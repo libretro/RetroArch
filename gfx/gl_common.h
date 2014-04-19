@@ -45,6 +45,7 @@
 #define context_swap_buffers_func(gl)                    gl->ctx_driver->swap_buffers(gl)
 #define context_swap_interval_func(gl, var)              gl->ctx_driver->swap_interval(gl, var)
 #define context_has_focus_func(gl)                       gl->ctx_driver->has_focus(gl)
+#define context_bind_hw_render(gl, enable)               if (gl->shared_context_use && gl->ctx_driver->bind_hw_render) gl->ctx_driver->bind_hw_render(gl, enable)
 #define context_check_window_func(gl, quit, resize, width, height, frame_count) \
    gl->ctx_driver->check_window(gl, quit, resize, width, height, frame_count)
 
@@ -55,6 +56,10 @@
 #define context_init_egl_image_buffer_func(gl, video)    gl->ctx_driver->init_egl_image_buffer(gl, video)
 #define context_write_egl_image_func(gl, frame, width, height, pitch, base_size, tex_index, img) \
    gl->ctx_driver->write_egl_image(gl, frame, width, height, pitch, base_size, tex_index,img)
+#endif
+
+#if defined(HAVE_FFMPEG) && (!defined(HAVE_OPENGLES) || defined(HAVE_OPENGLES3))
+#define HAVE_GL_ASYNC_READBACK
 #endif
 
 static inline bool gl_check_error(void)
@@ -178,6 +183,7 @@ typedef struct gl
    bool has_fp_fbo;
 #endif
    bool hw_render_use;
+   bool shared_context_use;
 
    bool should_resize;
    bool quitting;
@@ -238,7 +244,7 @@ typedef struct gl
    bool overlay_full_screen;
 #endif
 
-#if !defined(HAVE_OPENGLES) && defined(HAVE_FFMPEG)
+#ifdef HAVE_GL_ASYNC_READBACK
    // PBOs used for asynchronous viewport readbacks.
    GLuint pbo_readback[4];
    bool pbo_readback_enable;

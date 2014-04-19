@@ -47,6 +47,8 @@
 #include <sys/poll.h>
 #include <fcntl.h>
 
+static bool g_use_hw_ctx;
+static EGLContext g_egl_hw_ctx;
 static EGLContext g_egl_ctx;
 static EGLSurface g_egl_surf;
 static EGLDisplay g_egl_dpy;
@@ -593,8 +595,18 @@ static bool gfx_ctx_set_video_mode(void *data,
       goto error;
 
    g_egl_ctx = eglCreateContext(g_egl_dpy, g_config, EGL_NO_CONTEXT, (g_api == GFX_CTX_OPENGL_ES_API) ? gles_context_attribs : NULL);
-   if (!g_egl_ctx)
+   if (g_egl_ctx == EGL_NO_CONTEXT)
       goto error;
+
+   if (g_use_hw_ctx)
+   {
+      g_egl_hw_ctx = eglCreateContext(g_egl_dpy, g_config, g_egl_ctx,
+         (g_api == GFX_CTX_OPENGL_ES_API) ? gles_context_attribs : NULL);
+      RARCH_LOG("[KMS/EGL]: Created shared context: %p.\n", (void*)g_egl_hw_ctx);
+
+      if (g_egl_hw_ctx == EGL_NO_CONTEXT)
+         goto error;
+   }
 
    g_egl_surf = eglCreateWindowSurface(g_egl_dpy, g_config, (EGLNativeWindowType)g_gbm_surface, NULL);
    if (!g_egl_surf)
@@ -635,6 +647,9 @@ void gfx_ctx_destroy(void *data)
          eglMakeCurrent(g_egl_dpy, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
          eglDestroyContext(g_egl_dpy, g_egl_ctx);
       }
+
+      if (g_egl_hw_ctx)
+         eglDestroyContext(g_egl_dpy, g_egl_hw_ctx);
 
       if (g_egl_surf)
          eglDestroySurface(g_egl_dpy, g_egl_surf);
@@ -717,6 +732,14 @@ static bool gfx_ctx_bind_api(void *data, enum gfx_ctx_api api, unsigned major, u
    }
 }
 
+static void gfx_ctx_bind_hw_render(void *data, bool enable)
+{
+   (void)data;
+   g_use_hw_ctx = enable;
+   if (g_egl_dpy)
+      eglMakeCurrent(g_egl_dpy, g_egl_surf, g_egl_surf, enable ? g_egl_hw_ctx : g_egl_ctx);
+}
+
 const gfx_ctx_driver_t gfx_ctx_drm_egl = {
    gfx_ctx_init,
    gfx_ctx_destroy,
@@ -736,5 +759,6 @@ const gfx_ctx_driver_t gfx_ctx_drm_egl = {
    NULL,
    NULL,
    "kms-egl",
+   gfx_ctx_bind_hw_render,
 };
 

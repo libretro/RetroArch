@@ -103,6 +103,9 @@ typedef struct gfx_ctx_driver
 
    // Human readable string.
    const char *ident;
+
+   // Optional. Binds HW-render offscreen context.
+   void (*bind_hw_render)(void *data, bool enable);
 } gfx_ctx_driver_t;
 
 extern const gfx_ctx_driver_t gfx_ctx_sdl_gl;
@@ -120,7 +123,7 @@ extern const gfx_ctx_driver_t gfx_ctx_emscripten;
 extern const gfx_ctx_driver_t gfx_ctx_null;
 
 const gfx_ctx_driver_t *gfx_ctx_find_driver(const char *ident); // Finds driver with ident. Does not initialize.
-const gfx_ctx_driver_t *gfx_ctx_init_first(void *data, enum gfx_ctx_api api, unsigned major, unsigned minor); // Finds first suitable driver and initializes.
+const gfx_ctx_driver_t *gfx_ctx_init_first(void *data, enum gfx_ctx_api api, unsigned major, unsigned minor, bool hw_render_ctx); // Finds first suitable driver and initializes.
 
 #ifdef __cplusplus
 }

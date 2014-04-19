@@ -631,15 +631,23 @@ void gl_init_fbo(void *data, unsigned width, unsigned height)
 #ifndef HAVE_GCMGL
 static void gl_deinit_hw_render(gl_t *gl)
 {
+   context_bind_hw_render(gl, true);
+
    if (gl->hw_render_fbo_init)
       glDeleteFramebuffers(gl->textures, gl->hw_render_fbo);
    if (gl->hw_render_depth_init)
       glDeleteRenderbuffers(gl->textures, gl->hw_render_depth);
    gl->hw_render_fbo_init = false;
+
+   context_bind_hw_render(gl, false);
 }
 
 static bool gl_init_hw_render(gl_t *gl, unsigned width, unsigned height)
 {
+   // We can only share texture objects through contexts.
+   // FBOs are "abstract" objects and are not shared.
+   context_bind_hw_render(gl, true);
+
    unsigned i;
    RARCH_LOG("[GL]: Initializing HW render (%u x %u).\n", width, height);
    GLint max_fbo_size = 0;
@@ -720,6 +728,8 @@ static bool gl_init_hw_render(gl_t *gl, unsigned width, unsigned height)
 
    gl_bind_backbuffer();
    gl->hw_render_fbo_init = true;
+
+   context_bind_hw_render(gl, false);
    return true;
 }
 #endif
@@ -1310,7 +1320,7 @@ static inline void gl_set_shader_viewport(void *data, unsigned shader)
    gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
 }
 
-#if !defined(HAVE_OPENGLES) && defined(HAVE_FFMPEG)
+#ifdef HAVE_GL_ASYNC_READBACK
 static void gl_pbo_async_readback(void *data)
 {
    gl_t *gl = (gl_t*)data;
@@ -1327,9 +1337,15 @@ static void gl_pbo_async_readback(void *data)
    RARCH_PERFORMANCE_INIT(async_readback);
    RARCH_PERFORMANCE_START(async_readback);
    glReadBuffer(GL_BACK);
+#ifdef HAVE_OPENGLES3
+   glReadPixels(gl->vp.x, gl->vp.y,
+         gl->vp.width, gl->vp.height,
+         GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+#else
    glReadPixels(gl->vp.x, gl->vp.y,
          gl->vp.width, gl->vp.height,
          GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
+#endif
    RARCH_PERFORMANCE_STOP(async_readback);
 
    glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
@@ -1385,6 +1401,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
    RARCH_PERFORMANCE_START(frame_run);
 
    gl_t *gl = (gl_t*)data;
+   context_bind_hw_render(gl, false);
 
 #ifndef HAVE_OPENGLES
    if (gl->core_context)
@@ -1539,7 +1556,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
             gl->vp.width, gl->vp.height,
             GL_RGBA, GL_UNSIGNED_BYTE, gl->readback_buffer_screenshot);
    }
-#if !defined(HAVE_OPENGLES) && defined(HAVE_FFMPEG)
+#ifdef HAVE_GL_ASYNC_READBACK
    else if (gl->pbo_readback_enable)
       gl_pbo_async_readback(gl);
 #endif
@@ -1574,6 +1591,8 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
       glBindVertexArray(0);
 #endif
 
+   context_bind_hw_render(gl, true);
+
    return true;
 }
 
@@ -1599,6 +1618,7 @@ static void gl_free(void *data)
 #endif
 
    gl_t *gl = (gl_t*)data;
+   context_bind_hw_render(gl, false);
 
 #ifdef HAVE_GL_SYNC
    if (gl->have_sync)
@@ -1639,7 +1659,7 @@ static void gl_free(void *data)
 
    scaler_ctx_gen_reset(&gl->scaler);
 
-#if !defined(HAVE_OPENGLES) && defined(HAVE_FFMPEG)
+#ifdef HAVE_GL_ASYNC_READBACK
    if (gl->pbo_readback_enable)
    {
       glDeleteBuffers(4, gl->pbo_readback);
@@ -1674,7 +1694,9 @@ static void gl_set_nonblock_state(void *data, bool state)
    RARCH_LOG("GL VSync => %s\n", state ? "off" : "on");
 
    gl_t *gl = (gl_t*)data;
+   context_bind_hw_render(gl, false);
    context_swap_interval_func(gl, state ? 0 : g_settings.video.swap_interval);
+   context_bind_hw_render(gl, true);
 }
 
 static bool resolve_extensions(gl_t *gl)
@@ -1838,7 +1860,7 @@ static inline void gl_reinit_textures(void *data, const video_info_t *video)
 }
 #endif
 
-#if !defined(HAVE_OPENGLES) && defined(HAVE_FFMPEG)
+#ifdef HAVE_GL_ASYNC_READBACK
 static void gl_init_pbo_readback(void *data)
 {
    unsigned i;
@@ -1848,17 +1870,18 @@ static void gl_init_pbo_readback(void *data)
    if (!gl->pbo_readback_enable)
       return;
 
-   RARCH_LOG("Async PBO readback enabled.\n");
+   RARCH_LOG("[GL]: Async PBO readback enabled.\n");
 
    glGenBuffers(4, gl->pbo_readback);
    for (i = 0; i < 4; i++)
    {
       glBindBuffer(GL_PIXEL_PACK_BUFFER, gl->pbo_readback[i]);
       glBufferData(GL_PIXEL_PACK_BUFFER, gl->vp.width * gl->vp.height * sizeof(uint32_t),
-            NULL, GL_STREAM_COPY);
+            NULL, GL_STREAM_READ);
    }
    glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
 
+#ifndef HAVE_OPENGLES3
    struct scaler_ctx *scaler = &gl->pbo_readback_scaler;
    scaler->in_width    = gl->vp.width;
    scaler->in_height   = gl->vp.height;
@@ -1876,6 +1899,7 @@ static void gl_init_pbo_readback(void *data)
       RARCH_ERR("Failed to init pixel conversion for PBO.\n");
       glDeleteBuffers(4, gl->pbo_readback);
    }
+#endif
 }
 #endif
 
@@ -1900,6 +1924,8 @@ static const gfx_ctx_driver_t *gl_get_context(gl_t *gl)
    const char *api_name = "OpenGL";
 #endif
 
+   gl->shared_context_use = g_settings.video.shared_context && cb->context_type != RETRO_HW_CONTEXT_NONE;
+
    if (*g_settings.video.gl_context)
    {
       const gfx_ctx_driver_t *ctx = gfx_ctx_find_driver(g_settings.video.gl_context);
@@ -1910,6 +1936,10 @@ static const gfx_ctx_driver_t *gl_get_context(gl_t *gl)
             RARCH_ERR("Failed to bind API %s to context %s.\n", api_name, g_settings.video.gl_context);
             return NULL;
          }
+
+         // Enables or disables offscreen HW context.
+         if (ctx->bind_hw_render)
+            ctx->bind_hw_render(gl, gl->shared_context_use);
 
          if (!ctx->init(gl))
          {
@@ -1926,7 +1956,7 @@ static const gfx_ctx_driver_t *gl_get_context(gl_t *gl)
       return ctx;
    }
    else
-      return gfx_ctx_init_first(gl, api, major, minor);
+      return gfx_ctx_init_first(gl, api, major, minor, gl->shared_context_use);
 }
 
 #ifdef GL_DEBUG
@@ -2113,7 +2143,14 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
       g_extern.system.hw_render_callback.context_type == RETRO_HW_CONTEXT_OPENGL_CORE;
 #endif
    if (gl->hw_render_use)
+   {
       gl->textures = 1; // All on GPU, no need to excessively create textures.
+#ifdef GL_DEBUG
+      context_set_hw_render(true);
+      gl_begin_debug(gl);
+      context_set_hw_render(false);
+#endif
+   }
 #endif
    gl->white_color_ptr = white_color;
 
@@ -2213,7 +2250,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
             gl->win_width, gl->win_height);
    }
 
-#if !defined(HAVE_OPENGLES) && defined(HAVE_FFMPEG)
+#ifdef HAVE_GL_ASYNC_READBACK
    gl_init_pbo_readback(gl);
 #endif
 
@@ -2224,6 +2261,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
       return NULL;
    }
 
+   context_bind_hw_render(gl, true);
    return gl;
 }
 
@@ -2254,6 +2292,7 @@ static void gl_update_tex_filter_frame(gl_t *gl)
 {
    unsigned i;
    bool smooth = false;
+   context_bind_hw_render(gl, false);
    if (!gl_shader_filter_type(gl, 1, &smooth))
       smooth = g_settings.video.smooth;
    GLenum wrap_mode = gl_wrap_type_to_enum(gl_shader_wrap_type(gl, 1));
@@ -2278,12 +2317,14 @@ static void gl_update_tex_filter_frame(gl_t *gl)
    }
 
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
+   context_bind_hw_render(gl, true);
 }
 
 #if defined(HAVE_GLSL) || defined(HAVE_CG)
 static bool gl_set_shader(void *data, enum rarch_shader_type type, const char *path)
 {
    gl_t *gl = (gl_t*)data;
+   context_bind_hw_render(gl, false);
 
    if (type == RARCH_SHADER_NONE)
       return false;
@@ -2312,6 +2353,7 @@ static bool gl_set_shader(void *data, enum rarch_shader_type type, const char *p
    if (!gl->shader)
    {
       RARCH_ERR("[GL]: Cannot find shader core for path: %s.\n", path);
+      context_bind_hw_render(gl, true);
       return false;
    }
 
@@ -2326,6 +2368,7 @@ static bool gl_set_shader(void *data, enum rarch_shader_type type, const char *p
       bool ret = gl->shader->init(gl, NULL);
       if (!ret)
          gl->shader = NULL;
+      context_bind_hw_render(gl, true);
       return false;
    }
 
@@ -2366,6 +2409,7 @@ static bool gl_set_shader(void *data, enum rarch_shader_type type, const char *p
    // Apparently need to set viewport for passes when we aren't using FBOs.
    gl_set_shader_viewport(gl, 0);
    gl_set_shader_viewport(gl, 1);
+   context_bind_hw_render(gl, true);
    return true;
 }
 #endif
@@ -2387,25 +2431,56 @@ static void gl_viewport_info(void *data, struct rarch_viewport *vp)
 static bool gl_read_viewport(void *data, uint8_t *buffer)
 {
    gl_t *gl = (gl_t*)data;
+   context_bind_hw_render(gl, false);
     
    RARCH_PERFORMANCE_INIT(read_viewport);
    RARCH_PERFORMANCE_START(read_viewport);
 
-#if defined(HAVE_FFMPEG) && !defined(HAVE_OPENGLES)
+#ifdef HAVE_GL_ASYNC_READBACK
    if (gl->pbo_readback_enable)
    {
       if (!gl->pbo_readback_valid) // We haven't buffered up enough frames yet, come back later.
+      {
+         context_bind_hw_render(gl, true);
          return false;
+      }
 
       glBindBuffer(GL_PIXEL_PACK_BUFFER, gl->pbo_readback[gl->pbo_readback_index]);
+#ifdef HAVE_OPENGLES3
+      // Slower path, but should work on all implementations at least.
+      unsigned num_pixels = gl->vp.width * gl->vp.height;
+      const uint8_t *ptr = (const uint8_t*)glMapBufferRange(GL_PIXEL_PACK_BUFFER,
+            0, num_pixels * sizeof(uint32_t), GL_MAP_READ_BIT);
+      if (ptr)
+      {
+         unsigned x, y;
+         for (y = 0; y < gl->vp.height; y++)
+         {
+            for (x = 0; x < gl->vp.width; x++, buffer += 3, ptr += 4)
+            {
+               buffer[0] = ptr[2]; // RGBA -> BGR.
+               buffer[1] = ptr[1];
+               buffer[2] = ptr[0];
+            }
+         }
+      }
+      else
+      {
+         RARCH_ERR("[GL]: Failed to map pixel unpack buffer.\n");
+         context_bind_hw_render(gl, true);
+         return false;
+      }
+#else
       const void *ptr = glMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY);
       if (!ptr)
       {
-         RARCH_ERR("Failed to map pixel unpack buffer.\n");
+         RARCH_ERR("[GL]: Failed to map pixel unpack buffer.\n");
+         context_bind_hw_render(gl, true);
          return false;
       }
 
       scaler_ctx_scale(&gl->pbo_readback_scaler, buffer, ptr);
+#endif
       glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
       glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
    }
@@ -2423,6 +2498,7 @@ static bool gl_read_viewport(void *data, uint8_t *buffer)
       if (!gl->readback_buffer_screenshot)
       {
          RARCH_PERFORMANCE_STOP(read_viewport);
+         context_bind_hw_render(gl, true);
          return false;
       }
 
@@ -2443,6 +2519,7 @@ static bool gl_read_viewport(void *data, uint8_t *buffer)
    }
 
    RARCH_PERFORMANCE_STOP(read_viewport);
+   context_bind_hw_render(gl, true);
    return true;
 }
 #endif
@@ -2471,11 +2548,15 @@ static bool gl_overlay_load(void *data, const struct texture_image *images, unsi
 {
    unsigned i;
    gl_t *gl = (gl_t*)data;
+   context_bind_hw_render(gl, false);
 
    gl_free_overlay(gl);
    gl->overlay = (struct gl_overlay_data*)calloc(num_images, sizeof(*gl->overlay));
    if (!gl->overlay)
+   {
+      context_bind_hw_render(gl, true);
       return false;
+   }
 
    gl->overlays = num_images;
 
@@ -2499,6 +2580,7 @@ static bool gl_overlay_load(void *data, const struct texture_image *images, unsi
       gl->overlay[i].alpha_mod = 1.0f;
    }
 
+   context_bind_hw_render(gl, true);
    return true;
 }
 
@@ -2658,6 +2740,7 @@ static void gl_set_texture_frame(void *data,
       float alpha)
 {
    gl_t *gl = (gl_t*)data;
+   context_bind_hw_render(gl, false);
 
    if (!gl->rgui_texture)
    {
@@ -2692,6 +2775,7 @@ static void gl_set_texture_frame(void *data,
    }
 
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
+   context_bind_hw_render(gl, true);
 }
 
 static void gl_set_texture_enable(void *data, bool state, bool full_screen)
@@ -2711,10 +2795,12 @@ static void gl_apply_state_changes(void *data)
 static void gl_set_osd_msg(void *data, const char *msg, void *userdata)
 {
    gl_t *gl = (gl_t*)data;
+   context_bind_hw_render(gl, false);
    font_params_t *params = (font_params_t*)userdata;
 
    if (gl->font_ctx)
       gl->font_ctx->render_msg(gl, msg, params);
+   context_bind_hw_render(gl, true);
 }
 
 static void gl_show_mouse(void *data, bool state)
@@ -2781,5 +2867,4 @@ const video_driver_t video_gl = {
 #endif
    gl_get_poke_interface,
 };
-
 

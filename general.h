@@ -183,6 +183,7 @@ struct settings
       bool gpu_screenshot;
 
       bool allow_rotate;
+      bool shared_context;
    } video;
 
 #ifdef HAVE_MENU

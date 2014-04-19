@@ -41,6 +41,8 @@ static unsigned g_screen;
 static XIM g_xim;
 static XIC g_xic;
 
+static bool g_use_hw_ctx;
+static EGLContext g_egl_hw_ctx;
 static EGLContext g_egl_ctx;
 static EGLSurface g_egl_surf;
 static EGLDisplay g_egl_dpy;
@@ -422,9 +424,18 @@ static bool gfx_ctx_set_video_mode(void *data,
          (g_api == GFX_CTX_OPENGL_ES_API) ? egl_ctx_gles_attribs : NULL);
 
    RARCH_LOG("[X/EGL]: Created context: %p.\n", (void*)g_egl_ctx);
-
-   if (!g_egl_ctx)
+   if (g_egl_ctx == EGL_NO_CONTEXT)
       goto error;
+
+   if (g_use_hw_ctx)
+   {
+      g_egl_hw_ctx = eglCreateContext(g_egl_dpy, g_config, g_egl_ctx,
+         (g_api == GFX_CTX_OPENGL_ES_API) ? egl_ctx_gles_attribs : NULL);
+      RARCH_LOG("[X/EGL]: Created shared context: %p.\n", (void*)g_egl_hw_ctx);
+
+      if (g_egl_hw_ctx == EGL_NO_CONTEXT)
+         goto error;
+   }
 
    g_egl_surf = eglCreateWindowSurface(g_egl_dpy, g_config, (EGLNativeWindowType)g_win, NULL);
    if (!g_egl_surf)
@@ -512,6 +523,9 @@ static void gfx_ctx_destroy(void *data)
          eglMakeCurrent(g_egl_dpy, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
          eglDestroyContext(g_egl_dpy, g_egl_ctx);
       }
+
+      if (g_egl_hw_ctx)
+         eglDestroyContext(g_egl_dpy, g_egl_hw_ctx);
 
       if (g_egl_surf)
          eglDestroySurface(g_egl_dpy, g_egl_surf);
@@ -622,6 +636,14 @@ static void gfx_ctx_show_mouse(void *data, bool state)
    x11_show_mouse(g_dpy, g_win, state);
 }
 
+static void gfx_ctx_bind_hw_render(void *data, bool enable)
+{
+   (void)data;
+   g_use_hw_ctx = enable;
+   if (g_egl_dpy)
+      eglMakeCurrent(g_egl_dpy, g_egl_surf, g_egl_surf, enable ? g_egl_hw_ctx : g_egl_ctx);
+}
+
 const gfx_ctx_driver_t gfx_ctx_x_egl = {
    gfx_ctx_init,
    gfx_ctx_destroy,
@@ -641,5 +663,6 @@ const gfx_ctx_driver_t gfx_ctx_x_egl = {
    NULL,
    gfx_ctx_show_mouse,
    "x-egl",
+   gfx_ctx_bind_hw_render,
 };
 

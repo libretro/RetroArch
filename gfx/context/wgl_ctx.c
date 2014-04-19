@@ -33,8 +33,10 @@
 #define IDI_ICON 1
 #define MAX_MONITORS 9
 
+static bool g_use_hw_ctx;
 static HWND g_hwnd;
 static HGLRC g_hrc;
+static HGLRC g_hw_hrc;
 static HDC g_hdc;
 static HMONITOR g_last_hm;
 static HMONITOR g_all_hms[MAX_MONITORS];
@@ -82,8 +84,31 @@ static void create_gl_context(HWND hwnd)
    g_hdc = GetDC(hwnd);
    setup_pixel_format(g_hdc);
 
+#ifdef GL_DEBUG
+   bool debug = true;
+#else
+   bool debug = g_extern.system.hw_render_callback.debug_context;
+#endif
+   bool core_context = (g_major * 1000 + g_minor) >= 3001;
+
    if (!g_hrc)
+   {
       g_hrc = wglCreateContext(g_hdc);
+      if (g_hrc && !core_context && !debug) // We'll create shared context later if not.
+      {
+         g_hw_hrc = wglCreateContext(g_hdc);
+         if (g_hw_hrc)
+         {
+            if (!wglShareLists(g_hrc, g_hw_hrc))
+            {
+               RARCH_LOG("[WGL]: Failed to share contexts.\n");
+               g_quit = true;
+            }
+         }
+         else
+            g_quit = true;
+      }
+   }
    else
    {
       RARCH_LOG("[WGL]: Using cached GL context.\n");
@@ -102,14 +127,6 @@ static void create_gl_context(HWND hwnd)
       g_quit = true;
       return;
    }
-
-#ifdef GL_DEBUG
-   bool debug = true;
-#else
-   bool debug = g_extern.system.hw_render_callback.debug_context;
-#endif
-
-   bool core_context = (g_major * 1000 + g_minor) >= 3001;
 
    if (core_context || debug)
    {
@@ -169,6 +186,16 @@ static void create_gl_context(HWND hwnd)
          }
          else
             RARCH_ERR("[WGL]: Failed to create core context. Falling back to legacy context.\n");
+
+         if (g_use_hw_ctx)
+         {
+            g_hw_hrc = pcreate_context(g_hdc, context, attribs);
+            if (!g_hw_hrc)
+            {
+               RARCH_ERR("[WGL]: Failed to create shared context.\n");
+               g_quit = true;
+            }
+         }
       }
       else
          RARCH_ERR("[WGL]: wglCreateContextAttribsARB not supported.\n");
@@ -489,8 +516,11 @@ static void gfx_ctx_destroy(void *data)
 
       if (!driver.video_cache_context)
       {
+         if (g_hw_hrc)
+            wglDeleteContext(g_hw_hrc);
          wglDeleteContext(g_hrc);
          g_hrc = NULL;
+         g_hw_hrc = NULL;
       }
    }
 
@@ -559,6 +589,13 @@ static void gfx_ctx_show_mouse(void *data, bool state)
    show_cursor(state);
 }
 
+static void gfx_ctx_bind_hw_render(void *data, bool enable)
+{
+   g_use_hw_ctx = enable;
+   if (g_hdc)
+      wglMakeCurrent(g_hdc, enable ? g_hw_hrc : g_hrc);
+}
+
 const gfx_ctx_driver_t gfx_ctx_wgl = {
    gfx_ctx_init,
    gfx_ctx_destroy,
@@ -576,5 +613,6 @@ const gfx_ctx_driver_t gfx_ctx_wgl = {
    gfx_ctx_get_proc_address,
    gfx_ctx_show_mouse,
    "wgl",
+   gfx_ctx_bind_hw_render,
 };
 
