@@ -591,7 +591,7 @@ static void gfx_ctx_show_mouse(void *data, bool state)
 
 static void gfx_ctx_bind_hw_render(void *data, bool enable)
 {
-   g_use_hw_render = enable;
+   g_use_hw_ctx = enable;
    if (g_hdc)
       wglMakeCurrent(g_hdc, enable ? g_hw_hrc : g_hrc);
 }
