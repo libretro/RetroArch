@@ -1877,10 +1877,11 @@ static void gl_init_pbo_readback(void *data)
    {
       glBindBuffer(GL_PIXEL_PACK_BUFFER, gl->pbo_readback[i]);
       glBufferData(GL_PIXEL_PACK_BUFFER, gl->vp.width * gl->vp.height * sizeof(uint32_t),
-            NULL, GL_STREAM_COPY);
+            NULL, GL_STREAM_READ);
    }
    glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
 
+#ifndef HAVE_OPENGLES3
    struct scaler_ctx *scaler = &gl->pbo_readback_scaler;
    scaler->in_width    = gl->vp.width;
    scaler->in_height   = gl->vp.height;
@@ -1898,6 +1899,7 @@ static void gl_init_pbo_readback(void *data)
       RARCH_ERR("Failed to init pixel conversion for PBO.\n");
       glDeleteBuffers(4, gl->pbo_readback);
    }
+#endif
 }
 #endif
 
