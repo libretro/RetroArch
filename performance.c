@@ -306,7 +306,7 @@ unsigned rarch_get_cpu_cores(void)
 #elif defined(_SC_NPROCESSORS_ONLN) // Linux, most unix-likes.
    long ret = sysconf(_SC_NPROCESSORS_ONLN);
    if (ret <= 0)
-      return 1;
+      return (unsigned)1;
    return ret;
 #elif defined(BSD) || defined(__APPLE__) // BSD
    // Copypasta from stackoverflow, dunno if it works.

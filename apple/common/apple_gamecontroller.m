@@ -41,7 +41,7 @@ static void apple_gamecontroller_poll(GCController* controller)
  
    if (controller.extendedGamepad)
    {
-      GCExtendedGamepad* gp = controller.extendedGamepad;
+      GCExtendedGamepad* gp = (GCExtendedGamepad*)controller.extendedGamepad;
       g_current_input_data.pad_buttons[slot] |= IS_PRESSED(gp.dpad.up) ? 1 : 0;
       g_current_input_data.pad_buttons[slot] |= IS_PRESSED(gp.dpad.down) ? 2 : 0;
       g_current_input_data.pad_buttons[slot] |= IS_PRESSED(gp.dpad.left) ? 4 : 0;
@@ -62,7 +62,7 @@ static void apple_gamecontroller_poll(GCController* controller)
    }
    else if (controller.gamepad)
    {
-      GCGamepad* gp = controller.gamepad;
+      GCGamepad* gp = (GCGamepad*)controller.gamepad;
       g_current_input_data.pad_buttons[slot] |= IS_PRESSED(gp.dpad.up) ? 1 : 0;
       g_current_input_data.pad_buttons[slot] |= IS_PRESSED(gp.dpad.down) ? 2 : 0;
       g_current_input_data.pad_buttons[slot] |= IS_PRESSED(gp.dpad.left) ? 4 : 0;
@@ -82,9 +82,9 @@ void apple_gamecontroller_poll_all(void)
     if (IOS_IS_VERSION_6_OR_LOWER())
         return;
 #endif
-   NSArray* controllers = [GCController controllers];
+   NSArray* controllers = (NSArray*)GCController.controllers;
    
-   for (int i = 0; i != [controllers count]; i ++)
+   for (int i = 0; i < controllers.count; i ++)
       apple_gamecontroller_poll([controllers objectAtIndex:i]);
 }
 
@@ -118,7 +118,7 @@ void apple_gamecontroller_disconnect(GCController* controller)
    if (controller.playerIndex == GCControllerPlayerIndexUnset)
       return;
    
-   apple_joypad_disconnect((uint32_t)(controller.playerIndex));
+   apple_joypad_disconnect((uint32_t)controller.playerIndex);
 }
 
 void apple_gamecontroller_init(void)

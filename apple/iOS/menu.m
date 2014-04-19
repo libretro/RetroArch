@@ -191,10 +191,14 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 {
    switch (setting->type)
    {
-      case ST_BOOL: return [[RAMenuItemBooleanSetting alloc] initWithSetting:setting];
-      case ST_PATH: return [[RAMenuItemPathSetting alloc] initWithSetting:setting];
-      case ST_BIND: return [[RAMenuItemBindSetting alloc] initWithSetting:setting];
-      default:      break;
+      case ST_BOOL:
+           return [[RAMenuItemBooleanSetting alloc] initWithSetting:setting];
+      case ST_PATH:
+           return [[RAMenuItemPathSetting alloc] initWithSetting:setting];
+      case ST_BIND:
+           return [[RAMenuItemBindSetting alloc] initWithSetting:setting];
+      default:
+           break;
    }
 
    if (setting->type == ST_STRING && setting->values)
@@ -260,7 +264,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 
 - (void)alertView:(UIAlertView*)alertView clickedButtonAtIndex:(NSInteger)buttonIndex
 {
-   NSString* text = [alertView textFieldAtIndex:0].text;
+   NSString* text = (NSString*)[alertView textFieldAtIndex:0].text;
 
    if (buttonIndex == alertView.firstOtherButtonIndex && text.length)
    {
@@ -283,7 +287,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
    {
       RAMenuItemGeneralSetting __weak* weakSelf = self;
 
-      struct string_list* items = string_split("OK", "|");
+      struct string_list* items = (struct string_list*)string_split("OK", "|");
       RunActionSheet("Really Reset Value?", items, self.parentTable,
          ^(UIActionSheet* actionSheet, NSInteger buttonIndex)
          {
@@ -316,7 +320,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 {
    static NSString* const cell_id = @"boolean_setting";
    
-   UITableViewCell* result = [tableView dequeueReusableCellWithIdentifier:cell_id];
+   UITableViewCell* result = (UITableViewCell*)[tableView dequeueReusableCellWithIdentifier:cell_id];
    if (!result)
    {
       result = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleValue1 reuseIdentifier:cell_id];
@@ -423,11 +427,11 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 
 - (void)wasSelectedOnTableView:(UITableView *)tableView ofController:(UIViewController *)controller
 {
-   self.alert = [[UIAlertView alloc] initWithTitle:@"RetroArch"
+   self.alert = [[UIAlertView alloc] initWithTitle:BOXSTRING("RetroArch")
                                      message:BOXSTRING(self.setting->short_description)
                                      delegate:self
-                                     cancelButtonTitle:@"Cancel"
-                                     otherButtonTitles:@"Clear Keyboard", @"Clear Joystick", @"Clear Axis", nil];
+                                     cancelButtonTitle:BOXSTRING("Cancel")
+                                     otherButtonTitles:BOXSTRING("Clear Keyboard"), BOXSTRING("Clear Joystick"), BOXSTRING("Clear Axis"), nil];
 
    [self.alert show];
    
@@ -493,7 +497,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 - (id)init
 {
    if ((self = [super initWithStyle:UITableViewStylePlain]))
-      self.title = @"RetroArch";
+      self.title = BOXSTRING("RetroArch");
    return self;
 }
 
@@ -563,7 +567,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
       action: ^(NSString* core)
       {
          if (path)
-            apple_run_core(core, [path UTF8String]);
+            apple_run_core(core, path.UTF8String);
          else
          {
             weakSelf.core = core;
@@ -587,7 +591,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
          if (item && !item.isDirectory)
          {
             if (weakSelf.core)
-               apple_run_core(weakSelf.core, [item.path UTF8String]);
+               apple_run_core(weakSelf.core, item.path.UTF8String);
             else
                [weakSelf chooseCoreWithPath:item.path];
          }
@@ -712,24 +716,24 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 
    if ((self = [super initWithStyle:UITableViewStyleGrouped]))
    {
-      _isCustom = apple_core_info_has_custom_config([core UTF8String]);
+      _isCustom = apple_core_info_has_custom_config(core.UTF8String);
       if (_isCustom)
       {
          self.title = apple_get_core_display_name(core);
          
-         _pathToSave = BOXSTRING(apple_core_info_get_custom_config([core UTF8String], buffer, sizeof(buffer)));
+         _pathToSave = BOXSTRING(apple_core_info_get_custom_config(core.UTF8String, buffer, sizeof(buffer)));
          self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemTrash target:self action:@selector(deleteCustom)];
       }
       else
       {
-         self.title = @"Global Core Config";
+         self.title = BOXSTRING("Global Core Config");
          _pathToSave = apple_platform.globalConfigFile;
       }
       
-      const rarch_setting_t* setting_data = setting_data_get_list();
+      const rarch_setting_t* setting_data = (const rarch_setting_t*)setting_data_get_list();
       
       setting_data_reset(setting_data);
-      setting_data_load_config_path(setting_data, [_pathToSave UTF8String]);
+      setting_data_load_config_path(setting_data, _pathToSave.UTF8String);
       
       // HACK: Load the key mapping table
       apple_input_find_any_key();
@@ -770,7 +774,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 {
    if (self.pathToSave)
    {
-      config_file_t* config = config_file_new([self.pathToSave UTF8String]);
+      config_file_t* config = (config_file_t*)config_file_new(self.pathToSave.UTF8String);
       if (!config)
          config = config_file_new(0);
       
@@ -779,7 +783,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
       config_set_string(config, "system_directory", [[RetroArch_iOS get].systemDirectory UTF8String]);
       config_set_string(config, "savefile_directory", [[RetroArch_iOS get].systemDirectory UTF8String]);
       config_set_string(config, "savestate_directory", [[RetroArch_iOS get].systemDirectory UTF8String]);
-      config_file_write(config, [self.pathToSave UTF8String]);
+      config_file_write(config, self.pathToSave.UTF8String);
       config_file_free(config);
       
       apple_refresh_config();
@@ -819,7 +823,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
    {      
       RAFrontendSettingsMenu* __weak weakSelf = self;
 
-      self.title = @"Frontend Settings";
+      self.title = BOXSTRING("Frontend Settings");
       
       RAMenuItemBasic* diagnostic_item = [RAMenuItemBasic itemWithDescription:@"Diagnostic Log"
          action:^{ [weakSelf.navigationController pushViewController:[[RALogMenu alloc] initWithFile:[[RetroArch_iOS get].logPath UTF8String]] animated:YES]; }];
@@ -840,7 +844,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 - (void)willReloadData
 {
    RAFrontendSettingsMenu* __weak weakSelf = self;
-   NSMutableArray* cores = self.coreConfigOptions;
+   NSMutableArray* cores = (NSMutableArray*)self.coreConfigOptions;
    
    [cores removeAllObjects];
    
@@ -854,8 +858,8 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
    const core_info_list_t* core_list = apple_core_info_list_get();
    for (int i = 0; i < core_list->count; i ++)
    {
-      NSString* core_id = apple_get_core_id(&core_list->list[i]);
-      if (apple_core_info_has_custom_config([core_id UTF8String]))
+      NSString* core_id = (NSString*)apple_get_core_id(&core_list->list[i]);
+      if (apple_core_info_has_custom_config(core_id.UTF8String))
       {
          [cores addObject:[RAMenuItemBasic itemWithDescription:BOXSTRING(core_list->list[i].display_name)
                                                    association:core_id
@@ -882,10 +886,10 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
    RAMenuCoreList* list = [[RAMenuCoreList alloc] initWithPath:nil allowAutoDetect:false
       action:^(NSString* core)
       {
-         if (!apple_core_info_has_custom_config([core UTF8String]))
+         if (!apple_core_info_has_custom_config(core.UTF8String))
          {
             char path[PATH_MAX];
-            apple_core_info_get_custom_config([core UTF8String], path, sizeof(path));
+            apple_core_info_get_custom_config(core.UTF8String, path, sizeof(path));
          
             if (![[NSFileManager defaultManager] copyItemAtPath:apple_platform.globalConfigFile toPath:BOXSTRING(path) error:nil])
                RARCH_WARN("Could not create custom config at %s", path);
@@ -914,9 +918,9 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
    if ((self = [super initWithStyle:UITableViewStyleGrouped]))
    {
       RACoreOptionsMenu* __weak weakSelf = self;
-      core_option_manager_t* options = g_extern.system.core_options;
+      core_option_manager_t* options = (core_option_manager_t*)g_extern.system.core_options;
    
-      NSMutableArray* section = [NSMutableArray arrayWithObject:@""];
+      NSMutableArray* section = (NSMutableArray*)[NSMutableArray arrayWithObject:@""];
       [self.sections addObject:section];
    
       if (options)
@@ -1011,7 +1015,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 {
    if ((self = [super initWithStyle:UITableViewStyleGrouped]))
    {
-      self.title = @"Choose Core";
+      self.title = BOXSTRING("Choose Core");
       _action = action;
       _path = path;
 
@@ -1022,7 +1026,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
                action: ^{ if(weakSelf.action) weakSelf.action(nil); }]]];
       }
 
-      NSMutableArray* core_section = [NSMutableArray arrayWithObject:@"Cores"];
+      NSMutableArray* core_section = (NSMutableArray*)[NSMutableArray arrayWithObject:@"Cores"];
       [self.sections addObject:core_section];
 
       core_info_list_t* core_list = apple_core_info_list_get();
@@ -1037,11 +1041,11 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
             if (core_count == 1 && _action)
                [self runAction:apple_get_core_id(&core_support[0])];
             else if (core_count > 1)
-               [self load:core_count coresFromList:core_support toSection:core_section];
+               [self load:(uint32_t)core_count coresFromList:core_support toSection:core_section];
          }
          
          if (!_path || [core_section count] == 1)
-            [self load:core_list->count coresFromList:core_list->list toSection:core_section];
+            [self load:(uint32_t)core_list->count coresFromList:core_list->list toSection:core_section];
       }
    }
 
@@ -1130,7 +1134,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 
 + (void)changed:(UISegmentedControl*)sender
 {
-   g_extern.state_slot = sender.selectedSegmentIndex;
+   g_extern.state_slot = (int)sender.selectedSegmentIndex;
 }
 
 - (void)wasSelectedOnTableView:(UITableView *)tableView ofController:(UIViewController *)controller

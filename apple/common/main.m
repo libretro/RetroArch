@@ -33,9 +33,9 @@ NSString* apple_core;
 
 static CFRunLoopObserverRef iterate_observer;
 
-static void apple_rarch_exited()
+static void apple_rarch_exited(void)
 {
-   NSString* used_core = apple_core;
+   NSString* used_core = (NSString*)apple_core;
    apple_core = 0;
    
    if (apple_is_running)
@@ -68,7 +68,7 @@ static void do_iteration()
         CFRunLoopWakeUp(CFRunLoopGetMain());
 }
 
-void apple_start_iteration()
+void apple_start_iteration(void)
 {
    if (iterate_observer)
        return;
@@ -77,7 +77,7 @@ void apple_start_iteration()
     CFRunLoopAddObserver(CFRunLoopGetMain(), iterate_observer, kCFRunLoopCommonModes);
 }
 
-void apple_stop_iteration()
+void apple_stop_iteration(void)
 {
    if (!iterate_observer)
        return;

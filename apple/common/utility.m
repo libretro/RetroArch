@@ -49,7 +49,7 @@ NSString* objc_get_value_from_config(config_file_t* config, NSString* name, NSSt
 {
    char* data = 0;
    if (config)
-      config_get_string(config, [name UTF8String], &data);
+      config_get_string(config, name.UTF8String, &data);
    
    NSString* result = data ? BOXSTRING(data) : defaultValue;
    free(data);
@@ -65,7 +65,7 @@ NSString *apple_get_core_id(const core_info_t *core)
 
 NSString *apple_get_core_display_name(NSString *core_id)
 {
-   const core_info_t *core = apple_core_info_list_get_by_id([core_id UTF8String]);
+   const core_info_t *core = (const core_info_t*)apple_core_info_list_get_by_id(core_id.UTF8String);
    return core ? BOXSTRING(core->display_name) : core_id;
 }
 
@@ -110,7 +110,7 @@ NSString *apple_get_core_display_name(NSString *core_id)
 #ifdef IOS
 - (BOOL)textField:(UITextField *)textField shouldChangeCharactersInRange:(NSRange)range replacementString:(NSString *)string
 {
-   NSString* text = [[textField text] stringByReplacingCharactersInRange:range withString:string];
+   NSString* text = (NSString*)[[textField text] stringByReplacingCharactersInRange:range withString:string];
    return [self isPartialStringValid:text newEditingString:nil errorDescription:nil];
 }
 #endif

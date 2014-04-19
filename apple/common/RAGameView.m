@@ -243,7 +243,7 @@ void event_process_camera_frame(void* pixelBufferPtr)
 {
     CVPixelBufferRef pixelBuffer = (CVPixelBufferRef)pixelBufferPtr;
     
-    int width, height;
+    size_t width, height;
     CVReturn ret;
     
     width  = CVPixelBufferGetWidth(pixelBuffer);
@@ -257,7 +257,7 @@ void event_process_camera_frame(void* pixelBufferPtr)
     // textureCache will be what you previously made with CVOpenGLESTextureCacheCreate
     ret = CVOpenGLESTextureCacheCreateTextureFromImage(kCFAllocatorDefault,
                                                        textureCache, pixelBuffer, NULL, GL_TEXTURE_2D,
-                                                       GL_RGBA, width, height, GL_BGRA, GL_UNSIGNED_BYTE, 0, &renderTexture);
+                                                       GL_RGBA, (GLsizei)width, (GLsizei)height, GL_BGRA, GL_UNSIGNED_BYTE, 0, &renderTexture);
     if (!renderTexture || ret)
     {
         RARCH_ERR("ioscamera: CVOpenGLESTextureCacheCreateTextureFromImage failed.\n");
@@ -289,7 +289,7 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
        fromConnection:(AVCaptureConnection *)connection
 {
     // TODO: Don't post if event queue is full
-    CVPixelBufferRef pixelBuffer = CVPixelBufferRetain(CMSampleBufferGetImageBuffer(sampleBuffer));
+    CVPixelBufferRef pixelBuffer = (CVPixelBufferRef)CVPixelBufferRetain(CMSampleBufferGetImageBuffer(sampleBuffer));
     event_process_camera_frame(pixelBuffer);
 }
 
@@ -320,13 +320,13 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
     [_session setSessionPreset:_sessionPreset];
     
     //-- Creata a video device and input from that Device.  Add the input to the capture session.
-    AVCaptureDevice * videoDevice = [AVCaptureDevice defaultDeviceWithMediaType:AVMediaTypeVideo];
+    AVCaptureDevice * videoDevice = (AVCaptureDevice*)[AVCaptureDevice defaultDeviceWithMediaType:AVMediaTypeVideo];
     if(videoDevice == nil)
         assert(0);
     
     //-- Add the device to the session.
     NSError *error;
-    AVCaptureDeviceInput *input = [AVCaptureDeviceInput deviceInputWithDevice:videoDevice error:&error];
+    AVCaptureDeviceInput *input = (AVCaptureDeviceInput*)[AVCaptureDeviceInput deviceInputWithDevice:videoDevice error:&error];
     if(error)
     {
         RARCH_ERR("video device input %s\n", error.localizedDescription.UTF8String);
@@ -336,7 +336,7 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
     [_session addInput:input];
     
     //-- Create the output for the capture session.
-    AVCaptureVideoDataOutput * dataOutput = [[AVCaptureVideoDataOutput alloc] init];
+    AVCaptureVideoDataOutput * dataOutput = (AVCaptureVideoDataOutput*)[[AVCaptureVideoDataOutput alloc] init];
     [dataOutput setAlwaysDiscardsLateVideoFrames:NO]; // Probably want to set this to NO when recording
     
 	[dataOutput setVideoSettings:[NSDictionary dictionaryWithObject:[NSNumber numberWithInt:kCVPixelFormatType_32BGRA] forKey:(id)kCVPixelBufferPixelFormatTypeKey]];
@@ -391,7 +391,7 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
 - (void)locationManager:(CLLocationManager *)manager didUpdateLocations:(NSArray *)locations
 {
     locationChanged = true;
-    CLLocation *location = [locations objectAtIndex:([locations count] - 1)];
+    CLLocation *location = (CLLocation*)[locations objectAtIndex:([locations count] - 1)];
     currentLatitude  = [location coordinate].latitude;
     currentLongitude = [location coordinate].longitude;
     currentHorizontalAccuracy = [location horizontalAccuracy];
@@ -441,7 +441,7 @@ static RAScreen* get_chosen_screen(void)
    }
 #endif
 	
-   NSArray *screens = [RAScreen screens];
+   NSArray *screens = (NSArray*)RAScreen.screens;
    return (RAScreen*)[screens objectAtIndex:g_settings.video.monitor_index];
 }
 
@@ -551,24 +551,24 @@ bool apple_gfx_ctx_set_video_mode(void *data, unsigned width, unsigned height, b
 void apple_gfx_ctx_get_video_size(void *data, unsigned* width, unsigned* height)
 {
    (void)data;
-   RAScreen* screen = get_chosen_screen();
+   RAScreen* screen = (RAScreen*)get_chosen_screen();
    CGRect size;
 	
    if (g_initialized)
    {
 #if defined(OSX)
-      CGRect cgrect = NSRectToCGRect([g_view frame]);
+      CGRect cgrect = (CGRect)NSRectToCGRect([g_view frame]);
       size = CGRectMake(0, 0, CGRectGetWidth(cgrect), CGRectGetHeight(cgrect));
 #else
-      size = [g_view bounds];
+      size = g_view.bounds;
 #endif
    }
    else
-      size = [screen bounds];
+      size = screen.bounds;
 
 
-   *width  = CGRectGetWidth(size)  * [screen scale];
-   *height = CGRectGetHeight(size) * [screen scale];
+   *width  = CGRectGetWidth(size)  * screen.scale;
+   *height = CGRectGetHeight(size) * screen.scale;
 }
 
 void apple_gfx_ctx_update_window_title(void *data)
@@ -767,10 +767,10 @@ static bool apple_location_get_position(void *data, double *lat, double *lon, do
    if (!ret)
       goto fail;
 	
-	*lat      = currentLatitude;
-   *lon      = currentLongitude;
+   *lat            = currentLatitude;
+   *lon            = currentLongitude;
    *horiz_accuracy = currentHorizontalAccuracy;
-   *vert_accuracy = currentVerticalAccuracy;
+   *vert_accuracy  = currentVerticalAccuracy;
    return true;
 
 fail:
