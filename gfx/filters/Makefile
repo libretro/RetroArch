@@ -1,18 +1,36 @@
 compiler    := gcc
 extra_flags :=
 use_neon    := 0
-release		:= release
+release	    := release
+DYLIB	    := so
 
-ifndef platform
-platform := $(shell $(compiler) -dumpmachine)
+ifeq ($(platform),)
+platform = unix
+ifeq ($(shell uname -a),)
+   platform = win
+else ifneq ($(findstring MINGW,$(shell uname -a)),)
+   platform = win
+else ifneq ($(findstring Darwin,$(shell uname -a)),)
+   platform = osx
+   arch = intel
+ifeq ($(shell uname -p),powerpc)
+   arch = ppc
+endif
+else ifneq ($(findstring win,$(shell uname -a)),)
+   platform = win
+endif
 endif
 
-ifneq (,$(findstring armv7,$(platform)))
+ifeq ($(platform),gcc)
+extra_rules_gcc := $(shell $(compiler) -dumpmachine)
+endif
+
+ifneq (,$(findstring armv7,$(extra_rules_gcc)))
 extra_flags += -mcpu=cortex-a9 -mtune=cortex-a9 -mfpu=neon
 use_neon := 1
 endif
 
-ifneq (,$(findstring hardfloat,$(platform)))
+ifneq (,$(findstring hardfloat,$(extra_rules_gcc)))
 extra_flags += -mfloat-abi=hard
 endif
 
@@ -24,11 +42,23 @@ ifeq (debug,$(build))
 extra_flags += -O0 -g
 endif
 
-cc      := $(compiler)
-cpp     := $(subst cc,++,$(compiler)) -std=gnu++0x
+ldflags := -shared -Wl,--version-script=link.T
+
+ifeq ($(platform), unix)
+DYLIB = so
+else ifeq ($(platform), osx)
+compiler := $(CC)
+DYLIB = dylib
+ldflags := -dynamiclib
+else
+extra_flags += -static-libgcc -static-libstdc++
+DYLIB = dll
+endif
+
+CC      := $(compiler)
+CXX     := $(subst CC,++,$(compiler)) -std=gnu++0x
 flags   := -fPIC $(extra_flags)
 asflags := -fPIC  $(extra_flags)
-ldflags := -shared -Wl,--version-script=link.T
 objects :=
 flags   += -std=c99
 
@@ -38,24 +68,24 @@ ASMFLAGS := -INEON/asm
 asflags += -mfpu=neon
 endif
            
-objects += epx.so 2xsai.so super2xsai.so supereagle.so 2xbr.so darken.so scale2x.so
+objects += epx.$(DYLIB) 2xsai.$(DYLIB) super2xsai.$(DYLIB) supereagle.$(DYLIB) 2xbr.$(DYLIB) darken.$(DYLIB) scale2x.$(DYLIB)
 
 all: build;
 
 %.o: %.S
-	$(cc) -c -o $@ $(asflags)  $(ASMFLAGS)  $<
+	$(CC) -c -o $@ $(asflags)  $(ASMFLAGS)  $<
 
 %.o: %.c
-	$(cc) -c -o $@ $(flags) $<
+	$(CC) -c -o $@ $(flags) $<
 
-%.so: %.o
-	$(cc) -o $@ $(ldflags) $(flags) $^
+%.$(DYLIB): %.o
+	$(CC) -o $@ $(ldflags) $(flags) $^
 
 build: $(objects)
 
 clean:
 	rm -f *.o
-	rm -f *.so
+	rm -f *.$(DYLIB)
 
 strip:
-	strip -s *.so
+	strip -s *.$(DYLIB)
