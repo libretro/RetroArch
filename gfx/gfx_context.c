@@ -79,7 +79,11 @@ const gfx_ctx_driver_t *gfx_ctx_init_first(void *data, enum gfx_ctx_api api, uns
       if (gfx_ctx_drivers[i]->bind_api(data, api, major, minor))
       {
          if (gfx_ctx_drivers[i]->bind_hw_render)
-            gfx_ctx_drivers[i]->bind_hw_render(data, hw_render_ctx);
+         {
+            gfx_ctx_drivers[i]->bind_hw_render(data,
+                  g_settings.video.shared_context && hw_render_ctx);
+         }
+
          if (gfx_ctx_drivers[i]->init(data))
             return gfx_ctx_drivers[i];
       }

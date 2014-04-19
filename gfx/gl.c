@@ -1929,7 +1929,7 @@ static const gfx_ctx_driver_t *gl_get_context(gl_t *gl)
 
          // Enables or disables offscreen HW context.
          if (ctx->bind_hw_render)
-            ctx->bind_hw_render(gl, cb->context_type != RETRO_HW_CONTEXT_NONE);
+            ctx->bind_hw_render(gl, g_settings.video.shared_context && cb->context_type != RETRO_HW_CONTEXT_NONE);
 
          if (!ctx->init(gl))
          {
