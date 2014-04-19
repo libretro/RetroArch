@@ -1320,7 +1320,7 @@ static inline void gl_set_shader_viewport(void *data, unsigned shader)
    gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
 }
 
-#if !defined(HAVE_OPENGLES) && defined(HAVE_FFMPEG)
+#ifdef HAVE_GL_ASYNC_READBACK
 static void gl_pbo_async_readback(void *data)
 {
    gl_t *gl = (gl_t*)data;
@@ -1337,9 +1337,15 @@ static void gl_pbo_async_readback(void *data)
    RARCH_PERFORMANCE_INIT(async_readback);
    RARCH_PERFORMANCE_START(async_readback);
    glReadBuffer(GL_BACK);
+#ifdef HAVE_OPENGLES3
+   glReadPixels(gl->vp.x, gl->vp.y,
+         gl->vp.width, gl->vp.height,
+         GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+#else
    glReadPixels(gl->vp.x, gl->vp.y,
          gl->vp.width, gl->vp.height,
          GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
+#endif
    RARCH_PERFORMANCE_STOP(async_readback);
 
    glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
@@ -1550,7 +1556,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
             gl->vp.width, gl->vp.height,
             GL_RGBA, GL_UNSIGNED_BYTE, gl->readback_buffer_screenshot);
    }
-#if !defined(HAVE_OPENGLES) && defined(HAVE_FFMPEG)
+#ifdef HAVE_GL_ASYNC_READBACK
    else if (gl->pbo_readback_enable)
       gl_pbo_async_readback(gl);
 #endif
@@ -1653,7 +1659,7 @@ static void gl_free(void *data)
 
    scaler_ctx_gen_reset(&gl->scaler);
 
-#if !defined(HAVE_OPENGLES) && defined(HAVE_FFMPEG)
+#ifdef HAVE_GL_ASYNC_READBACK
    if (gl->pbo_readback_enable)
    {
       glDeleteBuffers(4, gl->pbo_readback);
@@ -1854,7 +1860,7 @@ static inline void gl_reinit_textures(void *data, const video_info_t *video)
 }
 #endif
 
-#if !defined(HAVE_OPENGLES) && defined(HAVE_FFMPEG)
+#ifdef HAVE_GL_ASYNC_READBACK
 static void gl_init_pbo_readback(void *data)
 {
    unsigned i;
@@ -1864,7 +1870,7 @@ static void gl_init_pbo_readback(void *data)
    if (!gl->pbo_readback_enable)
       return;
 
-   RARCH_LOG("Async PBO readback enabled.\n");
+   RARCH_LOG("[GL]: Async PBO readback enabled.\n");
 
    glGenBuffers(4, gl->pbo_readback);
    for (i = 0; i < 4; i++)
@@ -2242,7 +2248,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
             gl->win_width, gl->win_height);
    }
 
-#if !defined(HAVE_OPENGLES) && defined(HAVE_FFMPEG)
+#ifdef HAVE_GL_ASYNC_READBACK
    gl_init_pbo_readback(gl);
 #endif
 
@@ -2428,21 +2434,51 @@ static bool gl_read_viewport(void *data, uint8_t *buffer)
    RARCH_PERFORMANCE_INIT(read_viewport);
    RARCH_PERFORMANCE_START(read_viewport);
 
-#if defined(HAVE_FFMPEG) && !defined(HAVE_OPENGLES)
+#ifdef HAVE_GL_ASYNC_READBACK
    if (gl->pbo_readback_enable)
    {
       if (!gl->pbo_readback_valid) // We haven't buffered up enough frames yet, come back later.
+      {
+         context_bind_hw_render(gl, true);
          return false;
+      }
 
       glBindBuffer(GL_PIXEL_PACK_BUFFER, gl->pbo_readback[gl->pbo_readback_index]);
+#ifdef HAVE_OPENGLES3
+      // Slower path, but should work on all implementations at least.
+      unsigned num_pixels = gl->vp.width * gl->vp.height;
+      const uint8_t *ptr = (const uint8_t*)glMapBufferRange(GL_PIXEL_PACK_BUFFER,
+            0, num_pixels * sizeof(uint32_t), GL_MAP_READ_BIT);
+      if (ptr)
+      {
+         unsigned x, y;
+         for (y = 0; y < gl->vp.height; y++)
+         {
+            for (x = 0; x < gl->vp.width; x++, buffer += 3, ptr += 4)
+            {
+               buffer[0] = ptr[2]; // RGBA -> BGR.
+               buffer[1] = ptr[1];
+               buffer[2] = ptr[0];
+            }
+         }
+      }
+      else
+      {
+         RARCH_ERR("[GL]: Failed to map pixel unpack buffer.\n");
+         context_bind_hw_render(gl, true);
+         return false;
+      }
+#else
       const void *ptr = glMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY);
       if (!ptr)
       {
-         RARCH_ERR("Failed to map pixel unpack buffer.\n");
+         RARCH_ERR("[GL]: Failed to map pixel unpack buffer.\n");
+         context_bind_hw_render(gl, true);
          return false;
       }
 
       scaler_ctx_scale(&gl->pbo_readback_scaler, buffer, ptr);
+#endif
       glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
       glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
    }

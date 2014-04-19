@@ -58,6 +58,10 @@
    gl->ctx_driver->write_egl_image(gl, frame, width, height, pitch, base_size, tex_index,img)
 #endif
 
+#if defined(HAVE_FFMPEG) && (!defined(HAVE_OPENGLES) || defined(HAVE_OPENGLES3))
+#define HAVE_GL_ASYNC_READBACK
+#endif
+
 static inline bool gl_check_error(void)
 {
    int error = glGetError();
@@ -240,7 +244,7 @@ typedef struct gl
    bool overlay_full_screen;
 #endif
 
-#if !defined(HAVE_OPENGLES) && defined(HAVE_FFMPEG)
+#ifdef HAVE_GL_ASYNC_READBACK
    // PBOs used for asynchronous viewport readbacks.
    GLuint pbo_readback[4];
    bool pbo_readback_enable;
