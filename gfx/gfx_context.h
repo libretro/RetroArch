@@ -103,6 +103,9 @@ typedef struct gfx_ctx_driver
 
    // Human readable string.
    const char *ident;
+
+   // Optional. Binds HW-render offscreen context.
+   void (*bind_hw_render)(void *data, bool enable);
 } gfx_ctx_driver_t;
 
 extern const gfx_ctx_driver_t gfx_ctx_sdl_gl;

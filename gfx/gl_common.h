@@ -45,6 +45,7 @@
 #define context_swap_buffers_func(gl)                    gl->ctx_driver->swap_buffers(gl)
 #define context_swap_interval_func(gl, var)              gl->ctx_driver->swap_interval(gl, var)
 #define context_has_focus_func(gl)                       gl->ctx_driver->has_focus(gl)
+#define context_bind_hw_render(gl, enable)               if (gl->hw_render_use && gl->ctx_driver->bind_hw_render) gl->ctx_driver->bind_hw_render(gl, enable)
 #define context_check_window_func(gl, quit, resize, width, height, frame_count) \
    gl->ctx_driver->check_window(gl, quit, resize, width, height, frame_count)
 

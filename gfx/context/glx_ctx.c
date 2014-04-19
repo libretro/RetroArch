@@ -40,7 +40,7 @@ static unsigned g_screen;
 static XIM g_xim;
 static XIC g_xic;
 
-static GLXContext g_ctx;
+static GLXContext g_ctx, g_hw_ctx;
 static GLXFBConfig g_fbc;
 static unsigned g_major;
 static unsigned g_minor;
@@ -413,11 +413,15 @@ static bool gfx_ctx_set_video_mode(void *data,
 
          *aptr = None;
          g_ctx = glx_create_context_attribs(g_dpy, g_fbc, NULL, True, attribs);
+         g_hw_ctx = glx_create_context_attribs(g_dpy, g_fbc, g_ctx, True, attribs);
       }
       else
+      {
          g_ctx = glXCreateNewContext(g_dpy, g_fbc, GLX_RGBA_TYPE, 0, True);
+         g_hw_ctx = glXCreateNewContext(g_dpy, g_fbc, GLX_RGBA_TYPE, g_ctx, True);
+      }
 
-      if (!g_ctx)
+      if (!g_ctx || !g_hw_ctx)
       {
          RARCH_ERR("[GLX]: Failed to create new context.\n");
          goto error;
@@ -500,8 +504,10 @@ static void gfx_ctx_destroy(void *data)
       glXMakeContextCurrent(g_dpy, None, None, NULL);
       if (!driver.video_cache_context)
       {
+         glXDestroyContext(g_dpy, g_hw_ctx);
          glXDestroyContext(g_dpy, g_ctx);
          g_ctx = NULL;
+         g_hw_ctx = NULL;
       }
    }
 
@@ -596,6 +602,13 @@ static void gfx_ctx_show_mouse(void *data, bool state)
    x11_show_mouse(g_dpy, g_win, state);
 }
 
+static void gfx_ctx_bind_hw_render(void *data, bool enable)
+{
+   (void)data;
+   RARCH_LOG("[GLX]: Binding context (%s): %p\n", enable ? "RetroArch" : "HW render", enable ? (void*)g_hw_ctx : (void*)g_ctx);
+   glXMakeContextCurrent(g_dpy, g_glx_win, g_glx_win, enable ? g_hw_ctx : g_ctx);
+}
+
 const gfx_ctx_driver_t gfx_ctx_glx = {
    gfx_ctx_init,
    gfx_ctx_destroy,
@@ -617,5 +630,7 @@ const gfx_ctx_driver_t gfx_ctx_glx = {
 #endif
    gfx_ctx_show_mouse,
    "glx",
+
+   gfx_ctx_bind_hw_render,
 };
 
