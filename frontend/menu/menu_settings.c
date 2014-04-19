@@ -807,7 +807,7 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
                break;
          }
          break;
-
+#ifdef HAVE_OVERLAY
       case RGUI_SETTINGS_OVERLAY_OPACITY:
          {
             bool changed = true;
@@ -877,6 +877,7 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
                      g_settings.input.overlay_scale);
             break;
          }
+#endif
          // controllers
       case RGUI_SETTINGS_BIND_PLAYER:
          if (action == RGUI_ACTION_START)
