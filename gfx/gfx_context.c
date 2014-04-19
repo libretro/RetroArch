@@ -71,13 +71,15 @@ const gfx_ctx_driver_t *gfx_ctx_find_driver(const char *ident)
    return NULL;
 }
 
-const gfx_ctx_driver_t *gfx_ctx_init_first(void *data, enum gfx_ctx_api api, unsigned major, unsigned minor)
+const gfx_ctx_driver_t *gfx_ctx_init_first(void *data, enum gfx_ctx_api api, unsigned major, unsigned minor, bool hw_render_ctx)
 {
    unsigned i;
    for (i = 0; gfx_ctx_drivers[i]; i++)
    {
       if (gfx_ctx_drivers[i]->bind_api(data, api, major, minor))
       {
+         if (gfx_ctx_drivers[i]->bind_hw_render)
+            gfx_ctx_drivers[i]->bind_hw_render(data, hw_render_ctx);
          if (gfx_ctx_drivers[i]->init(data))
             return gfx_ctx_drivers[i];
       }

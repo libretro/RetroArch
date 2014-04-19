@@ -1927,6 +1927,10 @@ static const gfx_ctx_driver_t *gl_get_context(gl_t *gl)
             return NULL;
          }
 
+         // Enables or disables offscreen HW context.
+         if (ctx->bind_hw_render)
+            ctx->bind_hw_render(gl, cb->context_type != RETRO_HW_CONTEXT_NONE);
+
          if (!ctx->init(gl))
          {
             RARCH_ERR("Failed to init GL context: %s.\n", ctx->ident);
@@ -1942,7 +1946,7 @@ static const gfx_ctx_driver_t *gl_get_context(gl_t *gl)
       return ctx;
    }
    else
-      return gfx_ctx_init_first(gl, api, major, minor);
+      return gfx_ctx_init_first(gl, api, major, minor, cb->context_type != RETRO_HW_CONTEXT_NONE);
 }
 
 #ifdef GL_DEBUG
