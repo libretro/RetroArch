@@ -1916,6 +1916,8 @@ static const gfx_ctx_driver_t *gl_get_context(gl_t *gl)
    const char *api_name = "OpenGL";
 #endif
 
+   gl->shared_context_use = g_settings.video.shared_context && cb->context_type != RETRO_HW_CONTEXT_NONE;
+
    if (*g_settings.video.gl_context)
    {
       const gfx_ctx_driver_t *ctx = gfx_ctx_find_driver(g_settings.video.gl_context);
@@ -1929,7 +1931,7 @@ static const gfx_ctx_driver_t *gl_get_context(gl_t *gl)
 
          // Enables or disables offscreen HW context.
          if (ctx->bind_hw_render)
-            ctx->bind_hw_render(gl, g_settings.video.shared_context && cb->context_type != RETRO_HW_CONTEXT_NONE);
+            ctx->bind_hw_render(gl, gl->shared_context_use);
 
          if (!ctx->init(gl))
          {
@@ -1946,7 +1948,7 @@ static const gfx_ctx_driver_t *gl_get_context(gl_t *gl)
       return ctx;
    }
    else
-      return gfx_ctx_init_first(gl, api, major, minor, cb->context_type != RETRO_HW_CONTEXT_NONE);
+      return gfx_ctx_init_first(gl, api, major, minor, gl->shared_context_use);
 }
 
 #ifdef GL_DEBUG
