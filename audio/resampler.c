@@ -23,10 +23,10 @@
 #include "../general.h"
 
 static const rarch_resampler_t *backends[] = {
+   &sinc_resampler,
 #ifdef HAVE_CC_RESAMPLER
    &CC_resampler,
 #endif
-   &sinc_resampler,
    NULL,
 };
 
