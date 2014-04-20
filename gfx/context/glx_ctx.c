@@ -402,8 +402,14 @@ static bool gfx_ctx_set_video_mode(void *data,
             *aptr++ = g_major;
             *aptr++ = GLX_CONTEXT_MINOR_VERSION_ARB;
             *aptr++ = g_minor;
-            *aptr++ = GLX_CONTEXT_PROFILE_MASK_ARB;
-            *aptr++ = GLX_CONTEXT_CORE_PROFILE_BIT_ARB;
+
+            // Technically, we don't have core/compat until 3.2.
+            // Version 3.1 is either compat or not depending on GL_ARB_compatibility.
+            if ((g_major * 1000 + g_minor) >= 3002)
+            {
+               *aptr++ = GLX_CONTEXT_PROFILE_MASK_ARB;
+               *aptr++ = GLX_CONTEXT_CORE_PROFILE_BIT_ARB;
+            }
          }
 
          if (g_debug)

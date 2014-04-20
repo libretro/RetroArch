@@ -257,7 +257,7 @@ static bool gfx_ctx_init(void *data)
       EGL_NONE,
    };
 
-#ifdef EGL_OPENGL_ES3_BIT_KHR
+#ifdef EGL_KHR_create_context
    static const EGLint egl_attribs_gles3[] = {
       EGL_ATTRIBS_BASE,
       EGL_RENDERABLE_TYPE, EGL_OPENGL_ES3_BIT_KHR,
@@ -278,7 +278,7 @@ static bool gfx_ctx_init(void *data)
          attrib_ptr = egl_attribs_gl;
          break;
       case GFX_CTX_OPENGL_ES_API:
-#ifdef EGL_OPENGL_ES3_BIT_KHR
+#ifdef EGL_KHR_create_context
          if (g_major >= 3)
             attrib_ptr = egl_attribs_gles3;
          else
@@ -336,6 +336,59 @@ error:
    return false;
 }
 
+static EGLint *egl_fill_attribs(EGLint *attr)
+{
+   switch (g_api)
+   {
+#ifdef EGL_KHR_create_context
+      case GFX_CTX_OPENGL_API:
+      {
+         unsigned version = g_major * 1000 + g_minor;
+         bool core = version >= 3001;
+#ifdef GL_DEBUG
+         bool debug = true;
+#else
+         bool debug = g_extern.system.hw_render_callback.debug_context;
+#endif
+
+         if (core)
+         {
+            *attr++ = EGL_CONTEXT_MAJOR_VERSION_KHR;
+            *attr++ = g_major;
+            *attr++ = EGL_CONTEXT_MINOR_VERSION_KHR;
+            *attr++ = g_minor;
+            // Technically, we don't have core/compat until 3.2.
+            // Version 3.1 is either compat or not depending on GL_ARB_compatibility.
+            if (version >= 3002)
+            {
+               *attr++ = EGL_CONTEXT_OPENGL_PROFILE_MASK_KHR;
+               *attr++ = EGL_CONTEXT_OPENGL_CORE_PROFILE_BIT_KHR;
+            }
+         }
+
+         if (debug)
+         {
+            *attr++ = EGL_CONTEXT_FLAGS_KHR;
+            *attr++ = EGL_CONTEXT_OPENGL_DEBUG_BIT_KHR;
+         }
+
+         break;
+      }
+#endif
+
+      case GFX_CTX_OPENGL_ES_API:
+         *attr++ = EGL_CONTEXT_CLIENT_VERSION;
+         *attr++ = g_major ? (EGLint)g_major : 2;
+         break;
+
+      default:
+         break;
+   }
+
+   *attr = EGL_NONE;
+   return attr;
+}
+
 static bool gfx_ctx_set_video_mode(void *data,
       unsigned width, unsigned height,
       bool fullscreen)
@@ -357,11 +410,10 @@ static bool gfx_ctx_set_video_mode(void *data,
 
    int (*old_handler)(Display*, XErrorEvent*) = NULL;
 
-   // GLES 2.0+. Don't use for any other API.
-   const EGLint egl_ctx_gles_attribs[] = {
-      EGL_CONTEXT_CLIENT_VERSION, g_major ? (EGLint)g_major : 2,
-      EGL_NONE,
-   };
+   EGLint egl_attribs[16];
+   EGLint *attr = egl_attribs;
+
+   attr = egl_fill_attribs(attr);
 
    EGLint vid;
    if (!eglGetConfigAttrib(g_egl_dpy, g_config, EGL_NATIVE_VISUAL_ID, &vid))
@@ -421,7 +473,7 @@ static bool gfx_ctx_set_video_mode(void *data,
    XSetWindowBackground(g_dpy, g_win, 0);
 
    g_egl_ctx = eglCreateContext(g_egl_dpy, g_config, EGL_NO_CONTEXT,
-         (g_api == GFX_CTX_OPENGL_ES_API) ? egl_ctx_gles_attribs : NULL);
+         attr != egl_attribs ? egl_attribs : NULL);
 
    RARCH_LOG("[X/EGL]: Created context: %p.\n", (void*)g_egl_ctx);
    if (g_egl_ctx == EGL_NO_CONTEXT)
@@ -430,7 +482,7 @@ static bool gfx_ctx_set_video_mode(void *data,
    if (g_use_hw_ctx)
    {
       g_egl_hw_ctx = eglCreateContext(g_egl_dpy, g_config, g_egl_ctx,
-         (g_api == GFX_CTX_OPENGL_ES_API) ? egl_ctx_gles_attribs : NULL);
+            attr != egl_attribs ? egl_attribs : NULL);
       RARCH_LOG("[X/EGL]: Created shared context: %p.\n", (void*)g_egl_hw_ctx);
 
       if (g_egl_hw_ctx == EGL_NO_CONTEXT)
@@ -532,10 +584,11 @@ static void gfx_ctx_destroy(void *data)
       eglTerminate(g_egl_dpy);
    }
 
-   g_egl_ctx  = NULL;
-   g_egl_surf = NULL;
-   g_egl_dpy  = NULL;
-   g_config   = 0;
+   g_egl_ctx     = NULL;
+   g_egl_hw_ctx  = NULL;
+   g_egl_surf    = NULL;
+   g_egl_dpy     = NULL;
+   g_config      = 0;
 
    if (g_win)
    {
@@ -616,9 +669,13 @@ static bool gfx_ctx_bind_api(void *data, enum gfx_ctx_api api, unsigned major, u
    switch (api)
    {
       case GFX_CTX_OPENGL_API:
+#ifndef EGL_KHR_create_context
+         if ((major * 1000 + minor) >= 3001)
+            return false;
+#endif
          return eglBindAPI(EGL_OPENGL_API);
       case GFX_CTX_OPENGL_ES_API:
-#ifndef EGL_OPENGL_ES3_BIT_KHR
+#ifndef EGL_KHR_create_context
          if (major >= 3)
             return false;
 #endif
