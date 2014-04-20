@@ -43,6 +43,7 @@ OBJ = frontend/frontend.o \
 		gfx/image/image.o \
 		audio/resampler.o \
 		audio/sinc.o \
+		audio/cc_resampler.o \
 		performance.o
 
 JOBJ := conf/config_file.o \
@@ -95,7 +96,7 @@ endif
 libretro ?= -lretro
 
 LIBS = -lm
-DEFINES = -I. -DHAVE_SCREENSHOTS -DHAVE_BSV_MOVIE -DHAVE_BUILTIN_AUTOCONFIG -DRARCH_INTERNAL
+DEFINES = -I. -DHAVE_SCREENSHOTS -DHAVE_BSV_MOVIE -DHAVE_BUILTIN_AUTOCONFIG -DRARCH_INTERNAL -DHAVE_CC_RESAMPLER
 LDFLAGS = -L. -static-libgcc
 
 ifeq ($(TDM_GCC),)

@@ -38,6 +38,7 @@ OBJ = frontend/frontend.o \
 		gfx/fonts/bitmapfont.o \
 		audio/resampler.o \
 		audio/sinc.o \
+		audio/cc_resampler.o \
 		performance.o
 
 JOYCONFIG_OBJ = tools/retroarch-joyconfig.o \
@@ -63,7 +64,7 @@ ifeq ($(findstring Haiku,$(OS)),)
    LIBS = -lm
 endif
 
-DEFINES = -DHAVE_CONFIG_H -DHAVE_SCREENSHOTS -DRARCH_INTERNAL
+DEFINES = -DHAVE_CONFIG_H -DHAVE_SCREENSHOTS -DRARCH_INTERNAL -DHAVE_CC_RESAMPLER
 
 #HAVE_LAKKA = 1
 
@@ -102,6 +103,7 @@ ifeq ($(HAVE_LAKKA), 1)
    DEFINES += -DHAVE_LAKKA
 endif
 endif
+
 
 ifeq ($(HAVE_THREADS), 1)
    OBJ += autosave.o thread.o gfx/video_thread_wrapper.o audio/thread_wrapper.o

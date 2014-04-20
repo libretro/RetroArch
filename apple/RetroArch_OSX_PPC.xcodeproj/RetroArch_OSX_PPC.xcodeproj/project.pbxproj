@@ -292,6 +292,8 @@
 				ONLY_ACTIVE_ARCH = YES;
 				OTHER_CFLAGS = (
 					"-DHAVE_DYNAMIC,",
+					"-DHAVE_GRIFFIN,",
+					"-DHAVE_CC_RESAMPLER,",
 					"-DHAVE_MENU,",
 					"-DWANT_RPNG,",
 					"-DHAVE_OPENGL,",
@@ -319,6 +321,8 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				OTHER_CFLAGS = (
 					"-DHAVE_DYNAMIC,",
+					"-DHAVE_GRIFFIN,",
+					"-DHAVE_CC_RESAMPLER,",
 					"-DHAVE_MENU,",
 					"-DWANT_RPNG,",
 					"-DHAVE_OPENGL,",

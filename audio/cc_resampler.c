@@ -49,7 +49,7 @@ static void resampler_CC_process(void *re_, struct resampler_data *data)
    float ratio, fraction;
 
    audio_frame_float_t *inp = (audio_frame_float_t*)data->data_in;
-   audio_frame_float_t *inp_max = inp + data->input_frames;
+   audio_frame_float_t *inp_max = (audio_frame_float_t*)(inp + data->input_frames);
    audio_frame_float_t *outp = (audio_frame_float_t*)data->data_out;
 
    __asm__ (
@@ -189,7 +189,7 @@ static void resampler_CC_downsample(void *re_, struct resampler_data *data)
    rarch_CC_resampler_t *re     = (rarch_CC_resampler_t*)re_;
 
    audio_frame_float_t *inp     = (audio_frame_float_t*)data->data_in;
-   audio_frame_float_t *inp_max = inp + data->input_frames;
+   audio_frame_float_t *inp_max = (audio_frame_float_t*)(inp + data->input_frames);
    audio_frame_float_t *outp    = (audio_frame_float_t*)data->data_out;
 
    float ratio = 1.0 / data->ratio;
@@ -319,6 +319,6 @@ const rarch_resampler_t CC_resampler = {
    resampler_CC_init,
    resampler_CC_process,
    resampler_CC_free,
-   "CC",
+   "convoluted-cosine",
 };
 

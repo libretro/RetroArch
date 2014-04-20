@@ -362,6 +362,7 @@
 				ONLY_ACTIVE_ARCH = YES;
 				OTHER_CFLAGS = (
 					"-DHAVE_CAMERA",
+					"-DHAVE_CC_RESAMPLER",
 					"-DHAVE_GRIFFIN",
 					"-DHAVE_LOCATION",
 					"-DHAVE_RGUI",
@@ -414,6 +415,7 @@
 					"-DNS_BLOCK_ASSERTIONS=1",
 					"-DNDEBUG",
 					"-DHAVE_CAMERA",
+					"-DHAVE_CC_RESAMPLER",
 					"-DHAVE_GRIFFIN",
 					"-DHAVE_LOCATION",
 					"-DHAVE_RGUI",
@@ -458,6 +460,7 @@
 				LIBRARY_SEARCH_PATHS = "";
 				OTHER_CFLAGS = (
 					"-DHAVE_CAMERA",
+					"-DHAVE_CC_RESAMPLER",
 					"-DHAVE_GRIFFIN",
 					"-DHAVE_LOCATION",
 					"-DHAVE_RGUI",
@@ -502,6 +505,7 @@
 					"-DNS_BLOCK_ASSERTIONS=1",
 					"-DNDEBUG",
 					"-DHAVE_CAMERA",
+					"-DHAVE_CC_RESAMPLER",
 					"-DHAVE_GRIFFIN",
 					"-DHAVE_LOCATION",
 					"-DHAVE_RGUI",
@@ -528,6 +532,7 @@
 					"-DNS_BLOCK_ASSERTIONS=1",
 					"-DNDEBUG",
 					"-DHAVE_CAMERA",
+					"-DHAVE_CC_RESAMPLER",
 					"-DHAVE_GRIFFIN",
 					"-DHAVE_LOCATION",
 					"-DHAVE_RGUI",
