@@ -1006,7 +1006,17 @@ enum retro_hw_context_type
 struct retro_hw_render_callback
 {
    enum retro_hw_context_type context_type; // Which API to use. Set by libretro core.
-   retro_hw_context_reset_t context_reset; // Called when a context has been created or when it has been reset.
+
+   // Called when a context has been created or when it has been reset.
+   // An OpenGL context is only valid after context_reset() has been called.
+   //
+   // When context_reset is called, OpenGL resources in the libretro implementation are guaranteed to be invalid.
+   // It is possible that context_reset is called multiple times during an application lifecycle.
+   // If context_reset is called without any notification (context_destroy),
+   // the OpenGL context was lost and resources should just be recreated
+   // without any attempt to "free" old resources.
+   retro_hw_context_reset_t context_reset;
+
    retro_hw_get_current_framebuffer_t get_current_framebuffer; // Set by frontend.
    retro_hw_get_proc_address_t get_proc_address; // Set by frontend.
    bool depth; // Set if render buffers should have depth component attached.
@@ -1019,7 +1029,16 @@ struct retro_hw_render_callback
    bool cache_context; // If this is true, the frontend will go very far to avoid resetting context in scenarios like toggling fullscreen, etc.
    // The reset callback might still be called in extreme situations such as if the context is lost beyond recovery.
    // For optimal stability, set this to false, and allow context to be reset at any time.
-   retro_hw_context_reset_t context_destroy; // A callback to be called before the context is destroyed. Resources can be deinitialized at this step. This can be set to NULL, in which resources will just be destroyed without any notification.
+
+   retro_hw_context_reset_t context_destroy; // A callback to be called before the context is destroyed in a controlled way by the frontend.
+   // OpenGL resources can be deinitialized cleanly at this step.
+   // context_destroy can be set to NULL, in which resources will just be destroyed without any notification.
+   //
+   // Even when context_destroy is non-NULL, it is possible that context_reset is called without any destroy notification.
+   // This happens if context is lost by external factors (such as notified by GL_ARB_robustness).
+   // In this case, the context is assumed to be already dead,
+   // and the libretro implementation must not try to free any OpenGL resources in the subsequent context_reset.
+
    bool debug_context; // Creates a debug context.
 };
 
