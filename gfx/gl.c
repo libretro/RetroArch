@@ -1962,6 +1962,25 @@ static const gfx_ctx_driver_t *gl_get_context(gl_t *gl)
 #ifdef GL_DEBUG
 #ifdef HAVE_OPENGLES2
 #define DEBUG_CALLBACK_TYPE GL_APIENTRY
+// *sigh*
+#define GL_DEBUG_SOURCE_API GL_DEBUG_SOURCE_API_KHR
+#define GL_DEBUG_SOURCE_WINDOW_SYSTEM GL_DEBUG_SOURCE_WINDOW_SYSTEM_KHR
+#define GL_DEBUG_SOURCE_SHADER_COMPILER GL_DEBUG_SOURCE_SHADER_COMPILER_KHR
+#define GL_DEBUG_SOURCE_THIRD_PARTY GL_DEBUG_SOURCE_THIRD_PARTY_KHR
+#define GL_DEBUG_SOURCE_APPLICATION GL_DEBUG_SOURCE_APPLICATION_KHR
+#define GL_DEBUG_SOURCE_OTHER GL_DEBUG_SOURCE_OTHER_KHR
+#define GL_DEBUG_TYPE_ERROR GL_DEBUG_TYPE_ERROR_KHR
+#define GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR_KHR
+#define GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR_KHR
+#define GL_DEBUG_TYPE_PORTABILITY GL_DEBUG_TYPE_PORTABILITY_KHR
+#define GL_DEBUG_TYPE_PERFORMANCE GL_DEBUG_TYPE_PERFORMANCE_KHR
+#define GL_DEBUG_TYPE_MARKER GL_DEBUG_TYPE_MARKER_KHR
+#define GL_DEBUG_TYPE_PUSH_GROUP GL_DEBUG_TYPE_PUSH_GROUP_KHR
+#define GL_DEBUG_TYPE_POP_GROUP GL_DEBUG_TYPE_POP_GROUP_KHR
+#define GL_DEBUG_TYPE_OTHER GL_DEBUG_TYPE_OTHER_KHR
+#define GL_DEBUG_SEVERITY_HIGH GL_DEBUG_SEVERITY_HIGH_KHR
+#define GL_DEBUG_SEVERITY_MEDIUM GL_DEBUG_SEVERITY_MEDIUM_KHR
+#define GL_DEBUG_SEVERITY_LOW GL_DEBUG_SEVERITY_LOW_KHR
 #else
 #define DEBUG_CALLBACK_TYPE APIENTRY
 #endif
@@ -2020,9 +2039,15 @@ static void gl_begin_debug(gl_t *gl)
 {
    if (gl_query_extension(gl, "KHR_debug"))
    {
+#ifdef HAVE_OPENGLES2
+      glDebugMessageCallbackKHR(gl_debug_cb, gl);
+      glDebugMessageControlKHR(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, NULL, GL_TRUE);
+      glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS_KHR);
+#else
       glDebugMessageCallback(gl_debug_cb, gl);
       glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, NULL, GL_TRUE);
       glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+#endif
    }
 #ifndef HAVE_OPENGLES2
    else if (gl_query_extension(gl, "ARB_debug_output"))
@@ -2146,9 +2171,9 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    {
       gl->textures = 1; // All on GPU, no need to excessively create textures.
 #ifdef GL_DEBUG
-      context_set_hw_render(true);
+      context_bind_hw_render(gl, true);
       gl_begin_debug(gl);
-      context_set_hw_render(false);
+      context_bind_hw_render(gl, false);
 #endif
    }
 #endif

@@ -5,6 +5,7 @@ extern "C" {
 #endif
 #ifdef GL_APIENTRY
 typedef void (GL_APIENTRY *RGLGENGLDEBUGPROC)(GLenum, GLenum, GLuint, GLenum, GLsizei, const GLchar*, GLvoid*);
+typedef void (GL_APIENTRY *RGLGENGLDEBUGPROCKHR)(GLenum, GLenum, GLuint, GLenum, GLsizei, const GLchar*, GLvoid*);
 #else
 #ifndef APIENTRY
 #define APIENTRY
@@ -348,7 +349,7 @@ typedef GLboolean (APIENTRYP RGLSYMGLISSYNCPROC) (GLsync sync);
 typedef void (APIENTRYP RGLSYMGLDELETESYNCPROC) (GLsync sync);
 typedef GLenum (APIENTRYP RGLSYMGLCLIENTWAITSYNCPROC) (GLsync sync, GLbitfield flags, GLuint64 timeout);
 typedef void (APIENTRYP RGLSYMGLWAITSYNCPROC) (GLsync sync, GLbitfield flags, GLuint64 timeout);
-typedef void (APIENTRYP RGLSYMGLGETINTEGER64VPROC) (GLenum pname, GLint64 *params);
+typedef void (APIENTRYP RGLSYMGLGETINTEGER64VPROC) (GLenum pname, GLint64 *data);
 typedef void (APIENTRYP RGLSYMGLGETSYNCIVPROC) (GLsync sync, GLenum pname, GLsizei bufSize, GLsizei *length, GLint *values);
 typedef void (APIENTRYP RGLSYMGLGETINTEGER64I_VPROC) (GLenum target, GLuint index, GLint64 *data);
 typedef void (APIENTRYP RGLSYMGLGETBUFFERPARAMETERI64VPROC) (GLenum target, GLenum pname, GLint64 *params);

@@ -87,6 +87,7 @@ if __name__ == '__main__':
 
       f.write('#ifdef GL_APIENTRY\n')
       f.write('typedef void (GL_APIENTRY *RGLGENGLDEBUGPROC)(GLenum, GLenum, GLuint, GLenum, GLsizei, const GLchar*, GLvoid*);\n')
+      f.write('typedef void (GL_APIENTRY *RGLGENGLDEBUGPROCKHR)(GLenum, GLenum, GLuint, GLenum, GLsizei, const GLchar*, GLvoid*);\n')
       f.write('#else\n')
       f.write('#ifndef APIENTRY\n')
       f.write('#define APIENTRY\n')
