@@ -34,7 +34,7 @@ typedef struct x11_input
    Window win;
 
    char state[32];
-   bool mouse_l, mouse_r, mouse_m;
+   bool mouse_l, mouse_r, mouse_m, mouse_wu, mouse_wd;
    int mouse_x, mouse_y;
    int mouse_last_x, mouse_last_y;
 
@@ -115,6 +115,10 @@ static int16_t x_mouse_state(x11_input_t *x11, unsigned id)
          return x11->mouse_l;
       case RETRO_DEVICE_ID_MOUSE_RIGHT:
          return x11->mouse_r;
+      case RETRO_DEVICE_ID_MOUSE_WHEELUP:
+         return x11->mouse_wu;
+      case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
+         return x11->mouse_wd;
       default:
          return 0;
    }
@@ -240,11 +244,13 @@ static void x_input_poll_mouse(x11_input_t *x11)
             &win_x, &win_y,
             &mask);
 
-   x11->mouse_x = win_x;
-   x11->mouse_y = win_y;
-   x11->mouse_l = mask & Button1Mask; 
-   x11->mouse_m = mask & Button2Mask; 
-   x11->mouse_r = mask & Button3Mask; 
+   x11->mouse_x  = win_x;
+   x11->mouse_y  = win_y;
+   x11->mouse_l  = mask & Button1Mask; 
+   x11->mouse_m  = mask & Button2Mask; 
+   x11->mouse_r  = mask & Button3Mask; 
+   x11->mouse_wu = mask & Button4Mask; 
+   x11->mouse_wd = mask & Button5Mask; 
 
    // Somewhat hacky, but seem to do the job.
    if (x11->grab_mouse && video_focus_func())

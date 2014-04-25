@@ -98,7 +98,7 @@ struct udev_input
 
    int16_t mouse_x;
    int16_t mouse_y;
-   bool mouse_l, mouse_r, mouse_m;
+   bool mouse_l, mouse_r, mouse_m, mouse_wu, mouse_wd;
 };
 
 static inline bool get_bit(const uint8_t *buf, unsigned bit)
@@ -232,6 +232,7 @@ static void udev_handle_mouse(udev_input_t *udev, const struct input_event *even
    switch (event->type)
    {
       case EV_KEY:
+         /* TODO: mouse wheel up/down */
          switch (event->code)
          {
             case BTN_LEFT:
@@ -245,7 +246,6 @@ static void udev_handle_mouse(udev_input_t *udev, const struct input_event *even
             case BTN_MIDDLE:
                udev->mouse_m = event->value;
                break;
-
             default:
                break;
          }

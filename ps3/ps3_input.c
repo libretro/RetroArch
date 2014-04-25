@@ -313,6 +313,7 @@ static int16_t ps3_mouse_device_state(void *data, unsigned player, unsigned id)
 
    switch (id)
    {
+      /* TODO: mouse wheel up/down */
       case RETRO_DEVICE_ID_MOUSE_LEFT:
          return (!ps3->mice_connected ? 0 : mouse_state.buttons & CELL_MOUSE_BUTTON_1);
       case RETRO_DEVICE_ID_MOUSE_RIGHT:
