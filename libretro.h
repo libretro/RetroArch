@@ -144,6 +144,7 @@ extern "C" {
 #define RETRO_DEVICE_ID_MOUSE_RIGHT      3
 #define RETRO_DEVICE_ID_MOUSE_WHEELUP    4
 #define RETRO_DEVICE_ID_MOUSE_WHEELDOWN  5
+#define RETRO_DEVICE_ID_MOUSE_MIDDLE     6
 
 // Id values for LIGHTGUN types.
 #define RETRO_DEVICE_ID_LIGHTGUN_X        0

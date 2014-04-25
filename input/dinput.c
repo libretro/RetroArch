@@ -285,6 +285,8 @@ static int16_t dinput_mouse_state(struct dinput_input *di, unsigned id)
          return di->mouse_wu;
       case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
          return di->mouse_wd;
+      case RETRO_DEVICE_ID_MOUSE_MIDDLE:
+         return di->mouse_m;
       default:
          return 0;
    }

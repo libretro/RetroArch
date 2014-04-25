@@ -451,6 +451,8 @@ static int16_t udev_mouse_state(udev_input_t *udev, unsigned id)
          return udev->mouse_l;
       case RETRO_DEVICE_ID_MOUSE_RIGHT:
          return udev->mouse_r;
+      case RETRO_DEVICE_ID_MOUSE_MIDDLE:
+         return udev->mouse_m;
       default:
          return 0;
    }

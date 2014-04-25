@@ -119,6 +119,8 @@ static int16_t x_mouse_state(x11_input_t *x11, unsigned id)
          return x11->mouse_wu;
       case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
          return x11->mouse_wd;
+      case RETRO_DEVICE_ID_MOUSE_MIDDLE:
+         return x11->mouse_m;
       default:
          return 0;
    }

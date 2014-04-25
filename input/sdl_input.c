@@ -128,6 +128,8 @@ static int16_t sdl_mouse_device_state(sdl_input_t *sdl, unsigned id)
          return sdl->mouse_x;
       case RETRO_DEVICE_ID_MOUSE_Y:
          return sdl->mouse_y;
+      case RETRO_DEVICE_ID_MOUSE_MIDDLE:
+         return sdl->mouse_m;
       default:
          return 0;
    }

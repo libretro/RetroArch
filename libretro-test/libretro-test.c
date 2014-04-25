@@ -208,6 +208,7 @@ static void update_input(void)
    bool mouse_r    = input_state_cb(0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_RIGHT);
    bool mouse_down = input_state_cb(0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_WHEELDOWN);
    bool mouse_up   = input_state_cb(0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_WHEELUP);
+   bool mouse_middle = input_state_cb(0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_MIDDLE);
    if (mouse_x)
       logging.log(RETRO_LOG_INFO, "Mouse X: %d\n", mouse_x);
    if (mouse_y)
@@ -220,6 +221,8 @@ static void update_input(void)
       logging.log(RETRO_LOG_INFO, "Mouse wheeldown pressed.\n");
    if (mouse_up)
       logging.log(RETRO_LOG_INFO, "Mouse wheelup pressed.\n");
+   if (mouse_middle)
+      logging.log(RETRO_LOG_INFO, "Mouse middle pressed.\n");
 
    mouse_rel_x += mouse_x;
    mouse_rel_y += mouse_y;
