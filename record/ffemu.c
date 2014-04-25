@@ -153,6 +153,9 @@ struct ff_config_param
    bool audio_qscale;
    int audio_global_quality;
    int audio_bit_rate;
+   bool video_qscale;
+   int video_global_quality;
+   int video_bit_rate;
 
    AVDictionary *video_opts;
    AVDictionary *audio_opts;
@@ -264,6 +267,7 @@ static bool ffemu_init_audio(ffemu_t *handle)
 {
    struct ff_config_param *params = &handle->config;
    struct ff_audio_info *audio    = &handle->audio;
+   struct ff_video_info *video    = &handle->video;
    struct ffemu_params *param     = &handle->params;
 
    AVCodec *codec = avcodec_find_encoder_by_name(*params->acodec ? params->acodec : "flac");
@@ -435,6 +439,14 @@ static bool ffemu_init_video(ffemu_t *handle)
 
    video->codec->thread_count = params->threads;
 
+   if (params->video_qscale)
+   {
+      video->codec->flags |= CODEC_FLAG_QSCALE;
+      video->codec->global_quality = params->video_global_quality;
+   }
+   else if (params->video_bit_rate)
+      video->codec->bit_rate = params->video_bit_rate;
+
    if (handle->muxer.ctx->oformat->flags & AVFMT_GLOBALHEADER)
       video->codec->flags |= CODEC_FLAG_GLOBAL_HEADER;
 
@@ -488,6 +500,8 @@ static bool ffemu_init_config(struct ff_config_param *params, const char *config
 
    params->audio_qscale = config_get_int(params->conf, "audio_global_quality", &params->audio_global_quality);
    config_get_int(params->conf, "audio_bit_rate", &params->audio_bit_rate);
+   params->video_qscale = config_get_int(params->conf, "video_global_quality", &params->video_global_quality);
+   config_get_int(params->conf, "video_bit_rate", &params->video_bit_rate);
 
    char pix_fmt[64] = {0};
    if (config_get_array(params->conf, "pix_fmt", pix_fmt, sizeof(pix_fmt)))
