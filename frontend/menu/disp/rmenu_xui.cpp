@@ -19,6 +19,7 @@
 #include <xui.h>
 #include <xuiapp.h>
 
+#include "../backend/menu_common_backend.h"
 #include "../menu_common.h"
 
 #include "../../../gfx/gfx_common.h"
@@ -538,7 +539,6 @@ static void rmenu_xui_render(void *data)
       else if (menu_type == RGUI_SETTINGS_PATH_OPTIONS)
          w = 24;
 
-#ifdef HAVE_SHADER_MANAGER
       if (type >= RGUI_SETTINGS_SHADER_FILTER &&
             type <= RGUI_SETTINGS_SHADER_LAST)
       {
@@ -555,11 +555,10 @@ static void rmenu_xui_render(void *data)
          else if (type == RGUI_SETTINGS_SHADER_FILTER)
             snprintf(type_str, sizeof(type_str), "%s",
                   g_settings.video.smooth ? "Linear" : "Nearest");
-         else
-            shader_manager_get_str(&rgui->shader, type_str, sizeof(type_str), type);
+         else if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->shader_manager_get_str)
+            driver.menu_ctx->backend->shader_manager_get_str(&rgui->shader, type_str, sizeof(type_str), type);
       }
       else
-#endif
       // Pretty-print libretro cores from menu.
       if (menu_type == RGUI_SETTINGS_CORE || menu_type == RGUI_SETTINGS_DEFERRED_CORE)
       {

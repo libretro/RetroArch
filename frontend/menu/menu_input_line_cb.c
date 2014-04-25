@@ -94,7 +94,8 @@ void preset_filename_callback(void *userdata, const char *str)
 {
    rgui_handle_t *rgui = (rgui_handle_t*)userdata;
 
-   shader_manager_save_preset(rgui, str && *str ? str : NULL, false);
+   if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->shader_manager_save_preset)
+      driver.menu_ctx->backend->shader_manager_save_preset(rgui, str && *str ? str : NULL, false);
    menu_key_end_line(rgui);
 }
 #endif

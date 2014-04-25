@@ -17,17 +17,18 @@
 
 #include <stdint.h>
 #include <string.h>
-#include "../../file.h"
-#include "menu_common.h"
-#include "menu_navigation.h"
-#include "menu_input_line_cb.h"
-#include "../../gfx/gfx_common.h"
-#include "../../input/input_common.h"
-#include "../../config.def.h"
-#include "../../input/keyboard_line.h"
+#include "../../../file.h"
+#include "menu_common_backend.h"
+#include "../menu_common.h"
+#include "../menu_navigation.h"
+#include "../menu_input_line_cb.h"
+#include "../../../gfx/gfx_common.h"
+#include "../../../input/input_common.h"
+#include "../../../config.def.h"
+#include "../../../input/keyboard_line.h"
 
 #ifdef HAVE_CONFIG_H
-#include "../../config.h"
+#include "../../../config.h"
 #endif
 
 #if defined(__CELLOS_LV2__)
@@ -145,212 +146,11 @@ unsigned menu_type_is(unsigned type)
    return ret;
 }
 
-#ifdef HAVE_SHADER_MANAGER
-static enum rarch_shader_type shader_manager_get_type(const struct gfx_shader *shader)
-{
-   unsigned i;
-   // All shader types must be the same, or we cannot use it.
-   enum rarch_shader_type type = RARCH_SHADER_NONE;
-
-   for (i = 0; i < shader->passes; i++)
-   {
-      enum rarch_shader_type pass_type = gfx_shader_parse_type(shader->pass[i].source.cg,
-            RARCH_SHADER_NONE);
-
-      switch (pass_type)
-      {
-         case RARCH_SHADER_CG:
-         case RARCH_SHADER_GLSL:
-            if (type == RARCH_SHADER_NONE)
-               type = pass_type;
-            else if (type != pass_type)
-               return RARCH_SHADER_NONE;
-            break;
-
-         default:
-            return RARCH_SHADER_NONE;
-      }
-   }
-
-   return type;
-}
-
-void shader_manager_save_preset(void *data, const char *basename, bool apply)
-{
-   rgui_handle_t *rgui = (rgui_handle_t*)data;
-   enum rarch_shader_type type = shader_manager_get_type(&rgui->shader);
-   if (type == RARCH_SHADER_NONE)
-      return;
-
-   const char *conf_path = NULL;
-   char buffer[PATH_MAX];
-   if (basename)
-   {
-      strlcpy(buffer, basename, sizeof(buffer));
-      // Append extension automatically as appropriate.
-      if (!strstr(basename, ".cgp") && !strstr(basename, ".glslp"))
-      {
-         if (type == RARCH_SHADER_GLSL)
-            strlcat(buffer, ".glslp", sizeof(buffer));
-         else if (type == RARCH_SHADER_CG)
-            strlcat(buffer, ".cgp", sizeof(buffer));
-      }
-      conf_path = buffer;
-   }
-   else
-      conf_path = type == RARCH_SHADER_GLSL ? rgui->default_glslp : rgui->default_cgp;
-
-   char config_directory[PATH_MAX];
-   if (*g_extern.config_path)
-      fill_pathname_basedir(config_directory, g_extern.config_path, sizeof(config_directory));
-   else
-      *config_directory = '\0';
-
-   char cgp_path[PATH_MAX];
-   const char *dirs[] = {
-      g_settings.video.shader_dir,
-      g_settings.rgui_config_directory,
-      config_directory,
-   };
-
-   config_file_t *conf = config_file_new(NULL);
-   if (!conf)
-      return;
-   gfx_shader_write_conf_cgp(conf, &rgui->shader);
-
-   bool ret = false;
-   unsigned d;
-   for (d = 0; d < ARRAY_SIZE(dirs); d++)
-   {
-      if (!*dirs[d])
-         continue;
-
-      fill_pathname_join(cgp_path, dirs[d], conf_path, sizeof(cgp_path));
-      if (config_file_write(conf, cgp_path))
-      {
-         RARCH_LOG("Saved shader preset to %s.\n", cgp_path);
-         if (apply)
-            shader_manager_set_preset(NULL, type, cgp_path);
-         ret = true;
-         break;
-      }
-      else
-         RARCH_LOG("Failed writing shader preset to %s.\n", cgp_path);
-   }
-
-   config_file_free(conf);
-   if (!ret)
-      RARCH_ERR("Failed to save shader preset. Make sure config directory and/or shader dir are writable.\n");
-}
-
-static int shader_manager_toggle_setting(void *data, unsigned setting, unsigned action)
-{
-   unsigned dist_shader, dist_filter, dist_scale;
-   rgui_handle_t *rgui = (rgui_handle_t*)data;
-   dist_shader = setting - RGUI_SETTINGS_SHADER_0;
-   dist_filter = setting - RGUI_SETTINGS_SHADER_0_FILTER;
-   dist_scale  = setting - RGUI_SETTINGS_SHADER_0_SCALE;
-
-   if (setting == RGUI_SETTINGS_SHADER_FILTER)
-   {
-      switch (action)
-      {
-         case RGUI_ACTION_START:
-            g_settings.video.smooth = true;
-            break;
-
-         case RGUI_ACTION_LEFT:
-         case RGUI_ACTION_RIGHT:
-         case RGUI_ACTION_OK:
-            g_settings.video.smooth = !g_settings.video.smooth;
-            break;
-
-         default:
-            break;
-      }
-   }
-   else if (setting == RGUI_SETTINGS_SHADER_APPLY || setting == RGUI_SETTINGS_SHADER_PASSES)
-      return menu_set_settings(rgui, setting, action);
-   else if ((dist_shader % 3) == 0 || setting == RGUI_SETTINGS_SHADER_PRESET)
-   {
-      dist_shader /= 3;
-      struct gfx_shader_pass *pass = setting == RGUI_SETTINGS_SHADER_PRESET ?
-         &rgui->shader.pass[dist_shader] : NULL;
-      switch (action)
-      {
-         case RGUI_ACTION_OK:
-            file_list_push(rgui->menu_stack, g_settings.video.shader_dir, setting, rgui->selection_ptr);
-            menu_clear_navigation(rgui);
-            rgui->need_refresh = true;
-            break;
-
-         case RGUI_ACTION_START:
-            if (pass)
-               *pass->source.cg = '\0';
-            break;
-
-         default:
-            break;
-      }
-   }
-   else if ((dist_filter % 3) == 0)
-   {
-      dist_filter /= 3;
-      struct gfx_shader_pass *pass = &rgui->shader.pass[dist_filter];
-      switch (action)
-      {
-         case RGUI_ACTION_START:
-            rgui->shader.pass[dist_filter].filter = RARCH_FILTER_UNSPEC;
-            break;
-
-         case RGUI_ACTION_LEFT:
-         case RGUI_ACTION_RIGHT:
-         case RGUI_ACTION_OK:
-         {
-            unsigned delta = action == RGUI_ACTION_LEFT ? 2 : 1;
-            pass->filter = (enum gfx_filter_type)((pass->filter + delta) % 3);
-            break;
-         }
-
-         default:
-         break;
-      }
-   }
-   else if ((dist_scale % 3) == 0)
-   {
-      dist_scale /= 3;
-      struct gfx_shader_pass *pass = &rgui->shader.pass[dist_scale];
-      switch (action)
-      {
-         case RGUI_ACTION_START:
-            pass->fbo.scale_x = pass->fbo.scale_y = 0;
-            pass->fbo.valid = false;
-            break;
-
-         case RGUI_ACTION_LEFT:
-         case RGUI_ACTION_RIGHT:
-         case RGUI_ACTION_OK:
-         {
-            unsigned current_scale = pass->fbo.scale_x;
-            unsigned delta = action == RGUI_ACTION_LEFT ? 5 : 1;
-            current_scale = (current_scale + delta) % 6;
-            pass->fbo.valid = current_scale;
-            pass->fbo.scale_x = pass->fbo.scale_y = current_scale;
-            break;
-         }
-
-         default:
-         break;
-      }
-   }
-
-   return 0;
-}
-#endif
-
 static int menu_core_setting_toggle(unsigned setting, unsigned action)
 {
-   unsigned index = setting - RGUI_SETTINGS_CORE_OPTION_START;
+   unsigned index;
+   index = setting - RGUI_SETTINGS_CORE_OPTION_START;
+
    switch (action)
    {
       case RGUI_ACTION_LEFT:
@@ -377,8 +177,13 @@ int menu_settings_toggle_setting(void *data, unsigned setting, unsigned action, 
 {
    rgui_handle_t *rgui = (rgui_handle_t*)data;
 #ifdef HAVE_SHADER_MANAGER
-   if (setting >= RGUI_SETTINGS_SHADER_FILTER && setting <= RGUI_SETTINGS_SHADER_LAST)
-      return shader_manager_toggle_setting(rgui, setting, action);
+   if ((setting >= RGUI_SETTINGS_SHADER_FILTER) && (setting <= RGUI_SETTINGS_SHADER_LAST))
+   {
+      if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->shader_manager_toggle_setting)
+         return driver.menu_ctx->backend->shader_manager_toggle_setting(rgui, setting, action);
+      else
+         return 0;
+   }
 #endif
    if (setting >= RGUI_SETTINGS_CORE_OPTION_START)
       return menu_core_setting_toggle(setting, action);
@@ -1770,15 +1575,20 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
          break;
       case RGUI_SETTINGS_SHADER_APPLY:
       {
+         unsigned type = RARCH_SHADER_NONE;
+
          if (!driver.video || !driver.video->set_shader || action != RGUI_ACTION_OK)
             return 0;
 
          RARCH_LOG("Applying shader ...\n");
 
-         enum rarch_shader_type type = shader_manager_get_type(&rgui->shader);
+         if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->shader_manager_get_type)
+            type = driver.menu_ctx->backend->shader_manager_get_type(&rgui->shader);
 
-         if (rgui->shader.passes && type != RARCH_SHADER_NONE)
-            shader_manager_save_preset(rgui, NULL, true);
+         if (rgui->shader.passes && type != RARCH_SHADER_NONE
+               && driver.menu_ctx && driver.menu_ctx->backend &&
+               driver.menu_ctx->backend->shader_manager_save_preset)
+            driver.menu_ctx->backend->shader_manager_save_preset(rgui, NULL, true);
          else
          {
             type = gfx_shader_parse_type("", DEFAULT_SHADER_TYPE);
@@ -1790,7 +1600,8 @@ int menu_set_settings(void *data, unsigned setting, unsigned action)
                type = RARCH_SHADER_CG;
 #endif
             }
-            shader_manager_set_preset(NULL, type, NULL);
+            if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->shader_manager_set_preset)
+               driver.menu_ctx->backend->shader_manager_set_preset(NULL, type, NULL);
          }
          break;
       }

@@ -21,6 +21,7 @@
 #include <string.h>
 #include <limits.h>
 
+#include "../backend/menu_common_backend.h"
 #include "../menu_common.h"
 #include "../file_list.h"
 #include "../../../general.h"
@@ -312,8 +313,8 @@ static void rmenu_render(void *data)
          else if (type == RGUI_SETTINGS_SHADER_FILTER)
             snprintf(type_str, sizeof(type_str), "%s",
                   g_settings.video.smooth ? "Linear" : "Nearest");
-         else
-            shader_manager_get_str(&rgui->shader, type_str, sizeof(type_str), type);
+         else if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->shader_manager_get_str)
+            driver.menu_ctx->backend->shader_manager_get_str(&rgui->shader, type_str, sizeof(type_str), type);
       }
       else
 #endif

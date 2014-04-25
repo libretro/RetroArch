@@ -389,8 +389,14 @@ typedef struct video_driver
 
 typedef struct menu_ctx_driver_backend
 {
-   void  (*entries_init)(void*, unsigned);
-   int   (*iterate)(void *, unsigned);
+   void     (*entries_init)(void*, unsigned);
+   int      (*iterate)(void *, unsigned);
+   void     (*shader_manager_init)(void *);
+   void     (*shader_manager_get_str)(void *, char *, size_t, unsigned);
+   void     (*shader_manager_set_preset)(void *, unsigned, const char*);
+   void     (*shader_manager_save_preset)(void *, const char *, bool);
+   unsigned (*shader_manager_get_type)(void *);
+   int      (*shader_manager_toggle_setting)(void *, unsigned, unsigned);
    const char *ident;
 } menu_ctx_driver_backend_t;
 

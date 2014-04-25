@@ -68,163 +68,6 @@ void menu_update_system_info(void *data, bool *load_no_rom)
 #endif
 }
 
-#ifdef HAVE_SHADER_MANAGER
-void shader_manager_init(void *data)
-{
-   rgui_handle_t *rgui = (rgui_handle_t*)data;
-   memset(&rgui->shader, 0, sizeof(rgui->shader));
-   config_file_t *conf = NULL;
-
-   const char *config_path = NULL;
-   if (*g_extern.core_specific_config_path && g_settings.core_specific_config)
-      config_path = g_extern.core_specific_config_path;
-   else if (*g_extern.config_path)
-      config_path = g_extern.config_path;
-
-   // In a multi-config setting, we can't have conflicts on rgui.cgp/rgui.glslp.
-   if (config_path)
-   {
-      fill_pathname_base(rgui->default_glslp, config_path, sizeof(rgui->default_glslp));
-      path_remove_extension(rgui->default_glslp);
-      strlcat(rgui->default_glslp, ".glslp", sizeof(rgui->default_glslp));
-      fill_pathname_base(rgui->default_cgp, config_path, sizeof(rgui->default_cgp));
-      path_remove_extension(rgui->default_cgp);
-      strlcat(rgui->default_cgp, ".cgp", sizeof(rgui->default_cgp));
-   }
-   else
-   {
-      strlcpy(rgui->default_glslp, "rgui.glslp", sizeof(rgui->default_glslp));
-      strlcpy(rgui->default_cgp, "rgui.cgp", sizeof(rgui->default_cgp));
-   }
-
-   char cgp_path[PATH_MAX];
-
-   const char *ext = path_get_extension(g_settings.video.shader_path);
-   if (strcmp(ext, "glslp") == 0 || strcmp(ext, "cgp") == 0)
-   {
-      conf = config_file_new(g_settings.video.shader_path);
-      if (conf)
-      {
-         if (gfx_shader_read_conf_cgp(conf, &rgui->shader))
-            gfx_shader_resolve_relative(&rgui->shader, g_settings.video.shader_path);
-         config_file_free(conf);
-      }
-   }
-   else if (strcmp(ext, "glsl") == 0 || strcmp(ext, "cg") == 0)
-   {
-      strlcpy(rgui->shader.pass[0].source.cg, g_settings.video.shader_path,
-            sizeof(rgui->shader.pass[0].source.cg));
-      rgui->shader.passes = 1;
-   }
-   else
-   {
-      const char *shader_dir = *g_settings.video.shader_dir ?
-         g_settings.video.shader_dir : g_settings.system_directory;
-
-      fill_pathname_join(cgp_path, shader_dir, "rgui.glslp", sizeof(cgp_path));
-      conf = config_file_new(cgp_path);
-
-      if (!conf)
-      {
-         fill_pathname_join(cgp_path, shader_dir, "rgui.cgp", sizeof(cgp_path));
-         conf = config_file_new(cgp_path);
-      }
-
-      if (conf)
-      {
-         if (gfx_shader_read_conf_cgp(conf, &rgui->shader))
-            gfx_shader_resolve_relative(&rgui->shader, cgp_path);
-         config_file_free(conf);
-      }
-   }
-}
-
-void shader_manager_set_preset(struct gfx_shader *shader, enum rarch_shader_type type, const char *path)
-{
-   RARCH_LOG("Setting RGUI shader: %s.\n", path ? path : "N/A (stock)");
-   bool ret = video_set_shader_func(type, path);
-   if (ret)
-   {
-      // Makes sure that we use RGUI CGP shader on driver reinit.
-      // Only do this when the cgp actually works to avoid potential errors.
-      strlcpy(g_settings.video.shader_path, path ? path : "",
-            sizeof(g_settings.video.shader_path));
-      g_settings.video.shader_enable = true;
-
-      if (path && shader)
-      {
-         // Load stored CGP into RGUI menu on success.
-         // Used when a preset is directly loaded.
-         // No point in updating when the CGP was created from RGUI itself.
-         config_file_t *conf = config_file_new(path);
-         if (conf)
-         {
-            gfx_shader_read_conf_cgp(conf, shader);
-            gfx_shader_resolve_relative(shader, path);
-            config_file_free(conf);
-         }
-
-         rgui->need_refresh = true;
-      }
-   }
-   else
-   {
-      RARCH_ERR("Setting RGUI CGP failed.\n");
-      g_settings.video.shader_enable = false;
-   }
-}
-
-void shader_manager_get_str(struct gfx_shader *shader,
-      char *type_str, size_t type_str_size, unsigned type)
-{
-   if (type == RGUI_SETTINGS_SHADER_APPLY)
-      *type_str = '\0';
-   else if (type == RGUI_SETTINGS_SHADER_PASSES)
-      snprintf(type_str, type_str_size, "%u", shader->passes);
-   else
-   {
-      unsigned pass = (type - RGUI_SETTINGS_SHADER_0) / 3;
-      switch ((type - RGUI_SETTINGS_SHADER_0) % 3)
-      {
-         case 0:
-            if (*shader->pass[pass].source.cg)
-               fill_pathname_base(type_str,
-                     shader->pass[pass].source.cg, type_str_size);
-            else
-               strlcpy(type_str, "N/A", type_str_size);
-            break;
-
-         case 1:
-            switch (shader->pass[pass].filter)
-            {
-               case RARCH_FILTER_LINEAR:
-                  strlcpy(type_str, "Linear", type_str_size);
-                  break;
-
-               case RARCH_FILTER_NEAREST:
-                  strlcpy(type_str, "Nearest", type_str_size);
-                  break;
-
-               case RARCH_FILTER_UNSPEC:
-                  strlcpy(type_str, "Don't care", type_str_size);
-                  break;
-            }
-            break;
-
-         case 2:
-         {
-            unsigned scale = shader->pass[pass].fbo.scale_x;
-            if (!scale)
-               strlcpy(type_str, "Don't care", type_str_size);
-            else
-               snprintf(type_str, type_str_size, "%ux", scale);
-            break;
-         }
-      }
-   }
-}
-#endif
-
 void menu_rom_history_push(const char *path,
       const char *core_path,
       const char *core_name)
@@ -403,9 +246,8 @@ bool load_menu_game(void)
       // Update menu state which depends on config.
       menu_update_libretro_info();
       menu_init_history();
-#ifdef HAVE_SHADER_MANAGER
-      shader_manager_init(rgui);
-#endif
+      if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->shader_manager_init)
+         driver.menu_ctx->backend->shader_manager_init(rgui);
       return true;
    }
    else
@@ -447,9 +289,8 @@ void menu_init(void)
 
    menu_update_libretro_info();
 
-#ifdef HAVE_SHADER_MANAGER
-   shader_manager_init(rgui);
-#endif
+   if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->shader_manager_init)
+      driver.menu_ctx->backend->shader_manager_init(rgui);
 
    menu_init_history();
    rgui->last_time = rarch_get_time_usec();

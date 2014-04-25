@@ -596,12 +596,12 @@ MENU
 #include "../frontend/menu/menu_input_line_cb.c"
 #include "../frontend/menu/menu_common.c"
 #include "../frontend/menu/menu_navigation.c"
-#include "../frontend/menu/menu_settings.c"
 #include "../frontend/menu/history.c"
 #include "../frontend/menu/file_list.c"
 
 #if defined(HAVE_RMENU) || defined(HAVE_RGUI) || defined(HAVE_RMENU_XUI)
 #include "../frontend/menu/backend/menu_common_backend.c"
+#include "../frontend/menu/backend/menu_common_settings.c"
 #endif
 
 #ifdef HAVE_RMENU
