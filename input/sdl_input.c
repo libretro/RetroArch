@@ -252,12 +252,8 @@ static void sdl_poll_mouse(sdl_input_t *sdl)
    sdl->mouse_l  = SDL_BUTTON(SDL_BUTTON_LEFT)      & btn ? 1 : 0;
    sdl->mouse_r  = SDL_BUTTON(SDL_BUTTON_RIGHT)     & btn ? 1 : 0;
    sdl->mouse_m  = SDL_BUTTON(SDL_BUTTON_MIDDLE)    & btn ? 1 : 0;
-#if 0
-   /* Only SDL 1.2 supports this, SDL 2.0 doesn't. Will need to create compliant code for both here based on SDL version detection
-    * at runtime */
    sdl->mouse_wu = SDL_BUTTON(SDL_BUTTON_WHEELUP)   & btn ? 1 : 0;
    sdl->mouse_wd = SDL_BUTTON(SDL_BUTTON_WHEELDOWN) & btn ? 1 : 0;
-#endif
 }
 
 static void sdl_input_poll(void *data)
