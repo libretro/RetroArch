@@ -24,16 +24,16 @@
 void apple_display_alert(NSString* message, NSString* title)
 {
 #ifdef IOS
-   UIAlertView* alert = [[UIAlertView alloc] initWithTitle:title ? title : @"RetroArch"
+   UIAlertView* alert = [[UIAlertView alloc] initWithTitle:title ? title : BOXSTRING("RetroArch")
                                              message:message
                                              delegate:nil
-                                             cancelButtonTitle:@"OK"
+                                             cancelButtonTitle:BOXSTRING("OK")
                                              otherButtonTitles:nil];
    [alert show];
 #else
    NSAlert* alert = [[NSAlert new] autorelease];
    
-   [alert setMessageText:title ? title : @"RetroArch"];
+   [alert setMessageText:title ? title : BOXSTRING("RetroArch")];
    [alert setInformativeText:message];
    [alert setAlertStyle:NSInformationalAlertStyle];
    [alert beginSheetModalForWindow:[RetroArch_OSX get].window
@@ -91,14 +91,14 @@ NSString *apple_get_core_display_name(NSString *core_id)
 {
    bool hasDot = false;
 
-   if ([partialString length])
-      for (int i = 0; i != [partialString length]; i ++)
+   if (partialString.length)
+      for (int i = 0; i < partialString.length; i ++)
       {
          unichar ch = [partialString characterAtIndex:i];
          
-         if (i == 0 && (![self minimum] || [[self minimum] intValue] < 0) && ch == '-')
+         if (i == 0 && (!self.minimum || [[self minimum] intValue] < 0) && ch == '-')
             continue;
-         else if ([self allowsFloats] && !hasDot && ch == '.')
+         else if (self.allowsFloats && !hasDot && ch == '.')
             hasDot = true;
          else if (!isdigit(ch))
             return NO;

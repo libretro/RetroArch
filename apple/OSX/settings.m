@@ -144,7 +144,7 @@ NSWindowDelegate>
 
    setting_data_load_current();
 
-   const rarch_setting_t* setting_data = setting_data_get_list();
+   const rarch_setting_t *setting_data = (const rarch_setting_t *)setting_data_get_list();
 
    for (int i = 0; setting_data[i].type; i ++)
    {
@@ -264,11 +264,11 @@ NSWindowDelegate>
    {
 #ifdef MAC_OS_X_VERSION_10_6
 	  /* FIXME - Rewrite this so that this is no longer an associated object - requires ObjC 2.0 runtime */
-      if ([[tableColumn identifier] isEqualToString:@"left"])
+      if ([[tableColumn identifier] isEqualToString:BOXSTRING("left")])
          return objc_getAssociatedObject(item, associated_name_tag);
       else
 #endif
-         return @"";
+         return BOXSTRING("");
    }
    else
    {
@@ -276,7 +276,7 @@ NSWindowDelegate>
       const rarch_setting_t* setting = &setting_data[[item intValue]];
       char buffer[PATH_MAX];
       
-      if ([[tableColumn identifier] isEqualToString:@"left"])
+      if ([[tableColumn identifier] isEqualToString:BOXSTRING("left")])
          return BOXSTRING(setting->short_description);
       else
       {
@@ -297,17 +297,20 @@ NSWindowDelegate>
    if ([item isKindOfClass:[NSArray class]])
       return [tableColumn dataCell];
    
-   if ([[tableColumn identifier] isEqualToString:@"left"])
+   if ([[tableColumn identifier] isEqualToString:BOXSTRING("left")])
       return [tableColumn dataCell];
 
-   const rarch_setting_t* setting_data = setting_data_get_list();
-   const rarch_setting_t* setting = &setting_data[[item intValue]];
+   const rarch_setting_t* setting_data = (const rarch_setting_t *)setting_data_get_list();
+   const rarch_setting_t* setting      = (const rarch_setting_t *)&setting_data[[item intValue]];
 
    switch (setting->type)
    {
-      case ST_BOOL: return self.booleanCell;
-      case ST_BIND: return self.binderCell;
-      default:      return [tableColumn dataCell];
+      case ST_BOOL:
+           return self.booleanCell;
+      case ST_BIND:
+           return self.binderCell;
+      default:
+           return tableColumn.dataCell;
    }
 }
 
@@ -319,14 +322,19 @@ NSWindowDelegate>
       
       if ([item isKindOfClass:[NSNumber class]])
       {
-         const rarch_setting_t* setting_data = setting_data_get_list();
-         const rarch_setting_t* setting = &setting_data[[item intValue]];
+         const rarch_setting_t* setting_data = (const rarch_setting_t*)setting_data_get_list();
+         const rarch_setting_t* setting      = (const rarch_setting_t*)&setting_data[[item intValue]];
    
          switch (setting->type)
          {
-            case ST_BOOL: *setting->value.boolean = !*setting->value.boolean; return;
-            case ST_BIND: [self.binderWindow runForSetting:setting onWindow:[self.outline window]]; return;
-            default: return;
+            case ST_BOOL:
+                 *setting->value.boolean = !*setting->value.boolean;
+                 break;
+            case ST_BIND:
+                 [self.binderWindow runForSetting:setting onWindow:[self.outline window]];
+                 break;
+             default:
+                 break;
          }
       }
    }
@@ -336,16 +344,17 @@ NSWindowDelegate>
 {
    if ([notification object] == self.outline)
    {
-      NSText* editor = [[notification userInfo] objectForKey:@"NSFieldEditor"];
+      NSText* editor = [[notification userInfo] objectForKey:BOXSTRING("NSFieldEditor")];
       
       id item = [self.outline itemAtRow:[self.outline selectedRow]];
 
       if ([item isKindOfClass:[NSNumber class]])
       {
-         const rarch_setting_t* setting_data = setting_data_get_list();
-         const rarch_setting_t* setting = &setting_data[[item intValue]];
+         const rarch_setting_t* setting_data = (const rarch_setting_t *)setting_data_get_list();
+         const rarch_setting_t* setting = (const rarch_setting_t*)&setting_data[[item intValue]];
+         NSString *editor_string = (NSString*)editor.string;
          
-         setting_data_set_with_string_representation(setting, [editor.string UTF8String]);
+         setting_data_set_with_string_representation(setting, editor_string.UTF8String);
       }
    }
 }

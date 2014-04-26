@@ -35,15 +35,15 @@ void apple_core_info_set_config_path(const char* config_path)
       *core_config_path = '\0';
 }
 
-core_info_list_t* apple_core_info_list_get(void)
+core_info_list_t *apple_core_info_list_get(void)
 {
    if (!global_core_list)
-      RARCH_WARN("apple_core_info_list_get() called before apple_core_info_set_core_path()");
+      RARCH_WARN("core_info_list_get() called before core_info_set_core_path()");
 
    return global_core_list;
 }
 
-const core_info_t* apple_core_info_list_get_by_id(const char* core_id)
+const core_info_t *apple_core_info_list_get_by_id(const char* core_id)
 {
    if (core_id)
    {
@@ -57,7 +57,7 @@ const core_info_t* apple_core_info_list_get_by_id(const char* core_id)
    return 0;
 }
 
-const char* apple_core_info_get_id(const core_info_t* info, char* buffer, size_t buffer_length)
+const char *apple_core_info_get_id(const core_info_t* info, char* buffer, size_t buffer_length)
 {
    if (!buffer || !buffer_length)
       return "";
@@ -69,7 +69,7 @@ const char* apple_core_info_get_id(const core_info_t* info, char* buffer, size_t
    return buffer;
 }
 
-const char* apple_core_info_get_custom_config(const char* core_id, char* buffer, size_t buffer_length)
+const char *apple_core_info_get_custom_config(const char* core_id, char* buffer, size_t buffer_length)
 {
    if (!core_id || !buffer || !buffer_length)
       return 0;
@@ -81,10 +81,10 @@ const char* apple_core_info_get_custom_config(const char* core_id, char* buffer,
 
 bool apple_core_info_has_custom_config(const char* core_id)
 {
+   char path[PATH_MAX];
    if (!core_id)
       return false;
    
-   char path[PATH_MAX];
    apple_core_info_get_custom_config(core_id, path, sizeof(path));
    return path_file_exists(path);
 }
@@ -94,19 +94,28 @@ const char* apple_rom_history_get_path(rom_history_t* history, uint32_t index)
 {
    const char *path, *core_path, *core_name;
    rom_history_get_index(history, index, &path, &core_path, &core_name);
-   return path ? path : "";
+    
+   if (path)
+       return path;
+   return "";
 }
 
-const char* apple_rom_history_get_core_path(rom_history_t* history, uint32_t index)
+const char *apple_rom_history_get_core_path(rom_history_t* history, uint32_t index)
 {
    const char *path, *core_path, *core_name;
    rom_history_get_index(history, index, &path, &core_path, &core_name);
-   return core_path ? core_path : "";
+    
+   if (core_path)
+      return core_path;
+   return "";
 }
 
-const char* apple_rom_history_get_core_name(rom_history_t* history, uint32_t index)
+const char *apple_rom_history_get_core_name(rom_history_t* history, uint32_t index)
 {
    const char *path, *core_path, *core_name;
    rom_history_get_index(history, index, &path, &core_path, &core_name);
-   return core_name ? core_name : "";
+    
+   if (core_name)
+      return core_name;
+   return "";
 }

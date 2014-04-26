@@ -34,20 +34,20 @@ static void* const associated_core_key = (void*)&associated_core_key;
 {
    [super sendEvent:event];
    
-   NSEventType event_type = [event type];
+   NSEventType event_type = event.type;
    
    if (event_type == NSKeyDown || event_type == NSKeyUp)
    {
-      NSString* ch = [event characters];
+      NSString* ch = (NSString*)event.characters;
       
-      if (!ch || [ch length] == 0)
-         apple_input_keyboard_event(event_type == NSKeyDown, [event keyCode], 0, 0);
+      if (!ch || ch.length == 0)
+         apple_input_keyboard_event(event_type == NSKeyDown, event.keyCode, 0, 0);
       else
       {
-         apple_input_keyboard_event(event_type == NSKeyDown, [event keyCode], [ch characterAtIndex:0], [event modifierFlags]);
+         apple_input_keyboard_event(event_type == NSKeyDown, event.keyCode, [ch characterAtIndex:0], event.modifierFlags);
          
-         for (unsigned i = 1; i != [ch length]; i ++)
-            apple_input_keyboard_event(event_type == NSKeyDown, 0, [ch characterAtIndex:i], [event modifierFlags]);
+         for (unsigned i = 1; i != ch.length; i ++)
+            apple_input_keyboard_event(event_type == NSKeyDown, 0, [ch characterAtIndex:i], event.modifierFlags);
       }
    }
    else if (event_type == NSFlagsChanged)
@@ -57,14 +57,14 @@ static void* const associated_core_key = (void*)&associated_core_key;
       bool down = (new_flags & old_flags) == old_flags;
       old_flags = new_flags;
       
-      apple_input_keyboard_event(down, [event keyCode], 0, [event modifierFlags]);
+      apple_input_keyboard_event(down, event.keyCode, 0, event.modifierFlags);
    }
    else if (event_type == NSMouseMoved || event_type == NSLeftMouseDragged ||
             event_type == NSRightMouseDragged || event_type == NSOtherMouseDragged)
    {
       // Relative
-      g_current_input_data.mouse_delta[0] += [event deltaX];
-      g_current_input_data.mouse_delta[1] += [event deltaY];
+      g_current_input_data.mouse_delta[0] += event.deltaX;
+      g_current_input_data.mouse_delta[1] += event.deltaY;
 
       // Absolute
       NSPoint pos = [[RAGameView get] convertPoint:[event locationInWindow] fromView:nil];
@@ -73,12 +73,12 @@ static void* const associated_core_key = (void*)&associated_core_key;
    }
    else if (event_type == NSLeftMouseDown || event_type == NSRightMouseDown || event_type == NSOtherMouseDown)
    {
-      g_current_input_data.mouse_buttons |= 1 << [event buttonNumber];
+      g_current_input_data.mouse_buttons |= 1 << event.buttonNumber;
       g_current_input_data.touch_count = 1;
    }
    else if (event_type == NSLeftMouseUp || event_type == NSRightMouseUp || event_type == NSOtherMouseUp)
    {
-      g_current_input_data.mouse_buttons &= ~(1 << [event buttonNumber]);
+      g_current_input_data.mouse_buttons &= ~(1 << event.buttonNumber);
       g_current_input_data.touch_count = 0;
    }
 }
@@ -129,8 +129,8 @@ static char** waiting_argv;
    apple_platform = self;
    _loaded = true;
 
-   NSArray* paths = NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask, YES);
-   self.configDirectory = [[paths objectAtIndex:0] stringByAppendingPathComponent:@"RetroArch"];
+   NSArray* paths = (NSArray*)NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask, YES);
+   self.configDirectory = [[paths objectAtIndex:0] stringByAppendingPathComponent:BOXSTRING("RetroArch")];
    self.globalConfigFile = [NSString stringWithFormat:@"%@/retroarch.cfg", self.configDirectory];
    self.coreDirectory = [[[NSBundle mainBundle] bundlePath] stringByAppendingPathComponent:@"Contents/Resources/modules"];
    
@@ -152,12 +152,13 @@ static char** waiting_argv;
    // Create core select list
    NSComboBox* cb = (NSComboBox*)[[self.coreSelectSheet contentView] viewWithTag:1];
 
-   apple_core_info_set_core_path([self.coreDirectory UTF8String]);
-   apple_core_info_set_config_path([self.configDirectory UTF8String]);
-   const core_info_list_t* cores = apple_core_info_list_get();
+   apple_core_info_set_core_path(self.coreDirectory.UTF8String);
+   apple_core_info_set_config_path(self.configDirectory.UTF8String);
+   const core_info_list_t* cores = (const core_info_list_t*)apple_core_info_list_get();
+    
    for (int i = 0; cores && i != cores->count; i ++)
    {
-      NSString* desc = BOXSTRING(cores->list[i].display_name);
+      NSString* desc = (NSString*)BOXSTRING(cores->list[i].display_name);
 #if defined(MAC_OS_X_VERSION_10_6)
 	  /* FIXME - Rewrite this so that this is no longer an associated object - requires ObjC 2.0 runtime */
       objc_setAssociatedObject(desc, associated_core_key, apple_get_core_id(&cores->list[i]), OBJC_ASSOCIATION_RETAIN_NONATOMIC);
@@ -165,7 +166,7 @@ static char** waiting_argv;
 	   [cb addItemWithObjectValue:desc];
    }
 
-   if ([cb numberOfItems])
+   if (cb.numberOfItems)
       [cb selectItemAtIndex:0];
    else
       apple_display_alert(BOXSTRING("No libretro cores were found.\nSelect \"Go->Cores Directory\" from the menu and place libretro dylib files there."), BOXSTRING("RetroArch"));
@@ -233,9 +234,10 @@ static char** waiting_argv;
    {
       [[NSApplication sharedApplication] stopModal];
    
-      if (result == NSOKButton && [panel URL])
+      if (result == NSOKButton && panel.URL)
       {
-         self.file = [[panel URL] path];
+          NSURL *url = (NSURL*)panel.URL;
+          self.file = url.path;
          [self performSelector:@selector(chooseCore) withObject:nil afterDelay:.5f];
       }
    }];
@@ -251,7 +253,7 @@ static char** waiting_argv;
    _wantReload = apple_is_running;
 
    if (!apple_is_running)
-      apple_run_core(self.core, [self.file UTF8String]);
+      apple_run_core(self.core, self.file.UTF8String);
    else
       apple_event_basic_command(QUIT);
 }
@@ -293,7 +295,7 @@ static char** waiting_argv;
       [[NSApplication sharedApplication] terminate:nil];
 
    if (_wantReload)
-      apple_run_core(self.core, [self.file UTF8String]);
+      apple_run_core(self.core, self.file.UTF8String);
    else if(apple_use_tv_mode)
       apple_run_core(nil, 0);
    else
