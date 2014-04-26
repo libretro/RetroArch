@@ -216,6 +216,7 @@
     <ClCompile Include="..\..\deps\rzlib\unzip.c" />
     <ClCompile Include="..\..\deps\rzlib\zutil.c" />
     <ClCompile Include="..\..\file_extract.c" />
+    <ClCompile Include="..\..\frontend\menu\backend\menu_common_settings.c" />
     <ClCompile Include="..\..\frontend\menu\history.c" />
     <ClCompile Include="..\..\frontend\menu\file_list.c" />
     <ClCompile Include="..\..\frontend\menu\backend\menu_common_backend.c" />
@@ -223,7 +224,6 @@
     <ClCompile Include="..\..\frontend\menu\menu_common.c" />
     <ClCompile Include="..\..\frontend\menu\menu_input_line_cb.c" />
     <ClCompile Include="..\..\frontend\menu\menu_navigation.c" />
-    <ClCompile Include="..\..\frontend\menu\menu_settings.c" />
     <ClCompile Include="..\..\frontend\info\core_info.c" />
     <ClCompile Include="..\..\gfx\d3d9\d3d.cpp" />
     <ClCompile Include="..\..\gfx\context\d3d_ctx.cpp" />

@@ -38,9 +38,6 @@
     <ClCompile Include="..\..\frontend\menu\menu_common.c">
       <Filter>frontend\menu</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\frontend\menu\menu_settings.c">
-      <Filter>frontend\menu</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\frontend\menu\disp\rgui.c">
       <Filter>frontend\menu\disp</Filter>
     </ClCompile>
@@ -228,12 +225,17 @@
     <ClCompile Include="..\..\gfx\context\d3d_ctx.cpp">
       <Filter>gfx\context</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\frontend\menu\backend\menu_common_backend.c" />
     <ClCompile Include="..\..\gfx\filter.c">
       <Filter>gfx</Filter>
     </ClCompile>
     <ClCompile Include="..\..\audio\cc_resampler.c">
       <Filter>audio</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\frontend\menu\backend\menu_common_backend.c">
+      <Filter>frontend\menu\backend</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\frontend\menu\backend\menu_common_settings.c">
+      <Filter>frontend\menu\backend</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -299,6 +301,9 @@
     </Filter>
     <Filter Include="frontend\menu\info">
       <UniqueIdentifier>{bc290b55-620e-4351-b3b8-4d7a0a3b8792}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="frontend\menu\backend">
+      <UniqueIdentifier>{dd1ca879-56f4-43f6-8bd8-ae50222061e8}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>
