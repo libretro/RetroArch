@@ -28,15 +28,25 @@
 #include "../../input/keyboard_line.h"
 #include "menu_input_line_cb.h"
 
-void menu_key_start_line(rgui_handle_t *rgui, const char *label, input_keyboard_line_complete_t cb)
+void menu_key_start_line(void *data, const char *label, input_keyboard_line_complete_t cb)
 {
+   rgui_handle_t *rgui = (rgui_handle_t*)data;
+
+   if (!rgui)
+      return;
+
    rgui->keyboard.display = true;
    rgui->keyboard.label = label;
    rgui->keyboard.buffer = input_keyboard_start_line(rgui, cb);
 }
 
-static void menu_key_end_line(rgui_handle_t *rgui)
+static void menu_key_end_line(void *data)
 {
+   rgui_handle_t *rgui = (rgui_handle_t*)data;
+
+   if (!rgui)
+      return;
+
    rgui->keyboard.display = false;
    rgui->keyboard.label = NULL;
    rgui->old_input_state = -1ULL; // Avoid triggering states on pressing return.

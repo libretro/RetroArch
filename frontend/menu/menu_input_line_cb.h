@@ -22,7 +22,7 @@
 
 void menu_key_event(bool down, unsigned keycode, uint32_t character, uint16_t key_modifiers);
 
-void menu_key_start_line(rgui_handle_t *rgui, const char *label, input_keyboard_line_complete_t cb);
+void menu_key_start_line(void *data, const char *label, input_keyboard_line_complete_t cb);
 
 void netplay_port_callback(void *userdata, const char *str);
 void netplay_ipaddress_callback(void *userdata, const char *str);
