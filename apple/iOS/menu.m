@@ -646,12 +646,12 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
    RAHistoryMenu* __weak weakSelf = self;
    NSMutableArray* section = [NSMutableArray arrayWithObject:@""];
    
-   for (int i = 0; _history && i != rom_history_size(_history); i ++)
+   for (int i = 0; _history && i < rom_history_size(_history); i ++)
    {
-      RAMenuItemBasic* item = [RAMenuItemBasic itemWithDescription:BOXSTRING(path_basename(apple_rom_history_get_path(weakSelf.history, i)))
-                                                            action:^{ apple_run_core(BOXSTRING(apple_rom_history_get_core_path(weakSelf.history, i)),
-                                                                                     apple_rom_history_get_path(weakSelf.history, i)); }
-                                                            detail:^{ return BOXSTRING(apple_rom_history_get_core_name(weakSelf.history, i)); }];
+      RAMenuItemBasic* item = [RAMenuItemBasic itemWithDescription:BOXSTRING(path_basename(rom_history_get_path(weakSelf.history, i)))
+                                                            action:^{ apple_run_core(BOXSTRING(rom_history_get_core_path(weakSelf.history, i)),
+                                                                                     rom_history_get_path(weakSelf.history, i)); }
+                                                            detail:^{ return BOXSTRING(rom_history_get_core_name(weakSelf.history, i)); }];
       [section addObject:item];
    }
    
@@ -716,12 +716,12 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 
    if ((self = [super initWithStyle:UITableViewStyleGrouped]))
    {
-      _isCustom = apple_core_info_has_custom_config(core.UTF8String);
+      _isCustom = core_info_has_custom_config(core.UTF8String);
       if (_isCustom)
       {
          self.title = apple_get_core_display_name(core);
          
-         _pathToSave = BOXSTRING(apple_core_info_get_custom_config(core.UTF8String, buffer, sizeof(buffer)));
+         _pathToSave = BOXSTRING(core_info_get_custom_config(core.UTF8String, buffer, sizeof(buffer)));
          self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemTrash target:self action:@selector(deleteCustom)];
       }
       else
@@ -855,11 +855,11 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
    [cores addObject:[RAMenuItemBasic itemWithDescription:@"New Config for Core"
                                                   action: ^{ [weakSelf createNewConfig]; }]];
    
-   const core_info_list_t* core_list = apple_core_info_list_get();
+   const core_info_list_t* core_list = (const core_info_list_t*)core_info_list_get();
    for (int i = 0; i < core_list->count; i ++)
    {
       NSString* core_id = (NSString*)apple_get_core_id(&core_list->list[i]);
-      if (apple_core_info_has_custom_config(core_id.UTF8String))
+      if (core_info_has_custom_config(core_id.UTF8String))
       {
          [cores addObject:[RAMenuItemBasic itemWithDescription:BOXSTRING(core_list->list[i].display_name)
                                                    association:core_id
@@ -886,10 +886,10 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
    RAMenuCoreList* list = [[RAMenuCoreList alloc] initWithPath:nil allowAutoDetect:false
       action:^(NSString* core)
       {
-         if (!apple_core_info_has_custom_config(core.UTF8String))
+         if (!core_info_has_custom_config(core.UTF8String))
          {
             char path[PATH_MAX];
-            apple_core_info_get_custom_config(core.UTF8String, path, sizeof(path));
+            core_info_get_custom_config(core.UTF8String, path, sizeof(path));
          
             if (![[NSFileManager defaultManager] copyItemAtPath:apple_platform.globalConfigFile toPath:BOXSTRING(path) error:nil])
                RARCH_WARN("Could not create custom config at %s", path);
@@ -1022,14 +1022,14 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
       if (autoDetect)
       {
          RAMenuCoreList* __weak weakSelf = self;
-         [self.sections addObject: @[@"", [RAMenuItemBasic itemWithDescription:@"Auto Detect"
+         [self.sections addObject: @[BOXSTRING(""), [RAMenuItemBasic itemWithDescription:BOXSTRING("Auto Detect")
                action: ^{ if(weakSelf.action) weakSelf.action(nil); }]]];
       }
 
-      NSMutableArray* core_section = (NSMutableArray*)[NSMutableArray arrayWithObject:@"Cores"];
+      NSMutableArray* core_section = (NSMutableArray*)[NSMutableArray arrayWithObject:BOXSTRING("Cores")];
       [self.sections addObject:core_section];
 
-      core_info_list_t* core_list = apple_core_info_list_get();
+      core_info_list_t* core_list = (core_info_list_t*)core_info_list_get();
       if (core_list)
       {
          if (_path)

@@ -152,11 +152,11 @@ static char** waiting_argv;
    // Create core select list
    NSComboBox* cb = (NSComboBox*)[[self.coreSelectSheet contentView] viewWithTag:1];
 
-   apple_core_info_set_core_path(self.coreDirectory.UTF8String);
-   apple_core_info_set_config_path(self.configDirectory.UTF8String);
-   const core_info_list_t* cores = (const core_info_list_t*)apple_core_info_list_get();
+   core_info_set_core_path(self.coreDirectory.UTF8String);
+   core_info_set_config_path(self.configDirectory.UTF8String);
+   const core_info_list_t* cores = (const core_info_list_t*)core_info_list_get();
     
-   for (int i = 0; cores && i != cores->count; i ++)
+   for (int i = 0; cores && i < cores->count; i ++)
    {
       NSString* desc = (NSString*)BOXSTRING(cores->list[i].display_name);
 #if defined(MAC_OS_X_VERSION_10_6)

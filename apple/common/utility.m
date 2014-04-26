@@ -60,12 +60,12 @@ NSString* objc_get_value_from_config(config_file_t* config, NSString* name, NSSt
 NSString *apple_get_core_id(const core_info_t *core)
 {
    char buf[PATH_MAX];
-   return BOXSTRING(apple_core_info_get_id(core, buf, sizeof(buf)));
+   return BOXSTRING(core_info_get_id(core, buf, sizeof(buf)));
 }
 
 NSString *apple_get_core_display_name(NSString *core_id)
 {
-   const core_info_t *core = (const core_info_t*)apple_core_info_list_get_by_id(core_id.UTF8String);
+   const core_info_t *core = (const core_info_t*)core_info_list_get_by_id(core_id.UTF8String);
    return core ? BOXSTRING(core->display_name) : core_id;
 }
 

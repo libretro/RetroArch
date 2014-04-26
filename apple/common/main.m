@@ -109,8 +109,8 @@ void apple_run_core(NSString* core, const char* file)
 #ifdef IOS
     static char config_path[PATH_MAX];
    
-    if (apple_core_info_has_custom_config(apple_core.UTF8String))
-        apple_core_info_get_custom_config(apple_core.UTF8String, config_path, sizeof(config_path));
+    if (core_info_has_custom_config(apple_core.UTF8String))
+        core_info_get_custom_config(apple_core.UTF8String, config_path, sizeof(config_path));
     else
         strlcpy(config_path, apple_platform.globalConfigFile.UTF8String, sizeof(config_path));
     
