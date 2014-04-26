@@ -1268,6 +1268,7 @@ bool config_save_file(const char *path)
 
    RARCH_LOG("Saving config at path: \"%s\"\n", path);
 
+   config_set_float(conf, "input_axis_threshold", g_settings.input.axis_threshold);
    config_set_bool(conf,  "load_dummy_on_core_shutdown", g_settings.load_dummy_on_core_shutdown);
    config_set_bool(conf,  "fps_show", g_settings.fps_show);
    config_set_path(conf,  "libretro_path", g_settings.libretro);

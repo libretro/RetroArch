@@ -321,6 +321,7 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
          file_list_push(rgui->selection_buf, "Device", RGUI_SETTINGS_BIND_DEVICE, 0);
          file_list_push(rgui->selection_buf, "Device Type", RGUI_SETTINGS_BIND_DEVICE_TYPE, 0);
          file_list_push(rgui->selection_buf, "Analog D-pad Mode", RGUI_SETTINGS_BIND_ANALOG_MODE, 0);
+         file_list_push(rgui->selection_buf, "Input Axis Threshold", RGUI_SETTINGS_INPUT_AXIS_THRESHOLD, 0);
          file_list_push(rgui->selection_buf, "Autodetect enable", RGUI_SETTINGS_DEVICE_AUTODETECT_ENABLE, 0);
 
          file_list_push(rgui->selection_buf, "Bind Mode", RGUI_SETTINGS_CUSTOM_BIND_MODE, 0);
@@ -2649,6 +2650,27 @@ static int menu_common_setting_set(void *data, unsigned setting, unsigned action
                break;
          }
          break;
+      case RGUI_SETTINGS_INPUT_AXIS_THRESHOLD:
+         switch (action)
+         {
+            case RGUI_ACTION_START:
+               g_settings.input.axis_threshold = 0.5;
+               break;
+
+            case RGUI_ACTION_OK:
+            case RGUI_ACTION_RIGHT:
+               if (g_settings.input.axis_threshold < 1.0)
+                  g_settings.input.axis_threshold += 0.001;
+               break;
+            case RGUI_ACTION_LEFT:
+               if (g_settings.input.axis_threshold > 0.0)
+                  g_settings.input.axis_threshold -= 0.001;
+               break;
+
+            default:
+               break;
+         }
+         break;
       case RGUI_SETTINGS_BIND_DEVICE_TYPE:
          {
             unsigned current_device, current_index, i;
@@ -3971,56 +3993,68 @@ static void menu_common_setting_set_label(char *type_str, size_t type_str_size, 
          snprintf(type_str, type_str_size, "#%d", rgui->current_pad + 1);
          break;
       case RGUI_SETTINGS_BIND_DEVICE:
-      {
-         int map = g_settings.input.joypad_map[rgui->current_pad];
-         if (map >= 0 && map < MAX_PLAYERS)
          {
-            const char *device_name = g_settings.input.device_names[map];
-            if (*device_name)
-               strlcpy(type_str, device_name, type_str_size);
-            else
-               snprintf(type_str, type_str_size, "N/A (port #%u)", map);
-         }
-         else
-            strlcpy(type_str, "Disabled", type_str_size);
-         break;
-      }
-      case RGUI_SETTINGS_BIND_ANALOG_MODE:
-      {
-         static const char *modes[] = {
-            "None",
-            "Left Analog",
-            "Right Analog",
-            "Dual Analog",
-         };
-
-         strlcpy(type_str, modes[g_settings.input.analog_dpad_mode[rgui->current_pad] % ANALOG_DPAD_LAST], type_str_size);
-         break;
-      }
-      case RGUI_SETTINGS_BIND_DEVICE_TYPE:
-      {
-         const struct retro_controller_description *desc = NULL;
-         if (rgui->current_pad < g_extern.system.num_ports)
-         {
-            desc = libretro_find_controller_description(&g_extern.system.ports[rgui->current_pad],
-                  g_settings.input.libretro_device[rgui->current_pad]);
-         }
-
-         const char *name = desc ? desc->desc : NULL;
-         if (!name) // Find generic name.
-         {
-            switch (g_settings.input.libretro_device[rgui->current_pad])
+            int map = g_settings.input.joypad_map[rgui->current_pad];
+            if (map >= 0 && map < MAX_PLAYERS)
             {
-               case RETRO_DEVICE_NONE: name = "None"; break;
-               case RETRO_DEVICE_JOYPAD: name = "Joypad"; break;
-               case RETRO_DEVICE_ANALOG: name = "Joypad w/ Analog"; break;
-               default: name = "Unknown"; break;
+               const char *device_name = g_settings.input.device_names[map];
+               if (*device_name)
+                  strlcpy(type_str, device_name, type_str_size);
+               else
+                  snprintf(type_str, type_str_size, "N/A (port #%u)", map);
             }
+            else
+               strlcpy(type_str, "Disabled", type_str_size);
          }
-
-         strlcpy(type_str, name, type_str_size);
          break;
-      }
+      case RGUI_SETTINGS_BIND_ANALOG_MODE:
+         {
+            static const char *modes[] = {
+               "None",
+               "Left Analog",
+               "Right Analog",
+               "Dual Analog",
+            };
+
+            strlcpy(type_str, modes[g_settings.input.analog_dpad_mode[rgui->current_pad] % ANALOG_DPAD_LAST], type_str_size);
+         }
+         break;
+      case RGUI_SETTINGS_INPUT_AXIS_THRESHOLD:
+         snprintf(type_str, type_str_size, "%.3f", g_settings.input.axis_threshold);
+         break;
+      case RGUI_SETTINGS_BIND_DEVICE_TYPE:
+         {
+            const struct retro_controller_description *desc;
+            desc = NULL;
+            if (rgui->current_pad < g_extern.system.num_ports)
+            {
+               desc = libretro_find_controller_description(&g_extern.system.ports[rgui->current_pad],
+                     g_settings.input.libretro_device[rgui->current_pad]);
+            }
+
+            const char *name = desc ? desc->desc : NULL;
+            if (!name) // Find generic name.
+            {
+               switch (g_settings.input.libretro_device[rgui->current_pad])
+               {
+                  case RETRO_DEVICE_NONE:
+                     name = "None";
+                     break;
+                  case RETRO_DEVICE_JOYPAD:
+                     name = "Joypad";
+                     break;
+                  case RETRO_DEVICE_ANALOG:
+                     name = "Joypad w/ Analog";
+                     break;
+                  default:
+                     name = "Unknown";
+                     break;
+               }
+            }
+
+            strlcpy(type_str, name, type_str_size);
+         }
+         break;
       case RGUI_SETTINGS_DEVICE_AUTODETECT_ENABLE:
          strlcpy(type_str, g_settings.input.autodetect_enable ? "ON" : "OFF", type_str_size);
          break;
