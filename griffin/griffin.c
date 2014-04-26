@@ -601,7 +601,6 @@ MENU
 
 #if defined(HAVE_RMENU) || defined(HAVE_RGUI) || defined(HAVE_RMENU_XUI)
 #include "../frontend/menu/backend/menu_common_backend.c"
-#include "../frontend/menu/backend/menu_common_settings.c"
 #endif
 
 #ifdef HAVE_RMENU

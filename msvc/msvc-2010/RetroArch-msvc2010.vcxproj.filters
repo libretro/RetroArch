@@ -234,9 +234,6 @@
     <ClCompile Include="..\..\frontend\menu\backend\menu_common_backend.c">
       <Filter>frontend\menu\backend</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\frontend\menu\backend\menu_common_settings.c">
-      <Filter>frontend\menu\backend</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="resource.h" />

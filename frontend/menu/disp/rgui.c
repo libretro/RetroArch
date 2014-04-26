@@ -283,7 +283,11 @@ static void rgui_render(void *data)
    char title[256];
    const char *dir = NULL;
    unsigned menu_type = 0;
+   unsigned menu_type_is = 0;
    file_list_get_last(rgui->menu_stack, &dir, &menu_type);
+
+   if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->type_is)
+      menu_type_is = driver.menu_ctx->backend->type_is(menu_type);
 
    if (menu_type == RGUI_SETTINGS_CORE)
       snprintf(title, sizeof(title), "CORE SELECTION %s", dir);
@@ -328,7 +332,7 @@ static void rgui_render(void *data)
    else if (menu_type == RGUI_SETTINGS_PRIVACY_OPTIONS)
       strlcpy(title, "PRIVACY OPTIONS", sizeof(title));
 #ifdef HAVE_SHADER_MANAGER
-   else if (menu_type_is(menu_type) == RGUI_SETTINGS_SHADER_OPTIONS)
+   else if (menu_type_is == RGUI_SETTINGS_SHADER_OPTIONS)
       snprintf(title, sizeof(title), "SHADER %s", dir);
 #endif
    else if (menu_type == RGUI_SETTINGS_PATH_OPTIONS ||
@@ -432,8 +436,8 @@ static void rgui_render(void *data)
             type <= RGUI_SETTINGS_SHADER_LAST)
       {
          // HACK. Work around that we're using the menu_type as dir type to propagate state correctly.
-         if ((menu_type_is(menu_type) == RGUI_SETTINGS_SHADER_OPTIONS)
-               && (menu_type_is(type) == RGUI_SETTINGS_SHADER_OPTIONS))
+         if ((menu_type_is == RGUI_SETTINGS_SHADER_OPTIONS)
+               && (menu_type_is == RGUI_SETTINGS_SHADER_OPTIONS))
          {
             type = RGUI_FILE_DIRECTORY;
             strlcpy(type_str, "(DIR)", sizeof(type_str));
@@ -471,7 +475,7 @@ static void rgui_render(void *data)
 #endif
             menu_type == RGUI_SETTINGS_VIDEO_SOFTFILTER ||
             menu_type == RGUI_SETTINGS_DISK_APPEND ||
-            menu_type_is(menu_type) == RGUI_FILE_DIRECTORY)
+            menu_type_is == RGUI_FILE_DIRECTORY)
       {
          if (type == RGUI_FILE_PLAIN)
          {
@@ -499,8 +503,8 @@ static void rgui_render(void *data)
          strlcpy(type_str,
                core_option_get_val(g_extern.system.core_options, type - RGUI_SETTINGS_CORE_OPTION_START),
                sizeof(type_str));
-      else
-         menu_set_settings_label(type_str, sizeof(type_str), &w, type);
+      else if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->setting_set_label)
+         driver.menu_ctx->backend->setting_set_label(type_str, sizeof(type_str), &w, type);
 
       char entry_title_buf[256];
       char type_str_buf[64];

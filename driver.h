@@ -396,7 +396,12 @@ typedef struct menu_ctx_driver_backend
    void     (*shader_manager_set_preset)(void *, unsigned, const char*);
    void     (*shader_manager_save_preset)(void *, const char *, bool);
    unsigned (*shader_manager_get_type)(void *);
-   int      (*shader_manager_toggle_setting)(void *, unsigned, unsigned);
+   int      (*shader_manager_setting_toggle)(void *, unsigned, unsigned);
+   unsigned (*type_is)(unsigned);
+   int      (*core_setting_toggle)(unsigned, unsigned);
+   int      (*setting_toggle)(void *, unsigned, unsigned, unsigned);
+   int      (*setting_set)(void *, unsigned, unsigned);
+   void     (*setting_set_label)(char *, size_t, unsigned *, unsigned);
    const char *ident;
 } menu_ctx_driver_backend_t;
 

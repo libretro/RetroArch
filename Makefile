@@ -106,7 +106,7 @@ endif
 endif
 
 ifeq ($(HAVE_MENU_COMMON), 1)
-	OBJ += frontend/menu/backend/menu_common_backend.o frontend/menu/backend/menu_common_settings.o
+	OBJ += frontend/menu/backend/menu_common_backend.o
 endif
 
 ifeq ($(HAVE_THREADS), 1)
