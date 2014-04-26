@@ -1574,9 +1574,11 @@ static int menu_common_iterate(void *data, unsigned action)
    return ret;
 }
 
-#ifdef HAVE_SHADER_MANAGER
 static void menu_common_shader_manager_init(void *data)
 {
+   (void)data;
+
+#ifdef HAVE_SHADER_MANAGER
    rgui_handle_t *rgui = (rgui_handle_t*)data;
    memset(&rgui->shader, 0, sizeof(rgui->shader));
    config_file_t *conf = NULL;
@@ -1643,14 +1645,17 @@ static void menu_common_shader_manager_init(void *data)
          config_file_free(conf);
       }
    }
+#endif
 }
 
 static void menu_common_shader_manager_set_preset(void *data, unsigned type, const char *path)
 {
+#ifdef HAVE_SHADER_MANAGER
    struct gfx_shader *shader = (struct gfx_shader*)data;
+
    RARCH_LOG("Setting RGUI shader: %s.\n", path ? path : "N/A (stock)");
-   bool ret = video_set_shader_func((enum rarch_shader_type)type, path);
-   if (ret)
+
+   if (video_set_shader_func((enum rarch_shader_type)type, path))
    {
       // Makes sure that we use RGUI CGP shader on driver reinit.
       // Only do this when the cgp actually works to avoid potential errors.
@@ -1679,10 +1684,17 @@ static void menu_common_shader_manager_set_preset(void *data, unsigned type, con
       RARCH_ERR("Setting RGUI CGP failed.\n");
       g_settings.video.shader_enable = false;
    }
+#endif
 }
 
 static void menu_common_shader_manager_get_str(void *data, char *type_str, size_t type_str_size, unsigned type)
 {
+   (void)data;
+   (void)type_str;
+   (void)type_str_size;
+   (void)type;
+
+#ifdef HAVE_SHADER_MANAGER
    struct gfx_shader *shader = (struct gfx_shader*)data;
    if (type == RGUI_SETTINGS_SHADER_APPLY)
       *type_str = '\0';
@@ -1729,12 +1741,17 @@ static void menu_common_shader_manager_get_str(void *data, char *type_str, size_
          }
       }
    }
+#endif
 }
 
 static void menu_common_shader_manager_save_preset(void *data, const char *basename, bool apply)
 {
-   unsigned type;
-   rgui_handle_t *rgui = (rgui_handle_t*)data;
+#ifdef HAVE_SHADER_MANAGER
+   char buffer[PATH_MAX];
+   unsigned d, type;
+   rgui_handle_t *rgui;
+
+   rgui = (rgui_handle_t*)data;
 
    if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->shader_manager_get_type)
       type = driver.menu_ctx->backend->shader_manager_get_type(&rgui->shader);
@@ -1745,7 +1762,7 @@ static void menu_common_shader_manager_save_preset(void *data, const char *basen
       return;
 
    const char *conf_path = NULL;
-   char buffer[PATH_MAX];
+
    if (basename)
    {
       strlcpy(buffer, basename, sizeof(buffer));
@@ -1781,7 +1798,7 @@ static void menu_common_shader_manager_save_preset(void *data, const char *basen
    gfx_shader_write_conf_cgp(conf, &rgui->shader);
 
    bool ret = false;
-   unsigned d;
+
    for (d = 0; d < ARRAY_SIZE(dirs); d++)
    {
       if (!*dirs[d])
@@ -1806,11 +1823,17 @@ static void menu_common_shader_manager_save_preset(void *data, const char *basen
    config_file_free(conf);
    if (!ret)
       RARCH_ERR("Failed to save shader preset. Make sure config directory and/or shader dir are writable.\n");
+#endif
 }
 
 static unsigned menu_common_shader_manager_get_type(void *data)
 {
    unsigned i, type;
+   (void)data;
+
+   type = 0;
+
+#ifdef HAVE_SHADER_MANAGER
    const struct gfx_shader *shader = (const struct gfx_shader*)data;
 
    // All shader types must be the same, or we cannot use it.
@@ -1835,12 +1858,18 @@ static unsigned menu_common_shader_manager_get_type(void *data)
             return RARCH_SHADER_NONE;
       }
    }
+#endif
 
    return type;
 }
 
 static int menu_common_shader_manager_setting_toggle(void *data, unsigned setting, unsigned action)
 {
+   (void)data;
+   (void)setting;
+   (void)action;
+
+#ifdef HAVE_SHADER_MANAGER
    unsigned dist_shader, dist_filter, dist_scale;
    rgui_handle_t *rgui;
 
@@ -1942,10 +1971,10 @@ static int menu_common_shader_manager_setting_toggle(void *data, unsigned settin
          break;
       }
    }
+#endif
 
    return 0;
 }
-#endif
 
 static int menu_common_setting_toggle(void *data, unsigned setting, unsigned action, unsigned menu_type)
 {
@@ -4142,21 +4171,12 @@ static void menu_common_setting_set_label(char *type_str, size_t type_str_size, 
 const menu_ctx_driver_backend_t menu_ctx_backend_common = {
    menu_common_entries_init,
    menu_common_iterate,
-#ifdef HAVE_SHADER_MANAGER
    menu_common_shader_manager_init,
    menu_common_shader_manager_get_str,
    menu_common_shader_manager_set_preset,
    menu_common_shader_manager_save_preset,
    menu_common_shader_manager_get_type,
    menu_common_shader_manager_setting_toggle,
-#else
-   NULL,
-   NULL,
-   NULL,
-   NULL,
-   NULL,
-   NULL,
-#endif
    menu_common_type_is,
    menu_common_core_setting_toggle,
    menu_common_setting_toggle,
