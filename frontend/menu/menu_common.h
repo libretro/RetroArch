@@ -51,6 +51,10 @@ extern "C" {
 #define GFX_MAX_SHADERS 16
 #endif
 
+#define RGUI_SETTINGS_CORE_INFO_NONE    0xffff
+#define RGUI_SETTINGS_CORE_OPTION_NONE  0xffff
+#define RGUI_SETTINGS_CORE_OPTION_START 0x10000
+
 typedef enum
 {
    RGUI_FILE_PLAIN,
