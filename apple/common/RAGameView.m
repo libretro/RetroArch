@@ -71,7 +71,7 @@ static CLLocationAccuracy currentVerticalAccuracy;
 @implementation NSScreen (IOSCompat)
 - (CGRect)bounds
 {
-	CGRect cgrect  = NSRectToCGRect([self frame]);
+	CGRect cgrect  = (CGRect)NSRectToCGRect(self.frame);
 	return CGRectMake(0, 0, CGRectGetWidth(cgrect), CGRectGetHeight(cgrect));
 }
 - (float) scale  { return 1.0f; }
@@ -164,7 +164,7 @@ static bool g_is_syncing = true;
 {
    self = [super init];
 
-   UINib *xib = [UINib nibWithNibName:@"PauseIndicatorView" bundle:nil];
+   UINib *xib = [UINib nibWithNibName:BOXSTRING("PauseIndicatorView") bundle:nil];
    g_pause_indicator_view = [[xib instantiateWithOwner:[RetroArch_iOS get] options:nil] lastObject];
 
    g_view = [GLKView new];
@@ -320,7 +320,7 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
     [_session setSessionPreset:_sessionPreset];
     
     //-- Creata a video device and input from that Device.  Add the input to the capture session.
-    AVCaptureDevice * videoDevice = (AVCaptureDevice*)[AVCaptureDevice defaultDeviceWithMediaType:AVMediaTypeVideo];
+    AVCaptureDevice *videoDevice = (AVCaptureDevice*)[AVCaptureDevice defaultDeviceWithMediaType:AVMediaTypeVideo];
     if(videoDevice == nil)
         assert(0);
     
@@ -394,8 +394,8 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
     CLLocation *location = (CLLocation*)[locations objectAtIndex:([locations count] - 1)];
     currentLatitude  = [location coordinate].latitude;
     currentLongitude = [location coordinate].longitude;
-    currentHorizontalAccuracy = [location horizontalAccuracy];
-    currentVerticalAccuracy = [location verticalAccuracy];
+    currentHorizontalAccuracy = location.horizontalAccuracy;
+    currentVerticalAccuracy = location.verticalAccuracy;
     RARCH_LOG("didUpdateLocations - latitude %f, longitude %f\n", (float)currentLatitude, (float)currentLongitude);
 }
 
@@ -713,7 +713,7 @@ typedef struct apple_location
 	void *empty;
 } applelocation_t;
 
-static void *apple_location_init()
+static void *apple_location_init(void)
 {
 	applelocation_t *applelocation = (applelocation_t*)calloc(1, sizeof(applelocation_t));
 	if (!applelocation)

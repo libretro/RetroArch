@@ -131,8 +131,8 @@ static char** waiting_argv;
 
    NSArray* paths = (NSArray*)NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask, YES);
    self.configDirectory = [[paths objectAtIndex:0] stringByAppendingPathComponent:BOXSTRING("RetroArch")];
-   self.globalConfigFile = [NSString stringWithFormat:@"%@/retroarch.cfg", self.configDirectory];
-   self.coreDirectory = [[[NSBundle mainBundle] bundlePath] stringByAppendingPathComponent:@"Contents/Resources/modules"];
+   self.globalConfigFile = [NSString stringWithFormat:BOXSTRING("%@/retroarch.cfg"), self.configDirectory];
+   self.coreDirectory = [[[NSBundle mainBundle] bundlePath] stringByAppendingPathComponent:BOXSTRING("Contents/Resources/modules")];
    
 #if __MAC_OS_X_VERSION_MAX_ALLOWED >= 1070
    [self.window setCollectionBehavior:[self.window collectionBehavior] | NSWindowCollectionBehaviorFullScreenPrimary];
@@ -142,12 +142,12 @@ static char** waiting_argv;
    
    [[RAGameView get] setFrame: [[self.window contentView] bounds]];
    [[self.window contentView] setAutoresizesSubviews:YES];
-#if defined(IOS) || defined(MAC_OS_X_VERSION_10_6)
+#if defined(IOS) || defined(MAC_OS_X_VERSION_10_5)
    [[self.window contentView] addSubview:RAGameView.get];
 #endif
    [self.window makeFirstResponder:[RAGameView get]];
    
-   self.settingsWindow = [[[NSWindowController alloc] initWithWindowNibName:@"Settings"] autorelease];
+   self.settingsWindow = [[[NSWindowController alloc] initWithWindowNibName:BOXSTRING("Settings")] autorelease];
    
    // Create core select list
    NSComboBox* cb = (NSComboBox*)[[self.coreSelectSheet contentView] viewWithTag:1];
@@ -221,7 +221,7 @@ static char** waiting_argv;
    }
    else
    {
-      apple_display_alert(@"Cannot open multiple files", @"RetroArch");
+      apple_display_alert(BOXSTRING("Cannot open multiple files"), BOXSTRING("RetroArch"));
       [sender replyToOpenOrPrint:NSApplicationDelegateReplyFailure];
    }
 }
@@ -229,7 +229,7 @@ static char** waiting_argv;
 - (void)openDocument:(id)sender
 {
    NSOpenPanel* panel = [NSOpenPanel openPanel];
-#if defined(MAC_OS_X_VERSION_10_6)
+#if defined(MAC_OS_X_VERSION_10_5)
    [panel beginSheetModalForWindow:self.window completionHandler:^(NSInteger result)
    {
       [[NSApplication sharedApplication] stopModal];
