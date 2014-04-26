@@ -171,9 +171,8 @@ bool d3d_init_chain(void *data, const video_info_t *video_info)
    link_info.pass = &d3d->shader.pass[0];
    link_info.tex_w = link_info.tex_h = video_info->input_scale * RARCH_SCALE_BASE;
 
-   if (d3d->chain)
-      free(d3d->chain);
-   d3d->chain = (renderchain_t*)calloc(1, sizeof(renderchain_t));
+   d3d_deinit_chain(d3d);
+   d3d->chain = new renderchain_t();
    if (!d3d->chain)
       return false;
 
@@ -355,7 +354,7 @@ void d3d_deinit_chain(void *data)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
    if (d3d->chain)
-      free(d3d->chain);
+      delete (renderchain_t *)d3d->chain;
    d3d->chain = NULL;
 }
 
@@ -878,7 +877,7 @@ static void d3d_free(void *data)
    DestroyWindow(d3d->hWnd);
 
    if (d3d)
-      free(d3d);
+      delete d3d;
 
 #ifndef _XBOX
    UnregisterClass("RetroArch", GetModuleHandle(NULL));
@@ -1411,14 +1410,14 @@ static const gfx_ctx_driver_t *d3d_get_context(void)
 static void *d3d_init(const video_info_t *info, const input_driver_t **input,
       void **input_data)
 {
-   d3d_video_t *vid = (d3d_video_t*)calloc(1, sizeof(d3d_video_t));
+   d3d_video_t *vid = new d3d_video_t();
    if (!vid)
       return NULL;
 
    vid->ctx_driver = d3d_get_context();
    if (!vid->ctx_driver)
    {
-      free(vid);
+      delete vid;
       return NULL;
    }
 
@@ -1435,11 +1434,12 @@ static void *d3d_init(const video_info_t *info, const input_driver_t **input,
    vid->overlays_enabled = false;
 #endif
    vid->chain            = NULL;
+   vid->rgui             = NULL;
 
    if (!d3d_construct(vid, info, input, input_data))
    {
       RARCH_ERR("[D3D]: Failed to init D3D.\n");
-      free(vid);
+      delete vid;
       return NULL;
    }
 
