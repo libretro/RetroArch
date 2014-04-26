@@ -249,8 +249,8 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 
 - (void)wasSelectedOnTableView:(UITableView*)tableView ofController:(UIViewController*)controller
 {
-   UIAlertView* alertView = [[UIAlertView alloc] initWithTitle:@"Enter new value" message:BOXSTRING(self.setting->short_description) delegate:self
-                                                  cancelButtonTitle:@"Cancel" otherButtonTitles:@"OK", nil];
+   UIAlertView* alertView = [[UIAlertView alloc] initWithTitle:BOXSTRING("Enter new value") message:BOXSTRING(self.setting->short_description) delegate:self
+                                                  cancelButtonTitle:BOXSTRING("Cancel") otherButtonTitles:BOXSTRING("OK"), nil];
    alertView.alertViewStyle = UIAlertViewStylePlainTextInput;
 
    UITextField* field = [alertView textFieldAtIndex:0];
@@ -397,7 +397,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 {
    RAMenuItemEnumSetting __weak* weakSelf = self;
    
-   struct string_list* items = string_split(self.setting->values, "|");
+   struct string_list* items = (struct string_list*)string_split(self.setting->values, "|");
    RunActionSheet(self.setting->short_description, items, self.parentTable,
       ^(UIActionSheet* actionSheet, NSInteger buttonIndex)
       {
@@ -511,44 +511,44 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
    RAMainMenu* __weak weakSelf = self;
    self.sections = [NSMutableArray array];
 
-   NSMutableArray* settings = [NSMutableArray arrayWithObjects:@"Settings",
-                               [RAMenuItemBasic itemWithDescription:@"Frontend"
+   NSMutableArray* settings = [NSMutableArray arrayWithObjects:BOXSTRING("Settings"),
+                               [RAMenuItemBasic itemWithDescription:BOXSTRING("Frontend")
                                   action:^{ [weakSelf.navigationController pushViewController:[RAFrontendSettingsMenu new] animated:YES]; }],
                                nil];
    
    if (!apple_is_running)
    {
-      [self.sections addObject:[NSArray arrayWithObjects:@"Content",
-                                 [RAMenuItemBasic itemWithDescription:@"Choose Core"
+      [self.sections addObject:[NSArray arrayWithObjects:BOXSTRING("Content"),
+                                 [RAMenuItemBasic itemWithDescription:BOXSTRING("Choose Core")
                                     action:^{ [weakSelf chooseCoreWithPath:nil]; }
-                                    detail:^{ return weakSelf.core ? apple_get_core_display_name(weakSelf.core) : @"Auto Detect"; }],
-                                 [RAMenuItemBasic itemWithDescription:@"Load Content"                 action:^{ [weakSelf loadGame]; }],
-                                 [RAMenuItemBasic itemWithDescription:@"Load Content (History)"       action:^{ [weakSelf loadHistory]; }],
+                                    detail:^{ return weakSelf.core ? apple_get_core_display_name(weakSelf.core) : BOXSTRING("Auto Detect"); }],
+                                 [RAMenuItemBasic itemWithDescription:BOXSTRING("Load Content")                 action:^{ [weakSelf loadGame]; }],
+                                 [RAMenuItemBasic itemWithDescription:BOXSTRING("Load Content (History)")       action:^{ [weakSelf loadHistory]; }],
                                  nil]];
    }
    else
    {
-      [self.sections addObject:[NSArray arrayWithObjects:@"Actions",
-                                 [RAMenuItemBasic itemWithDescription:@"Reset Content" action:^{ [weakSelf performBasicAction:RESET]; }],
-                                 [RAMenuItemBasic itemWithDescription:@"Close Content" action:^{ [weakSelf performBasicAction:QUIT]; }],
+      [self.sections addObject:[NSArray arrayWithObjects:BOXSTRING("Actions"),
+                                 [RAMenuItemBasic itemWithDescription:BOXSTRING("Reset Content") action:^{ [weakSelf performBasicAction:RESET]; }],
+                                 [RAMenuItemBasic itemWithDescription:BOXSTRING("Close Content") action:^{ [weakSelf performBasicAction:QUIT]; }],
                                  nil]];
       
-      [self.sections addObject:[NSArray arrayWithObjects:@"States",
+      [self.sections addObject:[NSArray arrayWithObjects:BOXSTRING("States"),
                                  [RAMenuItemStateSelect new],
-                                 [RAMenuItemBasic itemWithDescription:@"Load State" action:^{ [weakSelf performBasicAction:LOAD_STATE]; }],
-                                 [RAMenuItemBasic itemWithDescription:@"Save State" action:^{ [weakSelf performBasicAction:SAVE_STATE]; }],
+                                 [RAMenuItemBasic itemWithDescription:BOXSTRING("Load State") action:^{ [weakSelf performBasicAction:LOAD_STATE]; }],
+                                 [RAMenuItemBasic itemWithDescription:BOXSTRING("Save State") action:^{ [weakSelf performBasicAction:SAVE_STATE]; }],
                                  nil]];
       
-      [settings addObject:[RAMenuItemBasic itemWithDescription:@"Core"
+      [settings addObject:[RAMenuItemBasic itemWithDescription:BOXSTRING("Core")
                               action:^{ [weakSelf.navigationController pushViewController:[[RACoreSettingsMenu alloc] initWithCore:apple_core] animated:YES]; }]];
-      [settings addObject:[RAMenuItemBasic itemWithDescription:@"Core Options"
+      [settings addObject:[RAMenuItemBasic itemWithDescription:BOXSTRING("Core Options")
                               action:^{ [weakSelf.navigationController pushViewController:[RACoreOptionsMenu new] animated:YES]; }]];
    }
    
    [self.sections addObject:settings];
    
    if (apple_is_running)
-      self.navigationItem.leftBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:@"Resume" style:UIBarButtonItemStyleBordered target:[RetroArch_iOS get] action:@selector(showGameView)];
+      self.navigationItem.leftBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:BOXSTRING("Resume") style:UIBarButtonItemStyleBordered target:[RetroArch_iOS get] action:@selector(showGameView)];
    else
       self.navigationItem.leftBarButtonItem = nil;
 }
@@ -602,7 +602,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 
 - (void)loadHistory
 {
-   NSString* history_path = [NSString stringWithFormat:@"%@/%s", [RetroArch_iOS get].systemDirectory, ".retroarch-game-history.txt"];
+   NSString* history_path = [NSString stringWithFormat:BOXSTRING("%@/%s"), [RetroArch_iOS get].systemDirectory, ".retroarch-game-history.txt"];
    [self.navigationController pushViewController:[[RAHistoryMenu alloc] initWithHistoryPath:history_path] animated:YES];
 }
 
@@ -627,7 +627,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
    {
       _history = rom_history_init([historyPath UTF8String], 100);
       [self reloadData];
-      self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:@"Clear History"
+      self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:BOXSTRING("Clear History")
                                                 style:UIBarButtonItemStyleBordered target:self action:@selector(clearHistory)];
    }
    
@@ -644,7 +644,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 - (void)willReloadData
 {  
    RAHistoryMenu* __weak weakSelf = self;
-   NSMutableArray* section = [NSMutableArray arrayWithObject:@""];
+   NSMutableArray* section = [NSMutableArray arrayWithObject:BOXSTRING("")];
    
    for (int i = 0; _history && i < rom_history_size(_history); i ++)
    {
@@ -676,7 +676,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
    
       NSMutableArray* settings = nil;
 
-      for (const rarch_setting_t* i = group + 1; i->type != ST_END_GROUP; i ++)
+      for (const rarch_setting_t* i = group + 1; i->type < ST_END_GROUP; i ++)
       {
          if (i->type == ST_SUB_GROUP)
             settings = [NSMutableArray arrayWithObjects:BOXSTRING(i->name), nil];
@@ -756,10 +756,10 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
             [section addObject:[RAMenuItemGeneralSetting itemForSetting:setting_data_find_setting(setting_data, groups[i][j])]];
       }
 
-      NSMutableArray* settings = [NSMutableArray arrayWithObjects:@"", nil];
+      NSMutableArray* settings = [NSMutableArray arrayWithObjects:BOXSTRING(""), nil];
       [self.sections addObject:settings];
 
-      for (const rarch_setting_t* i = setting_data; i->type != ST_NONE; i ++)
+      for (const rarch_setting_t* i = setting_data; i->type < ST_NONE; i++)
          if (i->type == ST_GROUP)
             [settings addObject:[RAMenuItemBasic itemWithDescription:BOXSTRING(i->name) action:
             ^{
@@ -825,9 +825,9 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 
       self.title = BOXSTRING("Frontend Settings");
       
-      RAMenuItemBasic* diagnostic_item = [RAMenuItemBasic itemWithDescription:@"Diagnostic Log"
+      RAMenuItemBasic* diagnostic_item = [RAMenuItemBasic itemWithDescription:BOXSTRING("Diagnostic Log")
          action:^{ [weakSelf.navigationController pushViewController:[[RALogMenu alloc] initWithFile:[[RetroArch_iOS get].logPath UTF8String]] animated:YES]; }];
-      [self.sections insertObject:@[@"", diagnostic_item] atIndex:0];
+      [self.sections insertObject:@[BOXSTRING(""), diagnostic_item] atIndex:0];
   
       _coreConfigOptions = [NSMutableArray array];
       [self.sections addObject:_coreConfigOptions];
@@ -848,11 +848,11 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
    
    [cores removeAllObjects];
    
-   [cores addObject:@"Configurations"];
-   [cores addObject:[RAMenuItemBasic itemWithDescription:@"Global Core Config"
+   [cores addObject:BOXSTRING("Configurations")];
+   [cores addObject:[RAMenuItemBasic itemWithDescription:BOXSTRING("Global Core Config")
                                                   action: ^{ [weakSelf showCoreConfigFor:nil]; }]];
    
-   [cores addObject:[RAMenuItemBasic itemWithDescription:@"New Config for Core"
+   [cores addObject:[RAMenuItemBasic itemWithDescription:BOXSTRING("New Config for Core")
                                                   action: ^{ [weakSelf createNewConfig]; }]];
    
    const core_info_list_t* core_list = (const core_info_list_t*)core_info_list_get();
@@ -864,7 +864,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
          [cores addObject:[RAMenuItemBasic itemWithDescription:BOXSTRING(core_list->list[i].display_name)
                                                    association:core_id
                                                         action: ^(id userdata) { [weakSelf showCoreConfigFor:userdata]; }
-                                                        detail: ^(id userdata) { return @""; }]];
+                                                        detail: ^(id userdata) { return BOXSTRING(""); }]];
       }
    }
 }
@@ -920,18 +920,19 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
       RACoreOptionsMenu* __weak weakSelf = self;
       core_option_manager_t* options = (core_option_manager_t*)g_extern.system.core_options;
    
-      NSMutableArray* section = (NSMutableArray*)[NSMutableArray arrayWithObject:@""];
+      NSMutableArray* section = (NSMutableArray*)[NSMutableArray arrayWithObject:BOXSTRING("")];
       [self.sections addObject:section];
    
       if (options)
       {
-         for (int i = 0; i != core_option_size(options); i ++)
+         unsigned i;
+         for (i = 0; i < core_option_size(options); i ++)
             [section addObject:[RAMenuItemBasic itemWithDescription:BOXSTRING(core_option_get_desc(options, i)) association:nil
                action:^{ [weakSelf editValue:i]; }
                detail:^{ return BOXSTRING(core_option_get_val(options, i)); }]];
       }
       else
-         [section addObject:[RAMenuItemBasic itemWithDescription:@"The running core has no options." action:NULL]];
+         [section addObject:[RAMenuItemBasic itemWithDescription:BOXSTRING("The running core has no options.") action:NULL]];
    }
    
    return self;
@@ -1036,7 +1037,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
          {
             const core_info_t* core_support = 0;
             size_t core_count = 0;
-            core_info_list_get_supported_cores(core_list, [_path UTF8String], &core_support, &core_count);
+            core_info_list_get_supported_cores(core_list, _path.UTF8String, &core_support, &core_count);
             
             if (core_count == 1 && _action)
                [self runAction:apple_get_core_id(&core_support[0])];
