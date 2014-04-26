@@ -1,5 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
+ *  Copyright (C) 2011-2014 - Daniel De Matteis
+ *  Copyright (C) 2013-2014 - Jason Fetters
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -211,3 +213,32 @@ error:
    return NULL;
 }
 
+const char* rom_history_get_path(rom_history_t* history, unsigned index)
+{
+   const char *path, *core_path, *core_name;
+   rom_history_get_index(history, index, &path, &core_path, &core_name);
+
+   if (path)
+      return path;
+   return "";
+}
+
+const char *rom_history_get_core_path(rom_history_t* history, unsigned index)
+{
+   const char *path, *core_path, *core_name;
+   rom_history_get_index(history, index, &path, &core_path, &core_name);
+    
+   if (core_path)
+      return core_path;
+   return "";
+}
+
+const char *rom_history_get_core_name(rom_history_t* history, unsigned index)
+{
+   const char *path, *core_path, *core_name;
+   rom_history_get_index(history, index, &path, &core_path, &core_name);
+
+   if (core_name)
+      return core_name;
+   return "";
+}

@@ -24,6 +24,9 @@
 #include "../../config.h"
 #endif
 
+static core_info_list_t* global_core_list = 0;
+static char core_config_path[PATH_MAX];
+
 static void core_info_list_resolve_all_extensions(core_info_list_t *core_info_list)
 {
    size_t i, all_ext_len = 0;
@@ -401,4 +404,74 @@ void core_info_list_get_missing_firmware(core_info_list_t *core_info_list,
    }
 
    qsort(info->firmware, info->firmware_count, sizeof(*info->firmware), core_info_firmware_cmp);
+}
+
+void core_info_set_core_path(const char* core_path)
+{
+   if (global_core_list)
+      core_info_list_free(global_core_list);
+   
+   global_core_list = core_path ? core_info_list_new(core_path) : 0;
+
+   if (!global_core_list)
+      RARCH_WARN("No cores were found at %s", core_path ? core_path : "(null");
+}
+
+void core_info_set_config_path(const char* config_path)
+{
+   if (!config_path || strlcpy(core_config_path, config_path, sizeof(core_config_path)) >= PATH_MAX)
+      *core_config_path = '\0';
+}
+
+core_info_list_t *core_info_list_get(void)
+{
+   if (!global_core_list)
+      RARCH_WARN("core_info_list_get() called before core_info_set_core_path()");
+
+   return global_core_list;
+}
+
+const core_info_t *core_info_list_get_by_id(const char* core_id)
+{
+   int i;
+   const core_info_list_t* cores = (const core_info_list_t*)core_info_list_get();
+
+   if (core_id)
+      for (i = 0; i < cores->count; i ++)
+         if (cores->list[i].path && strcmp(core_id, cores->list[i].path) == 0)
+            return &cores->list[i];
+
+   return 0;
+}
+
+const char *core_info_get_id(const core_info_t* info, char* buffer, size_t buffer_length)
+{
+   if (!buffer || !buffer_length)
+      return "";
+
+   if (info && info->path && strlcpy(buffer, info->path, buffer_length) < buffer_length)
+      return buffer;
+
+   *buffer = 0;
+   return buffer;
+}
+
+const char *core_info_get_custom_config(const char* core_id, char* buffer, size_t buffer_length)
+{
+   if (!core_id || !buffer || !buffer_length)
+      return 0;
+
+   snprintf(buffer, buffer_length, "%s/%s", core_config_path, path_basename(core_id));
+   fill_pathname(buffer, buffer, ".cfg", buffer_length);
+   return buffer;
+}
+
+bool core_info_has_custom_config(const char* core_id)
+{
+   char path[PATH_MAX];
+   if (!core_id)
+      return false;
+
+   core_info_get_custom_config(core_id, path, sizeof(path));
+   return path_file_exists(path);
 }

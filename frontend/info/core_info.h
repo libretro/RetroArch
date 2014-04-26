@@ -1,5 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
+ *  Copyright (C) 2011-2014 - Daniel De Matteis
+ *  Copyright (C) 2013-2014 - Jason Fetters
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -83,6 +85,16 @@ bool core_info_list_get_info(core_info_list_t *core_info_list, core_info_t *info
 const char *core_info_list_get_all_extensions(core_info_list_t *core_info_list);
 
 bool core_info_list_get_display_name(core_info_list_t *core_info_list, const char *path, char *buf, size_t size);
+
+void core_info_set_core_path(const char* core_path);
+void core_info_set_config_path(const char* config_path);
+
+core_info_list_t* core_info_list_get(void);
+const core_info_t* core_info_list_get_by_id(const char* core_id);
+const char* core_info_get_id(const core_info_t* info, char* buffer, size_t buffer_length);
+
+const char* core_info_get_custom_config(const char* core_id, char* buffer, size_t buffer_length);
+bool core_info_has_custom_config(const char* core_id);
 
 #ifdef __cplusplus
 }

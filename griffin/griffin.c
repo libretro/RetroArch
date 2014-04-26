@@ -660,7 +660,6 @@ XML
     
 #if defined(IOS) || defined(OSX)
 #include "../apple/common/setting_data.c"
-#include "../apple/common/core_info_ext.c"
 #endif
 
 #ifdef __cplusplus
