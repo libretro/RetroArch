@@ -433,7 +433,7 @@ core_info_list_t *core_info_list_get(void)
 
 const core_info_t *core_info_list_get_by_id(const char* core_id)
 {
-   int i;
+   unsigned i;
    const core_info_list_t* cores = (const core_info_list_t*)core_info_list_get();
 
    if (core_id)
