@@ -205,12 +205,6 @@ bool menu_replace_config(const char *path);
 
 bool menu_save_new_config(void);
 
-int menu_settings_toggle_setting(void *data, unsigned setting, unsigned action, unsigned menu_type);
-int menu_set_settings(void *data, unsigned setting, unsigned action);
-void menu_set_settings_label(char *type_str, size_t type_str_size, unsigned *w, unsigned type);
-
-unsigned menu_type_is(unsigned type);
-
 uint64_t menu_input(void);
 
 void menu_flush_stack_type(void *data, unsigned final_type);
