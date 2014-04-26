@@ -52,7 +52,7 @@ static void apple_rarch_exited(void)
       apple_run_core(nil, 0);
 }
 
-static void do_iteration()
+static void do_iteration(void)
 {
     bool iterate = iterate_observer && apple_is_running && !g_extern.is_paused;
     

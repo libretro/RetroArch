@@ -18,8 +18,22 @@
 
 #include "../../general.h"
 
-enum setting_type { ST_NONE, ST_BOOL, ST_INT, ST_UINT, ST_FLOAT, ST_PATH, ST_STRING, ST_HEX, ST_BIND,
-                    ST_GROUP, ST_SUB_GROUP, ST_END_GROUP, ST_END_SUB_GROUP };
+enum setting_type
+{
+   ST_NONE = 0,
+   ST_BOOL,
+   ST_INT,
+   ST_UINT,
+   ST_FLOAT,
+   ST_PATH,
+   ST_STRING,
+   ST_HEX,
+   ST_BIND,
+   ST_GROUP,
+   ST_SUB_GROUP,
+   ST_END_GROUP,
+   ST_END_SUB_GROUP
+};
                     
 enum setting_features
 {
@@ -108,8 +122,8 @@ rarch_setting_t setting_data_bind_setting(const char* name, const char* descript
                                     const struct retro_keybind* default_value);
 
 // These functions operate only on RetroArch's main settings list
-void setting_data_load_current();
-const rarch_setting_t* setting_data_get_list();
+void setting_data_load_current(void);
+const rarch_setting_t* setting_data_get_list(void);
 
 // Keyboard
 #include "keycode.h"
