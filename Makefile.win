@@ -115,7 +115,7 @@ JLIBS =
 
 ifeq ($(HAVE_RGUI), 1)
    DEFINES += -DHAVE_RGUI -DHAVE_MENU
-   OBJ += frontend/menu/menu_input_line_cb.o frontend/menu/menu_navigation.o frontend/menu/file_list.o frontend/menu/disp/rgui.o frontend/menu/history.o
+   OBJ += frontend/menu/menu_input_line_cb.o frontend/menu/menu_common.o frontend/menu/menu_navigation.o frontend/menu/file_list.o frontend/menu/disp/rgui.o frontend/menu/history.o
    HAVE_MENU_COMMON = 1
 endif
 
