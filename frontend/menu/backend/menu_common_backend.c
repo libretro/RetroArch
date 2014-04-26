@@ -2659,17 +2659,16 @@ static int menu_common_setting_set(void *data, unsigned setting, unsigned action
 
             case RGUI_ACTION_OK:
             case RGUI_ACTION_RIGHT:
-               if (g_settings.input.axis_threshold < 1.0)
-                  g_settings.input.axis_threshold += 0.001;
+               g_settings.input.axis_threshold += 0.01;
                break;
             case RGUI_ACTION_LEFT:
-               if (g_settings.input.axis_threshold > 0.0)
-                  g_settings.input.axis_threshold -= 0.001;
+               g_settings.input.axis_threshold -= 0.01;
                break;
 
             default:
                break;
          }
+         g_settings.input.axis_threshold = max(min(g_settings.input.axis_threshold, 0.95f), 0.05f);
          break;
       case RGUI_SETTINGS_BIND_DEVICE_TYPE:
          {
