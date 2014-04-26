@@ -1831,6 +1831,7 @@ static unsigned menu_common_shader_manager_get_type(void *data)
 {
    unsigned i, type;
    (void)data;
+   (void)i;
 
    type = 0;
 
