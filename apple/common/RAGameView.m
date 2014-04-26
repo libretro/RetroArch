@@ -97,7 +97,7 @@ static bool newFrame = false;
 
 #elif defined(OSX)
 
-#include "apple_input.h"
+#include "../../input/apple_input.h"
 
 static bool g_has_went_fullscreen;
 static NSOpenGLPixelFormat* g_format;

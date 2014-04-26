@@ -126,6 +126,6 @@ void setting_data_load_current(void);
 const rarch_setting_t* setting_data_get_list(void);
 
 // Keyboard
-#include "keycode.h"
+#include "../../input/apple_keycode.h"
 
 #endif

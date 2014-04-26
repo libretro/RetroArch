@@ -20,7 +20,7 @@
 #include "rarch_wrapper.h"
 #include "../../frontend/frontend.h"
 
-#include "apple_input.h"
+#include "../../input/apple_input.h"
 
 #include "../../file.h"
 

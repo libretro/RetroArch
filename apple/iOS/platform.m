@@ -18,7 +18,7 @@
 #import "RetroArch_Apple.h"
 #include "rarch_wrapper.h"
 
-#include "apple/common/apple_input.h"
+#include "../../input/apple_input.h"
 #include "apple/common/setting_data.h"
 #include "apple/common/apple_gamecontroller.h"
 #include "menu.h"

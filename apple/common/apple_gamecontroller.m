@@ -24,7 +24,7 @@
 #define IS_PRESSED(x) (x.value > .01f)
 
 #import <GameController/GameController.h>
-#include "apple_input.h"
+#include "../../input/apple_input.h"
 
 static void apple_gamecontroller_poll(GCController* controller)
 {
