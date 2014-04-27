@@ -149,6 +149,7 @@ struct ff_config_param
    unsigned sample_rate;
    unsigned scale_factor;
 
+   bool audio_enable;
    // Keep same naming conventions as libavcodec.
    bool audio_qscale;
    int audio_global_quality;
@@ -495,6 +496,9 @@ static bool ffemu_init_config(struct ff_config_param *params, const char *config
          || !params->frame_drop_ratio)
       params->frame_drop_ratio = 1;
 
+   if (!config_get_bool(params->conf, "audio_enable", &params->audio_enable))
+      params->audio_enable = true;
+
    config_get_uint(params->conf, "sample_rate", &params->sample_rate);
    config_get_uint(params->conf, "scale_factor", &params->scale_factor);
 
@@ -565,9 +569,12 @@ static bool ffemu_init_muxer_post(ffemu_t *handle)
    handle->muxer.vstream = stream;
    handle->muxer.vstream->sample_aspect_ratio = handle->video.codec->sample_aspect_ratio;
 
-   stream = avformat_new_stream(handle->muxer.ctx, handle->audio.encoder);
-   stream->codec = handle->audio.codec;
-   handle->muxer.astream = stream;
+   if (handle->config.audio_enable)
+   {
+      stream = avformat_new_stream(handle->muxer.ctx, handle->audio.encoder);
+      stream->codec = handle->audio.codec;
+      handle->muxer.astream = stream;
+   }
 
    av_dict_set(&handle->muxer.ctx->metadata, "title", "RetroArch video dump", 0); 
 
@@ -660,7 +667,7 @@ ffemu_t *ffemu_new(const struct ffemu_params *params)
    if (!ffemu_init_video(handle))
       goto error;
 
-   if (!ffemu_init_audio(handle))
+   if (handle->config.audio_enable && !ffemu_init_audio(handle))
       goto error;
 
    if (!ffemu_init_muxer_post(handle))
@@ -781,6 +788,9 @@ bool ffemu_push_video(ffemu_t *handle, const struct ffemu_video_data *data)
 
 bool ffemu_push_audio(ffemu_t *handle, const struct ffemu_audio_data *data)
 {
+   if (!handle->config.audio_enable)
+      return true;
+
    for (;;)
    {
       slock_lock(handle->lock);
@@ -1148,8 +1158,8 @@ static void ffemu_flush_video(ffemu_t *handle)
 static void ffemu_flush_buffers(ffemu_t *handle)
 {
    void *video_buf = av_malloc(2 * handle->params.fb_width * handle->params.fb_height * handle->video.pix_size);
-   size_t audio_buf_size = handle->audio.codec->frame_size * handle->params.channels * sizeof(int16_t);
-   void *audio_buf = av_malloc(audio_buf_size);
+   size_t audio_buf_size = handle->config.audio_enable ? (handle->audio.codec->frame_size * handle->params.channels * sizeof(int16_t)) : 0;
+   void *audio_buf = audio_buf_size ? av_malloc(audio_buf_size) : NULL;
 
    // Try pushing data in an interleaving pattern to ease the work of the muxer a bit.
    bool did_work;
@@ -1157,16 +1167,19 @@ static void ffemu_flush_buffers(ffemu_t *handle)
    {
       did_work = false;
 
-      if (fifo_read_avail(handle->audio_fifo) >= audio_buf_size)
+      if (handle->config.audio_enable)
       {
-         fifo_read(handle->audio_fifo, audio_buf, audio_buf_size);
+         if (fifo_read_avail(handle->audio_fifo) >= audio_buf_size)
+         {
+            fifo_read(handle->audio_fifo, audio_buf, audio_buf_size);
 
-         struct ffemu_audio_data aud = {0};
-         aud.frames = handle->audio.codec->frame_size;
-         aud.data = audio_buf;
+            struct ffemu_audio_data aud = {0};
+            aud.frames = handle->audio.codec->frame_size;
+            aud.data = audio_buf;
 
-         ffemu_push_audio_thread(handle, &aud, true);
-         did_work = true;
+            ffemu_push_audio_thread(handle, &aud, true);
+            did_work = true;
+         }
       }
 
       struct ffemu_video_data attr_buf;
@@ -1182,7 +1195,8 @@ static void ffemu_flush_buffers(ffemu_t *handle)
    } while (did_work);
 
    // Flush out last audio.
-   ffemu_flush_audio(handle, audio_buf, audio_buf_size);
+   if (handle->config.audio_enable)
+      ffemu_flush_audio(handle, audio_buf, audio_buf_size);
 
    // Flush out last video.
    ffemu_flush_video(handle);
@@ -1214,8 +1228,8 @@ static void ffemu_thread(void *data)
    void *video_buf = av_malloc(2 * ff->params.fb_width * ff->params.fb_height * ff->video.pix_size);
    assert(video_buf);
 
-   size_t audio_buf_size = ff->audio.codec->frame_size * ff->params.channels * sizeof(int16_t);
-   void *audio_buf = av_malloc(audio_buf_size);
+   size_t audio_buf_size = ff->config.audio_enable ? (ff->audio.codec->frame_size * ff->params.channels * sizeof(int16_t)) : 0;
+   void *audio_buf = audio_buf_size ? av_malloc(audio_buf_size) : NULL;
 
    while (ff->alive)
    {
@@ -1228,8 +1242,9 @@ static void ffemu_thread(void *data)
       if (fifo_read_avail(ff->attr_fifo) >= sizeof(attr_buf))
          avail_video = true;
 
-      if (fifo_read_avail(ff->audio_fifo) >= audio_buf_size)
-         avail_audio = true;
+      if (ff->config.audio_enable)
+         if (fifo_read_avail(ff->audio_fifo) >= audio_buf_size)
+            avail_audio = true;
       slock_unlock(ff->lock);
 
       if (!avail_video && !avail_audio)
