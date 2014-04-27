@@ -1327,8 +1327,8 @@ static void gl_pbo_async_readback(void *data)
    glBindBuffer(GL_PIXEL_PACK_BUFFER, gl->pbo_readback[gl->pbo_readback_index++]);
    gl->pbo_readback_index &= 3;
 
-   // If set, we 3 rendered frames already buffered up.
-   gl->pbo_readback_valid |= gl->pbo_readback_index == 0;
+   // 4 frames back, we can readback.
+   gl->pbo_readback_valid[gl->pbo_readback_index] = true;
 
    glPixelStorei(GL_PACK_ROW_LENGTH, 0);
    glPixelStorei(GL_PACK_ALIGNMENT, get_alignment(gl->vp.width * sizeof(uint32_t)));
@@ -1557,7 +1557,8 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
             GL_RGBA, GL_UNSIGNED_BYTE, gl->readback_buffer_screenshot);
    }
 #ifdef HAVE_GL_ASYNC_READBACK
-   else if (gl->pbo_readback_enable)
+   // Don't readback if we're in RGUI.
+   else if (gl->pbo_readback_enable && !gl->rgui_texture_enable)
       gl_pbo_async_readback(gl);
 #endif
 #endif
@@ -2464,12 +2465,14 @@ static bool gl_read_viewport(void *data, uint8_t *buffer)
 #ifdef HAVE_GL_ASYNC_READBACK
    if (gl->pbo_readback_enable)
    {
-      if (!gl->pbo_readback_valid) // We haven't buffered up enough frames yet, come back later.
+      // Don't readback if we're in RGUI.
+      if (!gl->pbo_readback_valid[gl->pbo_readback_index]) // We haven't buffered up enough frames yet, come back later.
       {
          context_bind_hw_render(gl, true);
          return false;
       }
 
+      gl->pbo_readback_valid[gl->pbo_readback_index] = false;
       glBindBuffer(GL_PIXEL_PACK_BUFFER, gl->pbo_readback[gl->pbo_readback_index]);
 #ifdef HAVE_OPENGLES3
       // Slower path, but should work on all implementations at least.

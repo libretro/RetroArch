@@ -247,8 +247,8 @@ typedef struct gl
 #ifdef HAVE_GL_ASYNC_READBACK
    // PBOs used for asynchronous viewport readbacks.
    GLuint pbo_readback[4];
+   bool pbo_readback_valid[4];
    bool pbo_readback_enable;
-   bool pbo_readback_valid;
    unsigned pbo_readback_index;
    struct scaler_ctx pbo_readback_scaler;
 #endif
