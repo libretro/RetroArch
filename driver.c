@@ -967,7 +967,7 @@ void uninit_drivers(void)
 }
 
 #ifdef HAVE_DYLIB
-static void init_dsp_plugin(void)
+void rarch_init_dsp_filter(void)
 {
    if (!(*g_settings.audio.dsp_plugin))
       return;
@@ -1023,13 +1023,15 @@ error:
    g_extern.audio_data.dsp_lib = NULL;
 }
 
-static void deinit_dsp_plugin(void)
+void rarch_deinit_dsp_filter(void)
 {
    if (g_extern.audio_data.dsp_lib && g_extern.audio_data.dsp_plugin)
    {
       g_extern.audio_data.dsp_plugin->free(g_extern.audio_data.dsp_handle);
       dylib_close(g_extern.audio_data.dsp_lib);
    }
+   g_extern.audio_data.dsp_handle = NULL;
+   g_extern.audio_data.dsp_plugin = NULL;
 }
 #endif
 
@@ -1130,7 +1132,7 @@ void init_audio(void)
    }
 
 #ifdef HAVE_DYLIB
-   init_dsp_plugin();
+   rarch_init_dsp_filter();
 #endif
 
    g_extern.measure_data.buffer_free_samples_count = 0;
@@ -1275,7 +1277,7 @@ void uninit_audio(void)
    g_extern.audio_data.outsamples = NULL;
 
 #ifdef HAVE_DYLIB
-   deinit_dsp_plugin();
+   rarch_deinit_dsp_filter();
 #endif
 
    compute_audio_buffer_statistics();

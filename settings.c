@@ -395,6 +395,8 @@ void config_set_defaults(void)
    *g_settings.video.shader_dir = '\0';
    *g_settings.video.filter_dir = '\0';
    *g_settings.video.filter_path = '\0';
+   *g_settings.audio.filter_dir = '\0';
+   *g_settings.audio.dsp_plugin = '\0';
 #ifdef HAVE_MENU
    *g_settings.rgui_content_directory = '\0';
    *g_settings.rgui_config_directory = '\0';
@@ -447,6 +449,9 @@ void config_set_defaults(void)
 
    if (default_filter_dir)
       fill_pathname_expand_special(g_settings.video.filter_dir, default_filter_dir, sizeof(g_settings.video.filter_dir));
+
+   if (default_dsp_filter_dir)
+      fill_pathname_expand_special(g_settings.audio.filter_dir, default_dsp_filter_dir, sizeof(g_settings.audio.filter_dir));
 
    if (default_libretro_path && !g_extern.has_set_libretro)
       fill_pathname_expand_special(g_settings.libretro, default_libretro_path, sizeof(g_settings.libretro));
@@ -889,6 +894,10 @@ bool config_load_file(const char *path, bool set_defaults)
    if (!strcmp(g_settings.video.filter_dir, "default"))
       *g_settings.video.filter_dir = '\0';
 
+   CONFIG_GET_PATH(audio.filter_dir, "audio_filter_dir");
+   if (!strcmp(g_settings.audio.filter_dir, "default"))
+      *g_settings.audio.filter_dir = '\0';
+
    CONFIG_GET_FLOAT(input.axis_threshold, "input_axis_threshold");
    CONFIG_GET_BOOL(input.netplay_client_swap_input, "netplay_client_swap_input");
 
@@ -1309,6 +1318,7 @@ bool config_save_file(const char *path)
    config_set_path(conf, "screenshot_directory", *g_settings.screenshot_directory ? g_settings.screenshot_directory : "default");
    config_set_int(conf, "aspect_ratio_index", g_settings.video.aspect_ratio_idx);
    config_set_string(conf, "audio_device", g_settings.audio.device);
+   config_set_string(conf, "audio_dsp_plugin", g_settings.audio.dsp_plugin);
 #ifdef HAVE_CAMERA
    config_set_string(conf, "camera_device", g_settings.camera.device);
    config_set_bool(conf, "camera_allow", g_settings.camera.allow);
@@ -1334,6 +1344,7 @@ bool config_save_file(const char *path)
    config_set_path(conf, "video_shader_dir", *g_settings.video.shader_dir ? g_settings.video.shader_dir : "default");
    config_set_path(conf, "video_filter", g_settings.video.filter_path);
    config_set_path(conf, "video_filter_dir", *g_settings.video.filter_dir ? g_settings.video.filter_dir : "default");
+   config_set_path(conf, "audio_filter_dir", *g_settings.audio.filter_dir ? g_settings.audio.filter_dir : "default");
 
    config_set_path(conf, "content_directory", *g_settings.content_directory ? g_settings.content_directory : "default");
 #ifdef HAVE_MENU

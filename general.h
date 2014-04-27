@@ -234,6 +234,7 @@ struct settings
       bool sync;
 
       char dsp_plugin[PATH_MAX];
+      char filter_dir[PATH_MAX];
 
       bool rate_control;
       float rate_control_delta;

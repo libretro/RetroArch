@@ -343,7 +343,8 @@ static const char *default_shader_dir = ":/shaders_glsl/";
 static const char *default_shader_dir = NULL;
 #endif
 
-static const char *default_filter_dir = NULL;
+static const char *default_filter_dir     = NULL;
+static const char *default_dsp_filter_dir = NULL;
 
 #if defined(__QNX__)
 static const char *default_config_path = "app/native/retroarch.cfg";

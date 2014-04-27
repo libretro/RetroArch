@@ -300,7 +300,8 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
          file_list_push(rgui->selection_buf, "Core Directory", RGUI_LIBRETRO_DIR_PATH, 0);
          file_list_push(rgui->selection_buf, "Core Info Directory", RGUI_LIBRETRO_INFO_DIR_PATH, 0);
 #ifdef HAVE_DYLIB
-         file_list_push(rgui->selection_buf, "Filter Directory", RGUI_FILTER_DIR_PATH, 0);
+         file_list_push(rgui->selection_buf, "Video Filter Directory", RGUI_FILTER_DIR_PATH, 0);
+         file_list_push(rgui->selection_buf, "DSP Filter Directory", RGUI_DSP_FILTER_DIR_PATH, 0);
 #endif
 #ifdef HAVE_SHADER_MANAGER
          file_list_push(rgui->selection_buf, "Shader Directory", RGUI_SHADER_DIR_PATH, 0);
@@ -336,6 +337,9 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
          break;
       case RGUI_SETTINGS_AUDIO_OPTIONS:
          file_list_clear(rgui->selection_buf);
+#ifdef HAVE_DYLIB
+         file_list_push(rgui->selection_buf, "DSP Filter", RGUI_SETTINGS_AUDIO_DSP_FILTER, 0);
+#endif
          file_list_push(rgui->selection_buf, "Mute Audio", RGUI_SETTINGS_AUDIO_MUTE, 0);
          file_list_push(rgui->selection_buf, "Rate Control Delta", RGUI_SETTINGS_AUDIO_CONTROL_RATE_DELTA, 0);
 #ifdef __CELLOS_LV2__
@@ -526,6 +530,7 @@ static unsigned menu_common_type_is(unsigned type)
    type_found = type == RGUI_BROWSER_DIR_PATH ||
       type == RGUI_SHADER_DIR_PATH ||
       type == RGUI_FILTER_DIR_PATH ||
+      type == RGUI_DSP_FILTER_DIR_PATH ||
       type == RGUI_SAVESTATE_DIR_PATH ||
       type == RGUI_LIBRETRO_DIR_PATH ||
       type == RGUI_LIBRETRO_INFO_DIR_PATH ||
@@ -661,6 +666,7 @@ static int menu_settings_iterate(void *data, unsigned action)
             menu_common_type_is(menu_type) == RGUI_SETTINGS_SHADER_OPTIONS||
             menu_common_type_is(menu_type) == RGUI_FILE_DIRECTORY ||
             menu_type == RGUI_SETTINGS_VIDEO_SOFTFILTER ||
+            menu_type == RGUI_SETTINGS_AUDIO_DSP_FILTER ||
             menu_type == RGUI_SETTINGS_OVERLAY_PRESET ||
             menu_type == RGUI_SETTINGS_CORE ||
             menu_type == RGUI_SETTINGS_CONFIG ||
@@ -1000,6 +1006,8 @@ static void menu_parse_and_resolve(void *data, unsigned menu_type)
                exts = "cg|glsl";
             else if (menu_type == RGUI_SETTINGS_VIDEO_SOFTFILTER)
                exts = EXT_EXECUTABLES;
+            else if (menu_type == RGUI_SETTINGS_AUDIO_DSP_FILTER)
+               exts = EXT_EXECUTABLES;
             else if (menu_type == RGUI_SETTINGS_OVERLAY_PRESET)
                exts = "cfg";
             else if (menu_common_type_is(menu_type) == RGUI_FILE_DIRECTORY)
@@ -1291,6 +1299,7 @@ static int menu_common_iterate(void *data, unsigned action)
                menu_common_type_is(type) == RGUI_FILE_DIRECTORY ||
                type == RGUI_SETTINGS_OVERLAY_PRESET ||
                type == RGUI_SETTINGS_VIDEO_SOFTFILTER ||
+               type == RGUI_SETTINGS_AUDIO_DSP_FILTER ||
                type == RGUI_SETTINGS_CORE ||
                type == RGUI_SETTINGS_CONFIG ||
                type == RGUI_SETTINGS_DISK_APPEND ||
@@ -1446,6 +1455,15 @@ static int menu_common_iterate(void *data, unsigned action)
 #endif
                menu_flush_stack_type(rgui, RGUI_SETTINGS_VIDEO_OPTIONS);
             }
+            else if (menu_type == RGUI_SETTINGS_AUDIO_DSP_FILTER)
+            {
+               fill_pathname_join(g_settings.audio.dsp_plugin, dir, path, sizeof(g_settings.audio.dsp_plugin));
+#ifdef HAVE_DYLIB
+               rarch_deinit_dsp_filter();
+               rarch_init_dsp_filter();
+#endif
+               menu_flush_stack_type(rgui, RGUI_SETTINGS_AUDIO_OPTIONS);
+            }
             else if (menu_type == RGUI_SAVESTATE_DIR_PATH)
             {
                strlcpy(g_extern.savestate_dir, dir, sizeof(g_extern.savestate_dir));
@@ -1478,6 +1496,11 @@ static int menu_common_iterate(void *data, unsigned action)
             else if (menu_type == RGUI_FILTER_DIR_PATH)
             {
                strlcpy(g_settings.video.filter_dir, dir, sizeof(g_settings.video.filter_dir));
+               menu_flush_stack_type(rgui, RGUI_SETTINGS_PATH_OPTIONS);
+            }
+            else if (menu_type == RGUI_DSP_FILTER_DIR_PATH)
+            {
+               strlcpy(g_settings.audio.filter_dir, dir, sizeof(g_settings.audio.filter_dir));
                menu_flush_stack_type(rgui, RGUI_SETTINGS_PATH_OPTIONS);
             }
             else if (menu_type == RGUI_SYSTEM_DIR_PATH)
@@ -1556,6 +1579,7 @@ static int menu_common_iterate(void *data, unsigned action)
             menu_common_type_is(menu_type) == RGUI_FILE_DIRECTORY ||
             menu_type == RGUI_SETTINGS_OVERLAY_PRESET ||
             menu_type == RGUI_SETTINGS_VIDEO_SOFTFILTER ||
+            menu_type == RGUI_SETTINGS_AUDIO_DSP_FILTER ||
             menu_type == RGUI_SETTINGS_DEFERRED_CORE ||
             menu_type == RGUI_SETTINGS_CORE ||
             menu_type == RGUI_SETTINGS_CONFIG ||
@@ -1831,9 +1855,11 @@ static unsigned menu_common_shader_manager_get_type(void *data)
 {
    unsigned i, type;
    (void)data;
-   (void)i;
 
+   i = 0;
    type = 0;
+
+   (void)i;
 
 #ifdef HAVE_SHADER_MANAGER
    const struct gfx_shader *shader = (const struct gfx_shader*)data;
@@ -2496,6 +2522,23 @@ static int menu_common_setting_set(void *data, unsigned setting, unsigned action
                break;
          }
          break;
+      case RGUI_SETTINGS_AUDIO_DSP_FILTER:
+         switch (action)
+         {
+            case RGUI_ACTION_OK:
+               file_list_push(rgui->menu_stack, g_settings.audio.filter_dir, setting, rgui->selection_ptr);
+               menu_clear_navigation(rgui);
+               rgui->need_refresh = true;
+               break;
+            case RGUI_ACTION_START:
+               strlcpy(g_settings.audio.dsp_plugin, "", sizeof(g_settings.audio.dsp_plugin));
+#ifdef HAVE_DYLIB
+               rarch_deinit_dsp_filter();
+               rarch_init_dsp_filter();
+#endif
+               break;
+         }
+         break;
 #ifdef HAVE_OVERLAY
       case RGUI_SETTINGS_OVERLAY_OPACITY:
          {
@@ -2933,6 +2976,10 @@ static int menu_common_setting_set(void *data, unsigned setting, unsigned action
       case RGUI_FILTER_DIR_PATH:
          if (action == RGUI_ACTION_START)
             *g_settings.video.filter_dir = '\0';
+         break;
+      case RGUI_DSP_FILTER_DIR_PATH:
+         if (action == RGUI_ACTION_START)
+            *g_settings.audio.filter_dir = '\0';
          break;
       case RGUI_SHADER_DIR_PATH:
          if (action == RGUI_ACTION_START)
@@ -3919,6 +3966,9 @@ static void menu_common_setting_set_label(char *type_str, size_t type_str_size, 
       case RGUI_FILTER_DIR_PATH:
          strlcpy(type_str, *g_settings.video.filter_dir ? g_settings.video.filter_dir : "<default>", type_str_size);
          break;
+      case RGUI_DSP_FILTER_DIR_PATH:
+         strlcpy(type_str, *g_settings.audio.filter_dir ? g_settings.audio.filter_dir : "<default>", type_str_size);
+         break;
       case RGUI_SHADER_DIR_PATH:
          strlcpy(type_str, *g_settings.video.shader_dir ? g_settings.video.shader_dir : "<default>", type_str_size);
          break;
@@ -3973,11 +4023,14 @@ static void menu_common_setting_set_label(char *type_str, size_t type_str_size, 
          strlcpy(type_str, "...", type_str_size);
          break;
       case RGUI_SETTINGS_VIDEO_SOFTFILTER:
-      {
-         const char *filter_name = rarch_softfilter_get_name(g_extern.filter.filter);
-         strlcpy(type_str, filter_name ? filter_name : "N/A", type_str_size);
+         {
+            const char *filter_name = rarch_softfilter_get_name(g_extern.filter.filter);
+            strlcpy(type_str, filter_name ? filter_name : "N/A", type_str_size);
+         }
          break;
-      }
+      case RGUI_SETTINGS_AUDIO_DSP_FILTER:
+         strlcpy(type_str, *g_settings.audio.dsp_plugin ? g_settings.audio.dsp_plugin : "N/A", type_str_size);
+         break;
 #ifdef HAVE_OVERLAY
       case RGUI_SETTINGS_OVERLAY_PRESET:
          strlcpy(type_str, path_basename(g_settings.input.overlay), type_str_size);

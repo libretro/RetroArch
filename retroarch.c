@@ -3060,7 +3060,7 @@ bool rarch_main_iterate(void)
 
 #ifdef HAVE_DYLIB
    // DSP plugin GUI events.
-   if (g_extern.audio_data.dsp_handle && g_extern.audio_data.dsp_plugin->events)
+   if (g_extern.audio_data.dsp_handle && g_extern.audio_data.dsp_plugin && g_extern.audio_data.dsp_plugin->events)
       g_extern.audio_data.dsp_plugin->events(g_extern.audio_data.dsp_handle);
 #endif
 

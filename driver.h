@@ -584,6 +584,8 @@ float driver_sensor_get_input(unsigned port, unsigned action);
 #ifdef HAVE_DYLIB
 void rarch_deinit_filter(void);
 void rarch_init_filter(enum retro_pixel_format);
+void rarch_init_dsp_filter(void);
+void rarch_deinit_dsp_filter(void);
 #endif
 
 // Used by RETRO_ENVIRONMENT_GET_CAMERA_INTERFACE
