@@ -35,6 +35,13 @@
 #define ECHO_MS 150
 #define AMP 0.0
 
+#ifdef RARCH_INTERNAL
+#define rarch_dsp_init    echo_sse_dsp_init
+#define rarch_dsp_process echo_sse_dsp_process
+#define rarch_dsp_free    echo_sse_dsp_free
+#define rarch_dsp_config  echo_sse_dsp_config
+#endif
+
 struct EchoFilter
 {
    float echo_buffer[4][0x10000] ALIGNED;
@@ -195,3 +202,9 @@ RARCH_API_EXPORT const rarch_dsp_plugin_t* RARCH_API_CALLTYPE
    return &dsp_plug;
 }
 
+#ifdef RARCH_INTERNAL
+#undef rarch_dsp_init
+#undef rarch_dsp_process
+#undef rarch_dsp_free
+#undef rarch_dsp_config
+#endif

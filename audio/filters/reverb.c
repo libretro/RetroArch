@@ -51,6 +51,13 @@
 #define ALLPASSTUNINGL3	341
 #define ALLPASSTUNINGL4	225
 
+#ifdef RARCH_INTERNAL
+#define rarch_dsp_init    reverb_dsp_init
+#define rarch_dsp_process reverb_dsp_process
+#define rarch_dsp_free    reverb_dsp_free
+#define rarch_dsp_config  reverb_dsp_config
+#endif
+
 struct comb
 {
 	float feedback;
@@ -385,3 +392,10 @@ RARCH_API_EXPORT const rarch_dsp_plugin_t* RARCH_API_CALLTYPE rarch_dsp_plugin_i
 {
    return &dsp_plug;
 }
+
+#ifdef RARCH_INTERNAL
+#undef rarch_dsp_init
+#undef rarch_dsp_process
+#undef rarch_dsp_free
+#undef rarch_dsp_config
+#endif

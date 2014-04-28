@@ -33,6 +33,13 @@
 
 #define sqr(a) ((a) * (a))
 
+#ifdef RARCH_INTERNAL
+#define rarch_dsp_init    iir_dsp_init
+#define rarch_dsp_process iir_dsp_process
+#define rarch_dsp_free    iir_dsp_free
+#define rarch_dsp_config  iir_dsp_config
+#endif
+
 struct iir_filter
 {
 #ifdef __SSE2__
@@ -379,3 +386,10 @@ RARCH_API_EXPORT const rarch_dsp_plugin_t* RARCH_API_CALLTYPE rarch_dsp_plugin_i
 {
    return &dsp_plug;
 }
+
+#ifdef RARCH_INTERNAL
+#undef rarch_dsp_init
+#undef rarch_dsp_process
+#undef rarch_dsp_free
+#undef rarch_dsp_config
+#endif

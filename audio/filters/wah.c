@@ -30,6 +30,13 @@
 #define LFOSKIPSAMPLES 30
 #endif
 
+#ifdef RARCH_INTERNAL
+#define rarch_dsp_init    wah_dsp_init
+#define rarch_dsp_process wah_dsp_process
+#define rarch_dsp_free    wah_dsp_free
+#define rarch_dsp_config  wah_dsp_config
+#endif
+
 struct wahwah_filter
 {
    float phase;
@@ -174,3 +181,10 @@ RARCH_API_EXPORT const rarch_dsp_plugin_t* RARCH_API_CALLTYPE rarch_dsp_plugin_i
 {
    return &dsp_plug;
 }
+
+#ifdef RARCH_INTERNAL
+#undef rarch_dsp_init
+#undef rarch_dsp_process
+#undef rarch_dsp_free
+#undef rarch_dsp_config
+#endif

@@ -38,6 +38,13 @@
 #define EQ_FILT_SIZE (EQ_COEFF_SIZE * 2)
 #endif
 
+#ifdef RARCH_INTERNAL
+#define rarch_dsp_init    eq_dsp_init
+#define rarch_dsp_process eq_dsp_process
+#define rarch_dsp_free    eq_dsp_free
+#define rarch_dsp_config  eq_dsp_config
+#endif
+
 typedef struct dsp_eq_state dsp_eq_state_t;
 
 static complex float phase_lut[2 * EQ_FILT_SIZE + 1];
@@ -411,3 +418,9 @@ RARCH_API_EXPORT const rarch_dsp_plugin_t* RARCH_API_CALLTYPE rarch_dsp_plugin_i
    return &dsp_plug;
 }
 
+#ifdef RARCH_INTERNAL
+#undef rarch_dsp_init
+#undef rarch_dsp_process
+#undef rarch_dsp_free
+#undef rarch_dsp_config
+#endif
