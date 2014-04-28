@@ -486,7 +486,9 @@ struct global
       size_t rewind_ptr;
       size_t rewind_size;
 
+#ifdef HAVE_DYLIB
       dylib_t dsp_lib;
+#endif
       const rarch_dsp_plugin_t *dsp_plugin;
       void *dsp_handle;
 
