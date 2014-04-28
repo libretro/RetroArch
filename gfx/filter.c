@@ -320,7 +320,8 @@ void rarch_softfilter_get_output_size(rarch_softfilter_t *filt,
       unsigned *out_width, unsigned *out_height,
       unsigned width, unsigned height)
 {
-   filt->impl->query_output_size(filt->impl_data, out_width, out_height, width, height);
+   if (filt && filt->impl && filt->impl->query_output_size)
+      filt->impl->query_output_size(filt->impl_data, out_width, out_height, width, height);
 }
 
 enum retro_pixel_format rarch_softfilter_get_output_format(rarch_softfilter_t *filt)
@@ -333,8 +334,10 @@ void rarch_softfilter_process(rarch_softfilter_t *filt,
       const void *input, unsigned width, unsigned height, size_t input_stride)
 {
    unsigned i;
-   filt->impl->get_work_packets(filt->impl_data, filt->packets,
-         output, output_stride, input, width, height, input_stride);
+
+   if (filt && filt->impl && filt->impl->get_work_packets)
+      filt->impl->get_work_packets(filt->impl_data, filt->packets,
+            output, output_stride, input, width, height, input_stride);
    
 #ifdef HAVE_THREADS
    // Fire off workers
