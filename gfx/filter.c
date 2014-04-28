@@ -84,28 +84,39 @@ struct rarch_softfilter
 };
 
 #ifdef HAVE_FILTERS_BUILTIN
-static softfilter_get_implementation_t softfilter_get_implementation_from_idx(unsigned idx)
-{
-   switch (idx)
-   {
-      case SOFTFILTER_TWOXBR:
-         return twoxbr_get_implementation;
-      case SOFTFILTER_DARKEN:
-         return darken_get_implementation;
-      case SOFTFILTER_TWOXSAI:
-         return twoxsai_get_implementation;
-      case SOFTFILTER_SUPERTWOXSAI:
-         return supertwoxsai_get_implementation;
-      case SOFTFILTER_SUPEREAGLE:
-         return supereagle_get_implementation;
-      case SOFTFILTER_EPX:
-         return epx_get_implementation;
-      case SOFTFILTER_SCALE2X:
-         return scale2x_get_implementation;
-   }
+extern const struct softfilter_implementation *twoxbr_get_implementation(softfilter_simd_mask_t simd);
+extern const struct softfilter_implementation *epx_get_implementation(softfilter_simd_mask_t simd);
+extern const struct softfilter_implementation *twoxsai_get_implementation(softfilter_simd_mask_t simd);
+extern const struct softfilter_implementation *supereagle_get_implementation(softfilter_simd_mask_t simd);
+extern const struct softfilter_implementation *supertwoxsai_get_implementation(softfilter_simd_mask_t simd);
+extern const struct softfilter_implementation *twoxbr_get_implementation(softfilter_simd_mask_t simd);
+extern const struct softfilter_implementation *darken_get_implementation(softfilter_simd_mask_t simd);
+extern const struct softfilter_implementation *scale2x_get_implementation(softfilter_simd_mask_t simd);
 
+static const struct softfilter_implementation *(*softfilter_drivers[]) (softfilter_simd_mask_t) =
+{
+   NULL,
+   &twoxbr_get_implementation,
+   &darken_get_implementation,
+   &twoxsai_get_implementation,
+   &supertwoxsai_get_implementation,
+   &supereagle_get_implementation,
+   &epx_get_implementation,
+   &scale2x_get_implementation,
+};
+
+unsigned softfilter_get_last_idx(void)
+{
+   return sizeof(softfilter_drivers) / sizeof(softfilter_drivers[0]);
+}
+
+static softfilter_get_implementation_t softfilter_get_implementation_from_idx(unsigned i)
+{
+   if (i < softfilter_get_last_idx())
+      return softfilter_drivers[i];
    return NULL;
 }
+
 #endif
 
 const char *rarch_softfilter_get_name(rarch_softfilter_t *filt)
@@ -113,7 +124,7 @@ const char *rarch_softfilter_get_name(rarch_softfilter_t *filt)
 #ifdef HAVE_FILTERS_BUILTIN
    unsigned cpu_features;
    const struct softfilter_implementation *impl;
-   softfilter_get_implementation_t cb = softfilter_get_implementation_from_idx(g_settings.video.filter_idx);
+   softfilter_get_implementation_t cb = (softfilter_get_implementation_t)softfilter_get_implementation_from_idx(g_settings.video.filter_idx);
    if (cb)
    {
       cpu_features = rarch_get_cpu_features();
@@ -147,7 +158,7 @@ rarch_softfilter_t *rarch_softfilter_new(const char *filter_path,
       return NULL;
 
 #if defined(HAVE_FILTERS_BUILTIN)
-   cb = softfilter_get_implementation_from_idx(g_settings.video.filter_idx);
+   cb = (softfilter_get_implementation_t)softfilter_get_implementation_from_idx(g_settings.video.filter_idx);
 #elif defined(HAVE_DYLIB)
    filt->lib = dylib_load(filter_path);
    if (!filt->lib)

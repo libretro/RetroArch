@@ -2497,7 +2497,7 @@ static int menu_common_setting_set(void *data, unsigned setting, unsigned action
                   g_settings.video.filter_idx--;
                break;
             case RGUI_ACTION_RIGHT:
-               if ((g_settings.video.filter_idx + 1) != SOFTFILTER_LAST)
+               if ((g_settings.video.filter_idx + 1) != softfilter_get_last_idx())
                   g_settings.video.filter_idx++;
                break;
 #endif
@@ -2512,7 +2512,7 @@ static int menu_common_setting_set(void *data, unsigned setting, unsigned action
                break;
             case RGUI_ACTION_START:
 #if defined(HAVE_FILTERS_BUILTIN)
-               g_settings.video.filter_idx = SOFTFILTER_NONE;
+               g_settings.video.filter_idx = 0;
 #else
                strlcpy(g_settings.video.filter_path, "", sizeof(g_settings.video.filter_path));
 #endif

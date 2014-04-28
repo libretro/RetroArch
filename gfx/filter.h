@@ -46,29 +46,5 @@ void rarch_softfilter_process(rarch_softfilter_t *filt,
 
 const char *rarch_softfilter_get_name(rarch_softfilter_t *filt);
 
-enum
-{
-   SOFTFILTER_NONE = 0,
-   SOFTFILTER_TWOXBR,
-   SOFTFILTER_DARKEN,
-   SOFTFILTER_EPX,
-   SOFTFILTER_TWOXSAI,
-   SOFTFILTER_SUPERTWOXSAI,
-   SOFTFILTER_SUPEREAGLE,
-   SOFTFILTER_SCALE2X,
-   SOFTFILTER_LAST,
-};
-
-#ifdef HAVE_FILTERS_BUILTIN
-const struct softfilter_implementation *twoxbr_get_implementation(softfilter_simd_mask_t simd);
-const struct softfilter_implementation *epx_get_implementation(softfilter_simd_mask_t simd);
-const struct softfilter_implementation *twoxsai_get_implementation(softfilter_simd_mask_t simd);
-const struct softfilter_implementation *supereagle_get_implementation(softfilter_simd_mask_t simd);
-const struct softfilter_implementation *supertwoxsai_get_implementation(softfilter_simd_mask_t simd);
-const struct softfilter_implementation *twoxbr_get_implementation(softfilter_simd_mask_t simd);
-const struct softfilter_implementation *darken_get_implementation(softfilter_simd_mask_t simd);
-const struct softfilter_implementation *scale2x_get_implementation(softfilter_simd_mask_t simd);
-#endif
-
 #endif
 
