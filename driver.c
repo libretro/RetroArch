@@ -966,14 +966,16 @@ void uninit_drivers(void)
    driver.input_data_own  = false;
 }
 
-#ifdef HAVE_DYLIB
 void rarch_init_dsp_filter(void)
 {
+   const rarch_dsp_plugin_t* (RARCH_API_CALLTYPE *plugin_init)(void);
    if (!(*g_settings.audio.dsp_plugin))
       return;
 
    rarch_dsp_info_t info = {0};
+   plugin_init = NULL;
 
+#ifdef HAVE_DYLIB
    g_extern.audio_data.dsp_lib = dylib_load(g_settings.audio.dsp_plugin);
    if (!g_extern.audio_data.dsp_lib)
    {
@@ -981,8 +983,8 @@ void rarch_init_dsp_filter(void)
       return;
    }
 
-   const rarch_dsp_plugin_t* (RARCH_API_CALLTYPE *plugin_init)(void) = 
-      (const rarch_dsp_plugin_t *(RARCH_API_CALLTYPE*)(void))dylib_proc(g_extern.audio_data.dsp_lib, "rarch_dsp_plugin_init");
+    plugin_init = (const rarch_dsp_plugin_t *(RARCH_API_CALLTYPE*)(void))dylib_proc(g_extern.audio_data.dsp_lib, "rarch_dsp_plugin_init");
+#endif
 
    if (!plugin_init)
    {
@@ -1017,22 +1019,25 @@ void rarch_init_dsp_filter(void)
    return;
 
 error:
+#ifdef HAVE_DYLIB
    if (g_extern.audio_data.dsp_lib)
       dylib_close(g_extern.audio_data.dsp_lib);
-   g_extern.audio_data.dsp_plugin = NULL;
    g_extern.audio_data.dsp_lib = NULL;
+#endif
+   g_extern.audio_data.dsp_plugin = NULL;
 }
 
 void rarch_deinit_dsp_filter(void)
 {
    if (g_extern.audio_data.dsp_plugin && g_extern.audio_data.dsp_plugin->free)
       g_extern.audio_data.dsp_plugin->free(g_extern.audio_data.dsp_handle);
+#ifdef HAVE_DYLIB
    if (g_extern.audio_data.dsp_lib)
       dylib_close(g_extern.audio_data.dsp_lib);
+#endif
    g_extern.audio_data.dsp_handle = NULL;
    g_extern.audio_data.dsp_plugin = NULL;
 }
-#endif
 
 void init_audio(void)
 {

@@ -386,7 +386,6 @@ static bool audio_flush(const int16_t *data, size_t samples)
          g_extern.audio_data.volume_gain);
    RARCH_PERFORMANCE_STOP(audio_convert_s16);
 
-#if defined(HAVE_DYLIB)
    rarch_dsp_output_t dsp_output = {0};
    rarch_dsp_input_t dsp_input   = {0};
    dsp_input.samples             = g_extern.audio_data.data;
@@ -397,10 +396,6 @@ static bool audio_flush(const int16_t *data, size_t samples)
 
    src_data.data_in      = dsp_output.samples ? dsp_output.samples : g_extern.audio_data.data;
    src_data.input_frames = dsp_output.samples ? dsp_output.frames : (samples >> 1);
-#else
-   src_data.data_in      = g_extern.audio_data.data;
-   src_data.input_frames = samples >> 1;
-#endif
 
    src_data.data_out = g_extern.audio_data.outsamples;
 
@@ -2566,7 +2561,6 @@ static void check_screenshot(void)
 }
 #endif
 
-#ifdef HAVE_DYLIB
 static void check_dsp_config(void)
 {
    if (!g_extern.audio_data.dsp_plugin || !g_extern.audio_data.dsp_plugin->config)
@@ -2579,7 +2573,6 @@ static void check_dsp_config(void)
 
    old_pressed = pressed;
 }
-#endif
 
 static void check_mute(void)
 {
@@ -2758,9 +2751,7 @@ static void do_state_checks(void)
       check_cheats();
       check_disk();
 
-#ifdef HAVE_DYLIB
       check_dsp_config();
-#endif
       check_reset();
 #ifdef HAVE_NETPLAY
    }

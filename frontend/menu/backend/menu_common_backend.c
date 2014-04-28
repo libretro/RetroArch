@@ -337,9 +337,7 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
          break;
       case RGUI_SETTINGS_AUDIO_OPTIONS:
          file_list_clear(rgui->selection_buf);
-#ifdef HAVE_DYLIB
          file_list_push(rgui->selection_buf, "DSP Filter", RGUI_SETTINGS_AUDIO_DSP_FILTER, 0);
-#endif
          file_list_push(rgui->selection_buf, "Mute Audio", RGUI_SETTINGS_AUDIO_MUTE, 0);
          file_list_push(rgui->selection_buf, "Rate Control Delta", RGUI_SETTINGS_AUDIO_CONTROL_RATE_DELTA, 0);
 #ifdef __CELLOS_LV2__
@@ -1457,11 +1455,11 @@ static int menu_common_iterate(void *data, unsigned action)
             }
             else if (menu_type == RGUI_SETTINGS_AUDIO_DSP_FILTER)
             {
-               fill_pathname_join(g_settings.audio.dsp_plugin, dir, path, sizeof(g_settings.audio.dsp_plugin));
 #ifdef HAVE_DYLIB
+               fill_pathname_join(g_settings.audio.dsp_plugin, dir, path, sizeof(g_settings.audio.dsp_plugin));
+#endif
                rarch_deinit_dsp_filter();
                rarch_init_dsp_filter();
-#endif
                menu_flush_stack_type(rgui, RGUI_SETTINGS_AUDIO_OPTIONS);
             }
             else if (menu_type == RGUI_SAVESTATE_DIR_PATH)
@@ -2531,11 +2529,11 @@ static int menu_common_setting_set(void *data, unsigned setting, unsigned action
                rgui->need_refresh = true;
                break;
             case RGUI_ACTION_START:
-               strlcpy(g_settings.audio.dsp_plugin, "", sizeof(g_settings.audio.dsp_plugin));
 #ifdef HAVE_DYLIB
+               strlcpy(g_settings.audio.dsp_plugin, "", sizeof(g_settings.audio.dsp_plugin));
+#endif
                rarch_deinit_dsp_filter();
                rarch_init_dsp_filter();
-#endif
                break;
          }
          break;
