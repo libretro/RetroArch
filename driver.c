@@ -1025,11 +1025,10 @@ error:
 
 void rarch_deinit_dsp_filter(void)
 {
-   if (g_extern.audio_data.dsp_lib && g_extern.audio_data.dsp_plugin)
-   {
+   if (g_extern.audio_data.dsp_plugin && g_extern.audio_data.dsp_plugin->free)
       g_extern.audio_data.dsp_plugin->free(g_extern.audio_data.dsp_handle);
+   if (g_extern.audio_data.dsp_lib)
       dylib_close(g_extern.audio_data.dsp_lib);
-   }
    g_extern.audio_data.dsp_handle = NULL;
    g_extern.audio_data.dsp_plugin = NULL;
 }
