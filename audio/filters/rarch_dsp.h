@@ -99,7 +99,7 @@ typedef struct rarch_dsp_plugin
    int api_version;
 
    // Signal plugin that it may open a configuring window or
-   // something similiar. The behavior of this function
+   // something similar. The behavior of this function
    // is thus plugin dependent. Implementing this is optional,
    // and can be set to NULL.
    void (*config)(void *data);
