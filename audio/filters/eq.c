@@ -356,7 +356,7 @@ static size_t equalizer_process(void *data, const float *in, unsigned frames)
    return written;
 }
 
-static void *dsp_init(const rarch_dsp_info_t *info)
+static void * rarch_dsp_init(const rarch_dsp_info_t *info)
 {
    const float bands[] = { 30, 80, 150, 250, 500, 800, 1000, 2000, 3000, 5000, 8000, 10000, 12000, 15000 };
    struct equalizer_filter_data *eq = (struct equalizer_filter_data*)calloc(1, sizeof(*eq));
@@ -370,7 +370,7 @@ static void *dsp_init(const rarch_dsp_info_t *info)
    return eq;
 }
 
-static void dsp_process(void *data, rarch_dsp_output_t *output,
+static void rarch_dsp_process(void *data, rarch_dsp_output_t *output,
       const rarch_dsp_input_t *input)
 {
    struct equalizer_filter_data *eq = (struct equalizer_filter_data*)data;
@@ -380,7 +380,7 @@ static void dsp_process(void *data, rarch_dsp_output_t *output,
    output->frames = out_frames;
 }
 
-static void dsp_free(void *data)
+static void rarch_dsp_free(void *data)
 {
    struct equalizer_filter_data *eq = (struct equalizer_filter_data*)data;
 
@@ -392,17 +392,17 @@ static void dsp_free(void *data)
    }
 }
 
-static void dsp_config(void *data)
+static void rarch_dsp_config(void *data)
 {
    (void)data;
 }
 
 const rarch_dsp_plugin_t dsp_plug = {
-   dsp_init,
-   dsp_process,
-   dsp_free,
+   rarch_dsp_init,
+   rarch_dsp_process,
+   rarch_dsp_free,
    RARCH_DSP_API_VERSION,
-   dsp_config,
+   rarch_dsp_config,
    "Equalizer"
 };
 

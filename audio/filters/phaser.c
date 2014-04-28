@@ -93,7 +93,7 @@ static float phaser_process(void *data, float in)
    return out;
 }
 
-static void* dsp_init(const rarch_dsp_info_t *info)
+static void * rarch_dsp_init(const rarch_dsp_info_t *info)
 {
    float freq, startphase, fb;
    int depth, stages, drywet;
@@ -130,7 +130,7 @@ static void* dsp_init(const rarch_dsp_info_t *info)
    return phaser;
 }
 
-static void dsp_process(void *data, rarch_dsp_output_t *output,
+static void rarch_dsp_process(void *data, rarch_dsp_output_t *output,
       const rarch_dsp_input_t *input)
 {
    int i, num_samples;
@@ -148,7 +148,7 @@ static void dsp_process(void *data, rarch_dsp_output_t *output,
 	output->frames = input->frames;
 }
 
-static void dsp_free(void *data)
+static void rarch_dsp_free(void *data)
 {
    struct phaser_filter_data *phaser = (struct phaser_filter_data*)data;
 
@@ -163,17 +163,17 @@ static void dsp_free(void *data)
    }
 }
 
-static void dsp_config(void *data)
+static void rarch_dsp_config(void *data)
 {
    (void)data;
 }
 
 const rarch_dsp_plugin_t dsp_plug = {
-	dsp_init,
-	dsp_process,
-	dsp_free,
+	rarch_dsp_init,
+	rarch_dsp_process,
+	rarch_dsp_free,
 	RARCH_DSP_API_VERSION,
-	dsp_config,
+	rarch_dsp_config,
 	"Phaser plugin"
 };
 
@@ -181,4 +181,3 @@ RARCH_API_EXPORT const rarch_dsp_plugin_t* RARCH_API_CALLTYPE rarch_dsp_plugin_i
 {
    return &dsp_plug;
 }
-

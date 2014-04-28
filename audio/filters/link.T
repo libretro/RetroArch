@@ -1,4 +1,4 @@
 {
-  global: dsp_*;
+  global: rarch_dsp_*;
   local: *;
 };

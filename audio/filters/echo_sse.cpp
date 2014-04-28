@@ -148,7 +148,7 @@ struct EchoFilter
    }
 };
 
-static void dsp_process(void *data, rarch_dsp_output_t *output,
+static void rarch_dsp_process(void *data, rarch_dsp_output_t *output,
       const rarch_dsp_input_t *input)
 {
    EchoFilter *echo = reinterpret_cast<EchoFilter*>(data);
@@ -157,12 +157,12 @@ static void dsp_process(void *data, rarch_dsp_output_t *output,
    output->frames = echo->Process(input->samples, input->frames);
 }
 
-static void dsp_free(void *data)
+static void rarch_dsp_free(void *data)
 {
    delete reinterpret_cast<EchoFilter*>(data);
 }
 
-static void *dsp_init(const rarch_dsp_info_t *info)
+static void * rarch_dsp_init(const rarch_dsp_info_t *info)
 {
    EchoFilter *echo = new EchoFilter;
 
@@ -176,18 +176,22 @@ static void *dsp_init(const rarch_dsp_info_t *info)
    return echo;
 }
 
-static void dsp_config(void *)
-{}
+static void rarch_dsp_config(void *)
+{
+}
 
 static const rarch_dsp_plugin_t dsp_plug = {
    dsp_init,
    dsp_process,
    dsp_free,
    RARCH_DSP_API_VERSION,
-   dsp_config,
+   rarch_dsp_config,
    "Echo (SSE2)"
 };
 
 RARCH_API_EXPORT const rarch_dsp_plugin_t* RARCH_API_CALLTYPE
-   rarch_dsp_plugin_init(void) { return &dsp_plug; }
+   rarch_dsp_plugin_init(void)
+{
+   return &dsp_plug;
+}
 

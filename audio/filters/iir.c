@@ -305,7 +305,7 @@ static float iir_process(void *data, float samp)
 }
 #endif
 
-static void* dsp_init(const rarch_dsp_info_t *info)
+static void * rarch_dsp_init(const rarch_dsp_info_t *info)
 {
    struct iir_filter_data *iir = (struct iir_filter_data*)calloc(1, sizeof(*iir));
 
@@ -326,7 +326,7 @@ static void* dsp_init(const rarch_dsp_info_t *info)
    return iir;
 }
 
-static void dsp_process(void *data, rarch_dsp_output_t *output,
+static void rarch_dsp_process(void *data, rarch_dsp_output_t *output,
       const rarch_dsp_input_t *input)
 {
    struct iir_filter_data *iir = (struct iir_filter_data*)data;
@@ -349,7 +349,7 @@ static void dsp_process(void *data, rarch_dsp_output_t *output,
 	output->frames = input->frames;
 }
 
-static void dsp_free(void *data)
+static void rarch_dsp_free(void *data)
 {
    struct iir_filter_data *iir = (struct iir_filter_data*)data;
 
@@ -357,16 +357,16 @@ static void dsp_free(void *data)
       free(iir);
 }
 
-static void dsp_config(void* data)
+static void rarch_dsp_config(void* data)
 {
 }
 
 const rarch_dsp_plugin_t dsp_plug = {
-	dsp_init,
-	dsp_process,
-	dsp_free,
+	rarch_dsp_init,
+	rarch_dsp_process,
+	rarch_dsp_free,
 	RARCH_DSP_API_VERSION,
-	dsp_config,
+	rarch_dsp_config,
 #ifdef __SSE2__
 	"IIR (SSE2)"
 #else

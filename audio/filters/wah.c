@@ -100,7 +100,7 @@ static float wahwah_process(void *data, float samp)
    return samp;
 }
 
-static void *dsp_init(const rarch_dsp_info_t *info)
+static void * rarch_dsp_init(const rarch_dsp_info_t *info)
 {
    float freq = 1.5; 
    float startphase = 0.0;
@@ -130,7 +130,7 @@ static void *dsp_init(const rarch_dsp_info_t *info)
    return wah;
 }
 
-static void dsp_process(void *data, rarch_dsp_output_t *output,
+static void rarch_dsp_process(void *data, rarch_dsp_output_t *output,
       const rarch_dsp_input_t *input)
 {
    int num_samples, i;
@@ -149,7 +149,7 @@ static void dsp_process(void *data, rarch_dsp_output_t *output,
 	output->frames = input->frames;
 }
 
-static void dsp_free(void *data)
+static void rarch_dsp_free(void *data)
 {
    struct wahwah_filter_data *wah = (struct wahwah_filter_data*)data;
 
@@ -157,16 +157,16 @@ static void dsp_free(void *data)
       free(wah);
 }
 
-static void dsp_config(void *data)
+static void rarch_dsp_config(void *data)
 {
 }
 
 const rarch_dsp_plugin_t dsp_plug = {
-	dsp_init,
-	dsp_process,
-	dsp_free,
+	rarch_dsp_init,
+	rarch_dsp_process,
+	rarch_dsp_free,
 	RARCH_DSP_API_VERSION,
-	dsp_config,
+	rarch_dsp_config,
 	"Wah"
 };
 
