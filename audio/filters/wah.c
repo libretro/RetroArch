@@ -167,7 +167,7 @@ const rarch_dsp_plugin_t dsp_plug = {
 	dsp_free,
 	RARCH_DSP_API_VERSION,
 	dsp_config,
-	"Wah plugin"
+	"Wah"
 };
 
 RARCH_API_EXPORT const rarch_dsp_plugin_t* RARCH_API_CALLTYPE rarch_dsp_plugin_init(void)

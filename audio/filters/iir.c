@@ -368,9 +368,9 @@ const rarch_dsp_plugin_t dsp_plug = {
 	RARCH_DSP_API_VERSION,
 	dsp_config,
 #ifdef __SSE2__
-	"IIR filter set (SSE2)"
+	"IIR (SSE2)"
 #else
-	"IIR filter set"
+	"IIR"
 #endif
 };
 
