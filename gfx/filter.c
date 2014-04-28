@@ -53,7 +53,8 @@ static void filter_thread_loop(void *data)
       if (die)
          break;
 
-      thr->packet->work(thr->userdata, thr->packet->thread_data);
+      if (thr->packet && thr->packet->work)
+         thr->packet->work(thr->userdata, thr->packet->thread_data);
 
       slock_lock(thr->lock);
       thr->done = true;
