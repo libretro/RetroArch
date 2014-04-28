@@ -1135,9 +1135,7 @@ void init_audio(void)
          RARCH_WARN("Audio rate control was desired, but driver does not support needed features.\n");
    }
 
-#ifdef HAVE_DYLIB
    rarch_init_dsp_filter();
-#endif
 
    g_extern.measure_data.buffer_free_samples_count = 0;
 
@@ -1280,9 +1278,7 @@ void uninit_audio(void)
    free(g_extern.audio_data.outsamples);
    g_extern.audio_data.outsamples = NULL;
 
-#ifdef HAVE_DYLIB
    rarch_deinit_dsp_filter();
-#endif
 
    compute_audio_buffer_statistics();
 }
