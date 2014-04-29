@@ -804,11 +804,14 @@ bool config_load_file(const char *path, bool set_defaults)
    CONFIG_GET_FLOAT(video.msg_pos_y, "video_message_pos_y");
    CONFIG_GET_INT(video.rotation, "video_rotation");
 
-#if defined(HAVE_FILTERS_BUILTIN) && !defined(__CELLOS_LV2__)
+#if defined(HAVE_FILTERS_BUILTIN)
+#ifndef __CELLOS_LV2__
    /* TODO - fix loading a softfilter from the start later on PS3
     * some kind of bug in gcmgl that happens right at initialization -
     * setting the filter later doesn't cause a problem meanwhile */
    CONFIG_GET_INT(video.filter_idx, "filter_index");
+#endif
+   CONFIG_GET_INT(audio.filter_idx, "audio_filter_index");
 #endif
 #ifdef RARCH_CONSOLE
    /* TODO - will be refactored later to make it more clean - it's more 
@@ -1289,6 +1292,7 @@ bool config_save_file(const char *path)
    config_set_bool(conf,  "rewind_enable", g_settings.rewind_enable);
 #ifdef HAVE_FILTERS_BUILTIN
    config_set_int(conf,   "filter_index",  g_settings.video.filter_idx);
+   config_set_int(conf,   "audio_filter_index",  g_settings.audio.filter_idx);
 #endif
    config_set_int(conf,   "rewind_granularity", g_settings.rewind_granularity);
    config_set_path(conf,  "video_shader", g_settings.video.shader_path);
