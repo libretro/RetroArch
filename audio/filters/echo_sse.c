@@ -202,7 +202,8 @@ static const rarch_dsp_plugin_t dsp_plug = {
    rarch_dsp_free,
    RARCH_DSP_API_VERSION,
    rarch_dsp_config,
-   "Echo (SSE2)"
+   "Echo (SSE2)",
+   NULL
 };
 
 RARCH_API_EXPORT const rarch_dsp_plugin_t* RARCH_API_CALLTYPE

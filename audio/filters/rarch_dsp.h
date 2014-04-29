@@ -34,14 +34,6 @@ extern "C" {
 #define RARCH_API_CALLTYPE
 #endif
 
-#ifndef RARCH_FALSE
-#define RARCH_FALSE 0
-#endif
-
-#ifndef RARCH_TRUE
-#define RARCH_TRUE 1
-#endif
-
 #define RARCH_DSP_API_VERSION 5
 
 typedef struct rarch_dsp_info

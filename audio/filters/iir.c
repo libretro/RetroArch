@@ -375,10 +375,11 @@ const rarch_dsp_plugin_t dsp_plug = {
 	RARCH_DSP_API_VERSION,
 	rarch_dsp_config,
 #ifdef __SSE2__
-	"IIR (SSE2)"
+	"IIR (SSE2)",
 #else
-	"IIR"
+	"IIR",
 #endif
+   NULL
 };
 
 
