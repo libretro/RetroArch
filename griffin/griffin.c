@@ -486,7 +486,9 @@ FILTERS
 #include "../gfx/filters/scale2x.c"
 
 #include "../audio/filters/echo.c"
+#ifndef _WIN32
 #include "../audio/filters/eq.c"
+#endif
 #include "../audio/filters/iir.c"
 #include "../audio/filters/phaser.c"
 #include "../audio/filters/reverb.c"

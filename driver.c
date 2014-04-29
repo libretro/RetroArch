@@ -969,7 +969,9 @@ void uninit_drivers(void)
 
 #ifdef HAVE_FILTERS_BUILTIN
 extern const struct dspfilter_implementation *echo_dsp_plugin_init(dspfilter_simd_mask_t simd);
+#ifndef _WIN32
 extern const struct dspfilter_implementation *eq_dsp_plugin_init(dspfilter_simd_mask_t simd);
+#endif
 extern const struct dspfilter_implementation *iir_dsp_plugin_init(dspfilter_simd_mask_t simd);
 extern const struct dspfilter_implementation *phaser_dsp_plugin_init(dspfilter_simd_mask_t simd);
 extern const struct dspfilter_implementation *reverb_dsp_plugin_init(dspfilter_simd_mask_t simd);
@@ -980,7 +982,9 @@ static const struct dspfilter_implementation *(*dspfilter_drivers[]) (dspfilter_
 {
    NULL,
    &echo_dsp_plugin_init,
+#ifndef _WIN32
    &eq_dsp_plugin_init,
+#endif
    &iir_dsp_plugin_init,
    &phaser_dsp_plugin_init,
    &reverb_dsp_plugin_init,

@@ -31,6 +31,12 @@
 #define M_PI		3.1415926535897932384626433832795
 #endif
 
+#ifdef __GNUC__
+#define ALIGNED __attribute__((aligned(16)));
+#else
+#define ALIGNED
+#endif
+
 #define sqr(a) ((a) * (a))
 
 #ifdef RARCH_INTERNAL
@@ -54,9 +60,9 @@ struct iir_filter
 
 struct iir_filter_data
 {
-   struct iir_filter iir_l __attribute__((aligned(16)));
-   struct iir_filter iir_r __attribute__((aligned(16)));
-   float buf[4096] __attribute__((aligned(16)));
+   struct iir_filter iir_l ALIGNED;
+   struct iir_filter iir_r ALIGNED;
+   float buf[4096] ALIGNED;
    int rate;
    unsigned type;
 };
