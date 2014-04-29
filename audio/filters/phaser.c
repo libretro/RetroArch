@@ -172,7 +172,7 @@ static void phaser_dsp_config(void *data)
    (void)data;
 }
 
-const rarch_dsp_plugin_t dsp_plug = {
+const struct dspfilter_implementation generic_phaser_dsp = {
 	phaser_dsp_init,
 	phaser_dsp_process,
 	phaser_dsp_free,
@@ -182,9 +182,9 @@ const rarch_dsp_plugin_t dsp_plug = {
    NULL
 };
 
-const rarch_dsp_plugin_t *rarch_dsp_plugin_init(void)
+const struct dspfilter_implementation *rarch_dsp_plugin_init(void)
 {
-   return &dsp_plug;
+   return &generic_phaser_dsp;
 }
 
 #ifdef RARCH_INTERNAL

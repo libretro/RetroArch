@@ -29,7 +29,7 @@
 #include "autosave.h"
 #include "dynamic.h"
 #include "cheats.h"
-#include "audio/ext/rarch_dsp.h"
+#include "audio/filters/rarch_dsp.h"
 #include "compat/strl.h"
 #include "performance.h"
 #include "core_options.h"
@@ -489,7 +489,7 @@ struct global
 #ifdef HAVE_DYLIB
       dylib_t dsp_lib;
 #endif
-      const rarch_dsp_plugin_t *dsp_plugin;
+      const struct dspfilter_implementation *dsp_plugin;
       void *dsp_handle;
 
       bool rate_control; 

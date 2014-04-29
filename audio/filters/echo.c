@@ -170,7 +170,7 @@ static void echo_dsp_config(void *data)
    (void)data;
 }
 
-static const rarch_dsp_plugin_t dsp_plug = {
+static const struct dspfilter_implementation generic_echo_dsp = {
    echo_dsp_init,
    echo_dsp_process,
    echo_dsp_free,
@@ -180,9 +180,9 @@ static const rarch_dsp_plugin_t dsp_plug = {
    NULL
 };
 
-const rarch_dsp_plugin_t *rarch_dsp_plugin_init(void)
+const struct dspfilter_implementation *rarch_dsp_plugin_init(void)
 {
-   return &dsp_plug;
+   return &generic_echo_dsp;
 }
 
 #ifdef RARCH_INTERNAL

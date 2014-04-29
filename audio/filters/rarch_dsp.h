@@ -15,14 +15,20 @@
  *
  */
 
-#ifndef __RARCH_DSP_PLUGIN_H
-#define __RARCH_DSP_PLUGIN_H
+#ifndef DSPFILTER_API_H__
+#define DSPFILTER_API_H__
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#define RARCH_DSP_API_VERSION 5
+// Dynamic library endpoint.
+typedef const struct dspfilter_implementation *(*dspfilter_get_implementation_t)(void);
+// Called at startup to get the callback struct.
+// This is NOT dynamically allocated!
+const struct dspfilter_implementation *rarch_dsp_plugin_init(void);
+
+#define RARCH_DSP_API_VERSION 6
 
 typedef struct rarch_dsp_info
 {
@@ -60,42 +66,39 @@ typedef struct rarch_dsp_input
    unsigned frames;
 } rarch_dsp_input_t;
 
-typedef struct rarch_dsp_plugin
+// Creates a handle of the plugin. Returns NULL if failed.
+typedef void *(*dspfilter_init_t)(const rarch_dsp_info_t *info);
+
+// Frees the handle.
+typedef void (*dspfilter_free_t)(void *data);
+
+// Processes input data. 
+// The plugin is allowed to return variable sizes for output data.
+typedef void (*dspfilter_process_t)(void *data, rarch_dsp_output_t *output, 
+      const rarch_dsp_input_t *input);
+
+// Signal plugin that it may open a configuring window or
+// something similar. The behavior of this function
+// is thus plugin dependent. Implementing this is optional,
+// and can be set to NULL.
+typedef void (*dspfilter_config_t)(void *data);
+
+// Called every frame, allows creating a GUI main loop in the main thread.
+// GUI events can be processed here in a non-blocking fashion.
+// Can be set to NULL to ignore it.
+typedef void (*dspfilter_events_t)(void *data);
+
+struct dspfilter_implementation
 {
-   // Creates a handle of the plugin. Returns NULL if failed.
-   void *(*init)(const rarch_dsp_info_t *info);
+   dspfilter_init_t     init;
+   dspfilter_process_t  process;
+   dspfilter_free_t     free;
+   int api_version; // Must be RARCH_DSP_API_VERSION
+   dspfilter_config_t   config;
+   const char *ident; // Human readable identifier of implementation.
+   dspfilter_events_t   events;
+};
 
-   // Processes input data. 
-   // The plugin is allowed to return variable sizes for output data.
-   void (*process)(void *data, rarch_dsp_output_t *output, 
-         const rarch_dsp_input_t *input);
-
-   // Frees the handle.
-   void (*free)(void *data);
-
-   // API version used to compile the plugin.
-   // Used to detect mismatches in API.
-   // Must be set to RARCH_DSP_API_VERSION on compile.
-   int api_version;
-
-   // Signal plugin that it may open a configuring window or
-   // something similar. The behavior of this function
-   // is thus plugin dependent. Implementing this is optional,
-   // and can be set to NULL.
-   void (*config)(void *data);
-
-   // Human readable identification string.
-   const char *ident;
-
-   // Called every frame, allows creating a GUI main loop in the main thread.
-   // GUI events can be processed here in a non-blocking fashion.
-   // Can be set to NULL to ignore it.
-   void (*events)(void *data);
-} rarch_dsp_plugin_t;
-
-// Called by RetroArch at startup to get the callback struct.
-// This is NOT dynamically allocated!
-const rarch_dsp_plugin_t *rarch_dsp_plugin_init(void);
 
 #ifdef __cplusplus
 }

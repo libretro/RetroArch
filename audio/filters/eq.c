@@ -402,7 +402,7 @@ static void eq_dsp_config(void *data)
    (void)data;
 }
 
-const rarch_dsp_plugin_t dsp_plug = {
+const struct dspfilter_implementation generic_eq_dsp = {
    eq_dsp_init,
    eq_dsp_process,
    eq_dsp_free,
@@ -412,9 +412,9 @@ const rarch_dsp_plugin_t dsp_plug = {
    NULL
 };
 
-const rarch_dsp_plugin_t *rarch_dsp_plugin_init(void)
+const struct dspfilter_implementation *rarch_dsp_plugin_init(void)
 {
-   return &dsp_plug;
+   return &generic_eq_dsp;
 }
 
 #ifdef RARCH_INTERNAL

@@ -26,6 +26,7 @@
 #include "audio/resampler.h"
 #include "gfx/thread_wrapper.h"
 #include "audio/thread_wrapper.h"
+#include "audio/filters/rarch_dsp.h"
 #include "gfx/gfx_common.h"
 
 #ifdef HAVE_X11
@@ -968,12 +969,13 @@ void uninit_drivers(void)
 
 void rarch_init_dsp_filter(void)
 {
-   const rarch_dsp_plugin_t* (RARCH_API_CALLTYPE *plugin_init)(void);
+   dspfilter_get_implementation_t cb;
+   rarch_dsp_info_t info = {0};
+
    if (!(*g_settings.audio.dsp_plugin))
       return;
 
-   rarch_dsp_info_t info = {0};
-   plugin_init = NULL;
+   cb = NULL;
 
 #ifdef HAVE_DYLIB
    g_extern.audio_data.dsp_lib = dylib_load(g_settings.audio.dsp_plugin);
@@ -983,16 +985,16 @@ void rarch_init_dsp_filter(void)
       return;
    }
 
-    plugin_init = (const rarch_dsp_plugin_t *(RARCH_API_CALLTYPE*)(void))dylib_proc(g_extern.audio_data.dsp_lib, "rarch_dsp_plugin_init");
+    cb = (dspfilter_get_implementation_t)dylib_proc(g_extern.audio_data.dsp_lib, "rarch_dsp_plugin_init");
 #endif
 
-   if (!plugin_init)
+   if (!cb)
    {
       RARCH_ERR("Failed to find symbol \"rarch_dsp_plugin_init\" in DSP plugin.\n");
       goto error;
    }
 
-   g_extern.audio_data.dsp_plugin = plugin_init();
+   g_extern.audio_data.dsp_plugin = cb();
    if (!g_extern.audio_data.dsp_plugin)
    {
       RARCH_ERR("Failed to get a valid DSP plugin.\n");
