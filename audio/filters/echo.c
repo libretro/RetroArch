@@ -24,10 +24,12 @@
 
 // 4 source echo.
 
+#ifndef ALIGNED
 #ifdef __GNUC__
 #define ALIGNED __attribute__((aligned(16)))
 #else
 #define ALIGNED
+#endif
 #endif
 
 #ifndef min

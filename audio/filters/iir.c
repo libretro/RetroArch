@@ -31,10 +31,12 @@
 #define M_PI		3.1415926535897932384626433832795
 #endif
 
+#ifndef ALIGNED
 #ifdef __GNUC__
 #define ALIGNED __attribute__((aligned(16)));
 #else
 #define ALIGNED
+#endif
 #endif
 
 #define sqr(a) ((a) * (a))
