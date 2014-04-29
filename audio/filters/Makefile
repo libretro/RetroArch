@@ -68,7 +68,7 @@ ASMFLAGS := -INEON/asm
 asflags += -mfpu=neon
 endif
            
-objects += eq.$(DYLIB) iir.$(DYLIB) phaser.$(DYLIB) reverb.$(DYLIB) volume.$(DYLIB) wah.$(DYLIB)
+objects += echo.$(DYLIB) eq.$(DYLIB) iir.$(DYLIB) phaser.$(DYLIB) reverb.$(DYLIB) volume.$(DYLIB) wah.$(DYLIB)
 
 all: build;
 
