@@ -1044,7 +1044,7 @@ void rarch_init_dsp_filter(void)
    cb = NULL;
 
 #if defined(HAVE_FILTERS_BUILTIN)
-   cb = (dspfilter_get_implementation_t)dspfilter_get_implementation_from_idx(g_settings.video.filter_idx);
+   cb = (dspfilter_get_implementation_t)dspfilter_get_implementation_from_idx(g_settings.audio.filter_idx);
 #elif defined(HAVE_DYLIB)
    g_extern.audio_data.dsp_lib = dylib_load(g_settings.audio.dsp_plugin);
    if (!g_extern.audio_data.dsp_lib)
