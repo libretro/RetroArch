@@ -22,11 +22,30 @@
 extern "C" {
 #endif
 
+#define DSPFILTER_SIMD_SSE      (1 << 0)
+#define DSPFILTER_SIMD_SSE2     (1 << 1)
+#define DSPFILTER_SIMD_VMX      (1 << 2)
+#define DSPFILTER_SIMD_VMX128   (1 << 3)
+#define DSPFILTER_SIMD_AVX      (1 << 4)
+#define DSPFILTER_SIMD_NEON     (1 << 5)
+#define DSPFILTER_SIMD_SSE3     (1 << 6)
+#define DSPFILTER_SIMD_SSSE3    (1 << 7)
+#define DSPFILTER_SIMD_MMX      (1 << 8)
+#define DSPFILTER_SIMD_MMXEXT   (1 << 9)
+#define DSPFILTER_SIMD_SSE4     (1 << 10)
+#define DSPFILTER_SIMD_SSE42    (1 << 11)
+#define DSPFILTER_SIMD_AVX2     (1 << 12)
+#define DSPFILTER_SIMD_VFPU     (1 << 13)
+#define DSPFILTER_SIMD_PS       (1 << 14)
+
+// A bit-mask of all supported SIMD instruction sets.
+// Allows an implementation to pick different dspfilter_implementation structs.
+typedef unsigned dspfilter_simd_mask_t;
+
 // Dynamic library endpoint.
-typedef const struct dspfilter_implementation *(*dspfilter_get_implementation_t)(void);
-// Called at startup to get the callback struct.
-// This is NOT dynamically allocated!
-const struct dspfilter_implementation *rarch_dsp_plugin_init(void);
+typedef const struct dspfilter_implementation *(*dspfilter_get_implementation_t)(dspfilter_simd_mask_t);
+// The same SIMD mask argument is forwarded to create() callback as well to avoid having to keep lots of state around.
+const struct dspfilter_implementation *rarch_dsp_plugin_init(dspfilter_simd_mask_t);
 
 #define RARCH_DSP_API_VERSION 6
 

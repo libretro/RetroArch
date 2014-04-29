@@ -969,6 +969,7 @@ void uninit_drivers(void)
 
 void rarch_init_dsp_filter(void)
 {
+   unsigned cpu_features;
    dspfilter_get_implementation_t cb;
    rarch_dsp_info_t info = {0};
 
@@ -994,7 +995,9 @@ void rarch_init_dsp_filter(void)
       goto error;
    }
 
-   g_extern.audio_data.dsp_plugin = cb();
+   cpu_features = rarch_get_cpu_features();
+   g_extern.audio_data.dsp_plugin = cb(cpu_features);
+
    if (!g_extern.audio_data.dsp_plugin)
    {
       RARCH_ERR("Failed to get a valid DSP plugin.\n");

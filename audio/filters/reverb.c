@@ -386,8 +386,9 @@ const struct dspfilter_implementation generic_reverb_dsp = {
    NULL
 };
 
-const struct dspfilter_implementation *rarch_dsp_plugin_init(void)
+const struct dspfilter_implementation *rarch_dsp_plugin_init(dspfilter_simd_mask_t simd)
 {
+   (void)simd;
    return &generic_reverb_dsp;
 }
 

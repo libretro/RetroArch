@@ -293,7 +293,8 @@ static void iir_process_batch(void *data, float *out, const float *in, unsigned 
    iir->fir_buf[1] = fir_buf[1];
    iir->iir_buf    = iir_buf;
 }
-#else
+#endif
+
 static float iir_process(void *data, float samp)
 {
    struct iir_filter *iir = (struct iir_filter*)data;
@@ -307,7 +308,6 @@ static float iir_process(void *data, float samp)
    iir->yn1 = out;
    return out;
 }
-#endif
 
 static void * iir_dsp_init(const rarch_dsp_info_t *info)
 {
@@ -337,9 +337,6 @@ static void iir_dsp_process(void *data, rarch_dsp_output_t *output,
 
    output->samples = iir->buf;
 
-#ifdef __SSE2__
-   iir_process_batch(&iir->iir_l, iir->buf, input->samples, input->frames);
-#else
    int num_samples = input->frames * 2;
    for (int i = 0; i<num_samples;)
 	{
@@ -348,10 +345,21 @@ static void iir_dsp_process(void *data, rarch_dsp_output_t *output,
 		iir->buf[i] = iir_process(&iir->iir_r, input->samples[i]);
 		i++;
 	}
-#endif
 
 	output->frames = input->frames;
 }
+
+#ifdef __SSE2__
+static void iir_dsp_process_sse2(void *data, rarch_dsp_output_t *output,
+      const rarch_dsp_input_t *input)
+{
+   struct iir_filter_data *iir = (struct iir_filter_data*)data;
+
+   output->samples = iir->buf;
+   iir_process_batch(&iir->iir_l, iir->buf, input->samples, input->frames);
+	output->frames = input->frames;
+}
+#endif
 
 static void iir_dsp_free(void *data)
 {
@@ -371,16 +379,28 @@ const struct dspfilter_implementation generic_iir_dsp = {
 	iir_dsp_free,
 	RARCH_DSP_API_VERSION,
 	iir_dsp_config,
-#ifdef __SSE2__
-	"IIR (SSE2)",
-#else
 	"IIR",
-#endif
    NULL
 };
 
-const struct dspfilter_implementation *rarch_dsp_plugin_init(void)
+#ifdef __SSE2__
+const struct dspfilter_implementation sse2_iir_dsp = {
+	iir_dsp_init,
+	iir_dsp_process_sse2,
+	iir_dsp_free,
+	RARCH_DSP_API_VERSION,
+	iir_dsp_config,
+	"IIR (SSE2)",
+   NULL
+};
+#endif
+
+const struct dspfilter_implementation *rarch_dsp_plugin_init(dspfilter_simd_mask_t simd)
 {
+#ifdef __SSE2__
+   if (simd & DSPFILTER_SIMD_SSE2)
+      return &sse2_iir_dsp;
+#endif
    return &generic_iir_dsp;
 }
 
