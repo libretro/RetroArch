@@ -120,8 +120,9 @@ static softfilter_get_implementation_t softfilter_get_implementation_from_idx(un
 
 #endif
 
-const char *rarch_softfilter_get_name(rarch_softfilter_t *filt)
+const char *rarch_softfilter_get_name(void *data)
 {
+   (void)data;
 #ifdef HAVE_FILTERS_BUILTIN
    unsigned cpu_features;
    const struct softfilter_implementation *impl;
@@ -136,6 +137,7 @@ const char *rarch_softfilter_get_name(rarch_softfilter_t *filt)
 
    return NULL;
 #else
+   rarch_softfilter_t *filt = (rarch_softfilter_t*)data;
    if (!filt || !filt->impl)
       return NULL;
 

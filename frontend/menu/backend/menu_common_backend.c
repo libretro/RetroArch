@@ -2523,13 +2523,30 @@ static int menu_common_setting_set(void *data, unsigned setting, unsigned action
       case RGUI_SETTINGS_AUDIO_DSP_FILTER:
          switch (action)
          {
+#ifdef HAVE_FILTERS_BUILTIN
+            case RGUI_ACTION_LEFT:
+               if (g_settings.audio.filter_idx > 0)
+                  g_settings.audio.filter_idx--;
+               break;
+            case RGUI_ACTION_RIGHT:
+               if ((g_settings.audio.filter_idx + 1) != dspfilter_get_last_idx())
+                  g_settings.audio.filter_idx++;
+               break;
+#endif
             case RGUI_ACTION_OK:
+#if defined(HAVE_FILTERS_BUILTIN)
+               rarch_deinit_dsp_filter();
+               rarch_init_dsp_filter();
+#elif defined(HAVE_DYLIB)
                file_list_push(rgui->menu_stack, g_settings.audio.filter_dir, setting, rgui->selection_ptr);
                menu_clear_navigation(rgui);
+#endif
                rgui->need_refresh = true;
                break;
             case RGUI_ACTION_START:
-#ifdef HAVE_DYLIB
+#if defined(HAVE_FILTERS_BUILTIN)
+               g_settings.audio.filter_idx = 0;
+#elif defined(HAVE_DYLIB)
                strlcpy(g_settings.audio.dsp_plugin, "", sizeof(g_settings.audio.dsp_plugin));
 #endif
                rarch_deinit_dsp_filter();
@@ -4027,7 +4044,10 @@ static void menu_common_setting_set_label(char *type_str, size_t type_str_size, 
          }
          break;
       case RGUI_SETTINGS_AUDIO_DSP_FILTER:
-         strlcpy(type_str, *g_settings.audio.dsp_plugin ? g_settings.audio.dsp_plugin : "N/A", type_str_size);
+         {
+            const char *filter_name = rarch_dspfilter_get_name((void*)g_extern.audio_data.dsp_plugin);
+            strlcpy(type_str, filter_name ? filter_name : "N/A", type_str_size);
+         }
          break;
 #ifdef HAVE_OVERLAY
       case RGUI_SETTINGS_OVERLAY_PRESET:

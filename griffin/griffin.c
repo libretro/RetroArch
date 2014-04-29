@@ -484,6 +484,14 @@ FILTERS
 #include "../gfx/filters/darken.c"
 #include "../gfx/filters/epx.c"
 #include "../gfx/filters/scale2x.c"
+
+#include "../audio/filters/echo.c"
+#include "../audio/filters/eq.c"
+#include "../audio/filters/iir.c"
+#include "../audio/filters/phaser.c"
+#include "../audio/filters/reverb.c"
+#include "../audio/filters/volume.c"
+#include "../audio/filters/wah.c"
 #endif
 /*============================================================
 DYNAMIC

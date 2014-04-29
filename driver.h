@@ -586,8 +586,13 @@ void rarch_deinit_filter(void);
 void rarch_init_filter(enum retro_pixel_format);
 #endif
 
+#ifdef HAVE_FILTERS_BUILTIN
+unsigned dspfilter_get_last_idx(void);
+#endif
+
 void rarch_init_dsp_filter(void);
 void rarch_deinit_dsp_filter(void);
+const char *rarch_dspfilter_get_name(void *data);
 
 // Used by RETRO_ENVIRONMENT_GET_CAMERA_INTERFACE
 #ifdef HAVE_CAMERA

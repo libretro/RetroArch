@@ -44,7 +44,7 @@ void rarch_softfilter_process(rarch_softfilter_t *filt,
       void *output, size_t output_stride,
       const void *input, unsigned width, unsigned height, size_t input_stride);
 
-const char *rarch_softfilter_get_name(rarch_softfilter_t *filt);
+const char *rarch_softfilter_get_name(void *data);
 
 #endif
 

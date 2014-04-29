@@ -967,18 +967,85 @@ void uninit_drivers(void)
    driver.input_data_own  = false;
 }
 
+#ifdef HAVE_FILTERS_BUILTIN
+extern const struct dspfilter_implementation *echo_dsp_plugin_init(dspfilter_simd_mask_t simd);
+extern const struct dspfilter_implementation *eq_dsp_plugin_init(dspfilter_simd_mask_t simd);
+extern const struct dspfilter_implementation *iir_dsp_plugin_init(dspfilter_simd_mask_t simd);
+extern const struct dspfilter_implementation *phaser_dsp_plugin_init(dspfilter_simd_mask_t simd);
+extern const struct dspfilter_implementation *reverb_dsp_plugin_init(dspfilter_simd_mask_t simd);
+extern const struct dspfilter_implementation *volume_dsp_plugin_init(dspfilter_simd_mask_t simd);
+extern const struct dspfilter_implementation *wah_dsp_plugin_init(dspfilter_simd_mask_t simd);
+
+static const struct dspfilter_implementation *(*dspfilter_drivers[]) (dspfilter_simd_mask_t) =
+{
+   NULL,
+   &echo_dsp_plugin_init,
+   &eq_dsp_plugin_init,
+   &iir_dsp_plugin_init,
+   &phaser_dsp_plugin_init,
+   &reverb_dsp_plugin_init,
+   &volume_dsp_plugin_init,
+   &wah_dsp_plugin_init,
+};
+
+unsigned dspfilter_get_last_idx(void)
+{
+   return sizeof(dspfilter_drivers) / sizeof(dspfilter_drivers[0]);
+}
+
+static dspfilter_get_implementation_t dspfilter_get_implementation_from_idx(unsigned i)
+{
+   if (i < dspfilter_get_last_idx())
+      return dspfilter_drivers[i];
+   return NULL;
+}
+
+#endif
+
+
+const char *rarch_dspfilter_get_name(void *data)
+{
+   const struct dspfilter_implementation *impl;
+   (void)data;
+#ifdef HAVE_FILTERS_BUILTIN
+   unsigned cpu_features;
+   dspfilter_get_implementation_t cb = (dspfilter_get_implementation_t)dspfilter_get_implementation_from_idx(g_settings.audio.filter_idx);
+   if (cb)
+   {
+      cpu_features = rarch_get_cpu_features();
+      impl = (const struct dspfilter_implementation *)cb(cpu_features);
+      if (impl)
+         return impl->ident;
+   }
+
+   return NULL;
+#else
+   impl = (const struct dspfilter_implementation*)data;
+   if (!impl || !impl->ident)
+      return NULL;
+
+   return impl->ident;
+#endif
+}
+
 void rarch_init_dsp_filter(void)
 {
    unsigned cpu_features;
    dspfilter_get_implementation_t cb;
    rarch_dsp_info_t info = {0};
 
+#ifdef HAVE_FILTERS_BUILTIN
+   if (!g_settings.audio.filter_idx)
+#else
    if (!(*g_settings.audio.dsp_plugin))
+#endif
       return;
 
    cb = NULL;
 
-#ifdef HAVE_DYLIB
+#if defined(HAVE_FILTERS_BUILTIN)
+   cb = (dspfilter_get_implementation_t)dspfilter_get_implementation_from_idx(g_settings.video.filter_idx);
+#elif defined(HAVE_DYLIB)
    g_extern.audio_data.dsp_lib = dylib_load(g_settings.audio.dsp_plugin);
    if (!g_extern.audio_data.dsp_lib)
    {
