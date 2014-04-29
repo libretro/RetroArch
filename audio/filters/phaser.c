@@ -178,7 +178,7 @@ const struct dspfilter_implementation generic_phaser_dsp = {
 	phaser_dsp_free,
 	RARCH_DSP_API_VERSION,
 	phaser_dsp_config,
-	"Phaser plugin",
+	"Phaser",
    NULL
 };
 
