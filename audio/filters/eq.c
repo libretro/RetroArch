@@ -22,8 +22,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <stdio.h>
-#include <stdbool.h>
-#include <assert.h>
+#include "boolean.h"
 #include <string.h>
 
 #ifndef M_PI
