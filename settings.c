@@ -804,7 +804,10 @@ bool config_load_file(const char *path, bool set_defaults)
    CONFIG_GET_FLOAT(video.msg_pos_y, "video_message_pos_y");
    CONFIG_GET_INT(video.rotation, "video_rotation");
 
-#ifdef HAVE_FILTERS_BUILTIN
+#if defined(HAVE_FILTERS_BUILTIN) && !defined(__CELLOS_LV2__)
+   /* TODO - fix loading a softfilter from the start later on PS3
+    * some kind of bug in gcmgl that happens right at initialization -
+    * setting the filter later doesn't cause a problem meanwhile */
    CONFIG_GET_INT(video.filter_idx, "filter_index");
 #endif
 #ifdef RARCH_CONSOLE
