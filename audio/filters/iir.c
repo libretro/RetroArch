@@ -34,10 +34,7 @@
 #define sqr(a) ((a) * (a))
 
 #ifdef RARCH_INTERNAL
-#define rarch_dsp_init    iir_dsp_init
-#define rarch_dsp_process iir_dsp_process
-#define rarch_dsp_free    iir_dsp_free
-#define rarch_dsp_config  iir_dsp_config
+#define rarch_dsp_plugin_init  iir_dsp_plugin_init
 #endif
 
 struct iir_filter
@@ -312,7 +309,7 @@ static float iir_process(void *data, float samp)
 }
 #endif
 
-static void * rarch_dsp_init(const rarch_dsp_info_t *info)
+static void * iir_dsp_init(const rarch_dsp_info_t *info)
 {
    struct iir_filter_data *iir = (struct iir_filter_data*)calloc(1, sizeof(*iir));
 
@@ -333,7 +330,7 @@ static void * rarch_dsp_init(const rarch_dsp_info_t *info)
    return iir;
 }
 
-static void rarch_dsp_process(void *data, rarch_dsp_output_t *output,
+static void iir_dsp_process(void *data, rarch_dsp_output_t *output,
       const rarch_dsp_input_t *input)
 {
    struct iir_filter_data *iir = (struct iir_filter_data*)data;
@@ -356,7 +353,7 @@ static void rarch_dsp_process(void *data, rarch_dsp_output_t *output,
 	output->frames = input->frames;
 }
 
-static void rarch_dsp_free(void *data)
+static void iir_dsp_free(void *data)
 {
    struct iir_filter_data *iir = (struct iir_filter_data*)data;
 
@@ -364,16 +361,16 @@ static void rarch_dsp_free(void *data)
       free(iir);
 }
 
-static void rarch_dsp_config(void* data)
+static void iir_dsp_config(void* data)
 {
 }
 
 const rarch_dsp_plugin_t dsp_plug = {
-	rarch_dsp_init,
-	rarch_dsp_process,
-	rarch_dsp_free,
+	iir_dsp_init,
+	iir_dsp_process,
+	iir_dsp_free,
 	RARCH_DSP_API_VERSION,
-	rarch_dsp_config,
+	iir_dsp_config,
 #ifdef __SSE2__
 	"IIR (SSE2)",
 #else
@@ -383,14 +380,11 @@ const rarch_dsp_plugin_t dsp_plug = {
 };
 
 
-RARCH_API_EXPORT const rarch_dsp_plugin_t* RARCH_API_CALLTYPE rarch_dsp_plugin_init(void)
+const rarch_dsp_plugin_t *rarch_dsp_plugin_init(void)
 {
    return &dsp_plug;
 }
 
 #ifdef RARCH_INTERNAL
-#undef rarch_dsp_init
-#undef rarch_dsp_process
-#undef rarch_dsp_free
-#undef rarch_dsp_config
+#undef rarch_dsp_plugin_init
 #endif

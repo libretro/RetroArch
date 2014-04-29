@@ -22,18 +22,6 @@
 extern "C" {
 #endif
 
-#ifdef _WIN32
-#ifdef RARCH_DLL_IMPORT
-#define RARCH_API_EXPORT __declspec(dllimport) 
-#else
-#define RARCH_API_EXPORT __declspec(dllexport) 
-#endif
-#define RARCH_API_CALLTYPE __cdecl
-#else
-#define RARCH_API_EXPORT
-#define RARCH_API_CALLTYPE
-#endif
-
 #define RARCH_DSP_API_VERSION 5
 
 typedef struct rarch_dsp_info
@@ -107,8 +95,7 @@ typedef struct rarch_dsp_plugin
 
 // Called by RetroArch at startup to get the callback struct.
 // This is NOT dynamically allocated!
-RARCH_API_EXPORT const rarch_dsp_plugin_t* RARCH_API_CALLTYPE 
-   rarch_dsp_plugin_init(void);
+const rarch_dsp_plugin_t *rarch_dsp_plugin_init(void);
 
 #ifdef __cplusplus
 }

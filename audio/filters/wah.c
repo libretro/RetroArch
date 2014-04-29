@@ -31,10 +31,7 @@
 #endif
 
 #ifdef RARCH_INTERNAL
-#define rarch_dsp_init    wah_dsp_init
-#define rarch_dsp_process wah_dsp_process
-#define rarch_dsp_free    wah_dsp_free
-#define rarch_dsp_config  wah_dsp_config
+#define rarch_dsp_plugin_init    wah_dsp_plugin_init
 #endif
 
 struct wahwah_filter
@@ -107,7 +104,7 @@ static float wahwah_process(void *data, float samp)
    return samp;
 }
 
-static void * rarch_dsp_init(const rarch_dsp_info_t *info)
+static void * wah_dsp_init(const rarch_dsp_info_t *info)
 {
    float freq = 1.5; 
    float startphase = 0.0;
@@ -137,7 +134,7 @@ static void * rarch_dsp_init(const rarch_dsp_info_t *info)
    return wah;
 }
 
-static void rarch_dsp_process(void *data, rarch_dsp_output_t *output,
+static void wah_dsp_process(void *data, rarch_dsp_output_t *output,
       const rarch_dsp_input_t *input)
 {
    int num_samples, i;
@@ -156,7 +153,7 @@ static void rarch_dsp_process(void *data, rarch_dsp_output_t *output,
 	output->frames = input->frames;
 }
 
-static void rarch_dsp_free(void *data)
+static void wah_dsp_free(void *data)
 {
    struct wahwah_filter_data *wah = (struct wahwah_filter_data*)data;
 
@@ -164,28 +161,25 @@ static void rarch_dsp_free(void *data)
       free(wah);
 }
 
-static void rarch_dsp_config(void *data)
+static void wah_dsp_config(void *data)
 {
 }
 
 const rarch_dsp_plugin_t dsp_plug = {
-	rarch_dsp_init,
-	rarch_dsp_process,
-	rarch_dsp_free,
+	wah_dsp_init,
+	wah_dsp_process,
+	wah_dsp_free,
 	RARCH_DSP_API_VERSION,
-	rarch_dsp_config,
+	wah_dsp_config,
 	"Wah",
    NULL
 };
 
-RARCH_API_EXPORT const rarch_dsp_plugin_t* RARCH_API_CALLTYPE rarch_dsp_plugin_init(void)
+const rarch_dsp_plugin_t *rarch_dsp_plugin_init(void)
 {
    return &dsp_plug;
 }
 
 #ifdef RARCH_INTERNAL
-#undef rarch_dsp_init
-#undef rarch_dsp_process
-#undef rarch_dsp_free
-#undef rarch_dsp_config
+#undef rarch_dsp_plugin_init
 #endif

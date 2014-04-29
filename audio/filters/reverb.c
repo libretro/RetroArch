@@ -52,10 +52,7 @@
 #define ALLPASSTUNINGL4	225
 
 #ifdef RARCH_INTERNAL
-#define rarch_dsp_init    reverb_dsp_init
-#define rarch_dsp_process reverb_dsp_process
-#define rarch_dsp_free    reverb_dsp_free
-#define rarch_dsp_config  reverb_dsp_config
+#define rarch_dsp_plugin_init    reverb_dsp_plugin_init
 #endif
 
 struct comb
@@ -319,7 +316,7 @@ struct reverb_filter_data
 };
 
 
-static void * rarch_dsp_init(const rarch_dsp_info_t *info)
+static void * reverb_dsp_init(const rarch_dsp_info_t *info)
 {
    float drytime, wettime, damping, roomwidth, roomsize;
    (void)info;
@@ -348,7 +345,7 @@ static void * rarch_dsp_init(const rarch_dsp_info_t *info)
    return reverb;
 }
 
-static void rarch_dsp_process(void *data, rarch_dsp_output_t *output,
+static void reverb_dsp_process(void *data, rarch_dsp_output_t *output,
       const rarch_dsp_input_t *input)
 {
    int i, num_samples;
@@ -366,7 +363,7 @@ static void rarch_dsp_process(void *data, rarch_dsp_output_t *output,
 	output->frames = input->frames;
 }
 
-static void rarch_dsp_free(void *data)
+static void reverb_dsp_free(void *data)
 {
    struct reverb_filter_data *rev = (struct reverb_filter_data*)data;
 
@@ -374,29 +371,26 @@ static void rarch_dsp_free(void *data)
       free(rev);
 }
 
-static void rarch_dsp_config(void *data)
+static void reverb_dsp_config(void *data)
 {
    (void)data;
 }
 
 const rarch_dsp_plugin_t dsp_plug = {
-	rarch_dsp_init,
-	rarch_dsp_process,
-	rarch_dsp_free,
+	reverb_dsp_init,
+	reverb_dsp_process,
+	reverb_dsp_free,
 	RARCH_DSP_API_VERSION,
-	rarch_dsp_config,
+	reverb_dsp_config,
 	"Reverberatation",
    NULL
 };
 
-RARCH_API_EXPORT const rarch_dsp_plugin_t* RARCH_API_CALLTYPE rarch_dsp_plugin_init(void)
+const rarch_dsp_plugin_t *rarch_dsp_plugin_init(void)
 {
    return &dsp_plug;
 }
 
 #ifdef RARCH_INTERNAL
-#undef rarch_dsp_init
-#undef rarch_dsp_process
-#undef rarch_dsp_free
-#undef rarch_dsp_config
+#undef rarch_dsp_plugin_init
 #endif

@@ -52,13 +52,10 @@ struct echo_filter_data
 };
 
 #ifdef RARCH_INTERNAL
-#define rarch_dsp_init    echo_sse_dsp_init
-#define rarch_dsp_process echo_sse_dsp_process
-#define rarch_dsp_free    echo_sse_dsp_free
-#define rarch_dsp_config  echo_sse_dsp_config
+#define rarch_dsp_plugin_init echo_dsp_plugin_init
 #endif
 
-void echo_init(void *data)
+static void echo_init(void *data)
 {
    unsigned i, j;
    struct echo_filter_data *echo = (struct echo_filter_data*)data;
@@ -85,7 +82,7 @@ void echo_init(void *data)
       echo->buffer[i] = 0.0f;
 }
 
-unsigned echo_sse2_process(void *data, const float *input, unsigned frames)
+static unsigned echo_sse2_process(void *data, const float *input, unsigned frames)
 {
    unsigned frames_out, i;
    float *buffer_out;
@@ -156,7 +153,7 @@ unsigned echo_sse2_process(void *data, const float *input, unsigned frames)
    return frames_out;
 }
 
-static void rarch_dsp_process(void *data, rarch_dsp_output_t *output,
+static void echo_sse_dsp_process(void *data, rarch_dsp_output_t *output,
       const rarch_dsp_input_t *input)
 {
    struct echo_filter_data *echo = (struct echo_filter_data*)data;
@@ -164,7 +161,7 @@ static void rarch_dsp_process(void *data, rarch_dsp_output_t *output,
    output->frames = echo_sse2_process(echo, input->samples, input->frames);
 }
 
-static void rarch_dsp_free(void *data)
+static void echo_sse_dsp_free(void *data)
 {
    struct echo_filter_data *echo = (struct echo_filter_data*)data;
 
@@ -172,7 +169,7 @@ static void rarch_dsp_free(void *data)
       free(echo);
 }
 
-static void *rarch_dsp_init(const rarch_dsp_info_t *info)
+static void *echo_sse_dsp_init(const rarch_dsp_info_t *info)
 {
    struct echo_filter_data *echo = (struct echo_filter_data*)calloc(1, sizeof(*echo));;
 
@@ -191,30 +188,26 @@ static void *rarch_dsp_init(const rarch_dsp_info_t *info)
    return echo;
 }
 
-static void rarch_dsp_config(void *data)
+static void echo_sse_dsp_config(void *data)
 {
    (void)data;
 }
 
 static const rarch_dsp_plugin_t dsp_plug = {
-   rarch_dsp_init,
-   rarch_dsp_process,
-   rarch_dsp_free,
+   echo_sse_dsp_init,
+   echo_sse_dsp_process,
+   echo_sse_dsp_free,
    RARCH_DSP_API_VERSION,
-   rarch_dsp_config,
+   echo_sse_dsp_config,
    "Echo (SSE2)",
    NULL
 };
 
-RARCH_API_EXPORT const rarch_dsp_plugin_t* RARCH_API_CALLTYPE
-   rarch_dsp_plugin_init(void)
+const rarch_dsp_plugin_t *rarch_dsp_plugin_init(void)
 {
    return &dsp_plug;
 }
 
 #ifdef RARCH_INTERNAL
-#undef rarch_dsp_init
-#undef rarch_dsp_process
-#undef rarch_dsp_free
-#undef rarch_dsp_config
+#undef rarch_dsp_plugin_init
 #endif

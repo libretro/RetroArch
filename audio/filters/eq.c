@@ -39,10 +39,7 @@
 #endif
 
 #ifdef RARCH_INTERNAL
-#define rarch_dsp_init    eq_dsp_init
-#define rarch_dsp_process eq_dsp_process
-#define rarch_dsp_free    eq_dsp_free
-#define rarch_dsp_config  eq_dsp_config
+#define rarch_dsp_plugin_init eq_dsp_plugin_init
 #endif
 
 typedef struct dsp_eq_state dsp_eq_state_t;
@@ -62,7 +59,8 @@ static void generate_phase_lut(void)
 
 static inline unsigned bitrange(unsigned len)
 {
-   unsigned ret = 0;
+   unsigned ret;
+   ret = 0;
    while ((len >>= 1))
       ret++;
 
@@ -363,7 +361,7 @@ static size_t equalizer_process(void *data, const float *in, unsigned frames)
    return written;
 }
 
-static void * rarch_dsp_init(const rarch_dsp_info_t *info)
+static void * eq_dsp_init(const rarch_dsp_info_t *info)
 {
    const float bands[] = { 30, 80, 150, 250, 500, 800, 1000, 2000, 3000, 5000, 8000, 10000, 12000, 15000 };
    struct equalizer_filter_data *eq = (struct equalizer_filter_data*)calloc(1, sizeof(*eq));
@@ -377,7 +375,7 @@ static void * rarch_dsp_init(const rarch_dsp_info_t *info)
    return eq;
 }
 
-static void rarch_dsp_process(void *data, rarch_dsp_output_t *output,
+static void eq_dsp_process(void *data, rarch_dsp_output_t *output,
       const rarch_dsp_input_t *input)
 {
    struct equalizer_filter_data *eq = (struct equalizer_filter_data*)data;
@@ -387,7 +385,7 @@ static void rarch_dsp_process(void *data, rarch_dsp_output_t *output,
    output->frames = out_frames;
 }
 
-static void rarch_dsp_free(void *data)
+static void eq_dsp_free(void *data)
 {
    struct equalizer_filter_data *eq = (struct equalizer_filter_data*)data;
 
@@ -399,29 +397,26 @@ static void rarch_dsp_free(void *data)
    }
 }
 
-static void rarch_dsp_config(void *data)
+static void eq_dsp_config(void *data)
 {
    (void)data;
 }
 
 const rarch_dsp_plugin_t dsp_plug = {
-   rarch_dsp_init,
-   rarch_dsp_process,
-   rarch_dsp_free,
+   eq_dsp_init,
+   eq_dsp_process,
+   eq_dsp_free,
    RARCH_DSP_API_VERSION,
-   rarch_dsp_config,
+   eq_dsp_config,
    "Equalizer",
    NULL
 };
 
-RARCH_API_EXPORT const rarch_dsp_plugin_t* RARCH_API_CALLTYPE rarch_dsp_plugin_init(void)
+const rarch_dsp_plugin_t *rarch_dsp_plugin_init(void)
 {
    return &dsp_plug;
 }
 
 #ifdef RARCH_INTERNAL
-#undef rarch_dsp_init
-#undef rarch_dsp_process
-#undef rarch_dsp_free
-#undef rarch_dsp_config
+#undef rarch_dsp_plugin_init
 #endif

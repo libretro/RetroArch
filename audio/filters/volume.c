@@ -21,10 +21,7 @@
 #include <math.h>
 
 #ifdef RARCH_INTERNAL
-#define rarch_dsp_init    volume_dsp_init
-#define rarch_dsp_process volume_dsp_process
-#define rarch_dsp_free    volume_dsp_free
-#define rarch_dsp_config  volume_dsp_config
+#define rarch_dsp_plugin_init    volume_dsp_plugin_init
 #endif
 
 struct volume_filter_data
@@ -56,7 +53,7 @@ static float db2gain(float val)
 }
 #endif
 
-void volume_process(void *data, const float *in, unsigned frames)
+static void volume_process(void *data, const float *in, unsigned frames)
 {
    float vol_left, vol_right;
    unsigned i;
@@ -75,7 +72,7 @@ void volume_process(void *data, const float *in, unsigned frames)
    }
 }
 
-static void * rarch_dsp_init(const rarch_dsp_info_t *info)
+static void *volume_dsp_init(const rarch_dsp_info_t *info)
 {
    struct volume_filter_data *vol = (struct volume_filter_data*)calloc(1, sizeof(*vol));
    (void)info;
@@ -90,7 +87,7 @@ static void * rarch_dsp_init(const rarch_dsp_info_t *info)
    return vol;
 }
 
-static void rarch_dsp_process(void *data, rarch_dsp_output_t *output,
+static void volume_dsp_process(void *data, rarch_dsp_output_t *output,
       const rarch_dsp_input_t *input)
 {
    struct volume_filter_data *vol = (struct volume_filter_data*)data;
@@ -100,7 +97,7 @@ static void rarch_dsp_process(void *data, rarch_dsp_output_t *output,
    output->frames = input->frames;
 }
 
-static void rarch_dsp_free(void *data)
+static void volume_dsp_free(void *data)
 {
    struct volume_filter_data *vol = (struct volume_filter_data*)data;
 
@@ -108,28 +105,26 @@ static void rarch_dsp_free(void *data)
       free(vol);
 }
 
-static void rarch_dsp_config(void *data)
+static void volume_dsp_config(void *data)
 {
+   (void)data;
 }
 
 const rarch_dsp_plugin_t dsp_plug = {
-   rarch_dsp_init,
-   rarch_dsp_process,
-   rarch_dsp_free,
+   volume_dsp_init,
+   volume_dsp_process,
+   volume_dsp_free,
    RARCH_DSP_API_VERSION,
-   rarch_dsp_config,
+   volume_dsp_config,
    "Volume",
    NULL
 };
 
-RARCH_API_EXPORT const rarch_dsp_plugin_t* RARCH_API_CALLTYPE rarch_dsp_plugin_init(void)
+const rarch_dsp_plugin_t *rarch_dsp_plugin_init(void)
 {
    return &dsp_plug;
 }
 
 #ifdef RARCH_INTERNAL
-#undef rarch_dsp_init
-#undef rarch_dsp_process
-#undef rarch_dsp_free
-#undef rarch_dsp_config
+#undef rarch_dsp_plugin_init
 #endif
