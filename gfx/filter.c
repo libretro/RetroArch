@@ -85,15 +85,6 @@ struct rarch_softfilter
 };
 
 #ifdef HAVE_FILTERS_BUILTIN
-extern const struct softfilter_implementation *twoxbr_get_implementation(softfilter_simd_mask_t simd);
-extern const struct softfilter_implementation *epx_get_implementation(softfilter_simd_mask_t simd);
-extern const struct softfilter_implementation *twoxsai_get_implementation(softfilter_simd_mask_t simd);
-extern const struct softfilter_implementation *supereagle_get_implementation(softfilter_simd_mask_t simd);
-extern const struct softfilter_implementation *supertwoxsai_get_implementation(softfilter_simd_mask_t simd);
-extern const struct softfilter_implementation *twoxbr_get_implementation(softfilter_simd_mask_t simd);
-extern const struct softfilter_implementation *darken_get_implementation(softfilter_simd_mask_t simd);
-extern const struct softfilter_implementation *scale2x_get_implementation(softfilter_simd_mask_t simd);
-
 static const struct softfilter_implementation *(*softfilter_drivers[]) (softfilter_simd_mask_t) =
 {
    NULL,

@@ -25,6 +25,8 @@
 #include "msvc/msvc_compat.h"
 #include "gfx/scaler/scaler.h"
 #include "gfx/image/image.h"
+#include "gfx/filters/softfilter.h"
+#include "audio/filters/rarch_dsp.h"
 #include "input/overlay.h"
 
 #ifdef HAVE_CONFIG_H
@@ -683,6 +685,27 @@ extern const menu_ctx_driver_t menu_ctx_rgui;
 extern const menu_ctx_driver_t menu_ctx_lakka;
 
 extern const menu_ctx_driver_backend_t menu_ctx_backend_common;
+
+#ifdef HAVE_FILTERS_BUILTIN
+extern const struct softfilter_implementation *twoxbr_get_implementation(softfilter_simd_mask_t simd);
+extern const struct softfilter_implementation *epx_get_implementation(softfilter_simd_mask_t simd);
+extern const struct softfilter_implementation *twoxsai_get_implementation(softfilter_simd_mask_t simd);
+extern const struct softfilter_implementation *supereagle_get_implementation(softfilter_simd_mask_t simd);
+extern const struct softfilter_implementation *supertwoxsai_get_implementation(softfilter_simd_mask_t simd);
+extern const struct softfilter_implementation *twoxbr_get_implementation(softfilter_simd_mask_t simd);
+extern const struct softfilter_implementation *darken_get_implementation(softfilter_simd_mask_t simd);
+extern const struct softfilter_implementation *scale2x_get_implementation(softfilter_simd_mask_t simd);
+
+extern const struct dspfilter_implementation *echo_dsp_plugin_init(dspfilter_simd_mask_t simd);
+#ifndef _WIN32
+extern const struct dspfilter_implementation *eq_dsp_plugin_init(dspfilter_simd_mask_t simd);
+#endif
+extern const struct dspfilter_implementation *iir_dsp_plugin_init(dspfilter_simd_mask_t simd);
+extern const struct dspfilter_implementation *phaser_dsp_plugin_init(dspfilter_simd_mask_t simd);
+extern const struct dspfilter_implementation *reverb_dsp_plugin_init(dspfilter_simd_mask_t simd);
+extern const struct dspfilter_implementation *volume_dsp_plugin_init(dspfilter_simd_mask_t simd);
+extern const struct dspfilter_implementation *wah_dsp_plugin_init(dspfilter_simd_mask_t simd);
+#endif
 
 #include "driver_funcs.h"
 
