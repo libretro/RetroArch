@@ -1294,6 +1294,9 @@ bool config_save_file(const char *path)
    config_set_int(conf,   "filter_index",  g_settings.video.filter_idx);
    config_set_int(conf,   "audio_filter_index",  g_settings.audio.filter_idx);
 #endif
+   config_set_int(conf,   "audio_latency", g_settings.audio.latency);
+   config_set_bool(conf,  "audio_sync",    g_settings.audio.sync);
+   config_set_int(conf,   "audio_block_frames", g_settings.audio.block_frames);
    config_set_int(conf,   "rewind_granularity", g_settings.rewind_granularity);
    config_set_path(conf,  "video_shader", g_settings.video.shader_path);
    config_set_bool(conf,  "video_shader_enable", g_settings.video.shader_enable);
