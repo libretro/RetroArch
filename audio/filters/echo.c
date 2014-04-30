@@ -94,11 +94,6 @@ static void echo_dsp_free(void *data)
 {
    struct echo_filter_data *echo = (struct echo_filter_data*)data;
 
-   if (echo->echo_l.history)
-      free(echo->echo_l.history);
-   if (echo->echo_r.history)
-      free(echo->echo_r.history);
-
    if (echo)
       free(echo);
 }
