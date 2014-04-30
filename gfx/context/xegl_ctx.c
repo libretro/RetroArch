@@ -257,7 +257,7 @@ static bool gfx_ctx_init(void *data)
       EGL_NONE,
    };
 
-#ifdef EGL_KHR_create_context
+#if defined(EGL_KHR_create_context) && defined(EGL_OPENGL_ES3_BIT_KHR)
    static const EGLint egl_attribs_gles3[] = {
       EGL_ATTRIBS_BASE,
       EGL_RENDERABLE_TYPE, EGL_OPENGL_ES3_BIT_KHR,
@@ -278,7 +278,7 @@ static bool gfx_ctx_init(void *data)
          attrib_ptr = egl_attribs_gl;
          break;
       case GFX_CTX_OPENGL_ES_API:
-#ifdef EGL_KHR_create_context
+#if defined(EGL_KHR_create_context) && defined(EGL_OPENGL_ES3_BIT_KHR)
          if (g_major >= 3)
             attrib_ptr = egl_attribs_gles3;
          else
