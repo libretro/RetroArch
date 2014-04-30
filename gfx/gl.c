@@ -1320,7 +1320,7 @@ static inline void gl_set_shader_viewport(void *data, unsigned shader)
    gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
 }
 
-#ifdef HAVE_GL_ASYNC_READBACK
+#if defined(HAVE_GL_ASYNC_READBACK) && defined(HAVE_MENU)
 static void gl_pbo_async_readback(void *data)
 {
    gl_t *gl = (gl_t*)data;
@@ -1557,9 +1557,11 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
             GL_RGBA, GL_UNSIGNED_BYTE, gl->readback_buffer_screenshot);
    }
 #ifdef HAVE_GL_ASYNC_READBACK
+#ifdef HAVE_MENU
    // Don't readback if we're in RGUI.
    else if (gl->pbo_readback_enable && !gl->rgui_texture_enable)
       gl_pbo_async_readback(gl);
+#endif
 #endif
 #endif
 

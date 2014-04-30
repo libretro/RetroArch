@@ -121,133 +121,167 @@ static void rarch_get_environment_console(void)
 #define menu_init_enable true
 #define initial_lifecycle_state_preinit false
 
-int main_entry_iterate(signature(), args_type() args)
+static retro_keyboard_event_t key_event;
+
+#ifdef HAVE_MENU
+static int main_entry_iterate_clear_input(args_type() args)
+{
+   rarch_input_poll();
+   if (!menu_input())
+   {
+      // Restore libretro keyboard callback.
+      g_extern.system.key_event = key_event;
+
+      g_extern.lifecycle_state &= ~(1ULL << MODE_CLEAR_INPUT);
+   }
+
+   return 0;
+}
+
+static int main_entry_iterate_shutdown(args_type() args)
+{
+#ifdef HAVE_MENU
+   // Load dummy core instead of exiting RetroArch completely.
+   if (g_settings.load_dummy_on_core_shutdown)
+      load_menu_game_prepare_dummy();
+   else
+#endif
+      return 1;
+
+   return 0;
+}
+
+
+static int main_entry_iterate_content(args_type() args)
+{
+   bool r;
+   if (g_extern.is_paused && !g_extern.is_oneshot)
+      r = rarch_main_idle_iterate();
+   else
+      r = rarch_main_iterate();
+
+   if (r)
+   {
+      if (frontend_ctx && frontend_ctx->process_events)
+         frontend_ctx->process_events(args);
+   }
+   else
+      g_extern.lifecycle_state &= ~(1ULL << MODE_GAME);
+
+   return 0;
+}
+
+static int main_entry_iterate_load_content(args_type() args)
+{
+   load_menu_game_prepare();
+
+   if (load_menu_game())
+   {
+      g_extern.lifecycle_state |= (1ULL << MODE_GAME);
+      if (driver.video_data && driver.video_poke && driver.video_poke->set_aspect_ratio)
+         driver.video_poke->set_aspect_ratio(driver.video_data, g_settings.video.aspect_ratio_idx);
+   }
+   else
+   {
+      // If ROM load fails, we exit RetroArch. On console it might make more sense to go back to menu though ...
+      g_extern.lifecycle_state = attempt_load_game_fails;
+
+      if (g_extern.lifecycle_state & (1ULL << MODE_EXIT))
+      {
+         if (frontend_ctx && frontend_ctx->shutdown)
+            frontend_ctx->shutdown(true);
+
+         return 1;
+      }
+   }
+
+   g_extern.lifecycle_state &= ~(1ULL << MODE_LOAD_GAME);
+
+   return 0;
+}
+
+static int main_entry_iterate_menu_preinit(args_type() args)
 {
    int i;
-   static retro_keyboard_event_t key_event;
 
-   if (g_extern.system.shutdown)
+   // Menu should always run with vsync on.
+   video_set_nonblock_state_func(false);
+   // Stop all rumbling when entering RGUI.
+   for (i = 0; i < MAX_PLAYERS; i++)
    {
-#ifdef HAVE_MENU
-      // Load dummy core instead of exiting RetroArch completely.
-      if (g_settings.load_dummy_on_core_shutdown)
-         load_menu_game_prepare_dummy();
-      else
-#endif
+      driver_set_rumble_state(i, RETRO_RUMBLE_STRONG, 0);
+      driver_set_rumble_state(i, RETRO_RUMBLE_WEAK, 0);
+   }
+
+   // Override keyboard callback to redirect to menu instead.
+   // We'll use this later for something ...
+   // FIXME: This should probably be moved to menu_common somehow.
+   key_event = g_extern.system.key_event;
+   g_extern.system.key_event = menu_key_event;
+
+   if (driver.audio_data)
+      audio_stop_func();
+
+   rgui->need_refresh = true;
+   rgui->old_input_state |= 1ULL << RARCH_MENU_TOGGLE;
+
+   g_extern.lifecycle_state &= ~(1ULL << MODE_MENU_PREINIT);
+   g_extern.lifecycle_state |= (1ULL << MODE_MENU);
+
+   return 0;
+}
+
+static int main_entry_iterate_menu(args_type() args)
+{
+   if (menu_iterate())
+   {
+      if (frontend_ctx && frontend_ctx->process_events)
+         frontend_ctx->process_events(args);
+   }
+   else
+   {
+      g_extern.lifecycle_state &= ~(1ULL << MODE_MENU);
+      driver_set_nonblock_state(driver.nonblock_state);
+
+      if (driver.audio_data && !g_extern.audio_data.mute && !audio_start_func())
+      {
+         RARCH_ERR("Failed to resume audio driver. Will continue without audio.\n");
+         g_extern.audio_active = false;
+      }
+
+      g_extern.lifecycle_state |= (1ULL << MODE_CLEAR_INPUT);
+
+      // If QUIT state came from command interface, we'll only see it once due to MODE_CLEAR_INPUT.
+      if (input_key_pressed_func(RARCH_QUIT_KEY) || !video_alive_func())
          return 1;
    }
+
+   return 0;
+}
+
+int main_entry_iterate(signature(), args_type() args)
+{
+   if (g_extern.system.shutdown)
+      return main_entry_iterate_shutdown(args);
    else if (g_extern.lifecycle_state & (1ULL << MODE_CLEAR_INPUT))
-   {
-      rarch_input_poll();
-      if (!menu_input())
-      {
-         // Restore libretro keyboard callback.
-         g_extern.system.key_event = key_event;
-
-         g_extern.lifecycle_state &= ~(1ULL << MODE_CLEAR_INPUT);
-      }
-   }
+      return main_entry_iterate_clear_input(args);
    else if (g_extern.lifecycle_state & (1ULL << MODE_LOAD_GAME))
-   {
-      load_menu_game_prepare();
-
-      if (load_menu_game())
-      {
-         g_extern.lifecycle_state |= (1ULL << MODE_GAME);
-         if (driver.video_data && driver.video_poke && driver.video_poke->set_aspect_ratio)
-            driver.video_poke->set_aspect_ratio(driver.video_data, g_settings.video.aspect_ratio_idx);
-      }
-      else
-      {
-         // If ROM load fails, we exit RetroArch. On console it might make more sense to go back to menu though ...
-         g_extern.lifecycle_state = attempt_load_game_fails;
-
-         if (g_extern.lifecycle_state & (1ULL << MODE_EXIT))
-         {
-            if (frontend_ctx && frontend_ctx->shutdown)
-               frontend_ctx->shutdown(true);
-
-            return 1;
-         }
-      }
-
-      g_extern.lifecycle_state &= ~(1ULL << MODE_LOAD_GAME);
-
-   }
+      return main_entry_iterate_load_content(args);
    else if (g_extern.lifecycle_state & (1ULL << MODE_GAME))
-   {
-      bool r;
-      if (g_extern.is_paused && !g_extern.is_oneshot)
-         r = rarch_main_idle_iterate();
-      else
-         r = rarch_main_iterate();
-
-      if (r)
-      {
-         if (frontend_ctx && frontend_ctx->process_events)
-            frontend_ctx->process_events(args);
-      }
-      else
-         g_extern.lifecycle_state &= ~(1ULL << MODE_GAME);
-   }
+      return main_entry_iterate_content(args);
 #ifdef HAVE_MENU
    else if (g_extern.lifecycle_state & (1ULL << MODE_MENU_PREINIT))
-   {
-      // Menu should always run with vsync on.
-      video_set_nonblock_state_func(false);
-      // Stop all rumbling when entering RGUI.
-      for (i = 0; i < MAX_PLAYERS; i++)
-      {
-         driver_set_rumble_state(i, RETRO_RUMBLE_STRONG, 0);
-         driver_set_rumble_state(i, RETRO_RUMBLE_WEAK, 0);
-      }
-
-      // Override keyboard callback to redirect to menu instead.
-      // We'll use this later for something ...
-      // FIXME: This should probably be moved to menu_common somehow.
-      key_event = g_extern.system.key_event;
-      g_extern.system.key_event = menu_key_event;
-
-      if (driver.audio_data)
-         audio_stop_func();
-
-      rgui->need_refresh = true;
-      rgui->old_input_state |= 1ULL << RARCH_MENU_TOGGLE;
-
-      g_extern.lifecycle_state &= ~(1ULL << MODE_MENU_PREINIT);
-      g_extern.lifecycle_state |= (1ULL << MODE_MENU);
-   }
+      main_entry_iterate_menu_preinit(args);
    else if (g_extern.lifecycle_state & (1ULL << MODE_MENU))
-   {
-      if (menu_iterate())
-      {
-         if (frontend_ctx && frontend_ctx->process_events)
-            frontend_ctx->process_events(args);
-      }
-      else
-      {
-         g_extern.lifecycle_state &= ~(1ULL << MODE_MENU);
-         driver_set_nonblock_state(driver.nonblock_state);
-
-         if (driver.audio_data && !g_extern.audio_data.mute && !audio_start_func())
-         {
-            RARCH_ERR("Failed to resume audio driver. Will continue without audio.\n");
-            g_extern.audio_active = false;
-         }
-
-         g_extern.lifecycle_state |= (1ULL << MODE_CLEAR_INPUT);
-
-         // If QUIT state came from command interface, we'll only see it once due to MODE_CLEAR_INPUT.
-         if (input_key_pressed_func(RARCH_QUIT_KEY) || !video_alive_func())
-            return 1;
-      }
-   }
+      return main_entry_iterate_menu(args);
 #endif
    else
       return 1;
 
    return 0;
 }
+#endif
+
 
 void main_exit(args_type() args)
 {
