@@ -47,6 +47,10 @@
 #include <sys/poll.h>
 #include <fcntl.h>
 
+#ifndef EGL_OPENGL_ES3_BIT_KHR
+#define EGL_OPENGL_ES3_BIT_KHR 0x0040
+#endif
+
 static bool g_use_hw_ctx;
 static EGLContext g_egl_hw_ctx;
 static EGLContext g_egl_ctx;
@@ -537,7 +541,7 @@ static bool gfx_ctx_set_video_mode(void *data,
       EGL_NONE,
    };
 
-#if defined(EGL_KHR_create_context) && defined(EGL_OPENGL_ES3_BIT_KHR)
+#ifdef EGL_KHR_create_context
    static const EGLint egl_attribs_gles3[] = {
       EGL_ATTRIBS_BASE,
       EGL_RENDERABLE_TYPE, EGL_OPENGL_ES3_BIT_KHR,
@@ -558,7 +562,7 @@ static bool gfx_ctx_set_video_mode(void *data,
          attrib_ptr = egl_attribs_gl;
          break;
       case GFX_CTX_OPENGL_ES_API:
-#if defined(EGL_KHR_create_context) && defined(EGL_OPENGL_ES3_BIT_KHR)
+#ifdef EGL_KHR_create_context
          if (g_major >= 3)
             attrib_ptr = egl_attribs_gles3;
          else

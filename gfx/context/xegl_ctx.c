@@ -30,6 +30,10 @@
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 
+#ifndef EGL_OPENGL_ES3_BIT_KHR
+#define EGL_OPENGL_ES3_BIT_KHR 0x0040
+#endif
+
 static Display *g_dpy;
 static Window   g_win;
 static Colormap g_cmap;
@@ -257,7 +261,7 @@ static bool gfx_ctx_init(void *data)
       EGL_NONE,
    };
 
-#if defined(EGL_KHR_create_context) && defined(EGL_OPENGL_ES3_BIT_KHR)
+#ifdef EGL_KHR_create_context
    static const EGLint egl_attribs_gles3[] = {
       EGL_ATTRIBS_BASE,
       EGL_RENDERABLE_TYPE, EGL_OPENGL_ES3_BIT_KHR,
@@ -278,7 +282,7 @@ static bool gfx_ctx_init(void *data)
          attrib_ptr = egl_attribs_gl;
          break;
       case GFX_CTX_OPENGL_ES_API:
-#if defined(EGL_KHR_create_context) && defined(EGL_OPENGL_ES3_BIT_KHR)
+#ifdef EGL_KHR_create_context
          if (g_major >= 3)
             attrib_ptr = egl_attribs_gles3;
          else
