@@ -1,4 +1,6 @@
 /* snes_ntsc 0.2.2. http://www.slack.net/~ant/ */
+#ifndef _BLARGG_SNES_NTSC_IMPLEMENTATION_H
+#define _BLARGG_SNES_NTSC_IMPLEMENTATION_H
 
 #include "snes_ntsc.h"
 
@@ -234,5 +236,7 @@ void snes_ntsc_blit_hires( snes_ntsc_t const* ntsc, SNES_NTSC_IN_T const* input,
 		rgb_out = (char*) rgb_out + out_pitch;
 	}
 }
+
+#endif
 
 #endif

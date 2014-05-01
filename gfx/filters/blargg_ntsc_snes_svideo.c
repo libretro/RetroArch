@@ -24,13 +24,9 @@
 #include "snes_ntsc/snes_ntsc.h"
 #include "snes_ntsc/snes_ntsc.c"
 
-void filter_size(unsigned*, unsigned*);
-void filter_render(uint32_t*, uint32_t*, unsigned, const uint16_t*, unsigned, unsigned, unsigned);
-
-struct snes_ntsc_t *ntsc;
-snes_ntsc_setup_t setup;
-int burst;
-int burst_toggle;
+static struct snes_ntsc_t *ntsc_svideo;
+static int burst_svideo;
+static int burst_toggle_svideo;
 
 static unsigned blargg_ntsc_snes_svideo_generic_input_fmts(void)
 {
@@ -70,24 +66,25 @@ static void *blargg_ntsc_snes_svideo_generic_create(unsigned in_fmt, unsigned ou
 
 static void blargg_ntsc_snes_svideo_initialize(void)
 {
+   snes_ntsc_setup_t setup;
    static bool initialized = false;
    if(initialized == true)
       return;
    initialized = true;
 
-   ntsc = (snes_ntsc_t*)malloc(sizeof *ntsc);
+   ntsc_svideo = (snes_ntsc_t*)malloc(sizeof(*ntsc_svideo));
    setup = snes_ntsc_svideo;
    setup.merge_fields = 1;
-   snes_ntsc_init(ntsc, &setup);
+   snes_ntsc_init(ntsc_svideo, &setup);
 
-   burst = 0;
-   burst_toggle = (setup.merge_fields ? 0 : 1);
+   burst_svideo = 0;
+   burst_toggle_svideo = (setup.merge_fields ? 0 : 1);
 }
 
 void terminate(void)
 {
-   if(ntsc)
-      free(ntsc);
+   if(ntsc_svideo)
+      free(ntsc_svideo);
 }
 
 static void blargg_ntsc_snes_svideo_generic_output(void *data, unsigned *out_width, unsigned *out_height,
@@ -110,15 +107,15 @@ static void blargg_ntsc_snes_svideo_render_rgb565(int width, int height,
       uint16_t *input, int pitch, uint16_t *output, int outpitch)
 {
    blargg_ntsc_snes_svideo_initialize();
-   if(!ntsc)
+   if(!ntsc_svideo)
       return;
 
    if(width <= 256)
-      snes_ntsc_blit(ntsc, input, pitch, burst, width, height, output, outpitch * 2, first, last);
+      snes_ntsc_blit(ntsc_svideo, input, pitch, burst_svideo, width, height, output, outpitch * 2, first, last);
    else
-      snes_ntsc_blit_hires(ntsc, input, pitch, burst, width, height, output, outpitch * 2, first, last);
+      snes_ntsc_blit_hires(ntsc_svideo, input, pitch, burst_svideo, width, height, output, outpitch * 2, first, last);
 
-   burst ^= burst_toggle;
+   burst_svideo ^= burst_toggle_svideo;
 }
 
 static void blargg_ntsc_snes_svideo_rgb565(unsigned width, unsigned height,

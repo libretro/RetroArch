@@ -1,4 +1,6 @@
 /* snes_ntsc 0.2.2. http://www.slack.net/~ant/ */
+#ifndef __BLARGG_SNES_NTSC_IMPLEMENTATION_H
+#define __BLARGG_SNES_NTSC_IMPLEMENTATION_H
 
 /* Common implementation of NTSC filters */
 
@@ -435,5 +437,7 @@ static void correct_errors( snes_ntsc_rgb_t color, snes_ntsc_rgb_t* out );
 	#else
 		#error "Need 32-bit int type"
 	#endif
+
+#endif
 
 #endif

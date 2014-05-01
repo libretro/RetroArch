@@ -24,13 +24,9 @@
 #include "snes_ntsc/snes_ntsc.h"
 #include "snes_ntsc/snes_ntsc.c"
 
-void filter_size(unsigned*, unsigned*);
-void filter_render(uint32_t*, uint32_t*, unsigned, const uint16_t*, unsigned, unsigned, unsigned);
-
-struct snes_ntsc_t *ntsc;
-snes_ntsc_setup_t setup;
-int burst;
-int burst_toggle;
+static struct snes_ntsc_t *ntsc_rgb;
+static int burst_rgb;
+static int burst_toggle_rgb;
 
 static unsigned blargg_ntsc_snes_rgb_generic_input_fmts(void)
 {
@@ -70,24 +66,25 @@ static void *blargg_ntsc_snes_rgb_generic_create(unsigned in_fmt, unsigned out_f
 
 static void blargg_ntsc_snes_rgb_initialize(void)
 {
+   snes_ntsc_setup_t setup;
    static bool initialized = false;
    if(initialized == true)
       return;
    initialized = true;
 
-   ntsc = (snes_ntsc_t*)malloc(sizeof *ntsc);
+   ntsc_rgb = (snes_ntsc_t*)malloc(sizeof(*ntsc_rgb));
    setup = snes_ntsc_rgb;
    setup.merge_fields = 1;
-   snes_ntsc_init(ntsc, &setup);
+   snes_ntsc_init(ntsc_rgb, &setup);
 
-   burst = 0;
-   burst_toggle = (setup.merge_fields ? 0 : 1);
+   burst_rgb = 0;
+   burst_toggle_rgb = (setup.merge_fields ? 0 : 1);
 }
 
 void terminate(void)
 {
-   if(ntsc)
-      free(ntsc);
+   if(ntsc_rgb)
+      free(ntsc_rgb);
 }
 
 static void blargg_ntsc_snes_rgb_generic_output(void *data, unsigned *out_width, unsigned *out_height,
@@ -110,15 +107,15 @@ static void blargg_ntsc_snes_rgb_render_rgb565(int width, int height,
       uint16_t *input, int pitch, uint16_t *output, int outpitch)
 {
    blargg_ntsc_snes_rgb_initialize();
-   if(!ntsc)
+   if(!ntsc_rgb)
       return;
 
    if(width <= 256)
-      snes_ntsc_blit(ntsc, input, pitch, burst, width, height, output, outpitch * 2, first, last);
+      snes_ntsc_blit(ntsc_rgb, input, pitch, burst_rgb, width, height, output, outpitch * 2, first, last);
    else
-      snes_ntsc_blit_hires(ntsc, input, pitch, burst, width, height, output, outpitch * 2, first, last);
+      snes_ntsc_blit_hires(ntsc_rgb, input, pitch, burst_rgb, width, height, output, outpitch * 2, first, last);
 
-   burst ^= burst_toggle;
+   burst_rgb ^= burst_toggle_rgb;
 }
 
 static void blargg_ntsc_snes_rgb_rgb565(unsigned width, unsigned height,
