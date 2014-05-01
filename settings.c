@@ -401,6 +401,7 @@ void config_set_defaults(void)
    *g_settings.rgui_content_directory = '\0';
    *g_settings.rgui_config_directory = '\0';
 #endif
+   g_settings.core_specific_config = default_core_specific_config;
 
 #ifdef RARCH_CONSOLE
    g_extern.lifecycle_state |= (1ULL << MODE_MENU_PREINIT);
@@ -410,8 +411,6 @@ void config_set_defaults(void)
    g_settings.video.msg_pos_x = 0.05f;
    g_settings.video.msg_pos_y = 0.90f;
    g_settings.video.aspect_ratio = -1.0f;
-
-   g_settings.core_specific_config = default_core_specific_config;
 
    // g_extern
    strlcpy(g_extern.savefile_dir, default_paths.sram_dir, sizeof(g_extern.savefile_dir));
