@@ -127,7 +127,7 @@ void snes_ntsc_blit( snes_ntsc_t const* ntsc, SNES_NTSC_IN_T const* input, long 
 		SNES_NTSC_IN_T const* line_in = input;
 		SNES_NTSC_BEGIN_ROW( ntsc, burst_phase,
 				snes_ntsc_black, snes_ntsc_black, SNES_NTSC_ADJ_IN( *line_in ) );
-		snes_ntsc_out_t* restrict line_out = (snes_ntsc_out_t*) rgb_out;
+		snes_ntsc_out_t* line_out = (snes_ntsc_out_t*) rgb_out;
 		int n;
 		++line_in;
 		
@@ -182,7 +182,7 @@ void snes_ntsc_blit_hires( snes_ntsc_t const* ntsc, SNES_NTSC_IN_T const* input,
 				snes_ntsc_black, snes_ntsc_black, snes_ntsc_black,
 				SNES_NTSC_ADJ_IN( line_in [0] ),
 				SNES_NTSC_ADJ_IN( line_in [1] ) );
-		snes_ntsc_out_t* restrict line_out = (snes_ntsc_out_t*) rgb_out;
+		snes_ntsc_out_t* line_out = (snes_ntsc_out_t*) rgb_out;
 		int n;
 		line_in += 2;
 		
