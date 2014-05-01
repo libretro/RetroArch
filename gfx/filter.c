@@ -88,6 +88,10 @@ struct rarch_softfilter
 static const struct softfilter_implementation *(*softfilter_drivers[]) (softfilter_simd_mask_t) =
 {
    NULL,
+   &blargg_ntsc_snes_rf_get_implementation,
+   &blargg_ntsc_snes_composite_get_implementation,
+   &blargg_ntsc_snes_svideo_get_implementation,
+   &blargg_ntsc_snes_rgb_get_implementation,
    &twoxbr_get_implementation,
    &darken_get_implementation,
    &twoxsai_get_implementation,

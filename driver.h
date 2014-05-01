@@ -687,6 +687,10 @@ extern const menu_ctx_driver_t menu_ctx_lakka;
 extern const menu_ctx_driver_backend_t menu_ctx_backend_common;
 
 #ifdef HAVE_FILTERS_BUILTIN
+extern const struct softfilter_implementation *blargg_ntsc_snes_rf_get_implementation(softfilter_simd_mask_t simd);
+extern const struct softfilter_implementation *blargg_ntsc_snes_composite_get_implementation(softfilter_simd_mask_t simd);
+extern const struct softfilter_implementation *blargg_ntsc_snes_svideo_get_implementation(softfilter_simd_mask_t simd);
+extern const struct softfilter_implementation *blargg_ntsc_snes_rgb_get_implementation(softfilter_simd_mask_t simd);
 extern const struct softfilter_implementation *twoxbr_get_implementation(softfilter_simd_mask_t simd);
 extern const struct softfilter_implementation *epx_get_implementation(softfilter_simd_mask_t simd);
 extern const struct softfilter_implementation *twoxsai_get_implementation(softfilter_simd_mask_t simd);

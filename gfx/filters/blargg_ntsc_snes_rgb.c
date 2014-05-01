@@ -81,12 +81,6 @@ static void blargg_ntsc_snes_rgb_initialize(void)
    burst_toggle_rgb = (setup.merge_fields ? 0 : 1);
 }
 
-void terminate(void)
-{
-   if(ntsc_rgb)
-      free(ntsc_rgb);
-}
-
 static void blargg_ntsc_snes_rgb_generic_output(void *data, unsigned *out_width, unsigned *out_height,
       unsigned width, unsigned height)
 {
@@ -98,6 +92,10 @@ static void blargg_ntsc_snes_rgb_generic_output(void *data, unsigned *out_width,
 static void blargg_ntsc_snes_rgb_generic_destroy(void *data)
 {
    struct filter_data *filt = (struct filter_data*)data;
+
+   if(ntsc_rgb)
+      free(ntsc_rgb);
+
    free(filt->workers);
    free(filt);
 }

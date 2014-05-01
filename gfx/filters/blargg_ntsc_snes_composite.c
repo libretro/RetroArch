@@ -81,12 +81,6 @@ static void blargg_ntsc_snes_composite_initialize(void)
    burst_toggle_composite = (setup.merge_fields ? 0 : 1);
 }
 
-void terminate(void)
-{
-   if(ntsc_composite)
-      free(ntsc_composite);
-}
-
 static void blargg_ntsc_snes_composite_generic_output(void *data, unsigned *out_width, unsigned *out_height,
       unsigned width, unsigned height)
 {
@@ -98,6 +92,10 @@ static void blargg_ntsc_snes_composite_generic_output(void *data, unsigned *out_
 static void blargg_ntsc_snes_composite_generic_destroy(void *data)
 {
    struct filter_data *filt = (struct filter_data*)data;
+
+   if(ntsc_composite)
+      free(ntsc_composite);
+
    free(filt->workers);
    free(filt);
 }

@@ -81,12 +81,6 @@ static void blargg_ntsc_snes_svideo_initialize(void)
    burst_toggle_svideo = (setup.merge_fields ? 0 : 1);
 }
 
-void terminate(void)
-{
-   if(ntsc_svideo)
-      free(ntsc_svideo);
-}
-
 static void blargg_ntsc_snes_svideo_generic_output(void *data, unsigned *out_width, unsigned *out_height,
       unsigned width, unsigned height)
 {
@@ -98,6 +92,10 @@ static void blargg_ntsc_snes_svideo_generic_output(void *data, unsigned *out_wid
 static void blargg_ntsc_snes_svideo_generic_destroy(void *data)
 {
    struct filter_data *filt = (struct filter_data*)data;
+
+   if(ntsc_svideo)
+      free(ntsc_svideo);
+
    free(filt->workers);
    free(filt);
 }
