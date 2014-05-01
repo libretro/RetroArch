@@ -114,7 +114,7 @@ static void blargg_ntsc_snes_composite_render_rgb565(int width, int height,
       return;
 
    pitch >>= 1;
-   outpitch >>= 2;
+   outpitch >>= 1;
 
    if(width <= 256)
       snes_ntsc_blit(ntsc, input, pitch, burst, width, height, output, outpitch * 2, first, last);
