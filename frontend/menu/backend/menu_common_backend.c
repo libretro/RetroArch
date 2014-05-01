@@ -2737,7 +2737,9 @@ static int menu_common_setting_set(void *data, unsigned setting, unsigned action
 
             devices[types++] = RETRO_DEVICE_NONE;
             devices[types++] = RETRO_DEVICE_JOYPAD;
-            devices[types++] = RETRO_DEVICE_ANALOG;
+            // Only push RETRO_DEVICE_ANALOG as default if we use an older core which doesn't use SET_CONTROLLER_INFO.
+            if (!g_extern.system.num_ports)
+               devices[types++] = RETRO_DEVICE_ANALOG;
 
             const struct retro_controller_info *desc = port < g_extern.system.num_ports ? &g_extern.system.ports[port] : NULL;
             if (desc)
@@ -2745,7 +2747,7 @@ static int menu_common_setting_set(void *data, unsigned setting, unsigned action
                for (i = 0; i < desc->num_types; i++)
                {
                   unsigned id = desc->types[i].id;
-                  if (types < ARRAY_SIZE(devices) && id != RETRO_DEVICE_NONE && id != RETRO_DEVICE_JOYPAD && id != RETRO_DEVICE_ANALOG)
+                  if (types < ARRAY_SIZE(devices) && id != RETRO_DEVICE_NONE && id != RETRO_DEVICE_JOYPAD)
                      devices[types++] = id;
                }
             }
