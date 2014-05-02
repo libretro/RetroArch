@@ -155,7 +155,7 @@ NSWindowDelegate>
             thisGroup = [NSMutableArray array];
 #if defined(MAC_OS_X_VERSION_10_6)
 			/* FIXME - Rewrite this so that this is no longer an associated object - requires ObjC 2.0 runtime */
-            objc_setAssociatedObject(thisGroup, associated_name_tag, [NSString stringWithFormat:@"%s", setting_data[i].name], OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+            objc_setAssociatedObject(thisGroup, associated_name_tag, [NSString stringWithFormat:BOXSTRING("%s"), setting_data[i].name], OBJC_ASSOCIATION_RETAIN_NONATOMIC);
 #endif
             break;
          }
@@ -173,7 +173,7 @@ NSWindowDelegate>
             thisSubGroup = [NSMutableArray array];
 #if defined(MAC_OS_X_VERSION_10_6)
 			 /* FIXME - Rewrite this so that this is no longer an associated object - requires ObjC 2.0 runtime */
-            objc_setAssociatedObject(thisSubGroup, associated_name_tag, [NSString stringWithFormat:@"%s", setting_data[i].name], OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+            objc_setAssociatedObject(thisSubGroup, associated_name_tag, [NSString stringWithFormat:BOXSTRING("%s"), setting_data[i].name], OBJC_ASSOCIATION_RETAIN_NONATOMIC);
 #endif
             break;
          }
@@ -196,7 +196,7 @@ NSWindowDelegate>
 	
 #ifdef MAC_OS_X_VERSION_10_6
    /* FIXME - fix for 10.5.8 and lower */
-   setting_data_load_config_path(setting_data_get_list(), [apple_platform.globalConfigFile UTF8String]);
+   setting_data_load_config_path(setting_data_get_list(), apple_platform.globalConfigFile.UTF8String);
 #endif
    apple_stop_iteration();
 }
@@ -205,7 +205,7 @@ NSWindowDelegate>
 {
 #ifdef MAC_OS_X_VERSION_10_6
 	/* FIXME - fix for 10.5.8 and lower */
-   setting_data_save_config_path(setting_data_get_list(), [apple_platform.globalConfigFile UTF8String]);
+   setting_data_save_config_path(setting_data_get_list(), apple_platform.globalConfigFile.UTF8String);
 #endif
    [NSApp stopModal];
 
@@ -215,7 +215,7 @@ NSWindowDelegate>
 #pragma mark Section Table
 - (NSInteger)numberOfRowsInTableView:(NSTableView*)view
 {
-   return [self.settings count];
+   return self.settings.count;
 }
 
 - (id)tableView:(NSTableView *)tableView objectValueForTableColumn:(NSTableColumn *)tableColumn row:(NSInteger)row
@@ -272,8 +272,8 @@ NSWindowDelegate>
    }
    else
    {
-      const rarch_setting_t* setting_data = setting_data_get_list();
-      const rarch_setting_t* setting = &setting_data[[item intValue]];
+      const rarch_setting_t* setting_data = (const rarch_setting_t*)setting_data_get_list();
+      const rarch_setting_t* setting = (const rarch_setting_t*)&setting_data[[item intValue]];
       char buffer[PATH_MAX];
       
       if ([[tableColumn identifier] isEqualToString:BOXSTRING("left")])
@@ -282,8 +282,10 @@ NSWindowDelegate>
       {
          switch (setting->type)
          {
-            case ST_BOOL: return BOXINT(*setting->value.boolean);
-            default:      return BOXSTRING(setting_data_get_string_representation(setting, buffer, sizeof(buffer)));
+            case ST_BOOL:
+                 return BOXINT(*setting->value.boolean);
+            default:
+                 return BOXSTRING(setting_data_get_string_representation(setting, buffer, sizeof(buffer)));
          }
       }
    }
@@ -300,8 +302,8 @@ NSWindowDelegate>
    if ([[tableColumn identifier] isEqualToString:BOXSTRING("left")])
       return [tableColumn dataCell];
 
-   const rarch_setting_t* setting_data = (const rarch_setting_t *)setting_data_get_list();
-   const rarch_setting_t* setting      = (const rarch_setting_t *)&setting_data[[item intValue]];
+   const rarch_setting_t *setting_data = (const rarch_setting_t *)setting_data_get_list();
+   const rarch_setting_t *setting      = (const rarch_setting_t *)&setting_data[[item intValue]];
 
    switch (setting->type)
    {

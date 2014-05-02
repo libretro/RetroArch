@@ -46,7 +46,7 @@ static void* const associated_core_key = (void*)&associated_core_key;
       {
          apple_input_keyboard_event(event_type == NSKeyDown, event.keyCode, [ch characterAtIndex:0], event.modifierFlags);
          
-         for (unsigned i = 1; i != ch.length; i ++)
+         for (unsigned i = 1; i < ch.length; i ++)
             apple_input_keyboard_event(event_type == NSKeyDown, 0, [ch characterAtIndex:i], event.modifierFlags);
       }
    }
@@ -208,7 +208,7 @@ static char** waiting_argv;
 
 - (void)application:(NSApplication *)sender openFiles:(NSArray *)filenames
 {
-   if ([filenames count] == 1 && [filenames objectAtIndex:0])
+   if (filenames.count == 1 && [filenames objectAtIndex:0])
    {
       self.file = [filenames objectAtIndex:0];
       
@@ -276,7 +276,7 @@ static char** waiting_argv;
    NSComboBox* cb = (NSComboBox*)[[self.coreSelectSheet contentView] viewWithTag:1];
 #if defined(MAC_OS_X_VERSION_10_6)
 	/* FIXME - Rewrite this so that this is no longer an associated object - requires ObjC 2.0 runtime */
-   self.core = objc_getAssociatedObject([cb objectValueOfSelectedItem], associated_core_key);
+   self.core = objc_getAssociatedObject(cb.objectValueOfSelectedItem, associated_core_key);
 #endif
 
    [self runCore];
