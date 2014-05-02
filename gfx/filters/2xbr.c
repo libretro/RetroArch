@@ -1,5 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
+ *  Copyright (C) 2011-2014 - Daniel De Matteis
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -14,35 +15,34 @@
  */
 
 /*
-   Hyllian's 2xBR v3.3a
-   
-   Copyright (C) 2011, 2014 Hyllian/Jararaca - sergiogdb@gmail.com
- 
-   This program is free software; you can redistribute it and/or
-   modify it under the terms of the GNU General Public License
-   as published by the Free Software Foundation; either version 2
-   of the License, or (at your option) any later version.
- 
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
- 
-   You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
- 
+ * Hyllian's 2xBR v3.3a
+ * Copyright (C) 2011, 2014 Hyllian/Jararaca - sergiogdb@gmail.com
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
  
 // Compile: gcc -o twoxbr.so -shared twoxbr.c -std=c99 -O3 -Wall -pedantic -fPIC
  
 #include "softfilter.h"
+#include "softfilter_prototypes.h"
 #include <stdlib.h>
  
 #ifdef RARCH_INTERNAL
 #define softfilter_get_implementation twoxbr_get_implementation
 #endif
- 
+
 #define TWOXBR_SCALE 2
  
 static unsigned twoxbr_generic_input_fmts(void)
