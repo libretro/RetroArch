@@ -301,7 +301,7 @@ static void parse_sub_msg(rarch_cmd_t *handle, const char *tok)
 
 static void parse_msg(rarch_cmd_t *handle, char *buf)
 {
-   char *save;
+   char *save = NULL;
    const char *tok = strtok_r(buf, "\n", &save);
    while (tok)
    {
