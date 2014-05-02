@@ -211,7 +211,7 @@ static void readjust_audio_input_rate(void)
    //      g_extern.audio_data.src_ratio, g_extern.audio_data.orig_src_ratio);
 }
 
-#ifdef HAVE_FFMPEG
+#ifdef HAVE_RECORD
 static void recording_dump_frame(const void *data, unsigned width, unsigned height, size_t pitch)
 {
    struct ffemu_video_data ffemu_data = {0};
@@ -298,7 +298,7 @@ static void video_frame(const void *data, unsigned width, unsigned height, size_
 
    // Slightly messy code,
    // but we really need to do processing before blocking on VSync for best possible scheduling.
-#ifdef HAVE_FFMPEG
+#ifdef HAVE_RECORD
    if (g_extern.recording && (!g_extern.filter.filter || !g_settings.video.post_filter_record || !data || g_extern.record_gpu_buffer))
       recording_dump_frame(data, width, height, pitch);
 #endif
@@ -323,7 +323,7 @@ static void video_frame(const void *data, unsigned width, unsigned height, size_
             data, width, height, pitch);
       RARCH_PERFORMANCE_STOP(softfilter_process);
 
-#ifdef HAVE_FFMPEG
+#ifdef HAVE_RECORD
       if (g_extern.recording && g_settings.video.post_filter_record)
          recording_dump_frame(g_extern.filter.buffer, owidth, oheight, opitch);
 #endif
@@ -337,7 +337,7 @@ static void video_frame(const void *data, unsigned width, unsigned height, size_
 
 void rarch_render_cached_frame(void)
 {
-#ifdef HAVE_FFMPEG
+#ifdef HAVE_RECORD
    // Cannot allow FFmpeg recording when pushing duped frames.
    bool recording = g_extern.recording;
    g_extern.recording = false;
@@ -355,14 +355,14 @@ void rarch_render_cached_frame(void)
          g_extern.frame_cache.height,
          g_extern.frame_cache.pitch);
 
-#ifdef HAVE_FFMPEG
+#ifdef HAVE_RECORD
    g_extern.recording = recording;
 #endif
 }
 
 static bool audio_flush(const int16_t *data, size_t samples)
 {
-#ifdef HAVE_FFMPEG
+#ifdef HAVE_RECORD
    if (g_extern.recording)
    {
       struct ffemu_audio_data ffemu_data = {0};
@@ -802,7 +802,7 @@ static void print_help(void)
    puts("\t\tAvailable commands are listed if command is invalid.");
 #endif
 
-#ifdef HAVE_FFMPEG
+#ifdef HAVE_RECORD
    puts("\t-r/--record: Path to record video file.\n\t\tUsing .mkv extension is recommended.");
    puts("\t--recordconfig: Path to settings used during recording.");
    puts("\t--size: Overrides output video size when recording with FFmpeg (format: WIDTHxHEIGHT).");
@@ -913,7 +913,7 @@ static void parse_input(int argc, char *argv[])
       { "help", 0, NULL, 'h' },
       { "save", 1, NULL, 's' },
       { "fullscreen", 0, NULL, 'f' },
-#ifdef HAVE_FFMPEG
+#ifdef HAVE_RECORD
       { "record", 1, NULL, 'r' },
       { "recordconfig", 1, &val, 'R' },
       { "size", 1, &val, 's' },
@@ -951,7 +951,7 @@ static void parse_input(int argc, char *argv[])
       { NULL, 0, NULL, 0 }
    };
 
-#ifdef HAVE_FFMPEG
+#ifdef HAVE_RECORD
 #define FFMPEG_RECORD_ARG "r:"
 #else
 #define FFMPEG_RECORD_ARG
@@ -1060,7 +1060,7 @@ static void parse_input(int argc, char *argv[])
             strlcpy(g_extern.config_path, optarg, sizeof(g_extern.config_path));
             break;
 
-#ifdef HAVE_FFMPEG
+#ifdef HAVE_RECORD
          case 'r':
             strlcpy(g_extern.record_path, optarg, sizeof(g_extern.record_path));
             g_extern.recording = true;
@@ -1176,7 +1176,7 @@ static void parse_input(int argc, char *argv[])
                   g_extern.block_patch = true;
                   break;
 
-#ifdef HAVE_FFMPEG
+#ifdef HAVE_RECORD
                case 's':
                {
                   if (sscanf(optarg, "%ux%u", &g_extern.record_width, &g_extern.record_height) != 2)
@@ -1293,7 +1293,7 @@ static inline void save_files(void)
    }
 }
 
-#ifdef HAVE_FFMPEG
+#ifdef HAVE_RECORD
 void rarch_init_recording(void)
 {
    if (!g_extern.recording)
@@ -2944,7 +2944,7 @@ int rarch_main_init(int argc, char *argv[])
 
    init_controllers();
 
-#ifdef HAVE_FFMPEG
+#ifdef HAVE_RECORD
    rarch_init_recording();
 #endif
 
@@ -3014,7 +3014,7 @@ static inline void update_frame_time(void)
    retro_time_t delta = 0;
 
    bool is_locked_fps = g_extern.is_paused || driver.nonblock_state;
-#ifdef HAVE_FFMPEG
+#ifdef HAVE_RECORD
    is_locked_fps |= g_extern.recording;
 #endif
 
@@ -3145,7 +3145,7 @@ void rarch_main_deinit(void)
       rarch_deinit_autosave();
 #endif
 
-#ifdef HAVE_FFMPEG
+#ifdef HAVE_RECORD
    rarch_deinit_recording();
 #endif
 

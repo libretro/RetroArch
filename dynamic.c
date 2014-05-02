@@ -814,7 +814,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          RARCH_LOG("Environ SET_AUDIO_CALLBACK.\n");
          const struct retro_audio_callback *info = (const struct retro_audio_callback*)data;
 
-#ifdef HAVE_FFMPEG
+#ifdef HAVE_RECORD
          if (g_extern.recording) // A/V sync is a must.
             return false;
 #endif

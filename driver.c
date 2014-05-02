@@ -700,7 +700,7 @@ bool driver_update_system_av_info(const struct retro_system_av_info *info)
    rarch_set_fullscreen(g_settings.video.fullscreen);
    // Cannot continue recording with different parameters.
    // Take the easiest route out and just restart the recording.
-#ifdef HAVE_FFMPEG
+#ifdef HAVE_RECORD
    if (g_extern.recording)
    {
       static const char *msg = "Restarting FFmpeg recording due to driver reinit.";

@@ -588,7 +588,7 @@ struct global
 #endif
 
    // FFmpeg record.
-#ifdef HAVE_FFMPEG
+#ifdef HAVE_RECORD
    ffemu_t *rec;
    char record_path[PATH_MAX];
    char record_config[PATH_MAX];
@@ -747,7 +747,7 @@ void rarch_save_state(void);
 void rarch_state_slot_increase(void);
 void rarch_state_slot_decrease(void);
 
-#ifdef HAVE_FFMPEG
+#ifdef HAVE_RECORD
 void rarch_init_recording(void);
 void rarch_deinit_recording(void);
 #endif
