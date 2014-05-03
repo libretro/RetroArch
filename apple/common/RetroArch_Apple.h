@@ -20,8 +20,7 @@
 #include <Foundation/Foundation.h>
 #import <CoreFoundation/CoreFoundation.h>
 
-#include "../../core_info.h"
-#include "core_info_ext.h"
+#include "../../frontend/info/core_info.h"
 #include "setting_data.h"
 #include "apple_export.h"
 

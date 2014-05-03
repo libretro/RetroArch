@@ -91,30 +91,37 @@ static void sdl_init_font(sdl_video_t *vid, const char *font_path, unsigned font
 static void sdl_render_msg(sdl_video_t *vid, SDL_Surface *buffer,
       const char *msg, unsigned width, unsigned height, const SDL_PixelFormat *fmt)
 {
-   int x, y;
+   int x, y, msg_base_x, msg_base_y;
+   unsigned rshift, gshift, bshift;
+   struct font_output_list out;
+   struct font_output *head;
+
    if (!vid->font)
       return;
 
-   struct font_output_list out;
    vid->font_driver->render_msg(vid->font, msg, &out);
-   struct font_output *head = out.head;
+   head = (struct font_output*)out.head;
 
-   int msg_base_x = g_settings.video.msg_pos_x * width;
-   int msg_base_y = (1.0 - g_settings.video.msg_pos_y) * height;
+   msg_base_x = g_settings.video.msg_pos_x * width;
+   msg_base_y = (1.0 - g_settings.video.msg_pos_y) * height;
 
-   unsigned rshift = fmt->Rshift;
-   unsigned gshift = fmt->Gshift;
-   unsigned bshift = fmt->Bshift;
+   rshift = fmt->Rshift;
+   gshift = fmt->Gshift;
+   bshift = fmt->Bshift;
 
    for (; head; head = head->next)
    {
-      int base_x = msg_base_x + head->off_x;
-      int base_y = msg_base_y - head->off_y - head->height;
+      int base_x, base_y, glyph_width, glyph_height, max_width, max_height;
+      const uint8_t *src;
+      uint32_t *out;
 
-      int glyph_width  = head->width;
-      int glyph_height = head->height;
+      base_x = msg_base_x + head->off_x;
+      base_y = msg_base_y - head->off_y - head->height;
 
-      const uint8_t *src = head->output;
+      glyph_width  = head->width;
+      glyph_height = head->height;
+
+      src = (const uint8_t*)head->output;
 
       if (base_x < 0)
       {
@@ -130,8 +137,8 @@ static void sdl_render_msg(sdl_video_t *vid, SDL_Surface *buffer,
          base_y = 0;
       }
 
-      int max_width  = width - base_x;
-      int max_height = height - base_y;
+      max_width  = width - base_x;
+      max_height = height - base_y;
 
       if (max_width <= 0 || max_height <= 0)
          continue;
@@ -141,7 +148,7 @@ static void sdl_render_msg(sdl_video_t *vid, SDL_Surface *buffer,
       if (glyph_height > max_height)
          glyph_height = max_height;
 
-      uint32_t *out = (uint32_t*)buffer->pixels + base_y * (buffer->pitch >> 2) + base_x;
+      out = (uint32_t*)buffer->pixels + base_y * (buffer->pitch >> 2) + base_x;
 
       for (y = 0; y < glyph_height; y++, src += head->pitch, out += buffer->pitch >> 2)
       {

@@ -40,7 +40,8 @@ static unsigned g_screen;
 static XIM g_xim;
 static XIC g_xic;
 
-static GLXContext g_ctx;
+static bool g_use_hw_ctx;
+static GLXContext g_ctx, g_hw_ctx;
 static GLXFBConfig g_fbc;
 static unsigned g_major;
 static unsigned g_minor;
@@ -82,11 +83,12 @@ static int nul_handler(Display *dpy, XErrorEvent *event)
    return 0;
 }
 
-static void gfx_ctx_get_video_size(unsigned *width, unsigned *height);
-static void gfx_ctx_destroy(void);
+static void gfx_ctx_get_video_size(void *data, unsigned *width, unsigned *height);
+static void gfx_ctx_destroy(void *data);
 
-static void gfx_ctx_swap_interval(unsigned interval)
+static void gfx_ctx_swap_interval(void *data, unsigned interval)
 {
+   (void)data;
    g_interval = interval;
 
    if (g_pglSwapIntervalEXT)
@@ -102,13 +104,13 @@ static void gfx_ctx_swap_interval(unsigned interval)
    }
 }
 
-static void gfx_ctx_check_window(bool *quit,
+static void gfx_ctx_check_window(void *data, bool *quit,
       bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
 {
    (void)frame_count;
 
    unsigned new_width = *width, new_height = *height;
-   gfx_ctx_get_video_size(&new_width, &new_height);
+   gfx_ctx_get_video_size(data, &new_width, &new_height);
 
    if (new_width != *width || new_height != *height)
    {
@@ -156,20 +158,23 @@ static void gfx_ctx_check_window(bool *quit,
    *quit = g_quit;
 }
 
-static void gfx_ctx_swap_buffers(void)
+static void gfx_ctx_swap_buffers(void *data)
 {
+   (void)data;
    if (g_is_double)
       glXSwapBuffers(g_dpy, g_glx_win);
 }
 
-static void gfx_ctx_set_resize(unsigned width, unsigned height)
+static void gfx_ctx_set_resize(void *data, unsigned width, unsigned height)
 {
+   (void)data;
    (void)width;
    (void)height;
 }
 
-static void gfx_ctx_update_window_title(void)
+static void gfx_ctx_update_window_title(void *data)
 {
+   (void)data;
    char buf[128], buf_fps[128];
    bool fps_draw = g_settings.fps_show;
    if (gfx_get_fps(buf, sizeof(buf), fps_draw ? buf_fps : NULL, sizeof(buf_fps)))
@@ -179,8 +184,10 @@ static void gfx_ctx_update_window_title(void)
       msg_queue_push(g_extern.msg_queue, buf_fps, 1, 1);
 }
 
-static void gfx_ctx_get_video_size(unsigned *width, unsigned *height)
+static void gfx_ctx_get_video_size(void *data, unsigned *width, unsigned *height)
 {
+   (void)data;
+
    if (!g_dpy || g_win == None)
    {
       Display *dpy = XOpenDisplay(NULL);
@@ -207,7 +214,7 @@ static void gfx_ctx_get_video_size(unsigned *width, unsigned *height)
    }
 }
 
-static bool gfx_ctx_init(void)
+static bool gfx_ctx_init(void *data)
 {
    if (g_inited)
       return false;
@@ -275,11 +282,11 @@ static bool gfx_ctx_init(void)
    return true;
 
 error:
-   gfx_ctx_destroy();
+   gfx_ctx_destroy(data);
    return false;
 }
 
-static bool gfx_ctx_set_video_mode(
+static bool gfx_ctx_set_video_mode(void *data,
       unsigned width, unsigned height,
       bool fullscreen)
 {
@@ -395,8 +402,14 @@ static bool gfx_ctx_set_video_mode(
             *aptr++ = g_major;
             *aptr++ = GLX_CONTEXT_MINOR_VERSION_ARB;
             *aptr++ = g_minor;
-            *aptr++ = GLX_CONTEXT_PROFILE_MASK_ARB;
-            *aptr++ = GLX_CONTEXT_CORE_PROFILE_BIT_ARB;
+
+            // Technically, we don't have core/compat until 3.2.
+            // Version 3.1 is either compat or not depending on GL_ARB_compatibility.
+            if ((g_major * 1000 + g_minor) >= 3002)
+            {
+               *aptr++ = GLX_CONTEXT_PROFILE_MASK_ARB;
+               *aptr++ = GLX_CONTEXT_CORE_PROFILE_BIT_ARB;
+            }
          }
 
          if (g_debug)
@@ -407,9 +420,24 @@ static bool gfx_ctx_set_video_mode(
 
          *aptr = None;
          g_ctx = glx_create_context_attribs(g_dpy, g_fbc, NULL, True, attribs);
+         if (g_use_hw_ctx)
+         {
+            RARCH_LOG("[GLX]: Creating shared HW context.\n");
+            g_hw_ctx = glx_create_context_attribs(g_dpy, g_fbc, g_ctx, True, attribs);
+            if (!g_hw_ctx)
+               RARCH_ERR("[GLX]: Failed to create new shared context.\n");
+         }
       }
       else
+      {
          g_ctx = glXCreateNewContext(g_dpy, g_fbc, GLX_RGBA_TYPE, 0, True);
+         if (g_use_hw_ctx)
+         {
+            g_hw_ctx = glXCreateNewContext(g_dpy, g_fbc, GLX_RGBA_TYPE, g_ctx, True);
+            if (!g_hw_ctx)
+               RARCH_ERR("[GLX]: Failed to create new shared context.\n");
+         }
+      }
 
       if (!g_ctx)
       {
@@ -453,7 +481,7 @@ static bool gfx_ctx_set_video_mode(
    else
       RARCH_WARN("[GLX]: Context is not double buffered!.\n");
 
-   gfx_ctx_swap_interval(g_interval);
+   gfx_ctx_swap_interval(data, g_interval);
 
    // This can blow up on some drivers. It's not fatal, so override errors for this call.
    old_handler = XSetErrorHandler(nul_handler);
@@ -479,12 +507,13 @@ error:
    if (vi)
       XFree(vi);
 
-   gfx_ctx_destroy();
+   gfx_ctx_destroy(data);
    return false;
 }
 
-static void gfx_ctx_destroy(void)
+static void gfx_ctx_destroy(void *data)
 {
+   (void)data;
    x11_destroy_input_context(&g_xim, &g_xic);
 
    if (g_dpy && g_ctx)
@@ -493,8 +522,11 @@ static void gfx_ctx_destroy(void)
       glXMakeContextCurrent(g_dpy, None, None, NULL);
       if (!driver.video_cache_context)
       {
+         if (g_hw_ctx)
+            glXDestroyContext(g_dpy, g_hw_ctx);
          glXDestroyContext(g_dpy, g_ctx);
          g_ctx = NULL;
+         g_hw_ctx = NULL;
       }
    }
 
@@ -549,15 +581,17 @@ static void gfx_ctx_destroy(void)
    g_core = false;
 }
 
-static void gfx_ctx_input_driver(const input_driver_t **input, void **input_data)
+static void gfx_ctx_input_driver(void *data, const input_driver_t **input, void **input_data)
 {
+   (void)data;
    void *xinput = input_x.init();
    *input       = xinput ? &input_x : NULL;
    *input_data  = xinput;
 }
 
-static bool gfx_ctx_has_focus(void)
+static bool gfx_ctx_has_focus(void *data)
 {
+   (void)data;
    if (!g_inited)
       return false;
 
@@ -573,28 +607,30 @@ static gfx_ctx_proc_t gfx_ctx_get_proc_address(const char *symbol)
    return glXGetProcAddress((const GLubyte*)symbol);
 }
 
-static bool gfx_ctx_bind_api(enum gfx_ctx_api api, unsigned major, unsigned minor)
+static bool gfx_ctx_bind_api(void *data, enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
+   (void)data;
    g_major = major;
    g_minor = minor;
    return api == GFX_CTX_OPENGL_API;
 }
 
-#ifdef HAVE_EGL
-static bool gfx_ctx_init_egl_image_buffer(const video_info_t *video)
+static void gfx_ctx_show_mouse(void *data, bool state)
 {
-   return false;
-}
-
-static bool gfx_ctx_write_egl_image(const void *frame, unsigned width, unsigned height, unsigned pitch, bool rgb32, unsigned index, void **image_handle)
-{
-   return false;
-}
-#endif
-
-static void gfx_ctx_show_mouse(bool state)
-{
+   (void)data;
    x11_show_mouse(g_dpy, g_win, state);
+}
+
+static void gfx_ctx_bind_hw_render(void *data, bool enable)
+{
+   (void)data;
+   g_use_hw_ctx = enable;
+
+   if (g_dpy)
+   {
+      //RARCH_LOG("[GLX]: Binding context (%s): %p\n", enable ? "RetroArch" : "HW render", enable ? (void*)g_hw_ctx : (void*)g_ctx);
+      glXMakeContextCurrent(g_dpy, g_glx_win, g_glx_win, enable ? g_hw_ctx : g_ctx);
+   }
 }
 
 const gfx_ctx_driver_t gfx_ctx_glx = {
@@ -613,10 +649,12 @@ const gfx_ctx_driver_t gfx_ctx_glx = {
    gfx_ctx_input_driver,
    gfx_ctx_get_proc_address,
 #ifdef HAVE_EGL
-   gfx_ctx_init_egl_image_buffer,
-   gfx_ctx_write_egl_image,
+   NULL,
+   NULL,
 #endif
    gfx_ctx_show_mouse,
    "glx",
+
+   gfx_ctx_bind_hw_render,
 };
 

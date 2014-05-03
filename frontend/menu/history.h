@@ -40,6 +40,13 @@ void rom_history_push(rom_history_t *hist,
       const char *path, const char *core_path,
       const char *core_name);
 
+const char* rom_history_get_path(rom_history_t* history,
+      unsigned index);
+const char* rom_history_get_core_path(rom_history_t* history,
+      unsigned index);
+const char* rom_history_get_core_name(rom_history_t* history,
+      unsigned index);
+
 #ifdef __cplusplus
 }
 #endif

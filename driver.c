@@ -26,6 +26,7 @@
 #include "audio/resampler.h"
 #include "gfx/thread_wrapper.h"
 #include "audio/thread_wrapper.h"
+#include "audio/filters/rarch_dsp.h"
 #include "gfx/gfx_common.h"
 
 #ifdef HAVE_X11
@@ -88,6 +89,9 @@ static const audio_driver_t *audio_drivers[] = {
 #ifdef EMSCRIPTEN
    &audio_rwebaudio,
 #endif
+#ifdef PSP
+   &audio_psp1,
+#endif   
 #ifdef HAVE_NULLAUDIO
    &audio_null,
 #endif
@@ -101,18 +105,15 @@ static const video_driver_t *video_drivers[] = {
 #ifdef XENON
    &video_xenon360,
 #endif
-#if defined(_XBOX) && (defined(HAVE_D3D8) || defined(HAVE_D3D9))
-   &video_xdk_d3d,
-#endif
-#if defined(HAVE_WIN32_D3D9)
+#if defined(_XBOX) && (defined(HAVE_D3D8) || defined(HAVE_D3D9)) || defined(HAVE_WIN32_D3D9)
    &video_d3d,
 #endif
 #ifdef SN_TARGET_PSP2
    &video_vita,
 #endif
-//#ifdef PSP
-   //&video_psp1,
-//#endif
+#ifdef PSP
+   &video_psp1,
+#endif
 #ifdef HAVE_SDL
    &video_sdl,
 #endif
@@ -615,7 +616,7 @@ float driver_sensor_get_input(unsigned port, unsigned id)
 #ifdef HAVE_CAMERA
 bool driver_camera_start(void)
 {
-   if (driver.camera && driver.camera_data)
+   if (driver.camera && driver.camera_data && g_settings.camera.allow)
       return driver.camera->start(driver.camera_data);
    else
       return false;
@@ -641,7 +642,7 @@ void driver_camera_poll(void)
 #ifdef HAVE_LOCATION
 bool driver_location_start(void)
 {
-   if (driver.location && driver.location_data)
+   if (driver.location && driver.location_data && g_settings.location.allow)
       return driver.location->start(driver.location_data);
    else
       return false;
@@ -691,6 +692,25 @@ retro_proc_address_t driver_get_proc_address(const char *sym)
    else
 #endif
       return NULL;
+}
+
+bool driver_update_system_av_info(const struct retro_system_av_info *info)
+{
+   g_extern.system.av_info = *info;
+   rarch_set_fullscreen(g_settings.video.fullscreen);
+   // Cannot continue recording with different parameters.
+   // Take the easiest route out and just restart the recording.
+#ifdef HAVE_RECORD
+   if (g_extern.recording)
+   {
+      static const char *msg = "Restarting FFmpeg recording due to driver reinit.";
+      msg_queue_push(g_extern.msg_queue, msg, 2, 180);
+      RARCH_WARN("%s\n", msg);
+      rarch_deinit_recording();
+      rarch_init_recording();
+   }
+#endif
+   return true;
 }
 
 // Only called once on init and deinit.
@@ -947,14 +967,81 @@ void uninit_drivers(void)
    driver.input_data_own  = false;
 }
 
-#ifdef HAVE_DYLIB
-static void init_dsp_plugin(void)
+#ifdef HAVE_FILTERS_BUILTIN
+static const struct dspfilter_implementation *(*dspfilter_drivers[]) (dspfilter_simd_mask_t) =
 {
-   if (!(*g_settings.audio.dsp_plugin))
-      return;
+   NULL,
+   &echo_dsp_plugin_init,
+#ifndef _WIN32
+#ifndef ANDROID
+   &eq_dsp_plugin_init,
+#endif
+#endif
+   &iir_dsp_plugin_init,
+   &phaser_dsp_plugin_init,
+   &reverb_dsp_plugin_init,
+   &volume_dsp_plugin_init,
+   &wah_dsp_plugin_init,
+};
 
+unsigned dspfilter_get_last_idx(void)
+{
+   return sizeof(dspfilter_drivers) / sizeof(dspfilter_drivers[0]);
+}
+
+static dspfilter_get_implementation_t dspfilter_get_implementation_from_idx(unsigned i)
+{
+   if (i < dspfilter_get_last_idx())
+      return dspfilter_drivers[i];
+   return NULL;
+}
+
+#endif
+
+
+const char *rarch_dspfilter_get_name(void *data)
+{
+   const struct dspfilter_implementation *impl;
+   (void)data;
+#ifdef HAVE_FILTERS_BUILTIN
+   unsigned cpu_features;
+   dspfilter_get_implementation_t cb = (dspfilter_get_implementation_t)dspfilter_get_implementation_from_idx(g_settings.audio.filter_idx);
+   if (cb)
+   {
+      cpu_features = rarch_get_cpu_features();
+      impl = (const struct dspfilter_implementation *)cb(cpu_features);
+      if (impl)
+         return impl->ident;
+   }
+
+   return NULL;
+#else
+   impl = (const struct dspfilter_implementation*)data;
+   if (!impl || !impl->ident)
+      return NULL;
+
+   return impl->ident;
+#endif
+}
+
+void rarch_init_dsp_filter(void)
+{
+   unsigned cpu_features;
+   dspfilter_get_implementation_t cb;
    rarch_dsp_info_t info = {0};
 
+#ifdef HAVE_FILTERS_BUILTIN
+   if (!g_settings.audio.filter_idx)
+#else
+   if (!(*g_settings.audio.dsp_plugin))
+#endif
+      return;
+
+   cb = NULL;
+
+#if defined(HAVE_FILTERS_BUILTIN)
+   cb = (dspfilter_get_implementation_t)dspfilter_get_implementation_from_idx(g_settings.audio.filter_idx);
+#elif defined(HAVE_DYLIB)
    g_extern.audio_data.dsp_lib = dylib_load(g_settings.audio.dsp_plugin);
    if (!g_extern.audio_data.dsp_lib)
    {
@@ -962,16 +1049,18 @@ static void init_dsp_plugin(void)
       return;
    }
 
-   const rarch_dsp_plugin_t* (RARCH_API_CALLTYPE *plugin_init)(void) = 
-      (const rarch_dsp_plugin_t *(RARCH_API_CALLTYPE*)(void))dylib_proc(g_extern.audio_data.dsp_lib, "rarch_dsp_plugin_init");
+    cb = (dspfilter_get_implementation_t)dylib_proc(g_extern.audio_data.dsp_lib, "rarch_dsp_plugin_init");
+#endif
 
-   if (!plugin_init)
+   if (!cb)
    {
       RARCH_ERR("Failed to find symbol \"rarch_dsp_plugin_init\" in DSP plugin.\n");
       goto error;
    }
 
-   g_extern.audio_data.dsp_plugin = plugin_init();
+   cpu_features = rarch_get_cpu_features();
+   g_extern.audio_data.dsp_plugin = cb(cpu_features);
+
    if (!g_extern.audio_data.dsp_plugin)
    {
       RARCH_ERR("Failed to get a valid DSP plugin.\n");
@@ -998,21 +1087,25 @@ static void init_dsp_plugin(void)
    return;
 
 error:
+#ifdef HAVE_DYLIB
    if (g_extern.audio_data.dsp_lib)
       dylib_close(g_extern.audio_data.dsp_lib);
-   g_extern.audio_data.dsp_plugin = NULL;
    g_extern.audio_data.dsp_lib = NULL;
+#endif
+   g_extern.audio_data.dsp_plugin = NULL;
 }
 
-static void deinit_dsp_plugin(void)
+void rarch_deinit_dsp_filter(void)
 {
-   if (g_extern.audio_data.dsp_lib && g_extern.audio_data.dsp_plugin)
-   {
+   if (g_extern.audio_data.dsp_plugin && g_extern.audio_data.dsp_plugin->free)
       g_extern.audio_data.dsp_plugin->free(g_extern.audio_data.dsp_handle);
+#ifdef HAVE_DYLIB
+   if (g_extern.audio_data.dsp_lib)
       dylib_close(g_extern.audio_data.dsp_lib);
-   }
-}
 #endif
+   g_extern.audio_data.dsp_handle = NULL;
+   g_extern.audio_data.dsp_plugin = NULL;
+}
 
 void init_audio(void)
 {
@@ -1084,11 +1177,10 @@ void init_audio(void)
       g_extern.audio_data.src_ratio =
       (double)g_settings.audio.out_rate / g_settings.audio.in_rate;
 
-   const char *resampler = *g_settings.audio.resampler ? g_settings.audio.resampler : NULL;
    if (!rarch_resampler_realloc(&g_extern.audio_data.resampler_data, &g_extern.audio_data.resampler,
-         resampler, g_extern.audio_data.orig_src_ratio))
+         g_settings.audio.resampler, g_extern.audio_data.orig_src_ratio))
    {
-      RARCH_ERR("Failed to initialize resampler \"%s\".\n", resampler ? resampler : "(default)");
+      RARCH_ERR("Failed to initialize resampler \"%s\".\n", g_settings.audio.resampler);
       g_extern.audio_active = false;
    }
 
@@ -1111,9 +1203,7 @@ void init_audio(void)
          RARCH_WARN("Audio rate control was desired, but driver does not support needed features.\n");
    }
 
-#ifdef HAVE_DYLIB
-   init_dsp_plugin();
-#endif
+   rarch_init_dsp_filter();
 
    g_extern.measure_data.buffer_free_samples_count = 0;
 
@@ -1256,52 +1346,35 @@ void uninit_audio(void)
    free(g_extern.audio_data.outsamples);
    g_extern.audio_data.outsamples = NULL;
 
-#ifdef HAVE_DYLIB
-   deinit_dsp_plugin();
-#endif
+   rarch_deinit_dsp_filter();
 
    compute_audio_buffer_statistics();
 }
 
-#ifdef HAVE_DYLIB
-static void deinit_filter(void)
+void rarch_deinit_filter(void)
 {
-   g_extern.filter.active = false;
-
-   if (g_extern.filter.lib)
-      dylib_close(g_extern.filter.lib);
-   g_extern.filter.lib = NULL;
-
+   rarch_softfilter_free(g_extern.filter.filter);
    free(g_extern.filter.buffer);
-   free(g_extern.filter.colormap);
-   free(g_extern.filter.scaler_out);
-   g_extern.filter.buffer     = NULL;
-   g_extern.filter.colormap   = NULL;
-   g_extern.filter.scaler_out = NULL;
-
-   scaler_ctx_gen_reset(&g_extern.filter.scaler);
-   memset(&g_extern.filter.scaler, 0, sizeof(g_extern.filter.scaler));
+   memset(&g_extern.filter, 0, sizeof(g_extern.filter));
 }
 
-static void init_filter(bool rgb32)
+void rarch_init_filter(enum retro_pixel_format colfmt)
 {
-   unsigned i;
-   if (g_extern.filter.active)
-      return;
+   rarch_deinit_filter();
+#ifdef HAVE_FILTERS_BUILTIN
+   if (!g_settings.video.filter_idx)
+#else
    if (!*g_settings.video.filter_path)
+#endif
       return;
+
+   // Deprecated format. Gets pre-converted.
+   if (colfmt == RETRO_PIXEL_FORMAT_0RGB1555)
+      colfmt = RETRO_PIXEL_FORMAT_RGB565;
 
    if (g_extern.system.hw_render_callback.context_type)
    {
       RARCH_WARN("Cannot use CPU filters when hardware rendering is used.\n");
-      return;
-   }
-
-   RARCH_LOG("Loading bSNES filter from \"%s\"\n", g_settings.video.filter_path);
-   g_extern.filter.lib = dylib_load(g_settings.video.filter_path);
-   if (!g_extern.filter.lib)
-   {
-      RARCH_ERR("Failed to load filter \"%s\"\n", g_settings.video.filter_path);
       return;
    }
 
@@ -1312,69 +1385,44 @@ static void init_filter(bool rgb32)
    unsigned pow2_y  = 0;
    unsigned maxsize = 0;
 
-   g_extern.filter.psize = 
-      (void (*)(unsigned*, unsigned*))dylib_proc(g_extern.filter.lib, "filter_size");
-   g_extern.filter.prender = 
-      (void (*)(uint32_t*, uint32_t*, 
-                unsigned, const uint16_t*, 
-                unsigned, unsigned, unsigned))dylib_proc(g_extern.filter.lib, "filter_render");
+#ifdef HAVE_FILTERS_BUILTIN
+   RARCH_LOG("Loading softfilter %d\n", g_settings.video.filter_idx);
+#else
+   RARCH_LOG("Loading softfilter from \"%s\"\n", g_settings.video.filter_path);
+#endif
+   g_extern.filter.filter = rarch_softfilter_new(g_settings.video.filter_path,
+         RARCH_SOFTFILTER_THREADS_AUTO, colfmt, width, height);
 
-   if (!g_extern.filter.psize || !g_extern.filter.prender)
+   if (!g_extern.filter.filter)
    {
-      RARCH_ERR("Failed to find functions in filter...\n");
-      goto error;
+#ifdef HAVE_FILTERS_BUILTIN
+      RARCH_LOG("Loading softfilter %d\n", g_settings.video.filter_idx);
+#else
+      RARCH_ERR("Failed to load filter \"%s\"\n", g_settings.video.filter_path);
+#endif
+      return;
    }
 
-   g_extern.filter.active = true;
-   g_extern.filter.psize(&width, &height);
-
+   rarch_softfilter_get_max_output_size(g_extern.filter.filter, &width, &height);
    pow2_x  = next_pow2(width);
    pow2_y  = next_pow2(height);
-   maxsize = pow2_x > pow2_y ? pow2_x : pow2_y; 
+   maxsize = max(pow2_x, pow2_y); 
    g_extern.filter.scale = maxsize / RARCH_SCALE_BASE;
 
-   g_extern.filter.buffer = (uint32_t*)malloc(RARCH_SCALE_BASE * RARCH_SCALE_BASE *
-         g_extern.filter.scale * g_extern.filter.scale * sizeof(uint32_t));
+   g_extern.filter.out_rgb32 = rarch_softfilter_get_output_format(g_extern.filter.filter) == RETRO_PIXEL_FORMAT_XRGB8888;
+   g_extern.filter.out_bpp = g_extern.filter.out_rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
+
+   // TODO: Aligned output.
+   g_extern.filter.buffer = malloc(width * height * g_extern.filter.out_bpp);
    if (!g_extern.filter.buffer)
-      goto error;
-
-   g_extern.filter.pitch = RARCH_SCALE_BASE * g_extern.filter.scale * sizeof(uint32_t);
-
-   g_extern.filter.colormap = (uint32_t*)malloc(0x10000 * sizeof(uint32_t));
-   if (!g_extern.filter.colormap)
-      goto error;
-
-   // Set up conversion map from 16-bit XRGB1555 to 32-bit ARGB.
-   for (i = 0; i < 0x10000; i++)
-   {
-      unsigned r = (i >> 10) & 0x1f;
-      unsigned g = (i >>  5) & 0x1f;
-      unsigned b = (i >>  0) & 0x1f;
-
-      r = (r << 3) | (r >> 2);
-      g = (g << 3) | (g >> 2);
-      b = (b << 3) | (b >> 2);
-      g_extern.filter.colormap[i] = (r << 16) | (g << 8) | (b << 0);
-   }
-
-   g_extern.filter.scaler_out = (uint16_t*)malloc(sizeof(uint16_t) * geom->max_width * geom->max_height);
-   if (!g_extern.filter.scaler_out)
-      goto error;
-
-   g_extern.filter.scaler.scaler_type = SCALER_TYPE_POINT;
-   g_extern.filter.scaler.in_fmt      = rgb32 ? SCALER_FMT_ARGB8888 : SCALER_FMT_RGB565;
-   g_extern.filter.scaler.out_fmt     = SCALER_FMT_0RGB1555;
-
-   if (!scaler_ctx_gen_filter(&g_extern.filter.scaler))
       goto error;
 
    return;
 
 error:
-   RARCH_ERR("CPU filter init failed.\n");
-   deinit_filter();
+   RARCH_ERR("Softfilter init failed.\n");
+   rarch_deinit_filter();
 }
-#endif
 
 static void deinit_shader_dir(void)
 {
@@ -1438,9 +1486,7 @@ static bool init_video_pixel_converter(unsigned size)
 
 void init_video_input(void)
 {
-#ifdef HAVE_DYLIB
-   init_filter(g_extern.system.pix_fmt == RETRO_PIXEL_FORMAT_XRGB8888);
-#endif
+   rarch_init_filter(g_extern.system.pix_fmt);
 
    init_shader_dir();
 
@@ -1449,7 +1495,7 @@ void init_video_input(void)
    unsigned scale = next_pow2(max_dim) / RARCH_SCALE_BASE;
    scale = max(scale, 1);
 
-   if (g_extern.filter.active)
+   if (g_extern.filter.filter)
       scale = g_extern.filter.scale;
 
    // Update core-dependent aspect ratio values.
@@ -1514,7 +1560,7 @@ void init_video_input(void)
    video.force_aspect = g_settings.video.force_aspect;
    video.smooth = g_settings.video.smooth;
    video.input_scale = scale;
-   video.rgb32 = g_extern.filter.active || (g_extern.system.pix_fmt == RETRO_PIXEL_FORMAT_XRGB8888);
+   video.rgb32 = g_extern.filter.filter ? g_extern.filter.out_rgb32 : (g_extern.system.pix_fmt == RETRO_PIXEL_FORMAT_XRGB8888);
 
    const input_driver_t *tmp = driver.input;
    find_video_driver(); // Need to grab the "real" video driver interface on a reinit.
@@ -1621,13 +1667,97 @@ void uninit_video_input(void)
 
    deinit_pixel_converter();
 
-#ifdef HAVE_DYLIB
-   deinit_filter();
-#endif
+   rarch_deinit_filter();
 
    deinit_shader_dir();
    compute_monitor_fps_statistics();
 }
+
+#ifdef HAVE_MENU
+static const menu_ctx_driver_t *menu_ctx_drivers[] = {
+#if defined(HAVE_RMENU)
+   &menu_ctx_rmenu,
+#endif
+#if defined(HAVE_RMENU_XUI)
+   &menu_ctx_rmenu_xui,
+#endif
+#if defined(HAVE_RGUI)
+   &menu_ctx_rgui,
+#endif
+#if defined(HAVE_LAKKA)
+   &menu_ctx_lakka,
+#endif
+   NULL // zero length array is not valid
+};
+
+const void *menu_ctx_find_driver(const char *ident)
+{
+   unsigned i;
+   for (i = 0; menu_ctx_drivers[i]; i++)
+   {
+      if (strcmp(menu_ctx_drivers[i]->ident, ident) == 0)
+         return menu_ctx_drivers[i];
+   }
+
+   return NULL;
+}
+
+static int find_menu_driver_index(const char *driver)
+{
+   unsigned i;
+   for (i = 0; menu_ctx_drivers[i]; i++)
+      if (strcasecmp(driver, menu_ctx_drivers[i]->ident) == 0)
+         return i;
+   return -1;
+}
+
+void find_prev_menu_driver(void)
+{
+   int i = find_menu_driver_index(g_settings.menu.driver);
+   if (i > 0)
+   {
+      strlcpy(g_settings.menu.driver, menu_ctx_drivers[i - 1]->ident, sizeof(g_settings.menu.driver));
+      driver.menu_ctx = (menu_ctx_driver_t*)menu_ctx_drivers[i - 1];
+   }
+   else
+      RARCH_WARN("Couldn't find any previous menu driver (current one: \"%s\").\n", g_settings.menu.driver);
+}
+
+void find_next_menu_driver(void)
+{
+   int i = find_menu_driver_index(g_settings.menu.driver);
+   if (i >= 0 && menu_ctx_drivers[i + 1])
+   {
+      strlcpy(g_settings.menu.driver, menu_ctx_drivers[i + 1]->ident, sizeof(g_settings.menu.driver));
+      driver.menu_ctx = (menu_ctx_driver_t*)menu_ctx_drivers[i + 1];
+   }
+   else
+      RARCH_WARN("Couldn't find any next menu driver (current one: \"%s\").\n", g_settings.menu.driver);
+}
+
+bool menu_ctx_init_first(const menu_ctx_driver_t **driver, void **data)
+{
+   unsigned i;
+
+   if (!menu_ctx_drivers[0])
+      return false;
+
+   for (i = 0; menu_ctx_drivers[i]; i++)
+   {
+      void *h = menu_ctx_drivers[i]->init();
+
+      if (h)
+      {
+         *driver = menu_ctx_drivers[i];
+         *data = h;
+         strlcpy(g_settings.menu.driver, menu_ctx_drivers[i]->ident, sizeof(g_settings.menu.driver));
+         return true;
+      }
+   }
+
+   return false;
+}
+#endif
 
 driver_t driver;
 

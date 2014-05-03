@@ -16,7 +16,7 @@
 #import <objc/runtime.h>
 #import "../common/RetroArch_Apple.h"
 #include "../common/setting_data.h"
-#include "../common/apple_input.h"
+#include "../../input/apple_input.h"
 
 #include "../../driver.h"
 #include "../../input/input_common.h"
@@ -88,9 +88,12 @@ static void* const associated_name_tag = (void*)&associated_name_tag;
 @end
 
 
-@interface RASettingsDelegate : NSObject<NSTableViewDataSource,   NSTableViewDelegate,
-                                         NSOutlineViewDataSource, NSOutlineViewDelegate,
-                                         NSWindowDelegate>
+@interface RASettingsDelegate : NSObject
+#ifdef MAC_OS_X_VERSION_10_6
+<NSTableViewDataSource,   NSTableViewDelegate,
+NSOutlineViewDataSource, NSOutlineViewDelegate,
+NSWindowDelegate>
+#endif
 {
    RAInputBinder* _binderWindow;
    NSButtonCell* _booleanCell;
@@ -141,7 +144,7 @@ static void* const associated_name_tag = (void*)&associated_name_tag;
 
    setting_data_load_current();
 
-   const rarch_setting_t* setting_data = setting_data_get_list();
+   const rarch_setting_t *setting_data = (const rarch_setting_t *)setting_data_get_list();
 
    for (int i = 0; setting_data[i].type; i ++)
    {
@@ -150,7 +153,10 @@ static void* const associated_name_tag = (void*)&associated_name_tag;
          case ST_GROUP:
          {
             thisGroup = [NSMutableArray array];
-            objc_setAssociatedObject(thisGroup, associated_name_tag, [NSString stringWithFormat:@"%s", setting_data[i].name], OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+#if defined(MAC_OS_X_VERSION_10_6)
+			/* FIXME - Rewrite this so that this is no longer an associated object - requires ObjC 2.0 runtime */
+            objc_setAssociatedObject(thisGroup, associated_name_tag, [NSString stringWithFormat:BOXSTRING("%s"), setting_data[i].name], OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+#endif
             break;
          }
          
@@ -165,7 +171,10 @@ static void* const associated_name_tag = (void*)&associated_name_tag;
          case ST_SUB_GROUP:
          {
             thisSubGroup = [NSMutableArray array];
-            objc_setAssociatedObject(thisSubGroup, associated_name_tag, [NSString stringWithFormat:@"%s", setting_data[i].name], OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+#if defined(MAC_OS_X_VERSION_10_6)
+			 /* FIXME - Rewrite this so that this is no longer an associated object - requires ObjC 2.0 runtime */
+            objc_setAssociatedObject(thisSubGroup, associated_name_tag, [NSString stringWithFormat:BOXSTRING("%s"), setting_data[i].name], OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+#endif
             break;
          }
          
@@ -184,14 +193,20 @@ static void* const associated_name_tag = (void*)&associated_name_tag;
          }
       }
    }
-   
-   setting_data_load_config_path(setting_data_get_list(), [apple_platform.globalConfigFile UTF8String]);
+	
+#ifdef MAC_OS_X_VERSION_10_6
+   /* FIXME - fix for 10.5.8 and lower */
+   setting_data_load_config_path(setting_data_get_list(), apple_platform.globalConfigFile.UTF8String);
+#endif
    apple_stop_iteration();
 }
 
 - (void)windowWillClose:(NSNotification *)notification
 {
-   setting_data_save_config_path(setting_data_get_list(), [apple_platform.globalConfigFile UTF8String]);
+#ifdef MAC_OS_X_VERSION_10_6
+	/* FIXME - fix for 10.5.8 and lower */
+   setting_data_save_config_path(setting_data_get_list(), apple_platform.globalConfigFile.UTF8String);
+#endif
    [NSApp stopModal];
 
    apple_start_iteration();
@@ -200,12 +215,17 @@ static void* const associated_name_tag = (void*)&associated_name_tag;
 #pragma mark Section Table
 - (NSInteger)numberOfRowsInTableView:(NSTableView*)view
 {
-   return [self.settings count];
+   return self.settings.count;
 }
 
 - (id)tableView:(NSTableView *)tableView objectValueForTableColumn:(NSTableColumn *)tableColumn row:(NSInteger)row
 {
+#if defined(MAC_OS_X_VERSION_10_6)
    return objc_getAssociatedObject([self.settings objectAtIndex:row], associated_name_tag);
+#else
+	/* FIXME - Rewrite this so that this is no longer an associated object - requires ObjC 2.0 runtime */
+	return 0; /* stub */
+#endif
 }
 
 - (void)tableViewSelectionDidChange:(NSNotification *)aNotification
@@ -242,25 +262,30 @@ static void* const associated_name_tag = (void*)&associated_name_tag;
 
    if ([item isKindOfClass:[NSArray class]])
    {
-      if ([[tableColumn identifier] isEqualToString:@"left"])
+#ifdef MAC_OS_X_VERSION_10_6
+	  /* FIXME - Rewrite this so that this is no longer an associated object - requires ObjC 2.0 runtime */
+      if ([[tableColumn identifier] isEqualToString:BOXSTRING("left")])
          return objc_getAssociatedObject(item, associated_name_tag);
       else
-         return @"";
+#endif
+         return BOXSTRING("");
    }
    else
    {
-      const rarch_setting_t* setting_data = setting_data_get_list();
-      const rarch_setting_t* setting = &setting_data[[item intValue]];
+      const rarch_setting_t* setting_data = (const rarch_setting_t*)setting_data_get_list();
+      const rarch_setting_t* setting = (const rarch_setting_t*)&setting_data[[item intValue]];
       char buffer[PATH_MAX];
       
-      if ([[tableColumn identifier] isEqualToString:@"left"])
+      if ([[tableColumn identifier] isEqualToString:BOXSTRING("left")])
          return BOXSTRING(setting->short_description);
       else
       {
          switch (setting->type)
          {
-            case ST_BOOL: return BOXINT(*setting->value.boolean);
-            default:      return BOXSTRING(setting_data_get_string_representation(setting, buffer, sizeof(buffer)));
+            case ST_BOOL:
+                 return BOXINT(*setting->value.boolean);
+            default:
+                 return BOXSTRING(setting_data_get_string_representation(setting, buffer, sizeof(buffer)));
          }
       }
    }
@@ -274,17 +299,20 @@ static void* const associated_name_tag = (void*)&associated_name_tag;
    if ([item isKindOfClass:[NSArray class]])
       return [tableColumn dataCell];
    
-   if ([[tableColumn identifier] isEqualToString:@"left"])
+   if ([[tableColumn identifier] isEqualToString:BOXSTRING("left")])
       return [tableColumn dataCell];
 
-   const rarch_setting_t* setting_data = setting_data_get_list();
-   const rarch_setting_t* setting = &setting_data[[item intValue]];
+   const rarch_setting_t *setting_data = (const rarch_setting_t *)setting_data_get_list();
+   const rarch_setting_t *setting      = (const rarch_setting_t *)&setting_data[[item intValue]];
 
    switch (setting->type)
    {
-      case ST_BOOL: return self.booleanCell;
-      case ST_BIND: return self.binderCell;
-      default:      return [tableColumn dataCell];
+      case ST_BOOL:
+           return self.booleanCell;
+      case ST_BIND:
+           return self.binderCell;
+      default:
+           return tableColumn.dataCell;
    }
 }
 
@@ -296,14 +324,19 @@ static void* const associated_name_tag = (void*)&associated_name_tag;
       
       if ([item isKindOfClass:[NSNumber class]])
       {
-         const rarch_setting_t* setting_data = setting_data_get_list();
-         const rarch_setting_t* setting = &setting_data[[item intValue]];
+         const rarch_setting_t* setting_data = (const rarch_setting_t*)setting_data_get_list();
+         const rarch_setting_t* setting      = (const rarch_setting_t*)&setting_data[[item intValue]];
    
          switch (setting->type)
          {
-            case ST_BOOL: *setting->value.boolean = !*setting->value.boolean; return;
-            case ST_BIND: [self.binderWindow runForSetting:setting onWindow:[self.outline window]]; return;
-            default: return;
+            case ST_BOOL:
+                 *setting->value.boolean = !*setting->value.boolean;
+                 break;
+            case ST_BIND:
+                 [self.binderWindow runForSetting:setting onWindow:[self.outline window]];
+                 break;
+             default:
+                 break;
          }
       }
    }
@@ -313,16 +346,17 @@ static void* const associated_name_tag = (void*)&associated_name_tag;
 {
    if ([notification object] == self.outline)
    {
-      NSText* editor = [[notification userInfo] objectForKey:@"NSFieldEditor"];
+      NSText* editor = [[notification userInfo] objectForKey:BOXSTRING("NSFieldEditor")];
       
       id item = [self.outline itemAtRow:[self.outline selectedRow]];
 
       if ([item isKindOfClass:[NSNumber class]])
       {
-         const rarch_setting_t* setting_data = setting_data_get_list();
-         const rarch_setting_t* setting = &setting_data[[item intValue]];
+         const rarch_setting_t* setting_data = (const rarch_setting_t *)setting_data_get_list();
+         const rarch_setting_t* setting = (const rarch_setting_t*)&setting_data[[item intValue]];
+         NSString *editor_string = (NSString*)editor.string;
          
-         setting_data_set_with_string_representation(setting, [editor.string UTF8String]);
+         setting_data_set_with_string_representation(setting, editor_string.UTF8String);
       }
    }
 }

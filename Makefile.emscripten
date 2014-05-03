@@ -30,17 +30,18 @@ OBJ = frontend/platform/platform_emscripten.o \
 		gfx/scaler/scaler.o \
 		gfx/scaler/pixconv.o \
 		gfx/scaler/scaler_int.o \
-		gfx/scaler/filter.o \
+		gfx/scaler/scaler_filter.o \
 		gfx/state_tracker.o \
 		gfx/shader_parse.o \
 		gfx/fonts/fonts.o \
 		gfx/fonts/bitmapfont.o \
-		gfx/image.o \
+		gfx/image/image.o \
 		audio/resampler.o \
 		audio/sinc.o \
+		audio/cc_resampler.o \
 		audio/null.o \
 		performance.o \
-		core_info.o \
+		frontend/info/core_info.o \
 		camera/rwebcam.o
 
 HAVE_OPENGL = 1
@@ -61,7 +62,7 @@ endif
 libretro = libretro_emscripten.bc
 
 LIBS =
-DEFINES = -DHAVE_SCREENSHOTS -DHAVE_CAMERA -DHAVE_NULLAUDIO -DHAVE_BSV_MOVIE -DRARCH_INTERNAL
+DEFINES = -DHAVE_SCREENSHOTS -DHAVE_CAMERA -DHAVE_NULLAUDIO -DHAVE_BSV_MOVIE -DRARCH_INTERNAL -DHAVE_CC_RESAMPLER
 LDFLAGS = -L. -s TOTAL_MEMORY=$(MEMORY) -s OUTLINING_LIMIT=50000 --js-library emscripten/library_rwebaudio.js --js-library emscripten/library_rwebinput.js --js-library emscripten/library_rwebcam.js --no-heap-copy
 
 ifeq ($(PERF_TEST), 1)
@@ -70,7 +71,12 @@ endif
 
 ifeq ($(HAVE_RGUI), 1)
    DEFINES += -DHAVE_MENU -DHAVE_RGUI
-   OBJ += frontend/menu/menu_common.o frontend/menu/menu_settings.o frontend/menu/menu_context.o file_list.o frontend/menu/disp/rgui.o frontend/menu/history.o
+   OBJ += frontend/menu/menu_input_line_cb.o frontend/menu/menu_common.o frontend/menu/menu_navigation.o frontend/menu/file_list.o frontend/menu/disp/rgui.o frontend/menu/history.o
+	HAVE_MENU_COMMON = 1
+endif
+
+ifeq ($(HAVE_MENU_COMMON), 1)
+	OBJ += frontend/menu/backend/menu_common_backend.o
 endif
 
 ifeq ($(HAVE_SDL), 1)

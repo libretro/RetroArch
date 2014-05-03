@@ -1,0 +1,273 @@
+DEBUG			               = 0
+HAVE_LOGGER		            = 0
+HAVE_FILE_LOGGER	         = 0
+PERF_TEST		            = 0
+WHOLE_ARCHIVE_LINK         = 0
+BIG_STACK		            = 0
+PC_DEVELOPMENT_IP_ADDRESS	= 255.255.255.255
+PC_DEVELOPMENT_UDP_PORT		= 3490
+
+ifneq ($(EMSCRIPTEN),)
+   platform = emscripten
+endif
+
+ifeq ($(platform),)
+platform = unix
+ifeq ($(shell uname -a),)
+   platform = win
+else ifneq ($(findstring MINGW,$(shell uname -a)),)
+   platform = win
+else ifneq ($(findstring Darwin,$(shell uname -a)),)
+   platform = osx
+else ifneq ($(findstring win,$(shell uname -a)),)
+   platform = win
+endif
+endif
+
+# system platform
+system_platform = unix
+ifeq ($(shell uname -a),)
+EXE_EXT = .exe
+   system_platform = win
+else ifneq ($(findstring Darwin,$(shell uname -a)),)
+   system_platform = osx
+else ifneq ($(findstring MINGW,$(shell uname -a)),)
+   system_platform = win
+endif
+
+TARGET_NAME := retroarch
+
+INCLUDE :=
+LDFLAGS :=
+LIBDIRS := 
+
+SHADER_DIR      := media/shaders
+OVERLAY_DIR     := media/overlays
+SHADER_GLSL_DIR := media/shaders_glsl
+
+PYTHON2		= python2$(EXE_EXT)
+PYTHON3		= python3$(EXE_EXT)
+GIT			= git$(EXE_EXT)
+
+ifeq ($(WHOLE_ARCHIVE_LINK), 1)
+   WHOLE_START := -Wl,--whole-archive
+   WHOLE_END := -Wl,--no-whole-archive
+endif
+
+ifeq ($(platform), ngc)
+  CC = $(DEVKITPPC)/bin/powerpc-eabi-gcc$(EXE_EXT)
+  CXX = $(DEVKITPPC)/bin/powerpc-eabi-g++$(EXE_EXT)
+  LD = $(DEVKITPPC)/bin/powerpc-eabi-ld$(EXE_EXT)
+  ELF2DOL = $(DEVKITPPC)/bin/elf2dol$(EXE_EXT)
+  EXT_TARGET := $(TARGET_NAME)_ngc.dol
+  EXT_INTER_TARGET := $(TARGET_NAME)_ngc.elf
+  INCLUDE += -I. -I$(DEVKITPRO)/libogc/include -Ideps/rzlib
+  LIBDIRS += -L$(DEVKITPRO)/libogc/lib/cube -L.
+  MACHDEP := -DGEKKO -DHW_DOL -mogc -mcpu=750 -meabi -mhard-float -DMSB_FIRST
+  LDFLAGS += $(MACHDEP) -Wl,-Map,$(notdir $(EXT_INTER_TARGET)).map
+ifeq ($(BIG_STACK), 1)
+   LDFLAGS += -T gx/ld/ogc.ld
+endif
+  LIBS := -lfat $(WHOLE_START) -lretro_ngc $(WHOLE_END) -logc
+ifeq ($(HAVE_LOGGER), 1)
+  LIBS += -lbba
+endif
+  PLATCFLAGS := -DGEKKO
+
+  HAVE_THREADS             := 1
+  HAVE_ZLIB                := 1
+  HAVE_RPNG                := 1
+  HAVE_OVERLAY             := 1
+else ifeq ($(platform), ps3)
+	#TODO
+  MEDIA_SHADER_DIR := ps3/pkg/USRDIR/cores/shaders
+else ifeq ($(platform), ps3-cobra)
+	#TODO
+  MEDIA_SHADER_DIR := ps3/iso/PS3_GAME/USRDIR/cores/shaders
+else ifeq ($(platform), wii)
+  CC = $(DEVKITPPC)/bin/powerpc-eabi-gcc$(EXE_EXT)
+  CXX = $(DEVKITPPC)/bin/powerpc-eabi-g++$(EXE_EXT)
+  LD = $(DEVKITPPC)/bin/powerpc-eabi-ld$(EXE_EXT)
+  ELF2DOL = $(DEVKITPPC)/bin/elf2dol$(EXE_EXT)
+  EXT_TARGET := $(TARGET_NAME)_wii.dol
+  EXT_INTER_TARGET := $(TARGET_NAME)_wii.elf
+  INCLUDE += -I. -I$(DEVKITPRO)/libogc/include -Ideps/rzlib
+  LIBDIRS += -L$(DEVKITPRO)/libogc/lib/wii -L.
+  MACHDEP := -DGEKKO -DHW_RVL -mrvl -mcpu=750 -meabi -mhard-float -DMSB_FIRST
+  LDFLAGS += $(MACHDEP) -Wl,-Map,$(notdir $(EXT_INTER_TARGET)).map,-wrap,malloc,-wrap,free,-wrap,memalign,-wrap,calloc,-wrap,realloc,-wrap,strdup,-wrap,strndup,-wrap,malloc_usable_size
+ifeq ($(BIG_STACK), 1)
+   LDFLAGS += -T gx/ld/rvl.ld
+endif
+  LIBS := -lfat $(WHOLE_START) -lretro_wii $(WHOLE_END) -logc -lwiiuse -lbte 
+  APP_BOOTER_DIR = wii/app_booter
+  PLATOBJS := $(APP_BOOTER_DIR)/app_booter.binobj
+  PLATCFLAGS := -DGEKKO
+
+  HAVE_RARCH_EXEC          := 1
+  HAVE_THREADS             := 1
+  HAVE_RSOUND              := 1
+  HAVE_LIBRETRO_MANAGEMENT := 1
+  HAVE_ZLIB                := 1
+  HAVE_RPNG                := 1
+  HAVE_OVERLAY             := 1
+  HAVE_LIBSICKSAXIS			:= 0
+else ifeq ($(platform), psp1)
+  CC = psp-gcc$(EXE_EXT)
+  CXX = psp-g++$(EXE_EXT)
+  LD = psp-ld$(EXE_EXT)
+  INCLUDE += -I$(PSPSDK)/psp/sdk/include
+  EXT_TARGET := $(TARGET_NAME)_psp1.elf
+  EXT_INTER_TARGET := $(TARGET_NAME)_psp1.elf
+  PLATCFLAGS := -DPSP -D_PSP_FW_VERSION=150 -G0
+
+  HAVE_LIBRETRO_MANAGEMENT := 1
+  HAVE_RPNG                := 1
+endif
+
+CFLAGS += -Wall -std=gnu99 $(MACHDEP) $(INCLUDE)
+
+OBJ = griffin/griffin.o  $(PLATOBJS)
+
+ifeq ($(PERF_TEST), 1)
+   CFLAGS += -DPERF_TEST
+endif
+
+ifeq ($(HAVE_LOGGER), 1)
+CFLAGS		+= -DHAVE_LOGGER
+CFLAGS      += -DPC_DEVELOPMENT_IP_ADDRESS=\"$(PC_DEVELOPMENT_IP_ADDRESS)\" -DPC_DEVELOPMENT_UDP_PORT=$(PC_DEVELOPMENT_UDP_PORT)
+INCLUDE     += -Iconsole/logger
+endif
+
+ifeq ($(HAVE_LIBRETRO_MANAGEMENT), 1)
+CFLAGS		+= -DHAVE_LIBRETRO_MANAGEMENT
+endif
+
+ifeq ($(HAVE_LIBSICKSAXIS), 1)
+CFLAGS		+= -DHAVE_LIBSICKSAXIS
+endif
+
+ifeq ($(HAVE_RPNG), 1)
+CFLAGS      += -DWANT_RPNG
+endif
+
+ifeq ($(HAVE_FILE_LOGGER), 1)
+CFLAGS		+= -DHAVE_FILE_LOGGER
+INCLUDE     += -Iconsole/logger
+endif
+
+ifeq ($(HAVE_RARCH_EXEC), 1)
+CFLAGS      += -DHAVE_RARCH_EXEC
+endif
+
+ifeq ($(HAVE_ZLIB), 1)
+CFLAGS      += -DHAVE_ZLIB -DWANT_MINIZ
+endif
+
+ifeq ($(HAVE_OVERLAY), 1)
+CFLAGS      += -DHAVE_OVERLAY
+endif
+
+CFLAGS += -std=gnu99 -DSINC_LOWER_QUALITY -DHAVE_CC_RESAMPLER -DHAVE_RGUI -DHAVE_MENU -DRARCH_CONSOLE -DHAVE_GRIFFIN=1 -DHAVE_SCREENSHOTS -Wno-char-subscripts  -DRARCH_INTERNAL
+
+ifeq ($(HAVE_THREADS), 1)
+CFLAGS += -DHAVE_THREADS
+ifeq ($(platform), psp1)
+LIBS += -lpthread-psp
+endif
+endif
+
+ifeq ($(HAVE_RSOUND), 1)
+CFLAGS += -DHAVE_RSOUND
+endif
+
+ifeq ($(DEBUG), 1)
+   CFLAGS += -O0 -g -DDEBUG
+else ifeq ($(platform), psp1)
+   CFLAGS += -O2
+else
+   CFLAGS += -O3
+endif
+
+all: $(EXT_TARGET)
+
+%.dol: %.elf
+	$(ELF2DOL) $< $@
+
+$(EXT_INTER_TARGET): $(OBJ)
+	$(CXX) -o $@ $(LDFLAGS) $(LIBDIRS) $(OBJ) $(LIBS)
+
+%.o: %.c
+	$(CC) $(CFLAGS) -c -o $@ $<
+
+%.bmpobj: %.bmp
+	$(LD) -r -b binary -o $@ $<
+
+%.binobj: %.bin
+	$(LD) -r -b binary -o $@ $<
+
+$(APP_BOOTER_DIR)/app_booter.bin:
+	$(MAKE) -C $(APP_BOOTER_DIR)
+
+pkg: all
+ifeq ($(platform), wii)
+	cp -r $(EXT_TARGET) wii/pkg/CORE.dol
+else ifeq ($(platform), ngc)
+	cp -r $(EXT_TARGET) ngc/pkg/CORE.dol
+else ifeq ($(platform), psp1)
+	psp-fixup-imports$(EXT) $(EXT_TARGET)
+endif
+
+shaders-checkout:
+	@if test -d $(SHADER_DIR); then \
+		echo "[SHADER CHECKOUT::] Git pulling common-shaders..."; \
+      cd $(SHADER_DIR); \
+		$(GIT) pull; \
+		cd ../../../../..; \
+	else \
+	echo "[SHADER CHECKOUT::] Git cloning common-shaders first..."; \
+      $(GIT) clone git://github.com/libretro/common-shaders.git $(SHADER_DIR); \
+	fi
+
+shaders-deploy:
+ifeq ($(platform), ps3)
+	@if test -d $(MEDIA_SHADER_DIR); then \
+		cp -r $(SHADER_DIR)/* $(MEDIA_SHADER_DIR); \
+	else \
+	echo "[DEPLOY PS3::] Creating PS3 shader directory first..."; \
+		mkdir -p $(MEDIA_SHADER_DIR) || bin/true; \
+	fi
+	@echo "[DEPLOY PS3::] Copied shaders to PS3 shaders directory."
+else ifeq ($(platform), ps3-cobra)
+	@if test -d $(MEDIA_SHADER_DIR); then \
+		cp -r $(SHADER_DIR)/* $(MEDIA_SHADER_DIR); \
+	else \
+	echo "[DEPLOY PS3::] Creating PS3 shader directory first..."; \
+		mkdir -p $(MEDIA_SHADER_DIR) || bin/true; \
+	fi
+	@echo "[DEPLOY PS3::] Copied shaders to PS3 shaders directory."
+endif
+
+shaders-convert-glsl:
+	$(PYTHON3) tools/cg2glsl.py $(SHADER_DIR) $(SHADER_GLSL_DIR)
+
+overlays-checkout:
+	@if test -d $(OVERLAY_DIR); then \
+		echo "[OVERLAY CHECKOUT::] Git pulling common-overlays..."; \
+      cd $(OVERLAY_DIR); \
+		$(GIT) pull; \
+		cd ../../../../..; \
+	else \
+	echo "[OVERLAY CHECKOUT::] Git cloning common-overlays first..."; \
+      $(GIT) clone git://github.com/libretro/common-overlays.git $(OVERLAY_DIR); \
+	fi
+
+
+clean:
+	rm -f $(EXT_TARGET)
+	rm -f $(EXT_INTER_TARGET)
+	rm -f $(OBJ)
+ifeq ($(platform), wii)
+	$(MAKE) -C $(APP_BOOTER_DIR) clean
+endif
+
+.PHONY: clean

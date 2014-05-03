@@ -68,7 +68,7 @@ static PFNVGCREATEEGLIMAGETARGETKHRPROC pvgCreateEGLImageTargetKHR;
 static void vg_set_nonblock_state(void *data, bool state)
 {
    vg_t *vg = (vg_t*)data;
-   vg->driver->swap_interval(state ? 0 : 1);
+   vg->driver->swap_interval(vg, state ? 0 : 1);
 }
 
 static inline bool vg_query_extension(const char *ext)
@@ -87,7 +87,7 @@ static void *vg_init(const video_info_t *video, const input_driver_t **input, vo
    if (!vg)
       return NULL;
 
-   vg->driver = gfx_ctx_init_first(GFX_CTX_OPENVG_API, 0, 0);
+   vg->driver = gfx_ctx_init_first(vg, GFX_CTX_OPENVG_API, 0, 0, false);
 
    if (!vg->driver)
    {
@@ -95,11 +95,11 @@ static void *vg_init(const video_info_t *video, const input_driver_t **input, vo
       return NULL;
    }
 
-   vg->driver->get_video_size(&vg->mScreenWidth, &vg->mScreenHeight);
+   vg->driver->get_video_size(vg, &vg->mScreenWidth, &vg->mScreenHeight);
    RARCH_LOG("Detecting screen resolution %ux%u.\n", vg->mScreenWidth, vg->mScreenHeight);
 
-   vg->driver->swap_interval(video->vsync ? 1 : 0);
-   vg->driver->update_window_title();
+   vg->driver->swap_interval(vg, video->vsync ? 1 : 0);
+   vg->driver->update_window_title(vg);
 
    vg->mTexType = video->rgb32 ? VG_sXRGB_8888 : VG_sRGB_565;
    vg->mKeepAspect = video->force_aspect;
@@ -112,18 +112,18 @@ static void *vg_init(const video_info_t *video, const input_driver_t **input, vo
       win_height = vg->mScreenHeight;
    }
 
-   if (!vg->driver->set_video_mode(win_width, win_height, video->fullscreen))
+   if (!vg->driver->set_video_mode(vg, win_width, win_height, video->fullscreen))
    {
       free(vg);
       return NULL;
    }
 
-   vg->driver->get_video_size(&vg->mScreenWidth, &vg->mScreenHeight);
+   vg->driver->get_video_size(vg, &vg->mScreenWidth, &vg->mScreenHeight);
    RARCH_LOG("Verified window resolution %ux%u.\n", vg->mScreenWidth, vg->mScreenHeight);
    vg->should_resize = true;
 
    if (vg->driver->translate_aspect)
-      vg->mScreenAspect = vg->driver->translate_aspect(vg->mScreenWidth, vg->mScreenHeight);
+      vg->mScreenAspect = vg->driver->translate_aspect(vg, vg->mScreenWidth, vg->mScreenHeight);
    else
       vg->mScreenAspect = (float)vg->mScreenWidth / vg->mScreenHeight;
 
@@ -135,7 +135,7 @@ static void *vg_init(const video_info_t *video, const input_driver_t **input, vo
          video->smooth ? VG_IMAGE_QUALITY_BETTER : VG_IMAGE_QUALITY_NONANTIALIASED);
    vg_set_nonblock_state(vg, !video->vsync);
 
-   vg->driver->input_driver(input, input_data);
+   vg->driver->input_driver(vg, input, input_data);
 
    if (g_settings.video.font_enable && font_renderer_create_default(&vg->font_driver, &vg->mFontRenderer))
    {
@@ -160,7 +160,7 @@ static void *vg_init(const video_info_t *video, const input_driver_t **input, vo
       }
    }
 
-   if (vg_query_extension("KHR_EGL_image") && vg->driver->init_egl_image_buffer(video))
+   if (vg_query_extension("KHR_EGL_image") && vg->driver->init_egl_image_buffer(vg, video))
    {
       pvgCreateEGLImageTargetKHR = (PFNVGCREATEEGLIMAGETARGETKHRPROC)vg->driver->get_proc_address("vgCreateEGLImageTargetKHR");
 
@@ -194,7 +194,7 @@ static void vg_free(void *data)
       vgDestroyPaint(vg->mPaintBg);
    }
 
-   vg->driver->destroy();
+   vg->driver->destroy(vg);
 
    free(vg);
 }
@@ -330,7 +330,7 @@ static void vg_copy_frame(void *data, const void *frame, unsigned width, unsigne
    if (vg->mEglImageBuf)
    {
       EGLImageKHR img = 0;
-      bool new_egl = vg->driver->write_egl_image(frame, width, height, pitch, (vg->mTexType == VG_sXRGB_8888), 0, &img);
+      bool new_egl = vg->driver->write_egl_image(vg, frame, width, height, pitch, (vg->mTexType == VG_sXRGB_8888), 0, &img);
       rarch_assert(img != EGL_NO_IMAGE_KHR);
 
       if (new_egl)
@@ -386,10 +386,10 @@ static bool vg_frame(void *data, const void *frame, unsigned width, unsigned hei
    if (msg && vg->mFontsOn)
       vg_draw_message(vg, msg);
 
-   vg->driver->update_window_title();
+   vg->driver->update_window_title(vg);
 
    RARCH_PERFORMANCE_STOP(vg_fr);
-   vg->driver->swap_buffers();
+   vg->driver->swap_buffers(vg);
 
    return true;
 }
@@ -399,7 +399,7 @@ static bool vg_alive(void *data)
    vg_t *vg = (vg_t*)data;
    bool quit;
 
-   vg->driver->check_window(&quit,
+   vg->driver->check_window(vg, &quit,
          &vg->should_resize, &vg->mScreenWidth, &vg->mScreenHeight,
          g_extern.frame_count);
    return !quit;
@@ -408,7 +408,7 @@ static bool vg_alive(void *data)
 static bool vg_focus(void *data)
 {
    vg_t *vg = (vg_t*)data;
-   return vg->driver->has_focus();
+   return vg->driver->has_focus(vg);
 }
 
 const video_driver_t video_vg = {

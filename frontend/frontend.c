@@ -24,6 +24,7 @@
 frontend_ctx_driver_t *frontend_ctx;
 
 #if defined(HAVE_MENU)
+#include "menu/menu_input_line_cb.h"
 #include "menu/menu_common.h"
 #endif
 
@@ -46,51 +47,12 @@ static void rarch_get_environment_console(void)
    init_libretro_sym(false);
    rarch_init_system_info();
 
-#ifdef HAVE_LIBRETRO_MANAGEMENT
-   char basename[PATH_MAX];
-   char basename_new[PATH_MAX];
-   char old_path[PATH_MAX];
-   char new_path[PATH_MAX];
-
-   strlcpy(basename, "CORE", sizeof(basename));
-   strlcat(basename, DEFAULT_EXE_EXT, sizeof(basename));
-   fill_pathname_join(old_path, default_paths.core_dir, basename, sizeof(old_path));
-
-   libretro_get_current_core_pathname(basename_new, sizeof(basename_new));
-   strlcat(basename_new, DEFAULT_EXE_EXT, sizeof(basename_new));
-   fill_pathname_join(new_path, default_paths.core_dir, basename_new, sizeof(new_path));
-
-   if (path_file_exists(old_path))
-   {
-      // Rename core filename executable (old_path) to a more sane name (new_path).
-
-      if (path_file_exists(new_path))
-      {
-         /* If new_path already exists, we are upgrading the core - 
-          * delete existing file first. */
-
-         if (remove(new_path) < 0)
-            RARCH_ERR("Failed to remove file: %s.\n", new_path);
-         else
-            RARCH_LOG("Removed temporary ROM file: %s.\n", new_path);
-      }
-
-      /* Now attempt the renaming of the core. */
-      if (rename(old_path, new_path) < 0)
-         RARCH_ERR("Failed to rename core.\n");
-      else
-      {
-         rarch_environment_cb(RETRO_ENVIRONMENT_SET_LIBRETRO_PATH, (void*)new_path);
-         RARCH_LOG("Renamed core successfully to: %s.\n", new_path);
-      }
-   }
-#endif
-
    global_init_drivers();
 }
 #endif
 
 #if defined(ANDROID)
+
 #define main_entry android_app_entry
 #define returntype void
 #define signature_expand() data
@@ -100,28 +62,16 @@ static void rarch_get_environment_console(void)
 #define declare_argc() int argc = 0;
 #define declare_argv() char *argv[1]
 #define args_initial_ptr() data
-#elif defined(__APPLE__) || defined(HAVE_BB10)
+#else
+
+#if defined(__APPLE__) || defined(HAVE_BB10)
 #define main_entry rarch_main
-#define returntype int
-#define signature_expand() argc, argv
-#define returnfunc() return 0
-#define return_negative() return 1
-#define return_var(var) return var
-#define declare_argc()
-#define declare_argv()
-#define args_initial_ptr() NULL
 #elif defined(EMSCRIPTEN)
 #define main_entry _fakemain
-#define returntype int
-#define signature_expand() argc, argv
-#define returnfunc() return 0
-#define return_negative() return 1
-#define return_var(var) return var
-#define declare_argc()
-#define declare_argv()
-#define args_initial_ptr() NULL
 #else
 #define main_entry main
+#endif
+
 #define returntype int
 #define signature_expand() argc, argv
 #define returnfunc() return 0
@@ -130,6 +80,7 @@ static void rarch_get_environment_console(void)
 #define declare_argc()
 #define declare_argv()
 #define args_initial_ptr() NULL
+
 #endif
 
 #if defined(HAVE_BB10) || defined(ANDROID)
@@ -166,132 +117,171 @@ static void rarch_get_environment_console(void)
 #define attempt_load_game_fails (1ULL << MODE_EXIT)
 #endif
 
-#if defined(RARCH_CONSOLE)
-#define load_dummy_on_core_shutdown false
-#else
-#define load_dummy_on_core_shutdown true
-#endif
-
 #define frontend_init_enable true
 #define menu_init_enable true
 #define initial_lifecycle_state_preinit false
 
-int main_entry_iterate(signature(), args_type() args)
+static retro_keyboard_event_t key_event;
+
+#ifdef HAVE_MENU
+static int main_entry_iterate_clear_input(args_type() args)
+{
+   rarch_input_poll();
+   if (!menu_input())
+   {
+      // Restore libretro keyboard callback.
+      g_extern.system.key_event = key_event;
+
+      g_extern.lifecycle_state &= ~(1ULL << MODE_CLEAR_INPUT);
+   }
+
+   return 0;
+}
+
+static int main_entry_iterate_shutdown(args_type() args)
+{
+#ifdef HAVE_MENU
+   // Load dummy core instead of exiting RetroArch completely.
+   if (g_settings.load_dummy_on_core_shutdown)
+      load_menu_game_prepare_dummy();
+   else
+#endif
+      return 1;
+
+   return 0;
+}
+
+
+static int main_entry_iterate_content(args_type() args)
+{
+   bool r;
+   if (g_extern.is_paused && !g_extern.is_oneshot)
+      r = rarch_main_idle_iterate();
+   else
+      r = rarch_main_iterate();
+
+   if (r)
+   {
+      if (frontend_ctx && frontend_ctx->process_events)
+         frontend_ctx->process_events(args);
+   }
+   else
+      g_extern.lifecycle_state &= ~(1ULL << MODE_GAME);
+
+   return 0;
+}
+
+static int main_entry_iterate_load_content(args_type() args)
+{
+   load_menu_game_prepare();
+
+   if (load_menu_game())
+   {
+      g_extern.lifecycle_state |= (1ULL << MODE_GAME);
+      if (driver.video_data && driver.video_poke && driver.video_poke->set_aspect_ratio)
+         driver.video_poke->set_aspect_ratio(driver.video_data, g_settings.video.aspect_ratio_idx);
+   }
+   else
+   {
+      // If ROM load fails, we exit RetroArch. On console it might make more sense to go back to menu though ...
+      g_extern.lifecycle_state = attempt_load_game_fails;
+
+      if (g_extern.lifecycle_state & (1ULL << MODE_EXIT))
+      {
+         if (frontend_ctx && frontend_ctx->shutdown)
+            frontend_ctx->shutdown(true);
+
+         return 1;
+      }
+   }
+
+   g_extern.lifecycle_state &= ~(1ULL << MODE_LOAD_GAME);
+
+   return 0;
+}
+
+static int main_entry_iterate_menu_preinit(args_type() args)
 {
    int i;
-   static retro_keyboard_event_t key_event;
 
-   if (g_extern.system.shutdown)
+   // Menu should always run with vsync on.
+   video_set_nonblock_state_func(false);
+   // Stop all rumbling when entering RGUI.
+   for (i = 0; i < MAX_PLAYERS; i++)
    {
-#ifdef HAVE_MENU
-      // Load dummy core instead of exiting RetroArch completely.
-      if (load_dummy_on_core_shutdown)
-         load_menu_game_prepare_dummy();
-      else
-#endif
+      driver_set_rumble_state(i, RETRO_RUMBLE_STRONG, 0);
+      driver_set_rumble_state(i, RETRO_RUMBLE_WEAK, 0);
+   }
+
+   // Override keyboard callback to redirect to menu instead.
+   // We'll use this later for something ...
+   // FIXME: This should probably be moved to menu_common somehow.
+   key_event = g_extern.system.key_event;
+   g_extern.system.key_event = menu_key_event;
+
+   if (driver.audio_data)
+      audio_stop_func();
+
+   rgui->need_refresh = true;
+   rgui->old_input_state |= 1ULL << RARCH_MENU_TOGGLE;
+
+   g_extern.lifecycle_state &= ~(1ULL << MODE_MENU_PREINIT);
+   g_extern.lifecycle_state |= (1ULL << MODE_MENU);
+
+   return 0;
+}
+
+static int main_entry_iterate_menu(args_type() args)
+{
+   if (menu_iterate())
+   {
+      if (frontend_ctx && frontend_ctx->process_events)
+         frontend_ctx->process_events(args);
+   }
+   else
+   {
+      g_extern.lifecycle_state &= ~(1ULL << MODE_MENU);
+      driver_set_nonblock_state(driver.nonblock_state);
+
+      if (driver.audio_data && !g_extern.audio_data.mute && !audio_start_func())
+      {
+         RARCH_ERR("Failed to resume audio driver. Will continue without audio.\n");
+         g_extern.audio_active = false;
+      }
+
+      g_extern.lifecycle_state |= (1ULL << MODE_CLEAR_INPUT);
+
+      // If QUIT state came from command interface, we'll only see it once due to MODE_CLEAR_INPUT.
+      if (input_key_pressed_func(RARCH_QUIT_KEY) || !video_alive_func())
          return 1;
    }
+
+   return 0;
+}
+
+int main_entry_iterate(signature(), args_type() args)
+{
+   if (g_extern.system.shutdown)
+      return main_entry_iterate_shutdown(args);
+   else if (g_extern.lifecycle_state & (1ULL << MODE_CLEAR_INPUT))
+      return main_entry_iterate_clear_input(args);
    else if (g_extern.lifecycle_state & (1ULL << MODE_LOAD_GAME))
-   {
-      load_menu_game_prepare();
-
-      if (load_menu_game())
-      {
-         g_extern.lifecycle_state |= (1ULL << MODE_GAME);
-         if (driver.video_poke && driver.video_poke->set_aspect_ratio)
-            driver.video_poke->set_aspect_ratio(driver.video_data, g_settings.video.aspect_ratio_idx);
-      }
-      else
-      {
-         // If ROM load fails, we exit RetroArch. On console it might make more sense to go back to menu though ...
-         g_extern.lifecycle_state = attempt_load_game_fails;
-
-         if (g_extern.lifecycle_state & (1ULL << MODE_EXIT))
-         {
-            if (frontend_ctx && frontend_ctx->shutdown)
-               frontend_ctx->shutdown(true);
-
-            return 1;
-         }
-      }
-
-      g_extern.lifecycle_state &= ~(1ULL << MODE_LOAD_GAME);
-
-   }
+      return main_entry_iterate_load_content(args);
    else if (g_extern.lifecycle_state & (1ULL << MODE_GAME))
-   {
-      bool r;
-      if (g_extern.is_paused && !g_extern.is_oneshot)
-         r = rarch_main_idle_iterate();
-      else
-         r = rarch_main_iterate();
-
-      if (r)
-      {
-         if (frontend_ctx && frontend_ctx->process_events)
-            frontend_ctx->process_events(args);
-      }
-      else
-         g_extern.lifecycle_state &= ~(1ULL << MODE_GAME);
-   }
+      return main_entry_iterate_content(args);
 #ifdef HAVE_MENU
    else if (g_extern.lifecycle_state & (1ULL << MODE_MENU_PREINIT))
-   {
-      // Menu should always run with vsync on.
-      video_set_nonblock_state_func(false);
-      // Stop all rumbling when entering RGUI.
-      for (i = 0; i < MAX_PLAYERS; i++)
-      {
-         driver_set_rumble_state(i, RETRO_RUMBLE_STRONG, 0);
-         driver_set_rumble_state(i, RETRO_RUMBLE_WEAK, 0);
-      }
-
-      // Override keyboard callback to redirect to menu instead.
-      // We'll use this later for something ...
-      // FIXME: This should probably be moved to menu_common somehow.
-      key_event = g_extern.system.key_event;
-      g_extern.system.key_event = menu_key_event;
-
-      if (driver.audio_data)
-         audio_stop_func();
-
-      rgui->need_refresh= true;
-      rgui->old_input_state |= 1ULL << RARCH_MENU_TOGGLE;
-
-      g_extern.lifecycle_state &= ~(1ULL << MODE_MENU_PREINIT);
-      g_extern.lifecycle_state |= (1ULL << MODE_MENU);
-   }
+      main_entry_iterate_menu_preinit(args);
    else if (g_extern.lifecycle_state & (1ULL << MODE_MENU))
-   {
-      if (menu_iterate())
-      {
-         if (frontend_ctx && frontend_ctx->process_events)
-            frontend_ctx->process_events(args);
-      }
-      else
-      {
-         g_extern.lifecycle_state &= ~(1ULL << MODE_MENU);
-         driver_set_nonblock_state(driver.nonblock_state);
-
-         if (driver.audio_data && !g_extern.audio_data.mute && !audio_start_func())
-         {
-            RARCH_ERR("Failed to resume audio driver. Will continue without audio.\n");
-            g_extern.audio_active = false;
-         }
-
-         while (menu_input())
-            rarch_input_poll();
-
-         // Restore libretro keyboard callback.
-         g_extern.system.key_event = key_event;
-      }
-   }
+      return main_entry_iterate_menu(args);
 #endif
    else
       return 1;
 
    return 0;
 }
+#endif
+
 
 void main_exit(args_type() args)
 {

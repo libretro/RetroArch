@@ -39,6 +39,9 @@ typedef struct frontend_ctx_driver
 
    // Human readable string.
    const char *ident;
+#ifdef IS_SALAMANDER
+   void (*salamander_init)(void);
+#endif
 } frontend_ctx_driver_t;
 
 extern const frontend_ctx_driver_t frontend_ctx_gx;
@@ -47,6 +50,7 @@ extern const frontend_ctx_driver_t frontend_ctx_xdk;
 extern const frontend_ctx_driver_t frontend_ctx_qnx;
 extern const frontend_ctx_driver_t frontend_ctx_apple;
 extern const frontend_ctx_driver_t frontend_ctx_android;
+extern const frontend_ctx_driver_t frontend_ctx_psp;
 
 const frontend_ctx_driver_t *frontend_ctx_find_driver(const char *ident); // Finds driver with ident. Does not initialize.
 const frontend_ctx_driver_t *frontend_ctx_init_first(void); // Finds first suitable driver and initializes.

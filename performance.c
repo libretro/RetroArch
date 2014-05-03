@@ -47,6 +47,10 @@
 #define CLOCK_MONOTONIC 2
 #endif
 
+#if defined(__mips__)
+#include <sys/time.h>
+#endif
+
 #if defined(__PSL1GHT__)
 #include <sys/time.h>
 #elif defined(__CELLOS_LV2__)
@@ -65,6 +69,10 @@
 
 #ifdef EMSCRIPTEN
 #include <emscripten.h>
+#endif
+
+#if defined(BSD) || defined(__APPLE__)
+#include <sys/sysctl.h>
 #endif
 
 #include <string.h>
@@ -164,6 +172,10 @@ retro_perf_tick_t rarch_get_perf_counter(void)
    asm volatile( "mrc p15, 0, %0, c9, c13, 0" : "=r"(time) );
 #elif defined(__CELLOS_LV2__) || defined(GEKKO) || defined(_XBOX360) || defined(__powerpc__) || defined(__ppc__) || defined(__POWERPC__)
    time = __mftb();
+#elif defined(__mips__)
+   struct timeval tv;
+   gettimeofday(&tv,NULL);
+   time = (1000000 * tv.tv_sec + tv.tv_usec);
 #endif
 
    return time;
@@ -198,9 +210,10 @@ retro_time_t rarch_get_time_usec(void)
    return tv.tv_sec * INT64_C(1000000) + (tv.tv_nsec + 500) / 1000;
 #elif defined(EMSCRIPTEN)
    return emscripten_get_now() * 1000;
-#elif defined(PSP)
-   SceKernelSysClock clock;
-   return sceKernelGetSystemTime(&clock);
+#elif defined(__mips__)
+   struct timeval tv;
+   gettimeofday(&tv,NULL);
+   return (1000000 * tv.tv_sec + tv.tv_usec);
 #else
 #error "Your platform does not have a timer function implemented in rarch_get_time_usec(). Cannot continue."
 #endif
@@ -262,7 +275,7 @@ static uint64_t xgetbv_x86(uint32_t index)
 }
 #endif
 
-#ifdef HAVE_NEON
+#if defined(HAVE_NEON) && !defined(__MACH__)
 static void arm_enable_runfast_mode(void)
 {
    // RunFast mode. Enables flush-to-zero and some floating point optimizations.
@@ -280,6 +293,46 @@ static void arm_enable_runfast_mode(void)
 }
 #endif
 
+unsigned rarch_get_cpu_cores(void)
+{
+#if defined(_WIN32) && !defined(_XBOX) // Win32
+   SYSTEM_INFO sysinfo;
+   GetSystemInfo(&sysinfo);
+   return sysinfo.dwNumberOfProcessors;
+#elif defined(ANDROID)
+   return android_getCpuCount();
+#elif defined(GEKKO)
+   return 1;
+#elif defined(_SC_NPROCESSORS_ONLN) // Linux, most unix-likes.
+   long ret = sysconf(_SC_NPROCESSORS_ONLN);
+   if (ret <= 0)
+      return (unsigned)1;
+   return ret;
+#elif defined(BSD) || defined(__APPLE__) // BSD
+   // Copypasta from stackoverflow, dunno if it works.
+   int num_cpu = 0;
+   int mib[4];
+   size_t len = sizeof(num_cpu);
+
+   mib[0] = CTL_HW;
+   mib[1] = HW_AVAILCPU;
+   sysctl(mib, 2, &num_cpu, &len, NULL, 0);
+   if (num_cpu < 1)
+   {
+      mib[1] = HW_NCPU;
+      sysctl(mib, 2, &num_cpu, &len, NULL, 0);
+      if (num_cpu < 1)
+         num_cpu = 1;
+   }
+   return num_cpu;
+#elif defined(_XBOX360)
+   return 3;
+#else
+   // No idea, assume single core.
+   return 1;
+#endif
+}
+
 uint64_t rarch_get_cpu_features(void)
 {
    uint64_t cpu = 0;
@@ -293,7 +346,8 @@ uint64_t rarch_get_cpu_features(void)
    memcpy(vendor, vendor_shuffle, sizeof(vendor_shuffle));
    RARCH_LOG("[CPUID]: Vendor: %s\n", vendor);
 
-   if (flags[0] < 1) // Does CPUID not support func = 1? (unlikely ...)
+   unsigned max_flag = flags[0];
+   if (max_flag < 1) // Does CPUID not support func = 1? (unlikely ...)
       return 0;
 
    x86_cpuid(1, flags);
@@ -302,7 +356,11 @@ uint64_t rarch_get_cpu_features(void)
       cpu |= RETRO_SIMD_MMX;
 
    if (flags[3] & (1 << 25))
+   {
+      // SSE also implies MMXEXT (according to FFmpeg source).
       cpu |= RETRO_SIMD_SSE;
+      cpu |= RETRO_SIMD_MMXEXT;
+   }
 
    if (flags[3] & (1 << 26))
       cpu |= RETRO_SIMD_SSE2;
@@ -313,17 +371,45 @@ uint64_t rarch_get_cpu_features(void)
    if (flags[2] & (1 << 9))
       cpu |= RETRO_SIMD_SSSE3;
 
+   if (flags[2] & (1 << 19))
+      cpu |= RETRO_SIMD_SSE4;
+
+   if (flags[2] & (1 << 20))
+      cpu |= RETRO_SIMD_SSE42;
+
    const int avx_flags = (1 << 27) | (1 << 28);
    // Must only perform xgetbv check if we have AVX CPU support (guaranteed to have at least i686).
    if (((flags[2] & avx_flags) == avx_flags) && ((xgetbv_x86(0) & 0x6) == 0x6))
       cpu |= RETRO_SIMD_AVX;
 
-   RARCH_LOG("[CPUID]: MMX:   %u\n", !!(cpu & RETRO_SIMD_MMX));
-   RARCH_LOG("[CPUID]: SSE:   %u\n", !!(cpu & RETRO_SIMD_SSE));
-   RARCH_LOG("[CPUID]: SSE2:  %u\n", !!(cpu & RETRO_SIMD_SSE2));
-   RARCH_LOG("[CPUID]: SSE3:  %u\n", !!(cpu & RETRO_SIMD_SSE3));
-   RARCH_LOG("[CPUID]: SSSE3: %u\n", !!(cpu & RETRO_SIMD_SSSE3));
-   RARCH_LOG("[CPUID]: AVX:   %u\n", !!(cpu & RETRO_SIMD_AVX));
+   if (max_flag >= 7)
+   {
+      x86_cpuid(7, flags);
+      if (flags[1] & (1 << 5))
+         cpu |= RETRO_SIMD_AVX2;
+   }
+
+   x86_cpuid(0x80000000, flags);
+   max_flag = flags[0];
+   if (max_flag >= 0x80000001u)
+   {
+      x86_cpuid(0x80000001, flags);
+      if (flags[3] & (1 << 23))
+         cpu |= RETRO_SIMD_MMX;
+      if (flags[3] & (1 << 22))
+         cpu |= RETRO_SIMD_MMXEXT;
+   }
+
+   RARCH_LOG("[CPUID]: MMX:    %u\n", !!(cpu & RETRO_SIMD_MMX));
+   RARCH_LOG("[CPUID]: MMXEXT: %u\n", !!(cpu & RETRO_SIMD_MMXEXT));
+   RARCH_LOG("[CPUID]: SSE:    %u\n", !!(cpu & RETRO_SIMD_SSE));
+   RARCH_LOG("[CPUID]: SSE2:   %u\n", !!(cpu & RETRO_SIMD_SSE2));
+   RARCH_LOG("[CPUID]: SSE3:   %u\n", !!(cpu & RETRO_SIMD_SSE3));
+   RARCH_LOG("[CPUID]: SSSE3:  %u\n", !!(cpu & RETRO_SIMD_SSSE3));
+   RARCH_LOG("[CPUID]: SSE4:   %u\n", !!(cpu & RETRO_SIMD_SSE4));
+   RARCH_LOG("[CPUID]: SSE4.2: %u\n", !!(cpu & RETRO_SIMD_SSE42));
+   RARCH_LOG("[CPUID]: AVX:    %u\n", !!(cpu & RETRO_SIMD_AVX));
+   RARCH_LOG("[CPUID]: AVX2:   %u\n", !!(cpu & RETRO_SIMD_AVX2));
 #elif defined(ANDROID) && defined(ANDROID_ARM)
    uint64_t cpu_flags = android_getCpuFeatures();
    (void)cpu_flags;
@@ -339,7 +425,9 @@ uint64_t rarch_get_cpu_features(void)
    RARCH_LOG("[CPUID]: NEON: %u\n", !!(cpu & RETRO_SIMD_NEON));
 #elif defined(HAVE_NEON)
    cpu |= RETRO_SIMD_NEON;
+#ifndef __MACH__
    arm_enable_runfast_mode();
+#endif
    RARCH_LOG("[CPUID]: NEON: %u\n", !!(cpu & RETRO_SIMD_NEON));
 #elif defined(__ALTIVEC__)
    cpu |= RETRO_SIMD_VMX;
@@ -347,6 +435,12 @@ uint64_t rarch_get_cpu_features(void)
 #elif defined(XBOX360)
    cpu |= RETRO_SIMD_VMX128;
    RARCH_LOG("[CPUID]: VMX128: %u\n", !!(cpu & RETRO_SIMD_VMX128));
+#elif defined(PSP)
+   cpu |= RETRO_SIMD_VFPU;
+   RARCH_LOG("[CPUID]: VFPU: %u\n", !!(cpu & RETRO_SIMD_VFPU));
+#elif defined(GEKKO)
+   cpu |= RETRO_SIMD_PS;
+   RARCH_LOG("[CPUID]: PS: %u\n", !!(cpu & RETRO_SIMD_PS));
 #endif
 
    return cpu;

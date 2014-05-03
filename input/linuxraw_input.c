@@ -243,6 +243,7 @@ const input_driver_t input_linuxraw = {
    NULL,
    NULL,
    linuxraw_get_capabilities,
+   NULL,
    "linuxraw",
    NULL,
    linuxraw_set_rumble,

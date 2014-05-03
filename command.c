@@ -301,7 +301,7 @@ static void parse_sub_msg(rarch_cmd_t *handle, const char *tok)
 
 static void parse_msg(rarch_cmd_t *handle, char *buf)
 {
-   char *save;
+   char *save = NULL;
    const char *tok = strtok_r(buf, "\n", &save);
    while (tok)
    {
@@ -322,7 +322,7 @@ bool rarch_cmd_get(rarch_cmd_t *handle, unsigned id)
 }
 
 #ifdef HAVE_NETWORK_CMD
-static void network_cmd_pre_frame(rarch_cmd_t *handle)
+static void network_cmd_poll(rarch_cmd_t *handle)
 {
    if (handle->net_fd < 0)
       return;
@@ -453,7 +453,7 @@ static size_t read_stdin(char *buf, size_t size)
 }
 #endif
 
-static void stdin_cmd_pre_frame(rarch_cmd_t *handle)
+static void stdin_cmd_poll(rarch_cmd_t *handle)
 {
    if (!handle->stdin_enable)
       return;
@@ -489,16 +489,16 @@ static void stdin_cmd_pre_frame(rarch_cmd_t *handle)
 }
 #endif
 
-void rarch_cmd_pre_frame(rarch_cmd_t *handle)
+void rarch_cmd_poll(rarch_cmd_t *handle)
 {
    memset(handle->state, 0, sizeof(handle->state));
 
 #ifdef HAVE_NETWORK_CMD
-   network_cmd_pre_frame(handle);
+   network_cmd_poll(handle);
 #endif
 
 #ifdef HAVE_STDIN_CMD
-   stdin_cmd_pre_frame(handle);
+   stdin_cmd_poll(handle);
 #endif
 }
 

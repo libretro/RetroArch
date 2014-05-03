@@ -18,7 +18,7 @@
 #import "RetroArch_Apple.h"
 #include "rarch_wrapper.h"
 
-#include "apple/common/apple_input.h"
+#include "../../input/apple_input.h"
 #include "apple/common/setting_data.h"
 #include "apple/common/apple_gamecontroller.h"
 #include "menu.h"
@@ -114,7 +114,7 @@ void ios_set_logging_state(const char *log_path, bool on)
 // Input helpers: This is kept here because it needs objective-c
 static void handle_touch_event(NSArray* touches)
 {
-   const int numTouches = [touches count];
+   unsigned long numTouches = touches.count;
    const float scale = [[UIScreen mainScreen] scale];
 
    g_current_input_data.touch_count = 0;
@@ -123,12 +123,12 @@ static void handle_touch_event(NSArray* touches)
    {
       UITouch* touch = [touches objectAtIndex:i];
       
-      if ([touch view] != [RAGameView get].view)
+      if (touch.view != [RAGameView get].view)
          continue;
 
       const CGPoint coord = [touch locationInView:[touch view]];
 
-      if ([touch phase] != UITouchPhaseEnded && [touch phase] != UITouchPhaseCancelled)
+      if (touch.phase != UITouchPhaseEnded && touch.phase != UITouchPhaseCancelled)
       {
          g_current_input_data.touches[g_current_input_data.touch_count   ].screen_x = coord.x * scale;
          g_current_input_data.touches[g_current_input_data.touch_count ++].screen_y = coord.y * scale;
@@ -161,23 +161,23 @@ static void handle_touch_event(NSArray* touches)
    // but is bad for business with events.
    static double last_time_stamp;
    
-   if (last_time_stamp == [event timestamp])
+   if (last_time_stamp == event.timestamp)
       return [super _keyCommandForEvent:event];
-   last_time_stamp = [event timestamp];
+   last_time_stamp = event.timestamp;
    
    // If the _hidEvent is null, [event _keyCode] will crash. (This happens with the on screen keyboard.)
-   if ([event _hidEvent])
+   if (event._hidEvent)
    {
-      NSString* ch = [event _privateInput];
+      NSString* ch = (NSString*)event._privateInput;
       
       if (!ch || [ch length] == 0)
-         apple_input_keyboard_event([event _isKeyDown], [event _keyCode], 0, [event _modifierFlags]);
+         apple_input_keyboard_event(event._isKeyDown, (uint32_t)event._keyCode, 0, (uint32_t)event._modifierFlags);
       else
       {
-         apple_input_keyboard_event([event _isKeyDown], [event _keyCode], [ch characterAtIndex:0], [event _modifierFlags]);
+         apple_input_keyboard_event(event._isKeyDown, (uint32_t)event._keyCode, [ch characterAtIndex:0], (uint32_t)event._modifierFlags);
          
          for (unsigned i = 1; i != [ch length]; i ++)
-            apple_input_keyboard_event([event _isKeyDown], 0, [ch characterAtIndex:i], [event _modifierFlags]);
+            apple_input_keyboard_event(event._isKeyDown, 0, [ch characterAtIndex:i], (uint32_t)event._modifierFlags);
       }
    }
 
@@ -188,8 +188,8 @@ static void handle_touch_event(NSArray* touches)
 {
    [super sendEvent:event];
    
-   if ([[event allTouches] count])
-      handle_touch_event([[event allTouches] allObjects]);
+   if (event.allTouches.count)
+      handle_touch_event(event.allTouches.allObjects);
 
    if (!(IOS_IS_VERSION_7_OR_HIGHER()) && [event respondsToSelector:@selector(_gsEvent)])
    {
@@ -250,9 +250,10 @@ static void handle_touch_event(NSArray* touches)
     }
    
    // Warn if there are no cores present
-   apple_core_info_set_core_path([self.coreDirectory UTF8String]);
-   apple_core_info_set_config_path([self.configDirectory UTF8String]);
-   const core_info_list_t* core_list = apple_core_info_list_get();
+   core_info_set_core_path([self.coreDirectory UTF8String]);
+   core_info_set_config_path([self.configDirectory UTF8String]);
+    
+   const core_info_list_t* core_list = (const core_info_list_t*)core_info_list_get();
    
    if (!core_list || core_list->count == 0)
       apple_display_alert(@"No libretro cores were found. You will not be able to run any content.", 0);
@@ -260,7 +261,7 @@ static void handle_touch_event(NSArray* touches)
    apple_gamecontroller_init();
    
    // Load system config
-   const rarch_setting_t* frontend_settings = apple_get_frontend_settings();   
+   const rarch_setting_t* frontend_settings = (const rarch_setting_t*)apple_get_frontend_settings();
    setting_data_reset(frontend_settings);
    setting_data_load_config_path(frontend_settings, [self.systemConfigPath UTF8String]);
 }
@@ -277,7 +278,7 @@ static void handle_touch_event(NSArray* touches)
 
 -(BOOL)application:(UIApplication *)application openURL:(NSURL *)url sourceApplication:(NSString *)sourceApplication annotation:(id)annotation
 {
-   NSString* filename = [[url path] lastPathComponent];
+   NSString* filename = (NSString*)url.path.lastPathComponent;
 
    NSError* error = nil;
    [[NSFileManager defaultManager] moveItemAtPath:[url path] toPath:[self.documentsDirectory stringByAppendingPathComponent:filename] error:&error];

@@ -18,7 +18,7 @@
 #include <stdlib.h>
 
 #include "../../../boolean.h"
-#include "../apple_input.h"
+#include "../../../input/apple_input.h"
 
 struct hidpad_ps3_data
 {
@@ -56,7 +56,7 @@ static void hidpad_ps3_send_control(struct hidpad_ps3_data* device)
 
 static void* hidpad_ps3_connect(struct apple_pad_connection* connection, uint32_t slot)
 {
-   struct hidpad_ps3_data* device = calloc(1, sizeof(struct hidpad_ps3_data));
+   struct hidpad_ps3_data* device = (struct hidpad_ps3_data*)calloc(1, sizeof(struct hidpad_ps3_data));
    device->connection = connection;  
    device->slot = slot;
    

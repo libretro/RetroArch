@@ -8,7 +8,7 @@ retroarch \- The reference frontend for the libretro API.
 
 .SH SYNOPSIS
 
-\fBretroarch\fR [rom file] [OPTIONS]...
+\fBretroarch\fR [rom file(s)] [OPTIONS]...
 
 .SH "DESCRIPTION"
 
@@ -117,33 +117,11 @@ Multiple config files are delimited by ','.
 Every config file will be appended in order where the key-value pairs of the next config file takes priority over the old ones.
 
 .TP
-\fB--gameboy PATH, -g PATH\fR
-Path to a Nintendo Game Boy ROM. If this flag is set, the Super Game Boy subsystem will be activated. The Super Game Boy BIOS needs to be loaded as the normal rom.
-
-.TP
-\fB--bsx PATH, -b PATH\fR
-Path to BS-X rom. Load BS-X BIOS as the regular rom.
-When using BS-X, save ram paths will be inferred from the BS-X BIOS path, not BS-X rom path.
-
-.TP
-\fB--bsxslot PATH, -B PATH\fR
-Path to BS-X slotted rom. Load BS-X BIOS as the regular rom.
-When using BS-X, save ram paths will be inferred from the BS-X BIOS path, not BS-X rom path.
-
-.TP
-\fB--sufamiA PATH\fR
-Path to A slot in Sufami Turbo. Load Sufami Turbo BIOS as regular rom.
-When using Sufami, save ram paths will be inferred from the Sufami BIOS path, not slot paths.
-
-.TP
-\fB--sufamiB PATH\fR
-Path to B slot in Sufami Turbo. Load Sufami Turbo BIOS as regular rom.
-When using Sufami, save ram paths will be inferred from the Sufami BIOS path, not slot paths.
-
-.TP
-\fB--mouse PORT, -m PORT\fR
-Connects a mouse into port number PORT. Possible values for PORT are 1 to 8.
-If set explicitly here, overrides config file for that port.
+\fB--subsystem SUBSYSTEM\fR
+Use a subsystem of the loaded libretro core. Multiple ROMs are loaded as multiple arguments.
+If a ROM is skipped, use a blank ("") command line argument.
+ROMs must be loaded in an order which depends on the particular subsystem used.
+See verbose log output to learn how a particular subsystem wants ROMs to be loaded.
 
 .TP
 \fB--nodevice PORT, -N PORT\fR
@@ -151,29 +129,15 @@ Disconnects an input device from port number PORT. Possible values for PORT are 
 If set explicitly here, overrides config file for that port.
 
 .TP
-\fB--scope, -p\fR
-Connects a Super Scope into port 2 of an emulated SNES. It is controlled with your mouse.
-If set explicitly here, overrides config file for that port.
-
-.TP
-\fB--justifier, -j\fR
-Connects a Konami Justifier into port 2 of an emulated SNES. It is controlled with your mouse.
-If set explicitly here, overrides config file for that port.
-
-.TP
-\fB--justifiers, -J\fR
-Connects two Konami Justifier into port 2 of an emulated SNES. Currently, only player 1 is controlled with the mouse.
-If set explicitly here, overrides config file for that port.
-
-.TP
-\fB--multitap, -4\fR
-Connects a four-way multitap into an emulated SNES. This allows for up to 5 players.
-If set explicitly here, overrides config file for that port.
-
-.TP
 \fB--dualanalog PORT, -A PORT\fR
 Connects a DualAnalog controller into port PORT. Possible values are 1 to 8.
 If set explicitly here, overrides config file for that port.
+
+.TP
+\fB--device PORT:ID, -d PORT:ID\fR
+Connects a generic input device ID into port PORT. Possible values for port are 1 to 8.
+If set explicitly here, overrides config file for that port.
+ID is an unsigned number corresponding to the device for a libretro core.
 
 .TP
 \fB--record PATH, -r PATH\fR

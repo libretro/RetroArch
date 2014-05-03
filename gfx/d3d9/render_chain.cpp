@@ -16,177 +16,179 @@
 #include "render_chain.hpp"
 #include <string.h>
 
-static const char *stock_program =
-    "void main_vertex"
-    "("
-    "	float4 position : POSITION,"
-    "	float2 texCoord : TEXCOORD0,"
-    "  float4 color : COLOR,"
-    ""
-    "  uniform float4x4 modelViewProj,"
-    ""
-    "	out float4 oPosition : POSITION,"
-    "	out float2 otexCoord : TEXCOORD0,"
-    "  out float4 oColor : COLOR"
-    ")"
-    "{"
-    "	oPosition = mul(modelViewProj, position);"
-    "	otexCoord = texCoord;"
-    "  oColor = color;"
-    "}"
-    ""
-    "float4 main_fragment(in float4 color : COLOR, float2 tex : TEXCOORD0, uniform sampler2D s0 : TEXUNIT0) : COLOR"
-    "{"
-    "   return color * tex2D(s0, tex);"
-    "}";
-
-RenderChain::~RenderChain()
+static inline D3DTEXTUREFILTERTYPE translate_filter(enum gfx_filter_type type)
 {
-   clear();
-#ifdef HAVE_CG
-   if (fStock)
-      cgDestroyProgram(fStock);
-   if (vStock)
-      cgDestroyProgram(vStock);
-#endif
-   if (tracker)
-      state_tracker_free(tracker);
+   if (type == RARCH_FILTER_UNSPEC)
+      return g_settings.video.smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT;
+   else
+      return type == RARCH_FILTER_LINEAR ? D3DTEXF_LINEAR : D3DTEXF_POINT;
 }
 
-RenderChain::RenderChain(const video_info_t *video_info,
+static inline D3DTEXTUREFILTERTYPE translate_filter(bool smooth)
+{
+   return smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT;
+}
+
+#ifdef HAVE_CG
+#include "render_chain_cg.h"
+#endif
+
+void renderchain_free(void *data)
+{
+   renderchain_t *chain = (renderchain_t*)data;
+
+   renderchain_clear(chain);
+   renderchain_destroy_stock_shader(chain);
+   if (chain->tracker)
+      state_tracker_free(chain->tracker);
+}
+
+bool renderchain_init(void *data, const video_info_t *video_info,
       LPDIRECT3DDEVICE dev_,
       CGcontext cgCtx_,
-      const D3DVIEWPORT &final_viewport_)
-   : dev(dev_), cgCtx(cgCtx_), video_info(*video_info), tracker(NULL),
-   final_viewport(final_viewport_), frame_count(0)
-{}
-
-bool RenderChain::init(const LinkInfo &info, PixelFormat fmt)
+      const D3DVIEWPORT *final_viewport_,
+      const LinkInfo *info, PixelFormat fmt)
 {
-   pixel_size = fmt == RGB565 ? 2 : 4;
-   if (!create_first_pass(info, fmt))
+   renderchain_t *chain = (renderchain_t*)data;
+
+   if (!chain)
       return false;
-   log_info(info);
-   if (!compile_shaders(fStock, vStock, ""))
+
+   chain->dev = dev_;
+   chain->cgCtx = cgCtx_;
+   chain->video_info = video_info;
+   chain->tracker = NULL;
+   chain->final_viewport =  (D3DVIEWPORT*)final_viewport_;
+   chain->frame_count = 0;
+   chain->pixel_size = fmt == RGB565 ? 2 : 4;
+   if (!renderchain_create_first_pass(chain, info, fmt))
+      return false;
+   renderchain_log_info(chain, info);
+   if (!renderchain_compile_shaders(chain, chain->fStock, chain->vStock, ""))
       return false;
 
    return true;
 }
 
-void RenderChain::clear()
+void renderchain_clear(void *data)
 {
-   for (unsigned i = 0; i < Textures; i++)
+   renderchain_t *chain = (renderchain_t*)data;
+   for (unsigned i = 0; i < TEXTURES; i++)
    {
-      if (prev.tex[i])
-         prev.tex[i]->Release();
-      if (prev.vertex_buf[i])
-         prev.vertex_buf[i]->Release();
+      if (chain->prev.tex[i])
+         chain->prev.tex[i]->Release();
+      if (chain->prev.vertex_buf[i])
+         chain->prev.vertex_buf[i]->Release();
    }
 
-   if (passes[0].vertex_decl)
-      passes[0].vertex_decl->Release();
-   for (unsigned i = 1; i < passes.size(); i++)
+   if (chain->passes[0].vertex_decl)
+      chain->passes[0].vertex_decl->Release();
+   for (unsigned i = 1; i < chain->passes.size(); i++)
    {
-      if (passes[i].tex)
-         passes[i].tex->Release();
-      if (passes[i].vertex_buf)
-         passes[i].vertex_buf->Release();
-      if (passes[i].vertex_decl)
-         passes[i].vertex_decl->Release();
-      if (passes[i].fPrg)
-         cgDestroyProgram(passes[i].fPrg);
-      if (passes[i].vPrg)
-         cgDestroyProgram(passes[i].vPrg);
+      if (chain->passes[i].tex)
+         chain->passes[i].tex->Release();
+      if (chain->passes[i].vertex_buf)
+         chain->passes[i].vertex_buf->Release();
+      if (chain->passes[i].vertex_decl)
+         chain->passes[i].vertex_decl->Release();
+      renderchain_destroy_shader(chain, i);
    }
 
-   for (unsigned i = 0; i < luts.size(); i++)
+   for (unsigned i = 0; i < chain->luts.size(); i++)
    {
-      if (luts[i].tex)
-         luts[i].tex->Release();
+      if (chain->luts[i].tex)
+         chain->luts[i].tex->Release();
    }
 
-   passes.clear();
-   luts.clear();
+   chain->passes.clear();
+   chain->luts.clear();
 }
 
-void RenderChain::set_final_viewport(const D3DVIEWPORT& final_viewport)
+void renderchain_set_final_viewport(void *data, const D3DVIEWPORT *final_viewport)
 {
-   this->final_viewport = final_viewport;
+   renderchain_t *chain = (renderchain_t*)data;
+   chain->final_viewport = (D3DVIEWPORT*)final_viewport;
 }
 
-bool RenderChain::set_pass_size(unsigned pass_index, unsigned width, unsigned height)
+bool renderchain_set_pass_size(void *data, unsigned pass_index, unsigned width, unsigned height)
 {
-   Pass &pass = passes[pass_index];
+   renderchain_t *chain = (renderchain_t*)data;
+   LPDIRECT3DDEVICE d3dr = chain->dev;
+   Pass &pass = chain->passes[pass_index];
    if (width != pass.info.tex_w || height != pass.info.tex_h)
    {
       pass.tex->Release();
       pass.info.tex_w = width;
       pass.info.tex_h = height;
 
-      if (FAILED(dev->CreateTexture(width, height, 1,
+      if (FAILED(d3dr->CreateTexture(width, height, 1,
          D3DUSAGE_RENDERTARGET,
-         passes.back().info.pass->fbo.fp_fbo ? D3DFMT_A32B32G32R32F : D3DFMT_A8R8G8B8,
+         chain->passes.back().info.pass->fbo.fp_fbo ? D3DFMT_A32B32G32R32F : D3DFMT_A8R8G8B8,
          D3DPOOL_DEFAULT,
          &pass.tex, NULL)))
          return false;
 
-      dev->SetTexture(0, pass.tex);
-      dev->SetSamplerState(0, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
-      dev->SetSamplerState(0, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
-      dev->SetTexture(0, NULL);
+      d3dr->SetTexture(0, pass.tex);
+      d3dr->SetSamplerState(0, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
+      d3dr->SetSamplerState(0, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
+      d3dr->SetTexture(0, NULL);
    }
 
    return true;
 }
 
-bool RenderChain::add_pass(const LinkInfo &info)
+bool renderchain_add_pass(void *data, const LinkInfo *info)
 {
+   renderchain_t *chain = (renderchain_t*)data;
+   LPDIRECT3DDEVICE d3dr = chain->dev;
    Pass pass;
-   pass.info = info;
+   pass.info = *info;
    pass.last_width = 0;
    pass.last_height = 0;
 
-   compile_shaders(pass.fPrg, pass.vPrg, info.pass->source.cg);
-   if (!init_fvf(pass))
+   renderchain_compile_shaders(chain, pass.fPrg, pass.vPrg, info->pass->source.cg);
+   if (!renderchain_init_shader_fvf(chain, pass))
       return false;
 
-   if (FAILED(dev->CreateVertexBuffer(
+   if (FAILED(d3dr->CreateVertexBuffer(
                4 * sizeof(Vertex),
-               dev->GetSoftwareVertexProcessing() ? D3DUSAGE_SOFTWAREPROCESSING : 0,
+               d3dr->GetSoftwareVertexProcessing() ? D3DUSAGE_SOFTWAREPROCESSING : 0,
                0,
                D3DPOOL_DEFAULT,
                &pass.vertex_buf,
                NULL)))
       return false;
 
-   if (FAILED(dev->CreateTexture(info.tex_w, info.tex_h, 1,
+   if (FAILED(d3dr->CreateTexture(info->tex_w, info->tex_h, 1,
                D3DUSAGE_RENDERTARGET,
-               passes.back().info.pass->fbo.fp_fbo ? D3DFMT_A32B32G32R32F : D3DFMT_A8R8G8B8,
+               chain->passes.back().info.pass->fbo.fp_fbo ? D3DFMT_A32B32G32R32F : D3DFMT_A8R8G8B8,
                D3DPOOL_DEFAULT,
                &pass.tex, NULL)))
       return false;
 
-   dev->SetTexture(0, pass.tex);
-   dev->SetSamplerState(0, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
-   dev->SetSamplerState(0, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
-   dev->SetTexture(0, NULL);
+   d3dr->SetTexture(0, pass.tex);
+   d3dr->SetSamplerState(0, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
+   d3dr->SetSamplerState(0, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
+   d3dr->SetTexture(0, NULL);
 
-   passes.push_back(pass);
+   chain->passes.push_back(pass);
 
-   log_info(info);
+   renderchain_log_info(chain, info);
    return true;
 }
 
-bool RenderChain::add_lut(const std::string &id,
+bool renderchain_add_lut(void *data, const std::string &id,
       const std::string &path,
       bool smooth)
 {
+   renderchain_t *chain = (renderchain_t*)data;
    LPDIRECT3DTEXTURE lut;
+   LPDIRECT3DDEVICE d3dr = chain->dev;
 
    RARCH_LOG("[D3D]: Loading LUT texture: %s.\n", path.c_str());
 
    if (FAILED(D3DXCreateTextureFromFileExA(
-               dev,
+               d3dr,
                path.c_str(),
                D3DX_DEFAULT_NONPOW2,
                D3DX_DEFAULT_NONPOW2,
@@ -202,67 +204,77 @@ bool RenderChain::add_lut(const std::string &id,
                &lut)))
       return false;
 
-   dev->SetTexture(0, lut);
-   dev->SetSamplerState(0, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
-   dev->SetSamplerState(0, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
-   dev->SetTexture(0, NULL);
+   d3dr->SetTexture(0, lut);
+   d3dr->SetSamplerState(0, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
+   d3dr->SetSamplerState(0, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
+   d3dr->SetTexture(0, NULL);
 
    lut_info info = { lut, id, smooth };
-   luts.push_back(info);
+   chain->luts.push_back(info);
    return true;
 }
 
-void RenderChain::add_state_tracker(state_tracker_t *tracker)
+void renderchain_add_state_tracker(void *data, state_tracker_t *tracker)
 {
-   if (this->tracker)
-      state_tracker_free(this->tracker);
-   this->tracker = tracker;
+   renderchain_t *chain = (renderchain_t*)data;
+   if (chain->tracker)
+      state_tracker_free(chain->tracker);
+   chain->tracker = tracker;
 }
 
-void RenderChain::start_render()
+void renderchain_start_render(void *data)
 {
-   passes[0].tex = prev.tex[prev.ptr];
-   passes[0].vertex_buf = prev.vertex_buf[prev.ptr];
-   passes[0].last_width = prev.last_width[prev.ptr];
-   passes[0].last_height = prev.last_height[prev.ptr];
+   renderchain_t *chain = (renderchain_t*)data;
+   chain->passes[0].tex         = chain->prev.tex[chain->prev.ptr];
+   chain->passes[0].vertex_buf  = chain->prev.vertex_buf[chain->prev.ptr];
+   chain->passes[0].last_width  = chain->prev.last_width[chain->prev.ptr];
+   chain->passes[0].last_height = chain->prev.last_height[chain->prev.ptr];
 }
 
-void RenderChain::end_render()
+void renderchain_end_render(void *data)
 {
-   prev.last_width[prev.ptr] = passes[0].last_width;
-   prev.last_height[prev.ptr] = passes[0].last_height;
-   prev.ptr = (prev.ptr + 1) & TexturesMask;
+   renderchain_t *chain = (renderchain_t*)data;
+   chain->prev.last_width[chain->prev.ptr]  = chain->passes[0].last_width;
+   chain->prev.last_height[chain->prev.ptr] = chain->passes[0].last_height;
+   chain->prev.ptr                          = (chain->prev.ptr + 1) & TEXTURESMASK;
 }
 
-bool RenderChain::render(const void *data,
+bool renderchain_render(void *chain_data, const void *data,
       unsigned width, unsigned height, unsigned pitch, unsigned rotation)
 {
-   start_render();
+   renderchain_t *chain = (renderchain_t*)chain_data;
+   LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)chain->dev;
+   renderchain_start_render(chain);
 
-   unsigned current_width = width, current_height = height;
-   unsigned out_width = 0, out_height = 0;
-   convert_geometry(passes[0].info, out_width, out_height,
-         current_width, current_height, final_viewport);
-
-   blit_to_texture(data, width, height, pitch);
+   unsigned current_width = width;
+   unsigned current_height = height;
+   unsigned out_width = 0;
+   unsigned out_height = 0;
+   renderchain_convert_geometry(chain, &chain->passes[0].info, out_width, out_height,
+         current_width, current_height, chain->final_viewport);
+#ifdef _XBOX1
+   d3dr->SetFlickerFilter(g_extern.console.screen.flicker_filter_index);
+   d3dr->SetSoftDisplayFilter(g_extern.lifecycle_state & (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE));
+#endif
+   renderchain_blit_to_texture(chain, data, width, height, pitch);
 
    // Grab back buffer.
    LPDIRECT3DSURFACE back_buffer;
-   dev->GetRenderTarget(0, &back_buffer);
+   d3dr->GetRenderTarget(0, &back_buffer);
 
    // In-between render target passes.
-   for (unsigned i = 0; i < passes.size() - 1; i++)
+   for (unsigned i = 0; i < chain->passes.size() - 1; i++)
    {
-      Pass &from_pass = passes[i];
-      Pass &to_pass = passes[i + 1];
+      Pass &from_pass = chain->passes[i];
+      Pass &to_pass   = chain->passes[i + 1];
 
       LPDIRECT3DSURFACE target;
       to_pass.tex->GetSurfaceLevel(0, &target);
-      dev->SetRenderTarget(0, target);
+      d3dr->SetRenderTarget(0, target);
 
-      convert_geometry(from_pass.info,
+      renderchain_convert_geometry(chain, &from_pass.info,
             out_width, out_height,
-            current_width, current_height, final_viewport);
+            current_width, current_height, chain->final_viewport);
 
       // Clear out whole FBO.
       D3DVIEWPORT viewport = {0};
@@ -270,19 +282,19 @@ bool RenderChain::render(const void *data,
       viewport.Height = to_pass.info.tex_h;
       viewport.MinZ = 0.0f;
       viewport.MaxZ = 1.0f;
-      dev->SetViewport(&viewport);
-      dev->Clear(0, 0, D3DCLEAR_TARGET, 0, 1, 0);
+      d3dr->SetViewport(&viewport);
+      d3dr->Clear(0, 0, D3DCLEAR_TARGET, 0, 1, 0);
       
       viewport.Width = out_width;
       viewport.Height = out_height;
-      set_viewport(viewport);
+      renderchain_set_viewport(chain, &viewport);
 
-      set_vertices(from_pass,
+      renderchain_set_vertices(chain, from_pass,
             current_width, current_height,
             out_width, out_height,
             out_width, out_height, 0);
 
-      render_pass(from_pass, i + 1);
+      renderchain_render_pass(chain, from_pass, i + 1);
 
       current_width = out_width;
       current_height = out_height;
@@ -290,162 +302,93 @@ bool RenderChain::render(const void *data,
    }
 
    // Final pass
-   dev->SetRenderTarget(0, back_buffer);
-   Pass &last_pass = passes.back();
+   d3dr->SetRenderTarget(0, back_buffer);
+   Pass &last_pass = chain->passes.back();
 
-   convert_geometry(last_pass.info,
+   renderchain_convert_geometry(chain, &last_pass.info,
          out_width, out_height,
-         current_width, current_height, final_viewport);
-   set_viewport(final_viewport);
-   set_vertices(last_pass,
+         current_width, current_height, chain->final_viewport);
+   renderchain_set_viewport(chain, chain->final_viewport);
+   renderchain_set_vertices(chain, last_pass,
             current_width, current_height,
             out_width, out_height,
-            final_viewport.Width, final_viewport.Height,
+            chain->final_viewport->Width, chain->final_viewport->Height,
             rotation);
-   render_pass(last_pass, passes.size());
+   renderchain_render_pass(chain, last_pass, chain->passes.size());
 
-   frame_count++;
+   chain->frame_count++;
 
    back_buffer->Release();
 
-   end_render();
-   set_shaders(fStock, vStock);
-   set_cg_mvp(vStock, final_viewport.Width, final_viewport.Height, 0);
+   renderchain_end_render(chain);
+   renderchain_set_shaders(chain, chain->fStock, chain->vStock);
+   renderchain_set_mvp(chain, chain->vStock, chain->final_viewport->Width, chain->final_viewport->Height, 0);
    return true;
 }
 
-D3DTEXTUREFILTERTYPE RenderChain::translate_filter(enum gfx_filter_type type)
+bool renderchain_create_first_pass(void *data, const LinkInfo *info, PixelFormat fmt)
 {
-   if (type == RARCH_FILTER_UNSPEC)
-      return g_settings.video.smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT;
-   else
-      return type == RARCH_FILTER_LINEAR ? D3DTEXF_LINEAR : D3DTEXF_POINT;
-}
-
-D3DTEXTUREFILTERTYPE RenderChain::translate_filter(bool smooth)
-{
-   return smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT;
-}
-
-bool RenderChain::create_first_pass(const LinkInfo &info, PixelFormat fmt)
-{
+   renderchain_t *chain = (renderchain_t*)data;
    D3DXMATRIX ident;
    D3DXMatrixIdentity(&ident);
-   dev->SetTransform(D3DTS_WORLD, &ident);
-   dev->SetTransform(D3DTS_VIEW, &ident);
+   LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)chain->dev;
+   d3dr->SetTransform(D3DTS_WORLD, &ident);
+   d3dr->SetTransform(D3DTS_VIEW, &ident);
 
    Pass pass;
-   pass.info = info;
+   pass.info = *info;
    pass.last_width = 0;
    pass.last_height = 0;
 
-   prev.ptr = 0;
-   for (unsigned i = 0; i < Textures; i++)
+   chain->prev.ptr = 0;
+   for (unsigned i = 0; i < TEXTURES; i++)
    {
-      prev.last_width[i] = 0;
-      prev.last_height[i] = 0;
+      chain->prev.last_width[i] = 0;
+      chain->prev.last_height[i] = 0;
 
-      if (FAILED(dev->CreateVertexBuffer(
+      if (FAILED(d3dr->CreateVertexBuffer(
                   4 * sizeof(Vertex),
-                  dev->GetSoftwareVertexProcessing() ? D3DUSAGE_SOFTWAREPROCESSING : 0,
+                  d3dr->GetSoftwareVertexProcessing() ? D3DUSAGE_SOFTWAREPROCESSING : 0,
                   0,
                   D3DPOOL_DEFAULT,
-                  &prev.vertex_buf[i],
+                  &chain->prev.vertex_buf[i],
                   NULL)))
       {
          return false;
       }
 
-      if (FAILED(dev->CreateTexture(info.tex_w, info.tex_h, 1, 0,
+      if (FAILED(d3dr->CreateTexture(info->tex_w, info->tex_h, 1, 0,
                   fmt == RGB565 ? D3DFMT_R5G6B5 : D3DFMT_X8R8G8B8,
                   D3DPOOL_MANAGED,
-                  &prev.tex[i], NULL)))
+                  &chain->prev.tex[i], NULL)))
       {
          return false;
       }
 
-      dev->SetTexture(0, prev.tex[i]);
-      dev->SetSamplerState(0, D3DSAMP_MINFILTER,
-            translate_filter(info.pass->filter));
-      dev->SetSamplerState(0, D3DSAMP_MAGFILTER,
-            translate_filter(info.pass->filter));
-      dev->SetSamplerState(0, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
-      dev->SetSamplerState(0, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
-      dev->SetTexture(0, NULL);
+      d3dr->SetTexture(0, chain->prev.tex[i]);
+      d3dr->SetSamplerState(0, D3DSAMP_MINFILTER,
+            translate_filter(info->pass->filter));
+      d3dr->SetSamplerState(0, D3DSAMP_MAGFILTER,
+            translate_filter(info->pass->filter));
+      d3dr->SetSamplerState(0, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
+      d3dr->SetSamplerState(0, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
+      d3dr->SetTexture(0, NULL);
    }
 
-   compile_shaders(pass.fPrg, pass.vPrg, info.pass->source.cg);
-   if (!init_fvf(pass))
+   renderchain_compile_shaders(chain, pass.fPrg, pass.vPrg, info->pass->source.cg);
+   if (!renderchain_init_shader_fvf(chain, pass))
       return false;
-   passes.push_back(pass);
+   chain->passes.push_back(pass);
    return true;
 }
 
-bool RenderChain::compile_shaders(CGprogram &fPrg, CGprogram &vPrg, const std::string &shader)
-{
-#ifdef HAVE_CG
-   CGprofile vertex_profile = cgD3D9GetLatestVertexProfile();
-   CGprofile fragment_profile = cgD3D9GetLatestPixelProfile();
-   RARCH_LOG("[D3D Cg]: Vertex profile: %s\n", cgGetProfileString(vertex_profile));
-   RARCH_LOG("[D3D Cg]: Fragment profile: %s\n", cgGetProfileString(fragment_profile));
-   const char **fragment_opts = cgD3D9GetOptimalOptions(fragment_profile);
-   const char **vertex_opts = cgD3D9GetOptimalOptions(vertex_profile);
-
-   if (shader.length() > 0)
-   {
-      RARCH_LOG("[D3D Cg]: Compiling shader: %s.\n", shader.c_str());
-      fPrg = cgCreateProgramFromFile(cgCtx, CG_SOURCE,
-            shader.c_str(), fragment_profile, "main_fragment", fragment_opts);
-
-      if (cgGetLastListing(cgCtx))
-         RARCH_ERR("[D3D Cg]: Fragment error:\n%s\n", cgGetLastListing(cgCtx));
-
-      vPrg = cgCreateProgramFromFile(cgCtx, CG_SOURCE,
-            shader.c_str(), vertex_profile, "main_vertex", vertex_opts);
-
-      if (cgGetLastListing(cgCtx))
-         RARCH_ERR("[D3D Cg]: Vertex error:\n%s\n", cgGetLastListing(cgCtx));
-   }
-   else
-   {
-      RARCH_LOG("[D3D Cg]: Compiling stock shader.\n");
-
-      fPrg = cgCreateProgram(cgCtx, CG_SOURCE, stock_program,
-            fragment_profile, "main_fragment", fragment_opts);
-
-      if (cgGetLastListing(cgCtx))
-         RARCH_ERR("[D3D Cg]: Fragment error:\n%s\n", cgGetLastListing(cgCtx));
-
-      vPrg = cgCreateProgram(cgCtx, CG_SOURCE, stock_program,
-            vertex_profile, "main_vertex", vertex_opts);
-
-      if (cgGetLastListing(cgCtx))
-         RARCH_ERR("[D3D Cg]: Vertex error:\n%s\n", cgGetLastListing(cgCtx));
-   }
-
-   if (!fPrg || !vPrg)
-      return false;
-
-   cgD3D9LoadProgram(fPrg, true, 0);
-   cgD3D9LoadProgram(vPrg, true, 0);
-#endif
-   return true;
-}
-
-void RenderChain::set_shaders(CGprogram &fPrg, CGprogram &vPrg)
-{
-#ifdef HAVE_CG
-   cgD3D9BindProgram(fPrg);
-   cgD3D9BindProgram(vPrg);
-#endif
-}
-
-void RenderChain::set_vertices(Pass &pass,
+void renderchain_set_vertices(void *data, Pass &pass,
       unsigned width, unsigned height,
       unsigned out_width, unsigned out_height,
       unsigned vp_width, unsigned vp_height,
       unsigned rotation)
 {
+   renderchain_t *chain = (renderchain_t*)data;
    const LinkInfo &info = pass.info;
 
    if (pass.last_width != width || pass.last_height != height)
@@ -502,25 +445,25 @@ void RenderChain::set_vertices(Pass &pass,
       pass.vertex_buf->Unlock();
    }
 
-#ifdef HAVE_CG
-   set_cg_mvp(pass.vPrg, vp_width, vp_height, rotation);
-
-   set_cg_params(pass,
+   renderchain_set_mvp(chain, pass.vPrg, vp_width, vp_height, rotation);
+   renderchain_set_shader_params(chain, pass,
          width, height,
          info.tex_w, info.tex_h,
          vp_width, vp_height);
-#endif
 }
 
-void RenderChain::set_viewport(const D3DVIEWPORT &vp)
+void renderchain_set_viewport(void *data, D3DVIEWPORT *vp)
 {
-   dev->SetViewport(&vp);
+   renderchain_t *chain = (renderchain_t*)data;
+   LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)chain->dev;
+   d3dr->SetViewport(vp);
 }
 
-void RenderChain::set_cg_mvp(CGprogram &vPrg,
+void renderchain_set_mvp(void *data, CGprogram &vPrg,
       unsigned vp_width, unsigned vp_height,
       unsigned rotation)
 {
+   renderchain_t *chain = (renderchain_t*)data;
    D3DXMATRIX proj, ortho, rot, tmp;
    D3DXMatrixOrthoOffCenterLH(&ortho, 0, vp_width, 0, vp_height, 0, 1);
 
@@ -532,599 +475,204 @@ void RenderChain::set_cg_mvp(CGprogram &vPrg,
    D3DXMatrixMultiply(&proj, &ortho, &rot);
    D3DXMatrixTranspose(&tmp, &proj);
 
-#ifdef HAVE_CG
-   CGparameter cgpModelViewProj = cgGetNamedParameter(vPrg, "modelViewProj");
-   if (cgpModelViewProj)
-      cgD3D9SetUniformMatrix(cgpModelViewProj, &tmp);
-#endif
+   renderchain_set_shader_mvp(chain, vPrg, tmp);
 }
 
-#define set_cg_param(prog, param, val) do { \
-   CGparameter cgp = cgGetNamedParameter(prog, param); \
-   if (cgp) \
-      cgD3D9SetUniform(cgp, &val); \
-} while(0)
-
-void RenderChain::set_cg_params(Pass &pass,
-            unsigned video_w, unsigned video_h,
-            unsigned tex_w, unsigned tex_h,
-            unsigned viewport_w, unsigned viewport_h)
-{
-   D3DXVECTOR2 video_size, texture_size, output_size;
-   video_size.x = video_w;
-   video_size.y = video_h;
-   texture_size.x = tex_w;
-   texture_size.y = tex_h;
-   output_size.x = viewport_w;
-   output_size.y = viewport_h;
-
-   set_cg_param(pass.vPrg, "IN.video_size", video_size);
-   set_cg_param(pass.fPrg, "IN.video_size", video_size);
-   set_cg_param(pass.vPrg, "IN.texture_size", texture_size);
-   set_cg_param(pass.fPrg, "IN.texture_size", texture_size);
-   set_cg_param(pass.vPrg, "IN.output_size", output_size);
-   set_cg_param(pass.fPrg, "IN.output_size", output_size);
-
-   float frame_cnt = frame_count;
-   if (pass.info.pass->frame_count_mod)
-      frame_cnt = frame_count % pass.info.pass->frame_count_mod;
-   set_cg_param(pass.fPrg, "IN.frame_count", frame_cnt);
-   set_cg_param(pass.vPrg, "IN.frame_count", frame_cnt);
-}
-
-void RenderChain::clear_texture(Pass &pass)
+void renderchain_clear_texture(void *data, Pass &pass)
 {
    D3DLOCKED_RECT d3dlr;
+#ifdef _XBOX
+   D3DTexture_LockRect(pass.tex, 0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);
+   memset(d3dlr.pBits, 0, pass.info.tex_h * d3dlr.Pitch);
+#else
    if (SUCCEEDED(pass.tex->LockRect(0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK)))
    {
       memset(d3dlr.pBits, 0, pass.info.tex_h * d3dlr.Pitch);
       pass.tex->UnlockRect(0);
    }
+#endif
 }
 
-void RenderChain::convert_geometry(const LinkInfo &info,
+void renderchain_convert_geometry(void *data, const LinkInfo *info,
       unsigned &out_width, unsigned &out_height,
       unsigned width, unsigned height,
-      const D3DVIEWPORT &final_viewport)
+      D3DVIEWPORT *final_viewport)
 {
-   switch (info.pass->fbo.type_x)
+   renderchain_t *chain = (renderchain_t*)data;
+   switch (info->pass->fbo.type_x)
    {
       case RARCH_SCALE_VIEWPORT:
-         out_width = info.pass->fbo.scale_x * final_viewport.Width;
+         out_width = info->pass->fbo.scale_x * final_viewport->Width;
          break;
 
       case RARCH_SCALE_ABSOLUTE:
-         out_width = info.pass->fbo.abs_x;
+         out_width = info->pass->fbo.abs_x;
          break;
 
       case RARCH_SCALE_INPUT:
-         out_width = info.pass->fbo.scale_x * width;
+         out_width = info->pass->fbo.scale_x * width;
          break;
    }
 
-   switch (info.pass->fbo.type_y)
+   switch (info->pass->fbo.type_y)
    {
       case RARCH_SCALE_VIEWPORT:
-         out_height = info.pass->fbo.scale_y * final_viewport.Height;
+         out_height = info->pass->fbo.scale_y * final_viewport->Height;
          break;
 
       case RARCH_SCALE_ABSOLUTE:
-         out_height = info.pass->fbo.abs_y;
+         out_height = info->pass->fbo.abs_y;
          break;
 
       case RARCH_SCALE_INPUT:
-         out_height = info.pass->fbo.scale_y * height;
+         out_height = info->pass->fbo.scale_y * height;
          break;
    }
 }
 
-void RenderChain::blit_to_texture(const void *frame,
+void renderchain_blit_to_texture(void *data, const void *frame,
       unsigned width, unsigned height,
       unsigned pitch)
 {
-   Pass &first = passes[0];
+   renderchain_t *chain = (renderchain_t*)data;
+   Pass &first = chain->passes[0];
    if (first.last_width != width || first.last_height != height)
-      clear_texture(first);
+      renderchain_clear_texture(chain, first);
 
    D3DLOCKED_RECT d3dlr;
+#ifdef _XBOX360
+   D3DSURFACE_DESC desc;
+   D3DTexture_LockRect(first.tex, 0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);
+   first.tex->GetLevelDesc(0, &desc);
+      XGCopySurface(d3dlr.pBits, d3dlr.Pitch, width, height, desc.Format, NULL, frame,
+                                        pitch, desc.Format, NULL, 0, 0);
+
+#else
    if (SUCCEEDED(first.tex->LockRect(0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK)))
    {
       for (unsigned y = 0; y < height; y++)
       {
-         const uint8_t *in = reinterpret_cast<const uint8_t*>(frame) + y * pitch;
-         uint8_t *out = reinterpret_cast<uint8_t*>(d3dlr.pBits) + y * d3dlr.Pitch;
-         memcpy(out, in, width * pixel_size);
+         const uint8_t *in = (const uint8_t*)frame + y * pitch;
+         uint8_t *out =(uint8_t*)d3dlr.pBits + y * d3dlr.Pitch;
+         memcpy(out, in, width * chain->pixel_size);
       }
 
       first.tex->UnlockRect(0);
    }
+#endif
 }
 
-void RenderChain::render_pass(Pass &pass, unsigned pass_index)
+void renderchain_render_pass(void *data, Pass &pass, unsigned pass_index)
 {
-   set_shaders(pass.fPrg, pass.vPrg);
-   dev->SetTexture(0, pass.tex);
-   dev->SetSamplerState(0, D3DSAMP_MINFILTER,
-         translate_filter(pass.info.pass->filter));
-   dev->SetSamplerState(0, D3DSAMP_MAGFILTER,
-         translate_filter(pass.info.pass->filter));
-
-   dev->SetVertexDeclaration(pass.vertex_decl);
-   for (unsigned i = 0; i < 4; i++)
-      dev->SetStreamSource(i, pass.vertex_buf, 0, sizeof(Vertex));
-
-   bind_orig(pass);
-   bind_prev(pass);
-   bind_pass(pass, pass_index);
-   bind_luts(pass);
-   bind_tracker(pass, pass_index);
-
-   if (SUCCEEDED(dev->BeginScene()))
+   renderchain_t *chain = (renderchain_t*)data;
+   LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)chain->dev;
+   renderchain_set_shaders(chain, pass.fPrg, pass.vPrg);
+#ifdef _XBOX
+   if (g_extern.frame_count)
    {
-      dev->DrawPrimitive(D3DPT_TRIANGLESTRIP, 0, 2);
-      dev->EndScene();
+#if defined(_XBOX1)
+      d3dr->SwitchTexture(0, pass.tex);
+#elif defined(_XBOX360)
+      d3dr->SetTextureFetchConstant(0, pass.tex);
+#endif
+   }
+   else if(pass.tex)
+#endif
+   d3dr->SetTexture(0, pass.tex);
+   d3dr->SetSamplerState(0, D3DSAMP_MINFILTER,
+         translate_filter(pass.info.pass->filter));
+   d3dr->SetSamplerState(0, D3DSAMP_MAGFILTER,
+         translate_filter(pass.info.pass->filter));
+
+#ifdef _XBOX1
+   d3dr->SetVertexShader(D3DFVF_XYZ | D3DFVF_TEX1);
+#else
+   d3dr->SetVertexDeclaration(pass.vertex_decl);
+#endif
+   for (unsigned i = 0; i < 4; i++)
+      d3dr->SetStreamSource(i, pass.vertex_buf, 0, sizeof(Vertex));
+
+   renderchain_bind_orig(chain, pass);
+   renderchain_bind_prev(chain, pass);
+   renderchain_bind_pass(chain, pass, pass_index);
+   renderchain_bind_luts(chain, pass);
+   renderchain_bind_tracker(chain, pass, pass_index);
+
+   if (SUCCEEDED(d3dr->BeginScene()))
+   {
+      d3dr->DrawPrimitive(D3DPT_TRIANGLESTRIP, 0, 2);
+      d3dr->EndScene();
    }
 
    // So we don't render with linear filter into render targets,
    // which apparently looked odd (too blurry).
-   dev->SetSamplerState(0, D3DSAMP_MINFILTER,
+   d3dr->SetSamplerState(0, D3DSAMP_MINFILTER,
          D3DTEXF_POINT);
-   dev->SetSamplerState(0, D3DSAMP_MAGFILTER,
+   d3dr->SetSamplerState(0, D3DSAMP_MAGFILTER,
          D3DTEXF_POINT);
 
-   unbind_all();
+   renderchain_unbind_all(chain);
 }
 
-void RenderChain::log_info(const LinkInfo &info)
+void renderchain_log_info(void *data, const LinkInfo *info)
 {
-   RARCH_LOG("[D3D9 Cg]: Render pass info:\n");
-   RARCH_LOG("\tTexture width: %u\n", info.tex_w);
-   RARCH_LOG("\tTexture height: %u\n", info.tex_h);
+   RARCH_LOG("[D3D]: Render pass info:\n");
+   RARCH_LOG("\tTexture width: %u\n", info->tex_w);
+   RARCH_LOG("\tTexture height: %u\n", info->tex_h);
 
    RARCH_LOG("\tScale type (X): ");
-   switch (info.pass->fbo.type_x)
+   switch (info->pass->fbo.type_x)
    {
       case RARCH_SCALE_INPUT:
-         RARCH_LOG("Relative @ %fx\n", info.pass->fbo.scale_x);
+         RARCH_LOG("Relative @ %fx\n", info->pass->fbo.scale_x);
          break;
 
       case RARCH_SCALE_VIEWPORT:
-         RARCH_LOG("Viewport @ %fx\n", info.pass->fbo.scale_x);
+         RARCH_LOG("Viewport @ %fx\n", info->pass->fbo.scale_x);
          break;
 
       case RARCH_SCALE_ABSOLUTE:
-         RARCH_LOG("Absolute @ %u px\n", info.pass->fbo.abs_x);
+         RARCH_LOG("Absolute @ %u px\n", info->pass->fbo.abs_x);
          break;
    }
 
    RARCH_LOG("\tScale type (Y): ");
-   switch (info.pass->fbo.type_y)
+   switch (info->pass->fbo.type_y)
    {
       case RARCH_SCALE_INPUT:
-         RARCH_LOG("Relative @ %fx\n", info.pass->fbo.scale_y);
+         RARCH_LOG("Relative @ %fx\n", info->pass->fbo.scale_y);
          break;
 
       case RARCH_SCALE_VIEWPORT:
-         RARCH_LOG("Viewport @ %fx\n", info.pass->fbo.scale_y);
+         RARCH_LOG("Viewport @ %fx\n", info->pass->fbo.scale_y);
          break;
 
       case RARCH_SCALE_ABSOLUTE:
-         RARCH_LOG("Absolute @ %u px\n", info.pass->fbo.abs_y);
+         RARCH_LOG("Absolute @ %u px\n", info->pass->fbo.abs_y);
          break;
    }
 
-   RARCH_LOG("\tBilinear filter: %s\n", info.pass->filter == RARCH_FILTER_LINEAR ? "true" : "false");
+   RARCH_LOG("\tBilinear filter: %s\n", info->pass->filter == RARCH_FILTER_LINEAR ? "true" : "false");
 }
 
-void RenderChain::bind_orig(Pass &pass)
+void renderchain_unbind_all(void *data)
 {
-   D3DXVECTOR2 video_size, texture_size;
-   video_size.x = passes[0].last_width;
-   video_size.y = passes[0].last_height;
-   texture_size.x = passes[0].info.tex_w;
-   texture_size.y = passes[0].info.tex_h;
-
-   set_cg_param(pass.vPrg, "ORIG.video_size", video_size);
-   set_cg_param(pass.fPrg, "ORIG.video_size", video_size);
-   set_cg_param(pass.vPrg, "ORIG.texture_size", texture_size);
-   set_cg_param(pass.fPrg, "ORIG.texture_size", texture_size);
-
-   CGparameter param = cgGetNamedParameter(pass.fPrg, "ORIG.texture");
-   if (param)
-   {
-      unsigned index = cgGetParameterResourceIndex(param);
-      dev->SetTexture(index, passes[0].tex);
-      dev->SetSamplerState(index, D3DSAMP_MAGFILTER,
-            translate_filter(passes[0].info.pass->filter));
-      dev->SetSamplerState(index, D3DSAMP_MINFILTER,
-            translate_filter(passes[0].info.pass->filter));
-      dev->SetSamplerState(index, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
-      dev->SetSamplerState(index, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
-      bound_tex.push_back(index);
-   }
-
-   param = cgGetNamedParameter(pass.vPrg, "ORIG.tex_coord");
-   if (param)
-   {
-      unsigned index = pass.attrib_map[cgGetParameterResourceIndex(param)];
-      dev->SetStreamSource(index, passes[0].vertex_buf, 0, sizeof(Vertex));
-      bound_vert.push_back(index);
-   }
-}
-
-void RenderChain::bind_prev(Pass &pass)
-{
-   static const char *prev_names[] = {
-      "PREV",
-      "PREV1",
-      "PREV2",
-      "PREV3",
-      "PREV4",
-      "PREV5",
-      "PREV6",
-   };
-
-   char attr_texture[64], attr_input_size[64], attr_tex_size[64], attr_coord[64];
-   D3DXVECTOR2 texture_size;
-
-   texture_size.x = passes[0].info.tex_w;
-   texture_size.y = passes[0].info.tex_h;
-
-   for (unsigned i = 0; i < Textures - 1; i++)
-   {
-      snprintf(attr_texture,    sizeof(attr_texture),    "%s.texture",      prev_names[i]);
-      snprintf(attr_input_size, sizeof(attr_input_size), "%s.video_size",   prev_names[i]);
-      snprintf(attr_tex_size,   sizeof(attr_tex_size),   "%s.texture_size", prev_names[i]);
-      snprintf(attr_coord,      sizeof(attr_coord),      "%s.tex_coord",    prev_names[i]);
-
-      D3DXVECTOR2 video_size;
-      video_size.x = prev.last_width[(prev.ptr - (i + 1)) & TexturesMask];
-      video_size.y = prev.last_height[(prev.ptr - (i + 1)) & TexturesMask];
-
-      set_cg_param(pass.vPrg, attr_input_size, video_size);
-      set_cg_param(pass.fPrg, attr_input_size, video_size);
-      set_cg_param(pass.vPrg, attr_tex_size, texture_size);
-      set_cg_param(pass.fPrg, attr_tex_size, texture_size);
-
-      CGparameter param = cgGetNamedParameter(pass.fPrg, attr_texture);
-      if (param)
-      {
-         unsigned index = cgGetParameterResourceIndex(param);
-
-         LPDIRECT3DTEXTURE tex = prev.tex[(prev.ptr - (i + 1)) & TexturesMask];
-         dev->SetTexture(index, tex);
-         bound_tex.push_back(index);
-
-         dev->SetSamplerState(index, D3DSAMP_MAGFILTER,
-               translate_filter(passes[0].info.pass->filter));
-         dev->SetSamplerState(index, D3DSAMP_MINFILTER,
-               translate_filter(passes[0].info.pass->filter));
-         dev->SetSamplerState(index, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
-         dev->SetSamplerState(index, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
-      }
-
-      param = cgGetNamedParameter(pass.vPrg, attr_coord);
-      if (param)
-      {
-         unsigned index = pass.attrib_map[cgGetParameterResourceIndex(param)];
-         LPDIRECT3DVERTEXBUFFER vert_buf = prev.vertex_buf[(prev.ptr - (i + 1)) & TexturesMask];
-         bound_vert.push_back(index);
-
-         dev->SetStreamSource(index, vert_buf, 0, sizeof(Vertex));
-      }
-   }
-}
-
-void RenderChain::bind_pass(Pass &pass, unsigned pass_index)
-{
-   // We only bother binding passes which are two indices behind.
-   if (pass_index < 3)
-      return;
-
-   for (unsigned i = 1; i < pass_index - 1; i++)
-   {
-      char pass_base[64];
-      snprintf(pass_base, sizeof(pass_base), "PASS%u.", i);
-
-      std::string attr_texture = pass_base;
-      attr_texture += "texture";
-      std::string attr_video_size = pass_base;
-      attr_video_size += "video_size";
-      std::string attr_texture_size = pass_base;
-      attr_texture_size += "texture_size";
-      std::string attr_tex_coord = pass_base;
-      attr_tex_coord += "tex_coord";
-
-      D3DXVECTOR2 video_size, texture_size;
-      video_size.x = passes[i].last_width;
-      video_size.y = passes[i].last_height;
-      texture_size.x = passes[i].info.tex_w;
-      texture_size.y = passes[i].info.tex_h;
-
-      set_cg_param(pass.vPrg, attr_video_size.c_str(), video_size);
-      set_cg_param(pass.fPrg, attr_video_size.c_str(), video_size);
-      set_cg_param(pass.vPrg, attr_texture_size.c_str(), texture_size);
-      set_cg_param(pass.fPrg, attr_texture_size.c_str(), texture_size);
-
-      CGparameter param = cgGetNamedParameter(pass.fPrg, attr_texture.c_str());
-      if (param)
-      {
-         unsigned index = cgGetParameterResourceIndex(param);
-         bound_tex.push_back(index);
-
-         dev->SetTexture(index, passes[i].tex);
-         dev->SetSamplerState(index, D3DSAMP_MAGFILTER,
-               translate_filter(passes[i].info.pass->filter));
-         dev->SetSamplerState(index, D3DSAMP_MINFILTER,
-               translate_filter(passes[i].info.pass->filter));
-         dev->SetSamplerState(index, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
-         dev->SetSamplerState(index, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
-      }
-
-      param = cgGetNamedParameter(pass.vPrg, attr_tex_coord.c_str());
-      if (param)
-      {
-         unsigned index = pass.attrib_map[cgGetParameterResourceIndex(param)];
-         dev->SetStreamSource(index, passes[i].vertex_buf, 0, sizeof(Vertex));
-         bound_vert.push_back(index);
-      }
-   }
-}
-
-void RenderChain::bind_luts(Pass &pass)
-{
-   for (unsigned i = 0; i < luts.size(); i++)
-   {
-      CGparameter fparam = cgGetNamedParameter(pass.fPrg, luts[i].id.c_str());
-      int bound_index = -1;
-      if (fparam)
-      {
-         unsigned index = cgGetParameterResourceIndex(fparam);
-         bound_index = index;
-         dev->SetTexture(index, luts[i].tex);
-         dev->SetSamplerState(index, D3DSAMP_MAGFILTER,
-               translate_filter(luts[i].smooth));
-         dev->SetSamplerState(index, D3DSAMP_MINFILTER,
-               translate_filter(luts[i].smooth));
-         dev->SetSamplerState(index, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
-         dev->SetSamplerState(index, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
-         bound_tex.push_back(index);
-      }
-
-      CGparameter vparam = cgGetNamedParameter(pass.vPrg, luts[i].id.c_str());
-      if (vparam)
-      {
-         unsigned index = cgGetParameterResourceIndex(vparam);
-         if (index != (unsigned)bound_index)
-         {
-            dev->SetTexture(index, luts[i].tex);
-            dev->SetSamplerState(index, D3DSAMP_MAGFILTER,
-                  translate_filter(luts[i].smooth));
-            dev->SetSamplerState(index, D3DSAMP_MINFILTER,
-                  translate_filter(luts[i].smooth));
-            dev->SetSamplerState(index, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
-            dev->SetSamplerState(index, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
-            bound_tex.push_back(index);
-         }
-      }
-   }
-}
-
-void RenderChain::unbind_all()
-{
+   renderchain_t *chain = (renderchain_t*)data;
+   LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)chain->dev;
    // Have to be a bit anal about it.
    // Render targets hate it when they have filters apparently.
-   for (unsigned i = 0; i < bound_tex.size(); i++)
+   for (unsigned i = 0; i < chain->bound_tex.size(); i++)
    {
-      dev->SetSamplerState(bound_tex[i], D3DSAMP_MAGFILTER,
+      d3dr->SetSamplerState(chain->bound_tex[i], D3DSAMP_MAGFILTER,
             D3DTEXF_POINT);
-      dev->SetSamplerState(bound_tex[i], D3DSAMP_MINFILTER,
+      d3dr->SetSamplerState(chain->bound_tex[i], D3DSAMP_MINFILTER,
             D3DTEXF_POINT);
-      dev->SetTexture(bound_tex[i], NULL);
+      d3dr->SetTexture(chain->bound_tex[i], NULL);
    }
 
-   for (unsigned i = 0; i < bound_vert.size(); i++)
-      dev->SetStreamSource(bound_vert[i], 0, 0, 0);
+   for (unsigned i = 0; i < chain->bound_vert.size(); i++)
+      d3dr->SetStreamSource(chain->bound_vert[i], 0, 0, 0);
 
-   bound_tex.clear();
-   bound_vert.clear();
+   chain->bound_tex.clear();
+   chain->bound_vert.clear();
 }
-
-static inline bool validate_param_name(const char *name)
-{
-   static const char *illegal[] = {
-      "PREV.",
-      "PREV1.",
-      "PREV2.",
-      "PREV3.",
-      "PREV4.",
-      "PREV5.",
-      "PREV6.",
-      "ORIG.",
-      "IN.",
-      "PASS",
-   };
-
-   for (unsigned i = 0; i < sizeof(illegal) / sizeof(illegal[0]); i++)
-      if (strstr(name, illegal[i]) == name)
-         return false;
-
-   return true;
-}
-
-static inline CGparameter find_param_from_semantic(CGparameter param, const std::string &sem)
-{
-   while (param)
-   {
-      if (cgGetParameterType(param) == CG_STRUCT)
-      {
-         CGparameter ret = find_param_from_semantic(cgGetFirstStructParameter(param), sem);
-         if (ret)
-            return ret;
-      }
-      else
-      {
-         if (cgGetParameterSemantic(param) &&
-               sem == cgGetParameterSemantic(param) &&
-               cgGetParameterDirection(param) == CG_IN &&
-               cgGetParameterVariability(param) == CG_VARYING &&
-               validate_param_name(cgGetParameterName(param)))
-            return param;
-      }
-      param = cgGetNextParameter(param);
-   }
-
-   return NULL;
-}
-
-static inline CGparameter find_param_from_semantic(CGprogram prog, const std::string &sem)
-{
-   return find_param_from_semantic(cgGetFirstParameter(prog, CG_PROGRAM), sem);
-}
-
-#define DECL_FVF_POSITION(stream) \
-   { (WORD)(stream), 0 * sizeof(float), D3DDECLTYPE_FLOAT3, D3DDECLMETHOD_DEFAULT, \
-      D3DDECLUSAGE_POSITION, 0 }
-#define DECL_FVF_TEXCOORD(stream, offset, index) \
-   { (WORD)(stream), (WORD)(offset * sizeof(float)), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, \
-      D3DDECLUSAGE_TEXCOORD, (BYTE)(index) }
-#define DECL_FVF_COLOR(stream, offset, index) \
-   { (WORD)(stream), (WORD)(offset * sizeof(float)), D3DDECLTYPE_FLOAT4, D3DDECLMETHOD_DEFAULT, \
-      D3DDECLUSAGE_COLOR, (BYTE)(index) } \
-
-bool RenderChain::init_fvf(Pass &pass)
-{
-   static const D3DVERTEXELEMENT decl_end = D3DDECL_END();
-   static const D3DVERTEXELEMENT position_decl = DECL_FVF_POSITION(0);
-   static const D3DVERTEXELEMENT tex_coord0 = DECL_FVF_TEXCOORD(1, 3, 0);
-   static const D3DVERTEXELEMENT tex_coord1 = DECL_FVF_TEXCOORD(2, 5, 1);
-   static const D3DVERTEXELEMENT color = DECL_FVF_COLOR(3, 7, 0);
-
-   D3DVERTEXELEMENT decl[MAXD3DDECLLENGTH] = {{0}};
-   if (cgD3D9GetVertexDeclaration(pass.vPrg, decl) == CG_FALSE)
-      return false;
-
-   unsigned count;
-   for (count = 0; count < MAXD3DDECLLENGTH; count++)
-   {
-      if (memcmp(&decl_end, &decl[count], sizeof(decl_end)) == 0)
-         break;
-   }
-
-   // This is completely insane.
-   // We do not have a good and easy way of setting up our
-   // attribute streams, so we have to do it ourselves, yay!
-   // Stream 0 => POSITION
-   // Stream 1 => TEXCOORD0
-   // Stream 2 => TEXCOORD1
-   // Stream 3 => COLOR // Not really used for anything.
-   // Stream {4..N} => Texture coord streams for varying resources which have no semantics.
-
-   std::vector<bool> indices(count);
-   bool texcoord0_taken = false;
-   bool texcoord1_taken = false;
-   bool stream_taken[4] = {false};
-
-   CGparameter param = find_param_from_semantic(pass.vPrg, "POSITION");
-   if (!param)
-      param = find_param_from_semantic(pass.vPrg, "POSITION0");
-   if (param)
-   {
-      stream_taken[0] = true;
-      RARCH_LOG("[FVF]: POSITION semantic found.\n");
-      unsigned index = cgGetParameterResourceIndex(param);
-      decl[index] = position_decl;
-      indices[index] = true;
-   }
-
-   param = find_param_from_semantic(pass.vPrg, "TEXCOORD");
-   if (!param)
-      param = find_param_from_semantic(pass.vPrg, "TEXCOORD0");
-   if (param)
-   {
-      stream_taken[1] = true;
-      texcoord0_taken = true;
-      RARCH_LOG("[FVF]: TEXCOORD0 semantic found.\n");
-      unsigned index = cgGetParameterResourceIndex(param);
-      decl[index] = tex_coord0;
-      indices[index] = true;
-   }
-
-   param = find_param_from_semantic(pass.vPrg, "TEXCOORD1");
-   if (param)
-   {
-      stream_taken[2] = true;
-      texcoord1_taken = true;
-      RARCH_LOG("[FVF]: TEXCOORD1 semantic found.\n");
-      unsigned index = cgGetParameterResourceIndex(param);
-      decl[index] = tex_coord1;
-      indices[index] = true;
-   }
-
-   param = find_param_from_semantic(pass.vPrg, "COLOR");
-   if (!param)
-      param = find_param_from_semantic(pass.vPrg, "COLOR0");
-   if (param)
-   {
-      stream_taken[3] = true;
-      RARCH_LOG("[FVF]: COLOR0 semantic found.\n");
-      unsigned index = cgGetParameterResourceIndex(param);
-      decl[index] = color;
-      indices[index] = true;
-   }
-
-   // Stream {0, 1, 2, 3} might be already taken. Find first vacant stream.
-   unsigned index;
-   for (index = 0; index < 4 && stream_taken[index]; index++);
-
-   // Find first vacant texcoord declaration.
-   unsigned tex_index = 0;
-   if (texcoord0_taken && texcoord1_taken)
-      tex_index = 2;
-   else if (texcoord1_taken && !texcoord0_taken)
-      tex_index = 0;
-   else if (texcoord0_taken && !texcoord1_taken)
-      tex_index = 1;
-
-   for (unsigned i = 0; i < count; i++)
-   {
-      if (indices[i])
-         pass.attrib_map.push_back(0);
-      else
-      {
-         pass.attrib_map.push_back(index);
-         D3DVERTEXELEMENT elem = DECL_FVF_TEXCOORD(index, 3, tex_index);
-         decl[i] = elem;
-
-         // Find next vacant stream.
-         index++;
-         while (index < 4 && stream_taken[index]) index++;
-
-         // Find next vacant texcoord declaration.
-         tex_index++;
-         if (tex_index == 1 && texcoord1_taken)
-            tex_index++;
-      }
-   }
-
-   if (FAILED(dev->CreateVertexDeclaration(decl, &pass.vertex_decl)))
-      return false;
-
-   return true;
-}
-
-void RenderChain::bind_tracker(Pass &pass, unsigned pass_index)
-{
-   if (!tracker)
-      return;
-
-   if (pass_index == 1)
-      uniform_cnt = state_get_uniform(tracker, uniform_info, MAX_VARIABLES, frame_count);
-
-   for (unsigned i = 0; i < uniform_cnt; i++)
-   {
-      set_cg_param(pass.fPrg, uniform_info[i].id, uniform_info[i].value);
-      set_cg_param(pass.vPrg, uniform_info[i].id, uniform_info[i].value);
-   }
-}
-

@@ -29,11 +29,12 @@
 #include "autosave.h"
 #include "dynamic.h"
 #include "cheats.h"
-#include "audio/ext/rarch_dsp.h"
+#include "audio/filters/rarch_dsp.h"
 #include "compat/strl.h"
 #include "performance.h"
 #include "core_options.h"
 #include "miscellaneous.h"
+#include "gfx/filter.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -109,6 +110,7 @@ enum menu_enums
    MODE_AUDIO_CUSTOM_BGM_ENABLE,
    MODE_OSK_ENTRY_SUCCESS,
    MODE_OSK_ENTRY_FAIL,
+   MODE_CLEAR_INPUT,
 };
 
 enum sound_mode_enums
@@ -154,10 +156,14 @@ struct settings
       char shader_path[PATH_MAX];
       bool shader_enable;
 
+#ifdef HAVE_FILTERS_BUILTIN
+      unsigned filter_idx;
+#endif
       char filter_path[PATH_MAX];
       float refresh_rate;
       bool threaded;
 
+      char filter_dir[PATH_MAX];
       char shader_dir[PATH_MAX];
 
       char font_path[PATH_MAX];
@@ -177,6 +183,7 @@ struct settings
       bool gpu_screenshot;
 
       bool allow_rotate;
+      bool shared_context;
    } video;
 
 #ifdef HAVE_MENU
@@ -191,6 +198,7 @@ struct settings
    {
       char driver[32];
       char device[PATH_MAX];
+      bool allow;
       unsigned width;
       unsigned height;
    } camera;
@@ -200,6 +208,7 @@ struct settings
    struct
    {
       char driver[32];
+      bool allow;
       int update_interval_ms;
       int update_interval_distance;
    } location;
@@ -209,6 +218,7 @@ struct settings
    struct
    {
       char driver[32];
+      bool enable;
    } osk;
 #endif
 
@@ -224,6 +234,10 @@ struct settings
       bool sync;
 
       char dsp_plugin[PATH_MAX];
+      char filter_dir[PATH_MAX];
+#ifdef HAVE_FILTERS_BUILTIN
+      unsigned filter_idx;
+#endif
 
       bool rate_control;
       float rate_control_delta;
@@ -276,12 +290,15 @@ struct settings
    unsigned game_history_size;
 
    char libretro[PATH_MAX];
+   unsigned libretro_log_level;
    char libretro_info_path[PATH_MAX];
    char cheat_database[PATH_MAX];
    char cheat_settings_path[PATH_MAX];
 
    char screenshot_directory[PATH_MAX];
    char system_directory[PATH_MAX];
+
+   char extraction_directory[PATH_MAX];
 
    bool rewind_enable;
    size_t rewind_buffer_size;
@@ -309,17 +326,9 @@ struct settings
    bool rgui_show_start_screen;
 #endif
    bool fps_show;
+   bool load_dummy_on_core_shutdown;
 
    bool core_specific_config;
-};
-
-enum rarch_game_type
-{
-   RARCH_CART_NORMAL = 0,
-   RARCH_CART_SGB,
-   RARCH_CART_BSX,
-   RARCH_CART_BSX_SLOTTED,
-   RARCH_CART_SUFAMI
 };
 
 typedef struct rarch_resolution
@@ -355,9 +364,8 @@ struct global
 #endif
    bool force_fullscreen;
 
-   bool rom_file_temporary;
-   char last_rom[PATH_MAX];
-   enum rarch_game_type game_type;
+   struct string_list *temporary_roms;
+
    uint32_t cart_crc;
 
    char gb_rom_path[PATH_MAX];
@@ -383,11 +391,15 @@ struct global
    
    char basename[PATH_MAX];
    char fullpath[PATH_MAX];
-   char savefile_name_srm[PATH_MAX];
-   char savefile_name_rtc[PATH_MAX]; // Make sure that fill_pathname has space.
-   char savefile_name_psrm[PATH_MAX];
-   char savefile_name_asrm[PATH_MAX];
-   char savefile_name_bsrm[PATH_MAX];
+
+   // A list of save types and associated paths for all ROMs.
+   struct string_list *savefiles;
+
+   // For --subsystem ROMs.
+   char subsystem[256];
+   struct string_list *subsystem_fullpaths;
+
+   char savefile_name[PATH_MAX];
    char savestate_name[PATH_MAX];
 
    // Used on reentrancy to use a savestate dir.
@@ -406,7 +418,7 @@ struct global
    char bps_name[PATH_MAX];
    char ips_name[PATH_MAX];
 
-   unsigned state_slot;
+   int state_slot;
 
    struct
    {
@@ -445,6 +457,12 @@ struct global
       retro_usec_t frame_time_last;
 
       core_option_manager_t *core_options;
+
+      struct retro_subsystem_info *special;
+      unsigned num_special;
+
+      struct retro_controller_info *ports;
+      unsigned num_ports;
    } system;
 
    struct
@@ -471,8 +489,10 @@ struct global
       size_t rewind_ptr;
       size_t rewind_size;
 
+#ifdef HAVE_DYLIB
       dylib_t dsp_lib;
-      const rarch_dsp_plugin_t *dsp_plugin;
+#endif
+      const struct dspfilter_implementation *dsp_plugin;
       void *dsp_handle;
 
       bool rate_control; 
@@ -496,20 +516,12 @@ struct global
 
    struct
    {
-      bool active;
-      uint32_t *buffer;
-      uint32_t *colormap;
-      unsigned pitch;
-      dylib_t lib;
+      rarch_softfilter_t *filter;
+
+      void *buffer;
       unsigned scale;
-
-      void (*psize)(unsigned *width, unsigned *height);
-      void (*prender)(uint32_t *colormap, uint32_t *output, unsigned outpitch,
-            const uint16_t *input, unsigned pitch, unsigned width, unsigned height);
-
-      // CPU filters only work on *XRGB1555*. We have to convert to XRGB1555 first.
-      struct scaler_ctx scaler;
-      uint16_t *scaler_out;
+      unsigned out_bpp;
+      bool out_rgb32;
    } filter;
 
    msg_queue_t *msg_queue;
@@ -560,7 +572,8 @@ struct global
    unsigned turbo_count;
 
    // Autosave support.
-   autosave_t *autosave[2];
+   autosave_t **autosave;
+   unsigned num_autosave;
 
    // Netplay.
 #ifdef HAVE_NETPLAY
@@ -575,7 +588,7 @@ struct global
 #endif
 
    // FFmpeg record.
-#ifdef HAVE_FFMPEG
+#ifdef HAVE_RECORD
    ffemu_t *rec;
    char record_path[PATH_MAX];
    char record_config[PATH_MAX];
@@ -604,6 +617,12 @@ struct global
       struct string_list *list;
       size_t ptr;
    } shader_dir;
+
+   struct
+   {
+      struct string_list *list;
+      size_t ptr;
+   } filter_dir;
 
    char sha256[64 + 1];
 
@@ -723,11 +742,15 @@ bool rarch_set_rumble_state(unsigned port, enum retro_rumble_effect effect, bool
 void rarch_init_autosave(void);
 void rarch_deinit_autosave(void);
 void rarch_take_screenshot(void);
-
 void rarch_load_state(void);
 void rarch_save_state(void);
 void rarch_state_slot_increase(void);
 void rarch_state_slot_decrease(void);
+
+#ifdef HAVE_RECORD
+void rarch_init_recording(void);
+void rarch_deinit_recording(void);
+#endif
 /////////
 
 // Public data structures

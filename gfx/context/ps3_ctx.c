@@ -37,7 +37,6 @@
 #endif
 
 #include "../gl_common.h"
-#include "../image.h"
 
 #include "../gfx_context.h"
 #include "../fonts/gl_font.h"
@@ -63,8 +62,9 @@ static unsigned gfx_ctx_get_resolution_height(unsigned resolution_id)
    return resolution.height;
 }
 
-static float gfx_ctx_get_aspect_ratio(void)
+static float gfx_ctx_get_aspect_ratio(void *data)
 {
+   (void)data;
    CellVideoOutState videoState;
    cellVideoOutGetState(CELL_VIDEO_OUT_PRIMARY, 0, &videoState);
 
@@ -79,7 +79,7 @@ static float gfx_ctx_get_aspect_ratio(void)
    return 16.0f/9.0f;
 }
 
-static void gfx_ctx_get_available_resolutions (void)
+static void gfx_ctx_get_available_resolutions(void)
 {
    bool defaultresolution;
    uint32_t resolution_count;
@@ -138,8 +138,9 @@ static void gfx_ctx_get_available_resolutions (void)
    g_extern.console.screen.resolutions.check = true;
 }
 
-static void gfx_ctx_set_swap_interval(unsigned interval)
+static void gfx_ctx_set_swap_interval(void *data, unsigned interval)
 {
+   (void)data;
 #if defined(HAVE_PSGL)
    if (gl_context)
    {
@@ -151,10 +152,10 @@ static void gfx_ctx_set_swap_interval(unsigned interval)
 #endif
 }
 
-static void gfx_ctx_check_window(bool *quit,
+static void gfx_ctx_check_window(void *data, bool *quit,
       bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
 {
-   gl_t *gl = driver.video_data;
+   gl_t *gl = data;
    *quit = false;
    *resize = false;
 
@@ -166,13 +167,15 @@ static void gfx_ctx_check_window(bool *quit,
       *resize = true;
 }
 
-static bool gfx_ctx_has_focus(void)
+static bool gfx_ctx_has_focus(void *data)
 {
+   (void)data;
    return true;
 }
 
-static void gfx_ctx_swap_buffers(void)
+static void gfx_ctx_swap_buffers(void *data)
 {
+   (void)data;
 #ifdef HAVE_LIBDBGFONT
    cellDbgFontDraw();
 #endif
@@ -184,10 +187,11 @@ static void gfx_ctx_swap_buffers(void)
 #endif
 }
 
-static void gfx_ctx_set_resize(unsigned width, unsigned height) { }
+static void gfx_ctx_set_resize(void *data, unsigned width, unsigned height) { }
 
-static void gfx_ctx_update_window_title(void)
+static void gfx_ctx_update_window_title(void *data)
 {
+   (void)data;
    char buf[128], buf_fps[128];
    bool fps_draw = g_settings.fps_show;
    gfx_get_fps(buf, sizeof(buf), fps_draw ? buf_fps : NULL, sizeof(buf_fps));
@@ -196,15 +200,17 @@ static void gfx_ctx_update_window_title(void)
       msg_queue_push(g_extern.msg_queue, buf_fps, 1, 1);
 }
 
-static void gfx_ctx_get_video_size(unsigned *width, unsigned *height)
+static void gfx_ctx_get_video_size(void *data, unsigned *width, unsigned *height)
 {
+   (void)data;
 #if defined(HAVE_PSGL)
    psglGetDeviceDimensions(gl_device, width, height); 
 #endif
 }
 
-static bool gfx_ctx_init(void)
+static bool gfx_ctx_init(void *data)
 {
+   (void)data;
 #if defined(HAVE_PSGL)
    PSGLinitOptions options = {
       .enable = PSGL_INIT_MAX_SPUS | PSGL_INIT_INITIALIZE_SPUS,
@@ -270,15 +276,17 @@ static bool gfx_ctx_init(void)
    return true;
 }
 
-static bool gfx_ctx_set_video_mode(
+static bool gfx_ctx_set_video_mode(void *data,
       unsigned width, unsigned height,
       bool fullscreen)
 {
+   (void)data;
    return true;
 }
 
-static void gfx_ctx_destroy(void)
+static void gfx_ctx_destroy(void *data)
 {
+   (void)data;
 #if defined(HAVE_PSGL)
    psglDestroyContext(gl_context);
    psglDestroyDevice(gl_device);
@@ -287,15 +295,17 @@ static void gfx_ctx_destroy(void)
 #endif
 }
 
-static void gfx_ctx_input_driver(const input_driver_t **input, void **input_data)
+static void gfx_ctx_input_driver(void *data, const input_driver_t **input, void **input_data)
 {
+   (void)data;
    void *ps3input = input_ps3.init();
    *input = ps3input ? &input_ps3 : NULL;
    *input_data = ps3input;
 }
 
-static bool gfx_ctx_bind_api(enum gfx_ctx_api api, unsigned major, unsigned minor)
+static bool gfx_ctx_bind_api(void *data, enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
+   (void)data;
    (void)major;
    (void)minor;
    return api == GFX_CTX_OPENGL_API || GFX_CTX_OPENGL_ES_API;

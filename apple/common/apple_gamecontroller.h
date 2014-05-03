@@ -16,7 +16,7 @@
 #ifndef __APPLE_RARCH_GAMECONTROLLER_H__
 #define __APPLE_RARCH_GAMECONTROLLER_H__
 
-void apple_gamecontroller_init();
-void apple_gamecontroller_poll_all();
+void apple_gamecontroller_init(void);
+void apple_gamecontroller_poll_all(void);
 
 #endif

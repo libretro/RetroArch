@@ -7,14 +7,22 @@ TESTS := test-sinc-lowest \
 	test-sinc-higher \
 	test-snr-sinc-higher \
 	test-sinc-highest \
-	test-snr-sinc-highest
+	test-snr-sinc-highest \
+	test-cc \
+	test-snr-cc
 
-CFLAGS += -O3 -ffast-math -g -Wall -pedantic -march=native -std=gnu99 -DRESAMPLER_TEST
+CFLAGS += -O3 -ffast-math -g -Wall -pedantic -march=native -std=gnu99 -DRESAMPLER_TEST -DRARCH_DUMMY_LOG
 LDFLAGS += -lm
 
 all: $(TESTS)
 
 resampler-sinc.o: ../resampler.c
+	$(CC) -c -o $@ $< $(CFLAGS)
+
+resampler-cc.o: ../resampler.c
+	$(CC) -c -o $@ $< $(CFLAGS) -DHAVE_CC_RESAMPLER
+
+cc-resampler.o: ../cc_resampler.c
 	$(CC) -c -o $@ $< $(CFLAGS)
 
 sinc-lowest.o: ../sinc.c
@@ -60,6 +68,12 @@ test-sinc-highest: sinc-highest.o ../utils.o main.o resampler-sinc.o
 	$(CC) -o $@ $^ $(LDFLAGS)
 
 test-snr-sinc-highest: sinc-highest.o ../utils.o snr.o resampler-sinc.o
+	$(CC) -o $@ $^ $(LDFLAGS)
+
+test-cc: cc-resampler.o ../utils.o main.o resampler-cc.o sinc.o
+	$(CC) -o $@ $^ $(LDFLAGS)
+
+test-snr-cc: cc-resampler.o ../utils.o snr.o resampler-cc.o sinc.o
 	$(CC) -o $@ $^ $(LDFLAGS)
 
 %.o: %.c

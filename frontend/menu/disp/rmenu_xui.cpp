@@ -19,6 +19,7 @@
 #include <xui.h>
 #include <xuiapp.h>
 
+#include "../backend/menu_common_backend.h"
 #include "../menu_common.h"
 
 #include "../../../gfx/gfx_common.h"
@@ -27,85 +28,16 @@
 #include "../../../message_queue.h"
 #include "../../../general.h"
 
-enum
-{
-   SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_B = 0,
-   SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_Y,
-   SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_SELECT,
-   SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_START,
-   SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_UP,
-   SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_DOWN,
-   SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_LEFT,
-   SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_RIGHT,
-   SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_A,
-   SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_X,
-   SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_L,
-   SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_R,
-   SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_L2,
-   SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_R2,
-   SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_L3,
-   SETTING_CONTROLS_RETRO_DEVICE_ID_JOYPAD_R3,
-   SETTING_CONTROLS_DPAD_EMULATION,
-   SETTING_CONTROLS_DEFAULT_ALL
-};
-
-enum
-{
-   INPUT_LOOP_NONE = 0,
-   INPUT_LOOP_RESIZE_MODE,
-   INPUT_LOOP_FILEBROWSER
-};
-
-enum
-{
-    INGAME_MENU_CHANGE_LIBRETRO_CORE = 0,
-    INGAME_MENU_LOAD_GAME_HISTORY_MODE,
-    INGAME_MENU_CHANGE_GAME,
-    INGAME_MENU_CORE_OPTIONS_MODE,
-    INGAME_MENU_VIDEO_OPTIONS_MODE,
-    INGAME_MENU_AUDIO_OPTIONS_MODE,
-    INGAME_MENU_INPUT_OPTIONS_MODE,
-    INGAME_MENU_PATH_OPTIONS_MODE,
-    INGAME_MENU_SETTINGS_MODE,
-    INGAME_MENU_LOAD_STATE,
-    INGAME_MENU_SAVE_STATE,
-    INGAME_MENU_SCREENSHOT_MODE,
-    INGAME_MENU_RETURN_TO_GAME,
-    INGAME_MENU_RESET,
-    INGAME_MENU_QUIT_RETROARCH,
-    INGAME_MENU_MAIN_MODE,
-};
-
 #define XUI_CONTROL_NAVIGATE_OK (XUI_CONTROL_NAVIGATE_RIGHT + 1)
 
-enum {
-   MENU_XUI_ITEM_HW_TEXTURE_FILTER = 0,
-   MENU_XUI_ITEM_GAMMA_CORRECTION_ENABLED,
-   MENU_XUI_ITEM_ASPECT_RATIO,
-   MENU_XUI_ITEM_RESIZE_MODE,
-   MENU_XUI_ITEM_ORIENTATION,
-};
-
-enum {
-   MENU_XUI_ITEM_AUDIO_MUTE_AUDIO = 0,
-};
-
-enum
-{
-   INGAME_MENU_REWIND_ENABLED = 0,
-   INGAME_MENU_REWIND_GRANULARITY,
-   SETTING_EMU_SHOW_DEBUG_INFO_MSG,
-};
-
-enum
-{
-   S_LBL_ASPECT_RATIO = 0,
-   S_LBL_RARCH_VERSION,
-   S_LBL_ROTATION,
-   S_LBL_LOAD_STATE_SLOT,
-   S_LBL_SAVE_STATE_SLOT,
-   S_LBL_REWIND_GRANULARITY,
-};
+#define FONT_WIDTH 5
+#define FONT_HEIGHT 10
+#define FONT_WIDTH_STRIDE (FONT_WIDTH + 1)
+#define FONT_HEIGHT_STRIDE (FONT_HEIGHT + 1)
+#define RXUI_TERM_START_X 15
+#define RXUI_TERM_START_Y 27
+#define RXUI_TERM_WIDTH (((rgui->width - RXUI_TERM_START_X - 15) / (FONT_WIDTH_STRIDE)))
+#define RXUI_TERM_HEIGHT (((rgui->height - RXUI_TERM_START_Y - 15) / (FONT_HEIGHT_STRIDE)) - 1)
 
 HXUIOBJ m_menulist;
 HXUIOBJ m_menutitle;
@@ -113,6 +45,7 @@ HXUIOBJ m_menutitlebottom;
 HXUIOBJ m_back;
 HXUIOBJ root_menu;
 HXUIOBJ current_menu;
+static msg_queue_t *xui_msg_queue;
 
 class CRetroArch : public CXuiModule
 {
@@ -126,26 +59,12 @@ class class_type: public CXuiSceneImpl \
 { \
    public: \
       HRESULT OnInit( XUIMessageInit* pInitData, int & bHandled ); \
-      HRESULT OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled ); \
-      HRESULT OnControlNavigate (XUIMessageControlNavigate *pControlNavigateData, BOOL& bHandled); \
- \
       HRESULT DispatchMessageMap(XUIMessage *pMessage) \
       { \
          if (pMessage->dwMessage == XM_INIT) \
          { \
             XUIMessageInit *pData = (XUIMessageInit *) pMessage->pvData; \
             return OnInit(pData, pMessage->bHandled); \
-         } \
-         if (pMessage->dwMessage == XM_CONTROL_NAVIGATE) \
-         { \
-           XUIMessageControlNavigate *pData = (XUIMessageControlNavigate *)pMessage->pvData; \
-           return OnControlNavigate(pData, pMessage->bHandled); \
-         } \
-         if (pMessage->dwMessage == XM_NOTIFY) \
-         { \
-            XUINotify *pNotify = (XUINotify *) pMessage->pvData; \
-            if (pNotify->dwNotify == XN_PRESS) \
-               return OnNotifyPress(pNotify->hObjSource, pMessage->bHandled); \
          } \
          return __super::DispatchMessageMap(pMessage); \
       } \
@@ -193,15 +112,6 @@ class class_type: public CXuiSceneImpl \
 }
 
 CREATE_CLASS(CRetroArchMain, L"RetroArchMain");
-CREATE_CLASS(CRetroArchFileBrowser, L"RetroArchFileBrowser");
-CREATE_CLASS(CRetroArchCoreBrowser, L"RetroArchCoreBrowser");
-CREATE_CLASS(CRetroArchShaderBrowser, L"RetroArchShaderBrowser");
-CREATE_CLASS(CRetroArchVideoOptions, L"RetroArchVideoOptions");
-CREATE_CLASS(CRetroArchAudioOptions, L"RetroArchAudioOptions");
-CREATE_CLASS(CRetroArchCoreOptions, L"RetroArchCoreOptions");
-CREATE_CLASS(CRetroArchSettings, L"RetroArchSettings");
-CREATE_CLASS(CRetroArchControls, L"RetroArchControls");
-CREATE_CLASS(CRetroArchLoadGameHistory, L"RetroArchLoadGameHistory");
 
 CRetroArch app;
 
@@ -214,15 +124,6 @@ static int process_input_ret = 0;
 HRESULT CRetroArch::RegisterXuiClasses (void)
 {
    CRetroArchMain::Register();
-   CRetroArchFileBrowser::Register();
-   CRetroArchCoreBrowser::Register();
-   CRetroArchShaderBrowser::Register();
-   CRetroArchVideoOptions::Register();
-   CRetroArchAudioOptions::Register();
-   CRetroArchCoreOptions::Register();
-   CRetroArchControls::Register();
-   CRetroArchSettings::Register();
-   CRetroArchLoadGameHistory::Register();
 
    return 0;
 }
@@ -231,908 +132,7 @@ HRESULT CRetroArch::RegisterXuiClasses (void)
 HRESULT CRetroArch::UnregisterXuiClasses (void)
 {
    XuiUnregisterClass(L"RetroArchMain");
-   XuiUnregisterClass(L"RetroArchCoreBrowser");
-   XuiUnregisterClass(L"RetroArchShaderBrowser");
-   XuiUnregisterClass(L"RetroArchFileBrowser");
-   XuiUnregisterClass(L"RetroArchVideoOptions");
-   XuiUnregisterClass(L"RetroArchAudioOptions");
-   XuiUnregisterClass(L"RetroArchCoreOptions");
-   XuiUnregisterClass(L"RetroArchControls");
-   XuiUnregisterClass(L"RetroArchSettings");
-   XuiUnregisterClass(L"RetroArchLoadGameHistory");
 
-   return 0;
-}
-
-static void menu_settings_create_menu_item_label_w(wchar_t *strwbuf, unsigned setting, size_t size)
-{
-   char str[PATH_MAX];
-
-   switch (setting)
-   {
-      case S_LBL_ASPECT_RATIO:
-         snprintf(str, size, "Aspect Ratio: %s", aspectratio_lut[g_settings.video.aspect_ratio_idx].name);
-         break;
-      case S_LBL_RARCH_VERSION:
-         snprintf(str, size, "RetroArch %s", PACKAGE_VERSION);
-         break;
-      case S_LBL_ROTATION:
-         snprintf(str, size, "Rotation: %s", rotation_lut[g_settings.video.rotation]);
-         break;
-      case S_LBL_LOAD_STATE_SLOT:
-         snprintf(str, size, "Load State #%d", g_extern.state_slot);
-         break;
-      case S_LBL_SAVE_STATE_SLOT:
-         snprintf(str, size, "Save State #%d", g_extern.state_slot);
-         break;
-      case S_LBL_REWIND_GRANULARITY:
-         snprintf(str, size, "Rewind granularity: %d", g_settings.rewind_granularity);
-         break;
-   }
-
-   mbstowcs(strwbuf, str, size / sizeof(wchar_t));
-}
-
-static void filebrowser_fetch_directory_entries(const char *path, uint64_t action)
-{
-#if 1
-   return;
-#else
-   //filebrowser_iterate(rgui->browser, action); 
-
-   mbstowcs(strw_buffer, path, sizeof(strw_buffer) / sizeof(wchar_t));
-   XuiTextElementSetText(m_menutitle, strw_buffer);
-
-   XuiListDeleteItems(m_menulist, 0, XuiListGetItemCount(m_menulist));
-   XuiListInsertItems(m_menulist, 0, rgui->browser->list->size);
-
-   for(unsigned i = 0; i < rgui->browser->list->size; i++)
-   {
-      char fname_tmp[256];
-      fill_pathname_base(fname_tmp, rgui->browser->list->elems[i].data, sizeof(fname_tmp));
-      mbstowcs(strw_buffer, fname_tmp, sizeof(strw_buffer) / sizeof(wchar_t));
-      XuiListSetText(m_menulist, i, strw_buffer);
-   }
-#endif
-}
-
-HRESULT CRetroArchFileBrowser::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
-{
-   GetChildById(L"XuiMenuList", &m_menulist);
-   GetChildById(L"XuiTxtTitle", &m_menutitle);
-   GetChildById(L"XuiTxtBottom", &m_menutitlebottom);
-
-#if 0
-   filebrowser_fetch_directory_entries(default_paths.filebrowser_startup_dir, RGUI_ACTION_OK);
-#endif
-
-   return 0;
-}
-
-HRESULT CRetroArchFileBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandled )
-{
-   char path[PATH_MAX];
-   process_input_ret = 0;
-
-   (void)path;
-
-#if 0
-
-   if(hObjPressed == m_menulist)
-   {
-      int index = XuiListGetCurSel(m_menulist, NULL);
-      wcstombs(str_buffer, (const wchar_t *)XuiListGetText(m_menulist, index), sizeof(str_buffer));
-      if (path_file_exists(rgui->browser->list->elems[index].data))
-      {
-         fill_pathname_join(g_extern.fullpath, rgui->browser->current_dir.directory_path, str_buffer, sizeof(g_extern.fullpath));
-         g_extern.lifecycle_state |= (1ULL << MODE_LOAD_GAME);
-         process_input_ret = -1;
-      }
-      else if(rgui->browser->list->elems[index].attr.b)
-      {
-         fill_pathname_join(path, rgui->browser->current_dir.directory_path, str_buffer, sizeof(path));
-         filebrowser_fetch_directory_entries(path, RGUI_ACTION_OK);
-      }
-   }
-#endif
-
-   bHandled = TRUE;
-
-   return 0;
-}
-
-static void set_dpad_emulation_label(unsigned port, char *str, size_t sizeof_str)
-{
-}
-
-static void rmenu_xui_populate_entries(void *data, unsigned menu_type)
-{
-   XuiListDeleteItems(m_menulist, 0, XuiListGetItemCount(m_menulist));
-
-   switch (menu_type)
-   {
-      case INGAME_MENU_CORE_OPTIONS_MODE:
-         if (g_extern.system.core_options)
-         {
-            size_t opts = core_option_size(g_extern.system.core_options);
-            for (size_t i = 0; i < opts; i++)
-            {
-               char label[256];
-               strlcpy(label, core_option_get_desc(g_extern.system.core_options, i),
-                     sizeof(label));
-               snprintf(label, sizeof(label), "%s : %s", label,
-                     core_option_get_val(g_extern.system.core_options, i));
-               mbstowcs(strw_buffer, label,
-                     sizeof(strw_buffer) / sizeof(wchar_t));
-               XuiListInsertItems(m_menulist, i, 1);
-               XuiListSetText(m_menulist, i, strw_buffer);
-            }
-         }
-         else
-         {
-            XuiListInsertItems(m_menulist, 0, 1);
-            XuiListSetText(m_menulist, 0, L"No options available.");
-         }
-         break;
-      case INGAME_MENU_LOAD_GAME_HISTORY_MODE:
-         {
-            size_t history_size = rom_history_size(rgui->history);
-
-            if (history_size)
-            {
-               size_t opts = history_size;
-               for (size_t i = 0; i < opts; i++)
-               {
-                  const char *path = NULL;
-                  const char *core_path = NULL;
-                  const char *core_name = NULL;
-
-                  rom_history_get_index(rgui->history, i,
-                        &path, &core_path, &core_name);
-
-                  char path_short[PATH_MAX];
-                  fill_pathname(path_short, path_basename(path), "", sizeof(path_short));
-
-                  char fill_buf[PATH_MAX];
-                  snprintf(fill_buf, sizeof(fill_buf), "%s (%s)",
-                        path_short, core_name);
-
-                  mbstowcs(strw_buffer, fill_buf, sizeof(strw_buffer) / sizeof(wchar_t));
-                  XuiListInsertItems(m_menulist, i, 1);
-                  XuiListSetText(m_menulist, i, strw_buffer);
-               }
-            }
-            else
-            {
-               XuiListInsertItems(m_menulist, 0, 1);
-               XuiListSetText(m_menulist, 0, L"No history available.");
-            }
-         }
-         break;
-      case INGAME_MENU_INPUT_OPTIONS_MODE:
-         {
-            unsigned i;
-            char buttons[RARCH_FIRST_META_KEY][128];
-            unsigned keybind_end = RETRO_DEVICE_ID_JOYPAD_R3 + 1;
-
-            for(i = 0; i < keybind_end; i++)
-            {
-               struct platform_bind key_label;
-               strlcpy(key_label.desc, "Unknown", sizeof(key_label.desc));
-               key_label.joykey = g_settings.input.binds[rgui->current_pad][i].joykey;
-
-               if (driver.input->set_keybinds)
-                  driver.input->set_keybinds(&key_label, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
-
-               snprintf(buttons[i], sizeof(buttons[i]), "%s #%d: %s", 
-                     g_settings.input.binds[rgui->current_pad][i].desc,
-                     rgui->current_pad, key_label.desc);
-               mbstowcs(strw_buffer, buttons[i], sizeof(strw_buffer) / sizeof(wchar_t));
-               XuiListInsertItems(m_menulist, i, 1);
-               XuiListSetText(m_menulist, i, strw_buffer);
-            }
-
-            //set_dpad_emulation_label(rgui->current_pad, buttons[0], sizeof(buttons[0]));
-            //mbstowcs(strw_buffer, buttons[0], sizeof(strw_buffer) / sizeof(wchar_t));
-            XuiListInsertItems(m_menulist, keybind_end, 1);
-            //XuiListSetText(m_menulist, SETTING_CONTROLS_DPAD_EMULATION, strw_buffer);
-            XuiListSetText(m_menulist, SETTING_CONTROLS_DPAD_EMULATION, L"Stub");
-
-            XuiListInsertItems(m_menulist, keybind_end + 1, 1);
-            XuiListSetText(m_menulist, SETTING_CONTROLS_DEFAULT_ALL, L"Reset all buttons to default");
-         }
-         break;
-      case INGAME_MENU_SETTINGS_MODE:
-         XuiListInsertItems(m_menulist, INGAME_MENU_REWIND_ENABLED, 1);
-         XuiListSetText(m_menulist, INGAME_MENU_REWIND_ENABLED, g_settings.rewind_enable ? L"Rewind: ON" : L"Rewind: OFF");
-         menu_settings_create_menu_item_label_w(strw_buffer, S_LBL_REWIND_GRANULARITY, sizeof(strw_buffer));
-         XuiListInsertItems(m_menulist, INGAME_MENU_REWIND_GRANULARITY, 1);
-         XuiListSetText(m_menulist, INGAME_MENU_REWIND_GRANULARITY, strw_buffer);
-
-         XuiListInsertItems(m_menulist, SETTING_EMU_SHOW_DEBUG_INFO_MSG, 1);
-         XuiListSetText(m_menulist, SETTING_EMU_SHOW_DEBUG_INFO_MSG, (g_settings.fps_show) ? L"Show Framerate: ON" : L"Show Framerate: OFF");
-         break;
-      case INGAME_MENU_MAIN_MODE:
-         XuiListInsertItems(m_menulist, INGAME_MENU_CHANGE_LIBRETRO_CORE, 1);
-         XuiListSetText(m_menulist, INGAME_MENU_CHANGE_LIBRETRO_CORE, L"Core ...");
-
-         XuiListInsertItems(m_menulist, INGAME_MENU_LOAD_GAME_HISTORY_MODE, 1);
-         XuiListSetText(m_menulist, INGAME_MENU_LOAD_GAME_HISTORY_MODE, L"Load Game (History) ...");
-
-         XuiListInsertItems(m_menulist, INGAME_MENU_CHANGE_GAME, 1);
-         XuiListSetText(m_menulist, INGAME_MENU_CHANGE_GAME, L"Load Game ...");
-
-         XuiListInsertItems(m_menulist, INGAME_MENU_CORE_OPTIONS_MODE, 1);
-         XuiListSetText(m_menulist, INGAME_MENU_CORE_OPTIONS_MODE, L"Core Options ...");
-
-         XuiListInsertItems(m_menulist, INGAME_MENU_VIDEO_OPTIONS_MODE, 1);
-         XuiListSetText(m_menulist, INGAME_MENU_VIDEO_OPTIONS_MODE, L"Video Options ...");
-
-         XuiListInsertItems(m_menulist, INGAME_MENU_AUDIO_OPTIONS_MODE, 1);
-         XuiListSetText(m_menulist, INGAME_MENU_AUDIO_OPTIONS_MODE, L"Audio Options ...");
-
-         XuiListInsertItems(m_menulist, INGAME_MENU_INPUT_OPTIONS_MODE, 1);
-         XuiListSetText(m_menulist, INGAME_MENU_INPUT_OPTIONS_MODE, L"Input Options ...");
-
-         XuiListInsertItems(m_menulist, INGAME_MENU_PATH_OPTIONS_MODE, 1);
-         XuiListSetText(m_menulist, INGAME_MENU_PATH_OPTIONS_MODE, L"Path Options ...");
-
-         XuiListInsertItems(m_menulist, INGAME_MENU_SETTINGS_MODE, 1);
-         XuiListSetText(m_menulist, INGAME_MENU_SETTINGS_MODE, L"Settings ...");
-
-         menu_settings_create_menu_item_label_w(strw_buffer, S_LBL_LOAD_STATE_SLOT, sizeof(strw_buffer));
-         XuiListInsertItems(m_menulist, INGAME_MENU_LOAD_STATE, 1);
-         XuiListSetText(m_menulist, INGAME_MENU_LOAD_STATE, strw_buffer);
-
-         menu_settings_create_menu_item_label_w(strw_buffer, S_LBL_SAVE_STATE_SLOT, sizeof(strw_buffer));
-         XuiListInsertItems(m_menulist, INGAME_MENU_SAVE_STATE, 1);
-         XuiListSetText(m_menulist, INGAME_MENU_SAVE_STATE, strw_buffer);
-
-         XuiListInsertItems(m_menulist, INGAME_MENU_SCREENSHOT_MODE, 1);
-         XuiListSetText(m_menulist, INGAME_MENU_SCREENSHOT_MODE, L"Take Screenshot");
-
-         XuiListInsertItems(m_menulist, INGAME_MENU_RETURN_TO_GAME, 1);
-         XuiListSetText(m_menulist, INGAME_MENU_RETURN_TO_GAME, L"Resume Game");
-
-         XuiListInsertItems(m_menulist, INGAME_MENU_RESET, 1);
-         XuiListSetText(m_menulist, INGAME_MENU_RESET, L"Restart Game");
-
-         XuiListInsertItems(m_menulist, INGAME_MENU_QUIT_RETROARCH, 1);
-         XuiListSetText(m_menulist, INGAME_MENU_QUIT_RETROARCH, L"Quit RetroArch");
-         break;
-   }
-}
-
-static unsigned xui_input_to_rmenu_xui_action(unsigned input)
-{
-   switch (input)
-   {
-      case XUI_CONTROL_NAVIGATE_LEFT:
-         return RGUI_ACTION_LEFT;
-      case XUI_CONTROL_NAVIGATE_RIGHT:
-         return RGUI_ACTION_RIGHT;
-      case XUI_CONTROL_NAVIGATE_UP:
-         return RGUI_ACTION_UP;
-      case XUI_CONTROL_NAVIGATE_DOWN:
-         return RGUI_ACTION_DOWN;
-      case XUI_CONTROL_NAVIGATE_OK:
-         return RGUI_ACTION_OK;
-   }
-
-   return RGUI_ACTION_NOOP;
-}
-
-HRESULT CRetroArchLoadGameHistory::OnControlNavigate(
-      XUIMessageControlNavigate *pControlNavigateData, BOOL& bHandled)
-{
-
-   unsigned current_index = XuiListGetCurSel(m_menulist, NULL);
-   unsigned input = pControlNavigateData->nControlNavigate;
-   unsigned action = xui_input_to_rmenu_xui_action(input);
-
-   if (action == RGUI_ACTION_OK)
-   {
-      load_menu_game_history(current_index);
-      process_input_ret = -1;
-   }
-
-   bHandled = TRUE;
-
-   switch (action)
-   {
-      case RGUI_ACTION_LEFT:
-      case RGUI_ACTION_RIGHT:
-      case RGUI_ACTION_UP:
-      case RGUI_ACTION_DOWN:
-         pControlNavigateData->hObjDest = pControlNavigateData->hObjSource;
-         break;
-      default:
-         break;
-   }
-
-   return 0;
-}
-
-
-HRESULT CRetroArchControls::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
-{
-   GetChildById(L"XuiMenuList", &m_menulist);
-   GetChildById(L"XuiBackButton", &m_back);
-   GetChildById(L"XuiTxtTitle", &m_menutitle);
-
-   XuiTextElementSetText(m_menutitle, L"Input options");
-
-   rmenu_xui_populate_entries(NULL, INGAME_MENU_INPUT_OPTIONS_MODE);
-
-   return 0;
-}
-
-HRESULT CRetroArchFileBrowser::OnControlNavigate(
-      XUIMessageControlNavigate *pControlNavigateData, BOOL& bHandled)
-{
-   bHandled = TRUE;
-   unsigned input = pControlNavigateData->nControlNavigate;
-   unsigned action = xui_input_to_rmenu_xui_action(input);
-
-   switch(action)
-   {
-      case RGUI_ACTION_LEFT:
-      case RGUI_ACTION_RIGHT:
-      case RGUI_ACTION_UP:
-      case RGUI_ACTION_DOWN:
-         pControlNavigateData->hObjDest = pControlNavigateData->hObjSource;
-         break;
-      default:
-         break;
-   }
-
-   return 0;
-}
-
-HRESULT CRetroArchShaderBrowser::OnControlNavigate(
-      XUIMessageControlNavigate *pControlNavigateData, BOOL& bHandled)
-{
-   unsigned input = pControlNavigateData->nControlNavigate;
-   unsigned action = xui_input_to_rmenu_xui_action(input);
-   bHandled = TRUE;
-
-   switch(action)
-   {
-      case RGUI_ACTION_LEFT:
-      case RGUI_ACTION_RIGHT:
-      case RGUI_ACTION_UP:
-      case RGUI_ACTION_DOWN:
-         pControlNavigateData->hObjDest = pControlNavigateData->hObjSource;
-         break;
-      default:
-         break;
-   }
-
-   return 0;
-}
-
-HRESULT CRetroArchCoreBrowser::OnControlNavigate(
-      XUIMessageControlNavigate *pControlNavigateData, BOOL& bHandled)
-{
-   unsigned input = pControlNavigateData->nControlNavigate;
-   unsigned action = xui_input_to_rmenu_xui_action(input);
-   bHandled = TRUE;
-
-   switch(action)
-   {
-      case RGUI_ACTION_LEFT:
-      case RGUI_ACTION_RIGHT:
-      case RGUI_ACTION_UP:
-      case RGUI_ACTION_DOWN:
-         pControlNavigateData->hObjDest = pControlNavigateData->hObjSource;
-         break;
-      default:
-         break;
-   }
-
-   return 0;
-}
-
-
-
-HRESULT CRetroArchControls::OnControlNavigate(
-      XUIMessageControlNavigate *pControlNavigateData, BOOL& bHandled)
-{
-   char button[128];
-   char buttons[RARCH_FIRST_META_KEY][128];
-   int i, current_index;
-
-   (void)button;
-
-   for(i = 0; i < RARCH_FIRST_META_KEY; i++)
-   {
-      struct platform_bind key_label;
-      strlcpy(key_label.desc, "Unknown", sizeof(key_label.desc));
-      key_label.joykey = g_settings.input.binds[rgui->current_pad][i].joykey;
-
-      if (driver.input->set_keybinds)
-         driver.input->set_keybinds(&key_label, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
-
-      snprintf(buttons[i], sizeof(buttons[i]), "%s #%d: %s", 
-            g_settings.input.binds[rgui->current_pad][i].desc, rgui->current_pad, 
-            key_label.desc);
-      mbstowcs(strw_buffer, buttons[i], sizeof(strw_buffer) / sizeof(wchar_t));
-      XuiListSetText(m_menulist, i, strw_buffer);
-   }
-   
-   current_index = XuiListGetCurSel(m_menulist, NULL);
-   unsigned input = pControlNavigateData->nControlNavigate;
-   unsigned action = xui_input_to_rmenu_xui_action(input);
-
-   switch(current_index)
-   {
-      case SETTING_CONTROLS_DPAD_EMULATION:
-         break;
-      case SETTING_CONTROLS_DEFAULT_ALL:
-         break;
-      default:
-         break;
-   }
-
-   //set_dpad_emulation_label(rgui->current_pad, button, sizeof(button));
-
-   //mbstowcs(strw_buffer, button, sizeof(strw_buffer) / sizeof(wchar_t));
-   //XuiListSetText(m_menulist, SETTING_CONTROLS_DPAD_EMULATION, strw_buffer);
-   XuiListSetText(m_menulist, SETTING_CONTROLS_DPAD_EMULATION, L"Stub");
-   XuiListSetText(m_menulist, SETTING_CONTROLS_DEFAULT_ALL, L"Reset all buttons to default");
-
-   return 0;
-}
-
-HRESULT CRetroArchLoadGameHistory::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
-{
-   if ( hObjPressed == m_menulist)
-   {
-      XUIMessageControlNavigate controls;
-      controls.nControlNavigate = (XUI_CONTROL_NAVIGATE)XUI_CONTROL_NAVIGATE_OK;
-      OnControlNavigate(&controls, bHandled);
-   }
-
-   bHandled = TRUE;
-   return 0;
-}
-
-HRESULT CRetroArchControls::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
-{
-   if ( hObjPressed == m_menulist)
-   {
-      XUIMessageControlNavigate controls;
-      controls.nControlNavigate = (XUI_CONTROL_NAVIGATE)XUI_CONTROL_NAVIGATE_OK;
-      OnControlNavigate(&controls, bHandled);
-   }
-
-   bHandled = TRUE;
-   return 0;
-}
-
-HRESULT CRetroArchLoadGameHistory::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
-{
-   GetChildById(L"XuiMenuList", &m_menulist);
-   GetChildById(L"XuiBackButton", &m_back);
-   GetChildById(L"XuiTxtTitle", &m_menutitle);
-
-   XuiTextElementSetText(m_menutitle, L"Load History");
-
-   rmenu_xui_populate_entries(NULL, INGAME_MENU_LOAD_GAME_HISTORY_MODE);
-
-   return 0;
-}
-
-HRESULT CRetroArchSettings::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
-{
-   GetChildById(L"XuiMenuList", &m_menulist);
-   GetChildById(L"XuiBackButton", &m_back);
-   GetChildById(L"XuiTxtTitle", &m_menutitle);
-
-   XuiTextElementSetText(m_menutitle, L"Settings");
-
-   rmenu_xui_populate_entries(NULL, INGAME_MENU_SETTINGS_MODE);
-
-   return 0;
-}
-
-HRESULT CRetroArchSettings::OnControlNavigate(XUIMessageControlNavigate *pControlNavigateData, BOOL& bHandled)
-{
-   int current_index;
-   xdk_d3d_video_t *device_ptr = (xdk_d3d_video_t*)driver.video_data;
-
-   current_index = XuiListGetCurSel(m_menulist, NULL);
-
-   unsigned input = pControlNavigateData->nControlNavigate;
-   unsigned action = xui_input_to_rmenu_xui_action(input);
-
-   switch(current_index)
-   {
-      case INGAME_MENU_REWIND_ENABLED:
-         menu_set_settings(rgui, RGUI_SETTINGS_REWIND_ENABLE, action);
-         XuiListSetText(m_menulist, INGAME_MENU_REWIND_ENABLED, g_settings.rewind_enable ? L"Rewind: ON" : L"Rewind: OFF");
-         break;
-      case INGAME_MENU_REWIND_GRANULARITY:
-         menu_set_settings(rgui, RGUI_SETTINGS_REWIND_GRANULARITY, action);
-         menu_settings_create_menu_item_label_w(strw_buffer, S_LBL_REWIND_GRANULARITY, sizeof(strw_buffer));
-         XuiListSetText(m_menulist, INGAME_MENU_REWIND_GRANULARITY, strw_buffer);
-         break;
-      case SETTING_EMU_SHOW_DEBUG_INFO_MSG:
-         menu_set_settings(rgui, RGUI_SETTINGS_DEBUG_TEXT, action);
-         XuiListSetText(m_menulist, SETTING_EMU_SHOW_DEBUG_INFO_MSG, g_settings.fps_show ? L"Show Framerate: ON" : L"Show Framerate: OFF");
-         break;
-      default:
-         break;
-   }
-
-   bHandled = TRUE;
-
-   switch(action)
-   {
-      case RGUI_ACTION_LEFT:
-      case RGUI_ACTION_RIGHT:
-      case RGUI_ACTION_UP:
-      case RGUI_ACTION_DOWN:
-         pControlNavigateData->hObjDest = pControlNavigateData->hObjSource;
-         break;
-      default:
-         break;
-   }
-
-   return 0;
-}
-
-HRESULT CRetroArchSettings::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
-{
-   process_input_ret = 0;
-
-   if ( hObjPressed == m_menulist)
-   {
-      XUIMessageControlNavigate controls;
-      controls.nControlNavigate = (XUI_CONTROL_NAVIGATE)XUI_CONTROL_NAVIGATE_OK;
-      OnControlNavigate(&controls, bHandled);
-   }
-
-   bHandled = TRUE;
-
-   return 0;
-}
-
-HRESULT CRetroArchCoreOptions::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
-{
-   GetChildById(L"XuiMenuList", &m_menulist);
-   GetChildById(L"XuiBackButton", &m_back);
-   GetChildById(L"XuiTxtTitle", &m_menutitle);
-
-   XuiListDeleteItems(m_menulist, 0, XuiListGetItemCount(m_menulist));
-
-   XuiTextElementSetText(m_menutitle, L"Core Options");
-
-   rmenu_xui_populate_entries(NULL, INGAME_MENU_CORE_OPTIONS_MODE);
-
-   return 0;
-}
-
-HRESULT CRetroArchCoreOptions::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
-{
-   process_input_ret = 0;
-
-   if ( hObjPressed == m_menulist)
-   {
-      XUIMessageControlNavigate controls;
-      controls.nControlNavigate = (XUI_CONTROL_NAVIGATE)XUI_CONTROL_NAVIGATE_OK;
-      OnControlNavigate(&controls, bHandled);
-   }
-
-   bHandled = TRUE;
-
-   return 0;
-}
-
-HRESULT CRetroArchCoreOptions::OnControlNavigate(XUIMessageControlNavigate *pControlNavigateData, BOOL& bHandled)
-{
-   unsigned current_index = XuiListGetCurSel(m_menulist, NULL);
-   unsigned input = pControlNavigateData->nControlNavigate;
-   unsigned action = xui_input_to_rmenu_xui_action(input);
-
-   if (g_extern.system.core_options)
-   {
-      bool update_item = false;
-
-      switch (action)
-      {
-         case RGUI_ACTION_LEFT:
-            core_option_prev(g_extern.system.core_options,  current_index);
-            update_item = true;
-            break;
-         case RGUI_ACTION_RIGHT:
-            core_option_next(g_extern.system.core_options,  current_index);
-            update_item = true;
-            break;
-      }
-
-      if (update_item)
-      {
-         char label[256];
-         strlcpy(label, core_option_get_desc(g_extern.system.core_options, current_index),
-            sizeof(label));
-         snprintf(label, sizeof(label), "%s : %s", label,
-            core_option_get_val(g_extern.system.core_options, current_index));
-         mbstowcs(strw_buffer, label,
-            sizeof(strw_buffer) / sizeof(wchar_t));
-         XuiListSetText(m_menulist, current_index, strw_buffer);
-      }
-   }
-
-   bHandled = TRUE;
-
-   switch(action)
-   {
-      case RGUI_ACTION_LEFT:
-      case RGUI_ACTION_RIGHT:
-      case RGUI_ACTION_UP:
-      case RGUI_ACTION_DOWN:
-         pControlNavigateData->hObjDest = pControlNavigateData->hObjSource;
-         break;
-      default:
-         break;
-   }
-
-   return 0;
-}
-
-HRESULT CRetroArchAudioOptions::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
-{
-   GetChildById(L"XuiMenuList", &m_menulist);
-   GetChildById(L"XuiBackButton", &m_back);
-   GetChildById(L"XuiTxtTitle", &m_menutitle);
-
-   XuiListDeleteItems(m_menulist, 0, XuiListGetItemCount(m_menulist));
-
-   XuiTextElementSetText(m_menutitle, L"Audio Options");
-
-   XuiListInsertItems(m_menulist, MENU_XUI_ITEM_AUDIO_MUTE_AUDIO, 1);
-   XuiListSetText(m_menulist, MENU_XUI_ITEM_AUDIO_MUTE_AUDIO, g_extern.audio_data.mute ? L"Mute Audio : ON" : L"Mute Audio : OFF");
-
-   return 0;
-}
-
-HRESULT CRetroArchAudioOptions::OnControlNavigate(XUIMessageControlNavigate *pControlNavigateData, BOOL& bHandled)
-{
-   int current_index = XuiListGetCurSel(m_menulist, NULL);
-   unsigned input = pControlNavigateData->nControlNavigate;
-   unsigned action = xui_input_to_rmenu_xui_action(input);
-
-   switch (current_index)
-   {
-      case MENU_XUI_ITEM_AUDIO_MUTE_AUDIO:
-         menu_set_settings(rgui, RGUI_SETTINGS_AUDIO_MUTE, action);
-         XuiListSetText(m_menulist, MENU_XUI_ITEM_AUDIO_MUTE_AUDIO, g_extern.audio_data.mute ? L"Mute Audio : ON" : L"Mute Audio : OFF");
-         break;
-   }
-
-   bHandled = TRUE;
-
-   switch(action)
-   {
-      case RGUI_ACTION_LEFT:
-      case RGUI_ACTION_RIGHT:
-      case RGUI_ACTION_UP:
-      case RGUI_ACTION_DOWN:
-         pControlNavigateData->hObjDest = pControlNavigateData->hObjSource;
-         break;
-      default:
-         break;
-   }
-
-   return 0;
-}
-
-HRESULT CRetroArchAudioOptions::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
-{
-   process_input_ret = 0;
-
-   if ( hObjPressed == m_menulist)
-   {
-      XUIMessageControlNavigate controls;
-      controls.nControlNavigate = (XUI_CONTROL_NAVIGATE)XUI_CONTROL_NAVIGATE_OK;
-      OnControlNavigate(&controls, bHandled);
-   }
-
-   bHandled = TRUE;
-
-   return 0;
-}
-
-HRESULT CRetroArchVideoOptions::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
-{
-   GetChildById(L"XuiMenuList", &m_menulist);
-   GetChildById(L"XuiBackButton", &m_back);
-   GetChildById(L"XuiTxtTitle", &m_menutitle);
-
-   XuiListDeleteItems(m_menulist, 0, XuiListGetItemCount(m_menulist));
-
-   XuiTextElementSetText(m_menutitle, L"Video Options");
-
-   XuiListInsertItems(m_menulist, MENU_XUI_ITEM_HW_TEXTURE_FILTER, 1);
-   XuiListSetText(m_menulist, MENU_XUI_ITEM_HW_TEXTURE_FILTER, g_settings.video.smooth ? L"Default Filter: Linear" : L"Default Filter: Nearest");
-
-   XuiListInsertItems(m_menulist, MENU_XUI_ITEM_GAMMA_CORRECTION_ENABLED, 1);
-   XuiListSetText(m_menulist, MENU_XUI_ITEM_GAMMA_CORRECTION_ENABLED, g_extern.console.screen.gamma_correction ? L"Gamma Correction: ON" : L"Gamma correction: OFF");
-
-   if (driver.video_poke->set_aspect_ratio)
-      driver.video_poke->set_aspect_ratio(driver.video_data, g_settings.video.aspect_ratio_idx);
-
-   menu_settings_create_menu_item_label_w(strw_buffer, S_LBL_ASPECT_RATIO, sizeof(strw_buffer));
-   XuiListInsertItems(m_menulist, MENU_XUI_ITEM_ASPECT_RATIO, 1);
-   XuiListSetText(m_menulist, MENU_XUI_ITEM_ASPECT_RATIO, strw_buffer);
-
-   XuiListInsertItems(m_menulist, MENU_XUI_ITEM_RESIZE_MODE, 1);
-   XuiListSetText(m_menulist, MENU_XUI_ITEM_RESIZE_MODE, L"Custom Ratio ...");
-
-   driver.video->set_rotation(driver.video_data, g_settings.video.rotation);
-   menu_settings_create_menu_item_label_w(strw_buffer, S_LBL_ROTATION, sizeof(strw_buffer));
-   XuiListInsertItems(m_menulist, MENU_XUI_ITEM_ORIENTATION, 1);
-   XuiListSetText(m_menulist, MENU_XUI_ITEM_ORIENTATION, strw_buffer);
-
-   return 0;
-}
-
-HRESULT CRetroArchVideoOptions::OnControlNavigate(XUIMessageControlNavigate *pControlNavigateData, BOOL& bHandled)
-{
-   bool aspectratio_changed = false;
-   int current_index;
-
-   current_index = XuiListGetCurSel(m_menulist, NULL);
-
-   unsigned input = pControlNavigateData->nControlNavigate;
-   unsigned action = xui_input_to_rmenu_xui_action(input);
-
-   switch (current_index)
-   {
-      case MENU_XUI_ITEM_HW_TEXTURE_FILTER:
-         menu_set_settings(rgui, RGUI_SETTINGS_VIDEO_FILTER, action);
-         XuiListSetText(m_menulist, MENU_XUI_ITEM_HW_TEXTURE_FILTER, g_settings.video.smooth ? L"Default Filter: Linear" : L"Default Filter: Nearest");
-         break;
-      case MENU_XUI_ITEM_GAMMA_CORRECTION_ENABLED:
-         if (action == RGUI_ACTION_LEFT ||
-               action == RGUI_ACTION_RIGHT ||
-               action == RGUI_ACTION_OK)
-         {
-            g_extern.console.screen.gamma_correction = g_extern.console.screen.gamma_correction ? 0 : 1;
-            XuiListSetText(m_menulist, MENU_XUI_ITEM_GAMMA_CORRECTION_ENABLED, g_extern.console.screen.gamma_correction ? L"Gamma correction: ON" : L"Gamma correction: OFF");
-            msg_queue_push(g_extern.msg_queue, "You need to restart for this change to take effect.\n", 1, 90);
-         }
-         break;
-      case MENU_XUI_ITEM_ASPECT_RATIO:
-         menu_set_settings(rgui, RGUI_SETTINGS_VIDEO_ASPECT_RATIO, action);
-         menu_settings_create_menu_item_label_w(strw_buffer, S_LBL_ASPECT_RATIO, sizeof(strw_buffer));
-         XuiListSetText(m_menulist, MENU_XUI_ITEM_ASPECT_RATIO, strw_buffer);
-         break;
-      case MENU_XUI_ITEM_ORIENTATION:
-         menu_set_settings(rgui, RGUI_SETTINGS_VIDEO_ROTATION, action);
-         menu_settings_create_menu_item_label_w(strw_buffer, S_LBL_ROTATION, sizeof(strw_buffer));
-         XuiListSetText(m_menulist, MENU_XUI_ITEM_ORIENTATION, strw_buffer);
-         driver.video->set_rotation(driver.video_data, g_settings.video.rotation);
-         break;
-   }
-
-   bHandled = TRUE;
-
-   switch(action)
-   {
-      case RGUI_ACTION_LEFT:
-      case RGUI_ACTION_RIGHT:
-      case RGUI_ACTION_UP:
-      case RGUI_ACTION_DOWN:
-         pControlNavigateData->hObjDest = pControlNavigateData->hObjSource;
-         break;
-      default:
-         break;
-   }
-
-   return 0;
-}
-
-HRESULT CRetroArchVideoOptions::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
-{
-   process_input_ret = 0;
-
-   if ( hObjPressed == m_menulist)
-   {
-      XUIMessageControlNavigate controls;
-      controls.nControlNavigate = (XUI_CONTROL_NAVIGATE)XUI_CONTROL_NAVIGATE_OK;
-      OnControlNavigate(&controls, bHandled);
-   }
-
-   bHandled = TRUE;
-
-   return 0;
-}
-
-HRESULT CRetroArchShaderBrowser::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
-{
-   GetChildById(L"XuiMenuList", &m_menulist);
-   GetChildById(L"XuiTxtTitle", &m_menutitle);
-   GetChildById(L"XuiTxtBottom", &m_menutitlebottom);
-
-#if 0
-   filebrowser_fetch_directory_entries("game:\\media\\shaders", RGUI_ACTION_OK);
-#endif
-
-   return 0;
-}
-
-HRESULT CRetroArchShaderBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandled )
-{
-   char path[PATH_MAX];
-   process_input_ret = 0;
-
-   (void)path;
-
-   if(hObjPressed == m_menulist)
-   {
-#if 0
-      int index = XuiListGetCurSel(m_menulist, NULL);
-      if (path_file_exists(rgui->browser->list->elems[index].data))
-         wcstombs(str_buffer, (const wchar_t *)XuiListGetText(m_menulist, index), sizeof(str_buffer));
-      else if (rgui->browser->list->elems[index].attr.b)
-      {
-         wcstombs(str_buffer, (const wchar_t *)XuiListGetText(m_menulist, index), sizeof(str_buffer));
-         fill_pathname_join(path, rgui->browser->current_dir.directory_path, str_buffer, sizeof(path));
-         filebrowser_fetch_directory_entries(path, RGUI_ACTION_OK);
-      }
-#endif
-   }
-
-   bHandled = TRUE;
-
-   return 0;
-}
-
-HRESULT CRetroArchCoreBrowser::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
-{
-   GetChildById(L"XuiMenuList", &m_menulist);
-   GetChildById(L"XuiTxtTitle", &m_menutitle);
-   GetChildById(L"XuiTxtBottom", &m_menutitlebottom);
-
-#if 0
-   filebrowser_fetch_directory_entries("game:", RGUI_ACTION_OK);
-#endif
-
-   return 0;
-}
-
-HRESULT CRetroArchCoreBrowser::OnNotifyPress( HXUIOBJ hObjPressed, BOOL& bHandled )
-{
-   char path[PATH_MAX];
-
-   process_input_ret = 0;
-
-   (void)path;
-
-   if(hObjPressed == m_menulist)
-   {
-#if 0
-      int index = XuiListGetCurSel(m_menulist, NULL);
-      wcstombs(str_buffer, (const wchar_t *)XuiListGetText(m_menulist, index), sizeof(str_buffer));
-      if(path_file_exists(rgui->browser->list->elems[index].data))
-      {
-         fill_pathname_join(path, rgui->browser->current_dir.directory_path, str_buffer, sizeof(path));
-         rarch_environment_cb(RETRO_ENVIRONMENT_SET_LIBRETRO_PATH, (void*)path);
-
-         g_extern.lifecycle_state |= (1ULL << MODE_EXITSPAWN);
-         process_input_ret = -1;
-      }
-      else if (rgui->browser->list->elems[index].attr.b)
-      {
-         fill_pathname_join(path, rgui->browser->current_dir.directory_path, str_buffer, sizeof(path));
-         filebrowser_fetch_directory_entries(path, RGUI_ACTION_OK);
-      }
-#endif
-   }
-
-   bHandled = TRUE;
    return 0;
 }
 
@@ -1142,180 +142,15 @@ HRESULT CRetroArchMain::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
    GetChildById(L"XuiTxtTitle", &m_menutitle);
    GetChildById(L"XuiTxtBottom", &m_menutitlebottom);
 
-   rmenu_xui_populate_entries(NULL, INGAME_MENU_MAIN_MODE);
-
-   mbstowcs(strw_buffer, g_extern.title_buf, sizeof(strw_buffer) / sizeof(wchar_t));
+   char str[PATH_MAX];
+   snprintf(str, sizeof(str), "%s - %s", PACKAGE_VERSION, g_extern.title_buf);
+   mbstowcs(strw_buffer, str, sizeof(strw_buffer) / sizeof(wchar_t));
    XuiTextElementSetText(m_menutitlebottom, strw_buffer);
-   menu_settings_create_menu_item_label_w(strw_buffer, S_LBL_RARCH_VERSION, sizeof(strw_buffer));
-   XuiTextElementSetText(m_menutitle, strw_buffer);
 
    return 0;
 }
 
-HRESULT CRetroArchMain::OnControlNavigate(XUIMessageControlNavigate *pControlNavigateData, BOOL& bHandled)
-{
-   xdk_d3d_video_t *vid = (xdk_d3d_video_t*)driver.video_data;
-   HRESULT hr;
-   int current_index;
-   bool hdmenus_allowed = (g_extern.lifecycle_state & (1ULL << MODE_MENU_HD));
-
-   current_index= XuiListGetCurSel(m_menulist, NULL);
-
-   unsigned input = pControlNavigateData->nControlNavigate;
-   unsigned action = xui_input_to_rmenu_xui_action(input);
-
-   HXUIOBJ current_obj = current_menu;
-
-   switch (current_index)
-   {
-      case INGAME_MENU_CHANGE_LIBRETRO_CORE:
-         if (action == RGUI_ACTION_OK)
-         {
-            hr = XuiSceneCreate(hdmenus_allowed ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_libretrocore_browser.xur", NULL, &current_menu);
-
-            if (hr < 0)
-               RARCH_ERR("Failed to load scene.\n");
-
-            XuiSceneNavigateForward(current_obj, false, current_menu, XUSER_INDEX_FOCUS);
-         }
-         break;
-      case INGAME_MENU_LOAD_GAME_HISTORY_MODE:
-         if (action == RGUI_ACTION_OK)
-         {
-            hr = XuiSceneCreate(hdmenus_allowed ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_load_game_history.xur", NULL, &current_menu);
-
-            if (hr < 0)
-               RARCH_ERR("Failed to load scene.\n");
-
-            XuiSceneNavigateForward(current_obj, false, current_menu, XUSER_INDEX_FOCUS);
-         }
-         break;
-      case INGAME_MENU_CHANGE_GAME:
-         if (action == RGUI_ACTION_OK)
-         {
-            hr = XuiSceneCreate(hdmenus_allowed ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_filebrowser.xur", NULL, &current_menu);
-
-            if (hr < 0)
-               RARCH_ERR("Failed to load scene.\n");
-
-            XuiSceneNavigateForward(current_obj, false, current_menu, XUSER_INDEX_FOCUS);
-         }
-         break;
-      case INGAME_MENU_CORE_OPTIONS_MODE:
-         if (action == RGUI_ACTION_OK)
-         {
-            hr = XuiSceneCreate(hdmenus_allowed ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_core_options.xur", NULL, &current_menu);
-
-            if (hr < 0)
-               RARCH_ERR("Failed to load scene.\n");
-
-            XuiSceneNavigateForward(current_obj, false, current_menu, XUSER_INDEX_FOCUS);
-         }
-         break;
-      case INGAME_MENU_VIDEO_OPTIONS_MODE:
-         if (action == RGUI_ACTION_OK)
-         {
-            hr = XuiSceneCreate(hdmenus_allowed ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_video_options.xur", NULL, &current_menu);
-
-            if (hr < 0)
-               RARCH_ERR("Failed to load scene.\n");
-
-            XuiSceneNavigateForward(current_obj, false, current_menu, XUSER_INDEX_FOCUS);
-         }
-         break;
-      case INGAME_MENU_AUDIO_OPTIONS_MODE:
-         if (action == RGUI_ACTION_OK)
-         {
-            hr = XuiSceneCreate(hdmenus_allowed ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_audio_options.xur", NULL, &current_menu);
-
-            if (hr < 0)
-               RARCH_ERR("Failed to load scene.\n");
-
-            XuiSceneNavigateForward(current_obj, false, current_menu, XUSER_INDEX_FOCUS);
-         }
-         break;
-      case INGAME_MENU_INPUT_OPTIONS_MODE:
-         if (action == RGUI_ACTION_OK)
-         {
-            hr = XuiSceneCreate(hdmenus_allowed ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_controls.xur", NULL, &current_menu);
-
-            if (hr < 0)
-               RARCH_ERR("Failed to load scene.\n");
-
-            XuiSceneNavigateForward(current_obj, false, current_menu, XUSER_INDEX_FOCUS);
-         }
-         break;
-      case INGAME_MENU_PATH_OPTIONS_MODE:
-         break;
-      case INGAME_MENU_SETTINGS_MODE:
-         if (action == RGUI_ACTION_OK)
-         {
-            hr = XuiSceneCreate(hdmenus_allowed ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_settings.xur", NULL, &current_menu);
-
-            if (hr < 0)
-               RARCH_ERR("Failed to load scene.\n");
-
-            XuiSceneNavigateForward(current_obj, false, current_menu, XUSER_INDEX_FOCUS);
-         }
-         break;
-      case INGAME_MENU_LOAD_STATE:
-         process_input_ret = menu_set_settings(rgui, RGUI_SETTINGS_SAVESTATE_LOAD, action);
-         menu_settings_create_menu_item_label_w(strw_buffer, S_LBL_LOAD_STATE_SLOT, sizeof(strw_buffer));
-         XuiListSetText(m_menulist, INGAME_MENU_LOAD_STATE, strw_buffer);
-         menu_settings_create_menu_item_label_w(strw_buffer, S_LBL_SAVE_STATE_SLOT, sizeof(strw_buffer));
-         XuiListSetText(m_menulist, INGAME_MENU_SAVE_STATE, strw_buffer);
-         break;
-      case INGAME_MENU_SAVE_STATE:
-         process_input_ret = menu_set_settings(rgui, RGUI_SETTINGS_SAVESTATE_SAVE, action);
-         menu_settings_create_menu_item_label_w(strw_buffer, S_LBL_LOAD_STATE_SLOT, sizeof(strw_buffer));
-         XuiListSetText(m_menulist, INGAME_MENU_LOAD_STATE, strw_buffer);
-         menu_settings_create_menu_item_label_w(strw_buffer, S_LBL_SAVE_STATE_SLOT, sizeof(strw_buffer));
-         XuiListSetText(m_menulist, INGAME_MENU_SAVE_STATE, strw_buffer);
-         break;
-      case INGAME_MENU_SCREENSHOT_MODE:
-         break;
-      case INGAME_MENU_RETURN_TO_GAME:
-         process_input_ret = menu_set_settings(rgui, RGUI_SETTINGS_RESUME_GAME, action);
-         break;
-      case INGAME_MENU_RESET:
-         process_input_ret = menu_set_settings(rgui, RGUI_SETTINGS_RESTART_GAME, action);
-         break;
-      case INGAME_MENU_QUIT_RETROARCH:
-         process_input_ret = menu_set_settings(rgui, RGUI_SETTINGS_QUIT_RARCH, action);
-         break;
-   }
-
-   bHandled = TRUE;
-
-   switch(action)
-   {
-      case RGUI_ACTION_LEFT:
-      case RGUI_ACTION_RIGHT:
-      case RGUI_ACTION_UP:
-      case RGUI_ACTION_DOWN:
-         pControlNavigateData->hObjDest = pControlNavigateData->hObjSource;
-         break;
-      default:
-         break;
-   }
-
-   return 0;
-}
-
-HRESULT CRetroArchMain::OnNotifyPress( HXUIOBJ hObjPressed,  int & bHandled )
-{
-   if ( hObjPressed == m_menulist)
-   {
-      XUIMessageControlNavigate controls;
-      controls.nControlNavigate = (XUI_CONTROL_NAVIGATE)XUI_CONTROL_NAVIGATE_OK;
-      OnControlNavigate(&controls, bHandled);
-   }
-
-   bHandled = TRUE;
-   return 0;
-}
-
-static void* rmenu_xui_init (void)
+static void* rmenu_xui_init(void)
 {
    HRESULT hr;
 
@@ -1326,7 +161,7 @@ static void* rmenu_xui_init (void)
       return NULL;
    }
 
-   xdk_d3d_video_t *device_ptr = (xdk_d3d_video_t*)driver.video_data;
+   d3d_video_t *d3d= (d3d_video_t*)driver.video_data;
 
    bool hdmenus_allowed = (g_extern.lifecycle_state & (1ULL << MODE_MENU_HD));
 
@@ -1343,9 +178,9 @@ static void* rmenu_xui_init (void)
    video_info.fullscreen = true;
    video_info.rgb32 = false;
 
-   xdk_d3d_generate_pp(&d3dpp, &video_info);
+   d3d_make_d3dpp(d3d, &video_info, &d3dpp);
 
-   hr = app.InitShared(device_ptr->d3d_render_device, &d3dpp, XuiPNGTextureLoader);
+   hr = app.InitShared(d3d->dev, &d3dpp, XuiPNGTextureLoader);
 
    if (hr != S_OK)
    {
@@ -1393,9 +228,11 @@ static void* rmenu_xui_init (void)
       return NULL;
    }
 
-   if (driver.video_poke && driver.video_poke->set_texture_enable)
+   if (driver.video_data && driver.video_poke && driver.video_poke->set_texture_enable)
       driver.video_poke->set_texture_frame(driver.video_data, NULL,
             true, 0, 0, 1.0f);
+
+   xui_msg_queue = msg_queue_new(16);
 
    return rgui;
 }
@@ -1404,32 +241,70 @@ static void rmenu_xui_free(void *data)
 {
    (void)data;
    app.Uninit();
+
+   if (xui_msg_queue)
+      msg_queue_free(xui_msg_queue);
 }
 
-static void ingame_menu_resize (void)
+static void xui_render_message(const char *msg)
 {
+	font_params_t font_parms;
+	size_t i, j;
+
+	struct string_list *list = string_split(msg, "\n");
+	if (!list)
+		return;
+
+	if (list->elems == 0)
+	{
+		string_list_free(list);
+		return;
+	}
+
+	j = 0;
+	for (i = 0; i < list->size; i++, j++)
+	{
+		char *msg = list->elems[i].data;
+		unsigned msglen = strlen(msg);
+	#if 0
+		if (msglen > RMENU_TERM_WIDTH)
+		{
+			msg[RMENU_TERM_WIDTH - 2] = '.';
+			msg[RMENU_TERM_WIDTH - 1] = '.';
+			msg[RMENU_TERM_WIDTH - 0] = '.';
+			msg[RMENU_TERM_WIDTH + 1] = '\0';
+			msglen = RMENU_TERM_WIDTH;
+		}
+	#endif
+		float msg_width  = (g_extern.lifecycle_state & (1ULL << MODE_MENU_HD)) ? 160 : 100;
+		float msg_height = 120;
+		float msg_offset = 32;
+
+		font_parms.x = msg_width;
+		font_parms.y = msg_height + (msg_offset * j);
+		font_parms.scale = 21;
+
+		if (driver.video_poke && driver.video_poke->set_osd_msg)
+			driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
+	}
 }
 
-void rmenu_xui_iterate(void *data, unsigned action)
+static void rmenu_xui_frame(void *data)
 {
-   (void)data;
+   d3d_video_t *d3d = (d3d_video_t*)data;
+   LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
 
-   if (action == RGUI_ACTION_OK)
-   {
-      XuiSceneNavigateBack(current_menu, root_menu, XUSER_INDEX_ANY);
-      current_menu = root_menu;
-      XuiElementGetChildById(current_menu, L"XuiMenuList", &m_menulist);
-      rmenu_xui_populate_entries(NULL, INGAME_MENU_MAIN_MODE);
-   }
-}
+   D3DVIEWPORT vp_full;
+   vp_full.X = 0;
+   vp_full.Y = 0;
+   vp_full.Width = d3d->screen_width;
+   vp_full.Height = d3d->screen_height;
+   vp_full.MinZ = 0.0f;
+   vp_full.MaxZ = 1.0f;
+   d3dr->SetViewport(&vp_full);
 
-bool menu_iterate_xui(void)
-{
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)driver.video_data;
-   LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->d3d_render_device;
-
-   app.RunFrame(); /* Update XUI */
-
+   app.RunFrame();
+   XuiTimersRun();
    XuiRenderBegin( app.GetDC(), D3DCOLOR_ARGB( 255, 0, 0, 0 ) );
 
    D3DXMATRIX matOrigView;
@@ -1442,12 +317,23 @@ bool menu_iterate_xui(void)
 
    XuiRenderSetViewTransform( app.GetDC(), &matOrigView );
 
+   const char *message = msg_queue_pull(xui_msg_queue);
+
+   if (message)
+      xui_render_message(message);
+   else
+   {
+      const char *message = msg_queue_pull(g_extern.msg_queue);
+      if (message)
+         xui_render_message(message);
+   }
+
    XuiRenderEnd( app.GetDC() );
-   XuiTimersRun();
-   return true;
+
+   d3dr->SetViewport(&d3d->final_viewport);
 }
 
-int rgui_input_postprocess(void *data, uint64_t old_state)
+static int rmenu_xui_input_postprocess(void *data, uint64_t old_state)
 {
    rgui_handle_t *rgui = (rgui_handle_t*)data;
    bool quit = false;
@@ -1476,15 +362,376 @@ int rgui_input_postprocess(void *data, uint64_t old_state)
    return process_input_ret_old;
 }
 
+static void blit_line(rgui_handle_t *rgui,
+int x, int y, const char *message, bool green)
+{
+}
+
+static void rmenu_xui_render_background(void *data)
+{
+   (void)data;
+}
+
+static void rmenu_xui_render_messagebox(void *data, const char *message)
+{
+   msg_queue_clear(xui_msg_queue);
+   msg_queue_push(xui_msg_queue, message, 2, 1);
+}
+
+static void rmenu_xui_render(void *data)
+{
+   rgui_handle_t *rgui = (rgui_handle_t*)data;
+
+   if (rgui->need_refresh && 
+         (g_extern.lifecycle_state & (1ULL << MODE_MENU))
+         && !rgui->msg_force)
+      return;
+
+   size_t begin = rgui->selection_ptr;
+   size_t end = rgui->selection_buf->size;
+
+   rmenu_xui_render_background(rgui);
+
+   char title[256];
+   const char *dir = NULL;
+   unsigned menu_type = 0;
+   unsigned menu_type_is = 0;
+   file_list_get_last(rgui->menu_stack, &dir, &menu_type);
+
+   if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->type_is)
+      menu_type_is = driver.menu_ctx->backend->type_is(menu_type);
+
+   if (menu_type == RGUI_SETTINGS_CORE)
+      snprintf(title, sizeof(title), "CORE SELECTION %s", dir);
+   else if (menu_type == RGUI_SETTINGS_DEFERRED_CORE)
+      snprintf(title, sizeof(title), "DETECTED CORES %s", dir);
+   else if (menu_type == RGUI_SETTINGS_CONFIG)
+      snprintf(title, sizeof(title), "CONFIG %s", dir);
+   else if (menu_type == RGUI_SETTINGS_DISK_APPEND)
+      snprintf(title, sizeof(title), "DISK APPEND %s", dir);
+   else if (menu_type == RGUI_SETTINGS_VIDEO_OPTIONS)
+      strlcpy(title, "VIDEO OPTIONS", sizeof(title));
+   else if (menu_type == RGUI_SETTINGS_INPUT_OPTIONS)
+      strlcpy(title, "INPUT OPTIONS", sizeof(title));
+   else if (menu_type == RGUI_SETTINGS_OVERLAY_OPTIONS)
+      strlcpy(title, "OVERLAY OPTIONS", sizeof(title));
+   else if (menu_type == RGUI_SETTINGS_NETPLAY_OPTIONS)
+      strlcpy(title, "NETPLAY OPTIONS", sizeof(title));
+   else if (menu_type == RGUI_SETTINGS_PATH_OPTIONS)
+      strlcpy(title, "PATH OPTIONS", sizeof(title));
+   else if (menu_type == RGUI_SETTINGS_OPTIONS)
+      strlcpy(title, "SETTINGS", sizeof(title));
+   else if (menu_type == RGUI_SETTINGS_DRIVERS)
+      strlcpy(title, "DRIVER OPTIONS", sizeof(title));
+#ifdef HAVE_SHADER_MANAGER
+   else if (menu_type == RGUI_SETTINGS_SHADER_OPTIONS)
+      strlcpy(title, "SHADER OPTIONS", sizeof(title));
+#endif
+   else if (menu_type == RGUI_SETTINGS_FONT_OPTIONS)
+      strlcpy(title, "FONT OPTIONS", sizeof(title));
+   else if (menu_type == RGUI_SETTINGS_GENERAL_OPTIONS)
+      strlcpy(title, "GENERAL OPTIONS", sizeof(title));
+   else if (menu_type == RGUI_SETTINGS_AUDIO_OPTIONS)
+      strlcpy(title, "AUDIO OPTIONS", sizeof(title));
+   else if (menu_type == RGUI_SETTINGS_DISK_OPTIONS)
+      strlcpy(title, "DISK OPTIONS", sizeof(title));
+   else if (menu_type == RGUI_SETTINGS_CORE_OPTIONS)
+      strlcpy(title, "CORE OPTIONS", sizeof(title));
+   else if (menu_type == RGUI_SETTINGS_CORE_INFO)
+      strlcpy(title, "CORE INFO", sizeof(title));		  
+   else if (menu_type == RGUI_SETTINGS_PRIVACY_OPTIONS)
+      strlcpy(title, "PRIVACY OPTIONS", sizeof(title)); 	  
+#ifdef HAVE_SHADER_MANAGER
+   else if (menu_type_is == RGUI_SETTINGS_SHADER_OPTIONS)
+      snprintf(title, sizeof(title), "SHADER %s", dir);
+#endif
+   else if ((menu_type == RGUI_SETTINGS_INPUT_OPTIONS) ||
+         (menu_type == RGUI_SETTINGS_PATH_OPTIONS) ||
+         (menu_type == RGUI_SETTINGS_OPTIONS) ||
+         (menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT || menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT_2) ||
+         menu_type == RGUI_SETTINGS_CUSTOM_BIND ||
+         menu_type == RGUI_START_SCREEN ||
+         menu_type == RGUI_SETTINGS)
+      snprintf(title, sizeof(title), "MENU %s", dir);
+   else if (menu_type == RGUI_SETTINGS_OPEN_HISTORY)
+      strlcpy(title, "LOAD HISTORY", sizeof(title));
+#ifdef HAVE_OVERLAY
+   else if (menu_type == RGUI_SETTINGS_OVERLAY_PRESET)
+      snprintf(title, sizeof(title), "OVERLAY %s", dir);
+#endif
+   else if (menu_type == RGUI_SETTINGS_VIDEO_SOFTFILTER)
+      snprintf(title, sizeof(title), "FILTER %s", dir);
+   else if (menu_type == RGUI_SETTINGS_AUDIO_DSP_FILTER)
+      snprintf(title, sizeof(title), "DSP FILTER %s", dir);
+   else if (menu_type == RGUI_BROWSER_DIR_PATH)
+      snprintf(title, sizeof(title), "BROWSER DIR %s", dir);
+#ifdef HAVE_SCREENSHOTS
+   else if (menu_type == RGUI_SCREENSHOT_DIR_PATH)
+      snprintf(title, sizeof(title), "SCREENSHOT DIR %s", dir);
+#endif
+   else if (menu_type == RGUI_SHADER_DIR_PATH)
+      snprintf(title, sizeof(title), "SHADER DIR %s", dir);
+   else if (menu_type == RGUI_FILTER_DIR_PATH)
+      snprintf(title, sizeof(title), "FILTER DIR %s", dir);
+   else if (menu_type == RGUI_DSP_FILTER_DIR_PATH)
+      snprintf(title, sizeof(title), "DSP_FILTER DIR %s", dir);
+   else if (menu_type == RGUI_SAVESTATE_DIR_PATH)
+      snprintf(title, sizeof(title), "SAVESTATE DIR %s", dir);
+#ifdef HAVE_DYNAMIC
+   else if (menu_type == RGUI_LIBRETRO_DIR_PATH)
+      snprintf(title, sizeof(title), "LIBRETRO DIR %s", dir);
+#endif
+   else if (menu_type == RGUI_CONFIG_DIR_PATH)
+      snprintf(title, sizeof(title), "CONFIG DIR %s", dir);
+   else if (menu_type == RGUI_SAVEFILE_DIR_PATH)
+      snprintf(title, sizeof(title), "SAVEFILE DIR %s", dir);
+#ifdef HAVE_OVERLAY
+   else if (menu_type == RGUI_OVERLAY_DIR_PATH)
+      snprintf(title, sizeof(title), "OVERLAY DIR %s", dir);
+#endif
+   else if (menu_type == RGUI_SYSTEM_DIR_PATH)
+      snprintf(title, sizeof(title), "SYSTEM DIR %s", dir);
+   else
+   {
+      if (rgui->defer_core)
+         snprintf(title, sizeof(title), "CONTENT %s", dir);
+      else
+      {
+         const char *core_name = rgui->info.library_name;
+         if (!core_name)
+            core_name = g_extern.system.info.library_name;
+         if (!core_name)
+            core_name = "No Core";
+         snprintf(title, sizeof(title), "CONTENT (%s) %s", core_name, dir);
+      }
+   }
+
+   mbstowcs(strw_buffer, title, sizeof(strw_buffer) / sizeof(wchar_t));
+   XuiTextElementSetText(m_menutitle, strw_buffer);
+
+   char title_buf[256];
+   menu_ticker_line(title_buf, RXUI_TERM_WIDTH - 3, g_extern.frame_count / 15, title, true);
+   blit_line(rgui, RXUI_TERM_START_X + 15, 15, title_buf, true);
+
+   char title_msg[64];
+   const char *core_name = rgui->info.library_name;
+   if (!core_name)
+      core_name = g_extern.system.info.library_name;
+   if (!core_name)
+      core_name = "No Core";
+
+   const char *core_version = rgui->info.library_version;
+   if (!core_version)
+      core_version = g_extern.system.info.library_version;
+   if (!core_version)
+      core_version = "";
+
+   snprintf(title_msg, sizeof(title_msg), "%s - %s %s", PACKAGE_VERSION, core_name, core_version);
+   blit_line(rgui, RXUI_TERM_START_X + 15, (RXUI_TERM_HEIGHT * FONT_HEIGHT_STRIDE) + RXUI_TERM_START_Y + 2, title_msg, true);
+
+   unsigned x, y;
+   size_t i;
+
+   x = RXUI_TERM_START_X;
+   y = RXUI_TERM_START_Y;
+
+   for (i = begin; i < end; i++/*, y += FONT_HEIGHT_STRIDE */)
+   {
+      const char *path = 0;
+      unsigned type = 0;
+      file_list_get_at_offset(rgui->selection_buf, i, &path, &type);
+      char message[256];
+      char type_str[256];
+
+      unsigned w = 19;
+      if (menu_type == RGUI_SETTINGS_INPUT_OPTIONS || menu_type == RGUI_SETTINGS_CUSTOM_BIND)
+         w = 21;
+      else if (menu_type == RGUI_SETTINGS_PATH_OPTIONS)
+         w = 24;
+
+      if (type >= RGUI_SETTINGS_SHADER_FILTER &&
+            type <= RGUI_SETTINGS_SHADER_LAST)
+      {
+         // HACK. Work around that we're using the menu_type as dir type to propagate state correctly.
+         if ((menu_type_is == RGUI_SETTINGS_SHADER_OPTIONS)
+               && (menu_type_is == RGUI_SETTINGS_SHADER_OPTIONS))
+         {
+            type = RGUI_FILE_DIRECTORY;
+            strlcpy(type_str, "(DIR)", sizeof(type_str));
+            w = 5;
+         }
+         else if (type == RGUI_SETTINGS_SHADER_OPTIONS || type == RGUI_SETTINGS_SHADER_PRESET)
+            strlcpy(type_str, "...", sizeof(type_str));
+         else if (type == RGUI_SETTINGS_SHADER_FILTER)
+            snprintf(type_str, sizeof(type_str), "%s",
+                  g_settings.video.smooth ? "Linear" : "Nearest");
+         else if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->shader_manager_get_str)
+            driver.menu_ctx->backend->shader_manager_get_str(&rgui->shader, type_str, sizeof(type_str), type);
+      }
+      else
+      // Pretty-print libretro cores from menu.
+      if (menu_type == RGUI_SETTINGS_CORE || menu_type == RGUI_SETTINGS_DEFERRED_CORE)
+      {
+         if (type == RGUI_FILE_PLAIN)
+         {
+            strlcpy(type_str, "(CORE)", sizeof(type_str));
+            file_list_get_alt_at_offset(rgui->selection_buf, i, &path);
+            w = 6;
+         }
+         else
+         {
+            strlcpy(type_str, "(DIR)", sizeof(type_str));
+            type = RGUI_FILE_DIRECTORY;
+            w = 5;
+         }
+      }
+      else if (menu_type == RGUI_SETTINGS_CONFIG ||
+#ifdef HAVE_OVERLAY
+            menu_type == RGUI_SETTINGS_OVERLAY_PRESET ||
+#endif
+            menu_type == RGUI_SETTINGS_VIDEO_SOFTFILTER ||
+            menu_type == RGUI_SETTINGS_AUDIO_DSP_FILTER ||
+            menu_type == RGUI_SETTINGS_DISK_APPEND ||
+            menu_type_is == RGUI_FILE_DIRECTORY)
+      {
+         if (type == RGUI_FILE_PLAIN)
+         {
+            strlcpy(type_str, "(FILE)", sizeof(type_str));
+            w = 6;
+         }
+         else if (type == RGUI_FILE_USE_DIRECTORY)
+         {
+            *type_str = '\0';
+            w = 0;
+         }
+         else
+         {
+            strlcpy(type_str, "(DIR)", sizeof(type_str));
+            type = RGUI_FILE_DIRECTORY;
+            w = 5;
+         }
+      }
+      else if (menu_type == RGUI_SETTINGS_OPEN_HISTORY)
+      {
+         *type_str = '\0';
+         w = 0;
+      }
+      else if (type >= RGUI_SETTINGS_CORE_OPTION_START)
+         strlcpy(type_str,
+               core_option_get_val(g_extern.system.core_options, type - RGUI_SETTINGS_CORE_OPTION_START),
+               sizeof(type_str));
+      else if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->setting_set_label)
+         driver.menu_ctx->backend->setting_set_label(type_str, sizeof(type_str), &w, type);
+
+      char entry_title_buf[256];
+      char type_str_buf[64];
+      bool selected = i == rgui->selection_ptr;
+
+      strlcpy(entry_title_buf, path, sizeof(entry_title_buf));
+      strlcpy(type_str_buf, type_str, sizeof(type_str_buf));
+
+#if 0
+      if ((type == RGUI_FILE_PLAIN || type == RGUI_FILE_DIRECTORY))
+         menu_ticker_line(entry_title_buf, RXUI_TERM_WIDTH - (w + 1 + 2), g_extern.frame_count / 15, path, selected);
+      else
+         menu_ticker_line(type_str_buf, w, g_extern.frame_count / 15, type_str, selected);
+#endif
+
+      snprintf(message, sizeof(message), "%s : %s",
+            entry_title_buf,
+            type_str_buf);
+
+      wchar_t msg_w[256];
+      mbstowcs(msg_w, message, sizeof(msg_w) / sizeof(wchar_t));
+      XuiListSetText(m_menulist, i, msg_w);
+      blit_line(rgui, x, y, message, i);
+   }
+
+   if (rgui->keyboard.display)
+   {
+      char msg[1024];
+      const char *str = *rgui->keyboard.buffer;
+      if (!str)
+         str = "";
+      snprintf(msg, sizeof(msg), "%s\n%s", rgui->keyboard.label, str);
+      rmenu_xui_render_messagebox(rgui, msg);
+   }
+}
+
+static void rmenu_xui_populate_entries(void *data, unsigned i)
+{
+   rgui_handle_t *rgui = (rgui_handle_t*)data;
+   XuiListSetCurSelVisible(m_menulist, rgui->selection_ptr);
+}
+
+static void rmenu_xui_navigation_clear(void *data)
+{
+   rgui_handle_t *rgui = (rgui_handle_t*)data;
+   XuiListSetCurSelVisible(m_menulist, rgui->selection_ptr);
+}
+
+static void rmenu_xui_navigation_set_visible(void *data)
+{
+   rgui_handle_t *rgui = (rgui_handle_t*)data;
+   XuiListSetCurSelVisible(m_menulist, rgui->selection_ptr);
+}
+
+static void rmenu_xui_navigation_alphabet(void *data, size_t *ptr_out)
+{
+   XuiListSetCurSelVisible(m_menulist, *ptr_out);
+}
+
+static void rmenu_xui_list_insert(void *data, const char *path, size_t list_size)
+{
+   (void)data;
+   wchar_t buf[PATH_MAX];
+
+   XuiListInsertItems(m_menulist, list_size, 1);
+   mbstowcs(buf, path, sizeof(buf) / sizeof(wchar_t));
+   XuiListSetText(m_menulist, list_size, buf);
+}
+
+static void rmenu_xui_list_delete(void *data, size_t list_size)
+{
+   (void)data;
+   XuiListDeleteItems(m_menulist, 0, list_size);
+}
+
+static void rmenu_xui_list_clear(void *data)
+{
+   (void)data;
+   XuiListDeleteItems(m_menulist, 0, XuiListGetItemCount(m_menulist));
+}
+
+static void rmenu_xui_list_set_selection(void *data)
+{
+   file_list_t *list = (file_list_t*)data;
+   XuiListSetCurSel(m_menulist, list->list[list->size].directory_ptr);
+}
+
 const menu_ctx_driver_t menu_ctx_rmenu_xui = {
    NULL,
-   NULL,
-   NULL,
+   rmenu_xui_render_messagebox,
+   rmenu_xui_render,
+   rmenu_xui_frame,
    rmenu_xui_init,
    rmenu_xui_free,
    NULL,
    NULL,
    rmenu_xui_populate_entries,
-   rmenu_xui_iterate,
+   NULL,
+   rmenu_xui_input_postprocess,
+   rmenu_xui_navigation_clear,
+   rmenu_xui_navigation_set_visible,
+   rmenu_xui_navigation_set_visible,
+   rmenu_xui_navigation_set_visible,
+   rmenu_xui_navigation_set_visible,
+   rmenu_xui_navigation_alphabet,
+   rmenu_xui_navigation_alphabet,
+   rmenu_xui_list_insert,
+   rmenu_xui_list_delete,
+   rmenu_xui_list_clear,
+   rmenu_xui_list_set_selection,
+   &menu_ctx_backend_common,
    "rmenu_xui",
 };

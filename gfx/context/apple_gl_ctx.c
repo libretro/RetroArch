@@ -17,7 +17,7 @@
 #include "../../driver.h"
 #include "../gfx_common.h"
 #include "../gl_common.h"
-#include "../image.h"
+#include "../image/image.h"
 
 #include "../fonts/gl_font.h"
 #include <stdint.h>
@@ -28,7 +28,7 @@
 
 #include "../../apple/common/rarch_wrapper.h"
 
-static void gfx_ctx_check_window(bool *quit,
+static void gfx_ctx_check_window(void *data, bool *quit,
       bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
 {
    (void)frame_count;
@@ -36,7 +36,7 @@ static void gfx_ctx_check_window(bool *quit,
    *quit = false;
 
    unsigned new_width, new_height;
-   apple_gfx_ctx_get_video_size(&new_width, &new_height);
+   apple_gfx_ctx_get_video_size(data, &new_width, &new_height);
    if (new_width != *width || new_height != *height)
    {
       *width  = new_width;
@@ -45,14 +45,16 @@ static void gfx_ctx_check_window(bool *quit,
    }
 }
 
-static void gfx_ctx_set_resize(unsigned width, unsigned height)
+static void gfx_ctx_set_resize(void *data, unsigned width, unsigned height)
 {
+   (void)data;
    (void)width;
    (void)height;
 }
 
-static void gfx_ctx_input_driver(const input_driver_t **input, void **input_data)
+static void gfx_ctx_input_driver(void *data, const input_driver_t **input, void **input_data)
 {
+   (void)data;
    *input = NULL;
    *input_data = NULL;
 }

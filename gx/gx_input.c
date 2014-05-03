@@ -38,6 +38,20 @@
 
 #define MAX_PADS 4
 
+enum input_devices
+{
+   DEVICE_GAMECUBE = 0,
+#ifdef HW_RVL
+   DEVICE_WIIMOTE,
+   DEVICE_NUNCHUK,
+   DEVICE_CLASSIC,
+#ifdef HAVE_LIBSICKSAXIS
+   DEVICE_SIXAXIS,
+#endif
+#endif
+   DEVICE_LAST
+};
+
 typedef struct gx_input
 {
    uint64_t pad_state[MAX_PADS];
@@ -97,13 +111,41 @@ const struct platform_bind platform_keys[] = {
 #endif
 };
 
+
 extern const rarch_joypad_driver_t gx_joypad;
 
 static bool g_menu;
 
 #ifdef HW_RVL
 static bool g_quit;
+
+static void power_callback(void)
+{
+   g_quit = true;
+}
+
+#ifdef HAVE_LIBSICKSAXIS
+volatile int lol = 0;
+struct ss_device dev[MAX_PADS];
+
+int change_cb(int result, void *usrdata)
+{
+    (*(volatile int*)usrdata)++;
+    return result;
+}
+
+void removal_cb(void *usrdata)
+{
+   RARCH_LOG("Device %d disconnected\n", (int)usrdata);
+}
 #endif
+
+#endif
+
+static void reset_cb(void)
+{
+   g_menu = true;
+}
 
 static bool gx_menu_input_state(uint64_t joykey, uint64_t state)
 {
@@ -223,20 +265,17 @@ static int16_t gx_input_state(void *data, const struct retro_keybind **binds,
 
 static void gx_input_free_input(void *data)
 {
+   unsigned i;
    (void)data;
-}
+   (void)i;
+#ifdef HAVE_LIBSICKSAXIS
+   for (i = 0; i < MAX_PADS; i++)
+      ss_close(&dev[i]);
 
-static void reset_callback(void)
-{
-   g_menu = true;
-}
-
-#ifdef HW_RVL
-static void power_callback(void)
-{
-   g_quit = true;
-}
+   USB_Deinitialize();
 #endif
+}
+
 
 static void gx_input_set_keybinds(void *data, unsigned device, unsigned port,
       unsigned id, unsigned keybind_action)
@@ -255,6 +294,60 @@ static void gx_input_set_keybinds(void *data, unsigned device, unsigned port,
       switch (device)
       {
 #ifdef HW_RVL
+#ifdef HAVE_LIBSICKSAXIS
+         case DEVICE_SIXAXIS:
+            g_settings.input.device[port] = device;
+            strlcpy(g_settings.input.device_names[port], "DualShock3/Sixaxis", sizeof(g_settings.input.device_names[port]));
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_B].def_joykey       = (RETRO_DEVICE_ID_JOYPAD_B);
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_Y].def_joykey       = (RETRO_DEVICE_ID_JOYPAD_Y);
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_SELECT].def_joykey  = (RETRO_DEVICE_ID_JOYPAD_SELECT);
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_START].def_joykey   = (RETRO_DEVICE_ID_JOYPAD_START);
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_UP].def_joykey      = (RETRO_DEVICE_ID_JOYPAD_UP);
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_DOWN].def_joykey    = (RETRO_DEVICE_ID_JOYPAD_DOWN);
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_LEFT].def_joykey    = (RETRO_DEVICE_ID_JOYPAD_LEFT);
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_RIGHT].def_joykey   = (RETRO_DEVICE_ID_JOYPAD_RIGHT);
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_A].def_joykey       = (RETRO_DEVICE_ID_JOYPAD_A);
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_X].def_joykey       = (RETRO_DEVICE_ID_JOYPAD_X);
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_L].def_joykey       = (RETRO_DEVICE_ID_JOYPAD_L);
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R].def_joykey       = (RETRO_DEVICE_ID_JOYPAD_R);
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_L2].def_joykey      = (RETRO_DEVICE_ID_JOYPAD_L2);
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R2].def_joykey      = (RETRO_DEVICE_ID_JOYPAD_R2);
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_L3].def_joykey      = (RETRO_DEVICE_ID_JOYPAD_L3);
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R3].def_joykey      = (RETRO_DEVICE_ID_JOYPAD_R3);
+            g_settings.input.binds[port][RARCH_ANALOG_LEFT_X_PLUS].def_joykey       = NO_BTN;
+            g_settings.input.binds[port][RARCH_ANALOG_LEFT_X_MINUS].def_joykey      = NO_BTN;
+            g_settings.input.binds[port][RARCH_ANALOG_LEFT_Y_PLUS].def_joykey       = NO_BTN;
+            g_settings.input.binds[port][RARCH_ANALOG_LEFT_Y_MINUS].def_joykey      = NO_BTN;
+            g_settings.input.binds[port][RARCH_ANALOG_RIGHT_X_PLUS].def_joykey      = NO_BTN;
+            g_settings.input.binds[port][RARCH_ANALOG_RIGHT_X_MINUS].def_joykey     = NO_BTN;
+            g_settings.input.binds[port][RARCH_ANALOG_RIGHT_Y_PLUS].def_joykey      = NO_BTN;
+            g_settings.input.binds[port][RARCH_ANALOG_RIGHT_Y_MINUS].def_joykey     = NO_BTN;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_B].def_joyaxis      = AXIS_NONE;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_Y].def_joyaxis      = AXIS_NONE;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_SELECT].def_joyaxis = AXIS_NONE;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_START].def_joyaxis  = AXIS_NONE;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_UP].def_joyaxis     = AXIS_NONE;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_DOWN].def_joyaxis   = AXIS_NONE;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_LEFT].def_joyaxis   = AXIS_NONE;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_RIGHT].def_joyaxis  = AXIS_NONE;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_A].def_joyaxis      = AXIS_NONE;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_X].def_joyaxis      = AXIS_NONE;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_L].def_joyaxis      = AXIS_NONE;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R].def_joyaxis      = AXIS_NONE;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_L2].def_joyaxis     = AXIS_NONE;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R2].def_joyaxis     = AXIS_NONE;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_L3].def_joyaxis     = AXIS_NONE;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R3].def_joyaxis     = AXIS_NONE;
+            g_settings.input.binds[port][RARCH_ANALOG_LEFT_X_PLUS].def_joyaxis      = AXIS_POS(0);
+            g_settings.input.binds[port][RARCH_ANALOG_LEFT_X_MINUS].def_joyaxis     = AXIS_NEG(0);
+            g_settings.input.binds[port][RARCH_ANALOG_LEFT_Y_PLUS].def_joyaxis      = AXIS_POS(1);
+            g_settings.input.binds[port][RARCH_ANALOG_LEFT_Y_MINUS].def_joyaxis     = AXIS_NEG(1);
+            g_settings.input.binds[port][RARCH_ANALOG_RIGHT_X_PLUS].def_joyaxis     = AXIS_POS(2);
+            g_settings.input.binds[port][RARCH_ANALOG_RIGHT_X_MINUS].def_joyaxis    = AXIS_NEG(2);
+            g_settings.input.binds[port][RARCH_ANALOG_RIGHT_Y_PLUS].def_joyaxis     = AXIS_POS(3);
+            g_settings.input.binds[port][RARCH_ANALOG_RIGHT_Y_MINUS].def_joyaxis    = AXIS_NEG(3);
+            break;
+#endif
          case DEVICE_WIIMOTE:
             g_settings.input.device[port] = device;
             strlcpy(g_settings.input.device_names[port], "Wiimote", sizeof(g_settings.input.device_names[port]));
@@ -499,17 +592,28 @@ static void gx_input_set_keybinds(void *data, unsigned device, unsigned port,
 
 static void *gx_input_init(void)
 {
+   unsigned i;
    gx_input_t *gx = (gx_input_t*)calloc(1, sizeof(*gx));
    if (!gx)
       return NULL;
 
    PAD_Init();
+#ifdef HAVE_LIBSICKSAXIS
+   USB_Initialize();
+#endif
 #ifdef HW_RVL
    WPAD_Init();
 #endif
-   SYS_SetResetCallback(reset_callback);
+   SYS_SetResetCallback(reset_cb);
 #ifdef HW_RVL
    SYS_SetPowerCallback(power_callback);
+#endif
+
+   (void)i;
+#ifdef HAVE_LIBSICKSAXIS
+   ss_init();
+   for (i = 0; i < MAX_PADS; i++)
+      ss_initialize(&dev[i]);
 #endif
 
    return gx;
@@ -523,10 +627,6 @@ static void gx_input_poll(void *data)
    gx->pad_state[1] = 0;
    gx->pad_state[2] = 0;
    gx->pad_state[3] = 0;
-   gx->analog_state[0][0][0] = gx->analog_state[0][0][1] = gx->analog_state[0][1][0] = gx->analog_state[0][1][1] = 0;
-   gx->analog_state[1][0][0] = gx->analog_state[1][0][1] = gx->analog_state[1][1][0] = gx->analog_state[1][1][1] = 0;
-   gx->analog_state[2][0][0] = gx->analog_state[2][0][1] = gx->analog_state[2][1][0] = gx->analog_state[2][1][1] = 0;
-   gx->analog_state[3][0][0] = gx->analog_state[3][0][1] = gx->analog_state[3][1][0] = gx->analog_state[3][1][1] = 0;
 
    uint8_t gcpad = PAD_ScanPads();
 
@@ -580,6 +680,44 @@ static void gx_input_poll(void *data)
 #ifdef HW_RVL
       uint32_t ptype = 0;
       uint32_t connected = WPAD_Probe(port, &ptype);
+
+#ifdef HAVE_LIBSICKSAXIS
+      USB_DeviceChangeNotifyAsync(USB_CLASS_HID, change_cb, (void*)&lol);
+
+      if (ss_is_connected(&dev[port]))
+      {
+         *state_cur |= (dev[port].pad.buttons.PS)       ? (1ULL << RARCH_MENU_TOGGLE) : 0;
+         *state_cur |= (dev[port].pad.buttons.cross)    ? (1ULL << RETRO_DEVICE_ID_JOYPAD_B) : 0;
+         *state_cur |= (dev[port].pad.buttons.square)   ? (1ULL << RETRO_DEVICE_ID_JOYPAD_Y) : 0;
+         *state_cur |= (dev[port].pad.buttons.select)   ? (1ULL << RETRO_DEVICE_ID_JOYPAD_SELECT) : 0;
+         *state_cur |= (dev[port].pad.buttons.start)    ? (1ULL << RETRO_DEVICE_ID_JOYPAD_START) : 0;
+         *state_cur |= (dev[port].pad.buttons.up)       ? (1ULL << RETRO_DEVICE_ID_JOYPAD_UP) : 0;
+         *state_cur |= (dev[port].pad.buttons.down)     ? (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN) : 0;
+         *state_cur |= (dev[port].pad.buttons.left)     ? (1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT) : 0;
+         *state_cur |= (dev[port].pad.buttons.right)    ? (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT) : 0;
+         *state_cur |= (dev[port].pad.buttons.circle)   ? (1ULL << RETRO_DEVICE_ID_JOYPAD_A) : 0;
+         *state_cur |= (dev[port].pad.buttons.triangle) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_X) : 0;
+         *state_cur |= (dev[port].pad.buttons.L1)       ? (1ULL << RETRO_DEVICE_ID_JOYPAD_L) : 0;
+         *state_cur |= (dev[port].pad.buttons.R1)       ? (1ULL << RETRO_DEVICE_ID_JOYPAD_R) : 0;
+         *state_cur |= (dev[port].pad.buttons.L2)       ? (1ULL << RETRO_DEVICE_ID_JOYPAD_L2) : 0;
+         *state_cur |= (dev[port].pad.buttons.R2)       ? (1ULL << RETRO_DEVICE_ID_JOYPAD_R2) : 0;
+         *state_cur |= (dev[port].pad.buttons.L3)       ? (1ULL << RETRO_DEVICE_ID_JOYPAD_L3) : 0;
+         *state_cur |= (dev[port].pad.buttons.R3)       ? (1ULL << RETRO_DEVICE_ID_JOYPAD_R3) : 0;
+      }
+      else
+      {
+         if (ss_open(&dev[port]) > 0)
+         {
+            ss_start_reading(&dev[port]);
+            ss_set_removal_cb(&dev[port], removal_cb, (void*)1);
+            if (g_settings.input.autodetect_enable)
+            {
+               if (strcmp(g_settings.input.device_names[port], "DualShock3/Sixaxis") != 0)
+                  gx_input_set_keybinds(NULL, DEVICE_SIXAXIS, port, 0, (1ULL << KEYBINDS_ACTION_SET_DEFAULT_BINDS));
+            }
+         }
+      }
+#endif
       
       if (connected == WPAD_ERR_NONE)
       {
@@ -737,7 +875,7 @@ static void gx_input_poll(void *data)
 
 static bool gx_input_key_pressed(void *data, int key)
 {
-   return (g_extern.lifecycle_state & (1ULL << key));
+   return (g_extern.lifecycle_state & (1ULL << key)) || input_joypad_pressed(&gx_joypad, 0, g_settings.input.binds[0], key);
 }
 
 static uint64_t gx_input_get_capabilities(void *data)
@@ -755,6 +893,11 @@ static const rarch_joypad_driver_t *gx_input_get_joypad_driver(void *data)
    return &gx_joypad;
 }
 
+static unsigned gx_input_devices_size(void *data)
+{
+   return DEVICE_LAST;
+}
+
 const input_driver_t input_gx = {
    gx_input_init,
    gx_input_poll,
@@ -765,6 +908,7 @@ const input_driver_t input_gx = {
    NULL,
    NULL,
    gx_input_get_capabilities,
+   gx_input_devices_size,
    "gx",
 
    NULL,

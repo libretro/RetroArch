@@ -2,6 +2,17 @@
 #include <stddef.h>
 #define SYM(x) { "gl" #x, &(gl##x) }
 const struct rglgen_sym_map rglgen_symbol_map[] = {
+    SYM(DebugMessageControlKHR),
+    SYM(DebugMessageInsertKHR),
+    SYM(DebugMessageCallbackKHR),
+    SYM(GetDebugMessageLogKHR),
+    SYM(PushDebugGroupKHR),
+    SYM(PopDebugGroupKHR),
+    SYM(ObjectLabelKHR),
+    SYM(GetObjectLabelKHR),
+    SYM(ObjectPtrLabelKHR),
+    SYM(GetObjectPtrLabelKHR),
+    SYM(GetPointervKHR),
     SYM(EGLImageTargetTexture2DOES),
     SYM(EGLImageTargetRenderbufferStorageOES),
     SYM(GetProgramBinaryOES),
@@ -19,20 +30,20 @@ const struct rglgen_sym_map rglgen_symbol_map[] = {
     SYM(DeleteVertexArraysOES),
     SYM(GenVertexArraysOES),
     SYM(IsVertexArrayOES),
-    SYM(DebugMessageControl),
-    SYM(DebugMessageInsert),
-    SYM(DebugMessageCallback),
-    SYM(GetDebugMessageLog),
-    SYM(PushDebugGroup),
-    SYM(PopDebugGroup),
-    SYM(ObjectLabel),
-    SYM(GetObjectLabel),
-    SYM(ObjectPtrLabel),
-    SYM(GetObjectPtrLabel),
-    SYM(GetPointerv),
 
     { NULL, NULL },
 };
+RGLSYMGLDEBUGMESSAGECONTROLKHRPROC __rglgen_glDebugMessageControlKHR;
+RGLSYMGLDEBUGMESSAGEINSERTKHRPROC __rglgen_glDebugMessageInsertKHR;
+RGLSYMGLDEBUGMESSAGECALLBACKKHRPROC __rglgen_glDebugMessageCallbackKHR;
+RGLSYMGLGETDEBUGMESSAGELOGKHRPROC __rglgen_glGetDebugMessageLogKHR;
+RGLSYMGLPUSHDEBUGGROUPKHRPROC __rglgen_glPushDebugGroupKHR;
+RGLSYMGLPOPDEBUGGROUPKHRPROC __rglgen_glPopDebugGroupKHR;
+RGLSYMGLOBJECTLABELKHRPROC __rglgen_glObjectLabelKHR;
+RGLSYMGLGETOBJECTLABELKHRPROC __rglgen_glGetObjectLabelKHR;
+RGLSYMGLOBJECTPTRLABELKHRPROC __rglgen_glObjectPtrLabelKHR;
+RGLSYMGLGETOBJECTPTRLABELKHRPROC __rglgen_glGetObjectPtrLabelKHR;
+RGLSYMGLGETPOINTERVKHRPROC __rglgen_glGetPointervKHR;
 RGLSYMGLEGLIMAGETARGETTEXTURE2DOESPROC __rglgen_glEGLImageTargetTexture2DOES;
 RGLSYMGLEGLIMAGETARGETRENDERBUFFERSTORAGEOESPROC __rglgen_glEGLImageTargetRenderbufferStorageOES;
 RGLSYMGLGETPROGRAMBINARYOESPROC __rglgen_glGetProgramBinaryOES;
@@ -50,15 +61,4 @@ RGLSYMGLBINDVERTEXARRAYOESPROC __rglgen_glBindVertexArrayOES;
 RGLSYMGLDELETEVERTEXARRAYSOESPROC __rglgen_glDeleteVertexArraysOES;
 RGLSYMGLGENVERTEXARRAYSOESPROC __rglgen_glGenVertexArraysOES;
 RGLSYMGLISVERTEXARRAYOESPROC __rglgen_glIsVertexArrayOES;
-RGLSYMGLDEBUGMESSAGECONTROLPROC __rglgen_glDebugMessageControl;
-RGLSYMGLDEBUGMESSAGEINSERTPROC __rglgen_glDebugMessageInsert;
-RGLSYMGLDEBUGMESSAGECALLBACKPROC __rglgen_glDebugMessageCallback;
-RGLSYMGLGETDEBUGMESSAGELOGPROC __rglgen_glGetDebugMessageLog;
-RGLSYMGLPUSHDEBUGGROUPPROC __rglgen_glPushDebugGroup;
-RGLSYMGLPOPDEBUGGROUPPROC __rglgen_glPopDebugGroup;
-RGLSYMGLOBJECTLABELPROC __rglgen_glObjectLabel;
-RGLSYMGLGETOBJECTLABELPROC __rglgen_glGetObjectLabel;
-RGLSYMGLOBJECTPTRLABELPROC __rglgen_glObjectPtrLabel;
-RGLSYMGLGETOBJECTPTRLABELPROC __rglgen_glGetObjectPtrLabel;
-RGLSYMGLGETPOINTERVPROC __rglgen_glGetPointerv;
 

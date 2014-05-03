@@ -27,36 +27,13 @@
 #include "../config.h"
 #endif
 
-#if defined(IOS)
-#include <OpenGLES/ES2/gl.h>
-#include <OpenGLES/ES2/glext.h>
-#elif defined(__APPLE__) // Because they like to be "oh, so, special".
-#include <OpenGL/gl.h>
-#include <OpenGL/glext.h>
-#elif defined(HAVE_PSGL)
-#include <PSGL/psgl.h>
-#include <PSGL/psglu.h>
-#include <GLES/glext.h>
-#elif defined(HAVE_OPENGL_MODERN)
-#include <EGL/egl.h>
-#include <GL3/gl3.h>
-#include <GL3/gl3ext.h>
-#elif defined(HAVE_OPENGLES2)
-#include <GLES2/gl2.h>
-#elif defined(HAVE_OPENGLES1)
-#include <GLES/gl.h>
-#include <GLES/glext.h>
-#else
-#define GL_GLEXT_PROTOTYPES
-#include <GL/gl.h>
-#include <GL/glext.h>
-#endif
+#include "glsym/glsym.h"
 
 #include "gfx_context.h"
 #include <stdlib.h>
 
 #include "gl_common.h"
-#include "image.h"
+#include "image/image.h"
 
 #ifdef HAVE_OPENGLES2
 #define BORDER_FUNC GL_CLAMP_TO_EDGE
@@ -706,9 +683,10 @@ static void gl_glsl_deinit(void)
    memset(&glsl_vbo, 0, sizeof(glsl_vbo));
 }
 
-static bool gl_glsl_init(const char *path)
+static bool gl_glsl_init(void *data, const char *path)
 {
    unsigned i;
+   (void)data;
 #ifndef HAVE_OPENGLES2
    RARCH_LOG("Checking GLSL shader support ...\n");
    bool shader_support = glCreateProgram && glUseProgram && glCreateShader
@@ -871,7 +849,7 @@ error:
    return false;
 }
 
-static void gl_glsl_set_params(unsigned width, unsigned height, 
+static void gl_glsl_set_params(void *data, unsigned width, unsigned height, 
       unsigned tex_width, unsigned tex_height, 
       unsigned out_width, unsigned out_height,
       unsigned frame_count,
@@ -879,6 +857,7 @@ static void gl_glsl_set_params(unsigned width, unsigned height,
       const struct gl_tex_info *prev_info, 
       const struct gl_tex_info *fbo_info, unsigned fbo_info_cnt)
 {
+   (void)data;
    // We enforce a certain layout for our various texture types in the texunits.
    // - Regular frame (Texture) (always bound).
    // - LUT textures (always bound).
@@ -1077,8 +1056,9 @@ static void gl_glsl_set_params(unsigned width, unsigned height,
    }
 }
 
-static bool gl_glsl_set_mvp(const math_matrix *mat)
+static bool gl_glsl_set_mvp(void *data, const math_matrix *mat)
 {
+   (void)data;
    if (!glsl_enable || !glsl_shader->modern)
       return false;
 
@@ -1162,8 +1142,9 @@ static bool gl_glsl_set_coords(const struct gl_coords *coords)
    return true;
 }
 
-static void gl_glsl_use(unsigned index)
+static void gl_glsl_use(void *data, unsigned index)
 {
+   (void)data;
    if (glsl_enable)
    {
       gl_glsl_reset_attrib();

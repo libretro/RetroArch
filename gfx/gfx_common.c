@@ -70,7 +70,8 @@ bool gfx_get_fps(char *buf, size_t size, char *buf_fps, size_t size_fps)
 // We only load this library once, so we let it be unloaded at application shutdown,
 // since unloading it early seems to cause issues on some systems.
 
-static dylib_t dwmlib = NULL;
+static dylib_t dwmlib;
+static bool dwm_composition_disabled;
 
 static void gfx_dwm_shutdown(void)
 {
@@ -81,9 +82,9 @@ static void gfx_dwm_shutdown(void)
    }
 }
 
-void gfx_set_dwm(void)
+static void gfx_init_dwm(void)
 {
-   static bool inited = false;
+   static bool inited;
    if (inited)
       return;
    inited = true;
@@ -102,8 +103,15 @@ void gfx_set_dwm(void)
       RARCH_LOG("Setting multimedia scheduling for DWM.\n");
       mmcss(TRUE);
    }
+}
 
-   if (!g_settings.video.disable_composition)
+void gfx_set_dwm(void)
+{
+   gfx_init_dwm();
+   if (!dwmlib)
+      return;
+
+   if (g_settings.video.disable_composition == dwm_composition_disabled)
       return;
 
    HRESULT (WINAPI *composition_enable)(UINT) = (HRESULT (WINAPI*)(UINT))dylib_proc(dwmlib, "DwmEnableComposition");
@@ -113,9 +121,10 @@ void gfx_set_dwm(void)
       return;
    }
 
-   HRESULT ret = composition_enable(0);
+   HRESULT ret = composition_enable(!g_settings.video.disable_composition);
    if (FAILED(ret))
       RARCH_ERR("Failed to set composition state ...\n");
+   dwm_composition_disabled = g_settings.video.disable_composition;
 }
 #endif
 
@@ -138,6 +147,8 @@ void gfx_scale_integer(struct rarch_viewport *vp, unsigned width, unsigned heigh
    {
       // Use system reported sizes as these define the geometry for the "normal" case.
       unsigned base_height = g_extern.system.av_info.geometry.base_height;
+      if (base_height == 0)
+         base_height = 1;
       // Account for non-square pixels.
       // This is sort of contradictory with the goal of integer scale,
       // but it is desirable in some cases.
@@ -251,7 +262,18 @@ void gfx_set_config_viewport(void)
       if (geom->aspect_ratio > 0.0f && g_settings.video.aspect_ratio_auto)
          aspectratio_lut[ASPECT_RATIO_CONFIG].value = geom->aspect_ratio;
       else
-         aspectratio_lut[ASPECT_RATIO_CONFIG].value = (float)geom->base_width / geom->base_height; // 1:1 PAR.
+      {
+         unsigned base_width, base_height;
+         base_width  = geom->base_width;
+         base_height = geom->base_height;
+
+         // Get around division by zero errors
+         if (base_width == 0)
+            base_width = 1;
+         if (base_height == 0)
+            base_height = 1;
+         aspectratio_lut[ASPECT_RATIO_CONFIG].value = (float)base_width / base_height; // 1:1 PAR.
+      }
    }
    else
       aspectratio_lut[ASPECT_RATIO_CONFIG].value = g_settings.video.aspect_ratio;

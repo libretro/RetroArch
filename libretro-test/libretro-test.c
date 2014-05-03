@@ -9,6 +9,8 @@
 static uint16_t *frame_buf;
 static struct retro_log_callback logging;
 static bool use_audio_cb;
+static float last_aspect;
+static float last_sample_rate;
 
 static void fallback_log(enum retro_log_level level, const char *fmt, ...)
 {
@@ -37,8 +39,7 @@ unsigned retro_api_version(void)
 
 void retro_set_controller_port_device(unsigned port, unsigned device)
 {
-   (void)port;
-   (void)device;
+   logging.log(RETRO_LOG_INFO, "Plugging device %u into port %u.\n", device, port);
 }
 
 void retro_get_system_info(struct retro_system_info *info)
@@ -50,11 +51,33 @@ void retro_get_system_info(struct retro_system_info *info)
    info->valid_extensions = NULL; // Anything is fine, we don't care.
 }
 
+static retro_video_refresh_t video_cb;
+static retro_audio_sample_t audio_cb;
+static retro_audio_sample_batch_t audio_batch_cb;
+static retro_environment_t environ_cb;
+static retro_input_poll_t input_poll_cb;
+static retro_input_state_t input_state_cb;
+
 void retro_get_system_av_info(struct retro_system_av_info *info)
 {
+   float aspect = 4.0f / 3.0f;
+   struct retro_variable var = { .key = "test_aspect" };
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+   {
+      if (!strcmp(var.value, "4:3"))
+         aspect = 4.0f / 3.0f;
+      else if (!strcmp(var.value, "16:9"))
+         aspect = 16.0f / 9.0f;
+   }
+
+   float sampling_rate = 30000.0f;
+   var.key = "test_samplerate";
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+      sampling_rate = strtof(var.value, NULL);
+
    info->timing = (struct retro_system_timing) {
       .fps = 60.0,
-      .sample_rate = 30000.0,
+      .sample_rate = sampling_rate,
    };
 
    info->geometry = (struct retro_game_geometry) {
@@ -62,16 +85,12 @@ void retro_get_system_av_info(struct retro_system_av_info *info)
       .base_height  = 240,
       .max_width    = 320,
       .max_height   = 240,
-      .aspect_ratio = 4.0 / 3.0,
+      .aspect_ratio = aspect,
    };
-}
 
-static retro_video_refresh_t video_cb;
-static retro_audio_sample_t audio_cb;
-static retro_audio_sample_batch_t audio_batch_cb;
-static retro_environment_t environ_cb;
-static retro_input_poll_t input_poll_cb;
-static retro_input_state_t input_state_cb;
+   last_aspect = aspect;
+   last_sample_rate = sampling_rate;
+}
 
 static struct retro_rumble_interface rumble;
 
@@ -80,6 +99,8 @@ void retro_set_environment(retro_environment_t cb)
    environ_cb = cb;
 
    static const struct retro_variable vars[] = {
+      { "test_aspect", "Aspect Ratio; 4:3|16:9" },
+      { "test_samplerate", "Sample Rate; 30000|20000" },
       { "test_opt0", "Test option #0; false|true" },
       { "test_opt1", "Test option #1; 0" },
       { "test_opt2", "Test option #2; 0|1|foo|3" },
@@ -93,6 +114,34 @@ void retro_set_environment(retro_environment_t cb)
 
    if (!cb(RETRO_ENVIRONMENT_GET_LOG_INTERFACE, &logging))
       logging.log = fallback_log;
+
+   static const struct retro_subsystem_memory_info mem1[] = {{ "ram1", 0x400 }, { "ram2", 0x401 }};
+   static const struct retro_subsystem_memory_info mem2[] = {{ "ram3", 0x402 }, { "ram4", 0x403 }};
+
+   static const struct retro_subsystem_rom_info roms[] = {
+      { "Test Rom #1", "bin", false, false, true, mem1, 2, },
+      { "Test Rom #2", "bin", false, false, true, mem2, 2, },
+   };
+
+   static const struct retro_subsystem_info types[] = {
+      { "Foo", "foo", roms, 2, 0x200, },
+      { NULL },
+   };
+
+   cb(RETRO_ENVIRONMENT_SET_SUBSYSTEM_INFO, (void*)types);
+
+   static const struct retro_controller_description controllers[] = {
+      { "Dummy Controller #1", RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 0) },
+      { "Dummy Controller #2", RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 1) },
+      { "Augmented Joypad", RETRO_DEVICE_JOYPAD }, // Test overriding generic description in UI.
+   };
+
+   static const struct retro_controller_info ports[] = {
+      { controllers, 3 },
+      { NULL, 0 },
+   };
+
+   cb(RETRO_ENVIRONMENT_SET_CONTROLLER_INFO, (void*)ports);
 }
 
 void retro_set_audio_sample(retro_audio_sample_t cb)
@@ -157,6 +206,9 @@ static void update_input(void)
    int16_t mouse_y = input_state_cb(0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_Y);
    bool mouse_l    = input_state_cb(0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_LEFT);
    bool mouse_r    = input_state_cb(0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_RIGHT);
+   bool mouse_down = input_state_cb(0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_WHEELDOWN);
+   bool mouse_up   = input_state_cb(0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_WHEELUP);
+   bool mouse_middle = input_state_cb(0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_MIDDLE);
    if (mouse_x)
       logging.log(RETRO_LOG_INFO, "Mouse X: %d\n", mouse_x);
    if (mouse_y)
@@ -165,6 +217,12 @@ static void update_input(void)
       logging.log(RETRO_LOG_INFO, "Mouse L pressed.\n");
    if (mouse_r)
       logging.log(RETRO_LOG_INFO, "Mouse R pressed.\n");
+   if (mouse_down)
+      logging.log(RETRO_LOG_INFO, "Mouse wheeldown pressed.\n");
+   if (mouse_up)
+      logging.log(RETRO_LOG_INFO, "Mouse wheelup pressed.\n");
+   if (mouse_middle)
+      logging.log(RETRO_LOG_INFO, "Mouse middle pressed.\n");
 
    mouse_rel_x += mouse_x;
    mouse_rel_y += mouse_y;
@@ -224,7 +282,7 @@ static void render_checkered(void)
       for (unsigned x = 0; x < 320; x++)
       {
          unsigned index_x = ((x - x_coord) >> 4) & 1;
-         line[x] = (index_y ^ index_x) ? color_r : color_g; 
+         line[x] = (index_y ^ index_x) ? color_r : color_g;
       }
    }
 
@@ -234,7 +292,6 @@ static void render_checkered(void)
 
    video_cb(frame_buf, 320, 240, 320 << 1);
 }
-
 
 static void check_variables(void)
 {
@@ -248,6 +305,21 @@ static void check_variables(void)
    var.key = "test_opt2";
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
       logging.log(RETRO_LOG_INFO, "Key -> Val: %s -> %s.\n", var.key, var.value);
+
+   float last = last_aspect;
+   float last_rate = last_sample_rate;
+   struct retro_system_av_info info;
+   retro_get_system_av_info(&info);
+   if ((last != last_aspect && last != 0.0f) || (last_rate != last_sample_rate && last_rate != 0.0f))
+   {
+      // SET_SYSTEM_AV_INFO can only be called within retro_run().
+      // check_variables() is called once in retro_load_game(), but the checks
+      // on last and last_rate ensures this path is never hit that early.
+      // last_aspect and last_sample_rate are not updated until retro_get_system_av_info(),
+      // which must come after retro_load_game().
+      bool ret = environ_cb(RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO, &info);
+      logging.log(RETRO_LOG_INFO, "SET_SYSTEM_AV_INFO = %u.\n", ret);
+   }
 }
 
 static void audio_callback(void)
@@ -323,6 +395,8 @@ bool retro_load_game(const struct retro_game_info *info)
 
 void retro_unload_game(void)
 {
+   last_aspect = 0.0f;
+   last_sample_rate = 0.0f;
 }
 
 unsigned retro_get_region(void)
@@ -332,10 +406,11 @@ unsigned retro_get_region(void)
 
 bool retro_load_game_special(unsigned type, const struct retro_game_info *info, size_t num)
 {
-   (void)type;
-   (void)info;
-   (void)num;
-   return false;
+   if (type != 0x200)
+      return false;
+   if (num != 2)
+      return false;
+   return retro_load_game(NULL);
 }
 
 size_t retro_serialize_size(void)

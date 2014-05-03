@@ -25,19 +25,20 @@ OBJ = frontend/frontend.o \
 		core_options.o \
 		compat/compat.o \
 		cheats.o \
-		core_info.o \
+		frontend/info/core_info.o \
 		conf/config_file.o \
 		screenshot.o \
 		gfx/scaler/scaler.o \
 		gfx/shader_parse.o \
 		gfx/scaler/pixconv.o \
 		gfx/scaler/scaler_int.o \
-		gfx/scaler/filter.o \
-		gfx/image.o \
+		gfx/scaler/scaler_filter.o \
+		gfx/image/image.o \
 		gfx/fonts/fonts.o \
 		gfx/fonts/bitmapfont.o \
 		audio/resampler.o \
 		audio/sinc.o \
+		audio/cc_resampler.o \
 		performance.o
 
 JOYCONFIG_OBJ = tools/retroarch-joyconfig.o \
@@ -63,7 +64,9 @@ ifeq ($(findstring Haiku,$(OS)),)
    LIBS = -lm
 endif
 
-DEFINES = -DHAVE_CONFIG_H -DHAVE_SCREENSHOTS -DRARCH_INTERNAL
+DEFINES = -DHAVE_CONFIG_H -DHAVE_SCREENSHOTS -DRARCH_INTERNAL -DHAVE_CC_RESAMPLER
+
+#HAVE_LAKKA = 1
 
 ifeq ($(GLOBAL_CONFIG_DIR),)
    GLOBAL_CONFIG_DIR = /etc
@@ -93,8 +96,17 @@ ifneq ($(findstring Linux,$(OS)),)
 endif
 
 ifeq ($(HAVE_RGUI), 1)
-   OBJ += frontend/menu/menu_common.o frontend/menu/menu_settings.o frontend/menu/menu_context.o file_list.o frontend/menu/disp/rgui.o frontend/menu/history.o
+   OBJ += frontend/menu/menu_input_line_cb.o frontend/menu/menu_common.o frontend/menu/menu_navigation.o frontend/menu/file_list.o frontend/menu/disp/rgui.o  frontend/menu/history.o 
    DEFINES += -DHAVE_MENU
+   HAVE_MENU_COMMON = 1
+ifeq ($(HAVE_LAKKA), 1)
+   OBJ += frontend/menu/disp/lakka.o
+   DEFINES += -DHAVE_LAKKA
+endif
+endif
+
+ifeq ($(HAVE_MENU_COMMON), 1)
+   OBJ += frontend/menu/backend/menu_common_backend.o
 endif
 
 ifeq ($(HAVE_THREADS), 1)
@@ -116,12 +128,6 @@ ifeq ($(HAVE_COMMAND), 1)
    OBJ += command.o
 endif
 
-ifeq ($(HAVE_RSOUND), 1)
-   OBJ += audio/rsound.o
-   DEFINES += $(RSOUND_CFLAGS)
-   LIBS += $(RSOUND_LIBS)
-endif
-
 ifeq ($(HAVE_OSS), 1)
    OBJ += audio/oss.o
 endif
@@ -132,6 +138,12 @@ endif
 
 ifeq ($(HAVE_OSS_LIB), 1)
    LIBS += -lossaudio
+endif
+
+ifeq ($(HAVE_RSOUND), 1)
+   OBJ += audio/rsound.o
+   DEFINES += $(RSOUND_CFLAGS)
+   LIBS += $(RSOUND_LIBS)
 endif
 
 ifeq ($(HAVE_ALSA), 1)
@@ -293,6 +305,7 @@ endif
 
 ifeq ($(HAVE_DYLIB), 1)
    LIBS += $(DYLIB_LIB)
+   OBJ += gfx/filter.o
 endif
 
 ifeq ($(HAVE_FREETYPE), 1)
@@ -315,7 +328,7 @@ endif
 ifeq ($(HAVE_FFMPEG), 1)
    OBJ += record/ffemu.o
    LIBS += $(AVCODEC_LIBS) $(AVFORMAT_LIBS) $(AVUTIL_LIBS) $(SWSCALE_LIBS)
-   DEFINES += $(AVCODEC_CFLAGS) $(AVFORMAT_CFLAGS) $(AVUTIL_CFLAGS) $(SWSCALE_CFLAGS)
+   DEFINES += $(AVCODEC_CFLAGS) $(AVFORMAT_CFLAGS) $(AVUTIL_CFLAGS) $(SWSCALE_CFLAGS) -DHAVE_RECORD
 endif
 
 ifeq ($(HAVE_DYNAMIC), 1)
@@ -403,6 +416,8 @@ RARCH_RETROLAUNCH_OBJ := $(addprefix $(OBJDIR)/,$(RETROLAUNCH_OBJ))
 
 all: $(TARGET) config.mk
 
+-include $(RARCH_OBJ:.o=.d) $(RARCH_JOYCONFIG_OBJ:.o=.d) $(RARCH_RETROLAUNCH_OBJ:.o=.d)
+
 config.mk: configure qb/*
 	@echo "config.mk is outdated or non-existing. Run ./configure again."
 	@exit 1
@@ -423,37 +438,37 @@ tools/retrolaunch/retrolaunch: $(RARCH_RETROLAUNCH_OBJ)
 	@$(if $(Q), $(shell echo echo LD $@),)
 	$(Q)$(LD) -o $@ $(RARCH_RETROLAUNCH_OBJ) $(LIBS) $(LDFLAGS) $(LIBRARY_DIRS)
 
-$(OBJDIR)/%.o: %.c config.h config.mk $(HEADERS)
+$(OBJDIR)/%.o: %.c config.h config.mk
 	@mkdir -p $(dir $@)
 	@$(if $(Q), $(shell echo echo CC $<),)
-	$(Q)$(CC) $(CFLAGS) $(DEFINES) -c -o $@ $<
+	$(Q)$(CC) $(CFLAGS) $(DEFINES) -MMD -c -o $@ $<
 
 .FORCE:
 
 $(OBJDIR)/git_version.o: git_version.c .FORCE
 	@mkdir -p $(dir $@)
 	@$(if $(Q), $(shell echo echo CC $<),)
-	$(Q)$(CC) $(CFLAGS) $(DEFINES) -c -o $@ $<
+	$(Q)$(CC) $(CFLAGS) $(DEFINES) -MMD -c -o $@ $<
 
-$(OBJDIR)/tools/linuxraw_joypad.o: input/linuxraw_joypad.c $(HEADERS)
+$(OBJDIR)/tools/linuxraw_joypad.o: input/linuxraw_joypad.c
 	@mkdir -p $(dir $@)
 	@$(if $(Q), $(shell echo echo CC $<),)
-	$(Q)$(CC) $(CFLAGS) $(DEFINES) -DIS_JOYCONFIG -c -o $@ $<
+	$(Q)$(CC) $(CFLAGS) $(DEFINES) -MMD -DIS_JOYCONFIG -c -o $@ $<
 
-$(OBJDIR)/tools/udev_joypad.o: input/udev_joypad.c $(HEADERS)
+$(OBJDIR)/tools/udev_joypad.o: input/udev_joypad.c
 	@mkdir -p $(dir $@)
 	@$(if $(Q), $(shell echo echo CC $<),)
-	$(Q)$(CC) $(CFLAGS) $(DEFINES) -DIS_JOYCONFIG -c -o $@ $<
+	$(Q)$(CC) $(CFLAGS) $(DEFINES) -MMD -DIS_JOYCONFIG -c -o $@ $<
 
-$(OBJDIR)/tools/input_common_launch.o: input/input_common.c $(HEADERS)
+$(OBJDIR)/tools/input_common_launch.o: input/input_common.c
 	@mkdir -p $(dir $@)
 	@$(if $(Q), $(shell echo echo CC $<),)
-	$(Q)$(CC) $(CFLAGS) $(DEFINES) -DIS_RETROLAUNCH -c -o $@ $<
+	$(Q)$(CC) $(CFLAGS) $(DEFINES) -MMD -DIS_RETROLAUNCH -c -o $@ $<
 
-$(OBJDIR)/tools/input_common_joyconfig.o: input/input_common.c $(HEADERS)
+$(OBJDIR)/tools/input_common_joyconfig.o: input/input_common.c
 	@mkdir -p $(dir $@)
 	@$(if $(Q), $(shell echo echo CC $<),)
-	$(Q)$(CC) $(CFLAGS) $(DEFINES) -DIS_JOYCONFIG -c -o $@ $<
+	$(Q)$(CC) $(CFLAGS) $(DEFINES) -MMD -DIS_JOYCONFIG -c -o $@ $<
 
 $(OBJDIR)/%.o: %.S config.h config.mk $(HEADERS)
 	@mkdir -p $(dir $@)

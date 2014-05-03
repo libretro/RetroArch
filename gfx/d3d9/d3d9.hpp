@@ -86,7 +86,7 @@ void d3d_show_cursor(void *data, bool state);
 void d3d_make_d3dpp(void *data, const video_info_t *info, D3DPRESENT_PARAMETERS *d3dpp);
 bool d3d_alive_func(void *data);
 
-struct D3DVideo
+typedef struct d3d_video
 {
       const d3d_font_renderer_t *font_ctx;
       const gfx_ctx_driver_t *ctx_driver;
@@ -130,11 +130,10 @@ struct D3DVideo
 #endif
 
 #ifdef HAVE_MENU
-      overlay_t rgui;
+      overlay_t *rgui;
 #endif
-
-      RenderChain *chain;
-};
+      void *chain;
+} d3d_video_t;
 
 #ifndef _XBOX
 extern "C" bool dinput_handle_message(void *dinput, UINT message, WPARAM wParam, LPARAM lParam);

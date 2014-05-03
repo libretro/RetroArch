@@ -259,7 +259,7 @@ static void setup_font(void *data, const char *msg, GLfloat scale, GLfloat pos_x
       return;
 
    if (gl->shader)
-      gl->shader->use(GL_SHADER_STOCK_BLEND);
+      gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
 
    gl_set_viewport(gl, gl->win_width, gl->win_height, false, false);
 

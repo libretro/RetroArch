@@ -385,7 +385,7 @@ static void file_action(enum file_action action, NSString* source, NSString* tar
       NSString* text = [alertView textFieldAtIndex:0].text;
 
       if (text.length)
-         file_action(alertView.tag, self.selectedItem.path, [_path stringByAppendingPathComponent:text]);
+         file_action((enum file_action)alertView.tag, self.selectedItem.path, [_path stringByAppendingPathComponent:text]);
    }
 
    [self browseTo:_path];

@@ -35,8 +35,10 @@
 #elif defined(_WIN32) && defined(_XBOX)
 #include <Xtl.h>
 #endif
+#include "msvc/msvc_compat.h"
 
 #include "retroarch_logger.h"
+#include <limits.h>
 
 // Some platforms do not set this value.
 // Just assume a value. It's usually 4KiB.
@@ -55,7 +57,7 @@
 #endif
 
 #define rarch_assert(cond) do { \
-   if (!(cond)) { RARCH_ERR("Assertion failed at %s:%d.\n", __FILE__, __LINE__); exit(2); } \
+   if (!(cond)) { RARCH_ERR("Assertion failed at %s:%d.\n", __FILE__, __LINE__); abort(); } \
 } while(0)
 
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))

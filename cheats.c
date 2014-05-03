@@ -169,7 +169,7 @@ static void cheat_manager_load_config(cheat_manager_t *handle, const char *path,
       return;
    }
 
-   char *save;
+   char *save = NULL;
    const char *num = strtok_r(str, ";", &save);
    while (num)
    {

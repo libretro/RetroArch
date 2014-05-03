@@ -34,9 +34,9 @@
 
 struct gl_shader_backend
 {
-   bool (*init)(const char *path);
+   bool (*init)(void *data, const char *path);
    void (*deinit)(void);
-   void (*set_params)(unsigned width, unsigned height, 
+   void (*set_params)(void *data, unsigned width, unsigned height, 
          unsigned tex_width, unsigned tex_height, 
          unsigned out_width, unsigned out_height,
          unsigned frame_counter,
@@ -44,13 +44,13 @@ struct gl_shader_backend
          const struct gl_tex_info *prev_info,
          const struct gl_tex_info *fbo_info, unsigned fbo_info_cnt);
 
-   void (*use)(unsigned index);
+   void (*use)(void *data, unsigned index);
    unsigned (*num_shaders)(void);
    bool (*filter_type)(unsigned index, bool *smooth);
    enum gfx_wrap_type (*wrap_type)(unsigned index);
    void (*shader_scale)(unsigned index, struct gfx_fbo_scale *scale);
    bool (*set_coords)(const struct gl_coords *coords);
-   bool (*set_mvp)(const math_matrix *mat);
+   bool (*set_mvp)(void *data, const math_matrix *mat);
    unsigned (*get_prev_textures)(void);
 
    enum rarch_shader_type type;

@@ -3,11 +3,10 @@
   <ItemGroup>
     <ClCompile Include="..\..\autosave.c" />
     <ClCompile Include="..\..\cheats.c" />
-    <ClCompile Include="..\..\core_info.c" />
     <ClCompile Include="..\..\core_options.c" />
     <ClCompile Include="..\..\file_extract.c" />
     <ClCompile Include="..\..\frontend\menu\history.c" />
-    <ClCompile Include="..\..\file_list.c" />
+    <ClCompile Include="..\..\frontend\menu\file_list.c" />
     <ClCompile Include="..\..\performance.c" />
     <ClCompile Include="..\..\command.c" />
     <ClCompile Include="..\..\conf\config_file.c" />
@@ -37,12 +36,6 @@
       <Filter>gfx</Filter>
     </ClCompile>
     <ClCompile Include="..\..\frontend\menu\menu_common.c">
-      <Filter>frontend\menu</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\frontend\menu\menu_context.c">
-      <Filter>frontend\menu</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\frontend\menu\menu_settings.c">
       <Filter>frontend\menu</Filter>
     </ClCompile>
     <ClCompile Include="..\..\frontend\menu\disp\rgui.c">
@@ -111,9 +104,6 @@
     <ClCompile Include="..\..\gfx\rpng\rpng.c">
       <Filter>gfx\rpng</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\gfx\image.c">
-      <Filter>gfx</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\input\input_common.c">
       <Filter>input</Filter>
     </ClCompile>
@@ -138,7 +128,7 @@
     <ClCompile Include="..\..\gfx\scaler\scaler_int.c">
       <Filter>gfx\scaler</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\gfx\scaler\filter.c">
+    <ClCompile Include="..\..\gfx\scaler\scaler_filter.c">
       <Filter>gfx\scaler</Filter>
     </ClCompile>
     <ClCompile Include="..\..\gfx\d3d9\render_chain.cpp">
@@ -149,9 +139,6 @@
     </ClCompile>
     <ClCompile Include="..\..\input\autoconf\builtin_win.c">
       <Filter>input\autoconf</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\gfx\d3d9\d3d9_pc.cpp">
-      <Filter>gfx\d3d9</Filter>
     </ClCompile>
     <ClCompile Include="..\..\gfx\d3d9\d3d.cpp">
       <Filter>gfx\d3d9</Filter>
@@ -225,6 +212,28 @@
     <ClCompile Include="..\..\input\overlay.c">
       <Filter>input</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\gfx\image\image.c" />
+    <ClCompile Include="..\..\frontend\menu\menu_input_line_cb.c">
+      <Filter>frontend\menu</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\frontend\menu\menu_navigation.c">
+      <Filter>frontend\menu</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\frontend\info\core_info.c">
+      <Filter>frontend\menu\info</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\gfx\context\d3d_ctx.cpp">
+      <Filter>gfx\context</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\gfx\filter.c">
+      <Filter>gfx</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\audio\cc_resampler.c">
+      <Filter>audio</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\frontend\menu\backend\menu_common_backend.c">
+      <Filter>frontend\menu\backend</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="resource.h" />
@@ -286,6 +295,12 @@
     </Filter>
     <Filter Include="deps\zlib">
       <UniqueIdentifier>{cf7c2fb9-ca3c-468e-af4f-74c652b3e5fe}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="frontend\menu\info">
+      <UniqueIdentifier>{bc290b55-620e-4351-b3b8-4d7a0a3b8792}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="frontend\menu\backend">
+      <UniqueIdentifier>{dd1ca879-56f4-43f6-8bd8-ae50222061e8}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

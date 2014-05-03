@@ -21,12 +21,17 @@
 #include <xtl.h>
 #endif
 
-#define MAX_PADS 4
-#define DEADZONE (16000)
-
 #include "../driver.h"
 #include "../general.h"
 #include "../libretro.h"
+
+#define MAX_PADS 4
+
+enum input_devices
+{
+   DEVICE_XBOX_PAD = 0,
+   DEVICE_LAST
+};
 
 typedef struct xdk_input
 {
@@ -169,10 +174,6 @@ static void xdk_input_poll(void *data)
    unsigned int dwInsertions, dwRemovals;
    XGetDeviceChanges(XDEVICE_TYPE_GAMEPAD, reinterpret_cast<PDWORD>(&dwInsertions), reinterpret_cast<PDWORD>(&dwRemovals));
 #endif
-   xdk->analog_state[0][0][0] = xdk->analog_state[0][0][1] = xdk->analog_state[0][1][0] = xdk->analog_state[0][1][1] = 0;
-   xdk->analog_state[1][0][0] = xdk->analog_state[1][0][1] = xdk->analog_state[1][1][0] = xdk->analog_state[1][1][1] = 0;
-   xdk->analog_state[2][0][0] = xdk->analog_state[2][0][1] = xdk->analog_state[2][1][0] = xdk->analog_state[2][1][1] = 0;
-   xdk->analog_state[3][0][0] = xdk->analog_state[3][0][1] = xdk->analog_state[3][1][0] = xdk->analog_state[3][1][1] = 0;
 
    for (unsigned port = 0; port < MAX_PADS; port++)
    {
@@ -385,7 +386,7 @@ static void *xdk_input_init(void)
 
 static bool xdk_input_key_pressed(void *data, int key)
 {
-   return (g_extern.lifecycle_state & (1ULL << key));
+   return (g_extern.lifecycle_state & (1ULL << key)) || input_joypad_pressed(&xdk_joypad, 0, g_settings.input.binds[0], key);
 }
 
 static uint64_t xdk_input_get_capabilities(void *data)
@@ -407,6 +408,7 @@ static bool xdk_input_set_rumble(void *data, unsigned port, enum retro_rumble_ef
    bool val = false;
 
   
+#if 0
 #if defined(_XBOX360)
    XINPUT_VIBRATION rumble_state;
 
@@ -426,12 +428,18 @@ static bool xdk_input_set_rumble(void *data, unsigned port, enum retro_rumble_ef
    val = XInputSetState(xdk->gamepads[port], &rumble_state) == ERROR_SUCCESS;
 #endif
 #endif
+#endif
    return val;
 }
 
 static const rarch_joypad_driver_t *xdk_input_get_joypad_driver(void *data)
 {
    return &xdk_joypad;
+}
+
+static unsigned xdk_input_devices_size(void *data)
+{
+   return DEVICE_LAST;
 }
 
 const input_driver_t input_xinput = 
@@ -445,6 +453,7 @@ const input_driver_t input_xinput =
    NULL,
    NULL,
    xdk_input_get_capabilities,
+   xdk_input_devices_size,
    "xinput",
 
    NULL,

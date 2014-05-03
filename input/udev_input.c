@@ -98,7 +98,7 @@ struct udev_input
 
    int16_t mouse_x;
    int16_t mouse_y;
-   bool mouse_l, mouse_r, mouse_m;
+   bool mouse_l, mouse_r, mouse_m, mouse_wu, mouse_wd;
 };
 
 static inline bool get_bit(const uint8_t *buf, unsigned bit)
@@ -232,6 +232,7 @@ static void udev_handle_mouse(udev_input_t *udev, const struct input_event *even
    switch (event->type)
    {
       case EV_KEY:
+         /* TODO: mouse wheel up/down */
          switch (event->code)
          {
             case BTN_LEFT:
@@ -245,7 +246,6 @@ static void udev_handle_mouse(udev_input_t *udev, const struct input_event *even
             case BTN_MIDDLE:
                udev->mouse_m = event->value;
                break;
-
             default:
                break;
          }
@@ -451,6 +451,8 @@ static int16_t udev_mouse_state(udev_input_t *udev, unsigned id)
          return udev->mouse_l;
       case RETRO_DEVICE_ID_MOUSE_RIGHT:
          return udev->mouse_r;
+      case RETRO_DEVICE_ID_MOUSE_MIDDLE:
+         return udev->mouse_m;
       default:
          return 0;
    }
@@ -816,6 +818,7 @@ const input_driver_t input_udev = {
    NULL,
    NULL,
    udev_input_get_capabilities,
+   NULL,
    "udev",
    udev_input_grab_mouse,
    udev_input_set_rumble,

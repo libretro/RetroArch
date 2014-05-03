@@ -20,15 +20,15 @@
 #include "../../gfx/gfx_context.h"
 
 // These functions must only be called in gfx/context/apple_gl_context.c
-bool apple_gfx_ctx_init(void);
-void apple_gfx_ctx_destroy(void);
-bool apple_gfx_ctx_bind_api(enum gfx_ctx_api api, unsigned major, unsigned minor);
-void apple_gfx_ctx_swap_interval(unsigned interval);
-bool apple_gfx_ctx_set_video_mode(unsigned width, unsigned height, bool fullscreen);
-void apple_gfx_ctx_get_video_size(unsigned* width, unsigned* height);
-void apple_gfx_ctx_update_window_title(void);
-bool apple_gfx_ctx_has_focus(void);
-void apple_gfx_ctx_swap_buffers(void);
+bool apple_gfx_ctx_init(void *data);
+void apple_gfx_ctx_destroy(void *data);
+bool apple_gfx_ctx_bind_api(void *data, enum gfx_ctx_api api, unsigned major, unsigned minor);
+void apple_gfx_ctx_swap_interval(void *data, unsigned interval);
+bool apple_gfx_ctx_set_video_mode(void *data, unsigned width, unsigned height, bool fullscreen);
+void apple_gfx_ctx_get_video_size(void *data, unsigned* width, unsigned* height);
+void apple_gfx_ctx_update_window_title(void *data);
+bool apple_gfx_ctx_has_focus(void *data);
+void apple_gfx_ctx_swap_buffers(void *data);
 gfx_ctx_proc_t apple_gfx_ctx_get_proc_address(const char *symbol_name);
 
 #ifdef IOS

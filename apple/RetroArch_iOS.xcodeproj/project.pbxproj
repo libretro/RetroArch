@@ -9,8 +9,6 @@
 /* Begin PBXBuildFile section */
 		501881EC184BAD6D006F665D /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 501881EB184BAD6D006F665D /* AVFoundation.framework */; };
 		501881EE184BB54C006F665D /* CoreMedia.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 501881ED184BB54C006F665D /* CoreMedia.framework */; };
-		5027DAD91871E55B007F4DA5 /* sinc_neon.S in Sources */ = {isa = PBXBuildFile; fileRef = 5027DAD81871E55B007F4DA5 /* sinc_neon.S */; };
-		5027DADB1871E572007F4DA5 /* utils_neon.S in Sources */ = {isa = PBXBuildFile; fileRef = 5027DADA1871E572007F4DA5 /* utils_neon.S */; };
 		509FC979183F9F18007A5A30 /* menu.m in Sources */ = {isa = PBXBuildFile; fileRef = 509FC978183F9F18007A5A30 /* menu.m */; };
 		50CCC828185E0E7D001F5BC8 /* CoreLocation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 50CCC827185E0E7D001F5BC8 /* CoreLocation.framework */; };
 		50E7189F184B88AA001956CE /* CoreVideo.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 50E7189E184B88AA001956CE /* CoreVideo.framework */; };
@@ -46,8 +44,6 @@
 /* Begin PBXFileReference section */
 		501881EB184BAD6D006F665D /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
 		501881ED184BB54C006F665D /* CoreMedia.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreMedia.framework; path = System/Library/Frameworks/CoreMedia.framework; sourceTree = SDKROOT; };
-		5027DAD81871E55B007F4DA5 /* sinc_neon.S */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.asm; path = sinc_neon.S; sourceTree = "<group>"; };
-		5027DADA1871E572007F4DA5 /* utils_neon.S */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.asm; path = utils_neon.S; sourceTree = "<group>"; };
 		509FC978183F9F18007A5A30 /* menu.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = menu.m; path = iOS/menu.m; sourceTree = SOURCE_ROOT; };
 		50CCC827185E0E7D001F5BC8 /* CoreLocation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreLocation.framework; path = System/Library/Frameworks/CoreLocation.framework; sourceTree = SDKROOT; };
 		50E7189E184B88AA001956CE /* CoreVideo.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreVideo.framework; path = System/Library/Frameworks/CoreVideo.framework; sourceTree = SDKROOT; };
@@ -209,8 +205,6 @@
 		96AFAEE516C1DC73009DE44C /* audio */ = {
 			isa = PBXGroup;
 			children = (
-				5027DADA1871E572007F4DA5 /* utils_neon.S */,
-				5027DAD81871E55B007F4DA5 /* sinc_neon.S */,
 			);
 			name = audio;
 			path = ../audio;
@@ -318,9 +312,7 @@
 				963C3C32186E3D2600A6EB1E /* apple_gamecontroller.m in Sources */,
 				96297A0F16C5AEA100E6DCE0 /* main.m in Sources */,
 				963F5AC816CC523B009BBD19 /* RAGameView.m in Sources */,
-				5027DADB1871E572007F4DA5 /* utils_neon.S in Sources */,
 				D48581DE16F823F9004BEB17 /* griffin.c in Sources */,
-				5027DAD91871E55B007F4DA5 /* sinc_neon.S in Sources */,
 				96337E82176AC6E5004685F3 /* utility.m in Sources */,
 				509FC979183F9F18007A5A30 /* menu.m in Sources */,
 				9678945B1788EAAE00D6CA69 /* browser.m in Sources */,
@@ -366,10 +358,11 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				HEADER_SEARCH_PATHS = ../;
-				IPHONEOS_DEPLOYMENT_TARGET = 6.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 5.1;
 				ONLY_ACTIVE_ARCH = YES;
 				OTHER_CFLAGS = (
 					"-DHAVE_CAMERA",
+					"-DHAVE_CC_RESAMPLER",
 					"-DHAVE_GRIFFIN",
 					"-DHAVE_LOCATION",
 					"-DHAVE_RGUI",
@@ -379,12 +372,11 @@
 					"-DHAVE_OPENGL",
 					"-DHAVE_FBO",
 					"-DHAVE_OPENGLES",
-					"-DHAVE_VID_CONTEXT",
 					"-DHAVE_OPENGLES2",
 					"-DHAVE_GLSL",
 					"-DINLINE=inline",
 					"-DLSB_FIRST",
-					"-DHAVE_THREAD",
+					"-DHAVE_THREADS",
 					"-D__LIBRETRO__",
 					"-DRARCH_MOBILE",
 					"-std=gnu99",
@@ -413,15 +405,17 @@
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "";
 				COPY_PHASE_STRIP = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_OPTIMIZATION_LEVEL = 2;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNINITIALIZED_AUTOS = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				HEADER_SEARCH_PATHS = ../;
-				IPHONEOS_DEPLOYMENT_TARGET = 6.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 5.1;
 				OTHER_CFLAGS = (
 					"-DNS_BLOCK_ASSERTIONS=1",
 					"-DNDEBUG",
 					"-DHAVE_CAMERA",
+					"-DHAVE_CC_RESAMPLER",
 					"-DHAVE_GRIFFIN",
 					"-DHAVE_LOCATION",
 					"-DHAVE_RGUI",
@@ -431,12 +425,11 @@
 					"-DHAVE_OPENGL",
 					"-DHAVE_FBO",
 					"-DHAVE_OPENGLES",
-					"-DHAVE_VID_CONTEXT",
 					"-DHAVE_OPENGLES2",
 					"-DHAVE_GLSL",
 					"-DINLINE=inline",
 					"-DLSB_FIRST",
-					"-DHAVE_THREAD",
+					"-DHAVE_THREADS",
 					"-D__LIBRETRO__",
 					"-DRARCH_MOBILE",
 					"-std=gnu99",
@@ -467,6 +460,7 @@
 				LIBRARY_SEARCH_PATHS = "";
 				OTHER_CFLAGS = (
 					"-DHAVE_CAMERA",
+					"-DHAVE_CC_RESAMPLER",
 					"-DHAVE_GRIFFIN",
 					"-DHAVE_LOCATION",
 					"-DHAVE_RGUI",
@@ -475,7 +469,6 @@
 					"-DHAVE_OPENGL",
 					"-DHAVE_FBO",
 					"-DHAVE_OPENGLES",
-					"-DHAVE_VID_CONTEXT",
 					"-DHAVE_OPENGLES2",
 					"-DHAVE_GLSL",
 					"-DINLINE=inline",
@@ -512,6 +505,7 @@
 					"-DNS_BLOCK_ASSERTIONS=1",
 					"-DNDEBUG",
 					"-DHAVE_CAMERA",
+					"-DHAVE_CC_RESAMPLER",
 					"-DHAVE_GRIFFIN",
 					"-DHAVE_LOCATION",
 					"-DHAVE_RGUI",
@@ -520,7 +514,33 @@
 					"-DHAVE_OPENGL",
 					"-DHAVE_FBO",
 					"-DHAVE_OPENGLES",
-					"-DHAVE_VID_CONTEXT",
+					"-DHAVE_OPENGLES2",
+					"-DHAVE_GLSL",
+					"-DINLINE=inline",
+					"-DLSB_FIRST",
+					"-D__LIBRETRO__",
+					"-DRARCH_MOBILE",
+					"-DHAVE_COREAUDIO",
+					"-DHAVE_DYNAMIC",
+					"-DHAVE_OVERLAY",
+					"-DHAVE_ZLIB",
+					"-DWANT_MINIZ",
+					"-DSINC_LOWER_QUALITY",
+					"-DRARCH_INTERNAL",
+				);
+				"OTHER_CFLAGS[arch=*]" = (
+					"-DNS_BLOCK_ASSERTIONS=1",
+					"-DNDEBUG",
+					"-DHAVE_CAMERA",
+					"-DHAVE_CC_RESAMPLER",
+					"-DHAVE_GRIFFIN",
+					"-DHAVE_LOCATION",
+					"-DHAVE_RGUI",
+					"-DHAVE_MENU",
+					"-DIOS",
+					"-DHAVE_OPENGL",
+					"-DHAVE_FBO",
+					"-DHAVE_OPENGLES",
 					"-DHAVE_OPENGLES2",
 					"-DHAVE_GLSL",
 					"-DINLINE=inline",

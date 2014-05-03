@@ -16,9 +16,9 @@ include $(CELL_MK_DIR)/sdk.makedef.mk
 PPU_LIB_TARGET		= librgl_ps3.a
 
 LDDIRS = -L.
-INCDIRS = -I. -Ips3/rgl/include
+INCDIRS = -I. -Ips3/gcmgl/include
 
-RGL_DIR = ps3/rgl/src
+RGL_DIR = ps3/gcmgl/src
 
 PPU_SRCS		=  $(RGL_DIR)/libelf/readelf.c \
 			  $(RGL_DIR)/rgl_ps3_raster.cpp \
@@ -48,10 +48,6 @@ ifeq ($(DEBUG), 1)
    PPU_OPTIMIZE_LV	:= -O0 -g
 else
    PPU_OPTIMIZE_LV	:= -O3
-endif
-
-ifeq ($(RGL_2D), 1)
-	PPU_OPTIMIZE_LV += -DHAVE_RGL_2D
 endif
 
 PPU_CFLAGS = $(PPU_OPTIMIZE_LV) $(INCDIRS) $(DEFINES)

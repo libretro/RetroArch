@@ -30,7 +30,7 @@ typedef struct sdl_input
 
    int mouse_x, mouse_y;
    int mouse_abs_x, mouse_abs_y;
-   int mouse_l, mouse_r, mouse_m;
+   int mouse_l, mouse_r, mouse_m, mouse_wu, mouse_wd;
 } sdl_input_t;
 
 static void *sdl_input_init(void)
@@ -120,10 +120,16 @@ static int16_t sdl_mouse_device_state(sdl_input_t *sdl, unsigned id)
          return sdl->mouse_l;
       case RETRO_DEVICE_ID_MOUSE_RIGHT:
          return sdl->mouse_r;
+      case RETRO_DEVICE_ID_MOUSE_WHEELUP:
+         return sdl->mouse_wu;
+      case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
+         return sdl->mouse_wd;
       case RETRO_DEVICE_ID_MOUSE_X:
          return sdl->mouse_x;
       case RETRO_DEVICE_ID_MOUSE_Y:
          return sdl->mouse_y;
+      case RETRO_DEVICE_ID_MOUSE_MIDDLE:
+         return sdl->mouse_m;
       default:
          return 0;
    }
@@ -245,9 +251,11 @@ static void sdl_poll_mouse(sdl_input_t *sdl)
 {
    Uint8 btn = SDL_GetRelativeMouseState(&sdl->mouse_x, &sdl->mouse_y);
    SDL_GetMouseState(&sdl->mouse_abs_x, &sdl->mouse_abs_y);
-   sdl->mouse_l = SDL_BUTTON(SDL_BUTTON_LEFT) & btn ? 1 : 0;
-   sdl->mouse_r = SDL_BUTTON(SDL_BUTTON_RIGHT) & btn ? 1 : 0;
-   sdl->mouse_m = SDL_BUTTON(SDL_BUTTON_MIDDLE) & btn ? 1 : 0;
+   sdl->mouse_l  = SDL_BUTTON(SDL_BUTTON_LEFT)      & btn ? 1 : 0;
+   sdl->mouse_r  = SDL_BUTTON(SDL_BUTTON_RIGHT)     & btn ? 1 : 0;
+   sdl->mouse_m  = SDL_BUTTON(SDL_BUTTON_MIDDLE)    & btn ? 1 : 0;
+   sdl->mouse_wu = SDL_BUTTON(SDL_BUTTON_WHEELUP)   & btn ? 1 : 0;
+   sdl->mouse_wd = SDL_BUTTON(SDL_BUTTON_WHEELDOWN) & btn ? 1 : 0;
 }
 
 static void sdl_input_poll(void *data)
@@ -283,6 +291,7 @@ const input_driver_t input_sdl = {
    NULL,
    NULL,
    sdl_get_capabilities,
+   NULL,
    "sdl",
    NULL,
    sdl_set_rumble,

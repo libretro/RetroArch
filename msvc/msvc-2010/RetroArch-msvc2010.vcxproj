@@ -100,7 +100,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;RARCH_INTERNAL;HAVE_WIN32_D3D9;HAVE_CG;HAVE_GLSL;HAVE_FBO;HAVE_ZLIB;WANT_MINIZ;_DEBUG;_WINDOWS;%(PreprocessorDefinitions);HAVE_SCREENSHOTS;HAVE_BSV_MOVIE;HAVE_BUILTIN_AUTOCONFIG;HAVE_DINPUT;HAVE_WINXINPUT;HAVE_XAUDIO;HAVE_DSOUND;HAVE_OPENGL;HAVE_DYLIB;HAVE_NETPLAY;HAVE_NETWORK_CMD;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;HAVE_DYNAMIC;_CRT_NONSTDC_NO_WARNINGS;_CRT_SECURE_NO_WARNINGS;__SSE__;__i686__;HAVE_OVERLAY;HAVE_RGUI;HAVE_GL_SYNC;HAVE_MENU</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;RARCH_INTERNAL;HAVE_WIN32_D3D9;HAVE_CG;HAVE_GLSL;HAVE_FBO;HAVE_ZLIB;WANT_MINIZ;HAVE_CC_RESAMPLER;_DEBUG;_WINDOWS;%(PreprocessorDefinitions);HAVE_SCREENSHOTS;HAVE_BSV_MOVIE;HAVE_BUILTIN_AUTOCONFIG;HAVE_DINPUT;HAVE_WINXINPUT;HAVE_XAUDIO;HAVE_DSOUND;HAVE_OPENGL;HAVE_DYLIB;HAVE_NETPLAY;HAVE_NETWORK_CMD;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;HAVE_DYNAMIC;_CRT_NONSTDC_NO_WARNINGS;_CRT_SECURE_NO_WARNINGS;__SSE__;__i686__;HAVE_OVERLAY;HAVE_RGUI;HAVE_GL_SYNC;HAVE_MENU</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(MSBuildProjectDirectory);$(MSBuildProjectDirectory)\..\..\;$(CG_INC_PATH);$(MSBuildProjectDirectory)\..\..\deps\rzlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <CompileAs>CompileAsCpp</CompileAs>
@@ -120,7 +120,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;RARCH_INTERNAL;HAVE_WIN32_D3D9;HAVE_CG;HAVE_GLSL;HAVE_FBO;HAVE_ZLIB;WANT_MINIZ;_DEBUG;_WINDOWS;%(PreprocessorDefinitions);HAVE_SCREENSHOTS;HAVE_BSV_MOVIE;HAVE_BUILTIN_AUTOCONFIG;HAVE_DINPUT;HAVE_WINXINPUT;HAVE_XAUDIO;HAVE_DSOUND;HAVE_OPENGL;HAVE_DYLIB;HAVE_NETPLAY;HAVE_NETWORK_CMD;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;HAVE_DYNAMIC;_CRT_SECURE_NO_WARNINGS;__SSE__;__SSE2__;__x86_64__;HAVE_OVERLAY;HAVE_RGUI;HAVE_GL_SYNC</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;RARCH_INTERNAL;HAVE_WIN32_D3D9;HAVE_CG;HAVE_GLSL;HAVE_FBO;HAVE_ZLIB;WANT_MINIZ;_DEBUG;_WINDOWS;%(PreprocessorDefinitions);HAVE_SCREENSHOTS;HAVE_BSV_MOVIE;HAVE_BUILTIN_AUTOCONFIG;HAVE_DINPUT;HAVE_WINXINPUT;HAVE_XAUDIO;HAVE_DSOUND;HAVE_OPENGL;HAVE_DYLIB;HAVE_NETPLAY;HAVE_NETWORK_CMD;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;HAVE_DYNAMIC;_CRT_SECURE_NO_WARNINGS;__SSE__;__SSE2__;__x86_64__;HAVE_OVERLAY;HAVE_RGUI;HAVE_GL_SYNC;HAVE_MENU</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(MSBuildProjectDirectory);$(MSBuildProjectDirectory)\..\..\;$(CG_INC_PATH);$(MSBuildProjectDirectory)\..\..\deps\rzlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <CompileAs>CompileAsCpp</CompileAs>
@@ -142,7 +142,7 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;RARCH_INTERNAL;HAVE_WIN32_D3D9;HAVE_CG;HAVE_GLSL;HAVE_FBO;HAVE_ZLIB;WANT_MINIZ;NDEBUG;_WINDOWS;%(PreprocessorDefinitions);HAVE_SCREENSHOTS;HAVE_BSV_MOVIE;HAVE_BUILTIN_AUTOCONFIG;HAVE_DINPUT;HAVE_WINXINPUT;HAVE_XAUDIO;HAVE_DSOUND;HAVE_OPENGL;HAVE_DYLIB;HAVE_NETPLAY;HAVE_NETWORK_CMD;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;HAVE_DYNAMIC;_CRT_NONSTDC_NO_WARNINGS;_CRT_SECURE_NO_WARNINGS;__SSE__;__i686__;HAVE_OVERLAY;HAVE_MENU;HAVE_RGUI;HAVE_GL_SYNC</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;RARCH_INTERNAL;HAVE_WIN32_D3D9;HAVE_CG;HAVE_GLSL;HAVE_FBO;HAVE_ZLIB;WANT_MINIZ;HAVE_CC_RESAMPLER;NDEBUG;_WINDOWS;%(PreprocessorDefinitions);HAVE_SCREENSHOTS;HAVE_BSV_MOVIE;HAVE_BUILTIN_AUTOCONFIG;HAVE_DINPUT;HAVE_WINXINPUT;HAVE_XAUDIO;HAVE_DSOUND;HAVE_OPENGL;HAVE_DYLIB;HAVE_NETPLAY;HAVE_NETWORK_CMD;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;HAVE_DYNAMIC;_CRT_NONSTDC_NO_WARNINGS;_CRT_SECURE_NO_WARNINGS;__SSE__;__i686__;HAVE_OVERLAY;HAVE_MENU;HAVE_RGUI;HAVE_GL_SYNC</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(MSBuildProjectDirectory);$(MSBuildProjectDirectory)\..\..\;$(CG_INC_PATH);$(MSBuildProjectDirectory)\..\..\deps\rzlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <CompileAs>CompileAsCpp</CompileAs>
@@ -166,7 +166,7 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;RARCH_INTERNAL;HAVE_WIN32_D3D9;HAVE_CG;HAVE_GLSL;HAVE_FBO;NDEBUG;_WINDOWS;%(PreprocessorDefinitions);HAVE_SCREENSHOTS;HAVE_BSV_MOVIE;HAVE_BUILTIN_AUTOCONFIG;HAVE_DINPUT;HAVE_WINXINPUT;HAVE_XAUDIO;HAVE_DSOUND;HAVE_OPENGL;HAVE_DYLIB;HAVE_NETPLAY;HAVE_NETWORK_CMD;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;HAVE_DYNAMIC;HAVE_ZLIB;WANT_MINIZ;_CRT_SECURE_NO_WARNINGS;__SSE__;__SSE2__;__x86_64__;HAVE_OVERLAY;HAVE_RGUI;HAVE_GL_SYNC</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;RARCH_INTERNAL;HAVE_WIN32_D3D9;HAVE_CG;HAVE_GLSL;HAVE_FBO;NDEBUG;_WINDOWS;%(PreprocessorDefinitions);HAVE_SCREENSHOTS;HAVE_BSV_MOVIE;HAVE_BUILTIN_AUTOCONFIG;HAVE_DINPUT;HAVE_WINXINPUT;HAVE_XAUDIO;HAVE_DSOUND;HAVE_OPENGL;HAVE_DYLIB;HAVE_NETPLAY;HAVE_NETWORK_CMD;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;HAVE_DYNAMIC;HAVE_ZLIB;WANT_MINIZ;_CRT_SECURE_NO_WARNINGS;__SSE__;__SSE2__;__x86_64__;HAVE_OVERLAY;HAVE_RGUI;HAVE_GL_SYNC;HAVE_MENU</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(MSBuildProjectDirectory);$(MSBuildProjectDirectory)\..\..\;$(MSBuildProjectDirectory)\..\..\deps\rzlib;$(CG_INC_PATH);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <CompileAs>CompileAsCpp</CompileAs>
@@ -183,6 +183,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\audio\cc_resampler.c" />
     <ClCompile Include="..\..\audio\dsound.c">
     </ClCompile>
     <ClCompile Include="..\..\audio\resampler.c" />
@@ -197,7 +198,6 @@
     </ClCompile>
     <ClCompile Include="..\..\cheats.c" />
     <ClCompile Include="..\..\compat\rxml\rxml.c" />
-    <ClCompile Include="..\..\core_info.c" />
     <ClCompile Include="..\..\core_options.c" />
     <ClCompile Include="..\..\deps\rzlib\adler32.c" />
     <ClCompile Include="..\..\deps\rzlib\compress.c" />
@@ -217,14 +217,17 @@
     <ClCompile Include="..\..\deps\rzlib\zutil.c" />
     <ClCompile Include="..\..\file_extract.c" />
     <ClCompile Include="..\..\frontend\menu\history.c" />
-    <ClCompile Include="..\..\file_list.c" />
+    <ClCompile Include="..\..\frontend\menu\file_list.c" />
+    <ClCompile Include="..\..\frontend\menu\backend\menu_common_backend.c" />
     <ClCompile Include="..\..\frontend\menu\disp\rgui.c" />
     <ClCompile Include="..\..\frontend\menu\menu_common.c" />
-    <ClCompile Include="..\..\frontend\menu\menu_settings.c" />
-    <ClCompile Include="..\..\frontend\menu\menu_context.c" />
+    <ClCompile Include="..\..\frontend\menu\menu_input_line_cb.c" />
+    <ClCompile Include="..\..\frontend\menu\menu_navigation.c" />
+    <ClCompile Include="..\..\frontend\info\core_info.c" />
     <ClCompile Include="..\..\gfx\d3d9\d3d.cpp" />
-    <ClCompile Include="..\..\gfx\d3d9\d3d9_pc.cpp" />
+    <ClCompile Include="..\..\gfx\context\d3d_ctx.cpp" />
     <ClCompile Include="..\..\gfx\d3d9\render_chain.cpp" />
+    <ClCompile Include="..\..\gfx\filter.c" />
     <ClCompile Include="..\..\gfx\fonts\bitmapfont.c" />
     <ClCompile Include="..\..\gfx\fonts\d3d_font.c" />
     <ClCompile Include="..\..\gfx\fonts\d3d_w32_font.cpp" />
@@ -273,13 +276,13 @@
     </ClCompile>
     <ClCompile Include="..\..\gfx\gl.c">
     </ClCompile>
-    <ClCompile Include="..\..\gfx\image.c">
+    <ClCompile Include="..\..\gfx\image\image.c">
     </ClCompile>
     <ClCompile Include="..\..\gfx\math\matrix.c">
     </ClCompile>
     <ClCompile Include="..\..\gfx\math\matrix_3x3.c">
     </ClCompile>
-    <ClCompile Include="..\..\gfx\scaler\filter.c">
+    <ClCompile Include="..\..\gfx\scaler\scaler_filter.c">
     </ClCompile>
     <ClCompile Include="..\..\gfx\scaler\pixconv.c">
     </ClCompile>

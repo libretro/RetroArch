@@ -101,7 +101,9 @@ CFLAGS += -Wall -pedantic $(fpic)
 
 ifeq ($(GLES), 1)
    CFLAGS += -DGLES -DHAVE_OPENGLES2
-   ifeq ($(GLES3), 1)
+   ifeq ($(GLES31), 1)
+      CFLAGS += -DHAVE_OPENGLES3 -DGLES31 -DGLES3
+   else ifeq ($(GLES3), 1)
       CFLAGS += -DHAVE_OPENGLES3 -DGLES3
    endif
    LIBS += -lGLESv2 # Still link against GLESv2 when using GLES3 API, at least on desktop Linux.

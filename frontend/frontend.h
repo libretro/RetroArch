@@ -21,9 +21,6 @@
 #if defined(ANDROID)
 #define args_type() struct android_app*
 #define signature() void* data
-#elif defined(__APPLE__) || defined(HAVE_BB10)
-#define args_type() void*
-#define signature() int argc, char *argv[]
 #else
 #define args_type() void*
 #define signature() int argc, char *argv[]

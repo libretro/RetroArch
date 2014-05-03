@@ -16,6 +16,8 @@
 
 #include <pspkernel.h>
 #include <pspdebug.h>
+#include <pspfpu.h>
+#include <psppower.h>
 
 #include <stdint.h>
 #include "../../boolean.h"
@@ -25,7 +27,7 @@
 #include "../../psp/sdk_defines.h"
 
 PSP_MODULE_INFO("RetroArch PSP", 0, 1, 1);
-PSP_MAIN_THREAD_ATTR(THREAD_ATTR_USER);
+PSP_MAIN_THREAD_ATTR(THREAD_ATTR_USER|THREAD_ATTR_VFPU);
 PSP_HEAP_SIZE_MAX();
 
 static int exit_callback(int arg1, int arg2, void *common)
@@ -90,10 +92,13 @@ static void system_init(void *data)
 {
    (void)data;
    //initialize debug screen
-   pspDebugScreenInit();
+   pspDebugScreenInit(); 
    pspDebugScreenClear();
-
+   
    setup_callback();
+   
+   pspFpuSetEnable(0);//disable FPU exceptions
+   scePowerSetClockFrequency(333,333,166);
 }
 
 static void system_deinit(void *data)
@@ -102,14 +107,32 @@ static void system_deinit(void *data)
    sceKernelExitGame();
 }
 
+static int psp_process_args(int argc, char *argv[], void *args)
+{
+   (void)argc;
+   (void)args;
+
+   if (argv[1] && (argv[1][0]))
+   {
+      strlcpy(g_extern.fullpath, argv[1], sizeof(g_extern.fullpath));
+      g_extern.lifecycle_state |= (1ULL << MODE_LOAD_GAME);
+      return 1;
+   }
+
+   return 0;
+}
+
 const frontend_ctx_driver_t frontend_ctx_psp = {
    get_environment_settings,     /* get_environment_settings */
    system_init,                  /* init */
    system_deinit,                /* deinit */
    NULL,                         /* exitspawn */
-   NULL,                         /* process_args */
+   psp_process_args,             /* process_args */
    NULL,                         /* process_events */
-   NULL,                         /* exec */
+   NULL,                  	      /* exec */
    NULL,                         /* shutdown */
    "psp",
+#ifdef IS_SALAMANDER
+   NULL,
+#endif
 };

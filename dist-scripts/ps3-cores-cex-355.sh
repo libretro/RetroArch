@@ -11,9 +11,10 @@ make -C ../ -f Makefile.ps3.rgl || exit 1
 EXE_PATH=/usr/local/cell/host-win32/bin
 
 for f in *_ps3.a ; do
-   name=`echo "$f" | sed 's/\(_libretro\|\)_ps3.a$//'`
+   name=`echo "$f" | sed 's/\(_libretro_ps3\|\).a$//'`
    whole_archive=
    if [ $name = "nxengine" ] ; then
+      echo "NXEngine found, applying whole archive linking..."
       whole_archive="WHOLE_ARCHIVE_LINK=1"
       echo $name yes
    fi

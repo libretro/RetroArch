@@ -24,7 +24,9 @@
 #include <stdint.h>
 #include "msvc/msvc_compat.h"
 #include "gfx/scaler/scaler.h"
-#include "gfx/image.h"
+#include "gfx/image/image.h"
+#include "gfx/filters/softfilter.h"
+#include "audio/filters/rarch_dsp.h"
 #include "input/overlay.h"
 
 #ifdef HAVE_CONFIG_H
@@ -232,95 +234,6 @@ typedef struct audio_driver
 #define GET_HAT_DIR(x) (x & HAT_MASK)
 #define GET_HAT(x) (x & (~HAT_MASK))
 
-enum input_devices
-{
-#if defined(ANDROID)
-   DEVICE_NONE = 0,
-   DEVICE_LOGITECH_RUMBLEPAD2,
-   DEVICE_LOGITECH_DUAL_ACTION,
-   DEVICE_LOGITECH_PRECISION_GAMEPAD,
-   DEVICE_ICONTROLPAD_HID_JOYSTICK,
-   DEVICE_ICONTROLPAD_BLUEZ_IME,
-   DEVICE_TTT_THT_ARCADE,
-   DEVICE_TOMMO_NEOGEOX_ARCADE,
-   DEVICE_MADCATZ_PC_USB_STICK,
-   DEVICE_LOGICOOL_RUMBLEPAD2,
-   DEVICE_IDROID_X360,
-   DEVICE_ZEEMOTE_STEELSERIES,
-   DEVICE_HUIJIA_USB_SNES,
-   DEVICE_SUPER_SMARTJOY,
-   DEVICE_SAITEK_RUMBLE_P480,
-   DEVICE_MS_SIDEWINDER_DUAL_STRIKE,
-   DEVICE_MS_SIDEWINDER,
-   DEVICE_MS_XBOX,
-   DEVICE_WISEGROUP_PLAYSTATION2,
-   DEVICE_JCPS102_PLAYSTATION2,
-   DEVICE_GENERIC_PLAYSTATION2_CONVERTER,
-   DEVICE_PSMOVE_NAVI,
-   DEVICE_JXD_S7300B,
-   DEVICE_JXD_S7800B,
-   DEVICE_IDROID_CON,
-   DEVICE_GENIUS_MAXFIRE_G08XU,
-   DEVICE_USB_2_AXIS_8_BUTTON_GAMEPAD,
-   DEVICE_BUFFALO_BGC_FC801,
-   DEVICE_RETROUSB_RETROPAD,
-   DEVICE_RETROUSB_SNES_RETROPORT,
-   DEVICE_CYPRESS_USB,
-   DEVICE_MAYFLASH_WII_CLASSIC,
-   DEVICE_SZMY_POWER_DUAL_BOX_WII,
-   DEVICE_ARCHOS_GAMEPAD,
-   DEVICE_JXD_S5110,
-   DEVICE_JXD_S5110_SKELROM,
-   DEVICE_XPERIA_PLAY,
-   DEVICE_BROADCOM_BLUETOOTH_HID,
-   DEVICE_THRUST_PREDATOR,
-   DEVICE_DRAGONRISE,
-   DEVICE_PLAYSTATION3_VERSION1,
-   DEVICE_PLAYSTATION3_VERSION2,
-   DEVICE_MOGA_IME,
-   DEVICE_NYKO_PLAYPAD_PRO,
-   DEVICE_TOODLES_2008_CHIMP,
-   DEVICE_MOGA,
-   DEVICE_SEGA_VIRTUA_STICK_HIGH_GRADE,
-   DEVICE_CCPCREATIONS_WIIUSE_IME,
-   DEVICE_KEYBOARD_RETROPAD,
-   DEVICE_OUYA,
-   DEVICE_ONLIVE_WIRELESS_CONTROLLER,
-   DEVICE_TOMEE_NES_USB,
-   DEVICE_THRUSTMASTER_T_MINI,
-   DEVICE_GAMEMID,
-   DEVICE_DEFENDER_GAME_RACER_CLASSIC,
-   DEVICE_HOLTEK_JC_U912F,
-   DEVICE_NVIDIA_SHIELD,
-   DEVICE_MUCH_IREADGO_I5,
-   DEVICE_WIKIPAD,
-   DEVICE_FC30_GAMEPAD,
-#elif defined(GEKKO)
-   DEVICE_GAMECUBE = 0,
-#ifdef HW_RVL
-   DEVICE_WIIMOTE,
-   DEVICE_NUNCHUK,
-   DEVICE_CLASSIC,
-#endif
-#elif defined(_XBOX)
-   DEVICE_XBOX_PAD = 0,
-#elif defined(__CELLOS_LV2__)
-   DEVICE_SIXAXIS = 0,
-#elif defined(__BLACKBERRY_QNX__)
-   DEVICE_NONE,
-   DEVICE_WIIMOTE,
-   DEVICE_KEYBOARD,
-   DEVICE_IPEGA,
-   DEVICE_KEYPAD,
-   DEVICE_UNKNOWN,
-#elif defined(IOS)
-   DEVICE_NONE,
-   DEVICE_WIIMOTE,
-   DEVICE_SIXAXIS,
-#endif
-   DEVICE_LAST
-};
-
 enum analog_dpad_mode
 {
    ANALOG_DPAD_NONE = 0,
@@ -356,6 +269,7 @@ typedef struct input_driver
    bool (*set_sensor_state)(void *data, unsigned port, enum retro_sensor_action action, unsigned rate);
    float (*get_sensor_input)(void *data, unsigned port, unsigned id);
    uint64_t (*get_capabilities)(void *data);
+   unsigned (*devices_size)(void *data);
    const char *ident;
 
    void (*grab_mouse)(void *data, bool state);
@@ -475,6 +389,54 @@ typedef struct video_driver
    void (*poke_interface)(void *data, const video_poke_interface_t **iface);
 } video_driver_t;
 
+typedef struct menu_ctx_driver_backend
+{
+   void     (*entries_init)(void*, unsigned);
+   int      (*iterate)(void *, unsigned);
+   void     (*shader_manager_init)(void *);
+   void     (*shader_manager_get_str)(void *, char *, size_t, unsigned);
+   void     (*shader_manager_set_preset)(void *, unsigned, const char*);
+   void     (*shader_manager_save_preset)(void *, const char *, bool);
+   unsigned (*shader_manager_get_type)(void *);
+   int      (*shader_manager_setting_toggle)(void *, unsigned, unsigned);
+   unsigned (*type_is)(unsigned);
+   int      (*core_setting_toggle)(unsigned, unsigned);
+   int      (*setting_toggle)(void *, unsigned, unsigned, unsigned);
+   int      (*setting_set)(void *, unsigned, unsigned);
+   void     (*setting_set_label)(char *, size_t, unsigned *, unsigned);
+   const char *ident;
+} menu_ctx_driver_backend_t;
+
+typedef struct menu_ctx_driver
+{
+   void  (*set_texture)(void*, bool);
+   void  (*render_messagebox)(void*, const char*);
+   void  (*render)(void*);
+   void  (*frame)(void*);
+   void* (*init)(void);
+   void  (*free)(void*);
+   void  (*init_assets)(void*);
+   void  (*free_assets)(void*);
+   void  (*populate_entries)(void*, unsigned);
+   void  (*iterate)(void*, unsigned);
+   int   (*input_postprocess)(void *, uint64_t);
+   void  (*navigation_clear)(void *);
+   void  (*navigation_decrement)(void *);
+   void  (*navigation_increment)(void *);
+   void  (*navigation_set)(void *);
+   void  (*navigation_set_last)(void *);
+   void  (*navigation_descend_alphabet)(void *, size_t *);
+   void  (*navigation_ascend_alphabet)(void *, size_t *);
+   void  (*list_insert)(void *, const char *, size_t);
+   void  (*list_delete)(void *, size_t);
+   void  (*list_clear)(void *);
+   void  (*list_set_selection)(void *);
+
+   const menu_ctx_driver_backend_t *backend;
+   // Human readable string.
+   const char *ident;
+} menu_ctx_driver_t;
+
 enum rarch_display_type
 {
    RARCH_DISPLAY_NONE = 0, // Non-bindable types like consoles, KMS, VideoCore, etc.
@@ -503,6 +465,9 @@ typedef struct driver
    void *audio_data;
    void *video_data;
    void *input_data;
+#ifdef HAVE_MENU
+   const menu_ctx_driver_t *menu_ctx;
+#endif
 
    bool threaded_video;
 
@@ -581,12 +546,14 @@ void uninit_video_input(void);
 void init_audio(void);
 void uninit_audio(void);
 
+void find_prev_resampler_driver(void);
 void find_prev_video_driver(void);
 void find_prev_audio_driver(void);
 void find_prev_input_driver(void);
 void find_next_video_driver(void);
 void find_next_audio_driver(void);
 void find_next_input_driver(void);
+void find_next_resampler_driver(void);
 
 #ifdef HAVE_CAMERA
 void init_camera(void);
@@ -616,6 +583,19 @@ bool driver_set_rumble_state(unsigned port, enum retro_rumble_effect effect, uin
 bool driver_set_sensor_state(unsigned port, enum retro_sensor_action action, unsigned rate);
 float driver_sensor_get_input(unsigned port, unsigned action);
 
+#ifdef HAVE_DYLIB
+void rarch_deinit_filter(void);
+void rarch_init_filter(enum retro_pixel_format);
+#endif
+
+#ifdef HAVE_FILTERS_BUILTIN
+unsigned dspfilter_get_last_idx(void);
+#endif
+
+void rarch_init_dsp_filter(void);
+void rarch_deinit_dsp_filter(void);
+const char *rarch_dspfilter_get_name(void *data);
+
 // Used by RETRO_ENVIRONMENT_GET_CAMERA_INTERFACE
 #ifdef HAVE_CAMERA
 bool driver_camera_start(void);
@@ -630,6 +610,16 @@ void driver_location_stop(void);
 bool driver_location_get_position(double *lat, double *lon, double *horiz_accuracy, double *vert_accuracy);
 void driver_location_set_interval(unsigned interval_msecs, unsigned interval_distance);
 #endif
+
+#ifdef HAVE_MENU
+const void *menu_ctx_find_driver(const char *ident); // Finds driver with ident. Does not initialize.
+bool menu_ctx_init_first(const menu_ctx_driver_t **driver, void **handle); // Finds first suitable driver and initializes.
+void find_prev_menu_driver(void);
+void find_next_menu_driver(void);
+#endif
+
+// Used by RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO
+bool driver_update_system_av_info(const struct retro_system_av_info *info);
 
 extern driver_t driver;
 
@@ -650,6 +640,7 @@ extern const audio_driver_t audio_coreaudio;
 extern const audio_driver_t audio_xenon360;
 extern const audio_driver_t audio_ps3;
 extern const audio_driver_t audio_gx;
+extern const audio_driver_t audio_psp1;
 extern const audio_driver_t audio_rwebaudio;
 extern const audio_driver_t audio_null;
 extern const video_driver_t video_gl;
@@ -687,6 +678,40 @@ extern const camera_driver_t camera_ios;
 extern const location_driver_t location_apple;
 extern const location_driver_t location_android;
 extern const input_osk_driver_t input_ps3_osk;
+
+extern const menu_ctx_driver_t menu_ctx_rmenu;
+extern const menu_ctx_driver_t menu_ctx_rmenu_xui;
+extern const menu_ctx_driver_t menu_ctx_rgui;
+extern const menu_ctx_driver_t menu_ctx_lakka;
+
+extern const menu_ctx_driver_backend_t menu_ctx_backend_common;
+
+#ifdef HAVE_FILTERS_BUILTIN
+extern const struct softfilter_implementation *blargg_ntsc_snes_rf_get_implementation(softfilter_simd_mask_t simd);
+extern const struct softfilter_implementation *blargg_ntsc_snes_composite_get_implementation(softfilter_simd_mask_t simd);
+extern const struct softfilter_implementation *blargg_ntsc_snes_svideo_get_implementation(softfilter_simd_mask_t simd);
+extern const struct softfilter_implementation *blargg_ntsc_snes_rgb_get_implementation(softfilter_simd_mask_t simd);
+extern const struct softfilter_implementation *lq2x_get_implementation(softfilter_simd_mask_t simd);
+extern const struct softfilter_implementation *phosphor2x_get_implementation(softfilter_simd_mask_t simd);
+extern const struct softfilter_implementation *twoxbr_get_implementation(softfilter_simd_mask_t simd);
+extern const struct softfilter_implementation *epx_get_implementation(softfilter_simd_mask_t simd);
+extern const struct softfilter_implementation *twoxsai_get_implementation(softfilter_simd_mask_t simd);
+extern const struct softfilter_implementation *supereagle_get_implementation(softfilter_simd_mask_t simd);
+extern const struct softfilter_implementation *supertwoxsai_get_implementation(softfilter_simd_mask_t simd);
+extern const struct softfilter_implementation *twoxbr_get_implementation(softfilter_simd_mask_t simd);
+extern const struct softfilter_implementation *darken_get_implementation(softfilter_simd_mask_t simd);
+extern const struct softfilter_implementation *scale2x_get_implementation(softfilter_simd_mask_t simd);
+
+extern const struct dspfilter_implementation *echo_dsp_plugin_init(dspfilter_simd_mask_t simd);
+#ifndef _WIN32
+extern const struct dspfilter_implementation *eq_dsp_plugin_init(dspfilter_simd_mask_t simd);
+#endif
+extern const struct dspfilter_implementation *iir_dsp_plugin_init(dspfilter_simd_mask_t simd);
+extern const struct dspfilter_implementation *phaser_dsp_plugin_init(dspfilter_simd_mask_t simd);
+extern const struct dspfilter_implementation *reverb_dsp_plugin_init(dspfilter_simd_mask_t simd);
+extern const struct dspfilter_implementation *volume_dsp_plugin_init(dspfilter_simd_mask_t simd);
+extern const struct dspfilter_implementation *wah_dsp_plugin_init(dspfilter_simd_mask_t simd);
+#endif
 
 #include "driver_funcs.h"
 

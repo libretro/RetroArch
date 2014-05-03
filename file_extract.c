@@ -308,6 +308,7 @@ end:
 struct zip_extract_userdata
 {
    char *zip_path;
+   const char *extraction_directory;
    size_t zip_path_size;
    struct string_list *ext;
    bool found_rom;
@@ -323,8 +324,13 @@ static bool zip_extract_cb(const char *name, const uint8_t *cdata, unsigned cmod
    if (ext && string_list_find_elem(data->ext, ext))
    {
       char new_path[PATH_MAX];
-      fill_pathname_resolve_relative(new_path, data->zip_path,
-            path_basename(name), sizeof(new_path));
+
+      if (data->extraction_directory)
+         fill_pathname_join(new_path, data->extraction_directory,
+               path_basename(name), sizeof(new_path));
+      else
+         fill_pathname_resolve_relative(new_path, data->zip_path,
+               path_basename(name), sizeof(new_path));
 
       switch (cmode)
       {
@@ -350,7 +356,8 @@ static bool zip_extract_cb(const char *name, const uint8_t *cdata, unsigned cmod
    return true;
 }
 
-bool zlib_extract_first_rom(char *zip_path, size_t zip_path_size, const char *valid_exts)
+bool zlib_extract_first_rom(char *zip_path, size_t zip_path_size, const char *valid_exts,
+      const char *extraction_directory)
 {
    bool ret;
    struct zip_extract_userdata userdata = {0};
@@ -369,6 +376,7 @@ bool zlib_extract_first_rom(char *zip_path, size_t zip_path_size, const char *va
 
    userdata.zip_path = zip_path;
    userdata.zip_path_size = zip_path_size;
+   userdata.extraction_directory = extraction_directory;
    userdata.ext = list;
 
    if (!zlib_parse_file(zip_path, zip_extract_cb, &userdata))

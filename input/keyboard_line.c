@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -98,6 +98,9 @@ const char **input_keyboard_line_get_buffer(const input_keyboard_line_t *state)
 
 static input_keyboard_line_t *g_keyboard_line;
 
+static input_keyboard_press_t g_keyboard_press_cb;
+static void *g_keyboard_press_data;
+
 const char **input_keyboard_start_line(void *userdata, input_keyboard_line_complete_t cb)
 {
    if (g_keyboard_line)
@@ -110,9 +113,39 @@ const char **input_keyboard_start_line(void *userdata, input_keyboard_line_compl
    return input_keyboard_line_get_buffer(g_keyboard_line);
 }
 
+void input_keyboard_wait_keys(void *userdata, input_keyboard_press_t cb)
+{
+   g_keyboard_press_cb = cb;
+   g_keyboard_press_data = userdata;
+   // While waiting for input, we have to block all hotkeys.
+   driver.block_input = true;
+}
+
+void input_keyboard_wait_keys_cancel(void)
+{
+   g_keyboard_press_cb = NULL;
+   g_keyboard_press_data = NULL;
+   driver.block_input = false;
+}
+
 void input_keyboard_event(bool down, unsigned code, uint32_t character, uint16_t mod)
 {
-   if (g_keyboard_line)
+   static bool deferred_wait_keys;
+
+   if (deferred_wait_keys)
+   {
+      if (!down)
+      {
+         input_keyboard_wait_keys_cancel();
+         deferred_wait_keys = false;
+      }
+   }
+   else if (g_keyboard_press_cb)
+   {
+      if (down && code != RETROK_UNKNOWN && !g_keyboard_press_cb(g_keyboard_press_data, code))
+         deferred_wait_keys = true;
+   }
+   else if (g_keyboard_line)
    {
       if (input_keyboard_line_event(g_keyboard_line, character))
       {

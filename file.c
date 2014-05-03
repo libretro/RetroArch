@@ -143,35 +143,8 @@ static ssize_t read_rom_file(const char *path, void **buf)
    return ret;
 }
 
-
-static const char *ramtype2str(int type)
-{
-   switch (type)
-   {
-      case RETRO_MEMORY_SAVE_RAM:
-      case RETRO_MEMORY_SNES_GAME_BOY_RAM:
-      case RETRO_MEMORY_SNES_BSX_RAM:
-         return ".srm";
-
-      case RETRO_MEMORY_RTC:
-      case RETRO_MEMORY_SNES_GAME_BOY_RTC:
-         return ".rtc";
-
-      case RETRO_MEMORY_SNES_BSX_PRAM:
-         return ".pram";
-
-      case RETRO_MEMORY_SNES_SUFAMI_TURBO_A_RAM:
-         return ".aram";
-      case RETRO_MEMORY_SNES_SUFAMI_TURBO_B_RAM:
-         return ".bram";
-
-      default:
-         return "";
-   }
-}
-
 // Attempt to save valuable RAM data somewhere ...
-static void dump_to_file_desperate(const void *data, size_t size, int type)
+static void dump_to_file_desperate(const void *data, size_t size, unsigned type)
 {
 #if defined(_WIN32) && !defined(_XBOX)
    const char *base = getenv("APPDATA");
@@ -185,14 +158,13 @@ static void dump_to_file_desperate(const void *data, size_t size, int type)
       goto error;
 
    char path[PATH_MAX];
-   snprintf(path, sizeof(path), "%s/RetroArch-recovery-", base);
+   snprintf(path, sizeof(path), "%s/RetroArch-recovery-%u", base, type);
    char timebuf[PATH_MAX];
 
    time_t time_;
    time(&time_);
    strftime(timebuf, sizeof(timebuf), "%Y-%m-%d-%H-%M-%S", localtime(&time_));
    strlcat(path, timebuf, sizeof(path));
-   strlcat(path, ramtype2str(type), sizeof(path));
 
    if (write_file(path, data, size))
       RARCH_WARN("Succeeded in saving RAM data to \"%s\".\n", path);
@@ -231,6 +203,13 @@ bool save_state(const char *path)
    return ret;
 }
 
+struct sram_block
+{
+   unsigned type;
+   void *data;
+   size_t size;
+};
+
 bool load_state(const char *path)
 {
    unsigned i;
@@ -248,75 +227,55 @@ bool load_state(const char *path)
    bool ret = true;
    RARCH_LOG("State size: %u bytes.\n", (unsigned)size);
 
-   void *block_buf[2] = {NULL, NULL};
-   int block_type[2] = {-1, -1};
-   size_t block_size[2] = {0};
+   struct sram_block *blocks = NULL;
+   unsigned num_blocks = 0;
 
-   if (g_settings.block_sram_overwrite)
+   if (g_settings.block_sram_overwrite && g_extern.savefiles && g_extern.savefiles->size)
    {
       RARCH_LOG("Blocking SRAM overwrite.\n");
-      switch (g_extern.game_type)
+      blocks = (struct sram_block*)calloc(g_extern.savefiles->size, sizeof(*blocks));
+      if (blocks)
       {
-         case RARCH_CART_NORMAL:
-            block_type[0] = RETRO_MEMORY_SAVE_RAM;
-            block_type[1] = RETRO_MEMORY_RTC;
-            break;
-
-         case RARCH_CART_BSX:
-         case RARCH_CART_BSX_SLOTTED:
-            block_type[0] = RETRO_MEMORY_SNES_BSX_RAM;
-            block_type[1] = RETRO_MEMORY_SNES_BSX_PRAM;
-            break;
-
-         case RARCH_CART_SUFAMI:
-            block_type[0] = RETRO_MEMORY_SNES_SUFAMI_TURBO_A_RAM;
-            block_type[1] = RETRO_MEMORY_SNES_SUFAMI_TURBO_B_RAM;
-            break;
-
-         case RARCH_CART_SGB:
-            block_type[0] = RETRO_MEMORY_SNES_GAME_BOY_RAM;
-            block_type[1] = RETRO_MEMORY_SNES_GAME_BOY_RTC;
-            break;
+         num_blocks = g_extern.savefiles->size;
+         for (i = 0; i < num_blocks; i++)
+            blocks[i].type = g_extern.savefiles->elems[i].attr.i;
       }
    }
 
-   for (i = 0; i < 2; i++)
-      if (block_type[i] != -1)
-         block_size[i] = pretro_get_memory_size(block_type[i]);
+   for (i = 0; i < num_blocks; i++)
+      blocks[i].size = pretro_get_memory_size(blocks[i].type);
 
-   for (i = 0; i < 2; i++)
-      if (block_size[i])
-         block_buf[i] = malloc(block_size[i]);
+   for (i = 0; i < num_blocks; i++)
+      if (blocks[i].size)
+         blocks[i].data = malloc(blocks[i].size);
 
    // Backup current SRAM which is overwritten by unserialize.
-   for (i = 0; i < 2; i++)
+   for (i = 0; i < num_blocks; i++)
    {
-      if (block_buf[i])
+      if (blocks[i].data)
       {
-         const void *ptr = pretro_get_memory_data(block_type[i]);
+         const void *ptr = pretro_get_memory_data(blocks[i].type);
          if (ptr)
-            memcpy(block_buf[i], ptr, block_size[i]);
+            memcpy(blocks[i].data, ptr, blocks[i].size);
       }
    }
 
    ret = pretro_unserialize(buf, size);
 
    // Flush back :D
-   for (i = 0; i < 2 && ret; i++)
+   for (i = 0; i < num_blocks; i++)
    {
-      if (block_buf[i])
+      if (blocks[i].data)
       {
-         void *ptr = pretro_get_memory_data(block_type[i]);
+         void *ptr = pretro_get_memory_data(blocks[i].type);
          if (ptr)
-            memcpy(ptr, block_buf[i], block_size[i]);
+            memcpy(ptr, blocks[i].data, blocks[i].size);
       }
    }
 
-   for (i = 0; i < 2; i++)
-      if (block_buf[i])
-         free(block_buf[i]);
-
-   free(buf);
+   for (i = 0; i < num_blocks; i++)
+      free(blocks[i].data);
+   free(blocks);
    return ret;
 }
 
@@ -362,175 +321,166 @@ void save_ram_file(const char *path, int type)
    }
 }
 
-#define MAX_ROMS 4
-
-static bool load_roms(unsigned rom_type, const char **rom_paths, size_t roms)
+static bool load_roms(const struct retro_subsystem_info *special, const struct string_list *roms)
 {
-   size_t i;
+   unsigned i;
    bool ret = true;
 
-   if (roms == 0)
+   struct retro_game_info *info = (struct retro_game_info*)calloc(roms->size, sizeof(*info));
+   if (!info)
       return false;
 
-   if (roms > MAX_ROMS)
-      return false;
-
-   void *rom_buf[MAX_ROMS] = {NULL};
-   long rom_len[MAX_ROMS] = {0};
-   struct retro_game_info info[MAX_ROMS] = {{NULL}};
-
-   if (!g_extern.system.info.need_fullpath)
+   for (i = 0; i < roms->size; i++)
    {
-      RARCH_LOG("Loading ROM file: %s.\n", rom_paths[0]);
-      if ((rom_len[0] = read_rom_file(rom_paths[0], &rom_buf[0])) == -1)
+      const char *path = roms->elems[i].data;
+      int attr = roms->elems[i].attr.i;
+
+      bool need_fullpath = attr & 2;
+      bool require_rom = attr & 4;
+
+      if (require_rom && !*path)
       {
-         RARCH_ERR("Could not read ROM file.\n");
+         RARCH_LOG("libretro core requires a ROM, but none were provided.\n");
          ret = false;
          goto end;
       }
 
-      RARCH_LOG("ROM size: %u bytes.\n", (unsigned)rom_len[0]);
-   }
-   else
-      RARCH_LOG("ROM loading skipped. Implementation will load it on its own.\n");
+      info[i].path = *path ? path : NULL;
 
-   info[0].path = rom_paths[0];
-   info[0].data = rom_buf[0];
-   info[0].size = rom_len[0];
-   info[0].meta = NULL; // Not relevant at this moment.
-
-   for (i = 1; i < roms; i++)
-   {
-      if (rom_paths[i] &&
-            !g_extern.system.info.need_fullpath &&
-            (rom_len[i] = read_file(rom_paths[i], &rom_buf[i])) == -1)
+      if (!need_fullpath && *path) // Load the ROM into memory.
       {
-         RARCH_ERR("Could not read ROM file: \"%s\".\n", rom_paths[i]);
-         ret = false;
-         goto end;
+         RARCH_LOG("Loading ROM file: %s.\n", path);
+         // First ROM is significant, attempt to do patching, CRC checking, etc ...
+         long size = i == 0 ? read_rom_file(path, (void**)&info[i].data) : read_file(path, (void**)&info[i].data);
+         if (size < 0)
+         {
+            RARCH_ERR("Could not read ROM file \"%s\".\n", path);
+            ret = false;
+            goto end;
+         }
+
+         info[i].size = size;
       }
-      
-      info[i].path = rom_paths[i];
-      info[i].data = rom_buf[i];
-      info[i].size = rom_len[i];
-      info[i].meta = NULL;
+      else
+         RARCH_LOG("ROM loading skipped. Implementation will load it on its own.\n");
    }
 
-   if (rom_type == 0)
-      ret = pretro_load_game(&info[0]);
+   if (special)
+      ret = pretro_load_game_special(special->id, info, roms->size);
    else
-      ret = pretro_load_game_special(rom_type, info, roms);
+      ret = pretro_load_game(*roms->elems[0].data ? info : NULL);
 
    if (!ret)
       RARCH_ERR("Failed to load game.\n");
 
 end:
-   for (i = 0; i < MAX_ROMS; i++)
-      free(rom_buf[i]);
+   for (i = 0; i < roms->size; i++)
+      free((void*)info[i].data);
+   free(info);
    return ret;
 }
 
-static bool load_normal_rom(void)
+bool init_rom_file(void)
 {
-   if (g_extern.libretro_no_rom && g_extern.system.no_game)
-      return pretro_load_game(NULL);
-   else if (g_extern.libretro_no_rom && !g_extern.system.no_game)
-   {
-      RARCH_ERR("No ROM is used, but libretro core does not support this.\n");
+   unsigned i;
+
+   g_extern.temporary_roms = string_list_new();
+   if (!g_extern.temporary_roms)
       return false;
+
+   const struct retro_subsystem_info *special = NULL;
+
+   if (*g_extern.subsystem)
+   {
+      special = libretro_find_subsystem_info(g_extern.system.special, g_extern.system.num_special,
+            g_extern.subsystem);
+
+      if (!special)
+      {
+         RARCH_ERR("Failed to find subsystem \"%s\" in libretro implementation.\n",
+               g_extern.subsystem);
+         return false;
+      }
+
+      if (special->num_roms && !g_extern.subsystem_fullpaths)
+      {
+         RARCH_ERR("libretro core requires special ROMs, but none were provided.\n");
+         return false;
+      }
+      else if (special->num_roms && special->num_roms != g_extern.subsystem_fullpaths->size)
+      {
+         RARCH_ERR("libretro core requires %u ROMs for subsystem \"%s\", but %u ROMs were provided.\n", special->num_roms, special->desc,
+               (unsigned)g_extern.subsystem_fullpaths->size);
+         return false;
+      }
+      else if (!special->num_roms && g_extern.subsystem_fullpaths && g_extern.subsystem_fullpaths->size)
+      {
+         RARCH_ERR("libretro core takes no ROMs for subsystem \"%s\", but %u ROMs were provided.\n", special->desc,
+               (unsigned)g_extern.subsystem_fullpaths->size);
+         return false;
+      }
+   }
+
+   union string_list_elem_attr attr;
+   attr.i = 0;
+
+   struct string_list *roms = string_list_new();
+   if (!roms)
+      return false;
+
+   if (*g_extern.subsystem)
+   {
+      for (i = 0; i < g_extern.subsystem_fullpaths->size; i++)
+      {
+         attr.i  = special->roms[i].block_extract;
+         attr.i |= special->roms[i].need_fullpath << 1;
+         attr.i |= special->roms[i].required << 2;
+         string_list_append(roms, g_extern.subsystem_fullpaths->elems[i].data, attr);
+      }
    }
    else
    {
-      const char *path = g_extern.fullpath;
-      return load_roms(0, &path, 1);
+      attr.i  = g_extern.system.info.block_extract;
+      attr.i |= g_extern.system.info.need_fullpath << 1;
+      attr.i |= (!g_extern.system.no_game) << 2;
+      string_list_append(roms, g_extern.libretro_no_rom ? "" : g_extern.fullpath, attr);
    }
-}
 
-static bool load_sgb_rom(void)
-{
-   const char *path[2] = {
-      *g_extern.fullpath ? g_extern.fullpath : NULL,
-      g_extern.gb_rom_path
-   };
-
-   return load_roms(RETRO_GAME_TYPE_SUPER_GAME_BOY, path, 2);
-}
-
-static bool load_bsx_rom(bool slotted)
-{
-   const char *path[2] = {
-      *g_extern.fullpath ? g_extern.fullpath : NULL,
-      g_extern.bsx_rom_path
-   };
-
-   return load_roms(slotted ? RETRO_GAME_TYPE_BSX_SLOTTED : RETRO_GAME_TYPE_BSX, path, 2); 
-}
-
-static bool load_sufami_rom(void)
-{
-   const char *path[3] = {
-      *g_extern.fullpath ? g_extern.fullpath : NULL,
-      *g_extern.sufami_rom_path[0] ? g_extern.sufami_rom_path[0] : NULL,
-      *g_extern.sufami_rom_path[1] ? g_extern.sufami_rom_path[1] : NULL,
-   };
-
-   return load_roms(RETRO_GAME_TYPE_SUFAMI_TURBO, path, 3);
-}
-
-bool init_rom_file(enum rarch_game_type type)
-{
 #ifdef HAVE_ZLIB
-   if (*g_extern.fullpath && !g_extern.system.block_extract)
+   // Try to extract every ROM we're going to load if appropriate.
+   for (i = 0; i < roms->size; i++)
    {
-      const char *ext = path_get_extension(g_extern.fullpath);
+      // block extract check
+      if (roms->elems[i].attr.i & 1)
+         continue;
+
+      const char *ext = path_get_extension(roms->elems[i].data);
+
+      const char *valid_ext = special ?
+         special->roms[i].valid_extensions :
+         g_extern.system.info.valid_extensions;
+
       if (ext && !strcasecmp(ext, "zip"))
       {
-         g_extern.rom_file_temporary = true;
-
-         if (!zlib_extract_first_rom(g_extern.fullpath, sizeof(g_extern.fullpath), g_extern.system.valid_extensions))
+         char temporary_rom[PATH_MAX];
+         strlcpy(temporary_rom, roms->elems[i].data, sizeof(temporary_rom));
+         if (!zlib_extract_first_rom(temporary_rom, sizeof(temporary_rom), valid_ext,
+                  *g_settings.extraction_directory ? g_settings.extraction_directory : NULL))
          {
-            RARCH_ERR("Failed to extract ROM from zipped file: %s.\n", g_extern.fullpath);
-            g_extern.rom_file_temporary = false;
+            RARCH_ERR("Failed to extract ROM from zipped file: %s.\n", temporary_rom);
+            string_list_free(roms);
             return false;
          }
-
-         strlcpy(g_extern.last_rom, g_extern.fullpath, sizeof(g_extern.last_rom));
+         string_list_set(roms, i, temporary_rom);
+         string_list_append(g_extern.temporary_roms, temporary_rom, attr);
       }
    }
 #endif
 
-   switch (type)
-   {
-      case RARCH_CART_SGB:
-         if (!load_sgb_rom())
-            return false;
-         break;
-
-      case RARCH_CART_NORMAL:
-         if (!load_normal_rom())
-            return false;
-         break;
-
-      case RARCH_CART_BSX:
-         if (!load_bsx_rom(false))
-            return false;
-         break;
-
-      case RARCH_CART_BSX_SLOTTED:
-         if (!load_bsx_rom(true))
-            return false;
-         break;
-
-      case RARCH_CART_SUFAMI:
-         if (!load_sufami_rom())
-            return false;
-         break;
-         
-      default:
-         RARCH_ERR("Invalid ROM type.\n");
-         return false;
-   }
-
-   return true;
+   // Set attr to need_fullpath as appropriate.
+   
+   bool ret = load_roms(special, roms);
+   string_list_free(roms);
+   return ret;
 }
 

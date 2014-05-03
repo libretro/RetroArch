@@ -19,8 +19,6 @@
 #include "d3d9.hpp"
 #include "../state_tracker.h"
 #include "../shader_parse.h"
-#include <map>
-#include <utility>
 
 struct Vertex
 {
@@ -36,141 +34,130 @@ struct LinkInfo
    struct gfx_shader_pass *pass;
 };
 
-class RenderChain
+enum PixelFormat
 {
-   public:
-      enum PixelFormat { RGB565, ARGB };
-
-      RenderChain(const video_info_t *video_info,
-            LPDIRECT3DDEVICE dev,
-#ifdef HAVE_CG
-            CGcontext cgCtx,
-#endif
-            const D3DVIEWPORT &final_viewport);
-      ~RenderChain();
-
-      bool init(const LinkInfo &info, PixelFormat fmt);
-
-      bool set_pass_size(unsigned pass, unsigned width, unsigned height);
-      void set_final_viewport(const D3DVIEWPORT &final_viewport);
-      bool add_pass(const LinkInfo &info);
-      bool add_lut(const std::string &id, const std::string &path, bool smooth);
-      void add_state_tracker(state_tracker_t *tracker);
-
-      bool render(const void *data,
-            unsigned width, unsigned height, unsigned pitch, unsigned rotation);
-
-      static void convert_geometry(const LinkInfo &info,
-            unsigned &out_width, unsigned &out_height,
-            unsigned width, unsigned height,
-            const D3DVIEWPORT &final_viewport);
-
-      void clear();
-
-   private:
-
-      LPDIRECT3DDEVICE dev;
-#ifdef HAVE_CG
-      CGcontext cgCtx;
-#endif
-      unsigned pixel_size;
-
-      const video_info_t &video_info;
+   RGB565 = 0,
+   ARGB
+};
 
 #define MAX_VARIABLES 64
-      state_tracker_t *tracker;
-      struct state_tracker_uniform uniform_info[MAX_VARIABLES];
-      unsigned uniform_cnt;
 
-      enum { Textures = 8, TexturesMask = Textures - 1 };
-      struct
-      {
-         LPDIRECT3DTEXTURE tex[Textures];
-         LPDIRECT3DVERTEXBUFFER vertex_buf[Textures];
-         unsigned ptr;
-         unsigned last_width[Textures];
-         unsigned last_height[Textures];
-      } prev;
-
-      struct Pass
-      {
-         LinkInfo info;
-         LPDIRECT3DTEXTURE tex;
-         LPDIRECT3DVERTEXBUFFER vertex_buf;
-#ifdef HAVE_CG
-         CGprogram vPrg, fPrg;
-#endif
-         unsigned last_width, last_height;
-
-#ifdef HAVE_D3D9
-         LPDIRECT3DVERTEXDECLARATION vertex_decl;
-#endif
-         std::vector<unsigned> attrib_map;
-      };
-      std::vector<Pass> passes;
-
-#ifdef HAVE_CG
-      CGprogram vStock, fStock;
-#endif
-
-      struct lut_info
-      {
-         LPDIRECT3DTEXTURE tex;
-         std::string id;
-         bool smooth;
-      };
-      std::vector<lut_info> luts;
-
-      D3DVIEWPORT final_viewport;
-      unsigned frame_count;
-
-      bool create_first_pass(const LinkInfo &info, PixelFormat fmt);
-#if defined(HAVE_CG)
-      bool compile_shaders(CGprogram &fPrg, CGprogram &vPrg, const std::string &shader);
-      void set_shaders(CGprogram &fPrg, CGprogram &vPrg);
-      void set_cg_mvp(CGprogram &vPrg,
-            unsigned vp_width, unsigned vp_height,
-            unsigned rotation);
-#endif
-
-      void set_vertices(Pass &pass,
-            unsigned width, unsigned height,
-            unsigned out_width, unsigned out_height,
-            unsigned vp_width, unsigned vp_height,
-            unsigned rotation);
-      void set_viewport(const D3DVIEWPORT &vp);
-
-      void set_cg_params(Pass &pass,
-            unsigned input_w, unsigned input_h,
-            unsigned tex_w, unsigned tex_h,
-            unsigned vp_w, unsigned vp_h);
-
-      void clear_texture(Pass &pass);
-
-      void blit_to_texture(const void *data,
-            unsigned width, unsigned height,
-            unsigned pitch);
-
-      void render_pass(Pass &pass, unsigned pass_index);
-      void log_info(const LinkInfo &info);
-
-      D3DTEXTUREFILTERTYPE translate_filter(enum gfx_filter_type type);
-      D3DTEXTUREFILTERTYPE translate_filter(bool smooth);
-
-      void start_render();
-      void end_render();
-
-      std::vector<unsigned> bound_tex;
-      std::vector<unsigned> bound_vert;
-      void bind_luts(Pass &pass);
-      void bind_orig(Pass &pass);
-      void bind_prev(Pass &pass);
-      void bind_pass(Pass &pass, unsigned pass_index);
-      void bind_tracker(Pass &pass, unsigned pass_index);
-      void unbind_all();
-
-      bool init_fvf(Pass &pass);
+enum
+{
+   TEXTURES = 8,
+   TEXTURESMASK = TEXTURES - 1
 };
+
+struct Pass
+{
+   LinkInfo info;
+   LPDIRECT3DTEXTURE tex;
+   LPDIRECT3DVERTEXBUFFER vertex_buf;
+#ifdef HAVE_CG
+   CGprogram vPrg, fPrg;
+#endif
+   unsigned last_width, last_height;
+#ifdef HAVE_D3D9
+   LPDIRECT3DVERTEXDECLARATION vertex_decl;
+#endif
+   std::vector<unsigned> attrib_map;
+};
+
+struct lut_info
+{
+   LPDIRECT3DTEXTURE tex;
+   std::string id;
+   bool smooth;
+};
+
+typedef struct renderchain
+{
+   LPDIRECT3DDEVICE dev;
+#ifdef HAVE_CG
+   CGcontext cgCtx;
+#endif
+   unsigned pixel_size;
+   const video_info_t *video_info;
+   state_tracker_t *tracker;
+   struct state_tracker_uniform uniform_info[MAX_VARIABLES];
+   unsigned uniform_cnt;
+   struct
+   {
+      LPDIRECT3DTEXTURE tex[TEXTURES];
+      LPDIRECT3DVERTEXBUFFER vertex_buf[TEXTURES];
+      unsigned ptr;
+      unsigned last_width[TEXTURES];
+      unsigned last_height[TEXTURES];
+   } prev;
+   std::vector<Pass> passes;
+#ifdef HAVE_CG
+   CGprogram vStock, fStock;
+#endif
+   std::vector<lut_info> luts;
+   D3DVIEWPORT *final_viewport;
+   unsigned frame_count;
+   std::vector<unsigned> bound_tex;
+   std::vector<unsigned> bound_vert;
+} renderchain_t;
+
+void renderchain_free(void *data);
+bool renderchain_init(void *data, const video_info_t *video_info,
+      LPDIRECT3DDEVICE dev_,
+      CGcontext cgCtx_,
+      const D3DVIEWPORT *final_viewport_,
+      const LinkInfo *info,
+      PixelFormat fmt);
+void renderchain_clear(void *data);
+void renderchain_set_final_viewport(void *data, const D3DVIEWPORT *final_viewport);
+bool renderchain_set_pass_size(void *data, unsigned pass_index, unsigned width, unsigned height);
+bool renderchain_add_pass(void *data, const LinkInfo *info);
+bool renderchain_add_lut(void *data, const std::string &id,
+      const std::string &path,
+      bool smooth);
+void renderchain_add_state_tracker(void *data, state_tracker_t *tracker);
+void renderchain_start_render(void *data);
+void renderchain_end_render(void *data);
+bool renderchain_render(void *chain_data, const void *data,
+      unsigned width, unsigned height, unsigned pitch, unsigned rotation);
+D3DTEXTUREFILTERTYPE renderchain_translate_filter(enum gfx_filter_type type);
+D3DTEXTUREFILTERTYPE renderchain_translate_filter(bool smooth);
+bool renderchain_create_first_pass(void *data, const LinkInfo *info, PixelFormat fmt);
+void renderchain_set_vertices(void *data, Pass &pass,
+      unsigned width, unsigned height,
+      unsigned out_width, unsigned out_height,
+      unsigned vp_width, unsigned vp_height,
+      unsigned rotation);
+void renderchain_set_viewport(void *data, D3DVIEWPORT *vp);
+void renderchain_set_mvp(void *data, CGprogram &vPrg,
+      unsigned vp_width, unsigned vp_height,
+      unsigned rotation);
+void renderchain_clear_texture(void *data, Pass &pass);
+void renderchain_convert_geometry(void *data, const LinkInfo *info,
+      unsigned &out_width, unsigned &out_height,
+      unsigned width, unsigned height,
+      D3DVIEWPORT *final_viewport);
+void renderchain_blit_to_texture(void *data, const void *frame,
+      unsigned width, unsigned height,
+      unsigned pitch);
+void renderchain_render_pass(void *data, Pass &pass, unsigned pass_index);
+void renderchain_log_info(void *data, const LinkInfo *info);
+void renderchain_unbind_all(void *data);
+
+bool renderchain_compile_shaders(void *data, CGprogram &fPrg, CGprogram &vPrg, const std::string &shader);
+void renderchain_set_shaders(void *data, CGprogram &fPrg, CGprogram &vPrg);
+void renderchain_destroy_stock_shader(void *data);
+void renderchain_destroy_shader(void *data, int i);
+void renderchain_set_shader_mvp(void *data, CGprogram &vPrg, D3DXMATRIX &tmp);
+void renderchain_set_shader_params(void *data, Pass &pass,
+            unsigned video_w, unsigned video_h,
+            unsigned tex_w, unsigned tex_h,
+            unsigned viewport_w, unsigned viewport_h);
+void renderchain_bind_tracker(void *data, Pass &pass, unsigned pass_index);
+bool renderchain_init_shader_fvf(void *data, Pass &pass);
+void renderchain_bind_orig(void *data, Pass &pass);
+void renderchain_bind_prev(void *data, Pass &pass);
+void renderchain_bind_luts(void *data, Pass &pass);
+void renderchain_bind_pass(void *data, Pass &pass, unsigned pass_index);
 
 #endif
 

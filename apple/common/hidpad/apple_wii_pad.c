@@ -24,7 +24,7 @@
 
 static void* hidpad_wii_connect(struct apple_pad_connection* connection, uint32_t slot)
 {
-   struct wiimote_t* device = calloc(1, sizeof(struct wiimote_t));
+   struct wiimote_t* device = (struct wiimote_t*)calloc(1, sizeof(struct wiimote_t));
 
    device->connection = connection;
    device->unid = slot;
@@ -47,11 +47,16 @@ static int16_t hidpad_wii_get_axis(struct wiimote_t* device, unsigned axis)
    {
       switch (axis)
       {
-         case 0: return device->exp.cc.classic.ljs.x.value * 0x7FFF;
-         case 1: return device->exp.cc.classic.ljs.y.value * 0x7FFF;
-         case 2: return device->exp.cc.classic.rjs.x.value * 0x7FFF;
-         case 3: return device->exp.cc.classic.rjs.y.value * 0x7FFF;
-         default: return 0;
+         case 0:
+            return device->exp.cc.classic.ljs.x.value * 0x7FFF;
+         case 1:
+            return device->exp.cc.classic.ljs.y.value * 0x7FFF;
+         case 2:
+            return device->exp.cc.classic.rjs.x.value * 0x7FFF;
+         case 3:
+            return device->exp.cc.classic.rjs.y.value * 0x7FFF;
+         default:
+            return 0;
       }
    }
 

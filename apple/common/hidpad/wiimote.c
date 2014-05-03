@@ -75,15 +75,16 @@ void wiimote_status(struct wiimote_t* wm)
    wiimote_send(wm, WM_CMD_CTRL_STATUS, &buf, 1);
 }
 
-void wiimote_data_report(struct wiimote_t* wm, byte type) {
-	byte buf[2] = {0x0,0x0};
+void wiimote_data_report(struct wiimote_t* wm, byte type)
+{
+   byte buf[2] = {0x0,0x0};
 
-	if (!wm  || !WIIMOTE_IS_CONNECTED(wm))
-		return;
+   if (!wm  || !WIIMOTE_IS_CONNECTED(wm))
+      return;
 
-    buf[1] = type;
-//CUIDADO es un &buf?
-	wiimote_send(wm, WM_CMD_REPORT_TYPE, buf, 2);
+   buf[1] = type;
+   //CUIDADO es un &buf?
+   wiimote_send(wm, WM_CMD_REPORT_TYPE, buf, 2);
 }
 
 
@@ -95,18 +96,19 @@ void wiimote_data_report(struct wiimote_t* wm, byte type) {
  *
  *	\a leds is a bitwise or of WIIMOTE_LED_1, WIIMOTE_LED_2, WIIMOTE_LED_3, or WIIMOTE_LED_4.
  */
-void wiimote_set_leds(struct wiimote_t* wm, int leds) {
-	byte buf;
+void wiimote_set_leds(struct wiimote_t* wm, int leds)
+{
+   byte buf;
 
-	if (!wm || !WIIMOTE_IS_CONNECTED(wm))
-		return;
+   if (!wm || !WIIMOTE_IS_CONNECTED(wm))
+      return;
 
-	/* remove the lower 4 bits because they control rumble */
-	wm->leds = (leds & 0xF0);
+   /* remove the lower 4 bits because they control rumble */
+   wm->leds = (leds & 0xF0);
 
-	buf = wm->leds;
+   buf = wm->leds;
 
-	wiimote_send(wm, WM_CMD_LED, &buf, 1);
+   wiimote_send(wm, WM_CMD_LED, &buf, 1);
 }
 
 /**
@@ -115,14 +117,15 @@ void wiimote_set_leds(struct wiimote_t* wm, int leds) {
  *	@param wm		Pointer to a wiimote_t structure.
  *	@param msg		The message specified in the event packet.
  */
-void wiimote_pressed_buttons(struct wiimote_t* wm, byte* msg) {
-	short now;
+void wiimote_pressed_buttons(struct wiimote_t* wm, byte* msg)
+{
+   short now;
 
-	/* convert to big endian */
-	now = BIG_ENDIAN_SHORT(*(short*)msg) & WIIMOTE_BUTTON_ALL;
+   /* convert to big endian */
+   now = BIG_ENDIAN_SHORT(*(short*)msg) & WIIMOTE_BUTTON_ALL;
 
-	/* buttons pressed now */
-	wm->btns = now;
+   /* buttons pressed now */
+   wm->btns = now;
 }
 
 /**
@@ -131,14 +134,16 @@ void wiimote_pressed_buttons(struct wiimote_t* wm, byte* msg) {
  *	@param wm		A pointer to a wiimote_t structure.
  *	@param msg		The message specified in the event packet for the expansion.
  */
-void wiimote_handle_expansion(struct wiimote_t* wm, byte* msg) {
-	switch (wm->exp.type) {
-		case EXP_CLASSIC:
-			classic_ctrl_event(&wm->exp.cc.classic, msg);
-			break;
-		default:
-			break;
-	}
+void wiimote_handle_expansion(struct wiimote_t* wm, byte* msg)
+{
+   switch (wm->exp.type)
+   {
+      case EXP_CLASSIC:
+         classic_ctrl_event(&wm->exp.cc.classic, msg);
+         break;
+      default:
+         break;
+   }
 }
 
 /**
@@ -154,16 +159,17 @@ void wiimote_handle_expansion(struct wiimote_t* wm, byte* msg) {
 *	The handshake will be concluded when the wiimote responds
 *	with this data.
 */
-int wiimote_handshake(struct wiimote_t* wm,  byte event, byte* data, unsigned short len) {
+int wiimote_handshake(struct wiimote_t* wm,  byte event, byte* data, unsigned short len)
+{
 
-	if (!wm) return 0;
+   if (!wm) return 0;
 
-	while(1)
-	{
+   while(1)
+   {
 #ifdef WIIMOTE_DBG
-		printf("Handshake %d\n",wm->handshake_state);
+      printf("Handshake %d\n",wm->handshake_state);
 #endif
-		switch (wm->handshake_state)
+      switch (wm->handshake_state)
       {
          case 0://no ha habido nunca handshake, debemos forzar un mensaje de staus para ver que pasa.
             {
@@ -230,7 +236,9 @@ int wiimote_handshake(struct wiimote_t* wm,  byte event, byte* data, unsigned sh
                   wm->handshake_state = 4;
                   return 0;
 
-               } else if (!attachment && WIIMOTE_IS_SET(wm, WIIMOTE_STATE_EXP)) {
+               }
+               else if (!attachment && WIIMOTE_IS_SET(wm, WIIMOTE_STATE_EXP))
+               {
                   /* attachment removed */
                   WIIMOTE_DISABLE_STATE(wm, WIIMOTE_STATE_EXP);
                   wm->exp.type = EXP_NONE;
@@ -327,7 +335,7 @@ int wiimote_handshake(struct wiimote_t* wm,  byte event, byte* data, unsigned sh
                break;
             }
       }
-	}
+   }
 }
 
 
@@ -376,28 +384,29 @@ int wiimote_send(struct wiimote_t* wm, byte report_type, byte* msg, int len)
  *	to a pending list and be sent out when the previous
  *	finishes.
  */
-int wiimote_read_data(struct wiimote_t* wm, unsigned int addr, unsigned short len) {
-	//No puden ser mas de 16 lo leido o vendra en trozos!
+int wiimote_read_data(struct wiimote_t* wm, unsigned int addr, unsigned short len)
+{
+   //No puden ser mas de 16 lo leido o vendra en trozos!
 
-	if (!wm || !WIIMOTE_IS_CONNECTED(wm))
-		return 0;
-	if (!len /*|| len > 16*/)
-		return 0;
+   if (!wm || !WIIMOTE_IS_CONNECTED(wm))
+      return 0;
+   if (!len /*|| len > 16*/)
+      return 0;
 
-	byte buf[6];
+   byte buf[6];
 
-	/* the offset is in big endian */
-	*(int*)(buf) = BIG_ENDIAN_LONG(addr);
+   /* the offset is in big endian */
+   *(int*)(buf) = BIG_ENDIAN_LONG(addr);
 
-	/* the length is in big endian */
-	*(short*)(buf + 4) = BIG_ENDIAN_SHORT(len);
+   /* the length is in big endian */
+   *(short*)(buf + 4) = BIG_ENDIAN_SHORT(len);
 
 #ifdef WIIMOTE_DBG
-	printf("Request read at address: 0x%x  length: %i", addr, len);
+   printf("Request read at address: 0x%x  length: %i", addr, len);
 #endif
-	wiimote_send(wm, WM_CMD_READ_DATA, buf, 6);
+   wiimote_send(wm, WM_CMD_READ_DATA, buf, 6);
 
-	return 1;
+   return 1;
 }
 
 /**
@@ -408,16 +417,17 @@ int wiimote_read_data(struct wiimote_t* wm, unsigned int addr, unsigned short le
  *	@param data			The data to be written to the memory location.
  *	@param len			The length of the block to be written.
  */
-int wiimote_write_data(struct wiimote_t* wm, unsigned int addr, byte* data, byte len) {
-	byte buf[21] = {0};		/* the payload is always 23 */
+int wiimote_write_data(struct wiimote_t* wm, unsigned int addr, byte* data, byte len)
+{
+   byte buf[21] = {0};		/* the payload is always 23 */
 
-	if (!wm || !WIIMOTE_IS_CONNECTED(wm))
-		return 0;
-	if (!data || !len)
-		return 0;
+   if (!wm || !WIIMOTE_IS_CONNECTED(wm))
+      return 0;
+   if (!data || !len)
+      return 0;
 
 #ifdef WIIMOTE_DBG
-	printf("Writing %i bytes to memory location 0x%x...\n", len, addr);
+   printf("Writing %i bytes to memory location 0x%x...\n", len, addr);
 
    int i = 0;
    printf("Write data is: ");
@@ -426,17 +436,17 @@ int wiimote_write_data(struct wiimote_t* wm, unsigned int addr, byte* data, byte
    printf("\n");
 #endif
 
-	/* the offset is in big endian */
-	*(int*)(buf) = BIG_ENDIAN_LONG(addr);
+   /* the offset is in big endian */
+   *(int*)(buf) = BIG_ENDIAN_LONG(addr);
 
-	/* length */
-	*(byte*)(buf + 4) = len;
+   /* length */
+   *(byte*)(buf + 4) = len;
 
-	/* data */
-	memcpy(buf + 5, data, len);
+   /* data */
+   memcpy(buf + 5, data, len);
 
-	wiimote_send(wm, WM_CMD_WRITE_DATA, buf, 21);
-	return 1;
+   wiimote_send(wm, WM_CMD_WRITE_DATA, buf, 21);
+   return 1;
 }
 
 

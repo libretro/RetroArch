@@ -51,7 +51,7 @@ struct dinput_input
    int mouse_rel_y;
    int mouse_x;
    int mouse_y;
-   bool mouse_l, mouse_r, mouse_m;
+   bool mouse_l, mouse_r, mouse_m, mouse_wu, mouse_wd;
    struct pointer_status pointer_head;  // dummy head for easier iteration
 };
 
@@ -187,9 +187,11 @@ static void dinput_poll(void *data)
 
       di->mouse_rel_x = mouse_state.lX;
       di->mouse_rel_y = mouse_state.lY;
-      di->mouse_l = mouse_state.rgbButtons[0];
-      di->mouse_r = mouse_state.rgbButtons[1];
-      di->mouse_m = mouse_state.rgbButtons[2];
+      di->mouse_l  = mouse_state.rgbButtons[0];
+      di->mouse_r  = mouse_state.rgbButtons[1];
+      di->mouse_m  = mouse_state.rgbButtons[2];
+      di->mouse_wu = mouse_state.rgbButtons[3];
+      di->mouse_wd = mouse_state.rgbButtons[4];
 
       // No simple way to get absolute coordinates for RETRO_DEVICE_POINTER. Just use Win32 APIs.
       POINT point = {0};
@@ -279,6 +281,12 @@ static int16_t dinput_mouse_state(struct dinput_input *di, unsigned id)
          return di->mouse_l;
       case RETRO_DEVICE_ID_MOUSE_RIGHT:
          return di->mouse_r;
+      case RETRO_DEVICE_ID_MOUSE_WHEELUP:
+         return di->mouse_wu;
+      case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
+         return di->mouse_wd;
+      case RETRO_DEVICE_ID_MOUSE_MIDDLE:
+         return di->mouse_m;
       default:
          return 0;
    }
@@ -558,6 +566,7 @@ const input_driver_t input_dinput = {
    NULL,
    NULL,
    dinput_get_capabilities,
+   NULL,
    "dinput",
 
    dinput_grab_mouse,

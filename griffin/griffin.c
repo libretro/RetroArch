@@ -14,6 +14,10 @@
 * If not, see <http://www.gnu.org/licenses/>.
 */
 
+#ifndef HAVE_DYLIB
+#define HAVE_FILTERS_BUILTIN
+#endif
+
 #if defined(_XBOX)
 #include "../msvc/msvc_compat.h"
 #endif
@@ -84,7 +88,6 @@ CONFIG FILE
 
 #include "../conf/config_file.c"
 #include "../core_options.c"
-#include "../core_info.c"
 
 /*============================================================
 CHEATS
@@ -101,7 +104,7 @@ VIDEO CONTEXT
 #if defined(__CELLOS_LV2__)
 #include "../gfx/context/ps3_ctx.c"
 #elif defined(_XBOX)
-#include "../gfx/context/xdk_ctx.c"
+#include "../gfx/context/d3d_ctx.cpp"
 #elif defined(ANDROID)
 #include "../gfx/context/androidegl_ctx.c"
 #elif defined(__BLACKBERRY_QNX__)
@@ -159,11 +162,11 @@ VIDEO IMAGE
 ============================================================ */
 
 #if defined(__CELLOS_LV2__)
-#include "../ps3/image.c"
+#include "../gfx/image/image_ps3.c"
 #elif defined(_XBOX1)
-#include "../xdk/image.c"
+#include "../gfx/image/image_xdk1.c"
 #else
-#include "../gfx/image.c"
+#include "../gfx/image/image.c"
 #endif
 
 #if defined(WANT_RPNG) || defined(RARCH_MOBILE)
@@ -191,10 +194,6 @@ VIDEO DRIVER
 #ifdef HAVE_OMAP
 #include "../gfx/omap_gfx.c"
 #include "../gfx/fbdev.c"
-#endif
-
-#ifdef HAVE_DYLIB
-#include "../gfx/ext_gfx.c"
 #endif
 
 #include "../gfx/gfx_common.c"
@@ -295,6 +294,9 @@ INPUT
 #elif defined(SN_TARGET_PSP2) || defined(PSP)
 #include "../psp/psp_input.c"
 #elif defined(GEKKO)
+#ifdef HAVE_LIBSICKSAXIS
+#include "../gx/sicksaxis.c"
+#endif
 #include "../gx/gx_input.c"
 #elif defined(_XBOX)
 #include "../xdk/xdk_xinput_input.c"
@@ -304,8 +306,8 @@ INPUT
 #include "../android/native/jni/input_autodetect.c"
 #include "../android/native/jni/input_android.c"
 #elif defined(IOS) || defined(OSX)
-#include "../apple/common/apple_input.c"
-#include "../apple/common/apple_joypad.c"
+#include "../input/apple_input.c"
+#include "../input/apple_joypad.c"
 #elif defined(__BLACKBERRY_QNX__)
 #include "../blackberry-qnx/qnx_input.c"
 #elif defined(EMSCRIPTEN)
@@ -356,6 +358,9 @@ AUDIO RESAMPLER
 ============================================================ */
 #include "../audio/resampler.c"
 #include "../audio/sinc.c"
+#ifdef HAVE_CC_RESAMPLER
+#include "../audio/cc_resampler.c"
+#endif
 
 /*============================================================
 CAMERA
@@ -408,6 +413,8 @@ AUDIO
 #include "../gx/gx_audio.c"
 #elif defined(EMSCRIPTEN)
 #include "../audio/rwebaudio.c"
+#elif defined(PSP)
+#include "../psp1/psp1_audio.c"
 #endif
 
 #ifdef HAVE_XAUDIO
@@ -444,10 +451,6 @@ AUDIO
 #include "../audio/null.c"
 #endif
 
-#ifdef HAVE_DYLIB
-#include "../audio/ext_audio.c"
-#endif
-
 /*============================================================
 DRIVERS
 ============================================================ */
@@ -456,16 +459,49 @@ DRIVERS
 /*============================================================
 SCALERS
 ============================================================ */
-#include "../gfx/scaler/filter.c"
+#include "../gfx/scaler/scaler_filter.c"
 #include "../gfx/scaler/pixconv.c"
 #include "../gfx/scaler/scaler.c"
 #include "../gfx/scaler/scaler_int.c"
 
 /*============================================================
+FILTERS
+============================================================ */
+
+#ifdef HAVE_FILTERS_BUILTIN
+#include "../gfx/filters/2xsai.c"
+#include "../gfx/filters/super2xsai.c"
+#include "../gfx/filters/supereagle.c"
+#include "../gfx/filters/2xbr.c"
+#include "../gfx/filters/darken.c"
+#include "../gfx/filters/epx.c"
+#include "../gfx/filters/scale2x.c"
+#include "../gfx/filters/blargg_ntsc_snes_rf.c"
+#include "../gfx/filters/blargg_ntsc_snes_composite.c"
+#include "../gfx/filters/blargg_ntsc_snes_svideo.c"
+#include "../gfx/filters/blargg_ntsc_snes_rgb.c"
+#include "../gfx/filters/lq2x.c"
+#include "../gfx/filters/phosphor2x.c"
+
+#include "../audio/filters/echo.c"
+#ifndef ANDROID
+#ifndef _WIN32
+#include "../audio/filters/eq.c"
+#endif
+#endif
+#include "../audio/filters/iir.c"
+#include "../audio/filters/phaser.c"
+#include "../audio/filters/reverb.c"
+#include "../audio/filters/volume.c"
+#include "../audio/filters/wah.c"
+#endif
+/*============================================================
 DYNAMIC
 ============================================================ */
 #include "../dynamic.c"
 #include "../dynamic_dummy.c"
+#include "../gfx/filter.c"
+
 
 /*============================================================
 FILE
@@ -518,6 +554,8 @@ FRONTEND
 #include "../frontend/platform/platform_android.c"
 #endif
 
+#include "../frontend/info/core_info.c"
+
 /*============================================================
 MAIN
 ============================================================ */
@@ -565,20 +603,32 @@ SCREENSHOTS
 MENU
 ============================================================ */
 #ifdef HAVE_MENU
+#include "../frontend/menu/menu_input_line_cb.c"
 #include "../frontend/menu/menu_common.c"
-#include "../frontend/menu/menu_context.c"
-#include "../frontend/menu/menu_settings.c"
+#include "../frontend/menu/menu_navigation.c"
 #include "../frontend/menu/history.c"
+#include "../frontend/menu/file_list.c"
 
-#include "../file_list.c"
+#if defined(HAVE_RMENU) || defined(HAVE_RGUI) || defined(HAVE_RMENU_XUI)
+#include "../frontend/menu/backend/menu_common_backend.c"
+#endif
 
-#if defined(HAVE_RMENU)
+#ifdef HAVE_RMENU
 #include "../frontend/menu/disp/rmenu.c"
-#elif defined(HAVE_RGUI)
+#endif
+
+#ifdef HAVE_RGUI
 #include "../frontend/menu/disp/rgui.c"
-#elif defined(HAVE_RMENU_XUI)
+#endif
+
+#ifdef HAVE_RMENU_XUI
 #include "../frontend/menu/disp/rmenu_xui.cpp"
 #endif
+
+#if defined(HAVE_LAKKA) && defined(HAVE_OPENGL)
+#include "../frontend/menu/disp/lakka.c"
+#endif
+
 #endif
 
 #ifdef __cplusplus
@@ -620,7 +670,6 @@ XML
     
 #if defined(IOS) || defined(OSX)
 #include "../apple/common/setting_data.c"
-#include "../apple/common/core_info_ext.c"
 #endif
 
 #ifdef __cplusplus

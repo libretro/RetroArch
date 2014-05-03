@@ -15,7 +15,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <GLES2/gl2.h>
+#include "../gfx/glsym/glsym.h"
 #include "../driver.h"
 #include "../android/native/jni/jni_macros.h"
 

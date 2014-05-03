@@ -8,6 +8,8 @@
 
 /* Begin PBXBuildFile section */
 		1DDD58160DA1D0A300B32029 /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = 1DDD58140DA1D0A300B32029 /* MainMenu.xib */; };
+		7A7C248118FC43ED00DB92FD /* CoreFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7A7C248018FC43ED00DB92FD /* CoreFoundation.framework */; };
+		7A7C24C318FC446400DB92FD /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7A7C24C218FC446400DB92FD /* IOKit.framework */; };
 		7AA19E9618AA09D000D16488 /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7AA19E9518AA09D000D16488 /* OpenGL.framework */; };
 		7AA19E9E18AA0C9900D16488 /* platform.m in Sources */ = {isa = PBXBuildFile; fileRef = 7AA19E9D18AA0C9900D16488 /* platform.m */; };
 		7AA19EA018AA0CA600D16488 /* settings.m in Sources */ = {isa = PBXBuildFile; fileRef = 7AA19E9F18AA0CA600D16488 /* settings.m */; };
@@ -27,6 +29,8 @@
 		1DDD58150DA1D0A300B32029 /* English */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = English; path = English.lproj/MainMenu.xib; sourceTree = "<group>"; };
 		29B97324FDCFA39411CA2CEA /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = /System/Library/Frameworks/AppKit.framework; sourceTree = "<absolute>"; };
 		29B97325FDCFA39411CA2CEA /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = /System/Library/Frameworks/Foundation.framework; sourceTree = "<absolute>"; };
+		7A7C248018FC43ED00DB92FD /* CoreFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreFoundation.framework; path = /System/Library/Frameworks/CoreFoundation.framework; sourceTree = "<absolute>"; };
+		7A7C24C218FC446400DB92FD /* IOKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IOKit.framework; path = /System/Library/Frameworks/IOKit.framework; sourceTree = "<absolute>"; };
 		7AA19E9518AA09D000D16488 /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = /System/Library/Frameworks/OpenGL.framework; sourceTree = "<absolute>"; };
 		7AA19E9D18AA0C9900D16488 /* platform.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = platform.m; path = ../OSX/platform.m; sourceTree = SOURCE_ROOT; };
 		7AA19E9F18AA0CA600D16488 /* settings.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = settings.m; path = ../OSX/settings.m; sourceTree = SOURCE_ROOT; };
@@ -46,6 +50,8 @@
 			files = (
 				8D11072F0486CEB800E47090 /* Cocoa.framework in Frameworks */,
 				7AA19E9618AA09D000D16488 /* OpenGL.framework in Frameworks */,
+				7A7C248118FC43ED00DB92FD /* CoreFoundation.framework in Frameworks */,
+				7A7C24C318FC446400DB92FD /* IOKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -88,6 +94,8 @@
 		29B97314FDCFA39411CA2CEA /* RetroArch_OSX_PPC */ = {
 			isa = PBXGroup;
 			children = (
+				7A7C248018FC43ED00DB92FD /* CoreFoundation.framework */,
+				7A7C24C218FC446400DB92FD /* IOKit.framework */,
 				7AA19E9518AA09D000D16488 /* OpenGL.framework */,
 				080E96DDFE201D6D7F000001 /* Classes */,
 				29B97315FDCFA39411CA2CEA /* Other Sources */,
@@ -284,13 +292,17 @@
 				ONLY_ACTIVE_ARCH = YES;
 				OTHER_CFLAGS = (
 					"-DHAVE_DYNAMIC,",
+					"-DHAVE_GRIFFIN,",
+					"-DHAVE_CC_RESAMPLER,",
 					"-DHAVE_MENU,",
 					"-DWANT_RPNG,",
 					"-DHAVE_OPENGL,",
 					"-DWANT_MINIZ,",
 					"-DHAVE_ZLIB,",
 					"-DRARCH_INTERNAL,",
-					"-DOSX",
+					"-DOSX,",
+					"-DHAVE_GLSL,",
+					"-DHAVE_RGUI",
 				);
 				PREBINDING = NO;
 				PRECOMPS_INCLUDE_HEADERS_FROM_BUILT_PRODUCTS_DIR = NO;
@@ -309,13 +321,17 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				OTHER_CFLAGS = (
 					"-DHAVE_DYNAMIC,",
+					"-DHAVE_GRIFFIN,",
+					"-DHAVE_CC_RESAMPLER,",
 					"-DHAVE_MENU,",
 					"-DWANT_RPNG,",
 					"-DHAVE_OPENGL,",
 					"-DWANT_MINIZ,",
 					"-DHAVE_ZLIB,",
 					"-DRARCH_INTERNAL,",
-					"-DOSX",
+					"-DOSX,",
+					"-DHAVE_GLSL,",
+					"-DHAVE_RGUI",
 				);
 				PREBINDING = NO;
 				PRECOMPS_INCLUDE_HEADERS_FROM_BUILT_PRODUCTS_DIR = NO;

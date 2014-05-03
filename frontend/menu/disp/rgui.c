@@ -2,7 +2,7 @@
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2014 - Daniel De Matteis
  *  Copyright (C) 2012-2014 - Michael Lelli
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -21,16 +21,15 @@
 #include <string.h>
 #include <limits.h>
 
+#include "../backend/menu_common_backend.h"
 #include "../menu_common.h"
-#include "../menu_context.h"
-#include "../../../file_list.h"
+#include "../file_list.h"
 #include "../../../general.h"
 #include "../../../gfx/gfx_common.h"
 #include "../../../config.def.h"
 #include "../../../file.h"
 #include "../../../dynamic.h"
 #include "../../../compat/posix_string.h"
-#include "../../../gfx/shader_parse.h"
 #include "../../../performance.h"
 #include "../../../input/input_common.h"
 
@@ -41,12 +40,16 @@
 #define HAVE_SHADER_MANAGER
 #endif
 
+#if defined(PSP)
+static uint16_t __attribute((aligned(64))) menu_framebuf[400 * 240];
+#else
 static uint16_t menu_framebuf[400 * 240];
+#endif
 
-#define TERM_START_X 15
-#define TERM_START_Y 27
-#define TERM_WIDTH (((rgui->width - TERM_START_X - 15) / (FONT_WIDTH_STRIDE)))
-#define TERM_HEIGHT (((rgui->height - TERM_START_Y - 15) / (FONT_HEIGHT_STRIDE)) - 1)
+#define RGUI_TERM_START_X 15
+#define RGUI_TERM_START_Y 27
+#define RGUI_TERM_WIDTH (((rgui->width - RGUI_TERM_START_X - 15) / (FONT_WIDTH_STRIDE)))
+#define RGUI_TERM_HEIGHT (((rgui->height - RGUI_TERM_START_Y - 15) / (FONT_HEIGHT_STRIDE)) - 1)
 
 static void rgui_copy_glyph(uint8_t *glyph, const uint8_t *buf)
 {
@@ -74,7 +77,7 @@ static uint16_t gray_filler(unsigned x, unsigned y)
    x >>= 1;
    y >>= 1;
    unsigned col = ((x + y) & 1) + 1;
-#ifdef GEKKO
+#if defined(GEKKO) || defined(PSP)
    return (6 << 12) | (col << 8) | (col << 4) | (col << 0);
 #else
    return (col << 13) | (col << 9) | (col << 5) | (12 << 0);
@@ -86,7 +89,7 @@ static uint16_t green_filler(unsigned x, unsigned y)
    x >>= 1;
    y >>= 1;
    unsigned col = ((x + y) & 1) + 1;
-#ifdef GEKKO
+#if defined(GEKKO) || defined(PSP)
    return (6 << 12) | (col << 8) | (col << 5) | (col << 0);
 #else
    return (col << 13) | (col << 10) | (col << 5) | (12 << 0);
@@ -121,7 +124,7 @@ static void blit_line(rgui_handle_t *rgui,
             if (col)
             {
                rgui->frame_buf[(y + j) * (rgui->frame_buf_pitch >> 1) + (x + i)] = green ?
-#ifdef GEKKO
+#if defined(GEKKO)|| defined(PSP)
                (3 << 0) | (10 << 4) | (3 << 8) | (7 << 12) : 0x7FFF;
 #else
                (15 << 0) | (7 << 4) | (15 << 8) | (7 << 12) : 0xFFFF;
@@ -169,7 +172,7 @@ static bool rguidisp_init_font(void *data)
    return ret;
 }
 
-static void render_background(rgui_handle_t *rgui)
+static void rgui_render_background(rgui_handle_t *rgui)
 {
    fill_rect(rgui->frame_buf, rgui->frame_buf_pitch,
          0, 0, rgui->width, rgui->height, gray_filler);
@@ -210,13 +213,13 @@ static void rgui_render_messagebox(void *data, const char *message)
    {
       char *msg = list->elems[i].data;
       unsigned msglen = strlen(msg);
-      if (msglen > TERM_WIDTH)
+      if (msglen > RGUI_TERM_WIDTH)
       {
-         msg[TERM_WIDTH - 2] = '.';
-         msg[TERM_WIDTH - 1] = '.';
-         msg[TERM_WIDTH - 0] = '.';
-         msg[TERM_WIDTH + 1] = '\0';
-         msglen = TERM_WIDTH;
+         msg[RGUI_TERM_WIDTH - 2] = '.';
+         msg[RGUI_TERM_WIDTH - 1] = '.';
+         msg[RGUI_TERM_WIDTH - 0] = '.';
+         msg[RGUI_TERM_WIDTH + 1] = '\0';
+         msglen = RGUI_TERM_WIDTH;
       }
 
       unsigned line_width = msglen * FONT_WIDTH_STRIDE - 1 + 6 + 10;
@@ -227,7 +230,7 @@ static void rgui_render_messagebox(void *data, const char *message)
    unsigned height = FONT_HEIGHT_STRIDE * list->size + 6 + 10;
    int x = (rgui->width - width) / 2;
    int y = (rgui->height - height) / 2;
-   
+
    fill_rect(rgui->frame_buf, rgui->frame_buf_pitch,
          x + 5, y + 5, width - 10, height - 10, gray_filler);
 
@@ -258,29 +261,33 @@ static void rgui_render(void *data)
 {
    rgui_handle_t *rgui = (rgui_handle_t*)data;
 
-   if (rgui->need_refresh && 
+   if (rgui->need_refresh &&
          (g_extern.lifecycle_state & (1ULL << MODE_MENU))
          && !rgui->msg_force)
       return;
 
-   size_t begin = rgui->selection_ptr >= TERM_HEIGHT / 2 ?
-      rgui->selection_ptr - TERM_HEIGHT / 2 : 0;
-   size_t end = rgui->selection_ptr + TERM_HEIGHT <= rgui->selection_buf->size ?
-      rgui->selection_ptr + TERM_HEIGHT : rgui->selection_buf->size;
-   
+   size_t begin = rgui->selection_ptr >= RGUI_TERM_HEIGHT / 2 ?
+      rgui->selection_ptr - RGUI_TERM_HEIGHT / 2 : 0;
+   size_t end = rgui->selection_ptr + RGUI_TERM_HEIGHT <= rgui->selection_buf->size ?
+      rgui->selection_ptr + RGUI_TERM_HEIGHT : rgui->selection_buf->size;
+
    // Do not scroll if all items are visible.
-   if (rgui->selection_buf->size <= TERM_HEIGHT)
+   if (rgui->selection_buf->size <= RGUI_TERM_HEIGHT)
       begin = 0;
 
-   if (end - begin > TERM_HEIGHT)
-      end = begin + TERM_HEIGHT;
+   if (end - begin > RGUI_TERM_HEIGHT)
+      end = begin + RGUI_TERM_HEIGHT;
 
-   render_background(rgui);
+   rgui_render_background(rgui);
 
    char title[256];
    const char *dir = NULL;
    unsigned menu_type = 0;
+   unsigned menu_type_is = 0;
    file_list_get_last(rgui->menu_stack, &dir, &menu_type);
+
+   if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->type_is)
+      menu_type_is = driver.menu_ctx->backend->type_is(menu_type);
 
    if (menu_type == RGUI_SETTINGS_CORE)
       snprintf(title, sizeof(title), "CORE SELECTION %s", dir);
@@ -292,27 +299,46 @@ static void rgui_render(void *data)
       snprintf(title, sizeof(title), "DISK APPEND %s", dir);
    else if (menu_type == RGUI_SETTINGS_VIDEO_OPTIONS)
       strlcpy(title, "VIDEO OPTIONS", sizeof(title));
+   else if (menu_type == RGUI_SETTINGS_INPUT_OPTIONS ||
+         menu_type == RGUI_SETTINGS_CUSTOM_BIND ||
+         menu_type == RGUI_SETTINGS_CUSTOM_BIND_KEYBOARD)
+      strlcpy(title, "INPUT OPTIONS", sizeof(title));
+   else if (menu_type == RGUI_SETTINGS_OVERLAY_OPTIONS)
+      strlcpy(title, "OVERLAY OPTIONS", sizeof(title));
+   else if (menu_type == RGUI_SETTINGS_NETPLAY_OPTIONS)
+      strlcpy(title, "NETPLAY OPTIONS", sizeof(title));
+   else if (menu_type == RGUI_SETTINGS_PATH_OPTIONS)
+      strlcpy(title, "PATH OPTIONS", sizeof(title));
+   else if (menu_type == RGUI_SETTINGS_OPTIONS)
+      strlcpy(title, "SETTINGS", sizeof(title));
    else if (menu_type == RGUI_SETTINGS_DRIVERS)
       strlcpy(title, "DRIVER OPTIONS", sizeof(title));
 #ifdef HAVE_SHADER_MANAGER
    else if (menu_type == RGUI_SETTINGS_SHADER_OPTIONS)
       strlcpy(title, "SHADER OPTIONS", sizeof(title));
 #endif
+   else if (menu_type == RGUI_SETTINGS_FONT_OPTIONS)
+      strlcpy(title, "FONT OPTIONS", sizeof(title));
+   else if (menu_type == RGUI_SETTINGS_GENERAL_OPTIONS)
+      strlcpy(title, "GENERAL OPTIONS", sizeof(title));
    else if (menu_type == RGUI_SETTINGS_AUDIO_OPTIONS)
       strlcpy(title, "AUDIO OPTIONS", sizeof(title));
    else if (menu_type == RGUI_SETTINGS_DISK_OPTIONS)
       strlcpy(title, "DISK OPTIONS", sizeof(title));
    else if (menu_type == RGUI_SETTINGS_CORE_OPTIONS)
       strlcpy(title, "CORE OPTIONS", sizeof(title));
+   else if (menu_type == RGUI_SETTINGS_CORE_INFO)
+      strlcpy(title, "CORE INFO", sizeof(title));
+   else if (menu_type == RGUI_SETTINGS_PRIVACY_OPTIONS)
+      strlcpy(title, "PRIVACY OPTIONS", sizeof(title));
 #ifdef HAVE_SHADER_MANAGER
-   else if (menu_type_is(menu_type) == RGUI_SETTINGS_SHADER_OPTIONS)
+   else if (menu_type_is == RGUI_SETTINGS_SHADER_OPTIONS)
       snprintf(title, sizeof(title), "SHADER %s", dir);
 #endif
-   else if ((menu_type == RGUI_SETTINGS_INPUT_OPTIONS) ||
-         (menu_type == RGUI_SETTINGS_PATH_OPTIONS) ||
-         (menu_type == RGUI_SETTINGS_OPTIONS) ||
-         (menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT || menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT_2) ||
-         menu_type == RGUI_SETTINGS_CUSTOM_BIND ||
+   else if (menu_type == RGUI_SETTINGS_PATH_OPTIONS ||
+         menu_type == RGUI_SETTINGS_OPTIONS ||
+         menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT ||
+         menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT_2 ||
          menu_type == RGUI_START_SCREEN ||
          menu_type == RGUI_SETTINGS)
       snprintf(title, sizeof(title), "MENU %s", dir);
@@ -322,6 +348,10 @@ static void rgui_render(void *data)
    else if (menu_type == RGUI_SETTINGS_OVERLAY_PRESET)
       snprintf(title, sizeof(title), "OVERLAY %s", dir);
 #endif
+   else if (menu_type == RGUI_SETTINGS_VIDEO_SOFTFILTER)
+      snprintf(title, sizeof(title), "FILTER %s", dir);
+   else if (menu_type == RGUI_SETTINGS_AUDIO_DSP_FILTER)
+      snprintf(title, sizeof(title), "DSP FILTER %s", dir);
    else if (menu_type == RGUI_BROWSER_DIR_PATH)
       snprintf(title, sizeof(title), "BROWSER DIR %s", dir);
 #ifdef HAVE_SCREENSHOTS
@@ -330,6 +360,10 @@ static void rgui_render(void *data)
 #endif
    else if (menu_type == RGUI_SHADER_DIR_PATH)
       snprintf(title, sizeof(title), "SHADER DIR %s", dir);
+   else if (menu_type == RGUI_FILTER_DIR_PATH)
+      snprintf(title, sizeof(title), "FILTER DIR %s", dir);
+   else if (menu_type == RGUI_DSP_FILTER_DIR_PATH)
+      snprintf(title, sizeof(title), "DSP FILTER DIR %s", dir);
    else if (menu_type == RGUI_SAVESTATE_DIR_PATH)
       snprintf(title, sizeof(title), "SAVESTATE DIR %s", dir);
 #ifdef HAVE_DYNAMIC
@@ -362,8 +396,8 @@ static void rgui_render(void *data)
    }
 
    char title_buf[256];
-   menu_ticker_line(title_buf, TERM_WIDTH - 3, g_extern.frame_count / 15, title, true);
-   blit_line(rgui, TERM_START_X + 15, 15, title_buf, true);
+   menu_ticker_line(title_buf, RGUI_TERM_WIDTH - 3, g_extern.frame_count / 15, title, true);
+   blit_line(rgui, RGUI_TERM_START_X + 15, 15, title_buf, true);
 
    char title_msg[64];
    const char *core_name = rgui->info.library_name;
@@ -379,13 +413,13 @@ static void rgui_render(void *data)
       core_version = "";
 
    snprintf(title_msg, sizeof(title_msg), "%s - %s %s", PACKAGE_VERSION, core_name, core_version);
-   blit_line(rgui, TERM_START_X + 15, (TERM_HEIGHT * FONT_HEIGHT_STRIDE) + TERM_START_Y + 2, title_msg, true);
+   blit_line(rgui, RGUI_TERM_START_X + 15, (RGUI_TERM_HEIGHT * FONT_HEIGHT_STRIDE) + RGUI_TERM_START_Y + 2, title_msg, true);
 
    unsigned x, y;
    size_t i;
 
-   x = TERM_START_X;
-   y = TERM_START_Y;
+   x = RGUI_TERM_START_X;
+   y = RGUI_TERM_START_Y;
 
    for (i = begin; i < end; i++, y += FONT_HEIGHT_STRIDE)
    {
@@ -396,7 +430,7 @@ static void rgui_render(void *data)
       char type_str[256];
 
       unsigned w = 19;
-      if (menu_type == RGUI_SETTINGS_INPUT_OPTIONS || menu_type == RGUI_SETTINGS_CUSTOM_BIND)
+      if (menu_type == RGUI_SETTINGS_INPUT_OPTIONS || menu_type == RGUI_SETTINGS_CUSTOM_BIND || menu_type == RGUI_SETTINGS_CUSTOM_BIND_KEYBOARD)
          w = 21;
       else if (menu_type == RGUI_SETTINGS_PATH_OPTIONS)
          w = 24;
@@ -406,8 +440,8 @@ static void rgui_render(void *data)
             type <= RGUI_SETTINGS_SHADER_LAST)
       {
          // HACK. Work around that we're using the menu_type as dir type to propagate state correctly.
-         if ((menu_type_is(menu_type) == RGUI_SETTINGS_SHADER_OPTIONS)
-               && (menu_type_is(type) == RGUI_SETTINGS_SHADER_OPTIONS))
+         if ((menu_type_is == RGUI_SETTINGS_SHADER_OPTIONS)
+               && (menu_type_is == RGUI_SETTINGS_SHADER_OPTIONS))
          {
             type = RGUI_FILE_DIRECTORY;
             strlcpy(type_str, "(DIR)", sizeof(type_str));
@@ -418,8 +452,8 @@ static void rgui_render(void *data)
          else if (type == RGUI_SETTINGS_SHADER_FILTER)
             snprintf(type_str, sizeof(type_str), "%s",
                   g_settings.video.smooth ? "Linear" : "Nearest");
-         else
-            shader_manager_get_str(&rgui->shader, type_str, sizeof(type_str), type);
+         else if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->shader_manager_get_str)
+            driver.menu_ctx->backend->shader_manager_get_str(&rgui->shader, type_str, sizeof(type_str), type);
       }
       else
 #endif
@@ -443,8 +477,10 @@ static void rgui_render(void *data)
 #ifdef HAVE_OVERLAY
             menu_type == RGUI_SETTINGS_OVERLAY_PRESET ||
 #endif
+            menu_type == RGUI_SETTINGS_VIDEO_SOFTFILTER ||
+            menu_type == RGUI_SETTINGS_AUDIO_DSP_FILTER ||
             menu_type == RGUI_SETTINGS_DISK_APPEND ||
-            menu_type_is(menu_type) == RGUI_FILE_DIRECTORY)
+            menu_type_is == RGUI_FILE_DIRECTORY)
       {
          if (type == RGUI_FILE_PLAIN)
          {
@@ -472,8 +508,8 @@ static void rgui_render(void *data)
          strlcpy(type_str,
                core_option_get_val(g_extern.system.core_options, type - RGUI_SETTINGS_CORE_OPTION_START),
                sizeof(type_str));
-      else
-         menu_set_settings_label(type_str, sizeof(type_str), &w, type);
+      else if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->setting_set_label)
+         driver.menu_ctx->backend->setting_set_label(type_str, sizeof(type_str), &w, type);
 
       char entry_title_buf[256];
       char type_str_buf[64];
@@ -482,14 +518,14 @@ static void rgui_render(void *data)
       strlcpy(entry_title_buf, path, sizeof(entry_title_buf));
       strlcpy(type_str_buf, type_str, sizeof(type_str_buf));
 
-      if ((type == RGUI_FILE_PLAIN || type == RGUI_FILE_DIRECTORY))
-         menu_ticker_line(entry_title_buf, TERM_WIDTH - (w + 1 + 2), g_extern.frame_count / 15, path, selected);
+      if (type == RGUI_FILE_PLAIN || type == RGUI_FILE_DIRECTORY || type == RGUI_SETTINGS_CORE_INFO_NONE)
+         menu_ticker_line(entry_title_buf, RGUI_TERM_WIDTH - (w + 1 + 2), g_extern.frame_count / 15, path, selected);
       else
          menu_ticker_line(type_str_buf, w, g_extern.frame_count / 15, type_str, selected);
 
       snprintf(message, sizeof(message), "%c %-*.*s %-*s",
             selected ? '>' : ' ',
-            TERM_WIDTH - (w + 1 + 2), TERM_WIDTH - (w + 1 + 2),
+            RGUI_TERM_WIDTH - (w + 1 + 2), RGUI_TERM_WIDTH - (w + 1 + 2),
             entry_title_buf,
             w,
             type_str_buf);
@@ -557,7 +593,7 @@ static void rgui_free(void *data)
       free((uint8_t*)rgui->font);
 }
 
-int rgui_input_postprocess(void *data, uint64_t old_state)
+static int rgui_input_postprocess(void *data, uint64_t old_state)
 {
    (void)data;
 
@@ -578,7 +614,7 @@ void rgui_set_texture(void *data, bool enable)
 {
    rgui_handle_t *rgui = (rgui_handle_t*)data;
 
-   if (driver.video_poke && driver.video_poke->set_texture_enable)
+   if (driver.video_data && driver.video_poke && driver.video_poke->set_texture_enable)
       driver.video_poke->set_texture_frame(driver.video_data, menu_framebuf,
             enable, rgui->width, rgui->height, 1.0f);
 }
@@ -587,11 +623,25 @@ const menu_ctx_driver_t menu_ctx_rgui = {
    rgui_set_texture,
    rgui_render_messagebox,
    rgui_render,
+   NULL,
    rgui_init,
    rgui_free,
    NULL,
    NULL,
    NULL,
    NULL,
+   rgui_input_postprocess,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   &menu_ctx_backend_common,
    "rgui",
 };

@@ -68,6 +68,7 @@ enum
    AUDIO_XENON360,
    AUDIO_WII,
    AUDIO_RWEBAUDIO,
+   AUDIO_PSP1,
    AUDIO_NULL,
 
    INPUT_ANDROID,
@@ -131,6 +132,8 @@ enum
 #define AUDIO_DEFAULT_DRIVER AUDIO_XENON360
 #elif defined(GEKKO)
 #define AUDIO_DEFAULT_DRIVER AUDIO_WII
+#elif defined(PSP)
+#define AUDIO_DEFAULT_DRIVER AUDIO_PSP1
 #elif defined(HAVE_ALSA) && defined(HAVE_VIDEOCORE)
 #define AUDIO_DEFAULT_DRIVER AUDIO_ALSATHREAD
 #elif defined(HAVE_ALSA)
@@ -177,7 +180,7 @@ enum
 #define INPUT_DEFAULT_DRIVER INPUT_RWEBINPUT
 #elif defined(__CELLOS_LV2__)
 #define INPUT_DEFAULT_DRIVER INPUT_PS3
-#elif defined(SN_TARGET_PSP2) || defined(PSP)
+#elif (defined(SN_TARGET_PSP2) || defined(PSP))
 #define INPUT_DEFAULT_DRIVER INPUT_PSP
 #elif defined(GEKKO)
 #define INPUT_DEFAULT_DRIVER INPUT_WII
@@ -250,6 +253,12 @@ static const unsigned monitor_index = 0; // Which monitor to prefer. 0 is any mo
 static const unsigned fullscreen_x = 0; // Fullscreen resolution. A value of 0 uses the desktop resolution.
 static const unsigned fullscreen_y = 0;
 
+#if defined(RARCH_CONSOLE) || defined(__APPLE__)
+static const bool load_dummy_on_core_shutdown = false;
+#else
+static const bool load_dummy_on_core_shutdown = true;
+#endif
+
 // Forcibly disable composition. Only valid on Windows Vista/7 for now.
 static const bool disable_composition = false;
 
@@ -274,6 +283,9 @@ static unsigned swap_interval = 1;
 
 // Threaded video. Will possibly increase performance significantly at cost of worse synchronization and latency.
 static const bool video_threaded = false;
+
+// Set to true if HW render cores should get their private context.
+static const bool video_shared_context = false;
 
 // Smooths picture
 static const bool video_smooth = true;
@@ -306,11 +318,7 @@ static unsigned aspect_ratio_idx = ASPECT_RATIO_CONFIG; // Use g_settings.video.
 #endif
 
 // Save configuration file on exit
-#if defined(RARCH_CONSOLE) || defined(RARCH_MOBILE)
 static bool config_save_on_exit = true;
-#else
-static bool config_save_on_exit = false;
-#endif
 
 #ifdef HAVE_OVERLAY
 // Default overlay directory
@@ -335,6 +343,9 @@ static const char *default_shader_dir = ":/shaders_glsl/";
 static const char *default_shader_dir = NULL;
 #endif
 
+static const char *default_filter_dir     = NULL;
+static const char *default_dsp_filter_dir = NULL;
+
 #if defined(__QNX__)
 static const char *default_config_path = "app/native/retroarch.cfg";
 #else
@@ -357,6 +368,10 @@ static bool default_core_specific_config = false;
 static const char *default_libretro_info_path = "/data/data/com.retroarch/info/";
 #elif defined(__QNX__)
 static const char *default_libretro_info_path = "/app/native/info/";
+#elif defined(_XBOX1)
+static const char *default_libretro_info_path = "D:";
+#elif defined(_XBOX360)
+static const char *default_libretro_info_path = "game:";
 #else
 static const char *default_libretro_info_path = NULL;
 #endif
@@ -365,6 +380,10 @@ static const char *default_libretro_info_path = NULL;
 static const char *default_libretro_path = "/data/data/com.retroarch/cores/";
 #elif defined(__QNX__)
 static const char *default_libretro_path = "/app/native/lib/";
+#elif defined(_XBOX1)
+static const char *default_libretro_path = "D:";
+#elif defined(_XBOX360)
+static const char *default_libretro_path = "game:";
 #else
 static const char *default_libretro_path = NULL;
 #endif
@@ -411,7 +430,7 @@ static const bool font_enable = true;
 #if defined(__QNX__)
 static const float refresh_rate = 59.98;
 #elif defined(RARCH_CONSOLE)
-static const float refresh_rate = 59.94; 
+static const float refresh_rate = 60/1.001; 
 #else
 static const float refresh_rate = 59.95; 
 #endif
@@ -438,6 +457,13 @@ static const int out_latency = 64;
 
 // Will sync audio. (recommended) 
 static const bool audio_sync = true;
+
+// Default resampler
+#if defined(PSP)
+static const char *audio_resampler = "CC";
+#else
+static const char *audio_resampler = "sinc";
+#endif
 
 // Experimental rate control
 #if defined(GEKKO) || !defined(RARCH_CONSOLE)
@@ -509,6 +535,9 @@ static const unsigned game_history_size = 100;
 // Show RGUI start-up screen on boot.
 static const bool rgui_show_start_screen = true;
 
+// Log level for libretro cores (GET_LOG_INTERFACE).
+static const unsigned libretro_log_level = 0;
+
 
 ////////////////////
 // Keybinds, Joypad
@@ -531,23 +560,40 @@ static const bool input_autodetect_enable = true;
 
 #ifndef IS_SALAMANDER
 
-#ifdef __CELLOS_LV2__
-#define RETRO_DEF_JOYPAD_B (1ULL << RETRO_DEVICE_ID_JOYPAD_B)
-#define RETRO_DEF_JOYPAD_Y (1ULL << RETRO_DEVICE_ID_JOYPAD_Y)
-#define RETRO_DEF_JOYPAD_SELECT (1ULL << RETRO_DEVICE_ID_JOYPAD_SELECT)
-#define RETRO_DEF_JOYPAD_START (1ULL << RETRO_DEVICE_ID_JOYPAD_START)
-#define RETRO_DEF_JOYPAD_UP (1ULL << RETRO_DEVICE_ID_JOYPAD_UP)
-#define RETRO_DEF_JOYPAD_DOWN (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN)
-#define RETRO_DEF_JOYPAD_LEFT (1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT)
-#define RETRO_DEF_JOYPAD_RIGHT (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT)
-#define RETRO_DEF_JOYPAD_A (1ULL << RETRO_DEVICE_ID_JOYPAD_A)
-#define RETRO_DEF_JOYPAD_X (1ULL << RETRO_DEVICE_ID_JOYPAD_X)
-#define RETRO_DEF_JOYPAD_L (1ULL << RETRO_DEVICE_ID_JOYPAD_L)
-#define RETRO_DEF_JOYPAD_R (1ULL << RETRO_DEVICE_ID_JOYPAD_R)
-#define RETRO_DEF_JOYPAD_L2 (1ULL << RETRO_DEVICE_ID_JOYPAD_L2)
-#define RETRO_DEF_JOYPAD_R2 (1ULL << RETRO_DEVICE_ID_JOYPAD_R2)
-#define RETRO_DEF_JOYPAD_L3 (1ULL << RETRO_DEVICE_ID_JOYPAD_L3)
-#define RETRO_DEF_JOYPAD_R3 (1ULL << RETRO_DEVICE_ID_JOYPAD_R3)
+#if defined(__CELLOS_LV2__)
+#define RETRO_DEF_JOYPAD_B RETRO_DEVICE_ID_JOYPAD_B
+#define RETRO_DEF_JOYPAD_Y RETRO_DEVICE_ID_JOYPAD_Y
+#define RETRO_DEF_JOYPAD_SELECT RETRO_DEVICE_ID_JOYPAD_SELECT
+#define RETRO_DEF_JOYPAD_START RETRO_DEVICE_ID_JOYPAD_START
+#define RETRO_DEF_JOYPAD_UP RETRO_DEVICE_ID_JOYPAD_UP
+#define RETRO_DEF_JOYPAD_DOWN RETRO_DEVICE_ID_JOYPAD_DOWN
+#define RETRO_DEF_JOYPAD_LEFT RETRO_DEVICE_ID_JOYPAD_LEFT
+#define RETRO_DEF_JOYPAD_RIGHT RETRO_DEVICE_ID_JOYPAD_RIGHT
+#define RETRO_DEF_JOYPAD_A RETRO_DEVICE_ID_JOYPAD_A
+#define RETRO_DEF_JOYPAD_X RETRO_DEVICE_ID_JOYPAD_X
+#define RETRO_DEF_JOYPAD_L RETRO_DEVICE_ID_JOYPAD_L
+#define RETRO_DEF_JOYPAD_R RETRO_DEVICE_ID_JOYPAD_R
+#define RETRO_DEF_JOYPAD_L2 RETRO_DEVICE_ID_JOYPAD_L2
+#define RETRO_DEF_JOYPAD_R2 RETRO_DEVICE_ID_JOYPAD_R2
+#define RETRO_DEF_JOYPAD_L3 RETRO_DEVICE_ID_JOYPAD_L3
+#define RETRO_DEF_JOYPAD_R3 RETRO_DEVICE_ID_JOYPAD_R3
+#elif defined(PSP)
+#define RETRO_DEF_JOYPAD_B RETRO_DEVICE_ID_JOYPAD_B
+#define RETRO_DEF_JOYPAD_Y RETRO_DEVICE_ID_JOYPAD_Y
+#define RETRO_DEF_JOYPAD_SELECT RETRO_DEVICE_ID_JOYPAD_SELECT
+#define RETRO_DEF_JOYPAD_START RETRO_DEVICE_ID_JOYPAD_START
+#define RETRO_DEF_JOYPAD_UP RETRO_DEVICE_ID_JOYPAD_UP
+#define RETRO_DEF_JOYPAD_DOWN RETRO_DEVICE_ID_JOYPAD_DOWN
+#define RETRO_DEF_JOYPAD_LEFT RETRO_DEVICE_ID_JOYPAD_LEFT
+#define RETRO_DEF_JOYPAD_RIGHT RETRO_DEVICE_ID_JOYPAD_RIGHT
+#define RETRO_DEF_JOYPAD_A RETRO_DEVICE_ID_JOYPAD_A
+#define RETRO_DEF_JOYPAD_X RETRO_DEVICE_ID_JOYPAD_X
+#define RETRO_DEF_JOYPAD_L RETRO_DEVICE_ID_JOYPAD_L
+#define RETRO_DEF_JOYPAD_R RETRO_DEVICE_ID_JOYPAD_R
+#define RETRO_DEF_JOYPAD_L2 NO_BTN
+#define RETRO_DEF_JOYPAD_R2 NO_BTN
+#define RETRO_DEF_JOYPAD_L3 NO_BTN
+#define RETRO_DEF_JOYPAD_R3 NO_BTN
 #else
 #define RETRO_DEF_JOYPAD_B NO_BTN
 #define RETRO_DEF_JOYPAD_Y NO_BTN

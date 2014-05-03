@@ -1422,7 +1422,7 @@ static void android_input_set_keybinds(void *data, unsigned device,
             strlcpy(g_settings.input.device_names[port], "DragonRise",
                   sizeof(g_settings.input.device_names[port]));
             /* TODO: L3/R3 */
-
+	
             android->dpad_emulation[port] = ANALOG_DPAD_DUALANALOG;
             android->keycode_lut[AKEYCODE_BUTTON_2]  |=  ((RETRO_DEVICE_ID_JOYPAD_A+1)      << shift);
             android->keycode_lut[AKEYCODE_BUTTON_3]  |=  ((RETRO_DEVICE_ID_JOYPAD_B+1)      << shift);
@@ -1433,6 +1433,35 @@ static void android_input_set_keybinds(void *data, unsigned device,
             android->keycode_lut[AKEYCODE_BUTTON_7]  |=  ((RETRO_DEVICE_ID_JOYPAD_SELECT+1) << shift);
             android->keycode_lut[AKEYCODE_BUTTON_8] |= ((RETRO_DEVICE_ID_JOYPAD_START+1)   << shift);
             break;
+
+         case DEVICE_SAMSUNG_GAMEPAD_EIGP20:
+            g_settings.input.device[port] = device;
+            strlcpy(g_settings.input.device_names[port], "Samsung Game Pad EI-GP20",
+                  sizeof(g_settings.input.device_names[port]));
+
+            android->dpad_emulation[port] = ANALOG_DPAD_DUALANALOG;
+
+	//B: "Pad 0: 96, ac=1, src = 1281"
+            android->keycode_lut[AKEYCODE_BUTTON_B]  |=  ((RETRO_DEVICE_ID_JOYPAD_A+1)      << shift);
+	//A: "Pad 0: 97, ac=1, src = 1281"
+            android->keycode_lut[AKEYCODE_BUTTON_A]  |=  ((RETRO_DEVICE_ID_JOYPAD_B+1)      << shift);
+	//X: "Pad 0: 99, ac=1, src = 1281"
+            android->keycode_lut[AKEYCODE_BUTTON_X]  |=  ((RETRO_DEVICE_ID_JOYPAD_X+1)      << shift);
+	//Y: "Pad 0: 100, ac=1, src = 1281"
+            android->keycode_lut[AKEYCODE_BUTTON_Y]  |=  ((RETRO_DEVICE_ID_JOYPAD_Y+1)      << shift);
+	//Left Trigger: "Pad 0: 102, ac=1, src = 1281"
+            android->keycode_lut[AKEYCODE_BUTTON_L1]  |=  ((RETRO_DEVICE_ID_JOYPAD_L+1)      << shift);
+	//Right Trigger: "Pad 0: 103, ac=1, src = 1281"
+            android->keycode_lut[AKEYCODE_BUTTON_R1]  |=  ((RETRO_DEVICE_ID_JOYPAD_R+1)      << shift);
+	//Play Button: "Pad 0: 0, ac=1, src = 1281"
+	//Start: "Pad 0: 108, ac=1, src = 1281"
+            android->keycode_lut[AKEYCODE_BUTTON_START] |= ((RETRO_DEVICE_ID_JOYPAD_START+1)   << shift);
+	//Select: "Pad 0: 109, ac=1, src = 1281"
+            android->keycode_lut[AKEYCODE_BUTTON_SELECT]  |=  ((RETRO_DEVICE_ID_JOYPAD_SELECT+1) << shift);
+	    break;
+
+
+
          case DEVICE_TOMEE_NES_USB:
             g_settings.input.device[port] = device;
             strlcpy(g_settings.input.device_names[port], "Tomee NES USB",
@@ -2081,6 +2110,11 @@ static float android_input_get_sensor_input(void *data, unsigned port, unsigned 
    return 0;
 }
 
+unsigned android_input_devices_size(void *data)
+{
+   return DEVICE_LAST;
+}
+
 const input_driver_t input_android = {
    android_input_init,
    android_input_poll,
@@ -2091,5 +2125,6 @@ const input_driver_t input_android = {
    android_input_set_sensor_state,
    android_input_get_sensor_input,
    android_input_get_capabilities,
+   android_input_devices_size,
    "android_input",
 };

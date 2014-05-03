@@ -44,7 +44,7 @@ static void xfonts_deinit_font(void *data)
 
 static void xfonts_render_msg(void *data, const char *msg, void *parms)
 {
-   xdk_d3d_video_t *d3d = (xdk_d3d_video_t*)data;
+   d3d_video_t *d3d = (d3d_video_t*)data;
    font_params_t *params = (font_params_t*)parms;
    wchar_t str[PATH_MAX];
    float x, y;
@@ -60,7 +60,7 @@ static void xfonts_render_msg(void *data, const char *msg, void *parms)
       y = g_settings.video.msg_pos_y;
    }
 
-   d3d->d3d_render_device->GetBackBuffer(-1, D3DBACKBUFFER_TYPE_MONO, &pFrontBuffer);
+   d3d->dev->GetBackBuffer(-1, D3DBACKBUFFER_TYPE_MONO, &pFrontBuffer);
 
    mbstowcs(str, msg, sizeof(str) / sizeof(wchar_t));
    debug_font->TextOut(pFrontBuffer, str, (unsigned)-1, x, y);

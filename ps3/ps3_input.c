@@ -17,10 +17,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#ifndef __PSL1GHT__
 #include <sdk_version.h>
-#endif
-
 #include "../boolean.h"
 
 #include "sdk_defines.h"
@@ -39,8 +36,14 @@
 #define MAX_PADS 7
 #endif
 
-#define DEADZONE_LOW 55
-#define DEADZONE_HIGH 210
+#define DEADZONE_LOW 105
+#define DEADZONE_HIGH 145
+
+enum input_devices
+{
+   DEVICE_SIXAXIS = 0,
+   DEVICE_LAST
+};
 
 typedef struct
 {
@@ -86,9 +89,7 @@ static void ps3_input_set_keybinds(void *data, unsigned device,
       unsigned port, unsigned id, unsigned keybind_action)
 {
    uint64_t *key = &g_settings.input.binds[port][id].joykey;
-   //uint64_t joykey = *key;
    size_t arr_size = sizeof(platform_keys) / sizeof(platform_keys[0]);
-
    (void)device;
 
    if (keybind_action & (1ULL << KEYBINDS_ACTION_SET_DEFAULT_BIND))
@@ -175,16 +176,19 @@ static void ps3_input_set_keybinds(void *data, unsigned device,
    }
 }
 
+static inline int16_t convert_u8_to_s16(uint8_t val)
+{
+   if (val == 0)
+      return -0x7fff;
+   else
+      return val * 0x0101 - 0x8000;
+}
+
 static void ps3_input_poll(void *data)
 {
    CellPadInfo2 pad_info;
    ps3_input_t *ps3 = (ps3_input_t*)data;
    uint64_t *lifecycle_state = &g_extern.lifecycle_state;
-
-   ps3->analog_state[0][0][0] = ps3->analog_state[0][0][1] = ps3->analog_state[0][1][0] = ps3->analog_state[0][1][1] = 0;
-   ps3->analog_state[1][0][0] = ps3->analog_state[1][0][1] = ps3->analog_state[1][1][0] = ps3->analog_state[1][1][1] = 0;
-   ps3->analog_state[2][0][0] = ps3->analog_state[2][0][1] = ps3->analog_state[2][1][0] = ps3->analog_state[2][1][1] = 0;
-   ps3->analog_state[3][0][0] = ps3->analog_state[3][0][1] = ps3->analog_state[3][1][0] = ps3->analog_state[3][1][1] = 0;
 
    for (unsigned port = 0; port < MAX_PADS; port++)
    {
@@ -245,19 +249,26 @@ static void ps3_input_poll(void *data)
          *state_cur |= (state_tmp.button[CELL_PAD_BTN_OFFSET_DIGITAL2] & CELL_PAD_CTRL_R2) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_R2) : 0;
          *state_cur |= (state_tmp.button[CELL_PAD_BTN_OFFSET_DIGITAL2] & CELL_PAD_CTRL_L2) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_L2) : 0;
          *state_cur |= (state_tmp.button[CELL_PAD_BTN_OFFSET_DIGITAL2] & CELL_PAD_CTRL_L2) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_L2) : 0;
-         int16_t lsx = (int16_t) state_tmp.button[CELL_PAD_BTN_OFFSET_ANALOG_LEFT_X];
-         int16_t lsy = (int16_t) state_tmp.button[CELL_PAD_BTN_OFFSET_ANALOG_LEFT_Y];
-         int16_t rsx = (int16_t) state_tmp.button[CELL_PAD_BTN_OFFSET_ANALOG_RIGHT_X];
-         int16_t rsy = (int16_t) state_tmp.button[CELL_PAD_BTN_OFFSET_ANALOG_RIGHT_Y];
-         int16_t ls_x = ((lsx - 128) * 256);
-         int16_t ls_y = ((lsy - 128) * 256);
-         int16_t rs_x = ((rsx - 128) * 256);
-         int16_t rs_y = ((rsy - 128) * 256);
          //RARCH_LOG("lsx : %d (%hd) lsy : %d (%hd) rsx : %d (%hd) rsy : %d (%hd)\n", lsx, ls_x, lsy, ls_y, rsx, rs_x, rsy, rs_y);
-         ps3->analog_state[port][RETRO_DEVICE_INDEX_ANALOG_LEFT ][RETRO_DEVICE_ID_ANALOG_X] = ls_x;
-         ps3->analog_state[port][RETRO_DEVICE_INDEX_ANALOG_LEFT ][RETRO_DEVICE_ID_ANALOG_Y] = ls_y;
-         ps3->analog_state[port][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_X] = rs_x;
-         ps3->analog_state[port][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_Y] = rs_y;
+         uint8_t lsx = (uint8_t)(state_tmp.button[CELL_PAD_BTN_OFFSET_ANALOG_LEFT_X]);
+         uint8_t lsy = (uint8_t)(state_tmp.button[CELL_PAD_BTN_OFFSET_ANALOG_LEFT_Y]);
+         uint8_t rsx = (uint8_t)(state_tmp.button[CELL_PAD_BTN_OFFSET_ANALOG_RIGHT_X]);
+         uint8_t rsy = (uint8_t)(state_tmp.button[CELL_PAD_BTN_OFFSET_ANALOG_RIGHT_Y]);
+#if 0
+         if (!(lsx < DEADZONE_LOW || DEADZONE_HIGH < lsx))
+            lsx = 128;
+         if (!(lsy < DEADZONE_LOW || DEADZONE_HIGH < lsy))
+            lsy = 128;
+         if (!(rsx < DEADZONE_LOW || DEADZONE_HIGH < rsx))
+            rsx = 128;
+         if (!(rsy < DEADZONE_LOW || DEADZONE_HIGH < rsy))
+            rsy = 128;
+#endif
+         ps3->analog_state[port][RETRO_DEVICE_INDEX_ANALOG_LEFT ][RETRO_DEVICE_ID_ANALOG_X] = convert_u8_to_s16(lsx);
+         ps3->analog_state[port][RETRO_DEVICE_INDEX_ANALOG_LEFT ][RETRO_DEVICE_ID_ANALOG_Y] = convert_u8_to_s16(lsy);
+         ps3->analog_state[port][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_X] = convert_u8_to_s16(rsx);
+         ps3->analog_state[port][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_Y] = convert_u8_to_s16(rsy);
+
          ps3->accelerometer_state[port].x = state_tmp.button[CELL_PAD_BTN_OFFSET_SENSOR_X];
          ps3->accelerometer_state[port].y = state_tmp.button[CELL_PAD_BTN_OFFSET_SENSOR_Y];
          ps3->accelerometer_state[port].z = state_tmp.button[CELL_PAD_BTN_OFFSET_SENSOR_Z];
@@ -302,6 +313,7 @@ static int16_t ps3_mouse_device_state(void *data, unsigned player, unsigned id)
 
    switch (id)
    {
+      /* TODO: mouse wheel up/down */
       case RETRO_DEVICE_ID_MOUSE_LEFT:
          return (!ps3->mice_connected ? 0 : mouse_state.buttons & CELL_MOUSE_BUTTON_1);
       case RETRO_DEVICE_ID_MOUSE_RIGHT:
@@ -440,7 +452,7 @@ static void* ps3_input_init(void)
 
 static bool ps3_input_key_pressed(void *data, int key)
 {
-   return (g_extern.lifecycle_state & (1ULL << key));
+   return (g_extern.lifecycle_state & (1ULL << key)) || input_joypad_pressed(&ps3_joypad, 0, g_settings.input.binds[0], key);
 }
 
 static uint64_t ps3_input_get_capabilities(void *data)
@@ -506,6 +518,11 @@ static const rarch_joypad_driver_t *ps3_input_get_joypad_driver(void *data)
    return &ps3_joypad;
 }
 
+static unsigned ps3_input_devices_size(void *data)
+{
+   return DEVICE_LAST;
+}
+
 const input_driver_t input_ps3 = {
    ps3_input_init,
    ps3_input_poll,
@@ -516,6 +533,7 @@ const input_driver_t input_ps3 = {
    ps3_input_set_sensor_state,
    NULL,
    ps3_input_get_capabilities,
+   ps3_input_devices_size,
    "ps3",
 
    NULL,

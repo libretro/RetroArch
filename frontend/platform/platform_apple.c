@@ -19,14 +19,53 @@
 #include "../../apple/common/apple_export.h"
 #include "../../apple/common/setting_data.h"
 
-#include "../frontend_context.h"
+#include "../frontend.h"
 
 #include <stdint.h>
 #include "../../boolean.h"
 #include <stddef.h>
 #include <string.h>
 
+static CFRunLoopObserverRef iterate_observer;
+
 extern bool apple_is_running;
+
+extern void apple_rarch_exited(void);
+
+static void do_iteration(void)
+{
+    bool iterate = iterate_observer && apple_is_running && !g_extern.is_paused;
+    
+    if (!iterate)
+        return;
+    
+    if (main_entry_iterate(0, NULL, NULL))
+    {
+        main_exit(NULL);
+        apple_rarch_exited();
+    }
+    else
+        CFRunLoopWakeUp(CFRunLoopGetMain());
+}
+
+void apple_start_iteration(void)
+{
+   if (iterate_observer)
+       return;
+    
+    iterate_observer = CFRunLoopObserverCreate(0, kCFRunLoopBeforeWaiting, true, 0, (CFRunLoopObserverCallBack)do_iteration, 0);
+    CFRunLoopAddObserver(CFRunLoopGetMain(), iterate_observer, kCFRunLoopCommonModes);
+}
+
+void apple_stop_iteration(void)
+{
+   if (!iterate_observer)
+       return;
+    
+    CFRunLoopObserverInvalidate(iterate_observer);
+    CFRelease(iterate_observer);
+    iterate_observer = 0;
+}
 
 void apple_event_basic_command(enum basic_event_t action)
 {

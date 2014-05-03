@@ -290,7 +290,7 @@ static void update_variables(void)
    {
       char *pch;
       char str[100];
-      snprintf(str, sizeof(str), var.value);
+      snprintf(str, sizeof(str), "%s", var.value);
       
       pch = strtok(str, "x");
       if (pch)
@@ -448,7 +448,11 @@ bool retro_load_game(const struct retro_game_info *info)
    }
 
 #ifdef GLES
-#ifdef GLES3
+#if defined(GLES31)
+   hw_render.context_type = RETRO_HW_CONTEXT_OPENGLES_VERSION;
+   hw_render.version_major = 3;
+   hw_render.version_minor = 1;
+#elif defined(GLES3)
    hw_render.context_type = RETRO_HW_CONTEXT_OPENGLES3;
 #else
    hw_render.context_type = RETRO_HW_CONTEXT_OPENGLES2;

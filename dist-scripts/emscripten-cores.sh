@@ -8,7 +8,7 @@ fi
 make -C ../ -f Makefile.emscripten clean || exit 1
 
 for f in *_emscripten.bc ; do
-   name=`echo "$f" | sed 's/\(_libretro\|\)_emscripten.bc$//'`
+   name=`echo "$f" | sed 's/\(_libretro_emscripten\|\).bc$//'`
    lto=1
    echo "building $name"
    if [ $name = "tyrquake" ] ; then

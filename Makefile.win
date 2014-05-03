@@ -26,7 +26,7 @@ OBJ = frontend/frontend.o \
 		compat/compat.o \
 		screenshot.o \
 		cheats.o \
-		core_info.o \
+		frontend/info/core_info.o \
 		audio/utils.o \
 		input/overlay.o \
 		fifo_buffer.o \
@@ -35,14 +35,15 @@ OBJ = frontend/frontend.o \
 		gfx/scaler/scaler.o \
 		gfx/scaler/pixconv.o \
 		gfx/scaler/scaler_int.o \
-		gfx/scaler/filter.o \
+		gfx/scaler/scaler_filter.o \
 		gfx/state_tracker.o \
 		gfx/shader_parse.o \
 		gfx/fonts/fonts.o \
 		gfx/fonts/bitmapfont.o \
-		gfx/image.o \
+		gfx/image/image.o \
 		audio/resampler.o \
 		audio/sinc.o \
+		audio/cc_resampler.o \
 		performance.o
 
 JOBJ := conf/config_file.o \
@@ -95,7 +96,7 @@ endif
 libretro ?= -lretro
 
 LIBS = -lm
-DEFINES = -I. -DHAVE_SCREENSHOTS -DHAVE_BSV_MOVIE -DHAVE_BUILTIN_AUTOCONFIG -DRARCH_INTERNAL
+DEFINES = -I. -DHAVE_SCREENSHOTS -DHAVE_BSV_MOVIE -DHAVE_BUILTIN_AUTOCONFIG -DRARCH_INTERNAL -DHAVE_CC_RESAMPLER
 LDFLAGS = -L. -static-libgcc
 
 ifeq ($(TDM_GCC),)
@@ -114,7 +115,12 @@ JLIBS =
 
 ifeq ($(HAVE_RGUI), 1)
    DEFINES += -DHAVE_RGUI -DHAVE_MENU
-   OBJ += frontend/menu/menu_common.o frontend/menu/menu_settings.o frontend/menu/menu_context.o file_list.o frontend/menu/disp/rgui.o frontend/menu/history.o
+   OBJ += frontend/menu/menu_input_line_cb.o frontend/menu/menu_common.o frontend/menu/menu_navigation.o frontend/menu/file_list.o frontend/menu/disp/rgui.o frontend/menu/history.o
+   HAVE_MENU_COMMON = 1
+endif
+
+ifeq ($(HAVE_MENU_COMMON), 1)
+   OBJ += frontend/menu/backend/menu_common_backend.o
 endif
 
 ifeq ($(HAVE_SDL), 1)
@@ -150,7 +156,7 @@ else
 endif
 
 ifeq ($(HAVE_D3D9), 1)
-   OBJ += gfx/d3d9/d3d.o gfx/d3d9/d3d9_pc.o gfx/d3d9/render_chain.o gfx/fonts/d3d_font.o gfx/fonts/d3d_w32_font.o
+   OBJ += gfx/d3d9/d3d.o gfx/d3d9/render_chain.o gfx/fonts/d3d_font.o gfx/fonts/d3d_w32_font.o gfx/context/d3d_ctx.o
    DEFINES += -DHAVE_WIN32_D3D9
    LIBS += -ld3d9 -lcg -lcgD3D9 -ld3dx9 -ldxguid
 endif
@@ -194,6 +200,7 @@ endif
 
 ifeq ($(HAVE_DYLIB), 1)
    DEFINES += -DHAVE_DYLIB
+   OBJ += gfx/filter.o
 endif
 
 ifeq ($(HAVE_STDIN_CMD), 1)
@@ -242,7 +249,7 @@ endif
 
 ifeq ($(HAVE_FFMPEG), 1)
    LIBS += -lavformat -lavcodec -lavutil -lswscale -lws2_32 -lz
-   DEFINES += -DHAVE_FFMPEG -Iffmpeg
+   DEFINES += -DHAVE_FFMPEG -DHAVE_RECORD -Iffmpeg
    OBJ += record/ffemu.o
 endif
 
@@ -285,31 +292,33 @@ RARCH_JOBJ := $(addprefix $(OBJDIR)/,$(JOBJ))
 
 all: $(TARGET) $(JTARGET)
 
+-include $(RARCH_OBJ:.o=.d) $(RARCH_JOBJ:.o=.d)
+
 $(TARGET): $(RARCH_OBJ)
 	@$(if $(Q), $(shell echo echo LD $@),)
 	$(Q)$(CXX) -o $@ $(RARCH_OBJ) $(LIBS) $(LDFLAGS) $(LDCXXFLAGS)
 
-$(OBJDIR)/%.o: %.c $(HEADERS)
+$(OBJDIR)/%.o: %.c
 	@mkdir -p $(dir $@)
 	@$(if $(Q), $(shell echo echo CC $<),)
-	$(Q)$(CC) $(CFLAGS) $(DEFINES) -c -o $@ $<
+	$(Q)$(CC) $(CFLAGS) $(DEFINES) -MMD -c -o $@ $<
 
 .FORCE:
 
 $(OBJDIR)/git_version.o: git_version.c .FORCE
 	@mkdir -p $(dir $@)
 	@$(if $(Q), $(shell echo echo CC $<),)
-	$(Q)$(CC) $(CFLAGS) $(DEFINES) -c -o $@ $<
+	$(Q)$(CC) $(CFLAGS) $(DEFINES) -MMD -c -o $@ $<
 
-$(OBJDIR)/tools/input_common_joyconfig.o: input/input_common.c $(HEADERS)
+$(OBJDIR)/tools/input_common_joyconfig.o: input/input_common.c
 	@mkdir -p $(dir $@)
 	@$(if $(Q), $(shell echo echo CC $<),)
-	$(Q)$(CC) $(CFLAGS) $(DEFINES) -DIS_JOYCONFIG -c -o $@ $<
+	$(Q)$(CC) $(CFLAGS) $(DEFINES) -DIS_JOYCONFIG -MMD -c -o $@ $<
 
-$(OBJDIR)/%.o: %.cpp $(HEADERS)
+$(OBJDIR)/%.o: %.cpp
 	@mkdir -p $(dir $@)
 	@$(if $(Q), $(shell echo echo CXX $<),)
-	$(Q)$(CXX) $(CXXFLAGS) $(DEFINES) -c -o $@ $<
+	$(Q)$(CXX) $(CXXFLAGS) $(DEFINES) -MMD -c -o $@ $<
 
 $(OBJDIR)/%.o: %.rc $(HEADERS)
 	@mkdir -p $(dir $@)

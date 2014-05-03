@@ -32,8 +32,7 @@ extern "C" {
 #endif
 
 #ifndef __cplusplus
-
-#if defined(_MSC_VER) && !defined(SN_TARGET_PS3) && !defined(__cplusplus)
+#if defined(_MSC_VER) && !defined(SN_TARGET_PS3)
 /* Hack applied for MSVC when compiling in C89 mode as it isn't C99 compliant. */
 #define bool unsigned char
 #define true 1
@@ -47,8 +46,22 @@ extern "C" {
 // It is not incremented for compatible changes to the API.
 #define RETRO_API_VERSION         1
 
-// Libretro's fundamental device abstractions.
-#define RETRO_DEVICE_MASK         0xff
+//
+// Libretros fundamental device abstractions.
+/////////
+//
+// Libretros input system consists of some standardized device types such as a joypad (with/without analog),
+// mouse, keyboard, lightgun and a pointer. The functionality of these devices are fixed, and individual cores map
+// their own concept of a controller to libretros abstractions.
+// This makes it possible for frontends to map the abstract types to a real input device,
+// and not having to worry about binding input correctly to arbitrary controller layouts.
+
+
+#define RETRO_DEVICE_TYPE_SHIFT         8
+#define RETRO_DEVICE_MASK               ((1 << RETRO_DEVICE_TYPE_SHIFT) - 1)
+#define RETRO_DEVICE_SUBCLASS(base, id) (((id + 1) << RETRO_DEVICE_TYPE_SHIFT) | base)
+
+// Input disabled.
 #define RETRO_DEVICE_NONE         0
 
 // The JOYPAD is called RetroPad. It is essentially a Super Nintendo controller,
@@ -63,6 +76,7 @@ extern "C" {
 
 // KEYBOARD device lets one poll for raw key pressed.
 // It is poll based, so input callback will return with the current pressed state.
+// For event/text based keyboard input, see RETRO_ENVIRONMENT_SET_KEYBOARD_CALLBACK.
 #define RETRO_DEVICE_KEYBOARD     3
 
 // Lightgun X/Y coordinates are reported relatively to last poll, similar to mouse.
@@ -88,7 +102,7 @@ extern "C" {
 //
 // To check if the pointer coordinates are valid (e.g. a touch display actually being touched),
 // PRESSED returns 1 or 0.
-// If using a mouse, PRESSED will usually correspond to the left mouse button.
+// If using a mouse on a desktop, PRESSED will usually correspond to the left mouse button, but this is a frontend decision.
 // PRESSED will only return 1 if the pointer is inside the game screen.
 //
 // For multi-touch, the index variable can be used to successively query more presses.
@@ -96,16 +110,6 @@ extern "C" {
 // with _X, _Y for index = 0. One can then query _PRESSED, _X, _Y with index = 1, and so on.
 // Eventually _PRESSED will return false for an index. No further presses are registered at this point.
 #define RETRO_DEVICE_POINTER      6
-
-// These device types are specializations of the base types above.
-// They should only be used in retro_set_controller_type() to inform libretro implementations
-// about use of a very specific device type.
-//
-// In input state callback, however, only the base type should be used in the 'device' field.
-#define RETRO_DEVICE_JOYPAD_MULTITAP        ((1 << 8) | RETRO_DEVICE_JOYPAD)
-#define RETRO_DEVICE_LIGHTGUN_SUPER_SCOPE   ((1 << 8) | RETRO_DEVICE_LIGHTGUN)
-#define RETRO_DEVICE_LIGHTGUN_JUSTIFIER     ((2 << 8) | RETRO_DEVICE_LIGHTGUN)
-#define RETRO_DEVICE_LIGHTGUN_JUSTIFIERS    ((3 << 8) | RETRO_DEVICE_LIGHTGUN)
 
 // Buttons for the RetroPad (JOYPAD).
 // The placement of these is equivalent to placements on the Super Nintendo controller.
@@ -134,10 +138,13 @@ extern "C" {
 #define RETRO_DEVICE_ID_ANALOG_Y         1
 
 // Id values for MOUSE.
-#define RETRO_DEVICE_ID_MOUSE_X      0
-#define RETRO_DEVICE_ID_MOUSE_Y      1
-#define RETRO_DEVICE_ID_MOUSE_LEFT   2
-#define RETRO_DEVICE_ID_MOUSE_RIGHT  3
+#define RETRO_DEVICE_ID_MOUSE_X          0
+#define RETRO_DEVICE_ID_MOUSE_Y          1
+#define RETRO_DEVICE_ID_MOUSE_LEFT       2
+#define RETRO_DEVICE_ID_MOUSE_RIGHT      3
+#define RETRO_DEVICE_ID_MOUSE_WHEELUP    4
+#define RETRO_DEVICE_ID_MOUSE_WHEELDOWN  5
+#define RETRO_DEVICE_ID_MOUSE_MIDDLE     6
 
 // Id values for LIGHTGUN types.
 #define RETRO_DEVICE_ID_LIGHTGUN_X        0
@@ -163,7 +170,7 @@ extern "C" {
 
 // Regular save ram. This ram is usually found on a game cartridge, backed up by a battery.
 // If save game data is too complex for a single memory buffer,
-// the SYSTEM_DIRECTORY environment callback can be used.
+// the SAVE_DIRECTORY (preferably) or SYSTEM_DIRECTORY environment callback can be used.
 #define RETRO_MEMORY_SAVE_RAM    0
 
 // Some games have a built-in clock to keep track of time.
@@ -175,21 +182,6 @@ extern "C" {
 
 // Video ram lets a frontend peek into a game systems video RAM (VRAM).
 #define RETRO_MEMORY_VIDEO_RAM   3
-
-// Special memory types.
-#define RETRO_MEMORY_SNES_BSX_RAM             ((1 << 8) | RETRO_MEMORY_SAVE_RAM)
-#define RETRO_MEMORY_SNES_BSX_PRAM            ((2 << 8) | RETRO_MEMORY_SAVE_RAM)
-#define RETRO_MEMORY_SNES_SUFAMI_TURBO_A_RAM  ((3 << 8) | RETRO_MEMORY_SAVE_RAM)
-#define RETRO_MEMORY_SNES_SUFAMI_TURBO_B_RAM  ((4 << 8) | RETRO_MEMORY_SAVE_RAM)
-#define RETRO_MEMORY_SNES_GAME_BOY_RAM        ((5 << 8) | RETRO_MEMORY_SAVE_RAM)
-#define RETRO_MEMORY_SNES_GAME_BOY_RTC        ((6 << 8) | RETRO_MEMORY_RTC)
-
-// Special game types passed into retro_load_game_special().
-// Only used when multiple ROMs are required.
-#define RETRO_GAME_TYPE_BSX             0x101
-#define RETRO_GAME_TYPE_BSX_SLOTTED     0x102
-#define RETRO_GAME_TYPE_SUFAMI_TURBO    0x103
-#define RETRO_GAME_TYPE_SUPER_GAME_BOY  0x104
 
 // Keysyms used for ID in input state callback when polling RETRO_KEYBOARD.
 enum retro_key
@@ -564,12 +556,12 @@ enum retro_mod
                                            // If this interface is not used, libretro cores should log to stderr as desired.
 #define RETRO_ENVIRONMENT_GET_PERF_INTERFACE 28
                                            // struct retro_perf_callback * --
-                                           // Gets an interface for performance counters. This is useful for performance logging in a 
+                                           // Gets an interface for performance counters. This is useful for performance logging in a
                                            // cross-platform way and for detecting architecture-specific features, such as SIMD support.
 #define RETRO_ENVIRONMENT_GET_LOCATION_INTERFACE 29
                                            // struct retro_location_callback * --
                                            // Gets access to the location interface.
-                                           // The purpose of this interface is to be able to retrieve location-based information from the host device, 
+                                           // The purpose of this interface is to be able to retrieve location-based information from the host device,
                                            // such as current latitude / longitude.
                                            //
 #define RETRO_ENVIRONMENT_GET_CONTENT_DIRECTORY 30
@@ -590,6 +582,134 @@ enum retro_mod
                                            // NOTE: libretro cores used to check GET_SYSTEM_DIRECTORY for similar things before.
                                            // They should still check GET_SYSTEM_DIRECTORY if they want to be backwards compatible.
                                            // The path here can be NULL. It should only be non-NULL if the frontend user has set a specific save path.
+                                           //
+#define RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO 32
+                                           // const struct retro_system_av_info * --
+                                           // Sets a new av_info structure. This can only be called from within retro_run().
+                                           // This should *only* be used if the core is completely altering the internal resolutions, aspect ratios, timings, sampling rate, etc.
+                                           // Calling this can require a full reinitialization of video/audio drivers in the frontend,
+                                           // so it is important to call it very sparingly, and usually only with the users explicit consent.
+                                           // An eventual driver reinit will happen so that video and audio callbacks
+                                           // happening after this call within the same retro_run() call will target the newly initialized driver.
+                                           //
+                                           // This callback makes it possible to support configurable resolutions in games, which can be useful to
+                                           // avoid setting the "worst case" in max_width/max_height.
+                                           //
+                                           // ***HIGHLY RECOMMENDED*** Do not call this callback every time resolution changes in an emulator core if it's
+                                           // expected to be a temporary change, for the reasons of possible driver reinit.
+                                           // This call is not a free pass for not trying to provide correct values in retro_get_system_av_info().
+                                           //
+                                           // If this returns false, the frontend does not acknowledge a changed av_info struct.
+#define RETRO_ENVIRONMENT_SET_PROC_ADDRESS_CALLBACK 33
+                                           // const struct retro_get_proc_address_interface * --
+                                           // Allows a libretro core to announce support for the get_proc_address() interface.
+                                           // This interface allows for a standard way to extend libretro where use of environment calls are too indirect,
+                                           // e.g. for cases where the frontend wants to call directly into the core.
+                                           //
+                                           // If a core wants to expose this interface, SET_PROC_ADDRESS_CALLBACK **MUST** be called from within retro_set_environment().
+                                           //
+#define RETRO_ENVIRONMENT_SET_SUBSYSTEM_INFO 34
+                                           // const struct retro_subsystem_info * --
+                                           // This environment call introduces the concept of libretro "subsystems".
+                                           // A subsystem is a variant of a libretro core which supports different kinds of games.
+                                           // The purpose of this is to support e.g. emulators which might have special needs, e.g. Super Nintendos Super GameBoy, Sufami Turbo.
+                                           // It can also be used to pick among subsystems in an explicit way if the libretro implementation is a multi-system emulator itself.
+                                           //
+                                           // Loading a game via a subsystem is done with retro_load_game_special(),
+                                           // and this environment call allows a libretro core to expose which subsystems are supported for use with retro_load_game_special().
+                                           // A core passes an array of retro_game_special_info which is terminated with a zeroed out retro_game_special_info struct.
+                                           //
+                                           // If a core wants to use this functionality, SET_SUBSYSTEM_INFO **MUST** be called from within retro_set_environment().
+                                           //
+#define RETRO_ENVIRONMENT_SET_CONTROLLER_INFO 35
+                                           // const struct retro_controller_info * --
+                                           // This environment call lets a libretro core tell the frontend which
+                                           // controller types are recognized in calls to retro_set_controller_port_device().
+                                           //
+                                           // Some emulators such as Super Nintendo
+                                           // support multiple lightgun types which must be specifically selected from.
+                                           // It is therefore sometimes necessary for a frontend to be able to tell
+                                           // the core about a special kind of input device which is not covered by the
+                                           // libretro input API.
+                                           //
+                                           // In order for a frontend to understand the workings of an input device,
+                                           // it must be a specialized type
+                                           // of the generic device types already defined in the libretro API.
+                                           //
+                                           // Which devices are supported can vary per input port.
+                                           // The core must pass an array of const struct retro_controller_info which is terminated with
+                                           // a blanked out struct. Each element of the struct corresponds to an ascending port index to retro_set_controller_port_device().
+                                           // Even if special device types are set in the libretro core, libretro should only poll input based on the base input device types.
+
+struct retro_controller_description
+{
+   // Human-readable description of the controller. Even if using a generic input device type, this can be
+   // set to the particular device type the core uses.
+   const char *desc;
+
+   // Device type passed to retro_set_controller_port_device(). If the device type is a sub-class of a generic input device type,
+   // use the RETRO_DEVICE_SUBCLASS macro to create an ID. E.g. RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 1).
+   unsigned id;
+};
+
+struct retro_controller_info
+{
+   const struct retro_controller_description *types;
+   unsigned num_types;
+};
+
+struct retro_subsystem_memory_info
+{
+   const char *extension; // The extension associated with a memory type, e.g. "psram".
+   unsigned type; // The memory type for retro_get_memory(). This should be at least 0x100 to avoid conflict with standardized libretro memory types.
+};
+
+struct retro_subsystem_rom_info
+{
+   const char *desc; // Describes what the ROM is (SGB bios, GB rom, etc).
+   const char *valid_extensions; // Same definition as retro_get_system_info().
+   bool need_fullpath; // Same definition as retro_get_system_info().
+   bool block_extract; // Same definition as retro_get_system_info().
+   bool required; // This is set if the ROM is required to load a game. If this is set to false, a zeroed-out retro_game_info can be passed.
+
+   // ROMs can have multiple associated persistent memory types (retro_get_memory()).
+   const struct retro_subsystem_memory_info *memory;
+   unsigned num_memory;
+};
+
+struct retro_subsystem_info
+{
+   const char *desc; // Human-readable string of the subsystem type, e.g. "Super GameBoy"
+   // A computer friendly short string identifier for the subsystem type.
+   // This name must be [a-z].
+   // E.g. if desc is "Super GameBoy", this can be "sgb".
+   // This identifier can be used for command-line interfaces, etc.
+   const char *ident;
+
+   // Infos for each ROM. The first entry is assumed to be the "most significant" ROM for frontend purposes.
+   // E.g. with Super GameBoy, the first ROM should be the GameBoy ROM, as it is the most "significant" ROM to a user.
+   // If a frontend creates new file paths based on the ROM used (e.g. savestates), it should use the path for the first ROM to do so.
+   const struct retro_subsystem_rom_info *roms;
+
+   unsigned num_roms; // Number of ROMs associated with a subsystem.
+   unsigned id; // The type passed to retro_load_game_special().
+};
+
+typedef void (*retro_proc_address_t)(void);
+// libretro API extension functions:
+// (None here so far).
+//////
+
+// Get a symbol from a libretro core.
+// Cores should only return symbols which are actual extensions to the libretro API.
+// Frontends should not use this to obtain symbols to standard libretro entry points (static linking or dlsym).
+// The symbol name must be equal to the function name, e.g. if void retro_foo(void); exists, the symbol must be called "retro_foo".
+// The returned function pointer must be cast to the corresponding type.
+typedef retro_proc_address_t (*retro_get_proc_address_t)(const char *sym);
+struct retro_get_proc_address_interface
+{
+   retro_get_proc_address_t get_proc_address;
+};
 
 enum retro_log_level
 {
@@ -621,6 +741,12 @@ struct retro_log_callback
 #define RETRO_SIMD_SSE3     (1 << 6)
 #define RETRO_SIMD_SSSE3    (1 << 7)
 #define RETRO_SIMD_MMX      (1 << 8)
+#define RETRO_SIMD_MMXEXT   (1 << 9)
+#define RETRO_SIMD_SSE4     (1 << 10)
+#define RETRO_SIMD_SSE42    (1 << 11)
+#define RETRO_SIMD_AVX2     (1 << 12)
+#define RETRO_SIMD_VFPU     (1 << 13)
+#define RETRO_SIMD_PS       (1 << 14)
 
 typedef uint64_t retro_perf_tick_t;
 typedef int64_t retro_time_t;
@@ -746,7 +872,7 @@ typedef void (*retro_camera_frame_raw_framebuffer_t)(const uint32_t *buffer, uns
 //
 // texture_target is the texture target for the GL texture.
 // These can include e.g. GL_TEXTURE_2D, GL_TEXTURE_RECTANGLE, and possibly more depending on extensions.
-// 
+//
 // affine points to a packed 3x3 column-major matrix used to apply an affine transform to texture coordinates. (affine_matrix * vec3(coord_x, coord_y, 1.0))
 // After transform, normalized texture coord (0, 0) should be bottom-left and (1, 1) should be top-right (or (width, height) for RECTANGLE).
 //
@@ -774,7 +900,7 @@ struct retro_camera_callback
 };
 
 // Sets the interval of time and/or distance at which to update/poll location-based data.
-// To ensure compatibility with all location-based implementations, values for both 
+// To ensure compatibility with all location-based implementations, values for both
 // interval_ms and interval_distance should be provided.
 // interval_ms is the interval expressed in milliseconds.
 // interval_distance is the distance interval expressed in meters.
@@ -802,7 +928,7 @@ struct retro_location_callback
    retro_location_start_t         start;
    retro_location_stop_t          stop;
    retro_location_get_position_t  get_position;
-   retro_location_set_interval_t  set_interval; 
+   retro_location_set_interval_t  set_interval;
 
    retro_location_lifetime_status_t initialized;
    retro_location_lifetime_status_t deinitialized;
@@ -867,16 +993,16 @@ typedef void (*retro_hw_context_reset_t)(void);
 typedef uintptr_t (*retro_hw_get_current_framebuffer_t)(void);
 
 // Get a symbol from HW context.
-typedef void (*retro_proc_address_t)(void);
 typedef retro_proc_address_t (*retro_hw_get_proc_address_t)(const char *sym);
 
 enum retro_hw_context_type
 {
-   RETRO_HW_CONTEXT_NONE = 0,
-   RETRO_HW_CONTEXT_OPENGL, // OpenGL 2.x. Latest version available before 3.x+. Driver can choose to use latest compatibility context.
-   RETRO_HW_CONTEXT_OPENGLES2, // GLES 2.0
-   RETRO_HW_CONTEXT_OPENGL_CORE, // Modern desktop core GL context. Use major/minor fields to set GL version.
-   RETRO_HW_CONTEXT_OPENGLES3, // GLES 3.0
+   RETRO_HW_CONTEXT_NONE             = 0,
+   RETRO_HW_CONTEXT_OPENGL           = 1, // OpenGL 2.x. Driver can choose to use latest compatibility context.
+   RETRO_HW_CONTEXT_OPENGLES2        = 2, // GLES 2.0
+   RETRO_HW_CONTEXT_OPENGL_CORE      = 3, // Modern desktop core GL context. Use version_major/version_minor fields to set GL version.
+   RETRO_HW_CONTEXT_OPENGLES3        = 4, // GLES 3.0
+   RETRO_HW_CONTEXT_OPENGLES_VERSION = 5, // GLES 3.1+. Set version_major/version_minor. For GLES2 and GLES3, use the corresponding enums directly.
 
    RETRO_HW_CONTEXT_DUMMY = INT_MAX
 };
@@ -884,20 +1010,39 @@ enum retro_hw_context_type
 struct retro_hw_render_callback
 {
    enum retro_hw_context_type context_type; // Which API to use. Set by libretro core.
-   retro_hw_context_reset_t context_reset; // Called when a context has been created or when it has been reset.
+
+   // Called when a context has been created or when it has been reset.
+   // An OpenGL context is only valid after context_reset() has been called.
+   //
+   // When context_reset is called, OpenGL resources in the libretro implementation are guaranteed to be invalid.
+   // It is possible that context_reset is called multiple times during an application lifecycle.
+   // If context_reset is called without any notification (context_destroy),
+   // the OpenGL context was lost and resources should just be recreated
+   // without any attempt to "free" old resources.
+   retro_hw_context_reset_t context_reset;
+
    retro_hw_get_current_framebuffer_t get_current_framebuffer; // Set by frontend.
    retro_hw_get_proc_address_t get_proc_address; // Set by frontend.
    bool depth; // Set if render buffers should have depth component attached.
    bool stencil; // Set if stencil buffers should be attached.
    // If depth and stencil are true, a packed 24/8 buffer will be added. Only attaching stencil is invalid and will be ignored.
    bool bottom_left_origin; // Use conventional bottom-left origin convention. Is false, standard libretro top-left origin semantics are used.
-   unsigned version_major; // Major version number for core GL context.
-   unsigned version_minor; // Minor version number for core GL context.
+   unsigned version_major; // Major version number for core GL context or GLES 3.1+.
+   unsigned version_minor; // Minor version number for core GL context or GLES 3.1+.
 
    bool cache_context; // If this is true, the frontend will go very far to avoid resetting context in scenarios like toggling fullscreen, etc.
-   // The reset callback might still be called in extreme situations such as if the context is lost beyond recovery. 
+   // The reset callback might still be called in extreme situations such as if the context is lost beyond recovery.
    // For optimal stability, set this to false, and allow context to be reset at any time.
-   retro_hw_context_reset_t context_destroy; // A callback to be called before the context is destroyed. Resources can be deinitialized at this step. This can be set to NULL, in which resources will just be destroyed without any notification.
+
+   retro_hw_context_reset_t context_destroy; // A callback to be called before the context is destroyed in a controlled way by the frontend.
+   // OpenGL resources can be deinitialized cleanly at this step.
+   // context_destroy can be set to NULL, in which resources will just be destroyed without any notification.
+   //
+   // Even when context_destroy is non-NULL, it is possible that context_reset is called without any destroy notification.
+   // This happens if context is lost by external factors (such as notified by GL_ARB_robustness).
+   // In this case, the context is assumed to be already dead,
+   // and the libretro implementation must not try to free any OpenGL resources in the subsequent context_reset.
+
    bool debug_context; // Creates a debug context.
 };
 
@@ -1128,6 +1273,8 @@ void retro_get_system_info(struct retro_system_info *info);
 void retro_get_system_av_info(struct retro_system_av_info *info);
 
 // Sets device to be used for player 'port'.
+// By default, RETRO_DEVICE_JOYPAD is assumed to be plugged into all available ports.
+// Setting a particular device type is not a guarantee that libretro cores will only poll input based on that particular device type. It is only a hint to the libretro core when a core cannot automatically detect the appropriate input device type on its own. It is also relevant when a core can change its behavior depending on device type.
 void retro_set_controller_port_device(unsigned port, unsigned device);
 
 // Resets the current game.

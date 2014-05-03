@@ -51,6 +51,7 @@ typedef struct rarch_resampler
 } rarch_resampler_t;
 
 extern const rarch_resampler_t sinc_resampler;
+extern const rarch_resampler_t CC_resampler;
 
 // Reallocs resampler. Will free previous handle before allocating a new one.
 // If ident is NULL, first resampler will be used.
@@ -65,13 +66,9 @@ bool rarch_resampler_realloc(void **re, const rarch_resampler_t **backend, const
    *handle = NULL; \
 } while(0)
 
-#ifdef RARCH_CONSOLE
-#define rarch_resampler_process(backend, handle, data) resampler_sinc_process(handle, data)
-#else
 #define rarch_resampler_process(backend, handle, data) do { \
    (backend)->process(handle, data); \
 } while(0)
-#endif
 
 #endif
 

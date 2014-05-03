@@ -26,10 +26,7 @@ static const gfx_ctx_driver_t *gfx_ctx_drivers[] = {
 #if defined(__CELLOS_LV2__)
    &gfx_ctx_ps3,
 #endif
-#if defined(_XBOX)
-   &gfx_ctx_xdk,
-#endif
-#if defined(HAVE_WIN32_D3D9)
+#if defined(HAVE_WIN32_D3D9) || defined(_XBOX)
    &gfx_ctx_d3d9,
 #endif
 #if defined(HAVE_VIDEOCORE)
@@ -59,6 +56,7 @@ static const gfx_ctx_driver_t *gfx_ctx_drivers[] = {
 #ifdef EMSCRIPTEN
    &gfx_ctx_emscripten,
 #endif
+   NULL
 };
 
 const gfx_ctx_driver_t *gfx_ctx_find_driver(const char *ident)
@@ -73,14 +71,20 @@ const gfx_ctx_driver_t *gfx_ctx_find_driver(const char *ident)
    return NULL;
 }
 
-const gfx_ctx_driver_t *gfx_ctx_init_first(enum gfx_ctx_api api, unsigned major, unsigned minor)
+const gfx_ctx_driver_t *gfx_ctx_init_first(void *data, enum gfx_ctx_api api, unsigned major, unsigned minor, bool hw_render_ctx)
 {
    unsigned i;
-   for (i = 0; i < ARRAY_SIZE(gfx_ctx_drivers); i++)
+   for (i = 0; gfx_ctx_drivers[i]; i++)
    {
-      if (gfx_ctx_drivers[i]->bind_api(api, major, minor))
+      if (gfx_ctx_drivers[i]->bind_api(data, api, major, minor))
       {
-         if (gfx_ctx_drivers[i]->init())
+         if (gfx_ctx_drivers[i]->bind_hw_render)
+         {
+            gfx_ctx_drivers[i]->bind_hw_render(data,
+                  g_settings.video.shared_context && hw_render_ctx);
+         }
+
+         if (gfx_ctx_drivers[i]->init(data))
             return gfx_ctx_drivers[i];
       }
    }

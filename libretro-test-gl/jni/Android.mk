@@ -17,9 +17,16 @@ ifeq ($(TARGET_ARCH),mips)
 LOCAL_CFLAGS += -DANDROID_MIPS
 endif
 
-LOCAL_SRC_FILES += $(wildcard ../*.c) ../glsym/rglgen.c ../glsym/glsym_es2.c
+ifeq ($(GLES), 3)
+   LOCAL_CFLAGS += -DHAVE_OPENGLES3 -DGLES3
+   GLES_LIB := -lGLESv3
+else
+   GLES_LIB := -lGLESv2
+endif
+
+LOCAL_SRC_FILES += $(addprefix ../,$(wildcard *.c) ../gfx/glsym/rglgen.c ../gfx/glsym/glsym_es2.c)
 LOCAL_CFLAGS += -O2 -Wall -std=gnu99 -ffast-math -DGLES -DHAVE_OPENGLES2
-LOCAL_LDLIBS += -lGLESv2
+LOCAL_LDLIBS += $(GLES_LIB)
 
 include $(BUILD_SHARED_LIBRARY)
 

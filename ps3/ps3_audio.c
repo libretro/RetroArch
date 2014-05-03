@@ -46,12 +46,7 @@ static void event_loop(void *data)
 static void event_loop(uint64_t data)
 #endif
 {
-#ifdef __PSL1GHT__
    ps3_audio_t *aud = data;
-#else
-   void * ptr_data = (void*)(uintptr_t)data;
-   ps3_audio_t *aud = ptr_data;
-#endif
    sys_event_queue_t id;
    sys_ipc_key_t key;
    sys_event_t event;

@@ -21,9 +21,9 @@
 #include <string.h>
 #include <limits.h>
 
+#include "../backend/menu_common_backend.h"
 #include "../menu_common.h"
-#include "../menu_context.h"
-#include "../../../file_list.h"
+#include "../file_list.h"
 #include "../../../general.h"
 #include "../../../gfx/gfx_common.h"
 #include "../../../config.def.h"
@@ -48,7 +48,7 @@
 #define POSITION_EDGE_CENTER (425)
 #define POSITION_OFFSET 30
 #define POSITION_RENDER_OFFSET 128
-#define TERM_WIDTH 45
+#define RMENU_TERM_WIDTH 45
 #define FONT_SIZE_NORMAL 21
 #elif defined(__CELLOS_LV2__)
 #define ENTRIES_HEIGHT 20
@@ -59,14 +59,14 @@
 #define POSITION_RENDER_OFFSET 0.20f
 #define POSITION_OFFSET 0.03f
 #define FONT_SIZE_NORMAL 0.95f
-#define TERM_WIDTH 60
+#define RMENU_TERM_WIDTH 60
 #endif
 
 struct texture_image *menu_texture;
 static bool render_normal = true;
 static bool menu_texture_inited =false;
 
-static void render_background(rgui_handle_t *rgui)
+static void rmenu_render_background(rgui_handle_t *rgui)
 {
 }
 
@@ -93,13 +93,13 @@ static void rmenu_render_messagebox(void *data, const char *message)
    {
       char *msg = list->elems[i].data;
       unsigned msglen = strlen(msg);
-      if (msglen > TERM_WIDTH)
+      if (msglen > RMENU_TERM_WIDTH)
       {
-         msg[TERM_WIDTH - 2] = '.';
-         msg[TERM_WIDTH - 1] = '.';
-         msg[TERM_WIDTH - 0] = '.';
-         msg[TERM_WIDTH + 1] = '\0';
-         msglen = TERM_WIDTH;
+         msg[RMENU_TERM_WIDTH - 2] = '.';
+         msg[RMENU_TERM_WIDTH - 1] = '.';
+         msg[RMENU_TERM_WIDTH - 0] = '.';
+         msg[RMENU_TERM_WIDTH + 1] = '\0';
+         msglen = RMENU_TERM_WIDTH;
       }
 
       font_parms.x = POSITION_EDGE_MIN + POSITION_OFFSET;
@@ -107,14 +107,12 @@ static void rmenu_render_messagebox(void *data, const char *message)
       font_parms.scale = FONT_SIZE_NORMAL;
       font_parms.color = WHITE;
 
-      if (driver.video_poke && driver.video_poke->set_osd_msg)
+      if (driver.video_data && driver.video_poke && driver.video_poke->set_osd_msg)
          driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
    }
 
    render_normal = false;
-
 }
-
 
 static void rmenu_render(void *data)
 {
@@ -140,12 +138,16 @@ static void rmenu_render(void *data)
    if (end - begin > ENTRIES_HEIGHT)
       end = begin + ENTRIES_HEIGHT;
    
-   render_background(rgui);
+   rmenu_render_background(rgui);
 
    char title[256];
    const char *dir = NULL;
    unsigned menu_type = 0;
+   unsigned menu_type_is = 0;
    file_list_get_last(rgui->menu_stack, &dir, &menu_type);
+
+   if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->type_is)
+      menu_type_is = driver.menu_ctx->backend->type_is(menu_type);
 
    if (menu_type == RGUI_SETTINGS_CORE)
       snprintf(title, sizeof(title), "CORE SELECTION %s", dir);
@@ -165,12 +167,30 @@ static void rmenu_render(void *data)
 #endif
    else if (menu_type == RGUI_SETTINGS_AUDIO_OPTIONS)
       strlcpy(title, "AUDIO OPTIONS", sizeof(title));
+   else if (menu_type == RGUI_SETTINGS_OVERLAY_OPTIONS)
+      strlcpy(title, "OVERLAY OPTIONS", sizeof(title));
+   else if (menu_type == RGUI_SETTINGS_NETPLAY_OPTIONS)
+      strlcpy(title, "NETPLAY OPTIONS", sizeof(title));
+   else if (menu_type == RGUI_SETTINGS_FONT_OPTIONS)
+      strlcpy(title, "FONT OPTIONS", sizeof(title));
+   else if (menu_type == RGUI_SETTINGS_GENERAL_OPTIONS)
+      strlcpy(title, "GENERAL OPTIONS", sizeof(title));
+   else if (menu_type == RGUI_SETTINGS_PATH_OPTIONS)
+      strlcpy(title, "PATH OPTIONS", sizeof(title));
+   else if (menu_type == RGUI_SETTINGS_OPTIONS)
+      strlcpy(title, "SETTINGS", sizeof(title));
+   else if (menu_type == RGUI_SETTINGS_INPUT_OPTIONS)
+      strlcpy(title, "INPUT OPTIONS", sizeof(title));
    else if (menu_type == RGUI_SETTINGS_DISK_OPTIONS)
       strlcpy(title, "DISK OPTIONS", sizeof(title));
    else if (menu_type == RGUI_SETTINGS_CORE_OPTIONS)
       strlcpy(title, "CORE OPTIONS", sizeof(title));
+   else if (menu_type == RGUI_SETTINGS_CORE_INFO)
+      strlcpy(title, "CORE INFO", sizeof(title)); 	  
+   else if (menu_type == RGUI_SETTINGS_PRIVACY_OPTIONS)
+      strlcpy(title, "PRIVACY OPTIONS", sizeof(title)); 	  
 #ifdef HAVE_SHADER_MANAGER
-   else if (menu_type_is(menu_type) == RGUI_SETTINGS_SHADER_OPTIONS)
+   else if (menu_type_is == RGUI_SETTINGS_SHADER_OPTIONS)
       snprintf(title, sizeof(title), "SHADER %s", dir);
 #endif
    else if ((menu_type == RGUI_SETTINGS_INPUT_OPTIONS) ||
@@ -187,6 +207,10 @@ static void rmenu_render(void *data)
    else if (menu_type == RGUI_SETTINGS_OVERLAY_PRESET)
       snprintf(title, sizeof(title), "OVERLAY %s", dir);
 #endif
+   else if (menu_type == RGUI_SETTINGS_VIDEO_SOFTFILTER)
+      snprintf(title, sizeof(title), "FILTER %s", dir);
+   else if (menu_type == RGUI_SETTINGS_AUDIO_DSP_FILTER)
+      snprintf(title, sizeof(title), "DSP FILTER %s", dir);
    else if (menu_type == RGUI_BROWSER_DIR_PATH)
       snprintf(title, sizeof(title), "BROWSER DIR %s", dir);
 #ifdef HAVE_SCREENSHOTS
@@ -195,6 +219,10 @@ static void rmenu_render(void *data)
 #endif
    else if (menu_type == RGUI_SHADER_DIR_PATH)
       snprintf(title, sizeof(title), "SHADER DIR %s", dir);
+   else if (menu_type == RGUI_FILTER_DIR_PATH)
+      snprintf(title, sizeof(title), "FILTER DIR %s", dir);
+   else if (menu_type == RGUI_DSP_FILTER_DIR_PATH)
+      snprintf(title, sizeof(title), "DSP FILTER DIR %s", dir);
    else if (menu_type == RGUI_SAVESTATE_DIR_PATH)
       snprintf(title, sizeof(title), "SAVESTATE DIR %s", dir);
 #ifdef HAVE_DYNAMIC
@@ -227,14 +255,14 @@ static void rmenu_render(void *data)
    }
 
    char title_buf[256];
-   menu_ticker_line(title_buf, TERM_WIDTH, g_extern.frame_count / 15, title, true);
+   menu_ticker_line(title_buf, RMENU_TERM_WIDTH, g_extern.frame_count / 15, title, true);
 
    font_parms.x = POSITION_EDGE_MIN + POSITION_OFFSET;
    font_parms.y = POSITION_EDGE_MIN + POSITION_RENDER_OFFSET - (POSITION_OFFSET*2);
    font_parms.scale = FONT_SIZE_NORMAL;
    font_parms.color = WHITE;
 
-   if (driver.video_poke && driver.video_poke->set_osd_msg)
+   if (driver.video_data && driver.video_poke && driver.video_poke->set_osd_msg)
       driver.video_poke->set_osd_msg(driver.video_data, title_buf, &font_parms);
 
    char title_msg[64];
@@ -257,7 +285,7 @@ static void rmenu_render(void *data)
 
    snprintf(title_msg, sizeof(title_msg), "%s - %s %s", PACKAGE_VERSION, core_name, core_version);
 
-   if (driver.video_poke && driver.video_poke->set_osd_msg)
+   if (driver.video_data && driver.video_poke && driver.video_poke->set_osd_msg)
       driver.video_poke->set_osd_msg(driver.video_data, title_msg, &font_parms);
 
    size_t i, j;
@@ -283,8 +311,8 @@ static void rmenu_render(void *data)
             type <= RGUI_SETTINGS_SHADER_LAST)
       {
          // HACK. Work around that we're using the menu_type as dir type to propagate state correctly.
-         if ((menu_type_is(menu_type) == RGUI_SETTINGS_SHADER_OPTIONS)
-               && (menu_type_is(type) == RGUI_SETTINGS_SHADER_OPTIONS))
+         if ((menu_type_is == RGUI_SETTINGS_SHADER_OPTIONS)
+               && (menu_type_is == RGUI_SETTINGS_SHADER_OPTIONS))
          {
             type = RGUI_FILE_DIRECTORY;
             strlcpy(type_str, "(DIR)", sizeof(type_str));
@@ -295,8 +323,8 @@ static void rmenu_render(void *data)
          else if (type == RGUI_SETTINGS_SHADER_FILTER)
             snprintf(type_str, sizeof(type_str), "%s",
                   g_settings.video.smooth ? "Linear" : "Nearest");
-         else
-            shader_manager_get_str(&rgui->shader, type_str, sizeof(type_str), type);
+         else if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->shader_manager_get_str)
+            driver.menu_ctx->backend->shader_manager_get_str(&rgui->shader, type_str, sizeof(type_str), type);
       }
       else
 #endif
@@ -320,8 +348,10 @@ static void rmenu_render(void *data)
 #ifdef HAVE_OVERLAY
             menu_type == RGUI_SETTINGS_OVERLAY_PRESET ||
 #endif
+            menu_type == RGUI_SETTINGS_VIDEO_SOFTFILTER ||
+            menu_type == RGUI_SETTINGS_AUDIO_DSP_FILTER ||
             menu_type == RGUI_SETTINGS_DISK_APPEND ||
-            menu_type_is(menu_type) == RGUI_FILE_DIRECTORY)
+            menu_type_is == RGUI_FILE_DIRECTORY)
       {
          if (type == RGUI_FILE_PLAIN)
          {
@@ -349,8 +379,8 @@ static void rmenu_render(void *data)
          strlcpy(type_str,
                core_option_get_val(g_extern.system.core_options, type - RGUI_SETTINGS_CORE_OPTION_START),
                sizeof(type_str));
-      else
-         menu_set_settings_label(type_str, sizeof(type_str), &w, type);
+      else if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->setting_set_label)
+         driver.menu_ctx->backend->setting_set_label(type_str, sizeof(type_str), &w, type);
 
       char entry_title_buf[256];
       char type_str_buf[64];
@@ -360,7 +390,7 @@ static void rmenu_render(void *data)
       strlcpy(type_str_buf, type_str, sizeof(type_str_buf));
 
       if ((type == RGUI_FILE_PLAIN || type == RGUI_FILE_DIRECTORY))
-         menu_ticker_line(entry_title_buf, TERM_WIDTH - (w + 1 + 2), g_extern.frame_count / 15, path, selected);
+         menu_ticker_line(entry_title_buf, RMENU_TERM_WIDTH - (w + 1 + 2), g_extern.frame_count / 15, path, selected);
       else
          menu_ticker_line(type_str_buf, w, g_extern.frame_count / 15, type_str, selected);
 
@@ -372,12 +402,12 @@ static void rmenu_render(void *data)
       font_parms.scale = FONT_SIZE_NORMAL;
       font_parms.color = WHITE;
 
-      if (driver.video_poke && driver.video_poke->set_osd_msg)
+      if (driver.video_data && driver.video_poke && driver.video_poke->set_osd_msg)
          driver.video_poke->set_osd_msg(driver.video_data, message, &font_parms);
 
       font_parms.x = POSITION_EDGE_CENTER + POSITION_OFFSET;
 
-      if (driver.video_poke && driver.video_poke->set_osd_msg)
+      if (driver.video_data && driver.video_poke && driver.video_poke->set_osd_msg)
          driver.video_poke->set_osd_msg(driver.video_data, type_str_buf, &font_parms);
    }
 }
@@ -389,7 +419,7 @@ void rmenu_set_texture(void *data, bool enable)
    if (menu_texture_inited)
       return;
 
-   if (driver.video_poke && driver.video_poke->set_texture_enable)
+   if (driver.video_data && driver.video_poke && driver.video_poke->set_texture_enable)
    {
       driver.video_poke->set_texture_frame(driver.video_data, menu_texture->pixels,
             enable, rgui->width, rgui->height, 1.0f);
@@ -432,7 +462,7 @@ static void rmenu_free(void *data)
    rmenu_free_assets(data);
 }
 
-int rgui_input_postprocess(void *data, uint64_t old_state)
+static int rmenu_input_postprocess(void *data, uint64_t old_state)
 {
    (void)data;
 
@@ -454,11 +484,25 @@ const menu_ctx_driver_t menu_ctx_rmenu = {
    rmenu_set_texture,
    rmenu_render_messagebox,
    rmenu_render,
+   NULL,
    rmenu_init,
    rmenu_free,
    rmenu_init_assets,
    rmenu_free_assets,
    NULL,
    NULL,
+   rmenu_input_postprocess,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   &menu_ctx_backend_common,
    "rmenu",
 };

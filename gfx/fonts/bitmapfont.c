@@ -89,7 +89,7 @@ static void font_renderer_msg(void *data, const char *msg, struct font_output_li
       if (!tmp)
          break;
 
-      tmp->output = handle->bitmap_chars[(unsigned) msg[i]];
+      tmp->output = handle->bitmap_chars[(uint8_t)msg[i]];
       tmp->width = FONT_WIDTH * handle->scale_factor;
       tmp->height = FONT_HEIGHT * handle->scale_factor;
       tmp->pitch = tmp->width;

@@ -21,45 +21,48 @@
 #ifdef _XBOX1
 #include <xfont.h>
 #endif
-#include "../gfx/image.h"
+#include "../gfx/shader_common.h"
+#include "../gfx/shader_parse.h"
+#include "../gfx/image/image.h"
 #include "../gfx/fonts/d3d_font.h"
 
 #include "../gfx/gfx_context.h"
 #include "../xdk/xdk_defines.h"
 
 #define DFONT_MAX	4096
+#if defined(_XBOX360)
+#define D3DFVF_CUSTOMVERTEX 0
+#elif defined(_XBOX1)
 #define D3DFVF_CUSTOMVERTEX	(D3DFVF_XYZRHW | D3DFVF_TEX1)
+#endif
 
 typedef struct DrawVerticeFormats
 {
-#if defined(_XBOX1)
-   float x, y, z;
-   float rhw;
-#elif defined(_XBOX360)
    float x, y;
+#if defined(_XBOX1)
+   float z;
+   float rhw;
 #endif
    float u, v;
 } DrawVerticeFormats;
 
 typedef struct gl_shader_backend gl_shader_backend_t;
 
-typedef struct xdk_d3d_video
+typedef struct d3d_video
 {
    const gfx_ctx_driver_t *ctx_driver;
    const gl_shader_backend_t *shader;
-#ifdef HAVE_FBO
-   bool fbo_inited;
-#endif
    bool should_resize;
    bool quitting;
    bool vsync;
    unsigned last_width;
    unsigned last_height;
-   unsigned win_width;
-   unsigned win_height;
+   unsigned screen_width;
+   unsigned screen_height;
+   unsigned dev_rotation;
    unsigned tex_w, tex_h;
-   LPDIRECT3D d3d_device;
-   LPDIRECT3DDEVICE d3d_render_device;
+   LPDIRECT3D g_pD3D;
+   LPDIRECT3DDEVICE dev;
    LPDIRECT3DVERTEXBUFFER vertex_buf;
    LPDIRECT3DTEXTURE lpTexture;
 #ifdef HAVE_D3D9
@@ -74,11 +77,14 @@ typedef struct xdk_d3d_video
    const d3d_font_renderer_t *font_ctx;
    D3DFORMAT internal_fmt;
    D3DFORMAT texture_fmt;
+   D3DVIEWPORT final_viewport;
    unsigned base_size;
    LPDIRECT3DSURFACE lpSurface;
-} xdk_d3d_video_t;
+   video_info_t video_info;
+   HRESULT d3d_err;
+} d3d_video_t;
 
-extern void xdk_d3d_generate_pp(D3DPRESENT_PARAMETERS *d3dpp, const video_info_t *video);
+extern void d3d_make_d3dpp(void *data, const video_info_t *info, D3DPRESENT_PARAMETERS *d3dpp);
 extern bool texture_image_render(struct texture_image *out_img);
 
 #endif

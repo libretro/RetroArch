@@ -23,7 +23,7 @@ static bool d3dfonts_w32_init_font(void *data, const char *font_path, unsigned f
 {
    (void)font_path;
 
-   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
+   d3d_video_t *d3d = (d3d_video_t*)data;
    D3DXFONT_DESC desc = {
       static_cast<int>(font_size), 0, 400, 0,
       false, DEFAULT_CHARSET,
@@ -43,7 +43,7 @@ static bool d3dfonts_w32_init_font(void *data, const char *font_path, unsigned f
 
 static void d3dfonts_w32_deinit_font(void *data)
 {
-   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
+   d3d_video_t *d3d = (d3d_video_t*)data;
    if (d3d->font)
       d3d->font->Release();
    d3d->font = NULL;
@@ -51,7 +51,7 @@ static void d3dfonts_w32_deinit_font(void *data)
 
 static void d3dfonts_w32_render_msg(void *data, const char *msg, void *userdata)
 {
-   D3DVideo *d3d = reinterpret_cast<D3DVideo*>(data);
+   d3d_video_t *d3d = (d3d_video_t*)data;
    font_params_t *params = (font_params_t*)userdata;
 
    if (msg && SUCCEEDED(d3d->dev->BeginScene()))

@@ -37,6 +37,10 @@
         <isset property="env.ANDROID_HOME" />
     </condition>
 
+    <condition property="ndk.dir" value="${env.ANDROID_NDK}">
+       <isset property="env.ANDROID_NDK" />
+    </condition>
+
     <!-- The project.properties file is created and updated by the 'android'
          tool, as well as ADT.
 
@@ -67,7 +71,17 @@
             -pre-clean
     -->
     <import file="custom_rules.xml" optional="true" />
+    <target name="-pre-build">
+       <exec executable="${ndk.dir}/ndk-build" failonerror="true">
+          <arg value="-j4"/>
+       </exec>
+    </target>
 
+    <target name="clean" depends="android_rules.clean">
+       <exec executable="${ndk.dir}/ndk-build" failonerror="true">
+          <arg value="clean"/>
+       </exec>
+    </target>
     <!-- Import the actual build file.
 
          To customize existing targets, there are two options:
