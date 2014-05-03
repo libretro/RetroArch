@@ -21,7 +21,7 @@
 #include "../apple/iOS/bluetooth/btpad.c"
 #include "../apple/iOS/bluetooth/btpad_queue.c"
 #elif defined(OSX)
-#include "../apple/OSX/hid_pad.c"
+#include "apple_hid_pad.c"
 #endif
 
 #include "../apple/common/hidpad/wiimote.c"

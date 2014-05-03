@@ -14,7 +14,7 @@
  */
 
 #include <IOKit/hid/IOHIDManager.h>
-#include "../../input/apple_input.h"
+#include "apple_input.h"
 
 struct apple_pad_connection
 {
@@ -33,7 +33,7 @@ void apple_pad_send_control(struct apple_pad_connection* connection, uint8_t* da
 // NOTE: I pieced this together through trial and error, any corrections are welcome
 static void hid_device_input_callback(void* context, IOReturn result, void* sender, IOHIDValueRef value)
 {
-   struct apple_pad_connection* connection = context;
+   struct apple_pad_connection* connection = (struct apple_pad_connection*)context;
 
    IOHIDElementRef element = IOHIDValueGetElement(value);
    uint32_t type = IOHIDElementGetType(element);
@@ -90,7 +90,9 @@ static void hid_device_report(void* context, IOReturn result, void *sender, IOHI
 
 static void hid_manager_device_attached(void* context, IOReturn result, void* sender, IOHIDDeviceRef device)
 {
+   char device_name[1024];
    struct apple_pad_connection* connection = calloc(1, sizeof(struct apple_pad_connection));
+
    connection->device = device;
    connection->slot = MAX_PLAYERS;
 
@@ -99,7 +101,6 @@ static void hid_manager_device_attached(void* context, IOReturn result, void* se
    IOHIDDeviceRegisterRemovalCallback(device, hid_device_removed, connection);
 
    CFStringRef device_name_ref = IOHIDDeviceGetProperty(device, CFSTR(kIOHIDProductKey));
-   char device_name[1024];
    CFStringGetCString(device_name_ref, device_name, sizeof(device_name), kCFStringEncodingUTF8);
 
    connection->slot = apple_joypad_connect(device_name, connection);
@@ -126,27 +127,27 @@ static void append_matching_dictionary(CFMutableArrayRef array, uint32_t page, u
    CFRelease(matcher);
 }
 
-void osx_pad_init()
+void osx_pad_init(void)
 {
-   if (!g_hid_manager)
-   {
-      g_hid_manager = IOHIDManagerCreate(kCFAllocatorDefault, kIOHIDOptionsTypeNone);
+   if (g_hid_manager)
+      return;
 
-      CFMutableArrayRef matcher = CFArrayCreateMutable(kCFAllocatorDefault, 0, &kCFTypeArrayCallBacks);
-      append_matching_dictionary(matcher, kHIDPage_GenericDesktop, kHIDUsage_GD_Joystick);
-      append_matching_dictionary(matcher, kHIDPage_GenericDesktop, kHIDUsage_GD_GamePad);
+   g_hid_manager = IOHIDManagerCreate(kCFAllocatorDefault, kIOHIDOptionsTypeNone);
 
-      IOHIDManagerSetDeviceMatchingMultiple(g_hid_manager, matcher);
-      CFRelease(matcher);
+   CFMutableArrayRef matcher = CFArrayCreateMutable(kCFAllocatorDefault, 0, &kCFTypeArrayCallBacks);
+   append_matching_dictionary(matcher, kHIDPage_GenericDesktop, kHIDUsage_GD_Joystick);
+   append_matching_dictionary(matcher, kHIDPage_GenericDesktop, kHIDUsage_GD_GamePad);
 
-      IOHIDManagerRegisterDeviceMatchingCallback(g_hid_manager, hid_manager_device_attached, 0);
-      IOHIDManagerScheduleWithRunLoop(g_hid_manager, CFRunLoopGetMain(), kCFRunLoopCommonModes);
+   IOHIDManagerSetDeviceMatchingMultiple(g_hid_manager, matcher);
+   CFRelease(matcher);
 
-      IOHIDManagerOpen(g_hid_manager, kIOHIDOptionsTypeNone);
-   }
+   IOHIDManagerRegisterDeviceMatchingCallback(g_hid_manager, hid_manager_device_attached, 0);
+   IOHIDManagerScheduleWithRunLoop(g_hid_manager, CFRunLoopGetMain(), kCFRunLoopCommonModes);
+
+   IOHIDManagerOpen(g_hid_manager, kIOHIDOptionsTypeNone);
 }
 
-void osx_pad_quit()
+void osx_pad_quit(void)
 {
    if (g_hid_manager)
    {
@@ -158,4 +159,3 @@ void osx_pad_quit()
 
    g_hid_manager = 0;
 }
-
