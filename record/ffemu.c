@@ -647,7 +647,7 @@ static void deinit_thread_buf(ffemu_t *handle)
    }
 }
 
-ffemu_t *ffemu_new(const void *data)
+void *ffemu_new(const void *data)
 {
    const struct ffemu_params *params = (const struct ffemu_params*)data;
    av_register_all();

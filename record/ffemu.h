@@ -80,7 +80,7 @@ struct ffemu_audio_data
 
 typedef struct ffemu ffemu_t;
 
-ffemu_t *ffemu_new(const void *data);
+void *ffemu_new(const void *data);
 void ffemu_free(void *data);
 
 bool ffemu_push_video(void *data, const void *_video_data);
