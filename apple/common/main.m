@@ -31,8 +31,6 @@ bool apple_is_running;
 bool apple_use_tv_mode;
 NSString* apple_core;
 
-static CFRunLoopObserverRef iterate_observer;
-
 static void apple_rarch_exited(void)
 {
    NSString* used_core = (NSString*)apple_core;
@@ -50,41 +48,6 @@ static void apple_rarch_exited(void)
    
    if (apple_use_tv_mode)
       apple_run_core(nil, 0);
-}
-
-static void do_iteration(void)
-{
-    bool iterate = iterate_observer && apple_is_running && !g_extern.is_paused;
-    
-    if (!iterate)
-        return;
-    
-    if (main_entry_iterate(0, NULL, NULL))
-    {
-        main_exit(NULL);
-        apple_rarch_exited();
-    }
-    else
-        CFRunLoopWakeUp(CFRunLoopGetMain());
-}
-
-void apple_start_iteration(void)
-{
-   if (iterate_observer)
-       return;
-    
-    iterate_observer = CFRunLoopObserverCreate(0, kCFRunLoopBeforeWaiting, true, 0, (CFRunLoopObserverCallBack)do_iteration, 0);
-    CFRunLoopAddObserver(CFRunLoopGetMain(), iterate_observer, kCFRunLoopCommonModes);
-}
-
-void apple_stop_iteration(void)
-{
-   if (!iterate_observer)
-       return;
-    
-    CFRunLoopObserverInvalidate(iterate_observer);
-    CFRelease(iterate_observer);
-    iterate_observer = 0;
 }
 
 void apple_run_core(NSString* core, const char* file)
