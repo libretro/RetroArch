@@ -19,7 +19,7 @@
 #include "../../apple/common/apple_export.h"
 #include "../../apple/common/setting_data.h"
 
-#include "../frontend_context.h"
+#include "../frontend.h"
 
 #include <stdint.h>
 #include "../../boolean.h"
@@ -29,6 +29,8 @@
 static CFRunLoopObserverRef iterate_observer;
 
 extern bool apple_is_running;
+
+extern void apple_rarch_exited(void);
 
 static void do_iteration(void)
 {

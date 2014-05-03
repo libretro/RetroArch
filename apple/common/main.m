@@ -31,7 +31,7 @@ bool apple_is_running;
 bool apple_use_tv_mode;
 NSString* apple_core;
 
-static void apple_rarch_exited(void)
+void apple_rarch_exited(void)
 {
    NSString* used_core = (NSString*)apple_core;
    apple_core = 0;
