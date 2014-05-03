@@ -692,6 +692,7 @@ extern const struct softfilter_implementation *blargg_ntsc_snes_composite_get_im
 extern const struct softfilter_implementation *blargg_ntsc_snes_svideo_get_implementation(softfilter_simd_mask_t simd);
 extern const struct softfilter_implementation *blargg_ntsc_snes_rgb_get_implementation(softfilter_simd_mask_t simd);
 extern const struct softfilter_implementation *lq2x_get_implementation(softfilter_simd_mask_t simd);
+extern const struct softfilter_implementation *phosphor2x_get_implementation(softfilter_simd_mask_t simd);
 extern const struct softfilter_implementation *twoxbr_get_implementation(softfilter_simd_mask_t simd);
 extern const struct softfilter_implementation *epx_get_implementation(softfilter_simd_mask_t simd);
 extern const struct softfilter_implementation *twoxsai_get_implementation(softfilter_simd_mask_t simd);

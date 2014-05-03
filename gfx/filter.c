@@ -93,6 +93,7 @@ static const struct softfilter_implementation *(*softfilter_drivers[]) (softfilt
    &blargg_ntsc_snes_svideo_get_implementation,
    &blargg_ntsc_snes_rgb_get_implementation,
    &lq2x_get_implementation,
+   &phosphor2x_get_implementation,
    &twoxbr_get_implementation,
    &darken_get_implementation,
    &twoxsai_get_implementation,

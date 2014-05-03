@@ -481,6 +481,7 @@ FILTERS
 #include "../gfx/filters/blargg_ntsc_snes_svideo.c"
 #include "../gfx/filters/blargg_ntsc_snes_rgb.c"
 #include "../gfx/filters/lq2x.c"
+#include "../gfx/filters/phosphor2x.c"
 
 #include "../audio/filters/echo.c"
 #ifndef _WIN32
