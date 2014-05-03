@@ -647,8 +647,9 @@ static void deinit_thread_buf(ffemu_t *handle)
    }
 }
 
-ffemu_t *ffemu_new(const struct ffemu_params *params)
+ffemu_t *ffemu_new(const void *data)
 {
+   const struct ffemu_params *params = (const struct ffemu_params*)data;
    av_register_all();
    avformat_network_init();
 
@@ -683,8 +684,9 @@ error:
    return NULL;
 }
 
-void ffemu_free(ffemu_t *handle)
+void ffemu_free(void *data)
 {
+   ffemu_t *handle = (ffemu_t*)data;
    if (!handle)
       return;
 
@@ -731,11 +733,21 @@ void ffemu_free(ffemu_t *handle)
    free(handle);
 }
 
-bool ffemu_push_video(ffemu_t *handle, const struct ffemu_video_data *data)
+bool ffemu_push_video(void *data, const void*_video_data)
 {
    unsigned y;
-   bool drop_frame = handle->video.frame_drop_count++ % handle->video.frame_drop_ratio;
+   bool drop_frame;
+   ffemu_t *handle;
+   const struct ffemu_video_data *video_data = (const struct ffemu_video_data*)_video_data;
+   handle = (ffemu_t*)data;
+
+   if (!handle || !video_data)
+      return false;
+
+   drop_frame = handle->video.frame_drop_count++ % handle->video.frame_drop_ratio;
+
    handle->video.frame_drop_count %= handle->video.frame_drop_ratio;
+
    if (drop_frame)
       return true;
 
@@ -748,7 +760,7 @@ bool ffemu_push_video(ffemu_t *handle, const struct ffemu_video_data *data)
       if (!handle->alive)
          return false;
 
-      if (avail >= sizeof(*data))
+      if (avail >= sizeof(*video_data))
          break;
 
       slock_lock(handle->cond_lock);
@@ -767,7 +779,7 @@ bool ffemu_push_video(ffemu_t *handle, const struct ffemu_video_data *data)
    slock_lock(handle->lock);
 
    // Tightly pack our frame to conserve memory. libretro tends to use a very large pitch.
-   struct ffemu_video_data attr_data = *data;
+   struct ffemu_video_data attr_data = *video_data;
 
    if (attr_data.is_dupe)
       attr_data.width = attr_data.height = attr_data.pitch = 0;
@@ -777,8 +789,8 @@ bool ffemu_push_video(ffemu_t *handle, const struct ffemu_video_data *data)
    fifo_write(handle->attr_fifo, &attr_data, sizeof(attr_data));
 
    int offset = 0;
-   for (y = 0; y < attr_data.height; y++, offset += data->pitch)
-      fifo_write(handle->video_fifo, (const uint8_t*)data->data + offset, attr_data.pitch);
+   for (y = 0; y < attr_data.height; y++, offset += video_data->pitch)
+      fifo_write(handle->video_fifo, (const uint8_t*)video_data->data + offset, attr_data.pitch);
 
    slock_unlock(handle->lock);
    scond_signal(handle->cond);
@@ -786,8 +798,14 @@ bool ffemu_push_video(ffemu_t *handle, const struct ffemu_video_data *data)
    return true;
 }
 
-bool ffemu_push_audio(ffemu_t *handle, const struct ffemu_audio_data *data)
+bool ffemu_push_audio(void *data, const void *_audio_data)
 {
+   ffemu_t *handle = (ffemu_t*)data;
+   const struct ffemu_audio_data *audio_data = (const struct ffemu_audio_data*)_audio_data;
+
+   if (!handle || !audio_data)
+      return false;
+
    if (!handle->config.audio_enable)
       return true;
 
@@ -800,7 +818,7 @@ bool ffemu_push_audio(ffemu_t *handle, const struct ffemu_audio_data *data)
       if (!handle->alive)
          return false;
 
-      if (avail >= data->frames * handle->params.channels * sizeof(int16_t))
+      if (avail >= audio_data->frames * handle->params.channels * sizeof(int16_t))
          break;
 
       slock_lock(handle->cond_lock);
@@ -817,7 +835,7 @@ bool ffemu_push_audio(ffemu_t *handle, const struct ffemu_audio_data *data)
    }
 
    slock_lock(handle->lock);
-   fifo_write(handle->audio_fifo, data->data, data->frames * handle->params.channels * sizeof(int16_t));
+   fifo_write(handle->audio_fifo, audio_data->data, audio_data->frames * handle->params.channels * sizeof(int16_t));
    slock_unlock(handle->lock);
    scond_signal(handle->cond);
 
@@ -1205,8 +1223,13 @@ static void ffemu_flush_buffers(ffemu_t *handle)
    av_free(audio_buf);
 }
 
-bool ffemu_finalize(ffemu_t *handle)
+bool ffemu_finalize(void *data)
 {
+   ffemu_t *handle = (ffemu_t*)data;
+
+   if (!handle)
+      return false;
+
    deinit_thread(handle);
 
    // Flush out data still in buffers (internal, and FFmpeg internal).
