@@ -82,7 +82,7 @@ static CLLocationAccuracy currentVerticalAccuracy;
 #ifdef IOS
 
 #include <GLKit/GLKit.h>
-#import "views.h"
+#include "../iOS/views.h"
 static const float ALMOST_INVISIBLE = .021f;
 static GLKView* g_view;
 static UIView* g_pause_indicator_view;

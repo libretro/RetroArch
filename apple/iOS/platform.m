@@ -15,8 +15,8 @@
 
 #include <string.h>
 
-#import "RetroArch_Apple.h"
-#include "rarch_wrapper.h"
+#include "../common/RetroArch_Apple.h"
+#include "../common/rarch_wrapper.h"
 
 #include "../../input/apple_input.h"
 #include "../../settings_data.h"
