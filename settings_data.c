@@ -13,8 +13,21 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "setting_data.h"
-#include "../../config.def.h"
+#include "settings_data.h"
+#include "file_path.h"
+#include "input/input_common.h"
+#include "config.def.h"
+
+#define ENFORCE_RANGE(setting, type)                  \
+{                                                     \
+   if (setting->flags & SD_FLAG_HAS_RANGE)            \
+   {                                                  \
+      if (*setting->value.type < setting->min)        \
+      *setting->value.type = setting->min;         \
+      if (*setting->value.type > setting->max)        \
+      *setting->value.type = setting->max;         \
+   }                                                  \
+}
 
 // HACK
 struct settings fake_settings;
@@ -24,17 +37,6 @@ void setting_data_load_current(void)
 {
    memcpy(&fake_settings, &g_settings, sizeof(struct settings));
    memcpy(&fake_extern, &g_extern, sizeof(struct global));
-}
-
-#define ENFORCE_RANGE(setting, type)                  \
-{                                                     \
-   if (setting->flags & SD_FLAG_HAS_RANGE)            \
-   {                                                  \
-      if (*setting->value.type < setting->min)        \
-         *setting->value.type = setting->min;         \
-      if (*setting->value.type > setting->max)        \
-         *setting->value.type = setting->max;         \
-   }                                                  \
 }
 
 // Input
@@ -52,19 +54,22 @@ static const char* get_input_config_key(const rarch_setting_t* setting, const ch
    return buffer;
 }
 
+//FIXME - make portable
+#ifdef APPLE
 static const char* get_key_name(const rarch_setting_t* setting)
 {
    if (BINDFOR(*setting).key == RETROK_UNKNOWN)
       return "nul";
 
    uint32_t hidkey = input_translate_rk_to_keysym(BINDFOR(*setting).key);
-   
+
    for (int i = 0; apple_key_name_map[i].hid_id; i ++)
       if (apple_key_name_map[i].hid_id == hidkey)
          return apple_key_name_map[i].keyname;
-   
+
    return "nul";
 }
+#endif
 
 
 static const char* get_button_name(const rarch_setting_t* setting)
@@ -74,27 +79,26 @@ static const char* get_button_name(const rarch_setting_t* setting)
    if (BINDFOR(*setting).joykey == NO_BTN)
       return "nul";
 
-   snprintf(buffer, 32, "%lld", BINDFOR(*setting).joykey);
+   snprintf(buffer, 32, "%lld", (long long int)(BINDFOR(*setting).joykey));
    return buffer;
 }
 
 static const char* get_axis_name(const rarch_setting_t* setting)
 {
    static char buffer[32];
-   
+
    uint32_t joyaxis = BINDFOR(*setting).joyaxis;
-   
+
    if (AXIS_NEG_GET(joyaxis) != AXIS_DIR_NONE)
       snprintf(buffer, 8, "-%d", AXIS_NEG_GET(joyaxis));
    else if (AXIS_POS_GET(joyaxis) != AXIS_DIR_NONE)
       snprintf(buffer, 8, "+%d", AXIS_POS_GET(joyaxis));
    else
       return "nul";
-   
+
    return buffer;
 }
 
-//
 void setting_data_reset_setting(const rarch_setting_t* setting)
 {
    switch (setting->type)
@@ -116,88 +120,91 @@ void setting_data_reset_setting(const rarch_setting_t* setting)
          break;
       case ST_STRING:
       case ST_PATH:
-         {  
-            if (setting->default_value.string)
-            {
-               if (setting->type == ST_STRING)
-                  strlcpy(setting->value.string, setting->default_value.string, setting->size);
-               else
-                  fill_pathname_expand_special(setting->value.string, setting->default_value.string, setting->size);
-            }
-            break;
+         if (setting->default_value.string)
+         {
+            if (setting->type == ST_STRING)
+               strlcpy(setting->value.string, setting->default_value.string, setting->size);
+            else
+               fill_pathname_expand_special(setting->value.string, setting->default_value.string, setting->size);
          }
+         break;
       default:
          break;
    }
-   
+
    if (setting->change_handler)
       setting->change_handler(setting);
 }
 
 void setting_data_reset(const rarch_setting_t* settings)
 {
+   const rarch_setting_t *i;
    memset(&fake_settings, 0, sizeof(fake_settings));
    memset(&fake_extern, 0, sizeof(fake_extern));
-   
-   for (const rarch_setting_t* i = settings; i->type != ST_NONE; i ++)
+
+   for (i = settings; i->type != ST_NONE; i ++)
       setting_data_reset_setting(i);
 }
 
 bool setting_data_load_config_path(const rarch_setting_t* settings, const char* path)
 {
-   config_file_t* config = config_file_new(path);
-   
+   config_file_t* config = (config_file_t*)config_file_new(path);
+
    if (config)
    {
       setting_data_load_config(settings, config);
       config_file_free(config);
    }
-   
+
    return config;
 }
 
 bool setting_data_load_config(const rarch_setting_t* settings, config_file_t* config)
 {
+   const rarch_setting_t *i;
    if (!config)
       return false;
 
-   for (const rarch_setting_t* i = settings; i->type != ST_NONE; i ++)
+   for (i = settings; i->type != ST_NONE; i ++)
    {
       switch (i->type)
       {
-         case ST_BOOL:   config_get_bool  (config, i->name, i->value.boolean); break;            
-         case ST_PATH:   config_get_path  (config, i->name, i->value.string, i->size); break;
-         case ST_STRING: config_get_array (config, i->name, i->value.string, i->size); break;
-         
+         case ST_BOOL:
+            config_get_bool  (config, i->name, i->value.boolean);
+            break;
+         case ST_PATH:
+            config_get_path  (config, i->name, i->value.string, i->size);
+            break;
+         case ST_STRING:
+            config_get_array (config, i->name, i->value.string, i->size);
+            break;
          case ST_INT:
             config_get_int(config, i->name, i->value.integer);
             ENFORCE_RANGE(i, integer);
             break;
-
          case ST_UINT:
             config_get_uint(config, i->name, i->value.unsigned_integer);
             ENFORCE_RANGE(i, unsigned_integer);
             break;
-
          case ST_FLOAT:
             config_get_float(config, i->name, i->value.fraction);
             ENFORCE_RANGE(i, fraction);
             break;         
-         
          case ST_BIND:
-         {
-            const char *prefix = (const char *)get_input_config_prefix(i);
-            input_config_parse_key       (config, prefix, i->name, i->value.keybind);
-            input_config_parse_joy_button(config, prefix, i->name, i->value.keybind);
-            input_config_parse_joy_axis  (config, prefix, i->name, i->value.keybind);
+            {
+               const char *prefix = (const char *)get_input_config_prefix(i);
+               input_config_parse_key       (config, prefix, i->name, i->value.keybind);
+               input_config_parse_joy_button(config, prefix, i->name, i->value.keybind);
+               input_config_parse_joy_axis  (config, prefix, i->name, i->value.keybind);
+            }
             break;
-         }
-         
-         case ST_HEX:    break;
-         default:        break;
+         case ST_HEX:
+            break;
+         default:
+            break;
       }
    }
-   
+
    return true;
 }
 
@@ -205,23 +212,24 @@ bool setting_data_save_config_path(const rarch_setting_t* settings, const char* 
 {
    bool result = false;
    config_file_t* config = (config_file_t*)config_file_new(path);
-   
+
    if (!config)
       config = config_file_new(0);
-   
+
    setting_data_save_config(settings, config);
    result = config_file_write(config, path);
    config_file_free(config);
-   
+
    return result;
 }
 
 bool setting_data_save_config(const rarch_setting_t* settings, config_file_t* config)
 {
+   const rarch_setting_t *i;
    if (!config)
       return false;
 
-   for (const rarch_setting_t* i = settings; i->type != ST_NONE; i ++)
+   for (i = settings; i->type != ST_NONE; i ++)
    {
       switch (i->type)
       {
@@ -247,7 +255,10 @@ bool setting_data_save_config(const rarch_setting_t* settings, config_file_t* co
             config_set_float(config, i->name, *i->value.fraction);
             break;
          case ST_BIND:
+            //FIXME: make portable
+#ifdef APPLE
             config_set_string(config, get_input_config_key(i, 0     ), get_key_name(i));
+#endif
             config_set_string(config, get_input_config_key(i, "btn" ), get_button_name(i));
             config_set_string(config, get_input_config_key(i, "axis"), get_axis_name(i));
             break;
@@ -257,16 +268,17 @@ bool setting_data_save_config(const rarch_setting_t* settings, config_file_t* co
             break;
       }
    }
-   
+
    return true;
 }
 
 const rarch_setting_t* setting_data_find_setting(const rarch_setting_t* settings, const char* name)
 {
+   const rarch_setting_t *i;
    if (!name)
       return 0;
 
-   for (const rarch_setting_t* i = settings; i->type != ST_NONE; i ++)
+   for (i = settings; i->type != ST_NONE; i ++)
       if (i->type <= ST_GROUP && strcmp(i->name, name) == 0)
          return i;
 
@@ -277,7 +289,7 @@ void setting_data_set_with_string_representation(const rarch_setting_t* setting,
 {
    if (!setting || !value)
       return;
-   
+
    switch (setting->type)
    {
       case ST_INT:
@@ -302,7 +314,7 @@ void setting_data_set_with_string_representation(const rarch_setting_t* setting,
       default:
          return;
    }
-   
+
    if (setting->change_handler)
       setting->change_handler(setting);
 }
@@ -333,7 +345,9 @@ const char* setting_data_get_string_representation(const rarch_setting_t* settin
          strlcpy(buffer, setting->value.string, length);
          break;
       case ST_BIND:
+#ifdef APPLE
          snprintf(buffer, length, "[KB:%s] [JS:%s] [AX:%s]", get_key_name(setting), get_button_name(setting), get_axis_name(setting));
+#endif
          break;
       default:
          return "";
@@ -349,7 +363,7 @@ rarch_setting_t setting_data_group_setting(enum setting_type type, const char* n
 }
 
 #define DEFINE_BASIC_SETTING_TYPE(TAG, TYPE, VALUE, SETTING_TYPE) \
-rarch_setting_t setting_data_##TAG##_setting(const char* name, const char* description, TYPE* target, TYPE default_value) \
+   rarch_setting_t setting_data_##TAG##_setting(const char* name, const char* description, TYPE* target, TYPE default_value) \
 { \
    rarch_setting_t result = { SETTING_TYPE, name, sizeof(TYPE), description }; \
    result.value.VALUE = target; \
@@ -357,10 +371,10 @@ rarch_setting_t setting_data_##TAG##_setting(const char* name, const char* descr
    return result; \
 }
 
-DEFINE_BASIC_SETTING_TYPE(bool, bool, boolean, ST_BOOL)
-DEFINE_BASIC_SETTING_TYPE(int, int, integer, ST_INT)
-DEFINE_BASIC_SETTING_TYPE(uint, unsigned int, unsigned_integer, ST_UINT)
-DEFINE_BASIC_SETTING_TYPE(float, float, fraction, ST_FLOAT)
+   DEFINE_BASIC_SETTING_TYPE(bool, bool, boolean, ST_BOOL)
+   DEFINE_BASIC_SETTING_TYPE(int, int, integer, ST_INT)
+   DEFINE_BASIC_SETTING_TYPE(uint, unsigned int, unsigned_integer, ST_UINT)
+   DEFINE_BASIC_SETTING_TYPE(float, float, fraction, ST_FLOAT)
 
 rarch_setting_t setting_data_string_setting(enum setting_type type,
       const char* name, const char* description, char* target,
@@ -388,7 +402,9 @@ rarch_setting_t setting_data_bind_setting(const char* name,
 static const uint32_t features = SD_FEATURE_SHADERS;
 #elif defined(OSX)
 static const uint32_t features = SD_FEATURE_VIDEO_MODE | SD_FEATURE_SHADERS |
-                                 SD_FEATURE_VSYNC | SD_FEATURE_AUDIO_DEVICE;
+SD_FEATURE_VSYNC | SD_FEATURE_AUDIO_DEVICE;
+#else
+static const uint32_t features = SD_FEATURE_VSYNC;
 #endif
 
 #define g_settings fake_settings
@@ -415,18 +431,38 @@ static const uint32_t features = SD_FEATURE_VIDEO_MODE | SD_FEATURE_SHADERS |
 
 #define WITH_RANGE(MIN, MAX)    \
    (list[index - 1]).min = MIN; \
-   (list[index - 1]).max = MAX; \
-   WITH_FLAGS(SD_FLAG_HAS_RANGE)
+(list[index - 1]).max = MAX; \
+WITH_FLAGS(SD_FLAG_HAS_RANGE)
 
 #define WITH_VALUES(VALUES) (list[index -1]).values = VALUES;
 
 const rarch_setting_t* setting_data_get_list(void)
 {
-   static rarch_setting_t list[512] = { 0 };
+   int i, player, index;
+   static rarch_setting_t list[512];
+   static bool initialized = false;
+
+   if (!initialized)
+   {
+      for (i = 0; i < 512; i++)
+      {
+         list[i].type = ST_NONE;
+         list[i].name = NULL;
+         list[i].size = 0;
+         list[i].short_description = NULL;
+         list[i].index = 0;
+         list[i].min = 0;
+         list[i].max = 0;
+         list[i].values = NULL;
+         list[i].flags = 0;
+      }
+
+      initialized = true;
+   }
 
    if (list[0].type == ST_NONE)
    {
-      unsigned index = 0;
+      index = 0;
 
       /***********/
       /* DRIVERS */
@@ -434,7 +470,9 @@ const rarch_setting_t* setting_data_get_list(void)
       WITH_FEATURE(SD_FEATURE_MULTI_DRIVER) START_GROUP("Drivers")
          START_SUB_GROUP("Drivers")
          CONFIG_STRING(g_settings.video.driver,             "video_driver",               "Video Driver",               config_get_default_video())
+#ifdef HAVE_OPENGL
          CONFIG_STRING(g_settings.video.gl_context,         "video_gl_context",           "OpenGL Driver",              "")
+#endif
          CONFIG_STRING(g_settings.audio.driver,             "audio_driver",               "Audio Driver",               config_get_default_audio())
          CONFIG_STRING(g_settings.input.driver,             "input_driver",               "Input Driver",               config_get_default_input())
          CONFIG_STRING(g_settings.input.joypad_driver,      "input_joypad_driver",        "Joypad Driver",              "")
@@ -642,17 +680,17 @@ const rarch_setting_t* setting_data_get_list(void)
 
 #ifdef ANDROID
          START_SUB_GROUP("Android")
-         CONFIG_INT(g_settings.input.back_behavior,         "input_back_behavior",        "Back Behavior",              BACK_BUTTON_QUIT)
-         CONFIG_INT(g_settings.input.icade_profile[0],      "input_autodetect_icade_profile_pad1", "iCade 1",           DEFAULT_ME_YO)
-         CONFIG_INT(g_settings.input.icade_profile[1],      "input_autodetect_icade_profile_pad2", "iCade 2",           DEFAULT_ME_YO)
-         CONFIG_INT(g_settings.input.icade_profile[2],      "input_autodetect_icade_profile_pad3", "iCade 3",           DEFAULT_ME_YO)
-         CONFIG_INT(g_settings.input.icade_profile[3],      "input_autodetect_icade_profile_pad4", "iCade 4",           DEFAULT_ME_YO)
+         CONFIG_UINT(g_settings.input.back_behavior,         "input_back_behavior",        "Back Behavior",              BACK_BUTTON_QUIT)
+         CONFIG_UINT(g_settings.input.icade_profile[0],      "input_autodetect_icade_profile_pad1", "iCade 1",           DEFAULT_ME_YO)
+         CONFIG_UINT(g_settings.input.icade_profile[1],      "input_autodetect_icade_profile_pad2", "iCade 2",           DEFAULT_ME_YO)
+         CONFIG_UINT(g_settings.input.icade_profile[2],      "input_autodetect_icade_profile_pad3", "iCade 3",           DEFAULT_ME_YO)
+         CONFIG_UINT(g_settings.input.icade_profile[3],      "input_autodetect_icade_profile_pad4", "iCade 4",           DEFAULT_ME_YO)
          END_SUB_GROUP()
 #endif
 
          // The second argument to config bind is 1 based for players and 0 only for meta keys
          START_SUB_GROUP("Meta Keys")
-         for (int i = 0; i != RARCH_BIND_LIST_END; i ++)
+         for (i = 0; i != RARCH_BIND_LIST_END; i ++)
             if (input_config_bind_map[i].meta)
             {
                const struct input_bind_map* bind = &input_config_bind_map[i];
@@ -660,19 +698,21 @@ const rarch_setting_t* setting_data_get_list(void)
             }
       END_SUB_GROUP()
 
-         for (int player = 0; player < MAX_PLAYERS; player ++)
+         for (player = 0; player < MAX_PLAYERS; player ++)
          {
             const struct retro_keybind* const defaults = (player == 0) ? retro_keybinds_1 : retro_keybinds_rest;
 
             char buffer[32];
             snprintf(buffer, 32, "Player %d", player + 1);
             START_SUB_GROUP(strdup(buffer))
-               for (int i = 0; i != RARCH_BIND_LIST_END; i ++)
+               for (i = 0; i != RARCH_BIND_LIST_END; i ++)
+               {
                   if (!input_config_bind_map[i].meta)
                   {
                      const struct input_bind_map* bind = &input_config_bind_map[i];
                      CONFIG_BIND(g_settings.input.binds[player][i], player + 1, bind->base, bind->desc, &defaults[i])
                   }
+               }
             END_SUB_GROUP()
          }
       END_GROUP()

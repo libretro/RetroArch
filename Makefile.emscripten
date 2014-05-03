@@ -8,6 +8,7 @@ OBJ = frontend/platform/platform_emscripten.o \
 		driver.o \
 		conf/config_file.o \
 		settings.o \
+		settings_data.o \
 		hash.o \
 		dynamic.o \
 		dynamic_dummy.o \

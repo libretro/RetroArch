@@ -322,6 +322,8 @@
     </ClCompile>
     <ClCompile Include="..\..\settings.c">
     </ClCompile>
+    <ClCompile Include="..\..\settings_data.c">
+    </ClCompile>
     <ClCompile Include="..\..\thread.c">
     </ClCompile>
   </ItemGroup>

@@ -19,7 +19,7 @@
 #include "rarch_wrapper.h"
 
 #include "../../input/apple_input.h"
-#include "apple/common/setting_data.h"
+#include "../../settings_data.h"
 #include "apple/common/apple_gamecontroller.h"
 #include "menu.h"
 

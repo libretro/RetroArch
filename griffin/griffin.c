@@ -668,9 +668,7 @@ XML
  APPLE EXTENSIONS
 ============================================================ */
     
-#if defined(IOS) || defined(OSX)
-#include "../apple/common/setting_data.c"
-#endif
+#include "../settings_data.c"
 
 #ifdef __cplusplus
 }

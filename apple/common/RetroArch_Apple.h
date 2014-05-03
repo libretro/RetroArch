@@ -21,7 +21,7 @@
 #import <CoreFoundation/CoreFoundation.h>
 
 #include "../../frontend/info/core_info.h"
-#include "setting_data.h"
+#include "../../settings_data.h"
 #include "apple_export.h"
 
 #define GSEVENT_TYPE_KEYDOWN 10

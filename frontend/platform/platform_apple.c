@@ -17,7 +17,7 @@
 #include "../menu/menu_common.h"
 #include "../../apple/common/rarch_wrapper.h"
 #include "../../apple/common/apple_export.h"
-#include "../../apple/common/setting_data.h"
+#include "../../settings_data.h"
 
 #include "../frontend.h"
 

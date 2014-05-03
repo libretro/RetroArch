@@ -16,7 +16,7 @@
 #include <sys/stat.h>
 
 #include "RetroArch_Apple.h"
-#include "setting_data.h"
+#include "../../settings_data.h"
 
 #include "../../general.h"
 #include "../../file.h"

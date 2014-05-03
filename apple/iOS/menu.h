@@ -16,9 +16,9 @@
 #ifndef __APPLE_RARCH_IOS_MENU_H__
 #define __APPLE_RARCH_IOS_MENU_H__
 
-#include "frontend/menu/history.h"
+#include "../../frontend/menu/history.h"
 #include "views.h"
-#include "apple/common/setting_data.h"
+#include "../../settings_data.h"
 
 @protocol RAMenuItemBase
 - (UITableViewCell*)cellForTableView:(UITableView*)tableView;

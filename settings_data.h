@@ -13,10 +13,10 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __APPLE_RARCH_SETTING_DATA_H__
-#define __APPLE_RARCH_SETTING_DATA_H__
+#ifndef __RARCH_SETTINGS_DATA_H__
+#define __RARCH_SETTINGS_DATA_H__
 
-#include "../../general.h"
+#include "general.h"
 
 enum setting_type
 {
@@ -37,22 +37,22 @@ enum setting_type
                     
 enum setting_features
 {
-   SD_FEATURE_ALWAYS = 0,
-   SD_FEATURE_MULTI_DRIVER = 1,
-   SD_FEATURE_VIDEO_MODE = 2,
+   SD_FEATURE_ALWAYS         = 0,
+   SD_FEATURE_MULTI_DRIVER   = 1,
+   SD_FEATURE_VIDEO_MODE     = 2,
    SD_FEATURE_WINDOW_MANAGER = 4,
-   SD_FEATURE_SHADERS = 8,
-   SD_FEATURE_VSYNC = 16,
-   SD_FEATURE_AUDIO_DEVICE = 32
+   SD_FEATURE_SHADERS        = 8,
+   SD_FEATURE_VSYNC          = 16,
+   SD_FEATURE_AUDIO_DEVICE   = 32
 };
 
 enum setting_flags
 {
-   SD_FLAG_PATH_DIR = 1,
-   SD_FLAG_PATH_FILE = 2,
+   SD_FLAG_PATH_DIR    = 1,
+   SD_FLAG_PATH_FILE   = 2,
    SD_FLAG_ALLOW_EMPTY = 4,
-   SD_FLAG_VALUE_DESC = 8,
-   SD_FLAG_HAS_RANGE = 16
+   SD_FLAG_VALUE_DESC  = 8,
+   SD_FLAG_HAS_RANGE   = 16
 };
 
 typedef struct rarch_setting_t
@@ -125,7 +125,8 @@ rarch_setting_t setting_data_bind_setting(const char* name, const char* descript
 void setting_data_load_current(void);
 const rarch_setting_t* setting_data_get_list(void);
 
-// Keyboard
-#include "../../input/apple_keycode.h"
+#ifdef APPLE
+#include "input/apple_keycode.h"
+#endif
 
 #endif

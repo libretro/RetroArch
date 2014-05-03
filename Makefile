@@ -12,6 +12,7 @@ OBJ = frontend/frontend.o \
 		hash.o \
 		driver.o \
 		settings.o \
+		settings_data.o \
 		dynamic.o \
 		dynamic_dummy.o \
 		message_queue.o \
