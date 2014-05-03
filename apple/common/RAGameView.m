@@ -83,9 +83,9 @@ static CLLocationAccuracy currentVerticalAccuracy;
 
 #include <GLKit/GLKit.h>
 #include "../iOS/views.h"
-static const float ALMOST_INVISIBLE = .021f;
-static GLKView* g_view;
-static UIView* g_pause_indicator_view;
+#define ALMOST_INVISIBLE (.021f)
+static GLKView *g_view;
+static UIView *g_pause_indicator_view;
 
 #ifdef HAVE_CAMERA
 static AVCaptureSession *_session;
