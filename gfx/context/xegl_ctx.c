@@ -148,31 +148,36 @@ static void gfx_ctx_check_window(void *data, bool *quit,
    XEvent event;
    while (XPending(g_dpy))
    {
+      // Can get events from older windows. Check this.
       XNextEvent(g_dpy, &event);
       bool filter = XFilterEvent(&event, g_win);
 
       switch (event.type)
       {
          case ClientMessage:
-            if ((Atom)event.xclient.data.l[0] == g_quit_atom)
+            if (event.xclient.window == g_win && (Atom)event.xclient.data.l[0] == g_quit_atom)
                g_quit = true;
             break;
 
          case DestroyNotify:
-            g_quit = true;
+            if (event.xdestroywindow.window == g_win)
+               g_quit = true;
             break;
 
          case MapNotify:
-            g_has_focus = true;
+            if (event.xmap.window == g_win)
+               g_has_focus = true;
             break;
 
          case UnmapNotify:
-            g_has_focus = false;
+            if (event.xunmap.window == g_win)
+               g_has_focus = false;
             break;
 
          case KeyPress:
          case KeyRelease:
-            x11_handle_key_event(&event, g_xic, filter);
+            if (event.xkey.window == g_win)
+               x11_handle_key_event(&event, g_xic, filter);
             break;
       }
    }
@@ -298,9 +303,14 @@ static bool gfx_ctx_init(void *data)
 
    g_quit = 0;
 
-   g_dpy = XOpenDisplay(NULL);
+   // Keep one g_dpy alive the entire process lifetime.
+   // This is necessary for nVidia's EGL implementation for now.
    if (!g_dpy)
-      goto error;
+   {
+      g_dpy = XOpenDisplay(NULL);
+      if (!g_dpy)
+         goto error;
+   }
 
    g_egl_dpy = eglGetDisplay((EGLNativeDisplayType)g_dpy);
    if (g_egl_dpy == EGL_NO_DISPLAY)
@@ -629,12 +639,7 @@ static void gfx_ctx_destroy(void *data)
       g_should_reset_mode = false;
    }
 
-   if (g_dpy)
-   {
-      XCloseDisplay(g_dpy);
-      g_dpy = NULL;
-   }
-
+   // Do not close g_dpy. We'll keep one for the entire application lifecycle to work-around nVidia EGL limitations.
    g_inited = false;
 }
 
