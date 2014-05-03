@@ -448,7 +448,11 @@ bool retro_load_game(const struct retro_game_info *info)
    }
 
 #ifdef GLES
-#ifdef GLES3
+#if defined(GLES31)
+   hw_render.context_type = RETRO_HW_CONTEXT_OPENGLES_VERSION;
+   hw_render.version_major = 3;
+   hw_render.version_minor = 1;
+#elif defined(GLES3)
    hw_render.context_type = RETRO_HW_CONTEXT_OPENGLES3;
 #else
    hw_render.context_type = RETRO_HW_CONTEXT_OPENGLES2;

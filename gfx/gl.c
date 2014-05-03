@@ -1921,6 +1921,8 @@ static const gfx_ctx_driver_t *gl_get_context(gl_t *gl)
       minor = 0;
       api_name = "OpenGL ES 3.0";
    }
+   else if (cb->context_type == RETRO_HW_CONTEXT_OPENGLES_VERSION)
+      api_name = "OpenGL ES 3.1+";
 #endif
 #else
    enum gfx_ctx_api api = GFX_CTX_OPENGL_API;
@@ -2162,14 +2164,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    // but still need multiple textures with PREV.
    gl->textures = 4;
 #ifdef HAVE_FBO
-#if defined(HAVE_OPENGLES3)
-   gl->hw_render_use = hw_render->context_type == RETRO_HW_CONTEXT_OPENGLES2 || hw_render->context_type == RETRO_HW_CONTEXT_OPENGLES3;
-#elif defined(HAVE_OPENGLES2)
-   gl->hw_render_use = hw_render->context_type == RETRO_HW_CONTEXT_OPENGLES2;
-#else
-   gl->hw_render_use = hw_render->context_type == RETRO_HW_CONTEXT_OPENGL ||
-      g_extern.system.hw_render_callback.context_type == RETRO_HW_CONTEXT_OPENGL_CORE;
-#endif
+   gl->hw_render_use = hw_render->context_type != RETRO_HW_CONTEXT_NONE;
    if (gl->hw_render_use)
    {
       gl->textures = 1; // All on GPU, no need to excessively create textures.

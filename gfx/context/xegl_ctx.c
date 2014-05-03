@@ -391,8 +391,15 @@ static EGLint *egl_fill_attribs(EGLint *attr)
 #endif
 
       case GFX_CTX_OPENGL_ES_API:
-         *attr++ = EGL_CONTEXT_CLIENT_VERSION;
+         *attr++ = EGL_CONTEXT_CLIENT_VERSION; // Same as EGL_CONTEXT_MAJOR_VERSION
          *attr++ = g_major ? (EGLint)g_major : 2;
+#ifdef EGL_KHR_create_context
+         if (g_minor > 0)
+         {
+            *attr++ = EGL_CONTEXT_MINOR_VERSION_KHR;
+            *attr++ = g_minor;
+         }
+#endif
          break;
 
       default:

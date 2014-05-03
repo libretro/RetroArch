@@ -997,11 +997,12 @@ typedef retro_proc_address_t (*retro_hw_get_proc_address_t)(const char *sym);
 
 enum retro_hw_context_type
 {
-   RETRO_HW_CONTEXT_NONE = 0,
-   RETRO_HW_CONTEXT_OPENGL, // OpenGL 2.x. Latest version available before 3.x+. Driver can choose to use latest compatibility context.
-   RETRO_HW_CONTEXT_OPENGLES2, // GLES 2.0
-   RETRO_HW_CONTEXT_OPENGL_CORE, // Modern desktop core GL context. Use major/minor fields to set GL version.
-   RETRO_HW_CONTEXT_OPENGLES3, // GLES 3.0
+   RETRO_HW_CONTEXT_NONE             = 0,
+   RETRO_HW_CONTEXT_OPENGL           = 1, // OpenGL 2.x. Driver can choose to use latest compatibility context.
+   RETRO_HW_CONTEXT_OPENGLES2        = 2, // GLES 2.0
+   RETRO_HW_CONTEXT_OPENGL_CORE      = 3, // Modern desktop core GL context. Use version_major/version_minor fields to set GL version.
+   RETRO_HW_CONTEXT_OPENGLES3        = 4, // GLES 3.0
+   RETRO_HW_CONTEXT_OPENGLES_VERSION = 5, // GLES 3.1+. Set version_major/version_minor. For GLES2 and GLES3, use the corresponding enums directly.
 
    RETRO_HW_CONTEXT_DUMMY = INT_MAX
 };
@@ -1026,8 +1027,8 @@ struct retro_hw_render_callback
    bool stencil; // Set if stencil buffers should be attached.
    // If depth and stencil are true, a packed 24/8 buffer will be added. Only attaching stencil is invalid and will be ignored.
    bool bottom_left_origin; // Use conventional bottom-left origin convention. Is false, standard libretro top-left origin semantics are used.
-   unsigned version_major; // Major version number for core GL context.
-   unsigned version_minor; // Minor version number for core GL context.
+   unsigned version_major; // Major version number for core GL context or GLES 3.1+.
+   unsigned version_minor; // Minor version number for core GL context or GLES 3.1+.
 
    bool cache_context; // If this is true, the frontend will go very far to avoid resetting context in scenarios like toggling fullscreen, etc.
    // The reset callback might still be called in extreme situations such as if the context is lost beyond recovery.
