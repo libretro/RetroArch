@@ -18,7 +18,7 @@
 #include "rarch_dsp.h"
 #include <math.h>
 #include <stdlib.h>
-#include <complex.h>
+#include <complex.h> //FIXME: This is a dependency missing pretty much everywhere except Linux
 #include <stdint.h>
 #include <stddef.h>
 #include <stdio.h>

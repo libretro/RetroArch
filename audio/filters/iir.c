@@ -257,6 +257,7 @@ static void iir_init(void *data, int samplerate, int filter_type)
 #ifdef __SSE2__
 static void iir_process_batch(void *data, float *out, const float *in, unsigned frames)
 {
+   unsigned i;
    struct iir_filter *iir = (struct iir_filter*)data;
 
    __m128 fir_coeff[2] = { iir->fir_coeff[0], iir->fir_coeff[1] };
@@ -264,7 +265,7 @@ static void iir_process_batch(void *data, float *out, const float *in, unsigned 
    __m128 fir_buf[2]   = { iir->fir_buf[0],   iir->fir_buf[1] }; 
    __m128 iir_buf      = iir->iir_buf;
 
-   for (unsigned i = 0; (i + 4) <= (2 * frames); in += 4, i += 4, out += 4)
+   for (i = 0; (i + 4) <= (2 * frames); in += 4, i += 4, out += 4)
    {
       __m128 input = _mm_loadu_ps(in);
 
@@ -341,12 +342,13 @@ static void * iir_dsp_init(const rarch_dsp_info_t *info)
 static void iir_dsp_process(void *data, rarch_dsp_output_t *output,
       const rarch_dsp_input_t *input)
 {
+   int i, num_samples;
    struct iir_filter_data *iir = (struct iir_filter_data*)data;
 
    output->samples = iir->buf;
 
-   int num_samples = input->frames * 2;
-   for (int i = 0; i<num_samples;)
+   num_samples = input->frames * 2;
+   for (i = 0; i<num_samples;)
 	{
 		iir->buf[i] = iir_process(&iir->iir_l, input->samples[i]);
 		i++;

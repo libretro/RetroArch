@@ -973,7 +973,9 @@ static const struct dspfilter_implementation *(*dspfilter_drivers[]) (dspfilter_
    NULL,
    &echo_dsp_plugin_init,
 #ifndef _WIN32
+#ifndef ANDROID
    &eq_dsp_plugin_init,
+#endif
 #endif
    &iir_dsp_plugin_init,
    &phaser_dsp_plugin_init,
