@@ -36,27 +36,30 @@ static const float scale_times = 0.8;
 static const float scanrange_low = 0.5;
 static const float scanrange_high = 0.65;
 
-static float phosphor_bloom[256];
-static float scan_range[256];
+static float phosphor_bloom_8888[256];
+static float scan_range_8888[256];
+static float phosphor_bloom_565[64];
+static float scan_range_565[64];
 
-#define clamp(x) ((x) > 255 ? 255 : ((x < 0) ? 0 : (uint32_t)x))
+#define clamp8(x) ((x) > 255 ? 255 : ((x < 0) ? 0 : (uint32_t)x))
+#define clamp6(x) ((x) > 63 ? 63 : ((x < 0) ? 0 : (uint32_t)x))
 
-#define red_rgb565(x)              (((x) >> 10) & 0x1f)
-#define green_rgb565(x)            (((x) >>  5) & 0x1f)
-#define blue_rgb565(x)             (((x) >>  0) & 0x1f)
+#define red_rgb565(x)              (((x) >> 10) & 0x3e)
+#define green_rgb565(x)            (((x) >>  5) & 0x3f)
+#define blue_rgb565(x)             (((x) <<  1) & 0x3e)
 #define red_xrgb8888(x)            (((x) >> 16) & 0xff)
 #define green_xrgb8888(x)          (((x) >>  8) & 0xff)
 #define blue_xrgb8888(x)           (((x) >>  0) & 0xff)
 
-#define set_red_rgb565(var, x)     (var = ((var) & 0x7C00)   | ((x) << 10))
-#define set_green_rgb565(var, x)   (var = ((var) & 0x3E0)    | ((x) << 5))
-#define set_blue_rgb565(var, x)    (var = ((var) & 0x1F)     | ((x) << 0))
+#define set_red_rgb565(var, x)     (var = ((var) & 0x07FF)   | ((x&0x3e) << 10))
+#define set_green_rgb565(var, x)   (var = ((var) & 0xF81F)   | ((x&0x3f) << 5))
+#define set_blue_rgb565(var, x)    (var = ((var) & 0xFFE0)   | ((x&0x3e) >> 1))
 #define set_red_xrgb8888(var, x)   (var = ((var) & 0x00ffff) | ((x) << 16))
 #define set_green_xrgb8888(var, x) (var = ((var) & 0xff00ff) | ((x) <<  8))
 #define set_blue_xrgb8888(var, x)  (var = ((var) & 0xffff00) | ((x) <<  0))
 
 #define blend_pixels_xrgb8888(a, b) (((a >> 1) & 0x7f7f7f7f) + ((b >> 1) & 0x7f7f7f7f))
-#define blend_pixels_rgb565(a, b) (((a >> 1) & 0x7f7f7f7f) + ((b >> 1) & 0x7f7f7f7f))
+#define blend_pixels_rgb565(a, b) (((a&0xF7DE) >> 1) + ((b&0xF7DE) >> 1))
 
 static inline unsigned max_component_xrgb8888(uint32_t color)
 {
@@ -124,7 +127,7 @@ static void bleed_phosphors_xrgb8888(uint32_t *scanline, unsigned width)
    for (x = 0; x < width; x += 2)
    {
       unsigned r = red_xrgb8888(scanline[x]);
-      unsigned r_set = clamp(r * phosphor_bleed * phosphor_bloom[r]);
+      unsigned r_set = clamp8(r * phosphor_bleed * phosphor_bloom_8888[r]);
       set_red_xrgb8888(scanline[x + 1], r_set);
    }
 
@@ -132,7 +135,7 @@ static void bleed_phosphors_xrgb8888(uint32_t *scanline, unsigned width)
    for (x = 0; x < width; x++)
    {
       unsigned g = green_xrgb8888(scanline[x]);
-      unsigned g_set = clamp((g >> 1) + 0.5 * g * phosphor_bleed * phosphor_bloom[g]);
+      unsigned g_set = clamp8((g >> 1) + 0.5 * g * phosphor_bleed * phosphor_bloom_8888[g]);
       set_green_xrgb8888(scanline[x], g_set);
    }
 
@@ -141,7 +144,7 @@ static void bleed_phosphors_xrgb8888(uint32_t *scanline, unsigned width)
    for (x = 1; x < width; x += 2)
    {
       unsigned b = blue_xrgb8888(scanline[x]);
-      unsigned b_set = clamp(b * phosphor_bleed * phosphor_bloom[b]);
+      unsigned b_set = clamp8(b * phosphor_bleed * phosphor_bloom_8888[b]);
       set_blue_xrgb8888(scanline[x + 1], b_set);
    }
 }
@@ -154,7 +157,7 @@ static void bleed_phosphors_rgb565(uint16_t *scanline, unsigned width)
    for (x = 0; x < width; x += 2)
    {
       unsigned r = red_rgb565(scanline[x]);
-      unsigned r_set = clamp(r * phosphor_bleed * phosphor_bloom[r]);
+      unsigned r_set = clamp6(r * phosphor_bleed * phosphor_bloom_565[r]);
       set_red_rgb565(scanline[x + 1], r_set);
    }
 
@@ -162,7 +165,7 @@ static void bleed_phosphors_rgb565(uint16_t *scanline, unsigned width)
    for (x = 0; x < width; x++)
    {
       unsigned g = green_rgb565(scanline[x]);
-      unsigned g_set = clamp((g >> 1) + 0.5 * g * phosphor_bleed * phosphor_bloom[g]);
+      unsigned g_set = clamp6((g >> 1) + 0.5 * g * phosphor_bleed * phosphor_bloom_565[g]);
       set_green_rgb565(scanline[x], g_set);
    }
 
@@ -171,7 +174,7 @@ static void bleed_phosphors_rgb565(uint16_t *scanline, unsigned width)
    for (x = 1; x < width; x += 2)
    {
       unsigned b = blue_rgb565(scanline[x]);
-      unsigned b_set = clamp(b * phosphor_bleed * phosphor_bloom[b]);
+      unsigned b_set = clamp6(b * phosphor_bleed * phosphor_bloom_565[b]);
       set_blue_rgb565(scanline[x + 1], b_set);
    }
 }
@@ -182,9 +185,9 @@ static void stretch_scanline_xrgb8888(const uint32_t * scan_in, uint32_t * scan_
    for (x = 0; x < width; x++)
    {
       unsigned max = max_component_xrgb8888(scan_in[x]);
-      set_red_xrgb8888(scan_out[x],   (uint32_t)(scan_range[max] * red_xrgb8888(scan_in[x])));
-      set_green_xrgb8888(scan_out[x], (uint32_t)(scan_range[max] * green_xrgb8888(scan_in[x])));
-      set_blue_xrgb8888(scan_out[x],  (uint32_t)(scan_range[max] * blue_xrgb8888(scan_in[x])));
+      set_red_xrgb8888(scan_out[x],   (uint32_t)(scan_range_8888[max] * red_xrgb8888(scan_in[x])));
+      set_green_xrgb8888(scan_out[x], (uint32_t)(scan_range_8888[max] * green_xrgb8888(scan_in[x])));
+      set_blue_xrgb8888(scan_out[x],  (uint32_t)(scan_range_8888[max] * blue_xrgb8888(scan_in[x])));
    }
 }
 
@@ -194,9 +197,9 @@ static void stretch_scanline_rgb565(const uint16_t * scan_in, uint16_t * scan_ou
    for (x = 0; x < width; x++)
    {
       unsigned max = max_component_rgb565(scan_in[x]);
-      set_red_rgb565(scan_out[x],   (uint16_t)(scan_range[max] * red_rgb565(scan_in[x])));
-      set_green_rgb565(scan_out[x], (uint16_t)(scan_range[max] * green_rgb565(scan_in[x])));
-      set_blue_rgb565(scan_out[x],  (uint16_t)(scan_range[max] * blue_rgb565(scan_in[x])));
+      set_red_rgb565(scan_out[x],   (uint16_t)(scan_range_565[max] * red_rgb565(scan_in[x])));
+      set_green_rgb565(scan_out[x], (uint16_t)(scan_range_565[max] * green_rgb565(scan_in[x])));
+      set_blue_rgb565(scan_out[x],  (uint16_t)(scan_range_565[max] * blue_rgb565(scan_in[x])));
    }
 }
 
@@ -265,8 +268,8 @@ static void phosphor2x_generic_xrgb8888(unsigned width, unsigned height,
       // Not exactly sure of order of operations here ...
       for (i = 0; i < 256; i++)
       {
-         phosphor_bloom[i] = scale_times * powf((float)i / 255.0f, 1.0f/2.2f) + scale_add;
-         scan_range[i] = scanrange_low + i * (scanrange_high - scanrange_low) / 255.0f;
+         phosphor_bloom_8888[i] = scale_times * powf((float)i / 255.0f, 1.0f/2.2f) + scale_add;
+         scan_range_8888[i] = scanrange_low + i * (scanrange_high - scanrange_low) / 255.0f;
       }
       filter_inited = true;
    }
@@ -297,10 +300,10 @@ static void phosphor2x_generic_rgb565(unsigned width, unsigned height,
       // Init lookup tables:
       // phosphorBloom = (scaleTimes .* linspace(0, 1, 255) .^ (1/2.2)) + scaleAdd;
       // Not exactly sure of order of operations here ...
-      for (i = 0; i < 256; i++)
+      for (i = 0; i < 64; i++)
       {
-         phosphor_bloom[i] = scale_times * powf((float)i / 255.0f, 1.0f/2.2f) + scale_add;
-         scan_range[i] = scanrange_low + i * (scanrange_high - scanrange_low) / 255.0f;
+         phosphor_bloom_565[i] = scale_times * powf((float)i / 31.0f, 1.0f/2.2f) + scale_add;
+         scan_range_565[i] = scanrange_low + i * (scanrange_high - scanrange_low) / 31.0f;
       }
       filter_inited = true;
    }
