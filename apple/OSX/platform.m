@@ -169,7 +169,7 @@ static char** waiting_argv;
    if (cb.numberOfItems)
       [cb selectItemAtIndex:0];
    else
-      apple_display_alert(BOXSTRING("No libretro cores were found.\nSelect \"Go->Cores Directory\" from the menu and place libretro dylib files there."), BOXSTRING("RetroArch"));
+      apple_display_alert("No libretro cores were found.\nSelect \"Go->Cores Directory\" from the menu and place libretro dylib files there.", "RetroArch");
    
    if (waiting_argc)
    {
@@ -221,7 +221,7 @@ static char** waiting_argv;
    }
    else
    {
-      apple_display_alert(BOXSTRING("Cannot open multiple files"), BOXSTRING("RetroArch"));
+      apple_display_alert("Cannot open multiple files", "RetroArch");
       [sender replyToOpenOrPrint:NSApplicationDelegateReplyFailure];
    }
 }

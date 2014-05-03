@@ -238,13 +238,21 @@ static void handle_touch_event(NSArray* touches)
     const char *path = [self.documentsDirectory UTF8String];
     path_mkdir(path);
     if (access(path, 0755) != 0)
-      apple_display_alert([NSString stringWithFormat:@"Failed to create or access base directory: %@", self.documentsDirectory], 0);
+    {
+       char msg[256];
+       snprintf(msg, sizeof(msg), "Failed to create or access base directory: %s", self.documentsDirectory.UTF8String);
+       apple_display_alert(msg, "Error");
+    }
     else
     {
         path = [self.systemDirectory UTF8String];
         path_mkdir(path);
         if (access(path, 0755) != 0)
-            apple_display_alert([NSString stringWithFormat:@"Failed to create or access system directory: %@", self.systemDirectory], 0);
+        {
+            char msg[256];
+            snprintf(msg, sizeof(msg), "Failed to create or access system directory: %s", self.systemDirectory.UTF8String);
+            apple_display_alert(msg, "Error");
+        }
         else
            [self pushViewController:[RAMainMenu new] animated:YES];
     }
@@ -256,7 +264,7 @@ static void handle_touch_event(NSArray* touches)
    const core_info_list_t* core_list = (const core_info_list_t*)core_info_list_get();
    
    if (!core_list || core_list->count == 0)
-      apple_display_alert(@"No libretro cores were found. You will not be able to run any content.", 0);
+      apple_display_alert("No libretro cores were found. You will not be able to run any content.", "Warning");
    
    apple_gamecontroller_init();
    

@@ -21,11 +21,11 @@
 #include "../../general.h"
 #include "../../file.h"
 
-void apple_display_alert(NSString* message, NSString* title)
+void apple_display_alert(const char *message, const char *title)
 {
 #ifdef IOS
-   UIAlertView* alert = [[UIAlertView alloc] initWithTitle:title ? title : BOXSTRING("RetroArch")
-                                             message:message
+   UIAlertView* alert = [[UIAlertView alloc] initWithTitle:title ? BOXSTRING(title) : BOXSTRING("RetroArch")
+                                             message:BOXSTRING(message)
                                              delegate:nil
                                              cancelButtonTitle:BOXSTRING("OK")
                                              otherButtonTitles:nil];
@@ -33,8 +33,8 @@ void apple_display_alert(NSString* message, NSString* title)
 #else
    NSAlert* alert = [[NSAlert new] autorelease];
    
-   [alert setMessageText:title ? title : BOXSTRING("RetroArch")];
-   [alert setInformativeText:message];
+   [alert setMessageText:(*title) ? BOXSTRING(title) : BOXSTRING("RetroArch")];
+   [alert setInformativeText:BOXSTRING(message)];
    [alert setAlertStyle:NSInformationalAlertStyle];
    [alert beginSheetModalForWindow:[RetroArch_OSX get].window
           modalDelegate:apple_platform
