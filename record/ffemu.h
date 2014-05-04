@@ -80,11 +80,11 @@ struct ffemu_audio_data
 
 typedef struct ffemu ffemu_t;
 
-void *ffemu_new(const void *data);
+void *ffemu_new(const struct ffemu_params *params);
 void ffemu_free(void *data);
 
-bool ffemu_push_video(void *data, const void *_video_data);
-bool ffemu_push_audio(void *data, const void *_audio_data);
+bool ffemu_push_video(void *data, const struct ffemu_video_data *video_data);
+bool ffemu_push_audio(void *data, const struct ffemu_audio_data *audio_data);
 bool ffemu_finalize(void *data);
 
 #ifdef __cplusplus

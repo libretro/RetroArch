@@ -647,9 +647,8 @@ static void deinit_thread_buf(ffemu_t *handle)
    }
 }
 
-void *ffemu_new(const void *data)
+void *ffemu_new(const struct ffemu_params *params)
 {
-   const struct ffemu_params *params = (const struct ffemu_params*)data;
    av_register_all();
    avformat_network_init();
 
@@ -733,13 +732,11 @@ void ffemu_free(void *data)
    free(handle);
 }
 
-bool ffemu_push_video(void *data, const void*_video_data)
+bool ffemu_push_video(void *data, const struct ffemu_video_data *video_data)
 {
    unsigned y;
    bool drop_frame;
-   ffemu_t *handle;
-   const struct ffemu_video_data *video_data = (const struct ffemu_video_data*)_video_data;
-   handle = (ffemu_t*)data;
+   ffemu_t *handle = (ffemu_t*)data;
 
    if (!handle || !video_data)
       return false;
@@ -798,10 +795,9 @@ bool ffemu_push_video(void *data, const void*_video_data)
    return true;
 }
 
-bool ffemu_push_audio(void *data, const void *_audio_data)
+bool ffemu_push_audio(void *data, const struct ffemu_audio_data *audio_data)
 {
    ffemu_t *handle = (ffemu_t*)data;
-   const struct ffemu_audio_data *audio_data = (const struct ffemu_audio_data*)_audio_data;
 
    if (!handle || !audio_data)
       return false;
