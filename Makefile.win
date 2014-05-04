@@ -251,7 +251,7 @@ endif
 ifeq ($(HAVE_FFMPEG), 1)
    LIBS += -lavformat -lavcodec -lavutil -lswscale -lws2_32 -lz
    DEFINES += -DHAVE_FFMPEG -DHAVE_RECORD -Iffmpeg
-   OBJ += record/ffemu.o
+   OBJ += record/ffemu.o record/ffmpeg.o
 endif
 
 ifneq ($(V), 1)
