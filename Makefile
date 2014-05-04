@@ -327,7 +327,7 @@ ifeq ($(HAVE_ZLIB), 1)
 endif
 
 ifeq ($(HAVE_FFMPEG), 1)
-   OBJ += record/ffemu.o
+   OBJ += record/ffemu.o record/ffmpeg.o
    LIBS += $(AVCODEC_LIBS) $(AVFORMAT_LIBS) $(AVUTIL_LIBS) $(SWSCALE_LIBS)
    DEFINES += $(AVCODEC_CFLAGS) $(AVFORMAT_CFLAGS) $(AVUTIL_CFLAGS) $(SWSCALE_CFLAGS) -DHAVE_RECORD
 endif

@@ -265,7 +265,7 @@ static void recording_dump_frame(const void *data, unsigned width, unsigned heig
       ffemu_data.is_dupe = !data;
    }
 
-   ffemu_push_video(g_extern.rec, &ffemu_data);
+   g_extern.rec_driver->push_video(g_extern.rec, &ffemu_data);
 }
 #endif
 
@@ -369,7 +369,7 @@ static bool audio_flush(const int16_t *data, size_t samples)
       ffemu_data.data                    = data;
       ffemu_data.frames                  = samples / 2;
 
-      ffemu_push_audio(g_extern.rec, &ffemu_data);
+      g_extern.rec_driver->push_audio(g_extern.rec, &ffemu_data);
    }
 #endif
 
@@ -1392,8 +1392,7 @@ void rarch_init_recording(void)
          params.fb_width, params.fb_height,
          (unsigned)params.pix_fmt);
 
-   g_extern.rec = ffemu_new(&params);
-   if (!g_extern.rec)
+   if (!ffemu_init_first(&g_extern.rec_driver, &g_extern.rec, &params))
    {
       RARCH_ERR("Failed to start FFmpeg recording.\n");
       g_extern.recording = false;
@@ -1405,12 +1404,14 @@ void rarch_init_recording(void)
 
 void rarch_deinit_recording(void)
 {
-   if (!g_extern.recording)
+   if (!g_extern.rec || !g_extern.rec_driver)
       return;
 
-   ffemu_finalize(g_extern.rec);
-   ffemu_free(g_extern.rec);
+   g_extern.rec_driver->finalize(g_extern.rec);
+   g_extern.rec_driver->free(g_extern.rec);
+
    g_extern.rec = NULL;
+   g_extern.rec_driver = NULL;
 
    free(g_extern.record_gpu_buffer);
    g_extern.record_gpu_buffer = NULL;

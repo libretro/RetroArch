@@ -589,7 +589,9 @@ struct global
 
    // FFmpeg record.
 #ifdef HAVE_RECORD
-   ffemu_t *rec;
+   const ffemu_backend_t *rec_driver;
+   void *rec;
+
    char record_path[PATH_MAX];
    char record_config[PATH_MAX];
    bool recording;

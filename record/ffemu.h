@@ -18,6 +18,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include "../boolean.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -78,14 +79,20 @@ struct ffemu_audio_data
    size_t frames;
 };
 
-typedef struct ffemu ffemu_t;
+typedef struct ffemu_backend
+{
+   void *(*init)(const struct ffemu_params *params);
+   void  (*free)(void *data);
+   bool  (*push_video)(void *data, const struct ffemu_video_data *video_data);
+   bool  (*push_audio)(void *data, const struct ffemu_audio_data *audio_data);
+   bool  (*finalize)(void *data);
+   const char *ident;
+} ffemu_backend_t;
 
-void *ffemu_new(const struct ffemu_params *params);
-void ffemu_free(void *data);
+extern const ffemu_backend_t ffemu_ffmpeg;
 
-bool ffemu_push_video(void *data, const struct ffemu_video_data *video_data);
-bool ffemu_push_audio(void *data, const struct ffemu_audio_data *audio_data);
-bool ffemu_finalize(void *data);
+const ffemu_backend_t *ffemu_find_backend(const char *ident);
+bool ffemu_init_first(const ffemu_backend_t **backend, void **data, const struct ffemu_params *params);
 
 #ifdef __cplusplus
 }
