@@ -184,7 +184,7 @@ void core_info_list_free(core_info_list_t *core_info_list)
 
    for (i = 0; i < core_info_list->count; i++)
    {
-      core_info_t *info = &core_info_list->list[i];
+      core_info_t *info = (core_info_t*)&core_info_list->list[i];
 
       free(info->path);
       free(info->display_name);
@@ -192,7 +192,8 @@ void core_info_list_free(core_info_list_t *core_info_list)
       free(info->authors);
       free(info->permissions);
       free(info->notes);
-      string_list_free(info->supported_extensions_list);
+      if (info->supported_extensions_list)
+         string_list_free(info->supported_extensions_list);
       string_list_free(info->authors_list);
       string_list_free(info->note_list);
       string_list_free(info->permissions_list);
