@@ -39,239 +39,477 @@
 #include "../../../screenshot.h"
 #include "../../../gfx/fonts/bitmap.h"
 
-GLuint texid = 0;
-struct texture_image *menu_texture;
-static bool textures_inited =false;
+#include "lakka.h"
+#include "tween.h"
+#include "png_texture_load.h"
 
-// thanks to https://github.com/DavidEGrayson/ahrs-visualizer/blob/master/png_texture.cpp
-static GLuint png_texture_load(void *data, int * width, int * height)
-{
-   struct texture_image *menu_texture = (struct texture_image*)data;
-   // Generate the OpenGL texture object
-   GLuint texture;
-   glGenTextures(1, &texture);
-   glBindTexture(GL_TEXTURE_2D, texture);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+#define HSPACING 300
+#define VSPACING 75
+#define C_ACTIVE_ZOOM 1.0
+#define C_PASSIVE_ZOOM 0.5
+#define I_ACTIVE_ZOOM 0.75
+#define I_PASSIVE_ZOOM 0.35
+#define DELAY 0.02
 
-   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, menu_texture->width, menu_texture->height, 0, GL_RGB, GL_UNSIGNED_BYTE, menu_texture->pixels);
+const GLfloat background_color[] = {
+   0.1, 0.74, 0.61, 1.00,
+   0.1, 0.74, 0.61, 1.00,
+   0.1, 0.74, 0.61, 1.00,
+   0.1, 0.74, 0.61, 1.00,
+};
 
-   return texture;
-}
+menu_category* categories = NULL;
 
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
-#define HAVE_SHADER_MANAGER
-#endif
+int depth = 0;
 
-static uint16_t menu_framebuf[400 * 240];
+GLuint settings_icon;
+GLuint arrow_icon;
+GLuint run_icon;
+GLuint resume_icon;
+GLuint savestate_icon;
+GLuint loadstate_icon;
+GLuint screenshot_icon;
+GLuint reload_icon;
 
-#define LAKKA_TERM_START_X 15
-#define LAKKA_TERM_START_Y 27
-#define LAKKA_TERM_WIDTH (((rgui->width - LAKKA_TERM_START_X - 15) / (FONT_WIDTH_STRIDE)))
-#define LAKKA_TERM_HEIGHT (((rgui->height - LAKKA_TERM_START_Y - 15) / (FONT_HEIGHT_STRIDE)) - 1)
+struct font_output_list run_label;
+struct font_output_list resume_label;
+
+int num_categories = 0;
+
+int menu_active_category = 0;
 
 int dim = 192;
 
-static void lakka_copy_glyph(uint8_t *glyph, const uint8_t *buf)
+float all_categories_x = 0;
+
+rgui_handle_t *rgui;
+
+// Fonts
+void *font;
+const gl_font_renderer_t *font_ctx;
+const font_renderer_driver_t *font_driver;
+GLuint font_tex;
+GLint max_font_size;
+int font_tex_w, font_tex_h;
+uint32_t *font_tex_buf;
+char font_last_msg[256];
+int font_last_width, font_last_height;
+GLfloat font_color[16];
+GLfloat font_color_dark[16];
+GLuint texture;
+
+// Move the categories left or right depending on the menu_active_category variable
+void lakka_switch_categories()
 {
-   int y, x;
-   for (y = 0; y < FONT_HEIGHT; y++)
+   // translation
+   add_tween(DELAY, -menu_active_category * HSPACING, &all_categories_x, &inOutQuad);
+   
+   // alpha tweening
+   for (int i = 0; i < num_categories; i++)
    {
-      for (x = 0; x < FONT_WIDTH; x++)
+      float ca = (i == menu_active_category) ? 1.0 : 0.5;
+      float cz = (i == menu_active_category) ? C_ACTIVE_ZOOM : C_PASSIVE_ZOOM;
+      add_tween(DELAY, ca, &categories[i].alpha, &inOutQuad);
+      add_tween(DELAY, cz, &categories[i].zoom,  &inOutQuad);
+
+      for (int j = 0; j < categories[i].num_items; j++)
       {
-         uint32_t col =
-            ((uint32_t)buf[3 * (-y * 256 + x) + 0] << 0) |
-            ((uint32_t)buf[3 * (-y * 256 + x) + 1] << 8) |
-            ((uint32_t)buf[3 * (-y * 256 + x) + 2] << 16);
-
-         uint8_t rem = 1 << ((x + y * FONT_WIDTH) & 7);
-         unsigned offset = (x + y * FONT_WIDTH) >> 3;
-
-         if (col != 0xff)
-            glyph[offset] |= rem;
+         float ia = (i != menu_active_category     ) ? 0   : 
+                    (j == categories[i].active_item) ? 1.0 : 0.5;
+         add_tween(DELAY, ia, &categories[i].items[j].alpha, &inOutQuad);
       }
    }
 }
 
-static uint16_t gray_filler(unsigned x, unsigned y)
+void lakka_switch_items()
 {
-   return 0x0008;
-}
-
-static uint16_t green_filler(unsigned x, unsigned y)
-{
-   return 0xf008;
-}
-
-static void fill_rect(uint16_t *buf, unsigned pitch,
-      unsigned x, unsigned y,
-      unsigned width, unsigned height,
-      uint16_t (*col)(unsigned x, unsigned y))
-{
-   unsigned j, i;
-   for (j = y; j < y + height; j++)
-      for (i = x; i < x + width; i++)
-         buf[j * (pitch >> 1) + i] = col(i, j);
-}
-
-static void blit_line(rgui_handle_t *rgui,
-      int x, int y, const char *message, bool green)
-{
-   int j, i;
-   while (*message)
+   for (int j = 0; j < categories[menu_active_category].num_items; j++)
    {
-      for (j = 0; j < FONT_HEIGHT; j++)
-      {
-         for (i = 0; i < FONT_WIDTH; i++)
-         {
-            uint8_t rem = 1 << ((i + j * FONT_WIDTH) & 7);
-            int offset = (i + j * FONT_WIDTH) >> 3;
-            bool col = (rgui->font[FONT_OFFSET((unsigned char)*message) + offset] & rem);
+      float ia = (j == categories[menu_active_category].active_item) ? 1.0 : 0.5;
+      float iz = (j == categories[menu_active_category].active_item) ? I_ACTIVE_ZOOM : I_PASSIVE_ZOOM;
+      float iy = (j == categories[menu_active_category].active_item) ? VSPACING*2.5 :
+                 (j  < categories[menu_active_category].active_item) ? VSPACING*(j-categories[menu_active_category].active_item - 1) :
+                                                                       VSPACING*(j-categories[menu_active_category].active_item + 3);
 
-            if (col)
-            {
-               rgui->frame_buf[(y + j) * (rgui->frame_buf_pitch >> 1) + (x + i)] = green ?
-#ifdef GEKKO
-               (3 << 0) | (10 << 4) | (3 << 8) | (7 << 12) : 0x7FFF;
-#else
-               (15 << 0) | (7 << 4) | (15 << 8) | (7 << 12) : 0xFFFF;
-#endif
+      add_tween(DELAY, ia, &categories[menu_active_category].items[j].alpha, &inOutQuad);
+      add_tween(DELAY, iz, &categories[menu_active_category].items[j].zoom,  &inOutQuad);
+      add_tween(DELAY, iy, &categories[menu_active_category].items[j].y,     &inOutQuad);
+   }
+}
+
+void lakka_switch_subitems ()
+{
+   menu_item ai = categories[menu_active_category].items[categories[menu_active_category].active_item];
+
+   for (int k = 0; k < ai.num_subitems; k++) {
+      // Above items
+      if (k < ai.active_subitem) {
+         add_tween(DELAY, 0.5, &ai.subitems[k].alpha, &inOutQuad);
+         add_tween(DELAY, VSPACING*(k-ai.active_subitem + 2), &ai.subitems[k].y, &inOutQuad);
+         add_tween(DELAY, I_PASSIVE_ZOOM, &ai.subitems[k].zoom, &inOutQuad);
+      // Active item
+      } else if (k == ai.active_subitem) {
+         add_tween(DELAY, 1.0, &ai.subitems[k].alpha, &inOutQuad);
+         add_tween(DELAY, VSPACING*2.5, &ai.subitems[k].y, &inOutQuad);
+         add_tween(DELAY, I_ACTIVE_ZOOM, &ai.subitems[k].zoom, &inOutQuad);
+      // Under items
+      } else if (k > ai.active_subitem) {
+         add_tween(DELAY, 0.5, &ai.subitems[k].alpha, &inOutQuad);
+         add_tween(DELAY, VSPACING*(k-ai.active_subitem + 3), &ai.subitems[k].y, &inOutQuad);
+         add_tween(DELAY, I_PASSIVE_ZOOM, &ai.subitems[k].zoom, &inOutQuad);
+      }
+   }
+}
+
+void lakka_reset_submenu()
+{
+   if (! (g_extern.main_is_init && !g_extern.libretro_dummy && strcmp(g_extern.fullpath, categories[menu_active_category].items[categories[menu_active_category].active_item].rom) == 0)) { // Keeps active submenu state (do we really want that?)
+      categories[menu_active_category].items[categories[menu_active_category].active_item].active_subitem = 0;
+      for (int i = 0; i < num_categories; i++) {
+         for (int j = 0; j < categories[i].num_items; j++) {
+            for (int k = 0; k < categories[i].items[j].num_subitems; k++) {
+               categories[i].items[j].subitems[k].alpha = 0;
+               categories[i].items[j].subitems[k].zoom = k == categories[i].items[j].active_subitem ? I_ACTIVE_ZOOM : I_PASSIVE_ZOOM;
+               categories[i].items[j].subitems[k].y = k == 0 ? VSPACING*2.5 : VSPACING*(3+k);
             }
          }
       }
-
-      x += FONT_WIDTH_STRIDE;
-      message++;
    }
 }
 
-static void init_font(rgui_handle_t *rgui, const uint8_t *font_bmp_buf)
+void lakka_open_submenu ()
+{
+   add_tween(DELAY, -HSPACING * (menu_active_category+1), &all_categories_x, &inOutQuad);
+
+   // Reset contextual menu style
+   lakka_reset_submenu();
+   
+   for (int i = 0; i < num_categories; i++) {
+      if (i == menu_active_category) {
+         add_tween(DELAY, 1.0, &categories[i].alpha, &inOutQuad);
+         for (int j = 0; j < categories[i].num_items; j++) {
+            if (j == categories[i].active_item) {
+               for (int k = 0; k < categories[i].items[j].num_subitems; k++) {
+                  if (k == categories[i].items[j].active_subitem) {
+                     add_tween(DELAY, 1.0, &categories[i].items[j].subitems[k].alpha, &inOutQuad);
+                     add_tween(DELAY, I_ACTIVE_ZOOM, &categories[i].items[j].subitems[k].zoom, &inOutQuad);
+                  } else {
+                     add_tween(DELAY, 0.5, &categories[i].items[j].subitems[k].alpha, &inOutQuad);
+                     add_tween(DELAY, I_PASSIVE_ZOOM, &categories[i].items[j].subitems[k].zoom, &inOutQuad);
+                  }
+               }
+            } else {
+               add_tween(DELAY, 0, &categories[i].items[j].alpha, &inOutQuad);
+            }
+         }
+      } else {
+         add_tween(DELAY, 0, &categories[i].alpha, &inOutQuad);
+      }
+   }
+}
+
+void lakka_close_submenu ()
+{
+   add_tween(DELAY, -HSPACING * menu_active_category, &all_categories_x, &inOutQuad);
+   
+   for (int i = 0; i < num_categories; i++) {
+      if (i == menu_active_category) {
+         add_tween(DELAY, 1.0, &categories[i].alpha, &inOutQuad);
+         add_tween(DELAY, C_ACTIVE_ZOOM, &categories[i].zoom, &inOutQuad);
+         for (int j = 0; j < categories[i].num_items; j++) {
+            if (j == categories[i].active_item) {
+               add_tween(DELAY, 1.0, &categories[i].items[j].alpha, &inOutQuad);
+               for (int k = 0; k < categories[i].items[j].num_subitems; k++) {
+                  add_tween(DELAY, 0, &categories[i].items[j].subitems[k].alpha, &inOutQuad);
+               }
+            } else {
+               add_tween(DELAY, 0.5, &categories[i].items[j].alpha, &inOutQuad);
+            }
+         }
+      } else {
+         add_tween(DELAY, 0.5, &categories[i].alpha, &inOutQuad);
+         add_tween(DELAY, C_PASSIVE_ZOOM, &categories[i].zoom, &inOutQuad);
+         for (int j = 0; j < categories[i].num_items; j++) {
+            add_tween(DELAY, 0, &categories[i].items[j].alpha, &inOutQuad);
+         }
+      }
+   }
+}
+
+struct font_rect
+{
+   int x, y;
+   int width, height;
+   int pot_width, pot_height;
+};
+
+/* font rendering */
+
+static bool init_font(void *data, const char *font_path, float font_size, unsigned win_width, unsigned win_height)
+{
+   size_t i, j;
+   (void)win_width;
+   (void)win_height;
+
+   if (!g_settings.video.font_enable)
+      return false;
+
+   (void)font_size;
+   gl_t *gl = (gl_t*)data;
+
+   if (font_renderer_create_default(&font_driver, &font))
+   {
+      glGenTextures(1, &font_tex);
+      glBindTexture(GL_TEXTURE_2D, font_tex);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+      glBindTexture(GL_TEXTURE_2D, texture);
+      glGetIntegerv(GL_MAX_TEXTURE_SIZE, &max_font_size);
+   }
+   else
+   {
+      RARCH_WARN("Couldn't init font renderer.\n");
+      return false;
+   }
+
+   for (i = 0; i < 4; i++)
+   {
+      font_color[4 * i + 0] = g_settings.video.msg_color_r;
+      font_color[4 * i + 1] = g_settings.video.msg_color_g;
+      font_color[4 * i + 2] = g_settings.video.msg_color_b;
+      font_color[4 * i + 3] = 1.0;
+   }
+
+   for (i = 0; i < 4; i++)
+   {
+      for (j = 0; j < 3; j++)
+         font_color_dark[4 * i + j] = 0.3 * font_color[4 * i + j];
+      font_color_dark[4 * i + 3] = 1.0;
+   }
+
+   return true;
+}
+
+static void calculate_msg_geometry(const struct font_output *head, struct font_rect *rect)
+{
+   int x_min = head->off_x;
+   int x_max = head->off_x + head->width+10;
+   int y_min = head->off_y;
+   int y_max = head->off_y + head->height;
+
+   while ((head = head->next))
+   {
+      int left = head->off_x;
+      int right = head->off_x + head->width;
+      int bottom = head->off_y;
+      int top = head->off_y + head->height;
+
+      if (left < x_min)
+         x_min = left;
+      if (right > x_max)
+         x_max = right;
+
+      if (bottom < y_min)
+         y_min = bottom;
+      if (top > y_max)
+         y_max = top;
+   }
+
+   rect->x = x_min;
+   rect->y = y_min;
+   rect->width = x_max - x_min;
+   rect->height = y_max - y_min;
+}
+
+static void adjust_power_of_two(gl_t *gl, struct font_rect *geom)
+{
+   // Some systems really hate NPOT textures.
+   geom->pot_width  = next_pow2(geom->width);
+   geom->pot_height = next_pow2(geom->height);
+
+   if (geom->pot_width > max_font_size)
+      geom->pot_width = max_font_size;
+   if (geom->pot_height > max_font_size)
+      geom->pot_height = max_font_size;
+
+   if ((geom->pot_width > font_tex_w) || (geom->pot_height > font_tex_h))
+   {
+      font_tex_buf = (uint32_t*)realloc(font_tex_buf,
+            geom->pot_width * geom->pot_height * sizeof(uint32_t));
+
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, geom->pot_width, geom->pot_height,
+            0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+
+      font_tex_w = geom->pot_width;
+      font_tex_h = geom->pot_height;
+   }
+}
+
+static void copy_glyph(const struct font_output *head, const struct font_rect *geom, uint32_t *buffer, unsigned width, unsigned height)
+{
+   int h, w;
+   // head has top-left oriented coords.
+   int x = head->off_x - geom->x;
+   int y = head->off_y - geom->y;
+   y     = height - head->height - y - 1;
+
+   const uint8_t *src = head->output;
+   int font_width  = head->width  + ((x < 0) ? x : 0);
+   int font_height = head->height + ((y < 0) ? y : 0);
+
+   if (x < 0)
+   {
+      src += -x;
+      x    = 0;
+   }
+
+   if (y < 0)
+   {
+      src += -y * head->pitch;
+      y    = 0;
+   }
+
+   if (x + font_width > (int)width)
+      font_width = width - x;
+
+   if (y + font_height > (int)height)
+      font_height = height - y;
+
+   uint32_t *dst = buffer + y * width + x;
+   for (h = 0; h < font_height; h++, dst += width, src += head->pitch)
+   {
+      uint8_t *d = (uint8_t*)dst;
+      for (w = 0; w < font_width; w++)
+      {
+         *d++ = 0xff;
+         *d++ = 0xff;
+         *d++ = 0xff;
+         *d++ = src[w];
+      }
+   }
+}
+
+static void blit_fonts(gl_t *gl, const struct font_output *head, const struct font_rect *geom)
+{
+   memset(font_tex_buf, 0, font_tex_w * font_tex_h * sizeof(uint32_t));
+
+   while (head)
+   {
+      copy_glyph(head, geom, font_tex_buf, font_tex_w, font_tex_h);
+      head = head->next;
+   }
+
+   glPixelStorei(GL_UNPACK_ALIGNMENT, 8);
+   glTexSubImage2D(GL_TEXTURE_2D,
+      0, 0, 0, font_tex_w, font_tex_h,
+      GL_RGBA, GL_UNSIGNED_BYTE, font_tex_buf);
+}
+
+static void calculate_font_coords(gl_t *gl,
+      GLfloat font_vertex[8], GLfloat font_vertex_dark[8], GLfloat font_tex_coords[8], GLfloat scale, GLfloat pos_x, GLfloat pos_y)
 {
    unsigned i;
-   uint8_t *font = (uint8_t *) calloc(1, FONT_OFFSET(256));
-   rgui->alloc_font = true;
-   for (i = 0; i < 256; i++)
+   GLfloat scale_factor = scale;
+
+   GLfloat lx = pos_x;
+   GLfloat hx = (GLfloat)font_last_width * scale_factor / gl->vp.width + lx;
+   GLfloat ly = pos_y;
+   GLfloat hy = (GLfloat)font_last_height * scale_factor / gl->vp.height + ly;
+
+   font_vertex[0] = lx;
+   font_vertex[2] = hx;
+   font_vertex[4] = lx;
+   font_vertex[6] = hx;
+   font_vertex[1] = hy;
+   font_vertex[3] = hy;
+   font_vertex[5] = ly;
+   font_vertex[7] = ly;
+
+   GLfloat shift_x = 2.0f / gl->vp.width;
+   GLfloat shift_y = 2.0f / gl->vp.height;
+   for (i = 0; i < 4; i++)
    {
-      unsigned y = i / 16;
-      unsigned x = i % 16;
-      lakka_copy_glyph(&font[FONT_OFFSET(i)],
-            font_bmp_buf + 54 + 3 * (256 * (255 - 16 * y) + 16 * x));
+      font_vertex_dark[2 * i + 0] = font_vertex[2 * i + 0] - shift_x;
+      font_vertex_dark[2 * i + 1] = font_vertex[2 * i + 1] - shift_y;
    }
 
-   rgui->font = font;
+   lx = 0.0f;
+   hx = (GLfloat)font_last_width / font_tex_w;
+   ly = 1.0f - (GLfloat)font_last_height / font_tex_h; 
+   hy = 1.0f;
+
+   font_tex_coords[0] = lx;
+   font_tex_coords[2] = hx;
+   font_tex_coords[4] = lx;
+   font_tex_coords[6] = hx;
+   font_tex_coords[1] = ly;
+   font_tex_coords[3] = ly;
+   font_tex_coords[5] = hy;
+   font_tex_coords[7] = hy;
 }
 
-static bool rguidisp_init_font(void *data)
+static void lakka_draw_text(void *data, struct font_output_list out, float x, float y, float scale, float alpha)
 {
-   rgui_handle_t *rgui = (rgui_handle_t*)data;
-
-   const uint8_t *font_bmp_buf = NULL;
-   const uint8_t *font_bin_buf = bitmap_bin;
-   bool ret = true;
-
-   if (font_bmp_buf)
-      init_font(rgui, font_bmp_buf);
-   else if (font_bin_buf)
-      rgui->font = font_bin_buf;
-   else
-      ret = false;
-
-   return ret;
-}
-
-static void lakka_render_background(rgui_handle_t *rgui)
-{
-   fill_rect(rgui->frame_buf, rgui->frame_buf_pitch,
-         0, 0, rgui->width, rgui->height, gray_filler);
-
-   fill_rect(rgui->frame_buf, rgui->frame_buf_pitch,
-         5, 5, rgui->width - 10, 5, green_filler);
-
-   fill_rect(rgui->frame_buf, rgui->frame_buf_pitch,
-         5, rgui->height - 10, rgui->width - 10, 5, green_filler);
-
-   fill_rect(rgui->frame_buf, rgui->frame_buf_pitch,
-         5, 5, 5, rgui->height - 10, green_filler);
-
-   fill_rect(rgui->frame_buf, rgui->frame_buf_pitch,
-         rgui->width - 10, 5, 5, rgui->height - 10, green_filler);
-}
-
-static void lakka_render_messagebox(void *data, const char *message)
-{
-   rgui_handle_t *rgui = (rgui_handle_t*)data;
-   size_t i;
-
-   if (!message || !*message)
+   gl_t *gl = (gl_t*)data;
+   if (!font)
       return;
 
-   struct string_list *list = string_split(message, "\n");
-   if (!list)
-      return;
-   if (list->elems == 0)
+   for (int i = 0; i < 4; i++)
    {
-      string_list_free(list);
-      return;
+      font_color[4 * i + 0] = 1.0;
+      font_color[4 * i + 1] = 1.0;
+      font_color[4 * i + 2] = 1.0;
+      font_color[4 * i + 3] = alpha;
    }
 
-   unsigned width = 0;
-   unsigned glyphs_width = 0;
-   for (i = 0; i < list->size; i++)
-   {
-      char *msg = list->elems[i].data;
-      unsigned msglen = strlen(msg);
-      if (msglen > LAKKA_TERM_WIDTH)
-      {
-         msg[LAKKA_TERM_WIDTH - 2] = '.';
-         msg[LAKKA_TERM_WIDTH - 1] = '.';
-         msg[LAKKA_TERM_WIDTH - 0] = '.';
-         msg[LAKKA_TERM_WIDTH + 1] = '\0';
-         msglen = LAKKA_TERM_WIDTH;
-      }
+   if (gl->shader)
+      gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
 
-      unsigned line_width = msglen * FONT_WIDTH_STRIDE - 1 + 6 + 10;
-      width = max(width, line_width);
-      glyphs_width = max(glyphs_width, msglen);
-   }
+   gl_set_viewport(gl, gl->win_width, gl->win_height, true, false);
 
-   unsigned height = FONT_HEIGHT_STRIDE * list->size + 6 + 10;
-   int x = (rgui->width - width) / 2;
-   int y = (rgui->height - height) / 2;
-   
-   fill_rect(rgui->frame_buf, rgui->frame_buf_pitch,
-         x + 5, y + 5, width - 10, height - 10, gray_filler);
+   glEnable(GL_BLEND);
 
-   fill_rect(rgui->frame_buf, rgui->frame_buf_pitch,
-         x, y, width - 5, 5, green_filler);
+   GLfloat font_vertex[8]; 
+   GLfloat font_vertex_dark[8]; 
+   GLfloat font_tex_coords[8];
 
-   fill_rect(rgui->frame_buf, rgui->frame_buf_pitch,
-         x + width - 5, y, 5, height - 5, green_filler);
+   glBindTexture(GL_TEXTURE_2D, font_tex);
 
-   fill_rect(rgui->frame_buf, rgui->frame_buf_pitch,
-         x + 5, y + height - 5, width - 5, 5, green_filler);
+   gl->coords.tex_coord = font_tex_coords;
 
-   fill_rect(rgui->frame_buf, rgui->frame_buf_pitch,
-         x, y + 5, 5, height - 5, green_filler);
+   struct font_output *head = out.head;
 
-   for (i = 0; i < list->size; i++)
-   {
-      const char *msg = list->elems[i].data;
-      int offset_x = FONT_WIDTH_STRIDE * (glyphs_width - strlen(msg)) / 2;
-      int offset_y = FONT_HEIGHT_STRIDE * i;
-      blit_line(rgui, x + 8 + offset_x, y + 8 + offset_y, msg, false);
-   }
+   struct font_rect geom;
+   calculate_msg_geometry(head, &geom);
+   adjust_power_of_two(gl, &geom);
+   blit_fonts(gl, head, &geom);
 
-   string_list_free(list);
+   //font_driver->free_output(font, &out);
+
+   font_last_width = geom.width;
+   font_last_height = geom.height;
+
+   calculate_font_coords(gl, font_vertex, font_vertex_dark, font_tex_coords, 
+         scale, x / gl->win_width, (gl->win_height - y) / gl->win_height);
+
+   gl->coords.vertex = font_vertex;
+   gl->coords.color  = font_color;
+   gl_shader_set_coords(gl, &gl->coords, &gl->mvp);
+   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+   // Post - Go back to old rendering path.
+   gl->coords.vertex    = gl->vertex_ptr;
+   gl->coords.tex_coord = gl->tex_coords;
+   gl->coords.color     = gl->white_color_ptr;
+   glBindTexture(GL_TEXTURE_2D, texture);
+
+   glDisable(GL_BLEND);
+
+   struct gl_ortho ortho = {0, 1, 0, 1, -1, 1};
+   gl_set_projection(gl, &ortho, true);
 }
-
-const GLfloat background_color[] = {
-   0, 200, 200, 0.75,
-   0, 200, 200, 0.75,
-   0, 200, 200, 0.75,
-   0, 200, 200, 0.75,
-};
 
 void lakka_draw_background(void *data)
 {
@@ -284,7 +522,7 @@ void lakka_draw_background(void *data)
    glBindTexture(GL_TEXTURE_2D, 0);
 
    if (gl->shader)
-      gl->shader->use(GL_SHADER_STOCK_BLEND);
+      gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
    gl_shader_set_coords(gl, &gl->coords, &gl->mvp_no_rot);
 
    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
@@ -296,7 +534,7 @@ void lakka_draw_icon(void *data, GLuint texture, float x, float y, float alpha, 
 {
    gl_t *gl = (gl_t*)data;
 
-   glViewport(x, gl->win_height - y, dim, dim);
+   glViewport(x, 900 - y, dim, dim);
 
    glEnable(GL_BLEND);
 
@@ -305,13 +543,6 @@ void lakka_draw_icon(void *data, GLuint texture, float x, float y, float alpha, 
       1.0f, 1.0f, 1.0f, alpha,
       1.0f, 1.0f, 1.0f, alpha,
       1.0f, 1.0f, 1.0f, alpha,
-   };
-
-   static const GLfloat vertexes_flipped[] = {
-      0, 1,
-      1, 1,
-      0, 0,
-      1, 0
    };
 
    static const GLfloat vtest[] = {
@@ -327,7 +558,7 @@ void lakka_draw_icon(void *data, GLuint texture, float x, float y, float alpha, 
    glBindTexture(GL_TEXTURE_2D, texture);
 
    if (gl->shader)
-      gl->shader->use(GL_SHADER_STOCK_BLEND);
+      gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
 
    math_matrix mymat;
 
@@ -347,301 +578,143 @@ void lakka_draw_icon(void *data, GLuint texture, float x, float y, float alpha, 
    gl->coords.vertex = gl->vertex_ptr;
    gl->coords.tex_coord = gl->tex_coords;
    gl->coords.color = gl->white_color_ptr;
-
-   gl_set_viewport(gl, gl->win_width, gl->win_height, 0, 0);
-}
-
-static void lakka_render(void *data)
-{
-   rgui_handle_t *rgui = (rgui_handle_t*)data;
-
-   gl_t *gl = (gl_t*)driver.video_data;
-
-   gl_set_viewport(gl, gl->win_width, gl->win_height, 0, 0);
-
-   lakka_draw_background(gl);
-
-   lakka_draw_icon(gl, texid, 0, 0, 1, 0, 1);
-
-   gl_set_viewport(gl, gl->win_width, gl->win_height, false, false);
-
-   if (rgui->need_refresh && 
-         (g_extern.lifecycle_state & (1ULL << MODE_MENU))
-         && !rgui->msg_force)
-      return;
-
-   size_t begin = rgui->selection_ptr >= LAKKA_TERM_HEIGHT / 2 ?
-      rgui->selection_ptr - LAKKA_TERM_HEIGHT / 2 : 0;
-   size_t end = rgui->selection_ptr + LAKKA_TERM_HEIGHT <= rgui->selection_buf->size ?
-      rgui->selection_ptr + LAKKA_TERM_HEIGHT : rgui->selection_buf->size;
-   
-   // Do not scroll if all items are visible.
-   if (rgui->selection_buf->size <= LAKKA_TERM_HEIGHT)
-      begin = 0;
-
-   if (end - begin > LAKKA_TERM_HEIGHT)
-      end = begin + LAKKA_TERM_HEIGHT;
-
-   lakka_render_background(rgui);
-
-   char title[256];
-   const char *dir = NULL;
-   unsigned menu_type = 0;
-   unsigned menu_type_is = 0;
-   file_list_get_last(rgui->menu_stack, &dir, &menu_type);
-
-   if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->type_is)
-      menu_type_is = driver.menu_ctx->backend->type_is(menu_type);
-
-   if (menu_type == RGUI_SETTINGS_CORE)
-      snprintf(title, sizeof(title), "CORE SELECTION %s", dir);
-   else if (menu_type == RGUI_SETTINGS_DEFERRED_CORE)
-      snprintf(title, sizeof(title), "DETECTED CORES %s", dir);
-   else if (menu_type == RGUI_SETTINGS_CONFIG)
-      snprintf(title, sizeof(title), "CONFIG %s", dir);
-   else if (menu_type == RGUI_SETTINGS_DISK_APPEND)
-      snprintf(title, sizeof(title), "DISK APPEND %s", dir);
-   else if (menu_type == RGUI_SETTINGS_VIDEO_OPTIONS)
-      strlcpy(title, "VIDEO OPTIONS", sizeof(title));
-   else if (menu_type == RGUI_SETTINGS_DRIVERS)
-      strlcpy(title, "DRIVER OPTIONS", sizeof(title));
-#ifdef HAVE_SHADER_MANAGER
-   else if (menu_type == RGUI_SETTINGS_SHADER_OPTIONS)
-      strlcpy(title, "SHADER OPTIONS", sizeof(title));
-#endif
-   else if (menu_type == RGUI_SETTINGS_AUDIO_OPTIONS)
-      strlcpy(title, "AUDIO OPTIONS", sizeof(title));
-   else if (menu_type == RGUI_SETTINGS_DISK_OPTIONS)
-      strlcpy(title, "DISK OPTIONS", sizeof(title));
-   else if (menu_type == RGUI_SETTINGS_CORE_OPTIONS)
-      strlcpy(title, "CORE OPTIONS", sizeof(title));
-#ifdef HAVE_SHADER_MANAGER
-   else if (menu_type_is == RGUI_SETTINGS_SHADER_OPTIONS)
-      snprintf(title, sizeof(title), "SHADER %s", dir);
-#endif
-   else if ((menu_type == RGUI_SETTINGS_INPUT_OPTIONS) ||
-         (menu_type == RGUI_SETTINGS_PATH_OPTIONS) ||
-         (menu_type == RGUI_SETTINGS_OPTIONS) ||
-         (menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT || menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT_2) ||
-         menu_type == RGUI_SETTINGS_CUSTOM_BIND ||
-         menu_type == RGUI_START_SCREEN ||
-         menu_type == RGUI_SETTINGS)
-      snprintf(title, sizeof(title), "MENU %s", dir);
-   else if (menu_type == RGUI_SETTINGS_OPEN_HISTORY)
-      strlcpy(title, "LOAD HISTORY", sizeof(title));
-#ifdef HAVE_OVERLAY
-   else if (menu_type == RGUI_SETTINGS_OVERLAY_PRESET)
-      snprintf(title, sizeof(title), "OVERLAY %s", dir);
-#endif
-   else if (menu_type == RGUI_BROWSER_DIR_PATH)
-      snprintf(title, sizeof(title), "BROWSER DIR %s", dir);
-#ifdef HAVE_SCREENSHOTS
-   else if (menu_type == RGUI_SCREENSHOT_DIR_PATH)
-      snprintf(title, sizeof(title), "SCREENSHOT DIR %s", dir);
-#endif
-   else if (menu_type == RGUI_SHADER_DIR_PATH)
-      snprintf(title, sizeof(title), "SHADER DIR %s", dir);
-   else if (menu_type == RGUI_FILTER_DIR_PATH)
-      snprintf(title, sizeof(title), "FILTER DIR %s", dir);
-   else if (menu_type == RGUI_SAVESTATE_DIR_PATH)
-      snprintf(title, sizeof(title), "SAVESTATE DIR %s", dir);
-#ifdef HAVE_DYNAMIC
-   else if (menu_type == RGUI_LIBRETRO_DIR_PATH)
-      snprintf(title, sizeof(title), "LIBRETRO DIR %s", dir);
-#endif
-   else if (menu_type == RGUI_CONFIG_DIR_PATH)
-      snprintf(title, sizeof(title), "CONFIG DIR %s", dir);
-   else if (menu_type == RGUI_SAVEFILE_DIR_PATH)
-      snprintf(title, sizeof(title), "SAVEFILE DIR %s", dir);
-#ifdef HAVE_OVERLAY
-   else if (menu_type == RGUI_OVERLAY_DIR_PATH)
-      snprintf(title, sizeof(title), "OVERLAY DIR %s", dir);
-#endif
-   else if (menu_type == RGUI_SYSTEM_DIR_PATH)
-      snprintf(title, sizeof(title), "SYSTEM DIR %s", dir);
-   else
-   {
-      if (rgui->defer_core)
-         snprintf(title, sizeof(title), "CONTENT %s", dir);
-      else
-      {
-         const char *core_name = rgui->info.library_name;
-         if (!core_name)
-            core_name = g_extern.system.info.library_name;
-         if (!core_name)
-            core_name = "No Core";
-         snprintf(title, sizeof(title), "CONTENT (%s) %s", core_name, dir);
-      }
-   }
-
-   char title_buf[256];
-   menu_ticker_line(title_buf, LAKKA_TERM_WIDTH - 3, g_extern.frame_count / 15, title, true);
-   blit_line(rgui, LAKKA_TERM_START_X + 15, 15, title_buf, true);
-
-   char title_msg[64];
-   const char *core_name = rgui->info.library_name;
-   if (!core_name)
-      core_name = g_extern.system.info.library_name;
-   if (!core_name)
-      core_name = "No Core";
-
-   const char *core_version = rgui->info.library_version;
-   if (!core_version)
-      core_version = g_extern.system.info.library_version;
-   if (!core_version)
-      core_version = "";
-
-   snprintf(title_msg, sizeof(title_msg), "%s - %s %s", PACKAGE_VERSION, core_name, core_version);
-   blit_line(rgui, LAKKA_TERM_START_X + 15, (LAKKA_TERM_HEIGHT * FONT_HEIGHT_STRIDE) + LAKKA_TERM_START_Y + 2, title_msg, true);
-
-   unsigned x, y;
-   size_t i;
-
-   x = LAKKA_TERM_START_X;
-   y = LAKKA_TERM_START_Y;
-
-   for (i = begin; i < end; i++, y += FONT_HEIGHT_STRIDE)
-   {
-      const char *path = 0;
-      unsigned type = 0;
-      file_list_get_at_offset(rgui->selection_buf, i, &path, &type);
-      char message[256];
-      char type_str[256];
-
-      unsigned w = 19;
-      if (menu_type == RGUI_SETTINGS_INPUT_OPTIONS || menu_type == RGUI_SETTINGS_CUSTOM_BIND)
-         w = 21;
-      else if (menu_type == RGUI_SETTINGS_PATH_OPTIONS)
-         w = 24;
-
-#ifdef HAVE_SHADER_MANAGER
-      if (type >= RGUI_SETTINGS_SHADER_FILTER &&
-            type <= RGUI_SETTINGS_SHADER_LAST)
-      {
-         // HACK. Work around that we're using the menu_type as dir type to propagate state correctly.
-         if ((menu_type_is == RGUI_SETTINGS_SHADER_OPTIONS)
-               && (menu_type_is == RGUI_SETTINGS_SHADER_OPTIONS))
-         {
-            type = RGUI_FILE_DIRECTORY;
-            strlcpy(type_str, "(DIR)", sizeof(type_str));
-            w = 5;
-         }
-         else if (type == RGUI_SETTINGS_SHADER_OPTIONS || type == RGUI_SETTINGS_SHADER_PRESET)
-            strlcpy(type_str, "...", sizeof(type_str));
-         else if (type == RGUI_SETTINGS_SHADER_FILTER)
-            snprintf(type_str, sizeof(type_str), "%s",
-                  g_settings.video.smooth ? "Linear" : "Nearest");
-         else
-            shader_manager_get_str(&rgui->shader, type_str, sizeof(type_str), type);
-      }
-      else
-#endif
-      // Pretty-print libretro cores from menu.
-      if (menu_type == RGUI_SETTINGS_CORE || menu_type == RGUI_SETTINGS_DEFERRED_CORE)
-      {
-         if (type == RGUI_FILE_PLAIN)
-         {
-            strlcpy(type_str, "(CORE)", sizeof(type_str));
-            file_list_get_alt_at_offset(rgui->selection_buf, i, &path);
-            w = 6;
-         }
-         else
-         {
-            strlcpy(type_str, "(DIR)", sizeof(type_str));
-            type = RGUI_FILE_DIRECTORY;
-            w = 5;
-         }
-      }
-      else if (menu_type == RGUI_SETTINGS_CONFIG ||
-#ifdef HAVE_OVERLAY
-            menu_type == RGUI_SETTINGS_OVERLAY_PRESET ||
-#endif
-            menu_type == RGUI_SETTINGS_DISK_APPEND ||
-            menu_type_is == RGUI_FILE_DIRECTORY)
-      {
-         if (type == RGUI_FILE_PLAIN)
-         {
-            strlcpy(type_str, "(FILE)", sizeof(type_str));
-            w = 6;
-         }
-         else if (type == RGUI_FILE_USE_DIRECTORY)
-         {
-            *type_str = '\0';
-            w = 0;
-         }
-         else
-         {
-            strlcpy(type_str, "(DIR)", sizeof(type_str));
-            type = RGUI_FILE_DIRECTORY;
-            w = 5;
-         }
-      }
-      else if (menu_type == RGUI_SETTINGS_OPEN_HISTORY)
-      {
-         *type_str = '\0';
-         w = 0;
-      }
-      else if (type >= RGUI_SETTINGS_CORE_OPTION_START)
-         strlcpy(type_str,
-               core_option_get_val(g_extern.system.core_options, type - RGUI_SETTINGS_CORE_OPTION_START),
-               sizeof(type_str));
-      else if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->setting_set_label)
-         driver.menu_ctx->backend->setting_set_label(type_str, sizeof(type_str), &w, type);
-
-      char entry_title_buf[256];
-      char type_str_buf[64];
-      bool selected = i == rgui->selection_ptr;
-
-      strlcpy(entry_title_buf, path, sizeof(entry_title_buf));
-      strlcpy(type_str_buf, type_str, sizeof(type_str_buf));
-
-      if ((type == RGUI_FILE_PLAIN || type == RGUI_FILE_DIRECTORY))
-         menu_ticker_line(entry_title_buf, LAKKA_TERM_WIDTH - (w + 1 + 2), g_extern.frame_count / 15, path, selected);
-      else
-         menu_ticker_line(type_str_buf, w, g_extern.frame_count / 15, type_str, selected);
-
-      snprintf(message, sizeof(message), "%c %-*.*s %-*s",
-            selected ? '>' : ' ',
-            LAKKA_TERM_WIDTH - (w + 1 + 2), LAKKA_TERM_WIDTH - (w + 1 + 2),
-            entry_title_buf,
-            w,
-            type_str_buf);
-
-      blit_line(rgui, x, y, message, selected);
-   }
-
-#ifdef GEKKO
-   const char *message_queue;
-
-   if (rgui->msg_force)
-   {
-      message_queue = msg_queue_pull(g_extern.msg_queue);
-      rgui->msg_force = false;
-   }
-   else
-      message_queue = driver.current_msg;
-
-   rgui_render_messagebox(rgui, message_queue);
-#endif
-
-   if (rgui->keyboard.display)
-   {
-      char msg[1024];
-      const char *str = *rgui->keyboard.buffer;
-      if (!str)
-         str = "";
-      snprintf(msg, sizeof(msg), "%s\n%s", rgui->keyboard.label, str);
-      lakka_render_messagebox(rgui, msg);
-   }
 }
 
 static void lakka_set_texture(void *data, bool enable)
 {
    rgui_handle_t *rgui = (rgui_handle_t*)data;
 
-   if (driver.video_data && driver.video_poke && driver.video_poke->set_texture_enable)
-      driver.video_poke->set_texture_frame(driver.video_data, menu_framebuf,
-            enable, rgui->width, rgui->height, 1.0f);
+   //if (driver.video_data && driver.video_poke && driver.video_poke->set_texture_enable)
+      //driver.video_poke->set_texture_frame(driver.video_data, menu_framebuf,
+      //      enable, 1440, 900, 1.0f);
+}
+
+void lakka_render(void *data)
+{
+   // Throttle in case VSync is broken (avoid 1000+ FPS RGUI).
+   /*retro_time_t time, delta, target_msec, sleep_msec;
+   time = rarch_get_time_usec();
+   delta = (time - rgui->last_time) / 1000;
+   target_msec = 750 / g_settings.video.refresh_rate; // Try to sleep less, so we can hopefully rely on FPS logger.
+   sleep_msec = target_msec - delta;
+   if (sleep_msec > 0)
+      rarch_sleep((unsigned int)sleep_msec);
+   rgui->last_time = rarch_get_time_usec();*/
+   
+   //update_tweens((float)delta/10000);
+
+   gl_t *gl = (gl_t*)data;
+
+   glViewport(0, 0, gl->win_width, gl->win_height);
+
+   lakka_draw_background(gl);
+
+   for(int i = 0; i < num_categories; i++)
+   {
+      // draw items
+      for(int j = 0; j < categories[i].num_items; j++)
+      {
+         lakka_draw_icon(gl, 
+            categories[i].items[j].icon, 
+            156 + HSPACING*(i+1) + all_categories_x - dim/2.0, 
+            300 + categories[i].items[j].y + dim/2.0, 
+            categories[i].items[j].alpha, 
+            0, 
+            categories[i].items[j].zoom);
+
+         if (i == menu_active_category && j == categories[i].active_item && depth == 1) // performance improvement
+         {
+            for(int k = 0; k < categories[i].items[j].num_subitems; k++)
+            {
+               if (k == 0 && g_extern.main_is_init && !g_extern.libretro_dummy && strcmp(g_extern.fullpath, categories[menu_active_category].items[categories[menu_active_category].active_item].rom) == 0)
+               {
+                  lakka_draw_icon(gl, 
+                     resume_icon, 
+                     156 + HSPACING*(i+2) + all_categories_x - dim/2.0, 
+                     300 + categories[i].items[j].subitems[k].y + dim/2.0, 
+                     categories[i].items[j].subitems[k].alpha, 
+                     0, 
+                     categories[i].items[j].subitems[k].zoom);
+                  lakka_draw_text(gl, 
+                     resume_label, 
+                     156 + HSPACING*(i+2) + all_categories_x + dim/2.0, 
+                     300 + categories[i].items[j].subitems[k].y + 15, 
+                     1, 
+                     categories[i].items[j].subitems[k].alpha);
+               }
+               else if (k == 0)
+               {
+                  lakka_draw_icon(gl, 
+                     run_icon, 
+                     156 + HSPACING*(i+2) + all_categories_x - dim/2.0, 
+                     300 + categories[i].items[j].subitems[k].y + dim/2.0, 
+                     categories[i].items[j].subitems[k].alpha, 
+                     0, 
+                     categories[i].items[j].subitems[k].zoom);
+                  lakka_draw_text(gl, 
+                     run_label, 
+                     156 + HSPACING*(i+2) + all_categories_x + dim/2.0, 
+                     300 + categories[i].items[j].subitems[k].y + 15, 
+                     1, 
+                     categories[i].items[j].subitems[k].alpha);
+               } else if (g_extern.main_is_init && !g_extern.libretro_dummy && strcmp(g_extern.fullpath, categories[menu_active_category].items[categories[menu_active_category].active_item].rom) == 0)
+               {
+               lakka_draw_icon(gl, 
+                  categories[i].items[j].subitems[k].icon, 
+                  156 + HSPACING*(i+2) + all_categories_x - dim/2.0, 
+                  300 + categories[i].items[j].subitems[k].y + dim/2.0, 
+                  categories[i].items[j].subitems[k].alpha, 
+                  0, 
+                  categories[i].items[j].subitems[k].zoom);
+               /*if category.prefix ~= "settings" and  (k == 2 or k == 3) and item.slot == -1 then
+                  love.graphics.print(subitem.name .. " <" .. item.slot .. " (auto)>", 256 + (HSPACING*(i+1)) + all_categories.x, 300-15 + subitem.y)
+               elseif category.prefix ~= "settings" and  (k == 2 or k == 3) then
+                  love.graphics.print(subitem.name .. " <" .. item.slot .. ">", 256 + (HSPACING*(i+1)) + all_categories.x, 300-15 + subitem.y)
+               else*/
+                  lakka_draw_text(gl, 
+                     categories[i].items[j].subitems[k].out, 
+                     156 + HSPACING*(i+2) + all_categories_x + dim/2.0, 
+                     300 + categories[i].items[j].subitems[k].y + 15, 
+                     1, 
+                     categories[i].items[j].subitems[k].alpha);
+               /*end*/
+               }
+            }
+         }
+
+         if (depth == 0) {
+            if (i == menu_active_category && j > categories[menu_active_category].active_item - 4 && j < categories[menu_active_category].active_item + 10) // performance improvement
+               lakka_draw_text(gl, 
+                  categories[i].items[j].out, 
+                  156 + HSPACING*(i+1) + all_categories_x + dim/2.0, 
+                  300 + categories[i].items[j].y + 15, 
+                  1, 
+                  categories[i].items[j].alpha);
+         } else {
+            lakka_draw_icon(gl,
+               arrow_icon, 
+               156 + (HSPACING*(i+1)) + all_categories_x + 150 +-dim/2.0, 
+               300 + categories[i].items[j].y + dim/2.0, 
+               categories[i].items[j].alpha,
+               0,
+               categories[i].items[j].zoom);
+         }
+      }
+
+      // draw category
+      lakka_draw_icon(gl, 
+         categories[i].icon, 
+         156 + (HSPACING*(i+1)) + all_categories_x - dim/2.0, 
+         300 + dim/2.0, 
+         categories[i].alpha, 
+         0, 
+         categories[i].zoom);
+   }
+
+   struct font_output_list msg = (depth == 0) ? categories[menu_active_category].out : categories[menu_active_category].items[categories[menu_active_category].active_item].out;
+   lakka_draw_text(gl, msg, 15.0, 40.0, 1, 1.0);
+
+   gl_set_viewport(gl, gl->win_width, gl->win_height, false, false);
 }
 
 static void lakka_init_assets(void *data)
@@ -651,47 +724,204 @@ static void lakka_init_assets(void *data)
    if (!rgui)
       return;
 
-   menu_texture = (struct texture_image*)calloc(1, sizeof(*menu_texture));
-   texture_image_load("/home/squarepusher/1391666767568.png", menu_texture);
+   gl_t *gl = (gl_t*)data;
 
-   texid = png_texture_load(menu_texture, &dim, &dim);
+   settings_icon = png_texture_load("/usr/share/retroarch/settings.png", &dim, &dim);
+   arrow_icon = png_texture_load("/usr/share/retroarch/arrow.png", &dim, &dim);
+   run_icon = png_texture_load("/usr/share/retroarch/run.png", &dim, &dim);
+   resume_icon = png_texture_load("/usr/share/retroarch/resume.png", &dim, &dim);
+   savestate_icon = png_texture_load("/usr/share/retroarch/savestate.png", &dim, &dim);
+   loadstate_icon = png_texture_load("/usr/share/retroarch/loadstate.png", &dim, &dim);
+   screenshot_icon = png_texture_load("/usr/share/retroarch/screenshot.png", &dim, &dim);
+   reload_icon = png_texture_load("/usr/share/retroarch/reload.png", &dim, &dim);
 
-   lakka_set_texture(rgui, true);
+   font_driver->render_msg(font, "Run", &run_label);
+   font_driver->render_msg(font, "Resume", &resume_label);
+}
+
+void lakka_init_settings()
+{
+   gl_t *gl = (gl_t*)driver.video_data;
+
+   menu_category mcat;
+   mcat.name = "Settings";
+   mcat.icon = settings_icon;
+   mcat.alpha = 1.0;
+   mcat.zoom = C_ACTIVE_ZOOM;
+   mcat.active_item = 0;
+   mcat.num_items   = 0;
+   mcat.items       = calloc(mcat.num_items, sizeof(menu_item));
+   struct font_output_list out;
+   font_driver->render_msg(font, mcat.name, &out);
+   mcat.out = out;
+   categories[0] = mcat;
+}
+
+char * str_replace ( const char *string, const char *substr, const char *replacement ){
+   char *tok = NULL;
+   char *newstr = NULL;
+   char *oldstr = NULL;
+   char *head = NULL;
+ 
+   /* if either substr or replacement is NULL, duplicate string a let caller handle it */
+   if ( substr == NULL || replacement == NULL ) return strdup (string);
+   newstr = strdup (string);
+   head = newstr;
+   while ( (tok = strstr ( head, substr ))){
+      oldstr = newstr;
+      newstr = malloc ( strlen ( oldstr ) - strlen ( substr ) + strlen ( replacement ) + 1 );
+      /*failed to alloc mem, free old string and return NULL */
+      if ( newstr == NULL ){
+         free (oldstr);
+         return NULL;
+      }
+      memcpy ( newstr, oldstr, tok - oldstr );
+      memcpy ( newstr + (tok - oldstr), replacement, strlen ( replacement ) );
+      memcpy ( newstr + (tok - oldstr) + strlen( replacement ), tok + strlen ( substr ), strlen ( oldstr ) - strlen ( substr ) - ( tok - oldstr ) );
+      memset ( newstr + strlen ( oldstr ) - strlen ( substr ) + strlen ( replacement ) , 0, 1 );
+      /* move back head right after the last replacement */
+      head = newstr + (tok - oldstr) + strlen( replacement );
+      free (oldstr);
+   }
+   return newstr;
+}
+
+void lakka_init_items(int i, menu_category *mcat, core_info_t corenfo, char* gametexturepath, char* path)
+{
+   gl_t *gl = (gl_t*)driver.video_data;
+
+   struct string_list *list = dir_list_new(path, corenfo.supported_extensions, true);
+   dir_list_sort(list, true);
+
+   int num_items = list ? list->size : 0;
+
+   for (int j = 0; j < num_items; j++) {
+      if (list->elems[j].attr.b) // is a directory
+      {
+    lakka_init_items(i, mcat, corenfo, gametexturepath, list->elems[j].data);
+      }
+      else
+      {
+         int n = mcat->num_items;
+         mcat->num_items++;
+         mcat->items = realloc(mcat->items, mcat->num_items * sizeof(menu_item));
+
+         mcat->items[n].name  = path_basename(list->elems[j].data);
+         mcat->items[n].rom   = list->elems[j].data;
+         mcat->items[n].icon  = png_texture_load(gametexturepath, &dim, &dim);
+         mcat->items[n].alpha = i != menu_active_category ? 0 : n ? 0.5 : 1;
+         mcat->items[n].zoom  = n ? I_PASSIVE_ZOOM : I_ACTIVE_ZOOM;
+         mcat->items[n].y     = n ? VSPACING*(3+n) : VSPACING*2.5;
+         mcat->items[n].active_subitem = 0;
+         mcat->items[n].num_subitems   = 5;
+         mcat->items[n].subitems       = calloc(mcat->items[n].num_subitems, sizeof(menu_subitem));
+
+         for (int k = 0; k < mcat->items[n].num_subitems; k++) {
+            switch (k) {
+               case 0:
+                  mcat->items[n].subitems[k].name = "Run";
+                  mcat->items[n].subitems[k].icon = run_icon;
+                  break;
+               case 1:
+                  mcat->items[n].subitems[k].name = "Save State";
+                  mcat->items[n].subitems[k].icon = savestate_icon;
+                  break;
+               case 2:
+                  mcat->items[n].subitems[k].name = "Load State";
+                  mcat->items[n].subitems[k].icon = loadstate_icon;
+                  break;
+               case 3:
+                  mcat->items[n].subitems[k].name = "Take Screenshot";
+                  mcat->items[n].subitems[k].icon = screenshot_icon;
+                  break;
+               case 4:
+                  mcat->items[n].subitems[k].name = "Reload";
+                  mcat->items[n].subitems[k].icon = reload_icon;
+                  break;
+            }
+            mcat->items[n].subitems[k].alpha = 0;
+            mcat->items[n].subitems[k].zoom = k == mcat->items[n].active_subitem ? I_ACTIVE_ZOOM : I_PASSIVE_ZOOM;
+            mcat->items[n].subitems[k].y = k == 0 ? VSPACING*2.5 : VSPACING*(3+k);
+            struct font_output_list out;
+            font_driver->render_msg(font, mcat->items[n].subitems[k].name, &out);
+            mcat->items[n].subitems[k].out = out;
+         }
+
+         struct font_output_list out;
+         font_driver->render_msg(font, mcat->items[n].name, &out);
+         mcat->items[n].out = out;
+      }
+   }
 }
 
 static void *lakka_init(void)
 {
-   uint16_t *framebuf = menu_framebuf;
-   size_t framebuf_pitch;
-
    rgui_handle_t *rgui = (rgui_handle_t*)calloc(1, sizeof(*rgui));
 
-   rgui->frame_buf = framebuf;
-   rgui->width = 320;
-   rgui->height = 240;
-   framebuf_pitch = rgui->width * sizeof(uint16_t);
+   gl_t *gl = (gl_t*)driver.video_data;
 
-   rgui->frame_buf_pitch = framebuf_pitch;
+   init_font(gl, g_settings.video.font_path, 6, 1440, 900);
 
-   bool ret = rguidisp_init_font(rgui);
+   menu_init_core_info(rgui);
 
-   if (!ret)
-   {
-      RARCH_ERR("No font bitmap or binary, abort");
-      /* TODO - should be refactored - perhaps don't do rarch_fail but instead
-       * exit program */
-      g_extern.lifecycle_state &= ~((1ULL << MODE_MENU) | (1ULL << MODE_GAME));
-      return NULL;
+   rgui->core_info = core_info_list_new("/usr/lib/libretro");
+
+   num_categories = rgui->core_info ? rgui->core_info->count + 1 : 1;
+
+   lakka_init_assets(gl);
+
+   categories = realloc(categories, num_categories * sizeof(menu_category));
+
+   lakka_init_settings();
+
+   for (int i = 0; i < num_categories-1; i++) {
+      core_info_t corenfo = rgui->core_info->list[i];
+
+      char core_id[256];
+      strcpy(core_id, basename(corenfo.path));
+      strcpy(core_id, str_replace(core_id, ".so", ""));
+      strcpy(core_id, str_replace(core_id, ".dll", ""));
+      strcpy(core_id, str_replace(core_id, ".dylib", ""));
+      strcpy(core_id, str_replace(core_id, "-libretro", ""));
+      strcpy(core_id, str_replace(core_id, "_libretro", ""));
+      strcpy(core_id, str_replace(core_id, "libretro-", ""));
+      strcpy(core_id, str_replace(core_id, "libretro_", ""));
+
+      char texturepath[256];
+      strcpy(texturepath, "/usr/share/retroarch/");
+      strcat(texturepath, core_id);
+      strcat(texturepath, ".png");
+
+      char gametexturepath[256];
+      strcpy(gametexturepath, "/usr/share/retroarch/");
+      strcat(gametexturepath, core_id);
+      strcat(gametexturepath, "-game.png");
+
+      menu_category mcat;
+      mcat.name        = corenfo.display_name;
+      mcat.libretro    = corenfo.path;
+      mcat.icon        = png_texture_load(texturepath, &dim, &dim);
+      mcat.alpha       = 0.5;
+      mcat.zoom        = C_PASSIVE_ZOOM;
+      mcat.active_item = 0;
+      mcat.num_items   = 0;
+      mcat.items       = calloc(mcat.num_items, sizeof(menu_item));
+      struct font_output_list out;
+      font_driver->render_msg(font, mcat.name, &out);
+      mcat.out = out;
+      
+      lakka_init_items(i+1, &mcat, corenfo, gametexturepath, g_settings.content_directory);
+
+      categories[i+1] = mcat;
    }
-   
-   lakka_init_assets(rgui);
 
-   return rgui;
+   rgui->last_time = rarch_get_time_usec();
+
+   return NULL;
 }
 
 static void lakka_free_assets(void *data)
 {
-   texture_image_free(menu_texture);
 }
 
 static void lakka_free(void *data)
@@ -721,7 +951,7 @@ static int lakka_input_postprocess(void *data, uint64_t old_state)
 
 const menu_ctx_driver_t menu_ctx_lakka = {
    lakka_set_texture,
-   lakka_render_messagebox,
+   NULL,
    lakka_render,
    NULL,
    lakka_init,
@@ -742,7 +972,6 @@ const menu_ctx_driver_t menu_ctx_lakka = {
    NULL,
    NULL,
    NULL,
-   NULL,
-   NULL,
+   &menu_ctx_backend_lakka,
    "lakka",
 };

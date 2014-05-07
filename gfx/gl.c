@@ -49,6 +49,10 @@
 #include "shader_glsl.h"
 #endif
 
+#ifdef HAVE_LAKKA
+#include "../frontend/menu/disp/lakka.h"
+#endif
+
 #include "shader_common.h"
 
 // Used for the last pass when rendering to the back buffer.
@@ -1515,7 +1519,11 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
 
 #if defined(HAVE_MENU)
    if (gl->rgui_texture_enable)
-      gl_draw_texture(gl);
+      #if defined(HAVE_LAKKA)
+         lakka_render(gl);
+      #else
+         gl_draw_texture(gl);
+      #endif
 #endif
 
    if (msg && gl->font_ctx)

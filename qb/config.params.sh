@@ -1,4 +1,5 @@
 HAVE_RGUI=yes           # Disable RGUI
+HAVE_LAKKA=yes          # Disable Lakka
 HAVE_DYNAMIC=yes        # Disable dynamic loading of libretro library
 HAVE_SDL=auto           # SDL support
 HAVE_UDEV=auto          # Udev/Evdev gamepad support
