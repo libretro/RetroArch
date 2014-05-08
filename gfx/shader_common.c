@@ -40,10 +40,12 @@ void gl_load_texture_data(GLuint obj, const struct texture_image *img,
    glTexImage2D(GL_TEXTURE_2D,
          0, driver.gfx_use_rgba ? GL_RGBA : RARCH_GL_INTERNAL_FORMAT32, img->width, img->height,
          0, driver.gfx_use_rgba ? GL_RGBA : RARCH_GL_TEXTURE_TYPE32, RARCH_GL_FORMAT32, img->pixels);
+#ifndef HAVE_PSGL
    if (mipmap)
    {
       glGenerateMipmap(GL_TEXTURE_2D);
    }
+#endif
 }
 
 bool gl_load_luts(const struct gfx_shader *generic_shader, GLuint *lut_textures)
