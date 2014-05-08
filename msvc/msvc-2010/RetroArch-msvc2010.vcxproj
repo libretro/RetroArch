@@ -288,6 +288,8 @@
     </ClCompile>
     <ClCompile Include="..\..\gfx\scaler\scaler.c">
     </ClCompile>
+    <ClCompile Include="..\..\gfx\shader_common.c">
+    </ClCompile>
     <ClCompile Include="..\..\gfx\scaler\scaler_int.c">
     </ClCompile>
     <ClCompile Include="..\..\gfx\state_tracker.c">

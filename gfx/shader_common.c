@@ -24,7 +24,7 @@ void gl_load_texture_data(GLuint obj, const struct texture_image *img,
    glBindTexture(GL_TEXTURE_2D, obj);
 
 #ifdef HAVE_OPENGLES2
-   GLenum wrap = GL_CLAMP_TO_EDGE;
+   wrap = GL_CLAMP_TO_EDGE;
 #endif
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrap);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrap);

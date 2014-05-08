@@ -34,6 +34,7 @@ OBJ = frontend/frontend.o \
 		media/rarch.o \
 		gfx/context/win32_common.o \
 		gfx/scaler/scaler.o \
+		gfx/shader_common.o \
 		gfx/scaler/pixconv.o \
 		gfx/scaler/scaler_int.o \
 		gfx/scaler/scaler_filter.o \

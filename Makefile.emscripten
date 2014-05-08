@@ -29,6 +29,7 @@ OBJ = frontend/platform/platform_emscripten.o \
 		input/overlay.o \
 		fifo_buffer.o \
 		gfx/scaler/scaler.o \
+		gfx/shader_common.o \
 		gfx/scaler/pixconv.o \
 		gfx/scaler/scaler_int.o \
 		gfx/scaler/scaler_filter.o \
