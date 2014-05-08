@@ -88,6 +88,7 @@ struct gfx_shader_lut
    char path[PATH_MAX];
    enum gfx_filter_type filter;
    enum gfx_wrap_type wrap;
+   bool mipmap;
 };
 
 // This is pretty big, shouldn't be put on the stack.

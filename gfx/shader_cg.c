@@ -102,7 +102,6 @@ struct cg_fbo_params
    CGparameter coord;
 };
 
-#define MAX_LUT_TEXTURES 8
 #define MAX_VARIABLES 64
 #define PREV_TEXTURES (MAX_TEXTURES - 1)
 
@@ -142,7 +141,7 @@ static unsigned active_index;
 static struct gfx_shader *cg_shader;
 
 static state_tracker_t *state_tracker;
-static GLuint lut_textures[MAX_LUT_TEXTURES];
+static GLuint lut_textures[GFX_MAX_TEXTURES];
 
 static CGparameter cg_attribs[PREV_TEXTURES + 1 + 4 + GFX_MAX_SHADERS];
 static unsigned cg_attrib_index;
@@ -496,53 +495,6 @@ static bool load_plain(const char *path)
 
 #define print_buf(buf, ...) snprintf(buf, sizeof(buf), __VA_ARGS__)
 
-static void load_texture_data(GLuint obj, const struct texture_image *img, bool smooth, GLenum wrap)
-{
-   glBindTexture(GL_TEXTURE_2D, obj);
-
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrap);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrap);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, smooth ? GL_LINEAR : GL_NEAREST);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, smooth ? GL_LINEAR : GL_NEAREST);
-
-#ifndef HAVE_PSGL
-   glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
-#endif
-   glTexImage2D(GL_TEXTURE_2D,
-         0, driver.gfx_use_rgba ? GL_RGBA : RARCH_GL_INTERNAL_FORMAT32, img->width, img->height,
-         0, driver.gfx_use_rgba ? GL_RGBA : RARCH_GL_TEXTURE_TYPE32, RARCH_GL_FORMAT32, img->pixels);
-}
-
-static bool load_textures(void)
-{
-   unsigned i;
-   if (!cg_shader->luts)
-      return true;
-
-   glGenTextures(cg_shader->luts, lut_textures);
-
-   for (i = 0; i < cg_shader->luts; i++)
-   {
-      RARCH_LOG("Loading image from: \"%s\".\n",
-            cg_shader->lut[i].path);
-
-      struct texture_image img = {0};
-      if (!texture_image_load(cg_shader->lut[i].path, &img))
-      {
-         RARCH_ERR("Failed to load picture ...\n");
-         return false;
-      }
-
-      load_texture_data(lut_textures[i], &img,
-            cg_shader->lut[i].filter != RARCH_FILTER_NEAREST,
-            gl_wrap_type_to_enum(cg_shader->lut[i].wrap));
-      texture_image_free(&img);
-   }
-
-   glBindTexture(GL_TEXTURE_2D, 0);
-   return true;
-}
-
 static bool load_imports(void)
 {
    unsigned i;
@@ -646,7 +598,7 @@ static bool load_preset(const char *path)
       }
    }
 
-   if (!load_textures())
+   if (!gl_load_luts(cg_shader, lut_textures))
    {
       RARCH_ERR("Failed to load lookup textures ...\n");
       return false;
