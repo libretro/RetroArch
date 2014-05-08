@@ -24,7 +24,7 @@ void gl_load_texture_data(GLuint obj, const struct texture_image *img,
    glBindTexture(GL_TEXTURE_2D, obj);
 
 #ifdef HAVE_PSGL
-   mipmap = false
+   mipmap = false;
 #endif
 #ifdef HAVE_OPENGLES2
    wrap = GL_CLAMP_TO_EDGE;
