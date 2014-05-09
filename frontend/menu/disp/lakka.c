@@ -774,20 +774,20 @@ static void lakka_init_assets(void *data)
 
 void lakka_init_settings(void)
 {
+   struct font_output_list out;
    gl_t *gl = (gl_t*)driver.video_data;
 
-   menu_category mcat;
-   mcat.name = "Settings";
-   mcat.icon = settings_icon;
-   mcat.alpha = 1.0;
-   mcat.zoom = C_ACTIVE_ZOOM;
-   mcat.active_item = 0;
-   mcat.num_items   = 0;
-   mcat.items       = calloc(mcat.num_items, sizeof(menu_item));
-   struct font_output_list out;
-   font_driver->render_msg(font, mcat.name, &out);
-   mcat.out = out;
-   categories[0] = mcat;
+   strlcpy(categories[0].name, "Settings", sizeof(categories[0].name));
+   categories[0].icon = settings_icon;
+   categories[0].alpha = 1.0;
+   categories[0].zoom = C_ACTIVE_ZOOM;
+   categories[0].active_item = 0;
+   categories[0].num_items   = 0;
+   categories[0].items       = calloc(categories[0].num_items, sizeof(menu_item));
+
+   font_driver->render_msg(font, categories[0].name, &out);
+
+   categories[0].out = out;
 }
 
 char * str_replace ( const char *string, const char *substr, const char *replacement)
@@ -843,8 +843,8 @@ void lakka_init_items(int i, menu_category *mcat, core_info_t corenfo, char* gam
          mcat->num_items++;
          mcat->items = realloc(mcat->items, mcat->num_items * sizeof(menu_item));
 
-         mcat->items[n].name  = path_basename(list->elems[j].data);
-         mcat->items[n].rom   = list->elems[j].data;
+         strlcpy(mcat->items[n].name, path_basename(list->elems[j].data), sizeof(mcat->items[n].name));
+         strlcpy(mcat->items[n].rom, list->elems[j].data, sizeof(mcat->items[n].rom));
          mcat->items[n].icon  = png_texture_load(gametexturepath, &dim, &dim);
          mcat->items[n].alpha = i != menu_active_category ? 0 : n ? 0.5 : 1;
          mcat->items[n].zoom  = n ? I_PASSIVE_ZOOM : I_ACTIVE_ZOOM;
@@ -955,7 +955,6 @@ static void *lakka_init(void)
    for (i = 0; i < num_categories-1; i++)
    {
       char core_id[256], texturepath[256], gametexturepath[256];
-      menu_category mcat;
       struct font_output_list out;
       core_info_t corenfo = rgui->core_info->list[i];
 
@@ -976,21 +975,19 @@ static void *lakka_init(void)
       strlcat(gametexturepath, core_id, sizeof(gametexturepath));
       strlcat(gametexturepath, "-game.png", sizeof(gametexturepath));
 
-      mcat.name        = corenfo.display_name;
-      mcat.libretro    = corenfo.path;
-      mcat.icon        = png_texture_load(texturepath, &dim, &dim);
-      mcat.alpha       = 0.5;
-      mcat.zoom        = C_PASSIVE_ZOOM;
-      mcat.active_item = 0;
-      mcat.num_items   = 0;
-      mcat.items       = calloc(mcat.num_items, sizeof(menu_item));
+      strlcpy(categories[i+1].name, corenfo.display_name, sizeof(categories[i+1].name));
+      strlcpy(categories[i+1].libretro, corenfo.path, sizeof(categories[i+1].libretro));
+      categories[i+1].icon        = png_texture_load(texturepath, &dim, &dim);
+      categories[i+1].alpha       = 0.5;
+      categories[i+1].zoom        = C_PASSIVE_ZOOM;
+      categories[i+1].active_item = 0;
+      categories[i+1].num_items   = 0;
+      categories[i+1].items       = calloc(categories[i+1].num_items, sizeof(menu_item));
 
-      font_driver->render_msg(font, mcat.name, &out);
-      mcat.out = out;
+      font_driver->render_msg(font, categories[i+1].name, &out);
+      categories[i+1].out = out;
 
-      lakka_init_items(i+1, &mcat, corenfo, gametexturepath, g_settings.content_directory);
-
-      categories[i+1] = mcat;
+      lakka_init_items(i+1, &categories[i+1], corenfo, gametexturepath, g_settings.content_directory);
    }
 
    rgui->last_time = rarch_get_time_usec();
