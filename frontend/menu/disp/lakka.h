@@ -20,8 +20,8 @@ typedef struct
 
 typedef struct
 {
-   char*  name;
-   char*  rom;
+   char  name[256];
+   char  rom[256];
    GLuint icon;
    float  alpha;
    float  zoom;
@@ -34,8 +34,8 @@ typedef struct
 
 typedef struct
 {
-   char*  name;
-   char*  libretro;
+   char  name[256];
+   char  libretro[256];
    GLuint icon;
    float  alpha;
    float  zoom;
