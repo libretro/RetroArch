@@ -1,6 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2014 - Daniel De Matteis
+ *  Copyright (C) 2014      - Jean-André Santoni
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -91,8 +92,10 @@ static int menu_lakka_iterate(void *data, unsigned action)
          break;
 
       case RGUI_ACTION_OK:
-         if (depth == 1) {
-            switch (categories[menu_active_category].items[categories[menu_active_category].active_item].active_subitem) {
+         if (depth == 1)
+         {
+            switch (categories[menu_active_category].items[categories[menu_active_category].active_item].active_subitem)
+            {
                case 0:
                   if (g_extern.main_is_init && !g_extern.libretro_dummy && strcmp(g_extern.fullpath, categories[menu_active_category].items[categories[menu_active_category].active_item].rom) == 0)
                   {

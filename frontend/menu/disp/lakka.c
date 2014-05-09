@@ -2,6 +2,7 @@
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2014 - Daniel De Matteis
  *  Copyright (C) 2012-2014 - Michael Lelli
+ *  Copyright (C) 2014      - Jean-André Santoni
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -898,7 +899,7 @@ static void *lakka_init(void)
 
    menu_init_core_info(rgui);
 
-   rgui->core_info = core_info_list_new("/usr/lib/libretro");
+   rgui->core_info = core_info_list_new(*rgui->libretro_dir ? rgui->libretro_dir : "/usr/lib/libretro");
 
    num_categories = rgui->core_info ? rgui->core_info->count + 1 : 1;
 
