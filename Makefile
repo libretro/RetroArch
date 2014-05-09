@@ -6,6 +6,7 @@ OBJDIR := obj-unix
 
 OBJ = frontend/frontend.o \
 		frontend/frontend_context.o \
+		frontend/platform/platform_null.o \
 		retroarch.o \
 		file.o \
 		file_path.o \

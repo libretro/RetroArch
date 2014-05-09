@@ -42,6 +42,7 @@ static const frontend_ctx_driver_t *frontend_ctx_drivers[] = {
 #if defined(PSP)
    &frontend_ctx_psp,
 #endif
+   &frontend_ctx_null,
    NULL // zero length array is not valid
 };
 

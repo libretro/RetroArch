@@ -560,6 +560,7 @@ FRONTEND
 #elif defined(ANDROID)
 #include "../frontend/platform/platform_android.c"
 #endif
+#include "../frontend/platform/platform_null.c"
 
 #include "../frontend/info/core_info.c"
 
