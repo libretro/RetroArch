@@ -43,7 +43,7 @@
 #endif
 #endif
 
-static void menu_lakka_entries_init(void *data, unsigned menu_type)
+static void menu_common_entries_init(void *data, unsigned menu_type)
 {
    rgui_handle_t *rgui = (rgui_handle_t*)data;
    unsigned i, last;
@@ -485,7 +485,7 @@ static int menu_start_screen_iterate(void *data, unsigned action)
    return 0;
 }
 
-static unsigned menu_lakka_type_is(unsigned type)
+static unsigned menu_common_type_is(unsigned type)
 {
    unsigned ret = 0;
    bool type_found;
@@ -606,13 +606,13 @@ static int menu_settings_iterate(void *data, unsigned action)
             menu_clear_navigation(rgui);
             rgui->need_refresh = true;
          }
-         else if ((type == RGUI_SETTINGS_OPEN_HISTORY || menu_lakka_type_is(type) == RGUI_FILE_DIRECTORY) && action == RGUI_ACTION_OK)
+         else if ((type == RGUI_SETTINGS_OPEN_HISTORY || menu_common_type_is(type) == RGUI_FILE_DIRECTORY) && action == RGUI_ACTION_OK)
          {
             file_list_push(rgui->menu_stack, "", type, rgui->selection_ptr);
             menu_clear_navigation(rgui);
             rgui->need_refresh = true;
          }
-         else if ((menu_lakka_type_is(type) == RGUI_SETTINGS || type == RGUI_SETTINGS_CORE || type == RGUI_SETTINGS_CONFIG || type == RGUI_SETTINGS_DISK_APPEND) && action == RGUI_ACTION_OK)
+         else if ((menu_common_type_is(type) == RGUI_SETTINGS || type == RGUI_SETTINGS_CORE || type == RGUI_SETTINGS_CONFIG || type == RGUI_SETTINGS_DISK_APPEND) && action == RGUI_ACTION_OK)
          {
             file_list_push(rgui->menu_stack, label, type, rgui->selection_ptr);
             menu_clear_navigation(rgui);
@@ -661,8 +661,8 @@ static int menu_settings_iterate(void *data, unsigned action)
    file_list_get_last(rgui->menu_stack, &dir, &menu_type);
 
    if (rgui->need_refresh && !(menu_type == RGUI_FILE_DIRECTORY ||
-            menu_lakka_type_is(menu_type) == RGUI_SETTINGS_SHADER_OPTIONS||
-            menu_lakka_type_is(menu_type) == RGUI_FILE_DIRECTORY ||
+            menu_common_type_is(menu_type) == RGUI_SETTINGS_SHADER_OPTIONS||
+            menu_common_type_is(menu_type) == RGUI_FILE_DIRECTORY ||
             menu_type == RGUI_SETTINGS_VIDEO_SOFTFILTER ||
             menu_type == RGUI_SETTINGS_AUDIO_DSP_FILTER ||
             menu_type == RGUI_SETTINGS_OVERLAY_PRESET ||
@@ -689,9 +689,9 @@ static int menu_settings_iterate(void *data, unsigned action)
             || menu_type == RGUI_SETTINGS_FONT_OPTIONS
             || menu_type == RGUI_SETTINGS_SHADER_OPTIONS
             )
-         menu_lakka_entries_init(rgui, menu_type);
+         menu_common_entries_init(rgui, menu_type);
       else
-         menu_lakka_entries_init(rgui, RGUI_SETTINGS);
+         menu_common_entries_init(rgui, RGUI_SETTINGS);
    }
 
    if (driver.video_data && driver.menu_ctx && driver.menu_ctx->render)
@@ -1000,7 +1000,7 @@ static void menu_parse_and_resolve(void *data, unsigned menu_type)
                exts = "cfg";
             else if (menu_type == RGUI_SETTINGS_SHADER_PRESET)
                exts = "cgp|glslp";
-            else if (menu_lakka_type_is(menu_type) == RGUI_SETTINGS_SHADER_OPTIONS)
+            else if (menu_common_type_is(menu_type) == RGUI_SETTINGS_SHADER_OPTIONS)
                exts = "cg|glsl";
             else if (menu_type == RGUI_SETTINGS_VIDEO_SOFTFILTER)
                exts = EXT_EXECUTABLES;
@@ -1008,7 +1008,7 @@ static void menu_parse_and_resolve(void *data, unsigned menu_type)
                exts = EXT_EXECUTABLES;
             else if (menu_type == RGUI_SETTINGS_OVERLAY_PRESET)
                exts = "cfg";
-            else if (menu_lakka_type_is(menu_type) == RGUI_FILE_DIRECTORY)
+            else if (menu_common_type_is(menu_type) == RGUI_FILE_DIRECTORY)
                exts = ""; // we ignore files anyway
             else if (rgui->defer_core)
                exts = rgui->core_info ? core_info_list_get_all_extensions(rgui->core_info) : "";
@@ -1029,14 +1029,14 @@ static void menu_parse_and_resolve(void *data, unsigned menu_type)
 
             dir_list_sort(list, true);
 
-            if (menu_lakka_type_is(menu_type) == RGUI_FILE_DIRECTORY)
+            if (menu_common_type_is(menu_type) == RGUI_FILE_DIRECTORY)
                file_list_push(rgui->selection_buf, "<Use this directory>", RGUI_FILE_USE_DIRECTORY, 0);
 
             for (i = 0; i < list->size; i++)
             {
                bool is_dir = list->elems[i].attr.b;
 
-               if ((menu_lakka_type_is(menu_type) == RGUI_FILE_DIRECTORY) && !is_dir)
+               if ((menu_common_type_is(menu_type) == RGUI_FILE_DIRECTORY) && !is_dir)
                   continue;
 
                // Need to preserve slash first time.
@@ -1193,7 +1193,7 @@ static int menu_custom_bind_iterate_keyboard(void *data, unsigned action)
    return 0;
 }
 
-static int menu_lakka_iterate(void *data, unsigned action)
+static int menu_common_iterate(void *data, unsigned action)
 {
    rgui_handle_t *rgui = (rgui_handle_t*)data;
 
@@ -1223,7 +1223,7 @@ static int menu_lakka_iterate(void *data, unsigned action)
 
    if (menu_type == RGUI_START_SCREEN)
       return menu_start_screen_iterate(rgui, action);
-   else if (menu_lakka_type_is(menu_type) == RGUI_SETTINGS)
+   else if (menu_common_type_is(menu_type) == RGUI_SETTINGS)
       return menu_settings_iterate(rgui, action);
    else if (menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT || menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT_2)
       return menu_viewport_iterate(rgui, action);
@@ -1293,8 +1293,8 @@ static int menu_lakka_iterate(void *data, unsigned action)
          file_list_get_at_offset(rgui->selection_buf, rgui->selection_ptr, &path, &type);
 
          if (
-               menu_lakka_type_is(type) == RGUI_SETTINGS_SHADER_OPTIONS ||
-               menu_lakka_type_is(type) == RGUI_FILE_DIRECTORY ||
+               menu_common_type_is(type) == RGUI_SETTINGS_SHADER_OPTIONS ||
+               menu_common_type_is(type) == RGUI_FILE_DIRECTORY ||
                type == RGUI_SETTINGS_OVERLAY_PRESET ||
                type == RGUI_SETTINGS_VIDEO_SOFTFILTER ||
                type == RGUI_SETTINGS_AUDIO_DSP_FILTER ||
@@ -1313,7 +1313,7 @@ static int menu_lakka_iterate(void *data, unsigned action)
          else
          {
 #ifdef HAVE_SHADER_MANAGER
-            if (menu_lakka_type_is(menu_type) == RGUI_SETTINGS_SHADER_OPTIONS)
+            if (menu_common_type_is(menu_type) == RGUI_SETTINGS_SHADER_OPTIONS)
             {
                if (menu_type == RGUI_SETTINGS_SHADER_PRESET)
                {
@@ -1340,7 +1340,7 @@ static int menu_lakka_iterate(void *data, unsigned action)
                // FIXME: Add for consoles.
                strlcpy(g_settings.libretro, path, sizeof(g_settings.libretro));
                strlcpy(g_extern.fullpath, rgui->deferred_path, sizeof(g_extern.fullpath));
-               load_menu_game_new_core();
+               load_menu_game_new_core(rgui);
                rgui->msg_force = true;
                ret = -1;
                menu_flush_stack_type(rgui, RGUI_SETTINGS);
@@ -1384,7 +1384,7 @@ static int menu_lakka_iterate(void *data, unsigned action)
                fill_pathname_join(config, dir, path, sizeof(config));
                menu_flush_stack_type(rgui, RGUI_SETTINGS);
                rgui->msg_force = true;
-               if (menu_replace_config(config))
+               if (menu_replace_config(rgui, config))
                {
                   menu_clear_navigation(rgui);
                   ret = -1;
@@ -1417,7 +1417,7 @@ static int menu_lakka_iterate(void *data, unsigned action)
             }
             else if (menu_type == RGUI_SETTINGS_OPEN_HISTORY)
             {
-               load_menu_game_history(rgui->selection_ptr);
+               load_menu_game_history(rgui, rgui->selection_ptr);
                menu_flush_stack_type(rgui, RGUI_SETTINGS);
                ret = -1;
             }
@@ -1573,8 +1573,8 @@ static int menu_lakka_iterate(void *data, unsigned action)
    file_list_get_last(rgui->menu_stack, &dir, &menu_type);
 
    if (rgui->need_refresh && (menu_type == RGUI_FILE_DIRECTORY ||
-            menu_lakka_type_is(menu_type) == RGUI_SETTINGS_SHADER_OPTIONS ||
-            menu_lakka_type_is(menu_type) == RGUI_FILE_DIRECTORY ||
+            menu_common_type_is(menu_type) == RGUI_SETTINGS_SHADER_OPTIONS ||
+            menu_common_type_is(menu_type) == RGUI_FILE_DIRECTORY ||
             menu_type == RGUI_SETTINGS_OVERLAY_PRESET ||
             menu_type == RGUI_SETTINGS_VIDEO_SOFTFILTER ||
             menu_type == RGUI_SETTINGS_AUDIO_DSP_FILTER ||
@@ -1597,7 +1597,7 @@ static int menu_lakka_iterate(void *data, unsigned action)
    return ret;
 }
 
-static void menu_lakka_shader_manager_init(void *data)
+static void menu_common_shader_manager_init(void *data)
 {
    (void)data;
 
@@ -1671,7 +1671,7 @@ static void menu_lakka_shader_manager_init(void *data)
 #endif
 }
 
-static void menu_lakka_shader_manager_set_preset(void *data, unsigned type, const char *path)
+static void menu_common_shader_manager_set_preset(void *data, unsigned type, const char *path)
 {
 #ifdef HAVE_SHADER_MANAGER
    struct gfx_shader *shader = (struct gfx_shader*)data;
@@ -1688,6 +1688,7 @@ static void menu_lakka_shader_manager_set_preset(void *data, unsigned type, cons
 
       if (path && shader)
       {
+         rgui_handle_t *rgui = (rgui_handle_t*)driver.menu;
          // Load stored CGP into RGUI menu on success.
          // Used when a preset is directly loaded.
          // No point in updating when the CGP was created from RGUI itself.
@@ -1710,7 +1711,7 @@ static void menu_lakka_shader_manager_set_preset(void *data, unsigned type, cons
 #endif
 }
 
-static void menu_lakka_shader_manager_get_str(void *data, char *type_str, size_t type_str_size, unsigned type)
+static void menu_common_shader_manager_get_str(void *data, char *type_str, size_t type_str_size, unsigned type)
 {
    (void)data;
    (void)type_str;
@@ -1767,7 +1768,7 @@ static void menu_lakka_shader_manager_get_str(void *data, char *type_str, size_t
 #endif
 }
 
-static void menu_lakka_shader_manager_save_preset(void *data, const char *basename, bool apply)
+static void menu_common_shader_manager_save_preset(void *data, const char *basename, bool apply)
 {
 #ifdef HAVE_SHADER_MANAGER
    char buffer[PATH_MAX];
@@ -1849,7 +1850,7 @@ static void menu_lakka_shader_manager_save_preset(void *data, const char *basena
 #endif
 }
 
-static unsigned menu_lakka_shader_manager_get_type(void *data)
+static unsigned menu_common_shader_manager_get_type(void *data)
 {
    unsigned i, type;
    (void)data;
@@ -1889,7 +1890,7 @@ static unsigned menu_lakka_shader_manager_get_type(void *data)
    return type;
 }
 
-static int menu_lakka_shader_manager_setting_toggle(void *data, unsigned setting, unsigned action)
+static int menu_common_shader_manager_setting_toggle(void *data, unsigned setting, unsigned action)
 {
    (void)data;
    (void)setting;
@@ -2002,7 +2003,7 @@ static int menu_lakka_shader_manager_setting_toggle(void *data, unsigned setting
    return 0;
 }
 
-static int menu_lakka_setting_toggle(void *data, unsigned setting, unsigned action, unsigned menu_type)
+static int menu_common_setting_toggle(void *data, unsigned setting, unsigned action, unsigned menu_type)
 {
    rgui_handle_t *rgui = (rgui_handle_t*)data;
 #ifdef HAVE_SHADER_MANAGER
@@ -2025,7 +2026,7 @@ static int menu_lakka_setting_toggle(void *data, unsigned setting, unsigned acti
    return 0;
 }
 
-static int menu_lakka_core_setting_toggle(unsigned setting, unsigned action)
+static int menu_common_core_setting_toggle(unsigned setting, unsigned action)
 {
    unsigned index;
    index = setting - RGUI_SETTINGS_CORE_OPTION_START;
@@ -2141,7 +2142,9 @@ static bool osk_callback_enter_audio_device_init(void *data)
 
 static bool osk_callback_enter_filename(void *data)
 {
-   if (!driver.osk)
+   rgui_handle_t *rgui = (rgui_handle_t*)driver.menu;
+
+   if (!driver.osk || !rgui)
       return false;
 
    if (g_extern.lifecycle_state & (1ULL << MODE_OSK_ENTRY_SUCCESS))
@@ -2194,7 +2197,7 @@ static bool osk_callback_enter_filename_init(void *data)
 #define RARCH_DEFAULT_PORT 55435
 #endif
 
-static int menu_lakka_setting_set(void *data, unsigned setting, unsigned action)
+static int menu_common_setting_set(void *data, unsigned setting, unsigned action)
 {
    rgui_handle_t *rgui = (rgui_handle_t*)data;
    unsigned port = rgui->current_pad;
@@ -3776,8 +3779,10 @@ static int menu_lakka_setting_set(void *data, unsigned setting, unsigned action)
    return 0;
 }
 
-static void menu_lakka_setting_set_label(char *type_str, size_t type_str_size, unsigned *w, unsigned type)
+static void menu_common_setting_set_label(char *type_str, size_t type_str_size, unsigned *w, unsigned type)
 {
+   rgui_handle_t *rgui = (rgui_handle_t*)driver.menu;
+
    switch (type)
    {
       case RGUI_SETTINGS_VIDEO_ROTATION:
@@ -4276,18 +4281,18 @@ static void menu_lakka_setting_set_label(char *type_str, size_t type_str_size, u
 }
 
 const menu_ctx_driver_backend_t menu_ctx_backend_lakka = {
-   menu_lakka_entries_init,
-   menu_lakka_iterate,
-   menu_lakka_shader_manager_init,
-   menu_lakka_shader_manager_get_str,
-   menu_lakka_shader_manager_set_preset,
-   menu_lakka_shader_manager_save_preset,
-   menu_lakka_shader_manager_get_type,
-   menu_lakka_shader_manager_setting_toggle,
-   menu_lakka_type_is,
-   menu_lakka_core_setting_toggle,
-   menu_lakka_setting_toggle,
-   menu_lakka_setting_set,
-   menu_lakka_setting_set_label,
+   menu_common_entries_init,
+   menu_common_iterate,
+   menu_common_shader_manager_init,
+   menu_common_shader_manager_get_str,
+   menu_common_shader_manager_set_preset,
+   menu_common_shader_manager_save_preset,
+   menu_common_shader_manager_get_type,
+   menu_common_shader_manager_setting_toggle,
+   menu_common_type_is,
+   menu_common_core_setting_toggle,
+   menu_common_setting_toggle,
+   menu_common_setting_set,
+   menu_common_setting_set_label,
    "menu_lakka",
 };
