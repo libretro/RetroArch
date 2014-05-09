@@ -15,20 +15,40 @@
  */
 
 #include "softfilter.h"
-#include "softfilter_prototypes.h"
 #include <stdlib.h>
 #include "boolean.h"
-
-#ifdef RARCH_INTERNAL
-#define softfilter_get_implementation blargg_ntsc_snes_composite_get_implementation
-#endif
-
 #include "snes_ntsc/snes_ntsc.h"
 #include "snes_ntsc/snes_ntsc.c"
 
-static struct snes_ntsc_t *ntsc_composite;
-static int burst_composite;
-static int burst_toggle_composite;
+#ifdef RARCH_INTERNAL
+#define softfilter_get_implementation blargg_ntsc_snes_composite_get_implementation
+#define softfilter_thread_data blargg_ntsc_snes_composite_softfilter_thread_data
+#define filter_data blargg_ntsc_snes_composite_filter_data
+#endif
+
+struct softfilter_thread_data
+{
+   void *out_data;
+   const void *in_data;
+   size_t out_pitch;
+   size_t in_pitch;
+   unsigned colfmt;
+   unsigned width;
+   unsigned height;
+   int first;
+   int last;
+};
+
+struct filter_data
+{
+   unsigned threads;
+   struct softfilter_thread_data *workers;
+   unsigned in_fmt;
+   struct snes_ntsc_t *ntsc;
+   int burst;
+   int burst_toggle;
+};
+
 
 static unsigned blargg_ntsc_snes_composite_generic_input_fmts(void)
 {
@@ -44,6 +64,20 @@ static unsigned blargg_ntsc_snes_composite_generic_threads(void *data)
 {
    struct filter_data *filt = (struct filter_data*)data;
    return filt->threads;
+}
+
+static void blargg_ntsc_snes_composite_initialize(void *data)
+{
+   snes_ntsc_setup_t setup;
+   struct filter_data *filt = (struct filter_data*)data;
+
+   filt->ntsc = (snes_ntsc_t*)calloc(1, sizeof(*filt->ntsc));
+   setup = snes_ntsc_composite;
+   setup.merge_fields = 1;
+   snes_ntsc_init(filt->ntsc, &setup);
+
+   filt->burst = 0;
+   filt->burst_toggle = (setup.merge_fields ? 0 : 1);
 }
 
 static void *blargg_ntsc_snes_composite_generic_create(unsigned in_fmt, unsigned out_fmt,
@@ -63,30 +97,15 @@ static void *blargg_ntsc_snes_composite_generic_create(unsigned in_fmt, unsigned
       free(filt);
       return NULL;
    }
+   blargg_ntsc_snes_composite_initialize(filt);
+
    return filt;
 }
 
-static void blargg_ntsc_snes_composite_initialize(void)
-{
-   snes_ntsc_setup_t setup;
-   static bool initialized = false;
-   if(initialized == true)
-      return;
-   initialized = true;
-
-   ntsc_composite = (snes_ntsc_t*)malloc(sizeof(*ntsc_composite));
-   setup = snes_ntsc_composite;
-   setup.merge_fields = 1;
-   snes_ntsc_init(ntsc_composite, &setup);
-
-   burst_composite = 0;
-   burst_toggle_composite = (setup.merge_fields ? 0 : 1);
-}
 
 static void blargg_ntsc_snes_composite_generic_output(void *data, unsigned *out_width, unsigned *out_height,
       unsigned width, unsigned height)
 {
-   blargg_ntsc_snes_composite_initialize();
    *out_width  = SNES_NTSC_OUT_WIDTH(256);
    *out_height = height;
 }
@@ -95,34 +114,31 @@ static void blargg_ntsc_snes_composite_generic_destroy(void *data)
 {
    struct filter_data *filt = (struct filter_data*)data;
 
-   if(ntsc_composite)
-      free(ntsc_composite);
+   if(filt->ntsc)
+      free(filt->ntsc);
 
    free(filt->workers);
    free(filt);
 }
 
-static void blargg_ntsc_snes_composite_render_rgb565(int width, int height,
+static void blargg_ntsc_snes_composite_render_rgb565(void *data, int width, int height,
       int first, int last,
       uint16_t *input, int pitch, uint16_t *output, int outpitch)
 {
-   blargg_ntsc_snes_composite_initialize();
-   if(!ntsc_composite)
-      return;
-
+   struct filter_data *filt = (struct filter_data*)data;
    if(width <= 256)
-      snes_ntsc_blit(ntsc_composite, input, pitch, burst_composite, width, height, output, outpitch * 2, first, last);
+      snes_ntsc_blit(filt->ntsc, input, pitch, filt->burst, width, height, output, outpitch * 2, first, last);
    else
-      snes_ntsc_blit_hires(ntsc_composite, input, pitch, burst_composite, width, height, output, outpitch * 2, first, last);
+      snes_ntsc_blit_hires(filt->ntsc, input, pitch, filt->burst, width, height, output, outpitch * 2, first, last);
 
-   burst_composite ^= burst_toggle_composite;
+   filt->burst ^= filt->burst_toggle;
 }
 
-static void blargg_ntsc_snes_composite_rgb565(unsigned width, unsigned height,
+static void blargg_ntsc_snes_composite_rgb565(void *data, unsigned width, unsigned height,
       int first, int last, uint16_t *src, 
       unsigned src_stride, uint16_t *dst, unsigned dst_stride)
 {
-   blargg_ntsc_snes_composite_render_rgb565(width, height,
+   blargg_ntsc_snes_composite_render_rgb565(data, width, height,
          first, last,
          src, src_stride,
          dst, dst_stride);
@@ -137,7 +153,7 @@ static void blargg_ntsc_snes_composite_work_cb_rgb565(void *data, void *thread_d
    unsigned width = thr->width;
    unsigned height = thr->height;
 
-   blargg_ntsc_snes_composite_rgb565(width, height,
+   blargg_ntsc_snes_composite_rgb565(data, width, height,
          thr->first, thr->last, input, thr->in_pitch / SOFTFILTER_BPP_RGB565, output, thr->out_pitch / SOFTFILTER_BPP_RGB565);
 }
 
@@ -193,4 +209,6 @@ const struct softfilter_implementation *softfilter_get_implementation(softfilter
 
 #ifdef RARCH_INTERNAL
 #undef softfilter_get_implementation
+#undef softfilter_thread_data
+#undef filter_data
 #endif
