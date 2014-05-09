@@ -263,50 +263,6 @@ static GLint get_attrib(GLuint prog, const char *base)
    return -1;
 }
 
-static bool load_luts(void)
-{
-   unsigned i;
-   if (!glsl_shader->luts)
-      return true;
-
-   glGenTextures(1, gl_teximage);
-
-   for (i = 0; i < glsl_shader->luts; i++)
-   {
-      RARCH_LOG("Loading texture image from: \"%s\" ...\n",
-            glsl_shader->lut[i].path);
-
-      struct texture_image img = {0};
-      if (!texture_image_load(glsl_shader->lut[i].path, &img))
-      {
-         RARCH_ERR("Failed to load texture image from: \"%s\"\n", glsl_shader->lut[i].path);
-         return false;
-      }
-
-      glBindTexture(GL_TEXTURE_2D, gl_teximage[i]);
-
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, BORDER_FUNC);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, BORDER_FUNC);
-
-      GLenum filter = glsl_shader->lut[i].filter == RARCH_FILTER_NEAREST ?
-         GL_NEAREST : GL_LINEAR;
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter);
-
-      glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
-      glTexImage2D(GL_TEXTURE_2D,
-            0, driver.gfx_use_rgba ? GL_RGBA : RARCH_GL_INTERNAL_FORMAT32,
-            img.width, img.height, 0,
-            driver.gfx_use_rgba ? GL_RGBA : RARCH_GL_TEXTURE_TYPE32,
-            RARCH_GL_FORMAT32, img.pixels);
-
-      glBindTexture(GL_TEXTURE_2D, 0);
-      texture_image_free(&img);
-   }
-
-   return true;
-}
-
 static void print_shader_log(GLuint obj)
 {
    GLint info_len = 0;
@@ -786,7 +742,7 @@ static bool gl_glsl_init(void *data, const char *path)
    if (!compile_programs(&gl_program[1]))
       goto error;
 
-   if (!load_luts())
+   if (!gl_load_luts(glsl_shader, gl_teximage))
    {
       RARCH_ERR("[GL]: Failed to load LUTs.\n");
       goto error;

@@ -22,7 +22,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#ifndef RESAMPLER_TEST
+#if !defined(RESAMPLER_TEST) && defined(RARCH_INTERNAL)
 #include "../general.h"
 #else
 #define RARCH_LOG(...) fprintf(stderr, __VA_ARGS__)
@@ -230,9 +230,9 @@ static void resampler_CC_upsample(void *re_, struct resampler_data *data)
    float b, ratio;
    rarch_CC_resampler_t *re = (rarch_CC_resampler_t*)re_;
 
-   audio_frame_float_t *inp = (audio_frame_float_t*)data->data_in;
-   audio_frame_float_t *inp_max = inp + data->input_frames;
-   audio_frame_float_t *outp = (audio_frame_float_t*)data->data_out;
+   audio_frame_float_t *inp     = (audio_frame_float_t*)data->data_in;
+   audio_frame_float_t *inp_max = (audio_frame_float_t*)(inp + data->input_frames);
+   audio_frame_float_t *outp    = (audio_frame_float_t*)data->data_out;
 
    b = min(data->ratio, 1.00); // cutoff frequency
    ratio = 1.0 / data->ratio;
@@ -320,4 +320,3 @@ const rarch_resampler_t CC_resampler = {
    resampler_CC_free,
    "CC",
 };
-

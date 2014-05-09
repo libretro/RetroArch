@@ -234,6 +234,13 @@
     <ClCompile Include="..\..\frontend\menu\backend\menu_common_backend.c">
       <Filter>frontend\menu\backend</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\settings_data.c" />
+    <ClCompile Include="..\..\gfx\shader_common.c">
+      <Filter>gfx</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\frontend\platform\platform_null.c">
+      <Filter>frontend\platform</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="resource.h" />
@@ -301,6 +308,9 @@
     </Filter>
     <Filter Include="frontend\menu\backend">
       <UniqueIdentifier>{dd1ca879-56f4-43f6-8bd8-ae50222061e8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="frontend\platform">
+      <UniqueIdentifier>{09d78055-1c93-4f12-ae3e-97aaa90cf78f}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

@@ -45,13 +45,13 @@ int main(int argc, char *argv[])
    if ((init_ret = rarch_main_init(argc, argv))) return init_ret;
 
 #ifdef HAVE_MENU
-   menu_init();
+   menu_init(driver.menu);
    g_extern.lifecycle_state |= 1ULL << MODE_GAME;
 
    // If we started a ROM directly from command line,
    // push it to ROM history.
    if (!g_extern.libretro_dummy)
-      menu_rom_history_push_current();
+      menu_rom_history_push_current(driver.menu);
 #endif
 
    emscripten_set_main_loop(emscripten_mainloop, g_settings.video.vsync ? 0 : INT_MAX, 1);

@@ -112,6 +112,7 @@ void preset_filename_callback(void *userdata, const char *str)
 
 void menu_key_event(bool down, unsigned keycode, uint32_t character, uint16_t mod)
 {
+   rgui_handle_t *rgui = (rgui_handle_t*)driver.menu;
    (void)down;
    (void)keycode;
    (void)mod;

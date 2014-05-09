@@ -466,6 +466,7 @@ typedef struct driver
    void *video_data;
    void *input_data;
 #ifdef HAVE_MENU
+   void *menu;
    const menu_ctx_driver_t *menu_ctx;
 #endif
 
@@ -538,7 +539,6 @@ void init_drivers(void);
 void init_drivers_pre(void);
 void uninit_drivers(void);
 
-void global_init_drivers(void);
 void global_uninit_drivers(void);
 
 void init_video_input(void);

@@ -18,6 +18,10 @@
 #define HAVE_FILTERS_BUILTIN
 #endif
 
+#if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
+#define HAVE_SHADERS
+#endif
+
 #if defined(_XBOX)
 #include "../msvc/msvc_compat.h"
 #endif
@@ -141,9 +145,10 @@ VIDEO CONTEXT
 /*============================================================
 VIDEO SHADERS
 ============================================================ */
-#if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
+#include "../gfx/shader_common.c"
+
+#ifdef HAVE_SHADERS
 #include "../gfx/shader_parse.c"
-#endif
 
 #ifdef HAVE_CG
 #include "../gfx/shader_cg.c"
@@ -155,6 +160,8 @@ VIDEO SHADERS
 
 #ifdef HAVE_GLSL
 #include "../gfx/shader_glsl.c"
+#endif
+
 #endif
 
 /*============================================================
@@ -553,6 +560,7 @@ FRONTEND
 #elif defined(ANDROID)
 #include "../frontend/platform/platform_android.c"
 #endif
+#include "../frontend/platform/platform_null.c"
 
 #include "../frontend/info/core_info.c"
 

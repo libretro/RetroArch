@@ -464,9 +464,10 @@ static void rmenu_free(void *data)
 
 static int rmenu_input_postprocess(void *data, uint64_t old_state)
 {
-   (void)data;
+   int ret;
+   rgui_handle_t *rgui = (rgui_handle_t*)data;
 
-   int ret = 0;
+   ret = 0;
 
    if ((rgui->trigger_state & (1ULL << RARCH_MENU_TOGGLE)) &&
          g_extern.main_is_init &&

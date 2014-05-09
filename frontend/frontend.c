@@ -32,23 +32,7 @@ frontend_ctx_driver_t *frontend_ctx;
 
 #ifdef RARCH_CONSOLE
 #include "../config.def.h"
-
 default_paths_t default_paths;
-
-static void rarch_get_environment_console(void)
-{
-   path_mkdir(default_paths.port_dir);
-   path_mkdir(default_paths.system_dir);
-   path_mkdir(default_paths.savestate_dir);
-   path_mkdir(default_paths.sram_dir);
-
-   config_load();
-
-   init_libretro_sym(false);
-   rarch_init_system_info();
-
-   global_init_drivers();
-}
 #endif
 
 #if defined(ANDROID)
@@ -89,27 +73,24 @@ static void rarch_get_environment_console(void)
 #define ra_preinited false
 #endif
 
-#if defined(HAVE_BB10) || defined(RARCH_CONSOLE)
+#if defined(HAVE_BB10)
 #define attempt_load_game false
 #else
 #define attempt_load_game true
 #endif
 
-#if defined(RARCH_CONSOLE) || defined(HAVE_BB10) || defined(ANDROID)
+#if defined(HAVE_BB10) || defined(ANDROID)
 #define initial_menu_lifecycle_state (1ULL << MODE_LOAD_GAME)
 #else
 #define initial_menu_lifecycle_state (1ULL << MODE_GAME)
 #endif
 
-#if !defined(RARCH_CONSOLE) && !defined(HAVE_BB10) && !defined(ANDROID)
+#if !defined(HAVE_BB10) && !defined(ANDROID)
 #define attempt_load_game_push_history true
 #else
 #define attempt_load_game_push_history false
 #endif
 
-#ifndef RARCH_CONSOLE
-#define rarch_get_environment_console() (void)0
-#endif
 
 #if defined(RARCH_CONSOLE) || defined(__QNX__) || defined(ANDROID)
 #define attempt_load_game_fails (1ULL << MODE_MENU_PREINIT)
@@ -117,17 +98,25 @@ static void rarch_get_environment_console(void)
 #define attempt_load_game_fails (1ULL << MODE_EXIT)
 #endif
 
-#define frontend_init_enable true
-#define menu_init_enable true
-#define initial_lifecycle_state_preinit false
-
 static retro_keyboard_event_t key_event;
+
+static void rarch_get_environment_console(void)
+{
+#ifdef RARCH_CONSOLE
+   path_mkdir(default_paths.port_dir);
+   path_mkdir(default_paths.system_dir);
+   path_mkdir(default_paths.savestate_dir);
+   path_mkdir(default_paths.sram_dir);
+
+   config_load();
+#endif
+}
 
 #ifdef HAVE_MENU
 static int main_entry_iterate_clear_input(args_type() args)
 {
    rarch_input_poll();
-   if (!menu_input())
+   if (!menu_input(driver.menu))
    {
       // Restore libretro keyboard callback.
       g_extern.system.key_event = key_event;
@@ -143,7 +132,7 @@ static int main_entry_iterate_shutdown(args_type() args)
 #ifdef HAVE_MENU
    // Load dummy core instead of exiting RetroArch completely.
    if (g_settings.load_dummy_on_core_shutdown)
-      load_menu_game_prepare_dummy();
+      load_menu_game_prepare_dummy(driver.menu);
    else
 #endif
       return 1;
@@ -173,9 +162,9 @@ static int main_entry_iterate_content(args_type() args)
 
 static int main_entry_iterate_load_content(args_type() args)
 {
-   load_menu_game_prepare();
+   load_menu_game_prepare(driver.menu);
 
-   if (load_menu_game())
+   if (load_menu_game(driver.menu))
    {
       g_extern.lifecycle_state |= (1ULL << MODE_GAME);
       if (driver.video_data && driver.video_poke && driver.video_poke->set_aspect_ratio)
@@ -203,6 +192,7 @@ static int main_entry_iterate_load_content(args_type() args)
 static int main_entry_iterate_menu_preinit(args_type() args)
 {
    int i;
+   rgui_handle_t *rgui = (rgui_handle_t*)driver.menu;
 
    // Menu should always run with vsync on.
    video_set_nonblock_state_func(false);
@@ -222,6 +212,12 @@ static int main_entry_iterate_menu_preinit(args_type() args)
    if (driver.audio_data)
       audio_stop_func();
 
+   if (!rgui)
+   {
+      driver.menu = (rgui_handle_t*)menu_init();
+      rgui = (rgui_handle_t*)driver.menu;
+   }
+
    rgui->need_refresh = true;
    rgui->old_input_state |= 1ULL << RARCH_MENU_TOGGLE;
 
@@ -233,7 +229,7 @@ static int main_entry_iterate_menu_preinit(args_type() args)
 
 static int main_entry_iterate_menu(args_type() args)
 {
-   if (menu_iterate())
+   if (menu_iterate(driver.menu))
    {
       if (frontend_ctx && frontend_ctx->process_events)
          frontend_ctx->process_events(args);
@@ -288,7 +284,7 @@ void main_exit(args_type() args)
 #ifdef HAVE_MENU
    g_extern.system.shutdown = false;
 
-   menu_free();
+   menu_free(driver.menu);
 
    if (g_extern.config_save_on_exit && *g_extern.config_path)
    {
@@ -338,13 +334,15 @@ returntype main_entry(signature())
    declare_argv();
    args_type() args = (args_type())args_initial_ptr();
 
-   if (frontend_init_enable)
-   {
-      frontend_ctx = (frontend_ctx_driver_t*)frontend_ctx_init_first();
+   frontend_ctx = (frontend_ctx_driver_t*)frontend_ctx_init_first();
 
-      if (frontend_ctx && frontend_ctx->init)
-         frontend_ctx->init(args);
+   if (!frontend_ctx)
+   {
+      RARCH_WARN("Frontend context could not be initialized.\n");
    }
+
+   if (frontend_ctx && frontend_ctx->init)
+      frontend_ctx->init(args);
 
    if (!ra_preinited)
    {
@@ -365,21 +363,25 @@ returntype main_entry(signature())
    }
 
 #if defined(HAVE_MENU)
-   if (menu_init_enable)
-      menu_init();
+   driver.menu = (rgui_handle_t*)menu_init();
+
+   if (!driver.menu)
+   {
+      RARCH_ERR("Couldn't initialize menu, exiting...\n");
+      returnfunc();
+   }
 
    if (frontend_ctx && frontend_ctx->process_args)
       frontend_ctx->process_args(argc, argv, args);
 
-   if (!initial_lifecycle_state_preinit)
-      g_extern.lifecycle_state |= initial_menu_lifecycle_state;
+   g_extern.lifecycle_state |= initial_menu_lifecycle_state;
 
    if (attempt_load_game_push_history)
    {
       // If we started a ROM directly from command line,
       // push it to ROM history.
       if (!g_extern.libretro_dummy)
-         menu_rom_history_push_current();
+         menu_rom_history_push_current(driver.menu);
    }
 
    while (!main_entry_iterate(signature_expand(), args));

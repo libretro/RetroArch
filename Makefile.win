@@ -5,6 +5,7 @@ OBJDIR := obj-w32
 
 OBJ = frontend/frontend.o \
 		frontend/frontend_context.o \
+		frontend/platform/platform_null.o \
 		retroarch.o \
 		file.o \
 		file_path.o \
@@ -34,6 +35,7 @@ OBJ = frontend/frontend.o \
 		media/rarch.o \
 		gfx/context/win32_common.o \
 		gfx/scaler/scaler.o \
+		gfx/shader_common.o \
 		gfx/scaler/pixconv.o \
 		gfx/scaler/scaler_int.o \
 		gfx/scaler/scaler_filter.o \

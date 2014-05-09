@@ -6,6 +6,7 @@ OBJDIR := obj-unix
 
 OBJ = frontend/frontend.o \
 		frontend/frontend_context.o \
+		frontend/platform/platform_null.o \
 		retroarch.o \
 		file.o \
 		file_path.o \
@@ -30,6 +31,7 @@ OBJ = frontend/frontend.o \
 		conf/config_file.o \
 		screenshot.o \
 		gfx/scaler/scaler.o \
+		gfx/shader_common.o \
 		gfx/shader_parse.o \
 		gfx/scaler/pixconv.o \
 		gfx/scaler/scaler_int.o \

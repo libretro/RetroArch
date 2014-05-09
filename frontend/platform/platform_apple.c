@@ -103,16 +103,19 @@ void apple_refresh_config(void)
 
 int apple_rarch_load_content(int argc, char* argv[])
 {
+   rgui_handle_t *rgui;
    rarch_main_clear_state();
    rarch_init_msg_queue();
    
    if (rarch_main_init(argc, argv))
       return 1;
    
-   menu_init();
+   driver.menu = (rgui_handle_t*)menu_init();
+    
+   rgui = (rgui_handle_t*)driver.menu;
    
-   if (!g_extern.libretro_dummy)
-      menu_rom_history_push_current();   
+   if (!g_extern.libretro_dummy && rgui)
+      menu_rom_history_push_current(rgui);
    
    g_extern.lifecycle_state |= 1ULL << MODE_GAME;
    

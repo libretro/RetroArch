@@ -80,7 +80,6 @@ static bool shader_parse_pass(config_file_t *conf, struct gfx_shader_pass *pass,
    // Smooth
    char filter_name_buf[64];
    print_buf(filter_name_buf, "filter_linear%u", i);
-
    bool smooth = false;
    if (config_get_bool(conf, filter_name_buf, &smooth))
       pass->filter = smooth ? RARCH_FILTER_LINEAR : RARCH_FILTER_NEAREST;
@@ -244,7 +243,6 @@ static bool shader_parse_textures(config_file_t *conf, struct gfx_shader *shader
 
       char id_filter[64];
       print_buf(id_filter, "%s_linear", id);
-
       bool smooth = false;
       if (config_get_bool(conf, id_filter, &smooth))
          shader->lut[shader->luts].filter = smooth ? RARCH_FILTER_LINEAR : RARCH_FILTER_NEAREST;
@@ -256,6 +254,14 @@ static bool shader_parse_textures(config_file_t *conf, struct gfx_shader *shader
       char wrap_mode[64];
       if (config_get_array(conf, id_wrap, wrap_mode, sizeof(wrap_mode)))
          shader->lut[shader->luts].wrap = wrap_str_to_mode(wrap_mode);
+
+      char id_mipmap[64];
+      print_buf(id_mipmap, "%s_mipmap", id);
+      bool mipmap = false;
+      if (config_get_bool(conf, id_mipmap, &mipmap))
+         shader->lut[shader->luts].mipmap = mipmap;
+      else
+         shader->lut[shader->luts].mipmap = false;
    }
 
    return true;
@@ -1084,11 +1090,14 @@ void gfx_shader_write_conf_cgp(config_file_t *conf, const struct gfx_shader *sha
          if (shader->lut[i].filter != RARCH_FILTER_UNSPEC)
          {
             print_buf(key, "%s_linear", shader->lut[i].id);
-            config_set_bool(conf, key, shader->lut[i].filter != RARCH_FILTER_LINEAR);
+            config_set_bool(conf, key, shader->lut[i].filter == RARCH_FILTER_LINEAR);
          }
 
          print_buf(key, "%s_wrap_mode", shader->lut[i].id);
          config_set_string(conf, key, wrap_mode_to_str(shader->lut[i].wrap));
+
+         print_buf(key, "%s_mipmap", shader->lut[i].id);
+         config_set_bool(conf, key, shader->lut[i].mipmap);
       }
    }
 
