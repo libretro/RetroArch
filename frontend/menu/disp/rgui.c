@@ -621,6 +621,16 @@ void rgui_set_texture(void *data, bool enable)
             enable, rgui->width, rgui->height, 1.0f);
 }
 
+static void rgui_init_core_info(void *data)
+{
+   rgui_handle_t *rgui = (rgui_handle_t*)data;
+
+   core_info_list_free(rgui->core_info);
+   rgui->core_info = NULL;
+   if (*g_settings.libretro_directory)
+      rgui->core_info = core_info_list_new(g_settings.libretro_directory);
+}
+
 const menu_ctx_driver_t menu_ctx_rgui = {
    rgui_set_texture,
    rgui_render_messagebox,
@@ -644,6 +654,7 @@ const menu_ctx_driver_t menu_ctx_rgui = {
    NULL,
    NULL,
    NULL,
+   rgui_init_core_info,
    &menu_ctx_backend_common,
    "rgui",
 };

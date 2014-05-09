@@ -191,8 +191,6 @@ void menu_free(void *data);
 
 void menu_ticker_line(char *buf, size_t len, unsigned tick, const char *str, bool selected);
 
-void menu_init_core_info(void *data);
-
 void load_menu_game_prepare(void *data);
 void load_menu_game_prepare_dummy(void *data);
 bool load_menu_game(void *data);

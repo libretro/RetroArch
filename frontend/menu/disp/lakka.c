@@ -904,12 +904,7 @@ static void *lakka_init(void)
 
    init_font(gl, g_settings.video.font_path, 6, 1440, 900);
 
-   menu_init_core_info(rgui);
-
-   rgui->core_info = core_info_list_new(*g_settings.libretro_directory ? g_settings.libretro_directory : "/usr/lib/libretro");
-
-   num_categories = rgui->core_info ? rgui->core_info->count + 1 : 1;
-
+   lakka_init_core_info(rgui);
    lakka_init_assets(rgui);
 
    categories = realloc(categories, num_categories * sizeof(menu_category));
@@ -923,22 +918,22 @@ static void *lakka_init(void)
       struct font_output_list out;
       core_info_t corenfo = rgui->core_info->list[i];
 
-      strcpy(core_id, basename(corenfo.path));
-      strcpy(core_id, str_replace(core_id, ".so", ""));
-      strcpy(core_id, str_replace(core_id, ".dll", ""));
-      strcpy(core_id, str_replace(core_id, ".dylib", ""));
-      strcpy(core_id, str_replace(core_id, "-libretro", ""));
-      strcpy(core_id, str_replace(core_id, "_libretro", ""));
-      strcpy(core_id, str_replace(core_id, "libretro-", ""));
-      strcpy(core_id, str_replace(core_id, "libretro_", ""));
+      strlcpy(core_id, basename(corenfo.path), sizeof(core_id));
+      strlcpy(core_id, str_replace(core_id, ".so", ""), sizeof(core_id));
+      strlcpy(core_id, str_replace(core_id, ".dll", ""), sizeof(core_id));
+      strlcpy(core_id, str_replace(core_id, ".dylib", ""), sizeof(core_id));
+      strlcpy(core_id, str_replace(core_id, "-libretro", ""), sizeof(core_id));
+      strlcpy(core_id, str_replace(core_id, "_libretro", ""), sizeof(core_id));
+      strlcpy(core_id, str_replace(core_id, "libretro-", ""), sizeof(core_id));
+      strlcpy(core_id, str_replace(core_id, "libretro_", ""), sizeof(core_id));
 
-      strcpy(texturepath, "/usr/share/retroarch/");
-      strcat(texturepath, core_id);
-      strcat(texturepath, ".png");
+      strlcpy(texturepath, "/usr/share/retroarch/", sizeof(texturepath));
+      strlcat(texturepath, core_id, sizeof(texturepath));
+      strlcat(texturepath, ".png", sizeof(texturepath));
 
-      strcpy(gametexturepath, "/usr/share/retroarch/");
-      strcat(gametexturepath, core_id);
-      strcat(gametexturepath, "-game.png");
+      strlcpy(gametexturepath, sizeof(gametexturepath), "/usr/share/retroarch/");
+      strlcat(gametexturepath, core_id, sizeof(gametexturepath));
+      strlcat(gametexturepath, "-game.png", sizeof(gametexturepath));
 
       mcat.name        = corenfo.display_name;
       mcat.libretro    = corenfo.path;
@@ -990,6 +985,17 @@ static int lakka_input_postprocess(void *data, uint64_t old_state)
    return ret;
 }
 
+static void lakka_init_core_info(void *data)
+{
+   rgui_handle_t *rgui = (rgui_handle_t*)data;
+
+   core_info_list_free(rgui->core_info);
+   rgui->core_info = NULL;
+
+   rgui->core_info = core_info_list_new(*g_settings.libretro_directory ? g_settings.libretro_directory : "/usr/lib/libretro");
+
+   num_categories = rgui->core_info ? rgui->core_info->count + 1 : 1;
+}
 
 const menu_ctx_driver_t menu_ctx_lakka = {
    lakka_set_texture,
@@ -1014,6 +1020,7 @@ const menu_ctx_driver_t menu_ctx_lakka = {
    NULL,
    NULL,
    NULL,
+   lakka_init_core_info,
    &menu_ctx_backend_lakka,
    "lakka",
 };
