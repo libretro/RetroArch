@@ -623,9 +623,12 @@ void lakka_render(void *data)
    struct font_output_list msg;
    rgui_handle_t *rgui = (rgui_handle_t*)data;
 
+   if (!rgui)
+      return;
+
    update_tweens((float)rgui->delta/10000);
 
-   gl_t *gl = (gl_t*)data;
+   gl_t *gl = (gl_t*)driver.video_data;
 
    glViewport(0, 0, gl->win_width, gl->win_height);
 
@@ -756,8 +759,6 @@ static void lakka_init_assets(void *data)
    if (!rgui)
       return;
 
-   gl_t *gl = (gl_t*)data;
-
    settings_icon = png_texture_load("/usr/share/retroarch/settings.png", &dim, &dim);
    arrow_icon = png_texture_load("/usr/share/retroarch/arrow.png", &dim, &dim);
    run_icon = png_texture_load("/usr/share/retroarch/run.png", &dim, &dim);
@@ -771,7 +772,7 @@ static void lakka_init_assets(void *data)
    font_driver->render_msg(font, "Resume", &resume_label);
 }
 
-void lakka_init_settings()
+void lakka_init_settings(void)
 {
    gl_t *gl = (gl_t*)driver.video_data;
 
@@ -852,8 +853,10 @@ void lakka_init_items(int i, menu_category *mcat, core_info_t corenfo, char* gam
          mcat->items[n].num_subitems   = 5;
          mcat->items[n].subitems       = calloc(mcat->items[n].num_subitems, sizeof(menu_subitem));
 
-         for (int k = 0; k < mcat->items[n].num_subitems; k++) {
-            switch (k) {
+         for (int k = 0; k < mcat->items[n].num_subitems; k++)
+         {
+            switch (k)
+            {
                case 0:
                   mcat->items[n].subitems[k].name = "Run";
                   mcat->items[n].subitems[k].icon = run_icon;
@@ -892,8 +895,12 @@ void lakka_init_items(int i, menu_category *mcat, core_info_t corenfo, char* gam
 static void *lakka_init(void)
 {
    int i;
+   gl_t *gl;
    rgui_handle_t *rgui = (rgui_handle_t*)calloc(1, sizeof(*rgui));
-   gl_t *gl = (gl_t*)driver.video_data;
+   if (!rgui)
+      return NULL;
+
+   gl = (gl_t*)driver.video_data;
 
    init_font(gl, g_settings.video.font_path, 6, 1440, 900);
 
@@ -903,7 +910,7 @@ static void *lakka_init(void)
 
    num_categories = rgui->core_info ? rgui->core_info->count + 1 : 1;
 
-   lakka_init_assets(gl);
+   lakka_init_assets(rgui);
 
    categories = realloc(categories, num_categories * sizeof(menu_category));
 
@@ -952,7 +959,7 @@ static void *lakka_init(void)
 
    rgui->last_time = rarch_get_time_usec();
 
-   return NULL;
+   return rgui;
 }
 
 static void lakka_free_assets(void *data)
@@ -968,11 +975,11 @@ static void lakka_free(void *data)
 
 static int lakka_input_postprocess(void *data, uint64_t old_state)
 {
-   (void)data;
+   rgui_handle_t *rgui = (rgui_handle_t*)data;
 
    int ret = 0;
 
-   if ((rgui->trigger_state & (1ULL << RARCH_MENU_TOGGLE)) &&
+   if ((rgui && rgui->trigger_state & (1ULL << RARCH_MENU_TOGGLE)) &&
          g_extern.main_is_init &&
          !g_extern.libretro_dummy)
    {
