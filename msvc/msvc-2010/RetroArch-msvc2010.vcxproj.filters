@@ -234,6 +234,10 @@
     <ClCompile Include="..\..\frontend\menu\backend\menu_common_backend.c">
       <Filter>frontend\menu\backend</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\settings_data.c" />
+    <ClCompile Include="..\..\gfx\shader_common.c">
+      <Filter>gfx</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="resource.h" />

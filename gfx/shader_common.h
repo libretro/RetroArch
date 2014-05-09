@@ -56,9 +56,12 @@ struct gl_shader_backend
    enum rarch_shader_type type;
 };
 
+#ifdef HAVE_OPENGL
 void gl_load_texture_data(GLuint obj, const struct texture_image *img,
       GLenum wrap, bool linear, bool mipmap);
 bool gl_load_luts(const struct gfx_shader *generic_shader, GLuint *lut_textures);
+
+#endif
 
 #endif
 
