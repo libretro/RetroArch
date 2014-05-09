@@ -943,7 +943,7 @@ static void *lakka_init(void)
 
    gl = (gl_t*)driver.video_data;
 
-   init_font(gl, g_settings.video.font_path, 6, 1440, 900);
+   init_font(gl, g_settings.video.font_path, 6, gl->win_width, gl->win_height);
 
    lakka_init_core_info(rgui);
    lakka_init_assets(rgui);
