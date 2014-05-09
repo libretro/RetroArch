@@ -490,21 +490,17 @@ static void gl_create_fbo_textures(void *data)
       if (fp_fbo && !gl->has_fp_fbo)
          RARCH_ERR("Floating-point FBO was requested, but is not supported. Falling back to UNORM.\n");
 
+#ifndef HAVE_OPENGLES2
       if (fp_fbo && gl->has_fp_fbo)
       {
          RARCH_LOG("FBO pass #%d is floating-point.\n", i);
          // GLES and GL are inconsistent in which arguments to pass.
-#ifdef HAVE_OPENGLES2
-         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 
-               gl->fbo_rect[i].width, gl->fbo_rect[i].height,
-               0, GL_RGBA, GL_FLOAT, NULL);
-#else
          glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F,
                gl->fbo_rect[i].width, gl->fbo_rect[i].height,
                0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-#endif
       }
       else
+#endif
       {
 #ifdef HAVE_OPENGLES2
          glTexImage2D(GL_TEXTURE_2D,
@@ -1757,7 +1753,7 @@ static bool resolve_extensions(gl_t *gl)
       RARCH_LOG("[GL]: Extension GL_EXT_unpack_subimage, can copy textures faster using UNPACK_ROW_LENGTH.\n");
       gl->support_unpack_row_length = true;
    }
-   gl->has_fp_fbo = gl_query_extension(gl, "OES_texture_float_linear");
+   // No extensions for float FBO currently.
 #else
 #ifdef HAVE_FBO
    // Float FBO is core in 3.2.
