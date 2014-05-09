@@ -99,11 +99,11 @@ GLfloat font_color_dark[16];
 GLuint texture;
 
 // Move the categories left or right depending on the menu_active_category variable
-void lakka_switch_categories()
+void lakka_switch_categories(void)
 {
    // translation
    add_tween(DELAY, -menu_active_category * HSPACING, &all_categories_x, &inOutQuad);
-   
+
    // alpha tweening
    for (int i = 0; i < num_categories; i++)
    {
@@ -115,7 +115,7 @@ void lakka_switch_categories()
       for (int j = 0; j < categories[i].num_items; j++)
       {
          float ia = (i != menu_active_category     ) ? 0   : 
-                    (j == categories[i].active_item) ? 1.0 : 0.5;
+            (j == categories[i].active_item) ? 1.0 : 0.5;
          add_tween(DELAY, ia, &categories[i].items[j].alpha, &inOutQuad);
       }
    }
@@ -125,11 +125,12 @@ void lakka_switch_items()
 {
    for (int j = 0; j < categories[menu_active_category].num_items; j++)
    {
-      float ia = (j == categories[menu_active_category].active_item) ? 1.0 : 0.5;
-      float iz = (j == categories[menu_active_category].active_item) ? I_ACTIVE_ZOOM : I_PASSIVE_ZOOM;
-      float iy = (j == categories[menu_active_category].active_item) ? VSPACING*2.5 :
-                 (j  < categories[menu_active_category].active_item) ? VSPACING*(j-categories[menu_active_category].active_item - 1) :
-                                                                       VSPACING*(j-categories[menu_active_category].active_item + 3);
+      float ia, iz, iy;
+      ia = (j == categories[menu_active_category].active_item) ? 1.0 : 0.5;
+      iz = (j == categories[menu_active_category].active_item) ? I_ACTIVE_ZOOM : I_PASSIVE_ZOOM;
+      iy = (j == categories[menu_active_category].active_item) ? VSPACING*2.5 :
+         (j  < categories[menu_active_category].active_item) ? VSPACING*(j-categories[menu_active_category].active_item - 1) :
+         VSPACING*(j-categories[menu_active_category].active_item + 3);
 
       add_tween(DELAY, ia, &categories[menu_active_category].items[j].alpha, &inOutQuad);
       add_tween(DELAY, iz, &categories[menu_active_category].items[j].zoom,  &inOutQuad);
@@ -139,21 +140,28 @@ void lakka_switch_items()
 
 void lakka_switch_subitems ()
 {
+   int k;
    menu_item ai = categories[menu_active_category].items[categories[menu_active_category].active_item];
 
-   for (int k = 0; k < ai.num_subitems; k++) {
-      // Above items
-      if (k < ai.active_subitem) {
+   for (k = 0; k < ai.num_subitems; k++)
+   {
+      if (k < ai.active_subitem)
+      {
+         // Above items
          add_tween(DELAY, 0.5, &ai.subitems[k].alpha, &inOutQuad);
          add_tween(DELAY, VSPACING*(k-ai.active_subitem + 2), &ai.subitems[k].y, &inOutQuad);
          add_tween(DELAY, I_PASSIVE_ZOOM, &ai.subitems[k].zoom, &inOutQuad);
-      // Active item
-      } else if (k == ai.active_subitem) {
+      }
+      else if (k == ai.active_subitem)
+      {
+         // Active item
          add_tween(DELAY, 1.0, &ai.subitems[k].alpha, &inOutQuad);
          add_tween(DELAY, VSPACING*2.5, &ai.subitems[k].y, &inOutQuad);
          add_tween(DELAY, I_ACTIVE_ZOOM, &ai.subitems[k].zoom, &inOutQuad);
-      // Under items
-      } else if (k > ai.active_subitem) {
+      }
+      else if (k > ai.active_subitem)
+      {
+         // Under items
          add_tween(DELAY, 0.5, &ai.subitems[k].alpha, &inOutQuad);
          add_tween(DELAY, VSPACING*(k-ai.active_subitem + 3), &ai.subitems[k].y, &inOutQuad);
          add_tween(DELAY, I_PASSIVE_ZOOM, &ai.subitems[k].zoom, &inOutQuad);
@@ -161,13 +169,19 @@ void lakka_switch_subitems ()
    }
 }
 
-void lakka_reset_submenu()
+void lakka_reset_submenu(void)
 {
-   if (! (g_extern.main_is_init && !g_extern.libretro_dummy && strcmp(g_extern.fullpath, categories[menu_active_category].items[categories[menu_active_category].active_item].rom) == 0)) { // Keeps active submenu state (do we really want that?)
+   int i, j, k;
+   if (!(g_extern.main_is_init && !g_extern.libretro_dummy && strcmp(g_extern.fullpath, categories[menu_active_category].items[categories[menu_active_category].active_item].rom) == 0))
+   {
+      // Keeps active submenu state (do we really want that?)
       categories[menu_active_category].items[categories[menu_active_category].active_item].active_subitem = 0;
-      for (int i = 0; i < num_categories; i++) {
-         for (int j = 0; j < categories[i].num_items; j++) {
-            for (int k = 0; k < categories[i].items[j].num_subitems; k++) {
+      for (i = 0; i < num_categories; i++)
+      {
+         for (j = 0; j < categories[i].num_items; j++)
+         {
+            for (k = 0; k < categories[i].items[j].num_subitems; k++)
+            {
                categories[i].items[j].subitems[k].alpha = 0;
                categories[i].items[j].subitems[k].zoom = k == categories[i].items[j].active_subitem ? I_ACTIVE_ZOOM : I_PASSIVE_ZOOM;
                categories[i].items[j].subitems[k].y = k == 0 ? VSPACING*2.5 : VSPACING*(3+k);
@@ -177,61 +191,75 @@ void lakka_reset_submenu()
    }
 }
 
-void lakka_open_submenu ()
+void lakka_open_submenu(void)
 {
+   int i, j, k;
    add_tween(DELAY, -HSPACING * (menu_active_category+1), &all_categories_x, &inOutQuad);
 
    // Reset contextual menu style
    lakka_reset_submenu();
    
-   for (int i = 0; i < num_categories; i++) {
-      if (i == menu_active_category) {
+   for (i = 0; i < num_categories; i++)
+   {
+      if (i == menu_active_category)
+      {
          add_tween(DELAY, 1.0, &categories[i].alpha, &inOutQuad);
-         for (int j = 0; j < categories[i].num_items; j++) {
-            if (j == categories[i].active_item) {
-               for (int k = 0; k < categories[i].items[j].num_subitems; k++) {
-                  if (k == categories[i].items[j].active_subitem) {
+         for (j = 0; j < categories[i].num_items; j++)
+         {
+            if (j == categories[i].active_item)
+            {
+               for (k = 0; k < categories[i].items[j].num_subitems; k++)
+               {
+                  if (k == categories[i].items[j].active_subitem)
+                  {
                      add_tween(DELAY, 1.0, &categories[i].items[j].subitems[k].alpha, &inOutQuad);
                      add_tween(DELAY, I_ACTIVE_ZOOM, &categories[i].items[j].subitems[k].zoom, &inOutQuad);
-                  } else {
+                  }
+                  else
+                  {
                      add_tween(DELAY, 0.5, &categories[i].items[j].subitems[k].alpha, &inOutQuad);
                      add_tween(DELAY, I_PASSIVE_ZOOM, &categories[i].items[j].subitems[k].zoom, &inOutQuad);
                   }
                }
-            } else {
-               add_tween(DELAY, 0, &categories[i].items[j].alpha, &inOutQuad);
             }
+            else
+               add_tween(DELAY, 0, &categories[i].items[j].alpha, &inOutQuad);
          }
-      } else {
-         add_tween(DELAY, 0, &categories[i].alpha, &inOutQuad);
       }
+      else
+         add_tween(DELAY, 0, &categories[i].alpha, &inOutQuad);
    }
 }
 
-void lakka_close_submenu ()
+void lakka_close_submenu(void)
 {
+   int i, j, k;
    add_tween(DELAY, -HSPACING * menu_active_category, &all_categories_x, &inOutQuad);
    
-   for (int i = 0; i < num_categories; i++) {
-      if (i == menu_active_category) {
+   for (i = 0; i < num_categories; i++)
+   {
+      if (i == menu_active_category)
+      {
          add_tween(DELAY, 1.0, &categories[i].alpha, &inOutQuad);
          add_tween(DELAY, C_ACTIVE_ZOOM, &categories[i].zoom, &inOutQuad);
-         for (int j = 0; j < categories[i].num_items; j++) {
-            if (j == categories[i].active_item) {
+         for (j = 0; j < categories[i].num_items; j++)
+         {
+            if (j == categories[i].active_item)
+            {
                add_tween(DELAY, 1.0, &categories[i].items[j].alpha, &inOutQuad);
-               for (int k = 0; k < categories[i].items[j].num_subitems; k++) {
+               for (k = 0; k < categories[i].items[j].num_subitems; k++)
                   add_tween(DELAY, 0, &categories[i].items[j].subitems[k].alpha, &inOutQuad);
-               }
-            } else {
-               add_tween(DELAY, 0.5, &categories[i].items[j].alpha, &inOutQuad);
             }
+            else
+               add_tween(DELAY, 0.5, &categories[i].items[j].alpha, &inOutQuad);
          }
-      } else {
+      }
+      else
+      {
          add_tween(DELAY, 0.5, &categories[i].alpha, &inOutQuad);
          add_tween(DELAY, C_PASSIVE_ZOOM, &categories[i].zoom, &inOutQuad);
-         for (int j = 0; j < categories[i].num_items; j++) {
+         for (j = 0; j < categories[i].num_items; j++)
             add_tween(DELAY, 0, &categories[i].items[j].alpha, &inOutQuad);
-         }
       }
    }
 }
@@ -349,15 +377,18 @@ static void adjust_power_of_two(gl_t *gl, struct font_rect *geom)
 
 static void copy_glyph(const struct font_output *head, const struct font_rect *geom, uint32_t *buffer, unsigned width, unsigned height)
 {
-   int h, w;
-   // head has top-left oriented coords.
-   int x = head->off_x - geom->x;
-   int y = head->off_y - geom->y;
-   y     = height - head->height - y - 1;
+   int h, w, x, y, font_width, font_height;
+   uint8_t *src;
+   uint32_t *dst;
 
-   const uint8_t *src = head->output;
-   int font_width  = head->width  + ((x < 0) ? x : 0);
-   int font_height = head->height + ((y < 0) ? y : 0);
+   // head has top-left oriented coords.
+   x = head->off_x - geom->x;
+   y = head->off_y - geom->y;
+   y = height - head->height - y - 1;
+
+   src = (uint8_t*)head->output;
+   font_width  = head->width  + ((x < 0) ? x : 0);
+   font_height = head->height + ((y < 0) ? y : 0);
 
    if (x < 0)
    {
@@ -377,7 +408,7 @@ static void copy_glyph(const struct font_output *head, const struct font_rect *g
    if (y + font_height > (int)height)
       font_height = height - y;
 
-   uint32_t *dst = buffer + y * width + x;
+   dst = (uint32_t*)(buffer + y * width + x);
    for (h = 0; h < font_height; h++, dst += width, src += head->pitch)
    {
       uint8_t *d = (uint8_t*)dst;
@@ -534,10 +565,6 @@ void lakka_draw_icon(void *data, GLuint texture, float x, float y, float alpha, 
 {
    gl_t *gl = (gl_t*)data;
 
-   glViewport(x, 900 - y, dim, dim);
-
-   glEnable(GL_BLEND);
-
    GLfloat color[] = {
       1.0f, 1.0f, 1.0f, alpha,
       1.0f, 1.0f, 1.0f, alpha,
@@ -551,6 +578,10 @@ void lakka_draw_icon(void *data, GLuint texture, float x, float y, float alpha, 
       0, 1,
       1, 1
    };
+
+   glViewport(x, 900 - y, dim, dim);
+
+   glEnable(GL_BLEND);
 
    gl->coords.vertex = vtest;
    gl->coords.tex_coord = vtest;
@@ -591,6 +622,8 @@ static void lakka_set_texture(void *data, bool enable)
 
 void lakka_render(void *data)
 {
+   int i, j, k;
+   struct font_output_list msg;
    // Throttle in case VSync is broken (avoid 1000+ FPS RGUI).
    /*retro_time_t time, delta, target_msec, sleep_msec;
    time = rarch_get_time_usec();
@@ -609,10 +642,10 @@ void lakka_render(void *data)
 
    lakka_draw_background(gl);
 
-   for(int i = 0; i < num_categories; i++)
+   for(i = 0; i < num_categories; i++)
    {
       // draw items
-      for(int j = 0; j < categories[i].num_items; j++)
+      for(j = 0; j < categories[i].num_items; j++)
       {
          lakka_draw_icon(gl, 
             categories[i].items[j].icon, 
@@ -624,9 +657,11 @@ void lakka_render(void *data)
 
          if (i == menu_active_category && j == categories[i].active_item && depth == 1) // performance improvement
          {
-            for(int k = 0; k < categories[i].items[j].num_subitems; k++)
+            for(k = 0; k < categories[i].items[j].num_subitems; k++)
             {
-               if (k == 0 && g_extern.main_is_init && !g_extern.libretro_dummy && strcmp(g_extern.fullpath, categories[menu_active_category].items[categories[menu_active_category].active_item].rom) == 0)
+               if (k == 0 && g_extern.main_is_init
+                     && !g_extern.libretro_dummy
+                     && strcmp(g_extern.fullpath, categories[menu_active_category].items[categories[menu_active_category].active_item].rom) == 0)
                {
                   lakka_draw_icon(gl, 
                      resume_icon, 
@@ -645,73 +680,81 @@ void lakka_render(void *data)
                else if (k == 0)
                {
                   lakka_draw_icon(gl, 
-                     run_icon, 
-                     156 + HSPACING*(i+2) + all_categories_x - dim/2.0, 
-                     300 + categories[i].items[j].subitems[k].y + dim/2.0, 
-                     categories[i].items[j].subitems[k].alpha, 
-                     0, 
-                     categories[i].items[j].subitems[k].zoom);
+                        run_icon, 
+                        156 + HSPACING*(i+2) + all_categories_x - dim/2.0, 
+                        300 + categories[i].items[j].subitems[k].y + dim/2.0, 
+                        categories[i].items[j].subitems[k].alpha, 
+                        0, 
+                        categories[i].items[j].subitems[k].zoom);
                   lakka_draw_text(gl, 
-                     run_label, 
-                     156 + HSPACING*(i+2) + all_categories_x + dim/2.0, 
-                     300 + categories[i].items[j].subitems[k].y + 15, 
-                     1, 
-                     categories[i].items[j].subitems[k].alpha);
-               } else if (g_extern.main_is_init && !g_extern.libretro_dummy && strcmp(g_extern.fullpath, categories[menu_active_category].items[categories[menu_active_category].active_item].rom) == 0)
+                        run_label, 
+                        156 + HSPACING*(i+2) + all_categories_x + dim/2.0, 
+                        300 + categories[i].items[j].subitems[k].y + 15, 
+                        1, 
+                        categories[i].items[j].subitems[k].alpha);
+               }
+               else if (g_extern.main_is_init && 
+                     !g_extern.libretro_dummy &&
+                     strcmp(g_extern.fullpath, categories[menu_active_category].items[categories[menu_active_category].active_item].rom) == 0)
                {
-               lakka_draw_icon(gl, 
-                  categories[i].items[j].subitems[k].icon, 
-                  156 + HSPACING*(i+2) + all_categories_x - dim/2.0, 
-                  300 + categories[i].items[j].subitems[k].y + dim/2.0, 
-                  categories[i].items[j].subitems[k].alpha, 
-                  0, 
-                  categories[i].items[j].subitems[k].zoom);
-               /*if category.prefix ~= "settings" and  (k == 2 or k == 3) and item.slot == -1 then
-                  love.graphics.print(subitem.name .. " <" .. item.slot .. " (auto)>", 256 + (HSPACING*(i+1)) + all_categories.x, 300-15 + subitem.y)
-               elseif category.prefix ~= "settings" and  (k == 2 or k == 3) then
-                  love.graphics.print(subitem.name .. " <" .. item.slot .. ">", 256 + (HSPACING*(i+1)) + all_categories.x, 300-15 + subitem.y)
-               else*/
+                  lakka_draw_icon(gl, 
+                        categories[i].items[j].subitems[k].icon, 
+                        156 + HSPACING*(i+2) + all_categories_x - dim/2.0, 
+                        300 + categories[i].items[j].subitems[k].y + dim/2.0, 
+                        categories[i].items[j].subitems[k].alpha, 
+                        0, 
+                        categories[i].items[j].subitems[k].zoom);
+                  /*if category.prefix ~= "settings" and  (k == 2 or k == 3) and item.slot == -1 then
+                    love.graphics.print(subitem.name .. " <" .. item.slot .. " (auto)>", 256 + (HSPACING*(i+1)) + all_categories.x, 300-15 + subitem.y)
+                    elseif category.prefix ~= "settings" and  (k == 2 or k == 3) then
+                    love.graphics.print(subitem.name .. " <" .. item.slot .. ">", 256 + (HSPACING*(i+1)) + all_categories.x, 300-15 + subitem.y)
+                    else*/
                   lakka_draw_text(gl, 
-                     categories[i].items[j].subitems[k].out, 
-                     156 + HSPACING*(i+2) + all_categories_x + dim/2.0, 
-                     300 + categories[i].items[j].subitems[k].y + 15, 
-                     1, 
-                     categories[i].items[j].subitems[k].alpha);
-               /*end*/
+                        categories[i].items[j].subitems[k].out, 
+                        156 + HSPACING*(i+2) + all_categories_x + dim/2.0, 
+                        300 + categories[i].items[j].subitems[k].y + 15, 
+                        1, 
+                        categories[i].items[j].subitems[k].alpha);
+                  /*end*/
                }
             }
          }
 
-         if (depth == 0) {
-            if (i == menu_active_category && j > categories[menu_active_category].active_item - 4 && j < categories[menu_active_category].active_item + 10) // performance improvement
+         if (depth == 0)
+         {
+            if (i == menu_active_category &&
+                  j > categories[menu_active_category].active_item - 4 &&
+                  j < categories[menu_active_category].active_item + 10) // performance improvement
                lakka_draw_text(gl, 
-                  categories[i].items[j].out, 
-                  156 + HSPACING*(i+1) + all_categories_x + dim/2.0, 
-                  300 + categories[i].items[j].y + 15, 
-                  1, 
-                  categories[i].items[j].alpha);
-         } else {
+                     categories[i].items[j].out, 
+                     156 + HSPACING*(i+1) + all_categories_x + dim/2.0, 
+                     300 + categories[i].items[j].y + 15, 
+                     1, 
+                     categories[i].items[j].alpha);
+         }
+         else
+         {
             lakka_draw_icon(gl,
-               arrow_icon, 
-               156 + (HSPACING*(i+1)) + all_categories_x + 150 +-dim/2.0, 
-               300 + categories[i].items[j].y + dim/2.0, 
-               categories[i].items[j].alpha,
-               0,
-               categories[i].items[j].zoom);
+                  arrow_icon, 
+                  156 + (HSPACING*(i+1)) + all_categories_x + 150 +-dim/2.0, 
+                  300 + categories[i].items[j].y + dim/2.0, 
+                  categories[i].items[j].alpha,
+                  0,
+                  categories[i].items[j].zoom);
          }
       }
 
       // draw category
       lakka_draw_icon(gl, 
-         categories[i].icon, 
-         156 + (HSPACING*(i+1)) + all_categories_x - dim/2.0, 
-         300 + dim/2.0, 
-         categories[i].alpha, 
-         0, 
-         categories[i].zoom);
+            categories[i].icon, 
+            156 + (HSPACING*(i+1)) + all_categories_x - dim/2.0, 
+            300 + dim/2.0, 
+            categories[i].alpha, 
+            0, 
+            categories[i].zoom);
    }
 
-   struct font_output_list msg = (depth == 0) ? categories[menu_active_category].out : categories[menu_active_category].items[categories[menu_active_category].active_item].out;
+   msg = (depth == 0) ? categories[menu_active_category].out : categories[menu_active_category].items[categories[menu_active_category].active_item].out;
    lakka_draw_text(gl, msg, 15.0, 40.0, 1, 1.0);
 
    gl_set_viewport(gl, gl->win_width, gl->win_height, false, false);
@@ -757,21 +800,23 @@ void lakka_init_settings()
    categories[0] = mcat;
 }
 
-char * str_replace ( const char *string, const char *substr, const char *replacement ){
-   char *tok = NULL;
-   char *newstr = NULL;
-   char *oldstr = NULL;
-   char *head = NULL;
- 
+char * str_replace ( const char *string, const char *substr, const char *replacement)
+{
+   char *tok, *newstr, *oldstr, *head;
+
    /* if either substr or replacement is NULL, duplicate string a let caller handle it */
-   if ( substr == NULL || replacement == NULL ) return strdup (string);
+   if ( substr == NULL || replacement == NULL )
+      return strdup (string);
+
    newstr = strdup (string);
    head = newstr;
-   while ( (tok = strstr ( head, substr ))){
+   while ( (tok = strstr ( head, substr )))
+   {
       oldstr = newstr;
       newstr = malloc ( strlen ( oldstr ) - strlen ( substr ) + strlen ( replacement ) + 1 );
       /*failed to alloc mem, free old string and return NULL */
-      if ( newstr == NULL ){
+      if (newstr == NULL)
+      {
          free (oldstr);
          return NULL;
       }
@@ -788,21 +833,23 @@ char * str_replace ( const char *string, const char *substr, const char *replace
 
 void lakka_init_items(int i, menu_category *mcat, core_info_t corenfo, char* gametexturepath, char* path)
 {
+   int num_items, j, n;
    gl_t *gl = (gl_t*)driver.video_data;
+   struct string_list *list = (struct string_list*)dir_list_new(path, corenfo.supported_extensions, true);
 
-   struct string_list *list = dir_list_new(path, corenfo.supported_extensions, true);
    dir_list_sort(list, true);
 
-   int num_items = list ? list->size : 0;
+   num_items = list ? list->size : 0;
 
-   for (int j = 0; j < num_items; j++) {
+   for (j = 0; j < num_items; j++)
+   {
       if (list->elems[j].attr.b) // is a directory
-      {
-    lakka_init_items(i, mcat, corenfo, gametexturepath, list->elems[j].data);
-      }
+         lakka_init_items(i, mcat, corenfo, gametexturepath, list->elems[j].data);
       else
       {
-         int n = mcat->num_items;
+         struct font_output_list out;
+
+         n = mcat->num_items;
          mcat->num_items++;
          mcat->items = realloc(mcat->items, mcat->num_items * sizeof(menu_item));
 
@@ -847,7 +894,6 @@ void lakka_init_items(int i, menu_category *mcat, core_info_t corenfo, char* gam
             mcat->items[n].subitems[k].out = out;
          }
 
-         struct font_output_list out;
          font_driver->render_msg(font, mcat->items[n].name, &out);
          mcat->items[n].out = out;
       }
@@ -856,8 +902,8 @@ void lakka_init_items(int i, menu_category *mcat, core_info_t corenfo, char* gam
 
 static void *lakka_init(void)
 {
+   int i;
    rgui_handle_t *rgui = (rgui_handle_t*)calloc(1, sizeof(*rgui));
-
    gl_t *gl = (gl_t*)driver.video_data;
 
    init_font(gl, g_settings.video.font_path, 6, 1440, 900);
@@ -874,10 +920,13 @@ static void *lakka_init(void)
 
    lakka_init_settings();
 
-   for (int i = 0; i < num_categories-1; i++) {
+   for (i = 0; i < num_categories-1; i++)
+   {
+      char core_id[256], texturepath[256], gametexturepath[256];
+      menu_category mcat;
+      struct font_output_list out;
       core_info_t corenfo = rgui->core_info->list[i];
 
-      char core_id[256];
       strcpy(core_id, basename(corenfo.path));
       strcpy(core_id, str_replace(core_id, ".so", ""));
       strcpy(core_id, str_replace(core_id, ".dll", ""));
@@ -887,17 +936,14 @@ static void *lakka_init(void)
       strcpy(core_id, str_replace(core_id, "libretro-", ""));
       strcpy(core_id, str_replace(core_id, "libretro_", ""));
 
-      char texturepath[256];
       strcpy(texturepath, "/usr/share/retroarch/");
       strcat(texturepath, core_id);
       strcat(texturepath, ".png");
 
-      char gametexturepath[256];
       strcpy(gametexturepath, "/usr/share/retroarch/");
       strcat(gametexturepath, core_id);
       strcat(gametexturepath, "-game.png");
 
-      menu_category mcat;
       mcat.name        = corenfo.display_name;
       mcat.libretro    = corenfo.path;
       mcat.icon        = png_texture_load(texturepath, &dim, &dim);
@@ -906,10 +952,10 @@ static void *lakka_init(void)
       mcat.active_item = 0;
       mcat.num_items   = 0;
       mcat.items       = calloc(mcat.num_items, sizeof(menu_item));
-      struct font_output_list out;
+
       font_driver->render_msg(font, mcat.name, &out);
       mcat.out = out;
-      
+
       lakka_init_items(i+1, &mcat, corenfo, gametexturepath, g_settings.content_directory);
 
       categories[i+1] = mcat;
