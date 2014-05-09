@@ -180,6 +180,10 @@ typedef struct
    } keyboard;
 
    bool bind_mode_keyboard;
+   retro_time_t time;
+   retro_time_t delta;
+   retro_time_t target_msec;
+   retro_time_t sleep_msec;
 } rgui_handle_t;
 
 void *menu_init(void);

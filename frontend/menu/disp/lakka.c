@@ -121,7 +121,7 @@ void lakka_switch_categories(void)
    }
 }
 
-void lakka_switch_items()
+void lakka_switch_items(void)
 {
    for (int j = 0; j < categories[menu_active_category].num_items; j++)
    {
@@ -138,7 +138,7 @@ void lakka_switch_items()
    }
 }
 
-void lakka_switch_subitems ()
+void lakka_switch_subitems(void)
 {
    int k;
    menu_item ai = categories[menu_active_category].items[categories[menu_active_category].active_item];
@@ -614,27 +614,15 @@ void lakka_draw_icon(void *data, GLuint texture, float x, float y, float alpha, 
 static void lakka_set_texture(void *data, bool enable)
 {
    rgui_handle_t *rgui = (rgui_handle_t*)data;
-
-   //if (driver.video_data && driver.video_poke && driver.video_poke->set_texture_enable)
-      //driver.video_poke->set_texture_frame(driver.video_data, menu_framebuf,
-      //      enable, 1440, 900, 1.0f);
 }
 
 void lakka_render(void *data)
 {
    int i, j, k;
    struct font_output_list msg;
-   // Throttle in case VSync is broken (avoid 1000+ FPS RGUI).
-   /*retro_time_t time, delta, target_msec, sleep_msec;
-   time = rarch_get_time_usec();
-   delta = (time - rgui->last_time) / 1000;
-   target_msec = 750 / g_settings.video.refresh_rate; // Try to sleep less, so we can hopefully rely on FPS logger.
-   sleep_msec = target_msec - delta;
-   if (sleep_msec > 0)
-      rarch_sleep((unsigned int)sleep_msec);
-   rgui->last_time = rarch_get_time_usec();*/
-   
-   //update_tweens((float)delta/10000);
+   rgui_handle_t *rgui = (rgui_handle_t*)data;
+
+   update_tweens((float)rgui->delta/10000);
 
    gl_t *gl = (gl_t*)data;
 

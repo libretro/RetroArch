@@ -485,7 +485,6 @@ void load_menu_game_new_core(void *data)
 
 bool menu_iterate(void *data)
 {
-   retro_time_t time, delta, target_msec, sleep_msec;
    unsigned action;
    static bool initial_held = true;
    static bool first_held = false;
@@ -585,12 +584,13 @@ bool menu_iterate(void *data)
    rarch_render_cached_frame();
 
    // Throttle in case VSync is broken (avoid 1000+ FPS RGUI).
-   time = rarch_get_time_usec();
-   delta = (time - rgui->last_time) / 1000;
-   target_msec = 750 / g_settings.video.refresh_rate; // Try to sleep less, so we can hopefully rely on FPS logger.
-   sleep_msec = target_msec - delta;
-   if (sleep_msec > 0)
-      rarch_sleep((unsigned int)sleep_msec);
+   rgui->time = rarch_get_time_usec();
+   rgui->delta = (rgui->time - rgui->last_time) / 1000;
+   rgui->target_msec = 750 / g_settings.video.refresh_rate; // Try to sleep less, so we can hopefully rely on FPS logger.
+   rgui->sleep_msec = rgui->target_msec - rgui->delta;
+
+   if (rgui->sleep_msec > 0)
+      rarch_sleep((unsigned int)rgui->sleep_msec);
    rgui->last_time = rarch_get_time_usec();
 
    if (driver.video_data && driver.video_poke && driver.video_poke->set_texture_enable)
