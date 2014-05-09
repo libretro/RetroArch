@@ -69,7 +69,6 @@ endif
 
 DEFINES = -DHAVE_CONFIG_H -DHAVE_SCREENSHOTS -DRARCH_INTERNAL -DHAVE_CC_RESAMPLER
 
-#HAVE_LAKKA = 1
 
 ifeq ($(GLOBAL_CONFIG_DIR),)
    GLOBAL_CONFIG_DIR = /etc
@@ -103,8 +102,9 @@ ifeq ($(HAVE_RGUI), 1)
    DEFINES += -DHAVE_MENU
    HAVE_MENU_COMMON = 1
 ifeq ($(HAVE_LAKKA), 1)
-   OBJ += frontend/menu/disp/lakka.o
+   OBJ += frontend/menu/disp/png_texture_load.o frontend/menu/disp/tween.o frontend/menu/backend/menu_lakka_backend.o frontend/menu/disp/lakka.o
    DEFINES += -DHAVE_LAKKA
+   LIBS += -lpng
 endif
 endif
 
