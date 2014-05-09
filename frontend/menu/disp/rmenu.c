@@ -480,6 +480,15 @@ static int rmenu_input_postprocess(void *data, uint64_t old_state)
    return ret;
 }
 
+static void rmenu_init_core_info(void *data)
+{
+   rgui_handle_t *rgui = (rgui_handle_t*)data;
+
+   core_info_list_free(rgui->core_info);
+   rgui->core_info = NULL;
+   if (*g_settings.libretro_directory)
+      rgui->core_info = core_info_list_new(g_settings.libretro_directory);
+}
 
 const menu_ctx_driver_t menu_ctx_rmenu = {
    rmenu_set_texture,
@@ -504,6 +513,7 @@ const menu_ctx_driver_t menu_ctx_rmenu = {
    NULL,
    NULL,
    NULL,
+   rmenu_init_core_info,
    &menu_ctx_backend_common,
    "rmenu",
 };

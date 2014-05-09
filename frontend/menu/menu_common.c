@@ -895,14 +895,3 @@ void menu_build_scroll_indices(void *data, file_list_t *buf)
 
    rgui->scroll_indices[rgui->scroll_indices_size++] = buf->size - 1;
 }
-
-
-void menu_init_core_info(void *data)
-{
-   rgui_handle_t *rgui = (rgui_handle_t*)data;
-
-   core_info_list_free(rgui->core_info);
-   rgui->core_info = NULL;
-   if (*g_settings.libretro_directory)
-      rgui->core_info = core_info_list_new(g_settings.libretro_directory);
-}

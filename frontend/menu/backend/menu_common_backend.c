@@ -1470,7 +1470,9 @@ static int menu_common_iterate(void *data, unsigned action)
             else if (menu_type == RGUI_LIBRETRO_DIR_PATH)
             {
                strlcpy(g_settings.libretro_directory, dir, sizeof(g_settings.libretro_directory));
-               menu_init_core_info(rgui);
+
+               if (driver.menu_ctx && driver.menu_ctx->init_core_info)
+                  driver.menu_ctx->init_core_info(rgui);
                menu_flush_stack_type(rgui, RGUI_SETTINGS_PATH_OPTIONS);
             }
 #ifdef HAVE_DYNAMIC
@@ -1483,7 +1485,8 @@ static int menu_common_iterate(void *data, unsigned action)
             else if (menu_type == RGUI_LIBRETRO_INFO_DIR_PATH)
             {
                strlcpy(g_settings.libretro_info_path, dir, sizeof(g_settings.libretro_info_path));
-               menu_init_core_info(rgui);
+               if (driver.menu_ctx && driver.menu_ctx->init_core_info)
+                  driver.menu_ctx->init_core_info(rgui);
                menu_flush_stack_type(rgui, RGUI_SETTINGS_PATH_OPTIONS);
             }
             else if (menu_type == RGUI_SHADER_DIR_PATH)
@@ -2979,14 +2982,16 @@ static int menu_common_setting_set(void *data, unsigned setting, unsigned action
          if (action == RGUI_ACTION_START)
          {
             *g_settings.libretro_directory = '\0';
-            menu_init_core_info(rgui);
+            if (driver.menu_ctx && driver.menu_ctx->init_core_info)
+               driver.menu_ctx->init_core_info(rgui);
          }
          break;
       case RGUI_LIBRETRO_INFO_DIR_PATH:
          if (action == RGUI_ACTION_START)
          {
             *g_settings.libretro_info_path = '\0';
-            menu_init_core_info(rgui);
+            if (driver.menu_ctx && driver.menu_ctx->init_core_info)
+               driver.menu_ctx->init_core_info(rgui);
          }
          break;
       case RGUI_CONFIG_DIR_PATH:

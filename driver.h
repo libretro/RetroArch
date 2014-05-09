@@ -431,6 +431,7 @@ typedef struct menu_ctx_driver
    void  (*list_delete)(void *, size_t);
    void  (*list_clear)(void *);
    void  (*list_set_selection)(void *);
+   void  (*init_core_info)(void *);
 
    const menu_ctx_driver_backend_t *backend;
    // Human readable string.
