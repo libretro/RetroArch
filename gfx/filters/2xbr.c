@@ -576,12 +576,14 @@ static void twoxbr_generic_xrgb8888(void *data, unsigned width, unsigned height,
       unsigned src_stride, uint32_t *dst, unsigned dst_stride)
 {
    unsigned nextline, finish;
-   struct filter_data *filt = (struct filter_data*)data;
    uint32_t pg_red_mask      = RED_MASK8888;
    uint32_t pg_green_mask    = GREEN_MASK8888;
    uint32_t pg_blue_mask     = BLUE_MASK8888;
    uint32_t pg_lbmask        = PG_LBMASK8888;
    uint32_t pg_alpha_mask    = ALPHA_MASK8888;
+   struct filter_data *filt = (struct filter_data*)data;
+
+   (void)filt;
 
    nextline = (last) ? 0 : src_stride;
    
