@@ -45,16 +45,16 @@ void gl_load_texture_data(GLuint obj, const struct texture_image *img,
          0, driver.gfx_use_rgba ? GL_RGBA : RARCH_GL_TEXTURE_TYPE32, RARCH_GL_FORMAT32, img->pixels);
 #ifndef HAVE_PSGL
    if (mipmap)
-   {
       glGenerateMipmap(GL_TEXTURE_2D);
-   }
 #endif
 }
 
 bool gl_load_luts(const struct gfx_shader *generic_shader, GLuint *lut_textures)
 {
-   unsigned i;
-   unsigned num_luts = min(generic_shader->luts, GFX_MAX_TEXTURES);
+   unsigned i, num_luts;
+   
+   num_luts = min(generic_shader->luts, GFX_MAX_TEXTURES);
+
    if (!generic_shader->luts)
       return true;
 
@@ -63,9 +63,9 @@ bool gl_load_luts(const struct gfx_shader *generic_shader, GLuint *lut_textures)
    glGenTextures(num_luts, lut_textures);
    for (i = 0; i < num_luts; i++)
    {
+      struct texture_image img = {0};
       RARCH_LOG("Loading texture image from: \"%s\" ...\n",
             generic_shader->lut[i].path);
-      struct texture_image img = {0};
       if (!texture_image_load(generic_shader->lut[i].path, &img))
       {
          RARCH_ERR("Failed to load texture image from: \"%s\"\n", generic_shader->lut[i].path);
