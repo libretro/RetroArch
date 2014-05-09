@@ -109,10 +109,10 @@ int apple_rarch_load_content(int argc, char* argv[])
    if (rarch_main_init(argc, argv))
       return 1;
    
-   menu_init();
+   menu_init(driver.menu);
    
    if (!g_extern.libretro_dummy)
-      menu_rom_history_push_current();   
+      menu_rom_history_push_current(driver.menu);
    
    g_extern.lifecycle_state |= 1ULL << MODE_GAME;
    

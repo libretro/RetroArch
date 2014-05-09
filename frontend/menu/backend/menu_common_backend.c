@@ -1340,7 +1340,7 @@ static int menu_common_iterate(void *data, unsigned action)
                // FIXME: Add for consoles.
                strlcpy(g_settings.libretro, path, sizeof(g_settings.libretro));
                strlcpy(g_extern.fullpath, rgui->deferred_path, sizeof(g_extern.fullpath));
-               load_menu_game_new_core();
+               load_menu_game_new_core(rgui);
                rgui->msg_force = true;
                ret = -1;
                menu_flush_stack_type(rgui, RGUI_SETTINGS);
@@ -1384,7 +1384,7 @@ static int menu_common_iterate(void *data, unsigned action)
                fill_pathname_join(config, dir, path, sizeof(config));
                menu_flush_stack_type(rgui, RGUI_SETTINGS);
                rgui->msg_force = true;
-               if (menu_replace_config(config))
+               if (menu_replace_config(rgui, config))
                {
                   menu_clear_navigation(rgui);
                   ret = -1;
@@ -1417,7 +1417,7 @@ static int menu_common_iterate(void *data, unsigned action)
             }
             else if (menu_type == RGUI_SETTINGS_OPEN_HISTORY)
             {
-               load_menu_game_history(rgui->selection_ptr);
+               load_menu_game_history(rgui, rgui->selection_ptr);
                menu_flush_stack_type(rgui, RGUI_SETTINGS);
                ret = -1;
             }
@@ -1688,6 +1688,7 @@ static void menu_common_shader_manager_set_preset(void *data, unsigned type, con
 
       if (path && shader)
       {
+         rgui_handle_t *rgui = (rgui_handle_t*)driver.menu;
          // Load stored CGP into RGUI menu on success.
          // Used when a preset is directly loaded.
          // No point in updating when the CGP was created from RGUI itself.
@@ -2141,7 +2142,9 @@ static bool osk_callback_enter_audio_device_init(void *data)
 
 static bool osk_callback_enter_filename(void *data)
 {
-   if (!driver.osk)
+   rgui_handle_t *rgui = (rgui_handle_t*)driver.menu;
+
+   if (!driver.osk || !rgui)
       return false;
 
    if (g_extern.lifecycle_state & (1ULL << MODE_OSK_ENTRY_SUCCESS))
@@ -3778,6 +3781,8 @@ static int menu_common_setting_set(void *data, unsigned setting, unsigned action
 
 static void menu_common_setting_set_label(char *type_str, size_t type_str_size, unsigned *w, unsigned type)
 {
+   rgui_handle_t *rgui = (rgui_handle_t*)driver.menu;
+
    switch (type)
    {
       case RGUI_SETTINGS_VIDEO_ROTATION:

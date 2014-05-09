@@ -127,7 +127,7 @@ static retro_keyboard_event_t key_event;
 static int main_entry_iterate_clear_input(args_type() args)
 {
    rarch_input_poll();
-   if (!menu_input())
+   if (!menu_input(driver.menu))
    {
       // Restore libretro keyboard callback.
       g_extern.system.key_event = key_event;
@@ -143,7 +143,7 @@ static int main_entry_iterate_shutdown(args_type() args)
 #ifdef HAVE_MENU
    // Load dummy core instead of exiting RetroArch completely.
    if (g_settings.load_dummy_on_core_shutdown)
-      load_menu_game_prepare_dummy();
+      load_menu_game_prepare_dummy(driver.menu);
    else
 #endif
       return 1;
@@ -173,9 +173,9 @@ static int main_entry_iterate_content(args_type() args)
 
 static int main_entry_iterate_load_content(args_type() args)
 {
-   load_menu_game_prepare();
+   load_menu_game_prepare(driver.menu);
 
-   if (load_menu_game())
+   if (load_menu_game(driver.menu))
    {
       g_extern.lifecycle_state |= (1ULL << MODE_GAME);
       if (driver.video_data && driver.video_poke && driver.video_poke->set_aspect_ratio)
@@ -203,6 +203,7 @@ static int main_entry_iterate_load_content(args_type() args)
 static int main_entry_iterate_menu_preinit(args_type() args)
 {
    int i;
+   rgui_handle_t *rgui = (rgui_handle_t*)driver.menu;
 
    // Menu should always run with vsync on.
    video_set_nonblock_state_func(false);
@@ -222,6 +223,12 @@ static int main_entry_iterate_menu_preinit(args_type() args)
    if (driver.audio_data)
       audio_stop_func();
 
+   if (!rgui)
+   {
+      driver.menu = (rgui_handle_t*)menu_init();
+      rgui = (rgui_handle_t*)driver.menu;
+   }
+
    rgui->need_refresh = true;
    rgui->old_input_state |= 1ULL << RARCH_MENU_TOGGLE;
 
@@ -233,7 +240,7 @@ static int main_entry_iterate_menu_preinit(args_type() args)
 
 static int main_entry_iterate_menu(args_type() args)
 {
-   if (menu_iterate())
+   if (menu_iterate(driver.menu))
    {
       if (frontend_ctx && frontend_ctx->process_events)
          frontend_ctx->process_events(args);
@@ -288,7 +295,7 @@ void main_exit(args_type() args)
 #ifdef HAVE_MENU
    g_extern.system.shutdown = false;
 
-   menu_free();
+   menu_free(driver.menu);
 
    if (g_extern.config_save_on_exit && *g_extern.config_path)
    {
@@ -366,7 +373,7 @@ returntype main_entry(signature())
 
 #if defined(HAVE_MENU)
    if (menu_init_enable)
-      menu_init();
+      driver.menu = (rgui_handle_t*)menu_init();
 
    if (frontend_ctx && frontend_ctx->process_args)
       frontend_ctx->process_args(argc, argv, args);
@@ -379,7 +386,7 @@ returntype main_entry(signature())
       // If we started a ROM directly from command line,
       // push it to ROM history.
       if (!g_extern.libretro_dummy)
-         menu_rom_history_push_current();
+         menu_rom_history_push_current(driver.menu);
    }
 
    while (!main_entry_iterate(signature_expand(), args));
