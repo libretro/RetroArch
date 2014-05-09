@@ -1,6 +1,4 @@
 include config.mk
-HAVE_LAKKA = 1
-DEFINES += -DHAVE_LAKKA
 
 TARGET = retroarch tools/retroarch-joyconfig tools/retrolaunch/retrolaunch
 
