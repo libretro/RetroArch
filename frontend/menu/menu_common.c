@@ -39,7 +39,7 @@ void menu_update_system_info(void *data, bool *load_no_rom)
 
 #ifdef HAVE_DYNAMIC
    libretro_free_system_info(&rgui->info);
-   if (!path_is_directory(g_settings.libretro))
+   if (*g_settings.libretro)
    {
       libretro_get_system_info(g_settings.libretro, &rgui->info, load_no_rom);
 #endif
@@ -204,17 +204,6 @@ static void menu_update_libretro_info(void *data)
    if (!rgui)
       return;
 
-   *rgui->libretro_dir = '\0';
-
-#if defined(RARCH_CONSOLE)
-   strlcpy(rgui->libretro_dir, default_paths.core_dir, sizeof(rgui->libretro_dir));
-#else
-   if (path_is_directory(g_settings.libretro))
-      strlcpy(rgui->libretro_dir, g_settings.libretro, sizeof(rgui->libretro_dir));
-   else if (*g_settings.libretro)
-      fill_pathname_basedir(rgui->libretro_dir, g_settings.libretro, sizeof(rgui->libretro_dir));
-#endif
-
 #ifndef HAVE_DYNAMIC
    retro_get_system_info(&rgui->info);
 #endif
@@ -222,8 +211,8 @@ static void menu_update_libretro_info(void *data)
    memset(&rgui->core_info_current, 0, sizeof(rgui->core_info_current));
    core_info_list_free(rgui->core_info);
    rgui->core_info = NULL;
-   if (*rgui->libretro_dir)
-      rgui->core_info = core_info_list_new(rgui->libretro_dir);
+   if (*g_settings.libretro_directory)
+      rgui->core_info = core_info_list_new(g_settings.libretro_directory);
 
    menu_update_system_info(rgui, NULL);
 }
@@ -668,7 +657,7 @@ bool menu_save_new_config(void)
    bool found_path = false;
    char config_name[PATH_MAX];
    char config_path[PATH_MAX];
-   if (*g_settings.libretro && !path_is_directory(g_settings.libretro) && path_file_exists(g_settings.libretro)) // Infer file name based on libretro core.
+   if (*g_settings.libretro && path_file_exists(g_settings.libretro)) // Infer file name based on libretro core.
    {
       unsigned i;
       // In case of collision, find an alternative name.
@@ -914,6 +903,6 @@ void menu_init_core_info(void *data)
 
    core_info_list_free(rgui->core_info);
    rgui->core_info = NULL;
-   if (*rgui->libretro_dir)
-      rgui->core_info = core_info_list_new(rgui->libretro_dir);
+   if (*g_settings.libretro_directory)
+      rgui->core_info = core_info_list_new(g_settings.libretro_directory);
 }

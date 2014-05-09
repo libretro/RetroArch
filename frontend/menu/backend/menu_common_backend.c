@@ -557,7 +557,7 @@ static int menu_settings_iterate(void *data, unsigned action)
       file_list_get_at_offset(rgui->selection_buf, rgui->selection_ptr, &label, &type);
 
    if (type == RGUI_SETTINGS_CORE)
-      label = rgui->libretro_dir;
+      label = g_settings.libretro_directory;
    else if (type == RGUI_SETTINGS_CONFIG)
       label = g_settings.rgui_config_directory;
    else if (type == RGUI_SETTINGS_DISK_APPEND)
@@ -1469,7 +1469,7 @@ static int menu_common_iterate(void *data, unsigned action)
             }
             else if (menu_type == RGUI_LIBRETRO_DIR_PATH)
             {
-               strlcpy(rgui->libretro_dir, dir, sizeof(rgui->libretro_dir));
+               strlcpy(g_settings.libretro_directory, dir, sizeof(g_settings.libretro_directory));
                menu_init_core_info(rgui);
                menu_flush_stack_type(rgui, RGUI_SETTINGS_PATH_OPTIONS);
             }
@@ -1536,7 +1536,7 @@ static int menu_common_iterate(void *data, unsigned action)
                   }
                   else // Present a selection.
                   {
-                     file_list_push(rgui->menu_stack, rgui->libretro_dir, RGUI_SETTINGS_DEFERRED_CORE, rgui->selection_ptr);
+                     file_list_push(rgui->menu_stack, g_settings.libretro_directory, RGUI_SETTINGS_DEFERRED_CORE, rgui->selection_ptr);
                      menu_clear_navigation(rgui);
                      rgui->need_refresh = true;
                   }
@@ -2978,7 +2978,7 @@ static int menu_common_setting_set(void *data, unsigned setting, unsigned action
       case RGUI_LIBRETRO_DIR_PATH:
          if (action == RGUI_ACTION_START)
          {
-            *rgui->libretro_dir = '\0';
+            *g_settings.libretro_directory = '\0';
             menu_init_core_info(rgui);
          }
          break;
@@ -3977,7 +3977,7 @@ static void menu_common_setting_set_label(char *type_str, size_t type_str_size, 
          strlcpy(type_str, *g_extern.savestate_dir ? g_extern.savestate_dir : "<ROM dir>", type_str_size);
          break;
       case RGUI_LIBRETRO_DIR_PATH:
-         strlcpy(type_str, *rgui->libretro_dir ? rgui->libretro_dir : "<None>", type_str_size);
+         strlcpy(type_str, *g_settings.libretro_directory ? g_settings.libretro_directory : "<None>", type_str_size);
          break;
       case RGUI_LIBRETRO_INFO_DIR_PATH:
          strlcpy(type_str, *g_settings.libretro_info_path ? g_settings.libretro_info_path : "<Core dir>", type_str_size);

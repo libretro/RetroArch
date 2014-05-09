@@ -381,6 +381,7 @@ void config_set_defaults(void)
    if (!g_extern.has_set_state_path)
       *g_extern.savestate_dir = '\0';
    *g_settings.libretro_info_path = '\0';
+   *g_settings.libretro_directory = '\0';
    *g_settings.core_options_path = '\0';
    *g_settings.game_history_path = '\0';
    *g_settings.cheat_database = '\0';
@@ -452,8 +453,8 @@ void config_set_defaults(void)
    if (default_dsp_filter_dir)
       fill_pathname_expand_special(g_settings.audio.filter_dir, default_dsp_filter_dir, sizeof(g_settings.audio.filter_dir));
 
-   if (default_libretro_path && !g_extern.has_set_libretro)
-      fill_pathname_expand_special(g_settings.libretro, default_libretro_path, sizeof(g_settings.libretro));
+   if (default_libretro_path && !g_extern.has_set_libretro_directory)
+      fill_pathname_expand_special(g_settings.libretro_directory, default_libretro_path, sizeof(g_settings.libretro_directory));
 
    if (default_libretro_info_path)
       fill_pathname_expand_special(g_settings.libretro_info_path, default_libretro_info_path, sizeof(g_settings.libretro_info_path));
@@ -955,6 +956,16 @@ bool config_load_file(const char *path, bool set_defaults)
 
    if (!g_extern.has_set_libretro)
       CONFIG_GET_PATH(libretro, "libretro_path");
+   if (!g_extern.has_set_libretro_directory)
+      CONFIG_GET_PATH(libretro_directory, "libretro_directory");
+
+   // Safe-guard against older behavior.
+   if (path_is_directory(g_settings.libretro))
+   {
+      RARCH_WARN("\"libretro_path\" is a directory, using this for \"libretro_directory\" instead.\n");
+      strlcpy(g_settings.libretro_directory, g_settings.libretro, sizeof(g_settings.libretro_directory));
+      *g_settings.libretro = '\0';
+   }
 
    CONFIG_GET_BOOL(fps_show, "fps_show");
    CONFIG_GET_BOOL(load_dummy_on_core_shutdown, "load_dummy_on_core_shutdown");
@@ -1286,6 +1297,7 @@ bool config_save_file(const char *path)
    config_set_bool(conf,  "load_dummy_on_core_shutdown", g_settings.load_dummy_on_core_shutdown);
    config_set_bool(conf,  "fps_show", g_settings.fps_show);
    config_set_path(conf,  "libretro_path", g_settings.libretro);
+   config_set_path(conf,  "libretro_directory", g_settings.libretro_directory);
    config_set_path(conf,  "libretro_info_path", g_settings.libretro_info_path);
    config_set_path(conf,  "cheat_database_path", g_settings.cheat_database);
    config_set_bool(conf,  "rewind_enable", g_settings.rewind_enable);

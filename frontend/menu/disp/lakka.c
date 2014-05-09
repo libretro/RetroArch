@@ -906,7 +906,7 @@ static void *lakka_init(void)
 
    menu_init_core_info(rgui);
 
-   rgui->core_info = core_info_list_new(*rgui->libretro_dir ? rgui->libretro_dir : "/usr/lib/libretro");
+   rgui->core_info = core_info_list_new(*g_settings.libretro_directory ? g_settings.libretro_directory : "/usr/lib/libretro");
 
    num_categories = rgui->core_info ? rgui->core_info->count + 1 : 1;
 

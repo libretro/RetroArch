@@ -290,6 +290,7 @@ struct settings
    unsigned game_history_size;
 
    char libretro[PATH_MAX];
+   char libretro_directory[PATH_MAX];
    unsigned libretro_log_level;
    char libretro_info_path[PATH_MAX];
    char cheat_database[PATH_MAX];
@@ -375,6 +376,7 @@ struct global
    bool has_set_state_path;
    bool has_set_libretro_device[MAX_PLAYERS];
    bool has_set_libretro;
+   bool has_set_libretro_directory;
 
 #ifdef HAVE_RMENU
    char menu_texture_path[PATH_MAX];
