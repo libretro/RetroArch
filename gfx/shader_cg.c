@@ -26,7 +26,6 @@
 #include <string.h>
 #include "../compat/strl.h"
 #include "../conf/config_file.h"
-#include "image/image.h"
 #include "../dynamic.h"
 #include "../compat/posix_string.h"
 #include "../file.h"

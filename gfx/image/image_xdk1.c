@@ -14,12 +14,13 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "image.h"
+#include "../image_context.h"
 #include "../../xdk/xdk_d3d.h"
 
-bool texture_image_load(const char *path, struct texture_image *out_img)
+static bool xdk_image_load(void *data, const char *path, void *image_data)
 {
-   d3d_video_t *d3d = (d3d_video_t*)driver.video_data;
+   d3d_video_t *d3d = (d3d_video_t*)data;
+   struct texture_image *out_img = (struct texture_image*)image_data;
 
    D3DXIMAGE_INFO m_imageInfo;
 
@@ -54,11 +55,22 @@ bool texture_image_load(const char *path, struct texture_image *out_img)
    return true;
 }
 
-void texture_image_free(struct texture_image *img)
+static void xdk_image_free(void *data, void *image_data)
 {
+   struct texture_image *img = (struct texture_image*)image_data;
+
+   if (!img)
+      return;
+
    if (img->vertex_buf)
       img->vertex_buf->Release();
    if (img->pixels)
       img->pixels->Release();
    memset(img, 0, sizeof(*img));
 }
+
+const image_ctx_driver_t image_ctx_xdk = {
+   xdk_image_load,
+   xdk_image_free,
+   "xdk",
+};

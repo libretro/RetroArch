@@ -193,6 +193,11 @@ struct settings
    } menu;
 #endif
 
+   struct 
+   {
+      char driver[32];
+   } image;
+
 #ifdef HAVE_CAMERA
    struct
    {

@@ -27,8 +27,6 @@
 #include <sys/platform.h>
 #include <GLES2/gl2.h>
 
-#include "../image/image.h"
-
 #include "../fonts/gl_font.h"
 #include <stdint.h>
 

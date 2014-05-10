@@ -356,6 +356,7 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
          file_list_push(rgui->selection_buf, "Audio Device", RGUI_SETTINGS_DRIVER_AUDIO_DEVICE, 0);
          file_list_push(rgui->selection_buf, "Audio Resampler", RGUI_SETTINGS_DRIVER_AUDIO_RESAMPLER, 0);
          file_list_push(rgui->selection_buf, "Input Driver", RGUI_SETTINGS_DRIVER_INPUT, 0);
+         file_list_push(rgui->selection_buf, "Image Driver", RGUI_SETTINGS_DRIVER_IMAGE, 0);
 #ifdef HAVE_CAMERA
          file_list_push(rgui->selection_buf, "Camera Driver", RGUI_SETTINGS_DRIVER_CAMERA, 0);
 #endif
@@ -3095,6 +3096,12 @@ static int menu_common_setting_set(void *data, unsigned setting, unsigned action
          else if (action == RGUI_ACTION_RIGHT)
             find_next_input_driver();
          break;
+      case RGUI_SETTINGS_DRIVER_IMAGE:
+         if (action == RGUI_ACTION_LEFT)
+            find_prev_image_driver();
+         else if (action == RGUI_ACTION_RIGHT)
+            find_next_image_driver();
+         break;
 #ifdef HAVE_CAMERA
       case RGUI_SETTINGS_DRIVER_CAMERA:
          if (action == RGUI_ACTION_LEFT)
@@ -3859,6 +3866,9 @@ static void menu_common_setting_set_label(char *type_str, size_t type_str_size, 
          break;
       case RGUI_SETTINGS_DRIVER_INPUT:
          strlcpy(type_str, g_settings.input.driver, type_str_size);
+         break;
+      case RGUI_SETTINGS_DRIVER_IMAGE:
+         strlcpy(type_str, g_settings.image.driver, type_str_size);
          break;
 #ifdef HAVE_CAMERA
       case RGUI_SETTINGS_DRIVER_CAMERA:
