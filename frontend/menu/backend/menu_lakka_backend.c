@@ -105,7 +105,14 @@ static int menu_lakka_iterate(void *data, unsigned action)
                   {
                      strlcpy(g_extern.fullpath, categories[menu_active_category].items[categories[menu_active_category].active_item].rom, sizeof(g_extern.fullpath));
                      strlcpy(g_settings.libretro, categories[menu_active_category].libretro, sizeof(g_settings.libretro));
+
+#ifdef HAVE_DYNAMIC
+                     menu_update_system_info(rgui, &rgui->load_no_rom);
                      g_extern.lifecycle_state |= (1ULL << MODE_LOAD_GAME);
+#else
+                     rarch_environment_cb(RETRO_ENVIRONMENT_SET_LIBRETRO_PATH, (void*)g_settings.libretro);
+                     rarch_environment_cb(RETRO_ENVIRONMENT_EXEC, (void*)g_extern.fullpath);
+#endif
                   }
                   return -1;
                   break;

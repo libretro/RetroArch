@@ -569,7 +569,7 @@ static char *find_last_slash(const char *str)
 
 // Assumes path is a directory. Appends a slash
 // if not already there.
-static void fill_pathname_slash(char *path, size_t size)
+void fill_pathname_slash(char *path, size_t size)
 {
    size_t path_len = strlen(path);
    const char *last_slash = find_last_slash(path);

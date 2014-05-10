@@ -1,6 +1,7 @@
 /*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2010-2013 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2013 - Daniel De Matteis
+ *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
+ *  Copyright (C) 2011-2014 - Daniel De Matteis
+ *  Copyright (C) 2014      - Jean-André Santoni
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -29,7 +30,8 @@ float inOutQuad(float t, float b, float c, float d)
    return -c / 2 * ((t - 1) * (t - 3) - 1) + b;
 }
 
-void add_tween(float duration, float target_value, float* subject, easingFunc easing) {
+void add_tween(float duration, float target_value, float* subject, easingFunc easing)
+{
    numtweens++;
    tweens = realloc(tweens, numtweens * sizeof(tween));
    tweens[numtweens-1].alive = 1;
@@ -43,33 +45,37 @@ void add_tween(float duration, float target_value, float* subject, easingFunc ea
 
 void update_tweens(float dt)
 {
-   int active_tweens = 0;
-   for(int i = 0; i < numtweens; i++)
+   int i, active_tweens;
+
+   active_tweens = 0;
+   for(i = 0; i < numtweens; i++)
    {
       tweens[i] = update_tween(tweens[i], dt);
       active_tweens += tweens[i].running_since < tweens[i].duration ? 1 : 0;
    }
-   if (numtweens && !active_tweens) {
+
+   if (numtweens && !active_tweens)
       numtweens = 0;
-   }
 }
 
 tween update_tween(tween tw, float dt)
 {
-   if (tw.running_since < tw.duration) {
+   if (tw.running_since < tw.duration)
+   {
       tw.running_since += dt;
       *(tw.subject) = tw.easing(
-         tw.running_since,
-         tw.initial_value,
-         tw.target_value - tw.initial_value,
-         tw.duration);
+            tw.running_since,
+            tw.initial_value,
+            tw.target_value - tw.initial_value,
+            tw.duration);
       if (tw.running_since >= tw.duration)
          *(tw.subject) = tw.target_value;
    }
    return tw;
 }
 
-void free_tweens()
+void free_tweens(void)
 {
-   free(tweens);
+   if (tweens)
+      free(tweens);
 }

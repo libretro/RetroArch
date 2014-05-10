@@ -17,14 +17,35 @@
 // Compile: gcc -o epx.so -shared epx.c -std=c99 -O3 -Wall -pedantic -fPIC
 
 #include "softfilter.h"
-#include "softfilter_prototypes.h"
 #include <stdlib.h>
 
 #ifdef RARCH_INTERNAL
 #define softfilter_get_implementation epx_get_implementation
+#define softfilter_thread_data epx_softfilter_thread_data
+#define filter_data epx_filter_data
 #endif
 
 #define EPX_SCALE 2
+
+struct softfilter_thread_data
+{
+   void *out_data;
+   const void *in_data;
+   size_t out_pitch;
+   size_t in_pitch;
+   unsigned colfmt;
+   unsigned width;
+   unsigned height;
+   int first;
+   int last;
+};
+
+struct filter_data
+{
+   unsigned threads;
+   struct softfilter_thread_data *workers;
+   unsigned in_fmt;
+};
 
 static unsigned epx_generic_input_fmts(void)
 {
@@ -405,4 +426,6 @@ const struct softfilter_implementation *softfilter_get_implementation(softfilter
 
 #ifdef RARCH_INTERNAL
 #undef softfilter_get_implementation
+#undef softfilter_thread_data
+#undef filter_data
 #endif

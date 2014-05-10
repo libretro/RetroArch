@@ -294,6 +294,7 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
       case RGUI_SETTINGS_PATH_OPTIONS:
          file_list_clear(rgui->selection_buf);
          file_list_push(rgui->selection_buf, "Content Directory", RGUI_BROWSER_DIR_PATH, 0);
+         file_list_push(rgui->selection_buf, "Assets Directory", RGUI_ASSETS_DIR_PATH, 0);
 #ifdef HAVE_DYNAMIC
          file_list_push(rgui->selection_buf, "Config Directory", RGUI_CONFIG_DIR_PATH, 0);
 #endif
@@ -526,6 +527,7 @@ static unsigned menu_common_type_is(unsigned type)
    }
 
    type_found = type == RGUI_BROWSER_DIR_PATH ||
+      type == RGUI_ASSETS_DIR_PATH ||
       type == RGUI_SHADER_DIR_PATH ||
       type == RGUI_FILTER_DIR_PATH ||
       type == RGUI_DSP_FILTER_DIR_PATH ||
@@ -1424,6 +1426,11 @@ static int menu_common_iterate(void *data, unsigned action)
             else if (menu_type == RGUI_BROWSER_DIR_PATH)
             {
                strlcpy(g_settings.rgui_content_directory, dir, sizeof(g_settings.rgui_content_directory));
+               menu_flush_stack_type(rgui, RGUI_SETTINGS_PATH_OPTIONS);
+            }
+            else if (menu_type == RGUI_ASSETS_DIR_PATH)
+            {
+               strlcpy(g_settings.assets_directory, dir, sizeof(g_settings.assets_directory));
                menu_flush_stack_type(rgui, RGUI_SETTINGS_PATH_OPTIONS);
             }
 #ifdef HAVE_SCREENSHOTS
@@ -2958,6 +2965,10 @@ static int menu_common_setting_set(void *data, unsigned setting, unsigned action
          if (action == RGUI_ACTION_START)
             *g_settings.rgui_content_directory = '\0';
          break;
+      case RGUI_ASSETS_DIR_PATH:
+         if (action == RGUI_ACTION_START)
+            *g_settings.assets_directory = '\0';
+         break;
 #ifdef HAVE_SCREENSHOTS
       case RGUI_SCREENSHOT_DIR_PATH:
          if (action == RGUI_ACTION_START)
@@ -3964,6 +3975,9 @@ static void menu_common_setting_set_label(char *type_str, size_t type_str_size, 
          break;
       case RGUI_BROWSER_DIR_PATH:
          strlcpy(type_str, *g_settings.rgui_content_directory ? g_settings.rgui_content_directory : "<default>", type_str_size);
+         break;
+      case RGUI_ASSETS_DIR_PATH:
+         strlcpy(type_str, *g_settings.assets_directory ? g_settings.assets_directory : "<default>", type_str_size);
          break;
 #ifdef HAVE_SCREENSHOTS
       case RGUI_SCREENSHOT_DIR_PATH:

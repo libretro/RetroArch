@@ -1,6 +1,7 @@
 /*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2010-2013 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2013 - Daniel De Matteis
+ *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
+ *  Copyright (C) 2011-2014 - Daniel De Matteis
+ *  Copyright (C) 2014      - Jean-André Santoni
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -13,6 +14,9 @@
  *  You should have received a copy of the GNU General Public License along with RetroArch.
  *  If not, see <http://www.gnu.org/licenses/>.
  */
+
+#ifndef _LAKKA_TWEEN_H
+#define _LAKKA_TWEEN_h
 
 #include "math.h"
 
@@ -35,3 +39,5 @@ tween update_tween(tween, float);
 void update_tweens(float);
 void add_tween(float, float, float*, easingFunc);
 void free_tweens();
+
+#endif

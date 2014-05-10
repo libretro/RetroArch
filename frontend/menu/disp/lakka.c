@@ -59,9 +59,31 @@ const GLfloat background_color[] = {
    0.1, 0.74, 0.61, 1.00,
 };
 
+// Category variables
 menu_category* categories = NULL;
-
 int depth = 0;
+int num_categories = 0;
+int menu_active_category = 0;
+int dim = 192;
+float all_categories_x = 0;
+
+// Font variables
+void *font;
+const gl_font_renderer_t *font_ctx;
+const font_renderer_driver_t *font_driver;
+GLuint font_tex;
+GLint max_font_size;
+int font_tex_w, font_tex_h;
+uint32_t *font_tex_buf;
+char font_last_msg[256];
+int font_last_width, font_last_height;
+struct font_output_list run_label;
+struct font_output_list resume_label;
+
+//GL-specific variables
+GLfloat font_color[16];
+GLfloat font_color_dark[16];
+GLuint texture;
 
 GLuint settings_icon;
 GLuint arrow_icon;
@@ -72,48 +94,23 @@ GLuint loadstate_icon;
 GLuint screenshot_icon;
 GLuint reload_icon;
 
-struct font_output_list run_label;
-struct font_output_list resume_label;
-
-int num_categories = 0;
-
-int menu_active_category = 0;
-
-int dim = 192;
-
-float all_categories_x = 0;
-
-rgui_handle_t *rgui;
-
-// Fonts
-void *font;
-const gl_font_renderer_t *font_ctx;
-const font_renderer_driver_t *font_driver;
-GLuint font_tex;
-GLint max_font_size;
-int font_tex_w, font_tex_h;
-uint32_t *font_tex_buf;
-char font_last_msg[256];
-int font_last_width, font_last_height;
-GLfloat font_color[16];
-GLfloat font_color_dark[16];
-GLuint texture;
-
 // Move the categories left or right depending on the menu_active_category variable
 void lakka_switch_categories(void)
 {
+   int i, j;
+
    // translation
    add_tween(DELAY, -menu_active_category * HSPACING, &all_categories_x, &inOutQuad);
 
    // alpha tweening
-   for (int i = 0; i < num_categories; i++)
+   for (i = 0; i < num_categories; i++)
    {
       float ca = (i == menu_active_category) ? 1.0 : 0.5;
       float cz = (i == menu_active_category) ? C_ACTIVE_ZOOM : C_PASSIVE_ZOOM;
       add_tween(DELAY, ca, &categories[i].alpha, &inOutQuad);
       add_tween(DELAY, cz, &categories[i].zoom,  &inOutQuad);
 
-      for (int j = 0; j < categories[i].num_items; j++)
+      for (j = 0; j < categories[i].num_items; j++)
       {
          float ia = (i != menu_active_category     ) ? 0   : 
             (j == categories[i].active_item) ? 1.0 : 0.5;
@@ -124,7 +121,8 @@ void lakka_switch_categories(void)
 
 void lakka_switch_items(void)
 {
-   for (int j = 0; j < categories[menu_active_category].num_items; j++)
+   int j;
+   for (j = 0; j < categories[menu_active_category].num_items; j++)
    {
       float ia, iz, iy;
       ia = (j == categories[menu_active_category].active_item) ? 1.0 : 0.5;
@@ -173,7 +171,10 @@ void lakka_switch_subitems(void)
 void lakka_reset_submenu(void)
 {
    int i, j, k;
-   if (!(g_extern.main_is_init && !g_extern.libretro_dummy && strcmp(g_extern.fullpath, categories[menu_active_category].items[categories[menu_active_category].active_item].rom) == 0))
+   if (!(
+            g_extern.main_is_init
+            && !g_extern.libretro_dummy
+            && strcmp(g_extern.fullpath, categories[menu_active_category].items[categories[menu_active_category].active_item].rom) == 0))
    {
       // Keeps active submenu state (do we really want that?)
       categories[menu_active_category].items[categories[menu_active_category].active_item].active_subitem = 0;
@@ -277,14 +278,13 @@ struct font_rect
 static bool init_font(void *data, const char *font_path, float font_size, unsigned win_width, unsigned win_height)
 {
    size_t i, j;
+   gl_t *gl = (gl_t*)data;
    (void)win_width;
    (void)win_height;
+   (void)font_size;
 
    if (!g_settings.video.font_enable)
       return false;
-
-   (void)font_size;
-   gl_t *gl = (gl_t*)data;
 
    if (font_renderer_create_default(&font_driver, &font))
    {
@@ -443,12 +443,13 @@ static void calculate_font_coords(gl_t *gl,
       GLfloat font_vertex[8], GLfloat font_vertex_dark[8], GLfloat font_tex_coords[8], GLfloat scale, GLfloat pos_x, GLfloat pos_y)
 {
    unsigned i;
-   GLfloat scale_factor = scale;
-
-   GLfloat lx = pos_x;
-   GLfloat hx = (GLfloat)font_last_width * scale_factor / gl->vp.width + lx;
-   GLfloat ly = pos_y;
-   GLfloat hy = (GLfloat)font_last_height * scale_factor / gl->vp.height + ly;
+   GLfloat scale_factor, lx, hx, ly, hy, shift_x, shift_y;
+   
+   scale_factor = scale;
+   lx = pos_x;
+   hx = (GLfloat)font_last_width * scale_factor / gl->vp.width + lx;
+   ly = pos_y;
+   hy = (GLfloat)font_last_height * scale_factor / gl->vp.height + ly;
 
    font_vertex[0] = lx;
    font_vertex[2] = hx;
@@ -459,8 +460,8 @@ static void calculate_font_coords(gl_t *gl,
    font_vertex[5] = ly;
    font_vertex[7] = ly;
 
-   GLfloat shift_x = 2.0f / gl->vp.width;
-   GLfloat shift_y = 2.0f / gl->vp.height;
+   shift_x = 2.0f / gl->vp.width;
+   shift_y = 2.0f / gl->vp.height;
    for (i = 0; i < 4; i++)
    {
       font_vertex_dark[2 * i + 0] = font_vertex[2 * i + 0] - shift_x;
@@ -484,11 +485,16 @@ static void calculate_font_coords(gl_t *gl,
 
 static void lakka_draw_text(void *data, struct font_output_list out, float x, float y, float scale, float alpha)
 {
+   int i;
+   struct font_output *head;
+   struct font_rect geom;
+   struct gl_ortho ortho = {0, 1, 0, 1, -1, 1};
    gl_t *gl = (gl_t*)data;
-   if (!font)
+
+   if (!font || !gl)
       return;
 
-   for (int i = 0; i < 4; i++)
+   for (i = 0; i < 4; i++)
    {
       font_color[4 * i + 0] = 1.0;
       font_color[4 * i + 1] = 1.0;
@@ -496,7 +502,7 @@ static void lakka_draw_text(void *data, struct font_output_list out, float x, fl
       font_color[4 * i + 3] = alpha;
    }
 
-   if (gl->shader)
+   if (gl->shader && gl->shader->use)
       gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
 
    gl_set_viewport(gl, gl->win_width, gl->win_height, true, false);
@@ -511,9 +517,8 @@ static void lakka_draw_text(void *data, struct font_output_list out, float x, fl
 
    gl->coords.tex_coord = font_tex_coords;
 
-   struct font_output *head = out.head;
+   head = (struct font_output*)out.head;
 
-   struct font_rect geom;
    calculate_msg_geometry(head, &geom);
    adjust_power_of_two(gl, &geom);
    blit_fonts(gl, head, &geom);
@@ -539,7 +544,6 @@ static void lakka_draw_text(void *data, struct font_output_list out, float x, fl
 
    glDisable(GL_BLEND);
 
-   struct gl_ortho ortho = {0, 1, 0, 1, -1, 1};
    gl_set_projection(gl, &ortho, true);
 }
 
@@ -553,7 +557,7 @@ void lakka_draw_background(void *data)
    gl->coords.color = background_color;
    glBindTexture(GL_TEXTURE_2D, 0);
 
-   if (gl->shader)
+   if (gl->shader && gl->shader->use)
       gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
    gl_shader_set_coords(gl, &gl->coords, &gl->mvp_no_rot);
 
@@ -564,8 +568,6 @@ void lakka_draw_background(void *data)
 
 void lakka_draw_icon(void *data, GLuint texture, float x, float y, float alpha, float rotation, float scale)
 {
-   gl_t *gl = (gl_t*)data;
-
    GLfloat color[] = {
       1.0f, 1.0f, 1.0f, alpha,
       1.0f, 1.0f, 1.0f, alpha,
@@ -580,6 +582,8 @@ void lakka_draw_icon(void *data, GLuint texture, float x, float y, float alpha, 
       1, 1
    };
 
+   gl_t *gl = (gl_t*)data;
+
    glViewport(x, 900 - y, dim, dim);
 
    glEnable(GL_BLEND);
@@ -589,7 +593,7 @@ void lakka_draw_icon(void *data, GLuint texture, float x, float y, float alpha, 
    gl->coords.color = color;
    glBindTexture(GL_TEXTURE_2D, texture);
 
-   if (gl->shader)
+   if (gl->shader && gl->shader->use)
       gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
 
    math_matrix mymat;
@@ -612,23 +616,17 @@ void lakka_draw_icon(void *data, GLuint texture, float x, float y, float alpha, 
    gl->coords.color = gl->white_color_ptr;
 }
 
-static void lakka_set_texture(void *data, bool enable)
-{
-   rgui_handle_t *rgui = (rgui_handle_t*)data;
-}
-
 void lakka_render(void *data)
 {
    int i, j, k;
    struct font_output_list msg;
+   gl_t *gl = (gl_t*)driver.video_data;
    rgui_handle_t *rgui = (rgui_handle_t*)data;
 
-   if (!rgui)
+   if (!rgui || !gl)
       return;
 
    update_tweens((float)rgui->delta/10000);
-
-   gl_t *gl = (gl_t*)driver.video_data;
 
    glViewport(0, 0, gl->win_width, gl->win_height);
 
@@ -754,19 +752,31 @@ void lakka_render(void *data)
 
 static void lakka_init_assets(void *data)
 {
+   char path[256], dirpath[256];;
    rgui_handle_t *rgui = (rgui_handle_t*)data;
 
    if (!rgui)
       return;
 
-   settings_icon = png_texture_load("/usr/share/retroarch/settings.png", &dim, &dim);
-   arrow_icon = png_texture_load("/usr/share/retroarch/arrow.png", &dim, &dim);
-   run_icon = png_texture_load("/usr/share/retroarch/run.png", &dim, &dim);
-   resume_icon = png_texture_load("/usr/share/retroarch/resume.png", &dim, &dim);
-   savestate_icon = png_texture_load("/usr/share/retroarch/savestate.png", &dim, &dim);
-   loadstate_icon = png_texture_load("/usr/share/retroarch/loadstate.png", &dim, &dim);
-   screenshot_icon = png_texture_load("/usr/share/retroarch/screenshot.png", &dim, &dim);
-   reload_icon = png_texture_load("/usr/share/retroarch/reload.png", &dim, &dim);
+   fill_pathname_join(dirpath, g_settings.assets_directory, "lakka", sizeof(dirpath));
+   fill_pathname_slash(dirpath, sizeof(dirpath));
+
+   fill_pathname_join(path, dirpath, "settings.png", sizeof(path));
+   settings_icon = png_texture_load(path, &dim, &dim);
+   fill_pathname_join(path, dirpath, "arrow.png", sizeof(path));
+   arrow_icon = png_texture_load(path, &dim, &dim);
+   fill_pathname_join(path, dirpath, "run.png", sizeof(path));
+   run_icon = png_texture_load(path, &dim, &dim);
+   fill_pathname_join(path, dirpath, "resume.png", sizeof(path));
+   resume_icon = png_texture_load(path, &dim, &dim);
+   fill_pathname_join(path, dirpath, "savestate.png", sizeof(path));
+   savestate_icon = png_texture_load(path, &dim, &dim);
+   fill_pathname_join(path, dirpath, "loadstate.png", sizeof(path));
+   loadstate_icon = png_texture_load(path, &dim, &dim);
+   fill_pathname_join(path, dirpath, "screenshot.png", sizeof(path));
+   screenshot_icon = png_texture_load(path, &dim, &dim);
+   fill_pathname_join(path, dirpath, "reload.png", sizeof(path));
+   reload_icon = png_texture_load(path, &dim, &dim);
 
    font_driver->render_msg(font, "Run", &run_label);
    font_driver->render_msg(font, "Resume", &resume_label);
@@ -775,7 +785,6 @@ static void lakka_init_assets(void *data)
 void lakka_init_settings(void)
 {
    struct font_output_list out;
-   gl_t *gl = (gl_t*)driver.video_data;
 
    strlcpy(categories[0].name, "Settings", sizeof(categories[0].name));
    categories[0].icon = settings_icon;
@@ -795,7 +804,7 @@ char * str_replace ( const char *string, const char *substr, const char *replace
    char *tok, *newstr, *oldstr, *head;
 
    /* if either substr or replacement is NULL, duplicate string a let caller handle it */
-   if ( substr == NULL || replacement == NULL )
+   if (!substr || !replacement)
       return strdup (string);
 
    newstr = strdup (string);
@@ -804,9 +813,10 @@ char * str_replace ( const char *string, const char *substr, const char *replace
    {
       oldstr = newstr;
       newstr = malloc ( strlen ( oldstr ) - strlen ( substr ) + strlen ( replacement ) + 1 );
-      /*failed to alloc mem, free old string and return NULL */
-      if (newstr == NULL)
+
+      if (!newstr)
       {
+         /*failed to alloc mem, free old string and return NULL */
          free (oldstr);
          return NULL;
       }
@@ -824,7 +834,6 @@ char * str_replace ( const char *string, const char *substr, const char *replace
 void lakka_init_items(int i, menu_category *mcat, core_info_t corenfo, char* gametexturepath, char* path)
 {
    int num_items, j, n;
-   gl_t *gl = (gl_t*)driver.video_data;
    struct string_list *list = (struct string_list*)dir_list_new(path, corenfo.supported_extensions, true);
 
    dir_list_sort(list, true);
@@ -874,7 +883,7 @@ void lakka_init_items(int i, menu_category *mcat, core_info_t corenfo, char* gam
                   mcat->items[n].subitems[k].icon = screenshot_icon;
                   break;
                case 4:
-                  mcat->items[n].subitems[k].name = "Reload";
+                  mcat->items[n].subitems[k].name = "Reset";
                   mcat->items[n].subitems[k].icon = reload_icon;
                   break;
             }
@@ -900,6 +909,7 @@ static void lakka_free_assets(void *data)
 static void lakka_free(void *data)
 {
    rgui_handle_t *rgui = (rgui_handle_t*)data;
+
    if (rgui->alloc_font)
       free((uint8_t*)rgui->font);
 }
@@ -954,7 +964,10 @@ static void *lakka_init(void)
 
    for (i = 0; i < num_categories-1; i++)
    {
-      char core_id[256], texturepath[256], gametexturepath[256];
+      char core_id[256], texturepath[256], gametexturepath[256], dirpath[256];
+
+      fill_pathname_join(dirpath, g_settings.assets_directory, "lakka", sizeof(dirpath));
+      fill_pathname_slash(dirpath, sizeof(dirpath));
       struct font_output_list out;
       core_info_t corenfo = rgui->core_info->list[i];
 
@@ -967,11 +980,11 @@ static void *lakka_init(void)
       strlcpy(core_id, str_replace(core_id, "libretro-", ""), sizeof(core_id));
       strlcpy(core_id, str_replace(core_id, "libretro_", ""), sizeof(core_id));
 
-      strlcpy(texturepath, "/usr/share/retroarch/", sizeof(texturepath));
+      strlcpy(texturepath, dirpath, sizeof(texturepath));
       strlcat(texturepath, core_id, sizeof(texturepath));
       strlcat(texturepath, ".png", sizeof(texturepath));
 
-      strlcpy(gametexturepath, "/usr/share/retroarch/", sizeof(gametexturepath));
+      strlcpy(gametexturepath, dirpath, sizeof(gametexturepath));
       strlcat(gametexturepath, core_id, sizeof(gametexturepath));
       strlcat(gametexturepath, "-game.png", sizeof(gametexturepath));
 
@@ -996,7 +1009,7 @@ static void *lakka_init(void)
 }
 
 const menu_ctx_driver_t menu_ctx_lakka = {
-   lakka_set_texture,
+   NULL,
    NULL,
    lakka_render,
    NULL,

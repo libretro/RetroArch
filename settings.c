@@ -392,6 +392,7 @@ void config_set_defaults(void)
    *g_settings.input.autoconfig_dir = '\0';
    *g_settings.input.overlay = '\0';
    *g_settings.content_directory = '\0';
+   *g_settings.assets_directory = '\0';
    *g_settings.video.shader_path = '\0';
    *g_settings.video.shader_dir = '\0';
    *g_settings.video.filter_dir = '\0';
@@ -987,8 +988,11 @@ bool config_load_file(const char *path, bool set_defaults)
 
    CONFIG_GET_PATH(extraction_directory, "extraction_directory");
    CONFIG_GET_PATH(content_directory, "content_directory");
+   CONFIG_GET_PATH(assets_directory, "assets_directory");
    if (!strcmp(g_settings.content_directory, "default"))
       *g_settings.content_directory = '\0';
+   if (!strcmp(g_settings.assets_directory, "default"))
+      *g_settings.assets_directory = '\0';
 #ifdef HAVE_MENU
    CONFIG_GET_PATH(rgui_content_directory, "rgui_browser_directory");
    if (!strcmp(g_settings.rgui_content_directory, "default"))
@@ -1368,6 +1372,7 @@ bool config_save_file(const char *path)
    config_set_path(conf, "audio_filter_dir", *g_settings.audio.filter_dir ? g_settings.audio.filter_dir : "default");
 
    config_set_path(conf, "content_directory", *g_settings.content_directory ? g_settings.content_directory : "default");
+   config_set_path(conf, "assets_directory", *g_settings.assets_directory ? g_settings.assets_directory : "default");
 #ifdef HAVE_MENU
    config_set_path(conf, "rgui_browser_directory", *g_settings.rgui_content_directory ? g_settings.rgui_content_directory : "default");
    config_set_path(conf, "rgui_config_directory", *g_settings.rgui_config_directory ? g_settings.rgui_config_directory : "default");

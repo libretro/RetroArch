@@ -17,14 +17,35 @@
 // Compile: gcc -o supereagle.so -shared supereagle.c -std=c99 -O3 -Wall -pedantic -fPIC
 
 #include "softfilter.h"
-#include "softfilter_prototypes.h"
 #include <stdlib.h>
 
 #ifdef RARCH_INTERNAL
 #define softfilter_get_implementation supereagle_get_implementation
+#define softfilter_thread_data supereagle_softfilter_thread_data
+#define filter_data supereagle_filter_data
 #endif
 
 #define SUPEREAGLE_SCALE 2
+
+struct softfilter_thread_data
+{
+   void *out_data;
+   const void *in_data;
+   size_t out_pitch;
+   size_t in_pitch;
+   unsigned colfmt;
+   unsigned width;
+   unsigned height;
+   int first;
+   int last;
+};
+
+struct filter_data
+{
+   unsigned threads;
+   struct softfilter_thread_data *workers;
+   unsigned in_fmt;
+};
 
 static unsigned supereagle_generic_input_fmts(void)
 {
@@ -313,4 +334,6 @@ const struct softfilter_implementation *softfilter_get_implementation(softfilter
 
 #ifdef RARCH_INTERNAL
 #undef softfilter_get_implementation
+#undef softfilter_thread_data
+#undef filter_data
 #endif
