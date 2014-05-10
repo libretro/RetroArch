@@ -111,9 +111,6 @@ static bool rpng_image_load_tga_shift(const char *path, struct texture_image *ou
 static bool rpng_image_load_argb_shift(const char *path, struct texture_image *out_img,
       unsigned a_shift, unsigned r_shift, unsigned g_shift, unsigned b_shift)
 {
-   unsigned i;
-   (void)i;
-
    if (strstr(path, ".tga"))
       return rpng_image_load_tga_shift(path, out_img, a_shift, r_shift, g_shift, b_shift);
 #ifdef HAVE_ZLIB
@@ -129,8 +126,9 @@ static bool rpng_image_load_argb_shift(const char *path, struct texture_image *o
       // This is quite uncommon ...
       if (a_shift != 24 || r_shift != 16 || g_shift != 8 || b_shift != 0)
       {
+         int i;
          unsigned num_pixels = out_img->width * out_img->height;
-         uint32_t *pixels = out_img->pixels;
+         uint32_t *pixels = (uint32_t*)out_img->pixels;
 
          for (i = 0; i < num_pixels; i++)
          {
