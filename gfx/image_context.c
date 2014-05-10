@@ -18,6 +18,7 @@
 #include "gfx_context.h"
 #include "../general.h"
 #include <string.h>
+#include "image_context.h"
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"

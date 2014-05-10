@@ -54,6 +54,7 @@ extern const image_ctx_driver_t image_ctx_rpng;
 const void *image_ctx_find_driver(const char *ident);
 void find_prev_image_driver(void);
 void find_next_image_driver(void);
+void find_image_driver(void);
 const void *image_ctx_init_first(void);
 
 #endif
