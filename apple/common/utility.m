@@ -47,11 +47,12 @@ void apple_display_alert(const char *message, const char *title)
 // Fetch a value from a config file, returning defaultValue if the value is not present
 NSString* objc_get_value_from_config(config_file_t* config, NSString* name, NSString* defaultValue)
 {
+   NSString *result;
    char* data = 0;
    if (config)
       config_get_string(config, name.UTF8String, &data);
    
-   NSString* result = data ? BOXSTRING(data) : defaultValue;
+   result = data ? BOXSTRING(data) : defaultValue;
    free(data);
    return result;
 }
