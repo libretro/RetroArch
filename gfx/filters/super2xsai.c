@@ -329,4 +329,6 @@ const struct softfilter_implementation *softfilter_get_implementation(softfilter
 
 #ifdef RARCH_INTERNAL
 #undef softfilter_get_implementation
+#undef softfilter_thread_data
+#undef filter_data
 #endif
