@@ -754,19 +754,31 @@ void lakka_render(void *data)
 
 static void lakka_init_assets(void *data)
 {
+   char path[256], dirpath[256];;
    rgui_handle_t *rgui = (rgui_handle_t*)data;
 
    if (!rgui)
       return;
 
-   settings_icon = png_texture_load("/usr/share/retroarch/settings.png", &dim, &dim);
-   arrow_icon = png_texture_load("/usr/share/retroarch/arrow.png", &dim, &dim);
-   run_icon = png_texture_load("/usr/share/retroarch/run.png", &dim, &dim);
-   resume_icon = png_texture_load("/usr/share/retroarch/resume.png", &dim, &dim);
-   savestate_icon = png_texture_load("/usr/share/retroarch/savestate.png", &dim, &dim);
-   loadstate_icon = png_texture_load("/usr/share/retroarch/loadstate.png", &dim, &dim);
-   screenshot_icon = png_texture_load("/usr/share/retroarch/screenshot.png", &dim, &dim);
-   reload_icon = png_texture_load("/usr/share/retroarch/reload.png", &dim, &dim);
+   fill_pathname_join(dirpath, g_settings.assets_directory, "lakka", sizeof(dirpath));
+   fill_pathname_slash(dirpath, sizeof(dirpath));
+
+   fill_pathname_join(path, dirpath, "settings.png", sizeof(path));
+   settings_icon = png_texture_load(path, &dim, &dim);
+   fill_pathname_join(path, dirpath, "arrow.png", sizeof(path));
+   arrow_icon = png_texture_load(path, &dim, &dim);
+   fill_pathname_join(path, dirpath, "run.png", sizeof(path));
+   run_icon = png_texture_load(path, &dim, &dim);
+   fill_pathname_join(path, dirpath, "resume.png", sizeof(path));
+   resume_icon = png_texture_load(path, &dim, &dim);
+   fill_pathname_join(path, dirpath, "savestate.png", sizeof(path));
+   savestate_icon = png_texture_load(path, &dim, &dim);
+   fill_pathname_join(path, dirpath, "loadstate.png", sizeof(path));
+   loadstate_icon = png_texture_load(path, &dim, &dim);
+   fill_pathname_join(path, dirpath, "screenshot.png", sizeof(path));
+   screenshot_icon = png_texture_load(path, &dim, &dim);
+   fill_pathname_join(path, dirpath, "reload.png", sizeof(path));
+   reload_icon = png_texture_load(path, &dim, &dim);
 
    font_driver->render_msg(font, "Run", &run_label);
    font_driver->render_msg(font, "Resume", &resume_label);
@@ -954,7 +966,10 @@ static void *lakka_init(void)
 
    for (i = 0; i < num_categories-1; i++)
    {
-      char core_id[256], texturepath[256], gametexturepath[256];
+      char core_id[256], texturepath[256], gametexturepath[256], dirpath[256];
+
+      fill_pathname_join(dirpath, g_settings.assets_directory, "lakka", sizeof(dirpath));
+      fill_pathname_slash(dirpath, sizeof(dirpath));
       struct font_output_list out;
       core_info_t corenfo = rgui->core_info->list[i];
 
@@ -967,11 +982,11 @@ static void *lakka_init(void)
       strlcpy(core_id, str_replace(core_id, "libretro-", ""), sizeof(core_id));
       strlcpy(core_id, str_replace(core_id, "libretro_", ""), sizeof(core_id));
 
-      strlcpy(texturepath, "/usr/share/retroarch/", sizeof(texturepath));
+      strlcpy(texturepath, dirpath, sizeof(texturepath));
       strlcat(texturepath, core_id, sizeof(texturepath));
       strlcat(texturepath, ".png", sizeof(texturepath));
 
-      strlcpy(gametexturepath, "/usr/share/retroarch/", sizeof(gametexturepath));
+      strlcpy(gametexturepath, dirpath, sizeof(gametexturepath));
       strlcat(gametexturepath, core_id, sizeof(gametexturepath));
       strlcat(gametexturepath, "-game.png", sizeof(gametexturepath));
 
