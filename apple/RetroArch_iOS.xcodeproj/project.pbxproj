@@ -11,6 +11,8 @@
 		501881EE184BB54C006F665D /* CoreMedia.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 501881ED184BB54C006F665D /* CoreMedia.framework */; };
 		509FC979183F9F18007A5A30 /* menu.m in Sources */ = {isa = PBXBuildFile; fileRef = 509FC978183F9F18007A5A30 /* menu.m */; };
 		50CCC828185E0E7D001F5BC8 /* CoreLocation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 50CCC827185E0E7D001F5BC8 /* CoreLocation.framework */; };
+		50DA5C05191EEECE0072AF07 /* sinc_neon.S in Sources */ = {isa = PBXBuildFile; fileRef = 50DA5C04191EEECE0072AF07 /* sinc_neon.S */; };
+		50DA5C07191EEED70072AF07 /* utils_neon.S in Sources */ = {isa = PBXBuildFile; fileRef = 50DA5C06191EEED70072AF07 /* utils_neon.S */; };
 		50E7189F184B88AA001956CE /* CoreVideo.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 50E7189E184B88AA001956CE /* CoreVideo.framework */; };
 		50F54A871848F9FC00E19EFD /* ic_pause.png in Resources */ = {isa = PBXBuildFile; fileRef = 50F54A861848F9FC00E19EFD /* ic_pause.png */; };
 		962979F616C43B9500E6DCE0 /* ic_dir.png in Resources */ = {isa = PBXBuildFile; fileRef = 962979F416C43B9500E6DCE0 /* ic_dir.png */; };
@@ -46,6 +48,8 @@
 		501881ED184BB54C006F665D /* CoreMedia.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreMedia.framework; path = System/Library/Frameworks/CoreMedia.framework; sourceTree = SDKROOT; };
 		509FC978183F9F18007A5A30 /* menu.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = menu.m; path = iOS/menu.m; sourceTree = SOURCE_ROOT; };
 		50CCC827185E0E7D001F5BC8 /* CoreLocation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreLocation.framework; path = System/Library/Frameworks/CoreLocation.framework; sourceTree = SDKROOT; };
+		50DA5C04191EEECE0072AF07 /* sinc_neon.S */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.asm; path = sinc_neon.S; sourceTree = "<group>"; };
+		50DA5C06191EEED70072AF07 /* utils_neon.S */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.asm; path = utils_neon.S; sourceTree = "<group>"; };
 		50E7189E184B88AA001956CE /* CoreVideo.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreVideo.framework; path = System/Library/Frameworks/CoreVideo.framework; sourceTree = SDKROOT; };
 		50F54A861848F9FC00E19EFD /* ic_pause.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = ic_pause.png; sourceTree = "<group>"; };
 		962979F416C43B9500E6DCE0 /* ic_dir.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = ic_dir.png; path = "../../android/phoenix/res/drawable-xhdpi/ic_dir.png"; sourceTree = "<group>"; };
@@ -197,6 +201,8 @@
 		96AFAEE516C1DC73009DE44C /* audio */ = {
 			isa = PBXGroup;
 			children = (
+				50DA5C06191EEED70072AF07 /* utils_neon.S */,
+				50DA5C04191EEECE0072AF07 /* sinc_neon.S */,
 			);
 			name = audio;
 			path = ../audio;
@@ -304,7 +310,9 @@
 				963C3C32186E3D2600A6EB1E /* apple_gamecontroller.m in Sources */,
 				96297A0F16C5AEA100E6DCE0 /* main.m in Sources */,
 				963F5AC816CC523B009BBD19 /* RAGameView.m in Sources */,
+				50DA5C07191EEED70072AF07 /* utils_neon.S in Sources */,
 				D48581DE16F823F9004BEB17 /* griffin.c in Sources */,
+				50DA5C05191EEECE0072AF07 /* sinc_neon.S in Sources */,
 				96337E82176AC6E5004685F3 /* utility.m in Sources */,
 				509FC979183F9F18007A5A30 /* menu.m in Sources */,
 				9678945B1788EAAE00D6CA69 /* browser.m in Sources */,
@@ -475,6 +483,7 @@
 					"-DWANT_MINIZ",
 					"-DSINC_LOWER_QUALITY",
 					"-DRARCH_INTERNAL",
+					"-DHAVE_NEON",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				VALID_ARCHS = "armv7 armv7s";
