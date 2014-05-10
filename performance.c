@@ -275,7 +275,8 @@ static uint64_t xgetbv_x86(uint32_t index)
 }
 #endif
 
-#if defined(HAVE_NEON) && !defined(__MACH__)
+#if defined(HAVE_NEON)
+/* TODO/FIX - does this work on iOS? */
 static void arm_enable_runfast_mode(void)
 {
    // RunFast mode. Enables flush-to-zero and some floating point optimizations.
@@ -425,9 +426,7 @@ uint64_t rarch_get_cpu_features(void)
    RARCH_LOG("[CPUID]: NEON: %u\n", !!(cpu & RETRO_SIMD_NEON));
 #elif defined(HAVE_NEON)
    cpu |= RETRO_SIMD_NEON;
-#ifndef __MACH__
    arm_enable_runfast_mode();
-#endif
    RARCH_LOG("[CPUID]: NEON: %u\n", !!(cpu & RETRO_SIMD_NEON));
 #elif defined(__ALTIVEC__)
    cpu |= RETRO_SIMD_VMX;
