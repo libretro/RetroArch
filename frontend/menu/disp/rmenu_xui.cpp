@@ -491,6 +491,8 @@ static void rmenu_xui_render(void *data)
 #endif
    else if (menu_type == RGUI_SYSTEM_DIR_PATH)
       snprintf(title, sizeof(title), "SYSTEM DIR %s", dir);
+   else if (menu_type == RGUI_ASSETS_DIR_PATH)
+      snprintf(title, sizeof(title), "ASSETS DIR %s", dir);
    else
    {
       if (rgui->defer_core)

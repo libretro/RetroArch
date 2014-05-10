@@ -321,6 +321,7 @@ struct settings
    bool stdin_cmd_enable;
 
    char content_directory[PATH_MAX];
+   char assets_directory[PATH_MAX];
 #if defined(HAVE_MENU)
    char rgui_content_directory[PATH_MAX];
    char rgui_config_directory[PATH_MAX];
