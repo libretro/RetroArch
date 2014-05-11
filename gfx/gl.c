@@ -544,7 +544,7 @@ static void gl_create_fbo_textures(void *data)
             RARCH_LOG("FBO pass #%d is floating-point.\n", i);
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F,
                   gl->fbo_rect[i].width, gl->fbo_rect[i].height,
-                  0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+                  0, GL_RGBA, GL_FLOAT, NULL);
          }
          else
 #endif
