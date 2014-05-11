@@ -158,7 +158,9 @@ typedef struct gl
    unsigned tex_index; // For use with PREV.
    unsigned textures;
    struct gl_tex_info prev_info[MAX_TEXTURES];
-   GLuint tex_filter;
+   GLuint tex_mag_filter;
+   GLuint tex_min_filter;
+   bool tex_mipmap;
 
    void *empty_buf;
 
@@ -181,6 +183,7 @@ typedef struct gl
    bool hw_render_fbo_init;
    bool hw_render_depth_init;
    bool has_fp_fbo;
+   bool has_srgb_fbo;
 #endif
    bool hw_render_use;
    bool shared_context_use;
@@ -341,11 +344,13 @@ extern void glBufferSubDataTextureReferenceRA( GLenum target, GLintptr offset, G
 #endif
 
 #if defined(HAVE_OPENGLES)
-
 #ifndef GL_UNPACK_ROW_LENGTH
 #define GL_UNPACK_ROW_LENGTH  0x0CF2
 #endif
 
+#ifndef GL_SRGB_ALPHA_EXT
+#define GL_SRGB_ALPHA_EXT 0x8C42
+#endif
 #endif
 
 void gl_set_projection(void *data, struct gl_ortho *ortho, bool allow_rotate);

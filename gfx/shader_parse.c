@@ -100,6 +100,15 @@ static bool shader_parse_pass(config_file_t *conf, struct gfx_shader_pass *pass,
    if (config_get_array(conf, frame_count_mod_buf, frame_count_mod, sizeof(frame_count_mod)))
       pass->frame_count_mod = strtoul(frame_count_mod, NULL, 0);
 
+   // SRGB and mipmapping
+   char srgb_output_buf[64];
+   print_buf(srgb_output_buf, "srgb_framebuffer%u", i);
+   config_get_bool(conf, srgb_output_buf, &pass->srgb_fbo);
+
+   char mipmap_buf[64];
+   print_buf(mipmap_buf, "mipmap_input%u", i);
+   config_get_bool(conf, mipmap_buf, &pass->mipmap);
+
    // Scale
    struct gfx_fbo_scale *scale = &pass->fbo;
    char scale_type[64] = {0};
@@ -1064,6 +1073,11 @@ void gfx_shader_write_conf_cgp(config_file_t *conf, const struct gfx_shader *sha
          print_buf(key, "frame_count_mod%u", i);
          config_set_int(conf, key, pass->frame_count_mod);
       }
+
+      print_buf(key, "srgb_framebuffer%u", i);
+      config_set_bool(conf, key, pass->srgb_fbo);
+      print_buf(key, "mipmap_input%u", i);
+      config_set_bool(conf, key, pass->mipmap);
 
       shader_write_fbo(conf, &pass->fbo, i);
    }

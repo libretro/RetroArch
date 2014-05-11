@@ -52,6 +52,8 @@ struct gl_shader_backend
    bool (*set_coords)(const struct gl_coords *coords);
    bool (*set_mvp)(void *data, const math_matrix *mat);
    unsigned (*get_prev_textures)(void);
+   bool (*mipmap_input)(unsigned index);
+   bool (*srgb_output)(unsigned index);
 
    enum rarch_shader_type type;
 };
@@ -60,7 +62,6 @@ struct gl_shader_backend
 void gl_load_texture_data(GLuint obj, const struct texture_image *img,
       GLenum wrap, bool linear, bool mipmap);
 bool gl_load_luts(const struct gfx_shader *generic_shader, GLuint *lut_textures);
-
 #endif
 
 #endif

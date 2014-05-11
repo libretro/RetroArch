@@ -80,6 +80,8 @@ struct gfx_shader_pass
    enum gfx_filter_type filter;
    enum gfx_wrap_type wrap;
    unsigned frame_count_mod;
+   bool srgb_fbo;
+   bool mipmap;
 };
 
 struct gfx_shader_lut

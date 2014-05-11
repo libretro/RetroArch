@@ -429,6 +429,18 @@ static bool hlsl_set_mvp(void *data, const math_matrix *mat)
       return false;
 }
 
+static bool hlsl_mipmap_input(unsigned index)
+{
+   (void)index;
+   return false;
+}
+
+static bool hlsl_srgb_output(unsigned index)
+{
+   (void)index;
+   return false;
+}
+
 const gl_shader_backend_t hlsl_backend = {
    hlsl_init,
    hlsl_deinit,
@@ -441,6 +453,8 @@ const gl_shader_backend_t hlsl_backend = {
    NULL,              /* hlsl_set_coords */
    hlsl_set_mvp,
    NULL,              /* hlsl_get_prev_textures */
+   hlsl_mipmap_input,
+   hlsl_srgb_output,
 
    RARCH_SHADER_HLSL,
 };

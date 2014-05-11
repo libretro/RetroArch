@@ -890,6 +890,22 @@ static unsigned gl_cg_get_prev_textures(void)
    return max_prev;
 }
 
+static bool gl_cg_mipmap_input(unsigned index)
+{
+   if (cg_active && index)
+      return cg_shader->pass[index - 1].mipmap;
+   else
+      return false;
+}
+
+static bool gl_cg_srgb_output(unsigned index)
+{
+   if (cg_active && index)
+      return cg_shader->pass[index - 1].srgb_fbo;
+   else
+      return false;
+}
+
 void gl_cg_set_compiler_args(const char **argv)
 {
    cg_arguments = argv;
@@ -912,6 +928,8 @@ const gl_shader_backend_t gl_cg_backend = {
    gl_cg_set_coords,
    gl_cg_set_mvp,
    gl_cg_get_prev_textures,
+   gl_cg_mipmap_input,
+   gl_cg_srgb_output,
 
    RARCH_SHADER_CG,
 };
