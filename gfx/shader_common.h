@@ -53,7 +53,6 @@ struct gl_shader_backend
    bool (*set_mvp)(void *data, const math_matrix *mat);
    unsigned (*get_prev_textures)(void);
    bool (*mipmap_input)(unsigned index);
-   bool (*srgb_output)(unsigned index);
 
    enum rarch_shader_type type;
 };

@@ -352,7 +352,6 @@ void gl_shader_set_coords(void *data, const struct gl_coords *coords, const math
 #define gl_shader_filter_type(gl, index, smooth) ((gl->shader) ? gl->shader->filter_type(index, smooth) : false)
 #define gl_shader_wrap_type(gl, index) ((gl->shader) ? gl->shader->wrap_type(index) : RARCH_WRAP_BORDER)
 #define gl_shader_mipmap_input(gl, index) ((gl->shader) ? gl->shader->mipmap_input(index) : false)
-#define gl_shader_srgb_output(gl, index) ((gl->shader) ? gl->shader->srgb_output(index) : false)
 
 #ifdef IOS
 // There is no default frame buffer on IOS.
@@ -490,7 +489,6 @@ static void gl_create_fbo_textures(void *data)
       glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[i]);
 
       bool mipmapped = gl_shader_mipmap_input(gl, i + 2);
-      bool srgb_output = gl_shader_srgb_output(gl, i + 1); // From previous pass.
 
       GLenum min_filter = mipmapped ? base_mip_filt : base_filt;
       bool smooth = false;
@@ -507,23 +505,23 @@ static void gl_create_fbo_textures(void *data)
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrap_enum);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrap_enum);
 
-      bool fp_fbo = gl->fbo_scale[i].valid && gl->fbo_scale[i].fp_fbo;
-      bool srgb_fbo = gl->fbo_scale[i].valid && srgb_output;
+      bool fp_fbo = gl->fbo_scale[i].fp_fbo;
+      bool srgb_fbo = gl->fbo_scale[i].srgb_fbo;
 
       if (srgb_fbo)
       {
          if (!gl->has_srgb_fbo)
-            RARCH_ERR("sRGB FBO was requested, but it is not supported. Falling back to UNORM. Result will look odd!\n");
+            RARCH_ERR("[GL]: sRGB FBO was requested, but it is not supported. Falling back to UNORM. Result will look odd!\n");
       }
       else if (fp_fbo)
       {
          if (!gl->has_fp_fbo)
-            RARCH_ERR("Floating-point FBO was requested, but is not supported. Falling back to UNORM.\n");
+            RARCH_ERR("[GL]: Floating-point FBO was requested, but is not supported. Falling back to UNORM.\n");
       }
 
       if (srgb_fbo && gl->has_srgb_fbo)
       {
-         RARCH_LOG("FBO pass #%d is sRGB.\n", i);
+         RARCH_LOG("[GL]: FBO pass #%d is sRGB.\n", i);
 #ifdef HAVE_OPENGLES2
          glTexImage2D(GL_TEXTURE_2D,
                0, GL_SRGB_ALPHA_EXT,
@@ -541,7 +539,7 @@ static void gl_create_fbo_textures(void *data)
 #ifndef HAVE_OPENGLES2
          if (fp_fbo && gl->has_fp_fbo)
          {
-            RARCH_LOG("FBO pass #%d is floating-point.\n", i);
+            RARCH_LOG("[GL]: FBO pass #%d is floating-point.\n", i);
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F,
                   gl->fbo_rect[i].width, gl->fbo_rect[i].height,
                   0, GL_RGBA, GL_FLOAT, NULL);

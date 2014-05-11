@@ -61,6 +61,7 @@ struct gfx_fbo_scale
    unsigned abs_x;
    unsigned abs_y;
    bool fp_fbo;
+   bool srgb_fbo;
    bool valid;
 };
 
@@ -80,7 +81,6 @@ struct gfx_shader_pass
    enum gfx_filter_type filter;
    enum gfx_wrap_type wrap;
    unsigned frame_count_mod;
-   bool srgb_fbo;
    bool mipmap;
 };
 

@@ -100,10 +100,14 @@ static bool shader_parse_pass(config_file_t *conf, struct gfx_shader_pass *pass,
    if (config_get_array(conf, frame_count_mod_buf, frame_count_mod, sizeof(frame_count_mod)))
       pass->frame_count_mod = strtoul(frame_count_mod, NULL, 0);
 
-   // SRGB and mipmapping
+   // FBO types and mipmapping
    char srgb_output_buf[64];
    print_buf(srgb_output_buf, "srgb_framebuffer%u", i);
-   config_get_bool(conf, srgb_output_buf, &pass->srgb_fbo);
+   config_get_bool(conf, srgb_output_buf, &pass->fbo.srgb_fbo);
+
+   char fp_fbo_buf[64];
+   print_buf(fp_fbo_buf, "float_framebuffer%u", i);
+   config_get_bool(conf, fp_fbo_buf, &pass->fbo.fp_fbo);
 
    char mipmap_buf[64];
    print_buf(mipmap_buf, "mipmap_input%u", i);
@@ -142,10 +146,6 @@ static bool shader_parse_pass(config_file_t *conf, struct gfx_shader_pass *pass,
    scale->type_y = RARCH_SCALE_INPUT;
    scale->scale_x = 1.0;
    scale->scale_y = 1.0;
-
-   char fp_fbo_buf[64];
-   print_buf(fp_fbo_buf, "float_framebuffer%u", i);
-   config_get_bool(conf, fp_fbo_buf, &scale->fp_fbo);
 
    if (*scale_type_x)
    {
@@ -978,6 +978,8 @@ static void shader_write_fbo(config_file_t *conf, const struct gfx_fbo_scale *fb
    char key[64];
    print_buf(key, "float_framebuffer%u", i);
    config_set_bool(conf, key, fbo->fp_fbo);
+   print_buf(key, "srgb_framebuffer%u", i);
+   config_set_bool(conf, key, fbo->srgb_fbo);
 
    if (!fbo->valid)
       return;
@@ -1074,8 +1076,6 @@ void gfx_shader_write_conf_cgp(config_file_t *conf, const struct gfx_shader *sha
          config_set_int(conf, key, pass->frame_count_mod);
       }
 
-      print_buf(key, "srgb_framebuffer%u", i);
-      config_set_bool(conf, key, pass->srgb_fbo);
       print_buf(key, "mipmap_input%u", i);
       config_set_bool(conf, key, pass->mipmap);
 
