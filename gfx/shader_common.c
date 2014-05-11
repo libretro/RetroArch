@@ -32,10 +32,11 @@ void gl_load_texture_data(GLuint obj, const struct texture_image *img,
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrap);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrap);
 
-   GLint filter = linear ? (mipmap ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR) :
-                           (mipmap ? GL_NEAREST_MIPMAP_NEAREST : GL_NEAREST);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter);
+   GLint mag_filter = linear? GL_LINEAR : GL_NEAREST;
+   GLint min_filter = linear ? (mipmap ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR) :
+                               (mipmap ? GL_NEAREST_MIPMAP_NEAREST : GL_NEAREST);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, mag_filter);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, min_filter);
 
 #ifndef HAVE_PSGL
    glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
