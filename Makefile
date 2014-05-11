@@ -319,7 +319,7 @@ ifeq ($(HAVE_FREETYPE), 1)
 endif
 
 ifeq ($(HAVE_SDL_IMAGE), 1)
-	OBJ += gfx/image/image_sdl.o
+   OBJ += gfx/image/image_sdl.o
    LIBS += $(SDL_IMAGE_LIBS)
    DEFINES += $(SDL_IMAGE_CFLAGS)
 endif
