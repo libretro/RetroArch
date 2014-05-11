@@ -910,7 +910,7 @@ static inline void gl_start_frame_fbo(gl_t *gl)
    // We will "flip" it in place on last pass.
    gl->coords.vertex = vertexes;
 
-#ifdef GL_FRAMEBUFFER_SRGB
+#if defined(GL_FRAMEBUFFER_SRGB) && !defined(HAVE_OPENGLES)
    if (gl->has_srgb_fbo)
       glEnable(GL_FRAMEBUFFER_SRGB);
 #endif
@@ -1016,7 +1016,7 @@ static void gl_frame_fbo(void *data, const struct gl_tex_info *tex_info)
       fbo_tex_info_cnt++;
    }
 
-#ifdef GL_FRAMEBUFFER_SRGB
+#if defined(GL_FRAMEBUFFER_SRGB) && !defined(HAVE_OPENGLES)
    if (gl->has_srgb_fbo)
       glDisable(GL_FRAMEBUFFER_SRGB);
 #endif
