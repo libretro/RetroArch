@@ -172,13 +172,13 @@ VIDEO IMAGE
 #include "../gfx/image/image_ps3.c"
 #elif defined(_XBOX1)
 #include "../gfx/image/image_xdk1.c"
-#else
-#include "../gfx/image/image.c"
+#elif defined(HAVE_SDL_IMAGE)
+#include "../gfx/image/image_sdl.c"
 #endif
 
-#if defined(WANT_RPNG) || defined(RARCH_MOBILE)
+#include "../gfx/image_context.c"
+#include "../gfx/image/image_rpng.c"
 #include "../gfx/rpng/rpng.c"
-#endif
 
 /*============================================================
 VIDEO DRIVER

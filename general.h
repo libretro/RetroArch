@@ -193,6 +193,11 @@ struct settings
    } menu;
 #endif
 
+   struct 
+   {
+      char driver[32];
+   } image;
+
 #ifdef HAVE_CAMERA
    struct
    {
@@ -715,6 +720,7 @@ const char *config_get_default_osk(void);
 const char *config_get_default_video(void);
 const char *config_get_default_audio(void);
 const char *config_get_default_input(void);
+const char *config_get_default_image(void);
 
 #include "conf/config_file.h"
 bool config_load_file(const char *path, bool set_defaults);

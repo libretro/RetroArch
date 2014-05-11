@@ -126,10 +126,15 @@ static char** waiting_argv;
 
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification
 {
+   NSArray *paths;
+   NSComboBox* cb;
+   const core_info_list_t* cores;
+   int i;
+    
    apple_platform = self;
    _loaded = true;
 
-   NSArray* paths = (NSArray*)NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask, YES);
+   paths = (NSArray*)NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask, YES);
    self.configDirectory = [[paths objectAtIndex:0] stringByAppendingPathComponent:BOXSTRING("RetroArch")];
    self.globalConfigFile = [NSString stringWithFormat:BOXSTRING("%@/retroarch.cfg"), self.configDirectory];
    self.coreDirectory = [[[NSBundle mainBundle] bundlePath] stringByAppendingPathComponent:BOXSTRING("Contents/Resources/modules")];
@@ -150,13 +155,13 @@ static char** waiting_argv;
    self.settingsWindow = [[[NSWindowController alloc] initWithWindowNibName:BOXSTRING("Settings")] autorelease];
    
    // Create core select list
-   NSComboBox* cb = (NSComboBox*)[[self.coreSelectSheet contentView] viewWithTag:1];
+   cb = (NSComboBox*)[[self.coreSelectSheet contentView] viewWithTag:1];
 
    core_info_set_core_path(self.coreDirectory.UTF8String);
    core_info_set_config_path(self.configDirectory.UTF8String);
-   const core_info_list_t* cores = (const core_info_list_t*)core_info_list_get();
+   cores = (const core_info_list_t*)core_info_list_get();
     
-   for (int i = 0; cores && i < cores->count; i ++)
+   for (i = 0; cores && i < cores->count; i ++)
    {
       NSString* desc = (NSString*)BOXSTRING(cores->list[i].display_name);
 #if defined(MAC_OS_X_VERSION_10_6)
@@ -266,6 +271,8 @@ static char** waiting_argv;
 
 - (IBAction)coreWasChosen:(id)sender
 {
+   NSComboBox* cb;
+    
    [[NSApplication sharedApplication] stopModal];
    [[NSApplication sharedApplication] endSheet:self.coreSelectSheet returnCode:0];
    [self.coreSelectSheet orderOut:self];
@@ -273,7 +280,7 @@ static char** waiting_argv;
    if (_isTerminating)
       return;
 
-   NSComboBox* cb = (NSComboBox*)[[self.coreSelectSheet contentView] viewWithTag:1];
+   cb = (NSComboBox*)[[self.coreSelectSheet contentView] viewWithTag:1];
 #if defined(MAC_OS_X_VERSION_10_6)
 	/* FIXME - Rewrite this so that this is no longer an associated object - requires ObjC 2.0 runtime */
    self.core = objc_getAssociatedObject(cb.objectValueOfSelectedItem, associated_core_key);
@@ -330,13 +337,16 @@ static char** waiting_argv;
 
 int main(int argc, char *argv[])
 {
-   for (int i = 0; i != argc; i ++)
+   int i;
+   for (i = 0; i < argc; i ++)
+   {
       if (strcmp(argv[i], "--") == 0)
       {
          waiting_argc = argc - i;
          waiting_argv = argv + i;
          break;
       }
+   }
 
    return NSApplicationMain(argc, (const char **) argv);
 }

@@ -22,7 +22,6 @@
 #include <EGL/egl.h>
 
 #include "../../frontend/platform/platform_android.h"
-#include "../image/image.h"
 
 #include "../fonts/gl_font.h"
 #include <stdint.h>

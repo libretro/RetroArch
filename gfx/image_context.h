@@ -13,15 +13,15 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __RARCH_IMAGE_H
-#define __RARCH_IMAGE_H
+#ifndef __RARCH_IMAGE_CONTEXT_H
+#define __RARCH_IMAGE_CONTEXT_H
 
 #include <stdint.h>
-#include "../../boolean.h"
+#include "../boolean.h"
 
 #ifdef _XBOX1
 #include <xtl.h>
-#include "../../xdk/xdk_defines.h"
+#include "../xdk/xdk_defines.h"
 #endif
 
 struct texture_image
@@ -38,8 +38,23 @@ struct texture_image
 #endif
 };
 
-bool texture_image_load(const char *path, struct texture_image* img);
-void texture_image_free(struct texture_image *img);
+typedef struct image_ctx_driver
+{
+   bool (*load)(void*, const char*, void *);
+   void (*free)(void *, void *);
+   // Human readable string.
+   const char *ident;
+} image_ctx_driver_t;
+
+extern const image_ctx_driver_t image_ctx_xdk1;
+extern const image_ctx_driver_t image_ctx_ps3;
+extern const image_ctx_driver_t image_ctx_sdl;
+extern const image_ctx_driver_t image_ctx_rpng;
+
+const void *image_ctx_find_driver(const char *ident);
+void find_prev_image_driver(void);
+void find_next_image_driver(void);
+void find_image_driver(void);
+const void *image_ctx_init_first(void);
 
 #endif
-

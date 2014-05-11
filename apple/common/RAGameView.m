@@ -162,9 +162,10 @@ static bool g_is_syncing = true;
 // < iOS Pause menu and lifecycle
 - (id)init
 {
+   UINib *xib;
    self = [super init];
 
-   UINib *xib = [UINib nibWithNibName:BOXSTRING("PauseIndicatorView") bundle:nil];
+   xib = (UINib*)[UINib nibWithNibName:BOXSTRING("PauseIndicatorView") bundle:nil];
    g_pause_indicator_view = [[xib instantiateWithOwner:[RetroArch_iOS get] options:nil] lastObject];
 
    g_view = [GLKView new];
@@ -193,14 +194,15 @@ static bool g_is_syncing = true;
 
 - (void)viewWillLayoutSubviews
 {
+   float tenpctw, tenpcth, width, height;
    UIInterfaceOrientation orientation = self.interfaceOrientation;
    CGRect screenSize = [[UIScreen mainScreen] bounds];
    
-   const float width = ((int)orientation < 3) ? CGRectGetWidth(screenSize) : CGRectGetHeight(screenSize);
-   const float height = ((int)orientation < 3) ? CGRectGetHeight(screenSize) : CGRectGetWidth(screenSize);
+   width = ((int)orientation < 3) ? CGRectGetWidth(screenSize) : CGRectGetHeight(screenSize);
+   height = ((int)orientation < 3) ? CGRectGetHeight(screenSize) : CGRectGetWidth(screenSize);
 
-   float tenpctw = width / 10.0f;
-   float tenpcth = height / 10.0f;
+   tenpctw = width / 10.0f;
+   tenpcth = height / 10.0f;
    
    g_pause_indicator_view.frame = CGRectMake(tenpctw * 4.0f, 0.0f, tenpctw * 2.0f, tenpcth);
    [g_pause_indicator_view viewWithTag:1].frame = CGRectMake(0, 0, tenpctw * 2.0f, tenpcth);
@@ -297,6 +299,10 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
 {
     CVReturn ret;
     int width, height;
+    NSError *error;
+    AVCaptureVideoDataOutput * dataOutput;
+    AVCaptureDeviceInput *input;
+    AVCaptureDevice *videoDevice;
     
     //FIXME - dehardcode this
     width = 640;
@@ -320,14 +326,13 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
     [_session setSessionPreset:_sessionPreset];
     
     //-- Creata a video device and input from that Device.  Add the input to the capture session.
-    AVCaptureDevice *videoDevice = (AVCaptureDevice*)[AVCaptureDevice defaultDeviceWithMediaType:AVMediaTypeVideo];
-    if(videoDevice == nil)
+    videoDevice = (AVCaptureDevice*)[AVCaptureDevice defaultDeviceWithMediaType:AVMediaTypeVideo];
+    if (videoDevice == nil)
         assert(0);
     
     //-- Add the device to the session.
-    NSError *error;
-    AVCaptureDeviceInput *input = (AVCaptureDeviceInput*)[AVCaptureDeviceInput deviceInputWithDevice:videoDevice error:&error];
-    if(error)
+    input = (AVCaptureDeviceInput*)[AVCaptureDeviceInput deviceInputWithDevice:videoDevice error:&error];
+    if (error)
     {
         RARCH_ERR("video device input %s\n", error.localizedDescription.UTF8String);
         assert(0);
@@ -336,7 +341,7 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
     [_session addInput:input];
     
     //-- Create the output for the capture session.
-    AVCaptureVideoDataOutput * dataOutput = (AVCaptureVideoDataOutput*)[[AVCaptureVideoDataOutput alloc] init];
+    dataOutput = (AVCaptureVideoDataOutput*)[[AVCaptureVideoDataOutput alloc] init];
     [dataOutput setAlwaysDiscardsLateVideoFrames:NO]; // Probably want to set this to NO when recording
     
 	[dataOutput setVideoSettings:[NSDictionary dictionaryWithObject:[NSNumber numberWithInt:kCVPixelFormatType_32BGRA] forKey:(id)kCVPixelBufferPixelFormatTypeKey]];
@@ -390,8 +395,9 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
 
 - (void)locationManager:(CLLocationManager *)manager didUpdateLocations:(NSArray *)locations
 {
+    CLLocation *location;
     locationChanged = true;
-    CLLocation *location = (CLLocation*)[locations objectAtIndex:([locations count] - 1)];
+    location = (CLLocation*)[locations objectAtIndex:([locations count] - 1)];
     currentLatitude  = [location coordinate].latitude;
     currentLongitude = [location coordinate].longitude;
     currentHorizontalAccuracy = location.horizontalAccuracy;
@@ -432,16 +438,17 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
 
 static RAScreen* get_chosen_screen(void)
 {
+    NSArray *screens;
 #if defined(OSX) && !defined(MAC_OS_X_VERSION_10_6)
 #else
    if (g_settings.video.monitor_index >= RAScreen.screens.count)
    {
       RARCH_WARN("video_monitor_index is greater than the number of connected monitors; using main screen instead.\n");
-      return [RAScreen mainScreen];
+      return RAScreen.mainScreen;
    }
 #endif
 	
-   NSArray *screens = (NSArray*)[RAScreen screens];
+   screens = (NSArray*)RAScreen.screens;
    return (RAScreen*)[screens objectAtIndex:g_settings.video.monitor_index];
 }
 
@@ -550,9 +557,10 @@ bool apple_gfx_ctx_set_video_mode(void *data, unsigned width, unsigned height, b
 
 void apple_gfx_ctx_get_video_size(void *data, unsigned* width, unsigned* height)
 {
-   (void)data;
-   RAScreen* screen = (RAScreen*)get_chosen_screen();
+   RAScreen *screen;
    CGRect size;
+   (void)data;
+   screen = (RAScreen*)get_chosen_screen();
 	
    if (g_initialized)
    {
@@ -566,19 +574,21 @@ void apple_gfx_ctx_get_video_size(void *data, unsigned* width, unsigned* height)
    else
       size = screen.bounds;
 
-
    *width  = CGRectGetWidth(size)  * screen.scale;
    *height = CGRectGetHeight(size) * screen.scale;
 }
 
 void apple_gfx_ctx_update_window_title(void *data)
 {
-   (void)data;
    static char buf[128], buf_fps[128];
-   bool fps_draw = g_settings.fps_show;
-   bool got_text = gfx_get_fps(buf, sizeof(buf), fps_draw ? buf_fps : NULL, sizeof(buf_fps));
+   bool fps_draw, got_text;
+    
+   (void)data;
+   (void)got_text;
+
+   fps_draw = g_settings.fps_show;
+   got_text = gfx_get_fps(buf, sizeof(buf), fps_draw ? buf_fps : NULL, sizeof(buf_fps));
    static const char* const text = buf; // < Can't access buf directly in the block
-    (void)got_text;
     (void)text;
 #ifdef OSX
    if (got_text)
@@ -596,8 +606,9 @@ bool apple_gfx_ctx_has_focus(void *data)
 
 void apple_gfx_ctx_swap_buffers(void *data)
 {
+   bool swap;
    (void)data;
-   bool swap = --g_fast_forward_skips < 0;
+   swap = --g_fast_forward_skips < 0;
 
    if (!swap)
       return;
@@ -632,13 +643,15 @@ typedef struct ios_camera
 
 static void *ios_camera_init(const char *device, uint64_t caps, unsigned width, unsigned height)
 {
+   ioscamera_t *ioscamera;
+    
    if ((caps & (1ULL << RETRO_CAMERA_BUFFER_OPENGL_TEXTURE)) == 0)
    {
       RARCH_ERR("ioscamera returns OpenGL texture.\n");
       return NULL;
    }
 
-   ioscamera_t *ioscamera = (ioscamera_t*)calloc(1, sizeof(ioscamera_t));
+   ioscamera = (ioscamera_t*)calloc(1, sizeof(ioscamera_t));
    if (!ioscamera)
       return NULL;
 

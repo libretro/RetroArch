@@ -17,7 +17,7 @@
 #include "../../config.h"
 #endif
 
-#include "image.h"
+#include "../image_context.h"
 #include "../../file.h"
 
 #include <stdlib.h>
@@ -26,84 +26,7 @@
 #include "../../general.h"
 #include "../rpng/rpng.h"
 
-#ifdef HAVE_SDL_IMAGE
-
-#include "SDL_image.h"
-bool texture_image_load_argb_shift(const char *path, struct texture_image *out_img,
-      unsigned a_shift, unsigned r_shift, unsigned g_shift, unsigned b_shift)
-{
-   int y, x;
-   SDL_Surface *img = IMG_Load(path);
-   if (!img)
-      return false;
-
-   out_img->width = img->w;
-   out_img->height = img->h;
-
-   size_t size = out_img->width * out_img->height * sizeof(uint32_t);
-   out_img->pixels = (uint32_t*)malloc(size);
-   if (!out_img->pixels)
-   {
-      SDL_FreeSurface(img);
-      return false;
-   }
-
-   const SDL_PixelFormat *fmt = img->format;
-   
-   RARCH_LOG("SDL_image: %dx%d @ %d bpp\n", img->w, img->h, img->format->BitsPerPixel);
-   if (img->format->BitsPerPixel == 32)
-   {
-      for (y = 0; y < img->h; y++)
-      {
-         uint32_t *dst = out_img->pixels + y * img->w;
-         const uint32_t *src = (const uint32_t*)img->pixels + y * img->pitch / sizeof(uint32_t);
-
-         for (x = 0; x < img->w; x++)
-         {
-            uint32_t r = (src[x] & fmt->Rmask) >> fmt->Rshift;
-            uint32_t g = (src[x] & fmt->Gmask) >> fmt->Gshift;
-            uint32_t b = (src[x] & fmt->Bmask) >> fmt->Bshift;
-            uint32_t a = (src[x] & fmt->Amask) >> fmt->Ashift;
-            dst[x] = (a << a_shift) | (r << r_shift) | (g << g_shift) | (b << b_shift);
-         }
-      }
-   }
-   else if (img->format->BitsPerPixel == 24)
-   {
-      for (y = 0; y < img->h; y++)
-      {
-         uint32_t *dst = out_img->pixels + y * img->w;
-         const uint8_t *src = (const uint8_t*)img->pixels + y * img->pitch;
-
-         for (x = 0; x < img->w; x++)
-         {
-            // Correct?
-            uint32_t color = 0;
-            color |= src[3 * x + 0] << 0;
-            color |= src[3 * x + 1] << 8;
-            color |= src[3 * x + 2] << 16;
-            uint32_t r = (color & fmt->Rmask) >> fmt->Rshift;
-            uint32_t g = (color & fmt->Gmask) >> fmt->Gshift;
-            uint32_t b = (color & fmt->Bmask) >> fmt->Bshift;
-            dst[x] = (0xff << a_shift) | (r << r_shift) | (g << g_shift) | (b << b_shift);
-         }
-      }
-   }
-   else
-   {
-      RARCH_ERR("8-bit and 16-bit image support are not implemented.\n");
-      SDL_FreeSurface(img);
-      return false;
-   }
-
-   SDL_FreeSurface(img);
-
-   return true;
-}
-
-#else
-
-static bool texture_image_load_tga_shift(const char *path, struct texture_image *out_img,
+static bool rpng_image_load_tga_shift(const char *path, struct texture_image *out_img,
       unsigned a_shift, unsigned r_shift, unsigned g_shift, unsigned b_shift)
 {
    unsigned i;
@@ -185,26 +108,28 @@ static bool texture_image_load_tga_shift(const char *path, struct texture_image 
    return true;
 }
 
-bool texture_image_load_argb_shift(const char *path, struct texture_image *out_img,
+static bool rpng_image_load_argb_shift(const char *path, struct texture_image *out_img,
       unsigned a_shift, unsigned r_shift, unsigned g_shift, unsigned b_shift)
 {
-   unsigned i;
-   (void)i;
    if (strstr(path, ".tga"))
-      return texture_image_load_tga_shift(path, out_img, a_shift, r_shift, g_shift, b_shift);
+      return rpng_image_load_tga_shift(path, out_img, a_shift, r_shift, g_shift, b_shift);
 #ifdef HAVE_ZLIB
    else if (strstr(path, ".png"))
    {
-      RARCH_LOG("[RPNG]: Using RPNG loader.\n");
       bool ret = rpng_load_image_argb(path, &out_img->pixels, &out_img->width, &out_img->height);
+
+      RARCH_LOG("[RPNG]: Using RPNG loader.\n");
+
       if (!ret)
          return false;
 
       // This is quite uncommon ...
       if (a_shift != 24 || r_shift != 16 || g_shift != 8 || b_shift != 0)
       {
+         int i;
          unsigned num_pixels = out_img->width * out_img->height;
-         uint32_t *pixels = out_img->pixels;
+         uint32_t *pixels = (uint32_t*)out_img->pixels;
+
          for (i = 0; i < num_pixels; i++)
          {
             uint32_t col = pixels[i];
@@ -222,8 +147,6 @@ bool texture_image_load_argb_shift(const char *path, struct texture_image *out_i
 
    return false;
 }
-
-#endif
 
 #ifdef GEKKO
 
@@ -245,7 +168,7 @@ bool texture_image_load_argb_shift(const char *path, struct texture_image *out_i
    src += tmp_pitch; \
 }
 
-static bool gx_convert_texture32(struct texture_image *image)
+static bool rpng_gx_convert_texture32(struct texture_image *image)
 {
    // memory allocation in libogc is extremely primitive so try to avoid gaps in memory when converting
    // by copying over to temp buffer first then converting over into main buffer again
@@ -279,21 +202,32 @@ static bool gx_convert_texture32(struct texture_image *image)
 
 #endif
 
-bool texture_image_load(const char *path, struct texture_image *out_img)
+static void rpng_image_free(void *data, void *image_data)
 {
+   struct texture_image *img = (struct texture_image*)image_data;
+
+   free(img->pixels);
+   memset(img, 0, sizeof(*img));
+}
+
+static bool rpng_image_load(void *data, const char *path, void *image_data)
+{
+   (void)data;
    bool ret;
+   struct texture_image *out_img = (struct texture_image*)image_data;
+
    // This interface "leak" is very ugly. FIXME: Fix this properly ...
    if (driver.gfx_use_rgba)
-      ret = texture_image_load_argb_shift(path, out_img, 24, 0, 8, 16);
+      ret = rpng_image_load_argb_shift(path, out_img, 24, 0, 8, 16);
    else
-      ret = texture_image_load_argb_shift(path, out_img, 24, 16, 8, 0);
+      ret = rpng_image_load_argb_shift(path, out_img, 24, 16, 8, 0);
 
 #ifdef GEKKO
    if (ret)
    {
-      if (!gx_convert_texture32(out_img))
+      if (!rpng_gx_convert_texture32(out_img))
       {
-         texture_image_free(out_img);
+         rpng_image_free(data, out_img);
          ret = false;
       }
    }
@@ -302,9 +236,8 @@ bool texture_image_load(const char *path, struct texture_image *out_img)
    return ret;
 }
 
-void texture_image_free(struct texture_image *img)
-{
-   free(img->pixels);
-   memset(img, 0, sizeof(*img));
-}
-
+const image_ctx_driver_t image_ctx_rpng = {
+   rpng_image_load,
+   rpng_image_free,
+   "rpng",
+};

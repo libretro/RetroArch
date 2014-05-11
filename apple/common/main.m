@@ -33,7 +33,7 @@ NSString* apple_core;
 
 void apple_rarch_exited(void)
 {
-   NSString* used_core = (NSString*)apple_core;
+   NSString *used_core = (NSString*)apple_core;
    apple_core = 0;
    
    if (apple_is_running)

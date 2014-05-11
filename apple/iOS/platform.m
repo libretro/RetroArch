@@ -114,12 +114,13 @@ void ios_set_logging_state(const char *log_path, bool on)
 // Input helpers: This is kept here because it needs objective-c
 static void handle_touch_event(NSArray* touches)
 {
+   int i;
    unsigned long numTouches = touches.count;
    const float scale = [[UIScreen mainScreen] scale];
 
    g_current_input_data.touch_count = 0;
    
-   for(int i = 0; i != numTouches && g_current_input_data.touch_count < MAX_TOUCHES; i ++)
+   for(i = 0; i != numTouches && g_current_input_data.touch_count < MAX_TOUCHES; i ++)
    {
       UITouch* touch = [touches objectAtIndex:i];
       
@@ -157,6 +158,7 @@ static void handle_touch_event(NSArray* touches)
 // Keyboard handler for iOS 7
 - (id)_keyCommandForEvent:(UIEvent*)event
 {
+   int i;
    // This gets called twice with the same timestamp for each keypress, that's fine for polling
    // but is bad for business with events.
    static double last_time_stamp;
@@ -170,13 +172,13 @@ static void handle_touch_event(NSArray* touches)
    {
       NSString* ch = (NSString*)event._privateInput;
       
-      if (!ch || [ch length] == 0)
+      if (!ch || ch.length == 0)
          apple_input_keyboard_event(event._isKeyDown, (uint32_t)event._keyCode, 0, (uint32_t)event._modifierFlags);
       else
       {
          apple_input_keyboard_event(event._isKeyDown, (uint32_t)event._keyCode, [ch characterAtIndex:0], (uint32_t)event._modifierFlags);
          
-         for (unsigned i = 1; i != [ch length]; i ++)
+         for (i = 1; i < ch.length; i++)
             apple_input_keyboard_event(event._isKeyDown, 0, [ch characterAtIndex:i], (uint32_t)event._modifierFlags);
       }
    }
@@ -217,6 +219,10 @@ static void handle_touch_event(NSArray* touches)
 
 - (void)applicationDidFinishLaunching:(UIApplication *)application
 {
+   const rarch_setting_t* frontend_settings;
+   const core_info_list_t* core_list;
+   const char *path;
+    
    apple_platform = self;
    [self setDelegate:self];
 
@@ -235,8 +241,9 @@ static void handle_touch_event(NSArray* touches)
    self.coreDirectory = [NSBundle.mainBundle.bundlePath stringByAppendingPathComponent:@"modules"];
    self.logPath = [self.systemDirectory stringByAppendingPathComponent:@"stdout.log"];
     
-    const char *path = [self.documentsDirectory UTF8String];
+    path = (const char*)self.documentsDirectory.UTF8String;
     path_mkdir(path);
+    
     if (access(path, 0755) != 0)
     {
        char msg[256];
@@ -245,8 +252,9 @@ static void handle_touch_event(NSArray* touches)
     }
     else
     {
-        path = [self.systemDirectory UTF8String];
+        path = self.systemDirectory.UTF8String;
         path_mkdir(path);
+        
         if (access(path, 0755) != 0)
         {
             char msg[256];
@@ -258,10 +266,10 @@ static void handle_touch_event(NSArray* touches)
     }
    
    // Warn if there are no cores present
-   core_info_set_core_path([self.coreDirectory UTF8String]);
-   core_info_set_config_path([self.configDirectory UTF8String]);
+   core_info_set_core_path(self.coreDirectory.UTF8String);
+   core_info_set_config_path(self.configDirectory.UTF8String);
     
-   const core_info_list_t* core_list = (const core_info_list_t*)core_info_list_get();
+   core_list = (const core_info_list_t*)core_info_list_get();
    
    if (!core_list || core_list->count == 0)
       apple_display_alert("No libretro cores were found. You will not be able to run any content.", "Warning");
@@ -269,9 +277,9 @@ static void handle_touch_event(NSArray* touches)
    apple_gamecontroller_init();
    
    // Load system config
-   const rarch_setting_t* frontend_settings = (const rarch_setting_t*)apple_get_frontend_settings();
+   frontend_settings = (const rarch_setting_t*)apple_get_frontend_settings();
    setting_data_reset(frontend_settings);
-   setting_data_load_config_path(frontend_settings, [self.systemConfigPath UTF8String]);
+   setting_data_load_config_path(frontend_settings, self.systemConfigPath.UTF8String);
 }
 
 - (void)applicationDidBecomeActive:(UIApplication *)application
