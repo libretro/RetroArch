@@ -1587,7 +1587,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
       driver.menu_ctx->frame(gl);
 
    if (gl->rgui_texture_enable)
-         gl_draw_texture(gl);
+      gl_draw_texture(gl);
 #endif
 
    if (msg && gl->font_ctx)
