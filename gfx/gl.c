@@ -351,6 +351,7 @@ void gl_shader_set_coords(void *data, const struct gl_coords *coords, const math
 #define gl_shader_num(gl) ((gl->shader) ? gl->shader->num_shaders() : 0)
 #define gl_shader_filter_type(gl, index, smooth) ((gl->shader) ? gl->shader->filter_type(index, smooth) : false)
 #define gl_shader_wrap_type(gl, index) ((gl->shader) ? gl->shader->wrap_type(index) : RARCH_WRAP_BORDER)
+#define gl_shader_mipmap_input(gl, index) ((gl->shader) ? gl->shader->mipmap_input(index) : false)
 
 #ifdef IOS
 // There is no default frame buffer on IOS.
@@ -460,6 +461,19 @@ static void gl_compute_fbo_geometry(void *data, unsigned width, unsigned height,
    }
 }
 
+static inline GLenum min_filter_to_mag(GLenum type)
+{
+   switch (type)
+   {
+      case GL_LINEAR_MIPMAP_LINEAR:
+         return GL_LINEAR;
+      case GL_NEAREST_MIPMAP_NEAREST:
+         return GL_NEAREST;
+      default:
+         return type;
+   }
+}
+
 static void gl_create_fbo_textures(void *data)
 {
    int i;
@@ -468,52 +482,84 @@ static void gl_create_fbo_textures(void *data)
    glGenTextures(gl->fbo_pass, gl->fbo_texture);
 
    GLuint base_filt = g_settings.video.smooth ? GL_LINEAR : GL_NEAREST;
+   GLuint base_mip_filt = g_settings.video.smooth ? GL_LINEAR_MIPMAP_LINEAR : GL_NEAREST_MIPMAP_NEAREST;
+
    for (i = 0; i < gl->fbo_pass; i++)
    {
       glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[i]);
 
-      GLuint filter_type = base_filt;
+      bool mipmapped = gl_shader_mipmap_input(gl, i + 2);
+
+      GLenum min_filter = mipmapped ? base_mip_filt : base_filt;
       bool smooth = false;
       if (gl_shader_filter_type(gl, i + 2, &smooth))
-         filter_type = smooth ? GL_LINEAR : GL_NEAREST;
+         min_filter = mipmapped ? (smooth ? GL_LINEAR_MIPMAP_LINEAR : GL_NEAREST_MIPMAP_NEAREST) : (smooth ? GL_LINEAR : GL_NEAREST);
+
+      GLenum mag_filter = min_filter_to_mag(min_filter);
 
       enum gfx_wrap_type wrap = gl_shader_wrap_type(gl, i + 2);
       GLenum wrap_enum = gl_wrap_type_to_enum(wrap);
 
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter_type);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter_type);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, mag_filter);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, min_filter);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrap_enum);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrap_enum);
 
-      bool fp_fbo = gl->fbo_scale[i].valid && gl->fbo_scale[i].fp_fbo;
+      bool fp_fbo = gl->fbo_scale[i].fp_fbo;
+      bool srgb_fbo = gl->fbo_scale[i].srgb_fbo;
 
-      if (fp_fbo && !gl->has_fp_fbo)
-         RARCH_ERR("Floating-point FBO was requested, but is not supported. Falling back to UNORM.\n");
-
-#ifndef HAVE_OPENGLES2
-      if (fp_fbo && gl->has_fp_fbo)
+      if (srgb_fbo)
       {
-         RARCH_LOG("FBO pass #%d is floating-point.\n", i);
-         // GLES and GL are inconsistent in which arguments to pass.
-         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F,
-               gl->fbo_rect[i].width, gl->fbo_rect[i].height,
-               0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+         if (!gl->has_srgb_fbo)
+            RARCH_ERR("[GL]: sRGB FBO was requested, but it is not supported. Falling back to UNORM. Result will look odd!\n");
       }
-      else
-#endif
+      else if (fp_fbo)
       {
+         if (!gl->has_fp_fbo)
+            RARCH_ERR("[GL]: Floating-point FBO was requested, but is not supported. Falling back to UNORM.\n");
+      }
+
+      if (srgb_fbo && gl->has_srgb_fbo)
+      {
+         RARCH_LOG("[GL]: FBO pass #%d is sRGB.\n", i);
 #ifdef HAVE_OPENGLES2
          glTexImage2D(GL_TEXTURE_2D,
-               0, GL_RGBA,
+               0, GL_SRGB_ALPHA_EXT,
+               gl->fbo_rect[i].width, gl->fbo_rect[i].height, 0,
+               GL_SRGB_ALPHA_EXT, GL_UNSIGNED_BYTE, NULL);
+#else
+         glTexImage2D(GL_TEXTURE_2D,
+               0, GL_SRGB8_ALPHA8,
                gl->fbo_rect[i].width, gl->fbo_rect[i].height, 0,
                GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-#else
-         // Avoid potential performance reductions on particular platforms.
-         glTexImage2D(GL_TEXTURE_2D,
-               0, RARCH_GL_INTERNAL_FORMAT32,
-               gl->fbo_rect[i].width, gl->fbo_rect[i].height, 0,
-               RARCH_GL_TEXTURE_TYPE32, RARCH_GL_FORMAT32, NULL);
 #endif
+      }
+      else
+      {
+#ifndef HAVE_OPENGLES2
+         if (fp_fbo && gl->has_fp_fbo)
+         {
+            RARCH_LOG("[GL]: FBO pass #%d is floating-point.\n", i);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F,
+                  gl->fbo_rect[i].width, gl->fbo_rect[i].height,
+                  0, GL_RGBA, GL_FLOAT, NULL);
+         }
+         else
+#endif
+         {
+#ifdef HAVE_OPENGLES2
+            glTexImage2D(GL_TEXTURE_2D,
+                  0, GL_RGBA,
+                  gl->fbo_rect[i].width, gl->fbo_rect[i].height, 0,
+                  GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+#else
+            // Avoid potential performance reductions on particular platforms.
+            glTexImage2D(GL_TEXTURE_2D,
+                  0, RARCH_GL_INTERNAL_FORMAT32,
+                  gl->fbo_rect[i].width, gl->fbo_rect[i].height, 0,
+                  RARCH_GL_TEXTURE_TYPE32, RARCH_GL_FORMAT32, NULL);
+#endif
+         }
       }
    }
 
@@ -852,10 +898,8 @@ static void gl_set_rotation(void *data, unsigned rotation)
 }
 
 #ifdef HAVE_FBO
-static inline void gl_start_frame_fbo(void *data)
+static inline void gl_start_frame_fbo(gl_t *gl)
 {
-   gl_t *gl = (gl_t*)data;
-
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
    glBindFramebuffer(GL_FRAMEBUFFER, gl->fbo[0]);
    gl_set_viewport(gl, gl->fbo_rect[0].img_width, gl->fbo_rect[0].img_height, true, false);
@@ -864,6 +908,11 @@ static inline void gl_start_frame_fbo(void *data)
    // consistent texture coordinates.
    // We will "flip" it in place on last pass.
    gl->coords.vertex = vertexes;
+
+#if defined(GL_FRAMEBUFFER_SRGB) && !defined(HAVE_OPENGLES)
+   if (gl->has_srgb_fbo)
+      glEnable(GL_FRAMEBUFFER_SRGB);
+#endif
 }
 
 static void gl_check_fbo_dimensions(void *data)
@@ -945,6 +994,11 @@ static void gl_frame_fbo(void *data, const struct gl_tex_info *tex_info)
          gl->shader->use(gl, i + 1);
       glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[i - 1]);
 
+#ifndef HAVE_GCMGL
+      if (gl_shader_mipmap_input(gl, i + 1))
+         glGenerateMipmap(GL_TEXTURE_2D);
+#endif
+
       glClear(GL_COLOR_BUFFER_BIT);
 
       // Render to FBO with certain size.
@@ -961,6 +1015,11 @@ static void gl_frame_fbo(void *data, const struct gl_tex_info *tex_info)
       fbo_tex_info_cnt++;
    }
 
+#if defined(GL_FRAMEBUFFER_SRGB) && !defined(HAVE_OPENGLES)
+   if (gl->has_srgb_fbo)
+      glDisable(GL_FRAMEBUFFER_SRGB);
+#endif
+
    // Render our last FBO texture directly to screen.
    prev_rect = &gl->fbo_rect[gl->fbo_pass - 1];
    GLfloat xamt = (GLfloat)prev_rect->img_width / prev_rect->width;
@@ -974,6 +1033,11 @@ static void gl_frame_fbo(void *data, const struct gl_tex_info *tex_info)
       gl->shader->use(gl, gl->fbo_pass + 1);
 
    glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[gl->fbo_pass - 1]);
+
+#ifndef HAVE_GCMGL
+   if (gl_shader_mipmap_input(gl, gl->fbo_pass + 1))
+      glGenerateMipmap(GL_TEXTURE_2D);
+#endif
 
    glClear(GL_COLOR_BUFFER_BIT);
    gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
@@ -1174,8 +1238,8 @@ static void gl_init_textures(void *data, const video_info_t *video)
 
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, gl->wrap_mode);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, gl->wrap_mode);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl->tex_filter);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl->tex_filter);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl->tex_mag_filter);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl->tex_min_filter);
 
 #ifdef HAVE_PSGL
       glTextureReferenceSCE(GL_TEXTURE_2D, 1,
@@ -1454,6 +1518,11 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
    else
       glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
 
+#ifndef HAVE_GCMGL
+   if (frame && gl->tex_mipmap) // No point regenerating mipmaps if there are no new frames.
+      glGenerateMipmap(GL_TEXTURE_2D);
+#endif
+
    // Have to reset rendering state which libretro core could easily have overridden.
 #ifdef HAVE_FBO
    if (gl->hw_render_fbo_init)
@@ -1518,11 +1587,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
       driver.menu_ctx->frame(gl);
 
    if (gl->rgui_texture_enable)
-      #if defined(HAVE_LAKKA)
-         lakka_render(gl);
-      #else
          gl_draw_texture(gl);
-      #endif
 #endif
 
    if (msg && gl->font_ctx)
@@ -1757,10 +1822,12 @@ static bool resolve_extensions(gl_t *gl)
       gl->support_unpack_row_length = true;
    }
    // No extensions for float FBO currently.
+   gl->has_srgb_fbo = gl_query_extension(gl, "EXT_sRGB");
 #else
 #ifdef HAVE_FBO
    // Float FBO is core in 3.2.
    gl->has_fp_fbo = gl->core_context || gl_query_extension(gl, "ARB_texture_float");
+   gl->has_srgb_fbo = gl->core_context || (gl_query_extension(gl, "EXT_texture_sRGB") && gl_query_extension(gl, "ARB_framebuffer_sRGB"));
 #endif
 #endif
 
@@ -2216,10 +2283,14 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    gl_set_shader_viewport(gl, 1);
 
    bool force_smooth = false;
+   gl->tex_mipmap = gl_shader_mipmap_input(gl, 1);
+
    if (gl_shader_filter_type(gl, 1, &force_smooth))
-      gl->tex_filter = force_smooth ? GL_LINEAR : GL_NEAREST;
+      gl->tex_min_filter = gl->tex_mipmap ? (force_smooth ? GL_LINEAR_MIPMAP_LINEAR : GL_NEAREST_MIPMAP_NEAREST) : (force_smooth ? GL_LINEAR : GL_NEAREST);
    else
-      gl->tex_filter = video->smooth ? GL_LINEAR : GL_NEAREST;
+      gl->tex_min_filter = gl->tex_mipmap ? (video->smooth ? GL_LINEAR_MIPMAP_LINEAR : GL_NEAREST_MIPMAP_NEAREST) : (video->smooth ? GL_LINEAR : GL_NEAREST);
+   
+   gl->tex_mag_filter = min_filter_to_mag(gl->tex_min_filter);
    gl->wrap_mode = gl_wrap_type_to_enum(gl_shader_wrap_type(gl, 1));
 
    gl_set_texture_fmts(gl, video->rgb32);
@@ -2327,12 +2398,16 @@ static void gl_update_tex_filter_frame(gl_t *gl)
       smooth = g_settings.video.smooth;
    GLenum wrap_mode = gl_wrap_type_to_enum(gl_shader_wrap_type(gl, 1));
 
+   gl->tex_mipmap = gl_shader_mipmap_input(gl, 1);
+
    gl->video_info.smooth = smooth;
-   GLuint new_filt = smooth ? GL_LINEAR : GL_NEAREST;
-   if (new_filt == gl->tex_filter && wrap_mode == gl->wrap_mode)
+   GLuint new_filt = gl->tex_mipmap ? (smooth ? GL_LINEAR_MIPMAP_LINEAR : GL_NEAREST_MIPMAP_NEAREST) : (smooth ? GL_LINEAR : GL_NEAREST);
+   if (new_filt == gl->tex_min_filter && wrap_mode == gl->wrap_mode)
       return;
 
-   gl->tex_filter = new_filt;
+   gl->tex_min_filter = new_filt;
+   gl->tex_mag_filter = min_filter_to_mag(gl->tex_min_filter);
+
    gl->wrap_mode = wrap_mode;
    for (i = 0; i < gl->textures; i++)
    {
@@ -2341,8 +2416,8 @@ static void gl_update_tex_filter_frame(gl_t *gl)
          glBindTexture(GL_TEXTURE_2D, gl->texture[i]);
          glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, gl->wrap_mode);
          glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, gl->wrap_mode);
-         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl->tex_filter);
-         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl->tex_filter);
+         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl->tex_mag_filter);
+         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl->tex_min_filter);
       }
    }
 
@@ -2407,6 +2482,7 @@ static bool gl_set_shader(void *data, enum rarch_shader_type type, const char *p
    if (gl->shader)
    {
       unsigned textures = gl->shader->get_prev_textures() + 1;
+
       if (textures > gl->textures) // Have to reinit a bit.
       {
 #if defined(HAVE_FBO) && !defined(HAVE_GCMGL)

@@ -616,7 +616,7 @@ void lakka_draw_icon(void *data, GLuint texture, float x, float y, float alpha, 
    gl->coords.color = gl->white_color_ptr;
 }
 
-void lakka_render(void *data)
+static void lakka_frame(void *data)
 {
    int i, j, k;
    struct font_output_list msg;
@@ -1011,8 +1011,8 @@ static void *lakka_init(void)
 const menu_ctx_driver_t menu_ctx_lakka = {
    NULL,
    NULL,
-   lakka_render,
    NULL,
+   lakka_frame,
    lakka_init,
    lakka_free,
    lakka_init_assets,

@@ -1158,6 +1158,14 @@ static unsigned gl_glsl_get_prev_textures(void)
    return max_prev;
 }
 
+static bool gl_glsl_mipmap_input(unsigned index)
+{
+   if (glsl_enable && index)
+      return glsl_shader->pass[index - 1].mipmap;
+   else
+      return false;
+}
+
 void gl_glsl_set_get_proc_address(gfx_ctx_proc_t (*proc)(const char*))
 {
    glsl_get_proc_address = proc;
@@ -1182,6 +1190,7 @@ const gl_shader_backend_t gl_glsl_backend = {
    gl_glsl_set_coords,
    gl_glsl_set_mvp,
    gl_glsl_get_prev_textures,
+   gl_glsl_mipmap_input,
 
    RARCH_SHADER_GLSL,
 };
