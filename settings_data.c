@@ -624,9 +624,9 @@ const rarch_setting_t* setting_data_get_list(void)
          /*********/
          START_GROUP("Audio")
          START_SUB_GROUP("State")
-         CONFIG_BOOL(g_settings.audio.enable,               "audio_enable",               "Enable",                     audio_enable)
+         CONFIG_BOOL(g_settings.audio.enable,               "audio_enable",               "Audio Enable",                     audio_enable)
+         CONFIG_BOOL(g_extern.audio_data.mute,              "audio_mute",                 "Audio Mute",                 DEFAULT_ME_YO)
          CONFIG_FLOAT(g_settings.audio.volume,              "audio_volume",               "Volume Level",               audio_volume)
-         CONFIG_BOOL(g_extern.audio_data.mute,              "audio_mute",                 "Mute Audio",                 DEFAULT_ME_YO)
          END_SUB_GROUP()
 
          START_SUB_GROUP("Sync")
@@ -649,7 +649,7 @@ const rarch_setting_t* setting_data_get_list(void)
          /*********/
          START_GROUP("Input")
          START_SUB_GROUP("Input")
-         CONFIG_BOOL(g_settings.input.autodetect_enable,    "input_autodetect_enable",    "Use joypad autodetection",   input_autodetect_enable)
+         CONFIG_BOOL(g_settings.input.autodetect_enable,    "input_autodetect_enable",    "Autodetect Enable",   input_autodetect_enable)
          CONFIG_PATH(g_settings.input.autoconfig_dir,       "joypad_autoconfig_dir",      "Joypad Autoconfig Directory",DEFAULT_ME_YO)          WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
          END_SUB_GROUP()
 
@@ -703,16 +703,16 @@ const rarch_setting_t* setting_data_get_list(void)
 
          for (player = 0; player < MAX_PLAYERS; player ++)
          {
+            char buffer[32];
             const struct retro_keybind* const defaults = (player == 0) ? retro_keybinds_1 : retro_keybinds_rest;
 
-            char buffer[32];
             snprintf(buffer, 32, "Player %d", player + 1);
             START_SUB_GROUP(strdup(buffer))
                for (i = 0; i != RARCH_BIND_LIST_END; i ++)
                {
                   if (!input_config_bind_map[i].meta)
                   {
-                     const struct input_bind_map* bind = &input_config_bind_map[i];
+                     const struct input_bind_map* bind = (const struct input_bind_map*)&input_config_bind_map[i];
                      CONFIG_BIND(g_settings.input.binds[player][i], player + 1, bind->base, bind->desc, &defaults[i])
                   }
                }
@@ -725,7 +725,7 @@ const rarch_setting_t* setting_data_get_list(void)
          /********/
          START_GROUP("Misc")
          START_SUB_GROUP("Misc")
-         CONFIG_BOOL(g_extern.config_save_on_exit,          "config_save_on_exit",        "Save Config On Exit",        config_save_on_exit)
+         CONFIG_BOOL(g_extern.config_save_on_exit,          "config_save_on_exit",        "Configuration Save On Exit", config_save_on_exit)
          CONFIG_BOOL(g_settings.network_cmd_enable,         "network_cmd_enable",         "Network Commands",           network_cmd_enable)
          //CONFIG_INT(g_settings.network_cmd_port,            "network_cmd_port",           "Network Command Port",       network_cmd_port)
          CONFIG_BOOL(g_settings.stdin_cmd_enable,           "stdin_cmd_enable",           "stdin command",              stdin_cmd_enable)
