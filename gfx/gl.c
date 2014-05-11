@@ -1587,11 +1587,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
       driver.menu_ctx->frame(gl);
 
    if (gl->rgui_texture_enable)
-      #if defined(HAVE_LAKKA)
-         lakka_render(gl);
-      #else
          gl_draw_texture(gl);
-      #endif
 #endif
 
    if (msg && gl->font_ctx)

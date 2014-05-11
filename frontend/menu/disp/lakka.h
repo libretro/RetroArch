@@ -64,7 +64,6 @@ typedef struct
 
 extern menu_category *categories;
 
-void lakka_render(void *data);
 void lakka_switch_items(void);
 void lakka_switch_subitems(void);
 void lakka_open_submenu(void);
