@@ -111,11 +111,6 @@ static void rarch_get_environment_console(void)
 #define rarch_get_environment_console() (void)0
 #endif
 
-#if defined(RARCH_CONSOLE) || defined(__QNX__) || defined(ANDROID)
-#define attempt_load_game_fails (1ULL << MODE_MENU_PREINIT)
-#else
-#define attempt_load_game_fails (1ULL << MODE_EXIT)
-#endif
 
 static retro_keyboard_event_t key_event;
 
@@ -179,16 +174,13 @@ static int main_entry_iterate_load_content(args_type() args)
    }
    else
    {
-      // If ROM load fails, we exit RetroArch. On console it might make more sense to go back to menu though ...
-      g_extern.lifecycle_state = attempt_load_game_fails;
-
-      if (g_extern.lifecycle_state & (1ULL << MODE_EXIT))
-      {
-         if (frontend_ctx && frontend_ctx->shutdown)
-            frontend_ctx->shutdown(true);
-
-         return 1;
-      }
+#if defined(RARCH_CONSOLE) || defined(RARCH_MOBILE)
+      // If ROM load fails, we go back to menu.
+      g_extern.lifecycle_state = (1ULL << MODE_MENU_PREINIT);
+#else
+      // If ROM load fails, we exit RetroArch.
+      g_extern.system.shutdown = true;
+#endif
    }
 
    g_extern.lifecycle_state &= ~(1ULL << MODE_LOAD_GAME);
