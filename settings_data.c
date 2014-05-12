@@ -480,7 +480,7 @@ const rarch_setting_t* setting_data_get_list(void)
          CONFIG_STRING(g_settings.camera.device,            "camera_device",              "Camera Driver",              config_get_default_camera())
 #endif         
 #ifdef HAVE_LOCATION
-         CONFIG_STRING(g_settings.location.device,          "location_device",            "Location Driver",            config_get_default_location())
+         CONFIG_STRING(g_settings.location.driver,          "location_driver",            "Location Driver",            config_get_default_location())
 #endif         
          CONFIG_STRING(g_settings.input.joypad_driver,      "input_joypad_driver",        "Joypad Driver",              "")
          CONFIG_STRING(g_settings.input.keyboard_layout,    "input_keyboard_layout",      "Keyboard Layout",            DEFAULT_ME_YO)
