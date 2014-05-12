@@ -52,12 +52,8 @@ input_keyboard_line_t *input_keyboard_line_new(void *userdata,
    return state;
 }
 
-bool input_keyboard_line_event(input_keyboard_line_t *state, uint32_t character, bool down)
+bool input_keyboard_line_event(input_keyboard_line_t *state, uint32_t character)
 {
-   if (!down)
-   {
-       return false;
-   }
    // Treat extended chars as ? as we cannot support printable characters for unicode stuff.
    char c = character >= 128 ? '?' : character;
    if (c == '\r' || c == '\n')
@@ -151,7 +147,7 @@ void input_keyboard_event(bool down, unsigned code, uint32_t character, uint16_t
    }
    else if (g_keyboard_line)
    {
-      if (input_keyboard_line_event(g_keyboard_line, character, down))
+      if (down && input_keyboard_line_event(g_keyboard_line, character))
       {
          // Line is complete, can free it now.
          input_keyboard_line_free(g_keyboard_line);

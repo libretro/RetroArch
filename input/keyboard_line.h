@@ -37,7 +37,7 @@ input_keyboard_line_t *input_keyboard_line_new(void *userdata,
       input_keyboard_line_complete_t cb);
 
 // Called on every keyboard character event.
-bool input_keyboard_line_event(input_keyboard_line_t *state, uint32_t character, bool down);
+bool input_keyboard_line_event(input_keyboard_line_t *state, uint32_t character);
 
 // Returns pointer to string. The underlying buffer can be reallocated at any time (or be NULL), but the pointer to it remains constant throughout the objects lifetime.
 const char **input_keyboard_line_get_buffer(const input_keyboard_line_t *state);
