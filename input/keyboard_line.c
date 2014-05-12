@@ -66,7 +66,7 @@ bool input_keyboard_line_event(input_keyboard_line_t *state, uint32_t character,
       return true;
    }
 
-   if (c == '\b')
+   if (c == '\b' || c == '\x7f') /* 0x7f is ASCII for del */
    {
       if (state->ptr)
       {
