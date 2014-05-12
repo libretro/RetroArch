@@ -78,23 +78,26 @@ static void apple_gamecontroller_poll(GCController* controller)
 
 void apple_gamecontroller_poll_all(void)
 {
+   NSArray *controllers;
+   int i;
 #ifdef IOS
     if (IOS_IS_VERSION_6_OR_LOWER())
         return;
 #endif
-   NSArray* controllers = (NSArray*)GCController.controllers;
+   controllers = (NSArray*)GCController.controllers;
    
-   for (int i = 0; i < controllers.count; i ++)
+   for (i = 0; i < controllers.count; i ++)
       apple_gamecontroller_poll([controllers objectAtIndex:i]);
 }
 
 void apple_gamecontroller_connect(GCController* controller)
 {
+   int32_t slot;
 #ifdef IOS
     if (IOS_IS_VERSION_6_OR_LOWER())
         return;
 #endif
-   int32_t slot = apple_joypad_connect_gcapi();
+   slot = apple_joypad_connect_gcapi();
    controller.playerIndex = (slot >= 0 && slot < MAX_PLAYERS) ? slot : GCControllerPlayerIndexUnset;
    
 /*

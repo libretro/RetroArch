@@ -32,9 +32,12 @@ static void* const associated_core_key = (void*)&associated_core_key;
 
 - (void)sendEvent:(NSEvent *)event
 {
+   int i;
+   NSEventType event_type;
+
    [super sendEvent:event];
    
-   NSEventType event_type = event.type;
+   event_type = event.type;
    
    if (event_type == NSKeyDown || event_type == NSKeyUp)
    {
@@ -46,7 +49,7 @@ static void* const associated_core_key = (void*)&associated_core_key;
       {
          apple_input_keyboard_event(event_type == NSKeyDown, event.keyCode, [ch characterAtIndex:0], event.modifierFlags);
          
-         for (unsigned i = 1; i < ch.length; i ++)
+         for (i = 1; i < ch.length; i ++)
             apple_input_keyboard_event(event_type == NSKeyDown, 0, [ch characterAtIndex:i], event.modifierFlags);
       }
    }
@@ -260,7 +263,7 @@ static char** waiting_argv;
    if (!apple_is_running)
       apple_run_core(self.core, self.file.UTF8String);
    else
-      apple_event_basic_command(QUIT);
+      g_extern.system.shutdown = true;
 }
 
 - (void)chooseCore
