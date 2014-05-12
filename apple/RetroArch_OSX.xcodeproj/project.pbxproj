@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 46;
+	objectVersion = 44;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -173,7 +173,7 @@
 				LastUpgradeCheck = 0500;
 			};
 			buildConfigurationList = 96355CD81788E6E00010DBFA /* Build configuration list for PBXProject "RetroArch_OSX" */;
-			compatibilityVersion = "Xcode 3.2";
+			compatibilityVersion = "Xcode 3.0";
 			developmentRegion = English;
 			hasScannedForEncodings = 0;
 			knownRegions = (
