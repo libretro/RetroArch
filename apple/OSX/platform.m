@@ -56,7 +56,7 @@ static void* const associated_core_key = (void*)&associated_core_key;
    else if (event_type == NSFlagsChanged)
    {
       static uint32_t old_flags = 0;
-      uint32_t new_flags = [event modifierFlags];
+      uint32_t new_flags = event.modifierFlags;
       bool down = (new_flags & old_flags) == old_flags;
       old_flags = new_flags;
       
@@ -65,12 +65,13 @@ static void* const associated_core_key = (void*)&associated_core_key;
    else if (event_type == NSMouseMoved || event_type == NSLeftMouseDragged ||
             event_type == NSRightMouseDragged || event_type == NSOtherMouseDragged)
    {
+      NSPoint pos;
       // Relative
       g_current_input_data.mouse_delta[0] += event.deltaX;
       g_current_input_data.mouse_delta[1] += event.deltaY;
 
       // Absolute
-      NSPoint pos = [[RAGameView get] convertPoint:[event locationInWindow] fromView:nil];
+      pos = [[RAGameView get] convertPoint:[event locationInWindow] fromView:nil];
       g_current_input_data.touches[0].screen_x = pos.x;
       g_current_input_data.touches[0].screen_y = pos.y;
    }
@@ -208,7 +209,7 @@ static char** waiting_argv;
    _isTerminating = true;
 
    if (apple_is_running)
-      apple_event_basic_command(QUIT);
+      g_extern.system.shutdown = true;
 
    return apple_is_running ? NSTerminateCancel : NSTerminateNow;
 }
@@ -236,7 +237,7 @@ static char** waiting_argv;
 
 - (void)openDocument:(id)sender
 {
-   NSOpenPanel* panel = [NSOpenPanel openPanel];
+   NSOpenPanel* panel = (NSOpenPanel*)[NSOpenPanel openPanel];
 #if defined(MAC_OS_X_VERSION_10_5)
    [panel beginSheetModalForWindow:self.window completionHandler:^(NSInteger result)
    {
@@ -327,8 +328,10 @@ static char** waiting_argv;
 
 - (IBAction)basicEvent:(id)sender
 {
-   if (apple_is_running)
-      apple_event_basic_command([sender tag]);
+   if (!apple_is_running)
+      return;
+
+   apple_event_basic_command([sender tag]);
 }
 
 - (void)alertDidEnd:(NSAlert *)alert returnCode:(NSInteger)returnCode contextInfo:(void *)contextInfo
