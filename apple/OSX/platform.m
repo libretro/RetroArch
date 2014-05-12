@@ -238,7 +238,7 @@ static char** waiting_argv;
 - (void)openDocument:(id)sender
 {
    NSOpenPanel* panel = (NSOpenPanel*)[NSOpenPanel openPanel];
-#if defined(MAC_OS_X_VERSION_10_5)
+#if defined(MAC_OS_X_VERSION_10_6)
    [panel beginSheetModalForWindow:self.window completionHandler:^(NSInteger result)
    {
       [[NSApplication sharedApplication] stopModal];
