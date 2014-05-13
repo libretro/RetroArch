@@ -1,5 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
+ *  Copyright (C) 2011-2014 - Daniel De Matteis
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -28,6 +29,7 @@
 #include "gfx/filters/softfilter.h"
 #include "audio/filters/rarch_dsp.h"
 #include "input/overlay.h"
+#include "frontend/frontend_context.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -448,6 +450,7 @@ enum rarch_display_type
 
 typedef struct driver
 {
+   const frontend_ctx_driver_t *frontend_ctx;
    const audio_driver_t *audio;
    const image_ctx_driver_t *image;
    const video_driver_t *video;

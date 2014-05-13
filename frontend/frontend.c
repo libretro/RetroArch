@@ -21,7 +21,6 @@
 #include "../file.h"
 
 #include "frontend_context.h"
-frontend_ctx_driver_t *frontend_ctx;
 
 #if defined(HAVE_MENU)
 #include "menu/menu_input_line_cb.h"
@@ -153,8 +152,8 @@ static int main_entry_iterate_content(args_type() args)
 
    if (r)
    {
-      if (frontend_ctx && frontend_ctx->process_events)
-         frontend_ctx->process_events(args);
+      if (driver.frontend_ctx && driver.frontend_ctx->process_events)
+         driver.frontend_ctx->process_events(args);
    }
    else
       g_extern.lifecycle_state &= ~(1ULL << MODE_GAME);
@@ -230,8 +229,8 @@ static int main_entry_iterate_menu(args_type() args)
 {
    if (menu_iterate(driver.menu))
    {
-      if (frontend_ctx && frontend_ctx->process_events)
-         frontend_ctx->process_events(args);
+      if (driver.frontend_ctx && driver.frontend_ctx->process_events)
+         driver.frontend_ctx->process_events(args);
    }
    else
    {
@@ -314,17 +313,17 @@ void main_exit(args_type() args)
    g_extern.log_file = NULL;
 #endif
 
-   if (frontend_ctx && frontend_ctx->deinit)
-      frontend_ctx->deinit(args);
+   if (driver.frontend_ctx && driver.frontend_ctx->deinit)
+      driver.frontend_ctx->deinit(args);
 
-   if (g_extern.lifecycle_state & (1ULL << MODE_EXITSPAWN) && frontend_ctx
-         && frontend_ctx->exitspawn)
-      frontend_ctx->exitspawn();
+   if (g_extern.lifecycle_state & (1ULL << MODE_EXITSPAWN) && driver.frontend_ctx
+         && driver.frontend_ctx->exitspawn)
+      driver.frontend_ctx->exitspawn();
 
    rarch_main_clear_state();
 
-   if (frontend_ctx && frontend_ctx->shutdown)
-      frontend_ctx->shutdown(false);
+   if (driver.frontend_ctx && driver.frontend_ctx->shutdown)
+      driver.frontend_ctx->shutdown(false);
 }
 
 returntype main_entry(signature())
@@ -333,15 +332,15 @@ returntype main_entry(signature())
    declare_argv();
    args_type() args = (args_type())args_initial_ptr();
 
-   frontend_ctx = (frontend_ctx_driver_t*)frontend_ctx_init_first();
+   driver.frontend_ctx = (frontend_ctx_driver_t*)frontend_ctx_init_first();
 
-   if (!frontend_ctx)
+   if (!driver.frontend_ctx)
    {
       RARCH_WARN("Frontend context could not be initialized.\n");
    }
 
-   if (frontend_ctx && frontend_ctx->init)
-      frontend_ctx->init(args);
+   if (driver.frontend_ctx && driver.frontend_ctx->init)
+      driver.frontend_ctx->init(args);
 
    if (!ra_preinited)
    {
@@ -349,9 +348,9 @@ returntype main_entry(signature())
       rarch_init_msg_queue();
    }
 
-   if (frontend_ctx && frontend_ctx->environment_get)
+   if (driver.frontend_ctx && driver.frontend_ctx->environment_get)
    {
-      frontend_ctx->environment_get(argc, argv, args);
+      driver.frontend_ctx->environment_get(argc, argv, args);
       rarch_get_environment_console();
    }
 
@@ -370,8 +369,8 @@ returntype main_entry(signature())
       returnfunc();
    }
 
-   if (frontend_ctx && frontend_ctx->process_args)
-      frontend_ctx->process_args(argc, argv, args);
+   if (driver.frontend_ctx && driver.frontend_ctx->process_args)
+      driver.frontend_ctx->process_args(argc, argv, args);
 
    g_extern.lifecycle_state |= initial_menu_lifecycle_state;
 
