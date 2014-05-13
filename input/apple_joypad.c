@@ -108,7 +108,7 @@ void apple_joypad_disconnect(uint32_t slot)
    {
       joypad_slot_t* s = (joypad_slot_t*)&slots[slot];
 
-      if (s->iface && s->data)
+      if (s->iface && s->data && s->iface->disconnect)
          s->iface->disconnect(s->data);
 
       memset(s, 0, sizeof(joypad_slot_t));
@@ -121,7 +121,7 @@ void apple_joypad_packet(uint32_t slot, uint8_t* data, uint32_t length)
    {
       joypad_slot_t *s = (joypad_slot_t*)&slots[slot];
 
-      if (s->iface && s->data)
+      if (s->iface && s->data && s->iface->packet_handler)
          s->iface->packet_handler(s->data, data, length);
    }
 }
@@ -151,7 +151,7 @@ static void apple_joypad_destroy(void)
 
    for (i = 0; i < MAX_PLAYERS; i ++)
    {
-      if (slots[i].used && slots[i].iface)
+      if (slots[i].used && slots[i].iface && slots[i].iface->set_rumble)
       {
          slots[i].iface->set_rumble(slots[i].data, RETRO_RUMBLE_STRONG, 0);
          slots[i].iface->set_rumble(slots[i].data, RETRO_RUMBLE_WEAK, 0);
@@ -200,7 +200,8 @@ static void apple_joypad_poll(void)
 
 static bool apple_joypad_rumble(unsigned pad, enum retro_rumble_effect effect, uint16_t strength)
 {
-   if (pad < MAX_PLAYERS && slots[pad].used && slots[pad].iface)
+   if (pad < MAX_PLAYERS && slots[pad].used && slots[pad].iface
+       && slots[pad].iface->set_rumble)
    {
       slots[pad].iface->set_rumble(slots[pad].data, effect, strength);
       return true;
