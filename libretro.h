@@ -388,12 +388,7 @@ enum retro_mod
                                            // It can be used by the frontend to potentially warn
                                            // about too demanding implementations.
                                            //
-                                           // The levels are "floating", but roughly defined as:
-                                           // 0: Low-powered embedded devices such as Raspberry Pi
-                                           // 1: 6th generation consoles, such as Wii/Xbox 1, and phones, tablets, etc.
-                                           // 2: 7th generation consoles, such as PS3/360, with sub-par CPUs.
-                                           // 3: Modern desktop/laptops with reasonably powerful CPUs.
-                                           // 4: High-end desktops with very powerful CPUs.
+                                           // The levels are "floating".
                                            //
                                            // This function can be called on a per-game basis,
                                            // as certain games an implementation can play might be
