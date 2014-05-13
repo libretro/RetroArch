@@ -168,7 +168,7 @@ static bool apple_joypad_button(unsigned port, uint16_t joykey)
    if (GET_HAT_DIR(joykey))
       return false;
    else // Check the button
-      return (port < MAX_PLAYERS && joykey < 32) ? (g_polled_input_data.pad_buttons[port] & (1 << joykey)) != 0 : false;
+      return (port < MAX_PLAYERS && joykey < 32) ? (g_current_input_data.pad_buttons[port] & (1 << joykey)) != 0 : false;
 }
 
 static int16_t apple_joypad_axis(unsigned port, uint32_t joyaxis)
@@ -182,12 +182,12 @@ static int16_t apple_joypad_axis(unsigned port, uint32_t joyaxis)
 
    if (AXIS_NEG_GET(joyaxis) < 4)
    {
-      val = g_polled_input_data.pad_axis[port][AXIS_NEG_GET(joyaxis)];
+      val = g_current_input_data.pad_axis[port][AXIS_NEG_GET(joyaxis)];
       val = (val < 0) ? val : 0;
    }
    else if(AXIS_POS_GET(joyaxis) < 4)
    {
-      val = g_polled_input_data.pad_axis[port][AXIS_POS_GET(joyaxis)];
+      val = g_current_input_data.pad_axis[port][AXIS_POS_GET(joyaxis)];
       val = (val > 0) ? val : 0;
    }
 

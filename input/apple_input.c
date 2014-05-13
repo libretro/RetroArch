@@ -245,7 +245,6 @@ extern const rarch_joypad_driver_t apple_joypad;
 static const rarch_joypad_driver_t* const g_joydriver = &apple_joypad;
 
 apple_input_data_t g_current_input_data;
-apple_input_data_t g_polled_input_data;
 
 #ifdef OSX // Taken from https://github.com/depp/keycode, check keycode.h for license
 const unsigned char MAC_NATIVE_TO_HID[128] = {
@@ -465,7 +464,7 @@ int32_t apple_input_find_any_axis(uint32_t port)
 static bool apple_key_pressed(enum retro_key key)
 {
    if ((int)key >= 0 && key < RETROK_LAST)
-      return g_polled_input_data.keys[input_translate_rk_to_keysym(key)];
+      return g_current_input_data.keys[input_translate_rk_to_keysym(key)];
    
    return false;
 }
@@ -479,26 +478,26 @@ static bool apple_is_pressed(unsigned port_num, const struct retro_keybind *bind
 static void *apple_input_init(void)
 {
    input_init_keyboard_lut(apple_key_map_hidusage);
-   memset(&g_polled_input_data, 0, sizeof(g_polled_input_data));
+   memset(&g_current_input_data, 0, sizeof(g_current_input_data));
    return (void*)-1;
 }
 
 static void apple_input_poll(void *data)
 {
+   int i;
    (void)data;
 
    apple_gamecontroller_poll_all();
-   memcpy(&g_polled_input_data, &g_current_input_data, sizeof(apple_input_data_t));
 
-   for (int i = 0; i != g_polled_input_data.touch_count; i ++)
+   for (i = 0; i < g_current_input_data.touch_count; i ++)
    {
-      input_translate_coord_viewport(g_polled_input_data.touches[i].screen_x, g_polled_input_data.touches[i].screen_y,
-         &g_polled_input_data.touches[i].fixed_x, &g_polled_input_data.touches[i].fixed_y,
-         &g_polled_input_data.touches[i].full_x, &g_polled_input_data.touches[i].full_y);
+      input_translate_coord_viewport(g_current_input_data.touches[i].screen_x, g_current_input_data.touches[i].screen_y,
+         &g_current_input_data.touches[i].fixed_x, &g_current_input_data.touches[i].fixed_y,
+         &g_current_input_data.touches[i].full_x, &g_current_input_data.touches[i].full_y);
    }
 
    input_joypad_poll(g_joydriver);
-   g_polled_input_data.pad_buttons[0] |= apple_input_get_icade_buttons();
+   g_current_input_data.pad_buttons[0] |= apple_input_get_icade_buttons();
 
    g_current_input_data.mouse_delta[0] = 0;
    g_current_input_data.mouse_delta[1] = 0;
@@ -524,13 +523,13 @@ static int16_t apple_input_state(void *data, const struct retro_keybind **binds,
          switch (id)
          {
             case RETRO_DEVICE_ID_MOUSE_X:
-               return g_polled_input_data.mouse_delta[0];
+               return g_current_input_data.mouse_delta[0];
             case RETRO_DEVICE_ID_MOUSE_Y:
-               return g_polled_input_data.mouse_delta[1];
+               return g_current_input_data.mouse_delta[1];
             case RETRO_DEVICE_ID_MOUSE_LEFT:
-               return g_polled_input_data.mouse_buttons & 1;
+               return g_current_input_data.mouse_buttons & 1;
             case RETRO_DEVICE_ID_MOUSE_RIGHT:
-               return g_polled_input_data.mouse_buttons & 2;
+               return g_current_input_data.mouse_buttons & 2;
          }
       }
       
@@ -539,9 +538,9 @@ static int16_t apple_input_state(void *data, const struct retro_keybind **binds,
       {
          const bool want_full = device == RARCH_DEVICE_POINTER_SCREEN;
       
-         if (index < g_polled_input_data.touch_count && index < MAX_TOUCHES)
+         if (index < g_current_input_data.touch_count && index < MAX_TOUCHES)
          {
-            const apple_touch_data_t *touch = (const apple_touch_data_t *)&g_polled_input_data.touches[index];
+            const apple_touch_data_t *touch = (const apple_touch_data_t *)&g_current_input_data.touches[index];
             int16_t x = want_full ? touch->full_x : touch->fixed_x;
             int16_t y = want_full ? touch->full_y : touch->fixed_y;
 
