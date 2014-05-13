@@ -126,9 +126,9 @@ static bool rpng_image_load_argb_shift(const char *path, struct texture_image *o
       // This is quite uncommon ...
       if (a_shift != 24 || r_shift != 16 || g_shift != 8 || b_shift != 0)
       {
-         int i;
-         unsigned num_pixels = out_img->width * out_img->height;
-         uint32_t *pixels = (uint32_t*)out_img->pixels;
+         uint32_t i, num_pixels, *pixels;
+         num_pixels = out_img->width * out_img->height;
+         pixels = (uint32_t*)out_img->pixels;
 
          for (i = 0; i < num_pixels; i++)
          {
