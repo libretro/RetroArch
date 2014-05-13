@@ -184,14 +184,14 @@ static size_t gx_audio_buffer_size(void *data)
 }
 
 const audio_driver_t audio_gx = {
-   .init = gx_audio_init,
-   .write = gx_audio_write,
-   .stop = gx_audio_stop,
-   .start = gx_audio_start,
-   .set_nonblock_state = gx_audio_set_nonblock_state,
-   .free = gx_audio_free,
-   .ident = "gx",
-   .write_avail = gx_audio_write_avail,
-   .buffer_size = gx_audio_buffer_size,
+   gx_audio_init,
+   gx_audio_write,
+   gx_audio_stop,
+   gx_audio_start,
+   gx_audio_set_nonblock_state,
+   gx_audio_free,
+   "gx",
+   gx_audio_write_avail,
+   gx_audio_buffer_size,
 };
 

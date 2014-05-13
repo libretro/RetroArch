@@ -21,7 +21,7 @@
 #include <string.h>
 #include "../fifo_buffer.h"
 
-#include "sdk_defines.h"
+#include "../ps3/sdk_defines.h"
 
 #define AUDIO_BLOCKS 8 // 8 or 16. Guess what we choose? :)
 #define AUDIO_CHANNELS 2 // All hail glorious stereo!

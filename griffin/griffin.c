@@ -412,15 +412,15 @@ AUDIO UTILS
 AUDIO
 ============================================================ */
 #if defined(__CELLOS_LV2__)
-#include "../ps3/ps3_audio.c"
+#include "../audio/ps3_audio.c"
 #elif defined(XENON)
 #include "../xenon/xenon360_audio.c"
 #elif defined(GEKKO)
-#include "../gx/gx_audio.c"
+#include "../audio/gx_audio.c"
 #elif defined(EMSCRIPTEN)
 #include "../audio/rwebaudio.c"
 #elif defined(PSP)
-#include "../psp1/psp1_audio.c"
+#include "../audio/psp1_audio.c"
 #endif
 
 #ifdef HAVE_XAUDIO
