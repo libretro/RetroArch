@@ -519,6 +519,7 @@ static void gl_create_fbo_textures(void *data)
             RARCH_ERR("[GL]: Floating-point FBO was requested, but is not supported. Falling back to UNORM.\n");
       }
 
+#ifndef HAVE_PSGL
       if (srgb_fbo && gl->has_srgb_fbo)
       {
          RARCH_LOG("[GL]: FBO pass #%d is sRGB.\n", i);
@@ -535,6 +536,7 @@ static void gl_create_fbo_textures(void *data)
 #endif
       }
       else
+#endif
       {
 #ifndef HAVE_OPENGLES2
          if (fp_fbo && gl->has_fp_fbo)

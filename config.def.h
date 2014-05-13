@@ -30,10 +30,6 @@
 #include "config.h"
 #endif
 
-#ifdef HW_RVL
-#include "gx/gx_input.h"
-#endif
-
 enum 
 {
    VIDEO_GL = 0,

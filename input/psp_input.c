@@ -25,12 +25,36 @@
 #include <pspctrl.h>
 #endif
 
-#include "sdk_defines.h"
-#include "psp_input.h"
+#include "../psp/sdk_defines.h"
 
 #include "../driver.h"
 #include "../libretro.h"
 #include "../general.h"
+
+enum {
+   PSP_GAMEPAD_CROSS =			      1ULL << 0,
+   PSP_GAMEPAD_SQUARE =			      1ULL << 1,
+   PSP_GAMEPAD_SELECT =			      1ULL << 2,
+   PSP_GAMEPAD_START =			      1ULL << 3,
+   PSP_GAMEPAD_DPAD_UP =		      1ULL << 4,
+   PSP_GAMEPAD_DPAD_DOWN =		      1ULL << 5,
+   PSP_GAMEPAD_DPAD_LEFT =		      1ULL << 6,
+   PSP_GAMEPAD_DPAD_RIGHT =		   1ULL << 7,
+   PSP_GAMEPAD_CIRCLE =			      1ULL << 8,
+   PSP_GAMEPAD_TRIANGLE =		      1ULL << 9,
+   PSP_GAMEPAD_L =			         1ULL << 10,
+   PSP_GAMEPAD_R =			         1ULL << 11,
+   PSP_GAMEPAD_LSTICK_LEFT_MASK =	1ULL << 16,
+   PSP_GAMEPAD_LSTICK_RIGHT_MASK =	1ULL << 17,
+   PSP_GAMEPAD_LSTICK_UP_MASK	 =	   1ULL << 18,
+   PSP_GAMEPAD_LSTICK_DOWN_MASK =	1ULL << 19,
+#ifdef SN_TARGET_PSP2
+   PSP_GAMEPAD_RSTICK_LEFT_MASK =	1ULL << 20,
+   PSP_GAMEPAD_RSTICK_RIGHT_MASK =	1ULL << 21,
+   PSP_GAMEPAD_RSTICK_UP_MASK 	=	1ULL << 22,
+   PSP_GAMEPAD_RSTICK_DOWN_MASK =	1ULL << 23,
+#endif
+};
 
 #define ANALOGSTICK_DEADZONE_LOW  (0x40)
 #define ANALOGSTICK_DEADZONE_HIGH (0xc0)

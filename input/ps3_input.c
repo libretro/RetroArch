@@ -20,7 +20,7 @@
 #include <sdk_version.h>
 #include "../boolean.h"
 
-#include "sdk_defines.h"
+#include "../ps3/sdk_defines.h"
 
 #include "../driver.h"
 #include "../libretro.h"

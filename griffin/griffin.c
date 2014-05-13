@@ -145,9 +145,8 @@ VIDEO CONTEXT
 /*============================================================
 VIDEO SHADERS
 ============================================================ */
-#include "../gfx/shader_common.c"
-
 #ifdef HAVE_SHADERS
+#include "../gfx/shader_common.c"
 #include "../gfx/shader_parse.c"
 
 #ifdef HAVE_CG
@@ -297,16 +296,16 @@ INPUT
 #endif
 
 #if defined(__CELLOS_LV2__)
-#include "../ps3/ps3_input.c"
+#include "../input/ps3_input.c"
 #elif defined(SN_TARGET_PSP2) || defined(PSP)
-#include "../psp/psp_input.c"
+#include "../input/psp_input.c"
 #elif defined(GEKKO)
 #ifdef HAVE_LIBSICKSAXIS
 #include "../gx/sicksaxis.c"
 #endif
-#include "../gx/gx_input.c"
+#include "../input/gx_input.c"
 #elif defined(_XBOX)
-#include "../xdk/xdk_xinput_input.c"
+#include "../input/xdk_xinput_input.c"
 #elif defined(XENON)
 #include "../xenon/xenon360_input.c"
 #elif defined(ANDROID)
@@ -323,7 +322,7 @@ INPUT
 
 #ifdef HAVE_OSK
 #if defined(__CELLOS_LV2__)
-#include "../ps3/ps3_input_osk.c"
+#include "../input/ps3_input_osk.c"
 #endif
 #endif
 
