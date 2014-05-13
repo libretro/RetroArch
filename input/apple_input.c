@@ -575,7 +575,9 @@ static bool apple_bind_button_pressed(void *data, int key)
 static void apple_input_free_input(void *data)
 {
    (void)data;
-   g_joydriver->destroy();
+    
+   if (g_joydriver && g_joydriver->destroy)
+      g_joydriver->destroy();
 }
 
 static void apple_input_set_keybinds(void *data, unsigned device, unsigned port,
@@ -640,7 +642,7 @@ static void apple_input_set_keybinds(void *data, unsigned device, unsigned port,
    {
       struct platform_bind *ret = (struct platform_bind*)data;
 
-      if (ret->joykey == NO_BTN)
+      if (ret && ret->joykey == NO_BTN)
          strlcpy(ret->desc, "No button", sizeof(ret->desc));
       else
          snprintf(ret->desc, sizeof(ret->desc), "Button %llu", ret->joykey);

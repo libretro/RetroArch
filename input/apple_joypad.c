@@ -56,7 +56,8 @@ static int32_t find_empty_slot(void)
 
 int32_t apple_joypad_connect(const char* name, struct apple_pad_connection* connection)
 {
-   int32_t slot = find_empty_slot();
+   int32_t slot;
+   slot = find_empty_slot();
 
    if (slot >= 0 && slot < MAX_PLAYERS)
    {
@@ -88,11 +89,12 @@ int32_t apple_joypad_connect(const char* name, struct apple_pad_connection* conn
 
 int32_t apple_joypad_connect_gcapi(void)
 {
-   int32_t slot = find_empty_slot();
+   int32_t slot;
+   slot = find_empty_slot();
 
    if (slot >= 0 && slot < MAX_PLAYERS)
    {
-      joypad_slot_t* s = (joypad_slot_t*)&slots[slot];
+      joypad_slot_t *s = (joypad_slot_t*)&slots[slot];
       s->used = true;
       s->is_gcapi = true;
    }
