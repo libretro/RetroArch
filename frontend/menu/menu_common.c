@@ -478,7 +478,7 @@ bool menu_iterate(void *data)
    static bool initial_held = true;
    static bool first_held = false;
    uint64_t input_state;
-   int32_t input_entry_ret, ret, i;
+   int32_t input_entry_ret, ret;
    rgui_handle_t *rgui;
 
    input_state = 0;
@@ -494,13 +494,6 @@ bool menu_iterate(void *data)
       rgui->need_refresh = true;
       g_extern.lifecycle_state &= ~(1ULL << MODE_MENU_PREINIT);
       rgui->old_input_state |= 1ULL << RARCH_MENU_TOGGLE;
-   }
-
-   // Update binds for analog dpad modes.
-   for (i = 0; i < MAX_PLAYERS; i++)
-   {
-      input_push_analog_dpad(g_settings.input.binds[i], g_settings.input.analog_dpad_mode[i]);
-      input_push_analog_dpad(g_settings.input.autoconf_binds[i], g_settings.input.analog_dpad_mode[i]);
    }
 
    rarch_input_poll();
@@ -605,12 +598,6 @@ bool menu_iterate(void *data)
          file_list_pop(rgui->menu_stack, &rgui->selection_ptr);
          file_list_get_last(rgui->menu_stack, NULL, &type);
       }
-   }
-
-   for (i = 0; i < MAX_PLAYERS; i++)
-   {
-      input_pop_analog_dpad(g_settings.input.binds[i]);
-      input_pop_analog_dpad(g_settings.input.autoconf_binds[i]);
    }
 
    if (ret || input_entry_ret)
