@@ -559,25 +559,25 @@ static void find_uniforms(unsigned pass, GLuint prog, struct shader_uniforms *un
       find_uniforms_frame(prog, &uni->orig, frame_base);
    }
 
-   for (i = 0; i < GFX_MAX_SHADERS; i++)
+   if (pass)
    {
-      snprintf(frame_base, sizeof(frame_base), "Pass%u", i + 1);
-      clear_uniforms_frame(&uni->pass[i]);
-      find_uniforms_frame(prog, &uni->pass[i], frame_base);
-      if (i && pass > i + 1)
+      for (i = 0; i < pass - 1; i++)
       {
-         snprintf(frame_base, sizeof(frame_base), "PassPrev%u", pass - i);
+         snprintf(frame_base, sizeof(frame_base), "Pass%u", i + 1);
+         clear_uniforms_frame(&uni->pass[i]);
+         find_uniforms_frame(prog, &uni->pass[i], frame_base);
+         snprintf(frame_base, sizeof(frame_base), "PassPrev%u", pass - (i + 1));
          find_uniforms_frame(prog, &uni->pass[i], frame_base);
       }
-   }
 
-   clear_uniforms_frame(&uni->prev[0]);
-   find_uniforms_frame(prog, &uni->prev[0], "Prev");
-   for (i = 1; i < PREV_TEXTURES; i++)
-   {
-      snprintf(frame_base, sizeof(frame_base), "Prev%u", i);
-      clear_uniforms_frame(&uni->prev[i]);
-      find_uniforms_frame(prog, &uni->prev[i], frame_base);
+      clear_uniforms_frame(&uni->prev[0]);
+      find_uniforms_frame(prog, &uni->prev[0], "Prev");
+      for (i = 1; i < PREV_TEXTURES; i++)
+      {
+         snprintf(frame_base, sizeof(frame_base), "Prev%u", i);
+         clear_uniforms_frame(&uni->prev[i]);
+         find_uniforms_frame(prog, &uni->prev[i], frame_base);
+      }
    }
 
    glUseProgram(0);

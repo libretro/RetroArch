@@ -547,7 +547,8 @@ def preprocess_vertex(source_data):
 
 def convert(source, dest):
    # Have to preprocess first to resolve #includes so we can hack potential vertex shaders.
-   vert_cmd_preprocess = ['cgc', '-E', '-I', os.path.split(source)[0], source]
+   inc_dir = os.path.split(source)[0]
+   vert_cmd_preprocess = ['cgc', '-E', '-I', '.' if inc_dir == '' else inc_dir, source]
    p = subprocess.Popen(vert_cmd_preprocess, stderr = subprocess.PIPE, stdout = subprocess.PIPE)
    source_data, stderr_ret = p.communicate()
    log(stderr_ret.decode())
