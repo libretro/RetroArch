@@ -237,6 +237,7 @@ enum input_devices
 #if defined(IOS)
    DEVICE_WIIMOTE,
    DEVICE_SIXAXIS,
+   DEVICE_MFI,
 #endif
    DEVICE_LAST
 };
@@ -633,6 +634,39 @@ static void apple_input_set_keybinds(void *data, unsigned device, unsigned port,
             g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R3].joykey     = 15;
             g_settings.input.binds[port][RARCH_MENU_TOGGLE].joykey             = 16;
             break;
+          case DEVICE_MFI:
+              strlcpy(g_settings.input.device_names[port], "MFi Gamepad", sizeof(g_settings.input.device_names[port]));
+              g_settings.input.device[port] = device;
+              g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_B].joykey      = RETRO_DEVICE_ID_JOYPAD_B;
+              g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_Y].joykey      = RETRO_DEVICE_ID_JOYPAD_Y;
+              g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_SELECT].joykey = RETRO_DEVICE_ID_JOYPAD_SELECT;
+              g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_START].joykey  = RETRO_DEVICE_ID_JOYPAD_START;
+              g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_UP].joykey     = RETRO_DEVICE_ID_JOYPAD_UP;
+              g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_DOWN].joykey   = RETRO_DEVICE_ID_JOYPAD_DOWN;
+              g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_LEFT].joykey   = RETRO_DEVICE_ID_JOYPAD_LEFT;
+              g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_RIGHT].joykey  = RETRO_DEVICE_ID_JOYPAD_RIGHT;
+              g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_A].joykey      = RETRO_DEVICE_ID_JOYPAD_A;
+              g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_X].joykey      = RETRO_DEVICE_ID_JOYPAD_X;
+              g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_L].joykey      = RETRO_DEVICE_ID_JOYPAD_L;
+              g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R].joykey      = RETRO_DEVICE_ID_JOYPAD_R;
+              g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_L2].joykey     = RETRO_DEVICE_ID_JOYPAD_L2;
+              g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R2].joykey     = RETRO_DEVICE_ID_JOYPAD_R2;
+              g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_L3].joykey     = RETRO_DEVICE_ID_JOYPAD_L3;
+              g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R3].joykey     = RETRO_DEVICE_ID_JOYPAD_R3;
+              g_settings.input.binds[port][RARCH_ANALOG_LEFT_X_PLUS].def_joyaxis      = AXIS_POS(0);
+              g_settings.input.binds[port][RARCH_ANALOG_LEFT_X_MINUS].def_joyaxis    = AXIS_NEG(0);
+              g_settings.input.binds[port][RARCH_ANALOG_LEFT_Y_PLUS].def_joyaxis      = AXIS_NEG(1);
+              g_settings.input.binds[port][RARCH_ANALOG_LEFT_Y_MINUS].def_joyaxis    = AXIS_POS(1);
+              g_settings.input.binds[port][RARCH_ANALOG_RIGHT_X_PLUS].def_joyaxis    = AXIS_POS(2);
+              g_settings.input.binds[port][RARCH_ANALOG_RIGHT_X_MINUS].def_joyaxis    = AXIS_NEG(2);
+              g_settings.input.binds[port][RARCH_ANALOG_RIGHT_Y_PLUS].def_joyaxis    = AXIS_NEG(3);
+              g_settings.input.binds[port][RARCH_ANALOG_RIGHT_Y_MINUS].def_joyaxis    = AXIS_POS(3);
+              
+              for (int i = 0; i < RARCH_CUSTOM_BIND_LIST_END; i++) {
+                  g_settings.input.binds[port][i].joyaxis = g_settings.input.binds[port][i].def_joyaxis;
+              }
+              
+              break;
       }
    }
 #endif
