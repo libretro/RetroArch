@@ -50,6 +50,13 @@ static void system_shutdown(void)
    bps_shutdown();
 }
 
+static int frontend_qnx_get_rating(void)
+{
+   /* TODO/FIXME - look at unique identifier per device and 
+    * determine rating for some */
+   return -1;
+}
+
 const frontend_ctx_driver_t frontend_ctx_qnx = {
    get_environment_settings,     /* get_environment_settings */
    system_init,                  /* init */
@@ -59,5 +66,6 @@ const frontend_ctx_driver_t frontend_ctx_qnx = {
    NULL,                         /* process_events */
    NULL,                         /* exec */
    system_shutdown,              /* shutdown */
+   frontend_qnx_get_rating,      /* get_rating */
    "qnx",
 };

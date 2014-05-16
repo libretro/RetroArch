@@ -366,6 +366,15 @@ static void system_exec(const char *path, bool should_load_game)
 #endif
 }
 
+static int frontend_gx_get_rating(void)
+{
+#ifdef HW_RVL
+   return 8;
+#else
+   return 6;
+#endif
+}
+
 const frontend_ctx_driver_t frontend_ctx_gx = {
    get_environment_settings,        /* get_environment_settings */
    system_init,                     /* init */
@@ -375,6 +384,7 @@ const frontend_ctx_driver_t frontend_ctx_gx = {
    NULL,                            /* process_events */
    system_exec,                     /* exec */
    NULL,                            /* shutdown */
+   frontend_gx_get_rating,         /* get_rating */
    "gx",
 #ifdef IS_SALAMANDER
    salamander_init,

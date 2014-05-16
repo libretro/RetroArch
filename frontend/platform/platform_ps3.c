@@ -454,6 +454,11 @@ static void system_exec(const char *path, bool should_load_game)
    cellSysmoduleUnloadModule(CELL_SYSMODULE_NET);
 }
 
+static int frontend_xdk_get_rating(void)
+{
+   return 10;
+}
+
 const frontend_ctx_driver_t frontend_ctx_ps3 = {
    get_environment_settings,     /* get_environment_settings */
    system_init,                  /* init */
@@ -463,6 +468,7 @@ const frontend_ctx_driver_t frontend_ctx_ps3 = {
    NULL,                         /* process_events */
    system_exec,                  /* exec */
    NULL,                         /* shutdown */
+   frontend_ps3_get_rating,      /* get_rating */
    "ps3",
 #ifdef IS_SALAMANDER
    salamander_init,

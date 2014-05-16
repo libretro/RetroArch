@@ -354,6 +354,17 @@ static void system_exec(const char *path, bool should_load_game)
 #endif
 }
 
+static int frontend_xdk_get_rating(void)
+{
+#if defined(_XBOX360)
+   return 11;
+#elif defined(_XBOX1)
+   return 7;
+#else
+   return -1;
+#endif
+}
+
 const frontend_ctx_driver_t frontend_ctx_xdk = {
    get_environment_settings,     /* get_environment_settings */
    system_init,                  /* init */
@@ -363,6 +374,7 @@ const frontend_ctx_driver_t frontend_ctx_xdk = {
    NULL,                         /* process_events */
    system_exec,                  /* exec */
    NULL,                         /* shutdown */
+   frontend_xdk_get_rating,      /* get_rating */
    "xdk",
 #ifdef IS_SALAMANDER
    salamander_init,

@@ -122,6 +122,11 @@ static int psp_process_args(int argc, char *argv[], void *args)
    return 0;
 }
 
+static int frontend_psp_get_rating(void)
+{
+   return 4;
+}
+
 const frontend_ctx_driver_t frontend_ctx_psp = {
    get_environment_settings,     /* get_environment_settings */
    system_init,                  /* init */
@@ -131,6 +136,7 @@ const frontend_ctx_driver_t frontend_ctx_psp = {
    NULL,                         /* process_events */
    NULL,                  	      /* exec */
    NULL,                         /* shutdown */
+   frontend_psp_get_rating,      /* get_rating */
    "psp",
 #ifdef IS_SALAMANDER
    NULL,
