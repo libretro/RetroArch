@@ -32,9 +32,8 @@ static inline uint32_t joypad_value_for_id(uint32_t joypad_id)
 
 static void apple_gamecontroller_poll(GCController *controller)
 {
-    if (!controller || controller.playerIndex == MAX_PLAYERS) {
+    if (!controller || controller.playerIndex == MAX_PLAYERS)
         return;
-    }
     
     uint32_t slot = (uint32_t)controller.playerIndex;
     
@@ -46,7 +45,8 @@ static void apple_gamecontroller_poll(GCController *controller)
     
     g_current_input_data.pad_buttons[slot] |= pause;
     
-    if (controller.extendedGamepad) {
+    if (controller.extendedGamepad)
+    {
         GCExtendedGamepad *gp = (GCExtendedGamepad *)controller.extendedGamepad;
         g_current_input_data.pad_buttons[slot] |= gp.dpad.up.pressed ? joypad_value_for_id(RETRO_DEVICE_ID_JOYPAD_UP) : 0;
         g_current_input_data.pad_buttons[slot] |= gp.dpad.down.pressed ? joypad_value_for_id(RETRO_DEVICE_ID_JOYPAD_DOWN) : 0;
@@ -65,7 +65,9 @@ static void apple_gamecontroller_poll(GCController *controller)
         g_current_input_data.pad_axis[slot][1] = gp.leftThumbstick.yAxis.value * 32767.0f;
         g_current_input_data.pad_axis[slot][2] = gp.rightThumbstick.xAxis.value * 32767.0f;
         g_current_input_data.pad_axis[slot][3] = gp.rightThumbstick.yAxis.value * 32767.0f;
-    } else if (controller.gamepad) {
+    }
+    else if (controller.gamepad)
+    {
         GCGamepad *gp = (GCGamepad *)controller.gamepad;
         g_current_input_data.pad_buttons[slot] |= gp.dpad.up.pressed ? joypad_value_for_id(RETRO_DEVICE_ID_JOYPAD_UP) : 0;
         g_current_input_data.pad_buttons[slot] |= gp.dpad.down.pressed ? joypad_value_for_id(RETRO_DEVICE_ID_JOYPAD_DOWN) : 0;
@@ -82,13 +84,11 @@ static void apple_gamecontroller_poll(GCController *controller)
 
 void apple_gamecontroller_poll_all(void)
 {
-    if (!apple_gamecontroller_available()) {
+    if (!apple_gamecontroller_available())
         return;
-    }
     
-    for (GCController *controller in [GCController controllers]) {
+    for (GCController *controller in [GCController controllers])
         apple_gamecontroller_poll(controller);
-    }
 }
 
 static void apple_gamecontroller_register(GCGamepad *gamepad)
@@ -96,8 +96,6 @@ static void apple_gamecontroller_register(GCGamepad *gamepad)
     gamepad.valueChangedHandler = ^(GCGamepad *updateGamepad, GCControllerElement *element) {
         apple_gamecontroller_poll(updateGamepad.controller);
     };
-    
-    
     
     gamepad.controller.controllerPausedHandler = ^(GCController *controller) {
         
@@ -119,9 +117,8 @@ static void apple_gamecontroller_connect(GCController *controller)
     
     controller.playerIndex = (slot >= 0 && slot < MAX_PLAYERS) ? slot : GCControllerPlayerIndexUnset;
     
-    if (controller.playerIndex == GCControllerPlayerIndexUnset) {
+    if (controller.playerIndex == GCControllerPlayerIndexUnset)
         return;
-    }
     
     apple_gamecontroller_register(controller.gamepad);
 }
