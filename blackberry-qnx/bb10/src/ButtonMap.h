@@ -31,7 +31,7 @@ public:
     QString getLabel(int button);
     //pass in RARCH button enum for button, map to g_setting
     int mapNextButtonPressed();
-    //Call in our emulator thread with seperate screen_cxt
+    //Call in our RetroArch thread with seperate screen_cxt
     int getButtonMapping(int player, int button);
     //Call from frontend
     int requestButtonMapping(screen_device_t device, int player, int button);

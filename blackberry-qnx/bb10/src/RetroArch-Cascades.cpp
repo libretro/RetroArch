@@ -154,7 +154,7 @@ void RetroArch::run()
                RARCH_ERR("Screen join window group failed.\n");
             }
 
-            char *win_id = "RetroArch_Emulator_Window";
+            char *win_id = "RetroArch_Window";
             screen_set_window_property_cv(screen_win, SCREEN_PROPERTY_ID_STRING, strlen(win_id), win_id);
 
             int z = 10;
@@ -221,7 +221,7 @@ void RetroArch::onRotationCompleted()
    if (OrientationSupport::instance()->orientation() == UIOrientation::Landscape)
    {
       if (state == RETROARCH_START_REQUESTED)
-         startEmulator();
+         start();
    }
 }
 
@@ -244,7 +244,7 @@ void RetroArch::onCoreSelected(QVariant value)
 /*
  * Functions
  */
-void RetroArch::startEmulator()
+void RetroArch::start()
 {
    state = RETROARCH_START_REQUESTED;
 

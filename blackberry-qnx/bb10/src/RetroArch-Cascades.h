@@ -33,7 +33,7 @@ public:
     RetroArch();
     ~ RetroArch();
 
-    Q_INVOKABLE void startEmulator();
+    Q_INVOKABLE void start();
     Q_INVOKABLE void findDevices();
     Q_INVOKABLE void discoverController(int player);
     void populateCores(core_info_list_t * info);
