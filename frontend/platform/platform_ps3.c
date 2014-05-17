@@ -69,7 +69,7 @@ static void find_and_set_first_file(void)
       RARCH_ERR("Failed last fallback - RetroArch Salamander will exit.\n");
 }
 
-static void salamander_init(void)
+static void frontend_ps3_salamander_init(void)
 {
    CellPadData pad_data;
    cellPadInit(7);
@@ -162,7 +162,7 @@ static void callback_sysutil_exit(uint64_t status, uint64_t param, void *userdat
 }
 #endif
 
-static void get_environment_settings(int argc, char *argv[], void *args)
+static void frontend_ps3_get_environment_settings(int argc, char *argv[], void *args)
 {
    (void)args;
 #ifndef IS_SALAMANDER
@@ -264,7 +264,7 @@ static void get_environment_settings(int argc, char *argv[], void *args)
    }
 }
 
-static void system_init(void *data)
+static void frontend_ps3_init(void *data)
 {
    (void)data;
 #ifdef HAVE_SYSUTILS
@@ -322,7 +322,7 @@ static void system_init(void *data)
 #endif
 }
 
-static int system_process_args(int argc, char *argv[], void *args)
+static int frontend_ps3_process_args(int argc, char *argv[], void *args)
 {
 #ifndef IS_SALAMANDER
    if (argc > 1)
@@ -336,7 +336,7 @@ static int system_process_args(int argc, char *argv[], void *args)
    return 0;
 }
 
-static void system_deinit(void *data)
+static void frontend_ps3_deinit(void *data)
 {
    (void)data;
 #ifndef IS_SALAMANDER
@@ -368,14 +368,14 @@ static void system_deinit(void *data)
 #endif
 }
 
-static void system_exec(const char *path, bool should_load_game);
+static void frontend_ps3_exec(const char *path, bool should_load_game);
 
-static void system_exitspawn(void)
+static void frontend_ps3_exitspawn(void)
 {
 #ifdef HAVE_RARCH_EXEC
 
 #ifdef IS_SALAMANDER
-   system_exec(libretro_path, false);
+   frontend_ps3_exec(libretro_path, false);
 
    cellSysmoduleUnloadModule(CELL_SYSMODULE_SYSUTIL_GAME);
    cellSysmoduleLoadModule(CELL_SYSMODULE_FS);
@@ -395,7 +395,7 @@ static void system_exitspawn(void)
    if (g_extern.lifecycle_state & (1ULL << MODE_EXITSPAWN_START_GAME))
       should_load_game = true;
 
-   system_exec(core_launch, should_load_game);
+   frontend_ps3_exec(core_launch, should_load_game);
 #endif
 
 #endif
@@ -413,7 +413,7 @@ static void system_exitspawn(void)
 
 #include "../../retroarch_logger.h"
 
-static void system_exec(const char *path, bool should_load_game)
+static void frontend_ps3_exec(const char *path, bool should_load_game)
 {
    (void)should_load_game;
 
@@ -454,23 +454,23 @@ static void system_exec(const char *path, bool should_load_game)
    cellSysmoduleUnloadModule(CELL_SYSMODULE_NET);
 }
 
-static int frontend_xdk_get_rating(void)
+static int frontend_ps3_get_rating(void)
 {
    return 10;
 }
 
 const frontend_ctx_driver_t frontend_ctx_ps3 = {
-   get_environment_settings,     /* get_environment_settings */
-   system_init,                  /* init */
-   system_deinit,                /* deinit */
-   system_exitspawn,             /* exitspawn */
-   system_process_args,          /* process_args */
+   frontend_ps3_get_environment_settings,     /* get_environment_settings */
+   frontend_ps3_init,            /* init */
+   frontend_ps3_deinit,          /* deinit */
+   frontend_ps3_exitspawn,       /* exitspawn */
+   frontend_ps3_process_args,    /* process_args */
    NULL,                         /* process_events */
-   system_exec,                  /* exec */
+   frontend_ps3_exec,            /* exec */
    NULL,                         /* shutdown */
    frontend_ps3_get_rating,      /* get_rating */
    "ps3",
 #ifdef IS_SALAMANDER
-   salamander_init,
+   frontend_ps3_salamander_init,
 #endif
 };

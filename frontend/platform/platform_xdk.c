@@ -59,7 +59,7 @@ static void find_and_set_first_file(void)
       RARCH_ERR("Failed last fallback - RetroArch Salamander will exit.\n");
 }
 
-static void salamander_init(void)
+static void frontend_xdk_salamander_init(void)
 {
    XINPUT_STATE state;
    (void)state;
@@ -178,7 +178,7 @@ static HRESULT xbox_io_unmount(char *szDrive)
 }
 #endif
 
-static void get_environment_settings(int argc, char *argv[], void *args)
+static void frontend_xdk_get_environment_settings(int argc, char *argv[], void *args)
 {
    HRESULT ret;
    (void)ret;
@@ -250,7 +250,7 @@ static void get_environment_settings(int argc, char *argv[], void *args)
 #endif
 }
 
-static void system_init(void *data)
+static void frontend_xdk_init(void *data)
 {
    (void)data;
 #if defined(_XBOX1) && !defined(IS_SALAMANDER)
@@ -264,7 +264,7 @@ static void system_init(void *data)
 #endif
 }
 
-static int system_process_args(int argc, char *argv[], void *args)
+static int frontend_xdk_process_args(int argc, char *argv[], void *args)
 {
    (void)argc;
    (void)argv;
@@ -303,18 +303,18 @@ static int system_process_args(int argc, char *argv[], void *args)
    return 0;
 }
 
-static void system_exec(const char *path, bool should_load_game);
+static void frontend_xdk_exec(const char *path, bool should_load_game);
 
-static void system_exitspawn(void)
+static void frontend_xdk_exitspawn(void)
 {
 #ifdef IS_SALAMANDER
-   system_exec(libretro_path, false);
+   frontend_xdk_exec(libretro_path, false);
 #else
    bool should_load_game = false;
    if (g_extern.lifecycle_state & (1ULL << MODE_EXITSPAWN_START_GAME))
       should_load_game = true;
 
-   system_exec(g_settings.libretro, should_load_game);
+   frontend_xdk_exec(g_settings.libretro, should_load_game);
 #endif
 }
 
@@ -324,7 +324,7 @@ static void system_exitspawn(void)
 
 #include "../../retroarch_logger.h"
 
-static void system_exec(const char *path, bool should_load_game)
+static void frontend_xdk_exec(const char *path, bool should_load_game)
 {
    (void)should_load_game;
 
@@ -366,17 +366,17 @@ static int frontend_xdk_get_rating(void)
 }
 
 const frontend_ctx_driver_t frontend_ctx_xdk = {
-   get_environment_settings,     /* get_environment_settings */
-   system_init,                  /* init */
+   frontend_xdk_get_environment_settings,     /* get_environment_settings */
+   frontend_xdk_init,            /* init */
    NULL,                         /* deinit */
-   system_exitspawn,             /* exitspawn */
-   system_process_args,          /* process_args */
+   frontend_xdk_exitspawn,       /* exitspawn */
+   frontend_xdk_process_args,    /* process_args */
    NULL,                         /* process_events */
-   system_exec,                  /* exec */
+   frontend_xdk_exec,            /* exec */
    NULL,                         /* shutdown */
    frontend_xdk_get_rating,      /* get_rating */
    "xdk",
 #ifdef IS_SALAMANDER
-   salamander_init,
+   frontend_xdk_salamander_init,
 #endif
 };

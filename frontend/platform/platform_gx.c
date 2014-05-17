@@ -67,7 +67,7 @@ static void find_and_set_first_file(void)
       RARCH_ERR("Failed last fallback - RetroArch Salamander will exit.\n");
 }
 
-static void salamander_init(void)
+static void frontend_gx_salamander_init(void)
 {
    char tmp_str[512] = {0};
    bool config_file_exists;
@@ -219,7 +219,7 @@ int gx_logger_file(struct _reent *r, int fd, const char *ptr, size_t len)
 extern char gx_rom_path[PATH_MAX];
 #endif
 
-static void get_environment_settings(int argc, char *argv[], void *args)
+static void frontend_gx_get_environment_settings(int argc, char *argv[], void *args)
 {
 #ifndef IS_SALAMANDER
    g_extern.verbose = true;
@@ -262,7 +262,7 @@ static void get_environment_settings(int argc, char *argv[], void *args)
 
 extern void __exception_setreload(int t);
 
-static void system_init(void *data)
+static void frontend_gx_init(void *data)
 {
    (void)data;
 #ifdef HW_RVL
@@ -302,26 +302,29 @@ static void system_init(void *data)
 #endif
 }
 
-static void system_exec(const char *path, bool should_load_game);
+static void frontend_gx_exec(const char *path, bool should_load_game);
 
-static void system_exitspawn(void)
+static void frontend_gx_exitspawn(void)
 {
+   char boot_dol[PATH_MAX];
+
+   (void)boot_dol;
+
 #if defined(IS_SALAMANDER)
-   system_exec(libretro_path, gx_rom_path[0] != '\0' ? true : false);
+   frontend_gx_exec(libretro_path, gx_rom_path[0] != '\0' ? true : false);
 #elif defined(HW_RVL)
    bool should_load_game = false;
    if (g_extern.lifecycle_state & (1ULL << MODE_EXITSPAWN_START_GAME))
       should_load_game = true;
 
-   system_exec(g_settings.libretro, should_load_game);
+   frontend_gx_exec(g_settings.libretro, should_load_game);
    // direct loading failed (out of memory), try to jump to salamander then load the correct core
-   char boot_dol[PATH_MAX];
    fill_pathname_join(boot_dol, default_paths.core_dir, "boot.dol", sizeof(boot_dol));
-   system_exec(boot_dol, should_load_game);
+   frontend_gx_exec(boot_dol, should_load_game);
 #endif
 }
 
-static void system_deinit(void *data)
+static void frontend_gx_deinit(void *data)
 {
    (void)data;
 #ifndef IS_SALAMANDER
@@ -335,7 +338,7 @@ static void system_deinit(void *data)
 #endif
 }
 
-static int system_process_args(int argc, char *argv[], void *args)
+static int frontend_gx_process_args(int argc, char *argv[], void *args)
 {
    int ret = 0;
 
@@ -359,7 +362,7 @@ static int system_process_args(int argc, char *argv[], void *args)
    return ret;
 }
 
-static void system_exec(const char *path, bool should_load_game)
+static void frontend_gx_exec(const char *path, bool should_load_game)
 {
 #ifdef HW_RVL
    system_exec_wii(path, should_load_game);
@@ -376,17 +379,17 @@ static int frontend_gx_get_rating(void)
 }
 
 const frontend_ctx_driver_t frontend_ctx_gx = {
-   get_environment_settings,        /* get_environment_settings */
-   system_init,                     /* init */
-   system_deinit,                   /* deinit */
-   system_exitspawn,                /* exitspawn */
-   system_process_args,             /* process_args */
+   frontend_gx_get_environment_settings, /* get_environment_settings */
+   frontend_gx_init,                /* init */
+   frontend_gx_deinit,              /* deinit */
+   frontend_gx_exitspawn,           /* exitspawn */
+   frontend_gx_process_args,        /* process_args */
    NULL,                            /* process_events */
-   system_exec,                     /* exec */
+   frontend_gx_exec,                /* exec */
    NULL,                            /* shutdown */
    frontend_gx_get_rating,         /* get_rating */
    "gx",
 #ifdef IS_SALAMANDER
-   salamander_init,
+   frontend_gx_salamander_init,
 #endif
 };
