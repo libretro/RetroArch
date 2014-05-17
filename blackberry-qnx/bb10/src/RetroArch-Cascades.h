@@ -25,9 +25,9 @@ class RetroArch: public QThread
 {
     Q_OBJECT
 
-    Q_PROPERTY(QString rom  READ getRom  WRITE setRom  NOTIFY romChanged)
+    Q_PROPERTY(QString content  READ getContent  WRITE setContent  NOTIFY contentChanged)
     Q_PROPERTY(QString core READ getCore WRITE setCore NOTIFY coreChanged)
-    Q_PROPERTY(QString romExtensions READ getRomExtensions NOTIFY romExtensionsChanged)
+    Q_PROPERTY(QString contentExtensions READ getContentExtensions NOTIFY contentExtensionsChanged)
 
 public:
     RetroArch();
@@ -39,9 +39,9 @@ public:
     void populateCores(core_info_list_t * info);
 
 signals:
-	void romChanged(QString);
+	void contentChanged(QString);
 	void coreChanged(QString);
-	void romExtensionsChanged(QString);
+	void contentExtensionsChanged(QString);
 
 public slots:
 	void aboutToQuit();
@@ -55,16 +55,16 @@ private:
      */
     void run();
 
-    QString rom;
-    QString getRom();
-    void setRom(QString rom);
+    QString content;
+    QString getContent();
+    void setContent(QString content);
 
     QString core;
     QString getCore();
 	void setCore(QString core);
 
-	QString romExtensions;
-	QString getRomExtensions();
+	QString contentExtensions;
+	QString getContentExtensions();
 
 	void initRASettings();
 

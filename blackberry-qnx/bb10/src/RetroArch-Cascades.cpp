@@ -188,14 +188,14 @@ exit:
 /*
  * Properties
  */
-QString RetroArch::getRom()
+QString RetroArch::getContent()
 {
-   return rom;
+   return content;
 }
 
-void RetroArch::setRom(QString rom)
+void RetroArch::setContent(QString content)
 {
-   this->rom = rom;
+   this->content = content;
 }
 
 QString RetroArch::getCore()
@@ -208,9 +208,9 @@ void RetroArch::setCore(QString core)
    this->core = core;
 }
 
-QString RetroArch::getRomExtensions()
+QString RetroArch::getContentExtensions()
 {
-   return romExtensions;
+   return contentExtensions;
 }
 
 /*
@@ -233,12 +233,12 @@ void RetroArch::onCoreSelected(QVariant value)
    core.append(core_info_list->list[coreSelectedIndex].path);
    emit coreChanged(core);
 
-   romExtensions = QString("*.%1").arg(core_info_list->list[coreSelectedIndex].supported_extensions);
-   romExtensions.replace("|", "|*.");
-   emit romExtensionsChanged(romExtensions);
+   contentExtensions = QString("*.%1").arg(core_info_list->list[coreSelectedIndex].supported_extensions);
+   contentExtensions.replace("|", "|*.");
+   emit contentExtensionsChanged(contentExtensions);
 
    qDebug() << "Core Selected: " << core;
-   qDebug() << "Supported Extensions: " << romExtensions;
+   qDebug() << "Supported Extensions: " << contentExtensions;
 }
 
 /*
@@ -315,7 +315,7 @@ void RetroArch::initRASettings()
    HardwareInfo *hwInfo;
 
    strlcpy(g_settings.libretro,(char *)core.toAscii().constData(), sizeof(g_settings.libretro));
-   strlcpy(g_extern.fullpath, (char *)rom.toAscii().constData(), sizeof(g_extern.fullpath));
+   strlcpy(g_extern.fullpath, (char *)content.toAscii().constData(), sizeof(g_extern.fullpath));
 
    hwInfo = new HardwareInfo();
 

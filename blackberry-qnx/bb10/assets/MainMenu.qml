@@ -8,14 +8,12 @@ Page {
             ActionBar.placement: ActionBarPlacement.OnBar
             imageSource: "asset:///images/open.png"
             onTriggered: {
-                if(RetroArch.rom == "" || RetroArch.core == "")
+                if(RetroArch.content == "" || RetroArch.core == "")
                 {
-                    //Do something to focus on select rom box
+                    //Do something to focus on select content box
                 }
                 else 
-                {
-                    RetroArch.startEmulator();
-                }
+                    RetroArch.start();
             }
         }
     ]
@@ -66,7 +64,7 @@ Page {
                 //I like the look as a textbox
                 DropDown
                 {
-                    id: romName
+                    id: contentName
                     verticalAlignment: VerticalAlignment.Center
                     horizontalAlignment: HorizontalAlignment.Center
                     preferredWidth: 600
@@ -74,7 +72,7 @@ Page {
                     title: if(picker.selectedFile)
                                picker.selectedFile
                            else
-                               "Rom Selection"
+                               "Content Selection"
                 }
 
                 ImageButton {
@@ -93,15 +91,15 @@ Page {
 
             property string selectedFile
 
-            title: "Rom Selector"
-            filter: { RetroArch.romExtensions.split("|") }
+            title: "Content Selector"
+            filter: { RetroArch.contentExtensions.split("|") }
             type: FileType.Other
-            directories: ["/accounts/1000/shared/documents/roms"]
+            directories: ["/accounts/1000/shared/documents/content"]
 
             onFileSelected: {
-                RetroArch.rom = selectedFiles[0];
-                selectedFile = RetroArch.rom.substr(RetroArch.rom.lastIndexOf('/')+1);
-                picker.directories = [RetroArch.rom.substr(0, RetroArch.rom.lastIndexOf('/'))];
+                RetroArch.content = selectedFiles[0];
+                selectedFile = RetroArch.content.substr(RetroArch.content.lastIndexOf('/')+1);
+                picker.directories = [RetroArch.content.substr(0, RetroArch.content.lastIndexOf('/'))];
             }
         }
     ]
