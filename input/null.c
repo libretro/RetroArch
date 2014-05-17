@@ -75,6 +75,11 @@ static bool nullinput_set_sensor_state(void *data, unsigned port, enum retro_sen
    return false;
 }
 
+static unsigned nullinput_devices_size(void *data)
+{
+   return 0;
+}
+
 const input_driver_t input_null = {
    nullinput_input_init,
    nullinput_input_poll,
@@ -85,5 +90,6 @@ const input_driver_t input_null = {
    nullinput_set_sensor_state,
    NULL,
    nullinput_get_capabilities,
+   nullinput_devices_size,
    "null",
 };

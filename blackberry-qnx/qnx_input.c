@@ -521,7 +521,7 @@ static void *qnx_input_init(void)
 
    //Get screen dimensions
    if(gfx_ctx_bbqnx.get_video_size)
-      gfx_ctx_bbqnx.get_video_size(&screen_width, &screen_height);
+      gfx_ctx_bbqnx.get_video_size(driver.video_data, &screen_width, &screen_height);
 
    if(initialized)
       return (void*)-1;

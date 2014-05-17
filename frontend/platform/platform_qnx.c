@@ -23,7 +23,7 @@
 #include "../../dynamic.h"
 #include "../../libretro_private.h"
 
-static void get_environment_settings(int argc, char *argv[], void *args)
+static void frontend_qnx_get_environment_settings(int argc, char *argv[], void *args)
 {
    (void)argc;
    (void)argv;
@@ -36,7 +36,7 @@ static void get_environment_settings(int argc, char *argv[], void *args)
    config_load();
 }
 
-static void system_init(void *data)
+static void frontend_qnx_init(void *data)
 {
    (void)data;
 /* FIXME - should this apply for both BB10 and PB? */
@@ -45,8 +45,9 @@ static void system_init(void *data)
 #endif
 }
 
-static void system_shutdown(void)
+static void frontend_qnx_shutdown(bool unused)
 {
+   (void)unused;
    bps_shutdown();
 }
 
@@ -58,14 +59,14 @@ static int frontend_qnx_get_rating(void)
 }
 
 const frontend_ctx_driver_t frontend_ctx_qnx = {
-   get_environment_settings,     /* get_environment_settings */
-   system_init,                  /* init */
+   frontend_qnx_get_environment_settings,     /* get_environment_settings */
+   frontend_qnx_init,            /* init */
    NULL,                         /* deinit */
    NULL,                         /* exitspawn */
    NULL,                         /* process_args */
    NULL,                         /* process_events */
    NULL,                         /* exec */
-   system_shutdown,              /* shutdown */
+   frontend_qnx_shutdown,        /* shutdown */
    frontend_qnx_get_rating,      /* get_rating */
    "qnx",
 };
