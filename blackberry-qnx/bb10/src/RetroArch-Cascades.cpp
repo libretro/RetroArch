@@ -48,6 +48,7 @@ RetroArch::RetroArch()
    res = connect(
          OrientationSupport::instance(), SIGNAL(rotationCompleted()),
          this, SLOT(onRotationCompleted()));
+   (void)res;
 
    rarch_main_clear_state();
    strlcpy(g_extern.config_path, "app/native/retroarch.cfg", sizeof(g_extern.config_path));
@@ -143,6 +144,7 @@ void RetroArch::run()
          {
          case RETROARCH_START_REQUESTED:
          {
+            char win_id[64];
             MsgReply(rcvid,0,NULL,0);
 
             if (screen_create_window_type(&screen_win, screen_ctx, SCREEN_CHILD_WINDOW) != BPS_SUCCESS)
@@ -154,7 +156,7 @@ void RetroArch::run()
                RARCH_ERR("Screen join window group failed.\n");
             }
 
-            char *win_id = "RetroArch_Window";
+            strlcpy(win_id, "RetroArch_Window", sizeof(win_id));
             screen_set_window_property_cv(screen_win, SCREEN_PROPERTY_ID_STRING, strlen(win_id), win_id);
 
             int z = 10;
@@ -264,7 +266,7 @@ void RetroArch::start()
 
 void RetroArch::populateCores(core_info_list_t * info)
 {
-   int i;
+   unsigned i;
    Option *tmp;
 
    //Populate DropDown
@@ -281,13 +283,14 @@ void RetroArch::populateCores(core_info_list_t * info)
 
 void RetroArch::findDevices()
 {
-   //Find all connected devices.
+   unsigned i;
    Option *tmp;
 
    deviceSelection->removeAll();
 
+   //Find all connected devices
    //Populate DropDown
-   for (int i = 0; i < pads_connected; ++i)
+   for (i = 0; i < pads_connected; ++i)
    {
       tmp = Option::create().text(devices[i].device_name)
                             .value(i);

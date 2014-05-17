@@ -163,6 +163,7 @@ static void wah_dsp_free(void *data)
 
 static void wah_dsp_config(void *data)
 {
+   (void)data;
 }
 
 const struct dspfilter_implementation generic_wah_dsp = {

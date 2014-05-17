@@ -151,7 +151,9 @@ rarch_softfilter_t *rarch_softfilter_new(const char *filter_path,
    softfilter_get_implementation_t cb;
     
    i = 0;
+
    (void)i;
+   (void)filter_path;
 
    rarch_softfilter_t *filt = (rarch_softfilter_t*)calloc(1, sizeof(*filt));
    if (!filt)

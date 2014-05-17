@@ -92,5 +92,6 @@
 		<nature>com.qnx.tools.ide.bbt.core.bbtnature</nature>
 		<nature>org.eclipse.cdt.core.ccnature</nature>
 		<nature>com.rim.tad.tools.qml.core.qmlNature</nature>
+		<nature>org.eclipse.cdt.qt.core.qtNature</nature>
 	</natures>
 </projectDescription>

@@ -27,6 +27,7 @@ static void frontend_qnx_get_environment_settings(int argc, char *argv[], void *
 {
    (void)argc;
    (void)argv;
+   (void)args;
 
 /* FIXME - should this apply for both BB10 and PB? */
 #if defined(__QNX__) && !defined(HAVE_BB10)

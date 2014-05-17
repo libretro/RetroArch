@@ -220,9 +220,13 @@ static void *phosphor2x_generic_create(unsigned in_fmt, unsigned out_fmt,
       unsigned max_width, unsigned max_height,
       unsigned threads, softfilter_simd_mask_t simd)
 {
-   (void)simd;
    unsigned i;
    struct filter_data *filt = (struct filter_data*)calloc(1, sizeof(*filt));
+
+   (void)simd;
+   (void)out_fmt;
+   (void)max_width;
+   (void)max_height;
 
    if (!filt)
       return NULL;
@@ -261,6 +265,7 @@ static void *phosphor2x_generic_create(unsigned in_fmt, unsigned out_fmt,
 static void phosphor2x_generic_output(void *data, unsigned *out_width, unsigned *out_height,
       unsigned width, unsigned height)
 {
+   (void)data;
    *out_width = width * PHOSPHOR2X_SCALE;
    *out_height = height * PHOSPHOR2X_SCALE;
 }
@@ -278,6 +283,9 @@ static void phosphor2x_generic_xrgb8888(void *data, unsigned width, unsigned hei
 {
    unsigned y;
    struct filter_data *filt = (struct filter_data*)data;
+
+   (void)first;
+   (void)last;
 
    memset(dst, 0, height * dst_stride);
 
@@ -312,6 +320,9 @@ static void phosphor2x_generic_rgb565(void *data, unsigned width, unsigned heigh
 {
    unsigned y;
    struct filter_data *filt = (struct filter_data*)data;
+
+   (void)first;
+   (void)last;
 
    memset(dst, 0, height * dst_stride);
 

@@ -381,6 +381,7 @@ static void iir_dsp_free(void *data)
 
 static void iir_dsp_config(void* data)
 {
+   (void)data;
 }
 
 const struct dspfilter_implementation generic_iir_dsp = {
@@ -407,6 +408,7 @@ const struct dspfilter_implementation sse2_iir_dsp = {
 
 const struct dspfilter_implementation *rarch_dsp_plugin_init(dspfilter_simd_mask_t simd)
 {
+   (void)simd;
 #ifdef __SSE2__
    if (simd & DSPFILTER_SIMD_SSE2)
       return &sse2_iir_dsp;

@@ -209,6 +209,8 @@ static void lq2x_work_cb_xrgb8888(void *data, void *thread_data)
    unsigned width = thr->width;
    unsigned height = thr->height;
 
+   (void)data;
+
    lq2x_generic_xrgb8888(width, height,
          thr->first, thr->last, input, thr->in_pitch / SOFTFILTER_BPP_XRGB8888, output, thr->out_pitch / SOFTFILTER_BPP_XRGB8888);
 }

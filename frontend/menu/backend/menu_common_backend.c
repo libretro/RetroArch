@@ -2016,6 +2016,8 @@ static int menu_common_shader_manager_setting_toggle(void *data, unsigned settin
 
 static int menu_common_setting_toggle(void *data, unsigned setting, unsigned action, unsigned menu_type)
 {
+   (void)menu_type;
+
    rgui_handle_t *rgui = (rgui_handle_t*)data;
 #ifdef HAVE_SHADER_MANAGER
    if ((setting >= RGUI_SETTINGS_SHADER_FILTER) && (setting <= RGUI_SETTINGS_SHADER_LAST))

@@ -116,6 +116,8 @@ static retro_keyboard_event_t key_event;
 #ifdef HAVE_MENU
 static int main_entry_iterate_clear_input(args_type() args)
 {
+   (void)args;
+
    rarch_input_poll();
    if (!menu_input(driver.menu))
    {
@@ -130,6 +132,8 @@ static int main_entry_iterate_clear_input(args_type() args)
 
 static int main_entry_iterate_shutdown(args_type() args)
 {
+   (void)args;
+
 #ifdef HAVE_MENU
    // Load dummy core instead of exiting RetroArch completely.
    if (g_settings.load_dummy_on_core_shutdown)
