@@ -5,17 +5,19 @@
 
 #include "ButtonMap.h"
 #include "RetroArch-Cascades.h"
-#include "input/input_common.h"
+#include "../../../input/input_common.h"
 #include "../../frontend_qnx.h"
 
 ButtonMap::ButtonMap(screen_context_t screen_ctx, QString groupId, int coid)
 {
+   int rc, usage, format, z;
+   screen_display_t screen_disp;
+
    this->screen_cxt = screen_ctx;
    this->groupId = groupId;
    this->coid = coid;
 
-   const int usage = SCREEN_USAGE_NATIVE | SCREEN_USAGE_WRITE | SCREEN_USAGE_READ;
-   int rc;
+   usage = SCREEN_USAGE_NATIVE | SCREEN_USAGE_WRITE | SCREEN_USAGE_READ;
 
    if(screen_create_window_type(&screen_win, screen_cxt, SCREEN_CHILD_WINDOW))
    {
@@ -23,12 +25,11 @@ ButtonMap::ButtonMap(screen_context_t screen_ctx, QString groupId, int coid)
    }
 
    screen_join_window_group(screen_win, (const char *)groupId.toAscii().constData());
-   int format = SCREEN_FORMAT_RGBA8888;
+   format = SCREEN_FORMAT_RGBA8888;
    screen_set_window_property_iv(screen_win, SCREEN_PROPERTY_FORMAT, &format);
 
    screen_set_window_property_iv(screen_win, SCREEN_PROPERTY_USAGE, &usage);
 
-   screen_display_t screen_disp;
    if (screen_get_window_property_pv(screen_win, SCREEN_PROPERTY_DISPLAY, (void **)&screen_disp))
    {
       RARCH_ERR("screen_get_window_property_pv [SCREEN_PROPERTY_DISPLAY] failed.\n");
@@ -40,19 +41,16 @@ ButtonMap::ButtonMap(screen_context_t screen_ctx, QString groupId, int coid)
    }
 
    rc = screen_set_window_property_iv(screen_win, SCREEN_PROPERTY_BUFFER_SIZE, screen_resolution);
-   if (rc) {
+   if (rc)
       perror("screen_set_window_property_iv");
-   }
 
-   int z = -10;
-   if (screen_set_window_property_iv(screen_win, SCREEN_PROPERTY_ZORDER, &z) != 0) {
+   z = -10;
+   if (screen_set_window_property_iv(screen_win, SCREEN_PROPERTY_ZORDER, &z) != 0)
       return;
-   }
 
    rc = screen_create_window_buffers(screen_win, 1);
-   if (rc) {
+   if (rc)
       perror("screen_create_window_buffers");
-   }
 
    screen_get_window_property_pv(screen_win, SCREEN_PROPERTY_RENDER_BUFFERS, (void **)&screen_buf);
 
@@ -80,15 +78,13 @@ QString ButtonMap::getLabel(int button)
 
 int ButtonMap::mapNextButtonPressed()
 {
+   int sym, z;
    bps_event_t *event = NULL;
-   int sym;
 
    //use in frontend run loop, get key pressed back, and map
-   int z = 10;
+   z = 10;
    if (screen_set_window_property_iv(screen_win, SCREEN_PROPERTY_ZORDER, &z) != 0)
-   {
       return -1;
-   }
 
    screen_post_window(screen_win, screen_buf, 1, screen_resolution, 0);
 
@@ -106,8 +102,8 @@ int ButtonMap::mapNextButtonPressed()
 
          if (domain == screen_get_domain())
          {
-            screen_event_t screen_event = screen_event_get_event(event);
             int screen_val;
+            screen_event_t screen_event = screen_event_get_event(event);
             screen_get_event_property_iv(screen_event, SCREEN_PROPERTY_TYPE, &screen_val);
 
             //TODO: Should we only let the buttons through that we are trying to map?
@@ -134,9 +130,7 @@ int ButtonMap::mapNextButtonPressed()
 
    z = -10;
    if (screen_set_window_property_iv(screen_win, SCREEN_PROPERTY_ZORDER, &z) != 0)
-   {
       return -1;
-   }
 
    screen_post_window(screen_win, screen_buf, 1, screen_resolution, 0);
 
@@ -159,11 +153,12 @@ void ButtonMap::mapDevice(int index, int player)
 
 void ButtonMap::refreshButtonMap(int player)
 {
+    int i;
     QVariantMap map;
 
     buttonDataModel->clear();
 
-    for (int i=0; i<16; ++i)
+    for (i=0; i < 16; ++i)
     {
        QString desc = QString(input_config_bind_map[i].desc);
        int index = desc.indexOf("(");
@@ -209,18 +204,16 @@ int ButtonMap::mapButton(int player, int button)
 
 QString ButtonMap::buttonToString(int player, int button)
 {
+   int i;
+
    if(g_settings.input.device[player] == DEVICE_KEYPAD || g_settings.input.device[player] == DEVICE_KEYBOARD)
-   {
       return QString(button);
-   }
    else
    {
-      for(int i=0;i<20;++i)
+      for(i = 0; i < 20; ++i)
       {
          if(platform_keys[i].joykey == (uint)button)
-         {
             return QString(platform_keys[i].desc);
-         }
       }
 
       return (button!=NO_BTN) ? QString(button) : QString("Not Mapped");

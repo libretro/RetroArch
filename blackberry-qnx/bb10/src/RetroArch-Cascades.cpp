@@ -1,26 +1,8 @@
-/* Copyright (c) 2012 Research In Motion Limited.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 #include "RetroArch-Cascades.h"
-#include "general.h"
-#include "conf/config_file.h"
-#include "file.h"
-#include "core_info.h"
-
-#ifdef HAVE_RGUI
-#include "frontend/menu/rgui.h"
-#endif
+#include "../../../general.h"
+#include "../../../conf/config_file.h"
+#include "../../../file.h"
+#include "../../../frontend/info/core_info.h"
 
 #include "../../frontend_qnx.h"
 
@@ -53,6 +35,9 @@ extern screen_context_t screen_ctx;
 
 RetroArch::RetroArch()
 {
+   bool res;
+   QmlDocument *qml;
+
    qmlRegisterType<bb::cascades::pickers::FilePicker>("bb.cascades.pickers", 1, 0, "FilePicker");
    qmlRegisterUncreatableType<bb::cascades::pickers::FileType>("bb.cascades.pickers", 1, 0, "FileType", "");
 
@@ -60,7 +45,7 @@ RetroArch::RetroArch()
    chid = ChannelCreate(0);
    coid = ConnectAttach(0, 0, chid, _NTO_SIDE_CHANNEL, 0);
 
-   bool res = connect(
+   res = connect(
          OrientationSupport::instance(), SIGNAL(rotationCompleted()),
          this, SLOT(onRotationCompleted()));
 
@@ -74,7 +59,7 @@ RetroArch::RetroArch()
    //Stop config overwritting values
    g_extern.block_config_read = true;
 
-   QmlDocument *qml = QmlDocument::create("asset:///main.qml");
+   qml = QmlDocument::create("asset:///main.qml");
 
    if (!qml->hasErrors())
    {
@@ -236,9 +221,7 @@ void RetroArch::onRotationCompleted()
    if (OrientationSupport::instance()->orientation() == UIOrientation::Landscape)
    {
       if (state == RETROARCH_START_REQUESTED)
-      {
          startEmulator();
-      }
    }
 }
 
@@ -267,9 +250,7 @@ void RetroArch::startEmulator()
 
    if (OrientationSupport::instance()->orientation() == UIOrientation::Portrait &&
        OrientationSupport::instance()->supportedDisplayOrientation() != SupportedDisplayOrientation::DeviceNorth)
-   {
       OrientationSupport::instance()->setSupportedDisplayOrientation(SupportedDisplayOrientation::DisplayLandscape);
-   }
    else
    {
       recv_msg msg;
@@ -315,9 +296,7 @@ void RetroArch::findDevices()
 
       //QML shows player 1 by default, so set dropdown to their controller.
       if(devices[i].port == 0 || devices[i].device == DEVICE_KEYPAD)
-      {
          deviceSelection->setSelectedIndex(i);
-      }
    }
 }
 
@@ -333,10 +312,12 @@ void RetroArch::discoverController(int player)
 
 void RetroArch::initRASettings()
 {
+   HardwareInfo *hwInfo;
+
    strlcpy(g_settings.libretro,(char *)core.toAscii().constData(), sizeof(g_settings.libretro));
    strlcpy(g_extern.fullpath, (char *)rom.toAscii().constData(), sizeof(g_extern.fullpath));
 
-   HardwareInfo *hwInfo = new HardwareInfo();
+   hwInfo = new HardwareInfo();
 
    //If Physical keyboard or a device mapped to player 1, hide overlay
    //TODO: Should there be a minimized/quick settings only overlay?

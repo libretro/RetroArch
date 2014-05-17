@@ -7,9 +7,9 @@
 
 #include <screen/screen.h>
 #include <sys/neutrino.h>
-#include "general.h"
-#include "conf/config_file.h"
-#include "file.h"
+#include "../../../general.h"
+#include "../../../conf/config_file.h"
+#include "../../../file.h"
 
 /*
 typedef struct {
