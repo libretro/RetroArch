@@ -20,6 +20,8 @@
 
 static BOOL apple_gamecontroller_available(void)
 {
+    if (IOS_IS_VERSION_6_OR_LOWER())
+        return false;
     /* by checking for extern symbols defined by the framework, we can check for its
      * existence at runtime. This is the Apple endorsed way of dealing with this */
     return (&GCControllerDidConnectNotification && &GCControllerDidDisconnectNotification);
