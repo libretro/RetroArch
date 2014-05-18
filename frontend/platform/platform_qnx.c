@@ -29,10 +29,7 @@ static void frontend_qnx_get_environment_settings(int argc, char *argv[], void *
    (void)argv;
    (void)args;
 
-/* FIXME - should this apply for both BB10 and PB? */
-#if defined(__QNX__) && !defined(HAVE_BB10)
    rarch_environment_cb(RETRO_ENVIRONMENT_SET_LIBRETRO_PATH, (void*)"app/native/lib");
-#endif
 
    config_load();
 }
@@ -40,10 +37,7 @@ static void frontend_qnx_get_environment_settings(int argc, char *argv[], void *
 static void frontend_qnx_init(void *data)
 {
    (void)data;
-/* FIXME - should this apply for both BB10 and PB? */
-#if defined(__QNX__) && !defined(HAVE_BB10)
    bps_initialize();
-#endif
 }
 
 static void frontend_qnx_shutdown(bool unused)

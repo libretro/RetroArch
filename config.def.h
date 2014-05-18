@@ -193,7 +193,7 @@ enum
 #define INPUT_DEFAULT_DRIVER INPUT_X
 #elif defined(IOS) || defined(OSX)
 #define INPUT_DEFAULT_DRIVER INPUT_APPLE
-#elif defined(__BLACKBERRY_QNX__)
+#elif defined(__QNX__)
 #define INPUT_DEFAULT_DRIVER INPUT_QNX
 #elif defined(HAVE_SDL)
 #define INPUT_DEFAULT_DRIVER INPUT_SDL
