@@ -55,8 +55,8 @@ RetroArch::RetroArch() :
    rarch_main_clear_state();
    strlcpy(g_extern.config_path, "app/native/retroarch.cfg", sizeof(g_extern.config_path));
    config_load();
-
    strlcpy(g_settings.libretro, "app/native/lib", sizeof(g_settings.libretro));
+   g_extern.verbose = 1;
    coreSelectedIndex = -1;
 
    //Stop config overwritting values
@@ -75,7 +75,7 @@ RetroArch::RetroArch() :
          //Get core DropDown reference to populate it in C++
          coreSelection = mAppPane->findChild<DropDown*>("dropdown_core");
          connect(coreSelection, SIGNAL(selectedValueChanged(QVariant)), this, SLOT(onCoreSelected(QVariant)));
-         core_info_list = core_info_list_new(g_settings.libretro);
+         core_info_list = (core_info_list_t*)core_info_list_new(g_settings.libretro);
          populateCores(core_info_list);
 
          Application::instance()->setScene(mAppPane);
@@ -263,8 +263,6 @@ void RetroArch::populateCores(core_info_list_t * info)
    //Populate DropDown
    for (i = 0; i < info->count; ++i)
    {
-      qDebug() << info->list[i].display_name;
-
       tmp = Option::create().text(QString(info->list[i].display_name))
                             .value(i);
 
