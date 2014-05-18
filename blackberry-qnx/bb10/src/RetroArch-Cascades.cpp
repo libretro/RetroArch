@@ -6,6 +6,7 @@
 
 #include "../../frontend_qnx.h"
 
+#include <bb/cascades/Application>
 #include <bb/cascades/AbsoluteLayoutProperties>
 #include <bb/cascades/ForeignWindowControl>
 #include <bb/cascades/AbstractPane>
@@ -33,7 +34,8 @@ using namespace bb::device;
 extern screen_window_t screen_win;
 extern screen_context_t screen_ctx;
 
-RetroArch::RetroArch()
+RetroArch::RetroArch() :
+                QObject()
 {
    bool res;
    QmlDocument *qml;
@@ -99,17 +101,6 @@ RetroArch::RetroArch()
 RetroArch::~RetroArch()
 {
    core_info_list_free(core_info_list);
-}
-
-void RetroArch::aboutToQuit()
-{
-   recv_msg msg;
-
-   msg.code = RETROARCH_EXIT;
-
-   MsgSend(coid, (void*)&msg, sizeof(msg), (void*)NULL, 0);
-
-   wait();
 }
 
 void RetroArch::run()

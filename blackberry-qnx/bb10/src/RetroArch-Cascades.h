@@ -21,7 +21,7 @@ namespace bb
     }
 }
 
-class RetroArch: public QThread
+class RetroArch : public QObject
 {
     Q_OBJECT
 
@@ -44,7 +44,6 @@ signals:
 	void contentExtensionsChanged(QString);
 
 public slots:
-	void aboutToQuit();
 	void onRotationCompleted();
 	void onCoreSelected(QVariant);
 
