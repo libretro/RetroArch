@@ -211,31 +211,38 @@ static void qnx_input_autodetect_gamepad(input_device_t* controller)
    //BBBB is the device's Vendor ID (in hexadecimal)
    //CCCC is the device's Product ID (also in hexadecimal)
    //D.D is the device's version number
+#ifdef HAVE_BB10
    if (strstr(controller->id, "057E-0306"))
    {
       controller->device = DEVICE_WIIMOTE;
       strlcpy(controller->device_name, "Wiimote", sizeof(controller->device_name));
    }
-   else if (strstr(controller->id, "0A5C-8502"))
+   else
+#endif
+	   if (strstr(controller->id, "0A5C-8502"))
    {
       controller->device = DEVICE_KEYBOARD;
       strlcpy(controller->device_name, "BlackBerry BT Keyboard", sizeof(controller->device_name));
    }
+#ifdef HAVE_BB10
    else if (strstr(controller->id, "qwerty:bb35"))
    {
       controller->device = DEVICE_KEYPAD;
       strlcpy(controller->device_name, "BlackBerry Q10 Keypad", sizeof(controller->device_name));
    }
+#endif
    else if (strstr(controller->id, "BB-VKB"))
    {
       controller->device = DEVICE_NONE;
       strlcpy(controller->device_name, "None", sizeof(controller->device_name));
    }
+#ifdef HAVE_BB10
    else if (controller->id[0])
    {
       controller->device = DEVICE_UNKNOWN;
       strlcpy(controller->device_name, "Unknown", sizeof(controller->device_name));
    }
+#endif
    else
    {
       controller->device = DEVICE_NONE;
@@ -589,7 +596,11 @@ static int16_t qnx_input_state(void *data, const struct retro_keybind **retro_ke
       case RETRO_DEVICE_JOYPAD:
          if(port_device[port])
          {
-            if (port_device[port]->device == DEVICE_KEYBOARD || port_device[port]->device == DEVICE_KEYPAD)
+            if (port_device[port]->device == DEVICE_KEYBOARD
+#ifdef HAVE_BB10
+            		|| port_device[port]->device == DEVICE_KEYPAD
+#endif
+            		)
                return ((port_device[port]->buttons & (1 << id)) && (port < pads_connected) );
             else{
                return ((port_device[port]->buttons & retro_keybinds[port][id].joykey) && (port < pads_connected));
