@@ -14,10 +14,6 @@
 * If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef HAVE_DYLIB
-#define HAVE_FILTERS_BUILTIN
-#endif
-
 #if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
 #define HAVE_SHADERS
 #endif
