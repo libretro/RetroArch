@@ -709,8 +709,6 @@ extern const struct softfilter_implementation *supertwoxsai_get_implementation(s
 extern const struct softfilter_implementation *twoxbr_get_implementation(softfilter_simd_mask_t simd);
 extern const struct softfilter_implementation *darken_get_implementation(softfilter_simd_mask_t simd);
 extern const struct softfilter_implementation *scale2x_get_implementation(softfilter_simd_mask_t simd);
-
-// TODO: DSP plugs.
 #endif
 
 #include "driver_funcs.h"

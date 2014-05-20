@@ -220,7 +220,33 @@ static bool create_filter_graph(rarch_dsp_filter_t *dsp, float sample_rate)
    return true;
 }
 
-#ifdef HAVE_DYLIB
+#if defined(HAVE_FILTERS_BUILTIN)
+extern const struct dspfilter_implementation *panning_dspfilter_get_implementation(dspfilter_simd_mask_t mask);
+
+static const dspfilter_get_implementation_t dsp_plugs_builtin[] = {
+   panning_dspfilter_get_implementation,
+};
+
+static bool append_plugs(rarch_dsp_filter_t *dsp)
+{
+   unsigned i;
+   dspfilter_simd_mask_t mask = rarch_get_cpu_features();
+
+   dsp->plugs = (struct rarch_dsp_plug*)calloc(ARRAY_SIZE(dsp_plugs_builtin), sizeof(*dsp->plugs));
+   if (!dsp->plugs)
+      return false;
+   dsp->num_plugs = ARRAY_SIZE(dsp_plugs_builtin);
+
+   for (i = 0; i < ARRAY_SIZE(dsp_plugs_builtin); i++)
+   {
+      dsp->plugs[i].impl = dsp_plugs_builtin[i](mask);
+      if (!dsp->plugs[i].impl)
+         return false;
+   }
+
+   return true;
+}
+#elif defined(HAVE_DYLIB)
 static bool append_plugs(rarch_dsp_filter_t *dsp, struct string_list *list)
 {
    unsigned i;
@@ -269,13 +295,13 @@ static bool append_plugs(rarch_dsp_filter_t *dsp, struct string_list *list)
 
    return true;
 }
-#else
-// Append from built-in filters.
 #endif
 
 rarch_dsp_filter_t *rarch_dsp_filter_new(const char *filter_config, float sample_rate)
 {
+#if !defined(HAVE_FILTERS_BUILTIN) && defined(HAVE_DYLIB)
    char basedir[PATH_MAX];
+#endif
    struct string_list *plugs = NULL;
 
    rarch_dsp_filter_t *dsp = (rarch_dsp_filter_t*)calloc(1, sizeof(*dsp));
@@ -289,7 +315,10 @@ rarch_dsp_filter_t *rarch_dsp_filter_new(const char *filter_config, float sample
       goto error;
    }
 
-#ifdef HAVE_DYLIB
+#if defined(HAVE_FILTERS_BUILTIN)
+   if (!append_plugs(dsp))
+      goto error;
+#elif defined(HAVE_DYLIB)
    fill_pathname_basedir(basedir, filter_config, sizeof(basedir));
 
    plugs = dir_list_new(basedir, EXT_EXECUTABLES, false);
@@ -301,9 +330,6 @@ rarch_dsp_filter_t *rarch_dsp_filter_new(const char *filter_config, float sample
 
    string_list_free(plugs);
    plugs = NULL;
-#else
-   if (!append_plugs(dsp))
-      goto error;
 #endif
 
    if (!create_filter_graph(dsp, sample_rate))
@@ -332,7 +358,10 @@ void rarch_dsp_filter_free(rarch_dsp_filter_t *dsp)
 
 #ifdef HAVE_DYLIB
    for (i = 0; i < dsp->num_plugs; i++)
-      dylib_close(dsp->plugs[i].lib);
+   {
+      if (dsp->plugs[i].lib)
+         dylib_close(dsp->plugs[i].lib);
+   }
    free(dsp->plugs);
 #endif
 

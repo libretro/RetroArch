@@ -485,7 +485,7 @@ FILTERS
 #include "../gfx/filters/lq2x.c"
 #include "../gfx/filters/phosphor2x.c"
 
-// TODO: Audio plugs.
+#include "../audio/filters/panning.c"
 #endif
 /*============================================================
 DYNAMIC
