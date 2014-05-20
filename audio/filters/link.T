@@ -1,4 +1,4 @@
 {
-  global: rarch_dsp_*;
+  global: dspfilter_get_implementation;
   local: *;
 };

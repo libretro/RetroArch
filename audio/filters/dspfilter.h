@@ -57,12 +57,11 @@ struct dspfilter_info
 
 struct dspfilter_output
 {
-   // The DSP plugin has to provide the buffering for the output samples.
-   // This is for performance reasons to avoid redundant copying of data.
+   // The DSP plugin has to provide the buffering for the output samples or reuse the input buffer directly.
    // The samples are laid out in interleaving order: LRLRLRLR
    // The range of the samples are [-1.0, 1.0]. 
-   // This range cannot be exceeded without horrible audio glitches.
-   const float *samples;
+   // It is not necessary to manually clip values.
+   float *samples;
 
    // Frames which the DSP plugin outputted for the current process.
    // One frame is here defined as a combined sample of 
@@ -75,7 +74,11 @@ struct dspfilter_output
 struct dspfilter_input 
 {
    // Input data for the DSP. The samples are interleaved in order: LRLRLRLR
-   const float *samples;
+   // It is valid for a DSP plug to use this buffer for output as long as the output size is less or equal to the input.
+   // This is useful for filters which can output one sample for each input sample and do not need to maintain its own buffers.
+   // Block based filters must provide their own buffering scheme.
+   // The input size is not bound, but it can be safely assumed that it will not exceed ~100ms worth of audio at a time.
+   float *samples;
 
    // Number of frames for input data.
    // One frame is here defined as a combined sample of 
@@ -101,7 +104,7 @@ typedef int (*dspfilter_config_get_int_array_t)(void *userdata, const char *key,
 typedef int (*dspfilter_config_get_string_t)(void *userdata, const char *key, char **output, const char *default_output);
 
 // Calls free() in host runtime. Sometimes needed on Windows. free() on NULL is fine.
-typedef void (*dspfilter_config_free_t)(void *userdata, void *ptr);
+typedef void (*dspfilter_config_free_t)(void *ptr);
 
 struct dspfilter_config
 {
