@@ -175,7 +175,7 @@ static const input_driver_t *input_drivers[] = {
 #if defined(IOS) || defined(OSX) //< Don't use __APPLE__ as it breaks basic SDL builds
    &input_apple,
 #endif
-#ifdef __BLACKBERRY_QNX__
+#ifdef __QNX__
    &input_qnx,
 #endif
 #ifdef EMSCRIPTEN

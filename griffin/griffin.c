@@ -107,7 +107,7 @@ VIDEO CONTEXT
 #include "../gfx/context/d3d_ctx.cpp"
 #elif defined(ANDROID)
 #include "../gfx/context/androidegl_ctx.c"
-#elif defined(__BLACKBERRY_QNX__)
+#elif defined(__QNX__)
 #include "../gfx/context/bbqnx_ctx.c"
 #elif defined(IOS) || defined(OSX)
 #include "../gfx/context/apple_gl_ctx.c"
@@ -310,7 +310,7 @@ INPUT
 #elif defined(IOS) || defined(OSX)
 #include "../input/apple_input.c"
 #include "../input/apple_joypad.c"
-#elif defined(__BLACKBERRY_QNX__)
+#elif defined(__QNX__)
 #include "../blackberry-qnx/qnx_input.c"
 #elif defined(EMSCRIPTEN)
 #include "../input/rwebinput_input.c"
