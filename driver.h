@@ -710,15 +710,7 @@ extern const struct softfilter_implementation *twoxbr_get_implementation(softfil
 extern const struct softfilter_implementation *darken_get_implementation(softfilter_simd_mask_t simd);
 extern const struct softfilter_implementation *scale2x_get_implementation(softfilter_simd_mask_t simd);
 
-extern const struct dspfilter_implementation *echo_dsp_plugin_init(dspfilter_simd_mask_t simd);
-#ifndef _WIN32
-extern const struct dspfilter_implementation *eq_dsp_plugin_init(dspfilter_simd_mask_t simd);
-#endif
-extern const struct dspfilter_implementation *iir_dsp_plugin_init(dspfilter_simd_mask_t simd);
-extern const struct dspfilter_implementation *phaser_dsp_plugin_init(dspfilter_simd_mask_t simd);
-extern const struct dspfilter_implementation *reverb_dsp_plugin_init(dspfilter_simd_mask_t simd);
-extern const struct dspfilter_implementation *volume_dsp_plugin_init(dspfilter_simd_mask_t simd);
-extern const struct dspfilter_implementation *wah_dsp_plugin_init(dspfilter_simd_mask_t simd);
+// TODO: DSP plugs.
 #endif
 
 #include "driver_funcs.h"

@@ -225,7 +225,7 @@ static bool append_plugs(rarch_dsp_filter_t *dsp, struct string_list *list)
    unsigned i;
    dspfilter_simd_mask_t mask = rarch_get_cpu_features();
 
-   for (unsigned i = 0; i < dsp->num_plugs; i++)
+   for (i = 0; i < dsp->num_plugs; i++)
    {
       dylib_t lib = dylib_load(list->elems[i].data);
       if (!lib)
