@@ -7,7 +7,6 @@ filter0 = panning
 panning_left_mix = "1.0 0.0"
 panning_right_mix = "0.0 1.0"
 
-
 # Some examples:
 #
 # Mono:
@@ -17,4 +16,8 @@ panning_right_mix = "0.0 1.0"
 # Swap left and right channels:
 # panning_left_mix = "0.0 1.0"
 # panning_right_mix = "1.0 0.0"
+#
+# Mono on one speaker:
+# panning_left_mix = "0.5 0.5"
+# panning_right_mix = "0.0 0.0"
 

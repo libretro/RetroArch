@@ -4061,7 +4061,7 @@ static void menu_common_setting_set_label(char *type_str, size_t type_str_size, 
          }
          break;
       case RGUI_SETTINGS_AUDIO_DSP_FILTER:
-         strlcpy(type_str, g_settings.audio.dsp_plugin, type_str_size);
+         strlcpy(type_str, path_basename(g_settings.audio.dsp_plugin), type_str_size);
          break;
 #ifdef HAVE_OVERLAY
       case RGUI_SETTINGS_OVERLAY_PRESET:

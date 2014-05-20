@@ -24,11 +24,11 @@ void rarch_dsp_filter_free(rarch_dsp_filter_t *dsp);
 
 struct rarch_dsp_data
 {
-   const float *input;
+   float *input;
    unsigned input_frames;
 
    // Set by rarch_dsp_filter_process().
-   const float *output;
+   float *output;
    unsigned output_frames;
 };
 

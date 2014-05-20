@@ -128,6 +128,7 @@ static int get_int(void *userdata, const char *key_str, int *value, int default_
    { \
       *values = (T*)calloc(num_default_values, sizeof(T)); \
       memcpy(*values, default_values, sizeof(T) * num_default_values); \
+      *out_num_values = num_default_values; \
       return false; \
    }
 
@@ -164,7 +165,7 @@ static int get_string(void *userdata, const char *key_str,
    }
 }
 
-static void dspfilter_free(void *userdata, void *ptr)
+static void dspfilter_free(void *ptr)
 {
    free(ptr);
 }
@@ -225,7 +226,7 @@ static bool append_plugs(rarch_dsp_filter_t *dsp, struct string_list *list)
    unsigned i;
    dspfilter_simd_mask_t mask = rarch_get_cpu_features();
 
-   for (i = 0; i < dsp->num_plugs; i++)
+   for (i = 0; i < list->size; i++)
    {
       dylib_t lib = dylib_load(list->elems[i].data);
       if (!lib)
