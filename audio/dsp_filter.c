@@ -18,7 +18,7 @@
 #include "dsp_filter.h"
 #include "../dynamic.h"
 #include "../conf/config_file.h"
-#include "filters/rarch_dsp.h"
+#include "filters/dspfilter.h"
 #include "../file_path.h"
 #include "../file_ext.h"
 #include "../compat/posix_string.h"

@@ -27,7 +27,7 @@
 #include "gfx/scaler/scaler.h"
 #include "gfx/image_context.h"
 #include "gfx/filters/softfilter.h"
-#include "audio/filters/rarch_dsp.h"
+#include "audio/dsp_filter.h"
 #include "input/overlay.h"
 #include "frontend/frontend_context.h"
 
