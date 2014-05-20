@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -13,21 +13,26 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __RARCH_BOOLEAN_H
-#define __RARCH_BOOLEAN_H
+#ifndef RARCH_DSP_FILTER_H__
+#define RARCH_DSP_FILTER_H__
 
-#ifndef __cplusplus
+typedef struct rarch_dsp_filter rarch_dsp_filter_t;
 
-#if defined(_MSC_VER) && !defined(SN_TARGET_PS3)
-/* Hack applied for MSVC when compiling in C89 mode as it isn't C99 compliant. */
-#define bool unsigned char
-#define true 1
-#define false 0
-#else
-#include <stdbool.h>
-#endif
+rarch_dsp_filter_t *rarch_dsp_filter_new(const char *filter_config, float sample_rate);
 
-#endif
+void rarch_dsp_filter_free(rarch_dsp_filter_t *dsp);
+
+struct rarch_dsp_data
+{
+   float *input;
+   unsigned input_frames;
+
+   // Set by rarch_dsp_filter_process().
+   float *output;
+   unsigned output_frames;
+};
+
+void rarch_dsp_filter_process(rarch_dsp_filter_t *dsp, struct rarch_dsp_data *data);
 
 #endif
 

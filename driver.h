@@ -27,7 +27,7 @@
 #include "gfx/scaler/scaler.h"
 #include "gfx/image_context.h"
 #include "gfx/filters/softfilter.h"
-#include "audio/filters/rarch_dsp.h"
+#include "audio/dsp_filter.h"
 #include "input/overlay.h"
 #include "frontend/frontend_context.h"
 
@@ -96,7 +96,6 @@ enum // RetroArch specific bind IDs.
    RARCH_CHEAT_INDEX_MINUS,
    RARCH_CHEAT_TOGGLE,
    RARCH_SCREENSHOT,
-   RARCH_DSP_CONFIG,
    RARCH_MUTE,
    RARCH_NETPLAY_FLIP,
    RARCH_SLOWMOTION,
@@ -710,16 +709,6 @@ extern const struct softfilter_implementation *supertwoxsai_get_implementation(s
 extern const struct softfilter_implementation *twoxbr_get_implementation(softfilter_simd_mask_t simd);
 extern const struct softfilter_implementation *darken_get_implementation(softfilter_simd_mask_t simd);
 extern const struct softfilter_implementation *scale2x_get_implementation(softfilter_simd_mask_t simd);
-
-extern const struct dspfilter_implementation *echo_dsp_plugin_init(dspfilter_simd_mask_t simd);
-#ifndef _WIN32
-extern const struct dspfilter_implementation *eq_dsp_plugin_init(dspfilter_simd_mask_t simd);
-#endif
-extern const struct dspfilter_implementation *iir_dsp_plugin_init(dspfilter_simd_mask_t simd);
-extern const struct dspfilter_implementation *phaser_dsp_plugin_init(dspfilter_simd_mask_t simd);
-extern const struct dspfilter_implementation *reverb_dsp_plugin_init(dspfilter_simd_mask_t simd);
-extern const struct dspfilter_implementation *volume_dsp_plugin_init(dspfilter_simd_mask_t simd);
-extern const struct dspfilter_implementation *wah_dsp_plugin_init(dspfilter_simd_mask_t simd);
 #endif
 
 #include "driver_funcs.h"

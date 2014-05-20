@@ -1008,7 +1008,7 @@ static void menu_parse_and_resolve(void *data, unsigned menu_type)
             else if (menu_type == RGUI_SETTINGS_VIDEO_SOFTFILTER)
                exts = EXT_EXECUTABLES;
             else if (menu_type == RGUI_SETTINGS_AUDIO_DSP_FILTER)
-               exts = EXT_EXECUTABLES;
+               exts = "dsp";
             else if (menu_type == RGUI_SETTINGS_OVERLAY_PRESET)
                exts = "cfg";
             else if (menu_common_type_is(menu_type) == RGUI_FILE_DIRECTORY)
@@ -2539,34 +2539,14 @@ static int menu_common_setting_set(void *data, unsigned setting, unsigned action
       case RGUI_SETTINGS_AUDIO_DSP_FILTER:
          switch (action)
          {
-#ifdef HAVE_FILTERS_BUILTIN
-            case RGUI_ACTION_LEFT:
-               if (g_settings.audio.filter_idx > 0)
-                  g_settings.audio.filter_idx--;
-               break;
-            case RGUI_ACTION_RIGHT:
-               if ((g_settings.audio.filter_idx + 1) != dspfilter_get_last_idx())
-                  g_settings.audio.filter_idx++;
-               break;
-#endif
             case RGUI_ACTION_OK:
-#if defined(HAVE_FILTERS_BUILTIN)
-               rarch_deinit_dsp_filter();
-               rarch_init_dsp_filter();
-#elif defined(HAVE_DYLIB)
                file_list_push(rgui->menu_stack, g_settings.audio.filter_dir, setting, rgui->selection_ptr);
                menu_clear_navigation(rgui);
-#endif
                rgui->need_refresh = true;
                break;
             case RGUI_ACTION_START:
-#if defined(HAVE_FILTERS_BUILTIN)
-               g_settings.audio.filter_idx = 0;
-#elif defined(HAVE_DYLIB)
-               strlcpy(g_settings.audio.dsp_plugin, "", sizeof(g_settings.audio.dsp_plugin));
-#endif
+               *g_settings.audio.dsp_plugin = '\0';
                rarch_deinit_dsp_filter();
-               rarch_init_dsp_filter();
                break;
          }
          break;
@@ -2902,7 +2882,6 @@ static int menu_common_setting_set(void *data, unsigned setting, unsigned action
       case RGUI_SETTINGS_BIND_CHEAT_INDEX_MINUS:
       case RGUI_SETTINGS_BIND_CHEAT_TOGGLE:
       case RGUI_SETTINGS_BIND_SCREENSHOT:
-      case RGUI_SETTINGS_BIND_DSP_CONFIG:
       case RGUI_SETTINGS_BIND_MUTE:
       case RGUI_SETTINGS_BIND_NETPLAY_FLIP:
       case RGUI_SETTINGS_BIND_SLOWMOTION:
@@ -4082,10 +4061,7 @@ static void menu_common_setting_set_label(char *type_str, size_t type_str_size, 
          }
          break;
       case RGUI_SETTINGS_AUDIO_DSP_FILTER:
-         {
-            const char *filter_name = rarch_dspfilter_get_name((void*)g_extern.audio_data.dsp_plugin);
-            strlcpy(type_str, filter_name ? filter_name : "N/A", type_str_size);
-         }
+         strlcpy(type_str, path_basename(g_settings.audio.dsp_plugin), type_str_size);
          break;
 #ifdef HAVE_OVERLAY
       case RGUI_SETTINGS_OVERLAY_PRESET:
@@ -4214,7 +4190,6 @@ static void menu_common_setting_set_label(char *type_str, size_t type_str_size, 
       case RGUI_SETTINGS_BIND_CHEAT_INDEX_MINUS:
       case RGUI_SETTINGS_BIND_CHEAT_TOGGLE:
       case RGUI_SETTINGS_BIND_SCREENSHOT:
-      case RGUI_SETTINGS_BIND_DSP_CONFIG:
       case RGUI_SETTINGS_BIND_MUTE:
       case RGUI_SETTINGS_BIND_NETPLAY_FLIP:
       case RGUI_SETTINGS_BIND_SLOWMOTION:

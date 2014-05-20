@@ -485,17 +485,9 @@ FILTERS
 #include "../gfx/filters/lq2x.c"
 #include "../gfx/filters/phosphor2x.c"
 
-#include "../audio/filters/echo.c"
-#ifndef ANDROID
-#ifndef _WIN32
-#include "../audio/filters/eq.c"
-#endif
-#endif
+#include "../audio/filters/panning.c"
 #include "../audio/filters/iir.c"
-#include "../audio/filters/phaser.c"
-#include "../audio/filters/reverb.c"
-#include "../audio/filters/volume.c"
-#include "../audio/filters/wah.c"
+#include "../audio/filters/echo.c"
 #endif
 /*============================================================
 DYNAMIC
@@ -503,6 +495,7 @@ DYNAMIC
 #include "../dynamic.c"
 #include "../dynamic_dummy.c"
 #include "../gfx/filter.c"
+#include "../audio/dsp_filter.c"
 
 
 /*============================================================
