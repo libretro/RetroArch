@@ -179,6 +179,9 @@ static void linuxraw_input_free(void *data)
 {
    linuxraw_input_t *linuxraw = (linuxraw_input_t*)data;
 
+   if (!linuxraw)
+      return;
+
    if (linuxraw->joypad)
       linuxraw->joypad->destroy();
 

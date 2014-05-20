@@ -662,11 +662,10 @@ static bool qnx_input_key_pressed(void *data, int key)
 
 static void qnx_input_free_input(void *data)
 {
-   qnx_input_t *qnx = (qnx_input_t*)data;
+   if (!data)
+      return;
 
-   if (qnx)
-      free(qnx);
-   qnx = 0;
+   //free(data);
 }
 
 static void qnx_input_set_keybinds(void *data, unsigned device, unsigned port,

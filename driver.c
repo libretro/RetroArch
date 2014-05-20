@@ -1663,10 +1663,10 @@ void uninit_video_input(void)
    }
 #endif
 
-   if (driver.input_data != driver.video_data && driver.input)
+   if (driver.input_data != driver.video_data && driver.input && driver.input->free)
       input_free_func();
 
-   if (driver.video_data && driver.video)
+   if (driver.video_data && driver.video && driver.video->free)
       video_free_func();
 
    deinit_pixel_converter();

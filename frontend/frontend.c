@@ -29,17 +29,21 @@
 
 #include "../file_ext.h"
 
-#ifdef RARCH_CONSOLE
+#if defined(RARCH_CONSOLE) || defined(__QNX__)
 #include "../config.def.h"
 
+#ifdef RARCH_CONSOLE
 default_paths_t default_paths;
+#endif
 
 static void rarch_get_environment_console(void)
 {
+#ifdef RARCH_CONSOLE
    path_mkdir(default_paths.port_dir);
    path_mkdir(default_paths.system_dir);
    path_mkdir(default_paths.savestate_dir);
    path_mkdir(default_paths.sram_dir);
+#endif
 
    config_load();
 
@@ -88,25 +92,25 @@ static void rarch_get_environment_console(void)
 #define ra_preinited false
 #endif
 
-#if defined(HAVE_BB10) || defined(RARCH_CONSOLE)
+#if defined(__QNX__) || defined(RARCH_CONSOLE)
 #define attempt_load_game false
 #else
 #define attempt_load_game true
 #endif
 
-#if defined(RARCH_CONSOLE) || defined(HAVE_BB10) || defined(ANDROID)
+#if defined(RARCH_CONSOLE) || defined(__QNX__) || defined(ANDROID)
 #define initial_menu_lifecycle_state (1ULL << MODE_LOAD_GAME)
 #else
 #define initial_menu_lifecycle_state (1ULL << MODE_GAME)
 #endif
 
-#if !defined(RARCH_CONSOLE) && !defined(HAVE_BB10) && !defined(ANDROID)
+#if !defined(RARCH_CONSOLE) && !defined(__QNX__) && !defined(ANDROID)
 #define attempt_load_game_push_history true
 #else
 #define attempt_load_game_push_history false
 #endif
 
-#ifndef RARCH_CONSOLE
+#if !defined(RARCH_CONSOLE) || !defined(__QNX__)
 #define rarch_get_environment_console() (void)0
 #endif
 
