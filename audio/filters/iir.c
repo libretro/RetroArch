@@ -57,7 +57,6 @@ static void iir_free(void *data)
    free(data);
 }
 
-
 static void iir_process(void *data, struct dspfilter_output *output,
       const struct dspfilter_input *input)
 {
