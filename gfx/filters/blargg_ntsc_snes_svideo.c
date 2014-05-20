@@ -104,7 +104,7 @@ static void *blargg_ntsc_snes_svideo_generic_create(unsigned in_fmt, unsigned ou
 static void blargg_ntsc_snes_svideo_generic_output(void *data, unsigned *out_width, unsigned *out_height,
       unsigned width, unsigned height)
 {
-   *out_width  = SNES_NTSC_OUT_WIDTH(256);
+   *out_width  = SNES_NTSC_OUT_WIDTH(width);
    *out_height = height;
 }
 
