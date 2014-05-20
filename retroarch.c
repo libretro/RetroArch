@@ -388,16 +388,15 @@ static bool audio_flush(const int16_t *data, size_t samples)
          g_extern.audio_data.volume_gain);
    RARCH_PERFORMANCE_STOP(audio_convert_s16);
 
-   rarch_dsp_output_t dsp_output = {0};
-   rarch_dsp_input_t dsp_input   = {0};
-   dsp_input.samples             = g_extern.audio_data.data;
-   dsp_input.frames              = samples >> 1;
+   struct rarch_dsp_data dsp_data = {0};
+   dsp_data.input                 = g_extern.audio_data.data;
+   dsp_data.input_frames          = samples >> 1;
 
-   if (g_extern.audio_data.dsp_plugin)
-      g_extern.audio_data.dsp_plugin->process(g_extern.audio_data.dsp_handle, &dsp_output, &dsp_input);
+   if (g_extern.audio_data.dsp)
+      rarch_dsp_filter_process(g_extern.audio_data.dsp, &dsp_data);
 
-   src_data.data_in      = dsp_output.samples ? dsp_output.samples : g_extern.audio_data.data;
-   src_data.input_frames = dsp_output.samples ? dsp_output.frames : (samples >> 1);
+   src_data.data_in      = dsp_data.output ? dsp_data.output : g_extern.audio_data.data;
+   src_data.input_frames = dsp_data.output ? dsp_data.output_frames : (samples >> 1);
 
    src_data.data_out = g_extern.audio_data.outsamples;
 
@@ -2575,19 +2574,6 @@ static void check_screenshot(void)
 }
 #endif
 
-static void check_dsp_config(void)
-{
-   if (!g_extern.audio_data.dsp_plugin || !g_extern.audio_data.dsp_plugin->config)
-      return;
-
-   static bool old_pressed;
-   bool pressed = input_key_pressed_func(RARCH_DSP_CONFIG);
-   if (pressed && !old_pressed)
-      g_extern.audio_data.dsp_plugin->config(g_extern.audio_data.dsp_handle);
-
-   old_pressed = pressed;
-}
-
 static void check_mute(void)
 {
    if (!g_extern.audio_active)
@@ -2765,7 +2751,6 @@ static void do_state_checks(void)
       check_cheats();
       check_disk();
 
-      check_dsp_config();
       check_reset();
 #ifdef HAVE_NETPLAY
    }
@@ -3062,12 +3047,6 @@ static inline void limit_frame_time(void)
 bool rarch_main_iterate(void)
 {
    unsigned i;
-
-#ifdef HAVE_DYLIB
-   // DSP plugin GUI events.
-   if (g_extern.audio_data.dsp_handle && g_extern.audio_data.dsp_plugin && g_extern.audio_data.dsp_plugin->events)
-      g_extern.audio_data.dsp_plugin->events(g_extern.audio_data.dsp_handle);
-#endif
 
    // SHUTDOWN on consoles should exit RetroArch completely.
    if (g_extern.system.shutdown)

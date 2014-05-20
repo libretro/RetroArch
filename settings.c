@@ -831,8 +831,8 @@ bool config_load_file(const char *path, bool set_defaults)
     * setting the filter later doesn't cause a problem meanwhile */
    CONFIG_GET_INT(video.filter_idx, "filter_index");
 #endif
-   CONFIG_GET_INT(audio.filter_idx, "audio_filter_index");
 #endif
+
 #ifdef RARCH_CONSOLE
    /* TODO - will be refactored later to make it more clean - it's more 
     * important that it works for consoles right now */
@@ -1327,7 +1327,6 @@ bool config_save_file(const char *path)
    config_set_bool(conf,  "rewind_enable", g_settings.rewind_enable);
 #ifdef HAVE_FILTERS_BUILTIN
    config_set_int(conf,   "filter_index",  g_settings.video.filter_idx);
-   config_set_int(conf,   "audio_filter_index",  g_settings.audio.filter_idx);
 #endif
    config_set_int(conf,   "audio_latency", g_settings.audio.latency);
    config_set_bool(conf,  "audio_sync",    g_settings.audio.sync);

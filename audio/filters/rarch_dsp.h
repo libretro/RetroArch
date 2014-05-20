@@ -43,19 +43,19 @@ extern "C" {
 typedef unsigned dspfilter_simd_mask_t;
 
 // Dynamic library endpoint.
-typedef const struct dspfilter_implementation *(*dspfilter_get_implementation_t)(dspfilter_simd_mask_t);
+typedef const struct dspfilter_implementation *(*dspfilter_get_implementation_t)(dspfilter_simd_mask_t mask);
 // The same SIMD mask argument is forwarded to create() callback as well to avoid having to keep lots of state around.
-const struct dspfilter_implementation *rarch_dsp_plugin_init(dspfilter_simd_mask_t);
+const struct dspfilter_implementation *dspfilter_get_implementation(dspfilter_simd_mask_t mask);
 
-#define RARCH_DSP_API_VERSION 6
+#define DSPFILTER_API_VERSION 1
 
-typedef struct rarch_dsp_info
+struct dspfilter_info
 {
    // Input sample rate that the DSP plugin receives.
    float input_rate;
-} rarch_dsp_info_t;
+};
 
-typedef struct rarch_dsp_output
+struct dspfilter_output
 {
    // The DSP plugin has to provide the buffering for the output samples.
    // This is for performance reasons to avoid redundant copying of data.
@@ -70,9 +70,9 @@ typedef struct rarch_dsp_output
    // (I.e. 44.1kHz, 16bit stereo will have 
    // 88.2k samples/sec and 44.1k frames/sec.)
    unsigned frames;
-} rarch_dsp_output_t;
+};
 
-typedef struct rarch_dsp_input
+struct dspfilter_input 
 {
    // Input data for the DSP. The samples are interleaved in order: LRLRLRLR
    const float *samples;
@@ -83,41 +83,59 @@ typedef struct rarch_dsp_input
    // (I.e. 44.1kHz, 16bit stereo will have 
    // 88.2k samples/sec and 44.1k frames/sec.)
    unsigned frames;
-} rarch_dsp_input_t;
+};
+
+// Returns true if config key was found. Otherwise, returns false, and sets value to default value.
+typedef int (*dspfilter_config_get_float_t)(void *userdata, const char *key, float *value, float default_value);
+typedef int (*dspfilter_config_get_int_t)(void *userdata, const char *key, int *value, int default_value);
+
+// Allocates an array with values. free() with dspfilter_config_free_t.
+typedef int (*dspfilter_config_get_float_array_t)(void *userdata, const char *key,
+      float **values, unsigned *out_num_values,
+      const float *default_values, unsigned num_default_values);
+
+typedef int (*dspfilter_config_get_int_array_t)(void *userdata, const char *key,
+      int **values, unsigned *out_num_values,
+      const int *default_values, unsigned num_default_values);
+
+typedef int (*dspfilter_config_get_string_t)(void *userdata, const char *key, char **output, const char *default_output);
+
+// Calls free() in host runtime. Sometimes needed on Windows. free() on NULL is fine.
+typedef void (*dspfilter_config_free_t)(void *userdata, void *ptr);
+
+struct dspfilter_config
+{
+   dspfilter_config_get_float_t get_float;
+   dspfilter_config_get_int_t get_int;
+
+   dspfilter_config_get_float_array_t get_float_array;
+   dspfilter_config_get_int_array_t get_int_array;
+
+   dspfilter_config_get_string_t get_string;
+   dspfilter_config_free_t free; // Avoid problems where DSP plug and host are linked against different C runtimes.
+};
 
 // Creates a handle of the plugin. Returns NULL if failed.
-typedef void *(*dspfilter_init_t)(const rarch_dsp_info_t *info);
+typedef void *(*dspfilter_init_t)(const struct dspfilter_info *info, const struct dspfilter_config *config, void *userdata);
 
 // Frees the handle.
 typedef void (*dspfilter_free_t)(void *data);
 
 // Processes input data. 
 // The plugin is allowed to return variable sizes for output data.
-typedef void (*dspfilter_process_t)(void *data, rarch_dsp_output_t *output, 
-      const rarch_dsp_input_t *input);
-
-// Signal plugin that it may open a configuring window or
-// something similar. The behavior of this function
-// is thus plugin dependent. Implementing this is optional,
-// and can be set to NULL.
-typedef void (*dspfilter_config_t)(void *data);
-
-// Called every frame, allows creating a GUI main loop in the main thread.
-// GUI events can be processed here in a non-blocking fashion.
-// Can be set to NULL to ignore it.
-typedef void (*dspfilter_events_t)(void *data);
+typedef void (*dspfilter_process_t)(void *data, struct dspfilter_output *output, 
+      const struct dspfilter_input *input);
 
 struct dspfilter_implementation
 {
    dspfilter_init_t     init;
    dspfilter_process_t  process;
    dspfilter_free_t     free;
-   int api_version; // Must be RARCH_DSP_API_VERSION
-   dspfilter_config_t   config;
-   const char *ident; // Human readable identifier of implementation.
-   dspfilter_events_t   events;
-};
 
+   unsigned api_version;    // Must be DSPFILTER_API_VERSION
+   const char *ident;       // Human readable identifier of implementation.
+   const char *short_ident; // Computer-friendly short version of ident. Lower case, no spaces and special characters, etc.
+};
 
 #ifdef __cplusplus
 }
