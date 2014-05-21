@@ -229,7 +229,9 @@ const char* apple_keycode_hidusage_to_name(uint32_t hid_usage)
    return "nul";
 }
 
+#ifdef IOS
 extern void apple_gamecontroller_poll_all(void);
+#endif
 
 enum input_devices
 {
@@ -237,6 +239,7 @@ enum input_devices
 #if defined(IOS)
    DEVICE_WIIMOTE,
    DEVICE_SIXAXIS,
+   DEVICE_MFI,
 #endif
    DEVICE_LAST
 };
@@ -245,7 +248,6 @@ extern const rarch_joypad_driver_t apple_joypad;
 static const rarch_joypad_driver_t* const g_joydriver = &apple_joypad;
 
 apple_input_data_t g_current_input_data;
-apple_input_data_t g_polled_input_data;
 
 #ifdef OSX // Taken from https://github.com/depp/keycode, check keycode.h for license
 const unsigned char MAC_NATIVE_TO_HID[128] = {
@@ -420,7 +422,9 @@ int32_t apple_input_find_any_key(void)
 {
    unsigned i;
 
+#ifdef IOS
    apple_gamecontroller_poll_all();
+#endif
    input_init_keyboard_lut(apple_key_map_hidusage);
 
    for (i = 0; apple_key_name_map[i].hid_id; i++)
@@ -433,7 +437,9 @@ int32_t apple_input_find_any_key(void)
 int32_t apple_input_find_any_button(uint32_t port)
 {
    unsigned i, buttons;
+#ifdef IOS
    apple_gamecontroller_poll_all();
+#endif
 
    buttons = g_current_input_data.pad_buttons[port] |
       ((port == 0) ? apple_input_get_icade_buttons() : 0);
@@ -448,7 +454,9 @@ int32_t apple_input_find_any_button(uint32_t port)
 
 int32_t apple_input_find_any_axis(uint32_t port)
 {
+#ifdef IOS
    apple_gamecontroller_poll_all();
+#endif
 
    for (int i = 0; i < 4; i++)
    {
@@ -465,7 +473,7 @@ int32_t apple_input_find_any_axis(uint32_t port)
 static bool apple_key_pressed(enum retro_key key)
 {
    if ((int)key >= 0 && key < RETROK_LAST)
-      return g_polled_input_data.keys[input_translate_rk_to_keysym(key)];
+      return g_current_input_data.keys[input_translate_rk_to_keysym(key)];
    
    return false;
 }
@@ -479,26 +487,28 @@ static bool apple_is_pressed(unsigned port_num, const struct retro_keybind *bind
 static void *apple_input_init(void)
 {
    input_init_keyboard_lut(apple_key_map_hidusage);
-   memset(&g_polled_input_data, 0, sizeof(g_polled_input_data));
+   memset(&g_current_input_data, 0, sizeof(g_current_input_data));
    return (void*)-1;
 }
 
 static void apple_input_poll(void *data)
 {
+   int i;
    (void)data;
 
+#ifdef IOS
    apple_gamecontroller_poll_all();
-   memcpy(&g_polled_input_data, &g_current_input_data, sizeof(apple_input_data_t));
+#endif
 
-   for (int i = 0; i != g_polled_input_data.touch_count; i ++)
+   for (i = 0; i < g_current_input_data.touch_count; i ++)
    {
-      input_translate_coord_viewport(g_polled_input_data.touches[i].screen_x, g_polled_input_data.touches[i].screen_y,
-         &g_polled_input_data.touches[i].fixed_x, &g_polled_input_data.touches[i].fixed_y,
-         &g_polled_input_data.touches[i].full_x, &g_polled_input_data.touches[i].full_y);
+      input_translate_coord_viewport(g_current_input_data.touches[i].screen_x, g_current_input_data.touches[i].screen_y,
+         &g_current_input_data.touches[i].fixed_x, &g_current_input_data.touches[i].fixed_y,
+         &g_current_input_data.touches[i].full_x, &g_current_input_data.touches[i].full_y);
    }
 
    input_joypad_poll(g_joydriver);
-   g_polled_input_data.pad_buttons[0] |= apple_input_get_icade_buttons();
+   g_current_input_data.pad_buttons[0] |= apple_input_get_icade_buttons();
 
    g_current_input_data.mouse_delta[0] = 0;
    g_current_input_data.mouse_delta[1] = 0;
@@ -524,13 +534,13 @@ static int16_t apple_input_state(void *data, const struct retro_keybind **binds,
          switch (id)
          {
             case RETRO_DEVICE_ID_MOUSE_X:
-               return g_polled_input_data.mouse_delta[0];
+               return g_current_input_data.mouse_delta[0];
             case RETRO_DEVICE_ID_MOUSE_Y:
-               return g_polled_input_data.mouse_delta[1];
+               return g_current_input_data.mouse_delta[1];
             case RETRO_DEVICE_ID_MOUSE_LEFT:
-               return g_polled_input_data.mouse_buttons & 1;
+               return g_current_input_data.mouse_buttons & 1;
             case RETRO_DEVICE_ID_MOUSE_RIGHT:
-               return g_polled_input_data.mouse_buttons & 2;
+               return g_current_input_data.mouse_buttons & 2;
          }
       }
       
@@ -539,9 +549,9 @@ static int16_t apple_input_state(void *data, const struct retro_keybind **binds,
       {
          const bool want_full = device == RARCH_DEVICE_POINTER_SCREEN;
       
-         if (index < g_polled_input_data.touch_count && index < MAX_TOUCHES)
+         if (index < g_current_input_data.touch_count && index < MAX_TOUCHES)
          {
-            const apple_touch_data_t *touch = (const apple_touch_data_t *)&g_polled_input_data.touches[index];
+            const apple_touch_data_t *touch = (const apple_touch_data_t *)&g_current_input_data.touches[index];
             int16_t x = want_full ? touch->full_x : touch->fixed_x;
             int16_t y = want_full ? touch->full_y : touch->fixed_y;
 
@@ -575,7 +585,9 @@ static bool apple_bind_button_pressed(void *data, int key)
 static void apple_input_free_input(void *data)
 {
    (void)data;
-   g_joydriver->destroy();
+    
+   if (g_joydriver && g_joydriver->destroy)
+      g_joydriver->destroy();
 }
 
 static void apple_input_set_keybinds(void *data, unsigned device, unsigned port,
@@ -632,6 +644,39 @@ static void apple_input_set_keybinds(void *data, unsigned device, unsigned port,
             g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R3].joykey     = 15;
             g_settings.input.binds[port][RARCH_MENU_TOGGLE].joykey             = 16;
             break;
+          case DEVICE_MFI:
+              strlcpy(g_settings.input.device_names[port], "MFi Gamepad", sizeof(g_settings.input.device_names[port]));
+              g_settings.input.device[port] = device;
+              g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_B].joykey      = RETRO_DEVICE_ID_JOYPAD_B;
+              g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_Y].joykey      = RETRO_DEVICE_ID_JOYPAD_Y;
+              g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_SELECT].joykey = RETRO_DEVICE_ID_JOYPAD_SELECT;
+              g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_START].joykey  = RETRO_DEVICE_ID_JOYPAD_START;
+              g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_UP].joykey     = RETRO_DEVICE_ID_JOYPAD_UP;
+              g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_DOWN].joykey   = RETRO_DEVICE_ID_JOYPAD_DOWN;
+              g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_LEFT].joykey   = RETRO_DEVICE_ID_JOYPAD_LEFT;
+              g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_RIGHT].joykey  = RETRO_DEVICE_ID_JOYPAD_RIGHT;
+              g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_A].joykey      = RETRO_DEVICE_ID_JOYPAD_A;
+              g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_X].joykey      = RETRO_DEVICE_ID_JOYPAD_X;
+              g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_L].joykey      = RETRO_DEVICE_ID_JOYPAD_L;
+              g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R].joykey      = RETRO_DEVICE_ID_JOYPAD_R;
+              g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_L2].joykey     = RETRO_DEVICE_ID_JOYPAD_L2;
+              g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R2].joykey     = RETRO_DEVICE_ID_JOYPAD_R2;
+              g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_L3].joykey     = RETRO_DEVICE_ID_JOYPAD_L3;
+              g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R3].joykey     = RETRO_DEVICE_ID_JOYPAD_R3;
+              g_settings.input.binds[port][RARCH_ANALOG_LEFT_X_PLUS].def_joyaxis      = AXIS_POS(0);
+              g_settings.input.binds[port][RARCH_ANALOG_LEFT_X_MINUS].def_joyaxis    = AXIS_NEG(0);
+              g_settings.input.binds[port][RARCH_ANALOG_LEFT_Y_PLUS].def_joyaxis      = AXIS_NEG(1);
+              g_settings.input.binds[port][RARCH_ANALOG_LEFT_Y_MINUS].def_joyaxis    = AXIS_POS(1);
+              g_settings.input.binds[port][RARCH_ANALOG_RIGHT_X_PLUS].def_joyaxis    = AXIS_POS(2);
+              g_settings.input.binds[port][RARCH_ANALOG_RIGHT_X_MINUS].def_joyaxis    = AXIS_NEG(2);
+              g_settings.input.binds[port][RARCH_ANALOG_RIGHT_Y_PLUS].def_joyaxis    = AXIS_NEG(3);
+              g_settings.input.binds[port][RARCH_ANALOG_RIGHT_Y_MINUS].def_joyaxis    = AXIS_POS(3);
+              
+              for (int i = 0; i < RARCH_CUSTOM_BIND_LIST_END; i++) {
+                  g_settings.input.binds[port][i].joyaxis = g_settings.input.binds[port][i].def_joyaxis;
+              }
+              
+              break;
       }
    }
 #endif
@@ -640,7 +685,7 @@ static void apple_input_set_keybinds(void *data, unsigned device, unsigned port,
    {
       struct platform_bind *ret = (struct platform_bind*)data;
 
-      if (ret->joykey == NO_BTN)
+      if (ret && ret->joykey == NO_BTN)
          strlcpy(ret->desc, "No button", sizeof(ret->desc));
       else
          snprintf(ret->desc, sizeof(ret->desc), "Button %llu", ret->joykey);

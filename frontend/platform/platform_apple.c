@@ -34,18 +34,17 @@ extern void apple_rarch_exited(void);
 
 static void do_iteration(void)
 {
-    bool iterate = iterate_observer && apple_is_running && !g_extern.is_paused;
-    
-    if (!iterate)
-        return;
-    
-    if (main_entry_iterate(0, NULL, NULL))
-    {
-        main_exit(NULL);
-        apple_rarch_exited();
-    }
-    else
-        CFRunLoopWakeUp(CFRunLoopGetMain());
+   if (!(iterate_observer && apple_is_running && !g_extern.is_paused))
+      return;
+
+   if (main_entry_iterate(0, NULL, NULL))
+   {
+      main_exit(NULL);
+      apple_rarch_exited();
+      return;
+   }
+
+   CFRunLoopWakeUp(CFRunLoopGetMain());
 }
 
 void apple_start_iteration(void)
@@ -93,12 +92,12 @@ void apple_refresh_config(void)
    memset(g_settings.input.overlay, 0, sizeof(g_settings.input.overlay));
    memset(g_settings.video.shader_path, 0, sizeof(g_settings.video.shader_path));
 
-   if (apple_is_running)
-   {
-      uninit_drivers();
-      config_load();
-      init_drivers();
-   }
+   if (!apple_is_running)
+      return;
+
+   uninit_drivers();
+   config_load();
+   init_drivers();
 }
 
 int apple_rarch_load_content(int argc, char* argv[])
@@ -122,6 +121,12 @@ int apple_rarch_load_content(int argc, char* argv[])
    return 0;
 }
 
+static int frontend_apple_get_rating(void)
+{
+   /* TODO/FIXME - look at unique identifier per device and 
+    * determine rating for some */
+   return -1;
+}
 const frontend_ctx_driver_t frontend_ctx_apple = {
    NULL,                         /* environment_get */
    NULL,                         /* init */
@@ -131,5 +136,6 @@ const frontend_ctx_driver_t frontend_ctx_apple = {
    NULL,                         /* process_events */
    NULL,                         /* exec */
    NULL,                         /* shutdown */
+   frontend_apple_get_rating,    /* get_rating */
    "apple",
 };

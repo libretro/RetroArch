@@ -195,7 +195,6 @@ static const struct cmd_map map[] = {
    { "CHEAT_INDEX_MINUS",      RARCH_CHEAT_INDEX_MINUS },
    { "CHEAT_TOGGLE",           RARCH_CHEAT_TOGGLE },
    { "SCREENSHOT",             RARCH_SCREENSHOT },
-   { "DSP_CONFIG",             RARCH_DSP_CONFIG },
    { "MUTE",                   RARCH_MUTE },
    { "NETPLAY_FLIP",           RARCH_NETPLAY_FLIP },
    { "SLOWMOTION",             RARCH_SLOWMOTION },

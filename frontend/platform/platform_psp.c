@@ -44,7 +44,7 @@ static int exit_callback(int arg1, int arg2, void *common)
    return 0;
 }
 
-static void get_environment_settings(int argc, char *argv[], void *args)
+static void frontend_psp_get_environment_settings(int argc, char *argv[], void *args)
 {
    (void)args;
 #ifndef IS_SALAMANDER
@@ -88,7 +88,7 @@ static int setup_callback(void)
    return thread_id;
 }
 
-static void system_init(void *data)
+static void frontend_psp_init(void *data)
 {
    (void)data;
    //initialize debug screen
@@ -101,13 +101,13 @@ static void system_init(void *data)
    scePowerSetClockFrequency(333,333,166);
 }
 
-static void system_deinit(void *data)
+static void frontend_psp_deinit(void *data)
 {
    (void)data;
    sceKernelExitGame();
 }
 
-static int psp_process_args(int argc, char *argv[], void *args)
+static int frontend_psp_process_args(int argc, char *argv[], void *args)
 {
    (void)argc;
    (void)args;
@@ -122,15 +122,21 @@ static int psp_process_args(int argc, char *argv[], void *args)
    return 0;
 }
 
+static int frontend_psp_get_rating(void)
+{
+   return 4;
+}
+
 const frontend_ctx_driver_t frontend_ctx_psp = {
-   get_environment_settings,     /* get_environment_settings */
-   system_init,                  /* init */
-   system_deinit,                /* deinit */
+   frontend_psp_get_environment_settings, /* get_environment_settings */
+   frontend_psp_init,            /* init */
+   frontend_psp_deinit,          /* deinit */
    NULL,                         /* exitspawn */
-   psp_process_args,             /* process_args */
+   frontend_psp_process_args,    /* process_args */
    NULL,                         /* process_events */
    NULL,                  	      /* exec */
    NULL,                         /* shutdown */
+   frontend_psp_get_rating,      /* get_rating */
    "psp",
 #ifdef IS_SALAMANDER
    NULL,

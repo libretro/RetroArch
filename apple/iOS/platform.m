@@ -115,12 +115,11 @@ void ios_set_logging_state(const char *log_path, bool on)
 static void handle_touch_event(NSArray* touches)
 {
    int i;
-   unsigned long numTouches = touches.count;
    const float scale = [[UIScreen mainScreen] scale];
 
    g_current_input_data.touch_count = 0;
    
-   for(i = 0; i != numTouches && g_current_input_data.touch_count < MAX_TOUCHES; i ++)
+   for(i = 0; i < touches.count && g_current_input_data.touch_count < MAX_TOUCHES; i ++)
    {
       UITouch* touch = [touches objectAtIndex:i];
       

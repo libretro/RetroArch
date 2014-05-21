@@ -599,6 +599,8 @@ static int rgui_input_postprocess(void *data, uint64_t old_state)
 {
    int ret;
    rgui_handle_t *rgui;
+
+   (void)old_state;
    
    rgui = (rgui_handle_t*)data;
    ret = 0;

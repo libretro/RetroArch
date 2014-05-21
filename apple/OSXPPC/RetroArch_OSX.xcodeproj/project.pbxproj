@@ -1,0 +1,405 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 44;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		7AEFCD7B192128D900FB5B6A /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 7AEFCD7A192128D900FB5B6A /* main.m */; };
+		7AEFCD7D192128EA00FB5B6A /* utility.m in Sources */ = {isa = PBXBuildFile; fileRef = 7AEFCD7C192128EA00FB5B6A /* utility.m */; };
+		7AEFCD7F192128FE00FB5B6A /* RAGameView.m in Sources */ = {isa = PBXBuildFile; fileRef = 7AEFCD7E192128FE00FB5B6A /* RAGameView.m */; };
+		7AEFCD811921290D00FB5B6A /* apple_gamecontroller.m in Sources */ = {isa = PBXBuildFile; fileRef = 7AEFCD801921290D00FB5B6A /* apple_gamecontroller.m */; };
+		7AEFCD831921292900FB5B6A /* platform.m in Sources */ = {isa = PBXBuildFile; fileRef = 7AEFCD821921292900FB5B6A /* platform.m */; };
+		7AEFCD851921294100FB5B6A /* settings.m in Sources */ = {isa = PBXBuildFile; fileRef = 7AEFCD841921294100FB5B6A /* settings.m */; };
+		7AEFCD871921295E00FB5B6A /* griffin.c in Sources */ = {isa = PBXBuildFile; fileRef = 7AEFCD861921295E00FB5B6A /* griffin.c */; };
+		962EE0E2178B3DF6004224FF /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 962EE0E1178B3DF6004224FF /* IOKit.framework */; };
+		96355CE31788E72A0010DBFA /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96355CE21788E72A0010DBFA /* Cocoa.framework */; };
+		964DE7C417D84B57001CBB6C /* Settings.xib in Resources */ = {isa = PBXBuildFile; fileRef = 964DE7C617D84B57001CBB6C /* Settings.xib */; };
+		967894931788ECDB00D6CA69 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 9678948F1788ECDB00D6CA69 /* InfoPlist.strings */; };
+		967894941788ECDB00D6CA69 /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = 967894911788ECDB00D6CA69 /* MainMenu.xib */; };
+		967894A41788F0C200D6CA69 /* CoreAudio.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 967894A21788F0C200D6CA69 /* CoreAudio.framework */; };
+		967894A51788F0C200D6CA69 /* CoreAudioKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 967894A31788F0C200D6CA69 /* CoreAudioKit.framework */; };
+		967894A71788F0D900D6CA69 /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 967894A61788F0D900D6CA69 /* OpenGL.framework */; };
+		967894A91788F0E500D6CA69 /* AudioUnit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 967894A81788F0E500D6CA69 /* AudioUnit.framework */; };
+		967894E9178A2EB400D6CA69 /* modules in Resources */ = {isa = PBXBuildFile; fileRef = 967894E8178A2EB400D6CA69 /* modules */; };
+		C15874EF178F2094001171D4 /* RetroArch.icns in Resources */ = {isa = PBXBuildFile; fileRef = C15874EE178F2094001171D4 /* RetroArch.icns */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		7AEFCD7A192128D900FB5B6A /* main.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = main.m; path = ../common/main.m; sourceTree = SOURCE_ROOT; };
+		7AEFCD7C192128EA00FB5B6A /* utility.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = utility.m; path = ../common/utility.m; sourceTree = SOURCE_ROOT; };
+		7AEFCD7E192128FE00FB5B6A /* RAGameView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = RAGameView.m; path = ../common/RAGameView.m; sourceTree = SOURCE_ROOT; };
+		7AEFCD801921290D00FB5B6A /* apple_gamecontroller.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = apple_gamecontroller.m; path = ../common/apple_gamecontroller.m; sourceTree = SOURCE_ROOT; };
+		7AEFCD821921292900FB5B6A /* platform.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = platform.m; path = ../OSX/platform.m; sourceTree = SOURCE_ROOT; };
+		7AEFCD841921294100FB5B6A /* settings.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = settings.m; path = ../OSX/settings.m; sourceTree = SOURCE_ROOT; };
+		7AEFCD861921295E00FB5B6A /* griffin.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = griffin.c; path = ../../griffin/griffin.c; sourceTree = SOURCE_ROOT; };
+		962EE0E1178B3DF6004224FF /* IOKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IOKit.framework; path = ../../../../../../../System/Library/Frameworks/IOKit.framework; sourceTree = "<group>"; };
+		96355CDF1788E72A0010DBFA /* RetroArch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RetroArch.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		96355CE21788E72A0010DBFA /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = System/Library/Frameworks/Cocoa.framework; sourceTree = SDKROOT; };
+		96355CE51788E72A0010DBFA /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = System/Library/Frameworks/AppKit.framework; sourceTree = SDKROOT; };
+		96355CE61788E72A0010DBFA /* CoreData.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreData.framework; path = System/Library/Frameworks/CoreData.framework; sourceTree = SDKROOT; };
+		96355CE71788E72A0010DBFA /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
+		964DE7C517D84B57001CBB6C /* en */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = en; path = en.lproj/Settings.xib; sourceTree = "<group>"; };
+		9678948D1788ECCA00D6CA69 /* RetroArch-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = "RetroArch-Info.plist"; path = "OSX/RetroArch-Info.plist"; sourceTree = SOURCE_ROOT; };
+		967894901788ECDB00D6CA69 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = OSX/en.lproj/InfoPlist.strings; sourceTree = SOURCE_ROOT; };
+		967894921788ECDB00D6CA69 /* en */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = en; path = OSX/en.lproj/MainMenu.xib; sourceTree = SOURCE_ROOT; };
+		967894A21788F0C200D6CA69 /* CoreAudio.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreAudio.framework; path = Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk/System/Library/Frameworks/CoreAudio.framework; sourceTree = DEVELOPER_DIR; };
+		967894A31788F0C200D6CA69 /* CoreAudioKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreAudioKit.framework; path = Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk/System/Library/Frameworks/CoreAudioKit.framework; sourceTree = DEVELOPER_DIR; };
+		967894A61788F0D900D6CA69 /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk/System/Library/Frameworks/OpenGL.framework; sourceTree = DEVELOPER_DIR; };
+		967894A81788F0E500D6CA69 /* AudioUnit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioUnit.framework; path = Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk/System/Library/Frameworks/AudioUnit.framework; sourceTree = DEVELOPER_DIR; };
+		967894E8178A2EB400D6CA69 /* modules */ = {isa = PBXFileReference; lastKnownFileType = folder; path = modules; sourceTree = "<group>"; };
+		C15874EE178F2094001171D4 /* RetroArch.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; name = RetroArch.icns; path = OSX/RetroArch.icns; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		96355CDC1788E72A0010DBFA /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				962EE0E2178B3DF6004224FF /* IOKit.framework in Frameworks */,
+				967894A91788F0E500D6CA69 /* AudioUnit.framework in Frameworks */,
+				967894A71788F0D900D6CA69 /* OpenGL.framework in Frameworks */,
+				967894A41788F0C200D6CA69 /* CoreAudio.framework in Frameworks */,
+				967894A51788F0C200D6CA69 /* CoreAudioKit.framework in Frameworks */,
+				96355CE31788E72A0010DBFA /* Cocoa.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		96355CD41788E6E00010DBFA = {
+			isa = PBXGroup;
+			children = (
+				962EE0E1178B3DF6004224FF /* IOKit.framework */,
+				96355CE81788E72A0010DBFA /* common */,
+				967894E7178A2E9B00D6CA69 /* Assets */,
+				96355CE11788E72A0010DBFA /* Frameworks */,
+				96355CE01788E72A0010DBFA /* Products */,
+				96355CE91788E72A0010DBFA /* Supporting Files */,
+			);
+			sourceTree = "<group>";
+		};
+		96355CE01788E72A0010DBFA /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				96355CDF1788E72A0010DBFA /* RetroArch.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		96355CE11788E72A0010DBFA /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				967894A81788F0E500D6CA69 /* AudioUnit.framework */,
+				967894A61788F0D900D6CA69 /* OpenGL.framework */,
+				967894A21788F0C200D6CA69 /* CoreAudio.framework */,
+				967894A31788F0C200D6CA69 /* CoreAudioKit.framework */,
+				96355CE51788E72A0010DBFA /* AppKit.framework */,
+				96355CE61788E72A0010DBFA /* CoreData.framework */,
+				96355CE71788E72A0010DBFA /* Foundation.framework */,
+				96355CE21788E72A0010DBFA /* Cocoa.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		96355CE81788E72A0010DBFA /* common */ = {
+			isa = PBXGroup;
+			children = (
+				7AEFCD861921295E00FB5B6A /* griffin.c */,
+				7AEFCD841921294100FB5B6A /* settings.m */,
+				7AEFCD821921292900FB5B6A /* platform.m */,
+				7AEFCD801921290D00FB5B6A /* apple_gamecontroller.m */,
+				7AEFCD7E192128FE00FB5B6A /* RAGameView.m */,
+				7AEFCD7A192128D900FB5B6A /* main.m */,
+				7AEFCD7C192128EA00FB5B6A /* utility.m */,
+			);
+			path = common;
+			sourceTree = "<group>";
+		};
+		96355CE91788E72A0010DBFA /* Supporting Files */ = {
+			isa = PBXGroup;
+			children = (
+				9678948F1788ECDB00D6CA69 /* InfoPlist.strings */,
+				9678948D1788ECCA00D6CA69 /* RetroArch-Info.plist */,
+			);
+			name = "Supporting Files";
+			path = RetroArch;
+			sourceTree = "<group>";
+		};
+		967894E7178A2E9B00D6CA69 /* Assets */ = {
+			isa = PBXGroup;
+			children = (
+				967894E8178A2EB400D6CA69 /* modules */,
+				967894911788ECDB00D6CA69 /* MainMenu.xib */,
+				C15874EE178F2094001171D4 /* RetroArch.icns */,
+				964DE7C617D84B57001CBB6C /* Settings.xib */,
+			);
+			name = Assets;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		96355CDE1788E72A0010DBFA /* RetroArch */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 96355CFA1788E72B0010DBFA /* Build configuration list for PBXNativeTarget "RetroArch" */;
+			buildPhases = (
+				96355CDB1788E72A0010DBFA /* Sources */,
+				96355CDC1788E72A0010DBFA /* Frameworks */,
+				96355CDD1788E72A0010DBFA /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = RetroArch;
+			productName = RetroArch;
+			productReference = 96355CDF1788E72A0010DBFA /* RetroArch.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		96355CD51788E6E00010DBFA /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 0500;
+			};
+			buildConfigurationList = 96355CD81788E6E00010DBFA /* Build configuration list for PBXProject "RetroArch_OSX" */;
+			compatibilityVersion = "Xcode 3.0";
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+			);
+			mainGroup = 96355CD41788E6E00010DBFA;
+			productRefGroup = 96355CE01788E72A0010DBFA /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				96355CDE1788E72A0010DBFA /* RetroArch */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		96355CDD1788E72A0010DBFA /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				967894931788ECDB00D6CA69 /* InfoPlist.strings in Resources */,
+				967894941788ECDB00D6CA69 /* MainMenu.xib in Resources */,
+				967894E9178A2EB400D6CA69 /* modules in Resources */,
+				C15874EF178F2094001171D4 /* RetroArch.icns in Resources */,
+				964DE7C417D84B57001CBB6C /* Settings.xib in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		96355CDB1788E72A0010DBFA /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				7AEFCD7B192128D900FB5B6A /* main.m in Sources */,
+				7AEFCD7D192128EA00FB5B6A /* utility.m in Sources */,
+				7AEFCD7F192128FE00FB5B6A /* RAGameView.m in Sources */,
+				7AEFCD811921290D00FB5B6A /* apple_gamecontroller.m in Sources */,
+				7AEFCD831921292900FB5B6A /* platform.m in Sources */,
+				7AEFCD851921294100FB5B6A /* settings.m in Sources */,
+				7AEFCD871921295E00FB5B6A /* griffin.c in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXVariantGroup section */
+		964DE7C617D84B57001CBB6C /* Settings.xib */ = {
+			isa = PBXVariantGroup;
+			children = (
+				964DE7C517D84B57001CBB6C /* en */,
+			);
+			name = Settings.xib;
+			path = OSX;
+			sourceTree = "<group>";
+		};
+		9678948F1788ECDB00D6CA69 /* InfoPlist.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				967894901788ECDB00D6CA69 /* en */,
+			);
+			name = InfoPlist.strings;
+			sourceTree = "<group>";
+		};
+		967894911788ECDB00D6CA69 /* MainMenu.xib */ = {
+			isa = PBXVariantGroup;
+			children = (
+				967894921788ECDB00D6CA69 /* en */,
+			);
+			name = MainMenu.xib;
+			path = RetroArch;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
+
+/* Begin XCBuildConfiguration section */
+		96355CD91788E6E00010DBFA /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = "$(ONLY_ACTIVE_ARCH_PRE_XCODE_3_1)";
+				HEADER_SEARCH_PATHS = "$(SRCROOT)/..";
+				ONLY_ACTIVE_ARCH_PRE_XCODE_3_1 = "$(NATIVE_ARCH)";
+				SDKROOT = "$(DEVELOPER_SDK_DIR)/MacOSX10.5.sdk";
+			};
+			name = Debug;
+		};
+		96355CDA1788E6E00010DBFA /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = "$(ARCHS_STANDARD_32_BIT_PRE_XCODE_3_1)";
+				ARCHS_STANDARD_32_BIT_PRE_XCODE_3_1 = "ppc i386";
+				HEADER_SEARCH_PATHS = "$(SRCROOT)/..";
+				SDKROOT = "$(DEVELOPER_SDK_DIR)/MacOSX10.5.sdk";
+			};
+			name = Release;
+		};
+		96355CFB1788E72B0010DBFA /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_CXX_LANGUAGE_STANDARD = "compiler-default";
+				CLANG_CXX_LIBRARY = "compiler-default";
+				CLANG_ENABLE_OBJC_ARC = NO;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_MISSING_PROPERTY_SYNTHESIS = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COMBINE_HIDPI_IMAGES = YES;
+				COPY_PHASE_STRIP = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				GCC_VERSION = "";
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				INFOPLIST_FILE = "$(SRCROOT)/OSX/RetroArch-Info.plist";
+				MACOSX_DEPLOYMENT_TARGET = 10.5;
+				ONLY_ACTIVE_ARCH = YES;
+				OTHER_CFLAGS = (
+					"-DHAVE_GRIFFIN",
+					"-DHAVE_CC_RESAMPLER",
+					"-DHAVE_RGUI",
+					"-DHAVE_MENU",
+					"-DOSX",
+					"-DHAVE_OPENGL",
+					"-DHAVE_FBO",
+					"-DHAVE_GLSL",
+					"-DINLINE=inline",
+					"-D__LIBRETRO__",
+					"-DWANT_RPNG",
+					"-DHAVE_COREAUDIO",
+					"-DHAVE_DYNAMIC",
+					"-DHAVE_OVERLAY",
+					"-DHAVE_ZLIB",
+					"-DWANT_MINIZ",
+					"-DSINC_LOWER_QUALITY",
+					"-DHAVE_NETPLAY",
+					"-DRARCH_INTERNAL",
+					"-DHAVE_THREADS",
+				);
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = "$(DEVELOPER_SDK_DIR)/MacOSX10.5.sdk";
+				WRAPPER_EXTENSION = app;
+			};
+			name = Debug;
+		};
+		96355CFC1788E72B0010DBFA /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_CXX_LANGUAGE_STANDARD = "compiler-default";
+				CLANG_CXX_LIBRARY = "compiler-default";
+				CLANG_ENABLE_OBJC_ARC = NO;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_MISSING_PROPERTY_SYNTHESIS = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COMBINE_HIDPI_IMAGES = YES;
+				COPY_PHASE_STRIP = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
+				GCC_VERSION = "";
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				INFOPLIST_FILE = "$(SRCROOT)/OSX/RetroArch-Info.plist";
+				MACOSX_DEPLOYMENT_TARGET = 10.5;
+				ONLY_ACTIVE_ARCH = YES;
+				OTHER_CFLAGS = (
+					"-DNS_BLOCK_ASSERTIONS=1",
+					"-DNDEBUG",
+					"-DHAVE_GRIFFIN",
+					"-DHAVE_CC_RESAMPLER",
+					"-DHAVE_RGUI",
+					"-DHAVE_MENU",
+					"-DOSX",
+					"-DHAVE_OPENGL",
+					"-DHAVE_FBO",
+					"-DHAVE_GLSL",
+					"-DINLINE=inline",
+					"-D__LIBRETRO__",
+					"-DWANT_RPNG",
+					"-DHAVE_COREAUDIO",
+					"-DHAVE_DYNAMIC",
+					"-DHAVE_OVERLAY",
+					"-DHAVE_ZLIB",
+					"-DWANT_MINIZ",
+					"-DSINC_LOWER_QUALITY",
+					"-DHAVE_NETPLAY",
+					"-DRARCH_INTERNAL",
+					"-DHAVE_THREADS",
+				);
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = "$(DEVELOPER_SDK_DIR)/MacOSX10.5.sdk";
+				WRAPPER_EXTENSION = app;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		96355CD81788E6E00010DBFA /* Build configuration list for PBXProject "RetroArch_OSX" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				96355CD91788E6E00010DBFA /* Debug */,
+				96355CDA1788E6E00010DBFA /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		96355CFA1788E72B0010DBFA /* Build configuration list for PBXNativeTarget "RetroArch" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				96355CFB1788E72B0010DBFA /* Debug */,
+				96355CFC1788E72B0010DBFA /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 96355CD51788E6E00010DBFA /* Project object */;
+}

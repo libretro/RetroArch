@@ -694,11 +694,6 @@ static void lakka_frame(void *data)
                         categories[i].items[j].subitems[k].alpha, 
                         0, 
                         categories[i].items[j].subitems[k].zoom);
-                  /*if category.prefix ~= "settings" and  (k == 2 or k == 3) and item.slot == -1 then
-                    love.graphics.print(subitem.name .. " <" .. item.slot .. " (auto)>", 256 + (HSPACING*(i+1)) + all_categories.x, 300-15 + subitem.y)
-                    elseif category.prefix ~= "settings" and  (k == 2 or k == 3) then
-                    love.graphics.print(subitem.name .. " <" .. item.slot .. ">", 256 + (HSPACING*(i+1)) + all_categories.x, 300-15 + subitem.y)
-                    else*/
                   lakka_draw_text(gl, 
                         categories[i].items[j].subitems[k].out, 
                         156 + HSPACING*(i+2) + all_categories_x + dim/2.0, 
@@ -812,7 +807,7 @@ char * str_replace ( const char *string, const char *substr, const char *replace
    while ( (tok = strstr ( head, substr )))
    {
       oldstr = newstr;
-      newstr = malloc ( strlen ( oldstr ) - strlen ( substr ) + strlen ( replacement ) + 1 );
+      newstr = (char*)malloc(strlen(oldstr) - strlen(substr) + strlen(replacement) + 1);
 
       if (!newstr)
       {
@@ -833,7 +828,7 @@ char * str_replace ( const char *string, const char *substr, const char *replace
 
 void lakka_init_items(int i, menu_category *mcat, core_info_t corenfo, char* gametexturepath, char* path)
 {
-   int num_items, j, n;
+   int num_items, j, n, k;
    struct string_list *list = (struct string_list*)dir_list_new(path, corenfo.supported_extensions, true);
 
    dir_list_sort(list, true);
@@ -854,43 +849,42 @@ void lakka_init_items(int i, menu_category *mcat, core_info_t corenfo, char* gam
 
          strlcpy(mcat->items[n].name, path_basename(list->elems[j].data), sizeof(mcat->items[n].name));
          strlcpy(mcat->items[n].rom, list->elems[j].data, sizeof(mcat->items[n].rom));
-         mcat->items[n].icon  = png_texture_load(gametexturepath, &dim, &dim);
-         mcat->items[n].alpha = i != menu_active_category ? 0 : n ? 0.5 : 1;
-         mcat->items[n].zoom  = n ? I_PASSIVE_ZOOM : I_ACTIVE_ZOOM;
-         mcat->items[n].y     = n ? VSPACING*(3+n) : VSPACING*2.5;
+         mcat->items[n].icon           = png_texture_load(gametexturepath, &dim, &dim);
+         mcat->items[n].alpha          = i != menu_active_category ? 0 : n ? 0.5 : 1;
+         mcat->items[n].zoom           = n ? I_PASSIVE_ZOOM : I_ACTIVE_ZOOM;
+         mcat->items[n].y              = n ? VSPACING*(3+n) : VSPACING*2.5;
          mcat->items[n].active_subitem = 0;
          mcat->items[n].num_subitems   = 5;
          mcat->items[n].subitems       = calloc(mcat->items[n].num_subitems, sizeof(menu_subitem));
 
-         for (int k = 0; k < mcat->items[n].num_subitems; k++)
+         for (k = 0; k < mcat->items[n].num_subitems; k++)
          {
             switch (k)
             {
                case 0:
-                  mcat->items[n].subitems[k].name = "Run";
+                  strlcpy(mcat->items[n].subitems[k].name, "Run", sizeof(mcat->items[n].subitems[k].name));
                   mcat->items[n].subitems[k].icon = run_icon;
                   break;
                case 1:
-                  mcat->items[n].subitems[k].name = "Save State";
+                  strlcpy(mcat->items[n].subitems[k].name, "Save State", sizeof(mcat->items[n].subitems[k].name));
                   mcat->items[n].subitems[k].icon = savestate_icon;
                   break;
                case 2:
-                  mcat->items[n].subitems[k].name = "Load State";
+                  strlcpy(mcat->items[n].subitems[k].name, "Load State", sizeof(mcat->items[n].subitems[k].name));
                   mcat->items[n].subitems[k].icon = loadstate_icon;
                   break;
                case 3:
-                  mcat->items[n].subitems[k].name = "Take Screenshot";
+                  strlcpy(mcat->items[n].subitems[k].name, "Take Screenshot", sizeof(mcat->items[n].subitems[k].name));
                   mcat->items[n].subitems[k].icon = screenshot_icon;
                   break;
                case 4:
-                  mcat->items[n].subitems[k].name = "Reset";
+                  strlcpy(mcat->items[n].subitems[k].name, "Reset", sizeof(mcat->items[n].subitems[k].name));
                   mcat->items[n].subitems[k].icon = reload_icon;
                   break;
             }
             mcat->items[n].subitems[k].alpha = 0;
             mcat->items[n].subitems[k].zoom = k == mcat->items[n].active_subitem ? I_ACTIVE_ZOOM : I_PASSIVE_ZOOM;
             mcat->items[n].subitems[k].y = k == 0 ? VSPACING*2.5 : VSPACING*(3+k);
-            struct font_output_list out;
             font_driver->render_msg(font, mcat->items[n].subitems[k].name, &out);
             mcat->items[n].subitems[k].out = out;
          }

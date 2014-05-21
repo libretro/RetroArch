@@ -399,7 +399,7 @@ uint64_t menu_input(void *data)
    if (!rgui)
       return 0;
 
-   input_push_analog_dpad((struct retro_keybind*)binds[0], g_settings.input.analog_dpad_mode[0]);
+   input_push_analog_dpad((struct retro_keybind*)binds[0], (g_settings.input.analog_dpad_mode[0] == ANALOG_DPAD_NONE) ? ANALOG_DPAD_LSTICK : g_settings.input.analog_dpad_mode[0]);
    for (i = 0; i < MAX_PLAYERS; i++)
       input_push_analog_dpad(g_settings.input.autoconf_binds[i], g_settings.input.analog_dpad_mode[i]);
 

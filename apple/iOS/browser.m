@@ -411,20 +411,21 @@ static void file_action(enum file_action action, NSString* source, NSString* tar
       // Parent item
       NSString* sourceItem = _path.stringByDeletingLastPathComponent;
       
-      RAMenuItemBasic* parentItem = [RAMenuItemBasic itemWithDescription:@"<Parent>" association:sourceItem.stringByDeletingLastPathComponent
+      RAMenuItemBasic* parentItem = [RAMenuItemBasic itemWithDescription:BOXSTRING("<Parent>") association:sourceItem.stringByDeletingLastPathComponent
          action:^(id userdata){ [weakSelf moveInto:userdata]; } detail:NULL];
-      [self.sections addObject:@[@"", parentItem]];
+      [self.sections addObject:@[BOXSTRING(""), parentItem]];
 
 
       // List contents
       struct string_list* contents = dir_list_new([_path stringByDeletingLastPathComponent].UTF8String, 0, true);
-      NSMutableArray* items = [NSMutableArray arrayWithObject:@""];
+      NSMutableArray* items = [NSMutableArray arrayWithObject:BOXSTRING("")];
    
       if (contents)
       {
+         int i;
          dir_list_sort(contents, true);
 
-         for (int i = 0; i < contents->size; i ++)
+         for (i = 0; i < contents->size; i ++)
          {
             if (contents->elems[i].attr.b)
             {
@@ -439,7 +440,7 @@ static void file_action(enum file_action action, NSString* source, NSString* tar
          dir_list_free(contents);
       }
 
-      [self setTitle:[@"Move " stringByAppendingString:_path.lastPathComponent]];
+      [self setTitle:[BOXSTRING("Move ") stringByAppendingString:_path.lastPathComponent]];
       
       [self.sections addObject:items];
    }

@@ -73,20 +73,20 @@ static char *strcat_alloc(char *dest, const char *input)
 
 static bool xml_grab_cheat(struct cheat *cht, xmlNodePtr ptr)
 {
+   bool first;
    if (!ptr)
       return false;
 
    memset(cht, 0, sizeof(struct cheat));
-   bool first = true;
+   first = true;
 
    for (; ptr; ptr = ptr->next)
    {
       if (strcmp((const char*)ptr->name, "description") == 0)
-      {
          cht->desc = (char*)xmlNodeGetContent(ptr);
-      }
       else if (strcmp((const char*)ptr->name, "code") == 0)
       {
+         xmlChar *code;
          if (!first)
          {
             cht->code = strcat_alloc(cht->code, "+");
@@ -94,7 +94,7 @@ static bool xml_grab_cheat(struct cheat *cht, xmlNodePtr ptr)
                return false;
          }
 
-         xmlChar *code = xmlNodeGetContent(ptr);
+         code = (xmlChar*)xmlNodeGetContent(ptr);
          if (!code)
             return false;
 
@@ -116,7 +116,7 @@ static bool xml_grab_cheats(cheat_manager_t *handle, xmlNodePtr ptr)
    {
       if (strcmp((const char*)ptr->name, "name") == 0)
       {
-         xmlChar *name = xmlNodeGetContent(ptr);
+         xmlChar *name = (xmlChar*)xmlNodeGetContent(ptr);
          if (name)
          {
             RARCH_LOG("Found cheat for game: \"%s\"\n", name);
@@ -155,22 +155,27 @@ static void cheat_manager_apply_cheats(cheat_manager_t *handle)
 
 static void cheat_manager_load_config(cheat_manager_t *handle, const char *path, const char *sha256)
 {
+   const char *num;
+   char *str, *save;
+   config_file_t *conf;
+
    if (!(*path))
       return;
 
-   config_file_t *conf = config_file_new(path);
+   conf = (config_file_t*)config_file_new(path);
    if (!conf)
       return;
 
-   char *str = NULL;
+   str = NULL;
    if (!config_get_string(conf, sha256, &str))
    {
       config_file_free(conf);
       return;
    }
 
-   char *save = NULL;
-   const char *num = strtok_r(str, ";", &save);
+   save = NULL;
+   num = (const char*)strtok_r(str, ";", &save);
+
    while (num)
    {
       unsigned index = strtoul(num, NULL, 0);
@@ -188,6 +193,10 @@ static void cheat_manager_load_config(cheat_manager_t *handle, const char *path,
 
 static void cheat_manager_save_config(cheat_manager_t *handle, const char *path, const char *sha256)
 {
+   unsigned i;
+   char conf_str[512] = {0};
+   char tmp[32] = {0};
+
    if (!(*path))
       return;
 
@@ -200,10 +209,6 @@ static void cheat_manager_save_config(cheat_manager_t *handle, const char *path,
       RARCH_ERR("Cannot save XML cheat settings.\n");
       return;
    }
-
-   unsigned i;
-   char conf_str[512] = {0};
-   char tmp[32] = {0};
 
    for (i = 0; i < handle->size; i++)
    {
@@ -227,18 +232,23 @@ static void cheat_manager_save_config(cheat_manager_t *handle, const char *path,
 
 cheat_manager_t *cheat_manager_new(const char *path)
 {
+   xmlParserCtxtPtr ctx;
+   xmlNodePtr head, cur;
+   xmlDocPtr doc;
+   cheat_manager_t *handle;
+
    LIBXML_TEST_VERSION;
 
    pretro_cheat_reset();
 
-   xmlParserCtxtPtr ctx = NULL;
-   xmlDocPtr doc = NULL;
-   cheat_manager_t *handle = (cheat_manager_t*)calloc(1, sizeof(struct cheat_manager));
+   ctx = NULL;
+   doc = NULL;
+   handle = (cheat_manager_t*)calloc(1, sizeof(struct cheat_manager));
    if (!handle)
       return NULL;
 
-   xmlNodePtr head = NULL;
-   xmlNodePtr cur = NULL;
+   head = NULL;
+   cur = NULL;
 
    handle->buf_size = 1;
    handle->cheats = (struct cheat*)calloc(handle->buf_size, sizeof(struct cheat));
@@ -381,4 +391,3 @@ void cheat_manager_index_prev(cheat_manager_t *handle)
 
    cheat_manager_update(handle);
 }
-

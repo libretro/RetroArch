@@ -47,7 +47,7 @@ else ifeq ($(platform), qnx)
 
    CC = qcc -Vgcc_ntoarmv7le
    AR = qcc -Vgcc_ntoarmv7le
-   CFLAGS += -D__BLACKBERRY_QNX__ -DGLES
+   CFLAGS += -DGLES
    GL_LIB := -lGLESv2
 else ifneq (,$(findstring armv,$(platform)))
    CC = gcc

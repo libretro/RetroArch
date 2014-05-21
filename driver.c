@@ -26,7 +26,7 @@
 #include "audio/resampler.h"
 #include "gfx/thread_wrapper.h"
 #include "audio/thread_wrapper.h"
-#include "audio/filters/rarch_dsp.h"
+#include "audio/dsp_filter.h"
 #include "gfx/gfx_common.h"
 
 #ifdef HAVE_X11
@@ -175,7 +175,7 @@ static const input_driver_t *input_drivers[] = {
 #if defined(IOS) || defined(OSX) //< Don't use __APPLE__ as it breaks basic SDL builds
    &input_apple,
 #endif
-#ifdef __BLACKBERRY_QNX__
+#ifdef __QNX__
    &input_qnx,
 #endif
 #ifdef EMSCRIPTEN
@@ -970,144 +970,22 @@ void uninit_drivers(void)
    driver.input_data_own  = false;
 }
 
-#ifdef HAVE_FILTERS_BUILTIN
-static const struct dspfilter_implementation *(*dspfilter_drivers[]) (dspfilter_simd_mask_t) =
-{
-   NULL,
-   &echo_dsp_plugin_init,
-#ifndef _WIN32
-#ifndef ANDROID
-   &eq_dsp_plugin_init,
-#endif
-#endif
-   &iir_dsp_plugin_init,
-   &phaser_dsp_plugin_init,
-   &reverb_dsp_plugin_init,
-   &volume_dsp_plugin_init,
-   &wah_dsp_plugin_init,
-};
-
-unsigned dspfilter_get_last_idx(void)
-{
-   return sizeof(dspfilter_drivers) / sizeof(dspfilter_drivers[0]);
-}
-
-static dspfilter_get_implementation_t dspfilter_get_implementation_from_idx(unsigned i)
-{
-   if (i < dspfilter_get_last_idx())
-      return dspfilter_drivers[i];
-   return NULL;
-}
-
-#endif
-
-
-const char *rarch_dspfilter_get_name(void *data)
-{
-   const struct dspfilter_implementation *impl;
-   (void)data;
-#ifdef HAVE_FILTERS_BUILTIN
-   unsigned cpu_features;
-   dspfilter_get_implementation_t cb = (dspfilter_get_implementation_t)dspfilter_get_implementation_from_idx(g_settings.audio.filter_idx);
-   if (cb)
-   {
-      cpu_features = rarch_get_cpu_features();
-      impl = (const struct dspfilter_implementation *)cb(cpu_features);
-      if (impl)
-         return impl->ident;
-   }
-
-   return NULL;
-#else
-   impl = (const struct dspfilter_implementation*)data;
-   if (!impl || !impl->ident)
-      return NULL;
-
-   return impl->ident;
-#endif
-}
-
 void rarch_init_dsp_filter(void)
 {
-   unsigned cpu_features;
-   dspfilter_get_implementation_t cb;
-   rarch_dsp_info_t info = {0};
-
-#ifdef HAVE_FILTERS_BUILTIN
-   if (!g_settings.audio.filter_idx)
-#else
-   if (!(*g_settings.audio.dsp_plugin))
-#endif
+   rarch_deinit_dsp_filter();
+   if (!*g_settings.audio.dsp_plugin)
       return;
 
-   cb = NULL;
-
-#if defined(HAVE_FILTERS_BUILTIN)
-   cb = (dspfilter_get_implementation_t)dspfilter_get_implementation_from_idx(g_settings.audio.filter_idx);
-#elif defined(HAVE_DYLIB)
-   g_extern.audio_data.dsp_lib = dylib_load(g_settings.audio.dsp_plugin);
-   if (!g_extern.audio_data.dsp_lib)
-   {
-      RARCH_ERR("Failed to open DSP plugin: \"%s\" ...\n", g_settings.audio.dsp_plugin);
-      return;
-   }
-
-    cb = (dspfilter_get_implementation_t)dylib_proc(g_extern.audio_data.dsp_lib, "rarch_dsp_plugin_init");
-#endif
-
-   if (!cb)
-   {
-      RARCH_ERR("Failed to find symbol \"rarch_dsp_plugin_init\" in DSP plugin.\n");
-      goto error;
-   }
-
-   cpu_features = rarch_get_cpu_features();
-   g_extern.audio_data.dsp_plugin = cb(cpu_features);
-
-   if (!g_extern.audio_data.dsp_plugin)
-   {
-      RARCH_ERR("Failed to get a valid DSP plugin.\n");
-      goto error;
-   }
-
-   if (g_extern.audio_data.dsp_plugin->api_version != RARCH_DSP_API_VERSION)
-   {
-      RARCH_ERR("DSP plugin API mismatch. RetroArch: %d, Plugin: %d\n", RARCH_DSP_API_VERSION, g_extern.audio_data.dsp_plugin->api_version);
-      goto error;
-   }
-
-   RARCH_LOG("Loaded DSP plugin: \"%s\"\n", g_extern.audio_data.dsp_plugin->ident ? g_extern.audio_data.dsp_plugin->ident : "Unknown");
-
-   info.input_rate = g_settings.audio.in_rate;
-
-   g_extern.audio_data.dsp_handle = g_extern.audio_data.dsp_plugin->init(&info);
-   if (!g_extern.audio_data.dsp_handle)
-   {
-      RARCH_ERR("Failed to init DSP plugin.\n");
-      goto error;
-   }
-
-   return;
-
-error:
-#ifdef HAVE_DYLIB
-   if (g_extern.audio_data.dsp_lib)
-      dylib_close(g_extern.audio_data.dsp_lib);
-   g_extern.audio_data.dsp_lib = NULL;
-#endif
-   g_extern.audio_data.dsp_plugin = NULL;
+   g_extern.audio_data.dsp = rarch_dsp_filter_new(g_settings.audio.dsp_plugin, g_settings.audio.in_rate);
+   if (!g_extern.audio_data.dsp)
+      RARCH_ERR("[DSP]: Failed to init DSP filter \"%s\".\n", g_settings.audio.dsp_plugin);
 }
 
 void rarch_deinit_dsp_filter(void)
 {
-   if (g_extern.audio_data.dsp_plugin && g_extern.audio_data.dsp_plugin->free)
-      g_extern.audio_data.dsp_plugin->free(g_extern.audio_data.dsp_handle);
-#ifdef HAVE_DYLIB
-   if (g_extern.audio_data.dsp_lib)
-      dylib_close(g_extern.audio_data.dsp_lib);
-#endif
-   g_extern.audio_data.dsp_handle = NULL;
-   g_extern.audio_data.dsp_plugin = NULL;
+   if (g_extern.audio_data.dsp)
+      rarch_dsp_filter_free(g_extern.audio_data.dsp);
+   g_extern.audio_data.dsp = NULL;
 }
 
 void init_audio(void)
@@ -1663,10 +1541,10 @@ void uninit_video_input(void)
    }
 #endif
 
-   if (driver.input_data != driver.video_data && driver.input)
+   if (driver.input_data != driver.video_data && driver.input && driver.input->free)
       input_free_func();
 
-   if (driver.video_data && driver.video)
+   if (driver.video_data && driver.video && driver.video->free)
       video_free_func();
 
    deinit_pixel_converter();

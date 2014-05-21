@@ -90,14 +90,15 @@ NSString *apple_get_core_display_name(NSString *core_id)
 
 - (BOOL)isPartialStringValid:(NSString*)partialString newEditingString:(NSString**)newString errorDescription:(NSString**)error
 {
+   int i;
    bool hasDot = false;
 
    if (partialString.length)
-      for (int i = 0; i < partialString.length; i ++)
+      for (i = 0; i < partialString.length; i ++)
       {
          unichar ch = [partialString characterAtIndex:i];
          
-         if (i == 0 && (!self.minimum || [[self minimum] intValue] < 0) && ch == '-')
+         if (i == 0 && (!self.minimum || self.minimum.intValue < 0) && ch == '-')
             continue;
          else if (self.allowsFloats && !hasDot && ch == '.')
             hasDot = true;

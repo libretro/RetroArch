@@ -62,7 +62,7 @@ bool input_keyboard_line_event(input_keyboard_line_t *state, uint32_t character)
       return true;
    }
 
-   if (c == '\b')
+   if (c == '\b' || c == '\x7f') /* 0x7f is ASCII for del */
    {
       if (state->ptr)
       {
@@ -147,7 +147,7 @@ void input_keyboard_event(bool down, unsigned code, uint32_t character, uint16_t
    }
    else if (g_keyboard_line)
    {
-      if (input_keyboard_line_event(g_keyboard_line, character))
+      if (down && input_keyboard_line_event(g_keyboard_line, character))
       {
          // Line is complete, can free it now.
          input_keyboard_line_free(g_keyboard_line);

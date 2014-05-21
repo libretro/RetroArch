@@ -1,7 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2014 - Daniel De Matteis
- *  Copyright (C) 2012-2014 - Brad Miller
+ *  Copyright (C) 2014 - Brad Miller
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -13,407 +12,348 @@
  *
  *  You should have received a copy of the GNU General Public License along with RetroArch.
  *  If not, see <http://www.gnu.org/licenses/>.
- *
  */
 
-#include "rarch_dsp.h"
-#include <string.h>
-#include <stdio.h>
-#include <stddef.h>
-#include <stdlib.h>
+#include "dspfilter.h"
 #include <math.h>
-
-#ifdef __SSE2__
-#include <emmintrin.h>
-#endif
+#include <stdlib.h>
+#include <string.h>
 
 #ifndef M_PI
 #define M_PI		3.1415926535897932384626433832795
 #endif
-
-#ifndef ALIGNED
-#ifdef __GNUC__
-#define ALIGNED __attribute__((aligned(16)));
-#else
-#define ALIGNED
-#endif
-#endif
-
 #define sqr(a) ((a) * (a))
 
-#ifdef RARCH_INTERNAL
-#define rarch_dsp_plugin_init  iir_dsp_plugin_init
-#endif
-
-struct iir_filter
-{
-#ifdef __SSE2__
-   __m128 fir_coeff[2];
-   __m128 fir_buf[2];
-
-   __m128 iir_coeff;
-   __m128 iir_buf;
-#endif
-	float pf_freq, pf_qfact, pf_gain;
-	int type, pf_q_is_bandwidth; 
-	float xn1,xn2,yn1,yn2;
-	float omega, cs, a1pha, beta, b0, b1, b2, a0, a1,a2, A, sn;
-};
-
-struct iir_filter_data
-{
-   struct iir_filter iir_l ALIGNED;
-   struct iir_filter iir_r ALIGNED;
-   float buf[4096] ALIGNED;
-   int rate;
-   unsigned type;
-};
-
 /* filter types */
-enum
-{
-   LPF, /* low pass filter */
-   HPF, /* High pass filter */
-   BPCSGF,/* band pass filter 1 */
-   BPZPGF,/* band pass filter 2 */
-   APF, /* Allpass filter*/
-   NOTCH, /* Notch Filter */
-   RIAA_phono, /* RIAA record/tape deemphasis */
-   PEQ, /* Peaking band EQ filter */
-   BBOOST, /* Bassboost filter */
-   LSH, /* Low shelf filter */
-   HSH, /* High shelf filter */
-   RIAA_CD /* CD de-emphasis */
+enum IIRFilter {
+	LPF, /* low pass filter */
+	HPF, /* High pass filter */
+	BPCSGF,/* band pass filter 1 */
+	BPZPGF,/* band pass filter 2 */
+	APF, /* Allpass filter*/
+	NOTCH, /* Notch Filter */
+	RIAA_phono, /* RIAA record/tape deemphasis */
+	PEQ, /* Peaking band EQ filter */
+	BBOOST, /* Bassboost filter */
+	LSH, /* Low shelf filter */
+	HSH, /* High shelf filter */
+	RIAA_CD /* CD de-emphasis */
 };
 
-//lynched from SoX >w>
-static void iir_make_poly_from_roots(double const * roots, size_t num_roots, float * poly)
+struct iir_data
 {
-	size_t i, j;
-	poly[0] = 1;
-	poly[1] = -roots[0];
-	memset(poly + 2, 0, (num_roots + 1 - 2) * sizeof(*poly));
-	for (i = 1; i < num_roots; ++i)
-		for (j = num_roots; j > 0; --j)
-			poly[j] -= poly[j - 1] * roots[i];
+   float b0, b1, b2;
+   float a0, a1, a2;
+
+   struct
+   {
+      float xn1, xn2;
+      float yn1, yn2;
+   } l, r;
+};
+
+static void iir_free(void *data)
+{
+   free(data);
 }
 
-static void iir_init(void *data, int samplerate, int filter_type)
+static void iir_process(void *data, struct dspfilter_output *output,
+      const struct dspfilter_input *input)
 {
-   struct iir_filter *iir = (struct iir_filter*)data;
+   unsigned i;
+   struct iir_data *iir = (struct iir_data*)data;
 
-   if (!iir)
-      return;
+   output->samples = input->samples;
+   output->frames  = input->frames;
 
-   iir->xn1=0;
-   iir->xn2=0;
-   iir->yn1=0;
-   iir->yn2=0;
-   iir->omega = 2 * M_PI * iir->pf_freq/samplerate;
-   iir->cs = cos(iir->omega);
-   iir->sn = sin(iir->omega);
-   iir->a1pha = iir->sn / (2.0 * iir->pf_qfact);
-   iir->A = exp(log(10.0) * iir->pf_gain  / 40);
-   iir->beta = sqrt(iir->A + iir->A);
-   //Set up filter coefficients according to type
+   float *out = output->samples;
+
+   float b0 = iir->b0;
+   float b1 = iir->b1;
+   float b2 = iir->b2;
+   float a0 = iir->a0;
+   float a1 = iir->a1;
+   float a2 = iir->a2;
+
+   float xn1_l = iir->l.xn1;
+   float xn2_l = iir->l.xn2;
+   float yn1_l = iir->l.yn1;
+   float yn2_l = iir->l.yn2;
+
+   float xn1_r = iir->r.xn1;
+   float xn2_r = iir->r.xn2;
+   float yn1_r = iir->r.yn1;
+   float yn2_r = iir->r.yn2;
+
+   for (i = 0; i < input->frames; i++, out += 2)
+   {
+      float in_l = out[0];
+      float in_r = out[1];
+
+      float l = (b0 * in_l + b1 * xn1_l + b2 * xn2_l - a1 * yn1_l - a2 * yn2_l) / a0;
+      float r = (b0 * in_r + b1 * xn1_r + b2 * xn2_r - a1 * yn1_r - a2 * yn2_r) / a0;
+
+      xn2_l = xn1_l;
+      xn1_l = in_l;
+      yn2_l = yn1_l;
+      yn1_l = l;
+
+      xn2_r = xn1_r;
+      xn1_r = in_r;
+      yn2_r = yn1_r;
+      yn1_r = r;
+
+      out[0] = l;
+      out[1] = r;
+   }
+
+   iir->l.xn1 = xn1_l;
+   iir->l.xn2 = xn2_l;
+   iir->l.yn1 = yn1_l;
+   iir->l.yn2 = yn2_l;
+
+   iir->r.xn1 = xn1_r;
+   iir->r.xn2 = xn2_r;
+   iir->r.yn1 = yn1_r;
+   iir->r.yn2 = yn2_r;
+}
+
+#define CHECK(x) if (!strcmp(str, #x)) return x
+static enum IIRFilter str_to_type(const char *str)
+{
+   CHECK(LPF);
+   CHECK(HPF);
+   CHECK(BPCSGF);
+   CHECK(BPZPGF);
+   CHECK(APF);
+   CHECK(NOTCH);
+   CHECK(RIAA_phono);
+   CHECK(PEQ);
+   CHECK(BBOOST);
+   CHECK(LSH);
+   CHECK(HSH);
+   CHECK(RIAA_CD);
+   return LPF; // Fallback.
+}
+
+static void make_poly_from_roots(
+      const double *roots, unsigned num_roots, float *poly)
+{
+   unsigned i, j;
+   poly[0] = 1;
+   poly[1] = -roots[0];
+   memset(poly + 2, 0, (num_roots + 1 - 2) * sizeof(*poly));
+   for (i = 1; i < num_roots; i++)
+      for (j = num_roots; j > 0; j--)
+         poly[j] -= poly[j - 1] * roots[i];
+}
+
+static void iir_filter_init(struct iir_data *iir,
+      float sample_rate, float freq, float qual, float gain, enum IIRFilter filter_type)
+{
+	double omega = 2.0 * M_PI * freq / sample_rate;
+   double cs = cos(omega);
+   double sn = sin(omega);
+   double a1pha = sn / (2.0 * qual);
+   double A = exp(log(10.0) * gain / 40.0);
+   double beta = sqrt(A + A);
+
+   float b0 = 0.0, b1 = 0.0, b2 = 0.0, a0 = 0.0, a1 = 0.0, a2 = 0.0;
+
+   // Set up filter coefficients according to type
    switch (filter_type)
    {
       case LPF:
-         iir->b0 =  (1.0 - iir->cs) / 2.0 ;
-         iir->b1 =   1.0 - iir->cs ;
-         iir->b2 =  (1.0 - iir->cs) / 2.0 ;
-         iir->a0 =   1.0 + iir->a1pha ;
-         iir->a1 =  -2.0 * iir->cs ;
-         iir->a2 =   1.0 - iir->a1pha ;
+         b0 =  (1.0 - cs) / 2.0;
+         b1 =   1.0 - cs ;
+         b2 =  (1.0 - cs) / 2.0;
+         a0 =   1.0 + a1pha;
+         a1 =  -2.0 * cs;
+         a2 =   1.0 - a1pha;
          break;
       case HPF:
-         iir->b0 =  (1.0 + iir->cs) / 2.0 ;
-         iir->b1 = -(1.0 + iir->cs) ;
-         iir->b2 =  (1.0 + iir->cs) / 2.0 ;
-         iir->a0 =   1.0 + iir->a1pha ;
-         iir->a1 =  -2.0 * iir->cs ;
-         iir->a2 =   1.0 - iir->a1pha ;
+         b0 =  (1.0 + cs) / 2.0;
+         b1 = -(1.0 + cs);
+         b2 =  (1.0 + cs) / 2.0;
+         a0 =   1.0 + a1pha;
+         a1 =  -2.0 * cs;
+         a2 =   1.0 - a1pha;
          break;
       case APF:
-         iir->b0 = 1.0 - iir->a1pha;
-         iir->b1 = -2.0 * iir->cs;
-         iir->b2 = 1.0 + iir->a1pha;
-         iir->a0 = 1.0 + iir->a1pha;
-         iir->a1 = -2.0 * iir->cs;
-         iir->a2 = 1.0 - iir->a1pha;
+         b0 =  1.0 - a1pha;
+         b1 = -2.0 * cs;
+         b2 =  1.0 + a1pha;
+         a0 =  1.0 + a1pha;
+         a1 = -2.0 * cs;
+         a2 =  1.0 - a1pha;
          break;
       case BPZPGF:
-         iir->b0 =   iir->a1pha ;
-         iir->b1 =   0.0 ;
-         iir->b2 =  -iir->a1pha ;
-         iir->a0 =   1.0 + iir->a1pha ;
-         iir->a1 =  -2.0 * iir->cs ;
-         iir->a2 =   1.0 - iir->a1pha ;
+         b0 =  a1pha;
+         b1 =  0.0;
+         b2 = -a1pha;
+         a0 =  1.0 + a1pha;
+         a1 = -2.0 * cs;
+         a2 =  1.0 - a1pha;
          break;
       case BPCSGF:
-         iir->b0=iir->sn/2.0;
-         iir->b1=0.0;
-         iir->b2=-iir->sn/2;
-         iir->a0=1.0+iir->a1pha;
-         iir->a1=-2.0*iir->cs;
-         iir->a2=1.0-iir->a1pha;
+         b0 =  sn / 2.0;
+         b1 =  0.0;
+         b2 = -sn / 2.0;
+         a0 =  1.0 + a1pha;
+         a1 = -2.0 * cs;
+         a2 =  1.0 - a1pha;
          break;
       case NOTCH: 
-         iir->b0 = 1;
-         iir->b1 = -2 * iir->cs;
-         iir->b2 = 1;
-         iir->a0 = 1 + iir->a1pha;
-         iir->a1 = -2 * iir->cs;
-         iir->a2 = 1 - iir->a1pha;
+         b0 =  1.0;
+         b1 = -2.0 * cs;
+         b2 =  1.0;
+         a0 =  1.0 + a1pha;
+         a1 = -2.0 * cs;
+         a2 =  1.0 - a1pha;
          break;
       case RIAA_phono: /* http://www.dsprelated.com/showmessage/73300/3.php */
-         if (samplerate == 44100) {
+      {
+         float b[3], a[3];
+
+         if ((int)sample_rate == 44100)
+         {
             static const double zeros[] = {-0.2014898, 0.9233820};
             static const double poles[] = {0.7083149, 0.9924091};
-            iir_make_poly_from_roots(zeros, (size_t)2, &iir->b0);
-            iir_make_poly_from_roots(poles, (size_t)2, &iir->a0);
+            make_poly_from_roots(zeros, 2, b);
+            make_poly_from_roots(poles, 2, a);
          }
-         else if (samplerate == 48000) {
+         else if ((int)sample_rate == 48000)
+         {
             static const double zeros[] = {-0.1766069, 0.9321590};
             static const double poles[] = {0.7396325, 0.9931330};
-            iir_make_poly_from_roots(zeros, (size_t)2, &iir->b0);
-            iir_make_poly_from_roots(poles, (size_t)2, &iir->a0);
+            make_poly_from_roots(zeros, 2, b);
+            make_poly_from_roots(poles, 2, a);
          }
-         else if (samplerate == 88200) {
+         else if ((int)sample_rate == 88200)
+         {
             static const double zeros[] = {-0.1168735, 0.9648312};
             static const double poles[] = {0.8590646, 0.9964002};
-            iir_make_poly_from_roots(zeros, (size_t)2, &iir->b0);
-            iir_make_poly_from_roots(poles, (size_t)2, &iir->a0);
+            make_poly_from_roots(zeros, 2, b);
+            make_poly_from_roots(poles, 2, a);
          }
-         else if (samplerate == 96000) {
+         else if ((int)sample_rate == 96000)
+         {
             static const double zeros[] = {-0.1141486, 0.9676817};
             static const double poles[] = {0.8699137, 0.9966946};
-            iir_make_poly_from_roots(zeros, (size_t)2, &iir->b0);
-            iir_make_poly_from_roots(poles, (size_t)2, &iir->a0);
+            make_poly_from_roots(zeros, 2, b);
+            make_poly_from_roots(poles, 2, a);
          }
-         { /* Normalise to 0dB at 1kHz (Thanks to Glenn Davis) */
-            double y = 2 * M_PI * 1000 / samplerate ;
-            double b_re = iir->b0 + iir->b1 * cos(-y) + iir->b2 * cos(-2 * y);
-            double a_re = iir->a0 + iir->a1 * cos(-y) + iir->a2 * cos(-2 * y);
-            double b_im = iir->b1 * sin(-y) + iir->b2 * sin(-2 * y);
-            double a_im = iir->a1 * sin(-y) + iir->a2 * sin(-2 * y);
-            double g = 1 / sqrt((sqr(b_re) + sqr(b_im)) / (sqr(a_re) + sqr(a_im)));
-            iir->b0 *= g;
-            iir->b1 *= g;
-            iir->b2 *= g;
-         }
+         
+         b0 = b[0];
+         b1 = b[1];
+         b2 = b[2];
+         a0 = a[0];
+         a1 = a[1];
+         a2 = a[2];
+
+         /* Normalise to 0dB at 1kHz (Thanks to Glenn Davis) */
+         double y = 2.0 * M_PI * 1000.0 / sample_rate;
+         double b_re = b0 + b1 * cos(-y) + b2 * cos(-2.0 * y);
+         double a_re = a0 + a1 * cos(-y) + a2 * cos(-2.0 * y);
+         double b_im = b1 * sin(-y) + b2 * sin(-2.0 * y);
+         double a_im = a1 * sin(-y) + a2 * sin(-2.0 * y);
+         double g = 1.0 / sqrt((sqr(b_re) + sqr(b_im)) / (sqr(a_re) + sqr(a_im)));
+         b0 *= g; b1 *= g; b2 *= g;
          break;
+      }
       case PEQ: 
-         iir->b0 =   1 + iir->a1pha * iir->A ;
-         iir->b1 =  -2 * iir->cs ;
-         iir->b2 =   1 - iir->a1pha * iir->A ;
-         iir->a0 =   1 + iir->a1pha / iir->A ;
-         iir->a1 =  -2 * iir->cs ;
-         iir->a2 =   1 - iir->a1pha / iir->A ;
+         b0 =  1.0 + a1pha * A;
+         b1 = -2.0 * cs;
+         b2 =  1.0 - a1pha * A;
+         a0 =  1.0 + a1pha / A;
+         a1 = -2.0 * cs;
+         a2 =  1.0 - a1pha / A;
          break; 
       case BBOOST:       
-         iir->beta = sqrt((iir->A * iir->A + 1) / 1.0 - (pow((iir->A - 1), 2)));
-         iir->b0 = iir->A * ((iir->A + 1) - (iir->A - 1) * iir->cs + iir->beta * iir->sn);
-         iir->b1 = 2 * iir->A * ((iir->A - 1) - (iir->A + 1) * iir->cs);
-         iir->b2 = iir->A * ((iir->A + 1) - (iir->A - 1) * iir->cs - iir->beta * iir->sn);
-         iir->a0 = ((iir->A + 1) + (iir->A - 1) * iir->cs + iir->beta * iir->sn);
-         iir->a1 = -2 * ((iir->A - 1) + (iir->A + 1) * iir->cs);
-         iir->a2 = (iir->A + 1) + (iir->A - 1) * iir->cs - iir->beta * iir->sn;
+         beta = sqrt((A * A + 1) / 1.0 - (pow((A - 1), 2)));
+         b0 = A * ((A + 1) - (A - 1) * cs + beta * sn);
+         b1 = 2 * A * ((A - 1) - (A + 1) * cs);
+         b2 = A * ((A + 1) - (A - 1) * cs - beta * sn);
+         a0 = ((A + 1) + (A - 1) * cs + beta * sn);
+         a1 = -2 * ((A - 1) + (A + 1) * cs);
+         a2 = (A + 1) + (A - 1) * cs - beta * sn;
          break;
       case LSH:
-         iir->b0 = iir->A * ((iir->A + 1) - (iir->A - 1) * iir->cs + iir->beta * iir->sn);
-         iir->b1 = 2 * iir->A * ((iir->A - 1) - (iir->A + 1) * iir->cs);
-         iir->b2 = iir->A * ((iir->A + 1) - (iir->A - 1) * iir->cs - iir->beta * iir->sn);
-         iir->a0 = (iir->A + 1) + (iir->A - 1) * iir->cs + iir->beta * iir->sn;
-         iir->a1 = -2 * ((iir->A - 1) + (iir->A + 1) * iir->cs);
-         iir->a2 = (iir->A + 1) + (iir->A - 1) * iir->cs - iir->beta * iir->sn;
+         b0 = A * ((A + 1) - (A - 1) * cs + beta * sn);
+         b1 = 2 * A * ((A - 1) - (A + 1) * cs);
+         b2 = A * ((A + 1) - (A - 1) * cs - beta * sn);
+         a0 = (A + 1) + (A - 1) * cs + beta * sn;
+         a1 = -2 * ((A - 1) + (A + 1) * cs);
+         a2 = (A + 1) + (A - 1) * cs - beta * sn;
          break;
       case RIAA_CD:
-         iir->omega = 2 * M_PI * 5283 / samplerate;
-         iir->cs = cos(iir->omega);
-         iir->sn = sin(iir->omega);
-         iir->a1pha = iir->sn / (2.0 * 0.4845);
-         iir->A = exp(log(10.0) * -9.477  / 40);
-         iir->beta = sqrt(iir->A + iir->A);
+         omega = 2.0 * M_PI * 5283.0 / sample_rate;
+         cs = cos(omega);
+         sn = sin(omega);
+         a1pha = sn / (2.0 * 0.4845);
+         A = exp(log(10.0) * -9.477 / 40.0);
+         beta = sqrt(A + A);
       case HSH:
-         iir->b0 = iir->A * ((iir->A + 1) + (iir->A - 1) * iir->cs + iir->beta * iir->sn);
-         iir->b1 = -2 * iir->A * ((iir->A - 1) + (iir->A + 1) * iir->cs);
-         iir->b2 = iir->A * ((iir->A + 1) + (iir->A - 1) * iir->cs - iir->beta * iir->sn);
-         iir->a0 = (iir->A + 1) - (iir->A - 1) * iir->cs + iir->beta * iir->sn;
-         iir->a1 = 2 * ((iir->A - 1) - (iir->A + 1) * iir->cs);
-         iir->a2 = (iir->A + 1) - (iir->A - 1) * iir->cs - iir->beta * iir->sn;
+         b0 = A * ((A + 1.0) + (A - 1.0) * cs + beta * sn);
+         b1 = -2.0 * A * ((A - 1.0) + (A + 1.0) * cs);
+         b2 = A * ((A + 1.0) + (A - 1.0) * cs - beta * sn);
+         a0 = (A + 1.0) - (A - 1.0) * cs + beta * sn;
+         a1 = 2.0 * ((A - 1.0) - (A + 1.0) * cs);
+         a2 = (A + 1.0) - (A - 1.0) * cs - beta * sn;
          break;
       default:
          break;
    }
 
-#ifdef __SSE2__
-   iir->fir_coeff[0] = _mm_set_ps(iir->b1 / iir->a0, iir->b1 / iir->a0, iir->b0 / iir->a0, iir->b0 / iir->a0);
-   iir->fir_coeff[1] = _mm_set_ps(0.0f, 0.0f, iir->b2 / iir->a0, iir->b2 / iir->a0);
-   iir->iir_coeff = _mm_set_ps(-iir->a2 / iir->a0, -iir->a2 / iir->a0, -iir->a1 / iir->a0, -iir->a1 / iir->a0);
-#endif
+   iir->b0 = b0;
+   iir->b1 = b1;
+   iir->b2 = b2;
+   iir->a0 = a0;
+   iir->a1 = a1;
+   iir->a2 = a2;
 }
 
-#ifdef __SSE2__
-static void iir_process_batch(void *data, float *out, const float *in, unsigned frames)
+static void *iir_init(const struct dspfilter_info *info,
+      const struct dspfilter_config *config, void *userdata)
 {
-   unsigned i;
-   struct iir_filter *iir = (struct iir_filter*)data;
-
-   __m128 fir_coeff[2] = { iir->fir_coeff[0], iir->fir_coeff[1] };
-   __m128 iir_coeff    = iir->iir_coeff;
-   __m128 fir_buf[2]   = { iir->fir_buf[0],   iir->fir_buf[1] }; 
-   __m128 iir_buf      = iir->iir_buf;
-
-   for (i = 0; (i + 4) <= (2 * frames); in += 4, i += 4, out += 4)
-   {
-      __m128 input = _mm_loadu_ps(in);
-
-      fir_buf[1] = _mm_shuffle_ps(fir_buf[0], fir_buf[1],  _MM_SHUFFLE(1, 0, 3, 2));
-      fir_buf[0] = _mm_shuffle_ps(input, fir_buf[0], _MM_SHUFFLE(1, 0, 1, 0));
-
-      __m128 res[3] = {
-         _mm_mul_ps(fir_buf[0], fir_coeff[0]),
-         _mm_mul_ps(fir_buf[1], fir_coeff[1]),
-         _mm_mul_ps(iir_buf, iir_coeff),
-      };
-
-      __m128 result = _mm_add_ps(_mm_add_ps(res[0], res[1]), res[2]);
-      result = _mm_add_ps(result, _mm_shuffle_ps(result, result, _MM_SHUFFLE(0, 0, 3, 2)));
-
-      iir_buf = _mm_shuffle_ps(result, iir_buf, _MM_SHUFFLE(1, 0, 1, 0));
-
-      fir_buf[1] = _mm_shuffle_ps(fir_buf[0], fir_buf[1],  _MM_SHUFFLE(1, 0, 3, 2));
-      fir_buf[0] = _mm_shuffle_ps(input, fir_buf[0], _MM_SHUFFLE(1, 0, 3, 2));
-
-      res[0] = _mm_mul_ps(fir_buf[0], fir_coeff[0]);
-      res[1] = _mm_mul_ps(fir_buf[1], fir_coeff[1]);
-      res[2] = _mm_mul_ps(iir_buf, iir_coeff);
-
-      __m128 result2 = _mm_add_ps(_mm_add_ps(res[0], res[1]), res[2]);
-      result2 = _mm_add_ps(result2, _mm_shuffle_ps(result2, result2, _MM_SHUFFLE(0, 0, 3, 2)));
-
-      iir_buf = _mm_shuffle_ps(result2, iir_buf, _MM_SHUFFLE(1, 0, 1, 0));
-
-      _mm_store_ps(out, _mm_shuffle_ps(result, result2, _MM_SHUFFLE(1, 0, 1, 0)));
-   }
-
-   iir->fir_buf[0] = fir_buf[0];
-   iir->fir_buf[1] = fir_buf[1];
-   iir->iir_buf    = iir_buf;
-}
-#endif
-
-static float iir_process(void *data, float samp)
-{
-   struct iir_filter *iir = (struct iir_filter*)data;
-
-   float out, in = 0;
-   in = samp;
-   out = (iir->b0 * in + iir->b1 * iir->xn1 + iir->b2 * iir->xn2 - iir->a1 * iir->yn1 - iir->a2 * iir->yn2) / iir->a0;
-   iir->xn2 = iir->xn1;
-   iir->xn1 = in;
-   iir->yn2 = iir->yn1;
-   iir->yn1 = out;
-   return out;
-}
-
-static void * iir_dsp_init(const rarch_dsp_info_t *info)
-{
-   struct iir_filter_data *iir = (struct iir_filter_data*)calloc(1, sizeof(*iir));
-
+   struct iir_data *iir = (struct iir_data*)calloc(1, sizeof(*iir));
    if (!iir)
       return NULL;
 
-   iir->rate = info->input_rate;
-   iir->type = 0;
-   iir->iir_l.pf_freq = 1024;
-   iir->iir_l.pf_qfact = 0.707;
-   iir->iir_l.pf_gain = 0;
-   iir_init(&iir->iir_l, info->input_rate, 0);
-   iir->iir_r.pf_freq = 1024;
-   iir->iir_r.pf_qfact = 0.707;
-   iir->iir_r.pf_gain = 0;
-   iir_init(&iir->iir_r, info->input_rate, 0);
+   float freq, qual, gain;
+   config->get_float(userdata, "frequency", &freq, 1024.0f);
+   config->get_float(userdata, "quality", &qual, 0.707f);
+   config->get_float(userdata, "gain", &gain, 0.0f);
 
+   char *type = NULL;
+   config->get_string(userdata, "type", &type, "LPF");
+
+   enum IIRFilter filter = str_to_type(type);
+   config->free(type);
+
+   iir_filter_init(iir, info->input_rate, freq, qual, gain, filter);
    return iir;
 }
 
-static void iir_dsp_process(void *data, rarch_dsp_output_t *output,
-      const rarch_dsp_input_t *input)
-{
-   int i, num_samples;
-   struct iir_filter_data *iir = (struct iir_filter_data*)data;
+static const struct dspfilter_implementation iir_plug = {
+   iir_init,
+   iir_process,
+   iir_free,
 
-   output->samples = iir->buf;
-
-   num_samples = input->frames * 2;
-   for (i = 0; i<num_samples;)
-	{
-		iir->buf[i] = iir_process(&iir->iir_l, input->samples[i]);
-		i++;
-		iir->buf[i] = iir_process(&iir->iir_r, input->samples[i]);
-		i++;
-	}
-
-	output->frames = input->frames;
-}
-
-#ifdef __SSE2__
-static void iir_dsp_process_sse2(void *data, rarch_dsp_output_t *output,
-      const rarch_dsp_input_t *input)
-{
-   struct iir_filter_data *iir = (struct iir_filter_data*)data;
-
-   output->samples = iir->buf;
-   iir_process_batch(&iir->iir_l, iir->buf, input->samples, input->frames);
-	output->frames = input->frames;
-}
-#endif
-
-static void iir_dsp_free(void *data)
-{
-   struct iir_filter_data *iir = (struct iir_filter_data*)data;
-
-   if (iir)
-      free(iir);
-}
-
-static void iir_dsp_config(void* data)
-{
-}
-
-const struct dspfilter_implementation generic_iir_dsp = {
-	iir_dsp_init,
-	iir_dsp_process,
-	iir_dsp_free,
-	RARCH_DSP_API_VERSION,
-	iir_dsp_config,
-	"IIR",
-   NULL
+   DSPFILTER_API_VERSION,
+   "IIR",
+   "iir",
 };
 
-#ifdef __SSE2__
-const struct dspfilter_implementation sse2_iir_dsp = {
-	iir_dsp_init,
-	iir_dsp_process_sse2,
-	iir_dsp_free,
-	RARCH_DSP_API_VERSION,
-	iir_dsp_config,
-	"IIR (SSE2)",
-   NULL
-};
+#ifdef HAVE_FILTERS_BUILTIN
+#define dspfilter_get_implementation iir_dspfilter_get_implementation
 #endif
 
-const struct dspfilter_implementation *rarch_dsp_plugin_init(dspfilter_simd_mask_t simd)
+const struct dspfilter_implementation *dspfilter_get_implementation(dspfilter_simd_mask_t mask)
 {
-#ifdef __SSE2__
-   if (simd & DSPFILTER_SIMD_SSE2)
-      return &sse2_iir_dsp;
-#endif
-   return &generic_iir_dsp;
+   (void)mask;
+   return &iir_plug;
 }
 
-#ifdef RARCH_INTERNAL
-#undef rarch_dsp_plugin_init
-#endif
+#undef dspfilter_get_implementation
+

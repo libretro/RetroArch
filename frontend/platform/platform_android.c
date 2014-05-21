@@ -33,8 +33,8 @@ struct android_app *g_android;
 static pthread_key_t thread_key;
 
 //forward decls
-static void system_deinit(void *data);
-static void system_shutdown(bool unused);
+static void frontend_android_deinit(void *data);
+static void frontend_android_shutdown(bool unused);
 extern void android_app_entry(void *args);
 
 void engine_handle_cmd(void *data)
@@ -376,7 +376,7 @@ static bool android_run_events (void *data)
    return true;
 }
 
-static void get_environment_settings(int argc, char *argv[], void *data)
+static void frontend_android_get_environment_settings(int argc, char *argv[], void *data)
 {
    JNIEnv *env;
    struct android_app* android_app = (struct android_app*)data;
@@ -550,7 +550,7 @@ static void process_pending_intent(void *data)
 #endif
 }
 
-static int process_events(void *data)
+static int frontend_android_process_events(void *data)
 {
    //jboolean hasPendingIntent;
    //JNIEnv *env;
@@ -572,7 +572,7 @@ static int process_events(void *data)
    return 0;
 }
 
-static void system_init(void *data)
+static void frontend_android_init(void *data)
 {
    JNIEnv *env;
    jclass class = NULL;
@@ -599,8 +599,8 @@ static void system_init(void *data)
    {
       if (!android_run_events(android_app))
       {
-         system_deinit(android_app);
-         system_shutdown(android_app);
+         frontend_android_deinit(android_app);
+         frontend_android_shutdown(android_app);
       }
    }
 
@@ -628,7 +628,7 @@ static void system_init(void *data)
    GET_METHOD_ID(env, android_app->getStringExtra, class, "getStringExtra", "(Ljava/lang/String;)Ljava/lang/String;");
 }
 
-static void system_deinit(void *data)
+static void frontend_android_deinit(void *data)
 {
    struct android_app* android_app = (struct android_app*)data;
 
@@ -640,7 +640,7 @@ static void system_deinit(void *data)
       AInputQueue_detachLooper(android_app->inputQueue);
 }
 
-static void system_shutdown(bool unused)
+static void frontend_android_shutdown(bool unused)
 {
    (void)unused;
    // exit() here is nasty.
@@ -649,14 +649,22 @@ static void system_shutdown(bool unused)
    exit(0);
 }
 
+static int frontend_android_get_rating(void)
+{
+   /* TODO/FIXME - look at unique identifier per device and 
+    * determine rating for some */
+   return -1;
+}
+
 const frontend_ctx_driver_t frontend_ctx_android = {
-   get_environment_settings,     /* get_environment_settings */
-   system_init,                  /* init */
-   system_deinit,                /* deinit */
+   frontend_android_get_environment_settings, /* get_environment_settings */
+   frontend_android_init,        /* init */
+   frontend_android_deinit,      /* deinit */
    NULL,                         /* exitspawn */
    NULL,                         /* process_args */
-   process_events,               /* process_events */
+   frontend_android_process_events, /* process_events */
    NULL,                         /* exec */
-   system_shutdown,              /* shutdown */
+   frontend_android_shutdown,    /* shutdown */
+   frontend_android_get_rating,  /* get_rating */
    "android",
 };

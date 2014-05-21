@@ -18,7 +18,6 @@
 #define __FRONTEND_CONTEXT_H
 
 #include "../boolean.h"
-#include "../driver.h"
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
@@ -36,6 +35,7 @@ typedef struct frontend_ctx_driver
    int (*process_events)(void *data);
    void (*exec)(const char *, bool);
    void (*shutdown)(bool);
+   int (*get_rating)(void);
 
    // Human readable string.
    const char *ident;

@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2013-2014 - Jason Fetters
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -15,136 +15,142 @@
 
 #include <Availability.h>
 #include "RetroArch_Apple.h"
-#ifdef IOS
-#include <UIKit/UIDevice.h>
-#endif
-
-#if defined(__IPHONE_7_0) && !defined(OSX)
-
-#define IS_PRESSED(x) (x.value > .01f)
-
 #import <GameController/GameController.h>
 #include "../../input/apple_input.h"
 
-static void apple_gamecontroller_poll(GCController* controller)
+static BOOL apple_gamecontroller_available(void)
 {
-#ifdef IOS
     if (IOS_IS_VERSION_6_OR_LOWER())
-        return;
-#endif
-   if (!controller || controller.playerIndex == MAX_PLAYERS)
-      return;
- 
-   uint32_t slot = (uint32_t)controller.playerIndex;
-   g_current_input_data.pad_buttons[slot] = 0;
-   memset(g_current_input_data.pad_axis[slot], 0, sizeof(g_current_input_data.pad_axis[0]));
- 
-   if (controller.extendedGamepad)
-   {
-      GCExtendedGamepad* gp = (GCExtendedGamepad*)controller.extendedGamepad;
-      g_current_input_data.pad_buttons[slot] |= IS_PRESSED(gp.dpad.up) ? 1 : 0;
-      g_current_input_data.pad_buttons[slot] |= IS_PRESSED(gp.dpad.down) ? 2 : 0;
-      g_current_input_data.pad_buttons[slot] |= IS_PRESSED(gp.dpad.left) ? 4 : 0;
-      g_current_input_data.pad_buttons[slot] |= IS_PRESSED(gp.dpad.right) ? 8 : 0;
-      g_current_input_data.pad_buttons[slot] |= IS_PRESSED(gp.buttonA) ? 16 : 0;
-      g_current_input_data.pad_buttons[slot] |= IS_PRESSED(gp.buttonB) ? 32 : 0;
-      g_current_input_data.pad_buttons[slot] |= IS_PRESSED(gp.buttonX) ? 64 : 0;
-      g_current_input_data.pad_buttons[slot] |= IS_PRESSED(gp.buttonY) ? 128 : 0;
-      g_current_input_data.pad_buttons[slot] |= IS_PRESSED(gp.leftShoulder) ? 256 : 0;
-      g_current_input_data.pad_buttons[slot] |= IS_PRESSED(gp.rightShoulder) ? 512 : 0;
-
-      g_current_input_data.pad_buttons[slot] |= IS_PRESSED(gp.leftTrigger) ? 1024 : 0;
-      g_current_input_data.pad_buttons[slot] |= IS_PRESSED(gp.rightTrigger) ? 2048 : 0;
-      g_current_input_data.pad_axis[slot][0] = gp.leftThumbstick.xAxis.value * 32767.0f;
-      g_current_input_data.pad_axis[slot][1] = gp.leftThumbstick.yAxis.value * 32767.0f;
-      g_current_input_data.pad_axis[slot][2] = gp.rightThumbstick.xAxis.value * 32767.0f;
-      g_current_input_data.pad_axis[slot][3] = gp.rightThumbstick.yAxis.value * 32767.0f;
-   }
-   else if (controller.gamepad)
-   {
-      GCGamepad* gp = (GCGamepad*)controller.gamepad;
-      g_current_input_data.pad_buttons[slot] |= IS_PRESSED(gp.dpad.up) ? 1 : 0;
-      g_current_input_data.pad_buttons[slot] |= IS_PRESSED(gp.dpad.down) ? 2 : 0;
-      g_current_input_data.pad_buttons[slot] |= IS_PRESSED(gp.dpad.left) ? 4 : 0;
-      g_current_input_data.pad_buttons[slot] |= IS_PRESSED(gp.dpad.right) ? 8 : 0;
-      g_current_input_data.pad_buttons[slot] |= IS_PRESSED(gp.buttonA) ? 16 : 0;
-      g_current_input_data.pad_buttons[slot] |= IS_PRESSED(gp.buttonB) ? 32 : 0;
-      g_current_input_data.pad_buttons[slot] |= IS_PRESSED(gp.buttonX) ? 64 : 0;
-      g_current_input_data.pad_buttons[slot] |= IS_PRESSED(gp.buttonY) ? 128 : 0;
-      g_current_input_data.pad_buttons[slot] |= IS_PRESSED(gp.leftShoulder) ? 256 : 0;
-      g_current_input_data.pad_buttons[slot] |= IS_PRESSED(gp.rightShoulder) ? 512 : 0;
-   }
+        return false;
+    /* by checking for extern symbols defined by the framework, we can check for its
+     * existence at runtime. This is the Apple endorsed way of dealing with this */
+    return (&GCControllerDidConnectNotification && &GCControllerDidDisconnectNotification);
 }
 
-void apple_gamecontroller_poll_all(void)
+static inline uint32_t joypad_value_for_id(uint32_t joypad_id)
 {
-#ifdef IOS
-    if (IOS_IS_VERSION_6_OR_LOWER())
-        return;
-#endif
-   NSArray* controllers = (NSArray*)GCController.controllers;
-   
-   for (int i = 0; i < controllers.count; i ++)
-      apple_gamecontroller_poll([controllers objectAtIndex:i]);
+    return (1 << joypad_id);
 }
 
-void apple_gamecontroller_connect(GCController* controller)
+static void apple_gamecontroller_poll(GCController *controller)
 {
-#ifdef IOS
-    if (IOS_IS_VERSION_6_OR_LOWER())
+    if (!controller || controller.playerIndex == MAX_PLAYERS)
         return;
-#endif
-   int32_t slot = apple_joypad_connect_gcapi();
-   controller.playerIndex = (slot >= 0 && slot < MAX_PLAYERS) ? slot : GCControllerPlayerIndexUnset;
-   
-/*
-   if (controller.playerIndex == GCControllerPlayerIndexUnset)
-      return;
-   else if (controller.extendedGamepad)
-      controller.extendedGamepad.valueChangedHandler =
-      ^(GCExtendedGamepad *gamepad, GCControllerElement *element) { apple_gamecontroller_poll(gamepad.controller); };
-   else if (controller.gamepad)
-      controller.gamepad.valueChangedHandler =
-      ^(GCGamepad *gamepad, GCControllerElement *element) { apple_gamecontroller_poll(gamepad.controller); };
-*/
-}
-
-void apple_gamecontroller_disconnect(GCController* controller)
-{
-#ifdef IOS
-    if (IOS_IS_VERSION_6_OR_LOWER())
-        return;
-#endif
-   if (controller.playerIndex == GCControllerPlayerIndexUnset)
-      return;
-   
-   apple_joypad_disconnect((uint32_t)controller.playerIndex);
-}
-
-void apple_gamecontroller_init(void)
-{
-#ifdef IOS
-    if (IOS_IS_VERSION_6_OR_LOWER())
-        return;
-#endif
     
-    [[NSNotificationCenter defaultCenter] addObserverForName:GCControllerDidConnectNotification object:nil queue:[NSOperationQueue mainQueue]
-      usingBlock:^(NSNotification *note) { apple_gamecontroller_connect([note object]); } ];
-
-   [[NSNotificationCenter defaultCenter] addObserverForName:GCControllerDidDisconnectNotification object:nil queue:[NSOperationQueue mainQueue]
-      usingBlock:^(NSNotification *note) { apple_gamecontroller_disconnect([note object]); } ];
-}
-
-#else
-
-void apple_gamecontroller_init(void)
-{
-   
+    uint32_t slot = (uint32_t)controller.playerIndex;
+    
+    /* retain the start (pause) value */
+    uint32_t pause = g_current_input_data.pad_buttons[slot] & joypad_value_for_id(RETRO_DEVICE_ID_JOYPAD_START);
+    
+    g_current_input_data.pad_buttons[slot] = 0;
+    memset(g_current_input_data.pad_axis[slot], 0, sizeof(g_current_input_data.pad_axis[0]));
+    
+    g_current_input_data.pad_buttons[slot] |= pause;
+    
+    if (controller.extendedGamepad)
+    {
+        GCExtendedGamepad *gp = (GCExtendedGamepad *)controller.extendedGamepad;
+        g_current_input_data.pad_buttons[slot] |= gp.dpad.up.pressed ? joypad_value_for_id(RETRO_DEVICE_ID_JOYPAD_UP) : 0;
+        g_current_input_data.pad_buttons[slot] |= gp.dpad.down.pressed ? joypad_value_for_id(RETRO_DEVICE_ID_JOYPAD_DOWN) : 0;
+        g_current_input_data.pad_buttons[slot] |= gp.dpad.left.pressed ? joypad_value_for_id(RETRO_DEVICE_ID_JOYPAD_LEFT) : 0;
+        g_current_input_data.pad_buttons[slot] |= gp.dpad.right.pressed ? joypad_value_for_id(RETRO_DEVICE_ID_JOYPAD_RIGHT) : 0;
+        g_current_input_data.pad_buttons[slot] |= gp.buttonA.pressed ? joypad_value_for_id(RETRO_DEVICE_ID_JOYPAD_B) : 0;
+        g_current_input_data.pad_buttons[slot] |= gp.buttonB.pressed ? joypad_value_for_id(RETRO_DEVICE_ID_JOYPAD_A) : 0;
+        g_current_input_data.pad_buttons[slot] |= gp.buttonX.pressed ? joypad_value_for_id(RETRO_DEVICE_ID_JOYPAD_Y) : 0;
+        g_current_input_data.pad_buttons[slot] |= gp.buttonY.pressed ? joypad_value_for_id(RETRO_DEVICE_ID_JOYPAD_X) : 0;
+        g_current_input_data.pad_buttons[slot] |= gp.leftShoulder.pressed ? joypad_value_for_id(RETRO_DEVICE_ID_JOYPAD_L) : 0;
+        g_current_input_data.pad_buttons[slot] |= gp.rightShoulder.pressed ? joypad_value_for_id(RETRO_DEVICE_ID_JOYPAD_R) : 0;
+        
+        g_current_input_data.pad_buttons[slot] |= gp.leftTrigger.pressed ? joypad_value_for_id(RETRO_DEVICE_ID_JOYPAD_L2) : 0;
+        g_current_input_data.pad_buttons[slot] |= gp.rightTrigger.pressed ? joypad_value_for_id(RETRO_DEVICE_ID_JOYPAD_R2) : 0;
+        g_current_input_data.pad_axis[slot][0] = gp.leftThumbstick.xAxis.value * 32767.0f;
+        g_current_input_data.pad_axis[slot][1] = gp.leftThumbstick.yAxis.value * 32767.0f;
+        g_current_input_data.pad_axis[slot][2] = gp.rightThumbstick.xAxis.value * 32767.0f;
+        g_current_input_data.pad_axis[slot][3] = gp.rightThumbstick.yAxis.value * 32767.0f;
+    }
+    else if (controller.gamepad)
+    {
+        GCGamepad *gp = (GCGamepad *)controller.gamepad;
+        g_current_input_data.pad_buttons[slot] |= gp.dpad.up.pressed ? joypad_value_for_id(RETRO_DEVICE_ID_JOYPAD_UP) : 0;
+        g_current_input_data.pad_buttons[slot] |= gp.dpad.down.pressed ? joypad_value_for_id(RETRO_DEVICE_ID_JOYPAD_DOWN) : 0;
+        g_current_input_data.pad_buttons[slot] |= gp.dpad.left.pressed ? joypad_value_for_id(RETRO_DEVICE_ID_JOYPAD_LEFT) : 0;
+        g_current_input_data.pad_buttons[slot] |= gp.dpad.right.pressed ? joypad_value_for_id(RETRO_DEVICE_ID_JOYPAD_RIGHT) : 0;
+        g_current_input_data.pad_buttons[slot] |= gp.buttonA.pressed ? joypad_value_for_id(RETRO_DEVICE_ID_JOYPAD_B) : 0;
+        g_current_input_data.pad_buttons[slot] |= gp.buttonB.pressed ? joypad_value_for_id(RETRO_DEVICE_ID_JOYPAD_A) : 0;
+        g_current_input_data.pad_buttons[slot] |= gp.buttonX.pressed ? joypad_value_for_id(RETRO_DEVICE_ID_JOYPAD_Y) : 0;
+        g_current_input_data.pad_buttons[slot] |= gp.buttonY.pressed ? joypad_value_for_id(RETRO_DEVICE_ID_JOYPAD_X) : 0;
+        g_current_input_data.pad_buttons[slot] |= gp.leftShoulder.pressed ? joypad_value_for_id(RETRO_DEVICE_ID_JOYPAD_L) : 0;
+        g_current_input_data.pad_buttons[slot] |= gp.rightShoulder.pressed ? joypad_value_for_id(RETRO_DEVICE_ID_JOYPAD_R) : 0;
+    }
 }
 
 void apple_gamecontroller_poll_all(void)
 {
-   
+    if (!apple_gamecontroller_available())
+        return;
+    
+    for (GCController *controller in [GCController controllers])
+        apple_gamecontroller_poll(controller);
 }
 
-#endif
+static void apple_gamecontroller_register(GCGamepad *gamepad)
+{
+    gamepad.valueChangedHandler = ^(GCGamepad *updateGamepad, GCControllerElement *element) {
+        apple_gamecontroller_poll(updateGamepad.controller);
+    };
+    
+    gamepad.controller.controllerPausedHandler = ^(GCController *controller) {
+        
+        uint32_t slot = (uint32_t)controller.playerIndex;
+        
+        g_current_input_data.pad_buttons[slot] |= joypad_value_for_id(RETRO_DEVICE_ID_JOYPAD_START);
+        
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.1 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+            g_current_input_data.pad_buttons[slot] &= ~joypad_value_for_id(RETRO_DEVICE_ID_JOYPAD_START);
+        });
+        
+    };
+    
+}
+
+static void apple_gamecontroller_connect(GCController *controller)
+{
+    int32_t slot = apple_joypad_connect_gcapi();
+    
+    controller.playerIndex = (slot >= 0 && slot < MAX_PLAYERS) ? slot : GCControllerPlayerIndexUnset;
+    
+    if (controller.playerIndex == GCControllerPlayerIndexUnset)
+        return;
+    
+    apple_gamecontroller_register(controller.gamepad);
+}
+
+static void apple_gamecontroller_disconnect(GCController* controller)
+{
+    if (controller.playerIndex == GCControllerPlayerIndexUnset)
+        return;
+    
+    apple_joypad_disconnect((uint32_t)controller.playerIndex);
+}
+
+void apple_gamecontroller_init(void)
+{
+    if (!apple_gamecontroller_available()) {
+        /* The Gamecontroller framework is not available... */
+        return;
+    }
+    
+    [[NSNotificationCenter defaultCenter] addObserverForName:GCControllerDidConnectNotification
+                                                      object:nil
+                                                       queue:[NSOperationQueue mainQueue]
+                                                  usingBlock:^(NSNotification *note) {
+                                                      apple_gamecontroller_connect([note object]);
+                                                  }];
+    
+    [[NSNotificationCenter defaultCenter] addObserverForName:GCControllerDidDisconnectNotification
+                                                      object:nil
+                                                       queue:[NSOperationQueue mainQueue]
+                                                  usingBlock:^(NSNotification *note) {
+                                                      apple_gamecontroller_disconnect([note object]);
+                                                  } ];
+}

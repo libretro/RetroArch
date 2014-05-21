@@ -746,7 +746,7 @@ static void set_program_attributes(unsigned i)
       char pass_str[64];
       snprintf(pass_str, sizeof(pass_str), "PASS%u", j + 1);
       set_pass_attrib(&prg[i], &prg[i].fbo[j], pass_str);
-      snprintf(pass_str, sizeof(pass_str), "PASSPREV%u", i - j); 
+      snprintf(pass_str, sizeof(pass_str), "PASSPREV%u", i - (j + 1));
       set_pass_attrib(&prg[i], &prg[i].fbo[j], pass_str);
    }
 }

@@ -29,7 +29,7 @@
 #include "autosave.h"
 #include "dynamic.h"
 #include "cheats.h"
-#include "audio/filters/rarch_dsp.h"
+#include "audio/dsp_filter.h"
 #include "compat/strl.h"
 #include "performance.h"
 #include "core_options.h"
@@ -93,7 +93,6 @@ enum menu_enums
    MODE_GAME = 0,
    MODE_LOAD_GAME,
    MODE_MENU,
-   MODE_EXIT,
    MODE_MENU_WIDESCREEN,
    MODE_MENU_HD,
    MODE_MENU_PREINIT,
@@ -240,9 +239,6 @@ struct settings
 
       char dsp_plugin[PATH_MAX];
       char filter_dir[PATH_MAX];
-#ifdef HAVE_FILTERS_BUILTIN
-      unsigned filter_idx;
-#endif
 
       bool rate_control;
       float rate_control_delta;
@@ -497,11 +493,7 @@ struct global
       size_t rewind_ptr;
       size_t rewind_size;
 
-#ifdef HAVE_DYLIB
-      dylib_t dsp_lib;
-#endif
-      const struct dspfilter_implementation *dsp_plugin;
-      void *dsp_handle;
+      rarch_dsp_filter_t *dsp;
 
       bool rate_control; 
       double orig_src_ratio;

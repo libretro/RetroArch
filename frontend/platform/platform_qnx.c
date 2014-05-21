@@ -23,41 +23,45 @@
 #include "../../dynamic.h"
 #include "../../libretro_private.h"
 
-static void get_environment_settings(int argc, char *argv[], void *args)
+static void frontend_qnx_get_environment_settings(int argc, char *argv[], void *args)
 {
    (void)argc;
    (void)argv;
+   (void)args;
 
-/* FIXME - should this apply for both BB10 and PB? */
-#if defined(__QNX__) && !defined(HAVE_BB10)
    rarch_environment_cb(RETRO_ENVIRONMENT_SET_LIBRETRO_PATH, (void*)"app/native/lib");
-#endif
 
    config_load();
 }
 
-static void system_init(void *data)
+static void frontend_qnx_init(void *data)
 {
    (void)data;
-/* FIXME - should this apply for both BB10 and PB? */
-#if defined(__QNX__) && !defined(HAVE_BB10)
    bps_initialize();
-#endif
 }
 
-static void system_shutdown(void)
+static void frontend_qnx_shutdown(bool unused)
 {
+   (void)unused;
    bps_shutdown();
 }
 
+static int frontend_qnx_get_rating(void)
+{
+   /* TODO/FIXME - look at unique identifier per device and 
+    * determine rating for some */
+   return -1;
+}
+
 const frontend_ctx_driver_t frontend_ctx_qnx = {
-   get_environment_settings,     /* get_environment_settings */
-   system_init,                  /* init */
+   frontend_qnx_get_environment_settings,     /* get_environment_settings */
+   frontend_qnx_init,            /* init */
    NULL,                         /* deinit */
    NULL,                         /* exitspawn */
    NULL,                         /* process_args */
    NULL,                         /* process_events */
    NULL,                         /* exec */
-   system_shutdown,              /* shutdown */
+   frontend_qnx_shutdown,        /* shutdown */
+   frontend_qnx_get_rating,      /* get_rating */
    "qnx",
 };

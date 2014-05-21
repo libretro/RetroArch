@@ -30,10 +30,6 @@
 #include "config.h"
 #endif
 
-#ifdef HW_RVL
-#include "gx/gx_input.h"
-#endif
-
 enum 
 {
    VIDEO_GL = 0,
@@ -197,7 +193,7 @@ enum
 #define INPUT_DEFAULT_DRIVER INPUT_X
 #elif defined(IOS) || defined(OSX)
 #define INPUT_DEFAULT_DRIVER INPUT_APPLE
-#elif defined(__BLACKBERRY_QNX__)
+#elif defined(__QNX__)
 #define INPUT_DEFAULT_DRIVER INPUT_QNX
 #elif defined(HAVE_SDL)
 #define INPUT_DEFAULT_DRIVER INPUT_SDL
@@ -239,7 +235,7 @@ enum
 
 #if defined(XENON) || defined(_XBOX360) || defined(__CELLOS_LV2__)
 #define DEFAULT_ASPECT_RATIO 1.7778f
-#elif defined(_XBOX1) || defined(GEKKO) || defined(ANDROID) || defined(__BLACKBERRY_QNX__)
+#elif defined(_XBOX1) || defined(GEKKO) || defined(ANDROID) || defined(__QNX__)
 #define DEFAULT_ASPECT_RATIO 1.3333f
 #else
 #define DEFAULT_ASPECT_RATIO -1.0f
@@ -678,7 +674,6 @@ static const bool input_autodetect_enable = true;
 #define RETRO_LBL_CHEAT_INDEX_MINUS "Cheat Index Minus"
 #define RETRO_LBL_CHEAT_TOGGLE "Cheat Toggle"
 #define RETRO_LBL_SCREENSHOT "Screenshot"
-#define RETRO_LBL_DSP_CONFIG "DSP Config"
 #define RETRO_LBL_MUTE "Mute Audio"
 #define RETRO_LBL_NETPLAY_FLIP "Netplay Flip Players"
 #define RETRO_LBL_SLOWMOTION "Slowmotion"
@@ -740,7 +735,6 @@ static const struct retro_keybind retro_keybinds_1[] = {
    { true, RARCH_CHEAT_INDEX_MINUS,        RETRO_LBL_CHEAT_INDEX_MINUS,    RETROK_t,       NO_BTN, 0, AXIS_NONE },
    { true, RARCH_CHEAT_TOGGLE,             RETRO_LBL_CHEAT_TOGGLE,         RETROK_u,       NO_BTN, 0, AXIS_NONE },
    { true, RARCH_SCREENSHOT,               RETRO_LBL_SCREENSHOT,           RETROK_F8,      NO_BTN, 0, AXIS_NONE },
-   { true, RARCH_DSP_CONFIG,               RETRO_LBL_DSP_CONFIG,           RETROK_c,       NO_BTN, 0, AXIS_NONE },
    { true, RARCH_MUTE,                     RETRO_LBL_MUTE,                 RETROK_F9,      NO_BTN, 0, AXIS_NONE },
    { true, RARCH_NETPLAY_FLIP,             RETRO_LBL_NETPLAY_FLIP,         RETROK_i,       NO_BTN, 0, AXIS_NONE },
    { true, RARCH_SLOWMOTION,               RETRO_LBL_SLOWMOTION,           RETROK_e,       NO_BTN, 0, AXIS_NONE },
@@ -803,7 +797,6 @@ static const struct retro_keybind retro_keybinds_menu[] = {
    { true, RARCH_CHEAT_INDEX_MINUS,        RETRO_LBL_CHEAT_INDEX_MINUS,    RETROK_t,       NO_BTN,                  0, AXIS_NONE },
    { true, RARCH_CHEAT_TOGGLE,             RETRO_LBL_CHEAT_TOGGLE,         RETROK_u,       NO_BTN,                  0, AXIS_NONE },
    { true, RARCH_SCREENSHOT,               RETRO_LBL_SCREENSHOT,           RETROK_F8,      NO_BTN,                  0, AXIS_NONE },
-   { true, RARCH_DSP_CONFIG,               RETRO_LBL_DSP_CONFIG,           RETROK_c,       NO_BTN,                  0, AXIS_NONE },
    { true, RARCH_MUTE,                     RETRO_LBL_MUTE,                 RETROK_F9,      NO_BTN,                  0, AXIS_NONE },
    { true, RARCH_NETPLAY_FLIP,             RETRO_LBL_NETPLAY_FLIP,         RETROK_i,       NO_BTN,                  0, AXIS_NONE },
    { true, RARCH_SLOWMOTION,               RETRO_LBL_SLOWMOTION,           RETROK_e,       NO_BTN,                  0, AXIS_NONE },

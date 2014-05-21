@@ -27,7 +27,7 @@ extern int menu_active_category;
 
 typedef struct
 {
-   char*  name;
+   char  name[256];
    GLuint icon;
    float  alpha;
    float  zoom;

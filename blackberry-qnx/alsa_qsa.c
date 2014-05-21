@@ -29,7 +29,13 @@ typedef struct alsa
    bool has_float;
    bool can_pause;
    bool is_paused;
+   unsigned frame_bits;
 } alsa_t;
+
+#define MAX_FRAG_SIZE 3072
+#define DEFAULT_RATE 48000
+
+typedef long snd_pcm_sframes_t;
 
 static void *alsa_qsa_init(const char *device, unsigned rate, unsigned latency)
 {
@@ -57,29 +63,41 @@ static void *alsa_qsa_init(const char *device, unsigned rate, unsigned latency)
       goto error;
    }
 
-   if ((err = snd_pcm_plugin_set_disable (alsa->pcm, PLUGIN_DISABLE_MMAP)) < 0)
+   if ((err = snd_pcm_plugin_set_disable (alsa->pcm, PLUGIN_MMAP)) < 0)
    {
       RARCH_ERR("[ALSA QSA]: Can't disable MMAP plugin: %s\n", snd_strerror(err));
       goto error;
    }
 
+   if ((err = snd_pcm_plugin_set_enable (alsa->pcm, PLUGIN_ROUTING)) < 0)
+   {
+      RARCH_ERR("[ALSA QSA]: Can't enable routing: %s\n", snd_strerror(err));
+      goto error;
+   }
+
    memset(&params, 0, sizeof(params));
 
-   params.channel = SND_PCM_CHANNEL_PLAYBACK;
+
+
    params.mode = SND_PCM_MODE_BLOCK;
-
-   params.format.interleave = 1;
-   params.format.format = SND_PCM_SFMT_S16_LE;
-   params.format.rate = rate;
-   params.format.voices = 2;
-
-   params.start_mode = SND_PCM_START_DATA;
+   params.channel = SND_PCM_CHANNEL_PLAYBACK;
+   params.start_mode = SND_PCM_START_FULL;
    params.stop_mode = SND_PCM_STOP_STOP;
 
-   params.buf.block.frag_size = 4096;
-   params.buf.block.frags_min = 8;
-   params.buf.block.frags_max = 16;
+   params.buf.block.frag_size = MAX_FRAG_SIZE;
+   params.buf.block.frags_min = 2;
+   params.buf.block.frags_max = 1;
+   params.format.interleave = 1;
+   params.format.rate = DEFAULT_RATE;
+   params.format.voices = 2;
 
+   params.format.format = SND_PCM_SFMT_S16_LE;
+   alsa->frame_bits = 16 * 2; /* bits * channel */
+
+#if 0
+   /* TODO/FIXME - invalid argument? */
+   snd_pcm_plugin_set_disable(alsa->pcm, PLUGIN_DISABLE_BUFFER_PARTIAL_BLOCKS);
+#endif
 
    if ((err = snd_pcm_plugin_params(alsa->pcm, &params)) < 0)
    {
@@ -116,41 +134,60 @@ error:
    return (void*)-1;
 }
 
-static ssize_t alsa_qsa_write(void *data, const void *buf, size_t size)
+static inline snd_pcm_sframes_t snd_pcm_bytes_to_frames(alsa_t *alsa, ssize_t bytes)
 {
-   int written, status;
+   return bytes * 8 / alsa->frame_bits;
+}
+
+static ssize_t alsa_qsa_write(void *data, const void *buf, size_t size_)
+{
+   int status;
    alsa_t *alsa = (alsa_t*)data;
    snd_pcm_channel_status_t cstatus = {0};
+   snd_pcm_sframes_t written = 0;
+   snd_pcm_sframes_t size = snd_pcm_bytes_to_frames(alsa, size_);
+   bool eagain_retry = true;
 
-   written = snd_pcm_plugin_write(alsa->pcm, buf, size);
-
-   if (written != size)
+   while (size)
    {
-      /* Check if samples playback got stuck somewhere in hardware or in */
-      /* the audio device driver */
-      if ((errno == EAGAIN) && (written == 0))
-    	  return 0;
+      snd_pcm_sframes_t frames = snd_pcm_plugin_write(alsa->pcm, buf, size);
 
-      if ((errno == EINVAL) || (errno == EIO))
+      if (frames <= 0)
       {
-          cstatus.channel = SND_PCM_CHANNEL_PLAYBACK;
-    	  status = snd_pcm_plugin_status(alsa->pcm, &cstatus);
+         if (frames == -EAGAIN && !alsa->nonblock) // Definitely not supposed to happen.
+         {
+            RARCH_WARN("[ALSA]: poll() was signaled, but EAGAIN returned from write.\n"
+                  "Your ALSA driver might be subtly broken.\n");
 
-    	  if (status > 0)
-    		  return 0;
-
-          if ((cstatus.status == SND_PCM_STATUS_UNDERRUN) ||
-        		  (cstatus.status == SND_PCM_STATUS_READY))
-        		  {
-        			  status = snd_pcm_plugin_prepare(alsa->pcm, SND_PCM_CHANNEL_PLAYBACK);
-        			  if (status < 0)
-        				  return 0;
-        		  }
+            if (eagain_retry)
+            {
+               eagain_retry = false;
+               continue;
+            }
+            else
+               return written;
+         }
+         else if (frames == -EAGAIN) // Expected if we're running nonblock.
+         {
+            return written;
+         }
+         /* TODO/FIXME - implement check_pcm_status for checking against more errors? */
+         else if (frames < 0)
+         {
+            RARCH_ERR("[ALSA]: Unknown error occured (%s).\n", snd_strerror(frames));
+            return -1;
+         }
+      }
+      else
+      {
+         written += frames;
+         buf     += (frames << 1) * (alsa->has_float ? sizeof(float) : sizeof(int16_t));
+         size    -= frames;
       }
    }
 
-    return written;
- }
+   return written;
+}
 
 static bool alsa_qsa_stop(void *data)
 {

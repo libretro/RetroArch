@@ -104,7 +104,7 @@ static void *blargg_ntsc_snes_rf_generic_create(unsigned in_fmt, unsigned out_fm
 static void blargg_ntsc_snes_rf_generic_output(void *data, unsigned *out_width, unsigned *out_height,
       unsigned width, unsigned height)
 {
-   *out_width  = SNES_NTSC_OUT_WIDTH(256);
+   *out_width  = SNES_NTSC_OUT_WIDTH(width);
    *out_height = height;
 }
 
