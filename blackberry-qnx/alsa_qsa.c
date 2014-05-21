@@ -149,43 +149,38 @@ static ssize_t alsa_qsa_write(void *data, const void *buf, size_t size_)
    {
       snd_pcm_sframes_t frames = snd_pcm_plugin_write(alsa->pcm, buf, size);
 
-      if (frames == -EPIPE || frames == -EINTR || frames == -ESTRPIPE)
+      if (frames <= 0)
       {
-         /* TODO/FIXME - does this implicitly call snd_pcm_recover? */
-         if (snd_pcm_plugin_prepare(alsa->pcm, SND_PCM_CHANNEL_PLAYBACK) < 0)
+         if (frames == -EAGAIN && !alsa->nonblock) // Definitely not supposed to happen.
          {
-            RARCH_ERR("[ALSA]: (#2) Failed to recover from error (%s)\n",
-                  snd_strerror(frames));
+            RARCH_WARN("[ALSA]: poll() was signaled, but EAGAIN returned from write.\n"
+                  "Your ALSA driver might be subtly broken.\n");
+
+            if (eagain_retry)
+            {
+               eagain_retry = false;
+               continue;
+            }
+            else
+               return written;
+         }
+         else if (frames == -EAGAIN) // Expected if we're running nonblock.
+         {
+            return written;
+         }
+         /* TODO/FIXME - implement check_pcm_status for checking against more errors? */
+         else if (frames < 0)
+         {
+            RARCH_ERR("[ALSA]: Unknown error occured (%s).\n", snd_strerror(frames));
             return -1;
          }
-         break;
       }
-      else if (frames == -EAGAIN && !alsa->nonblock) // Definitely not supposed to happen.
+      else
       {
-         RARCH_WARN("[ALSA]: poll() was signaled, but EAGAIN returned from write.\n"
-               "Your ALSA driver might be subtly broken.\n");
-
-         if (eagain_retry)
-         {
-            eagain_retry = false;
-            continue;
-         }
-         else
-            return written;
+         written += frames;
+         buf     += (frames << 1) * (alsa->has_float ? sizeof(float) : sizeof(int16_t));
+         size    -= frames;
       }
-      else if (frames == -EAGAIN) // Expected if we're running nonblock.
-      {
-         return written;
-      }
-      else if (frames < 0)
-      {
-         RARCH_ERR("[ALSA]: Unknown error occured (%s).\n", snd_strerror(frames));
-         return -1;
-      }
-
-      written += frames;
-      buf     += (frames << 1) * (alsa->has_float ? sizeof(float) : sizeof(int16_t));
-      size    -= frames;
    }
 
    return written;
