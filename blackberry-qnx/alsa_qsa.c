@@ -94,7 +94,10 @@ static void *alsa_qsa_init(const char *device, unsigned rate, unsigned latency)
    params.format.format = SND_PCM_SFMT_S16_LE;
    alsa->frame_bits = 16 * 2; /* bits * channel */
 
+#if 0
+   /* TODO/FIXME - invalid argument? */
    snd_pcm_plugin_set_disable(alsa->pcm, PLUGIN_DISABLE_BUFFER_PARTIAL_BLOCKS);
+#endif
 
    if ((err = snd_pcm_plugin_params(alsa->pcm, &params)) < 0)
    {
