@@ -30,6 +30,7 @@
 								<option id="com.qnx.qcc.option.compiler.security.1348091274" name="Enhanced Security (-fstack-protector-strong)" superClass="com.qnx.qcc.option.compiler.security" value="true" valueType="boolean"/>
 								<option id="com.qnx.qcc.option.compiler.defines.107606349" name="Defines (-D)" superClass="com.qnx.qcc.option.compiler.defines" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="HAVE_DYLIB"/>
+									<listOptionValue builtIn="false" value="HAVE_ALSA"/>
 									<listOptionValue builtIn="false" value="RARCH_INTERNAL"/>
 									<listOptionValue builtIn="false" value="HAVE_CC_RESAMPLER"/>
 									<listOptionValue builtIn="false" value="HAVE_NEON"/>
@@ -149,6 +150,7 @@
 								<option id="com.qnx.qcc.option.compiler.security.1255305436" name="Enhanced Security (-fstack-protector-strong)" superClass="com.qnx.qcc.option.compiler.security" value="true" valueType="boolean"/>
 								<option id="com.qnx.qcc.option.compiler.defines.1244683608" name="Defines (-D)" superClass="com.qnx.qcc.option.compiler.defines" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="HAVE_DYLIB"/>
+									<listOptionValue builtIn="false" value="HAVE_ALSA"/>
 									<listOptionValue builtIn="false" value="RARCH_INTERNAL"/>
 									<listOptionValue builtIn="false" value="HAVE_CC_RESAMPLER"/>
 									<listOptionValue builtIn="false" value="HAVE_NEON"/>
@@ -270,6 +272,7 @@
 								<option id="com.qnx.qcc.option.compiler.security.700151333" name="Enhanced Security (-fstack-protector-strong)" superClass="com.qnx.qcc.option.compiler.security" value="true" valueType="boolean"/>
 								<option id="com.qnx.qcc.option.compiler.defines.1248635115" name="Defines (-D)" superClass="com.qnx.qcc.option.compiler.defines" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="HAVE_DYLIB"/>
+									<listOptionValue builtIn="false" value="HAVE_ALSA"/>
 									<listOptionValue builtIn="false" value="RARCH_INTERNAL"/>
 									<listOptionValue builtIn="false" value="HAVE_CC_RESAMPLER"/>
 									<listOptionValue builtIn="false" value="HAVE_NEON"/>
@@ -392,6 +395,7 @@
 								<option id="com.qnx.qcc.option.compiler.security.2107949508" name="Enhanced Security (-fstack-protector-strong)" superClass="com.qnx.qcc.option.compiler.security" value="true" valueType="boolean"/>
 								<option id="com.qnx.qcc.option.compiler.defines.1697783072" name="Defines (-D)" superClass="com.qnx.qcc.option.compiler.defines" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="HAVE_DYLIB"/>
+									<listOptionValue builtIn="false" value="HAVE_ALSA"/>
 									<listOptionValue builtIn="false" value="RARCH_INTERNAL"/>
 									<listOptionValue builtIn="false" value="HAVE_CC_RESAMPLER"/>
 									<listOptionValue builtIn="false" value="HAVE_NEON"/>
@@ -512,6 +516,7 @@
 								<option id="com.qnx.qcc.option.compiler.security.1257406027" name="Enhanced Security (-fstack-protector-strong)" superClass="com.qnx.qcc.option.compiler.security" value="true" valueType="boolean"/>
 								<option id="com.qnx.qcc.option.compiler.defines.1727063462" name="Defines (-D)" superClass="com.qnx.qcc.option.compiler.defines" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="HAVE_DYLIB"/>
+									<listOptionValue builtIn="false" value="HAVE_ALSA"/>
 									<listOptionValue builtIn="false" value="RARCH_INTERNAL"/>
 									<listOptionValue builtIn="false" value="HAVE_CC_RESAMPLER"/>
 									<listOptionValue builtIn="false" value="HAVE_NEON"/>
@@ -632,6 +637,7 @@
 								<option id="com.qnx.qcc.option.compiler.security.183506287" name="Enhanced Security (-fstack-protector-strong)" superClass="com.qnx.qcc.option.compiler.security" value="true" valueType="boolean"/>
 								<option id="com.qnx.qcc.option.compiler.defines.969286898" name="Defines (-D)" superClass="com.qnx.qcc.option.compiler.defines" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="HAVE_DYLIB"/>
+									<listOptionValue builtIn="false" value="HAVE_ALSA"/>
 									<listOptionValue builtIn="false" value="RARCH_INTERNAL"/>
 									<listOptionValue builtIn="false" value="HAVE_CC_RESAMPLER"/>
 									<listOptionValue builtIn="false" value="HAVE_NEON"/>
@@ -753,6 +759,7 @@
 								<option id="com.qnx.qcc.option.compiler.security.735354154" name="Enhanced Security (-fstack-protector-strong)" superClass="com.qnx.qcc.option.compiler.security" value="true" valueType="boolean"/>
 								<option id="com.qnx.qcc.option.compiler.defines.1893860105" name="Defines (-D)" superClass="com.qnx.qcc.option.compiler.defines" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="HAVE_DYLIB"/>
+									<listOptionValue builtIn="false" value="HAVE_ALSA"/>
 									<listOptionValue builtIn="false" value="RARCH_INTERNAL"/>
 									<listOptionValue builtIn="false" value="HAVE_CC_RESAMPLER"/>
 									<listOptionValue builtIn="false" value="HAVE_NEON"/>
@@ -881,16 +888,16 @@
 		<scannerConfigBuildInfo instanceId="com.qnx.qcc.configuration.exe.release.648144057">
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="com.qnx.tools.ide.qde.managedbuilder.core.qccScannerInfo"/>
 		</scannerConfigBuildInfo>
-		<scannerConfigBuildInfo instanceId="com.qnx.qcc.configuration.exe.profile.398924846">
-			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="com.qnx.tools.ide.qde.managedbuilder.core.qccScannerInfo"/>
-		</scannerConfigBuildInfo>
 		<scannerConfigBuildInfo instanceId="com.qnx.qcc.configuration.exe.debug.381170420">
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="com.qnx.tools.ide.qde.managedbuilder.core.qccScannerInfo"/>
 		</scannerConfigBuildInfo>
-		<scannerConfigBuildInfo instanceId="com.qnx.qcc.configuration.exe.debug.647263012">
+		<scannerConfigBuildInfo instanceId="com.qnx.qcc.configuration.exe.profile.398924846">
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="com.qnx.tools.ide.qde.managedbuilder.core.qccScannerInfo"/>
 		</scannerConfigBuildInfo>
 		<scannerConfigBuildInfo instanceId="com.qnx.qcc.configuration.exe.profile.coverage.817388964">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="com.qnx.tools.ide.qde.managedbuilder.core.qccScannerInfo"/>
+		</scannerConfigBuildInfo>
+		<scannerConfigBuildInfo instanceId="com.qnx.qcc.configuration.exe.debug.647263012">
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="com.qnx.tools.ide.qde.managedbuilder.core.qccScannerInfo"/>
 		</scannerConfigBuildInfo>
 		<scannerConfigBuildInfo instanceId="com.qnx.qcc.configuration.exe.profile.617031134">
