@@ -268,12 +268,23 @@ static bool shader_parse_textures(config_file_t *conf, struct gfx_shader *shader
    return true;
 }
 
+static struct gfx_shader_parameter *find_parameter(struct gfx_shader_parameter *params, unsigned num_params, const char *id)
+{
+   unsigned i;
+   for (i = 0; i < num_params; i++)
+   {
+      if (!strcmp(params[i].id, id))
+         return &params[i];
+   }
+   return NULL;
+}
+
 bool gfx_shader_resolve_parameters(config_file_t *conf, struct gfx_shader *shader)
 {
    char parameters[1024];
    char *save = NULL;
    const char *id;
-   unsigned i, line;
+   unsigned i;
 
    shader->num_parameters = 0;
    struct gfx_shader_parameter *param = &shader->parameters[shader->num_parameters];
@@ -290,12 +301,18 @@ bool gfx_shader_resolve_parameters(config_file_t *conf, struct gfx_shader *shade
       {
          int ret = sscanf(line, "#pragma parameter %64s \"%64[^\"]\" %f %f %f %f",
                param->id, param->desc, &param->initial, &param->minimum, &param->maximum, &param->step);
-         if (ret == 6)
+
+         if (ret >= 5)
          {
             param->id[63] = '\0';
             param->desc[63] = '\0';
+
+            if (ret == 5)
+               param->step = 0.1f * (param->maximum - param->minimum);
+
             RARCH_LOG("Found #pragma parameter %s (%s) %f %f %f %f\n",
                   param->desc, param->id, param->initial, param->minimum, param->maximum, param->step);
+            param->current = param->initial;
 
             shader->num_parameters++;
             param++;
@@ -305,8 +322,25 @@ bool gfx_shader_resolve_parameters(config_file_t *conf, struct gfx_shader *shade
       fclose(file);
    }
 
-   if (!config_get_array(conf, "parameters", parameters, sizeof(parameters)))
-      return true;
+   // Read in parameters which override the defaults.
+   if (conf)
+   {
+      if (!config_get_array(conf, "parameters", parameters, sizeof(parameters)))
+         return true;
+
+      for (id = strtok_r(parameters, ";", &save); id; id = strtok_r(NULL, ";", &save))
+      {
+         struct gfx_shader_parameter *param = find_parameter(shader->parameters, shader->num_parameters, id);
+         if (!param)
+         {
+            RARCH_WARN("[CGP/GLSLP]: Parameter %s is set in the preset, but no shader uses this parameter, ignoring.\n", id);
+            continue;
+         }
+
+         if (!config_get_float(conf, id, &param->current))
+            RARCH_WARN("[CGP/GLSLP]: Parameter %s is not set in preset.\n", id);
+      }
+   }
 
    return true;
 }
