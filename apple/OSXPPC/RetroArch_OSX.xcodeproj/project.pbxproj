@@ -68,9 +68,28 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		7AC3D967192E75DE00F311D6 /* osx */ = {
+			isa = PBXGroup;
+			children = (
+				7AEFCD841921294100FB5B6A /* settings.m */,
+				7AEFCD821921292900FB5B6A /* platform.m */,
+			);
+			name = osx;
+			sourceTree = "<group>";
+		};
+		7AC3D968192E75F800F311D6 /* core */ = {
+			isa = PBXGroup;
+			children = (
+				7AEFCD861921295E00FB5B6A /* griffin.c */,
+			);
+			name = core;
+			sourceTree = "<group>";
+		};
 		96355CD41788E6E00010DBFA = {
 			isa = PBXGroup;
 			children = (
+				7AC3D968192E75F800F311D6 /* core */,
+				7AC3D967192E75DE00F311D6 /* osx */,
 				962EE0E1178B3DF6004224FF /* IOKit.framework */,
 				96355CE81788E72A0010DBFA /* common */,
 				967894E7178A2E9B00D6CA69 /* Assets */,
@@ -106,9 +125,6 @@
 		96355CE81788E72A0010DBFA /* common */ = {
 			isa = PBXGroup;
 			children = (
-				7AEFCD861921295E00FB5B6A /* griffin.c */,
-				7AEFCD841921294100FB5B6A /* settings.m */,
-				7AEFCD821921292900FB5B6A /* platform.m */,
 				7AEFCD7E192128FE00FB5B6A /* RAGameView.m */,
 				7AEFCD7A192128D900FB5B6A /* main.m */,
 				7AEFCD7C192128EA00FB5B6A /* utility.m */,
