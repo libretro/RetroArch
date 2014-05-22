@@ -183,6 +183,13 @@ static size_t gx_audio_buffer_size(void *data)
    return BLOCKS * CHUNK_SIZE;
 }
 
+static bool gx_audio_use_float(void *data)
+{
+   /* TODO/FIXME - verify */
+   (void)data;
+   return false;
+}
+
 const audio_driver_t audio_gx = {
    gx_audio_init,
    gx_audio_write,
@@ -190,8 +197,8 @@ const audio_driver_t audio_gx = {
    gx_audio_start,
    gx_audio_set_nonblock_state,
    gx_audio_free,
+   gx_audio_use_float,
    "gx",
    gx_audio_write_avail,
    gx_audio_buffer_size,
 };
-
