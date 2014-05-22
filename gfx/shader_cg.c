@@ -489,6 +489,7 @@ static bool load_plain(const char *path)
       prg[1] = prg[0];
    }
 
+   gfx_shader_resolve_parameters(NULL, cg_shader);
    return true;
 }
 
@@ -580,8 +581,9 @@ static bool load_preset(const char *path)
       return false;
    }
 
-   config_file_free(conf);
    gfx_shader_resolve_relative(cg_shader, path);
+   gfx_shader_resolve_parameters(conf, cg_shader);
+   config_file_free(conf);
 
    if (cg_shader->passes > GFX_MAX_SHADERS - 3)
    {

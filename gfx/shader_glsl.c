@@ -662,6 +662,8 @@ static bool gl_glsl_init(void *data, const char *path)
    if (!glsl_shader)
       return false;
 
+   config_file_t *conf = NULL;
+
    if (path)
    {
       bool ret;
@@ -674,12 +676,11 @@ static bool gl_glsl_init(void *data, const char *path)
       }
       else if (strcmp(path_get_extension(path), "glslp") == 0)
       {
-         config_file_t *conf = config_file_new(path);
+         conf = config_file_new(path);
          if (conf)
          {
             ret = gfx_shader_read_conf_cgp(conf, glsl_shader);
             glsl_shader->modern = true;
-            config_file_free(conf);
          }
          else
             ret = false;
@@ -703,6 +704,13 @@ static bool gl_glsl_init(void *data, const char *path)
    }
 
    gfx_shader_resolve_relative(glsl_shader, path);
+   gfx_shader_resolve_parameters(conf, glsl_shader);
+
+   if (conf)
+   {
+      config_file_free(conf);
+      conf = NULL;
+   }
 
    const char *stock_vertex = glsl_shader->modern ?
       stock_vertex_modern : stock_vertex_legacy;

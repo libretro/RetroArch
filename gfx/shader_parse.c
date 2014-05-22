@@ -268,10 +268,53 @@ static bool shader_parse_textures(config_file_t *conf, struct gfx_shader *shader
    return true;
 }
 
+bool gfx_shader_resolve_parameters(config_file_t *conf, struct gfx_shader *shader)
+{
+   char parameters[1024];
+   char *save = NULL;
+   const char *id;
+   unsigned i, line;
+
+   shader->num_parameters = 0;
+   struct gfx_shader_parameter *param = &shader->parameters[shader->num_parameters];
+
+   // Find all parameters in our shaders.
+   for (i = 0; i < shader->passes; i++)
+   {
+      char line[2048];
+      FILE *file = fopen(shader->pass[i].source.cg, "r");
+      if (!file)
+         continue;
+
+      while (shader->num_parameters < ARRAY_SIZE(shader->parameters) && fgets(line, sizeof(line), file))
+      {
+         int ret = sscanf(line, "#pragma parameter %64s \"%64[^\"]\" %f %f %f %f",
+               param->id, param->desc, &param->initial, &param->minimum, &param->maximum, &param->step);
+         if (ret == 6)
+         {
+            param->id[63] = '\0';
+            param->desc[63] = '\0';
+            RARCH_LOG("Found #pragma parameter %s (%s) %f %f %f %f\n",
+                  param->desc, param->id, param->initial, param->minimum, param->maximum, param->step);
+
+            shader->num_parameters++;
+            param++;
+         }
+      }
+
+      fclose(file);
+   }
+
+   if (!config_get_array(conf, "parameters", parameters, sizeof(parameters)))
+      return true;
+
+   return true;
+}
+
 static bool shader_parse_imports(config_file_t *conf, struct gfx_shader *shader)
 {
    char imports[1024];
-   char *save;
+   char *save = NULL;
    const char *id;
    if (!config_get_array(conf, "imports", imports, sizeof(imports)))
       return true;
