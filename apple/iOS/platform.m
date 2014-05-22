@@ -20,7 +20,7 @@
 
 #include "../../input/apple_input.h"
 #include "../../settings_data.h"
-#include "apple/common/apple_gamecontroller.h"
+#include "../common/apple_gamecontroller.h"
 #include "menu.h"
 
 #import "views.h"
@@ -28,7 +28,7 @@
 #include "bluetooth/btdynamic.h"
 #include "bluetooth/btpad.h"
 
-#include "file.h"
+#include "../../file.h"
 
 apple_frontend_settings_t apple_frontend_settings;
 

@@ -18,7 +18,7 @@
 #include <dlfcn.h>
 #include <CoreFoundation/CFRunLoop.h>
 
-#include "apple/common/rarch_wrapper.h"
+#include "../../common/rarch_wrapper.h"
 
 #define BUILDING_BTDYNAMIC
 #include "btdynamic.h"

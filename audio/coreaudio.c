@@ -15,9 +15,9 @@
  */
 
 
-#include "driver.h"
-#include "general.h"
-#include "fifo_buffer.h"
+#include "../driver.h"
+#include "../general.h"
+#include "../fifo_buffer.h"
 #include <stdlib.h>
 #include "../boolean.h"
 #include <pthread.h>
