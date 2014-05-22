@@ -730,36 +730,30 @@ static bool gl_init_hw_render(gl_t *gl, unsigned width, unsigned height)
       {
          if (stencil)
          {
+            glBindRenderbuffer(RARCH_GL_RENDERBUFFER, gl->hw_render_depth[i]);
+            glRenderbufferStorage(RARCH_GL_RENDERBUFFER, RARCH_GL_DEPTH24_STENCIL8, width, height);
+            glBindRenderbuffer(RARCH_GL_RENDERBUFFER, 0);
 #ifdef HAVE_OPENGLES2
             // GLES2 is a bit weird, as always. :P
-            glBindRenderbuffer(GL_RENDERBUFFER, gl->hw_render_depth[i]);
-            glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8_OES,
-                  width, height);
-            glBindRenderbuffer(GL_RENDERBUFFER, 0);
-
             // There's no GL_DEPTH_STENCIL_ATTACHMENT like in desktop GL.
             glFramebufferRenderbuffer(RARCH_GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
-                  GL_RENDERBUFFER, gl->hw_render_depth[i]);
+                  RARCH_GL_RENDERBUFFER, gl->hw_render_depth[i]);
             glFramebufferRenderbuffer(RARCH_GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT,
-                  GL_RENDERBUFFER, gl->hw_render_depth[i]);
+                  RARCH_GL_RENDERBUFFER, gl->hw_render_depth[i]);
 #else
             // We use ARB FBO extensions, no need to check.
-            glBindRenderbuffer(GL_RENDERBUFFER, gl->hw_render_depth[i]);
-            glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8,
-                  width, height);
-            glBindRenderbuffer(GL_RENDERBUFFER, 0);
             glFramebufferRenderbuffer(RARCH_GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT,
-                  GL_RENDERBUFFER, gl->hw_render_depth[i]);
+                  RARCH_GL_RENDERBUFFER, gl->hw_render_depth[i]);
 #endif
          }
          else
          {
-            glBindRenderbuffer(GL_RENDERBUFFER, gl->hw_render_depth[i]);
-            glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT16,
+            glBindRenderbuffer(RARCH_GL_RENDERBUFFER, gl->hw_render_depth[i]);
+            glRenderbufferStorage(RARCH_GL_RENDERBUFFER, GL_DEPTH_COMPONENT16,
                   width, height);
-            glBindRenderbuffer(GL_RENDERBUFFER, 0);
+            glBindRenderbuffer(RARCH_GL_RENDERBUFFER, 0);
             glFramebufferRenderbuffer(RARCH_GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
-                  GL_RENDERBUFFER, gl->hw_render_depth[i]);
+                  RARCH_GL_RENDERBUFFER, gl->hw_render_depth[i]);
          }
       }
 
