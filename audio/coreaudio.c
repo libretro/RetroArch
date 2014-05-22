@@ -60,7 +60,11 @@ static void coreaudio_free(void *data)
    if (dev->dev_alive)
    {
       AudioOutputUnitStop(dev->dev);
+#ifdef OSX_PPC
+      CloseComponent(dev->dev);
+#else
       AudioComponentInstanceDispose(dev->dev);
+#endif
    }
 
    if (dev->buffer)
@@ -191,14 +195,18 @@ static void *coreaudio_init(const char *device, unsigned rate, unsigned latency)
    desc.componentManufacturer = kAudioUnitManufacturer_Apple;
 
 #ifdef OSX_PPC
-   Component comp = AudioComponentFindNext(NULL, &desc);
+   Component comp = FindNextComponent(NULL, &desc);
 #else
    AudioComponent comp = AudioComponentFindNext(NULL, &desc);
 #endif
    if (comp == NULL)
       goto error;
    
+#ifdef OSX_PPC
+   if (OpenAComponent(comp, &dev->dev) != noErr)
+#else
    if (AudioComponentInstanceNew(comp, &dev->dev) != noErr)
+#endif
       goto error;
 
 #ifdef OSX
