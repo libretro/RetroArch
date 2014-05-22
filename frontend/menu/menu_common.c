@@ -71,9 +71,11 @@ int menu_defer_core(void *info_, const char *dir, const char *path, char *deferr
 {
    core_info_list_t *core_info;
    const core_info_t *info;
+   size_t supported;
+
    core_info = (core_info_list_t*)info_;
    info = NULL;
-   size_t supported = 0;
+   supported = 0;
 
    fill_pathname_join(deferred_path, dir, path, sizeof_deferred_path);
 
