@@ -733,12 +733,12 @@ static bool gl_init_hw_render(gl_t *gl, unsigned width, unsigned height)
             glBindRenderbuffer(RARCH_GL_RENDERBUFFER, gl->hw_render_depth[i]);
             glRenderbufferStorage(RARCH_GL_RENDERBUFFER, RARCH_GL_DEPTH24_STENCIL8, width, height);
             glBindRenderbuffer(RARCH_GL_RENDERBUFFER, 0);
-#ifdef HAVE_OPENGLES2
+#if defined(HAVE_OPENGLES2) || defined(OSX_PPC)
             // GLES2 is a bit weird, as always. :P
             // There's no GL_DEPTH_STENCIL_ATTACHMENT like in desktop GL.
-            glFramebufferRenderbuffer(RARCH_GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
+            glFramebufferRenderbuffer(RARCH_GL_FRAMEBUFFER, RARCH_GL_DEPTH_ATTACHMENT,
                   RARCH_GL_RENDERBUFFER, gl->hw_render_depth[i]);
-            glFramebufferRenderbuffer(RARCH_GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT,
+            glFramebufferRenderbuffer(RARCH_GL_FRAMEBUFFER, RARCH_GL_STENCIL_ATTACHMENT,
                   RARCH_GL_RENDERBUFFER, gl->hw_render_depth[i]);
 #else
             // We use ARB FBO extensions, no need to check.
@@ -752,7 +752,7 @@ static bool gl_init_hw_render(gl_t *gl, unsigned width, unsigned height)
             glRenderbufferStorage(RARCH_GL_RENDERBUFFER, GL_DEPTH_COMPONENT16,
                   width, height);
             glBindRenderbuffer(RARCH_GL_RENDERBUFFER, 0);
-            glFramebufferRenderbuffer(RARCH_GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
+            glFramebufferRenderbuffer(RARCH_GL_FRAMEBUFFER, RARCH_GL_DEPTH_ATTACHMENT,
                   RARCH_GL_RENDERBUFFER, gl->hw_render_depth[i]);
          }
       }
