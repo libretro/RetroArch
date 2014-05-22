@@ -93,6 +93,12 @@
 #define RARCH_GL_STENCIL_ATTACHMENT GL_STENCIL_ATTACHMENT
 #endif
 
+#ifdef OSX_PPC
+#define RARCH_GL_MAX_RENDERBUFFER_SIZE GL_MAX_RENDERBUFFER_SIZE_EXT
+#else
+#define RARCH_GL_MAX_RENDERBUFFER_SIZE GL_MAX_RENDERBUFFER_SIZE
+#endif
+
 static inline bool gl_check_error(void)
 {
    int error = glGetError();

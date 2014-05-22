@@ -698,7 +698,7 @@ static bool gl_init_hw_render(gl_t *gl, unsigned width, unsigned height)
    GLint max_fbo_size = 0;
    GLint max_renderbuffer_size = 0;
    glGetIntegerv(GL_MAX_TEXTURE_SIZE, &max_fbo_size);
-   glGetIntegerv(GL_MAX_RENDERBUFFER_SIZE, &max_renderbuffer_size);
+   glGetIntegerv(RARCH_GL_MAX_RENDERBUFFER_SIZE, &max_renderbuffer_size);
    RARCH_LOG("[GL]: Max texture size: %d px, renderbuffer size: %u px.\n", max_fbo_size, max_renderbuffer_size);
 
    if (!check_fbo_proc(gl))
