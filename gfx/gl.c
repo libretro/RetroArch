@@ -180,8 +180,6 @@ static bool init_vao(gl_t *gl)
 #define glFramebufferRenderbuffer glFramebufferRenderbufferOES
 #define glRenderbufferStorage glRenderbufferStorageOES
 #define glDeleteRenderbuffers glDeleteRenderbuffersOES
-#define GL_COLOR_ATTACHMENT0 GL_COLOR_ATTACHMENT0_EXT
-#define GL_FRAMEBUFFER_COMPLETE GL_FRAMEBUFFER_COMPLETE_OES
 #define check_fbo_proc(gl) (true)
 #elif !defined(HAVE_OPENGLES2)
 static bool check_fbo_proc(gl_t *gl)
@@ -577,10 +575,10 @@ static bool gl_create_fbo_targets(void *data)
    for (i = 0; i < gl->fbo_pass; i++)
    {
       glBindFramebuffer(RARCH_GL_FRAMEBUFFER, gl->fbo[i]);
-      glFramebufferTexture2D(RARCH_GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gl->fbo_texture[i], 0);
+      glFramebufferTexture2D(RARCH_GL_FRAMEBUFFER, RARCH_GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gl->fbo_texture[i], 0);
 
       GLenum status = glCheckFramebufferStatus(RARCH_GL_FRAMEBUFFER);
-      if (status != GL_FRAMEBUFFER_COMPLETE)
+      if (status != RARCH_GL_FRAMEBUFFER_COMPLETE)
          goto error;
    }
 
@@ -726,7 +724,7 @@ static bool gl_init_hw_render(gl_t *gl, unsigned width, unsigned height)
    for (i = 0; i < gl->textures; i++)
    {
       glBindFramebuffer(RARCH_GL_FRAMEBUFFER, gl->hw_render_fbo[i]);
-      glFramebufferTexture2D(RARCH_GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gl->texture[i], 0);
+      glFramebufferTexture2D(RARCH_GL_FRAMEBUFFER, RARCH_GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gl->texture[i], 0);
 
       if (depth)
       {
@@ -766,7 +764,7 @@ static bool gl_init_hw_render(gl_t *gl, unsigned width, unsigned height)
       }
 
       GLenum status = glCheckFramebufferStatus(RARCH_GL_FRAMEBUFFER);
-      if (status != GL_FRAMEBUFFER_COMPLETE)
+      if (status != RARCH_GL_FRAMEBUFFER_COMPLETE)
       {
          RARCH_ERR("[GL]: Failed to create HW render FBO #%u, error: 0x%u.\n", i, (unsigned)status);
          return false;
@@ -942,10 +940,10 @@ static void gl_check_fbo_dimensions(void *data)
                0, RARCH_GL_TEXTURE_TYPE32,
                RARCH_GL_FORMAT32, NULL);
 
-         glFramebufferTexture2D(RARCH_GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gl->fbo_texture[i], 0);
+         glFramebufferTexture2D(RARCH_GL_FRAMEBUFFER, RARCH_GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gl->fbo_texture[i], 0);
 
          GLenum status = glCheckFramebufferStatus(RARCH_GL_FRAMEBUFFER);
-         if (status != GL_FRAMEBUFFER_COMPLETE)
+         if (status != RARCH_GL_FRAMEBUFFER_COMPLETE)
             RARCH_WARN("Failed to reinit FBO texture.\n");
 
          RARCH_LOG("Recreating FBO texture #%d: %ux%u\n", i, gl->fbo_rect[i].width, gl->fbo_rect[i].height);
