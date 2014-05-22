@@ -37,7 +37,11 @@ typedef struct coreaudio
    pthread_mutex_t lock;
    pthread_cond_t cond;
 
+#ifdef OSX_PPC
+   ComponentInstance dev;
+#else
    AudioComponentInstance dev;
+#endif
    bool dev_alive;
 
    fifo_buffer_t *buffer;
@@ -173,7 +177,11 @@ static void *coreaudio_init(const char *device, unsigned rate, unsigned latency)
 #endif
 
    // Create AudioComponent
+#ifdef OSX_PPC
+   ComponentDescription desc = {0};
+#else
    AudioComponentDescription desc = {0};
+#endif
    desc.componentType = kAudioUnitType_Output;
 #ifdef IOS
    desc.componentSubType = kAudioUnitSubType_RemoteIO;
@@ -182,7 +190,11 @@ static void *coreaudio_init(const char *device, unsigned rate, unsigned latency)
 #endif
    desc.componentManufacturer = kAudioUnitManufacturer_Apple;
 
+#ifdef OSX_PPC
+   Component comp = AudioComponentFindNext(NULL, &desc);
+#else
    AudioComponent comp = AudioComponentFindNext(NULL, &desc);
+#endif
    if (comp == NULL)
       goto error;
    
