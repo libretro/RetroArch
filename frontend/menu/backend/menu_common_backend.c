@@ -1543,7 +1543,21 @@ static int menu_common_iterate(void *data, unsigned action)
             else
             {
                if (rgui->defer_core)
-                  ret = menu_defer_core(rgui, dir, path);
+               {
+                  ret = menu_defer_core(rgui->core_info, dir, path, rgui->deferred_path, sizeof(rgui->deferred_path));
+
+                  if (ret == -1)
+                  {
+                     menu_update_system_info(rgui, &rgui->load_no_rom);
+                     if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->defer_decision_automatic) 
+                        driver.menu_ctx->backend->defer_decision_automatic(rgui);
+                  }
+                  else if (ret == 0)
+                  {
+                     if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->defer_decision_manual) 
+                        driver.menu_ctx->backend->defer_decision_manual(rgui);
+                  }
+               }
                else
                {
                   fill_pathname_join(g_extern.fullpath, dir, path, sizeof(g_extern.fullpath));

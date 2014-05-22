@@ -67,37 +67,31 @@ void menu_update_system_info(void *data, bool *load_no_rom)
 }
 
 // When selection is presented back, returns 0. If it can make a decision right now, returns -1.
-int menu_defer_core(void *data, const char *dir, const char *path)
+int menu_defer_core(void *info_, const char *dir, const char *path, char *deferred_path, size_t sizeof_deferred_path)
 {
-   rgui_handle_t *rgui = (rgui_handle_t*)data;
-   const core_info_t *info = NULL;
+   core_info_list_t *core_info;
+   const core_info_t *info;
+   core_info = (core_info_list_t*)info_;
+   info = NULL;
    size_t supported = 0;
 
-   fill_pathname_join(rgui->deferred_path, dir, path, sizeof(rgui->deferred_path));
+   fill_pathname_join(deferred_path, dir, path, sizeof_deferred_path);
 
-   if (rgui->core_info)
-      core_info_list_get_supported_cores(rgui->core_info, rgui->deferred_path, &info, &supported);
+   if (core_info)
+      core_info_list_get_supported_cores(core_info, deferred_path, &info, &supported);
 
    if (supported == 1) // Can make a decision right now.
    {
-      strlcpy(g_extern.fullpath, rgui->deferred_path, sizeof(g_extern.fullpath));
+      strlcpy(g_extern.fullpath, deferred_path, sizeof(g_extern.fullpath));
       strlcpy(g_settings.libretro, info->path, sizeof(g_settings.libretro));
 
 #ifdef HAVE_DYNAMIC
-      menu_update_system_info(rgui, &rgui->load_no_rom);
       g_extern.lifecycle_state |= (1ULL << MODE_LOAD_GAME);
 #else
       rarch_environment_cb(RETRO_ENVIRONMENT_SET_LIBRETRO_PATH, (void*)g_settings.libretro);
       rarch_environment_cb(RETRO_ENVIRONMENT_EXEC, (void*)g_extern.fullpath);
 #endif
-      if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->defer_decision_automatic) 
-         driver.menu_ctx->backend->defer_decision_automatic(rgui);
       return -1;
-   }
-   else
-   {
-      if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->defer_decision_manual) 
-         driver.menu_ctx->backend->defer_decision_manual(rgui);
    }
 
    return 0;

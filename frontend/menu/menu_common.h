@@ -204,7 +204,7 @@ bool menu_replace_config(void *data, const char *path);
 
 bool menu_save_new_config(void);
 
-int menu_defer_core(void *data, const char *dir, const char *path);
+int menu_defer_core(void *data, const char *dir, const char *path, char *deferred_path, size_t sizeof_deferred_path);
 
 uint64_t menu_input(void *data);
 
