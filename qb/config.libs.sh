@@ -248,7 +248,7 @@ check_pkgconf FREETYPE freetype2
 check_pkgconf X11 x11
 [ "$HAVE_X11" = "no" ] && HAVE_XEXT=no && HAVE_XF86VM=no && HAVE_XINERAMA=no
 
-check_pkgconf XKBCOMMON xkbcommon 0.3
+check_pkgconf XKBCOMMON xkbcommon 0.3.2
 check_pkgconf XEXT xext
 check_pkgconf XF86VM xxf86vm
 check_pkgconf XINERAMA xinerama
