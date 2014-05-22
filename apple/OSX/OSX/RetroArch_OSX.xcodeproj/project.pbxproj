@@ -32,8 +32,8 @@
 		50351E76192E5E1300668AB1 /* griffin.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = griffin.c; path = ../../../../griffin/griffin.c; sourceTree = "<group>"; };
 		50351E78192E5E3C00668AB1 /* utility.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = utility.m; path = ../../../common/utility.m; sourceTree = "<group>"; };
 		50351E7A192E5E6100668AB1 /* RAGameView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = RAGameView.m; path = ../../../common/RAGameView.m; sourceTree = "<group>"; };
-		50351E7C192E5E8900668AB1 /* settings.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = settings.m; path = ../../settings.m; sourceTree = "<group>"; };
-		50351E7E192E5EC100668AB1 /* platform.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = platform.m; path = ../../platform.m; sourceTree = "<group>"; };
+		50351E7C192E5E8900668AB1 /* settings.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = settings.m; path = ../settings.m; sourceTree = "<group>"; };
+		50351E7E192E5EC100668AB1 /* platform.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = platform.m; path = ../platform.m; sourceTree = "<group>"; };
 		5053552F185E0F4000926C26 /* CoreLocation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreLocation.framework; path = System/Library/Frameworks/CoreLocation.framework; sourceTree = SDKROOT; };
 		962EE0E1178B3DF6004224FF /* IOKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IOKit.framework; path = ../../../../../../../System/Library/Frameworks/IOKit.framework; sourceTree = "<group>"; };
 		96355CDF1788E72A0010DBFA /* RetroArch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RetroArch.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -71,9 +71,19 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		50638D6D192E636400A8EB4D /* osx */ = {
+			isa = PBXGroup;
+			children = (
+				50351E7C192E5E8900668AB1 /* settings.m */,
+				50351E7E192E5EC100668AB1 /* platform.m */,
+			);
+			name = osx;
+			sourceTree = "<group>";
+		};
 		96355CD41788E6E00010DBFA = {
 			isa = PBXGroup;
 			children = (
+				50638D6D192E636400A8EB4D /* osx */,
 				962EE0E1178B3DF6004224FF /* IOKit.framework */,
 				96355CE81788E72A0010DBFA /* common */,
 				967894E7178A2E9B00D6CA69 /* Assets */,
@@ -110,8 +120,6 @@
 		96355CE81788E72A0010DBFA /* common */ = {
 			isa = PBXGroup;
 			children = (
-				50351E7E192E5EC100668AB1 /* platform.m */,
-				50351E7C192E5E8900668AB1 /* settings.m */,
 				50351E7A192E5E6100668AB1 /* RAGameView.m */,
 				50351E78192E5E3C00668AB1 /* utility.m */,
 				50351E76192E5E1300668AB1 /* griffin.c */,
