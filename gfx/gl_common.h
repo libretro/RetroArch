@@ -62,6 +62,14 @@
 #define HAVE_GL_ASYNC_READBACK
 #endif
 
+#if defined(HAVE_PSGL)
+#define RARCH_GL_FRAMEBUFFER GL_FRAMEBUFFER_OES
+#elif defined(__MACHO__)
+#define RARCH_GL_FRAMEBUFFER GL_FRAMEBUFFER_EXT
+#else
+#define RARCH_GL_FRAMEBUFFER GL_FRAMEBUFFER
+#endif
+
 static inline bool gl_check_error(void)
 {
    int error = glGetError();

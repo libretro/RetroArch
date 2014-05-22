@@ -180,7 +180,6 @@ static bool init_vao(gl_t *gl)
 #define glFramebufferRenderbuffer glFramebufferRenderbufferOES
 #define glRenderbufferStorage glRenderbufferStorageOES
 #define glDeleteRenderbuffers glDeleteRenderbuffersOES
-#define GL_FRAMEBUFFER GL_FRAMEBUFFER_OES
 #define GL_COLOR_ATTACHMENT0 GL_COLOR_ATTACHMENT0_EXT
 #define GL_FRAMEBUFFER_COMPLETE GL_FRAMEBUFFER_COMPLETE_OES
 #define check_fbo_proc(gl) (true)
@@ -358,7 +357,7 @@ void gl_shader_set_coords(void *data, const struct gl_coords *coords, const math
 void apple_bind_game_view_fbo(void);
 #define gl_bind_backbuffer() apple_bind_game_view_fbo()
 #else
-#define gl_bind_backbuffer() glBindFramebuffer(GL_FRAMEBUFFER, 0)
+#define gl_bind_backbuffer() glBindFramebuffer(RARCH_GL_FRAMEBUFFER, 0)
 #endif
 
 #ifdef HAVE_FBO
@@ -577,10 +576,10 @@ static bool gl_create_fbo_targets(void *data)
    glGenFramebuffers(gl->fbo_pass, gl->fbo);
    for (i = 0; i < gl->fbo_pass; i++)
    {
-      glBindFramebuffer(GL_FRAMEBUFFER, gl->fbo[i]);
-      glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gl->fbo_texture[i], 0);
+      glBindFramebuffer(RARCH_GL_FRAMEBUFFER, gl->fbo[i]);
+      glFramebufferTexture2D(RARCH_GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gl->fbo_texture[i], 0);
 
-      GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+      GLenum status = glCheckFramebufferStatus(RARCH_GL_FRAMEBUFFER);
       if (status != GL_FRAMEBUFFER_COMPLETE)
          goto error;
    }
@@ -726,8 +725,8 @@ static bool gl_init_hw_render(gl_t *gl, unsigned width, unsigned height)
 
    for (i = 0; i < gl->textures; i++)
    {
-      glBindFramebuffer(GL_FRAMEBUFFER, gl->hw_render_fbo[i]);
-      glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gl->texture[i], 0);
+      glBindFramebuffer(RARCH_GL_FRAMEBUFFER, gl->hw_render_fbo[i]);
+      glFramebufferTexture2D(RARCH_GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gl->texture[i], 0);
 
       if (depth)
       {
@@ -741,9 +740,9 @@ static bool gl_init_hw_render(gl_t *gl, unsigned width, unsigned height)
             glBindRenderbuffer(GL_RENDERBUFFER, 0);
 
             // There's no GL_DEPTH_STENCIL_ATTACHMENT like in desktop GL.
-            glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
+            glFramebufferRenderbuffer(RARCH_GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
                   GL_RENDERBUFFER, gl->hw_render_depth[i]);
-            glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT,
+            glFramebufferRenderbuffer(RARCH_GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT,
                   GL_RENDERBUFFER, gl->hw_render_depth[i]);
 #else
             // We use ARB FBO extensions, no need to check.
@@ -751,7 +750,7 @@ static bool gl_init_hw_render(gl_t *gl, unsigned width, unsigned height)
             glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8,
                   width, height);
             glBindRenderbuffer(GL_RENDERBUFFER, 0);
-            glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT,
+            glFramebufferRenderbuffer(RARCH_GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT,
                   GL_RENDERBUFFER, gl->hw_render_depth[i]);
 #endif
          }
@@ -761,12 +760,12 @@ static bool gl_init_hw_render(gl_t *gl, unsigned width, unsigned height)
             glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT16,
                   width, height);
             glBindRenderbuffer(GL_RENDERBUFFER, 0);
-            glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
+            glFramebufferRenderbuffer(RARCH_GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
                   GL_RENDERBUFFER, gl->hw_render_depth[i]);
          }
       }
 
-      GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+      GLenum status = glCheckFramebufferStatus(RARCH_GL_FRAMEBUFFER);
       if (status != GL_FRAMEBUFFER_COMPLETE)
       {
          RARCH_ERR("[GL]: Failed to create HW render FBO #%u, error: 0x%u.\n", i, (unsigned)status);
@@ -903,7 +902,7 @@ static void gl_set_rotation(void *data, unsigned rotation)
 static inline void gl_start_frame_fbo(gl_t *gl)
 {
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
-   glBindFramebuffer(GL_FRAMEBUFFER, gl->fbo[0]);
+   glBindFramebuffer(RARCH_GL_FRAMEBUFFER, gl->fbo[0]);
    gl_set_viewport(gl, gl->fbo_rect[0].img_width, gl->fbo_rect[0].img_height, true, false);
 
    // Need to preserve the "flipped" state when in FBO as well to have 
@@ -935,7 +934,7 @@ static void gl_check_fbo_dimensions(void *data)
          unsigned pow2_size = next_pow2(max);
          gl->fbo_rect[i].width = gl->fbo_rect[i].height = pow2_size;
 
-         glBindFramebuffer(GL_FRAMEBUFFER, gl->fbo[i]);
+         glBindFramebuffer(RARCH_GL_FRAMEBUFFER, gl->fbo[i]);
          glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[i]);
 
          glTexImage2D(GL_TEXTURE_2D,
@@ -943,9 +942,9 @@ static void gl_check_fbo_dimensions(void *data)
                0, RARCH_GL_TEXTURE_TYPE32,
                RARCH_GL_FORMAT32, NULL);
 
-         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gl->fbo_texture[i], 0);
+         glFramebufferTexture2D(RARCH_GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gl->fbo_texture[i], 0);
 
-         GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+         GLenum status = glCheckFramebufferStatus(RARCH_GL_FRAMEBUFFER);
          if (status != GL_FRAMEBUFFER_COMPLETE)
             RARCH_WARN("Failed to reinit FBO texture.\n");
 
@@ -990,7 +989,7 @@ static void gl_frame_fbo(void *data, const struct gl_tex_info *tex_info)
       fbo_info->tex_size[1] = prev_rect->height;
       memcpy(fbo_info->coord, fbo_tex_coords, sizeof(fbo_tex_coords));
 
-      glBindFramebuffer(GL_FRAMEBUFFER, gl->fbo[i]);
+      glBindFramebuffer(RARCH_GL_FRAMEBUFFER, gl->fbo[i]);
 
       if (gl->shader)
          gl->shader->use(gl, i + 1);
