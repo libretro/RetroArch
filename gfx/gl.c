@@ -728,9 +728,9 @@ static bool gl_init_hw_render(gl_t *gl, unsigned width, unsigned height)
 
       if (depth)
       {
+         glBindRenderbuffer(RARCH_GL_RENDERBUFFER, gl->hw_render_depth[i]);
          if (stencil)
          {
-            glBindRenderbuffer(RARCH_GL_RENDERBUFFER, gl->hw_render_depth[i]);
             glRenderbufferStorage(RARCH_GL_RENDERBUFFER, RARCH_GL_DEPTH24_STENCIL8, width, height);
             glBindRenderbuffer(RARCH_GL_RENDERBUFFER, 0);
 #if defined(HAVE_OPENGLES2) || defined(OSX_PPC)
@@ -748,7 +748,6 @@ static bool gl_init_hw_render(gl_t *gl, unsigned width, unsigned height)
          }
          else
          {
-            glBindRenderbuffer(RARCH_GL_RENDERBUFFER, gl->hw_render_depth[i]);
             glRenderbufferStorage(RARCH_GL_RENDERBUFFER, GL_DEPTH_COMPONENT16,
                   width, height);
             glBindRenderbuffer(RARCH_GL_RENDERBUFFER, 0);
