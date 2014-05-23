@@ -144,6 +144,8 @@ static GLuint lut_textures[GFX_MAX_TEXTURES];
 static CGparameter cg_attribs[PREV_TEXTURES + 1 + 4 + GFX_MAX_SHADERS];
 static unsigned cg_attrib_index;
 
+static char cg_alias_define[GFX_MAX_SHADERS][128];
+
 static void gl_cg_reset_attrib(void)
 {
    unsigned i;
@@ -422,10 +424,17 @@ static bool load_program(unsigned index, const char *prog, bool path_is_file)
    char *listing_f = NULL;
    char *listing_v = NULL;
 
-   static const char *argv[] = {
+   unsigned i, argc = 1;
+   static const char *argv[2 + GFX_MAX_SHADERS] = {
       "-DPARAMETER_UNIFORM",
       NULL,
    };
+
+   for (i = 0; i < GFX_MAX_SHADERS; i++)
+   {
+      if (*(cg_alias_define[i]))
+         argv[argc++] = cg_alias_define[i];
+   }
 
    if (path_is_file)
    {
@@ -603,6 +612,11 @@ static bool load_preset(const char *path)
       RARCH_WARN("Too many shaders ... Capping shader amount to %d.\n", GFX_MAX_SHADERS - 3);
       cg_shader->passes = GFX_MAX_SHADERS - 3;
    }
+
+   for (i = 0; i < cg_shader->passes; i++)
+      if (*cg_shader->pass[i].alias)
+         snprintf(cg_alias_define[i], sizeof(cg_alias_define[i]), "-D%s_ALIAS", cg_shader->pass[i].alias);
+
    for (i = 0; i < cg_shader->passes; i++)
    {
       if (!load_shader(i))
@@ -806,6 +820,8 @@ static bool gl_cg_init(void *data, const char *path)
    cgGLSetOptimalOptions(cgVProf);
    cgGLEnableProfile(cgFProf);
    cgGLEnableProfile(cgVProf);
+
+   memset(cg_alias_define, 0, sizeof(cg_alias_define));
 
    if (path && strcmp(path_get_extension(path), "cgp") == 0)
    {

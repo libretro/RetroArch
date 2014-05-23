@@ -58,6 +58,8 @@ static state_tracker_t *gl_state_tracker;
 static GLint gl_attribs[PREV_TEXTURES + 1 + 4 + GFX_MAX_SHADERS];
 static unsigned gl_attrib_index;
 
+static char glsl_alias_define[1024];
+
 // Cache the VBO.
 struct cache_vbo
 {
@@ -325,7 +327,7 @@ static bool compile_shader(GLuint shader, const char *define, const char *progra
       RARCH_LOG("[GL]: Using GLSL version %u.\n", version_no);
    }
 
-   const char *source[] = { version, define, program };
+   const char *source[] = { version, define, glsl_alias_define, program };
    glShaderSource(shader, ARRAY_SIZE(source), source, NULL);
    glCompileShader(shader);
 
@@ -739,6 +741,19 @@ static bool gl_glsl_init(void *data, const char *path)
       goto error;
    }
 #endif
+
+   // Find all aliases we use in our GLSLP and add #defines for them so
+   // that a shader can choose a fallback if we are not using a preset.
+   *glsl_alias_define = '\0';
+   for (i = 0; i < glsl_shader->passes; i++)
+   {
+      if (*glsl_shader->pass[i].alias)
+      {
+         char define[128];
+         snprintf(define, sizeof(define), "#define %s_ALIAS\n", glsl_shader->pass[i].alias);
+         strlcat(glsl_alias_define, define, sizeof(glsl_alias_define));
+      }
+   }
 
    if (!(gl_program[0] = compile_program(stock_vertex, stock_fragment, 0)))
    {
