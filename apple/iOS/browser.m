@@ -16,13 +16,13 @@
 #include <dirent.h>
 #include <sys/stat.h>
 
-#include "file_extract.h"
+#include "../../file_extract.h"
 
-#import "apple/common/RetroArch_Apple.h"
+#import "../common/RetroArch_Apple.h"
 #import "views.h"
 
-#include "conf/config_file.h"
-#include "file.h"
+#include "../../conf/config_file.h"
+#include "../../file.h"
 
 static const void* const associated_module_key = &associated_module_key;
 

@@ -177,5 +177,7 @@ const menu_ctx_driver_backend_t menu_ctx_backend_lakka = {
    NULL,
    NULL,
    NULL,
+   NULL,
+   NULL,
    "menu_lakka",
 };

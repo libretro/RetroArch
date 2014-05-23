@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>IDESourceControlProjectFavoriteDictionaryKey</key>
+	<false/>
+	<key>IDESourceControlProjectIdentifier</key>
+	<string>68627F4F-2F04-453A-B5AC-5C4A2718C870</string>
+	<key>IDESourceControlProjectName</key>
+	<string>RetroArch_OSX</string>
+	<key>IDESourceControlProjectOriginsDictionary</key>
+	<dict>
+		<key>70479BD4-5741-48BF-B723-C0C79B64DF9A</key>
+		<string>https://github.com/libretro/RetroArch.git</string>
+	</dict>
+	<key>IDESourceControlProjectPath</key>
+	<string>apple/RetroArch_OSX.xcodeproj/project.xcworkspace</string>
+	<key>IDESourceControlProjectRelativeInstallPathDictionary</key>
+	<dict>
+		<key>70479BD4-5741-48BF-B723-C0C79B64DF9A</key>
+		<string>../../..</string>
+	</dict>
+	<key>IDESourceControlProjectURL</key>
+	<string>https://github.com/libretro/RetroArch.git</string>
+	<key>IDESourceControlProjectVersion</key>
+	<integer>110</integer>
+	<key>IDESourceControlProjectWCCIdentifier</key>
+	<string>70479BD4-5741-48BF-B723-C0C79B64DF9A</string>
+	<key>IDESourceControlProjectWCConfigurations</key>
+	<array>
+		<dict>
+			<key>IDESourceControlRepositoryExtensionIdentifierKey</key>
+			<string>public.vcs.git</string>
+			<key>IDESourceControlWCCIdentifierKey</key>
+			<string>70479BD4-5741-48BF-B723-C0C79B64DF9A</string>
+			<key>IDESourceControlWCCName</key>
+			<string>retroarch</string>
+		</dict>
+	</array>
+</dict>
+</plist>

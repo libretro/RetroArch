@@ -405,6 +405,8 @@ typedef struct menu_ctx_driver_backend
    int      (*setting_toggle)(void *, unsigned, unsigned, unsigned);
    int      (*setting_set)(void *, unsigned, unsigned);
    void     (*setting_set_label)(char *, size_t, unsigned *, unsigned);
+   void     (*defer_decision_automatic)(void *);
+   void     (*defer_decision_manual)(void *);
    const char *ident;
 } menu_ctx_driver_backend_t;
 

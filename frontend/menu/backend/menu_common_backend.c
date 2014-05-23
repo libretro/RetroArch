@@ -1196,6 +1196,29 @@ static int menu_custom_bind_iterate_keyboard(void *data, unsigned action)
    return 0;
 }
 
+static void menu_common_defer_decision_automatic(void *data)
+{
+   rgui_handle_t *rgui = (rgui_handle_t*)data;
+
+   if (!rgui)
+      return;
+
+   menu_flush_stack_type(rgui, RGUI_SETTINGS);
+   rgui->msg_force = true;
+}
+
+static void menu_common_defer_decision_manual(void *data)
+{
+   rgui_handle_t *rgui = (rgui_handle_t*)data;
+
+   if (!rgui)
+      return;
+
+   file_list_push(rgui->menu_stack, g_settings.libretro_directory, RGUI_SETTINGS_DEFERRED_CORE, rgui->selection_ptr);
+   menu_clear_navigation(rgui);
+   rgui->need_refresh = true;
+}
+
 static int menu_common_iterate(void *data, unsigned action)
 {
    rgui_handle_t *rgui = (rgui_handle_t*)data;
@@ -1521,35 +1544,18 @@ static int menu_common_iterate(void *data, unsigned action)
             {
                if (rgui->defer_core)
                {
-                  fill_pathname_join(rgui->deferred_path, dir, path, sizeof(rgui->deferred_path));
+                  ret = menu_defer_core(rgui->core_info, dir, path, rgui->deferred_path, sizeof(rgui->deferred_path));
 
-                  const core_info_t *info = NULL;
-                  size_t supported = 0;
-                  if (rgui->core_info)
-                     core_info_list_get_supported_cores(rgui->core_info, rgui->deferred_path, &info, &supported);
-
-                  if (supported == 1) // Can make a decision right now.
+                  if (ret == -1)
                   {
-                     strlcpy(g_extern.fullpath, rgui->deferred_path, sizeof(g_extern.fullpath));
-                     strlcpy(g_settings.libretro, info->path, sizeof(g_settings.libretro));
-
-#ifdef HAVE_DYNAMIC
                      menu_update_system_info(rgui, &rgui->load_no_rom);
-                     g_extern.lifecycle_state |= (1ULL << MODE_LOAD_GAME);
-#else
-                     rarch_environment_cb(RETRO_ENVIRONMENT_SET_LIBRETRO_PATH, (void*)g_settings.libretro);
-                     rarch_environment_cb(RETRO_ENVIRONMENT_EXEC, (void*)g_extern.fullpath);
-#endif
-
-                     menu_flush_stack_type(rgui, RGUI_SETTINGS);
-                     rgui->msg_force = true;
-                     ret = -1;
+                     if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->defer_decision_automatic) 
+                        driver.menu_ctx->backend->defer_decision_automatic(rgui);
                   }
-                  else // Present a selection.
+                  else if (ret == 0)
                   {
-                     file_list_push(rgui->menu_stack, g_settings.libretro_directory, RGUI_SETTINGS_DEFERRED_CORE, rgui->selection_ptr);
-                     menu_clear_navigation(rgui);
-                     rgui->need_refresh = true;
+                     if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->defer_decision_manual) 
+                        driver.menu_ctx->backend->defer_decision_manual(rgui);
                   }
                }
                else
@@ -4300,5 +4306,7 @@ const menu_ctx_driver_backend_t menu_ctx_backend_common = {
    menu_common_setting_toggle,
    menu_common_setting_set,
    menu_common_setting_set_label,
+   menu_common_defer_decision_automatic,
+   menu_common_defer_decision_manual,
    "menu_common",
 };
