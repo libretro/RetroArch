@@ -425,7 +425,7 @@ static bool load_program(unsigned index, const char *prog, bool path_is_file)
    char *listing_v = NULL;
 
    unsigned i, argc = 1;
-   static const char *argv[2 + GFX_MAX_SHADERS] = {
+   const char *argv[2 + GFX_MAX_SHADERS] = {
       "-DPARAMETER_UNIFORM",
       NULL,
    };
