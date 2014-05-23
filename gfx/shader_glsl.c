@@ -1179,6 +1179,11 @@ static bool gl_glsl_mipmap_input(unsigned index)
       return false;
 }
 
+static struct gfx_shader *gl_glsl_get_current_shader(void)
+{
+   return glsl_enable ? glsl_shader : NULL;
+}
+
 void gl_glsl_set_get_proc_address(gfx_ctx_proc_t (*proc)(const char*))
 {
    glsl_get_proc_address = proc;
@@ -1204,6 +1209,7 @@ const gl_shader_backend_t gl_glsl_backend = {
    gl_glsl_set_mvp,
    gl_glsl_get_prev_textures,
    gl_glsl_mipmap_input,
+   gl_glsl_get_current_shader,
 
    RARCH_SHADER_GLSL,
 };

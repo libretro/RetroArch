@@ -913,6 +913,11 @@ static bool gl_cg_mipmap_input(unsigned index)
       return false;
 }
 
+static struct gfx_shader *gl_cg_get_current_shader(void)
+{
+   return cg_active ? cg_shader : NULL;
+}
+
 void gl_cg_invalidate_context(void)
 {
    cgCtx = NULL;
@@ -931,6 +936,7 @@ const gl_shader_backend_t gl_cg_backend = {
    gl_cg_set_mvp,
    gl_cg_get_prev_textures,
    gl_cg_mipmap_input,
+   gl_cg_get_current_shader,
 
    RARCH_SHADER_CG,
 };

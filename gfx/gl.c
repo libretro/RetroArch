@@ -2909,6 +2909,12 @@ static void gl_show_mouse(void *data, bool state)
       gl->ctx_driver->show_mouse(gl, state);
 }
 
+static struct gfx_shader *gl_get_current_shader(void *data)
+{
+   gl_t *gl = (gl_t*)data;
+   return gl->shader ? gl->shader->get_current_shader() : NULL;
+}
+
 static const video_poke_interface_t gl_poke_interface = {
    NULL,
 #ifdef HAVE_FBO
@@ -2924,6 +2930,9 @@ static const video_poke_interface_t gl_poke_interface = {
    gl_set_osd_msg,
 
    gl_show_mouse,
+   NULL,
+
+   gl_get_current_shader,
 };
 
 static void gl_get_poke_interface(void *data, const video_poke_interface_t **iface)
