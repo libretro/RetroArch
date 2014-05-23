@@ -287,7 +287,7 @@ static void gl_cg_set_params(void *data, unsigned width, unsigned height,
    }
 
    // Set FBO textures.
-   if (active_index > 2)
+   if (active_index)
    {
       for (i = 0; i < fbo_info_cnt; i++)
       {
@@ -756,13 +756,16 @@ static void set_program_attributes(unsigned i)
       prg[i].prev[j].coord = cgGetNamedParameter(prg[i].vprg, attr_buf_coord);
    }
 
-   for (j = 0; j < i - 1; j++)
+   for (j = 0; j + 1 < i; j++)
    {
       char pass_str[64];
       snprintf(pass_str, sizeof(pass_str), "PASS%u", j + 1);
       set_pass_attrib(&prg[i], &prg[i].fbo[j], pass_str);
       snprintf(pass_str, sizeof(pass_str), "PASSPREV%u", i - (j + 1));
       set_pass_attrib(&prg[i], &prg[i].fbo[j], pass_str);
+
+      if (*cg_shader->pass[j].alias)
+         set_pass_attrib(&prg[i], &prg[i].fbo[j], cg_shader->pass[j].alias);
    }
 }
 

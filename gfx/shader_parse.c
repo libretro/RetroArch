@@ -105,6 +105,11 @@ static bool shader_parse_pass(config_file_t *conf, struct gfx_shader_pass *pass,
    print_buf(mipmap_buf, "mipmap_input%u", i);
    config_get_bool(conf, mipmap_buf, &pass->mipmap);
 
+   char alias_buf[64];
+   print_buf(alias_buf, "alias%u", i);
+   if (!config_get_array(conf, alias_buf, pass->alias, sizeof(pass->alias)))
+      *pass->alias = '\0';
+
    // Scale
    struct gfx_fbo_scale *scale = &pass->fbo;
    char scale_type[64] = {0};
@@ -614,6 +619,9 @@ void gfx_shader_write_conf_cgp(config_file_t *conf, const struct gfx_shader *sha
 
       print_buf(key, "mipmap_input%u", i);
       config_set_bool(conf, key, pass->mipmap);
+
+      print_buf(key, "alias%u", i);
+      config_set_string(conf, key, pass->alias);
 
       shader_write_fbo(conf, &pass->fbo, i);
    }

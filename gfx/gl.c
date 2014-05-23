@@ -978,6 +978,7 @@ static void gl_frame_fbo(void *data, const struct gl_tex_info *tex_info)
       fbo_info->tex_size[0] = prev_rect->width;
       fbo_info->tex_size[1] = prev_rect->height;
       memcpy(fbo_info->coord, fbo_tex_coords, sizeof(fbo_tex_coords));
+      fbo_tex_info_cnt++;
 
       glBindFramebuffer(RARCH_GL_FRAMEBUFFER, gl->fbo[i]);
 
@@ -1002,8 +1003,6 @@ static void gl_frame_fbo(void *data, const struct gl_tex_info *tex_info)
 
       gl_shader_set_coords(gl, &gl->coords, &gl->mvp);
       glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-
-      fbo_tex_info_cnt++;
    }
 
 #if defined(GL_FRAMEBUFFER_SRGB) && !defined(HAVE_OPENGLES)
@@ -1017,6 +1016,16 @@ static void gl_frame_fbo(void *data, const struct gl_tex_info *tex_info)
    GLfloat yamt = (GLfloat)prev_rect->img_height / prev_rect->height;
 
    set_texture_coords(fbo_tex_coords, xamt, yamt);
+
+   // Push final FBO to list.
+   fbo_info = &fbo_tex_info[gl->fbo_pass - 1];
+   fbo_info->tex = gl->fbo_texture[gl->fbo_pass - 1];
+   fbo_info->input_size[0] = prev_rect->img_width;
+   fbo_info->input_size[1] = prev_rect->img_height;
+   fbo_info->tex_size[0] = prev_rect->width;
+   fbo_info->tex_size[1] = prev_rect->height;
+   memcpy(fbo_info->coord, fbo_tex_coords, sizeof(fbo_tex_coords));
+   fbo_tex_info_cnt++;
 
    // Render our FBO texture to back buffer.
    gl_bind_backbuffer();

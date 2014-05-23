@@ -88,6 +88,7 @@ struct gfx_shader_pass
       } string;
    } source;
 
+   char alias[64];
    struct gfx_fbo_scale fbo;
    enum gfx_filter_type filter;
    enum gfx_wrap_type wrap;
