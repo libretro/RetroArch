@@ -132,7 +132,6 @@ struct cg_program
 };
 
 static struct cg_program prg[GFX_MAX_SHADERS];
-static const char **cg_arguments;
 static bool cg_active;
 static CGprofile cgVProf, cgFProf;
 static unsigned active_index;
@@ -313,6 +312,15 @@ static void gl_cg_set_params(void *data, unsigned width, unsigned height,
       }
    }
 
+   // #pragma parameters
+   for (i = 0; i < cg_shader->num_parameters; i++)
+   {
+      CGparameter param_v = cgGetNamedParameter(prg[active_index].vprg, cg_shader->parameters[i].id);
+      CGparameter param_f = cgGetNamedParameter(prg[active_index].fprg, cg_shader->parameters[i].id);
+      set_param_1f(param_v, cg_shader->parameters[i].current);
+      set_param_1f(param_f, cg_shader->parameters[i].current);
+   }
+
    // Set state parameters
    if (state_tracker)
    {
@@ -414,18 +422,23 @@ static bool load_program(unsigned index, const char *prog, bool path_is_file)
    char *listing_f = NULL;
    char *listing_v = NULL;
 
+   static const char *argv[] = {
+      "-DPARAMETER_UNIFORM",
+      NULL,
+   };
+
    if (path_is_file)
    {
-      prg[index].fprg = cgCreateProgramFromFile(cgCtx, CG_SOURCE, prog, cgFProf, "main_fragment", cg_arguments);
+      prg[index].fprg = cgCreateProgramFromFile(cgCtx, CG_SOURCE, prog, cgFProf, "main_fragment", argv);
       SET_LISTING(f);
-      prg[index].vprg = cgCreateProgramFromFile(cgCtx, CG_SOURCE, prog, cgVProf, "main_vertex", cg_arguments);
+      prg[index].vprg = cgCreateProgramFromFile(cgCtx, CG_SOURCE, prog, cgVProf, "main_vertex", argv);
       SET_LISTING(v);
    }
    else
    {
-      prg[index].fprg = cgCreateProgram(cgCtx, CG_SOURCE, prog, cgFProf, "main_fragment", cg_arguments);
+      prg[index].fprg = cgCreateProgram(cgCtx, CG_SOURCE, prog, cgFProf, "main_fragment", argv);
       SET_LISTING(f);
-      prg[index].vprg = cgCreateProgram(cgCtx, CG_SOURCE, prog, cgVProf, "main_vertex", cg_arguments);
+      prg[index].vprg = cgCreateProgram(cgCtx, CG_SOURCE, prog, cgVProf, "main_vertex", argv);
       SET_LISTING(v);
    }
 
@@ -898,11 +911,6 @@ static bool gl_cg_mipmap_input(unsigned index)
       return cg_shader->pass[index - 1].mipmap;
    else
       return false;
-}
-
-void gl_cg_set_compiler_args(const char **argv)
-{
-   cg_arguments = argv;
 }
 
 void gl_cg_invalidate_context(void)

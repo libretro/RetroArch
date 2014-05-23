@@ -366,7 +366,7 @@ static GLuint compile_program(const char *vertex, const char *fragment, unsigned
    {
       RARCH_LOG("Found GLSL vertex shader.\n");
       vert = glCreateShader(GL_VERTEX_SHADER);
-      if (!compile_shader(vert, "#define VERTEX\n", vertex))
+      if (!compile_shader(vert, "#define VERTEX\n#define PARAMETER_UNIFORM\n", vertex))
       {
          RARCH_ERR("Failed to compile vertex shader #%u\n", i);
          return false;
@@ -379,7 +379,7 @@ static GLuint compile_program(const char *vertex, const char *fragment, unsigned
    {
       RARCH_LOG("Found GLSL fragment shader.\n");
       frag = glCreateShader(GL_FRAGMENT_SHADER);
-      if (!compile_shader(frag, "#define FRAGMENT\n", fragment))
+      if (!compile_shader(frag, "#define FRAGMENT\n#define PARAMETER_UNIFORM\n", fragment))
       {
          RARCH_ERR("Failed to compile fragment shader #%u\n", i);
          return false;
@@ -1000,6 +1000,14 @@ static void gl_glsl_set_params(void *data, unsigned width, unsigned height,
 
    glActiveTexture(GL_TEXTURE0);
 
+   // #pragma parameters
+   for (i = 0; i < glsl_shader->num_parameters; i++)
+   {
+      int location = glGetUniformLocation(gl_program[active_index], glsl_shader->parameters[i].id);
+      glUniform1f(location, glsl_shader->parameters[i].current);
+   }
+
+   // Set state parameters
    if (gl_state_tracker)
    {
       static struct state_tracker_uniform info[GFX_MAX_VARIABLES];
