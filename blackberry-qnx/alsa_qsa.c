@@ -46,6 +46,7 @@ static void *alsa_qsa_init(const char *device, unsigned rate, unsigned latency)
 
    int err, card, dev;
    snd_pcm_channel_params_t params = {0};
+   snd_pcm_channel_info_t pi;
    snd_pcm_channel_setup_t setup = {0};
    alsa_t *alsa = (alsa_t*)calloc(1, sizeof(alsa_t));
    if (!alsa)
@@ -70,6 +71,15 @@ static void *alsa_qsa_init(const char *device, unsigned rate, unsigned latency)
       goto error;
    }
 
+   memset(&pi, 0, sizeof(pi));
+   pi.channel = SND_PCM_CHANNEL_PLAYBACK;
+   if ((err = snd_pcm_plugin_info(alsa->pcm, &pi)) < 0)
+   {
+      RARCH_ERR("[ALSA QSA]: snd_pcm_plugin_info failed: %s\n",
+            snd_strerror(err));
+      goto error;
+   }
+
    memset(&params, 0, sizeof(params));
 
    params.channel = SND_PCM_CHANNEL_PLAYBACK;
@@ -83,9 +93,20 @@ static void *alsa_qsa_init(const char *device, unsigned rate, unsigned latency)
    params.start_mode = SND_PCM_START_FULL;
    params.stop_mode = SND_PCM_STOP_STOP;
 
-   params.buf.block.frag_size = MAX_FRAG_SIZE;
+   params.buf.block.frag_size = pi.max_fragment_size;
    params.buf.block.frags_min = 1;
-   params.buf.block.frags_max = 8; 
+   params.buf.block.frags_max = 8;
+
+   //FIXME: Hack turning on g_extern.verbose 
+   bool original_verbosity = g_extern.verbose;
+   g_extern.verbose = true;
+
+   RARCH_LOG("Fragment size: %d\n", params.buf.block.frag_size);
+   RARCH_LOG("Min Fragment size: %d\n", params.buf.block.frags_min);
+   RARCH_LOG("Max Fragment size: %d\n", params.buf.block.frags_max);
+
+   //FIXME: Hack turning on/off g_extern.verbose 
+   g_extern.verbose = original_verbosity;
 
    if ((err = snd_pcm_plugin_params(alsa->pcm, &params)) < 0)
    {
