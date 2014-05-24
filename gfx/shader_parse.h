@@ -28,6 +28,7 @@ extern "C" {
 #define GFX_MAX_SHADERS 16
 #define GFX_MAX_TEXTURES 8
 #define GFX_MAX_VARIABLES 64
+#define GFX_MAX_PARAMETERS 64
 
 enum gfx_scale_type
 {
@@ -120,7 +121,7 @@ struct gfx_shader
    unsigned luts;
    struct gfx_shader_lut lut[GFX_MAX_TEXTURES];
 
-   struct gfx_shader_parameter parameters[64];
+   struct gfx_shader_parameter parameters[GFX_MAX_PARAMETERS];
    unsigned num_parameters;
 
    unsigned variables;

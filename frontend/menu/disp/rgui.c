@@ -316,6 +316,8 @@ static void rgui_render(void *data)
 #ifdef HAVE_SHADER_MANAGER
    else if (menu_type == RGUI_SETTINGS_SHADER_OPTIONS)
       strlcpy(title, "SHADER OPTIONS", sizeof(title));
+   else if (menu_type == RGUI_SETTINGS_SHADER_PARAMETERS)
+      strlcpy(title, "SHADER PARAMETERS", sizeof(title));
 #endif
    else if (menu_type == RGUI_SETTINGS_FONT_OPTIONS)
       strlcpy(title, "FONT OPTIONS", sizeof(title));
@@ -451,7 +453,7 @@ static void rgui_render(void *data)
             strlcpy(type_str, "(DIR)", sizeof(type_str));
             w = 5;
          }
-         else if (type == RGUI_SETTINGS_SHADER_OPTIONS || type == RGUI_SETTINGS_SHADER_PRESET)
+         else if (type == RGUI_SETTINGS_SHADER_OPTIONS || type == RGUI_SETTINGS_SHADER_PRESET || type == RGUI_SETTINGS_SHADER_PARAMETERS)
             strlcpy(type_str, "...", sizeof(type_str));
          else if (type == RGUI_SETTINGS_SHADER_FILTER)
             snprintf(type_str, sizeof(type_str), "%s",
