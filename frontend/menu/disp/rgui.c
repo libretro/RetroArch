@@ -317,7 +317,9 @@ static void rgui_render(void *data)
    else if (menu_type == RGUI_SETTINGS_SHADER_OPTIONS)
       strlcpy(title, "SHADER OPTIONS", sizeof(title));
    else if (menu_type == RGUI_SETTINGS_SHADER_PARAMETERS)
-      strlcpy(title, "SHADER PARAMETERS", sizeof(title));
+      strlcpy(title, "SHADER PARAMETERS (CURRENT)", sizeof(title));
+   else if (menu_type == RGUI_SETTINGS_SHADER_PRESET_PARAMETERS)
+      strlcpy(title, "SHADER PARAMETERS (RGUI PRESET)", sizeof(title));
 #endif
    else if (menu_type == RGUI_SETTINGS_FONT_OPTIONS)
       strlcpy(title, "FONT OPTIONS", sizeof(title));
@@ -453,13 +455,18 @@ static void rgui_render(void *data)
             strlcpy(type_str, "(DIR)", sizeof(type_str));
             w = 5;
          }
-         else if (type == RGUI_SETTINGS_SHADER_OPTIONS || type == RGUI_SETTINGS_SHADER_PRESET || type == RGUI_SETTINGS_SHADER_PARAMETERS)
+         else if (type == RGUI_SETTINGS_SHADER_OPTIONS || type == RGUI_SETTINGS_SHADER_PRESET || type == RGUI_SETTINGS_SHADER_PARAMETERS || type == RGUI_SETTINGS_SHADER_PRESET_PARAMETERS)
             strlcpy(type_str, "...", sizeof(type_str));
          else if (type == RGUI_SETTINGS_SHADER_FILTER)
             snprintf(type_str, sizeof(type_str), "%s",
                   g_settings.video.smooth ? "Linear" : "Nearest");
          else if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->shader_manager_get_str)
-            driver.menu_ctx->backend->shader_manager_get_str(&rgui->shader, type_str, sizeof(type_str), type);
+         {
+            if (type >= RGUI_SETTINGS_SHADER_PARAMETER_0 && type <= RGUI_SETTINGS_SHADER_PARAMETER_LAST)
+               driver.menu_ctx->backend->shader_manager_get_str(rgui->parameter_shader, type_str, sizeof(type_str), type);
+            else
+               driver.menu_ctx->backend->shader_manager_get_str(&rgui->shader, type_str, sizeof(type_str), type);
+         }
       }
       else
 #endif

@@ -43,6 +43,17 @@
 #endif
 #endif
 
+#ifdef HAVE_SHADER_MANAGER
+static inline struct gfx_shader *shader_manager_get_current_shader(rgui_handle_t *rgui, unsigned type)
+{
+   struct gfx_shader *shader = type == RGUI_SETTINGS_SHADER_PRESET_PARAMETERS ? &rgui->shader : NULL;
+   if (!shader && driver.video_poke && driver.video_data && driver.video_poke->get_current_shader)
+      shader = driver.video_poke->get_current_shader(driver.video_data);
+
+   return shader;
+}
+#endif
+
 static void menu_common_entries_init(void *data, unsigned menu_type)
 {
    rgui_handle_t *rgui = (rgui_handle_t*)data;
@@ -52,15 +63,15 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
    {
 #ifdef HAVE_SHADER_MANAGER
       case RGUI_SETTINGS_SHADER_PARAMETERS:
+      case RGUI_SETTINGS_SHADER_PRESET_PARAMETERS:
       {
          file_list_clear(rgui->selection_buf);
-         struct gfx_shader *shader = NULL;
-         if (driver.video_poke && driver.video_data && driver.video_poke->get_current_shader)
-            shader = driver.video_poke->get_current_shader(driver.video_data);
 
+         struct gfx_shader *shader = shader_manager_get_current_shader(rgui, menu_type);
          if (shader)
             for (i = 0; i < shader->num_parameters; i++)
                file_list_push(rgui->selection_buf, shader->parameters[i].desc, RGUI_SETTINGS_SHADER_PARAMETER_0 + i, 0);
+         rgui->parameter_shader = shader;
          break;
       }
       case RGUI_SETTINGS_SHADER_OPTIONS:
@@ -72,8 +83,10 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
                RGUI_SETTINGS_SHADER_PRESET, 0);
          file_list_push(rgui->selection_buf, "Save As Shader Preset",
                RGUI_SETTINGS_SHADER_PRESET_SAVE, 0);
-         file_list_push(rgui->selection_buf, "Shader Parameters",
+         file_list_push(rgui->selection_buf, "Parameters (Current)",
                RGUI_SETTINGS_SHADER_PARAMETERS, 0);
+         file_list_push(rgui->selection_buf, "Parameters (RGUI)",
+               RGUI_SETTINGS_SHADER_PRESET_PARAMETERS, 0);
          file_list_push(rgui->selection_buf, "Shader Passes",
                RGUI_SETTINGS_SHADER_PASSES, 0);
 
@@ -520,6 +533,7 @@ static unsigned menu_common_type_is(unsigned type)
       type == RGUI_SETTINGS_FONT_OPTIONS ||
       type == RGUI_SETTINGS_SHADER_OPTIONS ||
       type == RGUI_SETTINGS_SHADER_PARAMETERS ||
+      type == RGUI_SETTINGS_SHADER_PRESET_PARAMETERS ||
       type == RGUI_SETTINGS_AUDIO_OPTIONS ||
       type == RGUI_SETTINGS_DISK_OPTIONS ||
       type == RGUI_SETTINGS_PATH_OPTIONS ||
@@ -713,6 +727,7 @@ static int menu_settings_iterate(void *data, unsigned action)
             || menu_type == RGUI_SETTINGS_FONT_OPTIONS
             || menu_type == RGUI_SETTINGS_SHADER_OPTIONS
             || menu_type == RGUI_SETTINGS_SHADER_PARAMETERS
+            || menu_type == RGUI_SETTINGS_SHADER_PRESET_PARAMETERS
             )
          menu_common_entries_init(rgui, menu_type);
       else
@@ -1376,6 +1391,9 @@ static int menu_common_iterate(void *data, unsigned action)
                   unsigned pass = (menu_type - RGUI_SETTINGS_SHADER_0) / 3;
                   fill_pathname_join(rgui->shader.pass[pass].source.path,
                         dir, path, sizeof(rgui->shader.pass[pass].source.path));
+
+                  // This will reset any changed parameters.
+                  gfx_shader_resolve_parameters(NULL, &rgui->shader);
                }
 
                // Pop stack until we hit shader manager again.
@@ -1681,7 +1699,10 @@ static void menu_common_shader_manager_init(void *data)
       if (conf)
       {
          if (gfx_shader_read_conf_cgp(conf, &rgui->shader))
+         {
             gfx_shader_resolve_relative(&rgui->shader, g_settings.video.shader_path);
+            gfx_shader_resolve_parameters(conf, &rgui->shader);
+         }
          config_file_free(conf);
       }
    }
@@ -1708,7 +1729,10 @@ static void menu_common_shader_manager_init(void *data)
       if (conf)
       {
          if (gfx_shader_read_conf_cgp(conf, &rgui->shader))
+         {
             gfx_shader_resolve_relative(&rgui->shader, cgp_path);
+            gfx_shader_resolve_parameters(conf, &rgui->shader);
+         }
          config_file_free(conf);
       }
    }
@@ -1741,6 +1765,7 @@ static void menu_common_shader_manager_set_preset(void *data, unsigned type, con
          {
             gfx_shader_read_conf_cgp(conf, shader);
             gfx_shader_resolve_relative(shader, path);
+            gfx_shader_resolve_parameters(conf, shader);
             config_file_free(conf);
          }
 
@@ -1768,10 +1793,7 @@ static void menu_common_shader_manager_get_str(void *data, char *type_str, size_
       *type_str = '\0';
    else if (type >= RGUI_SETTINGS_SHADER_PARAMETER_0 && type <= RGUI_SETTINGS_SHADER_PARAMETER_LAST)
    {
-      struct gfx_shader *shader = NULL;
-      if (driver.video_poke && driver.video_data && driver.video_poke->get_current_shader)
-         shader = driver.video_poke->get_current_shader(driver.video_data);
-
+      // rgui->parameter_shader here.
       if (shader)
       {
          const struct gfx_shader_parameter *param = &shader->parameters[type - RGUI_SETTINGS_SHADER_PARAMETER_0];
@@ -1983,7 +2005,7 @@ static int menu_common_shader_manager_setting_toggle(void *data, unsigned settin
             break;
       }
    }
-   else if (setting == RGUI_SETTINGS_SHADER_PARAMETERS && action == RGUI_ACTION_OK)
+   else if ((setting == RGUI_SETTINGS_SHADER_PARAMETERS || setting == RGUI_SETTINGS_SHADER_PRESET_PARAMETERS) && action == RGUI_ACTION_OK)
    {
       file_list_push(rgui->menu_stack, "", setting, rgui->selection_ptr);
       menu_clear_navigation(rgui);
@@ -1991,14 +2013,10 @@ static int menu_common_shader_manager_setting_toggle(void *data, unsigned settin
    }
    else if (setting >= RGUI_SETTINGS_SHADER_PARAMETER_0 && setting <= RGUI_SETTINGS_SHADER_PARAMETER_LAST)
    {
-      struct gfx_shader *shader = NULL;
-      if (driver.video_poke && driver.video_data && driver.video_poke->get_current_shader)
-         shader = driver.video_poke->get_current_shader(driver.video_data);
-
-      if (!shader)
+      if (!rgui->parameter_shader)
          return 0;
 
-      struct gfx_shader_parameter *param = &shader->parameters[setting - RGUI_SETTINGS_SHADER_PARAMETER_0];
+      struct gfx_shader_parameter *param = &rgui->parameter_shader->parameters[setting - RGUI_SETTINGS_SHADER_PARAMETER_0];
       switch (action)
       {
          case RGUI_ACTION_START:
@@ -3659,6 +3677,7 @@ static int menu_common_setting_set(void *data, unsigned setting, unsigned action
          {
             case RGUI_ACTION_START:
                rgui->shader.passes = 0;
+               rgui->need_refresh = true;
                break;
 
             case RGUI_ACTION_LEFT:
@@ -3682,9 +3701,8 @@ static int menu_common_setting_set(void *data, unsigned setting, unsigned action
                break;
          }
 
-#ifndef HAVE_RMENU
-         rgui->need_refresh = true;
-#endif
+         if (rgui->need_refresh)
+            gfx_shader_resolve_parameters(NULL, &rgui->shader);
          break;
       case RGUI_SETTINGS_SHADER_APPLY:
       {

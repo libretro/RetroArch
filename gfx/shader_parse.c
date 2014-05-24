@@ -286,9 +286,6 @@ static struct gfx_shader_parameter *find_parameter(struct gfx_shader_parameter *
 
 bool gfx_shader_resolve_parameters(config_file_t *conf, struct gfx_shader *shader)
 {
-   char parameters[1024];
-   char *save = NULL;
-   const char *id;
    unsigned i;
 
    shader->num_parameters = 0;
@@ -330,6 +327,10 @@ bool gfx_shader_resolve_parameters(config_file_t *conf, struct gfx_shader *shade
    // Read in parameters which override the defaults.
    if (conf)
    {
+      char parameters[1024];
+      char *save = NULL;
+      const char *id;
+
       if (!config_get_array(conf, "parameters", parameters, sizeof(parameters)))
          return true;
 
@@ -624,6 +625,26 @@ void gfx_shader_write_conf_cgp(config_file_t *conf, const struct gfx_shader *sha
       config_set_string(conf, key, pass->alias);
 
       shader_write_fbo(conf, &pass->fbo, i);
+   }
+
+   if (shader->num_parameters)
+   {
+      char parameters[4096] = {0};
+      strlcpy(parameters, shader->parameters[0].id, sizeof(parameters));
+      for (i = 1; i < shader->num_parameters; i++)
+      {
+         // O(n^2), but number of parameters is very limited.
+         strlcat(parameters, ";", sizeof(parameters));
+         strlcat(parameters, shader->parameters[i].id, sizeof(parameters));
+      }
+
+      config_set_string(conf, "parameters", parameters);
+      
+      for (i = 0; i < shader->num_parameters; i++)
+      {
+         char key[64];
+         config_set_float(conf, shader->parameters[i].id, shader->parameters[i].current);
+      }
    }
 
    if (shader->luts)
