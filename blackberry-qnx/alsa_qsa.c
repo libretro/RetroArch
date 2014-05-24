@@ -80,12 +80,12 @@ static void *alsa_qsa_init(const char *device, unsigned rate, unsigned latency)
    params.format.rate = DEFAULT_RATE;
    params.format.voices = 2;
 
-   params.start_mode = SND_PCM_START_DATA;
+   params.start_mode = SND_PCM_START_FULL;
    params.stop_mode = SND_PCM_STOP_STOP;
 
    params.buf.block.frag_size = MAX_FRAG_SIZE;
    params.buf.block.frags_min = 1;
-   params.buf.block.frags_max = 1; 
+   params.buf.block.frags_max = 8; 
 
    if ((err = snd_pcm_plugin_params(alsa->pcm, &params)) < 0)
    {
