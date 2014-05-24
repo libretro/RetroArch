@@ -24,6 +24,8 @@
 #define MAX_FRAG_SIZE 3072
 #define DEFAULT_RATE 48000
 
+#define CHANNELS 2
+
 typedef struct alsa
 {
    snd_pcm_t *pcm;
@@ -33,6 +35,8 @@ typedef struct alsa
    bool can_pause;
    bool is_paused;
 } alsa_t;
+
+typedef long snd_pcm_sframes_t;
 
 static void *alsa_qsa_init(const char *device, unsigned rate, unsigned latency)
 {
@@ -80,7 +84,7 @@ static void *alsa_qsa_init(const char *device, unsigned rate, unsigned latency)
    params.stop_mode = SND_PCM_STOP_STOP;
 
    params.buf.block.frag_size = MAX_FRAG_SIZE;
-   params.buf.block.frags_min = 2;
+   params.buf.block.frags_min = 1;
    params.buf.block.frags_max = 1; 
 
    if ((err = snd_pcm_plugin_params(alsa->pcm, &params)) < 0)
@@ -120,39 +124,59 @@ error:
 
 static ssize_t alsa_qsa_write(void *data, const void *buf, size_t size)
 {
-   int written, status;
+   int status;
    alsa_t *alsa = (alsa_t*)data;
    snd_pcm_channel_status_t cstatus = {0};
+   snd_pcm_sframes_t written = 0;
 
-   written = snd_pcm_plugin_write(alsa->pcm, buf, size);
-
-   if (written != size)
+   /* Write the audio data, checking for EAGAIN (buffer full) and underrun */
+   while (size)
    {
+      snd_pcm_sframes_t frames = snd_pcm_plugin_write(alsa->pcm, buf, size);
+
+      if (frames == size)
+         goto increment;
+
       /* Check if samples playback got stuck somewhere in hardware or in */
       /* the audio device driver */
-      if ((errno == EAGAIN) && (written == 0))
-    	  return 0;
-
-      if ((errno == EINVAL) || (errno == EIO))
+      if (((errno == EAGAIN)) && (written == 0))
       {
-         cstatus.channel = SND_PCM_CHANNEL_PLAYBACK;
-         status = snd_pcm_plugin_status(alsa->pcm, &cstatus);
-
-         if (status > 0)
-            return 0;
-
-         if ((cstatus.status == SND_PCM_STATUS_UNDERRUN) ||
-               (cstatus.status == SND_PCM_STATUS_READY))
+         RARCH_ERR("Sample got stuck somewhere in hardware or in audio device driver.\n");
+         written += frames;
+         buf     += (frames * CHANNELS) * (alsa->has_float ? sizeof(float) : sizeof(int16_t));
+         return 0;
+      }
+      else
+      {
+         if ((errno == EINVAL) || (errno == EIO))
          {
-            status = snd_pcm_plugin_prepare(alsa->pcm, SND_PCM_CHANNEL_PLAYBACK);
-            if (status < 0)
+            cstatus.channel = SND_PCM_CHANNEL_PLAYBACK;
+            status = snd_pcm_plugin_status(alsa->pcm, &cstatus);
+
+            if (status > 0)
                return 0;
+
+            if ((cstatus.status == SND_PCM_STATUS_UNDERRUN) ||
+                  (cstatus.status == SND_PCM_STATUS_READY))
+            {
+               status = snd_pcm_plugin_prepare(alsa->pcm, SND_PCM_CHANNEL_PLAYBACK);
+               if (status < 0)
+                  return 0;
+            }
+            continue;
          }
       }
+
+      return 0;
+
+increment:
+      written += frames;
+      buf     += (frames * CHANNELS) * (alsa->has_float ? sizeof(float) : sizeof(int16_t));
+      size -= frames;
    }
 
-    return written;
- }
+   return written;
+}
 
 static bool alsa_qsa_stop(void *data)
 {
