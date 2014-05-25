@@ -246,7 +246,7 @@ static ssize_t alsa_qsa_write(void *data, const void *buf, size_t size)
 
       if (alsa->buffer_ptr >= alsa->buf_size)
       {
-         snd_pcm_sframes_t frames = snd_pcm_write(alsa->pcm, alsa->buffer, avail_write);
+         snd_pcm_sframes_t frames = snd_pcm_write(alsa->pcm, alsa->buffer[alsa->buffer_index], alsa->buf_size);
 
 #if 0
          bool original_verbosity = g_extern.verbose;
