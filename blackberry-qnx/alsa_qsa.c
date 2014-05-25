@@ -65,17 +65,11 @@ static void *alsa_qsa_init(const char *device, unsigned rate, unsigned latency)
       goto error;
    }
 
-   if ((err = snd_pcm_plugin_set_disable (alsa->pcm, PLUGIN_DISABLE_MMAP)) < 0)
-   {
-      RARCH_ERR("[ALSA QSA]: Can't disable MMAP plugin: %s\n", snd_strerror(err));
-      goto error;
-   }
-
    memset(&pi, 0, sizeof(pi));
    pi.channel = SND_PCM_CHANNEL_PLAYBACK;
-   if ((err = snd_pcm_plugin_info(alsa->pcm, &pi)) < 0)
+   if ((err = snd_pcm_channel_info(alsa->pcm, &pi)) < 0)
    {
-      RARCH_ERR("[ALSA QSA]: snd_pcm_plugin_info failed: %s\n",
+      RARCH_ERR("[ALSA QSA]: snd_pcm_channel_info failed: %s\n",
             snd_strerror(err));
       goto error;
    }
@@ -108,7 +102,7 @@ static void *alsa_qsa_init(const char *device, unsigned rate, unsigned latency)
    //FIXME: Hack turning on/off g_extern.verbose 
    g_extern.verbose = original_verbosity;
 
-   if ((err = snd_pcm_plugin_params(alsa->pcm, &params)) < 0)
+   if ((err = snd_pcm_channel_params(alsa->pcm, &params)) < 0)
    {
       RARCH_ERR("[ALSA QSA]: Channel Parameter Error: %s\n", snd_strerror(err));
       goto error;
@@ -116,7 +110,7 @@ static void *alsa_qsa_init(const char *device, unsigned rate, unsigned latency)
 
    setup.channel = SND_PCM_CHANNEL_PLAYBACK;
 
-   if ((err = snd_pcm_plugin_setup(alsa->pcm, &setup)) < 0)
+   if ((err = snd_pcm_channel_setup(alsa->pcm, &setup)) < 0)
    {
       RARCH_ERR("[ALSA QSA]: Channel Parameter Read Back Error: %s\n", snd_strerror(err));
       goto error;
@@ -125,7 +119,7 @@ static void *alsa_qsa_init(const char *device, unsigned rate, unsigned latency)
    alsa->buffer_size = setup.buf.block.frag_size * (setup.buf.block.frags_max+1);
    RARCH_LOG("[ALSA QSA]: buffer size: %d bytes\n", alsa->buffer_size);
 
-   if ((err = snd_pcm_plugin_prepare(alsa->pcm, SND_PCM_CHANNEL_PLAYBACK)) < 0)
+   if ((err = snd_pcm_channel_prepare(alsa->pcm, SND_PCM_CHANNEL_PLAYBACK)) < 0)
    {
       RARCH_ERR("[ALSA QSA]: Channel Prepare Error: %s\n", snd_strerror(err));
       goto error;
@@ -155,7 +149,7 @@ static int check_pcm_status(void *data, int channel_type)
    memset(&status, 0, sizeof (status));
    status.channel = channel_type;
 
-   if ((ret = snd_pcm_plugin_status(alsa->pcm, &status)) == 0)
+   if ((ret = snd_pcm_channel_status(alsa->pcm, &status)) == 0)
    {
       if (status.status == SND_PCM_STATUS_UNSECURE)
       {
@@ -165,27 +159,27 @@ static int check_pcm_status(void *data, int channel_type)
       else if (status.status == SND_PCM_STATUS_UNDERRUN)
       {
          RARCH_LOG("check_pcm_status: SNDP_CM_STATUS_UNDERRUN.\n");
-         if ((ret = snd_pcm_plugin_prepare(alsa->pcm, channel_type)) < 0)
+         if ((ret = snd_pcm_channel_prepare(alsa->pcm, channel_type)) < 0)
          {
-            RARCH_ERR("Invalid state detected for underrun on snd_pcm_plugin_prepare: %s\n", snd_strerror(ret));
+            RARCH_ERR("Invalid state detected for underrun on snd_pcm_channel_prepare: %s\n", snd_strerror(ret));
             ret = -EPROTO;
          }
       }
       else if (status.status == SND_PCM_STATUS_OVERRUN)
       {
          RARCH_LOG("check_pcm_status: SNDP_CM_STATUS_OVERRUN.\n");
-         if ((ret = snd_pcm_plugin_prepare(alsa->pcm, channel_type)) < 0)
+         if ((ret = snd_pcm_channel_prepare(alsa->pcm, channel_type)) < 0)
          {
-            RARCH_ERR("Invalid state detected for overrun on snd_pcm_plugin_prepare: %s\n", snd_strerror(ret));
+            RARCH_ERR("Invalid state detected for overrun on snd_pcm_channel_prepare: %s\n", snd_strerror(ret));
             ret = -EPROTO;
          }
       }
       else if (status.status == SND_PCM_STATUS_CHANGE)
       {
          RARCH_LOG("check_pcm_status: SNDP_CM_STATUS_CHANGE.\n");
-         if ((ret = snd_pcm_plugin_prepare(alsa->pcm, channel_type)) < 0)
+         if ((ret = snd_pcm_channel_prepare(alsa->pcm, channel_type)) < 0)
          {
-            RARCH_ERR("Invalid state detected for change on snd_pcm_plugin_prepare: %s\n", snd_strerror(ret));
+            RARCH_ERR("Invalid state detected for change on snd_pcm_channel_prepare: %s\n", snd_strerror(ret));
             ret = -EPROTO;
          }
       }
@@ -212,7 +206,7 @@ static ssize_t alsa_qsa_write(void *data, const void *buf, size_t size)
 
    while (size)
    {
-      snd_pcm_sframes_t frames = snd_pcm_plugin_write(alsa->pcm, buf, size);
+      snd_pcm_sframes_t frames = snd_pcm_write(alsa->pcm, buf, size);
 
 #if 0
       bool original_verbosity = g_extern.verbose;
@@ -253,7 +247,7 @@ static bool alsa_qsa_stop(void *data)
 #ifdef HAVE_BB10
       if (snd_pcm_playback_pause(alsa->pcm) == 0)
 #else
-      if (snd_pcm_plugin_flush(alsa->pcm, SND_PCM_CHANNEL_PLAYBACK) == 0)
+      if (snd_pcm_channel_flush(alsa->pcm, SND_PCM_CHANNEL_PLAYBACK) == 0)
 #endif
       {
          alsa->is_paused = true;
@@ -336,7 +330,7 @@ static size_t alsa_qsa_write_avail(void *data)
    snd_pcm_channel_status_t status = {0};
 
    status.channel = SND_PCM_CHANNEL_PLAYBACK;
-   snd_pcm_plugin_status(alsa->pcm, &status);
+   snd_pcm_channel_status(alsa->pcm, &status);
 
    return status.free;
 }
