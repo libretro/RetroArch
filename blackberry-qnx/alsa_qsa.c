@@ -28,27 +28,36 @@
 
 typedef struct alsa
 {
+   uint8_t **buffer;
+   uint8_t *buffer_chunk;
+   unsigned buffer_index;
+   unsigned buffer_ptr;
+   volatile unsigned buffered_blocks;
+
    snd_pcm_t *pcm;
-   size_t buffer_size;
    bool nonblock;
    bool has_float;
    bool can_pause;
    bool is_paused;
+   unsigned buf_size;
+   unsigned buf_count;
 } alsa_t;
 
 typedef long snd_pcm_sframes_t;
 
 static void *alsa_qsa_init(const char *device, unsigned rate, unsigned latency)
 {
+   int err, card, dev, i;
+   snd_pcm_channel_params_t params = {0};
+   snd_pcm_channel_info_t pi;
+   snd_pcm_channel_setup_t setup = {0};
+   alsa_t *alsa;
+
    (void)device;
    (void)rate;
    (void)latency;
 
-   int err, card, dev;
-   snd_pcm_channel_params_t params = {0};
-   snd_pcm_channel_info_t pi;
-   snd_pcm_channel_setup_t setup = {0};
-   alsa_t *alsa = (alsa_t*)calloc(1, sizeof(alsa_t));
+   alsa = (alsa_t*)calloc(1, sizeof(alsa_t));
    if (!alsa)
       return NULL;
 
@@ -116,14 +125,32 @@ static void *alsa_qsa_init(const char *device, unsigned rate, unsigned latency)
       goto error;
    }
 
-   alsa->buffer_size = setup.buf.block.frag_size * (setup.buf.block.frags_max+1);
-   RARCH_LOG("[ALSA QSA]: buffer size: %d bytes\n", alsa->buffer_size);
+   if (g_settings.audio.block_frames)
+      alsa->buf_size = g_settings.audio.block_frames * 4;
+   else
+      alsa->buf_size = next_pow2(32 * latency);
+
+   RARCH_LOG("[ALSA QSA]: buffer size: %d bytes\n", alsa->buf_size);
+
+   alsa->buf_count = (latency * 4 * rate + 500) / 1000;
+   alsa->buf_count = (alsa->buf_count + alsa->buf_size / 2) / alsa->buf_size;
 
    if ((err = snd_pcm_channel_prepare(alsa->pcm, SND_PCM_CHANNEL_PLAYBACK)) < 0)
    {
       RARCH_ERR("[ALSA QSA]: Channel Prepare Error: %s\n", snd_strerror(err));
       goto error;
    }
+
+   alsa->buffer = (uint8_t**)calloc(sizeof(uint8_t*), alsa->buf_count);
+   if (!alsa->buffer)
+      goto error;
+
+   alsa->buffer_chunk = (uint8_t*)calloc(alsa->buf_count, alsa->buf_size);
+   if (!alsa->buffer_chunk)
+      goto error;
+
+   for (i = 0; i < alsa->buf_count; i++)
+      alsa->buffer[i] = alsa->buffer_chunk + i * alsa->buf_size;
 
    alsa->has_float = false;
 #ifdef HAVE_BB10
@@ -204,35 +231,46 @@ static ssize_t alsa_qsa_write(void *data, const void *buf, size_t size)
    snd_pcm_channel_status_t cstatus = {0};
    snd_pcm_sframes_t written = 0;
 
+
    while (size)
    {
-      snd_pcm_sframes_t frames = snd_pcm_write(alsa->pcm, buf, size);
+      size_t avail_write = min(alsa->buf_size - alsa->buffer_ptr, size);
+      if (avail_write)
+      {
+         memcpy(alsa->buffer[alsa->buffer_index] + alsa->buffer_ptr, buf, avail_write);
+         alsa->buffer_ptr += avail_write;
+         buf            += avail_write;
+         size           -= avail_write;
+         written        += avail_write;
+      }
+
+      if (alsa->buffer_ptr >= alsa->buf_size)
+      {
+         snd_pcm_sframes_t frames = snd_pcm_write(alsa->pcm, alsa->buffer, avail_write);
 
 #if 0
-      bool original_verbosity = g_extern.verbose;
-      g_extern.verbose = true;
-      RARCH_LOG("frames: %d, size: %d\n", frames, size);
-      g_extern.verbose = original_verbosity;
+         bool original_verbosity = g_extern.verbose;
+         g_extern.verbose = true;
+         RARCH_LOG("frames: %d, size: %d\n", frames, size);
+         g_extern.verbose = original_verbosity;
 #endif
+         alsa->buffer_index = (alsa->buffer_index + 1) % alsa->buf_count;
+         alsa->buffer_ptr = 0;
 
-      if (frames <= 0)
-      {
-         int ret;
+         if (frames <= 0)
+         {
+            int ret;
 
-         if (frames == -EAGAIN)
-            continue;
+            if (frames == -EAGAIN)
+               continue;
 
-         ret = check_pcm_status(alsa, SND_PCM_CHANNEL_PLAYBACK);
+            ret = check_pcm_status(alsa, SND_PCM_CHANNEL_PLAYBACK);
 
-         if (ret == -EPROTO || ret == -EBADF)
-            return -1;
+            if (ret == -EPROTO || ret == -EBADF)
+               return -1;
+         }
       }
-      else
-      {
-         written += frames;
-         buf     += (frames * CHANNELS) * (alsa->has_float ? sizeof(float) : sizeof(int16_t));
-         size -= frames;
-      }
+
    }
 
    return written;
@@ -320,6 +358,8 @@ static void alsa_qsa_free(void *data)
          snd_pcm_close(alsa->pcm);
          alsa->pcm = NULL;
       }
+      free(alsa->buffer);
+      free(alsa->buffer_chunk);
       free(alsa);
    }
 }
@@ -327,18 +367,14 @@ static void alsa_qsa_free(void *data)
 static size_t alsa_qsa_write_avail(void *data)
 {
    alsa_t *alsa = (alsa_t*)data;
-   snd_pcm_channel_status_t status = {0};
-
-   status.channel = SND_PCM_CHANNEL_PLAYBACK;
-   snd_pcm_channel_status(alsa->pcm, &status);
-
-   return status.free;
+   size_t avail = (alsa->buf_count - (int)alsa->buffered_blocks - 1) * alsa->buf_size + (alsa->buf_size - (int)alsa->buffer_ptr);
+   return avail;
 }
 
 static size_t alsa_qsa_buffer_size(void *data)
 {
    alsa_t *alsa = (alsa_t*)data;
-   return alsa->buffer_size;
+   return alsa->buf_size * alsa->buf_count; 
 }
 
 const audio_driver_t audio_alsa = {
