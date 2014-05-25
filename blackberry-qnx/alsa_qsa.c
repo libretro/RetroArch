@@ -143,6 +143,58 @@ error:
    return (void*)-1;
 }
 
+static int check_pcm_status(void *data, int channel_type)
+{
+   alsa_t *alsa = (alsa_t*)data;
+   snd_pcm_channel_status_t status;
+   int ret = EOK;
+
+   memset(&status, 0, sizeof (status));
+   status.channel = channel_type;
+
+   if ((ret = snd_pcm_plugin_status(alsa->pcm, &status)) == 0)
+   {
+      if (status.status == SND_PCM_STATUS_UNSECURE)
+      {
+         RARCH_ERR("check_pcm_status got SND_PCM_STATUS_UNSECURE, aborting playback\n");
+         ret = -EPROTO;
+      }
+      else if (status.status == SND_PCM_STATUS_UNDERRUN)
+      {
+         if ((ret = snd_pcm_plugin_prepare(alsa->pcm, channel_type)) < 0)
+         {
+            RARCH_ERR("Invalid state detected for underrun on snd_pcm_plugin_prepare: %s\n", snd_strerror(ret));
+            ret = -EPROTO;
+         }
+      }
+      else if (status.status == SND_PCM_STATUS_OVERRUN)
+      {
+         if ((ret = snd_pcm_plugin_prepare(alsa->pcm, channel_type)) < 0)
+         {
+            RARCH_ERR("Invalid state detected for overrun on snd_pcm_plugin_prepare: %s\n", snd_strerror(ret));
+            ret = -EPROTO;
+         }
+      }
+      else if (status.status == SND_PCM_STATUS_CHANGE)
+      {
+         if ((ret = snd_pcm_plugin_prepare(alsa->pcm, channel_type)) < 0)
+         {
+            RARCH_ERR("Invalid state detected for change on snd_pcm_plugin_prepare: %s\n", snd_strerror(ret));
+            ret = -EPROTO;
+         }
+      }
+   }
+   else
+   {
+      RARCH_ERR("check_pcm_status failed: %s\n", snd_strerror(ret));
+      if (ret == -ESRCH)
+         ret = -EBADF;
+   }
+
+   return ret;
+}
+
+
 static ssize_t alsa_qsa_write(void *data, const void *buf, size_t size)
 {
    int status;
@@ -150,50 +202,28 @@ static ssize_t alsa_qsa_write(void *data, const void *buf, size_t size)
    snd_pcm_channel_status_t cstatus = {0};
    snd_pcm_sframes_t written = 0;
 
-   /* Write the audio data, checking for EAGAIN (buffer full) and underrun */
    while (size)
    {
       snd_pcm_sframes_t frames = snd_pcm_plugin_write(alsa->pcm, buf, size);
 
-      if (frames == size)
-         goto increment;
-
-      /* Check if samples playback got stuck somewhere in hardware or in */
-      /* the audio device driver */
-      if (((errno == EAGAIN)) && (written == 0))
+      if (frames <= 0)
       {
-         RARCH_ERR("Sample got stuck somewhere in hardware or in audio device driver.\n");
-         written += frames;
-         buf     += (frames * CHANNELS) * (alsa->has_float ? sizeof(float) : sizeof(int16_t));
-         return 0;
+         int ret;
+
+         if (frames == -EAGAIN)
+            continue;
+
+         ret = check_pcm_status(alsa, SND_PCM_CHANNEL_PLAYBACK);
+
+         if (ret == -EPROTO || ret == -EBADF)
+            return -1;
       }
       else
       {
-         if ((errno == EINVAL) || (errno == EIO))
-         {
-            cstatus.channel = SND_PCM_CHANNEL_PLAYBACK;
-            status = snd_pcm_plugin_status(alsa->pcm, &cstatus);
-
-            if (status > 0)
-               return 0;
-
-            if ((cstatus.status == SND_PCM_STATUS_UNDERRUN) ||
-                  (cstatus.status == SND_PCM_STATUS_READY))
-            {
-               status = snd_pcm_plugin_prepare(alsa->pcm, SND_PCM_CHANNEL_PLAYBACK);
-               if (status < 0)
-                  return 0;
-            }
-            continue;
-         }
+         written += frames;
+         buf     += (frames * CHANNELS) * (alsa->has_float ? sizeof(float) : sizeof(int16_t));
+         size -= frames;
       }
-
-      return 0;
-
-increment:
-      written += frames;
-      buf     += (frames * CHANNELS) * (alsa->has_float ? sizeof(float) : sizeof(int16_t));
-      size -= frames;
    }
 
    return written;
