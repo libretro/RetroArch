@@ -90,7 +90,7 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
 #endif
          file_list_push(rgui->selection_buf, "Load Dummy On Core Shutdown", RGUI_SETTINGS_LOAD_DUMMY_ON_CORE_SHUTDOWN, 0);
          file_list_push(rgui->selection_buf, "Show Framerate", RGUI_SETTINGS_DEBUG_TEXT, 0);
-         file_list_push(rgui->selection_buf, "Game Speed Cap", RGUI_SETTINGS_FASTFORWARD_RATIO, 0);
+         file_list_push(rgui->selection_buf, "Maximum Run Speed", RGUI_SETTINGS_FASTFORWARD_RATIO, 0);
          file_list_push(rgui->selection_buf, "Slow-Motion Ratio", RGUI_SETTINGS_SLOWMOTION_RATIO, 0);
          file_list_push(rgui->selection_buf, "Rewind", RGUI_SETTINGS_REWIND_ENABLE, 0);
          file_list_push(rgui->selection_buf, "Rewind Granularity", RGUI_SETTINGS_REWIND_GRANULARITY, 0);
