@@ -145,6 +145,9 @@ error:
 
 static int check_pcm_status(void *data, int channel_type)
 {
+   bool original_verbosity = g_extern.verbose;
+   g_extern.verbose = true;
+
    alsa_t *alsa = (alsa_t*)data;
    snd_pcm_channel_status_t status;
    int ret = EOK;
@@ -194,6 +197,8 @@ static int check_pcm_status(void *data, int channel_type)
          ret = -EBADF;
    }
 
+   g_extern.verbose = original_verbosity;
+
    return ret;
 }
 
@@ -208,6 +213,13 @@ static ssize_t alsa_qsa_write(void *data, const void *buf, size_t size)
    while (size)
    {
       snd_pcm_sframes_t frames = snd_pcm_plugin_write(alsa->pcm, buf, size);
+
+#if 0
+      bool original_verbosity = g_extern.verbose;
+      g_extern.verbose = true;
+      RARCH_LOG("frames: %d, size: %d\n", frames, size);
+      g_extern.verbose = original_verbosity;
+#endif
 
       if (frames <= 0)
       {
