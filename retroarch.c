@@ -2358,14 +2358,11 @@ static void check_shader_dir(void)
       const char *shader          = g_extern.shader_dir.list->elems[g_extern.shader_dir.ptr].data;
       enum rarch_shader_type type = RARCH_SHADER_NONE;
 
-      const char *ext = strrchr(shader, '.');
-      if (ext)
-      {
-         if (strcmp(ext, ".shader") == 0)
-            type = RARCH_SHADER_GLSL;
-         else if (strcmp(ext, ".cg") == 0 || strcmp(ext, ".cgp") == 0)
-            type = RARCH_SHADER_CG;
-      }
+      const char *ext = path_get_extension(shader);
+      if (strcmp(ext, "glsl") == 0 || strcmp(ext, "glslp") == 0)
+         type = RARCH_SHADER_GLSL;
+      else if (strcmp(ext, "cg") == 0 || strcmp(ext, "cgp") == 0)
+         type = RARCH_SHADER_CG;
 
       if (type == RARCH_SHADER_NONE)
          return;
