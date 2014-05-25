@@ -479,7 +479,7 @@ static bool load_plain(const char *path)
    if (path)
    {
       RARCH_LOG("Loading Cg file: %s\n", path);
-      strlcpy(cg_shader->pass[0].source.cg, path, sizeof(cg_shader->pass[0].source.cg));
+      strlcpy(cg_shader->pass[0].source.path, path, sizeof(cg_shader->pass[0].source.path));
       if (!load_program(1, path, true))
          return false;
    }
@@ -546,9 +546,9 @@ static bool load_imports(void)
 static bool load_shader(unsigned i)
 {
    RARCH_LOG("Loading Cg shader: \"%s\".\n",
-         cg_shader->pass[i].source.cg);
+         cg_shader->pass[i].source.path);
 
-   if (!load_program(i + 1, cg_shader->pass[i].source.cg, true))
+   if (!load_program(i + 1, cg_shader->pass[i].source.path, true))
       return false;
 
    return true;

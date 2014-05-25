@@ -1354,8 +1354,8 @@ static int menu_common_iterate(void *data, unsigned action)
                else
                {
                   unsigned pass = (menu_type - RGUI_SETTINGS_SHADER_0) / 3;
-                  fill_pathname_join(rgui->shader.pass[pass].source.cg,
-                        dir, path, sizeof(rgui->shader.pass[pass].source.cg));
+                  fill_pathname_join(rgui->shader.pass[pass].source.path,
+                        dir, path, sizeof(rgui->shader.pass[pass].source.path));
                }
 
                // Pop stack until we hit shader manager again.
@@ -1662,8 +1662,8 @@ static void menu_common_shader_manager_init(void *data)
    }
    else if (strcmp(ext, "glsl") == 0 || strcmp(ext, "cg") == 0)
    {
-      strlcpy(rgui->shader.pass[0].source.cg, g_settings.video.shader_path,
-            sizeof(rgui->shader.pass[0].source.cg));
+      strlcpy(rgui->shader.pass[0].source.path, g_settings.video.shader_path,
+            sizeof(rgui->shader.pass[0].source.path));
       rgui->shader.passes = 1;
    }
    else
@@ -1749,9 +1749,9 @@ static void menu_common_shader_manager_get_str(void *data, char *type_str, size_
       switch ((type - RGUI_SETTINGS_SHADER_0) % 3)
       {
          case 0:
-            if (*shader->pass[pass].source.cg)
+            if (*shader->pass[pass].source.path)
                fill_pathname_base(type_str,
-                     shader->pass[pass].source.cg, type_str_size);
+                     shader->pass[pass].source.path, type_str_size);
             else
                strlcpy(type_str, "N/A", type_str_size);
             break;
@@ -1887,7 +1887,7 @@ static unsigned menu_common_shader_manager_get_type(void *data)
 
    for (i = 0; i < shader->passes; i++)
    {
-      enum rarch_shader_type pass_type = gfx_shader_parse_type(shader->pass[i].source.cg,
+      enum rarch_shader_type pass_type = gfx_shader_parse_type(shader->pass[i].source.path,
             RARCH_SHADER_NONE);
 
       switch (pass_type)
@@ -1960,7 +1960,7 @@ static int menu_common_shader_manager_setting_toggle(void *data, unsigned settin
 
          case RGUI_ACTION_START:
             if (pass)
-               *pass->source.cg = '\0';
+               *pass->source.path = '\0';
             break;
 
          default:

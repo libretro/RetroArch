@@ -415,11 +415,11 @@ static GLuint compile_program(const char *vertex, const char *fragment, unsigned
 
 static bool load_source_path(struct gfx_shader_pass *pass, const char *path)
 {
-   if (read_file(path, (void**)&pass->source.xml.vertex) <= 0)
+   if (read_file(path, (void**)&pass->source.string.vertex) <= 0)
       return false;
 
-   pass->source.xml.fragment = strdup(pass->source.xml.vertex);
-   return pass->source.xml.fragment && pass->source.xml.vertex;
+   pass->source.string.fragment = strdup(pass->source.string.vertex);
+   return pass->source.string.fragment && pass->source.string.vertex;
 }
 
 static bool compile_programs(GLuint *gl_prog)
@@ -432,15 +432,15 @@ static bool compile_programs(GLuint *gl_prog)
       // If we load from GLSLP (CGP),
       // load the file here, and pretend
       // we were really using XML all along.
-      if (*pass->source.cg && !load_source_path(pass, pass->source.cg))
+      if (*pass->source.path && !load_source_path(pass, pass->source.path))
       {
-         RARCH_ERR("Failed to load GLSL shader: %s.\n", pass->source.cg);
+         RARCH_ERR("Failed to load GLSL shader: %s.\n", pass->source.path);
          return false;
       }
-      *pass->source.cg = '\0';
+      *pass->source.path = '\0';
 
-      const char *vertex   = pass->source.xml.vertex;
-      const char *fragment = pass->source.xml.fragment;
+      const char *vertex   = pass->source.string.vertex;
+      const char *fragment = pass->source.string.fragment;
 
       gl_prog[i] = compile_program(vertex, fragment, i);
 
@@ -588,8 +588,8 @@ static void gl_glsl_free_shader(void)
 
    for (i = 0; i < glsl_shader->passes; i++)
    {
-      free(glsl_shader->pass[i].source.xml.vertex);
-      free(glsl_shader->pass[i].source.xml.fragment);
+      free(glsl_shader->pass[i].source.string.vertex);
+      free(glsl_shader->pass[i].source.string.fragment);
    }
 
    free(glsl_shader->script);
@@ -667,7 +667,7 @@ static bool gl_glsl_init(void *data, const char *path)
       bool ret;
       if (strcmp(path_get_extension(path), "glsl") == 0)
       {
-         strlcpy(glsl_shader->pass[0].source.cg, path, sizeof(glsl_shader->pass[0].source.cg));
+         strlcpy(glsl_shader->pass[0].source.path, path, sizeof(glsl_shader->pass[0].source.path));
          glsl_shader->passes = 1;
          glsl_shader->modern = true;
          ret = true;
@@ -685,7 +685,7 @@ static bool gl_glsl_init(void *data, const char *path)
             ret = false;
       }
       else
-         ret = gfx_shader_read_xml(path, glsl_shader);
+         ret = false;
 
       if (!ret)
       {
@@ -697,8 +697,8 @@ static bool gl_glsl_init(void *data, const char *path)
    {
       RARCH_WARN("[GL]: Stock GLSL shaders will be used.\n");
       glsl_shader->passes = 1;
-      glsl_shader->pass[0].source.xml.vertex   = strdup(glsl_core ? stock_vertex_core : stock_vertex_modern);
-      glsl_shader->pass[0].source.xml.fragment = strdup(glsl_core ? stock_fragment_core : stock_fragment_modern);
+      glsl_shader->pass[0].source.string.vertex   = strdup(glsl_core ? stock_vertex_core : stock_vertex_modern);
+      glsl_shader->pass[0].source.string.fragment = strdup(glsl_core ? stock_fragment_core : stock_fragment_modern);
       glsl_shader->modern = true;
    }
 

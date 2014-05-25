@@ -69,12 +69,12 @@ struct gfx_shader_pass
 {
    struct
    {
-      char cg[PATH_MAX];
+      char path[PATH_MAX];
       struct
       {
          char *vertex; // Dynamically allocated. Must be free'd.
          char *fragment; // Dynamically allocated. Must be free'd.
-      } xml;
+      } string;
    } source;
 
    struct gfx_fbo_scale fbo;
@@ -116,7 +116,6 @@ struct gfx_shader
 };
 
 bool gfx_shader_read_conf_cgp(config_file_t *conf, struct gfx_shader *shader);
-bool gfx_shader_read_xml(const char *path, struct gfx_shader *shader);
 void gfx_shader_write_conf_cgp(config_file_t *conf, const struct gfx_shader *shader);
 
 void gfx_shader_resolve_relative(struct gfx_shader *shader, const char *ref_path);
