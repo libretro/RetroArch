@@ -2447,7 +2447,7 @@ static int menu_common_setting_set(void *data, unsigned setting, unsigned action
                g_settings.fastforward_ratio += 0.1f;
                clamp_value = true;
             }
-            
+
             if (clamp_value)
                g_settings.fastforward_ratio = max(min(g_settings.fastforward_ratio, 10.0f), 1.0f);
          }
