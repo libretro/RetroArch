@@ -55,8 +55,8 @@ else
    DYLIB = dll
 endif
 
-CC      := $(compiler)
-CXX     := $(subst CC,++,$(compiler)) -std=gnu++0x
+CC      := $(compiler) -Wall
+CXX     := $(subst CC,++,$(compiler)) -std=gnu++0x -Wall
 flags   := -fPIC $(extra_flags)
 asflags := -fPIC  $(extra_flags)
 objects :=
