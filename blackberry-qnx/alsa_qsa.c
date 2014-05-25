@@ -161,6 +161,7 @@ static int check_pcm_status(void *data, int channel_type)
       }
       else if (status.status == SND_PCM_STATUS_UNDERRUN)
       {
+         RARCH_LOG("check_pcm_status: SNDP_CM_STATUS_UNDERRUN.\n");
          if ((ret = snd_pcm_plugin_prepare(alsa->pcm, channel_type)) < 0)
          {
             RARCH_ERR("Invalid state detected for underrun on snd_pcm_plugin_prepare: %s\n", snd_strerror(ret));
@@ -169,6 +170,7 @@ static int check_pcm_status(void *data, int channel_type)
       }
       else if (status.status == SND_PCM_STATUS_OVERRUN)
       {
+         RARCH_LOG("check_pcm_status: SNDP_CM_STATUS_OVERRUN.\n");
          if ((ret = snd_pcm_plugin_prepare(alsa->pcm, channel_type)) < 0)
          {
             RARCH_ERR("Invalid state detected for overrun on snd_pcm_plugin_prepare: %s\n", snd_strerror(ret));
@@ -177,6 +179,7 @@ static int check_pcm_status(void *data, int channel_type)
       }
       else if (status.status == SND_PCM_STATUS_CHANGE)
       {
+         RARCH_LOG("check_pcm_status: SNDP_CM_STATUS_CHANGE.\n");
          if ((ret = snd_pcm_plugin_prepare(alsa->pcm, channel_type)) < 0)
          {
             RARCH_ERR("Invalid state detected for change on snd_pcm_plugin_prepare: %s\n", snd_strerror(ret));
