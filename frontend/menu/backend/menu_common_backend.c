@@ -90,6 +90,8 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
 #endif
          file_list_push(rgui->selection_buf, "Load Dummy On Core Shutdown", RGUI_SETTINGS_LOAD_DUMMY_ON_CORE_SHUTDOWN, 0);
          file_list_push(rgui->selection_buf, "Show Framerate", RGUI_SETTINGS_DEBUG_TEXT, 0);
+         file_list_push(rgui->selection_buf, "Fast-forward Ratio", RGUI_SETTINGS_FASTFORWARD_RATIO, 0);
+         file_list_push(rgui->selection_buf, "Slow-Motion Ratio", RGUI_SETTINGS_SLOWMOTION_RATIO, 0);
          file_list_push(rgui->selection_buf, "Rewind", RGUI_SETTINGS_REWIND_ENABLE, 0);
          file_list_push(rgui->selection_buf, "Rewind Granularity", RGUI_SETTINGS_REWIND_GRANULARITY, 0);
          file_list_push(rgui->selection_buf, "SRAM Block Overwrite", RGUI_SETTINGS_BLOCK_SRAM_OVERWRITE, 0);
@@ -2406,27 +2408,53 @@ static int menu_common_setting_set(void *data, unsigned setting, unsigned action
          }
          break;
       case RGUI_SETTINGS_AUDIO_VOLUME:
-      {
-         float db_delta = 0.0f;
-         if (action == RGUI_ACTION_START)
          {
-            g_extern.audio_data.volume_db = 0.0f;
-            g_extern.audio_data.volume_gain = 1.0f;
-         }
-         else if (action == RGUI_ACTION_LEFT)
-            db_delta -= 1.0f;
-         else if (action == RGUI_ACTION_RIGHT)
-            db_delta += 1.0f;
+            float db_delta = 0.0f;
+            if (action == RGUI_ACTION_START)
+            {
+               g_extern.audio_data.volume_db = 0.0f;
+               g_extern.audio_data.volume_gain = 1.0f;
+            }
+            else if (action == RGUI_ACTION_LEFT)
+               db_delta -= 1.0f;
+            else if (action == RGUI_ACTION_RIGHT)
+               db_delta += 1.0f;
 
-         if (db_delta != 0.0f)
-         {
-            g_extern.audio_data.volume_db += db_delta;
-            g_extern.audio_data.volume_db = max(g_extern.audio_data.volume_db, -80.0f);
-            g_extern.audio_data.volume_db = min(g_extern.audio_data.volume_db, 12.0f);
-            g_extern.audio_data.volume_gain = db_to_gain(g_extern.audio_data.volume_db);
+            if (db_delta != 0.0f)
+            {
+               g_extern.audio_data.volume_db += db_delta;
+               g_extern.audio_data.volume_db = max(g_extern.audio_data.volume_db, -80.0f);
+               g_extern.audio_data.volume_db = min(g_extern.audio_data.volume_db, 12.0f);
+               g_extern.audio_data.volume_gain = db_to_gain(g_extern.audio_data.volume_db);
+            }
          }
          break;
-      }
+      case RGUI_SETTINGS_FASTFORWARD_RATIO:
+         {
+            if (action == RGUI_ACTION_START)
+               g_settings.fastforward_ratio = fastforward_ratio;
+            else if (action == RGUI_ACTION_LEFT)
+            {
+               if (g_settings.fastforward_ratio > -1.0f)
+                  g_settings.fastforward_ratio -= 0.01f;
+            }
+            else if (action == RGUI_ACTION_RIGHT)
+               g_settings.fastforward_ratio += 0.01f;
+         }
+         break;
+      case RGUI_SETTINGS_SLOWMOTION_RATIO:
+         {
+            if (action == RGUI_ACTION_START)
+               g_settings.slowmotion_ratio = slowmotion_ratio;
+            else if (action == RGUI_ACTION_LEFT)
+            {
+               if (g_settings.slowmotion_ratio > 1.0f)
+                  g_settings.slowmotion_ratio -= 0.01f;
+            }
+            else if (action == RGUI_ACTION_RIGHT)
+               g_settings.slowmotion_ratio += 0.01f;
+         }
+         break;
       case RGUI_SETTINGS_DEBUG_TEXT:
          if (action == RGUI_ACTION_START)
             g_settings.fps_show = false;
@@ -3966,6 +3994,12 @@ static void menu_common_setting_set_label(char *type_str, size_t type_str_size, 
          break;
       case RGUI_SETTINGS_AUDIO_CONTROL_RATE_DELTA:
          snprintf(type_str, type_str_size, "%.3f", g_settings.audio.rate_control_delta);
+         break;
+      case RGUI_SETTINGS_FASTFORWARD_RATIO:
+         snprintf(type_str, type_str_size, "%.3f", g_settings.fastforward_ratio);
+         break;
+      case RGUI_SETTINGS_SLOWMOTION_RATIO:
+         snprintf(type_str, type_str_size, "%.3f", g_settings.slowmotion_ratio);
          break;
       case RGUI_SETTINGS_DEBUG_TEXT:
          snprintf(type_str, type_str_size, (g_settings.fps_show) ? "ON" : "OFF");
