@@ -33,6 +33,7 @@
 									<listOptionValue builtIn="false" value="HAVE_DYLIB"/>
 									<listOptionValue builtIn="false" value="RARCH_INTERNAL"/>
 									<listOptionValue builtIn="false" value="HAVE_CC_RESAMPLER"/>
+									<listOptionValue builtIn="false" value="HAVE_ALSA"/>
 									<listOptionValue builtIn="false" value="HAVE_RGUI"/>
 									<listOptionValue builtIn="false" value="HAVE_MENU"/>
 									<listOptionValue builtIn="false" value="HAVE_NEON"/>
@@ -156,7 +157,8 @@
 									<listOptionValue builtIn="false" value="_FORTIFY_SOURCE=0"/>
 									<listOptionValue builtIn="false" value="HAVE_DYLIB"/>
 									<listOptionValue builtIn="false" value="RARCH_INTERNAL"/>
-									<listOptionValue builtIn="false" value="HAVE_CC"/>
+									<listOptionValue builtIn="false" value="HAVE_CC_RESAMPLER"/>
+									<listOptionValue builtIn="false" value="HAVE_ALSA"/>
 									<listOptionValue builtIn="false" value="HAVE_RGUI"/>
 									<listOptionValue builtIn="false" value="HAVE_MENU"/>
 									<listOptionValue builtIn="false" value="HAVE_NEON"/>
@@ -282,7 +284,8 @@
 									<listOptionValue builtIn="false" value="_FORTIFY_SOURCE=0"/>
 									<listOptionValue builtIn="false" value="HAVE_DYLIB"/>
 									<listOptionValue builtIn="false" value="RARCH_INTERNAL"/>
-									<listOptionValue builtIn="false" value="HAVE_CC"/>
+									<listOptionValue builtIn="false" value="HAVE_CC_RESAMPLER"/>
+									<listOptionValue builtIn="false" value="HAVE_ALSA"/>
 									<listOptionValue builtIn="false" value="HAVE_RGUI"/>
 									<listOptionValue builtIn="false" value="HAVE_MENU"/>
 									<listOptionValue builtIn="false" value="HAVE_NEON"/>
@@ -403,7 +406,8 @@
 									<listOptionValue builtIn="false" value="_FORTIFY_SOURCE=0"/>
 									<listOptionValue builtIn="false" value="HAVE_DYLIB"/>
 									<listOptionValue builtIn="false" value="RARCH_INTERNAL"/>
-									<listOptionValue builtIn="false" value="HAVE_CC"/>
+									<listOptionValue builtIn="false" value="HAVE_CC_RESAMPLER"/>
+									<listOptionValue builtIn="false" value="HAVE_ALSA"/>
 									<listOptionValue builtIn="false" value="HAVE_RGUI"/>
 									<listOptionValue builtIn="false" value="HAVE_MENU"/>
 									<listOptionValue builtIn="false" value="HAVE_NEON"/>
@@ -519,10 +523,10 @@
 		<scannerConfigBuildInfo instanceId="com.qnx.qcc.configuration.exe.profile.coverage.1511241566">
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="com.qnx.tools.ide.qde.managedbuilder.core.qccScannerInfo"/>
 		</scannerConfigBuildInfo>
-		<scannerConfigBuildInfo instanceId="com.qnx.qcc.configuration.exe.release.237026123">
+		<scannerConfigBuildInfo instanceId="com.qnx.qcc.configuration.exe.profile.coverage.511003583">
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="com.qnx.tools.ide.qde.managedbuilder.core.qccScannerInfo"/>
 		</scannerConfigBuildInfo>
-		<scannerConfigBuildInfo instanceId="com.qnx.qcc.configuration.exe.profile.coverage.511003583">
+		<scannerConfigBuildInfo instanceId="com.qnx.qcc.configuration.exe.release.237026123">
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="com.qnx.tools.ide.qde.managedbuilder.core.qccScannerInfo"/>
 		</scannerConfigBuildInfo>
 	</storageModule>

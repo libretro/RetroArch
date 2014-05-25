@@ -153,9 +153,7 @@ static void *alsa_qsa_init(const char *device, unsigned rate, unsigned latency)
       alsa->buffer[i] = alsa->buffer_chunk + i * alsa->buf_size;
 
    alsa->has_float = false;
-#ifdef HAVE_BB10
    alsa->can_pause = true;
-#endif
    RARCH_LOG("[ALSA QSA]: Can pause: %s.\n", alsa->can_pause ? "yes" : "no");
 
    return alsa;
@@ -282,11 +280,7 @@ static bool alsa_qsa_stop(void *data)
 
    if (alsa->can_pause && !alsa->is_paused)
    {
-#ifdef HAVE_BB10
       if (snd_pcm_playback_pause(alsa->pcm) == 0)
-#else
-      if (snd_pcm_channel_flush(alsa->pcm, SND_PCM_CHANNEL_PLAYBACK) == 0)
-#endif
       {
          alsa->is_paused = true;
          return true;
@@ -320,11 +314,7 @@ static bool alsa_qsa_start(void *data)
 
    if (alsa->can_pause && alsa->is_paused)
    {
-#ifdef HAVE_BB10
       int ret = snd_pcm_playback_resume(alsa->pcm);
-#else
-      int ret = 0;
-#endif
       if (ret < 0)
       {
          RARCH_ERR("[ALSA QSA]: Failed to unpause: %s.\n", snd_strerror(ret));
