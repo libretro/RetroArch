@@ -94,7 +94,7 @@ static void *alsa_qsa_init(const char *device, unsigned rate, unsigned latency)
    params.stop_mode = SND_PCM_STOP_STOP;
 
    params.buf.block.frag_size = pi.max_fragment_size;
-   params.buf.block.frags_min = 1;
+   params.buf.block.frags_min = 2;
    params.buf.block.frags_max = 8;
 
    //FIXME: Hack turning on g_extern.verbose 
