@@ -224,11 +224,13 @@ static bool create_filter_graph(rarch_dsp_filter_t *dsp, float sample_rate)
 extern const struct dspfilter_implementation *panning_dspfilter_get_implementation(dspfilter_simd_mask_t mask);
 extern const struct dspfilter_implementation *iir_dspfilter_get_implementation(dspfilter_simd_mask_t mask);
 extern const struct dspfilter_implementation *echo_dspfilter_get_implementation(dspfilter_simd_mask_t mask);
+extern const struct dspfilter_implementation *phaser_dspfilter_get_implementation(dspfilter_simd_mask_t mask);
 
 static const dspfilter_get_implementation_t dsp_plugs_builtin[] = {
    panning_dspfilter_get_implementation,
    iir_dspfilter_get_implementation,
    echo_dspfilter_get_implementation,
+   phaser_dspfilter_get_implementation,
 };
 
 static bool append_plugs(rarch_dsp_filter_t *dsp)
