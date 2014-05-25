@@ -1448,6 +1448,9 @@ bool config_save_file(const char *path)
    config_set_bool(conf, "savestate_auto_save", g_settings.savestate_auto_save);
    config_set_bool(conf, "savestate_auto_load", g_settings.savestate_auto_load);
 
+   config_set_float(conf, "fastforward_ratio", g_settings.fastforward_ratio);
+   config_set_float(conf, "slowmotion_ratio", g_settings.slowmotion_ratio);
+
    // g_extern
    config_set_bool(conf, "config_save_on_exit", g_extern.config_save_on_exit);
    config_set_int(conf, "sound_mode", g_extern.console.sound.mode);

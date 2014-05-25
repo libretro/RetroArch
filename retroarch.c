@@ -2821,7 +2821,6 @@ static void init_system_av_info(void)
 {
    pretro_get_system_av_info(&g_extern.system.av_info);
    g_extern.frame_limit.last_frame_time = rarch_get_time_usec();
-   g_extern.frame_limit.minimum_frame_time = (retro_time_t)roundf(1000000.0f / (g_extern.system.av_info.timing.fps * g_settings.fastforward_ratio));
 }
 
 static void verify_api_version(void)
@@ -3031,6 +3030,8 @@ static inline void limit_frame_time(void)
 {
    if (g_settings.fastforward_ratio < 0.0f)
       return;
+
+   g_extern.frame_limit.minimum_frame_time = (retro_time_t)roundf(1000000.0f / (g_extern.system.av_info.timing.fps * g_settings.fastforward_ratio));
 
    retro_time_t current = rarch_get_time_usec();
    retro_time_t target = g_extern.frame_limit.last_frame_time + g_extern.frame_limit.minimum_frame_time;

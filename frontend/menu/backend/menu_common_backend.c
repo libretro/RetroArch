@@ -90,7 +90,7 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
 #endif
          file_list_push(rgui->selection_buf, "Load Dummy On Core Shutdown", RGUI_SETTINGS_LOAD_DUMMY_ON_CORE_SHUTDOWN, 0);
          file_list_push(rgui->selection_buf, "Show Framerate", RGUI_SETTINGS_DEBUG_TEXT, 0);
-         file_list_push(rgui->selection_buf, "Fast-forward Ratio", RGUI_SETTINGS_FASTFORWARD_RATIO, 0);
+         file_list_push(rgui->selection_buf, "Game Speed Cap", RGUI_SETTINGS_FASTFORWARD_RATIO, 0);
          file_list_push(rgui->selection_buf, "Slow-Motion Ratio", RGUI_SETTINGS_SLOWMOTION_RATIO, 0);
          file_list_push(rgui->selection_buf, "Rewind", RGUI_SETTINGS_REWIND_ENABLE, 0);
          file_list_push(rgui->selection_buf, "Rewind Granularity", RGUI_SETTINGS_REWIND_GRANULARITY, 0);
@@ -2431,15 +2431,25 @@ static int menu_common_setting_set(void *data, unsigned setting, unsigned action
          break;
       case RGUI_SETTINGS_FASTFORWARD_RATIO:
          {
+            bool clamp_value = false;
             if (action == RGUI_ACTION_START)
                g_settings.fastforward_ratio = fastforward_ratio;
             else if (action == RGUI_ACTION_LEFT)
             {
-               if (g_settings.fastforward_ratio > -1.0f)
-                  g_settings.fastforward_ratio -= 0.01f;
+               g_settings.fastforward_ratio -= 0.1f;
+               if (g_settings.fastforward_ratio < 0.95f) // Avoid potential rounding errors when going from 1.1 to 1.0.
+                  g_settings.fastforward_ratio = fastforward_ratio;
+               else
+                  clamp_value = true;
             }
             else if (action == RGUI_ACTION_RIGHT)
-               g_settings.fastforward_ratio += 0.01f;
+            {
+               g_settings.fastforward_ratio += 0.1f;
+               clamp_value = true;
+            }
+            
+            if (clamp_value)
+               g_settings.fastforward_ratio = max(min(g_settings.fastforward_ratio, 10.0f), 1.0f);
          }
          break;
       case RGUI_SETTINGS_SLOWMOTION_RATIO:
@@ -2447,12 +2457,11 @@ static int menu_common_setting_set(void *data, unsigned setting, unsigned action
             if (action == RGUI_ACTION_START)
                g_settings.slowmotion_ratio = slowmotion_ratio;
             else if (action == RGUI_ACTION_LEFT)
-            {
-               if (g_settings.slowmotion_ratio > 1.0f)
-                  g_settings.slowmotion_ratio -= 0.01f;
-            }
+               g_settings.slowmotion_ratio -= 0.1f;
             else if (action == RGUI_ACTION_RIGHT)
-               g_settings.slowmotion_ratio += 0.01f;
+               g_settings.slowmotion_ratio += 0.1f;
+
+            g_settings.slowmotion_ratio = max(min(g_settings.slowmotion_ratio, 10.0f), 1.0f);
          }
          break;
       case RGUI_SETTINGS_DEBUG_TEXT:
@@ -3996,10 +4005,13 @@ static void menu_common_setting_set_label(char *type_str, size_t type_str_size, 
          snprintf(type_str, type_str_size, "%.3f", g_settings.audio.rate_control_delta);
          break;
       case RGUI_SETTINGS_FASTFORWARD_RATIO:
-         snprintf(type_str, type_str_size, "%.3f", g_settings.fastforward_ratio);
+         if (g_settings.fastforward_ratio > 0.0f)
+            snprintf(type_str, type_str_size, "%.1fx", g_settings.fastforward_ratio);
+         else
+            strlcpy(type_str, "No Limit", type_str_size);
          break;
       case RGUI_SETTINGS_SLOWMOTION_RATIO:
-         snprintf(type_str, type_str_size, "%.3f", g_settings.slowmotion_ratio);
+         snprintf(type_str, type_str_size, "%.1fx", g_settings.slowmotion_ratio);
          break;
       case RGUI_SETTINGS_DEBUG_TEXT:
          snprintf(type_str, type_str_size, (g_settings.fps_show) ? "ON" : "OFF");
