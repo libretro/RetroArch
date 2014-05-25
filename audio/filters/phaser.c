@@ -22,6 +22,10 @@
 #define phaserlfoshape 4.0
 #define lfoskipsamples 20
 
+#ifndef M_PI
+#define M_PI		3.1415926535897932384626433832795
+#endif
+
 struct phaser_data
 {
    float freq;
@@ -113,10 +117,6 @@ static void *phaser_init(const struct dspfilter_info *info,
    ph->phase   = lfo_start_phase * M_PI / 180.0;
 
    return ph;
-
-error:
-   free(ph);
-   return NULL;
 }
 
 static const struct dspfilter_implementation phaser_plug = {
