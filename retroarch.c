@@ -892,6 +892,7 @@ static void parse_input(int argc, char *argv[])
    g_extern.has_set_state_path = false;
    g_extern.has_set_libretro = false;
    g_extern.has_set_libretro_directory = false;
+   g_extern.has_set_verbosity = false;
    *g_extern.subsystem = '\0';
 
    if (argc < 2)
@@ -1042,6 +1043,7 @@ static void parse_input(int argc, char *argv[])
 
          case 'v':
             g_extern.verbose = true;
+            g_extern.has_set_verbosity = true;
             break;
 
          case 'N':

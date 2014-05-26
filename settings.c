@@ -1023,7 +1023,9 @@ bool config_load_file(const char *path, bool set_defaults)
    CONFIG_GET_BOOL(rgui_show_start_screen, "rgui_show_start_screen");
 #endif
    CONFIG_GET_INT(libretro_log_level, "libretro_log_level");
-   CONFIG_GET_BOOL_EXTERN(verbose, "log_verbosity");
+
+   if (!g_extern.has_set_verbosity)
+      CONFIG_GET_BOOL_EXTERN(verbose, "log_verbosity");
 
 #ifdef HAVE_OVERLAY
    CONFIG_GET_PATH_EXTERN(overlay_dir, "overlay_directory");
