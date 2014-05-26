@@ -518,7 +518,7 @@ static const bool netplay_client_swap_input = true;
 static const bool block_sram_overwrite = false;
 
 // When saving savestates, state index is automatically incremented before saving.
-// When the ROM is loaded, state index will be set to the highest existing value.
+// When the content is loaded, state index will be set to the highest existing value.
 static const bool savestate_auto_index = false;
 
 // Automatically saves a savestate at the end of RetroArch's lifetime.
@@ -538,7 +538,7 @@ static const bool network_cmd_enable = false;
 static const uint16_t network_cmd_port = 55355;
 static const bool stdin_cmd_enable = false;
 
-// Number of entries that will be kept in ROM history file.
+// Number of entries that will be kept in content history file.
 static const unsigned game_history_size = 100;
 
 // Show RGUI start-up screen on boot.
