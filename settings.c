@@ -968,6 +968,7 @@ bool config_load_file(const char *path, bool set_defaults)
 
    CONFIG_GET_STRING(image.driver, "image_driver");
    CONFIG_GET_STRING(video.driver, "video_driver");
+   CONFIG_GET_STRING(menu.driver, "menu_driver");
    CONFIG_GET_STRING(video.gl_context, "video_gl_context");
    CONFIG_GET_STRING(audio.driver, "audio_driver");
    CONFIG_GET_PATH(audio.dsp_plugin, "audio_dsp_plugin");
@@ -1353,6 +1354,7 @@ bool config_save_file(const char *path)
    config_set_int(conf,   "video_fullscreen_x", g_settings.video.fullscreen_x);
    config_set_int(conf,   "video_fullscreen_y", g_settings.video.fullscreen_y);
    config_set_string(conf,"video_driver", g_settings.video.driver);
+   config_set_string(conf,"menu_driver", g_settings.menu.driver);
    config_set_string(conf,"image_driver", g_settings.image.driver);
    config_set_bool(conf,  "video_vsync", g_settings.video.vsync);
    config_set_bool(conf,  "video_hard_sync", g_settings.video.hard_sync);
