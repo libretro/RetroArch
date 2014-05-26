@@ -295,7 +295,7 @@ bool gfx_shader_resolve_parameters(config_file_t *conf, struct gfx_shader *shade
    for (i = 0; i < shader->passes; i++)
    {
       char line[2048];
-      FILE *file = fopen(shader->pass[i].source.cg, "r");
+      FILE *file = fopen(shader->pass[i].source.path, "r");
       if (!file)
          continue;
 
