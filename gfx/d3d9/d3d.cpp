@@ -317,7 +317,7 @@ bool d3d_init_singlepass(void *data)
    pass.fbo.valid = true;
    pass.fbo.scale_x = pass.fbo.scale_y = 1.0;
    pass.fbo.type_x = pass.fbo.type_y = RARCH_SCALE_VIEWPORT;
-   strlcpy(pass.source.cg, d3d->cg_shader.c_str(), sizeof(pass.source.cg));
+   strlcpy(pass.source.path, d3d->cg_shader.c_str(), sizeof(pass.source.path));
 
    return true;
 }

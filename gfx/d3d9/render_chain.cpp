@@ -146,7 +146,7 @@ bool renderchain_add_pass(void *data, const LinkInfo *info)
    pass.last_width = 0;
    pass.last_height = 0;
 
-   renderchain_compile_shaders(chain, pass.fPrg, pass.vPrg, info->pass->source.cg);
+   renderchain_compile_shaders(chain, pass.fPrg, pass.vPrg, info->pass->source.path);
    if (!renderchain_init_shader_fvf(chain, pass))
       return false;
 
@@ -375,7 +375,7 @@ bool renderchain_create_first_pass(void *data, const LinkInfo *info, PixelFormat
       d3dr->SetTexture(0, NULL);
    }
 
-   renderchain_compile_shaders(chain, pass.fPrg, pass.vPrg, info->pass->source.cg);
+   renderchain_compile_shaders(chain, pass.fPrg, pass.vPrg, info->pass->source.path);
    if (!renderchain_init_shader_fvf(chain, pass))
       return false;
    chain->passes.push_back(pass);
