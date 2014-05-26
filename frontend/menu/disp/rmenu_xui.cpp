@@ -469,6 +469,8 @@ static void rmenu_xui_render(void *data)
    else if (menu_type == RGUI_SCREENSHOT_DIR_PATH)
       snprintf(title, sizeof(title), "SCREENSHOT DIR %s", dir);
 #endif
+   else if (menu_type == RGUI_AUTOCONFIG_DIR_PATH)
+      snprintf(title, sizeof(title), "AUTOCONFIG DIR %s", dir);
    else if (menu_type == RGUI_SHADER_DIR_PATH)
       snprintf(title, sizeof(title), "SHADER DIR %s", dir);
    else if (menu_type == RGUI_FILTER_DIR_PATH)

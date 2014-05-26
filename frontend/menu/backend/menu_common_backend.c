@@ -320,6 +320,7 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
 #ifdef HAVE_SCREENSHOTS
          file_list_push(rgui->selection_buf, "Screenshot Directory", RGUI_SCREENSHOT_DIR_PATH, 0);
 #endif
+         file_list_push(rgui->selection_buf, "Autoconfig Directory", RGUI_AUTOCONFIG_DIR_PATH, 0);
          break;
       case RGUI_SETTINGS_INPUT_OPTIONS:
          file_list_clear(rgui->selection_buf);
@@ -543,6 +544,7 @@ static unsigned menu_common_type_is(unsigned type)
       type == RGUI_SAVEFILE_DIR_PATH ||
       type == RGUI_OVERLAY_DIR_PATH ||
       type == RGUI_SCREENSHOT_DIR_PATH ||
+      type == RGUI_AUTOCONFIG_DIR_PATH ||
       type == RGUI_SYSTEM_DIR_PATH;
 
    if (type_found)
@@ -1542,6 +1544,11 @@ static int menu_common_iterate(void *data, unsigned action)
             else if (menu_type == RGUI_SYSTEM_DIR_PATH)
             {
                strlcpy(g_settings.system_directory, dir, sizeof(g_settings.system_directory));
+               menu_flush_stack_type(rgui, RGUI_SETTINGS_PATH_OPTIONS);
+            }
+            else if (menu_type == RGUI_AUTOCONFIG_DIR_PATH)
+            {
+               strlcpy(g_settings.input.autoconfig_dir, dir, sizeof(g_settings.input.autoconfig_dir));
                menu_flush_stack_type(rgui, RGUI_SETTINGS_PATH_OPTIONS);
             }
             else
@@ -3066,6 +3073,10 @@ static int menu_common_setting_set(void *data, unsigned setting, unsigned action
          if (action == RGUI_ACTION_START)
             *g_settings.system_directory = '\0';
          break;
+      case RGUI_AUTOCONFIG_DIR_PATH:
+         if (action == RGUI_ACTION_START)
+            *g_settings.input.autoconfig_dir = '\0';
+         break;
       case RGUI_SETTINGS_VIDEO_ROTATION:
          if (action == RGUI_ACTION_START)
          {
@@ -4094,6 +4105,9 @@ static void menu_common_setting_set_label(char *type_str, size_t type_str_size, 
          break;
       case RGUI_SYSTEM_DIR_PATH:
          strlcpy(type_str, *g_settings.system_directory ? g_settings.system_directory : "<ROM dir>", type_str_size);
+         break;
+      case RGUI_AUTOCONFIG_DIR_PATH:
+         strlcpy(type_str, *g_settings.input.autoconfig_dir ? g_settings.input.autoconfig_dir : "<default>", type_str_size);
          break;
       case RGUI_SETTINGS_DISK_INDEX:
          {
