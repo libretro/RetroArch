@@ -83,6 +83,8 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
 #endif
       case RGUI_SETTINGS_GENERAL_OPTIONS:
          file_list_clear(rgui->selection_buf);
+         file_list_push(rgui->selection_buf, "Libretro Logging Level", RGUI_SETTINGS_LIBRETRO_LOG_LEVEL, 0);
+         file_list_push(rgui->selection_buf, "Logging Verbosity", RGUI_SETTINGS_LOGGING_VERBOSITY, 0);
          file_list_push(rgui->selection_buf, "Configuration Save On Exit", RGUI_SETTINGS_CONFIG_SAVE_ON_EXIT, 0);
          file_list_push(rgui->selection_buf, "Configuration Per-Core", RGUI_SETTINGS_PER_CORE_CONFIG, 0);
 #ifdef HAVE_SCREENSHOTS
@@ -2267,6 +2269,20 @@ static int menu_common_setting_set(void *data, unsigned setting, unsigned action
          else if (action == RGUI_ACTION_START)
             g_settings.rewind_granularity = 1;
          break;
+      case RGUI_SETTINGS_LIBRETRO_LOG_LEVEL:
+         if (action == RGUI_ACTION_LEFT)
+         {
+            if (g_settings.libretro_log_level > 0)
+               g_settings.libretro_log_level--;
+         }
+         else if (action == RGUI_ACTION_RIGHT)
+            if (g_settings.libretro_log_level < 3)
+               g_settings.libretro_log_level++;
+         break;
+      case RGUI_SETTINGS_LOGGING_VERBOSITY:
+         if (action == RGUI_ACTION_LEFT || action == RGUI_ACTION_RIGHT)
+            g_extern.verbose = !g_extern.verbose;
+         break;
       case RGUI_SETTINGS_CONFIG_SAVE_ON_EXIT:
          if (action == RGUI_ACTION_OK || action == RGUI_ACTION_RIGHT
                || action == RGUI_ACTION_LEFT)
@@ -3969,6 +3985,26 @@ static void menu_common_setting_set_label(char *type_str, size_t type_str_size, 
 #endif
       case RGUI_SETTINGS_REWIND_GRANULARITY:
          snprintf(type_str, type_str_size, "%u", g_settings.rewind_granularity);
+         break;
+      case RGUI_SETTINGS_LIBRETRO_LOG_LEVEL:
+         switch(g_settings.libretro_log_level)
+         {
+            case 0:
+               snprintf(type_str, type_str_size, "0 (Debug)");
+               break;
+            case 1:
+               snprintf(type_str, type_str_size, "1 (Info)");
+               break;
+            case 2:
+               snprintf(type_str, type_str_size, "2 (Warning)");
+               break;
+            case 3:
+               snprintf(type_str, type_str_size, "3 (Error)");
+               break;
+         }
+         break;
+      case RGUI_SETTINGS_LOGGING_VERBOSITY:
+         strlcpy(type_str, g_extern.verbose ? "ON" : "OFF", type_str_size);
          break;
       case RGUI_SETTINGS_CONFIG_SAVE_ON_EXIT:
          strlcpy(type_str, g_extern.config_save_on_exit ? "ON" : "OFF", type_str_size);

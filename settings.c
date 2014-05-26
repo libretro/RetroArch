@@ -1023,6 +1023,7 @@ bool config_load_file(const char *path, bool set_defaults)
    CONFIG_GET_BOOL(rgui_show_start_screen, "rgui_show_start_screen");
 #endif
    CONFIG_GET_INT(libretro_log_level, "libretro_log_level");
+   CONFIG_GET_BOOL_EXTERN(verbose, "log_verbosity");
 
 #ifdef HAVE_OVERLAY
    CONFIG_GET_PATH_EXTERN(overlay_dir, "overlay_directory");
@@ -1480,6 +1481,7 @@ bool config_save_file(const char *path)
 
    config_set_bool(conf, "core_specific_config", g_settings.core_specific_config);
    config_set_int(conf, "libretro_log_level", g_settings.libretro_log_level);
+   config_set_bool(conf, "log_verbosity", g_extern.verbose);
 
    bool ret = config_file_write(conf, path);
    config_file_free(conf);
