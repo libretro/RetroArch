@@ -756,7 +756,7 @@ static void print_help(void)
    puts("===================================================================");
    puts("Usage: retroarch [rom file] [options...]");
    puts("\t-h/--help: Show this help message.");
-   puts("\t--menu: Do not require ROM or libretro core to be loaded, starts directly in menu.");
+   puts("\t--menu: Do not require content or libretro core to be loaded, starts directly in menu.");
    puts("\t\tIf no arguments are passed to RetroArch, it is equivalent to using --menu as only argument.");
    puts("\t--features: Prints available features compiled into RetroArch.");
    puts("\t-s/--save: Path for save file (*.srm).");
@@ -828,7 +828,7 @@ static void set_special_paths(char **argv, unsigned roms)
 {
    unsigned i;
 
-   // First ROM is the significant one.
+   // First content file is the significant one.
    set_basename(argv[0]);
 
    g_extern.subsystem_fullpaths = string_list_new();
@@ -1225,7 +1225,7 @@ static void parse_input(int argc, char *argv[])
    {
       if (optind < argc)
       {
-         RARCH_ERR("--menu was used, but ROM file was passed as well.\n");
+         RARCH_ERR("--menu was used, but content file was passed as well.\n");
          rarch_fail(1, "parse_input()");
       }
    }
@@ -1773,7 +1773,7 @@ static void fill_pathnames(void)
 
             if (use_sram_dir)
             {
-               // Redirect ROM fullpath to save directory.
+               // Redirect content fullpath to save directory.
                strlcpy(path, g_extern.savefile_name, sizeof(path));
                fill_pathname_dir(path, g_extern.subsystem_fullpaths->elems[i].data, ext,
                      sizeof(path));
@@ -3166,7 +3166,7 @@ void rarch_main_deinit(void)
       for (i = 0; i < g_extern.temporary_roms->size; i++)
       {
          const char *path = g_extern.temporary_roms->elems[i].data;
-         RARCH_LOG("Removing temporary ROM file: %s.\n", path);
+         RARCH_LOG("Removing temporary content file: %s.\n", path);
          if (remove(path) < 0)
             RARCH_ERR("Failed to remove temporary file: %s.\n", path);
       }
@@ -3200,12 +3200,12 @@ int rarch_main_init_wrap(const struct rarch_main_wrap *args)
    {
       if (args->rom_path)
       {
-         RARCH_LOG("Using ROM: %s.\n", args->rom_path);
+         RARCH_LOG("Using content: %s.\n", args->rom_path);
          argv[argc++] = strdup(args->rom_path);
       }
       else
       {
-         RARCH_LOG("No ROM, starting dummy core.\n");
+         RARCH_LOG("No content, starting dummy core.\n");
          argv[argc++] = strdup("--menu");
       }
    }
