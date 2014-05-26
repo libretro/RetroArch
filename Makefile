@@ -100,8 +100,8 @@ ifneq ($(findstring Linux,$(OS)),)
 endif
 
 ifeq ($(HAVE_RGUI), 1)
-   OBJ += frontend/menu/menu_input_line_cb.o frontend/menu/menu_common.o frontend/menu/menu_navigation.o frontend/menu/file_list.o frontend/menu/disp/rgui.o  frontend/menu/history.o 
-   DEFINES += -DHAVE_MENU
+   OBJ += frontend/menu/disp/rgui.o
+   DEFINES += -DHAVE_MENU -DHAVE_RGUI
    HAVE_MENU_COMMON = 1
 ifeq ($(HAVE_LAKKA), 1)
    OBJ += frontend/menu/backend/menu_lakka_backend.o frontend/menu/disp/lakka.o
@@ -111,7 +111,7 @@ endif
 endif
 
 ifeq ($(HAVE_MENU_COMMON), 1)
-   OBJ += frontend/menu/backend/menu_common_backend.o
+   OBJ += frontend/menu/backend/menu_common_backend.o frontend/menu/menu_input_line_cb.o frontend/menu/menu_common.o frontend/menu/menu_navigation.o frontend/menu/file_list.o frontend/menu/history.o
 endif
 
 ifeq ($(HAVE_THREADS), 1)
