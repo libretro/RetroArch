@@ -100,16 +100,9 @@ static void *alsa_qsa_init(const char *device, unsigned rate, unsigned latency)
    params.buf.block.frags_min = 2;
    params.buf.block.frags_max = 8;
 
-   //FIXME: Hack turning on g_extern.verbose 
-   bool original_verbosity = g_extern.verbose;
-   g_extern.verbose = true;
-
    RARCH_LOG("Fragment size: %d\n", params.buf.block.frag_size);
    RARCH_LOG("Min Fragment size: %d\n", params.buf.block.frags_min);
    RARCH_LOG("Max Fragment size: %d\n", params.buf.block.frags_max);
-
-   //FIXME: Hack turning on/off g_extern.verbose 
-   g_extern.verbose = original_verbosity;
 
    if ((err = snd_pcm_channel_params(alsa->pcm, &params)) < 0)
    {
@@ -164,9 +157,6 @@ error:
 
 static int check_pcm_status(void *data, int channel_type)
 {
-   bool original_verbosity = g_extern.verbose;
-   g_extern.verbose = true;
-
    alsa_t *alsa = (alsa_t*)data;
    snd_pcm_channel_status_t status;
    int ret = EOK;
@@ -216,8 +206,6 @@ static int check_pcm_status(void *data, int channel_type)
          ret = -EBADF;
    }
 
-   g_extern.verbose = original_verbosity;
-
    return ret;
 }
 
@@ -246,12 +234,6 @@ static ssize_t alsa_qsa_write(void *data, const void *buf, size_t size)
       {
          snd_pcm_sframes_t frames = snd_pcm_write(alsa->pcm, alsa->buffer[alsa->buffer_index], alsa->buf_size);
 
-#if 0
-         bool original_verbosity = g_extern.verbose;
-         g_extern.verbose = true;
-         RARCH_LOG("frames: %d, size: %d\n", frames, size);
-         g_extern.verbose = original_verbosity;
-#endif
          alsa->buffer_index = (alsa->buffer_index + 1) % alsa->buf_count;
          alsa->buffer_ptr = 0;
 
