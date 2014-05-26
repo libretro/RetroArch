@@ -1252,12 +1252,6 @@ static void init_controllers(void)
    {
       unsigned device = g_settings.input.libretro_device[i];
 
-      // This is default, don't bother.
-      if (device == RETRO_DEVICE_JOYPAD)
-         continue;
-
-      pretro_set_controller_port_device(i, device);
-
       const struct retro_controller_description *desc = NULL;
       if (i < g_extern.system.num_ports)
          desc = libretro_find_controller_description(&g_extern.system.ports[i], device);
@@ -1266,17 +1260,22 @@ static void init_controllers(void)
 
       if (!ident)
       {
-         switch (device)
+         // If we're trying to connect a completely unknown device, revert back to JOYPAD.
+         if (device != RETRO_DEVICE_JOYPAD && device != RETRO_DEVICE_NONE)
          {
-            case RETRO_DEVICE_ANALOG: ident = "analog"; break;
-            default: ident = "Unknown"; break;
+            RARCH_WARN("Input device ID %u is unknown to this libretro implementation. Using RETRO_DEVICE_JOYPAD.\n", device);
+            device = RETRO_DEVICE_JOYPAD;
+            // Do not fix g_settings.input.libretro_device[i], because any use of dummy core will reset this, which is not a good idea.
          }
+         ident = "Joypad";
       }
 
       if (device == RETRO_DEVICE_NONE)
          RARCH_LOG("Disconnecting device from port %u.\n", i + 1);
       else
          RARCH_LOG("Connecting %s (ID: %u) to port %u.\n", ident, device, i + 1);
+
+      pretro_set_controller_port_device(i, device);
    }
 }
 
