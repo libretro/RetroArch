@@ -85,6 +85,6 @@ void init_osk(void)
 
 void uninit_osk(void)
 {
-   if (driver.osk_data && driver.osk)
+   if (driver.osk_data && driver.osk && driver.osk->free)
       driver.osk->free(driver.osk_data);
 }

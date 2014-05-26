@@ -90,13 +90,13 @@ bool driver_camera_start(void)
 
 void driver_camera_stop(void)
 {
-   if (driver.camera && driver.camera_data)
+   if (driver.camera && driver.camera->stop && driver.camera_data)
       driver.camera->stop(driver.camera_data);
 }
 
 void driver_camera_poll(void)
 {
-   if (driver.camera && driver.camera_data)
+   if (driver.camera && driver.camera->poll && driver.camera_data)
    {
       driver.camera->poll(driver.camera_data,
             g_extern.system.camera_callback.frame_raw_framebuffer,
@@ -134,6 +134,8 @@ void uninit_camera(void)
    {
       if (g_extern.system.camera_callback.deinitialized)
          g_extern.system.camera_callback.deinitialized();
-      driver.camera->free(driver.camera_data);
+
+      if (driver.camera->free)
+         driver.camera->free(driver.camera_data);
    }
 }

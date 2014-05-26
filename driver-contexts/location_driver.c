@@ -84,20 +84,20 @@ bool driver_location_start(void)
 
 void driver_location_stop(void)
 {
-   if (driver.location && driver.location_data)
+   if (driver.location && driver.location->stop && driver.location_data)
       driver.location->stop(driver.location_data);
 }
 
 void driver_location_set_interval(unsigned interval_msecs, unsigned interval_distance)
 {
-   if (driver.location && driver.location_data)
+   if (driver.location && driver.location->set_interval && driver.location_data)
       driver.location->set_interval(driver.location_data, interval_msecs, interval_distance);
 }
 
 bool driver_location_get_position(double *lat, double *lon, double *horiz_accuracy,
       double *vert_accuracy)
 {
-   if (driver.location && driver.location_data)
+   if (driver.location && driver.location->get_position && driver.location_data)
       return driver.location->get_position(driver.location_data, lat, lon, horiz_accuracy, vert_accuracy);
 
    *lat = 0.0;
@@ -133,6 +133,8 @@ void uninit_location(void)
    {
       if (g_extern.system.location_callback.deinitialized)
          g_extern.system.location_callback.deinitialized();
-      driver.location->free(driver.location_data);
+
+      if (driver.location->free)
+         driver.location->free(driver.location_data);
    }
 }
