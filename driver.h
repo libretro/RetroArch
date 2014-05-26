@@ -622,7 +622,6 @@ void driver_location_set_interval(unsigned interval_msecs, unsigned interval_dis
 
 #ifdef HAVE_MENU
 const void *menu_ctx_find_driver(const char *ident); // Finds driver with ident. Does not initialize.
-bool menu_ctx_init_first(const menu_ctx_driver_t **driver, void **handle); // Finds first suitable driver and initializes.
 void find_prev_menu_driver(void);
 void find_next_menu_driver(void);
 #endif

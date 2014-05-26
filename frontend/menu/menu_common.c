@@ -314,16 +314,20 @@ bool load_menu_game(void *data)
 
 void *menu_init(void)
 {
-   rgui_handle_t *rgui = (rgui_handle_t*)calloc(1, sizeof(rgui));
+   rgui_handle_t *rgui;
 
-   if (!rgui)
+   if (!driver.menu_ctx)
       return NULL;
 
-   if (!menu_ctx_init_first(&driver.menu_ctx, (void**)&rgui))
+   rgui = (rgui_handle_t*)driver.menu_ctx->init();
+
+   if (!rgui)
    {
       RARCH_ERR("Could not initialize menu.\n");
       rarch_fail(1, "menu_init()");
    }
+
+   strlcpy(g_settings.menu.driver, driver.menu_ctx->ident, sizeof(g_settings.menu.driver));
 
    rgui->menu_stack = (file_list_t*)calloc(1, sizeof(file_list_t));
    rgui->selection_buf = (file_list_t*)calloc(1, sizeof(file_list_t));

@@ -76,25 +76,23 @@ void find_next_menu_driver(void)
       RARCH_WARN("Couldn't find any next menu driver (current one: \"%s\").\n", g_settings.menu.driver);
 }
 
-bool menu_ctx_init_first(const menu_ctx_driver_t **driver, void **data)
+static void find_menu_driver(void)
 {
-   unsigned i;
-
-   if (!menu_ctx_drivers[0])
-      return false;
-
-   for (i = 0; menu_ctx_drivers[i]; i++)
+   int i = find_menu_driver_index(g_settings.menu.driver);
+   if (i >= 0)
+      driver.menu_ctx = menu_ctx_drivers[i];
+   else
    {
-      void *h = menu_ctx_drivers[i]->init();
+      unsigned d;
+      RARCH_WARN("Couldn't find any menu driver named \"%s\"\n", g_settings.menu.driver);
+      RARCH_LOG_OUTPUT("Available menu drivers are:\n");
+      for (d = 0; menu_ctx_drivers[d]; d++)
+         RARCH_LOG_OUTPUT("\t%s\n", menu_ctx_drivers[d]->ident);
+      RARCH_WARN("Going to default to first menu driver...\n");
 
-      if (h)
-      {
-         *driver = menu_ctx_drivers[i];
-         *data = h;
-         strlcpy(g_settings.menu.driver, menu_ctx_drivers[i]->ident, sizeof(g_settings.menu.driver));
-         return true;
-      }
+      driver.menu_ctx = menu_ctx_drivers[0];
+
+      if (!driver.menu_ctx)
+         rarch_fail(1, "find_menu_driver()");
    }
-
-   return false;
 }
