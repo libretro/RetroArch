@@ -104,9 +104,9 @@ typedef struct
    float  target_value;
    float* subject;
    easingFunc easing;
-} tween;
+} tween_t;
 
-static tween* tweens = NULL;
+static tween_t* tweens = NULL;
 int numtweens = 0;
 
 static float inOutQuad(float t, float b, float c, float d)
@@ -120,30 +120,37 @@ static float inOutQuad(float t, float b, float c, float d)
 static void add_tween(float duration, float target_value, float* subject, easingFunc easing)
 {
    numtweens++;
-   tweens = realloc(tweens, numtweens * sizeof(tween));
-   tweens[numtweens-1].alive = 1;
-   tweens[numtweens-1].duration = duration;
-   tweens[numtweens-1].running_since = 0;
-   tweens[numtweens-1].initial_value = *subject;
-   tweens[numtweens-1].target_value = target_value;
-   tweens[numtweens-1].subject = subject;
-   tweens[numtweens-1].easing = easing;
+   tweens = realloc(tweens, numtweens * sizeof(tween_t));
+
+   tween_t *tween = (tween_t*)&tweens[numtweens-1];
+
+   if (!tween)
+      return;
+
+   tween->alive = 1;
+   tween->duration = duration;
+   tween->running_since = 0;
+   tween->initial_value = *subject;
+   tween->target_value = target_value;
+   tween->subject = subject;
+   tween->easing = easing;
 }
 
-static tween update_tween(tween tw, float dt)
+static void update_tween(void *data, float dt)
 {
-   if (tw.running_since < tw.duration)
+   tween_t *tween = (tween_t*)data;
+
+   if (tween->running_since < tween->duration)
    {
-      tw.running_since += dt;
-      *(tw.subject) = tw.easing(
-            tw.running_since,
-            tw.initial_value,
-            tw.target_value - tw.initial_value,
-            tw.duration);
-      if (tw.running_since >= tw.duration)
-         *(tw.subject) = tw.target_value;
+      tween->running_since += dt;
+      *tween->subject = tween->easing(
+            tween->running_since,
+            tween->initial_value,
+            tween->target_value - tween->initial_value,
+            tween->duration);
+      if (tween->running_since >= tween->duration)
+         *tween->subject = tween->target_value;
    }
-   return tw;
 }
 
 static void update_tweens(float dt)
@@ -153,7 +160,7 @@ static void update_tweens(float dt)
    active_tweens = 0;
    for(i = 0; i < numtweens; i++)
    {
-      tweens[i] = update_tween(tweens[i], dt);
+      update_tween(&tweens[i], dt);
       active_tweens += tweens[i].running_since < tweens[i].duration ? 1 : 0;
    }
 
