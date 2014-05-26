@@ -41,7 +41,6 @@
 #include "../../../gfx/fonts/bitmap.h"
 
 #include "lakka.h"
-#include "tween.h"
 #include "png_texture_load.h"
 
 #define HSPACING 300
@@ -93,6 +92,74 @@ GLuint savestate_icon;
 GLuint loadstate_icon;
 GLuint screenshot_icon;
 GLuint reload_icon;
+
+typedef float (*easingFunc)(float, float, float, float);
+
+typedef struct
+{
+   int    alive;
+   float  duration;
+   float  running_since;
+   float  initial_value;
+   float  target_value;
+   float* subject;
+   easingFunc easing;
+} tween;
+
+static tween* tweens = NULL;
+int numtweens = 0;
+
+static float inOutQuad(float t, float b, float c, float d)
+{
+   t = t / d * 2;
+   if (t < 1)
+      return c / 2 * pow(t, 2) + b;
+   return -c / 2 * ((t - 1) * (t - 3) - 1) + b;
+}
+
+static void add_tween(float duration, float target_value, float* subject, easingFunc easing)
+{
+   numtweens++;
+   tweens = realloc(tweens, numtweens * sizeof(tween));
+   tweens[numtweens-1].alive = 1;
+   tweens[numtweens-1].duration = duration;
+   tweens[numtweens-1].running_since = 0;
+   tweens[numtweens-1].initial_value = *subject;
+   tweens[numtweens-1].target_value = target_value;
+   tweens[numtweens-1].subject = subject;
+   tweens[numtweens-1].easing = easing;
+}
+
+static tween update_tween(tween tw, float dt)
+{
+   if (tw.running_since < tw.duration)
+   {
+      tw.running_since += dt;
+      *(tw.subject) = tw.easing(
+            tw.running_since,
+            tw.initial_value,
+            tw.target_value - tw.initial_value,
+            tw.duration);
+      if (tw.running_since >= tw.duration)
+         *(tw.subject) = tw.target_value;
+   }
+   return tw;
+}
+
+static void update_tweens(float dt)
+{
+   int i, active_tweens;
+
+   active_tweens = 0;
+   for(i = 0; i < numtweens; i++)
+   {
+      tweens[i] = update_tween(tweens[i], dt);
+      active_tweens += tweens[i].running_since < tweens[i].duration ? 1 : 0;
+   }
+
+   if (numtweens && !active_tweens)
+      numtweens = 0;
+}
 
 // Move the categories left or right depending on the menu_active_category variable
 void lakka_switch_categories(void)
@@ -898,6 +965,8 @@ void lakka_init_items(int i, menu_category *mcat, core_info_t corenfo, char* gam
 
 static void lakka_free_assets(void *data)
 {
+   if (tweens)
+      free(tweens);
 }
 
 static void lakka_free(void *data)

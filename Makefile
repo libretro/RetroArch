@@ -104,7 +104,7 @@ ifeq ($(HAVE_RGUI), 1)
    DEFINES += -DHAVE_MENU
    HAVE_MENU_COMMON = 1
 ifeq ($(HAVE_LAKKA), 1)
-   OBJ += frontend/menu/disp/png_texture_load.o frontend/menu/disp/tween.o frontend/menu/backend/menu_lakka_backend.o frontend/menu/disp/lakka.o
+   OBJ += frontend/menu/disp/png_texture_load.o frontend/menu/backend/menu_lakka_backend.o frontend/menu/disp/lakka.o
    DEFINES += -DHAVE_LAKKA
    LIBS += -lpng
 endif
