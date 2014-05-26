@@ -76,8 +76,14 @@ void find_next_camera_driver(void)
 
 bool driver_camera_start(void)
 {
-   if (driver.camera && driver.camera_data && g_settings.camera.allow)
-      return driver.camera->start(driver.camera_data);
+   if (driver.camera && driver.camera_data)
+   {
+      if (g_settings.camera.allow)
+         return driver.camera->start(driver.camera_data);
+
+      msg_queue_push(g_extern.msg_queue, "Camera is explicitly disabled.\n", 1, 180);
+      return false;
+   }
    else
       return false;
 }

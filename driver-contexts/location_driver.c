@@ -70,8 +70,14 @@ void find_next_location_driver(void)
 
 bool driver_location_start(void)
 {
-   if (driver.location && driver.location_data && g_settings.location.allow)
-      return driver.location->start(driver.location_data);
+   if (driver.location && driver.location_data)
+   {
+      if (g_settings.location.allow)
+         return driver.location->start(driver.location_data);
+
+      msg_queue_push(g_extern.msg_queue, "Location is explicitly disabled.\n", 1, 180);
+      return false;
+   }
    else
       return false;
 }
