@@ -511,6 +511,9 @@ void global_init_drivers(void)
 {
    find_audio_driver();
    find_input_driver();
+#ifdef HAVE_MENU
+   find_menu_driver();
+#endif
    init_video_input();
 }
 
