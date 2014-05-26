@@ -362,7 +362,9 @@ void init_drivers_pre(void)
 #ifdef HAVE_OSK
    find_osk_driver();
 #endif
+#ifdef HAVE_MENU
    find_menu_driver();
+#endif
 }
 
 static void adjust_system_rates(void)
