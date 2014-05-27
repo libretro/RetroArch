@@ -1096,10 +1096,10 @@ char * str_replace ( const char *string, const char *substr, const char *replace
    return newstr;
 }
 
-void lakka_init_items(int i, menu_category_t *mcat, core_info_t corenfo, char* gametexturepath, char* path)
+static void lakka_init_items(int i, menu_category_t *category, core_info_t *info, const char* gametexturepath, const char* path)
 {
    int num_items, j, n, k;
-   struct string_list *list = (struct string_list*)dir_list_new(path, corenfo.supported_extensions, true);
+   struct string_list *list = (struct string_list*)dir_list_new(path, info->supported_extensions, true);
 
    dir_list_sort(list, true);
 
@@ -1108,17 +1108,17 @@ void lakka_init_items(int i, menu_category_t *mcat, core_info_t corenfo, char* g
    for (j = 0; j < num_items; j++)
    {
       if (list->elems[j].attr.b) // is a directory
-         lakka_init_items(i, mcat, corenfo, gametexturepath, list->elems[j].data);
+         lakka_init_items(i, category, info, gametexturepath, list->elems[j].data);
       else
       {
          struct font_output_list out;
          menu_item_t *item;
 
-         n = mcat->num_items;
-         item = (menu_item_t*)&mcat->items[n];
+         n = category->num_items;
+         item = (menu_item_t*)&category->items[n];
 
-         mcat->num_items++;
-         mcat->items = (menu_item_t*)realloc(mcat->items, mcat->num_items * sizeof(menu_item_t));
+         category->num_items++;
+         category->items = (menu_item_t*)realloc(category->items, category->num_items * sizeof(menu_item_t));
 
          strlcpy(item->name, path_basename(list->elems[j].data), sizeof(item->name));
          strlcpy(item->rom, list->elems[j].data, sizeof(item->rom));
@@ -1236,13 +1236,14 @@ static void *lakka_init(void)
    for (i = 0; i < num_categories-1; i++)
    {
       char core_id[256], texturepath[256], gametexturepath[256], dirpath[256];
+      core_info_t *info;
       menu_category_t *category = (menu_category_t*)&categories[i+1];
 
       fill_pathname_join(dirpath, g_settings.assets_directory, "lakka", sizeof(dirpath));
       fill_pathname_slash(dirpath, sizeof(dirpath));
-      core_info_t corenfo = rgui->core_info->list[i];
+      info = (core_info_t*)&rgui->core_info->list[i];
 
-      strlcpy(core_id, basename(corenfo.path), sizeof(core_id));
+      strlcpy(core_id, basename(info->path), sizeof(core_id));
       strlcpy(core_id, str_replace(core_id, ".so", ""), sizeof(core_id));
       strlcpy(core_id, str_replace(core_id, ".dll", ""), sizeof(core_id));
       strlcpy(core_id, str_replace(core_id, ".dylib", ""), sizeof(core_id));
@@ -1257,10 +1258,10 @@ static void *lakka_init(void)
 
       strlcpy(gametexturepath, dirpath, sizeof(gametexturepath));
       strlcat(gametexturepath, core_id, sizeof(gametexturepath));
-      strlcat(gametexturepath, "-game.png", sizeof(gametexturepath));
+      strlcat(gametexturepath, "-content.png", sizeof(gametexturepath));
 
-      strlcpy(category->name, corenfo.display_name, sizeof(category->name));
-      strlcpy(category->libretro, corenfo.path, sizeof(category->libretro));
+      strlcpy(category->name, info->display_name, sizeof(category->name));
+      strlcpy(category->libretro, info->path, sizeof(category->libretro));
       category->icon        = png_texture_load(texturepath, &dim, &dim);
       category->alpha       = 0.5;
       category->zoom        = C_PASSIVE_ZOOM;
@@ -1270,7 +1271,7 @@ static void *lakka_init(void)
 
       font_driver->render_msg(font, category->name, &category->out);
 
-      lakka_init_items(i+1, category, corenfo, gametexturepath, g_settings.content_directory);
+      lakka_init_items(i+1, category, info, gametexturepath, g_settings.content_directory);
    }
 
    return rgui;
