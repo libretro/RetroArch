@@ -110,6 +110,14 @@
 #define glGenerateMipmap glGenerateMipmapOES
 #endif
 
+#ifdef HAVE_FBO
+
+#if defined(__APPLE__) || defined(HAVE_PSGL)
+#define GL_RGBA32F GL_RGBA32F_ARB
+#endif
+
+#endif
+
 static inline bool gl_check_error(void)
 {
    int error = glGetError();

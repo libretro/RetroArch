@@ -196,9 +196,6 @@ static bool check_fbo_proc(gl_t *gl)
 #else
 #define check_fbo_proc(gl) (true)
 #endif
-#if defined(__APPLE__) || defined(HAVE_PSGL)
-#define GL_RGBA32F GL_RGBA32F_ARB
-#endif
 #endif
 
 ////////////////// Shaders
@@ -525,7 +522,7 @@ static void gl_create_fbo_textures(void *data)
             RARCH_ERR("[GL]: Floating-point FBO was requested, but is not supported. Falling back to UNORM.\n");
       }
 
-#ifndef HAVE_PSGL
+#ifndef HAVE_OPENGLES
       if (srgb_fbo && gl->has_srgb_fbo)
       {
          RARCH_LOG("[GL]: FBO pass #%d is sRGB.\n", i);
@@ -1835,7 +1832,7 @@ static bool resolve_extensions(gl_t *gl)
 #else
 #ifdef HAVE_FBO
    // Float FBO is core in 3.2.
-#ifdef HAVE_PSGL
+#ifdef HAVE_GCMGL
    gl->has_fp_fbo = false; // FIXME - rewrite GL implementation
 #else
    gl->has_fp_fbo = gl->core_context || gl_query_extension(gl, "ARB_texture_float");
