@@ -140,6 +140,9 @@ static void update_tween(void *data, float dt)
 {
    tween_t *tween = (tween_t*)data;
 
+   if (!tween)
+      return;
+
    if (tween->running_since < tween->duration)
    {
       tween->running_since += dt;
@@ -203,6 +206,8 @@ void lakka_switch_items(void)
 
    for (j = 0; j < active_category->num_items; j++)
    {
+      menu_item_t *active_item = (menu_item_t*)&active_category->items[j];
+
       float ia, iz, iy;
       ia = (j == active_category->active_item) ? 1.0 : 0.5;
       iz = (j == active_category->active_item) ? I_ACTIVE_ZOOM : I_PASSIVE_ZOOM;
@@ -210,9 +215,9 @@ void lakka_switch_items(void)
          (j  < active_category->active_item) ? VSPACING*(j - active_category->active_item - 1) :
          VSPACING*(j - active_category->active_item + 3);
 
-      add_tween(DELAY, ia, &active_category->items[j].alpha, &inOutQuad);
-      add_tween(DELAY, iz, &active_category->items[j].zoom,  &inOutQuad);
-      add_tween(DELAY, iy, &active_category->items[j].y,     &inOutQuad);
+      add_tween(DELAY, ia, &active_item->alpha, &inOutQuad);
+      add_tween(DELAY, iz, &active_item->zoom,  &inOutQuad);
+      add_tween(DELAY, iy, &active_item->y,     &inOutQuad);
    }
 }
 
@@ -224,26 +229,28 @@ void lakka_switch_subitems(void)
 
    for (k = 0; k < item->num_subitems; k++)
    {
+      menu_subitem_t *subitem = (menu_subitem_t*)&item->subitems[k];
+
       if (k < item->active_subitem)
       {
          // Above items
-         add_tween(DELAY, 0.5, &item->subitems[k].alpha, &inOutQuad);
-         add_tween(DELAY, VSPACING*(k - item->active_subitem + 2), &item->subitems[k].y, &inOutQuad);
-         add_tween(DELAY, I_PASSIVE_ZOOM, &item->subitems[k].zoom, &inOutQuad);
+         add_tween(DELAY, 0.5, &subitem->alpha, &inOutQuad);
+         add_tween(DELAY, VSPACING*(k - item->active_subitem + 2), &subitem->y, &inOutQuad);
+         add_tween(DELAY, I_PASSIVE_ZOOM, &subitem->zoom, &inOutQuad);
       }
       else if (k == item->active_subitem)
       {
          // Active item
-         add_tween(DELAY, 1.0, &item->subitems[k].alpha, &inOutQuad);
-         add_tween(DELAY, VSPACING*2.5, &item->subitems[k].y, &inOutQuad);
-         add_tween(DELAY, I_ACTIVE_ZOOM, &item->subitems[k].zoom, &inOutQuad);
+         add_tween(DELAY, 1.0, &subitem->alpha, &inOutQuad);
+         add_tween(DELAY, VSPACING*2.5, &subitem->y, &inOutQuad);
+         add_tween(DELAY, I_ACTIVE_ZOOM, &subitem->zoom, &inOutQuad);
       }
       else if (k > item->active_subitem)
       {
          // Under items
-         add_tween(DELAY, 0.5, &item->subitems[k].alpha, &inOutQuad);
-         add_tween(DELAY, VSPACING*(k - item->active_subitem + 3), &item->subitems[k].y, &inOutQuad);
-         add_tween(DELAY, I_PASSIVE_ZOOM, &item->subitems[k].zoom, &inOutQuad);
+         add_tween(DELAY, 0.5, &subitem->alpha, &inOutQuad);
+         add_tween(DELAY, VSPACING*(k - item->active_subitem + 3), &subitem->y, &inOutQuad);
+         add_tween(DELAY, I_PASSIVE_ZOOM, &subitem->zoom, &inOutQuad);
       }
    }
 }
@@ -269,9 +276,11 @@ void lakka_reset_submenu(void)
          {
             for (k = 0; k < category->items[j].num_subitems; k++)
             {
-               category->items[j].subitems[k].alpha = 0;
-               category->items[j].subitems[k].zoom = k == category->items[j].active_subitem ? I_ACTIVE_ZOOM : I_PASSIVE_ZOOM;
-               category->items[j].subitems[k].y = k == 0 ? VSPACING*2.5 : VSPACING*(3+k);
+               menu_subitem_t *subitem = (menu_subitem_t*)&category->items[j].subitems[k];
+
+               subitem->alpha = 0;
+               subitem->zoom = k == category->items[j].active_subitem ? I_ACTIVE_ZOOM : I_PASSIVE_ZOOM;
+               subitem->y = k == 0 ? VSPACING * 2.5 : VSPACING * (3+k);
             }
          }
       }
@@ -300,15 +309,17 @@ void lakka_open_submenu(void)
             {
                for (k = 0; k < category->items[j].num_subitems; k++)
                {
+                  menu_subitem_t *subitem = (menu_subitem_t*)&category->items[j].subitems[k];
+
                   if (k == category->items[j].active_subitem)
                   {
-                     add_tween(DELAY, 1.0, &category->items[j].subitems[k].alpha, &inOutQuad);
-                     add_tween(DELAY, I_ACTIVE_ZOOM, &category->items[j].subitems[k].zoom, &inOutQuad);
+                     add_tween(DELAY, 1.0, &subitem->alpha, &inOutQuad);
+                     add_tween(DELAY, I_ACTIVE_ZOOM, &subitem->zoom, &inOutQuad);
                   }
                   else
                   {
-                     add_tween(DELAY, 0.5, &category->items[j].subitems[k].alpha, &inOutQuad);
-                     add_tween(DELAY, I_PASSIVE_ZOOM, &category->items[j].subitems[k].zoom, &inOutQuad);
+                     add_tween(DELAY, 0.5, &subitem->alpha, &inOutQuad);
+                     add_tween(DELAY, I_PASSIVE_ZOOM, &subitem->zoom, &inOutQuad);
                   }
                }
             }
@@ -731,18 +742,22 @@ static void lakka_frame(void *data)
       // draw items
       for(j = 0; j < category->num_items; j++)
       {
+         menu_item_t *item = (menu_item_t*)&category->items[j];
+
          lakka_draw_icon(gl, 
-            category->items[j].icon, 
+            item->icon, 
             156 + HSPACING*(i+1) + all_categories_x - dim/2.0, 
-            300 + category->items[j].y + dim/2.0, 
-            category->items[j].alpha, 
+            300 + item->y + dim/2.0, 
+            item->alpha, 
             0, 
-            category->items[j].zoom);
+            item->zoom);
 
          if (i == menu_active_category && j == category->active_item && depth == 1) // performance improvement
          {
-            for(k = 0; k < category->items[j].num_subitems; k++)
+            for(k = 0; k < item->num_subitems; k++)
             {
+               menu_subitem_t *subitem = (menu_subitem_t*)&item->subitems[k];
+
                if (k == 0 && g_extern.main_is_init
                      && !g_extern.libretro_dummy
                      && strcmp(g_extern.fullpath, active_category->items[active_category->active_item].rom) == 0)
@@ -750,50 +765,50 @@ static void lakka_frame(void *data)
                   lakka_draw_icon(gl, 
                      resume_icon, 
                      156 + HSPACING*(i+2) + all_categories_x - dim/2.0, 
-                     300 + category->items[j].subitems[k].y + dim/2.0, 
-                     category->items[j].subitems[k].alpha, 
+                     300 + subitem->y + dim/2.0, 
+                     subitem->alpha, 
                      0, 
-                     category->items[j].subitems[k].zoom);
+                     subitem->zoom);
                   lakka_draw_text(gl, 
                      &resume_label, 
                      156 + HSPACING*(i+2) + all_categories_x + dim/2.0, 
-                     300 + category->items[j].subitems[k].y + 15, 
+                     300 + subitem->y + 15, 
                      1, 
-                     category->items[j].subitems[k].alpha);
+                     subitem->alpha);
                }
                else if (k == 0)
                {
                   lakka_draw_icon(gl, 
                         run_icon, 
                         156 + HSPACING*(i+2) + all_categories_x - dim/2.0, 
-                        300 + category->items[j].subitems[k].y + dim/2.0, 
-                        category->items[j].subitems[k].alpha, 
+                        300 + subitem->y + dim/2.0, 
+                        subitem->alpha, 
                         0, 
-                        category->items[j].subitems[k].zoom);
+                        subitem->zoom);
                   lakka_draw_text(gl, 
                         &run_label, 
                         156 + HSPACING*(i+2) + all_categories_x + dim/2.0, 
-                        300 + category->items[j].subitems[k].y + 15, 
+                        300 + subitem->y + 15, 
                         1, 
-                        category->items[j].subitems[k].alpha);
+                        subitem->alpha);
                }
                else if (g_extern.main_is_init && 
                      !g_extern.libretro_dummy &&
                      strcmp(g_extern.fullpath, active_category->items[active_category->active_item].rom) == 0)
                {
                   lakka_draw_icon(gl, 
-                        category->items[j].subitems[k].icon, 
+                        subitem->icon, 
                         156 + HSPACING*(i+2) + all_categories_x - dim/2.0, 
-                        300 + category->items[j].subitems[k].y + dim/2.0, 
-                        category->items[j].subitems[k].alpha, 
+                        300 + subitem->y + dim/2.0, 
+                        subitem->alpha, 
                         0, 
-                        category->items[j].subitems[k].zoom);
+                        subitem->zoom);
                   lakka_draw_text(gl, 
-                        &category->items[j].subitems[k].out, 
+                        &subitem->out, 
                         156 + HSPACING * (i+2) + all_categories_x + dim/2.0, 
-                        300 + category->items[j].subitems[k].y + 15, 
+                        300 + subitem->y + 15, 
                         1, 
-                        category->items[j].subitems[k].alpha);
+                        subitem->alpha);
                   /*end*/
                }
             }
@@ -805,21 +820,21 @@ static void lakka_frame(void *data)
                   j > active_category->active_item - 4 &&
                   j < active_category->active_item + 10) // performance improvement
                lakka_draw_text(gl, 
-                     &category->items[j].out, 
+                     &item->out, 
                      156 + HSPACING * (i+1) + all_categories_x + dim/2.0, 
-                     300 + category->items[j].y + 15, 
+                     300 + item->y + 15, 
                      1, 
-                     category->items[j].alpha);
+                     item->alpha);
          }
          else
          {
             lakka_draw_icon(gl,
                   arrow_icon, 
                   156 + (HSPACING*(i+1)) + all_categories_x + 150 +-dim/2.0, 
-                  300 + category->items[j].y + dim/2.0, 
-                  category->items[j].alpha,
+                  300 + item->y + dim/2.0, 
+                  item->alpha,
                   0,
-                  category->items[j].zoom);
+                  item->zoom);
          }
       }
 
@@ -1091,55 +1106,60 @@ void lakka_init_items(int i, menu_category_t *mcat, core_info_t corenfo, char* g
       else
       {
          struct font_output_list out;
+         menu_item_t *item;
 
          n = mcat->num_items;
+         item = (menu_item_t*)&mcat->items[n];
+
          mcat->num_items++;
          mcat->items = (menu_item_t*)realloc(mcat->items, mcat->num_items * sizeof(menu_item_t));
 
-         strlcpy(mcat->items[n].name, path_basename(list->elems[j].data), sizeof(mcat->items[n].name));
-         strlcpy(mcat->items[n].rom, list->elems[j].data, sizeof(mcat->items[n].rom));
-         mcat->items[n].icon           = png_texture_load(gametexturepath, &dim, &dim);
-         mcat->items[n].alpha          = i != menu_active_category ? 0 : n ? 0.5 : 1;
-         mcat->items[n].zoom           = n ? I_PASSIVE_ZOOM : I_ACTIVE_ZOOM;
-         mcat->items[n].y              = n ? VSPACING*(3+n) : VSPACING*2.5;
-         mcat->items[n].active_subitem = 0;
-         mcat->items[n].num_subitems   = 5;
-         mcat->items[n].subitems       = (menu_subitem_t*)calloc(mcat->items[n].num_subitems, sizeof(menu_subitem_t));
+         strlcpy(item->name, path_basename(list->elems[j].data), sizeof(item->name));
+         strlcpy(item->rom, list->elems[j].data, sizeof(item->rom));
+         item->icon           = png_texture_load(gametexturepath, &dim, &dim);
+         item->alpha          = i != menu_active_category ? 0 : n ? 0.5 : 1;
+         item->zoom           = n ? I_PASSIVE_ZOOM : I_ACTIVE_ZOOM;
+         item->y              = n ? VSPACING*(3+n) : VSPACING*2.5;
+         item->active_subitem = 0;
+         item->num_subitems   = 5;
+         item->subitems       = (menu_subitem_t*)calloc(item->num_subitems, sizeof(menu_subitem_t));
 
-         for (k = 0; k < mcat->items[n].num_subitems; k++)
+         for (k = 0; k < item->num_subitems; k++)
          {
+            menu_subitem_t *subitem = (menu_subitem_t*)&item->subitems[k];
+
             switch (k)
             {
                case 0:
-                  strlcpy(mcat->items[n].subitems[k].name, "Run", sizeof(mcat->items[n].subitems[k].name));
-                  mcat->items[n].subitems[k].icon = run_icon;
+                  strlcpy(subitem->name, "Run", sizeof(subitem->name));
+                  subitem->icon = run_icon;
                   break;
                case 1:
-                  strlcpy(mcat->items[n].subitems[k].name, "Save State", sizeof(mcat->items[n].subitems[k].name));
-                  mcat->items[n].subitems[k].icon = savestate_icon;
+                  strlcpy(subitem->name, "Save State", sizeof(subitem->name));
+                  subitem->icon = savestate_icon;
                   break;
                case 2:
-                  strlcpy(mcat->items[n].subitems[k].name, "Load State", sizeof(mcat->items[n].subitems[k].name));
-                  mcat->items[n].subitems[k].icon = loadstate_icon;
+                  strlcpy(item->subitems[k].name, "Load State", sizeof(item->subitems[k].name));
+                  item->subitems[k].icon = loadstate_icon;
                   break;
                case 3:
-                  strlcpy(mcat->items[n].subitems[k].name, "Take Screenshot", sizeof(mcat->items[n].subitems[k].name));
-                  mcat->items[n].subitems[k].icon = screenshot_icon;
+                  strlcpy(item->subitems[k].name, "Take Screenshot", sizeof(item->subitems[k].name));
+                  item->subitems[k].icon = screenshot_icon;
                   break;
                case 4:
-                  strlcpy(mcat->items[n].subitems[k].name, "Reset", sizeof(mcat->items[n].subitems[k].name));
-                  mcat->items[n].subitems[k].icon = reload_icon;
+                  strlcpy(item->subitems[k].name, "Reset", sizeof(item->subitems[k].name));
+                  item->subitems[k].icon = reload_icon;
                   break;
             }
-            mcat->items[n].subitems[k].alpha = 0;
-            mcat->items[n].subitems[k].zoom = k == mcat->items[n].active_subitem ? I_ACTIVE_ZOOM : I_PASSIVE_ZOOM;
-            mcat->items[n].subitems[k].y = k == 0 ? VSPACING*2.5 : VSPACING*(3+k);
-            font_driver->render_msg(font, mcat->items[n].subitems[k].name, &out);
-            memcpy(&mcat->items[n].subitems[k].out, &out, sizeof(struct font_output_list));
+            subitem->alpha = 0;
+            subitem->zoom = k == item->active_subitem ? I_ACTIVE_ZOOM : I_PASSIVE_ZOOM;
+            subitem->y = k == 0 ? VSPACING * 2.5 : VSPACING * (3 + k);
+            font_driver->render_msg(font, subitem->name, &out);
+            memcpy(&subitem->out, &out, sizeof(struct font_output_list));
          }
 
-         font_driver->render_msg(font, mcat->items[n].name, &out);
-         memcpy(&mcat->items[n].out, &out, sizeof(struct font_output_list));
+         font_driver->render_msg(font, item->name, &out);
+         memcpy(&item->out, &out, sizeof(struct font_output_list));
       }
    }
 }
