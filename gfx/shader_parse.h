@@ -28,6 +28,7 @@ extern "C" {
 #define GFX_MAX_SHADERS 16
 #define GFX_MAX_TEXTURES 8
 #define GFX_MAX_VARIABLES 64
+#define GFX_MAX_PARAMETERS 64
 
 enum gfx_scale_type
 {
@@ -65,6 +66,17 @@ struct gfx_fbo_scale
    bool valid;
 };
 
+struct gfx_shader_parameter
+{
+   char id[64];
+   char desc[64];
+   float current;
+   float minimum;
+   float initial;
+   float maximum;
+   float step;
+};
+
 struct gfx_shader_pass
 {
    struct
@@ -77,6 +89,7 @@ struct gfx_shader_pass
       } string;
    } source;
 
+   char alias[64];
    struct gfx_fbo_scale fbo;
    enum gfx_filter_type filter;
    enum gfx_wrap_type wrap;
@@ -108,6 +121,9 @@ struct gfx_shader
    unsigned luts;
    struct gfx_shader_lut lut[GFX_MAX_TEXTURES];
 
+   struct gfx_shader_parameter parameters[GFX_MAX_PARAMETERS];
+   unsigned num_parameters;
+
    unsigned variables;
    struct state_tracker_uniform_info variable[GFX_MAX_VARIABLES];
    char script_path[PATH_MAX];
@@ -119,6 +135,7 @@ bool gfx_shader_read_conf_cgp(config_file_t *conf, struct gfx_shader *shader);
 void gfx_shader_write_conf_cgp(config_file_t *conf, const struct gfx_shader *shader);
 
 void gfx_shader_resolve_relative(struct gfx_shader *shader, const char *ref_path);
+bool gfx_shader_resolve_parameters(config_file_t *conf, struct gfx_shader *shader);
 
 enum rarch_shader_type gfx_shader_parse_type(const char *path, enum rarch_shader_type fallback);
 

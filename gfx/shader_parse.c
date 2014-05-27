@@ -105,6 +105,11 @@ static bool shader_parse_pass(config_file_t *conf, struct gfx_shader_pass *pass,
    print_buf(mipmap_buf, "mipmap_input%u", i);
    config_get_bool(conf, mipmap_buf, &pass->mipmap);
 
+   char alias_buf[64];
+   print_buf(alias_buf, "alias%u", i);
+   if (!config_get_array(conf, alias_buf, pass->alias, sizeof(pass->alias)))
+      *pass->alias = '\0';
+
    // Scale
    struct gfx_fbo_scale *scale = &pass->fbo;
    char scale_type[64] = {0};
@@ -268,10 +273,88 @@ static bool shader_parse_textures(config_file_t *conf, struct gfx_shader *shader
    return true;
 }
 
+static struct gfx_shader_parameter *find_parameter(struct gfx_shader_parameter *params, unsigned num_params, const char *id)
+{
+   unsigned i;
+   for (i = 0; i < num_params; i++)
+   {
+      if (!strcmp(params[i].id, id))
+         return &params[i];
+   }
+   return NULL;
+}
+
+bool gfx_shader_resolve_parameters(config_file_t *conf, struct gfx_shader *shader)
+{
+   unsigned i;
+
+   shader->num_parameters = 0;
+   struct gfx_shader_parameter *param = &shader->parameters[shader->num_parameters];
+
+   // Find all parameters in our shaders.
+   for (i = 0; i < shader->passes; i++)
+   {
+      char line[2048];
+      FILE *file = fopen(shader->pass[i].source.path, "r");
+      if (!file)
+         continue;
+
+      while (shader->num_parameters < ARRAY_SIZE(shader->parameters) && fgets(line, sizeof(line), file))
+      {
+         int ret = sscanf(line, "#pragma parameter %64s \"%64[^\"]\" %f %f %f %f",
+               param->id, param->desc, &param->initial, &param->minimum, &param->maximum, &param->step);
+
+         if (ret >= 5)
+         {
+            param->id[63] = '\0';
+            param->desc[63] = '\0';
+
+            if (ret == 5)
+               param->step = 0.1f * (param->maximum - param->minimum);
+
+            RARCH_LOG("Found #pragma parameter %s (%s) %f %f %f %f\n",
+                  param->desc, param->id, param->initial, param->minimum, param->maximum, param->step);
+            param->current = param->initial;
+
+            shader->num_parameters++;
+            param++;
+         }
+      }
+
+      fclose(file);
+   }
+
+   // Read in parameters which override the defaults.
+   if (conf)
+   {
+      char parameters[1024];
+      char *save = NULL;
+      const char *id;
+
+      if (!config_get_array(conf, "parameters", parameters, sizeof(parameters)))
+         return true;
+
+      for (id = strtok_r(parameters, ";", &save); id; id = strtok_r(NULL, ";", &save))
+      {
+         struct gfx_shader_parameter *param = find_parameter(shader->parameters, shader->num_parameters, id);
+         if (!param)
+         {
+            RARCH_WARN("[CGP/GLSLP]: Parameter %s is set in the preset, but no shader uses this parameter, ignoring.\n", id);
+            continue;
+         }
+
+         if (!config_get_float(conf, id, &param->current))
+            RARCH_WARN("[CGP/GLSLP]: Parameter %s is not set in preset.\n", id);
+      }
+   }
+
+   return true;
+}
+
 static bool shader_parse_imports(config_file_t *conf, struct gfx_shader *shader)
 {
    char imports[1024];
-   char *save;
+   char *save = NULL;
    const char *id;
    if (!config_get_array(conf, "imports", imports, sizeof(imports)))
       return true;
@@ -538,7 +621,30 @@ void gfx_shader_write_conf_cgp(config_file_t *conf, const struct gfx_shader *sha
       print_buf(key, "mipmap_input%u", i);
       config_set_bool(conf, key, pass->mipmap);
 
+      print_buf(key, "alias%u", i);
+      config_set_string(conf, key, pass->alias);
+
       shader_write_fbo(conf, &pass->fbo, i);
+   }
+
+   if (shader->num_parameters)
+   {
+      char parameters[4096] = {0};
+      strlcpy(parameters, shader->parameters[0].id, sizeof(parameters));
+      for (i = 1; i < shader->num_parameters; i++)
+      {
+         // O(n^2), but number of parameters is very limited.
+         strlcat(parameters, ";", sizeof(parameters));
+         strlcat(parameters, shader->parameters[i].id, sizeof(parameters));
+      }
+
+      config_set_string(conf, "parameters", parameters);
+      
+      for (i = 0; i < shader->num_parameters; i++)
+      {
+         char key[64];
+         config_set_float(conf, shader->parameters[i].id, shader->parameters[i].current);
+      }
    }
 
    if (shader->luts)

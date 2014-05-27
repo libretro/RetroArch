@@ -164,6 +164,7 @@ typedef struct
 
 #ifdef HAVE_SHADER_MANAGER
    struct gfx_shader shader;
+   struct gfx_shader *parameter_shader; // Points to either shader or graphics driver current shader.
 #endif
    unsigned current_pad;
 

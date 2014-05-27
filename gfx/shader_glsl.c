@@ -58,6 +58,8 @@ static state_tracker_t *gl_state_tracker;
 static GLint gl_attribs[PREV_TEXTURES + 1 + 4 + GFX_MAX_SHADERS];
 static unsigned gl_attrib_index;
 
+static char glsl_alias_define[1024];
+
 // Cache the VBO.
 struct cache_vbo
 {
@@ -325,7 +327,7 @@ static bool compile_shader(GLuint shader, const char *define, const char *progra
       RARCH_LOG("[GL]: Using GLSL version %u.\n", version_no);
    }
 
-   const char *source[] = { version, define, program };
+   const char *source[] = { version, define, glsl_alias_define, program };
    glShaderSource(shader, ARRAY_SIZE(source), source, NULL);
    glCompileShader(shader);
 
@@ -366,7 +368,7 @@ static GLuint compile_program(const char *vertex, const char *fragment, unsigned
    {
       RARCH_LOG("Found GLSL vertex shader.\n");
       vert = glCreateShader(GL_VERTEX_SHADER);
-      if (!compile_shader(vert, "#define VERTEX\n", vertex))
+      if (!compile_shader(vert, "#define VERTEX\n#define PARAMETER_UNIFORM\n", vertex))
       {
          RARCH_ERR("Failed to compile vertex shader #%u\n", i);
          return false;
@@ -379,7 +381,7 @@ static GLuint compile_program(const char *vertex, const char *fragment, unsigned
    {
       RARCH_LOG("Found GLSL fragment shader.\n");
       frag = glCreateShader(GL_FRAGMENT_SHADER);
-      if (!compile_shader(frag, "#define FRAGMENT\n", fragment))
+      if (!compile_shader(frag, "#define FRAGMENT\n#define PARAMETER_UNIFORM\n", fragment))
       {
          RARCH_ERR("Failed to compile fragment shader #%u\n", i);
          return false;
@@ -566,6 +568,9 @@ static void find_uniforms(unsigned pass, GLuint prog, struct shader_uniforms *un
       find_uniforms_frame(prog, &uni->pass[i], frame_base);
       snprintf(frame_base, sizeof(frame_base), "PassPrev%u", pass - (i + 1));
       find_uniforms_frame(prog, &uni->pass[i], frame_base);
+
+      if (*glsl_shader->pass[i].alias)
+         find_uniforms_frame(prog, &uni->pass[i], glsl_shader->pass[i].alias);
    }
 
    clear_uniforms_frame(&uni->prev[0]);
@@ -662,6 +667,8 @@ static bool gl_glsl_init(void *data, const char *path)
    if (!glsl_shader)
       return false;
 
+   config_file_t *conf = NULL;
+
    if (path)
    {
       bool ret;
@@ -674,12 +681,11 @@ static bool gl_glsl_init(void *data, const char *path)
       }
       else if (strcmp(path_get_extension(path), "glslp") == 0)
       {
-         config_file_t *conf = config_file_new(path);
+         conf = config_file_new(path);
          if (conf)
          {
             ret = gfx_shader_read_conf_cgp(conf, glsl_shader);
             glsl_shader->modern = true;
-            config_file_free(conf);
          }
          else
             ret = false;
@@ -703,6 +709,13 @@ static bool gl_glsl_init(void *data, const char *path)
    }
 
    gfx_shader_resolve_relative(glsl_shader, path);
+   gfx_shader_resolve_parameters(conf, glsl_shader);
+
+   if (conf)
+   {
+      config_file_free(conf);
+      conf = NULL;
+   }
 
    const char *stock_vertex = glsl_shader->modern ?
       stock_vertex_modern : stock_vertex_legacy;
@@ -728,6 +741,19 @@ static bool gl_glsl_init(void *data, const char *path)
       goto error;
    }
 #endif
+
+   // Find all aliases we use in our GLSLP and add #defines for them so
+   // that a shader can choose a fallback if we are not using a preset.
+   *glsl_alias_define = '\0';
+   for (i = 0; i < glsl_shader->passes; i++)
+   {
+      if (*glsl_shader->pass[i].alias)
+      {
+         char define[128];
+         snprintf(define, sizeof(define), "#define %s_ALIAS\n", glsl_shader->pass[i].alias);
+         strlcat(glsl_alias_define, define, sizeof(glsl_alias_define));
+      }
+   }
 
    if (!(gl_program[0] = compile_program(stock_vertex, stock_fragment, 0)))
    {
@@ -810,12 +836,6 @@ static void gl_glsl_set_params(void *data, unsigned width, unsigned height,
       const struct gl_tex_info *fbo_info, unsigned fbo_info_cnt)
 {
    (void)data;
-   // We enforce a certain layout for our various texture types in the texunits.
-   // - Regular frame (Texture) (always bound).
-   // - LUT textures (always bound).
-   // - Original texture (always bound if meaningful).
-   // - FBO textures (always bound if available).
-   // - Previous textures.
 
    if (!glsl_enable || (gl_program[active_index] == 0))
       return;
@@ -853,21 +873,22 @@ static void gl_glsl_set_params(void *data, unsigned width, unsigned height,
    if (uni->frame_direction >= 0)
       glUniform1i(uni->frame_direction, g_extern.frame_is_reverse ? -1 : 1);
 
+   unsigned texunit = 1;
+
    for (i = 0; i < glsl_shader->luts; i++)
    {
       if (uni->lut_texture[i] >= 0)
       {
          // Have to rebind as HW render could override this.
-         glActiveTexture(GL_TEXTURE0 + i + 1);
+         glActiveTexture(GL_TEXTURE0 + texunit);
          glBindTexture(GL_TEXTURE_2D, gl_teximage[i]);
-         glUniform1i(uni->lut_texture[i], i + 1);
+         glUniform1i(uni->lut_texture[i], texunit);
+         texunit++;
       }
    }
 
-   unsigned texunit = glsl_shader->luts + 1;
-
-   // Set original texture unless we're in first pass (pointless).
-   if (active_index > 1)
+   // Set original texture.
+   if (active_index)
    {
       if (uni->orig.texture >= 0)
       {
@@ -875,9 +896,8 @@ static void gl_glsl_set_params(void *data, unsigned width, unsigned height,
          glActiveTexture(GL_TEXTURE0 + texunit);
          glUniform1i(uni->orig.texture, texunit);
          glBindTexture(GL_TEXTURE_2D, info->tex);
+         texunit++;
       }
-
-      texunit++;
 
       if (uni->orig.texture_size >= 0)
          glUniform2fv(uni->orig.texture_size, 1, info->tex_size);
@@ -898,20 +918,16 @@ static void gl_glsl_set_params(void *data, unsigned width, unsigned height,
          size += 8;
       }
 
-      // Bind new texture in the chain.
-      if (fbo_info_cnt > 0)
-      {
-         glActiveTexture(GL_TEXTURE0 + texunit + fbo_info_cnt - 1);
-         glBindTexture(GL_TEXTURE_2D, fbo_info[fbo_info_cnt - 1].tex);
-      }
-
       // Bind FBO textures.
       for (i = 0; i < fbo_info_cnt; i++)
       {
          if (uni->pass[i].texture)
+         {
+            glActiveTexture(GL_TEXTURE0 + texunit);
+            glBindTexture(GL_TEXTURE_2D, fbo_info[i].tex);
             glUniform1i(uni->pass[i].texture, texunit);
-
-         texunit++;
+            texunit++;
+         }
 
          if (uni->pass[i].texture_size >= 0)
             glUniform2fv(uni->pass[i].texture_size, 1, fbo_info[i].tex_size);
@@ -932,23 +948,6 @@ static void gl_glsl_set_params(void *data, unsigned width, unsigned height,
          }
       }
    }
-   else
-   {
-      // First pass, so unbind everything to avoid collitions.
-      // Unbind ORIG.
-      glActiveTexture(GL_TEXTURE0 + texunit);
-      glBindTexture(GL_TEXTURE_2D, 0);
-
-      GLuint base_tex = texunit + 1;
-      // Unbind any lurking FBO passes.
-      // Rendering to a texture that is bound to a texture unit
-      // sounds very shaky ... ;)
-      for (i = 0; i < glsl_shader->passes; i++)
-      {
-         glActiveTexture(GL_TEXTURE0 + base_tex + i);
-         glBindTexture(GL_TEXTURE_2D, 0);
-      }
-   }
 
    // Set previous textures. Only bind if they're actually used.
    for (i = 0; i < PREV_TEXTURES; i++)
@@ -957,10 +956,9 @@ static void gl_glsl_set_params(void *data, unsigned width, unsigned height,
       {
          glActiveTexture(GL_TEXTURE0 + texunit);
          glBindTexture(GL_TEXTURE_2D, prev_info[i].tex);
-         glUniform1i(uni->prev[i].texture, texunit++);
+         glUniform1i(uni->prev[i].texture, texunit);
+         texunit++;
       }
-
-      texunit++;
 
       if (uni->prev[i].texture_size >= 0)
          glUniform2fv(uni->prev[i].texture_size, 1, prev_info[i].tex_size);
@@ -992,6 +990,14 @@ static void gl_glsl_set_params(void *data, unsigned width, unsigned height,
 
    glActiveTexture(GL_TEXTURE0);
 
+   // #pragma parameters
+   for (i = 0; i < glsl_shader->num_parameters; i++)
+   {
+      int location = glGetUniformLocation(gl_program[active_index], glsl_shader->parameters[i].id);
+      glUniform1f(location, glsl_shader->parameters[i].current);
+   }
+
+   // Set state parameters
    if (gl_state_tracker)
    {
       static struct state_tracker_uniform info[GFX_MAX_VARIABLES];
@@ -1163,6 +1169,11 @@ static bool gl_glsl_mipmap_input(unsigned index)
       return false;
 }
 
+static struct gfx_shader *gl_glsl_get_current_shader(void)
+{
+   return glsl_enable ? glsl_shader : NULL;
+}
+
 void gl_glsl_set_get_proc_address(gfx_ctx_proc_t (*proc)(const char*))
 {
    glsl_get_proc_address = proc;
@@ -1188,6 +1199,7 @@ const gl_shader_backend_t gl_glsl_backend = {
    gl_glsl_set_mvp,
    gl_glsl_get_prev_textures,
    gl_glsl_mipmap_input,
+   gl_glsl_get_current_shader,
 
    RARCH_SHADER_GLSL,
 };

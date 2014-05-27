@@ -435,6 +435,11 @@ static bool hlsl_mipmap_input(unsigned index)
    return false;
 }
 
+static struct gfx_shader *hlsl_get_current_shader(void)
+{
+   return NULL;
+}
+
 const gl_shader_backend_t hlsl_backend = {
    hlsl_init,
    hlsl_deinit,
@@ -448,6 +453,7 @@ const gl_shader_backend_t hlsl_backend = {
    hlsl_set_mvp,
    NULL,              /* hlsl_get_prev_textures */
    hlsl_mipmap_input,
+   hlsl_get_current_shader,
 
    RARCH_SHADER_HLSL,
 };

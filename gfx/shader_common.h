@@ -54,6 +54,8 @@ struct gl_shader_backend
    unsigned (*get_prev_textures)(void);
    bool (*mipmap_input)(unsigned index);
 
+   struct gfx_shader *(*get_current_shader)(void);
+
    enum rarch_shader_type type;
 };
 

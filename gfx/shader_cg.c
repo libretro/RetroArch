@@ -132,7 +132,6 @@ struct cg_program
 };
 
 static struct cg_program prg[GFX_MAX_SHADERS];
-static const char **cg_arguments;
 static bool cg_active;
 static CGprofile cgVProf, cgFProf;
 static unsigned active_index;
@@ -144,6 +143,8 @@ static GLuint lut_textures[GFX_MAX_TEXTURES];
 
 static CGparameter cg_attribs[PREV_TEXTURES + 1 + 4 + GFX_MAX_SHADERS];
 static unsigned cg_attrib_index;
+
+static char cg_alias_define[GFX_MAX_SHADERS][128];
 
 static void gl_cg_reset_attrib(void)
 {
@@ -288,7 +289,7 @@ static void gl_cg_set_params(void *data, unsigned width, unsigned height,
    }
 
    // Set FBO textures.
-   if (active_index > 2)
+   if (active_index)
    {
       for (i = 0; i < fbo_info_cnt; i++)
       {
@@ -311,6 +312,15 @@ static void gl_cg_set_params(void *data, unsigned width, unsigned height,
             cg_attribs[cg_attrib_index++] = prg[active_index].fbo[i].coord;
          }
       }
+   }
+
+   // #pragma parameters
+   for (i = 0; i < cg_shader->num_parameters; i++)
+   {
+      CGparameter param_v = cgGetNamedParameter(prg[active_index].vprg, cg_shader->parameters[i].id);
+      CGparameter param_f = cgGetNamedParameter(prg[active_index].fprg, cg_shader->parameters[i].id);
+      set_param_1f(param_v, cg_shader->parameters[i].current);
+      set_param_1f(param_f, cg_shader->parameters[i].current);
    }
 
    // Set state parameters
@@ -414,18 +424,30 @@ static bool load_program(unsigned index, const char *prog, bool path_is_file)
    char *listing_f = NULL;
    char *listing_v = NULL;
 
+   unsigned i, argc = 1;
+   const char *argv[2 + GFX_MAX_SHADERS] = {
+      "-DPARAMETER_UNIFORM",
+      NULL,
+   };
+
+   for (i = 0; i < GFX_MAX_SHADERS; i++)
+   {
+      if (*(cg_alias_define[i]))
+         argv[argc++] = cg_alias_define[i];
+   }
+
    if (path_is_file)
    {
-      prg[index].fprg = cgCreateProgramFromFile(cgCtx, CG_SOURCE, prog, cgFProf, "main_fragment", cg_arguments);
+      prg[index].fprg = cgCreateProgramFromFile(cgCtx, CG_SOURCE, prog, cgFProf, "main_fragment", argv);
       SET_LISTING(f);
-      prg[index].vprg = cgCreateProgramFromFile(cgCtx, CG_SOURCE, prog, cgVProf, "main_vertex", cg_arguments);
+      prg[index].vprg = cgCreateProgramFromFile(cgCtx, CG_SOURCE, prog, cgVProf, "main_vertex", argv);
       SET_LISTING(v);
    }
    else
    {
-      prg[index].fprg = cgCreateProgram(cgCtx, CG_SOURCE, prog, cgFProf, "main_fragment", cg_arguments);
+      prg[index].fprg = cgCreateProgram(cgCtx, CG_SOURCE, prog, cgFProf, "main_fragment", argv);
       SET_LISTING(f);
-      prg[index].vprg = cgCreateProgram(cgCtx, CG_SOURCE, prog, cgVProf, "main_vertex", cg_arguments);
+      prg[index].vprg = cgCreateProgram(cgCtx, CG_SOURCE, prog, cgVProf, "main_vertex", argv);
       SET_LISTING(v);
    }
 
@@ -489,6 +511,7 @@ static bool load_plain(const char *path)
       prg[1] = prg[0];
    }
 
+   gfx_shader_resolve_parameters(NULL, cg_shader);
    return true;
 }
 
@@ -580,14 +603,20 @@ static bool load_preset(const char *path)
       return false;
    }
 
-   config_file_free(conf);
    gfx_shader_resolve_relative(cg_shader, path);
+   gfx_shader_resolve_parameters(conf, cg_shader);
+   config_file_free(conf);
 
    if (cg_shader->passes > GFX_MAX_SHADERS - 3)
    {
       RARCH_WARN("Too many shaders ... Capping shader amount to %d.\n", GFX_MAX_SHADERS - 3);
       cg_shader->passes = GFX_MAX_SHADERS - 3;
    }
+
+   for (i = 0; i < cg_shader->passes; i++)
+      if (*cg_shader->pass[i].alias)
+         snprintf(cg_alias_define[i], sizeof(cg_alias_define[i]), "-D%s_ALIAS", cg_shader->pass[i].alias);
+
    for (i = 0; i < cg_shader->passes; i++)
    {
       if (!load_shader(i))
@@ -741,13 +770,16 @@ static void set_program_attributes(unsigned i)
       prg[i].prev[j].coord = cgGetNamedParameter(prg[i].vprg, attr_buf_coord);
    }
 
-   for (j = 0; j < i - 1; j++)
+   for (j = 0; j + 1 < i; j++)
    {
       char pass_str[64];
       snprintf(pass_str, sizeof(pass_str), "PASS%u", j + 1);
       set_pass_attrib(&prg[i], &prg[i].fbo[j], pass_str);
       snprintf(pass_str, sizeof(pass_str), "PASSPREV%u", i - (j + 1));
       set_pass_attrib(&prg[i], &prg[i].fbo[j], pass_str);
+
+      if (*cg_shader->pass[j].alias)
+         set_pass_attrib(&prg[i], &prg[i].fbo[j], cg_shader->pass[j].alias);
    }
 }
 
@@ -788,6 +820,8 @@ static bool gl_cg_init(void *data, const char *path)
    cgGLSetOptimalOptions(cgVProf);
    cgGLEnableProfile(cgFProf);
    cgGLEnableProfile(cgVProf);
+
+   memset(cg_alias_define, 0, sizeof(cg_alias_define));
 
    if (path && strcmp(path_get_extension(path), "cgp") == 0)
    {
@@ -898,9 +932,9 @@ static bool gl_cg_mipmap_input(unsigned index)
       return false;
 }
 
-void gl_cg_set_compiler_args(const char **argv)
+static struct gfx_shader *gl_cg_get_current_shader(void)
 {
-   cg_arguments = argv;
+   return cg_active ? cg_shader : NULL;
 }
 
 void gl_cg_invalidate_context(void)
@@ -921,6 +955,7 @@ const gl_shader_backend_t gl_cg_backend = {
    gl_cg_set_mvp,
    gl_cg_get_prev_textures,
    gl_cg_mipmap_input,
+   gl_cg_get_current_shader,
 
    RARCH_SHADER_CG,
 };
