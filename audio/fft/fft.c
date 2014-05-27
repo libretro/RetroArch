@@ -18,7 +18,7 @@
 #include <stdlib.h>
 
 #ifndef M_PI
-#define M_PI 3.14159265
+#define M_PI 3.1415926535897932384626433832795
 #endif
 
 struct rarch_fft
@@ -126,42 +126,11 @@ void rarch_fft_free(rarch_fft_t *fft)
    free(fft);
 }
 
-static inline rarch_fft_complex_t complex_mul(rarch_fft_complex_t a, rarch_fft_complex_t b)
-{
-   rarch_fft_complex_t out = {
-      a.real * b.real - a.imag * b.imag,
-      a.imag * b.real + a.real * b.imag,
-   };
-
-   return out;
-}
-
-static inline rarch_fft_complex_t complex_add(rarch_fft_complex_t a, rarch_fft_complex_t b)
-{
-   rarch_fft_complex_t out = {
-      a.real + b.real,
-      a.imag + b.imag,
-   };
-
-   return out;
-}
-
-static inline rarch_fft_complex_t complex_sub(rarch_fft_complex_t a, rarch_fft_complex_t b)
-{
-   rarch_fft_complex_t out = {
-      a.real - b.real,
-      a.imag - b.imag,
-   };
-
-   return out;
-}
-
-
 static void butterfly(rarch_fft_complex_t *a, rarch_fft_complex_t *b, rarch_fft_complex_t mod)
 {
-   mod = complex_mul(mod, *b);
-   *b = complex_sub(*a, mod);
-   *a = complex_add(*a, mod);
+   mod = rarch_fft_complex_mul(mod, *b);
+   *b = rarch_fft_complex_sub(*a, mod);
+   *a = rarch_fft_complex_add(*a, mod);
 }
 
 static void butterflies(rarch_fft_complex_t *butterfly_buf,
@@ -221,6 +190,6 @@ void rarch_fft_process_inverse(rarch_fft_t *fft,
             1, step_size, samples);
    }
 
-   resolve_float(out, fft->interleave_buffer, fft->size, 1.0f / fft->size);
+   resolve_float(out, fft->interleave_buffer, samples, 1.0f / samples);
 }
 

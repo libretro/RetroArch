@@ -25,6 +25,51 @@ typedef struct
    float imag;
 } rarch_fft_complex_t;
 
+static inline rarch_fft_complex_t rarch_fft_complex_mul(rarch_fft_complex_t a,
+      rarch_fft_complex_t b)
+{
+   rarch_fft_complex_t out = {
+      a.real * b.real - a.imag * b.imag,
+      a.imag * b.real + a.real * b.imag,
+   };
+
+   return out;
+
+}
+
+static inline rarch_fft_complex_t rarch_fft_complex_add(rarch_fft_complex_t a,
+      rarch_fft_complex_t b)
+{
+   rarch_fft_complex_t out = {
+      a.real + b.real,
+      a.imag + b.imag,
+   };
+
+   return out;
+
+}
+
+static inline rarch_fft_complex_t rarch_fft_complex_sub(rarch_fft_complex_t a,
+      rarch_fft_complex_t b)
+{
+   rarch_fft_complex_t out = {
+      a.real - b.real,
+      a.imag - b.imag,
+   };
+
+   return out;
+
+}
+
+static inline rarch_fft_complex_t rarch_fft_complex_conj(rarch_fft_complex_t a)
+{
+   rarch_fft_complex_t out = {
+      a.real, -a.imag,
+   };
+
+   return out;
+}
+
 rarch_fft_t *rarch_fft_new(unsigned block_size_log2);
 
 void rarch_fft_free(rarch_fft_t *fft);
