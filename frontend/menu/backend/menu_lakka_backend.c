@@ -41,6 +41,7 @@ static int menu_lakka_iterate(void *data, unsigned action)
 {
    rgui_handle_t *rgui = (rgui_handle_t*)data;
    menu_category_t *active_category = (menu_category_t*)&categories[menu_active_category];
+   menu_item_t     *active_item = (menu_item_t*)&active_category->items[active_category->active_item];
 
    if (!active_category)
       return 0;
@@ -73,11 +74,11 @@ static int menu_lakka_iterate(void *data, unsigned action)
             lakka_switch_items();
          }
          if (depth == 1 && 
-               (active_category->items[active_category->active_item].active_subitem < active_category->items[active_category->active_item].num_subitems -1) &&
+               (active_item->active_subitem < active_item->num_subitems -1) &&
                (g_extern.main_is_init && !g_extern.libretro_dummy) &&
-               strcmp(g_extern.fullpath, active_category->items[active_category->active_item].rom) == 0)
+               strcmp(g_extern.fullpath, active_item->rom) == 0)
          {
-            active_category->items[active_category->active_item].active_subitem++;
+            active_item->active_subitem++;
             lakka_switch_subitems();
          }
          break;
@@ -88,9 +89,9 @@ static int menu_lakka_iterate(void *data, unsigned action)
             active_category->active_item--;
             lakka_switch_items();
          }
-         if (depth == 1 && active_category->items[active_category->active_item].active_subitem > 0)
+         if (depth == 1 && active_item->active_subitem > 0)
          {
-            active_category->items[active_category->active_item].active_subitem--;
+            active_item->active_subitem--;
             lakka_switch_subitems();
          }
          break;
@@ -98,16 +99,15 @@ static int menu_lakka_iterate(void *data, unsigned action)
       case RGUI_ACTION_OK:
          if (depth == 1)
          {
-            switch (active_category->items[active_category->active_item].active_subitem)
+            switch (active_item->active_subitem)
             {
                case 0:
-                  if (g_extern.main_is_init && !g_extern.libretro_dummy && strcmp(g_extern.fullpath, active_category->items[active_category->active_item].rom) == 0)
-                  {
+                  if (g_extern.main_is_init && !g_extern.libretro_dummy
+                        && strcmp(g_extern.fullpath, active_item->rom) == 0)
                      g_extern.lifecycle_state |= (1ULL << MODE_GAME);
-                  }
                   else
                   {
-                     strlcpy(g_extern.fullpath, active_category->items[active_category->active_item].rom, sizeof(g_extern.fullpath));
+                     strlcpy(g_extern.fullpath, active_item->rom, sizeof(g_extern.fullpath));
                      strlcpy(g_settings.libretro, active_category->libretro, sizeof(g_settings.libretro));
 
 #ifdef HAVE_DYNAMIC
