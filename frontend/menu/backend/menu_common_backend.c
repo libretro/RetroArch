@@ -297,7 +297,7 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
 #endif
       case RGUI_SETTINGS_PATH_OPTIONS:
          file_list_clear(rgui->selection_buf);
-         file_list_push(rgui->selection_buf, "Content Directory", RGUI_BROWSER_DIR_PATH, 0);
+         file_list_push(rgui->selection_buf, "Browser Directory", RGUI_BROWSER_DIR_PATH, 0);
          file_list_push(rgui->selection_buf, "Assets Directory", RGUI_ASSETS_DIR_PATH, 0);
 #ifdef HAVE_DYNAMIC
          file_list_push(rgui->selection_buf, "Config Directory", RGUI_CONFIG_DIR_PATH, 0);
