@@ -75,13 +75,13 @@ rarch_fft_t *rarch_fft_new(unsigned block_size_log2);
 void rarch_fft_free(rarch_fft_t *fft);
 
 void rarch_fft_process_forward_complex(rarch_fft_t *fft,
-      rarch_fft_complex_t *out, const rarch_fft_complex_t *in);
+      rarch_fft_complex_t *out, const rarch_fft_complex_t *in, unsigned step);
 
 void rarch_fft_process_forward(rarch_fft_t *fft,
-      rarch_fft_complex_t *out, const float *in);
+      rarch_fft_complex_t *out, const float *in, unsigned step);
 
 void rarch_fft_process_inverse(rarch_fft_t *fft,
-      float *out, const rarch_fft_complex_t *in);
+      float *out, const rarch_fft_complex_t *in, unsigned step);
 
 
 #endif

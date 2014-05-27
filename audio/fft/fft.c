@@ -62,31 +62,32 @@ static void build_phase_lut(rarch_fft_complex_t *out, int size)
 
 static void interleave_complex(const unsigned *bitinverse,
       rarch_fft_complex_t *out, const rarch_fft_complex_t *in,
-      unsigned samples)
+      unsigned samples, unsigned step)
 {
    unsigned i;
-   for (i = 0; i < samples; i++)
-      out[bitinverse[i]] = in[i];
+   for (i = 0; i < samples; i++, in += step)
+      out[bitinverse[i]] = *in;
 }
 
 static void interleave_float(const unsigned *bitinverse,
       rarch_fft_complex_t *out, const float *in,
-      unsigned samples)
+      unsigned samples, unsigned step)
 {
    unsigned i;
-   for (i = 0; i < samples; i++)
+   for (i = 0; i < samples; i++, in += step)
    {
       unsigned inv_i = bitinverse[i];
-      out[inv_i].real = in[i];
+      out[inv_i].real = *in;
       out[inv_i].imag = 0.0f;
    }
 }
 
-static void resolve_float(float *out, const rarch_fft_complex_t *in, unsigned samples, float gain)
+static void resolve_float(float *out, const rarch_fft_complex_t *in, unsigned samples,
+      float gain, unsigned step)
 {
    unsigned i;
-   for (i = 0; i < samples; i++)
-      out[i] = gain * in[i].real;
+   for (i = 0; i < samples; i++, in++, out += step)
+      *out = gain * in->real;
 }
 
 rarch_fft_t *rarch_fft_new(unsigned block_size_log2)
@@ -147,11 +148,11 @@ static void butterflies(rarch_fft_complex_t *butterfly_buf,
 }
 
 void rarch_fft_process_forward_complex(rarch_fft_t *fft,
-      rarch_fft_complex_t *out, const rarch_fft_complex_t *in)
+      rarch_fft_complex_t *out, const rarch_fft_complex_t *in, unsigned step)
 {
    unsigned step_size;
    unsigned samples = fft->size;
-   interleave_complex(fft->bitinverse_buffer, out, in, fft->size);
+   interleave_complex(fft->bitinverse_buffer, out, in, fft->size, step);
 
    for (step_size = 1; step_size < samples; step_size <<= 1)
    {
@@ -162,11 +163,11 @@ void rarch_fft_process_forward_complex(rarch_fft_t *fft,
 }
 
 void rarch_fft_process_forward(rarch_fft_t *fft,
-      rarch_fft_complex_t *out, const float *in)
+      rarch_fft_complex_t *out, const float *in, unsigned step)
 {
    unsigned step_size;
    unsigned samples = fft->size;
-   interleave_float(fft->bitinverse_buffer, out, in, fft->size);
+   interleave_float(fft->bitinverse_buffer, out, in, fft->size, step);
 
    for (step_size = 1; step_size < fft->size; step_size <<= 1)
    {
@@ -177,11 +178,11 @@ void rarch_fft_process_forward(rarch_fft_t *fft,
 }
 
 void rarch_fft_process_inverse(rarch_fft_t *fft,
-      float *out, const rarch_fft_complex_t *in)
+      float *out, const rarch_fft_complex_t *in, unsigned step)
 {
    unsigned step_size;
    unsigned samples = fft->size;
-   interleave_complex(fft->bitinverse_buffer, fft->interleave_buffer, in, fft->size);
+   interleave_complex(fft->bitinverse_buffer, fft->interleave_buffer, in, fft->size, step);
 
    for (step_size = 1; step_size < samples; step_size <<= 1)
    {
@@ -190,6 +191,6 @@ void rarch_fft_process_inverse(rarch_fft_t *fft,
             1, step_size, samples);
    }
 
-   resolve_float(out, fft->interleave_buffer, samples, 1.0f / samples);
+   resolve_float(out, fft->interleave_buffer, samples, 1.0f / samples, step);
 }
 
