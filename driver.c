@@ -511,11 +511,11 @@ void global_init_drivers(void)
 {
    find_audio_driver();
    find_input_driver();
-   init_video_input();
    find_image_driver();
 #ifdef HAVE_MENU
    find_menu_driver();
 #endif
+   init_video_input();
 }
 
 void global_uninit_drivers(void)
