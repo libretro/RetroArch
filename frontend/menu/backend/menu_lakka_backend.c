@@ -39,11 +39,20 @@
 
 static int menu_lakka_iterate(void *data, unsigned action)
 {
-   rgui_handle_t *rgui = (rgui_handle_t*)data;
-   menu_category_t *active_category = (menu_category_t*)&categories[menu_active_category];
-   menu_item_t     *active_item = (menu_item_t*)&active_category->items[active_category->active_item];
+   rgui_handle_t *rgui;
+   menu_category_t *active_category;
+   menu_item_t *active_item;
 
-   if (!active_category)
+   rgui = (rgui_handle_t*)data;
+   active_category = NULL;
+   active_item = NULL;
+
+   active_category = (menu_category_t*)&categories[menu_active_category];
+
+   if (active_category)
+      active_item = (menu_item_t*)&active_category->items[active_category->active_item];
+
+   if (!active_category || !active_item)
       return 0;
 
    if (driver.video_data && driver.menu_ctx && driver.menu_ctx->set_texture)

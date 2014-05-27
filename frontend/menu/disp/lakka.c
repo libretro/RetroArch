@@ -143,6 +143,12 @@ static void update_tween(void *data, float dt)
    if (!tween)
       return;
 
+#if 0
+   RARCH_LOG("delta: %f\n", dt);
+   RARCH_LOG("tween running since: %f\n", tween->running_since);
+   RARCH_LOG("tween duration: %f\n", tween->duration);
+#endif
+
    if (tween->running_since < tween->duration)
    {
       tween->running_since += dt;
