@@ -152,7 +152,7 @@ void rarch_fft_process_forward_complex(rarch_fft_t *fft,
 {
    unsigned step_size;
    unsigned samples = fft->size;
-   interleave_complex(fft->bitinverse_buffer, out, in, fft->size, step);
+   interleave_complex(fft->bitinverse_buffer, out, in, samples, step);
 
    for (step_size = 1; step_size < samples; step_size <<= 1)
    {
@@ -167,7 +167,7 @@ void rarch_fft_process_forward(rarch_fft_t *fft,
 {
    unsigned step_size;
    unsigned samples = fft->size;
-   interleave_float(fft->bitinverse_buffer, out, in, fft->size, step);
+   interleave_float(fft->bitinverse_buffer, out, in, samples, step);
 
    for (step_size = 1; step_size < fft->size; step_size <<= 1)
    {
@@ -182,7 +182,7 @@ void rarch_fft_process_inverse(rarch_fft_t *fft,
 {
    unsigned step_size;
    unsigned samples = fft->size;
-   interleave_complex(fft->bitinverse_buffer, fft->interleave_buffer, in, fft->size, step);
+   interleave_complex(fft->bitinverse_buffer, fft->interleave_buffer, in, samples, 1);
 
    for (step_size = 1; step_size < samples; step_size <<= 1)
    {

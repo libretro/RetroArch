@@ -76,6 +76,7 @@ static void eq_process(void *data, struct dspfilter_output *output,
          write_avail = input_frames;
 
       memcpy(eq->block + eq->block_ptr * 2, in, write_avail * 2 * sizeof(float));
+
       in += write_avail * 2;
       input_frames -= write_avail;
       eq->block_ptr += write_avail;
@@ -124,12 +125,6 @@ static void generate_response(rarch_fft_complex_t *response,
 {
    unsigned i;
 
-   // DC and Nyquist get 0 gain. (This will get smeared out good with windowing later though ...)
-   response[0].real = 0.0f;
-   response[0].imag = 0.0f;
-   response[samples].real = 0.0f;
-   response[samples].imag = 0.0f;
-
    float start_freq = 0.0f;
    float start_gain = 1.0f;
 
@@ -145,44 +140,83 @@ static void generate_response(rarch_fft_complex_t *response,
    }
 
    // Create a response by linear interpolation between known frequency sample points.
-   for (i = 1; i < samples; i++)
+   for (i = 0; i <= samples; i++)
    {
       float freq = (float)i / samples;
 
-      while (freq > end_freq)
+      while (freq >= end_freq)
       {
          if (num_gains)
          {
             start_freq = end_freq;
             start_gain = end_gain;
-
             end_freq = gains->freq;
             end_gain = gains->gain;
+
             gains++;
             num_gains--;
          }
          else
          {
+            start_freq = end_freq;
+            start_gain = end_gain;
             end_freq = 1.0f;
             end_gain = 1.0f;
+            break;
          }
       }
 
-      float lerp = (freq - start_freq) / (end_freq - start_freq);
+      float lerp = 0.5f;
+      if (end_freq > start_freq)
+         lerp = (freq - start_freq) / (end_freq - start_freq);
       float gain = (1.0f - lerp) * start_gain + lerp * end_gain;
 
       response[i].real = gain;
       response[i].imag = 0.0f;
       response[2 * samples - i].real = gain;
-      response[2 * samples - i].imag = gain;
+      response[2 * samples - i].imag = 0.0f;
    }
 }
 
+// Modified Bessel function of first order.
+// Check Wiki for mathematical definition ...
+static inline double besseli0(double x)
+{
+   unsigned i;
+   double sum = 0.0;
+
+   double factorial = 1.0;
+   double factorial_mult = 0.0;
+   double x_pow = 1.0;
+   double two_div_pow = 1.0;
+   double x_sqr = x * x;
+
+   // Approximate. This is an infinite sum.
+   // Luckily, it converges rather fast.
+   for (i = 0; i < 18; i++)
+   {
+      sum += x_pow * two_div_pow / (factorial * factorial);
+
+      factorial_mult += 1.0;
+      x_pow *= x_sqr;
+      two_div_pow *= 0.25;
+      factorial *= factorial_mult;
+   }
+
+   return sum;
+}
+
+static inline double kaiser_window(double index, double beta)
+{
+   return besseli0(beta * sqrt(1 - index * index));
+}
+
 static void create_filter(struct eq_data *eq, unsigned size_log2,
-      struct eq_gain *gains, unsigned num_gains)
+      struct eq_gain *gains, unsigned num_gains, double beta)
 {
    int i;
    int half_block_size = eq->block_size >> 1;
+   double window_mod = 1.0 / kaiser_window(0.0, beta);
 
    rarch_fft_t *fft = rarch_fft_new(size_log2);
    float *time_filter = (float*)calloc(eq->block_size * 2, sizeof(*time_filter));
@@ -213,7 +247,7 @@ static void create_filter(struct eq_data *eq, unsigned size_log2,
       // Simple cosine window.
       double phase = (double)i / (eq->block_size - 1);
       phase = 2.0 * (phase - 0.5);
-      time_filter[i] *= cos(phase * M_PI);
+      time_filter[i] *= window_mod * kaiser_window(phase, beta);
    }
 
    // Debugging.
@@ -222,7 +256,7 @@ static void create_filter(struct eq_data *eq, unsigned size_log2,
    if (file)
    {
       for (i = 0; i < (int)eq->block_size; i++)
-         fprintf(file, "%.6f", time_filter[i]);
+         fprintf(file, "%.6f\n", time_filter[i]);
       fclose(file);
    }
 #endif
@@ -259,9 +293,23 @@ static void *eq_init(const struct dspfilter_info *info,
    if (!eq->fft || !eq->fftblock || !eq->save || !eq->block || !eq->filter)
       goto error;
 
-   struct eq_gain *gains = NULL;
-   unsigned num_gains = 0;
-   create_filter(eq, size_log2, gains, num_gains);
+   //struct eq_gain *gains = NULL;
+   //unsigned num_gains = 0;
+   struct eq_gain gains[] = {
+      { 0.00f, 2.0f },
+      { 0.04f, 1.0f },
+      { 0.05f, 0.4f },
+      { 0.06f, 1.0f },
+      { 0.08f, 0.1f },
+      { 0.15f, 0.1f },
+      { 0.3f, 3.0f },
+      { 0.5f, 0.25f },
+      { 0.7f, 2.0f },
+   };
+   unsigned num_gains = sizeof(gains) / sizeof(gains[0]);
+   double beta = 5.0;
+
+   create_filter(eq, size_log2, gains, num_gains, beta);
 
    return eq;
 
@@ -284,7 +332,7 @@ static const struct dspfilter_implementation eq_plug = {
 #define dspfilter_get_implementation eq_dspfilter_get_implementation
 #endif
 
-const struct dspfilter_implementation *eq_get_implementation(dspfilter_simd_mask_t mask)
+const struct dspfilter_implementation *dspfilter_get_implementation(dspfilter_simd_mask_t mask)
 {
    (void)mask;
    return &eq_plug;
