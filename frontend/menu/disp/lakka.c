@@ -1267,8 +1267,6 @@ static void *lakka_init(void)
       lakka_init_items(i+1, category, corenfo, gametexturepath, g_settings.content_directory);
    }
 
-   rgui->last_time = rarch_get_time_usec();
-
    return rgui;
 }
 
