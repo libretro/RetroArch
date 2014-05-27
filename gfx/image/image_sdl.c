@@ -13,6 +13,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+/* FIXME - Fix this, it appears to be broken */
+
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
 #endif
