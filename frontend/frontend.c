@@ -373,8 +373,20 @@ returntype main_entry(signature())
 
    if (!driver.menu)
    {
-      RARCH_ERR("Couldn't initialize menu, exiting...\n");
-      returnfunc();
+      RARCH_ERR("Couldn't initialize menu.\n");
+
+      if (!driver.menu_ctx)
+      {
+         RARCH_WARN("Trying to bring up menu context interface.\n");
+         find_menu_driver();
+      }
+
+      if (!(driver.menu = (rgui_handle_t*)menu_init()))
+      {
+         RARCH_ERR("Couldn't initialize menu (2nd attempt).\n");
+         rarch_fail(1, "main_entry()");
+         returnfunc();
+      }
    }
 
    if (driver.frontend_ctx && driver.frontend_ctx->process_args)
