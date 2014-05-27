@@ -33,7 +33,7 @@ typedef struct
    float  zoom;
    float  y;
    struct font_output_list out;
-} menu_subitem;
+} menu_subitem_t;
 
 typedef struct
 {
@@ -45,9 +45,9 @@ typedef struct
    float  y;
    int    active_subitem;
    int num_subitems;
-   menu_subitem *subitems;
+   menu_subitem_t *subitems;
    struct font_output_list out;
-} menu_item;
+} menu_item_t;
 
 typedef struct
 {
@@ -58,11 +58,11 @@ typedef struct
    float  zoom;
    int    active_item;
    int    num_items;
-   menu_item *items;
+   menu_item_t *items;
    struct font_output_list out;
-} menu_category;
+} menu_category_t;
 
-extern menu_category *categories;
+extern menu_category_t *categories;
 
 void lakka_switch_items(void);
 void lakka_switch_subitems(void);
