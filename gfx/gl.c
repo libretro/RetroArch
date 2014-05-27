@@ -744,7 +744,7 @@ static bool gl_init_hw_render(gl_t *gl, unsigned width, unsigned height)
 
          if (stencil)
          {
-#if defined(HAVE_OPENGLES2) || defined(OSX_PPC)
+#if defined(HAVE_OPENGLES2) || defined(HAVE_OPENGLES1) || defined(OSX_PPC)
             // GLES2 is a bit weird, as always. :P
             // There's no GL_DEPTH_STENCIL_ATTACHMENT like in desktop GL.
             glFramebufferRenderbuffer(RARCH_GL_FRAMEBUFFER, RARCH_GL_DEPTH_ATTACHMENT,
