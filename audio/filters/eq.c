@@ -24,6 +24,10 @@
 #define M_PI 3.1415926535897932384626433832795
 #endif
 
+#ifndef min
+#define min(a, b) ((a) < (b) ? (a) : (b))
+#endif
+
 struct eq_data
 {
    rarch_fft_t *fft;
@@ -167,6 +171,7 @@ static void generate_response(rarch_fft_complex_t *response,
       }
 
       float lerp = 0.5f;
+      // Edge case where i == samples.
       if (end_freq > start_freq)
          lerp = (freq - start_freq) / (end_freq - start_freq);
       float gain = (1.0f - lerp) * start_gain + lerp * end_gain;
@@ -223,6 +228,7 @@ static void create_filter(struct eq_data *eq, unsigned size_log2,
    if (!fft || !time_filter)
       goto end;
 
+   // Make sure bands are in correct order.
    qsort(gains, num_gains, sizeof(*gains), gains_cmp);
 
    // Compute desired filter response.
@@ -251,7 +257,7 @@ static void create_filter(struct eq_data *eq, unsigned size_log2,
    }
 
    // Debugging.
-#if 1
+#if 0
    FILE *file = fopen("/tmp/test.txt", "w");
    if (file)
    {
@@ -272,12 +278,40 @@ end:
 static void *eq_init(const struct dspfilter_info *info,
       const struct dspfilter_config *config, void *userdata)
 {
+   unsigned i;
    struct eq_data *eq = (struct eq_data*)calloc(1, sizeof(*eq));
    if (!eq)
       return NULL;
 
-   unsigned size_log2 = 8;
+   const float default_freq[] = { 0.0f, info->input_rate };
+   const float default_gain[] = { 0.0f, 0.0f };
+
+   float beta;
+   config->get_float(userdata, "window_beta", &beta, 4.0f);
+
+   int size_log2;
+   config->get_int(userdata, "block_size_log2", &size_log2, 8);
    unsigned size = 1 << size_log2;
+
+   struct eq_gain *gains = NULL;
+   float *frequencies, *gain;
+   unsigned num_freq, num_gain;
+   config->get_float_array(userdata, "frequencies", &frequencies, &num_freq, default_freq, 2);
+   config->get_float_array(userdata, "gains", &gain, &num_gain, default_gain, 2);
+
+   num_gain = num_freq = min(num_gain, num_freq);
+
+   gains = (struct eq_gain*)calloc(num_gain, sizeof(*gains));
+   if (!gains)
+      goto error;
+
+   for (i = 0; i < num_gain; i++)
+   {
+      gains[i].freq = 0.5f * frequencies[i] / info->input_rate;
+      gains[i].gain = pow(10.0, gain[i] / 20.0);
+   }
+   config->free(frequencies);
+   config->free(gain);
 
    eq->block_size = size;
 
@@ -293,27 +327,13 @@ static void *eq_init(const struct dspfilter_info *info,
    if (!eq->fft || !eq->fftblock || !eq->save || !eq->block || !eq->filter)
       goto error;
 
-   //struct eq_gain *gains = NULL;
-   //unsigned num_gains = 0;
-   struct eq_gain gains[] = {
-      { 0.00f, 2.0f },
-      { 0.04f, 1.0f },
-      { 0.05f, 0.4f },
-      { 0.06f, 1.0f },
-      { 0.08f, 0.1f },
-      { 0.15f, 0.1f },
-      { 0.3f, 3.0f },
-      { 0.5f, 0.25f },
-      { 0.7f, 2.0f },
-   };
-   unsigned num_gains = sizeof(gains) / sizeof(gains[0]);
-   double beta = 5.0;
+   create_filter(eq, size_log2, gains, num_gain, beta);
 
-   create_filter(eq, size_log2, gains, num_gains, beta);
-
+   free(gains);
    return eq;
 
 error:
+   free(gains);
    eq_free(eq);
    return NULL;
 }
