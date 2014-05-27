@@ -44,6 +44,7 @@ typedef struct
    float x;
    float y;
    float scale;
+   float alpha;
    unsigned color;
 } font_params_t;
 
