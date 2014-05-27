@@ -119,10 +119,12 @@ static float inOutQuad(float t, float b, float c, float d)
 
 static void add_tween(float duration, float target_value, float* subject, easingFunc easing)
 {
-   numtweens++;
-   tweens = (tween_t*)realloc(tweens, numtweens * sizeof(tween_t));
+   tween_t *tween;
 
-   tween_t *tween = (tween_t*)&tweens[numtweens-1];
+   numtweens++;
+
+   tweens = (tween_t*)realloc(tweens, numtweens * sizeof(tween_t));
+   tween = (tween_t*)&tweens[numtweens-1];
 
    if (!tween)
       return;
@@ -188,10 +190,11 @@ void lakka_switch_categories(void)
    // alpha tweening
    for (i = 0; i < num_categories; i++)
    {
+      float ca, cz;
       menu_category_t *category = (menu_category_t*)&categories[i];
 
-      float ca = (i == menu_active_category) ? 1.0 : 0.5;
-      float cz = (i == menu_active_category) ? C_ACTIVE_ZOOM : C_PASSIVE_ZOOM;
+      ca = (i == menu_active_category) ? 1.0 : 0.5;
+      cz = (i == menu_active_category) ? C_ACTIVE_ZOOM : C_PASSIVE_ZOOM;
       add_tween(DELAY, ca, &category->alpha, &inOutQuad);
       add_tween(DELAY, cz, &category->zoom,  &inOutQuad);
 
@@ -212,9 +215,9 @@ void lakka_switch_items(void)
 
    for (j = 0; j < active_category->num_items; j++)
    {
+      float ia, iz, iy;
       menu_item_t *active_item = (menu_item_t*)&active_category->items[j];
 
-      float ia, iz, iy;
       ia = (j == active_category->active_item) ? 1.0 : 0.5;
       iz = (j == active_category->active_item) ? I_ACTIVE_ZOOM : I_PASSIVE_ZOOM;
       iy = (j == active_category->active_item) ? VSPACING*2.5 :
@@ -1064,7 +1067,7 @@ void lakka_init_settings(void)
    font_driver->render_msg(font, category->name, &category->out);
 }
 
-char * str_replace ( const char *string, const char *substr, const char *replacement)
+static char * str_replace ( const char *string, const char *substr, const char *replacement)
 {
    char *tok, *newstr, *oldstr, *head;
 
