@@ -155,11 +155,9 @@ static void* rmenu_xui_init(void)
    HRESULT hr;
 
    rgui_handle_t *rgui = (rgui_handle_t*)calloc(1, sizeof(*rgui));
-   if (rgui == NULL)
-   {
-      RARCH_ERR("Could not allocate RGUI handle.\n");
+
+   if (!rgui)
       return NULL;
-   }
 
    d3d_video_t *d3d= (d3d_video_t*)driver.video_data;
 

@@ -99,6 +99,11 @@ enum
 
    OSK_PS3,
    OSK_NULL,
+
+   MENU_RGUI,
+   MENU_RMENU,
+   MENU_RMENU_XUI,
+   MENU_LAKKA,
 };
 
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) || defined(__CELLOS_LV2__)
@@ -231,6 +236,14 @@ enum
 #define OSK_DEFAULT_DRIVER OSK_PS3
 #else
 #define OSK_DEFAULT_DRIVER OSK_NULL
+#endif
+
+#if defined(HAVE_RMENU)
+#define MENU_DEFAULT_DRIVER MENU_RMENU
+#elif defined(HAVE_RMENU_XUI)
+#define MENU_DEFAULT_DRIVER MENU_RMENU_XUI
+#else
+#define MENU_DEFAULT_DRIVER MENU_RGUI
 #endif
 
 #if defined(XENON) || defined(_XBOX360) || defined(__CELLOS_LV2__)
