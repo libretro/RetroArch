@@ -465,6 +465,8 @@ static void rmenu_xui_render(void *data)
       snprintf(title, sizeof(title), "DSP FILTER %s", dir);
    else if (menu_type == RGUI_BROWSER_DIR_PATH)
       snprintf(title, sizeof(title), "BROWSER DIR %s", dir);
+   else if (menu_type == RGUI_CONTENT_DIR_PATH)
+      snprintf(title, sizeof(title), "CONTENT DIR %s", dir);
 #ifdef HAVE_SCREENSHOTS
    else if (menu_type == RGUI_SCREENSHOT_DIR_PATH)
       snprintf(title, sizeof(title), "SCREENSHOT DIR %s", dir);
