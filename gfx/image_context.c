@@ -59,12 +59,16 @@ void find_image_driver(void)
    else
    {
       unsigned d;
-      RARCH_ERR("Couldn't find any image driver named \"%s\"\n", g_settings.image.driver);
+      RARCH_WARN("Couldn't find any image driver named \"%s\"\n", g_settings.image.driver);
       RARCH_LOG_OUTPUT("Available image drivers are:\n");
       for (d = 0; image_ctx_drivers[d]; d++)
          RARCH_LOG_OUTPUT("\t%s\n", image_ctx_drivers[d]->ident);
+      RARCH_WARN("Going to default to first image driver...\n");
 
-      rarch_fail(1, "find_image_driver()");
+      driver.image = image_ctx_drivers[0];
+
+      if (!driver.image)
+         rarch_fail(1, "find_image_driver()");
    }
 }
 

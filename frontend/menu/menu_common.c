@@ -324,6 +324,16 @@ void *menu_init(void)
       return NULL;
    }
 
+   if (!driver.image)
+   {
+      RARCH_ERR("Image driver not initialized.\n");
+      RARCH_WARN("Trying to bring up image driver interface.\n");
+      find_image_driver();
+
+      if (!driver.image)
+         RARCH_ERR("Still couldn't initialize image driver.\n");
+   }
+
    if (driver.menu_ctx->init)
       rgui = (rgui_handle_t*)driver.menu_ctx->init();
 

@@ -580,6 +580,8 @@ void find_prev_location_driver(void);
 void find_next_location_driver(void);
 #endif
 
+void find_image_driver(void);
+
 void driver_set_monitor_refresh_rate(float hz);
 bool driver_monitor_fps_statistics(double *refresh_rate, double *deviation, unsigned *sample_points);
 void driver_set_nonblock_state(bool nonblock);
@@ -626,6 +628,7 @@ void driver_location_set_interval(unsigned interval_msecs, unsigned interval_dis
 const void *menu_ctx_find_driver(const char *ident); // Finds driver with ident. Does not initialize.
 void find_prev_menu_driver(void);
 void find_next_menu_driver(void);
+void find_menu_driver(void);
 #endif
 
 // Used by RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO
