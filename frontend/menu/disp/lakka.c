@@ -576,7 +576,7 @@ static void calculate_font_coords(gl_t *gl,
    font_tex_coords[7] = hy;
 }
 
-static void lakka_draw_text(void *data, struct font_output_list out, float x, float y, float scale, float alpha)
+static void lakka_draw_text(void *data, struct font_output_list *out, float x, float y, float scale, float alpha)
 {
    int i;
    struct font_output *head;
@@ -584,7 +584,7 @@ static void lakka_draw_text(void *data, struct font_output_list out, float x, fl
    struct gl_ortho ortho = {0, 1, 0, 1, -1, 1};
    gl_t *gl = (gl_t*)data;
 
-   if (!font || !gl)
+   if (!font || !gl || !out)
       return;
 
    for (i = 0; i < 4; i++)
@@ -610,13 +610,11 @@ static void lakka_draw_text(void *data, struct font_output_list out, float x, fl
 
    gl->coords.tex_coord = font_tex_coords;
 
-   head = (struct font_output*)out.head;
+   head = (struct font_output*)out->head;
 
    calculate_msg_geometry(head, &geom);
    adjust_power_of_two(gl, &geom);
    blit_fonts(gl, head, &geom);
-
-   //font_driver->free_output(font, &out);
 
    font_last_width = geom.width;
    font_last_height = geom.height;
@@ -712,7 +710,7 @@ void lakka_draw_icon(void *data, GLuint texture, float x, float y, float alpha, 
 static void lakka_frame(void *data)
 {
    int i, j, k;
-   struct font_output_list msg;
+   struct font_output_list *msg;
    gl_t *gl = (gl_t*)driver.video_data;
    rgui_handle_t *rgui = (rgui_handle_t*)data;
    menu_category_t *active_category = (menu_category_t*)&categories[menu_active_category];
@@ -757,7 +755,7 @@ static void lakka_frame(void *data)
                      0, 
                      category->items[j].subitems[k].zoom);
                   lakka_draw_text(gl, 
-                     resume_label, 
+                     &resume_label, 
                      156 + HSPACING*(i+2) + all_categories_x + dim/2.0, 
                      300 + category->items[j].subitems[k].y + 15, 
                      1, 
@@ -773,7 +771,7 @@ static void lakka_frame(void *data)
                         0, 
                         category->items[j].subitems[k].zoom);
                   lakka_draw_text(gl, 
-                        run_label, 
+                        &run_label, 
                         156 + HSPACING*(i+2) + all_categories_x + dim/2.0, 
                         300 + category->items[j].subitems[k].y + 15, 
                         1, 
@@ -791,7 +789,7 @@ static void lakka_frame(void *data)
                         0, 
                         category->items[j].subitems[k].zoom);
                   lakka_draw_text(gl, 
-                        category->items[j].subitems[k].out, 
+                        &category->items[j].subitems[k].out, 
                         156 + HSPACING * (i+2) + all_categories_x + dim/2.0, 
                         300 + category->items[j].subitems[k].y + 15, 
                         1, 
@@ -807,7 +805,7 @@ static void lakka_frame(void *data)
                   j > active_category->active_item - 4 &&
                   j < active_category->active_item + 10) // performance improvement
                lakka_draw_text(gl, 
-                     category->items[j].out, 
+                     &category->items[j].out, 
                      156 + HSPACING * (i+1) + all_categories_x + dim/2.0, 
                      300 + category->items[j].y + 15, 
                      1, 
@@ -835,8 +833,10 @@ static void lakka_frame(void *data)
             category->zoom);
    }
 
-   msg = (depth == 0) ? active_category->out : active_category->items[active_category->active_item].out;
-   lakka_draw_text(gl, msg, 15.0, 40.0, 1, 1.0);
+   if ((depth == 0))
+      lakka_draw_text(gl, &active_category->out, 15.0, 40.0, 1, 1.0);
+   else
+      lakka_draw_text(gl, &active_category->items[active_category->active_item].out, 15.0, 40.0, 1, 1.0);
 
    gl_set_viewport(gl, gl->win_width, gl->win_height, false, false);
 }
@@ -1030,7 +1030,6 @@ static void lakka_init_assets(void *data)
 
 void lakka_init_settings(void)
 {
-   struct font_output_list out;
    menu_category_t *category = (menu_category_t*)&categories[0];
 
    strlcpy(category->name, "Settings", sizeof(category->name));
@@ -1041,9 +1040,7 @@ void lakka_init_settings(void)
    category->num_items   = 0;
    category->items       = (menu_item_t*)calloc(category->num_items, sizeof(menu_item_t));
 
-   font_driver->render_msg(font, category->name, &out);
-
-   category->out = out;
+   font_driver->render_msg(font, category->name, &category->out);
 }
 
 char * str_replace ( const char *string, const char *substr, const char *replacement)
@@ -1138,11 +1135,11 @@ void lakka_init_items(int i, menu_category_t *mcat, core_info_t corenfo, char* g
             mcat->items[n].subitems[k].zoom = k == mcat->items[n].active_subitem ? I_ACTIVE_ZOOM : I_PASSIVE_ZOOM;
             mcat->items[n].subitems[k].y = k == 0 ? VSPACING*2.5 : VSPACING*(3+k);
             font_driver->render_msg(font, mcat->items[n].subitems[k].name, &out);
-            mcat->items[n].subitems[k].out = out;
+            memcpy(&mcat->items[n].subitems[k].out, &out, sizeof(struct font_output_list));
          }
 
          font_driver->render_msg(font, mcat->items[n].name, &out);
-         mcat->items[n].out = out;
+         memcpy(&mcat->items[n].out, &out, sizeof(struct font_output_list));
       }
    }
 }
@@ -1217,7 +1214,6 @@ static void *lakka_init(void)
 
       fill_pathname_join(dirpath, g_settings.assets_directory, "lakka", sizeof(dirpath));
       fill_pathname_slash(dirpath, sizeof(dirpath));
-      struct font_output_list out;
       core_info_t corenfo = rgui->core_info->list[i];
 
       strlcpy(core_id, basename(corenfo.path), sizeof(core_id));
@@ -1246,8 +1242,7 @@ static void *lakka_init(void)
       category->num_items   = 0;
       category->items       = (menu_item_t*)calloc(category->num_items, sizeof(menu_item_t));
 
-      font_driver->render_msg(font, category->name, &out);
-      category->out = out;
+      font_driver->render_msg(font, category->name, &category->out);
 
       lakka_init_items(i+1, category, corenfo, gametexturepath, g_settings.content_directory);
    }
