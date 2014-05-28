@@ -396,15 +396,12 @@ static void gl_cg_deinit_state(void)
 // Final deinit.
 static void gl_cg_deinit_context_state(void)
 {
-   // Destroying context breaks on PS3 for some unknown reason.
-#ifndef __CELLOS_LV2__
    if (cgCtx)
    {
       RARCH_LOG("CG: Destroying context.\n");
       cgDestroyContext(cgCtx);
       cgCtx = NULL;
    }
-#endif
 }
 
 // Full deinit.
@@ -938,11 +935,6 @@ static bool gl_cg_mipmap_input(unsigned index)
 static struct gfx_shader *gl_cg_get_current_shader(void)
 {
    return cg_active ? cg_shader : NULL;
-}
-
-void gl_cg_invalidate_context(void)
-{
-   cgCtx = NULL;
 }
 
 const gl_shader_backend_t gl_cg_backend = {

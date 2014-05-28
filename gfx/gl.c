@@ -2644,9 +2644,6 @@ static void gl_restart(void)
    void *data = driver.video_data;
    driver.video_data = NULL;
    gl_free(data);
-#ifdef HAVE_CG
-   gl_cg_invalidate_context();
-#endif
    init_video_input();
 }
 #endif
