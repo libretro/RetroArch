@@ -319,12 +319,6 @@ ifeq ($(HAVE_FREETYPE), 1)
 endif
 
 
-ifeq ($(HAVE_SDL_IMAGE), 1)
-   #OBJ += gfx/image/image_sdl.o
-   #LIBS += $(SDL_IMAGE_LIBS)
-   #DEFINES += $(SDL_IMAGE_CFLAGS)
-endif
-
 ifeq ($(HAVE_ZLIB), 1)
    OBJ += gfx/rpng/rpng.o file_extract.o
    LIBS += $(ZLIB_LIBS)

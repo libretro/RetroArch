@@ -87,7 +87,6 @@ HAVE_WINXINPUT = 1
 
 ifeq ($(SLIM),)
    HAVE_SDL = 1
-   HAVE_SDL_IMAGE = 1
    HAVE_LIBXML2 = 1
    HAVE_FREETYPE = 1
    HAVE_ZLIB = 1
@@ -144,12 +143,6 @@ ifeq ($(HAVE_OPENGL), 1)
    OBJ += gfx/gl.o gfx/math/matrix.o gfx/fonts/gl_font.o gfx/fonts/gl_raster_font.o gfx/gfx_context.o gfx/context/wgl_ctx.o gfx/shader_glsl.o gfx/glsym/rglgen.o gfx/glsym/glsym_gl.o
    DEFINES += -DHAVE_OPENGL -DHAVE_OVERLAY -DHAVE_GLSL -DHAVE_GL_SYNC
    LIBS += -lopengl32 -lgdi32 -lcomdlg32
-endif
-
-ifeq ($(HAVE_SDL_IMAGE), 1)
-   OBJ += gfx/image/image_sdl.o
-   LIBS += -lSDL_image
-   DEFINES += -DHAVE_SDL_IMAGE
 endif
 
 ifeq ($(HAVE_CG), 1)
