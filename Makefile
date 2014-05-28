@@ -37,7 +37,6 @@ OBJ = frontend/frontend.o \
 		gfx/scaler/scaler_int.o \
 		gfx/scaler/scaler_filter.o \
 		gfx/image/image_rpng.o \
-		gfx/image_context.o \
 		gfx/fonts/fonts.o \
 		gfx/fonts/bitmapfont.o \
 		audio/resampler.o \
@@ -319,10 +318,11 @@ ifeq ($(HAVE_FREETYPE), 1)
    DEFINES += $(FREETYPE_CFLAGS)
 endif
 
+
 ifeq ($(HAVE_SDL_IMAGE), 1)
-   OBJ += gfx/image/image_sdl.o
-   LIBS += $(SDL_IMAGE_LIBS)
-   DEFINES += $(SDL_IMAGE_CFLAGS)
+   #OBJ += gfx/image/image_sdl.o
+   #LIBS += $(SDL_IMAGE_LIBS)
+   #DEFINES += $(SDL_IMAGE_CFLAGS)
 endif
 
 ifeq ($(HAVE_ZLIB), 1)

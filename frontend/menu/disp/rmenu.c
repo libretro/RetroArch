@@ -442,8 +442,7 @@ static void rmenu_init_assets(void *data)
 
    menu_texture = (struct texture_image*)calloc(1, sizeof(*menu_texture));
 
-   if (driver.image && driver.image->load)
-      driver.image->load(driver.video_data, g_extern.menu_texture_path, menu_texture);
+   texture_image_load(driver.video_data, g_extern.menu_texture_path, menu_texture);
    rgui->width = menu_texture->width;
    rgui->height = menu_texture->height;
 
@@ -464,8 +463,7 @@ static void *rmenu_init(void)
 
 static void rmenu_free_assets(void *data)
 {
-   if (driver.image && driver.image->free)
-      driver.image->free(driver.video_data, menu_texture);
+   texture_image_free(driver.video_data, menu_texture);
 
    menu_texture_inited = false;
 }

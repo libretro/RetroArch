@@ -167,12 +167,10 @@ VIDEO IMAGE
 #include "../gfx/image/image_ps3.c"
 #elif defined(_XBOX1)
 #include "../gfx/image/image_xdk1.c"
-#elif defined(HAVE_SDL_IMAGE)
-#include "../gfx/image/image_sdl.c"
+#else
+#include "../gfx/image/image_rpng.c"
 #endif
 
-#include "../gfx/image_context.c"
-#include "../gfx/image/image_rpng.c"
 #include "../gfx/rpng/rpng.c"
 
 /*============================================================

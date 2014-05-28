@@ -241,7 +241,6 @@
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsC</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\gfx\image\image_rpng.c" />
-    <ClCompile Include="..\..\gfx\image_context.c" />
     <ClCompile Include="..\..\gfx\rpng\rpng.c" />
     <ClCompile Include="..\..\gfx\shader_cg.c" />
     <ClCompile Include="..\..\gfx\shader_glsl.c" />

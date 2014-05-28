@@ -17,6 +17,7 @@
 #include "../../driver.h"
 #include "../gfx_common.h"
 #include "../gl_common.h"
+#include "../image/image.h"
 
 #include "../fonts/gl_font.h"
 #include <stdint.h>

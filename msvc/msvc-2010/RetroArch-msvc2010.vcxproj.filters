@@ -240,9 +240,6 @@
     <ClCompile Include="..\..\frontend\platform\platform_null.c">
       <Filter>frontend\platform</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\gfx\image_context.c">
-      <Filter>gfx</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\gfx\image\image_rpng.c">
       <Filter>gfx\image</Filter>
     </ClCompile>

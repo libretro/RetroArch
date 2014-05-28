@@ -19,7 +19,7 @@
 #include "../../config.h"
 #endif
 
-#include "../image_context.h"
+#include "image.h"
 #include "../../file.h"
 
 #include <stdlib.h>
@@ -107,7 +107,7 @@ static bool sdl_load_argb_shift(const char *path, struct texture_image *out_img,
    return true;
 }
 
-static bool sdl_image_load(void *data, const char *path, void *image_data)
+bool texture_image_load(void *data, const char *path, void *image_data)
 {
    bool ret;
    (void)data;
@@ -123,15 +123,9 @@ static bool sdl_image_load(void *data, const char *path, void *image_data)
    return ret;
 }
 
-static void sdl_image_free(void *data, void *image_data)
+void texture_image_free(void *data, void *image_data)
 {
    struct texture_image *img = (struct texture_image*)image_data;
    free(img->pixels);
    memset(img, 0, sizeof(*img));
 }
-
-const image_ctx_driver_t image_ctx_sdl = {
-   sdl_image_load,
-   sdl_image_free,
-   "sdl",
-};

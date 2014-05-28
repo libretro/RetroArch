@@ -17,7 +17,7 @@
 #include "../general.h"
 #include "../driver.h"
 #include "../libretro.h"
-#include "../gfx/image_context.h"
+#include "../gfx/image/image.h"
 #include "../conf/config_file.h"
 #include "../compat/posix_string.h"
 #include "input_common.h"
@@ -163,15 +163,12 @@ static void input_overlay_free_overlay(struct overlay *overlay)
 {
    size_t i;
 
-   if (driver.image && driver.image->free)
-      for (i = 0; i < overlay->size; i++)
-         driver.image->free(driver.video_data, &overlay->descs[i].image);
+   for (i = 0; i < overlay->size; i++)
+      texture_image_free(driver.video_data, &overlay->descs[i].image);
 
    free(overlay->load_images);
    free(overlay->descs);
-
-   if (driver.image && driver.image->free)
-      driver.image->free(driver.video_data, &overlay->image);
+   texture_image_free(driver.video_data, &overlay->image);
 }
 
 static void input_overlay_free_overlays(input_overlay_t *ol)
@@ -202,9 +199,8 @@ static bool input_overlay_load_desc(input_overlay_t *ol, config_file_t *conf, st
       fill_pathname_resolve_relative(path, ol->overlay_path, image_path, sizeof(path));
 
       struct texture_image img = {0};
-      if (driver.image && driver.image->load)
-         if (driver.image->load(driver.video_data, path, &img))
-            desc->image = img;
+      if (texture_image_load(driver.video_data, path, &img))
+         desc->image = img;
    }
 
    char overlay_desc_normalized_key[64];
@@ -352,21 +348,13 @@ static bool input_overlay_load_overlay(input_overlay_t *ol, config_file_t *conf,
    if (config_get_path(conf, overlay_path_key, overlay_path, sizeof(overlay_path)))
    {
       struct texture_image img = {0};
-      bool ret = false;
 
       fill_pathname_resolve_relative(overlay_resolved_path, config_path,
             overlay_path, sizeof(overlay_resolved_path));
 
-      ret = driver.image && driver.image->load;
-
-      if (ret)
-      {
-         ret = driver.image->load(driver.video_data, overlay_resolved_path, &img);
-         if(ret)
-            overlay->image = img;
-      }
-
-      if (!ret)
+      if (texture_image_load(driver.video_data, overlay_resolved_path, &img))
+         overlay->image = img;
+      else
       {
          RARCH_ERR("[Overlay]: Failed to load image: %s.\n", overlay_resolved_path);
          return false;

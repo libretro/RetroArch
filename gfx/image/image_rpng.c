@@ -17,7 +17,7 @@
 #include "../../config.h"
 #endif
 
-#include "../image_context.h"
+#include "image.h"
 #include "../../file.h"
 
 #include <stdlib.h>
@@ -202,7 +202,7 @@ static bool rpng_gx_convert_texture32(struct texture_image *image)
 
 #endif
 
-static void rpng_image_free(void *data, void *image_data)
+void texture_image_free(void *data, void *image_data)
 {
    struct texture_image *img = (struct texture_image*)image_data;
 
@@ -210,7 +210,7 @@ static void rpng_image_free(void *data, void *image_data)
    memset(img, 0, sizeof(*img));
 }
 
-static bool rpng_image_load(void *data, const char *path, void *image_data)
+bool texture_image_load(void *data, const char *path, void *image_data)
 {
    (void)data;
    bool ret;
@@ -235,9 +235,3 @@ static bool rpng_image_load(void *data, const char *path, void *image_data)
 
    return ret;
 }
-
-const image_ctx_driver_t image_ctx_rpng = {
-   rpng_image_load,
-   rpng_image_free,
-   "rpng",
-};

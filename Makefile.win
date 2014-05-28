@@ -44,7 +44,6 @@ OBJ = frontend/frontend.o \
 		gfx/fonts/fonts.o \
 		gfx/fonts/bitmapfont.o \
 		gfx/image/image_rpng.o \
-		gfx/image_context.o \
 		audio/resampler.o \
 		audio/dsp_filter.o \
 		audio/sinc.o \

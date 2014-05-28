@@ -355,7 +355,6 @@ void init_drivers_pre(void)
 #ifdef HAVE_CAMERA
    find_camera_driver();
 #endif
-   find_image_driver();
 #ifdef HAVE_LOCATION
    find_location_driver();
 #endif
@@ -533,9 +532,6 @@ void init_drivers(void)
    driver.osk_data_own = !driver.osk_data;
 #endif
 
-   if (!driver.image)
-      find_image_driver();
-
    adjust_system_rates();
 
    g_extern.frame_count = 0;
@@ -578,8 +574,6 @@ void uninit_drivers(void)
       g_extern.system.hw_render_callback.context_destroy();
 
    uninit_video_input();
-
-   driver.image = NULL;
 
 #ifdef HAVE_CAMERA
    uninit_camera();

@@ -17,11 +17,11 @@
 #define __RARCH_IMAGE_CONTEXT_H
 
 #include <stdint.h>
-#include "../boolean.h"
+#include "../../boolean.h"
 
 #ifdef _XBOX1
 #include <xtl.h>
-#include "../xdk/xdk_defines.h"
+#include "../../xdk/xdk_defines.h"
 #endif
 
 struct texture_image
@@ -46,13 +46,14 @@ typedef struct image_ctx_driver
    const char *ident;
 } image_ctx_driver_t;
 
+#if 0
 extern const image_ctx_driver_t image_ctx_xdk1;
 extern const image_ctx_driver_t image_ctx_ps3;
 extern const image_ctx_driver_t image_ctx_sdl;
 extern const image_ctx_driver_t image_ctx_rpng;
+#endif
 
-void find_prev_image_driver(void);
-void find_next_image_driver(void);
-void find_image_driver(void);
+bool texture_image_load(void *data, const char *path, void *img);
+void texture_image_free(void *data, void *img);
 
 #endif

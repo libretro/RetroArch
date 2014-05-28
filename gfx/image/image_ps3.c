@@ -18,7 +18,7 @@
 #include "../../config.h"
 #endif
 
-#include "../image_context.h"
+#include "image.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -304,7 +304,7 @@ error:
    return false;
 }
 
-static bool ps3_image_load(void *data, const char *path, void *image_data)
+bool texture_image_load(void *data, const char *path, void *image_data)
 {
    (void)data;
    struct texture_image *out_img = (struct texture_image*)image_data;
@@ -326,7 +326,7 @@ static bool ps3_image_load(void *data, const char *path, void *image_data)
    return true;
 }
 
-static void ps3_image_free(void *data, void *image_data)
+void texture_image_free(void *data, void *image_data)
 {
    struct texture_image *img = (struct texture_image*)image_data;
 
@@ -334,9 +334,3 @@ static void ps3_image_free(void *data, void *image_data)
       free(img->pixels);
    memset(img, 0, sizeof(*img));
 }
-
-const image_ctx_driver_t image_ctx_ps3 = {
-   ps3_image_load,
-   ps3_image_free,
-   "ps3",
-};

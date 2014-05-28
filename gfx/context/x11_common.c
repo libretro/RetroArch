@@ -18,6 +18,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <X11/Xatom.h>
+#include "../image/image.h"
 #include "../../general.h"
 #include "../../input/input_common.h"
 #include "../../input/keyboard_line.h"

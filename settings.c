@@ -221,28 +221,10 @@ const char *config_get_default_location(void)
 }
 #endif
 
-const char *config_get_default_image(void)
-{
-   switch (IMAGE_DEFAULT_DRIVER)
-   {
-      case IMAGE_SDL:
-         return "sdl";
-      case IMAGE_XDK:
-         return "xdk";
-      case IMAGE_PS3:
-         return "ps3";
-      case IMAGE_RPNG:
-         return "rpng";
-      default:
-         return NULL;
-   }
-}
-
 void config_set_defaults(void)
 {
    unsigned i, j;
    const char *def_video = config_get_default_video();
-   const char *def_image = config_get_default_image();
    const char *def_audio = config_get_default_audio();
    const char *def_input = config_get_default_input();
 #ifdef HAVE_MENU
@@ -274,8 +256,6 @@ void config_set_defaults(void)
       strlcpy(g_settings.audio.driver, def_audio, sizeof(g_settings.audio.driver));
    if (def_input)
       strlcpy(g_settings.input.driver, def_input, sizeof(g_settings.input.driver));
-   if (def_image)
-      strlcpy(g_settings.image.driver, def_image, sizeof(g_settings.image.driver));
 #ifdef HAVE_MENU
    if (def_menu)
       strlcpy(g_settings.menu.driver,  def_menu,  sizeof(g_settings.menu.driver));
@@ -989,7 +969,6 @@ bool config_load_file(const char *path, bool set_defaults)
    CONFIG_GET_BOOL(location.allow, "location_allow");
 #endif
 
-   CONFIG_GET_STRING(image.driver, "image_driver");
    CONFIG_GET_STRING(video.driver, "video_driver");
    CONFIG_GET_STRING(menu.driver, "menu_driver");
    CONFIG_GET_STRING(video.gl_context, "video_gl_context");
@@ -1378,7 +1357,6 @@ bool config_save_file(const char *path)
    config_set_int(conf,   "video_fullscreen_y", g_settings.video.fullscreen_y);
    config_set_string(conf,"video_driver", g_settings.video.driver);
    config_set_string(conf,"menu_driver", g_settings.menu.driver);
-   config_set_string(conf,"image_driver", g_settings.image.driver);
    config_set_bool(conf,  "video_vsync", g_settings.video.vsync);
    config_set_bool(conf,  "video_hard_sync", g_settings.video.hard_sync);
    config_set_int(conf,   "video_hard_sync_frames", g_settings.video.hard_sync_frames);

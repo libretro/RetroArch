@@ -39,7 +39,6 @@ OBJ = frontend/platform/platform_emscripten.o \
 		gfx/fonts/fonts.o \
 		gfx/fonts/bitmapfont.o \
 		gfx/image/image_rpng.o \
-		gfx/image_context.o \
 		audio/resampler.o \
 		audio/sinc.o \
 		audio/cc_resampler.o \

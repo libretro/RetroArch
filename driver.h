@@ -25,7 +25,7 @@
 #include <stdint.h>
 #include "msvc/msvc_compat.h"
 #include "gfx/scaler/scaler.h"
-#include "gfx/image_context.h"
+#include "gfx/image/image.h"
 #include "gfx/filters/softfilter.h"
 #include "audio/dsp_filter.h"
 #include "input/overlay.h"
@@ -455,7 +455,6 @@ typedef struct driver
 {
    const frontend_ctx_driver_t *frontend_ctx;
    const audio_driver_t *audio;
-   const image_ctx_driver_t *image;
    const video_driver_t *video;
    const input_driver_t *input;
 #ifdef HAVE_OSK
@@ -549,8 +548,6 @@ void uninit_drivers(void);
 
 void global_init_drivers(void);
 void global_uninit_drivers(void);
-
-void init_image_input(void);
 
 void init_video_input(void);
 void uninit_video_input(void);

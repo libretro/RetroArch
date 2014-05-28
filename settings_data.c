@@ -475,7 +475,6 @@ const rarch_setting_t* setting_data_get_list(void)
 #endif
          CONFIG_STRING(g_settings.audio.driver,             "audio_driver",               "Audio Driver",               config_get_default_audio())
          CONFIG_STRING(g_settings.input.driver,             "input_driver",               "Input Driver",               config_get_default_input())
-         CONFIG_STRING(g_settings.image.driver,             "image_driver",               "Image Driver",               config_get_default_image())
 #ifdef HAVE_CAMERA
          CONFIG_STRING(g_settings.camera.device,            "camera_device",              "Camera Driver",              config_get_default_camera())
 #endif         
