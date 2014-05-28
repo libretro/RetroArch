@@ -1271,11 +1271,17 @@ static void init_controllers(void)
       }
 
       if (device == RETRO_DEVICE_NONE)
+      {
          RARCH_LOG("Disconnecting device from port %u.\n", i + 1);
-      else
+         pretro_set_controller_port_device(i, device);
+      }
+      else if (device != RETRO_DEVICE_JOYPAD)
+      {
+         // Some cores do not properly range check port argument.
+         // This is broken behavior ofc, but avoid breaking cores needlessly.
          RARCH_LOG("Connecting %s (ID: %u) to port %u.\n", ident, device, i + 1);
-
-      pretro_set_controller_port_device(i, device);
+         pretro_set_controller_port_device(i, device);
+      }
    }
 }
 
