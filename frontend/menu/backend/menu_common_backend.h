@@ -19,6 +19,10 @@
 
 #include "../menu_common.h"
 
+#ifndef GFX_MAX_PARAMETERS
+#define GFX_MAX_PARAMETERS 64
+#endif
+
 typedef enum
 {
    // Shader stuff
