@@ -431,8 +431,6 @@ void config_set_defaults(void)
    g_settings.core_specific_config = default_core_specific_config;
 
 #ifdef RARCH_CONSOLE
-   g_extern.lifecycle_state |= (1ULL << MODE_MENU_PREINIT);
-
    strlcpy(g_settings.system_directory, default_paths.system_dir, sizeof(g_settings.system_directory));
 
    g_settings.video.msg_pos_x = 0.05f;

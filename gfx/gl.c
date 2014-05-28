@@ -1693,12 +1693,11 @@ static void gl_free_overlay(gl_t *gl)
 
 static void gl_free(void *data)
 {
-#ifdef RARCH_CONSOLE
-   if (driver.video_data)
-      return;
-#endif
-
    gl_t *gl = (gl_t*)data;
+
+   if (!gl)
+      return;
+
    context_bind_hw_render(gl, false);
 
 #ifdef HAVE_GL_SYNC
@@ -1898,54 +1897,6 @@ static inline void gl_set_texture_fmts(void *data, bool rgb32)
    }
 #endif
 }
-
-#ifdef RARCH_CONSOLE
-static inline void gl_reinit_textures(void *data, const video_info_t *video)
-{
-   gl_t *gl = (gl_t*)data;
-   unsigned old_base_size = gl->base_size;
-   unsigned old_width     = gl->tex_w;
-   unsigned old_height    = gl->tex_h;
-
-   gl_set_texture_fmts(gl, video->rgb32);
-   gl->tex_w = gl->tex_h = RARCH_SCALE_BASE * video->input_scale;
-
-   gl->empty_buf = realloc(gl->empty_buf, sizeof(uint32_t) * gl->tex_w * gl->tex_h);
-   if (gl->empty_buf)
-      memset(gl->empty_buf, 0, sizeof(uint32_t) * gl->tex_w * gl->tex_h);
-
-   if (old_base_size != gl->base_size || old_width != gl->tex_w || old_height != gl->tex_h)
-   {
-      RARCH_LOG("Reinitializing textures (%u x %u @ %u bpp)\n", gl->tex_w, gl->tex_h, gl->base_size * CHAR_BIT);
-
-#if defined(HAVE_PSGL)
-      glBindBuffer(GL_TEXTURE_REFERENCE_BUFFER_SCE, 0);
-      glDeleteBuffers(1, &gl->pbo);
-      gl->pbo = 0;
-#endif
-
-      glBindTexture(GL_TEXTURE_2D, 0);
-      glDeleteTextures(gl->textures, gl->texture);
-
-      gl_init_textures(gl, video);
-      gl_init_textures_data(gl);
-
-#ifdef HAVE_FBO
-      if (gl->tex_w > old_width || gl->tex_h > old_height)
-      {
-         RARCH_LOG("Reiniting FBO.\n");
-         gl_deinit_fbo(gl);
-         gl_init_fbo(gl, gl->tex_w, gl->tex_h);
-      }
-#endif
-   }
-   else
-      RARCH_LOG("Reinitializing textures skipped.\n");
-
-   if (!gl_check_error())
-      RARCH_ERR("GL error reported while reinitializing textures. This should not happen ...\n");
-}
-#endif
 
 #ifdef HAVE_GL_ASYNC_READBACK
 static void gl_init_pbo_readback(void *data)
@@ -2155,16 +2106,6 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 {
 #ifdef _WIN32
    gfx_set_dwm();
-#endif
-
-#ifdef RARCH_CONSOLE
-   if (driver.video_data)
-   {
-      gl_t *gl = (gl_t*)driver.video_data;
-      // Reinitialize textures as we might have changed pixel formats.
-      gl_reinit_textures(gl, video); 
-      return driver.video_data;
-   }
 #endif
 
    gl_t *gl = (gl_t*)calloc(1, sizeof(gl_t));

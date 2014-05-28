@@ -188,7 +188,10 @@ static void ps3_input_poll(void *data)
 {
    CellPadInfo2 pad_info;
    ps3_input_t *ps3 = (ps3_input_t*)data;
-   uint64_t *lifecycle_state = &g_extern.lifecycle_state;
+   uint64_t *lifecycle_state = (uint64_t*)&g_extern.lifecycle_state;
+
+   if (!ps3)
+      return;
 
    for (unsigned port = 0; port < MAX_PADS; port++)
    {
@@ -307,9 +310,12 @@ static void ps3_input_poll(void *data)
 
 static int16_t ps3_mouse_device_state(void *data, unsigned player, unsigned id)
 {
-   ps3_input_t *ps3 = (ps3_input_t*)data;
    CellMouseData mouse_state;
+   ps3_input_t *ps3 = (ps3_input_t*)data;
    cellMouseGetData(id, &mouse_state);
+
+   if (!ps3)
+      return 0;
 
    switch (id)
    {
@@ -379,6 +385,9 @@ static int16_t ps3_input_state(void *data, const struct retro_keybind **binds,
    ps3_input_t *ps3 = (ps3_input_t*)data;
    int16_t retval = 0;
 
+   if (!ps3)
+      return 0;
+
    if (port < ps3->pads_connected)
    {
       switch (device)
@@ -424,14 +433,13 @@ static int16_t ps3_input_state(void *data, const struct retro_keybind **binds,
 
 static void ps3_input_free_input(void *data)
 {
-   if (!data)
+   ps3_input_t *ps3 = (ps3_input_t*)data;
+   if (!ps3)
       return;
 
-#ifndef __CELLOS_LV2__
    cellPadEnd();
-#endif
 #ifdef HAVE_MOUSE
-   //cellMouseEnd();
+   cellMouseEnd();
 #endif
 }
 
@@ -550,7 +558,7 @@ static bool ps3_joypad_button(unsigned port_num, uint16_t joykey)
 {
    ps3_input_t *ps3 = (ps3_input_t*)driver.input_data;
 
-   if (port_num >= MAX_PADS)
+   if (!ps3 || port_num >= MAX_PADS)
       return false;
 
    return ps3->pad_state[port_num] & (1ULL << joykey);
@@ -559,7 +567,7 @@ static bool ps3_joypad_button(unsigned port_num, uint16_t joykey)
 static int16_t ps3_joypad_axis(unsigned port_num, uint32_t joyaxis)
 {
    ps3_input_t *ps3 = (ps3_input_t*)driver.input_data;
-   if (joyaxis == AXIS_NONE || port_num >= MAX_PADS)
+   if (!ps3 || joyaxis == AXIS_NONE || port_num >= MAX_PADS)
       return 0;
 
    int val = 0;
@@ -602,7 +610,7 @@ static void ps3_joypad_poll(void)
 static bool ps3_joypad_query_pad(unsigned pad)
 {
    ps3_input_t *ps3 = (ps3_input_t*)driver.input_data;
-   return pad < MAX_PLAYERS && ps3->pad_state[pad];
+   return (ps3 && pad < MAX_PLAYERS && ps3->pad_state[pad]);
 }
 
 static const char *ps3_joypad_name(unsigned pad)
