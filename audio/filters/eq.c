@@ -18,7 +18,7 @@
 #include <string.h>
 #include <stdio.h>
 
-#include "../fft/fft.c"
+#include "fft/fft.c"
 
 #ifndef M_PI
 #define M_PI 3.1415926535897932384626433832795
@@ -30,13 +30,13 @@
 
 struct eq_data
 {
-   rarch_fft_t *fft;
+   fft_t *fft;
    float buffer[8 * 1024];
 
    float *save;
    float *block;
-   rarch_fft_complex_t *filter;
-   rarch_fft_complex_t *fftblock;
+   fft_complex_t *filter;
+   fft_complex_t *fftblock;
    unsigned block_size;
    unsigned block_ptr;
 };
@@ -53,7 +53,7 @@ static void eq_free(void *data)
    if (!eq)
       return;
 
-   rarch_fft_free(eq->fft);
+   fft_free(eq->fft);
    free(eq->save);
    free(eq->block);
    free(eq->fftblock);
@@ -92,10 +92,10 @@ static void eq_process(void *data, struct dspfilter_output *output,
 
          for (c = 0; c < 2; c++)
          {
-            rarch_fft_process_forward(eq->fft, eq->fftblock, eq->block + c, 2);
+            fft_process_forward(eq->fft, eq->fftblock, eq->block + c, 2);
             for (i = 0; i < 2 * eq->block_size; i++)
-               eq->fftblock[i] = rarch_fft_complex_mul(eq->fftblock[i], eq->filter[i]);
-            rarch_fft_process_inverse(eq->fft, out + c, eq->fftblock, 2);
+               eq->fftblock[i] = fft_complex_mul(eq->fftblock[i], eq->filter[i]);
+            fft_process_inverse(eq->fft, out + c, eq->fftblock, 2);
          }
 
          // Overlap add method, so add in saved block now.
@@ -124,7 +124,7 @@ static int gains_cmp(const void *a_, const void *b_)
       return 0;
 }
 
-static void generate_response(rarch_fft_complex_t *response,
+static void generate_response(fft_complex_t *response,
       const struct eq_gain *gains, unsigned num_gains, unsigned samples)
 {
    unsigned i;
@@ -223,7 +223,7 @@ static void create_filter(struct eq_data *eq, unsigned size_log2,
    int half_block_size = eq->block_size >> 1;
    double window_mod = 1.0 / kaiser_window(0.0, beta);
 
-   rarch_fft_t *fft = rarch_fft_new(size_log2);
+   fft_t *fft = fft_new(size_log2);
    float *time_filter = (float*)calloc(eq->block_size * 2, sizeof(*time_filter));
    if (!fft || !time_filter)
       goto end;
@@ -235,7 +235,7 @@ static void create_filter(struct eq_data *eq, unsigned size_log2,
    generate_response(eq->filter, gains, num_gains, half_block_size);
 
    // Get equivalent time-domain filter.
-   rarch_fft_process_inverse(fft, time_filter, eq->filter, 1);
+   fft_process_inverse(fft, time_filter, eq->filter, 1);
 
    // ifftshift() to create the correct linear phase filter.
    // The filter response was designed with zero phase, which won't work unless we compensate
@@ -268,10 +268,10 @@ static void create_filter(struct eq_data *eq, unsigned size_log2,
 #endif
 
    // Padded FFT to create our FFT filter.
-   rarch_fft_process_forward(eq->fft, eq->filter, time_filter, 1);
+   fft_process_forward(eq->fft, eq->filter, time_filter, 1);
 
 end:
-   rarch_fft_free(fft);
+   fft_free(fft);
    free(time_filter);
 }
 
@@ -307,7 +307,7 @@ static void *eq_init(const struct dspfilter_info *info,
 
    for (i = 0; i < num_gain; i++)
    {
-      gains[i].freq = 0.5f * frequencies[i] / info->input_rate;
+      gains[i].freq = frequencies[i] / (0.5f * info->input_rate);
       gains[i].gain = pow(10.0, gain[i] / 20.0);
    }
    config->free(frequencies);
@@ -317,12 +317,12 @@ static void *eq_init(const struct dspfilter_info *info,
 
    eq->save     = (float*)calloc(    size, 2 * sizeof(*eq->save));
    eq->block    = (float*)calloc(2 * size, 2 * sizeof(*eq->block));
-   eq->fftblock = (rarch_fft_complex_t*)calloc(2 * size, sizeof(*eq->fftblock));
-   eq->filter   = (rarch_fft_complex_t*)calloc(2 * size, sizeof(*eq->filter));
+   eq->fftblock = (fft_complex_t*)calloc(2 * size, sizeof(*eq->fftblock));
+   eq->filter   = (fft_complex_t*)calloc(2 * size, sizeof(*eq->filter));
 
    // Use an FFT which is twice the block size with zero-padding
    // to make circular convolution => proper convolution.
-   eq->fft = rarch_fft_new(size_log2 + 1);
+   eq->fft = fft_new(size_log2 + 1);
 
    if (!eq->fft || !eq->fftblock || !eq->save || !eq->block || !eq->filter)
       goto error;

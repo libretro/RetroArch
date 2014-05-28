@@ -16,19 +16,19 @@
 #ifndef RARCH_FFT_H__
 #define RARCH_FFT_H__
 
-typedef struct rarch_fft rarch_fft_t;
+typedef struct fft fft_t;
 
 // C99 <complex.h> would be nice.
 typedef struct
 {
    float real;
    float imag;
-} rarch_fft_complex_t;
+} fft_complex_t;
 
-static inline rarch_fft_complex_t rarch_fft_complex_mul(rarch_fft_complex_t a,
-      rarch_fft_complex_t b)
+static inline fft_complex_t fft_complex_mul(fft_complex_t a,
+      fft_complex_t b)
 {
-   rarch_fft_complex_t out = {
+   fft_complex_t out = {
       a.real * b.real - a.imag * b.imag,
       a.imag * b.real + a.real * b.imag,
    };
@@ -37,10 +37,10 @@ static inline rarch_fft_complex_t rarch_fft_complex_mul(rarch_fft_complex_t a,
 
 }
 
-static inline rarch_fft_complex_t rarch_fft_complex_add(rarch_fft_complex_t a,
-      rarch_fft_complex_t b)
+static inline fft_complex_t fft_complex_add(fft_complex_t a,
+      fft_complex_t b)
 {
-   rarch_fft_complex_t out = {
+   fft_complex_t out = {
       a.real + b.real,
       a.imag + b.imag,
    };
@@ -49,10 +49,10 @@ static inline rarch_fft_complex_t rarch_fft_complex_add(rarch_fft_complex_t a,
 
 }
 
-static inline rarch_fft_complex_t rarch_fft_complex_sub(rarch_fft_complex_t a,
-      rarch_fft_complex_t b)
+static inline fft_complex_t fft_complex_sub(fft_complex_t a,
+      fft_complex_t b)
 {
-   rarch_fft_complex_t out = {
+   fft_complex_t out = {
       a.real - b.real,
       a.imag - b.imag,
    };
@@ -61,27 +61,27 @@ static inline rarch_fft_complex_t rarch_fft_complex_sub(rarch_fft_complex_t a,
 
 }
 
-static inline rarch_fft_complex_t rarch_fft_complex_conj(rarch_fft_complex_t a)
+static inline fft_complex_t fft_complex_conj(fft_complex_t a)
 {
-   rarch_fft_complex_t out = {
+   fft_complex_t out = {
       a.real, -a.imag,
    };
 
    return out;
 }
 
-rarch_fft_t *rarch_fft_new(unsigned block_size_log2);
+fft_t *fft_new(unsigned block_size_log2);
 
-void rarch_fft_free(rarch_fft_t *fft);
+void fft_free(fft_t *fft);
 
-void rarch_fft_process_forward_complex(rarch_fft_t *fft,
-      rarch_fft_complex_t *out, const rarch_fft_complex_t *in, unsigned step);
+void fft_process_forward_complex(fft_t *fft,
+      fft_complex_t *out, const fft_complex_t *in, unsigned step);
 
-void rarch_fft_process_forward(rarch_fft_t *fft,
-      rarch_fft_complex_t *out, const float *in, unsigned step);
+void fft_process_forward(fft_t *fft,
+      fft_complex_t *out, const float *in, unsigned step);
 
-void rarch_fft_process_inverse(rarch_fft_t *fft,
-      float *out, const rarch_fft_complex_t *in, unsigned step);
+void fft_process_inverse(fft_t *fft,
+      float *out, const fft_complex_t *in, unsigned step);
 
 
 #endif
