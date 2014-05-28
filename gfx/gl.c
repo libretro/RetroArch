@@ -49,10 +49,6 @@
 #include "shader_glsl.h"
 #endif
 
-#ifdef HAVE_LAKKA
-#include "../frontend/menu/disp/lakka.h"
-#endif
-
 #include "shader_common.h"
 
 // Used for the last pass when rendering to the back buffer.
@@ -159,8 +155,7 @@ static bool init_vao(gl_t *gl)
    if (!gl->core_context && !gl_query_extension(gl, "ARB_vertex_array_object"))
       return false;
 
-   bool present = glGenVertexArrays && glBindVertexArray && glDeleteVertexArrays;
-   if (!present)
+   if (!(glGenVertexArrays && glBindVertexArray && glDeleteVertexArrays))
       return false;
 
    glGenVertexArrays(1, &gl->vao);
@@ -328,6 +323,9 @@ void gl_shader_set_coords(void *data, const struct gl_coords *coords, const math
 {
    gl_t *gl = (gl_t*)data;
 
+   if (!gl)
+      return;
+
    bool ret_coords = false;
    bool ret_mvp    = false;
 
@@ -482,6 +480,9 @@ static void gl_create_fbo_textures(void *data)
    int i;
    gl_t *gl = (gl_t*)data;
 
+   if (!gl)
+      return;
+
    glGenTextures(gl->fbo_pass, gl->fbo_texture);
 
    GLuint base_filt = g_settings.video.smooth ? GL_LINEAR : GL_NEAREST;
@@ -576,6 +577,9 @@ static bool gl_create_fbo_targets(void *data)
    int i;
    gl_t *gl = (gl_t*)data;
 
+   if (!gl)
+      return false;
+
    glBindTexture(GL_TEXTURE_2D, 0);
    glGenFramebuffers(gl->fbo_pass, gl->fbo);
    for (i = 0; i < gl->fbo_pass; i++)
@@ -616,7 +620,7 @@ void gl_init_fbo(void *data, unsigned width, unsigned height)
    int i;
    gl_t *gl = (gl_t*)data;
 
-   if (gl_shader_num(gl) == 0)
+   if (!gl || gl_shader_num(gl) == 0)
       return;
 
    struct gfx_fbo_scale scale, scale_last;
@@ -682,6 +686,9 @@ void gl_init_fbo(void *data, unsigned width, unsigned height)
 #ifndef HAVE_GCMGL
 static void gl_deinit_hw_render(gl_t *gl)
 {
+   if (!gl)
+      return;
+
    context_bind_hw_render(gl, true);
 
    if (gl->hw_render_fbo_init)
@@ -782,6 +789,9 @@ void gl_set_projection(void *data, struct gl_ortho *ortho, bool allow_rotate)
 {
    gl_t *gl = (gl_t*)data;
 
+   if (!gl)
+      return;
+
    // Calculate projection.
    matrix_ortho(&gl->mvp_no_rot, ortho->left, ortho->right,
          ortho->bottom, ortho->top, ortho->znear, ortho->zfar);
@@ -798,12 +808,17 @@ void gl_set_projection(void *data, struct gl_ortho *ortho, bool allow_rotate)
 
 void gl_set_viewport(void *data, unsigned width, unsigned height, bool force_full, bool allow_rotate)
 {
+   int x, y;
+   float device_aspect = 0.0f;
    gl_t *gl = (gl_t*)data;
-
-   int x = 0, y = 0;
    struct gl_ortho ortho = {0, 1, 0, 1, -1, 1};
 
-   float device_aspect = 0.0f;
+   if (!gl)
+      return;
+
+   x = 0;
+   y = 0;
+
    if (gl->ctx_driver->translate_aspect)
       device_aspect = context_translate_aspect_func(gl, width, height);
    else
@@ -890,13 +905,19 @@ static void gl_set_rotation(void *data, unsigned rotation)
    gl_t *gl = (gl_t*)data;
    struct gl_ortho ortho = {0, 1, 0, 1, -1, 1};
 
-   gl->rotation = 90 * rotation;
-   gl_set_projection(gl, &ortho, true);
+   if (gl)
+   {
+      gl->rotation = 90 * rotation;
+      gl_set_projection(gl, &ortho, true);
+   }
 }
 
 #ifdef HAVE_FBO
 static inline void gl_start_frame_fbo(gl_t *gl)
 {
+   if (!gl)
+      return;
+
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
    glBindFramebuffer(RARCH_GL_FRAMEBUFFER, gl->fbo[0]);
    gl_set_viewport(gl, gl->fbo_rect[0].img_width, gl->fbo_rect[0].img_height, true, false);
@@ -916,6 +937,9 @@ static void gl_check_fbo_dimensions(void *data)
 {
    int i;
    gl_t *gl = (gl_t*)data;
+
+   if (!gl)
+      return;
 
    // Check if we have to recreate our FBO textures.
    for (i = 0; i < gl->fbo_pass; i++)
@@ -954,6 +978,9 @@ static void gl_frame_fbo(void *data, const struct gl_tex_info *tex_info)
    int i;
    gl_t *gl = (gl_t*)data;
    GLfloat fbo_tex_coords[8] = {0.0f};
+
+   if (!gl)
+      return;
 
    // Render the rest of our passes.
    gl->coords.tex_coord = fbo_tex_coords;
@@ -1471,6 +1498,10 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
    RARCH_PERFORMANCE_START(frame_run);
 
    gl_t *gl = (gl_t*)data;
+
+   if (!gl)
+      return true;
+
    context_bind_hw_render(gl, false);
 
 #ifndef HAVE_OPENGLES
@@ -1571,7 +1602,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
       glClear(GL_COLOR_BUFFER_BIT);
    }
 
-   if (gl->shader)
+   if (gl->shader && gl->shader->set_params)
       gl->shader->set_params(gl, width, height,
          gl->tex_w, gl->tex_h,
          gl->vp.width, gl->vp.height,
@@ -1681,6 +1712,9 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
 static void gl_free_overlay(gl_t *gl)
 {
    unsigned i;
+   if (!gl)
+      return;
+
    for (i = 0; i < gl->overlays; i++)
       if (gl->overlay[i].tex)
          glDeleteTextures(1, &gl->overlay[i].tex);
@@ -1774,9 +1808,13 @@ static void gl_set_nonblock_state(void *data, bool state)
    RARCH_LOG("GL VSync => %s\n", state ? "off" : "on");
 
    gl_t *gl = (gl_t*)data;
-   context_bind_hw_render(gl, false);
-   context_swap_interval_func(gl, state ? 0 : g_settings.video.swap_interval);
-   context_bind_hw_render(gl, true);
+
+   if (gl)
+   {
+      context_bind_hw_render(gl, false);
+      context_swap_interval_func(gl, state ? 0 : g_settings.video.swap_interval);
+      context_bind_hw_render(gl, true);
+   }
 }
 
 static bool resolve_extensions(gl_t *gl)
