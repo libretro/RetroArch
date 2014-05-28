@@ -44,13 +44,6 @@ static void rarch_get_environment_console(void)
    path_mkdir(default_paths.savestate_dir);
    path_mkdir(default_paths.sram_dir);
 #endif
-
-   config_load();
-
-   init_libretro_sym(false);
-   rarch_init_system_info();
-
-   global_init_drivers();
 }
 #endif
 
@@ -307,7 +300,6 @@ void main_exit(args_type() args)
    if (g_extern.main_is_init)
       rarch_main_deinit();
    rarch_deinit_msg_queue();
-   global_uninit_drivers();
 
 #ifdef PERF_TEST
    rarch_perf_log();

@@ -501,22 +501,6 @@ bool driver_update_system_av_info(const struct retro_system_av_info *info)
    return true;
 }
 
-// Only called once on init and deinit.
-// Video and input drivers need to be active (owned)
-// before retroarch core starts.
-// Core handles audio.
-
-void global_init_drivers(void)
-{
-   init_drivers_pre();
-   init_drivers();
-}
-
-void global_uninit_drivers(void)
-{
-   uninit_drivers();
-}
-
 void init_drivers(void)
 {
    driver.video_data_own = !driver.video_data;
