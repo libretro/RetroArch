@@ -185,7 +185,7 @@ static void generate_response(fft_complex_t *response,
 
 // Modified Bessel function of first order.
 // Check Wiki for mathematical definition ...
-static inline double besseli0(double x)
+static inline double kaiser_besseli0(double x)
 {
    unsigned i;
    double sum = 0.0;
@@ -213,7 +213,7 @@ static inline double besseli0(double x)
 
 static inline double kaiser_window(double index, double beta)
 {
-   return besseli0(beta * sqrt(1 - index * index));
+   return kaiser_besseli0(beta * sqrt(1 - index * index));
 }
 
 static void create_filter(struct eq_data *eq, unsigned size_log2,
