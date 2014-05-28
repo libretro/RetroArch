@@ -93,9 +93,6 @@ static void retrace_callback(u32 retrace_count)
    LWP_ThreadSignal(g_video_cond);
 }
 
-extern rgui_handle_t *rgui;
-
-
 #ifdef HAVE_OVERLAY
 static void gx_render_overlay(void *data);
 static void gx_free_overlay(gx_video_t *gx)
@@ -116,10 +113,13 @@ void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines)
             max_width, max_height, i;
    bool progressive;
    gx_video_t *gx = (gx_video_t*)data;
-   (void)level;
 #ifdef GX_OPTS
    struct __gx_regdef *__gx = (struct __gx_regdef*)__gxregs;
 #endif
+   rgui_handle_t *rgui = (rgui_handle_t*)driver.menu;
+
+   (void)level;
+
    _CPU_ISR_Disable(level);
    VIDEO_SetBlack(true);
    VIDEO_Flush();
@@ -347,6 +347,9 @@ static void init_texture(void *data, unsigned width, unsigned height)
    unsigned g_filter, rgui_w, rgui_h;
    struct __gx_regdef *__gx = (struct __gx_regdef*)__gxregs;
    gx_video_t *gx = (gx_video_t*)data;
+   rgui_handle_t *rgui = (rgui_handle_t*)driver.menu;
+   struct __gx_texobj *fb_ptr = (struct __gx_texobj*)&g_tex.obj;
+   struct __gx_texobj *menu_ptr = (struct __gx_texobj*)&menu_tex.obj;
 
    width &= ~3;
    height &= ~3;
@@ -360,8 +363,6 @@ static void init_texture(void *data, unsigned width, unsigned height)
       rgui_h = rgui->height;
    }
 
-   struct __gx_texobj *fb_ptr = (struct __gx_texobj*)&g_tex.obj;
-   struct __gx_texobj *menu_ptr = (struct __gx_texobj*)&menu_tex.obj;
    __GX_InitTexObj(fb_ptr, g_tex.data, width, height, (gx->rgb32) ? GX_TF_RGBA8 : gx->rgui_texture_enable ? GX_TF_RGB5A3 : GX_TF_RGB565, GX_CLAMP, GX_CLAMP, GX_FALSE);
    __GX_InitTexObjFilterMode(fb_ptr, g_filter, g_filter);
    __GX_InitTexObj(menu_ptr, menu_tex.data, rgui_w, rgui_h, GX_TF_RGB5A3, GX_CLAMP, GX_CLAMP, GX_FALSE);
@@ -894,6 +895,7 @@ static bool gx_frame(void *data, const void *frame,
    gx_video_t *gx = (gx_video_t*)driver.video_data;
    struct __gx_regdef *__gx = (struct __gx_regdef*)__gxregs;
    u8 clear_efb = GX_FALSE;
+   rgui_handle_t *rgui = (rgui_handle_t*)driver.menu;
 
    (void)data;
 
@@ -1050,8 +1052,10 @@ static void gx_set_texture_frame(void *data, const void *frame,
 
 static void gx_set_texture_enable(void *data, bool enable, bool full_screen)
 {
-   (void)full_screen;
    gx_video_t *gx = (gx_video_t*)data;
+
+   (void)full_screen;
+
    gx->rgui_texture_enable = enable;
    // need to make sure the game texture is the right pixel format for menu overlay
    gx->should_resize = true;
