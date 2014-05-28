@@ -717,8 +717,6 @@ static bool d3d_frame(void *data, const void *frame,
    if (!d3d || !frame)
       return true;
 
-   d3dr = (LPDIRECT3DDEVICE)d3d->dev;
-
    if (d3d && d3d->should_resize)
    {
       d3d_calculate_rect(d3d, d3d->screen_width, d3d->screen_height, d3d->video_info.force_aspect, g_extern.system.aspect_ratio);
@@ -736,17 +734,19 @@ static bool d3d_frame(void *data, const void *frame,
       screen_vp.Height = d3d->screen_height;
    }
 
+   d3dr = (LPDIRECT3DDEVICE)d3d->dev;
+
    if (d3dr)
    {
       d3dr->SetViewport(&screen_vp);
       d3dr->Clear(0, 0, D3DCLEAR_TARGET, 0, 1, 0);
-   }
 
-   // Insert black frame first, so we can screenshot, etc.
-   if (g_settings.video.black_frame_insertion && d3dr)
-   {
-      d3dr->Present(NULL, NULL, NULL, NULL);
-      d3dr->Clear(0, 0, D3DCLEAR_TARGET, 0, 1, 0);
+      // Insert black frame first, so we can screenshot, etc.
+      if (g_settings.video.black_frame_insertion)
+      {
+         d3dr->Present(NULL, NULL, NULL, NULL);
+         d3dr->Clear(0, 0, D3DCLEAR_TARGET, 0, 1, 0);
+      }
    }
 
    render_pass(d3d, frame, width, height, pitch, d3d->dev_rotation);
@@ -879,7 +879,7 @@ static void d3d_set_osd_msg(void *data, const char *msg, void *userdata)
    d3d_video_t *d3d = (d3d_video_t*)data;
    font_params_t *params = (font_params_t*)userdata;
 
-   if (d3d->font_ctx && d3d->font_ctx->render_msg)
+   if (d3d && d3d->font_ctx && d3d->font_ctx->render_msg)
       d3d->font_ctx->render_msg(d3d, msg, params);
 }
 
