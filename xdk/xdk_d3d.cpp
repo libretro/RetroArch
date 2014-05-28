@@ -84,7 +84,8 @@ static void d3d_free(void *data)
       d3d->ctx_driver->destroy(d3d);
    d3d->ctx_driver = NULL;
 
-   d3d->g_pD3D->Release();
+   if (d3d->g_pD3D)
+      d3d->g_pD3D->Release();
    d3d->g_pD3D = NULL;
 
    free(d3d);
@@ -291,12 +292,12 @@ static bool d3d_init_base(void *data, const video_info_t *info)
       return false;
    }
 
-   if (d3d->d3d_err = d3d->g_pD3D->CreateDevice(0,
+   if ((d3d->d3d_err = d3d->g_pD3D->CreateDevice(0,
             D3DDEVTYPE_HAL,
             NULL,
             D3DCREATE_HARDWARE_VERTEXPROCESSING,
             &d3dpp,
-            &d3d->dev) != S_OK)
+            &d3d->dev)) != S_OK)
    {
       RARCH_ERR("[D3D]: Failed to initialize device.\n");
       return false;
@@ -430,7 +431,7 @@ static bool d3d_construct(void *data, const video_info_t *info, const input_driv
    d3d->screen_height = info->fullscreen ? full_y : info->height;
 
    d3d->video_info = *info;
-   if (!d3d_initialize(d3d, &d3d->video_info))
+   if (!d3d_initialize(data, &d3d->video_info))
       return false;
 
    if (input && input_data)
