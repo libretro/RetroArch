@@ -16,7 +16,6 @@ HAVE_GLES=no            # Use GLESv2 instead of desktop GL
 HAVE_MALI_FBDEV=no      # Enable Mali fbdev context support
 HAVE_GLES3=no           # Enable OpenGLES3 support
 HAVE_X11=auto           # Disable everything X11.
-HAVE_LIMA=no            # Enable Lima video support
 HAVE_OMAP=no            # Enable OMAP video support
 HAVE_XINERAMA=auto      # Disable Xinerama support.
 HAVE_KMS=auto           # Enable KMS context support
