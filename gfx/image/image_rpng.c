@@ -227,7 +227,7 @@ bool texture_image_load(void *data, const char *path, void *image_data)
    {
       if (!rpng_gx_convert_texture32(out_img))
       {
-         rpng_image_free(data, out_img);
+         texture_image_free(data, out_img);
          ret = false;
       }
    }

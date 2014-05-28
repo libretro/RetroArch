@@ -324,13 +324,18 @@ static void gx_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
       gfx_set_config_viewport();
 
    g_extern.system.aspect_ratio = aspectratio_lut[aspect_ratio_idx].value;
-   gx->keep_aspect = true;
-   gx->should_resize = true;
+
+   if (gx)
+   {
+      gx->keep_aspect = true;
+      gx->should_resize = true;
+   }
 }
 
 static void setup_video_mode(void *data)
 {
-   for (unsigned i = 0; i < 2; i++)
+   unsigned i;
+   for (i = 0; i < 2; i++)
       g_framebuf[i] = MEM_K0_TO_K1(memalign(32, 640 * 576 * VI_DISPLAY_PIX_SZ));
 
    g_current_framebuf = 0;
@@ -372,8 +377,7 @@ static void init_texture(void *data, unsigned width, unsigned height)
 
 static void init_vtx(void *data)
 {
-   gx_video_t *gx = (gx_video_t*)data;
-   (void)gx;
+   (void)data;
 
    GX_SetCullMode(GX_CULL_NONE);
    GX_SetClipMode(GX_CLIP_DISABLE);
@@ -660,14 +664,15 @@ static void convert_texture16(const uint32_t *_src, uint32_t *_dst,
 static void convert_texture16_conv(const uint32_t *_src, uint32_t *_dst,
       unsigned width, unsigned height, unsigned pitch)
 {
+   unsigned i, tmp_pitch, width2;
    width &= ~3;
    height &= ~3;
-   unsigned tmp_pitch = pitch >> 2;
-   unsigned width2 = width >> 1;
+   tmp_pitch = pitch >> 2;
+   width2 = width >> 1;
 
-   const uint32_t *src = _src;
-   uint32_t *dst = _dst;
-   for (unsigned i = 0; i < height; i += 4, dst += 4 * width2)
+   const uint32_t *src = (const uint32_t*)_src;
+   uint32_t *dst = (uint32_t*)_dst;
+   for (i = 0; i < height; i += 4, dst += 4 * width2)
    {
 #define BLIT_LINE_16_CONV(x) (0x80008000 | (((x) & 0xFFC0FFC0) >> 1) | ((x) & 0x001F001F))
          BLIT_LINE_16(0)
@@ -681,14 +686,15 @@ static void convert_texture16_conv(const uint32_t *_src, uint32_t *_dst,
 static void convert_texture32(const uint32_t *_src, uint32_t *_dst,
       unsigned width, unsigned height, unsigned pitch)
 {
+   unsigned i, tmp_pitch, width2;
    width &= ~3;
    height &= ~3;
-   unsigned tmp_pitch = pitch >> 1;
-   unsigned width2 = width << 1;
+   tmp_pitch = pitch >> 1;
+   width2 = width << 1;
 
    const uint16_t *src = (uint16_t *) _src;
    uint16_t *dst = (uint16_t *) _dst;
-   for (unsigned i = 0; i < height; i += 4, dst += 4 * width2)
+   for (i = 0; i < height; i += 4, dst += 4 * width2)
    {
       BLIT_LINE_32(0)
       BLIT_LINE_32(4)
@@ -892,14 +898,12 @@ static bool gx_frame(void *data, const void *frame,
       unsigned width, unsigned height, unsigned pitch,
       const char *msg)
 {
-   gx_video_t *gx = (gx_video_t*)driver.video_data;
+   gx_video_t *gx = (gx_video_t*)data;
    struct __gx_regdef *__gx = (struct __gx_regdef*)__gxregs;
    u8 clear_efb = GX_FALSE;
    rgui_handle_t *rgui = (rgui_handle_t*)driver.menu;
 
-   (void)data;
-
-   if(!frame && !gx->rgui_texture_enable)
+   if(!gx || (!frame && !gx->rgui_texture_enable))
       return true;
 
    if (!frame)
@@ -1027,7 +1031,9 @@ static void gx_free(void *data)
    (void)data;
 #ifdef HAVE_OVERLAY
    gx_video_t *gx = (gx_video_t*)driver.video_data;
-   gx_free_overlay(gx);
+
+   if (gx)
+      gx_free_overlay(gx);
 #endif
 }
 
@@ -1035,7 +1041,9 @@ static void gx_set_rotation(void *data, unsigned orientation)
 {
    gx_video_t *gx = (gx_video_t*)data;
    g_orientation = orientation;
-   gx->should_resize = true;
+
+   if (gx)
+      gx->should_resize = true;
 }
 
 static void gx_set_texture_frame(void *data, const void *frame,
@@ -1047,7 +1055,9 @@ static void gx_set_texture_frame(void *data, const void *frame,
    (void)alpha;
 
    gx_video_t *gx = (gx_video_t*)data;
-   gx->menu_data = (uint32_t*)frame;
+
+   if (gx)
+      gx->menu_data = (uint32_t*)frame;
 }
 
 static void gx_set_texture_enable(void *data, bool enable, bool full_screen)
@@ -1056,15 +1066,20 @@ static void gx_set_texture_enable(void *data, bool enable, bool full_screen)
 
    (void)full_screen;
 
-   gx->rgui_texture_enable = enable;
-   // need to make sure the game texture is the right pixel format for menu overlay
-   gx->should_resize = true;
+   if (gx)
+   {
+      gx->rgui_texture_enable = enable;
+      // need to make sure the game texture is the right pixel format for menu overlay
+      gx->should_resize = true;
+   }
 }
 
 static void gx_apply_state_changes(void *data)
 {
    gx_video_t *gx = (gx_video_t*)data;
-   gx->should_resize = true;
+
+   if (gx)
+      gx->should_resize = true;
 }
 
 static void gx_viewport_info(void *data, struct rarch_viewport *vp)
@@ -1107,7 +1122,7 @@ static bool gx_overlay_load(void *data, const struct texture_image *images, unsi
 
    for (i = 0; i < num_images; i++)
    {
-      struct gx_overlay_data *o = &gx->overlay[i];
+      struct gx_overlay_data *o = (struct gx_overlay_data*)&gx->overlay[i];
       GX_InitTexObj(&o->tex, images[i].pixels, images[i].width, images[i].height, GX_TF_RGBA8, GX_CLAMP, GX_CLAMP, GX_FALSE);
       GX_InitTexObjFilterMode(&g_tex.obj, GX_LINEAR, GX_LINEAR);
       DCFlushRange(images[i].pixels, images[i].width * images[i].height * sizeof(uint32_t));
@@ -1123,19 +1138,33 @@ static bool gx_overlay_load(void *data, const struct texture_image *images, unsi
 static void gx_overlay_tex_geom(void *data, unsigned image, float x, float y, float w, float h)
 {
    gx_video_t *gx = (gx_video_t*)data;
-   struct gx_overlay_data *o = &gx->overlay[image];
+   struct gx_overlay_data *o;
+   
+   o = NULL;
 
-   o->tex_coord[0] = x;     o->tex_coord[1] = y;
-   o->tex_coord[2] = x + w; o->tex_coord[3] = y;
-   o->tex_coord[4] = x;     o->tex_coord[5] = y + h;
-   o->tex_coord[6] = x + w; o->tex_coord[7] = y + h;
+   if (gx)
+      o = (struct gx_overlay_data*)&gx->overlay[image];
+
+   if (o)
+   {
+      o->tex_coord[0] = x;
+      o->tex_coord[1] = y;
+      o->tex_coord[2] = x + w;
+      o->tex_coord[3] = y;
+      o->tex_coord[4] = x;
+      o->tex_coord[5] = y + h;
+      o->tex_coord[6] = x + w;
+      o->tex_coord[7] = y + h;
+   }
 }
 
 static void gx_overlay_vertex_geom(void *data, unsigned image, float x, float y, float w, float h)
 {
    gx_video_t *gx = (gx_video_t*)data;
-   struct gx_overlay_data *o = &gx->overlay[image];
-
+   struct gx_overlay_data *o;
+   
+   o = NULL;
+   
    // Flipped, so we preserve top-down semantics.
    y = 1.0f - y;
    h = -h;
@@ -1146,10 +1175,20 @@ static void gx_overlay_vertex_geom(void *data, unsigned image, float x, float y,
    w = (w * 2.0f);
    h = (h * 2.0f);
 
-   o->vertex_coord[0] = x;     o->vertex_coord[1] = y;
-   o->vertex_coord[2] = x + w; o->vertex_coord[3] = y;
-   o->vertex_coord[4] = x;     o->vertex_coord[5] = y + h;
-   o->vertex_coord[6] = x + w; o->vertex_coord[7] = y + h;
+   if (gx)
+      o = (struct gx_overlay_data*)&gx->overlay[image];
+
+   if (o)
+   {
+      o->vertex_coord[0] = x;
+      o->vertex_coord[1] = y;
+      o->vertex_coord[2] = x + w;
+      o->vertex_coord[3] = y;
+      o->vertex_coord[4] = x;
+      o->vertex_coord[5] = y + h;
+      o->vertex_coord[6] = x + w;
+      o->vertex_coord[7] = y + h;
+   }
 }
 
 static void gx_overlay_enable(void *data, bool state)
