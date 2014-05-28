@@ -67,11 +67,6 @@ static bool d3d_init_shader(void *data)
 
 static void d3d_free(void *data)
 {
-#ifdef RARCH_CONSOLE
-   if (driver.video_data)
-      return;
-#endif
-
    d3d_video_t *d3d = (d3d_video_t*)data;
 
    if (!d3d)
@@ -88,6 +83,9 @@ static void d3d_free(void *data)
    if (d3d->ctx_driver && d3d->ctx_driver->destroy)
       d3d->ctx_driver->destroy(d3d);
    d3d->ctx_driver = NULL;
+
+   d3d->g_pD3D->Release();
+   d3d->g_pD3D = NULL;
 
    free(d3d);
 }
@@ -262,28 +260,6 @@ static void d3d_init_textures(void *data, const video_info_t *video)
 
    if (g_extern.console.screen.viewports.custom_vp.height == 0)
       g_extern.console.screen.viewports.custom_vp.height = vp.Height;
-}
-
-static void d3d_reinit_textures(void *data, const video_info_t *video)
-{
-   d3d_video_t *d3d = (d3d_video_t*)data;
-
-   unsigned old_base_size = d3d->base_size;
-   unsigned old_width     = d3d->tex_w;
-   unsigned old_height    = d3d->tex_h;
-   d3d->texture_fmt = video->rgb32 ? D3DFMT_LIN_X8R8G8B8 : D3DFMT_LIN_R5G6B5;
-   d3d->base_size   = video->rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
-
-   d3d->tex_w = d3d->tex_h = RARCH_SCALE_BASE * video->input_scale;
-
-   if (old_base_size != d3d->base_size || old_width != d3d->tex_w || old_height != d3d->tex_h)
-   {
-      RARCH_LOG("Reinitializing textures (%u x %u @ %u bpp)\n", d3d->tex_w,
-            d3d->tex_h, d3d->base_size * CHAR_BIT);
-
-      d3d_init_textures(d3d, video);
-      RARCH_LOG("Reinitializing textures skipped.\n");
-   }
 }
 
 static const gfx_ctx_driver_t *d3d_get_context(void *data)
@@ -466,14 +442,6 @@ static bool d3d_construct(void *data, const video_info_t *info, const input_driv
 
 static void *d3d_init(const video_info_t *vid, const input_driver_t **input, void **input_data)
 {
-   if (driver.video_data)
-   {
-      d3d_video_t *d3d = (d3d_video_t*)driver.video_data;
-      // Reinitialize textures as we might have changed pixel formats.
-      d3d_reinit_textures(d3d, vid);
-      return driver.video_data;
-   }
-
    d3d_video_t *d3d = (d3d_video_t*)calloc(1, sizeof(d3d_video_t));
    if (!d3d)
       return NULL;
@@ -742,31 +710,40 @@ static void render_pass(void *data, const void *frame, unsigned width, unsigned 
 static bool d3d_frame(void *data, const void *frame,
       unsigned width, unsigned height, unsigned pitch, const char *msg)
 {
+   LPDIRECT3DDEVICE d3dr;
+   D3DVIEWPORT screen_vp;
    d3d_video_t *d3d = (d3d_video_t*)data;
-   LPDIRECT3DDEVICE d3dr = d3d->dev;
 
-   if (!frame)
+   if (!d3d || !frame)
       return true;
 
-   if (d3d->should_resize)
+   d3dr = (LPDIRECT3DDEVICE)d3d->dev;
+
+   if (d3d && d3d->should_resize)
    {
       d3d_calculate_rect(d3d, d3d->screen_width, d3d->screen_height, d3d->video_info.force_aspect, g_extern.system.aspect_ratio);
       d3d->should_resize = false;
    }
 
    // render_chain() only clears out viewport, clear out everything
-   D3DVIEWPORT screen_vp;
    screen_vp.X = 0;
    screen_vp.Y = 0;
    screen_vp.MinZ = 0;
    screen_vp.MaxZ = 1;
-   screen_vp.Width = d3d->screen_width;
-   screen_vp.Height = d3d->screen_height;
-   d3dr->SetViewport(&screen_vp);
-   d3dr->Clear(0, 0, D3DCLEAR_TARGET, 0, 1, 0);
+   if (d3d)
+   {
+      screen_vp.Width = d3d->screen_width;
+      screen_vp.Height = d3d->screen_height;
+   }
+
+   if (d3dr)
+   {
+      d3dr->SetViewport(&screen_vp);
+      d3dr->Clear(0, 0, D3DCLEAR_TARGET, 0, 1, 0);
+   }
 
    // Insert black frame first, so we can screenshot, etc.
-   if (g_settings.video.black_frame_insertion)
+   if (g_settings.video.black_frame_insertion && d3dr)
    {
       d3dr->Present(NULL, NULL, NULL, NULL);
       d3dr->Clear(0, 0, D3DCLEAR_TARGET, 0, 1, 0);
@@ -810,10 +787,13 @@ static bool d3d_frame(void *data, const void *frame,
 static void d3d_set_nonblock_state(void *data, bool state)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
-   d3d->video_info.vsync = !state;
 
-   if (d3d->ctx_driver && d3d->ctx_driver->swap_interval)
-      d3d->ctx_driver->swap_interval(d3d, state ? 0 : 1);
+   if (d3d)
+   {
+      d3d->video_info.vsync = !state;
+      if (d3d->ctx_driver && d3d->ctx_driver->swap_interval)
+         d3d->ctx_driver->swap_interval(d3d, state ? 0 : 1);
+   }
 }
 
 static bool d3d_alive(void *data)
@@ -821,20 +801,22 @@ static bool d3d_alive(void *data)
    d3d_video_t *d3d = (d3d_video_t*)data;
    bool quit, resize;
 
-   if (d3d->ctx_driver && d3d->ctx_driver->check_window)
+   if (d3d && d3d->ctx_driver && d3d->ctx_driver->check_window)
       d3d->ctx_driver->check_window(d3d, &quit,
             &resize, NULL, NULL, g_extern.frame_count);
 
-   if (quit)
-      d3d->quitting = true;
-   else if (resize)
+   if (quit && d3d)
+      d3d->quitting = quit;
+   else if (resize && d3d)
       d3d->should_resize = true;
-   return !d3d->quitting;
+   return !quit;
 }
 
 static bool d3d_focus(void *data)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
+   if (!d3d || !d3d->ctx_driver)
+      return true;
    return d3d->ctx_driver->has_focus(d3d);
 }
 
@@ -850,8 +832,12 @@ static void d3d_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
       gfx_set_config_viewport();
 
    g_extern.system.aspect_ratio  = aspectratio_lut[aspect_ratio_idx].value;
-   d3d->video_info.force_aspect = true;
-   d3d->should_resize = true;
+
+   if (d3d)
+   {
+      d3d->video_info.force_aspect = true;
+      d3d->should_resize = true;
+   }
 }
 
 static void d3d_set_filtering(void *data, unsigned index, bool set_smooth) { }
@@ -859,7 +845,9 @@ static void d3d_set_filtering(void *data, unsigned index, bool set_smooth) { }
 static void d3d_apply_state_changes(void *data)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
-   d3d->should_resize = true;
+
+   if (d3d)
+      d3d->should_resize = true;
 }
 
 #ifdef HAVE_MENU
@@ -877,8 +865,12 @@ static void d3d_set_texture_frame(void *data,
 static void d3d_set_texture_enable(void *data, bool state, bool full_screen)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
-   d3d->rgui_texture_enable = state;
-   d3d->rgui_texture_full_screen = full_screen;
+
+   if (d3d)
+   {
+      d3d->rgui_texture_enable = state;
+      d3d->rgui_texture_full_screen = full_screen;
+   }
 }
 #endif
 
