@@ -580,8 +580,6 @@ void find_prev_location_driver(void);
 void find_next_location_driver(void);
 #endif
 
-void find_image_driver(void);
-
 void driver_set_monitor_refresh_rate(float hz);
 bool driver_monitor_fps_statistics(double *refresh_rate, double *deviation, unsigned *sample_points);
 void driver_set_nonblock_state(bool nonblock);
