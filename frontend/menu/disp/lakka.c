@@ -1118,10 +1118,10 @@ static void lakka_init_items(int i, menu_category_t *category, core_info_t *info
          menu_item_t *item;
 
          n = category->num_items;
-         item = (menu_item_t*)&category->items[n];
 
          category->num_items++;
          category->items = (menu_item_t*)realloc(category->items, category->num_items * sizeof(menu_item_t));
+         item = (menu_item_t*)&category->items[n];
 
          strlcpy(item->name, path_basename(list->elems[j].data), sizeof(item->name));
          strlcpy(item->rom, list->elems[j].data, sizeof(item->rom));

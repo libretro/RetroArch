@@ -511,6 +511,7 @@ void global_init_drivers(void)
 {
    find_audio_driver();
    find_input_driver();
+   find_image_driver();
 #ifdef HAVE_MENU
    find_menu_driver();
 #endif
@@ -574,6 +575,9 @@ void init_drivers(void)
 #ifdef HAVE_OSK
    driver.osk_data_own = !driver.osk_data;
 #endif
+
+   if (!driver.image)
+      find_image_driver();
 
    adjust_system_rates();
 

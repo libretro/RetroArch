@@ -19,7 +19,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define lfoskipsamples 30
+#define wahwahlfoskipsamples 30
 
 #ifndef M_PI
 #define M_PI		3.1415926535897932384626433832795
@@ -59,7 +59,7 @@ static void wahwah_process(void *data, struct dspfilter_output *output,
    {
       float in[2] = { out[0], out[1] };
 
-      if ((wah->skipcount++ % lfoskipsamples) == 0)
+      if ((wah->skipcount++ % wahwahlfoskipsamples) == 0)
       {
          float frequency = (1.0 + cos(wah->skipcount * wah->lfoskip + wah->phase)) / 2.0;
          frequency = frequency * wah->depth * (1.0 - wah->freqofs) + wah->freqofs;

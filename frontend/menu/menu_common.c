@@ -316,16 +316,29 @@ void *menu_init(void)
 {
    rgui_handle_t *rgui;
 
-   if (!driver.menu_ctx)
-      return NULL;
+   rgui = NULL;
 
-   rgui = (rgui_handle_t*)driver.menu_ctx->init();
+   if (!driver.menu_ctx)
+   {
+      RARCH_ERR("menu_init() - menu context interface not initialized.\n");
+      return NULL;
+   }
+
+   if (!driver.image)
+   {
+      RARCH_ERR("Image driver not initialized.\n");
+      RARCH_WARN("Trying to bring up image driver interface.\n");
+      find_image_driver();
+
+      if (!driver.image)
+         RARCH_ERR("Still couldn't initialize image driver.\n");
+   }
+
+   if (driver.menu_ctx->init)
+      rgui = (rgui_handle_t*)driver.menu_ctx->init();
 
    if (!rgui)
-   {
-      RARCH_ERR("Could not initialize menu.\n");
-      rarch_fail(1, "menu_init()");
-   }
+      return NULL;
 
    strlcpy(g_settings.menu.driver, driver.menu_ctx->ident, sizeof(g_settings.menu.driver));
 

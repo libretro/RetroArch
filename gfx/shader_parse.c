@@ -641,10 +641,7 @@ void gfx_shader_write_conf_cgp(config_file_t *conf, const struct gfx_shader *sha
       config_set_string(conf, "parameters", parameters);
       
       for (i = 0; i < shader->num_parameters; i++)
-      {
-         char key[64];
          config_set_float(conf, shader->parameters[i].id, shader->parameters[i].current);
-      }
    }
 
    if (shader->luts)

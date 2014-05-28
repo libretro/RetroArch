@@ -480,10 +480,13 @@ FILTERS
 #include "../gfx/filters/lq2x.c"
 #include "../gfx/filters/phosphor2x.c"
 
-#include "../audio/filters/panning.c"
-#include "../audio/filters/iir.c"
 #include "../audio/filters/echo.c"
 #include "../audio/filters/eq.c"
+#include "../audio/filters/iir.c"
+#include "../audio/filters/panning.c"
+#include "../audio/filters/phaser.c"
+#include "../audio/filters/reverb.c"
+#include "../audio/filters/wahwah.c"
 #endif
 /*============================================================
 DYNAMIC

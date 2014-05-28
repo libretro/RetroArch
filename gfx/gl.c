@@ -196,15 +196,13 @@ static bool check_fbo_proc(gl_t *gl)
 #else
 #define check_fbo_proc(gl) (true)
 #endif
-#if defined(__APPLE__) || defined(HAVE_PSGL)
-#define GL_RGBA32F GL_RGBA32F_ARB
-#endif
 #endif
 
 ////////////////// Shaders
 
 static bool gl_shader_init(void *data)
 {
+   bool ret;
    gl_t *gl = (gl_t*)data;
    const gl_shader_backend_t *backend = NULL;
 
@@ -213,6 +211,8 @@ static bool gl_shader_init(void *data)
 
    enum rarch_shader_type type = gfx_shader_parse_type(shader_path,
          gl->core_context ? RARCH_SHADER_GLSL : DEFAULT_SHADER_TYPE);
+
+   ret = 0;
 
    if (type == RARCH_SHADER_NONE)
    {
@@ -256,7 +256,10 @@ static bool gl_shader_init(void *data)
 #endif
 
    gl->shader = backend;
-   bool ret = gl->shader->init(gl, shader_path);
+
+   if (gl->shader && gl->shader->init)
+      ret = gl->shader->init(gl, shader_path);
+
    if (!ret)
    {
       RARCH_ERR("[GL]: Failed to init shader, falling back to stock.\n");
@@ -269,6 +272,9 @@ static bool gl_shader_init(void *data)
 static inline void gl_shader_deinit(void *data)
 {
    gl_t *gl = (gl_t*)data;
+
+   if (!gl)
+      return;
 
    if (gl->shader)
       gl->shader->deinit();
@@ -295,7 +301,7 @@ static void gl_set_coords(const struct gl_coords *coords)
 
 static void gl_disable_client_arrays(gl_t *gl)
 {
-   if (gl->core_context)
+   if (!gl || gl->core_context)
       return;
 
    glClientActiveTexture(GL_TEXTURE1);
@@ -516,7 +522,7 @@ static void gl_create_fbo_textures(void *data)
             RARCH_ERR("[GL]: Floating-point FBO was requested, but is not supported. Falling back to UNORM.\n");
       }
 
-#ifndef HAVE_PSGL
+#ifndef HAVE_OPENGLES
       if (srgb_fbo && gl->has_srgb_fbo)
       {
          RARCH_LOG("[GL]: FBO pass #%d is sRGB.\n", i);
@@ -735,7 +741,7 @@ static bool gl_init_hw_render(gl_t *gl, unsigned width, unsigned height)
 
          if (stencil)
          {
-#if defined(HAVE_OPENGLES2) || defined(OSX_PPC)
+#if defined(HAVE_OPENGLES2) || defined(HAVE_OPENGLES1) || defined(OSX_PPC)
             // GLES2 is a bit weird, as always. :P
             // There's no GL_DEPTH_STENCIL_ATTACHMENT like in desktop GL.
             glFramebufferRenderbuffer(RARCH_GL_FRAMEBUFFER, RARCH_GL_DEPTH_ATTACHMENT,
@@ -1826,7 +1832,11 @@ static bool resolve_extensions(gl_t *gl)
 #else
 #ifdef HAVE_FBO
    // Float FBO is core in 3.2.
+#ifdef HAVE_GCMGL
+   gl->has_fp_fbo = false; // FIXME - rewrite GL implementation
+#else
    gl->has_fp_fbo = gl->core_context || gl_query_extension(gl, "ARB_texture_float");
+#endif
    gl->has_srgb_fbo = gl->core_context || (gl_query_extension(gl, "EXT_texture_sRGB") && gl_query_extension(gl, "ARB_framebuffer_sRGB"));
 #endif
 #endif

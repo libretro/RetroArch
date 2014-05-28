@@ -151,6 +151,25 @@ const char *config_get_default_input(void)
    }
 }
 
+#ifdef HAVE_MENU
+const char *config_get_default_menu(void)
+{
+   switch (MENU_DEFAULT_DRIVER)
+   {
+      case MENU_RGUI:
+         return "rgui";
+      case MENU_RMENU:
+         return "rmenu";
+      case MENU_RMENU_XUI:
+         return "rmenu_xui";
+      case MENU_LAKKA:
+         return "lakka";
+      default:
+         return "NULL";
+   }
+}
+#endif
+
 #ifdef HAVE_OSK
 const char *config_get_default_osk(void)
 {
@@ -226,6 +245,9 @@ void config_set_defaults(void)
    const char *def_image = config_get_default_image();
    const char *def_audio = config_get_default_audio();
    const char *def_input = config_get_default_input();
+#ifdef HAVE_MENU
+   const char *def_menu  = config_get_default_menu();
+#endif
 #ifdef HAVE_CAMERA
    const char *def_camera = config_get_default_camera();
 
@@ -254,6 +276,10 @@ void config_set_defaults(void)
       strlcpy(g_settings.input.driver, def_input, sizeof(g_settings.input.driver));
    if (def_image)
       strlcpy(g_settings.image.driver, def_image, sizeof(g_settings.image.driver));
+#ifdef HAVE_MENU
+   if (def_menu)
+      strlcpy(g_settings.menu.driver,  def_menu,  sizeof(g_settings.menu.driver));
+#endif
 
    g_settings.load_dummy_on_core_shutdown = load_dummy_on_core_shutdown;
 

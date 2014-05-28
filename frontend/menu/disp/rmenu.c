@@ -454,6 +454,9 @@ static void *rmenu_init(void)
 {
    rgui_handle_t *rgui = (rgui_handle_t*)calloc(1, sizeof(*rgui));
 
+   if (!rgui)
+      return NULL;
+
    rmenu_init_assets(rgui);
 
    return rgui;
