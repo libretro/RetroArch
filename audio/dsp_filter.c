@@ -226,6 +226,7 @@ extern const struct dspfilter_implementation *iir_dspfilter_get_implementation(d
 extern const struct dspfilter_implementation *echo_dspfilter_get_implementation(dspfilter_simd_mask_t mask);
 extern const struct dspfilter_implementation *phaser_dspfilter_get_implementation(dspfilter_simd_mask_t mask);
 extern const struct dspfilter_implementation *wahwah_dspfilter_get_implementation(dspfilter_simd_mask_t mask);
+extern const struct dspfilter_implementation *eq_dspfilter_get_implementation(dspfilter_simd_mask_t mask);
 
 static const dspfilter_get_implementation_t dsp_plugs_builtin[] = {
    panning_dspfilter_get_implementation,
@@ -233,6 +234,7 @@ static const dspfilter_get_implementation_t dsp_plugs_builtin[] = {
    echo_dspfilter_get_implementation,
    phaser_dspfilter_get_implementation,
    wahwah_dspfilter_get_implementation,
+   eq_dspfilter_get_implementation,
 };
 
 static bool append_plugs(rarch_dsp_filter_t *dsp)
