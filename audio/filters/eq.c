@@ -250,7 +250,7 @@ static void create_filter(struct eq_data *eq, unsigned size_log2,
    // Apply a window to smooth out the frequency repsonse.
    for (i = 0; i < (int)eq->block_size; i++)
    {
-      // Simple cosine window.
+      // Kaiser window.
       double phase = (double)i / (eq->block_size - 1);
       phase = 2.0 * (phase - 0.5);
       time_filter[i] *= window_mod * kaiser_window(phase, beta);
