@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2014 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -92,7 +92,7 @@ static const audio_driver_t *audio_drivers[] = {
 #endif
 #ifdef PSP
    &audio_psp1,
-#endif   
+#endif
 #ifdef HAVE_NULLAUDIO
    &audio_null,
 #endif
@@ -575,6 +575,9 @@ void init_drivers(void)
 #ifdef HAVE_OSK
    driver.osk_data_own = !driver.osk_data;
 #endif
+   //  Fix issue #713.  FIXME: This is hacky, and it should probably be replaced
+   //  by init_image_input() or init_image() or something once implemented.
+   find_image_driver();
 
    adjust_system_rates();
 
@@ -634,7 +637,7 @@ void uninit_drivers(void)
    if (driver.location_data_own)
       driver.location_data = NULL;
 #endif
-   
+
 #ifdef HAVE_OSK
    uninit_osk();
 
@@ -979,7 +982,7 @@ void rarch_init_filter(enum retro_pixel_format colfmt)
    rarch_softfilter_get_max_output_size(g_extern.filter.filter, &width, &height);
    pow2_x  = next_pow2(width);
    pow2_y  = next_pow2(height);
-   maxsize = max(pow2_x, pow2_y); 
+   maxsize = max(pow2_x, pow2_y);
    g_extern.filter.scale = maxsize / RARCH_SCALE_BASE;
 
    g_extern.filter.out_rgb32 = rarch_softfilter_get_output_format(g_extern.filter.filter) == RETRO_PIXEL_FORMAT_XRGB8888;
