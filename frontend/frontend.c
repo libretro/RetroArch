@@ -85,12 +85,6 @@ static void rarch_get_environment_console(void)
 #define ra_preinited false
 #endif
 
-#if defined(__QNX__) || defined(RARCH_CONSOLE)
-#define attempt_load_game false
-#else
-#define attempt_load_game true
-#endif
-
 #if defined(RARCH_CONSOLE) || defined(__QNX__) || defined(ANDROID)
 #define initial_menu_lifecycle_state (1ULL << MODE_LOAD_GAME)
 #else
@@ -354,7 +348,6 @@ returntype main_entry(signature())
       rarch_get_environment_console();
    }
 
-   if (attempt_load_game)
    {
       int init_ret;
       if ((init_ret = rarch_main_init(argc, argv))) return_var(init_ret);

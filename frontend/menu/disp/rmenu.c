@@ -456,6 +456,7 @@ static void *rmenu_init(void)
    if (!rgui)
       return NULL;
 
+
    rmenu_init_assets(rgui);
 
    return rgui;
