@@ -459,6 +459,9 @@ static bool compile_programs(GLuint *gl_prog)
 static void gl_glsl_reset_attrib(void)
 {
    unsigned i;
+   // Add sanity check that we did not overflow.
+   rarch_assert(gl_attrib_index <= ARRAY_SIZE(gl_attribs));
+
    for (i = 0; i < gl_attrib_index; i++)
       glDisableVertexAttribArray(gl_attribs[i]);
    gl_attrib_index = 0;

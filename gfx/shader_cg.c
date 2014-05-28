@@ -149,6 +149,9 @@ static char cg_alias_define[GFX_MAX_SHADERS][128];
 static void gl_cg_reset_attrib(void)
 {
    unsigned i;
+   // Add sanity check that we did not overflow.
+   rarch_assert(cg_attrib_index <= ARRAY_SIZE(cg_attribs));
+
    for (i = 0; i < cg_attrib_index; i++)
       cgGLDisableClientState(cg_attribs[i]);
    cg_attrib_index = 0;
