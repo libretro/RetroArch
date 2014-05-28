@@ -20,7 +20,7 @@
 #include <string.h>
 
 #define phaserlfoshape 4.0
-#define lfoskipsamples 20
+#define phaserlfoskipsamples 20
 
 #ifndef M_PI
 #define M_PI		3.1415926535897932384626433832795
@@ -67,7 +67,7 @@ static void phaser_process(void *data, struct dspfilter_output *output,
       for (c = 0; c < 2; c++)
          m[c] = in[c] + ph->fbout[c] * ph->fb * 0.01f;
 
-      if ((ph->skipcount++ % lfoskipsamples) == 0)
+      if ((ph->skipcount++ % phaserlfoskipsamples) == 0)
       {
          ph->gain = 0.5 * (1.0 + cos(ph->skipcount * ph->lfoskip + ph->phase));
          ph->gain = (exp(ph->gain * phaserlfoshape) - 1.0) / (exp(phaserlfoshape) - 1);
