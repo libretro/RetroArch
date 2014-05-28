@@ -3585,12 +3585,18 @@ CGGL_API void cgGLEnableClientState( CGparameter param )
 
 CGGL_API void cgGLDisableClientState( CGparameter param )
 {
-   CgRuntimeParameter *_ptr = rglCgGLTestParameter( param );
+   GLuint index;
+   CgParameterResource *parameterResource;
+   CgRuntimeParameter *_ptr = (CgRuntimeParameter*)rglCgGLTestParameter( param );
 
-   const CgParameterResource *parameterResource = rglGetParameterResource( _ptr->program, _ptr->parameterEntry );
+   if (_ptr)
+      parameterResource = (CgParameterResource*)rglGetParameterResource( _ptr->program, _ptr->parameterEntry );
 
-   GLuint index = ( GLuint )( parameterResource->resource - CG_ATTR0 );
-   rglDisableVertexAttribArrayNV( index );
+   if (parameterResource)
+   {
+      index = (GLuint)( parameterResource->resource - CG_ATTR0 );
+      rglDisableVertexAttribArrayNV( index );
+   }
 }
 
 /******************************************************************************
