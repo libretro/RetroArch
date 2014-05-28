@@ -576,13 +576,12 @@ void init_drivers(void)
    driver.osk_data_own = !driver.osk_data;
 #endif
 
-   adjust_system_rates();
-
-   g_extern.frame_count = 0;
-
    if (!driver.image)
       find_image_driver();
 
+   adjust_system_rates();
+
+   g_extern.frame_count = 0;
    init_video_input();
 
    if (!driver.video_cache_context_ack && g_extern.system.hw_render_callback.context_reset)
