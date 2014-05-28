@@ -79,18 +79,6 @@ static void rarch_get_environment_console(void)
 
 #endif
 
-#if defined(HAVE_BB10) || defined(ANDROID)
-#define ra_preinited true
-#else
-#define ra_preinited false
-#endif
-
-#if defined(RARCH_CONSOLE) || defined(__QNX__) || defined(ANDROID)
-#define initial_menu_lifecycle_state (1ULL << MODE_LOAD_GAME)
-#else
-#define initial_menu_lifecycle_state (1ULL << MODE_GAME)
-#endif
-
 #if !defined(RARCH_CONSOLE) && !defined(__QNX__) && !defined(ANDROID)
 #define attempt_load_game_push_history true
 #else
@@ -336,11 +324,8 @@ returntype main_entry(signature())
    if (driver.frontend_ctx && driver.frontend_ctx->init)
       driver.frontend_ctx->init(args);
 
-   if (!ra_preinited)
-   {
-      rarch_main_clear_state();
-      rarch_init_msg_queue();
-   }
+   rarch_main_clear_state();
+   rarch_init_msg_queue();
 
    if (driver.frontend_ctx && driver.frontend_ctx->environment_get)
    {
@@ -377,7 +362,7 @@ returntype main_entry(signature())
    if (driver.frontend_ctx && driver.frontend_ctx->process_args)
       driver.frontend_ctx->process_args(argc, argv, args);
 
-   g_extern.lifecycle_state |= initial_menu_lifecycle_state;
+   g_extern.lifecycle_state |= (1ULL << MODE_GAME);
 
    if (attempt_load_game_push_history)
    {
