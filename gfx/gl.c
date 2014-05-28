@@ -2369,19 +2369,23 @@ static bool gl_alive(void *data)
    else if (resize)
       gl->should_resize = true;
 
-   return !gl->quitting;
+   return !quit;
 }
 
 static bool gl_focus(void *data)
 {
    gl_t *gl = (gl_t*)data;
-   return context_has_focus_func(gl);
+   return gl && context_has_focus_func(gl);
 }
 
 static void gl_update_tex_filter_frame(gl_t *gl)
 {
    unsigned i;
    bool smooth = false;
+
+   if (!gl)
+      return;
+
    context_bind_hw_render(gl, false);
    if (!gl_shader_filter_type(gl, 1, &smooth))
       smooth = g_settings.video.smooth;
@@ -2418,6 +2422,10 @@ static void gl_update_tex_filter_frame(gl_t *gl)
 static bool gl_set_shader(void *data, enum rarch_shader_type type, const char *path)
 {
    gl_t *gl = (gl_t*)data;
+
+   if (!gl)
+      return false;
+
    context_bind_hw_render(gl, false);
 
    if (type == RARCH_SHADER_NONE)
@@ -2511,14 +2519,15 @@ static bool gl_set_shader(void *data, enum rarch_shader_type type, const char *p
 
 static void gl_viewport_info(void *data, struct rarch_viewport *vp)
 {
+   unsigned top_y, top_dist;
    gl_t *gl = (gl_t*)data;
    *vp = gl->vp;
    vp->full_width  = gl->win_width;
    vp->full_height = gl->win_height;
 
    // Adjust as GL viewport is bottom-up.
-   unsigned top_y = vp->y + vp->height;
-   unsigned top_dist = gl->win_height - top_y;
+   top_y = vp->y + vp->height;
+   top_dist = gl->win_height - top_y;
    vp->y = top_dist;
 }
 
@@ -2526,6 +2535,9 @@ static void gl_viewport_info(void *data, struct rarch_viewport *vp)
 static bool gl_read_viewport(void *data, uint8_t *buffer)
 {
    gl_t *gl = (gl_t*)data;
+   if (!gl)
+      return false;
+
    context_bind_hw_render(gl, false);
     
    RARCH_PERFORMANCE_INIT(read_viewport);
@@ -2645,6 +2657,9 @@ static bool gl_overlay_load(void *data, const struct texture_image *images, unsi
 {
    unsigned i;
    gl_t *gl = (gl_t*)data;
+   if (!gl)
+      return false;
+
    context_bind_hw_render(gl, false);
 
    gl_free_overlay(gl);
@@ -2686,9 +2701,13 @@ static void gl_overlay_tex_geom(void *data,
       GLfloat x, GLfloat y,
       GLfloat w, GLfloat h)
 {
+   struct gl_overlay_data *o;
    gl_t *gl = (gl_t*)data;
-   struct gl_overlay_data *o = &gl->overlay[image];
 
+   if (!gl)
+      return;
+
+   o = (struct gl_overlay_data*)&gl->overlay[image];
    o->tex_coord[0] = x;     o->tex_coord[1] = y;
    o->tex_coord[2] = x + w; o->tex_coord[3] = y;
    o->tex_coord[4] = x;     o->tex_coord[5] = y + h;
@@ -2700,8 +2719,12 @@ static void gl_overlay_vertex_geom(void *data,
       float x, float y,
       float w, float h)
 {
+   struct gl_overlay_data *o;
    gl_t *gl = (gl_t*)data;
-   struct gl_overlay_data *o = &gl->overlay[image];
+
+   if (!gl)
+      return;
+   o = (struct gl_overlay_data*)&gl->overlay[image];
 
    // Flipped, so we preserve top-down semantics.
    y = 1.0f - y;
@@ -2716,21 +2739,29 @@ static void gl_overlay_vertex_geom(void *data,
 static void gl_overlay_enable(void *data, bool state)
 {
    gl_t *gl = (gl_t*)data;
-   gl->overlay_enable = state;
-   if (gl->ctx_driver->show_mouse && gl->fullscreen)
-      gl->ctx_driver->show_mouse(gl, state);
+
+   if (gl)
+   {
+      gl->overlay_enable = state;
+      if (gl->ctx_driver->show_mouse && gl->fullscreen)
+         gl->ctx_driver->show_mouse(gl, state);
+   }
 }
 
 static void gl_overlay_full_screen(void *data, bool enable)
 {
    gl_t *gl = (gl_t*)data;
-   gl->overlay_full_screen = enable;
+
+   if (gl)
+      gl->overlay_full_screen = enable;
 }
 
 static void gl_overlay_set_alpha(void *data, unsigned image, float mod)
 {
    gl_t *gl = (gl_t*)data;
-   gl->overlay[image].alpha_mod = mod;
+
+   if (gl)
+      gl->overlay[image].alpha_mod = mod;
 }
 
 static void gl_render_overlay(void *data)
@@ -2744,6 +2775,9 @@ static void gl_render_overlay(void *data)
       1.0f, 1.0f, 1.0f, 1.0f,
       1.0f, 1.0f, 1.0f, 1.0f,
    };
+
+   if (!gl)
+      return;
 
    glEnable(GL_BLEND);
 
@@ -2827,8 +2861,12 @@ static void gl_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
    }
 
    g_extern.system.aspect_ratio = aspectratio_lut[aspect_ratio_idx].value;
-   gl->keep_aspect = true;
-   gl->should_resize = true;
+
+   if (gl)
+   {
+      gl->keep_aspect = true;
+      gl->should_resize = true;
+   }
 }
 
 #if defined(HAVE_MENU)
@@ -2837,6 +2875,9 @@ static void gl_set_texture_frame(void *data,
       float alpha)
 {
    gl_t *gl = (gl_t*)data;
+   if (!gl)
+      return;
+
    context_bind_hw_render(gl, false);
 
    if (!gl->rgui_texture)
@@ -2878,20 +2919,30 @@ static void gl_set_texture_frame(void *data,
 static void gl_set_texture_enable(void *data, bool state, bool full_screen)
 {
    gl_t *gl = (gl_t*)data;
-   gl->rgui_texture_enable = state;
-   gl->rgui_texture_full_screen = full_screen;
+
+   if (gl)
+   {
+      gl->rgui_texture_enable = state;
+      gl->rgui_texture_full_screen = full_screen;
+   }
 }
 #endif
 
 static void gl_apply_state_changes(void *data)
 {
    gl_t *gl = (gl_t*)data;
-   gl->should_resize = true;
+
+   if (gl)
+      gl->should_resize = true;
 }
 
 static void gl_set_osd_msg(void *data, const char *msg, void *userdata)
 {
    gl_t *gl = (gl_t*)data;
+
+   if (!gl)
+      return;
+
    context_bind_hw_render(gl, false);
    font_params_t *params = (font_params_t*)userdata;
 
@@ -2903,14 +2954,15 @@ static void gl_set_osd_msg(void *data, const char *msg, void *userdata)
 static void gl_show_mouse(void *data, bool state)
 {
    gl_t *gl = (gl_t*)data;
-   if (gl->ctx_driver->show_mouse)
+
+   if (gl && gl->ctx_driver->show_mouse)
       gl->ctx_driver->show_mouse(gl, state);
 }
 
 static struct gfx_shader *gl_get_current_shader(void *data)
 {
    gl_t *gl = (gl_t*)data;
-   return gl->shader ? gl->shader->get_current_shader() : NULL;
+   return (gl && gl->shader) ? gl->shader->get_current_shader() : NULL;
 }
 
 static const video_poke_interface_t gl_poke_interface = {
