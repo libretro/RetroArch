@@ -138,4 +138,5 @@ void uninit_camera(void)
       if (driver.camera->free)
          driver.camera->free(driver.camera_data);
    }
+   driver.camera_data = NULL;
 }

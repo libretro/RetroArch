@@ -137,4 +137,5 @@ void uninit_location(void)
       if (driver.location->free)
          driver.location->free(driver.location_data);
    }
+   driver.location_data = NULL;
 }

@@ -509,56 +509,13 @@ bool driver_update_system_av_info(const struct retro_system_av_info *info)
 
 void global_init_drivers(void)
 {
-   find_audio_driver();
-   find_input_driver();
-   find_image_driver();
-#ifdef HAVE_MENU
-   find_menu_driver();
-#endif
-   init_video_input();
+   init_drivers_pre();
+   init_drivers();
 }
 
 void global_uninit_drivers(void)
 {
-   if (driver.video && driver.video_data)
-   {
-      driver.video->free(driver.video_data);
-      driver.video_data = NULL;
-   }
-
-   if (driver.input && driver.input_data)
-   {
-      driver.input->free(driver.input_data);
-      driver.input_data = NULL;
-   }
-
-#ifdef HAVE_CAMERA
-   if (driver.camera && driver.camera_data)
-   {
-      if (g_extern.system.camera_callback.deinitialized)
-         g_extern.system.camera_callback.deinitialized();
-      driver.camera->free(driver.camera_data);
-      driver.camera_data = NULL;
-   }
-#endif
-
-#ifdef HAVE_LOCATION
-   if (driver.location && driver.location_data)
-   {
-      if (g_extern.system.location_callback.deinitialized)
-         g_extern.system.location_callback.deinitialized();
-      driver.location->free(driver.location_data);
-      driver.location_data = NULL;
-   }
-#endif
-
-#ifdef HAVE_OSK
-   if (driver.osk && driver.osk_data)
-   {
-      driver.osk->free(driver.osk_data);
-      driver.osk_data = NULL;
-   }
-#endif
+   uninit_drivers();
 }
 
 void init_drivers(void)
