@@ -480,31 +480,6 @@ static void *gx_init(const video_info_t *video,
 #ifdef GX_OPTS
    struct __gx_regdef *__gx = (struct __gx_regdef*)__gxregs;
 #endif
-   g_vsync = video->vsync;
-
-   //TODO/FIXME - should probably be removed - we're going to do full teardown/setup now
-   if (driver.video_data)
-   {
-      gx_video_t *gx = (gx_video_t*)driver.video_data;
-
-      if (gx->scale != video->input_scale || gx->rgb32 != video->rgb32)
-      {
-         RARCH_LOG("[GX] reallocate texture\n");
-         free(g_tex.data);
-         g_tex.data = memalign(32, RARCH_SCALE_BASE * RARCH_SCALE_BASE * video->input_scale * video->input_scale * (video->rgb32 ? 4 : 2));
-
-         if (!g_tex.data)
-         {
-            RARCH_ERR("[GX] Error allocating video texture\n");
-            exit(1);
-         }
-      }
-
-      gx->rgb32 = video->rgb32;
-      gx->scale = video->input_scale;
-      gx->should_resize = true;
-      return driver.video_data;
-   }
 
    gx_video_t *gx = (gx_video_t*)calloc(1, sizeof(gx_video_t));
    if (!gx)
@@ -516,6 +491,7 @@ static void *gx_init(const video_info_t *video,
 
    VIDEO_Init();
    GX_Init(gx_fifo, sizeof(gx_fifo));
+   g_vsync = video->vsync;
 
    setup_video_mode(gx);
    init_vtx(gx);
@@ -1029,12 +1005,10 @@ static bool gx_focus(void *data)
 
 static void gx_free(void *data)
 {
-   (void)data;
-#ifdef HAVE_OVERLAY
    gx_video_t *gx = (gx_video_t*)driver.video_data;
 
-   if (gx)
-      gx_free_overlay(gx);
+#ifdef HAVE_OVERLAY
+   gx_free_overlay(gx);
 #endif
 
    GX_DrawDone();
@@ -1043,6 +1017,8 @@ static void gx_free(void *data)
    VIDEO_SetBlack(true);
    VIDEO_Flush();
    VIDEO_WaitVSync();
+
+   free(data);
 }
 
 static void gx_set_rotation(void *data, unsigned orientation)
