@@ -242,7 +242,7 @@ static int16_t psp_input_state(void *data, const struct retro_keybind **binds,
 
 static void psp_input_free_input(void *data)
 {
-   (void)data;
+   free(data);
 }
 
 static void psp_input_set_keybinds(void *data, unsigned device, unsigned port,

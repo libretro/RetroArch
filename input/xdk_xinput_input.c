@@ -356,7 +356,7 @@ static int16_t xdk_input_state(void *data, const struct retro_keybind **binds,
 
 static void xdk_input_free_input(void *data)
 {
-   (void)data;
+   free(data);
 }
 
 static void *xdk_input_init(void)
