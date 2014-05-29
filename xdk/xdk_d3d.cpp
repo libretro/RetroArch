@@ -352,6 +352,10 @@ static bool d3d_init_base(void *data, const video_info_t *info)
       return false;
    }
 
+   RARCH_LOG("d3d is NULL: %d\n", d3d == NULL);
+   RARCH_LOG("d3d g_pD3D is NULL: %d\n", d3d->g_pD3D == NULL);
+   RARCH_LOG("d3d->dev is NULL: %d\n", d3d->dev == NULL);
+
    if (FAILED(d3d->d3d_err = d3d->g_pD3D->CreateDevice(
             d3d->cur_mon_id,
             D3DDEVTYPE_HAL,

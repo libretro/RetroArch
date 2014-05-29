@@ -323,17 +323,6 @@ static bool gfx_ctx_d3d_init(void *data)
 static void gfx_ctx_d3d_destroy(void *data)
 {
    (void)data;
-#ifdef _XBOX
-   d3d_video_t * d3d = (d3d_video_t*)data;
-
-   if (d3d->dev)
-      d3d->dev->Release();
-   d3d->dev = 0;
-
-   if (d3d->g_pD3D)
-      d3d->g_pD3D->Release();
-   d3d->g_pD3D = 0;
-#endif
 }
 
 static void gfx_ctx_d3d_input_driver(void *data, const input_driver_t **input, void **input_data)
