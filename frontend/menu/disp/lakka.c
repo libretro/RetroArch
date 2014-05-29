@@ -738,7 +738,7 @@ static void lakka_frame(void *data)
    if (!rgui || !gl)
       return;
 
-   update_tweens((float)rgui->delta/10000);
+   update_tweens((float)rgui->delta/10000000000);
 
    glViewport(0, 0, gl->win_width, gl->win_height);
 
