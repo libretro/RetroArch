@@ -320,7 +320,7 @@ static void *eq_init(const struct dspfilter_info *info,
    eq->save     = (float*)calloc(    size, 2 * sizeof(*eq->save));
    eq->block    = (float*)calloc(2 * size, 2 * sizeof(*eq->block));
    eq->fftblock = (fft_complex_t*)calloc(2 * size, sizeof(*eq->fftblock));
-   eq->filter   = (fft_complex_t*)calloc(2 * size, sizeof(*eq->filter));
+   eq->filter   = (fft_complex_t*)calloc(2 * size + 1, sizeof(*eq->filter));
 
    // Use an FFT which is twice the block size with zero-padding
    // to make circular convolution => proper convolution.
