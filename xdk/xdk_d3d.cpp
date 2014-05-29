@@ -100,26 +100,30 @@ static void d3d_deinitialize(void *data)
 static void d3d_free(void *data)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
-
-   if (!d3d)
-      return;
-
    d3d_deinitialize(d3d);
 #ifdef HAVE_OVERLAY
-   // TODO
+   //d3d_free_overlays(d3d);
 #endif
 #ifdef HAVE_MENU
-   // TODO?
+   //d3d_free_overlay(d3d, d3d->rgui);
 #endif
    if (d3d->dev)
       d3d->dev->Release();
-   d3d->dev = 0;
    if (d3d->g_pD3D)
       d3d->g_pD3D->Release();
-   d3d->g_pD3D = 0;
+
+#ifdef HAVE_MONITOR
+   Monitor::last_hm = MonitorFromWindow(d3d->hWnd, MONITOR_DEFAULTTONEAREST);
+   DestroyWindow(d3d->hWnd);
+#endif
+
 
    if (d3d)
       free(d3d);
+
+#ifndef _XBOX
+   UnregisterClass("RetroArch", GetModuleHandle(NULL));
+#endif
 }
 
 static void d3d_set_viewport(void *data, int x, int y, unsigned width, unsigned height)
@@ -203,7 +207,7 @@ static void renderchain_set_mvp(void *data,
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
-#if defined(_XBOX360) && defined(HAVE_HLSL)
+#if defined(_XBOX360) && defined(HAVE_SHADERS)
    hlsl_set_proj_matrix(XMMatrixRotationZ(rotation * (M_PI / 2.0)));
    if (d3d->shader && d3d->shader->set_mvp)
       d3d->shader->set_mvp(d3d, NULL);
@@ -247,16 +251,32 @@ static bool d3d_set_shader(void *data, enum rarch_shader_type type, const char *
    return true;
 }
 
-static void d3d_init_textures(void *data, const video_info_t *video)
+static bool renderchain_add_pass(void *data, const video_info_t *info)
 {
    HRESULT ret;
    d3d_video_t *d3d = (d3d_video_t*)data;
    D3DVIEWPORT vp = {0};
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
 
+   d3d->last_width  = 0;
+   d3d->last_height = 0;
+
+   ret = d3dr->CreateVertexBuffer(
+               4 * sizeof(DrawVerticeFormats), 
+               D3DUSAGE_WRITEONLY,
+               D3DFVF_CUSTOMVERTEX,
+               D3DPOOL_MANAGED,
+               &d3d->vertex_buf
+#ifndef _XBOX1
+               ,NULL
+#endif
+               );
+   if (FAILED(ret))
+      return false;
+
    ret = d3dr->CreateTexture(d3d->tex_w, d3d->tex_h, 1,
                0,
-               video->rgb32 ? D3DFMT_LIN_X8R8G8B8 : D3DFMT_LIN_R5G6B5,
+               info->rgb32 ? D3DFMT_LIN_X8R8G8B8 : D3DFMT_LIN_R5G6B5,
                D3DPOOL_DEFAULT,
                &d3d->tex
 #ifndef _XBOX1
@@ -264,24 +284,15 @@ static void d3d_init_textures(void *data, const video_info_t *video)
 #endif
                );
    if (FAILED(ret))
-      return;
+      return false;
 
-   // TODO - change into renderchain_init
-   d3d->pixel_size   = video->rgb32 ? 4 : 2;
-   d3d->last_width = d3d->tex_w;
-   d3d->last_height = d3d->tex_h;
-
-#ifdef _XBOX1
-   // TODO - can this go?
-   d3dr->SetRenderState(D3DRS_LIGHTING, FALSE);
-#endif
+   d3dr->SetTexture(0, d3d->tex);
+   RD3DDevice_SetSamplerState_AddressU(d3dr, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
+   RD3DDevice_SetSamplerState_AddressV(d3dr, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
+   d3dr->SetTexture(0, NULL);
 
    vp.Width  = d3d->screen_width;
    vp.Height = d3d->screen_height;
-
-   // TODO - can this go?
-   d3dr->SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
-   d3dr->SetRenderState(D3DRS_ZENABLE, FALSE);
 
    vp.MinZ   = 0.0f;
    vp.MaxZ   = 1.0f;
@@ -292,6 +303,8 @@ static void d3d_init_textures(void *data, const video_info_t *video)
 
    if (g_extern.console.screen.viewports.custom_vp.height == 0)
       g_extern.console.screen.viewports.custom_vp.height = vp.Height;
+
+   return true;
 }
 
 static const gfx_ctx_driver_t *d3d_get_context(void *data)
@@ -351,32 +364,52 @@ static bool d3d_init_base(void *data, const video_info_t *info)
    return true;
 }
 
-static bool d3d_init_chain(void *data, const video_info_t *info)
+bool renderchain_init(void *data, const video_info_t *video_info,
+      LPDIRECT3DDEVICE dev_,
+      /*CGcontext cgCtx_,*/
+      const D3DVIEWPORT *final_viewport_
+      /*, const LinkInfo *info, PixelFormat fmt*/)
 {
-   HRESULT ret;
+   //TODO/FIXME - horribly incomplete right now
+#if 0
+   renderchain_t *chain = (renderchain_t*)data;
+#else
+   d3d_video_t *chain = (d3d_video_t*)data;
+#endif
+
+   if (!chain)
+      return false;
+
+   // TODO - give chain its own state
+   chain->pixel_size   = video_info->rgb32 ? 4 : 2;
+
+   return true;
+}
+
+static bool d3d_init_chain(void *data, const video_info_t *video_info)
+{
    d3d_video_t *d3d = (d3d_video_t*)data;
    LPDIRECT3DDEVICE d3dr = d3d->dev;
 
    //TODO - change to link_info
-   d3d->tex_w                = RARCH_SCALE_BASE * info->input_scale;
-   d3d->tex_h                = RARCH_SCALE_BASE * info->input_scale;
+   d3d->tex_w = d3d->tex_h = video_info->input_scale * RARCH_SCALE_BASE;
 
    d3d_deinit_chain(d3d);
+   //TODO - new renderchain
 
-   ret = d3dr->CreateVertexBuffer(
-               4 * sizeof(DrawVerticeFormats), 
-               D3DUSAGE_WRITEONLY,
-               D3DFVF_CUSTOMVERTEX,
-               D3DPOOL_MANAGED,
-               &d3d->vertex_buf
-#ifndef _XBOX1
-               ,NULL
-#endif
-               );
-   if (FAILED(ret))
+   if (!renderchain_init(d3d/*->chain*/, &d3d->video_info, d3dr, /*d3d->cgCtx,*/ &d3d->final_viewport/*&link_info, d3d->video_info.rgb32 ? ARGB : RGB565*/))
+   {
+      RARCH_ERR("[D3D]: Failed to init render chain.\n");
       return false;
+   }
 
-   d3d_init_textures(d3d, info);
+   //TODO - add for loop with passes
+   //TODO - d3d should become d3d->chain and video_info should become &link_info
+   if (!renderchain_add_pass(d3d, video_info))
+   {
+      RARCH_ERR("[D3D]: Failed to add pass.\n");
+      return false;
+   }
 
 #if defined(_XBOX1)
    const DrawVerticeFormats init_verts[] = {
@@ -467,7 +500,7 @@ static bool d3d_initialize(void *data, const video_info_t *info)
 
    d3d_calculate_rect(d3d, d3d->screen_width, d3d->screen_height, info->force_aspect,g_extern.system.aspect_ratio);
 
-#ifdef HAVE_HLSL
+#ifdef HAVE_SHADERS
    if (!d3d_init_shader(d3d))
    {
       RARCH_ERR("Failed to initialize HLSL.\n");
@@ -511,21 +544,89 @@ static bool d3d_construct(void *data, const video_info_t *info, const input_driv
                           void **input_data)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
-   unsigned full_x, full_y;
-
    d3d->should_resize = false;
+#ifndef _XBOX
+   gfx_set_dwm();
+#endif
+
+#ifdef HAVE_WINDOW
+   memset(&d3d->windowClass, 0, sizeof(d3d->windowClass));
+   d3d->windowClass.cbSize        = sizeof(d3d->windowClass);
+   d3d->windowClass.style         = CS_HREDRAW | CS_VREDRAW;
+   d3d->windowClass.lpfnWndProc   = WindowProc;
+   d3d->windowClass.hInstance     = NULL;
+   d3d->windowClass.hCursor       = LoadCursor(NULL, IDC_ARROW);
+   d3d->windowClass.lpszClassName = "RetroArch";
+   d3d->windowClass.hIcon = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_ICON));
+   d3d->windowClass.hIconSm = (HICON)LoadImage(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_ICON), IMAGE_ICON, 16, 16, 0);
+   if (!info->fullscreen)
+      d3d->windowClass.hbrBackground = (HBRUSH)COLOR_WINDOW;
+
+   RegisterClassEx(&d3d->windowClass);
+#endif
+
+#ifdef HAVE_MONITOR
+   RECT mon_rect = d3d_monitor_rect(d3d);
+
+   bool windowed_full = g_settings.video.windowed_fullscreen;
+
+   unsigned full_x = (windowed_full || info->width  == 0) ? (mon_rect.right  - mon_rect.left) : info->width;
+   unsigned full_y = (windowed_full || info->height == 0) ? (mon_rect.bottom - mon_rect.top)  : info->height;
+   RARCH_LOG("[D3D]: Monitor size: %dx%d.\n", (int)(mon_rect.right  - mon_rect.left), (int)(mon_rect.bottom - mon_rect.top));
+
+   d3d->screen_width  = info->fullscreen ? full_x : info->width;
+   d3d->screen_height = info->fullscreen ? full_y : info->height;
+#else
+   unsigned full_x, full_y;
 
    if (d3d->ctx_driver && d3d->ctx_driver->get_video_size)
       d3d->ctx_driver->get_video_size(d3d, &full_x, &full_y);
 
    d3d->screen_width  = info->fullscreen ? full_x : info->width;
    d3d->screen_height = info->fullscreen ? full_y : info->height;
+#endif
+
+   unsigned win_width  = d3d->screen_width;
+   unsigned win_height = d3d->screen_height;
+
+#ifdef HAVE_WINDOW
+   if (!info->fullscreen)
+   {
+      RECT rect   = {0};
+      rect.right  = d3d->screen_width;
+      rect.bottom = d3d->screen_height;
+      AdjustWindowRect(&rect, WS_OVERLAPPEDWINDOW, FALSE);
+      win_width  = rect.right - rect.left;
+      win_height = rect.bottom - rect.top;
+   }
+
+   char buffer[128];
+   gfx_get_fps(buffer, sizeof(buffer), NULL, 0);
+   std::string title = buffer;
+   title += " || Direct3D";
+
+   d3d->hWnd = CreateWindowEx(0, "RetroArch", title.c_str(),
+         info->fullscreen ?
+         (WS_EX_TOPMOST | WS_POPUP) : WS_OVERLAPPEDWINDOW,
+         info->fullscreen ? mon_rect.left : CW_USEDEFAULT,
+         info->fullscreen ? mon_rect.top  : CW_USEDEFAULT,
+         win_width, win_height,
+         NULL, NULL, NULL, d3d);
+#endif
+
+#ifdef HAVE_WINDOW
+   ShowWindow(d3d->hWnd, SW_RESTORE);
+   UpdateWindow(d3d->hWnd);
+   SetForegroundWindow(d3d->hWnd);
+   SetFocus(d3d->hWnd);
+#endif
 
    d3d->video_info = *info;
    if (!d3d_initialize(data, &d3d->video_info))
       return false;
 
-   if (input && input_data)
+   if (input && input_data &&
+      d3d->ctx_driver && d3d->ctx_driver->input_driver)
       d3d->ctx_driver->input_driver(d3d, input, input_data);
 
    RARCH_LOG("[D3D]: Init complete.\n");
