@@ -67,15 +67,7 @@ static bool d3d_init_shader(void *data)
 
 static void d3d_free(void *data)
 {
-#ifdef RARCH_CONSOLE
-   if (driver.video_data)
-      return;
-#endif
-
    d3d_video_t *d3d = (d3d_video_t*)data;
-
-   if (!d3d)
-      return;
 
    if (d3d->font_ctx && d3d->font_ctx->deinit)
       d3d->font_ctx->deinit(d3d);
@@ -89,7 +81,7 @@ static void d3d_free(void *data)
       d3d->ctx_driver->destroy(d3d);
    d3d->ctx_driver = NULL;
 
-   free(d3d);
+   free(data);
 }
 
 static void d3d_set_viewport(void *data, int x, int y, unsigned width, unsigned height)
