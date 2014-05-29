@@ -482,6 +482,7 @@ static void *gx_init(const video_info_t *video,
 #endif
    g_vsync = video->vsync;
 
+   //TODO/FIXME - should probably be removed - we're going to do full teardown/setup now
    if (driver.video_data)
    {
       gx_video_t *gx = (gx_video_t*)driver.video_data;
@@ -1035,6 +1036,13 @@ static void gx_free(void *data)
    if (gx)
       gx_free_overlay(gx);
 #endif
+
+   GX_DrawDone();
+   GX_AbortFrame();
+   GX_Flush();
+   VIDEO_SetBlack(true);
+   VIDEO_Flush();
+   VIDEO_WaitVSync();
 }
 
 static void gx_set_rotation(void *data, unsigned orientation)

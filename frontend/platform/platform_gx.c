@@ -324,20 +324,6 @@ static void frontend_gx_exitspawn(void)
 #endif
 }
 
-static void frontend_gx_deinit(void *data)
-{
-   (void)data;
-#ifndef IS_SALAMANDER
-   // we never init GX/VIDEO subsystems in salamander
-   GX_DrawDone();
-   GX_AbortFrame();
-   GX_Flush();
-   VIDEO_SetBlack(true);
-   VIDEO_Flush();
-   VIDEO_WaitVSync();
-#endif
-}
-
 static int frontend_gx_process_args(int argc, char *argv[], void *args)
 {
    int ret = 0;
@@ -381,7 +367,7 @@ static int frontend_gx_get_rating(void)
 const frontend_ctx_driver_t frontend_ctx_gx = {
    frontend_gx_get_environment_settings, /* get_environment_settings */
    frontend_gx_init,                /* init */
-   frontend_gx_deinit,              /* deinit */
+   NULL,                            /* deinit */
    frontend_gx_exitspawn,           /* exitspawn */
    frontend_gx_process_args,        /* process_args */
    NULL,                            /* process_events */
