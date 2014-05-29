@@ -186,7 +186,7 @@ static void renderchain_set_final_viewport(void *data, const D3DVIEWPORT *final_
 {
    //renderchain_t *chain = (renderchain_t*)data;
    d3d_video_t *chain = (d3d_video_t*)data;
-   chain->final_viewport = (D3DVIEWPORT*)final_viewport;
+   chain->final_viewport = *final_viewport;
 }
 
 static void renderchain_set_mvp(void *data,
@@ -255,16 +255,17 @@ static void d3d_init_textures(void *data, const video_info_t *video)
       d3d->tex->Release();
    d3d->tex = NULL;
 
-   if (FAILED(d3dr->CreateTexture(d3d->tex_w, d3d->tex_h, 1,
+   ret = d3dr->CreateTexture(d3d->tex_w, d3d->tex_h, 1,
                0,
                video->rgb32 ? D3DFMT_LIN_X8R8G8B8 : D3DFMT_LIN_R5G6B5,
                D3DPOOL_DEFAULT,
                &d3d->tex
 #ifndef _XBOX1
-               , NULL
+               ,NULL
 #endif
-               )))
-      return false;
+               );
+   if (FAILED(ret))
+      return;
 
    d3d->last_width = d3d->tex_w;
    d3d->last_height = d3d->tex_h;
@@ -283,7 +284,7 @@ static void d3d_init_textures(void *data, const video_info_t *video)
 
    vp.MinZ   = 0.0f;
    vp.MaxZ   = 1.0f;
-   RD3DDevice_SetViewport(d3d->dev, &vp);
+   RD3DDevice_SetViewport(d3dr, &vp);
 
    if (g_extern.console.screen.viewports.custom_vp.width == 0)
       g_extern.console.screen.viewports.custom_vp.width = vp.Width;
@@ -342,8 +343,7 @@ static bool d3d_init_chain(void *data, const video_info_t *info)
    d3d_video_t *d3d = (d3d_video_t*)data;
    LPDIRECT3DDEVICE d3dr = d3d->dev;
 
-
-   if (FAILED(d3dr->CreateVertexBuffer(
+   ret = d3dr->CreateVertexBuffer(
                4 * sizeof(DrawVerticeFormats), 
                D3DUSAGE_WRITEONLY,
                D3DFVF_CUSTOMVERTEX,
@@ -352,7 +352,8 @@ static bool d3d_init_chain(void *data, const video_info_t *info)
 #ifndef _XBOX1
                ,NULL
 #endif
-               )))
+               );
+   if (FAILED(ret))
       return false;
 
    d3d_init_textures(d3d, info);
