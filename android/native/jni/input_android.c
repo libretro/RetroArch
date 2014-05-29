@@ -2025,7 +2025,7 @@ static bool android_input_key_pressed(void *data, int key)
 
 static void android_input_free_input(void *data)
 {
-   (void)data;
+   free(data);
 }
 
 static uint64_t android_input_get_capabilities(void *data)
