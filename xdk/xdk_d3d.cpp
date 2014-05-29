@@ -210,6 +210,13 @@ static void renderchain_set_final_viewport(void *data, const D3DVIEWPORT *final_
    chain->final_viewport = *final_viewport;
 }
 
+static _inline void renderchain_set_viewport(void *data, D3DVIEWPORT *vp)
+{
+   d3d_video_t *chain = (d3d_video_t*)data;
+   LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)chain->dev;
+   RD3DDevice_SetViewport(d3dr, vp);
+}
+
 static void renderchain_set_mvp(void *data,
       unsigned vp_width, unsigned vp_height,
       unsigned rotation)
@@ -879,35 +886,51 @@ static void renderchain_set_vertices(void *data, unsigned pass,
          d3d->screen_height);
 }
 
+static void renderchain_start_render(void *data)
+{
+#if 0
+   renderchain_t *chain = (renderchain_t*)data;
+
+   chain->passes[0].tex         = chain->prev.tex[chain->prev.ptr];
+   chain->passes[0].vertex_buf  = chain->prev.vertex_buf[chain->prev.ptr];
+   chain->passes[0].last_width  = chain->prev.last_width[chain->prev.ptr];
+   chain->passes[0].last_height = chain->prev.last_height[chain->prev.ptr];
+#else
+   d3d_video_t *chain = (d3d_video_t*)data;
+#endif
+}
+
+void renderchain_end_render(void *data)
+{
+#if 0
+   renderchain_t *chain = (renderchain_t*)data;
+   chain->prev.last_width[chain->prev.ptr]  = chain->passes[0].last_width;
+   chain->prev.last_height[chain->prev.ptr] = chain->passes[0].last_height;
+   chain->prev.ptr                          = (chain->prev.ptr + 1) & TEXTURESMASK;
+#else
+   d3d_video_t *chain = (d3d_video_t*)data;
+#endif
+}
+
 static void renderchain_render_pass(void *data, const void *frame, unsigned width, unsigned height,
                         unsigned pitch, unsigned rotation)
 {
-#ifdef _XBOX360
-   DWORD fetchConstant;
-   UINT64 pendingMask3;
-#endif
-   d3d_video_t *d3d = (d3d_video_t*)data;
-   LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
-#ifdef _XBOX1
-   d3dr->SetFlickerFilter(g_extern.console.screen.flicker_filter_index);
-   d3dr->SetSoftDisplayFilter(g_extern.lifecycle_state & (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE));
-#endif
-   renderchain_blit_to_texture(d3d, frame, width, height, pitch);
-   renderchain_set_vertices(d3d, 1, width, height);
+
+   d3d_video_t *chain = (d3d_video_t*)data;
+   LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)chain->dev;
 
 #ifdef _XBOX
    if (g_extern.frame_count)
    {
 #ifdef _XBOX1
-      d3dr->SwitchTexture(0, d3d->tex);
+      d3dr->SwitchTexture(0, chain->tex);
 #elif defined _XBOX360
-      d3dr->SetTextureFetchConstant(0, d3d->tex);
+      d3dr->SetTextureFetchConstant(0, chain->tex);
 #endif
    }
    else
 #endif
-      if (d3d->tex) { RD3DDevice_SetTexture(d3dr, 0, d3d->tex); }
-   RD3DDevice_SetViewport(d3d->dev, &d3d->final_viewport);
+      if (chain->tex) { RD3DDevice_SetTexture(d3dr, 0, chain->tex); }
    // TODO - use translate_filter on last param - and create pass->filter
    RD3DDevice_SetSamplerState_MinFilter(d3dr, 0, g_settings.video.smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT);
    RD3DDevice_SetSamplerState_MagFilter(d3dr, 0, g_settings.video.smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT);
@@ -918,10 +941,10 @@ static void renderchain_render_pass(void *data, const void *frame, unsigned widt
 
 #if defined(_XBOX1)
    RD3DDevice_SetVertexShader(d3dr, D3DFVF_XYZ | D3DFVF_TEX1);
-   IDirect3DDevice8_SetStreamSource(d3dr, 0, d3d->vertex_buf, sizeof(DrawVerticeFormats));
+   IDirect3DDevice8_SetStreamSource(d3dr, 0, chain->vertex_buf, sizeof(DrawVerticeFormats));
 #elif defined(_XBOX360)
    D3DDevice_SetVertexDeclaration(d3dr, d3d->v_decl);
-   D3DDevice_SetStreamSource_Inline(d3dr, 0, d3d->vertex_buf, 0, sizeof(DrawVerticeFormats));
+   D3DDevice_SetStreamSource_Inline(d3dr, 0, chain->vertex_buf, 0, sizeof(DrawVerticeFormats));
 #endif
 
 #ifdef _XBOX
@@ -933,6 +956,44 @@ static void renderchain_render_pass(void *data, const void *frame, unsigned widt
       d3dr->EndScene();
    }
 #endif
+}
+
+static bool renderchain_render(void *chain_data, const void *data,
+                               unsigned width, unsigned height, unsigned pitch, unsigned rotation)
+{
+#ifdef _XBOX360
+   DWORD fetchConstant;
+   UINT64 pendingMask3;
+#endif
+   d3d_video_t *chain = (d3d_video_t*)chain_data;
+   LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)chain->dev;
+   renderchain_start_render(chain);
+
+   unsigned current_width = width;
+   unsigned current_height = height;
+   unsigned out_width = 0;
+   unsigned out_height = 0;
+   //renderchain_convert_geometry(chain, &chain->passes[0].info, out_width, out_height, current_width, current_height, chain->final_viewport);
+#ifdef _XBOX1
+   d3dr->SetFlickerFilter(g_extern.console.screen.flicker_filter_index);
+   d3dr->SetSoftDisplayFilter(g_extern.lifecycle_state & (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE));
+#endif
+   renderchain_blit_to_texture(chain, data, width, height, pitch);
+
+   // TODO - for loop going over passes
+
+   // Final pass
+   renderchain_set_viewport(chain, &chain->final_viewport);
+   renderchain_set_vertices(chain, /*last_pass*/1, width, height);
+   renderchain_render_pass(chain, data, current_width, current_height, pitch, rotation);
+
+   // TODO - replace with chain->frame_count
+   g_extern.frame_count++;
+
+   renderchain_end_render(chain);
+   renderchain_set_shader_params(chain, /*pass*/1, width, height, chain->tex_w, chain->tex_h, chain->screen_width, chain->screen_height);
+   renderchain_set_mvp(chain, chain->final_viewport.Width, chain->final_viewport.Height, chain->dev_rotation);
+   return true;
 }
 
 static bool d3d_frame(void *data, const void *frame,
@@ -991,12 +1052,11 @@ static bool d3d_frame(void *data, const void *frame,
       d3dr->Clear(0, 0, D3DCLEAR_TARGET, 0, 1, 0);
    }
 
-   // TODO - change into renderchain_render and refactor renderchain_render_pass
-   renderchain_render_pass(d3d, frame, width, height, pitch, d3d->dev_rotation);
-
-   g_extern.frame_count++;
-
-   renderchain_set_mvp(d3d, d3d->screen_width, d3d->screen_height, d3d->dev_rotation);
+   if (!renderchain_render(d3d, frame, width, height, pitch, d3d->dev_rotation))
+   {
+      RARCH_ERR("[D3D]: Failed to render scene.\n");
+      return false;
+   }
 
 #ifdef HAVE_MENU
    if (g_extern.lifecycle_state & (1ULL << MODE_MENU) && driver.menu_ctx && driver.menu_ctx->frame)
