@@ -55,7 +55,9 @@ bool renderchain_init(void *data, const video_info_t *video_info,
       return false;
 
    chain->dev = dev_;
+#ifdef HAVE_CG
    chain->cgCtx = cgCtx_;
+#endif
    chain->video_info = video_info;
    chain->tracker = NULL;
    chain->final_viewport =  (D3DVIEWPORT*)final_viewport_;
@@ -598,11 +600,15 @@ void renderchain_render_pass(void *data, Pass &pass, unsigned pass_index)
    renderchain_bind_luts(chain, pass);
    renderchain_bind_tracker(chain, pass, pass_index);
 
+#ifdef _XBOX
+   d3dr->DrawPrimitive(D3DPT_TRIANGLESTRIP, 0, 2);
+#else
    if (SUCCEEDED(d3dr->BeginScene()))
    {
       d3dr->DrawPrimitive(D3DPT_TRIANGLESTRIP, 0, 2);
       d3dr->EndScene();
    }
+#endif
 
    // So we don't render with linear filter into render targets,
    // which apparently looked odd (too blurry).

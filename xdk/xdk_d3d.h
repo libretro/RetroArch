@@ -56,17 +56,13 @@ typedef struct d3d_video
    bool quitting;
    bool vsync;
    bool needs_restore;
-   unsigned last_width;
-   unsigned last_height;
    unsigned screen_width;
    unsigned screen_height;
    unsigned dev_rotation;
-   unsigned tex_w, tex_h;
    LPDIRECT3D g_pD3D;
    LPDIRECT3DDEVICE dev;
-   LPDIRECT3DVERTEXBUFFER vertex_buf;
-   LPDIRECT3DTEXTURE lpTexture;
 #ifdef HAVE_D3D9
+   LPDIRECT3DSURFACE lpSurface;
    LPDIRECT3DTEXTURE lpTexture_ot_as16srgb;
    LPDIRECT3DTEXTURE lpTexture_ot;
    LPDIRECT3DVERTEXDECLARATION v_decl;
@@ -76,13 +72,19 @@ typedef struct d3d_video
    bool rgui_texture_full_screen;
 #endif
    const d3d_font_renderer_t *font_ctx;
-   D3DFORMAT internal_fmt;
-   D3DFORMAT texture_fmt;
    D3DVIEWPORT final_viewport;
-   unsigned base_size;
-   LPDIRECT3DSURFACE lpSurface;
    video_info_t video_info;
    HRESULT d3d_err;
+
+   // RENDERCHAIN PASS
+   unsigned pixel_size;
+   LPDIRECT3DTEXTURE tex;
+   LPDIRECT3DVERTEXBUFFER vertex_buf;
+   unsigned last_width;
+   unsigned last_height;
+   // RENDERCHAIN PASS -> INFO
+   unsigned tex_w;
+   unsigned tex_h;
 } d3d_video_t;
 
 extern void d3d_make_d3dpp(void *data, const video_info_t *info, D3DPRESENT_PARAMETERS *d3dpp);

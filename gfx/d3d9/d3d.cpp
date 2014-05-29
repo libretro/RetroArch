@@ -694,16 +694,21 @@ static bool d3d_frame(void *data, const void *frame,
       unsigned width, unsigned height, unsigned pitch,
       const char *msg)
 {
+   D3DVIEWPORT screen_vp;
    d3d_video_t *d3d = (d3d_video_t*)data;
+   LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
 
   if (!frame)
       return true;
 
    RARCH_PERFORMANCE_INIT(d3d_frame);
    RARCH_PERFORMANCE_START(d3d_frame);
+
+#ifndef _XBOX
    // We cannot recover in fullscreen.
    if (d3d->needs_restore && IsIconic(d3d->hWnd))
       return true;
+#endif
 
    if (d3d->needs_restore && !d3d_restore(d3d))
    {
@@ -721,26 +726,25 @@ static bool d3d_frame(void *data, const void *frame,
    }
 
    // render_chain() only clears out viewport, clear out everything.
-   D3DVIEWPORT screen_vp;
    screen_vp.X = 0;
    screen_vp.Y = 0;
    screen_vp.MinZ = 0;
    screen_vp.MaxZ = 1;
    screen_vp.Width = d3d->screen_width;
    screen_vp.Height = d3d->screen_height;
-   d3d->dev->SetViewport(&screen_vp);
-   d3d->dev->Clear(0, 0, D3DCLEAR_TARGET, 0, 1, 0);
+   d3dr->SetViewport(&screen_vp);
+   d3dr->Clear(0, 0, D3DCLEAR_TARGET, 0, 1, 0);
 
    // Insert black frame first, so we can screenshot, etc.
    if (g_settings.video.black_frame_insertion)
    {
-      if (d3d->dev->Present(NULL, NULL, NULL, NULL) != D3D_OK)
+      if (d3dr->Present(NULL, NULL, NULL, NULL) != D3D_OK)
       {
          RARCH_ERR("[D3D]: Present() failed.\n");
          d3d->needs_restore = true;
          return true;
       }
-      d3d->dev->Clear(0, 0, D3DCLEAR_TARGET, 0, 1, 0);
+      d3dr->Clear(0, 0, D3DCLEAR_TARGET, 0, 1, 0);
    }
 
    if (!renderchain_render(d3d->chain, frame, width, height, pitch, d3d->dev_rotation))
@@ -749,7 +753,7 @@ static bool d3d_frame(void *data, const void *frame,
       return false;
    }
 
-   if (d3d->font_ctx && d3d->font_ctx->render_msg)
+   if (d3d->font_ctx && d3d->font_ctx->render_msg && msg)
    {
       font_params_t font_parms = {0};
 #ifdef _XBOX
@@ -908,7 +912,7 @@ static void d3d_viewport_info(void *data, struct rarch_viewport *vp)
 static bool d3d_read_viewport(void *data, uint8_t *buffer)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
-   LPDIRECT3DDEVICE d3dr = d3d->dev;
+   LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
 
    RARCH_PERFORMANCE_INIT(d3d_read_viewport);
    RARCH_PERFORMANCE_START(d3d_read_viewport);
@@ -1137,7 +1141,6 @@ static void d3d_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
    g_extern.system.aspect_ratio = aspectratio_lut[aspect_ratio_idx].value;
    d3d->video_info.force_aspect = true;
    d3d->should_resize = true;
-   return;
 }
 
 static void d3d_apply_state_changes(void *data)
@@ -1154,7 +1157,7 @@ static void d3d_set_osd_msg(void *data, const char *msg, void *userdata)
    if (params)
       d3d_set_font_rect(d3d, params);
 
-   if (d3d->font_ctx && d3d->font_ctx->render_msg)
+   if (d3d && d3d->font_ctx && d3d->font_ctx->render_msg)
       d3d->font_ctx->render_msg(d3d, msg, params);
 }
 
