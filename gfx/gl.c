@@ -2369,7 +2369,7 @@ static bool gl_alive(void *data)
    else if (resize)
       gl->should_resize = true;
 
-   return !quit;
+   return !gl->quitting;
 }
 
 static bool gl_focus(void *data)
