@@ -369,14 +369,21 @@ static int16_t gx_input_state(void *data, const struct retro_keybind **binds,
 static void gx_input_free_input(void *data)
 {
    unsigned i;
-   (void)data;
-   (void)i;
-#ifdef HAVE_LIBSICKSAXIS
-   for (i = 0; i < MAX_PADS; i++)
-      ss_close(&dev[i]);
 
-   USB_Deinitialize();
+   for (i = 0; i < MAX_PADS; i++)
+   {
+#ifdef HAVE_LIBSICKSAXIS
+      ss_close(&dev[i]);
+      USB_Deinitialize();
 #endif
+
+#ifdef HW_RVL
+      WPAD_Flush(i);
+      WPAD_Disconnect(i);
+#endif
+   }
+
+   free(data);
 }
 
 
