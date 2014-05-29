@@ -59,6 +59,7 @@ typedef struct d3d_video
    unsigned screen_width;
    unsigned screen_height;
    unsigned dev_rotation;
+   HWND hWnd;
    LPDIRECT3D g_pD3D;
    LPDIRECT3DDEVICE dev;
 #ifdef HAVE_D3D9
@@ -75,6 +76,7 @@ typedef struct d3d_video
    D3DVIEWPORT final_viewport;
    video_info_t video_info;
    HRESULT d3d_err;
+   unsigned cur_mon_id;
 
    // RENDERCHAIN PASS
    unsigned pixel_size;

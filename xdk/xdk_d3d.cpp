@@ -74,13 +74,21 @@ static void d3d_deinit_shader(void *data)
    d3d->shader = NULL;
 }
 
+static void d3d_deinit_chain(void *data)
+{
+   d3d_video_t *d3d = (d3d_video_t*)data;
+   if (d3d->tex)
+      d3d->tex->Release();
+   d3d->tex = NULL;
+}
+
 static void d3d_deinitialize(void *data)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
 
    if (d3d->font_ctx && d3d->font_ctx->deinit)
       d3d->font_ctx->deinit(d3d);
-   //d3d_deinit_chain(d3d);
+   d3d_deinit_chain(d3d);
 #ifdef HAVE_SHADERS
    d3d_deinit_shader(d3d);
 #endif
@@ -243,17 +251,8 @@ static void d3d_init_textures(void *data, const video_info_t *video)
 {
    HRESULT ret;
    d3d_video_t *d3d = (d3d_video_t*)data;
-   D3DPRESENT_PARAMETERS d3dpp;
    D3DVIEWPORT vp = {0};
-   LPDIRECT3DDEVICE d3dr = d3d->dev;
-
-   d3d_make_d3dpp(d3d, video, &d3dpp);
-
-   d3d->pixel_size   = video->rgb32 ? 4 : 2;
-
-   if (d3d->tex)
-      d3d->tex->Release();
-   d3d->tex = NULL;
+   LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
 
    ret = d3dr->CreateTexture(d3d->tex_w, d3d->tex_h, 1,
                0,
@@ -267,6 +266,8 @@ static void d3d_init_textures(void *data, const video_info_t *video)
    if (FAILED(ret))
       return;
 
+   // TODO - change into renderchain_init
+   d3d->pixel_size   = video->rgb32 ? 4 : 2;
    d3d->last_width = d3d->tex_w;
    d3d->last_height = d3d->tex_h;
 
@@ -322,15 +323,28 @@ static bool d3d_init_base(void *data, const video_info_t *info)
       return false;
    }
 
-   if ((d3d->d3d_err = d3d->g_pD3D->CreateDevice(0,
+   if (FAILED(d3d->d3d_err = d3d->g_pD3D->CreateDevice(
+            d3d->cur_mon_id,
             D3DDEVTYPE_HAL,
-            NULL,
+            d3d->hWnd,
             D3DCREATE_HARDWARE_VERTEXPROCESSING,
             &d3dpp,
-            &d3d->dev)) != S_OK)
+            &d3d->dev)))
    {
-      RARCH_ERR("[D3D]: Failed to initialize device.\n");
-      return false;
+      RARCH_WARN("[D3D]: Failed to init device with hardware vertex processing (code: 0x%x). Trying to fall back to software vertex processing.\n",
+                 (unsigned)d3d->d3d_err);
+
+      if (FAILED(d3d->d3d_err = d3d->g_pD3D->CreateDevice(
+                  d3d->cur_mon_id,
+                  D3DDEVTYPE_HAL,
+                  d3d->hWnd,
+                  D3DCREATE_SOFTWARE_VERTEXPROCESSING,
+                  &d3dpp,
+                  &d3d->dev)))
+      {
+         RARCH_ERR("Failed to initialize device.\n");
+         return false;
+      }
    }
 
 
@@ -342,6 +356,12 @@ static bool d3d_init_chain(void *data, const video_info_t *info)
    HRESULT ret;
    d3d_video_t *d3d = (d3d_video_t*)data;
    LPDIRECT3DDEVICE d3dr = d3d->dev;
+
+   //TODO - change to link_info
+   d3d->tex_w                = RARCH_SCALE_BASE * info->input_scale;
+   d3d->tex_h                = RARCH_SCALE_BASE * info->input_scale;
+
+   d3d_deinit_chain(d3d);
 
    ret = d3dr->CreateVertexBuffer(
                4 * sizeof(DrawVerticeFormats), 
@@ -532,8 +552,6 @@ static void *d3d_init(const video_info_t *vid, const input_driver_t **input, voi
    d3d->needs_restore        = false;
    d3d->should_resize        = false;
    d3d->vsync                = vid->vsync;
-   d3d->tex_w                = RARCH_SCALE_BASE * vid->input_scale;
-   d3d->tex_h                = RARCH_SCALE_BASE * vid->input_scale;
 
    if (!d3d_construct(d3d, vid, input, input_data))
    {
