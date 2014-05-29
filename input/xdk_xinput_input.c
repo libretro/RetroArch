@@ -356,6 +356,17 @@ static int16_t xdk_input_state(void *data, const struct retro_keybind **binds,
 
 static void xdk_input_free_input(void *data)
 {
+   xdk_input_t *xdk = (xdk_input_t*)data;
+   int i;
+
+   (void)xdk;
+   (void)i;
+
+#ifdef _XBOX1
+   for (i = 0; i < MAX_PADS; i++)
+      XInputClose(xdk->gamepads[i]);
+#endif
+
    free(data);
 }
 
