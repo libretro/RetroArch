@@ -100,7 +100,7 @@ void sthread_join(sthread_t *thread)
 
 struct slock
 {
-   CRITICAL_SECTION lock;
+   HANDLE lock;
 };
 
 slock_t *slock_new(void)
@@ -109,24 +109,29 @@ slock_t *slock_new(void)
    if (!lock)
       return NULL;
 
-   InitializeCriticalSection(&lock->lock);
+   lock->lock = CreateMutex(NULL, FALSE, "");
+   if (!lock->lock)
+   {
+      free(lock);
+      return NULL;
+   }
    return lock;
 }
 
 void slock_free(slock_t *lock)
 {
-   DeleteCriticalSection(&lock->lock);
+   CloseHandle(lock->lock);
    free(lock);
 }
 
 void slock_lock(slock_t *lock)
 {
-   EnterCriticalSection(&lock->lock);
+   WaitForSingleObject(lock->lock, INFINITE);
 }
 
 void slock_unlock(slock_t *lock)
 {
-   LeaveCriticalSection(&lock->lock);
+   ReleaseMutex(lock->lock);
 }
 
 struct scond
@@ -153,9 +158,8 @@ scond_t *scond_new(void)
 void scond_wait(scond_t *cond, slock_t *lock)
 {
    WaitForSingleObject(cond->event, 0);
-   slock_unlock(lock);
 
-   WaitForSingleObject(cond->event, INFINITE);
+   SignalObjectAndWait(lock->lock, cond->event, INFINITE, FALSE);
 
    slock_lock(lock);
 }
@@ -163,9 +167,8 @@ void scond_wait(scond_t *cond, slock_t *lock)
 bool scond_wait_timeout(scond_t *cond, slock_t *lock, int64_t timeout_us)
 {
    WaitForSingleObject(cond->event, 0);
-   slock_unlock(lock);
 
-   DWORD res = WaitForSingleObject(cond->event, (DWORD)(timeout_us) / 1000);
+   DWORD res = SignalObjectAndWait(lock->lock, cond->event, (DWORD)(timeout_us) / 1000, FALSE);
 
    slock_lock(lock);
    return res == WAIT_OBJECT_0;
