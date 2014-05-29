@@ -407,8 +407,6 @@ static void psp_free(void *data)
    if (psp->rgui.frame)
       free(psp->rgui.frame);
 
-   memset(psp, 0, sizeof(psp1_video_t));
-
    free(data);
 }
 
