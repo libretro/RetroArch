@@ -855,13 +855,11 @@ static bool d3d_frame(void *data, const void *frame,
 static void d3d_set_nonblock_state(void *data, bool state)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
+   d3d->video_info.vsync = !state;
 
-   if (d3d)
-   {
-      d3d->video_info.vsync = !state;
-      if (d3d->ctx_driver && d3d->ctx_driver->swap_interval)
-         d3d->ctx_driver->swap_interval(d3d, state ? 0 : 1);
-   }
+   if (d3d->ctx_driver && d3d->ctx_driver->swap_interval)
+      d3d->ctx_driver->swap_interval(d3d, state ? 0 : 1);
+   d3d_restore(d3d);
 }
 
 static bool d3d_alive(void *data)
@@ -884,7 +882,7 @@ static bool d3d_alive(void *data)
    else if (resize)
       d3d->should_resize = true;
 
-   return !quit;
+   return !d3d->quitting;
 }
 
 static bool d3d_focus(void *data)
