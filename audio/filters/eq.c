@@ -224,7 +224,7 @@ static void create_filter(struct eq_data *eq, unsigned size_log2,
    double window_mod = 1.0 / kaiser_window(0.0, beta);
 
    fft_t *fft = fft_new(size_log2);
-   float *time_filter = (float*)calloc(eq->block_size * 2, sizeof(*time_filter));
+   float *time_filter = (float*)calloc(eq->block_size * 2 + 1, sizeof(*time_filter));
    if (!fft || !time_filter)
       goto end;
 
@@ -251,7 +251,7 @@ static void create_filter(struct eq_data *eq, unsigned size_log2,
    for (i = 0; i < (int)eq->block_size; i++)
    {
       // Kaiser window.
-      double phase = (double)i / (eq->block_size - 1);
+      double phase = (double)i / eq->block_size;
       phase = 2.0 * (phase - 0.5);
       time_filter[i] *= window_mod * kaiser_window(phase, beta);
    }
@@ -261,14 +261,16 @@ static void create_filter(struct eq_data *eq, unsigned size_log2,
    FILE *file = fopen("/tmp/test.txt", "w");
    if (file)
    {
-      for (i = 0; i < (int)eq->block_size; i++)
-         fprintf(file, "%.6f\n", time_filter[i]);
+      for (i = 0; i < (int)eq->block_size - 1; i++)
+         fprintf(file, "%.6f\n", time_filter[i + 1]);
       fclose(file);
    }
 #endif
 
    // Padded FFT to create our FFT filter.
-   fft_process_forward(eq->fft, eq->filter, time_filter, 1);
+   // Make our even-length filter odd by discarding the first coefficient.
+   // For some interesting reason, this allows us to design an odd-length linear phase filter.
+   fft_process_forward(eq->fft, eq->filter, time_filter + 1, 1);
 
 end:
    fft_free(fft);
