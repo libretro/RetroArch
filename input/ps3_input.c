@@ -441,6 +441,7 @@ static void ps3_input_free_input(void *data)
 #ifdef HAVE_MOUSE
    cellMouseEnd();
 #endif
+   free(data);
 }
 
 
