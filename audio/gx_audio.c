@@ -64,7 +64,7 @@ static void *gx_audio_init(const char *device, unsigned rate, unsigned latency)
    if (!wa)
       return NULL;
 
-   gx_audio_data = wa;
+   gx_audio_data = (gx_audio_t*)wa;
 
    memset(wa, 0, sizeof(*wa));
 
@@ -166,9 +166,7 @@ static void gx_audio_free(void *data)
       LWP_CloseQueue(wa->cond);
       wa->cond = 0;
    }
-   if (data)
-      free(data);
-   wa = NULL;
+   free(data);
 }
 
 static size_t gx_audio_write_avail(void *data)
