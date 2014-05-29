@@ -80,6 +80,16 @@ static void d3d_deinit_chain(void *data)
    if (d3d->tex)
       d3d->tex->Release();
    d3d->tex = NULL;
+
+   if (d3d->vertex_buf)
+      d3d->vertex_buf->Release();
+   d3d->vertex_buf = NULL;
+
+#ifndef _XBOX1
+   if (d3d->v_decl)
+      d3d->v_decl->Release();
+   d3d->v_decl = NULL;
+#endif
 }
 
 static void d3d_deinitialize(void *data)
@@ -116,7 +126,6 @@ static void d3d_free(void *data)
    Monitor::last_hm = MonitorFromWindow(d3d->hWnd, MONITOR_DEFAULTTONEAREST);
    DestroyWindow(d3d->hWnd);
 #endif
-
 
    if (d3d)
       free(d3d);
@@ -633,35 +642,39 @@ static bool d3d_construct(void *data, const video_info_t *info, const input_driv
    return true;
 }
 
-static void *d3d_init(const video_info_t *vid, const input_driver_t **input, void **input_data)
+static void *d3d_init(const video_info_t *info, const input_driver_t **input, void **input_data)
 {
-   d3d_video_t *d3d = (d3d_video_t*)calloc(1, sizeof(d3d_video_t));
-   if (!d3d)
+   d3d_video_t *vid = new d3d_video_t();
+   if (!vid)
       return NULL;
 
-   d3d->ctx_driver = d3d_get_context(d3d);
-   if (!d3d->ctx_driver)
+   vid->ctx_driver = d3d_get_context(vid);
+   if (!vid->ctx_driver)
    {
-      free(d3d);
+      free(vid);
       return NULL;
    }
 
    //default values
-   d3d->g_pD3D               = NULL;
-   d3d->dev                  = NULL;
-   d3d->dev_rotation         = 0;
-   d3d->needs_restore        = false;
-   d3d->should_resize        = false;
-   d3d->vsync                = vid->vsync;
+   vid->g_pD3D               = NULL;
+   vid->dev                  = NULL;
+   vid->dev_rotation         = 0;
+   vid->needs_restore        = false;
+#ifdef HAVE_CG
+   vid->cgCtx                = NULL;
+#endif
+   vid->should_resize        = false;
+   vid->vsync                = info->vsync;
+   //vid->chain              = NULL;
 
-   if (!d3d_construct(d3d, vid, input, input_data))
+   if (!d3d_construct(vid, info, input, input_data))
    {
       RARCH_ERR("[D3D]: Failed to init D3D.\n");
-      delete d3d;
+      delete vid;
       return NULL;
    }
 
-   return d3d;
+   return vid;
 }
 
 #ifdef HAVE_RMENU
@@ -869,12 +882,12 @@ static void renderchain_set_vertices(void *data, unsigned pass,
 static void renderchain_render_pass(void *data, const void *frame, unsigned width, unsigned height,
                         unsigned pitch, unsigned rotation)
 {
-   d3d_video_t *d3d = (d3d_video_t*)data;
-   LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
-#ifndef _XBOX1
+#ifdef _XBOX360
    DWORD fetchConstant;
    UINT64 pendingMask3;
 #endif
+   d3d_video_t *d3d = (d3d_video_t*)data;
+   LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
 #ifdef _XBOX1
    d3dr->SetFlickerFilter(g_extern.console.screen.flicker_filter_index);
    d3dr->SetSoftDisplayFilter(g_extern.lifecycle_state & (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE));
@@ -882,14 +895,18 @@ static void renderchain_render_pass(void *data, const void *frame, unsigned widt
    renderchain_blit_to_texture(d3d, frame, width, height, pitch);
    renderchain_set_vertices(d3d, 1, width, height);
 
+#ifdef _XBOX
    if (g_extern.frame_count)
+   {
 #ifdef _XBOX1
       d3dr->SwitchTexture(0, d3d->tex);
 #elif defined _XBOX360
       d3dr->SetTextureFetchConstant(0, d3d->tex);
 #endif
-   else if (d3d->tex) 
-      RD3DDevice_SetTexture(d3dr, 0, d3d->tex);
+   }
+   else
+#endif
+      if (d3d->tex) { RD3DDevice_SetTexture(d3dr, 0, d3d->tex); }
    RD3DDevice_SetViewport(d3d->dev, &d3d->final_viewport);
    // TODO - use translate_filter on last param - and create pass->filter
    RD3DDevice_SetSamplerState_MinFilter(d3dr, 0, g_settings.video.smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT);
