@@ -811,12 +811,20 @@ static void d3d_set_nonblock_state(void *data, bool state)
 static bool d3d_alive(void *data)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
-   bool quit = false, resize = false;
+   bool quit, resize;
+
+   quit = false;
+   resize = false;
 
    if (d3d->ctx_driver && d3d->ctx_driver->check_window)
       d3d->ctx_driver->check_window(d3d, &quit, &resize, &d3d->screen_width,
       &d3d->screen_height, g_extern.frame_count);
 
+#ifdef _XBOX
+   // TODO - see if this can apply for PC as well
+   if (quit && d3d)
+      d3d->quitting = quit;
+#endif
    else if (resize)
       d3d->should_resize = true;
 
