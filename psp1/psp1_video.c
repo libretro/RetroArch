@@ -426,6 +426,7 @@ static void psp_free(void *data)
 
    memset(psp, 0, sizeof(psp1_video_t));
 
+   free(data);
 }
 
 #ifdef HAVE_MENU
