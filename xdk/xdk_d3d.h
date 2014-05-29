@@ -55,6 +55,7 @@ typedef struct d3d_video
    bool should_resize;
    bool quitting;
    bool vsync;
+   bool needs_restore;
    unsigned last_width;
    unsigned last_height;
    unsigned screen_width;

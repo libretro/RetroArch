@@ -65,6 +65,23 @@ static bool d3d_init_shader(void *data)
    return d3d->shader->init(d3d, shader_path);
 }
 
+static void d3d_deinitialize(void *data)
+{
+   d3d_video_t *d3d = (d3d_video_t*)data;
+
+   if (d3d->font_ctx && d3d->font_ctx->deinit)
+      d3d->font_ctx->deinit(d3d);
+   //d3d_deinit_chain(d3d);
+#ifdef HAVE_SHADERS
+   //d3d_deinit_shader(d3d);
+   if (d3d->shader && d3d->shader->deinit)
+      d3d->shader->deinit();
+   d3d->shader = NULL;
+#endif
+
+   d3d->needs_restore = false;
+}
+
 static void d3d_free(void *data)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
@@ -72,23 +89,22 @@ static void d3d_free(void *data)
    if (!d3d)
       return;
 
-   if (d3d->font_ctx && d3d->font_ctx->deinit)
-      d3d->font_ctx->deinit(d3d);
-   d3d->font_ctx = NULL;
-
-   if (d3d->shader && d3d->shader->deinit)
-      d3d->shader->deinit();
-   d3d->shader = NULL;
-
-   if (d3d->ctx_driver && d3d->ctx_driver->destroy)
-      d3d->ctx_driver->destroy(d3d);
-   d3d->ctx_driver = NULL;
-
+   d3d_deinitialize(d3d);
+#ifdef HAVE_OVERLAY
+   // TODO
+#endif
+#ifdef HAVE_MENU
+   // TODO?
+#endif
+   if (d3d->dev)
+      d3d->dev->Release();
+   d3d->dev = 0;
    if (d3d->g_pD3D)
       d3d->g_pD3D->Release();
-   d3d->g_pD3D = NULL;
+   d3d->g_pD3D = 0;
 
-   free(d3d);
+   if (d3d)
+      free(d3d);
 }
 
 static void d3d_set_viewport(void *data, int x, int y, unsigned width, unsigned height)
@@ -379,8 +395,41 @@ static bool d3d_initialize(void *data, const video_info_t *info)
 
    if (!d3d->g_pD3D)
       ret = d3d_init_base(d3d, info);
-   else
+   else if (d3d->needs_restore)
    {
+      D3DPRESENT_PARAMETERS d3dpp;
+      d3d_make_d3dpp(d3d, info, &d3dpp);
+      if (d3d->dev->Reset(&d3dpp) != D3D_OK)
+      {
+#ifndef _XBOX
+         HRESULT res = d3d->dev->TestCooperativeLevel();
+         const char *err;
+         switch (res)
+         {
+            case D3DERR_DEVICELOST:
+               err = "DEVICELOST";
+               break;
+            case D3DERR_DEVICENOTRESET:
+               err = "DEVICENOTRESET";
+               break;
+            case D3DERR_DRIVERINTERNALERROR:
+               err = "DRIVERINTERNALERROR";
+               break;
+            default:
+               err = "Unknown";
+         }
+         // Try to recreate the device completely ...
+         RARCH_WARN("[D3D]: Attempting to recover from dead state (%s).\n", err);
+#endif
+         d3d_deinitialize(d3d); 
+         d3d->g_pD3D->Release();
+         d3d->g_pD3D = NULL;
+         ret = d3d_init_base(d3d, info);
+         if (ret)
+            RARCH_LOG("[D3D]: Recovered from dead state.\n");
+         else
+            return ret;
+      }
    }
 
    if (!ret)
@@ -413,6 +462,18 @@ static bool d3d_initialize(void *data, const video_info_t *info)
    }
 
    return true;
+}
+
+bool d3d_restore(void *data)
+{
+   d3d_video_t *d3d = (d3d_video_t*)data;
+   d3d_deinitialize(d3d);
+   d3d->needs_restore = !d3d_initialize(d3d, &d3d->video_info);
+
+   if (d3d->needs_restore)
+      RARCH_ERR("[D3D]: Restore error.\n");
+
+   return !d3d->needs_restore;
 }
 
 // Delay constructor due to lack of exceptions.
@@ -458,6 +519,7 @@ static void *d3d_init(const video_info_t *vid, const input_driver_t **input, voi
    d3d->g_pD3D               = NULL;
    d3d->dev                  = NULL;
    d3d->dev_rotation         = 0;
+   d3d->needs_restore        = false;
    d3d->should_resize        = false;
    d3d->vsync                = vid->vsync;
    d3d->tex_w                = RARCH_SCALE_BASE * vid->input_scale;
@@ -718,6 +780,12 @@ static bool d3d_frame(void *data, const void *frame,
    if (!d3d || !frame)
       return true;
 
+   if (d3d->needs_restore && !d3d_restore(d3d))
+   {
+      RARCH_ERR("[D3D]: Failed to restore.\n");
+      return false;
+   }
+
    if (d3d && d3d->should_resize)
    {
       d3d_calculate_rect(d3d, d3d->screen_width, d3d->screen_height, d3d->video_info.force_aspect, g_extern.system.aspect_ratio);
@@ -729,11 +797,8 @@ static bool d3d_frame(void *data, const void *frame,
    screen_vp.Y = 0;
    screen_vp.MinZ = 0;
    screen_vp.MaxZ = 1;
-   if (d3d)
-   {
-      screen_vp.Width = d3d->screen_width;
-      screen_vp.Height = d3d->screen_height;
-   }
+   screen_vp.Width = d3d->screen_width;
+   screen_vp.Height = d3d->screen_height;
 
    d3dr = (LPDIRECT3DDEVICE)d3d->dev;
 
