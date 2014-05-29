@@ -519,6 +519,9 @@ void init_drivers(void)
    adjust_system_rates();
 
    g_extern.frame_count = 0;
+#ifdef _XBOX
+   if (!driver.video_data)
+#endif
    init_video_input();
 
    if (!driver.video_cache_context_ack && g_extern.system.hw_render_callback.context_reset)
@@ -557,13 +560,16 @@ void uninit_drivers(void)
    if (g_extern.system.hw_render_callback.context_destroy && !driver.video_cache_context)
       g_extern.system.hw_render_callback.context_destroy();
 
+#ifndef _XBOX
    uninit_video_input();
+#endif
 
 #ifdef HAVE_CAMERA
    uninit_camera();
 
    if (driver.camera_data_own)
       driver.camera_data = NULL;
+   driver.camera_data_own = false;
 #endif
 
 #ifdef HAVE_LOCATION
@@ -571,6 +577,7 @@ void uninit_drivers(void)
 
    if (driver.location_data_own)
       driver.location_data = NULL;
+   driver.location_data_own = false;
 #endif
    
 #ifdef HAVE_OSK
@@ -578,26 +585,19 @@ void uninit_drivers(void)
 
    if (driver.osk_data_own)
       driver.osk_data = NULL;
-#endif
-   if (driver.video_data_own)
-      driver.video_data = NULL;
-   if (driver.audio_data_own)
-      driver.audio_data = NULL;
-   if (driver.input_data_own)
-      driver.input_data = NULL;
-
-#ifdef HAVE_CAMERA
-   driver.camera_data_own = false;
-#endif
-#ifdef HAVE_LOCATION
-   driver.location_data_own = false;
-#endif
-#ifdef HAVE_OSK
    driver.osk_data_own    = false;
 #endif
+#ifndef _XBOX
+   if (driver.video_data_own)
+      driver.video_data = NULL;
    driver.video_data_own  = false;
-   driver.audio_data_own  = false;
+   if (driver.input_data_own)
+      driver.input_data = NULL;
    driver.input_data_own  = false;
+#endif
+   if (driver.audio_data_own)
+      driver.audio_data = NULL;
+   driver.audio_data_own  = false;
 }
 
 void rarch_init_dsp_filter(void)

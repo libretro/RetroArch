@@ -170,9 +170,6 @@ static void xdk_input_poll(void *data)
 {
    xdk_input_t *xdk = (xdk_input_t*)data;
 
-   if (!xdk)
-      return;
-
 #if defined(_XBOX1)
    unsigned int dwInsertions, dwRemovals;
    XGetDeviceChanges(XDEVICE_TYPE_GAMEPAD, reinterpret_cast<PDWORD>(&dwInsertions), reinterpret_cast<PDWORD>(&dwRemovals));
@@ -337,7 +334,7 @@ static int16_t xdk_input_state(void *data, const struct retro_keybind **binds,
 {
    xdk_input_t *xdk = (xdk_input_t*)data;
 
-   if (!xdk || port >= MAX_PADS)
+   if (port >= MAX_PADS)
       return 0;
 
    switch (device)
@@ -407,11 +404,10 @@ static uint64_t xdk_input_get_capabilities(void *data)
 static bool xdk_input_set_rumble(void *data, unsigned port, enum retro_rumble_effect effect, uint16_t strength)
 {
    xdk_input_t *xdk = (xdk_input_t*)data;
+   (void)xdk;
    bool val = false;
 
-   if (!xdk)
-      return false;
-
+  
 #if 0
 #if defined(_XBOX360)
    XINPUT_VIBRATION rumble_state;
@@ -474,7 +470,7 @@ static bool xdk_joypad_button(unsigned port_num, uint16_t joykey)
 {
    xdk_input_t *xdk = (xdk_input_t*)driver.input_data;
 
-   if (!xdk || port_num >= MAX_PADS)
+   if (port_num >= MAX_PADS)
       return false;
 
    return xdk->pad_state[port_num] & (1ULL << joykey);
@@ -483,7 +479,7 @@ static bool xdk_joypad_button(unsigned port_num, uint16_t joykey)
 static int16_t xdk_joypad_axis(unsigned port_num, uint32_t joyaxis)
 {
    xdk_input_t *xdk = (xdk_input_t*)driver.input_data;
-   if (!xdk || joyaxis == AXIS_NONE || port_num >= MAX_PADS)
+   if (joyaxis == AXIS_NONE || port_num >= MAX_PADS)
       return 0;
 
    int val = 0;
@@ -527,8 +523,6 @@ static void xdk_joypad_poll(void)
 static bool xdk_joypad_query_pad(unsigned pad)
 {
    xdk_input_t *xdk = (xdk_input_t*)driver.input_data;
-   if (!xdk)
-      return false;
    return pad < MAX_PLAYERS && xdk->pad_state[pad];
 }
 

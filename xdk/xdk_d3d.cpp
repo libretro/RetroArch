@@ -65,74 +65,31 @@ static bool d3d_init_shader(void *data)
    return d3d->shader->init(d3d, shader_path);
 }
 
-static void d3d_deinit_shader(void *data)
+static void d3d_free(void *data)
 {
+#ifdef RARCH_CONSOLE
+   if (driver.video_data)
+      return;
+#endif
+
    d3d_video_t *d3d = (d3d_video_t*)data;
+
+   if (!d3d)
+      return;
+
+   if (d3d->font_ctx && d3d->font_ctx->deinit)
+      d3d->font_ctx->deinit(d3d);
+   d3d->font_ctx = NULL;
 
    if (d3d->shader && d3d->shader->deinit)
       d3d->shader->deinit();
    d3d->shader = NULL;
-}
 
-static void d3d_deinit_chain(void *data)
-{
-   d3d_video_t *d3d = (d3d_video_t*)data;
-   if (d3d->tex)
-      d3d->tex->Release();
-   d3d->tex = NULL;
+   if (d3d->ctx_driver && d3d->ctx_driver->destroy)
+      d3d->ctx_driver->destroy(d3d);
+   d3d->ctx_driver = NULL;
 
-   if (d3d->vertex_buf)
-      d3d->vertex_buf->Release();
-   d3d->vertex_buf = NULL;
-
-#ifndef _XBOX1
-   if (d3d->v_decl)
-      d3d->v_decl->Release();
-   d3d->v_decl = NULL;
-#endif
-}
-
-static void d3d_deinitialize(void *data)
-{
-   d3d_video_t *d3d = (d3d_video_t*)data;
-
-   if (d3d->font_ctx && d3d->font_ctx->deinit)
-      d3d->font_ctx->deinit(d3d);
-   d3d_deinit_chain(d3d);
-#ifdef HAVE_SHADERS
-   d3d_deinit_shader(d3d);
-#endif
-
-   d3d->needs_restore = false;
-}
-
-
-static void d3d_free(void *data)
-{
-   d3d_video_t *d3d = (d3d_video_t*)data;
-   d3d_deinitialize(d3d);
-#ifdef HAVE_OVERLAY
-   //d3d_free_overlays(d3d);
-#endif
-#ifdef HAVE_MENU
-   //d3d_free_overlay(d3d, d3d->rgui);
-#endif
-   if (d3d->dev)
-      d3d->dev->Release();
-   if (d3d->g_pD3D)
-      d3d->g_pD3D->Release();
-
-#ifdef HAVE_MONITOR
-   Monitor::last_hm = MonitorFromWindow(d3d->hWnd, MONITOR_DEFAULTTONEAREST);
-   DestroyWindow(d3d->hWnd);
-#endif
-
-   if (d3d)
-      free(d3d);
-
-#ifndef _XBOX
-   UnregisterClass("RetroArch", GetModuleHandle(NULL));
-#endif
+   free(d3d);
 }
 
 static void d3d_set_viewport(void *data, int x, int y, unsigned width, unsigned height)
@@ -153,8 +110,6 @@ static void d3d_set_viewport(void *data, int x, int y, unsigned width, unsigned 
    viewport.MinZ   = 0.0f;
    viewport.MaxZ   = 1.0f;
    d3d->final_viewport = viewport;
-
-   //d3d_set_font_rect(d3d, NULL);
 }
 
 static void d3d_calculate_rect(void *data, unsigned width, unsigned height,
@@ -199,43 +154,26 @@ static void d3d_calculate_rect(void *data, unsigned width, unsigned height,
 
 static void d3d_set_rotation(void *data, unsigned rot)
 {
+   (void)data;
    d3d_video_t *d3d = (d3d_video_t*)data;
    d3d->dev_rotation = rot;
 }
 
-static void renderchain_set_final_viewport(void *data, const D3DVIEWPORT *final_viewport)
-{
-   //renderchain_t *chain = (renderchain_t*)data;
-   d3d_video_t *chain = (d3d_video_t*)data;
-   chain->final_viewport = *final_viewport;
-}
-
-static _inline void renderchain_set_viewport(void *data, D3DVIEWPORT *vp)
-{
-   d3d_video_t *chain = (d3d_video_t*)data;
-   LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)chain->dev;
-   RD3DDevice_SetViewport(d3dr, vp);
-}
-
-static void renderchain_set_mvp(void *data,
-      unsigned vp_width, unsigned vp_height,
-      unsigned rotation)
+static void set_mvp(void *data, unsigned vp_width, unsigned vp_height, unsigned rotation)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
-#if defined(_XBOX360) && defined(HAVE_SHADERS)
+#if defined(_XBOX360) && defined(HAVE_HLSL)
    hlsl_set_proj_matrix(XMMatrixRotationZ(rotation * (M_PI / 2.0)));
    if (d3d->shader && d3d->shader->set_mvp)
       d3d->shader->set_mvp(d3d, NULL);
 #elif defined(_XBOX1)
-   D3DXMATRIX p_out, ortho, rot;
-   D3DXMatrixOrthoOffCenterLH(&ortho, 0, vp_width,  vp_height, 0, 0.0f, 1.0f);
+   D3DXMATRIX p_out, p_rotate, mat;
+   D3DXMatrixOrthoOffCenterLH(&mat, 0, vp_width,  vp_height, 0, 0.0f, 1.0f);
    D3DXMatrixIdentity(&p_out);
+   D3DXMatrixRotationZ(&p_rotate, rotation * (M_PI / 2.0));
 
-   if (rotation)
-      D3DXMatrixRotationZ(&rot, rotation * (M_PI / 2.0));
-
-   RD3DDevice_SetTransform(d3dr, D3DTS_WORLD, &rot);
+   RD3DDevice_SetTransform(d3dr, D3DTS_WORLD, &p_rotate);
    RD3DDevice_SetTransform(d3dr, D3DTS_VIEW, &p_out);
    RD3DDevice_SetTransform(d3dr, D3DTS_PROJECTION, &p_out);
 #endif
@@ -267,60 +205,83 @@ static bool d3d_set_shader(void *data, enum rarch_shader_type type, const char *
    return true;
 }
 
-static bool renderchain_add_pass(void *data, const video_info_t *info)
+static void d3d_init_textures(void *data, const video_info_t *video)
 {
    HRESULT ret;
    d3d_video_t *d3d = (d3d_video_t*)data;
+
+   D3DPRESENT_PARAMETERS d3dpp;
    D3DVIEWPORT vp = {0};
-   LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
+   d3d_make_d3dpp(d3d, video, &d3dpp);
 
-   d3d->last_width  = 0;
-   d3d->last_height = 0;
+   d3d->pixel_size   = video->rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
 
-   ret = d3dr->CreateVertexBuffer(
-               4 * sizeof(DrawVerticeFormats), 
-               D3DUSAGE_WRITEONLY,
-               D3DFVF_CUSTOMVERTEX,
-               D3DPOOL_MANAGED,
-               &d3d->vertex_buf
-#ifndef _XBOX1
-               ,NULL
+   if (d3d->tex)
+   {
+      d3d->tex->Release();
+      d3d->tex = NULL;
+   }
+
+   ret = d3d->dev->CreateTexture(d3d->tex_w, d3d->tex_h, 1, 0, video->rgb32 ? D3DFMT_LIN_X8R8G8B8 : D3DFMT_LIN_R5G6B5,
+         0, &d3d->tex
+#ifdef _XBOX360
+         , NULL
 #endif
-               );
-   if (FAILED(ret))
-      return false;
+         );
 
-   ret = d3dr->CreateTexture(d3d->tex_w, d3d->tex_h, 1,
-               0,
-               info->rgb32 ? D3DFMT_LIN_X8R8G8B8 : D3DFMT_LIN_R5G6B5,
-               D3DPOOL_DEFAULT,
-               &d3d->tex
-#ifndef _XBOX1
-               ,NULL
+   if (ret != S_OK)
+   {
+      RARCH_ERR("[d3d_init_textures::] failed at CreateTexture.\n");
+      return;
+   }
+
+   D3DLOCKED_RECT d3dlr;
+   D3DTexture_LockRect(d3d->tex, 0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);
+   memset(d3dlr.pBits, 0, d3d->tex_w * d3dlr.Pitch);
+
+   d3d->last_width = d3d->tex_w;
+   d3d->last_height = d3d->tex_h;
+
+#ifdef _XBOX1
+   d3d->dev->SetRenderState(D3DRS_LIGHTING, FALSE);
 #endif
-               );
-   if (FAILED(ret))
-      return false;
-
-   d3dr->SetTexture(0, d3d->tex);
-   RD3DDevice_SetSamplerState_AddressU(d3dr, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
-   RD3DDevice_SetSamplerState_AddressV(d3dr, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
-   d3dr->SetTexture(0, NULL);
 
    vp.Width  = d3d->screen_width;
    vp.Height = d3d->screen_height;
 
+   d3d->dev->SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
+   d3d->dev->SetRenderState(D3DRS_ZENABLE, FALSE);
+
    vp.MinZ   = 0.0f;
    vp.MaxZ   = 1.0f;
-   RD3DDevice_SetViewport(d3dr, &vp);
+   RD3DDevice_SetViewport(d3d->dev, &vp);
 
    if (g_extern.console.screen.viewports.custom_vp.width == 0)
       g_extern.console.screen.viewports.custom_vp.width = vp.Width;
 
    if (g_extern.console.screen.viewports.custom_vp.height == 0)
       g_extern.console.screen.viewports.custom_vp.height = vp.Height;
+}
 
-   return true;
+static void d3d_reinit_textures(void *data, const video_info_t *video)
+{
+   d3d_video_t *d3d = (d3d_video_t*)data;
+
+   unsigned old_base_size = d3d->pixel_size;
+   unsigned old_width     = d3d->tex_w;
+   unsigned old_height    = d3d->tex_h;
+   d3d->pixel_size   = video->rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
+
+   d3d->tex_w = d3d->tex_h = RARCH_SCALE_BASE * video->input_scale;
+
+   if (old_base_size != d3d->pixel_size || old_width != d3d->tex_w || old_height != d3d->tex_h)
+   {
+      RARCH_LOG("Reinitializing textures (%u x %u @ %u bpp)\n", d3d->tex_w,
+            d3d->tex_h, d3d->pixel_size * CHAR_BIT);
+
+      d3d_init_textures(d3d, video);
+      RARCH_LOG("Reinitializing textures skipped.\n");
+   }
 }
 
 static const gfx_ctx_driver_t *d3d_get_context(void *data)
@@ -352,85 +313,41 @@ static bool d3d_init_base(void *data, const video_info_t *info)
       return false;
    }
 
-   RARCH_LOG("d3d is NULL: %d\n", d3d == NULL);
-   RARCH_LOG("d3d g_pD3D is NULL: %d\n", d3d->g_pD3D == NULL);
-   RARCH_LOG("d3d->dev is NULL: %d\n", d3d->dev == NULL);
-
-   if (FAILED(d3d->d3d_err = d3d->g_pD3D->CreateDevice(
-            d3d->cur_mon_id,
+   if (d3d->d3d_err = d3d->g_pD3D->CreateDevice(0,
             D3DDEVTYPE_HAL,
-            d3d->hWnd,
+            NULL,
             D3DCREATE_HARDWARE_VERTEXPROCESSING,
             &d3dpp,
-            &d3d->dev)))
+            &d3d->dev) != S_OK)
    {
-      RARCH_WARN("[D3D]: Failed to init device with hardware vertex processing (code: 0x%x). Trying to fall back to software vertex processing.\n",
-                 (unsigned)d3d->d3d_err);
-
-      if (FAILED(d3d->d3d_err = d3d->g_pD3D->CreateDevice(
-                  d3d->cur_mon_id,
-                  D3DDEVTYPE_HAL,
-                  d3d->hWnd,
-                  D3DCREATE_SOFTWARE_VERTEXPROCESSING,
-                  &d3dpp,
-                  &d3d->dev)))
-      {
-         RARCH_ERR("Failed to initialize device.\n");
-         return false;
-      }
+      RARCH_ERR("[D3D]: Failed to initialize device.\n");
+      return false;
    }
 
 
    return true;
 }
 
-bool renderchain_init(void *data, const video_info_t *video_info,
-      LPDIRECT3DDEVICE dev_,
-      /*CGcontext cgCtx_,*/
-      const D3DVIEWPORT *final_viewport_
-      /*, const LinkInfo *info, PixelFormat fmt*/)
+static bool d3d_init_chain(void *data, const video_info_t *info)
 {
-   //TODO/FIXME - horribly incomplete right now
-#if 0
-   renderchain_t *chain = (renderchain_t*)data;
-#else
-   d3d_video_t *chain = (d3d_video_t*)data;
-#endif
-
-   if (!chain)
-      return false;
-
-   // TODO - give chain its own state
-   chain->pixel_size   = video_info->rgb32 ? 4 : 2;
-
-   return true;
-}
-
-static bool d3d_init_chain(void *data, const video_info_t *video_info)
-{
+   HRESULT ret;
    d3d_video_t *d3d = (d3d_video_t*)data;
    LPDIRECT3DDEVICE d3dr = d3d->dev;
 
-   //TODO - change to link_info
-   d3d->tex_w = d3d->tex_h = video_info->input_scale * RARCH_SCALE_BASE;
+   d3d_init_textures(d3d, info);
 
-   d3d_deinit_chain(d3d);
-   //TODO - new renderchain
+   ret = d3d->dev->CreateVertexBuffer(4 * sizeof(DrawVerticeFormats), 
+         D3DUSAGE_WRITEONLY, D3DFVF_CUSTOMVERTEX, D3DPOOL_MANAGED, &d3d->vertex_buf
+#ifdef _XBOX360
+         ,NULL
+#endif
+         );
 
-   if (!renderchain_init(d3d/*->chain*/, &d3d->video_info, d3dr, /*d3d->cgCtx,*/ &d3d->final_viewport/*&link_info, d3d->video_info.rgb32 ? ARGB : RGB565*/))
+   if (ret != S_OK)
    {
-      RARCH_ERR("[D3D]: Failed to init render chain.\n");
+      RARCH_ERR("[d3d_init::] Failed at CreateVertexBuffer.\n");
       return false;
    }
-
-   //TODO - add for loop with passes
-   //TODO - d3d should become d3d->chain and video_info should become &link_info
-   if (!renderchain_add_pass(d3d, video_info))
-   {
-      RARCH_ERR("[D3D]: Failed to add pass.\n");
-      return false;
-   }
-
 #if defined(_XBOX1)
    const DrawVerticeFormats init_verts[] = {
       { -1.0f, -1.0f, 1.0f, 0.0f, 1.0f },
@@ -465,7 +382,12 @@ static bool d3d_init_chain(void *data, const video_info_t *video_info)
       D3DDECL_END()
    };
 
-   d3dr->CreateVertexDeclaration(VertexElements, &d3d->v_decl);
+   ret = d3d->dev->CreateVertexDeclaration(VertexElements, &d3d->v_decl);
+
+   if (ret != S_OK)
+   {
+      RARCH_ERR("[d3d_init::] Failed at CreateVertexDeclaration.\n");
+   }
 #endif
 
    return true;
@@ -478,41 +400,8 @@ static bool d3d_initialize(void *data, const video_info_t *info)
 
    if (!d3d->g_pD3D)
       ret = d3d_init_base(d3d, info);
-   else if (d3d->needs_restore)
+   else
    {
-      D3DPRESENT_PARAMETERS d3dpp;
-      d3d_make_d3dpp(d3d, info, &d3dpp);
-      if (d3d->dev->Reset(&d3dpp) != D3D_OK)
-      {
-#ifndef _XBOX
-         HRESULT res = d3d->dev->TestCooperativeLevel();
-         const char *err;
-         switch (res)
-         {
-            case D3DERR_DEVICELOST:
-               err = "DEVICELOST";
-               break;
-            case D3DERR_DEVICENOTRESET:
-               err = "DEVICENOTRESET";
-               break;
-            case D3DERR_DRIVERINTERNALERROR:
-               err = "DRIVERINTERNALERROR";
-               break;
-            default:
-               err = "Unknown";
-         }
-         // Try to recreate the device completely ...
-         RARCH_WARN("[D3D]: Attempting to recover from dead state (%s).\n", err);
-#endif
-         d3d_deinitialize(d3d); 
-         d3d->g_pD3D->Release();
-         d3d->g_pD3D = NULL;
-         ret = d3d_init_base(d3d, info);
-         if (ret)
-            RARCH_LOG("[D3D]: Recovered from dead state.\n");
-         else
-            return ret;
-      }
    }
 
    if (!ret)
@@ -520,7 +409,7 @@ static bool d3d_initialize(void *data, const video_info_t *info)
 
    d3d_calculate_rect(d3d, d3d->screen_width, d3d->screen_height, info->force_aspect,g_extern.system.aspect_ratio);
 
-#ifdef HAVE_SHADERS
+#ifdef HAVE_HLSL
    if (!d3d_init_shader(d3d))
    {
       RARCH_ERR("Failed to initialize HLSL.\n");
@@ -547,56 +436,13 @@ static bool d3d_initialize(void *data, const video_info_t *info)
    return true;
 }
 
-bool d3d_restore(void *data)
-{
-   d3d_video_t *d3d = (d3d_video_t*)data;
-   d3d_deinitialize(d3d);
-   d3d->needs_restore = !d3d_initialize(d3d, &d3d->video_info);
-
-   if (d3d->needs_restore)
-      RARCH_ERR("[D3D]: Restore error.\n");
-
-   return !d3d->needs_restore;
-}
-
 // Delay constructor due to lack of exceptions.
 static bool d3d_construct(void *data, const video_info_t *info, const input_driver_t **input,
                           void **input_data)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
    d3d->should_resize = false;
-#ifndef _XBOX
-   gfx_set_dwm();
-#endif
 
-#ifdef HAVE_WINDOW
-   memset(&d3d->windowClass, 0, sizeof(d3d->windowClass));
-   d3d->windowClass.cbSize        = sizeof(d3d->windowClass);
-   d3d->windowClass.style         = CS_HREDRAW | CS_VREDRAW;
-   d3d->windowClass.lpfnWndProc   = WindowProc;
-   d3d->windowClass.hInstance     = NULL;
-   d3d->windowClass.hCursor       = LoadCursor(NULL, IDC_ARROW);
-   d3d->windowClass.lpszClassName = "RetroArch";
-   d3d->windowClass.hIcon = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_ICON));
-   d3d->windowClass.hIconSm = (HICON)LoadImage(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_ICON), IMAGE_ICON, 16, 16, 0);
-   if (!info->fullscreen)
-      d3d->windowClass.hbrBackground = (HBRUSH)COLOR_WINDOW;
-
-   RegisterClassEx(&d3d->windowClass);
-#endif
-
-#ifdef HAVE_MONITOR
-   RECT mon_rect = d3d_monitor_rect(d3d);
-
-   bool windowed_full = g_settings.video.windowed_fullscreen;
-
-   unsigned full_x = (windowed_full || info->width  == 0) ? (mon_rect.right  - mon_rect.left) : info->width;
-   unsigned full_y = (windowed_full || info->height == 0) ? (mon_rect.bottom - mon_rect.top)  : info->height;
-   RARCH_LOG("[D3D]: Monitor size: %dx%d.\n", (int)(mon_rect.right  - mon_rect.left), (int)(mon_rect.bottom - mon_rect.top));
-
-   d3d->screen_width  = info->fullscreen ? full_x : info->width;
-   d3d->screen_height = info->fullscreen ? full_y : info->height;
-#else
    unsigned full_x, full_y;
 
    if (d3d->ctx_driver && d3d->ctx_driver->get_video_size)
@@ -604,88 +450,56 @@ static bool d3d_construct(void *data, const video_info_t *info, const input_driv
 
    d3d->screen_width  = info->fullscreen ? full_x : info->width;
    d3d->screen_height = info->fullscreen ? full_y : info->height;
-#endif
-
-   unsigned win_width  = d3d->screen_width;
-   unsigned win_height = d3d->screen_height;
-
-#ifdef HAVE_WINDOW
-   if (!info->fullscreen)
-   {
-      RECT rect   = {0};
-      rect.right  = d3d->screen_width;
-      rect.bottom = d3d->screen_height;
-      AdjustWindowRect(&rect, WS_OVERLAPPEDWINDOW, FALSE);
-      win_width  = rect.right - rect.left;
-      win_height = rect.bottom - rect.top;
-   }
-
-   char buffer[128];
-   gfx_get_fps(buffer, sizeof(buffer), NULL, 0);
-   std::string title = buffer;
-   title += " || Direct3D";
-
-   d3d->hWnd = CreateWindowEx(0, "RetroArch", title.c_str(),
-         info->fullscreen ?
-         (WS_EX_TOPMOST | WS_POPUP) : WS_OVERLAPPEDWINDOW,
-         info->fullscreen ? mon_rect.left : CW_USEDEFAULT,
-         info->fullscreen ? mon_rect.top  : CW_USEDEFAULT,
-         win_width, win_height,
-         NULL, NULL, NULL, d3d);
-#endif
-
-#ifdef HAVE_WINDOW
-   ShowWindow(d3d->hWnd, SW_RESTORE);
-   UpdateWindow(d3d->hWnd);
-   SetForegroundWindow(d3d->hWnd);
-   SetFocus(d3d->hWnd);
-#endif
 
    d3d->video_info = *info;
-   if (!d3d_initialize(data, &d3d->video_info))
+   if (!d3d_initialize(d3d, &d3d->video_info))
       return false;
 
-   if (input && input_data &&
-      d3d->ctx_driver && d3d->ctx_driver->input_driver)
+   if (input && input_data)
       d3d->ctx_driver->input_driver(d3d, input, input_data);
 
    RARCH_LOG("[D3D]: Init complete.\n");
    return true;
 }
 
-static void *d3d_init(const video_info_t *info, const input_driver_t **input, void **input_data)
+static void *d3d_init(const video_info_t *vid, const input_driver_t **input, void **input_data)
 {
-   d3d_video_t *vid = new d3d_video_t();
-   if (!vid)
+   if (driver.video_data)
+   {
+      d3d_video_t *d3d = (d3d_video_t*)driver.video_data;
+      // Reinitialize textures as we might have changed pixel formats.
+      d3d_reinit_textures(d3d, vid);
+      return driver.video_data;
+   }
+
+   d3d_video_t *d3d = (d3d_video_t*)calloc(1, sizeof(d3d_video_t));
+   if (!d3d)
       return NULL;
 
-   vid->ctx_driver = d3d_get_context(vid);
-   if (!vid->ctx_driver)
+   d3d->ctx_driver = d3d_get_context(d3d);
+   if (!d3d->ctx_driver)
    {
-      free(vid);
+      free(d3d);
       return NULL;
    }
 
    //default values
-   vid->g_pD3D               = NULL;
-   vid->dev                  = NULL;
-   vid->dev_rotation         = 0;
-   vid->needs_restore        = false;
-#ifdef HAVE_CG
-   vid->cgCtx                = NULL;
-#endif
-   vid->should_resize        = false;
-   vid->vsync                = info->vsync;
-   //vid->chain              = NULL;
+   d3d->g_pD3D               = NULL;
+   d3d->dev                  = NULL;
+   d3d->dev_rotation         = 0;
+   d3d->should_resize        = false;
+   d3d->vsync                = vid->vsync;
+   d3d->tex_w                = RARCH_SCALE_BASE * vid->input_scale;
+   d3d->tex_h                = RARCH_SCALE_BASE * vid->input_scale;
 
-   if (!d3d_construct(vid, info, input, input_data))
+   if (!d3d_construct(d3d, vid, input, input_data))
    {
       RARCH_ERR("[D3D]: Failed to init D3D.\n");
-      delete vid;
+      delete d3d;
       return NULL;
    }
 
-   return vid;
+   return d3d;
 }
 
 #ifdef HAVE_RMENU
@@ -762,9 +576,11 @@ static bool texture_image_render(void *data, struct texture_image *out_img,
 #endif
 
 #ifdef HAVE_MENU
+
 static void d3d_draw_texture(void *data)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
+#if defined(HAVE_RMENU)
    menu_texture->x = 0;
    menu_texture->y = 0;
 
@@ -777,10 +593,11 @@ static void d3d_draw_texture(void *data)
          d3d->screen_width, d3d->screen_height, true);
       d3d->dev->SetRenderState(D3DRS_ALPHABLENDENABLE, false);
    }
+#endif
 }
 #endif
 
-static void renderchain_clear_texture(void *data)
+static void clear_texture(void *data)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
    LPDIRECT3DDEVICE d3dr = d3d->dev;
@@ -790,14 +607,13 @@ static void renderchain_clear_texture(void *data)
    memset(d3dlr.pBits, 0, d3d->tex_w * d3dlr.Pitch);
 }
 
-static void renderchain_blit_to_texture(void *data, const void *frame,
-   unsigned width, unsigned height,
-   unsigned pitch)
+static void blit_to_texture(void *data, const void *frame,
+   unsigned width, unsigned height, unsigned pitch)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
 
    if (d3d->last_width != width || d3d->last_height != height)
-      renderchain_clear_texture(data);
+      clear_texture(data);
 
    D3DLOCKED_RECT d3dlr;
    D3DTexture_LockRect(d3d->tex, 0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);
@@ -817,35 +633,12 @@ static void renderchain_blit_to_texture(void *data, const void *frame,
 #endif
 }
 
-static void renderchain_set_shader_params(void *data, unsigned pass/*Pass &pass*/,
-            unsigned video_w, unsigned video_h,
-            unsigned tex_w, unsigned tex_h,
-            unsigned viewport_w, unsigned viewport_h)
-{
-#ifdef _XBOX360
-   d3d_video_t *d3d = (d3d_video_t*)data;
-   if (!d3d || !d3d->shader)
-      return;
-
-   if (d3d->shader->use)
-      d3d->shader->use(d3d, pass);
-   if (d3d->shader->set_params)
-      d3d->shader->set_params(d3d, video_w, video_h, tex_w, tex_h, viewport_w,
-            viewport_h, g_extern.frame_count,
-            NULL, NULL, NULL, 0);
-#endif
-}
-
-static void renderchain_set_vertices(void *data, unsigned pass,
-      unsigned width, unsigned height)
+static void set_vertices(void *data, unsigned pass, unsigned width, unsigned height)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
 
    if (d3d->last_width != width || d3d->last_height != height)
    {
-      d3d->last_width = width;
-      d3d->last_height = height;
-
 #if defined(_XBOX1)
       float tex_w = width;
       float tex_h = height;
@@ -868,7 +661,7 @@ static void renderchain_set_vertices(void *data, unsigned pass,
       };
 #endif
 
-      // Align texels and vertices.
+      // Align texels and vertices (D3D9 quirk).
       for (unsigned i = 0; i < 4; i++)
       {
          verts[i].x -= 0.5f / ((float)d3d->tex_w);
@@ -883,158 +676,84 @@ static void renderchain_set_vertices(void *data, unsigned pass,
       RD3DVertexBuffer_Lock(d3d->vertex_buf, 0, 0, &verts_ptr, 0);
       memcpy(verts_ptr, verts, sizeof(verts));
       RD3DVertexBuffer_Unlock(d3d->vertex_buf);
+
+      d3d->last_width = width;
+      d3d->last_height = height;
    }
 
-   renderchain_set_mvp(d3d, d3d->screen_width, d3d->screen_height, d3d->dev_rotation);
-   renderchain_set_shader_params(d3d, pass, width, height, d3d->tex_w, d3d->tex_h, d3d->screen_width,
-         d3d->screen_height);
+   if (d3d->shader)
+   {
+      set_mvp(d3d, d3d->screen_width, d3d->screen_height, d3d->dev_rotation);
+      if (d3d->shader->use)
+         d3d->shader->use(d3d, pass);
+      if (d3d->shader->set_params)
+         d3d->shader->set_params(d3d, width, height, d3d->tex_w, d3d->tex_h, d3d->screen_width,
+               d3d->screen_height, g_extern.frame_count,
+               NULL, NULL, NULL, 0);
+   }
 }
 
-static void renderchain_start_render(void *data)
-{
-#if 0
-   renderchain_t *chain = (renderchain_t*)data;
-
-   chain->passes[0].tex         = chain->prev.tex[chain->prev.ptr];
-   chain->passes[0].vertex_buf  = chain->prev.vertex_buf[chain->prev.ptr];
-   chain->passes[0].last_width  = chain->prev.last_width[chain->prev.ptr];
-   chain->passes[0].last_height = chain->prev.last_height[chain->prev.ptr];
-#else
-   d3d_video_t *chain = (d3d_video_t*)data;
-#endif
-}
-
-void renderchain_end_render(void *data)
-{
-#if 0
-   renderchain_t *chain = (renderchain_t*)data;
-   chain->prev.last_width[chain->prev.ptr]  = chain->passes[0].last_width;
-   chain->prev.last_height[chain->prev.ptr] = chain->passes[0].last_height;
-   chain->prev.ptr                          = (chain->prev.ptr + 1) & TEXTURESMASK;
-#else
-   d3d_video_t *chain = (d3d_video_t*)data;
-#endif
-}
-
-static void renderchain_render_pass(void *data, const void *frame, unsigned width, unsigned height,
+static void render_pass(void *data, const void *frame, unsigned width, unsigned height,
                         unsigned pitch, unsigned rotation)
 {
-
-   d3d_video_t *chain = (d3d_video_t*)data;
-   LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)chain->dev;
-
-#ifdef _XBOX
-   if (g_extern.frame_count)
-   {
+   d3d_video_t *d3d = (d3d_video_t*)data;
+   LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
+#ifndef _XBOX1
+   DWORD fetchConstant;
+   UINT64 pendingMask3;
+#endif
 #ifdef _XBOX1
-      d3dr->SwitchTexture(0, chain->tex);
+   d3dr->SetFlickerFilter(g_extern.console.screen.flicker_filter_index);
+   d3dr->SetSoftDisplayFilter(g_extern.lifecycle_state & (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE));
+#endif
+   blit_to_texture(d3d, frame, width, height, pitch);
+   set_vertices(d3d, 1, width, height);
+
+   if (g_extern.frame_count)
+#ifdef _XBOX1
+      d3dr->SwitchTexture(0, d3d->tex);
 #elif defined _XBOX360
-      d3dr->SetTextureFetchConstant(0, chain->tex);
+      d3dr->SetTextureFetchConstant(0, d3d->tex);
 #endif
-   }
-   else
-#endif
-      if (chain->tex) { RD3DDevice_SetTexture(d3dr, 0, chain->tex); }
-   // TODO - use translate_filter on last param - and create pass->filter
+   else if (d3d->tex) 
+      RD3DDevice_SetTexture(d3dr, 0, d3d->tex);
+   RD3DDevice_SetViewport(d3d->dev, &d3d->final_viewport);
    RD3DDevice_SetSamplerState_MinFilter(d3dr, 0, g_settings.video.smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT);
    RD3DDevice_SetSamplerState_MagFilter(d3dr, 0, g_settings.video.smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT);
-
-   //TODO - move outside
    RD3DDevice_SetSamplerState_AddressU(d3dr, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
    RD3DDevice_SetSamplerState_AddressV(d3dr, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
 
 #if defined(_XBOX1)
    RD3DDevice_SetVertexShader(d3dr, D3DFVF_XYZ | D3DFVF_TEX1);
-   IDirect3DDevice8_SetStreamSource(d3dr, 0, chain->vertex_buf, sizeof(DrawVerticeFormats));
+   IDirect3DDevice8_SetStreamSource(d3dr, 0, d3d->vertex_buf, sizeof(DrawVerticeFormats));
 #elif defined(_XBOX360)
    D3DDevice_SetVertexDeclaration(d3dr, d3d->v_decl);
-   D3DDevice_SetStreamSource_Inline(d3dr, 0, chain->vertex_buf, 0, sizeof(DrawVerticeFormats));
+   D3DDevice_SetStreamSource_Inline(d3dr, 0, d3d->vertex_buf, 0, sizeof(DrawVerticeFormats));
 #endif
-
-#ifdef _XBOX
    d3dr->DrawPrimitive(D3DPT_TRIANGLESTRIP, 0, 2);
-#else
-   if (SUCCEEDED(d3dr->BeginScene()))
-   {
-      d3dr->DrawPrimitive(D3DPT_TRIANGLESTRIP, 0, 2);
-      d3dr->EndScene();
-   }
-#endif
-}
 
-static bool renderchain_render(void *chain_data, const void *data,
-                               unsigned width, unsigned height, unsigned pitch, unsigned rotation)
-{
-#ifdef _XBOX360
-   DWORD fetchConstant;
-   UINT64 pendingMask3;
-#endif
-   d3d_video_t *chain = (d3d_video_t*)chain_data;
-   LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)chain->dev;
-   renderchain_start_render(chain);
-
-   unsigned current_width = width;
-   unsigned current_height = height;
-   unsigned out_width = 0;
-   unsigned out_height = 0;
-   //renderchain_convert_geometry(chain, &chain->passes[0].info, out_width, out_height, current_width, current_height, chain->final_viewport);
-#ifdef _XBOX1
-   d3dr->SetFlickerFilter(g_extern.console.screen.flicker_filter_index);
-   d3dr->SetSoftDisplayFilter(g_extern.lifecycle_state & (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE));
-#endif
-   renderchain_blit_to_texture(chain, data, width, height, pitch);
-
-   // TODO - for loop going over passes
-
-   // Final pass
-   renderchain_set_viewport(chain, &chain->final_viewport);
-   renderchain_set_vertices(chain, /*last_pass*/1, width, height);
-   renderchain_render_pass(chain, data, current_width, current_height, pitch, rotation);
-
-   // TODO - replace with chain->frame_count
    g_extern.frame_count++;
 
-   renderchain_end_render(chain);
-   renderchain_set_shader_params(chain, /*pass*/1, width, height, chain->tex_w, chain->tex_h, chain->screen_width, chain->screen_height);
-   renderchain_set_mvp(chain, chain->final_viewport.Width, chain->final_viewport.Height, chain->dev_rotation);
-   return true;
+   set_mvp(d3d, d3d->screen_width, d3d->screen_height, d3d->dev_rotation);
 }
 
 static bool d3d_frame(void *data, const void *frame,
       unsigned width, unsigned height, unsigned pitch, const char *msg)
 {
-   D3DVIEWPORT screen_vp;
    d3d_video_t *d3d = (d3d_video_t*)data;
-   LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
+   LPDIRECT3DDEVICE d3dr = d3d->dev;
 
    if (!frame)
       return true;
 
-   RARCH_PERFORMANCE_INIT(d3d_frame);
-   RARCH_PERFORMANCE_START(d3d_frame);
-
-#ifndef _XBOX
-   // We cannot recover in fullscreen.
-   if (d3d->needs_restore && IsIconic(d3d->hWnd))
-      return true;
-#endif
-
-   if (d3d->needs_restore && !d3d_restore(d3d))
-   {
-      RARCH_ERR("[D3D]: Failed to restore.\n");
-      return false;
-   }
-
-   if (d3d && d3d->should_resize)
+   if (d3d->should_resize)
    {
       d3d_calculate_rect(d3d, d3d->screen_width, d3d->screen_height, d3d->video_info.force_aspect, g_extern.system.aspect_ratio);
-      renderchain_set_final_viewport(d3d/*->chain*/, &d3d->final_viewport);
-      //d3d_recompute_pass_sizes(d3d);
-      
       d3d->should_resize = false;
    }
 
    // render_chain() only clears out viewport, clear out everything
+   D3DVIEWPORT screen_vp;
    screen_vp.X = 0;
    screen_vp.Y = 0;
    screen_vp.MinZ = 0;
@@ -1047,20 +766,11 @@ static bool d3d_frame(void *data, const void *frame,
    // Insert black frame first, so we can screenshot, etc.
    if (g_settings.video.black_frame_insertion)
    {
-      if (d3dr->Present(NULL, NULL, NULL, NULL) != D3D_OK)
-      {
-         RARCH_ERR("[D3D]: Present() failed.\n");
-         d3d->needs_restore = true;
-         return true;
-      }
+      d3dr->Present(NULL, NULL, NULL, NULL);
       d3dr->Clear(0, 0, D3DCLEAR_TARGET, 0, 1, 0);
    }
 
-   if (!renderchain_render(d3d, frame, width, height, pitch, d3d->dev_rotation))
-   {
-      RARCH_ERR("[D3D]: Failed to render scene.\n");
-      return false;
-   }
+   render_pass(d3d, frame, width, height, pitch, d3d->dev_rotation);
 
 #ifdef HAVE_MENU
    if (g_extern.lifecycle_state & (1ULL << MODE_MENU) && driver.menu_ctx && driver.menu_ctx->frame)
@@ -1070,11 +780,11 @@ static bool d3d_frame(void *data, const void *frame,
       d3d_draw_texture(d3d);
 #endif
 
+   if (d3d && d3d->ctx_driver && d3d->ctx_driver->update_window_title)
+      d3d->ctx_driver->update_window_title(d3d);
 
-   if (d3d->font_ctx && d3d->font_ctx->render_msg && msg)
+   if (msg)
    {
-      font_params_t font_parms = {0};
-#ifdef _XBOX
 #if defined(_XBOX1)
       float msg_width  = 60;
       float msg_height = 365;
@@ -1082,17 +792,12 @@ static bool d3d_frame(void *data, const void *frame,
       float msg_width  = (g_extern.lifecycle_state & (1ULL << MODE_MENU_HD)) ? 160 : 100;
       float msg_height = 90;
 #endif
+      font_params_t font_parms = {0};
       font_parms.x = msg_width;
       font_parms.y = msg_height;
       font_parms.scale = 21;
-#endif
       d3d->font_ctx->render_msg(d3d, msg, &font_parms);
    }
-
-   RARCH_PERFORMANCE_STOP(d3d_frame);
-
-   if (d3d && d3d->ctx_driver && d3d->ctx_driver->update_window_title)
-      d3d->ctx_driver->update_window_title(d3d);
 
    if (d3d && d3d->ctx_driver && d3d->ctx_driver->swap_buffers)
       d3d->ctx_driver->swap_buffers(d3d);
@@ -1107,7 +812,6 @@ static void d3d_set_nonblock_state(void *data, bool state)
 
    if (d3d->ctx_driver && d3d->ctx_driver->swap_interval)
       d3d->ctx_driver->swap_interval(d3d, state ? 0 : 1);
-   d3d_restore(d3d);
 }
 
 static bool d3d_alive(void *data)
@@ -1115,66 +819,46 @@ static bool d3d_alive(void *data)
    d3d_video_t *d3d = (d3d_video_t*)data;
    bool quit, resize;
 
-   quit = false;
-   resize = false;
-
    if (d3d->ctx_driver && d3d->ctx_driver->check_window)
-      d3d->ctx_driver->check_window(d3d, &quit, &resize, &d3d->screen_width,
-      &d3d->screen_height, g_extern.frame_count);
+      d3d->ctx_driver->check_window(d3d, &quit,
+            &resize, NULL, NULL, g_extern.frame_count);
 
-#ifdef _XBOX
-   // TODO - see if this can apply for PC as well
-   if (quit && d3d)
-      d3d->quitting = quit;
-#endif
+   if (quit)
+      d3d->quitting = true;
    else if (resize)
       d3d->should_resize = true;
-
    return !d3d->quitting;
 }
 
 static bool d3d_focus(void *data)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
-   if (d3d && d3d->ctx_driver && d3d->ctx_driver->has_focus)
-      return d3d->ctx_driver->has_focus(d3d);
-   return false;
+   return d3d->ctx_driver->has_focus(d3d);
 }
 
 static void d3d_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
 
-   switch (aspect_ratio_idx)
-   {
-      case ASPECT_RATIO_SQUARE:
-         gfx_set_square_pixel_viewport(g_extern.system.av_info.geometry.base_width, g_extern.system.av_info.geometry.base_height);
-         break;
-
-      case ASPECT_RATIO_CORE:
-         gfx_set_core_viewport();
-         break;
-
-      case ASPECT_RATIO_CONFIG:
-         gfx_set_config_viewport();
-         break;
-
-      default:
-         break;
-   }
+   if (aspect_ratio_idx == ASPECT_RATIO_SQUARE)
+      gfx_set_square_pixel_viewport(g_extern.system.av_info.geometry.base_width, g_extern.system.av_info.geometry.base_height);
+   else if (aspect_ratio_idx == ASPECT_RATIO_CORE)
+      gfx_set_core_viewport();
+   else if (aspect_ratio_idx == ASPECT_RATIO_CONFIG)
+      gfx_set_config_viewport();
 
    g_extern.system.aspect_ratio  = aspectratio_lut[aspect_ratio_idx].value;
    d3d->video_info.force_aspect = true;
    d3d->should_resize = true;
 }
 
+static void d3d_set_filtering(void *data, unsigned index, bool set_smooth) { }
+
 static void d3d_apply_state_changes(void *data)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
    d3d->should_resize = true;
 }
-
-static void d3d_set_filtering(void *data, unsigned index, bool set_smooth) { }
 
 #ifdef HAVE_MENU
 static void d3d_set_texture_frame(void *data,
@@ -1191,12 +875,8 @@ static void d3d_set_texture_frame(void *data,
 static void d3d_set_texture_enable(void *data, bool state, bool full_screen)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
-
-   if (d3d)
-   {
-      d3d->rgui_texture_enable = state;
-      d3d->rgui_texture_full_screen = full_screen;
-   }
+   d3d->rgui_texture_enable = state;
+   d3d->rgui_texture_full_screen = full_screen;
 }
 #endif
 
@@ -1205,7 +885,7 @@ static void d3d_set_osd_msg(void *data, const char *msg, void *userdata)
    d3d_video_t *d3d = (d3d_video_t*)data;
    font_params_t *params = (font_params_t*)userdata;
 
-   if (d3d && d3d->font_ctx && d3d->font_ctx->render_msg)
+   if (d3d->font_ctx && d3d->font_ctx->render_msg)
       d3d->font_ctx->render_msg(d3d, msg, params);
 }
 
