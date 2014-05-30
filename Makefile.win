@@ -99,7 +99,7 @@ endif
 libretro ?= -lretro
 
 LIBS = -lm
-DEFINES = -I. -DHAVE_SCREENSHOTS -DHAVE_BSV_MOVIE -DHAVE_BUILTIN_AUTOCONFIG -DRARCH_INTERNAL -DHAVE_CC_RESAMPLER
+DEFINES = -I. -DHAVE_SCREENSHOTS -DHAVE_BSV_MOVIE -DHAVE_BUILTIN_AUTOCONFIG -DRARCH_INTERNAL -DHAVE_CC_RESAMPLER -DHAVE_OVERLAY
 LDFLAGS = -L. -static-libgcc
 
 ifeq ($(TDM_GCC),)
@@ -141,7 +141,7 @@ endif
 
 ifeq ($(HAVE_OPENGL), 1)
    OBJ += gfx/gl.o gfx/math/matrix.o gfx/fonts/gl_font.o gfx/fonts/gl_raster_font.o gfx/gfx_context.o gfx/context/wgl_ctx.o gfx/shader_glsl.o gfx/glsym/rglgen.o gfx/glsym/glsym_gl.o
-   DEFINES += -DHAVE_OPENGL -DHAVE_OVERLAY -DHAVE_GLSL -DHAVE_GL_SYNC
+   DEFINES += -DHAVE_OPENGL -DHAVE_GLSL -DHAVE_GL_SYNC
    LIBS += -lopengl32 -lgdi32 -lcomdlg32
 endif
 
