@@ -247,20 +247,14 @@ bool renderchain_init_shader_fvf(void *data, void *pass_)
    return true;
 }
 
-static bool d3d_init_textures(void *data, const video_info_t *info)
+static bool renderchain_create_first_pass(void *data, const video_info_t *info)
 {
    HRESULT ret;
-   d3d_video_t *d3d = (d3d_video_t*)data;
-   LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
-
-   d3d->pixel_size   = info->rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
-   d3d->tex_w = d3d->tex_h = RARCH_SCALE_BASE * info->input_scale;
-
-   if (!renderchain_init_shader_fvf(d3d, d3d))
-      return false;
+   d3d_video_t *chain = (d3d_video_t*)data;
+   LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)chain->dev;
 
    ret = d3dr->CreateVertexBuffer(4 * sizeof(DrawVerticeFormats), 
-         D3DUSAGE_WRITEONLY, D3DFVF_CUSTOMVERTEX, D3DPOOL_MANAGED, &d3d->vertex_buf
+         D3DUSAGE_WRITEONLY, D3DFVF_CUSTOMVERTEX, D3DPOOL_MANAGED, &chain->vertex_buf
 #ifdef _XBOX360
          ,NULL
 #endif
@@ -269,8 +263,8 @@ static bool d3d_init_textures(void *data, const video_info_t *info)
    if (FAILED(ret))
       return false;
 
-   ret = d3dr->CreateTexture(d3d->tex_w, d3d->tex_h, 1, 0, info->rgb32 ? D3DFMT_LIN_X8R8G8B8 : D3DFMT_LIN_R5G6B5,
-         0, &d3d->tex
+   ret = d3dr->CreateTexture(chain->tex_w, chain->tex_h, 1, 0, info->rgb32 ? D3DFMT_LIN_X8R8G8B8 : D3DFMT_LIN_R5G6B5,
+         0, &chain->tex
 #ifdef _XBOX360
          , NULL
 #endif
@@ -285,34 +279,108 @@ static bool d3d_init_textures(void *data, const video_info_t *info)
    d3dr->SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
    d3dr->SetRenderState(D3DRS_ZENABLE, FALSE);
 
-   if (g_extern.console.screen.viewports.custom_vp.width == 0)
-      g_extern.console.screen.viewports.custom_vp.width = d3d->screen_width;
-
-   if (g_extern.console.screen.viewports.custom_vp.height == 0)
-      g_extern.console.screen.viewports.custom_vp.height = d3d->screen_height;
+   if (!renderchain_init_shader_fvf(chain, chain))
+      return false;
 
    return true;
 }
 
-static void d3d_reinit_textures(void *data, const video_info_t *video)
+
+static bool renderchain_init(void *data, const video_info_t *info)
+{
+   d3d_video_t *chain = (d3d_video_t*)data;
+   LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)chain->dev;
+
+   chain->pixel_size   = info->rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
+
+   if (!renderchain_create_first_pass(chain, info))
+      return false;
+
+   if (g_extern.console.screen.viewports.custom_vp.width == 0)
+      g_extern.console.screen.viewports.custom_vp.width = chain->screen_width;
+
+   if (g_extern.console.screen.viewports.custom_vp.height == 0)
+      g_extern.console.screen.viewports.custom_vp.height = chain->screen_height;
+
+   return true;
+}
+
+static bool d3d_init_chain(void *data, const video_info_t *info)
+{
+   d3d_video_t *d3d = (d3d_video_t*)data;
+   d3d_video_t *link_info = (d3d_video_t*)data;
+   LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
+   link_info->tex_w = link_info->tex_h = RARCH_SCALE_BASE * info->input_scale;
+
+   d3d_deinit_chain(d3d);
+#ifndef _XBOX
+   d3d->chain = new renderchain_t();
+   if (!d3d->chain)
+      return false;
+
+   if (!renderchain_init(d3d->chain, &d3d->video_info, d3dr, d3d->cgCtx, &d3d->final_viewport, &link_info,
+            d3d->video_info.rgb32 ? ARGB : RGB565))
+   {
+      RARCH_ERR("[D3D9]: Failed to init render chain.\n");
+      return false;
+   }
+
+   unsigned current_width = link_info.tex_w;
+   unsigned current_height = link_info.tex_h;
+   unsigned out_width = 0;
+   unsigned out_height = 0;
+
+   for (unsigned i = 1; i < d3d->shader.passes; i++)
+   {
+      renderchain_convert_geometry(d3d->chain, &link_info,
+            out_width, out_height,
+            current_width, current_height, &d3d->final_viewport);
+
+      link_info.pass = &d3d->shader.pass[i];
+      link_info.tex_w = next_pow2(out_width);
+      link_info.tex_h = next_pow2(out_height);
+
+      current_width = out_width;
+      current_height = out_height;
+
+      if (!renderchain_add_pass(d3d->chain, &link_info))
+      {
+         RARCH_ERR("[D3D9]: Failed to add pass.\n");
+         return false;
+      }
+   }
+#else
+ if (!renderchain_init(d3d, info))
+   {
+      RARCH_ERR("[D3D]: Failed to init render chain.\n");
+      return false;
+   }
+#endif
+
+#ifndef _XBOX
+#ifndef DONT_HAVE_STATE_TRACKER
+   if (!d3d_init_imports(d3d))
+   {
+      RARCH_ERR("[D3D9]: Failed to init imports.\n");
+      return false;
+   }
+#endif
+#endif
+
+   return true;
+}
+
+static void d3d_reinit_renderchain(void *data, const video_info_t *video)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
 
-   unsigned old_base_size = d3d->pixel_size;
-   unsigned old_width     = d3d->tex_w;
-   unsigned old_height    = d3d->tex_h;
    d3d->pixel_size   = video->rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
-
    d3d->tex_w = d3d->tex_h = RARCH_SCALE_BASE * video->input_scale;
 
-   if (old_base_size != d3d->pixel_size || old_width != d3d->tex_w || old_height != d3d->tex_h)
-   {
-      RARCH_LOG("Reinitializing renderchain - and textures (%u x %u @ %u bpp)\n", d3d->tex_w,
+   RARCH_LOG("Reinitializing renderchain - and textures (%u x %u @ %u bpp)\n", d3d->tex_w,
             d3d->tex_h, d3d->pixel_size * CHAR_BIT);
-      renderchain_clear(d3d);
-      d3d_init_textures(d3d, video);
-      RARCH_LOG("Reinitializing textures skipped.\n");
-   }
+   d3d_deinit_chain(d3d);
+   d3d_init_chain(d3d, video);
 }
 
 static bool d3d_init_base(void *data, const video_info_t *info)
@@ -339,26 +407,6 @@ static bool d3d_init_base(void *data, const video_info_t *info)
       return false;
    }
 
-
-   return true;
-}
-
-static bool d3d_init_chain(void *data, const video_info_t *info)
-{
-   d3d_video_t *d3d = (d3d_video_t*)data;
-   LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
-
-   d3d_init_textures(d3d, info);
-
-#ifndef _XBOX
-#ifndef DONT_HAVE_STATE_TRACKER
-   if (!d3d_init_imports(d3d))
-   {
-      RARCH_ERR("[D3D9]: Failed to init imports.\n");
-      return false;
-   }
-#endif
-#endif
 
    return true;
 }
@@ -1145,8 +1193,8 @@ static void *d3d_init(const video_info_t *info, const input_driver_t **input, vo
    if (driver.video_data)
    {
       d3d_video_t *vid = (d3d_video_t*)driver.video_data;
-      // Reinitialize textures as we might have changed pixel formats.
-      d3d_reinit_textures(vid, info);
+      // Reinitialize renderchain as we might have changed pixel formats.
+      d3d_reinit_renderchain(vid, info);
       if (input && input_data)
       {
          *input = driver.input;
