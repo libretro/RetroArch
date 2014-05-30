@@ -625,6 +625,8 @@ static int menu_settings_iterate(unsigned action)
    unsigned menu_type = 0;
    file_list_get_last(rgui->menu_stack, &dir, &menu_type);
 
+   rgui = (rgui_handle_t*)driver.menu;
+
    if (rgui->need_refresh)
       action = RGUI_ACTION_NOOP;
 
@@ -715,6 +717,8 @@ static int menu_settings_iterate(unsigned action)
       default:
          break;
    }
+
+   rgui = (rgui_handle_t*)driver.menu;
 
    file_list_get_last(rgui->menu_stack, &dir, &menu_type);
 
@@ -948,15 +952,20 @@ static int menu_viewport_iterate(unsigned action)
    return 0;
 }
 
-static void menu_parse_and_resolve(void *data, unsigned menu_type)
+static void menu_parse_and_resolve(unsigned menu_type)
 {
    const core_info_t *info = NULL;
    const char *dir;
    size_t i, list_size;
    file_list_t *list;
-   rgui_handle_t *rgui;
+   rgui_handle_t *rgui = (rgui_handle_t*)driver.menu;
 
-   rgui = (rgui_handle_t*)data;
+   if (!rgui)
+   {
+      RARCH_ERR("Cannot parse and resolve menu, menu handle is not initialized.\n");
+      return;
+   }
+
    dir = NULL;
 
    file_list_clear(rgui->selection_buf);
@@ -1260,9 +1269,9 @@ static int menu_custom_bind_iterate_keyboard(void *data, unsigned action)
    return 0;
 }
 
-static void menu_common_defer_decision_automatic(void *data)
+static void menu_common_defer_decision_automatic(void)
 {
-   rgui_handle_t *rgui = (rgui_handle_t*)data;
+   rgui_handle_t *rgui = (rgui_handle_t*)driver.menu;
 
    if (!rgui)
       return;
@@ -1271,9 +1280,9 @@ static void menu_common_defer_decision_automatic(void *data)
    rgui->msg_force = true;
 }
 
-static void menu_common_defer_decision_manual(void *data)
+static void menu_common_defer_decision_manual(void)
 {
-   rgui_handle_t *rgui = (rgui_handle_t*)data;
+   rgui_handle_t *rgui = (rgui_handle_t*)driver.menu;
 
    if (!rgui)
       return;
@@ -1632,12 +1641,12 @@ static int menu_common_iterate(unsigned action)
                   {
                      menu_update_system_info(driver.menu, &rgui->load_no_rom);
                      if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->defer_decision_automatic) 
-                        driver.menu_ctx->backend->defer_decision_automatic(rgui);
+                        driver.menu_ctx->backend->defer_decision_automatic();
                   }
                   else if (ret == 0)
                   {
                      if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->defer_decision_manual) 
-                        driver.menu_ctx->backend->defer_decision_manual(rgui);
+                        driver.menu_ctx->backend->defer_decision_manual();
                   }
                }
                else
@@ -1684,7 +1693,7 @@ static int menu_common_iterate(unsigned action)
             menu_type == RGUI_SETTINGS_DISK_APPEND))
    {
       rgui->need_refresh = false;
-      menu_parse_and_resolve(rgui, menu_type);
+      menu_parse_and_resolve(menu_type);
    }
 
    if (driver.menu_ctx && driver.menu_ctx->iterate)
