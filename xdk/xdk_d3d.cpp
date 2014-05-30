@@ -461,6 +461,14 @@ static void *d3d_init(const video_info_t *vid, const input_driver_t **input, voi
       d3d_video_t *d3d = (d3d_video_t*)driver.video_data;
       // Reinitialize textures as we might have changed pixel formats.
       d3d_reinit_textures(d3d, vid);
+      if (input && input_data)
+      {
+         *input = driver.input;
+         *input_data = driver.input_data;
+      }
+
+      driver.video_data_own = true;
+      driver.input_data_own = true;
       return driver.video_data;
    }
 
@@ -490,6 +498,11 @@ static void *d3d_init(const video_info_t *vid, const input_driver_t **input, voi
       delete d3d;
       return NULL;
    }
+
+#ifdef _XBOX
+   driver.video_data_own = true;
+   driver.input_data_own = true;
+#endif
 
    return d3d;
 }

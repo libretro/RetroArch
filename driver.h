@@ -484,13 +484,15 @@ typedef struct driver
    bool video_cache_context;
    bool video_cache_context_ack; // Set to true by driver if context caching succeeded.
 
-   // Set if the respective handles are owned by RetroArch driver core.
-   // Consoles upper logic will generally intialize the drivers before
-   // the driver core initializes. It will then be up to upper logic
-   // to finally free() up the driver handles.
-   // Driver core will still call init() and free(), but in this case
-   // these calls should be seen as "reinit() + ref_count++" and "ref_count--"
-   // respectively.
+   // Set this to true if the platform in question needs to 'own' the respective
+   // handle and therefore skip regular RetroArch driver teardown/reiniting procedure.
+   // If set to true, the 'free' function will get skipped. It is then up to the
+   // driver implementation to properly handle 'reiniting' inside the 'init' function
+   // and make sure it returns the existing handle instead of allocating and returning
+   // a pointer to a new handle.
+   //
+   // Typically, if a driver intends to make use of this, it should set this to true
+   // at the end of its 'init' function.
    bool video_data_own;
    bool audio_data_own;
    bool input_data_own;

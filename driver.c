@@ -503,17 +503,17 @@ bool driver_update_system_av_info(const struct retro_system_av_info *info)
 
 void init_drivers(void)
 {
-   driver.video_data_own = !driver.video_data;
-   driver.audio_data_own = !driver.audio_data;
-   driver.input_data_own = !driver.input_data;
+   driver.video_data_own = false;
+   driver.audio_data_own = false;
+   driver.input_data_own = false;
 #ifdef HAVE_CAMERA
-   driver.camera_data_own = !driver.camera_data;
+   driver.camera_data_own = false;
 #endif
 #ifdef HAVE_LOCATION
-   driver.location_data_own = !driver.location_data;
+   driver.location_data_own = false;
 #endif
 #ifdef HAVE_OSK
-   driver.osk_data_own = !driver.osk_data;
+   driver.osk_data_own = false;
 #endif
 
    adjust_system_rates();
@@ -550,6 +550,64 @@ void init_drivers(void)
    g_extern.system.frame_time_last = 0;
 }
 
+void rarch_deinit_filter(void)
+{
+   rarch_softfilter_free(g_extern.filter.filter);
+   free(g_extern.filter.buffer);
+   memset(&g_extern.filter, 0, sizeof(g_extern.filter));
+}
+
+static void deinit_pixel_converter(void)
+{
+   scaler_ctx_gen_reset(&driver.scaler);
+   memset(&driver.scaler, 0, sizeof(driver.scaler));
+   free(driver.scaler_out);
+   driver.scaler_out = NULL;
+}
+
+static void deinit_shader_dir(void)
+{
+   // It handles NULL, no worries :D
+   dir_list_free(g_extern.shader_dir.list);
+   g_extern.shader_dir.list = NULL;
+   g_extern.shader_dir.ptr  = 0;
+}
+
+static void compute_monitor_fps_statistics(void)
+{
+   if (g_settings.video.threaded)
+   {
+      RARCH_LOG("Monitor FPS estimation is disabled for threaded video.\n");
+      return;
+   }
+
+   if (g_extern.measure_data.frame_time_samples_count < 2 * MEASURE_FRAME_TIME_SAMPLES_COUNT)
+   {
+      RARCH_LOG("Does not have enough samples for monitor refresh rate estimation. Requires to run for at least %u frames.\n",
+            2 * MEASURE_FRAME_TIME_SAMPLES_COUNT);
+      return;
+   }
+
+   double avg_fps = 0.0;
+   double stddev = 0.0;
+   unsigned samples = 0;
+   if (driver_monitor_fps_statistics(&avg_fps, &stddev, &samples))
+   {
+      RARCH_LOG("Average monitor Hz: %.6f Hz. (%.3f %% frame time deviation, based on %u last samples).\n",
+            avg_fps, 100.0 * stddev, samples);
+   }
+}
+
+static void uninit_video_misc(void)
+{
+   deinit_pixel_converter();
+
+   rarch_deinit_filter();
+
+   deinit_shader_dir();
+   compute_monitor_fps_statistics();
+}
+
 void uninit_drivers(void)
 {
    uninit_audio();
@@ -557,44 +615,41 @@ void uninit_drivers(void)
    if (g_extern.system.hw_render_callback.context_destroy && !driver.video_cache_context)
       g_extern.system.hw_render_callback.context_destroy();
 
-#ifndef _XBOX
    uninit_video_input();
-#endif
+   uninit_video_misc();
+
+   if (!driver.video_data_own)
+      driver.video_data = NULL;
 
 #ifdef HAVE_CAMERA
-   uninit_camera();
-
-   if (driver.camera_data_own)
+   if (!driver.camera_data_own)
+   {
+      uninit_camera();
       driver.camera_data = NULL;
-   driver.camera_data_own = false;
+   }
 #endif
 
 #ifdef HAVE_LOCATION
-   uninit_location();
-
-   if (driver.location_data_own)
+   if (!driver.location_data_own)
+   {
+      uninit_location();
       driver.location_data = NULL;
-   driver.location_data_own = false;
+   }
 #endif
    
 #ifdef HAVE_OSK
-   uninit_osk();
-
-   if (driver.osk_data_own)
+   if (!driver.osk_data_own)
+   {
+      uninit_osk();
       driver.osk_data = NULL;
-   driver.osk_data_own    = false;
+   }
 #endif
-#ifndef _XBOX
-   if (driver.video_data_own)
-      driver.video_data = NULL;
-   driver.video_data_own  = false;
-   if (driver.input_data_own)
+
+   if (!driver.input_data_own)
       driver.input_data = NULL;
-   driver.input_data_own  = false;
-#endif
-   if (driver.audio_data_own)
+
+   if (!driver.audio_data_own)
       driver.audio_data = NULL;
-   driver.audio_data_own  = false;
 }
 
 void rarch_init_dsp_filter(void)
@@ -803,31 +858,6 @@ bool driver_monitor_fps_statistics(double *refresh_rate, double *deviation, unsi
    return true;
 }
 
-static void compute_monitor_fps_statistics(void)
-{
-   if (g_settings.video.threaded)
-   {
-      RARCH_LOG("Monitor FPS estimation is disabled for threaded video.\n");
-      return;
-   }
-
-   if (g_extern.measure_data.frame_time_samples_count < 2 * MEASURE_FRAME_TIME_SAMPLES_COUNT)
-   {
-      RARCH_LOG("Does not have enough samples for monitor refresh rate estimation. Requires to run for at least %u frames.\n",
-            2 * MEASURE_FRAME_TIME_SAMPLES_COUNT);
-      return;
-   }
-
-   double avg_fps = 0.0;
-   double stddev = 0.0;
-   unsigned samples = 0;
-   if (driver_monitor_fps_statistics(&avg_fps, &stddev, &samples))
-   {
-      RARCH_LOG("Average monitor Hz: %.6f Hz. (%.3f %% frame time deviation, based on %u last samples).\n",
-            avg_fps, 100.0 * stddev, samples);
-   }
-}
-
 void uninit_audio(void)
 {
    if (driver.audio_data && driver.audio)
@@ -857,13 +887,6 @@ void uninit_audio(void)
    rarch_deinit_dsp_filter();
 
    compute_audio_buffer_statistics();
-}
-
-void rarch_deinit_filter(void)
-{
-   rarch_softfilter_free(g_extern.filter.filter);
-   free(g_extern.filter.buffer);
-   memset(&g_extern.filter, 0, sizeof(g_extern.filter));
 }
 
 void rarch_init_filter(enum retro_pixel_format colfmt)
@@ -932,14 +955,6 @@ error:
    rarch_deinit_filter();
 }
 
-static void deinit_shader_dir(void)
-{
-   // It handles NULL, no worries :D
-   dir_list_free(g_extern.shader_dir.list);
-   g_extern.shader_dir.list = NULL;
-   g_extern.shader_dir.ptr  = 0;
-}
-
 static void init_shader_dir(void)
 {
    unsigned i;
@@ -958,14 +973,6 @@ static void init_shader_dir(void)
 
    for (i = 0; i < g_extern.shader_dir.list->size; i++)
       RARCH_LOG("Found shader \"%s\"\n", g_extern.shader_dir.list->elems[i].data);
-}
-
-static void deinit_pixel_converter(void)
-{
-   scaler_ctx_gen_reset(&driver.scaler);
-   memset(&driver.scaler, 0, sizeof(driver.scaler));
-   free(driver.scaler_out);
-   driver.scaler_out = NULL;
 }
 
 static bool init_video_pixel_converter(unsigned size)
@@ -1168,18 +1175,11 @@ void uninit_video_input(void)
    }
 #endif
 
-   if (driver.input_data != driver.video_data && driver.input && driver.input->free)
+   if (!driver.input_data_own && driver.input_data != driver.video_data && driver.input && driver.input->free)
       input_free_func();
 
-   if (driver.video_data && driver.video && driver.video->free)
+   if (!driver.video_data_own && driver.video_data && driver.video && driver.video->free)
       video_free_func();
-
-   deinit_pixel_converter();
-
-   rarch_deinit_filter();
-
-   deinit_shader_dir();
-   compute_monitor_fps_statistics();
 }
 
 driver_t driver;
