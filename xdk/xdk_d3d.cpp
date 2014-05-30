@@ -304,18 +304,15 @@ static bool d3d_init_chain(void *data, const video_info_t *info)
 
    d3d_init_textures(d3d, info);
 
-   ret = d3d->dev->CreateVertexBuffer(4 * sizeof(DrawVerticeFormats), 
+   ret = d3dr->CreateVertexBuffer(4 * sizeof(DrawVerticeFormats), 
          D3DUSAGE_WRITEONLY, D3DFVF_CUSTOMVERTEX, D3DPOOL_MANAGED, &d3d->vertex_buf
 #ifdef _XBOX360
          ,NULL
 #endif
          );
 
-   if (ret != S_OK)
-   {
-      RARCH_ERR("[d3d_init::] Failed at CreateVertexBuffer.\n");
+   if (FAILED(ret))
       return false;
-   }
 
 #if defined(_XBOX360)
    static const D3DVERTEXELEMENT VertexElements[] =
@@ -325,12 +322,8 @@ static bool d3d_init_chain(void *data, const video_info_t *info)
       D3DDECL_END()
    };
 
-   ret = d3d->dev->CreateVertexDeclaration(VertexElements, &d3d->v_decl);
-
-   if (ret != S_OK)
-   {
-      RARCH_ERR("[d3d_init::] Failed at CreateVertexDeclaration.\n");
-   }
+   if (FAILED(d3dr->CreateVertexDeclaration(VertexElements, &d3d->v_decl))
+      return false;
 #endif
 
    return true;
@@ -491,10 +484,7 @@ static bool texture_image_render(void *data, struct texture_image *out_img,
    HRESULT ret = out_img->vertex_buf->Lock(0, 0, (unsigned char**)&pCurVerts, 0);
 
    if (FAILED(ret))
-   {
-      RARCH_ERR("Error occurred during m_pVertexBuffer->Lock().\n");
       return false;
-   }
 
    // copy the new verts over the old verts
    memcpy(pCurVerts, newVerts, 4 * sizeof(DrawVerticeFormats));
@@ -692,14 +682,18 @@ static void render_pass(void *data, const void *frame, unsigned width, unsigned 
    blit_to_texture(d3d, frame, width, height, pitch);
    set_vertices(d3d, 1, width, height);
 
+#ifdef _XBOX
    if (g_extern.frame_count)
+   {
 #ifdef _XBOX1
       d3dr->SwitchTexture(0, d3d->tex);
 #elif defined _XBOX360
       d3dr->SetTextureFetchConstant(0, d3d->tex);
 #endif
-   else if (d3d->tex) 
-      RD3DDevice_SetTexture(d3dr, 0, d3d->tex);
+   }
+   else if (d3d->tex)
+#endif
+   RD3DDevice_SetTexture(d3dr, 0, d3d->tex);
    RD3DDevice_SetViewport(d3d->dev, &d3d->final_viewport);
    RD3DDevice_SetSamplerState_MinFilter(d3dr, 0, g_settings.video.smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT);
    RD3DDevice_SetSamplerState_MagFilter(d3dr, 0, g_settings.video.smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT);
@@ -713,7 +707,16 @@ static void render_pass(void *data, const void *frame, unsigned width, unsigned 
    D3DDevice_SetVertexDeclaration(d3dr, d3d->v_decl);
    D3DDevice_SetStreamSource_Inline(d3dr, 0, d3d->vertex_buf, 0, sizeof(DrawVerticeFormats));
 #endif
+
+#ifdef _XBOX
    d3dr->DrawPrimitive(D3DPT_TRIANGLESTRIP, 0, 2);
+#else
+   if (SUCCEEDED(d3dr->BeginScene()))
+   {
+      d3dr->DrawPrimitive(D3DPT_TRIANGLESTRIP, 0, 2);
+      d3dr->EndScene();
+   }
+#endif
 
    g_extern.frame_count++;
 
@@ -763,9 +766,6 @@ static bool d3d_frame(void *data, const void *frame,
       d3d_draw_texture(d3d);
 #endif
 
-   if (d3d && d3d->ctx_driver && d3d->ctx_driver->update_window_title)
-      d3d->ctx_driver->update_window_title(d3d);
-
    if (msg)
    {
 #if defined(_XBOX1)
@@ -781,6 +781,9 @@ static bool d3d_frame(void *data, const void *frame,
       font_parms.scale = 21;
       d3d->font_ctx->render_msg(d3d, msg, &font_parms);
    }
+
+   if (d3d && d3d->ctx_driver && d3d->ctx_driver->update_window_title)
+      d3d->ctx_driver->update_window_title(d3d);
 
    if (d3d && d3d->ctx_driver && d3d->ctx_driver->swap_buffers)
       d3d->ctx_driver->swap_buffers(d3d);

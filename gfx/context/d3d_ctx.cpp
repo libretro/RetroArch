@@ -127,13 +127,13 @@ static void gfx_ctx_d3d_swap_buffers(void *data)
 static void gfx_ctx_d3d_update_title(void *data)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
-   char buffer[128], buffer_fps[128];
+   char buf[128], buffer_fps[128];
    bool fps_draw = g_settings.fps_show;
 
-   if (gfx_get_fps(buffer, sizeof(buffer), fps_draw ? buffer_fps : NULL, sizeof(buffer_fps)))
+   if (gfx_get_fps(buf, sizeof(buf), fps_draw ? buffer_fps : NULL, sizeof(buffer_fps)))
    {
 #ifndef _XBOX
-      SetWindowText(d3d->hWnd, buffer);
+      SetWindowText(d3d->hWnd, buf);
 #endif
    }
 
@@ -149,7 +149,9 @@ static void gfx_ctx_d3d_update_title(void *data)
       msg_queue_push(g_extern.msg_queue, buffer_fps, 1, 1);
    }
 
+#ifndef _XBOX
    g_extern.frame_count++;
+#endif
 }
 
 static void gfx_ctx_d3d_show_mouse(void *data, bool state)
