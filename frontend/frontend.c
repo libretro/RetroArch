@@ -207,7 +207,7 @@ static int main_entry_iterate_menu_preinit(args_type() args)
 
 static int main_entry_iterate_menu(args_type() args)
 {
-   if (menu_iterate(driver.menu))
+   if (menu_iterate())
    {
       if (driver.frontend_ctx && driver.frontend_ctx->process_events)
          driver.frontend_ctx->process_events(args);

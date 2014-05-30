@@ -420,7 +420,7 @@ typedef struct menu_ctx_driver
    void  (*free_assets)(void*);
    void  (*populate_entries)(void*, unsigned);
    void  (*iterate)(void*, unsigned);
-   int   (*input_postprocess)(void *, uint64_t);
+   int   (*input_postprocess)(uint64_t);
    void  (*navigation_clear)(void *);
    void  (*navigation_decrement)(void *);
    void  (*navigation_increment)(void *);

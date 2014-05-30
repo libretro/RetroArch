@@ -331,9 +331,9 @@ static void rmenu_xui_frame(void *data)
    d3dr->SetViewport(&d3d->final_viewport);
 }
 
-static int rmenu_xui_input_postprocess(void *data, uint64_t old_state)
+static int rmenu_xui_input_postprocess(uint64_t old_state)
 {
-   rgui_handle_t *rgui = (rgui_handle_t*)data;
+   rgui_handle_t *rgui = (rgui_handle_t*)driver.menu;
    bool quit = false;
    bool resize = false;
    unsigned width;

@@ -482,12 +482,10 @@ static void rmenu_free(void *data)
    rmenu_free_assets(data);
 }
 
-static int rmenu_input_postprocess(void *data, uint64_t old_state)
+static int rmenu_input_postprocess(uint64_t old_state)
 {
-   int ret;
-   rgui_handle_t *rgui = (rgui_handle_t*)data;
-
-   ret = 0;
+   rgui_handle_t *rgui = (rgui_handle_t*)driver.menu;
+   int ret = 0;
 
    if ((rgui->trigger_state & (1ULL << RARCH_MENU_TOGGLE)) &&
          g_extern.main_is_init &&

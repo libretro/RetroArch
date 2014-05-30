@@ -187,7 +187,7 @@ typedef struct
 } rgui_handle_t;
 
 void *menu_init(const void *data);
-bool menu_iterate(void *data);
+bool menu_iterate(void);
 void menu_free(void *data);
 
 void menu_ticker_line(char *buf, size_t len, unsigned tick, const char *str, bool selected);

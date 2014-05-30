@@ -385,7 +385,7 @@ void menu_free(void *data)
    rom_history_free(rgui->history);
    core_info_list_free(rgui->core_info);
 
-   free(rgui);
+   free(data);
 }
 
 void menu_ticker_line(char *buf, size_t len, unsigned index, const char *str, bool selected)
@@ -525,19 +525,19 @@ void load_menu_game_new_core(void)
 #endif
 }
 
-bool menu_iterate(void *data)
+bool menu_iterate(void)
 {
    unsigned action;
    static bool initial_held = true;
    static bool first_held = false;
    uint64_t input_state;
    int32_t input_entry_ret, ret;
-   rgui_handle_t *rgui;
+   rgui_handle_t *rgui= (rgui_handle_t*)driver.menu;
+   RARCH_LOG("rgui is NULL: %d\n", rgui == NULL);
 
    input_state = 0;
    input_entry_ret = 0;
    ret = 0;
-   rgui = (rgui_handle_t*)data;
 
    if (!rgui)
       return false;
@@ -620,6 +620,8 @@ bool menu_iterate(void *data)
    if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->iterate) 
       input_entry_ret = driver.menu_ctx->backend->iterate(action);
 
+   rgui = (rgui_handle_t*)driver.menu;
+
    if (driver.video_data && driver.video_poke && driver.video_poke->set_texture_enable)
       driver.video_poke->set_texture_enable(driver.video_data, rgui->frame_buf_show, MENU_TEXTURE_FULLSCREEN);
 
@@ -640,7 +642,7 @@ bool menu_iterate(void *data)
             MENU_TEXTURE_FULLSCREEN);
 
    if (driver.menu_ctx && driver.menu_ctx->input_postprocess)
-      ret = driver.menu_ctx->input_postprocess(rgui, rgui->old_input_state);
+      ret = driver.menu_ctx->input_postprocess(rgui->old_input_state);
 
    if (ret < 0)
    {

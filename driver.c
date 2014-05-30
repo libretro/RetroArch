@@ -633,10 +633,7 @@ void uninit_drivers(void)
 
 #ifdef HAVE_MENU
    if (!driver.menu_data_own)
-   {
       menu_free(driver.menu);
-      driver.menu = NULL;
-   }
 #endif
 
    uninit_video_input();

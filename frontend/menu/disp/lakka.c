@@ -1192,10 +1192,9 @@ static void lakka_free(void *data)
       free((uint8_t*)rgui->font);
 }
 
-static int lakka_input_postprocess(void *data, uint64_t old_state)
+static int lakka_input_postprocess(uint64_t old_state)
 {
-   rgui_handle_t *rgui = (rgui_handle_t*)data;
-
+   rgui_handle_t *rgui = (rgui_handle_t*)driver.menu;
    int ret = 0;
 
    if ((rgui && rgui->trigger_state & (1ULL << RARCH_MENU_TOGGLE)) &&

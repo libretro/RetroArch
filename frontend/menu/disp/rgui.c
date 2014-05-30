@@ -612,15 +612,12 @@ static void rgui_free(void *data)
       free((uint8_t*)rgui->font);
 }
 
-static int rgui_input_postprocess(void *data, uint64_t old_state)
+static int rgui_input_postprocess(uint64_t old_state)
 {
-   int ret;
-   rgui_handle_t *rgui;
+   rgui_handle_t *rgui = (rgui_handle_t*)driver.menu;
+   int ret = 0;
 
    (void)old_state;
-   
-   rgui = (rgui_handle_t*)data;
-   ret = 0;
 
    if ((rgui->trigger_state & (1ULL << RARCH_MENU_TOGGLE)) &&
          g_extern.main_is_init &&
