@@ -56,6 +56,7 @@ typedef struct d3d_video
    bool quitting;
    bool vsync;
    bool needs_restore;
+   bool overlays_enabled;
    unsigned screen_width;
    unsigned screen_height;
    unsigned dev_rotation;
@@ -66,7 +67,6 @@ typedef struct d3d_video
    LPDIRECT3DSURFACE lpSurface;
    LPDIRECT3DTEXTURE lpTexture_ot_as16srgb;
    LPDIRECT3DTEXTURE lpTexture_ot;
-   LPDIRECT3DVERTEXDECLARATION v_decl;
 #endif
 #ifdef HAVE_MENU
    bool rgui_texture_enable;
@@ -84,6 +84,9 @@ typedef struct d3d_video
    LPDIRECT3DVERTEXBUFFER vertex_buf;
    unsigned last_width;
    unsigned last_height;
+#ifdef HAVE_D3D9
+   LPDIRECT3DVERTEXDECLARATION vertex_decl;
+#endif
    // RENDERCHAIN PASS -> INFO
    unsigned tex_w;
    unsigned tex_h;

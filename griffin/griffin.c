@@ -18,6 +18,11 @@
 #define HAVE_SHADERS
 #endif
 
+#ifdef _XBOX
+#define DONT_HAVE_BITMAPFONTS
+#define DONT_HAVE_STATE_TRACKER
+#endif
+
 #if defined(_XBOX)
 #include "../msvc/msvc_compat.h"
 #endif
@@ -239,10 +244,6 @@ VIDEO DRIVER
 /*============================================================
 FONTS
 ============================================================ */
-
-#ifdef _XBOX
-#define DONT_HAVE_BITMAPFONTS
-#endif
 
 #if defined(HAVE_OPENGL) || defined(HAVE_D3D8) || defined(HAVE_D3D9)
 
