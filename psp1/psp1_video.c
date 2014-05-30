@@ -410,10 +410,6 @@ static void psp_free(void *data)
    free(data);
 }
 
-#ifdef HAVE_MENU
-static void psp_restart(void) {}
-#endif
-
 static void psp_set_rotation(void *data, unsigned rotation)
 {
    psp1_video_t *psp = (psp1_video_t*)data;
@@ -515,10 +511,6 @@ const video_driver_t video_psp1 = {
    NULL,
    psp_free,
    "psp1",
-
-#if defined(HAVE_MENU)
-   psp_restart,
-#endif
 
    psp_set_rotation,
    NULL,

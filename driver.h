@@ -376,10 +376,6 @@ typedef struct video_driver
    void (*free)(void *data);
    const char *ident;
 
-#ifdef HAVE_MENU
-   void (*restart)(void);
-#endif
-
    void (*set_rotation)(void *data, unsigned rotation);
    void (*viewport_info)(void *data, struct rarch_viewport *vp);
 

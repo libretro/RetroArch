@@ -943,10 +943,6 @@ const video_driver_t video_lima = {
   lima_gfx_free,
   "lima",
 
-#ifdef HAVE_MENU
-  NULL, /* restart */
-#endif
-
   lima_gfx_set_rotation,
   lima_gfx_viewport_info,
   NULL, /* read_viewport */

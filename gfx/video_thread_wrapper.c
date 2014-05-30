@@ -791,11 +791,6 @@ static void thread_get_poke_interface(void *data, const video_poke_interface_t *
       *iface = NULL;
 }
 
-#if defined(HAVE_MENU)
-// all stubs for now, might not have to implement them unless we want to port this to consoles
-static void thread_restart(void) {}
-#endif
-
 static const video_driver_t video_thread = {
    thread_init_never_call, // Should never be called directly.
    thread_frame,
@@ -805,9 +800,6 @@ static const video_driver_t video_thread = {
    thread_set_shader,
    thread_free,
    "Thread wrapper",
-#if defined(HAVE_MENU)
-   thread_restart,
-#endif
    thread_set_rotation,
    thread_viewport_info,
    thread_read_viewport,

@@ -472,8 +472,6 @@ static void gx_efb_screenshot(void)
 
 #endif
 
-static void gx_restart(void) { }
-
 static void *gx_init(const video_info_t *video,
       const input_driver_t **input, void **input_data)
 {
@@ -1259,7 +1257,6 @@ const video_driver_t video_gx = {
    .ident = "gx",
    .set_rotation = gx_set_rotation,
    .viewport_info = gx_viewport_info,
-   .restart = gx_restart,
 #ifdef HAVE_OVERLAY
    .overlay_interface = gx_get_overlay_interface,
 #endif

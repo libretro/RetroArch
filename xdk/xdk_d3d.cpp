@@ -1243,28 +1243,6 @@ static void *d3d_init(const video_info_t *info, const input_driver_t **input, vo
    return vid;
 }
 
-static void d3d_restart(void)
-{
-   d3d_video_t *d3d = (d3d_video_t*)driver.video_data;
-   LPDIRECT3DDEVICE d3dr = d3d->dev;
-
-   if (!d3d)
-      return;
-
-   D3DPRESENT_PARAMETERS d3dpp;
-   video_info_t video_info = {0};
-
-   video_info.vsync = g_settings.video.vsync;
-   video_info.force_aspect = false;
-   video_info.smooth = g_settings.video.smooth;
-   video_info.input_scale = 2;
-   video_info.fullscreen = true;
-   video_info.rgb32 = (d3d->pixel_size == sizeof(uint32_t)) ? true : false;
-   d3d_make_d3dpp(d3d, &video_info, &d3dpp);
-
-   d3dr->Reset(&d3dpp);
-}
-
 const video_driver_t video_d3d = {
    d3d_init,
    d3d_frame,
@@ -1274,7 +1252,6 @@ const video_driver_t video_d3d = {
    d3d_set_shader,
    d3d_free,
    "d3d",
-   d3d_restart,
    d3d_set_rotation,
    NULL, /* viewport_info */
    NULL, /* read_viewport */
