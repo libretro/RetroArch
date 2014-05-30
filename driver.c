@@ -598,16 +598,6 @@ static void compute_monitor_fps_statistics(void)
    }
 }
 
-static void uninit_video_misc(void)
-{
-   deinit_pixel_converter();
-
-   rarch_deinit_filter();
-
-   deinit_shader_dir();
-   compute_monitor_fps_statistics();
-}
-
 void uninit_drivers(void)
 {
    uninit_audio();
@@ -616,7 +606,6 @@ void uninit_drivers(void)
       g_extern.system.hw_render_callback.context_destroy();
 
    uninit_video_input();
-   uninit_video_misc();
 
    if (!driver.video_data_own)
       driver.video_data = NULL;
@@ -1180,6 +1169,13 @@ void uninit_video_input(void)
 
    if (!driver.video_data_own && driver.video_data && driver.video && driver.video->free)
       video_free_func();
+
+   deinit_pixel_converter();
+
+   rarch_deinit_filter();
+
+   deinit_shader_dir();
+   compute_monitor_fps_statistics();
 }
 
 driver_t driver;
