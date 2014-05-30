@@ -209,10 +209,8 @@ static void d3d_init_textures(void *data, const video_info_t *video)
    d3d->pixel_size   = video->rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
 
    if (d3d->tex)
-   {
       d3d->tex->Release();
-      d3d->tex = NULL;
-   }
+   d3d->tex = NULL;
 
    ret = d3d->dev->CreateTexture(d3d->tex_w, d3d->tex_h, 1, 0, video->rgb32 ? D3DFMT_LIN_X8R8G8B8 : D3DFMT_LIN_R5G6B5,
          0, &d3d->tex
@@ -221,15 +219,8 @@ static void d3d_init_textures(void *data, const video_info_t *video)
 #endif
          );
 
-   if (ret != S_OK)
-   {
-      RARCH_ERR("[d3d_init_textures::] failed at CreateTexture.\n");
+   if (FAILED(ret))
       return;
-   }
-
-   D3DLOCKED_RECT d3dlr;
-   D3DTexture_LockRect(d3d->tex, 0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);
-   memset(d3dlr.pBits, 0, d3d->tex_w * d3dlr.Pitch);
 
 #ifdef _XBOX1
    d3d->dev->SetRenderState(D3DRS_LIGHTING, FALSE);
