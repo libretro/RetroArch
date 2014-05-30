@@ -1176,7 +1176,7 @@ static void menu_parse_and_resolve(unsigned menu_type)
 
    rgui->scroll_indices_size = 0;
    if (menu_type != RGUI_SETTINGS_OPEN_HISTORY)
-      menu_build_scroll_indices(rgui, rgui->selection_buf);
+      menu_build_scroll_indices(rgui->selection_buf);
 
    // Before a refresh, we could have deleted a file on disk, causing
    // selection_ptr to suddendly be out of range. Ensure it doesn't overflow.
