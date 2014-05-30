@@ -153,6 +153,7 @@ HRESULT CRetroArchMain::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
 static void* rmenu_xui_init(void)
 {
    HRESULT hr;
+   TypefaceDescriptor typeface = {0};
 
    rgui_handle_t *rgui = (rgui_handle_t*)calloc(1, sizeof(*rgui));
 
@@ -187,7 +188,6 @@ static void* rmenu_xui_init(void)
    }
 
    /* Register font */
-   TypefaceDescriptor typeface = {0};
    typeface.szTypeface = L"Arial Unicode MS";
    typeface.szLocator = L"file://game:/media/rarch.ttf";
    typeface.szReserved1 = NULL;
@@ -286,9 +286,9 @@ static void xui_render_message(const char *msg)
 	}
 }
 
-static void rmenu_xui_frame(void *data)
+static void rmenu_xui_frame(void)
 {
-   d3d_video_t *d3d = (d3d_video_t*)data;
+   d3d_video_t *d3d = (d3d_video_t*)driver.video_data;
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
 
    D3DVIEWPORT vp_full;
@@ -656,7 +656,7 @@ static void rmenu_xui_render(void)
       if (!str)
          str = "";
       snprintf(msg, sizeof(msg), "%s\n%s", rgui->keyboard.label, str);
-      rmenu_xui_render_messagebox(rgui, msg);
+      rmenu_xui_render_messagebox(msg);
    }
 }
 
