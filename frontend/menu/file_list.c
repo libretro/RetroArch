@@ -55,6 +55,9 @@ void file_list_push(file_list_t *list,
 
 void file_list_pop(file_list_t *list, size_t *directory_ptr)
 {
+   if (!list)
+      return;
+
    if (!(list->size == 0))
    {
       if (driver.menu_ctx && driver.menu_ctx->list_delete)
@@ -74,6 +77,10 @@ void file_list_pop(file_list_t *list, size_t *directory_ptr)
 void file_list_free(file_list_t *list)
 {
    size_t i;
+
+   if (!list)
+      return;
+
    for (i = 0; i < list->size; i++)
       free(list->list[i].path);
    free(list->list);
@@ -83,6 +90,10 @@ void file_list_free(file_list_t *list)
 void file_list_clear(file_list_t *list)
 {
    size_t i;
+
+   if (!list)
+      return;
+
    for (i = 0; i < list->size; i++)
    {
       free(list->list[i].path);
@@ -97,6 +108,9 @@ void file_list_clear(file_list_t *list)
 void file_list_set_alt_at_offset(file_list_t *list, size_t index,
       const char *alt)
 {
+   if (!list)
+      return;
+
    free(list->list[index].alt);
    list->list[index].alt = strdup(alt);
 }
@@ -104,6 +118,9 @@ void file_list_set_alt_at_offset(file_list_t *list, size_t index,
 void file_list_get_alt_at_offset(const file_list_t *list, size_t index,
       const char **alt)
 {
+   if (!list)
+      return;
+
    if (alt)
       *alt = list->list[index].alt ? list->list[index].alt : list->list[index].path;
 }
@@ -119,12 +136,18 @@ static int file_list_alt_cmp(const void *a_, const void *b_)
 
 void file_list_sort_on_alt(file_list_t *list)
 {
+   if (!list)
+      return;
+
    qsort(list->list, list->size, sizeof(list->list[0]), file_list_alt_cmp);
 }
 
 void file_list_get_at_offset(const file_list_t *list, size_t index,
       const char **path, unsigned *file_type)
 {
+   if (!list)
+      return;
+
    if (path)
       *path = list->list[index].path;
    if (file_type)
@@ -134,6 +157,9 @@ void file_list_get_at_offset(const file_list_t *list, size_t index,
 void file_list_get_last(const file_list_t *list,
       const char **path, unsigned *file_type)
 {
+   if (!list)
+      return;
+
    if (list->size)
       file_list_get_at_offset(list, list->size - 1, path, file_type);
 }
@@ -143,6 +169,10 @@ bool file_list_search(const file_list_t *list, const char *needle, size_t *index
    size_t i;
    const char *alt;
    bool ret = false;
+
+   if (!list)
+      return false;
+
    for (i = 0; i < list->size; i++)
    {
       file_list_get_alt_at_offset(list, i, &alt);
@@ -165,4 +195,3 @@ bool file_list_search(const file_list_t *list, const char *needle, size_t *index
 
    return ret;
 }
-

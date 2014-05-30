@@ -34,6 +34,10 @@
 #include "gfx/context/x11_common.h"
 #endif
 
+#ifdef HAVE_MENU
+#include "frontend/menu/menu_common.h"
+#endif
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -501,6 +505,20 @@ bool driver_update_system_av_info(const struct retro_system_av_info *info)
    return true;
 }
 
+#ifdef HAVE_MENU
+static void init_menu(void)
+{
+   if (!driver.menu_ctx)
+      find_menu_driver();
+
+   if (!(driver.menu = (rgui_handle_t*)menu_init(driver.menu_ctx)))
+   {
+      RARCH_ERR("Cannot initialize menu.\n");
+      rarch_fail(1, "init_menu()");
+   }
+}
+#endif
+
 void init_drivers(void)
 {
    driver.video_data_own = false;
@@ -515,10 +533,14 @@ void init_drivers(void)
 #ifdef HAVE_OSK
    driver.osk_data_own = false;
 #endif
+#ifdef HAVE_MENU
+   driver.menu_data_own = false;
+#endif
 
    adjust_system_rates();
 
    g_extern.frame_count = 0;
+
    init_video_input();
 
    if (!driver.video_cache_context_ack && g_extern.system.hw_render_callback.context_reset)
@@ -541,6 +563,10 @@ void init_drivers(void)
 
 #ifdef HAVE_OSK
    init_osk();
+#endif
+
+#ifdef HAVE_MENU
+   init_menu();
 #endif
 
    // Keep non-throttled state as good as possible.
@@ -604,6 +630,14 @@ void uninit_drivers(void)
 
    if (g_extern.system.hw_render_callback.context_destroy && !driver.video_cache_context)
       g_extern.system.hw_render_callback.context_destroy();
+
+#ifdef HAVE_MENU
+   if (!driver.menu_data_own)
+   {
+      menu_free(driver.menu);
+      driver.menu = NULL;
+   }
+#endif
 
    uninit_video_input();
 
@@ -1087,6 +1121,7 @@ void init_video_input(void)
       rarch_fail(1, "init_video_input()");
    }
 
+
    driver.video_poke = NULL;
    if (driver.video->poke_interface)
       driver.video->poke_interface(driver.video_data, &driver.video_poke);
@@ -1162,6 +1197,7 @@ void uninit_video_input(void)
 
    if (!driver.input_data_own && driver.input_data != driver.video_data && driver.input && driver.input->free)
       input_free_func();
+
 
    if (!driver.video_data_own && driver.video_data && driver.video && driver.video->free)
       video_free_func();

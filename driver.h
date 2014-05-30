@@ -505,6 +505,9 @@ typedef struct driver
 #ifdef HAVE_OSK
    bool osk_data_own;
 #endif
+#ifdef HAVE_MENU
+   bool menu_data_own;
+#endif
 
 #ifdef HAVE_COMMAND
    rarch_cmd_t *command;

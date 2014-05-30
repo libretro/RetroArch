@@ -175,6 +175,9 @@ static int main_entry_iterate_menu_preinit(args_type() args)
    int i;
    rgui_handle_t *rgui = (rgui_handle_t*)driver.menu;
 
+   if (!rgui)
+      return 1;
+
    // Menu should always run with vsync on.
    video_set_nonblock_state_func(false);
    // Stop all rumbling when entering RGUI.
@@ -192,12 +195,6 @@ static int main_entry_iterate_menu_preinit(args_type() args)
 
    if (driver.audio_data)
       audio_stop_func();
-
-   if (!rgui)
-   {
-      driver.menu = (rgui_handle_t*)menu_init();
-      rgui = (rgui_handle_t*)driver.menu;
-   }
 
    rgui->need_refresh = true;
    rgui->old_input_state |= 1ULL << RARCH_MENU_TOGGLE;
@@ -262,10 +259,7 @@ int main_entry_iterate(signature(), args_type() args)
 
 void main_exit(args_type() args)
 {
-#ifdef HAVE_MENU
    g_extern.system.shutdown = false;
-
-   menu_free(driver.menu);
 
    if (g_extern.config_save_on_exit && *g_extern.config_path)
    {
@@ -277,7 +271,6 @@ void main_exit(args_type() args)
       if (*g_extern.core_specific_config_path && g_settings.core_specific_config)
          config_save_file(g_extern.core_specific_config_path);
    }
-#endif
 
    if (g_extern.main_is_init)
       rarch_main_deinit();
@@ -339,26 +332,6 @@ returntype main_entry(signature())
    }
 
 #if defined(HAVE_MENU)
-   driver.menu = (rgui_handle_t*)menu_init();
-
-   if (!driver.menu)
-   {
-      RARCH_ERR("Couldn't initialize menu.\n");
-
-      if (!driver.menu_ctx)
-      {
-         RARCH_WARN("Trying to bring up menu context interface.\n");
-         find_menu_driver();
-      }
-
-      if (!(driver.menu = (rgui_handle_t*)menu_init()))
-      {
-         RARCH_ERR("Couldn't initialize menu (2nd attempt).\n");
-         rarch_fail(1, "main_entry()");
-         returnfunc();
-      }
-   }
-
    if (driver.frontend_ctx && driver.frontend_ctx->process_args)
       driver.frontend_ctx->process_args(argc, argv, args);
 

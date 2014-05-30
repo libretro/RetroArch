@@ -590,6 +590,10 @@ static unsigned menu_common_type_is(unsigned type)
 static int menu_settings_iterate(void *data, unsigned action)
 {
    rgui_handle_t *rgui = (rgui_handle_t*)data;
+   
+   if (!rgui)
+      return 0;
+
    rgui->frame_buf_pitch = rgui->width * 2;
    unsigned type = 0;
    const char *label = NULL;
@@ -3390,12 +3394,7 @@ static int menu_common_setting_set(void *data, unsigned setting, unsigned action
                g_extern.lifecycle_state &= ~(1ULL << MODE_VIDEO_PAL_TEMPORAL_ENABLE);
             }
 
-            if (driver.video && driver.video->restart)
-               driver.video->restart();
-            if (driver.menu_ctx && driver.menu_ctx->free_assets)
-               driver.menu_ctx->free_assets(rgui);
-            if (driver.menu_ctx && driver.menu_ctx->init_assets)
-               driver.menu_ctx->init_assets(rgui);
+            rarch_set_fullscreen(g_settings.video.fullscreen);
          }
          break;
       case RGUI_SETTINGS_VIDEO_PAL60:
@@ -3411,12 +3410,7 @@ static int menu_common_setting_set(void *data, unsigned setting, unsigned action
                   else
                      g_extern.lifecycle_state |= (1ULL << MODE_VIDEO_PAL_TEMPORAL_ENABLE);
 
-                  if (driver.video && driver.video->restart)
-                     driver.video->restart();
-                  if (driver.menu_ctx && driver.menu_ctx->free_assets)
-                     driver.menu_ctx->free_assets(rgui);
-                  if (driver.menu_ctx && driver.menu_ctx->init_assets)
-                     driver.menu_ctx->init_assets(rgui);
+                  rarch_set_fullscreen(g_settings.video.fullscreen);
                }
                break;
             case RGUI_ACTION_START:
@@ -3424,12 +3418,7 @@ static int menu_common_setting_set(void *data, unsigned setting, unsigned action
                {
                   g_extern.lifecycle_state &= ~(1ULL << MODE_VIDEO_PAL_TEMPORAL_ENABLE);
 
-                  if (driver.video && driver.video->restart)
-                     driver.video->restart();
-                  if (driver.menu_ctx && driver.menu_ctx->free_assets)
-                     driver.menu_ctx->free_assets(rgui);
-                  if (driver.menu_ctx && driver.menu_ctx->init_assets)
-                     driver.menu_ctx->init_assets(rgui);
+                  rarch_set_fullscreen(g_settings.video.fullscreen);
                }
                break;
          }

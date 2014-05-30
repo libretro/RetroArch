@@ -271,6 +271,11 @@ bool load_menu_game(void *data)
    struct rarch_main_wrap args = {0};
    rgui_handle_t *rgui = (rgui_handle_t*)data;
 
+   if (!rgui)
+      return false;
+
+   args.no_rom        = rgui->load_no_rom;
+
    if (g_extern.main_is_init)
       rarch_main_deinit();
 
@@ -280,14 +285,11 @@ bool load_menu_game(void *data)
    args.state_path    = *g_extern.savestate_dir ? g_extern.savestate_dir : NULL;
    args.rom_path      = *g_extern.fullpath ? g_extern.fullpath : NULL;
    args.libretro_path = *g_settings.libretro ? g_settings.libretro : NULL;
-   args.no_rom        = rgui->load_no_rom;
-
-   if (rgui)
-      rgui->load_no_rom  = false;
 
    if (rarch_main_init_wrap(&args) != 0)
    {
       char name[PATH_MAX], msg[PATH_MAX];
+      rgui = (rgui_handle_t*)driver.menu;
 
       fill_pathname_base(name, g_extern.fullpath, sizeof(name));
       snprintf(msg, sizeof(msg), "Failed to load %s.\n", name);
@@ -300,11 +302,12 @@ bool load_menu_game(void *data)
 
    RARCH_LOG("rarch_main_init_wrap() succeeded.\n");
 
-   if (rgui)
+   if ((rgui = (rgui_handle_t*)driver.menu))
    {
       // Update menu state which depends on config.
       menu_update_libretro_info(rgui);
       menu_init_history(rgui);
+
       if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->shader_manager_init)
          driver.menu_ctx->backend->shader_manager_init(rgui);
    }
@@ -312,25 +315,20 @@ bool load_menu_game(void *data)
    return true;
 }
 
-void *menu_init(void)
+void *menu_init(const void *data)
 {
    rgui_handle_t *rgui;
+   menu_ctx_driver_t *menu_ctx = (menu_ctx_driver_t*)data;
 
-   rgui = NULL;
-
-   if (!driver.menu_ctx)
-   {
-      RARCH_ERR("menu_init() - menu context interface not initialized.\n");
+   if (!menu_ctx)
       return NULL;
-   }
 
-   if (driver.menu_ctx->init)
-      rgui = (rgui_handle_t*)driver.menu_ctx->init();
+   rgui = (rgui_handle_t*)menu_ctx->init();
 
    if (!rgui)
       return NULL;
 
-   strlcpy(g_settings.menu.driver, driver.menu_ctx->ident, sizeof(g_settings.menu.driver));
+   strlcpy(g_settings.menu.driver, menu_ctx->ident, sizeof(g_settings.menu.driver));
 
    rgui->menu_stack = (file_list_t*)calloc(1, sizeof(file_list_t));
    rgui->selection_buf = (file_list_t*)calloc(1, sizeof(file_list_t));
@@ -339,8 +337,8 @@ void *menu_init(void)
    rgui->push_start_screen = g_settings.rgui_show_start_screen;
    g_settings.rgui_show_start_screen = false;
 
-   if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->entries_init) 
-      driver.menu_ctx->backend->entries_init(rgui, RGUI_SETTINGS);
+   if (menu_ctx && menu_ctx->backend && menu_ctx->backend->entries_init) 
+      menu_ctx->backend->entries_init(rgui, RGUI_SETTINGS);
 
    rgui->trigger_state = 0;
    rgui->old_input_state = 0;
@@ -350,8 +348,8 @@ void *menu_init(void)
 
    menu_update_libretro_info(rgui);
 
-   if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->shader_manager_init)
-      driver.menu_ctx->backend->shader_manager_init(rgui);
+   if (menu_ctx && menu_ctx->backend && menu_ctx->backend->shader_manager_init)
+      menu_ctx->backend->shader_manager_init(rgui);
 
    menu_init_history(rgui);
    rgui->last_time = rarch_get_time_usec();

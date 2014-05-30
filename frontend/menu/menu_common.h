@@ -186,7 +186,7 @@ typedef struct
    retro_time_t sleep_msec;
 } rgui_handle_t;
 
-void *menu_init(void);
+void *menu_init(const void *data);
 bool menu_iterate(void *data);
 void menu_free(void *data);
 

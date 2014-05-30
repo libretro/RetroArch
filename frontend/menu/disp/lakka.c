@@ -1176,6 +1176,8 @@ static void lakka_init_items(int i, menu_category_t *category, core_info_t *info
 
 static void lakka_free_assets(void *data)
 {
+   (void)data;
+
    if (tweens)
       free(tweens);
 }
@@ -1183,6 +1185,8 @@ static void lakka_free_assets(void *data)
 static void lakka_free(void *data)
 {
    rgui_handle_t *rgui = (rgui_handle_t*)data;
+
+   lakka_free_assets(rgui);
 
    if (rgui->alloc_font)
       free((uint8_t*)rgui->font);
