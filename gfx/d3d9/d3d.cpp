@@ -835,7 +835,7 @@ static bool d3d_alive(void *data)
    else if (resize)
       d3d->should_resize = true;
 
-   return !d3d->quitting;
+   return !quit;
 }
 
 static bool d3d_focus(void *data)
