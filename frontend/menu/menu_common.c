@@ -563,6 +563,8 @@ bool menu_iterate(void)
 
    input_state = menu_input();
 
+   rgui = (rgui_handle_t*)driver.menu;
+
    if (rgui->do_held)
    {
       if (!first_held)
