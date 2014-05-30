@@ -2742,7 +2742,8 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
 #else
                strlcpy(g_settings.video.filter_path, "", sizeof(g_settings.video.filter_path));
 #endif
-               rarch_set_fullscreen(g_settings.video.fullscreen);
+               rarch_deinit_filter();
+               rarch_init_filter(g_extern.system.pix_fmt);
                break;
          }
          break;
