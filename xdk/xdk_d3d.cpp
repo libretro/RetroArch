@@ -231,9 +231,6 @@ static void d3d_init_textures(void *data, const video_info_t *video)
    D3DTexture_LockRect(d3d->tex, 0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);
    memset(d3dlr.pBits, 0, d3d->tex_w * d3dlr.Pitch);
 
-   d3d->last_width = d3d->tex_w;
-   d3d->last_height = d3d->tex_h;
-
 #ifdef _XBOX1
    d3d->dev->SetRenderState(D3DRS_LIGHTING, FALSE);
 #endif
@@ -340,33 +337,8 @@ static bool d3d_init_chain(void *data, const video_info_t *info)
       RARCH_ERR("[d3d_init::] Failed at CreateVertexBuffer.\n");
       return false;
    }
-#if defined(_XBOX1)
-   const DrawVerticeFormats init_verts[] = {
-      { -1.0f, -1.0f, 1.0f, 0.0f, 1.0f },
-      {  1.0f, -1.0f, 1.0f, 1.0f, 1.0f },
-      { -1.0f,  1.0f, 1.0f, 0.0f, 0.0f },
-      {  1.0f,  1.0f, 1.0f, 1.0f, 0.0f },
-   };
 
-   BYTE *verts_ptr;
-#elif defined(_XBOX360)
-   static const DrawVerticeFormats init_verts[] = {
-      { -1.0f, -1.0f, 0.0f, 1.0f },
-      {  1.0f, -1.0f, 1.0f, 1.0f },
-      { -1.0f,  1.0f, 0.0f, 0.0f },
-      {  1.0f,  1.0f, 1.0f, 0.0f },
-   };
-
-   void *verts_ptr;
-#endif
-
-   d3d->vertex_buf->Lock(0, 0, &verts_ptr, 0);
-   memcpy(verts_ptr, init_verts, sizeof(init_verts));
-   d3d->vertex_buf->Unlock();
-
-#if defined(_XBOX1)
-   d3d->dev->SetVertexShader(D3DFVF_XYZ | D3DFVF_TEX1);
-#elif defined(_XBOX360)
+#if defined(_XBOX360)
    static const D3DVERTEXELEMENT VertexElements[] =
    {
       { 0, 0 * sizeof(float), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_POSITION, 0 },
@@ -644,6 +616,9 @@ static void set_vertices(void *data, unsigned pass, unsigned width, unsigned hei
 
    if (d3d->last_width != width || d3d->last_height != height)
    {
+      d3d->last_width = width;
+      d3d->last_height = height;
+
       DrawVerticeFormats vert[4];
       float tex_w = width;
       float tex_h = height;
@@ -708,9 +683,6 @@ static void set_vertices(void *data, unsigned pass, unsigned width, unsigned hei
       RD3DVertexBuffer_Lock(d3d->vertex_buf, 0, 0, &verts, 0);
       memcpy(verts, vert, sizeof(vert));
       RD3DVertexBuffer_Unlock(d3d->vertex_buf);
-
-      d3d->last_width = width;
-      d3d->last_height = height;
    }
 
    if (d3d->shader)
