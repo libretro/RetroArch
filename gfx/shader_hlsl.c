@@ -219,7 +219,7 @@ static bool load_shader(void *data, const char *cgp_path, unsigned i)
 {
    char path_buf[PATH_MAX];
    fill_pathname_resolve_relative(path_buf, cgp_path,
-      cg_shader->pass[i].source.cg, sizeof(path_buf));
+      cg_shader->pass[i].source.path, sizeof(path_buf));
 
    RARCH_LOG("Loading Cg/HLSL shader: \"%s\".\n", path_buf);
 
@@ -243,7 +243,7 @@ static bool load_plain(void *data, const char *path)
    if (path && path[0] != '\0')
    {
       RARCH_LOG("Loading Cg/HLSL file: %s\n", path);
-      strlcpy(cg_shader->pass[0].source.cg, path, sizeof(cg_shader->pass[0].source.cg));
+      strlcpy(cg_shader->pass[0].source.path, path, sizeof(cg_shader->pass[0].source.path));
       if (!load_program(data, 1, path, true))
          return false;
    }
