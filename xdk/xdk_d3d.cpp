@@ -201,10 +201,6 @@ static void d3d_init_textures(void *data, const video_info_t *video)
 {
    HRESULT ret;
    d3d_video_t *d3d = (d3d_video_t*)data;
-
-   D3DPRESENT_PARAMETERS d3dpp;
-   d3d_make_d3dpp(d3d, video, &d3dpp);
-
    d3d->pixel_size   = video->rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
 
    if (d3d->tex)
