@@ -1557,7 +1557,8 @@ static int menu_common_iterate(unsigned action)
             else if (menu_type == RGUI_SETTINGS_VIDEO_SOFTFILTER)
             {
                fill_pathname_join(g_settings.video.filter_path, dir, path, sizeof(g_settings.video.filter_path));
-               rarch_set_fullscreen(g_settings.video.fullscreen);
+               rarch_deinit_filter();
+               rarch_init_filter(g_extern.system.pix_fmt);
                menu_flush_stack_type(RGUI_SETTINGS_VIDEO_OPTIONS);
             }
             else if (menu_type == RGUI_SETTINGS_AUDIO_DSP_FILTER)
@@ -2721,7 +2722,8 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
                file_list_push(rgui->menu_stack, g_settings.video.filter_dir, setting, rgui->selection_ptr);
                menu_clear_navigation(rgui);
 #else
-               rarch_set_fullscreen(g_settings.video.fullscreen);
+               rarch_deinit_filter();
+               rarch_init_filter(g_extern.system.pix_fmt);
 #endif
                rgui->need_refresh = true;
                break;
