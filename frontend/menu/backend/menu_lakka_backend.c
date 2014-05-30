@@ -125,7 +125,7 @@ static int menu_lakka_iterate(unsigned action)
                      strlcpy(g_settings.libretro, active_category->libretro, sizeof(g_settings.libretro));
 
 #ifdef HAVE_DYNAMIC
-                     menu_update_system_info(&rgui->load_no_rom);
+                     menu_update_system_info(driver.menu, &rgui->load_no_rom);
                      g_extern.lifecycle_state |= (1ULL << MODE_LOAD_GAME);
 #else
                      rarch_environment_cb(RETRO_ENVIRONMENT_SET_LIBRETRO_PATH, (void*)g_settings.libretro);
