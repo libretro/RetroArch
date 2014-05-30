@@ -240,7 +240,7 @@ bool renderchain_init_shader_fvf(void *data, void *pass_)
       D3DDECL_END()
    };
 
-   if (FAILED(d3dr->CreateVertexDeclaration(VertexElements, &pass->vertex_decl))
+   if (FAILED(d3dr->CreateVertexDeclaration(VertexElements, &pass->vertex_decl)))
       return false;
 #endif
 
