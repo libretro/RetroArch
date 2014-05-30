@@ -217,7 +217,7 @@ static inline double kaiser_window(double index, double beta)
 }
 
 static void create_filter(struct eq_data *eq, unsigned size_log2,
-      struct eq_gain *gains, unsigned num_gains, double beta)
+      struct eq_gain *gains, unsigned num_gains, double beta, const char *filter_path)
 {
    int i;
    int half_block_size = eq->block_size >> 1;
@@ -257,15 +257,16 @@ static void create_filter(struct eq_data *eq, unsigned size_log2,
    }
 
    // Debugging.
-#if 0
-   FILE *file = fopen("/tmp/test.txt", "w");
-   if (file)
+   if (filter_path)
    {
-      for (i = 0; i < (int)eq->block_size - 1; i++)
-         fprintf(file, "%.6f\n", time_filter[i + 1]);
-      fclose(file);
+      FILE *file = fopen(filter_path, "w");
+      if (file)
+      {
+         for (i = 0; i < (int)eq->block_size - 1; i++)
+            fprintf(file, "%.8f\n", time_filter[i + 1]);
+         fclose(file);
+      }
    }
-#endif
 
    // Padded FFT to create our FFT filter.
    // Make our even-length filter odd by discarding the first coefficient.
@@ -301,6 +302,13 @@ static void *eq_init(const struct dspfilter_info *info,
    config->get_float_array(userdata, "frequencies", &frequencies, &num_freq, default_freq, 2);
    config->get_float_array(userdata, "gains", &gain, &num_gain, default_gain, 2);
 
+   char *filter_path = NULL;
+   if (!config->get_string(userdata, "impulse_response_output", &filter_path, ""))
+   {
+      config->free(filter_path);
+      filter_path = NULL;
+   }
+
    num_gain = num_freq = min(num_gain, num_freq);
 
    gains = (struct eq_gain*)calloc(num_gain, sizeof(*gains));
@@ -329,7 +337,9 @@ static void *eq_init(const struct dspfilter_info *info,
    if (!eq->fft || !eq->fftblock || !eq->save || !eq->block || !eq->filter)
       goto error;
 
-   create_filter(eq, size_log2, gains, num_gain, beta);
+   create_filter(eq, size_log2, gains, num_gain, beta, filter_path);
+   config->free(filter_path);
+   filter_path = NULL;
 
    free(gains);
    return eq;
