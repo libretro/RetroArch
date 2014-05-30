@@ -644,42 +644,69 @@ static void set_vertices(void *data, unsigned pass, unsigned width, unsigned hei
 
    if (d3d->last_width != width || d3d->last_height != height)
    {
-#if defined(_XBOX1)
+      DrawVerticeFormats vert[4];
       float tex_w = width;
       float tex_h = height;
-
-      DrawVerticeFormats verts[] = {
-         { -1.0f, -1.0f, 1.0f, 0.0f,  tex_h },
-         {  1.0f, -1.0f, 1.0f, tex_w, tex_h },
-         { -1.0f,  1.0f, 1.0f, 0.0f,  0.0f },
-         {  1.0f,  1.0f, 1.0f, tex_w, 0.0f },
-      };
-#elif defined(_XBOX360)
-      float tex_w = width / ((float)d3d->tex_w);
-      float tex_h = height / ((float)d3d->tex_h);
-
-      DrawVerticeFormats verts[] = {
-         { -1.0f, -1.0f, 0.0f,  tex_h },
-         {  1.0f, -1.0f, tex_w, tex_h },
-         { -1.0f,  1.0f, 0.0f,  0.0f },
-         {  1.0f,  1.0f, tex_w, 0.0f },
-      };
+#ifdef _XBOX360
+      tex_w /= ((float)d3d->tex_w);
+      tex_h /= ((float)d3d->tex_h);
 #endif
 
-      // Align texels and vertices (D3D9 quirk).
+      vert[0].x = -1.0f;
+      vert[1].x =  1.0f;
+      vert[2].x = -1.0f;
+      vert[3].x =  1.0f;
+
+      vert[0].y = -1.0f;
+      vert[1].y = -1.0f;
+      vert[2].y =  1.0f;
+      vert[3].y =  1.0f;
+#if defined(_XBOX1)
+      vert[0].z =  1.0f;
+      vert[1].z =  1.0f;
+      vert[2].z =  1.0f;
+      vert[3].z =  1.0f;
+
+      vert[0].rhw = 0.0f;
+      vert[1].rhw = tex_w;
+      vert[2].rhw = 0.0f;
+      vert[3].rhw = tex_w;
+
+      vert[0].u =  tex_h;
+      vert[1].u =  tex_h;
+      vert[2].u =  0.0f;
+      vert[3].u =  0.0f;
+
+      vert[0].v =  0.0f;
+      vert[1].v =  0.0f;
+      vert[2].v =  0.0f;
+      vert[3].v =  0.0f;
+#elif defined(_XBOX360)
+      vert[0].u =  0.0f;
+      vert[1].u =  tex_w;
+      vert[2].u =  0.0f;
+      vert[3].u =  tex_w;
+
+      vert[0].v =  tex_h;
+      vert[1].v =  tex_h;
+      vert[2].v =  0.0f;
+      vert[3].v =  0.0f;
+#endif
+
+      // Align texels and vertices.
       for (unsigned i = 0; i < 4; i++)
       {
-         verts[i].x -= 0.5f / ((float)d3d->tex_w);
-         verts[i].y += 0.5f / ((float)d3d->tex_h);
+         vert[i].x -= 0.5f / ((float)d3d->tex_w);
+         vert[i].y += 0.5f / ((float)d3d->tex_h);
       }
 
 #if defined(_XBOX1)
-      BYTE *verts_ptr;
+      BYTE *verts;
 #elif defined(_XBOX360)
-      void *verts_ptr;
+      void *verts;
 #endif
-      RD3DVertexBuffer_Lock(d3d->vertex_buf, 0, 0, &verts_ptr, 0);
-      memcpy(verts_ptr, verts, sizeof(verts));
+      RD3DVertexBuffer_Lock(d3d->vertex_buf, 0, 0, &verts, 0);
+      memcpy(verts, vert, sizeof(vert));
       RD3DVertexBuffer_Unlock(d3d->vertex_buf);
 
       d3d->last_width = width;
