@@ -294,7 +294,7 @@ typedef struct input_osk_driver
 
 typedef struct camera_driver
 {
-   // FIXME: params for init - queries for resolution, framerate, color format
+   // FIXME: params for initialization - queries for resolution, framerate, color format
    // which might or might not be honored
    void *(*init)(const char *device, uint64_t buffer_types, unsigned width, unsigned height);
    void (*free)(void *data);
@@ -366,7 +366,7 @@ typedef struct video_driver
 {
    void *(*init)(const video_info_t *video, const input_driver_t **input, void **input_data); 
    // Should the video driver act as an input driver as well? :)
-   // The video init might preinitialize an input driver to override the settings in case the video driver relies on input driver for event handling, e.g.
+   // The video initialization might preinitialize an input driver to override the settings in case the video driver relies on input driver for event handling, e.g.
    bool (*frame)(void *data, const void *frame, unsigned width, unsigned height, unsigned pitch, const char *msg); // msg is for showing a message on the screen along with the video frame.
    void (*set_nonblock_state)(void *data, bool toggle); // Should we care about syncing to vblank? Fast forwarding.
    // Is the window still active?

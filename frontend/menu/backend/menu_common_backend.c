@@ -682,7 +682,7 @@ static int menu_settings_iterate(void *data, unsigned action)
          {
             int ret = 0;
 
-            if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->setting_toggle)
+            if (rgui && driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->setting_toggle)
                ret = driver.menu_ctx->backend->setting_toggle(rgui, type, action, menu_type);
             if (ret)
                return ret;
@@ -704,7 +704,7 @@ static int menu_settings_iterate(void *data, unsigned action)
 
    file_list_get_last(rgui->menu_stack, &dir, &menu_type);
 
-   if (rgui->need_refresh && !(menu_type == RGUI_FILE_DIRECTORY ||
+   if (rgui && rgui->need_refresh && !(menu_type == RGUI_FILE_DIRECTORY ||
             menu_common_type_is(menu_type) == RGUI_SETTINGS_SHADER_OPTIONS ||
             menu_common_type_is(menu_type) == RGUI_FILE_DIRECTORY ||
             menu_type == RGUI_SETTINGS_VIDEO_SOFTFILTER ||
@@ -740,14 +740,17 @@ static int menu_settings_iterate(void *data, unsigned action)
          menu_common_entries_init(rgui, RGUI_SETTINGS);
    }
 
-   if (driver.video_data && driver.menu_ctx && driver.menu_ctx->render)
-      driver.menu_ctx->render(rgui);
-
-   // Have to defer it so we let settings refresh.
-   if (rgui->push_start_screen)
+   if (rgui)
    {
-      rgui->push_start_screen = false;
-      file_list_push(rgui->menu_stack, "", RGUI_START_SCREEN, 0);
+      if (driver.video_data && driver.menu_ctx && driver.menu_ctx->render)
+         driver.menu_ctx->render(rgui);
+
+      // Have to defer it so we let settings refresh.
+      if (rgui->push_start_screen)
+      {
+         rgui->push_start_screen = false;
+         file_list_push(rgui->menu_stack, "", RGUI_START_SCREEN, 0);
+      }
    }
 
    return 0;
@@ -2679,9 +2682,8 @@ static int menu_common_setting_set(void *data, unsigned setting, unsigned action
                break;
 #endif
             case RGUI_ACTION_OK:
-#if defined(HAVE_FILTERS_BUILTIN)
                rarch_set_fullscreen(g_settings.video.fullscreen);
-#elif defined(HAVE_DYLIB)
+#if defined(HAVE_DYLIB)
                file_list_push(rgui->menu_stack, g_settings.video.filter_dir, setting, rgui->selection_ptr);
                menu_clear_navigation(rgui);
 #endif

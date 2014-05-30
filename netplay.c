@@ -375,7 +375,7 @@ static bool init_udp_socket(netplay_t *handle, const char *server, uint16_t port
    handle->udp_fd = socket(handle->addr->ai_family, handle->addr->ai_socktype, handle->addr->ai_protocol);
    if (handle->udp_fd < 0)
    {
-      RARCH_ERR("Failed to init socket...\n");
+      RARCH_ERR("Failed to initialize socket.\n");
       return false;
    }
 

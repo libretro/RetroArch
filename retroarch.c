@@ -1486,7 +1486,7 @@ void rarch_init_rewind(void)
    g_extern.state_manager = state_manager_new(g_extern.state_size, g_settings.rewind_buffer_size);
 
    if (!g_extern.state_manager)
-      RARCH_WARN("Failed to init rewind buffer. Rewinding will be disabled.\n");
+      RARCH_WARN("Failed to initialize rewind buffer. Rewinding will be disabled.\n");
 
    void *state;
    state_manager_push_where(g_extern.state_manager, &state);
@@ -1584,12 +1584,12 @@ static void init_netplay(void)
    if (!g_extern.netplay)
    {
       g_extern.netplay_is_client = false;
-      RARCH_WARN("Failed to init netplay ...\n");
+      RARCH_WARN("Failed to initialize netplay ...\n");
 
       if (g_extern.msg_queue)
       {
          msg_queue_push(g_extern.msg_queue,
-               "Failed to init netplay ...",
+               "Failed to initialize netplay ...",
                0, 180);
       }
    }
@@ -1981,7 +1981,7 @@ void rarch_set_fullscreen(bool fullscreen)
 
 bool rarch_check_fullscreen(void)
 {
-   // If we go fullscreen we drop all drivers and reinit to be safe.
+   // If we go fullscreen we drop all drivers and reinitialize to be safe.
    static bool was_pressed = false;
    bool pressed = input_key_pressed_func(RARCH_FULLSCREEN_TOGGLE_KEY);
    bool toggle = pressed && !was_pressed;

@@ -584,7 +584,7 @@ enum retro_mod
                                            // This should *only* be used if the core is completely altering the internal resolutions, aspect ratios, timings, sampling rate, etc.
                                            // Calling this can require a full reinitialization of video/audio drivers in the frontend,
                                            // so it is important to call it very sparingly, and usually only with the users explicit consent.
-                                           // An eventual driver reinit will happen so that video and audio callbacks
+                                           // An eventual driver reinitialize will happen so that video and audio callbacks
                                            // happening after this call within the same retro_run() call will target the newly initialized driver.
                                            //
                                            // This callback makes it possible to support configurable resolutions in games, which can be useful to
@@ -982,7 +982,7 @@ struct retro_frame_time_callback
 // it should implement context_destroy callback.
 // If called, all GPU resources must be reinitialized.
 // Usually called when frontend reinits video driver.
-// Also called first time video driver is initialized, allowing libretro core to init resources.
+// Also called first time video driver is initialized, allowing libretro core to initialize resources.
 typedef void (*retro_hw_context_reset_t)(void);
 // Gets current framebuffer which is to be rendered to. Could change every frame potentially.
 typedef uintptr_t (*retro_hw_get_current_framebuffer_t)(void);

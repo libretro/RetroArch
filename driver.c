@@ -298,7 +298,7 @@ static void find_video_driver(void)
 
 void find_prev_video_driver(void)
 {
-   // No need to enforce GL if HW render. This is done at driver init anyways.
+   // No need to enforce GL if HW render. This is done at driver initialize anyways.
    int i = find_video_driver_index(g_settings.video.driver);
    if (i > 0)
       strlcpy(g_settings.video.driver, video_drivers[i - 1]->ident, sizeof(g_settings.video.driver));
@@ -308,7 +308,7 @@ void find_prev_video_driver(void)
 
 void find_next_video_driver(void)
 {
-   // No need to enforce GL if HW render. This is done at driver init anyways.
+   // No need to enforce GL if HW render. This is done at driver initialize anyways.
    int i = find_video_driver_index(g_settings.video.driver);
    if (i >= 0 && video_drivers[i + 1])
       strlcpy(g_settings.video.driver, video_drivers[i + 1]->ident, sizeof(g_settings.video.driver));
@@ -550,13 +550,13 @@ void init_drivers(void)
    init_audio();
 
 #ifdef HAVE_CAMERA
-   // Only init camera driver if we're ever going to use it.
+   // Only initialize camera driver if we're ever going to use it.
    if (g_extern.camera_active)
       init_camera();
 #endif
 
 #ifdef HAVE_LOCATION
-   // Only init location driver if we're ever going to use it.
+   // Only initialize location driver if we're ever going to use it.
    if (g_extern.location_active)
       init_location();
 #endif
@@ -683,7 +683,7 @@ void rarch_init_dsp_filter(void)
 
    g_extern.audio_data.dsp = rarch_dsp_filter_new(g_settings.audio.dsp_plugin, g_settings.audio.in_rate);
    if (!g_extern.audio_data.dsp)
-      RARCH_ERR("[DSP]: Failed to init DSP filter \"%s\".\n", g_settings.audio.dsp_plugin);
+      RARCH_ERR("[DSP]: Failed to initialize DSP filter \"%s\".\n", g_settings.audio.dsp_plugin);
 }
 
 void rarch_deinit_dsp_filter(void)
@@ -915,12 +915,10 @@ void uninit_audio(void)
 void rarch_init_filter(enum retro_pixel_format colfmt)
 {
    rarch_deinit_filter();
-#ifdef HAVE_FILTERS_BUILTIN
-   if (!g_settings.video.filter_idx)
-#else
+#ifndef HAVE_FILTERS_BUILTIN
    if (!*g_settings.video.filter_path)
-#endif
       return;
+#endif
 
    // Deprecated format. Gets pre-converted.
    if (colfmt == RETRO_PIXEL_FORMAT_0RGB1555)
@@ -939,9 +937,7 @@ void rarch_init_filter(enum retro_pixel_format colfmt)
    unsigned pow2_y  = 0;
    unsigned maxsize = 0;
 
-#ifdef HAVE_FILTERS_BUILTIN
-   RARCH_LOG("Loading softfilter %d\n", g_settings.video.filter_idx);
-#else
+#ifndef HAVE_FILTERS_BUILTIN
    RARCH_LOG("Loading softfilter from \"%s\"\n", g_settings.video.filter_path);
 #endif
    g_extern.filter.filter = rarch_softfilter_new(g_settings.video.filter_path,
@@ -1083,7 +1079,7 @@ void init_video_input(void)
 
    if (!init_video_pixel_converter(RARCH_SCALE_BASE * scale))
    {
-      RARCH_ERR("Failed to init pixel converter.\n");
+      RARCH_ERR("Failed to initialize pixel converter.\n");
       rarch_fail(1, "init_video_input()");
    }
 
@@ -1155,7 +1151,7 @@ void init_video_input(void)
          driver.input_data = input_init_func();
          if (driver.input_data == NULL)
          {
-            RARCH_ERR("Cannot init input driver. Exiting ...\n");
+            RARCH_ERR("Cannot initialize input driver. Exiting ...\n");
             rarch_fail(1, "init_video_input()");
          }
       }
