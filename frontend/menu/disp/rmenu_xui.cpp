@@ -180,11 +180,10 @@ static void* rmenu_xui_init(void)
 
    hr = app.InitShared(d3d->dev, &d3dpp, XuiPNGTextureLoader);
 
-   if (hr != S_OK)
+   if (FAILED(hr))
    {
       RARCH_ERR("Failed initializing XUI application.\n");
-      free(rgui);
-      return NULL;
+      goto error;
    }
 
    /* Register font */
@@ -194,36 +193,32 @@ static void* rmenu_xui_init(void)
    typeface.szReserved1 = NULL;
 
    hr = XuiRegisterTypeface( &typeface, TRUE );
-   if (hr != S_OK)
+   if (FAILED(hr))
    {
       RARCH_ERR("Failed to register default typeface.\n");
-      free(rgui);
-      return NULL;
+      goto error;
    }
 
    hr = XuiLoadVisualFromBinary( L"file://game:/media/rarch_scene_skin.xur", NULL);
-   if (hr != S_OK)
+   if (FAILED(hr))
    {
       RARCH_ERR("Failed to load skin.\n");
-      free(rgui);
-      return NULL;
+      goto error;
    }
 
    hr = XuiSceneCreate(hdmenus_allowed ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_main.xur", NULL, &root_menu);
-   if (hr != S_OK)
+   if (FAILED(hr))
    {
       RARCH_ERR("Failed to create scene 'rarch_main.xur'.\n");
-      free(rgui);
-      return NULL;
+      goto error;
    }
 
    current_menu = root_menu;
    hr = XuiSceneNavigateFirst(app.GetRootObj(), current_menu, XUSER_INDEX_FOCUS);
-   if (hr != S_OK)
+   if (FAILED(hr))
    {
       RARCH_ERR("XuiSceneNavigateFirst failed.\n");
-      free(rgui);
-      return NULL;
+      goto error;
    }
 
    if (driver.video_data && driver.video_poke && driver.video_poke->set_texture_enable)
@@ -233,6 +228,10 @@ static void* rmenu_xui_init(void)
    xui_msg_queue = msg_queue_new(16);
 
    return rgui;
+
+error:
+   free(rgui);
+   return NULL;
 }
 
 static void rmenu_xui_free(void *data)
@@ -360,40 +359,39 @@ static int rmenu_xui_input_postprocess(uint64_t old_state)
    return process_input_ret_old;
 }
 
-static void blit_line(rgui_handle_t *rgui,
-int x, int y, const char *message, bool green)
+static void blit_line(int x, int y, const char *message, bool green)
 {
 }
 
-static void rmenu_xui_render_background(void *data)
+static void rmenu_xui_render_background(void)
 {
-   (void)data;
 }
 
-static void rmenu_xui_render_messagebox(void *data, const char *message)
+static void rmenu_xui_render_messagebox(const char *message)
 {
    msg_queue_clear(xui_msg_queue);
    msg_queue_push(xui_msg_queue, message, 2, 1);
 }
 
-static void rmenu_xui_render(void *data)
+static void rmenu_xui_render(void)
 {
-   rgui_handle_t *rgui = (rgui_handle_t*)data;
-
-   if (rgui->need_refresh && 
-         (g_extern.lifecycle_state & (1ULL << MODE_MENU))
-         && !rgui->msg_force)
-      return;
-
-   size_t begin = rgui->selection_ptr;
-   size_t end = rgui->selection_buf->size;
-
-   rmenu_xui_render_background(rgui);
-
+   size_t begin, end;
    char title[256];
    const char *dir = NULL;
    unsigned menu_type = 0;
    unsigned menu_type_is = 0;
+   rgui_handle_t *rgui = (rgui_handle_t*)driver.menu;
+
+   if (!rgui || rgui->need_refresh && 
+         (g_extern.lifecycle_state & (1ULL << MODE_MENU))
+         && !rgui->msg_force)
+      return;
+
+   begin = rgui->selection_ptr;
+   end   = rgui->selection_buf->size;
+
+   rmenu_xui_render_background();
+
    file_list_get_last(rgui->menu_stack, &dir, &menu_type);
 
    if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->type_is)
@@ -515,7 +513,7 @@ static void rmenu_xui_render(void *data)
 
    char title_buf[256];
    menu_ticker_line(title_buf, RXUI_TERM_WIDTH - 3, g_extern.frame_count / 15, title, true);
-   blit_line(rgui, RXUI_TERM_START_X + 15, 15, title_buf, true);
+   blit_line(RXUI_TERM_START_X + 15, 15, title_buf, true);
 
    char title_msg[64];
    const char *core_name = rgui->info.library_name;
@@ -531,7 +529,7 @@ static void rmenu_xui_render(void *data)
       core_version = "";
 
    snprintf(title_msg, sizeof(title_msg), "%s - %s %s", PACKAGE_VERSION, core_name, core_version);
-   blit_line(rgui, RXUI_TERM_START_X + 15, (RXUI_TERM_HEIGHT * FONT_HEIGHT_STRIDE) + RXUI_TERM_START_Y + 2, title_msg, true);
+   blit_line(RXUI_TERM_START_X + 15, (RXUI_TERM_HEIGHT * FONT_HEIGHT_STRIDE) + RXUI_TERM_START_Y + 2, title_msg, true);
 
    unsigned x, y;
    size_t i;
@@ -648,7 +646,7 @@ static void rmenu_xui_render(void *data)
       wchar_t msg_w[256];
       mbstowcs(msg_w, message, sizeof(msg_w) / sizeof(wchar_t));
       XuiListSetText(m_menulist, i, msg_w);
-      blit_line(rgui, x, y, message, i);
+      blit_line(x, y, message, i);
    }
 
    if (rgui->keyboard.display)

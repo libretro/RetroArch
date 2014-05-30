@@ -727,13 +727,13 @@ void lakka_draw_icon(void *data, GLuint texture, float x, float y, float alpha, 
    gl->coords.color = gl->white_color_ptr;
 }
 
-static void lakka_frame(void *data)
+static void lakka_frame(void)
 {
    int i, j, k;
    struct font_output_list *msg;
    gl_t *gl = (gl_t*)driver.video_data;
-   rgui_handle_t *rgui = (rgui_handle_t*)data;
    menu_category_t *active_category = (menu_category_t*)&categories[menu_active_category];
+   rgui_handle_t *rgui = (rgui_handle_t*)driver.menu;
 
    if (!rgui || !gl)
       return;

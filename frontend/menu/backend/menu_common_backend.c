@@ -471,7 +471,7 @@ static int menu_start_screen_iterate(unsigned action)
       return 0;
 
    if (driver.video_data && driver.menu_ctx && driver.menu_ctx->render)
-      driver.menu_ctx->render(rgui);
+      driver.menu_ctx->render();
 
    char desc[6][64];
    static const unsigned binds[] = {
@@ -526,7 +526,7 @@ static int menu_start_screen_iterate(unsigned action)
          desc[0], desc[1], desc[2], desc[3], desc[4], desc[5]);
 
    if (driver.video_data && driver.menu_ctx && driver.menu_ctx->render_messagebox)
-      driver.menu_ctx->render_messagebox(rgui, msg);
+      driver.menu_ctx->render_messagebox(msg);
 
    if (action == RGUI_ACTION_OK)
       file_list_pop(rgui->menu_stack, &rgui->selection_ptr);
@@ -758,17 +758,14 @@ static int menu_settings_iterate(unsigned action)
          menu_common_entries_init(driver.menu, RGUI_SETTINGS);
    }
 
-   if (rgui)
-   {
-      if (rgui && driver.menu_ctx && driver.menu_ctx->render)
-         driver.menu_ctx->render(rgui);
+   if (driver.menu_ctx && driver.menu_ctx->render)
+      driver.menu_ctx->render();
 
-      // Have to defer it so we let settings refresh.
-      if (rgui->push_start_screen)
-      {
-         rgui->push_start_screen = false;
-         file_list_push(rgui->menu_stack, "", RGUI_START_SCREEN, 0);
-      }
+   // Have to defer it so we let settings refresh.
+   if (rgui->push_start_screen)
+   {
+      rgui->push_start_screen = false;
+      file_list_push(rgui->menu_stack, "", RGUI_START_SCREEN, 0);
    }
 
    return 0;
@@ -905,7 +902,7 @@ static int menu_viewport_iterate(unsigned action)
    file_list_get_last(rgui->menu_stack, NULL, &menu_type);
 
    if (driver.video_data && driver.menu_ctx && driver.menu_ctx->render)
-      driver.menu_ctx->render(rgui);
+      driver.menu_ctx->render();
 
    const char *base_msg = NULL;
    char msg[64];
@@ -936,7 +933,7 @@ static int menu_viewport_iterate(unsigned action)
    }
 
    if (driver.video_data && driver.menu_ctx && driver.menu_ctx->render_messagebox)
-      driver.menu_ctx->render_messagebox(rgui, msg);
+      driver.menu_ctx->render_messagebox(msg);
 
    if (!custom->width)
       custom->width = stride_x;
@@ -1198,13 +1195,13 @@ static int menu_custom_bind_iterate(void *data, unsigned action)
    (void)action; // Have to ignore action here. Only bind that should work here is Quit RetroArch or something like that.
 
    if (driver.video_data && driver.menu_ctx && driver.menu_ctx->render)
-      driver.menu_ctx->render(rgui);
+      driver.menu_ctx->render();
 
    char msg[256];
    snprintf(msg, sizeof(msg), "[%s]\npress joypad\n(RETURN to skip)", input_config_bind_map[rgui->binds.begin - RGUI_SETTINGS_BIND_BEGIN].desc);
 
    if (driver.video_data && driver.menu_ctx && driver.menu_ctx->render_messagebox)
-      driver.menu_ctx->render_messagebox(rgui, msg);
+      driver.menu_ctx->render_messagebox(msg);
 
    struct rgui_bind_state binds = rgui->binds;
    menu_poll_bind_state(&binds);
@@ -1231,7 +1228,7 @@ static int menu_custom_bind_iterate_keyboard(void *data, unsigned action)
    (void)action; // Have to ignore action here.
 
    if (driver.video_data && driver.menu_ctx && driver.menu_ctx->render)
-      driver.menu_ctx->render(rgui);
+      driver.menu_ctx->render();
 
    int64_t current = rarch_get_time_usec();
    int timeout = (rgui->binds.timeout_end - current) / 1000000;
@@ -1241,7 +1238,7 @@ static int menu_custom_bind_iterate_keyboard(void *data, unsigned action)
          input_config_bind_map[rgui->binds.begin - RGUI_SETTINGS_BIND_BEGIN].desc, timeout);
 
    if (driver.video_data && driver.menu_ctx && driver.menu_ctx->render_messagebox)
-      driver.menu_ctx->render_messagebox(rgui, msg);
+      driver.menu_ctx->render_messagebox(msg);
 
    bool timed_out = false;
    if (timeout <= 0)
@@ -1700,7 +1697,7 @@ static int menu_common_iterate(unsigned action)
       driver.menu_ctx->iterate(rgui, action);
 
    if (driver.video_data && driver.menu_ctx && driver.menu_ctx->render)
-      driver.menu_ctx->render(rgui);
+      driver.menu_ctx->render();
 
    return ret;
 }

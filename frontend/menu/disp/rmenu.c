@@ -66,11 +66,11 @@ struct texture_image *menu_texture;
 static bool render_normal = true;
 static bool menu_texture_inited =false;
 
-static void rmenu_render_background(rgui_handle_t *rgui)
+static void rmenu_render_background(void)
 {
 }
 
-static void rmenu_render_messagebox(void *data, const char *message)
+static void rmenu_render_messagebox(const char *message)
 {
    font_params_t font_parms;
 
@@ -114,20 +114,20 @@ static void rmenu_render_messagebox(void *data, const char *message)
    render_normal = false;
 }
 
-static void rmenu_render(void *data)
+static void rmenu_render(void)
 {
    size_t begin, end;
-   rgui_handle_t *rgui = (rgui_handle_t*)data;
    font_params_t font_parms;
+   rgui_handle_t *rgui = (rgui_handle_t*)driver.menu;
+
+   if (!rgui)
+      return;
 
    if (!render_normal)
    {
       render_normal = true;
       return;
    }
-
-   if (!rgui)
-      return;
 
    if (rgui->need_refresh && 
          (g_extern.lifecycle_state & (1ULL << MODE_MENU))
@@ -146,7 +146,7 @@ static void rmenu_render(void *data)
    if (end - begin > ENTRIES_HEIGHT)
       end = begin + ENTRIES_HEIGHT;
    
-   rmenu_render_background(rgui);
+   rmenu_render_background();
 
    char title[256];
    const char *dir = NULL;
@@ -463,7 +463,6 @@ static void *rmenu_init(void)
 
    if (!rgui)
       return NULL;
-
 
    rmenu_init_assets(rgui);
 

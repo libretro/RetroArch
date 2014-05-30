@@ -107,10 +107,14 @@ static void fill_rect(uint16_t *buf, unsigned pitch,
          buf[j * (pitch >> 1) + i] = col(i, j);
 }
 
-static void blit_line(rgui_handle_t *rgui,
-      int x, int y, const char *message, bool green)
+static void blit_line(int x, int y, const char *message, bool green)
 {
    int j, i;
+   rgui_handle_t *rgui = (rgui_handle_t*)driver.menu;
+
+   if (!rgui)
+      return;
+
    while (*message)
    {
       for (j = 0; j < FONT_HEIGHT; j++)
@@ -172,8 +176,13 @@ static bool rguidisp_init_font(void *data)
    return ret;
 }
 
-static void rgui_render_background(rgui_handle_t *rgui)
+static void rgui_render_background(void)
 {
+   rgui_handle_t *rgui = (rgui_handle_t*)driver.menu;
+
+   if (!rgui)
+      return;
+
    fill_rect(rgui->frame_buf, rgui->frame_buf_pitch,
          0, 0, rgui->width, rgui->height, gray_filler);
 
@@ -190,12 +199,12 @@ static void rgui_render_background(rgui_handle_t *rgui)
          rgui->width - 10, 5, 5, rgui->height - 10, green_filler);
 }
 
-static void rgui_render_messagebox(void *data, const char *message)
+static void rgui_render_messagebox(const char *message)
 {
-   rgui_handle_t *rgui = (rgui_handle_t*)data;
    size_t i;
+   rgui_handle_t *rgui = (rgui_handle_t*)driver.menu;
 
-   if (!message || !*message)
+   if (!rgui || !message || !*message)
       return;
 
    struct string_list *list = string_split(message, "\n");
@@ -251,24 +260,24 @@ static void rgui_render_messagebox(void *data, const char *message)
       const char *msg = list->elems[i].data;
       int offset_x = FONT_WIDTH_STRIDE * (glyphs_width - strlen(msg)) / 2;
       int offset_y = FONT_HEIGHT_STRIDE * i;
-      blit_line(rgui, x + 8 + offset_x, y + 8 + offset_y, msg, false);
+      blit_line(x + 8 + offset_x, y + 8 + offset_y, msg, false);
    }
 
    string_list_free(list);
 }
 
-static void rgui_render(void *data)
+static void rgui_render(void)
 {
-   rgui_handle_t *rgui = (rgui_handle_t*)data;
+   size_t begin, end;
+   rgui_handle_t *rgui = (rgui_handle_t*)driver.menu;
 
    if (rgui->need_refresh &&
          (g_extern.lifecycle_state & (1ULL << MODE_MENU))
          && !rgui->msg_force)
       return;
 
-   size_t begin = rgui->selection_ptr >= RGUI_TERM_HEIGHT / 2 ?
-      rgui->selection_ptr - RGUI_TERM_HEIGHT / 2 : 0;
-   size_t end = rgui->selection_ptr + RGUI_TERM_HEIGHT <= rgui->selection_buf->size ?
+   begin = (rgui->selection_ptr >= RGUI_TERM_HEIGHT / 2) ? rgui->selection_ptr - RGUI_TERM_HEIGHT / 2 : 0;
+   end = (rgui->selection_ptr + RGUI_TERM_HEIGHT <= rgui->selection_buf->size) ?
       rgui->selection_ptr + RGUI_TERM_HEIGHT : rgui->selection_buf->size;
 
    // Do not scroll if all items are visible.
@@ -278,7 +287,7 @@ static void rgui_render(void *data)
    if (end - begin > RGUI_TERM_HEIGHT)
       end = begin + RGUI_TERM_HEIGHT;
 
-   rgui_render_background(rgui);
+   rgui_render_background();
 
    char title[256];
    const char *dir = NULL;
@@ -407,7 +416,7 @@ static void rgui_render(void *data)
 
    char title_buf[256];
    menu_ticker_line(title_buf, RGUI_TERM_WIDTH - 3, g_extern.frame_count / 15, title, true);
-   blit_line(rgui, RGUI_TERM_START_X + 15, 15, title_buf, true);
+   blit_line(RGUI_TERM_START_X + 15, 15, title_buf, true);
 
    char title_msg[64];
    const char *core_name = rgui->info.library_name;
@@ -423,7 +432,7 @@ static void rgui_render(void *data)
       core_version = "";
 
    snprintf(title_msg, sizeof(title_msg), "%s - %s %s", PACKAGE_VERSION, core_name, core_version);
-   blit_line(rgui, RGUI_TERM_START_X + 15, (RGUI_TERM_HEIGHT * FONT_HEIGHT_STRIDE) + RGUI_TERM_START_Y + 2, title_msg, true);
+   blit_line(RGUI_TERM_START_X + 15, (RGUI_TERM_HEIGHT * FONT_HEIGHT_STRIDE) + RGUI_TERM_START_Y + 2, title_msg, true);
 
    unsigned x, y;
    size_t i;
@@ -545,7 +554,7 @@ static void rgui_render(void *data)
             w,
             type_str_buf);
 
-      blit_line(rgui, x, y, message, selected);
+      blit_line(x, y, message, selected);
    }
 
 #ifdef GEKKO
@@ -559,7 +568,7 @@ static void rgui_render(void *data)
    else
       message_queue = driver.current_msg;
 
-   rgui_render_messagebox(rgui, message_queue);
+   rgui_render_messagebox(message_queue);
 #endif
 
    if (rgui->keyboard.display)
@@ -569,7 +578,7 @@ static void rgui_render(void *data)
       if (!str)
          str = "";
       snprintf(msg, sizeof(msg), "%s\n%s", rgui->keyboard.label, str);
-      rgui_render_messagebox(rgui, msg);
+      rgui_render_messagebox(msg);
    }
 }
 

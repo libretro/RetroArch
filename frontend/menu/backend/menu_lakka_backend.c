@@ -176,7 +176,7 @@ static int menu_lakka_iterate(unsigned action)
       driver.menu_ctx->iterate(rgui, action);
 
    if (driver.video_data && driver.menu_ctx && driver.menu_ctx->render)
-      driver.menu_ctx->render(rgui);
+      driver.menu_ctx->render();
 
    return 0;
 }
