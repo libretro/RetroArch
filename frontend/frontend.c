@@ -98,7 +98,7 @@ static int main_entry_iterate_clear_input(args_type() args)
    (void)args;
 
    rarch_input_poll();
-   if (!menu_input(driver.menu))
+   if (!menu_input())
    {
       // Restore libretro keyboard callback.
       g_extern.system.key_event = key_event;
@@ -116,7 +116,7 @@ static int main_entry_iterate_shutdown(args_type() args)
 #ifdef HAVE_MENU
    // Load dummy core instead of exiting RetroArch completely.
    if (g_settings.load_dummy_on_core_shutdown)
-      load_menu_game_prepare_dummy(driver.menu);
+      load_menu_game_prepare_dummy();
    else
 #endif
       return 1;
@@ -146,9 +146,9 @@ static int main_entry_iterate_content(args_type() args)
 
 static int main_entry_iterate_load_content(args_type() args)
 {
-   load_menu_game_prepare(driver.menu);
+   load_menu_game_prepare();
 
-   if (load_menu_game(driver.menu))
+   if (load_menu_game())
    {
       g_extern.lifecycle_state |= (1ULL << MODE_GAME);
       if (driver.video_data && driver.video_poke && driver.video_poke->set_aspect_ratio)
@@ -342,7 +342,7 @@ returntype main_entry(signature())
       // If we started a ROM directly from command line,
       // push it to ROM history.
       if (!g_extern.libretro_dummy)
-         menu_rom_history_push_current(driver.menu);
+         menu_rom_history_push_current();
    }
 
    while (!main_entry_iterate(signature_expand(), args));

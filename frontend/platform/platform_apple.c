@@ -109,12 +109,8 @@ int apple_rarch_load_content(int argc, char* argv[])
    if (rarch_main_init(argc, argv))
       return 1;
    
-   driver.menu = (rgui_handle_t*)menu_init();
-    
-   rgui = (rgui_handle_t*)driver.menu;
-   
-   if (!g_extern.libretro_dummy && rgui)
-      menu_rom_history_push_current(rgui);
+   if (!g_extern.libretro_dummy)
+      menu_rom_history_push_current();
    
    g_extern.lifecycle_state |= 1ULL << MODE_GAME;
    

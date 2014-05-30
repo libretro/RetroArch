@@ -192,24 +192,24 @@ void menu_free(void *data);
 
 void menu_ticker_line(char *buf, size_t len, unsigned tick, const char *str, bool selected);
 
-void load_menu_game_prepare(void *data);
-void load_menu_game_prepare_dummy(void *data);
-bool load_menu_game(void *data);
-void load_menu_game_history(void *data, unsigned game_index);
-extern void load_menu_game_new_core(void *data);
-void menu_rom_history_push(void *data, const char *path, const char *core_path,
+void load_menu_game_prepare(void);
+void load_menu_game_prepare_dummy(void);
+bool load_menu_game(void);
+void load_menu_game_history(unsigned game_index);
+extern void load_menu_game_new_core(void);
+void menu_rom_history_push(const char *path, const char *core_path,
       const char *core_name);
-void menu_rom_history_push_current(void *data);
+void menu_rom_history_push_current(void);
 
-bool menu_replace_config(void *data, const char *path);
+bool menu_replace_config(const char *path);
 
 bool menu_save_new_config(void);
 
 int menu_defer_core(void *data, const char *dir, const char *path, char *deferred_path, size_t sizeof_deferred_path);
 
-uint64_t menu_input(void *data);
+uint64_t menu_input(void);
 
-void menu_flush_stack_type(void *data, unsigned final_type);
+void menu_flush_stack_type(unsigned final_type);
 void menu_update_system_info(void *data, bool *load_no_rom);
 void menu_build_scroll_indices(void *data, file_list_t *buf);
 

@@ -99,22 +99,25 @@ int menu_defer_core(void *info_, const char *dir, const char *path, char *deferr
    return 0;
 }
 
-void menu_rom_history_push(void *data, const char *path,
+void menu_rom_history_push(const char *path,
       const char *core_path,
       const char *core_name)
 {
-   rgui_handle_t *rgui = (rgui_handle_t*)data;
+   rgui_handle_t *rgui = (rgui_handle_t*)driver.menu;
 
-   if (rgui->history)
+   if (rgui && rgui->history)
       rom_history_push(rgui->history, path, core_path, core_name);
 }
 
-void menu_rom_history_push_current(void *data)
+void menu_rom_history_push_current(void)
 {
    // g_extern.fullpath can be relative here.
    // Ensure we're pushing absolute path.
    char tmp[PATH_MAX];
-   rgui_handle_t *rgui = (rgui_handle_t*)data;
+   rgui_handle_t *rgui = (rgui_handle_t*)driver.menu;
+
+   if (!rgui)
+      return;
 
    strlcpy(tmp, g_extern.fullpath, sizeof(tmp));
 
@@ -122,14 +125,17 @@ void menu_rom_history_push_current(void *data)
       path_resolve_realpath(tmp, sizeof(tmp));
 
    if (g_extern.system.no_game || *tmp)
-      menu_rom_history_push(rgui, *tmp ? tmp : NULL,
+      menu_rom_history_push(*tmp ? tmp : NULL,
             g_settings.libretro,
             g_extern.system.info.library_name);
 }
 
-void load_menu_game_prepare(void *data)
+void load_menu_game_prepare(void)
 {
-   rgui_handle_t *rgui = (rgui_handle_t*)data;
+   rgui_handle_t *rgui = (rgui_handle_t*)driver.menu;
+
+   if (!rgui)
+      return;
 
    if (*g_extern.fullpath || (rgui && rgui->load_no_rom))
    {
@@ -146,12 +152,11 @@ void load_menu_game_prepare(void *data)
 #ifdef RARCH_CONSOLE
       if (g_extern.system.no_game || *g_extern.fullpath)
 #endif
-      menu_rom_history_push(rgui, *g_extern.fullpath ? g_extern.fullpath : NULL,
+      menu_rom_history_push(*g_extern.fullpath ? g_extern.fullpath : NULL,
             g_settings.libretro,
             rgui->info.library_name ? rgui->info.library_name : "");
    }
 
-#ifdef HAVE_MENU
    // redraw RGUI frame
    rgui->old_input_state = rgui->trigger_state = 0;
    rgui->do_held = false;
@@ -159,7 +164,6 @@ void load_menu_game_prepare(void *data)
 
    if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->iterate) 
       driver.menu_ctx->backend->iterate(rgui, RGUI_ACTION_NOOP);
-#endif
 
    // Draw frame for loading message
    if (driver.video_data && driver.video_poke && driver.video_poke->set_texture_enable)
@@ -173,14 +177,12 @@ void load_menu_game_prepare(void *data)
             MENU_TEXTURE_FULLSCREEN);
 }
 
-void load_menu_game_history(void *data, unsigned game_index)
+void load_menu_game_history(unsigned game_index)
 {
-   rgui_handle_t *rgui;
    const char *path = NULL;
    const char *core_path = NULL;
    const char *core_name = NULL;
-
-   rgui = (rgui_handle_t*)data;
+   rgui_handle_t *rgui = (rgui_handle_t*)driver.menu;
 
    if (!rgui)
       return;
@@ -208,7 +210,10 @@ static void menu_init_history(void *data)
 {
    rgui_handle_t *rgui = (rgui_handle_t*)data;
 
-   if (rgui && rgui->history)
+   if (!rgui)
+      return;
+
+   if (rgui->history)
    {
       rom_history_free(rgui->history);
       rgui->history = NULL;
@@ -250,9 +255,9 @@ static void menu_update_libretro_info(void *data)
    menu_update_system_info(rgui, NULL);
 }
 
-void load_menu_game_prepare_dummy(void *data)
+void load_menu_game_prepare_dummy(void)
 {
-   rgui_handle_t *rgui = (rgui_handle_t*)data;
+   rgui_handle_t *rgui = (rgui_handle_t*)driver.menu;
 
    if (!rgui)
       return;
@@ -266,10 +271,11 @@ void load_menu_game_prepare_dummy(void *data)
    g_extern.system.shutdown = false;
 }
 
-bool load_menu_game(void *data)
+bool load_menu_game(void)
 {
+   int ret;
    struct rarch_main_wrap args = {0};
-   rgui_handle_t *rgui = (rgui_handle_t*)data;
+   rgui_handle_t *rgui = (rgui_handle_t*)driver.menu;
 
    if (!rgui)
       return false;
@@ -286,10 +292,12 @@ bool load_menu_game(void *data)
    args.rom_path      = *g_extern.fullpath ? g_extern.fullpath : NULL;
    args.libretro_path = *g_settings.libretro ? g_settings.libretro : NULL;
 
-   if (rarch_main_init_wrap(&args) != 0)
+   ret = rarch_main_init_wrap(&args);
+   rgui = (rgui_handle_t*)driver.menu;
+
+   if (ret != 0)
    {
       char name[PATH_MAX], msg[PATH_MAX];
-      rgui = (rgui_handle_t*)driver.menu;
 
       fill_pathname_base(name, g_extern.fullpath, sizeof(name));
       snprintf(msg, sizeof(msg), "Failed to load %s.\n", name);
@@ -302,7 +310,7 @@ bool load_menu_game(void *data)
 
    RARCH_LOG("rarch_main_init_wrap() succeeded.\n");
 
-   if ((rgui = (rgui_handle_t*)driver.menu))
+   if (rgui)
    {
       // Update menu state which depends on config.
       menu_update_libretro_info(rgui);
@@ -419,23 +427,22 @@ void menu_ticker_line(char *buf, size_t len, unsigned index, const char *str, bo
    }
 }
 
-#ifdef HAVE_MENU
-uint64_t menu_input(void *data)
+uint64_t menu_input(void)
 {
    unsigned i;
    uint64_t input_state;
-   rgui_handle_t *rgui;
 #ifdef RARCH_CONSOLE
    static const struct retro_keybind *binds[] = { g_settings.input.menu_binds };
 #else
    static const struct retro_keybind *binds[] = { g_settings.input.binds[0] };
 #endif
-
-   rgui = (rgui_handle_t*)data;
-   input_state = 0;
+   rgui_handle_t *rgui = (rgui_handle_t*)driver.menu;
 
    if (!rgui)
       return 0;
+
+   input_state = 0;
+
 
    input_push_analog_dpad((struct retro_keybind*)binds[0], (g_settings.input.analog_dpad_mode[0] == ANALOG_DPAD_NONE) ? ANALOG_DPAD_LSTICK : g_settings.input.analog_dpad_mode[0]);
    for (i = 0; i < MAX_PLAYERS; i++)
@@ -473,6 +480,10 @@ uint64_t menu_input(void *data)
 bool menu_custom_bind_keyboard_cb(void *data, unsigned code)
 {
    rgui_handle_t *rgui = (rgui_handle_t*)data;
+
+   if (!rgui)
+      return false;
+
    rgui->binds.target->key = (enum retro_key)code;
    rgui->binds.begin++;
    rgui->binds.target++;
@@ -480,10 +491,14 @@ bool menu_custom_bind_keyboard_cb(void *data, unsigned code)
    return rgui->binds.begin <= rgui->binds.last;
 }
 
-void menu_flush_stack_type(void *data, unsigned final_type)
+void menu_flush_stack_type(unsigned final_type)
 {
-   rgui_handle_t *rgui = (rgui_handle_t*)data;
    unsigned type;
+   rgui_handle_t *rgui = (rgui_handle_t*)driver.menu;
+
+   if (!rgui)
+      return;
+
    type = 0;
    rgui->need_refresh = true;
    file_list_get_last(rgui->menu_stack, NULL, &type);
@@ -494,9 +509,9 @@ void menu_flush_stack_type(void *data, unsigned final_type)
    }
 }
 
-void load_menu_game_new_core(void *data)
+void load_menu_game_new_core(void)
 {
-   rgui_handle_t *rgui = (rgui_handle_t*)data;
+   rgui_handle_t *rgui = (rgui_handle_t*)driver.menu;
 
    if (!rgui)
       return;
@@ -547,7 +562,7 @@ bool menu_iterate(void *data)
       return false;
    }
 
-   input_state = menu_input(rgui);
+   input_state = menu_input();
 
    if (rgui->do_held)
    {
@@ -643,17 +658,17 @@ bool menu_iterate(void *data)
 
    return true;
 }
-#endif
 
 // Quite intrusive and error prone.
 // Likely to have lots of small bugs.
 // Cleanly exit the main loop to ensure that all the tiny details get set properly.
 // This should mitigate most of the smaller bugs.
-bool menu_replace_config(void *data, const char *path)
+bool menu_replace_config(const char *path)
 {
-   rgui_handle_t *rgui;
+   rgui_handle_t *rgui = (rgui_handle_t*)driver.menu;
 
-   rgui = (rgui_handle_t*)data;
+   if (!rgui)
+      return false;
 
    if (strcmp(path, g_extern.config_path) == 0 || !rgui)
       return false;

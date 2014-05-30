@@ -56,9 +56,13 @@ static inline struct gfx_shader *shader_manager_get_current_shader(rgui_handle_t
 
 static void menu_common_entries_init(void *data, unsigned menu_type)
 {
-   rgui_handle_t *rgui = (rgui_handle_t*)data;
    unsigned i, last;
    char tmp[256];
+   rgui_handle_t *rgui = (rgui_handle_t*)data;
+
+   if (!rgui)
+      return;
+
    switch (menu_type)
    {
 #ifdef HAVE_SHADER_MANAGER
@@ -447,7 +451,6 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
 
    if (driver.menu_ctx && driver.menu_ctx->populate_entries)
       driver.menu_ctx->populate_entries(rgui, menu_type);
-
 }
 
 static int menu_start_screen_iterate(void *data, unsigned action)
@@ -735,9 +738,9 @@ static int menu_settings_iterate(void *data, unsigned action)
             || menu_type == RGUI_SETTINGS_SHADER_PARAMETERS
             || menu_type == RGUI_SETTINGS_SHADER_PRESET_PARAMETERS
             )
-         menu_common_entries_init(rgui, menu_type);
+         menu_common_entries_init(driver.menu, menu_type);
       else
-         menu_common_entries_init(rgui, RGUI_SETTINGS);
+         menu_common_entries_init(driver.menu, RGUI_SETTINGS);
    }
 
    if (rgui)
@@ -1168,6 +1171,7 @@ static void menu_parse_and_resolve(void *data, unsigned menu_type)
 static int menu_custom_bind_iterate(void *data, unsigned action)
 {
    rgui_handle_t *rgui = (rgui_handle_t*)data;
+
    (void)action; // Have to ignore action here. Only bind that should work here is Quit RetroArch or something like that.
 
    if (driver.video_data && driver.menu_ctx && driver.menu_ctx->render)
@@ -1249,7 +1253,7 @@ static void menu_common_defer_decision_automatic(void *data)
    if (!rgui)
       return;
 
-   menu_flush_stack_type(rgui, RGUI_SETTINGS);
+   menu_flush_stack_type(RGUI_SETTINGS);
    rgui->msg_force = true;
 }
 
@@ -1308,9 +1312,9 @@ static int menu_common_iterate(void *data, unsigned action)
    else if (menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT || menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT_2)
       return menu_viewport_iterate(rgui, action);
    else if (menu_type == RGUI_SETTINGS_CUSTOM_BIND)
-      return menu_custom_bind_iterate(rgui, action);
+      return menu_custom_bind_iterate(driver.menu, action);
    else if (menu_type == RGUI_SETTINGS_CUSTOM_BIND_KEYBOARD)
-      return menu_custom_bind_iterate_keyboard(rgui, action);
+      return menu_custom_bind_iterate_keyboard(driver.menu, action);
 
    if (rgui->need_refresh && action != RGUI_ACTION_MESSAGE)
       action = RGUI_ACTION_NOOP;
@@ -1414,7 +1418,7 @@ static int menu_common_iterate(void *data, unsigned action)
                }
 
                // Pop stack until we hit shader manager again.
-               menu_flush_stack_type(rgui, RGUI_SETTINGS_SHADER_OPTIONS);
+               menu_flush_stack_type(RGUI_SETTINGS_SHADER_OPTIONS);
             }
             else
 #endif
@@ -1423,16 +1427,16 @@ static int menu_common_iterate(void *data, unsigned action)
                // FIXME: Add for consoles.
                strlcpy(g_settings.libretro, path, sizeof(g_settings.libretro));
                strlcpy(g_extern.fullpath, rgui->deferred_path, sizeof(g_extern.fullpath));
-               load_menu_game_new_core(rgui);
+               load_menu_game_new_core();
                rgui->msg_force = true;
                ret = -1;
-               menu_flush_stack_type(rgui, RGUI_SETTINGS);
+               menu_flush_stack_type(RGUI_SETTINGS);
             }
             else if (menu_type == RGUI_SETTINGS_CORE)
             {
 #if defined(HAVE_DYNAMIC)
                fill_pathname_join(g_settings.libretro, dir, path, sizeof(g_settings.libretro));
-               menu_update_system_info(rgui, &rgui->load_no_rom);
+               menu_update_system_info(driver.menu, &rgui->load_no_rom);
 
                // No ROM needed for this core, load game immediately.
                if (rgui->load_no_rom)
@@ -1459,15 +1463,15 @@ static int menu_common_iterate(void *data, unsigned action)
                ret = -1;
 #endif
 
-               menu_flush_stack_type(rgui, RGUI_SETTINGS);
+               menu_flush_stack_type(RGUI_SETTINGS);
             }
             else if (menu_type == RGUI_SETTINGS_CONFIG)
             {
                char config[PATH_MAX];
                fill_pathname_join(config, dir, path, sizeof(config));
-               menu_flush_stack_type(rgui, RGUI_SETTINGS);
+               menu_flush_stack_type(RGUI_SETTINGS);
                rgui->msg_force = true;
-               if (menu_replace_config(rgui, config))
+               if (menu_replace_config(config))
                {
                   menu_clear_navigation(rgui);
                   ret = -1;
@@ -1484,7 +1488,7 @@ static int menu_common_iterate(void *data, unsigned action)
                if (!driver.overlay)
                   RARCH_ERR("Failed to load overlay.\n");
 
-               menu_flush_stack_type(rgui, RGUI_SETTINGS_OPTIONS);
+               menu_flush_stack_type(RGUI_SETTINGS_OPTIONS);
             }
 #endif
             else if (menu_type == RGUI_SETTINGS_DISK_APPEND)
@@ -1495,54 +1499,54 @@ static int menu_common_iterate(void *data, unsigned action)
 
                g_extern.lifecycle_state |= 1ULL << MODE_GAME;
 
-               menu_flush_stack_type(rgui, RGUI_SETTINGS);
+               menu_flush_stack_type(RGUI_SETTINGS);
                ret = -1;
             }
             else if (menu_type == RGUI_SETTINGS_OPEN_HISTORY)
             {
-               load_menu_game_history(rgui, rgui->selection_ptr);
-               menu_flush_stack_type(rgui, RGUI_SETTINGS);
+               load_menu_game_history(rgui->selection_ptr);
+               menu_flush_stack_type(RGUI_SETTINGS);
                ret = -1;
             }
             else if (menu_type == RGUI_BROWSER_DIR_PATH)
             {
                strlcpy(g_settings.rgui_content_directory, dir, sizeof(g_settings.rgui_content_directory));
-               menu_flush_stack_type(rgui, RGUI_SETTINGS_PATH_OPTIONS);
+               menu_flush_stack_type(RGUI_SETTINGS_PATH_OPTIONS);
             }
             else if (menu_type == RGUI_CONTENT_DIR_PATH)
             {
                strlcpy(g_settings.content_directory, dir, sizeof(g_settings.content_directory));
-               menu_flush_stack_type(rgui, RGUI_SETTINGS_PATH_OPTIONS);
+               menu_flush_stack_type(RGUI_SETTINGS_PATH_OPTIONS);
             }
             else if (menu_type == RGUI_ASSETS_DIR_PATH)
             {
                strlcpy(g_settings.assets_directory, dir, sizeof(g_settings.assets_directory));
-               menu_flush_stack_type(rgui, RGUI_SETTINGS_PATH_OPTIONS);
+               menu_flush_stack_type(RGUI_SETTINGS_PATH_OPTIONS);
             }
 #ifdef HAVE_SCREENSHOTS
             else if (menu_type == RGUI_SCREENSHOT_DIR_PATH)
             {
                strlcpy(g_settings.screenshot_directory, dir, sizeof(g_settings.screenshot_directory));
-               menu_flush_stack_type(rgui, RGUI_SETTINGS_PATH_OPTIONS);
+               menu_flush_stack_type(RGUI_SETTINGS_PATH_OPTIONS);
             }
 #endif
             else if (menu_type == RGUI_SAVEFILE_DIR_PATH)
             {
                strlcpy(g_extern.savefile_dir, dir, sizeof(g_extern.savefile_dir));
-               menu_flush_stack_type(rgui, RGUI_SETTINGS_PATH_OPTIONS);
+               menu_flush_stack_type(RGUI_SETTINGS_PATH_OPTIONS);
             }
 #ifdef HAVE_OVERLAY
             else if (menu_type == RGUI_OVERLAY_DIR_PATH)
             {
                strlcpy(g_extern.overlay_dir, dir, sizeof(g_extern.overlay_dir));
-               menu_flush_stack_type(rgui, RGUI_SETTINGS_PATH_OPTIONS);
+               menu_flush_stack_type(RGUI_SETTINGS_PATH_OPTIONS);
             }
 #endif
             else if (menu_type == RGUI_SETTINGS_VIDEO_SOFTFILTER)
             {
                fill_pathname_join(g_settings.video.filter_path, dir, path, sizeof(g_settings.video.filter_path));
                menu_reinit_context(rgui);
-               menu_flush_stack_type(rgui, RGUI_SETTINGS_VIDEO_OPTIONS);
+               menu_flush_stack_type(RGUI_SETTINGS_VIDEO_OPTIONS);
             }
             else if (menu_type == RGUI_SETTINGS_AUDIO_DSP_FILTER)
             {
@@ -1551,12 +1555,12 @@ static int menu_common_iterate(void *data, unsigned action)
 #endif
                rarch_deinit_dsp_filter();
                rarch_init_dsp_filter();
-               menu_flush_stack_type(rgui, RGUI_SETTINGS_AUDIO_OPTIONS);
+               menu_flush_stack_type(RGUI_SETTINGS_AUDIO_OPTIONS);
             }
             else if (menu_type == RGUI_SAVESTATE_DIR_PATH)
             {
                strlcpy(g_extern.savestate_dir, dir, sizeof(g_extern.savestate_dir));
-               menu_flush_stack_type(rgui, RGUI_SETTINGS_PATH_OPTIONS);
+               menu_flush_stack_type(RGUI_SETTINGS_PATH_OPTIONS);
             }
             else if (menu_type == RGUI_LIBRETRO_DIR_PATH)
             {
@@ -1564,13 +1568,13 @@ static int menu_common_iterate(void *data, unsigned action)
 
                if (driver.menu_ctx && driver.menu_ctx->init_core_info)
                   driver.menu_ctx->init_core_info(rgui);
-               menu_flush_stack_type(rgui, RGUI_SETTINGS_PATH_OPTIONS);
+               menu_flush_stack_type(RGUI_SETTINGS_PATH_OPTIONS);
             }
 #ifdef HAVE_DYNAMIC
             else if (menu_type == RGUI_CONFIG_DIR_PATH)
             {
                strlcpy(g_settings.rgui_config_directory, dir, sizeof(g_settings.rgui_config_directory));
-               menu_flush_stack_type(rgui, RGUI_SETTINGS_PATH_OPTIONS);
+               menu_flush_stack_type(RGUI_SETTINGS_PATH_OPTIONS);
             }
 #endif
             else if (menu_type == RGUI_LIBRETRO_INFO_DIR_PATH)
@@ -1578,32 +1582,32 @@ static int menu_common_iterate(void *data, unsigned action)
                strlcpy(g_settings.libretro_info_path, dir, sizeof(g_settings.libretro_info_path));
                if (driver.menu_ctx && driver.menu_ctx->init_core_info)
                   driver.menu_ctx->init_core_info(rgui);
-               menu_flush_stack_type(rgui, RGUI_SETTINGS_PATH_OPTIONS);
+               menu_flush_stack_type(RGUI_SETTINGS_PATH_OPTIONS);
             }
             else if (menu_type == RGUI_SHADER_DIR_PATH)
             {
                strlcpy(g_settings.video.shader_dir, dir, sizeof(g_settings.video.shader_dir));
-               menu_flush_stack_type(rgui, RGUI_SETTINGS_PATH_OPTIONS);
+               menu_flush_stack_type(RGUI_SETTINGS_PATH_OPTIONS);
             }
             else if (menu_type == RGUI_FILTER_DIR_PATH)
             {
                strlcpy(g_settings.video.filter_dir, dir, sizeof(g_settings.video.filter_dir));
-               menu_flush_stack_type(rgui, RGUI_SETTINGS_PATH_OPTIONS);
+               menu_flush_stack_type(RGUI_SETTINGS_PATH_OPTIONS);
             }
             else if (menu_type == RGUI_DSP_FILTER_DIR_PATH)
             {
                strlcpy(g_settings.audio.filter_dir, dir, sizeof(g_settings.audio.filter_dir));
-               menu_flush_stack_type(rgui, RGUI_SETTINGS_PATH_OPTIONS);
+               menu_flush_stack_type(RGUI_SETTINGS_PATH_OPTIONS);
             }
             else if (menu_type == RGUI_SYSTEM_DIR_PATH)
             {
                strlcpy(g_settings.system_directory, dir, sizeof(g_settings.system_directory));
-               menu_flush_stack_type(rgui, RGUI_SETTINGS_PATH_OPTIONS);
+               menu_flush_stack_type(RGUI_SETTINGS_PATH_OPTIONS);
             }
             else if (menu_type == RGUI_AUTOCONFIG_DIR_PATH)
             {
                strlcpy(g_settings.input.autoconfig_dir, dir, sizeof(g_settings.input.autoconfig_dir));
-               menu_flush_stack_type(rgui, RGUI_SETTINGS_PATH_OPTIONS);
+               menu_flush_stack_type(RGUI_SETTINGS_PATH_OPTIONS);
             }
             else
             {
@@ -1613,7 +1617,7 @@ static int menu_common_iterate(void *data, unsigned action)
 
                   if (ret == -1)
                   {
-                     menu_update_system_info(rgui, &rgui->load_no_rom);
+                     menu_update_system_info(driver.menu, &rgui->load_no_rom);
                      if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->defer_decision_automatic) 
                         driver.menu_ctx->backend->defer_decision_automatic(rgui);
                   }
@@ -1628,7 +1632,7 @@ static int menu_common_iterate(void *data, unsigned action)
                   fill_pathname_join(g_extern.fullpath, dir, path, sizeof(g_extern.fullpath));
                   g_extern.lifecycle_state |= (1ULL << MODE_LOAD_GAME);
 
-                  menu_flush_stack_type(rgui, RGUI_SETTINGS);
+                  menu_flush_stack_type(RGUI_SETTINGS);
                   rgui->msg_force = true;
                   ret = -1;
                }
@@ -1681,10 +1685,11 @@ static int menu_common_iterate(void *data, unsigned action)
 
 static void menu_common_shader_manager_init(void *data)
 {
-   (void)data;
+   rgui_handle_t *rgui = (rgui_handle_t*)data;
+   if (!rgui)
+      return;
 
 #ifdef HAVE_SHADER_MANAGER
-   rgui_handle_t *rgui = (rgui_handle_t*)data;
    memset(&rgui->shader, 0, sizeof(rgui->shader));
    config_file_t *conf = NULL;
 
@@ -2976,7 +2981,7 @@ static int menu_common_setting_set(void *data, unsigned setting, unsigned action
                rgui->binds.last = RGUI_SETTINGS_BIND_LAST;
                file_list_push(rgui->menu_stack, "", RGUI_SETTINGS_CUSTOM_BIND_KEYBOARD, rgui->selection_ptr);
                rgui->binds.timeout_end = rarch_get_time_usec() + RGUI_KEYBOARD_BIND_TIMEOUT_SECONDS * 1000000;
-               input_keyboard_wait_keys(rgui, menu_custom_bind_keyboard_cb);
+               input_keyboard_wait_keys(driver.menu, menu_custom_bind_keyboard_cb);
             }
             else
             {
@@ -3091,7 +3096,7 @@ static int menu_common_setting_set(void *data, unsigned setting, unsigned action
                if (rgui->bind_mode_keyboard)
                {
                   rgui->binds.timeout_end = rarch_get_time_usec() + RGUI_KEYBOARD_BIND_TIMEOUT_SECONDS * 1000000;
-                  input_keyboard_wait_keys(rgui, menu_custom_bind_keyboard_cb);
+                  input_keyboard_wait_keys(driver.menu, menu_custom_bind_keyboard_cb);
                }
                else
                {
