@@ -116,21 +116,29 @@ static void rmenu_render_messagebox(void *data, const char *message)
 
 static void rmenu_render(void *data)
 {
+   size_t begin, end;
+   rgui_handle_t *rgui = (rgui_handle_t*)data;
+   font_params_t font_parms;
+
    if (!render_normal)
    {
       render_normal = true;
       return;
    }
-  
-   rgui_handle_t *rgui = (rgui_handle_t*)data;
-   font_params_t font_parms;
+
+   if (!rgui)
+      return;
 
    if (rgui->need_refresh && 
          (g_extern.lifecycle_state & (1ULL << MODE_MENU))
          && !rgui->msg_force)
-      return; size_t begin = rgui->selection_ptr >= (ENTRIES_HEIGHT / 2) ?  (rgui->selection_ptr - (ENTRIES_HEIGHT / 2)) : 0;
-   size_t end = (rgui->selection_ptr + ENTRIES_HEIGHT) <= rgui->selection_buf->size ?
-      rgui->selection_ptr + ENTRIES_HEIGHT : rgui->selection_buf->size;
+      return;
+
+   if (!rgui->selection_buf)
+      return;
+
+   begin = (rgui->selection_ptr >= (ENTRIES_HEIGHT / 2)) ?  (rgui->selection_ptr - (ENTRIES_HEIGHT / 2)) : 0;
+   end = ((rgui->selection_ptr + ENTRIES_HEIGHT) <= rgui->selection_buf->size) ? rgui->selection_ptr + ENTRIES_HEIGHT : rgui->selection_buf->size;
 
    if (rgui->selection_buf->size <= ENTRIES_HEIGHT)
       begin = 0;

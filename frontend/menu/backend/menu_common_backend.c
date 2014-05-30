@@ -742,7 +742,7 @@ static int menu_settings_iterate(void *data, unsigned action)
 
    if (rgui)
    {
-      if (driver.video_data && driver.menu_ctx && driver.menu_ctx->render)
+      if (rgui && driver.menu_ctx && driver.menu_ctx->render)
          driver.menu_ctx->render(rgui);
 
       // Have to defer it so we let settings refresh.
@@ -1265,6 +1265,14 @@ static void menu_common_defer_decision_manual(void *data)
    rgui->need_refresh = true;
 }
 
+static void menu_reinit_context(void *data)
+{
+   rarch_set_fullscreen(g_settings.video.fullscreen);
+
+   data = (void*)driver.menu;
+   (void)data;
+}
+
 static int menu_common_iterate(void *data, unsigned action)
 {
    rgui_handle_t *rgui = (rgui_handle_t*)data;
@@ -1533,7 +1541,7 @@ static int menu_common_iterate(void *data, unsigned action)
             else if (menu_type == RGUI_SETTINGS_VIDEO_SOFTFILTER)
             {
                fill_pathname_join(g_settings.video.filter_path, dir, path, sizeof(g_settings.video.filter_path));
-               rarch_set_fullscreen(g_settings.video.fullscreen);
+               menu_reinit_context(rgui);
                menu_flush_stack_type(rgui, RGUI_SETTINGS_VIDEO_OPTIONS);
             }
             else if (menu_type == RGUI_SETTINGS_AUDIO_DSP_FILTER)
@@ -2682,7 +2690,7 @@ static int menu_common_setting_set(void *data, unsigned setting, unsigned action
                break;
 #endif
             case RGUI_ACTION_OK:
-               rarch_set_fullscreen(g_settings.video.fullscreen);
+               menu_reinit_context(rgui);
 #if defined(HAVE_DYLIB)
                file_list_push(rgui->menu_stack, g_settings.video.filter_dir, setting, rgui->selection_ptr);
                menu_clear_navigation(rgui);
@@ -2695,7 +2703,7 @@ static int menu_common_setting_set(void *data, unsigned setting, unsigned action
 #else
                strlcpy(g_settings.video.filter_path, "", sizeof(g_settings.video.filter_path));
 #endif
-               rarch_set_fullscreen(g_settings.video.fullscreen);
+               menu_reinit_context(rgui);
                break;
          }
          break;
@@ -3331,7 +3339,7 @@ static int menu_common_setting_set(void *data, unsigned setting, unsigned action
 
       case RGUI_SETTINGS_TOGGLE_FULLSCREEN:
          if (action == RGUI_ACTION_OK)
-            rarch_set_fullscreen(!g_settings.video.fullscreen);
+            menu_reinit_context(rgui);
          break;
 
 #if defined(GEKKO)
@@ -3396,7 +3404,7 @@ static int menu_common_setting_set(void *data, unsigned setting, unsigned action
                g_extern.lifecycle_state &= ~(1ULL << MODE_VIDEO_PAL_TEMPORAL_ENABLE);
             }
 
-            rarch_set_fullscreen(g_settings.video.fullscreen);
+            menu_reinit_context(rgui);
          }
          break;
       case RGUI_SETTINGS_VIDEO_PAL60:
@@ -3412,7 +3420,7 @@ static int menu_common_setting_set(void *data, unsigned setting, unsigned action
                   else
                      g_extern.lifecycle_state |= (1ULL << MODE_VIDEO_PAL_TEMPORAL_ENABLE);
 
-                  rarch_set_fullscreen(g_settings.video.fullscreen);
+                  menu_reinit_context(rgui);
                }
                break;
             case RGUI_ACTION_START:
@@ -3420,7 +3428,7 @@ static int menu_common_setting_set(void *data, unsigned setting, unsigned action
                {
                   g_extern.lifecycle_state &= ~(1ULL << MODE_VIDEO_PAL_TEMPORAL_ENABLE);
 
-                  rarch_set_fullscreen(g_settings.video.fullscreen);
+                  menu_reinit_context(rgui);
                }
                break;
          }
@@ -3538,7 +3546,7 @@ static int menu_common_setting_set(void *data, unsigned setting, unsigned action
          *scale = max(*scale, 1.0f);
 
          if (old_scale != *scale && !g_settings.video.fullscreen)
-            rarch_set_fullscreen(g_settings.video.fullscreen); // Reinit video driver.
+            menu_reinit_context(rgui);
 
          break;
       }
@@ -3555,7 +3563,7 @@ static int menu_common_setting_set(void *data, unsigned setting, unsigned action
             g_settings.video.threaded = false;
 
          if (g_settings.video.threaded != old)
-            rarch_set_fullscreen(g_settings.video.fullscreen); // Reinit video driver.
+            menu_reinit_context(rgui);
          break;
       }
 #endif
@@ -3618,20 +3626,20 @@ static int menu_common_setting_set(void *data, unsigned setting, unsigned action
          {
             case RGUI_ACTION_START:
                g_settings.video.monitor_index = 0;
-               rarch_set_fullscreen(g_settings.video.fullscreen);
+               menu_reinit_context(rgui);
                break;
 
             case RGUI_ACTION_OK:
             case RGUI_ACTION_RIGHT:
                g_settings.video.monitor_index++;
-               rarch_set_fullscreen(g_settings.video.fullscreen);
+               menu_reinit_context(rgui);
                break;
 
             case RGUI_ACTION_LEFT:
                if (g_settings.video.monitor_index)
                {
                   g_settings.video.monitor_index--;
-                  rarch_set_fullscreen(g_settings.video.fullscreen);
+                  menu_reinit_context(rgui);
                }
                break;
 
@@ -3812,12 +3820,12 @@ static int menu_common_setting_set(void *data, unsigned setting, unsigned action
          if (action == RGUI_ACTION_OK || action == RGUI_ACTION_LEFT || action == RGUI_ACTION_RIGHT)
          {
             g_settings.video.disable_composition = !g_settings.video.disable_composition;
-            rarch_set_fullscreen(g_settings.video.fullscreen);
+            menu_reinit_context(rgui);
          }
          else if (action == RGUI_ACTION_START)
          {
             g_settings.video.disable_composition = false;
-            rarch_set_fullscreen(g_settings.video.fullscreen);
+            menu_reinit_context(rgui);
          }
          break;
 #ifdef HAVE_NETPLAY
