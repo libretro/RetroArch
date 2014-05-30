@@ -243,6 +243,9 @@
     <ClCompile Include="..\..\gfx\image\image_rpng.c">
       <Filter>gfx\image</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\audio\dsp_filter.c">
+      <Filter>audio</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="resource.h" />

@@ -186,6 +186,7 @@
     <ClCompile Include="..\..\audio\cc_resampler.c" />
     <ClCompile Include="..\..\audio\dsound.c">
     </ClCompile>
+    <ClCompile Include="..\..\audio\dsp_filter.c" />
     <ClCompile Include="..\..\audio\resampler.c" />
     <ClCompile Include="..\..\audio\sinc.c" />
     <ClCompile Include="..\..\audio\thread_wrapper.c" />

@@ -794,7 +794,7 @@ static bool d3d_frame(void *data, const void *frame,
 
 #ifdef HAVE_MENU
    if (g_extern.lifecycle_state & (1ULL << MODE_MENU) && driver.menu_ctx && driver.menu_ctx->frame)
-      driver.menu_ctx->frame(d3d);
+      driver.menu_ctx->frame();
 #endif
 
    if (d3d && d3d->ctx_driver && d3d->ctx_driver->update_window_title)
