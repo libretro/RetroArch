@@ -1526,9 +1526,7 @@ static int menu_common_iterate(void *data, unsigned action)
             else if (menu_type == RGUI_SETTINGS_VIDEO_SOFTFILTER)
             {
                fill_pathname_join(g_settings.video.filter_path, dir, path, sizeof(g_settings.video.filter_path));
-#ifdef HAVE_DYLIB
                rarch_set_fullscreen(g_settings.video.fullscreen);
-#endif
                menu_flush_stack_type(rgui, RGUI_SETTINGS_VIDEO_OPTIONS);
             }
             else if (menu_type == RGUI_SETTINGS_AUDIO_DSP_FILTER)
