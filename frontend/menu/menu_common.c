@@ -533,7 +533,6 @@ bool menu_iterate(void)
    uint64_t input_state;
    int32_t input_entry_ret, ret;
    rgui_handle_t *rgui= (rgui_handle_t*)driver.menu;
-   RARCH_LOG("rgui is NULL: %d\n", rgui == NULL);
 
    input_state = 0;
    input_entry_ret = 0;
