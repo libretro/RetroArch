@@ -580,6 +580,9 @@ static void *rgui_init(void)
 
    rgui_handle_t *rgui = (rgui_handle_t*)calloc(1, sizeof(*rgui));
 
+   if (!rgui)
+      return NULL;
+
    rgui->frame_buf = framebuf;
    rgui->width = 320;
    rgui->height = 240;
@@ -604,6 +607,7 @@ static void *rgui_init(void)
 static void rgui_free(void *data)
 {
    rgui_handle_t *rgui = (rgui_handle_t*)data;
+
    if (rgui->alloc_font)
       free((uint8_t*)rgui->font);
 }
