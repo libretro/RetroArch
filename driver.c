@@ -915,11 +915,7 @@ void rarch_init_filter(enum retro_pixel_format colfmt)
 
    if (!g_extern.filter.filter)
    {
-#ifdef HAVE_FILTERS_BUILTIN
-      RARCH_LOG("Loading softfilter %d\n", g_settings.video.filter_idx);
-#else
-      RARCH_ERR("Failed to load filter \"%s\"\n", g_settings.video.filter_path);
-#endif
+      RARCH_ERR("Failed to load filter.\n");
       return;
    }
 
@@ -940,7 +936,7 @@ void rarch_init_filter(enum retro_pixel_format colfmt)
    return;
 
 error:
-   RARCH_ERR("Softfilter init failed.\n");
+   RARCH_ERR("Softfilter initialization failed.\n");
    rarch_deinit_filter();
 }
 
