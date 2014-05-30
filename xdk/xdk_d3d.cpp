@@ -203,7 +203,6 @@ static void d3d_init_textures(void *data, const video_info_t *video)
    d3d_video_t *d3d = (d3d_video_t*)data;
 
    D3DPRESENT_PARAMETERS d3dpp;
-   D3DVIEWPORT vp = {0};
    d3d_make_d3dpp(d3d, video, &d3dpp);
 
    d3d->pixel_size   = video->rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
@@ -226,21 +225,14 @@ static void d3d_init_textures(void *data, const video_info_t *video)
    d3d->dev->SetRenderState(D3DRS_LIGHTING, FALSE);
 #endif
 
-   vp.Width  = d3d->screen_width;
-   vp.Height = d3d->screen_height;
-
    d3d->dev->SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
    d3d->dev->SetRenderState(D3DRS_ZENABLE, FALSE);
 
-   vp.MinZ   = 0.0f;
-   vp.MaxZ   = 1.0f;
-   RD3DDevice_SetViewport(d3d->dev, &vp);
-
    if (g_extern.console.screen.viewports.custom_vp.width == 0)
-      g_extern.console.screen.viewports.custom_vp.width = vp.Width;
+      g_extern.console.screen.viewports.custom_vp.width = d3d->screen_width;
 
    if (g_extern.console.screen.viewports.custom_vp.height == 0)
-      g_extern.console.screen.viewports.custom_vp.height = vp.Height;
+      g_extern.console.screen.viewports.custom_vp.height = d3d->screen_height;
 }
 
 static void d3d_reinit_textures(void *data, const video_info_t *video)
