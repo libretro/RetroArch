@@ -1896,8 +1896,8 @@ static void menu_common_shader_manager_get_str(void *data, char *type_str, size_
 
 static void menu_common_shader_manager_save_preset(const char *basename, bool apply)
 {
-   rgui_handle_t *rgui = (rgui_handle_t*)driver.menu;
 #ifdef HAVE_SHADER_MANAGER
+   rgui_handle_t *rgui = (rgui_handle_t*)driver.menu;
    char buffer[PATH_MAX];
    unsigned d, type;
 
