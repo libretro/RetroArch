@@ -44,8 +44,16 @@
 #endif
 
 #ifdef HAVE_SHADER_MANAGER
-static inline struct gfx_shader *shader_manager_get_current_shader(rgui_handle_t *rgui, unsigned type)
+static inline struct gfx_shader *shader_manager_get_current_shader(void *data, unsigned type)
 {
+   rgui_handle_t *rgui = (rgui_handle_t*)data;
+
+   if (!rgui)
+   {
+      RARCH_ERR("Cannot get current shader, menu handle is not initialized.\n");
+      return NULL;
+   }
+
    struct gfx_shader *shader = type == RGUI_SETTINGS_SHADER_PRESET_PARAMETERS ? &rgui->shader : NULL;
    if (!shader && driver.video_poke && driver.video_data && driver.video_poke->get_current_shader)
       shader = driver.video_poke->get_current_shader(driver.video_data);
@@ -453,11 +461,14 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
       driver.menu_ctx->populate_entries(rgui, menu_type);
 }
 
-static int menu_start_screen_iterate(void *data, unsigned action)
+static int menu_start_screen_iterate(unsigned action)
 {
    unsigned i;
    char msg[1024];
-   rgui_handle_t *rgui = (rgui_handle_t*)data;
+   rgui_handle_t *rgui = (rgui_handle_t*)driver.menu;
+
+   if (!rgui)
+      return 0;
 
    if (driver.video_data && driver.menu_ctx && driver.menu_ctx->render)
       driver.menu_ctx->render(rgui);
@@ -590,9 +601,9 @@ static unsigned menu_common_type_is(unsigned type)
    return ret;
 }
 
-static int menu_settings_iterate(void *data, unsigned action)
+static int menu_settings_iterate(unsigned action)
 {
-   rgui_handle_t *rgui = (rgui_handle_t*)data;
+   rgui_handle_t *rgui = (rgui_handle_t*)driver.menu;
    
    if (!rgui)
       return 0;
@@ -685,8 +696,8 @@ static int menu_settings_iterate(void *data, unsigned action)
          {
             int ret = 0;
 
-            if (rgui && driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->setting_toggle)
-               ret = driver.menu_ctx->backend->setting_toggle(rgui, type, action, menu_type);
+            if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->setting_toggle)
+               ret = driver.menu_ctx->backend->setting_toggle(type, action, menu_type);
             if (ret)
                return ret;
          }
@@ -759,10 +770,13 @@ static int menu_settings_iterate(void *data, unsigned action)
    return 0;
 }
 
-static int menu_viewport_iterate(void *data, unsigned action)
+static int menu_viewport_iterate(unsigned action)
 {
-   rgui_handle_t *rgui = (rgui_handle_t*)data;
    rarch_viewport_t *custom = &g_extern.console.screen.viewports.custom_vp;
+   rgui_handle_t *rgui = (rgui_handle_t*)driver.menu;
+
+   if (!rgui)
+      return 0;
 
    unsigned menu_type = 0;
    file_list_get_last(rgui->menu_stack, NULL, &menu_type);
@@ -1277,14 +1291,20 @@ static void menu_reinit_context(void *data)
    (void)data;
 }
 
-static int menu_common_iterate(void *data, unsigned action)
+static int menu_common_iterate(unsigned action)
 {
-   rgui_handle_t *rgui = (rgui_handle_t*)data;
-
+   int ret = 0;
    const char *dir = 0;
    unsigned menu_type = 0;
+   rgui_handle_t *rgui = (rgui_handle_t*)driver.menu;
+
+   if (!rgui)
+   {
+      RARCH_ERR("Cannot iterate menu, menu handle is not initialized.\n");
+      return 0;
+   }
+
    file_list_get_last(rgui->menu_stack, &dir, &menu_type);
-   int ret = 0;
 
    if (driver.video_data && driver.menu_ctx && driver.menu_ctx->set_texture)
       driver.menu_ctx->set_texture(rgui, false);
@@ -1306,11 +1326,11 @@ static int menu_common_iterate(void *data, unsigned action)
 #endif
 
    if (menu_type == RGUI_START_SCREEN)
-      return menu_start_screen_iterate(rgui, action);
+      return menu_start_screen_iterate(action);
    else if (menu_common_type_is(menu_type) == RGUI_SETTINGS)
-      return menu_settings_iterate(rgui, action);
+      return menu_settings_iterate(action);
    else if (menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT || menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT_2)
-      return menu_viewport_iterate(rgui, action);
+      return menu_viewport_iterate(action);
    else if (menu_type == RGUI_SETTINGS_CUSTOM_BIND)
       return menu_custom_bind_iterate(driver.menu, action);
    else if (menu_type == RGUI_SETTINGS_CUSTOM_BIND_KEYBOARD)
@@ -1875,14 +1895,18 @@ static void menu_common_shader_manager_get_str(void *data, char *type_str, size_
 #endif
 }
 
-static void menu_common_shader_manager_save_preset(void *data, const char *basename, bool apply)
+static void menu_common_shader_manager_save_preset(const char *basename, bool apply)
 {
+   rgui_handle_t *rgui = (rgui_handle_t*)driver.menu;
 #ifdef HAVE_SHADER_MANAGER
    char buffer[PATH_MAX];
    unsigned d, type;
-   rgui_handle_t *rgui;
 
-   rgui = (rgui_handle_t*)data;
+   if (!rgui)
+   {
+      RARCH_ERR("Cannot save shader preset, menu handle is not initialized.\n");
+      return;
+   }
 
    if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->shader_manager_get_type)
       type = driver.menu_ctx->backend->shader_manager_get_type(&rgui->shader);
@@ -1959,19 +1983,18 @@ static void menu_common_shader_manager_save_preset(void *data, const char *basen
 
 static unsigned menu_common_shader_manager_get_type(void *data)
 {
-   unsigned i, type;
-   (void)data;
-
-   i = 0;
-   type = 0;
-
-   (void)i;
-
 #ifdef HAVE_SHADER_MANAGER
+   unsigned i, type;
    const struct gfx_shader *shader = (const struct gfx_shader*)data;
 
    // All shader types must be the same, or we cannot use it.
    type = RARCH_SHADER_NONE;
+
+   if (!shader)
+   {
+      RARCH_ERR("Cannot get shader type, shader handle is not initialized.\n");
+      return type;
+   }
 
    for (i = 0; i < shader->passes; i++)
    {
@@ -1992,22 +2015,30 @@ static unsigned menu_common_shader_manager_get_type(void *data)
             return RARCH_SHADER_NONE;
       }
    }
-#endif
 
    return type;
+#else
+   return 0;
+#endif
+
 }
 
-static int menu_common_shader_manager_setting_toggle(void *data, unsigned setting, unsigned action)
+static int menu_common_shader_manager_setting_toggle(unsigned setting, unsigned action)
 {
-   (void)data;
+   rgui_handle_t *rgui = (rgui_handle_t*)driver.menu;
+
+   if (!rgui)
+   {
+      RARCH_ERR("Cannot toggle shader setting, menu handle is not initialized.\n");
+      return 0;
+   }
+
    (void)setting;
    (void)action;
 
 #ifdef HAVE_SHADER_MANAGER
    unsigned dist_shader, dist_filter, dist_scale;
-   rgui_handle_t *rgui;
 
-   rgui = (rgui_handle_t*)data;
    dist_shader = setting - RGUI_SETTINGS_SHADER_0;
    dist_filter = setting - RGUI_SETTINGS_SHADER_0_FILTER;
    dist_scale  = setting - RGUI_SETTINGS_SHADER_0_SCALE;
@@ -2064,7 +2095,7 @@ static int menu_common_shader_manager_setting_toggle(void *data, unsigned settin
    }
    else if ((setting == RGUI_SETTINGS_SHADER_APPLY || setting == RGUI_SETTINGS_SHADER_PASSES) &&
          (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->setting_set))
-      driver.menu_ctx->backend->setting_set(rgui, setting, action);
+      driver.menu_ctx->backend->setting_set(setting, action);
    else if (((dist_shader % 3) == 0 || setting == RGUI_SETTINGS_SHADER_PRESET))
    {
       dist_shader /= 3;
@@ -2142,16 +2173,15 @@ static int menu_common_shader_manager_setting_toggle(void *data, unsigned settin
    return 0;
 }
 
-static int menu_common_setting_toggle(void *data, unsigned setting, unsigned action, unsigned menu_type)
+static int menu_common_setting_toggle(unsigned setting, unsigned action, unsigned menu_type)
 {
    (void)menu_type;
 
-   rgui_handle_t *rgui = (rgui_handle_t*)data;
 #ifdef HAVE_SHADER_MANAGER
    if ((setting >= RGUI_SETTINGS_SHADER_FILTER) && (setting <= RGUI_SETTINGS_SHADER_LAST))
    {
       if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->shader_manager_setting_toggle)
-         return driver.menu_ctx->backend->shader_manager_setting_toggle(rgui, setting, action);
+         return driver.menu_ctx->backend->shader_manager_setting_toggle(setting, action);
       else
          return 0;
    }
@@ -2162,7 +2192,7 @@ static int menu_common_setting_toggle(void *data, unsigned setting, unsigned act
       return driver.menu_ctx->backend->core_setting_toggle(setting, action);
 
    if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->setting_set)
-      return driver.menu_ctx->backend->setting_set(rgui, setting, action);
+      return driver.menu_ctx->backend->setting_set(setting, action);
 
    return 0;
 }
@@ -2338,9 +2368,9 @@ static bool osk_callback_enter_filename_init(void *data)
 #define RARCH_DEFAULT_PORT 55435
 #endif
 
-static int menu_common_setting_set(void *data, unsigned setting, unsigned action)
+static int menu_common_setting_set(unsigned setting, unsigned action)
 {
-   rgui_handle_t *rgui = (rgui_handle_t*)data;
+   rgui_handle_t *rgui = (rgui_handle_t*)driver.menu;
    unsigned port = rgui->current_pad;
 
    switch (setting)
@@ -2695,10 +2725,11 @@ static int menu_common_setting_set(void *data, unsigned setting, unsigned action
                break;
 #endif
             case RGUI_ACTION_OK:
-               menu_reinit_context(rgui);
 #if defined(HAVE_DYLIB)
                file_list_push(rgui->menu_stack, g_settings.video.filter_dir, setting, rgui->selection_ptr);
                menu_clear_navigation(rgui);
+#else
+               menu_reinit_context(rgui);
 #endif
                rgui->need_refresh = true;
                break;
@@ -3726,7 +3757,7 @@ static int menu_common_setting_set(void *data, unsigned setting, unsigned action
          if (rgui->shader.passes && type != RARCH_SHADER_NONE
                && driver.menu_ctx && driver.menu_ctx->backend &&
                driver.menu_ctx->backend->shader_manager_save_preset)
-            driver.menu_ctx->backend->shader_manager_save_preset(rgui, NULL, true);
+            driver.menu_ctx->backend->shader_manager_save_preset(NULL, true);
          else
          {
             type = gfx_shader_parse_type("", DEFAULT_SHADER_TYPE);

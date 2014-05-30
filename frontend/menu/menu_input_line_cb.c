@@ -94,6 +94,12 @@ void audio_device_callback(void *userdata, const char *str)
 {
    rgui_handle_t *rgui = (rgui_handle_t*)userdata;
 
+   if (!rgui)
+   {
+      RARCH_ERR("Cannot invoke audio device setting callback, menu handle is not initialized.\n");
+      return;
+   }
+
    if (str && *str)
       strlcpy(g_settings.audio.device, str, sizeof(g_settings.audio.device));
    menu_key_end_line(rgui);
@@ -104,8 +110,14 @@ void preset_filename_callback(void *userdata, const char *str)
 {
    rgui_handle_t *rgui = (rgui_handle_t*)userdata;
 
+   if (!rgui)
+   {
+      RARCH_ERR("Cannot invoke preset setting callback, menu handle is not initialized.\n");
+      return;
+   }
+
    if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->shader_manager_save_preset)
-      driver.menu_ctx->backend->shader_manager_save_preset(rgui, str && *str ? str : NULL, false);
+      driver.menu_ctx->backend->shader_manager_save_preset(str && *str ? str : NULL, false);
    menu_key_end_line(rgui);
 }
 #endif
@@ -113,6 +125,13 @@ void preset_filename_callback(void *userdata, const char *str)
 void menu_key_event(bool down, unsigned keycode, uint32_t character, uint16_t mod)
 {
    rgui_handle_t *rgui = (rgui_handle_t*)driver.menu;
+
+   if (!rgui)
+   {
+      RARCH_ERR("Cannot invoke menu key event callback, menu handle is not initialized.\n");
+      return;
+   }
+
    (void)down;
    (void)keycode;
    (void)mod;

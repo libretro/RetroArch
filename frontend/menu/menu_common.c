@@ -163,7 +163,7 @@ void load_menu_game_prepare(void)
    rgui->msg_force = true;
 
    if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->iterate) 
-      driver.menu_ctx->backend->iterate(rgui, RGUI_ACTION_NOOP);
+      driver.menu_ctx->backend->iterate(RGUI_ACTION_NOOP);
 
    // Draw frame for loading message
    if (driver.video_data && driver.video_poke && driver.video_poke->set_texture_enable)
@@ -618,7 +618,7 @@ bool menu_iterate(void *data)
       action = RGUI_ACTION_START;
 
    if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->iterate) 
-      input_entry_ret = driver.menu_ctx->backend->iterate(rgui, action);
+      input_entry_ret = driver.menu_ctx->backend->iterate(action);
 
    if (driver.video_data && driver.video_poke && driver.video_poke->set_texture_enable)
       driver.video_poke->set_texture_enable(driver.video_data, rgui->frame_buf_show, MENU_TEXTURE_FULLSCREEN);

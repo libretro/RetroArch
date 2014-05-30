@@ -37,13 +37,18 @@
 #include "../../../config.h"
 #endif
 
-static int menu_lakka_iterate(void *data, unsigned action)
+static int menu_lakka_iterate(unsigned action)
 {
-   rgui_handle_t *rgui;
    menu_category_t *active_category;
    menu_item_t *active_item;
+   rgui_handle_t *rgui = (rgui_handle_t*)driver.menu;
 
-   rgui = (rgui_handle_t*)data;
+   if (!rgui)
+   {
+      RARCH_ERR("Cannot iterate menu, menu handle is not initialized.\n");
+      return 0;
+   }
+
    active_category = NULL;
    active_item = NULL;
 
