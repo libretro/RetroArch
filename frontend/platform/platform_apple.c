@@ -87,7 +87,7 @@ void apple_event_basic_command(enum basic_event_t action)
 
 void apple_refresh_config(void)
 {
-   // Little nudge to prevent stale values when reloading the confg file
+   // Little nudge to prevent stale values when reloading the config file
    g_extern.block_config_read = false;
    memset(g_settings.input.overlay, 0, sizeof(g_settings.input.overlay));
    memset(g_settings.video.shader_path, 0, sizeof(g_settings.video.shader_path));
@@ -102,7 +102,6 @@ void apple_refresh_config(void)
 
 int apple_rarch_load_content(int argc, char* argv[])
 {
-   rgui_handle_t *rgui;
    rarch_main_clear_state();
    rarch_init_msg_queue();
    
