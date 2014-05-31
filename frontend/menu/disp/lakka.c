@@ -109,6 +109,38 @@ typedef struct
 static tween_t* tweens = NULL;
 int numtweens = 0;
 
+static char *str_replace (const char *string, const char *substr, const char *replacement)
+{
+   char *tok, *newstr, *oldstr, *head;
+
+   /* if either substr or replacement is NULL, duplicate string a let caller handle it */
+   if (!substr || !replacement)
+      return strdup (string);
+
+   newstr = strdup (string);
+   head = newstr;
+   while ( (tok = strstr ( head, substr )))
+   {
+      oldstr = newstr;
+      newstr = (char*)malloc(strlen(oldstr) - strlen(substr) + strlen(replacement) + 1);
+
+      if (!newstr)
+      {
+         /*failed to alloc mem, free old string and return NULL */
+         free (oldstr);
+         return NULL;
+      }
+      memcpy ( newstr, oldstr, tok - oldstr );
+      memcpy ( newstr + (tok - oldstr), replacement, strlen ( replacement ) );
+      memcpy ( newstr + (tok - oldstr) + strlen( replacement ), tok + strlen ( substr ), strlen ( oldstr ) - strlen ( substr ) - ( tok - oldstr ) );
+      memset ( newstr + strlen ( oldstr ) - strlen ( substr ) + strlen ( replacement ) , 0, 1 );
+      /* move back head right after the last replacement */
+      head = newstr + (tok - oldstr) + strlen( replacement );
+      free (oldstr);
+   }
+   return newstr;
+}
+
 static float inOutQuad(float t, float b, float c, float d)
 {
    t = t / d * 2;
@@ -387,6 +419,25 @@ struct font_rect
 };
 
 /* font rendering */
+
+#if 0
+static void deinit_font(void *data)
+{
+   (void)data;
+
+   if (font)
+   {
+      if (font_driver)
+         font_driver->free(font);
+      font_driver = NULL;
+
+      glDeleteTextures(1, &font_tex);
+
+      if (font_tex_buf)
+         free(font_tex_buf);
+   }
+}
+#endif
 
 static bool init_font(void *data, const char *font_path, float font_size, unsigned win_width, unsigned win_height)
 {
@@ -1021,7 +1072,7 @@ static GLuint png_texture_load(const char * file_name, int * width, int * height
 
 static void lakka_context_destroy(void *data)
 {
-   (void)data;
+   gl_t *gl = (gl_t*)driver.video_data;
 
    glDeleteTextures(1, &settings_icon);
    glDeleteTextures(1, &arrow_icon);
@@ -1034,15 +1085,19 @@ static void lakka_context_destroy(void *data)
 
    if (numtweens)
       free(tweens);
+
 }
 
 static void lakka_context_reset(void *data)
 {
+   int i, j;
    char path[256], dirpath[256];;
    rgui_handle_t *rgui = (rgui_handle_t*)data;
+   gl_t *gl = (gl_t*)driver.video_data;
 
    if (!rgui)
       return;
+
 
    fill_pathname_join(dirpath, g_settings.assets_directory, "lakka", sizeof(dirpath));
    fill_pathname_slash(dirpath, sizeof(dirpath));
@@ -1064,8 +1119,63 @@ static void lakka_context_reset(void *data)
    fill_pathname_join(path, dirpath, "reload.png", sizeof(path));
    reload_icon = png_texture_load(path, &dim, &dim);
 
-   font_driver->render_msg(font, "Run", &run_label);
-   font_driver->render_msg(font, "Resume", &resume_label);
+   if (font_driver)
+   {
+      font_driver->render_msg(font, "Run", &run_label);
+      font_driver->render_msg(font, "Resume", &resume_label);
+   }
+
+   //FIXME - at what point are we going to free up all these textures?
+   {
+      for (i = 1; i < num_categories; i++)
+      {
+         menu_category_t *category = (menu_category_t*)&categories[i];
+
+         char core_id[256], texturepath[256], gametexturepath[256], dirpath[256];
+         core_info_t *info;
+         core_info_list_t *info_list;
+
+         fill_pathname_join(dirpath, g_settings.assets_directory, "lakka", sizeof(dirpath));
+         fill_pathname_slash(dirpath, sizeof(dirpath));
+
+         info_list = (core_info_list_t*)rgui->core_info;
+         info = NULL;
+
+         if (info_list)
+            info = (core_info_t*)&info_list->list[i-1];
+
+         strlcpy(core_id, basename(info->path), sizeof(core_id));
+         strlcpy(core_id, str_replace(core_id, ".so", ""), sizeof(core_id));
+         strlcpy(core_id, str_replace(core_id, ".dll", ""), sizeof(core_id));
+         strlcpy(core_id, str_replace(core_id, ".dylib", ""), sizeof(core_id));
+         strlcpy(core_id, str_replace(core_id, "-libretro", ""), sizeof(core_id));
+         strlcpy(core_id, str_replace(core_id, "_libretro", ""), sizeof(core_id));
+         strlcpy(core_id, str_replace(core_id, "libretro-", ""), sizeof(core_id));
+         strlcpy(core_id, str_replace(core_id, "libretro_", ""), sizeof(core_id));
+
+         strlcpy(texturepath, dirpath, sizeof(texturepath));
+         strlcat(texturepath, core_id, sizeof(texturepath));
+         strlcat(texturepath, ".png", sizeof(texturepath));
+
+         strlcpy(gametexturepath, dirpath, sizeof(gametexturepath));
+         strlcat(gametexturepath, core_id, sizeof(gametexturepath));
+         strlcat(gametexturepath, "-content.png", sizeof(gametexturepath));
+
+         category->icon = png_texture_load(texturepath, &dim, &dim);
+         
+         if (font_driver)
+            font_driver->render_msg(font, category->name, &category->out);
+
+         for (j = 0; j < category->num_items; j++)
+         {
+            menu_item_t *item = (menu_item_t*)&category->items[j];
+            item->icon = png_texture_load(gametexturepath, &dim, &dim);
+
+            if (font_driver)
+               font_driver->render_msg(font, item->name, &item->out);
+         }
+      }
+   }
 }
 
 void lakka_init_settings(void)
@@ -1080,40 +1190,10 @@ void lakka_init_settings(void)
    category->num_items   = 0;
    category->items       = (menu_item_t*)calloc(category->num_items, sizeof(menu_item_t));
 
-   font_driver->render_msg(font, category->name, &category->out);
+   if (font_driver)
+      font_driver->render_msg(font, category->name, &category->out);
 }
 
-static char * str_replace ( const char *string, const char *substr, const char *replacement)
-{
-   char *tok, *newstr, *oldstr, *head;
-
-   /* if either substr or replacement is NULL, duplicate string a let caller handle it */
-   if (!substr || !replacement)
-      return strdup (string);
-
-   newstr = strdup (string);
-   head = newstr;
-   while ( (tok = strstr ( head, substr )))
-   {
-      oldstr = newstr;
-      newstr = (char*)malloc(strlen(oldstr) - strlen(substr) + strlen(replacement) + 1);
-
-      if (!newstr)
-      {
-         /*failed to alloc mem, free old string and return NULL */
-         free (oldstr);
-         return NULL;
-      }
-      memcpy ( newstr, oldstr, tok - oldstr );
-      memcpy ( newstr + (tok - oldstr), replacement, strlen ( replacement ) );
-      memcpy ( newstr + (tok - oldstr) + strlen( replacement ), tok + strlen ( substr ), strlen ( oldstr ) - strlen ( substr ) - ( tok - oldstr ) );
-      memset ( newstr + strlen ( oldstr ) - strlen ( substr ) + strlen ( replacement ) , 0, 1 );
-      /* move back head right after the last replacement */
-      head = newstr + (tok - oldstr) + strlen( replacement );
-      free (oldstr);
-   }
-   return newstr;
-}
 
 static void lakka_init_items(int i, menu_category_t *category, core_info_t *info, const char* gametexturepath, const char* path)
 {
@@ -1179,11 +1259,14 @@ static void lakka_init_items(int i, menu_category_t *category, core_info_t *info
             subitem->alpha = 0;
             subitem->zoom = k == item->active_subitem ? I_ACTIVE_ZOOM : I_PASSIVE_ZOOM;
             subitem->y = k == 0 ? VSPACING * 2.5 : VSPACING * (3 + k);
-            font_driver->render_msg(font, subitem->name, &out);
+
+            if (font_driver)
+               font_driver->render_msg(font, subitem->name, &out);
             memcpy(&subitem->out, &out, sizeof(struct font_output_list));
          }
 
-         font_driver->render_msg(font, item->name, &out);
+         if (font_driver)
+            font_driver->render_msg(font, item->name, &out);
          memcpy(&item->out, &out, sizeof(struct font_output_list));
       }
    }
@@ -1233,68 +1316,15 @@ static void lakka_init_core_info(void *data)
 static void *lakka_init(void)
 {
    int i, j;
-   gl_t *gl;
    rgui_handle_t *rgui = (rgui_handle_t*)calloc(1, sizeof(*rgui));
-   if (!rgui)
+   gl_t *gl = (gl_t*)driver.video_data;
+   if (!rgui || !gl)
       return NULL;
-
-   gl = (gl_t*)driver.video_data;
 
    init_font(gl, g_settings.video.font_path, g_settings.video.font_size, gl->win_width, gl->win_height);
 
    lakka_init_core_info(rgui);
-
-   if (categories)
-   {
-      for (i = 1; i < num_categories; i++)
-      {
-         menu_category_t *category = (menu_category_t*)&categories[i];
-
-         char core_id[256], texturepath[256], gametexturepath[256], dirpath[256];
-         core_info_t *info;
-         core_info_list_t *info_list;
-
-         fill_pathname_join(dirpath, g_settings.assets_directory, "lakka", sizeof(dirpath));
-         fill_pathname_slash(dirpath, sizeof(dirpath));
-
-         info_list = (core_info_list_t*)rgui->core_info;
-         info = NULL;
-
-         if (info_list)
-            info = (core_info_t*)&info_list->list[i-1];
-
-         strlcpy(core_id, basename(info->path), sizeof(core_id));
-         strlcpy(core_id, str_replace(core_id, ".so", ""), sizeof(core_id));
-         strlcpy(core_id, str_replace(core_id, ".dll", ""), sizeof(core_id));
-         strlcpy(core_id, str_replace(core_id, ".dylib", ""), sizeof(core_id));
-         strlcpy(core_id, str_replace(core_id, "-libretro", ""), sizeof(core_id));
-         strlcpy(core_id, str_replace(core_id, "_libretro", ""), sizeof(core_id));
-         strlcpy(core_id, str_replace(core_id, "libretro-", ""), sizeof(core_id));
-         strlcpy(core_id, str_replace(core_id, "libretro_", ""), sizeof(core_id));
-
-         strlcpy(texturepath, dirpath, sizeof(texturepath));
-         strlcat(texturepath, core_id, sizeof(texturepath));
-         strlcat(texturepath, ".png", sizeof(texturepath));
-
-         strlcpy(gametexturepath, dirpath, sizeof(gametexturepath));
-         strlcat(gametexturepath, core_id, sizeof(gametexturepath));
-         strlcat(gametexturepath, "-content.png", sizeof(gametexturepath));
-
-         category->icon = png_texture_load(texturepath, &dim, &dim);
-         font_driver->render_msg(font, category->name, &category->out);
-
-         for (j = 0; j < category->num_items; j++)
-         {
-            menu_item_t *item = (menu_item_t*)&category->items[j];
-            item->icon = png_texture_load(gametexturepath, &dim, &dim);
-            font_driver->render_msg(font, item->name, &item->out);
-         }
-      }
-      return rgui;
-   }
-
    categories = (menu_category_t*)calloc(num_categories, sizeof(menu_category_t));
-
    lakka_init_settings();
 
    for (i = 1; i < num_categories; i++)
@@ -1339,7 +1369,8 @@ static void *lakka_init(void)
       category->num_items   = 0;
       category->items       = (menu_item_t*)calloc(category->num_items, sizeof(menu_item_t));
 
-      font_driver->render_msg(font, category->name, &category->out);
+      if (font_driver)
+         font_driver->render_msg(font, category->name, &category->out);
 
       lakka_init_items(i, category, info, gametexturepath, g_settings.content_directory);
    }
