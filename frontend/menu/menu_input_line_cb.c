@@ -124,9 +124,7 @@ void preset_filename_callback(void *userdata, const char *str)
 
 void menu_key_event(bool down, unsigned keycode, uint32_t character, uint16_t mod)
 {
-   rgui_handle_t *rgui = (rgui_handle_t*)driver.menu;
-
-   if (!rgui)
+   if (!driver.menu)
    {
       RARCH_ERR("Cannot invoke menu key event callback, menu handle is not initialized.\n");
       return;
@@ -138,9 +136,9 @@ void menu_key_event(bool down, unsigned keycode, uint32_t character, uint16_t mo
 
    if (character == '/')
    {
-      rgui->keyboard.display = true;
-      rgui->keyboard.label = "Search: ";
-      rgui->keyboard.buffer = input_keyboard_start_line(rgui, menu_search_callback);
+      driver.menu->keyboard.display = true;
+      driver.menu->keyboard.label = "Search: ";
+      driver.menu->keyboard.buffer = input_keyboard_start_line(driver.menu, menu_search_callback);
    }
 }
 
