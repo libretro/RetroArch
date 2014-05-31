@@ -1963,10 +1963,6 @@ static void check_savestates(bool immutable)
 
 void rarch_set_fullscreen(bool fullscreen)
 {
-#ifdef HAVE_MENU
-   driver.menu_data_own = true; // Don't reinit menu for something trivial.
-#endif
-
    g_settings.video.fullscreen = fullscreen;
    driver.video_cache_context = g_extern.system.hw_render_callback.cache_context;
    driver.video_cache_context_ack = false;
@@ -1977,10 +1973,6 @@ void rarch_set_fullscreen(bool fullscreen)
    // Poll input to avoid possibly stale data to corrupt things.
    if (driver.input)
       input_poll_func();
-
-#ifdef HAVE_MENU
-   driver.menu_data_own = false;
-#endif
 }
 
 bool rarch_check_fullscreen(void)

@@ -535,7 +535,8 @@ void init_drivers(void)
    driver.osk_data_own = false;
 #endif
 #ifdef HAVE_MENU
-   driver.menu_data_own = false;
+   // By default, we want the menu to persist through driver reinits.
+   driver.menu_data_own = true;
 #endif
 
    adjust_system_rates();

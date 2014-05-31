@@ -258,7 +258,10 @@ void main_exit(args_type() args)
    }
 
    if (g_extern.main_is_init)
+   {
+      driver.menu_data_own = false; // Do not want menu context to live any more.
       rarch_main_deinit();
+   }
    rarch_deinit_msg_queue();
 
 #ifdef PERF_TEST
