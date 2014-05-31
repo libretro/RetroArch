@@ -38,7 +38,7 @@ default_paths_t default_paths;
 
 static void rarch_get_environment_console(void)
 {
-#ifdef RARCH_CONSOLE
+#if defined(RARCH_CONSOLE) || defined(__QNX__)
    path_mkdir(default_paths.port_dir);
    path_mkdir(default_paths.system_dir);
    path_mkdir(default_paths.savestate_dir);
@@ -84,11 +84,6 @@ static void rarch_get_environment_console(void)
 #else
 #define attempt_load_game_push_history false
 #endif
-
-#if !defined(RARCH_CONSOLE) || !defined(__QNX__)
-#define rarch_get_environment_console() (void)0
-#endif
-
 
 static retro_keyboard_event_t key_event;
 
@@ -318,7 +313,6 @@ returntype main_entry(signature())
       driver.frontend_ctx->init(args);
 
    rarch_main_clear_state();
-   rarch_init_msg_queue();
 
    if (driver.frontend_ctx && driver.frontend_ctx->environment_get)
    {
