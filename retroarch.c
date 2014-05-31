@@ -597,7 +597,6 @@ void rarch_input_poll(void)
 #endif
 }
 
-#ifndef RARCH_CONSOLE
 // Turbo scheme: If turbo button is held, all buttons pressed except for D-pad will go into
 // a turbo mode. Until the button is released again, the input state will be modulated by a periodic pulse defined
 // by the configured duty cycle.
@@ -613,7 +612,6 @@ static bool input_apply_turbo(unsigned port, unsigned id, bool res)
    else
       return res;
 }
-#endif
 
 static int16_t input_state(unsigned port, unsigned device, unsigned index, unsigned id)
 {
@@ -659,11 +657,9 @@ static int16_t input_state(unsigned port, unsigned device, unsigned index, unsig
    }
 #endif
 
-#ifndef RARCH_CONSOLE
    // Don't allow turbo for D-pad.
    if (device == RETRO_DEVICE_JOYPAD && (id < RETRO_DEVICE_ID_JOYPAD_UP || id > RETRO_DEVICE_ID_JOYPAD_RIGHT))
       res = input_apply_turbo(port, id, res);
-#endif
 
 #ifdef HAVE_BSV_MOVIE
    if (g_extern.bsv.movie && !g_extern.bsv.movie_playback)
