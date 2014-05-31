@@ -690,6 +690,11 @@ struct rarch_main_wrap
    bool no_rom;
 };
 
+// Public data structures
+extern struct settings g_settings;
+extern struct global g_extern;
+/////////
+
 // Public functions
 void config_load(void);
 void config_set_defaults(void);
@@ -741,16 +746,15 @@ void rarch_load_state(void);
 void rarch_save_state(void);
 void rarch_state_slot_increase(void);
 void rarch_state_slot_decrease(void);
+static inline void rarch_reinit_drivers(void)
+{
+   rarch_set_fullscreen(g_settings.video.fullscreen);
+}
 
 #ifdef HAVE_RECORD
 void rarch_init_recording(void);
 void rarch_deinit_recording(void);
 #endif
-/////////
-
-// Public data structures
-extern struct settings g_settings;
-extern struct global g_extern;
 /////////
 
 #ifdef __cplusplus
