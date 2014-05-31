@@ -33,6 +33,11 @@ char libretro_path[512];
 
 static void find_and_set_first_file(void)
 {
+#ifndef IS_SALAMANDER
+   bool original_verbose = g_extern.verbose;
+   g_extern.verbose = true;
+#endif
+
    //Last fallback - we'll need to start the first executable file 
    // we can find in the RetroArch cores directory
 
@@ -56,6 +61,10 @@ static void find_and_set_first_file(void)
    }
    else
       RARCH_ERR("Failed last fallback - RetroArch Salamander will exit.\n");
+
+#ifndef IS_SALAMANDER
+   g_extern.verbose = original_verbose;
+#endif
 }
 
 static void frontend_xdk_salamander_init(void)
@@ -132,6 +141,10 @@ static void frontend_xdk_salamander_init(void)
 #ifdef _XBOX1
 static HRESULT xbox_io_mount(char *szDrive, char *szDevice)
 {
+#ifndef IS_SALAMANDER
+   bool original_verbose = g_extern.verbose;
+   g_extern.verbose = true;
+#endif
    char szSourceDevice[48];
    char szDestinationDrive[16];
 
@@ -156,6 +169,9 @@ static HRESULT xbox_io_mount(char *szDrive, char *szDevice)
 
    IoCreateSymbolicLink(&LinkName, &DeviceName);
 
+#ifndef IS_SALAMANDER
+   g_extern.verbose = original_verbose;
+#endif
    return S_OK;
 }
 
@@ -183,8 +199,11 @@ static void frontend_xdk_get_environment_settings(int argc, char *argv[], void *
    (void)ret;
 
 #ifndef IS_SALAMANDER
+   bool original_verbose = g_extern.verbose;
    g_extern.verbose = true;
+#endif
 
+#ifndef IS_SALAMANDER
 #if defined(HAVE_LOGGER)
    logger_init();
 #elif defined(HAVE_FILE_LOGGER)
@@ -241,6 +260,10 @@ static void frontend_xdk_get_environment_settings(int argc, char *argv[], void *
    strlcpy(default_paths.sram_dir, "game:\\savefiles", sizeof(default_paths.sram_dir));
    strlcpy(default_paths.system_dir, "game:\\system", sizeof(default_paths.system_dir));
 #endif
+
+#ifndef IS_SALAMANDER
+   g_extern.verbose = original_verbose;
+#endif
 }
 
 static void frontend_xdk_init(void *data)
@@ -259,6 +282,13 @@ static void frontend_xdk_init(void *data)
 
 static int frontend_xdk_process_args(int argc, char *argv[], void *args)
 {
+   int ret;
+#ifndef IS_SALAMANDER
+   bool original_verbose = g_extern.verbose;
+   g_extern.verbose = true;
+#endif
+
+   ret = 0;
    (void)argc;
    (void)argv;
 
@@ -275,7 +305,8 @@ static int frontend_xdk_process_args(int argc, char *argv[], void *args)
       {
          snprintf(g_extern.fullpath, sizeof(g_extern.fullpath), (char*)ptr.Data);
          RARCH_LOG("Auto-start game %s.\n", g_extern.fullpath);
-         return 1;
+         ret = 1;
+         goto exit;
       }
    }
 #elif defined(_XBOX360)
@@ -289,11 +320,16 @@ static int frontend_xdk_process_args(int argc, char *argv[], void *args)
       RARCH_LOG("Auto-start game %s.\n", g_extern.fullpath);
 
       delete []pLaunchData;
-      return 1;
+      ret = 1;
+      goto exit;
    }
 #endif
 #endif
-   return 0;
+exit:
+#ifndef IS_SALAMANDER
+   g_extern.verbose = original_verbose;
+#endif
+   return ret;
 }
 
 static void frontend_xdk_exec(const char *path, bool should_load_game);
@@ -319,6 +355,10 @@ static void frontend_xdk_exitspawn(void)
 
 static void frontend_xdk_exec(const char *path, bool should_load_game)
 {
+#ifndef IS_SALAMANDER
+   bool original_verbose = g_extern.verbose;
+   g_extern.verbose = true;
+#endif
    (void)should_load_game;
 
    RARCH_LOG("Attempt to load executable: [%s].\n", path);
@@ -344,6 +384,9 @@ static void frontend_xdk_exec(const char *path, bool should_load_game)
    }
    XLaunchNewImage(path, NULL);
 #endif
+#endif
+#ifndef IS_SALAMANDER
+   g_extern.verbose = original_verbose;
 #endif
 }
 

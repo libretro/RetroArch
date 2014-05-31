@@ -163,10 +163,13 @@ static void callback_sysutil_exit(uint64_t status, uint64_t param, void *userdat
 
 static void frontend_ps3_get_environment_settings(int argc, char *argv[], void *args)
 {
+#ifndef IS_SALAMANDER
+   bool original_verbose = g_extern.verbose;
+   g_extern.verbose = true;
+#endif
+
    (void)args;
 #ifndef IS_SALAMANDER
-   g_extern.verbose = true;
-
 #if defined(HAVE_LOGGER)
    logger_init();
 #elif defined(HAVE_FILE_LOGGER)
@@ -256,6 +259,10 @@ static void frontend_ps3_get_environment_settings(int argc, char *argv[], void *
 #endif
 #endif
    }
+
+#ifndef IS_SALAMANDER
+   g_extern.verbose = original_verbose;
+#endif
 }
 
 static void frontend_ps3_init(void *data)
@@ -319,12 +326,17 @@ static void frontend_ps3_init(void *data)
 static int frontend_ps3_process_args(int argc, char *argv[], void *args)
 {
 #ifndef IS_SALAMANDER
+   bool original_verbose = g_extern.verbose;
+   g_extern.verbose = true;
+
    if (argc > 1)
    {
       RARCH_LOG("Auto-start game %s.\n", argv[1]);
       strlcpy(g_extern.fullpath, argv[1], sizeof(g_extern.fullpath));
       return 1;
    }
+
+   g_extern.verbose = original_verbose;
 #endif
 
    return 0;
@@ -367,7 +379,10 @@ static void frontend_ps3_exec(const char *path, bool should_load_game);
 static void frontend_ps3_exitspawn(void)
 {
 #ifdef HAVE_RARCH_EXEC
-
+#ifndef IS_SALAMANDER
+   bool original_verbose = g_extern.verbose;
+   g_extern.verbose = true;
+#endif
 #ifdef IS_SALAMANDER
    frontend_ps3_exec(libretro_path, false);
 
@@ -392,6 +407,9 @@ static void frontend_ps3_exitspawn(void)
    frontend_ps3_exec(core_launch, should_load_game);
 #endif
 
+#ifndef IS_SALAMANDER
+   g_extern.verbose = original_verbose;
+#endif
 #endif
 
 }
@@ -410,13 +428,16 @@ static void frontend_ps3_exitspawn(void)
 static void frontend_ps3_exec(const char *path, bool should_load_game)
 {
    (void)should_load_game;
-
-   RARCH_LOG("Attempt to load executable: [%s].\n", path);
    char spawn_data[256];
 #ifndef IS_SALAMANDER
+   bool original_verbose = g_extern.verbose;
+   g_extern.verbose = true;
+
    char game_path[256];
    game_path[0] = '\0';
 #endif
+
+   RARCH_LOG("Attempt to load executable: [%s].\n", path);
 
    for(unsigned int i = 0; i < sizeof(spawn_data); ++i)
       spawn_data[i] = i & 0xff;
@@ -446,6 +467,10 @@ static void frontend_ps3_exec(const char *path, bool should_load_game)
    sys_net_finalize_network();
    cellSysmoduleUnloadModule(CELL_SYSMODULE_SYSUTIL_NP);
    cellSysmoduleUnloadModule(CELL_SYSMODULE_NET);
+
+#ifndef IS_SALAMANDER
+   g_extern.verbose = original_verbose;
+#endif
 }
 
 static int frontend_ps3_get_rating(void)

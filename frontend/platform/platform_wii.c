@@ -103,6 +103,11 @@ static void dol_copy_argv_path(const char *dolpath, const char *argpath)
 // heap memory and are restricted to the stack only
 void system_exec_wii(const char *path, bool should_load_game)
 {
+#ifndef IS_SALAMANDER
+   bool original_verbose = g_extern.verbose;
+   g_extern.verbose = true;
+#endif
+
    char game_path[PATH_MAX];
 
    RARCH_LOG("Attempt to load executable: [%s] %d.\n", path, sizeof(game_path));
@@ -121,7 +126,7 @@ void system_exec_wii(const char *path, bool should_load_game)
    if (fp == NULL)
    {
       RARCH_ERR("Could not open DOL file %s.\n", path);
-      return;
+      goto exit;
    }
 
    fseek(fp, 0, SEEK_END);
@@ -134,7 +139,7 @@ void system_exec_wii(const char *path, bool should_load_game)
    {
       RARCH_ERR("Could not execute DOL file %s.\n", path);
       fclose(fp);
-      return;
+      goto exit;
    }
 
    fread(dol, 1, size, fp);
@@ -161,4 +166,10 @@ void system_exec_wii(const char *path, bool should_load_game)
    RARCH_LOG("jumping to %08x\n", (unsigned) BOOTER_ADDR);
    SYS_ResetSystem(SYS_SHUTDOWN,0,0);
    __lwp_thread_stopmultitasking((void (*)(void)) BOOTER_ADDR);
+
+exit:
+   (void)0;
+#ifndef IS_SALAMANDER
+   g_extern.verbose = original_verbose;
+#endif
 }
