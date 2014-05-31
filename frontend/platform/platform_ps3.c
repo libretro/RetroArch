@@ -325,11 +325,10 @@ static void frontend_ps3_init(void *data)
 
 static int frontend_ps3_process_args(int argc, char *argv[], void *args)
 {
+   int ret = 0;
 #ifndef IS_SALAMANDER
-   int ret;
    bool original_verbose = g_extern.verbose;
    g_extern.verbose = true;
-   ret = 0;
 
    if (argc > 1)
    {
