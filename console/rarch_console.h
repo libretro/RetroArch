@@ -32,6 +32,7 @@ typedef struct
    char shader_dir[PATH_MAX];
    char savestate_dir[PATH_MAX];
    char sram_dir[PATH_MAX];
+   char screenshot_dir[PATH_MAX];
    char system_dir[PATH_MAX];
 } default_paths_t;
 

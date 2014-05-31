@@ -492,6 +492,8 @@ void config_set_defaults(void)
       strlcpy(g_extern.savefile_dir, default_paths.sram_dir, sizeof(g_extern.savefile_dir));
    if (*default_paths.system_dir)
       strlcpy(g_settings.system_directory, default_paths.system_dir, sizeof(g_settings.system_directory));
+   if (*default_paths.screenshot_dir)
+      strlcpy(g_settings.screenshot_directory, default_paths.screenshot_dir, sizeof(g_settings.screenshot_directory));
 
    if (*default_paths.config_path)
       strlcpy(g_extern.config_path, default_paths.config_path, sizeof(g_extern.config_path));
