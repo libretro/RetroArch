@@ -431,11 +431,7 @@ uint64_t menu_input(void)
 {
    unsigned i;
    uint64_t input_state;
-#ifdef RARCH_CONSOLE
-   static const struct retro_keybind *binds[] = { g_settings.input.menu_binds };
-#else
    static const struct retro_keybind *binds[] = { g_settings.input.binds[0] };
-#endif
    rgui_handle_t *rgui = (rgui_handle_t*)driver.menu;
 
    if (!rgui)
