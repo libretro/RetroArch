@@ -17,29 +17,30 @@
 #ifndef MENU_COMMON_H__
 #define MENU_COMMON_H__
 
-#include "../../general.h"
-#include "../info/core_info.h"
-
-#ifdef HAVE_RGUI
-#define MENU_TEXTURE_FULLSCREEN false
-#else
-#define MENU_TEXTURE_FULLSCREEN true
-#endif
-
+#include <stdint.h>
+#include <stddef.h>
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
 #include "../../boolean.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
+#include "../../general.h"
+#include "menu_navigation.h"
+#include "../info/core_info.h"
 #include "file_list.h"
+#include "history.h"
+#include "../../input/input_common.h"
+#include "../../input/keyboard_line.h"
 
 #if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
 #define HAVE_SHADER_MANAGER
 #include "../../gfx/shader_parse.h"
 #endif
 
-#include "history.h"
+#ifdef HAVE_RGUI
+#define MENU_TEXTURE_FULLSCREEN false
+#else
+#define MENU_TEXTURE_FULLSCREEN true
+#endif
 
 #ifndef GFX_MAX_SHADERS
 #define GFX_MAX_SHADERS 16
@@ -48,6 +49,16 @@ extern "C" {
 #define RGUI_SETTINGS_CORE_INFO_NONE    0xffff
 #define RGUI_SETTINGS_CORE_OPTION_NONE  0xffff
 #define RGUI_SETTINGS_CORE_OPTION_START 0x10000
+
+#define RGUI_MAX_BUTTONS 32
+#define RGUI_MAX_AXES 32
+#define RGUI_MAX_HATS 4
+
+#define RGUI_KEYBOARD_BIND_TIMEOUT_SECONDS 5
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 typedef enum
 {
@@ -79,9 +90,6 @@ typedef enum
    RGUI_ACTION_NOOP
 } rgui_action_t;
 
-#define RGUI_MAX_BUTTONS 32
-#define RGUI_MAX_AXES 32
-#define RGUI_MAX_HATS 4
 struct rgui_bind_state_port
 {
    bool buttons[RGUI_MAX_BUTTONS];
@@ -97,7 +105,6 @@ struct rgui_bind_axis_state
    int16_t locked_axes[RGUI_MAX_AXES];
 };
 
-#define RGUI_KEYBOARD_BIND_TIMEOUT_SECONDS 5
 struct rgui_bind_state
 {
    struct retro_keybind *target;

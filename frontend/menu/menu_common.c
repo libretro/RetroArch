@@ -14,24 +14,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <stdint.h>
-#include <stddef.h>
-#include <stdlib.h>
-#include <string.h>
-#include <limits.h>
-#include <ctype.h>
 #include "menu_common.h"
-#include "menu_navigation.h"
-
-#include "../../gfx/gfx_common.h"
-#include "../../performance.h"
-#include "../../driver.h"
-#include "../../file.h"
-#include "../../file_ext.h"
-#include "../../input/input_common.h"
-#include "../../input/keyboard_line.h"
-
-#include "../../compat/posix_string.h"
 
 void menu_update_system_info(void *data, bool *load_no_rom)
 {
