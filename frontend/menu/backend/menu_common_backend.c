@@ -479,9 +479,8 @@ static int menu_info_screen_iterate(unsigned action)
 {
    unsigned i;
    char msg[1024];
-   rgui_handle_t *rgui = (rgui_handle_t*)driver.menu;
 
-   if (!rgui)
+   if (!driver.menu)
       return 0;
 
    if (driver.video_data && driver.menu_ctx && driver.menu_ctx->render)
@@ -514,7 +513,7 @@ static int menu_info_screen_iterate(unsigned action)
       }
    }
 
-   switch (rgui->info_selection)
+   switch (driver.menu->info_selection)
    {
       case RGUI_SETTINGS_WINDOW_COMPOSITING_ENABLE:
          snprintf(msg, sizeof(msg),
@@ -1087,7 +1086,7 @@ static int menu_info_screen_iterate(unsigned action)
       driver.menu_ctx->render_messagebox(msg);
 
    if (action == RGUI_ACTION_OK)
-      file_list_pop(rgui->menu_stack, &rgui->selection_ptr);
+      file_list_pop(driver.menu->menu_stack, &driver.menu->selection_ptr);
    return 0;
 }
 
@@ -1095,9 +1094,8 @@ static int menu_start_screen_iterate(unsigned action)
 {
    unsigned i;
    char msg[1024];
-   rgui_handle_t *rgui = (rgui_handle_t*)driver.menu;
 
-   if (!rgui)
+   if (!driver.menu)
       return 0;
 
    if (driver.video_data && driver.menu_ctx && driver.menu_ctx->render)
@@ -1161,7 +1159,7 @@ static int menu_start_screen_iterate(unsigned action)
       driver.menu_ctx->render_messagebox(msg);
 
    if (action == RGUI_ACTION_OK)
-      file_list_pop(rgui->menu_stack, &rgui->selection_ptr);
+      file_list_pop(driver.menu->menu_stack, &driver.menu->selection_ptr);
    return 0;
 }
 
@@ -1235,16 +1233,14 @@ static unsigned menu_common_type_is(unsigned type)
 
 static int menu_settings_iterate(unsigned action)
 {
-   rgui_handle_t *rgui = (rgui_handle_t*)driver.menu;
-   
-   if (!rgui)
+   if (!driver.menu)
       return 0;
 
-   rgui->frame_buf_pitch = rgui->width * 2;
+   driver.menu->frame_buf_pitch = driver.menu->width * 2;
    unsigned type = 0;
    const char *label = NULL;
    if (action != RGUI_ACTION_REFRESH)
-      file_list_get_at_offset(rgui->selection_buf, rgui->selection_ptr, &label, &type);
+      file_list_get_at_offset(driver.menu->selection_buf, driver.menu->selection_ptr, &label, &type);
 
    if (type == RGUI_SETTINGS_CORE)
       label = g_settings.libretro_directory;
@@ -1255,41 +1251,39 @@ static int menu_settings_iterate(unsigned action)
 
    const char *dir = NULL;
    unsigned menu_type = 0;
-   file_list_get_last(rgui->menu_stack, &dir, &menu_type);
+   file_list_get_last(driver.menu->menu_stack, &dir, &menu_type);
 
-   rgui = (rgui_handle_t*)driver.menu;
-
-   if (rgui->need_refresh)
+   if (driver.menu->need_refresh)
       action = RGUI_ACTION_NOOP;
 
    switch (action)
    {
       case RGUI_ACTION_UP:
-         if (rgui->selection_ptr > 0)
-            menu_decrement_navigation(rgui);
+         if (driver.menu->selection_ptr > 0)
+            menu_decrement_navigation(driver.menu);
          else
-            menu_set_navigation(rgui, file_list_get_size(rgui->selection_buf) - 1);
+            menu_set_navigation(driver.menu, file_list_get_size(driver.menu->selection_buf) - 1);
          break;
 
       case RGUI_ACTION_DOWN:
-         if (rgui->selection_ptr + 1 < file_list_get_size(rgui->selection_buf))
-            menu_increment_navigation(rgui);
+         if (driver.menu->selection_ptr + 1 < file_list_get_size(driver.menu->selection_buf))
+            menu_increment_navigation(driver.menu);
          else
-            menu_clear_navigation(rgui);
+            menu_clear_navigation(driver.menu);
          break;
 
       case RGUI_ACTION_CANCEL:
-         if (file_list_get_size(rgui->menu_stack) > 1)
+         if (file_list_get_size(driver.menu->menu_stack) > 1)
          {
-            file_list_pop(rgui->menu_stack, &rgui->selection_ptr);
-            rgui->need_refresh = true;
+            file_list_pop(driver.menu->menu_stack, &driver.menu->selection_ptr);
+            driver.menu->need_refresh = true;
          }
          break;
       case RGUI_ACTION_SELECT:
          {
             const char *path = NULL;
-            file_list_get_at_offset(rgui->selection_buf, rgui->selection_ptr, &path, &rgui->info_selection);
-            file_list_push(rgui->menu_stack, "", RGUI_INFO_SCREEN, rgui->selection_ptr);
+            file_list_get_at_offset(driver.menu->selection_buf, driver.menu->selection_ptr, &path, &driver.menu->info_selection);
+            file_list_push(driver.menu->menu_stack, "", RGUI_INFO_SCREEN, driver.menu->selection_ptr);
          }
          break;
       case RGUI_ACTION_LEFT:
@@ -1299,26 +1293,26 @@ static int menu_settings_iterate(unsigned action)
          if ((type == RGUI_SETTINGS_OPEN_FILEBROWSER || type == RGUI_SETTINGS_OPEN_FILEBROWSER_DEFERRED_CORE)
                && action == RGUI_ACTION_OK)
          {
-            rgui->defer_core = type == RGUI_SETTINGS_OPEN_FILEBROWSER_DEFERRED_CORE;
-            file_list_push(rgui->menu_stack, g_settings.rgui_content_directory, RGUI_FILE_DIRECTORY, rgui->selection_ptr);
-            menu_clear_navigation(rgui);
-            rgui->need_refresh = true;
+            driver.menu->defer_core = type == RGUI_SETTINGS_OPEN_FILEBROWSER_DEFERRED_CORE;
+            file_list_push(driver.menu->menu_stack, g_settings.rgui_content_directory, RGUI_FILE_DIRECTORY, driver.menu->selection_ptr);
+            menu_clear_navigation(driver.menu);
+            driver.menu->need_refresh = true;
          }
          else if ((type == RGUI_SETTINGS_OPEN_HISTORY || menu_common_type_is(type) == RGUI_FILE_DIRECTORY) && action == RGUI_ACTION_OK)
          {
-            file_list_push(rgui->menu_stack, "", type, rgui->selection_ptr);
-            menu_clear_navigation(rgui);
-            rgui->need_refresh = true;
+            file_list_push(driver.menu->menu_stack, "", type, driver.menu->selection_ptr);
+            menu_clear_navigation(driver.menu);
+            driver.menu->need_refresh = true;
          }
          else if ((menu_common_type_is(type) == RGUI_SETTINGS || type == RGUI_SETTINGS_CORE || type == RGUI_SETTINGS_CONFIG || type == RGUI_SETTINGS_DISK_APPEND) && action == RGUI_ACTION_OK)
          {
-            file_list_push(rgui->menu_stack, label, type, rgui->selection_ptr);
-            menu_clear_navigation(rgui);
-            rgui->need_refresh = true;
+            file_list_push(driver.menu->menu_stack, label, type, driver.menu->selection_ptr);
+            menu_clear_navigation(driver.menu);
+            driver.menu->need_refresh = true;
          }
          else if (type == RGUI_SETTINGS_CUSTOM_VIEWPORT && action == RGUI_ACTION_OK)
          {
-            file_list_push(rgui->menu_stack, "", type, rgui->selection_ptr);
+            file_list_push(driver.menu->menu_stack, "", type, driver.menu->selection_ptr);
 
             // Start with something sane.
             rarch_viewport_t *custom = &g_extern.console.screen.viewports.custom_vp;
@@ -1344,23 +1338,21 @@ static int menu_settings_iterate(unsigned action)
          break;
 
       case RGUI_ACTION_REFRESH:
-         menu_clear_navigation(rgui);
-         rgui->need_refresh = true;
+         menu_clear_navigation(driver.menu);
+         driver.menu->need_refresh = true;
          break;
 
       case RGUI_ACTION_MESSAGE:
-         rgui->msg_force = true;
+         driver.menu->msg_force = true;
          break;
 
       default:
          break;
    }
 
-   rgui = (rgui_handle_t*)driver.menu;
+   file_list_get_last(driver.menu->menu_stack, &dir, &menu_type);
 
-   file_list_get_last(rgui->menu_stack, &dir, &menu_type);
-
-   if (rgui && rgui->need_refresh && !(menu_type == RGUI_FILE_DIRECTORY ||
+   if (driver.menu->need_refresh && !(menu_type == RGUI_FILE_DIRECTORY ||
             menu_common_type_is(menu_type) == RGUI_SETTINGS_SHADER_OPTIONS ||
             menu_common_type_is(menu_type) == RGUI_FILE_DIRECTORY ||
             menu_type == RGUI_SETTINGS_VIDEO_SOFTFILTER ||
@@ -1371,7 +1363,7 @@ static int menu_settings_iterate(unsigned action)
             menu_type == RGUI_SETTINGS_DISK_APPEND ||
             menu_type == RGUI_SETTINGS_OPEN_HISTORY))
    {
-      rgui->need_refresh = false;
+      driver.menu->need_refresh = false;
       if (
                menu_type == RGUI_SETTINGS_INPUT_OPTIONS
             || menu_type == RGUI_SETTINGS_PATH_OPTIONS
@@ -1400,10 +1392,10 @@ static int menu_settings_iterate(unsigned action)
       driver.menu_ctx->render();
 
    // Have to defer it so we let settings refresh.
-   if (rgui->push_start_screen)
+   if (driver.menu->push_start_screen)
    {
-      rgui->push_start_screen = false;
-      file_list_push(rgui->menu_stack, "", RGUI_START_SCREEN, 0);
+      driver.menu->push_start_screen = false;
+      file_list_push(driver.menu->menu_stack, "", RGUI_START_SCREEN, 0);
    }
 
    return 0;
@@ -1412,13 +1404,12 @@ static int menu_settings_iterate(unsigned action)
 static int menu_viewport_iterate(unsigned action)
 {
    rarch_viewport_t *custom = &g_extern.console.screen.viewports.custom_vp;
-   rgui_handle_t *rgui = (rgui_handle_t*)driver.menu;
 
-   if (!rgui)
+   if (!driver.menu)
       return 0;
 
    unsigned menu_type = 0;
-   file_list_get_last(rgui->menu_stack, NULL, &menu_type);
+   file_list_get_last(driver.menu->menu_stack, NULL, &menu_type);
 
    struct retro_game_geometry *geom = &g_extern.system.av_info.geometry;
    int stride_x = g_settings.video.scale_integer ?
@@ -1483,23 +1474,23 @@ static int menu_viewport_iterate(unsigned action)
          break;
 
       case RGUI_ACTION_CANCEL:
-         file_list_pop(rgui->menu_stack, &rgui->selection_ptr);
+         file_list_pop(driver.menu->menu_stack, &driver.menu->selection_ptr);
          if (menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT_2)
          {
-            file_list_push(rgui->menu_stack, "",
+            file_list_push(driver.menu->menu_stack, "",
                   RGUI_SETTINGS_CUSTOM_VIEWPORT,
-                  rgui->selection_ptr);
+                  driver.menu->selection_ptr);
          }
          break;
 
       case RGUI_ACTION_OK:
-         file_list_pop(rgui->menu_stack, &rgui->selection_ptr);
+         file_list_pop(driver.menu->menu_stack, &driver.menu->selection_ptr);
          if (menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT
                && !g_settings.video.scale_integer)
          {
-            file_list_push(rgui->menu_stack, "",
+            file_list_push(driver.menu->menu_stack, "",
                   RGUI_SETTINGS_CUSTOM_VIEWPORT_2,
-                  rgui->selection_ptr);
+                  driver.menu->selection_ptr);
          }
          break;
 
@@ -1530,14 +1521,14 @@ static int menu_viewport_iterate(unsigned action)
          break;
 
       case RGUI_ACTION_MESSAGE:
-         rgui->msg_force = true;
+         driver.menu->msg_force = true;
          break;
 
       default:
          break;
    }
 
-   file_list_get_last(rgui->menu_stack, NULL, &menu_type);
+   file_list_get_last(driver.menu->menu_stack, NULL, &menu_type);
 
    if (driver.video_data && driver.menu_ctx && driver.menu_ctx->render)
       driver.menu_ctx->render();
@@ -1593,9 +1584,8 @@ static void menu_parse_and_resolve(unsigned menu_type)
    const char *dir;
    size_t i, list_size;
    file_list_t *list;
-   rgui_handle_t *rgui = (rgui_handle_t*)driver.menu;
 
-   if (!rgui)
+   if (!driver.menu)
    {
       RARCH_ERR("Cannot parse and resolve menu, menu handle is not initialized.\n");
       return;
@@ -1603,14 +1593,14 @@ static void menu_parse_and_resolve(unsigned menu_type)
 
    dir = NULL;
 
-   file_list_clear(rgui->selection_buf);
+   file_list_clear(driver.menu->selection_buf);
 
    // parsing switch
    switch (menu_type)
    {
       case RGUI_SETTINGS_OPEN_HISTORY:
          /* History parse */
-         list_size = rom_history_size(rgui->history);
+         list_size = rom_history_size(driver.menu->history);
 
          for (i = 0; i < list_size; i++)
          {
@@ -1621,7 +1611,7 @@ static void menu_parse_and_resolve(unsigned menu_type)
             core_path = NULL;
             core_name = NULL;
 
-            rom_history_get_index(rgui->history, i,
+            rom_history_get_index(driver.menu->history, i,
                   &path, &core_path, &core_name);
 
             if (path)
@@ -1635,7 +1625,7 @@ static void menu_parse_and_resolve(unsigned menu_type)
             else
                strlcpy(fill_buf, core_name, sizeof(fill_buf));
 
-            file_list_push(rgui->selection_buf, fill_buf, RGUI_FILE_PLAIN, 0);
+            file_list_push(driver.menu->selection_buf, fill_buf, RGUI_FILE_PLAIN, 0);
          }
          break;
       case RGUI_SETTINGS_DEFERRED_CORE:
@@ -1643,25 +1633,25 @@ static void menu_parse_and_resolve(unsigned menu_type)
       default:
          {
             /* Directory parse */
-            file_list_get_last(rgui->menu_stack, &dir, &menu_type);
+            file_list_get_last(driver.menu->menu_stack, &dir, &menu_type);
 
             if (!*dir)
             {
 #if defined(GEKKO)
 #ifdef HW_RVL
-               file_list_push(rgui->selection_buf, "sd:/", menu_type, 0);
-               file_list_push(rgui->selection_buf, "usb:/", menu_type, 0);
+               file_list_push(driver.menu->selection_buf, "sd:/", menu_type, 0);
+               file_list_push(driver.menu->selection_buf, "usb:/", menu_type, 0);
 #endif
-               file_list_push(rgui->selection_buf, "carda:/", menu_type, 0);
-               file_list_push(rgui->selection_buf, "cardb:/", menu_type, 0);
+               file_list_push(driver.menu->selection_buf, "carda:/", menu_type, 0);
+               file_list_push(driver.menu->selection_buf, "cardb:/", menu_type, 0);
 #elif defined(_XBOX1)
-               file_list_push(rgui->selection_buf, "C:", menu_type, 0);
-               file_list_push(rgui->selection_buf, "D:", menu_type, 0);
-               file_list_push(rgui->selection_buf, "E:", menu_type, 0);
-               file_list_push(rgui->selection_buf, "F:", menu_type, 0);
-               file_list_push(rgui->selection_buf, "G:", menu_type, 0);
+               file_list_push(driver.menu->selection_buf, "C:", menu_type, 0);
+               file_list_push(driver.menu->selection_buf, "D:", menu_type, 0);
+               file_list_push(driver.menu->selection_buf, "E:", menu_type, 0);
+               file_list_push(driver.menu->selection_buf, "F:", menu_type, 0);
+               file_list_push(driver.menu->selection_buf, "G:", menu_type, 0);
 #elif defined(_XBOX360)
-               file_list_push(rgui->selection_buf, "game:", menu_type, 0);
+               file_list_push(driver.menu->selection_buf, "game:", menu_type, 0);
 #elif defined(_WIN32)
                unsigned drives = GetLogicalDrives();
                char drive[] = " :\\";
@@ -1669,26 +1659,26 @@ static void menu_parse_and_resolve(unsigned menu_type)
                {
                   drive[0] = 'A' + i;
                   if (drives & (1 << i))
-                     file_list_push(rgui->selection_buf, drive, menu_type, 0);
+                     file_list_push(driver.menu->selection_buf, drive, menu_type, 0);
                }
 #elif defined(__CELLOS_LV2__)
-               file_list_push(rgui->selection_buf, "/app_home/", menu_type, 0);
-               file_list_push(rgui->selection_buf, "/dev_hdd0/", menu_type, 0);
-               file_list_push(rgui->selection_buf, "/dev_hdd1/", menu_type, 0);
-               file_list_push(rgui->selection_buf, "/host_root/", menu_type, 0);
-               file_list_push(rgui->selection_buf, "/dev_usb000/", menu_type, 0);
-               file_list_push(rgui->selection_buf, "/dev_usb001/", menu_type, 0);
-               file_list_push(rgui->selection_buf, "/dev_usb002/", menu_type, 0);
-               file_list_push(rgui->selection_buf, "/dev_usb003/", menu_type, 0);
-               file_list_push(rgui->selection_buf, "/dev_usb004/", menu_type, 0);
-               file_list_push(rgui->selection_buf, "/dev_usb005/", menu_type, 0);
-               file_list_push(rgui->selection_buf, "/dev_usb006/", menu_type, 0);
+               file_list_push(driver.menu->selection_buf, "/app_home/", menu_type, 0);
+               file_list_push(driver.menu->selection_buf, "/dev_hdd0/", menu_type, 0);
+               file_list_push(driver.menu->selection_buf, "/dev_hdd1/", menu_type, 0);
+               file_list_push(driver.menu->selection_buf, "/host_root/", menu_type, 0);
+               file_list_push(driver.menu->selection_buf, "/dev_usb000/", menu_type, 0);
+               file_list_push(driver.menu->selection_buf, "/dev_usb001/", menu_type, 0);
+               file_list_push(driver.menu->selection_buf, "/dev_usb002/", menu_type, 0);
+               file_list_push(driver.menu->selection_buf, "/dev_usb003/", menu_type, 0);
+               file_list_push(driver.menu->selection_buf, "/dev_usb004/", menu_type, 0);
+               file_list_push(driver.menu->selection_buf, "/dev_usb005/", menu_type, 0);
+               file_list_push(driver.menu->selection_buf, "/dev_usb006/", menu_type, 0);
 #elif defined(PSP)
-               file_list_push(rgui->selection_buf, "ms0:/", menu_type, 0);
-               file_list_push(rgui->selection_buf, "ef0:/", menu_type, 0);
-               file_list_push(rgui->selection_buf, "host0:/", menu_type, 0);
+               file_list_push(driver.menu->selection_buf, "ms0:/", menu_type, 0);
+               file_list_push(driver.menu->selection_buf, "ef0:/", menu_type, 0);
+               file_list_push(driver.menu->selection_buf, "host0:/", menu_type, 0);
 #else
-               file_list_push(rgui->selection_buf, "/", menu_type, 0);
+               file_list_push(driver.menu->selection_buf, "/", menu_type, 0);
 #endif
                return;
             }
@@ -1720,13 +1710,13 @@ static void menu_parse_and_resolve(unsigned menu_type)
                exts = "cfg";
             else if (menu_common_type_is(menu_type) == RGUI_FILE_DIRECTORY)
                exts = ""; // we ignore files anyway
-            else if (rgui->defer_core)
-               exts = rgui->core_info ? core_info_list_get_all_extensions(rgui->core_info) : "";
-            else if (rgui->info.valid_extensions)
+            else if (driver.menu->defer_core)
+               exts = driver.menu->core_info ? core_info_list_get_all_extensions(driver.menu->core_info) : "";
+            else if (driver.menu->info.valid_extensions)
             {
                exts = ext_buf;
-               if (*rgui->info.valid_extensions)
-                  snprintf(ext_buf, sizeof(ext_buf), "%s|zip", rgui->info.valid_extensions);
+               if (*driver.menu->info.valid_extensions)
+                  snprintf(ext_buf, sizeof(ext_buf), "%s|zip", driver.menu->info.valid_extensions);
                else
                   *ext_buf = '\0';
             }
@@ -1740,7 +1730,7 @@ static void menu_parse_and_resolve(unsigned menu_type)
             dir_list_sort(list, true);
 
             if (menu_common_type_is(menu_type) == RGUI_FILE_DIRECTORY)
-               file_list_push(rgui->selection_buf, "<Use this directory>", RGUI_FILE_USE_DIRECTORY, 0);
+               file_list_push(driver.menu->selection_buf, "<Use this directory>", RGUI_FILE_USE_DIRECTORY, 0);
 
             list_size = list->size;
             for (i = 0; i < list_size; i++)
@@ -1762,12 +1752,12 @@ static void menu_parse_and_resolve(unsigned menu_type)
 
                // Push menu_type further down in the chain.
                // Needed for shader manager currently.
-               file_list_push(rgui->selection_buf, path,
+               file_list_push(driver.menu->selection_buf, path,
                      is_dir ? menu_type : RGUI_FILE_PLAIN, 0);
             }
 
             if (driver.menu_ctx && driver.menu_ctx->backend->entries_init)
-               driver.menu_ctx->backend->entries_init(rgui, menu_type);
+               driver.menu_ctx->backend->entries_init(driver.menu, menu_type);
 
             string_list_free(list);
          }
@@ -1778,8 +1768,8 @@ static void menu_parse_and_resolve(unsigned menu_type)
    {
       case RGUI_SETTINGS_CORE:
          dir = NULL;
-         list = (file_list_t*)rgui->selection_buf;
-         file_list_get_last(rgui->menu_stack, &dir, &menu_type);
+         list = (file_list_t*)driver.menu->selection_buf;
+         file_list_get_last(driver.menu->menu_stack, &dir, &menu_type);
          list_size = file_list_get_size(list);
          for (i = 0; i < list_size; i++)
          {
@@ -1793,50 +1783,51 @@ static void menu_parse_and_resolve(unsigned menu_type)
             fill_pathname_join(core_path, dir, path, sizeof(core_path));
 
             char display_name[256];
-            if (rgui->core_info &&
-                  core_info_list_get_display_name(rgui->core_info,
+            if (driver.menu->core_info &&
+                  core_info_list_get_display_name(driver.menu->core_info,
                      core_path, display_name, sizeof(display_name)))
                file_list_set_alt_at_offset(list, i, display_name);
          }
-         file_list_sort_on_alt(rgui->selection_buf);
+         file_list_sort_on_alt(driver.menu->selection_buf);
          break;
       case RGUI_SETTINGS_DEFERRED_CORE:
-         core_info_list_get_supported_cores(rgui->core_info, rgui->deferred_path, &info, &list_size);
+         core_info_list_get_supported_cores(driver.menu->core_info, driver.menu->deferred_path, &info, &list_size);
          for (i = 0; i < list_size; i++)
          {
-            file_list_push(rgui->selection_buf, info[i].path, RGUI_FILE_PLAIN, 0);
-            file_list_set_alt_at_offset(rgui->selection_buf, i, info[i].display_name);
+            file_list_push(driver.menu->selection_buf, info[i].path, RGUI_FILE_PLAIN, 0);
+            file_list_set_alt_at_offset(driver.menu->selection_buf, i, info[i].display_name);
          }
-         file_list_sort_on_alt(rgui->selection_buf);
+         file_list_sort_on_alt(driver.menu->selection_buf);
          break;
       default:
          (void)0;
    }
 
-   rgui->scroll_indices_size = 0;
+   driver.menu->scroll_indices_size = 0;
    if (menu_type != RGUI_SETTINGS_OPEN_HISTORY)
-      menu_build_scroll_indices(rgui->selection_buf);
+      menu_build_scroll_indices(driver.menu->selection_buf);
 
    // Before a refresh, we could have deleted a file on disk, causing
    // selection_ptr to suddendly be out of range. Ensure it doesn't overflow.
-   if (rgui->selection_ptr >= file_list_get_size(rgui->selection_buf) && file_list_get_size(rgui->selection_buf))
-      menu_set_navigation(rgui, file_list_get_size(rgui->selection_buf) - 1);
-   else if (!file_list_get_size(rgui->selection_buf))
-      menu_clear_navigation(rgui);
+   if (driver.menu->selection_ptr >= file_list_get_size(driver.menu->selection_buf) && file_list_get_size(driver.menu->selection_buf))
+      menu_set_navigation(driver.menu, file_list_get_size(driver.menu->selection_buf) - 1);
+   else if (!file_list_get_size(driver.menu->selection_buf))
+      menu_clear_navigation(driver.menu);
 }
 
 // This only makes sense for PC so far.
 // Consoles use set_keybind callbacks instead.
 static int menu_custom_bind_iterate(void *data, unsigned action)
 {
+   char msg[256];
    rgui_handle_t *rgui = (rgui_handle_t*)data;
 
    (void)action; // Have to ignore action here. Only bind that should work here is Quit RetroArch or something like that.
+   (void)msg;
 
    if (driver.video_data && driver.menu_ctx && driver.menu_ctx->render)
       driver.menu_ctx->render();
 
-   char msg[256];
    snprintf(msg, sizeof(msg), "[%s]\npress joypad\n(RETURN to skip)", input_config_bind_map[rgui->binds.begin - RGUI_SETTINGS_BIND_BEGIN].desc);
 
    if (driver.video_data && driver.menu_ctx && driver.menu_ctx->render_messagebox)
@@ -1863,8 +1854,11 @@ static int menu_custom_bind_iterate(void *data, unsigned action)
 
 static int menu_custom_bind_iterate_keyboard(void *data, unsigned action)
 {
+   char msg[256];
    rgui_handle_t *rgui = (rgui_handle_t*)data;
+
    (void)action; // Have to ignore action here.
+   (void)msg;
 
    if (driver.video_data && driver.menu_ctx && driver.menu_ctx->render)
       driver.menu_ctx->render();
@@ -1872,7 +1866,6 @@ static int menu_custom_bind_iterate_keyboard(void *data, unsigned action)
    int64_t current = rarch_get_time_usec();
    int timeout = (rgui->binds.timeout_end - current) / 1000000;
 
-   char msg[256];
    snprintf(msg, sizeof(msg), "[%s]\npress keyboard\n(timeout %d seconds)",
          input_config_bind_map[rgui->binds.begin - RGUI_SETTINGS_BIND_BEGIN].desc, timeout);
 
@@ -1907,25 +1900,21 @@ static int menu_custom_bind_iterate_keyboard(void *data, unsigned action)
 
 static void menu_common_defer_decision_automatic(void)
 {
-   rgui_handle_t *rgui = (rgui_handle_t*)driver.menu;
-
-   if (!rgui)
+   if (!driver.menu)
       return;
 
    menu_flush_stack_type(RGUI_SETTINGS);
-   rgui->msg_force = true;
+   driver.menu->msg_force = true;
 }
 
 static void menu_common_defer_decision_manual(void)
 {
-   rgui_handle_t *rgui = (rgui_handle_t*)driver.menu;
-
-   if (!rgui)
+   if (!driver.menu)
       return;
 
-   file_list_push(rgui->menu_stack, g_settings.libretro_directory, RGUI_SETTINGS_DEFERRED_CORE, rgui->selection_ptr);
-   menu_clear_navigation(rgui);
-   rgui->need_refresh = true;
+   file_list_push(driver.menu->menu_stack, g_settings.libretro_directory, RGUI_SETTINGS_DEFERRED_CORE, driver.menu->selection_ptr);
+   menu_clear_navigation(driver.menu);
+   driver.menu->need_refresh = true;
 }
 
 static int menu_common_iterate(unsigned action)
@@ -1933,18 +1922,17 @@ static int menu_common_iterate(unsigned action)
    int ret = 0;
    const char *dir = 0;
    unsigned menu_type = 0;
-   rgui_handle_t *rgui = (rgui_handle_t*)driver.menu;
 
-   if (!rgui)
+   if (!driver.menu)
    {
       RARCH_ERR("Cannot iterate menu, menu handle is not initialized.\n");
       return 0;
    }
 
-   file_list_get_last(rgui->menu_stack, &dir, &menu_type);
+   file_list_get_last(driver.menu->menu_stack, &dir, &menu_type);
 
    if (driver.video_data && driver.menu_ctx && driver.menu_ctx->set_texture)
-      driver.menu_ctx->set_texture(rgui, false);
+      driver.menu_ctx->set_texture(driver.menu, false);
 
 #ifdef HAVE_OSK
    // process pending osk init callback
@@ -1975,65 +1963,65 @@ static int menu_common_iterate(unsigned action)
    else if (menu_type == RGUI_SETTINGS_CUSTOM_BIND_KEYBOARD)
       return menu_custom_bind_iterate_keyboard(driver.menu, action);
 
-   if (rgui->need_refresh && action != RGUI_ACTION_MESSAGE)
+   if (driver.menu->need_refresh && action != RGUI_ACTION_MESSAGE)
       action = RGUI_ACTION_NOOP;
 
-   unsigned scroll_speed = (max(rgui->scroll_accel, 2) - 2) / 4 + 1;
+   unsigned scroll_speed = (max(driver.menu->scroll_accel, 2) - 2) / 4 + 1;
    unsigned fast_scroll_speed = 4 + 4 * scroll_speed;
 
    switch (action)
    {
       case RGUI_ACTION_UP:
-         if (rgui->selection_ptr >= scroll_speed)
-            menu_set_navigation(rgui, rgui->selection_ptr - scroll_speed);
+         if (driver.menu->selection_ptr >= scroll_speed)
+            menu_set_navigation(driver.menu, driver.menu->selection_ptr - scroll_speed);
          else
-            menu_set_navigation(rgui, file_list_get_size(rgui->selection_buf) - 1);
+            menu_set_navigation(driver.menu, file_list_get_size(driver.menu->selection_buf) - 1);
          break;
 
       case RGUI_ACTION_DOWN:
-         if (rgui->selection_ptr + scroll_speed < file_list_get_size(rgui->selection_buf))
-            menu_set_navigation(rgui, rgui->selection_ptr + scroll_speed);
+         if (driver.menu->selection_ptr + scroll_speed < file_list_get_size(driver.menu->selection_buf))
+            menu_set_navigation(driver.menu, driver.menu->selection_ptr + scroll_speed);
          else
-            menu_clear_navigation(rgui);
+            menu_clear_navigation(driver.menu);
          break;
 
       case RGUI_ACTION_LEFT:
-         if (rgui->selection_ptr > fast_scroll_speed)
-            menu_set_navigation(rgui, rgui->selection_ptr - fast_scroll_speed);
+         if (driver.menu->selection_ptr > fast_scroll_speed)
+            menu_set_navigation(driver.menu, driver.menu->selection_ptr - fast_scroll_speed);
          else
-            menu_clear_navigation(rgui);
+            menu_clear_navigation(driver.menu);
          break;
 
       case RGUI_ACTION_RIGHT:
-         if (rgui->selection_ptr + fast_scroll_speed < file_list_get_size(rgui->selection_buf))
-            menu_set_navigation(rgui, rgui->selection_ptr + fast_scroll_speed);
+         if (driver.menu->selection_ptr + fast_scroll_speed < file_list_get_size(driver.menu->selection_buf))
+            menu_set_navigation(driver.menu, driver.menu->selection_ptr + fast_scroll_speed);
          else
-            menu_set_navigation_last(rgui);
+            menu_set_navigation_last(driver.menu);
          break;
 
       case RGUI_ACTION_SCROLL_UP:
-         menu_descend_alphabet(rgui, &rgui->selection_ptr);
+         menu_descend_alphabet(driver.menu, &driver.menu->selection_ptr);
          break;
       case RGUI_ACTION_SCROLL_DOWN:
-         menu_ascend_alphabet(rgui, &rgui->selection_ptr);
+         menu_ascend_alphabet(driver.menu, &driver.menu->selection_ptr);
          break;
 
       case RGUI_ACTION_CANCEL:
-         if (file_list_get_size(rgui->menu_stack) > 1)
+         if (file_list_get_size(driver.menu->menu_stack) > 1)
          {
-            file_list_pop(rgui->menu_stack, &rgui->selection_ptr);
-            rgui->need_refresh = true;
+            file_list_pop(driver.menu->menu_stack, &driver.menu->selection_ptr);
+            driver.menu->need_refresh = true;
          }
          break;
 
       case RGUI_ACTION_OK:
       {
-         if (file_list_get_size(rgui->selection_buf) == 0)
+         if (file_list_get_size(driver.menu->selection_buf) == 0)
             return 0;
 
          const char *path = 0;
          unsigned type = 0;
-         file_list_get_at_offset(rgui->selection_buf, rgui->selection_ptr, &path, &type);
+         file_list_get_at_offset(driver.menu->selection_buf, driver.menu->selection_ptr, &path, &type);
 
          if (
                menu_common_type_is(type) == RGUI_SETTINGS_SHADER_OPTIONS ||
@@ -2049,9 +2037,9 @@ static int menu_common_iterate(unsigned action)
             char cat_path[PATH_MAX];
             fill_pathname_join(cat_path, dir, path, sizeof(cat_path));
 
-            file_list_push(rgui->menu_stack, cat_path, type, rgui->selection_ptr);
-            menu_clear_navigation(rgui);
-            rgui->need_refresh = true;
+            file_list_push(driver.menu->menu_stack, cat_path, type, driver.menu->selection_ptr);
+            menu_clear_navigation(driver.menu);
+            driver.menu->need_refresh = true;
          }
          else
          {
@@ -2063,19 +2051,19 @@ static int menu_common_iterate(unsigned action)
                   char shader_path[PATH_MAX];
                   fill_pathname_join(shader_path, dir, path, sizeof(shader_path));
                   if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->shader_manager_set_preset)
-                     driver.menu_ctx->backend->shader_manager_set_preset(rgui->shader, gfx_shader_parse_type(shader_path, RARCH_SHADER_NONE),
+                     driver.menu_ctx->backend->shader_manager_set_preset(driver.menu->shader, gfx_shader_parse_type(shader_path, RARCH_SHADER_NONE),
                         shader_path);
                }
                else
                {
-                  struct gfx_shader *shader = (struct gfx_shader*)rgui->shader;
+                  struct gfx_shader *shader = (struct gfx_shader*)driver.menu->shader;
                   unsigned pass = (menu_type - RGUI_SETTINGS_SHADER_0) / 3;
 
                   fill_pathname_join(shader->pass[pass].source.path,
                         dir, path, sizeof(shader->pass[pass].source.path));
 
                   // This will reset any changed parameters.
-                  gfx_shader_resolve_parameters(NULL, rgui->shader);
+                  gfx_shader_resolve_parameters(NULL, driver.menu->shader);
                }
 
                // Pop stack until we hit shader manager again.
@@ -2087,9 +2075,9 @@ static int menu_common_iterate(unsigned action)
             {
                // FIXME: Add for consoles.
                strlcpy(g_settings.libretro, path, sizeof(g_settings.libretro));
-               strlcpy(g_extern.fullpath, rgui->deferred_path, sizeof(g_extern.fullpath));
+               strlcpy(g_extern.fullpath, driver.menu->deferred_path, sizeof(g_extern.fullpath));
                load_menu_game_new_core();
-               rgui->msg_force = true;
+               driver.menu->msg_force = true;
                ret = -1;
                menu_flush_stack_type(RGUI_SETTINGS);
             }
@@ -2097,14 +2085,14 @@ static int menu_common_iterate(unsigned action)
             {
 #if defined(HAVE_DYNAMIC)
                fill_pathname_join(g_settings.libretro, dir, path, sizeof(g_settings.libretro));
-               menu_update_system_info(driver.menu, &rgui->load_no_rom);
+               menu_update_system_info(driver.menu, &driver.menu->load_no_rom);
 
                // No ROM needed for this core, load game immediately.
-               if (rgui->load_no_rom)
+               if (driver.menu->load_no_rom)
                {
                   g_extern.lifecycle_state |= (1ULL << MODE_LOAD_GAME);
                   *g_extern.fullpath = '\0';
-                  rgui->msg_force = true;
+                  driver.menu->msg_force = true;
                   ret = -1;
                }
 
@@ -2131,10 +2119,10 @@ static int menu_common_iterate(unsigned action)
                char config[PATH_MAX];
                fill_pathname_join(config, dir, path, sizeof(config));
                menu_flush_stack_type(RGUI_SETTINGS);
-               rgui->msg_force = true;
+               driver.menu->msg_force = true;
                if (menu_replace_config(config))
                {
-                  menu_clear_navigation(rgui);
+                  menu_clear_navigation(driver.menu);
                   ret = -1;
                }
             }
@@ -2165,7 +2153,7 @@ static int menu_common_iterate(unsigned action)
             }
             else if (menu_type == RGUI_SETTINGS_OPEN_HISTORY)
             {
-               load_menu_game_history(rgui->selection_ptr);
+               load_menu_game_history(driver.menu->selection_ptr);
                menu_flush_stack_type(RGUI_SETTINGS);
                ret = -1;
             }
@@ -2229,7 +2217,7 @@ static int menu_common_iterate(unsigned action)
                strlcpy(g_settings.libretro_directory, dir, sizeof(g_settings.libretro_directory));
 
                if (driver.menu_ctx && driver.menu_ctx->init_core_info)
-                  driver.menu_ctx->init_core_info(rgui);
+                  driver.menu_ctx->init_core_info(driver.menu);
                menu_flush_stack_type(RGUI_SETTINGS_PATH_OPTIONS);
             }
 #ifdef HAVE_DYNAMIC
@@ -2243,7 +2231,7 @@ static int menu_common_iterate(unsigned action)
             {
                strlcpy(g_settings.libretro_info_path, dir, sizeof(g_settings.libretro_info_path));
                if (driver.menu_ctx && driver.menu_ctx->init_core_info)
-                  driver.menu_ctx->init_core_info(rgui);
+                  driver.menu_ctx->init_core_info(driver.menu);
                menu_flush_stack_type(RGUI_SETTINGS_PATH_OPTIONS);
             }
             else if (menu_type == RGUI_SHADER_DIR_PATH)
@@ -2273,13 +2261,13 @@ static int menu_common_iterate(unsigned action)
             }
             else
             {
-               if (rgui->defer_core)
+               if (driver.menu->defer_core)
                {
-                  ret = menu_defer_core(rgui->core_info, dir, path, rgui->deferred_path, sizeof(rgui->deferred_path));
+                  ret = menu_defer_core(driver.menu->core_info, dir, path, driver.menu->deferred_path, sizeof(driver.menu->deferred_path));
 
                   if (ret == -1)
                   {
-                     menu_update_system_info(driver.menu, &rgui->load_no_rom);
+                     menu_update_system_info(driver.menu, &driver.menu->load_no_rom);
                      if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->defer_decision_automatic) 
                         driver.menu_ctx->backend->defer_decision_automatic();
                   }
@@ -2295,7 +2283,7 @@ static int menu_common_iterate(unsigned action)
                   g_extern.lifecycle_state |= (1ULL << MODE_LOAD_GAME);
 
                   menu_flush_stack_type(RGUI_SETTINGS);
-                  rgui->msg_force = true;
+                  driver.menu->msg_force = true;
                   ret = -1;
                }
             }
@@ -2304,12 +2292,12 @@ static int menu_common_iterate(unsigned action)
       }
 
       case RGUI_ACTION_REFRESH:
-         menu_clear_navigation(rgui);
-         rgui->need_refresh = true;
+         menu_clear_navigation(driver.menu);
+         driver.menu->need_refresh = true;
          break;
 
       case RGUI_ACTION_MESSAGE:
-         rgui->msg_force = true;
+         driver.menu->msg_force = true;
          break;
 
       default:
@@ -2318,9 +2306,9 @@ static int menu_common_iterate(unsigned action)
 
 
    // refresh values in case the stack changed
-   file_list_get_last(rgui->menu_stack, &dir, &menu_type);
+   file_list_get_last(driver.menu->menu_stack, &dir, &menu_type);
 
-   if (rgui->need_refresh && (menu_type == RGUI_FILE_DIRECTORY ||
+   if (driver.menu->need_refresh && (menu_type == RGUI_FILE_DIRECTORY ||
             menu_common_type_is(menu_type) == RGUI_SETTINGS_SHADER_OPTIONS ||
             menu_common_type_is(menu_type) == RGUI_FILE_DIRECTORY ||
             menu_type == RGUI_SETTINGS_OVERLAY_PRESET ||
@@ -2332,12 +2320,12 @@ static int menu_common_iterate(unsigned action)
             menu_type == RGUI_SETTINGS_OPEN_HISTORY ||
             menu_type == RGUI_SETTINGS_DISK_APPEND))
    {
-      rgui->need_refresh = false;
+      driver.menu->need_refresh = false;
       menu_parse_and_resolve(menu_type);
    }
 
    if (driver.menu_ctx && driver.menu_ctx->iterate)
-      driver.menu_ctx->iterate(rgui, action);
+      driver.menu_ctx->iterate(driver.menu, action);
 
    if (driver.video_data && driver.menu_ctx && driver.menu_ctx->render)
       driver.menu_ctx->render();
@@ -2444,7 +2432,6 @@ static void menu_common_shader_manager_set_preset(void *data, unsigned type, con
 
       if (path && shader)
       {
-         rgui_handle_t *rgui = (rgui_handle_t*)driver.menu;
          // Load stored CGP into RGUI menu on success.
          // Used when a preset is directly loaded.
          // No point in updating when the CGP was created from RGUI itself.
@@ -2457,7 +2444,7 @@ static void menu_common_shader_manager_set_preset(void *data, unsigned type, con
             config_file_free(conf);
          }
 
-         rgui->need_refresh = true;
+         driver.menu->need_refresh = true;
       }
    }
    else
@@ -2541,18 +2528,17 @@ static void menu_common_shader_manager_get_str(void *data, char *type_str, size_
 static void menu_common_shader_manager_save_preset(const char *basename, bool apply)
 {
 #ifdef HAVE_SHADER_MANAGER
-   rgui_handle_t *rgui = (rgui_handle_t*)driver.menu;
    char buffer[PATH_MAX];
    unsigned d, type;
 
-   if (!rgui)
+   if (!driver.menu)
    {
       RARCH_ERR("Cannot save shader preset, menu handle is not initialized.\n");
       return;
    }
 
    if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->shader_manager_get_type)
-      type = driver.menu_ctx->backend->shader_manager_get_type(rgui->shader);
+      type = driver.menu_ctx->backend->shader_manager_get_type(driver.menu->shader);
    else
       type = RARCH_SHADER_NONE;
 
@@ -2575,7 +2561,7 @@ static void menu_common_shader_manager_save_preset(const char *basename, bool ap
       conf_path = buffer;
    }
    else
-      conf_path = type == RARCH_SHADER_GLSL ? rgui->default_glslp : rgui->default_cgp;
+      conf_path = type == RARCH_SHADER_GLSL ? driver.menu->default_glslp : driver.menu->default_cgp;
 
    char config_directory[PATH_MAX];
    if (*g_extern.config_path)
@@ -2593,7 +2579,7 @@ static void menu_common_shader_manager_save_preset(const char *basename, bool ap
    config_file_t *conf = config_file_new(NULL);
    if (!conf)
       return;
-   gfx_shader_write_conf_cgp(conf, rgui->shader);
+   gfx_shader_write_conf_cgp(conf, driver.menu->shader);
 
    bool ret = false;
 
@@ -2668,9 +2654,7 @@ static unsigned menu_common_shader_manager_get_type(void *data)
 
 static int menu_common_shader_manager_setting_toggle(unsigned setting, unsigned action)
 {
-   rgui_handle_t *rgui = (rgui_handle_t*)driver.menu;
-
-   if (!rgui)
+   if (!driver.menu)
    {
       RARCH_ERR("Cannot toggle shader setting, menu handle is not initialized.\n");
       return 0;
@@ -2706,16 +2690,16 @@ static int menu_common_shader_manager_setting_toggle(unsigned setting, unsigned 
    }
    else if ((setting == RGUI_SETTINGS_SHADER_PARAMETERS || setting == RGUI_SETTINGS_SHADER_PRESET_PARAMETERS) && action == RGUI_ACTION_OK)
    {
-      file_list_push(rgui->menu_stack, "", setting, rgui->selection_ptr);
-      menu_clear_navigation(rgui);
-      rgui->need_refresh = true;
+      file_list_push(driver.menu->menu_stack, "", setting, driver.menu->selection_ptr);
+      menu_clear_navigation(driver.menu);
+      driver.menu->need_refresh = true;
    }
    else if (setting >= RGUI_SETTINGS_SHADER_PARAMETER_0 && setting <= RGUI_SETTINGS_SHADER_PARAMETER_LAST)
    {
       struct gfx_shader *shader;
       struct gfx_shader_parameter *param;
 
-      shader = (struct gfx_shader*)rgui->parameter_shader;
+      shader = (struct gfx_shader*)driver.menu->parameter_shader;
 
       if (!shader)
          return 0;
@@ -2753,16 +2737,16 @@ static int menu_common_shader_manager_setting_toggle(unsigned setting, unsigned 
       struct gfx_shader *shader = NULL;
       struct gfx_shader_pass *pass = NULL;
       dist_shader /= 3;
-      shader = (struct gfx_shader*)rgui->shader;
+      shader = (struct gfx_shader*)driver.menu->shader;
       if (shader && setting == RGUI_SETTINGS_SHADER_PRESET)
          pass = (struct gfx_shader_pass*)&shader->pass[dist_shader];
 
       switch (action)
       {
          case RGUI_ACTION_OK:
-            file_list_push(rgui->menu_stack, g_settings.video.shader_dir, setting, rgui->selection_ptr);
-            menu_clear_navigation(rgui);
-            rgui->need_refresh = true;
+            file_list_push(driver.menu->menu_stack, g_settings.video.shader_dir, setting, driver.menu->selection_ptr);
+            menu_clear_navigation(driver.menu);
+            driver.menu->need_refresh = true;
             break;
 
          case RGUI_ACTION_START:
@@ -2779,7 +2763,7 @@ static int menu_common_shader_manager_setting_toggle(unsigned setting, unsigned 
       struct gfx_shader *shader = NULL;
       struct gfx_shader_pass *pass = NULL;
       dist_filter /= 3;
-      shader = (struct gfx_shader*)rgui->shader;
+      shader = (struct gfx_shader*)driver.menu->shader;
       pass = (struct gfx_shader_pass*)&shader->pass[dist_filter];
       switch (action)
       {
@@ -2805,7 +2789,7 @@ static int menu_common_shader_manager_setting_toggle(unsigned setting, unsigned 
       struct gfx_shader *shader = NULL;
       struct gfx_shader_pass *pass = NULL;
       dist_scale /= 3;
-      shader = (struct gfx_shader*)rgui->shader;
+      shader = (struct gfx_shader*)driver.menu->shader;
       pass = (struct gfx_shader_pass*)&shader->pass[dist_scale];
       switch (action)
       {
@@ -2975,10 +2959,11 @@ static bool osk_callback_enter_audio_device_init(void *data)
 
 static bool osk_callback_enter_filename(void *data)
 {
-   rgui_handle_t *rgui = (rgui_handle_t*)driver.menu;
-
-   if (!driver.osk || !rgui)
+   if (!driver.osk)
+   {
+      RARCH_ERR("OSK driver is not initialized, exiting OSK callback ...\n");
       return false;
+   }
 
    if (g_extern.lifecycle_state & (1ULL << MODE_OSK_ENTRY_SUCCESS))
    {
@@ -2994,7 +2979,7 @@ static bool osk_callback_enter_filename(void *data)
       config_file_t *conf = config_file_new(NULL);
       if (!conf)
          return false;
-      gfx_shader_write_conf_cgp(conf, rgui->shader);
+      gfx_shader_write_conf_cgp(conf, driver.menu->shader);
       config_file_write(conf, filepath);
       config_file_free(conf);
       goto do_exit;
@@ -3032,14 +3017,13 @@ static bool osk_callback_enter_filename_init(void *data)
 
 static int menu_common_setting_set(unsigned setting, unsigned action)
 {
-   rgui_handle_t *rgui = (rgui_handle_t*)driver.menu;
-   unsigned port = rgui->current_pad;
+   unsigned port = driver.menu->current_pad;
 
    switch (setting)
    {
       case RGUI_START_SCREEN:
          if (action == RGUI_ACTION_OK)
-            file_list_push(rgui->menu_stack, "", RGUI_START_SCREEN, 0);
+            file_list_push(driver.menu->menu_stack, "", RGUI_START_SCREEN, 0);
          break;
       case RGUI_SETTINGS_REWIND_ENABLE:
          if (action == RGUI_ACTION_OK ||
@@ -3354,9 +3338,9 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
          switch (action)
          {
             case RGUI_ACTION_OK:
-               file_list_push(rgui->menu_stack, g_extern.overlay_dir, setting, rgui->selection_ptr);
-               menu_clear_navigation(rgui);
-               rgui->need_refresh = true;
+               file_list_push(driver.menu->menu_stack, g_extern.overlay_dir, setting, driver.menu->selection_ptr);
+               menu_clear_navigation(driver.menu);
+               driver.menu->need_refresh = true;
                break;
 
 #ifndef __QNX__ // FIXME: Why ifndef QNX?
@@ -3388,13 +3372,13 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
 #endif
             case RGUI_ACTION_OK:
 #if defined(HAVE_DYLIB)
-               file_list_push(rgui->menu_stack, g_settings.video.filter_dir, setting, rgui->selection_ptr);
-               menu_clear_navigation(rgui);
+               file_list_push(driver.menu->menu_stack, g_settings.video.filter_dir, setting, driver.menu->selection_ptr);
+               menu_clear_navigation(driver.menu);
 #else
                rarch_deinit_filter();
                rarch_init_filter(g_extern.system.pix_fmt);
 #endif
-               rgui->need_refresh = true;
+               driver.menu->need_refresh = true;
                break;
             case RGUI_ACTION_START:
 #if defined(HAVE_FILTERS_BUILTIN)
@@ -3411,9 +3395,9 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
          switch (action)
          {
             case RGUI_ACTION_OK:
-               file_list_push(rgui->menu_stack, g_settings.audio.filter_dir, setting, rgui->selection_ptr);
-               menu_clear_navigation(rgui);
-               rgui->need_refresh = true;
+               file_list_push(driver.menu->menu_stack, g_settings.audio.filter_dir, setting, driver.menu->selection_ptr);
+               menu_clear_navigation(driver.menu);
+               driver.menu->need_refresh = true;
                break;
             case RGUI_ACTION_START:
                *g_settings.audio.dsp_plugin = '\0';
@@ -3495,22 +3479,22 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
          // controllers
       case RGUI_SETTINGS_BIND_PLAYER:
          if (action == RGUI_ACTION_START)
-            rgui->current_pad = 0;
+            driver.menu->current_pad = 0;
          else if (action == RGUI_ACTION_LEFT)
          {
-            if (rgui->current_pad != 0)
-               rgui->current_pad--;
+            if (driver.menu->current_pad != 0)
+               driver.menu->current_pad--;
          }
          else if (action == RGUI_ACTION_RIGHT)
          {
-            if (rgui->current_pad < MAX_PLAYERS - 1)
-               rgui->current_pad++;
+            if (driver.menu->current_pad < MAX_PLAYERS - 1)
+               driver.menu->current_pad++;
          }
 #ifdef HAVE_RGUI
-         if (port != rgui->current_pad)
-            rgui->need_refresh = true;
+         if (port != driver.menu->current_pad)
+            driver.menu->need_refresh = true;
 #endif
-         port = rgui->current_pad;
+         port = driver.menu->current_pad;
          break;
       case RGUI_SETTINGS_BIND_DEVICE:
          // If set_keybinds is supported, we do it more fancy, and scroll through
@@ -3664,28 +3648,28 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
          break;
       case RGUI_SETTINGS_CUSTOM_BIND_MODE:
          if (action == RGUI_ACTION_OK || action == RGUI_ACTION_LEFT || action == RGUI_ACTION_RIGHT)
-            rgui->bind_mode_keyboard = !rgui->bind_mode_keyboard;
+            driver.menu->bind_mode_keyboard = !driver.menu->bind_mode_keyboard;
          break;
       case RGUI_SETTINGS_CUSTOM_BIND_ALL:
          if (action == RGUI_ACTION_OK)
          {
-            if (rgui->bind_mode_keyboard)
+            if (driver.menu->bind_mode_keyboard)
             {
-               rgui->binds.target = &g_settings.input.binds[port][0];
-               rgui->binds.begin = RGUI_SETTINGS_BIND_BEGIN;
-               rgui->binds.last = RGUI_SETTINGS_BIND_LAST;
-               file_list_push(rgui->menu_stack, "", RGUI_SETTINGS_CUSTOM_BIND_KEYBOARD, rgui->selection_ptr);
-               rgui->binds.timeout_end = rarch_get_time_usec() + RGUI_KEYBOARD_BIND_TIMEOUT_SECONDS * 1000000;
+               driver.menu->binds.target = &g_settings.input.binds[port][0];
+               driver.menu->binds.begin = RGUI_SETTINGS_BIND_BEGIN;
+               driver.menu->binds.last = RGUI_SETTINGS_BIND_LAST;
+               file_list_push(driver.menu->menu_stack, "", RGUI_SETTINGS_CUSTOM_BIND_KEYBOARD, driver.menu->selection_ptr);
+               driver.menu->binds.timeout_end = rarch_get_time_usec() + RGUI_KEYBOARD_BIND_TIMEOUT_SECONDS * 1000000;
                input_keyboard_wait_keys(driver.menu, menu_custom_bind_keyboard_cb);
             }
             else
             {
-               rgui->binds.target = &g_settings.input.binds[port][0];
-               rgui->binds.begin = RGUI_SETTINGS_BIND_BEGIN;
-               rgui->binds.last = RGUI_SETTINGS_BIND_LAST;
-               file_list_push(rgui->menu_stack, "", RGUI_SETTINGS_CUSTOM_BIND, rgui->selection_ptr);
-               menu_poll_bind_get_rested_axes(&rgui->binds);
-               menu_poll_bind_state(&rgui->binds);
+               driver.menu->binds.target = &g_settings.input.binds[port][0];
+               driver.menu->binds.begin = RGUI_SETTINGS_BIND_BEGIN;
+               driver.menu->binds.last = RGUI_SETTINGS_BIND_LAST;
+               file_list_push(driver.menu->menu_stack, "", RGUI_SETTINGS_CUSTOM_BIND, driver.menu->selection_ptr);
+               menu_poll_bind_get_rested_axes(&driver.menu->binds);
+               menu_poll_bind_state(&driver.menu->binds);
             }
          }
          break;
@@ -3693,13 +3677,13 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
          if (action == RGUI_ACTION_OK)
          {
             unsigned i;
-            struct retro_keybind *target = &g_settings.input.binds[port][0];
+            struct retro_keybind *target = (struct retro_keybind*)&g_settings.input.binds[port][0];
             const struct retro_keybind *def_binds = port ? retro_keybinds_rest : retro_keybinds_1;
-            rgui->binds.begin = RGUI_SETTINGS_BIND_BEGIN;
-            rgui->binds.last = RGUI_SETTINGS_BIND_LAST;
+            driver.menu->binds.begin = RGUI_SETTINGS_BIND_BEGIN;
+            driver.menu->binds.last = RGUI_SETTINGS_BIND_LAST;
             for (i = RGUI_SETTINGS_BIND_BEGIN; i <= RGUI_SETTINGS_BIND_LAST; i++, target++)
             {
-               if (rgui->bind_mode_keyboard)
+               if (driver.menu->bind_mode_keyboard)
                   target->key = def_binds[i - RGUI_SETTINGS_BIND_BEGIN].key;
                else
                {
@@ -3781,27 +3765,27 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
             struct retro_keybind *bind = &g_settings.input.binds[port][setting - RGUI_SETTINGS_BIND_BEGIN];
             if (action == RGUI_ACTION_OK)
             {
-               rgui->binds.begin = setting;
-               rgui->binds.last = setting;
-               rgui->binds.target = bind;
-               rgui->binds.player = port;
-               file_list_push(rgui->menu_stack, "",
-                     rgui->bind_mode_keyboard ? RGUI_SETTINGS_CUSTOM_BIND_KEYBOARD : RGUI_SETTINGS_CUSTOM_BIND, rgui->selection_ptr);
+               driver.menu->binds.begin = setting;
+               driver.menu->binds.last = setting;
+               driver.menu->binds.target = bind;
+               driver.menu->binds.player = port;
+               file_list_push(driver.menu->menu_stack, "",
+                     driver.menu->bind_mode_keyboard ? RGUI_SETTINGS_CUSTOM_BIND_KEYBOARD : RGUI_SETTINGS_CUSTOM_BIND, driver.menu->selection_ptr);
 
-               if (rgui->bind_mode_keyboard)
+               if (driver.menu->bind_mode_keyboard)
                {
-                  rgui->binds.timeout_end = rarch_get_time_usec() + RGUI_KEYBOARD_BIND_TIMEOUT_SECONDS * 1000000;
+                  driver.menu->binds.timeout_end = rarch_get_time_usec() + RGUI_KEYBOARD_BIND_TIMEOUT_SECONDS * 1000000;
                   input_keyboard_wait_keys(driver.menu, menu_custom_bind_keyboard_cb);
                }
                else
                {
-                  menu_poll_bind_get_rested_axes(&rgui->binds);
-                  menu_poll_bind_state(&rgui->binds);
+                  menu_poll_bind_get_rested_axes(&driver.menu->binds);
+                  menu_poll_bind_state(&driver.menu->binds);
                }
             }
             else if (action == RGUI_ACTION_START)
             {
-               if (rgui->bind_mode_keyboard)
+               if (driver.menu->bind_mode_keyboard)
                {
                   const struct retro_keybind *def_binds = port ? retro_keybinds_rest : retro_keybinds_1;
                   bind->key = def_binds[setting - RGUI_SETTINGS_BIND_BEGIN].key;
@@ -3851,7 +3835,7 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
          {
             *g_settings.libretro_directory = '\0';
             if (driver.menu_ctx && driver.menu_ctx->init_core_info)
-               driver.menu_ctx->init_core_info(rgui);
+               driver.menu_ctx->init_core_info(driver.menu);
          }
          break;
       case RGUI_LIBRETRO_INFO_DIR_PATH:
@@ -3859,7 +3843,7 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
          {
             *g_settings.libretro_info_path = '\0';
             if (driver.menu_ctx && driver.menu_ctx->init_core_info)
-               driver.menu_ctx->init_core_info(rgui);
+               driver.menu_ctx->init_core_info(driver.menu);
          }
          break;
       case RGUI_CONFIG_DIR_PATH:
@@ -3939,7 +3923,7 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
             }
             else
 #endif
-               menu_key_start_line(rgui, "Audio Device Name / IP: ", audio_device_callback);
+               menu_key_start_line(driver.menu, "Audio Device Name / IP: ", audio_device_callback);
          }
          else if (action == RGUI_ACTION_START)
             *g_settings.audio.device = '\0';
@@ -4376,21 +4360,21 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
 #ifdef HAVE_SHADER_MANAGER
       case RGUI_SETTINGS_SHADER_PASSES:
          {
-            struct gfx_shader *shader = (struct gfx_shader*)rgui->shader;
+            struct gfx_shader *shader = (struct gfx_shader*)driver.menu->shader;
 
             switch (action)
             {
                case RGUI_ACTION_START:
                   if (shader && shader->passes)
                      shader->passes = 0;
-                  rgui->need_refresh = true;
+                  driver.menu->need_refresh = true;
                   break;
 
                case RGUI_ACTION_LEFT:
                   if (shader && shader->passes)
                   {
                      shader->passes--;
-                     rgui->need_refresh = true;
+                     driver.menu->need_refresh = true;
                   }
                   break;
 
@@ -4399,7 +4383,7 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
                   if (shader && (shader->passes < GFX_MAX_SHADERS))
                   {
                      shader->passes++;
-                     rgui->need_refresh = true;
+                     driver.menu->need_refresh = true;
                   }
                   break;
 
@@ -4407,13 +4391,13 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
                   break;
             }
 
-            if (rgui->need_refresh)
-               gfx_shader_resolve_parameters(NULL, rgui->shader);
+            if (driver.menu->need_refresh)
+               gfx_shader_resolve_parameters(NULL, driver.menu->shader);
          }
          break;
       case RGUI_SETTINGS_SHADER_APPLY:
       {
-         struct gfx_shader *shader = (struct gfx_shader*)rgui->shader;
+         struct gfx_shader *shader = (struct gfx_shader*)driver.menu->shader;
          unsigned type = RARCH_SHADER_NONE;
 
          if (!driver.video || !driver.video->set_shader || action != RGUI_ACTION_OK)
@@ -4422,7 +4406,7 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
          RARCH_LOG("Applying shader ...\n");
 
          if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->shader_manager_get_type)
-            type = driver.menu_ctx->backend->shader_manager_get_type(rgui->shader);
+            type = driver.menu_ctx->backend->shader_manager_get_type(driver.menu->shader);
 
          if (shader->passes && type != RARCH_SHADER_NONE
                && driver.menu_ctx && driver.menu_ctx->backend &&
@@ -4455,7 +4439,7 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
             }
             else
 #endif
-               menu_key_start_line(rgui, "Preset Filename: ", preset_filename_callback);
+               menu_key_start_line(driver.menu, "Preset Filename: ", preset_filename_callback);
          }
          break;
 #endif
@@ -4549,7 +4533,7 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
          break;
       case RGUI_SETTINGS_NETPLAY_HOST_IP_ADDRESS:
          if (action == RGUI_ACTION_OK)
-            menu_key_start_line(rgui, "IP Address: ", netplay_ipaddress_callback);
+            menu_key_start_line(driver.menu, "IP Address: ", netplay_ipaddress_callback);
          else if (action == RGUI_ACTION_START)
             *g_extern.netplay_server = '\0';
          break;
@@ -4566,13 +4550,13 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
          break;
       case RGUI_SETTINGS_NETPLAY_TCP_UDP_PORT:
          if (action == RGUI_ACTION_OK)
-            menu_key_start_line(rgui, "TCP/UDP Port: ", netplay_port_callback);
+            menu_key_start_line(driver.menu, "TCP/UDP Port: ", netplay_port_callback);
          else if (action == RGUI_ACTION_START)
             g_extern.netplay_port = RARCH_DEFAULT_PORT;
          break;
       case RGUI_SETTINGS_NETPLAY_NICKNAME:
          if (action == RGUI_ACTION_OK)
-            menu_key_start_line(rgui, "Nickname: ", netplay_nickname_callback);
+            menu_key_start_line(driver.menu, "Nickname: ", netplay_nickname_callback);
          else if (action == RGUI_ACTION_START)
             *g_extern.netplay_nick = '\0';
          break;
@@ -4649,8 +4633,6 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
 
 static void menu_common_setting_set_label(char *type_str, size_t type_str_size, unsigned *w, unsigned type)
 {
-   rgui_handle_t *rgui = (rgui_handle_t*)driver.menu;
-
    switch (type)
    {
       case RGUI_SETTINGS_VIDEO_ROTATION:
@@ -4971,11 +4953,11 @@ static void menu_common_setting_set_label(char *type_str, size_t type_str_size, 
          break;
 #endif
       case RGUI_SETTINGS_BIND_PLAYER:
-         snprintf(type_str, type_str_size, "#%d", rgui->current_pad + 1);
+         snprintf(type_str, type_str_size, "#%d", driver.menu->current_pad + 1);
          break;
       case RGUI_SETTINGS_BIND_DEVICE:
          {
-            int map = g_settings.input.joypad_map[rgui->current_pad];
+            int map = g_settings.input.joypad_map[driver.menu->current_pad];
             if (map >= 0 && map < MAX_PLAYERS)
             {
                const char *device_name = g_settings.input.device_names[map];
@@ -4997,7 +4979,7 @@ static void menu_common_setting_set_label(char *type_str, size_t type_str_size, 
                "Dual Analog",
             };
 
-            strlcpy(type_str, modes[g_settings.input.analog_dpad_mode[rgui->current_pad] % ANALOG_DPAD_LAST], type_str_size);
+            strlcpy(type_str, modes[g_settings.input.analog_dpad_mode[driver.menu->current_pad] % ANALOG_DPAD_LAST], type_str_size);
          }
          break;
       case RGUI_SETTINGS_INPUT_AXIS_THRESHOLD:
@@ -5005,18 +4987,17 @@ static void menu_common_setting_set_label(char *type_str, size_t type_str_size, 
          break;
       case RGUI_SETTINGS_BIND_DEVICE_TYPE:
          {
-            const struct retro_controller_description *desc;
-            desc = NULL;
-            if (rgui->current_pad < g_extern.system.num_ports)
+            const struct retro_controller_description *desc = NULL;
+            if (driver.menu->current_pad < g_extern.system.num_ports)
             {
-               desc = libretro_find_controller_description(&g_extern.system.ports[rgui->current_pad],
-                     g_settings.input.libretro_device[rgui->current_pad]);
+               desc = libretro_find_controller_description(&g_extern.system.ports[driver.menu->current_pad],
+                     g_settings.input.libretro_device[driver.menu->current_pad]);
             }
 
             const char *name = desc ? desc->desc : NULL;
             if (!name) // Find generic name.
             {
-               switch (g_settings.input.libretro_device[rgui->current_pad])
+               switch (g_settings.input.libretro_device[driver.menu->current_pad])
                {
                   case RETRO_DEVICE_NONE:
                      name = "None";
@@ -5040,7 +5021,7 @@ static void menu_common_setting_set_label(char *type_str, size_t type_str_size, 
          strlcpy(type_str, g_settings.input.autodetect_enable ? "ON" : "OFF", type_str_size);
          break;
       case RGUI_SETTINGS_CUSTOM_BIND_MODE:
-         strlcpy(type_str, rgui->bind_mode_keyboard ? "Keyboard" : "Joypad", type_str_size);
+         strlcpy(type_str, driver.menu->bind_mode_keyboard ? "Keyboard" : "Joypad", type_str_size);
          break;
       case RGUI_SETTINGS_BIND_UP:
       case RGUI_SETTINGS_BIND_DOWN:
@@ -5097,7 +5078,7 @@ static void menu_common_setting_set_label(char *type_str, size_t type_str_size, 
       case RGUI_SETTINGS_BIND_DISK_NEXT:
       case RGUI_SETTINGS_BIND_GRAB_MOUSE_TOGGLE:
       case RGUI_SETTINGS_BIND_MENU_TOGGLE:
-         input_get_bind_string(type_str, &g_settings.input.binds[rgui->current_pad][type - RGUI_SETTINGS_BIND_BEGIN], type_str_size);
+         input_get_bind_string(type_str, &g_settings.input.binds[driver.menu->current_pad][type - RGUI_SETTINGS_BIND_BEGIN], type_str_size);
          break;
       case RGUI_SETTINGS_AUDIO_DSP_EFFECT:
 #ifdef RARCH_CONSOLE

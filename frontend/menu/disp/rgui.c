@@ -48,8 +48,8 @@ static uint16_t menu_framebuf[400 * 240];
 
 #define RGUI_TERM_START_X 15
 #define RGUI_TERM_START_Y 27
-#define RGUI_TERM_WIDTH (((rgui->width - RGUI_TERM_START_X - 15) / (FONT_WIDTH_STRIDE)))
-#define RGUI_TERM_HEIGHT (((rgui->height - RGUI_TERM_START_Y - 15) / (FONT_HEIGHT_STRIDE)) - 1)
+#define RGUI_TERM_WIDTH (((driver.menu->width - RGUI_TERM_START_X - 15) / (FONT_WIDTH_STRIDE)))
+#define RGUI_TERM_HEIGHT (((driver.menu->height - RGUI_TERM_START_Y - 15) / (FONT_HEIGHT_STRIDE)) - 1)
 
 static void rgui_copy_glyph(uint8_t *glyph, const uint8_t *buf)
 {
@@ -110,9 +110,8 @@ static void fill_rect(uint16_t *buf, unsigned pitch,
 static void blit_line(int x, int y, const char *message, bool green)
 {
    int j, i;
-   rgui_handle_t *rgui = (rgui_handle_t*)driver.menu;
 
-   if (!rgui)
+   if (!driver.menu)
       return;
 
    while (*message)
@@ -123,11 +122,11 @@ static void blit_line(int x, int y, const char *message, bool green)
          {
             uint8_t rem = 1 << ((i + j * FONT_WIDTH) & 7);
             int offset = (i + j * FONT_WIDTH) >> 3;
-            bool col = (rgui->font[FONT_OFFSET((unsigned char)*message) + offset] & rem);
+            bool col = (driver.menu->font[FONT_OFFSET((unsigned char)*message) + offset] & rem);
 
             if (col)
             {
-               rgui->frame_buf[(y + j) * (rgui->frame_buf_pitch >> 1) + (x + i)] = green ?
+               driver.menu->frame_buf[(y + j) * (driver.menu->frame_buf_pitch >> 1) + (x + i)] = green ?
 #if defined(GEKKO)|| defined(PSP)
                (3 << 0) | (10 << 4) | (3 << 8) | (7 << 12) : 0x7FFF;
 #else
@@ -178,33 +177,30 @@ static bool rguidisp_init_font(void *data)
 
 static void rgui_render_background(void)
 {
-   rgui_handle_t *rgui = (rgui_handle_t*)driver.menu;
-
-   if (!rgui)
+   if (!driver.menu)
       return;
 
-   fill_rect(rgui->frame_buf, rgui->frame_buf_pitch,
-         0, 0, rgui->width, rgui->height, gray_filler);
+   fill_rect(driver.menu->frame_buf, driver.menu->frame_buf_pitch,
+         0, 0, driver.menu->width, driver.menu->height, gray_filler);
 
-   fill_rect(rgui->frame_buf, rgui->frame_buf_pitch,
-         5, 5, rgui->width - 10, 5, green_filler);
+   fill_rect(driver.menu->frame_buf, driver.menu->frame_buf_pitch,
+         5, 5, driver.menu->width - 10, 5, green_filler);
 
-   fill_rect(rgui->frame_buf, rgui->frame_buf_pitch,
-         5, rgui->height - 10, rgui->width - 10, 5, green_filler);
+   fill_rect(driver.menu->frame_buf, driver.menu->frame_buf_pitch,
+         5, driver.menu->height - 10, driver.menu->width - 10, 5, green_filler);
 
-   fill_rect(rgui->frame_buf, rgui->frame_buf_pitch,
-         5, 5, 5, rgui->height - 10, green_filler);
+   fill_rect(driver.menu->frame_buf, driver.menu->frame_buf_pitch,
+         5, 5, 5, driver.menu->height - 10, green_filler);
 
-   fill_rect(rgui->frame_buf, rgui->frame_buf_pitch,
-         rgui->width - 10, 5, 5, rgui->height - 10, green_filler);
+   fill_rect(driver.menu->frame_buf, driver.menu->frame_buf_pitch,
+         driver.menu->width - 10, 5, 5, driver.menu->height - 10, green_filler);
 }
 
 static void rgui_render_messagebox(const char *message)
 {
    size_t i;
-   rgui_handle_t *rgui = (rgui_handle_t*)driver.menu;
 
-   if (!rgui || !message || !*message)
+   if (!driver.menu || !message || !*message)
       return;
 
    struct string_list *list = string_split(message, "\n");
@@ -237,22 +233,22 @@ static void rgui_render_messagebox(const char *message)
    }
 
    unsigned height = FONT_HEIGHT_STRIDE * list->size + 6 + 10;
-   int x = (rgui->width - width) / 2;
-   int y = (rgui->height - height) / 2;
+   int x = (driver.menu->width - width) / 2;
+   int y = (driver.menu->height - height) / 2;
 
-   fill_rect(rgui->frame_buf, rgui->frame_buf_pitch,
+   fill_rect(driver.menu->frame_buf, driver.menu->frame_buf_pitch,
          x + 5, y + 5, width - 10, height - 10, gray_filler);
 
-   fill_rect(rgui->frame_buf, rgui->frame_buf_pitch,
+   fill_rect(driver.menu->frame_buf, driver.menu->frame_buf_pitch,
          x, y, width - 5, 5, green_filler);
 
-   fill_rect(rgui->frame_buf, rgui->frame_buf_pitch,
+   fill_rect(driver.menu->frame_buf, driver.menu->frame_buf_pitch,
          x + width - 5, y, 5, height - 5, green_filler);
 
-   fill_rect(rgui->frame_buf, rgui->frame_buf_pitch,
+   fill_rect(driver.menu->frame_buf, driver.menu->frame_buf_pitch,
          x + 5, y + height - 5, width - 5, 5, green_filler);
 
-   fill_rect(rgui->frame_buf, rgui->frame_buf_pitch,
+   fill_rect(driver.menu->frame_buf, driver.menu->frame_buf_pitch,
          x, y + 5, 5, height - 5, green_filler);
 
    for (i = 0; i < list->size; i++)
@@ -269,19 +265,18 @@ static void rgui_render_messagebox(const char *message)
 static void rgui_render(void)
 {
    size_t begin, end;
-   rgui_handle_t *rgui = (rgui_handle_t*)driver.menu;
 
-   if (rgui->need_refresh &&
+   if (driver.menu->need_refresh &&
          (g_extern.lifecycle_state & (1ULL << MODE_MENU))
-         && !rgui->msg_force)
+         && !driver.menu->msg_force)
       return;
 
-   begin = (rgui->selection_ptr >= RGUI_TERM_HEIGHT / 2) ? rgui->selection_ptr - RGUI_TERM_HEIGHT / 2 : 0;
-   end = (rgui->selection_ptr + RGUI_TERM_HEIGHT <= file_list_get_size(rgui->selection_buf)) ?
-      rgui->selection_ptr + RGUI_TERM_HEIGHT : file_list_get_size(rgui->selection_buf);
+   begin = (driver.menu->selection_ptr >= RGUI_TERM_HEIGHT / 2) ? driver.menu->selection_ptr - RGUI_TERM_HEIGHT / 2 : 0;
+   end   = (driver.menu->selection_ptr + RGUI_TERM_HEIGHT <= file_list_get_size(driver.menu->selection_buf)) ?
+      driver.menu->selection_ptr + RGUI_TERM_HEIGHT : file_list_get_size(driver.menu->selection_buf);
 
    // Do not scroll if all items are visible.
-   if (file_list_get_size(rgui->selection_buf) <= RGUI_TERM_HEIGHT)
+   if (file_list_get_size(driver.menu->selection_buf) <= RGUI_TERM_HEIGHT)
       begin = 0;
 
    if (end - begin > RGUI_TERM_HEIGHT)
@@ -293,7 +288,7 @@ static void rgui_render(void)
    const char *dir = NULL;
    unsigned menu_type = 0;
    unsigned menu_type_is = 0;
-   file_list_get_last(rgui->menu_stack, &dir, &menu_type);
+   file_list_get_last(driver.menu->menu_stack, &dir, &menu_type);
 
    if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->type_is)
       menu_type_is = driver.menu_ctx->backend->type_is(menu_type);
@@ -403,11 +398,11 @@ static void rgui_render(void)
       snprintf(title, sizeof(title), "ASSETS DIR %s", dir);
    else
    {
-      if (rgui->defer_core)
+      if (driver.menu->defer_core)
          snprintf(title, sizeof(title), "CONTENT %s", dir);
       else
       {
-         const char *core_name = rgui->info.library_name;
+         const char *core_name = driver.menu->info.library_name;
          if (!core_name)
             core_name = g_extern.system.info.library_name;
          if (!core_name)
@@ -421,13 +416,13 @@ static void rgui_render(void)
    blit_line(RGUI_TERM_START_X + 15, 15, title_buf, true);
 
    char title_msg[64];
-   const char *core_name = rgui->info.library_name;
+   const char *core_name = driver.menu->info.library_name;
    if (!core_name)
       core_name = g_extern.system.info.library_name;
    if (!core_name)
       core_name = "No Core";
 
-   const char *core_version = rgui->info.library_version;
+   const char *core_version = driver.menu->info.library_version;
    if (!core_version)
       core_version = g_extern.system.info.library_version;
    if (!core_version)
@@ -446,7 +441,7 @@ static void rgui_render(void)
    {
       const char *path = 0;
       unsigned type = 0;
-      file_list_get_at_offset(rgui->selection_buf, i, &path, &type);
+      file_list_get_at_offset(driver.menu->selection_buf, i, &path, &type);
       char message[256];
       char type_str[256];
 
@@ -476,9 +471,9 @@ static void rgui_render(void)
          else if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->shader_manager_get_str)
          {
             if (type >= RGUI_SETTINGS_SHADER_PARAMETER_0 && type <= RGUI_SETTINGS_SHADER_PARAMETER_LAST)
-               driver.menu_ctx->backend->shader_manager_get_str(rgui->parameter_shader, type_str, sizeof(type_str), type);
+               driver.menu_ctx->backend->shader_manager_get_str(driver.menu->parameter_shader, type_str, sizeof(type_str), type);
             else
-               driver.menu_ctx->backend->shader_manager_get_str(rgui->shader, type_str, sizeof(type_str), type);
+               driver.menu_ctx->backend->shader_manager_get_str(driver.menu->shader, type_str, sizeof(type_str), type);
          }
       }
       else
@@ -489,7 +484,7 @@ static void rgui_render(void)
          if (type == RGUI_FILE_PLAIN)
          {
             strlcpy(type_str, "(CORE)", sizeof(type_str));
-            file_list_get_alt_at_offset(rgui->selection_buf, i, &path);
+            file_list_get_alt_at_offset(driver.menu->selection_buf, i, &path);
             w = 6;
          }
          else
@@ -539,7 +534,7 @@ static void rgui_render(void)
 
       char entry_title_buf[256];
       char type_str_buf[64];
-      bool selected = i == rgui->selection_ptr;
+      bool selected = i == driver.menu->selection_ptr;
 
       strlcpy(entry_title_buf, path, sizeof(entry_title_buf));
       strlcpy(type_str_buf, type_str, sizeof(type_str_buf));
@@ -562,10 +557,10 @@ static void rgui_render(void)
 #ifdef GEKKO
    const char *message_queue;
 
-   if (rgui->msg_force)
+   if (driver.menu->msg_force)
    {
       message_queue = msg_queue_pull(g_extern.msg_queue);
-      rgui->msg_force = false;
+      driver.menu->msg_force = false;
    }
    else
       message_queue = driver.current_msg;
@@ -573,13 +568,13 @@ static void rgui_render(void)
    rgui_render_messagebox(message_queue);
 #endif
 
-   if (rgui->keyboard.display)
+   if (driver.menu->keyboard.display)
    {
       char msg[1024];
-      const char *str = *rgui->keyboard.buffer;
+      const char *str = *driver.menu->keyboard.buffer;
       if (!str)
          str = "";
-      snprintf(msg, sizeof(msg), "%s\n%s", rgui->keyboard.label, str);
+      snprintf(msg, sizeof(msg), "%s\n%s", driver.menu->keyboard.label, str);
       rgui_render_messagebox(msg);
    }
 }
@@ -625,12 +620,11 @@ static void rgui_free(void *data)
 
 static int rgui_input_postprocess(uint64_t old_state)
 {
-   rgui_handle_t *rgui = (rgui_handle_t*)driver.menu;
    int ret = 0;
 
    (void)old_state;
 
-   if ((rgui->trigger_state & (1ULL << RARCH_MENU_TOGGLE)) &&
+   if ((driver.menu->trigger_state & (1ULL << RARCH_MENU_TOGGLE)) &&
          g_extern.main_is_init &&
          !g_extern.libretro_dummy)
    {
