@@ -18,12 +18,6 @@
 #define MENU_COMMON_H__
 
 #include "../../general.h"
-
-#ifdef HAVE_CONFIG_H
-#include "../../config.h"
-#endif
-
-#include "../../performance.h"
 #include "../info/core_info.h"
 
 #ifdef HAVE_RGUI
