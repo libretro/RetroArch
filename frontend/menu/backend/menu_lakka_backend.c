@@ -60,7 +60,7 @@ static int menu_lakka_iterate(unsigned action)
       return 0;
 
    if (driver.video_data && driver.menu_ctx && driver.menu_ctx->set_texture)
-      driver.menu_ctx->set_texture(driver.menu, false);
+      driver.menu_ctx->set_texture(driver.menu);
 
    switch (action)
    {
