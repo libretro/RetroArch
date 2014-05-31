@@ -47,6 +47,7 @@
 static inline struct gfx_shader *shader_manager_get_current_shader(void *data, unsigned type)
 {
    rgui_handle_t *rgui = (rgui_handle_t*)data;
+   struct gfx_shader *shader = NULL;
 
    if (!rgui)
    {
@@ -54,7 +55,9 @@ static inline struct gfx_shader *shader_manager_get_current_shader(void *data, u
       return NULL;
    }
 
-   struct gfx_shader *shader = type == RGUI_SETTINGS_SHADER_PRESET_PARAMETERS ? &rgui->shader : NULL;
+   if (type == RGUI_SETTINGS_SHADER_PRESET_PARAMETERS)
+      shader = (struct gfx_shader *)rgui->shader;
+
    if (!shader && driver.video_poke && driver.video_data && driver.video_poke->get_current_shader)
       shader = driver.video_poke->get_current_shader(driver.video_data);
 
@@ -79,7 +82,7 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
       {
          file_list_clear(rgui->selection_buf);
 
-         struct gfx_shader *shader = shader_manager_get_current_shader(rgui, menu_type);
+         struct gfx_shader *shader = (struct gfx_shader*)shader_manager_get_current_shader(rgui, menu_type);
          if (shader)
             for (i = 0; i < shader->num_parameters; i++)
                file_list_push(rgui->selection_buf, shader->parameters[i].desc, RGUI_SETTINGS_SHADER_PARAMETER_0 + i, 0);
@@ -87,6 +90,12 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
          break;
       }
       case RGUI_SETTINGS_SHADER_OPTIONS:
+      {
+         struct gfx_shader *shader = (struct gfx_shader*)rgui->shader;
+
+         if (!shader)
+            return;
+
          file_list_clear(rgui->selection_buf);
          file_list_push(rgui->selection_buf, "Apply Shader Changes",
                RGUI_SETTINGS_SHADER_APPLY, 0);
@@ -102,7 +111,7 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
          file_list_push(rgui->selection_buf, "Shader Passes",
                RGUI_SETTINGS_SHADER_PASSES, 0);
 
-         for (i = 0; i < rgui->shader.passes; i++)
+         for (i = 0; i < shader->passes; i++)
          {
             char buf[64];
 
@@ -118,7 +127,8 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
             file_list_push(rgui->selection_buf, buf,
                   RGUI_SETTINGS_SHADER_0_SCALE + 3 * i, 0);
          }
-         break;
+      }
+      break;
 #endif
       case RGUI_SETTINGS_GENERAL_OPTIONS:
          file_list_clear(rgui->selection_buf);
@@ -2053,17 +2063,19 @@ static int menu_common_iterate(unsigned action)
                   char shader_path[PATH_MAX];
                   fill_pathname_join(shader_path, dir, path, sizeof(shader_path));
                   if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->shader_manager_set_preset)
-                     driver.menu_ctx->backend->shader_manager_set_preset(&rgui->shader, gfx_shader_parse_type(shader_path, RARCH_SHADER_NONE),
+                     driver.menu_ctx->backend->shader_manager_set_preset(rgui->shader, gfx_shader_parse_type(shader_path, RARCH_SHADER_NONE),
                         shader_path);
                }
                else
                {
+                  struct gfx_shader *shader = (struct gfx_shader*)rgui->shader;
                   unsigned pass = (menu_type - RGUI_SETTINGS_SHADER_0) / 3;
-                  fill_pathname_join(rgui->shader.pass[pass].source.path,
-                        dir, path, sizeof(rgui->shader.pass[pass].source.path));
+
+                  fill_pathname_join(shader->pass[pass].source.path,
+                        dir, path, sizeof(shader->pass[pass].source.path));
 
                   // This will reset any changed parameters.
-                  gfx_shader_resolve_parameters(NULL, &rgui->shader);
+                  gfx_shader_resolve_parameters(NULL, rgui->shader);
                }
 
                // Pop stack until we hit shader manager again.
@@ -2340,7 +2352,6 @@ static void menu_common_shader_manager_init(void *data)
       return;
 
 #ifdef HAVE_SHADER_MANAGER
-   memset(&rgui->shader, 0, sizeof(rgui->shader));
    config_file_t *conf = NULL;
 
    const char *config_path = NULL;
@@ -2373,19 +2384,21 @@ static void menu_common_shader_manager_init(void *data)
       conf = config_file_new(g_settings.video.shader_path);
       if (conf)
       {
-         if (gfx_shader_read_conf_cgp(conf, &rgui->shader))
+         if (gfx_shader_read_conf_cgp(conf, rgui->shader))
          {
-            gfx_shader_resolve_relative(&rgui->shader, g_settings.video.shader_path);
-            gfx_shader_resolve_parameters(conf, &rgui->shader);
+            gfx_shader_resolve_relative(rgui->shader, g_settings.video.shader_path);
+            gfx_shader_resolve_parameters(conf, rgui->shader);
          }
          config_file_free(conf);
       }
    }
    else if (strcmp(ext, "glsl") == 0 || strcmp(ext, "cg") == 0)
    {
-      strlcpy(rgui->shader.pass[0].source.path, g_settings.video.shader_path,
-            sizeof(rgui->shader.pass[0].source.path));
-      rgui->shader.passes = 1;
+      struct gfx_shader *shader = (struct gfx_shader*)rgui->shader;
+
+      strlcpy(shader->pass[0].source.path, g_settings.video.shader_path,
+            sizeof(shader->pass[0].source.path));
+      shader->passes = 1;
    }
    else
    {
@@ -2403,10 +2416,10 @@ static void menu_common_shader_manager_init(void *data)
 
       if (conf)
       {
-         if (gfx_shader_read_conf_cgp(conf, &rgui->shader))
+         if (gfx_shader_read_conf_cgp(conf, rgui->shader))
          {
-            gfx_shader_resolve_relative(&rgui->shader, cgp_path);
-            gfx_shader_resolve_parameters(conf, &rgui->shader);
+            gfx_shader_resolve_relative(rgui->shader, cgp_path);
+            gfx_shader_resolve_parameters(conf, rgui->shader);
          }
          config_file_free(conf);
       }
@@ -2471,7 +2484,7 @@ static void menu_common_shader_manager_get_str(void *data, char *type_str, size_
       // rgui->parameter_shader here.
       if (shader)
       {
-         const struct gfx_shader_parameter *param = &shader->parameters[type - RGUI_SETTINGS_SHADER_PARAMETER_0];
+         const struct gfx_shader_parameter *param = (const struct gfx_shader_parameter*)&shader->parameters[type - RGUI_SETTINGS_SHADER_PARAMETER_0];
          snprintf(type_str, type_str_size, "%.2f [%.2f %.2f]", param->current, param->minimum, param->maximum);
       }
       else
@@ -2539,7 +2552,7 @@ static void menu_common_shader_manager_save_preset(const char *basename, bool ap
    }
 
    if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->shader_manager_get_type)
-      type = driver.menu_ctx->backend->shader_manager_get_type(&rgui->shader);
+      type = driver.menu_ctx->backend->shader_manager_get_type(rgui->shader);
    else
       type = RARCH_SHADER_NONE;
 
@@ -2580,7 +2593,7 @@ static void menu_common_shader_manager_save_preset(const char *basename, bool ap
    config_file_t *conf = config_file_new(NULL);
    if (!conf)
       return;
-   gfx_shader_write_conf_cgp(conf, &rgui->shader);
+   gfx_shader_write_conf_cgp(conf, rgui->shader);
 
    bool ret = false;
 
@@ -2699,11 +2712,19 @@ static int menu_common_shader_manager_setting_toggle(unsigned setting, unsigned 
    }
    else if (setting >= RGUI_SETTINGS_SHADER_PARAMETER_0 && setting <= RGUI_SETTINGS_SHADER_PARAMETER_LAST)
    {
-      if (!rgui->parameter_shader)
+      struct gfx_shader *shader;
+      struct gfx_shader_parameter *param;
+
+      shader = (struct gfx_shader*)rgui->parameter_shader;
+
+      if (!shader)
          return 0;
 
-      struct gfx_shader *shader = (struct gfx_shader*)&rgui->parameter_shader;
-      struct gfx_shader_parameter *param = (struct gfx_shader_parameter*)&shader->parameters[setting - RGUI_SETTINGS_SHADER_PARAMETER_0];
+      param = (struct gfx_shader_parameter*)&shader->parameters[setting - RGUI_SETTINGS_SHADER_PARAMETER_0];
+
+      if (!param)
+         return 0;
+
       switch (action)
       {
          case RGUI_ACTION_START:
@@ -2729,9 +2750,13 @@ static int menu_common_shader_manager_setting_toggle(unsigned setting, unsigned 
       driver.menu_ctx->backend->setting_set(setting, action);
    else if (((dist_shader % 3) == 0 || setting == RGUI_SETTINGS_SHADER_PRESET))
    {
+      struct gfx_shader *shader = NULL;
+      struct gfx_shader_pass *pass = NULL;
       dist_shader /= 3;
-      struct gfx_shader_pass *pass = setting == RGUI_SETTINGS_SHADER_PRESET ?
-         &rgui->shader.pass[dist_shader] : NULL;
+      shader = (struct gfx_shader*)rgui->shader;
+      if (shader && setting == RGUI_SETTINGS_SHADER_PRESET)
+         pass = (struct gfx_shader_pass*)&shader->pass[dist_shader];
+
       switch (action)
       {
          case RGUI_ACTION_OK:
@@ -2751,12 +2776,15 @@ static int menu_common_shader_manager_setting_toggle(unsigned setting, unsigned 
    }
    else if ((dist_filter % 3) == 0)
    {
+      struct gfx_shader *shader = NULL;
+      struct gfx_shader_pass *pass = NULL;
       dist_filter /= 3;
-      struct gfx_shader_pass *pass = &rgui->shader.pass[dist_filter];
+      shader = (struct gfx_shader*)rgui->shader;
+      pass = (struct gfx_shader_pass*)&shader->pass[dist_filter];
       switch (action)
       {
          case RGUI_ACTION_START:
-            rgui->shader.pass[dist_filter].filter = RARCH_FILTER_UNSPEC;
+            shader->pass[dist_filter].filter = RARCH_FILTER_UNSPEC;
             break;
 
          case RGUI_ACTION_LEFT:
@@ -2774,8 +2802,11 @@ static int menu_common_shader_manager_setting_toggle(unsigned setting, unsigned 
    }
    else if ((dist_scale % 3) == 0)
    {
+      struct gfx_shader *shader = NULL;
+      struct gfx_shader_pass *pass = NULL;
       dist_scale /= 3;
-      struct gfx_shader_pass *pass = &rgui->shader.pass[dist_scale];
+      shader = (struct gfx_shader*)rgui->shader;
+      pass = (struct gfx_shader_pass*)&shader->pass[dist_scale];
       switch (action)
       {
          case RGUI_ACTION_START:
@@ -2963,7 +2994,7 @@ static bool osk_callback_enter_filename(void *data)
       config_file_t *conf = config_file_new(NULL);
       if (!conf)
          return false;
-      gfx_shader_write_conf_cgp(conf, &rgui->shader);
+      gfx_shader_write_conf_cgp(conf, rgui->shader);
       config_file_write(conf, filepath);
       config_file_free(conf);
       goto do_exit;
@@ -4344,39 +4375,45 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
          break;
 #ifdef HAVE_SHADER_MANAGER
       case RGUI_SETTINGS_SHADER_PASSES:
-         switch (action)
          {
-            case RGUI_ACTION_START:
-               rgui->shader.passes = 0;
-               rgui->need_refresh = true;
-               break;
+            struct gfx_shader *shader = (struct gfx_shader*)rgui->shader;
 
-            case RGUI_ACTION_LEFT:
-               if (rgui->shader.passes)
-               {
-                  rgui->shader.passes--;
+            switch (action)
+            {
+               case RGUI_ACTION_START:
+                  if (shader && shader->passes)
+                     shader->passes = 0;
                   rgui->need_refresh = true;
-               }
-               break;
+                  break;
 
-            case RGUI_ACTION_RIGHT:
-            case RGUI_ACTION_OK:
-               if (rgui->shader.passes < GFX_MAX_SHADERS)
-               {
-                  rgui->shader.passes++;
-                  rgui->need_refresh = true;
-               }
-               break;
+               case RGUI_ACTION_LEFT:
+                  if (shader && shader->passes)
+                  {
+                     shader->passes--;
+                     rgui->need_refresh = true;
+                  }
+                  break;
 
-            default:
-               break;
+               case RGUI_ACTION_RIGHT:
+               case RGUI_ACTION_OK:
+                  if (shader && (shader->passes < GFX_MAX_SHADERS))
+                  {
+                     shader->passes++;
+                     rgui->need_refresh = true;
+                  }
+                  break;
+
+               default:
+                  break;
+            }
+
+            if (rgui->need_refresh)
+               gfx_shader_resolve_parameters(NULL, rgui->shader);
          }
-
-         if (rgui->need_refresh)
-            gfx_shader_resolve_parameters(NULL, &rgui->shader);
          break;
       case RGUI_SETTINGS_SHADER_APPLY:
       {
+         struct gfx_shader *shader = (struct gfx_shader*)rgui->shader;
          unsigned type = RARCH_SHADER_NONE;
 
          if (!driver.video || !driver.video->set_shader || action != RGUI_ACTION_OK)
@@ -4385,9 +4422,9 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
          RARCH_LOG("Applying shader ...\n");
 
          if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->shader_manager_get_type)
-            type = driver.menu_ctx->backend->shader_manager_get_type(&rgui->shader);
+            type = driver.menu_ctx->backend->shader_manager_get_type(rgui->shader);
 
-         if (rgui->shader.passes && type != RARCH_SHADER_NONE
+         if (shader->passes && type != RARCH_SHADER_NONE
                && driver.menu_ctx && driver.menu_ctx->backend &&
                driver.menu_ctx->backend->shader_manager_save_preset)
             driver.menu_ctx->backend->shader_manager_save_preset(NULL, true);

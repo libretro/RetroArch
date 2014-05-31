@@ -167,7 +167,7 @@ typedef struct
    bool load_no_rom;
 
 #ifdef HAVE_SHADER_MANAGER
-   struct gfx_shader shader;
+   void *shader;
    void *parameter_shader; // Points to either shader or graphics driver current shader.
 #endif
    unsigned current_pad;

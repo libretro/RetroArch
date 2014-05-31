@@ -323,6 +323,9 @@ void *menu_init(const void *data)
    rgui->menu_stack = (file_list_t*)calloc(1, sizeof(file_list_t));
    rgui->selection_buf = (file_list_t*)calloc(1, sizeof(file_list_t));
    rgui->core_info_current = (core_info_t*)calloc(1, sizeof(core_info_t));
+#ifdef HAVE_SHADER_MANAGER
+   rgui->shader = (struct gfx_shader*)calloc(1, sizeof(struct gfx_shader));
+#endif
    file_list_push(rgui->menu_stack, "", RGUI_SETTINGS, 0);
    menu_clear_navigation(rgui);
    rgui->push_start_screen = g_settings.rgui_show_start_screen;
@@ -354,6 +357,12 @@ void menu_free(void *data)
 
    if (!rgui)
       return;
+  
+#ifdef HAVE_SHADER_MANAGER
+   if (rgui->shader)
+      free(rgui->shader);
+   rgui->shader = NULL;
+#endif
 
    if (driver.menu_ctx && driver.menu_ctx->free)
       driver.menu_ctx->free(rgui);

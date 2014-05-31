@@ -478,7 +478,7 @@ static void rgui_render(void)
             if (type >= RGUI_SETTINGS_SHADER_PARAMETER_0 && type <= RGUI_SETTINGS_SHADER_PARAMETER_LAST)
                driver.menu_ctx->backend->shader_manager_get_str(rgui->parameter_shader, type_str, sizeof(type_str), type);
             else
-               driver.menu_ctx->backend->shader_manager_get_str(&rgui->shader, type_str, sizeof(type_str), type);
+               driver.menu_ctx->backend->shader_manager_get_str(rgui->shader, type_str, sizeof(type_str), type);
          }
       }
       else
