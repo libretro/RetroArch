@@ -286,6 +286,10 @@ void main_exit(args_type() args)
       driver.frontend_ctx->shutdown(false);
 }
 
+#ifdef HW_RVL
+static char wii_new_argv1[PATH_MAX];
+#endif
+
 returntype main_entry(signature())
 {
    declare_argc();
@@ -331,6 +335,23 @@ returntype main_entry(signature())
          path_mkdir(default_paths.system_dir);
 #endif
    }
+
+#ifdef HW_RVL
+   // needed on Wii; loaders follow a dumb standard where the path and filename are separate in the argument list
+   if (argc > 2 && argv[1] != NULL && argv[2] != NULL)
+   {
+      int i;
+      fill_pathname_join(wii_new_argv1, argv[1], argv[2], sizeof(wii_new_argv1));
+      argv[1] = wii_new_argv1;
+      // shift over remaining args
+      for (i = 3; i < argc; i++)
+      {
+         argv[i - 1] = argv[i];
+      }
+      argc--;
+      argv[argc] = NULL;
+   }
+#endif
 
    {
       int init_ret;
