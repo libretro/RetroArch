@@ -138,9 +138,9 @@ static void rmenu_render(void)
       return;
 
    begin = (rgui->selection_ptr >= (ENTRIES_HEIGHT / 2)) ?  (rgui->selection_ptr - (ENTRIES_HEIGHT / 2)) : 0;
-   end = ((rgui->selection_ptr + ENTRIES_HEIGHT) <= rgui->selection_buf->size) ? rgui->selection_ptr + ENTRIES_HEIGHT : rgui->selection_buf->size;
+   end = ((rgui->selection_ptr + ENTRIES_HEIGHT) <= file_list_get_size(rgui->selection_buf)) ? rgui->selection_ptr + ENTRIES_HEIGHT : file_list_get_size(rgui->selection_buf);
 
-   if (rgui->selection_buf->size <= ENTRIES_HEIGHT)
+   if (file_list_get_size(rgui->selection_buf) <= ENTRIES_HEIGHT)
       begin = 0;
 
    if (end - begin > ENTRIES_HEIGHT)

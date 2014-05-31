@@ -1254,18 +1254,18 @@ static int menu_settings_iterate(unsigned action)
          if (rgui->selection_ptr > 0)
             menu_decrement_navigation(rgui);
          else
-            menu_set_navigation(rgui, rgui->selection_buf->size - 1);
+            menu_set_navigation(rgui, file_list_get_size(rgui->selection_buf) - 1);
          break;
 
       case RGUI_ACTION_DOWN:
-         if (rgui->selection_ptr + 1 < rgui->selection_buf->size)
+         if (rgui->selection_ptr + 1 < file_list_get_size(rgui->selection_buf))
             menu_increment_navigation(rgui);
          else
             menu_clear_navigation(rgui);
          break;
 
       case RGUI_ACTION_CANCEL:
-         if (rgui->menu_stack->size > 1)
+         if (file_list_get_size(rgui->menu_stack) > 1)
          {
             file_list_pop(rgui->menu_stack, &rgui->selection_ptr);
             rgui->need_refresh = true;
@@ -1728,7 +1728,8 @@ static void menu_parse_and_resolve(unsigned menu_type)
             if (menu_common_type_is(menu_type) == RGUI_FILE_DIRECTORY)
                file_list_push(rgui->selection_buf, "<Use this directory>", RGUI_FILE_USE_DIRECTORY, 0);
 
-            for (i = 0; i < list->size; i++)
+            list_size = list->size;
+            for (i = 0; i < list_size; i++)
             {
                bool is_dir = list->elems[i].attr.b;
 
@@ -1765,7 +1766,7 @@ static void menu_parse_and_resolve(unsigned menu_type)
          dir = NULL;
          list = (file_list_t*)rgui->selection_buf;
          file_list_get_last(rgui->menu_stack, &dir, &menu_type);
-         list_size = list->size;
+         list_size = file_list_get_size(list);
          for (i = 0; i < list_size; i++)
          {
             const char *path;
@@ -1804,9 +1805,9 @@ static void menu_parse_and_resolve(unsigned menu_type)
 
    // Before a refresh, we could have deleted a file on disk, causing
    // selection_ptr to suddendly be out of range. Ensure it doesn't overflow.
-   if (rgui->selection_ptr >= rgui->selection_buf->size && rgui->selection_buf->size)
-      menu_set_navigation(rgui, rgui->selection_buf->size - 1);
-   else if (!rgui->selection_buf->size)
+   if (rgui->selection_ptr >= file_list_get_size(rgui->selection_buf) && file_list_get_size(rgui->selection_buf))
+      menu_set_navigation(rgui, file_list_get_size(rgui->selection_buf) - 1);
+   else if (!file_list_get_size(rgui->selection_buf))
       menu_clear_navigation(rgui);
 }
 
@@ -1972,11 +1973,11 @@ static int menu_common_iterate(unsigned action)
          if (rgui->selection_ptr >= scroll_speed)
             menu_set_navigation(rgui, rgui->selection_ptr - scroll_speed);
          else
-            menu_set_navigation(rgui, rgui->selection_buf->size - 1);
+            menu_set_navigation(rgui, file_list_get_size(rgui->selection_buf) - 1);
          break;
 
       case RGUI_ACTION_DOWN:
-         if (rgui->selection_ptr + scroll_speed < rgui->selection_buf->size)
+         if (rgui->selection_ptr + scroll_speed < file_list_get_size(rgui->selection_buf))
             menu_set_navigation(rgui, rgui->selection_ptr + scroll_speed);
          else
             menu_clear_navigation(rgui);
@@ -1990,7 +1991,7 @@ static int menu_common_iterate(unsigned action)
          break;
 
       case RGUI_ACTION_RIGHT:
-         if (rgui->selection_ptr + fast_scroll_speed < rgui->selection_buf->size)
+         if (rgui->selection_ptr + fast_scroll_speed < file_list_get_size(rgui->selection_buf))
             menu_set_navigation(rgui, rgui->selection_ptr + fast_scroll_speed);
          else
             menu_set_navigation_last(rgui);
@@ -2004,7 +2005,7 @@ static int menu_common_iterate(unsigned action)
          break;
 
       case RGUI_ACTION_CANCEL:
-         if (rgui->menu_stack->size > 1)
+         if (file_list_get_size(rgui->menu_stack) > 1)
          {
             file_list_pop(rgui->menu_stack, &rgui->selection_ptr);
             rgui->need_refresh = true;
@@ -2013,7 +2014,7 @@ static int menu_common_iterate(unsigned action)
 
       case RGUI_ACTION_OK:
       {
-         if (rgui->selection_buf->size == 0)
+         if (file_list_get_size(rgui->selection_buf) == 0)
             return 0;
 
          const char *path = 0;
@@ -2697,7 +2698,8 @@ static int menu_common_shader_manager_setting_toggle(unsigned setting, unsigned 
       if (!rgui->parameter_shader)
          return 0;
 
-      struct gfx_shader_parameter *param = &rgui->parameter_shader->parameters[setting - RGUI_SETTINGS_SHADER_PARAMETER_0];
+      struct gfx_shader *shader = (struct gfx_shader*)&rgui->parameter_shader;
+      struct gfx_shader_parameter *param = (struct gfx_shader_parameter*)&shader->parameters[setting - RGUI_SETTINGS_SHADER_PARAMETER_0];
       switch (action)
       {
          case RGUI_ACTION_START:

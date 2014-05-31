@@ -277,11 +277,11 @@ static void rgui_render(void)
       return;
 
    begin = (rgui->selection_ptr >= RGUI_TERM_HEIGHT / 2) ? rgui->selection_ptr - RGUI_TERM_HEIGHT / 2 : 0;
-   end = (rgui->selection_ptr + RGUI_TERM_HEIGHT <= rgui->selection_buf->size) ?
-      rgui->selection_ptr + RGUI_TERM_HEIGHT : rgui->selection_buf->size;
+   end = (rgui->selection_ptr + RGUI_TERM_HEIGHT <= file_list_get_size(rgui->selection_buf)) ?
+      rgui->selection_ptr + RGUI_TERM_HEIGHT : file_list_get_size(rgui->selection_buf);
 
    // Do not scroll if all items are visible.
-   if (rgui->selection_buf->size <= RGUI_TERM_HEIGHT)
+   if (file_list_get_size(rgui->selection_buf) <= RGUI_TERM_HEIGHT)
       begin = 0;
 
    if (end - begin > RGUI_TERM_HEIGHT)

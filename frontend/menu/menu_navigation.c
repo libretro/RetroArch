@@ -62,7 +62,7 @@ void menu_set_navigation(void *data, size_t i)
 void menu_set_navigation_last(void *data)
 {
    rgui_handle_t *rgui = (rgui_handle_t*)data;
-   rgui->selection_ptr = rgui->selection_buf->size - 1;
+   rgui->selection_ptr = file_list_get_size(rgui->selection_buf) - 1;
 
    if (driver.menu_ctx && driver.menu_ctx->navigation_set_last)
       driver.menu_ctx->navigation_set_last(rgui);

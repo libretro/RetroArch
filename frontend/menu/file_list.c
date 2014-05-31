@@ -53,6 +53,23 @@ void file_list_push(file_list_t *list,
 
 }
 
+size_t file_list_get_size(const file_list_t *list)
+{
+   if (!list)
+      return 0;
+
+   return list->size;
+}
+
+size_t file_list_get_directory_ptr(const file_list_t *list)
+{
+   size_t size;
+   if (!list)
+      return 0;
+   size = file_list_get_size(list);
+   return list->list[size].directory_ptr;
+}
+
 void file_list_pop(file_list_t *list, size_t *directory_ptr)
 {
    if (!list)

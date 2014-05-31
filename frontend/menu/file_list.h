@@ -42,6 +42,9 @@ void file_list_clear(file_list_t *list);
 void file_list_get_last(const file_list_t *list,
       const char **path, unsigned *type);
 
+size_t file_list_get_size(const file_list_t *list);
+size_t file_list_get_directory_ptr(const file_list_t *list);
+
 void file_list_get_at_offset(const file_list_t *list, size_t index,
       const char **path, unsigned *type);
 

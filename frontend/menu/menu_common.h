@@ -138,15 +138,15 @@ typedef struct
    size_t frame_buf_pitch;
    bool frame_buf_show;
 
-   file_list_t *menu_stack;
-   file_list_t *selection_buf;
+   void *menu_stack;
+   void *selection_buf;
    size_t selection_ptr;
    unsigned info_selection;
    bool need_refresh;
    bool msg_force;
    bool push_start_screen;
 
-   core_info_list_t *core_info;
+   void *core_info;
    core_info_t core_info_current;
    bool defer_core;
    char deferred_path[PATH_MAX];
@@ -168,11 +168,11 @@ typedef struct
 
 #ifdef HAVE_SHADER_MANAGER
    struct gfx_shader shader;
-   struct gfx_shader *parameter_shader; // Points to either shader or graphics driver current shader.
+   void *parameter_shader; // Points to either shader or graphics driver current shader.
 #endif
    unsigned current_pad;
 
-   rom_history_t *history;
+   void *history;
    retro_time_t last_time; // Used to throttle RGUI in case VSync is broken.
 
    struct rgui_bind_state binds;

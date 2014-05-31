@@ -261,7 +261,7 @@ static void xui_render_message(const char *msg)
 	j = 0;
 	for (i = 0; i < list->size; i++, j++)
 	{
-		char *msg = list->elems[i].data;
+		char *msg = (char*)list->elems[i].data;
 		unsigned msglen = strlen(msg);
 	#if 0
 		if (msglen > RMENU_TERM_WIDTH)
@@ -388,7 +388,7 @@ static void rmenu_xui_render(void)
       return;
 
    begin = rgui->selection_ptr;
-   end   = rgui->selection_buf->size;
+   end   = file_list_get_size(rgui->selection_buf);
 
    rmenu_xui_render_background();
 
@@ -710,7 +710,10 @@ static void rmenu_xui_list_clear(void *data)
 static void rmenu_xui_list_set_selection(void *data)
 {
    file_list_t *list = (file_list_t*)data;
-   XuiListSetCurSel(m_menulist, list->list[list->size].directory_ptr);
+   if (!list)
+      return;
+
+   XuiListSetCurSel(m_menulist, file_list_get_directory_ptr(list));
 }
 
 static void rmenu_xui_init_core_info(void *data)
