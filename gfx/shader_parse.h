@@ -24,10 +24,21 @@
 extern "C" {
 #endif
 
+#ifndef GFX_MAX_SHADERS
 #define GFX_MAX_SHADERS 16
+#endif
+
+#ifndef GFX_MAX_TEXTURES
 #define GFX_MAX_TEXTURES 8
+#endif
+
+#ifndef GFX_MAX_VARIABLES
 #define GFX_MAX_VARIABLES 64
+#endif
+
+#ifndef GFX_MAX_PARAMETERS
 #define GFX_MAX_PARAMETERS 64
+#endif
 
 enum gfx_scale_type
 {
