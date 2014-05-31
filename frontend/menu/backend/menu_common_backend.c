@@ -954,8 +954,11 @@ static int menu_info_screen_iterate(unsigned action)
          snprintf(msg, sizeof(msg),
                " -- Key to exit RetroArch cleanly."
 #if !defined(RARCH_MOBILE) && !defined(RARCH_CONSOLE)
-               "\nKilling it in any hard way (SIGTERM, SIGKILL, \n"
-               "etc) will terminate without saving RAM, etc."
+               "\nKilling it in any hard way (SIGKILL, \n"
+               "etc) will terminate without saving\n"
+               "RAM, etc. On Unix-likes,\n"
+               "SIGINT/SIGTERM allows\n"
+               "a clean deinitialization."
 #endif
                );
          break;
