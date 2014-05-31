@@ -60,7 +60,9 @@ static void frontend_psp_get_environment_settings(int argc, char *argv[], void *
    fill_pathname_basedir(default_paths.port_dir, argv[0], sizeof(default_paths.port_dir));
    RARCH_LOG("port dir: [%s]\n", default_paths.port_dir);
 
+   fill_pathname_join(default_paths.asset_dir, default_paths.port_dir, "media", sizeof(default_paths.asset_dir));
    fill_pathname_join(default_paths.core_dir, default_paths.port_dir, "cores", sizeof(default_paths.core_dir));
+   fill_pathname_join(default_paths.core_info_dir, default_paths.port_dir, "cores", sizeof(default_paths.core_info_dir));
    fill_pathname_join(default_paths.savestate_dir, default_paths.core_dir, "savestates", sizeof(default_paths.savestate_dir));
    fill_pathname_join(default_paths.sram_dir, default_paths.core_dir, "savefiles", sizeof(default_paths.sram_dir));
    fill_pathname_join(default_paths.system_dir, default_paths.core_dir, "system", sizeof(default_paths.system_dir));
