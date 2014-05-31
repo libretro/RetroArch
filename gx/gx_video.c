@@ -49,6 +49,8 @@ uint32_t g_orientation;
 static struct
 {
    uint32_t *data; // needs to be resizable
+   unsigned width;
+   unsigned height;
    GXTexObj obj;
 } g_tex;
 
@@ -335,8 +337,9 @@ static void gx_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
 static void setup_video_mode(void *data)
 {
    unsigned i;
-   for (i = 0; i < 2; i++)
-      g_framebuf[i] = MEM_K0_TO_K1(memalign(32, 640 * 576 * VI_DISPLAY_PIX_SZ));
+   if (!g_framebuf[0])
+      for (i = 0; i < 2; i++)
+         g_framebuf[i] = MEM_K0_TO_K1(memalign(32, 640 * 576 * VI_DISPLAY_PIX_SZ));
 
    g_current_framebuf = 0;
    g_draw_done = true;
@@ -375,9 +378,9 @@ static void init_texture(void *data, unsigned width, unsigned height)
    __GX_InvalidateTexAll(__gx);
 }
 
-static void init_vtx(void *data)
+static void init_vtx(void *data, const video_info_t *video)
 {
-   (void)data;
+   gx_video_t *gx = (gx_video_t*)data;
 
    GX_SetCullMode(GX_CULL_NONE);
    GX_SetClipMode(GX_CLIP_DISABLE);
@@ -410,13 +413,28 @@ static void init_vtx(void *data)
    GX_InvVtxCache();
 
    GX_SetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
-   g_tex.data = memalign(32, 4 * 4 * 4);
-   memset(g_tex.data, 0, 4 * 4 * 4);
-   memset(&g_tex.obj, 0, sizeof(GXTexObj));
-   memset(&menu_tex.obj, 0, sizeof(GXTexObj));
 
-   DCFlushRange(g_tex.data, 4 * 4 * 4);
-   init_texture(data, 4, 4); // for menu texture
+   if (gx->scale != video->input_scale || gx->rgb32 != video->rgb32)
+   {
+      RARCH_LOG("[GX] reallocate texture\n");
+      free(g_tex.data);
+      g_tex.data = memalign(32, RARCH_SCALE_BASE * RARCH_SCALE_BASE * video->input_scale * video->input_scale * (video->rgb32 ? 4 : 2));
+      g_tex.width = g_tex.height = RARCH_SCALE_BASE * video->input_scale;
+
+      if (!g_tex.data)
+      {
+         RARCH_ERR("[GX] Error allocating video texture\n");
+         exit(1);
+      }
+   }
+
+   DCFlushRange(g_tex.data, g_tex.width * g_tex.height * video->rgb32 ? 4 : 2);
+
+   gx->rgb32 = video->rgb32;
+   gx->scale = video->input_scale;
+   gx->should_resize = true;
+
+   init_texture(data, g_tex.width, g_tex.height);
    GX_Flush();
 }
 
@@ -492,7 +510,7 @@ static void *gx_init(const video_info_t *video,
    g_vsync = video->vsync;
 
    setup_video_mode(gx);
-   init_vtx(gx);
+   init_vtx(gx, video);
    build_disp_list();
 
    gx->vp.full_width = gx_mode.fbWidth;
@@ -894,6 +912,9 @@ static bool gx_frame(void *data, const void *frame,
    {
       LWP_ThreadSleep(g_video_cond);
    }
+
+   width = min(g_tex.width, width);
+   height = min(g_tex.height, height);
 
    if (width != gx_old_width || height != gx_old_height)
    {
