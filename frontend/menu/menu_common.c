@@ -29,9 +29,9 @@ void menu_update_system_info(void *data, bool *load_no_rom)
       // Keep track of info for the currently selected core.
       if (rgui->core_info)
       {
-         if (core_info_list_get_info(rgui->core_info, &rgui->core_info_current, g_settings.libretro))
+         if (core_info_list_get_info(rgui->core_info, rgui->core_info_current, g_settings.libretro))
          {
-            const core_info_t *info = &rgui->core_info_current;
+            const core_info_t *info = (const core_info_t*)rgui->core_info_current;
 
             RARCH_LOG("[Core Info]:\n");
             if (info->display_name)
@@ -229,7 +229,6 @@ static void menu_update_libretro_info(void *data)
    retro_get_system_info(&rgui->info);
 #endif
 
-   memset(&rgui->core_info_current, 0, sizeof(rgui->core_info_current));
    core_info_list_free(rgui->core_info);
    rgui->core_info = NULL;
    if (*g_settings.libretro_directory)
@@ -323,6 +322,7 @@ void *menu_init(const void *data)
 
    rgui->menu_stack = (file_list_t*)calloc(1, sizeof(file_list_t));
    rgui->selection_buf = (file_list_t*)calloc(1, sizeof(file_list_t));
+   rgui->core_info_current = (core_info_t*)calloc(1, sizeof(core_info_t));
    file_list_push(rgui->menu_stack, "", RGUI_SETTINGS, 0);
    menu_clear_navigation(rgui);
    rgui->push_start_screen = g_settings.rgui_show_start_screen;
@@ -367,6 +367,9 @@ void menu_free(void *data)
 
    rom_history_free(rgui->history);
    core_info_list_free(rgui->core_info);
+
+   if (rgui->core_info_current)
+      free(rgui->core_info_current);
 
    free(data);
 }
