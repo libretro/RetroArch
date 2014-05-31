@@ -475,7 +475,6 @@ static int menu_info_screen_iterate(unsigned action)
    if (driver.video_data && driver.menu_ctx && driver.menu_ctx->render)
       driver.menu_ctx->render();
 
-   char desc[6][64];
    static const unsigned binds[] = {
       RETRO_DEVICE_ID_JOYPAD_UP,
       RETRO_DEVICE_ID_JOYPAD_DOWN,
@@ -484,6 +483,7 @@ static int menu_info_screen_iterate(unsigned action)
       RARCH_MENU_TOGGLE,
       RARCH_QUIT_KEY,
    };
+   char desc[ARRAY_SIZE(binds)][64];
 
    for (i = 0; i < ARRAY_SIZE(binds); i++)
    {
@@ -1088,7 +1088,6 @@ static int menu_start_screen_iterate(unsigned action)
    if (driver.video_data && driver.menu_ctx && driver.menu_ctx->render)
       driver.menu_ctx->render();
 
-   char desc[6][64];
    static const unsigned binds[] = {
       RETRO_DEVICE_ID_JOYPAD_UP,
       RETRO_DEVICE_ID_JOYPAD_DOWN,
@@ -1098,6 +1097,7 @@ static int menu_start_screen_iterate(unsigned action)
       RARCH_MENU_TOGGLE,
       RARCH_QUIT_KEY,
    };
+   char desc[ARRAY_SIZE(binds)][64];
 
    for (i = 0; i < ARRAY_SIZE(binds); i++)
    {
