@@ -162,7 +162,7 @@ void file_list_sort_on_alt(file_list_t *list)
 void file_list_get_at_offset(const file_list_t *list, size_t index,
       const char **path, unsigned *file_type)
 {
-   if (!list)
+   if (!list || !list->list)
       return;
 
    if (path)
