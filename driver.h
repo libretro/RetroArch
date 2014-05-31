@@ -411,7 +411,7 @@ typedef struct menu_ctx_driver_backend
 
 typedef struct menu_ctx_driver
 {
-   void  (*set_texture)(void*, bool);
+   void  (*set_texture)(void*);
    void  (*render_messagebox)(const char*);
    void  (*render)(void);
    void  (*frame)(void);

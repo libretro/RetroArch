@@ -1932,7 +1932,7 @@ static int menu_common_iterate(unsigned action)
    file_list_get_last(driver.menu->menu_stack, &dir, &menu_type);
 
    if (driver.video_data && driver.menu_ctx && driver.menu_ctx->set_texture)
-      driver.menu_ctx->set_texture(driver.menu, false);
+      driver.menu_ctx->set_texture(driver.menu);
 
 #ifdef HAVE_OSK
    // process pending osk init callback

@@ -635,13 +635,13 @@ static int rgui_input_postprocess(uint64_t old_state)
    return ret;
 }
 
-void rgui_set_texture(void *data, bool enable)
+void rgui_set_texture(void *data)
 {
    rgui_handle_t *rgui = (rgui_handle_t*)data;
 
-   if (driver.video_data && driver.video_poke && driver.video_poke->set_texture_enable)
+   if (driver.video_data && driver.video_poke && driver.video_poke->set_texture_frame)
       driver.video_poke->set_texture_frame(driver.video_data, menu_framebuf,
-            enable, rgui->width, rgui->height, 1.0f);
+            false, rgui->width, rgui->height, 1.0f);
 }
 
 static void rgui_init_core_info(void *data)
