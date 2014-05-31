@@ -1019,6 +1019,23 @@ static GLuint png_texture_load(const char * file_name, int * width, int * height
     return texture;
 }
 
+static void lakka_free_assets(void *data)
+{
+   (void)data;
+
+   glDeleteTextures(1, &settings_icon);
+   glDeleteTextures(1, &arrow_icon);
+   glDeleteTextures(1, &run_icon);
+   glDeleteTextures(1, &resume_icon);
+   glDeleteTextures(1, &savestate_icon);
+   glDeleteTextures(1, &loadstate_icon);
+   glDeleteTextures(1, &screenshot_icon);
+   glDeleteTextures(1, &reload_icon);
+
+   if (numtweens)
+      free(tweens);
+}
+
 static void lakka_init_assets(void *data)
 {
    char path[256], dirpath[256];;
@@ -1173,13 +1190,6 @@ static void lakka_init_items(int i, menu_category_t *category, core_info_t *info
 }
 
 
-static void lakka_free_assets(void *data)
-{
-   (void)data;
-
-   if (numtweens)
-      free(tweens);
-}
 
 static void lakka_free(void *data)
 {
