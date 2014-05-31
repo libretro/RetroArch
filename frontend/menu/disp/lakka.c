@@ -1019,7 +1019,7 @@ static GLuint png_texture_load(const char * file_name, int * width, int * height
     return texture;
 }
 
-static void lakka_free_assets(void *data)
+static void lakka_context_destroy(void *data)
 {
    (void)data;
 
@@ -1036,7 +1036,7 @@ static void lakka_free_assets(void *data)
       free(tweens);
 }
 
-static void lakka_init_assets(void *data)
+static void lakka_context_reset(void *data)
 {
    char path[256], dirpath[256];;
    rgui_handle_t *rgui = (rgui_handle_t*)data;
@@ -1190,12 +1190,9 @@ static void lakka_init_items(int i, menu_category_t *category, core_info_t *info
 }
 
 
-
 static void lakka_free(void *data)
 {
    rgui_handle_t *rgui = (rgui_handle_t*)data;
-
-   lakka_free_assets(rgui);
 
    if (rgui->alloc_font)
       free((uint8_t*)rgui->font);
@@ -1246,7 +1243,6 @@ static void *lakka_init(void)
    init_font(gl, g_settings.video.font_path, g_settings.video.font_size, gl->win_width, gl->win_height);
 
    lakka_init_core_info(rgui);
-   lakka_init_assets(rgui);
 
    if (categories)
    {
@@ -1358,8 +1354,8 @@ const menu_ctx_driver_t menu_ctx_lakka = {
    lakka_frame,
    lakka_init,
    lakka_free,
-   lakka_init_assets,
-   lakka_free_assets,
+   lakka_context_reset,
+   lakka_context_destroy,
    NULL,
    NULL,
    lakka_input_postprocess,

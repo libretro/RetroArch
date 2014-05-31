@@ -450,7 +450,7 @@ void rmenu_set_texture(void *data, bool enable)
    }
 }
 
-static void rmenu_init_assets(void *data)
+static void rmenu_context_reset(void *data)
 {
    rgui_handle_t *rgui = (rgui_handle_t*)data;
 
@@ -476,19 +476,16 @@ static void *rmenu_init(void)
    if (!rgui)
       return NULL;
 
-   rmenu_init_assets(rgui);
-
    return rgui;
 }
 
-static void rmenu_free_assets(void *data)
+static void rmenu_context_destroy(void *data)
 {
    texture_image_free(driver.video_data, menu_texture);
 }
 
 static void rmenu_free(void *data)
 {
-   rmenu_free_assets(data);
 }
 
 static int rmenu_input_postprocess(uint64_t old_state)
@@ -524,8 +521,8 @@ const menu_ctx_driver_t menu_ctx_rmenu = {
    NULL,
    rmenu_init,
    rmenu_free,
-   rmenu_init_assets,
-   rmenu_free_assets,
+   rmenu_context_reset,
+   rmenu_context_destroy,
    NULL,
    NULL,
    rmenu_input_postprocess,

@@ -508,9 +508,10 @@ bool driver_update_system_av_info(const struct retro_system_av_info *info)
 #ifdef HAVE_MENU
 static void init_menu(void)
 {
-   if (!driver.menu_ctx)
-      find_menu_driver();
+   if (driver.menu)
+      return;
 
+   find_menu_driver();
    if (!(driver.menu = (rgui_handle_t*)menu_init(driver.menu_ctx)))
    {
       RARCH_ERR("Cannot initialize menu.\n");
@@ -546,6 +547,9 @@ void init_drivers(void)
    if (!driver.video_cache_context_ack && g_extern.system.hw_render_callback.context_reset)
       g_extern.system.hw_render_callback.context_reset();
    driver.video_cache_context_ack = false;
+
+   if (driver.menu_ctx && driver.menu_ctx->context_reset)
+      driver.menu_ctx->context_reset(driver.menu);
 
    init_audio();
 
@@ -631,9 +635,15 @@ void uninit_drivers(void)
    if (g_extern.system.hw_render_callback.context_destroy && !driver.video_cache_context)
       g_extern.system.hw_render_callback.context_destroy();
 
+   if (driver.menu_ctx && driver.menu_ctx->context_destroy)
+      driver.menu_ctx->context_destroy(driver.menu);
+
 #ifdef HAVE_MENU
    if (!driver.menu_data_own)
+   {
       menu_free(driver.menu);
+      driver.menu = NULL;
+   }
 #endif
 
    uninit_video_input();

@@ -418,8 +418,8 @@ typedef struct menu_ctx_driver
    void  (*frame)(void);
    void* (*init)(void);
    void  (*free)(void*);
-   void  (*init_assets)(void*);
-   void  (*free_assets)(void*);
+   void  (*context_reset)(void*);
+   void  (*context_destroy)(void*);
    void  (*populate_entries)(void*, unsigned);
    void  (*iterate)(void*, unsigned);
    int   (*input_postprocess)(uint64_t);
