@@ -54,9 +54,6 @@
 #define RGUI_SETTINGS_CORE_OPTION_NONE  0xffff
 #define RGUI_SETTINGS_CORE_OPTION_START 0x10000
 
-#define RGUI_MAX_BUTTONS 32
-#define RGUI_MAX_AXES 32
-#define RGUI_MAX_HATS 4
 
 #define RGUI_KEYBOARD_BIND_TIMEOUT_SECONDS 5
 
@@ -93,100 +90,6 @@ typedef enum
    RGUI_ACTION_MAPPING_NEXT,
    RGUI_ACTION_NOOP
 } rgui_action_t;
-
-
-struct rgui_bind_state_port
-{
-   bool buttons[RGUI_MAX_BUTTONS];
-   int16_t axes[RGUI_MAX_AXES];
-   uint16_t hats[RGUI_MAX_HATS];
-};
-
-struct rgui_bind_axis_state
-{
-   // Default axis state.
-   int16_t rested_axes[RGUI_MAX_AXES];
-   // Locked axis state. If we configured an axis, avoid having the same axis state trigger something again right away.
-   int16_t locked_axes[RGUI_MAX_AXES];
-};
-
-struct rgui_bind_state
-{
-   struct retro_keybind *target;
-   int64_t timeout_end; // For keyboard binding.
-   unsigned begin;
-   unsigned last;
-   unsigned player;
-   struct rgui_bind_state_port state[MAX_PLAYERS];
-   struct rgui_bind_axis_state axis_state[MAX_PLAYERS];
-   bool skip;
-};
-
-typedef struct
-{
-   uint64_t old_input_state;
-   uint64_t trigger_state;
-   bool do_held;
-
-   unsigned delay_timer;
-   unsigned delay_count;
-
-   unsigned width;
-   unsigned height;
-
-   uint16_t *frame_buf;
-   size_t frame_buf_pitch;
-   bool frame_buf_show;
-
-   void *menu_stack;
-   void *selection_buf;
-   size_t selection_ptr;
-   unsigned info_selection;
-   bool need_refresh;
-   bool msg_force;
-   bool push_start_screen;
-
-   void *core_info;
-   void *core_info_current;
-   bool defer_core;
-   char deferred_path[PATH_MAX];
-
-   // Quick jumping indices with L/R.
-   // Rebuilt when parsing directory.
-   size_t scroll_indices[2 * (26 + 2) + 1];
-   unsigned scroll_indices_size;
-   unsigned scroll_accel;
-
-   char default_glslp[PATH_MAX];
-   char default_cgp[PATH_MAX];
-
-   const uint8_t *font;
-   bool alloc_font;
-
-   struct retro_system_info info;
-   bool load_no_rom;
-
-   void *shader;
-   void *parameter_shader; // Points to either shader or graphics driver current shader.
-   unsigned current_pad;
-
-   void *history;
-   retro_time_t last_time; // Used to throttle RGUI in case VSync is broken.
-
-   struct rgui_bind_state binds;
-   struct
-   {
-      const char **buffer;
-      const char *label;
-      bool display;
-   } keyboard;
-
-   bool bind_mode_keyboard;
-   retro_time_t time;
-   retro_time_t delta;
-   retro_time_t target_msec;
-   retro_time_t sleep_msec;
-} rgui_handle_t;
 
 void menu_poll_bind_get_rested_axes(void *data);
 void menu_poll_bind_state(void *data);

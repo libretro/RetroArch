@@ -86,10 +86,8 @@ void menu_rom_history_push(const char *path,
       const char *core_path,
       const char *core_name)
 {
-   rgui_handle_t *rgui = (rgui_handle_t*)driver.menu;
-
-   if (rgui && rgui->history)
-      rom_history_push(rgui->history, path, core_path, core_name);
+   if (driver.menu && driver.menu->history)
+      rom_history_push(driver.menu->history, path, core_path, core_name);
 }
 
 void menu_rom_history_push_current(void)
@@ -97,9 +95,8 @@ void menu_rom_history_push_current(void)
    // g_extern.fullpath can be relative here.
    // Ensure we're pushing absolute path.
    char tmp[PATH_MAX];
-   rgui_handle_t *rgui = (rgui_handle_t*)driver.menu;
 
-   if (!rgui)
+   if (!driver.menu)
       return;
 
    strlcpy(tmp, g_extern.fullpath, sizeof(tmp));
@@ -115,12 +112,10 @@ void menu_rom_history_push_current(void)
 
 void load_menu_game_prepare(void)
 {
-   rgui_handle_t *rgui = (rgui_handle_t*)driver.menu;
-
-   if (!rgui)
+   if (!driver.menu)
       return;
 
-   if (*g_extern.fullpath || (rgui && rgui->load_no_rom))
+   if (*g_extern.fullpath || driver.menu->load_no_rom)
    {
       if (*g_extern.fullpath)
       {
@@ -137,20 +132,20 @@ void load_menu_game_prepare(void)
 #endif
       menu_rom_history_push(*g_extern.fullpath ? g_extern.fullpath : NULL,
             g_settings.libretro,
-            rgui->info.library_name ? rgui->info.library_name : "");
+            driver.menu->info.library_name ? driver.menu->info.library_name : "");
    }
 
    // redraw RGUI frame
-   rgui->old_input_state = rgui->trigger_state = 0;
-   rgui->do_held = false;
-   rgui->msg_force = true;
+   driver.menu->old_input_state = driver.menu->trigger_state = 0;
+   driver.menu->do_held = false;
+   driver.menu->msg_force = true;
 
    if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->iterate) 
       driver.menu_ctx->backend->iterate(RGUI_ACTION_NOOP);
 
    // Draw frame for loading message
    if (driver.video_data && driver.video_poke && driver.video_poke->set_texture_enable)
-      driver.video_poke->set_texture_enable(driver.video_data, rgui->frame_buf_show, MENU_TEXTURE_FULLSCREEN);
+      driver.video_poke->set_texture_enable(driver.video_data, driver.menu->frame_buf_show, MENU_TEXTURE_FULLSCREEN);
 
    if (driver.video)
       rarch_render_cached_frame();
@@ -165,12 +160,11 @@ void load_menu_game_history(unsigned game_index)
    const char *path = NULL;
    const char *core_path = NULL;
    const char *core_name = NULL;
-   rgui_handle_t *rgui = (rgui_handle_t*)driver.menu;
 
-   if (!rgui)
+   if (!driver.menu)
       return;
 
-   rom_history_get_index(rgui->history,
+   rom_history_get_index(driver.menu->history,
          game_index, &path, &core_path, &core_name);
 
    // SET_LIBRETRO_PATH is unsafe here.
@@ -178,14 +172,14 @@ void load_menu_game_history(unsigned game_index)
    strlcpy(g_settings.libretro, core_path, sizeof(g_settings.libretro));
 
    if (path)
-      rgui->load_no_rom = false;
+      driver.menu->load_no_rom = false;
    else
-      rgui->load_no_rom = true;
+      driver.menu->load_no_rom = true;
 
    rarch_environment_cb(RETRO_ENVIRONMENT_EXEC, (void*)path);
 
 #if defined(HAVE_DYNAMIC)
-   menu_update_system_info(rgui, NULL);
+   menu_update_system_info(driver.menu, NULL);
 #endif
 }
 
@@ -239,14 +233,12 @@ static void menu_update_libretro_info(void *data)
 
 void load_menu_game_prepare_dummy(void)
 {
-   rgui_handle_t *rgui = (rgui_handle_t*)driver.menu;
-
-   if (!rgui)
+   if (!driver.menu)
       return;
 
    // Starts dummy core.
    *g_extern.fullpath = '\0';
-   rgui->load_no_rom = false;
+   driver.menu->load_no_rom = false;
 
    g_extern.lifecycle_state |= (1ULL << MODE_LOAD_GAME);
    g_extern.lifecycle_state &= ~(1ULL << MODE_GAME);
@@ -257,12 +249,11 @@ bool load_menu_game(void)
 {
    int ret;
    struct rarch_main_wrap args = {0};
-   rgui_handle_t *rgui = (rgui_handle_t*)driver.menu;
 
-   if (!rgui)
+   if (!driver.menu)
       return false;
 
-   args.no_rom        = rgui->load_no_rom;
+   args.no_rom        = driver.menu->load_no_rom;
 
    if (g_extern.main_is_init)
       rarch_main_deinit();
@@ -275,7 +266,6 @@ bool load_menu_game(void)
    args.libretro_path = *g_settings.libretro ? g_settings.libretro : NULL;
 
    ret = rarch_main_init_wrap(&args);
-   rgui = (rgui_handle_t*)driver.menu;
 
    if (ret != 0)
    {
@@ -284,23 +274,19 @@ bool load_menu_game(void)
       fill_pathname_base(name, g_extern.fullpath, sizeof(name));
       snprintf(msg, sizeof(msg), "Failed to load %s.\n", name);
       msg_queue_push(g_extern.msg_queue, msg, 1, 90);
-      if (rgui)
-         rgui->msg_force = true;
+      driver.menu->msg_force = true;
       RARCH_ERR("rarch_main_init_wrap() failed.\n");
       return false;
    }
 
    RARCH_LOG("rarch_main_init_wrap() succeeded.\n");
 
-   if (rgui)
-   {
-      // Update menu state which depends on config.
-      menu_update_libretro_info(rgui);
-      menu_init_history(rgui);
+   // Update menu state which depends on config.
+   menu_update_libretro_info(driver.menu);
+   menu_init_history(driver.menu);
 
-      if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->shader_manager_init)
-         driver.menu_ctx->backend->shader_manager_init(rgui);
-   }
+   if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->shader_manager_init)
+      driver.menu_ctx->backend->shader_manager_init(driver.menu);
 
    return true;
 }
@@ -427,9 +413,8 @@ uint64_t menu_input(void)
    unsigned i;
    uint64_t input_state;
    static const struct retro_keybind *binds[] = { g_settings.input.binds[0] };
-   rgui_handle_t *rgui = (rgui_handle_t*)driver.menu;
 
-   if (!rgui)
+   if (!driver.menu)
       return 0;
 
    input_state = 0;
@@ -454,9 +439,9 @@ uint64_t menu_input(void)
    for (i = 0; i < MAX_PLAYERS; i++)
       input_pop_analog_dpad(g_settings.input.autoconf_binds[i]);
 
-   rgui->trigger_state = input_state & ~rgui->old_input_state;
+   driver.menu->trigger_state = input_state & ~driver.menu->old_input_state;
 
-   rgui->do_held = (input_state & (
+   driver.menu->do_held = (input_state & (
             (1ULL << RETRO_DEVICE_ID_JOYPAD_UP)
             | (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN)
             | (1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT)
@@ -485,30 +470,27 @@ bool menu_custom_bind_keyboard_cb(void *data, unsigned code)
 void menu_flush_stack_type(unsigned final_type)
 {
    unsigned type;
-   rgui_handle_t *rgui = (rgui_handle_t*)driver.menu;
 
-   if (!rgui)
+   if (!driver.menu)
       return;
 
    type = 0;
-   rgui->need_refresh = true;
-   file_list_get_last(rgui->menu_stack, NULL, &type);
+   driver.menu->need_refresh = true;
+   file_list_get_last(driver.menu->menu_stack, NULL, &type);
    while (type != final_type)
    {
-      file_list_pop(rgui->menu_stack, &rgui->selection_ptr);
-      file_list_get_last(rgui->menu_stack, NULL, &type);
+      file_list_pop(driver.menu->menu_stack, &driver.menu->selection_ptr);
+      file_list_get_last(driver.menu->menu_stack, NULL, &type);
    }
 }
 
 void load_menu_game_new_core(void)
 {
-   rgui_handle_t *rgui = (rgui_handle_t*)driver.menu;
-
-   if (!rgui)
+   if (!driver.menu)
       return;
 
 #ifdef HAVE_DYNAMIC
-   menu_update_system_info(rgui, &rgui->load_no_rom);
+   menu_update_system_info(driver.menu, &driver.menu->load_no_rom);
    g_extern.lifecycle_state |= (1ULL << MODE_LOAD_GAME);
 #else
    rarch_environment_cb(RETRO_ENVIRONMENT_SET_LIBRETRO_PATH, (void*)g_settings.libretro);
@@ -523,20 +505,19 @@ bool menu_iterate(void)
    static bool first_held = false;
    uint64_t input_state;
    int32_t input_entry_ret, ret;
-   rgui_handle_t *rgui= (rgui_handle_t*)driver.menu;
 
    input_state = 0;
    input_entry_ret = 0;
    ret = 0;
 
-   if (!rgui)
+   if (!driver.menu)
       return false;
 
    if (g_extern.lifecycle_state & (1ULL << MODE_MENU_PREINIT))
    {
-      rgui->need_refresh = true;
+      driver.menu->need_refresh = true;
       g_extern.lifecycle_state &= ~(1ULL << MODE_MENU_PREINIT);
-      rgui->old_input_state |= 1ULL << RARCH_MENU_TOGGLE;
+      driver.menu->old_input_state |= 1ULL << RARCH_MENU_TOGGLE;
    }
 
    rarch_input_poll();
@@ -554,22 +535,20 @@ bool menu_iterate(void)
 
    input_state = menu_input();
 
-   rgui = (rgui_handle_t*)driver.menu;
-
-   if (rgui->do_held)
+   if (driver.menu->do_held)
    {
       if (!first_held)
       {
          first_held = true;
-         rgui->delay_timer = initial_held ? 12 : 6;
-         rgui->delay_count = 0;
+         driver.menu->delay_timer = initial_held ? 12 : 6;
+         driver.menu->delay_count = 0;
       }
 
-      if (rgui->delay_count >= rgui->delay_timer)
+      if (driver.menu->delay_count >= driver.menu->delay_timer)
       {
          first_held = false;
-         rgui->trigger_state = input_state;
-         rgui->scroll_accel = min(rgui->scroll_accel + 1, 64);
+         driver.menu->trigger_state = input_state;
+         driver.menu->scroll_accel = min(driver.menu->scroll_accel + 1, 64);
       }
 
       initial_held = false;
@@ -578,74 +557,72 @@ bool menu_iterate(void)
    {
       first_held = false;
       initial_held = true;
-      rgui->scroll_accel = 0;
+      driver.menu->scroll_accel = 0;
    }
 
-   rgui->delay_count++;
-   rgui->old_input_state = input_state;
+   driver.menu->delay_count++;
+   driver.menu->old_input_state = input_state;
 
    if (driver.block_input)
-      rgui->trigger_state = 0;
+      driver.menu->trigger_state = 0;
 
    action = RGUI_ACTION_NOOP;
 
    // don't run anything first frame, only capture held inputs for old_input_state
-   if (rgui->trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_UP))
+   if (driver.menu->trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_UP))
       action = RGUI_ACTION_UP;
-   else if (rgui->trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN))
+   else if (driver.menu->trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN))
       action = RGUI_ACTION_DOWN;
-   else if (rgui->trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT))
+   else if (driver.menu->trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT))
       action = RGUI_ACTION_LEFT;
-   else if (rgui->trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT))
+   else if (driver.menu->trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT))
       action = RGUI_ACTION_RIGHT;
-   else if (rgui->trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_L))
+   else if (driver.menu->trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_L))
       action = RGUI_ACTION_SCROLL_UP;
-   else if (rgui->trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_R))
+   else if (driver.menu->trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_R))
       action = RGUI_ACTION_SCROLL_DOWN;
-   else if (rgui->trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_B))
+   else if (driver.menu->trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_B))
       action = RGUI_ACTION_CANCEL;
-   else if (rgui->trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_A))
+   else if (driver.menu->trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_A))
       action = RGUI_ACTION_OK;
-   else if (rgui->trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_START))
+   else if (driver.menu->trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_START))
       action = RGUI_ACTION_START;
-   else if (rgui->trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_SELECT))
+   else if (driver.menu->trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_SELECT))
       action = RGUI_ACTION_SELECT;
 
    if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->iterate) 
       input_entry_ret = driver.menu_ctx->backend->iterate(action);
 
-   rgui = (rgui_handle_t*)driver.menu;
-
    if (driver.video_data && driver.video_poke && driver.video_poke->set_texture_enable)
-      driver.video_poke->set_texture_enable(driver.video_data, rgui->frame_buf_show, MENU_TEXTURE_FULLSCREEN);
+      driver.video_poke->set_texture_enable(driver.video_data, driver.menu->frame_buf_show, MENU_TEXTURE_FULLSCREEN);
 
    rarch_render_cached_frame();
 
    // Throttle in case VSync is broken (avoid 1000+ FPS RGUI).
-   rgui->time = rarch_get_time_usec();
-   rgui->delta = (rgui->time - rgui->last_time) / 1000;
-   rgui->target_msec = 750 / g_settings.video.refresh_rate; // Try to sleep less, so we can hopefully rely on FPS logger.
-   rgui->sleep_msec = rgui->target_msec - rgui->delta;
+   driver.menu->time = rarch_get_time_usec();
+   driver.menu->delta = (driver.menu->time - driver.menu->last_time) / 1000;
+   driver.menu->target_msec = 750 / g_settings.video.refresh_rate; // Try to sleep less, so we can hopefully rely on FPS logger.
+   driver.menu->sleep_msec = driver.menu->target_msec - driver.menu->delta;
 
-   if (rgui->sleep_msec > 0)
-      rarch_sleep((unsigned int)rgui->sleep_msec);
-   rgui->last_time = rarch_get_time_usec();
+   if (driver.menu->sleep_msec > 0)
+      rarch_sleep((unsigned int)driver.menu->sleep_msec);
+   driver.menu->last_time = rarch_get_time_usec();
 
    if (driver.video_data && driver.video_poke && driver.video_poke->set_texture_enable)
       driver.video_poke->set_texture_enable(driver.video_data, false,
             MENU_TEXTURE_FULLSCREEN);
 
    if (driver.menu_ctx && driver.menu_ctx->input_postprocess)
-      ret = driver.menu_ctx->input_postprocess(rgui->old_input_state);
+      ret = driver.menu_ctx->input_postprocess(driver.menu->old_input_state);
 
    if (ret < 0)
    {
       unsigned type = 0;
-      file_list_get_last(rgui->menu_stack, NULL, &type);
+      file_list_get_last(driver.menu->menu_stack, NULL, &type);
       while (type != RGUI_SETTINGS)
       {
-         file_list_pop(rgui->menu_stack, &rgui->selection_ptr);
-         file_list_get_last(rgui->menu_stack, NULL, &type);
+         file_list_pop(driver.menu->menu_stack, &driver.menu->selection_ptr);
+         file_list_get_last(driver.menu->menu_stack, NULL, &type);
       }
    }
 
@@ -661,12 +638,10 @@ bool menu_iterate(void)
 // This should mitigate most of the smaller bugs.
 bool menu_replace_config(const char *path)
 {
-   rgui_handle_t *rgui = (rgui_handle_t*)driver.menu;
-
-   if (!rgui)
+   if (!driver.menu)
       return false;
 
-   if (strcmp(path, g_extern.config_path) == 0 || !rgui)
+   if (strcmp(path, g_extern.config_path) == 0)
       return false;
 
    if (g_extern.config_save_on_exit && *g_extern.config_path)
@@ -679,7 +654,7 @@ bool menu_replace_config(const char *path)
    *g_extern.fullpath = '\0';
    *g_settings.libretro = '\0'; // Load core in new config.
    g_extern.lifecycle_state |= (1ULL << MODE_LOAD_GAME);
-   rgui->load_no_rom = false;
+   driver.menu->load_no_rom = false;
 
    return true;
 }
@@ -826,8 +801,8 @@ void menu_poll_bind_get_rested_axes(void *data)
 static bool menu_poll_find_trigger_pad(struct rgui_bind_state *state, struct rgui_bind_state *new_state, unsigned p)
 {
    unsigned a, b, h;
-   const struct rgui_bind_state_port *n = &new_state->state[p];
-   const struct rgui_bind_state_port *o = &state->state[p];
+   const struct rgui_bind_state_port *n = (const struct rgui_bind_state_port*)&new_state->state[p];
+   const struct rgui_bind_state_port *o = (const struct rgui_bind_state_port*)&state->state[p];
 
    for (b = 0; b < RGUI_MAX_BUTTONS; b++)
    {
@@ -933,16 +908,15 @@ void menu_build_scroll_indices(file_list_t *buf)
    size_t i;
    int current;
    bool current_is_dir;
-   rgui_handle_t *rgui = (rgui_handle_t*)driver.menu;
 
-   if (!rgui)
+   if (!driver.menu)
       return;
 
-   rgui->scroll_indices_size = 0;
+   driver.menu->scroll_indices_size = 0;
    if (!buf->size)
       return;
 
-   rgui->scroll_indices[rgui->scroll_indices_size++] = 0;
+   driver.menu->scroll_indices[driver.menu->scroll_indices_size++] = 0;
 
    current = menu_list_get_first_char(buf, 0);
    current_is_dir = menu_list_elem_is_dir(buf, 0);
@@ -956,11 +930,11 @@ void menu_build_scroll_indices(file_list_t *buf)
       is_dir = menu_list_elem_is_dir(buf, i);
 
       if ((current_is_dir && !is_dir) || (first > current))
-         rgui->scroll_indices[rgui->scroll_indices_size++] = i;
+         driver.menu->scroll_indices[driver.menu->scroll_indices_size++] = i;
 
       current = first;
       current_is_dir = is_dir;
    }
 
-   rgui->scroll_indices[rgui->scroll_indices_size++] = buf->size - 1;
+   driver.menu->scroll_indices[driver.menu->scroll_indices_size++] = buf->size - 1;
 }
