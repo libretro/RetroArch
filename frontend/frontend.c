@@ -35,32 +35,6 @@
 #ifdef RARCH_CONSOLE
 default_paths_t default_paths;
 #endif
-
-static void rarch_get_environment_console(void)
-{
-#if defined(RARCH_CONSOLE) || defined(__QNX__)
-   if (*default_paths.autoconfig_dir)
-      path_mkdir(default_paths.autoconfig_dir);
-   if (*default_paths.assets_dir)
-      path_mkdir(default_paths.assets_dir);
-   if (*default_paths.core_dir)
-      path_mkdir(default_paths.core_dir);
-   if (*default_paths.core_info_dir)
-      path_mkdir(default_paths.core_info_dir);
-   if (*default_paths.overlay_dir)
-      path_mkdir(default_paths.overlay_dir);
-   if (*default_paths.port_dir)
-      path_mkdir(default_paths.port_dir);
-   if (*default_paths.shader_dir)
-      path_mkdir(default_paths.shader_dir);
-   if (*default_paths.savestate_dir)
-      path_mkdir(default_paths.savestate_dir);
-   if (*default_paths.sram_dir)
-      path_mkdir(default_paths.sram_dir);
-   if (*default_paths.system_dir)
-      path_mkdir(default_paths.system_dir);
-#endif
-}
 #endif
 
 #if defined(ANDROID)
@@ -333,7 +307,28 @@ returntype main_entry(signature())
    if (driver.frontend_ctx && driver.frontend_ctx->environment_get)
    {
       driver.frontend_ctx->environment_get(argc, argv, args);
-      rarch_get_environment_console();
+#if defined(RARCH_CONSOLE) || defined(__QNX__)
+      if (*default_paths.autoconfig_dir)
+         path_mkdir(default_paths.autoconfig_dir);
+      if (*default_paths.assets_dir)
+         path_mkdir(default_paths.assets_dir);
+      if (*default_paths.core_dir)
+         path_mkdir(default_paths.core_dir);
+      if (*default_paths.core_info_dir)
+         path_mkdir(default_paths.core_info_dir);
+      if (*default_paths.overlay_dir)
+         path_mkdir(default_paths.overlay_dir);
+      if (*default_paths.port_dir)
+         path_mkdir(default_paths.port_dir);
+      if (*default_paths.shader_dir)
+         path_mkdir(default_paths.shader_dir);
+      if (*default_paths.savestate_dir)
+         path_mkdir(default_paths.savestate_dir);
+      if (*default_paths.sram_dir)
+         path_mkdir(default_paths.sram_dir);
+      if (*default_paths.system_dir)
+         path_mkdir(default_paths.system_dir);
+#endif
    }
 
    {
