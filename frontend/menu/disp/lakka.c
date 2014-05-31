@@ -1210,14 +1210,19 @@ static int lakka_input_postprocess(uint64_t old_state)
 
 static void lakka_init_core_info(void *data)
 {
+   core_info_list_t *core;
    rgui_handle_t *rgui = (rgui_handle_t*)data;
 
    core_info_list_free(rgui->core_info);
    rgui->core_info = NULL;
 
-   rgui->core_info = core_info_list_new(*g_settings.libretro_directory ? g_settings.libretro_directory : "/usr/lib/libretro");
+   rgui->core_info = (core_info_list_t*)core_info_list_new(*g_settings.libretro_directory ? g_settings.libretro_directory : "/usr/lib/libretro");
 
-   num_categories = rgui->core_info ? rgui->core_info->count + 1 : 1;
+   if (rgui->core_info)
+   {
+      core = (core_info_list_t*)rgui->core_info;
+      num_categories = rgui->core_info ? core->count + 1 : 1;
+   }
 }
 
 static void *lakka_init(void)
@@ -1243,10 +1248,16 @@ static void *lakka_init(void)
 
          char core_id[256], texturepath[256], gametexturepath[256], dirpath[256];
          core_info_t *info;
+         core_info_list_t *info_list;
 
          fill_pathname_join(dirpath, g_settings.assets_directory, "lakka", sizeof(dirpath));
          fill_pathname_slash(dirpath, sizeof(dirpath));
-         info = (core_info_t*)&rgui->core_info->list[i-1];
+
+         info_list = (core_info_list_t*)rgui->core_info;
+         info = NULL;
+
+         if (info_list)
+            info = (core_info_t*)&info_list->list[i-1];
 
          strlcpy(core_id, basename(info->path), sizeof(core_id));
          strlcpy(core_id, str_replace(core_id, ".so", ""), sizeof(core_id));
@@ -1286,11 +1297,17 @@ static void *lakka_init(void)
    {
       char core_id[256], texturepath[256], gametexturepath[256], dirpath[256];
       core_info_t *info;
+      core_info_list_t *info_list;
       menu_category_t *category = (menu_category_t*)&categories[i];
 
       fill_pathname_join(dirpath, g_settings.assets_directory, "lakka", sizeof(dirpath));
       fill_pathname_slash(dirpath, sizeof(dirpath));
-      info = (core_info_t*)&rgui->core_info->list[i-1];
+
+      info_list = (core_info_list_t*)rgui->core_info;
+      info = NULL;
+
+      if (info_list)
+         info = (core_info_t*)&info_list->list[i-1];
 
       strlcpy(core_id, basename(info->path), sizeof(core_id));
       strlcpy(core_id, str_replace(core_id, ".so", ""), sizeof(core_id));
