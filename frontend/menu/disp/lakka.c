@@ -695,7 +695,7 @@ void lakka_draw_icon(void *data, GLuint texture, float x, float y, float alpha, 
 
    gl_t *gl = (gl_t*)data;
 
-   glViewport(x, 900 - y, dim, dim);
+   glViewport(x, gl->win_height - y, dim, dim);
 
    glEnable(GL_BLEND);
 
@@ -1178,7 +1178,7 @@ static void lakka_free_assets(void *data)
 {
    (void)data;
 
-   if (tweens)
+   if (numtweens)
       free(tweens);
 }
 
@@ -1222,7 +1222,7 @@ static void lakka_init_core_info(void *data)
 
 static void *lakka_init(void)
 {
-   int i;
+   int i, j;
    gl_t *gl;
    rgui_handle_t *rgui = (rgui_handle_t*)calloc(1, sizeof(*rgui));
    if (!rgui)
@@ -1230,24 +1230,67 @@ static void *lakka_init(void)
 
    gl = (gl_t*)driver.video_data;
 
-   init_font(gl, g_settings.video.font_path, 6, gl->win_width, gl->win_height);
+   init_font(gl, g_settings.video.font_path, g_settings.video.font_size, gl->win_width, gl->win_height);
 
    lakka_init_core_info(rgui);
    lakka_init_assets(rgui);
 
-   categories = (menu_category_t*)realloc(categories, num_categories * sizeof(menu_category_t));
+   if (categories)
+   {
+      for (i = 1; i < num_categories; i++)
+      {
+         menu_category_t *category = (menu_category_t*)&categories[i];
+
+         char core_id[256], texturepath[256], gametexturepath[256], dirpath[256];
+         core_info_t *info;
+
+         fill_pathname_join(dirpath, g_settings.assets_directory, "lakka", sizeof(dirpath));
+         fill_pathname_slash(dirpath, sizeof(dirpath));
+         info = (core_info_t*)&rgui->core_info->list[i-1];
+
+         strlcpy(core_id, basename(info->path), sizeof(core_id));
+         strlcpy(core_id, str_replace(core_id, ".so", ""), sizeof(core_id));
+         strlcpy(core_id, str_replace(core_id, ".dll", ""), sizeof(core_id));
+         strlcpy(core_id, str_replace(core_id, ".dylib", ""), sizeof(core_id));
+         strlcpy(core_id, str_replace(core_id, "-libretro", ""), sizeof(core_id));
+         strlcpy(core_id, str_replace(core_id, "_libretro", ""), sizeof(core_id));
+         strlcpy(core_id, str_replace(core_id, "libretro-", ""), sizeof(core_id));
+         strlcpy(core_id, str_replace(core_id, "libretro_", ""), sizeof(core_id));
+
+         strlcpy(texturepath, dirpath, sizeof(texturepath));
+         strlcat(texturepath, core_id, sizeof(texturepath));
+         strlcat(texturepath, ".png", sizeof(texturepath));
+
+         strlcpy(gametexturepath, dirpath, sizeof(gametexturepath));
+         strlcat(gametexturepath, core_id, sizeof(gametexturepath));
+         strlcat(gametexturepath, "-content.png", sizeof(gametexturepath));
+
+         category->icon = png_texture_load(texturepath, &dim, &dim);
+         font_driver->render_msg(font, category->name, &category->out);
+
+         for (j = 0; j < category->num_items; j++)
+         {
+            menu_item_t *item = (menu_item_t*)&category->items[j];
+            item->icon = png_texture_load(gametexturepath, &dim, &dim);
+            font_driver->render_msg(font, item->name, &item->out);
+         }
+      }
+      return rgui;
+   }
+
+   categories = (menu_category_t*)calloc(num_categories, sizeof(menu_category_t));
 
    lakka_init_settings();
 
-   for (i = 0; i < num_categories-1; i++)
+   for (i = 1; i < num_categories; i++)
    {
       char core_id[256], texturepath[256], gametexturepath[256], dirpath[256];
       core_info_t *info;
-      menu_category_t *category = (menu_category_t*)&categories[i+1];
+      menu_category_t *category = (menu_category_t*)&categories[i];
 
       fill_pathname_join(dirpath, g_settings.assets_directory, "lakka", sizeof(dirpath));
       fill_pathname_slash(dirpath, sizeof(dirpath));
-      info = (core_info_t*)&rgui->core_info->list[i];
+      info = (core_info_t*)&rgui->core_info->list[i-1];
 
       strlcpy(core_id, basename(info->path), sizeof(core_id));
       strlcpy(core_id, str_replace(core_id, ".so", ""), sizeof(core_id));
@@ -1277,7 +1320,7 @@ static void *lakka_init(void)
 
       font_driver->render_msg(font, category->name, &category->out);
 
-      lakka_init_items(i+1, category, info, gametexturepath, g_settings.content_directory);
+      lakka_init_items(i, category, info, gametexturepath, g_settings.content_directory);
    }
 
    return rgui;
