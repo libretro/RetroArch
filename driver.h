@@ -23,7 +23,6 @@
 #include "libretro_private.h"
 #include <stdlib.h>
 #include <stdint.h>
-#include "miscellaneous.h"
 #include "msvc/msvc_compat.h"
 #include "gfx/scaler/scaler.h"
 #include "gfx/image/image.h"

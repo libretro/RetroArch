@@ -64,6 +64,7 @@
 
 struct texture_image *menu_texture;
 static bool render_normal = true;
+static bool menu_texture_inited =false;
 
 static void rmenu_render_background(void)
 {
@@ -440,13 +441,14 @@ void rmenu_set_texture(void *data, bool enable)
 {
    rgui_handle_t *rgui = (rgui_handle_t*)data;
 
-   if (menu_texture)
+   if (menu_texture_inited)
       return;
 
    if (driver.video_data && driver.video_poke && driver.video_poke->set_texture_enable)
    {
       driver.video_poke->set_texture_frame(driver.video_data, menu_texture->pixels,
             enable, rgui->width, rgui->height, 1.0f);
+      menu_texture_inited = true;
    }
 }
 
@@ -458,9 +460,6 @@ static void rmenu_context_reset(void *data)
       return;
 
    menu_texture = (struct texture_image*)calloc(1, sizeof(*menu_texture));
-
-   if (!menu_texture)
-      return;
 
    texture_image_load(driver.video_data, g_extern.menu_texture_path, menu_texture);
    rgui->width = menu_texture->width;
@@ -482,6 +481,8 @@ static void *rmenu_init(void)
 static void rmenu_context_destroy(void *data)
 {
    texture_image_free(driver.video_data, menu_texture);
+
+   menu_texture_inited = false;
 }
 
 static void rmenu_free(void *data)
