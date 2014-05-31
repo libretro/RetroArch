@@ -703,6 +703,10 @@ static void gx_input_set_keybinds(void *data, unsigned device, unsigned port,
 static void *gx_input_init(void)
 {
    unsigned i;
+
+   if (driver.input_data)
+      return driver.input_data;
+
    gx_input_t *gx = (gx_input_t*)calloc(1, sizeof(*gx));
    if (!gx)
       return NULL;
@@ -726,6 +730,7 @@ static void *gx_input_init(void)
       ss_initialize(&dev[i]);
 #endif
 
+   driver.input_data_own = true;
    return gx;
 }
 
