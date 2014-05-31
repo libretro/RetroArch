@@ -101,18 +101,18 @@ static void dol_copy_argv_path(const char *dolpath, const char *argpath)
 
 // WARNING: after we move any data into EXECUTE_ADDR, we can no longer use any
 // heap memory and are restricted to the stack only
-void system_exec_wii(const char *path, bool should_load_game)
+void system_exec_wii(const char *_path, bool should_load_game)
 {
 #ifndef IS_SALAMANDER
    bool original_verbose = g_extern.verbose;
    g_extern.verbose = true;
 #endif
 
+   char path[PATH_MAX];
    char game_path[PATH_MAX];
 
-   RARCH_LOG("Attempt to load executable: [%s] %d.\n", path, sizeof(game_path));
-
    // copy heap info into stack so it survives us moving the .dol into MEM2
+   strlcpy(path, _path, sizeof(path));
    if (should_load_game)
    {
 #ifdef IS_SALAMANDER
@@ -121,6 +121,8 @@ void system_exec_wii(const char *path, bool should_load_game)
       strlcpy(game_path, g_extern.fullpath, sizeof(game_path));
 #endif
    }
+
+   RARCH_LOG("Attempt to load executable: [%s]\n", path);
 
    FILE * fp = fopen(path, "rb");
    if (fp == NULL)
@@ -152,8 +154,7 @@ void system_exec_wii(const char *path, bool should_load_game)
    __io_wiisd.shutdown();
    __io_usbstorage.shutdown();
 
-   // luckily for us, newlib's memmove doesn't allocate a seperate buffer for
-   // copying in situations of overlap, so it's safe to do this
+   // don't use memcpy, there might be an overlap
    memmove(EXECUTE_ADDR, dol, size);
    DCFlushRange(EXECUTE_ADDR, size);
 

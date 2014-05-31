@@ -49,14 +49,14 @@ extern void system_exec_wii(const char *path, bool should_load_game);
 #include <fat.h>
 
 #ifdef IS_SALAMANDER
-char libretro_path[512];
+char libretro_path[PATH_MAX];
 
 static void find_and_set_first_file(void)
 {
    //Last fallback - we'll need to start the first executable file 
    // we can find in the RetroArch cores directory
 
-   char first_file[512] = {0};
+   char first_file[PATH_MAX] = {0};
    find_first_libretro_core(first_file, sizeof(first_file),
    default_paths.core_dir, "dol");
 
@@ -68,14 +68,14 @@ static void find_and_set_first_file(void)
 
 static void frontend_gx_salamander_init(void)
 {
-   char tmp_str[512] = {0};
+   char tmp_str[PATH_MAX] = {0};
    bool config_file_exists;
 
    if (path_file_exists(default_paths.config_path))
       config_file_exists = true;
 
    //try to find CORE executable
-   char core_executable[1024];
+   char core_executable[PATH_MAX] = {0};
    fill_pathname_join(core_executable, default_paths.core_dir, "CORE.dol", sizeof(core_executable));
 
    if(path_file_exists(core_executable))
@@ -265,6 +265,19 @@ static void frontend_gx_init(void *data)
 #ifndef IS_SALAMANDER
    gx_init_mem2();
 #endif
+#endif
+
+#if defined(DEBUG) && defined(IS_SALAMANDER)
+   VIDEO_Init();
+   GXRModeObj *rmode = VIDEO_GetPreferredMode(NULL);
+   void *xfb = MEM_K0_TO_K1(SYS_AllocateFramebuffer(rmode));
+   console_init(xfb, 20, 20, rmode->fbWidth, rmode->xfbHeight, rmode->fbWidth * VI_DISPLAY_PIX_SZ);
+   VIDEO_Configure(rmode);
+   VIDEO_SetNextFramebuffer(xfb);
+   VIDEO_SetBlack(FALSE);
+   VIDEO_Flush();
+   VIDEO_WaitVSync();
+   VIDEO_WaitVSync();
 #endif
 
 #ifndef DEBUG
