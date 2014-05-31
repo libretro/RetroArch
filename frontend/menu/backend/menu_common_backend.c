@@ -507,7 +507,7 @@ static int menu_info_screen_iterate(unsigned action)
       case RGUI_SETTINGS_WINDOW_COMPOSITING_ENABLE:
          snprintf(msg, sizeof(msg),
                "-- Forcibly disable composition.\n"
-               "Only valid on Windows Vista/7/8 for now.");
+               "Only valid on Windows Vista/7 for now.");
          break;
       case RGUI_SETTINGS_LIBRETRO_LOG_LEVEL:
          snprintf(msg, sizeof(msg),
