@@ -43,6 +43,8 @@
 #endif
 #endif
 
+static unsigned info_selection_ptr = 0;
+
 #ifdef HAVE_SHADER_MANAGER
 static inline struct gfx_shader *shader_manager_get_current_shader(void *data, unsigned type)
 {
@@ -461,7 +463,7 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
       driver.menu_ctx->populate_entries(rgui, menu_type);
 }
 
-static int menu_start_screen_iterate(unsigned action)
+static int menu_info_screen_iterate(unsigned action)
 {
    unsigned i;
    char msg[1024];
@@ -500,6 +502,620 @@ static int menu_start_screen_iterate(unsigned action)
       }
    }
 
+   switch(info_selection_ptr)
+   {
+      case RGUI_SETTINGS_WINDOW_COMPOSITING_ENABLE:
+         snprintf(msg, sizeof(msg),
+               "-- Forcibly disable composition.\n"
+               "Only valid on Windows Vista/7/8 for now.");
+         break;
+      case RGUI_SETTINGS_LIBRETRO_LOG_LEVEL:
+         snprintf(msg, sizeof(msg),
+               "-- Sets log level for libretro cores \n"
+               "(GET_LOG_INTERFACE). \n"
+               " \n"
+               " If a log level issued by a libretro \n"
+               " core is below libretro_log level, it \n"
+               " is ignored.\n"
+               " \n"
+               " DEBUG logs are always ignored unless \n"
+               " verbose mode is activated (--verbose).\n"
+               " \n"
+               " DEBUG = 0\n"
+               " INFO  = 1\n"
+               " WARN  = 2\n"
+               " ERROR = 3"
+               );
+         break;
+      case RGUI_SETTINGS_LOGGING_VERBOSITY:
+         snprintf(msg, sizeof(msg),
+               "-- Enable or disable verbosity level \n"
+               "of frontend.");
+         break;
+      case RGUI_SYSTEM_DIR_PATH:
+         snprintf(msg, sizeof(msg),
+               "-- Sets the 'system' directory.\n"
+               "Implementations can query for this\n"
+               "directory to load BIOSes, system-\n"
+               "specific configs, etc.");
+         break;
+      case RGUI_START_SCREEN:
+         snprintf(msg, sizeof(msg),
+               " -- Show startup screen in menu.\n"
+               "Is automatically set to false when seen\n"
+               "for the first time.\n"
+               " \n"
+               "This is only updated in config if\n"
+               "'Config Save On Exit' is set to true.\n");
+         break;
+      case RGUI_SETTINGS_CONFIG_SAVE_ON_EXIT:
+         snprintf(msg, sizeof(msg),
+               " -- Flushes config to disk on exit.\n"
+               "Useful for menu as settings can be\n"
+               "modified. Overwrites the config.\n"
+               " \n"
+               "#include's and comments are not pre-\n"
+               "served.\n");
+         break;
+      case RGUI_SETTINGS_PER_CORE_CONFIG:
+         snprintf(msg, sizeof(msg),
+               " -- Load up a specific config file \n"
+               "based on the core being used.\n");
+         break;
+      case RGUI_SETTINGS_VIDEO_WINDOW_SCALE_X:
+      case RGUI_SETTINGS_VIDEO_WINDOW_SCALE_Y:
+         snprintf(msg, sizeof(msg),
+               " -- Fullscreen resolution.\n"
+               " \n"
+               "Resolution of 0 uses the \n"
+               "resolution of the environment.\n");
+         break;
+      case RGUI_SETTINGS_VIDEO_VSYNC:
+         snprintf(msg, sizeof(msg),
+               " -- Video V-Sync.\n");
+         break;
+      case RGUI_SETTINGS_VIDEO_HARD_SYNC:
+         snprintf(msg, sizeof(msg),
+               " -- Attempts to hard-synchronize \n"
+               "CPU and GPU.\n"
+               " \n"
+               "Can reduce latency at cost of \n"
+               "performance.");
+         break;
+      case RGUI_SETTINGS_VIDEO_HARD_SYNC_FRAMES:
+         snprintf(msg, sizeof(msg),
+               " -- Sets how many frames CPU can \n"
+               "run ahead of GPU when using 'GPU \n"
+               "Hard Sync'.\n"
+               " \n"
+               "Maximum is 3.\n"
+               " \n"
+               " 0: Syncs to GPU immediately.\n"
+               " 1: Syncs to previous frame.\n"
+               " 2: Etc ...");
+         break;
+      case RGUI_SETTINGS_VIDEO_BLACK_FRAME_INSERTION:
+         snprintf(msg, sizeof(msg),
+               " -- Inserts a black frame inbetween \n"
+               "frames.\n"
+               " \n"
+               "Useful for 120 Hz monitors who want to \n"
+               "play 60 Hz material with eliminated \n"
+               "ghosting.\n"
+               " \n"
+               "Video refresh rate should still be con-\n"
+               "figured as if it is a 60 Hz monitor \n"
+               "(divide refresh rate by 2).");
+         break;
+      case RGUI_SETTINGS_VIDEO_THREADED:
+         snprintf(msg, sizeof(msg),
+               " -- Use threaded video driver.\n"
+               " \n"
+               "Using this might improve performance at \n"
+               "possible cost of latency and more video \n"
+               "stuttering.");
+         break;
+      case RGUI_SETTINGS_VIDEO_INTEGER_SCALE:
+         snprintf(msg, sizeof(msg),
+               " -- Only scales video in integer \n"
+               "steps.\n"
+               " \n"
+               "The base size depends on system-reported \n"
+               "geometry and aspect ratio.\n"
+               " \n"
+               "If Force Aspect is not set, X/Y will be \n"
+               "integer scaled independently.");
+         break;
+      case RGUI_SETTINGS_VIDEO_CROP_OVERSCAN:
+         snprintf(msg, sizeof(msg),
+               " -- Forces cropping of overscanned \n"
+               "frames.\n"
+               " \n"
+               "Exact behavior of this option is core-\n"
+               "implementation specific.");
+         break;
+      case RGUI_SETTINGS_VIDEO_MONITOR_INDEX:
+         snprintf(msg, sizeof(msg),
+               " -- Which monitor to prefer.\n"
+               " \n"
+               "0 (default) means no particular monitor \n"
+               "is preferred, 1 and up (1 being first \n"
+               "monitor), suggests RetroArch to use that \n"
+               "particular monitor.");
+         break;
+      case RGUI_SETTINGS_VIDEO_ROTATION:
+         snprintf(msg, sizeof(msg),
+               " -- Forces a certain rotation \n"
+               "of the screen.\n"
+               " \n"
+               "The rotation is added to rotations which\n"
+               "the libretro core sets (see Video Allow\n"
+               "Rotate).");
+         break;
+      case RGUI_SETTINGS_AUDIO_CONTROL_RATE_DELTA:
+         snprintf(msg, sizeof(msg),
+               " -- Audio rate control.\n"
+               " \n"
+               "Setting this to 0 disables rate control.\n"
+               "Any other value controls audio rate control \n"
+               "delta.\n"
+               " \n"
+               "Defines how much input rate can be adjusted \n"
+               "dynamically.\n"
+               " \n"
+               " Input rate is defined as: \n"
+               " input rate * (1.0 +/- (rate control delta))");
+         break;
+      case RGUI_SETTINGS_AUDIO_VOLUME:
+         snprintf(msg, sizeof(msg),
+               " -- Audio volume, expressed in dB.\n"
+               " \n"
+               " 0 dB is normal volume. No gain will be applied.\n"
+               "Gain can be controlled in runtime with Input\n"
+               "Volume Up / Input Volume Down.");
+         break;
+      case RGUI_SETTINGS_VIDEO_SOFTFILTER:
+#ifdef HAVE_FILTERS_BUILTIN
+         snprintf(msg, sizeof(msg),
+               " -- CPU-based video filter.");
+#else
+         snprintf(msg, sizeof(msg),
+               " -- CPU-based video filter.\n"
+               " \n"
+               "Path to a dynamic library.");
+#endif
+         break;
+      case RGUI_SETTINGS_BLOCK_SRAM_OVERWRITE:
+         snprintf(msg, sizeof(msg),
+               " -- Block SRAM from being overwritten \n"
+               "when loading save states.\n"
+               " \n"
+               "Might potentially lead to buggy games.");
+         break;
+      case RGUI_SETTINGS_PRIVACY_CAMERA_ALLOW:
+         snprintf(msg, sizeof(msg),
+               " -- Allow or disallow camera access by \n"
+               "cores.");
+         break;
+      case RGUI_SETTINGS_PRIVACY_LOCATION_ALLOW:
+         snprintf(msg, sizeof(msg),
+               " -- Allow or disallow location services \n"
+               "access by cores.");
+         break;
+      case RGUI_SETTINGS_REWIND_ENABLE:
+         snprintf(msg, sizeof(msg),
+               " -- Enable rewinding.\n"
+               " \n"
+               "This will take a performance hit, \n"
+               "so it is disabled by default.");
+         break;
+      case RGUI_SETTINGS_REWIND_GRANULARITY:
+         snprintf(msg, sizeof(msg),
+               " -- Rewind granularity.\n"
+               " \n"
+               " When rewinding defined number of \n"
+               "frames, you can rewind several frames \n"
+               "at a time, increasing the rewinding \n"
+               "speed.");
+         break;
+      case RGUI_SETTINGS_DEVICE_AUTODETECT_ENABLE:
+         snprintf(msg, sizeof(msg),
+               " -- Enable input auto-detection.\n"
+               " \n"
+               "Will attempt to auto-configure \n"
+               "joypads, Plug-and-Play style.");
+         break;
+      case RGUI_SETTINGS_INPUT_AXIS_THRESHOLD:
+         snprintf(msg, sizeof(msg),
+               " -- Defines axis threshold.\n"
+               " \n"
+               " Possible values are [0.0, 1.0].");
+         break;
+      case RGUI_SETTINGS_DRIVER_INPUT:
+         snprintf(msg, sizeof(msg),
+               " -- Input driver.\n"
+               " \n"
+               "Depending on video driver, it might \n"
+               "force a different input driver.");
+         break;
+      case RGUI_SETTINGS_AUDIO_DSP_FILTER:
+         snprintf(msg, sizeof(msg),
+               " -- Audio DSP plugin.\n"
+               " Processes audio before it's sent to \n"
+               "the driver."
+#ifndef HAVE_FILTERS_BUILTIN
+               " \n"
+               "Path to a dynamic library."
+#endif
+               );
+         break;
+      case RGUI_SETTINGS_TOGGLE_FULLSCREEN:
+         snprintf(msg, sizeof(msg),
+               " -- Toggles fullscreen.");
+         break;
+      case RGUI_SETTINGS_SLOWMOTION_RATIO:
+         snprintf(msg, sizeof(msg),
+               " -- Slowmotion ratio."
+               " \n"
+               "When slowmotion, content will slow\n"
+               "down by factor.");
+         break;
+      case RGUI_SETTINGS_FASTFORWARD_RATIO:
+         snprintf(msg, sizeof(msg),
+               " -- Fastforward ratio."
+               " \n"
+               "The maximum rate at which content will\n"
+               "be run when using fast forward.\n"
+               " \n"
+               " (E.g. 5.0 for 60 fps content => 300 fps \n"
+               "cap).\n"
+               " \n"
+               "RetroArch will go to sleep to ensure that \n"
+               "the maximum rate will not be exceeded.\n"
+               "Do not rely on this cap to be perfectly \n"
+               "accurate.");
+         break;
+      case RGUI_SETTINGS_PAUSE_IF_WINDOW_FOCUS_LOST:
+         snprintf(msg, sizeof(msg),
+               " -- Pause gameplay when window focus \n"
+               "is lost.");
+         break;
+      case RGUI_SETTINGS_GPU_SCREENSHOT:
+         snprintf(msg, sizeof(msg),
+               " -- Screenshots output of GPU shaded \n"
+               "material if available.");
+         break;
+      case RGUI_SETTINGS_SRAM_AUTOSAVE:
+         snprintf(msg, sizeof(msg),
+               " -- Autosaves the non-volatile SRAM \n"
+               "at a regular interval.\n"
+               " \n"
+               "This is disabled by default unless set \n"
+               "otherwise. The interval is measured in \n"
+               "seconds. \n"
+               " \n"
+               "A value of 0 disables autosave.");
+         break;
+      case RGUI_SCREENSHOT_DIR_PATH:
+         snprintf(msg, sizeof(msg),
+               " -- Directory to dump screenshots to.");
+         break;
+      case RGUI_SETTINGS_DRIVER_AUDIO_DEVICE:
+         snprintf(msg, sizeof(msg),
+               " -- Override the default audio device \n"
+               "the audio driver uses.\n"
+               "This is driver dependent. E.g.\n"
+#ifdef HAVE_ALSA
+               " \n"
+               "ALSA wants a PCM device."
+#endif
+#ifdef HAVE_OSS
+               " \n"
+               "OSS wants a path (e.g. /dev/dsp)."
+#endif
+#ifdef HAVE_JACK
+               " \n"
+               "JACK wants portnames (e.g. system:playback1\n"
+               ",system:playback_2)."
+#endif
+#ifdef HAVE_RSOUND
+               " \n"
+               "RSound wants an IP address to an RSound \n"
+               "server."
+#endif
+               );
+         break;
+      case RGUI_ASSETS_DIR_PATH:
+         snprintf(msg, sizeof(msg),
+               " -- Assets directory. \n"
+               " This location is queried by default when \n"
+               "menu interfaces try to look for loadable \n"
+               "assets, etc.");
+         break;
+      case RGUI_SETTINGS_SAVESTATE_AUTO_SAVE:
+         snprintf(msg, sizeof(msg),
+               " -- Automatically saves a savestate at the \n"
+               "end of RetroArch's lifetime.\n"
+               " \n"
+               "RetroArch will automatically load any savestate\n"
+               "with this path on startup if 'Savestate Auto\n"
+               "Load' is set.");
+         break;
+      case RGUI_SETTINGS_VIDEO_SWAP_INTERVAL:
+         snprintf(msg, sizeof(msg),
+               " -- VSync Swap Interval.\n"
+               " \n"
+               "Uses a custom swap interval for VSync. Set this \n"
+               "to effectively halve monitor refresh rate.");
+         break;
+      case RGUI_SETTINGS_VIDEO_REFRESH_RATE_AUTO:
+         snprintf(msg, sizeof(msg),
+               " -- Refresh Rate Auto.\n"
+               " \n"
+               "The accurate refresh rate of our monitor (Hz).\n"
+               "This is used to calculate audio input rate with \n"
+               "the formula: \n"
+               " \n"
+               "audio_input_rate = game input rate * display \n"
+               "refresh rate / game refresh rate\n"
+               " \n"
+               "If the implementation does not report any \n"
+               "values, NTSC defaults will be assumed for \n"
+               "compatibility.\n"
+               " \n"
+               "This value should stay close to 60Hz to avoid \n"
+               "large pitch changes. If your monitor does \n"
+               "not run at 60Hz, or something close to it, \n"
+               "disable VSync, and leave this at its default.");
+         break;
+      case RGUI_LIBRETRO_DIR_PATH:
+         snprintf(msg, sizeof(msg),
+               " -- A directory for where to search for \n"
+               "libretro core implementations.");
+         break;
+      case RGUI_SAVEFILE_DIR_PATH:
+         snprintf(msg, sizeof(msg),
+               " -- Save all save files (*.srm) to this \n"
+               "directory. This includes related files like \n"
+               ".bsv, .rt, .psrm, etc...\n"
+               " \n"
+               "This will be overridden by explicit command line\n"
+               "options.");
+         break;
+      case RGUI_SAVESTATE_DIR_PATH:
+         snprintf(msg, sizeof(msg),
+               " -- Save all save states (*.state) to this \n"
+               "directory.\n"
+               " \n"
+               "This will be overridden by explicit command line\n"
+               "options.");
+         break;
+      case RGUI_SETTINGS_BIND_ANALOG_LEFT_X_PLUS:
+      case RGUI_SETTINGS_BIND_ANALOG_LEFT_X_MINUS:
+      case RGUI_SETTINGS_BIND_ANALOG_LEFT_Y_PLUS:
+      case RGUI_SETTINGS_BIND_ANALOG_LEFT_Y_MINUS:
+      case RGUI_SETTINGS_BIND_ANALOG_RIGHT_X_PLUS:
+      case RGUI_SETTINGS_BIND_ANALOG_RIGHT_X_MINUS:
+      case RGUI_SETTINGS_BIND_ANALOG_RIGHT_Y_PLUS:
+      case RGUI_SETTINGS_BIND_ANALOG_RIGHT_Y_MINUS:
+         snprintf(msg, sizeof(msg),
+               " -- Axis for analog stick (DualShock-esque.\n"
+               " \n"
+               "Bound as usual, however, if a real analog \n"
+               "axis is bound, it can be read as a true analog.\n"
+               " \n"
+               "Positive X axis is right. \n"
+               "Positive Y axis is down.");
+         break;
+      case RGUI_SETTINGS_BIND_SHADER_NEXT:
+         snprintf(msg, sizeof(msg),
+               " -- Applies next shader in directory.");
+         break;
+      case RGUI_SETTINGS_BIND_SHADER_PREV:
+         snprintf(msg, sizeof(msg),
+               " -- Applies previous shader in directory.");
+         break;
+      case RGUI_SETTINGS_BIND_LOAD_STATE_KEY:
+         snprintf(msg, sizeof(msg),
+               " -- Loads state.");
+         break;
+      case RGUI_SETTINGS_BIND_SAVE_STATE_KEY:
+         snprintf(msg, sizeof(msg),
+               " -- Saves state.");
+         break;
+      case RGUI_SETTINGS_BIND_STATE_SLOT_PLUS:
+      case RGUI_SETTINGS_BIND_STATE_SLOT_MINUS:
+         snprintf(msg, sizeof(msg),
+               " -- State slots.\n"
+               " \n"
+               " With slot set to 0, save state name is *.state \n"
+               " (or whatever defined on commandline).\n"
+               "When slot is != 0, path will be (path)(d), \n"
+               "where (d) is slot number.");
+         break;
+      case RGUI_SETTINGS_BIND_TURBO_ENABLE:
+         snprintf(msg, sizeof(msg),
+               " -- Turbo enable.\n"
+               " \n"
+               "Holding the turbo while pressing another \n"
+               "button will let the button enter a turbo \n"
+               "mode where the button state is modulated \n"
+               "with a periodic signal. \n"
+               " \n"
+               "The modulation stops when the button \n"
+               "itself (not turbo button) is released.");
+         break;
+      case RGUI_SETTINGS_BIND_FAST_FORWARD_HOLD_KEY:
+         snprintf(msg, sizeof(msg),
+               " -- Hold for fast-forward. Releasing button \n"
+               "disables fast-forward.");
+         break;
+      case RGUI_SETTINGS_BIND_QUIT_KEY:
+         snprintf(msg, sizeof(msg),
+               " -- Key to exit RetroArch cleanly."
+#if !defined(RARCH_MOBILE) && !defined(RARCH_CONSOLE)
+               "\nKilling it in any hard way (SIGTERM, SIGKILL, \n"
+               "etc) will terminate without saving RAM, etc."
+#endif
+               );
+         break;
+      case RGUI_SETTINGS_BIND_REWIND:
+         snprintf(msg, sizeof(msg),
+               " -- Hold button down to rewind.\n"
+               " \n"
+               "Rewind must be enabled.");
+         break;
+      case RGUI_SETTINGS_BIND_MOVIE_RECORD_TOGGLE:
+         snprintf(msg, sizeof(msg),
+               " -- Toggle between recording and not.");
+         break;
+      case RGUI_SETTINGS_BIND_PAUSE_TOGGLE:
+         snprintf(msg, sizeof(msg),
+               " -- Toggle between paused and non-paused state.");
+         break;
+      case RGUI_SETTINGS_BIND_FRAMEADVANCE:
+         snprintf(msg, sizeof(msg),
+               " -- Frame advance when content is paused.");
+         break;
+      case RGUI_SETTINGS_BIND_RESET:
+         snprintf(msg, sizeof(msg),
+               " -- Reset the content.\n");
+         break;
+      case RGUI_SETTINGS_BIND_CHEAT_INDEX_PLUS:
+         snprintf(msg, sizeof(msg),
+               " -- Increment cheat index.\n");
+         break;
+      case RGUI_SETTINGS_BIND_CHEAT_INDEX_MINUS:
+         snprintf(msg, sizeof(msg),
+               " -- Decrement cheat index.\n");
+         break;
+      case RGUI_SETTINGS_BIND_CHEAT_TOGGLE:
+         snprintf(msg, sizeof(msg),
+               " -- Toggle cheat index.\n");
+         break;
+      case RGUI_SETTINGS_BIND_SCREENSHOT:
+         snprintf(msg, sizeof(msg),
+               " -- Take screenshot.");
+         break;
+      case RGUI_SETTINGS_BIND_MUTE:
+         snprintf(msg, sizeof(msg),
+               " -- Mute/unmute audio.");
+         break;
+      case RGUI_SETTINGS_BIND_NETPLAY_FLIP:
+         snprintf(msg, sizeof(msg),
+               " -- Netplay flip players.");
+         break;
+      case RGUI_SETTINGS_BIND_SLOWMOTION:
+         snprintf(msg, sizeof(msg),
+               " -- Hold for slowmotion.");
+         break;
+      case RGUI_SETTINGS_BIND_ENABLE_HOTKEY:
+         snprintf(msg, sizeof(msg),
+               " -- Enable other hotkeys.\n"
+               " \n"
+               " If this hotkey is bound to either keyboard, \n"
+               "joybutton or joyaxis, all other hotkeys will \n"
+               "be disabled unless this hotkey is also held \n"
+               "at the same time. \n"
+               " \n"
+               "This is useful for RETRO_KEYBOARD centric \n"
+               "implementations which query a large area of \n"
+               "the keyboard, where it is not desirable that \n"
+               "hotkeys get in the way.");
+         break;
+      case RGUI_SETTINGS_BIND_VOLUME_UP:
+         snprintf(msg, sizeof(msg),
+               " -- Increases audio volume.");
+         break;
+      case RGUI_SETTINGS_BIND_VOLUME_DOWN:
+         snprintf(msg, sizeof(msg),
+               " -- Decreases audio volume.");
+         break;
+      case RGUI_SETTINGS_BIND_OVERLAY_NEXT:
+         snprintf(msg, sizeof(msg),
+               " -- Toggles to next overlay.\n"
+               " \n"
+               "Wraps around.");
+         break;
+      case RGUI_SETTINGS_BIND_DISK_EJECT_TOGGLE:
+         snprintf(msg, sizeof(msg),
+               " -- Toggles eject for disks.\n"
+               " \n"
+               "Used for multiple-disk content.");
+         break;
+      case RGUI_SETTINGS_BIND_DISK_NEXT:
+         snprintf(msg, sizeof(msg),
+               " -- Cycles through disk images. Use after \n"
+               "ejecting. \n"
+               " \n"
+               " Complete by toggling eject again.");
+         break;
+      case RGUI_SETTINGS_BIND_GRAB_MOUSE_TOGGLE:
+         snprintf(msg, sizeof(msg),
+               " -- Toggles mouse grab.\n"
+               " \n"
+               "When mouse is grabbed, RetroArch hides the \n"
+               "mouse, and keeps the mouse pointer inside \n"
+               "the window to allow relative mouse input to \n"
+               "work better.");
+         break;
+      case RGUI_SETTINGS_BIND_MENU_TOGGLE:
+         snprintf(msg, sizeof(msg),
+               " -- Toggles menu.");
+         break;
+      default:
+         snprintf(msg, sizeof(msg),
+               "-- No info on this item available. --\n");
+   }
+
+   if (driver.video_data && driver.menu_ctx && driver.menu_ctx->render_messagebox)
+      driver.menu_ctx->render_messagebox(msg);
+
+   if (action == RGUI_ACTION_OK)
+      file_list_pop(rgui->menu_stack, &rgui->selection_ptr);
+   return 0;
+}
+
+static int menu_start_screen_iterate(unsigned action)
+{
+   unsigned i;
+   char msg[1024];
+   rgui_handle_t *rgui = (rgui_handle_t*)driver.menu;
+
+   if (!rgui)
+      return 0;
+
+   if (driver.video_data && driver.menu_ctx && driver.menu_ctx->render)
+      driver.menu_ctx->render();
+
+   char desc[6][64];
+   static const unsigned binds[] = {
+      RETRO_DEVICE_ID_JOYPAD_UP,
+      RETRO_DEVICE_ID_JOYPAD_DOWN,
+      RETRO_DEVICE_ID_JOYPAD_A,
+      RETRO_DEVICE_ID_JOYPAD_B,
+      RETRO_DEVICE_ID_JOYPAD_SELECT,
+      RARCH_MENU_TOGGLE,
+      RARCH_QUIT_KEY,
+   };
+
+   for (i = 0; i < ARRAY_SIZE(binds); i++)
+   {
+      if (driver.input && driver.input->set_keybinds)
+      {
+         struct platform_bind key_label;
+         strlcpy(key_label.desc, "Unknown", sizeof(key_label.desc));
+         key_label.joykey = g_settings.input.binds[0][binds[i]].joykey;
+         driver.input->set_keybinds(&key_label, 0, 0, 0, 1ULL << KEYBINDS_ACTION_GET_BIND_LABEL);
+         strlcpy(desc[i], key_label.desc, sizeof(desc[i]));
+      }
+      else
+      {
+         const struct retro_keybind *bind = &g_settings.input.binds[0][binds[i]];
+         input_get_bind_string(desc[i], bind, sizeof(desc[i]));
+      }
+   }
+
    snprintf(msg, sizeof(msg),
          "-- Welcome to RetroArch / RGUI --\n"
          " \n" // strtok_r doesn't split empty strings.
@@ -509,6 +1125,7 @@ static int menu_start_screen_iterate(unsigned action)
          "  Scroll (Down): %-20s\n"
          "      Accept/OK: %-20s\n"
          "           Back: %-20s\n"
+         "           Info: %-20s\n"
          "Enter/Exit RGUI: %-20s\n"
          " Exit RetroArch: %-20s\n"
          " \n"
@@ -523,7 +1140,7 @@ static int menu_start_screen_iterate(unsigned action)
          " \n"
 
          "Press Accept/OK to continue.",
-         desc[0], desc[1], desc[2], desc[3], desc[4], desc[5]);
+         desc[0], desc[1], desc[2], desc[3], desc[4], desc[5], desc[6]);
 
    if (driver.video_data && driver.menu_ctx && driver.menu_ctx->render_messagebox)
       driver.menu_ctx->render_messagebox(msg);
@@ -653,7 +1270,13 @@ static int menu_settings_iterate(unsigned action)
             rgui->need_refresh = true;
          }
          break;
-
+      case RGUI_ACTION_SELECT:
+         {
+            const char *path = NULL;
+            file_list_get_at_offset(rgui->selection_buf, rgui->selection_ptr, &path, &info_selection_ptr);
+            file_list_push(rgui->menu_stack, "", RGUI_INFO_SCREEN, 0);
+         }
+         break;
       case RGUI_ACTION_LEFT:
       case RGUI_ACTION_RIGHT:
       case RGUI_ACTION_OK:
@@ -1325,6 +1948,8 @@ static int menu_common_iterate(unsigned action)
 
    if (menu_type == RGUI_START_SCREEN)
       return menu_start_screen_iterate(action);
+   else if (menu_type == RGUI_INFO_SCREEN)
+      return menu_info_screen_iterate(action);
    else if (menu_common_type_is(menu_type) == RGUI_SETTINGS)
       return menu_settings_iterate(action);
    else if (menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT || menu_type == RGUI_SETTINGS_CUSTOM_VIEWPORT_2)

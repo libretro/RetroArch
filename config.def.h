@@ -268,7 +268,7 @@ static const bool load_dummy_on_core_shutdown = false;
 static const bool load_dummy_on_core_shutdown = true;
 #endif
 
-// Forcibly disable composition. Only valid on Windows Vista/7 for now.
+// Forcibly disable composition. Only valid on Windows Vista/7/8 for now.
 static const bool disable_composition = false;
 
 // Video VSYNC (recommended)
@@ -432,7 +432,7 @@ static const bool font_enable = true;
 // This is used to calculate audio input rate with the formula:
 // audio_input_rate = game_input_rate * display_refresh_rate / game_refresh_rate.
 // If the implementation does not report any values,
-// SNES NTSC defaults will be assumed for compatibility.
+// NTSC defaults will be assumed for compatibility.
 // This value should stay close to 60Hz to avoid large pitch changes.
 // If your monitor does not run at 60Hz, or something close to it, disable VSync,
 // and leave this at its default.
@@ -474,7 +474,7 @@ static const char *audio_resampler = "CC";
 static const char *audio_resampler = "sinc";
 #endif
 
-// Experimental rate control
+// Audio rate control
 #if defined(GEKKO) || !defined(RARCH_CONSOLE)
 static const bool rate_control = true;
 #else
@@ -482,11 +482,7 @@ static const bool rate_control = false;
 #endif
 
 // Rate control delta. Defines how much rate_control is allowed to adjust input rate.
-#if defined(__QNX__)
-static const float rate_control_delta = 0.000;
-#else
 static const float rate_control_delta = 0.005;
-#endif
 
 // Default audio volume in dB. (0.0 dB == unity gain).
 static const float audio_volume = 0.0;

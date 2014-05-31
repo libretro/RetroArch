@@ -617,6 +617,8 @@ bool menu_iterate(void)
       action = RGUI_ACTION_OK;
    else if (rgui->trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_START))
       action = RGUI_ACTION_START;
+   else if (rgui->trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_SELECT))
+      action = RGUI_ACTION_SELECT;
 
    if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->iterate) 
       input_entry_ret = driver.menu_ctx->backend->iterate(action);
