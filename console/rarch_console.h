@@ -17,19 +17,16 @@
 #ifndef CONSOLE_EXT_H__
 #define CONSOLE_EXT_H__
 
-#ifdef _WIN32
-#define MAXIMUM_PATH 260
-#else
-#define MAXIMUM_PATH 512
-#endif
+#include <stdint.h>
+#include <stddef.h>
 
 typedef struct
 {
-   char core_dir[MAXIMUM_PATH];
-   char port_dir[MAXIMUM_PATH];
-   char savestate_dir[MAXIMUM_PATH];
-   char sram_dir[MAXIMUM_PATH];
-   char system_dir[MAXIMUM_PATH];
+   char core_dir[PATH_MAX];
+   char port_dir[PATH_MAX];
+   char savestate_dir[PATH_MAX];
+   char sram_dir[PATH_MAX];
+   char system_dir[PATH_MAX];
 } default_paths_t;
 
 extern default_paths_t default_paths;
