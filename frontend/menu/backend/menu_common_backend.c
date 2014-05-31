@@ -2194,7 +2194,6 @@ static int menu_common_iterate(unsigned action)
             else if (menu_type == RGUI_SETTINGS_VIDEO_SOFTFILTER)
             {
                fill_pathname_join(g_settings.video.filter_path, dir, path, sizeof(g_settings.video.filter_path));
-               driver.menu_data_own = true;
                rarch_set_fullscreen(g_settings.video.fullscreen);
                menu_flush_stack_type(RGUI_SETTINGS_VIDEO_OPTIONS);
             }
@@ -2203,8 +2202,8 @@ static int menu_common_iterate(unsigned action)
 #ifdef HAVE_DYLIB
                fill_pathname_join(g_settings.audio.dsp_plugin, dir, path, sizeof(g_settings.audio.dsp_plugin));
 #endif
-               driver.menu_data_own = true;
-               rarch_set_fullscreen(g_settings.video.fullscreen);
+               rarch_deinit_dsp_filter();
+               rarch_init_dsp_filter();
                menu_flush_stack_type(RGUI_SETTINGS_AUDIO_OPTIONS);
             }
             else if (menu_type == RGUI_SAVESTATE_DIR_PATH)
@@ -4023,7 +4022,10 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
 
       case RGUI_SETTINGS_TOGGLE_FULLSCREEN:
          if (action == RGUI_ACTION_OK)
+         {
+            g_settings.video.fullscreen = !g_settings.video.fullscreen;
             rarch_set_fullscreen(g_settings.video.fullscreen);
+         }
          break;
 
 #if defined(GEKKO)
