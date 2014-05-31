@@ -549,9 +549,6 @@ void init_drivers(void)
       g_extern.system.hw_render_callback.context_reset();
    driver.video_cache_context_ack = false;
 
-   if (driver.menu_ctx && driver.menu_ctx->context_reset)
-      driver.menu_ctx->context_reset(driver.menu);
-
    init_audio();
 
 #ifdef HAVE_CAMERA
@@ -572,6 +569,8 @@ void init_drivers(void)
 
 #ifdef HAVE_MENU
    init_menu();
+   if (driver.menu_ctx && driver.menu_ctx->context_reset)
+      driver.menu_ctx->context_reset(driver.menu);
 #endif
 
    // Keep non-throttled state as good as possible.
