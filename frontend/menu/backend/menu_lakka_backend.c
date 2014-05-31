@@ -41,9 +41,8 @@ static int menu_lakka_iterate(unsigned action)
 {
    menu_category_t *active_category;
    menu_item_t *active_item;
-   rgui_handle_t *rgui = (rgui_handle_t*)driver.menu;
 
-   if (!rgui)
+   if (!driver.menu)
    {
       RARCH_ERR("Cannot iterate menu, menu handle is not initialized.\n");
       return 0;
@@ -61,7 +60,7 @@ static int menu_lakka_iterate(unsigned action)
       return 0;
 
    if (driver.video_data && driver.menu_ctx && driver.menu_ctx->set_texture)
-      driver.menu_ctx->set_texture(rgui, false);
+      driver.menu_ctx->set_texture(driver.menu, false);
 
    switch (action)
    {
@@ -125,7 +124,7 @@ static int menu_lakka_iterate(unsigned action)
                      strlcpy(g_settings.libretro, active_category->libretro, sizeof(g_settings.libretro));
 
 #ifdef HAVE_DYNAMIC
-                     menu_update_system_info(driver.menu, &rgui->load_no_rom);
+                     menu_update_system_info(driver.menu, &driver.menu->load_no_rom);
                      g_extern.lifecycle_state |= (1ULL << MODE_LOAD_GAME);
 #else
                      rarch_environment_cb(RETRO_ENVIRONMENT_SET_LIBRETRO_PATH, (void*)g_settings.libretro);
@@ -173,7 +172,7 @@ static int menu_lakka_iterate(unsigned action)
    }
 
    if (driver.menu_ctx && driver.menu_ctx->iterate)
-      driver.menu_ctx->iterate(rgui, action);
+      driver.menu_ctx->iterate(driver.menu, action);
 
    if (driver.video_data && driver.menu_ctx && driver.menu_ctx->render)
       driver.menu_ctx->render();

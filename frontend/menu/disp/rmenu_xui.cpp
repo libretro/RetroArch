@@ -332,7 +332,6 @@ static void rmenu_xui_frame(void)
 
 static int rmenu_xui_input_postprocess(uint64_t old_state)
 {
-   rgui_handle_t *rgui = (rgui_handle_t*)driver.menu;
    bool quit = false;
    bool resize = false;
    unsigned width;
@@ -343,7 +342,7 @@ static int rmenu_xui_input_postprocess(uint64_t old_state)
    (void)height;
    (void)frame_count;
 
-   if ((rgui->trigger_state & (1ULL << RARCH_MENU_TOGGLE)) &&
+   if ((driver.menu->trigger_state & (1ULL << RARCH_MENU_TOGGLE)) &&
       g_extern.main_is_init)
    {
       g_extern.lifecycle_state |= (1ULL << MODE_GAME);
@@ -380,19 +379,18 @@ static void rmenu_xui_render(void)
    const char *dir = NULL;
    unsigned menu_type = 0;
    unsigned menu_type_is = 0;
-   rgui_handle_t *rgui = (rgui_handle_t*)driver.menu;
 
-   if (!rgui || rgui->need_refresh && 
+   if (!driver.menu || driver.menu->need_refresh && 
          (g_extern.lifecycle_state & (1ULL << MODE_MENU))
-         && !rgui->msg_force)
+         && !driver.menu->msg_force)
       return;
 
-   begin = rgui->selection_ptr;
-   end   = file_list_get_size(rgui->selection_buf);
+   begin = driver.menu->selection_ptr;
+   end   = file_list_get_size(driver.menu->selection_buf);
 
    rmenu_xui_render_background();
 
-   file_list_get_last(rgui->menu_stack, &dir, &menu_type);
+   file_list_get_last(driver.menu->menu_stack, &dir, &menu_type);
 
    if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->type_is)
       menu_type_is = driver.menu_ctx->backend->type_is(menu_type);
@@ -497,11 +495,11 @@ static void rmenu_xui_render(void)
       snprintf(title, sizeof(title), "ASSETS DIR %s", dir);
    else
    {
-      if (rgui->defer_core)
+      if (driver.menu->defer_core)
          snprintf(title, sizeof(title), "CONTENT %s", dir);
       else
       {
-         const char *core_name = rgui->info.library_name;
+         const char *core_name = driver.menu->info.library_name;
          if (!core_name)
             core_name = g_extern.system.info.library_name;
          if (!core_name)
@@ -518,13 +516,13 @@ static void rmenu_xui_render(void)
    blit_line(RXUI_TERM_START_X + 15, 15, title_buf, true);
 
    char title_msg[64];
-   const char *core_name = rgui->info.library_name;
+   const char *core_name = driver.menu->info.library_name;
    if (!core_name)
       core_name = g_extern.system.info.library_name;
    if (!core_name)
       core_name = "No Core";
 
-   const char *core_version = rgui->info.library_version;
+   const char *core_version = driver.menu->info.library_version;
    if (!core_version)
       core_version = g_extern.system.info.library_version;
    if (!core_version)
@@ -543,7 +541,7 @@ static void rmenu_xui_render(void)
    {
       const char *path = 0;
       unsigned type = 0;
-      file_list_get_at_offset(rgui->selection_buf, i, &path, &type);
+      file_list_get_at_offset(driver.menu->selection_buf, i, &path, &type);
       char message[256];
       char type_str[256];
 
@@ -570,7 +568,7 @@ static void rmenu_xui_render(void)
             snprintf(type_str, sizeof(type_str), "%s",
                   g_settings.video.smooth ? "Linear" : "Nearest");
          else if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->shader_manager_get_str)
-            driver.menu_ctx->backend->shader_manager_get_str(rgui->shader, type_str, sizeof(type_str), type);
+            driver.menu_ctx->backend->shader_manager_get_str(driver.menu->shader, type_str, sizeof(type_str), type);
       }
       else
       // Pretty-print libretro cores from menu.
@@ -579,7 +577,7 @@ static void rmenu_xui_render(void)
          if (type == RGUI_FILE_PLAIN)
          {
             strlcpy(type_str, "(CORE)", sizeof(type_str));
-            file_list_get_alt_at_offset(rgui->selection_buf, i, &path);
+            file_list_get_alt_at_offset(driver.menu->selection_buf, i, &path);
             w = 6;
          }
          else
@@ -629,7 +627,7 @@ static void rmenu_xui_render(void)
 
       char entry_title_buf[256];
       char type_str_buf[64];
-      bool selected = i == rgui->selection_ptr;
+      bool selected = i == driver.menu->selection_ptr;
 
       strlcpy(entry_title_buf, path, sizeof(entry_title_buf));
       strlcpy(type_str_buf, type_str, sizeof(type_str_buf));
@@ -651,13 +649,13 @@ static void rmenu_xui_render(void)
       blit_line(x, y, message, i);
    }
 
-   if (rgui->keyboard.display)
+   if (driver.menu->keyboard.display)
    {
       char msg[1024];
-      const char *str = *rgui->keyboard.buffer;
+      const char *str = *driver.menu->keyboard.buffer;
       if (!str)
          str = "";
-      snprintf(msg, sizeof(msg), "%s\n%s", rgui->keyboard.label, str);
+      snprintf(msg, sizeof(msg), "%s\n%s", driver.menu->keyboard.label, str);
       rmenu_xui_render_messagebox(msg);
    }
 }

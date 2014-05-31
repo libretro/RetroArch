@@ -733,9 +733,8 @@ static void lakka_frame(void)
    struct font_output_list *msg;
    gl_t *gl = (gl_t*)driver.video_data;
    menu_category_t *active_category = (menu_category_t*)&categories[menu_active_category];
-   rgui_handle_t *rgui = (rgui_handle_t*)driver.menu;
 
-   if (!rgui || !gl)
+   if (!driver.menu || !gl)
       return;
 
    update_tweens(0.002);
@@ -1194,10 +1193,9 @@ static void lakka_free(void *data)
 
 static int lakka_input_postprocess(uint64_t old_state)
 {
-   rgui_handle_t *rgui = (rgui_handle_t*)driver.menu;
    int ret = 0;
 
-   if ((rgui && rgui->trigger_state & (1ULL << RARCH_MENU_TOGGLE)) &&
+   if ((driver.menu && driver.menu->trigger_state & (1ULL << RARCH_MENU_TOGGLE)) &&
          g_extern.main_is_init &&
          !g_extern.libretro_dummy)
    {
