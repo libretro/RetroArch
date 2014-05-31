@@ -43,8 +43,6 @@
 #endif
 #endif
 
-static unsigned info_selection_ptr = 0;
-
 #ifdef HAVE_SHADER_MANAGER
 static inline struct gfx_shader *shader_manager_get_current_shader(void *data, unsigned type)
 {
@@ -502,7 +500,7 @@ static int menu_info_screen_iterate(unsigned action)
       }
    }
 
-   switch(info_selection_ptr)
+   switch (rgui->info_selection)
    {
       case RGUI_SETTINGS_WINDOW_COMPOSITING_ENABLE:
          snprintf(msg, sizeof(msg),
@@ -1276,8 +1274,8 @@ static int menu_settings_iterate(unsigned action)
       case RGUI_ACTION_SELECT:
          {
             const char *path = NULL;
-            file_list_get_at_offset(rgui->selection_buf, rgui->selection_ptr, &path, &info_selection_ptr);
-            file_list_push(rgui->menu_stack, "", RGUI_INFO_SCREEN, 0);
+            file_list_get_at_offset(rgui->selection_buf, rgui->selection_ptr, &path, &rgui->info_selection);
+            file_list_push(rgui->menu_stack, "", RGUI_INFO_SCREEN, rgui->selection_ptr);
          }
          break;
       case RGUI_ACTION_LEFT:
