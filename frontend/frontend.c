@@ -303,6 +303,7 @@ returntype main_entry(signature())
       driver.frontend_ctx->init(args);
 
    rarch_main_clear_state();
+   rarch_init_msg_queue();
 
    if (driver.frontend_ctx && driver.frontend_ctx->environment_get)
    {
