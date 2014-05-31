@@ -512,59 +512,59 @@ static void gl_create_fbo_textures(void *data)
       bool fp_fbo = gl->fbo_scale[i].fp_fbo;
       bool srgb_fbo = gl->fbo_scale[i].srgb_fbo;
 
-      if (srgb_fbo)
-      {
-         if (!gl->has_srgb_fbo)
-            RARCH_ERR("[GL]: sRGB FBO was requested, but it is not supported. Falling back to UNORM. Result will look odd!\n");
-      }
-      else if (fp_fbo)
+      if (fp_fbo)
       {
          if (!gl->has_fp_fbo)
-            RARCH_ERR("[GL]: Floating-point FBO was requested, but is not supported. Falling back to UNORM.\n");
+            RARCH_ERR("[GL]: Floating-point FBO was requested, but is not supported. Falling back to UNORM. Result may band/clip/etc.!\n");
+      }
+      else if (srgb_fbo)
+      {
+         if (!gl->has_srgb_fbo)
+            RARCH_ERR("[GL]: sRGB FBO was requested, but it is not supported. Falling back to UNORM. Result may have banding!\n");
       }
 
-#ifndef HAVE_OPENGLES
-      if (srgb_fbo && gl->has_srgb_fbo)
+   #ifndef HAVE_OPENGLES2
+      if (fp_fbo && gl->has_fp_fbo)
       {
-         RARCH_LOG("[GL]: FBO pass #%d is sRGB.\n", i);
-#ifdef HAVE_OPENGLES2
-         glTexImage2D(GL_TEXTURE_2D,
-               0, GL_SRGB_ALPHA_EXT,
-               gl->fbo_rect[i].width, gl->fbo_rect[i].height, 0,
-               GL_SRGB_ALPHA_EXT, GL_UNSIGNED_BYTE, NULL);
-#else
-         glTexImage2D(GL_TEXTURE_2D,
-               0, GL_SRGB8_ALPHA8,
-               gl->fbo_rect[i].width, gl->fbo_rect[i].height, 0,
-               GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-#endif
+         RARCH_LOG("[GL]: FBO pass #%d is floating-point.\n", i);
+         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F,
+               gl->fbo_rect[i].width, gl->fbo_rect[i].height,
+               0, GL_RGBA, GL_FLOAT, NULL);
       }
       else
-#endif
+   #endif
       {
-#ifndef HAVE_OPENGLES2
-         if (fp_fbo && gl->has_fp_fbo)
+      #ifndef HAVE_OPENGLES
+         if (srgb_fbo && gl->has_srgb_fbo)
          {
-            RARCH_LOG("[GL]: FBO pass #%d is floating-point.\n", i);
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F,
-                  gl->fbo_rect[i].width, gl->fbo_rect[i].height,
-                  0, GL_RGBA, GL_FLOAT, NULL);
+            RARCH_LOG("[GL]: FBO pass #%d is sRGB.\n", i);
+         #ifdef HAVE_OPENGLES2
+            glTexImage2D(GL_TEXTURE_2D,
+                  0, GL_SRGB_ALPHA_EXT,
+                  gl->fbo_rect[i].width, gl->fbo_rect[i].height, 0,
+                  GL_SRGB_ALPHA_EXT, GL_UNSIGNED_BYTE, NULL);
+         #else
+            glTexImage2D(GL_TEXTURE_2D,
+                  0, GL_SRGB8_ALPHA8,
+                  gl->fbo_rect[i].width, gl->fbo_rect[i].height, 0,
+                  GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+         #endif
          }
          else
-#endif
+      #endif
          {
-#ifdef HAVE_OPENGLES2
+         #ifdef HAVE_OPENGLES2
             glTexImage2D(GL_TEXTURE_2D,
                   0, GL_RGBA,
                   gl->fbo_rect[i].width, gl->fbo_rect[i].height, 0,
                   GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-#else
+         #else
             // Avoid potential performance reductions on particular platforms.
             glTexImage2D(GL_TEXTURE_2D,
                   0, RARCH_GL_INTERNAL_FORMAT32,
                   gl->fbo_rect[i].width, gl->fbo_rect[i].height, 0,
                   RARCH_GL_TEXTURE_TYPE32, RARCH_GL_FORMAT32, NULL);
-#endif
+         #endif
          }
       }
    }
