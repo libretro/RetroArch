@@ -22,8 +22,14 @@
 
 typedef struct
 {
+   char config_path[PATH_MAX];
+   char autoconfig_dir[PATH_MAX];
+   char assets_dir[PATH_MAX];
    char core_dir[PATH_MAX];
+   char core_info_dir[PATH_MAX];
+   char overlay_dir[PATH_MAX];
    char port_dir[PATH_MAX];
+   char shader_dir[PATH_MAX];
    char savestate_dir[PATH_MAX];
    char sram_dir[PATH_MAX];
    char system_dir[PATH_MAX];

@@ -29,7 +29,6 @@
 #include "../../file.h"
 
 #ifdef IS_SALAMANDER
-char config_path[512];
 char libretro_path[512];
 
 static void find_and_set_first_file(void)
@@ -81,7 +80,7 @@ static void frontend_xdk_salamander_init(void)
 	   char tmp_str[PATH_MAX];
 	   bool config_file_exists = false;
 
-	   if(path_file_exists(config_path))
+	   if(path_file_exists(default_paths.config_path))
 		   config_file_exists = true;
 
 	   //try to find CORE executable
@@ -102,7 +101,7 @@ static void frontend_xdk_salamander_init(void)
 	   {
 		   if(config_file_exists)
 		   {
-			   config_file_t * conf = config_file_new(config_path);
+			   config_file_t * conf = config_file_new(default_paths.config_path);
 			   config_get_array(conf, "libretro_path", tmp_str, sizeof(tmp_str));
             strlcpy(libretro_path, tmp_str, sizeof(libretro_path));
 		   }
@@ -120,7 +119,7 @@ static void frontend_xdk_salamander_init(void)
 		   {
 			   config_file_t *new_conf = config_file_new(NULL);
 			   config_set_string(new_conf, "libretro_path", libretro_path);
-			   config_file_write(new_conf, config_path);
+			   config_file_write(new_conf, default_paths.config_path);
 			   config_file_free(new_conf);
 		   }
 	   }
@@ -224,11 +223,8 @@ static void frontend_xdk_get_environment_settings(int argc, char *argv[], void *
 
 #if defined(_XBOX1)
    strlcpy(default_paths.core_dir, "D:", sizeof(default_paths.core_dir));
-#ifdef IS_SALAMANDER
-   fill_pathname_join(config_path, default_paths.core_dir, "retroarch.cfg", sizeof(config_path));
-#else
-   fill_pathname_join(g_extern.config_path, default_paths.core_dir, "retroarch.cfg", sizeof(g_extern.config_path));
-#endif
+   strlcpy(default_paths.core_info_dir, "D:", sizeof(default_paths.core_info_dir));
+   fill_pathname_join(default_paths.config_path, default_paths.core_dir, "retroarch.cfg", sizeof(default_paths.config_path));
    fill_pathname_join(default_paths.savestate_dir, default_paths.core_dir, "savestates", sizeof(default_paths.savestate_dir));
    fill_pathname_join(default_paths.sram_dir, default_paths.core_dir, "savefiles", sizeof(default_paths.sram_dir));
    fill_pathname_join(default_paths.system_dir, default_paths.core_dir, "system", sizeof(default_paths.system_dir));
@@ -238,11 +234,10 @@ static void frontend_xdk_get_environment_settings(int argc, char *argv[], void *
 #endif
 #elif defined(_XBOX360)
    strlcpy(default_paths.core_dir, "game:", sizeof(default_paths.core_dir));
-#ifdef IS_SALAMANDER
-   strlcpy(config_path, "game:\\retroarch.cfg", sizeof(config_path));
-#else
+   strlcpy(default_paths.core_info_dir, "game:", sizeof(default_paths.core_info_dir));
+   strlcpy(default_paths.config_path, "game:\\retroarch.cfg", sizeof(default_paths.config_path));
+#ifndef IS_SALAMANDER
    strlcpy(g_settings.screenshot_directory, "game:", sizeof(g_settings.screenshot_directory));
-   strlcpy(g_extern.config_path, "game:\\retroarch.cfg", sizeof(g_extern.config_path));
 #endif
    strlcpy(default_paths.savestate_dir, "game:\\savestates", sizeof(default_paths.savestate_dir));
    strlcpy(default_paths.sram_dir, "game:\\savefiles", sizeof(default_paths.sram_dir));

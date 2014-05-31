@@ -428,14 +428,12 @@ void config_set_defaults(void)
    g_settings.core_specific_config = default_core_specific_config;
 
 #ifdef RARCH_CONSOLE
-   strlcpy(g_settings.system_directory, default_paths.system_dir, sizeof(g_settings.system_directory));
 
    g_settings.video.msg_pos_x = 0.05f;
    g_settings.video.msg_pos_y = 0.90f;
    g_settings.video.aspect_ratio = -1.0f;
 
    // g_extern
-   strlcpy(g_extern.savefile_dir, default_paths.sram_dir, sizeof(g_extern.savefile_dir));
    g_extern.console.screen.gamma_correction = DEFAULT_GAMMA;
    g_extern.lifecycle_state |= (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE);
    g_extern.lifecycle_state |= (1ULL << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE);
@@ -443,12 +441,6 @@ void config_set_defaults(void)
    g_extern.lifecycle_state |= (1ULL << MODE_VIDEO_FLICKER_FILTER_ENABLE);
 
    g_extern.console.screen.resolutions.current.id = 0;
-   strlcpy(g_extern.savestate_dir, default_paths.savestate_dir, sizeof(g_extern.savestate_dir));
-
-   g_extern.state_slot = 0;
-   g_extern.audio_data.mute = 0;
-   g_extern.verbose = true;
-
    g_extern.console.sound.mode = SOUND_MODE_NORMAL;
 #ifdef _XBOX1
    g_extern.console.sound.volume_level = 0;
@@ -482,6 +474,28 @@ void config_set_defaults(void)
 
    if (default_config_path)
       fill_pathname_expand_special(g_extern.config_path, default_config_path, sizeof(g_extern.config_path));
+
+#ifdef RARCH_CONSOLE
+   if (*default_paths.assets_dir)
+      strlcpy(g_settings.assets_directory, default_paths.assets_dir, sizeof(g_settings.assets_directory));
+   if (*default_paths.core_dir)
+      strlcpy(g_settings.libretro_directory, default_paths.core_dir, sizeof(g_settings.libretro_directory));
+   if (*default_paths.core_info_dir)
+      strlcpy(g_settings.libretro_info_path, default_paths.core_info_dir, sizeof(g_settings.libretro_info_path));
+   if (*default_paths.overlay_dir)
+      strlcpy(g_extern.overlay_dir, default_paths.overlay_dir, sizeof(g_extern.overlay_dir));
+   if (*default_paths.shader_dir)
+      strlcpy(g_settings.video.shader_dir, default_paths.shader_dir, sizeof(g_settings.video.shader_dir));
+   if (*default_paths.savestate_dir)
+      strlcpy(g_extern.savestate_dir, default_paths.savestate_dir, sizeof(g_extern.savestate_dir));
+   if (*default_paths.sram_dir)
+      strlcpy(g_extern.savefile_dir, default_paths.sram_dir, sizeof(g_extern.savefile_dir));
+   if (*default_paths.system_dir)
+      strlcpy(g_settings.system_directory, default_paths.system_dir, sizeof(g_settings.system_directory));
+
+   if (*default_paths.config_path)
+      strlcpy(g_extern.config_path, default_paths.config_path, sizeof(g_extern.config_path));
+#endif
 
    g_extern.config_save_on_exit = config_save_on_exit;
 

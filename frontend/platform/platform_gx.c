@@ -49,7 +49,6 @@ extern void system_exec_wii(const char *path, bool should_load_game);
 #include <fat.h>
 
 #ifdef IS_SALAMANDER
-char config_path[512];
 char libretro_path[512];
 
 static void find_and_set_first_file(void)
@@ -72,7 +71,7 @@ static void frontend_gx_salamander_init(void)
    char tmp_str[512] = {0};
    bool config_file_exists;
 
-   if (path_file_exists(config_path))
+   if (path_file_exists(default_paths.config_path))
       config_file_exists = true;
 
    //try to find CORE executable
@@ -89,7 +88,7 @@ static void frontend_gx_salamander_init(void)
    {
       if(config_file_exists)
       {
-         config_file_t * conf = config_file_new(config_path);
+         config_file_t * conf = config_file_new(default_paths.config_path);
          if (!conf) // stupid libfat bug or something; somtimes it says the file is there when it doesn't
             config_file_exists = false;
          else
@@ -111,7 +110,7 @@ static void frontend_gx_salamander_init(void)
       {
          config_file_t *new_conf = config_file_new(NULL);
          config_set_string(new_conf, "libretro_path", libretro_path);
-         config_file_write(new_conf, config_path);
+         config_file_write(new_conf, default_paths.config_path);
          config_file_free(new_conf);
       }
    }
@@ -243,11 +242,7 @@ static void frontend_gx_get_environment_settings(int argc, char *argv[], void *a
       snprintf(default_paths.port_dir, sizeof(default_paths.port_dir), "%.*s/retroarch", device_end - default_paths.core_dir, default_paths.core_dir);
    else
       fill_pathname_join(default_paths.port_dir, default_paths.port_dir, "retroarch", sizeof(default_paths.port_dir));
-#ifdef IS_SALAMANDER
-   fill_pathname_join(config_path, default_paths.port_dir, "retroarch.cfg", sizeof(config_path));
-#else
-   fill_pathname_join(g_extern.config_path, default_paths.port_dir, "retroarch.cfg", sizeof(g_extern.config_path));
-#endif
+   fill_pathname_join(default_paths.config_path, default_paths.port_dir, "retroarch.cfg", sizeof(default_paths.config_path));
    fill_pathname_join(default_paths.system_dir, default_paths.port_dir, "system", sizeof(default_paths.system_dir));
    fill_pathname_join(default_paths.sram_dir, default_paths.port_dir, "savefiles", sizeof(default_paths.sram_dir));
    fill_pathname_join(default_paths.savestate_dir, default_paths.port_dir, "savefiles", sizeof(default_paths.savestate_dir));

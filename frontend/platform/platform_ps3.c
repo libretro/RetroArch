@@ -49,7 +49,6 @@ SYS_PROCESS_PARAM(1001, 0x200000)
 #include <cell/pad.h>
 #include <cell/sysmodule.h>
 
-char config_path[512];
 char libretro_path[512];
 
 static void find_and_set_first_file(void)
@@ -88,7 +87,7 @@ static void frontend_ps3_salamander_init(void)
       char tmp_str[PATH_MAX];
       bool config_file_exists = false;
 
-      if (path_file_exists(config_path))
+      if (path_file_exists(default_paths.config_path))
          config_file_exists = true;
 
       //try to find CORE executable
@@ -105,7 +104,7 @@ static void frontend_ps3_salamander_init(void)
       {
          if (config_file_exists)
          {
-            config_file_t * conf = config_file_new(config_path);
+            config_file_t * conf = config_file_new(default_paths.config_path);
             config_get_array(conf, "libretro_path", tmp_str, sizeof(tmp_str));
             config_file_free(conf);
             strlcpy(libretro_path, tmp_str, sizeof(libretro_path));
@@ -120,7 +119,7 @@ static void frontend_ps3_salamander_init(void)
          {
             config_file_t *new_conf = config_file_new(NULL);
             config_set_string(new_conf, "libretro_path", libretro_path);
-            config_file_write(new_conf, config_path);
+            config_file_write(new_conf, default_paths.config_path);
             config_file_free(new_conf);
          }
       }
@@ -242,24 +241,19 @@ static void frontend_ps3_get_environment_settings(int argc, char *argv[], void *
       }
 
       fill_pathname_join(default_paths.core_dir, default_paths.port_dir, "cores", sizeof(default_paths.core_dir));
+      fill_pathname_join(default_paths.core_info_dir, default_paths.port_dir, "cores", sizeof(default_paths.core_info_dir));
       fill_pathname_join(default_paths.savestate_dir, default_paths.core_dir, "savestates", sizeof(default_paths.savestate_dir));
       fill_pathname_join(default_paths.sram_dir, default_paths.core_dir, "savefiles", sizeof(default_paths.sram_dir));
       fill_pathname_join(default_paths.system_dir, default_paths.core_dir, "system", sizeof(default_paths.system_dir));
-
-      /* now we fill in all the variables */
-#if defined(HAVE_CG) || defined(HAVE_GLSL)
-      fill_pathname_join(g_settings.video.shader_dir, default_paths.core_dir, "shaders", sizeof(g_settings.video.shader_dir));
-#endif
-
-#ifdef IS_SALAMANDER
-      fill_pathname_join(config_path, default_paths.port_dir, "retroarch.cfg",  sizeof(config_path));
-#else
-      fill_pathname_join(g_extern.overlay_dir, default_paths.core_dir, "overlays", sizeof(g_extern.overlay_dir));
+      fill_pathname_join(default_paths.shader_dir,  default_paths.core_dir, "shaders", sizeof(default_paths.shader_dir));
+      fill_pathname_join(default_paths.config_path, default_paths.port_dir, "retroarch.cfg",  sizeof(default_paths.config_path));
+      fill_pathname_join(default_paths.overlay_dir, default_paths.core_dir, "overlays", sizeof(default_paths.overlay_dir));
+      fill_pathname_join(default_paths.assets_dir,   default_paths.core_dir, "media", sizeof(default_paths.assets_dir));
+#ifndef IS_SALAMANDER
 #ifdef HAVE_RMENU
       fill_pathname_join(g_extern.menu_texture_path, default_paths.core_dir, "borders/Menu/main-menu_1080p.png",
             sizeof(g_extern.menu_texture_path));
 #endif
-      fill_pathname_join(g_extern.config_path, default_paths.port_dir, "retroarch.cfg",  sizeof(g_extern.config_path));
 #endif
    }
 }
