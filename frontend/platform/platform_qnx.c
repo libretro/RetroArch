@@ -28,10 +28,6 @@ static void frontend_qnx_get_environment_settings(int argc, char *argv[], void *
    (void)argc;
    (void)argv;
    (void)args;
-
-   rarch_environment_cb(RETRO_ENVIRONMENT_SET_LIBRETRO_PATH, (void*)"app/native/lib");
-
-   config_load();
 }
 
 static void frontend_qnx_init(void *data)
