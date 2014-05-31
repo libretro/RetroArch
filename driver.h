@@ -30,7 +30,7 @@
 #include "audio/dsp_filter.h"
 #include "input/overlay.h"
 #include "frontend/frontend_context.h"
-
+#include "miscellaneous.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
