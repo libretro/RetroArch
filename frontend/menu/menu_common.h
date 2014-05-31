@@ -94,6 +94,7 @@ typedef enum
    RGUI_ACTION_NOOP
 } rgui_action_t;
 
+
 struct rgui_bind_state_port
 {
    bool buttons[RGUI_MAX_BUTTONS];
@@ -120,11 +121,6 @@ struct rgui_bind_state
    struct rgui_bind_axis_state axis_state[MAX_PLAYERS];
    bool skip;
 };
-
-void menu_poll_bind_get_rested_axes(struct rgui_bind_state *state);
-void menu_poll_bind_state(struct rgui_bind_state *state);
-bool menu_poll_find_trigger(struct rgui_bind_state *state, struct rgui_bind_state *new_state);
-bool menu_custom_bind_keyboard_cb(void *data, unsigned code);
 
 typedef struct
 {
@@ -170,10 +166,8 @@ typedef struct
    struct retro_system_info info;
    bool load_no_rom;
 
-#ifdef HAVE_SHADER_MANAGER
    void *shader;
    void *parameter_shader; // Points to either shader or graphics driver current shader.
-#endif
    unsigned current_pad;
 
    void *history;
@@ -193,6 +187,11 @@ typedef struct
    retro_time_t target_msec;
    retro_time_t sleep_msec;
 } rgui_handle_t;
+
+void menu_poll_bind_get_rested_axes(void *data);
+void menu_poll_bind_state(void *data);
+bool menu_poll_find_trigger(void *data1, void *data2);
+bool menu_custom_bind_keyboard_cb(void *data, unsigned code);
 
 void *menu_init(const void *data);
 bool menu_iterate(void);

@@ -762,8 +762,13 @@ bool menu_save_new_config(void)
    return ret;
 }
 
-void menu_poll_bind_state(struct rgui_bind_state *state)
+void menu_poll_bind_state(void *data)
 {
+   struct rgui_bind_state *state = (struct rgui_bind_state*)data;
+
+   if (!state)
+      return;
+
    unsigned i, b, a, h;
    memset(state->state, 0, sizeof(state->state));
    state->skip = input_input_state_func(NULL, 0, RETRO_DEVICE_KEYBOARD, 0, RETROK_RETURN);
@@ -795,10 +800,15 @@ void menu_poll_bind_state(struct rgui_bind_state *state)
    }
 }
 
-void menu_poll_bind_get_rested_axes(struct rgui_bind_state *state)
+void menu_poll_bind_get_rested_axes(void *data)
 {
    unsigned i, a;
    const rarch_joypad_driver_t *joypad = NULL;
+   struct rgui_bind_state *state = (struct rgui_bind_state*)data;
+
+   if (!state)
+      return;
+
    if (driver.input && driver.input_data && driver.input->get_joypad_driver)
       joypad = driver.input->get_joypad_driver(driver.input_data);
 
@@ -875,9 +885,16 @@ static bool menu_poll_find_trigger_pad(struct rgui_bind_state *state, struct rgu
    return false;
 }
 
-bool menu_poll_find_trigger(struct rgui_bind_state *state, struct rgui_bind_state *new_state)
+bool menu_poll_find_trigger(void *data1, void *data2)
 {
    unsigned i;
+   struct rgui_bind_state *state, *new_state;
+   state     = (struct rgui_bind_state*)data1;
+   new_state = (struct rgui_bind_state*)data2;
+
+   if (!state || !new_state)
+      return false;
+
    for (i = 0; i < MAX_PLAYERS; i++)
    {
       if (menu_poll_find_trigger_pad(state, new_state, i))
