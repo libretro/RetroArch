@@ -1774,15 +1774,16 @@ static void menu_parse_and_resolve(unsigned menu_type)
          for (i = 0; i < list_size; i++)
          {
             const char *path;
+            char core_path[PATH_MAX], display_name[256];
             unsigned type = 0;
+
+            path = NULL;
             file_list_get_at_offset(list, i, &path, &type);
             if (type != RGUI_FILE_PLAIN)
                continue;
 
-            char core_path[PATH_MAX];
             fill_pathname_join(core_path, dir, path, sizeof(core_path));
 
-            char display_name[256];
             if (driver.menu->core_info &&
                   core_info_list_get_display_name(driver.menu->core_info,
                      core_path, display_name, sizeof(display_name)))
