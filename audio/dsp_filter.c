@@ -14,6 +14,7 @@
  */
 
 #include "../general.h"
+#include "../performance.h"
 
 #include "dsp_filter.h"
 #include "../dynamic.h"
