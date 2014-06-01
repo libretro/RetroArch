@@ -481,6 +481,7 @@ FILTERS
 
 #include "../audio/filters/echo.c"
 #include "../audio/filters/eq.c"
+#include "../audio/filters/chorus.c"
 #include "../audio/filters/iir.c"
 #include "../audio/filters/panning.c"
 #include "../audio/filters/phaser.c"
