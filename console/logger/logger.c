@@ -78,7 +78,7 @@ static int if_up_with(int index)
    if (ret < 0)
    {
       printf("cellNetCtlInit() failed(%x)\n", ret);
-      return (-1);
+      return -1;
    }
 
    for (;;)
@@ -87,7 +87,7 @@ static int if_up_with(int index)
       if (ret < 0)
       {
          printf("cellNetCtlGetState() failed(%x)\n", ret);
-         return (-1);
+         return -1;
       }
       if (state == CELL_NET_CTL_STATE_IPObtained)
          break;
@@ -97,14 +97,14 @@ static int if_up_with(int index)
       if (index && timeout_count < 0)
       {
          printf("if_up_with(%d) timeout\n", index);
-         return (0);
+         return 0;
       }
    }
 #elif defined(GEKKO)
    char t[16];
    if (if_config(t, NULL, NULL, TRUE) < 0)
    {
-      return (-1);
+      return -1;
    }
 #endif
 
@@ -118,7 +118,7 @@ static int if_up_with(int index)
 
    inet_pton(AF_INET, PC_DEVELOPMENT_IP_ADDRESS, &target.sin_addr);
 
-   return (0);
+   return 0;
 }
 
 static int if_down(int sid)
@@ -129,7 +129,7 @@ static int if_down(int sid)
 #elif defined(GEKKO) && !defined(HW_DOL)
    net_deinit();
 #endif
-   return (0);
+   return 0;
 }
 
 void logger_init (void)
@@ -153,8 +153,8 @@ void logger_send(const char *__format,...)
 
 void logger_send_v(const char *__format, va_list args)
 {
+   int len;
    vsnprintf(sendbuf,4000,__format, args);
-
-   int len=strlen(sendbuf);
+   len = strlen(sendbuf);
    sendto(sock,sendbuf,len,MSG_DONTWAIT,(struct sockaddr*)&target,sizeof(target));
 }

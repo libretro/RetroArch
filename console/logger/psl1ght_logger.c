@@ -63,12 +63,14 @@ void logger_shutdown (void)
 
 void logger_send(const char *format,...)
 {
+   char log_buf[1024];
+   va_list va;
+   int max;
+
    if(s == -1)
       return;
 
-   char logBuffer[1024];
-   int max = sizeof(logBuffer);
-   va_list va;
+   max = sizeof(logBuffer);
    va_start(va, format);
 
    int wrote = vsnprintf(logBuffer, max, format, va);
