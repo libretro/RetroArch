@@ -3092,6 +3092,60 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
 {
    unsigned port = driver.menu->current_pad;
 
+   if (setting >= RGUI_SETTINGS_BIND_BEGIN && setting <= RGUI_SETTINGS_BIND_ALL_LAST)
+   {
+      if (driver.input->set_keybinds && !driver.input->get_joypad_driver)
+      {
+         unsigned keybind_action = KEYBINDS_ACTION_NONE;
+
+         if (action == RGUI_ACTION_START)
+            keybind_action = (1ULL << KEYBINDS_ACTION_SET_DEFAULT_BIND);
+
+         // FIXME: The array indices here look totally wrong ... Fixed it so it looks kind of sane for now.
+         if (keybind_action != KEYBINDS_ACTION_NONE)
+            driver.input->set_keybinds(driver.input_data, g_settings.input.device[port], port,
+                  setting - RGUI_SETTINGS_BIND_BEGIN, keybind_action);
+      }
+      else
+      {
+         struct retro_keybind *bind = &g_settings.input.binds[port][setting - RGUI_SETTINGS_BIND_BEGIN];
+         if (action == RGUI_ACTION_OK)
+         {
+            driver.menu->binds.begin = setting;
+            driver.menu->binds.last = setting;
+            driver.menu->binds.target = bind;
+            driver.menu->binds.player = port;
+            file_list_push(driver.menu->menu_stack, "",
+                  driver.menu->bind_mode_keyboard ? RGUI_SETTINGS_CUSTOM_BIND_KEYBOARD : RGUI_SETTINGS_CUSTOM_BIND, driver.menu->selection_ptr);
+
+            if (driver.menu->bind_mode_keyboard)
+            {
+               driver.menu->binds.timeout_end = rarch_get_time_usec() + RGUI_KEYBOARD_BIND_TIMEOUT_SECONDS * 1000000;
+               input_keyboard_wait_keys(driver.menu, menu_custom_bind_keyboard_cb);
+            }
+            else
+            {
+               menu_poll_bind_get_rested_axes(&driver.menu->binds);
+               menu_poll_bind_state(&driver.menu->binds);
+            }
+         }
+         else if (action == RGUI_ACTION_START)
+         {
+            if (driver.menu->bind_mode_keyboard)
+            {
+               const struct retro_keybind *def_binds = port ? retro_keybinds_rest : retro_keybinds_1;
+               bind->key = def_binds[setting - RGUI_SETTINGS_BIND_BEGIN].key;
+            }
+            else
+            {
+               bind->joykey = NO_BTN;
+               bind->joyaxis = AXIS_NONE;
+            }
+         }
+      }
+      return 0;
+   }
+
    switch (setting)
    {
       case RGUI_START_SCREEN:
@@ -3762,111 +3816,6 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
                {
                   target->joykey = NO_BTN;
                   target->joyaxis = AXIS_NONE;
-               }
-            }
-         }
-         break;
-      case RGUI_SETTINGS_BIND_UP:
-      case RGUI_SETTINGS_BIND_DOWN:
-      case RGUI_SETTINGS_BIND_LEFT:
-      case RGUI_SETTINGS_BIND_RIGHT:
-      case RGUI_SETTINGS_BIND_A:
-      case RGUI_SETTINGS_BIND_B:
-      case RGUI_SETTINGS_BIND_X:
-      case RGUI_SETTINGS_BIND_Y:
-      case RGUI_SETTINGS_BIND_START:
-      case RGUI_SETTINGS_BIND_SELECT:
-      case RGUI_SETTINGS_BIND_L:
-      case RGUI_SETTINGS_BIND_R:
-      case RGUI_SETTINGS_BIND_L2:
-      case RGUI_SETTINGS_BIND_R2:
-      case RGUI_SETTINGS_BIND_L3:
-      case RGUI_SETTINGS_BIND_R3:
-      case RGUI_SETTINGS_BIND_TURBO_ENABLE:
-      case RGUI_SETTINGS_BIND_ANALOG_LEFT_X_PLUS:
-      case RGUI_SETTINGS_BIND_ANALOG_LEFT_X_MINUS:
-      case RGUI_SETTINGS_BIND_ANALOG_LEFT_Y_PLUS:
-      case RGUI_SETTINGS_BIND_ANALOG_LEFT_Y_MINUS:
-      case RGUI_SETTINGS_BIND_ANALOG_RIGHT_X_PLUS:
-      case RGUI_SETTINGS_BIND_ANALOG_RIGHT_X_MINUS:
-      case RGUI_SETTINGS_BIND_ANALOG_RIGHT_Y_PLUS:
-      case RGUI_SETTINGS_BIND_ANALOG_RIGHT_Y_MINUS:
-      case RGUI_SETTINGS_BIND_FAST_FORWARD_KEY:
-      case RGUI_SETTINGS_BIND_FAST_FORWARD_HOLD_KEY:
-      case RGUI_SETTINGS_BIND_LOAD_STATE_KEY:
-      case RGUI_SETTINGS_BIND_SAVE_STATE_KEY:
-      case RGUI_SETTINGS_BIND_FULLSCREEN_TOGGLE_KEY:
-      case RGUI_SETTINGS_BIND_QUIT_KEY:
-      case RGUI_SETTINGS_BIND_STATE_SLOT_PLUS:
-      case RGUI_SETTINGS_BIND_STATE_SLOT_MINUS:
-      case RGUI_SETTINGS_BIND_REWIND:
-      case RGUI_SETTINGS_BIND_MOVIE_RECORD_TOGGLE:
-      case RGUI_SETTINGS_BIND_PAUSE_TOGGLE:
-      case RGUI_SETTINGS_BIND_FRAMEADVANCE:
-      case RGUI_SETTINGS_BIND_RESET:
-      case RGUI_SETTINGS_BIND_SHADER_NEXT:
-      case RGUI_SETTINGS_BIND_SHADER_PREV:
-      case RGUI_SETTINGS_BIND_CHEAT_INDEX_PLUS:
-      case RGUI_SETTINGS_BIND_CHEAT_INDEX_MINUS:
-      case RGUI_SETTINGS_BIND_CHEAT_TOGGLE:
-      case RGUI_SETTINGS_BIND_SCREENSHOT:
-      case RGUI_SETTINGS_BIND_MUTE:
-      case RGUI_SETTINGS_BIND_NETPLAY_FLIP:
-      case RGUI_SETTINGS_BIND_SLOWMOTION:
-      case RGUI_SETTINGS_BIND_ENABLE_HOTKEY:
-      case RGUI_SETTINGS_BIND_VOLUME_UP:
-      case RGUI_SETTINGS_BIND_VOLUME_DOWN:
-      case RGUI_SETTINGS_BIND_OVERLAY_NEXT:
-      case RGUI_SETTINGS_BIND_DISK_EJECT_TOGGLE:
-      case RGUI_SETTINGS_BIND_DISK_NEXT:
-      case RGUI_SETTINGS_BIND_GRAB_MOUSE_TOGGLE:
-      case RGUI_SETTINGS_BIND_MENU_TOGGLE:
-         if (driver.input->set_keybinds && !driver.input->get_joypad_driver)
-         {
-            unsigned keybind_action = KEYBINDS_ACTION_NONE;
-
-            if (action == RGUI_ACTION_START)
-               keybind_action = (1ULL << KEYBINDS_ACTION_SET_DEFAULT_BIND);
-
-            // FIXME: The array indices here look totally wrong ... Fixed it so it looks kind of sane for now.
-            if (keybind_action != KEYBINDS_ACTION_NONE)
-               driver.input->set_keybinds(driver.input_data, g_settings.input.device[port], port,
-                     setting - RGUI_SETTINGS_BIND_BEGIN, keybind_action);
-         }
-         else
-         {
-            struct retro_keybind *bind = &g_settings.input.binds[port][setting - RGUI_SETTINGS_BIND_BEGIN];
-            if (action == RGUI_ACTION_OK)
-            {
-               driver.menu->binds.begin = setting;
-               driver.menu->binds.last = setting;
-               driver.menu->binds.target = bind;
-               driver.menu->binds.player = port;
-               file_list_push(driver.menu->menu_stack, "",
-                     driver.menu->bind_mode_keyboard ? RGUI_SETTINGS_CUSTOM_BIND_KEYBOARD : RGUI_SETTINGS_CUSTOM_BIND, driver.menu->selection_ptr);
-
-               if (driver.menu->bind_mode_keyboard)
-               {
-                  driver.menu->binds.timeout_end = rarch_get_time_usec() + RGUI_KEYBOARD_BIND_TIMEOUT_SECONDS * 1000000;
-                  input_keyboard_wait_keys(driver.menu, menu_custom_bind_keyboard_cb);
-               }
-               else
-               {
-                  menu_poll_bind_get_rested_axes(&driver.menu->binds);
-                  menu_poll_bind_state(&driver.menu->binds);
-               }
-            }
-            else if (action == RGUI_ACTION_START)
-            {
-               if (driver.menu->bind_mode_keyboard)
-               {
-                  const struct retro_keybind *def_binds = port ? retro_keybinds_rest : retro_keybinds_1;
-                  bind->key = def_binds[setting - RGUI_SETTINGS_BIND_BEGIN].key;
-               }
-               else
-               {
-                  bind->joykey = NO_BTN;
-                  bind->joyaxis = AXIS_NONE;
                }
             }
          }
