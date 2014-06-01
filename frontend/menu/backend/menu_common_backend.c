@@ -1124,10 +1124,7 @@ static int menu_info_screen_iterate(unsigned action)
       case RGUI_SETTINGS_DRIVER_AUDIO_RESAMPLER:
          if (!strcmp(g_settings.audio.resampler, "sinc"))
             snprintf(msg, sizeof(msg),
-                  " -- Windowed SINC implementation.\n"
-                  " \n"
-                  "Only suitable as an upsampler, as cutoff \n"
-                  "frequency isn't dynamically configurable.");
+                  " -- Windowed SINC implementation.");
          else if (!strcmp(g_settings.audio.resampler, "CC"))
             snprintf(msg, sizeof(msg),
                   " -- Convoluted Cosine implementation.");
