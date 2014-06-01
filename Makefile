@@ -201,10 +201,6 @@ ifeq ($(SCALER_NO_SIMD), 1)
    DEFINES += -DSCALER_NO_SIMD
 endif
 
-ifeq ($(PERF_TEST), 1)
-   DEFINES += -DPERF_TEST
-endif
-
 ifeq ($(HAVE_SDL), 1)
    OBJ += gfx/sdl_gfx.o input/sdl_input.o input/sdl_joypad.o audio/sdl_audio.o
    JOYCONFIG_OBJ += input/sdl_joypad.o

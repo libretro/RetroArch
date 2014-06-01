@@ -110,10 +110,6 @@ ifeq ($(SCALER_NO_SIMD), 1)
    DEFINES += -DSCALER_NO_SIMD
 endif
 
-ifeq ($(PERF_TEST), 1)
-   DEFINES += -DPERF_TEST
-endif
-
 JLIBS =
 
 ifeq ($(HAVE_RGUI), 1)

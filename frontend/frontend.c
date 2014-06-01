@@ -259,9 +259,7 @@ void main_exit(args_type() args)
    }
    rarch_deinit_msg_queue();
 
-#ifdef PERF_TEST
    rarch_perf_log();
-#endif
 
 #if defined(HAVE_LOGGER) && !defined(ANDROID)
    logger_shutdown();

@@ -1,5 +1,4 @@
 LOCAL_PATH := $(call my-dir)
-PERF_TEST := 0
 HAVE_NEON := 1
 HAVE_LOGGER := 1
 
@@ -40,10 +39,6 @@ LOCAL_SRC_FILES  +=	$(RARCH_PATH)/griffin/griffin.c
 ifeq ($(HAVE_LOGGER), 1)
    LOCAL_CFLAGS += -DHAVE_LOGGER
    LOGGER_LDLIBS := -llog
-endif
-
-ifeq ($(PERF_TEST), 1)
-   LOCAL_CFLAGS += -DPERF_TEST
 endif
 
 ifeq ($(GLES),3)

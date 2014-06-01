@@ -16,7 +16,6 @@ HAVE_GCMGL	      = 1
 HAVE_LOGGER		   = 0
 HAVE_FREETYPE	   = 0
 HAVE_RLAUNCH      = 0
-PERF_TEST		   = 0
 WHOLE_ARCHIVE_LINK = 0
 
 CONTENT_ID_FULL		= UP0001-SSNE10000_00-0000000000000001
@@ -64,10 +63,6 @@ GIT			= git.exe
 endif
 
 PPU_SRCS		= griffin/griffin.c
-
-ifeq ($(PERF_TEST), 1)
-   DEFINES += -DPERF_TEST
-endif
 
 ifeq ($(HAVE_RLAUNCH), 1)
 	DEFINES += -DHAVE_RLAUNCH

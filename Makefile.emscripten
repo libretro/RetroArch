@@ -68,10 +68,6 @@ LIBS =
 DEFINES = -DHAVE_SCREENSHOTS -DHAVE_CAMERA -DHAVE_NULLAUDIO -DHAVE_BSV_MOVIE -DRARCH_INTERNAL -DHAVE_CC_RESAMPLER
 LDFLAGS = -L. -s TOTAL_MEMORY=$(MEMORY) -s OUTLINING_LIMIT=50000 --js-library emscripten/library_rwebaudio.js --js-library emscripten/library_rwebinput.js --js-library emscripten/library_rwebcam.js --no-heap-copy
 
-ifeq ($(PERF_TEST), 1)
-   DEFINES += -DPERF_TEST
-endif
-
 ifeq ($(HAVE_RGUI), 1)
    DEFINES += -DHAVE_MENU -DHAVE_RGUI
    OBJ += frontend/menu/disp/rgui.o

@@ -123,10 +123,11 @@ static void log_counters(const struct retro_perf_counter **counters, unsigned nu
 
 void rarch_perf_log(void)
 {
-#if defined(PERF_TEST) || !defined(RARCH_INTERNAL)
+   if (!g_extern.perfcnt_enable)
+      return;
+
    RARCH_LOG("[PERF]: Performance counters (RetroArch):\n");
    log_counters(perf_counters_rarch, perf_ptr_rarch);
-#endif
 }
 
 void retro_perf_log(void)

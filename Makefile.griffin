@@ -1,7 +1,6 @@
 DEBUG			               = 0
 HAVE_LOGGER		            = 0
 HAVE_FILE_LOGGER	         = 0
-PERF_TEST		            = 0
 WHOLE_ARCHIVE_LINK         = 0
 BIG_STACK		            = 0
 PC_DEVELOPMENT_IP_ADDRESS	= 255.255.255.255
@@ -129,10 +128,6 @@ endif
 CFLAGS += -Wall -std=gnu99 $(MACHDEP) $(INCLUDE)
 
 OBJ = griffin/griffin.o  $(PLATOBJS)
-
-ifeq ($(PERF_TEST), 1)
-   CFLAGS += -DPERF_TEST
-endif
 
 ifeq ($(HAVE_LOGGER), 1)
 CFLAGS		+= -DHAVE_LOGGER
