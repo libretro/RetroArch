@@ -448,7 +448,9 @@ static void rgui_render(void)
       char type_str[256];
 
       unsigned w = 19;
-      if (menu_type == RGUI_SETTINGS_INPUT_OPTIONS || menu_type == RGUI_SETTINGS_CUSTOM_BIND || menu_type == RGUI_SETTINGS_CUSTOM_BIND_KEYBOARD)
+      if (menu_type == RGUI_SETTINGS_PERFORMANCE_COUNTERS)
+         w = 28;
+      else if (menu_type == RGUI_SETTINGS_INPUT_OPTIONS || menu_type == RGUI_SETTINGS_CUSTOM_BIND || menu_type == RGUI_SETTINGS_CUSTOM_BIND_KEYBOARD)
          w = 21;
       else if (menu_type == RGUI_SETTINGS_PATH_OPTIONS)
          w = 24;

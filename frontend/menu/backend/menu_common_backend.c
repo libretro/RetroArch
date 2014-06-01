@@ -4671,9 +4671,10 @@ static void menu_common_setting_set_label(char *type_str, size_t type_str_size, 
 
       if (counters[type])
       {
+         unsigned offset = type - RGUI_SETTINGS_PERF_COUNTERS_BEGIN;
          snprintf(type_str, type_str_size, PERF_LOG_FMT, 
-               ((unsigned long long)counters[type]->total / (unsigned long long)counters[type]->call_cnt),
-               (unsigned long long)counters[type]->call_cnt);
+               ((unsigned long long)counters[offset]->total / (unsigned long long)counters[offset]->call_cnt),
+               (unsigned long long)counters[offset]->call_cnt);
       }
       else
 #endif
