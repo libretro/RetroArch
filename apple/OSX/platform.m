@@ -183,7 +183,7 @@ static char** waiting_argv;
    if (waiting_argc)
    {
       apple_is_running = true;
-      apple_rarch_load_content(waiting_argc, waiting_argv);
+      apple_rarch_load_content(&waiting_argc, waiting_argv);
    }
    else if (!_wantReload)
       apple_run_core(nil, 0);
