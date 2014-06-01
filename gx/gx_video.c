@@ -118,7 +118,6 @@ void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines)
 #ifdef GX_OPTS
    struct __gx_regdef *__gx = (struct __gx_regdef*)__gxregs;
 #endif
-   rgui_handle_t *rgui = (rgui_handle_t*)driver.menu;
 
    (void)level;
 
@@ -273,17 +272,17 @@ void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines)
 
    RARCH_LOG("GX Resolution: %dx%d (%s)\n", gx_mode.fbWidth, gx_mode.efbHeight, (gx_mode.viTVMode & 3) == VI_INTERLACE ? "interlaced" : "progressive");
 
-   if (rgui)
+   if (driver.menu)
    {
-      rgui->height = gx_mode.efbHeight / (gx->double_strike ? 1 : 2);
-      rgui->height &= ~3;
-      if (rgui->height > 240)
-         rgui->height = 240;
+      driver.menu->height = gx_mode.efbHeight / (gx->double_strike ? 1 : 2);
+      driver.menu->height &= ~3;
+      if (driver.menu->height > 240)
+         driver.menu->height = 240;
 
-      rgui->width = gx_mode.fbWidth / (gx_mode.fbWidth < 400 ? 1 : 2);
-      rgui->width &= ~3;
-      if (rgui->width > 400)
-         rgui->width = 400;
+      driver.menu->width = gx_mode.fbWidth / (gx_mode.fbWidth < 400 ? 1 : 2);
+      driver.menu->width &= ~3;
+      if (driver.menu->width > 400)
+         driver.menu->width = 400;
    }
 
    if (tvmode == VI_PAL)
@@ -355,7 +354,6 @@ static void init_texture(void *data, unsigned width, unsigned height)
    unsigned g_filter, rgui_w, rgui_h;
    struct __gx_regdef *__gx = (struct __gx_regdef*)__gxregs;
    gx_video_t *gx = (gx_video_t*)data;
-   rgui_handle_t *rgui = (rgui_handle_t*)driver.menu;
    struct __gx_texobj *fb_ptr = (struct __gx_texobj*)&g_tex.obj;
    struct __gx_texobj *menu_ptr = (struct __gx_texobj*)&menu_tex.obj;
 
@@ -365,10 +363,10 @@ static void init_texture(void *data, unsigned width, unsigned height)
    rgui_w = 320;
    rgui_h = 240;
 
-   if (rgui)
+   if (driver.menu)
    {
-      rgui_w = rgui->width;
-      rgui_h = rgui->height;
+      rgui_w = driver.menu->width;
+      rgui_h = driver.menu->height;
    }
 
    __GX_InitTexObj(fb_ptr, g_tex.data, width, height, (gx->rgb32) ? GX_TF_RGBA8 : gx->rgui_texture_enable ? GX_TF_RGB5A3 : GX_TF_RGB565, GX_CLAMP, GX_CLAMP, GX_FALSE);
@@ -894,7 +892,6 @@ static bool gx_frame(void *data, const void *frame,
    gx_video_t *gx = (gx_video_t*)data;
    struct __gx_regdef *__gx = (struct __gx_regdef*)__gxregs;
    u8 clear_efb = GX_FALSE;
-   rgui_handle_t *rgui = (rgui_handle_t*)driver.menu;
 
    if(!gx || (!frame && !gx->rgui_texture_enable))
       return true;
@@ -940,8 +937,8 @@ static bool gx_frame(void *data, const void *frame,
 
    if (gx->rgui_texture_enable && gx->menu_data)
    {
-      convert_texture16(gx->menu_data, menu_tex.data, rgui->width, rgui->height, rgui->width * 2);
-      DCFlushRange(menu_tex.data, rgui->width * rgui->height * 2);
+      convert_texture16(gx->menu_data, menu_tex.data, driver.menu->width, driver.menu->height, driver.menu->width * 2);
+      DCFlushRange(menu_tex.data, driver.menu->width * driver.menu->height * 2);
    }
 
    __GX_InvalidateTexAll(__gx);

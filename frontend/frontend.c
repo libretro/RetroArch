@@ -154,9 +154,8 @@ static int main_entry_iterate_load_content(args_type() args)
 static int main_entry_iterate_menu_preinit(args_type() args)
 {
    int i;
-   rgui_handle_t *rgui = (rgui_handle_t*)driver.menu;
 
-   if (!rgui)
+   if (!driver.menu)
       return 1;
 
    // Menu should always run with vsync on.
@@ -177,8 +176,8 @@ static int main_entry_iterate_menu_preinit(args_type() args)
    if (driver.audio_data)
       audio_stop_func();
 
-   rgui->need_refresh = true;
-   rgui->old_input_state |= 1ULL << RARCH_MENU_TOGGLE;
+   driver.menu->need_refresh = true;
+   driver.menu->old_input_state |= 1ULL << RARCH_MENU_TOGGLE;
 
    g_extern.lifecycle_state &= ~(1ULL << MODE_MENU_PREINIT);
    g_extern.lifecycle_state |= (1ULL << MODE_MENU);
