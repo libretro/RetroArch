@@ -24,6 +24,7 @@
 #include "../compat/posix_string.h"
 #include "../msvc/msvc_compat.h"
 #include "../file.h"
+#include "../miscellaneous.h"
 
 #if !defined(_WIN32) && !defined(__CELLOS_LV2__) && !defined(_XBOX)
 #include <sys/param.h> // PATH_MAX
@@ -32,14 +33,6 @@
 #include <windows.h>
 #elif defined(_XBOX)
 #include <xtl.h>
-#endif
-
-#ifndef PATH_MAX
-#ifdef PATH_MAX
-#define PATH_MAX PATH_MAX
-#else
-#define PATH_MAX 512
-#endif
 #endif
 
 #define MAX_INCLUDE_DEPTH 16
