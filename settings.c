@@ -31,6 +31,7 @@
 
 struct settings g_settings;
 struct global g_extern;
+struct defaults default_paths;
 
 const char *config_get_default_audio(void)
 {

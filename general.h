@@ -124,6 +124,22 @@ enum sound_mode_enums
    SOUND_MODE_LAST
 };
 
+struct defaults
+{
+   char config_path[PATH_MAX];
+   char autoconfig_dir[PATH_MAX];
+   char assets_dir[PATH_MAX];
+   char core_dir[PATH_MAX];
+   char core_info_dir[PATH_MAX];
+   char overlay_dir[PATH_MAX];
+   char port_dir[PATH_MAX];
+   char shader_dir[PATH_MAX];
+   char savestate_dir[PATH_MAX];
+   char sram_dir[PATH_MAX];
+   char screenshot_dir[PATH_MAX];
+   char system_dir[PATH_MAX];
+};
+
 // All config related settings go here.
 struct settings
 {
@@ -693,6 +709,7 @@ struct rarch_main_wrap
 // Public data structures
 extern struct settings g_settings;
 extern struct global g_extern;
+extern struct defaults default_paths;
 /////////
 
 // Public functions

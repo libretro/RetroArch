@@ -71,7 +71,6 @@
 #define attempt_load_game_push_history false
 #endif
 
-default_paths_t default_paths;
 static retro_keyboard_event_t key_event;
 
 #ifdef HAVE_MENU

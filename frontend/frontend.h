@@ -21,10 +21,6 @@
 #include <stdint.h>
 #include <stddef.h>
 
-#ifndef PATH_MAX
-#define PATH_MAX 4096
-#endif
-
 #if defined(ANDROID)
 #define args_type() struct android_app*
 #define signature() void* data
@@ -32,24 +28,6 @@
 #define args_type() void*
 #define signature() int argc, char *argv[]
 #endif
-
-typedef struct
-{
-   char config_path[PATH_MAX];
-   char autoconfig_dir[PATH_MAX];
-   char assets_dir[PATH_MAX];
-   char core_dir[PATH_MAX];
-   char core_info_dir[PATH_MAX];
-   char overlay_dir[PATH_MAX];
-   char port_dir[PATH_MAX];
-   char shader_dir[PATH_MAX];
-   char savestate_dir[PATH_MAX];
-   char sram_dir[PATH_MAX];
-   char screenshot_dir[PATH_MAX];
-   char system_dir[PATH_MAX];
-} default_paths_t;
-
-default_paths_t default_paths;
 
 #ifdef __cplusplus
 extern "C" {
