@@ -60,31 +60,31 @@ typedef struct
 } core_info_list_t;
 
 core_info_list_t *core_info_list_new(const char *modules_path);
-void core_info_list_free(core_info_list_t *core_info_list);
+void core_info_list_free(void *data);
 
-size_t core_info_list_num_info_files(core_info_list_t *core_info_list);
+size_t core_info_list_num_info_files(void *data);
 
-bool core_info_does_support_file(const core_info_t *core, const char *path);
-bool core_info_does_support_any_file(const core_info_t *core, const struct string_list *list);
+bool core_info_does_support_file(const void *data, const char *path);
+bool core_info_does_support_any_file(const void *data, const void *list);
 
 // Non-reentrant, does not allocate. Returns pointer to internal state.
-void core_info_list_get_supported_cores(core_info_list_t *core_info_list, const char *path,
+void core_info_list_get_supported_cores(void *data, const char *path,
       const core_info_t **infos, size_t *num_infos);
 
 // Non-reentrant, does not allocate. Returns pointer to internal state.
-void core_info_list_get_missing_firmware(core_info_list_t *core_info_list,
+void core_info_list_get_missing_firmware(void *data,
       const char *core, const char *systemdir,
       const core_info_firmware_t **firmware, size_t *num_firmware);
 
-void core_info_list_update_missing_firmware(core_info_list_t *core_info_list,
+void core_info_list_update_missing_firmware(void *data,
       const char *core, const char *systemdir);	  
 	  
 // Shallow-copies internal state. Data in *info is invalidated when the core_info_list is freed.
-bool core_info_list_get_info(void *data, core_info_t *info, const char *path);
+bool core_info_list_get_info(void *data1, void *data2, const char *path);
 
-const char *core_info_list_get_all_extensions(core_info_list_t *core_info_list);
+const char *core_info_list_get_all_extensions(void *data);
 
-bool core_info_list_get_display_name(core_info_list_t *core_info_list, const char *path, char *buf, size_t size);
+bool core_info_list_get_display_name(void *data, const char *path, char *buf, size_t size);
 
 void core_info_set_core_path(const char* core_path);
 void core_info_set_config_path(const char* config_path);

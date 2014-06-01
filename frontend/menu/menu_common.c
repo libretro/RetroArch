@@ -903,13 +903,14 @@ static inline bool menu_list_elem_is_dir(file_list_t *buf, unsigned offset)
    return type != RGUI_FILE_PLAIN;
 }
 
-void menu_build_scroll_indices(file_list_t *buf)
+void menu_build_scroll_indices(void *data)
 {
    size_t i;
    int current;
    bool current_is_dir;
+   file_list_t *buf = (file_list_t*)data;
 
-   if (!driver.menu)
+   if (!driver.menu || !buf)
       return;
 
    driver.menu->scroll_indices_size = 0;

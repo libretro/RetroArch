@@ -121,7 +121,7 @@ uint64_t menu_input(void);
 
 void menu_flush_stack_type(unsigned final_type);
 void menu_update_system_info(void *data, bool *load_no_rom);
-void menu_build_scroll_indices(file_list_t *buf);
+void menu_build_scroll_indices(void *data);
 
 #ifdef __cplusplus
 }
