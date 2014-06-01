@@ -252,7 +252,7 @@ void lakka_switch_items(void)
 
       ia = (j == active_category->active_item) ? 1.0 : 0.5;
       iz = (j == active_category->active_item) ? I_ACTIVE_ZOOM : I_PASSIVE_ZOOM;
-      iy = (j == active_category->active_item) ? VSPACING*2.5 :
+      iy = (j == active_category->active_item) ? VSPACING*2.4 :
          (j  < active_category->active_item) ? VSPACING*(j - active_category->active_item - 1) :
          VSPACING*(j - active_category->active_item + 3);
 
@@ -283,7 +283,7 @@ void lakka_switch_subitems(void)
       {
          // Active item
          add_tween(DELAY, 1.0, &subitem->alpha, &inOutQuad);
-         add_tween(DELAY, VSPACING*2.5, &subitem->y, &inOutQuad);
+         add_tween(DELAY, VSPACING*2.4, &subitem->y, &inOutQuad);
          add_tween(DELAY, I_ACTIVE_ZOOM, &subitem->zoom, &inOutQuad);
       }
       else if (k > item->active_subitem)
@@ -321,7 +321,7 @@ void lakka_reset_submenu(void)
 
                subitem->alpha = 0;
                subitem->zoom = k == category->items[j].active_subitem ? I_ACTIVE_ZOOM : I_PASSIVE_ZOOM;
-               subitem->y = k == 0 ? VSPACING * 2.5 : VSPACING * (3+k);
+               subitem->y = k == 0 ? VSPACING * 2.4 : VSPACING * (3+k);
             }
          }
       }
@@ -490,7 +490,7 @@ static void calculate_msg_geometry(const struct font_output *head, struct font_r
    int x_min = head->off_x;
    int x_max = head->off_x + head->width+10;
    int y_min = head->off_y;
-   int y_max = head->off_y + head->height;
+   int y_max = head->off_y + head->height+1;
 
    while ((head = head->next))
    {
@@ -1249,7 +1249,7 @@ static void lakka_init_items(int i, menu_category_t *category, core_info_t *info
          strlcpy(item->rom, list->elems[j].data, sizeof(item->rom));
          item->alpha          = i != menu_active_category ? 0 : n ? 0.5 : 1;
          item->zoom           = n ? I_PASSIVE_ZOOM : I_ACTIVE_ZOOM;
-         item->y              = n ? VSPACING*(3+n) : VSPACING*2.5;
+         item->y              = n ? VSPACING*(3+n) : VSPACING*2.4;
          item->active_subitem = 0;
          item->num_subitems   = 5;
          item->subitems       = (menu_subitem_t*)calloc(item->num_subitems, sizeof(menu_subitem_t));
@@ -1278,7 +1278,7 @@ static void lakka_init_items(int i, menu_category_t *category, core_info_t *info
             }
             subitem->alpha = 0;
             subitem->zoom = k == item->active_subitem ? I_ACTIVE_ZOOM : I_PASSIVE_ZOOM;
-            subitem->y = k == 0 ? VSPACING * 2.5 : VSPACING * (3 + k);
+            subitem->y = k == 0 ? VSPACING * 2.4 : VSPACING * (3 + k);
 
             if (font_driver)
                font_driver->render_msg(font, subitem->name, &subitem->out);
