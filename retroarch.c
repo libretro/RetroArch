@@ -393,7 +393,12 @@ static bool audio_flush(const int16_t *data, size_t samples)
    dsp_data.input_frames          = samples >> 1;
 
    if (g_extern.audio_data.dsp)
+   {
+      RARCH_PERFORMANCE_INIT(audio_dsp);
+      RARCH_PERFORMANCE_START(audio_dsp);
       rarch_dsp_filter_process(g_extern.audio_data.dsp, &dsp_data);
+      RARCH_PERFORMANCE_STOP(audio_dsp);
+   }
 
    src_data.data_in      = dsp_data.output ? dsp_data.output : g_extern.audio_data.data;
    src_data.input_frames = dsp_data.output ? dsp_data.output_frames : (samples >> 1);
