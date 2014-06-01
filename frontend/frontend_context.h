@@ -23,7 +23,7 @@
 #include "../config.h"
 #endif
 
-#include "../console/rarch_console.h"
+#include "frontend.h"
 
 typedef struct frontend_ctx_driver
 {

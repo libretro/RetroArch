@@ -21,7 +21,7 @@
 #include "file.h"
 #include "compat/posix_string.h"
 #include "input/input_common.h"
-#include "console/rarch_console.h"
+#include "frontend/frontend.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
