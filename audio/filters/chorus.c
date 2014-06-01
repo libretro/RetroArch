@@ -84,7 +84,6 @@ static void chorus_process(void *data, struct dspfilter_output *output,
       out[1] = ch->mix_dry * in[1] + ch->mix_wet * chorus_r;
 
       ch->old_ptr = (ch->old_ptr + 1) & CHORUS_DELAY_MASK;
-      ch->lfo_ptr = (ch->lfo_ptr + 1) % ch->lfo_period;
    }
 }
 
