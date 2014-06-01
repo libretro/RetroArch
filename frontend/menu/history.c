@@ -42,11 +42,15 @@ struct rom_history
    char *conf_path;
 };
 
-void rom_history_get_index(rom_history_t *hist,
+void rom_history_get_index(void *data,
       size_t index,
       const char **path, const char **core_path,
       const char **core_name)
 {
+   rom_history_t *hist = (rom_history_t*)data;
+   if (!hist)
+      return;
+
    *path      = hist->entries[index].path;
    *core_path = hist->entries[index].core_path;
    *core_name = hist->entries[index].core_name;
@@ -60,11 +64,16 @@ static void rom_history_free_entry(struct rom_history_entry *entry)
    memset(entry, 0, sizeof(*entry));
 }
 
-void rom_history_push(rom_history_t *hist,
+void rom_history_push(void *data,
       const char *path, const char *core_path,
       const char *core_name)
 {
    size_t i;
+   rom_history_t *hist = (rom_history_t*)data;
+
+   if (!hist)
+      return;
+
    for (i = 0; i < hist->size; i++)
    {
       bool equal_path = (!path && !hist->entries[i].path) ||
@@ -101,11 +110,12 @@ void rom_history_push(rom_history_t *hist,
    hist->size++;
 }
 
-static void rom_history_write_file(rom_history_t *hist)
+static void rom_history_write_file(void *data)
 {
    size_t i;
+   rom_history_t *hist = (rom_history_t*)data;
    FILE *file = fopen(hist->conf_path, "w");
-   if (!file)
+   if (!file || !hist)
       return;
 
    for (i = 0; i < hist->size; i++)
@@ -119,9 +129,10 @@ static void rom_history_write_file(rom_history_t *hist)
    fclose(file);
 }
 
-void rom_history_free(rom_history_t *hist)
+void rom_history_free(void *data)
 {
    size_t i;
+   rom_history_t *hist = (rom_history_t*)data;
    if (!hist)
       return;
 
@@ -136,23 +147,31 @@ void rom_history_free(rom_history_t *hist)
    free(hist);
 }
 
-void rom_history_clear(rom_history_t *hist)
+void rom_history_clear(void *data)
 {
    size_t i;
+   rom_history_t *hist = (rom_history_t*)data;
+   if (!hist)
+      return;
+
    for (i = 0; i < hist->cap; i++)
       rom_history_free_entry(&hist->entries[i]);
    hist->size = 0;
 }
 
-size_t rom_history_size(rom_history_t *hist)
+size_t rom_history_size(void *data)
 {
-   return hist->size;
+   rom_history_t *hist = (rom_history_t*)data;
+   if (hist)
+      return hist->size;
+   return 0;
 }
 
-static bool rom_history_read_file(rom_history_t *hist, const char *path)
+static bool rom_history_read_file(void *data, const char *path)
 {
+   rom_history_t *hist = (rom_history_t*)data;
    FILE *file = fopen(path, "r");
-   if (!file)
+   if (!file || !data)
       return true;
    
    char buf[3][PATH_MAX];
@@ -213,30 +232,43 @@ error:
    return NULL;
 }
 
-const char* rom_history_get_path(rom_history_t* history, unsigned index)
+const char* rom_history_get_path(void *data, unsigned index)
 {
    const char *path, *core_path, *core_name;
-   rom_history_get_index(history, index, &path, &core_path, &core_name);
+   rom_history_t* hist = (rom_history_t*)data;
+   if (!hist)
+      return "";
+
+   rom_history_get_index(hist, index, &path, &core_path, &core_name);
 
    if (path)
       return path;
    return "";
 }
 
-const char *rom_history_get_core_path(rom_history_t* history, unsigned index)
+const char *rom_history_get_core_path(void *data, unsigned index)
 {
    const char *path, *core_path, *core_name;
-   rom_history_get_index(history, index, &path, &core_path, &core_name);
+   rom_history_t* hist = (rom_history_t*)data;
+   if (!hist)
+      return "";
+
+   rom_history_get_index(hist, index, &path, &core_path, &core_name);
     
    if (core_path)
       return core_path;
    return "";
 }
 
-const char *rom_history_get_core_name(rom_history_t* history, unsigned index)
+const char *rom_history_get_core_name(void *data, unsigned index)
 {
    const char *path, *core_path, *core_name;
-   rom_history_get_index(history, index, &path, &core_path, &core_name);
+   rom_history_t* hist = (rom_history_t*)data;
+
+   if (!hist)
+      return "";
+
+   rom_history_get_index(hist, index, &path, &core_path, &core_name);
 
    if (core_name)
       return core_name;

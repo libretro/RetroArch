@@ -237,9 +237,13 @@ bool core_info_list_get_display_name(core_info_list_t *core_info_list, const cha
    return false;
 }
 
-bool core_info_list_get_info(core_info_list_t *core_info_list, core_info_t *out_info, const char *path)
+bool core_info_list_get_info(void *data, core_info_t *out_info, const char *path)
 {
    size_t i;
+   core_info_list_t *core_info_list = (core_info_list_t*)data;
+   if (!core_info_list)
+      return false;
+
    memset(out_info, 0, sizeof(*out_info));
 
    for (i = 0; i < core_info_list->count; i++)
