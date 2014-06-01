@@ -23,6 +23,8 @@
 #include "../config.h"
 #endif
 
+#include "../console/rarch_console.h"
+
 typedef struct frontend_ctx_driver
 {
    void (*environment_get)(int argc, char *argv[], void *args);

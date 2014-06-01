@@ -31,10 +31,6 @@
 
 #if defined(RARCH_CONSOLE) || defined(__QNX__)
 #include "../config.def.h"
-
-#ifdef RARCH_CONSOLE
-default_paths_t default_paths;
-#endif
 #endif
 
 #if defined(ANDROID)
@@ -75,6 +71,7 @@ default_paths_t default_paths;
 #define attempt_load_game_push_history false
 #endif
 
+default_paths_t default_paths;
 static retro_keyboard_event_t key_event;
 
 #ifdef HAVE_MENU

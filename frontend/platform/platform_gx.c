@@ -20,7 +20,6 @@
 #include "../../general.h"
 #include "../../libretro_private.h"
 
-#include "../../console/rarch_console.h"
 #include "../../file.h"
 
 #if defined(HW_RVL) && !defined(IS_SALAMANDER)

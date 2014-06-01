@@ -16,7 +16,6 @@
 
 #include "../../driver.h"
 #include "../../ps3/sdk_defines.h"
-#include "../../console/rarch_console.h"
 
 #ifdef HAVE_LIBDBGFONT
 #ifndef __PSL1GHT__

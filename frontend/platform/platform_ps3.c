@@ -19,7 +19,6 @@
 #include "../../ps3/sdk_defines.h"
 #include "../menu/menu_common.h"
 
-#include "../../console/rarch_console.h"
 #include "../../conf/config_file.h"
 #include "../../general.h"
 #include "../../file.h"

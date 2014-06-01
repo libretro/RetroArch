@@ -23,10 +23,6 @@
 #include <string.h>
 #include <ctype.h>
 
-#ifdef RARCH_CONSOLE
-#include "console/rarch_console.h"
-#endif
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
