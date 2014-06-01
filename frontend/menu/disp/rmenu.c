@@ -169,6 +169,8 @@ static void rmenu_render(void)
       strlcpy(title, "VIDEO OPTIONS", sizeof(title));
    else if (menu_type == RGUI_SETTINGS_DRIVERS)
       strlcpy(title, "DRIVER OPTIONS", sizeof(title));
+   else if (menu_type == RGUI_SETTINGS_PERFORMANCE_COUNTERS)
+      strlcpy(title, "PERFORMANCE COUNTERS", sizeof(title));
 #ifdef HAVE_SHADER_MANAGER
    else if (menu_type == RGUI_SETTINGS_SHADER_OPTIONS)
       strlcpy(title, "SHADER OPTIONS", sizeof(title));

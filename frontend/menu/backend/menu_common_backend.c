@@ -425,6 +425,22 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
          file_list_push(rgui->selection_buf, "Menu Driver", RGUI_SETTINGS_DRIVER_MENU, 0);
 #endif
          break;
+      case RGUI_SETTINGS_PERFORMANCE_COUNTERS:
+         file_list_clear(rgui->selection_buf);
+         {
+#ifdef PERF_TEST
+            const struct retro_perf_counter **counters = (const struct retro_perf_counter**)perf_counters_rarch;
+            unsigned num = perf_ptr_rarch;
+
+            if (!counters || num == 0)
+               break;
+
+            for (i = 0; i < num; i++)
+               if (counters[i] && counters[i]->ident)
+                  file_list_push(rgui->selection_buf, counters[i]->ident, RGUI_SETTINGS_PERF_COUNTERS_BEGIN + i, 0);
+#endif
+         }
+         break;
       case RGUI_SETTINGS:
          file_list_clear(rgui->selection_buf);
 
@@ -449,6 +465,9 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
          file_list_push(rgui->selection_buf, "Core Information", RGUI_SETTINGS_CORE_INFO, 0);
          file_list_push(rgui->selection_buf, "Settings", RGUI_SETTINGS_OPTIONS, 0);
          file_list_push(rgui->selection_buf, "Drivers", RGUI_SETTINGS_DRIVERS, 0);
+#ifdef PERF_TEST
+         file_list_push(rgui->selection_buf, "Performance Counters", RGUI_SETTINGS_PERFORMANCE_COUNTERS, 0);
+#endif
 
          if (g_extern.main_is_init && !g_extern.libretro_dummy)
          {
@@ -1238,6 +1257,7 @@ static unsigned menu_common_type_is(unsigned type)
       type == RGUI_SETTINGS_NETPLAY_OPTIONS ||
       type == RGUI_SETTINGS_OPTIONS ||
       type == RGUI_SETTINGS_DRIVERS ||
+      type == RGUI_SETTINGS_PERFORMANCE_COUNTERS ||
       (type == RGUI_SETTINGS_INPUT_OPTIONS);
 
    if (type_found)
@@ -1423,6 +1443,7 @@ static int menu_settings_iterate(unsigned action)
             || menu_type == RGUI_SETTINGS_NETPLAY_OPTIONS
             || menu_type == RGUI_SETTINGS_OPTIONS
             || menu_type == RGUI_SETTINGS_DRIVERS
+            || menu_type == RGUI_SETTINGS_PERFORMANCE_COUNTERS
             || menu_type == RGUI_SETTINGS_CORE_INFO
             || menu_type == RGUI_SETTINGS_CORE_OPTIONS
             || menu_type == RGUI_SETTINGS_AUDIO_OPTIONS
@@ -4686,6 +4707,12 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
    return 0;
 }
 
+#ifdef _WIN32
+#define PERF_LOG_FMT "%I64u ticks, %I64u runs."
+#else
+#define PERF_LOG_FMT "%llu ticks, %llu runs."
+#endif
+
 static void menu_common_setting_set_label(char *type_str, size_t type_str_size, unsigned *w, unsigned type)
 {
    switch (type)
@@ -4982,6 +5009,7 @@ static void menu_common_setting_set_label(char *type_str, size_t type_str_size, 
       case RGUI_SETTINGS_NETPLAY_OPTIONS:
       case RGUI_SETTINGS_PRIVACY_OPTIONS:
       case RGUI_SETTINGS_OPTIONS:
+      case RGUI_SETTINGS_PERFORMANCE_COUNTERS:
       case RGUI_SETTINGS_DRIVERS:
       case RGUI_SETTINGS_CUSTOM_BIND_ALL:
       case RGUI_SETTINGS_CUSTOM_BIND_DEFAULT_ALL:
@@ -5210,6 +5238,89 @@ static void menu_common_setting_set_label(char *type_str, size_t type_str_size, 
          break;
       case RGUI_SETTINGS_LOAD_DUMMY_ON_CORE_SHUTDOWN:
          snprintf(type_str, type_str_size, g_settings.load_dummy_on_core_shutdown ? "ON" : "OFF");
+         break;
+      case RGUI_SETTINGS_PERF_COUNTERS_BEGIN:
+      case RGUI_SETTINGS_PERF_COUNTERS_BEGIN + 1:
+      case RGUI_SETTINGS_PERF_COUNTERS_BEGIN + 2:
+      case RGUI_SETTINGS_PERF_COUNTERS_BEGIN + 3:
+      case RGUI_SETTINGS_PERF_COUNTERS_BEGIN + 4:
+      case RGUI_SETTINGS_PERF_COUNTERS_BEGIN + 5:
+      case RGUI_SETTINGS_PERF_COUNTERS_BEGIN + 6:
+      case RGUI_SETTINGS_PERF_COUNTERS_BEGIN + 7:
+      case RGUI_SETTINGS_PERF_COUNTERS_BEGIN + 8:
+      case RGUI_SETTINGS_PERF_COUNTERS_BEGIN + 9:
+      case RGUI_SETTINGS_PERF_COUNTERS_BEGIN + 10:
+      case RGUI_SETTINGS_PERF_COUNTERS_BEGIN + 11:
+      case RGUI_SETTINGS_PERF_COUNTERS_BEGIN + 12:
+      case RGUI_SETTINGS_PERF_COUNTERS_BEGIN + 13:
+      case RGUI_SETTINGS_PERF_COUNTERS_BEGIN + 14:
+      case RGUI_SETTINGS_PERF_COUNTERS_BEGIN + 15:
+      case RGUI_SETTINGS_PERF_COUNTERS_BEGIN + 16:
+      case RGUI_SETTINGS_PERF_COUNTERS_BEGIN + 17:
+      case RGUI_SETTINGS_PERF_COUNTERS_BEGIN + 18:
+      case RGUI_SETTINGS_PERF_COUNTERS_BEGIN + 19:
+      case RGUI_SETTINGS_PERF_COUNTERS_BEGIN + 20:
+      case RGUI_SETTINGS_PERF_COUNTERS_BEGIN + 21:
+      case RGUI_SETTINGS_PERF_COUNTERS_BEGIN + 22:
+      case RGUI_SETTINGS_PERF_COUNTERS_BEGIN + 23:
+      case RGUI_SETTINGS_PERF_COUNTERS_BEGIN + 24:
+      case RGUI_SETTINGS_PERF_COUNTERS_BEGIN + 25:
+      case RGUI_SETTINGS_PERF_COUNTERS_BEGIN + 26:
+      case RGUI_SETTINGS_PERF_COUNTERS_BEGIN + 27:
+      case RGUI_SETTINGS_PERF_COUNTERS_BEGIN + 28:
+      case RGUI_SETTINGS_PERF_COUNTERS_BEGIN + 29:
+      case RGUI_SETTINGS_PERF_COUNTERS_BEGIN + 30:
+      case RGUI_SETTINGS_PERF_COUNTERS_BEGIN + 31:
+      case RGUI_SETTINGS_PERF_COUNTERS_BEGIN + 32:
+      case RGUI_SETTINGS_PERF_COUNTERS_BEGIN + 33:
+      case RGUI_SETTINGS_PERF_COUNTERS_BEGIN + 34:
+      case RGUI_SETTINGS_PERF_COUNTERS_BEGIN + 35:
+      case RGUI_SETTINGS_PERF_COUNTERS_BEGIN + 36:
+      case RGUI_SETTINGS_PERF_COUNTERS_BEGIN + 37:
+      case RGUI_SETTINGS_PERF_COUNTERS_BEGIN + 38:
+      case RGUI_SETTINGS_PERF_COUNTERS_BEGIN + 39:
+      case RGUI_SETTINGS_PERF_COUNTERS_BEGIN + 40:
+      case RGUI_SETTINGS_PERF_COUNTERS_BEGIN + 41:
+      case RGUI_SETTINGS_PERF_COUNTERS_BEGIN + 42:
+      case RGUI_SETTINGS_PERF_COUNTERS_BEGIN + 43:
+      case RGUI_SETTINGS_PERF_COUNTERS_BEGIN + 44:
+      case RGUI_SETTINGS_PERF_COUNTERS_BEGIN + 45:
+      case RGUI_SETTINGS_PERF_COUNTERS_BEGIN + 46:
+      case RGUI_SETTINGS_PERF_COUNTERS_BEGIN + 47:
+      case RGUI_SETTINGS_PERF_COUNTERS_BEGIN + 48:
+      case RGUI_SETTINGS_PERF_COUNTERS_BEGIN + 49:
+      case RGUI_SETTINGS_PERF_COUNTERS_BEGIN + 50:
+      case RGUI_SETTINGS_PERF_COUNTERS_BEGIN + 51:
+      case RGUI_SETTINGS_PERF_COUNTERS_BEGIN + 52:
+      case RGUI_SETTINGS_PERF_COUNTERS_BEGIN + 53:
+      case RGUI_SETTINGS_PERF_COUNTERS_BEGIN + 54:
+      case RGUI_SETTINGS_PERF_COUNTERS_BEGIN + 55:
+      case RGUI_SETTINGS_PERF_COUNTERS_BEGIN + 56:
+      case RGUI_SETTINGS_PERF_COUNTERS_BEGIN + 57:
+      case RGUI_SETTINGS_PERF_COUNTERS_BEGIN + 58:
+      case RGUI_SETTINGS_PERF_COUNTERS_BEGIN + 59:
+      case RGUI_SETTINGS_PERF_COUNTERS_BEGIN + 60:
+      case RGUI_SETTINGS_PERF_COUNTERS_BEGIN + 61:
+      case RGUI_SETTINGS_PERF_COUNTERS_BEGIN + 62:
+      case RGUI_SETTINGS_PERF_COUNTERS_END:
+         {
+#ifdef PERF_TEST
+            const struct retro_perf_counter **counters = (const struct retro_perf_counter**)perf_counters_rarch;
+            unsigned num = perf_ptr_rarch;
+
+            if (counters[type] && counters[type]->ident && counters[type]->call_cnt && counters[type]->total)
+            {
+               snprintf(type_str, type_str_size, PERF_LOG_FMT, 
+                     (unsigned long long)counters[type]->total / (unsigned long long)counters[type]->call_cnt,
+                     (unsigned long long)counters[type]->call_cnt);
+            }
+            else
+#endif
+            {
+               *type_str = '\0';
+               *w = 0;
+            }
+         }
          break;
       default:
          *type_str = '\0';

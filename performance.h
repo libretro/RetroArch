@@ -35,6 +35,15 @@ extern "C" {
 #include "libretro.h"
 #include <stdint.h>
 
+#define MAX_COUNTERS 64
+
+#ifdef PERF_TEST
+extern const struct retro_perf_counter *perf_counters_rarch[MAX_COUNTERS];
+extern const struct retro_perf_counter *perf_counters_libretro[MAX_COUNTERS];
+extern unsigned perf_ptr_rarch;
+extern unsigned perf_ptr_libretro;
+#endif
+
 retro_perf_tick_t rarch_get_perf_counter(void);
 retro_time_t rarch_get_time_usec(void);
 void rarch_perf_register(struct retro_perf_counter *perf);

@@ -77,11 +77,10 @@
 
 #include <string.h>
 
-#define MAX_COUNTERS 64
-static const struct retro_perf_counter *perf_counters_rarch[MAX_COUNTERS];
-static const struct retro_perf_counter *perf_counters_libretro[MAX_COUNTERS];
-static unsigned perf_ptr_rarch;
-static unsigned perf_ptr_libretro;
+const struct retro_perf_counter *perf_counters_rarch[MAX_COUNTERS];
+const struct retro_perf_counter *perf_counters_libretro[MAX_COUNTERS];
+unsigned perf_ptr_rarch;
+unsigned perf_ptr_libretro;
 
 void rarch_perf_register(struct retro_perf_counter *perf)
 {
