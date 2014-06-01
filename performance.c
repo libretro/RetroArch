@@ -117,10 +117,13 @@ static void log_counters(const struct retro_perf_counter **counters, unsigned nu
    unsigned i;
    for (i = 0; i < num; i++)
    {
-      RARCH_LOG(PERF_LOG_FMT,
-            counters[i]->ident,
-            (unsigned long long)counters[i]->total / (unsigned long long)counters[i]->call_cnt,
-            (unsigned long long)counters[i]->call_cnt);
+      if (counters[i]->call_cnt)
+      {
+         RARCH_LOG(PERF_LOG_FMT,
+               counters[i]->ident,
+               (unsigned long long)counters[i]->total / (unsigned long long)counters[i]->call_cnt,
+               (unsigned long long)counters[i]->call_cnt);
+      }
    }
 }
 

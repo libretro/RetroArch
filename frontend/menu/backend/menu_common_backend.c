@@ -391,7 +391,7 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
 #ifdef HAVE_OSK
          file_list_push(rgui->selection_buf, "Onscreen Keyboard Enable", RGUI_SETTINGS_ONSCREEN_KEYBOARD_ENABLE, 0);
 #endif
-         last = (driver.input && driver.input->set_keybinds && !driver.input->get_joypad_driver) ? RGUI_SETTINGS_BIND_R3 : RGUI_SETTINGS_BIND_MENU_TOGGLE;
+         last = (driver.input && driver.input->set_keybinds && !driver.input->get_joypad_driver) ? RGUI_SETTINGS_BIND_R3 : RGUI_SETTINGS_BIND_ALL_LAST;
          for (i = RGUI_SETTINGS_BIND_BEGIN; i <= last; i++)
             file_list_push(rgui->selection_buf, input_config_bind_map[i - RGUI_SETTINGS_BIND_BEGIN].desc, i, 0);
          break;
@@ -3092,7 +3092,20 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
 {
    unsigned port = driver.menu->current_pad;
 
-   if (setting >= RGUI_SETTINGS_BIND_BEGIN && setting <= RGUI_SETTINGS_BIND_ALL_LAST)
+   if (setting >= RGUI_SETTINGS_PERF_COUNTERS_BEGIN && setting <= RGUI_SETTINGS_PERF_COUNTERS_END)
+   {
+#ifdef PERF_TEST
+      struct retro_perf_counter **counters = (struct retro_perf_counter**)perf_counters_rarch;
+      unsigned offset = setting - RGUI_SETTINGS_PERF_COUNTERS_BEGIN;
+      if (counters[offset] && action == RGUI_ACTION_START)
+      {
+         counters[offset]->total = 0;
+         counters[offset]->call_cnt = 0;
+      }
+#endif
+      return 0;
+   }
+   else if (setting >= RGUI_SETTINGS_BIND_BEGIN && setting <= RGUI_SETTINGS_BIND_ALL_LAST)
    {
       if (driver.input->set_keybinds && !driver.input->get_joypad_driver)
       {
@@ -4669,9 +4682,9 @@ static void menu_common_setting_set_label(char *type_str, size_t type_str_size, 
 #ifdef PERF_TEST
       const struct retro_perf_counter **counters = (const struct retro_perf_counter**)perf_counters_rarch;
 
-      if (counters[type])
+      unsigned offset = type - RGUI_SETTINGS_PERF_COUNTERS_BEGIN;
+      if (counters[offset] && counters[offset]->call_cnt)
       {
-         unsigned offset = type - RGUI_SETTINGS_PERF_COUNTERS_BEGIN;
          snprintf(type_str, type_str_size, PERF_LOG_FMT, 
                ((unsigned long long)counters[offset]->total / (unsigned long long)counters[offset]->call_cnt),
                (unsigned long long)counters[offset]->call_cnt);
