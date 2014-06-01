@@ -360,8 +360,8 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
          file_list_push(rgui->selection_buf, "Core Info Directory", RGUI_LIBRETRO_INFO_DIR_PATH, 0);
 #ifdef HAVE_DYLIB
          file_list_push(rgui->selection_buf, "Soft Filter Directory", RGUI_FILTER_DIR_PATH, 0);
-         file_list_push(rgui->selection_buf, "DSP Filter Directory", RGUI_DSP_FILTER_DIR_PATH, 0);
 #endif
+         file_list_push(rgui->selection_buf, "DSP Filter Directory", RGUI_DSP_FILTER_DIR_PATH, 0);
 #ifdef HAVE_SHADER_MANAGER
          file_list_push(rgui->selection_buf, "Shader Directory", RGUI_SHADER_DIR_PATH, 0);
 #endif
