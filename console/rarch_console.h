@@ -20,6 +20,10 @@
 #include <stdint.h>
 #include <stddef.h>
 
+#ifndef PATH_MAX
+#define PATH_MAX 4096
+#endif
+
 typedef struct
 {
    char config_path[PATH_MAX];
