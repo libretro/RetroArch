@@ -29,9 +29,10 @@ struct item_file
    size_t directory_ptr;
 };
 
-void file_list_push(file_list_t *list,
+void file_list_push(void *data,
       const char *path, unsigned type, size_t directory_ptr)
 {
+   file_list_t *list = (file_list_t*)data;
    if (!list)
       return;
 
@@ -53,25 +54,29 @@ void file_list_push(file_list_t *list,
 
 }
 
-size_t file_list_get_size(const file_list_t *list)
+size_t file_list_get_size(const void *data)
 {
+   const file_list_t *list = (const file_list_t*)data;
    if (!list)
       return 0;
 
    return list->size;
 }
 
-size_t file_list_get_directory_ptr(const file_list_t *list)
+size_t file_list_get_directory_ptr(const void *data)
 {
    size_t size;
+   const file_list_t *list = (const file_list_t*)data;
    if (!list)
       return 0;
+
    size = file_list_get_size(list);
    return list->list[size].directory_ptr;
 }
 
-void file_list_pop(file_list_t *list, size_t *directory_ptr)
+void file_list_pop(void *data, size_t *directory_ptr)
 {
+   file_list_t *list = (file_list_t*)data;
    if (!list)
       return;
 
@@ -91,9 +96,10 @@ void file_list_pop(file_list_t *list, size_t *directory_ptr)
       driver.menu_ctx->list_set_selection(list);
 }
 
-void file_list_free(file_list_t *list)
+void file_list_free(void *data)
 {
    size_t i;
+   file_list_t *list = (file_list_t*)data;
 
    if (!list)
       return;
@@ -104,9 +110,10 @@ void file_list_free(file_list_t *list)
    free(list);
 }
 
-void file_list_clear(file_list_t *list)
+void file_list_clear(void *data)
 {
    size_t i;
+   file_list_t *list = (file_list_t*)data;
 
    if (!list)
       return;
@@ -122,9 +129,10 @@ void file_list_clear(file_list_t *list)
    list->size = 0;
 }
 
-void file_list_set_alt_at_offset(file_list_t *list, size_t index,
+void file_list_set_alt_at_offset(void *data, size_t index,
       const char *alt)
 {
+   file_list_t *list = (file_list_t*)data;
    if (!list)
       return;
 
@@ -132,9 +140,10 @@ void file_list_set_alt_at_offset(file_list_t *list, size_t index,
    list->list[index].alt = strdup(alt);
 }
 
-void file_list_get_alt_at_offset(const file_list_t *list, size_t index,
+void file_list_get_alt_at_offset(const void *data, size_t index,
       const char **alt)
 {
+   const file_list_t *list = (const file_list_t*)data;
    if (!list)
       return;
 
@@ -151,18 +160,22 @@ static int file_list_alt_cmp(const void *a_, const void *b_)
    return strcasecmp(cmp_a, cmp_b);
 }
 
-void file_list_sort_on_alt(file_list_t *list)
+void file_list_sort_on_alt(void *data)
 {
+   file_list_t *list = (file_list_t*)data;
    if (!list)
       return;
 
    qsort(list->list, list->size, sizeof(list->list[0]), file_list_alt_cmp);
 }
 
-void file_list_get_at_offset(const file_list_t *list, size_t index,
+void file_list_get_at_offset(const void *data, size_t index,
       const char **path, unsigned *file_type)
 {
-   if (!list || !list->list)
+   const file_list_t *list = (const file_list_t*)data;
+   if (!list)
+      return;
+   if (!list->list)
       return;
 
    if (path)
@@ -171,9 +184,10 @@ void file_list_get_at_offset(const file_list_t *list, size_t index,
       *file_type = list->list[index].type;
 }
 
-void file_list_get_last(const file_list_t *list,
+void file_list_get_last(const void *data,
       const char **path, unsigned *file_type)
 {
+   const file_list_t *list = (const file_list_t*)data;
    if (!list)
       return;
 
@@ -181,22 +195,24 @@ void file_list_get_last(const file_list_t *list,
       file_list_get_at_offset(list, list->size - 1, path, file_type);
 }
 
-bool file_list_search(const file_list_t *list, const char *needle, size_t *index)
+bool file_list_search(const void *data, const char *needle, size_t *index)
 {
    size_t i;
    const char *alt;
    bool ret = false;
+   const file_list_t *list = (const file_list_t*)data;
 
    if (!list)
       return false;
 
    for (i = 0; i < list->size; i++)
    {
+      const char *str;
       file_list_get_alt_at_offset(list, i, &alt);
       if (!alt)
          continue;
 
-      const char *str = strcasestr(alt, needle);
+      str = (const char *)strcasestr(alt, needle);
       if (str == alt) // Found match with first chars, best possible match.
       {
          *index = i;
