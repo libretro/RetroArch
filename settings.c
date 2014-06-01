@@ -477,6 +477,8 @@ void config_set_defaults(void)
    if (default_config_path)
       fill_pathname_expand_special(g_extern.config_path, default_config_path, sizeof(g_extern.config_path));
 
+   if (*default_paths.audio_filter_dir)
+      strlcpy(g_settings.audio.filter_dir, default_paths.audio_filter_dir, sizeof(g_settings.audio.filter_dir));
    if (*default_paths.assets_dir)
       strlcpy(g_settings.assets_directory, default_paths.assets_dir, sizeof(g_settings.assets_directory));
    if (*default_paths.core_dir)

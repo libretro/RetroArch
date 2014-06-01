@@ -310,6 +310,8 @@ returntype main_entry(signature())
 #if defined(RARCH_CONSOLE) || defined(__QNX__)
       if (*default_paths.autoconfig_dir)
          path_mkdir(default_paths.autoconfig_dir);
+      if (*default_paths.audio_filter_dir)
+         path_mkdir(default_paths.audio_filter_dir);
       if (*default_paths.assets_dir)
          path_mkdir(default_paths.assets_dir);
       if (*default_paths.core_dir)
