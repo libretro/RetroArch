@@ -324,8 +324,8 @@ static int frontend_xdk_process_args(int argc, char *argv[], void *args)
    }
 #endif
 #endif
-exit:
 #ifndef IS_SALAMANDER
+exit:
    g_extern.verbose = original_verbose;
 #endif
    return ret;

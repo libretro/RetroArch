@@ -25,6 +25,10 @@
 
 #include "frontend.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct frontend_ctx_driver
 {
    void (*environment_get)(int argc, char *argv[], void *args);
@@ -57,5 +61,9 @@ extern const frontend_ctx_driver_t frontend_ctx_null;
 
 const frontend_ctx_driver_t *frontend_ctx_find_driver(const char *ident); // Finds driver with ident. Does not initialize.
 const frontend_ctx_driver_t *frontend_ctx_init_first(void); // Finds first suitable driver and initializes.
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
