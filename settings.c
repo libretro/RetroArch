@@ -1038,6 +1038,8 @@ bool config_load_file(const char *path, bool set_defaults)
    if (!g_extern.has_set_verbosity)
       CONFIG_GET_BOOL_EXTERN(verbose, "log_verbosity");
 
+   CONFIG_GET_BOOL_EXTERN(perfcnt_enable, "perfcnt_enable");
+
 #ifdef HAVE_OVERLAY
    CONFIG_GET_PATH_EXTERN(overlay_dir, "overlay_directory");
    if (!strcmp(g_extern.overlay_dir, "default"))
@@ -1495,6 +1497,7 @@ bool config_save_file(const char *path)
    config_set_bool(conf, "core_specific_config", g_settings.core_specific_config);
    config_set_int(conf, "libretro_log_level", g_settings.libretro_log_level);
    config_set_bool(conf, "log_verbosity", g_extern.verbose);
+   config_set_bool(conf, "perfcnt_enable", g_extern.perfcnt_enable);
 
    bool ret = config_file_write(conf, path);
    config_file_free(conf);

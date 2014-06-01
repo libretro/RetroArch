@@ -31,7 +31,6 @@
 #include "cheats.h"
 #include "audio/dsp_filter.h"
 #include "compat/strl.h"
-#include "performance.h"
 #include "core_options.h"
 #include "miscellaneous.h"
 #include "gfx/filter.h"
@@ -363,6 +362,7 @@ typedef struct rarch_viewport
 struct global
 {
    bool verbose;
+   bool perfcnt_enable;
    bool audio_active;
    bool video_active;
 #ifdef HAVE_CAMERA

@@ -134,6 +134,7 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
          file_list_clear(rgui->selection_buf);
          file_list_push(rgui->selection_buf, "Libretro Logging Level", RGUI_SETTINGS_LIBRETRO_LOG_LEVEL, 0);
          file_list_push(rgui->selection_buf, "Logging Verbosity", RGUI_SETTINGS_LOGGING_VERBOSITY, 0);
+         file_list_push(rgui->selection_buf, "Performance Counters", RGUI_SETTINGS_PERFORMANCE_COUNTERS_ENABLE, 0);
          file_list_push(rgui->selection_buf, "Configuration Save On Exit", RGUI_SETTINGS_CONFIG_SAVE_ON_EXIT, 0);
          file_list_push(rgui->selection_buf, "Configuration Per-Core", RGUI_SETTINGS_PER_CORE_CONFIG, 0);
 #ifdef HAVE_SCREENSHOTS
@@ -428,7 +429,6 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
       case RGUI_SETTINGS_PERFORMANCE_COUNTERS:
          file_list_clear(rgui->selection_buf);
          {
-#ifdef PERF_TEST
             const struct retro_perf_counter **counters = (const struct retro_perf_counter**)perf_counters_rarch;
             unsigned num = perf_ptr_rarch;
 
@@ -438,7 +438,6 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
             for (i = 0; i < num; i++)
                if (counters[i] && counters[i]->ident)
                   file_list_push(rgui->selection_buf, counters[i]->ident, RGUI_SETTINGS_PERF_COUNTERS_BEGIN + i, 0);
-#endif
          }
          break;
       case RGUI_SETTINGS:
@@ -465,9 +464,7 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
          file_list_push(rgui->selection_buf, "Core Information", RGUI_SETTINGS_CORE_INFO, 0);
          file_list_push(rgui->selection_buf, "Settings", RGUI_SETTINGS_OPTIONS, 0);
          file_list_push(rgui->selection_buf, "Drivers", RGUI_SETTINGS_DRIVERS, 0);
-#ifdef PERF_TEST
          file_list_push(rgui->selection_buf, "Performance Counters", RGUI_SETTINGS_PERFORMANCE_COUNTERS, 0);
-#endif
 
          if (g_extern.main_is_init && !g_extern.libretro_dummy)
          {
@@ -561,6 +558,11 @@ static int menu_info_screen_iterate(unsigned action)
          snprintf(msg, sizeof(msg),
                "-- Enable or disable verbosity level \n"
                "of frontend.");
+         break;
+      case RGUI_SETTINGS_PERFORMANCE_COUNTERS_ENABLE:
+         snprintf(msg, sizeof(msg),
+               "-- Enable or disable frontend \n"
+               "performance counters.");
          break;
       case RGUI_SYSTEM_DIR_PATH:
          snprintf(msg, sizeof(msg),
@@ -3208,7 +3210,6 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
 
    if (setting >= RGUI_SETTINGS_PERF_COUNTERS_BEGIN && setting <= RGUI_SETTINGS_PERF_COUNTERS_END)
    {
-#ifdef PERF_TEST
       struct retro_perf_counter **counters = (struct retro_perf_counter**)perf_counters_rarch;
       unsigned offset = setting - RGUI_SETTINGS_PERF_COUNTERS_BEGIN;
       if (counters[offset] && action == RGUI_ACTION_START)
@@ -3216,7 +3217,6 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
          counters[offset]->total = 0;
          counters[offset]->call_cnt = 0;
       }
-#endif
       return 0;
    }
    else if (setting >= RGUI_SETTINGS_BIND_BEGIN && setting <= RGUI_SETTINGS_BIND_ALL_LAST)
@@ -3330,6 +3330,10 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
       case RGUI_SETTINGS_LOGGING_VERBOSITY:
          if (action == RGUI_ACTION_LEFT || action == RGUI_ACTION_RIGHT)
             g_extern.verbose = !g_extern.verbose;
+         break;
+      case RGUI_SETTINGS_PERFORMANCE_COUNTERS_ENABLE:
+         if (action == RGUI_ACTION_LEFT || action == RGUI_ACTION_RIGHT)
+            g_extern.perfcnt_enable = !g_extern.perfcnt_enable;
          break;
       case RGUI_SETTINGS_CONFIG_SAVE_ON_EXIT:
          if (action == RGUI_ACTION_OK || action == RGUI_ACTION_RIGHT
@@ -4783,28 +4787,25 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
    return 0;
 }
 
-#ifdef _WIN32
-#define PERF_LOG_FMT "%I64u ticks, %I64u runs."
-#else
-#define PERF_LOG_FMT "%llu ticks, %llu runs."
-#endif
-
 static void menu_common_setting_set_label(char *type_str, size_t type_str_size, unsigned *w, unsigned type)
 {
    if (type >= RGUI_SETTINGS_PERF_COUNTERS_BEGIN && type <= RGUI_SETTINGS_PERF_COUNTERS_END)
    {
-#ifdef PERF_TEST
       const struct retro_perf_counter **counters = (const struct retro_perf_counter**)perf_counters_rarch;
 
       unsigned offset = type - RGUI_SETTINGS_PERF_COUNTERS_BEGIN;
       if (counters[offset] && counters[offset]->call_cnt)
       {
-         snprintf(type_str, type_str_size, PERF_LOG_FMT, 
+         snprintf(type_str, type_str_size,
+#ifdef _WIN32
+               "%I64u ticks, %I64u runs.",
+#else
+               "%llu ticks, %llu runs.",
+#endif
                ((unsigned long long)counters[offset]->total / (unsigned long long)counters[offset]->call_cnt),
                (unsigned long long)counters[offset]->call_cnt);
       }
       else
-#endif
       {
          *type_str = '\0';
          *w = 0;
@@ -4972,6 +4973,9 @@ static void menu_common_setting_set_label(char *type_str, size_t type_str_size, 
             break;
          case RGUI_SETTINGS_LOGGING_VERBOSITY:
             strlcpy(type_str, g_extern.verbose ? "ON" : "OFF", type_str_size);
+            break;
+         case RGUI_SETTINGS_PERFORMANCE_COUNTERS_ENABLE:
+            strlcpy(type_str, g_extern.perfcnt_enable ? "ON" : "OFF", type_str_size);
             break;
          case RGUI_SETTINGS_CONFIG_SAVE_ON_EXIT:
             strlcpy(type_str, g_extern.config_save_on_exit ? "ON" : "OFF", type_str_size);

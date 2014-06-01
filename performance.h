@@ -17,8 +17,10 @@
 #ifndef _RARCH_PERF_H
 #define _RARCH_PERF_H
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
+#ifdef _WIN32
+#define PERF_LOG_FMT "[PERF]: Avg (%s): %I64u ticks, %I64u runs.\n"
+#else
+#define PERF_LOG_FMT "[PERF]: Avg (%s): %llu ticks, %llu runs.\n"
 #endif
 
 #ifdef __cplusplus
@@ -31,18 +33,14 @@ extern "C" {
 #endif
 #endif
 
-#include "boolean.h"
-#include "libretro.h"
-#include <stdint.h>
+#include "general.h"
 
 #define MAX_COUNTERS 64
 
-#ifdef PERF_TEST
 extern const struct retro_perf_counter *perf_counters_rarch[MAX_COUNTERS];
 extern const struct retro_perf_counter *perf_counters_libretro[MAX_COUNTERS];
 extern unsigned perf_ptr_rarch;
 extern unsigned perf_ptr_libretro;
-#endif
 
 retro_perf_tick_t rarch_get_perf_counter(void);
 retro_time_t rarch_get_time_usec(void);
@@ -54,33 +52,32 @@ void retro_perf_log(void);
 
 static inline void rarch_perf_start(struct retro_perf_counter *perf)
 {
-   perf->call_cnt++;
-   perf->start = rarch_get_perf_counter();
+   if (g_extern.perfcnt_enable)
+   {
+      perf->call_cnt++;
+      perf->start = rarch_get_perf_counter();
+   }
 }
 
 static inline void rarch_perf_stop(struct retro_perf_counter *perf)
 {
-   perf->total += rarch_get_perf_counter() - perf->start;
+   if (g_extern.perfcnt_enable)
+      perf->total += rarch_get_perf_counter() - perf->start;
 }
 
 uint64_t rarch_get_cpu_features(void);
 unsigned rarch_get_cpu_cores(void);
 
 // Used internally by RetroArch.
-#if defined(PERF_TEST) || !defined(RARCH_INTERNAL)
 #define RARCH_PERFORMANCE_INIT(X) \
    static struct retro_perf_counter X = {#X}; \
    do { \
       if (!(X).registered) \
          rarch_perf_register(&(X)); \
    } while(0)
+
 #define RARCH_PERFORMANCE_START(X) rarch_perf_start(&(X))
 #define RARCH_PERFORMANCE_STOP(X) rarch_perf_stop(&(X))
-#else
-#define RARCH_PERFORMANCE_INIT(X)
-#define RARCH_PERFORMANCE_START(X)
-#define RARCH_PERFORMANCE_STOP(X)
-#endif
 
 #ifdef __cplusplus
 }

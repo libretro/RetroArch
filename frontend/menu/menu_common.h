@@ -30,6 +30,7 @@
 #include "history.h"
 #include "../../input/input_common.h"
 #include "../../input/keyboard_line.h"
+#include "../../performance.h"
 
 #if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
 

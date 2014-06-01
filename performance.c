@@ -84,7 +84,7 @@ unsigned perf_ptr_libretro;
 
 void rarch_perf_register(struct retro_perf_counter *perf)
 {
-   if (perf->registered || perf_ptr_rarch >= MAX_COUNTERS)
+   if (!g_extern.perfcnt_enable || perf->registered || perf_ptr_rarch >= MAX_COUNTERS)
       return;
 
    perf_counters_rarch[perf_ptr_rarch++] = perf;
@@ -105,12 +105,6 @@ void retro_perf_clear(void)
    perf_ptr_libretro = 0;
    memset(perf_counters_libretro, 0, sizeof(perf_counters_libretro));
 }
-
-#ifdef _WIN32
-#define PERF_LOG_FMT "[PERF]: Avg (%s): %I64u ticks, %I64u runs.\n"
-#else
-#define PERF_LOG_FMT "[PERF]: Avg (%s): %llu ticks, %llu runs.\n"
-#endif
 
 static void log_counters(const struct retro_perf_counter **counters, unsigned num)
 {
