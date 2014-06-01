@@ -58,8 +58,9 @@ static enum gfx_wrap_type wrap_str_to_mode(const char *wrap_mode)
 }
 
 // CGP
-static bool shader_parse_pass(config_file_t *conf, struct gfx_shader_pass *pass, unsigned i)
+static bool shader_parse_pass(config_file_t *conf, void *data, unsigned i)
 {
+   struct gfx_shader_pass *pass = (struct gfx_shader_pass*)data;
    // Source
    char shader_name[64];
    print_buf(shader_name, "shader%u", i);
@@ -227,11 +228,13 @@ static bool shader_parse_pass(config_file_t *conf, struct gfx_shader_pass *pass,
    return true;
 }
 
-static bool shader_parse_textures(config_file_t *conf, struct gfx_shader *shader)
+static bool shader_parse_textures(config_file_t *conf, void *data)
 {
    const char *id;
    char *save;
    char textures[1024];
+   struct gfx_shader *shader = (struct gfx_shader*)data;
+
    if (!config_get_array(conf, "textures", textures, sizeof(textures)))
       return true;
 
@@ -284,9 +287,10 @@ static struct gfx_shader_parameter *find_parameter(struct gfx_shader_parameter *
    return NULL;
 }
 
-bool gfx_shader_resolve_parameters(config_file_t *conf, struct gfx_shader *shader)
+bool gfx_shader_resolve_parameters(config_file_t *conf, void *data)
 {
    unsigned i;
+   struct gfx_shader *shader = (struct gfx_shader*)data;
 
    shader->num_parameters = 0;
    struct gfx_shader_parameter *param = &shader->parameters[shader->num_parameters];
@@ -449,9 +453,11 @@ static bool shader_parse_imports(config_file_t *conf, struct gfx_shader *shader)
    return true;
 }
 
-bool gfx_shader_read_conf_cgp(config_file_t *conf, struct gfx_shader *shader)
+bool gfx_shader_read_conf_cgp(config_file_t *conf, void *data)
 {
    unsigned shaders, i;
+   struct gfx_shader *shader = (struct gfx_shader*)data;
+
    memset(shader, 0, sizeof(*shader));
 
    shader->type = RARCH_SHADER_CG;
@@ -591,9 +597,10 @@ static void shader_write_variable(config_file_t *conf, const struct state_tracke
    }
 }
 
-void gfx_shader_write_conf_cgp(config_file_t *conf, const struct gfx_shader *shader)
+void gfx_shader_write_conf_cgp(config_file_t *conf, void *data)
 {
    unsigned i;
+   struct gfx_shader *shader = (struct gfx_shader*)data;
    config_set_int(conf, "shaders", shader->passes);
    for (i = 0; i < shader->passes; i++)
    {
@@ -714,10 +721,12 @@ enum rarch_shader_type gfx_shader_parse_type(const char *path, enum rarch_shader
    return fallback;
 }
 
-void gfx_shader_resolve_relative(struct gfx_shader *shader, const char *ref_path)
+void gfx_shader_resolve_relative(void *data, const char *ref_path)
 {
    unsigned i;
    char tmp_path[PATH_MAX];
+   struct gfx_shader *shader = (struct gfx_shader*)data;
+
    for (i = 0; i < shader->passes; i++)
    {
       if (!*shader->pass[i].source.path)
