@@ -250,6 +250,24 @@ static void frontend_gx_get_environment_settings(int argc, char *argv[], void *a
       fill_pathname_join(gx_rom_path, argv[1], argv[2], sizeof(gx_rom_path));
    else
       gx_rom_path[0] = '\0';
+#else
+#ifdef HW_RVL
+   // needed on Wii; loaders follow a dumb standard where the path and filename are separate in the argument list
+   if (argc > 2 && argv[1] != NULL && argv[2] != NULL)
+   {
+      int i;
+      char wii_new_argv1[PATH_MAX];
+      fill_pathname_join(wii_new_argv1, argv[1], argv[2], sizeof(wii_new_argv1));
+      argv[1] = strdup(wii_new_argv1);
+      // shift over remaining args
+      for (i = 3; i < argc; i++)
+      {
+         argv[i - 1] = argv[i];
+      }
+      argc--;
+      argv[argc] = NULL;
+   }
+#endif
 #endif
 }
 
