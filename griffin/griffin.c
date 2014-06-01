@@ -428,7 +428,7 @@ AUDIO
 
 #ifdef HAVE_ALSA
 #ifdef __QNX__
-#include "../blackberry-qnx/alsa_qsa.c"
+#include "../audio/alsa_qsa.c"
 #else
 #include "../audio/alsa.c"
 #include "../audio/alsathread.c"
