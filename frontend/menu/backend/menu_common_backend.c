@@ -391,7 +391,7 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
 #ifdef HAVE_OSK
          file_list_push(rgui->selection_buf, "Onscreen Keyboard Enable", RGUI_SETTINGS_ONSCREEN_KEYBOARD_ENABLE, 0);
 #endif
-         last = (driver.input && driver.input->set_keybinds && !driver.input->get_joypad_driver) ? RGUI_SETTINGS_BIND_R3 : RGUI_SETTINGS_BIND_ALL_LAST;
+         last = (driver.input && driver.input->set_keybinds && !driver.input->get_joypad_driver) ? (RGUI_SETTINGS_BIND_BEGIN + RETRO_DEVICE_ID_JOYPAD_R3) : RGUI_SETTINGS_BIND_ALL_LAST;
          for (i = RGUI_SETTINGS_BIND_BEGIN; i <= last; i++)
             file_list_push(rgui->selection_buf, input_config_bind_map[i - RGUI_SETTINGS_BIND_BEGIN].desc, i, 0);
          break;
@@ -1034,16 +1034,16 @@ static int menu_info_screen_iterate(unsigned action)
                "This will be overridden by explicit command line\n"
                "options.");
          break;
-      case RGUI_SETTINGS_BIND_ANALOG_LEFT_X_PLUS:
-      case RGUI_SETTINGS_BIND_ANALOG_LEFT_X_MINUS:
-      case RGUI_SETTINGS_BIND_ANALOG_LEFT_Y_PLUS:
-      case RGUI_SETTINGS_BIND_ANALOG_LEFT_Y_MINUS:
-      case RGUI_SETTINGS_BIND_ANALOG_RIGHT_X_PLUS:
-      case RGUI_SETTINGS_BIND_ANALOG_RIGHT_X_MINUS:
-      case RGUI_SETTINGS_BIND_ANALOG_RIGHT_Y_PLUS:
-      case RGUI_SETTINGS_BIND_ANALOG_RIGHT_Y_MINUS:
+      case RGUI_SETTINGS_BIND_BEGIN + RARCH_ANALOG_LEFT_X_PLUS:
+      case RGUI_SETTINGS_BIND_BEGIN + RARCH_ANALOG_LEFT_X_MINUS:
+      case RGUI_SETTINGS_BIND_BEGIN + RARCH_ANALOG_LEFT_Y_PLUS:
+      case RGUI_SETTINGS_BIND_BEGIN + RARCH_ANALOG_LEFT_Y_MINUS:
+      case RGUI_SETTINGS_BIND_BEGIN + RARCH_ANALOG_RIGHT_X_PLUS:
+      case RGUI_SETTINGS_BIND_BEGIN + RARCH_ANALOG_RIGHT_X_MINUS:
+      case RGUI_SETTINGS_BIND_BEGIN + RARCH_ANALOG_RIGHT_Y_PLUS:
+      case RGUI_SETTINGS_BIND_BEGIN + RARCH_ANALOG_RIGHT_Y_MINUS:
          snprintf(msg, sizeof(msg),
-               " -- Axis for analog stick (DualShock-esque.\n"
+               " -- Axis for analog stick (DualShock-esque).\n"
                " \n"
                "Bound as usual, however, if a real analog \n"
                "axis is bound, it can be read as a true analog.\n"
@@ -1051,24 +1051,24 @@ static int menu_info_screen_iterate(unsigned action)
                "Positive X axis is right. \n"
                "Positive Y axis is down.");
          break;
-      case RGUI_SETTINGS_BIND_SHADER_NEXT:
+      case RGUI_SETTINGS_BIND_BEGIN + RARCH_SHADER_NEXT:
          snprintf(msg, sizeof(msg),
                " -- Applies next shader in directory.");
          break;
-      case RGUI_SETTINGS_BIND_SHADER_PREV:
+      case RGUI_SETTINGS_BIND_BEGIN + RARCH_SHADER_PREV:
          snprintf(msg, sizeof(msg),
                " -- Applies previous shader in directory.");
          break;
-      case RGUI_SETTINGS_BIND_LOAD_STATE_KEY:
+      case RGUI_SETTINGS_BIND_BEGIN + RARCH_LOAD_STATE_KEY:
          snprintf(msg, sizeof(msg),
                " -- Loads state.");
          break;
-      case RGUI_SETTINGS_BIND_SAVE_STATE_KEY:
+      case RGUI_SETTINGS_BIND_BEGIN + RARCH_SAVE_STATE_KEY:
          snprintf(msg, sizeof(msg),
                " -- Saves state.");
          break;
-      case RGUI_SETTINGS_BIND_STATE_SLOT_PLUS:
-      case RGUI_SETTINGS_BIND_STATE_SLOT_MINUS:
+      case RGUI_SETTINGS_BIND_BEGIN + RARCH_STATE_SLOT_PLUS:
+      case RGUI_SETTINGS_BIND_BEGIN + RARCH_STATE_SLOT_MINUS:
          snprintf(msg, sizeof(msg),
                " -- State slots.\n"
                " \n"
@@ -1077,7 +1077,7 @@ static int menu_info_screen_iterate(unsigned action)
                "When slot is != 0, path will be (path)(d), \n"
                "where (d) is slot number.");
          break;
-      case RGUI_SETTINGS_BIND_TURBO_ENABLE:
+      case RGUI_SETTINGS_BIND_BEGIN + RARCH_TURBO_ENABLE:
          snprintf(msg, sizeof(msg),
                " -- Turbo enable.\n"
                " \n"
@@ -1089,12 +1089,12 @@ static int menu_info_screen_iterate(unsigned action)
                "The modulation stops when the button \n"
                "itself (not turbo button) is released.");
          break;
-      case RGUI_SETTINGS_BIND_FAST_FORWARD_HOLD_KEY:
+      case RGUI_SETTINGS_BIND_BEGIN + RARCH_FAST_FORWARD_HOLD_KEY:
          snprintf(msg, sizeof(msg),
                " -- Hold for fast-forward. Releasing button \n"
                "disables fast-forward.");
          break;
-      case RGUI_SETTINGS_BIND_QUIT_KEY:
+      case RGUI_SETTINGS_BIND_BEGIN + RARCH_QUIT_KEY:
          snprintf(msg, sizeof(msg),
                " -- Key to exit RetroArch cleanly."
 #if !defined(RARCH_MOBILE) && !defined(RARCH_CONSOLE)
@@ -1106,57 +1106,57 @@ static int menu_info_screen_iterate(unsigned action)
 #endif
                );
          break;
-      case RGUI_SETTINGS_BIND_REWIND:
+      case RGUI_SETTINGS_BIND_BEGIN + RARCH_REWIND:
          snprintf(msg, sizeof(msg),
                " -- Hold button down to rewind.\n"
                " \n"
                "Rewind must be enabled.");
          break;
-      case RGUI_SETTINGS_BIND_MOVIE_RECORD_TOGGLE:
+      case RGUI_SETTINGS_BIND_BEGIN + RARCH_MOVIE_RECORD_TOGGLE:
          snprintf(msg, sizeof(msg),
                " -- Toggle between recording and not.");
          break;
-      case RGUI_SETTINGS_BIND_PAUSE_TOGGLE:
+      case RGUI_SETTINGS_BIND_BEGIN + RARCH_PAUSE_TOGGLE:
          snprintf(msg, sizeof(msg),
                " -- Toggle between paused and non-paused state.");
          break;
-      case RGUI_SETTINGS_BIND_FRAMEADVANCE:
+      case RGUI_SETTINGS_BIND_BEGIN + RARCH_FRAMEADVANCE:
          snprintf(msg, sizeof(msg),
                " -- Frame advance when content is paused.");
          break;
-      case RGUI_SETTINGS_BIND_RESET:
+      case RGUI_SETTINGS_BIND_BEGIN + RARCH_RESET:
          snprintf(msg, sizeof(msg),
                " -- Reset the content.\n");
          break;
-      case RGUI_SETTINGS_BIND_CHEAT_INDEX_PLUS:
+      case RGUI_SETTINGS_BIND_BEGIN + RARCH_CHEAT_INDEX_PLUS:
          snprintf(msg, sizeof(msg),
                " -- Increment cheat index.\n");
          break;
-      case RGUI_SETTINGS_BIND_CHEAT_INDEX_MINUS:
+      case RGUI_SETTINGS_BIND_BEGIN + RARCH_CHEAT_INDEX_MINUS:
          snprintf(msg, sizeof(msg),
                " -- Decrement cheat index.\n");
          break;
-      case RGUI_SETTINGS_BIND_CHEAT_TOGGLE:
+      case RGUI_SETTINGS_BIND_BEGIN + RARCH_CHEAT_TOGGLE:
          snprintf(msg, sizeof(msg),
                " -- Toggle cheat index.\n");
          break;
-      case RGUI_SETTINGS_BIND_SCREENSHOT:
+      case RGUI_SETTINGS_BIND_BEGIN + RARCH_SCREENSHOT:
          snprintf(msg, sizeof(msg),
                " -- Take screenshot.");
          break;
-      case RGUI_SETTINGS_BIND_MUTE:
+      case RGUI_SETTINGS_BIND_BEGIN + RARCH_MUTE:
          snprintf(msg, sizeof(msg),
                " -- Mute/unmute audio.");
          break;
-      case RGUI_SETTINGS_BIND_NETPLAY_FLIP:
+      case RGUI_SETTINGS_BIND_BEGIN + RARCH_NETPLAY_FLIP:
          snprintf(msg, sizeof(msg),
                " -- Netplay flip players.");
          break;
-      case RGUI_SETTINGS_BIND_SLOWMOTION:
+      case RGUI_SETTINGS_BIND_BEGIN + RARCH_SLOWMOTION:
          snprintf(msg, sizeof(msg),
                " -- Hold for slowmotion.");
          break;
-      case RGUI_SETTINGS_BIND_ENABLE_HOTKEY:
+      case RGUI_SETTINGS_BIND_BEGIN + RARCH_ENABLE_HOTKEY:
          snprintf(msg, sizeof(msg),
                " -- Enable other hotkeys.\n"
                " \n"
@@ -1170,34 +1170,34 @@ static int menu_info_screen_iterate(unsigned action)
                "the keyboard, where it is not desirable that \n"
                "hotkeys get in the way.");
          break;
-      case RGUI_SETTINGS_BIND_VOLUME_UP:
+      case RGUI_SETTINGS_BIND_BEGIN + RARCH_VOLUME_UP:
          snprintf(msg, sizeof(msg),
                " -- Increases audio volume.");
          break;
-      case RGUI_SETTINGS_BIND_VOLUME_DOWN:
+      case RGUI_SETTINGS_BIND_BEGIN + RARCH_VOLUME_DOWN:
          snprintf(msg, sizeof(msg),
                " -- Decreases audio volume.");
          break;
-      case RGUI_SETTINGS_BIND_OVERLAY_NEXT:
+      case RGUI_SETTINGS_BIND_BEGIN + RARCH_OVERLAY_NEXT:
          snprintf(msg, sizeof(msg),
                " -- Toggles to next overlay.\n"
                " \n"
                "Wraps around.");
          break;
-      case RGUI_SETTINGS_BIND_DISK_EJECT_TOGGLE:
+      case RGUI_SETTINGS_BIND_BEGIN + RARCH_DISK_EJECT_TOGGLE:
          snprintf(msg, sizeof(msg),
                " -- Toggles eject for disks.\n"
                " \n"
                "Used for multiple-disk content.");
          break;
-      case RGUI_SETTINGS_BIND_DISK_NEXT:
+      case RGUI_SETTINGS_BIND_BEGIN + RARCH_DISK_NEXT:
          snprintf(msg, sizeof(msg),
                " -- Cycles through disk images. Use after \n"
                "ejecting. \n"
                " \n"
                " Complete by toggling eject again.");
          break;
-      case RGUI_SETTINGS_BIND_GRAB_MOUSE_TOGGLE:
+      case RGUI_SETTINGS_BIND_BEGIN + RARCH_GRAB_MOUSE_TOGGLE:
          snprintf(msg, sizeof(msg),
                " -- Toggles mouse grab.\n"
                " \n"
@@ -1206,7 +1206,7 @@ static int menu_info_screen_iterate(unsigned action)
                "the window to allow relative mouse input to \n"
                "work better.");
          break;
-      case RGUI_SETTINGS_BIND_MENU_TOGGLE:
+      case RGUI_SETTINGS_BIND_BEGIN + RARCH_MENU_TOGGLE:
          snprintf(msg, sizeof(msg),
                " -- Toggles menu.");
          break;
