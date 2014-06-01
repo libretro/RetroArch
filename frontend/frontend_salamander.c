@@ -37,7 +37,7 @@
 #include "platform/platform_psp.c"
 #endif
 
-default_paths_t default_paths;
+struct defaults default_paths;
 
 //We need to set libretro to the first entry in the cores
 //directory so that it will be saved to the config file
