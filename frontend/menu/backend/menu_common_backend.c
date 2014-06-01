@@ -428,8 +428,8 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
          break;
       case RGUI_SETTINGS_PERFORMANCE_COUNTERS:
          file_list_clear(rgui->selection_buf);
-         file_list_push(rgui->selection_buf, "Core Counters", RGUI_SETTINGS_PERFORMANCE_COUNTERS_LIBRETRO, 0);
          file_list_push(rgui->selection_buf, "Frontend Counters", RGUI_SETTINGS_PERFORMANCE_COUNTERS_FRONTEND, 0);
+         file_list_push(rgui->selection_buf, "Core Counters", RGUI_SETTINGS_PERFORMANCE_COUNTERS_LIBRETRO, 0);
          break;
       case RGUI_SETTINGS_PERFORMANCE_COUNTERS_LIBRETRO:
          file_list_clear(rgui->selection_buf);
