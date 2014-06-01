@@ -30,7 +30,9 @@
 #include "audio/dsp_filter.h"
 #include "input/overlay.h"
 #include "frontend/frontend_context.h"
+#ifndef _WIN32
 #include "miscellaneous.h"
+#endif
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
