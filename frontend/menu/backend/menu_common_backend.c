@@ -5306,12 +5306,11 @@ static void menu_common_setting_set_label(char *type_str, size_t type_str_size, 
          {
 #ifdef PERF_TEST
             const struct retro_perf_counter **counters = (const struct retro_perf_counter**)perf_counters_rarch;
-            unsigned num = perf_ptr_rarch;
 
-            if (counters[type] && counters[type]->ident && counters[type]->call_cnt && counters[type]->total)
+            if (counters[type])
             {
                snprintf(type_str, type_str_size, PERF_LOG_FMT, 
-                     (unsigned long long)counters[type]->total / (unsigned long long)counters[type]->call_cnt,
+                     ((unsigned long long)counters[type]->total / (unsigned long long)counters[type]->call_cnt),
                      (unsigned long long)counters[type]->call_cnt);
             }
             else
