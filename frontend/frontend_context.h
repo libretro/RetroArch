@@ -23,8 +23,6 @@
 #include "../config.h"
 #endif
 
-#include "frontend.h"
-
 #ifdef __cplusplus
 extern "C" {
 #endif
