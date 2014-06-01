@@ -1072,6 +1072,7 @@ static GLuint png_texture_load(const char * file_name, int * width, int * height
 
 static void lakka_context_destroy(void *data)
 {
+   int i, j;
    gl_t *gl = (gl_t*)driver.video_data;
 
    glDeleteTextures(1, &settings_icon);
@@ -1083,21 +1084,48 @@ static void lakka_context_destroy(void *data)
    glDeleteTextures(1, &screenshot_icon);
    glDeleteTextures(1, &reload_icon);
 
+   for (i = 1; i < num_categories; i++)
+   {
+      menu_category_t *category = (menu_category_t*)&categories[i];
+      glDeleteTextures(1, &category->icon);
+
+      for (j = 0; j < category->num_items; j++)
+      {
+         menu_item_t *item = (menu_item_t*)&category->items[j];
+         glDeleteTextures(1, &item->icon);
+      }
+   }
+
    if (numtweens)
       free(tweens);
 
 }
 
+void lakka_init_settings(void)
+{
+   menu_category_t *category = (menu_category_t*)&categories[0];
+
+   strlcpy(category->name, "Settings", sizeof(category->name));
+   category->icon = settings_icon;
+   category->alpha = 1.0;
+   category->zoom = C_ACTIVE_ZOOM;
+   category->active_item = 0;
+   category->num_items   = 0;
+   category->items       = (menu_item_t*)calloc(category->num_items, sizeof(menu_item_t));
+
+   if (font_driver)
+      font_driver->render_msg(font, category->name, &category->out);
+}
+
 static void lakka_context_reset(void *data)
 {
-   int i, j;
+   int i, j, k;
    char path[256], dirpath[256];;
    rgui_handle_t *rgui = (rgui_handle_t*)data;
    gl_t *gl = (gl_t*)driver.video_data;
 
    if (!rgui)
       return;
-
 
    fill_pathname_join(dirpath, g_settings.assets_directory, "lakka", sizeof(dirpath));
    fill_pathname_slash(dirpath, sizeof(dirpath));
@@ -1125,77 +1153,76 @@ static void lakka_context_reset(void *data)
       font_driver->render_msg(font, "Resume", &resume_label);
    }
 
-   //FIXME - at what point are we going to free up all these textures?
+   lakka_init_settings();
+   for (i = 1; i < num_categories; i++)
    {
-      for (i = 1; i < num_categories; i++)
+      menu_category_t *category = (menu_category_t*)&categories[i];
+
+      char core_id[256], texturepath[256], gametexturepath[256], dirpath[256];
+      core_info_t *info;
+      core_info_list_t *info_list;
+
+      fill_pathname_join(dirpath, g_settings.assets_directory, "lakka", sizeof(dirpath));
+      fill_pathname_slash(dirpath, sizeof(dirpath));
+
+      info_list = (core_info_list_t*)rgui->core_info;
+      info = NULL;
+
+      if (info_list)
+         info = (core_info_t*)&info_list->list[i-1];
+
+      strlcpy(core_id, basename(info->path), sizeof(core_id));
+      strlcpy(core_id, str_replace(core_id, ".so", ""), sizeof(core_id));
+      strlcpy(core_id, str_replace(core_id, ".dll", ""), sizeof(core_id));
+      strlcpy(core_id, str_replace(core_id, ".dylib", ""), sizeof(core_id));
+      strlcpy(core_id, str_replace(core_id, "-libretro", ""), sizeof(core_id));
+      strlcpy(core_id, str_replace(core_id, "_libretro", ""), sizeof(core_id));
+      strlcpy(core_id, str_replace(core_id, "libretro-", ""), sizeof(core_id));
+      strlcpy(core_id, str_replace(core_id, "libretro_", ""), sizeof(core_id));
+
+      strlcpy(texturepath, dirpath, sizeof(texturepath));
+      strlcat(texturepath, core_id, sizeof(texturepath));
+      strlcat(texturepath, ".png", sizeof(texturepath));
+
+      strlcpy(gametexturepath, dirpath, sizeof(gametexturepath));
+      strlcat(gametexturepath, core_id, sizeof(gametexturepath));
+      strlcat(gametexturepath, "-content.png", sizeof(gametexturepath));
+
+      category->icon = png_texture_load(texturepath, &dim, &dim);
+      
+      if (font_driver)
+         font_driver->render_msg(font, category->name, &category->out);
+
+      for (j = 0; j < category->num_items; j++)
       {
-         menu_category_t *category = (menu_category_t*)&categories[i];
+         menu_item_t *item = (menu_item_t*)&category->items[j];
+         item->icon = png_texture_load(gametexturepath, &dim, &dim);
 
-         char core_id[256], texturepath[256], gametexturepath[256], dirpath[256];
-         core_info_t *info;
-         core_info_list_t *info_list;
-
-         fill_pathname_join(dirpath, g_settings.assets_directory, "lakka", sizeof(dirpath));
-         fill_pathname_slash(dirpath, sizeof(dirpath));
-
-         info_list = (core_info_list_t*)rgui->core_info;
-         info = NULL;
-
-         if (info_list)
-            info = (core_info_t*)&info_list->list[i-1];
-
-         strlcpy(core_id, basename(info->path), sizeof(core_id));
-         strlcpy(core_id, str_replace(core_id, ".so", ""), sizeof(core_id));
-         strlcpy(core_id, str_replace(core_id, ".dll", ""), sizeof(core_id));
-         strlcpy(core_id, str_replace(core_id, ".dylib", ""), sizeof(core_id));
-         strlcpy(core_id, str_replace(core_id, "-libretro", ""), sizeof(core_id));
-         strlcpy(core_id, str_replace(core_id, "_libretro", ""), sizeof(core_id));
-         strlcpy(core_id, str_replace(core_id, "libretro-", ""), sizeof(core_id));
-         strlcpy(core_id, str_replace(core_id, "libretro_", ""), sizeof(core_id));
-
-         strlcpy(texturepath, dirpath, sizeof(texturepath));
-         strlcat(texturepath, core_id, sizeof(texturepath));
-         strlcat(texturepath, ".png", sizeof(texturepath));
-
-         strlcpy(gametexturepath, dirpath, sizeof(gametexturepath));
-         strlcat(gametexturepath, core_id, sizeof(gametexturepath));
-         strlcat(gametexturepath, "-content.png", sizeof(gametexturepath));
-
-         category->icon = png_texture_load(texturepath, &dim, &dim);
-         
          if (font_driver)
-            font_driver->render_msg(font, category->name, &category->out);
+            font_driver->render_msg(font, item->name, &item->out);
 
-         for (j = 0; j < category->num_items; j++)
+         for (k = 0; k < item->num_subitems; k++)
          {
-            menu_item_t *item = (menu_item_t*)&category->items[j];
-            item->icon = png_texture_load(gametexturepath, &dim, &dim);
+            menu_subitem_t *subitem = (menu_subitem_t*)&item->subitems[k];
+
+            switch (k)
+            {
+               case 0: subitem->icon = run_icon; break;
+               case 1: subitem->icon = savestate_icon; break;
+               case 2: item->subitems[k].icon = loadstate_icon; break;
+               case 3: item->subitems[k].icon = screenshot_icon; break;
+               case 4: item->subitems[k].icon = reload_icon; break;
+            }
 
             if (font_driver)
-               font_driver->render_msg(font, item->name, &item->out);
+               font_driver->render_msg(font, subitem->name, &subitem->out);
          }
       }
+
    }
 }
 
-void lakka_init_settings(void)
-{
-   menu_category_t *category = (menu_category_t*)&categories[0];
-
-   strlcpy(category->name, "Settings", sizeof(category->name));
-   category->icon = settings_icon;
-   category->alpha = 1.0;
-   category->zoom = C_ACTIVE_ZOOM;
-   category->active_item = 0;
-   category->num_items   = 0;
-   category->items       = (menu_item_t*)calloc(category->num_items, sizeof(menu_item_t));
-
-   if (font_driver)
-      font_driver->render_msg(font, category->name, &category->out);
-}
-
-
-static void lakka_init_items(int i, menu_category_t *category, core_info_t *info, const char* gametexturepath, const char* path)
+static void lakka_init_items(int i, menu_category_t *category, core_info_t *info, const char* path)
 {
    int num_items, j, n, k;
    struct string_list *list = (struct string_list*)dir_list_new(path, info->supported_extensions, true);
@@ -1207,10 +1234,9 @@ static void lakka_init_items(int i, menu_category_t *category, core_info_t *info
    for (j = 0; j < num_items; j++)
    {
       if (list->elems[j].attr.b) // is a directory
-         lakka_init_items(i, category, info, gametexturepath, list->elems[j].data);
+         lakka_init_items(i, category, info, list->elems[j].data);
       else
       {
-         struct font_output_list out;
          menu_item_t *item;
 
          n = category->num_items;
@@ -1221,7 +1247,6 @@ static void lakka_init_items(int i, menu_category_t *category, core_info_t *info
 
          strlcpy(item->name, path_basename(list->elems[j].data), sizeof(item->name));
          strlcpy(item->rom, list->elems[j].data, sizeof(item->rom));
-         item->icon           = png_texture_load(gametexturepath, &dim, &dim);
          item->alpha          = i != menu_active_category ? 0 : n ? 0.5 : 1;
          item->zoom           = n ? I_PASSIVE_ZOOM : I_ACTIVE_ZOOM;
          item->y              = n ? VSPACING*(3+n) : VSPACING*2.5;
@@ -1237,23 +1262,18 @@ static void lakka_init_items(int i, menu_category_t *category, core_info_t *info
             {
                case 0:
                   strlcpy(subitem->name, "Run", sizeof(subitem->name));
-                  subitem->icon = run_icon;
                   break;
                case 1:
                   strlcpy(subitem->name, "Save State", sizeof(subitem->name));
-                  subitem->icon = savestate_icon;
                   break;
                case 2:
                   strlcpy(item->subitems[k].name, "Load State", sizeof(item->subitems[k].name));
-                  item->subitems[k].icon = loadstate_icon;
                   break;
                case 3:
                   strlcpy(item->subitems[k].name, "Take Screenshot", sizeof(item->subitems[k].name));
-                  item->subitems[k].icon = screenshot_icon;
                   break;
                case 4:
                   strlcpy(item->subitems[k].name, "Reset", sizeof(item->subitems[k].name));
-                  item->subitems[k].icon = reload_icon;
                   break;
             }
             subitem->alpha = 0;
@@ -1261,17 +1281,11 @@ static void lakka_init_items(int i, menu_category_t *category, core_info_t *info
             subitem->y = k == 0 ? VSPACING * 2.5 : VSPACING * (3 + k);
 
             if (font_driver)
-               font_driver->render_msg(font, subitem->name, &out);
-            memcpy(&subitem->out, &out, sizeof(struct font_output_list));
+               font_driver->render_msg(font, subitem->name, &subitem->out);
          }
-
-         if (font_driver)
-            font_driver->render_msg(font, item->name, &out);
-         memcpy(&item->out, &out, sizeof(struct font_output_list));
       }
    }
 }
-
 
 static void lakka_free(void *data)
 {
@@ -1325,17 +1339,12 @@ static void *lakka_init(void)
 
    lakka_init_core_info(rgui);
    categories = (menu_category_t*)calloc(num_categories, sizeof(menu_category_t));
-   lakka_init_settings();
 
    for (i = 1; i < num_categories; i++)
    {
-      char core_id[256], texturepath[256], gametexturepath[256], dirpath[256];
       core_info_t *info;
       core_info_list_t *info_list;
       menu_category_t *category = (menu_category_t*)&categories[i];
-
-      fill_pathname_join(dirpath, g_settings.assets_directory, "lakka", sizeof(dirpath));
-      fill_pathname_slash(dirpath, sizeof(dirpath));
 
       info_list = (core_info_list_t*)rgui->core_info;
       info = NULL;
@@ -1343,36 +1352,15 @@ static void *lakka_init(void)
       if (info_list)
          info = (core_info_t*)&info_list->list[i-1];
 
-      strlcpy(core_id, basename(info->path), sizeof(core_id));
-      strlcpy(core_id, str_replace(core_id, ".so", ""), sizeof(core_id));
-      strlcpy(core_id, str_replace(core_id, ".dll", ""), sizeof(core_id));
-      strlcpy(core_id, str_replace(core_id, ".dylib", ""), sizeof(core_id));
-      strlcpy(core_id, str_replace(core_id, "-libretro", ""), sizeof(core_id));
-      strlcpy(core_id, str_replace(core_id, "_libretro", ""), sizeof(core_id));
-      strlcpy(core_id, str_replace(core_id, "libretro-", ""), sizeof(core_id));
-      strlcpy(core_id, str_replace(core_id, "libretro_", ""), sizeof(core_id));
-
-      strlcpy(texturepath, dirpath, sizeof(texturepath));
-      strlcat(texturepath, core_id, sizeof(texturepath));
-      strlcat(texturepath, ".png", sizeof(texturepath));
-
-      strlcpy(gametexturepath, dirpath, sizeof(gametexturepath));
-      strlcat(gametexturepath, core_id, sizeof(gametexturepath));
-      strlcat(gametexturepath, "-content.png", sizeof(gametexturepath));
-
       strlcpy(category->name, info->display_name, sizeof(category->name));
       strlcpy(category->libretro, info->path, sizeof(category->libretro));
-      category->icon        = png_texture_load(texturepath, &dim, &dim);
       category->alpha       = 0.5;
       category->zoom        = C_PASSIVE_ZOOM;
       category->active_item = 0;
       category->num_items   = 0;
       category->items       = (menu_item_t*)calloc(category->num_items, sizeof(menu_item_t));
 
-      if (font_driver)
-         font_driver->render_msg(font, category->name, &category->out);
-
-      lakka_init_items(i, category, info, gametexturepath, g_settings.content_directory);
+      lakka_init_items(i, category, info, g_settings.content_directory);
    }
 
    return rgui;
