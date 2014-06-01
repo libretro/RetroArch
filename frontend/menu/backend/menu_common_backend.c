@@ -1077,6 +1077,61 @@ static int menu_info_screen_iterate(unsigned action)
          snprintf(msg, sizeof(msg),
                " -- Toggles menu.");
          break;
+      case RGUI_SETTINGS_DRIVER_VIDEO:
+         if (!strcmp(g_settings.video.driver, "gl"))
+            snprintf(msg, sizeof(msg),
+                  " -- OpenGL Video driver. \n"
+                  " \n"
+                  "This driver allows libretro GL cores to  \n"
+                  "be used in addition to software-rendered \n"
+                  "core implementations.\n"
+                  " \n"
+                  "Performance for software-rendered and \n"
+                  "libretro GL core implementations should be \n"
+                  "optimal (depending on your graphics card's \n"
+                  "underlying GL driver).");
+         else if (!strcmp(g_settings.video.driver, "sdl"))
+            snprintf(msg, sizeof(msg),
+                  " -- SDL Video driver.\n"
+                  " \n"
+                  "This is an SDL 1.2 software-rendered video \n"
+                  "driver.\n"
+                  " \n"
+                  "Performance is considered to be suboptimal. \n"
+                  "Consider using it only as a last resort.\n"
+                  " \n"
+                  "WARNING: Menu support is currently not \n"
+                  "supported with this driver.");
+         else if (!strcmp(g_settings.video.driver, "d3d"))
+            snprintf(msg, sizeof(msg),
+                  " -- Direct3D Video driver. \n"
+                  " \n"
+                  "Performance for software-rendered cores \n"
+                  "should be optimal (depending on your \n"
+                  "graphics card's underlying D3D driver).");
+         else if (!strcmp(g_settings.video.driver, "lima"))
+            snprintf(msg, sizeof(msg),
+                  " -- Lima Video Driver. \n"
+                  " \n"
+                  "This is a low-level Limare video driver. \n"
+                  " \n"
+                  "Performance for software rendered cores \n"
+                  "should be optimal.");
+         else
+            snprintf(msg, sizeof(msg),
+                  " -- Current Video driver.");
+         break;
+      case RGUI_SETTINGS_DRIVER_AUDIO_RESAMPLER:
+         if (!strcmp(g_settings.audio.resampler, "sinc"))
+            snprintf(msg, sizeof(msg),
+                  " -- Windowed SINC implementation.\n"
+                  " \n"
+                  "Only suitable as an upsampler, as cutoff \n"
+                  "frequency isn't dynamically configurable.");
+         else if (!strcmp(g_settings.audio.resampler, "CC"))
+            snprintf(msg, sizeof(msg),
+                  " -- Convoluted Cosine implementation.");
+         break;
       default:
          snprintf(msg, sizeof(msg),
                "-- No info on this item available. --\n");
