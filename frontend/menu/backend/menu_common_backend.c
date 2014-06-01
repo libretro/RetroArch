@@ -761,12 +761,126 @@ static int menu_info_screen_iterate(unsigned action)
                " \n"
                " Possible values are [0.0, 1.0].");
          break;
-      case RGUI_SETTINGS_DRIVER_INPUT:
+      case RGUI_SETTINGS_CORE:
          snprintf(msg, sizeof(msg),
-               " -- Input driver.\n"
+               " -- Core Selection. \n"
                " \n"
-               "Depending on video driver, it might \n"
-               "force a different input driver.");
+               "Browse for a libretro core \n"
+               "implementation. Where the browser \n"
+               "starts depends on your Core Directory \n"
+               "path. If blank, it will start in root. \n"
+               " \n"
+               "If Core Directory is a directory, RGUI \n"
+               "will use that as top folder. If Core \n"
+               "Directory is a full path, it will start \n"
+               "in the folder where the file is.");
+         break;
+      case RGUI_SETTINGS_OPEN_HISTORY:
+         snprintf(msg, sizeof(msg),
+               " -- Loading content from history. \n"
+               " \n"
+               "As content is loaded, content and libretro \n"
+               "core combinations are saved to history. \n"
+               " \n"
+               "The history is saved to a file in the same \n"
+               "directory as the RetroArch config file. If \n"
+               "no config file was loaded in startup, history \n"
+               "will not be saved or loaded, and will not exist \n"
+               "in the main menu."
+               );
+         break;
+      case RGUI_SETTINGS_SHADER_PRESET:
+         snprintf(msg, sizeof(msg),
+               " -- Load Shader Preset. \n"
+               " \n"
+               " Load a "
+#ifdef HAVE_CG
+               "Cg"
+#endif
+#ifdef HAVE_GLSL
+#ifdef HAVE_CG
+               "/"
+#endif
+               "GLSL"
+#endif
+#ifdef HAVE_HLSL
+#if defined(HAVE_CG) || defined(HAVE_HLSL)
+               "/"
+#endif
+               "HLSL"
+#endif
+               " preset directly. \n"
+               "The menu shader menu is updated accordingly. \n"
+               " \n"
+               "If the CGP uses scaling methods which are not \n"
+               "simple, (i.e. source scaling, same scaling \n"
+               "factor for X/Y), the scaling factor displayed \n"
+               "in the menu might not be correct."
+               );
+         break;
+      case RGUI_SETTINGS_SHADER_APPLY:
+         snprintf(msg, sizeof(msg),
+               " -- Apply Shader Changes. \n"
+               " \n"
+               "After changing shader settings, use this to \n"
+               "apply changes. \n"
+               " \n"
+               "Changing shader settings is a somewhat \n"
+               "expensive operation so it has to be \n"
+               "done explicitly.");
+         break;
+      case RGUI_SETTINGS_SHADER_PASSES:
+         snprintf(msg, sizeof(msg),
+               " -- Shader Passes. \n"
+               " \n"
+               "RetroArch allows you to mix and match various \n"
+               "shaders with arbitrary shader passes, with \n"
+               "custom hardware filters and scale factors. \n"
+               " \n"
+               "This option specifies the number of shader \n"
+               "passes to use. If you set this to 0, and use \n"
+               "Apply Shader Changes, you use a 'blank' shader. \n"
+               " \n"
+               "The Default Filter option will affect the \n"
+               "stretching filter.");
+         break;
+      case RGUI_SETTINGS_DRIVER_INPUT:
+         if (!strcmp(g_settings.input.driver, "udev"))
+            snprintf(msg, sizeof(msg),
+                  " -- udev Input driver. \n"
+                  " \n"
+                  "This driver can run without X. \n"
+                  " \n"
+                  "It uses the recent evdev joypad API \n"
+                  "for joystick support. It supports \n"
+                  "hotplugging and force feedback (if \n"
+                  "supported by device). \n"
+                  " \n"
+                  "The driver reads evdev events for keyboard \n"
+                  "support. It also supports keyboard callback, \n"
+                  "mice and touchpads. \n"
+                  " \n"
+                  "By default in most distros, /dev/input nodes \n"
+                  "are root-only (mode 600). You can set up a udev \n"
+                  "rule which makes these accessible to non-root."
+                  );
+         else if (!strcmp(g_settings.input.driver, "linuxraw"))
+            snprintf(msg, sizeof(msg),
+                  " -- linuxraw Input driver. \n"
+                  " \n"
+                  "This driver requires an active TTY. Keyboard \n"
+                  "events are read directly from the TTY which \n"
+                  "makes it simpler, but not as flexible as udev. \n"
+                  "Mice, etc, are not supported at all. \n"
+                  " \n"
+                  "This driver uses the older joystick API \n"
+                  "(/dev/input/js*).");
+         else
+            snprintf(msg, sizeof(msg),
+                  " -- Input driver.\n"
+                  " \n"
+                  "Depending on video driver, it might \n"
+                  "force a different input driver.");
          break;
       case RGUI_SETTINGS_AUDIO_DSP_FILTER:
          snprintf(msg, sizeof(msg),
