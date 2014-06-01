@@ -98,7 +98,7 @@ int main(int argc, char *argv[])
       frontend_ctx->init(args);
 
    if (frontend_ctx && frontend_ctx->environment_get)
-      frontend_ctx->environment_get(argc, argv, args);
+      frontend_ctx->environment_get(&argc, argv, args);
 
    if (frontend_ctx && frontend_ctx->salamander_init)
       frontend_ctx->salamander_init();
