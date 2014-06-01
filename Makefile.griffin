@@ -137,7 +137,7 @@ endif
 ifeq ($(HAVE_LOGGER), 1)
 CFLAGS		+= -DHAVE_LOGGER
 CFLAGS      += -DPC_DEVELOPMENT_IP_ADDRESS=\"$(PC_DEVELOPMENT_IP_ADDRESS)\" -DPC_DEVELOPMENT_UDP_PORT=$(PC_DEVELOPMENT_UDP_PORT)
-INCLUDE     += -Iconsole/logger
+INCLUDE     += -Ilogger/netlogger
 endif
 
 ifeq ($(HAVE_LIBRETRO_MANAGEMENT), 1)
@@ -154,7 +154,7 @@ endif
 
 ifeq ($(HAVE_FILE_LOGGER), 1)
 CFLAGS		+= -DHAVE_FILE_LOGGER
-INCLUDE     += -Iconsole/logger
+INCLUDE     += -Ilogger/netlogger
 endif
 
 ifeq ($(HAVE_RARCH_EXEC), 1)
