@@ -40,6 +40,6 @@ typedef struct
    char system_dir[PATH_MAX];
 } default_paths_t;
 
-extern default_paths_t default_paths;
+default_paths_t default_paths;
 
 #endif

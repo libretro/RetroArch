@@ -21,6 +21,7 @@
 #include "file.h"
 #include "compat/posix_string.h"
 #include "input/input_common.h"
+#include "console/rarch_console.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -475,7 +476,6 @@ void config_set_defaults(void)
    if (default_config_path)
       fill_pathname_expand_special(g_extern.config_path, default_config_path, sizeof(g_extern.config_path));
 
-#ifdef RARCH_CONSOLE
    if (*default_paths.assets_dir)
       strlcpy(g_settings.assets_directory, default_paths.assets_dir, sizeof(g_settings.assets_directory));
    if (*default_paths.core_dir)
@@ -497,7 +497,6 @@ void config_set_defaults(void)
 
    if (*default_paths.config_path)
       strlcpy(g_extern.config_path, default_paths.config_path, sizeof(g_extern.config_path));
-#endif
 
    g_extern.config_save_on_exit = config_save_on_exit;
 
