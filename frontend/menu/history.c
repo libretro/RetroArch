@@ -239,6 +239,10 @@ const char* rom_history_get_path(void *data, unsigned index)
    if (!hist)
       return "";
 
+   path      = NULL;
+   core_path = NULL;
+   core_name = NULL;
+
    rom_history_get_index(hist, index, &path, &core_path, &core_name);
 
    if (path)
@@ -252,6 +256,10 @@ const char *rom_history_get_core_path(void *data, unsigned index)
    rom_history_t* hist = (rom_history_t*)data;
    if (!hist)
       return "";
+
+   path      = NULL;
+   core_path = NULL;
+   core_name = NULL;
 
    rom_history_get_index(hist, index, &path, &core_path, &core_name);
     
@@ -267,6 +275,10 @@ const char *rom_history_get_core_name(void *data, unsigned index)
 
    if (!hist)
       return "";
+
+   path      = NULL;
+   core_path = NULL;
+   core_name = NULL;
 
    rom_history_get_index(hist, index, &path, &core_path, &core_name);
 
