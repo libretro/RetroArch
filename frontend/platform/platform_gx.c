@@ -217,7 +217,7 @@ int gx_logger_file(struct _reent *r, int fd, const char *ptr, size_t len)
 extern char gx_rom_path[PATH_MAX];
 #endif
 
-static void frontend_gx_get_environment_settings(int argc, char *argv[], void *args)
+static void frontend_gx_get_environment_settings(int *argc, char *argv[], void *args)
 {
 #ifndef IS_SALAMANDER
 #if defined(HAVE_LOGGER)
@@ -246,26 +246,26 @@ static void frontend_gx_get_environment_settings(int argc, char *argv[], void *a
    fill_pathname_join(default_paths.savestate_dir, default_paths.port_dir, "savefiles", sizeof(default_paths.savestate_dir));
 
 #ifdef IS_SALAMANDER
-   if (argc > 2 && argv[1] != NULL && argv[2] != NULL)
+   if (*argc > 2 && argv[1] != NULL && argv[2] != NULL)
       fill_pathname_join(gx_rom_path, argv[1], argv[2], sizeof(gx_rom_path));
    else
       gx_rom_path[0] = '\0';
 #else
 #ifdef HW_RVL
    // needed on Wii; loaders follow a dumb standard where the path and filename are separate in the argument list
-   if (argc > 2 && argv[1] != NULL && argv[2] != NULL)
+   if (*argc > 2 && argv[1] != NULL && argv[2] != NULL)
    {
       int i;
       char wii_new_argv1[PATH_MAX];
       fill_pathname_join(wii_new_argv1, argv[1], argv[2], sizeof(wii_new_argv1));
       argv[1] = strdup(wii_new_argv1);
       // shift over remaining args
-      for (i = 3; i < argc; i++)
+      for (i = 3; i < *argc; i++)
       {
          argv[i - 1] = argv[i];
       }
-      argc--;
-      argv[argc] = NULL;
+      *argc = *argc - 1;
+      argv[*argc] = NULL;
    }
 #endif
 #endif
@@ -348,21 +348,21 @@ static void frontend_gx_exitspawn(void)
 #endif
 }
 
-static int frontend_gx_process_args(int argc, char *argv[], void *args)
+static int frontend_gx_process_args(int *argc, char *argv[], void *args)
 {
    int ret = 0;
 
 #ifndef IS_SALAMANDER
    // a big hack: sometimes salamander doesn't save the new core it loads on first boot,
    // so we make sure g_settings.libretro is set here
-   if (!g_settings.libretro[0] && argc >= 1 && strrchr(argv[0], '/'))
+   if (!g_settings.libretro[0] && *argc >= 1 && strrchr(argv[0], '/'))
    {
       char path[PATH_MAX];
       strlcpy(path, strrchr(argv[0], '/') + 1, sizeof(path));
       rarch_environment_cb(RETRO_ENVIRONMENT_SET_LIBRETRO_PATH, path);
    }
 
-   if (argc > 2 && argv[1] != NULL && argv[2] != NULL)
+   if (*argc > 2 && argv[1] != NULL && argv[2] != NULL)
    {
       fill_pathname_join(g_extern.fullpath, argv[1], argv[2], sizeof(g_extern.fullpath));
       ret = 1;

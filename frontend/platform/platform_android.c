@@ -376,7 +376,7 @@ static bool android_run_events (void *data)
    return true;
 }
 
-static void frontend_android_get_environment_settings(int argc, char *argv[], void *data)
+static void frontend_android_get_environment_settings(int *argc, char *argv[], void *data)
 {
    JNIEnv *env;
    struct android_app* android_app = (struct android_app*)data;

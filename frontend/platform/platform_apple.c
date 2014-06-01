@@ -100,12 +100,12 @@ void apple_refresh_config(void)
    init_drivers();
 }
 
-int apple_rarch_load_content(int argc, char* argv[])
+int apple_rarch_load_content(int *argc, char* argv[])
 {
    rarch_main_clear_state();
    rarch_init_msg_queue();
    
-   if (rarch_main_init(argc, argv))
+   if (rarch_main_init(*argc, argv))
       return 1;
    
    if (!g_extern.libretro_dummy)

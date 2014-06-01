@@ -160,7 +160,7 @@ static void callback_sysutil_exit(uint64_t status, uint64_t param, void *userdat
 }
 #endif
 
-static void frontend_ps3_get_environment_settings(int argc, char *argv[], void *args)
+static void frontend_ps3_get_environment_settings(int *argc, char *argv[], void *args)
 {
 #ifndef IS_SALAMANDER
    bool original_verbose = g_extern.verbose;
@@ -186,7 +186,7 @@ static void frontend_ps3_get_environment_settings(int argc, char *argv[], void *
 #ifdef HAVE_MULTIMAN
    /* not launched from external launcher, set default path */
    // second param is multiMAN SELF file
-   if(path_file_exists(argv[2]) && argc > 1 && (strcmp(argv[2], EMULATOR_CONTENT_DIR) == 0))
+   if(path_file_exists(argv[2]) && *argc > 1 && (strcmp(argv[2], EMULATOR_CONTENT_DIR) == 0))
    {
       g_extern.lifecycle_state |= (1ULL << MODE_EXTLAUNCH_MULTIMAN);
       RARCH_LOG("Started from multiMAN, auto-game start enabled.\n");
@@ -322,14 +322,14 @@ static void frontend_ps3_init(void *data)
 #endif
 }
 
-static int frontend_ps3_process_args(int argc, char *argv[], void *args)
+static int frontend_ps3_process_args(int *argc, char *argv[], void *args)
 {
    int ret = 0;
 #ifndef IS_SALAMANDER
    bool original_verbose = g_extern.verbose;
    g_extern.verbose = true;
 
-   if (argc > 1)
+   if (*argc > 1)
    {
       RARCH_LOG("Auto-start game %s.\n", argv[1]);
       strlcpy(g_extern.fullpath, argv[1], sizeof(g_extern.fullpath));

@@ -44,7 +44,7 @@ static int exit_callback(int arg1, int arg2, void *common)
    return 0;
 }
 
-static void frontend_psp_get_environment_settings(int argc, char *argv[], void *args)
+static void frontend_psp_get_environment_settings(int *argc, char *argv[], void *args)
 {
    (void)args;
 #ifndef IS_SALAMANDER
@@ -107,7 +107,7 @@ static void frontend_psp_deinit(void *data)
    sceKernelExitGame();
 }
 
-static int frontend_psp_process_args(int argc, char *argv[], void *args)
+static int frontend_psp_process_args(int *argc, char *argv[], void *args)
 {
    (void)argc;
    (void)args;

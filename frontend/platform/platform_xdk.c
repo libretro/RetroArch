@@ -192,7 +192,7 @@ static HRESULT xbox_io_unmount(char *szDrive)
 }
 #endif
 
-static void frontend_xdk_get_environment_settings(int argc, char *argv[], void *args)
+static void frontend_xdk_get_environment_settings(int *argc, char *argv[], void *args)
 {
    HRESULT ret;
    (void)ret;
@@ -279,7 +279,7 @@ static void frontend_xdk_init(void *data)
 #endif
 }
 
-static int frontend_xdk_process_args(int argc, char *argv[], void *args)
+static int frontend_xdk_process_args(int *argc, char *argv[], void *args)
 {
    int ret;
 #ifndef IS_SALAMANDER

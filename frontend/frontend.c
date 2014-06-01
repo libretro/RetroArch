@@ -306,7 +306,7 @@ returntype main_entry(signature())
 
    if (driver.frontend_ctx && driver.frontend_ctx->environment_get)
    {
-      driver.frontend_ctx->environment_get(argc, argv, args);
+      driver.frontend_ctx->environment_get(&argc, argv, args);
 #if defined(RARCH_CONSOLE) || defined(__QNX__)
       if (*default_paths.autoconfig_dir)
          path_mkdir(default_paths.autoconfig_dir);
@@ -340,7 +340,7 @@ returntype main_entry(signature())
 
 #if defined(HAVE_MENU)
    if (driver.frontend_ctx && driver.frontend_ctx->process_args)
-      driver.frontend_ctx->process_args(argc, argv, args);
+      driver.frontend_ctx->process_args(&argc, argv, args);
 
    g_extern.lifecycle_state |= (1ULL << MODE_GAME);
 
