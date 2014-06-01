@@ -171,6 +171,10 @@ static void rmenu_render(void)
       strlcpy(title, "DRIVER OPTIONS", sizeof(title));
    else if (menu_type == RGUI_SETTINGS_PERFORMANCE_COUNTERS)
       strlcpy(title, "PERFORMANCE COUNTERS", sizeof(title));
+   else if (menu_type == RGUI_SETTINGS_PERFORMANCE_COUNTERS_LIBRETRO)
+      strlcpy(title, "CORE PERFORMANCE COUNTERS", sizeof(title));
+   else if (menu_type == RGUI_SETTINGS_PERFORMANCE_COUNTERS_FRONTEND)
+      strlcpy(title, "FRONTEND PERFORMANCE COUNTERS", sizeof(title));
 #ifdef HAVE_SHADER_MANAGER
    else if (menu_type == RGUI_SETTINGS_SHADER_OPTIONS)
       strlcpy(title, "SHADER OPTIONS", sizeof(title));

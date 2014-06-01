@@ -428,6 +428,25 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
          break;
       case RGUI_SETTINGS_PERFORMANCE_COUNTERS:
          file_list_clear(rgui->selection_buf);
+         file_list_push(rgui->selection_buf, "Core Counters", RGUI_SETTINGS_PERFORMANCE_COUNTERS_LIBRETRO, 0);
+         file_list_push(rgui->selection_buf, "Frontend Counters", RGUI_SETTINGS_PERFORMANCE_COUNTERS_FRONTEND, 0);
+         break;
+      case RGUI_SETTINGS_PERFORMANCE_COUNTERS_LIBRETRO:
+         file_list_clear(rgui->selection_buf);
+         {
+            const struct retro_perf_counter **counters = (const struct retro_perf_counter**)perf_counters_libretro;
+            unsigned num = perf_ptr_libretro;
+
+            if (!counters || num == 0)
+               break;
+
+            for (i = 0; i < num; i++)
+               if (counters[i] && counters[i]->ident)
+                  file_list_push(rgui->selection_buf, counters[i]->ident, RGUI_SETTINGS_LIBRETRO_PERF_COUNTERS_BEGIN + i, 0);
+         }
+         break;
+      case RGUI_SETTINGS_PERFORMANCE_COUNTERS_FRONTEND:
+         file_list_clear(rgui->selection_buf);
          {
             const struct retro_perf_counter **counters = (const struct retro_perf_counter**)perf_counters_rarch;
             unsigned num = perf_ptr_rarch;
@@ -1374,6 +1393,8 @@ static unsigned menu_common_type_is(unsigned type)
       type == RGUI_SETTINGS_OPTIONS ||
       type == RGUI_SETTINGS_DRIVERS ||
       type == RGUI_SETTINGS_PERFORMANCE_COUNTERS ||
+      type == RGUI_SETTINGS_PERFORMANCE_COUNTERS_LIBRETRO ||
+      type == RGUI_SETTINGS_PERFORMANCE_COUNTERS_FRONTEND ||
       (type == RGUI_SETTINGS_INPUT_OPTIONS);
 
    if (type_found)
@@ -1560,6 +1581,8 @@ static int menu_settings_iterate(unsigned action)
             || menu_type == RGUI_SETTINGS_OPTIONS
             || menu_type == RGUI_SETTINGS_DRIVERS
             || menu_type == RGUI_SETTINGS_PERFORMANCE_COUNTERS
+            || menu_type == RGUI_SETTINGS_PERFORMANCE_COUNTERS_FRONTEND
+            || menu_type == RGUI_SETTINGS_PERFORMANCE_COUNTERS_LIBRETRO
             || menu_type == RGUI_SETTINGS_CORE_INFO
             || menu_type == RGUI_SETTINGS_CORE_OPTIONS
             || menu_type == RGUI_SETTINGS_AUDIO_OPTIONS
@@ -3204,20 +3227,31 @@ static bool osk_callback_enter_filename_init(void *data)
 #define RARCH_DEFAULT_PORT 55435
 #endif
 
+static int menu_common_setting_set_perf(unsigned setting, unsigned action,
+      struct retro_perf_counter **counters, unsigned offset)
+{
+   if (counters[offset] && action == RGUI_ACTION_START)
+   {
+      counters[offset]->total = 0;
+      counters[offset]->call_cnt = 0;
+   }
+   return 0;
+}
+
 static int menu_common_setting_set(unsigned setting, unsigned action)
 {
+   struct retro_perf_counter **counters;
    unsigned port = driver.menu->current_pad;
 
    if (setting >= RGUI_SETTINGS_PERF_COUNTERS_BEGIN && setting <= RGUI_SETTINGS_PERF_COUNTERS_END)
    {
-      struct retro_perf_counter **counters = (struct retro_perf_counter**)perf_counters_rarch;
-      unsigned offset = setting - RGUI_SETTINGS_PERF_COUNTERS_BEGIN;
-      if (counters[offset] && action == RGUI_ACTION_START)
-      {
-         counters[offset]->total = 0;
-         counters[offset]->call_cnt = 0;
-      }
-      return 0;
+      counters = (struct retro_perf_counter**)perf_counters_rarch;
+      return menu_common_setting_set_perf(setting, action, counters, setting - RGUI_SETTINGS_PERF_COUNTERS_BEGIN);
+   }
+   else if (setting >= RGUI_SETTINGS_LIBRETRO_PERF_COUNTERS_BEGIN && setting <= RGUI_SETTINGS_LIBRETRO_PERF_COUNTERS_END)
+   {
+      counters = (struct retro_perf_counter**)perf_counters_libretro;
+      return menu_common_setting_set_perf(setting, action, counters, setting - RGUI_SETTINGS_LIBRETRO_PERF_COUNTERS_BEGIN);
    }
    else if (setting >= RGUI_SETTINGS_BIND_BEGIN && setting <= RGUI_SETTINGS_BIND_ALL_LAST)
    {
@@ -4787,34 +4821,37 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
    return 0;
 }
 
+static void menu_common_setting_set_label_perf(char *type_str, size_t type_str_size, unsigned *w, unsigned type,
+      const struct retro_perf_counter **counters, unsigned offset)
+{
+   if (counters[offset] && counters[offset]->call_cnt)
+   {
+      snprintf(type_str, type_str_size,
+#ifdef _WIN32
+            "%I64u ticks, %I64u runs.",
+#else
+            "%llu ticks, %llu runs.",
+#endif
+            ((unsigned long long)counters[offset]->total / (unsigned long long)counters[offset]->call_cnt),
+            (unsigned long long)counters[offset]->call_cnt);
+   }
+   else
+   {
+      *type_str = '\0';
+      *w = 0;
+   }
+}
+
 static void menu_common_setting_set_label(char *type_str, size_t type_str_size, unsigned *w, unsigned type)
 {
    if (type >= RGUI_SETTINGS_PERF_COUNTERS_BEGIN && type <= RGUI_SETTINGS_PERF_COUNTERS_END)
-   {
-      const struct retro_perf_counter **counters = (const struct retro_perf_counter**)perf_counters_rarch;
-
-      unsigned offset = type - RGUI_SETTINGS_PERF_COUNTERS_BEGIN;
-      if (counters[offset] && counters[offset]->call_cnt)
-      {
-         snprintf(type_str, type_str_size,
-#ifdef _WIN32
-               "%I64u ticks, %I64u runs.",
-#else
-               "%llu ticks, %llu runs.",
-#endif
-               ((unsigned long long)counters[offset]->total / (unsigned long long)counters[offset]->call_cnt),
-               (unsigned long long)counters[offset]->call_cnt);
-      }
-      else
-      {
-         *type_str = '\0';
-         *w = 0;
-      }
-   }
+      menu_common_setting_set_label_perf(type_str, type_str_size, w, type, perf_counters_rarch,
+            type - RGUI_SETTINGS_PERF_COUNTERS_BEGIN);
+   else if (type >= RGUI_SETTINGS_LIBRETRO_PERF_COUNTERS_BEGIN && type <= RGUI_SETTINGS_LIBRETRO_PERF_COUNTERS_END)
+      menu_common_setting_set_label_perf(type_str, type_str_size, w, type, perf_counters_libretro,
+            type - RGUI_SETTINGS_LIBRETRO_PERF_COUNTERS_BEGIN);
    else if (type >= RGUI_SETTINGS_BIND_BEGIN && type <= RGUI_SETTINGS_BIND_ALL_LAST)
-   {
       input_get_bind_string(type_str, &g_settings.input.binds[driver.menu->current_pad][type - RGUI_SETTINGS_BIND_BEGIN], type_str_size);
-   }
    else
    {
       switch (type)
@@ -5115,6 +5152,8 @@ static void menu_common_setting_set_label(char *type_str, size_t type_str_size, 
          case RGUI_SETTINGS_PRIVACY_OPTIONS:
          case RGUI_SETTINGS_OPTIONS:
          case RGUI_SETTINGS_PERFORMANCE_COUNTERS:
+         case RGUI_SETTINGS_PERFORMANCE_COUNTERS_FRONTEND:
+         case RGUI_SETTINGS_PERFORMANCE_COUNTERS_LIBRETRO:
          case RGUI_SETTINGS_DRIVERS:
          case RGUI_SETTINGS_CUSTOM_BIND_ALL:
          case RGUI_SETTINGS_CUSTOM_BIND_DEFAULT_ALL:
