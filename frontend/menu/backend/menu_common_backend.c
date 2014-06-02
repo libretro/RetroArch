@@ -3663,12 +3663,12 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
                break;
 #endif
             case RGUI_ACTION_OK:
-#if defined(HAVE_DYLIB)
-               file_list_push(driver.menu->menu_stack, g_settings.video.filter_dir, setting, driver.menu->selection_ptr);
-               menu_clear_navigation(driver.menu);
-#else
+#ifdef HAVE_FILTERS_BUILTIN
                driver.menu_data_own = true;
                rarch_reinit_drivers();
+#elif defined(HAVE_DYLIB)
+               file_list_push(driver.menu->menu_stack, g_settings.video.filter_dir, setting, driver.menu->selection_ptr);
+               menu_clear_navigation(driver.menu);
 #endif
                driver.menu->need_refresh = true;
                break;
