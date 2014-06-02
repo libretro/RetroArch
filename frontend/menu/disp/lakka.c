@@ -649,13 +649,13 @@ static void calculate_font_coords(gl_t *gl,
    font_tex_coords[7] = hy;
 }
 
-static void lakka_draw_text(void *data, struct font_output_list *out, float x, float y, float scale, float alpha)
+static void lakka_draw_text(struct font_output_list *out, float x, float y, float scale, float alpha)
 {
    int i;
    struct font_output *head;
    struct font_rect geom;
    struct gl_ortho ortho = {0, 1, 0, 1, -1, 1};
-   gl_t *gl = (gl_t*)data;
+   gl_t *gl = (gl_t*)driver.video_data;
 
    if (!font || !gl || !out)
       return;
@@ -711,9 +711,9 @@ static void lakka_draw_text(void *data, struct font_output_list *out, float x, f
    gl_set_projection(gl, &ortho, true);
 }
 
-void lakka_draw_background(void *data)
+void lakka_draw_background()
 {
-   gl_t *gl = (gl_t*)data;
+   gl_t *gl = (gl_t*)driver.video_data;
 
    glEnable(GL_BLEND);
 
@@ -730,7 +730,7 @@ void lakka_draw_background(void *data)
    gl->coords.color = gl->white_color_ptr;
 }
 
-void lakka_draw_icon(void *data, GLuint texture, float x, float y, float alpha, float rotation, float scale)
+void lakka_draw_icon(GLuint texture, float x, float y, float alpha, float rotation, float scale)
 {
    GLfloat color[] = {
       1.0f, 1.0f, 1.0f, alpha,
@@ -746,7 +746,7 @@ void lakka_draw_icon(void *data, GLuint texture, float x, float y, float alpha, 
       1, 1
    };
 
-   gl_t *gl = (gl_t*)data;
+   gl_t *gl = (gl_t*)driver.video_data;
 
    glViewport(x, gl->win_height - y, dim, dim);
 
@@ -780,12 +780,131 @@ void lakka_draw_icon(void *data, GLuint texture, float x, float y, float alpha, 
    gl->coords.color = gl->white_color_ptr;
 }
 
+static void lakka_draw_subitems(int i, int j)
+{
+   int k;
+   menu_category_t *category = (menu_category_t*)&categories[i];
+   menu_item_t *item = (menu_item_t*)&category->items[j];
+   menu_category_t *active_category = (menu_category_t*)&categories[menu_active_category];
+   menu_item_t *active_item = (menu_item_t*)&active_category->items[active_category->active_item];
+
+   for(k = 0; k < item->num_subitems; k++)
+   {
+      menu_subitem_t *subitem = (menu_subitem_t*)&item->subitems[k];
+
+      if (k == 0 && g_extern.main_is_init
+            && !g_extern.libretro_dummy
+            && strcmp(g_extern.fullpath, &active_item->rom) == 0)
+      {
+         lakka_draw_icon(resume_icon, 
+            156 + HSPACING*(i+2) + all_categories_x - dim/2.0, 
+            300 + subitem->y + dim/2.0, 
+            subitem->alpha, 
+            0, 
+            subitem->zoom);
+         lakka_draw_text(&resume_label, 
+            156 + HSPACING*(i+2) + all_categories_x + dim/2.0, 
+            300 + subitem->y + 15, 
+            1, 
+            subitem->alpha);
+      }
+      else if (k == 0)
+      {
+         lakka_draw_icon(subitem->icon, 
+               156 + HSPACING*(i+2) + all_categories_x - dim/2.0, 
+               300 + subitem->y + dim/2.0, 
+               subitem->alpha, 
+               0, 
+               subitem->zoom);
+         lakka_draw_text(&subitem->out, 
+               156 + HSPACING * (i+2) + all_categories_x + dim/2.0, 
+               300 + subitem->y + 15, 
+               1, 
+               subitem->alpha);
+      }
+      else if ( // if we are in settings or a rom is launched
+            menu_active_category == 0 ||
+            (g_extern.main_is_init && 
+            !g_extern.libretro_dummy &&
+            strcmp(g_extern.fullpath, &active_item->rom) == 0))
+      {
+         lakka_draw_icon(subitem->icon, 
+               156 + HSPACING*(i+2) + all_categories_x - dim/2.0, 
+               300 + subitem->y + dim/2.0, 
+               subitem->alpha, 
+               0, 
+               subitem->zoom);
+         lakka_draw_text(&subitem->out, 
+               156 + HSPACING * (i+2) + all_categories_x + dim/2.0, 
+               300 + subitem->y + 15, 
+               1, 
+               subitem->alpha);
+      }
+   }
+}
+
+static void lakka_draw_items(int i)
+{
+   int j;
+   menu_category_t *category = (menu_category_t*)&categories[i];
+   menu_category_t *active_category = (menu_category_t*)&categories[menu_active_category];
+   menu_item_t *active_item = (menu_item_t*)&active_category->items[active_category->active_item];
+
+   for(j = 0; j < category->num_items; j++)
+   {
+      menu_item_t *item = (menu_item_t*)&category->items[j];
+
+      if (i == menu_active_category &&
+         j > active_category->active_item - 4 &&
+         j < active_category->active_item + 10) // performance improvement
+      {
+         lakka_draw_icon(item->icon, 
+            156 + HSPACING*(i+1) + all_categories_x - dim/2.0, 
+            300 + item->y + dim/2.0, 
+            item->alpha, 
+            0, 
+            item->zoom);
+
+         if (depth == 0)
+            lakka_draw_text(&item->out, 
+               156 + HSPACING * (i+1) + all_categories_x + dim/2.0, 
+               300 + item->y + 15, 
+               1, 
+               item->alpha);
+      }
+
+      if (i == menu_active_category && j == category->active_item && depth == 1) // performance improvement
+         lakka_draw_subitems(i, j);
+   }
+}
+
+static void lakka_draw_categories()
+{
+   int i;
+
+   for(i = 0; i < num_categories; i++)
+   {
+      menu_category_t *category = (menu_category_t*)&categories[i];
+
+      // draw items
+      lakka_draw_items(i);
+
+      // draw category icon
+      lakka_draw_icon(category->icon, 
+            156 + (HSPACING*(i+1)) + all_categories_x - dim/2.0, 
+            300 + dim/2.0, 
+            category->alpha, 
+            0, 
+            category->zoom);
+   }
+}
+
 static void lakka_frame(void)
 {
-   int i, j, k;
    struct font_output_list *msg;
    gl_t *gl = (gl_t*)driver.video_data;
    menu_category_t *active_category = (menu_category_t*)&categories[menu_active_category];
+   menu_item_t *active_item = (menu_item_t*)&active_category->items[active_category->active_item];
 
    if (!driver.menu || !gl)
       return;
@@ -794,124 +913,18 @@ static void lakka_frame(void)
 
    glViewport(0, 0, gl->win_width, gl->win_height);
 
-   lakka_draw_background(gl);
+   lakka_draw_background();
 
-   for(i = 0; i < num_categories; i++)
-   {
-      menu_category_t *category = (menu_category_t*)&categories[i];
+   lakka_draw_categories();
 
-      // draw items
-      for(j = 0; j < category->num_items; j++)
-      {
-         menu_item_t *item = (menu_item_t*)&category->items[j];
-
-         lakka_draw_icon(gl, 
-            item->icon, 
-            156 + HSPACING*(i+1) + all_categories_x - dim/2.0, 
-            300 + item->y + dim/2.0, 
-            item->alpha, 
-            0, 
-            item->zoom);
-
-         if (i == menu_active_category && j == category->active_item && depth == 1) // performance improvement
-         {
-            for(k = 0; k < item->num_subitems; k++)
-            {
-               menu_subitem_t *subitem = (menu_subitem_t*)&item->subitems[k];
-
-               if (k == 0 && g_extern.main_is_init
-                     && !g_extern.libretro_dummy
-                     && strcmp(g_extern.fullpath, active_category->items[active_category->active_item].rom) == 0)
-               {
-                  lakka_draw_icon(gl, 
-                     resume_icon, 
-                     156 + HSPACING*(i+2) + all_categories_x - dim/2.0, 
-                     300 + subitem->y + dim/2.0, 
-                     subitem->alpha, 
-                     0, 
-                     subitem->zoom);
-                  lakka_draw_text(gl, 
-                     &resume_label, 
-                     156 + HSPACING*(i+2) + all_categories_x + dim/2.0, 
-                     300 + subitem->y + 15, 
-                     1, 
-                     subitem->alpha);
-               }
-               else if (k == 0)
-               {
-                  lakka_draw_icon(gl, 
-                        subitem->icon, 
-                        156 + HSPACING*(i+2) + all_categories_x - dim/2.0, 
-                        300 + subitem->y + dim/2.0, 
-                        subitem->alpha, 
-                        0, 
-                        subitem->zoom);
-                  lakka_draw_text(gl, 
-                        &subitem->out, 
-                        156 + HSPACING * (i+2) + all_categories_x + dim/2.0, 
-                        300 + subitem->y + 15, 
-                        1, 
-                        subitem->alpha);
-               }
-               else if ( // if we are in settings or a rom is launched
-                     menu_active_category == 0 ||
-                     (g_extern.main_is_init && 
-                     !g_extern.libretro_dummy &&
-                     strcmp(g_extern.fullpath, active_category->items[active_category->active_item].rom) == 0))
-               {
-                  lakka_draw_icon(gl, 
-                        subitem->icon, 
-                        156 + HSPACING*(i+2) + all_categories_x - dim/2.0, 
-                        300 + subitem->y + dim/2.0, 
-                        subitem->alpha, 
-                        0, 
-                        subitem->zoom);
-                  lakka_draw_text(gl, 
-                        &subitem->out, 
-                        156 + HSPACING * (i+2) + all_categories_x + dim/2.0, 
-                        300 + subitem->y + 15, 
-                        1, 
-                        subitem->alpha);
-               }
-            }
-         }
-
-         if (depth == 0)
-         {
-            if (i == menu_active_category &&
-                  j > active_category->active_item - 4 &&
-                  j < active_category->active_item + 10) // performance improvement
-               lakka_draw_text(gl, 
-                     &item->out, 
-                     156 + HSPACING * (i+1) + all_categories_x + dim/2.0, 
-                     300 + item->y + 15, 
-                     1, 
-                     item->alpha);
-         }
-         else
-         {
-            if (i == menu_active_category && j == active_category->active_item)
-               lakka_draw_icon(gl,
-                     arrow_icon,
-                     156 + HSPACING * (i+1) + all_categories_x + 150 +-dim/2.0,
-                     300 + item->y + dim/2.0, 1, 0, I_ACTIVE_ZOOM);
-         }
-      }
-
-      // draw category
-      lakka_draw_icon(gl, 
-            category->icon, 
-            156 + (HSPACING*(i+1)) + all_categories_x - dim/2.0, 
-            300 + dim/2.0, 
-            category->alpha, 
-            0, 
-            category->zoom);
+   if (depth == 0) {
+      lakka_draw_text(&active_category->out, 15.0, 40.0, 1, 1.0);
+   } else {
+      lakka_draw_text(&active_item->out, 15.0, 40.0, 1, 1.0);
+      lakka_draw_icon(arrow_icon,
+            156 + HSPACING*(menu_active_category+1) + all_categories_x + 150 +-dim/2.0,
+            300 + VSPACING*2.4 + (dim/2.0), 1, 0, I_ACTIVE_ZOOM);
    }
-
-   if ((depth == 0))
-      lakka_draw_text(gl, &active_category->out, 15.0, 40.0, 1, 1.0);
-   else
-      lakka_draw_text(gl, &active_category->items[active_category->active_item].out, 15.0, 40.0, 1, 1.0);
 
    gl_set_viewport(gl, gl->win_width, gl->win_height, false, false);
 }
