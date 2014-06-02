@@ -65,12 +65,6 @@
 
 #endif
 
-#if !defined(RARCH_CONSOLE) && !defined(__QNX__) && !defined(ANDROID)
-#define attempt_load_game_push_history true
-#else
-#define attempt_load_game_push_history false
-#endif
-
 static retro_keyboard_event_t key_event;
 
 #ifdef HAVE_MENU
@@ -284,6 +278,7 @@ void main_exit(args_type() args)
 
 returntype main_entry(signature())
 {
+   int ret;
    declare_argc();
    declare_argv();
    args_type() args = (args_type())args_initial_ptr();
@@ -330,18 +325,18 @@ returntype main_entry(signature())
 #endif
    }
 
-   {
-      int init_ret;
-      if ((init_ret = rarch_main_init(argc, argv))) return_var(init_ret);
-   }
+   if ((ret = rarch_main_init(argc, argv))) return_var(ret);
 
 #if defined(HAVE_MENU)
+   ret = 0;
    if (driver.frontend_ctx && driver.frontend_ctx->process_args)
-      driver.frontend_ctx->process_args(&argc, argv, args);
+      ret = driver.frontend_ctx->process_args(&argc, argv, args);
 
    g_extern.lifecycle_state |= (1ULL << MODE_GAME);
 
-   if (attempt_load_game_push_history)
+#if defined(RARCH_CONSOLE) || defined(RARCH_MOBILE)
+   if (ret)
+#endif
    {
       // If we started a ROM directly from command line,
       // push it to ROM history.
