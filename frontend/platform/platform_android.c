@@ -693,6 +693,7 @@ static int frontend_android_process_args(int *argc, char *argv[], void *args)
       strlcpy(g_extern.fullpath, argv, sizeof(g_extern.fullpath));
       (*env)->ReleaseStringUTFChars(env, jstr, argv);
 
+      g_extern.lifecycle_state |= (1ULL << MODE_LOAD_GAME);
       RARCH_LOG("Auto-start game %s.\n", g_extern.fullpath);
       return 1;
    }
