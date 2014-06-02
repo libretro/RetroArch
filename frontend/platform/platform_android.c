@@ -119,10 +119,7 @@ void engine_handle_cmd(void *data)
 
          /* The window is being hidden or closed, clean it up. */
          /* terminate display/EGL context here */
-         if (g_extern.is_paused)
-            uninit_drivers();
-         else
-            RARCH_WARN("Window is terminated outside PAUSED state.\n");
+         //RARCH_WARN("Window is terminated outside PAUSED state.\n");
 
          android_app->window = NULL;
          scond_broadcast(android_app->cond);
@@ -557,7 +554,7 @@ static int frontend_android_process_events(void *data)
    //JNIEnv *env;
    struct android_app* android_app = (struct android_app*)data;
 
-   if (input_key_pressed_func(RARCH_PAUSE_TOGGLE))
+   if (g_extern.is_paused)
          android_run_events(android_app);
 
 #if 0
