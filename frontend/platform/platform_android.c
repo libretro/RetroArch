@@ -74,7 +74,7 @@ void engine_handle_cmd(void *data)
          scond_broadcast(android_app->cond);
          slock_unlock(android_app->mutex);
 
-         if (g_extern.lifecycle_state & (1ULL << RARCH_PAUSE_TOGGLE))
+         if (g_extern.is_paused)
             rarch_reinit_drivers();
          break;
 
@@ -101,7 +101,7 @@ void engine_handle_cmd(void *data)
          if (!g_extern.system.shutdown)
          {
             RARCH_LOG("Pausing RetroArch.\n");
-            g_extern.lifecycle_state |= (1ULL << RARCH_PAUSE_TOGGLE);
+            g_extern.is_paused = true;
          }
          break;
 
@@ -119,7 +119,7 @@ void engine_handle_cmd(void *data)
 
          /* The window is being hidden or closed, clean it up. */
          /* terminate display/EGL context here */
-         if (g_extern.lifecycle_state & (1ULL << RARCH_PAUSE_TOGGLE))
+         if (g_extern.is_paused)
             uninit_drivers();
          else
             RARCH_WARN("Window is terminated outside PAUSED state.\n");
@@ -130,7 +130,7 @@ void engine_handle_cmd(void *data)
          break;
 
       case APP_CMD_GAINED_FOCUS:
-         g_extern.lifecycle_state &= ~(1ULL << RARCH_PAUSE_TOGGLE);
+         g_extern.is_paused = false;
 
          if ((android_app->sensor_state_mask & (1ULL << RETRO_SENSOR_ACCELEROMETER_ENABLE))
                && android_app->accelerometerSensor == NULL)
