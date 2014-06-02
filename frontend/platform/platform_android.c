@@ -75,7 +75,7 @@ void engine_handle_cmd(void *data)
          slock_unlock(android_app->mutex);
 
          if (g_extern.lifecycle_state & (1ULL << RARCH_PAUSE_TOGGLE))
-            init_drivers();
+            rarch_reinit_drivers();
          break;
 
       case APP_CMD_RESUME:
@@ -98,7 +98,7 @@ void engine_handle_cmd(void *data)
          scond_broadcast(android_app->cond);
          slock_unlock(android_app->mutex);
 
-         if (!(g_extern.lifecycle_state & (1ULL << RARCH_QUIT_KEY)))
+         if (!g_extern.system.shutdown)
          {
             RARCH_LOG("Pausing RetroArch.\n");
             g_extern.lifecycle_state |= (1ULL << RARCH_PAUSE_TOGGLE);
@@ -146,7 +146,7 @@ void engine_handle_cmd(void *data)
          break;
 
       case APP_CMD_DESTROY:
-         g_extern.lifecycle_state |= (1ULL << RARCH_QUIT_KEY);
+         g_extern.system.shutdown = true;
          break;
    }
 }
@@ -404,7 +404,7 @@ static bool android_run_events (void *data)
       engine_handle_cmd(driver.input_data);
 
    // Check if we are exiting.
-   if (g_extern.lifecycle_state & (1ULL << RARCH_QUIT_KEY))
+   if (g_extern.system.shutdown)
       return false;
 
    return true;
@@ -425,18 +425,8 @@ static void frontend_android_get_environment_settings(int *argc, char *argv[], v
       return;
 
    CALL_OBJ_METHOD(env, obj, android_app->activity->clazz, android_app->getIntent);
-   RARCH_LOG("Checking arguments passed from intent...\n");
+   RARCH_LOG("Checking arguments passed from intent ...\n");
 
-   // Content
-   CALL_OBJ_METHOD_PARAM(env, jstr, obj, android_app->getStringExtra, (*env)->NewStringUTF(env, "ROM"));
-   if (android_app->getStringExtra && jstr)
-   {
-      const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
-      strlcpy(g_extern.fullpath, argv, sizeof(g_extern.fullpath));
-      (*env)->ReleaseStringUTFChars(env, jstr, argv);
-
-      RARCH_LOG("Content Filename: [%s].\n", g_extern.fullpath);
-   }
 
    // Config file
    CALL_OBJ_METHOD_PARAM(env, jstr, obj, android_app->getStringExtra, (*env)->NewStringUTF(env, "CONFIGFILE"));
@@ -476,10 +466,10 @@ static void frontend_android_get_environment_settings(int *argc, char *argv[], v
    {
       const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
       strlcpy(default_paths.core_path, argv, sizeof(default_paths.core_path));
+      RARCH_LOG("Libretro path: [%s].\n", default_paths.core_path);
       (*env)->ReleaseStringUTFChars(env, jstr, argv);
    }
 
-   RARCH_LOG("Libretro path: [%s].\n", default_paths.core_path);
 
 }
 
@@ -502,7 +492,7 @@ static void process_pending_intent(void *data)
    // ROM
    jstr = (*env)->CallObjectMethod(env, android_app->activity->clazz, android_app->getPendingIntentFullPath);
    JNI_EXCEPTION(env);
-   RARCH_LOG("Checking arguments passed from intent...\n");
+   RARCH_LOG("Checking arguments passed from intent ...\n");
    if (android_app->getPendingIntentFullPath && jstr)
    {
       const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
@@ -551,7 +541,7 @@ static void process_pending_intent(void *data)
 
    if (startgame)
    {
-      RARCH_LOG("Starting new game %s...\n", g_extern.fullpath);
+      RARCH_LOG("Starting new game %s ...\n", g_extern.fullpath);
       g_extern.lifecycle_state &= ~(1ULL << MODE_MENU_PREINIT);
       g_extern.lifecycle_state &= ~(1ULL << MODE_GAME);
       load_menu_game_new_core();
@@ -604,11 +594,9 @@ static void frontend_android_init(void *data)
    slock_unlock(android_app->mutex);
 
    memset(&g_android, 0, sizeof(g_android));
-   g_android = android_app;
+   g_android = (struct android_app*)android_app;
 
-   RARCH_LOG("Native Activity started.\n");
-   rarch_main_clear_state();
-   rarch_init_msg_queue();
+   RARCH_LOG("Waiting for Android Native Window to be initialized ...\n");
 
    while (!android_app->window)
    {
@@ -616,8 +604,11 @@ static void frontend_android_init(void *data)
       {
          frontend_android_deinit(android_app);
          frontend_android_shutdown(android_app);
+         return;
       }
    }
+
+   RARCH_LOG("Android Native Window initialized.\n");
 
    env = jni_thread_getenv();
    if (!env)
@@ -650,12 +641,14 @@ static void frontend_android_deinit(void *data)
    if (!android_app)
       return;
 
-   RARCH_LOG("Deinitializing RetroArch...\n");
+   RARCH_LOG("Deinitializing RetroArch ...\n");
    android_app->activityState = APP_CMD_DEAD;
 
-   RARCH_LOG("android_app_destroy!");
    if (android_app->inputQueue)
+   {
+      RARCH_LOG("Detaching Android input queue looper ...\n");
       AInputQueue_detachLooper(android_app->inputQueue);
+   }
 }
 
 static void frontend_android_shutdown(bool unused)
@@ -674,12 +667,45 @@ static int frontend_android_get_rating(void)
    return -1;
 }
 
+static int frontend_android_process_args(int *argc, char *argv[], void *args)
+{
+   JNIEnv *env;
+   jobject obj = NULL;
+   jstring jstr = NULL;
+   struct android_app* android_app = (struct android_app*)g_android;
+
+   if (!android_app)
+      return 0;
+
+   env = jni_thread_getenv();
+   if (!env)
+      return 0;
+
+   CALL_OBJ_METHOD(env, obj, android_app->activity->clazz, android_app->getIntent);
+
+   RARCH_LOG("Checking content path passed from intent ...\n");
+
+   // Content
+   CALL_OBJ_METHOD_PARAM(env, jstr, obj, android_app->getStringExtra, (*env)->NewStringUTF(env, "ROM"));
+   if (android_app->getStringExtra && jstr)
+   {
+      const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
+      strlcpy(g_extern.fullpath, argv, sizeof(g_extern.fullpath));
+      (*env)->ReleaseStringUTFChars(env, jstr, argv);
+
+      RARCH_LOG("Auto-start game %s.\n", g_extern.fullpath);
+      return 1;
+   }
+
+   return 0;
+}
+
 const frontend_ctx_driver_t frontend_ctx_android = {
    frontend_android_get_environment_settings, /* get_environment_settings */
    frontend_android_init,        /* init */
    frontend_android_deinit,      /* deinit */
    NULL,                         /* exitspawn */
-   NULL,                         /* process_args */
+   frontend_android_process_args,   /* process_args */
    frontend_android_process_events, /* process_events */
    NULL,                         /* exec */
    frontend_android_shutdown,    /* shutdown */

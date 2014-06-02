@@ -331,9 +331,9 @@ static int frontend_ps3_process_args(int *argc, char *argv[], void *args)
 
    if (*argc > 1)
    {
-      RARCH_LOG("Auto-start game %s.\n", argv[1]);
       strlcpy(g_extern.fullpath, argv[1], sizeof(g_extern.fullpath));
       ret = 1;
+      RARCH_LOG("Auto-start game %s.\n", argv[1]);
    }
 
    g_extern.verbose = original_verbose;
