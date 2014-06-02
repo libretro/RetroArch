@@ -304,7 +304,7 @@ returntype main_entry(signature())
    if (driver.frontend_ctx && driver.frontend_ctx->environment_get)
    {
       driver.frontend_ctx->environment_get(&argc, argv, args);
-#if defined(RARCH_CONSOLE) || defined(__QNX__)
+#if defined(RARCH_CONSOLE) || defined(RARCH_MOBILE)
       if (*default_paths.autoconfig_dir)
          path_mkdir(default_paths.autoconfig_dir);
       if (*default_paths.audio_filter_dir)

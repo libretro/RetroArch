@@ -138,12 +138,19 @@ static void callback_sysutil_exit(uint64_t status, uint64_t param, void *userdat
    (void)status;
 
 #ifndef IS_SALAMANDER
-   gl_t *gl = driver.video_data;
+#ifdef HAVE_OPENGL
+   gl_t *gl = (gl_t*)driver.video_data;
+
+   if (!gl)
+      return;
+#endif
 
    switch (status)
    {
       case CELL_SYSUTIL_REQUEST_EXITGAME:
+#ifdef HAVE_OPENGL
          gl->quitting = true;
+#endif
          g_extern.lifecycle_state &= ~((1ULL << MODE_MENU_PREINIT) | (1ULL << MODE_GAME));
          break;
 #ifdef HAVE_OSK
