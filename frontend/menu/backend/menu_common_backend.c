@@ -585,10 +585,12 @@ static int menu_info_screen_iterate(unsigned action)
          break;
       case RGUI_SYSTEM_DIR_PATH:
          snprintf(msg, sizeof(msg),
-               "-- Sets the 'system' directory.\n"
+               "-- System Directory. \n"
+               " \n"
+               "Sets the 'system' directory.\n"
                "Implementations can query for this\n"
-               "directory to load BIOSes, system-\n"
-               "specific configs, etc.");
+               "directory to load BIOSes, \n"
+               "system-specific configs, etc.");
          break;
       case RGUI_START_SCREEN:
          snprintf(msg, sizeof(msg),
@@ -605,8 +607,41 @@ static int menu_info_screen_iterate(unsigned action)
                "Useful for menu as settings can be\n"
                "modified. Overwrites the config.\n"
                " \n"
-               "#include's and comments are not pre-\n"
-               "served.\n");
+               "#include's and comments are not \n"
+               "preserved. \n"
+               " \n"
+               "By design, the config file is \n"
+               "considered immutable as it is \n"
+               "likely maintained by the user, \n"
+               "and should not be overwritten \n"
+               "behind the user's back."
+#if defined(RARCH_CONSOLE) || defined(RARCH_MOBILE)
+               "\nThis is not not the case on \n"
+               "consoles however, where \n"
+               "looking at the config file \n"
+               "manually isn't really an option."
+#endif
+               );
+         break;
+      case RGUI_SETTINGS_OPEN_FILEBROWSER:
+         snprintf(msg, sizeof(msg),
+               " -- Load Content. \n"
+               "Browse for content. \n"
+               " \n"
+               "To load content, you need a \n"
+               "libretro core to use, and a \n"
+               "content file. \n"
+               " \n"
+               "To control where the menu starts \n"
+               " to browse for content, set  \n"
+               "Browser Directory. If not set,  \n"
+               "it will start in root. \n"
+               " \n"
+               "The browser will filter out \n"
+               "extensions for the last core set \n"
+               "in 'Core', and use that core when \n"
+               "content is loaded."
+               );
          break;
       case RGUI_SETTINGS_PER_CORE_CONFIG:
          snprintf(msg, sizeof(msg),
@@ -654,8 +689,8 @@ static int menu_info_screen_iterate(unsigned action)
                "play 60 Hz material with eliminated \n"
                "ghosting.\n"
                " \n"
-               "Video refresh rate should still be con-\n"
-               "figured as if it is a 60 Hz monitor \n"
+               "Video refresh rate should still be \n"
+               "configured as if it is a 60 Hz monitor \n"
                "(divide refresh rate by 2).");
          break;
       case RGUI_SETTINGS_VIDEO_THREADED:
@@ -682,8 +717,8 @@ static int menu_info_screen_iterate(unsigned action)
                " -- Forces cropping of overscanned \n"
                "frames.\n"
                " \n"
-               "Exact behavior of this option is core-\n"
-               "implementation specific.");
+               "Exact behavior of this option is \n"
+               "core-implementation specific.");
          break;
       case RGUI_SETTINGS_VIDEO_MONITOR_INDEX:
          snprintf(msg, sizeof(msg),
@@ -791,7 +826,7 @@ static int menu_info_screen_iterate(unsigned action)
                "starts depends on your Core Directory \n"
                "path. If blank, it will start in root. \n"
                " \n"
-               "If Core Directory is a directory, RGUI \n"
+               "If Core Directory is a directory, the menu \n"
                "will use that as top folder. If Core \n"
                "Directory is a full path, it will start \n"
                "in the folder where the file is.");
@@ -848,7 +883,14 @@ static int menu_info_screen_iterate(unsigned action)
                " \n"
                "Changing shader settings is a somewhat \n"
                "expensive operation so it has to be \n"
-               "done explicitly.");
+               "done explicitly. \n"
+               " \n"
+               "When you apply shaders, the menu shader \n"
+               "settings are saved to a temporary file (either \n"
+               "rgui.cgp or rgui.glslp) and loaded. The file \n"
+               "persists after RetroArch exits. The file is \n"
+               "saved to Shader Directory."
+               );
          break;
       case RGUI_SETTINGS_SHADER_PASSES:
          snprintf(msg, sizeof(msg),
@@ -864,6 +906,22 @@ static int menu_info_screen_iterate(unsigned action)
                " \n"
                "The Default Filter option will affect the \n"
                "stretching filter.");
+         break;
+      case RGUI_SETTINGS_BIND_DEVICE:
+         snprintf(msg, sizeof(msg),
+               " -- Input Device. \n"
+               " \n"
+               "Picks which gamepad to use for player N. \n"
+               "The name of the pad is available."
+               );
+         break;
+      case RGUI_SETTINGS_BIND_DEVICE_TYPE:
+         snprintf(msg, sizeof(msg),
+               " -- Input Device Type. \n"
+               " \n"
+               "Picks which device type to use. This is \n"
+               "relevant for the libretro core itself."
+               );
          break;
       case RGUI_SETTINGS_DRIVER_INPUT:
          if (!strcmp(g_settings.input.driver, "udev"))
@@ -963,7 +1021,10 @@ static int menu_info_screen_iterate(unsigned action)
          break;
       case RGUI_SCREENSHOT_DIR_PATH:
          snprintf(msg, sizeof(msg),
-               " -- Directory to dump screenshots to.");
+               " -- Screenshot Directory. \n"
+               " \n"
+               "Directory to dump screenshots to."
+               );
          break;
       case RGUI_SETTINGS_DRIVER_AUDIO_DEVICE:
          snprintf(msg, sizeof(msg),
@@ -992,7 +1053,8 @@ static int menu_info_screen_iterate(unsigned action)
          break;
       case RGUI_ASSETS_DIR_PATH:
          snprintf(msg, sizeof(msg),
-               " -- Assets directory. \n"
+               " -- Assets Directory. \n"
+               " \n"
                " This location is queried by default when \n"
                "menu interfaces try to look for loadable \n"
                "assets, etc.");
@@ -1035,12 +1097,16 @@ static int menu_info_screen_iterate(unsigned action)
          break;
       case RGUI_LIBRETRO_DIR_PATH:
          snprintf(msg, sizeof(msg),
-               " -- A directory for where to search for \n"
+               " -- Core Directory. \n"
+               " \n"
+               "A directory for where to search for \n"
                "libretro core implementations.");
          break;
       case RGUI_SAVEFILE_DIR_PATH:
          snprintf(msg, sizeof(msg),
-               " -- Save all save files (*.srm) to this \n"
+               " -- Savefile Directory. \n"
+               " \n"
+               "Save all save files (*.srm) to this \n"
                "directory. This includes related files like \n"
                ".bsv, .rt, .psrm, etc...\n"
                " \n"
@@ -1049,7 +1115,9 @@ static int menu_info_screen_iterate(unsigned action)
          break;
       case RGUI_SAVESTATE_DIR_PATH:
          snprintf(msg, sizeof(msg),
-               " -- Save all save states (*.state) to this \n"
+               " -- Savestate Directory. \n"
+               " \n"
+               "Save all save states (*.state) to this \n"
                "directory.\n"
                " \n"
                "This will be overridden by explicit command line\n"
@@ -1282,6 +1350,90 @@ static int menu_info_screen_iterate(unsigned action)
          else if (!strcmp(g_settings.audio.resampler, "CC"))
             snprintf(msg, sizeof(msg),
                   " -- Convoluted Cosine implementation.");
+         break;
+      case RGUI_SETTINGS_SHADER_0_FILTER + (0 * 3):
+      case RGUI_SETTINGS_SHADER_0_FILTER + (1 * 3):
+      case RGUI_SETTINGS_SHADER_0_FILTER + (2 * 3):
+      case RGUI_SETTINGS_SHADER_0_FILTER + (3 * 3):
+      case RGUI_SETTINGS_SHADER_0_FILTER + (4 * 3):
+      case RGUI_SETTINGS_SHADER_0_FILTER + (5 * 3):
+      case RGUI_SETTINGS_SHADER_0_FILTER + (6 * 3):
+      case RGUI_SETTINGS_SHADER_0_FILTER + (7 * 3):
+      case RGUI_SETTINGS_SHADER_0_FILTER + (8 * 3):
+      case RGUI_SETTINGS_SHADER_0_FILTER + (9 * 3):
+      case RGUI_SETTINGS_SHADER_0_FILTER + (10 * 3):
+      case RGUI_SETTINGS_SHADER_0_FILTER + (11 * 3):
+      case RGUI_SETTINGS_SHADER_0_FILTER + (12 * 3):
+      case RGUI_SETTINGS_SHADER_0_FILTER + (13 * 3):
+      case RGUI_SETTINGS_SHADER_0_FILTER + (14 * 3):
+      case RGUI_SETTINGS_SHADER_0_FILTER + (15 * 3):
+         snprintf(msg, sizeof(msg),
+               " -- Hardware filter for this pass. \n"
+               " \n"
+               "If 'Don't Care' is set, 'Default \n"
+               "Filter' will be used."
+               );
+         break;
+      case RGUI_SETTINGS_SHADER_0 + (0 * 3):
+      case RGUI_SETTINGS_SHADER_0 + (1 * 3):
+      case RGUI_SETTINGS_SHADER_0 + (2 * 3):
+      case RGUI_SETTINGS_SHADER_0 + (3 * 3):
+      case RGUI_SETTINGS_SHADER_0 + (4 * 3):
+      case RGUI_SETTINGS_SHADER_0 + (5 * 3):
+      case RGUI_SETTINGS_SHADER_0 + (6 * 3):
+      case RGUI_SETTINGS_SHADER_0 + (7 * 3):
+      case RGUI_SETTINGS_SHADER_0 + (8 * 3):
+      case RGUI_SETTINGS_SHADER_0 + (9 * 3):
+      case RGUI_SETTINGS_SHADER_0 + (10 * 3):
+      case RGUI_SETTINGS_SHADER_0 + (11 * 3):
+      case RGUI_SETTINGS_SHADER_0 + (12 * 3):
+      case RGUI_SETTINGS_SHADER_0 + (13 * 3):
+      case RGUI_SETTINGS_SHADER_0 + (14 * 3):
+      case RGUI_SETTINGS_SHADER_0 + (15 * 3):
+         snprintf(msg, sizeof(msg),
+               " -- Path to shader. \n"
+               " \n"
+               "All shaders must be of the same \n"
+               "type (i.e. CG, GLSL or HLSL). \n"
+               " \n"
+               "Set Shader Directory to set where \n"
+               "the browser starts to look for \n"
+               "shaders."
+               );
+         break;
+      case RGUI_SETTINGS_SHADER_0_SCALE + (0 * 3):
+      case RGUI_SETTINGS_SHADER_0_SCALE + (1 * 3):
+      case RGUI_SETTINGS_SHADER_0_SCALE + (2 * 3):
+      case RGUI_SETTINGS_SHADER_0_SCALE + (3 * 3):
+      case RGUI_SETTINGS_SHADER_0_SCALE + (4 * 3):
+      case RGUI_SETTINGS_SHADER_0_SCALE + (5 * 3):
+      case RGUI_SETTINGS_SHADER_0_SCALE + (6 * 3):
+      case RGUI_SETTINGS_SHADER_0_SCALE + (7 * 3):
+      case RGUI_SETTINGS_SHADER_0_SCALE + (8 * 3):
+      case RGUI_SETTINGS_SHADER_0_SCALE + (9 * 3):
+      case RGUI_SETTINGS_SHADER_0_SCALE + (10 * 3):
+      case RGUI_SETTINGS_SHADER_0_SCALE + (11 * 3):
+      case RGUI_SETTINGS_SHADER_0_SCALE + (12 * 3):
+      case RGUI_SETTINGS_SHADER_0_SCALE + (13 * 3):
+      case RGUI_SETTINGS_SHADER_0_SCALE + (14 * 3):
+      case RGUI_SETTINGS_SHADER_0_SCALE + (15 * 3):
+         snprintf(msg, sizeof(msg),
+               " -- Scale for this pass. \n"
+               " \n"
+               "The scale factor accumulates, i.e. 2x \n"
+               "for first pass and 2x for second pass \n"
+               "will give you a 4x total scale. \n"
+               " \n"
+               "If there is a scale factor for last \n"
+               "pass, the result is stretched to \n"
+               "screen with the filter specified in \n"
+               "'Default Filter'. \n"
+               " \n"
+               "If 'Don't Care' is set, either 1x \n"
+               "scale or stretch to fullscreen will \n"
+               "be used depending if it's not the last \n"
+               "pass or not."
+               );
          break;
       default:
          snprintf(msg, sizeof(msg),

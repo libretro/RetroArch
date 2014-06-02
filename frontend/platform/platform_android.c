@@ -130,14 +130,14 @@ void engine_handle_cmd(void *data)
          g_extern.is_paused = false;
 
          if ((android_app->sensor_state_mask & (1ULL << RETRO_SENSOR_ACCELEROMETER_ENABLE))
-               && android_app->accelerometerSensor == NULL)
+               && android_app->accelerometerSensor == NULL && driver.input_data)
             android_input_set_sensor_state(driver.input_data, 0, RETRO_SENSOR_ACCELEROMETER_ENABLE,
                   android_app->accelerometer_event_rate);
          break;
       case APP_CMD_LOST_FOCUS:
          // Avoid draining battery while app is not being used
          if ((android_app->sensor_state_mask & (1ULL << RETRO_SENSOR_ACCELEROMETER_ENABLE))
-               && android_app->accelerometerSensor != NULL)
+               && android_app->accelerometerSensor != NULL && driver.input_data)
             android_input_set_sensor_state(driver.input_data, 0, RETRO_SENSOR_ACCELEROMETER_DISABLE,
                   android_app->accelerometer_event_rate);
          break;
@@ -371,8 +371,8 @@ void ANativeActivity_onCreate(ANativeActivity* activity,
    memset(android_app, 0, sizeof(struct android_app));
    android_app->activity = activity;
 
-   android_app->mutex = slock_new();
-   android_app->cond  = scond_new();
+   android_app->mutex = (slock_t*)slock_new();
+   android_app->cond  = (scond_t*)scond_new();
 
    if (pipe(msgpipe))
    {
