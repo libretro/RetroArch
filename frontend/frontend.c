@@ -65,12 +65,6 @@
 
 #endif
 
-#if !defined(RARCH_CONSOLE) && !defined(__QNX__) && !defined(ANDROID)
-#define attempt_load_game_push_history true
-#else
-#define attempt_load_game_push_history false
-#endif
-
 static retro_keyboard_event_t key_event;
 
 #ifdef HAVE_MENU
@@ -341,13 +335,10 @@ returntype main_entry(signature())
 
    g_extern.lifecycle_state |= (1ULL << MODE_GAME);
 
-   if (attempt_load_game_push_history)
-   {
-      // If we started a ROM directly from command line,
-      // push it to ROM history.
-      if (!g_extern.libretro_dummy)
-         menu_rom_history_push_current();
-   }
+   // If we started a ROM directly from command line,
+   // push it to ROM history.
+   if (!g_extern.libretro_dummy)
+      menu_rom_history_push_current();
 
    while (!main_entry_iterate(signature_expand(), args));
 #else
