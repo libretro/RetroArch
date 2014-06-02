@@ -890,13 +890,11 @@ static void lakka_frame(void)
          }
          else
          {
-            lakka_draw_icon(gl,
-                  arrow_icon, 
-                  156 + (HSPACING*(i+1)) + all_categories_x + 150 +-dim/2.0, 
-                  300 + item->y + dim/2.0, 
-                  item->alpha,
-                  0,
-                  item->zoom);
+            if (i == menu_active_category && j == active_category->active_item)
+               lakka_draw_icon(gl,
+                     arrow_icon,
+                     156 + HSPACING * (i+1) + all_categories_x + 150 +-dim/2.0,
+                     300 + item->y + dim/2.0, 1, 0, I_ACTIVE_ZOOM);
          }
       }
 
