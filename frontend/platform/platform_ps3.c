@@ -331,7 +331,7 @@ static void frontend_ps3_init(void *data)
 
 static int frontend_ps3_process_args(int *argc, char *argv[], void *args)
 {
-   int ret = 0;
+   int ret = 1;
 #ifndef IS_SALAMANDER
    bool original_verbose = g_extern.verbose;
    g_extern.verbose = true;
@@ -339,7 +339,7 @@ static int frontend_ps3_process_args(int *argc, char *argv[], void *args)
    if (*argc > 1)
    {
       strlcpy(g_extern.fullpath, argv[1], sizeof(g_extern.fullpath));
-      ret = 1;
+      ret = 0;
       RARCH_LOG("Auto-start game %s.\n", argv[1]);
    }
 

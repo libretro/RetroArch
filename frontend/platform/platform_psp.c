@@ -116,10 +116,10 @@ static int frontend_psp_process_args(int *argc, char *argv[], void *args)
    {
       strlcpy(g_extern.fullpath, argv[1], sizeof(g_extern.fullpath));
       g_extern.lifecycle_state |= (1ULL << MODE_LOAD_GAME);
-      return 1;
+      return 0;
    }
 
-   return 0;
+   return 1;
 }
 
 static int frontend_psp_get_rating(void)

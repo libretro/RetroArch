@@ -350,7 +350,7 @@ static void frontend_gx_exitspawn(void)
 
 static int frontend_gx_process_args(int *argc, char *argv[], void *args)
 {
-   int ret = 0;
+   int ret = 1;
 
 #ifndef IS_SALAMANDER
    // a big hack: sometimes salamander doesn't save the new core it loads on first boot,
@@ -365,7 +365,7 @@ static int frontend_gx_process_args(int *argc, char *argv[], void *args)
    if (*argc > 2 && argv[1] != NULL && argv[2] != NULL)
    {
       fill_pathname_join(g_extern.fullpath, argv[1], argv[2], sizeof(g_extern.fullpath));
-      ret = 1;
+      ret = 0;
    }
 #endif
 

@@ -287,7 +287,7 @@ static int frontend_xdk_process_args(int *argc, char *argv[], void *args)
    g_extern.verbose = true;
 #endif
 
-   ret = 0;
+   ret = 1;
    (void)argc;
    (void)argv;
 
@@ -304,7 +304,7 @@ static int frontend_xdk_process_args(int *argc, char *argv[], void *args)
       {
          snprintf(g_extern.fullpath, sizeof(g_extern.fullpath), (char*)ptr.Data);
          RARCH_LOG("Auto-start game %s.\n", g_extern.fullpath);
-         ret = 1;
+         ret = 0;
          goto exit;
       }
    }
@@ -319,7 +319,7 @@ static int frontend_xdk_process_args(int *argc, char *argv[], void *args)
       RARCH_LOG("Auto-start game %s.\n", g_extern.fullpath);
 
       delete []pLaunchData;
-      ret = 1;
+      ret = 0;
       goto exit;
    }
 #endif

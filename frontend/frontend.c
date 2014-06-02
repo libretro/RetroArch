@@ -328,14 +328,13 @@ returntype main_entry(signature())
    if ((ret = rarch_main_init(argc, argv))) return_var(ret);
 
 #if defined(HAVE_MENU)
-   ret = 0;
    if (driver.frontend_ctx && driver.frontend_ctx->process_args)
       ret = driver.frontend_ctx->process_args(&argc, argv, args);
 
    g_extern.lifecycle_state |= (1ULL << MODE_GAME);
 
 #if defined(RARCH_CONSOLE) || defined(RARCH_MOBILE)
-   if (ret)
+   if (!ret)
 #endif
    {
       // If we started a ROM directly from command line,
