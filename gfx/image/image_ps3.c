@@ -329,6 +329,8 @@ bool texture_image_load(void *data, const char *path, void *image_data)
 void texture_image_free(void *data, void *image_data)
 {
    struct texture_image *img = (struct texture_image*)image_data;
+   if (!img)
+      return;
 
    if (img->pixels)
       free(img->pixels);

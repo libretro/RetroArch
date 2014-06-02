@@ -635,7 +635,7 @@ void uninit_drivers(void)
    if (g_extern.system.hw_render_callback.context_destroy && !driver.video_cache_context)
       g_extern.system.hw_render_callback.context_destroy();
 
-   if (driver.menu_ctx && driver.menu_ctx->context_destroy)
+   if (driver.menu && driver.menu_ctx && driver.menu_ctx->context_destroy)
       driver.menu_ctx->context_destroy(driver.menu);
 
 #ifdef HAVE_MENU
