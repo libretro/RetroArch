@@ -75,6 +75,8 @@ typedef struct android_input
    ASensorEventQueue* sensorEventQueue;
 } android_input_t;
 
+extern const rarch_joypad_driver_t android_joypad;
+
 void (*engine_handle_dpad)(void *data, AInputEvent*, size_t, int, char*, size_t, int, bool, unsigned);
 static bool android_input_set_sensor_state(void *data, unsigned port, enum retro_sensor_action action, unsigned event_rate);
 
@@ -1974,8 +1976,15 @@ static int16_t android_input_state(void *data, const struct retro_keybind **bind
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
+#if 0
+         return input_joypad_pressed(&android_joypad, port, binds[port], id);
+#else
          return ((android->pad_state[port] & binds[port][id].joykey) && (port < android->pads_connected));
+#endif
       case RETRO_DEVICE_ANALOG:
+#if 0
+         return input_joypad_analog(&android_joypad, port, index, id, binds[port]);
+#else
          if (port >= android->pads_connected)
             return 0;
          switch ((index << 1) | id)
@@ -1989,6 +1998,8 @@ static int16_t android_input_state(void *data, const struct retro_keybind **bind
             case (RETRO_DEVICE_INDEX_ANALOG_RIGHT << 1) | RETRO_DEVICE_ID_ANALOG_Y:
                return android->analog_state[port][1][1];
          }
+         break;
+#endif
       case RETRO_DEVICE_POINTER:
          switch (id)
          {
@@ -2001,6 +2012,7 @@ static int16_t android_input_state(void *data, const struct retro_keybind **bind
             default:
                return 0;
          }
+         break;
       case RARCH_DEVICE_POINTER_SCREEN:
          switch (id)
          {
@@ -2013,6 +2025,7 @@ static int16_t android_input_state(void *data, const struct retro_keybind **bind
             default:
                return 0;
          }
+         break;
    }
 
    return 0;
@@ -2115,6 +2128,11 @@ unsigned android_input_devices_size(void *data)
    return DEVICE_LAST;
 }
 
+static const rarch_joypad_driver_t *android_input_get_joypad_driver(void *data)
+{
+   return &android_joypad;
+}
+
 const input_driver_t input_android = {
    android_input_init,
    android_input_poll,
@@ -2127,4 +2145,93 @@ const input_driver_t input_android = {
    android_input_get_capabilities,
    android_input_devices_size,
    "android_input",
+
+   NULL,
+   NULL,
+   android_input_get_joypad_driver,
+};
+
+static bool android_joypad_init(void)
+{
+   return true;
+}
+
+static bool android_joypad_button(unsigned port_num, uint16_t joykey)
+{
+   android_input_t *android = (android_input_t*)driver.input_data;
+
+   if (!android || port_num >= MAX_PADS)
+      return false;
+
+   return android->pad_state[port_num] & (1ULL << joykey);
+}
+
+static int16_t android_joypad_axis(unsigned port_num, uint32_t joyaxis)
+{
+   android_input_t *android = (android_input_t*)driver.input_data;
+   if (!android || joyaxis == AXIS_NONE || port_num >= MAX_PADS)
+      return 0;
+
+   int val = 0;
+
+   int axis    = -1;
+   bool is_neg = false;
+   bool is_pos = false;
+
+   if (AXIS_NEG_GET(joyaxis) < 4)
+   {
+      axis = AXIS_NEG_GET(joyaxis);
+      is_neg = true;
+   }
+   else if (AXIS_POS_GET(joyaxis) < 4)
+   {
+      axis = AXIS_POS_GET(joyaxis);
+      is_pos = true;
+   }
+
+   switch (axis)
+   {
+      case 0: val = android->analog_state[port_num][0][0]; break;
+      case 1: val = android->analog_state[port_num][0][1]; break;
+      case 2: val = android->analog_state[port_num][1][0]; break;
+      case 3: val = android->analog_state[port_num][1][1]; break;
+   }
+
+   if (is_neg && val > 0)
+      val = 0;
+   else if (is_pos && val < 0)
+      val = 0;
+
+   return val;
+}
+
+static void android_joypad_poll(void)
+{
+}
+
+static bool android_joypad_query_pad(unsigned pad)
+{
+   android_input_t *android = (android_input_t*)driver.input_data;
+   return (android && pad < MAX_PLAYERS && android->pad_state[pad]);
+}
+
+static const char *android_joypad_name(unsigned pad)
+{
+   return NULL;
+}
+
+static void android_joypad_destroy(void)
+{
+}
+
+const rarch_joypad_driver_t android_joypad = {
+   android_joypad_init,
+   android_joypad_query_pad,
+   android_joypad_destroy,
+   android_joypad_button,
+   android_joypad_axis,
+   android_joypad_poll,
+   NULL,
+   android_joypad_name,
+   "android",
 };
