@@ -569,7 +569,8 @@ void init_drivers(void)
 
 #ifdef HAVE_MENU
    init_menu();
-   if (driver.menu_ctx && driver.menu_ctx->context_reset)
+
+   if (driver.menu && driver.menu_ctx && driver.menu_ctx->context_reset)
       driver.menu_ctx->context_reset(driver.menu);
 #endif
 
@@ -635,10 +636,10 @@ void uninit_drivers(void)
    if (g_extern.system.hw_render_callback.context_destroy && !driver.video_cache_context)
       g_extern.system.hw_render_callback.context_destroy();
 
+#ifdef HAVE_MENU
    if (driver.menu && driver.menu_ctx && driver.menu_ctx->context_destroy)
       driver.menu_ctx->context_destroy(driver.menu);
 
-#ifdef HAVE_MENU
    if (!driver.menu_data_own)
    {
       menu_free(driver.menu);
