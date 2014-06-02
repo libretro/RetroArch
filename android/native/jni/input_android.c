@@ -1736,7 +1736,7 @@ static void android_input_set_keybinds(void *data, unsigned device,
 static void android_input_poll(void *data)
 {
    int ident;
-   uint64_t lifecycle_mask = (1ULL << RARCH_RESET) | (1ULL << RARCH_REWIND) | (1ULL << RARCH_FAST_FORWARD_KEY) | (1ULL << RARCH_FAST_FORWARD_HOLD_KEY) | (1ULL << RARCH_MUTE) | (1ULL << RARCH_SAVE_STATE_KEY) | (1ULL << RARCH_LOAD_STATE_KEY) | (1ULL << RARCH_STATE_SLOT_PLUS) | (1ULL << RARCH_STATE_SLOT_MINUS) | (1ULL << RARCH_QUIT_KEY) | (1ULL << RARCH_MENU_TOGGLE);
+   uint64_t lifecycle_mask = (1ULL << RARCH_RESET) | (1ULL << RARCH_REWIND) | (1ULL << RARCH_FAST_FORWARD_KEY) | (1ULL << RARCH_FAST_FORWARD_HOLD_KEY) | (1ULL << RARCH_MUTE) | (1ULL << RARCH_SAVE_STATE_KEY) | (1ULL << RARCH_LOAD_STATE_KEY) | (1ULL << RARCH_STATE_SLOT_PLUS) | (1ULL << RARCH_STATE_SLOT_MINUS) | (1ULL << RARCH_MENU_TOGGLE);
    uint64_t *lifecycle_state = &g_extern.lifecycle_state;
    struct android_app *android_app = (struct android_app*)g_android;
    android_input_t *android = (android_input_t*)data;
@@ -1824,7 +1824,7 @@ static void android_input_poll(void *data)
                   }
                   else if (g_settings.input.back_behavior == BACK_BUTTON_QUIT)
                   {
-                     *lifecycle_state |= (1ULL << RARCH_QUIT_KEY); 
+                     g_extern.system.shutdown = true;
                      AInputQueue_finishEvent(android_app->inputQueue, event, handled);
                      break;
                   }

@@ -509,7 +509,7 @@ static void handle_navigator_event(void *data, bps_event_t *event)
                   }
                   else if (bps_event_get_code(event_pause) == NAVIGATOR_EXIT)
                   {
-                     g_extern.lifecycle_state |= (1ULL << RARCH_QUIT_KEY);
+                     g_extern.system.shutdown = true;
                      break;
                   }
                }

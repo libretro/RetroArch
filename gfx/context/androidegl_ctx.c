@@ -182,7 +182,7 @@ static void gfx_ctx_check_window(void *data, bool *quit,
    }
 
    // Check if we are exiting.
-   if (g_extern.lifecycle_state & (1ULL << RARCH_QUIT_KEY))
+   if (g_extern.system.shutdown)
       *quit = true;
 }
 
