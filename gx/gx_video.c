@@ -1266,17 +1266,18 @@ static void gx_get_overlay_interface(void *data, const video_overlay_interface_t
 #endif
 
 const video_driver_t video_gx = {
-   .init = gx_init,
-   .frame = gx_frame,
-   .alive = gx_alive,
-   .set_nonblock_state = gx_set_nonblock_state,
-   .focus = gx_focus,
-   .free = gx_free,
-   .ident = "gx",
-   .set_rotation = gx_set_rotation,
-   .viewport_info = gx_viewport_info,
+   gx_init,
+   gx_frame,
+   gx_set_nonblock_state,
+   gx_alive,
+   gx_focus,
+   NULL,
+   gx_free,
+   "gx",
+   gx_set_rotation,
+   gx_viewport_info,
 #ifdef HAVE_OVERLAY
-   .overlay_interface = gx_get_overlay_interface,
+   gx_get_overlay_interface,
 #endif
-   .poke_interface = gx_get_poke_interface,
+   gx_get_poke_interface,
 };
