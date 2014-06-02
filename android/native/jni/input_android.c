@@ -2063,6 +2063,11 @@ static bool android_input_key_pressed(void *data, int key)
 
 static void android_input_free_input(void *data)
 {
+   android_input_t *android = (android_input_t*)data;
+   if (!android)
+      return;
+
+   ASensorManager_destroyEventQueue(android->sensorManager, android->sensorEventQueue);
    free(data);
 }
 
