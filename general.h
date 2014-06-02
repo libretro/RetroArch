@@ -126,6 +126,7 @@ enum sound_mode_enums
 struct defaults
 {
    char config_path[PATH_MAX];
+   char core_path[PATH_MAX];
    char autoconfig_dir[PATH_MAX];
    char audio_filter_dir[PATH_MAX];
    char assets_dir[PATH_MAX];

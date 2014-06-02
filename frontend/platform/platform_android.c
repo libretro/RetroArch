@@ -415,7 +415,6 @@ static void frontend_android_get_environment_settings(int *argc, char *argv[], v
    JNIEnv *env;
    jobject obj = NULL;
    jstring jstr = NULL;
-   bool valschanged = false;
    struct android_app* android_app = (struct android_app*)data;
 
    if (!android_app)
@@ -436,8 +435,7 @@ static void frontend_android_get_environment_settings(int *argc, char *argv[], v
       strlcpy(g_extern.fullpath, argv, sizeof(g_extern.fullpath));
       (*env)->ReleaseStringUTFChars(env, jstr, argv);
 
-      valschanged = true;
-      RARCH_LOG("ROM Filename: [%s].\n", g_extern.fullpath);
+      RARCH_LOG("Content Filename: [%s].\n", g_extern.fullpath);
    }
 
    // Config file
@@ -445,11 +443,10 @@ static void frontend_android_get_environment_settings(int *argc, char *argv[], v
    if (android_app->getStringExtra && jstr)
    {
       const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
-      strlcpy(g_extern.config_path, argv, sizeof(g_extern.config_path));
+      strlcpy(default_paths.config_path, argv, sizeof(default_paths.config_path));
       (*env)->ReleaseStringUTFChars(env, jstr, argv);
 
-      valschanged = true;
-      RARCH_LOG("Config file: [%s].\n", g_extern.config_path);
+      RARCH_LOG("Config file: [%s].\n", default_paths.config_path);
    }
 
    // Current IME
@@ -460,7 +457,6 @@ static void frontend_android_get_environment_settings(int *argc, char *argv[], v
       strlcpy(android_app->current_ime, argv, sizeof(android_app->current_ime));
       (*env)->ReleaseStringUTFChars(env, jstr, argv);
 
-      valschanged = true;
       RARCH_LOG("Current IME: [%s].\n", android_app->current_ime);
    }
 
@@ -473,25 +469,17 @@ static void frontend_android_get_environment_settings(int *argc, char *argv[], v
       (*env)->ReleaseStringUTFChars(env, jstr, argv);
    }
 
-
-   if (valschanged)
-   {
-      g_extern.block_config_read = false;
-      config_load();
-      g_extern.block_config_read = true;
-   }
-
    //LIBRETRO
    CALL_OBJ_METHOD_PARAM(env, jstr, obj, android_app->getStringExtra, (*env)->NewStringUTF(env, "LIBRETRO"));
 
    if (android_app->getStringExtra && jstr)
    {
       const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
-      strlcpy(g_settings.libretro, argv, sizeof(g_settings.libretro));
+      strlcpy(default_paths.core_path, argv, sizeof(default_paths.core_path));
       (*env)->ReleaseStringUTFChars(env, jstr, argv);
    }
 
-   RARCH_LOG("Libretro path: [%s].\n", g_settings.libretro);
+   RARCH_LOG("Libretro path: [%s].\n", default_paths.core_path);
 
 }
 
@@ -502,7 +490,6 @@ static void process_pending_intent(void *data)
    JNIEnv *env;
    struct android_app* android_app = (struct android_app*)data;
    jstring jstr = NULL;
-   bool valschanged = false;
    bool startgame = false;
 
    if (!android_app)
@@ -522,7 +509,6 @@ static void process_pending_intent(void *data)
       strlcpy(g_extern.fullpath, argv, sizeof(g_extern.fullpath));
       (*env)->ReleaseStringUTFChars(env, jstr, argv);
 
-      valschanged = true;
       startgame = true;
       RARCH_LOG("ROM Filename: [%s].\n", g_extern.fullpath);
    }
@@ -533,10 +519,9 @@ static void process_pending_intent(void *data)
    if (android_app->getPendingIntentConfigPath && jstr)
    {
       const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
-      strlcpy(g_extern.config_path, argv, sizeof(g_extern.config_path));
+      strlcpy(default_paths.config_path, argv, sizeof(default_paths.config_path));
       (*env)->ReleaseStringUTFChars(env, jstr, argv);
 
-      valschanged = true;
       RARCH_LOG("Config file: [%s].\n", g_extern.config_path);
    }
 
@@ -549,15 +534,7 @@ static void process_pending_intent(void *data)
       strlcpy(android_app->current_ime, argv, sizeof(android_app->current_ime));
       (*env)->ReleaseStringUTFChars(env, jstr, argv);
 
-      valschanged = true;
       RARCH_LOG("Current IME: [%s].\n", android_app->current_ime);
-   }
-
-   if (valschanged)
-   {
-      g_extern.block_config_read = false;
-      config_load();
-      g_extern.block_config_read = true;
    }
 
    //LIBRETRO
@@ -566,11 +543,11 @@ static void process_pending_intent(void *data)
    if (android_app->getPendingIntentLibretroPath && jstr)
    {
       const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
-      strlcpy(g_settings.libretro, argv, sizeof(g_settings.libretro));
+      strlcpy(default_paths.core_path, argv, sizeof(default_paths.core_path));
       (*env)->ReleaseStringUTFChars(env, jstr, argv);
    }
 
-   RARCH_LOG("Libretro path: [%s].\n", g_settings.libretro);
+   RARCH_LOG("Libretro path: [%s].\n", default_paths.core_path);
 
    if (startgame)
    {

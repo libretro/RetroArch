@@ -483,6 +483,8 @@ void config_set_defaults(void)
       strlcpy(g_settings.assets_directory, default_paths.assets_dir, sizeof(g_settings.assets_directory));
    if (*default_paths.core_dir)
       strlcpy(g_settings.libretro_directory, default_paths.core_dir, sizeof(g_settings.libretro_directory));
+   if (*default_paths.core_path)
+      strlcpy(g_settings.libretro, default_paths.core_path, sizeof(g_settings.libretro));
    if (*default_paths.core_info_dir)
       strlcpy(g_settings.libretro_info_path, default_paths.core_info_dir, sizeof(g_settings.libretro_info_path));
    if (*default_paths.overlay_dir)
