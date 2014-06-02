@@ -247,8 +247,10 @@ void load_menu_game_prepare_dummy(void)
 
 bool load_menu_game(void)
 {
-   int ret;
+   int argc, ret, i;
    struct rarch_main_wrap args = {0};
+   char *argv_copy[MAX_ARGS];
+   char *argv[MAX_ARGS] = {NULL};
 
    if (!driver.menu)
       return false;
@@ -265,7 +267,17 @@ bool load_menu_game(void)
    args.rom_path      = *g_extern.fullpath ? g_extern.fullpath : NULL;
    args.libretro_path = *g_settings.libretro ? g_settings.libretro : NULL;
 
-   ret = rarch_main_init_wrap(&args);
+   argc = 0;
+
+   rarch_main_init_wrap(&args, &argc, argv);
+
+   // The pointers themselves are not const, and can be messed around with by getopt_long().
+   memcpy(argv_copy, argv, sizeof(argv));
+
+   ret = rarch_main_init(argc, argv);
+
+   for (i = 0; i < ARRAY_SIZE(argv_copy); i++)
+      free(argv_copy[i]);
 
    if (ret != 0)
    {

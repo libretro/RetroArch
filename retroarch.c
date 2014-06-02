@@ -3190,77 +3190,59 @@ void rarch_main_deinit(void)
    g_extern.main_is_init = false;
 }
 
-#define MAX_ARGS 32
-
-int rarch_main_init_wrap(const struct rarch_main_wrap *args)
+void rarch_main_init_wrap(const struct rarch_main_wrap *args, int *argc, char **argv)
 {
    unsigned i;
-   if (g_extern.main_is_init)
-      rarch_main_deinit();
 
-   int argc = 0;
-   char *argv[MAX_ARGS] = {NULL};
-   char *argv_copy[MAX_ARGS];
-
-   argv[argc++] = strdup("retroarch");
+   argv[(*argc)++] = strdup("retroarch");
 
    if (!args->no_rom)
    {
       if (args->rom_path)
       {
          RARCH_LOG("Using content: %s.\n", args->rom_path);
-         argv[argc++] = strdup(args->rom_path);
+         argv[(*argc)++] = strdup(args->rom_path);
       }
       else
       {
          RARCH_LOG("No content, starting dummy core.\n");
-         argv[argc++] = strdup("--menu");
+         argv[(*argc)++] = strdup("--menu");
       }
    }
 
    if (args->sram_path)
    {
-      argv[argc++] = strdup("-s");
-      argv[argc++] = strdup(args->sram_path);
+      argv[(*argc)++] = strdup("-s");
+      argv[(*argc)++] = strdup(args->sram_path);
    }
 
    if (args->state_path)
    {
-      argv[argc++] = strdup("-S");
-      argv[argc++] = strdup(args->state_path);
+      argv[(*argc)++] = strdup("-S");
+      argv[(*argc)++] = strdup(args->state_path);
    }
 
    if (args->config_path)
    {
-      argv[argc++] = strdup("-c");
-      argv[argc++] = strdup(args->config_path);
+      argv[(*argc)++] = strdup("-c");
+      argv[(*argc)++] = strdup(args->config_path);
    }
 
 #ifdef HAVE_DYNAMIC
    if (args->libretro_path)
    {
-      argv[argc++] = strdup("-L");
-      argv[argc++] = strdup(args->libretro_path);
+      argv[(*argc)++] = strdup("-L");
+      argv[(*argc)++] = strdup(args->libretro_path);
    }
 #endif
 
    if (args->verbose)
-      argv[argc++] = strdup("-v");
+      argv[(*argc)++] = strdup("-v");
 
 #ifdef HAVE_FILE_LOGGER
-   for (i = 0; i < argc; i++)
+   for (i = 0; i < *argc; i++)
       RARCH_LOG("arg #%d: %s\n", i, argv[i]);
 #endif
-
-   // The pointers themselves are not const, and can be messed around with by getopt_long().
-   memcpy(argv_copy, argv, sizeof(argv));
-
-   int ret = rarch_main_init(argc, argv);
-
-   for (i = 0; i < ARRAY_SIZE(argv_copy); i++)
-      free(argv_copy[i]);
-
-   return ret;
 }
 
 bool rarch_main_idle_iterate(void)
