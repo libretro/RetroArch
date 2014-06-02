@@ -89,7 +89,7 @@ static int menu_lakka_iterate(unsigned action)
          if (depth == 1 // if we are on subitems level
          && active_item->active_subitem < active_item->num_subitems -1 // and we do not exceed the number of subitems
          && (menu_active_category == 0 // and we are in settings or a rom is launched
-         || (active_item->active_subitem < active_item->num_subitems -1) && (g_extern.main_is_init && !g_extern.libretro_dummy) && strcmp(g_extern.fullpath, active_item->rom) == 0))
+         || ((active_item->active_subitem < active_item->num_subitems -1) && (g_extern.main_is_init && !g_extern.libretro_dummy) && strcmp(g_extern.fullpath, &active_item->rom) == 0)))
          {
             active_item->active_subitem++;
             lakka_switch_subitems();
