@@ -85,6 +85,8 @@ GLfloat font_color_dark[16];
 GLuint texture;
 
 GLuint settings_icon;
+GLuint setting_icon;
+GLuint subsetting_icon;
 GLuint arrow_icon;
 GLuint run_icon;
 GLuint resume_icon;
@@ -838,22 +840,24 @@ static void lakka_frame(void)
                else if (k == 0)
                {
                   lakka_draw_icon(gl, 
-                        run_icon, 
+                        subitem->icon, 
                         156 + HSPACING*(i+2) + all_categories_x - dim/2.0, 
                         300 + subitem->y + dim/2.0, 
                         subitem->alpha, 
                         0, 
                         subitem->zoom);
                   lakka_draw_text(gl, 
-                        &run_label, 
-                        156 + HSPACING*(i+2) + all_categories_x + dim/2.0, 
+                        &subitem->out, 
+                        156 + HSPACING * (i+2) + all_categories_x + dim/2.0, 
                         300 + subitem->y + 15, 
                         1, 
                         subitem->alpha);
                }
-               else if (g_extern.main_is_init && 
+               else if ( // if we are in settings or a rom is launched
+                     menu_active_category == 0 ||
+                     (g_extern.main_is_init && 
                      !g_extern.libretro_dummy &&
-                     strcmp(g_extern.fullpath, active_category->items[active_category->active_item].rom) == 0)
+                     strcmp(g_extern.fullpath, active_category->items[active_category->active_item].rom) == 0))
                {
                   lakka_draw_icon(gl, 
                         subitem->icon, 
@@ -868,7 +872,6 @@ static void lakka_frame(void)
                         300 + subitem->y + 15, 
                         1, 
                         subitem->alpha);
-                  /*end*/
                }
             }
          }
@@ -1106,16 +1109,131 @@ void lakka_init_settings(void)
    menu_category_t *category = (menu_category_t*)&categories[0];
 
    strlcpy(category->name, "Settings", sizeof(category->name));
-   category->icon = settings_icon;
    category->alpha = 1.0;
    category->zoom = C_ACTIVE_ZOOM;
    category->active_item = 0;
    category->num_items   = 0;
    category->items       = (menu_item_t*)calloc(category->num_items, sizeof(menu_item_t));
 
+   int j, k;
+
+   // General options item
+
+   j = 0;
+   category->num_items++;
+   category->items = (menu_item_t*)realloc(category->items, category->num_items * sizeof(menu_item_t));
+
+   menu_item_t *item0  = (menu_item_t*)&category->items[j];
+
+   strlcpy(item0->name, "General Options", sizeof(item0->name));
+   item0->alpha          = j ? 0.5 : 1.0;
+   item0->zoom           = j ? I_PASSIVE_ZOOM : I_ACTIVE_ZOOM;
+   item0->y              = j ? VSPACING*(3+j) : VSPACING*2.4;
+   item0->active_subitem = 0;
+   item0->num_subitems   = 0;
+
+   // General options subitems
+
+   k = 0;
+   item0->num_subitems++;
+   //item0->subitems = (menu_subitem_t*)realloc(item0->subitems, item0->num_subitems * sizeof(menu_subitem_t));
+   item0->subitems = (menu_subitem_t*)calloc(item0->num_subitems, sizeof(menu_subitem_t));
+
+   menu_subitem_t *subitem0 = (menu_subitem_t*)&item0->subitems[k];
+
+   strlcpy(subitem0->name, "Libretro Logging Level", sizeof(subitem0->name));
+   subitem0->alpha = k ? 1.0 : 0.5;
+   subitem0->zoom = k ? I_ACTIVE_ZOOM : I_PASSIVE_ZOOM;
+   subitem0->y = k ? VSPACING * (3+k) : VSPACING * 2.4;
+
+   k = 1;
+   item0->num_subitems++;
+   item0->subitems = (menu_subitem_t*)realloc(item0->subitems, item0->num_subitems * sizeof(menu_subitem_t));
+   //item0->subitems = (menu_subitem_t*)calloc(item0->num_subitems, sizeof(menu_subitem_t));
+
+   menu_subitem_t *subitem1 = (menu_subitem_t*)&item0->subitems[k];
+
+   strlcpy(subitem1->name, "Logging Verbosity", sizeof(subitem1->name));
+   subitem1->alpha = k ? 1.0 : 0.5;
+   subitem1->zoom = k ? I_ACTIVE_ZOOM : I_PASSIVE_ZOOM;
+   subitem1->y = k ? VSPACING * (3+k) : VSPACING * 2.4;
+
+   k = 2;
+   item0->num_subitems++;
+   item0->subitems = (menu_subitem_t*)realloc(item0->subitems, item0->num_subitems * sizeof(menu_subitem_t));
+   //item0->subitems = (menu_subitem_t*)calloc(item0->num_subitems, sizeof(menu_subitem_t));
+
+   menu_subitem_t *subitem2 = (menu_subitem_t*)&item0->subitems[k];
+
+   strlcpy(subitem2->name, "Configuration Save On Exit", sizeof(subitem2->name));
+   subitem2->alpha = k ? 1.0 : 0.5;
+   subitem2->zoom = k ? I_ACTIVE_ZOOM : I_PASSIVE_ZOOM;
+   subitem2->y = k ? VSPACING * (3+k) : VSPACING * 2.4;
+
+   // Quit item
+
+   j = 1;
+   category->num_items++;
+   category->items = (menu_item_t*)realloc(category->items, category->num_items * sizeof(menu_item_t));
+
+   menu_item_t *item1 = (menu_item_t*)&category->items[j];
+
+   strlcpy(item1->name, "Quit RetroArch", sizeof(item1->name));
+   item1->alpha          = j ? 0.5 : 1.0;
+   item1->zoom           = j ? I_PASSIVE_ZOOM : I_ACTIVE_ZOOM;
+   item1->y              = j ? VSPACING*(3+j) : VSPACING*2.4;
+   item1->active_subitem = 0;
+   item1->num_subitems   = 0;
+}
+
+void lakka_settings_context_reset(void)
+{
+   menu_category_t *category = (menu_category_t*)&categories[0];
+   category->icon = settings_icon;
    if (font_driver)
       font_driver->render_msg(font, category->name, &category->out);
+
+   int j, k;
+
+   // General options item
+
+   j = 0;
+   menu_item_t *item0;
+   item0 = (menu_item_t*)&category->items[j];
+   item0->icon = setting_icon;
+   if (font_driver)
+      font_driver->render_msg(font, item0->name, &item0->out);
+
+   // General options subitems
+
+   k = 0;
+   menu_subitem_t *subitem0 = (menu_subitem_t*)&item0->subitems[k];
+   subitem0->icon = subsetting_icon;
+   if (font_driver)
+      font_driver->render_msg(font, subitem0->name, &subitem0->out);
+   
+   k = 1;
+   menu_subitem_t *subitem1 = (menu_subitem_t*)&item0->subitems[k];
+   subitem1->icon = subsetting_icon;
+   if (font_driver)
+      font_driver->render_msg(font, subitem1->name, &subitem1->out);
+   
+   k = 2;
+   menu_subitem_t *subitem2 = (menu_subitem_t*)&item0->subitems[k];
+   subitem2->icon = subsetting_icon;
+   if (font_driver)
+      font_driver->render_msg(font, subitem2->name, &subitem2->out);
+   
+   // Quit item
+
+   j = 1;
+   menu_item_t *item1;
+   item1 = (menu_item_t*)&category->items[j];
+   item1->icon = setting_icon;
+   if (font_driver)
+      font_driver->render_msg(font, item1->name, &item1->out);
 }
+
 
 static void lakka_context_reset(void *data)
 {
@@ -1132,6 +1250,10 @@ static void lakka_context_reset(void *data)
 
    fill_pathname_join(path, dirpath, "settings.png", sizeof(path));
    settings_icon = png_texture_load(path, &dim, &dim);
+   fill_pathname_join(path, dirpath, "setting.png", sizeof(path));
+   setting_icon = png_texture_load(path, &dim, &dim);
+   fill_pathname_join(path, dirpath, "subsetting.png", sizeof(path));
+   subsetting_icon = png_texture_load(path, &dim, &dim);
    fill_pathname_join(path, dirpath, "arrow.png", sizeof(path));
    arrow_icon = png_texture_load(path, &dim, &dim);
    fill_pathname_join(path, dirpath, "run.png", sizeof(path));
@@ -1153,7 +1275,7 @@ static void lakka_context_reset(void *data)
       font_driver->render_msg(font, "Resume", &resume_label);
    }
 
-   lakka_init_settings();
+   lakka_settings_context_reset();
    for (i = 1; i < num_categories; i++)
    {
       menu_category_t *category = (menu_category_t*)&categories[i];
@@ -1209,9 +1331,9 @@ static void lakka_context_reset(void *data)
             {
                case 0: subitem->icon = run_icon; break;
                case 1: subitem->icon = savestate_icon; break;
-               case 2: item->subitems[k].icon = loadstate_icon; break;
-               case 3: item->subitems[k].icon = screenshot_icon; break;
-               case 4: item->subitems[k].icon = reload_icon; break;
+               case 2: subitem->icon = loadstate_icon; break;
+               case 3: subitem->icon = screenshot_icon; break;
+               case 4: subitem->icon = reload_icon; break;
             }
 
             if (font_driver)
@@ -1267,18 +1389,18 @@ static void lakka_init_items(int i, menu_category_t *category, core_info_t *info
                   strlcpy(subitem->name, "Save State", sizeof(subitem->name));
                   break;
                case 2:
-                  strlcpy(item->subitems[k].name, "Load State", sizeof(item->subitems[k].name));
+                  strlcpy(subitem->name, "Load State", sizeof(subitem->name));
                   break;
                case 3:
-                  strlcpy(item->subitems[k].name, "Take Screenshot", sizeof(item->subitems[k].name));
+                  strlcpy(subitem->name, "Take Screenshot", sizeof(subitem->name));
                   break;
                case 4:
-                  strlcpy(item->subitems[k].name, "Reset", sizeof(item->subitems[k].name));
+                  strlcpy(subitem->name, "Reset", sizeof(subitem->name));
                   break;
             }
             subitem->alpha = 0;
-            subitem->zoom = k == item->active_subitem ? I_ACTIVE_ZOOM : I_PASSIVE_ZOOM;
-            subitem->y = k == 0 ? VSPACING * 2.4 : VSPACING * (3 + k);
+            subitem->zoom = k ? I_PASSIVE_ZOOM : I_ACTIVE_ZOOM;
+            subitem->y = k ? VSPACING * (3+k) : VSPACING * 2.4;
 
             if (font_driver)
                font_driver->render_msg(font, subitem->name, &subitem->out);
@@ -1339,6 +1461,8 @@ static void *lakka_init(void)
 
    lakka_init_core_info(rgui);
    categories = (menu_category_t*)calloc(num_categories, sizeof(menu_category_t));
+
+   lakka_init_settings();
 
    for (i = 1; i < num_categories; i++)
    {
