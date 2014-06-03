@@ -902,10 +902,12 @@ static void lakka_frame(void)
    struct font_output_list *msg;
    gl_t *gl = (gl_t*)driver.video_data;
    menu_category_t *active_category = (menu_category_t*)&categories[menu_active_category];
-   menu_item_t *active_item = (menu_item_t*)&active_category->items[active_category->active_item];
+   menu_item_t *active_item;
 
-   if (!driver.menu || !gl)
+   if (!driver.menu || !gl || !active_category)
       return;
+
+   active_item = (menu_item_t*)&active_category->items[active_category->active_item];
 
    update_tweens(0.002);
 
