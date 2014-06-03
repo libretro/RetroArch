@@ -134,15 +134,6 @@ static void frontend_psp_deinit(void *data)
    sceKernelExitGame();
 }
 
-static int frontend_psp_process_args(int *argc, char *argv[], void *args)
-{
-   (void)argc;
-   (void)args;
-
-
-   return 1;
-}
-
 static int frontend_psp_get_rating(void)
 {
    return 4;
@@ -153,7 +144,7 @@ const frontend_ctx_driver_t frontend_ctx_psp = {
    frontend_psp_init,            /* init */
    frontend_psp_deinit,          /* deinit */
    NULL,                         /* exitspawn */
-   frontend_psp_process_args,    /* process_args */
+   NULL,                         /* process_args */
    NULL,                         /* process_events */
    NULL,                  	      /* exec */
    NULL,                         /* shutdown */

@@ -23,14 +23,6 @@
 #include "../../dynamic.h"
 #include "../../libretro_private.h"
 
-static void frontend_qnx_get_environment_settings(int *argc, char *argv[],
-      void *args, void *params_data)
-{
-   (void)argc;
-   (void)argv;
-   (void)args;
-}
-
 static void frontend_qnx_init(void *data)
 {
    (void)data;
@@ -51,7 +43,7 @@ static int frontend_qnx_get_rating(void)
 }
 
 const frontend_ctx_driver_t frontend_ctx_qnx = {
-   frontend_qnx_get_environment_settings,     /* get_environment_settings */
+   NULL,                         /* get_environment_settings */
    frontend_qnx_init,            /* init */
    NULL,                         /* deinit */
    NULL,                         /* exitspawn */

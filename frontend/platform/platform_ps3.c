@@ -356,28 +356,6 @@ static void frontend_ps3_init(void *data)
 #endif
 }
 
-static int frontend_ps3_process_args(int *argc, char *argv[], void *args)
-{
-   int ret = 1;
-#ifndef IS_SALAMANDER
-   bool original_verbose = g_extern.verbose;
-   g_extern.verbose = true;
-
-#if 0
-   if (*argc > 1 && argv[1] != NULL)
-   {
-      strlcpy(g_extern.fullpath, argv[1], sizeof(g_extern.fullpath));
-      ret = 0;
-      RARCH_LOG("Auto-start game %s.\n", argv[1]);
-   }
-#endif
-
-   g_extern.verbose = original_verbose;
-#endif
-
-   return ret;
-}
-
 static void frontend_ps3_deinit(void *data)
 {
    (void)data;
@@ -541,7 +519,7 @@ const frontend_ctx_driver_t frontend_ctx_ps3 = {
    frontend_ps3_init,            /* init */
    frontend_ps3_deinit,          /* deinit */
    frontend_ps3_exitspawn,       /* exitspawn */
-   frontend_ps3_process_args,    /* process_args */
+   NULL,                         /* process_args */
    NULL,                         /* process_events */
    frontend_ps3_exec,            /* exec */
    NULL,                         /* shutdown */

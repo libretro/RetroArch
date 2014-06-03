@@ -346,24 +346,6 @@ static void frontend_xdk_init(void *data)
 #endif
 }
 
-static int frontend_xdk_process_args(int *argc, char *argv[], void *args)
-{
-   int ret;
-#ifndef IS_SALAMANDER
-   bool original_verbose = g_extern.verbose;
-   g_extern.verbose = true;
-#endif
-
-   ret = 1;
-   (void)argc;
-   (void)argv;
-
-#ifndef IS_SALAMANDER
-   g_extern.verbose = original_verbose;
-#endif
-   return ret;
-}
-
 static void frontend_xdk_exec(const char *path, bool should_load_game);
 
 static void frontend_xdk_exitspawn(void)
@@ -439,7 +421,7 @@ const frontend_ctx_driver_t frontend_ctx_xdk = {
    frontend_xdk_init,            /* init */
    NULL,                         /* deinit */
    frontend_xdk_exitspawn,       /* exitspawn */
-   frontend_xdk_process_args,    /* process_args */
+   NULL,                         /* process_args */
    NULL,                         /* process_events */
    frontend_xdk_exec,            /* exec */
    NULL,                         /* shutdown */
