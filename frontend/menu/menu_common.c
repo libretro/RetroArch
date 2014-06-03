@@ -247,19 +247,15 @@ void load_menu_game_prepare_dummy(void)
 
 bool load_menu_game(void)
 {
-   int argc, ret, i;
+   int rarch_argc, ret, i;
    struct rarch_main_wrap args = {0};
    char *argv_copy[MAX_ARGS];
-   char *argv[MAX_ARGS] = {NULL};
+   char *rarch_argv[MAX_ARGS] = {NULL};
 
    if (!driver.menu)
       return false;
 
    args.no_rom        = driver.menu->load_no_rom;
-
-   if (g_extern.main_is_init)
-      rarch_main_deinit();
-
    args.verbose       = g_extern.verbose;
    args.config_path   = *g_extern.config_path ? g_extern.config_path : NULL;
    args.sram_path     = *g_extern.savefile_dir ? g_extern.savefile_dir : NULL;
@@ -267,20 +263,24 @@ bool load_menu_game(void)
    args.rom_path      = *g_extern.fullpath ? g_extern.fullpath : NULL;
    args.libretro_path = *g_settings.libretro ? g_settings.libretro : NULL;
 
-   argc = 0;
+   rarch_argc = 0;
+   ret = 0;
 
-   rarch_main_init_wrap(&args, &argc, argv);
+   rarch_main_init_wrap(&args, &rarch_argc, rarch_argv);
 
-   // The pointers themselves are not const, and can be messed around with by getopt_long().
-   memcpy(argv_copy, argv, sizeof(argv));
+   if (rarch_argc > 0)
+   {
+      // The pointers themselves are not const, and can be messed around with by getopt_long().
+      memcpy(argv_copy, rarch_argv, sizeof(rarch_argv));
 
-   if (g_extern.main_is_init)
-      rarch_main_deinit();
+      if (g_extern.main_is_init)
+         rarch_main_deinit();
 
-   ret = rarch_main_init(argc, argv);
+      ret = rarch_main_init(rarch_argc, rarch_argv);
 
-   for (i = 0; i < ARRAY_SIZE(argv_copy); i++)
-      free(argv_copy[i]);
+      for (i = 0; i < ARRAY_SIZE(argv_copy); i++)
+         free(argv_copy[i]);
+   }
 
    if (ret != 0)
    {
