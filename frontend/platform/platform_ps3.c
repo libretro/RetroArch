@@ -167,7 +167,8 @@ static void callback_sysutil_exit(uint64_t status, uint64_t param, void *userdat
 }
 #endif
 
-static void frontend_ps3_get_environment_settings(int *argc, char *argv[], void *args)
+static void frontend_ps3_get_environment_settings(int *argc, char *argv[],
+      void *args, void *params_data)
 {
 #ifndef IS_SALAMANDER
    bool original_verbose = g_extern.verbose;

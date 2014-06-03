@@ -23,7 +23,8 @@
 #include "../../dynamic.h"
 #include "../../libretro_private.h"
 
-static void frontend_qnx_get_environment_settings(int *argc, char *argv[], void *args)
+static void frontend_qnx_get_environment_settings(int *argc, char *argv[],
+      void *args, void *params_data)
 {
    (void)argc;
    (void)argv;

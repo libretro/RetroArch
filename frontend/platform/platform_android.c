@@ -407,7 +407,8 @@ static bool android_run_events (void *data)
    return true;
 }
 
-static void frontend_android_get_environment_settings(int *argc, char *argv[], void *data)
+static void frontend_android_get_environment_settings(int *argc, char *argv[],
+      void *data, void *params_data)
 {
    JNIEnv *env;
    jobject obj = NULL;

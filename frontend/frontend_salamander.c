@@ -89,7 +89,10 @@ static void find_first_libretro_core(char *first_file,
 int main(int argc, char *argv[])
 {
    void *args = NULL;
+   struct rarch_main_wrap *wrap_args;
+
    frontend_ctx_driver_t *frontend_ctx = (frontend_ctx_driver_t*)frontend_ctx_init_first();
+   wrap_args = NULL;
 
    if (!frontend_ctx)
       return 0;
@@ -98,7 +101,7 @@ int main(int argc, char *argv[])
       frontend_ctx->init(args);
 
    if (frontend_ctx && frontend_ctx->environment_get)
-      frontend_ctx->environment_get(&argc, argv, args);
+      frontend_ctx->environment_get(&argc, argv, args, wrap_args);
 
    if (frontend_ctx && frontend_ctx->salamander_init)
       frontend_ctx->salamander_init();

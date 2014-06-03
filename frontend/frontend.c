@@ -276,14 +276,32 @@ void main_exit(args_type() args)
       driver.frontend_ctx->shutdown(false);
 }
 
+static void free_args(struct rarch_main_wrap *wrap_args,
+    char *argv_copy[])
+{
+   int i;
+   for (i = 0; i < ARRAY_SIZE(argv_copy); i++)
+      if (argv_copy[i])
+         free(argv_copy[i]);
+
+   free(wrap_args);
+}
+
 returntype main_entry(signature())
 {
-   int ret;
+   int ret, rarch_argc;
+   char *rarch_argv[MAX_ARGS], *argv_copy[MAX_ARGS];
+   int *rarch_argc_ptr;
+   char **rarch_argv_ptr;
+   struct rarch_main_wrap *wrap_args;
    declare_argc();
    declare_argv();
    args_type() args = (args_type())args_initial_ptr();
 
+   wrap_args = NULL;
    driver.frontend_ctx = (frontend_ctx_driver_t*)frontend_ctx_init_first();
+   rarch_argv_ptr = (char**)argv;
+   rarch_argc_ptr = (int*)&argc;
 
    if (!driver.frontend_ctx)
    {
@@ -298,7 +316,7 @@ returntype main_entry(signature())
 
    if (driver.frontend_ctx && driver.frontend_ctx->environment_get)
    {
-      driver.frontend_ctx->environment_get(&argc, argv, args);
+      driver.frontend_ctx->environment_get(rarch_argc_ptr, rarch_argv_ptr, args, wrap_args);
 #if defined(RARCH_CONSOLE) || defined(RARCH_MOBILE)
       if (*default_paths.autoconfig_dir)
          path_mkdir(default_paths.autoconfig_dir);
@@ -323,13 +341,30 @@ returntype main_entry(signature())
       if (*default_paths.system_dir)
          path_mkdir(default_paths.system_dir);
 #endif
+
+      if (wrap_args)
+      {
+         rarch_main_init_wrap(wrap_args, &rarch_argc, rarch_argv);
+         
+         if (rarch_argc > 0)
+         {
+            memcpy(argv_copy, rarch_argv, sizeof(rarch_argv));
+            rarch_argv_ptr = (char**)rarch_argv;
+            rarch_argc_ptr = (int*)&rarch_argc;
+         }
+      }
    }
 
-   if ((ret = rarch_main_init(argc, argv))) return_var(ret);
+   if ((ret = rarch_main_init(*rarch_argc_ptr, rarch_argv_ptr)))
+   {
+      free_args(wrap_args, argv_copy);
+      return_var(ret);
+   }
 
 #if defined(HAVE_MENU)
    if (driver.frontend_ctx && driver.frontend_ctx->process_args)
-      ret = driver.frontend_ctx->process_args(&argc, argv, args);
+      ret = driver.frontend_ctx->process_args(rarch_argc_ptr, rarch_argv_ptr, args);
+
 
    g_extern.lifecycle_state |= (1ULL << MODE_GAME);
 
@@ -342,7 +377,12 @@ returntype main_entry(signature())
       if (!g_extern.libretro_dummy)
          menu_rom_history_push_current();
    }
+#endif
 
+   if (wrap_args)
+      free_args(wrap_args, argv_copy);
+
+#if defined(HAVE_MENU)
    while (!main_entry_iterate(signature_expand(), args));
 #else
    while ((g_extern.is_paused && !g_extern.is_oneshot) ? rarch_main_idle_iterate() : rarch_main_iterate());

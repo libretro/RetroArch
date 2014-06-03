@@ -29,7 +29,8 @@ extern "C" {
 
 typedef struct frontend_ctx_driver
 {
-   void (*environment_get)(int *argc, char *argv[], void *args);
+   void (*environment_get)(int *argc, char *argv[], void *args,
+         void *params_data);
 
    void (*init)(void *data);
    void (*deinit)(void *data);

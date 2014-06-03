@@ -192,7 +192,8 @@ static HRESULT xbox_io_unmount(char *szDrive)
 }
 #endif
 
-static void frontend_xdk_get_environment_settings(int *argc, char *argv[], void *args)
+static void frontend_xdk_get_environment_settings(int *argc, char *argv[],
+      void *args, void *params_data)
 {
    HRESULT ret;
    (void)ret;

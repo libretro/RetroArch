@@ -217,7 +217,8 @@ int gx_logger_file(struct _reent *r, int fd, const char *ptr, size_t len)
 extern char gx_rom_path[PATH_MAX];
 #endif
 
-static void frontend_gx_get_environment_settings(int *argc, char *argv[], void *args)
+static void frontend_gx_get_environment_settings(int *argc, char *argv[],
+      void *args, void *params_data)
 {
 #ifndef IS_SALAMANDER
 #if defined(HAVE_LOGGER)
