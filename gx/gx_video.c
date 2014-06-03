@@ -1276,6 +1276,7 @@ const video_driver_t video_gx = {
    "gx",
    gx_set_rotation,
    gx_viewport_info,
+   NULL,
 #ifdef HAVE_OVERLAY
    gx_get_overlay_interface,
 #endif

@@ -3192,8 +3192,6 @@ void rarch_main_deinit(void)
 
 void rarch_main_init_wrap(const struct rarch_main_wrap *args, int *argc, char **argv)
 {
-   unsigned i;
-
    argv[(*argc)++] = strdup("retroarch");
 
    if (!args->no_rom)
