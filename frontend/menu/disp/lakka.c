@@ -858,7 +858,7 @@ static void lakka_draw_items(int i)
          j > active_category->active_item - 4 &&
          j < active_category->active_item + 10) // performance improvement
       {
-         lakka_draw_icon(item->icon, 
+         lakka_draw_icon(category->item_icon, 
             156 + HSPACING*(i+1) + all_categories_x - dim/2.0, 
             300 + item->y + dim/2.0, 
             item->alpha, 
@@ -1102,12 +1102,13 @@ static void lakka_context_destroy(void *data)
    {
       menu_category_t *category = (menu_category_t*)&categories[i];
       glDeleteTextures(1, &category->icon);
+      glDeleteTextures(1, &category->item_icon);
 
-      for (j = 0; j < category->num_items; j++)
+      /*for (j = 0; j < category->num_items; j++)
       {
          menu_item_t *item = (menu_item_t*)&category->items[j];
          glDeleteTextures(1, &item->icon);
-      }
+      }*/
    }
 
    if (numtweens)
@@ -1201,6 +1202,7 @@ void lakka_settings_context_reset(void)
 {
    menu_category_t *category = (menu_category_t*)&categories[0];
    category->icon = settings_icon;
+   category->item_icon = setting_icon;
    if (font_driver)
       font_driver->render_msg(font, category->name, &category->out);
 
@@ -1211,7 +1213,6 @@ void lakka_settings_context_reset(void)
    j = 0;
    menu_item_t *item0;
    item0 = (menu_item_t*)&category->items[j];
-   item0->icon = setting_icon;
    if (font_driver)
       font_driver->render_msg(font, item0->name, &item0->out);
 
@@ -1240,7 +1241,6 @@ void lakka_settings_context_reset(void)
    j = 1;
    menu_item_t *item1;
    item1 = (menu_item_t*)&category->items[j];
-   item1->icon = setting_icon;
    if (font_driver)
       font_driver->render_msg(font, item1->name, &item1->out);
 }
@@ -1291,7 +1291,7 @@ static void lakka_context_reset(void *data)
    {
       menu_category_t *category = (menu_category_t*)&categories[i];
 
-      char core_id[256], texturepath[256], gametexturepath[256], dirpath[256];
+      char core_id[256], texturepath[256], content_texturepath[256], dirpath[256];
       core_info_t *info;
       core_info_list_t *info_list;
 
@@ -1317,11 +1317,12 @@ static void lakka_context_reset(void *data)
       strlcat(texturepath, core_id, sizeof(texturepath));
       strlcat(texturepath, ".png", sizeof(texturepath));
 
-      strlcpy(gametexturepath, dirpath, sizeof(gametexturepath));
-      strlcat(gametexturepath, core_id, sizeof(gametexturepath));
-      strlcat(gametexturepath, "-content.png", sizeof(gametexturepath));
+      strlcpy(content_texturepath, dirpath, sizeof(content_texturepath));
+      strlcat(content_texturepath, core_id, sizeof(content_texturepath));
+      strlcat(content_texturepath, "-content.png", sizeof(content_texturepath));
 
       category->icon = png_texture_load(texturepath, &dim, &dim);
+      category->item_icon = png_texture_load(content_texturepath, &dim, &dim);
       
       if (font_driver)
          font_driver->render_msg(font, category->name, &category->out);
@@ -1329,7 +1330,6 @@ static void lakka_context_reset(void *data)
       for (j = 0; j < category->num_items; j++)
       {
          menu_item_t *item = (menu_item_t*)&category->items[j];
-         item->icon = png_texture_load(gametexturepath, &dim, &dim);
 
          if (font_driver)
             font_driver->render_msg(font, item->name, &item->out);
