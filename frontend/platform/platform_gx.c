@@ -271,20 +271,20 @@ static void frontend_gx_get_environment_settings(int *argc, char *argv[],
 #else
       char path[PATH_MAX];
       struct rarch_main_wrap *args = (struct rarch_main_wrap*)params_data;
-      args = (struct rarch_main_wrap*)malloc(sizeof(struct rarch_main_wrap));
 
-      if (!args)
-         return;
+      if (args)
+      {
+         fill_pathname_join(path, argv[1], argv[2], sizeof(path));
 
-      fill_pathname_join(path, argv[1], argv[2], sizeof(path));
-
-      args->no_rom         = false;
-      args->verbose        = false;
-      args->config_path    = NULL;
-      args->sram_path      = NULL;
-      args->state_path     = NULL;
-      args->rom_path       = path;
-      args->libretro_path  = NULL;
+         args->touched        = true;
+         args->no_rom         = false;
+         args->verbose        = false;
+         args->config_path    = NULL;
+         args->sram_path      = NULL;
+         args->state_path     = NULL;
+         args->rom_path       = path;
+         args->libretro_path  = NULL;
+      }
 #endif
    }
 #endif

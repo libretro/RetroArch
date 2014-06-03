@@ -706,6 +706,8 @@ struct rarch_main_wrap
    const char *libretro_path;
    bool verbose;
    bool no_rom;
+
+   bool touched;
 };
 
 // Public data structures

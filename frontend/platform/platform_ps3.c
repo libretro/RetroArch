@@ -202,7 +202,39 @@ static void frontend_ps3_get_environment_settings(int *argc, char *argv[],
    else
 #endif
 #ifndef IS_SALAMANDER
-      RARCH_WARN("Started from Salamander, auto-game start disabled.\n");
+      if (*argc > 1 && argv[1] != NULL && argv[1][0] != '\0')
+      {
+         char path[PATH_MAX];
+         struct rarch_main_wrap *args = (struct rarch_main_wrap*)params_data;
+
+         if (args)
+         {
+            strlcpy(path, argv[1], sizeof(path));
+
+            args->touched        = true;
+            args->no_rom         = false;
+            args->verbose        = false;
+            args->config_path    = NULL;
+            args->sram_path      = NULL;
+            args->state_path     = NULL;
+            args->rom_path       = path;
+            args->libretro_path  = NULL;
+
+            RARCH_LOG("argv[0]: %s\n", argv[0]);
+            RARCH_LOG("argv[1]: %s\n", argv[1]);
+            RARCH_LOG("argv[2]: %s\n", argv[2]);
+
+            RARCH_LOG("Auto-start game %s.\n", argv[1]);
+         }
+      }
+      else
+         RARCH_WARN("Started from Salamander, auto-game start disabled.\n");
+
+   //hack - this would break core selection
+   if (argv[1] != NULL && argv[1][0] == '\0')
+   {
+      RARCH_LOG("Broken core selection triggered.\n");
+   }
 #endif
 
    memset(&size, 0x00, sizeof(CellGameContentSize));
@@ -337,12 +369,14 @@ static int frontend_ps3_process_args(int *argc, char *argv[], void *args)
    bool original_verbose = g_extern.verbose;
    g_extern.verbose = true;
 
-   if (*argc > 1)
+#if 0
+   if (*argc > 1 && argv[1] != NULL)
    {
       strlcpy(g_extern.fullpath, argv[1], sizeof(g_extern.fullpath));
       ret = 0;
       RARCH_LOG("Auto-start game %s.\n", argv[1]);
    }
+#endif
 
    g_extern.verbose = original_verbose;
 #endif

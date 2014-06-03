@@ -280,11 +280,12 @@ static void free_args(struct rarch_main_wrap *wrap_args,
     char *argv_copy[])
 {
    int i;
+   if (!wrap_args->touched)
+      return;
+
    for (i = 0; i < ARRAY_SIZE(argv_copy); i++)
       if (argv_copy[i])
          free(argv_copy[i]);
-
-   free(wrap_args);
 }
 
 returntype main_entry(signature())
@@ -298,7 +299,7 @@ returntype main_entry(signature())
    declare_argv();
    args_type() args = (args_type())args_initial_ptr();
 
-   wrap_args = NULL;
+   wrap_args = (struct rarch_main_wrap*)calloc(1, sizeof(*wrap_args));
    driver.frontend_ctx = (frontend_ctx_driver_t*)frontend_ctx_init_first();
    rarch_argv_ptr = (char**)argv;
    rarch_argc_ptr = (int*)&argc;
@@ -342,22 +343,20 @@ returntype main_entry(signature())
          path_mkdir(default_paths.system_dir);
 #endif
 
-      if (wrap_args)
+      if (wrap_args->touched)
       {
+         g_extern.verbose = true;
          rarch_main_init_wrap(wrap_args, &rarch_argc, rarch_argv);
-         
-         if (rarch_argc > 0)
-         {
-            memcpy(argv_copy, rarch_argv, sizeof(rarch_argv));
-            rarch_argv_ptr = (char**)rarch_argv;
-            rarch_argc_ptr = (int*)&rarch_argc;
-         }
+         memcpy(argv_copy, rarch_argv, sizeof(rarch_argv));
+         rarch_argv_ptr = (char**)rarch_argv;
+         rarch_argc_ptr = (int*)&rarch_argc;
       }
    }
 
    if ((ret = rarch_main_init(*rarch_argc_ptr, rarch_argv_ptr)))
    {
       free_args(wrap_args, argv_copy);
+      free(wrap_args);
       return_var(ret);
    }
 
@@ -381,6 +380,7 @@ returntype main_entry(signature())
 
    if (wrap_args)
       free_args(wrap_args, argv_copy);
+   free(wrap_args);
 
 #if defined(HAVE_MENU)
    while (!main_entry_iterate(signature_expand(), args));
