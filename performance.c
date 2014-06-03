@@ -139,16 +139,7 @@ void retro_perf_log(void)
 retro_perf_tick_t rarch_get_perf_counter(void)
 {
    retro_perf_tick_t time = 0;
-#ifdef _XBOX1
-
-#define rdtsc	__asm __emit 0fh __asm __emit 031h
-   LARGE_INTEGER time_tmp;
-   rdtsc;
-   __asm	mov	time_tmp.LowPart, eax;
-   __asm	mov	time_tmp.HighPart, edx;
-   time = time_tmp.QuadPart;
-
-#elif defined(__linux__) || defined(__QNX__)
+#if defined(__linux__) || defined(__QNX__)
    struct timespec tv;
    if (clock_gettime(CLOCK_MONOTONIC, &tv) == 0)
       time = (retro_perf_tick_t)tv.tv_sec * 1000000000 + (retro_perf_tick_t)tv.tv_nsec;
@@ -173,6 +164,22 @@ retro_perf_tick_t rarch_get_perf_counter(void)
    struct timeval tv;
    gettimeofday(&tv,NULL);
    time = (1000000 * tv.tv_sec + tv.tv_usec);
+#elif defined(_WIN32)
+   long tv_sec, tv_usec;
+   static const unsigned __int64 epoch = 11644473600000000Ui64;
+   FILETIME file_time;
+   SYSTEMTIME system_time;
+   ULARGE_INTEGER ularge;
+
+   GetSystemTime(&system_time);
+   SystemTimeToFileTime(&system_time, &file_time);
+   ularge.LowPart = file_time.dwLowDateTime;
+   ularge.HighPart = file_time.dwHighDateTime;
+
+   tv_sec = (long)((ularge.QuadPart - epoch) / 10000000L);
+   tv_usec = (long)(system_time.wMilliseconds * 1000);
+
+   time = (1000000 * tv_sec + tv_usec);
 #endif
 
    return time;
