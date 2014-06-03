@@ -51,13 +51,6 @@
 #define I_PASSIVE_ZOOM 0.35
 #define DELAY 0.02
 
-const GLfloat background_color[] = {
-   0.1, 0.74, 0.61, 1.00,
-   0.1, 0.74, 0.61, 1.00,
-   0.1, 0.74, 0.61, 1.00,
-   0.1, 0.74, 0.61, 1.00,
-};
-
 // Category variables
 menu_category_t *categories;
 int depth = 0;
@@ -65,6 +58,7 @@ int num_categories = 0;
 int menu_active_category = 0;
 int dim = 192;
 float all_categories_x = 0;
+float global_alpha = 0;
 
 // Font variables
 void *font;
@@ -94,19 +88,6 @@ GLuint savestate_icon;
 GLuint loadstate_icon;
 GLuint screenshot_icon;
 GLuint reload_icon;
-
-typedef float (*easingFunc)(float, float, float, float);
-
-typedef struct
-{
-   int    alive;
-   float  duration;
-   float  running_since;
-   float  initial_value;
-   float  target_value;
-   float* subject;
-   easingFunc easing;
-} tween_t;
 
 static tween_t* tweens = NULL;
 int numtweens = 0;
@@ -143,7 +124,7 @@ static char *str_replace (const char *string, const char *substr, const char *re
    return newstr;
 }
 
-static float inOutQuad(float t, float b, float c, float d)
+float inOutQuad(float t, float b, float c, float d)
 {
    t = t / d * 2;
    if (t < 1)
@@ -151,7 +132,7 @@ static float inOutQuad(float t, float b, float c, float d)
    return -c / 2 * ((t - 1) * (t - 3) - 1) + b;
 }
 
-static void add_tween(float duration, float target_value, float* subject, easingFunc easing)
+void add_tween(float duration, float target_value, float* subject, easingFunc easing, tweenCallback callback)
 {
    tween_t *tween;
 
@@ -170,6 +151,7 @@ static void add_tween(float duration, float target_value, float* subject, easing
    tween->target_value = target_value;
    tween->subject = subject;
    tween->easing = easing;
+   tween->callback = callback;
 }
 
 static void update_tween(void *data, float dt)
@@ -193,8 +175,11 @@ static void update_tween(void *data, float dt)
             tween->initial_value,
             tween->target_value - tween->initial_value,
             tween->duration);
-      if (tween->running_since >= tween->duration)
+      if (tween->running_since >= tween->duration) {
          *tween->subject = tween->target_value;
+         if (tween->callback)
+            tween->callback();
+      }
    }
 }
 
@@ -219,7 +204,7 @@ void lakka_switch_categories(void)
    int i, j;
 
    // translation
-   add_tween(DELAY, -menu_active_category * HSPACING, &all_categories_x, &inOutQuad);
+   add_tween(DELAY, -menu_active_category * HSPACING, &all_categories_x, &inOutQuad, NULL);
 
    // alpha tweening
    for (i = 0; i < num_categories; i++)
@@ -229,15 +214,15 @@ void lakka_switch_categories(void)
 
       ca = (i == menu_active_category) ? 1.0 : 0.5;
       cz = (i == menu_active_category) ? C_ACTIVE_ZOOM : C_PASSIVE_ZOOM;
-      add_tween(DELAY, ca, &category->alpha, &inOutQuad);
-      add_tween(DELAY, cz, &category->zoom,  &inOutQuad);
+      add_tween(DELAY, ca, &category->alpha, &inOutQuad, NULL);
+      add_tween(DELAY, cz, &category->zoom,  &inOutQuad, NULL);
 
       for (j = 0; j < category->num_items; j++)
       {
          float ia = (i != menu_active_category     ) ? 0   : 
             (j == category->active_item) ? 1.0 : 0.5;
 
-         add_tween(DELAY, ia, &category->items[j].alpha, &inOutQuad);
+         add_tween(DELAY, ia, &category->items[j].alpha, &inOutQuad, NULL);
       }
    }
 }
@@ -258,9 +243,9 @@ void lakka_switch_items(void)
          (j  < active_category->active_item) ? VSPACING*(j - active_category->active_item - 1) :
          VSPACING*(j - active_category->active_item + 3);
 
-      add_tween(DELAY, ia, &active_item->alpha, &inOutQuad);
-      add_tween(DELAY, iz, &active_item->zoom,  &inOutQuad);
-      add_tween(DELAY, iy, &active_item->y,     &inOutQuad);
+      add_tween(DELAY, ia, &active_item->alpha, &inOutQuad, NULL);
+      add_tween(DELAY, iz, &active_item->zoom,  &inOutQuad, NULL);
+      add_tween(DELAY, iy, &active_item->y,     &inOutQuad, NULL);
    }
 }
 
@@ -277,23 +262,23 @@ void lakka_switch_subitems(void)
       if (k < item->active_subitem)
       {
          // Above items
-         add_tween(DELAY, 0.5, &subitem->alpha, &inOutQuad);
-         add_tween(DELAY, VSPACING*(k - item->active_subitem + 2), &subitem->y, &inOutQuad);
-         add_tween(DELAY, I_PASSIVE_ZOOM, &subitem->zoom, &inOutQuad);
+         add_tween(DELAY, 0.5, &subitem->alpha, &inOutQuad, NULL);
+         add_tween(DELAY, VSPACING*(k - item->active_subitem + 2), &subitem->y, &inOutQuad, NULL);
+         add_tween(DELAY, I_PASSIVE_ZOOM, &subitem->zoom, &inOutQuad, NULL);
       }
       else if (k == item->active_subitem)
       {
          // Active item
-         add_tween(DELAY, 1.0, &subitem->alpha, &inOutQuad);
-         add_tween(DELAY, VSPACING*2.4, &subitem->y, &inOutQuad);
-         add_tween(DELAY, I_ACTIVE_ZOOM, &subitem->zoom, &inOutQuad);
+         add_tween(DELAY, 1.0, &subitem->alpha, &inOutQuad, NULL);
+         add_tween(DELAY, VSPACING*2.4, &subitem->y, &inOutQuad, NULL);
+         add_tween(DELAY, I_ACTIVE_ZOOM, &subitem->zoom, &inOutQuad, NULL);
       }
       else if (k > item->active_subitem)
       {
          // Under items
-         add_tween(DELAY, 0.5, &subitem->alpha, &inOutQuad);
-         add_tween(DELAY, VSPACING*(k - item->active_subitem + 3), &subitem->y, &inOutQuad);
-         add_tween(DELAY, I_PASSIVE_ZOOM, &subitem->zoom, &inOutQuad);
+         add_tween(DELAY, 0.5, &subitem->alpha, &inOutQuad, NULL);
+         add_tween(DELAY, VSPACING*(k - item->active_subitem + 3), &subitem->y, &inOutQuad, NULL);
+         add_tween(DELAY, I_PASSIVE_ZOOM, &subitem->zoom, &inOutQuad, NULL);
       }
    }
 }
@@ -333,7 +318,7 @@ void lakka_reset_submenu(void)
 void lakka_open_submenu(void)
 {
    int i, j, k;
-   add_tween(DELAY, -HSPACING * (menu_active_category+1), &all_categories_x, &inOutQuad);
+   add_tween(DELAY, -HSPACING * (menu_active_category+1), &all_categories_x, &inOutQuad, NULL);
 
    // Reset contextual menu style
    lakka_reset_submenu();
@@ -344,7 +329,7 @@ void lakka_open_submenu(void)
 
       if (i == menu_active_category)
       {
-         add_tween(DELAY, 1.0, &category->alpha, &inOutQuad);
+         add_tween(DELAY, 1.0, &category->alpha, &inOutQuad, NULL);
 
          for (j = 0; j < category->num_items; j++)
          {
@@ -356,29 +341,29 @@ void lakka_open_submenu(void)
 
                   if (k == category->items[j].active_subitem)
                   {
-                     add_tween(DELAY, 1.0, &subitem->alpha, &inOutQuad);
-                     add_tween(DELAY, I_ACTIVE_ZOOM, &subitem->zoom, &inOutQuad);
+                     add_tween(DELAY, 1.0, &subitem->alpha, &inOutQuad, NULL);
+                     add_tween(DELAY, I_ACTIVE_ZOOM, &subitem->zoom, &inOutQuad, NULL);
                   }
                   else
                   {
-                     add_tween(DELAY, 0.5, &subitem->alpha, &inOutQuad);
-                     add_tween(DELAY, I_PASSIVE_ZOOM, &subitem->zoom, &inOutQuad);
+                     add_tween(DELAY, 0.5, &subitem->alpha, &inOutQuad, NULL);
+                     add_tween(DELAY, I_PASSIVE_ZOOM, &subitem->zoom, &inOutQuad, NULL);
                   }
                }
             }
             else
-               add_tween(DELAY, 0, &category->items[j].alpha, &inOutQuad);
+               add_tween(DELAY, 0, &category->items[j].alpha, &inOutQuad, NULL);
          }
       }
       else
-         add_tween(DELAY, 0, &category->alpha, &inOutQuad);
+         add_tween(DELAY, 0, &category->alpha, &inOutQuad, NULL);
    }
 }
 
 void lakka_close_submenu(void)
 {
    int i, j, k;
-   add_tween(DELAY, -HSPACING * menu_active_category, &all_categories_x, &inOutQuad);
+   add_tween(DELAY, -HSPACING * menu_active_category, &all_categories_x, &inOutQuad, NULL);
    
    for (i = 0; i < num_categories; i++)
    {
@@ -386,29 +371,29 @@ void lakka_close_submenu(void)
 
       if (i == menu_active_category)
       {
-         add_tween(DELAY, 1.0, &category->alpha, &inOutQuad);
-         add_tween(DELAY, C_ACTIVE_ZOOM, &category->zoom, &inOutQuad);
+         add_tween(DELAY, 1.0, &category->alpha, &inOutQuad, NULL);
+         add_tween(DELAY, C_ACTIVE_ZOOM, &category->zoom, &inOutQuad, NULL);
 
          for (j = 0; j < category->num_items; j++)
          {
             if (j == category->active_item)
             {
-               add_tween(DELAY, 1.0, &category->items[j].alpha, &inOutQuad);
+               add_tween(DELAY, 1.0, &category->items[j].alpha, &inOutQuad, NULL);
 
                for (k = 0; k < category->items[j].num_subitems; k++)
-                  add_tween(DELAY, 0, &category->items[j].subitems[k].alpha, &inOutQuad);
+                  add_tween(DELAY, 0, &category->items[j].subitems[k].alpha, &inOutQuad, NULL);
             }
             else
-               add_tween(DELAY, 0.5, &category->items[j].alpha, &inOutQuad);
+               add_tween(DELAY, 0.5, &category->items[j].alpha, &inOutQuad, NULL);
          }
       }
       else
       {
-         add_tween(DELAY, 0.5, &category->alpha, &inOutQuad);
-         add_tween(DELAY, C_PASSIVE_ZOOM, &category->zoom, &inOutQuad);
+         add_tween(DELAY, 0.5, &category->alpha, &inOutQuad, NULL);
+         add_tween(DELAY, C_PASSIVE_ZOOM, &category->zoom, &inOutQuad, NULL);
 
          for (j = 0; j < category->num_items; j++)
-            add_tween(DELAY, 0, &category->items[j].alpha, &inOutQuad);
+            add_tween(DELAY, 0, &category->items[j].alpha, &inOutQuad, NULL);
       }
    }
 }
@@ -651,6 +636,9 @@ static void calculate_font_coords(gl_t *gl,
 
 static void lakka_draw_text(struct font_output_list *out, float x, float y, float scale, float alpha)
 {
+   if (alpha > global_alpha)
+      alpha = global_alpha;
+
    int i;
    struct font_output *head;
    struct font_rect geom;
@@ -713,6 +701,13 @@ static void lakka_draw_text(struct font_output_list *out, float x, float y, floa
 
 void lakka_draw_background()
 {
+   GLfloat background_color[] = {
+      0.1, 0.74, 0.61, global_alpha,
+      0.1, 0.74, 0.61, global_alpha,
+      0.1, 0.74, 0.61, global_alpha,
+      0.1, 0.74, 0.61, global_alpha,
+   };
+
    gl_t *gl = (gl_t*)driver.video_data;
 
    glEnable(GL_BLEND);
@@ -732,6 +727,9 @@ void lakka_draw_background()
 
 void lakka_draw_icon(GLuint texture, float x, float y, float alpha, float rotation, float scale)
 {
+   if (alpha > global_alpha)
+      alpha = global_alpha;
+
    GLfloat color[] = {
       1.0f, 1.0f, 1.0f, alpha,
       1.0f, 1.0f, 1.0f, alpha,
@@ -1111,9 +1109,8 @@ static void lakka_context_destroy(void *data)
       }*/
    }
 
-   if (numtweens)
-      free(tweens);
-
+   //if (numtweens)
+   //   free(tweens);
 }
 
 void lakka_init_settings(void)
@@ -1351,7 +1348,6 @@ static void lakka_context_reset(void *data)
                font_driver->render_msg(font, subitem->name, &subitem->out);
          }
       }
-
    }
 }
 
@@ -1430,17 +1426,19 @@ static void lakka_free(void *data)
 
 static int lakka_input_postprocess(uint64_t old_state)
 {
-   int ret = 0;
-
    if ((driver.menu && driver.menu->trigger_state & (1ULL << RARCH_MENU_TOGGLE)) &&
          g_extern.main_is_init &&
          !g_extern.libretro_dummy)
    {
+      global_alpha = 0;
       g_extern.lifecycle_state |= (1ULL << MODE_GAME);
-      ret = -1;
+      return -1;
    }
 
-   return ret;
+   if (! global_alpha)
+      add_tween(DELAY, 1.0, &global_alpha, &inOutQuad, NULL);
+
+   return 0;
 }
 
 static void lakka_init_core_info(void *data)

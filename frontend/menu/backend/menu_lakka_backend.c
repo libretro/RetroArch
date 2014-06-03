@@ -115,6 +115,7 @@ static int menu_lakka_iterate(unsigned action)
             switch (active_item->active_subitem)
             {
                case 0:
+                  global_alpha = 0.0;
                   if (g_extern.main_is_init && !g_extern.libretro_dummy
                         && strcmp(g_extern.fullpath, active_item->rom) == 0)
                      g_extern.lifecycle_state |= (1ULL << MODE_GAME);
@@ -134,11 +135,13 @@ static int menu_lakka_iterate(unsigned action)
                   return -1;
                   break;
                case 1:
+                  global_alpha = 0.0;
                   rarch_save_state();
                   g_extern.lifecycle_state |= (1ULL << MODE_GAME);
                   return -1;
                   break;
                case 2:
+                  global_alpha = 0.0;
                   rarch_load_state();
                   g_extern.lifecycle_state |= (1ULL << MODE_GAME);
                   return -1;
@@ -147,6 +150,7 @@ static int menu_lakka_iterate(unsigned action)
                   rarch_take_screenshot();
                   break;
                case 4:
+                  global_alpha = 0.0;
                   rarch_game_reset();
                   g_extern.lifecycle_state |= (1ULL << MODE_GAME);
                   return -1;
