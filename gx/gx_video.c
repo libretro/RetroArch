@@ -37,7 +37,6 @@
 
 #define SYSMEM1_SIZE 0x01800000
 
-
 void *g_framebuf[2];
 unsigned g_current_framebuf;
 
@@ -99,9 +98,6 @@ static void retrace_callback(u32 retrace_count)
 static void gx_render_overlay(void *data);
 static void gx_free_overlay(gx_video_t *gx)
 {
-#ifdef GX_OPTS
-   struct __gx_regdef *__gx = (struct __gx_regdef*)__gxregs;
-#endif
    free(gx->overlay);
    gx->overlay = NULL;
    gx->overlays = 0;
@@ -115,9 +111,6 @@ void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines)
             max_width, max_height, i;
    bool progressive;
    gx_video_t *gx = (gx_video_t*)data;
-#ifdef GX_OPTS
-   struct __gx_regdef *__gx = (struct __gx_regdef*)__gxregs;
-#endif
 
    (void)level;
 
@@ -491,10 +484,6 @@ static void gx_efb_screenshot(void)
 static void *gx_init(const video_info_t *video,
       const input_driver_t **input, void **input_data)
 {
-#ifdef GX_OPTS
-   struct __gx_regdef *__gx = (struct __gx_regdef*)__gxregs;
-#endif
-
    gx_video_t *gx = (gx_video_t*)calloc(1, sizeof(gx_video_t));
    if (!gx)
       return NULL;
@@ -1124,9 +1113,6 @@ static bool gx_overlay_load(void *data, const struct texture_image *images, unsi
 {
    unsigned i;
    gx_video_t *gx = (gx_video_t*)data;
-#ifdef GX_OPTS
-   struct __gx_regdef *__gx = (struct __gx_regdef*)__gxregs;
-#endif
 
    gx_free_overlay(gx);
    gx->overlay = (struct gx_overlay_data*)calloc(num_images, sizeof(*gx->overlay));
@@ -1227,9 +1213,6 @@ static void gx_overlay_set_alpha(void *data, unsigned image, float mod)
 static void gx_render_overlay(void *data)
 {
    gx_video_t *gx = (gx_video_t*)data;
-#ifdef GX_OPTS
-   struct __gx_regdef *__gx = (struct __gx_regdef*)__gxregs;
-#endif
 
    GX_SetCurrentMtx(GX_PNMTX1);
    GX_SetVtxDesc(GX_VA_POS, GX_DIRECT);
