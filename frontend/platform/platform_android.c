@@ -410,6 +410,7 @@ static bool android_run_events (void *data)
 static void frontend_android_get_environment_settings(int *argc, char *argv[],
       void *data, void *params_data)
 {
+   char config_path[PATH_MAX], core_path[PATH_MAX], path[PATH_MAX];
    JNIEnv *env;
    jobject obj = NULL;
    jstring jstr = NULL;
@@ -425,16 +426,17 @@ static void frontend_android_get_environment_settings(int *argc, char *argv[],
    CALL_OBJ_METHOD(env, obj, android_app->activity->clazz, android_app->getIntent);
    RARCH_LOG("Checking arguments passed from intent ...\n");
 
-
    // Config file
    CALL_OBJ_METHOD_PARAM(env, jstr, obj, android_app->getStringExtra, (*env)->NewStringUTF(env, "CONFIGFILE"));
    if (android_app->getStringExtra && jstr)
    {
       const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
-      strlcpy(default_paths.config_path, argv, sizeof(default_paths.config_path));
+
+      if (*argv && argv[0] != '\0')
+         strlcpy(config_path, argv, sizeof(config_path));
       (*env)->ReleaseStringUTFChars(env, jstr, argv);
 
-      RARCH_LOG("Config file: [%s].\n", default_paths.config_path);
+      RARCH_LOG("Config file: [%s].\n", config_path);
    }
 
    // Current IME
@@ -453,8 +455,9 @@ static void frontend_android_get_environment_settings(int *argc, char *argv[],
    {
       const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
       bool used = (strcmp(argv, "false") == 0) ? false : true;
-      RARCH_LOG("USED: [%s].\n", used ? "true" : "false");
       (*env)->ReleaseStringUTFChars(env, jstr, argv);
+
+      RARCH_LOG("USED: [%s].\n", used ? "true" : "false");
    }
 
    //LIBRETRO
@@ -463,12 +466,43 @@ static void frontend_android_get_environment_settings(int *argc, char *argv[],
    if (android_app->getStringExtra && jstr)
    {
       const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
-      strlcpy(default_paths.core_path, argv, sizeof(default_paths.core_path));
-      RARCH_LOG("Libretro path: [%s].\n", default_paths.core_path);
+
+      if (*argv && argv[0] != '\0')
+         strlcpy(core_path, argv, sizeof(core_path));
       (*env)->ReleaseStringUTFChars(env, jstr, argv);
+
+      RARCH_LOG("Libretro path: [%s].\n", core_path);
    }
 
+   // Content
+   CALL_OBJ_METHOD_PARAM(env, jstr, obj, android_app->getStringExtra, (*env)->NewStringUTF(env, "ROM"));
+   if (android_app->getStringExtra && jstr)
+   {
+      const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
 
+      if (*argv && argv[0] != '\0')
+         strlcpy(path, argv, sizeof(path));
+      (*env)->ReleaseStringUTFChars(env, jstr, argv);
+
+      if (path[0] != '\0')
+      {
+         struct rarch_main_wrap *args = (struct rarch_main_wrap*)params_data;
+
+         if (args)
+         {
+            args->touched        = true;
+            args->no_rom         = false;
+            args->verbose        = false;
+            args->config_path    = strdup(config_path);
+            args->sram_path      = NULL;
+            args->state_path     = NULL;
+            args->rom_path       = strdup(path);
+            args->libretro_path  = strdup(core_path);
+
+            RARCH_LOG("Auto-start game %s.\n", path);
+         }
+      }
+   }
 }
 
 #if 0
@@ -665,46 +699,12 @@ static int frontend_android_get_rating(void)
    return -1;
 }
 
-static int frontend_android_process_args(int *argc, char *argv[], void *args)
-{
-   JNIEnv *env;
-   jobject obj = NULL;
-   jstring jstr = NULL;
-   struct android_app* android_app = (struct android_app*)g_android;
-
-   if (!android_app)
-      return 1;
-
-   env = jni_thread_getenv();
-   if (!env)
-      return 1;
-
-   CALL_OBJ_METHOD(env, obj, android_app->activity->clazz, android_app->getIntent);
-
-   RARCH_LOG("Checking content path passed from intent ...\n");
-
-   // Content
-   CALL_OBJ_METHOD_PARAM(env, jstr, obj, android_app->getStringExtra, (*env)->NewStringUTF(env, "ROM"));
-   if (android_app->getStringExtra && jstr)
-   {
-      const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
-      strlcpy(g_extern.fullpath, argv, sizeof(g_extern.fullpath));
-      (*env)->ReleaseStringUTFChars(env, jstr, argv);
-
-      g_extern.lifecycle_state |= (1ULL << MODE_LOAD_GAME);
-      RARCH_LOG("Auto-start game %s.\n", g_extern.fullpath);
-      return 0;
-   }
-
-   return 1;
-}
-
 const frontend_ctx_driver_t frontend_ctx_android = {
    frontend_android_get_environment_settings, /* get_environment_settings */
    frontend_android_init,        /* init */
    frontend_android_deinit,      /* deinit */
    NULL,                         /* exitspawn */
-   frontend_android_process_args,   /* process_args */
+   NULL,                         /* process_args */
    frontend_android_process_events, /* process_events */
    NULL,                         /* exec */
    frontend_android_shutdown,    /* shutdown */
