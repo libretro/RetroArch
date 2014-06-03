@@ -68,6 +68,32 @@ static void frontend_psp_get_environment_settings(int *argc, char *argv[],
    fill_pathname_join(default_paths.sram_dir, default_paths.core_dir, "savefiles", sizeof(default_paths.sram_dir));
    fill_pathname_join(default_paths.system_dir, default_paths.core_dir, "system", sizeof(default_paths.system_dir));
    fill_pathname_join(default_paths.config_path, default_paths.port_dir, "retroarch.cfg", sizeof(default_paths.config_path));
+
+   if (argv[1] && (argv[1][0] != '\0'))
+   {
+      char path[PATH_MAX];
+      struct rarch_main_wrap *args = (struct rarch_main_wrap*)params_data;
+
+      if (args)
+      {
+         strlcpy(path, argv[1], sizeof(path));
+
+         args->touched        = true;
+         args->no_rom         = false;
+         args->verbose        = false;
+         args->config_path    = NULL;
+         args->sram_path      = NULL;
+         args->state_path     = NULL;
+         args->rom_path       = strdup(path);
+         args->libretro_path  = NULL;
+
+         RARCH_LOG("argv[0]: %s\n", argv[0]);
+         RARCH_LOG("argv[1]: %s\n", argv[1]);
+         RARCH_LOG("argv[2]: %s\n", argv[2]);
+
+         RARCH_LOG("Auto-start game %s.\n", argv[1]);
+      }
+   }
 }
 
 int callback_thread(SceSize args, void *argp)
@@ -113,12 +139,6 @@ static int frontend_psp_process_args(int *argc, char *argv[], void *args)
    (void)argc;
    (void)args;
 
-   if (argv[1] && (argv[1][0]))
-   {
-      strlcpy(g_extern.fullpath, argv[1], sizeof(g_extern.fullpath));
-      g_extern.lifecycle_state |= (1ULL << MODE_LOAD_GAME);
-      return 0;
-   }
 
    return 1;
 }

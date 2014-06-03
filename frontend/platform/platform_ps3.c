@@ -217,7 +217,7 @@ static void frontend_ps3_get_environment_settings(int *argc, char *argv[],
             args->config_path    = NULL;
             args->sram_path      = NULL;
             args->state_path     = NULL;
-            args->rom_path       = path;
+            args->rom_path       = strdup(path);
             args->libretro_path  = NULL;
 
             RARCH_LOG("argv[0]: %s\n", argv[0]);
