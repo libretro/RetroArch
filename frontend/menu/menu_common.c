@@ -274,6 +274,9 @@ bool load_menu_game(void)
    // The pointers themselves are not const, and can be messed around with by getopt_long().
    memcpy(argv_copy, argv, sizeof(argv));
 
+   if (g_extern.main_is_init)
+      rarch_main_deinit();
+
    ret = rarch_main_init(argc, argv);
 
    for (i = 0; i < ARRAY_SIZE(argv_copy); i++)
