@@ -889,9 +889,13 @@ static bool gx_frame(void *data, const void *frame,
       unsigned width, unsigned height, unsigned pitch,
       const char *msg)
 {
+
    gx_video_t *gx = (gx_video_t*)data;
    struct __gx_regdef *__gx = (struct __gx_regdef*)__gxregs;
    u8 clear_efb = GX_FALSE;
+
+   RARCH_PERFORMANCE_INIT(gx_frame);
+   RARCH_PERFORMANCE_START(gx_frame);
 
    if(!gx || (!frame && !gx->rgui_texture_enable))
       return true;
@@ -915,9 +919,13 @@ static bool gx_frame(void *data, const void *frame,
 
    if (width != gx_old_width || height != gx_old_height)
    {
+      RARCH_PERFORMANCE_INIT(gx_frame_resize);
+      RARCH_PERFORMANCE_START(gx_frame_resize);
       init_texture(data, width, height);
       gx_old_width = width;
       gx_old_height = height;
+
+      RARCH_PERFORMANCE_STOP(gx_frame_resize);
    }
 
    g_draw_done = false;
@@ -926,6 +934,9 @@ static bool gx_frame(void *data, const void *frame,
 
    if (frame)
    {
+      RARCH_PERFORMANCE_INIT(gx_frame_convert);
+      RARCH_PERFORMANCE_START(gx_frame_convert);
+
       if (gx->rgb32)
          convert_texture32(frame, g_tex.data, width, height, pitch);
       else if (gx->rgui_texture_enable)
@@ -933,6 +944,8 @@ static bool gx_frame(void *data, const void *frame,
       else
          convert_texture16(frame, g_tex.data, width, height, pitch);
       DCFlushRange(g_tex.data, height * (width << (gx->rgb32 ? 2 : 1)));
+
+      RARCH_PERFORMANCE_STOP(gx_frame_convert);
    }
 
    if (gx->rgui_texture_enable && gx->menu_data)
@@ -997,6 +1010,8 @@ static bool gx_frame(void *data, const void *frame,
    VIDEO_Flush();
 
    g_extern.frame_count++;
+
+   RARCH_PERFORMANCE_STOP(gx_frame);
 
    return true;
 }
