@@ -256,19 +256,6 @@ static void frontend_gx_get_environment_settings(int *argc, char *argv[],
    // needed on Wii; loaders follow a dumb standard where the path and filename are separate in the argument list
    if (*argc > 2 && argv[1] != NULL && argv[2] != NULL)
    {
-#if 1
-      int i;
-      char wii_new_argv1[PATH_MAX];
-      fill_pathname_join(wii_new_argv1, argv[1], argv[2], sizeof(wii_new_argv1));
-      argv[1] = strdup(wii_new_argv1);
-      // shift over remaining args
-      for (i = 3; i < *argc; i++)
-      {
-         argv[i - 1] = argv[i];
-      }
-      *argc = *argc - 1;
-      argv[*argc] = NULL;
-#else
       char path[PATH_MAX];
       struct rarch_main_wrap *args = (struct rarch_main_wrap*)params_data;
 
@@ -282,10 +269,9 @@ static void frontend_gx_get_environment_settings(int *argc, char *argv[],
          args->config_path    = NULL;
          args->sram_path      = NULL;
          args->state_path     = NULL;
-         args->rom_path       = path;
+         args->rom_path       = strdup(path);
          args->libretro_path  = NULL;
       }
-#endif
    }
 #endif
 #endif
@@ -381,14 +367,6 @@ static int frontend_gx_process_args(int *argc, char *argv[], void *args)
       strlcpy(path, strrchr(argv[0], '/') + 1, sizeof(path));
       rarch_environment_cb(RETRO_ENVIRONMENT_SET_LIBRETRO_PATH, path);
    }
-
-#if 1
-   if (*argc > 2 && argv[1] != NULL && argv[2] != NULL)
-   {
-      fill_pathname_join(g_extern.fullpath, argv[1], argv[2], sizeof(g_extern.fullpath));
-      ret = 0;
-   }
-#endif
 #endif
 
    return ret;
