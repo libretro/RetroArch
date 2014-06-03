@@ -262,6 +262,72 @@ static void frontend_xdk_get_environment_settings(int *argc, char *argv[],
 #endif
 
 #ifndef IS_SALAMANDER
+   char path[PATH_MAX];
+#if defined(_XBOX1)
+   RARCH_LOG("Gets here top.\n");
+   LAUNCH_DATA ptr;
+   DWORD launch_type;
+
+   if (XGetLaunchInfo(&launch_type, &ptr) == ERROR_SUCCESS)
+   {
+      if (launch_type == LDT_FROM_DEBUGGER_CMDLINE)
+      {
+         RARCH_LOG("Launched from commandline debugger.\n");
+         goto exit;
+      }
+      else
+      {
+         char *extracted_path = (char*)&ptr.Data;
+
+         if (extracted_path && extracted_path[0] != '\0'
+            && (strstr(extracted_path, "Pool") == NULL) /* Hack. Unknown problem */)
+         {
+            RARCH_LOG("Gets here 3.\n");
+            strlcpy(path, extracted_path, sizeof(path));
+            RARCH_LOG("Auto-start game %s.\n", path);
+         }
+      }
+   }
+#elif defined(_XBOX360)
+   DWORD dwLaunchDataSize;
+   if (XGetLaunchDataSize(&dwLaunchDataSize) == ERROR_SUCCESS)
+   {
+      BYTE* pLaunchData = new BYTE[dwLaunchDataSize];
+      XGetLaunchData(pLaunchData, dwLaunchDataSize);
+      char *extracted_path = (char*)&pLaunchData;
+
+      if (extracted_path && extracted_path[0] != '\0')
+      {
+         strlcpy(path, extracted_path, sizeof(path));
+         RARCH_LOG("Auto-start game %s.\n", path);
+      }
+
+      if (pLaunchData)
+         delete []pLaunchData;
+   }
+#endif
+   if (path && path[0] != '\0')
+   {
+         struct rarch_main_wrap *args = (struct rarch_main_wrap*)params_data;
+
+         if (args)
+         {
+            args->touched        = true;
+            args->no_rom         = false;
+            args->verbose        = false;
+            args->config_path    = NULL;
+            args->sram_path      = NULL;
+            args->state_path     = NULL;
+            args->rom_path       = strdup(path);
+            args->libretro_path  = NULL;
+
+            RARCH_LOG("Auto-start game %s.\n", path);
+         }
+   }
+#endif
+
+#ifndef IS_SALAMANDER
+exit:
    g_extern.verbose = original_verbose;
 #endif
 }
@@ -293,40 +359,6 @@ static int frontend_xdk_process_args(int *argc, char *argv[], void *args)
    (void)argv;
 
 #ifndef IS_SALAMANDER
-#if defined(_XBOX1)
-   LAUNCH_DATA ptr;
-   DWORD launch_type;
-
-   if (XGetLaunchInfo(&launch_type, &ptr) == ERROR_SUCCESS)
-   {
-      if (launch_type == LDT_FROM_DEBUGGER_CMDLINE)
-         RARCH_LOG("Launched from commandline debugger.\n");
-      else
-      {
-         snprintf(g_extern.fullpath, sizeof(g_extern.fullpath), (char*)ptr.Data);
-         RARCH_LOG("Auto-start game %s.\n", g_extern.fullpath);
-         ret = 0;
-         goto exit;
-      }
-   }
-#elif defined(_XBOX360)
-   DWORD dwLaunchDataSize;
-   if (XGetLaunchDataSize(&dwLaunchDataSize) == ERROR_SUCCESS)
-   {
-      BYTE* pLaunchData = new BYTE[dwLaunchDataSize];
-      XGetLaunchData(pLaunchData, dwLaunchDataSize);
-
-      snprintf(g_extern.fullpath, sizeof(g_extern.fullpath), "%s", (char*)pLaunchData);
-      RARCH_LOG("Auto-start game %s.\n", g_extern.fullpath);
-
-      delete []pLaunchData;
-      ret = 0;
-      goto exit;
-   }
-#endif
-#endif
-#ifndef IS_SALAMANDER
-exit:
    g_extern.verbose = original_verbose;
 #endif
    return ret;
@@ -363,26 +395,27 @@ static void frontend_xdk_exec(const char *path, bool should_load_game)
 
    RARCH_LOG("Attempt to load executable: [%s].\n", path);
 #ifdef IS_SALAMANDER
-   XLaunchNewImage(path, NULL);
+   if (path[0] != '\0')
+      XLaunchNewImage(path, NULL);
 #else
 #if defined(_XBOX1)
    LAUNCH_DATA ptr;
    memset(&ptr, 0, sizeof(ptr));
-   if (should_load_game)
-   {
+   if (should_load_game && g_extern.fullpath[0] != '\0')
       snprintf((char*)ptr.Data, sizeof(ptr.Data), "%s", g_extern.fullpath);
-      XLaunchNewImage(path, &ptr);
-   }
-   else
-      XLaunchNewImage(path, NULL);
+
+   if (path[0] != '\0')
+      XLaunchNewImage(path, ptr.Data[0] != '\0' ? &ptr : NULL);
 #elif defined(_XBOX360)
    char game_path[1024];
-   if (should_load_game)
+   if (should_load_game && g_extern.fullpath[0] != '\0')
    {
       strlcpy(game_path, g_extern.fullpath, sizeof(game_path));
       XSetLaunchData(game_path, MAX_LAUNCH_DATA_SIZE);
    }
-   XLaunchNewImage(path, NULL);
+
+   if (path[0] != '\0')
+      XLaunchNewImage(path, NULL);
 #endif
 #endif
 #ifndef IS_SALAMANDER
