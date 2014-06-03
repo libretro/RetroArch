@@ -484,26 +484,48 @@ static void frontend_ps3_exec(const char *path, bool should_load_game)
    for(unsigned int i = 0; i < sizeof(spawn_data); ++i)
       spawn_data[i] = i & 0xff;
 
-#ifndef IS_SALAMANDER
-   if (should_load_game)
-      strlcpy(game_path, g_extern.fullpath, sizeof(game_path));
-#endif
-
-   const char * const spawn_argv[] = {
-#ifndef IS_SALAMANDER
-      game_path,
-#endif
-      NULL
-   };
-
    SceNpDrmKey * k_licensee = NULL;
-   int ret = sceNpDrmProcessExitSpawn2(k_licensee, path, (const char** const)spawn_argv, NULL, (sys_addr_t)spawn_data, 256, 1000, SYS_PROCESS_PRIMARY_STACK_SIZE_1M);
+   int ret;
+#ifdef IS_SALAMANDER
+   const char * const spawn_argv[] = { NULL};
+
+   ret = sceNpDrmProcessExitSpawn2(k_licensee, path, (const char** const)spawn_argv, NULL, (sys_addr_t)spawn_data, 256, 1000, SYS_PROCESS_PRIMARY_STACK_SIZE_1M);
 
    if(ret <  0)
    {
       RARCH_WARN("SELF file is not of NPDRM type, trying another approach to boot it...\n");
       sys_game_process_exitspawn(path, (const char** const)spawn_argv, NULL, NULL, 0, 1000, SYS_PROCESS_PRIMARY_STACK_SIZE_1M);
    }
+#else
+   if (should_load_game && g_extern.fullpath[0] != '\0')
+   {
+      strlcpy(game_path, g_extern.fullpath, sizeof(game_path));
+
+      const char * const spawn_argv[] = {
+         game_path,
+         NULL
+      };
+
+      ret = sceNpDrmProcessExitSpawn2(k_licensee, path, (const char** const)spawn_argv, NULL, (sys_addr_t)spawn_data, 256, 1000, SYS_PROCESS_PRIMARY_STACK_SIZE_1M);
+
+      if(ret <  0)
+      {
+         RARCH_WARN("SELF file is not of NPDRM type, trying another approach to boot it...\n");
+         sys_game_process_exitspawn(path, (const char** const)spawn_argv, NULL, NULL, 0, 1000, SYS_PROCESS_PRIMARY_STACK_SIZE_1M);
+      }
+   }
+   else
+   {
+      const char * const spawn_argv[] = {NULL}; 
+      ret = sceNpDrmProcessExitSpawn2(k_licensee, path, (const char** const)spawn_argv, NULL, (sys_addr_t)spawn_data, 256, 1000, SYS_PROCESS_PRIMARY_STACK_SIZE_1M);
+
+      if(ret <  0)
+      {
+         RARCH_WARN("SELF file is not of NPDRM type, trying another approach to boot it...\n");
+         sys_game_process_exitspawn(path, (const char** const)spawn_argv, NULL, NULL, 0, 1000, SYS_PROCESS_PRIMARY_STACK_SIZE_1M);
+      }
+   }
+#endif
 
    sceNpTerm();
    sys_net_finalize_network();
