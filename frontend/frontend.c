@@ -276,38 +276,37 @@ void main_exit(args_type() args)
       driver.frontend_ctx->shutdown(false);
 }
 
-static void free_args(struct rarch_main_wrap *wrap_args,
-    char *argv_copy[])
+static void free_args(struct rarch_main_wrap *wrap_args, char **argv_copy, unsigned argv_size)
 {
-   int i;
+   unsigned i;
    if (!wrap_args->touched)
       return;
 
-   for (i = 0; i < ARRAY_SIZE(argv_copy); i++)
-      if (argv_copy[i])
-         free(argv_copy[i]);
+   for (i = 0; i < argv_size; i++)
+      free(argv_copy[i]);
 }
 
 returntype main_entry(signature())
 {
-   int ret, rarch_argc;
-   char *rarch_argv[MAX_ARGS], *argv_copy[MAX_ARGS];
    int *rarch_argc_ptr;
    char **rarch_argv_ptr;
    struct rarch_main_wrap *wrap_args;
    declare_argc();
    declare_argv();
    args_type() args = (args_type())args_initial_ptr();
+   int ret, rarch_argc = 0;
+   char *rarch_argv[MAX_ARGS] = {NULL};
+   char *argv_copy[MAX_ARGS] = {NULL};
 
    wrap_args = (struct rarch_main_wrap*)calloc(1, sizeof(*wrap_args));
+   rarch_assert(wrap_args);
+
    driver.frontend_ctx = (frontend_ctx_driver_t*)frontend_ctx_init_first();
    rarch_argv_ptr = (char**)argv;
    rarch_argc_ptr = (int*)&argc;
 
    if (!driver.frontend_ctx)
-   {
       RARCH_WARN("Frontend context could not be initialized.\n");
-   }
 
    if (driver.frontend_ctx && driver.frontend_ctx->init)
       driver.frontend_ctx->init(args);
@@ -355,7 +354,7 @@ returntype main_entry(signature())
 
    if ((ret = rarch_main_init(*rarch_argc_ptr, rarch_argv_ptr)))
    {
-      free_args(wrap_args, argv_copy);
+      free_args(wrap_args, argv_copy, ARRAY_SIZE(argv_copy));
       free(wrap_args);
       return_var(ret);
    }
@@ -379,7 +378,7 @@ returntype main_entry(signature())
 #endif
 
    if (wrap_args)
-      free_args(wrap_args, argv_copy);
+      free_args(wrap_args, argv_copy, ARRAY_SIZE(argv_copy));
    free(wrap_args);
 
 #if defined(HAVE_MENU)
