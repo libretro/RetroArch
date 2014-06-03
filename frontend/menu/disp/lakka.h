@@ -39,7 +39,6 @@ typedef struct
 {
    char  name[256];
    char  rom[256];
-   GLuint icon;
    float  alpha;
    float  zoom;
    float  y;
@@ -54,6 +53,7 @@ typedef struct
    char  name[256];
    char  libretro[256];
    GLuint icon;
+   GLuint item_icon;
    float  alpha;
    float  zoom;
    int    active_item;
