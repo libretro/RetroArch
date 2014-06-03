@@ -354,10 +354,8 @@ static void frontend_gx_exitspawn(void)
 #endif
 }
 
-static int frontend_gx_process_args(int *argc, char *argv[], void *args)
+static void frontend_gx_process_args(int *argc, char *argv[], void *args)
 {
-   int ret = 1;
-
 #ifndef IS_SALAMANDER
    // a big hack: sometimes salamander doesn't save the new core it loads on first boot,
    // so we make sure g_settings.libretro is set here
@@ -368,8 +366,6 @@ static int frontend_gx_process_args(int *argc, char *argv[], void *args)
       rarch_environment_cb(RETRO_ENVIRONMENT_SET_LIBRETRO_PATH, path);
    }
 #endif
-
-   return ret;
 }
 
 static void frontend_gx_exec(const char *path, bool should_load_game)

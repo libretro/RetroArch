@@ -36,7 +36,7 @@ typedef struct frontend_ctx_driver
    void (*deinit)(void *data);
    void (*exitspawn)(void);
 
-   int (*process_args)(int *argc, char *argv[], void *args);
+   void (*process_args)(int *argc, char *argv[], void *args);
    int (*process_events)(void *data);
    void (*exec)(const char *, bool);
    void (*shutdown)(bool);

@@ -361,8 +361,7 @@ returntype main_entry(signature())
 
 #if defined(HAVE_MENU)
    if (driver.frontend_ctx && driver.frontend_ctx->process_args)
-      ret = driver.frontend_ctx->process_args(rarch_argc_ptr, rarch_argv_ptr, args);
-
+      driver.frontend_ctx->process_args(rarch_argc_ptr, rarch_argv_ptr, args);
 
    g_extern.lifecycle_state |= (1ULL << MODE_GAME);
 
