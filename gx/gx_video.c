@@ -908,13 +908,9 @@ static bool gx_frame(void *data, const void *frame,
 
    if (width != gx_old_width || height != gx_old_height)
    {
-      RARCH_PERFORMANCE_INIT(gx_frame_resize);
-      RARCH_PERFORMANCE_START(gx_frame_resize);
       init_texture(data, width, height);
       gx_old_width = width;
       gx_old_height = height;
-
-      RARCH_PERFORMANCE_STOP(gx_frame_resize);
    }
 
    g_draw_done = false;
