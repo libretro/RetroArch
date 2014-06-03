@@ -290,11 +290,8 @@ bool load_menu_game(void)
       snprintf(msg, sizeof(msg), "Failed to load %s.\n", name);
       msg_queue_push(g_extern.msg_queue, msg, 1, 90);
       driver.menu->msg_force = true;
-      RARCH_ERR("rarch_main_init_wrap() failed.\n");
       return false;
    }
-
-   RARCH_LOG("rarch_main_init_wrap() succeeded.\n");
 
    // Update menu state which depends on config.
    menu_update_libretro_info(driver.menu);
