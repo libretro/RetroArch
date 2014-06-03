@@ -229,12 +229,6 @@ static void frontend_ps3_get_environment_settings(int *argc, char *argv[],
       }
       else
          RARCH_WARN("Started from Salamander, auto-game start disabled.\n");
-
-   //hack - this would break core selection
-   if (argv[1] != NULL && argv[1][0] == '\0')
-   {
-      RARCH_LOG("Broken core selection triggered.\n");
-   }
 #endif
 
    memset(&size, 0x00, sizeof(CellGameContentSize));
