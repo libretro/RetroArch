@@ -49,7 +49,7 @@ static void find_first_libretro_core(char *first_file,
 
    RARCH_LOG("Searching for valid libretro implementation in: \"%s\".\n", dir);
 
-   struct string_list *list = dir_list_new(dir, ext, false);
+   struct string_list *list = (struct string_list*)dir_list_new(dir, ext, false);
    if (!list)
    {
       RARCH_ERR("Couldn't read directory. Cannot infer default libretro core.\n");
@@ -59,7 +59,7 @@ static void find_first_libretro_core(char *first_file,
    for (size_t i = 0; i < list->size && !ret; i++)
    {
       RARCH_LOG("Checking library: \"%s\".\n", list->elems[i].data);
-      const char * libretro_elem = list->elems[i].data;
+      const char *libretro_elem = list->elems[i].data;
 
       if (libretro_elem)
       {
@@ -84,6 +84,24 @@ static void find_first_libretro_core(char *first_file,
    }
 
    dir_list_free(list);
+}
+
+static void find_and_set_first_file(char *path, size_t sizeof_path, const char *ext)
+{
+   //Last fallback - we'll need to start the first executable file 
+   // we can find in the RetroArch cores directory
+
+   char first_file[PATH_MAX] = {0};
+   find_first_libretro_core(first_file, sizeof(first_file),
+         default_paths.core_dir, ext);
+
+   if(first_file)
+   {
+      fill_pathname_join(path, default_paths.core_dir, first_file, sizeof(path));
+      RARCH_LOG("libretro_path now set to: %s.\n", path);
+   }
+   else
+      RARCH_ERR("Failed last fallback - RetroArch Salamander will exit.\n");
 }
 
 int main(int argc, char *argv[])

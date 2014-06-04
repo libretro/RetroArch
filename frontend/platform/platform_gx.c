@@ -53,24 +53,6 @@ extern void system_exec_wii(const char *path, bool should_load_game);
 #ifdef IS_SALAMANDER
 char libretro_path[PATH_MAX];
 
-static void find_and_set_first_file(const char *ext)
-{
-   //Last fallback - we'll need to start the first executable file 
-   // we can find in the RetroArch cores directory
-
-   char first_file[PATH_MAX] = {0};
-   find_first_libretro_core(first_file, sizeof(first_file),
-         default_paths.core_dir, ext);
-
-   if(first_file)
-   {
-      fill_pathname_join(libretro_path, default_paths.core_dir, first_file, sizeof(libretro_path));
-      RARCH_LOG("libretro_path now set to: %s.\n", libretro_path);
-   }
-   else
-      RARCH_ERR("Failed last fallback - RetroArch Salamander will exit.\n");
-}
-
 static void frontend_gx_salamander_init(void)
 {
    char tmp_str[PATH_MAX] = {0};
@@ -93,7 +75,7 @@ static void frontend_gx_salamander_init(void)
    }
 
    if(!config_file_exists || !strcmp(libretro_path, ""))
-      find_and_set_first_file("dol");
+      find_and_set_first_file(libretro_path, sizeof(libretro_path), "dol");
    else
    {
       RARCH_LOG("Start [%s] found in retroarch.cfg.\n", libretro_path);

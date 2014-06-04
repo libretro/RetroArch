@@ -22,4 +22,7 @@ static void find_first_libretro_core(char *first_file,
    size_t size_of_first_file, const char *dir,
    const char * ext);
 
+static void find_and_set_first_file(char *path, size_t sizeof_path,
+      const char *ext);
+
 #endif
