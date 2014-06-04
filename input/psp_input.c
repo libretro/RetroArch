@@ -31,7 +31,7 @@
 #include "../libretro.h"
 #include "../general.h"
 #ifdef HAVE_KERNEL_PRX
-#include "../psp1/kernelFunctions.h"
+#include "../psp1/kernel_functions.h"
 #endif
 
 enum {
@@ -132,7 +132,7 @@ static void psp_input_poll(void *data)
    sceCtrlSetSamplingMode(DEFAULT_SAMPLING_MODE);
    ret = CtrlPeekBufferPositive(0, &state_tmp, 1);
 #ifdef HAVE_KERNEL_PRX
-   state_tmp.Buttons = (state_tmp.Buttons&0x0000FFFF)|(readSystemButtons()&0xFFFF0000);
+   state_tmp.Buttons = (state_tmp.Buttons&0x0000FFFF)|(read_system_buttons()&0xFFFF0000);
 #endif
    (void)ret;
 

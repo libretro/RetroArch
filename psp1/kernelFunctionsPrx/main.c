@@ -7,15 +7,15 @@
 #include <pspthreadman_kernel.h>
 #include <string.h>
 
-PSP_MODULE_INFO("kernelFunctions", PSP_MODULE_KERNEL, 0, 0);
+PSP_MODULE_INFO("kernel_functions", PSP_MODULE_KERNEL, 0, 0);
 PSP_MAIN_THREAD_ATTR(0);
 
 
 static volatile int thread_active;
 static unsigned int buttons;
-static SceUID main_thread;
+static SceUID main_thread_id;
 
-static int mainThread(SceSize args, void *argp)
+static int main_thread(SceSize args, void *argp)
 {
 	SceCtrlData paddata;
 
@@ -34,20 +34,19 @@ static int mainThread(SceSize args, void *argp)
 }
 
 
-unsigned int readSystemButtons(void)
+unsigned int read_system_buttons(void)
 {
 	return buttons;
 }
 
-void loadGame(const char* fileName, void * argp){
+void exitspawn_kernel( const char* fileName, SceSize args, void * argp){
    thread_active = 0;
    struct SceKernelLoadExecVSHParam game_param;
-   pspDebugScreenClear();
 
    memset(&game_param,0,sizeof(game_param));
 
    game_param.size = sizeof(game_param);
-   game_param.args = strlen(argp)+1;
+   game_param.args = args;
    game_param.argp = argp;
    game_param.key  = "game";
    game_param.vshmain_args_size = 0;
@@ -68,10 +67,10 @@ int module_start(SceSize args, void *argp)
 
 	buttons = 0;
 	thread_active = 0;   
-	main_thread = sceKernelCreateThread("main Thread", mainThread, 0x11, 0x200, 0, NULL);
+	main_thread_id = sceKernelCreateThread("main Thread", main_thread, 0x11, 0x200, 0, NULL);
 
    if (main_thread >= 0)
-		sceKernelStartThread(main_thread, 0, 0);
+		sceKernelStartThread(main_thread_id, 0, 0);
 
 	return 0;
 }
@@ -79,10 +78,10 @@ int module_start(SceSize args, void *argp)
 
 int module_stop(void)
 {
-	if (main_thread >= 0)
+	if (main_thread_id >= 0)
 	{
 		thread_active = 0;
-		sceKernelWaitThreadEnd(main_thread, NULL);
+		sceKernelWaitThreadEnd(main_thread_id, NULL);
 	}
 	return 0;
 }
