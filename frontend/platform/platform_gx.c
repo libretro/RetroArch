@@ -76,45 +76,32 @@ static void frontend_gx_salamander_init(void)
    if (path_file_exists(default_paths.config_path))
       config_file_exists = true;
 
-   //try to find CORE executable
-   char core_executable[PATH_MAX] = {0};
-   fill_pathname_join(core_executable, default_paths.core_dir, "CORE.dol", sizeof(core_executable));
-
-   if(path_file_exists(core_executable))
+   if(config_file_exists)
    {
-      //Start CORE executable
-      strlcpy(libretro_path, core_executable, sizeof(libretro_path));
-      RARCH_LOG("Start [%s].\n", libretro_path);
-   }
-   else
-   {
-      if(config_file_exists)
-      {
-         config_file_t * conf = config_file_new(default_paths.config_path);
-         if (!conf) // stupid libfat bug or something; somtimes it says the file is there when it doesn't
-            config_file_exists = false;
-         else
-         {
-            config_get_array(conf, "libretro_path", tmp_str, sizeof(tmp_str));
-            config_file_free(conf);
-            strlcpy(libretro_path, tmp_str, sizeof(libretro_path));
-         }
-      }
-
-      if(!config_file_exists || !strcmp(libretro_path, ""))
-         find_and_set_first_file();
+      config_file_t * conf = config_file_new(default_paths.config_path);
+      if (!conf) // stupid libfat bug or something; somtimes it says the file is there when it doesn't
+         config_file_exists = false;
       else
       {
-         RARCH_LOG("Start [%s] found in retroarch.cfg.\n", libretro_path);
+         config_get_array(conf, "libretro_path", tmp_str, sizeof(tmp_str));
+         config_file_free(conf);
+         strlcpy(libretro_path, tmp_str, sizeof(libretro_path));
       }
+   }
 
-      if (!config_file_exists)
-      {
-         config_file_t *new_conf = config_file_new(NULL);
-         config_set_string(new_conf, "libretro_path", libretro_path);
-         config_file_write(new_conf, default_paths.config_path);
-         config_file_free(new_conf);
-      }
+   if(!config_file_exists || !strcmp(libretro_path, ""))
+      find_and_set_first_file();
+   else
+   {
+      RARCH_LOG("Start [%s] found in retroarch.cfg.\n", libretro_path);
+   }
+
+   if (!config_file_exists)
+   {
+      config_file_t *new_conf = config_file_new(NULL);
+      config_set_string(new_conf, "libretro_path", libretro_path);
+      config_file_write(new_conf, default_paths.config_path);
+      config_file_free(new_conf);
    }
 }
 

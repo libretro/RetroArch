@@ -68,69 +68,37 @@ static void find_and_set_first_file(void)
 
 static void frontend_xdk_salamander_init(void)
 {
-   XINPUT_STATE state;
    (void)state;
 
-   //WIP - no Xbox 1 controller input yet
-#ifdef _XBOX360
-   XInputGetState(0, &state);
+   //normal executable loading path
+   char tmp_str[PATH_MAX];
+   bool config_file_exists = false;
 
-   if(state.Gamepad.wButtons & XINPUT_GAMEPAD_Y)
+   if(path_file_exists(default_paths.config_path))
+      config_file_exists = true;
+
+   if(config_file_exists)
    {
-      //override path, boot first executable in cores directory
-      RARCH_LOG("Fallback - Will boot first executable in RetroArch cores directory.\n");
+      config_file_t * conf = config_file_new(default_paths.config_path);
+      config_get_array(conf, "libretro_path", tmp_str, sizeof(tmp_str));
+      strlcpy(libretro_path, tmp_str, sizeof(libretro_path));
+   }
+
+   if(!config_file_exists || !strcmp(libretro_path, ""))
+   {
       find_and_set_first_file();
    }
    else
-#endif
    {
-	   //normal executable loading path
-	   char tmp_str[PATH_MAX];
-	   bool config_file_exists = false;
+      RARCH_LOG("Start [%s] found in retroarch.cfg.\n", libretro_path);
+   }
 
-	   if(path_file_exists(default_paths.config_path))
-		   config_file_exists = true;
-
-	   //try to find CORE executable
-	   char core_executable[1024];
-#if defined(_XBOX360)
-      strlcpy(core_executable, "game:\\CORE.xex", sizeof(core_executable));
-#elif defined(_XBOX1)
-      fill_pathname_join(core_executable, "D:", "CORE.xbe", sizeof(core_executable));
-#endif
-
-	   if(path_file_exists(core_executable))
-	   {
-		   //Start CORE executable
-		   strlcpy(libretro_path, core_executable, sizeof(libretro_path));
-		   RARCH_LOG("Start [%s].\n", libretro_path);
-	   }
-	   else
-	   {
-		   if(config_file_exists)
-		   {
-			   config_file_t * conf = config_file_new(default_paths.config_path);
-			   config_get_array(conf, "libretro_path", tmp_str, sizeof(tmp_str));
-            strlcpy(libretro_path, tmp_str, sizeof(libretro_path));
-		   }
-
-		   if(!config_file_exists || !strcmp(libretro_path, ""))
-		   {
-			   find_and_set_first_file();
-		   }
-		   else
-		   {
-			   RARCH_LOG("Start [%s] found in retroarch.cfg.\n", libretro_path);
-		   }
-
-		   if (!config_file_exists)
-		   {
-			   config_file_t *new_conf = config_file_new(NULL);
-			   config_set_string(new_conf, "libretro_path", libretro_path);
-			   config_file_write(new_conf, default_paths.config_path);
-			   config_file_free(new_conf);
-		   }
-	   }
+   if (!config_file_exists)
+   {
+      config_file_t *new_conf = config_file_new(NULL);
+      config_set_string(new_conf, "libretro_path", libretro_path);
+      config_file_write(new_conf, default_paths.config_path);
+      config_file_free(new_conf);
    }
 }
 #else
