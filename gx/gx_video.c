@@ -66,6 +66,11 @@ size_t display_list_size;
 GXRModeObj gx_mode;
 unsigned gx_old_width, gx_old_height;
 
+static u8 _gxtexmode0ids[8] = {0x80,0x81,0x82,0x83,0xA0,0xA1,0xA2,0xA3};
+static u8 _gxtexmode1ids[8] = {0x84,0x85,0x86,0x87,0xA4,0xA5,0xA6,0xA7};
+static u8 _gxteximg0ids[8] = {0x88,0x89,0x8A,0x8B,0xA8,0xA9,0xAA,0xAB};
+static u8 _gxteximg3ids[8] = {0x94,0x95,0x96,0x97,0xB4,0xB5,0xB6,0xB7};
+
 float verts[16] ATTRIBUTE_ALIGN(32) = {
    -1,  1, -0.5,
     1,  1, -0.5,
@@ -942,7 +947,7 @@ static bool gx_frame(void *data, const void *frame,
    __GX_InvalidateTexAll(__gx);
 
    __GX_SetCurrentMtx(__gx, GX_PNMTX0);
-   GX_LoadTexObj(&g_tex.obj, GX_TEXMAP0);
+   __GX_LoadTexObj(&g_tex.obj, GX_TEXMAP0);
    __GX_CallDispList(__gx, display_list, display_list_size);
 
    if (gx->rgui_texture_enable)

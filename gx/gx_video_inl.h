@@ -727,6 +727,22 @@ static void __GX_SendFlushPrim(struct __gx_regdef *__gx)
    __gx->peZMode = (__gx->peZMode&~0x10)|(_SHIFTL(update_enable,4,1)); \
    GX_LOAD_BP_REG(__gx->peZMode)
 
+#define __GX_LoadTexObj(obj, mapid) \
+{ \
+   struct __gx_texobj *ptr = (struct __gx_texobj*)obj; \
+   ptr->tex_filt = (ptr->tex_filt&~0xff000000)|(_SHIFTL(_gxtexmode0ids[mapid],24,8)); \
+   ptr->tex_lod = (ptr->tex_lod&~0xff000000)|(_SHIFTL(_gxtexmode1ids[mapid],24,8)); \
+   ptr->tex_size = (ptr->tex_size&~0xff000000)|(_SHIFTL(_gxteximg0ids[mapid],24,8)); \
+   ptr->tex_maddr = (ptr->tex_maddr&~0xff000000)|(_SHIFTL(_gxteximg3ids[mapid],24,8)); \
+   GX_LOAD_BP_REG(ptr->tex_filt); \
+   GX_LOAD_BP_REG(ptr->tex_lod); \
+   GX_LOAD_BP_REG(ptr->tex_size); \
+   GX_LOAD_BP_REG(ptr->tex_maddr); \
+   __gx->texMapSize[mapid] = ptr->tex_size; \
+   __gx->texMapWrap[mapid] = ptr->tex_filt; \
+   __gx->dirtyState |= 0x0001; \
+}
+
 #define X_FACTOR 0.5
 #define Y_FACTOR 342.0
 #define ZFACTOR 16777215.0
