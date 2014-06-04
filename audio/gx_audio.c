@@ -27,6 +27,8 @@
 #include <cafe/ai.h>
 #endif
 
+#include "../gx/sdk_defines.h"
+
 #define CHUNK_FRAMES 64
 #define CHUNK_SIZE (CHUNK_FRAMES * sizeof(uint32_t))
 #define BLOCKS 16
@@ -49,7 +51,7 @@ typedef struct
    volatile unsigned dma_write;
    size_t write_ptr;
 
-   lwpq_t cond;
+   OSCond cond;
    bool nonblock;
 } gx_audio_t;
 
@@ -67,7 +69,7 @@ static void dma_callback(void)
    DCFlushRange(wa->data[wa->dma_next], CHUNK_SIZE);
    AIInitDMA((uint32_t)wa->data[wa->dma_next], CHUNK_SIZE);
 
-   LWP_ThreadSignal(wa->cond);
+   OSSignalCond(wa->cond);
 }
 
 static void *gx_audio_init(const char *device, unsigned rate, unsigned latency)
@@ -94,7 +96,7 @@ static void *gx_audio_init(const char *device, unsigned rate, unsigned latency)
       g_settings.audio.out_rate = 48000;
    }
 
-   LWP_InitQueue(&wa->cond);
+   OSInitThreadQueue(&wa->cond);
 
    wa->dma_write = BLOCKS - 1;
    DCFlushRange(wa->data, sizeof(wa->data));
@@ -116,10 +118,10 @@ static inline void copy_swapped(uint32_t * restrict dst, const uint32_t * restri
 
 static ssize_t gx_audio_write(void *data, const void *buf_, size_t size)
 {
-   gx_audio_t *wa = data;
-
    size_t frames = size >> 2;
    const uint32_t *buf = buf_;
+   gx_audio_t *wa = data;
+
    while (frames)
    {
       size_t to_write = CHUNK_FRAMES - wa->write_ptr;
@@ -128,7 +130,7 @@ static ssize_t gx_audio_write(void *data, const void *buf_, size_t size)
 
       // FIXME: Nonblocking audio should break out of loop when it has nothing to write.
       while ((wa->dma_write == wa->dma_next || wa->dma_write == wa->dma_busy) && !wa->nonblock)
-         LWP_ThreadSleep(wa->cond);
+         OSSleepThread(wa->cond);
 
       copy_swapped(wa->data[wa->dma_write] + wa->write_ptr, buf, to_write);
 
@@ -149,6 +151,10 @@ static ssize_t gx_audio_write(void *data, const void *buf_, size_t size)
 static bool gx_audio_stop(void *data)
 {
    gx_audio_t *wa = (gx_audio_t*)data;
+
+   if (!wa)
+      return false;
+
    AIStopDMA();
    memset(wa->data, 0, sizeof(wa->data));
    DCFlushRange(wa->data, sizeof(wa->data));
@@ -158,6 +164,10 @@ static bool gx_audio_stop(void *data)
 static void gx_audio_set_nonblock_state(void *data, bool state)
 {
    gx_audio_t *wa = (gx_audio_t*)data;
+
+   if (!wa)
+      return;
+
    wa->nonblock = state;
 }
 
@@ -171,13 +181,17 @@ static bool gx_audio_start(void *data)
 static void gx_audio_free(void *data)
 {
    gx_audio_t *wa = (gx_audio_t*)data;
+
+   if (!wa)
+      return;
+
    AIStopDMA();
    AIRegisterDMACallback(NULL);
-   if (wa && wa->cond)
-   {
+
+   if (wa->cond)
       LWP_CloseQueue(wa->cond);
-      wa->cond = 0;
-   }
+   wa->cond = 0;
+
    free(data);
 }
 

@@ -19,6 +19,7 @@
 #include "../../driver.h"
 #include "../../general.h"
 #include "../../libretro_private.h"
+#include "../../gx/sdk_defines.h"
 
 #include "../../file.h"
 
@@ -331,17 +332,18 @@ static void frontend_gx_init(void *data)
 #endif
 
 #if defined(HW_RVL) && !defined(IS_SALAMANDER)
-   lwp_t gx_device_thread;
+   OSThread gx_device_thread;
    gx_devices[GX_DEVICE_SD].interface = &__io_wiisd;
    gx_devices[GX_DEVICE_SD].name = "sd";
    gx_devices[GX_DEVICE_SD].mounted = fatMountSimple(gx_devices[GX_DEVICE_SD].name, gx_devices[GX_DEVICE_SD].interface);
    gx_devices[GX_DEVICE_USB].interface = &__io_usbstorage;
    gx_devices[GX_DEVICE_USB].name = "usb";
    gx_devices[GX_DEVICE_USB].mounted = fatMountSimple(gx_devices[GX_DEVICE_USB].name, gx_devices[GX_DEVICE_USB].interface);
-   LWP_MutexInit(&gx_device_cond_mutex, 0);
-   LWP_CondInit(&gx_device_cond);
-   LWP_MutexInit(&gx_device_mutex, false);
-   LWP_CreateThread(&gx_device_thread, gx_devthread, NULL, NULL, 0, 66);
+
+   OSInitMutex(&gx_device_cond_mutex);
+   OSInitCond(&gx_device_cond);
+   OSInitMutex(&gx_device_mutex);
+   OSCreateThread(&gx_device_thread, gx_devthread, 0, NULL, NULL, 0, 66, 0);
 #endif
 }
 
