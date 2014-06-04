@@ -30,27 +30,18 @@
 #ifdef IS_SALAMANDER
 char libretro_path[512];
 
-static void find_and_set_first_file(void)
+static void find_and_set_first_file(const char *ext)
 {
    //Last fallback - we'll need to start the first executable file 
    // we can find in the RetroArch cores directory
 
-   char first_file[PATH_MAX];
+   char first_file[PATH_MAX] = {0};
    find_first_libretro_core(first_file, sizeof(first_file),
-#if defined(_XBOX360)
-   "game:", "xex"
-#elif defined(_XBOX1)
-   "D:", "xbe"
-#endif
-);
+         default_paths.core_dir, ext);
 
    if(first_file)
    {
-#ifdef _XBOX1
       fill_pathname_join(libretro_path, default_paths.core_dir, first_file, sizeof(libretro_path));
-#else
-      strlcpy(libretro_path, first_file, sizeof(libretro_path));
-#endif
       RARCH_LOG("libretro_path now set to: %s.\n", libretro_path);
    }
    else
@@ -77,7 +68,11 @@ static void frontend_xdk_salamander_init(void)
 
    if(!config_file_exists || !strcmp(libretro_path, ""))
    {
-      find_and_set_first_file();
+#if defined(_XBOX360)
+      find_and_set_first_file("xex");
+#elif defined(_XBOX1)
+      find_and_set_first_file("xbe");
+#endif
    }
    else
    {

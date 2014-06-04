@@ -49,13 +49,14 @@ SYS_PROCESS_PARAM(1001, 0x200000)
 
 char libretro_path[512];
 
-static void find_and_set_first_file(void)
+static void find_and_set_first_file(const char *ext)
 {
    //Last fallback - we'll need to start the first executable file 
    // we can find in the RetroArch cores directory
 
    char first_file[PATH_MAX];
-   find_first_libretro_core(first_file, sizeof(first_file), default_paths.core_dir, "SELF");
+   find_first_libretro_core(first_file, sizeof(first_file),
+         default_paths.core_dir, ext);
 
    if(first_file)
    {
@@ -84,7 +85,7 @@ static void frontend_ps3_salamander_init(void)
    }
 
    if (!config_file_exists || !strcmp(libretro_path, ""))
-      find_and_set_first_file();
+      find_and_set_first_file("SELF");
    else
       RARCH_LOG("Start [%s] found in retroarch.cfg.\n", libretro_path);
 
