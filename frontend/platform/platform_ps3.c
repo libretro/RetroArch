@@ -45,7 +45,6 @@ SYS_PROCESS_PARAM(1001, 0x200000)
 #include <netex/net.h>
 #include <np.h>
 #include <np/drm.h>
-#include <cell/pad.h>
 #include <cell/sysmodule.h>
 
 char libretro_path[512];
