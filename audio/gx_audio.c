@@ -18,15 +18,27 @@
 #include <stdlib.h>
 #include "../boolean.h"
 #include "../general.h"
-#include <malloc.h>
 #include <string.h>
 
+#ifdef GEKKO
 #include <gccore.h>
 #include <ogcsys.h>
+#else
+#include <cafe/ai.h>
+#endif
 
 #define CHUNK_FRAMES 64
 #define CHUNK_SIZE (CHUNK_FRAMES * sizeof(uint32_t))
 #define BLOCKS 16
+
+#ifdef GEKKO
+#define AIInit AUDIO_Init
+#define AIInitDMA AUDIO_InitDMA
+#define AIStartDMA AUDIO_StartDMA
+#define AIStopDMA AUDIO_StopDMA
+#define AIRegisterDMACallback AUDIO_RegisterDMACallback
+#define AISetDSPSampleRate AUDIO_SetDSPSampleRate
+#endif
 
 typedef struct
 {
@@ -53,7 +65,7 @@ static void dma_callback(void)
    wa->dma_next = (wa->dma_next + 1) & (BLOCKS - 1);
 
    DCFlushRange(wa->data[wa->dma_next], CHUNK_SIZE);
-   AUDIO_InitDMA((uint32_t)wa->data[wa->dma_next], CHUNK_SIZE);
+   AIInitDMA((uint32_t)wa->data[wa->dma_next], CHUNK_SIZE);
 
    LWP_ThreadSignal(wa->cond);
 }
@@ -68,17 +80,17 @@ static void *gx_audio_init(const char *device, unsigned rate, unsigned latency)
 
    memset(wa, 0, sizeof(*wa));
 
-   AUDIO_Init(NULL);
-   AUDIO_RegisterDMACallback(dma_callback);
+   AIInit(NULL);
+   AIRegisterDMACallback(dma_callback);
 
    if (rate < 33000)
    {
-      AUDIO_SetDSPSampleRate(AI_SAMPLERATE_32KHZ);
+      AISetDSPSampleRate(AI_SAMPLERATE_32KHZ);
       g_settings.audio.out_rate = 32000;
    }
    else
    {
-      AUDIO_SetDSPSampleRate(AI_SAMPLERATE_48KHZ);
+      AISetDSPSampleRate(AI_SAMPLERATE_48KHZ);
       g_settings.audio.out_rate = 48000;
    }
 
@@ -86,8 +98,8 @@ static void *gx_audio_init(const char *device, unsigned rate, unsigned latency)
 
    wa->dma_write = BLOCKS - 1;
    DCFlushRange(wa->data, sizeof(wa->data));
-   AUDIO_InitDMA((uint32_t)wa->data[wa->dma_next], CHUNK_SIZE);
-   AUDIO_StartDMA();
+   AIInitDMA((uint32_t)wa->data[wa->dma_next], CHUNK_SIZE);
+   AIStartDMA();
 
    return wa;
 }
@@ -137,7 +149,7 @@ static ssize_t gx_audio_write(void *data, const void *buf_, size_t size)
 static bool gx_audio_stop(void *data)
 {
    gx_audio_t *wa = (gx_audio_t*)data;
-   AUDIO_StopDMA();
+   AIStopDMA();
    memset(wa->data, 0, sizeof(wa->data));
    DCFlushRange(wa->data, sizeof(wa->data));
    return true;
@@ -152,15 +164,15 @@ static void gx_audio_set_nonblock_state(void *data, bool state)
 static bool gx_audio_start(void *data)
 {
    (void)data;
-   AUDIO_StartDMA();
+   AIStartDMA();
    return true;
 }
 
 static void gx_audio_free(void *data)
 {
    gx_audio_t *wa = (gx_audio_t*)data;
-   AUDIO_StopDMA();
-   AUDIO_RegisterDMACallback(NULL);
+   AIStopDMA();
+   AIRegisterDMACallback(NULL);
    if (wa && wa->cond)
    {
       LWP_CloseQueue(wa->cond);
