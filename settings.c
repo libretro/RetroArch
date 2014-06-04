@@ -487,8 +487,10 @@ void config_set_defaults(void)
       strlcpy(g_settings.libretro, default_paths.core_path, sizeof(g_settings.libretro));
    if (*default_paths.core_info_dir)
       strlcpy(g_settings.libretro_info_path, default_paths.core_info_dir, sizeof(g_settings.libretro_info_path));
+#ifdef HAVE_OVERLAY
    if (*default_paths.overlay_dir)
       strlcpy(g_extern.overlay_dir, default_paths.overlay_dir, sizeof(g_extern.overlay_dir));
+#endif
    if (*default_paths.shader_dir)
       strlcpy(g_settings.video.shader_dir, default_paths.shader_dir, sizeof(g_settings.video.shader_dir));
    if (*default_paths.savestate_dir)
