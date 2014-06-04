@@ -68,7 +68,7 @@ static u32 __lwp_heap_block_size(heap_cntrl *theheap, void *ptr)
 
 static heap_cntrl gx_mem2_heap;
 
-bool gx_init_mem2()  
+bool gx_init_mem2(void)  
 {
    u32 level;
    _CPU_ISR_Disable(level);
@@ -185,14 +185,14 @@ char *_mem2_strndup(const char *s, size_t n)
     return ptr;
 }
 
-u32 gx_mem2_used()
+u32 gx_mem2_used(void)
 {
    heap_iblock info;
    __lwp_heap_getinfo(&gx_mem2_heap, &info);
    return info.used_size;
 }
 
-u32 gx_mem2_total()
+u32 gx_mem2_total(void)
 {
    heap_iblock info;
    __lwp_heap_getinfo(&gx_mem2_heap, &info);

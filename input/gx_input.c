@@ -16,10 +16,12 @@
  */
 
 #include <stdint.h>
+#ifdef HW_RVL
 #include <gccore.h>
 #include <ogc/pad.h>
-#ifdef HW_RVL
 #include <wiiuse/wpad.h>
+#else
+#include <cafe/pads/wpad/wpad.h>
 #endif
 #include <string.h>
 #include <math.h>
@@ -31,6 +33,12 @@
 #include "../driver.h"
 #include "../libretro.h"
 #include <stdlib.h>
+
+#ifdef GEKKO
+#define WPADInit WPAD_Init
+#define WPADDisconnect WPAD_Disconnect
+#define WPADProbe WPAD_Probe
+#endif
 
 enum
 {
@@ -379,7 +387,7 @@ static void gx_input_free_input(void *data)
 
 #ifdef HW_RVL
       WPAD_Flush(i);
-      WPAD_Disconnect(i);
+      WPADDisconnect(i);
 #endif
    }
 
@@ -716,7 +724,7 @@ static void *gx_input_init(void)
    USB_Initialize();
 #endif
 #ifdef HW_RVL
-   WPAD_Init();
+   WPADInit();
 #endif
    SYS_SetResetCallback(reset_cb);
 #ifdef HW_RVL
@@ -794,7 +802,7 @@ static void gx_input_poll(void *data)
 
 #ifdef HW_RVL
       uint32_t ptype = 0;
-      uint32_t connected = WPAD_Probe(port, &ptype);
+      uint32_t connected = WPADProbe(port, &ptype);
 
 #ifdef HAVE_LIBSICKSAXIS
       USB_DeviceChangeNotifyAsync(USB_CLASS_HID, change_cb, (void*)&lol);
