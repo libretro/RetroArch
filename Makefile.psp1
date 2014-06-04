@@ -20,7 +20,7 @@ RARCH_DEFINES = -DPSP -D_MIPS_ARCH_ALLEGREX1 -DHAVE_LIBRETRO_MANAGEMENT -DHAVE_Z
 
 LIBDIR =
 LDFLAGS =
-LIBS = -lretro_psp1 -lstdc++ -lpspgu -lpspgum -lm -lpspaudio -lpspfpu -lpsppower -lpsprtc
+LIBS = -lretro_psp1   -lstdc++ -lpspgu -lpspgum -lm -lpspaudio -lpspfpu -lpsppower -lpsprtc
 
 ifeq ($(HAVE_THREADS), 1)
 RARCH_DEFINES += -DHAVE_THREADS
@@ -31,7 +31,7 @@ ifeq ($(HAVE_FILE_LOGGER), 1)
 CFLAGS		+= -DHAVE_FILE_LOGGER
 endif
 
-ifeq ($(HAVE_KERNEL_RX), 1)
+ifeq ($(HAVE_KERNEL_PRX), 1)
 CFLAGS      += -DHAVE_KERNEL_PRX
 endif
 
@@ -41,7 +41,7 @@ CFLAGS += $(RARCH_DEFINES)
 EXTRA_TARGETS = EBOOT.PBP
 PSP_EBOOT_TITLE = RetroArch PSP1
 
-PSP_OBJECTS = griffin/griffin.o psp1/kernelFunctions.o
+PSP_OBJECTS = griffin/griffin.o psp1/kernel_functions.o
 
 OBJS = $(PSP_OBJECTS)
 
