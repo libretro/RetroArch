@@ -30,6 +30,7 @@
 #include "../driver.h"
 #include "../libretro.h"
 #include "../general.h"
+#include "../psp1/kernelFunctions.h"
 
 enum {
    PSP_GAMEPAD_CROSS =			      1ULL << 0,
@@ -128,6 +129,7 @@ static void psp_input_poll(void *data)
 #endif
    sceCtrlSetSamplingMode(DEFAULT_SAMPLING_MODE);
    ret = CtrlPeekBufferPositive(0, &state_tmp, 1);
+   state_tmp.Buttons = (state_tmp.Buttons&0x0000FFFF)|(readSystemButtons()&0xFFFF0000);
    (void)ret;
 
    psp->analog_state[0][0][0] = psp->analog_state[0][0][1] = psp->analog_state[0][1][0] = psp->analog_state[0][1][1] = 0;
@@ -159,12 +161,7 @@ static void psp_input_poll(void *data)
 
    *lifecycle_state &= ~((1ULL << RARCH_MENU_TOGGLE));
 
-   if (
-            (psp->pad_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_L))
-         && (psp->pad_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_R))
-         && (psp->pad_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_SELECT))
-         && (psp->pad_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_START))
-         )
+   if (STATE_BUTTON(state_tmp) & PSP_CTRL_NOTE)
       *lifecycle_state |= (1ULL << RARCH_MENU_TOGGLE);
 
    if (g_settings.input.autodetect_enable)
