@@ -77,7 +77,6 @@ static void frontend_psp_salamander_init(void)
 }
 #endif
 
-
 static void frontend_psp_get_environment_settings(int *argc, char *argv[],
       void *args, void *params_data)
 {
