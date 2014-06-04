@@ -32,11 +32,6 @@ char libretro_path[512];
 
 static void find_and_set_first_file(void)
 {
-#ifndef IS_SALAMANDER
-   bool original_verbose = g_extern.verbose;
-   g_extern.verbose = true;
-#endif
-
    //Last fallback - we'll need to start the first executable file 
    // we can find in the RetroArch cores directory
 
@@ -52,7 +47,7 @@ static void find_and_set_first_file(void)
    if(first_file)
    {
 #ifdef _XBOX1
-      fill_pathname_join(libretro_path, "D:", first_file, sizeof(libretro_path));
+      fill_pathname_join(libretro_path, default_paths.core_dir, first_file, sizeof(libretro_path));
 #else
       strlcpy(libretro_path, first_file, sizeof(libretro_path));
 #endif
@@ -60,10 +55,6 @@ static void find_and_set_first_file(void)
    }
    else
       RARCH_ERR("Failed last fallback - RetroArch Salamander will exit.\n");
-
-#ifndef IS_SALAMANDER
-   g_extern.verbose = original_verbose;
-#endif
 }
 
 static void frontend_xdk_salamander_init(void)
