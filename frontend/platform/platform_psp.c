@@ -18,6 +18,7 @@
 #include <pspdebug.h>
 #include <pspfpu.h>
 #include <psppower.h>
+#include <pspsdk.h>
 
 #include <stdint.h>
 #include "../../boolean.h"
@@ -126,6 +127,8 @@ static void frontend_psp_init(void *data)
    
    pspFpuSetEnable(0);//disable FPU exceptions
    scePowerSetClockFrequency(333,333,166);
+
+   pspSdkLoadStartModule("kernelFunctions.prx", PSP_MEMORY_PARTITION_KERNEL);
 }
 
 static void frontend_psp_deinit(void *data)
