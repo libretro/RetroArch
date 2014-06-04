@@ -24,6 +24,8 @@
 
 #if defined(HW_RVL) && !defined(IS_SALAMANDER)
 #include "../../wii/mem2_manager.h"
+#include <ogc/mutex.h>
+#include <ogc/cond.h>
 #endif
 
 #include <stdlib.h>
@@ -40,7 +42,6 @@
 
 #ifdef HW_RVL
 #include <ogc/ios.h>
-#include <ogc/cond.h>
 #include <ogc/usbstorage.h>
 #include <sdcard/wiisd_io.h>
 extern void system_exec_wii(const char *path, bool should_load_game);
