@@ -43,25 +43,7 @@ char eboot_path[512];
 
 char libretro_path[512];
 
-static void find_first_libretro_core(char *first_file,
-   size_t size_of_first_file, const char *dir,
-   const char * ext);
-static void find_and_set_first_file(void)
-{
-   //Last fallback - we'll need to start the first executable file
-   // we can find in the RetroArch cores directory
-
-   char first_file[PATH_MAX];
-   find_first_libretro_core(first_file, sizeof(first_file), default_paths.core_dir, EXT_EXECUTABLES);
-
-   if(first_file)
-   {
-      fill_pathname_join(libretro_path, default_paths.core_dir, first_file, sizeof(libretro_path));
-      RARCH_LOG("libretro_path now set to: %s.\n", libretro_path);
-   }
-   else
-      RARCH_ERR("Failed last fallback - RetroArch Salamander will exit.\n");
-}
+static void find_and_set_first_file(char *path, size_t sizeof_path, const char *ext);
 
 static void frontend_psp_salamander_init(void)
 {
@@ -81,7 +63,7 @@ static void frontend_psp_salamander_init(void)
    }
 
    if (!config_file_exists || !strcmp(libretro_path, ""))
-      find_and_set_first_file();
+      find_and_set_first_file(libretro_path, sizeof(libretro_path), EXT_EXECUTABLES);
    else
       RARCH_LOG("Start [%s] found in retroarch.cfg.\n", libretro_path);
 
