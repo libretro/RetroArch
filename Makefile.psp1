@@ -1,5 +1,6 @@
 BUILD_PRX			= 1
 DEBUG			    = 0
+HAVE_KERNEL_PRX   = 1
 HAVE_FILE_LOGGER	= 0
 HAVE_THREADS 		= 0
 
@@ -28,6 +29,10 @@ endif
 
 ifeq ($(HAVE_FILE_LOGGER), 1)
 CFLAGS		+= -DHAVE_FILE_LOGGER
+endif
+
+ifeq ($(HAVE_KERNEL_RX), 1)
+CFLAGS      += -DHAVE_KERNEL_PRX
 endif
 
 CFLAGS += $(RARCH_DEFINES)

@@ -128,7 +128,9 @@ static void frontend_psp_init(void *data)
    pspFpuSetEnable(0);//disable FPU exceptions
    scePowerSetClockFrequency(333,333,166);
 
+#ifdef HAVE_KERNEL_PRX
    pspSdkLoadStartModule("kernelFunctions.prx", PSP_MEMORY_PARTITION_KERNEL);
+#endif
 }
 
 static void frontend_psp_deinit(void *data)
