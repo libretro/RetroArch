@@ -62,8 +62,11 @@ static void find_and_set_first_file(void)
    find_first_libretro_core(first_file, sizeof(first_file),
    default_paths.core_dir, "dol");
 
-   if(first_file[0])
-      strlcpy(libretro_path, first_file, sizeof(libretro_path));
+   if(first_file)
+   {
+      fill_pathname_join(libretro_path, default_paths.core_dir, first_file, sizeof(libretro_path));
+      RARCH_LOG("libretro_path now set to: %s.\n", libretro_path);
+   }
    else
       RARCH_ERR("Failed last fallback - RetroArch Salamander will exit.\n");
 }
