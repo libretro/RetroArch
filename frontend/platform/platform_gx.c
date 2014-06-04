@@ -40,6 +40,7 @@
 
 #ifdef HW_RVL
 #include <ogc/ios.h>
+#include <ogc/cond.h>
 #include <ogc/usbstorage.h>
 #include <sdcard/wiisd_io.h>
 extern void system_exec_wii(const char *path, bool should_load_game);
@@ -159,9 +160,16 @@ static struct {
    const char *name;
 } gx_devices[GX_DEVICE_END];
 static mutex_t gx_device_mutex;
+static mutex_t gx_device_cond_mutex;
+static cond_t gx_device_cond;
 
 static void *gx_devthread(void *a)
 {
+   struct timespec timeout = {0};
+
+   timeout.tv_sec = 1;
+   timeout.tv_nsec = 0;
+
    while (1)
    {
       LWP_MutexLock(gx_device_mutex);
@@ -177,7 +185,9 @@ static void *gx_devthread(void *a)
          }
       }
       LWP_MutexUnlock(gx_device_mutex);
-      usleep(100000);
+      LWP_MutexLock(gx_device_cond_mutex);
+      LWP_CondTimedWait(gx_device_cond, gx_device_cond_mutex, &timeout);
+      LWP_MutexUnlock(gx_device_cond_mutex);
    }
 
    return NULL;
@@ -327,6 +337,8 @@ static void frontend_gx_init(void *data)
    gx_devices[GX_DEVICE_USB].interface = &__io_usbstorage;
    gx_devices[GX_DEVICE_USB].name = "usb";
    gx_devices[GX_DEVICE_USB].mounted = fatMountSimple(gx_devices[GX_DEVICE_USB].name, gx_devices[GX_DEVICE_USB].interface);
+   LWP_MutexInit(&gx_device_cond_mutex, 0);
+   LWP_CondInit(&gx_device_cond);
    LWP_MutexInit(&gx_device_mutex, false);
    LWP_CreateThread(&gx_device_thread, gx_devthread, NULL, NULL, 0, 66);
 #endif
