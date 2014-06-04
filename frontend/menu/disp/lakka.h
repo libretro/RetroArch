@@ -21,8 +21,17 @@
 #include "../../../gfx/gl_common.h"
 #include "../../../gfx/fonts/fonts.h"
 
+#define DELAY 0.02
+#define HSPACING 300
+#define VSPACING 75
+#define C_ACTIVE_ZOOM 1.0
+#define C_PASSIVE_ZOOM 0.5
+#define I_ACTIVE_ZOOM 0.75
+#define I_PASSIVE_ZOOM 0.35
+
 extern int depth;
 extern int num_categories;
+extern float all_categories_x;
 extern int menu_active_category;
 extern float global_alpha;
 
@@ -80,11 +89,6 @@ typedef struct
 
 extern menu_category_t *categories;
 
-void lakka_switch_items(void);
-void lakka_switch_subitems(void);
-void lakka_open_submenu(void);
-void lakka_close_submenu(void);
-void lakka_switch_categories(void);
 void add_tween(float duration, float target_value, float* subject, easingFunc easing, tweenCallback callback);
 float inOutQuad(float t, float b, float c, float d);
 
