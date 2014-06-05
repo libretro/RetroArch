@@ -291,7 +291,9 @@ static void frontend_gx_exitspawn(char *core_path, size_t sizeof_core_path)
    if (g_extern.lifecycle_state & (1ULL << MODE_EXITSPAWN_START_GAME))
       should_load_game = true;
 
-   frontend_gx_exec(g_settings.libretro, should_load_game);
+   frontend_gx_exec(core_path, should_load_game);
+
+   // FIXME/TODO - hack
    // direct loading failed (out of memory), try to jump to salamander then load the correct core
    fill_pathname_join(core_path, default_paths.core_dir, "boot.dol", sizeof_core_path);
 #endif

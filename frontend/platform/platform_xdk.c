@@ -244,15 +244,12 @@ static void frontend_xdk_exec(const char *path, bool should_load_game);
 
 static void frontend_xdk_exitspawn(char *core_path, size_t sizeof_core_path)
 {
-#ifdef IS_SALAMANDER
-   frontend_xdk_exec(core_path, false);
-#else
    bool should_load_game = false;
+#ifndef IS_SALAMANDER
    if (g_extern.lifecycle_state & (1ULL << MODE_EXITSPAWN_START_GAME))
       should_load_game = true;
-
-   frontend_xdk_exec(g_settings.libretro, should_load_game);
 #endif
+   frontend_xdk_exec(core_path, should_load_game);
 }
 
 #include <stdio.h>
