@@ -900,7 +900,7 @@ static GLuint png_texture_load(const char * file_name, int * width, int * height
 
 static void lakka_context_destroy(void *data)
 {
-   int i, j;
+   int i, j, k;
    gl_t *gl = (gl_t*)driver.video_data;
 
    glDeleteTextures(1, &settings_icon);
@@ -915,14 +915,28 @@ static void lakka_context_destroy(void *data)
    for (i = 1; i < num_categories; i++)
    {
       menu_category_t *category = (menu_category_t*)&categories[i];
+
+      if (!category)
+         continue;
+
       glDeleteTextures(1, &category->icon);
       glDeleteTextures(1, &category->item_icon);
 
-      /*for (j = 0; j < category->num_items; j++)
+      for (j = 0; j < category->num_items; j++)
       {
-         menu_item_t *item = (menu_item_t*)&category->items[j];
-         glDeleteTextures(1, &item->icon);
-      }*/
+         menu_item_t *item;
+         menu_subitem_t *subitem;
+
+         item = (menu_item_t*)&category->items[j];
+
+         if (item)
+         {
+            subitem = (menu_subitem_t*)&item->subitems[j];
+
+            if (subitem)
+               glDeleteTextures(1, &subitem->icon);
+         }
+      }
    }
 
    //if (numtweens)
