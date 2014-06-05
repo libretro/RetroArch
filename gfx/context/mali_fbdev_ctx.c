@@ -26,6 +26,7 @@ static EGLSurface g_egl_surf;
 static EGLDisplay g_egl_dpy;
 static EGLConfig g_config;
 static bool g_resize;
+static unsigned g_width, g_height;
 
 static volatile sig_atomic_t g_quit;
 static void sighandler(int sig)
@@ -47,6 +48,12 @@ static void gfx_ctx_destroy(void *data)
 
    if (g_egl_dpy != EGL_NO_DISPLAY)
    {
+      if (g_egl_ctx != EGL_NO_CONTEXT)
+      {
+         glFlush();
+         glFinish();
+      }
+
       eglMakeCurrent(g_egl_dpy, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
       if (g_egl_ctx != EGL_NO_CONTEXT)
          eglDestroyContext(g_egl_dpy, g_egl_ctx);
@@ -68,11 +75,8 @@ static void gfx_ctx_get_video_size(void *data, unsigned *width, unsigned *height
    (void)data;
    if (g_egl_dpy != EGL_NO_DISPLAY && g_egl_surf != EGL_NO_SURFACE)
    {
-      EGLint gl_width, gl_height;
-      eglQuerySurface(g_egl_dpy, g_egl_surf, EGL_WIDTH, &gl_width);
-      eglQuerySurface(g_egl_dpy, g_egl_surf, EGL_HEIGHT, &gl_height);
-      *width  = gl_width;
-      *height = gl_height;
+      *width  = g_width;
+      *height = g_height;
    }
    else
    {
@@ -186,6 +190,9 @@ static bool gfx_ctx_set_video_mode(void *data,
       width = 1280;
    if (!height || !fullscreen)
       height = 720;
+
+   g_width = width;
+   g_height = height;
 
    static const EGLint attribs[] = {
       EGL_CONTEXT_CLIENT_VERSION, 2, // Use version 2, even for GLES3.
