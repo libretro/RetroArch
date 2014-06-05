@@ -240,6 +240,7 @@ typedef struct gl
    bool hw_render_depth_init;
    bool has_fp_fbo;
    bool has_srgb_fbo;
+   bool has_srgb_fbo_gles3;
 #endif
    bool hw_render_use;
    bool shared_context_use;
