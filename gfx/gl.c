@@ -1858,14 +1858,26 @@ static bool resolve_extensions(gl_t *gl)
                  "32-bit path will require conversion.\n");
    }
 
-   gl->support_unpack_row_length = false;
-   if (gl_query_extension(gl, "GL_EXT_unpack_subimage"))
+   bool gles3 = false;
+   const char *version = (const char*)glGetString(GL_VERSION);
+   unsigned gles_major = 0, gles_minor = 0;
+   // This format is mandated by GLES.
+   if (version && sscanf(version, "OpenGL ES %u.%u", &gles_major, &gles_minor) == 2 && gles_major >= 3)
+   {
+      RARCH_LOG("[GL]: GLES3 or newer detected. Auto-enabling some extensions.\n");
+      gles3 = true;
+   }
+
+   // GLES3 has unpack_subimage and sRGB in core.
+
+   gl->support_unpack_row_length = gles3;
+   if (!gles3 && gl_query_extension(gl, "GL_EXT_unpack_subimage"))
    {
       RARCH_LOG("[GL]: Extension GL_EXT_unpack_subimage, can copy textures faster using UNPACK_ROW_LENGTH.\n");
       gl->support_unpack_row_length = true;
    }
    // No extensions for float FBO currently.
-   gl->has_srgb_fbo = gl_query_extension(gl, "EXT_sRGB");
+   gl->has_srgb_fbo = gles3 || gl_query_extension(gl, "EXT_sRGB");
 #else
 #ifdef HAVE_FBO
    // Float FBO is core in 3.2.
