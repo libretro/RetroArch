@@ -32,8 +32,6 @@ char libretro_path[512];
 
 static void frontend_xdk_salamander_init(void)
 {
-   (void)state;
-
    //normal executable loading path
    char tmp_str[PATH_MAX];
    bool config_file_exists = false;
@@ -49,17 +47,9 @@ static void frontend_xdk_salamander_init(void)
    }
 
    if(!config_file_exists || !strcmp(libretro_path, ""))
-   {
-#if defined(_XBOX360)
-      find_and_set_first_file(libretro_path, sizeof(libretro_path), "xex");
-#elif defined(_XBOX1)
-      find_and_set_first_file(libretro_path, sizeof(libretro_path), "xbe");
-#endif
-   }
+      find_and_set_first_file(libretro_path, sizeof(libretro_path), EXT_EXECUTABLES);
    else
-   {
       RARCH_LOG("Start [%s] found in retroarch.cfg.\n", libretro_path);
-   }
 
    if (!config_file_exists)
    {

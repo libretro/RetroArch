@@ -75,7 +75,7 @@ static void frontend_gx_salamander_init(void)
    }
 
    if(!config_file_exists || !strcmp(libretro_path, ""))
-      find_and_set_first_file(libretro_path, sizeof(libretro_path), "dol");
+      find_and_set_first_file(libretro_path, sizeof(libretro_path), EXT_EXECUTABLES);
    else
    {
       RARCH_LOG("Start [%s] found in retroarch.cfg.\n", libretro_path);
