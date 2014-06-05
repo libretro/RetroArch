@@ -18,6 +18,9 @@
 #ifndef _RARCH_FRONTEND_H
 #define _RARCH_FRONTEND_H
 
+#include <stdint.h>
+#include <stddef.h>
+
 #if defined(ANDROID)
 #define args_type() struct android_app*
 #define signature() void* data

@@ -219,7 +219,7 @@ static bool load_shader(void *data, const char *cgp_path, unsigned i)
 {
    char path_buf[PATH_MAX];
    fill_pathname_resolve_relative(path_buf, cgp_path,
-      cg_shader->pass[i].source.cg, sizeof(path_buf));
+      cg_shader->pass[i].source.path, sizeof(path_buf));
 
    RARCH_LOG("Loading Cg/HLSL shader: \"%s\".\n", path_buf);
 
@@ -243,7 +243,7 @@ static bool load_plain(void *data, const char *path)
    if (path && path[0] != '\0')
    {
       RARCH_LOG("Loading Cg/HLSL file: %s\n", path);
-      strlcpy(cg_shader->pass[0].source.cg, path, sizeof(cg_shader->pass[0].source.cg));
+      strlcpy(cg_shader->pass[0].source.path, path, sizeof(cg_shader->pass[0].source.path));
       if (!load_program(data, 1, path, true))
          return false;
    }
@@ -429,6 +429,17 @@ static bool hlsl_set_mvp(void *data, const math_matrix *mat)
       return false;
 }
 
+static bool hlsl_mipmap_input(unsigned index)
+{
+   (void)index;
+   return false;
+}
+
+static struct gfx_shader *hlsl_get_current_shader(void)
+{
+   return NULL;
+}
+
 const gl_shader_backend_t hlsl_backend = {
    hlsl_init,
    hlsl_deinit,
@@ -441,6 +452,8 @@ const gl_shader_backend_t hlsl_backend = {
    NULL,              /* hlsl_set_coords */
    hlsl_set_mvp,
    NULL,              /* hlsl_get_prev_textures */
+   hlsl_mipmap_input,
+   hlsl_get_current_shader,
 
    RARCH_SHADER_HLSL,
 };

@@ -68,7 +68,6 @@ void apple_joypad_send_hid_control(struct apple_pad_connection* connection, uint
 
 // Input data for the main thread and the game thread
 extern apple_input_data_t g_current_input_data;
-extern apple_input_data_t g_polled_input_data;
 
 // Main thread only
 void apple_input_enable_icade(bool on);

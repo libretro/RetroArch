@@ -47,7 +47,7 @@ else ifeq ($(platform), qnx)
 
    CC = qcc -Vgcc_ntoarmv7le
    AR = qcc -Vgcc_ntoarmv7le
-   CFLAGS += -D__BLACKBERRY_QNX__ -DGLES
+   CFLAGS += -DGLES
    GL_LIB := -lGLESv2
 else ifneq (,$(findstring armv,$(platform)))
    CC = gcc
@@ -120,7 +120,7 @@ endif
 all: $(TARGET)
 
 $(TARGET): $(OBJECTS)
-	$(CC) $(fpic) $(SHARED) $(INCLUDES) -o $@ $(OBJECTS) $(LIBS) -lm
+	$(CC) $(fpic) $(SHARED) $(INCLUDES) -o $@ $(OBJECTS) $(LIBS) -lm $(EXTRA_GL_LIBS)
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c -o $@ $<

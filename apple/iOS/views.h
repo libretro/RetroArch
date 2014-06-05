@@ -17,7 +17,7 @@
 #define _RARCH_APPLE_VIEWS_H
 
 #include <UIKit/UIKit.h>
-#include "frontend/info/core_info.h"
+#include "../../frontend/info/core_info.h"
 
 
 #include "menu.h"

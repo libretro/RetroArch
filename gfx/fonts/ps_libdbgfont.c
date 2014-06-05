@@ -25,7 +25,7 @@
 #define DbgFontExit sceDbgFontExit
 #elif defined(__CELLOS_LV2__)
 #include <cell/dbgfont.h>
-#define SCE_DBGFONT_BUFSIZE_LARGE 1024
+#define SCE_DBGFONT_BUFSIZE_LARGE 2048
 #define DbgFontPrint(x, y, scale, color, msg) cellDbgFontPrintf(x, y, scale, color, msg)
 #define DbgFontConfig CellDbgFontConfig
 #define DbgFontInit cellDbgFontInit

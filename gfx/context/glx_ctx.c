@@ -626,7 +626,7 @@ static void gfx_ctx_bind_hw_render(void *data, bool enable)
    (void)data;
    g_use_hw_ctx = enable;
 
-   if (g_dpy)
+   if (g_dpy && g_glx_win)
    {
       //RARCH_LOG("[GLX]: Binding context (%s): %p\n", enable ? "RetroArch" : "HW render", enable ? (void*)g_hw_ctx : (void*)g_ctx);
       glXMakeContextCurrent(g_dpy, g_glx_win, g_glx_win, enable ? g_hw_ctx : g_ctx);

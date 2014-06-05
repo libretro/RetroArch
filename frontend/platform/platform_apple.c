@@ -17,7 +17,7 @@
 #include "../menu/menu_common.h"
 #include "../../apple/common/rarch_wrapper.h"
 #include "../../apple/common/apple_export.h"
-#include "../../apple/common/setting_data.h"
+#include "../../settings_data.h"
 
 #include "../frontend.h"
 
@@ -34,18 +34,17 @@ extern void apple_rarch_exited(void);
 
 static void do_iteration(void)
 {
-    bool iterate = iterate_observer && apple_is_running && !g_extern.is_paused;
-    
-    if (!iterate)
-        return;
-    
-    if (main_entry_iterate(0, NULL, NULL))
-    {
-        main_exit(NULL);
-        apple_rarch_exited();
-    }
-    else
-        CFRunLoopWakeUp(CFRunLoopGetMain());
+   if (!(iterate_observer && apple_is_running && !g_extern.is_paused))
+      return;
+
+   if (main_entry_iterate(0, NULL, NULL))
+   {
+      main_exit(NULL);
+      apple_rarch_exited();
+      return;
+   }
+
+   CFRunLoopWakeUp(CFRunLoopGetMain());
 }
 
 void apple_start_iteration(void)
@@ -88,37 +87,41 @@ void apple_event_basic_command(enum basic_event_t action)
 
 void apple_refresh_config(void)
 {
-   // Little nudge to prevent stale values when reloading the confg file
+   // Little nudge to prevent stale values when reloading the config file
    g_extern.block_config_read = false;
    memset(g_settings.input.overlay, 0, sizeof(g_settings.input.overlay));
    memset(g_settings.video.shader_path, 0, sizeof(g_settings.video.shader_path));
 
-   if (apple_is_running)
-   {
-      uninit_drivers();
-      config_load();
-      init_drivers();
-   }
+   if (!apple_is_running)
+      return;
+
+   uninit_drivers();
+   config_load();
+   init_drivers();
 }
 
-int apple_rarch_load_content(int argc, char* argv[])
+int apple_rarch_load_content(int *argc, char* argv[])
 {
    rarch_main_clear_state();
    rarch_init_msg_queue();
    
-   if (rarch_main_init(argc, argv))
+   if (rarch_main_init(*argc, argv))
       return 1;
    
-   menu_init();
-   
    if (!g_extern.libretro_dummy)
-      menu_rom_history_push_current();   
+      menu_rom_history_push_current();
    
    g_extern.lifecycle_state |= 1ULL << MODE_GAME;
    
    return 0;
 }
 
+static int frontend_apple_get_rating(void)
+{
+   /* TODO/FIXME - look at unique identifier per device and 
+    * determine rating for some */
+   return -1;
+}
 const frontend_ctx_driver_t frontend_ctx_apple = {
    NULL,                         /* environment_get */
    NULL,                         /* init */
@@ -128,5 +131,6 @@ const frontend_ctx_driver_t frontend_ctx_apple = {
    NULL,                         /* process_events */
    NULL,                         /* exec */
    NULL,                         /* shutdown */
+   frontend_apple_get_rating,    /* get_rating */
    "apple",
 };

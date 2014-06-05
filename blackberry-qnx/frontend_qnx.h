@@ -57,6 +57,19 @@ const struct platform_bind platform_keys[] = {
 };
 #endif
 
+enum input_devices
+{
+   DEVICE_NONE,
+#ifdef HAVE_BB10
+   DEVICE_WIIMOTE,
+   DEVICE_KEYPAD,
+   DEVICE_UNKNOWN,
+#endif
+   DEVICE_KEYBOARD,
+   DEVICE_IPEGA,
+   DEVICE_LAST
+};
+
 extern input_device_t devices[MAX_PADS];
 
 #endif

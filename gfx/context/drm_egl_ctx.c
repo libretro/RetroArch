@@ -805,7 +805,7 @@ static void gfx_ctx_bind_hw_render(void *data, bool enable)
 {
    (void)data;
    g_use_hw_ctx = enable;
-   if (g_egl_dpy)
+   if (g_egl_dpy && g_egl_surf)
       eglMakeCurrent(g_egl_dpy, g_egl_surf, g_egl_surf, enable ? g_egl_hw_ctx : g_egl_ctx);
 }
 

@@ -1,6 +1,5 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2014 - Daniel De Matteis
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -12,176 +11,157 @@
  *
  *  You should have received a copy of the GNU General Public License along with RetroArch.
  *  If not, see <http://www.gnu.org/licenses/>.
- *
  */
 
+#include "dspfilter.h"
 #include <math.h>
-#include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-#include <stdint.h>
-#include "rarch_dsp.h"
-
-// 4 source echo.
-
-#ifndef ALIGNED
-#ifdef __GNUC__
-#define ALIGNED __attribute__((aligned(16)))
-#else
-#define ALIGNED
-#endif
-#endif
 
 #ifndef min
-#define min(a, b) (((a) < (b)) ? (a) : (b))
+#define min(a, b) ((a) < (b) ? (a) : (b))
 #endif
 
-struct echo_filter
+struct echo_channel
 {
-   float *history; // history buffer
-   int pos; // current position in history buffer
-   int amp; // amplification of echoes (0-256)
-   int delay; // delay in number of samples
-   int ms; // delay in miliseconds
-   int rate; // sample rate
-
-   float f_amp; // amplification (0-1)
-   float input_rate;
+   float *buffer;
+   unsigned ptr;
+   unsigned frames;
+   float feedback;
 };
 
-struct echo_filter_data
+struct echo_data
 {
-   struct echo_filter echo_l;
-   struct echo_filter echo_r;
-   float buf[4096];
+   struct echo_channel *channels;
+   unsigned num_channels;
+   float amp;
 };
 
-#ifdef RARCH_INTERNAL
-#define rarch_dsp_plugin_init echo_dsp_plugin_init
-#endif
-
-static float echo_process(void *data, float in)
+static void echo_free(void *data)
 {
-   struct echo_filter *echo = (struct echo_filter*)data;
+   unsigned i;
+   struct echo_data *echo = (struct echo_data*)data;
 
-   float smp = echo->history[echo->pos];
-   smp *= echo->f_amp;	
-   smp += in;
-   echo->history[echo->pos] = smp;
-   echo->pos = (echo->pos + 1) % echo->delay;
-   return smp;
+   for (i = 0; i < echo->num_channels; i++)
+      free(echo->channels[i].buffer);
+   free(echo->channels);
+   free(echo);
 }
 
-static void echo_dsp_process(void *data, rarch_dsp_output_t *output,
-      const rarch_dsp_input_t *input)
+static void echo_process(void *data, struct dspfilter_output *output,
+      const struct dspfilter_input *input)
 {
-   int num_samples, i;
-   struct echo_filter_data *echo = (struct echo_filter_data*)data;
-   output->samples = echo->buf;
-   num_samples = input->frames * 2;
+   unsigned i, c;
+   struct echo_data *echo = (struct echo_data*)data;
 
-   for (i = 0; i < num_samples;)
+   output->samples = input->samples;
+   output->frames  = input->frames;
+
+   float *out = output->samples;
+
+   for (i = 0; i < input->frames; i++, out += 2)
    {
-      echo->buf[i] = echo_process(&echo->echo_l, input->samples[i]);
-      i++;
-      echo->buf[i] = echo_process(&echo->echo_r, input->samples[i]);
-      i++;
-   }
-   output->frames = input->frames;
-}
+      float echo_left  = 0.0f;
+      float echo_right = 0.0f;
 
-static void echo_dsp_free(void *data)
-{
-   struct echo_filter_data *echo = (struct echo_filter_data*)data;
-
-   if (echo)
-      free(echo);
-}
-
-static void echo_set_delay(void *data, int ms)
-{
-   int new_delay, how_much, i;
-   float *new_history;
-   struct echo_filter *echo = (struct echo_filter*)data;
-
-   new_delay = ms * echo->input_rate / 1000;
-   if (new_delay == 0)
-      new_delay = 1;
-
-   new_history = (float*)malloc(new_delay * sizeof(float));
-   memset(new_history, 0, new_delay * sizeof(float));
-
-   if (echo->history)
-   {
-      how_much = echo->delay - echo->pos;
-      how_much = min(how_much, new_delay);
-      memcpy(new_history, echo->history + echo->pos, how_much * sizeof(float));
-
-      if (how_much < new_delay)
+      for (c = 0; c < echo->num_channels; c++)
       {
-         i = how_much;
-         how_much = new_delay - how_much;
-         how_much = min(how_much, echo->delay);
-         how_much = min(how_much, echo->pos);
-         memcpy(new_history + i, echo->history, how_much * sizeof(float));
+         echo_left  += echo->channels[c].buffer[(echo->channels[c].ptr << 1) + 0];
+         echo_right += echo->channels[c].buffer[(echo->channels[c].ptr << 1) + 1];
       }
 
-      if (echo->history)
-         free(echo->history);
+      echo_left  *= echo->amp;
+      echo_right *= echo->amp;
+
+      float left  = out[0] + echo_left;
+      float right = out[1] + echo_right;
+
+      for (c = 0; c < echo->num_channels; c++)
+      {
+         float feedback_left  = out[0] + echo->channels[c].feedback * echo_left;
+         float feedback_right = out[1] + echo->channels[c].feedback * echo_right;
+
+         echo->channels[c].buffer[(echo->channels[c].ptr << 1) + 0] = feedback_left;
+         echo->channels[c].buffer[(echo->channels[c].ptr << 1) + 1] = feedback_right;
+
+         echo->channels[c].ptr = (echo->channels[c].ptr + 1) % echo->channels[c].frames;
+      }
+
+      out[0] = left;
+      out[1] = right;
    }
-   echo->history = new_history;
-   echo->pos = 0;
-   echo->delay = new_delay;
-   echo->ms = ms;
 }
 
-static void *echo_dsp_init(const rarch_dsp_info_t *info)
+static void *echo_init(const struct dspfilter_info *info,
+      const struct dspfilter_config *config, void *userdata)
 {
-   struct echo_filter_data *echo = (struct echo_filter_data*)calloc(1, sizeof(*echo));;
-
+   unsigned i;
+   struct echo_data *echo = (struct echo_data*)calloc(1, sizeof(*echo));
    if (!echo)
       return NULL;
 
-   echo->echo_l.history = NULL;
-   echo->echo_l.input_rate = info->input_rate;
-   echo_set_delay(&echo->echo_l, 200);
-   echo->echo_l.amp = 128;
-   echo->echo_l.f_amp = (float)echo->echo_l.amp / 256.0f;
-   echo->echo_l.pos = 0;
+   float *delay = NULL, *feedback = NULL;
+   unsigned num_delay = 0, num_feedback = 0;
 
-   echo->echo_r.history = NULL;
-   echo->echo_r.input_rate = info->input_rate;
-   echo_set_delay(&echo->echo_r, 200);
-   echo->echo_r.amp = 128;
-   echo->echo_r.f_amp = (float)echo->echo_r.amp / 256.0f;
-   echo->echo_r.pos = 0;
+   static const float default_delay[] = { 200.0f };
+   static const float default_feedback[] = { 0.5f };
 
-   fprintf(stderr, "[Echo] loaded!\n");
+   config->get_float_array(userdata, "delay", &delay, &num_delay, default_delay, 1);
+   config->get_float_array(userdata, "feedback", &feedback, &num_feedback, default_feedback, 1);
+   config->get_float(userdata, "amp", &echo->amp, 0.2f);
 
+   unsigned channels = num_feedback = num_delay = min(num_delay, num_feedback);
+
+   echo->channels = (struct echo_channel*)calloc(channels, sizeof(*echo->channels));
+   if (!echo->channels)
+      goto error;
+
+   echo->num_channels = channels;
+
+   for (i = 0; i < channels; i++)
+   {
+      unsigned frames = (unsigned)(delay[i] * info->input_rate / 1000.0f + 0.5f);
+      if (!frames)
+         goto error;
+
+      echo->channels[i].buffer = (float*)calloc(frames, 2 * sizeof(float));
+      if (!echo->channels[i].buffer)
+         goto error;
+
+      echo->channels[i].frames = frames;
+      echo->channels[i].feedback = feedback[i];
+   }
+
+   config->free(delay);
+   config->free(feedback);
    return echo;
+
+error:
+   config->free(delay);
+   config->free(feedback);
+   echo_free(echo);
+   return NULL;
 }
 
-static void echo_dsp_config(void *data)
-{
-   (void)data;
-}
 
-static const struct dspfilter_implementation generic_echo_dsp = {
-   echo_dsp_init,
-   echo_dsp_process,
-   echo_dsp_free,
-   RARCH_DSP_API_VERSION,
-   echo_dsp_config,
-   "Echo",
-   NULL
+static const struct dspfilter_implementation echo_plug = {
+   echo_init,
+   echo_process,
+   echo_free,
+
+   DSPFILTER_API_VERSION,
+   "Multi-Echo",
+   "echo",
 };
 
-const struct dspfilter_implementation *rarch_dsp_plugin_init(dspfilter_simd_mask_t simd)
+#ifdef HAVE_FILTERS_BUILTIN
+#define dspfilter_get_implementation echo_dspfilter_get_implementation
+#endif
+
+const struct dspfilter_implementation *dspfilter_get_implementation(dspfilter_simd_mask_t mask)
 {
-   (void)simd;
-   return &generic_echo_dsp;
+   (void)mask;
+   return &echo_plug;
 }
 
-#ifdef RARCH_INTERNAL
-#undef rarch_dsp_plugin_init
-#endif
+#undef dspfilter_get_implementation
+

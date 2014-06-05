@@ -16,13 +16,13 @@
 #include <dirent.h>
 #include <sys/stat.h>
 
-#include "file_extract.h"
+#include "../../file_extract.h"
 
-#import "apple/common/RetroArch_Apple.h"
+#import "../common/RetroArch_Apple.h"
 #import "views.h"
 
-#include "conf/config_file.h"
-#include "file.h"
+#include "../../conf/config_file.h"
+#include "../../file.h"
 
 static const void* const associated_module_key = &associated_module_key;
 
@@ -34,7 +34,9 @@ static bool zlib_extract_callback(const char *name,
    
    if (cmode != 0 && cmode != 8)
    {
-      apple_display_alert([NSString stringWithFormat:@"Could not unzip %s (unknown mode %d)", name, cmode], @"Action Failed");
+       char msg[256];
+       snprintf(msg, sizeof(msg), "Could not unzip %s (unknown mode %d)", name, cmode);
+      apple_display_alert(msg, "Action Failed");
       return false;
    }
 
@@ -65,13 +67,13 @@ static bool zlib_extract_callback(const char *name,
 static void unzip_file(const char* path, const char* output_directory)
 {
    if (!path_file_exists(path))
-      apple_display_alert(@"Could not locate zip file.", @"Action Failed");
+      apple_display_alert("Could not locate zip file.", "Action Failed");
    else if (path_is_directory(output_directory))
-      apple_display_alert(@"Output directory for zip must not already exist.", @"Action Failed");
+      apple_display_alert("Output directory for zip must not already exist.", "Action Failed");
    else if (!path_mkdir(output_directory))
-      apple_display_alert(@"Could not create output directory to extract zip.", @"Action Failed");
+      apple_display_alert("Could not create output directory to extract zip.", "Action Failed");
    else if (!zlib_parse_file(path, zlib_extract_callback, (void*)output_directory))
-      apple_display_alert(@"Could not process zip file.", @"Action Failed");
+      apple_display_alert("Could not process zip file.", "Action Failed");
 }
 
 enum file_action { FA_DELETE = 10000, FA_CREATE, FA_MOVE, FA_UNZIP };
@@ -92,7 +94,7 @@ static void file_action(enum file_action action, NSString* source, NSString* tar
    }
 
    if (!result && error)
-      apple_display_alert(error.localizedDescription, @"Action failed");
+      apple_display_alert(error.localizedDescription.UTF8String, "Action failed");
 }
 
 @implementation RADirectoryItem
@@ -369,7 +371,7 @@ static void file_action(enum file_action action, NSString* source, NSString* tar
       [alertView show];
    }
    else if (![action isEqualToString:@"Cancel"])// Zip
-      apple_display_alert(@"Action not supported.", @"Action Failed");
+      apple_display_alert("Action not supported.", "Action Failed");
 }
 
 // Called by various alert views created in this class, the alertView.tag value is the action to take.
@@ -409,20 +411,21 @@ static void file_action(enum file_action action, NSString* source, NSString* tar
       // Parent item
       NSString* sourceItem = _path.stringByDeletingLastPathComponent;
       
-      RAMenuItemBasic* parentItem = [RAMenuItemBasic itemWithDescription:@"<Parent>" association:sourceItem.stringByDeletingLastPathComponent
+      RAMenuItemBasic* parentItem = [RAMenuItemBasic itemWithDescription:BOXSTRING("<Parent>") association:sourceItem.stringByDeletingLastPathComponent
          action:^(id userdata){ [weakSelf moveInto:userdata]; } detail:NULL];
-      [self.sections addObject:@[@"", parentItem]];
+      [self.sections addObject:@[BOXSTRING(""), parentItem]];
 
 
       // List contents
       struct string_list* contents = dir_list_new([_path stringByDeletingLastPathComponent].UTF8String, 0, true);
-      NSMutableArray* items = [NSMutableArray arrayWithObject:@""];
+      NSMutableArray* items = [NSMutableArray arrayWithObject:BOXSTRING("")];
    
       if (contents)
       {
+         int i;
          dir_list_sort(contents, true);
 
-         for (int i = 0; i < contents->size; i ++)
+         for (i = 0; i < contents->size; i ++)
          {
             if (contents->elems[i].attr.b)
             {
@@ -437,7 +440,7 @@ static void file_action(enum file_action action, NSString* source, NSString* tar
          dir_list_free(contents);
       }
 
-      [self setTitle:[@"Move " stringByAppendingString:_path.lastPathComponent]];
+      [self setTitle:[BOXSTRING("Move ") stringByAppendingString:_path.lastPathComponent]];
       
       [self.sections addObject:items];
    }

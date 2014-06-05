@@ -21,7 +21,7 @@
 #import <CoreFoundation/CoreFoundation.h>
 
 #include "../../frontend/info/core_info.h"
-#include "setting_data.h"
+#include "../../settings_data.h"
 #include "apple_export.h"
 
 #define GSEVENT_TYPE_KEYDOWN 10
@@ -57,7 +57,7 @@ extern void apple_start_iteration();
 extern void apple_stop_iteration();
 
 // utility.m
-extern void apple_display_alert(NSString* message, NSString* title);
+extern void apple_display_alert(const char *message, const char *title);
 extern NSString *objc_get_value_from_config(config_file_t* config, NSString* name, NSString* defaultValue);
 extern NSString *apple_get_core_id(const core_info_t *core);
 extern NSString *apple_get_core_display_name(NSString *core_id);

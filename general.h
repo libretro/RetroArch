@@ -29,9 +29,8 @@
 #include "autosave.h"
 #include "dynamic.h"
 #include "cheats.h"
-#include "audio/filters/rarch_dsp.h"
+#include "audio/dsp_filter.h"
 #include "compat/strl.h"
-#include "performance.h"
 #include "core_options.h"
 #include "miscellaneous.h"
 #include "gfx/filter.h"
@@ -93,7 +92,6 @@ enum menu_enums
    MODE_GAME = 0,
    MODE_LOAD_GAME,
    MODE_MENU,
-   MODE_EXIT,
    MODE_MENU_WIDESCREEN,
    MODE_MENU_HD,
    MODE_MENU_PREINIT,
@@ -123,6 +121,24 @@ enum sound_mode_enums
    SOUND_MODE_HEADSET,
 #endif
    SOUND_MODE_LAST
+};
+
+struct defaults
+{
+   char config_path[PATH_MAX];
+   char core_path[PATH_MAX];
+   char autoconfig_dir[PATH_MAX];
+   char audio_filter_dir[PATH_MAX];
+   char assets_dir[PATH_MAX];
+   char core_dir[PATH_MAX];
+   char core_info_dir[PATH_MAX];
+   char overlay_dir[PATH_MAX];
+   char port_dir[PATH_MAX];
+   char shader_dir[PATH_MAX];
+   char savestate_dir[PATH_MAX];
+   char sram_dir[PATH_MAX];
+   char screenshot_dir[PATH_MAX];
+   char system_dir[PATH_MAX];
 };
 
 // All config related settings go here.
@@ -235,9 +251,6 @@ struct settings
 
       char dsp_plugin[PATH_MAX];
       char filter_dir[PATH_MAX];
-#ifdef HAVE_FILTERS_BUILTIN
-      unsigned filter_idx;
-#endif
 
       bool rate_control;
       float rate_control_delta;
@@ -251,9 +264,6 @@ struct settings
       char joypad_driver[32];
       char keyboard_layout[64];
       struct retro_keybind binds[MAX_PLAYERS][RARCH_BIND_LIST_END];
-#ifdef RARCH_CONSOLE
-      struct retro_keybind menu_binds[RARCH_BIND_LIST_END];
-#endif
 
       // Set by autoconfiguration in joypad_autoconfig_dir. Does not override main binds.
       struct retro_keybind autoconf_binds[MAX_PLAYERS][RARCH_BIND_LIST_END];
@@ -290,6 +300,7 @@ struct settings
    unsigned game_history_size;
 
    char libretro[PATH_MAX];
+   char libretro_directory[PATH_MAX];
    unsigned libretro_log_level;
    char libretro_info_path[PATH_MAX];
    char cheat_database[PATH_MAX];
@@ -320,6 +331,7 @@ struct settings
    bool stdin_cmd_enable;
 
    char content_directory[PATH_MAX];
+   char assets_directory[PATH_MAX];
 #if defined(HAVE_MENU)
    char rgui_content_directory[PATH_MAX];
    char rgui_config_directory[PATH_MAX];
@@ -351,6 +363,7 @@ typedef struct rarch_viewport
 struct global
 {
    bool verbose;
+   bool perfcnt_enable;
    bool audio_active;
    bool video_active;
 #ifdef HAVE_CAMERA
@@ -375,6 +388,8 @@ struct global
    bool has_set_state_path;
    bool has_set_libretro_device[MAX_PLAYERS];
    bool has_set_libretro;
+   bool has_set_libretro_directory;
+   bool has_set_verbosity;
 
 #ifdef HAVE_RMENU
    char menu_texture_path[PATH_MAX];
@@ -489,11 +504,7 @@ struct global
       size_t rewind_ptr;
       size_t rewind_size;
 
-#ifdef HAVE_DYLIB
-      dylib_t dsp_lib;
-#endif
-      const struct dspfilter_implementation *dsp_plugin;
-      void *dsp_handle;
+      rarch_dsp_filter_t *dsp;
 
       bool rate_control; 
       double orig_src_ratio;
@@ -589,7 +600,9 @@ struct global
 
    // FFmpeg record.
 #ifdef HAVE_RECORD
-   ffemu_t *rec;
+   const ffemu_backend_t *rec_driver;
+   void *rec;
+
    char record_path[PATH_MAX];
    char record_config[PATH_MAX];
    bool recording;
@@ -693,7 +706,15 @@ struct rarch_main_wrap
    const char *libretro_path;
    bool verbose;
    bool no_rom;
+
+   bool touched;
 };
+
+// Public data structures
+extern struct settings g_settings;
+extern struct global g_extern;
+extern struct defaults default_paths;
+/////////
 
 // Public functions
 void config_load(void);
@@ -720,7 +741,13 @@ void rarch_game_reset(void);
 void rarch_main_clear_state(void);
 void rarch_init_system_info(void);
 int rarch_main(int argc, char *argv[]);
-int rarch_main_init_wrap(const struct rarch_main_wrap *args);
+
+#ifndef MAX_ARGS
+#define MAX_ARGS 32
+#endif
+
+void rarch_main_init_wrap(const struct rarch_main_wrap *args, int *argc, char **argv);
+
 int rarch_main_init(int argc, char *argv[]);
 bool rarch_main_idle_iterate(void);
 bool rarch_main_iterate(void);
@@ -746,16 +773,15 @@ void rarch_load_state(void);
 void rarch_save_state(void);
 void rarch_state_slot_increase(void);
 void rarch_state_slot_decrease(void);
+static inline void rarch_reinit_drivers(void)
+{
+   rarch_set_fullscreen(g_settings.video.fullscreen);
+}
 
 #ifdef HAVE_RECORD
 void rarch_init_recording(void);
 void rarch_deinit_recording(void);
 #endif
-/////////
-
-// Public data structures
-extern struct settings g_settings;
-extern struct global g_extern;
 /////////
 
 #ifdef __cplusplus

@@ -32,6 +32,9 @@ static const gfx_ctx_driver_t *gfx_ctx_drivers[] = {
 #if defined(HAVE_VIDEOCORE)
    &gfx_ctx_videocore,
 #endif
+#if defined(HAVE_MALI_FBDEV)
+   &gfx_ctx_mali_fbdev,
+#endif
 #if defined(_WIN32) && defined(HAVE_OPENGL)
    &gfx_ctx_wgl,
 #endif
@@ -47,7 +50,7 @@ static const gfx_ctx_driver_t *gfx_ctx_drivers[] = {
 #if defined(ANDROID)
    &gfx_ctx_android,
 #endif
-#if defined(__BLACKBERRY_QNX__)
+#if defined(__QNX__)
    &gfx_ctx_bbqnx,
 #endif
 #if defined(IOS) || defined(OSX) //< Don't use __APPLE__ as it breaks basic SDL builds

@@ -1,5 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
+ *  Copyright (C) 2011-2014 - Daniel De Matteis
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -26,11 +27,15 @@
 #include "audio/resampler.h"
 #include "gfx/thread_wrapper.h"
 #include "audio/thread_wrapper.h"
-#include "audio/filters/rarch_dsp.h"
+#include "audio/dsp_filter.h"
 #include "gfx/gfx_common.h"
 
 #ifdef HAVE_X11
 #include "gfx/context/x11_common.h"
+#endif
+
+#ifdef HAVE_MENU
+#include "frontend/menu/menu_common.h"
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -175,7 +180,7 @@ static const input_driver_t *input_drivers[] = {
 #if defined(IOS) || defined(OSX) //< Don't use __APPLE__ as it breaks basic SDL builds
    &input_apple,
 #endif
-#ifdef __BLACKBERRY_QNX__
+#ifdef __QNX__
    &input_qnx,
 #endif
 #ifdef EMSCRIPTEN
@@ -188,174 +193,19 @@ static const input_driver_t *input_drivers[] = {
 };
 
 #ifdef HAVE_OSK
-static const input_osk_driver_t *osk_drivers[] = {
-#ifdef __CELLOS_LV2__
-   &input_ps3_osk,
-#endif
-   NULL,
-};
-
-static int find_osk_driver_index(const char *driver)
-{
-   unsigned i;
-   for (i = 0; osk_drivers[i]; i++)
-      if (strcasecmp(driver, osk_drivers[i]->ident) == 0)
-         return i;
-   return -1;
-}
-
-static void find_osk_driver(void)
-{
-   int i = find_osk_driver_index(g_settings.osk.driver);
-   if (i >= 0)
-      driver.osk = osk_drivers[i];
-   else
-   {
-      unsigned d;
-      RARCH_ERR("Couldn't find any OSK driver named \"%s\"\n", g_settings.osk.driver);
-      RARCH_LOG_OUTPUT("Available OSK drivers are:\n");
-      for (d = 0; osk_drivers[d]; d++)
-         RARCH_LOG_OUTPUT("\t%s\n", osk_drivers[d]->ident);
-
-      rarch_fail(1, "find_osk_driver()");
-   }
-}
-
-void find_prev_osk_driver(void)
-{
-   int i = find_osk_driver_index(g_settings.osk.driver);
-   if (i > 0)
-      strlcpy(g_settings.osk.driver, osk_drivers[i - 1]->ident, sizeof(g_settings.osk.driver));
-   else
-      RARCH_WARN("Couldn't find any previous osk driver (current one: \"%s\").\n", g_settings.osk.driver);
-}
-
-void find_next_osk_driver(void)
-{
-   int i = find_osk_driver_index(g_settings.osk.driver);
-   if (i >= 0 && osk_drivers[i + 1])
-      strlcpy(g_settings.osk.driver, osk_drivers[i + 1]->ident, sizeof(g_settings.osk.driver));
-   else
-      RARCH_WARN("Couldn't find any next osk driver (current one: \"%s\").\n", g_settings.osk.driver);
-}
+#include "driver-contexts/osk_driver.c"
 #endif
 
 #ifdef HAVE_CAMERA
-static const camera_driver_t *camera_drivers[] = {
-#ifdef HAVE_V4L2
-   &camera_v4l2,
-#endif
-#ifdef EMSCRIPTEN
-   &camera_rwebcam,
-#endif
-#ifdef ANDROID
-   &camera_android,
-#endif
-#ifdef IOS
-   &camera_ios,
-#endif
-   NULL,
-};
-
-static int find_camera_driver_index(const char *driver)
-{
-   unsigned i;
-   for (i = 0; camera_drivers[i]; i++)
-      if (strcasecmp(driver, camera_drivers[i]->ident) == 0)
-         return i;
-   return -1;
-}
-
-static void find_camera_driver(void)
-{
-   int i = find_camera_driver_index(g_settings.camera.driver);
-   if (i >= 0)
-      driver.camera = camera_drivers[i];
-   else
-   {
-      unsigned d;
-      RARCH_ERR("Couldn't find any camera driver named \"%s\"\n", g_settings.camera.driver);
-      RARCH_LOG_OUTPUT("Available camera drivers are:\n");
-      for (d = 0; camera_drivers[d]; d++)
-         RARCH_LOG_OUTPUT("\t%s\n", camera_drivers[d]->ident);
-
-      rarch_fail(1, "find_camera_driver()");
-   }
-}
-
-void find_prev_camera_driver(void)
-{
-   int i = find_camera_driver_index(g_settings.camera.driver);
-   if (i > 0)
-      strlcpy(g_settings.camera.driver, camera_drivers[i - 1]->ident, sizeof(g_settings.camera.driver));
-   else
-      RARCH_WARN("Couldn't find any previous camera driver (current one: \"%s\").\n", g_settings.camera.driver);
-}
-
-void find_next_camera_driver(void)
-{
-   int i = find_camera_driver_index(g_settings.camera.driver);
-   if (i >= 0 && camera_drivers[i + 1])
-      strlcpy(g_settings.camera.driver, camera_drivers[i + 1]->ident, sizeof(g_settings.camera.driver));
-   else
-      RARCH_WARN("Couldn't find any next camera driver (current one: \"%s\").\n", g_settings.camera.driver);
-}
+#include "driver-contexts/camera_driver.c"
 #endif
 
 #ifdef HAVE_LOCATION
-static const location_driver_t *location_drivers[] = {
-#ifdef ANDROID
-   &location_android,
+#include "driver-contexts/location_driver.c"
 #endif
-#if defined(IOS) || defined(OSX)
-   &location_apple,
-#endif
-   NULL,
-};
 
-static int find_location_driver_index(const char *driver)
-{
-   unsigned i;
-   for (i = 0; location_drivers[i]; i++)
-      if (strcasecmp(driver, location_drivers[i]->ident) == 0)
-         return i;
-   return -1;
-}
-
-static void find_location_driver(void)
-{
-   int i = find_location_driver_index(g_settings.location.driver);
-   if (i >= 0)
-      driver.location = location_drivers[i];
-   else
-   {
-      unsigned d;
-      RARCH_ERR("Couldn't find any location driver named \"%s\"\n", g_settings.location.driver);
-      RARCH_LOG_OUTPUT("Available location drivers are:\n");
-      for (d = 0; location_drivers[d]; d++)
-         RARCH_LOG_OUTPUT("\t%s\n", location_drivers[d]->ident);
-
-      rarch_fail(1, "find_location_driver()");
-   }
-}
-
-void find_prev_location_driver(void)
-{
-   int i = find_location_driver_index(g_settings.location.driver);
-   if (i > 0)
-      strlcpy(g_settings.location.driver, location_drivers[i - 1]->ident, sizeof(g_settings.location.driver));
-   else
-      RARCH_WARN("Couldn't find any previous location driver (current one: \"%s\").\n", g_settings.location.driver);
-}
-
-void find_next_location_driver(void)
-{
-   int i = find_location_driver_index(g_settings.location.driver);
-   if (i >= 0 && location_drivers[i + 1])
-      strlcpy(g_settings.location.driver, location_drivers[i + 1]->ident, sizeof(g_settings.location.driver));
-   else
-      RARCH_WARN("Couldn't find any next location driver (current one: \"%s\").\n", g_settings.location.driver);
-}
+#ifdef HAVE_MENU
+#include "driver-contexts/menu_driver.c"
 #endif
 
 static int find_audio_driver_index(const char *driver)
@@ -448,7 +298,7 @@ static void find_video_driver(void)
 
 void find_prev_video_driver(void)
 {
-   // No need to enforce GL if HW render. This is done at driver init anyways.
+   // No need to enforce GL if HW render. This is done at driver initialize anyways.
    int i = find_video_driver_index(g_settings.video.driver);
    if (i > 0)
       strlcpy(g_settings.video.driver, video_drivers[i - 1]->ident, sizeof(g_settings.video.driver));
@@ -458,7 +308,7 @@ void find_prev_video_driver(void)
 
 void find_next_video_driver(void)
 {
-   // No need to enforce GL if HW render. This is done at driver init anyways.
+   // No need to enforce GL if HW render. This is done at driver initialize anyways.
    int i = find_video_driver_index(g_settings.video.driver);
    if (i >= 0 && video_drivers[i + 1])
       strlcpy(g_settings.video.driver, video_drivers[i + 1]->ident, sizeof(g_settings.video.driver));
@@ -514,6 +364,9 @@ void init_drivers_pre(void)
 #endif
 #ifdef HAVE_OSK
    find_osk_driver();
+#endif
+#ifdef HAVE_MENU
+   find_menu_driver();
 #endif
 }
 
@@ -613,67 +466,6 @@ float driver_sensor_get_input(unsigned port, unsigned id)
       return 0.0f;
 }
 
-#ifdef HAVE_CAMERA
-bool driver_camera_start(void)
-{
-   if (driver.camera && driver.camera_data && g_settings.camera.allow)
-      return driver.camera->start(driver.camera_data);
-   else
-      return false;
-}
-
-void driver_camera_stop(void)
-{
-   if (driver.camera && driver.camera_data)
-      driver.camera->stop(driver.camera_data);
-}
-
-void driver_camera_poll(void)
-{
-   if (driver.camera && driver.camera_data)
-   {
-      driver.camera->poll(driver.camera_data,
-            g_extern.system.camera_callback.frame_raw_framebuffer,
-            g_extern.system.camera_callback.frame_opengl_texture);
-   }
-}
-#endif
-
-#ifdef HAVE_LOCATION
-bool driver_location_start(void)
-{
-   if (driver.location && driver.location_data && g_settings.location.allow)
-      return driver.location->start(driver.location_data);
-   else
-      return false;
-}
-
-void driver_location_stop(void)
-{
-   if (driver.location && driver.location_data)
-      driver.location->stop(driver.location_data);
-}
-
-void driver_location_set_interval(unsigned interval_msecs, unsigned interval_distance)
-{
-   if (driver.location && driver.location_data)
-      driver.location->set_interval(driver.location_data, interval_msecs, interval_distance);
-}
-
-bool driver_location_get_position(double *lat, double *lon, double *horiz_accuracy,
-      double *vert_accuracy)
-{
-   if (driver.location && driver.location_data)
-      return driver.location->get_position(driver.location_data, lat, lon, horiz_accuracy, vert_accuracy);
-
-   *lat = 0.0;
-   *lon = 0.0;
-   *horiz_accuracy = 0.0;
-   *vert_accuracy = 0.0;
-   return false;
-}
-#endif
-
 uintptr_t driver_get_current_framebuffer(void)
 {
 #ifdef HAVE_FBO
@@ -697,7 +489,7 @@ retro_proc_address_t driver_get_proc_address(const char *sym)
 bool driver_update_system_av_info(const struct retro_system_av_info *info)
 {
    g_extern.system.av_info = *info;
-   rarch_set_fullscreen(g_settings.video.fullscreen);
+   rarch_reinit_drivers();
    // Cannot continue recording with different parameters.
    // Take the easiest route out and just restart the recording.
 #ifdef HAVE_RECORD
@@ -713,147 +505,44 @@ bool driver_update_system_av_info(const struct retro_system_av_info *info)
    return true;
 }
 
-// Only called once on init and deinit.
-// Video and input drivers need to be active (owned)
-// before retroarch core starts.
-// Core handles audio.
-
-void global_init_drivers(void)
+#ifdef HAVE_MENU
+static void init_menu(void)
 {
-   find_audio_driver();
-   find_input_driver();
-   init_video_input();
-}
-
-void global_uninit_drivers(void)
-{
-   if (driver.video && driver.video_data)
-   {
-      driver.video->free(driver.video_data);
-      driver.video_data = NULL;
-   }
-
-   if (driver.input && driver.input_data)
-   {
-      driver.input->free(driver.input_data);
-      driver.input_data = NULL;
-   }
-
-#ifdef HAVE_CAMERA
-   if (driver.camera && driver.camera_data)
-   {
-      if (g_extern.system.camera_callback.deinitialized)
-         g_extern.system.camera_callback.deinitialized();
-      driver.camera->free(driver.camera_data);
-      driver.camera_data = NULL;
-   }
-#endif
-
-#ifdef HAVE_LOCATION
-   if (driver.location && driver.location_data)
-   {
-      if (g_extern.system.location_callback.deinitialized)
-         g_extern.system.location_callback.deinitialized();
-      driver.location->free(driver.location_data);
-      driver.location_data = NULL;
-   }
-#endif
-
-#ifdef HAVE_OSK
-   if (driver.osk && driver.osk_data)
-   {
-      driver.osk->free(driver.osk_data);
-      driver.osk_data = NULL;
-   }
-#endif
-}
-
-#ifdef HAVE_CAMERA
-void init_camera(void)
-{
-   // Resource leaks will follow if camera is initialized twice.
-   if (driver.camera_data)
+   if (driver.menu)
       return;
 
-   find_camera_driver();
-
-   driver.camera_data = camera_init_func(
-         *g_settings.camera.device ? g_settings.camera.device : NULL,
-         g_extern.system.camera_callback.caps,
-         g_settings.camera.width ? g_settings.camera.width : g_extern.system.camera_callback.width,
-         g_settings.camera.height ? g_settings.camera.height : g_extern.system.camera_callback.height);
-
-   if (!driver.camera_data)
+   find_menu_driver();
+   if (!(driver.menu = (rgui_handle_t*)menu_init(driver.menu_ctx)))
    {
-      RARCH_ERR("Failed to initialize camera driver. Will continue without camera.\n");
-      g_extern.camera_active = false;
-   }
-
-   if (g_extern.system.camera_callback.initialized)
-      g_extern.system.camera_callback.initialized();
-}
-#endif
-
-#ifdef HAVE_LOCATION
-void init_location(void)
-{
-   // Resource leaks will follow if location interface is initialized twice.
-   if (driver.location_data)
-      return;
-
-   find_location_driver();
-
-   driver.location_data = location_init_func();
-
-   if (!driver.location_data)
-   {
-      RARCH_ERR("Failed to initialize location driver. Will continue without location.\n");
-      g_extern.location_active = false;
-   }
-
-   if (g_extern.system.location_callback.initialized)
-      g_extern.system.location_callback.initialized();
-}
-#endif
-
-#ifdef HAVE_OSK
-void init_osk(void)
-{
-   // Resource leaks will follow if osk is initialized twice.
-   if (driver.osk_data)
-      return;
-
-   find_osk_driver();
-
-   //FIXME - refactor params later based on semantics 
-   driver.osk_data = osk_init_func(0);
-
-   if (!driver.osk_data)
-   {
-      RARCH_ERR("Failed to initialize OSK driver. Will continue without OSK.\n");
-      g_extern.osk_active = false;
+      RARCH_ERR("Cannot initialize menu.\n");
+      rarch_fail(1, "init_menu()");
    }
 }
 #endif
 
 void init_drivers(void)
 {
-   driver.video_data_own = !driver.video_data;
-   driver.audio_data_own = !driver.audio_data;
-   driver.input_data_own = !driver.input_data;
+   driver.video_data_own = false;
+   driver.audio_data_own = false;
+   driver.input_data_own = false;
 #ifdef HAVE_CAMERA
-   driver.camera_data_own = !driver.camera_data;
+   driver.camera_data_own = false;
 #endif
 #ifdef HAVE_LOCATION
-   driver.location_data_own = !driver.location_data;
+   driver.location_data_own = false;
 #endif
 #ifdef HAVE_OSK
-   driver.osk_data_own = !driver.osk_data;
+   driver.osk_data_own = false;
+#endif
+#ifdef HAVE_MENU
+   // By default, we want the menu to persist through driver reinits.
+   driver.menu_data_own = true;
 #endif
 
    adjust_system_rates();
 
    g_extern.frame_count = 0;
+
    init_video_input();
 
    if (!driver.video_cache_context_ack && g_extern.system.hw_render_callback.context_reset)
@@ -863,19 +552,26 @@ void init_drivers(void)
    init_audio();
 
 #ifdef HAVE_CAMERA
-   // Only init camera driver if we're ever going to use it.
+   // Only initialize camera driver if we're ever going to use it.
    if (g_extern.camera_active)
       init_camera();
 #endif
 
 #ifdef HAVE_LOCATION
-   // Only init location driver if we're ever going to use it.
+   // Only initialize location driver if we're ever going to use it.
    if (g_extern.location_active)
       init_location();
 #endif
 
 #ifdef HAVE_OSK
    init_osk();
+#endif
+
+#ifdef HAVE_MENU
+   init_menu();
+
+   if (driver.menu && driver.menu_ctx && driver.menu_ctx->context_reset)
+      driver.menu_ctx->context_reset(driver.menu);
 #endif
 
    // Keep non-throttled state as good as possible.
@@ -885,37 +581,53 @@ void init_drivers(void)
    g_extern.system.frame_time_last = 0;
 }
 
-#ifdef HAVE_CAMERA
-void uninit_camera(void)
+void rarch_deinit_filter(void)
 {
-   if (driver.camera_data && driver.camera)
+   rarch_softfilter_free(g_extern.filter.filter);
+   free(g_extern.filter.buffer);
+   memset(&g_extern.filter, 0, sizeof(g_extern.filter));
+}
+
+static void deinit_pixel_converter(void)
+{
+   scaler_ctx_gen_reset(&driver.scaler);
+   memset(&driver.scaler, 0, sizeof(driver.scaler));
+   free(driver.scaler_out);
+   driver.scaler_out = NULL;
+}
+
+static void deinit_shader_dir(void)
+{
+   // It handles NULL, no worries :D
+   dir_list_free(g_extern.shader_dir.list);
+   g_extern.shader_dir.list = NULL;
+   g_extern.shader_dir.ptr  = 0;
+}
+
+static void compute_monitor_fps_statistics(void)
+{
+   if (g_settings.video.threaded)
    {
-      if (g_extern.system.camera_callback.deinitialized)
-         g_extern.system.camera_callback.deinitialized();
-      driver.camera->free(driver.camera_data);
+      RARCH_LOG("Monitor FPS estimation is disabled for threaded video.\n");
+      return;
+   }
+
+   if (g_extern.measure_data.frame_time_samples_count < 2 * MEASURE_FRAME_TIME_SAMPLES_COUNT)
+   {
+      RARCH_LOG("Does not have enough samples for monitor refresh rate estimation. Requires to run for at least %u frames.\n",
+            2 * MEASURE_FRAME_TIME_SAMPLES_COUNT);
+      return;
+   }
+
+   double avg_fps = 0.0;
+   double stddev = 0.0;
+   unsigned samples = 0;
+   if (driver_monitor_fps_statistics(&avg_fps, &stddev, &samples))
+   {
+      RARCH_LOG("Average monitor Hz: %.6f Hz. (%.3f %% frame time deviation, based on %u last samples).\n",
+            avg_fps, 100.0 * stddev, samples);
    }
 }
-#endif
-
-#ifdef HAVE_LOCATION
-void uninit_location(void)
-{
-   if (driver.location_data && driver.location)
-   {
-      if (g_extern.system.location_callback.deinitialized)
-         g_extern.system.location_callback.deinitialized();
-      driver.location->free(driver.location_data);
-   }
-}
-#endif
-
-#ifdef HAVE_OSK
-void uninit_osk(void)
-{
-   if (driver.osk_data && driver.osk)
-      driver.osk->free(driver.osk_data);
-}
-#endif
 
 void uninit_drivers(void)
 {
@@ -924,187 +636,69 @@ void uninit_drivers(void)
    if (g_extern.system.hw_render_callback.context_destroy && !driver.video_cache_context)
       g_extern.system.hw_render_callback.context_destroy();
 
+#ifdef HAVE_MENU
+   if (driver.menu && driver.menu_ctx && driver.menu_ctx->context_destroy)
+      driver.menu_ctx->context_destroy(driver.menu);
+
+   if (!driver.menu_data_own)
+   {
+      menu_free(driver.menu);
+      driver.menu = NULL;
+   }
+#endif
+
    uninit_video_input();
 
-#ifdef HAVE_CAMERA
-   uninit_camera();
+   if (!driver.video_data_own)
+      driver.video_data = NULL;
 
-   if (driver.camera_data_own)
+#ifdef HAVE_CAMERA
+   if (!driver.camera_data_own)
+   {
+      uninit_camera();
       driver.camera_data = NULL;
+   }
 #endif
 
 #ifdef HAVE_LOCATION
-   uninit_location();
-
-   if (driver.location_data_own)
+   if (!driver.location_data_own)
+   {
+      uninit_location();
       driver.location_data = NULL;
+   }
 #endif
    
 #ifdef HAVE_OSK
-   uninit_osk();
-
-   if (driver.osk_data_own)
+   if (!driver.osk_data_own)
+   {
+      uninit_osk();
       driver.osk_data = NULL;
+   }
 #endif
-   if (driver.video_data_own)
-      driver.video_data = NULL;
-   if (driver.audio_data_own)
-      driver.audio_data = NULL;
-   if (driver.input_data_own)
+
+   if (!driver.input_data_own)
       driver.input_data = NULL;
 
-#ifdef HAVE_CAMERA
-   driver.camera_data_own = false;
-#endif
-#ifdef HAVE_LOCATION
-   driver.location_data_own = false;
-#endif
-#ifdef HAVE_OSK
-   driver.osk_data_own    = false;
-#endif
-   driver.video_data_own  = false;
-   driver.audio_data_own  = false;
-   driver.input_data_own  = false;
-}
-
-#ifdef HAVE_FILTERS_BUILTIN
-static const struct dspfilter_implementation *(*dspfilter_drivers[]) (dspfilter_simd_mask_t) =
-{
-   NULL,
-   &echo_dsp_plugin_init,
-#ifndef _WIN32
-#ifndef ANDROID
-   &eq_dsp_plugin_init,
-#endif
-#endif
-   &iir_dsp_plugin_init,
-   &phaser_dsp_plugin_init,
-   &reverb_dsp_plugin_init,
-   &volume_dsp_plugin_init,
-   &wah_dsp_plugin_init,
-};
-
-unsigned dspfilter_get_last_idx(void)
-{
-   return sizeof(dspfilter_drivers) / sizeof(dspfilter_drivers[0]);
-}
-
-static dspfilter_get_implementation_t dspfilter_get_implementation_from_idx(unsigned i)
-{
-   if (i < dspfilter_get_last_idx())
-      return dspfilter_drivers[i];
-   return NULL;
-}
-
-#endif
-
-
-const char *rarch_dspfilter_get_name(void *data)
-{
-   const struct dspfilter_implementation *impl;
-   (void)data;
-#ifdef HAVE_FILTERS_BUILTIN
-   unsigned cpu_features;
-   dspfilter_get_implementation_t cb = (dspfilter_get_implementation_t)dspfilter_get_implementation_from_idx(g_settings.audio.filter_idx);
-   if (cb)
-   {
-      cpu_features = rarch_get_cpu_features();
-      impl = (const struct dspfilter_implementation *)cb(cpu_features);
-      if (impl)
-         return impl->ident;
-   }
-
-   return NULL;
-#else
-   impl = (const struct dspfilter_implementation*)data;
-   if (!impl || !impl->ident)
-      return NULL;
-
-   return impl->ident;
-#endif
+   if (!driver.audio_data_own)
+      driver.audio_data = NULL;
 }
 
 void rarch_init_dsp_filter(void)
 {
-   unsigned cpu_features;
-   dspfilter_get_implementation_t cb;
-   rarch_dsp_info_t info = {0};
-
-#ifdef HAVE_FILTERS_BUILTIN
-   if (!g_settings.audio.filter_idx)
-#else
-   if (!(*g_settings.audio.dsp_plugin))
-#endif
+   rarch_deinit_dsp_filter();
+   if (!*g_settings.audio.dsp_plugin)
       return;
 
-   cb = NULL;
-
-#if defined(HAVE_FILTERS_BUILTIN)
-   cb = (dspfilter_get_implementation_t)dspfilter_get_implementation_from_idx(g_settings.audio.filter_idx);
-#elif defined(HAVE_DYLIB)
-   g_extern.audio_data.dsp_lib = dylib_load(g_settings.audio.dsp_plugin);
-   if (!g_extern.audio_data.dsp_lib)
-   {
-      RARCH_ERR("Failed to open DSP plugin: \"%s\" ...\n", g_settings.audio.dsp_plugin);
-      return;
-   }
-
-    cb = (dspfilter_get_implementation_t)dylib_proc(g_extern.audio_data.dsp_lib, "rarch_dsp_plugin_init");
-#endif
-
-   if (!cb)
-   {
-      RARCH_ERR("Failed to find symbol \"rarch_dsp_plugin_init\" in DSP plugin.\n");
-      goto error;
-   }
-
-   cpu_features = rarch_get_cpu_features();
-   g_extern.audio_data.dsp_plugin = cb(cpu_features);
-
-   if (!g_extern.audio_data.dsp_plugin)
-   {
-      RARCH_ERR("Failed to get a valid DSP plugin.\n");
-      goto error;
-   }
-
-   if (g_extern.audio_data.dsp_plugin->api_version != RARCH_DSP_API_VERSION)
-   {
-      RARCH_ERR("DSP plugin API mismatch. RetroArch: %d, Plugin: %d\n", RARCH_DSP_API_VERSION, g_extern.audio_data.dsp_plugin->api_version);
-      goto error;
-   }
-
-   RARCH_LOG("Loaded DSP plugin: \"%s\"\n", g_extern.audio_data.dsp_plugin->ident ? g_extern.audio_data.dsp_plugin->ident : "Unknown");
-
-   info.input_rate = g_settings.audio.in_rate;
-
-   g_extern.audio_data.dsp_handle = g_extern.audio_data.dsp_plugin->init(&info);
-   if (!g_extern.audio_data.dsp_handle)
-   {
-      RARCH_ERR("Failed to init DSP plugin.\n");
-      goto error;
-   }
-
-   return;
-
-error:
-#ifdef HAVE_DYLIB
-   if (g_extern.audio_data.dsp_lib)
-      dylib_close(g_extern.audio_data.dsp_lib);
-   g_extern.audio_data.dsp_lib = NULL;
-#endif
-   g_extern.audio_data.dsp_plugin = NULL;
+   g_extern.audio_data.dsp = rarch_dsp_filter_new(g_settings.audio.dsp_plugin, g_settings.audio.in_rate);
+   if (!g_extern.audio_data.dsp)
+      RARCH_ERR("[DSP]: Failed to initialize DSP filter \"%s\".\n", g_settings.audio.dsp_plugin);
 }
 
 void rarch_deinit_dsp_filter(void)
 {
-   if (g_extern.audio_data.dsp_plugin && g_extern.audio_data.dsp_plugin->free)
-      g_extern.audio_data.dsp_plugin->free(g_extern.audio_data.dsp_handle);
-#ifdef HAVE_DYLIB
-   if (g_extern.audio_data.dsp_lib)
-      dylib_close(g_extern.audio_data.dsp_lib);
-#endif
-   g_extern.audio_data.dsp_handle = NULL;
-   g_extern.audio_data.dsp_plugin = NULL;
+   if (g_extern.audio_data.dsp)
+      rarch_dsp_filter_free(g_extern.audio_data.dsp);
+   g_extern.audio_data.dsp = NULL;
 }
 
 void init_audio(void)
@@ -1295,31 +889,6 @@ bool driver_monitor_fps_statistics(double *refresh_rate, double *deviation, unsi
    return true;
 }
 
-static void compute_monitor_fps_statistics(void)
-{
-   if (g_settings.video.threaded)
-   {
-      RARCH_LOG("Monitor FPS estimation is disabled for threaded video.\n");
-      return;
-   }
-
-   if (g_extern.measure_data.frame_time_samples_count < 2 * MEASURE_FRAME_TIME_SAMPLES_COUNT)
-   {
-      RARCH_LOG("Does not have enough samples for monitor refresh rate estimation. Requires to run for at least %u frames.\n",
-            2 * MEASURE_FRAME_TIME_SAMPLES_COUNT);
-      return;
-   }
-
-   double avg_fps = 0.0;
-   double stddev = 0.0;
-   unsigned samples = 0;
-   if (driver_monitor_fps_statistics(&avg_fps, &stddev, &samples))
-   {
-      RARCH_LOG("Average monitor Hz: %.6f Hz. (%.3f %% frame time deviation, based on %u last samples).\n",
-            avg_fps, 100.0 * stddev, samples);
-   }
-}
-
 void uninit_audio(void)
 {
    if (driver.audio_data && driver.audio)
@@ -1351,22 +920,13 @@ void uninit_audio(void)
    compute_audio_buffer_statistics();
 }
 
-void rarch_deinit_filter(void)
-{
-   rarch_softfilter_free(g_extern.filter.filter);
-   free(g_extern.filter.buffer);
-   memset(&g_extern.filter, 0, sizeof(g_extern.filter));
-}
-
 void rarch_init_filter(enum retro_pixel_format colfmt)
 {
    rarch_deinit_filter();
-#ifdef HAVE_FILTERS_BUILTIN
-   if (!g_settings.video.filter_idx)
-#else
+#ifndef HAVE_FILTERS_BUILTIN
    if (!*g_settings.video.filter_path)
-#endif
       return;
+#endif
 
    // Deprecated format. Gets pre-converted.
    if (colfmt == RETRO_PIXEL_FORMAT_0RGB1555)
@@ -1385,9 +945,7 @@ void rarch_init_filter(enum retro_pixel_format colfmt)
    unsigned pow2_y  = 0;
    unsigned maxsize = 0;
 
-#ifdef HAVE_FILTERS_BUILTIN
-   RARCH_LOG("Loading softfilter %d\n", g_settings.video.filter_idx);
-#else
+#ifndef HAVE_FILTERS_BUILTIN
    RARCH_LOG("Loading softfilter from \"%s\"\n", g_settings.video.filter_path);
 #endif
    g_extern.filter.filter = rarch_softfilter_new(g_settings.video.filter_path,
@@ -1395,11 +953,7 @@ void rarch_init_filter(enum retro_pixel_format colfmt)
 
    if (!g_extern.filter.filter)
    {
-#ifdef HAVE_FILTERS_BUILTIN
-      RARCH_LOG("Loading softfilter %d\n", g_settings.video.filter_idx);
-#else
-      RARCH_ERR("Failed to load filter \"%s\"\n", g_settings.video.filter_path);
-#endif
+      RARCH_ERR("Failed to load filter.\n");
       return;
    }
 
@@ -1420,16 +974,8 @@ void rarch_init_filter(enum retro_pixel_format colfmt)
    return;
 
 error:
-   RARCH_ERR("Softfilter init failed.\n");
+   RARCH_ERR("Softfilter initialization failed.\n");
    rarch_deinit_filter();
-}
-
-static void deinit_shader_dir(void)
-{
-   // It handles NULL, no worries :D
-   dir_list_free(g_extern.shader_dir.list);
-   g_extern.shader_dir.list = NULL;
-   g_extern.shader_dir.ptr  = 0;
 }
 
 static void init_shader_dir(void)
@@ -1438,7 +984,7 @@ static void init_shader_dir(void)
    if (!*g_settings.video.shader_dir)
       return;
 
-   g_extern.shader_dir.list = dir_list_new(g_settings.video.shader_dir, "shader|cg|cgp|glsl|glslp", false);
+   g_extern.shader_dir.list = dir_list_new(g_settings.video.shader_dir, "cg|cgp|glsl|glslp", false);
    if (!g_extern.shader_dir.list || g_extern.shader_dir.list->size == 0)
    {
       deinit_shader_dir();
@@ -1450,14 +996,6 @@ static void init_shader_dir(void)
 
    for (i = 0; i < g_extern.shader_dir.list->size; i++)
       RARCH_LOG("Found shader \"%s\"\n", g_extern.shader_dir.list->elems[i].data);
-}
-
-static void deinit_pixel_converter(void)
-{
-   scaler_ctx_gen_reset(&driver.scaler);
-   memset(&driver.scaler, 0, sizeof(driver.scaler));
-   free(driver.scaler_out);
-   driver.scaler_out = NULL;
 }
 
 static bool init_video_pixel_converter(unsigned size)
@@ -1483,6 +1021,7 @@ static bool init_video_pixel_converter(unsigned size)
 
    return true;
 }
+
 
 void init_video_input(void)
 {
@@ -1548,7 +1087,7 @@ void init_video_input(void)
 
    if (!init_video_pixel_converter(RARCH_SCALE_BASE * scale))
    {
-      RARCH_ERR("Failed to init pixel converter.\n");
+      RARCH_ERR("Failed to initialize pixel converter.\n");
       rarch_fail(1, "init_video_input()");
    }
 
@@ -1586,6 +1125,7 @@ void init_video_input(void)
       rarch_fail(1, "init_video_input()");
    }
 
+
    driver.video_poke = NULL;
    if (driver.video->poke_interface)
       driver.video->poke_interface(driver.video_data, &driver.video_poke);
@@ -1619,7 +1159,7 @@ void init_video_input(void)
          driver.input_data = input_init_func();
          if (driver.input_data == NULL)
          {
-            RARCH_ERR("Cannot init input driver. Exiting ...\n");
+            RARCH_ERR("Cannot initialize input driver. Exiting ...\n");
             rarch_fail(1, "init_video_input()");
          }
       }
@@ -1659,10 +1199,11 @@ void uninit_video_input(void)
    }
 #endif
 
-   if (driver.input_data != driver.video_data && driver.input)
+   if (!driver.input_data_own && driver.input_data != driver.video_data && driver.input && driver.input->free)
       input_free_func();
 
-   if (driver.video_data && driver.video)
+
+   if (!driver.video_data_own && driver.video_data && driver.video && driver.video->free)
       video_free_func();
 
    deinit_pixel_converter();
@@ -1672,92 +1213,6 @@ void uninit_video_input(void)
    deinit_shader_dir();
    compute_monitor_fps_statistics();
 }
-
-#ifdef HAVE_MENU
-static const menu_ctx_driver_t *menu_ctx_drivers[] = {
-#if defined(HAVE_RMENU)
-   &menu_ctx_rmenu,
-#endif
-#if defined(HAVE_RMENU_XUI)
-   &menu_ctx_rmenu_xui,
-#endif
-#if defined(HAVE_RGUI)
-   &menu_ctx_rgui,
-#endif
-#if defined(HAVE_LAKKA)
-   &menu_ctx_lakka,
-#endif
-   NULL // zero length array is not valid
-};
-
-const void *menu_ctx_find_driver(const char *ident)
-{
-   unsigned i;
-   for (i = 0; menu_ctx_drivers[i]; i++)
-   {
-      if (strcmp(menu_ctx_drivers[i]->ident, ident) == 0)
-         return menu_ctx_drivers[i];
-   }
-
-   return NULL;
-}
-
-static int find_menu_driver_index(const char *driver)
-{
-   unsigned i;
-   for (i = 0; menu_ctx_drivers[i]; i++)
-      if (strcasecmp(driver, menu_ctx_drivers[i]->ident) == 0)
-         return i;
-   return -1;
-}
-
-void find_prev_menu_driver(void)
-{
-   int i = find_menu_driver_index(g_settings.menu.driver);
-   if (i > 0)
-   {
-      strlcpy(g_settings.menu.driver, menu_ctx_drivers[i - 1]->ident, sizeof(g_settings.menu.driver));
-      driver.menu_ctx = (menu_ctx_driver_t*)menu_ctx_drivers[i - 1];
-   }
-   else
-      RARCH_WARN("Couldn't find any previous menu driver (current one: \"%s\").\n", g_settings.menu.driver);
-}
-
-void find_next_menu_driver(void)
-{
-   int i = find_menu_driver_index(g_settings.menu.driver);
-   if (i >= 0 && menu_ctx_drivers[i + 1])
-   {
-      strlcpy(g_settings.menu.driver, menu_ctx_drivers[i + 1]->ident, sizeof(g_settings.menu.driver));
-      driver.menu_ctx = (menu_ctx_driver_t*)menu_ctx_drivers[i + 1];
-   }
-   else
-      RARCH_WARN("Couldn't find any next menu driver (current one: \"%s\").\n", g_settings.menu.driver);
-}
-
-bool menu_ctx_init_first(const menu_ctx_driver_t **driver, void **data)
-{
-   unsigned i;
-
-   if (!menu_ctx_drivers[0])
-      return false;
-
-   for (i = 0; menu_ctx_drivers[i]; i++)
-   {
-      void *h = menu_ctx_drivers[i]->init();
-
-      if (h)
-      {
-         *driver = menu_ctx_drivers[i];
-         *data = h;
-         strlcpy(g_settings.menu.driver, menu_ctx_drivers[i]->ident, sizeof(g_settings.menu.driver));
-         return true;
-      }
-   }
-
-   return false;
-}
-#endif
 
 driver_t driver;
 

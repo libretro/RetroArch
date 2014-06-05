@@ -34,7 +34,7 @@ static void emscripten_mainloop(void)
    exit(0);
 }
 
-int main(int argc, char *argv[])
+int main(int *argc, char *argv[])
 {
    emscripten_set_canvas_size(800, 600);
 
@@ -42,10 +42,9 @@ int main(int argc, char *argv[])
    rarch_init_msg_queue();
 
    int init_ret;
-   if ((init_ret = rarch_main_init(argc, argv))) return init_ret;
+   if ((init_ret = rarch_main_init(*argc, argv))) return init_ret;
 
 #ifdef HAVE_MENU
-   menu_init();
    g_extern.lifecycle_state |= 1ULL << MODE_GAME;
 
    // If we started a ROM directly from command line,

@@ -1385,10 +1385,6 @@ static void psp2_free(void *data)
 	free(psp->g_initializeHostMem);
 }
 
-#ifdef HAVE_MENU
-static void psp2_restart(void) {}
-#endif
-
 static void psp2_set_rotation(void *data, unsigned rotation)
 {
    psp2_video_t *psp = (psp2_video_t*)data;
@@ -1404,10 +1400,6 @@ const video_driver_t video_psp2 = {
    NULL,
    psp2_free,
    "psp2",
-
-#if defined(HAVE_MENU)
-   psp2_restart,
-#endif
 
    psp2_set_rotation,
    NULL,

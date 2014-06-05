@@ -136,19 +136,23 @@ void renderchain_set_shaders(void *data, CGprogram &fPrg, CGprogram &vPrg)
 void renderchain_destroy_stock_shader(void *data)
 {
    renderchain_t *chain = (renderchain_t*)data;
+#ifdef HAVE_CG
    if (chain->fStock)
       cgDestroyProgram(chain->fStock);
    if (chain->vStock)
       cgDestroyProgram(chain->vStock);
+#endif
 }
 
 void renderchain_destroy_shader(void *data, int i)
 {
    renderchain_t *chain = (renderchain_t*)data;
+#ifdef HAVE_CG
    if (chain->passes[i].fPrg)
       cgDestroyProgram(chain->passes[i].fPrg);
    if (chain->passes[i].vPrg)
       cgDestroyProgram(chain->passes[i].vPrg);
+#endif
 }
 
 void renderchain_set_shader_mvp(void *data, CGprogram &vPrg, D3DXMATRIX &tmp)

@@ -1,7 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2014 - Daniel De Matteis
- *  Copyright (C) 2012-2014 - Brad Miller
+ *  Copyright (C) 2014 - Brad Miller
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -13,69 +12,108 @@
  *
  *  You should have received a copy of the GNU General Public License along with RetroArch.
  *  If not, see <http://www.gnu.org/licenses/>.
- *
  */
 
-#include "rarch_dsp.h"
-#include <string.h>
-#include <stdio.h>
+#include "dspfilter.h"
+#include <math.h>
 #include <stdlib.h>
-
-#define NUMCOMBS 8
-#define NUMALLPASSES 4
-#define MUTED 0
-#define FIXEDGAIN 0.015f
-#define SCALEWET 3
-#define SCALEDRY 2
-#define SCALEDAMP	0.4f
-#define SCALEROOM 0.28f
-#define OFFSETROOM 0.7f
-#define INITIALROOM 0.5f
-#define INITIALDAMP 0.5f
-#define INITIALWET (1 / SCALEWET)
-#define INITIALDRY 0
-#define INITIALWIDTH 1
-#define INITIALMODE 0
-#define FREEZEMODE 0.5f
-
-#define COMBTUNINGL1		1116
-#define COMBTUNINGL2		1188
-#define COMBTUNINGL3		1277
-#define COMBTUNINGL4		1356
-#define COMBTUNINGL5		1422
-#define COMBTUNINGL6		1491
-#define COMBTUNINGL7		1557
-#define COMBTUNINGL8		1617
-#define ALLPASSTUNINGL1 556
-#define ALLPASSTUNINGL2 441
-#define ALLPASSTUNINGL3	341
-#define ALLPASSTUNINGL4	225
-
-#ifdef RARCH_INTERNAL
-#define rarch_dsp_plugin_init    reverb_dsp_plugin_init
-#endif
+#include <string.h>
 
 struct comb
 {
-	float feedback;
-	float filterstore;
-	float damp1;
-	float damp2;
-	float *buffer;
-	int bufsize;
-	int bufidx;
+   float *buffer;
+   unsigned bufsize;
+   unsigned bufidx;
+
+   float feedback;
+   float filterstore;
+   float damp1, damp2;
 };
+
+static inline float comb_process(struct comb *c, float input)
+{
+   float output = c->buffer[c->bufidx];
+   c->filterstore = (output * c->damp2) + (c->filterstore * c->damp1);
+
+   c->buffer[c->bufidx] = input + (c->filterstore * c->feedback);
+
+   c->bufidx++;
+   if (c->bufidx >= c->bufsize)
+      c->bufidx = 0;
+
+   return output;
+}
 
 struct allpass
 {
-   float feedback;
    float *buffer;
-   int bufsize;
-   int bufidx;
+   float feedback;
+   unsigned bufsize;
+   unsigned bufidx;
 };
+
+static inline float allpass_process(struct allpass *a, float input)
+{
+   float bufout = a->buffer[a->bufidx];
+   float output = -input + bufout;
+   a->buffer[a->bufidx] = input + bufout * a->feedback;
+
+   a->bufidx++;
+   if (a->bufidx >= a->bufsize)
+      a->bufidx = 0;
+
+   return output;
+}
+
+#define numcombs 8
+#define numallpasses 4
+static const float muted = 0;
+static const float fixedgain = 0.015f;
+static const float scalewet = 3;
+static const float scaledry = 2;
+static const float scaledamp = 0.4f;
+static const float scaleroom = 0.28f;
+static const float offsetroom = 0.7f;
+static const float initialroom = 0.5f;
+static const float initialdamp = 0.5f;
+static const float initialwet = 1.0f / 3.0f;
+static const float initialdry = 0;
+static const float initialwidth = 1;
+static const float initialmode = 0;
+static const float freezemode = 0.5f;
+
+#define combtuningL1 1116
+#define combtuningL2 1188
+#define combtuningL3 1277
+#define combtuningL4 1356
+#define combtuningL5 1422
+#define combtuningL6 1491
+#define combtuningL7 1557
+#define combtuningL8 1617
+#define allpasstuningL1 556
+#define allpasstuningL2 441
+#define allpasstuningL3 341
+#define allpasstuningL4 225
 
 struct revmodel
 {
+   struct comb combL[numcombs];
+   struct allpass allpassL[numallpasses];
+
+   float bufcombL1[combtuningL1];
+   float bufcombL2[combtuningL2];
+   float bufcombL3[combtuningL3];
+   float bufcombL4[combtuningL4];
+   float bufcombL5[combtuningL5];
+   float bufcombL6[combtuningL6];
+   float bufcombL7[combtuningL7];
+   float bufcombL8[combtuningL8];
+
+   float bufallpassL1[allpasstuningL1];
+   float bufallpassL2[allpasstuningL2];
+   float bufallpassL3[allpasstuningL3];
+   float bufallpassL4[allpasstuningL4];
+
    float gain;
    float roomsize, roomsize1;
    float damp, damp1;
@@ -83,315 +121,195 @@ struct revmodel
    float dry;
    float width;
    float mode;
-
-   struct comb combL[NUMCOMBS];
-
-   struct allpass	allpassL[NUMALLPASSES];
-
-   float bufcombL1[COMBTUNINGL1];
-   float bufcombL2[COMBTUNINGL2];
-   float bufcombL3[COMBTUNINGL3];
-   float bufcombL4[COMBTUNINGL4];
-   float bufcombL5[COMBTUNINGL5];
-   float bufcombL6[COMBTUNINGL6];
-   float bufcombL7[COMBTUNINGL7];
-   float bufcombL8[COMBTUNINGL8];
-
-   float bufallpassL1[ALLPASSTUNINGL1];
-   float bufallpassL2[ALLPASSTUNINGL2];
-   float bufallpassL3[ALLPASSTUNINGL3];
-   float bufallpassL4[ALLPASSTUNINGL4];
 };
 
-// FIXME: Fix this really ugly hack
-static inline float undenormalise(void *sample)
-{
-   if (((*(unsigned int*)sample) &  0x7f800000) == 0)
-      return 0.0f;
-   return *(float*)sample;
-}
-
-static inline float comb_process(void *data, float input)
-{
-   struct comb *comb = (struct comb*)data; 
-   float output;
-
-   output = comb->buffer[comb->bufidx];
-   undenormalise(&output);
-
-   comb->filterstore = (output * comb->damp2) + (comb->filterstore * comb->damp1);
-   undenormalise(&comb->filterstore);
-
-   comb->buffer[comb->bufidx] = input + (comb->filterstore * comb->feedback);
-
-   if (++comb->bufidx >= comb->bufsize)
-      comb->bufidx = 0;
-
-   return output;
-}
-
-
-static inline float allpass_process(void *data, float input)
-{
-   struct allpass *allpass = (struct allpass*)data;
-   float output, bufout;
-
-   bufout = allpass->buffer[allpass->bufidx];
-   undenormalise(&bufout);
-
-   output = -input + bufout;
-   allpass->buffer[allpass->bufidx] = input + (bufout * allpass->feedback);
-
-   if (++allpass->bufidx >= allpass->bufsize)
-      allpass->bufidx = 0;
-
-   return output;
-}
-
-static float revmodel_getmode(float mode)
-{
-   if (mode >= FREEZEMODE)
-      return 1;
-   else
-      return 0;
-}
-
-static void revmodel_update(void *data)
+static float revmodel_process(struct revmodel *rev, float in)
 {
    int i;
-   struct revmodel *rev = (struct revmodel*)data;
+   float mono_out = 0.0f;
+   float mono_in = in;
+   float input = mono_in * rev->gain;
+   for (i = 0; i < numcombs; i++)
+      mono_out += comb_process(&rev->combL[i], input);
 
-   rev->wet1 = rev->wet * (rev->width / 2 + 0.5f);
+   for (i = 0; i < numallpasses; i++)
+      mono_out = allpass_process(&rev->allpassL[i], mono_out);
 
-   if (rev->mode >= FREEZEMODE)
+   return mono_in * rev->dry + mono_out * rev->wet1;
+}
+
+static void revmodel_update(struct revmodel *rev)
+{
+   int i;
+   rev->wet1 = rev->wet * (rev->width / 2.0f + 0.5f);
+
+   if (rev->mode >= freezemode)
    {
-      rev->roomsize1 = 1;
-      rev->damp1 = 0;
-      rev->gain = MUTED;
+      rev->roomsize1 = 1.0f;
+      rev->damp1 = 0.0f;
+      rev->gain = muted;
    }
    else
    {
       rev->roomsize1 = rev->roomsize;
       rev->damp1 = rev->damp;
-      rev->gain = FIXEDGAIN;
+      rev->gain = fixedgain;
    }
 
-   for (i = 0; i < NUMCOMBS; i++)
+   for (i = 0; i < numcombs; i++)
+   {
       rev->combL[i].feedback = rev->roomsize1;
-
-   for (i = 0; i < NUMCOMBS; i++)
-   {
       rev->combL[i].damp1 = rev->damp1;
-      rev->combL[i].damp2 = 1 - rev->damp1;
+      rev->combL[i].damp2 = 1.0f - rev->damp1;
    }
 }
 
-static void revmodel_set(void *data, float drytime,
-      float wettime, float damping, float roomwidth, float roomsize)
+static void revmodel_setroomsize(struct revmodel *rev, float value)
 {
-   int i, j;
-   struct revmodel *rev = (struct revmodel*)data;
-
-	rev->wet = wettime;
-	revmodel_update(rev);
-
-   rev->roomsize = roomsize;
-	revmodel_update(rev);
-
-	rev->dry = drytime;
-
-   rev->damp = damping;
-	revmodel_update(rev);
-
-	rev->width = roomwidth;
-	revmodel_update(rev);
-
-	rev->mode = INITIALMODE;
-	revmodel_update(rev);
-
-   if (revmodel_getmode(rev->mode) >= FREEZEMODE)
-      return;
-
-   for (i = 0; i < NUMCOMBS; i++)
-   {
-      for (j = 0; j < rev->combL[i].bufsize; j++)
-         rev->combL[i].buffer[j] = 0;
-   }
-
-   for (i = 0; i < NUMALLPASSES; i++)
-   {
-      for (j = 0; j < rev->allpassL[i].bufsize; j++)
-         rev->allpassL[i].buffer[j] = 0;
-   }
+   rev->roomsize = value * scaleroom + offsetroom;
+   revmodel_update(rev);
 }
 
-static void revmodel_init(void *data)
+static void revmodel_setdamp(struct revmodel *rev, float value)
 {
-   struct revmodel *rev = (struct revmodel*)data;
-
-	rev->combL[0].filterstore = 0;
-	rev->combL[0].bufidx      = 0;
-   rev->combL[0].buffer      = (float*)rev->bufcombL1;
-   rev->combL[0].bufsize     = COMBTUNINGL1;
-	rev->combL[1].filterstore = 0;
-	rev->combL[1].bufidx      = 0;
-   rev->combL[1].buffer      = (float*)rev->bufcombL2;
-   rev->combL[1].bufsize     = COMBTUNINGL2;
-	rev->combL[2].filterstore = 0;
-	rev->combL[2].bufidx      = 0;
-   rev->combL[2].buffer      = (float*)rev->bufcombL3;
-   rev->combL[2].bufsize     = COMBTUNINGL3;
-	rev->combL[3].filterstore = 0;
-	rev->combL[3].bufidx      = 0;
-   rev->combL[3].buffer      = (float*)rev->bufcombL4;
-   rev->combL[3].bufsize     = COMBTUNINGL4;
-	rev->combL[4].filterstore = 0;
-	rev->combL[4].bufidx      = 0;
-   rev->combL[4].buffer      = (float*)rev->bufcombL5;
-   rev->combL[4].bufsize     = COMBTUNINGL5;
-	rev->combL[5].filterstore = 0;
-	rev->combL[5].bufidx      = 0;
-   rev->combL[5].buffer      = (float*)rev->bufcombL6;
-   rev->combL[5].bufsize     = COMBTUNINGL6;
-	rev->combL[6].filterstore = 0;
-	rev->combL[6].bufidx      = 0;
-   rev->combL[6].buffer      = (float*)rev->bufcombL7;
-   rev->combL[6].bufsize     = COMBTUNINGL7;
-	rev->combL[7].filterstore = 0;
-	rev->combL[7].bufidx      = 0;
-   rev->combL[7].buffer      = (float*)rev->bufcombL8;
-   rev->combL[7].bufsize     = COMBTUNINGL8;
-
-   rev->allpassL[0].bufidx   = 0;
-   rev->allpassL[0].buffer   = (float*)rev->bufallpassL1;
-   rev->allpassL[0].bufsize  = ALLPASSTUNINGL1;
-	rev->allpassL[0].feedback = 0.5f;
-   rev->allpassL[1].bufidx   = 0;
-   rev->allpassL[1].buffer   = (float*)rev->bufallpassL2;
-   rev->allpassL[1].bufsize  = ALLPASSTUNINGL2;
-	rev->allpassL[1].feedback = 0.5f;
-   rev->allpassL[2].bufidx   = 0;
-   rev->allpassL[2].buffer   = (float*)rev->bufallpassL3;
-   rev->allpassL[2].bufsize  = ALLPASSTUNINGL3;
-	rev->allpassL[2].feedback = 0.5f;
-   rev->allpassL[3].bufidx   = 0;
-   rev->allpassL[3].buffer   = (float*)rev->bufallpassL4;
-   rev->allpassL[3].bufsize  = ALLPASSTUNINGL4;
-	rev->allpassL[3].feedback = 0.5f;
-
+   rev->damp = value * scaledamp;
+   revmodel_update(rev);
 }
 
-static float revmodel_process(void *data, float in)
+static void revmodel_setwet(struct revmodel *rev, float value)
 {
-   float samp, mono_out, mono_in, input;
-   int i;
-   struct revmodel *rev = (struct revmodel*)data;
-
-	samp = in;
-	mono_out = 0.0f;
-	mono_in = samp;
-	input = (mono_in) * rev->gain;
-
-	for(i=0; i < NUMCOMBS; i++)
-		mono_out += comb_process(&rev->combL[i], input);
-	for(i = 0; i < NUMALLPASSES; i++)
-		mono_out = allpass_process(&rev->allpassL[i], mono_out);
-	samp = mono_in * rev->dry + mono_out * rev->wet1;
-	return samp;
+   rev->wet = value * scalewet;
+   revmodel_update(rev);
 }
 
-
-#define REVMODEL_GETWET(revmodel) (revmodel->wet / SCALEWET)
-#define REVMODEL_GETROOMSIZE(revmodel) ((revmodel->roomsize - OFFSETROOM) / SCALEROOM)
-#define REVMODEL_GETDRY(revmodel) (revmodel->dry / SCALEDRY)
-#define REVMODEL_GETWIDTH(revmodel) (revmodel->width)
-
-
-
-struct reverb_filter_data
+static void revmodel_setdry(struct revmodel *rev, float value)
 {
-   struct revmodel rev_l;
-   struct revmodel rev_r;
-   float buf[4096];
+   rev->dry = value * scaledry;
+   revmodel_update(rev);
+}
+
+static void revmodel_setwidth(struct revmodel *rev, float value)
+{
+   rev->width = value;
+   revmodel_update(rev);
+}
+
+static void revmodel_setmode(struct revmodel *rev, float value)
+{
+   rev->mode = value;
+   revmodel_update(rev);
+}
+
+static void revmodel_init(struct revmodel *rev)
+{
+   rev->combL[0].buffer = rev->bufcombL1; rev->combL[0].bufsize = combtuningL1;
+   rev->combL[1].buffer = rev->bufcombL2; rev->combL[1].bufsize = combtuningL2;
+   rev->combL[2].buffer = rev->bufcombL3; rev->combL[2].bufsize = combtuningL3;
+   rev->combL[3].buffer = rev->bufcombL4; rev->combL[3].bufsize = combtuningL4;
+   rev->combL[4].buffer = rev->bufcombL5; rev->combL[4].bufsize = combtuningL5;
+   rev->combL[5].buffer = rev->bufcombL6; rev->combL[5].bufsize = combtuningL6;
+   rev->combL[6].buffer = rev->bufcombL7; rev->combL[6].bufsize = combtuningL7;
+   rev->combL[7].buffer = rev->bufcombL8; rev->combL[7].bufsize = combtuningL8;
+
+   rev->allpassL[0].buffer = rev->bufallpassL1; rev->allpassL[0].bufsize = allpasstuningL1;
+   rev->allpassL[1].buffer = rev->bufallpassL2; rev->allpassL[1].bufsize = allpasstuningL2;
+   rev->allpassL[2].buffer = rev->bufallpassL3; rev->allpassL[2].bufsize = allpasstuningL3;
+   rev->allpassL[3].buffer = rev->bufallpassL4; rev->allpassL[3].bufsize = allpasstuningL4;
+
+   rev->allpassL[0].feedback = 0.5f;
+   rev->allpassL[1].feedback = 0.5f;
+   rev->allpassL[2].feedback = 0.5f;
+   rev->allpassL[3].feedback = 0.5f;
+
+   revmodel_setwet(rev, initialwet);
+   revmodel_setroomsize(rev, initialroom);
+   revmodel_setdry(rev, initialdry);
+   revmodel_setdamp(rev, initialdamp);
+   revmodel_setwidth(rev, initialwidth);
+   revmodel_setmode(rev, initialmode);
+}
+
+struct reverb_data
+{
+   struct revmodel left, right;
 };
 
-
-static void * reverb_dsp_init(const rarch_dsp_info_t *info)
+static void reverb_free(void *data)
 {
-   float drytime, wettime, damping, roomwidth, roomsize;
-   (void)info;
+   free(data);
+}
 
-   drytime = 0.43; 
-   wettime = 0.57;
-   damping = 0.45;
-   roomwidth = 0.56;
-   roomsize = 0.56;
+static void reverb_process(void *data, struct dspfilter_output *output,
+      const struct dspfilter_input *input)
+{
+   unsigned i;
+   struct reverb_data *rev = (struct reverb_data*)data;
 
-   struct reverb_filter_data *reverb = (struct reverb_filter_data*)calloc(1, sizeof(*reverb));
+   output->samples = input->samples;
+   output->frames  = input->frames;
+   float *out = output->samples;
 
-   if (!reverb)
+   for (i = 0; i < input->frames; i++, out += 2)
+   {
+      float in[2] = { out[0], out[1] };
+
+      out[0] = revmodel_process(&rev->left, in[0]);
+      out[1] = revmodel_process(&rev->right, in[1]);
+   }
+}
+
+static void *reverb_init(const struct dspfilter_info *info,
+      const struct dspfilter_config *config, void *userdata)
+{
+   struct reverb_data *rev = (struct reverb_data*)calloc(1, sizeof(*rev));
+   if (!rev)
       return NULL;
 
-   revmodel_init(&reverb->rev_l);
-   revmodel_set(&reverb->rev_l, INITIALDRY,
-         INITIALWET * SCALEWET, INITIALDAMP * SCALEDAMP, INITIALWIDTH, (INITIALROOM * SCALEROOM) + OFFSETROOM);
-   revmodel_set(&reverb->rev_l, drytime, wettime, damping, roomwidth, roomsize);
+   float drytime, wettime, damping, roomwidth, roomsize;
+   config->get_float(userdata, "drytime", &drytime, 0.43f);
+   config->get_float(userdata, "wettime", &wettime, 0.4f);
+   config->get_float(userdata, "damping", &damping, 0.8f);
+   config->get_float(userdata, "roomwidth", &roomwidth, 0.56f);
+   config->get_float(userdata, "roomsize", &roomsize, 0.56f);
 
-   revmodel_init(&reverb->rev_r);
-   revmodel_set(&reverb->rev_r, INITIALDRY,
-         INITIALWET * SCALEWET, INITIALDAMP * SCALEDAMP, INITIALWIDTH, (INITIALROOM * SCALEROOM) + OFFSETROOM);
-   revmodel_set(&reverb->rev_r, drytime, wettime, damping, roomwidth, roomsize);
+   revmodel_init(&rev->left);
+   revmodel_init(&rev->right);
 
-   return reverb;
+   revmodel_setdamp(&rev->left, damping);
+   revmodel_setdry(&rev->left, drytime);
+   revmodel_setwet(&rev->left, wettime);
+   revmodel_setwidth(&rev->left, roomwidth);
+   revmodel_setroomsize(&rev->left, roomsize);
+
+   revmodel_setdamp(&rev->right, damping);
+   revmodel_setdry(&rev->right, drytime);
+   revmodel_setwet(&rev->right, wettime);
+   revmodel_setwidth(&rev->right, roomwidth);
+   revmodel_setroomsize(&rev->right, roomsize);
+
+   return rev;
 }
 
-static void reverb_dsp_process(void *data, rarch_dsp_output_t *output,
-      const rarch_dsp_input_t *input)
-{
-   int i, num_samples;
-   struct reverb_filter_data *reverb = (struct reverb_filter_data*)data;
+static const struct dspfilter_implementation reverb_plug = {
+   reverb_init,
+   reverb_process,
+   reverb_free,
 
-	output->samples = reverb->buf;
-	num_samples = input->frames * 2;
-	for (i = 0; i < num_samples;)
-	{
-		reverb->buf[i] = revmodel_process(&reverb->rev_l, input->samples[i]);
-		i++;
-		reverb->buf[i] = revmodel_process(&reverb->rev_r, input->samples[i]);
-		i++;
-	}
-	output->frames = input->frames;
-}
-
-static void reverb_dsp_free(void *data)
-{
-   struct reverb_filter_data *rev = (struct reverb_filter_data*)data;
-
-   if (rev)
-      free(rev);
-}
-
-static void reverb_dsp_config(void *data)
-{
-   (void)data;
-}
-
-const struct dspfilter_implementation generic_reverb_dsp = {
-	reverb_dsp_init,
-	reverb_dsp_process,
-	reverb_dsp_free,
-	RARCH_DSP_API_VERSION,
-	reverb_dsp_config,
-	"Reverberatation",
-   NULL
+   DSPFILTER_API_VERSION,
+   "Reverb",
+   "reverb",
 };
 
-const struct dspfilter_implementation *rarch_dsp_plugin_init(dspfilter_simd_mask_t simd)
+#ifdef HAVE_FILTERS_BUILTIN
+#define dspfilter_get_implementation reverb_dspfilter_get_implementation
+#endif
+
+const struct dspfilter_implementation *dspfilter_get_implementation(dspfilter_simd_mask_t mask)
 {
-   (void)simd;
-   return &generic_reverb_dsp;
+   (void)mask;
+   return &reverb_plug;
 }
 
-#ifdef RARCH_INTERNAL
-#undef rarch_dsp_plugin_init
-#endif
+#undef dspfilter_get_implementation
+
+

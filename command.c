@@ -24,6 +24,7 @@
 #include "general.h"
 #include "compat/strl.h"
 #include "compat/posix_string.h"
+#include "file_path.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -195,7 +196,6 @@ static const struct cmd_map map[] = {
    { "CHEAT_INDEX_MINUS",      RARCH_CHEAT_INDEX_MINUS },
    { "CHEAT_TOGGLE",           RARCH_CHEAT_TOGGLE },
    { "SCREENSHOT",             RARCH_SCREENSHOT },
-   { "DSP_CONFIG",             RARCH_DSP_CONFIG },
    { "MUTE",                   RARCH_MUTE },
    { "NETPLAY_FLIP",           RARCH_NETPLAY_FLIP },
    { "SLOWMOTION",             RARCH_SLOWMOTION },
@@ -214,15 +214,12 @@ static bool cmd_set_shader(const char *arg)
       return false;
 
    enum rarch_shader_type type = RARCH_SHADER_NONE;
-   const char *ext = strrchr(arg, '.');
+   const char *ext = path_get_extension(arg);
 
-   if (ext)
-   {
-      if (strcmp(ext, ".shader") == 0)
-         type = RARCH_SHADER_GLSL;
-      else if (strcmp(ext, ".cg") == 0 || strcmp(ext, ".cgp") == 0)
-         type = RARCH_SHADER_CG;
-   }
+   if (strcmp(ext, "glsl") == 0 || strcmp(ext, "glslp") == 0)
+      type = RARCH_SHADER_GLSL;
+   else if (strcmp(ext, "cg") == 0 || strcmp(ext, "cgp") == 0)
+      type = RARCH_SHADER_CG;
 
    if (type == RARCH_SHADER_NONE)
       return false;

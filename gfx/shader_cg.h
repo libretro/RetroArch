@@ -20,8 +20,6 @@
 #include "shader_common.h"
 #include <stdint.h>
 
-void gl_cg_set_compiler_args(const char **argv);
-void gl_cg_invalidate_context(void); // Call when resetting GL context on PS3.
 extern const gl_shader_backend_t gl_cg_backend;
 
 #endif

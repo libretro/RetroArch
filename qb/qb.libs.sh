@@ -112,7 +112,7 @@ check_pkgconf()	#$1 = HAVE_$1	$2 = package	$3 = version	$4 = critical error mess
 	[ "$3" ] && ECHOBUF="$ECHOBUF with minimum version $3"
 #	echo -n "$ECHOBUF ... "
 	answer='no'
-	pkg-config --atleast-version="${3:-0.0}" "$2" && {
+	$PKG_CONF_PATH --atleast-version="${3:-0.0}" "$2" && {
 		answer='yes'
 		eval $1_CFLAGS=\"$(pkg-config $2 --cflags)\"
 		eval $1_LIBS=\"$(pkg-config $2 --libs)\"

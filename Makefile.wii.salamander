@@ -18,7 +18,7 @@ else ifneq ($(findstring MINGW,$(shell uname -a)),)
    system_platform = win
 endif
 
-PC_DEVELOPMENT_IP_ADDRESS	= "192.168.1.7"
+PC_DEVELOPMENT_IP_ADDRESS	= 255.255.255.255
 PC_DEVELOPMENT_UDP_PORT		= 3490
 
 CC = $(DEVKITPPC)/bin/powerpc-eabi-gcc$(EXE_EXT)
@@ -39,18 +39,18 @@ LIBS := -lfat -lwiiuse -logc -lbte
 
 APP_BOOTER_DIR = wii/app_booter
 
-OBJ = frontend/frontend_salamander.o frontend/frontend_context.o file_path.o compat/compat.o conf/config_file.o $(APP_BOOTER_DIR)/app_booter.binobj
+OBJ = frontend/frontend_salamander.o frontend/frontend_context.o frontend/platform/platform_null.o file_path.o compat/compat.o conf/config_file.o $(APP_BOOTER_DIR)/app_booter.binobj
 
 ifeq ($(HAVE_LOGGER), 1)
 CFLAGS		+= -DHAVE_LOGGER
 CFLAGS          += -DPC_DEVELOPMENT_IP_ADDRESS=\"$(PC_DEVELOPMENT_IP_ADDRESS)\" -DPC_DEVELOPMENT_UDP_PORT=$(PC_DEVELOPMENT_UDP_PORT)
-CFLAGS          += -Iconsole/logger
-OBJ             += console/logger/logger.o
+CFLAGS          += -Ilogger/netlogger
+OBJ             += logger/netlogger/logger.o
 endif
 
 ifeq ($(HAVE_FILE_LOGGER), 1)
 CFLAGS		+= -DHAVE_FILE_LOGGER
-CFLAGS          += -Iconsole/logger
+CFLAGS          += -Ilogger/netlogger
 endif
 
 CFLAGS += -std=gnu99 -DIS_SALAMANDER -DRARCH_CONSOLE -DHAVE_RARCH_EXEC -DGEKKO -Wno-char-subscripts 

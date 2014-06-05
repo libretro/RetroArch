@@ -32,11 +32,11 @@
 
 #ifndef ppchalt
 #define ppchalt() ({					\
-	asm volatile("sync");				\
+      _sync(); \
 	while(1) {							\
-		asm volatile("nop");			\
+      _nop(); \
 		asm volatile("li 3,0");			\
-		asm volatile("nop");			\
+      _nop(); \
 	}									\
 })
 #endif

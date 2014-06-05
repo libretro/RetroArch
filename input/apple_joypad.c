@@ -56,7 +56,8 @@ static int32_t find_empty_slot(void)
 
 int32_t apple_joypad_connect(const char* name, struct apple_pad_connection* connection)
 {
-   int32_t slot = find_empty_slot();
+   int32_t slot;
+   slot = find_empty_slot();
 
    if (slot >= 0 && slot < MAX_PLAYERS)
    {
@@ -88,11 +89,12 @@ int32_t apple_joypad_connect(const char* name, struct apple_pad_connection* conn
 
 int32_t apple_joypad_connect_gcapi(void)
 {
-   int32_t slot = find_empty_slot();
+   int32_t slot;
+   slot = find_empty_slot();
 
    if (slot >= 0 && slot < MAX_PLAYERS)
    {
-      joypad_slot_t* s = (joypad_slot_t*)&slots[slot];
+      joypad_slot_t *s = (joypad_slot_t*)&slots[slot];
       s->used = true;
       s->is_gcapi = true;
    }
@@ -106,7 +108,7 @@ void apple_joypad_disconnect(uint32_t slot)
    {
       joypad_slot_t* s = (joypad_slot_t*)&slots[slot];
 
-      if (s->iface && s->data)
+      if (s->iface && s->data && s->iface->disconnect)
          s->iface->disconnect(s->data);
 
       memset(s, 0, sizeof(joypad_slot_t));
@@ -119,7 +121,7 @@ void apple_joypad_packet(uint32_t slot, uint8_t* data, uint32_t length)
    {
       joypad_slot_t *s = (joypad_slot_t*)&slots[slot];
 
-      if (s->iface && s->data)
+      if (s->iface && s->data && s->iface->packet_handler)
          s->iface->packet_handler(s->data, data, length);
    }
 }
@@ -149,7 +151,7 @@ static void apple_joypad_destroy(void)
 
    for (i = 0; i < MAX_PLAYERS; i ++)
    {
-      if (slots[i].used && slots[i].iface)
+      if (slots[i].used && slots[i].iface && slots[i].iface->set_rumble)
       {
          slots[i].iface->set_rumble(slots[i].data, RETRO_RUMBLE_STRONG, 0);
          slots[i].iface->set_rumble(slots[i].data, RETRO_RUMBLE_WEAK, 0);
@@ -166,7 +168,7 @@ static bool apple_joypad_button(unsigned port, uint16_t joykey)
    if (GET_HAT_DIR(joykey))
       return false;
    else // Check the button
-      return (port < MAX_PLAYERS && joykey < 32) ? (g_polled_input_data.pad_buttons[port] & (1 << joykey)) != 0 : false;
+      return (port < MAX_PLAYERS && joykey < 32) ? (g_current_input_data.pad_buttons[port] & (1 << joykey)) != 0 : false;
 }
 
 static int16_t apple_joypad_axis(unsigned port, uint32_t joyaxis)
@@ -180,12 +182,12 @@ static int16_t apple_joypad_axis(unsigned port, uint32_t joyaxis)
 
    if (AXIS_NEG_GET(joyaxis) < 4)
    {
-      val = g_polled_input_data.pad_axis[port][AXIS_NEG_GET(joyaxis)];
+      val = g_current_input_data.pad_axis[port][AXIS_NEG_GET(joyaxis)];
       val = (val < 0) ? val : 0;
    }
    else if(AXIS_POS_GET(joyaxis) < 4)
    {
-      val = g_polled_input_data.pad_axis[port][AXIS_POS_GET(joyaxis)];
+      val = g_current_input_data.pad_axis[port][AXIS_POS_GET(joyaxis)];
       val = (val > 0) ? val : 0;
    }
 
@@ -198,7 +200,8 @@ static void apple_joypad_poll(void)
 
 static bool apple_joypad_rumble(unsigned pad, enum retro_rumble_effect effect, uint16_t strength)
 {
-   if (pad < MAX_PLAYERS && slots[pad].used && slots[pad].iface)
+   if (pad < MAX_PLAYERS && slots[pad].used && slots[pad].iface
+       && slots[pad].iface->set_rumble)
    {
       slots[pad].iface->set_rumble(slots[pad].data, effect, strength);
       return true;

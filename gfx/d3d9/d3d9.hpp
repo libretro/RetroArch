@@ -91,6 +91,7 @@ typedef struct d3d_video
       const d3d_font_renderer_t *font_ctx;
       const gfx_ctx_driver_t *ctx_driver;
       bool should_resize;
+      bool quitting;
 
 #ifdef HAVE_WINDOW
       WNDCLASSEX windowClass;

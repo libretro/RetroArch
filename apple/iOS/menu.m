@@ -14,7 +14,8 @@
  */
 
 #include <objc/runtime.h>
-#include "apple/common/RetroArch_Apple.h"
+#include "../common/RetroArch_Apple.h"
+#include "../../input/input_common.h"
 #include "../../input/apple_input.h"
 #include "menu.h"
 

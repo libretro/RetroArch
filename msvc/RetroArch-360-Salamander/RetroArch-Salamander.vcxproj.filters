@@ -32,5 +32,8 @@
     <ClCompile Include="..\..\frontend\frontend_context.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\frontend\platform\platform_null.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

@@ -86,11 +86,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message,
 			return win32_handle_keyboard_event(hWnd, message, wParam, lParam);
 
         case WM_DESTROY:
-			//TODO - We can't set d3d_quit to true here since WM_DESTROY might be invoked
-			//on tear-down/setup, and we would exit straight away immediately
-			//
-			//Right now, quit button of window is broken because of this.
-			//d3d_quit = true;
+			d3d_quit = true;
 			return 0;
         case WM_SIZE:
 			unsigned new_width, new_height;
@@ -127,13 +123,13 @@ static void gfx_ctx_d3d_swap_buffers(void *data)
 static void gfx_ctx_d3d_update_title(void *data)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
-   char buffer[128], buffer_fps[128];
+   char buf[128], buffer_fps[128];
    bool fps_draw = g_settings.fps_show;
 
-   if (gfx_get_fps(buffer, sizeof(buffer), fps_draw ? buffer_fps : NULL, sizeof(buffer_fps)))
+   if (gfx_get_fps(buf, sizeof(buf), fps_draw ? buffer_fps : NULL, sizeof(buffer_fps)))
    {
 #ifndef _XBOX
-      SetWindowText(d3d->hWnd, buffer);
+      SetWindowText(d3d->hWnd, buf);
 #endif
    }
 
@@ -149,7 +145,9 @@ static void gfx_ctx_d3d_update_title(void *data)
       msg_queue_push(g_extern.msg_queue, buffer_fps, 1, 1);
    }
 
+#ifndef _XBOX
    g_extern.frame_count++;
+#endif
 }
 
 static void gfx_ctx_d3d_show_mouse(void *data, bool state)
@@ -323,17 +321,6 @@ static bool gfx_ctx_d3d_init(void *data)
 static void gfx_ctx_d3d_destroy(void *data)
 {
    (void)data;
-#ifdef _XBOX
-   d3d_video_t * d3d = (d3d_video_t*)data;
-
-   if (d3d->dev)
-      d3d->dev->Release();
-   d3d->dev = 0;
-
-   if (d3d->g_pD3D)
-      d3d->g_pD3D->Release();
-   d3d->g_pD3D = 0;
-#endif
 }
 
 static void gfx_ctx_d3d_input_driver(void *data, const input_driver_t **input, void **input_data)

@@ -77,7 +77,7 @@ static int img_free(void *ptr, void *a)
 	Image decompression - libJPEG
 ********************************************************************************/
 
-static bool ps3graphics_load_jpeg(const char *path, struct texture_image *out_img)
+static bool ps3_load_jpeg(const char *path, struct texture_image *out_img)
 {
    size_t img_size;
 #ifndef __PSL1GHT__
@@ -178,7 +178,6 @@ static bool ps3graphics_load_jpeg(const char *path, struct texture_image *out_im
    return true;
 
 error:
-   RARCH_ERR("ps3graphics_load_jpeg(): error.\n");
    if (out_img->pixels)
       free(out_img->pixels);
    out_img->pixels = 0;
@@ -193,7 +192,7 @@ error:
 	Image decompression - libPNG
 ********************************************************************************/
 
-static bool ps3graphics_load_png(const char *path, struct texture_image *out_img)
+static bool ps3_load_png(const char *path, struct texture_image *out_img)
 {
    size_t img_size;
 #ifndef __PSL1GHT__
@@ -294,8 +293,6 @@ static bool ps3graphics_load_png(const char *path, struct texture_image *out_img
    return true;
 
 error:
-   RARCH_ERR("ps3graphics_load_png(): error.\n");
-
    if (out_img->pixels)
       free(out_img->pixels);
    out_img->pixels = 0;
@@ -307,24 +304,34 @@ error:
    return false;
 }
 
-bool texture_image_load(const char *path, struct texture_image *out_img)
+bool texture_image_load(void *data, const char *path, void *image_data)
 {
+   (void)data;
+   struct texture_image *out_img = (struct texture_image*)image_data;
+
+   if (!out_img)
+      return false;
+
    if(strstr(path, ".PNG") != NULL || strstr(path, ".png") != NULL)
    {
-      if (!ps3graphics_load_png(path, out_img))
+      if (!ps3_load_png(path, out_img))
          return false;
    }
    else
    {
-      if (!ps3graphics_load_jpeg(path, out_img))
+      if (!ps3_load_jpeg(path, out_img))
          return false;
    }
 
    return true;
 }
 
-void texture_image_free(struct texture_image *img)
+void texture_image_free(void *data, void *image_data)
 {
+   struct texture_image *img = (struct texture_image*)image_data;
+   if (!img)
+      return;
+
    if (img->pixels)
       free(img->pixels);
    memset(img, 0, sizeof(*img));

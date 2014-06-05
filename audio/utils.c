@@ -95,8 +95,8 @@ void audio_convert_float_to_s16_SSE2(int16_t *out,
 void audio_convert_s16_to_float_altivec(float *out,
       const int16_t *in, size_t samples, float gain)
 {
-   const vector float gain_vec = vec_splat((vector float)gain, 0);
-   const vector float zero_vec = vec_splat((vector float)0.0f, 0);
+   const vector float gain_vec = { gain, gain , gain, gain };
+   const vector float zero_vec = { 0.0f, 0.0f, 0.0f, 0.0f};
    // Unaligned loads/store is a bit expensive, so we optimize for the good path (very likely).
    if (((uintptr_t)out & 15) + ((uintptr_t)in & 15) == 0)
    {
@@ -140,7 +140,7 @@ void audio_convert_float_to_s16_altivec(int16_t *out,
    else
       audio_convert_float_to_s16_C(out, in, samples);
 }
-#elif defined(HAVE_NEON) && !defined(__MACH__)
+#elif defined(HAVE_NEON)
 void audio_convert_s16_float_asm(float *out, const int16_t *in, size_t samples, const float *gain); // Avoid potential hard-float/soft-float ABI issues.
 static void audio_convert_s16_to_float_neon(float *out, const int16_t *in, size_t samples,
       float gain)
@@ -264,7 +264,7 @@ void audio_convert_float_to_s16_ALLEGREX(int16_t *out,
 
 void audio_convert_init_simd(void)
 {
-#if defined HAVE_NEON && !defined(__MACH__)
+#if defined HAVE_NEON
    unsigned cpu = rarch_get_cpu_features();
    audio_convert_s16_to_float_arm = cpu & RETRO_SIMD_NEON ?
       audio_convert_s16_to_float_neon : audio_convert_s16_to_float_C;

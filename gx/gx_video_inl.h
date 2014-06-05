@@ -359,13 +359,16 @@ static void __SETVCDATTR(struct __gx_regdef *__gx, u8 attr,u8 type)
 #ifdef HW_DOL
 static inline void __GX_UpdateBPMask(struct __gx_regdef *__gx)
 {
-   u32 i;
-   u32 nbmp,nres;
+   u32 i, nbmp, nres;
    u8 ntexmap;
+
    nbmp = _SHIFTR(__gx->genMode,16,3);
    nres = 0;
-   for(i=0;i<nbmp;i++) {
-      switch(i) {
+
+   for(i = 0; i < nbmp; i++)
+   {
+      switch (i)
+      {
          case GX_INDTEXSTAGE0:
             ntexmap = __gx->tevRasOrder[2] & 7;
             break;
@@ -384,7 +387,9 @@ static inline void __GX_UpdateBPMask(struct __gx_regdef *__gx)
       }
       nres |= (1<<ntexmap);
    }
-   if((__gx->tevIndMask & 0xff)!=nres) {
+
+   if((__gx->tevIndMask & 0xff)!=nres)
+   {
       __gx->tevIndMask = (__gx->tevIndMask & ~0xff)|(nres & 0xff);
       GX_LOAD_BP_REG(__gx->tevIndMask);
    }
@@ -436,7 +441,7 @@ static inline void __GX_SetTexCoordGen(struct __gx_regdef *__gx)
 static void __SetSURegs(struct __gx_regdef *__gx, u8 texmap,u8 texcoord)
 {
    u32 reg;
-   u16 wd,ht;
+   u16 wd, ht;
    u8 wrap_s,wrap_t;
 
    wd = __gx->texMapSize[texmap] & 0x3ff;
@@ -456,17 +461,17 @@ static void __SetSURegs(struct __gx_regdef *__gx, u8 texmap,u8 texcoord)
 
 static inline void __GX_SetSUTexRegs(struct __gx_regdef *__gx)
 {
-   u32 i;
-   u32 indtev,dirtev;
-   u8 texcoord,texmap;
-   u32 tevreg,tevm,texcm;
+   u32 i, indtev, dirtev, tevreg, tevm, texcm;
+   u8 texcoord, texmap;
 
    dirtev = (_SHIFTR(__gx->genMode,10,4))+1;
    indtev = _SHIFTR(__gx->genMode,16,3);
 
    //indirect texture order
-   for(i=0;i<indtev;i++) {
-      switch(i) {
+   for(i = 0;i < indtev; i++)
+   {
+      switch(i)
+      {
          case GX_INDTEXSTAGE0:
             texmap = __gx->tevRasOrder[2] & 7;
             texcoord = _SHIFTR(__gx->tevRasOrder[2],3,3);
@@ -490,12 +495,13 @@ static inline void __GX_SetSUTexRegs(struct __gx_regdef *__gx)
       }
 
       texcm = _SHIFTL(1,texcoord,1);
+
       if(!(__gx->texCoordManually & texcm))
          __SetSURegs(__gx, texmap,texcoord);
    }
 
    //direct texture order
-   for(i=0;i<dirtev;i++)
+   for(i = 0; i < dirtev; i++)
    {
       tevreg = 3+(_SHIFTR(i,1,3));
       texmap = (__gx->tevTexMap[i] & 0xff);
@@ -721,6 +727,22 @@ static void __GX_SendFlushPrim(struct __gx_regdef *__gx)
    __gx->peZMode = (__gx->peZMode&~0x10)|(_SHIFTL(update_enable,4,1)); \
    GX_LOAD_BP_REG(__gx->peZMode)
 
+#define __GX_LoadTexObj(obj, mapid) \
+{ \
+   struct __gx_texobj *ptr = (struct __gx_texobj*)obj; \
+   ptr->tex_filt = (ptr->tex_filt&~0xff000000)|(_SHIFTL(_gxtexmode0ids[mapid],24,8)); \
+   ptr->tex_lod = (ptr->tex_lod&~0xff000000)|(_SHIFTL(_gxtexmode1ids[mapid],24,8)); \
+   ptr->tex_size = (ptr->tex_size&~0xff000000)|(_SHIFTL(_gxteximg0ids[mapid],24,8)); \
+   ptr->tex_maddr = (ptr->tex_maddr&~0xff000000)|(_SHIFTL(_gxteximg3ids[mapid],24,8)); \
+   GX_LOAD_BP_REG(ptr->tex_filt); \
+   GX_LOAD_BP_REG(ptr->tex_lod); \
+   GX_LOAD_BP_REG(ptr->tex_size); \
+   GX_LOAD_BP_REG(ptr->tex_maddr); \
+   __gx->texMapSize[mapid] = ptr->tex_size; \
+   __gx->texMapWrap[mapid] = ptr->tex_filt; \
+   __gx->dirtyState |= 0x0001; \
+}
+
 #define X_FACTOR 0.5
 #define Y_FACTOR 342.0
 #define ZFACTOR 16777215.0
@@ -747,68 +769,6 @@ static inline void __GX_SetViewportJitter(f32 xOrig,f32 yOrig,f32 wd,f32 ht,f32 
    FIFO_PUTF32(y1);
    FIFO_PUTF32(f);
 }
-
-#if 0
-static void __GX_SetCopyFilter(u8 aa,u8 sample_pattern[12][2],u8 vf,u8 vfilter[7])
-{
-   u32 reg01=0,reg02=0,reg03=0,reg04=0,reg53=0,reg54=0;
-   if(aa)
-   {
-      reg01 = sample_pattern[0][0]&0xf;
-      reg01 = (reg01&~0xf0)|(_SHIFTL(sample_pattern[0][1],4,4));
-      reg01 = (reg01&~0xf00)|(_SHIFTL(sample_pattern[1][0],8,4));
-      reg01 = (reg01&~0xf000)|(_SHIFTL(sample_pattern[1][1],12,4));
-      reg01 = (reg01&~0xf0000)|(_SHIFTL(sample_pattern[2][0],16,4));
-      reg01 = (reg01&~0xf00000)|(_SHIFTL(sample_pattern[2][1],20,4));
-      reg01 = (reg01&~0xff000000)|(_SHIFTL(0x01,24,8));
-      reg02 = sample_pattern[3][0]&0xf;
-      reg02 = (reg02&~0xf0)|(_SHIFTL(sample_pattern[3][1],4,4));
-      reg02 = (reg02&~0xf00)|(_SHIFTL(sample_pattern[4][0],8,4));
-      reg02 = (reg02&~0xf000)|(_SHIFTL(sample_pattern[4][1],12,4));
-      reg02 = (reg02&~0xf0000)|(_SHIFTL(sample_pattern[5][0],16,4));
-      reg02 = (reg02&~0xf00000)|(_SHIFTL(sample_pattern[5][1],20,4));
-      reg02 = (reg02&~0xff000000)|(_SHIFTL(0x02,24,8));
-      reg03 = sample_pattern[6][0]&0xf;
-      reg03 = (reg03&~0xf0)|(_SHIFTL(sample_pattern[6][1],4,4));
-      reg03 = (reg03&~0xf00)|(_SHIFTL(sample_pattern[7][0],8,4));
-      reg03 = (reg03&~0xf000)|(_SHIFTL(sample_pattern[7][1],12,4));
-      reg03 = (reg03&~0xf0000)|(_SHIFTL(sample_pattern[8][0],16,4));
-      reg03 = (reg03&~0xf00000)|(_SHIFTL(sample_pattern[8][1],20,4));
-      reg03 = (reg03&~0xff000000)|(_SHIFTL(0x03,24,8));
-      reg04 = sample_pattern[9][0]&0xf;
-      reg04 = (reg04&~0xf0)|(_SHIFTL(sample_pattern[9][1],4,4));
-      reg04 = (reg04&~0xf00)|(_SHIFTL(sample_pattern[10][0],8,4));
-      reg04 = (reg04&~0xf000)|(_SHIFTL(sample_pattern[10][1],12,4));
-      reg04 = (reg04&~0xf0000)|(_SHIFTL(sample_pattern[11][0],16,4));
-      reg04 = (reg04&~0xf00000)|(_SHIFTL(sample_pattern[11][1],20,4));
-      reg04 = (reg04&~0xff000000)|(_SHIFTL(0x04,24,8));
-   }
-   else
-   {
-      reg01 = 0x01666666;
-      reg02 = 0x02666666;
-      reg03 = 0x03666666;
-      reg04 = 0x04666666;
-   }
-   GX_LOAD_BP_REG(reg01);
-   GX_LOAD_BP_REG(reg02);
-   GX_LOAD_BP_REG(reg03);
-   GX_LOAD_BP_REG(reg04);
-   reg53 = 0x53595000;
-   reg54 = 0x54000015;
-   if(vf) {
-      reg53 = 0x53000000|(vfilter[0]&0x3f);
-      reg53 = (reg53&~0xfc0)|(_SHIFTL(vfilter[1],6,6));
-      reg53 = (reg53&~0x3f000)|(_SHIFTL(vfilter[2],12,6));
-      reg53 = (reg53&~0xfc0000)|(_SHIFTL(vfilter[3],18,6));
-      reg54 = 0x54000000|(vfilter[4]&0x3f);
-      reg54 = (reg54&~0xfc0)|(_SHIFTL(vfilter[5],6,6));
-      reg54 = (reg54&~0x3f000)|(_SHIFTL(vfilter[6],12,6));
-   }
-   GX_LOAD_BP_REG(reg53);
-   GX_LOAD_BP_REG(reg54);
-}
-#endif
 
 #define __GX_Position1x8(index) FIFO_PUTU8(index)
 #define __GX_TexCoord1x8(index) FIFO_PUTU8(index)

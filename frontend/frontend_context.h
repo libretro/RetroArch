@@ -17,31 +17,34 @@
 #ifndef __FRONTEND_CONTEXT_H
 #define __FRONTEND_CONTEXT_H
 
+#include <stddef.h>
 #include "../boolean.h"
-#include "../driver.h"
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct frontend_ctx_driver
 {
-   void (*environment_get)(int argc, char *argv[], void *args);
+   void (*environment_get)(int *argc, char *argv[], void *args,
+         void *params_data);
 
    void (*init)(void *data);
    void (*deinit)(void *data);
-   void (*exitspawn)(void);
+   void (*exitspawn)(char *core_path, size_t sizeof_core_path);
 
-   int (*process_args)(int argc, char *argv[], void *args);
+   void (*process_args)(int *argc, char *argv[], void *args);
    int (*process_events)(void *data);
    void (*exec)(const char *, bool);
    void (*shutdown)(bool);
+   int (*get_rating)(void);
 
    // Human readable string.
    const char *ident;
-#ifdef IS_SALAMANDER
-   void (*salamander_init)(void);
-#endif
 } frontend_ctx_driver_t;
 
 extern const frontend_ctx_driver_t frontend_ctx_gx;
@@ -51,8 +54,13 @@ extern const frontend_ctx_driver_t frontend_ctx_qnx;
 extern const frontend_ctx_driver_t frontend_ctx_apple;
 extern const frontend_ctx_driver_t frontend_ctx_android;
 extern const frontend_ctx_driver_t frontend_ctx_psp;
+extern const frontend_ctx_driver_t frontend_ctx_null;
 
 const frontend_ctx_driver_t *frontend_ctx_find_driver(const char *ident); // Finds driver with ident. Does not initialize.
 const frontend_ctx_driver_t *frontend_ctx_init_first(void); // Finds first suitable driver and initializes.
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

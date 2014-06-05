@@ -15,9 +15,9 @@
  */
 
 
-#include "driver.h"
-#include "general.h"
-#include "fifo_buffer.h"
+#include "../driver.h"
+#include "../general.h"
+#include "../fifo_buffer.h"
 #include <stdlib.h>
 #include "../boolean.h"
 #include <pthread.h>
@@ -37,7 +37,11 @@ typedef struct coreaudio
    pthread_mutex_t lock;
    pthread_cond_t cond;
 
+#ifdef OSX_PPC
+   ComponentInstance dev;
+#else
    AudioComponentInstance dev;
+#endif
    bool dev_alive;
 
    fifo_buffer_t *buffer;
@@ -56,7 +60,11 @@ static void coreaudio_free(void *data)
    if (dev->dev_alive)
    {
       AudioOutputUnitStop(dev->dev);
+#ifdef OSX_PPC
+      CloseComponent(dev->dev);
+#else
       AudioComponentInstanceDispose(dev->dev);
+#endif
    }
 
    if (dev->buffer)
@@ -173,7 +181,11 @@ static void *coreaudio_init(const char *device, unsigned rate, unsigned latency)
 #endif
 
    // Create AudioComponent
+#ifdef OSX_PPC
+   ComponentDescription desc = {0};
+#else
    AudioComponentDescription desc = {0};
+#endif
    desc.componentType = kAudioUnitType_Output;
 #ifdef IOS
    desc.componentSubType = kAudioUnitSubType_RemoteIO;
@@ -182,11 +194,19 @@ static void *coreaudio_init(const char *device, unsigned rate, unsigned latency)
 #endif
    desc.componentManufacturer = kAudioUnitManufacturer_Apple;
 
+#ifdef OSX_PPC
+   Component comp = FindNextComponent(NULL, &desc);
+#else
    AudioComponent comp = AudioComponentFindNext(NULL, &desc);
+#endif
    if (comp == NULL)
       goto error;
    
+#ifdef OSX_PPC
+   if (OpenAComponent(comp, &dev->dev) != noErr)
+#else
    if (AudioComponentInstanceNew(comp, &dev->dev) != noErr)
+#endif
       goto error;
 
 #ifdef OSX

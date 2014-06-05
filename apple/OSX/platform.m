@@ -32,9 +32,12 @@ static void* const associated_core_key = (void*)&associated_core_key;
 
 - (void)sendEvent:(NSEvent *)event
 {
+   int i;
+   NSEventType event_type;
+
    [super sendEvent:event];
    
-   NSEventType event_type = event.type;
+   event_type = event.type;
    
    if (event_type == NSKeyDown || event_type == NSKeyUp)
    {
@@ -46,14 +49,14 @@ static void* const associated_core_key = (void*)&associated_core_key;
       {
          apple_input_keyboard_event(event_type == NSKeyDown, event.keyCode, [ch characterAtIndex:0], event.modifierFlags);
          
-         for (unsigned i = 1; i < ch.length; i ++)
+         for (i = 1; i < ch.length; i ++)
             apple_input_keyboard_event(event_type == NSKeyDown, 0, [ch characterAtIndex:i], event.modifierFlags);
       }
    }
    else if (event_type == NSFlagsChanged)
    {
       static uint32_t old_flags = 0;
-      uint32_t new_flags = [event modifierFlags];
+      uint32_t new_flags = event.modifierFlags;
       bool down = (new_flags & old_flags) == old_flags;
       old_flags = new_flags;
       
@@ -62,12 +65,13 @@ static void* const associated_core_key = (void*)&associated_core_key;
    else if (event_type == NSMouseMoved || event_type == NSLeftMouseDragged ||
             event_type == NSRightMouseDragged || event_type == NSOtherMouseDragged)
    {
+      NSPoint pos;
       // Relative
       g_current_input_data.mouse_delta[0] += event.deltaX;
       g_current_input_data.mouse_delta[1] += event.deltaY;
 
       // Absolute
-      NSPoint pos = [[RAGameView get] convertPoint:[event locationInWindow] fromView:nil];
+      pos = [[RAGameView get] convertPoint:[event locationInWindow] fromView:nil];
       g_current_input_data.touches[0].screen_x = pos.x;
       g_current_input_data.touches[0].screen_y = pos.y;
    }
@@ -126,10 +130,15 @@ static char** waiting_argv;
 
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification
 {
+   NSArray *paths;
+   NSComboBox* cb;
+   const core_info_list_t* cores;
+   int i;
+    
    apple_platform = self;
    _loaded = true;
 
-   NSArray* paths = (NSArray*)NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask, YES);
+   paths = (NSArray*)NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask, YES);
    self.configDirectory = [[paths objectAtIndex:0] stringByAppendingPathComponent:BOXSTRING("RetroArch")];
    self.globalConfigFile = [NSString stringWithFormat:BOXSTRING("%@/retroarch.cfg"), self.configDirectory];
    self.coreDirectory = [[[NSBundle mainBundle] bundlePath] stringByAppendingPathComponent:BOXSTRING("Contents/Resources/modules")];
@@ -143,20 +152,20 @@ static char** waiting_argv;
    [[RAGameView get] setFrame: [[self.window contentView] bounds]];
    [[self.window contentView] setAutoresizesSubviews:YES];
 #if defined(IOS) || defined(MAC_OS_X_VERSION_10_5)
-   [[self.window contentView] addSubview:RAGameView.get];
+   [[self.window contentView] addSubview:[RAGameView get]];
 #endif
    [self.window makeFirstResponder:[RAGameView get]];
    
    self.settingsWindow = [[[NSWindowController alloc] initWithWindowNibName:BOXSTRING("Settings")] autorelease];
    
    // Create core select list
-   NSComboBox* cb = (NSComboBox*)[[self.coreSelectSheet contentView] viewWithTag:1];
+   cb = (NSComboBox*)[[self.coreSelectSheet contentView] viewWithTag:1];
 
    core_info_set_core_path(self.coreDirectory.UTF8String);
    core_info_set_config_path(self.configDirectory.UTF8String);
-   const core_info_list_t* cores = (const core_info_list_t*)core_info_list_get();
+   cores = (const core_info_list_t*)core_info_list_get();
     
-   for (int i = 0; cores && i < cores->count; i ++)
+   for (i = 0; cores && i < cores->count; i ++)
    {
       NSString* desc = (NSString*)BOXSTRING(cores->list[i].display_name);
 #if defined(MAC_OS_X_VERSION_10_6)
@@ -169,12 +178,12 @@ static char** waiting_argv;
    if (cb.numberOfItems)
       [cb selectItemAtIndex:0];
    else
-      apple_display_alert(BOXSTRING("No libretro cores were found.\nSelect \"Go->Cores Directory\" from the menu and place libretro dylib files there."), BOXSTRING("RetroArch"));
+      apple_display_alert("No libretro cores were found.\nSelect \"Go->Cores Directory\" from the menu and place libretro dylib files there.", "RetroArch");
    
    if (waiting_argc)
    {
       apple_is_running = true;
-      apple_rarch_load_content(waiting_argc, waiting_argv);
+      apple_rarch_load_content(&waiting_argc, waiting_argv);
    }
    else if (!_wantReload)
       apple_run_core(nil, 0);
@@ -200,7 +209,7 @@ static char** waiting_argv;
    _isTerminating = true;
 
    if (apple_is_running)
-      apple_event_basic_command(QUIT);
+      g_extern.system.shutdown = true;
 
    return apple_is_running ? NSTerminateCancel : NSTerminateNow;
 }
@@ -221,15 +230,15 @@ static char** waiting_argv;
    }
    else
    {
-      apple_display_alert(BOXSTRING("Cannot open multiple files"), BOXSTRING("RetroArch"));
+      apple_display_alert("Cannot open multiple files", "RetroArch");
       [sender replyToOpenOrPrint:NSApplicationDelegateReplyFailure];
    }
 }
 
 - (void)openDocument:(id)sender
 {
-   NSOpenPanel* panel = [NSOpenPanel openPanel];
-#if defined(MAC_OS_X_VERSION_10_5)
+   NSOpenPanel* panel = (NSOpenPanel*)[NSOpenPanel openPanel];
+#if defined(MAC_OS_X_VERSION_10_6)
    [panel beginSheetModalForWindow:self.window completionHandler:^(NSInteger result)
    {
       [[NSApplication sharedApplication] stopModal];
@@ -255,7 +264,7 @@ static char** waiting_argv;
    if (!apple_is_running)
       apple_run_core(self.core, self.file.UTF8String);
    else
-      apple_event_basic_command(QUIT);
+      g_extern.system.shutdown = true;
 }
 
 - (void)chooseCore
@@ -266,6 +275,8 @@ static char** waiting_argv;
 
 - (IBAction)coreWasChosen:(id)sender
 {
+   NSComboBox* cb;
+    
    [[NSApplication sharedApplication] stopModal];
    [[NSApplication sharedApplication] endSheet:self.coreSelectSheet returnCode:0];
    [self.coreSelectSheet orderOut:self];
@@ -273,7 +284,7 @@ static char** waiting_argv;
    if (_isTerminating)
       return;
 
-   NSComboBox* cb = (NSComboBox*)[[self.coreSelectSheet contentView] viewWithTag:1];
+   cb = (NSComboBox*)[[self.coreSelectSheet contentView] viewWithTag:1];
 #if defined(MAC_OS_X_VERSION_10_6)
 	/* FIXME - Rewrite this so that this is no longer an associated object - requires ObjC 2.0 runtime */
    self.core = objc_getAssociatedObject(cb.objectValueOfSelectedItem, associated_core_key);
@@ -317,8 +328,10 @@ static char** waiting_argv;
 
 - (IBAction)basicEvent:(id)sender
 {
-   if (apple_is_running)
-      apple_event_basic_command([sender tag]);
+   if (!apple_is_running)
+      return;
+
+   apple_event_basic_command([sender tag]);
 }
 
 - (void)alertDidEnd:(NSAlert *)alert returnCode:(NSInteger)returnCode contextInfo:(void *)contextInfo
@@ -330,13 +343,16 @@ static char** waiting_argv;
 
 int main(int argc, char *argv[])
 {
-   for (int i = 0; i != argc; i ++)
+   int i;
+   for (i = 0; i < argc; i ++)
+   {
       if (strcmp(argv[i], "--") == 0)
       {
          waiting_argc = argc - i;
          waiting_argv = argv + i;
          break;
       }
+   }
 
    return NSApplicationMain(argc, (const char **) argv);
 }

@@ -258,7 +258,7 @@ static void setup_font(void *data, const char *msg, GLfloat scale, GLfloat pos_x
    if (!gl->font)
       return;
 
-   if (gl->shader)
+   if (gl->shader && gl->shader->use)
       gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
 
    gl_set_viewport(gl, gl->win_width, gl->win_height, false, false);
@@ -319,24 +319,43 @@ static void setup_font(void *data, const char *msg, GLfloat scale, GLfloat pos_x
 
 static void gl_render_msg(void *data, const char *msg, void *parms)
 {
+   GLfloat x, y, scale, alpha;
+   gl_t *gl;
+   font_params_t *params;
+   int i;
+
    (void)data;
    (void)msg;
-   GLfloat x, y, scale;
    
-   gl_t *gl = (gl_t*)data;
-   font_params_t *params = (font_params_t*)parms;
+   gl = (gl_t*)data;
+   params = (font_params_t*)parms;
+
+   if (!gl)
+      return;
 
    if (params)
    {
       x = params->x;
       y = params->y;
       scale = params->scale;
+      alpha = params->alpha;
+
+      // If alpha is 0.0f, turn it into default 1.0f
+      if (alpha <= 0.0f)
+         alpha = 1.0f;
    }
    else
    {
       x = g_settings.video.msg_pos_x;
       y = g_settings.video.msg_pos_y;
       scale = g_settings.video.font_scale ? (GLfloat)gl->vp.width / (GLfloat)gl->full_x : 1.0f;
+      alpha = 1.0f;
+   }
+
+   for (i = 0; i < 4; i++)
+   {
+      gl->font_color[4 * i + 3] = alpha;
+      gl->font_color_dark[4 * i + 3] = alpha;
    }
 
    setup_font(data, msg, scale, x, y);

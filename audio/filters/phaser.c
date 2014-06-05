@@ -1,7 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2014 - Daniel De Matteis
- *  Copyright (C) 2012-2014 - Brad Miller
+ *  Copyright (C) 2014 - Brad Miller
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -13,181 +12,132 @@
  *
  *  You should have received a copy of the GNU General Public License along with RetroArch.
  *  If not, see <http://www.gnu.org/licenses/>.
- *
  */
 
-#include "rarch_dsp.h"
-#include <string.h>
-#include <stdio.h>
-#include <stdlib.h>
+#include "dspfilter.h"
 #include <math.h>
+#include <stdlib.h>
+#include <string.h>
+
+#define phaserlfoshape 4.0
+#define phaserlfoskipsamples 20
 
 #ifndef M_PI
 #define M_PI		3.1415926535897932384626433832795
 #endif
 
-#define PHASERLFOSHAPE 4.0
-#define PHASER_LFOSKIPSAMPLES 20
-
-#ifdef RARCH_INTERNAL
-#define rarch_dsp_plugin_init    phaser_dsp_plugin_init
-#endif
-
-struct phaser_filter
+struct phaser_data
 {
    float freq;
    float startphase;
    float fb;
-   int depth;
-   int stages;
-   int drywet;
-   unsigned long skipcount;
-   float old[24];
+   float depth;
+   float drywet;
+   float old[2][24];
    float gain;
-   float fbout;
+   float fbout[2];
    float lfoskip;
    float phase;
+
+   int stages;
+   unsigned long skipcount;
 };
 
-struct phaser_filter_data
+static void phaser_free(void *data)
 {
-   struct phaser_filter phase_l;
-   struct phaser_filter phase_r;
-   float buf[4096];
-};
-
-static void phaser_init(void *data, int samplerate)
-{
-   int j;
-   struct phaser_filter *phaser = (struct phaser_filter*)data;
-
-	phaser->skipcount = 0;
-	phaser->gain = 0.0;
-	phaser->fbout = 0.0;
-	phaser->lfoskip = phaser->freq * 2 * M_PI / samplerate;
-	phaser->phase = phaser->startphase * M_PI / 180;
-	for (j = 0; j < phaser->stages; j++)
-		phaser->old[j] = 0;
+   free(data);
 }
 
-static float phaser_process(void *data, float in)
+static void phaser_process(void *data, struct dspfilter_output *output,
+      const struct dspfilter_input *input)
 {
-   float m, tmp, out;
-   int j;
-   struct phaser_filter *phaser = (struct phaser_filter*)data;
+   unsigned i, c;
+   int s;
+   float m[2], tmp[2];
+   struct phaser_data *ph = (struct phaser_data*)data;
 
-   m = in + phaser->fbout * phaser->fb / 100;
+   output->samples = input->samples;
+   output->frames  = input->frames;
+   float *out = output->samples;
 
-   if (((phaser->skipcount++) % PHASER_LFOSKIPSAMPLES) == 0)
+   for (i = 0; i < input->frames; i++, out += 2)
    {
-      phaser->gain = (1 + cos(phaser->skipcount * phaser->lfoskip + phaser->phase)) / 2;
-      phaser->gain =(exp(phaser->gain * PHASERLFOSHAPE) - 1) / (exp(PHASERLFOSHAPE)-1);
-      phaser->gain = 1 - phaser->gain / 255 * phaser->depth;  
+      float in[2] = { out[0], out[1] };
+
+      for (c = 0; c < 2; c++)
+         m[c] = in[c] + ph->fbout[c] * ph->fb * 0.01f;
+
+      if ((ph->skipcount++ % phaserlfoskipsamples) == 0)
+      {
+         ph->gain = 0.5 * (1.0 + cos(ph->skipcount * ph->lfoskip + ph->phase));
+         ph->gain = (exp(ph->gain * phaserlfoshape) - 1.0) / (exp(phaserlfoshape) - 1);
+         ph->gain = 1.0 - ph->gain * ph->depth;
+      }
+
+      for (s = 0; s < ph->stages; s++)
+      {
+         for (c = 0; c < 2; c++)
+         {
+            tmp[c] = ph->old[c][s];
+            ph->old[c][s] = ph->gain * tmp[c] + m[c];
+            m[c] = tmp[c] - ph->gain * ph->old[c][s];
+         }
+      }
+
+      for (c = 0; c < 2; c++)
+      {
+         ph->fbout[c] = m[c];
+         out[c] = m[c] * ph->drywet + in[c] * (1.0f - ph->drywet);
+      }
    }
-   for (j = 0; j < phaser->stages; j++)
-   {
-      tmp = phaser->old[j];
-      phaser->old[j] = phaser->gain * tmp + m;
-      m = tmp - phaser->gain * phaser->old[j];
-   }
-   phaser->fbout = m;
-   out = (m * phaser->drywet + in * (255 - phaser->drywet)) / 255;
-   if (out < -1.0) out = -1.0;
-   if (out > 1.0) out = 1.0;
-   return out;
 }
 
-static void * phaser_dsp_init(const rarch_dsp_info_t *info)
+static void *phaser_init(const struct dspfilter_info *info,
+      const struct dspfilter_config *config, void *userdata)
 {
-   float freq, startphase, fb;
-   int depth, stages, drywet;
-   struct phaser_filter_data *phaser;
-
-   freq = 0.4; 
-   startphase = 0;
-   fb = 0;
-   depth = 100;
-   stages = 2;
-   drywet = 128;
-
-   phaser = (struct phaser_filter_data*)calloc(1, sizeof(*phaser));
-
-   if (!phaser)
+   struct phaser_data *ph = (struct phaser_data*)calloc(1, sizeof(*ph));
+   if (!ph)
       return NULL;
 
-   phaser->phase_l.freq = freq;
-   phaser->phase_l.startphase = startphase;
-   phaser->phase_l.fb = fb;
-   phaser->phase_l.depth = depth;
-   phaser->phase_l.stages = stages;
-   phaser->phase_l.drywet = drywet;
-   phaser_init(&phaser->phase_l, info->input_rate);
+   float lfo_freq, lfo_start_phase;
 
-   phaser->phase_r.freq = freq;
-   phaser->phase_r.startphase = startphase;
-   phaser->phase_r.fb = fb;
-   phaser->phase_r.depth = depth;
-   phaser->phase_r.stages = stages;
-   phaser->phase_r.drywet = drywet;
-   phaser_init(&phaser->phase_r, info->input_rate);
+   config->get_float(userdata, "lfo_freq", &lfo_freq, 0.4f);
+   config->get_float(userdata, "lfo_start_phase", &lfo_start_phase, 0.0f);
+   config->get_float(userdata, "feedback", &ph->fb, 0.0f);
+   config->get_float(userdata, "depth", &ph->depth, 0.4f);
+   config->get_float(userdata, "dry_wet", &ph->drywet, 0.5f);
+   config->get_int(userdata, "stages", &ph->stages, 2);
 
-   return phaser;
+   if (ph->stages < 1)
+      ph->stages = 1;
+   else if (ph->stages > 24)
+      ph->stages = 24;
+
+   ph->lfoskip = lfo_freq * 2.0 * M_PI / info->input_rate;
+   ph->phase   = lfo_start_phase * M_PI / 180.0;
+
+   return ph;
 }
 
-static void phaser_dsp_process(void *data, rarch_dsp_output_t *output,
-      const rarch_dsp_input_t *input)
-{
-   int i, num_samples;
-   struct phaser_filter_data *phaser = (struct phaser_filter_data*)data;
+static const struct dspfilter_implementation phaser_plug = {
+   phaser_init,
+   phaser_process,
+   phaser_free,
 
-   output->samples = phaser->buf;
-   num_samples = input->frames * 2;
-   for (i = 0; i<num_samples;)
-   {
-		phaser->buf[i] = phaser_process(&phaser->phase_l, input->samples[i]);
-		i++;
-		phaser->buf[i] = phaser_process(&phaser->phase_r, input->samples[i]);
-		i++;
-	}
-	output->frames = input->frames;
-}
-
-static void phaser_dsp_free(void *data)
-{
-   struct phaser_filter_data *phaser = (struct phaser_filter_data*)data;
-
-   if (phaser)
-   {
-      int j;
-      for (j = 0; j < phaser->phase_l.stages; j++)
-         phaser->phase_l.old[j] = 0;
-      for (j = 0; j < phaser->phase_r.stages; j++)
-         phaser->phase_r.old[j] = 0;
-      free(phaser);
-   }
-}
-
-static void phaser_dsp_config(void *data)
-{
-   (void)data;
-}
-
-const struct dspfilter_implementation generic_phaser_dsp = {
-	phaser_dsp_init,
-	phaser_dsp_process,
-	phaser_dsp_free,
-	RARCH_DSP_API_VERSION,
-	phaser_dsp_config,
-	"Phaser",
-   NULL
+   DSPFILTER_API_VERSION,
+   "Phaser",
+   "phaser",
 };
 
-const struct dspfilter_implementation *rarch_dsp_plugin_init(dspfilter_simd_mask_t simd)
+#ifdef HAVE_FILTERS_BUILTIN
+#define dspfilter_get_implementation phaser_dspfilter_get_implementation
+#endif
+
+const struct dspfilter_implementation *dspfilter_get_implementation(dspfilter_simd_mask_t mask)
 {
-   (void)simd;
-   return &generic_phaser_dsp;
+   (void)mask;
+   return &phaser_plug;
 }
 
-#ifdef RARCH_INTERNAL
-#undef rarch_dsp_plugin_init
-#endif
+#undef dspfilter_get_implementation
+

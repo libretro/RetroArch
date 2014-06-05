@@ -94,6 +94,12 @@ void audio_device_callback(void *userdata, const char *str)
 {
    rgui_handle_t *rgui = (rgui_handle_t*)userdata;
 
+   if (!rgui)
+   {
+      RARCH_ERR("Cannot invoke audio device setting callback, menu handle is not initialized.\n");
+      return;
+   }
+
    if (str && *str)
       strlcpy(g_settings.audio.device, str, sizeof(g_settings.audio.device));
    menu_key_end_line(rgui);
@@ -104,23 +110,35 @@ void preset_filename_callback(void *userdata, const char *str)
 {
    rgui_handle_t *rgui = (rgui_handle_t*)userdata;
 
+   if (!rgui)
+   {
+      RARCH_ERR("Cannot invoke preset setting callback, menu handle is not initialized.\n");
+      return;
+   }
+
    if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->shader_manager_save_preset)
-      driver.menu_ctx->backend->shader_manager_save_preset(rgui, str && *str ? str : NULL, false);
+      driver.menu_ctx->backend->shader_manager_save_preset(str && *str ? str : NULL, false);
    menu_key_end_line(rgui);
 }
 #endif
 
 void menu_key_event(bool down, unsigned keycode, uint32_t character, uint16_t mod)
 {
+   if (!driver.menu)
+   {
+      RARCH_ERR("Cannot invoke menu key event callback, menu handle is not initialized.\n");
+      return;
+   }
+
    (void)down;
    (void)keycode;
    (void)mod;
 
    if (character == '/')
    {
-      rgui->keyboard.display = true;
-      rgui->keyboard.label = "Search: ";
-      rgui->keyboard.buffer = input_keyboard_start_line(rgui, menu_search_callback);
+      driver.menu->keyboard.display = true;
+      driver.menu->keyboard.label = "Search: ";
+      driver.menu->keyboard.buffer = input_keyboard_start_line(driver.menu, menu_search_callback);
    }
 }
 

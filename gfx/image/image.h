@@ -13,8 +13,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __RARCH_IMAGE_H
-#define __RARCH_IMAGE_H
+#ifndef __RARCH_IMAGE_CONTEXT_H
+#define __RARCH_IMAGE_CONTEXT_H
 
 #include <stdint.h>
 #include "../../boolean.h"
@@ -38,8 +38,22 @@ struct texture_image
 #endif
 };
 
-bool texture_image_load(const char *path, struct texture_image* img);
-void texture_image_free(struct texture_image *img);
+typedef struct image_ctx_driver
+{
+   bool (*load)(void*, const char*, void *);
+   void (*free)(void *, void *);
+   // Human readable string.
+   const char *ident;
+} image_ctx_driver_t;
 
+#if 0
+extern const image_ctx_driver_t image_ctx_xdk1;
+extern const image_ctx_driver_t image_ctx_ps3;
+extern const image_ctx_driver_t image_ctx_sdl;
+extern const image_ctx_driver_t image_ctx_rpng;
 #endif
 
+bool texture_image_load(void *data, const char *path, void *img);
+void texture_image_free(void *data, void *img);
+
+#endif

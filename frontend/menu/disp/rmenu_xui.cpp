@@ -36,8 +36,8 @@
 #define FONT_HEIGHT_STRIDE (FONT_HEIGHT + 1)
 #define RXUI_TERM_START_X 15
 #define RXUI_TERM_START_Y 27
-#define RXUI_TERM_WIDTH (((rgui->width - RXUI_TERM_START_X - 15) / (FONT_WIDTH_STRIDE)))
-#define RXUI_TERM_HEIGHT (((rgui->height - RXUI_TERM_START_Y - 15) / (FONT_HEIGHT_STRIDE)) - 1)
+#define RXUI_TERM_WIDTH (((driver.menu->width - RXUI_TERM_START_X - 15) / (FONT_WIDTH_STRIDE)))
+#define RXUI_TERM_HEIGHT (((driver.menu->height - RXUI_TERM_START_Y - 15) / (FONT_HEIGHT_STRIDE)) - 1)
 
 HXUIOBJ m_menulist;
 HXUIOBJ m_menutitle;
@@ -153,13 +153,12 @@ HRESULT CRetroArchMain::OnInit(XUIMessageInit * pInitData, BOOL& bHandled)
 static void* rmenu_xui_init(void)
 {
    HRESULT hr;
+   TypefaceDescriptor typeface = {0};
 
    rgui_handle_t *rgui = (rgui_handle_t*)calloc(1, sizeof(*rgui));
-   if (rgui == NULL)
-   {
-      RARCH_ERR("Could not allocate RGUI handle.\n");
+
+   if (!rgui)
       return NULL;
-   }
 
    d3d_video_t *d3d= (d3d_video_t*)driver.video_data;
 
@@ -182,50 +181,44 @@ static void* rmenu_xui_init(void)
 
    hr = app.InitShared(d3d->dev, &d3dpp, XuiPNGTextureLoader);
 
-   if (hr != S_OK)
+   if (FAILED(hr))
    {
       RARCH_ERR("Failed initializing XUI application.\n");
-      free(rgui);
-      return NULL;
+      goto error;
    }
 
    /* Register font */
-   TypefaceDescriptor typeface = {0};
    typeface.szTypeface = L"Arial Unicode MS";
    typeface.szLocator = L"file://game:/media/rarch.ttf";
    typeface.szReserved1 = NULL;
 
    hr = XuiRegisterTypeface( &typeface, TRUE );
-   if (hr != S_OK)
+   if (FAILED(hr))
    {
       RARCH_ERR("Failed to register default typeface.\n");
-      free(rgui);
-      return NULL;
+      goto error;
    }
 
    hr = XuiLoadVisualFromBinary( L"file://game:/media/rarch_scene_skin.xur", NULL);
-   if (hr != S_OK)
+   if (FAILED(hr))
    {
       RARCH_ERR("Failed to load skin.\n");
-      free(rgui);
-      return NULL;
+      goto error;
    }
 
    hr = XuiSceneCreate(hdmenus_allowed ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_main.xur", NULL, &root_menu);
-   if (hr != S_OK)
+   if (FAILED(hr))
    {
       RARCH_ERR("Failed to create scene 'rarch_main.xur'.\n");
-      free(rgui);
-      return NULL;
+      goto error;
    }
 
    current_menu = root_menu;
    hr = XuiSceneNavigateFirst(app.GetRootObj(), current_menu, XUSER_INDEX_FOCUS);
-   if (hr != S_OK)
+   if (FAILED(hr))
    {
       RARCH_ERR("XuiSceneNavigateFirst failed.\n");
-      free(rgui);
-      return NULL;
+      goto error;
    }
 
    if (driver.video_data && driver.video_poke && driver.video_poke->set_texture_enable)
@@ -235,6 +228,10 @@ static void* rmenu_xui_init(void)
    xui_msg_queue = msg_queue_new(16);
 
    return rgui;
+
+error:
+   free(rgui);
+   return NULL;
 }
 
 static void rmenu_xui_free(void *data)
@@ -264,7 +261,7 @@ static void xui_render_message(const char *msg)
 	j = 0;
 	for (i = 0; i < list->size; i++, j++)
 	{
-		char *msg = list->elems[i].data;
+		char *msg = (char*)list->elems[i].data;
 		unsigned msglen = strlen(msg);
 	#if 0
 		if (msglen > RMENU_TERM_WIDTH)
@@ -289,9 +286,9 @@ static void xui_render_message(const char *msg)
 	}
 }
 
-static void rmenu_xui_frame(void *data)
+static void rmenu_xui_frame(void)
 {
-   d3d_video_t *d3d = (d3d_video_t*)data;
+   d3d_video_t *d3d = (d3d_video_t*)driver.video_data;
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
 
    D3DVIEWPORT vp_full;
@@ -333,9 +330,8 @@ static void rmenu_xui_frame(void *data)
    d3dr->SetViewport(&d3d->final_viewport);
 }
 
-static int rmenu_xui_input_postprocess(void *data, uint64_t old_state)
+static int rmenu_xui_input_postprocess(uint64_t old_state)
 {
-   rgui_handle_t *rgui = (rgui_handle_t*)data;
    bool quit = false;
    bool resize = false;
    unsigned width;
@@ -346,7 +342,7 @@ static int rmenu_xui_input_postprocess(void *data, uint64_t old_state)
    (void)height;
    (void)frame_count;
 
-   if ((rgui->trigger_state & (1ULL << RARCH_MENU_TOGGLE)) &&
+   if ((driver.menu->trigger_state & (1ULL << RARCH_MENU_TOGGLE)) &&
       g_extern.main_is_init)
    {
       g_extern.lifecycle_state |= (1ULL << MODE_GAME);
@@ -362,41 +358,39 @@ static int rmenu_xui_input_postprocess(void *data, uint64_t old_state)
    return process_input_ret_old;
 }
 
-static void blit_line(rgui_handle_t *rgui,
-int x, int y, const char *message, bool green)
+static void blit_line(int x, int y, const char *message, bool green)
 {
 }
 
-static void rmenu_xui_render_background(void *data)
+static void rmenu_xui_render_background(void)
 {
-   (void)data;
 }
 
-static void rmenu_xui_render_messagebox(void *data, const char *message)
+static void rmenu_xui_render_messagebox(const char *message)
 {
    msg_queue_clear(xui_msg_queue);
    msg_queue_push(xui_msg_queue, message, 2, 1);
 }
 
-static void rmenu_xui_render(void *data)
+static void rmenu_xui_render(void)
 {
-   rgui_handle_t *rgui = (rgui_handle_t*)data;
-
-   if (rgui->need_refresh && 
-         (g_extern.lifecycle_state & (1ULL << MODE_MENU))
-         && !rgui->msg_force)
-      return;
-
-   size_t begin = rgui->selection_ptr;
-   size_t end = rgui->selection_buf->size;
-
-   rmenu_xui_render_background(rgui);
-
+   size_t begin, end;
    char title[256];
    const char *dir = NULL;
    unsigned menu_type = 0;
    unsigned menu_type_is = 0;
-   file_list_get_last(rgui->menu_stack, &dir, &menu_type);
+
+   if (!driver.menu || driver.menu->need_refresh && 
+         (g_extern.lifecycle_state & (1ULL << MODE_MENU))
+         && !driver.menu->msg_force)
+      return;
+
+   begin = driver.menu->selection_ptr;
+   end   = file_list_get_size(driver.menu->selection_buf);
+
+   rmenu_xui_render_background();
+
+   file_list_get_last(driver.menu->menu_stack, &dir, &menu_type);
 
    if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->type_is)
       menu_type_is = driver.menu_ctx->backend->type_is(menu_type);
@@ -423,6 +417,12 @@ static void rmenu_xui_render(void *data)
       strlcpy(title, "SETTINGS", sizeof(title));
    else if (menu_type == RGUI_SETTINGS_DRIVERS)
       strlcpy(title, "DRIVER OPTIONS", sizeof(title));
+   else if (menu_type == RGUI_SETTINGS_PERFORMANCE_COUNTERS)
+      strlcpy(title, "PERFORMANCE COUNTERS", sizeof(title));
+   else if (menu_type == RGUI_SETTINGS_PERFORMANCE_COUNTERS_LIBRETRO)
+      strlcpy(title, "CORE PERFORMANCE COUNTERS", sizeof(title));
+   else if (menu_type == RGUI_SETTINGS_PERFORMANCE_COUNTERS_FRONTEND)
+      strlcpy(title, "FRONTEND PERFORMANCE COUNTERS", sizeof(title));
 #ifdef HAVE_SHADER_MANAGER
    else if (menu_type == RGUI_SETTINGS_SHADER_OPTIONS)
       strlcpy(title, "SHADER OPTIONS", sizeof(title));
@@ -455,6 +455,8 @@ static void rmenu_xui_render(void *data)
       snprintf(title, sizeof(title), "MENU %s", dir);
    else if (menu_type == RGUI_SETTINGS_OPEN_HISTORY)
       strlcpy(title, "LOAD HISTORY", sizeof(title));
+   else if (menu_type == RGUI_INFO_SCREEN)
+      strlcpy(title, "INFO", sizeof(title));
 #ifdef HAVE_OVERLAY
    else if (menu_type == RGUI_SETTINGS_OVERLAY_PRESET)
       snprintf(title, sizeof(title), "OVERLAY %s", dir);
@@ -465,10 +467,14 @@ static void rmenu_xui_render(void *data)
       snprintf(title, sizeof(title), "DSP FILTER %s", dir);
    else if (menu_type == RGUI_BROWSER_DIR_PATH)
       snprintf(title, sizeof(title), "BROWSER DIR %s", dir);
+   else if (menu_type == RGUI_CONTENT_DIR_PATH)
+      snprintf(title, sizeof(title), "CONTENT DIR %s", dir);
 #ifdef HAVE_SCREENSHOTS
    else if (menu_type == RGUI_SCREENSHOT_DIR_PATH)
       snprintf(title, sizeof(title), "SCREENSHOT DIR %s", dir);
 #endif
+   else if (menu_type == RGUI_AUTOCONFIG_DIR_PATH)
+      snprintf(title, sizeof(title), "AUTOCONFIG DIR %s", dir);
    else if (menu_type == RGUI_SHADER_DIR_PATH)
       snprintf(title, sizeof(title), "SHADER DIR %s", dir);
    else if (menu_type == RGUI_FILTER_DIR_PATH)
@@ -491,13 +497,15 @@ static void rmenu_xui_render(void *data)
 #endif
    else if (menu_type == RGUI_SYSTEM_DIR_PATH)
       snprintf(title, sizeof(title), "SYSTEM DIR %s", dir);
+   else if (menu_type == RGUI_ASSETS_DIR_PATH)
+      snprintf(title, sizeof(title), "ASSETS DIR %s", dir);
    else
    {
-      if (rgui->defer_core)
+      if (driver.menu->defer_core)
          snprintf(title, sizeof(title), "CONTENT %s", dir);
       else
       {
-         const char *core_name = rgui->info.library_name;
+         const char *core_name = driver.menu->info.library_name;
          if (!core_name)
             core_name = g_extern.system.info.library_name;
          if (!core_name)
@@ -511,23 +519,23 @@ static void rmenu_xui_render(void *data)
 
    char title_buf[256];
    menu_ticker_line(title_buf, RXUI_TERM_WIDTH - 3, g_extern.frame_count / 15, title, true);
-   blit_line(rgui, RXUI_TERM_START_X + 15, 15, title_buf, true);
+   blit_line(RXUI_TERM_START_X + 15, 15, title_buf, true);
 
    char title_msg[64];
-   const char *core_name = rgui->info.library_name;
+   const char *core_name = driver.menu->info.library_name;
    if (!core_name)
       core_name = g_extern.system.info.library_name;
    if (!core_name)
       core_name = "No Core";
 
-   const char *core_version = rgui->info.library_version;
+   const char *core_version = driver.menu->info.library_version;
    if (!core_version)
       core_version = g_extern.system.info.library_version;
    if (!core_version)
       core_version = "";
 
    snprintf(title_msg, sizeof(title_msg), "%s - %s %s", PACKAGE_VERSION, core_name, core_version);
-   blit_line(rgui, RXUI_TERM_START_X + 15, (RXUI_TERM_HEIGHT * FONT_HEIGHT_STRIDE) + RXUI_TERM_START_Y + 2, title_msg, true);
+   blit_line(RXUI_TERM_START_X + 15, (RXUI_TERM_HEIGHT * FONT_HEIGHT_STRIDE) + RXUI_TERM_START_Y + 2, title_msg, true);
 
    unsigned x, y;
    size_t i;
@@ -539,7 +547,7 @@ static void rmenu_xui_render(void *data)
    {
       const char *path = 0;
       unsigned type = 0;
-      file_list_get_at_offset(rgui->selection_buf, i, &path, &type);
+      file_list_get_at_offset(driver.menu->selection_buf, i, &path, &type);
       char message[256];
       char type_str[256];
 
@@ -566,7 +574,7 @@ static void rmenu_xui_render(void *data)
             snprintf(type_str, sizeof(type_str), "%s",
                   g_settings.video.smooth ? "Linear" : "Nearest");
          else if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->shader_manager_get_str)
-            driver.menu_ctx->backend->shader_manager_get_str(&rgui->shader, type_str, sizeof(type_str), type);
+            driver.menu_ctx->backend->shader_manager_get_str(driver.menu->shader, type_str, sizeof(type_str), type);
       }
       else
       // Pretty-print libretro cores from menu.
@@ -575,7 +583,7 @@ static void rmenu_xui_render(void *data)
          if (type == RGUI_FILE_PLAIN)
          {
             strlcpy(type_str, "(CORE)", sizeof(type_str));
-            file_list_get_alt_at_offset(rgui->selection_buf, i, &path);
+            file_list_get_alt_at_offset(driver.menu->selection_buf, i, &path);
             w = 6;
          }
          else
@@ -625,7 +633,7 @@ static void rmenu_xui_render(void *data)
 
       char entry_title_buf[256];
       char type_str_buf[64];
-      bool selected = i == rgui->selection_ptr;
+      bool selected = i == driver.menu->selection_ptr;
 
       strlcpy(entry_title_buf, path, sizeof(entry_title_buf));
       strlcpy(type_str_buf, type_str, sizeof(type_str_buf));
@@ -644,17 +652,17 @@ static void rmenu_xui_render(void *data)
       wchar_t msg_w[256];
       mbstowcs(msg_w, message, sizeof(msg_w) / sizeof(wchar_t));
       XuiListSetText(m_menulist, i, msg_w);
-      blit_line(rgui, x, y, message, i);
+      blit_line(x, y, message, i);
    }
 
-   if (rgui->keyboard.display)
+   if (driver.menu->keyboard.display)
    {
       char msg[1024];
-      const char *str = *rgui->keyboard.buffer;
+      const char *str = *driver.menu->keyboard.buffer;
       if (!str)
          str = "";
-      snprintf(msg, sizeof(msg), "%s\n%s", rgui->keyboard.label, str);
-      rmenu_xui_render_messagebox(rgui, msg);
+      snprintf(msg, sizeof(msg), "%s\n%s", driver.menu->keyboard.label, str);
+      rmenu_xui_render_messagebox(msg);
    }
 }
 
@@ -706,7 +714,20 @@ static void rmenu_xui_list_clear(void *data)
 static void rmenu_xui_list_set_selection(void *data)
 {
    file_list_t *list = (file_list_t*)data;
-   XuiListSetCurSel(m_menulist, list->list[list->size].directory_ptr);
+   if (!list)
+      return;
+
+   XuiListSetCurSel(m_menulist, file_list_get_directory_ptr(list));
+}
+
+static void rmenu_xui_init_core_info(void *data)
+{
+   rgui_handle_t *rgui = (rgui_handle_t*)data;
+
+   core_info_list_free(rgui->core_info);
+   rgui->core_info = NULL;
+   if (*g_settings.libretro_directory)
+      rgui->core_info = core_info_list_new(g_settings.libretro_directory);
 }
 
 const menu_ctx_driver_t menu_ctx_rmenu_xui = {
@@ -732,6 +753,7 @@ const menu_ctx_driver_t menu_ctx_rmenu_xui = {
    rmenu_xui_list_delete,
    rmenu_xui_list_clear,
    rmenu_xui_list_set_selection,
+   rmenu_xui_init_core_info,
    &menu_ctx_backend_common,
    "rmenu_xui",
 };

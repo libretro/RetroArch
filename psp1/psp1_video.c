@@ -111,54 +111,41 @@ static void *psp_init(const video_info_t *video,
 {
    // to-do : add ASSERT() checks or use main RAM if VRAM is too low for desired video->input_scale
    void *pspinput;
-   psp1_video_t *psp=driver.video_data;
-
-   if (!psp)
-   {
-      // first time init
-      psp = (psp1_video_t*)calloc(1, sizeof(psp1_video_t));
-
-      if (!psp)
-         goto error;
-
-   }
-
-   if(!psp->main_dList) // either first time init or psp_free was called
-   {
-      sceGuInit();
-
-
-      psp->main_dList         = memalign(16, 256); // make sure to allocate more space if bigger display lists are needed.
-      psp->frame_dList        = memalign(16, 256);
-      psp->rgui.dList         = memalign(16, 256);
-      psp->rgui.frame         = memalign(16,  2 * 480 * 272);
-      psp->frame_coords       = memalign(64,  1 * sizeof(psp1_sprite_t));
-      psp->rgui.frame_coords  = memalign(64, 16 * sizeof(psp1_sprite_t));
-
-      memset(psp->frame_coords      , 0,  1 * sizeof(psp1_sprite_t));
-      memset(psp->rgui.frame_coords , 0, 16 * sizeof(psp1_sprite_t));
-      sceKernelDcacheWritebackInvalidateAll();
-      psp->frame_coords       = TO_UNCACHED_PTR(psp->frame_coords);
-      psp->rgui.frame_coords  = TO_UNCACHED_PTR(psp->rgui.frame_coords);;
-
-      psp->frame_coords->v0.x = 60;
-      psp->frame_coords->v0.y = 0;
-      psp->frame_coords->v0.u = 0;
-      psp->frame_coords->v0.v = 0;
-
-      psp->frame_coords->v1.x = 420;
-      psp->frame_coords->v1.y = SCEGU_SCR_HEIGHT;
-      psp->frame_coords->v1.u = 256;
-      psp->frame_coords->v1.v = 240;
-
-   }
-
-   psp->vsync = video->vsync;
-   psp->rgb32 = video->rgb32;
-
    int pixel_format, lut_pixel_format, lut_block_count;
    unsigned int red_shift, color_mask;
    void *displayBuffer, *LUT_r, *LUT_b;
+   psp1_video_t *psp  = (psp1_video_t*)calloc(1, sizeof(psp1_video_t));
+
+   if (!psp)
+      return NULL;
+
+   sceGuInit();
+
+   psp->main_dList         = memalign(16, 256); // make sure to allocate more space if bigger display lists are needed.
+   psp->frame_dList        = memalign(16, 256);
+   psp->rgui.dList         = memalign(16, 256);
+   psp->rgui.frame         = memalign(16,  2 * 480 * 272);
+   psp->frame_coords       = memalign(64,  1 * sizeof(psp1_sprite_t));
+   psp->rgui.frame_coords  = memalign(64, 16 * sizeof(psp1_sprite_t));
+
+   memset(psp->frame_coords      , 0,  1 * sizeof(psp1_sprite_t));
+   memset(psp->rgui.frame_coords , 0, 16 * sizeof(psp1_sprite_t));
+   sceKernelDcacheWritebackInvalidateAll();
+   psp->frame_coords       = TO_UNCACHED_PTR(psp->frame_coords);
+   psp->rgui.frame_coords  = TO_UNCACHED_PTR(psp->rgui.frame_coords);;
+
+   psp->frame_coords->v0.x = 60;
+   psp->frame_coords->v0.y = 0;
+   psp->frame_coords->v0.u = 0;
+   psp->frame_coords->v0.v = 0;
+
+   psp->frame_coords->v1.x = 420;
+   psp->frame_coords->v1.y = SCEGU_SCR_HEIGHT;
+   psp->frame_coords->v1.u = 256;
+   psp->frame_coords->v1.v = 240;
+
+   psp->vsync = video->vsync;
+   psp->rgb32 = video->rgb32;
 
    if(psp->rgb32)
    {
@@ -215,7 +202,6 @@ static void *psp_init(const video_info_t *video,
 
    }
 
-
    sceDisplayWaitVblankStart();   // TODO : check if necessary
    sceGuDisplay(GU_FALSE);
 
@@ -240,8 +226,6 @@ static void *psp_init(const video_info_t *video,
 
    pspDebugScreenSetColorMode(pixel_format);
    pspDebugScreenSetBase(psp->draw_buffer);
-
-
 
    // fill frame_dList :
 
@@ -274,7 +258,6 @@ static void *psp_init(const video_info_t *video,
       *input = pspinput ? &input_psp : NULL;
       *input_data = pspinput;
    }
-
 
    return psp;
 error:
@@ -424,13 +407,8 @@ static void psp_free(void *data)
    if (psp->rgui.frame)
       free(psp->rgui.frame);
 
-   memset(psp, 0, sizeof(psp1_video_t));
-
+   free(data);
 }
-
-#ifdef HAVE_MENU
-static void psp_restart(void) {}
-#endif
 
 static void psp_set_rotation(void *data, unsigned rotation)
 {
@@ -533,10 +511,6 @@ const video_driver_t video_psp1 = {
    NULL,
    psp_free,
    "psp1",
-
-#if defined(HAVE_MENU)
-   psp_restart,
-#endif
 
    psp_set_rotation,
    NULL,

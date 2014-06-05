@@ -19,9 +19,6 @@
 #import "RetroArch_Apple.h"
 #include "rarch_wrapper.h"
 #include "../../frontend/frontend.h"
-
-#include "../../input/apple_input.h"
-
 #include "../../file.h"
 
 id<RetroArch_Platform> apple_platform;
@@ -33,7 +30,7 @@ NSString* apple_core;
 
 void apple_rarch_exited(void)
 {
-   NSString* used_core = (NSString*)apple_core;
+   NSString *used_core = (NSString*)apple_core;
    apple_core = 0;
    
    if (apple_is_running)
@@ -52,6 +49,12 @@ void apple_rarch_exited(void)
 
 void apple_run_core(NSString* core, const char* file)
 {
+   static char core_path[PATH_MAX], file_path[PATH_MAX], config_path[PATH_MAX];
+   char **argv;
+   int argc;
+    
+   (void)config_path;
+
    if (apple_is_running)
        return;
     
@@ -60,9 +63,6 @@ void apple_run_core(NSString* core, const char* file)
     apple_core = core;
     apple_is_running = true;
 
-   static char core_path[PATH_MAX];
-   static char file_path[PATH_MAX];
-
    if (file && core)
    {
       strlcpy(core_path, apple_core.UTF8String, sizeof(core_path));
@@ -70,8 +70,6 @@ void apple_run_core(NSString* core, const char* file)
    }
    
 #ifdef IOS
-    static char config_path[PATH_MAX];
-   
     if (core_info_has_custom_config(apple_core.UTF8String))
         core_info_get_custom_config(apple_core.UTF8String, config_path, sizeof(config_path));
     else
@@ -80,24 +78,23 @@ void apple_run_core(NSString* core, const char* file)
     static const char* const argv_game[] = { "retroarch", "-c", config_path, "-L", core_path, file_path, 0 };
     static const char* const argv_menu[] = { "retroarch", "-c", config_path, "--menu", 0 };
     
-    int argc = (file && core) ? 6 : 4;
-    char** argv = (char**)((file && core) ? argv_game : argv_menu);
+    argc = (file && core) ? 6 : 4;
 #else
    static const char* const argv_game[] = { "retroarch", "-L", core_path, file_path, 0 };
    static const char* const argv_menu[] = { "retroarch", "--menu", 0 };
 
-   int argc = (file && core) ? 4 : 2;
-   char** argv = (char**)((file && core) ? argv_game : argv_menu);
+   argc = (file && core) ? 4 : 2;
 #endif
+    argv = (char**)((file && core) ? argv_game : argv_menu);
 
-    if (apple_rarch_load_content(argc, argv))
+    if (apple_rarch_load_content(&argc, argv))
     {
         char basedir[256];
         fill_pathname_basedir(basedir, file ? file : "", sizeof(basedir));
         if (file && access(basedir, R_OK | W_OK | X_OK))
-            apple_display_alert(BOXSTRING("The directory containing the selected file must have write premissions. This will prevent zipped content from loading, and will cause some cores to not function."), 0);
+            apple_display_alert("The directory containing the selected file must have write premissions. This will prevent zipped content from loading, and will cause some cores to not function.", "Warning");
         else
-            apple_display_alert(BOXSTRING("Failed to load content."), 0);
+            apple_display_alert("Failed to load content.", "Error");
         
         apple_rarch_exited();
     }

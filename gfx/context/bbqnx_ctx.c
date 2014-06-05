@@ -50,17 +50,15 @@ static screen_display_t screen_disp;
 
 static enum gfx_ctx_api g_api;
 
-static void gfx_ctx_set_swap_interval(void *data, unsigned interval)
+static void gfx_ctx_qnx_set_swap_interval(void *data, unsigned interval)
 {
    (void)data;
-   RARCH_LOG("gfx_ctx_set_swap_interval(%d).\n", interval);
    eglSwapInterval(g_egl_dpy, interval);
 }
 
-static void gfx_ctx_destroy(void *data)
+static void gfx_ctx_qnx_destroy(void *data)
 {
    (void)data;
-   RARCH_LOG("gfx_ctx_destroy().\n");
    eglMakeCurrent(g_egl_dpy, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
    eglDestroyContext(g_egl_dpy, g_egl_ctx);
    eglDestroySurface(g_egl_dpy, g_egl_surf);
@@ -74,7 +72,7 @@ static void gfx_ctx_destroy(void *data)
    g_resize   = false;
 }
 
-static void gfx_ctx_get_video_size(void *data, unsigned *width, unsigned *height)
+static void gfx_ctx_qnx_get_video_size(void *data, unsigned *width, unsigned *height)
 {
    (void)data;
    if (g_egl_dpy)
@@ -92,7 +90,7 @@ static void gfx_ctx_get_video_size(void *data, unsigned *width, unsigned *height
    }
 }
 
-static bool gfx_ctx_init(void *data)
+static bool gfx_ctx_qnx_init(void *data)
 {
    /* Create a screen context that will be used to 
     * create an EGL surface to receive libscreen events */
@@ -283,19 +281,19 @@ static bool gfx_ctx_init(void *data)
 
 error:
    RARCH_ERR("EGL error: %d.\n", eglGetError());
-   gfx_ctx_destroy(data);
+   gfx_ctx_qnx_destroy(data);
 screen_error:
    screen_stop_events(screen_ctx);
    return false;
 }
 
-static void gfx_ctx_swap_buffers(void *data)
+static void gfx_ctx_qnx_swap_buffers(void *data)
 {
    (void)data;
    eglSwapBuffers(g_egl_dpy, g_egl_surf);
 }
 
-static void gfx_ctx_check_window(void *data, bool *quit,
+static void gfx_ctx_qnx_check_window(void *data, bool *quit,
       bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
 {
    (void)data;
@@ -304,7 +302,7 @@ static void gfx_ctx_check_window(void *data, bool *quit,
    *quit = false;
 
    unsigned new_width, new_height;
-   gfx_ctx_get_video_size(&new_width, &new_height);
+   gfx_ctx_qnx_get_video_size(data, &new_width, &new_height);
    if (new_width != *width || new_height != *height)
    {
       *width  = new_width;
@@ -313,18 +311,18 @@ static void gfx_ctx_check_window(void *data, bool *quit,
    }
 
    // Check if we are exiting.
-   if (g_extern.lifecycle_state & (1ULL << RARCH_QUIT_KEY))
+   if (g_extern.system.shutdown)
       *quit = true;
 }
 
-static void gfx_ctx_set_resize(void *data, unsigned width, unsigned height)
+static void gfx_ctx_qnx_set_resize(void *data, unsigned width, unsigned height)
 {
    (void)data;
    (void)width;
    (void)height;
 }
 
-static void gfx_ctx_update_window_title(void *data)
+static void gfx_ctx_qnx_update_window_title(void *data)
 {
    (void)data;
    char buf[128], buf_fps[128];
@@ -335,7 +333,7 @@ static void gfx_ctx_update_window_title(void *data)
       msg_queue_push(g_extern.msg_queue, buf_fps, 1, 1);
 }
 
-static bool gfx_ctx_set_video_mode(void *data,
+static bool gfx_ctx_qnx_set_video_mode(void *data,
       unsigned width, unsigned height,
       bool fullscreen)
 {
@@ -347,14 +345,14 @@ static bool gfx_ctx_set_video_mode(void *data,
 }
 
 
-static void gfx_ctx_input_driver(void *data, const input_driver_t **input, void **input_data)
+static void gfx_ctx_qnx_input_driver(void *data, const input_driver_t **input, void **input_data)
 {
    (void)data;
    *input = NULL;
    *input_data = NULL;
 }
 
-static gfx_ctx_proc_t gfx_ctx_get_proc_address(void *data, const char *symbol)
+static gfx_ctx_proc_t gfx_ctx_qnx_get_proc_address(const char *symbol)
 {
    rarch_assert(sizeof(void*) == sizeof(void (*)(void)));
    gfx_ctx_proc_t ret;
@@ -365,7 +363,7 @@ static gfx_ctx_proc_t gfx_ctx_get_proc_address(void *data, const char *symbol)
    return ret;
 }
 
-static bool gfx_ctx_bind_api(void *data, enum gfx_ctx_api api, unsigned major, unsigned minor)
+static bool gfx_ctx_qnx_bind_api(void *data, enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
    (void)data;
    (void)major;
@@ -374,27 +372,31 @@ static bool gfx_ctx_bind_api(void *data, enum gfx_ctx_api api, unsigned major, u
    return api == GFX_CTX_OPENGL_ES_API;
 }
 
-static bool gfx_ctx_has_focus(void *data)
+static bool gfx_ctx_qnx_has_focus(void *data)
 {
    (void)data;
    return true;
 }
 
 const gfx_ctx_driver_t gfx_ctx_bbqnx = {
-   gfx_ctx_init,
-   gfx_ctx_destroy,
-   gfx_ctx_bind_api,
-   gfx_ctx_set_swap_interval,
-   gfx_ctx_set_video_mode,
-   gfx_ctx_get_video_size,
+   gfx_ctx_qnx_init,
+   gfx_ctx_qnx_destroy,
+   gfx_ctx_qnx_bind_api,
+   gfx_ctx_qnx_set_swap_interval,
+   gfx_ctx_qnx_set_video_mode,
+   gfx_ctx_qnx_get_video_size,
    NULL,
-   gfx_ctx_update_window_title,
-   gfx_ctx_check_window,
-   gfx_ctx_set_resize,
-   gfx_ctx_has_focus,
-   gfx_ctx_swap_buffers,
-   gfx_ctx_input_driver,
-   gfx_ctx_get_proc_address,
+   gfx_ctx_qnx_update_window_title,
+   gfx_ctx_qnx_check_window,
+   gfx_ctx_qnx_set_resize,
+   gfx_ctx_qnx_has_focus,
+   gfx_ctx_qnx_swap_buffers,
+   gfx_ctx_qnx_input_driver,
+   gfx_ctx_qnx_get_proc_address,
+#ifdef HAVE_EGL
+   NULL,
+   NULL,
+#endif
    NULL,
    "blackberry_qnx",
 };

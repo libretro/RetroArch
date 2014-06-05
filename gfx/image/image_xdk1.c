@@ -17,9 +17,10 @@
 #include "image.h"
 #include "../../xdk/xdk_d3d.h"
 
-bool texture_image_load(const char *path, struct texture_image *out_img)
+bool texture_image_load(void *data, const char *path, void *image_data)
 {
-   d3d_video_t *d3d = (d3d_video_t*)driver.video_data;
+   d3d_video_t *d3d = (d3d_video_t*)data;
+   struct texture_image *out_img = (struct texture_image*)image_data;
 
    D3DXIMAGE_INFO m_imageInfo;
 
@@ -54,8 +55,13 @@ bool texture_image_load(const char *path, struct texture_image *out_img)
    return true;
 }
 
-void texture_image_free(struct texture_image *img)
+void texture_image_free(void *data, void *image_data)
 {
+   struct texture_image *img = (struct texture_image*)image_data;
+
+   if (!img)
+      return;
+
    if (img->vertex_buf)
       img->vertex_buf->Release();
    if (img->pixels)

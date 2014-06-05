@@ -186,6 +186,7 @@
     <ClCompile Include="..\..\audio\cc_resampler.c" />
     <ClCompile Include="..\..\audio\dsound.c">
     </ClCompile>
+    <ClCompile Include="..\..\audio\dsp_filter.c" />
     <ClCompile Include="..\..\audio\resampler.c" />
     <ClCompile Include="..\..\audio\sinc.c" />
     <ClCompile Include="..\..\audio\thread_wrapper.c" />
@@ -224,6 +225,7 @@
     <ClCompile Include="..\..\frontend\menu\menu_input_line_cb.c" />
     <ClCompile Include="..\..\frontend\menu\menu_navigation.c" />
     <ClCompile Include="..\..\frontend\info\core_info.c" />
+    <ClCompile Include="..\..\frontend\platform\platform_null.c" />
     <ClCompile Include="..\..\gfx\d3d9\d3d.cpp" />
     <ClCompile Include="..\..\gfx\context\d3d_ctx.cpp" />
     <ClCompile Include="..\..\gfx\d3d9\render_chain.cpp" />
@@ -239,6 +241,7 @@
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">CompileAsC</CompileAs>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsC</CompileAs>
     </ClCompile>
+    <ClCompile Include="..\..\gfx\image\image_rpng.c" />
     <ClCompile Include="..\..\gfx\rpng\rpng.c" />
     <ClCompile Include="..\..\gfx\shader_cg.c" />
     <ClCompile Include="..\..\gfx\shader_glsl.c" />
@@ -276,8 +279,6 @@
     </ClCompile>
     <ClCompile Include="..\..\gfx\gl.c">
     </ClCompile>
-    <ClCompile Include="..\..\gfx\image\image.c">
-    </ClCompile>
     <ClCompile Include="..\..\gfx\math\matrix.c">
     </ClCompile>
     <ClCompile Include="..\..\gfx\math\matrix_3x3.c">
@@ -287,6 +288,8 @@
     <ClCompile Include="..\..\gfx\scaler\pixconv.c">
     </ClCompile>
     <ClCompile Include="..\..\gfx\scaler\scaler.c">
+    </ClCompile>
+    <ClCompile Include="..\..\gfx\shader_common.c">
     </ClCompile>
     <ClCompile Include="..\..\gfx\scaler\scaler_int.c">
     </ClCompile>
@@ -321,6 +324,8 @@
     <ClCompile Include="..\..\screenshot.c">
     </ClCompile>
     <ClCompile Include="..\..\settings.c">
+    </ClCompile>
+    <ClCompile Include="..\..\settings_data.c">
     </ClCompile>
     <ClCompile Include="..\..\thread.c">
     </ClCompile>

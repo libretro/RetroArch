@@ -33,33 +33,42 @@ void apple_pad_send_control(struct apple_pad_connection* connection, uint8_t* da
 // NOTE: I pieced this together through trial and error, any corrections are welcome
 static void hid_device_input_callback(void* context, IOReturn result, void* sender, IOHIDValueRef value)
 {
+   IOHIDElementRef element;
+   uint32_t type, page, use;
    struct apple_pad_connection* connection = (struct apple_pad_connection*)context;
 
-   IOHIDElementRef element = IOHIDValueGetElement(value);
-   uint32_t type = IOHIDElementGetType(element);
-   uint32_t page = IOHIDElementGetUsagePage(element);
-   uint32_t use = IOHIDElementGetUsage(element);
+   element = IOHIDValueGetElement(value);
+   type    = IOHIDElementGetType(element);
+   page    = IOHIDElementGetUsagePage(element);
+   use     = IOHIDElementGetUsage(element);
 
    // Joystick handler: TODO: Can GamePad work the same?
    if (type == kIOHIDElementTypeInput_Button && page == kHIDPage_Button)
    {
       CFIndex state = IOHIDValueGetIntegerValue(value);
 
-      if (state)  g_current_input_data.pad_buttons[connection->slot] |= (1 << (use - 1));
-      else        g_current_input_data.pad_buttons[connection->slot] &= ~(1 << (use - 1));
+      if (state)
+          g_current_input_data.pad_buttons[connection->slot] |= (1 << (use - 1));
+      else
+          g_current_input_data.pad_buttons[connection->slot] &= ~(1 << (use - 1));
    }
    else if (type == kIOHIDElementTypeInput_Misc && page == kHIDPage_GenericDesktop)
    {
       static const uint32_t axis_use_ids[4] = { 48, 49, 50, 53 };
-      for (int i = 0; i < 4; i ++)
+      int i;
+       
+      for (i = 0; i < 4; i ++)
       {
          if (use == axis_use_ids[i])
          {
-            CFIndex min = IOHIDElementGetPhysicalMin(element);
-            CFIndex max = IOHIDElementGetPhysicalMax(element) - min;
-            CFIndex state = IOHIDValueGetIntegerValue(value) - min;
+            CFIndex min, max, state;
+            float val;
+            
+            min = IOHIDElementGetPhysicalMin(element);
+            max = IOHIDElementGetPhysicalMax(element) - min;
+            state = IOHIDValueGetIntegerValue(value) - min;
          
-            float val = (float)state / (float)max;
+            val = (float)state / (float)max;
             g_current_input_data.pad_axis[connection->slot][i] = ((val * 2.0f) - 1.0f) * 32767.0f;
          }
       }
@@ -91,6 +100,7 @@ static void hid_device_report(void* context, IOReturn result, void *sender, IOHI
 static void hid_manager_device_attached(void* context, IOReturn result, void* sender, IOHIDDeviceRef device)
 {
    char device_name[1024];
+   CFStringRef device_name_ref;
    struct apple_pad_connection* connection = calloc(1, sizeof(struct apple_pad_connection));
 
    connection->device = device;
@@ -100,7 +110,7 @@ static void hid_manager_device_attached(void* context, IOReturn result, void* se
    IOHIDDeviceScheduleWithRunLoop(device, CFRunLoopGetCurrent(), kCFRunLoopCommonModes);
    IOHIDDeviceRegisterRemovalCallback(device, hid_device_removed, connection);
 
-   CFStringRef device_name_ref = IOHIDDeviceGetProperty(device, CFSTR(kIOHIDProductKey));
+   device_name_ref = IOHIDDeviceGetProperty(device, CFSTR(kIOHIDProductKey));
    CFStringGetCString(device_name_ref, device_name, sizeof(device_name), kCFStringEncodingUTF8);
 
    connection->slot = apple_joypad_connect(device_name, connection);
@@ -113,13 +123,16 @@ static void hid_manager_device_attached(void* context, IOReturn result, void* se
 
 static void append_matching_dictionary(CFMutableArrayRef array, uint32_t page, uint32_t use)
 {
-   CFMutableDictionaryRef matcher = CFDictionaryCreateMutable(kCFAllocatorDefault, 0, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
+   CFNumberRef pagen, usen;
+   CFMutableDictionaryRef matcher;
+    
+   matcher = CFDictionaryCreateMutable(kCFAllocatorDefault, 0, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
 
-   CFNumberRef pagen = CFNumberCreate(kCFAllocatorDefault, kCFNumberIntType, &page);
+   pagen = CFNumberCreate(kCFAllocatorDefault, kCFNumberIntType, &page);
    CFDictionarySetValue(matcher, CFSTR(kIOHIDDeviceUsagePageKey), pagen);
    CFRelease(pagen);
 
-   CFNumberRef usen = CFNumberCreate(kCFAllocatorDefault, kCFNumberIntType, &use);
+   usen = CFNumberCreate(kCFAllocatorDefault, kCFNumberIntType, &use);
    CFDictionarySetValue(matcher, CFSTR(kIOHIDDeviceUsageKey), usen);
    CFRelease(usen);
 
@@ -129,12 +142,14 @@ static void append_matching_dictionary(CFMutableArrayRef array, uint32_t page, u
 
 void osx_pad_init(void)
 {
+   CFMutableArrayRef matcher;
+    
    if (g_hid_manager)
       return;
 
    g_hid_manager = IOHIDManagerCreate(kCFAllocatorDefault, kIOHIDOptionsTypeNone);
 
-   CFMutableArrayRef matcher = CFArrayCreateMutable(kCFAllocatorDefault, 0, &kCFTypeArrayCallBacks);
+   matcher = CFArrayCreateMutable(kCFAllocatorDefault, 0, &kCFTypeArrayCallBacks);
    append_matching_dictionary(matcher, kHIDPage_GenericDesktop, kHIDUsage_GD_Joystick);
    append_matching_dictionary(matcher, kHIDPage_GenericDesktop, kHIDUsage_GD_GamePad);
 

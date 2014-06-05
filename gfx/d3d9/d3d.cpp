@@ -317,7 +317,7 @@ bool d3d_init_singlepass(void *data)
    pass.fbo.valid = true;
    pass.fbo.scale_x = pass.fbo.scale_y = 1.0;
    pass.fbo.type_x = pass.fbo.type_y = RARCH_SCALE_VIEWPORT;
-   strlcpy(pass.source.cg, d3d->cg_shader.c_str(), sizeof(pass.source.cg));
+   strlcpy(pass.source.path, d3d->cg_shader.c_str(), sizeof(pass.source.path));
 
    return true;
 }
@@ -364,6 +364,7 @@ static void d3d_deinitialize(void *data)
 
    if (d3d->font_ctx && d3d->font_ctx->deinit)
       d3d->font_ctx->deinit(d3d);
+   d3d->font_ctx = NULL;
    d3d_deinit_chain(d3d);
 #ifdef HAVE_SHADERS
    d3d_deinit_shader(d3d);
@@ -694,13 +695,17 @@ static bool d3d_frame(void *data, const void *frame,
       unsigned width, unsigned height, unsigned pitch,
       const char *msg)
 {
+   D3DVIEWPORT screen_vp;
    d3d_video_t *d3d = (d3d_video_t*)data;
+   LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
 
   if (!frame)
       return true;
 
    RARCH_PERFORMANCE_INIT(d3d_frame);
    RARCH_PERFORMANCE_START(d3d_frame);
+
+#ifndef _XBOX
    // We cannot recover in fullscreen.
    if (d3d->needs_restore && IsIconic(d3d->hWnd))
       return true;
@@ -710,6 +715,7 @@ static bool d3d_frame(void *data, const void *frame,
       RARCH_ERR("[D3D]: Failed to restore.\n");
       return false;
    }
+#endif
 
    if (d3d->should_resize)
    {
@@ -721,26 +727,30 @@ static bool d3d_frame(void *data, const void *frame,
    }
 
    // render_chain() only clears out viewport, clear out everything.
-   D3DVIEWPORT screen_vp;
    screen_vp.X = 0;
    screen_vp.Y = 0;
    screen_vp.MinZ = 0;
    screen_vp.MaxZ = 1;
    screen_vp.Width = d3d->screen_width;
    screen_vp.Height = d3d->screen_height;
-   d3d->dev->SetViewport(&screen_vp);
-   d3d->dev->Clear(0, 0, D3DCLEAR_TARGET, 0, 1, 0);
+   d3dr->SetViewport(&screen_vp);
+   d3dr->Clear(0, 0, D3DCLEAR_TARGET, 0, 1, 0);
 
    // Insert black frame first, so we can screenshot, etc.
    if (g_settings.video.black_frame_insertion)
    {
-      if (d3d->dev->Present(NULL, NULL, NULL, NULL) != D3D_OK)
+#ifdef _XBOX
+      d3dr->Present(NULL, NULL, NULL, NULL);
+      d3dr->Clear(0, 0, D3DCLEAR_TARGET, 0, 1, 0);
+#else
+      if (d3dr->Present(NULL, NULL, NULL, NULL) != D3D_OK)
       {
          RARCH_ERR("[D3D]: Present() failed.\n");
          d3d->needs_restore = true;
          return true;
       }
-      d3d->dev->Clear(0, 0, D3DCLEAR_TARGET, 0, 1, 0);
+      d3dr->Clear(0, 0, D3DCLEAR_TARGET, 0, 1, 0);
+#endif
    }
 
    if (!renderchain_render(d3d->chain, frame, width, height, pitch, d3d->dev_rotation))
@@ -749,7 +759,7 @@ static bool d3d_frame(void *data, const void *frame,
       return false;
    }
 
-   if (d3d->font_ctx && d3d->font_ctx->render_msg)
+   if (d3d->font_ctx && d3d->font_ctx->render_msg && msg)
    {
       font_params_t font_parms = {0};
 #ifdef _XBOX
@@ -784,7 +794,7 @@ static bool d3d_frame(void *data, const void *frame,
 
 #ifdef HAVE_MENU
    if (g_extern.lifecycle_state & (1ULL << MODE_MENU) && driver.menu_ctx && driver.menu_ctx->frame)
-      driver.menu_ctx->frame(d3d);
+      driver.menu_ctx->frame();
 #endif
 
    if (d3d && d3d->ctx_driver && d3d->ctx_driver->update_window_title)
@@ -811,12 +821,17 @@ static void d3d_set_nonblock_state(void *data, bool state)
 static bool d3d_alive(void *data)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
-   bool quit = false, resize = false;
+   bool quit, resize;
+
+   quit = false;
+   resize = false;
 
    if (d3d->ctx_driver && d3d->ctx_driver->check_window)
       d3d->ctx_driver->check_window(d3d, &quit, &resize, &d3d->screen_width,
       &d3d->screen_height, g_extern.frame_count);
 
+   if (quit)
+      d3d->quitting = quit;
    else if (resize)
       d3d->should_resize = true;
 
@@ -873,8 +888,8 @@ static void d3d_free(void *data)
 
 #ifdef HAVE_MONITOR
    Monitor::last_hm = MonitorFromWindow(d3d->hWnd, MONITOR_DEFAULTTONEAREST);
-#endif
    DestroyWindow(d3d->hWnd);
+#endif
 
    if (d3d)
       delete d3d;
@@ -900,7 +915,7 @@ static void d3d_viewport_info(void *data, struct rarch_viewport *vp)
 static bool d3d_read_viewport(void *data, uint8_t *buffer)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
-   LPDIRECT3DDEVICE d3dr = d3d->dev;
+   LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
 
    RARCH_PERFORMANCE_INIT(d3d_read_viewport);
    RARCH_PERFORMANCE_START(d3d_read_viewport);
@@ -1129,7 +1144,6 @@ static void d3d_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
    g_extern.system.aspect_ratio = aspectratio_lut[aspect_ratio_idx].value;
    d3d->video_info.force_aspect = true;
    d3d->should_resize = true;
-   return;
 }
 
 static void d3d_apply_state_changes(void *data)
@@ -1146,7 +1160,7 @@ static void d3d_set_osd_msg(void *data, const char *msg, void *userdata)
    if (params)
       d3d_set_font_rect(d3d, params);
 
-   if (d3d->font_ctx && d3d->font_ctx->render_msg)
+   if (d3d && d3d->font_ctx && d3d->font_ctx->render_msg)
       d3d->font_ctx->render_msg(d3d, msg, params);
 }
 
@@ -1300,31 +1314,26 @@ static bool d3d_construct(void *data, const video_info_t *info, const input_driv
    RegisterClassEx(&d3d->windowClass);
 #endif
 
+   unsigned full_x, full_y;
 #ifdef HAVE_MONITOR
    RECT mon_rect = d3d_monitor_rect(d3d);
 
    bool windowed_full = g_settings.video.windowed_fullscreen;
 
-   unsigned full_x = (windowed_full || info->width  == 0) ? (mon_rect.right  - mon_rect.left) : info->width;
-   unsigned full_y = (windowed_full || info->height == 0) ? (mon_rect.bottom - mon_rect.top)  : info->height;
+   full_x = (windowed_full || info->width  == 0) ? (mon_rect.right  - mon_rect.left) : info->width;
+   full_y = (windowed_full || info->height == 0) ? (mon_rect.bottom - mon_rect.top)  : info->height;
    RARCH_LOG("[D3D]: Monitor size: %dx%d.\n", (int)(mon_rect.right  - mon_rect.left), (int)(mon_rect.bottom - mon_rect.top));
-
-   d3d->screen_width  = info->fullscreen ? full_x : info->width;
-   d3d->screen_height = info->fullscreen ? full_y : info->height;
 #else
-   unsigned full_x, full_y;
-
    if (d3d->ctx_driver && d3d->ctx_driver->get_video_size)
       d3d->ctx_driver->get_video_size(&full_x, &full_y);
-
+#endif
    d3d->screen_width  = info->fullscreen ? full_x : info->width;
    d3d->screen_height = info->fullscreen ? full_y : info->height;
-#endif
 
+#ifdef HAVE_WINDOW
    unsigned win_width  = d3d->screen_width;
    unsigned win_height = d3d->screen_height;
 
-#ifdef HAVE_WINDOW
    if (!info->fullscreen)
    {
       RECT rect   = {0};
@@ -1347,11 +1356,11 @@ static bool d3d_construct(void *data, const video_info_t *info, const input_driv
          info->fullscreen ? mon_rect.top  : CW_USEDEFAULT,
          win_width, win_height,
          NULL, NULL, NULL, d3d);
-#endif
 
    driver.display_type  = RARCH_DISPLAY_WIN32;
    driver.video_display = 0;
    driver.video_window  = (uintptr_t)d3d->hWnd;
+#endif
 
    if (d3d && d3d->ctx_driver && d3d->ctx_driver->show_mouse)
       d3d->ctx_driver->show_mouse(d3d, !info->fullscreen
@@ -1446,30 +1455,6 @@ static void *d3d_init(const video_info_t *info, const input_driver_t **input,
    return vid;
 }
 
-static void d3d_restart(void)
-{
-#ifdef _XBOX
-   d3d_video_t *d3d = (d3d_video_t*)driver.video_data;
-   LPDIRECT3DDEVICE d3dr = d3d->dev;
-
-   if (!d3d)
-      return;
-
-   D3DPRESENT_PARAMETERS d3dpp;
-   video_info_t video_info = {0};
-
-   video_info.vsync = g_settings.video.vsync;
-   video_info.force_aspect = false;
-   video_info.smooth = g_settings.video.smooth;
-   video_info.input_scale = 2;
-   video_info.fullscreen = true;
-   video_info.rgb32 = (d3d->base_size == sizeof(uint32_t)) ? true : false;
-   d3d_make_d3dpp(d3d, &video_info, &d3dpp);
-
-   d3dr->Reset(&d3dpp);
-#endif
-}
-
 const video_driver_t video_d3d = {
    d3d_init,
    d3d_frame,
@@ -1479,9 +1464,6 @@ const video_driver_t video_d3d = {
    d3d_set_shader,
    d3d_free,
    "d3d",
-#ifdef HAVE_MENU
-   d3d_restart,
-#endif
    d3d_set_rotation,
    d3d_viewport_info,
    d3d_read_viewport,

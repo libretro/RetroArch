@@ -62,6 +62,62 @@
 #define HAVE_GL_ASYNC_READBACK
 #endif
 
+#if defined(HAVE_PSGL)
+#define RARCH_GL_FRAMEBUFFER GL_FRAMEBUFFER_OES
+#define RARCH_GL_FRAMEBUFFER_COMPLETE GL_FRAMEBUFFER_COMPLETE_OES
+#define RARCH_GL_COLOR_ATTACHMENT0 GL_COLOR_ATTACHMENT0_EXT
+#elif defined(OSX_PPC)
+#define RARCH_GL_FRAMEBUFFER GL_FRAMEBUFFER_EXT
+#define RARCH_GL_FRAMEBUFFER_COMPLETE GL_FRAMEBUFFER_COMPLETE_EXT
+#define RARCH_GL_COLOR_ATTACHMENT0 GL_COLOR_ATTACHMENT0_EXT
+#else
+#define RARCH_GL_FRAMEBUFFER GL_FRAMEBUFFER
+#define RARCH_GL_FRAMEBUFFER_COMPLETE GL_FRAMEBUFFER_COMPLETE
+#define RARCH_GL_COLOR_ATTACHMENT0 GL_COLOR_ATTACHMENT0
+#endif
+
+#if defined(HAVE_OPENGLES2)
+#define RARCH_GL_RENDERBUFFER GL_RENDERBUFFER
+#define RARCH_GL_DEPTH24_STENCIL8 GL_DEPTH24_STENCIL8_OES
+#define RARCH_GL_DEPTH_ATTACHMENT GL_DEPTH_ATTACHMENT
+#define RARCH_GL_STENCIL_ATTACHMENT GL_STENCIL_ATTACHMENT
+#elif defined(OSX_PPC)
+#define RARCH_GL_RENDERBUFFER GL_RENDERBUFFER_EXT
+#define RARCH_GL_DEPTH24_STENCIL8 GL_DEPTH24_STENCIL8_EXT
+#define RARCH_GL_DEPTH_ATTACHMENT GL_DEPTH_ATTACHMENT_EXT
+#define RARCH_GL_STENCIL_ATTACHMENT GL_STENCIL_ATTACHMENT_EXT
+#elif defined(HAVE_PSGL) && !defined(HAVE_GCMGL)
+#define RARCH_GL_RENDERBUFFER GL_RENDERBUFFER_OES
+#define RARCH_GL_DEPTH24_STENCIL8 GL_DEPTH24_STENCIL8_SCE
+#define RARCH_GL_DEPTH_ATTACHMENT GL_DEPTH_ATTACHMENT_OES
+#define RARCH_GL_STENCIL_ATTACHMENT GL_STENCIL_ATTACHMENT_OES
+#else
+#define RARCH_GL_RENDERBUFFER GL_RENDERBUFFER
+#define RARCH_GL_DEPTH24_STENCIL8 GL_DEPTH24_STENCIL8
+#define RARCH_GL_DEPTH_ATTACHMENT GL_DEPTH_ATTACHMENT
+#define RARCH_GL_STENCIL_ATTACHMENT GL_STENCIL_ATTACHMENT
+#endif
+
+#ifdef OSX_PPC
+#define RARCH_GL_MAX_RENDERBUFFER_SIZE GL_MAX_RENDERBUFFER_SIZE_EXT
+#elif defined(HAVE_PSGL) && !defined(HAVE_GCMGL)
+#define RARCH_GL_MAX_RENDERBUFFER_SIZE GL_MAX_RENDERBUFFER_SIZE_OES
+#else
+#define RARCH_GL_MAX_RENDERBUFFER_SIZE GL_MAX_RENDERBUFFER_SIZE
+#endif
+
+#if defined(HAVE_PSGL) && !defined(HAVE_GCMGL)
+#define glGenerateMipmap glGenerateMipmapOES
+#endif
+
+#ifdef HAVE_FBO
+
+#if defined(__APPLE__) || defined(HAVE_PSGL)
+#define GL_RGBA32F GL_RGBA32F_ARB
+#endif
+
+#endif
+
 static inline bool gl_check_error(void)
 {
    int error = glGetError();
@@ -158,7 +214,9 @@ typedef struct gl
    unsigned tex_index; // For use with PREV.
    unsigned textures;
    struct gl_tex_info prev_info[MAX_TEXTURES];
-   GLuint tex_filter;
+   GLuint tex_mag_filter;
+   GLuint tex_min_filter;
+   bool tex_mipmap;
 
    void *empty_buf;
 
@@ -181,6 +239,8 @@ typedef struct gl
    bool hw_render_fbo_init;
    bool hw_render_depth_init;
    bool has_fp_fbo;
+   bool has_srgb_fbo;
+   bool has_srgb_fbo_gles3;
 #endif
    bool hw_render_use;
    bool shared_context_use;
@@ -341,11 +401,13 @@ extern void glBufferSubDataTextureReferenceRA( GLenum target, GLintptr offset, G
 #endif
 
 #if defined(HAVE_OPENGLES)
-
 #ifndef GL_UNPACK_ROW_LENGTH
 #define GL_UNPACK_ROW_LENGTH  0x0CF2
 #endif
 
+#ifndef GL_SRGB_ALPHA_EXT
+#define GL_SRGB_ALPHA_EXT 0x8C42
+#endif
 #endif
 
 void gl_set_projection(void *data, struct gl_ortho *ortho, bool allow_rotate);

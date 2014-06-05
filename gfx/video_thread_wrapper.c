@@ -751,6 +751,13 @@ static void thread_apply_state_changes(void *data)
    slock_unlock(thr->frame.lock);
 }
 
+// This is read-only state which should not have any kind of race condition.
+static struct gfx_shader *thread_get_current_shader(void *data)
+{
+   thread_video_t *thr = (thread_video_t*)data;
+   return thr->poke ? thr->poke->get_current_shader(thr->driver_data) : NULL;
+}
+
 static const video_poke_interface_t thread_poke = {
    thread_set_filtering,
 #ifdef HAVE_FBO
@@ -763,6 +770,12 @@ static const video_poke_interface_t thread_poke = {
    thread_set_texture_frame,
    thread_set_texture_enable,
 #endif
+
+   NULL,
+   NULL,
+   NULL,
+
+   thread_get_current_shader,
 };
 
 static void thread_get_poke_interface(void *data, const video_poke_interface_t **iface)
@@ -778,11 +791,6 @@ static void thread_get_poke_interface(void *data, const video_poke_interface_t *
       *iface = NULL;
 }
 
-#if defined(HAVE_MENU)
-// all stubs for now, might not have to implement them unless we want to port this to consoles
-static void thread_restart(void) {}
-#endif
-
 static const video_driver_t video_thread = {
    thread_init_never_call, // Should never be called directly.
    thread_frame,
@@ -792,9 +800,6 @@ static const video_driver_t video_thread = {
    thread_set_shader,
    thread_free,
    "Thread wrapper",
-#if defined(HAVE_MENU)
-   thread_restart,
-#endif
    thread_set_rotation,
    thread_viewport_info,
    thread_read_viewport,

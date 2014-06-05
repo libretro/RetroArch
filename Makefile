@@ -6,12 +6,14 @@ OBJDIR := obj-unix
 
 OBJ = frontend/frontend.o \
 		frontend/frontend_context.o \
+		frontend/platform/platform_null.o \
 		retroarch.o \
 		file.o \
 		file_path.o \
 		hash.o \
 		driver.o \
 		settings.o \
+		settings_data.o \
 		dynamic.o \
 		dynamic_dummy.o \
 		message_queue.o \
@@ -29,14 +31,16 @@ OBJ = frontend/frontend.o \
 		conf/config_file.o \
 		screenshot.o \
 		gfx/scaler/scaler.o \
+		gfx/shader_common.o \
 		gfx/shader_parse.o \
 		gfx/scaler/pixconv.o \
 		gfx/scaler/scaler_int.o \
 		gfx/scaler/scaler_filter.o \
-		gfx/image/image.o \
+		gfx/image/image_rpng.o \
 		gfx/fonts/fonts.o \
 		gfx/fonts/bitmapfont.o \
 		audio/resampler.o \
+		audio/dsp_filter.o \
 		audio/sinc.o \
 		audio/cc_resampler.o \
 		performance.o
@@ -64,9 +68,8 @@ ifeq ($(findstring Haiku,$(OS)),)
    LIBS = -lm
 endif
 
-DEFINES = -DHAVE_CONFIG_H -DHAVE_SCREENSHOTS -DRARCH_INTERNAL -DHAVE_CC_RESAMPLER
+DEFINES = -DHAVE_CONFIG_H -DHAVE_SCREENSHOTS -DRARCH_INTERNAL -DHAVE_CC_RESAMPLER -DHAVE_OVERLAY
 
-#HAVE_LAKKA = 1
 
 ifeq ($(GLOBAL_CONFIG_DIR),)
    GLOBAL_CONFIG_DIR = /etc
@@ -91,22 +94,24 @@ endif
 
 ifneq ($(findstring Linux,$(OS)),)
    LIBS += -lrt
+   JOYCONFIG_LIBS += -lrt
    OBJ += input/linuxraw_input.o input/linuxraw_joypad.o
    JOYCONFIG_OBJ += tools/linuxraw_joypad.o
 endif
 
 ifeq ($(HAVE_RGUI), 1)
-   OBJ += frontend/menu/menu_input_line_cb.o frontend/menu/menu_common.o frontend/menu/menu_navigation.o frontend/menu/file_list.o frontend/menu/disp/rgui.o  frontend/menu/history.o 
-   DEFINES += -DHAVE_MENU
+   OBJ += frontend/menu/disp/rgui.o
+   DEFINES += -DHAVE_MENU -DHAVE_RGUI
    HAVE_MENU_COMMON = 1
 ifeq ($(HAVE_LAKKA), 1)
-   OBJ += frontend/menu/disp/lakka.o
+   OBJ += frontend/menu/backend/menu_lakka_backend.o frontend/menu/disp/lakka.o
    DEFINES += -DHAVE_LAKKA
+   LIBS += -lpng
 endif
 endif
 
 ifeq ($(HAVE_MENU_COMMON), 1)
-   OBJ += frontend/menu/backend/menu_common_backend.o
+   OBJ += frontend/menu/backend/menu_common_backend.o frontend/menu/menu_input_line_cb.o frontend/menu/menu_common.o frontend/menu/menu_navigation.o frontend/menu/file_list.o frontend/menu/history.o
 endif
 
 ifeq ($(HAVE_THREADS), 1)
@@ -197,10 +202,6 @@ ifeq ($(SCALER_NO_SIMD), 1)
    DEFINES += -DSCALER_NO_SIMD
 endif
 
-ifeq ($(PERF_TEST), 1)
-   DEFINES += -DPERF_TEST
-endif
-
 ifeq ($(HAVE_SDL), 1)
    OBJ += gfx/sdl_gfx.o input/sdl_input.o input/sdl_joypad.o audio/sdl_audio.o
    JOYCONFIG_OBJ += input/sdl_joypad.o
@@ -237,6 +238,10 @@ ifeq ($(HAVE_OPENGL), 1)
       OBJ += gfx/context/vc_egl_ctx.o
    endif
 
+   ifeq ($(HAVE_MALI_FBDEV), 1)
+      OBJ += gfx/context/mali_fbdev_ctx.o
+   endif
+
    ifeq ($(HAVE_X11), 1)
       ifeq ($(HAVE_GLES), 0)
          OBJ += gfx/context/glx_ctx.o
@@ -266,7 +271,7 @@ ifeq ($(HAVE_OPENGL), 1)
    endif
 
    OBJ += gfx/shader_glsl.o 
-   DEFINES += -DHAVE_GLSL -DHAVE_OVERLAY
+   DEFINES += -DHAVE_GLSL
 endif
 
 ifeq ($(HAVE_VG), 1)
@@ -314,10 +319,6 @@ ifeq ($(HAVE_FREETYPE), 1)
    DEFINES += $(FREETYPE_CFLAGS)
 endif
 
-ifeq ($(HAVE_SDL_IMAGE), 1)
-   LIBS += $(SDL_IMAGE_LIBS)
-   DEFINES += $(SDL_IMAGE_CFLAGS)
-endif
 
 ifeq ($(HAVE_ZLIB), 1)
    OBJ += gfx/rpng/rpng.o file_extract.o
@@ -326,7 +327,7 @@ ifeq ($(HAVE_ZLIB), 1)
 endif
 
 ifeq ($(HAVE_FFMPEG), 1)
-   OBJ += record/ffemu.o
+   OBJ += record/ffemu.o record/ffmpeg.o
    LIBS += $(AVCODEC_LIBS) $(AVFORMAT_LIBS) $(AVUTIL_LIBS) $(SWSCALE_LIBS)
    DEFINES += $(AVCODEC_CFLAGS) $(AVFORMAT_CFLAGS) $(AVUTIL_CFLAGS) $(SWSCALE_CFLAGS) -DHAVE_RECORD
 endif

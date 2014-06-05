@@ -77,15 +77,14 @@
 
 #include <string.h>
 
-#define MAX_COUNTERS 64
-static const struct retro_perf_counter *perf_counters_rarch[MAX_COUNTERS];
-static const struct retro_perf_counter *perf_counters_libretro[MAX_COUNTERS];
-static unsigned perf_ptr_rarch;
-static unsigned perf_ptr_libretro;
+const struct retro_perf_counter *perf_counters_rarch[MAX_COUNTERS];
+const struct retro_perf_counter *perf_counters_libretro[MAX_COUNTERS];
+unsigned perf_ptr_rarch;
+unsigned perf_ptr_libretro;
 
 void rarch_perf_register(struct retro_perf_counter *perf)
 {
-   if (perf->registered || perf_ptr_rarch >= MAX_COUNTERS)
+   if (!g_extern.perfcnt_enable || perf->registered || perf_ptr_rarch >= MAX_COUNTERS)
       return;
 
    perf_counters_rarch[perf_ptr_rarch++] = perf;
@@ -107,30 +106,28 @@ void retro_perf_clear(void)
    memset(perf_counters_libretro, 0, sizeof(perf_counters_libretro));
 }
 
-#ifdef _WIN32
-#define PERF_LOG_FMT "[PERF]: Avg (%s): %I64u ticks, %I64u runs.\n"
-#else
-#define PERF_LOG_FMT "[PERF]: Avg (%s): %llu ticks, %llu runs.\n"
-#endif
-
 static void log_counters(const struct retro_perf_counter **counters, unsigned num)
 {
    unsigned i;
    for (i = 0; i < num; i++)
    {
-      RARCH_LOG(PERF_LOG_FMT,
-            counters[i]->ident,
-            (unsigned long long)counters[i]->total / (unsigned long long)counters[i]->call_cnt,
-            (unsigned long long)counters[i]->call_cnt);
+      if (counters[i]->call_cnt)
+      {
+         RARCH_LOG(PERF_LOG_FMT,
+               counters[i]->ident,
+               (unsigned long long)counters[i]->total / (unsigned long long)counters[i]->call_cnt,
+               (unsigned long long)counters[i]->call_cnt);
+      }
    }
 }
 
 void rarch_perf_log(void)
 {
-#if defined(PERF_TEST) || !defined(RARCH_INTERNAL)
+   if (!g_extern.perfcnt_enable)
+      return;
+
    RARCH_LOG("[PERF]: Performance counters (RetroArch):\n");
    log_counters(perf_counters_rarch, perf_ptr_rarch);
-#endif
 }
 
 void retro_perf_log(void)
@@ -142,16 +139,7 @@ void retro_perf_log(void)
 retro_perf_tick_t rarch_get_perf_counter(void)
 {
    retro_perf_tick_t time = 0;
-#ifdef _XBOX1
-
-#define rdtsc	__asm __emit 0fh __asm __emit 031h
-   LARGE_INTEGER time_tmp;
-   rdtsc;
-   __asm	mov	time_tmp.LowPart, eax;
-   __asm	mov	time_tmp.HighPart, edx;
-   time = time_tmp.QuadPart;
-
-#elif defined(__linux__) || defined(__QNX__)
+#if defined(__linux__) || defined(__QNX__)
    struct timespec tv;
    if (clock_gettime(CLOCK_MONOTONIC, &tv) == 0)
       time = (retro_perf_tick_t)tv.tv_sec * 1000000000 + (retro_perf_tick_t)tv.tv_nsec;
@@ -176,6 +164,22 @@ retro_perf_tick_t rarch_get_perf_counter(void)
    struct timeval tv;
    gettimeofday(&tv,NULL);
    time = (1000000 * tv.tv_sec + tv.tv_usec);
+#elif defined(_WIN32)
+   long tv_sec, tv_usec;
+   static const unsigned __int64 epoch = 11644473600000000Ui64;
+   FILETIME file_time;
+   SYSTEMTIME system_time;
+   ULARGE_INTEGER ularge;
+
+   GetSystemTime(&system_time);
+   SystemTimeToFileTime(&system_time, &file_time);
+   ularge.LowPart = file_time.dwLowDateTime;
+   ularge.HighPart = file_time.dwHighDateTime;
+
+   tv_sec = (long)((ularge.QuadPart - epoch) / 10000000L);
+   tv_usec = (long)(system_time.wMilliseconds * 1000);
+
+   time = (1000000 * tv_sec + tv_usec);
 #endif
 
    return time;
@@ -275,7 +279,8 @@ static uint64_t xgetbv_x86(uint32_t index)
 }
 #endif
 
-#if defined(HAVE_NEON) && !defined(__MACH__)
+#if defined(HAVE_NEON)
+/* TODO/FIX - does this work on iOS? */
 static void arm_enable_runfast_mode(void)
 {
    // RunFast mode. Enables flush-to-zero and some floating point optimizations.
@@ -425,9 +430,7 @@ uint64_t rarch_get_cpu_features(void)
    RARCH_LOG("[CPUID]: NEON: %u\n", !!(cpu & RETRO_SIMD_NEON));
 #elif defined(HAVE_NEON)
    cpu |= RETRO_SIMD_NEON;
-#ifndef __MACH__
    arm_enable_runfast_mode();
-#endif
    RARCH_LOG("[CPUID]: NEON: %u\n", !!(cpu & RETRO_SIMD_NEON));
 #elif defined(__ALTIVEC__)
    cpu |= RETRO_SIMD_VMX;

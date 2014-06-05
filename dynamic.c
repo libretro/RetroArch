@@ -23,10 +23,6 @@
 #include <string.h>
 #include <ctype.h>
 
-#ifdef RARCH_CONSOLE
-#include "console/rarch_console.h"
-#endif
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -185,58 +181,6 @@ void libretro_free_system_info(struct retro_system_info *info)
    memset(info, 0, sizeof(*info));
 }
 
-
-static bool find_first_libretro(char *path, size_t size,
-      const char *dir, const char *rom_path)
-{
-   size_t i;
-   bool ret = false;
-   const char *ext = path_get_extension(rom_path);
-   if (!ext || !*ext)
-   {
-      RARCH_ERR("Path has no extension. Cannot infer libretro implementation.\n");
-      return false;
-   }
-
-   RARCH_LOG("Searching for valid libretro implementation in: \"%s\".\n", dir);
-
-   struct string_list *list = dir_list_new(dir, DYNAMIC_EXT, false);
-   if (!list)
-   {
-      RARCH_ERR("Couldn't open directory: \"%s\".\n", dir);
-      return false;
-   }
-
-   for (i = 0; i < list->size && !ret; i++)
-   {
-      RARCH_LOG("Checking library: \"%s\".\n", list->elems[i].data);
-
-      struct retro_system_info info = {0};
-      dylib_t lib = libretro_get_system_info_lib(list->elems[i].data, &info, NULL);
-      if (!lib)
-         continue;
-
-      if (!info.valid_extensions)
-      {
-         dylib_close(lib);
-         continue;
-      }
-
-      struct string_list *supported_ext = string_split(info.valid_extensions, "|");
-
-      if (string_list_find_elem(supported_ext, ext))
-      {
-         strlcpy(path, list->elems[i].data, size);
-         ret = true;
-      }
-
-      string_list_free(supported_ext);
-      dylib_close(lib);
-   }
-
-   dir_list_free(list);
-   return ret;
-}
 #endif
 
 const struct retro_subsystem_info *libretro_find_subsystem_info(const struct retro_subsystem_info *info, unsigned num_info,
@@ -307,19 +251,6 @@ static void load_symbols(bool is_dummy)
    else
    {
 #ifdef HAVE_DYNAMIC
-      if (path_is_directory(g_settings.libretro))
-      {
-         char libretro_core_buffer[PATH_MAX];
-         if (!find_first_libretro(libretro_core_buffer, sizeof(libretro_core_buffer),
-                  g_settings.libretro, g_extern.fullpath))
-         {
-            RARCH_ERR("libretro_path is a directory, but no valid libretro implementation was found.\n");
-            rarch_fail(1, "load_dynamic()");
-         }
-
-         strlcpy(g_settings.libretro, libretro_core_buffer, sizeof(g_settings.libretro));
-      }
-
       // Need to use absolute path for this setting. It can be saved to ROM history,
       // and a relative path would break in that scenario.
       path_resolve_realpath(g_settings.libretro, sizeof(g_settings.libretro));

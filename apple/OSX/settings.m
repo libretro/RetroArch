@@ -15,7 +15,7 @@
 
 #import <objc/runtime.h>
 #import "../common/RetroArch_Apple.h"
-#include "../common/setting_data.h"
+#include "../../settings_data.h"
 #include "../../input/apple_input.h"
 
 #include "../../driver.h"
@@ -194,19 +194,13 @@ NSWindowDelegate>
       }
    }
 	
-#ifdef MAC_OS_X_VERSION_10_6
-   /* FIXME - fix for 10.5.8 and lower */
    setting_data_load_config_path(setting_data_get_list(), apple_platform.globalConfigFile.UTF8String);
-#endif
    apple_stop_iteration();
 }
 
 - (void)windowWillClose:(NSNotification *)notification
 {
-#ifdef MAC_OS_X_VERSION_10_6
-	/* FIXME - fix for 10.5.8 and lower */
    setting_data_save_config_path(setting_data_get_list(), apple_platform.globalConfigFile.UTF8String);
-#endif
    [NSApp stopModal];
 
    apple_start_iteration();

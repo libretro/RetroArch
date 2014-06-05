@@ -265,7 +265,7 @@ static void recording_dump_frame(const void *data, unsigned width, unsigned heig
       ffemu_data.is_dupe = !data;
    }
 
-   ffemu_push_video(g_extern.rec, &ffemu_data);
+   g_extern.rec_driver->push_video(g_extern.rec, &ffemu_data);
 }
 #endif
 
@@ -369,7 +369,7 @@ static bool audio_flush(const int16_t *data, size_t samples)
       ffemu_data.data                    = data;
       ffemu_data.frames                  = samples / 2;
 
-      ffemu_push_audio(g_extern.rec, &ffemu_data);
+      g_extern.rec_driver->push_audio(g_extern.rec, &ffemu_data);
    }
 #endif
 
@@ -388,16 +388,20 @@ static bool audio_flush(const int16_t *data, size_t samples)
          g_extern.audio_data.volume_gain);
    RARCH_PERFORMANCE_STOP(audio_convert_s16);
 
-   rarch_dsp_output_t dsp_output = {0};
-   rarch_dsp_input_t dsp_input   = {0};
-   dsp_input.samples             = g_extern.audio_data.data;
-   dsp_input.frames              = samples >> 1;
+   struct rarch_dsp_data dsp_data = {0};
+   dsp_data.input                 = g_extern.audio_data.data;
+   dsp_data.input_frames          = samples >> 1;
 
-   if (g_extern.audio_data.dsp_plugin)
-      g_extern.audio_data.dsp_plugin->process(g_extern.audio_data.dsp_handle, &dsp_output, &dsp_input);
+   if (g_extern.audio_data.dsp)
+   {
+      RARCH_PERFORMANCE_INIT(audio_dsp);
+      RARCH_PERFORMANCE_START(audio_dsp);
+      rarch_dsp_filter_process(g_extern.audio_data.dsp, &dsp_data);
+      RARCH_PERFORMANCE_STOP(audio_dsp);
+   }
 
-   src_data.data_in      = dsp_output.samples ? dsp_output.samples : g_extern.audio_data.data;
-   src_data.input_frames = dsp_output.samples ? dsp_output.frames : (samples >> 1);
+   src_data.data_in      = dsp_data.output ? dsp_data.output : g_extern.audio_data.data;
+   src_data.input_frames = dsp_data.output ? dsp_data.output_frames : (samples >> 1);
 
    src_data.data_out = g_extern.audio_data.outsamples;
 
@@ -599,6 +603,9 @@ void rarch_input_poll(void)
 }
 
 #ifndef RARCH_CONSOLE
+/* TODO/FIXME - I'd really like to know why this breaks jumping in games like Mario World on consoles - can't
+ * jump high with this - binds that need to be initialized? */
+
 // Turbo scheme: If turbo button is held, all buttons pressed except for D-pad will go into
 // a turbo mode. Until the button is released again, the input state will be modulated by a periodic pulse defined
 // by the configured duty cycle.
@@ -661,6 +668,8 @@ static int16_t input_state(unsigned port, unsigned device, unsigned index, unsig
 #endif
 
 #ifndef RARCH_CONSOLE
+/* TODO/FIXME - I'd really like to know why this breaks jumping in games like Mario World on consoles - can't
+ * jump high with this - binds that need to be initialized? */
    // Don't allow turbo for D-pad.
    if (device == RETRO_DEVICE_JOYPAD && (id < RETRO_DEVICE_ID_JOYPAD_UP || id > RETRO_DEVICE_ID_JOYPAD_RIGHT))
       res = input_apply_turbo(port, id, res);
@@ -757,7 +766,7 @@ static void print_help(void)
    puts("===================================================================");
    puts("Usage: retroarch [rom file] [options...]");
    puts("\t-h/--help: Show this help message.");
-   puts("\t--menu: Do not require ROM or libretro core to be loaded, starts directly in menu.");
+   puts("\t--menu: Do not require content or libretro core to be loaded, starts directly in menu.");
    puts("\t\tIf no arguments are passed to RetroArch, it is equivalent to using --menu as only argument.");
    puts("\t--features: Prints available features compiled into RetroArch.");
    puts("\t-s/--save: Path for save file (*.srm).");
@@ -829,7 +838,7 @@ static void set_special_paths(char **argv, unsigned roms)
 {
    unsigned i;
 
-   // First ROM is the significant one.
+   // First content file is the significant one.
    set_basename(argv[0]);
 
    g_extern.subsystem_fullpaths = string_list_new();
@@ -892,6 +901,8 @@ static void parse_input(int argc, char *argv[])
    g_extern.has_set_save_path = false;
    g_extern.has_set_state_path = false;
    g_extern.has_set_libretro = false;
+   g_extern.has_set_libretro_directory = false;
+   g_extern.has_set_verbosity = false;
    *g_extern.subsystem = '\0';
 
    if (argc < 2)
@@ -1042,6 +1053,7 @@ static void parse_input(int argc, char *argv[])
 
          case 'v':
             g_extern.verbose = true;
+            g_extern.has_set_verbosity = true;
             break;
 
          case 'N':
@@ -1069,8 +1081,18 @@ static void parse_input(int argc, char *argv[])
 
 #ifdef HAVE_DYNAMIC
          case 'L':
-            strlcpy(g_settings.libretro, optarg, sizeof(g_settings.libretro));
-            g_extern.has_set_libretro = true;
+            if (path_is_directory(optarg))
+            {
+               *g_settings.libretro = '\0';
+               strlcpy(g_settings.libretro_directory, optarg, sizeof(g_settings.libretro_directory));
+               g_extern.has_set_libretro = true;
+               g_extern.has_set_libretro_directory = true;
+            }
+            else
+            {
+               strlcpy(g_settings.libretro, optarg, sizeof(g_settings.libretro));
+               g_extern.has_set_libretro = true;
+            }
             break;
 #endif
 
@@ -1215,7 +1237,7 @@ static void parse_input(int argc, char *argv[])
    {
       if (optind < argc)
       {
-         RARCH_ERR("--menu was used, but ROM file was passed as well.\n");
+         RARCH_ERR("--menu was used, but content file was passed as well.\n");
          rarch_fail(1, "parse_input()");
       }
    }
@@ -1240,12 +1262,6 @@ static void init_controllers(void)
    {
       unsigned device = g_settings.input.libretro_device[i];
 
-      // This is default, don't bother.
-      if (device == RETRO_DEVICE_JOYPAD)
-         continue;
-
-      pretro_set_controller_port_device(i, device);
-
       const struct retro_controller_description *desc = NULL;
       if (i < g_extern.system.num_ports)
          desc = libretro_find_controller_description(&g_extern.system.ports[i], device);
@@ -1254,17 +1270,28 @@ static void init_controllers(void)
 
       if (!ident)
       {
-         switch (device)
+         // If we're trying to connect a completely unknown device, revert back to JOYPAD.
+         if (device != RETRO_DEVICE_JOYPAD && device != RETRO_DEVICE_NONE)
          {
-            case RETRO_DEVICE_ANALOG: ident = "analog"; break;
-            default: ident = "Unknown"; break;
+            RARCH_WARN("Input device ID %u is unknown to this libretro implementation. Using RETRO_DEVICE_JOYPAD.\n", device);
+            device = RETRO_DEVICE_JOYPAD;
+            // Do not fix g_settings.input.libretro_device[i], because any use of dummy core will reset this, which is not a good idea.
          }
+         ident = "Joypad";
       }
 
       if (device == RETRO_DEVICE_NONE)
+      {
          RARCH_LOG("Disconnecting device from port %u.\n", i + 1);
-      else
+         pretro_set_controller_port_device(i, device);
+      }
+      else if (device != RETRO_DEVICE_JOYPAD)
+      {
+         // Some cores do not properly range check port argument.
+         // This is broken behavior ofc, but avoid breaking cores needlessly.
          RARCH_LOG("Connecting %s (ID: %u) to port %u.\n", ident, device, i + 1);
+         pretro_set_controller_port_device(i, device);
+      }
    }
 }
 
@@ -1392,8 +1419,7 @@ void rarch_init_recording(void)
          params.fb_width, params.fb_height,
          (unsigned)params.pix_fmt);
 
-   g_extern.rec = ffemu_new(&params);
-   if (!g_extern.rec)
+   if (!ffemu_init_first(&g_extern.rec_driver, &g_extern.rec, &params))
    {
       RARCH_ERR("Failed to start FFmpeg recording.\n");
       g_extern.recording = false;
@@ -1405,12 +1431,14 @@ void rarch_init_recording(void)
 
 void rarch_deinit_recording(void)
 {
-   if (!g_extern.recording)
+   if (!g_extern.rec || !g_extern.rec_driver)
       return;
 
-   ffemu_finalize(g_extern.rec);
-   ffemu_free(g_extern.rec);
+   g_extern.rec_driver->finalize(g_extern.rec);
+   g_extern.rec_driver->free(g_extern.rec);
+
    g_extern.rec = NULL;
+   g_extern.rec_driver = NULL;
 
    free(g_extern.record_gpu_buffer);
    g_extern.record_gpu_buffer = NULL;
@@ -1468,7 +1496,7 @@ void rarch_init_rewind(void)
    g_extern.state_manager = state_manager_new(g_extern.state_size, g_settings.rewind_buffer_size);
 
    if (!g_extern.state_manager)
-      RARCH_WARN("Failed to init rewind buffer. Rewinding will be disabled.\n");
+      RARCH_WARN("Failed to initialize rewind buffer. Rewinding will be disabled.\n");
 
    void *state;
    state_manager_push_where(g_extern.state_manager, &state);
@@ -1566,12 +1594,12 @@ static void init_netplay(void)
    if (!g_extern.netplay)
    {
       g_extern.netplay_is_client = false;
-      RARCH_WARN("Failed to init netplay ...\n");
+      RARCH_WARN("Failed to initialize netplay ...\n");
 
       if (g_extern.msg_queue)
       {
          msg_queue_push(g_extern.msg_queue,
-               "Failed to init netplay ...",
+               "Failed to initialize netplay ...",
                0, 180);
       }
    }
@@ -1762,7 +1790,7 @@ static void fill_pathnames(void)
 
             if (use_sram_dir)
             {
-               // Redirect ROM fullpath to save directory.
+               // Redirect content fullpath to save directory.
                strlcpy(path, g_extern.savefile_name, sizeof(path));
                fill_pathname_dir(path, g_extern.subsystem_fullpaths->elems[i].data, ext,
                      sizeof(path));
@@ -1963,7 +1991,7 @@ void rarch_set_fullscreen(bool fullscreen)
 
 bool rarch_check_fullscreen(void)
 {
-   // If we go fullscreen we drop all drivers and reinit to be safe.
+   // If we go fullscreen we drop all drivers and reinitialize to be safe.
    static bool was_pressed = false;
    bool pressed = input_key_pressed_func(RARCH_FULLSCREEN_TOGGLE_KEY);
    bool toggle = pressed && !was_pressed;
@@ -2347,14 +2375,11 @@ static void check_shader_dir(void)
       const char *shader          = g_extern.shader_dir.list->elems[g_extern.shader_dir.ptr].data;
       enum rarch_shader_type type = RARCH_SHADER_NONE;
 
-      const char *ext = strrchr(shader, '.');
-      if (ext)
-      {
-         if (strcmp(ext, ".shader") == 0)
-            type = RARCH_SHADER_GLSL;
-         else if (strcmp(ext, ".cg") == 0 || strcmp(ext, ".cgp") == 0)
-            type = RARCH_SHADER_CG;
-      }
+      const char *ext = path_get_extension(shader);
+      if (strcmp(ext, "glsl") == 0 || strcmp(ext, "glslp") == 0)
+         type = RARCH_SHADER_GLSL;
+      else if (strcmp(ext, "cg") == 0 || strcmp(ext, "cgp") == 0)
+         type = RARCH_SHADER_CG;
 
       if (type == RARCH_SHADER_NONE)
          return;
@@ -2563,19 +2588,6 @@ static void check_screenshot(void)
 }
 #endif
 
-static void check_dsp_config(void)
-{
-   if (!g_extern.audio_data.dsp_plugin || !g_extern.audio_data.dsp_plugin->config)
-      return;
-
-   static bool old_pressed;
-   bool pressed = input_key_pressed_func(RARCH_DSP_CONFIG);
-   if (pressed && !old_pressed)
-      g_extern.audio_data.dsp_plugin->config(g_extern.audio_data.dsp_handle);
-
-   old_pressed = pressed;
-}
-
 static void check_mute(void)
 {
    if (!g_extern.audio_active)
@@ -2753,7 +2765,6 @@ static void do_state_checks(void)
       check_cheats();
       check_disk();
 
-      check_dsp_config();
       check_reset();
 #ifdef HAVE_NETPLAY
    }
@@ -2824,7 +2835,6 @@ static void init_system_av_info(void)
 {
    pretro_get_system_av_info(&g_extern.system.av_info);
    g_extern.frame_limit.last_frame_time = rarch_get_time_usec();
-   g_extern.frame_limit.minimum_frame_time = (retro_time_t)roundf(1000000.0f / (g_extern.system.av_info.timing.fps * g_settings.fastforward_ratio));
 }
 
 static void verify_api_version(void)
@@ -3035,6 +3045,8 @@ static inline void limit_frame_time(void)
    if (g_settings.fastforward_ratio < 0.0f)
       return;
 
+   g_extern.frame_limit.minimum_frame_time = (retro_time_t)roundf(1000000.0f / (g_extern.system.av_info.timing.fps * g_settings.fastforward_ratio));
+
    retro_time_t current = rarch_get_time_usec();
    retro_time_t target = g_extern.frame_limit.last_frame_time + g_extern.frame_limit.minimum_frame_time;
    retro_time_t to_sleep_ms = (target - current) / 1000;
@@ -3050,12 +3062,6 @@ static inline void limit_frame_time(void)
 bool rarch_main_iterate(void)
 {
    unsigned i;
-
-#ifdef HAVE_DYLIB
-   // DSP plugin GUI events.
-   if (g_extern.audio_data.dsp_handle && g_extern.audio_data.dsp_plugin && g_extern.audio_data.dsp_plugin->events)
-      g_extern.audio_data.dsp_plugin->events(g_extern.audio_data.dsp_handle);
-#endif
 
    // SHUTDOWN on consoles should exit RetroArch completely.
    if (g_extern.system.shutdown)
@@ -3177,7 +3183,7 @@ void rarch_main_deinit(void)
       for (i = 0; i < g_extern.temporary_roms->size; i++)
       {
          const char *path = g_extern.temporary_roms->elems[i].data;
-         RARCH_LOG("Removing temporary ROM file: %s.\n", path);
+         RARCH_LOG("Removing temporary content file: %s.\n", path);
          if (remove(path) < 0)
             RARCH_ERR("Failed to remove temporary file: %s.\n", path);
       }
@@ -3193,77 +3199,58 @@ void rarch_main_deinit(void)
    g_extern.main_is_init = false;
 }
 
-#define MAX_ARGS 32
-
-int rarch_main_init_wrap(const struct rarch_main_wrap *args)
+void rarch_main_init_wrap(const struct rarch_main_wrap *args, int *argc, char **argv)
 {
-   unsigned i;
-   if (g_extern.main_is_init)
-      rarch_main_deinit();
-
-   int argc = 0;
-   char *argv[MAX_ARGS] = {NULL};
-   char *argv_copy[MAX_ARGS];
-
-   argv[argc++] = strdup("retroarch");
+   *argc = 0;
+   argv[(*argc)++] = strdup("retroarch");
 
    if (!args->no_rom)
    {
       if (args->rom_path)
       {
-         RARCH_LOG("Using ROM: %s.\n", args->rom_path);
-         argv[argc++] = strdup(args->rom_path);
+         RARCH_LOG("Using content: %s.\n", args->rom_path);
+         argv[(*argc)++] = strdup(args->rom_path);
       }
       else
       {
-         RARCH_LOG("No ROM, starting dummy core.\n");
-         argv[argc++] = strdup("--menu");
+         RARCH_LOG("No content, starting dummy core.\n");
+         argv[(*argc)++] = strdup("--menu");
       }
    }
 
    if (args->sram_path)
    {
-      argv[argc++] = strdup("-s");
-      argv[argc++] = strdup(args->sram_path);
+      argv[(*argc)++] = strdup("-s");
+      argv[(*argc)++] = strdup(args->sram_path);
    }
 
    if (args->state_path)
    {
-      argv[argc++] = strdup("-S");
-      argv[argc++] = strdup(args->state_path);
+      argv[(*argc)++] = strdup("-S");
+      argv[(*argc)++] = strdup(args->state_path);
    }
 
    if (args->config_path)
    {
-      argv[argc++] = strdup("-c");
-      argv[argc++] = strdup(args->config_path);
+      argv[(*argc)++] = strdup("-c");
+      argv[(*argc)++] = strdup(args->config_path);
    }
 
 #ifdef HAVE_DYNAMIC
    if (args->libretro_path)
    {
-      argv[argc++] = strdup("-L");
-      argv[argc++] = strdup(args->libretro_path);
+      argv[(*argc)++] = strdup("-L");
+      argv[(*argc)++] = strdup(args->libretro_path);
    }
 #endif
 
    if (args->verbose)
-      argv[argc++] = strdup("-v");
+      argv[(*argc)++] = strdup("-v");
 
 #ifdef HAVE_FILE_LOGGER
-   for (i = 0; i < argc; i++)
+   for (i = 0; i < *argc; i++)
       RARCH_LOG("arg #%d: %s\n", i, argv[i]);
 #endif
-
-   // The pointers themselves are not const, and can be messed around with by getopt_long().
-   memcpy(argv_copy, argv, sizeof(argv));
-
-   int ret = rarch_main_init(argc, argv);
-
-   for (i = 0; i < ARRAY_SIZE(argv_copy); i++)
-      free(argv_copy[i]);
-
-   return ret;
 }
 
 bool rarch_main_idle_iterate(void)

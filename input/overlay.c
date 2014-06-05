@@ -162,11 +162,13 @@ void input_overlay_set_scale_factor(input_overlay_t *ol, float scale)
 static void input_overlay_free_overlay(struct overlay *overlay)
 {
    size_t i;
+
    for (i = 0; i < overlay->size; i++)
-      texture_image_free(&overlay->descs[i].image);
+      texture_image_free(driver.video_data, &overlay->descs[i].image);
+
    free(overlay->load_images);
    free(overlay->descs);
-   texture_image_free(&overlay->image);
+   texture_image_free(driver.video_data, &overlay->image);
 }
 
 static void input_overlay_free_overlays(input_overlay_t *ol)
@@ -197,7 +199,7 @@ static bool input_overlay_load_desc(input_overlay_t *ol, config_file_t *conf, st
       fill_pathname_resolve_relative(path, ol->overlay_path, image_path, sizeof(path));
 
       struct texture_image img = {0};
-      if (texture_image_load(path, &img))
+      if (texture_image_load(driver.video_data, path, &img))
          desc->image = img;
    }
 
@@ -345,11 +347,12 @@ static bool input_overlay_load_overlay(input_overlay_t *ol, config_file_t *conf,
    snprintf(overlay_path_key, sizeof(overlay_path_key), "overlay%u_overlay", index);
    if (config_get_path(conf, overlay_path_key, overlay_path, sizeof(overlay_path)))
    {
+      struct texture_image img = {0};
+
       fill_pathname_resolve_relative(overlay_resolved_path, config_path,
             overlay_path, sizeof(overlay_resolved_path));
 
-      struct texture_image img = {0};
-      if (texture_image_load(overlay_resolved_path, &img))
+      if (texture_image_load(driver.video_data, overlay_resolved_path, &img))
          overlay->image = img;
       else
       {

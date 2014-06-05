@@ -1,74 +1,74 @@
 compiler    := gcc
 extra_flags :=
 use_neon    := 0
-release	    := release
-DYLIB	    := so
+build       = release
+DYLIB	      := so
 
 ifeq ($(platform),)
-platform = unix
-ifeq ($(shell uname -a),)
-   platform = win
-else ifneq ($(findstring MINGW,$(shell uname -a)),)
-   platform = win
-else ifneq ($(findstring Darwin,$(shell uname -a)),)
-   platform = osx
-   arch = intel
-ifeq ($(shell uname -p),powerpc)
-   arch = ppc
-endif
-else ifneq ($(findstring win,$(shell uname -a)),)
-   platform = win
-endif
+   platform = unix
+   ifeq ($(shell uname -a),)
+      platform = win
+   else ifneq ($(findstring MINGW,$(shell uname -a)),)
+      platform = win
+   else ifneq ($(findstring Darwin,$(shell uname -a)),)
+      platform = osx
+      arch = intel
+      ifeq ($(shell uname -p),powerpc)
+         arch = ppc
+      endif
+   else ifneq ($(findstring win,$(shell uname -a)),)
+      platform = win
+   endif
 endif
 
 ifeq ($(platform),gcc)
-extra_rules_gcc := $(shell $(compiler) -dumpmachine)
+   extra_rules_gcc := $(shell $(compiler) -dumpmachine)
 endif
 
 ifneq (,$(findstring armv7,$(extra_rules_gcc)))
-extra_flags += -mcpu=cortex-a9 -mtune=cortex-a9 -mfpu=neon
-use_neon := 1
+   extra_flags += -mcpu=cortex-a9 -mtune=cortex-a9 -mfpu=neon
+   use_neon := 1
 endif
 
 ifneq (,$(findstring hardfloat,$(extra_rules_gcc)))
-extra_flags += -mfloat-abi=hard
+   extra_flags += -mfloat-abi=hard
 endif
 
 ifeq (release,$(build))
-extra_flags += -O2
+   extra_flags += -O2
 endif
 
 ifeq (debug,$(build))
-extra_flags += -O0 -g
+   extra_flags += -O0 -g
 endif
 
-ldflags := -shared -Wl,--version-script=link.T
+ldflags := -shared -lm -Wl,--version-script=link.T
 
 ifeq ($(platform), unix)
-DYLIB = so
+   DYLIB = so
 else ifeq ($(platform), osx)
-compiler := $(CC)
-DYLIB = dylib
-ldflags := -dynamiclib
+   compiler := $(CC)
+   DYLIB = dylib
+   ldflags := -dynamiclib
 else
-extra_flags += -static-libgcc -static-libstdc++
-DYLIB = dll
+   extra_flags += -static-libgcc -static-libstdc++
+   DYLIB = dll
 endif
 
-CC      := $(compiler)
-CXX     := $(subst CC,++,$(compiler)) -std=gnu++0x
+CC      := $(compiler) -Wall
+CXX     := $(subst CC,++,$(compiler)) -std=gnu++0x -Wall
 flags   := -fPIC $(extra_flags)
 asflags := -fPIC  $(extra_flags)
 objects :=
-flags   += -std=c99
-
 
 ifeq (1,$(use_neon))
-ASMFLAGS := -INEON/asm
-asflags += -mfpu=neon
+   ASMFLAGS := -INEON/asm
+   asflags += -mfpu=neon
 endif
-           
-objects += echo.$(DYLIB) eq.$(DYLIB) iir.$(DYLIB) phaser.$(DYLIB) reverb.$(DYLIB) volume.$(DYLIB) wah.$(DYLIB)
+
+plugs := $(wildcard *.c)
+objects := $(plugs:.c=.o)
+targets := $(objects:.o=.$(DYLIB))
 
 all: build;
 
@@ -81,7 +81,7 @@ all: build;
 %.$(DYLIB): %.o
 	$(CC) -o $@ $(ldflags) $(flags) $^
 
-build: $(objects)
+build: $(targets)
 
 clean:
 	rm -f *.o

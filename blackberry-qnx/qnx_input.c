@@ -30,17 +30,6 @@
 #define MAX_TOUCH 4
 #endif
 
-enum input_devices
-{
-   DEVICE_NONE,
-   DEVICE_WIIMOTE,
-   DEVICE_KEYBOARD,
-   DEVICE_IPEGA,
-   DEVICE_KEYPAD,
-   DEVICE_UNKNOWN,
-   DEVICE_LAST
-};
-
 struct touches
 {
    int16_t x, y;
@@ -49,11 +38,16 @@ struct touches
    int map;
 };
 
-static struct touches touch[MAX_TOUCH];
-static unsigned touch_count;
-//The first touch_count indices of touch_map will be a valid, active index in touch array.
-//Saves us from searching through touch array when polling state.
-static int touch_map[MAX_TOUCH];
+typedef struct qnx_input
+{
+   struct touches touch[MAX_TOUCH];
+   unsigned touch_count;
+
+   int touch_map[MAX_TOUCH];
+   /*The first touch_count indices of touch_map will be a valid, active index in touch array.
+    * Saves us from searching through touch array when polling state.
+    */
+} qnx_input_t;
 
 input_device_t devices[MAX_PADS];
 input_device_t *port_device[MAX_PADS];
@@ -66,13 +60,17 @@ static void qnx_input_autodetect_gamepad(input_device_t* controller);
 static void initController(input_device_t* controller);
 
 #ifdef HAVE_BB10
-static void process_gamepad_event(screen_event_t screen_event, int type)
+static void process_gamepad_event(void *data, screen_event_t screen_event, int type)
 {
+   int i;
    screen_device_t device;
+   input_device_t* controller = NULL;
+
+   (void)data;
+   (void)type;
+
    screen_get_event_property_pv(screen_event, SCREEN_PROPERTY_DEVICE, (void**)&device);
 
-   input_device_t* controller = NULL;
-   int i;
    for (i = 0; i < MAX_PADS; ++i)
    {
       if (device == devices[i].handle)
@@ -103,6 +101,8 @@ static void process_gamepad_event(screen_event_t screen_event, int type)
 static void loadController(input_device_t* controller)
 {
    int device;
+
+   (void)device;
 
    // Query libscreen for information about this device.
    screen_get_device_property_iv(controller->handle, SCREEN_PROPERTY_TYPE, &controller->type);
@@ -140,20 +140,21 @@ static void loadController(input_device_t* controller)
 }
 
 extern screen_context_t screen_ctx;
-void discoverControllers()
+void discoverControllers(void)
 {
    // Get an array of all available devices.
    int deviceCount;
+   unsigned i;
    screen_event_t *event;
+
+   (void)event;
 
    screen_get_context_property_iv(screen_ctx, SCREEN_PROPERTY_DEVICE_COUNT, &deviceCount);
    screen_device_t* devices_found = (screen_device_t*)calloc(deviceCount, sizeof(screen_device_t));
    screen_get_context_property_pv(screen_ctx, SCREEN_PROPERTY_DEVICES, (void**)devices_found);
 
    // Scan the list for gamepad and joystick devices.
-   int i;
-
-   for(i=0;i<pads_connected;++i)
+   for(i = 0; i < pads_connected; ++i)
       initController(&devices[i]);
 
    pads_connected = 0;
@@ -210,31 +211,38 @@ static void qnx_input_autodetect_gamepad(input_device_t* controller)
    //BBBB is the device's Vendor ID (in hexadecimal)
    //CCCC is the device's Product ID (also in hexadecimal)
    //D.D is the device's version number
+#ifdef HAVE_BB10
    if (strstr(controller->id, "057E-0306"))
    {
       controller->device = DEVICE_WIIMOTE;
       strlcpy(controller->device_name, "Wiimote", sizeof(controller->device_name));
    }
-   else if (strstr(controller->id, "0A5C-8502"))
+   else
+#endif
+	   if (strstr(controller->id, "0A5C-8502"))
    {
       controller->device = DEVICE_KEYBOARD;
       strlcpy(controller->device_name, "BlackBerry BT Keyboard", sizeof(controller->device_name));
    }
+#ifdef HAVE_BB10
    else if (strstr(controller->id, "qwerty:bb35"))
    {
       controller->device = DEVICE_KEYPAD;
       strlcpy(controller->device_name, "BlackBerry Q10 Keypad", sizeof(controller->device_name));
    }
+#endif
    else if (strstr(controller->id, "BB-VKB"))
    {
       controller->device = DEVICE_NONE;
       strlcpy(controller->device_name, "None", sizeof(controller->device_name));
    }
+#ifdef HAVE_BB10
    else if (controller->id[0])
    {
       controller->device = DEVICE_UNKNOWN;
       strlcpy(controller->device_name, "Unknown", sizeof(controller->device_name));
    }
+#endif
    else
    {
       controller->device = DEVICE_NONE;
@@ -249,26 +257,32 @@ static void qnx_input_autodetect_gamepad(input_device_t* controller)
    }
 }
 
-static void process_keyboard_event(screen_event_t event, int type)
+static void process_keyboard_event(void *data, screen_event_t event, int type)
 {
    input_device_t* controller = NULL;
-   int i = 0;
+   int i, b, sym, modifiers, flags, scan, cap;
+
+   (void)data;
+   (void)type;
+
+   i = 0;
+   sym = 0;
+   modifiers = 0;
+   flags = 0;
+   scan = 0;
+   cap = 0;
 
    //Get Keyboard state
-   int sym = 0;
    screen_get_event_property_iv(event, SCREEN_PROPERTY_KEY_SYM, &sym);
-   int modifiers = 0;
    screen_get_event_property_iv(event, SCREEN_PROPERTY_KEY_MODIFIERS, &modifiers);
-   int flags = 0;
    screen_get_event_property_iv(event, SCREEN_PROPERTY_KEY_FLAGS, &flags);
-   int scan = 0;
    screen_get_event_property_iv(event, SCREEN_PROPERTY_KEY_SCAN, &scan);
-   int cap = 0;
    screen_get_event_property_iv(event, SCREEN_PROPERTY_KEY_CAP, &cap);
 
 #ifdef HAVE_BB10
    //Find device that pressed the key
    screen_device_t device;
+
    screen_get_event_property_pv(event, SCREEN_PROPERTY_DEVICE, (void**)&device);
 
    for (i = 0; i < MAX_PADS; ++i)
@@ -289,7 +303,6 @@ static void process_keyboard_event(screen_event_t event, int type)
    if(controller->port == -1)
       return;
 
-   int b;
    for (b = 0; b < RARCH_FIRST_CUSTOM_BIND; ++b)
    {
       if ((unsigned int)g_settings.input.binds[controller->port][b].joykey == (unsigned int)(sym&0xFF))
@@ -308,11 +321,11 @@ static void process_keyboard_event(screen_event_t event, int type)
          g_extern.lifecycle_state ^= (1ULL << RARCH_MENU_TOGGLE);
 }
 
-static void process_touch_event(screen_event_t event, int type)
+static void process_touch_event(void *data, screen_event_t event, int type)
 {
-   int contact_id;
-   int pos[2];
-   int i;
+   int contact_id, pos[2];
+   unsigned i, j;
+   qnx_input_t *qnx = (qnx_input_t*)data;
 
    screen_get_event_property_iv(event, SCREEN_PROPERTY_TOUCH_ID, (int*)&contact_id);
    screen_get_event_property_iv(event, SCREEN_PROPERTY_SOURCE_POSITION, pos);
@@ -321,53 +334,52 @@ static void process_touch_event(screen_event_t event, int type)
    {
       case SCREEN_EVENT_MTOUCH_TOUCH:
          //Find a free touch struct
-         for(i=0;i<MAX_TOUCH;++i)
+         for(i = 0; i < MAX_TOUCH; ++i)
          {
-            if(touch[i].contact_id == -1)
+            if(qnx->touch[i].contact_id == -1)
             {
-               touch[i].contact_id = contact_id;
+               qnx->touch[i].contact_id = contact_id;
                input_translate_coord_viewport(pos[0], pos[1],
-                  &touch[i].x, &touch[i].y,
-                  &touch[i].full_x, &touch[i].full_y);
+                  &qnx->touch[i].x, &qnx->touch[i].y,
+                  &qnx->touch[i].full_x, &qnx->touch[i].full_y);
                //Add this touch to the map to signal it's valid
-               touch[i].map = touch_count;
-               touch_map[touch_count] = i;
-               touch_count++;
+               qnx->touch[i].map = qnx->touch_count;
+               qnx->touch_map[qnx->touch_count] = i;
+               qnx->touch_count++;
                break;
             }
          }
          //printf("New Touch: x:%d, y:%d, id:%d\n", pos[0], pos[1], contact_id);fflush(stdout);
-         //printf("Map: %d %d %d %d %d %d\n", touch_map[0], touch_map[1], touch_map[2], touch_map[3], touch_map[4], touch_map[5]);fflush(stdout);
+         //printf("Map: %d %d %d %d %d %d\n", qnx->touch_map[0], qnx->touch_map[1], qnx->touch_map[2], qnx->touch_map[3], qnx->touch_map[4], qnx->touch_map[5]);fflush(stdout);
          break;
       case SCREEN_EVENT_MTOUCH_RELEASE:
-         for(i=0; i<MAX_TOUCH; ++i)
+         for(i = 0; i < MAX_TOUCH; ++i)
          {
-            if(touch[i].contact_id == contact_id)
+            if(qnx->touch[i].contact_id == contact_id)
             {
                //Invalidate the finger
-               touch[i].contact_id = -1;
+               qnx->touch[i].contact_id = -1;
 
                //Remove touch from map and shift remaining valid ones to the front
-               touch_map[touch[i].map] = -1;
-               int j;
-               for(j=touch[i].map;j<touch_count;++j)
+               qnx->touch_map[qnx->touch[i].map] = -1;
+               for(j = qnx->touch[i].map; j < qnx->touch_count; ++j)
                {
-                 touch_map[j] = touch_map[j+1];
-                 touch[touch_map[j+1]].map = j;
-                 touch_map[j+1] = -1;
+                 qnx->touch_map[j] = qnx->touch_map[j+1];
+                 qnx->touch[qnx->touch_map[j+1]].map = j;
+                 qnx->touch_map[j+1] = -1;
                }
-               touch_count--;
+               qnx->touch_count--;
                break;
             }
          }
          //printf("Release: x:%d, y:%d, id:%d\n", pos[0], pos[1], contact_id);fflush(stdout);
-         //printf("Map: %d %d %d %d %d %d\n", touch_map[0], touch_map[1], touch_map[2], touch_map[3], touch_map[4], touch_map[5]);fflush(stdout);
+         //printf("Map: %d %d %d %d %d %d\n", qnx->touch_map[0], qnx->touch_map[1], qnx->touch_map[2], qnx->touch_map[3], qnx->touch_map[4], qnx->touch_map[5]);fflush(stdout);
          break;
       case SCREEN_EVENT_MTOUCH_MOVE:
          //Find the finger we're tracking and update
-         for(i=0; i<touch_count; ++i)
+         for(i = 0; i < qnx->touch_count; ++i)
          {
-            if(touch[i].contact_id == contact_id)
+            if(qnx->touch[i].contact_id == contact_id)
             {
                //During a move, we can go ~30 pixel into the bezel which gives negative
                //numbers or numbers larger than the screen res. Normalize.
@@ -382,8 +394,8 @@ static void process_touch_event(screen_event_t event, int type)
                   pos[1] = screen_height;
 
                input_translate_coord_viewport(pos[0], pos[1],
-                     &touch[i].x, &touch[i].y,
-                     &touch[i].full_x, &touch[i].full_y);
+                     &qnx->touch[i].x, &qnx->touch[i].y,
+                     &qnx->touch[i].full_x, &qnx->touch[i].full_y);
                //printf("Move: x:%d, y:%d, id:%d\n", pos[0], pos[1], contact_id);fflush(stdout);
                break;
             }
@@ -392,7 +404,7 @@ static void process_touch_event(screen_event_t event, int type)
    }
 }
 
-static void handle_screen_event(bps_event_t *event)
+static void handle_screen_event(void *data, bps_event_t *event)
 {
    int type;
 
@@ -404,22 +416,21 @@ static void handle_screen_event(bps_event_t *event)
       case SCREEN_EVENT_MTOUCH_TOUCH:
       case SCREEN_EVENT_MTOUCH_RELEASE:
       case SCREEN_EVENT_MTOUCH_MOVE:
-         process_touch_event(screen_event, type);
+         process_touch_event(data, screen_event, type);
          break;
       case SCREEN_EVENT_KEYBOARD:
-         process_keyboard_event(screen_event, type);
+         process_keyboard_event(data, screen_event, type);
          break;
 #ifdef HAVE_BB10
       case SCREEN_EVENT_GAMEPAD:
       case SCREEN_EVENT_JOYSTICK:
-         process_gamepad_event(screen_event, type);
+         process_gamepad_event(data, screen_event, type);
          break;
       case SCREEN_EVENT_DEVICE:
          {
             // A device was attached or removed.
             screen_device_t device;
-            int attached;
-            int type;
+            int attached, type, i;
 
             screen_get_event_property_pv(screen_event,
                   SCREEN_PROPERTY_DEVICE, (void**)&device);
@@ -429,8 +440,6 @@ static void handle_screen_event(bps_event_t *event)
             if (attached)
                screen_get_device_property_iv(device,
                      SCREEN_PROPERTY_TYPE, &type);
-
-            int i;
 
             if (attached && (type == SCREEN_EVENT_GAMEPAD || type == SCREEN_EVENT_JOYSTICK || type == SCREEN_EVENT_KEYBOARD))
             {
@@ -464,11 +473,14 @@ static void handle_screen_event(bps_event_t *event)
    }
 }
 
-static void handle_navigator_event(bps_event_t *event)
+static void handle_navigator_event(void *data, bps_event_t *event)
 {
    navigator_window_state_t state;
    bps_event_t *event_pause = NULL;
    int rc;
+
+   (void)data;
+   (void)rc;
 
    switch (bps_event_get_code(event))
    {
@@ -497,7 +509,7 @@ static void handle_navigator_event(bps_event_t *event)
                   }
                   else if (bps_event_get_code(event_pause) == NAVIGATOR_EXIT)
                   {
-                     g_extern.lifecycle_state |= (1ULL << RARCH_QUIT_KEY);
+                     g_extern.system.shutdown = true;
                      break;
                   }
                }
@@ -517,19 +529,18 @@ static void handle_navigator_event(bps_event_t *event)
 static void *qnx_input_init(void)
 {
    int i;
-   static int initialized = 0;
+   qnx_input_t *qnx = (qnx_input_t*)calloc(1, sizeof(*qnx));
+   if (!qnx)
+      return NULL;
 
    //Get screen dimensions
    if(gfx_ctx_bbqnx.get_video_size)
-      gfx_ctx_bbqnx.get_video_size(&screen_width, &screen_height);
-
-   if(initialized)
-      return (void*)-1;
+      gfx_ctx_bbqnx.get_video_size(driver.video_data, &screen_width, &screen_height);
 
    for (i = 0; i < MAX_TOUCH; ++i)
    {
-      touch[i].contact_id = -1;
-      touch_map[i] = -1;
+      qnx->touch[i].contact_id = -1;
+      qnx->touch_map[i] = -1;
    }
 
    for (i = 0; i < MAX_PADS; ++i)
@@ -544,9 +555,7 @@ static void *qnx_input_init(void)
    init_playbook_keyboard();
 #endif
 
-   initialized = 1;
-
-   return (void*)-1;
+   return qnx;
 }
 
 static void qnx_input_poll(void *data)
@@ -568,9 +577,9 @@ static void qnx_input_poll(void *data)
          {
             domain = bps_event_get_domain(event);
             if (domain == navigator_get_domain())
-               handle_navigator_event(event);
+               handle_navigator_event(data, event);
             else if (domain == screen_get_domain())
-               handle_screen_event(event);
+               handle_screen_event(data, event);
          }
          else
             break;
@@ -580,14 +589,18 @@ static void qnx_input_poll(void *data)
 
 static int16_t qnx_input_state(void *data, const struct retro_keybind **retro_keybinds, unsigned port, unsigned device, unsigned index, unsigned id)
 {
-   (void)data;
+   qnx_input_t *qnx = (qnx_input_t*)data;
 
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
          if(port_device[port])
          {
-            if (port_device[port]->device == DEVICE_KEYBOARD || port_device[port]->device == DEVICE_KEYPAD)
+            if (port_device[port]->device == DEVICE_KEYBOARD
+#ifdef HAVE_BB10
+            		|| port_device[port]->device == DEVICE_KEYPAD
+#endif
+            		)
                return ((port_device[port]->buttons & (1 << id)) && (port < pads_connected) );
             else{
                return ((port_device[port]->buttons & retro_keybinds[port][id].joykey) && (port < pads_connected));
@@ -624,9 +637,12 @@ static int16_t qnx_input_state(void *data, const struct retro_keybind **retro_ke
 
             switch (id)
             {
-               case RETRO_DEVICE_ID_POINTER_X: return want_full ? touch[touch_map[index]].full_x : touch[touch_map[index]].x;
-               case RETRO_DEVICE_ID_POINTER_Y: return want_full ? touch[touch_map[index]].full_y : touch[touch_map[index]].y;
-               case RETRO_DEVICE_ID_POINTER_PRESSED: return (touch_map[index] != -1);
+               case RETRO_DEVICE_ID_POINTER_X:
+                  return want_full ? qnx->touch[qnx->touch_map[index]].full_x : qnx->touch[qnx->touch_map[index]].x;
+               case RETRO_DEVICE_ID_POINTER_Y:
+                  return want_full ? qnx->touch[qnx->touch_map[index]].full_y : qnx->touch[qnx->touch_map[index]].y;
+               case RETRO_DEVICE_ID_POINTER_PRESSED:
+                  return (qnx->touch_map[index] != -1);
             }
 
             break;
@@ -640,17 +656,19 @@ static int16_t qnx_input_state(void *data, const struct retro_keybind **retro_ke
 
 static bool qnx_input_key_pressed(void *data, int key)
 {
+   (void)data;
    return ((g_extern.lifecycle_state | driver.overlay_state.buttons ) & (1ULL << key));
 }
 
 static void qnx_input_free_input(void *data)
 {
-   (void)data;
+   free(data);
 }
 
 static void qnx_input_set_keybinds(void *data, unsigned device, unsigned port,
       unsigned id, unsigned keybind_action)
 {
+   int i;
    input_device_t *controller = (input_device_t*)data;
 #ifdef HAVE_BB10
    uint64_t *key = &g_settings.input.binds[port][id].joykey;
@@ -658,6 +676,8 @@ static void qnx_input_set_keybinds(void *data, unsigned device, unsigned port,
    size_t arr_size = sizeof(platform_keys) / sizeof(platform_keys[0]);
 
    (void)device;
+   (void)joykey;
+   (void)data;
 
    if (keybind_action & (1ULL << KEYBINDS_ACTION_SET_DEFAULT_BIND))
       *key = g_settings.input.binds[port][id].def_joykey;
@@ -670,7 +690,7 @@ static void qnx_input_set_keybinds(void *data, unsigned device, unsigned port,
          case DEVICE_WIIMOTE:
             //TODO:Have enum lookup for string
             strlcpy(g_settings.input.device_names[port], "Wiimote",
-               sizeof(g_settings.input.device_names[port]));
+                  sizeof(g_settings.input.device_names[port]));
             g_settings.input.device[port] = device;
             g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_B].def_joykey      = SCREEN_X_GAME_BUTTON;
             g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_Y].def_joykey      = SCREEN_B_GAME_BUTTON;
@@ -694,7 +714,7 @@ static void qnx_input_set_keybinds(void *data, unsigned device, unsigned port,
             break;
          case DEVICE_KEYPAD:
             strlcpy(g_settings.input.device_names[port], "BlackBerry Q10 Keypad",
-               sizeof(g_settings.input.device_names[port]));
+                  sizeof(g_settings.input.device_names[port]));
             g_settings.input.device[port] = device;
             g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_B].def_joykey      = KEYCODE_M & 0xFF;
             g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_Y].def_joykey      = KEYCODE_J & 0xFF;
@@ -719,7 +739,7 @@ static void qnx_input_set_keybinds(void *data, unsigned device, unsigned port,
 #endif
          case DEVICE_KEYBOARD:
             strlcpy(g_settings.input.device_names[port], "BlackBerry BT Keyboard",
-               sizeof(g_settings.input.device_names[port]));
+                  sizeof(g_settings.input.device_names[port]));
             g_settings.input.device[port] = device;
             g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_B].def_joykey      = KEYCODE_Z & 0xFF;
             g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_Y].def_joykey      = KEYCODE_A & 0xFF;
@@ -743,7 +763,7 @@ static void qnx_input_set_keybinds(void *data, unsigned device, unsigned port,
             break;
          case DEVICE_IPEGA:
             strlcpy(g_settings.input.device_names[port], "iPega PG-9017",
-               sizeof(g_settings.input.device_names[port]));
+                  sizeof(g_settings.input.device_names[port]));
             g_settings.input.device[port] = device;
             g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_B].def_joykey      = KEYCODE_J & 0xFF;
             g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_Y].def_joykey      = KEYCODE_M & 0xFF;
@@ -768,7 +788,7 @@ static void qnx_input_set_keybinds(void *data, unsigned device, unsigned port,
 #ifdef HAVE_BB10
          case DEVICE_UNKNOWN:
             strlcpy(g_settings.input.device_names[port], "Unknown",
-               sizeof(g_settings.input.device_names[port]));
+                  sizeof(g_settings.input.device_names[port]));
             g_settings.input.device[port] = device;
             g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_B].def_joykey      = SCREEN_B_GAME_BUTTON;
             g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_Y].def_joykey      = SCREEN_Y_GAME_BUTTON;
@@ -790,10 +810,11 @@ static void qnx_input_set_keybinds(void *data, unsigned device, unsigned port,
             controller->port = port;
             port_device[port] = controller;
             break;
+#endif
          case DEVICE_NONE:
          default:
             strlcpy(g_settings.input.device_names[port], "None",
-               sizeof(g_settings.input.device_names[port]));
+                  sizeof(g_settings.input.device_names[port]));
             g_settings.input.device[port] = device;
             g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_B].def_joykey      = NO_BTN;
             g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_Y].def_joykey      = NO_BTN;
@@ -815,10 +836,9 @@ static void qnx_input_set_keybinds(void *data, unsigned device, unsigned port,
             controller->port = -1;
             port_device[port] = 0;
             break;
-#endif
       }
 
-      for (unsigned i = 0; i < RARCH_CUSTOM_BIND_LIST_END; i++)
+      for (i = 0; i < RARCH_CUSTOM_BIND_LIST_END; i++)
       {
          g_settings.input.binds[port][i].id = i;
          g_settings.input.binds[port][i].joykey = g_settings.input.binds[port][i].def_joykey;
@@ -856,6 +876,8 @@ static uint64_t qnx_input_get_capabilities(void *data)
 {
    uint64_t caps = 0;
 
+   (void)data;
+
    caps |= (1 << RETRO_DEVICE_JOYPAD);
    caps |= (1 << RETRO_DEVICE_POINTER);
 #ifdef HAVE_BB10
@@ -867,6 +889,7 @@ static uint64_t qnx_input_get_capabilities(void *data)
 
 unsigned qnx_input_devices_size(void *data)
 {
+   (void)data;
    return DEVICE_LAST;
 }
 
@@ -882,4 +905,7 @@ const input_driver_t input_qnx = {
    qnx_input_get_capabilities,
    qnx_input_devices_size,
    "qnx_input",
+   NULL,
+   NULL,
+   NULL,
 };

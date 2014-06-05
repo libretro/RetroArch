@@ -1,5 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
+ *  Copyright (C) 2011-2014 - Daniel De Matteis
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -26,8 +27,12 @@
 #include "gfx/scaler/scaler.h"
 #include "gfx/image/image.h"
 #include "gfx/filters/softfilter.h"
-#include "audio/filters/rarch_dsp.h"
+#include "audio/dsp_filter.h"
 #include "input/overlay.h"
+#include "frontend/frontend_context.h"
+#ifndef _WIN32
+#include "miscellaneous.h"
+#endif
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -94,7 +99,6 @@ enum // RetroArch specific bind IDs.
    RARCH_CHEAT_INDEX_MINUS,
    RARCH_CHEAT_TOGGLE,
    RARCH_SCREENSHOT,
-   RARCH_DSP_CONFIG,
    RARCH_MUTE,
    RARCH_NETPLAY_FLIP,
    RARCH_SLOWMOTION,
@@ -293,7 +297,7 @@ typedef struct input_osk_driver
 
 typedef struct camera_driver
 {
-   // FIXME: params for init - queries for resolution, framerate, color format
+   // FIXME: params for initialization - queries for resolution, framerate, color format
    // which might or might not be honored
    void *(*init)(const char *device, uint64_t buffer_types, unsigned width, unsigned height);
    void (*free)(void *data);
@@ -357,13 +361,15 @@ typedef struct video_poke_interface
 
    void (*show_mouse)(void *data, bool state);
    void (*grab_mouse_toggle)(void *data);
+
+   struct gfx_shader *(*get_current_shader)(void *data);
 } video_poke_interface_t;
 
 typedef struct video_driver
 {
    void *(*init)(const video_info_t *video, const input_driver_t **input, void **input_data); 
    // Should the video driver act as an input driver as well? :)
-   // The video init might preinitialize an input driver to override the settings in case the video driver relies on input driver for event handling, e.g.
+   // The video initialization might preinitialize an input driver to override the settings in case the video driver relies on input driver for event handling, e.g.
    bool (*frame)(void *data, const void *frame, unsigned width, unsigned height, unsigned pitch, const char *msg); // msg is for showing a message on the screen along with the video frame.
    void (*set_nonblock_state)(void *data, bool toggle); // Should we care about syncing to vblank? Fast forwarding.
    // Is the window still active?
@@ -372,10 +378,6 @@ typedef struct video_driver
    bool (*set_shader)(void *data, enum rarch_shader_type type, const char *path); // Sets shader. Might not be implemented. Will be moved to poke_interface later.
    void (*free)(void *data);
    const char *ident;
-
-#ifdef HAVE_MENU
-   void (*restart)(void);
-#endif
 
    void (*set_rotation)(void *data, unsigned rotation);
    void (*viewport_info)(void *data, struct rarch_viewport *vp);
@@ -392,34 +394,36 @@ typedef struct video_driver
 typedef struct menu_ctx_driver_backend
 {
    void     (*entries_init)(void*, unsigned);
-   int      (*iterate)(void *, unsigned);
+   int      (*iterate)(unsigned);
    void     (*shader_manager_init)(void *);
    void     (*shader_manager_get_str)(void *, char *, size_t, unsigned);
    void     (*shader_manager_set_preset)(void *, unsigned, const char*);
-   void     (*shader_manager_save_preset)(void *, const char *, bool);
+   void     (*shader_manager_save_preset)(const char *, bool);
    unsigned (*shader_manager_get_type)(void *);
-   int      (*shader_manager_setting_toggle)(void *, unsigned, unsigned);
+   int      (*shader_manager_setting_toggle)(unsigned, unsigned);
    unsigned (*type_is)(unsigned);
    int      (*core_setting_toggle)(unsigned, unsigned);
-   int      (*setting_toggle)(void *, unsigned, unsigned, unsigned);
-   int      (*setting_set)(void *, unsigned, unsigned);
+   int      (*setting_toggle)(unsigned, unsigned, unsigned);
+   int      (*setting_set)(unsigned, unsigned);
    void     (*setting_set_label)(char *, size_t, unsigned *, unsigned);
+   void     (*defer_decision_automatic)(void);
+   void     (*defer_decision_manual)(void);
    const char *ident;
 } menu_ctx_driver_backend_t;
 
 typedef struct menu_ctx_driver
 {
-   void  (*set_texture)(void*, bool);
-   void  (*render_messagebox)(void*, const char*);
-   void  (*render)(void*);
-   void  (*frame)(void*);
+   void  (*set_texture)(void*);
+   void  (*render_messagebox)(const char*);
+   void  (*render)(void);
+   void  (*frame)(void);
    void* (*init)(void);
    void  (*free)(void*);
-   void  (*init_assets)(void*);
-   void  (*free_assets)(void*);
+   void  (*context_reset)(void*);
+   void  (*context_destroy)(void*);
    void  (*populate_entries)(void*, unsigned);
    void  (*iterate)(void*, unsigned);
-   int   (*input_postprocess)(void *, uint64_t);
+   int   (*input_postprocess)(uint64_t);
    void  (*navigation_clear)(void *);
    void  (*navigation_decrement)(void *);
    void  (*navigation_increment)(void *);
@@ -431,11 +435,113 @@ typedef struct menu_ctx_driver
    void  (*list_delete)(void *, size_t);
    void  (*list_clear)(void *);
    void  (*list_set_selection)(void *);
+   void  (*init_core_info)(void *);
 
    const menu_ctx_driver_backend_t *backend;
    // Human readable string.
    const char *ident;
 } menu_ctx_driver_t;
+
+#define RGUI_MAX_BUTTONS 32
+#define RGUI_MAX_AXES 32
+#define RGUI_MAX_HATS 4
+
+#ifndef MAX_PLAYERS
+#define MAX_PLAYERS 8
+#endif
+
+struct rgui_bind_state_port
+{
+   bool buttons[RGUI_MAX_BUTTONS];
+   int16_t axes[RGUI_MAX_AXES];
+   uint16_t hats[RGUI_MAX_HATS];
+};
+
+struct rgui_bind_axis_state
+{
+   // Default axis state.
+   int16_t rested_axes[RGUI_MAX_AXES];
+   // Locked axis state. If we configured an axis, avoid having the same axis state trigger something again right away.
+   int16_t locked_axes[RGUI_MAX_AXES];
+};
+
+struct rgui_bind_state
+{
+   struct retro_keybind *target;
+   int64_t timeout_end; // For keyboard binding.
+   unsigned begin;
+   unsigned last;
+   unsigned player;
+   struct rgui_bind_state_port state[MAX_PLAYERS];
+   struct rgui_bind_axis_state axis_state[MAX_PLAYERS];
+   bool skip;
+};
+
+typedef struct
+{
+   uint64_t old_input_state;
+   uint64_t trigger_state;
+   bool do_held;
+
+   unsigned delay_timer;
+   unsigned delay_count;
+
+   unsigned width;
+   unsigned height;
+
+   uint16_t *frame_buf;
+   size_t frame_buf_pitch;
+   bool frame_buf_show;
+
+   void *menu_stack;
+   void *selection_buf;
+   size_t selection_ptr;
+   unsigned info_selection;
+   bool need_refresh;
+   bool msg_force;
+   bool push_start_screen;
+
+   void *core_info;
+   void *core_info_current;
+   bool defer_core;
+   char deferred_path[PATH_MAX];
+
+   // Quick jumping indices with L/R.
+   // Rebuilt when parsing directory.
+   size_t scroll_indices[2 * (26 + 2) + 1];
+   unsigned scroll_indices_size;
+   unsigned scroll_accel;
+
+   char default_glslp[PATH_MAX];
+   char default_cgp[PATH_MAX];
+
+   const uint8_t *font;
+   bool alloc_font;
+
+   struct retro_system_info info;
+   bool load_no_rom;
+
+   void *shader;
+   void *parameter_shader; // Points to either shader or graphics driver current shader.
+   unsigned current_pad;
+
+   void *history;
+   retro_time_t last_time; // Used to throttle RGUI in case VSync is broken.
+
+   struct rgui_bind_state binds;
+   struct
+   {
+      const char **buffer;
+      const char *label;
+      bool display;
+   } keyboard;
+
+   bool bind_mode_keyboard;
+   retro_time_t time;
+   retro_time_t delta;
+   retro_time_t target_msec;
+   retro_time_t sleep_msec;
+} rgui_handle_t;
 
 enum rarch_display_type
 {
@@ -447,6 +553,7 @@ enum rarch_display_type
 
 typedef struct driver
 {
+   const frontend_ctx_driver_t *frontend_ctx;
    const audio_driver_t *audio;
    const video_driver_t *video;
    const input_driver_t *input;
@@ -466,6 +573,7 @@ typedef struct driver
    void *video_data;
    void *input_data;
 #ifdef HAVE_MENU
+   rgui_handle_t *menu;
    const menu_ctx_driver_t *menu_ctx;
 #endif
 
@@ -476,13 +584,15 @@ typedef struct driver
    bool video_cache_context;
    bool video_cache_context_ack; // Set to true by driver if context caching succeeded.
 
-   // Set if the respective handles are owned by RetroArch driver core.
-   // Consoles upper logic will generally intialize the drivers before
-   // the driver core initializes. It will then be up to upper logic
-   // to finally free() up the driver handles.
-   // Driver core will still call init() and free(), but in this case
-   // these calls should be seen as "reinit() + ref_count++" and "ref_count--"
-   // respectively.
+   // Set this to true if the platform in question needs to 'own' the respective
+   // handle and therefore skip regular RetroArch driver teardown/reiniting procedure.
+   // If set to true, the 'free' function will get skipped. It is then up to the
+   // driver implementation to properly handle 'reiniting' inside the 'init' function
+   // and make sure it returns the existing handle instead of allocating and returning
+   // a pointer to a new handle.
+   //
+   // Typically, if a driver intends to make use of this, it should set this to true
+   // at the end of its 'init' function.
    bool video_data_own;
    bool audio_data_own;
    bool input_data_own;
@@ -494,6 +604,9 @@ typedef struct driver
 #endif
 #ifdef HAVE_OSK
    bool osk_data_own;
+#endif
+#ifdef HAVE_MENU
+   bool menu_data_own;
 #endif
 
 #ifdef HAVE_COMMAND
@@ -537,9 +650,6 @@ typedef struct driver
 void init_drivers(void);
 void init_drivers_pre(void);
 void uninit_drivers(void);
-
-void global_init_drivers(void);
-void global_uninit_drivers(void);
 
 void init_video_input(void);
 void uninit_video_input(void);
@@ -613,9 +723,9 @@ void driver_location_set_interval(unsigned interval_msecs, unsigned interval_dis
 
 #ifdef HAVE_MENU
 const void *menu_ctx_find_driver(const char *ident); // Finds driver with ident. Does not initialize.
-bool menu_ctx_init_first(const menu_ctx_driver_t **driver, void **handle); // Finds first suitable driver and initializes.
 void find_prev_menu_driver(void);
 void find_next_menu_driver(void);
+void find_menu_driver(void);
 #endif
 
 // Used by RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO
@@ -685,6 +795,7 @@ extern const menu_ctx_driver_t menu_ctx_rgui;
 extern const menu_ctx_driver_t menu_ctx_lakka;
 
 extern const menu_ctx_driver_backend_t menu_ctx_backend_common;
+extern const menu_ctx_driver_backend_t menu_ctx_backend_lakka;
 
 #ifdef HAVE_FILTERS_BUILTIN
 extern const struct softfilter_implementation *blargg_ntsc_snes_rf_get_implementation(softfilter_simd_mask_t simd);
@@ -701,16 +812,6 @@ extern const struct softfilter_implementation *supertwoxsai_get_implementation(s
 extern const struct softfilter_implementation *twoxbr_get_implementation(softfilter_simd_mask_t simd);
 extern const struct softfilter_implementation *darken_get_implementation(softfilter_simd_mask_t simd);
 extern const struct softfilter_implementation *scale2x_get_implementation(softfilter_simd_mask_t simd);
-
-extern const struct dspfilter_implementation *echo_dsp_plugin_init(dspfilter_simd_mask_t simd);
-#ifndef _WIN32
-extern const struct dspfilter_implementation *eq_dsp_plugin_init(dspfilter_simd_mask_t simd);
-#endif
-extern const struct dspfilter_implementation *iir_dsp_plugin_init(dspfilter_simd_mask_t simd);
-extern const struct dspfilter_implementation *phaser_dsp_plugin_init(dspfilter_simd_mask_t simd);
-extern const struct dspfilter_implementation *reverb_dsp_plugin_init(dspfilter_simd_mask_t simd);
-extern const struct dspfilter_implementation *volume_dsp_plugin_init(dspfilter_simd_mask_t simd);
-extern const struct dspfilter_implementation *wah_dsp_plugin_init(dspfilter_simd_mask_t simd);
 #endif
 
 #include "driver_funcs.h"

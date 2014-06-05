@@ -21,7 +21,6 @@
 #include "../file.h"
 
 #include "frontend_context.h"
-frontend_ctx_driver_t *frontend_ctx;
 
 #if defined(HAVE_MENU)
 #include "menu/menu_input_line_cb.h"
@@ -30,25 +29,8 @@ frontend_ctx_driver_t *frontend_ctx;
 
 #include "../file_ext.h"
 
-#ifdef RARCH_CONSOLE
+#if defined(RARCH_CONSOLE) || defined(__QNX__)
 #include "../config.def.h"
-
-default_paths_t default_paths;
-
-static void rarch_get_environment_console(void)
-{
-   path_mkdir(default_paths.port_dir);
-   path_mkdir(default_paths.system_dir);
-   path_mkdir(default_paths.savestate_dir);
-   path_mkdir(default_paths.sram_dir);
-
-   config_load();
-
-   init_libretro_sym(false);
-   rarch_init_system_info();
-
-   global_init_drivers();
-}
 #endif
 
 #if defined(ANDROID)
@@ -83,49 +65,13 @@ static void rarch_get_environment_console(void)
 
 #endif
 
-#if defined(HAVE_BB10) || defined(ANDROID)
-#define ra_preinited true
-#else
-#define ra_preinited false
-#endif
-
-#if defined(HAVE_BB10) || defined(RARCH_CONSOLE)
-#define attempt_load_game false
-#else
-#define attempt_load_game true
-#endif
-
-#if defined(RARCH_CONSOLE) || defined(HAVE_BB10) || defined(ANDROID)
-#define initial_menu_lifecycle_state (1ULL << MODE_LOAD_GAME)
-#else
-#define initial_menu_lifecycle_state (1ULL << MODE_GAME)
-#endif
-
-#if !defined(RARCH_CONSOLE) && !defined(HAVE_BB10) && !defined(ANDROID)
-#define attempt_load_game_push_history true
-#else
-#define attempt_load_game_push_history false
-#endif
-
-#ifndef RARCH_CONSOLE
-#define rarch_get_environment_console() (void)0
-#endif
-
-#if defined(RARCH_CONSOLE) || defined(__QNX__) || defined(ANDROID)
-#define attempt_load_game_fails (1ULL << MODE_MENU_PREINIT)
-#else
-#define attempt_load_game_fails (1ULL << MODE_EXIT)
-#endif
-
-#define frontend_init_enable true
-#define menu_init_enable true
-#define initial_lifecycle_state_preinit false
-
 static retro_keyboard_event_t key_event;
 
 #ifdef HAVE_MENU
 static int main_entry_iterate_clear_input(args_type() args)
 {
+   (void)args;
+
    rarch_input_poll();
    if (!menu_input())
    {
@@ -140,6 +86,8 @@ static int main_entry_iterate_clear_input(args_type() args)
 
 static int main_entry_iterate_shutdown(args_type() args)
 {
+   (void)args;
+
 #ifdef HAVE_MENU
    // Load dummy core instead of exiting RetroArch completely.
    if (g_settings.load_dummy_on_core_shutdown)
@@ -162,8 +110,8 @@ static int main_entry_iterate_content(args_type() args)
 
    if (r)
    {
-      if (frontend_ctx && frontend_ctx->process_events)
-         frontend_ctx->process_events(args);
+      if (driver.frontend_ctx && driver.frontend_ctx->process_events)
+         driver.frontend_ctx->process_events(args);
    }
    else
       g_extern.lifecycle_state &= ~(1ULL << MODE_GAME);
@@ -183,16 +131,13 @@ static int main_entry_iterate_load_content(args_type() args)
    }
    else
    {
-      // If ROM load fails, we exit RetroArch. On console it might make more sense to go back to menu though ...
-      g_extern.lifecycle_state = attempt_load_game_fails;
-
-      if (g_extern.lifecycle_state & (1ULL << MODE_EXIT))
-      {
-         if (frontend_ctx && frontend_ctx->shutdown)
-            frontend_ctx->shutdown(true);
-
-         return 1;
-      }
+#if defined(RARCH_CONSOLE) || defined(RARCH_MOBILE)
+      // If ROM load fails, we go back to menu.
+      g_extern.lifecycle_state = (1ULL << MODE_MENU_PREINIT);
+#else
+      // If ROM load fails, we exit RetroArch.
+      g_extern.system.shutdown = true;
+#endif
    }
 
    g_extern.lifecycle_state &= ~(1ULL << MODE_LOAD_GAME);
@@ -203,6 +148,9 @@ static int main_entry_iterate_load_content(args_type() args)
 static int main_entry_iterate_menu_preinit(args_type() args)
 {
    int i;
+
+   if (!driver.menu)
+      return 1;
 
    // Menu should always run with vsync on.
    video_set_nonblock_state_func(false);
@@ -222,8 +170,8 @@ static int main_entry_iterate_menu_preinit(args_type() args)
    if (driver.audio_data)
       audio_stop_func();
 
-   rgui->need_refresh = true;
-   rgui->old_input_state |= 1ULL << RARCH_MENU_TOGGLE;
+   driver.menu->need_refresh = true;
+   driver.menu->old_input_state |= 1ULL << RARCH_MENU_TOGGLE;
 
    g_extern.lifecycle_state &= ~(1ULL << MODE_MENU_PREINIT);
    g_extern.lifecycle_state |= (1ULL << MODE_MENU);
@@ -235,8 +183,8 @@ static int main_entry_iterate_menu(args_type() args)
 {
    if (menu_iterate())
    {
-      if (frontend_ctx && frontend_ctx->process_events)
-         frontend_ctx->process_events(args);
+      if (driver.frontend_ctx && driver.frontend_ctx->process_events)
+         driver.frontend_ctx->process_events(args);
    }
    else
    {
@@ -285,10 +233,7 @@ int main_entry_iterate(signature(), args_type() args)
 
 void main_exit(args_type() args)
 {
-#ifdef HAVE_MENU
    g_extern.system.shutdown = false;
-
-   menu_free();
 
    if (g_extern.config_save_on_exit && *g_extern.config_path)
    {
@@ -300,16 +245,15 @@ void main_exit(args_type() args)
       if (*g_extern.core_specific_config_path && g_settings.core_specific_config)
          config_save_file(g_extern.core_specific_config_path);
    }
-#endif
 
    if (g_extern.main_is_init)
+   {
+      driver.menu_data_own = false; // Do not want menu context to live any more.
       rarch_main_deinit();
+   }
    rarch_deinit_msg_queue();
-   global_uninit_drivers();
 
-#ifdef PERF_TEST
    rarch_perf_log();
-#endif
 
 #if defined(HAVE_LOGGER) && !defined(ANDROID)
    logger_shutdown();
@@ -319,69 +263,124 @@ void main_exit(args_type() args)
    g_extern.log_file = NULL;
 #endif
 
-   if (frontend_ctx && frontend_ctx->deinit)
-      frontend_ctx->deinit(args);
+   if (driver.frontend_ctx && driver.frontend_ctx->deinit)
+      driver.frontend_ctx->deinit(args);
 
-   if (g_extern.lifecycle_state & (1ULL << MODE_EXITSPAWN) && frontend_ctx
-         && frontend_ctx->exitspawn)
-      frontend_ctx->exitspawn();
+   if (g_extern.lifecycle_state & (1ULL << MODE_EXITSPAWN) && driver.frontend_ctx
+         && driver.frontend_ctx->exitspawn)
+      driver.frontend_ctx->exitspawn(g_settings.libretro, sizeof(g_settings.libretro));
 
    rarch_main_clear_state();
 
-   if (frontend_ctx && frontend_ctx->shutdown)
-      frontend_ctx->shutdown(false);
+   if (driver.frontend_ctx && driver.frontend_ctx->shutdown)
+      driver.frontend_ctx->shutdown(false);
+}
+
+static void free_args(struct rarch_main_wrap *wrap_args, char **argv_copy, unsigned argv_size)
+{
+   unsigned i;
+   if (!wrap_args->touched)
+      return;
+
+   for (i = 0; i < argv_size; i++)
+      free(argv_copy[i]);
 }
 
 returntype main_entry(signature())
 {
+   int *rarch_argc_ptr;
+   char **rarch_argv_ptr;
+   struct rarch_main_wrap *wrap_args;
    declare_argc();
    declare_argv();
    args_type() args = (args_type())args_initial_ptr();
+   int ret, rarch_argc = 0;
+   char *rarch_argv[MAX_ARGS] = {NULL};
+   char *argv_copy[MAX_ARGS] = {NULL};
 
-   if (frontend_init_enable)
+   wrap_args = (struct rarch_main_wrap*)calloc(1, sizeof(*wrap_args));
+   rarch_assert(wrap_args);
+
+   driver.frontend_ctx = (frontend_ctx_driver_t*)frontend_ctx_init_first();
+   rarch_argv_ptr = (char**)argv;
+   rarch_argc_ptr = (int*)&argc;
+
+   if (!driver.frontend_ctx)
+      RARCH_WARN("Frontend context could not be initialized.\n");
+
+   if (driver.frontend_ctx && driver.frontend_ctx->init)
+      driver.frontend_ctx->init(args);
+
+   rarch_main_clear_state();
+   rarch_init_msg_queue();
+
+   if (driver.frontend_ctx && driver.frontend_ctx->environment_get)
    {
-      frontend_ctx = (frontend_ctx_driver_t*)frontend_ctx_init_first();
+      driver.frontend_ctx->environment_get(rarch_argc_ptr, rarch_argv_ptr, args, wrap_args);
+#if defined(RARCH_CONSOLE) || defined(RARCH_MOBILE)
+      if (*default_paths.autoconfig_dir)
+         path_mkdir(default_paths.autoconfig_dir);
+      if (*default_paths.audio_filter_dir)
+         path_mkdir(default_paths.audio_filter_dir);
+      if (*default_paths.assets_dir)
+         path_mkdir(default_paths.assets_dir);
+      if (*default_paths.core_dir)
+         path_mkdir(default_paths.core_dir);
+      if (*default_paths.core_info_dir)
+         path_mkdir(default_paths.core_info_dir);
+      if (*default_paths.overlay_dir)
+         path_mkdir(default_paths.overlay_dir);
+      if (*default_paths.port_dir)
+         path_mkdir(default_paths.port_dir);
+      if (*default_paths.shader_dir)
+         path_mkdir(default_paths.shader_dir);
+      if (*default_paths.savestate_dir)
+         path_mkdir(default_paths.savestate_dir);
+      if (*default_paths.sram_dir)
+         path_mkdir(default_paths.sram_dir);
+      if (*default_paths.system_dir)
+         path_mkdir(default_paths.system_dir);
+#endif
 
-      if (frontend_ctx && frontend_ctx->init)
-         frontend_ctx->init(args);
+      if (wrap_args->touched)
+      {
+         g_extern.verbose = true;
+         rarch_main_init_wrap(wrap_args, &rarch_argc, rarch_argv);
+         memcpy(argv_copy, rarch_argv, sizeof(rarch_argv));
+         rarch_argv_ptr = (char**)rarch_argv;
+         rarch_argc_ptr = (int*)&rarch_argc;
+      }
    }
 
-   if (!ra_preinited)
+   if ((ret = rarch_main_init(*rarch_argc_ptr, rarch_argv_ptr)))
    {
-      rarch_main_clear_state();
-      rarch_init_msg_queue();
-   }
-
-   if (frontend_ctx && frontend_ctx->environment_get)
-   {
-      frontend_ctx->environment_get(argc, argv, args);
-      rarch_get_environment_console();
-   }
-
-   if (attempt_load_game)
-   {
-      int init_ret;
-      if ((init_ret = rarch_main_init(argc, argv))) return_var(init_ret);
+      free_args(wrap_args, argv_copy, ARRAY_SIZE(argv_copy));
+      free(wrap_args);
+      return_var(ret);
    }
 
 #if defined(HAVE_MENU)
-   if (menu_init_enable)
-      menu_init();
+   if (driver.frontend_ctx && driver.frontend_ctx->process_args)
+      driver.frontend_ctx->process_args(rarch_argc_ptr, rarch_argv_ptr, args);
 
-   if (frontend_ctx && frontend_ctx->process_args)
-      frontend_ctx->process_args(argc, argv, args);
+   g_extern.lifecycle_state |= (1ULL << MODE_GAME);
 
-   if (!initial_lifecycle_state_preinit)
-      g_extern.lifecycle_state |= initial_menu_lifecycle_state;
-
-   if (attempt_load_game_push_history)
+#if defined(RARCH_CONSOLE) || defined(RARCH_MOBILE)
+   if (!ret)
+#endif
    {
       // If we started a ROM directly from command line,
       // push it to ROM history.
       if (!g_extern.libretro_dummy)
          menu_rom_history_push_current();
    }
+#endif
 
+   if (wrap_args)
+      free_args(wrap_args, argv_copy, ARRAY_SIZE(argv_copy));
+   free(wrap_args);
+
+#if defined(HAVE_MENU)
    while (!main_entry_iterate(signature_expand(), args));
 #else
    while ((g_extern.is_paused && !g_extern.is_oneshot) ? rarch_main_idle_iterate() : rarch_main_iterate());

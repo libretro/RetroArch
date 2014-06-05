@@ -14,8 +14,13 @@
 * If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef HAVE_DYLIB
-#define HAVE_FILTERS_BUILTIN
+#if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
+#define HAVE_SHADERS
+#endif
+
+#ifdef _XBOX
+#define DONT_HAVE_BITMAPFONTS
+#define DONT_HAVE_STATE_TRACKER
 #endif
 
 #if defined(_XBOX)
@@ -33,9 +38,9 @@ CONSOLE EXTENSIONS
 #ifdef RARCH_CONSOLE
 
 #if defined(HAVE_LOGGER) && defined(__PSL1GHT__)
-#include "../console/logger/psl1ght_logger.c"
+#include "../logger/netlogger/psl1ght_logger.c"
 #elif defined(HAVE_LOGGER) && !defined(ANDROID)
-#include "../console/logger/logger.c"
+#include "../logger/netlogger/logger.c"
 #endif
 
 #ifdef HW_DOL
@@ -107,7 +112,7 @@ VIDEO CONTEXT
 #include "../gfx/context/d3d_ctx.cpp"
 #elif defined(ANDROID)
 #include "../gfx/context/androidegl_ctx.c"
-#elif defined(__BLACKBERRY_QNX__)
+#elif defined(__QNX__)
 #include "../gfx/context/bbqnx_ctx.c"
 #elif defined(IOS) || defined(OSX)
 #include "../gfx/context/apple_gl_ctx.c"
@@ -141,9 +146,9 @@ VIDEO CONTEXT
 /*============================================================
 VIDEO SHADERS
 ============================================================ */
-#if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
+#ifdef HAVE_SHADERS
+#include "../gfx/shader_common.c"
 #include "../gfx/shader_parse.c"
-#endif
 
 #ifdef HAVE_CG
 #include "../gfx/shader_cg.c"
@@ -157,6 +162,8 @@ VIDEO SHADERS
 #include "../gfx/shader_glsl.c"
 #endif
 
+#endif
+
 /*============================================================
 VIDEO IMAGE
 ============================================================ */
@@ -166,12 +173,10 @@ VIDEO IMAGE
 #elif defined(_XBOX1)
 #include "../gfx/image/image_xdk1.c"
 #else
-#include "../gfx/image/image.c"
+#include "../gfx/image/image_rpng.c"
 #endif
 
-#if defined(WANT_RPNG) || defined(RARCH_MOBILE)
 #include "../gfx/rpng/rpng.c"
-#endif
 
 /*============================================================
 VIDEO DRIVER
@@ -240,10 +245,6 @@ VIDEO DRIVER
 FONTS
 ============================================================ */
 
-#ifdef _XBOX
-#define DONT_HAVE_BITMAPFONTS
-#endif
-
 #if defined(HAVE_OPENGL) || defined(HAVE_D3D8) || defined(HAVE_D3D9)
 
 #if defined(HAVE_FREETYPE) || !defined(DONT_HAVE_BITMAPFONTS)
@@ -290,16 +291,16 @@ INPUT
 #endif
 
 #if defined(__CELLOS_LV2__)
-#include "../ps3/ps3_input.c"
+#include "../input/ps3_input.c"
 #elif defined(SN_TARGET_PSP2) || defined(PSP)
-#include "../psp/psp_input.c"
+#include "../input/psp_input.c"
 #elif defined(GEKKO)
 #ifdef HAVE_LIBSICKSAXIS
 #include "../gx/sicksaxis.c"
 #endif
-#include "../gx/gx_input.c"
+#include "../input/gx_input.c"
 #elif defined(_XBOX)
-#include "../xdk/xdk_xinput_input.c"
+#include "../input/xdk_xinput_input.c"
 #elif defined(XENON)
 #include "../xenon/xenon360_input.c"
 #elif defined(ANDROID)
@@ -308,7 +309,7 @@ INPUT
 #elif defined(IOS) || defined(OSX)
 #include "../input/apple_input.c"
 #include "../input/apple_joypad.c"
-#elif defined(__BLACKBERRY_QNX__)
+#elif defined(__QNX__)
 #include "../blackberry-qnx/qnx_input.c"
 #elif defined(EMSCRIPTEN)
 #include "../input/rwebinput_input.c"
@@ -316,7 +317,7 @@ INPUT
 
 #ifdef HAVE_OSK
 #if defined(__CELLOS_LV2__)
-#include "../ps3/ps3_input_osk.c"
+#include "../input/ps3_input_osk.c"
 #endif
 #endif
 
@@ -398,23 +399,18 @@ RSOUND
 #endif
 
 /*============================================================
-AUDIO UTILS
-============================================================ */
-#include "../audio/utils.c"
-
-/*============================================================
 AUDIO
 ============================================================ */
 #if defined(__CELLOS_LV2__)
-#include "../ps3/ps3_audio.c"
+#include "../audio/ps3_audio.c"
 #elif defined(XENON)
 #include "../xenon/xenon360_audio.c"
 #elif defined(GEKKO)
-#include "../gx/gx_audio.c"
+#include "../audio/gx_audio.c"
 #elif defined(EMSCRIPTEN)
 #include "../audio/rwebaudio.c"
 #elif defined(PSP)
-#include "../psp1/psp1_audio.c"
+#include "../audio/psp1_audio.c"
 #endif
 
 #ifdef HAVE_XAUDIO
@@ -432,7 +428,7 @@ AUDIO
 
 #ifdef HAVE_ALSA
 #ifdef __QNX__
-#include "../blackberry-qnx/alsa_qsa.c"
+#include "../audio/alsa_qsa.c"
 #else
 #include "../audio/alsa.c"
 #include "../audio/alsathread.c"
@@ -484,16 +480,13 @@ FILTERS
 #include "../gfx/filters/phosphor2x.c"
 
 #include "../audio/filters/echo.c"
-#ifndef ANDROID
-#ifndef _WIN32
 #include "../audio/filters/eq.c"
-#endif
-#endif
+#include "../audio/filters/chorus.c"
 #include "../audio/filters/iir.c"
+#include "../audio/filters/panning.c"
 #include "../audio/filters/phaser.c"
 #include "../audio/filters/reverb.c"
-#include "../audio/filters/volume.c"
-#include "../audio/filters/wah.c"
+#include "../audio/filters/wahwah.c"
 #endif
 /*============================================================
 DYNAMIC
@@ -501,6 +494,7 @@ DYNAMIC
 #include "../dynamic.c"
 #include "../dynamic_dummy.c"
 #include "../gfx/filter.c"
+#include "../audio/dsp_filter.c"
 
 
 /*============================================================
@@ -553,6 +547,7 @@ FRONTEND
 #elif defined(ANDROID)
 #include "../frontend/platform/platform_android.c"
 #endif
+#include "../frontend/platform/platform_null.c"
 
 #include "../frontend/info/core_info.c"
 
@@ -668,9 +663,11 @@ XML
  APPLE EXTENSIONS
 ============================================================ */
     
-#if defined(IOS) || defined(OSX)
-#include "../apple/common/setting_data.c"
-#endif
+#include "../settings_data.c"
+/*============================================================
+ AUDIO UTILS
+============================================================ */
+#include "../audio/utils.c"
 
 #ifdef __cplusplus
 }

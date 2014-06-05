@@ -5,12 +5,14 @@ OBJDIR := obj-w32
 
 OBJ = frontend/frontend.o \
 		frontend/frontend_context.o \
+		frontend/platform/platform_null.o \
 		retroarch.o \
 		file.o \
 		file_path.o \
 		driver.o \
 		conf/config_file.o \
 		settings.o \
+		settings_data.o \
 		hash.o \
 		dynamic.o \
 		dynamic_dummy.o \
@@ -33,6 +35,7 @@ OBJ = frontend/frontend.o \
 		media/rarch.o \
 		gfx/context/win32_common.o \
 		gfx/scaler/scaler.o \
+		gfx/shader_common.o \
 		gfx/scaler/pixconv.o \
 		gfx/scaler/scaler_int.o \
 		gfx/scaler/scaler_filter.o \
@@ -40,8 +43,9 @@ OBJ = frontend/frontend.o \
 		gfx/shader_parse.o \
 		gfx/fonts/fonts.o \
 		gfx/fonts/bitmapfont.o \
-		gfx/image/image.o \
+		gfx/image/image_rpng.o \
 		audio/resampler.o \
+		audio/dsp_filter.o \
 		audio/sinc.o \
 		audio/cc_resampler.o \
 		performance.o
@@ -83,7 +87,6 @@ HAVE_WINXINPUT = 1
 
 ifeq ($(SLIM),)
    HAVE_SDL = 1
-   HAVE_SDL_IMAGE = 1
    HAVE_LIBXML2 = 1
    HAVE_FREETYPE = 1
    HAVE_ZLIB = 1
@@ -96,7 +99,7 @@ endif
 libretro ?= -lretro
 
 LIBS = -lm
-DEFINES = -I. -DHAVE_SCREENSHOTS -DHAVE_BSV_MOVIE -DHAVE_BUILTIN_AUTOCONFIG -DRARCH_INTERNAL -DHAVE_CC_RESAMPLER
+DEFINES = -I. -DHAVE_SCREENSHOTS -DHAVE_BSV_MOVIE -DHAVE_BUILTIN_AUTOCONFIG -DRARCH_INTERNAL -DHAVE_CC_RESAMPLER -DHAVE_OVERLAY
 LDFLAGS = -L. -static-libgcc
 
 ifeq ($(TDM_GCC),)
@@ -107,20 +110,16 @@ ifeq ($(SCALER_NO_SIMD), 1)
    DEFINES += -DSCALER_NO_SIMD
 endif
 
-ifeq ($(PERF_TEST), 1)
-   DEFINES += -DPERF_TEST
-endif
-
 JLIBS =
 
 ifeq ($(HAVE_RGUI), 1)
    DEFINES += -DHAVE_RGUI -DHAVE_MENU
-   OBJ += frontend/menu/menu_input_line_cb.o frontend/menu/menu_common.o frontend/menu/menu_navigation.o frontend/menu/file_list.o frontend/menu/disp/rgui.o frontend/menu/history.o
+   OBJ += frontend/menu/disp/rgui.o
    HAVE_MENU_COMMON = 1
 endif
 
 ifeq ($(HAVE_MENU_COMMON), 1)
-   OBJ += frontend/menu/backend/menu_common_backend.o
+   OBJ += frontend/menu/backend/menu_common_backend.o frontend/menu/menu_input_line_cb.o frontend/menu/menu_common.o frontend/menu/menu_navigation.o frontend/menu/file_list.o frontend/menu/history.o
 endif
 
 ifeq ($(HAVE_SDL), 1)
@@ -138,13 +137,8 @@ endif
 
 ifeq ($(HAVE_OPENGL), 1)
    OBJ += gfx/gl.o gfx/math/matrix.o gfx/fonts/gl_font.o gfx/fonts/gl_raster_font.o gfx/gfx_context.o gfx/context/wgl_ctx.o gfx/shader_glsl.o gfx/glsym/rglgen.o gfx/glsym/glsym_gl.o
-   DEFINES += -DHAVE_OPENGL -DHAVE_OVERLAY -DHAVE_GLSL -DHAVE_GL_SYNC
+   DEFINES += -DHAVE_OPENGL -DHAVE_GLSL -DHAVE_GL_SYNC
    LIBS += -lopengl32 -lgdi32 -lcomdlg32
-endif
-
-ifeq ($(HAVE_SDL_IMAGE), 1)
-   LIBS += -lSDL_image
-   DEFINES += -DHAVE_SDL_IMAGE
 endif
 
 ifeq ($(HAVE_CG), 1)
@@ -250,7 +244,7 @@ endif
 ifeq ($(HAVE_FFMPEG), 1)
    LIBS += -lavformat -lavcodec -lavutil -lswscale -lws2_32 -lz
    DEFINES += -DHAVE_FFMPEG -DHAVE_RECORD -Iffmpeg
-   OBJ += record/ffemu.o
+   OBJ += record/ffemu.o record/ffmpeg.o
 endif
 
 ifneq ($(V), 1)

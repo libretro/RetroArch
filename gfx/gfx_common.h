@@ -23,6 +23,7 @@ extern "C" {
 #include <stddef.h>
 #include "../general.h"
 #include "../boolean.h"
+#include "../performance.h"
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
@@ -44,6 +45,7 @@ typedef struct
    float x;
    float y;
    float scale;
+   float alpha;
    unsigned color;
 } font_params_t;
 

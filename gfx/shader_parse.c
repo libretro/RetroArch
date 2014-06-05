@@ -20,14 +20,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#ifdef HAVE_LIBXML2
-#include <libxml/parser.h>
-#include <libxml/tree.h>
-#else
-#define RXML_LIBXML2_COMPAT
-#include "../compat/rxml/rxml.h"
-#endif
-
 #define print_buf(buf, ...) snprintf(buf, sizeof(buf), __VA_ARGS__)
 
 static const char *wrap_mode_to_str(enum gfx_wrap_type type)
@@ -66,12 +58,13 @@ static enum gfx_wrap_type wrap_str_to_mode(const char *wrap_mode)
 }
 
 // CGP
-static bool shader_parse_pass(config_file_t *conf, struct gfx_shader_pass *pass, unsigned i)
+static bool shader_parse_pass(config_file_t *conf, void *data, unsigned i)
 {
+   struct gfx_shader_pass *pass = (struct gfx_shader_pass*)data;
    // Source
    char shader_name[64];
    print_buf(shader_name, "shader%u", i);
-   if (!config_get_path(conf, shader_name, pass->source.cg, sizeof(pass->source.cg)))
+   if (!config_get_path(conf, shader_name, pass->source.path, sizeof(pass->source.path)))
    {
       RARCH_ERR("Couldn't parse shader source (%s).\n", shader_name);
       return false;
@@ -80,7 +73,6 @@ static bool shader_parse_pass(config_file_t *conf, struct gfx_shader_pass *pass,
    // Smooth
    char filter_name_buf[64];
    print_buf(filter_name_buf, "filter_linear%u", i);
-
    bool smooth = false;
    if (config_get_bool(conf, filter_name_buf, &smooth))
       pass->filter = smooth ? RARCH_FILTER_LINEAR : RARCH_FILTER_NEAREST;
@@ -100,6 +92,24 @@ static bool shader_parse_pass(config_file_t *conf, struct gfx_shader_pass *pass,
    print_buf(frame_count_mod_buf, "frame_count_mod%u", i);
    if (config_get_array(conf, frame_count_mod_buf, frame_count_mod, sizeof(frame_count_mod)))
       pass->frame_count_mod = strtoul(frame_count_mod, NULL, 0);
+
+   // FBO types and mipmapping
+   char srgb_output_buf[64];
+   print_buf(srgb_output_buf, "srgb_framebuffer%u", i);
+   config_get_bool(conf, srgb_output_buf, &pass->fbo.srgb_fbo);
+
+   char fp_fbo_buf[64];
+   print_buf(fp_fbo_buf, "float_framebuffer%u", i);
+   config_get_bool(conf, fp_fbo_buf, &pass->fbo.fp_fbo);
+
+   char mipmap_buf[64];
+   print_buf(mipmap_buf, "mipmap_input%u", i);
+   config_get_bool(conf, mipmap_buf, &pass->mipmap);
+
+   char alias_buf[64];
+   print_buf(alias_buf, "alias%u", i);
+   if (!config_get_array(conf, alias_buf, pass->alias, sizeof(pass->alias)))
+      *pass->alias = '\0';
 
    // Scale
    struct gfx_fbo_scale *scale = &pass->fbo;
@@ -134,10 +144,6 @@ static bool shader_parse_pass(config_file_t *conf, struct gfx_shader_pass *pass,
    scale->type_y = RARCH_SCALE_INPUT;
    scale->scale_x = 1.0;
    scale->scale_y = 1.0;
-
-   char fp_fbo_buf[64];
-   print_buf(fp_fbo_buf, "float_framebuffer%u", i);
-   config_get_bool(conf, fp_fbo_buf, &scale->fp_fbo);
 
    if (*scale_type_x)
    {
@@ -222,11 +228,13 @@ static bool shader_parse_pass(config_file_t *conf, struct gfx_shader_pass *pass,
    return true;
 }
 
-static bool shader_parse_textures(config_file_t *conf, struct gfx_shader *shader)
+static bool shader_parse_textures(config_file_t *conf, void *data)
 {
    const char *id;
    char *save;
    char textures[1024];
+   struct gfx_shader *shader = (struct gfx_shader*)data;
+
    if (!config_get_array(conf, "textures", textures, sizeof(textures)))
       return true;
 
@@ -244,7 +252,6 @@ static bool shader_parse_textures(config_file_t *conf, struct gfx_shader *shader
 
       char id_filter[64];
       print_buf(id_filter, "%s_linear", id);
-
       bool smooth = false;
       if (config_get_bool(conf, id_filter, &smooth))
          shader->lut[shader->luts].filter = smooth ? RARCH_FILTER_LINEAR : RARCH_FILTER_NEAREST;
@@ -256,6 +263,93 @@ static bool shader_parse_textures(config_file_t *conf, struct gfx_shader *shader
       char wrap_mode[64];
       if (config_get_array(conf, id_wrap, wrap_mode, sizeof(wrap_mode)))
          shader->lut[shader->luts].wrap = wrap_str_to_mode(wrap_mode);
+
+      char id_mipmap[64];
+      print_buf(id_mipmap, "%s_mipmap", id);
+      bool mipmap = false;
+      if (config_get_bool(conf, id_mipmap, &mipmap))
+         shader->lut[shader->luts].mipmap = mipmap;
+      else
+         shader->lut[shader->luts].mipmap = false;
+   }
+
+   return true;
+}
+
+static struct gfx_shader_parameter *find_parameter(struct gfx_shader_parameter *params, unsigned num_params, const char *id)
+{
+   unsigned i;
+   for (i = 0; i < num_params; i++)
+   {
+      if (!strcmp(params[i].id, id))
+         return &params[i];
+   }
+   return NULL;
+}
+
+bool gfx_shader_resolve_parameters(config_file_t *conf, void *data)
+{
+   unsigned i;
+   struct gfx_shader *shader = (struct gfx_shader*)data;
+
+   shader->num_parameters = 0;
+   struct gfx_shader_parameter *param = &shader->parameters[shader->num_parameters];
+
+   // Find all parameters in our shaders.
+   for (i = 0; i < shader->passes; i++)
+   {
+      char line[2048];
+      FILE *file = fopen(shader->pass[i].source.path, "r");
+      if (!file)
+         continue;
+
+      while (shader->num_parameters < ARRAY_SIZE(shader->parameters) && fgets(line, sizeof(line), file))
+      {
+         int ret = sscanf(line, "#pragma parameter %64s \"%64[^\"]\" %f %f %f %f",
+               param->id, param->desc, &param->initial, &param->minimum, &param->maximum, &param->step);
+
+         if (ret >= 5)
+         {
+            param->id[63] = '\0';
+            param->desc[63] = '\0';
+
+            if (ret == 5)
+               param->step = 0.1f * (param->maximum - param->minimum);
+
+            RARCH_LOG("Found #pragma parameter %s (%s) %f %f %f %f\n",
+                  param->desc, param->id, param->initial, param->minimum, param->maximum, param->step);
+            param->current = param->initial;
+
+            shader->num_parameters++;
+            param++;
+         }
+      }
+
+      fclose(file);
+   }
+
+   // Read in parameters which override the defaults.
+   if (conf)
+   {
+      char parameters[1024];
+      char *save = NULL;
+      const char *id;
+
+      if (!config_get_array(conf, "parameters", parameters, sizeof(parameters)))
+         return true;
+
+      for (id = strtok_r(parameters, ";", &save); id; id = strtok_r(NULL, ";", &save))
+      {
+         struct gfx_shader_parameter *param = find_parameter(shader->parameters, shader->num_parameters, id);
+         if (!param)
+         {
+            RARCH_WARN("[CGP/GLSLP]: Parameter %s is set in the preset, but no shader uses this parameter, ignoring.\n", id);
+            continue;
+         }
+
+         if (!config_get_float(conf, id, &param->current))
+            RARCH_WARN("[CGP/GLSLP]: Parameter %s is not set in preset.\n", id);
+      }
    }
 
    return true;
@@ -264,7 +358,7 @@ static bool shader_parse_textures(config_file_t *conf, struct gfx_shader *shader
 static bool shader_parse_imports(config_file_t *conf, struct gfx_shader *shader)
 {
    char imports[1024];
-   char *save;
+   char *save = NULL;
    const char *id;
    if (!config_get_array(conf, "imports", imports, sizeof(imports)))
       return true;
@@ -359,9 +453,11 @@ static bool shader_parse_imports(config_file_t *conf, struct gfx_shader *shader)
    return true;
 }
 
-bool gfx_shader_read_conf_cgp(config_file_t *conf, struct gfx_shader *shader)
+bool gfx_shader_read_conf_cgp(config_file_t *conf, void *data)
 {
    unsigned shaders, i;
+   struct gfx_shader *shader = (struct gfx_shader*)data;
+
    memset(shader, 0, sizeof(*shader));
 
    shader->type = RARCH_SHADER_CG;
@@ -394,539 +490,6 @@ bool gfx_shader_read_conf_cgp(config_file_t *conf, struct gfx_shader *shader)
 
    return true;
 }
-
-// XML shaders
-static bool xml_get_prop(char *buf, size_t size, xmlNodePtr node, const char *prop)
-{
-   if (!size)
-      return false;
-
-   xmlChar *p = xmlGetProp(node, (const xmlChar*)prop);
-   if (p)
-   {
-      bool ret = strlcpy(buf, (const char*)p, size) < size;
-      xmlFree(p);
-      return ret;
-   }
-   else
-   {
-      *buf = '\0';
-      return false;
-   }
-}
-
-static char *xml_get_content(xmlNodePtr node)
-{
-   xmlChar *content = xmlNodeGetContent(node);
-   if (!content)
-      return NULL;
-
-   char *ret = strdup((const char*)content);
-   xmlFree(content);
-   return ret;
-}
-
-static char *xml_replace_if_file(char *content, const char *path, xmlNodePtr node, const char *src_prop)
-{
-   char prop[PATH_MAX];
-   if (!xml_get_prop(prop, sizeof(prop), node, src_prop))
-      return content;
-
-   free(content);
-   content = NULL;
-
-   char shader_path[PATH_MAX];
-   fill_pathname_resolve_relative(shader_path, path, prop, sizeof(shader_path));
-
-   RARCH_LOG("Loading external source from \"%s\".\n", shader_path);
-   if (read_file(shader_path, (void**)&content) >= 0)
-      return content;
-   else
-      return NULL;
-}
-
-static bool get_xml_attrs(struct gfx_shader_pass *pass, xmlNodePtr ptr)
-{
-   struct gfx_fbo_scale *fbo = &pass->fbo;
-   pass->frame_count_mod = 0;
-   pass->filter = RARCH_FILTER_UNSPEC;
-   fbo->fp_fbo = false;
-   fbo->scale_x = 1.0;
-   fbo->scale_y = 1.0;
-   fbo->type_x = pass->fbo.type_y = RARCH_SCALE_INPUT;
-   fbo->valid = false;
-
-   // Check if shader forces a certain texture filtering.
-   char attr[64];
-   if (xml_get_prop(attr, sizeof(attr), ptr, "filter"))
-   {
-      if (strcmp(attr, "nearest") == 0)
-      {
-         pass->filter = RARCH_FILTER_NEAREST;
-         RARCH_LOG("XML: Shader forces GL_NEAREST.\n");
-      }
-      else if (strcmp(attr, "linear") == 0)
-      {
-         pass->filter = RARCH_FILTER_LINEAR;
-         RARCH_LOG("XML: Shader forces GL_LINEAR.\n");
-      }
-      else
-      {
-         RARCH_WARN("XML: Invalid property for filter.\n");
-         return false;
-      }
-   }
-
-   // Check for scaling attributes *lots of code <_<*
-   char attr_scale[64], attr_scale_x[64], attr_scale_y[64];
-   char attr_size[64], attr_size_x[64], attr_size_y[64];
-   char attr_outscale[64], attr_outscale_x[64], attr_outscale_y[64];
-   char frame_count_mod[64], fp_fbo[64];
-
-   xml_get_prop(attr_scale, sizeof(attr_scale), ptr, "scale");
-   xml_get_prop(attr_scale_x, sizeof(attr_scale_x), ptr, "scale_x");
-   xml_get_prop(attr_scale_y, sizeof(attr_scale_y), ptr, "scale_y");
-   xml_get_prop(attr_size, sizeof(attr_size), ptr, "size");
-   xml_get_prop(attr_size_x, sizeof(attr_size_x), ptr, "size_x");
-   xml_get_prop(attr_size_y, sizeof(attr_size_y), ptr, "size_y");
-   xml_get_prop(attr_outscale, sizeof(attr_outscale), ptr, "outscale");
-   xml_get_prop(attr_outscale_x, sizeof(attr_outscale_x), ptr, "outscale_x");
-   xml_get_prop(attr_outscale_y, sizeof(attr_outscale_y), ptr, "outscale_y");
-   xml_get_prop(frame_count_mod, sizeof(frame_count_mod), ptr, "frame_count_mod");
-   xml_get_prop(fp_fbo, sizeof(fp_fbo), ptr, "float_framebuffer");
-
-   fbo->fp_fbo = strcmp(fp_fbo, "true") == 0;
-
-   unsigned x_attr_cnt = 0, y_attr_cnt = 0;
-
-   if (*frame_count_mod)
-   {
-      pass->frame_count_mod = strtoul(frame_count_mod, NULL, 0);
-      RARCH_LOG("Got frame count mod attr: %u\n", pass->frame_count_mod);
-   }
-
-   if (*attr_scale)
-   {
-      float scale = strtod(attr_scale, NULL);
-      fbo->scale_x = scale;
-      fbo->scale_y = scale;
-      fbo->valid = true;
-      RARCH_LOG("Got scale attr: %.1f\n", scale);
-      x_attr_cnt++;
-      y_attr_cnt++;
-   }
-
-   if (*attr_scale_x)
-   {
-      float scale = strtod(attr_scale_x, NULL);
-      fbo->scale_x = scale;
-      fbo->valid = true;
-      RARCH_LOG("Got scale_x attr: %.1f\n", scale);
-      x_attr_cnt++;
-   }
-
-   if (*attr_scale_y)
-   {
-      float scale = strtod(attr_scale_y, NULL);
-      fbo->scale_y = scale;
-      fbo->valid = true;
-      RARCH_LOG("Got scale_y attr: %.1f\n", scale);
-      y_attr_cnt++;
-   }
-   
-   if (*attr_size)
-   {
-      fbo->abs_x = fbo->abs_y = strtoul(attr_size, NULL, 0);
-      fbo->valid = true;
-      fbo->type_x = fbo->type_y = RARCH_SCALE_ABSOLUTE;
-      RARCH_LOG("Got size attr: %u\n", fbo->abs_x);
-      x_attr_cnt++;
-      y_attr_cnt++;
-   }
-
-   if (*attr_size_x)
-   {
-      fbo->abs_x = strtoul(attr_size_x, NULL, 0);
-      fbo->valid = true;
-      fbo->type_x = RARCH_SCALE_ABSOLUTE;
-      RARCH_LOG("Got size_x attr: %u\n", fbo->abs_x);
-      x_attr_cnt++;
-   }
-
-   if (*attr_size_y)
-   {
-      fbo->abs_y = strtoul(attr_size_y, NULL, 0);
-      fbo->valid = true;
-      fbo->type_y = RARCH_SCALE_ABSOLUTE;
-      RARCH_LOG("Got size_y attr: %u\n", fbo->abs_y);
-      y_attr_cnt++;
-   }
-
-   if (*attr_outscale)
-   {
-      float scale = strtod(attr_outscale, NULL);
-      fbo->scale_x = fbo->scale_y = scale;
-      fbo->valid = true;
-      fbo->type_x = fbo->type_y = RARCH_SCALE_VIEWPORT;
-      RARCH_LOG("Got outscale attr: %.1f\n", scale);
-      x_attr_cnt++;
-      y_attr_cnt++;
-   }
-
-   if (*attr_outscale_x)
-   {
-      float scale = strtod(attr_outscale_x, NULL);
-      fbo->scale_x = scale;
-      fbo->valid = true;
-      fbo->type_x = RARCH_SCALE_VIEWPORT;
-      RARCH_LOG("Got outscale_x attr: %.1f\n", scale);
-      x_attr_cnt++;
-   }
-
-   if (*attr_outscale_y)
-   {
-      float scale = strtod(attr_outscale_y, NULL);
-      fbo->scale_y = scale;
-      fbo->valid = true;
-      fbo->type_y = RARCH_SCALE_VIEWPORT;
-      RARCH_LOG("Got outscale_y attr: %.1f\n", scale);
-      y_attr_cnt++;
-   }
-
-   if (x_attr_cnt > 1)
-      return false;
-   if (y_attr_cnt > 1)
-      return false;
-
-   return true;
-}
-
-static bool add_texture_image(struct gfx_shader *shader,
-      xmlNodePtr ptr)
-{
-   if (shader->luts >= GFX_MAX_TEXTURES)
-   {
-      RARCH_WARN("Too many texture images. Ignoring ...\n");
-      return true;
-   }
-
-   struct gfx_shader_lut *lut = &shader->lut[shader->luts];
-
-   xml_get_prop(lut->id, sizeof(lut->id), ptr, "id");
-   xml_get_prop(lut->path, sizeof(lut->path), ptr, "file");
-
-   char filter[64] = {0};
-   xml_get_prop(filter, sizeof(filter), ptr, "filter");
-
-   if (!*lut->id)
-   {
-      RARCH_ERR("Could not find ID in texture.\n");
-      return false;
-   }
-
-   if (!*lut->path)
-   {
-      RARCH_ERR("Could not find filename in texture.\n");
-      return false;
-   }
-
-   if (strcmp(filter, "linear") == 0)
-      lut->filter = RARCH_FILTER_LINEAR;
-   else if (strcmp(filter, "nearest") == 0)
-      lut->filter = RARCH_FILTER_NEAREST;
-   else if (!*filter)
-      lut->filter = RARCH_FILTER_UNSPEC;
-   else
-   {
-      RARCH_ERR("Invalid LUT filter type.\n");
-      return false;
-   }
-
-   shader->luts++;
-   return true;
-}
-
-static bool add_import_value(struct gfx_shader *shader, xmlNodePtr ptr)
-{
-   if (shader->variables >= GFX_MAX_VARIABLES)
-   {
-      RARCH_ERR("Too many import variables ...\n");
-      return false;
-   }
-
-   struct state_tracker_uniform_info *var = &shader->variable[shader->variables];
-
-   char semantic[64], wram[64], input[64], bitmask[64], bitequal[64];
-   xml_get_prop(var->id, sizeof(var->id), ptr, "id");
-   xml_get_prop(semantic, sizeof(semantic), ptr, "semantic");
-   xml_get_prop(wram, sizeof(wram), ptr, "wram");
-   xml_get_prop(input, sizeof(input), ptr, "input_slot");
-   xml_get_prop(bitmask, sizeof(bitmask), ptr, "mask");
-   xml_get_prop(bitequal, sizeof(bitequal), ptr, "equal");
-
-   if (!*semantic || !*var->id)
-   {
-      RARCH_ERR("No semantic or ID for import value.\n");
-      return false;
-   }
-
-   if (strcmp(semantic, "capture") == 0)
-      var->type = RARCH_STATE_CAPTURE;
-   else if (strcmp(semantic, "capture_previous") == 0)
-      var->type = RARCH_STATE_CAPTURE_PREV;
-   else if (strcmp(semantic, "transition") == 0)
-      var->type = RARCH_STATE_TRANSITION;
-   else if (strcmp(semantic, "transition_count") == 0)
-      var->type = RARCH_STATE_TRANSITION_COUNT;
-   else if (strcmp(semantic, "transition_previous") == 0)
-      var->type = RARCH_STATE_TRANSITION_PREV;
-   else if (strcmp(semantic, "python") == 0)
-      var->type = RARCH_STATE_PYTHON;
-   else
-   {
-      RARCH_ERR("Invalid semantic for import value.\n");
-      return false;
-   }
-
-   if (var->type != RARCH_STATE_PYTHON)
-   {
-      if (*input) 
-      {
-         unsigned slot = strtoul(input, NULL, 0);
-         switch (slot)
-         {
-            case 1:
-               var->ram_type = RARCH_STATE_INPUT_SLOT1;
-               break;
-            case 2:
-               var->ram_type = RARCH_STATE_INPUT_SLOT2;
-               break;
-
-            default:
-               RARCH_ERR("Invalid input slot for import.\n");
-               return false;
-         }
-      }
-      else if (*wram)
-      {
-         var->addr = strtoul(wram, NULL, 16);
-         var->ram_type = RARCH_STATE_WRAM;
-      }
-      else
-      {
-         RARCH_ERR("No RAM address specificed for import value.\n");
-         return false;
-      }
-   }
-
-   if (*bitmask)
-      var->mask = strtoul(bitmask, NULL, 16);
-   if (*bitequal)
-      var->equal = strtoul(bitequal, NULL, 16);
-
-   shader->variables++;
-   return true;
-}
-
-static bool get_script(struct gfx_shader *shader, const char *path,
-      xmlNodePtr ptr)
-{
-   if (shader->script)
-   {
-      RARCH_ERR("Script already imported.\n");
-      return false;
-   }
-
-   xml_get_prop(shader->script_class, sizeof(shader->script_class), ptr, "class");
-
-   char language[64];
-   xml_get_prop(language, sizeof(language), ptr, "language");
-   if (strcmp(language, "python") != 0)
-   {
-      RARCH_ERR("Script language is not Python.\n");
-      return false;
-   }
-
-   shader->script = xml_get_content(ptr);
-   if (!shader->script)
-      return false;
-
-   shader->script = xml_replace_if_file(shader->script, path, ptr, "src"); 
-   if (!shader->script)
-   {
-      RARCH_ERR("Cannot find Python script.\n");
-      return false;
-   }
-
-   return true;
-}
-
-bool gfx_shader_read_xml(const char *path, struct gfx_shader *shader)
-{
-   LIBXML_TEST_VERSION;
-
-   xmlParserCtxtPtr ctx = xmlNewParserCtxt();
-   if (!ctx)
-   {
-      RARCH_ERR("Failed to load libxml2 context.\n");
-      return false;
-   }
-
-   RARCH_LOG("Loading XML shader: %s\n", path);
-   xmlDocPtr doc = xmlCtxtReadFile(ctx, path, NULL, 0);
-   xmlNodePtr head = NULL;
-   xmlNodePtr cur = NULL;
-
-   if (!doc)
-   {
-      RARCH_ERR("Failed to parse XML file: %s\n", path);
-      goto error;
-   }
-
-#ifdef HAVE_LIBXML2
-   if (ctx->valid == 0)
-   {
-      RARCH_ERR("Cannot validate XML shader: %s\n", path);
-      goto error;
-   }
-#endif
-
-   head = xmlDocGetRootElement(doc);
-
-   for (cur = head; cur; cur = cur->next)
-   {
-      if (cur->type != XML_ELEMENT_NODE)
-         continue;
-      if (strcmp((const char*)cur->name, "shader") != 0)
-         continue;
-
-      char attr[64];
-      xml_get_prop(attr, sizeof(attr), cur, "language");
-
-      if (strcmp(attr, "GLSL") == 0)
-         shader->type = RARCH_SHADER_GLSL;
-      else
-         continue;
-
-      xml_get_prop(attr, sizeof(attr), cur, "style");
-      shader->modern = strcmp(attr, "GLES2") == 0;
-
-      if (xml_get_prop(shader->prefix, sizeof(shader->prefix), cur, "prefix"))
-         RARCH_LOG("[GL]: Using uniform and attrib prefix: %s\n", shader->prefix);
-
-      if (shader->modern)
-         RARCH_LOG("[GL]: Shader reports a GLES2 style shader.\n");
-      else
-         RARCH_WARN("[GL]: Legacy shaders are deprecated.\n");
-      break;
-   }
-
-   if (!cur) // We couldn't find any GLSL shader :(
-      goto error;
-
-   // Iterate to check if we find fragment and/or vertex shaders.
-   for (cur = cur->children; cur && shader->passes < GFX_MAX_SHADERS;
-         cur = cur->next)
-   {
-      if (cur->type != XML_ELEMENT_NODE)
-         continue;
-
-      char *content = xml_get_content(cur);
-      if (!content)
-         continue;
-
-      struct gfx_shader_pass *pass = &shader->pass[shader->passes];
-
-      if (strcmp((const char*)cur->name, "vertex") == 0)
-      {
-         if (pass->source.xml.vertex)
-         {
-            RARCH_ERR("Cannot have more than one vertex shader in a program.\n");
-            free(content);
-            goto error;
-         }
-
-         content = xml_replace_if_file(content, path, cur, "src");
-         if (!content)
-         {
-            RARCH_ERR("Shader source file was provided, but failed to read.\n");
-            goto error;
-         }
-
-         pass->source.xml.vertex = content;
-      }
-      else if (strcmp((const char*)cur->name, "fragment") == 0)
-      {
-         if (shader->modern && !pass->source.xml.vertex)
-         {
-            RARCH_ERR("Modern GLSL was chosen and vertex shader was not provided. This is an error.\n");
-            free(content);
-            goto error;
-         }
-
-         content = xml_replace_if_file(content, path, cur, "src");
-         if (!content)
-         {
-            RARCH_ERR("Shader source file was provided, but failed to read.\n");
-            goto error;
-         }
-
-         pass->source.xml.fragment = content;
-         if (!get_xml_attrs(pass, cur))
-         {
-            RARCH_ERR("XML shader attributes do not comply with specifications.\n");
-            goto error;
-         }
-
-         shader->passes++;
-      }
-      else if (strcmp((const char*)cur->name, "texture") == 0)
-      {
-         free(content);
-         if (!add_texture_image(shader, cur))
-         {
-            RARCH_ERR("Texture image failed to load.\n");
-            goto error;
-         }
-      }
-      else if (strcmp((const char*)cur->name, "import") == 0)
-      {
-         free(content);
-         if (!add_import_value(shader, cur))
-         {
-            RARCH_ERR("Import value is invalid.\n");
-            goto error;
-         }
-      }
-      else if (strcmp((const char*)cur->name, "script") == 0)
-      {
-         free(content);
-         if (!get_script(shader, path, cur))
-         {
-            RARCH_ERR("Script is invalid.\n");
-            goto error;
-         }
-      }
-   }
-
-   if (!shader->passes)
-   {
-      RARCH_ERR("Couldn't find vertex shader nor fragment shader in XML file.\n");
-      goto error;
-   }
-
-   xmlFreeDoc(doc);
-   xmlFreeParserCtxt(ctx);
-   return true;
-
-error:
-   RARCH_ERR("Failed to load XML shader ...\n");
-   if (doc)
-      xmlFreeDoc(doc);
-   xmlFreeParserCtxt(ctx);
-   return false;
-}
-
 
 // CGP store
 static const char *scale_type_to_str(enum gfx_scale_type type)
@@ -963,6 +526,8 @@ static void shader_write_fbo(config_file_t *conf, const struct gfx_fbo_scale *fb
    char key[64];
    print_buf(key, "float_framebuffer%u", i);
    config_set_bool(conf, key, fbo->fp_fbo);
+   print_buf(key, "srgb_framebuffer%u", i);
+   config_set_bool(conf, key, fbo->srgb_fbo);
 
    if (!fbo->valid)
       return;
@@ -1032,9 +597,10 @@ static void shader_write_variable(config_file_t *conf, const struct state_tracke
    }
 }
 
-void gfx_shader_write_conf_cgp(config_file_t *conf, const struct gfx_shader *shader)
+void gfx_shader_write_conf_cgp(config_file_t *conf, void *data)
 {
    unsigned i;
+   struct gfx_shader *shader = (struct gfx_shader*)data;
    config_set_int(conf, "shaders", shader->passes);
    for (i = 0; i < shader->passes; i++)
    {
@@ -1042,7 +608,7 @@ void gfx_shader_write_conf_cgp(config_file_t *conf, const struct gfx_shader *sha
 
       char key[64];
       print_buf(key, "shader%u", i);
-      config_set_string(conf, key, pass->source.cg);
+      config_set_string(conf, key, pass->source.path);
 
       if (pass->filter != RARCH_FILTER_UNSPEC)
       {
@@ -1059,7 +625,30 @@ void gfx_shader_write_conf_cgp(config_file_t *conf, const struct gfx_shader *sha
          config_set_int(conf, key, pass->frame_count_mod);
       }
 
+      print_buf(key, "mipmap_input%u", i);
+      config_set_bool(conf, key, pass->mipmap);
+
+      print_buf(key, "alias%u", i);
+      config_set_string(conf, key, pass->alias);
+
       shader_write_fbo(conf, &pass->fbo, i);
+   }
+
+   if (shader->num_parameters)
+   {
+      char parameters[4096] = {0};
+      strlcpy(parameters, shader->parameters[0].id, sizeof(parameters));
+      for (i = 1; i < shader->num_parameters; i++)
+      {
+         // O(n^2), but number of parameters is very limited.
+         strlcat(parameters, ";", sizeof(parameters));
+         strlcat(parameters, shader->parameters[i].id, sizeof(parameters));
+      }
+
+      config_set_string(conf, "parameters", parameters);
+      
+      for (i = 0; i < shader->num_parameters; i++)
+         config_set_float(conf, shader->parameters[i].id, shader->parameters[i].current);
    }
 
    if (shader->luts)
@@ -1084,11 +673,14 @@ void gfx_shader_write_conf_cgp(config_file_t *conf, const struct gfx_shader *sha
          if (shader->lut[i].filter != RARCH_FILTER_UNSPEC)
          {
             print_buf(key, "%s_linear", shader->lut[i].id);
-            config_set_bool(conf, key, shader->lut[i].filter != RARCH_FILTER_LINEAR);
+            config_set_bool(conf, key, shader->lut[i].filter == RARCH_FILTER_LINEAR);
          }
 
          print_buf(key, "%s_wrap_mode", shader->lut[i].id);
          config_set_string(conf, key, wrap_mode_to_str(shader->lut[i].wrap));
+
+         print_buf(key, "%s_mipmap", shader->lut[i].id);
+         config_set_bool(conf, key, shader->lut[i].mipmap);
       }
    }
 
@@ -1123,24 +715,26 @@ enum rarch_shader_type gfx_shader_parse_type(const char *path, enum rarch_shader
 
    if (strcmp(ext, "cg") == 0 || strcmp(ext, "cgp") == 0)
       return RARCH_SHADER_CG;
-   else if (strcmp(ext, "shader") == 0 || strcmp(ext, "glslp") == 0 || strcmp(ext, "glsl") == 0)
+   else if (strcmp(ext, "glslp") == 0 || strcmp(ext, "glsl") == 0)
       return RARCH_SHADER_GLSL;
 
    return fallback;
 }
 
-void gfx_shader_resolve_relative(struct gfx_shader *shader, const char *ref_path)
+void gfx_shader_resolve_relative(void *data, const char *ref_path)
 {
    unsigned i;
    char tmp_path[PATH_MAX];
+   struct gfx_shader *shader = (struct gfx_shader*)data;
+
    for (i = 0; i < shader->passes; i++)
    {
-      if (!*shader->pass[i].source.cg)
+      if (!*shader->pass[i].source.path)
          continue;
 
-      strlcpy(tmp_path, shader->pass[i].source.cg, sizeof(tmp_path));
-      fill_pathname_resolve_relative(shader->pass[i].source.cg,
-            ref_path, tmp_path, sizeof(shader->pass[i].source.cg));
+      strlcpy(tmp_path, shader->pass[i].source.path, sizeof(tmp_path));
+      fill_pathname_resolve_relative(shader->pass[i].source.path,
+            ref_path, tmp_path, sizeof(shader->pass[i].source.path));
    }
 
    for (i = 0; i < shader->luts; i++)
