@@ -193,18 +193,13 @@ static void frontend_psp_exec(const char *path, bool should_load_game)
 
 static void frontend_psp_exitspawn(char *core_path, size_t sizeof_core_path)
 {
-#ifdef IS_SALAMANDER
-   frontend_psp_exec(core_path, false);
-#else
-   char core_launch[256];
-
-   strlcpy(core_launch, g_settings.libretro, sizeof(core_launch));
    bool should_load_game = false;
+#ifndef IS_SALAMANDER
    if (g_extern.lifecycle_state & (1ULL << MODE_EXITSPAWN_START_GAME))
       should_load_game = true;
 
-   frontend_psp_exec(core_launch, should_load_game);
 #endif
+   frontend_psp_exec(core_path, should_load_game);
 }
 
 static int frontend_psp_get_rating(void)
