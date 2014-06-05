@@ -94,6 +94,7 @@ endif
 
 ifneq ($(findstring Linux,$(OS)),)
    LIBS += -lrt
+   JOYCONFIG_LIBS += -lrt
    OBJ += input/linuxraw_input.o input/linuxraw_joypad.o
    JOYCONFIG_OBJ += tools/linuxraw_joypad.o
 endif
@@ -235,6 +236,10 @@ ifeq ($(HAVE_OPENGL), 1)
 
    ifeq ($(HAVE_VIDEOCORE), 1)
       OBJ += gfx/context/vc_egl_ctx.o
+   endif
+
+   ifeq ($(HAVE_MALI_FBDEV), 1)
+      OBJ += gfx/context/mali_fbdev_ctx.o
    endif
 
    ifeq ($(HAVE_X11), 1)
