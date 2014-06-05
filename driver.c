@@ -506,7 +506,7 @@ bool driver_update_system_av_info(const struct retro_system_av_info *info)
 }
 
 #ifdef HAVE_MENU
-void init_menu(void)
+static void init_menu(void)
 {
    if (driver.menu)
       return;
@@ -517,9 +517,6 @@ void init_menu(void)
       RARCH_ERR("Cannot initialize menu.\n");
       rarch_fail(1, "init_menu()");
    }
-
-   if (driver.menu && driver.menu_ctx && driver.menu_ctx->context_reset)
-      driver.menu_ctx->context_reset(driver.menu);
 }
 #endif
 
@@ -572,6 +569,9 @@ void init_drivers(void)
 
 #ifdef HAVE_MENU
    init_menu();
+
+   if (driver.menu && driver.menu_ctx && driver.menu_ctx->context_reset)
+      driver.menu_ctx->context_reset(driver.menu);
 #endif
 
    // Keep non-throttled state as good as possible.
@@ -629,9 +629,14 @@ static void compute_monitor_fps_statistics(void)
    }
 }
 
-#ifdef HAVE_MENU
-void uninit_menu(void)
+void uninit_drivers(void)
 {
+   uninit_audio();
+
+   if (g_extern.system.hw_render_callback.context_destroy && !driver.video_cache_context)
+      g_extern.system.hw_render_callback.context_destroy();
+
+#ifdef HAVE_MENU
    if (driver.menu && driver.menu_ctx && driver.menu_ctx->context_destroy)
       driver.menu_ctx->context_destroy(driver.menu);
 
@@ -640,17 +645,7 @@ void uninit_menu(void)
       menu_free(driver.menu);
       driver.menu = NULL;
    }
-}
 #endif
-
-void uninit_drivers(void)
-{
-   uninit_audio();
-
-   if (g_extern.system.hw_render_callback.context_destroy && !driver.video_cache_context)
-      g_extern.system.hw_render_callback.context_destroy();
-
-   uninit_menu();
 
    uninit_video_input();
 
