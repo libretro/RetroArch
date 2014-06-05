@@ -746,6 +746,11 @@ int rarch_main(int argc, char *argv[]);
 #define MAX_ARGS 32
 #endif
 
+#ifdef HAVE_MENU
+void init_menu(void);
+void uninit_menu(void);
+#endif
+
 void rarch_main_init_wrap(const struct rarch_main_wrap *args, int *argc, char **argv);
 
 int rarch_main_init(int argc, char *argv[]);
