@@ -1,4 +1,4 @@
-TARGET = kernelFunctions
+TARGET = kernel_functions
 OBJS = main.o
 PSP_FW_VERSION = 150
 

@@ -1,0 +1,34 @@
+BUILD_PRX         = 1
+DEBUG             = 0
+
+TARGET = retroarchpsp_salamander
+
+ifeq ($(DEBUG), 1)
+   OPTIMIZE_LV	:= -O0 -g
+else
+   OPTIMIZE_LV	:= -O2 -g
+endif
+
+INCDIR = $(PSPPATH)/include
+CFLAGS = $(OPTIMIZE_LV) -G0 -std=gnu99 -ffast-math
+ASFLAGS = $(CFLAGS)
+
+RARCH_DEFINES = -DPSP -DIS_SALAMANDER -DRARCH_CONSOLE -DRARCH_INTERNAL
+
+LIBDIR =
+LDFLAGS =
+LIBS = -lstdc++ -lm
+
+ifeq ($(HAVE_FILE_LOGGER), 1)
+CFLAGS		+= -DHAVE_FILE_LOGGER
+endif
+
+CFLAGS += $(RARCH_DEFINES)
+
+EXTRA_TARGETS = EBOOT.PBP
+PSP_EBOOT_TITLE = RetroArch PSP1
+
+OBJS = frontend/frontend_salamander.o frontend/frontend_context.o frontend/platform/platform_null.o file_path.o compat/compat.o conf/config_file.o psp1/kernel_functions.o
+
+PSPSDK=$(shell psp-config --pspsdk-path)
+include $(PSPSDK)/lib/build.mak
