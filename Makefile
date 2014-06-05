@@ -94,6 +94,7 @@ endif
 
 ifneq ($(findstring Linux,$(OS)),)
    LIBS += -lrt
+   JOYCONFIG_LIBS += -lrt
    OBJ += input/linuxraw_input.o input/linuxraw_joypad.o
    JOYCONFIG_OBJ += tools/linuxraw_joypad.o
 endif
