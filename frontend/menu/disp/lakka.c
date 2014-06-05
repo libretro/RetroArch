@@ -1028,6 +1028,10 @@ void lakka_init_settings(void)
 void lakka_settings_context_reset(void)
 {
    menu_category_t *category = (menu_category_t*)&categories[0];
+
+   if (!category)
+      return;
+
    category->icon = settings_icon;
    category->item_icon = setting_icon;
    if (font_driver)
@@ -1167,11 +1171,21 @@ static void lakka_context_reset(void *data)
 
             switch (k)
             {
-               case 0: subitem->icon = run_icon; break;
-               case 1: subitem->icon = savestate_icon; break;
-               case 2: subitem->icon = loadstate_icon; break;
-               case 3: subitem->icon = screenshot_icon; break;
-               case 4: subitem->icon = reload_icon; break;
+               case 0:
+                  subitem->icon = run_icon;
+                  break;
+               case 1:
+                  subitem->icon = savestate_icon;
+                  break;
+               case 2:
+                  subitem->icon = loadstate_icon;
+                  break;
+               case 3:
+                  subitem->icon = screenshot_icon;
+                  break;
+               case 4:
+                  subitem->icon = reload_icon;
+                  break;
             }
 
             if (font_driver)
@@ -1216,6 +1230,9 @@ static void lakka_init_items(int i, menu_category_t *category, core_info_t *info
          for (k = 0; k < item->num_subitems; k++)
          {
             menu_subitem_t *subitem = (menu_subitem_t*)&item->subitems[k];
+
+            if (!subitem)
+               continue;
 
             switch (k)
             {
