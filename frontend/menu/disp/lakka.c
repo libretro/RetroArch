@@ -162,13 +162,18 @@ static void update_tween(void *data, float dt)
    if (tween->running_since < tween->duration)
    {
       tween->running_since += dt;
-      *tween->subject = tween->easing(
-            tween->running_since,
-            tween->initial_value,
-            tween->target_value - tween->initial_value,
-            tween->duration);
-      if (tween->running_since >= tween->duration) {
+
+      if (tween->easing)
+         *tween->subject = tween->easing(
+               tween->running_since,
+               tween->initial_value,
+               tween->target_value - tween->initial_value,
+               tween->duration);
+
+      if (tween->running_since >= tween->duration)
+      {
          *tween->subject = tween->target_value;
+
          if (tween->callback)
             tween->callback();
       }
@@ -180,6 +185,7 @@ static void update_tweens(float dt)
    int i, active_tweens;
 
    active_tweens = 0;
+
    for(i = 0; i < numtweens; i++)
    {
       update_tween(&tweens[i], dt);
@@ -491,7 +497,7 @@ static void lakka_draw_text(struct font_output_list *out, float x, float y, floa
    gl_set_projection(gl, &ortho, true);
 }
 
-void lakka_draw_background()
+void lakka_draw_background(void)
 {
    GLfloat background_color[] = {
       0.1, 0.74, 0.61, global_alpha,
@@ -582,6 +588,9 @@ static void lakka_draw_subitems(int i, int j)
    {
       menu_subitem_t *subitem = (menu_subitem_t*)&item->subitems[k];
 
+      if (!subitem)
+         continue;
+
       if (k == 0 && g_extern.main_is_init
             && !g_extern.libretro_dummy
             && strcmp(g_extern.fullpath, &active_item->rom) == 0)
@@ -612,12 +621,14 @@ static void lakka_draw_subitems(int i, int j)
                1, 
                subitem->alpha);
       }
-      else if ( // if we are in settings or a rom is launched
+      else if(
             menu_active_category == 0 ||
             (g_extern.main_is_init && 
             !g_extern.libretro_dummy &&
             strcmp(g_extern.fullpath, &active_item->rom) == 0))
       {
+         // if we are in settings or a rom is launched
+         
          lakka_draw_icon(subitem->icon, 
                156 + HSPACING*(i+2) + all_categories_x - dim/2.0, 
                300 + subitem->y + dim/2.0, 
@@ -644,6 +655,9 @@ static void lakka_draw_items(int i)
    {
       menu_item_t *item = (menu_item_t*)&category->items[j];
 
+      if (!item)
+         continue;
+
       if (i == menu_active_category &&
          j > active_category->active_item - 4 &&
          j < active_category->active_item + 10) // performance improvement
@@ -668,13 +682,16 @@ static void lakka_draw_items(int i)
    }
 }
 
-static void lakka_draw_categories()
+static void lakka_draw_categories(void)
 {
    int i;
 
    for(i = 0; i < num_categories; i++)
    {
       menu_category_t *category = (menu_category_t*)&categories[i];
+
+      if (!category)
+         continue;
 
       // draw items
       lakka_draw_items(i);
@@ -709,10 +726,15 @@ static void lakka_frame(void)
 
    lakka_draw_categories();
 
-   if (depth == 0) {
-      lakka_draw_text(&active_category->out, 15.0, 40.0, 1, 1.0);
-   } else {
-      lakka_draw_text(&active_item->out, 15.0, 40.0, 1, 1.0);
+   if (depth == 0)
+   {
+      if (active_category)
+         lakka_draw_text(&active_category->out, 15.0, 40.0, 1, 1.0);
+   }
+   else
+   {
+      if (active_item)
+         lakka_draw_text(&active_item->out, 15.0, 40.0, 1, 1.0);
       lakka_draw_icon(arrow_icon,
             156 + HSPACING*(menu_active_category+1) + all_categories_x + 150 +-dim/2.0,
             300 + VSPACING*2.4 + (dim/2.0), 1, 0, I_ACTIVE_ZOOM);
