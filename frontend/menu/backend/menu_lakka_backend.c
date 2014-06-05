@@ -51,6 +51,9 @@ static void lakka_switch_categories(void)
       float ca, cz;
       menu_category_t *category = (menu_category_t*)&categories[i];
 
+      if (!category)
+         continue;
+
       ca = (i == menu_active_category) ? 1.0 : 0.5;
       cz = (i == menu_active_category) ? C_ACTIVE_ZOOM : C_PASSIVE_ZOOM;
       add_tween(DELAY, ca, &category->alpha, &inOutQuad, NULL);
@@ -76,6 +79,9 @@ static void lakka_switch_items(void)
       float ia, iz, iy;
       menu_item_t *active_item = (menu_item_t*)&active_category->items[j];
 
+      if (!active_item)
+         continue;
+
       ia = (j == active_category->active_item) ? 1.0 : 0.5;
       iz = (j == active_category->active_item) ? I_ACTIVE_ZOOM : I_PASSIVE_ZOOM;
       iy = (j == active_category->active_item) ? VSPACING*2.4 :
@@ -97,6 +103,9 @@ static void lakka_switch_subitems(void)
    for (k = 0; k < item->num_subitems; k++)
    {
       menu_subitem_t *subitem = (menu_subitem_t*)&item->subitems[k];
+
+      if (!subitem)
+         continue;
 
       if (k < item->active_subitem)
       {
@@ -139,11 +148,17 @@ static void lakka_reset_submenu(void)
       {
          menu_category_t *category = (menu_category_t*)&categories[i];
 
+         if (!category)
+            continue;
+
          for (j = 0; j < category->num_items; j++)
          {
             for (k = 0; k < category->items[j].num_subitems; k++)
             {
                menu_subitem_t *subitem = (menu_subitem_t*)&category->items[j].subitems[k];
+
+               if (!subitem)
+                  continue;
 
                subitem->alpha = 0;
                subitem->zoom = k == category->items[j].active_subitem ? I_ACTIVE_ZOOM : I_PASSIVE_ZOOM;
@@ -166,7 +181,12 @@ static void lakka_open_submenu(void)
    {
       menu_category_t *category = (menu_category_t*)&categories[i];
 
-      if (i == menu_active_category)
+      if (!category)
+         continue;
+
+      if (i != menu_active_category)
+         add_tween(DELAY, 0, &category->alpha, &inOutQuad, NULL);
+      else
       {
          add_tween(DELAY, 1.0, &category->alpha, &inOutQuad, NULL);
 
@@ -194,8 +214,6 @@ static void lakka_open_submenu(void)
                add_tween(DELAY, 0, &category->items[j].alpha, &inOutQuad, NULL);
          }
       }
-      else
-         add_tween(DELAY, 0, &category->alpha, &inOutQuad, NULL);
    }
 }
 
@@ -207,6 +225,9 @@ static void lakka_close_submenu(void)
    for (i = 0; i < num_categories; i++)
    {
       menu_category_t *category = (menu_category_t*)&categories[i];
+
+      if (!category)
+         continue;
 
       if (i == menu_active_category)
       {
