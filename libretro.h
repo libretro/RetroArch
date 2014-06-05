@@ -635,6 +635,111 @@ enum retro_mod
                                            // The core must pass an array of const struct retro_controller_info which is terminated with
                                            // a blanked out struct. Each element of the struct corresponds to an ascending port index to retro_set_controller_port_device().
                                            // Even if special device types are set in the libretro core, libretro should only poll input based on the base input device types.
+#define RETRO_ENVIRONMENT_SET_MEMORY_MAPS (36 | RETRO_ENVIRONMENT_EXPERIMENTAL)
+                                           // const struct retro_memory_map * --
+                                           // This environment call lets a libretro core tell the frontend about the memory maps this
+                                           // core emulates. This can be used to implement, for example, cheats in a core-agnostic way.
+                                           //
+                                           // Should only be used by emulators; it doesn't make much sense for anything else.
+                                           // It is recommended to expose all relevant pointers through retro_get_memory_* as well.
+                                           //
+                                           // Can be called from retro_init and retro_load_game.
+                                           //
+
+#define RETRO_MEMDESC_CONST     (1 << 0)  // The frontend will never change this memory area once retro_load_game has returned.
+#define RETRO_MEMDESC_BIGENDIAN (1 << 1)  // The memory area contains big endian data. Default is little endian.
+#define RETRO_MEMDESC_ALIGN_2   (1 << 16) // All memory access in this area is aligned to their own size, or 2, whichever is smaller.
+#define RETRO_MEMDESC_ALIGN_4   (2 << 16)
+#define RETRO_MEMDESC_ALIGN_8   (3 << 16)
+#define RETRO_MEMDESC_MINSIZE_2 (1 << 24) // All memory in this region is accessed at least 2 bytes at the time.
+#define RETRO_MEMDESC_MINSIZE_4 (2 << 24)
+#define RETRO_MEMDESC_MINSIZE_8 (3 << 24)
+struct retro_memory_descriptor {
+   uint64_t flags;
+
+   //Pointer to the start of the relevant ROM or RAM chip.
+   //It's strongly recommended to use 'offset' if possible, rather than doing math on the pointer.
+   //If the same byte is mapped my multiple descriptors, their descriptors must have the same pointer.
+   //If 'start' does not point to the first byte in the pointer, put the difference in 'offset' instead.
+   //May be NULL if there's nothing usable here (e.g. hardware registers and open bus). No flags should be set if the pointer is NULL.
+   //It's recommended to minimize the number of descriptors if possible, but not mandatory.
+   void * ptr;
+   size_t offset;
+
+   //This is the location in the emulated address space where the mapping starts.
+   size_t start;
+
+   //Which bits must be same as in 'start' for this mapping to apply.
+   //The first memory descriptor to claim a certain byte is the one that applies.
+   //A bit which is set in 'start' must also be set in this.
+   //Can be zero, in which case each byte is assumed mapped exactly once. In this case, 'len' must be a power of two.
+   size_t select;
+
+   //If this is nonzero, the set bits are assumed not connected to the memory chip's address pins.
+   size_t disconnect;
+
+   //This one tells the size of the current memory area.
+   //If, after start+disconnect are applied, the address is higher than this, the highest bit of the address is cleared.
+   //If the address is still too high, the next highest bit is cleared.
+   //Can be zero, in which case it's assumed to be infinite (as limited by 'select' and 'disconnect').
+   size_t len;
+
+   //To go from emulated address to physical address, the following order applies:
+   //Subtract 'start', pick off 'disconnect', apply 'len', add 'offset'.
+
+   //The address space name must consist of only a-zA-Z0-9_-, should be as short as feasible (maximum length is 8 plus the NUL),
+   // and may not be any other address space plus one or more 0-9A-F at the end.
+   //However, multiple memory descriptors for the same address space is allowed, and the address
+   // space name can be empty. NULL is treated as empty.
+   //Address space names are case sensitive, but avoid lowercase if possible.
+   //The same pointer may exist in multiple address spaces.
+   //Examples:
+   // blank+blank - valid (multiple things may be mapped in the same namespace)
+   // 'Sp'+'Sp' - valid (multiple things may be mapped in the same namespace)
+   // 'A'+'B' - valid (neither is a prefix of each other)
+   // 'S'+blank - valid ('S' is not in 0-9A-F)
+   // 'a'+blank - valid ('a' is not in 0-9A-F)
+   // 'a'+'A' - valid (neither is a prefix of each other)
+   // 'AR'+blank - valid ('R' is not in 0-9A-F)
+   // 'ARB'+blank - valid (the B can't be part of the address either, because there is no namespace 'AR')
+   // blank+'B' - not valid, because it's ambigous which address space B1234 would refer to.
+   //  The length can't be used for that purpose; the frontend may want to append arbitrary data to an address, without a separator.
+   const char * addrspace;
+};
+//The frontend may use the largest value of 'start'+'select' in a certain namespace to infer the size of the address space.
+//If the address space is larger than that, a mapping with .ptr=NULL should be at the end of the array, with .select set to all ones for as long as the address space is big.
+//Sample descriptors (minus .ptr, and RETRO_MEMFLAG_ on the flags):
+//SNES WRAM:
+// .start=0x7E0000, .len=0x20000
+//(Note that this must be mapped before the ROM in most cases; some of the ROM mappers try to claim $7E0000, or at least $7E8000.)
+//SNES SPC700 RAM:
+// .addrspace="S", .len=0x10000
+//SNES WRAM mirrors:
+// .flags=MIRROR, .start=0x000000, .select=0xC0E000, .len=0x2000
+// .flags=MIRROR, .start=0x800000, .select=0xC0E000, .len=0x2000
+//SNES WRAM mirrors, alternate equivalent descriptor:
+// .flags=MIRROR, .select=0x40E000, .disconnect=~0x1FFF
+//(Various similar constructions can be created by combining parts of the above two.)
+//SNES LoROM (512KB, mirrored a couple of times):
+// .flags=CONST, .start=0x008000, .select=0x408000, .disconnect=0x8000, .len=512*1024
+// .flags=CONST, .start=0x400000, .select=0x400000, .disconnect=0x8000, .len=512*1024
+//SNES HiROM (4MB):
+// .flags=CONST,                 .start=0x400000, .select=0x400000, .len=4*1024*1024
+// .flags=CONST, .offset=0x8000, .start=0x008000, .select=0x408000, .len=4*1024*1024
+//SNES ExHiROM (8MB):
+// .flags=CONST, .offset=0,                  .start=0xC00000, .select=0xC00000, .len=4*1024*1024
+// .flags=CONST, .offset=4*1024*1024,        .start=0x400000, .select=0xC00000, .len=4*1024*1024
+// .flags=CONST, .offset=0x8000,             .start=0x808000, .select=0xC08000, .len=4*1024*1024
+// .flags=CONST, .offset=4*1024*1024+0x8000, .start=0x008000, .select=0xC08000, .len=4*1024*1024
+//Clarify the size of the address space:
+// .ptr=NULL, .select=0xFFFFFF
+//.len can be implied by .select in many of them, but was included for clarity.
+
+struct retro_memory_map
+{
+   const struct retro_memory_descriptor * descriptors;
+   unsigned num_descriptors;
+};
 
 struct retro_controller_description
 {
