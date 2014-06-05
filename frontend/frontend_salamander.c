@@ -104,8 +104,52 @@ static void find_and_set_first_file(char *path, size_t sizeof_path, const char *
       RARCH_ERR("Failed last fallback - RetroArch Salamander will exit.\n");
 }
 
+static void salamander_init(char *libretro_path, size_t sizeof_libretro_path)
+{
+   //normal executable loading path
+   bool config_file_exists = false;
+
+   if (path_file_exists(default_paths.config_path))
+      config_file_exists = true;
+
+   if (config_file_exists)
+   {
+      char tmp_str[PATH_MAX];
+      config_file_t * conf = config_file_new(default_paths.config_path);
+
+      if (conf)
+      {
+         config_get_array(conf, "libretro_path", tmp_str, sizeof(tmp_str));
+         config_file_free(conf);
+         strlcpy(libretro_path, tmp_str, sizeof_libretro_path);
+      }
+#ifdef GEKKO
+      else // stupid libfat bug or something; somtimes it says the file is there when it doesn't
+         config_file_exists = false;
+#endif
+   }
+
+   if (!config_file_exists || !strcmp(libretro_path, ""))
+      find_and_set_first_file(libretro_path, sizeof_libretro_path, EXT_EXECUTABLES);
+   else
+      RARCH_LOG("Start [%s] found in retroarch.cfg.\n", libretro_path);
+
+   if (!config_file_exists)
+   {
+      config_file_t *conf = config_file_new(NULL);
+
+      if (conf)
+      {
+         config_set_string(conf, "libretro_path", libretro_path);
+         config_file_write(conf, default_paths.config_path);
+         config_file_free(conf);
+      }
+   }
+}
+
 int main(int argc, char *argv[])
 {
+   char libretro_path[PATH_MAX];
    void *args = NULL;
    struct rarch_main_wrap *wrap_args;
 
@@ -121,14 +165,13 @@ int main(int argc, char *argv[])
    if (frontend_ctx && frontend_ctx->environment_get)
       frontend_ctx->environment_get(&argc, argv, args, wrap_args);
 
-   if (frontend_ctx && frontend_ctx->salamander_init)
-      frontend_ctx->salamander_init();
+   salamander_init(libretro_path, sizeof(libretro_path));
 
    if (frontend_ctx && frontend_ctx->deinit)
       frontend_ctx->deinit(args);
 
    if (frontend_ctx && frontend_ctx->exitspawn)
-      frontend_ctx->exitspawn();
+      frontend_ctx->exitspawn(libretro_path, sizeof(libretro_path));
 
    return 1;
 }

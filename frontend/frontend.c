@@ -268,7 +268,7 @@ void main_exit(args_type() args)
 
    if (g_extern.lifecycle_state & (1ULL << MODE_EXITSPAWN) && driver.frontend_ctx
          && driver.frontend_ctx->exitspawn)
-      driver.frontend_ctx->exitspawn();
+      driver.frontend_ctx->exitspawn(g_settings.libretro, sizeof(g_settings.libretro));
 
    rarch_main_clear_state();
 

@@ -17,6 +17,7 @@
 #ifndef __FRONTEND_CONTEXT_H
 #define __FRONTEND_CONTEXT_H
 
+#include <stddef.h>
 #include "../boolean.h"
 
 #ifdef HAVE_CONFIG_H
@@ -34,7 +35,7 @@ typedef struct frontend_ctx_driver
 
    void (*init)(void *data);
    void (*deinit)(void *data);
-   void (*exitspawn)(void);
+   void (*exitspawn)(char *core_path, size_t sizeof_core_path);
 
    void (*process_args)(int *argc, char *argv[], void *args);
    int (*process_events)(void *data);
@@ -44,9 +45,6 @@ typedef struct frontend_ctx_driver
 
    // Human readable string.
    const char *ident;
-#ifdef IS_SALAMANDER
-   void (*salamander_init)(void);
-#endif
 } frontend_ctx_driver_t;
 
 extern const frontend_ctx_driver_t frontend_ctx_gx;

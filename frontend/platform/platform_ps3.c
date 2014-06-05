@@ -46,40 +46,6 @@ SYS_PROCESS_PARAM(1001, 0x200000)
 #include <np.h>
 #include <np/drm.h>
 #include <cell/sysmodule.h>
-
-char libretro_path[PATH_MAX];
-
-static void frontend_ps3_salamander_init(void)
-{
-   //normal executable loading path
-   char tmp_str[PATH_MAX];
-   bool config_file_exists = false;
-
-   if (path_file_exists(default_paths.config_path))
-      config_file_exists = true;
-
-   if (config_file_exists)
-   {
-      config_file_t * conf = config_file_new(default_paths.config_path);
-      config_get_array(conf, "libretro_path", tmp_str, sizeof(tmp_str));
-      config_file_free(conf);
-      strlcpy(libretro_path, tmp_str, sizeof(libretro_path));
-   }
-
-   if (!config_file_exists || !strcmp(libretro_path, ""))
-      find_and_set_first_file(libretro_path, sizeof(libretro_path), EXT_EXECUTABLES);
-   else
-      RARCH_LOG("Start [%s] found in retroarch.cfg.\n", libretro_path);
-
-   if (!config_file_exists)
-   {
-      config_file_t *new_conf = config_file_new(NULL);
-      config_set_string(new_conf, "libretro_path", libretro_path);
-      config_file_write(new_conf, default_paths.config_path);
-      config_file_free(new_conf);
-   }
-}
-
 #endif
 
 #ifdef HAVE_SYSUTILS
@@ -342,42 +308,41 @@ static void frontend_ps3_deinit(void *data)
 
 static void frontend_ps3_exec(const char *path, bool should_load_game);
 
-static void frontend_ps3_exitspawn(void)
+static void frontend_ps3_exitspawn(char *core_path, size_t core_path_size)
 {
 #ifdef HAVE_RARCH_EXEC
+   bool should_load_game = false;
+
 #ifndef IS_SALAMANDER
    bool original_verbose = g_extern.verbose;
    g_extern.verbose = true;
-#endif
-#ifdef IS_SALAMANDER
-   frontend_ps3_exec(libretro_path, false);
 
-   cellSysmoduleUnloadModule(CELL_SYSMODULE_SYSUTIL_GAME);
-   cellSysmoduleLoadModule(CELL_SYSMODULE_FS);
-   cellSysmoduleLoadModule(CELL_SYSMODULE_IO);
-#else
-   char core_launch[256];
 #ifdef HAVE_MULTIMAN 
    if (g_extern.lifecycle_state & (1ULL << MODE_EXITSPAWN_MULTIMAN))
    {
       RARCH_LOG("Boot Multiman: %s.\n", MULTIMAN_SELF_FILE);
-      strlcpy(core_launch, MULTIMAN_SELF_FILE, sizeof(core_launch));
+      strlcpy(core_path, MULTIMAN_SELF_FILE, core_path_size);
    }
    else
 #endif
-   strlcpy(core_launch, g_settings.libretro, sizeof(core_launch));
-   bool should_load_game = false;
    if (g_extern.lifecycle_state & (1ULL << MODE_EXITSPAWN_START_GAME))
       should_load_game = true;
+#endif
 
-   frontend_ps3_exec(core_launch, should_load_game);
+   frontend_ps3_exec(core_path, should_load_game);
+
+#ifdef IS_SALAMANDER
+   cellSysmoduleUnloadModule(CELL_SYSMODULE_SYSUTIL_GAME);
+   cellSysmoduleLoadModule(CELL_SYSMODULE_FS);
+   cellSysmoduleLoadModule(CELL_SYSMODULE_IO);
+#else
+
 #endif
 
 #ifndef IS_SALAMANDER
    g_extern.verbose = original_verbose;
 #endif
 #endif
-
 }
 
 #include <stdio.h>
@@ -477,7 +442,4 @@ const frontend_ctx_driver_t frontend_ctx_ps3 = {
    NULL,                         /* shutdown */
    frontend_ps3_get_rating,      /* get_rating */
    "ps3",
-#ifdef IS_SALAMANDER
-   frontend_ps3_salamander_init,
-#endif
 };

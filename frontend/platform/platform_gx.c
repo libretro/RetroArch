@@ -50,47 +50,7 @@ extern void system_exec_wii(const char *path, bool should_load_game);
 #include <sdcard/gcsd.h>
 #include <fat.h>
 
-#ifdef IS_SALAMANDER
-char libretro_path[PATH_MAX];
-
-static void frontend_gx_salamander_init(void)
-{
-   char tmp_str[PATH_MAX] = {0};
-   bool config_file_exists;
-
-   if (path_file_exists(default_paths.config_path))
-      config_file_exists = true;
-
-   if(config_file_exists)
-   {
-      config_file_t * conf = config_file_new(default_paths.config_path);
-      if (!conf) // stupid libfat bug or something; somtimes it says the file is there when it doesn't
-         config_file_exists = false;
-      else
-      {
-         config_get_array(conf, "libretro_path", tmp_str, sizeof(tmp_str));
-         config_file_free(conf);
-         strlcpy(libretro_path, tmp_str, sizeof(libretro_path));
-      }
-   }
-
-   if(!config_file_exists || !strcmp(libretro_path, ""))
-      find_and_set_first_file(libretro_path, sizeof(libretro_path), EXT_EXECUTABLES);
-   else
-   {
-      RARCH_LOG("Start [%s] found in retroarch.cfg.\n", libretro_path);
-   }
-
-   if (!config_file_exists)
-   {
-      config_file_t *new_conf = config_file_new(NULL);
-      config_set_string(new_conf, "libretro_path", libretro_path);
-      config_file_write(new_conf, default_paths.config_path);
-      config_file_free(new_conf);
-   }
-}
-
-#else
+#ifndef IS_SALAMANDER
 
 enum
 {
@@ -321,24 +281,21 @@ static void frontend_gx_init(void *data)
 
 static void frontend_gx_exec(const char *path, bool should_load_game);
 
-static void frontend_gx_exitspawn(void)
+static void frontend_gx_exitspawn(char *core_path, size_t sizeof_core_path)
 {
-   char boot_dol[PATH_MAX];
-
-   (void)boot_dol;
-
-#if defined(IS_SALAMANDER)
-   frontend_gx_exec(libretro_path, gx_rom_path[0] != '\0' ? true : false);
-#elif defined(HW_RVL)
    bool should_load_game = false;
+#if defined(IS_SALAMANDER)
+   if (gx_rom_path[0] != '\0')
+      should_load_game = true;
+#elif defined(HW_RVL)
    if (g_extern.lifecycle_state & (1ULL << MODE_EXITSPAWN_START_GAME))
       should_load_game = true;
 
    frontend_gx_exec(g_settings.libretro, should_load_game);
    // direct loading failed (out of memory), try to jump to salamander then load the correct core
-   fill_pathname_join(boot_dol, default_paths.core_dir, "boot.dol", sizeof(boot_dol));
-   frontend_gx_exec(boot_dol, should_load_game);
+   fill_pathname_join(core_path, default_paths.core_dir, "boot.dol", sizeof_core_path);
 #endif
+   frontend_gx_exec(core_path, should_load_game);
 }
 
 static void frontend_gx_process_args(int *argc, char *argv[], void *args)
@@ -382,7 +339,4 @@ const frontend_ctx_driver_t frontend_ctx_gx = {
    NULL,                            /* shutdown */
    frontend_gx_get_rating,         /* get_rating */
    "gx",
-#ifdef IS_SALAMANDER
-   frontend_gx_salamander_init,
-#endif
 };
