@@ -434,14 +434,14 @@ static void calculate_font_coords(gl_t *gl,
 
 static void lakka_draw_text(struct font_output_list *out, float x, float y, float scale, float alpha)
 {
-   if (alpha > global_alpha)
-      alpha = global_alpha;
-
    int i;
    struct font_output *head;
    struct font_rect geom;
    struct gl_ortho ortho = {0, 1, 0, 1, -1, 1};
    gl_t *gl = (gl_t*)driver.video_data;
+
+   if (alpha > global_alpha)
+      alpha = global_alpha;
 
    if (!font || !gl || !out)
       return;
@@ -505,8 +505,10 @@ void lakka_draw_background(void)
       0.1, 0.74, 0.61, global_alpha,
       0.1, 0.74, 0.61, global_alpha,
    };
-
    gl_t *gl = (gl_t*)driver.video_data;
+
+   if (!gl)
+      return;
 
    glEnable(GL_BLEND);
 
@@ -525,9 +527,6 @@ void lakka_draw_background(void)
 
 void lakka_draw_icon(GLuint texture, float x, float y, float alpha, float rotation, float scale)
 {
-   if (alpha > global_alpha)
-      alpha = global_alpha;
-
    GLfloat color[] = {
       1.0f, 1.0f, 1.0f, alpha,
       1.0f, 1.0f, 1.0f, alpha,
@@ -543,6 +542,12 @@ void lakka_draw_icon(GLuint texture, float x, float y, float alpha, float rotati
    };
 
    gl_t *gl = (gl_t*)driver.video_data;
+
+   if (!gl)
+      return;
+   
+   if (alpha > global_alpha)
+      alpha = global_alpha;
 
    glViewport(x, gl->win_height - y, dim, dim);
 
@@ -586,6 +591,8 @@ static void lakka_draw_subitems(int i, int j)
 
    for(k = 0; k < item->num_subitems; k++)
    {
+      bool draw_subitem = false;
+      bool draw_subicon = false;
       menu_subitem_t *subitem = (menu_subitem_t*)&item->subitems[k];
 
       if (!subitem)
@@ -607,34 +614,28 @@ static void lakka_draw_subitems(int i, int j)
             1, 
             subitem->alpha);
       }
-      else if (k == 0)
-      {
-         lakka_draw_icon(subitem->icon, 
-               156 + HSPACING*(i+2) + all_categories_x - dim/2.0, 
-               300 + subitem->y + dim/2.0, 
-               subitem->alpha, 
-               0, 
-               subitem->zoom);
-         lakka_draw_text(&subitem->out, 
-               156 + HSPACING * (i+2) + all_categories_x + dim/2.0, 
-               300 + subitem->y + 15, 
-               1, 
-               subitem->alpha);
-      }
-      else if(
+      else if(k == 0 ||
             menu_active_category == 0 ||
             (g_extern.main_is_init && 
             !g_extern.libretro_dummy &&
             strcmp(g_extern.fullpath, &active_item->rom) == 0))
       {
-         // if we are in settings or a rom is launched
-         
+         draw_subicon  =true;
+         draw_subitem = true;
+      }
+
+      if (draw_subicon)
+      {
          lakka_draw_icon(subitem->icon, 
                156 + HSPACING*(i+2) + all_categories_x - dim/2.0, 
                300 + subitem->y + dim/2.0, 
                subitem->alpha, 
                0, 
                subitem->zoom);
+      }
+
+      if (draw_subitem)
+      {
          lakka_draw_text(&subitem->out, 
                156 + HSPACING * (i+2) + all_categories_x + dim/2.0, 
                300 + subitem->y + 15, 
@@ -735,6 +736,7 @@ static void lakka_frame(void)
    {
       if (active_item)
          lakka_draw_text(&active_item->out, 15.0, 40.0, 1, 1.0);
+
       lakka_draw_icon(arrow_icon,
             156 + HSPACING*(menu_active_category+1) + all_categories_x + 150 +-dim/2.0,
             300 + VSPACING*2.4 + (dim/2.0), 1, 0, I_ACTIVE_ZOOM);
