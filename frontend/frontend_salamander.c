@@ -20,7 +20,6 @@
 #include <string.h>
 
 #include "../file_ext.h"
-#include "frontend_salamander.h"
 #include "frontend_context.h"
 
 
