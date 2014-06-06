@@ -1,0 +1,70 @@
+=====================================================================
+==	libdi by Team Twiizers.
+==	
+==
+=====================================================================
+
+libdi is a threadsafe library that allows you to access the DVD drive
+in your Wii, regardless of a modchip being installed or not.
+
+-----------
+-- INSTALL
+-----------
+
+To install the lib, simply type
+
+make
+make install
+
+This will install the lib into your libogc.
+
+-----------
+-- USAGE
+-----------
+
+Usage is fairly self-explanatory, aside from DI_Init. You can set
+a callback using DI_SetCallback, which will be called upon completion
+of the disc initialization. This callback runs in the regular callback
+context.
+
+After this initial init, you call DI_Mount to spin the drive up. There is
+no need for unmounting, you can just eject the disc any time you want.
+Remounting with DI_Mount is necessary however. Calling DI_Mount is also
+helpful as a last resort for failing reads.
+
+Async reads are implemented in the lib using the standard async ioctls.
+You can pass an ipccallback function, of which the usrdata will be filled
+with the buffer you pass. Async reads do not have the advantage of auto-retries.
+You will have to check wether a read succeeds or not in your callback.
+
+Sync reads do have auto-retry, and the lib will try up to MAX_RETRY amount
+of times before it gives up. Dirty discs can need up to 10 retries
+before data is actually properly read. By default MAX_RETRY is set to 16.
+
+Most of the functions in this lib are universal and can be used on modchipped
+or non-modchipped drives alike. Some exceptions are: 
+
+DI_ReadDVDConfig	Will only work on non-modchipped drives.
+DI_ReportKey		Will only work on non-modchipped drives.
+DI_ReadDVDUnencrypted	Will only work on original discs.
+DI_ClosePartition	Will only work on original discs.
+DI_OpenPartition	Will only work on original discs.
+DI_ReadDiscID		Will only work on original discs.
+
+If you've been reading through the source, you've probably noticed by now the
+peculiar function DI_KillDrive. DI_KillDrive will not actually kill your drive
+as to be useless. It merely crashes it in such a way that it will not respond
+to any DI commands, it will not eject your disc, and it will not take in any discs
+until the next DI_Reset. DI_Mount might fail if used after this function!
+I have included this function because people might have a use for it. Like it
+says in the source, I am not responsible if someone's drive does actually die
+from usage of this function.
+
+
+Known bugs:
+
+Currently, if you do a DI_Init(), and then return to HBC without a disc ever being inserted,
+your program will hang until a disc is inserted. If anyone has a nice solution, I'd
+love to hear it.
+
+Erant

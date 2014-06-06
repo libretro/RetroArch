@@ -1,0 +1,9 @@
+cube
+deps
+include
+lib
+wii
+gc/ogc/libversion.h
+*.bz2
+docs
+warn.log
