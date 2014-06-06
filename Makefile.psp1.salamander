@@ -26,7 +26,9 @@ endif
 CFLAGS += $(RARCH_DEFINES)
 
 EXTRA_TARGETS = EBOOT.PBP
-PSP_EBOOT_TITLE = RetroArch PSP1
+PSP_EBOOT_TITLE = RetroArch
+PSP_EBOOT_ICON = psp1/ICON0.PNG
+PSP_EBOOT_PIC1 = psp1/PIC1.PNG
 
 OBJS = frontend/frontend_salamander.o frontend/frontend_context.o frontend/platform/platform_null.o file_path.o compat/compat.o conf/config_file.o psp1/kernel_functions.o
 
