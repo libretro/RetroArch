@@ -1,4 +1,5 @@
 BUILD_PRX         = 1
+HAVE_FILE_LOGGER  = 0
 DEBUG             = 0
 
 TARGET = retroarchpsp_salamander
