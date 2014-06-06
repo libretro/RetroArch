@@ -1,8 +1,8 @@
-BUILD_PRX			= 1
-DEBUG			    = 0
+BUILD_PRX         = 1
+DEBUG             = 0
 HAVE_KERNEL_PRX   = 1
-HAVE_FILE_LOGGER	= 0
-HAVE_THREADS 		= 0
+HAVE_FILE_LOGGER  = 0
+HAVE_THREADS      = 0
 
 TARGET = retroarchpsp
 
@@ -10,6 +10,11 @@ ifeq ($(DEBUG), 1)
    OPTIMIZE_LV	:= -O0 -g
 else
    OPTIMIZE_LV	:= -O2 -g
+endif
+
+ifeq ($(WHOLE_ARCHIVE_LINK), 1)
+   WHOLE_START := -Wl,--whole-archive
+   WHOLE_END := -Wl,--no-whole-archive
 endif
 
 INCDIR = $(PSPPATH)/include
@@ -20,7 +25,7 @@ RARCH_DEFINES = -DPSP -D_MIPS_ARCH_ALLEGREX1 -DHAVE_LIBRETRO_MANAGEMENT -DHAVE_Z
 
 LIBDIR =
 LDFLAGS =
-LIBS = -lretro_psp1   -lstdc++ -lpspgu -lpspgum -lm -lpspaudio -lpspfpu -lpsppower -lpsprtc
+LIBS = $(WHOLE_START) -lretro_psp1 $(WHOLE_END) -lstdc++ -lpspgu -lpspgum -lm -lpspaudio -lpspfpu -lpsppower -lpsprtc
 
 ifeq ($(HAVE_THREADS), 1)
 RARCH_DEFINES += -DHAVE_THREADS
@@ -28,15 +33,11 @@ LIBS += -lpthread-psp
 endif
 
 ifeq ($(HAVE_FILE_LOGGER), 1)
-CFLAGS		+= -DHAVE_FILE_LOGGER
+CFLAGS += -DHAVE_FILE_LOGGER
 endif
 
 ifeq ($(HAVE_KERNEL_PRX), 1)
-CFLAGS      += -DHAVE_KERNEL_PRX
-endif
-
-ifeq ($(WHOLE_ARCHIVE_LINK), 1)
-LDFLAGS += -Wl, --whole-archive
+CFLAGS += -DHAVE_KERNEL_PRX
 endif
 
 CFLAGS += $(RARCH_DEFINES)
