@@ -33,42 +33,45 @@ static void find_first_libretro_core(char *first_file,
    size_t size_of_first_file, const char *dir,
    const char * ext)
 {
+   struct string_list *list;
+   size_t i;
    bool ret = false;
 
    RARCH_LOG("Searching for valid libretro implementation in: \"%s\".\n", dir);
 
-   struct string_list *list = (struct string_list*)dir_list_new(dir, ext, false);
+   list = (struct string_list*)dir_list_new(dir, ext, false);
    if (!list)
    {
       RARCH_ERR("Couldn't read directory. Cannot infer default libretro core.\n");
       return;
    }
    
-   for (size_t i = 0; i < list->size && !ret; i++)
+   for (i = 0; i < list->size && !ret; i++)
    {
-      RARCH_LOG("Checking library: \"%s\".\n", list->elems[i].data);
-      const char *libretro_elem = list->elems[i].data;
+      char fname[PATH_MAX];
+      const char *libretro_elem = (const char*)list->elems[i].data;
 
-      if (libretro_elem)
+      RARCH_LOG("Checking library: \"%s\".\n", libretro_elem);
+
+      if (!libretro_elem)
+         continue;
+
+      fill_pathname_base(fname, libretro_elem, sizeof(fname));
+
+      if (strncmp(fname, SALAMANDER_FILE, sizeof(fname)) == 0)
       {
-         char fname[PATH_MAX];
-         fill_pathname_base(fname, libretro_elem, sizeof(fname));
-
-         if (strncmp(fname, SALAMANDER_FILE, sizeof(fname)) == 0)
+         if ((i + 1) == list->size)
          {
-            if ((i + 1) == list->size)
-            {
-               RARCH_WARN("Entry is RetroArch Salamander itself, but is last entry. No choice but to set it.\n");
-               strlcpy(first_file, fname, size_of_first_file);
-            }
-
-            continue;
+            RARCH_WARN("Entry is RetroArch Salamander itself, but is last entry. No choice but to set it.\n");
+            strlcpy(first_file, fname, size_of_first_file);
          }
 
-         strlcpy(first_file, fname, size_of_first_file);
-         RARCH_LOG("First found libretro core is: \"%s\".\n", first_file);
-         ret = true;
+         continue;
       }
+
+      strlcpy(first_file, fname, size_of_first_file);
+      RARCH_LOG("First found libretro core is: \"%s\".\n", first_file);
+      ret = true;
    }
 
    dir_list_free(list);
@@ -83,7 +86,7 @@ static void find_and_set_first_file(char *path, size_t sizeof_path, const char *
    find_first_libretro_core(first_file, sizeof(first_file),
          default_paths.core_dir, ext);
 
-   if(first_file)
+   if (first_file)
    {
       fill_pathname_join(path, default_paths.core_dir, first_file, sizeof(path));
       RARCH_LOG("libretro_path now set to: %s.\n", path);
@@ -103,7 +106,7 @@ static void salamander_init(char *libretro_path, size_t sizeof_libretro_path)
    if (config_file_exists)
    {
       char tmp_str[PATH_MAX];
-      config_file_t * conf = config_file_new(default_paths.config_path);
+      config_file_t * conf = (config_file_t*)config_file_new(default_paths.config_path);
 
       if (conf)
       {
@@ -124,7 +127,7 @@ static void salamander_init(char *libretro_path, size_t sizeof_libretro_path)
 
    if (!config_file_exists)
    {
-      config_file_t *conf = config_file_new(NULL);
+      config_file_t *conf = (config_file_t*)config_file_new(NULL);
 
       if (conf)
       {
