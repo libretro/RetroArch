@@ -269,6 +269,7 @@
     <ClCompile Include="..\..\frontend\frontend_salamander.c" />
     <ClCompile Include="..\..\frontend\frontend_context.c" />
     <ClCompile Include="..\..\frontend\platform\platform_null.c" />
+    <ClCompile Include="..\..\frontend\platform\platform_xdk.c" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

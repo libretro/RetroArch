@@ -35,5 +35,8 @@
     <ClCompile Include="..\..\frontend\platform\platform_null.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\frontend\platform\platform_xdk.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
