@@ -101,12 +101,13 @@ static void frontend_psp_deinit(void *data)
    (void)data;
 #ifndef IS_SALAMANDER
    g_extern.verbose = false;
-#endif
 
 #ifdef HAVE_FILE_LOGGER
    if (g_extern.log_file)
       fclose(g_extern.log_file);
    g_extern.log_file = NULL;
+#endif
+
 #endif
 }
 

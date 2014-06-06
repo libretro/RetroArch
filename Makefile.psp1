@@ -35,6 +35,10 @@ ifeq ($(HAVE_KERNEL_PRX), 1)
 CFLAGS      += -DHAVE_KERNEL_PRX
 endif
 
+ifeq ($(WHOLE_ARCHIVE_LINK), 1)
+LDFLAGS += -Wl, --whole-archive
+endif
+
 CFLAGS += $(RARCH_DEFINES)
 
 
