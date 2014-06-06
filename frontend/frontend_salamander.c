@@ -19,22 +19,11 @@
 #include <stddef.h>
 #include <string.h>
 
+#include "../conf/config_file.h"
+#include "../general.h"
+#include "../file.h"
 #include "../file_ext.h"
 #include "frontend_context.h"
-
-
-#if defined(__CELLOS_LV2__)
-#include "platform/platform_ps3.c"
-#elif defined(GEKKO)
-#include "platform/platform_gx.c"
-#ifdef HW_RVL
-#include "platform/platform_wii.c"
-#endif
-#elif defined(_XBOX)
-#include "platform/platform_xdk.c"
-#elif defined(PSP)
-#include "platform/platform_psp.c"
-#endif
 
 struct defaults default_paths;
 
