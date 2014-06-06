@@ -591,8 +591,6 @@ static void lakka_draw_subitems(int i, int j)
 
    for(k = 0; k < item->num_subitems; k++)
    {
-      bool draw_subitem = false;
-      bool draw_subicon = false;
       menu_subitem_t *subitem = (menu_subitem_t*)&item->subitems[k];
 
       if (!subitem)
@@ -620,28 +618,19 @@ static void lakka_draw_subitems(int i, int j)
             !g_extern.libretro_dummy &&
             strcmp(g_extern.fullpath, &active_item->rom) == 0))
       {
-         draw_subicon  =true;
-         draw_subitem = true;
-      }
-
-      if (draw_subicon)
-      {
          lakka_draw_icon(subitem->icon, 
                156 + HSPACING*(i+2) + all_categories_x - dim/2.0, 
                300 + subitem->y + dim/2.0, 
                subitem->alpha, 
                0, 
                subitem->zoom);
-      }
-
-      if (draw_subitem)
-      {
          lakka_draw_text(&subitem->out, 
                156 + HSPACING * (i+2) + all_categories_x + dim/2.0, 
                300 + subitem->y + 15, 
                1, 
                subitem->alpha);
       }
+
    }
 }
 
@@ -1029,6 +1018,8 @@ void lakka_init_settings(void)
 
 void lakka_settings_context_reset(void)
 {
+   menu_item_t *item;
+   int k;
    menu_category_t *category = (menu_category_t*)&categories[0];
 
    if (!category)
@@ -1039,43 +1030,26 @@ void lakka_settings_context_reset(void)
    if (font_driver)
       font_driver->render_msg(font, category->name, &category->out);
 
-   int j, k;
-
    // General options item
 
-   j = 0;
-   menu_item_t *item0;
-   item0 = (menu_item_t*)&category->items[j];
+   item = (menu_item_t*)&category->items[0];
    if (font_driver)
-      font_driver->render_msg(font, item0->name, &item0->out);
+      font_driver->render_msg(font, item->name, &item->out);
 
    // General options subitems
+   for (k = 0; k < 2; k++)
+   {
+      menu_subitem_t *subitem = (menu_subitem_t*)&item->subitems[k];
+      subitem->icon = subsetting_icon;
+      if (font_driver)
+         font_driver->render_msg(font, subitem->name, &subitem->out);
+   }
 
-   k = 0;
-   menu_subitem_t *subitem0 = (menu_subitem_t*)&item0->subitems[k];
-   subitem0->icon = subsetting_icon;
-   if (font_driver)
-      font_driver->render_msg(font, subitem0->name, &subitem0->out);
-   
-   k = 1;
-   menu_subitem_t *subitem1 = (menu_subitem_t*)&item0->subitems[k];
-   subitem1->icon = subsetting_icon;
-   if (font_driver)
-      font_driver->render_msg(font, subitem1->name, &subitem1->out);
-   
-   k = 2;
-   menu_subitem_t *subitem2 = (menu_subitem_t*)&item0->subitems[k];
-   subitem2->icon = subsetting_icon;
-   if (font_driver)
-      font_driver->render_msg(font, subitem2->name, &subitem2->out);
-   
    // Quit item
 
-   j = 1;
-   menu_item_t *item1;
-   item1 = (menu_item_t*)&category->items[j];
+   item = (menu_item_t*)&category->items[1];
    if (font_driver)
-      font_driver->render_msg(font, item1->name, &item1->out);
+      font_driver->render_msg(font, item->name, &item->out);
 }
 
 
