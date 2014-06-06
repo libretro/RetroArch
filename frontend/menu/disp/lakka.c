@@ -86,7 +86,13 @@ enum
    TEXTURE_LAST
 };
 
-GLuint textures[TEXTURE_LAST];
+struct lakka_texture_item
+{
+   GLuint id;
+   char path[PATH_MAX];
+};
+
+struct lakka_texture_item textures[TEXTURE_LAST];
 
 static tween_t* tweens = NULL;
 int numtweens = 0;
@@ -250,7 +256,7 @@ static bool init_font(void *data, const char *font_path, float font_size, unsign
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-      glBindTexture(GL_TEXTURE_2D, textures[TEXTURE_MAIN]);
+      glBindTexture(GL_TEXTURE_2D, textures[TEXTURE_MAIN].id);
       glGetIntegerv(GL_MAX_TEXTURE_SIZE, &max_font_size);
    }
    else
@@ -497,7 +503,7 @@ static void lakka_draw_text(struct font_output_list *out, float x, float y, floa
    gl->coords.vertex    = gl->vertex_ptr;
    gl->coords.tex_coord = gl->tex_coords;
    gl->coords.color     = gl->white_color_ptr;
-   glBindTexture(GL_TEXTURE_2D, textures[TEXTURE_MAIN]);
+   glBindTexture(GL_TEXTURE_2D, textures[TEXTURE_MAIN].id);
 
    glDisable(GL_BLEND);
 
@@ -607,7 +613,7 @@ static void lakka_draw_subitems(int i, int j)
             && !g_extern.libretro_dummy
             && strcmp(g_extern.fullpath, &active_item->rom) == 0)
       {
-         lakka_draw_icon(textures[TEXTURE_RESUME], 
+         lakka_draw_icon(textures[TEXTURE_RESUME].id, 
             156 + HSPACING*(i+2) + all_categories_x - dim/2.0, 
             300 + subitem->y + dim/2.0, 
             subitem->alpha, 
@@ -733,7 +739,7 @@ static void lakka_frame(void)
       if (active_item)
          lakka_draw_text(&active_item->out, 15.0, 40.0, 1, 1.0);
 
-      lakka_draw_icon(textures[TEXTURE_ARROW],
+      lakka_draw_icon(textures[TEXTURE_ARROW].id,
             156 + HSPACING*(menu_active_category+1) + all_categories_x + 150 +-dim/2.0,
             300 + VSPACING*2.4 + (dim/2.0), 1, 0, I_ACTIVE_ZOOM);
    }
@@ -902,7 +908,7 @@ static void lakka_context_destroy(void *data)
    gl_t *gl = (gl_t*)driver.video_data;
 
    for (i = 0; i < TEXTURE_LAST; i++)
-      glDeleteTextures(1, &textures[i]);
+      glDeleteTextures(1, &textures[i].id);
 
    for (i = 1; i < num_categories; i++)
    {
@@ -1026,8 +1032,8 @@ void lakka_settings_context_reset(void)
    if (!category)
       return;
 
-   category->icon = textures[TEXTURE_SETTINGS];
-   category->item_icon = textures[TEXTURE_SETTING];
+   category->icon = textures[TEXTURE_SETTINGS].id;
+   category->item_icon = textures[TEXTURE_SETTING].id;
    if (font_driver)
       font_driver->render_msg(font, category->name, &category->out);
 
@@ -1041,7 +1047,7 @@ void lakka_settings_context_reset(void)
    for (k = 0; k < 2; k++)
    {
       menu_subitem_t *subitem = (menu_subitem_t*)&item->subitems[k];
-      subitem->icon = textures[TEXTURE_SUBSETTING];
+      subitem->icon = textures[TEXTURE_SUBSETTING].id;
       if (font_driver)
          font_driver->render_msg(font, subitem->name, &subitem->out);
    }
@@ -1067,26 +1073,19 @@ static void lakka_context_reset(void *data)
    fill_pathname_join(dirpath, g_settings.assets_directory, "lakka", sizeof(dirpath));
    fill_pathname_slash(dirpath, sizeof(dirpath));
 
-   fill_pathname_join(path, dirpath, "settings.png", sizeof(path));
-   textures[TEXTURE_SETTINGS] = png_texture_load(path, &dim, &dim);
-   fill_pathname_join(path, dirpath, "setting.png", sizeof(path));
-   textures[TEXTURE_SETTING] = png_texture_load(path, &dim, &dim);
-   fill_pathname_join(path, dirpath, "subsetting.png", sizeof(path));
-   textures[TEXTURE_SUBSETTING] = png_texture_load(path, &dim, &dim);
-   fill_pathname_join(path, dirpath, "arrow.png", sizeof(path));
-   textures[TEXTURE_ARROW] = png_texture_load(path, &dim, &dim);
-   fill_pathname_join(path, dirpath, "run.png", sizeof(path));
-   textures[TEXTURE_RUN] = png_texture_load(path, &dim, &dim);
-   fill_pathname_join(path, dirpath, "resume.png", sizeof(path));
-   textures[TEXTURE_RESUME] = png_texture_load(path, &dim, &dim);
-   fill_pathname_join(path, dirpath, "savestate.png", sizeof(path));
-   textures[TEXTURE_SAVESTATE] = png_texture_load(path, &dim, &dim);
-   fill_pathname_join(path, dirpath, "loadstate.png", sizeof(path));
-   textures[TEXTURE_LOADSTATE] = png_texture_load(path, &dim, &dim);
-   fill_pathname_join(path, dirpath, "screenshot.png", sizeof(path));
-   textures[TEXTURE_SCREENSHOT] = png_texture_load(path, &dim, &dim);
-   fill_pathname_join(path, dirpath, "reload.png", sizeof(path));
-   textures[TEXTURE_RELOAD] = png_texture_load(path, &dim, &dim);
+   fill_pathname_join(textures[TEXTURE_SETTINGS].path, dirpath, "settings.png", sizeof(textures[TEXTURE_SETTINGS].path));
+   fill_pathname_join(textures[TEXTURE_SETTING].path, dirpath, "setting.png", sizeof(textures[TEXTURE_SETTING].path));
+   fill_pathname_join(textures[TEXTURE_SUBSETTING].path, dirpath, "subsetting.png", sizeof(textures[TEXTURE_SUBSETTING].path));
+   fill_pathname_join(textures[TEXTURE_ARROW].path, dirpath, "arrow.png", sizeof(textures[TEXTURE_ARROW].path));
+   fill_pathname_join(textures[TEXTURE_RUN].path, dirpath, "run.png", sizeof(textures[TEXTURE_RUN].path));
+   fill_pathname_join(textures[TEXTURE_RESUME].path, dirpath, "resume.png", sizeof(textures[TEXTURE_RESUME].path));
+   fill_pathname_join(textures[TEXTURE_SAVESTATE].path, dirpath, "savestate.png", sizeof(textures[TEXTURE_SAVESTATE].path));
+   fill_pathname_join(textures[TEXTURE_LOADSTATE].path, dirpath, "loadstate.png", sizeof(textures[TEXTURE_LOADSTATE].path));
+   fill_pathname_join(textures[TEXTURE_SCREENSHOT].path, dirpath, "screenshot.png", sizeof(textures[TEXTURE_SCREENSHOT].path));
+   fill_pathname_join(textures[TEXTURE_RELOAD].path, dirpath, "reload.png", sizeof(textures[TEXTURE_RELOAD].path));
+
+   for (k = 0; k < TEXTURE_LAST; k++)
+      textures[k].id = png_texture_load(textures[k].path, &dim, &dim);
 
    if (font_driver)
    {
@@ -1149,19 +1148,19 @@ static void lakka_context_reset(void *data)
             switch (k)
             {
                case 0:
-                  subitem->icon = textures[TEXTURE_RUN];
+                  subitem->icon = textures[TEXTURE_RUN].id;
                   break;
                case 1:
-                  subitem->icon = textures[TEXTURE_SAVESTATE];
+                  subitem->icon = textures[TEXTURE_SAVESTATE].id;
                   break;
                case 2:
-                  subitem->icon = textures[TEXTURE_LOADSTATE];
+                  subitem->icon = textures[TEXTURE_LOADSTATE].id;
                   break;
                case 3:
-                  subitem->icon = textures[TEXTURE_SCREENSHOT];
+                  subitem->icon = textures[TEXTURE_SCREENSHOT].id;
                   break;
                case 4:
-                  subitem->icon = textures[TEXTURE_RELOAD];
+                  subitem->icon = textures[TEXTURE_RELOAD].id;
                   break;
             }
 
