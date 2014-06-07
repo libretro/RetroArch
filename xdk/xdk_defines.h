@@ -48,7 +48,7 @@
 #define RD3DDevice_DrawPrimitive(device, PrimitiveType, StartVertex, PrimitiveCount) D3DDevice_DrawVertices(PrimitiveType, StartVertex, D3DVERTEXCOUNT(PrimitiveType, PrimitiveCount))
 #define RD3DDevice_Clear(device, Count, pRects, Flags, Color, Z, Stencil) D3DDevice_Clear(Count, pRects, Flags, Color, Z, Stencil)
 #define RD3DDevice_SetViewport(device, viewport) D3DDevice_SetViewport(viewport)
-#define D3DDevice_Presents(device, returnval) D3DDevice_Swap(0)
+#define D3DDevice_Presents(d3d, device) D3DDevice_Swap(0)
 #define D3DDevice_SetSamplerState_MinFilter(device, sampler, value) SetSamplerState_function(device, sampler, D3DTSS_MINFILTER, value)
 #define D3DDevice_SetSamplerState_MagFilter(device, sampler, value) SetSamplerState_function(device, sampler, D3DTSS_MAGFILTER, value)
 #define D3DDevice_SetSamplerState_AddressU(device, sampler, value) SetSamplerState_function(device, sampler, D3DTSS_ADDRESSU, value)
