@@ -16,6 +16,7 @@
 
 #include "fonts.h"
 #include "../gfx_common.h"
+#include "../gl_common.h"
 
 #if defined(SN_TARGET_PSP2)
 #include <libdbgfont.h>
@@ -32,19 +33,19 @@
 #define DbgFontExit cellDbgFontExit
 #endif
 
-static void *gl_init_font(void *data, const char *font_path, float font_size,
-      unsigned win_width, unsigned win_height)
+static void *gl_init_font(void *gl_data, const char *font_path, float font_size)
 {
    (void)font_path;
    (void)font_size;
+   gl_t *gl = (gl_t*)gl_data;
 
    DbgFontConfig cfg;
 #if defined(SN_TARGET_PSP2)
    cfg.fontSize     = SCE_DBGFONT_FONTSIZE_LARGE;
 #elif defined(__CELLOS_LV2__)
    cfg.bufSize      = SCE_DBGFONT_BUFSIZE_LARGE;
-   cfg.screenWidth  = win_width;
-   cfg.screenHeight = win_height;
+   cfg.screenWidth  = gl->win_width;
+   cfg.screenHeight = gl->win_height;
 #endif
 
    DbgFontInit(&cfg);
@@ -97,3 +98,4 @@ const gl_font_renderer_t libdbg_font = {
    gl_render_msg,
    "GL raster",
 };
+

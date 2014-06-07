@@ -28,11 +28,8 @@ typedef struct
    void *font_data;
 } gl_raster_t;
 
-static void *gl_init_font(void *gl_data, const char *font_path, float font_size, unsigned win_width, unsigned win_height)
+static void *gl_init_font(void *gl_data, const char *font_path, float font_size)
 {
-   (void)win_width;
-   (void)win_height;
-
    gl_raster_t *font = (gl_raster_t*)calloc(1, sizeof(*font));
    if (!font)
       return NULL;
@@ -115,7 +112,7 @@ void gl_free_font(void *data)
    font_color[      4 * (6 * i + c) + 3] = color[3]; \
 } while(0)
 
-static void render_message(gl_raster_t *font, const char *msg, GLfloat scale, const GLfloat color[4], GLfloat pos_x, GLfloat pos_y)
+static void render_message(gl_raster_t *font, const char *msg, GLfloat scale, const GLfloat color[4], GLfloat pos_x, GLfloat pos_y, bool full_screen)
 {
    unsigned i;
    gl_t *gl = font->gl;
@@ -123,7 +120,7 @@ static void render_message(gl_raster_t *font, const char *msg, GLfloat scale, co
    if (gl->shader && gl->shader->use)
       gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
 
-   gl_set_viewport(gl, gl->win_width, gl->win_height, true, false);
+   gl_set_viewport(gl, gl->win_width, gl->win_height, full_screen, false);
 
    glEnable(GL_BLEND);
    glBindTexture(GL_TEXTURE_2D, font->tex);
@@ -138,15 +135,15 @@ static void render_message(gl_raster_t *font, const char *msg, GLfloat scale, co
    unsigned msg_len_full = strlen(msg);
    unsigned msg_len = min(msg_len_full, MAX_MSG_LEN_CHUNK);
 
-   int x = roundf(pos_x * gl->win_width);
-   int y = roundf(pos_y * gl->win_height);
+   int x = roundf(pos_x * gl->vp.width);
+   int y = roundf(pos_y * gl->vp.height);
    int delta_x = 0;
    int delta_y = 0;
 
    float inv_tex_size_x = 1.0f / font->tex_width;
    float inv_tex_size_y = 1.0f / font->tex_height;
-   float inv_win_width  = 1.0f / font->gl->win_width;
-   float inv_win_height = 1.0f / font->gl->win_height;
+   float inv_win_width  = 1.0f / font->gl->vp.width;
+   float inv_win_height = 1.0f / font->gl->vp.height;
 
    while (msg_len_full)
    {
@@ -213,6 +210,7 @@ static void gl_render_msg(void *data, const char *msg, const struct font_params 
 {
    GLfloat x, y, scale;
    GLfloat color[4];
+   bool full_screen;
 
    gl_raster_t *font = (gl_raster_t*)data;
    if (!font)
@@ -223,11 +221,12 @@ static void gl_render_msg(void *data, const char *msg, const struct font_params 
       x = params->x;
       y = params->y;
       scale = params->scale;
+      full_screen = params->full_screen;
 
-      color[0] = ((params->color >> 16) & 0xff) / 255.0f;
-      color[1] = ((params->color >>  8) & 0xff) / 255.0f;
-      color[2] = ((params->color >>  0) & 0xff) / 255.0f;
-      color[3] = params->alpha;
+      color[0] = FONT_COLOR_GET_RED(params->color);
+      color[1] = FONT_COLOR_GET_GREEN(params->color);
+      color[2] = FONT_COLOR_GET_BLUE(params->color);
+      color[3] = FONT_COLOR_GET_ALPHA(params->color);
 
       // If alpha is 0.0f, turn it into default 1.0f
       if (color[3] <= 0.0f)
@@ -238,6 +237,7 @@ static void gl_render_msg(void *data, const char *msg, const struct font_params 
       x = g_settings.video.msg_pos_x;
       y = g_settings.video.msg_pos_y;
       scale = 1.0f;
+      full_screen = false;
 
       color[0] = g_settings.video.msg_color_r;
       color[1] = g_settings.video.msg_color_g;
@@ -245,7 +245,7 @@ static void gl_render_msg(void *data, const char *msg, const struct font_params 
       color[3] = 1.0f;
    }
 
-   render_message(font, msg, scale, color, x, y);
+   render_message(font, msg, scale, color, x, y, full_screen);
 }
 
 const gl_font_renderer_t gl_raster_font = {

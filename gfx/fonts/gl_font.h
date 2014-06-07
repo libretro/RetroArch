@@ -21,8 +21,7 @@
 
 typedef struct gl_font_renderer
 {
-   void *(*init)(void *data, const char *font_path, float font_size,
-         unsigned win_width, unsigned win_height);
+   void *(*init)(void *data, const char *font_path, float font_size);
    void (*free)(void *data);
    void (*render_msg)(void *data, const char *msg, const struct font_params *parms);
    const char *ident;
@@ -32,7 +31,7 @@ extern const gl_font_renderer_t gl_raster_font;
 extern const gl_font_renderer_t libdbg_font;
 
 bool gl_font_init_first(const gl_font_renderer_t **font_driver, void **font_handle,
-      void *gl_data, const char *font_path, float font_size, unsigned win_width, unsigned win_height);
+      void *gl_data, const char *font_path, float font_size);
 
 #endif
 
