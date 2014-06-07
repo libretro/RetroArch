@@ -173,6 +173,19 @@ static void d3d_free(void *data)
 #endif
 }
 
+static void d3d_viewport_info(void *data, struct rarch_viewport *vp)
+{
+   d3d_video_t *d3d = (d3d_video_t*)data;
+
+   vp->x           = d3d->final_viewport.X;
+   vp->y           = d3d->final_viewport.Y;
+   vp->width       = d3d->final_viewport.Width;
+   vp->height      = d3d->final_viewport.Height;
+
+   vp->full_width  = d3d->screen_width;
+   vp->full_height = d3d->screen_height;
+}
+
 static void d3d_set_rotation(void *data, unsigned rot)
 {
    (void)data;
@@ -1253,7 +1266,7 @@ const video_driver_t video_d3d = {
    d3d_free,
    "d3d",
    d3d_set_rotation,
-   NULL, /* viewport_info */
+   d3d_viewport_info,
    NULL, /* read_viewport */
 #ifdef HAVE_OVERLAY
    NULL, /* overlay_interface */
