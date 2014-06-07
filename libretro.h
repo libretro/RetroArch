@@ -591,8 +591,8 @@ enum retro_mod
                                            // avoid setting the "worst case" in max_width/max_height.
                                            //
                                            // ***HIGHLY RECOMMENDED*** Do not call this callback every time resolution changes in an emulator core if it's
-                                           // expected to be a temporary change, for the reasons of possible driver reinit.
-                                           // This call is not a free pass for not trying to provide correct values in retro_get_system_av_info().
+                                           // expected to be a temporary change, for the reasons of possible driver reinitialization.
+                                           // This call is not a free pass for not trying to provide correct values in retro_get_system_av_info(). If you need to change things like aspect ratio or nominal width/height, use RETRO_ENVIRONMENT_SET_GEOMETRY, which is a softer variant of SET_SYSTEM_AV_INFO.
                                            //
                                            // If this returns false, the frontend does not acknowledge a changed av_info struct.
 #define RETRO_ENVIRONMENT_SET_PROC_ADDRESS_CALLBACK 33
@@ -645,6 +645,23 @@ enum retro_mod
                                            //
                                            // Can be called from retro_init and retro_load_game.
                                            //
+#define RETRO_ENVIRONMENT_SET_GEOMETRY 37
+                                           // const struct retro_game_geometry * --
+                                           // This environment call is similar to SET_SYSTEM_AV_INFO for changing video parameters,
+                                           // but provides a guarantee that drivers will not be reinitialized.
+                                           // This can only be called from within retro_run().
+                                           //
+                                           // The purpose of this call is to allow a core to alter nominal width/heights as well as aspect ratios on-the-fly,
+                                           // which can be useful for some emulators to change in run-time.
+                                           //
+                                           // max_width/max_height arguments are ignored and cannot be changed
+                                           // with this call as this could potentially require a reinitialization or a non-constant time operation.
+                                           // If max_width/max_height are to be changed, SET_SYSTEM_AV_INFO is required.
+                                           //
+                                           // A frontend must guarantee that this environment call completes in constant time.
+
+
+
 
 #define RETRO_MEMDESC_CONST     (1 << 0)   // The frontend will never change this memory area once retro_load_game has returned.
 #define RETRO_MEMDESC_BIGENDIAN (1 << 1)   // The memory area contains big endian data. Default is little endian.
