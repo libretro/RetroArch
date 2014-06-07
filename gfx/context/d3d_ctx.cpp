@@ -267,10 +267,9 @@ static void gfx_ctx_d3d_check_window(void *data, bool *quit,
 
    if (d3d_quit)
       *quit = true;
-#ifdef _XBOX
    if (d3d->should_resize)
       *resize = true;
-#else
+#ifndef _XBOX
    MSG msg;
 
    while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
@@ -281,14 +280,18 @@ static void gfx_ctx_d3d_check_window(void *data, bool *quit,
 #endif
 }
 
+#ifdef _XBOX
+static HANDLE GetFocus(void)
+{
+   d3d_video_t *d3d = (d3d_video_t*)driver.video_data;
+   return d3d->hWnd;
+}
+#endif
+
 static bool gfx_ctx_d3d_has_focus(void *data)
 {
-#ifdef _XBOX
-   return true;
-#else
    d3d_video_t *d3d = (d3d_video_t*)data;
    return GetFocus() == d3d->hWnd;
-#endif
 }
 
 static bool gfx_ctx_d3d_bind_api(void *data, enum gfx_ctx_api api, unsigned major, unsigned minor)
