@@ -481,16 +481,7 @@ void renderchain_set_mvp(void *data, CGprogram &vPrg,
 void renderchain_clear_texture(void *data, Pass &pass)
 {
    D3DLOCKED_RECT d3dlr;
-#ifdef _XBOX
-   D3DTexture_LockRect(pass.tex, 0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);
-   memset(d3dlr.pBits, 0, pass.info.tex_h * d3dlr.Pitch);
-#else
-   if (SUCCEEDED(pass.tex->LockRect(0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK)))
-   {
-      memset(d3dlr.pBits, 0, pass.info.tex_h * d3dlr.Pitch);
-      pass.tex->UnlockRect(0);
-   }
-#endif
+   D3DTexture_LockRectClear(pass, pass.tex, 0, d3dlr, NULL, D3DLOCK_NOSYSLOCK);
 }
 
 void renderchain_convert_geometry(void *data, const LinkInfo *info,
@@ -596,15 +587,7 @@ void renderchain_render_pass(void *data, Pass &pass, unsigned pass_index)
    renderchain_bind_luts(chain, pass);
    renderchain_bind_tracker(chain, pass, pass_index);
 
-#ifdef _XBOX
-   d3dr->DrawPrimitive(D3DPT_TRIANGLESTRIP, 0, 2);
-#else
-   if (SUCCEEDED(d3dr->BeginScene()))
-   {
-      d3dr->DrawPrimitive(D3DPT_TRIANGLESTRIP, 0, 2);
-      d3dr->EndScene();
-   }
-#endif
+   D3DDevice_DrawPrimitive(d3dr, D3DPT_TRIANGLESTRIP, 0, 2);
 
    // So we don't render with linear filter into render targets,
    // which apparently looked odd (too blurry).

@@ -622,11 +622,7 @@ static void d3d_overlay_render(void *data, overlay_t *overlay)
    D3DDevice_SetSamplerState_AddressV(d3d->dev, 0, D3DTADDRESS_BORDER);
    D3DDevice_SetSamplerState_MinFilter(d3d->dev, 0, D3DTEXF_LINEAR);
    D3DDevice_SetSamplerState_MagFilter(d3d->dev, 0, D3DTEXF_LINEAR);
-   if (SUCCEEDED(d3d->dev->BeginScene()))
-   {
-      d3d->dev->DrawPrimitive(D3DPT_TRIANGLESTRIP, 0, 2);
-      d3d->dev->EndScene();
-   }
+   D3DDevice_DrawPrimitive(d3d->dev, D3DPT_TRIANGLESTRIP, 0, 2);
 
    // restore previous state
    d3d->dev->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);

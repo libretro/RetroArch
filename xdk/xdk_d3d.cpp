@@ -488,7 +488,7 @@ static bool texture_image_render(void *data, struct texture_image *out_img,
       vp.MaxZ   = 1.0f;
       d3dr->SetViewport(&vp);
    }
-   d3dr->DrawPrimitive(D3DPT_QUADLIST, 0, 1);
+   D3DDevice_DrawPrimitive(d3dr, D3DPT_QUADLIST, 0, 1);
 
    return true;
 }
@@ -522,8 +522,7 @@ static void clear_texture(void *data)
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
    D3DLOCKED_RECT d3dlr;
 
-   D3DTexture_LockRect(d3d->tex, 0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);
-   memset(d3dlr.pBits, 0, d3d->tex_w * d3dlr.Pitch);
+   D3DTexture_LockRectClear(d3d, d3d->tex, 0, d3dlr, NULL, D3DLOCK_NOSYSLOCK);
 }
 
 static void blit_to_texture(void *data, const void *frame,
@@ -681,15 +680,7 @@ static void render_pass(void *data, const void *frame, unsigned width, unsigned 
    D3DDevice_SetStreamSource_Inline(d3dr, 0, d3d->vertex_buf, 0, sizeof(DrawVerticeFormats));
 #endif
 
-#ifdef _XBOX
-   d3dr->DrawPrimitive(D3DPT_TRIANGLESTRIP, 0, 2);
-#else
-   if (SUCCEEDED(d3dr->BeginScene()))
-   {
-      d3dr->DrawPrimitive(D3DPT_TRIANGLESTRIP, 0, 2);
-      d3dr->EndScene();
-   }
-#endif
+   D3DDevice_DrawPrimitive(d3dr, D3DPT_TRIANGLESTRIP, 0, 2);
 
    g_extern.frame_count++;
 

@@ -58,6 +58,18 @@ class RenderChain;
 #define D3DDevice_SetSamplerState_AddressV(dev, sampler, type) dev->SetSamplerState(sampler, D3DSAMP_ADDRESSV, type)
 #define D3DDevice_SetSamplerState_MinFilter(dev, sampler, type) dev->SetSamplerState(sampler, D3DSAMP_MINFILTER, type)
 #define D3DDevice_SetSamplerState_MagFilter(dev, sampler, type) dev->SetSamplerState(sampler, D3DSAMP_MAGFILTER, type)
+#define D3DDevice_DrawPrimitive(dev, type, start, count) \
+   if (SUCCEEDED(dev->BeginScene())) \
+   { \
+      dev->DrawPrimitive(type, start, count); \
+      dev->EndScene(); \
+   }
+#define D3DTexture_LockRectClear(pass, tex, level, lockedrect, rect, flags) \
+   if (SUCCEEDED(tex->LockRect(level, &lockedrect, rect, flags))) \
+   { \
+      memset(lockedrect.pBits, level, pass.info.tex_h * lockedrect.Pitch); \
+      tex->UnlockRect(0); \
+   }
 #endif
 
 
