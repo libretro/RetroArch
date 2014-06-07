@@ -100,7 +100,7 @@
 
 #define D3DTexture_LockRectClear(pass, tex, level, lockedrect, rect, flags) \
    D3DTexture_LockRect(tex, level, &lockedrect, rect, flags); \
-   memset(lockedrect.pBits, 0, pass->tex_w * lockedrect.Pitch)
+   memset(lockedrect.pBits, 0, pass->tex_h * lockedrect.Pitch)
 
 #define D3DDevice_DrawPrimitive(dev, type, start, count) dev->DrawPrimitive(type, start, count)
 
