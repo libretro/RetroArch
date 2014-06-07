@@ -1093,6 +1093,21 @@ static bool d3d_construct(void *data, const video_info_t *info, const input_driv
    gfx_set_dwm();
 #endif
 
+#ifdef HAVE_MENU
+   if (d3d->rgui)
+      free(d3d->rgui);
+
+   d3d->rgui = (overlay_t*)calloc(1, sizeof(overlay_t));
+   d3d->rgui->tex_coords.x = 0;
+   d3d->rgui->tex_coords.y = 0;
+   d3d->rgui->tex_coords.w = 1;
+   d3d->rgui->tex_coords.h = 1;
+   d3d->rgui->vert_coords.x = 0;
+   d3d->rgui->vert_coords.y = 1;
+   d3d->rgui->vert_coords.w = 1;
+   d3d->rgui->vert_coords.h = -1;
+#endif
+
 #ifdef HAVE_WINDOW
    memset(&d3d->windowClass, 0, sizeof(d3d->windowClass));
    d3d->windowClass.cbSize        = sizeof(d3d->windowClass);
@@ -1233,13 +1248,20 @@ static void *d3d_init(const video_info_t *info, const input_driver_t **input, vo
    //default values
    vid->g_pD3D               = NULL;
    vid->dev                  = NULL;
+#ifndef _XBOX
+   vid->font                 = NULL;
+#endif
    vid->dev_rotation         = 0;
    vid->needs_restore        = false;
 #ifdef HAVE_CG
    vid->cgCtx                = NULL;
 #endif
+#ifdef HAVE_OVERLAY
+   vid->overlays_enabled = false;
+#endif
    vid->should_resize        = false;
    vid->vsync                = info->vsync;
+   vid->rgui             = NULL;
 
    if (!d3d_construct(vid, info, input, input_data))
    {

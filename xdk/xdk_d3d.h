@@ -36,6 +36,22 @@
 #define D3DFVF_CUSTOMVERTEX	(D3DFVF_XYZRHW | D3DFVF_TEX1)
 #endif
 
+typedef struct
+{
+   struct Coords
+   {
+      float x, y, w, h;
+   };
+   Coords tex_coords;
+   Coords vert_coords;
+   unsigned tex_w, tex_h;
+   bool fullscreen;
+   bool enabled;
+   float alpha_mod;
+   LPDIRECT3DTEXTURE tex;
+   LPDIRECT3DVERTEXBUFFER vert_buf;
+} overlay_t;
+
 typedef struct DrawVerticeFormats
 {
    float x, y;
@@ -50,6 +66,7 @@ typedef struct gl_shader_backend gl_shader_backend_t;
 
 typedef struct d3d_video
 {
+   const d3d_font_renderer_t *font_ctx;
    const gfx_ctx_driver_t *ctx_driver;
    const gl_shader_backend_t *shader;
    bool should_resize;
@@ -63,6 +80,9 @@ typedef struct d3d_video
    HWND hWnd;
    LPDIRECT3D g_pD3D;
    LPDIRECT3DDEVICE dev;
+#ifndef _XBOX
+   LPD3DXFONT font;
+#endif
 #ifdef HAVE_D3D9
    LPDIRECT3DSURFACE lpSurface;
    LPDIRECT3DTEXTURE lpTexture_ot_as16srgb;
@@ -72,7 +92,6 @@ typedef struct d3d_video
    bool rgui_texture_enable;
    bool rgui_texture_full_screen;
 #endif
-   const d3d_font_renderer_t *font_ctx;
    D3DVIEWPORT final_viewport;
    video_info_t video_info;
    HRESULT d3d_err;
@@ -90,6 +109,10 @@ typedef struct d3d_video
    // RENDERCHAIN PASS -> INFO
    unsigned tex_w;
    unsigned tex_h;
+
+#ifdef HAVE_MENU
+   overlay_t *rgui;
+#endif
 } d3d_video_t;
 
 extern void d3d_make_d3dpp(void *data, const video_info_t *info, D3DPRESENT_PARAMETERS *d3dpp);
