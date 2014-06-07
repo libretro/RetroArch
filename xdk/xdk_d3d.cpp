@@ -859,11 +859,12 @@ static void d3d_calculate_rect(void *data, unsigned width, unsigned height,
 }
 
 static bool d3d_frame(void *data, const void *frame,
-      unsigned width, unsigned height, unsigned pitch, const char *msg)
+      unsigned width, unsigned height, unsigned pitch,
+      const char *msg)
 {
    D3DVIEWPORT screen_vp;
    d3d_video_t *d3d = (d3d_video_t*)data;
-   LPDIRECT3DDEVICE d3dr = d3d->dev;
+   LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
 
    if (!frame)
       return true;
@@ -921,17 +922,17 @@ static bool d3d_frame(void *data, const void *frame,
 #endif
    }
 
+#ifdef _XBOX
    render_pass(d3d, frame, width, height, pitch, d3d->dev_rotation);
-
-#ifdef HAVE_MENU
-   if (g_extern.lifecycle_state & (1ULL << MODE_MENU) && driver.menu_ctx && driver.menu_ctx->frame)
-      driver.menu_ctx->frame();
-
-   if (d3d && d3d->rgui_texture_enable)
-      d3d_draw_texture(d3d);
+#else
+   if (!renderchain_render(d3d->chain, frame, width, height, pitch, d3d->dev_rotation))
+   {
+      RARCH_ERR("[D3D]: Failed to render scene.\n");
+      return false;
+   }
 #endif
 
-   if (msg)
+   if (d3d->font_ctx && d3d->font_ctx->render_msg && msg)
    {
 #if defined(_XBOX1)
       float msg_width  = 60;
@@ -946,6 +947,14 @@ static bool d3d_frame(void *data, const void *frame,
       font_parms.scale = 21;
       d3d->font_ctx->render_msg(d3d, msg, &font_parms);
    }
+
+#ifdef HAVE_MENU
+   if (g_extern.lifecycle_state & (1ULL << MODE_MENU) && driver.menu_ctx && driver.menu_ctx->frame)
+      driver.menu_ctx->frame();
+
+   if (d3d && d3d->rgui_texture_enable)
+      d3d_draw_texture(d3d);
+#endif
 
    RARCH_PERFORMANCE_STOP(d3d_frame);
 
@@ -987,7 +996,7 @@ static bool d3d_alive(void *data)
    else if (resize)
       d3d->should_resize = true;
 
-   return !d3d->quitting;
+   return !quit;
 }
 
 static bool d3d_focus(void *data)
@@ -1025,8 +1034,6 @@ static void d3d_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
    d3d->should_resize = true;
 }
 
-static void d3d_set_filtering(void *data, unsigned index, bool set_smooth) { }
-
 static void d3d_apply_state_changes(void *data)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
@@ -1063,7 +1070,7 @@ static void d3d_set_osd_msg(void *data, const char *msg, void *userdata)
 }
 
 static const video_poke_interface_t d3d_poke_interface = {
-   d3d_set_filtering,
+   NULL,
 #ifdef HAVE_FBO
    NULL,
    NULL,
@@ -1187,6 +1194,12 @@ static bool d3d_construct(void *data, const video_info_t *info, const input_driv
    SetFocus(d3d->hWnd);
 #endif
 
+#ifdef HAVE_WINDOW
+   ShowWindow(d3d->hWnd, SW_RESTORE);
+   UpdateWindow(d3d->hWnd);
+   SetForegroundWindow(d3d->hWnd);
+   SetFocus(d3d->hWnd);
+#endif
 
    d3d->video_info = *info;
    if (!d3d_initialize(d3d, &d3d->video_info))
@@ -1202,7 +1215,7 @@ static bool d3d_construct(void *data, const video_info_t *info, const input_driv
 
 static const gfx_ctx_driver_t *d3d_get_context(void *data)
 {
-   d3d_video_t *d3d = (d3d_video_t*)data;
+   // TODO: GL core contexts through ANGLE?
    enum gfx_ctx_api api;
    unsigned major, minor;
 #if defined(_XBOX1)
@@ -1213,7 +1226,7 @@ static const gfx_ctx_driver_t *d3d_get_context(void *data)
    major = 9;
 #endif
    minor = 0;
-   return gfx_ctx_init_first(d3d, api, major, minor, false);
+   return gfx_ctx_init_first(driver.video_data, api, major, minor, false);
 }
 
 static void *d3d_init(const video_info_t *info, const input_driver_t **input, void **input_data)

@@ -535,8 +535,11 @@ static void d3d_overlay_render(void *data, overlay_t *overlay)
 #endif
             0,
             D3DPOOL_MANAGED,
-            &overlay->vert_buf,
-            NULL);
+            &overlay->vert_buf
+#ifndef _XBOX1
+            ,NULL
+#endif
+            );
    }
 
    for (unsigned i = 0; i < 4; i++)
@@ -584,6 +587,7 @@ static void d3d_overlay_render(void *data, overlay_t *overlay)
    d3d->dev->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
    d3d->dev->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
 
+#ifndef _XBOX1
    // set vertex decl for overlay
    D3DVERTEXELEMENT vElems[4] = {
       {0, 0,  D3DDECLTYPE_FLOAT3, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_POSITION, 0},
@@ -595,6 +599,7 @@ static void d3d_overlay_render(void *data, overlay_t *overlay)
    d3d->dev->CreateVertexDeclaration(vElems, &vertex_decl);
    d3d->dev->SetVertexDeclaration(vertex_decl);
    vertex_decl->Release();
+#endif
 
    d3d->dev->SetStreamSource(0, overlay->vert_buf, 0, sizeof(overlay_vertex));
 
@@ -790,12 +795,12 @@ static bool d3d_frame(void *data, const void *frame,
    }
 #endif
 
-   RARCH_PERFORMANCE_STOP(d3d_frame);
-
 #ifdef HAVE_MENU
    if (g_extern.lifecycle_state & (1ULL << MODE_MENU) && driver.menu_ctx && driver.menu_ctx->frame)
       driver.menu_ctx->frame();
 #endif
+
+   RARCH_PERFORMANCE_STOP(d3d_frame);
 
    if (d3d && d3d->ctx_driver && d3d->ctx_driver->update_window_title)
       d3d->ctx_driver->update_window_title(d3d);
