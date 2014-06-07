@@ -4373,11 +4373,7 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
          if (action == RGUI_ACTION_LEFT)
          {
             if (rgui_current_gx_resolution > 0)
-            {
                rgui_current_gx_resolution--;
-               if (driver.video_data)
-                  gx_set_video_mode(driver.video_data, rgui_gx_resolutions[rgui_current_gx_resolution][0], rgui_gx_resolutions[rgui_current_gx_resolution][1]);
-            }
          }
          else if (action == RGUI_ACTION_RIGHT)
          {
@@ -4390,10 +4386,13 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
 #endif
 
                rgui_current_gx_resolution++;
-               if (driver.video_data)
-                  gx_set_video_mode(driver.video_data, rgui_gx_resolutions[rgui_current_gx_resolution][0],
-                        rgui_gx_resolutions[rgui_current_gx_resolution][1]);
             }
+         }
+         else if (action == RGUI_ACTION_OK)
+         {
+            if (driver.video_data)
+               gx_set_video_mode(driver.video_data, rgui_gx_resolutions[rgui_current_gx_resolution][0],
+                     rgui_gx_resolutions[rgui_current_gx_resolution][1]);
          }
          break;
 #elif defined(__CELLOS_LV2__)
