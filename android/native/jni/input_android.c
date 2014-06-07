@@ -59,14 +59,17 @@ enum
    AXIS_BRAKE = 23,
 };
 
+#define MAX_AXIS 10
+
 typedef struct android_input
 {
    jmethodID onBackPressed;
    unsigned pads_connected;
    int state_device_ids[MAX_PADS];
-   uint64_t pad_state[MAX_PADS];
+   uint8_t pad_state[MAX_PADS][(LAST_KEYCODE + 7) / 8];
+   
    uint64_t keycode_lut[LAST_KEYCODE];
-   int16_t analog_state[MAX_PADS][2][2];
+   int16_t analog_state[MAX_PADS][MAX_AXIS];
    sensor_t accelerometer_state;
    unsigned dpad_emulation[MAX_PLAYERS];
    struct input_pointer pointer[MAX_TOUCH];
@@ -77,7 +80,7 @@ typedef struct android_input
 
 extern const rarch_joypad_driver_t android_joypad;
 
-void (*engine_handle_dpad)(void *data, AInputEvent*, size_t, int, char*, size_t, int, bool, unsigned);
+void (*engine_handle_dpad)(void *data, AInputEvent*, int, char*, size_t, int, bool, unsigned);
 static bool android_input_set_sensor_state(void *data, unsigned port, enum retro_sensor_action action, unsigned event_rate);
 
 extern float AMotionEvent_getAxisValue(const AInputEvent* motion_event,
@@ -87,28 +90,34 @@ static typeof(AMotionEvent_getAxisValue) *p_AMotionEvent_getAxisValue;
 
 #define AMotionEvent_getAxisValue (*p_AMotionEvent_getAxisValue)
 
+static inline bool get_bit(const uint8_t *buf, unsigned bit)
+{
+   return buf[bit >> 3] & (1 << (bit & 7));
+}
+
+static inline void clear_bit(uint8_t *buf, unsigned bit)
+{
+   buf[bit >> 3] &= ~(1 << (bit & 7));
+}
+
+static inline void set_bit(uint8_t *buf, unsigned bit)
+{
+   buf[bit >> 3] |= 1 << (bit & 7);
+}
+
 static void engine_handle_dpad_default(void *data, AInputEvent *event,
-      size_t motion_pointer, int port, char *msg, size_t msg_sizeof,
+      int port, char *msg, size_t msg_sizeof,
       int source, bool debug_enable, unsigned emulation)
 {
+   size_t motion_pointer = AMotionEvent_getAction(event) >> AMOTION_EVENT_ACTION_POINTER_INDEX_SHIFT;
    android_input_t *android = (android_input_t*)data;
-   uint64_t *state_cur = &android->pad_state[port];
    float dzone_min = -g_settings.input.axis_threshold;
    float dzone_max = g_settings.input.axis_threshold;
    float x = AMotionEvent_getX(event, motion_pointer);
    float y = AMotionEvent_getY(event, motion_pointer);
 
-   *state_cur &= ~((1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT) | 
-         (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT) | (1ULL << RETRO_DEVICE_ID_JOYPAD_UP) |
-         (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN));
-
-   if (emulation == ANALOG_DPAD_LSTICK)
-   {
-      *state_cur |= PRESSED_LEFT(x, y)  ? (1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT)  : 0;
-      *state_cur |= PRESSED_RIGHT(x, y) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT) : 0;
-      *state_cur |= PRESSED_UP(x, y)    ? (1ULL << RETRO_DEVICE_ID_JOYPAD_UP)    : 0;
-      *state_cur |= PRESSED_DOWN(x, y)  ? (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN)  : 0;
-   }
+   android->analog_state[port][0] = (int16_t)(x * 32767.0f);
+   android->analog_state[port][1] = (int16_t)(y * 32767.0f);
 
    if (debug_enable)
       snprintf(msg, msg_sizeof, "Pad %d : x = %.2f, y = %.2f, src %d.\n",
@@ -116,13 +125,11 @@ static void engine_handle_dpad_default(void *data, AInputEvent *event,
 }
 
 static void engine_handle_dpad_getaxisvalue(void *data, AInputEvent *event,
-      size_t motion_pointer, int port, char *msg, size_t msg_sizeof, int source,
+      int port, char *msg, size_t msg_sizeof, int source,
       bool debug_enable, unsigned emulation)
 {
+   size_t motion_pointer = AMotionEvent_getAction(event) >> AMOTION_EVENT_ACTION_POINTER_INDEX_SHIFT;
    android_input_t *android = (android_input_t*)data;
-   uint64_t *state_cur = &android->pad_state[port];
-   float dzone_min = -g_settings.input.axis_threshold;
-   float dzone_max = g_settings.input.axis_threshold;
    float x = AMotionEvent_getAxisValue(event, AXIS_X, motion_pointer);
    float y = AMotionEvent_getAxisValue(event, AXIS_Y, motion_pointer);
    float z = AMotionEvent_getAxisValue(event, AXIS_Z, motion_pointer);
@@ -131,46 +138,20 @@ static void engine_handle_dpad_getaxisvalue(void *data, AInputEvent *event,
    float haty = AMotionEvent_getAxisValue(event, AXIS_HAT_Y, motion_pointer);
    float ltrig = AMotionEvent_getAxisValue(event, AXIS_LTRIGGER, motion_pointer);
    float rtrig = AMotionEvent_getAxisValue(event, AXIS_RTRIGGER, motion_pointer);
-   
-   /* On some devices, the left and right triggers send AXIS_BRAKE / AXIS_GAS events, use those if AXIS_LTRIGGER / AXIS_RTRIGGER return zero */
-   if (ltrig == 0.0f)
-	   ltrig = AMotionEvent_getAxisValue(event, AXIS_BRAKE, motion_pointer);
-   if (rtrig == 0.0f)
-	   rtrig = AMotionEvent_getAxisValue(event, AXIS_GAS, motion_pointer);
+   float brake = AMotionEvent_getAxisValue(event, AXIS_BRAKE, motion_pointer);
+   float gas = AMotionEvent_getAxisValue(event, AXIS_GAS, motion_pointer);
 
-   *state_cur &= ~((1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT) | 
-         (1ULL << RETRO_DEVICE_ID_JOYPAD_L2) | (1ULL << RETRO_DEVICE_ID_JOYPAD_R2) |
-         (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT) | (1ULL << RETRO_DEVICE_ID_JOYPAD_UP) |
-         (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN));
-
-   /* On some devices the dpad sends AXIS_HAT_X / AXIS_HAT_Y events, use those first if the returned values are nonzero */
-   if (fabsf(hatx) > 0.0001f || fabsf(haty) > 0.0001f)
-   {
-      *state_cur |= PRESSED_LEFT(hatx, haty)  ? (1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT)  : 0;
-      *state_cur |= PRESSED_RIGHT(hatx, haty) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT) : 0;
-      *state_cur |= PRESSED_UP(hatx, haty)    ? (1ULL << RETRO_DEVICE_ID_JOYPAD_UP)    : 0;
-      *state_cur |= PRESSED_DOWN(hatx, haty)  ? (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN)  : 0;
-   }
-   else if (emulation == ANALOG_DPAD_LSTICK)
-   {
-      *state_cur |= PRESSED_LEFT(x, y)  ? (1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT)  : 0;
-      *state_cur |= PRESSED_RIGHT(x, y) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT) : 0;
-      *state_cur |= PRESSED_UP(x, y)    ? (1ULL << RETRO_DEVICE_ID_JOYPAD_UP)    : 0;
-      *state_cur |= PRESSED_DOWN(x, y)  ? (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN)  : 0;
-   }
-
-   if (ltrig > 0.5f)
-      *state_cur |= 1ULL << RETRO_DEVICE_ID_JOYPAD_L2;
-   if (rtrig > 0.5f)
-      *state_cur |= 1ULL << RETRO_DEVICE_ID_JOYPAD_R2;
-
-   if (emulation == ANALOG_DPAD_DUALANALOG)
-   {
-      android->analog_state[port][0][0] = x * 0x7fff;
-      android->analog_state[port][0][1] = y * 0x7fff;
-      android->analog_state[port][1][0] = z * 0x7fff;
-      android->analog_state[port][1][1] = rz * 0x7fff;
-   }
+   // XXX: this could be a loop instead, but do we really want to loop through every axis?
+   android->analog_state[port][0] = (int16_t)(x * 32767.0f);
+   android->analog_state[port][1] = (int16_t)(y * 32767.0f);
+   android->analog_state[port][2] = (int16_t)(z * 32767.0f);
+   android->analog_state[port][3] = (int16_t)(rz * 32767.0f);
+   android->analog_state[port][4] = (int16_t)(hatx * 32767.0f);
+   android->analog_state[port][5] = (int16_t)(haty * 32767.0f);
+   android->analog_state[port][6] = (int16_t)(ltrig * 32767.0f);
+   android->analog_state[port][7] = (int16_t)(rtrig * 32767.0f);
+   android->analog_state[port][8] = (int16_t)(brake * 32767.0f);
+   android->analog_state[port][9] = (int16_t)(gas * 32767.0f);
 
    if (debug_enable)
       snprintf(msg, msg_sizeof, "Pad %d : x %.2f, y %.2f, z %.2f, rz %.2f, src %d.\n",
@@ -193,6 +174,7 @@ static void *android_input_init(void)
    android->pads_connected = 0;
 
    // TODO: rewrite code to not change input binds
+   /*
    if (!android_input_use_keycode_lut)
    {
       for (j = 0; j < LAST_KEYCODE; j++)
@@ -246,6 +228,7 @@ static void *android_input_init(void)
 
       android->dpad_emulation[i] = ANALOG_DPAD_DUALANALOG;
    }
+   */
 
    for (i = 0; i < MAX_PLAYERS; i++)
       strlcpy(g_settings.input.device_names[i], "Custom", sizeof(g_settings.input.device_names[i]));
@@ -1734,18 +1717,18 @@ static void android_input_set_keybinds(void *data, unsigned device,
 }
 
 static int android_input_poll_event_type_motion(android_input_t *android, AInputEvent *event,
-      size_t motion_pointer, float *x, float *y, int port, int source)
+      float *x, float *y, int port, int source)
 {
-   int action = AMotionEvent_getAction(event);
-   action &= AMOTION_EVENT_ACTION_MASK;
-
    if (source & ~(AINPUT_SOURCE_TOUCHSCREEN | AINPUT_SOURCE_MOUSE))
    {
-      if (android->dpad_emulation[port] != ANALOG_DPAD_NONE)
+      //if (android->dpad_emulation[port] != ANALOG_DPAD_NONE)
          return 1;
    }
    else
    {
+      int getaction = AMotionEvent_getAction(event);
+      int action = getaction & AMOTION_EVENT_ACTION_MASK;
+      size_t motion_pointer = getaction >> AMOTION_EVENT_ACTION_POINTER_INDEX_SHIFT;
       bool keyup = (action == AMOTION_EVENT_ACTION_UP ||
             action == AMOTION_EVENT_ACTION_CANCEL || action == AMOTION_EVENT_ACTION_POINTER_UP) ||
          (source == AINPUT_SOURCE_MOUSE && action != AMOTION_EVENT_ACTION_DOWN);
@@ -1778,78 +1761,19 @@ static int android_input_poll_event_type_motion(android_input_t *android, AInput
    return 0;
 }
 
-static void android_input_poll_keycode_back(android_input_t *android, struct android_app *android_app,
-      AInputEvent *event, int port, int type_event, int *handled)
-{
-   uint8_t unpacked = (android->keycode_lut[AKEYCODE_BACK] >> ((port+1) << 3)) - 1;
-   uint64_t input_state = (1ULL << unpacked);
-
-   (void)handled;
-
-   if (type_event == AINPUT_EVENT_TYPE_KEY && input_state < (1ULL << RARCH_FIRST_META_KEY)
-         && input_state > 0)
-   {
-   }
-   else if (g_settings.input.back_behavior == BACK_BUTTON_QUIT)
-   {
-      g_extern.system.shutdown = true;
-   }
-   else if (g_settings.input.back_behavior == BACK_BUTTON_GUI_TOGGLE)
-   {
-      int action = AKeyEvent_getAction(event);
-      if (action == AKEY_EVENT_ACTION_DOWN)
-         g_extern.lifecycle_state |= (1ULL << RARCH_MENU_TOGGLE);
-      else if (action == AKEY_EVENT_ACTION_UP)
-         g_extern.lifecycle_state &= ~(1ULL << RARCH_MENU_TOGGLE);
-   }
-#if 0
-   else if (android->onBackPressed && g_settings.input.back_behavior == BACK_BUTTON_MENU_TOGGLE)
-   {
-      RARCH_LOG("Invoke onBackPressed through JNI.\n");
-      JNIEnv *env = jni_thread_getenv();
-      if (env)
-      {
-         CALL_VOID_METHOD(env, android_app->activity->clazz, android->onBackPressed);
-      }
-   }
-#endif
-}
-
 static void android_input_poll_event_type_key(android_input_t *android, struct android_app *android_app,
       AInputEvent *event, int port, int keycode, int source, int type_event, int *handled, int lifecycle_mask)
 {
-   if (keycode == AKEYCODE_BACK)
-   {
-      android_input_poll_keycode_back(android, android_app, event, port, type_event, handled);
-      return;
-   }
-
-   /* Hack - we have to decrease the unpacked value by 1
-    * because we 'added' 1 to each entry in the LUT -
-    * RETRO_DEVICE_ID_JOYPAD_B is 0
-    */
-   uint8_t unpacked = (android->keycode_lut[keycode] >> ((port+1) << 3)) - 1;
-   uint64_t input_state = (1ULL << unpacked);
    int action  = AKeyEvent_getAction(event);
-   uint64_t *key = NULL;
 
+   // some controllers send both the up and down events at once when the button is released for "special" buttons, like menu buttons
+   // work around that by only using down events for meta keys (which get cleared every poll anyway)
+   if (action == AKEY_EVENT_ACTION_UP)// && !(input_state & lifecycle_mask))
+      clear_bit(android->pad_state[port], keycode);
+   else if (action == AKEY_EVENT_ACTION_DOWN)
+      set_bit(android->pad_state[port], keycode);
 
-   if (input_state < (1ULL << RARCH_FIRST_META_KEY))
-      key = (uint64_t*)&android->pad_state[port];
-   else if (input_state/* && action == AKEY_EVENT_ACTION_DOWN*/)
-      key = (uint64_t*)&g_extern.lifecycle_state;
-
-   if (key)
-   {
-      // some controllers send both the up and down events at once when the button is released for "special" buttons, like menu buttons
-      // work around that by only using down events for meta keys (which get cleared every poll anyway)
-      if (action == AKEY_EVENT_ACTION_UP && !(input_state & lifecycle_mask))
-         *key &= ~(input_state);
-      else if (action == AKEY_EVENT_ACTION_DOWN)
-         *key |= input_state;
-   }
-
-   if ((keycode == AKEYCODE_VOLUME_UP || keycode == AKEYCODE_VOLUME_DOWN) && android->keycode_lut[keycode] == 0)
+   if ((keycode == AKEYCODE_VOLUME_UP || keycode == AKEYCODE_VOLUME_DOWN))// && android->keycode_lut[keycode] == 0)
       *handled = 0;
 }
 
@@ -1862,7 +1786,7 @@ static void android_input_poll(void *data)
    uint64_t lifecycle_mask = (1ULL << RARCH_RESET) | (1ULL << RARCH_REWIND) | (1ULL << RARCH_FAST_FORWARD_KEY) | (1ULL << RARCH_FAST_FORWARD_HOLD_KEY) | (1ULL << RARCH_MUTE) | (1ULL << RARCH_SAVE_STATE_KEY) | (1ULL << RARCH_LOAD_STATE_KEY) | (1ULL << RARCH_STATE_SLOT_PLUS) | (1ULL << RARCH_STATE_SLOT_MINUS) | (1ULL << RARCH_MENU_TOGGLE);
    struct android_app *android_app = (struct android_app*)g_android;
    android_input_t *android = (android_input_t*)data;
-   g_extern.lifecycle_state &= ~lifecycle_mask;
+   //g_extern.lifecycle_state &= ~lifecycle_mask;
 
    while ((ident = ALooper_pollAll((input_key_pressed_func(RARCH_PAUSE_TOGGLE)) ? -1 : 0,
                NULL, NULL, NULL)) >= 0)
@@ -1880,7 +1804,6 @@ static void android_input_poll(void *data)
             {
                bool long_msg_enable = false;
                int32_t handled = 1;
-               int action = 0;
                char msg[128];
                int source, id, keycode, type_event, port;
                int predispatched;
@@ -1895,7 +1818,6 @@ static void android_input_poll(void *data)
                id = AInputEvent_getDeviceId(event);
                if (id == zeus_second_id)
                   id = zeus_id;
-               keycode = AKeyEvent_getKeyCode(event);
 
                type_event = AInputEvent_getType(event);
                port = -1;
@@ -1940,10 +1862,9 @@ static void android_input_poll(void *data)
                {
                   float x = 0.0f;
                   float y = 0.0f;
-                  size_t motion_pointer = action >> AMOTION_EVENT_ACTION_POINTER_INDEX_SHIFT;
 
-                  if (android_input_poll_event_type_motion(android, event, motion_pointer, &x, &y, port, source))
-                     engine_handle_dpad(android, event, motion_pointer, port, msg, sizeof(msg), source, debug_enable,
+                  if (android_input_poll_event_type_motion(android, event, &x, &y, port, source))
+                     engine_handle_dpad(android, event, port, msg, sizeof(msg), source, debug_enable,
                            android->dpad_emulation[port]);
                   else
                   {
@@ -1953,10 +1874,11 @@ static void android_input_poll(void *data)
                }
                else if (type_event == AINPUT_EVENT_TYPE_KEY)
                {
+                  keycode = AKeyEvent_getKeyCode(event);
                   android_input_poll_event_type_key(android, android_app, event, port, keycode, source, type_event, &handled,
                         lifecycle_mask);
                   if (debug_enable)
-                     snprintf(msg, sizeof(msg), "Pad %d : %d, ac = %d, src = %d.\n", port, keycode, action, source);
+                     snprintf(msg, sizeof(msg), "Pad %d : %d, src = %d.\n", port, keycode, source);
                }
 
                if (msg[0] != 0)
@@ -2001,13 +1923,13 @@ static int16_t android_input_state(void *data, const struct retro_keybind **bind
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
-#if 0
+#if 1
          return input_joypad_pressed(&android_joypad, port, binds[port], id);
 #else
          return ((android->pad_state[port] & binds[port][id].joykey) && (port < android->pads_connected));
 #endif
       case RETRO_DEVICE_ANALOG:
-#if 0
+#if 1
          return input_joypad_analog(&android_joypad, port, index, id, binds[port]);
 #else
          if (port >= android->pads_connected)
@@ -2067,7 +1989,9 @@ static void android_input_free_input(void *data)
    if (!android)
       return;
 
-   ASensorManager_destroyEventQueue(android->sensorManager, android->sensorEventQueue);
+   if (android->sensorManager)
+      ASensorManager_destroyEventQueue(android->sensorManager, android->sensorEventQueue);
+
    free(data);
 }
 
@@ -2190,10 +2114,10 @@ static bool android_joypad_button(unsigned port_num, uint16_t joykey)
 {
    android_input_t *android = (android_input_t*)driver.input_data;
 
-   if (!android || port_num >= MAX_PADS)
+   if (!android || port_num >= MAX_PADS || joykey >= LAST_KEYCODE)
       return false;
 
-   return android->pad_state[port_num] & (1ULL << joykey);
+   return get_bit(android->pad_state[port_num], joykey);
 }
 
 static int16_t android_joypad_axis(unsigned port_num, uint32_t joyaxis)
@@ -2208,24 +2132,18 @@ static int16_t android_joypad_axis(unsigned port_num, uint32_t joyaxis)
    bool is_neg = false;
    bool is_pos = false;
 
-   if (AXIS_NEG_GET(joyaxis) < 4)
+   if (AXIS_NEG_GET(joyaxis) < MAX_AXIS)
    {
       axis = AXIS_NEG_GET(joyaxis);
       is_neg = true;
    }
-   else if (AXIS_POS_GET(joyaxis) < 4)
+   else if (AXIS_POS_GET(joyaxis) < MAX_AXIS)
    {
       axis = AXIS_POS_GET(joyaxis);
       is_pos = true;
    }
 
-   switch (axis)
-   {
-      case 0: val = android->analog_state[port_num][0][0]; break;
-      case 1: val = android->analog_state[port_num][0][1]; break;
-      case 2: val = android->analog_state[port_num][1][0]; break;
-      case 3: val = android->analog_state[port_num][1][1]; break;
-   }
+   val = android->analog_state[port_num][axis];
 
    if (is_neg && val > 0)
       val = 0;
@@ -2242,7 +2160,7 @@ static void android_joypad_poll(void)
 static bool android_joypad_query_pad(unsigned pad)
 {
    android_input_t *android = (android_input_t*)driver.input_data;
-   return (android && pad < MAX_PLAYERS && android->pad_state[pad]);
+   return (pad < MAX_PLAYERS && pad < android->pads_connected);
 }
 
 static const char *android_joypad_name(unsigned pad)

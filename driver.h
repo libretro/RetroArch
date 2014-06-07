@@ -442,7 +442,12 @@ typedef struct menu_ctx_driver
    const char *ident;
 } menu_ctx_driver_t;
 
+#ifdef ANDROID
+#define RGUI_MAX_BUTTONS 219
+#else
 #define RGUI_MAX_BUTTONS 32
+#endif
+
 #define RGUI_MAX_AXES 32
 #define RGUI_MAX_HATS 4
 
