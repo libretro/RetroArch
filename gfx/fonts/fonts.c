@@ -36,8 +36,8 @@ bool font_renderer_create_default(const font_renderer_driver_t **driver, void **
    unsigned i;
    for (i = 0; font_backends[i]; i++)
    {
-      const char *path = NULL;
-      if (!font_path)
+      const char *path = font_path;
+      if (!path)
          path = font_backends[i]->get_default_font();
       if (!path)
          continue;

@@ -123,7 +123,7 @@ static void render_message(gl_raster_t *font, const char *msg, GLfloat scale, co
    if (gl->shader && gl->shader->use)
       gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
 
-   gl_set_viewport(gl, gl->win_width, gl->win_height, false, false);
+   gl_set_viewport(gl, gl->win_width, gl->win_height, true, false);
 
    glEnable(GL_BLEND);
    glBindTexture(GL_TEXTURE_2D, font->tex);
@@ -206,6 +206,7 @@ static void render_message(gl_raster_t *font, const char *msg, GLfloat scale, co
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
 
    glDisable(GL_BLEND);
+   gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
 }
 
 static void gl_render_msg(void *data, const char *msg, const struct font_params *params)
