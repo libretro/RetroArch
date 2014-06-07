@@ -109,15 +109,7 @@ static void gfx_ctx_d3d_swap_buffers(void *data)
    d3d_video_t *d3d = (d3d_video_t*)data;
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
 
-#ifdef _XBOX
-   RD3DDevice_Present(d3dr);
-#else
-   if (d3dr->Present(NULL, NULL, NULL, NULL) != D3D_OK)
-   {
-      d3d->needs_restore = true;
-      RARCH_ERR("[D3D]: Present() failed.\n");
-   }
-#endif
+   D3DDevice_Presents(d3d, d3dr);
 }
 
 static void gfx_ctx_d3d_update_title(void *data)

@@ -899,18 +899,10 @@ static bool d3d_frame(void *data, const void *frame,
    // Insert black frame first, so we can screenshot, etc.
    if (g_settings.video.black_frame_insertion)
    {
-#ifdef _XBOX
-      d3dr->Present(NULL, NULL, NULL, NULL);
-      d3dr->Clear(0, 0, D3DCLEAR_TARGET, 0, 1, 0);
-#else
-      if (d3dr->Present(NULL, NULL, NULL, NULL) != D3D_OK)
-      {
-         RARCH_ERR("[D3D]: Present() failed.\n");
-         d3d->needs_restore = true;
+      D3DDevice_Presents(d3d, d3dr);
+      if (d3d->needs_restore)
          return true;
-      }
       d3dr->Clear(0, 0, D3DCLEAR_TARGET, 0, 1, 0);
-#endif
    }
 
 #ifdef _XBOX

@@ -70,6 +70,12 @@ class RenderChain;
       memset(lockedrect.pBits, level, pass.info.tex_h * lockedrect.Pitch); \
       tex->UnlockRect(0); \
    }
+#define D3DDevice_Presents(d3d, dev) \
+      if (dev->Present(NULL, NULL, NULL, NULL) != D3D_OK) \
+      { \
+         RARCH_ERR("[D3D]: Present() failed.\n"); \
+         d3d->needs_restore = true; \
+      }
 #endif
 
 
