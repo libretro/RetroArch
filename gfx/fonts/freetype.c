@@ -86,12 +86,8 @@ static bool ft_renderer_create_atlas(ft_renderer_t *handle)
       FT_Render_Glyph(handle->face->glyph, FT_RENDER_MODE_NORMAL);
       FT_GlyphSlot slot = handle->face->glyph;
 
+      // Some glyphs can be blank.
       buffer[i] = (uint8_t*)calloc(slot->bitmap.rows * slot->bitmap.pitch, 1);
-      if (!buffer[i])
-      {
-         ret = false;
-         goto end;
-      }
 
       glyph->width = slot->bitmap.width;
       glyph->height = slot->bitmap.rows;
@@ -102,7 +98,8 @@ static bool ft_renderer_create_atlas(ft_renderer_t *handle)
       glyph->draw_offset_x = slot->bitmap_left;
       glyph->draw_offset_y = -slot->bitmap_top;
 
-      memcpy(buffer[i], slot->bitmap.buffer, slot->bitmap.rows * pitches[i]);
+      if (buffer[i])
+         memcpy(buffer[i], slot->bitmap.buffer, slot->bitmap.rows * pitches[i]);
       max_width = max(max_width, slot->bitmap.width);
       max_height = max(max_height, slot->bitmap.rows);
    }
@@ -121,7 +118,6 @@ static bool ft_renderer_create_atlas(ft_renderer_t *handle)
    for (i = 0; i < ATLAS_SIZE; i++)
    {
       unsigned r, c;
-      const uint8_t *src = buffer[i];
 
       unsigned offset_x = (i % ATLAS_COLS) * max_width;
       unsigned offset_y = (i / ATLAS_COLS) * max_height;
@@ -132,9 +128,13 @@ static bool ft_renderer_create_atlas(ft_renderer_t *handle)
       uint8_t *dst = handle->atlas.buffer;
       dst += offset_x + offset_y * handle->atlas.width;
 
-      for (r = 0; r < handle->glyphs[i].height; r++, dst += handle->atlas.width, src += pitches[i])
-         for (c = 0; c < handle->glyphs[i].width; c++)
-            dst[c] = src[c];
+      if (buffer[i])
+      {
+         const uint8_t *src = buffer[i];
+         for (r = 0; r < handle->glyphs[i].height; r++, dst += handle->atlas.width, src += pitches[i])
+            for (c = 0; c < handle->glyphs[i].width; c++)
+               dst[c] = src[c];
+      }
    }
 
 end:

@@ -19,6 +19,7 @@ OBJ = frontend/frontend.o \
 		message_queue.o \
 		rewind.o \
 		gfx/gfx_common.o \
+		gfx/fonts/bitmapfont.o \
 		input/input_common.o \
 		input/keyboard_line.o \
 		input/overlay.o \
@@ -44,7 +45,6 @@ OBJ = frontend/frontend.o \
 		audio/cc_resampler.o \
 		performance.o
 
-#		gfx/fonts/bitmapfont.o \
 
 JOYCONFIG_OBJ = tools/retroarch-joyconfig.o \
 	conf/config_file.o \
