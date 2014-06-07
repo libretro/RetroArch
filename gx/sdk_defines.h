@@ -3,7 +3,6 @@
 
 #ifdef GEKKO
 
-#ifndef OSInitMutex
 #define OSThread lwp_t
 #define OSCond lwpq_t
 #define OSThreadQueue lwpq_t
@@ -22,7 +21,15 @@
 #define OSJoinThread(thread, val) LWP_JoinThread(thread, val)
 
 #define OSCreateThread(thread, func, intarg, ptrarg, stackbase, stacksize, priority, attrs) LWP_CreateThread(thread, func, ptrarg, stackbase, stacksize, priority)
-#endif
+
+#define VISetPostRetraceCallback(cb) VIDEO_SetPostRetraceCallback(cb)
+#define VISetBlack(black) VIDEO_SetBlack(black)
+#define VIFlush() VIDEO_Flush()
+#define VISetNextFrameBuffer(fb) VIDEO_SetNextFramebuffer(fb)
+#define VIWaitForRetrace() VIDEO_WaitVSync()
+#define VIConfigure(rm) VIDEO_Configure(rm)
+#define VIInit() VIDEO_Init()
+#define VIPadFrameBufferWidth(width) VIDEO_PadFramebufferWidth(width)
 
 #endif
 

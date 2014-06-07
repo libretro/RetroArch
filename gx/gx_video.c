@@ -121,8 +121,8 @@ void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines)
    (void)level;
 
    _CPU_ISR_Disable(level);
-   VIDEO_SetBlack(true);
-   VIDEO_Flush();
+   VISetBlack(true);
+   VIFlush();
    viHeightMultiplier = 1;
    viWidth = 640;
 #if defined(HW_RVL)
@@ -242,19 +242,19 @@ void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines)
    gx->double_strike = (modetype == VI_NON_INTERLACE);
    gx->should_resize = true;
 
-   VIDEO_Configure(&gx_mode);
+   VIConfigure(&gx_mode);
    VIDEO_ClearFrameBuffer(&gx_mode, g_framebuf[0], COLOR_BLACK);
    VIDEO_ClearFrameBuffer(&gx_mode, g_framebuf[1], COLOR_BLACK);
-   VIDEO_SetNextFramebuffer(g_framebuf[0]);
-   VIDEO_SetPostRetraceCallback(retrace_callback);
-   VIDEO_SetBlack(false);
-   VIDEO_Flush();
+   VISetNextFrameBuffer(g_framebuf[0]);
+   VISetPostRetraceCallback(retrace_callback);
+   VISetBlack(false);
+   VIFlush();
 
    GX_SetViewportJitter(0, 0, gx_mode.fbWidth, gx_mode.efbHeight, 0, 1, 1);
    GX_SetDispCopySrc(0, 0, gx_mode.fbWidth, gx_mode.efbHeight);
 
    f32 y_scale = GX_GetYScaleFactor(gx_mode.efbHeight, gx_mode.xfbHeight);
-   u16 xfbWidth = VIDEO_PadFramebufferWidth(gx_mode.fbWidth);
+   u16 xfbWidth = VIPadFrameBufferWidth(gx_mode.fbWidth);
    u16 xfbHeight = GX_SetDispCopyYScale(y_scale);
    (void)xfbHeight;
    GX_SetDispCopyDst(xfbWidth, xfbHeight);
@@ -498,7 +498,7 @@ static void *gx_init(const video_info_t *video,
    *input = gxinput ? &input_gx : NULL;
    *input_data = gxinput;
 
-   VIDEO_Init();
+   VIInit();
    GX_Init(gx_fifo, sizeof(gx_fifo));
    g_vsync = video->vsync;
 
@@ -995,8 +995,8 @@ static bool gx_frame(void *data, const void *frame,
 
    __GX_CopyDisp(__gx, g_framebuf[g_current_framebuf], clear_efb);
    __GX_Flush(__gx);
-   VIDEO_SetNextFramebuffer(g_framebuf[g_current_framebuf]);
-   VIDEO_Flush();
+   VISetNextFrameBuffer(g_framebuf[g_current_framebuf]);
+   VIFlush();
 
    g_extern.frame_count++;
 
@@ -1034,9 +1034,9 @@ static void gx_free(void *data)
    GX_DrawDone();
    GX_AbortFrame();
    GX_Flush();
-   VIDEO_SetBlack(true);
-   VIDEO_Flush();
-   VIDEO_WaitVSync();
+   VISetBlack(true);
+   VIFlush();
+   VIWaitForRetrace();
 
    free(data);
 }
