@@ -20,10 +20,11 @@
 #include <ogcsys.h>
 #include <gccore.h>
 #include <ogc/cond.h>
+#include "../gx/sdk_defines.h"
 
 #define STACKSIZE (8 * 1024)
 
-typedef lwp_t pthread_t;
+typedef OSThread pthread_t;
 typedef mutex_t pthread_mutex_t;
 typedef void* pthread_mutexattr_t;
 typedef int pthread_attr_t;
@@ -33,12 +34,12 @@ typedef cond_t pthread_condattr_t;
 static inline int pthread_create(pthread_t *thread, const pthread_attr_t *attr, void *(*start_routine)(void*), void *arg)
 {
    *thread = 0;
-   return LWP_CreateThread(thread, start_routine, arg, 0, STACKSIZE, 64);
+   return OSCreateThread(thread, start_routine, 0 /* unused */, arg, 0, STACKSIZE, 64, 0 /* unused */);
 }
 
 static inline int pthread_mutex_init(pthread_mutex_t *mutex, const pthread_mutexattr_t *attr)
 {
-   return LWP_MutexInit(mutex, 0);
+   return OSInitMutex(mutex);
 }
 
 static inline int pthread_mutex_destroy(pthread_mutex_t *mutex)
@@ -48,12 +49,12 @@ static inline int pthread_mutex_destroy(pthread_mutex_t *mutex)
 
 static inline int pthread_mutex_lock(pthread_mutex_t *mutex)
 {
-   return LWP_MutexLock(*mutex);
+   return OSLockMutex(*mutex);
 }
 
 static inline int pthread_mutex_unlock(pthread_mutex_t *mutex)
 {
-   return LWP_MutexUnlock(*mutex);
+   return OSUnlockMutex(*mutex);
 }
 
 static inline void pthread_exit(void *retval)
@@ -71,17 +72,17 @@ static inline int pthread_detach(pthread_t thread)
 
 static inline int pthread_join(pthread_t thread, void **retval)
 {
-   return LWP_JoinThread(thread, retval);
+   return OSJoinThread(thread, retval);
 }
 
 static inline int pthread_mutex_trylock(pthread_mutex_t *mutex)
 {
-   return LWP_MutexTryLock(*mutex);
+   return OSTryLockMutex(*mutex);
 }
 
 static inline int pthread_cond_wait(pthread_cond_t *cond, pthread_mutex_t *mutex)
 {
-   return LWP_CondWait(*cond, *mutex);
+   return OSWaitCond(*cond, *mutex);
 }
 
 static inline int pthread_cond_timedwait(pthread_cond_t *cond, pthread_mutex_t *mutex, const struct timespec *abstime)
@@ -91,7 +92,7 @@ static inline int pthread_cond_timedwait(pthread_cond_t *cond, pthread_mutex_t *
 
 static inline int pthread_cond_init(pthread_cond_t *cond, const pthread_condattr_t *attr)
 {
-   return LWP_CondInit(cond);
+   return OSInitCond(cond);
 }
 
 static inline int pthread_cond_signal(pthread_cond_t *cond)

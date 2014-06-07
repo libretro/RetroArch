@@ -34,6 +34,7 @@
 
 #include "ppc_asm.h"
 #include "gx_video_inl.h"
+#include "sdk_defines.h"
 
 #define SYSMEM1_SIZE 0x01800000
 
@@ -41,7 +42,7 @@ void *g_framebuf[2];
 unsigned g_current_framebuf;
 
 bool g_vsync;
-lwpq_t g_video_cond;
+OSCond g_video_cond;
 volatile bool g_draw_done;
 uint32_t g_orientation;
 
@@ -96,7 +97,7 @@ static void retrace_callback(u32 retrace_count)
 {
    (void)retrace_count;
    g_draw_done = true;
-   LWP_ThreadSignal(g_video_cond);
+   OSSignalCond(g_video_cond);
 }
 
 #ifdef HAVE_OVERLAY
@@ -341,7 +342,7 @@ static void setup_video_mode(void *data)
    g_current_framebuf = 0;
    g_draw_done = true;
    g_orientation = ORIENTATION_NORMAL;
-   LWP_InitQueue(&g_video_cond);
+   OSInitThreadQueue(&g_video_cond);
 
    VIDEO_GetPreferredMode(&gx_mode);
    gx_set_video_mode(data, 0, 0);
@@ -904,9 +905,7 @@ static bool gx_frame(void *data, const void *frame,
    }
 
    while (((g_vsync || gx->rgui_texture_enable)) && !g_draw_done)
-   {
-      LWP_ThreadSleep(g_video_cond);
-   }
+      OSSleepThread(g_video_cond);
 
    width = min(g_tex.width, width);
    height = min(g_tex.height, height);
