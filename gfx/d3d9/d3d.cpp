@@ -618,10 +618,10 @@ static void d3d_overlay_render(void *data, overlay_t *overlay)
 
    // render overlay
    d3d->dev->SetTexture(0, overlay->tex);
-   d3d->dev->SetSamplerState(0, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
-   d3d->dev->SetSamplerState(0, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
-   d3d->dev->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
-   d3d->dev->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
+   D3DDevice_SetSamplerState_AddressU(d3d->dev, 0, D3DTADDRESS_BORDER);
+   D3DDevice_SetSamplerState_AddressV(d3d->dev, 0, D3DTADDRESS_BORDER);
+   D3DDevice_SetSamplerState_MinFilter(d3d->dev, 0, D3DTEXF_LINEAR);
+   D3DDevice_SetSamplerState_MagFilter(d3d->dev, 0, D3DTEXF_LINEAR);
    if (SUCCEEDED(d3d->dev->BeginScene()))
    {
       d3d->dev->DrawPrimitive(D3DPT_TRIANGLESTRIP, 0, 2);

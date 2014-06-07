@@ -131,8 +131,8 @@ bool renderchain_set_pass_size(void *data, unsigned pass_index, unsigned width, 
          return false;
 
       d3dr->SetTexture(0, pass.tex);
-      d3dr->SetSamplerState(0, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
-      d3dr->SetSamplerState(0, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
+      D3DDevice_SetSamplerState_AddressU(d3dr, 0, D3DTADDRESS_BORDER);
+      D3DDevice_SetSamplerState_AddressV(d3dr, 0, D3DTADDRESS_BORDER);
       d3dr->SetTexture(0, NULL);
    }
 
@@ -169,8 +169,8 @@ bool renderchain_add_pass(void *data, const LinkInfo *info)
       return false;
 
    d3dr->SetTexture(0, pass.tex);
-   d3dr->SetSamplerState(0, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
-   d3dr->SetSamplerState(0, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
+   D3DDevice_SetSamplerState_AddressU(d3dr, 0, D3DTADDRESS_BORDER);
+   D3DDevice_SetSamplerState_AddressV(d3dr, 0, D3DTADDRESS_BORDER);
    d3dr->SetTexture(0, NULL);
 
    chain->passes.push_back(pass);
@@ -207,8 +207,8 @@ bool renderchain_add_lut(void *data, const std::string &id,
       return false;
 
    d3dr->SetTexture(0, lut);
-   d3dr->SetSamplerState(0, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
-   d3dr->SetSamplerState(0, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
+   D3DDevice_SetSamplerState_AddressU(d3dr, 0, D3DTADDRESS_BORDER);
+   D3DDevice_SetSamplerState_AddressV(d3dr, 0, D3DTADDRESS_BORDER);
    d3dr->SetTexture(0, NULL);
 
    lut_info info = { lut, id, smooth };
@@ -368,12 +368,10 @@ bool renderchain_create_first_pass(void *data, const LinkInfo *info, PixelFormat
       }
 
       d3dr->SetTexture(0, chain->prev.tex[i]);
-      d3dr->SetSamplerState(0, D3DSAMP_MINFILTER,
-            translate_filter(info->pass->filter));
-      d3dr->SetSamplerState(0, D3DSAMP_MAGFILTER,
-            translate_filter(info->pass->filter));
-      d3dr->SetSamplerState(0, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
-      d3dr->SetSamplerState(0, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
+      D3DDevice_SetSamplerState_MinFilter(d3dr, 0, translate_filter(info->pass->filter));
+      D3DDevice_SetSamplerState_MagFilter(d3dr, 0, translate_filter(info->pass->filter));
+      D3DDevice_SetSamplerState_AddressU(d3dr, 0, D3DTADDRESS_BORDER);
+      D3DDevice_SetSamplerState_AddressV(d3dr, 0, D3DTADDRESS_BORDER);
       d3dr->SetTexture(0, NULL);
    }
 
@@ -581,10 +579,8 @@ void renderchain_render_pass(void *data, Pass &pass, unsigned pass_index)
    else if(pass.tex)
 #endif
    d3dr->SetTexture(0, pass.tex);
-   d3dr->SetSamplerState(0, D3DSAMP_MINFILTER,
-         translate_filter(pass.info.pass->filter));
-   d3dr->SetSamplerState(0, D3DSAMP_MAGFILTER,
-         translate_filter(pass.info.pass->filter));
+   D3DDevice_SetSamplerState_MinFilter(d3dr, 0, translate_filter(pass.info.pass->filter));
+   D3DDevice_SetSamplerState_MagFilter(d3dr, 0, translate_filter(pass.info.pass->filter));
 
 #ifdef _XBOX1
    d3dr->SetVertexShader(D3DFVF_XYZ | D3DFVF_TEX1);
@@ -612,10 +608,8 @@ void renderchain_render_pass(void *data, Pass &pass, unsigned pass_index)
 
    // So we don't render with linear filter into render targets,
    // which apparently looked odd (too blurry).
-   d3dr->SetSamplerState(0, D3DSAMP_MINFILTER,
-         D3DTEXF_POINT);
-   d3dr->SetSamplerState(0, D3DSAMP_MAGFILTER,
-         D3DTEXF_POINT);
+   D3DDevice_SetSamplerState_MinFilter(d3dr, 0, D3DTEXF_POINT);
+   D3DDevice_SetSamplerState_MagFilter(d3dr, 0, D3DTEXF_POINT);
 
    renderchain_unbind_all(chain);
 }
@@ -669,10 +663,8 @@ void renderchain_unbind_all(void *data)
    // Render targets hate it when they have filters apparently.
    for (unsigned i = 0; i < chain->bound_tex.size(); i++)
    {
-      d3dr->SetSamplerState(chain->bound_tex[i], D3DSAMP_MAGFILTER,
-            D3DTEXF_POINT);
-      d3dr->SetSamplerState(chain->bound_tex[i], D3DSAMP_MINFILTER,
-            D3DTEXF_POINT);
+      D3DDevice_SetSamplerState_MinFilter(d3dr, chain->bound_tex[i], D3DTEXF_POINT);
+      D3DDevice_SetSamplerState_MagFilter(d3dr, chain->bound_tex[i], D3DTEXF_POINT);
       d3dr->SetTexture(chain->bound_tex[i], NULL);
    }
 

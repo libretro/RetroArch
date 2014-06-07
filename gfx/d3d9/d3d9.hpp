@@ -53,6 +53,14 @@
 
 class RenderChain;
 
+#ifndef _XBOX
+#define D3DDevice_SetSamplerState_AddressU(dev, sampler, type) dev->SetSamplerState(sampler, D3DSAMP_ADDRESSU, type)
+#define D3DDevice_SetSamplerState_AddressV(dev, sampler, type) dev->SetSamplerState(sampler, D3DSAMP_ADDRESSV, type)
+#define D3DDevice_SetSamplerState_MinFilter(dev, sampler, type) dev->SetSamplerState(sampler, D3DSAMP_MINFILTER, type)
+#define D3DDevice_SetSamplerState_MagFilter(dev, sampler, type) dev->SetSamplerState(sampler, D3DSAMP_MAGFILTER, type)
+#endif
+
+
 typedef struct
 {
    struct Coords

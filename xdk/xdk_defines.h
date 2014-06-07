@@ -49,10 +49,10 @@
 #define RD3DDevice_Clear(device, Count, pRects, Flags, Color, Z, Stencil) D3DDevice_Clear(Count, pRects, Flags, Color, Z, Stencil)
 #define RD3DDevice_SetViewport(device, viewport) D3DDevice_SetViewport(viewport)
 #define RD3DDevice_Present(device) D3DDevice_Swap(0)
-#define RD3DDevice_SetSamplerState_MinFilter(device, sampler, value) SetSamplerState_function(device, sampler, D3DTSS_MINFILTER, value)
-#define RD3DDevice_SetSamplerState_MagFilter(device, sampler, value) SetSamplerState_function(device, sampler, D3DTSS_MAGFILTER, value)
-#define RD3DDevice_SetSamplerState_AddressU(device, sampler, value) SetSamplerState_function(device, sampler, D3DTSS_ADDRESSU, value)
-#define RD3DDevice_SetSamplerState_AddressV(device, sampler, value) SetSamplerState_function(device, sampler, D3DTSS_ADDRESSV, value)
+#define D3DDevice_SetSamplerState_MinFilter(device, sampler, value) SetSamplerState_function(device, sampler, D3DTSS_MINFILTER, value)
+#define D3DDevice_SetSamplerState_MagFilter(device, sampler, value) SetSamplerState_function(device, sampler, D3DTSS_MAGFILTER, value)
+#define D3DDevice_SetSamplerState_AddressU(device, sampler, value) SetSamplerState_function(device, sampler, D3DTSS_ADDRESSU, value)
+#define D3DDevice_SetSamplerState_AddressV(device, sampler, value) SetSamplerState_function(device, sampler, D3DTSS_ADDRESSV, value)
 
 #define D3DLOCK_NOSYSLOCK (0)
 
@@ -91,10 +91,10 @@
 #define RD3DDevice_Clear(device, Count, pRects, Flags, Color, Z, Stencil) D3DDevice_Clear(device, Count, pRects, Flags, Color, Z, Stencil, false)
 #define RD3DDevice_SetViewport(device, viewport) D3DDevice_SetViewport(device, viewport)
 #define RD3DDevice_Present(device) D3DDevice_Present(device)
-#define RD3DDevice_SetSamplerState_MinFilter(device, sampler, value) D3DDevice_SetSamplerState_MinFilter(device, sampler, value)
-#define RD3DDevice_SetSamplerState_MagFilter(device, sampler, value) D3DDevice_SetSamplerState_MagFilter(device, sampler, value)
-#define RD3DDevice_SetSamplerState_AddressU(device, sampler, value) D3DDevice_SetSamplerState_AddressU_Inline(device, sampler, value)
-#define RD3DDevice_SetSamplerState_AddressV(device, sampler, value) D3DDevice_SetSamplerState_AddressV_Inline(device, sampler, value)
+#define D3DDevice_SetSamplerState_MinFilter(device, sampler, value) D3DDevice_SetSamplerState_MinFilter(device, sampler, value)
+#define D3DDevice_SetSamplerState_MagFilter(device, sampler, value) D3DDevice_SetSamplerState_MagFilter(device, sampler, value)
+#define D3DDevice_SetSamplerState_AddressU(device, sampler, value) D3DDevice_SetSamplerState_AddressU_Inline(device, sampler, value)
+#define D3DDevice_SetSamplerState_AddressV(device, sampler, value) D3DDevice_SetSamplerState_AddressV_Inline(device, sampler, value)
 
 #endif
 
