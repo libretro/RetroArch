@@ -342,6 +342,15 @@ typedef struct video_overlay_interface
 } video_overlay_interface_t;
 #endif
 
+struct font_params
+{
+   float x;
+   float y;
+   float alpha;
+   float scale;
+   uint32_t color;
+};
+
 // Optionally implemented interface to poke more deeply into video driver.
 typedef struct video_poke_interface
 {
@@ -357,7 +366,7 @@ typedef struct video_poke_interface
    void (*set_texture_frame)(void *data, const void *frame, bool rgb32, unsigned width, unsigned height, float alpha); // Update texture.
    void (*set_texture_enable)(void *data, bool enable, bool full_screen); // Enable/disable rendering.
 #endif
-   void (*set_osd_msg)(void *data, const char *msg, void *userdata);
+   void (*set_osd_msg)(void *data, const char *msg, const struct font_params *params);
 
    void (*show_mouse)(void *data, bool state);
    void (*grab_mouse_toggle)(void *data);

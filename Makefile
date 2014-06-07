@@ -38,12 +38,13 @@ OBJ = frontend/frontend.o \
 		gfx/scaler/scaler_filter.o \
 		gfx/image/image_rpng.o \
 		gfx/fonts/fonts.o \
-		gfx/fonts/bitmapfont.o \
 		audio/resampler.o \
 		audio/dsp_filter.o \
 		audio/sinc.o \
 		audio/cc_resampler.o \
 		performance.o
+
+#		gfx/fonts/bitmapfont.o \
 
 JOYCONFIG_OBJ = tools/retroarch-joyconfig.o \
 	conf/config_file.o \

@@ -611,7 +611,6 @@ const rarch_setting_t* setting_data_get_list(void)
          CONFIG_PATH(g_settings.video.font_path,            "video_font_path",            "Font Path",                  DEFAULT_ME_YO)       WITH_FLAGS(SD_FLAG_ALLOW_EMPTY)
          CONFIG_FLOAT(g_settings.video.font_size,           "video_font_size",            "OSD Font Size",              font_size)
          CONFIG_BOOL(g_settings.video.font_enable,          "video_font_enable",          "OSD Font Enable",            font_enable)
-         CONFIG_BOOL(g_settings.video.font_scale,           "video_font_scale",           "OSD Font Scale To Window",   font_scale)
          CONFIG_FLOAT(g_settings.video.msg_pos_x,           "video_message_pos_x",        "Message X Position",         message_pos_offset_x)
          CONFIG_FLOAT(g_settings.video.msg_pos_y,           "video_message_pos_y",        "Message Y Position",         message_pos_offset_y)
          /* message color */

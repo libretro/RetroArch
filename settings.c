@@ -292,7 +292,6 @@ void config_set_defaults(void)
 
    g_settings.video.font_enable = font_enable;
    g_settings.video.font_size = font_size;
-   g_settings.video.font_scale = font_scale;
    g_settings.video.msg_pos_x = message_pos_offset_x;
    g_settings.video.msg_pos_y = message_pos_offset_y;
    
@@ -839,7 +838,6 @@ bool config_load_file(const char *path, bool set_defaults)
    CONFIG_GET_PATH(video.font_path, "video_font_path");
    CONFIG_GET_FLOAT(video.font_size, "video_font_size");
    CONFIG_GET_BOOL(video.font_enable, "video_font_enable");
-   CONFIG_GET_BOOL(video.font_scale, "video_font_scale");
    CONFIG_GET_FLOAT(video.msg_pos_x, "video_message_pos_x");
    CONFIG_GET_FLOAT(video.msg_pos_y, "video_message_pos_y");
    CONFIG_GET_INT(video.rotation, "video_rotation");
@@ -1397,7 +1395,6 @@ bool config_save_file(const char *path)
    config_set_bool(conf, "location_allow", g_settings.location.allow);
 #endif
 
-   config_set_bool(conf,  "video_font_scale", g_settings.video.font_scale);
    config_set_float(conf, "video_font_size", g_settings.video.font_size);
    config_set_bool(conf,  "video_font_enable", g_settings.video.font_enable);
 

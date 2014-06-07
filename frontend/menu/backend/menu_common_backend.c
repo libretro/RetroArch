@@ -205,7 +205,6 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
       case RGUI_SETTINGS_FONT_OPTIONS:
          file_list_clear(rgui->selection_buf);
          file_list_push(rgui->selection_buf, "OSD Font Enable", RGUI_SETTINGS_FONT_ENABLE, 0);
-         file_list_push(rgui->selection_buf, "OSD Font Scale to Window", RGUI_SETTINGS_FONT_SCALE, 0);
          file_list_push(rgui->selection_buf, "OSD Font Size", RGUI_SETTINGS_FONT_SIZE, 0);
          break;
       case RGUI_SETTINGS_CORE_OPTIONS:
@@ -4944,12 +4943,6 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
          else if (action == RGUI_ACTION_START)
             g_settings.video.font_enable = true;
          break;
-      case RGUI_SETTINGS_FONT_SCALE:
-         if (action == RGUI_ACTION_OK || action == RGUI_ACTION_LEFT || action == RGUI_ACTION_RIGHT)
-            g_settings.video.font_scale = !g_settings.video.font_scale;
-         else if (action == RGUI_ACTION_START)
-            g_settings.video.font_scale = true;
-         break;
       case RGUI_SETTINGS_FONT_SIZE:
          if (action == RGUI_ACTION_LEFT)
             g_settings.video.font_size -= 1.0f;
@@ -5467,9 +5460,6 @@ static void menu_common_setting_set_label(char *type_str, size_t type_str_size, 
 #endif
          case RGUI_SETTINGS_FONT_ENABLE:
             snprintf(type_str, type_str_size, g_settings.video.font_enable ? "ON" : "OFF");
-            break;
-         case RGUI_SETTINGS_FONT_SCALE:
-            snprintf(type_str, type_str_size, g_settings.video.font_scale ? "ON" : "OFF");
             break;
          case RGUI_SETTINGS_FONT_SIZE:
             snprintf(type_str, type_str_size, "%.1f", g_settings.video.font_size);

@@ -25,24 +25,24 @@ static const font_renderer_driver_t *font_backends[] = {
    &ft_font_renderer,
 #endif
 #if !defined(DONT_HAVE_BITMAPFONTS)
-   &bitmap_font_renderer,
+//   &bitmap_font_renderer,
 #endif
    NULL
 };
 
-bool font_renderer_create_default(const font_renderer_driver_t **driver, void **handle)
+bool font_renderer_create_default(const font_renderer_driver_t **driver, void **handle,
+      const char *font_path, unsigned font_size)
 {
    unsigned i;
    for (i = 0; font_backends[i]; i++)
    {
-      const char *font_path = *g_settings.video.font_path ? g_settings.video.font_path : NULL;
+      const char *path = NULL;
       if (!font_path)
-         font_path = font_backends[i]->get_default_font();
-
-      if (!font_path)
+         path = font_backends[i]->get_default_font();
+      if (!path)
          continue;
 
-      *handle = font_backends[i]->init(font_path, g_settings.video.font_size);
+      *handle = font_backends[i]->init(path, font_size);
       if (*handle)
       {
          RARCH_LOG("Using font rendering backend: %s.\n", font_backends[i]->ident);

@@ -32,15 +32,11 @@
 #define DbgFontExit cellDbgFontExit
 #endif
 
-static bool gl_init_font(void *data, const char *font_path, float font_size,
+static void *gl_init_font(void *data, const char *font_path, float font_size,
       unsigned win_width, unsigned win_height)
 {
    (void)font_path;
    (void)font_size;
-
-   font_renderer_t *handle = (font_renderer_t*)calloc(1, sizeof(*handle));
-   if (!handle)
-      return NULL;
 
    DbgFontConfig cfg;
 #if defined(SN_TARGET_PSP2)
@@ -52,24 +48,22 @@ static bool gl_init_font(void *data, const char *font_path, float font_size,
 #endif
 
    DbgFontInit(&cfg);
-   free(handle);
 
-   return true;
+   // Doesn't need any state.
+   return (void*)-1;
 }
 
 static void gl_deinit_font(void *data)
 {
    (void)data;
-
    DbgFontExit();
 }
 
-static void gl_render_msg(void *data, const char *msg, void *parms)
+static void gl_render_msg(void *data, const char *msg, const struct font_params *params)
 {
    (void)data;
    float x, y, scale;
    unsigned color;
-   font_params_t *params = (font_params_t*)parms;
 
    if (params)
    {

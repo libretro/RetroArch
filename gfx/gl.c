@@ -1630,8 +1630,8 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
       gl_draw_texture(gl);
 #endif
 
-   if (msg && gl->font_ctx)
-      gl->font_ctx->render_msg(gl, msg, NULL);
+   if (msg && gl->font_driver && gl->font_handle)
+      gl->font_driver->render_msg(gl->font_handle, msg, NULL);
 
 #ifdef HAVE_OVERLAY
    if (gl->overlay_enable)
@@ -1750,8 +1750,8 @@ static void gl_free(void *data)
    }
 #endif
 
-   if (gl->font_ctx)
-      gl->font_ctx->deinit(gl);
+   if (gl->font_driver && gl->font_handle)
+      gl->font_driver->free(gl->font_handle);
    gl_shader_deinit(gl);
 
 #ifndef NO_GL_FF_VERTEX
@@ -2314,6 +2314,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    gl->coords.tex_coord      = gl->tex_coords;
    gl->coords.color          = gl->white_color_ptr;
    gl->coords.lut_tex_coord  = tex_coords;
+   gl->coords.vertices       = 4;
 
    // Empty buffer that we use to clear out the texture with on res change.
    gl->empty_buf = calloc(sizeof(uint32_t), gl->tex_w * gl->tex_h);
@@ -2352,8 +2353,10 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    if (g_settings.video.font_enable)
 #endif
    {
-      gl->font_ctx = gl_font_init_first(gl, g_settings.video.font_path, g_settings.video.font_size,
-            gl->win_width, gl->win_height);
+      if (!gl_font_init_first(&gl->font_driver, &gl->font_handle,
+            gl, *g_settings.video.font_path ? g_settings.video.font_path : NULL, g_settings.video.font_size,
+            gl->win_width, gl->win_height))
+         RARCH_ERR("[GL]: Failed to init font renderer.\n");
    }
 
 #ifdef HAVE_GL_ASYNC_READBACK
@@ -2934,19 +2937,18 @@ static void gl_apply_state_changes(void *data)
       gl->should_resize = true;
 }
 
-static void gl_set_osd_msg(void *data, const char *msg, void *userdata)
+static void gl_set_osd_msg(void *data, const char *msg, const struct font_params *params)
 {
    gl_t *gl = (gl_t*)data;
-
    if (!gl)
       return;
 
-   context_bind_hw_render(gl, false);
-   font_params_t *params = (font_params_t*)userdata;
-
-   if (gl->font_ctx)
-      gl->font_ctx->render_msg(gl, msg, params);
-   context_bind_hw_render(gl, true);
+   if (gl->font_driver && gl->font_handle)
+   {
+      context_bind_hw_render(gl, false);
+      gl->font_driver->render_msg(gl->font_handle, msg, params);
+      context_bind_hw_render(gl, true);
+   }
 }
 
 static void gl_show_mouse(void *data, bool state)
