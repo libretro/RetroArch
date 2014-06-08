@@ -89,7 +89,7 @@
  pendingMask3 = D3DTAG_MASKENCODE(D3DTAG_START(D3DTAG_FETCHCONSTANTS) + fetchConstant, D3DTAG_START(D3DTAG_FETCHCONSTANTS) + fetchConstant); \
  D3DDevice_SetTexture(device, Stage, pTexture, pendingMask3)
 
-#define D3DDevice_CreateVertexBuffers(device, Length, Usage, UnusedFVF, UnusedPool, ppVertexBuffer, pUnusedSharedHandle) IDirect3DDevice8_CreateVertexBuffer(device, Length, Usage, UnusedFVF, UnusedPool, ppVertexBuffer)
+#define D3DDevice_CreateVertexBuffers(device, Length, Usage, UnusedFVF, UnusedPool, ppVertexBuffer, pUnusedSharedHandle) IDirect3DDevice9_CreateVertexBuffer(device, Length, Usage, UnusedFVF, UnusedPool, ppVertexBuffer, NULL)
 #define RD3DDevice_DrawPrimitive(device, PrimitiveType, StartVertex, PrimitiveCount) D3DDevice_DrawVertices(device, PrimitiveType, StartVertex, D3DVERTEXCOUNT(PrimitiveType, PrimitiveCount))
 #define RD3DDevice_Clear(device, Count, pRects, Flags, Color, Z, Stencil) D3DDevice_Clear(device, Count, pRects, Flags, Color, Z, Stencil, false)
 #define RD3DDevice_SetViewport(device, viewport) D3DDevice_SetViewport(device, viewport)
@@ -97,7 +97,7 @@
 #define D3DDevice_SetSamplerState_MagFilter(device, sampler, value) D3DDevice_SetSamplerState_MagFilter(device, sampler, value)
 #define D3DDevice_SetSamplerState_AddressU(device, sampler, value) D3DDevice_SetSamplerState_AddressU_Inline(device, sampler, value)
 #define D3DDevice_SetSamplerState_AddressV(device, sampler, value) D3DDevice_SetSamplerState_AddressV_Inline(device, sampler, value)
-#define D3DDevice_Presents(dev, returnval) D3DDevice_Present(dev)
+#define D3DDevice_Presents(d3d, dev) D3DDevice_Present(dev)
 #endif
 
 #define D3DTexture_LockRectClear(pass, tex, level, lockedrect, rect, flags) \
