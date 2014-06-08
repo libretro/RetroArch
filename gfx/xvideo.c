@@ -129,7 +129,7 @@ static void xv_init_font(xv_t *xv, const char *font_path, unsigned font_size)
    if (!g_settings.video.font_enable)
       return;
 
-   if (font_renderer_create_default(&xv->font_driver, &xv->font))
+   if (font_renderer_create_default(&xv->font_driver, &xv->font, *g_settings.video.font_path ? g_settings.video.font_path : NULL, g_settings.video.font_size))
    {
       int r = g_settings.video.msg_color_r * 255;
       r = (r < 0 ? 0 : (r > 255 ? 255 : r));
@@ -608,12 +608,11 @@ static void xv_render_msg(xv_t *xv, const char *msg, unsigned width, unsigned he
 
    int x, y;
    unsigned i;
-   struct font_output_list out;
-   xv->font_driver->render_msg(xv->font, msg, &out);
-   struct font_output *head = out.head;
+
+   const struct font_atlas *atlas = xv->font_driver->get_atlas(xv->font);
 
    int msg_base_x = g_settings.video.msg_pos_x * width;
-   int msg_base_y = height * (1.0 - g_settings.video.msg_pos_y);
+   int msg_base_y = height * (1.0f - g_settings.video.msg_pos_y);
 
    unsigned luma_index[2] = { xv->luma_index[0], xv->luma_index[1] };
    unsigned chroma_u_index = xv->chroma_u_index;
@@ -621,15 +620,19 @@ static void xv_render_msg(xv_t *xv, const char *msg, unsigned width, unsigned he
 
    unsigned pitch = width << 1; // YUV formats used are 16 bpp.
 
-   for (; head; head = head->next)
+   for (; *msg; msg++)
    {
-      int base_x = (msg_base_x + head->off_x) & ~1; // Make sure we always start on the correct boundary so the indices are correct.
-      int base_y = msg_base_y - head->off_y - head->height;
+      const struct font_glyph *glyph = xv->font_driver->get_glyph(xv->font, (uint8_t)*msg);
+      if (!glyph)
+         continue;
 
-      int glyph_width  = head->width;
-      int glyph_height = head->height;
+      int base_x = (msg_base_x + glyph->draw_offset_x + 1) & ~1; // Make sure we always start on the correct boundary so the indices are correct.
+      int base_y = msg_base_y + glyph->draw_offset_y;
 
-      const uint8_t *src = head->output;
+      int glyph_width  = glyph->width;
+      int glyph_height = glyph->height;
+
+      const uint8_t *src = atlas->buffer + glyph->atlas_offset_x + glyph->atlas_offset_y * atlas->width;
 
       if (base_x < 0)
       {
@@ -640,7 +643,7 @@ static void xv_render_msg(xv_t *xv, const char *msg, unsigned width, unsigned he
 
       if (base_y < 0)
       {
-         src -= base_y * (int)head->pitch;
+         src -= base_y * (int)atlas->width;
          glyph_height += base_y;
          base_y = 0;
       }
@@ -658,7 +661,7 @@ static void xv_render_msg(xv_t *xv, const char *msg, unsigned width, unsigned he
 
       uint8_t *out = (uint8_t*)xv->image->data + base_y * pitch + (base_x << 1);
 
-      for (y = 0; y < glyph_height; y++, src += head->pitch, out += pitch)
+      for (y = 0; y < glyph_height; y++, src += atlas->width, out += pitch)
       {
          // 2 input pixels => 4 bytes (2Y, 1U, 1V).
          for (x = 0; x < glyph_width; x += 2)
@@ -689,9 +692,10 @@ static void xv_render_msg(xv_t *xv, const char *msg, unsigned width, unsigned he
             out[out_x + chroma_v_index] = blended;
          }
       }
-   }
 
-   xv->font_driver->free_output(xv->font, &out);
+      msg_base_x += glyph->advance_x;
+      msg_base_y += glyph->advance_y;
+   }
 }
 
 static bool xv_frame(void *data, const void *frame, unsigned width, unsigned height, unsigned pitch, const char *msg)
