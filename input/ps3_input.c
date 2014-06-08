@@ -36,9 +36,6 @@
 #define MAX_PADS 7
 #endif
 
-#define DEADZONE_LOW 105
-#define DEADZONE_HIGH 145
-
 enum input_devices
 {
    DEVICE_SIXAXIS = 0,
