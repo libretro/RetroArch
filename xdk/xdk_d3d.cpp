@@ -512,24 +512,17 @@ static void d3d_draw_texture(void *data)
 }
 #endif
 
-static void clear_texture(void *data)
-{
-   d3d_video_t *d3d = (d3d_video_t*)data;
-   LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
-   D3DLOCKED_RECT d3dlr;
-
-   D3DTexture_LockRectClear(d3d, d3d->tex, 0, d3dlr, NULL, D3DLOCK_NOSYSLOCK);
-}
-
 static void blit_to_texture(void *data, const void *frame,
    unsigned width, unsigned height, unsigned pitch)
 {
+   D3DLOCKED_RECT d3dlr;
    d3d_video_t *d3d = (d3d_video_t*)data;
 
    if (d3d->last_width != width || d3d->last_height != height)
-      clear_texture(data);
+   {
+      D3DTexture_LockRectClear(d3d, d3d->tex, 0, d3dlr, NULL, D3DLOCK_NOSYSLOCK);
+   }
 
-   D3DLOCKED_RECT d3dlr;
    D3DTexture_LockRect(d3d->tex, 0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);
 
 #if defined(_XBOX360)

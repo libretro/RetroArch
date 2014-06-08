@@ -477,12 +477,6 @@ void renderchain_set_mvp(void *data, CGprogram &vPrg,
    renderchain_set_shader_mvp(chain, vPrg, tmp);
 }
 
-void renderchain_clear_texture(void *data, Pass &pass)
-{
-   D3DLOCKED_RECT d3dlr;
-   D3DTexture_LockRectClear(pass, pass.tex, 0, d3dlr, NULL, D3DLOCK_NOSYSLOCK);
-}
-
 void renderchain_convert_geometry(void *data, const LinkInfo *info,
       unsigned &out_width, unsigned &out_height,
       unsigned width, unsigned height,
@@ -524,12 +518,14 @@ void renderchain_blit_to_texture(void *data, const void *frame,
       unsigned width, unsigned height,
       unsigned pitch)
 {
+   D3DLOCKED_RECT d3dlr;
    renderchain_t *chain = (renderchain_t*)data;
    Pass &first = chain->passes[0];
    if (first.last_width != width || first.last_height != height)
-      renderchain_clear_texture(chain, first);
+   {
+      D3DTexture_LockRectClear(first, first.tex, 0, d3dlr, NULL, D3DLOCK_NOSYSLOCK);
+   }
 
-   D3DLOCKED_RECT d3dlr;
 #ifdef _XBOX360
    D3DSURFACE_DESC desc;
    D3DTexture_LockRect(first.tex, 0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);

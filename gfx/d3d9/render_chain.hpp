@@ -131,7 +131,6 @@ void renderchain_set_viewport(void *data, D3DVIEWPORT *vp);
 void renderchain_set_mvp(void *data, CGprogram &vPrg,
       unsigned vp_width, unsigned vp_height,
       unsigned rotation);
-void renderchain_clear_texture(void *data, Pass &pass);
 void renderchain_convert_geometry(void *data, const LinkInfo *info,
       unsigned &out_width, unsigned &out_height,
       unsigned width, unsigned height,
