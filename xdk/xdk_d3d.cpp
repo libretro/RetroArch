@@ -470,7 +470,7 @@ static bool texture_image_render(void *data, struct texture_image *out_img,
 
    // draw the quad
    d3dr->SetTexture(0, out_img->pixels);
-   d3dr->SetStreamSource(0, out_img->vertex_buf, sizeof(DrawVerticeFormats));
+   D3DDevice_SetStreamSources(d3dr, 0, out_img->vertex_buf, 0, sizeof(DrawVerticeFormats));
    d3dr->SetVertexShader(D3DFVF_CUSTOMVERTEX);
 
    if (force_fullscreen)
@@ -663,11 +663,13 @@ static void render_pass(void *data, const void *frame, unsigned width, unsigned 
 
 #if defined(_XBOX1)
    RD3DDevice_SetVertexShader(d3dr, D3DFVF_XYZ | D3DFVF_TEX1);
-   IDirect3DDevice8_SetStreamSource(d3dr, 0, d3d->vertex_buf, sizeof(DrawVerticeFormats));
 #elif defined(_XBOX360)
    D3DDevice_SetVertexDeclaration(d3dr, d3d->vertex_decl);
-   D3DDevice_SetStreamSource_Inline(d3dr, 0, d3d->vertex_buf, 0, sizeof(DrawVerticeFormats));
 #endif
+   for (unsigned i = 0; i < 4; i++)
+   {
+      D3DDevice_SetStreamSources(d3dr, i, d3d->vertex_buf, 0, sizeof(DrawVerticeFormats));
+   }
 
    D3DDevice_DrawPrimitive(d3dr, D3DPT_TRIANGLESTRIP, 0, 2);
 

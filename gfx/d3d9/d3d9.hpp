@@ -77,6 +77,8 @@ class RenderChain;
          d3d->needs_restore = true; \
       }
 #define D3DDevice_CreateVertexBuffers(device, Length, Usage, UnusedFVF, UnusedPool, ppVertexBuffer, pUnusedSharedHandle) device->CreateVertexBuffer(Length, Usage, UnusedFVF, UnusedPool, ppVertexBuffer, NULL)
+
+#define D3DDevice_SetStreamSources(device, streamNumber, pStreamData, OffsetInBytes, Stride) device->SetStreamSource(streamNumber, pStreamData, OffsetInBytes, Stride)
 #endif
 
 

@@ -54,6 +54,7 @@
 #define D3DDevice_SetSamplerState_AddressU(device, sampler, value) SetSamplerState_function(device, sampler, D3DTSS_ADDRESSU, value)
 #define D3DDevice_SetSamplerState_AddressV(device, sampler, value) SetSamplerState_function(device, sampler, D3DTSS_ADDRESSV, value)
 #define D3DDevice_CreateVertexBuffers(device, Length, Usage, UnusedFVF, UnusedPool, ppVertexBuffer, pUnusedSharedHandle) IDirect3DDevice8_CreateVertexBuffer(device, Length, Usage, UnusedFVF, UnusedPool, ppVertexBuffer)
+#define D3DDevice_SetStreamSources(device, streamNumber, pStreamData, OffsetInBytes, Stride)      IDirect3DDevice8_SetStreamSource(device, streamNumber, pStreamData, Stride);
 
 
 #define D3DLOCK_NOSYSLOCK (0)
@@ -88,6 +89,8 @@
  fetchConstant = GPU_CONVERT_D3D_TO_HARDWARE_TEXTUREFETCHCONSTANT(Stage); \
  pendingMask3 = D3DTAG_MASKENCODE(D3DTAG_START(D3DTAG_FETCHCONSTANTS) + fetchConstant, D3DTAG_START(D3DTAG_FETCHCONSTANTS) + fetchConstant); \
  D3DDevice_SetTexture(device, Stage, pTexture, pendingMask3)
+
+#define D3DDevice_SetStreamSources(device, streamNumber, pStreamData, OffsetInBytes, Stride) D3DDevice_SetStreamSource_Inline(device, streamNumber, pStreamData, OffsetInBytes, Stride)
 
 #define D3DDevice_CreateVertexBuffers(device, Length, Usage, UnusedFVF, UnusedPool, ppVertexBuffer, pUnusedSharedHandle) IDirect3DDevice9_CreateVertexBuffer(device, Length, Usage, UnusedFVF, UnusedPool, ppVertexBuffer, NULL)
 #define RD3DDevice_DrawPrimitive(device, PrimitiveType, StartVertex, PrimitiveCount) D3DDevice_DrawVertices(device, PrimitiveType, StartVertex, D3DVERTEXCOUNT(PrimitiveType, PrimitiveCount))

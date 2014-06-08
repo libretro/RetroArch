@@ -589,7 +589,7 @@ static void d3d_overlay_render(void *data, overlay_t *overlay)
    vertex_decl->Release();
 #endif
 
-   d3d->dev->SetStreamSource(0, overlay->vert_buf, 0, sizeof(overlay_vertex));
+   D3DDevice_SetStreamSources(d3d->dev, 0, overlay->vert_buf, 0, sizeof(overlay_vertex));
 
    if (overlay->fullscreen)
    {

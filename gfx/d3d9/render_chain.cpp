@@ -574,7 +574,13 @@ void renderchain_render_pass(void *data, Pass &pass, unsigned pass_index)
    d3dr->SetVertexDeclaration(pass.vertex_decl);
 #endif
    for (unsigned i = 0; i < 4; i++)
-      d3dr->SetStreamSource(i, pass.vertex_buf, 0, sizeof(Vertex));
+   {
+#ifdef _XBOX
+      D3DDevice_SetStreamSources(d3dr, i, pass.vertex_buf, 0, sizeof(DrawVerticeFormats));
+#else
+      D3DDevice_SetStreamSources(d3dr, i, pass.vertex_buf, 0, sizeof(Vertex));
+#endif
+   }
 
    renderchain_bind_orig(chain, pass);
    renderchain_bind_prev(chain, pass);
@@ -647,7 +653,9 @@ void renderchain_unbind_all(void *data)
    }
 
    for (unsigned i = 0; i < chain->bound_vert.size(); i++)
-      d3dr->SetStreamSource(chain->bound_vert[i], 0, 0, 0);
+   {
+      D3DDevice_SetStreamSources(d3dr, chain->bound_vert[i], 0, 0, 0);
+   }
 
    chain->bound_tex.clear();
    chain->bound_vert.clear();
