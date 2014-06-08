@@ -1549,8 +1549,8 @@ static void android_input_set_keybinds(void *data, unsigned device,
             g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_L3].def_joykey      = (RETRO_DEVICE_ID_JOYPAD_L3);
             g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R3].def_joykey      = (RETRO_DEVICE_ID_JOYPAD_R3);
 
-            /* FIXME - doesn't work */
             g_settings.input.binds[port][RARCH_MENU_TOGGLE].def_joykey              = (AKEYCODE_BUTTON_START);
+            g_settings.input.binds[port][RARCH_MENU_TOGGLE].joykey                  = (AKEYCODE_BUTTON_START);
 
             g_settings.input.binds[port][RARCH_ANALOG_LEFT_X_PLUS].def_joykey       = NO_BTN;
             g_settings.input.binds[port][RARCH_ANALOG_LEFT_X_MINUS].def_joykey      = NO_BTN;
@@ -1766,7 +1766,7 @@ static void android_input_set_keybinds(void *data, unsigned device,
             break;
       }
 
-      for (i = 0; i < RARCH_CUSTOM_BIND_LIST_END; i++)
+      for (i = 0; i < RARCH_BIND_LIST_END; i++)
       {
          g_settings.input.binds[port][i].id = i;
          g_settings.input.binds[port][i].joykey = g_settings.input.binds[port][i].def_joykey;
@@ -1823,13 +1823,13 @@ static int android_input_poll_event_type_motion(android_input_t *android, AInput
 }
 
 static void android_input_poll_event_type_key(android_input_t *android, struct android_app *android_app,
-      AInputEvent *event, int port, int keycode, int source, int type_event, int *handled, int lifecycle_mask)
+      AInputEvent *event, int port, int keycode, int source, int type_event, int *handled)
 {
    int action  = AKeyEvent_getAction(event);
 
    // some controllers send both the up and down events at once when the button is released for "special" buttons, like menu buttons
    // work around that by only using down events for meta keys (which get cleared every poll anyway)
-   if (action == AKEY_EVENT_ACTION_UP)// && !(input_state & lifecycle_mask))
+   if (action == AKEY_EVENT_ACTION_UP)
       clear_bit(android->pad_state[port], keycode);
    else if (action == AKEY_EVENT_ACTION_DOWN)
       set_bit(android->pad_state[port], keycode);
@@ -1844,10 +1844,8 @@ static void android_input_poll_event_type_key(android_input_t *android, struct a
 static void android_input_poll(void *data)
 {
    int ident;
-   uint64_t lifecycle_mask = (1ULL << RARCH_RESET) | (1ULL << RARCH_REWIND) | (1ULL << RARCH_FAST_FORWARD_KEY) | (1ULL << RARCH_FAST_FORWARD_HOLD_KEY) | (1ULL << RARCH_MUTE) | (1ULL << RARCH_SAVE_STATE_KEY) | (1ULL << RARCH_LOAD_STATE_KEY) | (1ULL << RARCH_STATE_SLOT_PLUS) | (1ULL << RARCH_STATE_SLOT_MINUS) | (1ULL << RARCH_MENU_TOGGLE);
    struct android_app *android_app = (struct android_app*)g_android;
    android_input_t *android = (android_input_t*)data;
-   //g_extern.lifecycle_state &= ~lifecycle_mask;
 
    while ((ident = ALooper_pollAll((input_key_pressed_func(RARCH_PAUSE_TOGGLE)) ? -1 : 0,
                NULL, NULL, NULL)) >= 0)
@@ -1936,8 +1934,7 @@ static void android_input_poll(void *data)
                else if (type_event == AINPUT_EVENT_TYPE_KEY)
                {
                   keycode = AKeyEvent_getKeyCode(event);
-                  android_input_poll_event_type_key(android, android_app, event, port, keycode, source, type_event, &handled,
-                        lifecycle_mask);
+                  android_input_poll_event_type_key(android, android_app, event, port, keycode, source, type_event, &handled);
                   if (debug_enable)
                      snprintf(msg, sizeof(msg), "Pad %d : %d, src = %d.\n", port, keycode, source);
                }
@@ -2041,7 +2038,8 @@ static int16_t android_input_state(void *data, const struct retro_keybind **bind
 
 static bool android_input_key_pressed(void *data, int key)
 {
-   return ((g_extern.lifecycle_state | driver.overlay_state.buttons) & (1ULL << key));
+   return ((g_extern.lifecycle_state | driver.overlay_state.buttons) & (1ULL << key))
+      || input_joypad_pressed(&android_joypad, 0, g_settings.input.binds[0], key);
 }
 
 static void android_input_free_input(void *data)
