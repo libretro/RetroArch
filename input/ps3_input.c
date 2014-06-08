@@ -456,6 +456,7 @@ static bool ps3_input_set_rumble(void *data, unsigned port, enum retro_rumble_ef
          if (strength > 255)
             strength = 255;
          params.motor[1] = strength;
+         break;
    }
 
    cellPadSetActDirect(port, &params);
