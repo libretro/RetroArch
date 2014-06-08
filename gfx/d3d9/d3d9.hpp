@@ -76,6 +76,7 @@ class RenderChain;
          RARCH_ERR("[D3D]: Present() failed.\n"); \
          d3d->needs_restore = true; \
       }
+#define D3DDevice_CreateVertexBuffers(device, Length, Usage, UnusedFVF, UnusedPool, ppVertexBuffer, pUnusedSharedHandle) device->CreateVertexBuffer(Length, Usage, UnusedFVF, UnusedPool, ppVertexBuffer, NULL)
 #endif
 
 

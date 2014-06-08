@@ -526,20 +526,8 @@ static void d3d_overlay_render(void *data, overlay_t *overlay)
 
    if (!overlay->vert_buf)
    {
-      d3d->dev->CreateVertexBuffer(
-            sizeof(vert),
-#ifdef _XBOX
-            0,
-#else
-            d3d->dev->GetSoftwareVertexProcessing() ? D3DUSAGE_SOFTWAREPROCESSING : 0,
-#endif
-            0,
-            D3DPOOL_MANAGED,
-            &overlay->vert_buf
-#ifndef _XBOX1
-            ,NULL
-#endif
-            );
+      D3DDevice_CreateVertexBuffers(d3d->dev, sizeof(vert), 
+         d3d->dev->GetSoftwareVertexProcessing() ? D3DUSAGE_SOFTWAREPROCESSING : 0, 0, D3DPOOL_MANAGED, &overlay->vert_buf, NULL);
    }
 
    for (unsigned i = 0; i < 4; i++)

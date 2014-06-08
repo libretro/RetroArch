@@ -266,12 +266,8 @@ static bool renderchain_create_first_pass(void *data, const video_info_t *info)
    d3d_video_t *chain = (d3d_video_t*)data;
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)chain->dev;
 
-   ret = d3dr->CreateVertexBuffer(4 * sizeof(DrawVerticeFormats), 
-         D3DUSAGE_WRITEONLY, D3DFVF_CUSTOMVERTEX, D3DPOOL_MANAGED, &chain->vertex_buf
-#ifdef _XBOX360
-         ,NULL
-#endif
-         );
+   ret = D3DDevice_CreateVertexBuffers(d3dr, 4 * sizeof(DrawVerticeFormats), 
+         D3DUSAGE_WRITEONLY, D3DFVF_CUSTOMVERTEX, D3DPOOL_MANAGED, &chain->vertex_buf, NULL);
 
    if (FAILED(ret))
       return false;
