@@ -100,8 +100,8 @@ static bool ft_renderer_create_atlas(ft_renderer_t *handle)
 
       if (buffer[i])
          memcpy(buffer[i], slot->bitmap.buffer, slot->bitmap.rows * pitches[i]);
-      max_width = max(max_width, slot->bitmap.width);
-      max_height = max(max_height, slot->bitmap.rows);
+      max_width = max(max_width, (unsigned)slot->bitmap.width);
+      max_height = max(max_height, (unsigned)slot->bitmap.rows);
    }
 
    handle->atlas.width = max_width * ATLAS_COLS;
