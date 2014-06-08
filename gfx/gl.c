@@ -1037,6 +1037,7 @@ static void gl_frame_fbo(void *data, const struct gl_tex_info *tex_info)
             gl->vp.width, gl->vp.height, g_extern.frame_count, 
             tex_info, gl->prev_info, fbo_tex_info, fbo_tex_info_cnt);
 
+      gl->coords.vertices = 4;
       gl_shader_set_coords(gl, &gl->coords, &gl->mvp);
       glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
    }
@@ -1086,6 +1087,7 @@ static void gl_frame_fbo(void *data, const struct gl_tex_info *tex_info)
 
    gl->coords.vertex = gl->vertex_ptr;
 
+   gl->coords.vertices = 4;
    gl_shader_set_coords(gl, &gl->coords, &gl->mvp);
    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
@@ -1474,6 +1476,7 @@ static inline void gl_draw_texture(void *data)
 
    if (gl->shader)
       gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
+   gl->coords.vertices = 4;
    gl_shader_set_coords(gl, &gl->coords, &gl->mvp_no_rot);
 
    glEnable(GL_BLEND);
@@ -1612,6 +1615,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
          g_extern.frame_count, 
          &tex_info, gl->prev_info, NULL, 0);
 
+   gl->coords.vertices = 4;
    gl_shader_set_coords(gl, &gl->coords, &gl->mvp);
    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
@@ -2796,6 +2800,7 @@ static void gl_render_overlay(void *data)
       gl->coords.vertex    = gl->overlay[i].vertex_coord;
       gl->coords.tex_coord = gl->overlay[i].tex_coord;
       gl->coords.color     = white_color_mod;
+      gl->coords.vertices  = 4;
       gl_shader_set_coords(gl, &gl->coords, &gl->mvp_no_rot);
       glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
    }

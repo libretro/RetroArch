@@ -98,39 +98,28 @@ void gl_free_font(void *data)
 #define emit(c, vx, vy) do { \
    font_vertex[     2 * (6 * i + c) + 0] = (x + (delta_x + off_x + vx * width) * scale) * inv_win_width; \
    font_vertex[     2 * (6 * i + c) + 1] = (y + (delta_y - off_y - vy * height) * scale) * inv_win_height; \
-   font_vertex_dark[2 * (6 * i + c) + 0] = (x + (delta_x + off_x - 2 + vx * width) * scale) * inv_win_width; \
-   font_vertex_dark[2 * (6 * i + c) + 1] = (y + (delta_y - off_y - 2 - vy * height) * scale) * inv_win_height; \
    font_tex_coords[ 2 * (6 * i + c) + 0] = (tex_x + vx * width) * inv_tex_size_x; \
    font_tex_coords[ 2 * (6 * i + c) + 1] = (tex_y + vy * height) * inv_tex_size_y; \
-   font_color_dark[ 4 * (6 * i + c) + 0] = 0.3f * color[0]; \
-   font_color_dark[ 4 * (6 * i + c) + 1] = 0.3f * color[1]; \
-   font_color_dark[ 4 * (6 * i + c) + 2] = 0.3f * color[2]; \
-   font_color_dark[ 4 * (6 * i + c) + 3] = color[3]; \
    font_color[      4 * (6 * i + c) + 0] = color[0]; \
    font_color[      4 * (6 * i + c) + 1] = color[1]; \
    font_color[      4 * (6 * i + c) + 2] = color[2]; \
    font_color[      4 * (6 * i + c) + 3] = color[3]; \
 } while(0)
 
-static void render_message(gl_raster_t *font, const char *msg, GLfloat scale, const GLfloat color[4], GLfloat pos_x, GLfloat pos_y, bool full_screen)
+static void render_message(gl_raster_t *font, const char *msg, GLfloat scale, const GLfloat color[4], GLfloat pos_x, GLfloat pos_y)
 {
    unsigned i;
    gl_t *gl = font->gl;
 
+   // Rebind shaders so attrib cache gets reset.
    if (gl->shader && gl->shader->use)
       gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
-
-   gl_set_viewport(gl, gl->win_width, gl->win_height, full_screen, false);
-
-   glEnable(GL_BLEND);
    glBindTexture(GL_TEXTURE_2D, font->tex);
 
-#define MAX_MSG_LEN_CHUNK 32
+#define MAX_MSG_LEN_CHUNK 64
    GLfloat font_tex_coords[2 * 6 * MAX_MSG_LEN_CHUNK];
    GLfloat font_vertex[2 * 6 * MAX_MSG_LEN_CHUNK]; 
-   GLfloat font_vertex_dark[2 * 6 * MAX_MSG_LEN_CHUNK]; 
    GLfloat font_color[4 * 6 * MAX_MSG_LEN_CHUNK];
-   GLfloat font_color_dark[4 * 6 * MAX_MSG_LEN_CHUNK];
 
    unsigned msg_len_full = strlen(msg);
    unsigned msg_len = min(msg_len_full, MAX_MSG_LEN_CHUNK);
@@ -175,14 +164,6 @@ static void render_message(gl_raster_t *font, const char *msg, GLfloat scale, co
          delta_y -= gly->advance_y;
       }
 
-      // TODO: Make drop shadows parameterized?
-      gl->coords.tex_coord = font_tex_coords;
-      gl->coords.vertex    = font_vertex_dark;
-      gl->coords.color     = font_color_dark;
-      gl->coords.vertices  = 6 * msg_len;
-      gl_shader_set_coords(gl, &gl->coords, &gl->mvp_no_rot);
-      glDrawArrays(GL_TRIANGLES, 0, 6 * msg_len);
-
       gl->coords.tex_coord = font_tex_coords;
       gl->coords.vertex    = font_vertex;
       gl->coords.color     = font_color;
@@ -201,20 +182,19 @@ static void render_message(gl_raster_t *font, const char *msg, GLfloat scale, co
    gl->coords.color     = gl->white_color_ptr;
    gl->coords.vertices  = 4;
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
-
-   glDisable(GL_BLEND);
-   gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
 }
 
 static void gl_render_msg(void *data, const char *msg, const struct font_params *params)
 {
    GLfloat x, y, scale;
-   GLfloat color[4];
+   GLfloat color[4], color_dark[4];
    bool full_screen;
 
    gl_raster_t *font = (gl_raster_t*)data;
    if (!font)
       return;
+
+   gl_t *gl = font->gl;
 
    if (params)
    {
@@ -245,7 +225,23 @@ static void gl_render_msg(void *data, const char *msg, const struct font_params 
       color[3] = 1.0f;
    }
 
-   render_message(font, msg, scale, color, x, y, full_screen);
+   color_dark[0] = color[0] * 0.3f;
+   color_dark[1] = color[1] * 0.3f;
+   color_dark[2] = color[2] * 0.3f;
+   color_dark[3] = color[3];
+
+   gl_set_viewport(gl, gl->win_width, gl->win_height, full_screen, false);
+   glEnable(GL_BLEND);
+   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+   glBlendEquation(GL_FUNC_ADD);
+
+   // TODO: Make drop shadows parameterized?
+   render_message(font, msg, scale, color_dark,
+         x - scale * 2.0f / gl->vp.width, y - scale * 2.0f / gl->vp.height);
+   render_message(font, msg, scale, color, x, y);
+
+   glDisable(GL_BLEND);
+   gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
 }
 
 const gl_font_renderer_t gl_raster_font = {

@@ -64,11 +64,11 @@ static char glsl_alias_define[1024];
 struct cache_vbo
 {
    GLuint vbo_primary;
-   GLfloat buffer_primary[128];
+   GLfloat *buffer_primary;
    size_t size_primary;
 
    GLuint vbo_secondary;
-   GLfloat buffer_secondary[128];
+   GLfloat *buffer_secondary;
    size_t size_secondary;
 };
 static struct cache_vbo glsl_vbo[GFX_MAX_SHADERS];
@@ -467,18 +467,24 @@ static void gl_glsl_reset_attrib(void)
    gl_attrib_index = 0;
 }
 
-static void gl_glsl_set_vbo(GLfloat *buffer, size_t *buffer_elems, const GLfloat *data, size_t elems)
+static void gl_glsl_set_vbo(GLfloat **buffer, size_t *buffer_elems, const GLfloat *data, size_t elems)
 {
-   if (elems != *buffer_elems || memcmp(data, buffer, elems * sizeof(GLfloat)))
+   if (elems != *buffer_elems || memcmp(data, *buffer, elems * sizeof(GLfloat)))
    {
-      //RARCH_LOG("[GL]: VBO updated with %u elems.\n", (unsigned)elems);
-      memcpy(buffer, data, elems * sizeof(GLfloat));
+      if (elems > *buffer_elems)
+      {
+         GLfloat *new_buffer = (GLfloat*)realloc(*buffer, elems * sizeof(GLfloat));
+         rarch_assert(new_buffer);
+         *buffer = new_buffer;
+      }
+
+      memcpy(*buffer, data, elems * sizeof(GLfloat));
       glBufferData(GL_ARRAY_BUFFER, elems * sizeof(GLfloat), data, GL_STATIC_DRAW);
       *buffer_elems = elems;
    }
 }
 
-static void gl_glsl_set_attribs(GLuint vbo, GLfloat *buffer, size_t *buffer_elems,
+static void gl_glsl_set_attribs(GLuint vbo, GLfloat **buffer, size_t *buffer_elems,
       const GLfloat *data, size_t elems, const struct glsl_attrib *attrs, size_t num_attrs)
 {
    size_t i;
@@ -639,6 +645,9 @@ static void gl_glsl_deinit(void)
          glDeleteBuffers(1, &glsl_vbo[i].vbo_primary);
       if (glsl_vbo[i].vbo_secondary)
          glDeleteBuffers(1, &glsl_vbo[i].vbo_secondary);
+
+      free(glsl_vbo[i].buffer_primary);
+      free(glsl_vbo[i].buffer_secondary);
    }
    memset(&glsl_vbo, 0, sizeof(glsl_vbo));
 }
@@ -843,7 +852,7 @@ static void gl_glsl_set_params(void *data, unsigned width, unsigned height,
    if (!glsl_enable || (gl_program[active_index] == 0))
       return;
 
-   GLfloat buffer[128];
+   GLfloat buffer[512];
    unsigned i;
    size_t size = 0;
    struct glsl_attrib attribs[32];
@@ -986,7 +995,7 @@ static void gl_glsl_set_params(void *data, unsigned width, unsigned height,
    if (size)
    {
       gl_glsl_set_attribs(glsl_vbo[active_index].vbo_secondary,
-            glsl_vbo[active_index].buffer_secondary,
+            &glsl_vbo[active_index].buffer_secondary,
             &glsl_vbo[active_index].size_secondary,
             buffer, size, attribs, attribs_size);
    }
@@ -1035,7 +1044,15 @@ static bool gl_glsl_set_coords(const struct gl_coords *coords)
    if (!glsl_enable || !glsl_shader->modern)
       return false;
 
-   GLfloat buffer[128];
+   // Avoid hitting malloc on every single regular quad draw.
+   GLfloat short_buffer[4 * (2 + 2 + 4 + 2)];
+   GLfloat *buffer = short_buffer;
+   if (coords->vertices > 4)
+      buffer = (GLfloat*)calloc(coords->vertices * (2 + 2 + 4 + 2), sizeof(*buffer));
+
+   if (!buffer)
+      return false;
+
    size_t size = 0;
 
    struct glsl_attrib attribs[4];
@@ -1051,8 +1068,8 @@ static bool gl_glsl_set_coords(const struct gl_coords *coords)
       attribs_size++;
       attr++;
 
-      memcpy(buffer + size, coords->tex_coord, 8 * sizeof(GLfloat));
-      size += 8;
+      memcpy(buffer + size, coords->tex_coord, 2 * coords->vertices * sizeof(GLfloat));
+      size += 2 * coords->vertices;
    }
 
    if (uni->vertex_coord >= 0)
@@ -1063,8 +1080,8 @@ static bool gl_glsl_set_coords(const struct gl_coords *coords)
       attribs_size++;
       attr++;
 
-      memcpy(buffer + size, coords->vertex, 8 * sizeof(GLfloat));
-      size += 8;
+      memcpy(buffer + size, coords->vertex, 2 * coords->vertices * sizeof(GLfloat));
+      size += 2 * coords->vertices;
    }
 
    if (uni->color >= 0)
@@ -1075,8 +1092,8 @@ static bool gl_glsl_set_coords(const struct gl_coords *coords)
       attribs_size++;
       attr++;
 
-      memcpy(buffer + size, coords->color, 16 * sizeof(GLfloat));
-      size += 16;
+      memcpy(buffer + size, coords->color, 4 * coords->vertices * sizeof(GLfloat));
+      size += 4 * coords->vertices;
    }
 
    if (uni->lut_tex_coord >= 0)
@@ -1087,19 +1104,21 @@ static bool gl_glsl_set_coords(const struct gl_coords *coords)
       attribs_size++;
       attr++;
 
-      memcpy(buffer + size, coords->lut_tex_coord, 8 * sizeof(GLfloat));
-      size += 8;
+      memcpy(buffer + size, coords->lut_tex_coord, 2 * coords->vertices * sizeof(GLfloat));
+      size += 2 * coords->vertices;
    }
 
    if (size)
    {
       gl_glsl_set_attribs(glsl_vbo[active_index].vbo_primary,
-            glsl_vbo[active_index].buffer_primary,
+            &glsl_vbo[active_index].buffer_primary,
             &glsl_vbo[active_index].size_primary,
             buffer, size,
             attribs, attribs_size);
    }
 
+   if (buffer != short_buffer)
+      free(buffer);
    return true;
 }
 

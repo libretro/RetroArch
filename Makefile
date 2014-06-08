@@ -394,7 +394,7 @@ else
       ifneq ($(findstring icc,$(CC)),)
          CFLAGS += -std=c99 -D_GNU_SOURCE
       else
-         CFLAGS += -std=gnu99
+         CFLAGS += -std=gnu99 -D_GNU_SOURCE
       endif
    endif
 endif
