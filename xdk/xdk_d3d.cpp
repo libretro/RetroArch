@@ -512,9 +512,25 @@ static void d3d_draw_texture(void *data)
 }
 #endif
 
+#if defined(_XBOX360)
+#define D3DTexture_Blit(d3d, desc, d3dlr, frame, width, height, pitch) \
+   d3d->tex->GetLevelDesc(0, &desc); \
+   XGCopySurface(d3dlr.pBits, d3dlr.Pitch, width, height, desc.Format, NULL, frame,
+                                        pitch, desc.Format, NULL, 0, 0)
+#else
+#define D3DTexture_Blit(d3d, desc, d3dlr, frame, width, height, pitch) \
+   for (unsigned y = 0; y < height; y++) \
+   { \
+      const uint8_t *in = (const uint8_t*)frame + y * pitch; \
+      uint8_t *out = (uint8_t*)d3dlr.pBits + y * d3dlr.Pitch; \
+      memcpy(out, in, width * d3d->pixel_size); \
+   }
+#endif
+
 static void blit_to_texture(void *data, const void *frame,
    unsigned width, unsigned height, unsigned pitch)
 {
+   D3DSURFACE_DESC desc;
    D3DLOCKED_RECT d3dlr;
    d3d_video_t *d3d = (d3d_video_t*)data;
 
@@ -524,20 +540,7 @@ static void blit_to_texture(void *data, const void *frame,
    }
 
    D3DTexture_LockRect(d3d->tex, 0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);
-
-#if defined(_XBOX360)
-   D3DSURFACE_DESC desc;
-   d3d->tex->GetLevelDesc(0, &desc);
-      XGCopySurface(d3dlr.pBits, d3dlr.Pitch, width, height, desc.Format, NULL, frame,
-                                        pitch, desc.Format, NULL, 0, 0);
-#elif defined(_XBOX1)
-   for (unsigned y = 0; y < height; y++)
-   {
-      const uint8_t *in = (const uint8_t*)frame + y * pitch;
-      uint8_t *out = (uint8_t*)d3dlr.pBits + y * d3dlr.Pitch;
-      memcpy(out, in, width * d3d->pixel_size);
-   }
-#endif
+   D3DTexture_Blit(d3d, desc, d3dlr, frame, width, height, pitch);
 }
 
 static void set_vertices(void *data, unsigned pass, unsigned width, unsigned height)

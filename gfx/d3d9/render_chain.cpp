@@ -518,6 +518,7 @@ void renderchain_blit_to_texture(void *data, const void *frame,
       unsigned width, unsigned height,
       unsigned pitch)
 {
+   D3DSURFACE_DESC desc;
    D3DLOCKED_RECT d3dlr;
    renderchain_t *chain = (renderchain_t*)data;
    Pass &first = chain->passes[0];
@@ -526,26 +527,7 @@ void renderchain_blit_to_texture(void *data, const void *frame,
       D3DTexture_LockRectClear(first, first.tex, 0, d3dlr, NULL, D3DLOCK_NOSYSLOCK);
    }
 
-#ifdef _XBOX360
-   D3DSURFACE_DESC desc;
-   D3DTexture_LockRect(first.tex, 0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);
-   first.tex->GetLevelDesc(0, &desc);
-      XGCopySurface(d3dlr.pBits, d3dlr.Pitch, width, height, desc.Format, NULL, frame,
-                                        pitch, desc.Format, NULL, 0, 0);
-
-#else
-   if (SUCCEEDED(first.tex->LockRect(0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK)))
-   {
-      for (unsigned y = 0; y < height; y++)
-      {
-         const uint8_t *in = (const uint8_t*)frame + y * pitch;
-         uint8_t *out =(uint8_t*)d3dlr.pBits + y * d3dlr.Pitch;
-         memcpy(out, in, width * chain->pixel_size);
-      }
-
-      first.tex->UnlockRect(0);
-   }
-#endif
+   D3DTexture_Blit(chain, desc, d3dlr, frame, width, height, pitch);
 }
 
 void renderchain_render_pass(void *data, Pass &pass, unsigned pass_index)
