@@ -257,16 +257,6 @@ static void ps3_input_poll(void *data)
          uint8_t lsy = (uint8_t)(state_tmp.button[CELL_PAD_BTN_OFFSET_ANALOG_LEFT_Y]);
          uint8_t rsx = (uint8_t)(state_tmp.button[CELL_PAD_BTN_OFFSET_ANALOG_RIGHT_X]);
          uint8_t rsy = (uint8_t)(state_tmp.button[CELL_PAD_BTN_OFFSET_ANALOG_RIGHT_Y]);
-#if 0
-         if (!(lsx < DEADZONE_LOW || DEADZONE_HIGH < lsx))
-            lsx = 128;
-         if (!(lsy < DEADZONE_LOW || DEADZONE_HIGH < lsy))
-            lsy = 128;
-         if (!(rsx < DEADZONE_LOW || DEADZONE_HIGH < rsx))
-            rsx = 128;
-         if (!(rsy < DEADZONE_LOW || DEADZONE_HIGH < rsy))
-            rsy = 128;
-#endif
          ps3->analog_state[port][RETRO_DEVICE_INDEX_ANALOG_LEFT ][RETRO_DEVICE_ID_ANALOG_X] = convert_u8_to_s16(lsx);
          ps3->analog_state[port][RETRO_DEVICE_INDEX_ANALOG_LEFT ][RETRO_DEVICE_ID_ANALOG_Y] = convert_u8_to_s16(lsy);
          ps3->analog_state[port][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_X] = convert_u8_to_s16(rsx);
