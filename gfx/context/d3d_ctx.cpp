@@ -432,15 +432,16 @@ static void gfx_ctx_d3d_get_video_size(void *data, unsigned *width, unsigned *he
 
 static void gfx_ctx_d3d_swap_interval(void *data, unsigned interval)
 {
-   (void)data;
-#ifdef _XBOX
    d3d_video_t *d3d = (d3d_video_t*)data;
+#ifdef _XBOX
    LPDIRECT3DDEVICE d3dr = d3d->dev;
 
    if (interval)
       d3dr->SetRenderState(XBOX_PRESENTATIONINTERVAL, D3DPRESENT_INTERVAL_ONE);
    else
       d3dr->SetRenderState(XBOX_PRESENTATIONINTERVAL, D3DPRESENT_INTERVAL_IMMEDIATE);
+#else
+   d3d_restore(d3d);
 #endif
 }
 

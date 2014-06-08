@@ -948,9 +948,6 @@ static void d3d_set_nonblock_state(void *data, bool state)
 
    if (d3d->ctx_driver && d3d->ctx_driver->swap_interval)
       d3d->ctx_driver->swap_interval(d3d, state ? 0 : 1);
-#ifndef _XBOX
-   d3d_restore(d3d);
-#endif
 }
 
 static bool d3d_alive(void *data)
