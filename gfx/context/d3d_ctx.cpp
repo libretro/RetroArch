@@ -49,7 +49,6 @@ extern bool d3d_restore(void *data);
 static void d3d_resize(void *data, unsigned new_width, unsigned new_height)
 {
    (void)data;
-#ifndef _XBOX
    d3d_video_t *d3d = (d3d_video_t*)curD3D;
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
    if (!d3dr)
@@ -63,7 +62,6 @@ static void d3d_resize(void *data, unsigned new_width, unsigned new_height)
       d3d->video_info.height = d3d->screen_height = new_height;
       d3d_restore(d3d);
    }
-#endif
 }
 
 #ifdef HAVE_WINDOW

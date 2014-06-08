@@ -751,19 +751,22 @@ static bool d3d_initialize(void *data, const video_info_t *info)
    return true;
 }
 
-#ifndef _XBOX
+
 bool d3d_restore(void *data)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
+#ifdef _XBOX
    d3d_deinitialize(d3d);
    d3d->needs_restore = !d3d_initialize(d3d, &d3d->video_info);
+#else
+   d3d->needs_restore = false;
+#endif
 
    if (d3d->needs_restore)
       RARCH_ERR("[D3D]: Restore error.\n");
 
    return !d3d->needs_restore;
 }
-#endif
 
 static void d3d_set_viewport(void *data, int x, int y, unsigned width, unsigned height)
 {
@@ -847,13 +850,12 @@ static bool d3d_frame(void *data, const void *frame,
    // We cannot recover in fullscreen.
    if (d3d->needs_restore && IsIconic(d3d->hWnd))
       return true;
-
+#endif
    if (d3d->needs_restore && !d3d_restore(d3d))
    {
       RARCH_ERR("[D3D]: Failed to restore.\n");
       return false;
    }
-#endif
 
    if (d3d->should_resize)
    {
