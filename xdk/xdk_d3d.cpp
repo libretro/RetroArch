@@ -266,7 +266,7 @@ static bool renderchain_create_first_pass(void *data, const video_info_t *info)
    d3d_video_t *chain = (d3d_video_t*)data;
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)chain->dev;
 
-   ret = D3DDevice_CreateVertexBuffers(d3dr, 4 * sizeof(DrawVerticeFormats), 
+   ret = D3DDevice_CreateVertexBuffers(d3dr, 4 * sizeof(Vertex), 
          D3DUSAGE_WRITEONLY, D3DFVF_CUSTOMVERTEX, D3DPOOL_MANAGED, &chain->vertex_buf, NULL);
 
    if (FAILED(ret))
@@ -438,7 +438,7 @@ static bool texture_image_render(void *data, struct texture_image *out_img,
    float fY = static_cast<float>(y);
 
    // create the new vertices
-   DrawVerticeFormats newVerts[] =
+   Vertex newVerts[] =
    {
       // x,           y,              z,     color, u ,v
       {fX,            fY,             0.0f,  0,     0, 0},
@@ -448,7 +448,7 @@ static bool texture_image_render(void *data, struct texture_image *out_img,
    };
 
    // load the existing vertices
-   DrawVerticeFormats *pCurVerts;
+   Vertex *pCurVerts;
 
    HRESULT ret = out_img->vertex_buf->Lock(0, 0, (unsigned char**)&pCurVerts, 0);
 
@@ -456,7 +456,7 @@ static bool texture_image_render(void *data, struct texture_image *out_img,
       return false;
 
    // copy the new verts over the old verts
-   memcpy(pCurVerts, newVerts, 4 * sizeof(DrawVerticeFormats));
+   memcpy(pCurVerts, newVerts, 4 * sizeof(Vertex));
    out_img->vertex_buf->Unlock();
 
    d3d->dev->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
@@ -470,7 +470,7 @@ static bool texture_image_render(void *data, struct texture_image *out_img,
 
    // draw the quad
    d3dr->SetTexture(0, out_img->pixels);
-   D3DDevice_SetStreamSources(d3dr, 0, out_img->vertex_buf, 0, sizeof(DrawVerticeFormats));
+   D3DDevice_SetStreamSources(d3dr, 0, out_img->vertex_buf, 0, sizeof(Vertex));
    d3dr->SetVertexShader(D3DFVF_CUSTOMVERTEX);
 
    if (force_fullscreen)
@@ -549,7 +549,7 @@ static void set_vertices(void *data, unsigned pass, unsigned width, unsigned hei
       d3d->last_width = width;
       d3d->last_height = height;
 
-      DrawVerticeFormats vert[4];
+      Vertex vert[4];
       float tex_w = width;
       float tex_h = height;
 #ifdef _XBOX360
@@ -668,7 +668,7 @@ static void render_pass(void *data, const void *frame, unsigned width, unsigned 
 #endif
    for (unsigned i = 0; i < 4; i++)
    {
-      D3DDevice_SetStreamSources(d3dr, i, d3d->vertex_buf, 0, sizeof(DrawVerticeFormats));
+      D3DDevice_SetStreamSources(d3dr, i, d3d->vertex_buf, 0, sizeof(Vertex));
    }
 
    D3DDevice_DrawPrimitive(d3dr, D3DPT_TRIANGLESTRIP, 0, 2);

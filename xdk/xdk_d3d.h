@@ -52,7 +52,7 @@ typedef struct
    LPDIRECT3DVERTEXBUFFER vert_buf;
 } overlay_t;
 
-typedef struct DrawVerticeFormats
+typedef struct Vertex
 {
    float x, y;
 #if defined(_XBOX1)
@@ -60,7 +60,7 @@ typedef struct DrawVerticeFormats
    float rhw;
 #endif
    float u, v;
-} DrawVerticeFormats;
+} Vertex;
 
 typedef struct gl_shader_backend gl_shader_backend_t;
 

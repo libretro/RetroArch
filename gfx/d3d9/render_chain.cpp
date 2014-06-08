@@ -575,11 +575,7 @@ void renderchain_render_pass(void *data, Pass &pass, unsigned pass_index)
 #endif
    for (unsigned i = 0; i < 4; i++)
    {
-#ifdef _XBOX
-      D3DDevice_SetStreamSources(d3dr, i, pass.vertex_buf, 0, sizeof(DrawVerticeFormats));
-#else
       D3DDevice_SetStreamSources(d3dr, i, pass.vertex_buf, 0, sizeof(Vertex));
-#endif
    }
 
    renderchain_bind_orig(chain, pass);

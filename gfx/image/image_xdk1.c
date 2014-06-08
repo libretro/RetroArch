@@ -27,22 +27,17 @@ bool texture_image_load(void *data, const char *path, void *image_data)
    out_img->pixels      = NULL;
    out_img->vertex_buf  = NULL;
 
-   HRESULT ret = D3DXCreateTextureFromFileExA(d3d->dev,
+   if(FAILED(D3DXCreateTextureFromFileExA(d3d->dev,
          path, D3DX_DEFAULT, D3DX_DEFAULT, D3DX_DEFAULT, 0, D3DFMT_A8R8G8B8,
          D3DPOOL_MANAGED, D3DX_DEFAULT, D3DX_DEFAULT, 0, &m_imageInfo, NULL,
-         &out_img->pixels);
-
-   if(FAILED(ret))
+         &out_img->pixels)))
    {
       RARCH_ERR("Error occurred during D3DXCreateTextureFromFileExA().\n");
       return false;
    }
 
    // create a vertex buffer for the quad that will display the texture
-   ret = d3d->dev->CreateVertexBuffer(4 * sizeof(DrawVerticeFormats),
-         D3DUSAGE_WRITEONLY, D3DFVF_CUSTOMVERTEX, D3DPOOL_MANAGED, &out_img->vertex_buf);
-
-   if (FAILED(ret))
+   if (FAILED(D3DDevice_CreateVertexBuffers(d3d->dev, 4 * sizeof(Vertex), D3DUSAGE_WRITEONLY, D3DFVF_CUSTOMVERTEX, D3DPOOL_MANAGED, &out_img->vertex_buf, NULL)))
    {
       RARCH_ERR("Error occurred during CreateVertexBuffer().\n");
       out_img->pixels->Release();
