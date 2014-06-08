@@ -186,8 +186,9 @@ static void render_message(gl_raster_t *font, const char *msg, GLfloat scale, co
 
 static void gl_render_msg(void *data, const char *msg, const struct font_params *params)
 {
-   GLfloat x, y, scale;
+   GLfloat x, y, scale, drop_mod;
    GLfloat color[4], color_dark[4];
+   int drop_x, drop_y;
    bool full_screen;
 
    gl_raster_t *font = (gl_raster_t*)data;
@@ -202,6 +203,9 @@ static void gl_render_msg(void *data, const char *msg, const struct font_params 
       y = params->y;
       scale = params->scale;
       full_screen = params->full_screen;
+      drop_x = params->drop_x;
+      drop_y = params->drop_y;
+      drop_mod = params->drop_mod;
 
       color[0] = FONT_COLOR_GET_RED(params->color);
       color[1] = FONT_COLOR_GET_GREEN(params->color);
@@ -223,21 +227,27 @@ static void gl_render_msg(void *data, const char *msg, const struct font_params 
       color[1] = g_settings.video.msg_color_g;
       color[2] = g_settings.video.msg_color_b;
       color[3] = 1.0f;
-   }
 
-   color_dark[0] = color[0] * 0.3f;
-   color_dark[1] = color[1] * 0.3f;
-   color_dark[2] = color[2] * 0.3f;
-   color_dark[3] = color[3];
+      drop_x = -2;
+      drop_y = -2;
+      drop_mod = 0.3f;
+   }
 
    gl_set_viewport(gl, gl->win_width, gl->win_height, full_screen, false);
    glEnable(GL_BLEND);
    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
    glBlendEquation(GL_FUNC_ADD);
 
-   // TODO: Make drop shadows parameterized?
-   render_message(font, msg, scale, color_dark,
-         x - scale * 2.0f / gl->vp.width, y - scale * 2.0f / gl->vp.height);
+   if (drop_x || drop_y)
+   {
+      color_dark[0] = color[0] * drop_mod;
+      color_dark[1] = color[1] * drop_mod;
+      color_dark[2] = color[2] * drop_mod;
+      color_dark[3] = color[3];
+
+      render_message(font, msg, scale, color_dark,
+            x + scale * drop_x / gl->vp.width, y + scale * drop_y / gl->vp.height);
+   }
    render_message(font, msg, scale, color, x, y);
 
    glDisable(GL_BLEND);

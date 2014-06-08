@@ -347,7 +347,9 @@ struct font_params
    float x;
    float y;
    float scale;
-   uint32_t color; // ABGR.
+   float drop_mod; // Drop shadow color multiplier.
+   int drop_x, drop_y; // Drop shadow offset. If both are 0, no drop shadow will be rendered.
+   uint32_t color; // ABGR. Use the macros.
    bool full_screen;
 };
 #define FONT_COLOR_RGBA(r, g, b, a) (((r) << 0) | ((g) << 8) | ((b) << 16) | ((a) << 24))
