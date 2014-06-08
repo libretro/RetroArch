@@ -643,6 +643,7 @@ static void render_pass(void *data, const void *frame, unsigned width, unsigned 
    blit_to_texture(d3d, frame, width, height, pitch);
    set_vertices(d3d, 1, width, height);
 
+#if 0
 #ifdef _XBOX
    if (g_extern.frame_count)
    {
@@ -653,6 +654,7 @@ static void render_pass(void *data, const void *frame, unsigned width, unsigned 
 #endif
    }
    else if (d3d->tex)
+#endif
 #endif
    RD3DDevice_SetTexture(d3dr, 0, d3d->tex);
    RD3DDevice_SetViewport(d3d->dev, &d3d->final_viewport);

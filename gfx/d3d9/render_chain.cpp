@@ -553,17 +553,7 @@ void renderchain_render_pass(void *data, Pass &pass, unsigned pass_index)
    renderchain_t *chain = (renderchain_t*)data;
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)chain->dev;
    renderchain_set_shaders(chain, pass.fPrg, pass.vPrg);
-#ifdef _XBOX
-   if (g_extern.frame_count)
-   {
-#if defined(_XBOX1)
-      d3dr->SwitchTexture(0, pass.tex);
-#elif defined(_XBOX360)
-      d3dr->SetTextureFetchConstant(0, pass.tex);
-#endif
-   }
-   else if(pass.tex)
-#endif
+
    d3dr->SetTexture(0, pass.tex);
    D3DDevice_SetSamplerState_MinFilter(d3dr, 0, translate_filter(pass.info.pass->filter));
    D3DDevice_SetSamplerState_MagFilter(d3dr, 0, translate_filter(pass.info.pass->filter));
