@@ -70,7 +70,9 @@ static void sdl_init_font(sdl_video_t *vid, const char *font_path, unsigned font
    if (!g_settings.video.font_enable)
       return;
 
-   if (font_renderer_create_default(&vid->font_driver, &vid->font))
+   if (font_renderer_create_default(&vid->font_driver, &vid->font,
+            *g_settings.video.font_path ? g_settings.video.font_path : NULL,
+            g_settings.video.font_size))
    {
          int r = g_settings.video.msg_color_r * 255;
          int g = g_settings.video.msg_color_g * 255;
@@ -91,37 +93,34 @@ static void sdl_init_font(sdl_video_t *vid, const char *font_path, unsigned font
 static void sdl_render_msg(sdl_video_t *vid, SDL_Surface *buffer,
       const char *msg, unsigned width, unsigned height, const SDL_PixelFormat *fmt)
 {
-   int x, y, msg_base_x, msg_base_y;
+   int x, y, msg_base_x, msg_base_y, delta_x, delta_y;
    unsigned rshift, gshift, bshift;
-   struct font_output_list out;
-   struct font_output *head;
 
    if (!vid->font)
       return;
 
-   vid->font_driver->render_msg(vid->font, msg, &out);
-   head = (struct font_output*)out.head;
+   const struct font_atlas *atlas = vid->font_driver->get_atlas(vid->font);
 
    msg_base_x = g_settings.video.msg_pos_x * width;
-   msg_base_y = (1.0 - g_settings.video.msg_pos_y) * height;
+   msg_base_y = (1.0f - g_settings.video.msg_pos_y) * height;
 
    rshift = fmt->Rshift;
    gshift = fmt->Gshift;
    bshift = fmt->Bshift;
 
-   for (; head; head = head->next)
+   for (; *msg; msg++)
    {
-      int base_x, base_y, glyph_width, glyph_height, max_width, max_height;
-      const uint8_t *src;
-      uint32_t *out;
+      const struct font_glyph *glyph = vid->font_driver->get_glyph(vid->font, (uint8_t)*msg);
+      if (!glyph)
+         continue;
 
-      base_x = msg_base_x + head->off_x;
-      base_y = msg_base_y - head->off_y - head->height;
+      int glyph_width  = glyph->width;
+      int glyph_height = glyph->height;
 
-      glyph_width  = head->width;
-      glyph_height = head->height;
+      int base_x = msg_base_x + glyph->draw_offset_x;
+      int base_y = msg_base_y + glyph->draw_offset_y;
 
-      src = (const uint8_t*)head->output;
+      const uint8_t *src = atlas->buffer + glyph->atlas_offset_x + glyph->atlas_offset_y * atlas->width;
 
       if (base_x < 0)
       {
@@ -132,13 +131,13 @@ static void sdl_render_msg(sdl_video_t *vid, SDL_Surface *buffer,
 
       if (base_y < 0)
       {
-         src -= base_y * (int)head->pitch;
+         src -= base_y * (int)atlas->width;
          glyph_height += base_y;
          base_y = 0;
       }
 
-      max_width  = width - base_x;
-      max_height = height - base_y;
+      int max_width  = width - base_x;
+      int max_height = height - base_y;
 
       if (max_width <= 0 || max_height <= 0)
          continue;
@@ -148,9 +147,9 @@ static void sdl_render_msg(sdl_video_t *vid, SDL_Surface *buffer,
       if (glyph_height > max_height)
          glyph_height = max_height;
 
-      out = (uint32_t*)buffer->pixels + base_y * (buffer->pitch >> 2) + base_x;
+      uint32_t *out = (uint32_t*)buffer->pixels + base_y * (buffer->pitch >> 2) + base_x;
 
-      for (y = 0; y < glyph_height; y++, src += head->pitch, out += buffer->pitch >> 2)
+      for (y = 0; y < glyph_height; y++, src += atlas->width, out += buffer->pitch >> 2)
       {
          for (x = 0; x < glyph_width; x++)
          {
@@ -166,9 +165,10 @@ static void sdl_render_msg(sdl_video_t *vid, SDL_Surface *buffer,
             out[x] = (out_r << rshift) | (out_g << gshift) | (out_b << bshift);
          }
       }
-   }
 
-   vid->font_driver->free_output(vid->font, &out);
+      msg_base_x += glyph->advance_x;
+      msg_base_y += glyph->advance_y;
+   }
 }
 
 static void sdl_gfx_set_handles(void)
