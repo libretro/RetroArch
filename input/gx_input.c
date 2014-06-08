@@ -258,115 +258,17 @@ static void reset_cb(void)
    g_menu = true;
 }
 
-static bool gx_menu_input_state(uint64_t joykey, uint64_t state)
-{
-   switch (joykey)
-   {
-      case CONSOLE_MENU_A:
-         return state & ((1ULL << GX_GC_A)
-#ifdef HW_RVL
-               | (1ULL << GX_WIIMOTE_A) | (1ULL << GX_CLASSIC_A) | (1ULL << GX_WIIMOTE_2)
-#endif
-               );
-      case CONSOLE_MENU_B:
-         return state & ((1ULL << GX_GC_B)
-#ifdef HW_RVL
-               | (1ULL << GX_WIIMOTE_B) | (1ULL << GX_CLASSIC_B) | (1ULL << GX_WIIMOTE_1)
-#endif
-               );
-      case CONSOLE_MENU_X:
-         return state & ((1ULL << GX_GC_X)
-#ifdef HW_RVL
-               | (1ULL << GX_CLASSIC_X)
-#endif
-               );
-      case CONSOLE_MENU_Y:
-         return state & ((1ULL << GX_GC_Y)
-#ifdef HW_RVL
-               | (1ULL << GX_CLASSIC_Y)
-#endif
-               );
-      case CONSOLE_MENU_START:
-         return state & ((1ULL << GX_GC_START)
-#ifdef HW_RVL
-               | (1ULL << GX_WIIMOTE_PLUS) | (1ULL << GX_CLASSIC_PLUS)
-#endif
-               );
-      case CONSOLE_MENU_SELECT:
-         return state & ((1ULL << GX_GC_Z_TRIGGER)
-#ifdef HW_RVL
-               | (1ULL << GX_WIIMOTE_MINUS) | (1ULL << GX_CLASSIC_MINUS)
-#endif
-               );
-      case CONSOLE_MENU_UP:
-         return state & ((1ULL << GX_GC_UP)
-#ifdef HW_RVL
-               | (1ULL << GX_WIIMOTE_UP) | (1ULL << GX_CLASSIC_UP) |  (1ULL << GX_NUNCHUK_UP)
-#endif
-               );
-      case CONSOLE_MENU_DOWN:
-         return state & ((1ULL << GX_GC_DOWN)
-#ifdef HW_RVL
-               | (1ULL << GX_WIIMOTE_DOWN) | (1ULL << GX_CLASSIC_DOWN) | (1ULL << GX_NUNCHUK_DOWN)
-#endif
-               );
-      case CONSOLE_MENU_LEFT:
-         return state & ((1ULL << GX_GC_LEFT)
-#ifdef HW_RVL
-               | (1ULL << GX_WIIMOTE_LEFT) | (1ULL << GX_CLASSIC_LEFT) | (1ULL << GX_NUNCHUK_LEFT)
-#endif
-               );
-      case CONSOLE_MENU_RIGHT:
-         return state & ((1ULL << GX_GC_RIGHT)
-#ifdef HW_RVL
-               | (1ULL << GX_WIIMOTE_RIGHT) | (1ULL << GX_CLASSIC_RIGHT) | (1ULL << GX_NUNCHUK_RIGHT)
-#endif
-               );
-      case CONSOLE_MENU_L:
-         return state & ((1ULL << GX_GC_L_TRIGGER)
-#ifdef HW_RVL
-               | (1ULL << GX_CLASSIC_L_TRIGGER)
-#endif
-               );
-      case CONSOLE_MENU_R:
-         return state & ((1ULL << GX_GC_R_TRIGGER)
-#ifdef HW_RVL
-               | (1ULL << GX_CLASSIC_R_TRIGGER)
-#endif
-               );
-      case CONSOLE_MENU_HOME:
-         return state & ((1ULL << GX_WIIMOTE_HOME)
-#ifdef HW_RVL
-               | (1ULL << GX_CLASSIC_HOME)
-#endif
-               );
-#ifdef HW_RVL
-      case CONSOLE_MENU_L2:
-         return state & (1ULL << GX_CLASSIC_ZL_TRIGGER);
-      case CONSOLE_MENU_R2:
-         return state & (1ULL << GX_CLASSIC_ZR_TRIGGER);
-#endif
-      default:
-         return false;
-   }
-}
-
 static int16_t gx_input_state(void *data, const struct retro_keybind **binds,
       unsigned port, unsigned device,
       unsigned index, unsigned id)
 {
-   gx_input_t *gx = (gx_input_t*)data;
-
    if (port >= MAX_PADS)
       return 0;
 
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
-         if (binds[port][id].joykey >= CONSOLE_MENU_FIRST && binds[port][id].joykey <= CONSOLE_MENU_LAST)
-            return gx_menu_input_state(binds[port][id].joykey, gx->pad_state[port]) ? 1 : 0;
-         else
-            return input_joypad_pressed(&gx_joypad, port, binds[port], id);;
+         return input_joypad_pressed(&gx_joypad, port, binds[port], id);;
       case RETRO_DEVICE_ANALOG:
          return input_joypad_analog(&gx_joypad, port, index, id, binds[port]);
       default:
