@@ -653,8 +653,8 @@ static bool gfx_ctx_set_video_mode(void *data,
       goto error;
 
    EGLint egl_attribs[16];
-   EGLint *attr = egl_attribs;
-   attr = egl_fill_attribs(attr);
+   EGLint *attr;
+   attr = egl_fill_attribs(egl_attribs);
 
    g_egl_ctx = eglCreateContext(g_egl_dpy, g_config, EGL_NO_CONTEXT,
          attr != egl_attribs ? egl_attribs : NULL);

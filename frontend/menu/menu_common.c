@@ -247,7 +247,8 @@ void load_menu_game_prepare_dummy(void)
 
 bool load_menu_game(void)
 {
-   int rarch_argc, ret, i;
+   int rarch_argc, ret;
+   unsigned i;
    struct rarch_main_wrap args = {0};
    char *argv_copy[MAX_ARGS];
    char *rarch_argv[MAX_ARGS] = {NULL};
