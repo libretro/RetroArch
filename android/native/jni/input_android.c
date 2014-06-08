@@ -285,6 +285,8 @@ static void android_input_set_keybinds(void *data, unsigned device,
 
    if (keybind_action & (1ULL << KEYBINDS_ACTION_SET_DEFAULT_BINDS))
    {
+      int i;
+
       /* eight 8-bit values are packed into one uint64_t
        * one for each of the 8 pads */
       unsigned shift = 8 + (port * 8);
@@ -1521,15 +1523,67 @@ static void android_input_set_keybinds(void *data, unsigned device,
             strlcpy(g_settings.input.device_names[port], "NVIDIA Shield",
                   sizeof(g_settings.input.device_names[port]));
             android->dpad_emulation[port] = ANALOG_DPAD_DUALANALOG;
-            android->keycode_lut[AKEYCODE_BUTTON_B] |= ((RETRO_DEVICE_ID_JOYPAD_A+1) << shift);
-            android->keycode_lut[AKEYCODE_BUTTON_A] |= ((RETRO_DEVICE_ID_JOYPAD_B+1) << shift);
-            android->keycode_lut[AKEYCODE_BUTTON_Y] |= ((RETRO_DEVICE_ID_JOYPAD_X+1) << shift);
-            android->keycode_lut[AKEYCODE_BUTTON_X] |= ((RETRO_DEVICE_ID_JOYPAD_Y+1) << shift);
-            android->keycode_lut[AKEYCODE_BUTTON_L1] |= ((RETRO_DEVICE_ID_JOYPAD_L+1) << shift);
-            android->keycode_lut[AKEYCODE_BUTTON_R1] |= ((RETRO_DEVICE_ID_JOYPAD_R+1) << shift);
-            android->keycode_lut[AKEYCODE_BUTTON_START] |= ((RARCH_MENU_TOGGLE+1) << shift);
-            android->keycode_lut[AKEYCODE_BUTTON_THUMBL] |= ((RETRO_DEVICE_ID_JOYPAD_SELECT+1) << shift);
-            android->keycode_lut[AKEYCODE_BUTTON_THUMBR] |= ((RETRO_DEVICE_ID_JOYPAD_START+1) << shift);
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_B].def_joykey       = (AKEYCODE_BUTTON_A);
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_Y].def_joykey       = (AKEYCODE_BUTTON_X);
+
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_SELECT].def_joykey  = (AKEYCODE_BUTTON_THUMBL);
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_START].def_joykey   = (AKEYCODE_BUTTON_THUMBR);
+
+            // FIXME - Figure out how to map these - Shield doesn't use these key codes - uses HAT_X/HAT_Y instead */
+#if 0
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_UP].def_joykey      = (AKEYCODE_DPAD_UP);
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_DOWN].def_joykey    = (AKEYCODE_DPAD_DOWN);
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_LEFT].def_joykey    = (AKEYCODE_DPAD_LEFT);
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_RIGHT].def_joykey   = (AKEYCODE_DPAD_RIGHT);
+#endif
+
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_A].def_joykey       = (AKEYCODE_BUTTON_B);
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_X].def_joykey       = (AKEYCODE_BUTTON_Y);
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_L].def_joykey       = (AKEYCODE_BUTTON_L1);
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R].def_joykey       = (AKEYCODE_BUTTON_R1);
+
+            // FIXME - Figure out how to map these
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_L2].def_joykey      = (RETRO_DEVICE_ID_JOYPAD_L2);
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R2].def_joykey      = (RETRO_DEVICE_ID_JOYPAD_R2);
+
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_L3].def_joykey      = (RETRO_DEVICE_ID_JOYPAD_L3);
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R3].def_joykey      = (RETRO_DEVICE_ID_JOYPAD_R3);
+
+            /* FIXME - doesn't work */
+            g_settings.input.binds[port][RARCH_MENU_TOGGLE].def_joykey              = (AKEYCODE_BUTTON_START);
+
+            g_settings.input.binds[port][RARCH_ANALOG_LEFT_X_PLUS].def_joykey       = NO_BTN;
+            g_settings.input.binds[port][RARCH_ANALOG_LEFT_X_MINUS].def_joykey      = NO_BTN;
+            g_settings.input.binds[port][RARCH_ANALOG_LEFT_Y_PLUS].def_joykey       = NO_BTN;
+            g_settings.input.binds[port][RARCH_ANALOG_LEFT_Y_MINUS].def_joykey      = NO_BTN;
+            g_settings.input.binds[port][RARCH_ANALOG_RIGHT_X_PLUS].def_joykey      = NO_BTN;
+            g_settings.input.binds[port][RARCH_ANALOG_RIGHT_X_MINUS].def_joykey     = NO_BTN;
+            g_settings.input.binds[port][RARCH_ANALOG_RIGHT_Y_PLUS].def_joykey      = NO_BTN;
+            g_settings.input.binds[port][RARCH_ANALOG_RIGHT_Y_MINUS].def_joykey     = NO_BTN;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_B].def_joyaxis      = AXIS_NONE;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_Y].def_joyaxis      = AXIS_NONE;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_SELECT].def_joyaxis = AXIS_NONE;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_START].def_joyaxis  = AXIS_NONE;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_UP].def_joyaxis     = AXIS_NONE;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_DOWN].def_joyaxis   = AXIS_NONE;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_LEFT].def_joyaxis   = AXIS_NONE;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_RIGHT].def_joyaxis  = AXIS_NONE;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_A].def_joyaxis      = AXIS_NONE;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_X].def_joyaxis      = AXIS_NONE;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_L].def_joyaxis      = AXIS_NONE;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R].def_joyaxis      = AXIS_NONE;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_L2].def_joyaxis     = AXIS_NONE;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R2].def_joyaxis     = AXIS_NONE;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_L3].def_joyaxis     = AXIS_NONE;
+            g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R3].def_joyaxis     = AXIS_NONE;
+            g_settings.input.binds[port][RARCH_ANALOG_LEFT_X_PLUS].def_joyaxis      = AXIS_POS(0);
+            g_settings.input.binds[port][RARCH_ANALOG_LEFT_X_MINUS].def_joyaxis     = AXIS_NEG(0);
+            g_settings.input.binds[port][RARCH_ANALOG_LEFT_Y_PLUS].def_joyaxis      = AXIS_POS(1);
+            g_settings.input.binds[port][RARCH_ANALOG_LEFT_Y_MINUS].def_joyaxis     = AXIS_NEG(1);
+            g_settings.input.binds[port][RARCH_ANALOG_RIGHT_X_PLUS].def_joyaxis     = AXIS_POS(2);
+            g_settings.input.binds[port][RARCH_ANALOG_RIGHT_X_MINUS].def_joyaxis    = AXIS_NEG(2);
+            g_settings.input.binds[port][RARCH_ANALOG_RIGHT_Y_PLUS].def_joyaxis     = AXIS_POS(3);
+            g_settings.input.binds[port][RARCH_ANALOG_RIGHT_Y_MINUS].def_joyaxis    = AXIS_NEG(3);
             break;
          case DEVICE_MUCH_IREADGO_I5:
             g_settings.input.device[port] = device;
@@ -1710,6 +1764,13 @@ static void android_input_set_keybinds(void *data, unsigned device,
             
             android->dpad_emulation[port] = ANALOG_DPAD_DUALANALOG;
             break;
+      }
+
+      for (i = 0; i < RARCH_CUSTOM_BIND_LIST_END; i++)
+      {
+         g_settings.input.binds[port][i].id = i;
+         g_settings.input.binds[port][i].joykey = g_settings.input.binds[port][i].def_joykey;
+         g_settings.input.binds[port][i].joyaxis = g_settings.input.binds[port][i].def_joyaxis;
       }
 
       android->keycode_lut[AKEYCODE_MENU] |= ((RARCH_MENU_TOGGLE + 1) << shift);
