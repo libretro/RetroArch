@@ -1540,7 +1540,6 @@ static void android_input_set_keybinds(void *data, unsigned device,
             g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R3].def_joykey      = (RETRO_DEVICE_ID_JOYPAD_R3);
 
             g_settings.input.binds[port][RARCH_MENU_TOGGLE].def_joykey              = (AKEYCODE_BUTTON_START);
-            g_settings.input.binds[port][RARCH_MENU_TOGGLE].joykey                  = (AKEYCODE_BUTTON_START);
 
             g_settings.input.binds[port][RARCH_ANALOG_LEFT_X_PLUS].def_joykey       = NO_BTN;
             g_settings.input.binds[port][RARCH_ANALOG_LEFT_X_MINUS].def_joykey      = NO_BTN;
