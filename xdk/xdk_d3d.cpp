@@ -515,8 +515,7 @@ static void d3d_draw_texture(void *data)
 #if defined(_XBOX360)
 #define D3DTexture_Blit(d3d, desc, d3dlr, frame, width, height, pitch) \
    d3d->tex->GetLevelDesc(0, &desc); \
-   XGCopySurface(d3dlr.pBits, d3dlr.Pitch, width, height, desc.Format, NULL, frame,
-                                        pitch, desc.Format, NULL, 0, 0)
+   XGCopySurface(d3dlr.pBits, d3dlr.Pitch, width, height, desc.Format, NULL, frame, pitch, desc.Format, NULL, 0, 0)
 #else
 #define D3DTexture_Blit(d3d, desc, d3dlr, frame, width, height, pitch) \
    for (unsigned y = 0; y < height; y++) \
