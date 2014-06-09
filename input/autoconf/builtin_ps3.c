@@ -35,8 +35,8 @@ DECL_BTN(l2, 12) \
 DECL_BTN(r2, 13) \
 DECL_AXIS(l_x_plus,  +0) \
 DECL_AXIS(l_x_minus, -0) \
-DECL_AXIS(l_y_plus,  -1) \
-DECL_AXIS(l_y_minus, +1) \
+DECL_AXIS(l_y_plus,  +1) \
+DECL_AXIS(l_y_minus, -1) \
 DECL_AXIS(r_x_plus,  +2) \
 DECL_AXIS(r_x_minus, -2) \
 DECL_AXIS(r_y_plus,  -3) \
