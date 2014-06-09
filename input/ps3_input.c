@@ -49,26 +49,6 @@ typedef struct
    float z;
 } sensor_t;
 
-const struct platform_bind platform_keys[] = {
-   { (1ULL << RETRO_DEVICE_ID_JOYPAD_B), "Cross button" },
-   { (1ULL << RETRO_DEVICE_ID_JOYPAD_Y), "Square button" },
-   { (1ULL << RETRO_DEVICE_ID_JOYPAD_SELECT), "Select button" },
-   { (1ULL << RETRO_DEVICE_ID_JOYPAD_START), "Start button" },
-   { (1ULL << RETRO_DEVICE_ID_JOYPAD_UP), "D-Pad Up" },
-   { (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN), "D-Pad Down" },
-   { (1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT), "D-Pad Left" },
-   { (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT), "D-Pad Right" },
-   { (1ULL << RETRO_DEVICE_ID_JOYPAD_A), "Circle button" },
-   { (1ULL << RETRO_DEVICE_ID_JOYPAD_X), "Triangle button" },
-   { (1ULL << RETRO_DEVICE_ID_JOYPAD_L), "L1 button" },
-   { (1ULL << RETRO_DEVICE_ID_JOYPAD_R), "R1 button" },
-   { (1ULL << RETRO_DEVICE_ID_JOYPAD_L2), "L2 button" },
-   { (1ULL << RETRO_DEVICE_ID_JOYPAD_R2), "R2 button" },
-   { (1ULL << RETRO_DEVICE_ID_JOYPAD_L3), "L3 button" },
-   { (1ULL << RETRO_DEVICE_ID_JOYPAD_R3), "R3 button" },
-   { (1ULL << RARCH_TURBO_ENABLE), "Turbo button (unmapped)" },
-};
-
 typedef struct ps3_input
 {
    uint64_t pad_state[MAX_PADS];
