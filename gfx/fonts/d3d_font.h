@@ -18,6 +18,7 @@
 
 #include <stdint.h>
 #include "../../boolean.h"
+#include "../../driver.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -27,7 +28,7 @@ typedef struct d3d_font_renderer
 {
    bool (*init)(void *data, const char *font_path, unsigned font_size);
    void (*deinit)(void *data);
-   void (*render_msg)(void *data, const char *msg, void *parms);
+   void (*render_msg)(void *data, const char *msg, const struct font_params *params);
    const char *ident;
 } d3d_font_renderer_t;
 

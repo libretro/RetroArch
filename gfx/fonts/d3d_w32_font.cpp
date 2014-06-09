@@ -49,10 +49,9 @@ static void d3dfonts_w32_deinit_font(void *data)
    d3d->font = NULL;
 }
 
-static void d3dfonts_w32_render_msg(void *data, const char *msg, void *userdata)
+static void d3dfonts_w32_render_msg(void *data, const char *msg, const struct font_params *params)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
-   font_params_t *params = (font_params_t*)userdata;
 
    if (msg && SUCCEEDED(d3d->dev->BeginScene()))
    {
