@@ -301,6 +301,7 @@ INPUT
 #include "../gx/sicksaxis.c"
 #endif
 #include "../input/gx_input.c"
+#include "../input/autoconf/builtin_gx.c"
 #elif defined(_XBOX)
 #include "../input/xdk_xinput_input.c"
 #include "../input/autoconf/builtin_xdk.c"
