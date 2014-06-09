@@ -53,6 +53,9 @@ static const rarch_joypad_driver_t *joypad_drivers[] = {
 #ifdef HAVE_WINXINPUT
    &winxinput_joypad,
 #endif
+#ifdef GEKKO
+   &gx_joypad,
+#endif
 #ifdef _XBOX
    &xdk_joypad,
 #endif

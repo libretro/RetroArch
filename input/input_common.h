@@ -108,6 +108,7 @@ extern const rarch_joypad_driver_t sdl_joypad;
 extern const rarch_joypad_driver_t ps3_joypad;
 extern const rarch_joypad_driver_t psp_joypad;
 extern const rarch_joypad_driver_t xdk_joypad;
+extern const rarch_joypad_driver_t gx_joypad;
 
 struct rarch_key_map
 {

@@ -40,6 +40,9 @@
 #define WPADProbe WPAD_Probe
 #endif
 
+#define WPAD_EXP_SICKSAXIS 253
+#define WPAD_EXP_GAMECUBE  254
+
 enum
 {
    GX_GC_A                 = 0,
@@ -152,21 +155,19 @@ enum gx_device_id
 enum input_devices
 {
    DEVICE_GAMECUBE = 0,
-#ifdef HW_RVL
    DEVICE_WIIMOTE,
    DEVICE_NUNCHUK,
    DEVICE_CLASSIC,
-#ifdef HAVE_LIBSICKSAXIS
    DEVICE_SIXAXIS,
-#endif
-#endif
    DEVICE_LAST
 };
 
 typedef struct gx_input
 {
    uint64_t pad_state[MAX_PADS];
+   uint32_t ptype[MAX_PADS];
    int16_t analog_state[MAX_PADS][2][2];
+   const rarch_joypad_driver_t *joypad;
 } gx_input_t;
 
 const struct platform_bind platform_keys[] = {
@@ -223,7 +224,6 @@ const struct platform_bind platform_keys[] = {
 };
 
 
-extern const rarch_joypad_driver_t gx_joypad;
 
 static bool g_menu;
 
@@ -262,15 +262,16 @@ static int16_t gx_input_state(void *data, const struct retro_keybind **binds,
       unsigned port, unsigned device,
       unsigned index, unsigned id)
 {
-   if (port >= MAX_PADS)
+   gx_input_t *gx = (gx_input_t*)data;
+   if (port >= MAX_PADS || !gx)
       return 0;
 
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
-         return input_joypad_pressed(&gx_joypad, port, binds[port], id);;
+         return input_joypad_pressed(gx->joypad, port, binds[port], id);;
       case RETRO_DEVICE_ANALOG:
-         return input_joypad_analog(&gx_joypad, port, index, id, binds[port]);
+         return input_joypad_analog(gx->joypad, port, index, id, binds[port]);
       default:
          return 0;
    }
@@ -278,20 +279,10 @@ static int16_t gx_input_state(void *data, const struct retro_keybind **binds,
 
 static void gx_input_free_input(void *data)
 {
-   unsigned i;
+   gx_input_t *gx = (gx_input_t*)data;
 
-   for (i = 0; i < MAX_PADS; i++)
-   {
-#ifdef HAVE_LIBSICKSAXIS
-      ss_close(&dev[i]);
-      USB_Deinitialize();
-#endif
-
-#ifdef HW_RVL
-      WPAD_Flush(i);
-      WPADDisconnect(i);
-#endif
-   }
+   if (gx->joypad)
+      gx->joypad->destroy();
 
    free(data);
 }
@@ -612,8 +603,6 @@ static void gx_input_set_keybinds(void *data, unsigned device, unsigned port,
 
 static void *gx_input_init(void)
 {
-   unsigned i;
-
    if (driver.input_data)
       return driver.input_data;
 
@@ -621,27 +610,43 @@ static void *gx_input_init(void)
    if (!gx)
       return NULL;
 
-   PAD_Init();
-#ifdef HAVE_LIBSICKSAXIS
-   USB_Initialize();
-#endif
-#ifdef HW_RVL
-   WPADInit();
-#endif
    SYS_SetResetCallback(reset_cb);
 #ifdef HW_RVL
    SYS_SetPowerCallback(power_callback);
 #endif
 
-   (void)i;
-#ifdef HAVE_LIBSICKSAXIS
-   ss_init();
-   for (i = 0; i < MAX_PADS; i++)
-      ss_initialize(&dev[i]);
-#endif
+   gx->joypad = input_joypad_init_driver(g_settings.input.joypad_driver);
 
    driver.input_data_own = true;
    return gx;
+}
+
+static void handle_hotplug(void *data, unsigned port, uint32_t ptype)
+{
+   gx_input_t *gx = (gx_input_t*)data;
+   gx->ptype[port] = ptype;
+
+   if (!g_settings.input.autodetect_enable)
+      return;
+
+   switch (ptype)
+   {
+      case WPAD_EXP_NUNCHUK:
+         gx_input_set_keybinds(NULL, DEVICE_NUNCHUK, port, 0, (1ULL << KEYBINDS_ACTION_SET_DEFAULT_BINDS));
+         break;
+      case WPAD_EXP_CLASSIC:
+         gx_input_set_keybinds(NULL, DEVICE_CLASSIC, port, 0, (1ULL << KEYBINDS_ACTION_SET_DEFAULT_BINDS));
+         break;
+      case WPAD_EXP_NONE:
+         gx_input_set_keybinds(NULL, DEVICE_WIIMOTE, port, 0, (1ULL << KEYBINDS_ACTION_SET_DEFAULT_BINDS));
+         break;
+      case WPAD_EXP_GAMECUBE:
+         gx_input_set_keybinds(NULL, DEVICE_GAMECUBE, port, 0, (1ULL << KEYBINDS_ACTION_SET_DEFAULT_BINDS));
+         break;
+      case WPAD_EXP_SICKSAXIS:
+         gx_input_set_keybinds(NULL, DEVICE_SIXAXIS, port, 0, (1ULL << KEYBINDS_ACTION_SET_DEFAULT_BINDS));
+         break;
+   }
 }
 
 static void gx_input_poll(void *data)
@@ -663,6 +668,7 @@ static void gx_input_poll(void *data)
    {
       uint32_t down = 0;
       uint64_t *state_cur = &gx->pad_state[port];
+      uint32_t ptype = 0;
 
       if (gcpad & (1 << port))
       {
@@ -695,22 +701,18 @@ static void gx_input_poll(void *data)
          if ((*state_cur & menu_combo) == menu_combo)
             *state_cur |= (1ULL << GX_WIIMOTE_HOME);
 
-         if (g_settings.input.autodetect_enable)
-         {
-            if (strcmp(g_settings.input.device_names[port], "Gamecube Controller") != 0)
-               gx_input_set_keybinds(NULL, DEVICE_GAMECUBE, port, 0, (1ULL << KEYBINDS_ACTION_SET_DEFAULT_BINDS));
-         }
+         if (gx->ptype[port] != WPAD_EXP_GAMECUBE)
+            handle_hotplug(gx, port, WPAD_EXP_GAMECUBE);
+         break;
       }
 
 #ifdef HW_RVL
-      uint32_t ptype = 0;
-      uint32_t connected = WPADProbe(port, &ptype);
-
 #ifdef HAVE_LIBSICKSAXIS
       USB_DeviceChangeNotifyAsync(USB_CLASS_HID, change_cb, (void*)&lol);
 
       if (ss_is_connected(&dev[port]))
       {
+         ptype = WPAD_EXP_SICKSAXIS;
          *state_cur |= (dev[port].pad.buttons.PS)       ? (1ULL << RARCH_MENU_TOGGLE) : 0;
          *state_cur |= (dev[port].pad.buttons.cross)    ? (1ULL << RETRO_DEVICE_ID_JOYPAD_B) : 0;
          *state_cur |= (dev[port].pad.buttons.square)   ? (1ULL << RETRO_DEVICE_ID_JOYPAD_Y) : 0;
@@ -733,16 +735,20 @@ static void gx_input_poll(void *data)
       {
          if (ss_open(&dev[port]) > 0)
          {
+            ptype = WPAD_EXP_SICKSAXIS;
             ss_start_reading(&dev[port]);
             ss_set_removal_cb(&dev[port], removal_cb, (void*)1);
-            if (g_settings.input.autodetect_enable)
-            {
-               if (strcmp(g_settings.input.device_names[port], "DualShock3/Sixaxis") != 0)
-                  gx_input_set_keybinds(NULL, DEVICE_SIXAXIS, port, 0, (1ULL << KEYBINDS_ACTION_SET_DEFAULT_BINDS));
-            }
          }
       }
+
+      if (ptype == WPAD_EXP_SICKSAXIS && gx->ptype[port] != WPAD_EXP_SICKSAXIS)
+      {
+         handle_hotplug(gx, port, WPAD_EXP_SICKSAXIS);
+         break;
+      }
 #endif
+
+      uint32_t connected = WPADProbe(port, &ptype);
       
       if (connected == WPAD_ERR_NONE)
       {
@@ -820,12 +826,6 @@ static void gx_input_poll(void *data)
             gx->analog_state[port][RETRO_DEVICE_INDEX_ANALOG_LEFT][RETRO_DEVICE_ID_ANALOG_Y] = ls_y;
             gx->analog_state[port][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_X] = rs_x;
             gx->analog_state[port][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_Y] = rs_y;
-
-            if (g_settings.input.autodetect_enable)
-            {
-               if (strcmp(g_settings.input.device_names[port], "Classic Controller") != 0)
-                  gx_input_set_keybinds(NULL, DEVICE_CLASSIC, port, 0, (1ULL << KEYBINDS_ACTION_SET_DEFAULT_BINDS));
-            }
          }
          else if (ptype == WPAD_EXP_NUNCHUK)
          {
@@ -855,29 +855,20 @@ static void gx_input_poll(void *data)
             gx->analog_state[port][RETRO_DEVICE_INDEX_ANALOG_LEFT][RETRO_DEVICE_ID_ANALOG_X] = x;
             gx->analog_state[port][RETRO_DEVICE_INDEX_ANALOG_LEFT][RETRO_DEVICE_ID_ANALOG_Y] = y;
 
-            if (g_settings.input.autodetect_enable)
-            {
-               if (strcmp(g_settings.input.device_names[port], "Wiimote + Nunchuk") != 0)
-                  gx_input_set_keybinds(NULL, DEVICE_NUNCHUK, port, 0, (1ULL << KEYBINDS_ACTION_SET_DEFAULT_BINDS));
-            }
          }
-         else
-         {
-            //no attachment, assume standalone Wiimote
-            if (g_settings.input.autodetect_enable)
-            {
-               if (strcmp(g_settings.input.device_names[port], "Wiimote") != 0)
-                  gx_input_set_keybinds(NULL, DEVICE_WIIMOTE, port, 0, (1ULL << KEYBINDS_ACTION_SET_DEFAULT_BINDS));
-            }
-         }
+
+         if (ptype != gx->ptype[port])
+            handle_hotplug(gx, port, ptype);
       }
 
-      for (int i = 0; i < 2; i++)
-         for (int j = 0; j < 2; j++)
-            if (gx->analog_state[port][i][j] == -0x8000)
-               gx->analog_state[port][i][j] = -0x7fff;
 #endif
    }
+
+   for (int k = 0; k < MAX_PADS; k++)
+      for (int i = 0; i < 2; i++)
+         for (int j = 0; j < 2; j++)
+            if (gx->analog_state[k][i][j] == -0x8000)
+               gx->analog_state[k][i][j] = -0x7fff;
 
    uint64_t *state_p1 = &gx->pad_state[0];
    uint64_t *lifecycle_state = &g_extern.lifecycle_state;
@@ -944,6 +935,17 @@ const input_driver_t input_gx = {
 
 static bool gx_joypad_init(void)
 {
+   PAD_Init();
+#ifdef HW_RVL
+   WPADInit();
+#endif
+#ifdef HAVE_LIBSICKSAXIS
+   int i;
+   USB_Initialize();
+   ss_init();
+   for (i = 0; i < MAX_PADS; i++)
+      ss_initialize(&dev[i]);
+#endif
    return true;
 }
 
@@ -1013,6 +1015,19 @@ static const char *gx_joypad_name(unsigned pad)
 
 static void gx_joypad_destroy(void)
 {
+   int i;
+   for (i = 0; i < MAX_PADS; i++)
+   {
+#ifdef HAVE_LIBSICKSAXIS
+      ss_close(&dev[i]);
+      USB_Deinitialize();
+#endif
+
+#ifdef HW_RVL
+      WPAD_Flush(i);
+      WPADDisconnect(i);
+#endif
+   }
 }
 
 const rarch_joypad_driver_t gx_joypad = {
