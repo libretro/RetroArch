@@ -330,6 +330,10 @@ static void *gx_input_init(void)
 static void handle_hotplug(void *data, unsigned port, uint32_t ptype)
 {
    gx_input_t *gx = (gx_input_t*)data;
+
+   if (ptype == 0)
+      return;
+
    gx->ptype[port] = ptype;
 
    if (!g_settings.input.autodetect_enable)
@@ -360,86 +364,10 @@ static void gx_input_poll(void *data)
       uint64_t *state_cur = &gx->pad_state[port];
       uint32_t ptype = 0;
 
-      if (gcpad & (1 << port))
-      {
-         down = PAD_ButtonsHeld(port);
-
-         *state_cur |= (down & PAD_BUTTON_A) ? (1ULL << GX_GC_A) : 0;
-         *state_cur |= (down & PAD_BUTTON_B) ? (1ULL << GX_GC_B) : 0;
-         *state_cur |= (down & PAD_BUTTON_X) ? (1ULL << GX_GC_X) : 0;
-         *state_cur |= (down & PAD_BUTTON_Y) ? (1ULL << GX_GC_Y) : 0;
-         *state_cur |= (down & PAD_BUTTON_UP) ? (1ULL << GX_GC_UP) : 0;
-         *state_cur |= (down & PAD_BUTTON_DOWN) ? (1ULL << GX_GC_DOWN) : 0;
-         *state_cur |= (down & PAD_BUTTON_LEFT) ? (1ULL << GX_GC_LEFT) : 0;
-         *state_cur |= (down & PAD_BUTTON_RIGHT) ? (1ULL << GX_GC_RIGHT) : 0;
-         *state_cur |= (down & PAD_BUTTON_START) ? (1ULL << GX_GC_START) : 0;
-         *state_cur |= (down & PAD_TRIGGER_Z) ? (1ULL << GX_GC_Z_TRIGGER) : 0;
-         *state_cur |= ((down & PAD_TRIGGER_L) || PAD_TriggerL(port) > 127) ? (1ULL << GX_GC_L_TRIGGER) : 0;
-         *state_cur |= ((down & PAD_TRIGGER_R) || PAD_TriggerR(port) > 127) ? (1ULL << GX_GC_R_TRIGGER) : 0;
-
-         int16_t ls_x = (int16_t)PAD_StickX(port) * 256;
-         int16_t ls_y = (int16_t)PAD_StickY(port) * -256;
-         int16_t rs_x = (int16_t)PAD_SubStickX(port) * 256;
-         int16_t rs_y = (int16_t)PAD_SubStickY(port) * -256;
-
-         gx->analog_state[port][RETRO_DEVICE_INDEX_ANALOG_LEFT][RETRO_DEVICE_ID_ANALOG_X] = ls_x;
-         gx->analog_state[port][RETRO_DEVICE_INDEX_ANALOG_LEFT][RETRO_DEVICE_ID_ANALOG_Y] = ls_y;
-         gx->analog_state[port][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_X] = rs_x;
-         gx->analog_state[port][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_Y] = rs_y;
-
-         const uint64_t menu_combo = (1ULL << GX_GC_START) | (1ULL << GX_GC_Z_TRIGGER) | (1ULL << GX_GC_L_TRIGGER) | (1ULL << GX_GC_R_TRIGGER);
-         if ((*state_cur & menu_combo) == menu_combo)
-            *state_cur |= (1ULL << GX_WIIMOTE_HOME);
-
-         if (gx->ptype[port] != WPAD_EXP_GAMECUBE)
-            handle_hotplug(gx, port, WPAD_EXP_GAMECUBE);
-         break;
-      }
-
 #ifdef HW_RVL
-#ifdef HAVE_LIBSICKSAXIS
-      USB_DeviceChangeNotifyAsync(USB_CLASS_HID, change_cb, (void*)&lol);
-
-      if (ss_is_connected(&dev[port]))
-      {
-         ptype = WPAD_EXP_SICKSAXIS;
-         *state_cur |= (dev[port].pad.buttons.PS)       ? (1ULL << RARCH_MENU_TOGGLE) : 0;
-         *state_cur |= (dev[port].pad.buttons.cross)    ? (1ULL << RETRO_DEVICE_ID_JOYPAD_B) : 0;
-         *state_cur |= (dev[port].pad.buttons.square)   ? (1ULL << RETRO_DEVICE_ID_JOYPAD_Y) : 0;
-         *state_cur |= (dev[port].pad.buttons.select)   ? (1ULL << RETRO_DEVICE_ID_JOYPAD_SELECT) : 0;
-         *state_cur |= (dev[port].pad.buttons.start)    ? (1ULL << RETRO_DEVICE_ID_JOYPAD_START) : 0;
-         *state_cur |= (dev[port].pad.buttons.up)       ? (1ULL << RETRO_DEVICE_ID_JOYPAD_UP) : 0;
-         *state_cur |= (dev[port].pad.buttons.down)     ? (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN) : 0;
-         *state_cur |= (dev[port].pad.buttons.left)     ? (1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT) : 0;
-         *state_cur |= (dev[port].pad.buttons.right)    ? (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT) : 0;
-         *state_cur |= (dev[port].pad.buttons.circle)   ? (1ULL << RETRO_DEVICE_ID_JOYPAD_A) : 0;
-         *state_cur |= (dev[port].pad.buttons.triangle) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_X) : 0;
-         *state_cur |= (dev[port].pad.buttons.L1)       ? (1ULL << RETRO_DEVICE_ID_JOYPAD_L) : 0;
-         *state_cur |= (dev[port].pad.buttons.R1)       ? (1ULL << RETRO_DEVICE_ID_JOYPAD_R) : 0;
-         *state_cur |= (dev[port].pad.buttons.L2)       ? (1ULL << RETRO_DEVICE_ID_JOYPAD_L2) : 0;
-         *state_cur |= (dev[port].pad.buttons.R2)       ? (1ULL << RETRO_DEVICE_ID_JOYPAD_R2) : 0;
-         *state_cur |= (dev[port].pad.buttons.L3)       ? (1ULL << RETRO_DEVICE_ID_JOYPAD_L3) : 0;
-         *state_cur |= (dev[port].pad.buttons.R3)       ? (1ULL << RETRO_DEVICE_ID_JOYPAD_R3) : 0;
-      }
-      else
-      {
-         if (ss_open(&dev[port]) > 0)
-         {
-            ptype = WPAD_EXP_SICKSAXIS;
-            ss_start_reading(&dev[port]);
-            ss_set_removal_cb(&dev[port], removal_cb, (void*)1);
-         }
-      }
-
-      if (ptype == WPAD_EXP_SICKSAXIS && gx->ptype[port] != WPAD_EXP_SICKSAXIS)
-      {
-         handle_hotplug(gx, port, WPAD_EXP_SICKSAXIS);
-         break;
-      }
-#endif
 
       uint32_t connected = WPADProbe(port, &ptype);
-      
+
       if (connected == WPAD_ERR_NONE)
       {
          WPADData *wpaddata = WPAD_Data(port);
@@ -456,14 +384,14 @@ static void gx_input_poll(void *data)
          *state_cur |= (down & WPAD_BUTTON_MINUS) ? (1ULL << GX_WIIMOTE_MINUS) : 0;
          *state_cur |= (down & WPAD_BUTTON_HOME) ? (1ULL << GX_WIIMOTE_HOME) : 0;
 
-          if (ptype != WPAD_EXP_NUNCHUK)
-          {
-             // rotated d-pad on Wiimote
-             *state_cur |= (down & WPAD_BUTTON_UP) ? (1ULL << GX_WIIMOTE_LEFT) : 0;
-             *state_cur |= (down & WPAD_BUTTON_DOWN) ? (1ULL << GX_WIIMOTE_RIGHT) : 0;
-             *state_cur |= (down & WPAD_BUTTON_LEFT) ? (1ULL << GX_WIIMOTE_DOWN) : 0;
-             *state_cur |= (down & WPAD_BUTTON_RIGHT) ? (1ULL << GX_WIIMOTE_UP) : 0;
-          }
+         if (ptype != WPAD_EXP_NUNCHUK)
+         {
+            // rotated d-pad on Wiimote
+            *state_cur |= (down & WPAD_BUTTON_UP) ? (1ULL << GX_WIIMOTE_LEFT) : 0;
+            *state_cur |= (down & WPAD_BUTTON_DOWN) ? (1ULL << GX_WIIMOTE_RIGHT) : 0;
+            *state_cur |= (down & WPAD_BUTTON_LEFT) ? (1ULL << GX_WIIMOTE_DOWN) : 0;
+            *state_cur |= (down & WPAD_BUTTON_RIGHT) ? (1ULL << GX_WIIMOTE_UP) : 0;
+         }
 
 
          if (ptype == WPAD_EXP_CLASSIC)
@@ -546,19 +474,91 @@ static void gx_input_poll(void *data)
             gx->analog_state[port][RETRO_DEVICE_INDEX_ANALOG_LEFT][RETRO_DEVICE_ID_ANALOG_Y] = y;
 
          }
+      }
+#endif
+      else
+      {
+         if (gcpad & (1 << port))
+         {
+            down = PAD_ButtonsHeld(port);
 
-         if (ptype != gx->ptype[port])
-            handle_hotplug(gx, port, ptype);
+            *state_cur |= (down & PAD_BUTTON_A) ? (1ULL << GX_GC_A) : 0;
+            *state_cur |= (down & PAD_BUTTON_B) ? (1ULL << GX_GC_B) : 0;
+            *state_cur |= (down & PAD_BUTTON_X) ? (1ULL << GX_GC_X) : 0;
+            *state_cur |= (down & PAD_BUTTON_Y) ? (1ULL << GX_GC_Y) : 0;
+            *state_cur |= (down & PAD_BUTTON_UP) ? (1ULL << GX_GC_UP) : 0;
+            *state_cur |= (down & PAD_BUTTON_DOWN) ? (1ULL << GX_GC_DOWN) : 0;
+            *state_cur |= (down & PAD_BUTTON_LEFT) ? (1ULL << GX_GC_LEFT) : 0;
+            *state_cur |= (down & PAD_BUTTON_RIGHT) ? (1ULL << GX_GC_RIGHT) : 0;
+            *state_cur |= (down & PAD_BUTTON_START) ? (1ULL << GX_GC_START) : 0;
+            *state_cur |= (down & PAD_TRIGGER_Z) ? (1ULL << GX_GC_Z_TRIGGER) : 0;
+            *state_cur |= ((down & PAD_TRIGGER_L) || PAD_TriggerL(port) > 127) ? (1ULL << GX_GC_L_TRIGGER) : 0;
+            *state_cur |= ((down & PAD_TRIGGER_R) || PAD_TriggerR(port) > 127) ? (1ULL << GX_GC_R_TRIGGER) : 0;
+
+            int16_t ls_x = (int16_t)PAD_StickX(port) * 256;
+            int16_t ls_y = (int16_t)PAD_StickY(port) * -256;
+            int16_t rs_x = (int16_t)PAD_SubStickX(port) * 256;
+            int16_t rs_y = (int16_t)PAD_SubStickY(port) * -256;
+
+            gx->analog_state[port][RETRO_DEVICE_INDEX_ANALOG_LEFT][RETRO_DEVICE_ID_ANALOG_X] = ls_x;
+            gx->analog_state[port][RETRO_DEVICE_INDEX_ANALOG_LEFT][RETRO_DEVICE_ID_ANALOG_Y] = ls_y;
+            gx->analog_state[port][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_X] = rs_x;
+            gx->analog_state[port][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_Y] = rs_y;
+
+            const uint64_t menu_combo = (1ULL << GX_GC_START) | (1ULL << GX_GC_Z_TRIGGER) | (1ULL << GX_GC_L_TRIGGER) | (1ULL << GX_GC_R_TRIGGER);
+            if ((*state_cur & menu_combo) == menu_combo)
+               *state_cur |= (1ULL << GX_WIIMOTE_HOME);
+
+            ptype = WPAD_EXP_GAMECUBE;
+         }
+#ifdef HAVE_LIBSICKSAXIS
+         else
+         {
+            USB_DeviceChangeNotifyAsync(USB_CLASS_HID, change_cb, (void*)&lol);
+
+            if (ss_is_connected(&dev[port]))
+            {
+               ptype = WPAD_EXP_SICKSAXIS;
+               *state_cur |= (dev[port].pad.buttons.PS)       ? (1ULL << RARCH_MENU_TOGGLE) : 0;
+               *state_cur |= (dev[port].pad.buttons.cross)    ? (1ULL << RETRO_DEVICE_ID_JOYPAD_B) : 0;
+               *state_cur |= (dev[port].pad.buttons.square)   ? (1ULL << RETRO_DEVICE_ID_JOYPAD_Y) : 0;
+               *state_cur |= (dev[port].pad.buttons.select)   ? (1ULL << RETRO_DEVICE_ID_JOYPAD_SELECT) : 0;
+               *state_cur |= (dev[port].pad.buttons.start)    ? (1ULL << RETRO_DEVICE_ID_JOYPAD_START) : 0;
+               *state_cur |= (dev[port].pad.buttons.up)       ? (1ULL << RETRO_DEVICE_ID_JOYPAD_UP) : 0;
+               *state_cur |= (dev[port].pad.buttons.down)     ? (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN) : 0;
+               *state_cur |= (dev[port].pad.buttons.left)     ? (1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT) : 0;
+               *state_cur |= (dev[port].pad.buttons.right)    ? (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT) : 0;
+               *state_cur |= (dev[port].pad.buttons.circle)   ? (1ULL << RETRO_DEVICE_ID_JOYPAD_A) : 0;
+               *state_cur |= (dev[port].pad.buttons.triangle) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_X) : 0;
+               *state_cur |= (dev[port].pad.buttons.L1)       ? (1ULL << RETRO_DEVICE_ID_JOYPAD_L) : 0;
+               *state_cur |= (dev[port].pad.buttons.R1)       ? (1ULL << RETRO_DEVICE_ID_JOYPAD_R) : 0;
+               *state_cur |= (dev[port].pad.buttons.L2)       ? (1ULL << RETRO_DEVICE_ID_JOYPAD_L2) : 0;
+               *state_cur |= (dev[port].pad.buttons.R2)       ? (1ULL << RETRO_DEVICE_ID_JOYPAD_R2) : 0;
+               *state_cur |= (dev[port].pad.buttons.L3)       ? (1ULL << RETRO_DEVICE_ID_JOYPAD_L3) : 0;
+               *state_cur |= (dev[port].pad.buttons.R3)       ? (1ULL << RETRO_DEVICE_ID_JOYPAD_R3) : 0;
+            }
+            else
+            {
+               if (ss_open(&dev[port]) > 0)
+               {
+                  ptype = WPAD_EXP_SICKSAXIS;
+                  ss_start_reading(&dev[port]);
+                  ss_set_removal_cb(&dev[port], removal_cb, (void*)1);
+               }
+            }
+         }
+#endif
       }
 
-#endif
-   }
+      if (ptype != gx->ptype[port])
+         handle_hotplug(gx, port, ptype);
 
-   for (int k = 0; k < MAX_PADS; k++)
       for (int i = 0; i < 2; i++)
          for (int j = 0; j < 2; j++)
-            if (gx->analog_state[k][i][j] == -0x8000)
-               gx->analog_state[k][i][j] = -0x7fff;
+            if (gx->analog_state[port][i][j] == -0x8000)
+               gx->analog_state[port][i][j] = -0x7fff;
+   }
+
 
    uint64_t *state_p1 = &gx->pad_state[0];
    uint64_t *lifecycle_state = &g_extern.lifecycle_state;
