@@ -82,23 +82,6 @@ static void xenon360_input_free_input(void *data)
    (void)data;
 }
 
-static void xenon360_input_set_keybinds(void *data, unsigned device,
-      unsigned port, unsigned id, unsigned keybind_action)
-{
-   (void)data;
-   (void)device;
-   (void)id;
-
-   if (keybind_action & (1ULL << KEYBINDS_ACTION_SET_DEFAULT_BINDS))
-   {
-      for (unsigned i = 0; i < RARCH_CUSTOM_BIND_LIST_END; i++)
-      {
-         g_settings.input.binds[port][i].id = i;
-         g_settings.input.binds[port][i].joykey = g_settings.input.binds[port][i].def_joykey;
-      }
-   }
-}
-
 static void* xenon360_input_init(void)
 {
    return (void*)-1;
@@ -124,7 +107,7 @@ const input_driver_t input_xenon360 = {
    xenon360_input_state,
    xenon360_input_key_pressed,
    xenon360_input_free_input,
-   xenon360_input_set_keybinds,
+   NULL,
    NULL,
    NULL,
    xenon360_input_get_capabilities,
