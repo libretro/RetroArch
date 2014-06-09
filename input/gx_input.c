@@ -331,9 +331,6 @@ static void handle_hotplug(void *data, unsigned port, uint32_t ptype)
 {
    gx_input_t *gx = (gx_input_t*)data;
 
-   if (ptype == 0)
-      return;
-
    gx->ptype[port] = ptype;
 
    if (!g_settings.input.autodetect_enable)
@@ -475,6 +472,8 @@ static void gx_input_poll(void *data)
 
          }
       }
+#else
+      ptype = WPAD_EXP_GAMECUBE;
 #endif
       else
       {
