@@ -45,127 +45,6 @@ typedef struct xdk_input
 #endif
 } xdk_input_t;
 
-
-const struct platform_bind platform_keys[] = {
-   { (RETRO_DEVICE_ID_JOYPAD_B), "A button" },
-   { (RETRO_DEVICE_ID_JOYPAD_Y), "X button" },
-   { (RETRO_DEVICE_ID_JOYPAD_SELECT), "Back button" },
-   { (RETRO_DEVICE_ID_JOYPAD_START), "Start button" },
-   { (RETRO_DEVICE_ID_JOYPAD_UP), "D-Pad Up" },
-   { (RETRO_DEVICE_ID_JOYPAD_DOWN), "D-Pad Down" },
-   { (RETRO_DEVICE_ID_JOYPAD_LEFT), "D-Pad Left" },
-   { (RETRO_DEVICE_ID_JOYPAD_RIGHT), "D-Pad Right" },
-   { (RETRO_DEVICE_ID_JOYPAD_A), "B button" },
-   { (RETRO_DEVICE_ID_JOYPAD_X), "Y button" },
-   { (RETRO_DEVICE_ID_JOYPAD_L), "Left trigger" },
-   { (RETRO_DEVICE_ID_JOYPAD_R), "Right trigger" },
-#if defined(_XBOX360)
-   { (RETRO_DEVICE_ID_JOYPAD_L2), "Left shoulder" },
-   { (RETRO_DEVICE_ID_JOYPAD_R2), "Right shoulder" },
-#elif defined(_XBOX1)
-   { (RETRO_DEVICE_ID_JOYPAD_L2), "Black button" },
-   { (RETRO_DEVICE_ID_JOYPAD_R2), "White button" },
-#endif
-   { (RETRO_DEVICE_ID_JOYPAD_L3), "Left thumb" },
-   { (RETRO_DEVICE_ID_JOYPAD_R3), "Right thumb" },
-};
-
-extern const rarch_joypad_driver_t xdk_joypad;
-
-static void xdk_input_set_keybinds(void *data, unsigned device,
-      unsigned port, unsigned id, unsigned keybind_action)
-{
-   uint64_t *key = &g_settings.input.binds[port][id].joykey;
-   uint64_t joykey = *key;
-   size_t arr_size = sizeof(platform_keys) / sizeof(platform_keys[0]);
-
-   (void)device;
-
-   if (keybind_action & (1ULL << KEYBINDS_ACTION_SET_DEFAULT_BIND))
-      *key = g_settings.input.binds[port][id].def_joykey;
-
-   if (keybind_action & (1ULL << KEYBINDS_ACTION_SET_DEFAULT_BINDS))
-   {
-      strlcpy(g_settings.input.device_names[port], "Xbox", sizeof(g_settings.input.device_names[port]));
-      g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_B].def_joykey       = (RETRO_DEVICE_ID_JOYPAD_B);
-      g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_Y].def_joykey       = (RETRO_DEVICE_ID_JOYPAD_Y);
-      g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_SELECT].def_joykey  = (RETRO_DEVICE_ID_JOYPAD_SELECT);
-      g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_START].def_joykey   = (RETRO_DEVICE_ID_JOYPAD_START);
-      g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_UP].def_joykey      = (RETRO_DEVICE_ID_JOYPAD_UP);
-      g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_DOWN].def_joykey    = (RETRO_DEVICE_ID_JOYPAD_DOWN);
-      g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_LEFT].def_joykey    = (RETRO_DEVICE_ID_JOYPAD_LEFT);
-      g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_RIGHT].def_joykey   = (RETRO_DEVICE_ID_JOYPAD_RIGHT);
-      g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_A].def_joykey       = (RETRO_DEVICE_ID_JOYPAD_A);
-      g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_X].def_joykey       = (RETRO_DEVICE_ID_JOYPAD_X);
-      g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_L].def_joykey       = (RETRO_DEVICE_ID_JOYPAD_L);
-      g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R].def_joykey       = (RETRO_DEVICE_ID_JOYPAD_R);
-      g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_L2].def_joykey      = (RETRO_DEVICE_ID_JOYPAD_L2);
-      g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R2].def_joykey      = (RETRO_DEVICE_ID_JOYPAD_R2);
-      g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_L3].def_joykey      = (RETRO_DEVICE_ID_JOYPAD_L3);
-      g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R3].def_joykey      = (RETRO_DEVICE_ID_JOYPAD_R3);
-      g_settings.input.binds[port][RARCH_ANALOG_LEFT_X_PLUS].def_joykey       = NO_BTN;
-      g_settings.input.binds[port][RARCH_ANALOG_LEFT_X_MINUS].def_joykey      = NO_BTN;
-      g_settings.input.binds[port][RARCH_ANALOG_LEFT_Y_PLUS].def_joykey       = NO_BTN;
-      g_settings.input.binds[port][RARCH_ANALOG_LEFT_Y_MINUS].def_joykey      = NO_BTN;
-      g_settings.input.binds[port][RARCH_ANALOG_RIGHT_X_PLUS].def_joykey      = NO_BTN;
-      g_settings.input.binds[port][RARCH_ANALOG_RIGHT_X_MINUS].def_joykey     = NO_BTN;
-      g_settings.input.binds[port][RARCH_ANALOG_RIGHT_Y_PLUS].def_joykey      = NO_BTN;
-      g_settings.input.binds[port][RARCH_ANALOG_RIGHT_Y_MINUS].def_joykey     = NO_BTN;
-      g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_B].def_joyaxis      = AXIS_NONE;
-      g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_Y].def_joyaxis      = AXIS_NONE;
-      g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_SELECT].def_joyaxis = AXIS_NONE;
-      g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_START].def_joyaxis  = AXIS_NONE;
-      g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_UP].def_joyaxis     = AXIS_NONE;
-      g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_DOWN].def_joyaxis   = AXIS_NONE;
-      g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_LEFT].def_joyaxis   = AXIS_NONE;
-      g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_RIGHT].def_joyaxis  = AXIS_NONE;
-      g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_A].def_joyaxis      = AXIS_NONE;
-      g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_X].def_joyaxis      = AXIS_NONE;
-      g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_L].def_joyaxis      = AXIS_NONE;
-      g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R].def_joyaxis      = AXIS_NONE;
-      g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_L2].def_joyaxis     = AXIS_NONE;
-      g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R2].def_joyaxis     = AXIS_NONE;
-      g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_L3].def_joyaxis     = AXIS_NONE;
-      g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R3].def_joyaxis     = AXIS_NONE;
-      g_settings.input.binds[port][RARCH_ANALOG_LEFT_X_PLUS].def_joyaxis      = AXIS_POS(0);
-      g_settings.input.binds[port][RARCH_ANALOG_LEFT_X_MINUS].def_joyaxis     = AXIS_NEG(0);
-      g_settings.input.binds[port][RARCH_ANALOG_LEFT_Y_PLUS].def_joyaxis      = AXIS_NEG(1);
-      g_settings.input.binds[port][RARCH_ANALOG_LEFT_Y_MINUS].def_joyaxis     = AXIS_POS(1);
-      g_settings.input.binds[port][RARCH_ANALOG_RIGHT_X_PLUS].def_joyaxis     = AXIS_POS(2);
-      g_settings.input.binds[port][RARCH_ANALOG_RIGHT_X_MINUS].def_joyaxis    = AXIS_NEG(2);
-      g_settings.input.binds[port][RARCH_ANALOG_RIGHT_Y_PLUS].def_joyaxis     = AXIS_NEG(3);
-      g_settings.input.binds[port][RARCH_ANALOG_RIGHT_Y_MINUS].def_joyaxis    = AXIS_POS(3);
-
-      for (int i = 0; i < RARCH_CUSTOM_BIND_LIST_END; i++)
-      {
-         g_settings.input.binds[port][i].id = i;
-         g_settings.input.binds[port][i].joykey = g_settings.input.binds[port][i].def_joykey;
-         g_settings.input.binds[port][i].joyaxis = g_settings.input.binds[port][i].def_joyaxis;
-      }
-
-   }
-
-   if (keybind_action & (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL))
-   {
-      struct platform_bind *ret = (struct platform_bind*)data;
-
-      if (ret->joykey == NO_BTN)
-         strlcpy(ret->desc, "No button", sizeof(ret->desc));
-      else
-      {
-         for (size_t i = 0; i < arr_size; i++)
-         {
-            if (platform_keys[i].joykey == ret->joykey)
-            {
-               strlcpy(ret->desc, platform_keys[i].desc, sizeof(ret->desc));
-               return;
-            }
-         }
-         strlcpy(ret->desc, "Unknown", sizeof(ret->desc));
-      }
-   }
-}
-
 static void xdk_input_poll(void *data)
 {
    xdk_input_t *xdk = (xdk_input_t*)data;
@@ -264,12 +143,6 @@ static void xdk_input_poll(void *data)
       xdk->analog_state[port][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_X] = state_tmp.Gamepad.sThumbRX;
       xdk->analog_state[port][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_Y] = state_tmp.Gamepad.sThumbRY;
 
-      if (g_settings.input.autodetect_enable)
-      {
-         if (strcmp(g_settings.input.device_names[port], "Xbox") != 0)
-            xdk_input_set_keybinds(NULL, DEVICE_XBOX_PAD, port, 0, (1ULL << KEYBINDS_ACTION_SET_DEFAULT_BINDS));
-      }
-
       for (int i = 0; i < 2; i++)
          for (int j = 0; j < 2; j++)
             if (xdk->analog_state[port][i][j] == -0x8000)
@@ -297,9 +170,9 @@ static int16_t xdk_input_state(void *data, const struct retro_keybind **binds,
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
-         return input_joypad_pressed(&xdk_joypad, port, binds[port], id);
+         return input_joypad_pressed(xdk->joypad, port, binds[port], id);
       case RETRO_DEVICE_ANALOG:
-         return input_joypad_analog(&xdk_joypad, port, index, id, binds[port]);
+         return input_joypad_analog(xdk->joypad, port, index, id, binds[port]);
       default:
          return 0;
    }
@@ -307,6 +180,11 @@ static int16_t xdk_input_state(void *data, const struct retro_keybind **binds,
 
 static void xdk_input_free_input(void *data)
 {
+   xdk_input_t *xdk = (xdk_input_t*)data;
+
+   if (xdk->joypad)
+      xdk->joypad->destroy();
+
    free(data);
 }
 
@@ -335,12 +213,14 @@ static void *xdk_input_init(void)
    while(XGetDeviceEnumerationStatus() == XDEVICE_ENUMERATION_BUSY) {}
 #endif
 
+   xdk->joypad = input_joypad_init_driver(g_settings.input.joypad_driver);
    return xdk;
 }
 
 static bool xdk_input_key_pressed(void *data, int key)
 {
-   return (g_extern.lifecycle_state & (1ULL << key)) || input_joypad_pressed(&xdk_joypad, 0, g_settings.input.binds[0], key);
+   xdk_input_t *xdk = (xdk_input_t*)data;
+   return (g_extern.lifecycle_state & (1ULL << key)) || input_joypad_pressed(xdk->joypad, 0, g_settings.input.binds[0], key);
 }
 
 static uint64_t xdk_input_get_capabilities(void *data)
@@ -388,7 +268,8 @@ static bool xdk_input_set_rumble(void *data, unsigned port, enum retro_rumble_ef
 
 static const rarch_joypad_driver_t *xdk_input_get_joypad_driver(void *data)
 {
-   return &xdk_joypad;
+   xdk_input_t *xdk = (xdk_input_t*)data;
+   return xdk->joypad;
 }
 
 static unsigned xdk_input_devices_size(void *data)
@@ -403,7 +284,7 @@ const input_driver_t input_xinput =
    xdk_input_state,
    xdk_input_key_pressed,
    xdk_input_free_input,
-   xdk_input_set_keybinds,
+   NULL,
    NULL,
    NULL,
    xdk_input_get_capabilities,
@@ -417,6 +298,14 @@ const input_driver_t input_xinput =
 
 static bool xdk_joypad_init(void)
 {
+   unsigned autoconf_pad;
+
+   for (autoconf_pad = 0; autoconf_pad < MAX_PLAYERS; autoconf_pad++)
+   {
+      strlcpy(g_settings.input.device_names[autoconf_pad], ps3_joypad_name(autoconf_pad), sizeof(g_settings.input.device_names[autoconf_pad]));
+      input_config_autoconfigure_joypad(autoconf_pad, ps3_joypad_name(autoconf_pad), ps3_joypad.ident);
+   }
+
    return true;
 }
 
@@ -480,9 +369,17 @@ static bool xdk_joypad_query_pad(unsigned pad)
    return pad < MAX_PLAYERS && xdk->pad_state[pad];
 }
 
+static const char* const XBOX_CONTROLLER_NAMES[4] =
+{
+   "XInput Controller (Player 1)",
+   "XInput Controller (Player 2)",
+   "XInput Controller (Player 3)",
+   "XInput Controller (Player 4)"
+};
+
 static const char *xdk_joypad_name(unsigned pad)
 {
-   return NULL;
+   return XBOX_CONTROLLER_NAMES(pad);
 }
 
 static void xdk_joypad_destroy(void)
