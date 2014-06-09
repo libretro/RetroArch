@@ -69,8 +69,6 @@ const struct platform_bind platform_keys[] = {
    { (1ULL << RARCH_TURBO_ENABLE), "Turbo button (unmapped)" },
 };
 
-extern const rarch_joypad_driver_t ps3_joypad;
-
 typedef struct ps3_input
 {
    uint64_t pad_state[MAX_PADS];
@@ -80,6 +78,7 @@ typedef struct ps3_input
    unsigned mice_connected;
 #endif
    sensor_t accelerometer_state[MAX_PADS];
+   const rarch_joypad_driver_t *joypad;
 } ps3_input_t;
 
 static inline int16_t convert_u8_to_s16(uint8_t val)
@@ -241,9 +240,9 @@ static int16_t ps3_input_state(void *data, const struct retro_keybind **binds,
       switch (device)
       {
          case RETRO_DEVICE_JOYPAD:
-            return input_joypad_pressed(&ps3_joypad, port, binds[port], id);
+            return input_joypad_pressed(ps3->joypad, port, binds[port], id);
          case RETRO_DEVICE_ANALOG:
-            return input_joypad_analog(&ps3_joypad, port, index, id, binds[port]);
+            return input_joypad_analog(ps3->joypad, port, index, id, binds[port]);
 #if 0
          case RETRO_DEVICE_SENSOR_ACCELEROMETER:
             switch (id)
@@ -282,6 +281,9 @@ static void ps3_input_free_input(void *data)
    if (!ps3)
       return;
 
+   if (ps3->joypad)
+      ps3->joypad->destroy();
+
    cellPadEnd();
 #ifdef HAVE_MOUSE
    cellMouseEnd();
@@ -301,12 +303,13 @@ static void* ps3_input_init(void)
    cellMouseInit(MAX_MICE);
 #endif
 
+   ps3->joypad = input_joypad_init_driver(g_settings.input.joypad_driver);
    return ps3;
 }
 
 static bool ps3_input_key_pressed(void *data, int key)
 {
-   return (g_extern.lifecycle_state & (1ULL << key)) || input_joypad_pressed(&ps3_joypad, 0, g_settings.input.binds[0], key);
+   return (g_extern.lifecycle_state & (1ULL << key)) || input_joypad_pressed(ps3->joypad, 0, g_settings.input.binds[0], key);
 }
 
 static uint64_t ps3_input_get_capabilities(void *data)
@@ -370,7 +373,8 @@ static bool ps3_input_set_rumble(void *data, unsigned port, enum retro_rumble_ef
 
 static const rarch_joypad_driver_t *ps3_input_get_joypad_driver(void *data)
 {
-   return &ps3_joypad;
+   ps3_input_t *ps3 = (ps3_input_t*)data;
+   return ps3->joypad;
 }
 
 static unsigned ps3_input_devices_size(void *data)
