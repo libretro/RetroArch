@@ -43,6 +43,7 @@ typedef struct xdk_input
    bool bInserted[MAX_PADS];
    bool bRemoved[MAX_PADS];
 #endif
+   const rarch_joypad_driver_t *joypad;
 } xdk_input_t;
 
 static void xdk_input_poll(void *data)
@@ -296,14 +297,27 @@ const input_driver_t input_xinput =
    xdk_input_get_joypad_driver,
 };
 
+static const char* const XBOX_CONTROLLER_NAMES[4] =
+{
+   "XInput Controller (Player 1)",
+   "XInput Controller (Player 2)",
+   "XInput Controller (Player 3)",
+   "XInput Controller (Player 4)"
+};
+
+static const char *xdk_joypad_name(unsigned pad)
+{
+   return XBOX_CONTROLLER_NAMES[pad];
+}
+
 static bool xdk_joypad_init(void)
 {
    unsigned autoconf_pad;
 
    for (autoconf_pad = 0; autoconf_pad < MAX_PLAYERS; autoconf_pad++)
    {
-      strlcpy(g_settings.input.device_names[autoconf_pad], ps3_joypad_name(autoconf_pad), sizeof(g_settings.input.device_names[autoconf_pad]));
-      input_config_autoconfigure_joypad(autoconf_pad, ps3_joypad_name(autoconf_pad), ps3_joypad.ident);
+      strlcpy(g_settings.input.device_names[autoconf_pad], xdk_joypad_name(autoconf_pad), sizeof(g_settings.input.device_names[autoconf_pad]));
+      input_config_autoconfigure_joypad(autoconf_pad, xdk_joypad_name(autoconf_pad), xdk_joypad.ident);
    }
 
    return true;
@@ -367,19 +381,6 @@ static bool xdk_joypad_query_pad(unsigned pad)
 {
    xdk_input_t *xdk = (xdk_input_t*)driver.input_data;
    return pad < MAX_PLAYERS && xdk->pad_state[pad];
-}
-
-static const char* const XBOX_CONTROLLER_NAMES[4] =
-{
-   "XInput Controller (Player 1)",
-   "XInput Controller (Player 2)",
-   "XInput Controller (Player 3)",
-   "XInput Controller (Player 4)"
-};
-
-static const char *xdk_joypad_name(unsigned pad)
-{
-   return XBOX_CONTROLLER_NAMES(pad);
 }
 
 static void xdk_joypad_destroy(void)
