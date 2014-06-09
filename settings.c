@@ -1222,7 +1222,6 @@ static void save_keybind_key(config_file_t *conf, const char *prefix, const char
    config_set_string(conf, key, btn);
 }
 
-#ifndef RARCH_CONSOLE
 static void save_keybind_hat(config_file_t *conf, const char *key, const struct retro_keybind *bind)
 {
    unsigned hat = GET_HAT(bind->joykey);
@@ -1254,7 +1253,6 @@ static void save_keybind_hat(config_file_t *conf, const char *key, const struct 
    snprintf(config, sizeof(config), "h%u%s", hat, dir);
    config_set_string(conf, key, config);
 }
-#endif
 
 static void save_keybind_joykey(config_file_t *conf, const char *prefix, const char *base,
       const struct retro_keybind *bind)
@@ -1264,10 +1262,8 @@ static void save_keybind_joykey(config_file_t *conf, const char *prefix, const c
 
    if (bind->joykey == NO_BTN)
       config_set_string(conf, key, "nul");
-#ifndef RARCH_CONSOLE // Consoles don't understand hats.
    else if (GET_HAT_DIR(bind->joykey))
       save_keybind_hat(conf, key, bind);
-#endif
    else
       config_set_uint64(conf, key, bind->joykey);
 }
