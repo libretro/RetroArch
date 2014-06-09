@@ -522,37 +522,6 @@ static int menu_info_screen_iterate(unsigned action)
    if (driver.video_data && driver.menu_ctx && driver.menu_ctx->render)
       driver.menu_ctx->render();
 
-   // FIXME: This is unused code, why was it even here?
-#if 0
-   static const unsigned binds[] = {
-      RETRO_DEVICE_ID_JOYPAD_UP,
-      RETRO_DEVICE_ID_JOYPAD_DOWN,
-      RETRO_DEVICE_ID_JOYPAD_A,
-      RETRO_DEVICE_ID_JOYPAD_B,
-      RARCH_MENU_TOGGLE,
-      RARCH_QUIT_KEY,
-   };
-   char desc[ARRAY_SIZE(binds)][64];
-
-   for (i = 0; i < ARRAY_SIZE(binds); i++)
-   {
-      if (driver.input && driver.input->set_keybinds)
-      {
-         struct platform_bind key_label;
-         strlcpy(key_label.desc, "Unknown", sizeof(key_label.desc));
-         key_label.joykey = g_settings.input.binds[0][binds[i]].joykey;
-         driver.input->set_keybinds(&key_label, 0, 0, 0, 1ULL << KEYBINDS_ACTION_GET_BIND_LABEL);
-         strlcpy(desc[i], key_label.desc, sizeof(desc[i]));
-      }
-      else
-      {
-         const struct retro_keybind *bind = &g_settings.input.binds[0][binds[i]];
-         const struct retro_keybind *auto_bind = input_get_auto_bind(0, binds[i]);
-         input_get_bind_string(desc[i], bind, auto_bind, sizeof(desc[i]));
-      }
-   }
-#endif
-
    switch (driver.menu->info_selection)
    {
       case RGUI_SETTINGS_WINDOW_COMPOSITING_ENABLE:
