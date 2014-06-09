@@ -285,7 +285,7 @@ static int menu_lakka_iterate(unsigned action)
 
    switch (action)
    {
-      case RGUI_ACTION_LEFT:
+      case MENU_ACTION_LEFT:
          if (depth == 0 && menu_active_category > 0)
          {
             menu_active_category--;
@@ -293,7 +293,7 @@ static int menu_lakka_iterate(unsigned action)
          }
          break;
 
-      case RGUI_ACTION_RIGHT:
+      case MENU_ACTION_RIGHT:
          if (depth == 0 && menu_active_category < num_categories-1)
          {
             menu_active_category++;
@@ -301,7 +301,7 @@ static int menu_lakka_iterate(unsigned action)
          }
          break;
 
-      case RGUI_ACTION_DOWN:
+      case MENU_ACTION_DOWN:
          if (depth == 0 && active_category->active_item < active_category->num_items - 1)
          {
             active_category->active_item++;
@@ -317,7 +317,7 @@ static int menu_lakka_iterate(unsigned action)
          }
          break;
 
-      case RGUI_ACTION_UP:
+      case MENU_ACTION_UP:
          if (depth == 0 && active_category->active_item > 0)
          {
             active_category->active_item--;
@@ -330,7 +330,7 @@ static int menu_lakka_iterate(unsigned action)
          }
          break;
 
-      case RGUI_ACTION_OK:
+      case MENU_ACTION_OK:
          if (depth == 1)
          {
             switch (active_item->active_subitem)
@@ -389,7 +389,7 @@ static int menu_lakka_iterate(unsigned action)
          }
          break;
 
-      case RGUI_ACTION_CANCEL:
+      case MENU_ACTION_CANCEL:
          if (depth == 1)
          {
             lakka_close_submenu();

@@ -458,10 +458,10 @@ typedef struct menu_ctx_driver
    const char *ident;
 } menu_ctx_driver_t;
 
-#define RGUI_MAX_BUTTONS 219
+#define MENU_MAX_BUTTONS 219
 
-#define RGUI_MAX_AXES 32
-#define RGUI_MAX_HATS 4
+#define MENU_MAX_AXES 32
+#define MENU_MAX_HATS 4
 
 #ifndef MAX_PLAYERS
 #define MAX_PLAYERS 8
@@ -469,17 +469,17 @@ typedef struct menu_ctx_driver
 
 struct rgui_bind_state_port
 {
-   bool buttons[RGUI_MAX_BUTTONS];
-   int16_t axes[RGUI_MAX_AXES];
-   uint16_t hats[RGUI_MAX_HATS];
+   bool buttons[MENU_MAX_BUTTONS];
+   int16_t axes[MENU_MAX_AXES];
+   uint16_t hats[MENU_MAX_HATS];
 };
 
 struct rgui_bind_axis_state
 {
    // Default axis state.
-   int16_t rested_axes[RGUI_MAX_AXES];
+   int16_t rested_axes[MENU_MAX_AXES];
    // Locked axis state. If we configured an axis, avoid having the same axis state trigger something again right away.
-   int16_t locked_axes[RGUI_MAX_AXES];
+   int16_t locked_axes[MENU_MAX_AXES];
 };
 
 struct rgui_bind_state

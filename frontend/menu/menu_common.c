@@ -135,13 +135,13 @@ void load_menu_game_prepare(void)
             driver.menu->info.library_name ? driver.menu->info.library_name : "");
    }
 
-   // redraw RGUI frame
+   // redraw menu frame
    driver.menu->old_input_state = driver.menu->trigger_state = 0;
    driver.menu->do_held = false;
    driver.menu->msg_force = true;
 
    if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->iterate) 
-      driver.menu_ctx->backend->iterate(RGUI_ACTION_NOOP);
+      driver.menu_ctx->backend->iterate(MENU_ACTION_NOOP);
 
    // Draw frame for loading message
    if (driver.video_data && driver.video_poke && driver.video_poke->set_texture_enable)
@@ -207,7 +207,7 @@ static void menu_init_history(void *data)
                ".retroarch-game-history.txt", sizeof(history_path));
       }
 
-      RARCH_LOG("[RGUI]: Opening history: %s.\n", history_path);
+      RARCH_LOG("[Menu]: Opening history: %s.\n", history_path);
       rgui->history = rom_history_init(history_path, g_settings.game_history_size);
    }
 }
@@ -325,13 +325,13 @@ void *menu_init(const void *data)
 #ifdef HAVE_SHADER_MANAGER
    rgui->shader = (struct gfx_shader*)calloc(1, sizeof(struct gfx_shader));
 #endif
-   file_list_push(rgui->menu_stack, "", RGUI_SETTINGS, 0);
+   file_list_push(rgui->menu_stack, "", MENU_SETTINGS, 0);
    menu_clear_navigation(rgui);
    rgui->push_start_screen = g_settings.rgui_show_start_screen;
    g_settings.rgui_show_start_screen = false;
 
    if (menu_ctx && menu_ctx->backend && menu_ctx->backend->entries_init) 
-      menu_ctx->backend->entries_init(rgui, RGUI_SETTINGS);
+      menu_ctx->backend->entries_init(rgui, MENU_SETTINGS);
 
    rgui->trigger_state = 0;
    rgui->old_input_state = 0;
@@ -520,29 +520,29 @@ bool menu_iterate(void)
    if (driver.block_input)
       driver.menu->trigger_state = 0;
 
-   action = RGUI_ACTION_NOOP;
+   action = MENU_ACTION_NOOP;
 
    // don't run anything first frame, only capture held inputs for old_input_state
    if (driver.menu->trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_UP))
-      action = RGUI_ACTION_UP;
+      action = MENU_ACTION_UP;
    else if (driver.menu->trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN))
-      action = RGUI_ACTION_DOWN;
+      action = MENU_ACTION_DOWN;
    else if (driver.menu->trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT))
-      action = RGUI_ACTION_LEFT;
+      action = MENU_ACTION_LEFT;
    else if (driver.menu->trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT))
-      action = RGUI_ACTION_RIGHT;
+      action = MENU_ACTION_RIGHT;
    else if (driver.menu->trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_L))
-      action = RGUI_ACTION_SCROLL_UP;
+      action = MENU_ACTION_SCROLL_UP;
    else if (driver.menu->trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_R))
-      action = RGUI_ACTION_SCROLL_DOWN;
+      action = MENU_ACTION_SCROLL_DOWN;
    else if (driver.menu->trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_B))
-      action = RGUI_ACTION_CANCEL;
+      action = MENU_ACTION_CANCEL;
    else if (driver.menu->trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_A))
-      action = RGUI_ACTION_OK;
+      action = MENU_ACTION_OK;
    else if (driver.menu->trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_START))
-      action = RGUI_ACTION_START;
+      action = MENU_ACTION_START;
    else if (driver.menu->trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_SELECT))
-      action = RGUI_ACTION_SELECT;
+      action = MENU_ACTION_SELECT;
 
    if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->iterate) 
       input_entry_ret = driver.menu_ctx->backend->iterate(action);
@@ -573,7 +573,7 @@ bool menu_iterate(void)
    {
       unsigned type = 0;
       file_list_get_last(driver.menu->menu_stack, NULL, &type);
-      while (type != RGUI_SETTINGS)
+      while (type != MENU_SETTINGS)
       {
          file_list_pop(driver.menu->menu_stack, &driver.menu->selection_ptr);
          file_list_get_last(driver.menu->menu_stack, NULL, &type);
@@ -710,7 +710,7 @@ static inline bool menu_list_elem_is_dir(file_list_t *buf, unsigned offset)
    const char *path = NULL;
    unsigned type = 0;
    file_list_get_at_offset(buf, offset, &path, &type);
-   return type != RGUI_FILE_PLAIN;
+   return type != MENU_FILE_PLAIN;
 }
 
 void menu_build_scroll_indices(void *data)

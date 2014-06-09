@@ -166,11 +166,11 @@ void menu_poll_bind_state(void *data)
    input_joypad_poll(joypad);
    for (i = 0; i < MAX_PLAYERS; i++)
    {
-      for (b = 0; b < RGUI_MAX_BUTTONS; b++)
+      for (b = 0; b < MENU_MAX_BUTTONS; b++)
          state->state[i].buttons[b] = input_joypad_button_raw(joypad, i, b);
-      for (a = 0; a < RGUI_MAX_AXES; a++)
+      for (a = 0; a < MENU_MAX_AXES; a++)
          state->state[i].axes[a] = input_joypad_axis_raw(joypad, i, a);
-      for (h = 0; h < RGUI_MAX_HATS; h++)
+      for (h = 0; h < MENU_MAX_HATS; h++)
       {
          state->state[i].hats[h] |= input_joypad_hat_raw(joypad, i, HAT_UP_MASK, h) ? HAT_UP_MASK : 0;
          state->state[i].hats[h] |= input_joypad_hat_raw(joypad, i, HAT_DOWN_MASK, h) ? HAT_DOWN_MASK : 0;
@@ -199,7 +199,7 @@ void menu_poll_bind_get_rested_axes(void *data)
    }
 
    for (i = 0; i < MAX_PLAYERS; i++)
-      for (a = 0; a < RGUI_MAX_AXES; a++)
+      for (a = 0; a < MENU_MAX_AXES; a++)
          state->axis_state[i].rested_axes[a] = input_joypad_axis_raw(joypad, i, a);
 }
 
@@ -209,7 +209,7 @@ static bool menu_poll_find_trigger_pad(struct rgui_bind_state *state, struct rgu
    const struct rgui_bind_state_port *n = (const struct rgui_bind_state_port*)&new_state->state[p];
    const struct rgui_bind_state_port *o = (const struct rgui_bind_state_port*)&state->state[p];
 
-   for (b = 0; b < RGUI_MAX_BUTTONS; b++)
+   for (b = 0; b < MENU_MAX_BUTTONS; b++)
    {
       if (n->buttons[b] && !o->buttons[b])
       {
@@ -220,7 +220,7 @@ static bool menu_poll_find_trigger_pad(struct rgui_bind_state *state, struct rgu
    }
 
    // Axes are a bit tricky ...
-   for (a = 0; a < RGUI_MAX_AXES; a++)
+   for (a = 0; a < MENU_MAX_AXES; a++)
    {
       int locked_distance = abs(n->axes[a] - new_state->axis_state[p].locked_axes[a]);
       int rested_distance = abs(n->axes[a] - new_state->axis_state[p].rested_axes[a]);
@@ -241,7 +241,7 @@ static bool menu_poll_find_trigger_pad(struct rgui_bind_state *state, struct rgu
          new_state->axis_state[p].locked_axes[a] = 0;
    }
 
-   for (h = 0; h < RGUI_MAX_HATS; h++)
+   for (h = 0; h < MENU_MAX_HATS; h++)
    {
       uint16_t trigged = n->hats[h] & (~o->hats[h]);
       uint16_t sane_trigger = 0;
@@ -296,7 +296,7 @@ bool menu_custom_bind_keyboard_cb(void *data, unsigned code)
    rgui->binds.target->key = (enum retro_key)code;
    rgui->binds.begin++;
    rgui->binds.target++;
-   rgui->binds.timeout_end = rarch_get_time_usec() + RGUI_KEYBOARD_BIND_TIMEOUT_SECONDS * 1000000;
+   rgui->binds.timeout_end = rarch_get_time_usec() + MENU_KEYBOARD_BIND_TIMEOUT_SECONDS * 1000000;
    return rgui->binds.begin <= rgui->binds.last;
 }
 

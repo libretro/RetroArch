@@ -14,8 +14,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef RGUI_LIST_H__
-#define RGUI_LIST_H__
+#ifndef MENU_LIST_H__
+#define MENU_LIST_H__
 
 #ifdef __cplusplus
 extern "C" {
