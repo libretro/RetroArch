@@ -483,7 +483,9 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
          file_list_push(rgui->selection_buf, "Core Information", RGUI_SETTINGS_CORE_INFO, 0);
          file_list_push(rgui->selection_buf, "Settings", RGUI_SETTINGS_OPTIONS, 0);
          file_list_push(rgui->selection_buf, "Drivers", RGUI_SETTINGS_DRIVERS, 0);
-         file_list_push(rgui->selection_buf, "Performance Counters", RGUI_SETTINGS_PERFORMANCE_COUNTERS, 0);
+
+         if (g_extern.perfcnt_enable)
+            file_list_push(rgui->selection_buf, "Performance Counters", RGUI_SETTINGS_PERFORMANCE_COUNTERS, 0);
 
          if (g_extern.main_is_init && !g_extern.libretro_dummy)
          {
