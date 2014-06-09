@@ -111,9 +111,6 @@ static void render_message(gl_raster_t *font, const char *msg, GLfloat scale, co
    unsigned i;
    gl_t *gl = font->gl;
 
-   // Rebind shaders so attrib cache gets reset.
-   if (gl->shader && gl->shader->use)
-      gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
    glBindTexture(GL_TEXTURE_2D, font->tex);
 
 #define MAX_MSG_LEN_CHUNK 64
@@ -136,6 +133,10 @@ static void render_message(gl_raster_t *font, const char *msg, GLfloat scale, co
 
    while (msg_len_full)
    {
+      // Rebind shaders so attrib cache gets reset.
+      if (gl->shader && gl->shader->use)
+         gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
+
       for (i = 0; i < msg_len; i++)
       {
          const struct font_glyph *gly = font->font_driver->get_glyph(font->font_data, (uint8_t)msg[i]);
@@ -207,10 +208,10 @@ static void gl_render_msg(void *data, const char *msg, const struct font_params 
       drop_y = params->drop_y;
       drop_mod = params->drop_mod;
 
-      color[0] = FONT_COLOR_GET_RED(params->color);
-      color[1] = FONT_COLOR_GET_GREEN(params->color);
-      color[2] = FONT_COLOR_GET_BLUE(params->color);
-      color[3] = FONT_COLOR_GET_ALPHA(params->color);
+      color[0] = FONT_COLOR_GET_RED(params->color) / 255.0f;
+      color[1] = FONT_COLOR_GET_GREEN(params->color) / 255.0f;
+      color[2] = FONT_COLOR_GET_BLUE(params->color) / 255.0f;
+      color[3] = FONT_COLOR_GET_ALPHA(params->color) / 255.0f;
 
       // If alpha is 0.0f, turn it into default 1.0f
       if (color[3] <= 0.0f)

@@ -199,19 +199,20 @@ static void update_tweens(float dt)
 static void lakka_draw_text(const char *str, float x, float y, float scale, float alpha)
 {
    gl_t *gl = (gl_t*)driver.video_data;
+   if (!gl)
+      return;
+
+   gl_set_viewport(gl, gl->win_width, gl->win_height, false, false);
 
    struct font_params params = {0};
-   params.x = x / gl->win_width;
-   params.y = 1.0f - y / gl->win_height;
+   params.x = x / gl->vp.width;
+   params.y = 1.0f - y / gl->vp.height;
 
    if (alpha > global_alpha)
       alpha = global_alpha;
 
    params.scale = scale;
-   params.color = FONT_COLOR_RGBA(0xff, 0xff, 0xff, (uint8_t)(255 * alpha));
-   params.drop_x = -2;
-   params.drop_y = -2;
-   params.drop_mod = 0.3f;
+   params.color = FONT_COLOR_RGBA(255, 255, 255, (uint8_t)(255 * alpha));
 
    if (font_driver)
       font_driver->render_msg(font, str, &params);
@@ -225,8 +226,8 @@ void lakka_draw_background(void)
       0.1, 0.74, 0.61, global_alpha,
       0.1, 0.74, 0.61, global_alpha,
    };
-   gl_t *gl = (gl_t*)driver.video_data;
 
+   gl_t *gl = (gl_t*)driver.video_data;
    if (!gl)
       return;
 
@@ -238,6 +239,8 @@ void lakka_draw_background(void)
 
    if (gl->shader && gl->shader->use)
       gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
+
+   gl->coords.vertices = 4;
    gl_shader_set_coords(gl, &gl->coords, &gl->mvp_no_rot);
 
    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
@@ -291,6 +294,7 @@ void lakka_draw_icon(GLuint texture, float x, float y, float alpha, float rotati
    matrix_scale(&mscal, scale, scale, 1);
    matrix_multiply(&mymat, &mscal, &mymat);
 
+   gl->coords.vertices = 4;
    gl_shader_set_coords(gl, &gl->coords, &mymat);
 
    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
