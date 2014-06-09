@@ -390,6 +390,12 @@ struct global
    bool has_set_libretro_directory;
    bool has_set_verbosity;
 
+   bool has_set_netplay_mode;
+   bool has_set_netplay_nickname;
+   bool has_set_netplay_ip_address;
+   bool has_set_netplay_delay_frames;
+   bool has_set_netplay_ip_port;
+
 #ifdef HAVE_RMENU
    char menu_texture_path[PATH_MAX];
 #endif

@@ -1092,12 +1092,18 @@ bool config_load_file(const char *path, bool set_defaults)
    CONFIG_GET_PATH(input.autoconfig_dir, "joypad_autoconfig_dir");
 
 #ifdef HAVE_NETPLAY
-   CONFIG_GET_BOOL_EXTERN(netplay_is_spectate, "netplay_spectator_mode_enable");
-   CONFIG_GET_BOOL_EXTERN(netplay_is_client, "netplay_mode");
-   CONFIG_GET_PATH_EXTERN(netplay_nick, "netplay_nickname");
-   CONFIG_GET_PATH_EXTERN(netplay_server, "netplay_ip_address");
-   CONFIG_GET_INT_EXTERN(netplay_sync_frames, "netplay_delay_frames");
-   CONFIG_GET_INT_EXTERN(netplay_port, "netplay_ip_port");
+   if (!g_extern.has_set_netplay_mode)
+      CONFIG_GET_BOOL_EXTERN(netplay_is_spectate, "netplay_spectator_mode_enable");
+   if (!g_extern.has_set_netplay_mode)
+      CONFIG_GET_BOOL_EXTERN(netplay_is_client, "netplay_mode");
+   if (!g_extern.has_set_netplay_nickname)
+      CONFIG_GET_PATH_EXTERN(netplay_nick, "netplay_nickname");
+   if (!g_extern.has_set_netplay_ip_address)
+      CONFIG_GET_PATH_EXTERN(netplay_server, "netplay_ip_address");
+   if (!g_extern.has_set_netplay_delay_frames)
+      CONFIG_GET_INT_EXTERN(netplay_sync_frames, "netplay_delay_frames");
+   if (!g_extern.has_set_netplay_ip_port)
+      CONFIG_GET_INT_EXTERN(netplay_port, "netplay_ip_port");
 #endif
 
 #ifdef ANDROID

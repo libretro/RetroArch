@@ -903,6 +903,13 @@ static void parse_input(int argc, char *argv[])
    g_extern.has_set_libretro = false;
    g_extern.has_set_libretro_directory = false;
    g_extern.has_set_verbosity = false;
+
+   g_extern.has_set_netplay_mode = false;
+   g_extern.has_set_netplay_nickname = false;
+   g_extern.has_set_netplay_ip_address = false;
+   g_extern.has_set_netplay_delay_frames = false;
+   g_extern.has_set_netplay_ip_port = false;
+
    *g_extern.subsystem = '\0';
 
    if (argc < 2)
@@ -1126,16 +1133,20 @@ static void parse_input(int argc, char *argv[])
 
 #ifdef HAVE_NETPLAY
          case 'H':
+            g_extern.has_set_netplay_ip_address = true;
             g_extern.netplay_enable = true;
+            *g_extern.netplay_server = '\0';
             break;
 
          case 'C':
+            g_extern.has_set_netplay_ip_address = true;
             g_extern.netplay_enable = true;
             strlcpy(g_extern.netplay_server, optarg, sizeof(g_extern.netplay_server));
             break;
 
          case 'F':
             g_extern.netplay_sync_frames = strtol(optarg, NULL, 0);
+            g_extern.has_set_netplay_delay_frames = true;
             break;
 #endif
 
@@ -1159,14 +1170,17 @@ static void parse_input(int argc, char *argv[])
 
 #ifdef HAVE_NETPLAY
                case 'p':
+                  g_extern.has_set_netplay_ip_port = true;
                   g_extern.netplay_port = strtoul(optarg, NULL, 0);
                   break;
 
                case 'S':
+                  g_extern.has_set_netplay_mode = true;
                   g_extern.netplay_is_spectate = true;
                   break;
 
                case 'N':
+                  g_extern.has_set_netplay_nickname = true;
                   strlcpy(g_extern.netplay_nick, optarg, sizeof(g_extern.netplay_nick));
                   break;
 #endif
