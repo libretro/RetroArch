@@ -56,6 +56,9 @@ static const rarch_joypad_driver_t *joypad_drivers[] = {
 #ifdef _XBOX
    &xdk_joypad,
 #endif
+#ifdef PSP
+   &psp_joypad,
+#endif
 #ifdef HAVE_DINPUT
    &dinput_joypad,
 #endif

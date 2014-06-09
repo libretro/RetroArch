@@ -295,6 +295,7 @@ INPUT
 #include "../input/autoconf/builtin_ps3.c"
 #elif defined(SN_TARGET_PSP2) || defined(PSP)
 #include "../input/psp_input.c"
+#include "../input/autoconf/builtin_psp.c"
 #elif defined(GEKKO)
 #ifdef HAVE_LIBSICKSAXIS
 #include "../gx/sicksaxis.c"

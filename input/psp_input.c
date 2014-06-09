@@ -34,34 +34,6 @@
 #include "../psp1/kernel_functions.h"
 #endif
 
-enum {
-   PSP_GAMEPAD_CROSS =			      1ULL << 0,
-   PSP_GAMEPAD_SQUARE =			      1ULL << 1,
-   PSP_GAMEPAD_SELECT =			      1ULL << 2,
-   PSP_GAMEPAD_START =			      1ULL << 3,
-   PSP_GAMEPAD_DPAD_UP =		      1ULL << 4,
-   PSP_GAMEPAD_DPAD_DOWN =		      1ULL << 5,
-   PSP_GAMEPAD_DPAD_LEFT =		      1ULL << 6,
-   PSP_GAMEPAD_DPAD_RIGHT =		   1ULL << 7,
-   PSP_GAMEPAD_CIRCLE =			      1ULL << 8,
-   PSP_GAMEPAD_TRIANGLE =		      1ULL << 9,
-   PSP_GAMEPAD_L =			         1ULL << 10,
-   PSP_GAMEPAD_R =			         1ULL << 11,
-   PSP_GAMEPAD_LSTICK_LEFT_MASK =	1ULL << 16,
-   PSP_GAMEPAD_LSTICK_RIGHT_MASK =	1ULL << 17,
-   PSP_GAMEPAD_LSTICK_UP_MASK	 =	   1ULL << 18,
-   PSP_GAMEPAD_LSTICK_DOWN_MASK =	1ULL << 19,
-#ifdef SN_TARGET_PSP2
-   PSP_GAMEPAD_RSTICK_LEFT_MASK =	1ULL << 20,
-   PSP_GAMEPAD_RSTICK_RIGHT_MASK =	1ULL << 21,
-   PSP_GAMEPAD_RSTICK_UP_MASK 	=	1ULL << 22,
-   PSP_GAMEPAD_RSTICK_DOWN_MASK =	1ULL << 23,
-#endif
-};
-
-#define ANALOGSTICK_DEADZONE_LOW  (0x40)
-#define ANALOGSTICK_DEADZONE_HIGH (0xc0)
-
 #define MAX_PADS 1
 
 enum input_devices
@@ -70,54 +42,13 @@ enum input_devices
    DEVICE_LAST
 };
 
-const struct platform_bind platform_keys[] = {
-   { PSP_GAMEPAD_CIRCLE, "Circle button" },
-   { PSP_GAMEPAD_CROSS, "Cross button" },
-   { PSP_GAMEPAD_TRIANGLE, "Triangle button" },
-   { PSP_GAMEPAD_SQUARE, "Square button" },
-   { PSP_GAMEPAD_DPAD_UP, "D-Pad Up" },
-   { PSP_GAMEPAD_DPAD_DOWN, "D-Pad Down" },
-   { PSP_GAMEPAD_DPAD_LEFT, "D-Pad Left" },
-   { PSP_GAMEPAD_DPAD_RIGHT, "D-Pad Right" },
-   { PSP_GAMEPAD_SELECT, "Select button" },
-   { PSP_GAMEPAD_START, "Start button" },
-   { PSP_GAMEPAD_L, "L button" },
-   { 0, "Unused" },
-   { 0, "Unused" },
-   { PSP_GAMEPAD_R, "R button" },
-   { 0, "Unused" },
-   { 0, "Unused" },
-   { PSP_GAMEPAD_LSTICK_LEFT_MASK, "LStick Left" },
-   { PSP_GAMEPAD_LSTICK_RIGHT_MASK, "LStick Right" },
-   { PSP_GAMEPAD_LSTICK_UP_MASK, "LStick Up" },
-   { PSP_GAMEPAD_LSTICK_DOWN_MASK, "LStick Down" },
-#ifdef SN_TARGET_PSP2
-   { PSP_GAMEPAD_RSTICK_LEFT_MASK, "RStick Left" },
-   { PSP_GAMEPAD_RSTICK_RIGHT_MASK, "RStick Right" },
-   { PSP_GAMEPAD_RSTICK_UP_MASK, "RStick Up" },
-   { PSP_GAMEPAD_RSTICK_DOWN_MASK, "RStick Down" },
-#else
-   { 0, "Unused" },
-   { 0, "Unused" },
-   { 0, "Unused" },
-   { 0, "Unused" },
-   { 0, "Unused" },
-   { 0, "Unused" },
-   { 0, "Unused" },
-   { 0, "Unused" },
-#endif
-};
-
-extern const rarch_joypad_driver_t psp_joypad;
 
 typedef struct psp_input
 {
    uint64_t pad_state;
    int16_t analog_state[1][2][2];
+   const rarch_joypad_driver_t *joypad;
 } psp_input_t;
-
-static void psp_input_set_keybinds(void *data, unsigned device, unsigned port,
-      unsigned id, unsigned keybind_action);
 
 static void psp_input_poll(void *data)
 {
@@ -176,12 +107,6 @@ static void psp_input_poll(void *data)
          )
 #endif
       *lifecycle_state |= (1ULL << RARCH_MENU_TOGGLE);
-
-   if (g_settings.input.autodetect_enable)
-   {
-      if (strcmp(g_settings.input.device_names[0], "PSP") != 0)
-         psp_input_set_keybinds(NULL, DEVICE_PSP, 0, 0, (1ULL << KEYBINDS_ACTION_SET_DEFAULT_BINDS));
-   }
 }
 
 static int16_t psp_input_state(void *data, const struct retro_keybind **binds,
@@ -196,9 +121,9 @@ static int16_t psp_input_state(void *data, const struct retro_keybind **binds,
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
-         return input_joypad_pressed(&psp_joypad, port, binds[port], id);
+         return input_joypad_pressed(psp->joypad, port, binds[port], id);
       case RETRO_DEVICE_ANALOG:
-         return input_joypad_analog(&psp_joypad, port, index, id, binds[port]);
+         return input_joypad_analog(psp->joypad, port, index, id, binds[port]);
    }
 
    return 0;
@@ -206,99 +131,12 @@ static int16_t psp_input_state(void *data, const struct retro_keybind **binds,
 
 static void psp_input_free_input(void *data)
 {
+   psp_input_t *psp = (psp_input_t*)data;
+
+   if (psp->joypad)
+      psp->joypad->destroy();
+
    free(data);
-}
-
-static void psp_input_set_keybinds(void *data, unsigned device, unsigned port,
-      unsigned id, unsigned keybind_action)
-{
-   (void)device;
-   uint64_t *key = &g_settings.input.binds[port][id].joykey;
-   size_t arr_size = sizeof(platform_keys) / sizeof(platform_keys[0]);
-   (void)device;
-
-   if (keybind_action & (1ULL << KEYBINDS_ACTION_SET_DEFAULT_BIND))
-      *key = g_settings.input.binds[port][id].def_joykey;
-
-   if (keybind_action & (1ULL << KEYBINDS_ACTION_SET_DEFAULT_BINDS))
-   {
-      strlcpy(g_settings.input.device_names[port], "PSP", sizeof(g_settings.input.device_names[port]));
-      g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_B].def_joykey       = (RETRO_DEVICE_ID_JOYPAD_B);
-      g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_Y].def_joykey       = (RETRO_DEVICE_ID_JOYPAD_Y);
-      g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_SELECT].def_joykey  = (RETRO_DEVICE_ID_JOYPAD_SELECT);
-      g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_START].def_joykey   = (RETRO_DEVICE_ID_JOYPAD_START);
-      g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_UP].def_joykey      = (RETRO_DEVICE_ID_JOYPAD_UP);
-      g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_DOWN].def_joykey    = (RETRO_DEVICE_ID_JOYPAD_DOWN);
-      g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_LEFT].def_joykey    = (RETRO_DEVICE_ID_JOYPAD_LEFT);
-      g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_RIGHT].def_joykey   = (RETRO_DEVICE_ID_JOYPAD_RIGHT);
-      g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_A].def_joykey       = (RETRO_DEVICE_ID_JOYPAD_A);
-      g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_X].def_joykey       = (RETRO_DEVICE_ID_JOYPAD_X);
-      g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_L].def_joykey       = (RETRO_DEVICE_ID_JOYPAD_L);
-      g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R].def_joykey       = (RETRO_DEVICE_ID_JOYPAD_R);
-      g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_L2].def_joykey      = NO_BTN;
-      g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R2].def_joykey      = NO_BTN;
-      g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_L3].def_joykey      = NO_BTN;
-      g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R3].def_joykey      = NO_BTN;
-      g_settings.input.binds[port][RARCH_ANALOG_LEFT_X_PLUS].def_joykey       = NO_BTN;
-      g_settings.input.binds[port][RARCH_ANALOG_LEFT_X_MINUS].def_joykey      = NO_BTN;
-      g_settings.input.binds[port][RARCH_ANALOG_LEFT_Y_PLUS].def_joykey       = NO_BTN;
-      g_settings.input.binds[port][RARCH_ANALOG_LEFT_Y_MINUS].def_joykey      = NO_BTN;
-      g_settings.input.binds[port][RARCH_ANALOG_RIGHT_X_PLUS].def_joykey      = NO_BTN;
-      g_settings.input.binds[port][RARCH_ANALOG_RIGHT_X_MINUS].def_joykey     = NO_BTN;
-      g_settings.input.binds[port][RARCH_ANALOG_RIGHT_Y_PLUS].def_joykey      = NO_BTN;
-      g_settings.input.binds[port][RARCH_ANALOG_RIGHT_Y_MINUS].def_joykey     = NO_BTN;
-      g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_B].def_joyaxis      = AXIS_NONE;
-      g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_Y].def_joyaxis      = AXIS_NONE;
-      g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_SELECT].def_joyaxis = AXIS_NONE;
-      g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_START].def_joyaxis  = AXIS_NONE;
-      g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_UP].def_joyaxis     = AXIS_NONE;
-      g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_DOWN].def_joyaxis   = AXIS_NONE;
-      g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_LEFT].def_joyaxis   = AXIS_NONE;
-      g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_RIGHT].def_joyaxis  = AXIS_NONE;
-      g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_A].def_joyaxis      = AXIS_NONE;
-      g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_X].def_joyaxis      = AXIS_NONE;
-      g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_L].def_joyaxis      = AXIS_NONE;
-      g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R].def_joyaxis      = AXIS_NONE;
-      g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_L2].def_joyaxis     = AXIS_NONE;
-      g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R2].def_joyaxis     = AXIS_NONE;
-      g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_L3].def_joyaxis     = AXIS_NONE;
-      g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R3].def_joyaxis     = AXIS_NONE;
-      g_settings.input.binds[port][RARCH_ANALOG_LEFT_X_PLUS].def_joyaxis      = AXIS_POS(0);
-      g_settings.input.binds[port][RARCH_ANALOG_LEFT_X_MINUS].def_joyaxis     = AXIS_NEG(0);
-      g_settings.input.binds[port][RARCH_ANALOG_LEFT_Y_PLUS].def_joyaxis      = AXIS_POS(1);
-      g_settings.input.binds[port][RARCH_ANALOG_LEFT_Y_MINUS].def_joyaxis     = AXIS_NEG(1);
-      g_settings.input.binds[port][RARCH_ANALOG_RIGHT_X_PLUS].def_joyaxis     = AXIS_POS(2);
-      g_settings.input.binds[port][RARCH_ANALOG_RIGHT_X_MINUS].def_joyaxis    = AXIS_NEG(2);
-      g_settings.input.binds[port][RARCH_ANALOG_RIGHT_Y_PLUS].def_joyaxis     = AXIS_POS(3);
-      g_settings.input.binds[port][RARCH_ANALOG_RIGHT_Y_MINUS].def_joyaxis    = AXIS_NEG(3);
-
-      for (int i = 0; i < RARCH_CUSTOM_BIND_LIST_END; i++)
-      {
-         g_settings.input.binds[port][i].id = i;
-         g_settings.input.binds[port][i].joykey = g_settings.input.binds[port][i].def_joykey;
-         g_settings.input.binds[port][i].joyaxis = g_settings.input.binds[port][i].def_joyaxis;
-      }
-   }
-
-   if (keybind_action & (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL))
-   {
-      struct platform_bind *ret = (struct platform_bind*)data;
-
-      if (ret->joykey == NO_BTN)
-         strlcpy(ret->desc, "No button", sizeof(ret->desc));
-      else
-      {
-         for (size_t i = 0; i < arr_size; i++)
-         {
-            if (platform_keys[i].joykey == ret->joykey)
-            {
-               strlcpy(ret->desc, platform_keys[i].desc, sizeof(ret->desc));
-               return;
-            }
-         }
-         strlcpy(ret->desc, "Unknown", sizeof(ret->desc));
-      }
-   }
 }
 
 static void* psp_input_initialize(void)
@@ -306,13 +144,16 @@ static void* psp_input_initialize(void)
    psp_input_t *psp = (psp_input_t*)calloc(1, sizeof(*psp));
    if (!psp)
       return NULL;
+   
+   psp->joypad = input_joypad_init_driver(g_settings.input.joypad_driver);   
 
    return psp;
 }
 
 static bool psp_input_key_pressed(void *data, int key)
 {
-   return (g_extern.lifecycle_state & (1ULL << key)) || input_joypad_pressed(&psp_joypad, 0, g_settings.input.binds[0], key);
+   psp_input_t *psp = (psp_input_t*)data;
+   return (g_extern.lifecycle_state & (1ULL << key)) || input_joypad_pressed(psp->joypad, 0, g_settings.input.binds[0], key);
 }
 
 static uint64_t psp_input_get_capabilities(void *data)
@@ -327,7 +168,8 @@ static uint64_t psp_input_get_capabilities(void *data)
 
 static const rarch_joypad_driver_t *psp_input_get_joypad_driver(void *data)
 {
-   return &psp_joypad;
+   psp_input_t *psp = (psp_input_t*)data;
+   return psp->joypad;
 }
 
 static unsigned psp_input_devices_size(void *data)
@@ -341,7 +183,7 @@ const input_driver_t input_psp = {
    psp_input_state,
    psp_input_key_pressed,
    psp_input_free_input,
-   psp_input_set_keybinds,
+   NULL,
    NULL,
    NULL,
    psp_input_get_capabilities,
@@ -353,8 +195,21 @@ const input_driver_t input_psp = {
    psp_input_get_joypad_driver,
 };
 
+static const char *psp_joypad_name(unsigned pad)
+{
+   return "PSP Controller";
+}
+
 static bool psp_joypad_init(void)
 {
+   unsigned autoconf_pad;
+
+   for (autoconf_pad = 0; autoconf_pad < MAX_PADS; autoconf_pad++)
+   {
+      strlcpy(g_settings.input.device_names[autoconf_pad], psp_joypad_name(autoconf_pad), sizeof(g_settings.input.device_names[autoconf_pad]));
+      input_config_autoconfigure_joypad(autoconf_pad, psp_joypad_name(autoconf_pad), psp_joypad.ident);
+   }
+
    return true;
 }
 
@@ -417,10 +272,6 @@ static bool psp_joypad_query_pad(unsigned pad)
    return pad < MAX_PLAYERS && psp->pad_state;
 }
 
-static const char *psp_joypad_name(unsigned pad)
-{
-   return NULL;
-}
 
 static void psp_joypad_destroy(void)
 {
