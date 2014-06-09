@@ -1091,12 +1091,14 @@ bool config_load_file(const char *path, bool set_defaults)
    CONFIG_GET_BOOL(input.autodetect_enable, "input_autodetect_enable");
    CONFIG_GET_PATH(input.autoconfig_dir, "joypad_autoconfig_dir");
 
+#ifdef HAVE_NETPLAY
    CONFIG_GET_BOOL_EXTERN(netplay_is_spectate, "netplay_spectator_mode_enable");
    CONFIG_GET_BOOL_EXTERN(netplay_is_client, "netplay_mode");
    CONFIG_GET_PATH_EXTERN(netplay_nick, "netplay_nickname");
    CONFIG_GET_PATH_EXTERN(netplay_server, "netplay_ip_address");
    CONFIG_GET_INT_EXTERN(netplay_sync_frames, "netplay_delay_frames");
    CONFIG_GET_INT_EXTERN(netplay_port, "netplay_ip_port");
+#endif
 
 #ifdef ANDROID
    CONFIG_GET_INT(input.back_behavior, "input_back_behavior");
@@ -1476,12 +1478,14 @@ bool config_save_file(const char *path)
    config_set_int(conf, "sound_mode", g_extern.console.sound.mode);
    config_set_int(conf, "state_slot", g_extern.state_slot);
 
+#ifdef HAVE_NETPLAY
    config_set_bool(conf, "netplay_spectator_mode_enable", g_extern.netplay_is_spectate);
    config_set_bool(conf, "netplay_mode", g_extern.netplay_is_client);
    config_set_string(conf, "netplay_nickname", g_extern.netplay_nick);
    config_set_string(conf, "netplay_ip_address", g_extern.netplay_server);
    config_set_int(conf, "netplay_ip_port", g_extern.netplay_port);
    config_set_int(conf, "netplay_delay_frames", g_extern.netplay_sync_frames);
+#endif
 
    bool custom_bgm_enable_val = g_extern.lifecycle_state & (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE);
    config_set_bool(conf, "custom_bgm_enable", custom_bgm_enable_val);

@@ -78,6 +78,7 @@ endif
   HAVE_ZLIB                := 1
   HAVE_RPNG                := 1
   HAVE_OVERLAY             := 1
+  HAVE_BUILTIN_AUTOCONFIG  := 1
 else ifeq ($(platform), ps3)
 	#TODO
   MEDIA_SHADER_DIR := ps3/pkg/USRDIR/cores/shaders
@@ -112,6 +113,7 @@ endif
   HAVE_RPNG                := 1
   HAVE_OVERLAY             := 1
   HAVE_LIBSICKSAXIS			:= 0
+  HAVE_BUILTIN_AUTOCONFIG  := 1
 else ifeq ($(platform), psp1)
   CC = psp-gcc$(EXE_EXT)
   CXX = psp-g++$(EXE_EXT)
@@ -162,6 +164,10 @@ endif
 
 ifeq ($(HAVE_OVERLAY), 1)
 CFLAGS      += -DHAVE_OVERLAY
+endif
+
+ifeq ($(HAVE_BUILTIN_AUTOCONFIG), 1)
+CFLAGS      += -DHAVE_BUILTIN_AUTOCONFIG
 endif
 
 CFLAGS += -std=gnu99 -DSINC_LOWER_QUALITY -DHAVE_CC_RESAMPLER -DHAVE_RGUI -DHAVE_MENU -DRARCH_CONSOLE -DHAVE_GRIFFIN=1 -DHAVE_SCREENSHOTS -Wno-char-subscripts  -DRARCH_INTERNAL

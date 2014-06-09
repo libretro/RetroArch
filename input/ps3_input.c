@@ -408,16 +408,6 @@ static bool ps3_joypad_init(void)
       input_config_autoconfigure_joypad(autoconf_pad, ps3_joypad_name(autoconf_pad), ps3_joypad.ident);
    }
 
-   bool original_verbose = g_extern.verbose;
-   g_extern.verbose = true;
-
-   RARCH_LOG("Analog Left X Plus: 0x%x\n", g_settings.input.autoconf_binds[0][RARCH_ANALOG_LEFT_X_PLUS].joyaxis);
-   RARCH_LOG("Analog Left X Minus: 0x%x\n", g_settings.input.autoconf_binds[0][RARCH_ANALOG_LEFT_X_MINUS].joyaxis);
-   RARCH_LOG("Analog Right X Plus: 0x%x\n", g_settings.input.autoconf_binds[0][RARCH_ANALOG_RIGHT_X_PLUS].joyaxis);
-   RARCH_LOG("Analog Right X Minus: 0x%x\n", g_settings.input.autoconf_binds[0][RARCH_ANALOG_RIGHT_X_MINUS].joyaxis);
-
-   g_extern.verbose = original_verbose;
-
    return true;
 }
 
