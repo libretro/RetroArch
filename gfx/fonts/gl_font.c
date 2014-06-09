@@ -23,18 +23,24 @@ static const gl_font_renderer_t *gl_font_backends[] = {
 #else
    &gl_raster_font,
 #endif
+   NULL,
 };
 
-const gl_font_renderer_t *gl_font_init_first(void *data, const char *font_path, float font_size,
-      unsigned win_width, unsigned win_height)
+bool gl_font_init_first(const gl_font_renderer_t **font_driver, void **font_handle,
+      void *gl_data, const char *font_path, float font_size)
 {
-   size_t i;
-   for (i = 0; i < ARRAY_SIZE(gl_font_backends); i++)
+   unsigned i;
+   for (i = 0; gl_font_backends[i]; i++)
    {
-      if (gl_font_backends[i]->init(data, font_path, font_size, win_width, win_height))
-         return gl_font_backends[i];
+      void *data = gl_font_backends[i]->init(gl_data, font_path, font_size);
+      if (data)
+      {
+         *font_driver = gl_font_backends[i];
+         *font_handle = data;
+         return true;
+      }
    }
 
-   return NULL;
+   return false;
 }
 

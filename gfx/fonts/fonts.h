@@ -20,30 +20,43 @@
 #include <stdint.h>
 #include "../../boolean.h"
 
-typedef struct font_renderer font_renderer_t;
+// All coordinates and offsets are top-left oriented.
+//
+// This is a texture-atlas approach which allows text to be drawn in a single draw call.
+// It is up to the code using this interface to actually generate proper vertex buffers and upload the atlas texture to GPU.
 
-struct font_output
+struct font_glyph
 {
-   uint8_t *output; // 8-bit alpha.
-   unsigned width, height, pitch;
-   unsigned color;
-   unsigned scaling_factor;
-   int off_x, off_y;
-   int advance_x, advance_y, char_off_x, char_off_y; // for advanced font rendering
-   struct font_output *next; // linked list.
+   unsigned width;
+   unsigned height;
+
+   // Texel coordiate offset for top-left pixel of this glyph.
+   unsigned atlas_offset_x;
+   unsigned atlas_offset_y;
+
+   // When drawing this glyph, apply an offset to current X/Y draw coordinate.
+   int draw_offset_x;
+   int draw_offset_y;
+
+   // Advance X/Y draw coordinates after drawing this glyph.
+   int advance_x;
+   int advance_y;
 };
 
-struct font_output_list
+struct font_atlas
 {
-   struct font_output *head;
+   uint8_t *buffer; // Alpha channel.
+   unsigned width;
+   unsigned height;
 };
 
 typedef struct font_renderer_driver
 {
    void *(*init)(const char *font_path, float font_size);
-   void (*render_msg)(void *data, const char *msg, struct font_output_list *output);
-   void (*free_output)(void *data, struct font_output_list *list);
+   const struct font_atlas *(*get_atlas)(void *data);
+   const struct font_glyph *(*get_glyph)(void *data, uint32_t code); // Returns NULL if no glyph for this code is found.
    void (*free)(void *data);
+
    const char *(*get_default_font)(void);
    const char *ident;
 } font_renderer_driver_t;
@@ -51,7 +64,8 @@ typedef struct font_renderer_driver
 extern const font_renderer_driver_t ft_font_renderer;
 extern const font_renderer_driver_t bitmap_font_renderer;
 
-bool font_renderer_create_default(const font_renderer_driver_t **driver, void **handle);
+// font_path can be NULL for default font.
+bool font_renderer_create_default(const font_renderer_driver_t **driver, void **handle, const char *font_path, unsigned font_size);
 
 #endif
 

@@ -342,6 +342,22 @@ typedef struct video_overlay_interface
 } video_overlay_interface_t;
 #endif
 
+struct font_params
+{
+   float x;
+   float y;
+   float scale;
+   float drop_mod; // Drop shadow color multiplier.
+   int drop_x, drop_y; // Drop shadow offset. If both are 0, no drop shadow will be rendered.
+   uint32_t color; // ABGR. Use the macros.
+   bool full_screen;
+};
+#define FONT_COLOR_RGBA(r, g, b, a) (((r) << 0) | ((g) << 8) | ((b) << 16) | ((a) << 24))
+#define FONT_COLOR_GET_RED(col)   (((col) >>  0) & 0xff)
+#define FONT_COLOR_GET_GREEN(col) (((col) >>  8) & 0xff)
+#define FONT_COLOR_GET_BLUE(col)  (((col) >> 16) & 0xff)
+#define FONT_COLOR_GET_ALPHA(col) (((col) >> 24) & 0xff)
+
 // Optionally implemented interface to poke more deeply into video driver.
 typedef struct video_poke_interface
 {
@@ -357,7 +373,7 @@ typedef struct video_poke_interface
    void (*set_texture_frame)(void *data, const void *frame, bool rgb32, unsigned width, unsigned height, float alpha); // Update texture.
    void (*set_texture_enable)(void *data, bool enable, bool full_screen); // Enable/disable rendering.
 #endif
-   void (*set_osd_msg)(void *data, const char *msg, void *userdata);
+   void (*set_osd_msg)(void *data, const char *msg, const struct font_params *params);
 
    void (*show_mouse)(void *data, bool state);
    void (*grab_mouse_toggle)(void *data);

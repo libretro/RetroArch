@@ -137,7 +137,8 @@ static void *vg_init(const video_info_t *video, const input_driver_t **input, vo
 
    vg->driver->input_driver(vg, input, input_data);
 
-   if (g_settings.video.font_enable && font_renderer_create_default(&vg->font_driver, &vg->mFontRenderer))
+   if (g_settings.video.font_enable && font_renderer_create_default(&vg->font_driver, &vg->mFontRenderer,
+            *g_settings.video.font_path ? g_settings.video.font_path : NULL, g_settings.video.font_size))
    {
       vg->mFont = vgCreateFont(0);
 
@@ -199,6 +200,7 @@ static void vg_free(void *data)
    free(vg);
 }
 
+#if 0
 static void vg_render_message(vg_t *vg, const char *msg)
 {
    free(vg->mLastMsg);
@@ -273,6 +275,7 @@ static void vg_draw_message(vg_t *vg, const char *msg)
    vgSeti(VG_SCISSORING, VG_TRUE);
    vgSeti(VG_IMAGE_MODE, VG_DRAW_IMAGE_NORMAL);
 }
+#endif
 
 static void vg_calculate_quad(vg_t *vg)
 {
@@ -383,8 +386,10 @@ static bool vg_frame(void *data, const void *frame, unsigned width, unsigned hei
 
    vgDrawImage(vg->mImage);
 
+#if 0
    if (msg && vg->mFontsOn)
       vg_draw_message(vg, msg);
+#endif
 
    vg->driver->update_window_title(vg);
 

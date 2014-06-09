@@ -435,11 +435,10 @@ static void xdk_video_font_draw_text(xdk360_video_font_t *font, void *video_data
    d3dr->EndVertices();
 }
 
-static void xdk_render_msg(void *data, const char *str_msg, void *parms)
+static void xdk_render_msg(void *data, const char *str_msg, const struct font_params *params)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
    xdk360_video_font_t *font = &m_Font;
-   font_params_t *params = (font_params_t*)parms;
    wchar_t msg[PATH_MAX];
    float x, y;
 

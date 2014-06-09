@@ -16,6 +16,7 @@
 
 #include "fonts.h"
 #include "../gfx_common.h"
+#include "../gl_common.h"
 
 #if defined(SN_TARGET_PSP2)
 #include <libdbgfont.h>
@@ -32,44 +33,38 @@
 #define DbgFontExit cellDbgFontExit
 #endif
 
-static bool gl_init_font(void *data, const char *font_path, float font_size,
-      unsigned win_width, unsigned win_height)
+static void *gl_init_font(void *gl_data, const char *font_path, float font_size)
 {
    (void)font_path;
    (void)font_size;
-
-   font_renderer_t *handle = (font_renderer_t*)calloc(1, sizeof(*handle));
-   if (!handle)
-      return NULL;
+   gl_t *gl = (gl_t*)gl_data;
 
    DbgFontConfig cfg;
 #if defined(SN_TARGET_PSP2)
    cfg.fontSize     = SCE_DBGFONT_FONTSIZE_LARGE;
 #elif defined(__CELLOS_LV2__)
    cfg.bufSize      = SCE_DBGFONT_BUFSIZE_LARGE;
-   cfg.screenWidth  = win_width;
-   cfg.screenHeight = win_height;
+   cfg.screenWidth  = gl->win_width;
+   cfg.screenHeight = gl->win_height;
 #endif
 
    DbgFontInit(&cfg);
-   free(handle);
 
-   return true;
+   // Doesn't need any state.
+   return (void*)-1;
 }
 
 static void gl_deinit_font(void *data)
 {
    (void)data;
-
    DbgFontExit();
 }
 
-static void gl_render_msg(void *data, const char *msg, void *parms)
+static void gl_render_msg(void *data, const char *msg, const struct font_params *params)
 {
    (void)data;
    float x, y, scale;
    unsigned color;
-   font_params_t *params = (font_params_t*)parms;
 
    if (params)
    {
@@ -103,3 +98,4 @@ const gl_font_renderer_t libdbg_font = {
    gl_render_msg,
    "GL raster",
 };
+

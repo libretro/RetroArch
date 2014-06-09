@@ -189,6 +189,7 @@ struct gl_coords
    const GLfloat *color;
    const GLfloat *tex_coord;
    const GLfloat *lut_tex_coord;
+   unsigned vertices;
 };
 
 typedef struct gl_shader_backend gl_shader_backend_t;
@@ -282,17 +283,8 @@ typedef struct gl
 #endif
 
    // Fonts
-   void *font;
-   const gl_font_renderer_t *font_ctx;
-   const font_renderer_driver_t *font_driver;
-   GLuint font_tex;
-   GLint max_font_size;
-   int font_tex_w, font_tex_h;
-   uint32_t *font_tex_buf;
-   char font_last_msg[256];
-   int font_last_width, font_last_height;
-   GLfloat font_color[16];
-   GLfloat font_color_dark[16];
+   const gl_font_renderer_t *font_driver;
+   void *font_handle;
 
    bool egl_images;
    video_info_t video_info;

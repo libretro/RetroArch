@@ -245,7 +245,7 @@ static void rmenu_xui_free(void *data)
 
 static void xui_render_message(const char *msg)
 {
-	font_params_t font_parms;
+	struct font_params font_parms;
 	size_t i, j;
 
 	struct string_list *list = string_split(msg, "\n");

@@ -21,6 +21,7 @@ extern "C" {
 #endif
 
 #include <stddef.h>
+#include <stdint.h>
 #include "../general.h"
 #include "../boolean.h"
 #include "../performance.h"
@@ -39,15 +40,6 @@ void gfx_set_dwm(void);
 
 void gfx_scale_integer(struct rarch_viewport *vp, unsigned win_width, unsigned win_height,
       float aspect_ratio, bool keep_aspect);
-
-typedef struct
-{
-   float x;
-   float y;
-   float scale;
-   float alpha;
-   unsigned color;
-} font_params_t;
 
 #define MIN_SCALING_FACTOR (1.0f)
 

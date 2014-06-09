@@ -280,7 +280,7 @@ bool d3d_init_multipass(void *data)
 }
 #endif
 
-void d3d_set_font_rect(void *data, font_params_t *params)
+void d3d_set_font_rect(void *data, const struct font_params *params)
 {
 #ifndef _XBOX
    d3d_video_t *d3d = (d3d_video_t*)data;
@@ -745,7 +745,7 @@ static bool d3d_frame(void *data, const void *frame,
 
    if (d3d->font_ctx && d3d->font_ctx->render_msg && msg)
    {
-      font_params_t font_parms = {0};
+      struct font_params font_parms = {0};
 #ifdef _XBOX
 #if defined(_XBOX1)
       float msg_width  = 60;
@@ -1133,9 +1133,8 @@ static void d3d_apply_state_changes(void *data)
    d3d->should_resize = true;
 }
 
-static void d3d_set_osd_msg(void *data, const char *msg, void *userdata)
+static void d3d_set_osd_msg(void *data, const char *msg, const struct font_params *params)
 {
-   font_params_t *params = (font_params_t*)userdata;
    d3d_video_t *d3d = (d3d_video_t*)data;
 
    if (params)

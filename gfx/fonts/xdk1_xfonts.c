@@ -42,10 +42,9 @@ static void xfonts_deinit_font(void *data)
    (void)data;
 }
 
-static void xfonts_render_msg(void *data, const char *msg, void *parms)
+static void xfonts_render_msg(void *data, const char *msg, const struct font_params *params)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
-   font_params_t *params = (font_params_t*)parms;
    wchar_t str[PATH_MAX];
    float x, y;
 

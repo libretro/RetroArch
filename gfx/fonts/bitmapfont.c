@@ -21,37 +21,60 @@
 #include "../../msvc/msvc_compat.h"
 #include "../../boolean.h"
 
-struct font_renderer
+#define ATLAS_COLS 16
+#define ATLAS_ROWS 16
+#define ATLAS_SIZE (ATLAS_COLS * ATLAS_ROWS)
+
+typedef struct bm_renderer
 {
    unsigned scale_factor;
-   uint8_t *bitmap_chars[256];
-   uint8_t *bitmap_alloc;
-};
+   struct font_glyph glyphs[ATLAS_SIZE];
+   struct font_atlas atlas;
+} bm_renderer_t;
 
-static void char_to_texture(font_renderer_t *handle, uint8_t letter)
+static const struct font_atlas *font_renderer_get_atlas(void *data)
+{
+   bm_renderer_t *handle = (bm_renderer_t*)data;
+   return &handle->atlas;
+}
+
+static const struct font_glyph *font_renderer_get_glyph(void *data, uint32_t code)
+{
+   bm_renderer_t *handle = (bm_renderer_t*)data;
+   return code < ATLAS_SIZE ? &handle->glyphs[code] : NULL;
+}
+
+static void char_to_texture(bm_renderer_t *handle, uint8_t letter, unsigned atlas_x, unsigned atlas_y)
 {
    unsigned y, x, xo, yo;
-   handle->bitmap_chars[letter] = &handle->bitmap_alloc[letter * FONT_WIDTH * FONT_HEIGHT * handle->scale_factor * handle->scale_factor];
+   uint8_t *target = handle->atlas.buffer + atlas_x + atlas_y * handle->atlas.width;
+
    for (y = 0; y < FONT_HEIGHT; y++)
    {
       for (x = 0; x < FONT_WIDTH; x++)
       {
-         uint8_t rem = 1 << ((x + y * FONT_WIDTH) & 7);
-         unsigned offset = (x + y * FONT_WIDTH) >> 3;
-         uint8_t col = (bitmap_bin[FONT_OFFSET(letter) + offset] & rem) ? 0xFF : 0;
+         unsigned font_pixel = x + y * FONT_WIDTH;
+         uint8_t rem = 1 << (font_pixel & 7);
+         unsigned offset = font_pixel >> 3;
+         uint8_t col = (bitmap_bin[FONT_OFFSET(letter) + offset] & rem) ? 0xff : 0;
 
-         for (xo = 0; xo < handle->scale_factor; xo++)
-            for (yo = 0; yo < handle->scale_factor; yo++)
-               handle->bitmap_chars[letter][x * handle->scale_factor + xo + (y * handle->scale_factor + yo) * FONT_WIDTH * handle->scale_factor] = col;
+         uint8_t *dst = target;
+         dst += x * handle->scale_factor;
+         dst += y * handle->scale_factor * handle->atlas.width;
+
+         for (yo = 0; yo < handle->scale_factor; yo++)
+            for (xo = 0; xo < handle->scale_factor; xo++)
+               dst[xo + yo * handle->atlas.width] = col;
       }
    }
 }
 
-
 static void *font_renderer_init(const char *font_path, float font_size)
 {
+   (void)font_path;
    unsigned i;
-   font_renderer_t *handle = (font_renderer_t*)calloc(1, sizeof(*handle));
+
+   bm_renderer_t *handle = (bm_renderer_t*)calloc(1, sizeof(*handle));
    if (!handle)
       return NULL;
 
@@ -59,77 +82,35 @@ static void *font_renderer_init(const char *font_path, float font_size)
    if (!handle->scale_factor)
       handle->scale_factor = 1;
 
-   handle->bitmap_alloc = (uint8_t*)malloc(FONT_WIDTH * FONT_HEIGHT * handle->scale_factor * handle->scale_factor * 256);
+   handle->atlas.width  = FONT_WIDTH * handle->scale_factor * ATLAS_COLS;
+   handle->atlas.height = FONT_HEIGHT * handle->scale_factor * ATLAS_ROWS;
+   handle->atlas.buffer = (uint8_t*)calloc(handle->atlas.width * handle->atlas.height, 1);
 
-   if (!handle->bitmap_alloc)
+   for (i = 0; i < ATLAS_SIZE; i++)
    {
-      free(handle);
-      return NULL;
-   }
+      unsigned x = (i % ATLAS_COLS) * handle->scale_factor * FONT_WIDTH;
+      unsigned y = (i / ATLAS_COLS) * handle->scale_factor * FONT_HEIGHT;
+      char_to_texture(handle, i, x, y);
 
-   for (i = 0; i < 256; i++)
-      char_to_texture(handle, i);
+      handle->glyphs[i].width = FONT_WIDTH * handle->scale_factor;
+      handle->glyphs[i].height = FONT_HEIGHT * handle->scale_factor;
+      handle->glyphs[i].atlas_offset_x = x;
+      handle->glyphs[i].atlas_offset_y = y;
+      handle->glyphs[i].draw_offset_x  = 0;
+      handle->glyphs[i].draw_offset_y  = -FONT_HEIGHT_BASELINE * (int)handle->scale_factor;
+      handle->glyphs[i].advance_x = (FONT_WIDTH + 1) * handle->scale_factor;
+      handle->glyphs[i].advance_y = 0;
+   }
 
    return handle;
 }
 
-static void font_renderer_msg(void *data, const char *msg, struct font_output_list *output) 
-{
-   size_t i;
-   font_renderer_t *handle = (font_renderer_t*)data;
-   output->head = NULL;
-
-   struct font_output *cur = NULL;
-   size_t len = strlen(msg);
-   int off_x = 0;
-
-   for (i = 0; i < len; i++)
-   {
-      struct font_output *tmp = (struct font_output*)calloc(1, sizeof(*tmp));
-      if (!tmp)
-         break;
-
-      tmp->output = handle->bitmap_chars[(uint8_t)msg[i]];
-      tmp->width = FONT_WIDTH * handle->scale_factor;
-      tmp->height = FONT_HEIGHT * handle->scale_factor;
-      tmp->pitch = tmp->width;
-      tmp->advance_x = tmp->width;
-      tmp->advance_y = tmp->height;
-      tmp->char_off_x = 0;
-      tmp->char_off_y = tmp->height;
-      tmp->off_x = off_x;
-      tmp->off_y = 0;
-      tmp->next = NULL;
-
-      if (i == 0)
-         output->head = tmp;
-      else
-         cur->next = tmp;
-
-      cur = tmp;
-
-      off_x += FONT_WIDTH_STRIDE * handle->scale_factor;
-   }
-}
-
-static void font_renderer_free_output(void *data, struct font_output_list *output)
-{
-   (void)data;
-   struct font_output *itr = output->head;
-   struct font_output *tmp = NULL;
-   while (itr != NULL)
-   {
-      tmp = itr;
-      itr = itr->next;
-      free(tmp);
-   }
-   output->head = NULL;
-}
-
 static void font_renderer_free(void *data)
 {
-   font_renderer_t *handle = (font_renderer_t*)data;
-   free(handle->bitmap_alloc);
+   bm_renderer_t *handle = (bm_renderer_t*)data;
+   if (!handle)
+      return;
+   free(handle->atlas.buffer);
    free(handle);
 }
 
@@ -140,9 +121,10 @@ static const char *font_renderer_get_default_font(void)
 
 const font_renderer_driver_t bitmap_font_renderer = {
    font_renderer_init,
-   font_renderer_msg,
-   font_renderer_free_output,
+   font_renderer_get_atlas,
+   font_renderer_get_glyph,
    font_renderer_free,
    font_renderer_get_default_font,
    "bitmap",
 };
+

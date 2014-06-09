@@ -185,7 +185,6 @@ struct settings
       char font_path[PATH_MAX];
       float font_size;
       bool font_enable;
-      bool font_scale;
       float msg_pos_x;
       float msg_pos_y;
       float msg_color_r;

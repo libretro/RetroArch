@@ -54,20 +54,7 @@ float global_alpha = 0;
 
 // Font variables
 void *font;
-const gl_font_renderer_t *font_ctx;
-const font_renderer_driver_t *font_driver;
-GLuint font_tex;
-GLint max_font_size;
-int font_tex_w, font_tex_h;
-uint32_t *font_tex_buf;
-char font_last_msg[256];
-int font_last_width, font_last_height;
-struct font_output_list run_label;
-struct font_output_list resume_label;
-
-//GL-specific variables
-GLfloat font_color[16];
-GLfloat font_color_dark[16];
+const gl_font_renderer_t *font_driver;
 
 enum
 {
@@ -209,305 +196,26 @@ static void update_tweens(float dt)
       numtweens = 0;
 }
 
-struct font_rect
+static void lakka_draw_text(const char *str, float x, float y, float scale, float alpha)
 {
-   int x, y;
-   int width, height;
-   int pot_width, pot_height;
-};
-
-/* font rendering */
-
-#if 0
-static void deinit_font(void *data)
-{
-   (void)data;
-
-   if (font)
-   {
-      if (font_driver)
-         font_driver->free(font);
-      font_driver = NULL;
-
-      glDeleteTextures(1, &font_tex);
-
-      if (font_tex_buf)
-         free(font_tex_buf);
-   }
-}
-#endif
-
-static bool init_font(void *data, const char *font_path, float font_size, unsigned win_width, unsigned win_height)
-{
-   size_t i, j;
-   gl_t *gl = (gl_t*)data;
-   (void)win_width;
-   (void)win_height;
-   (void)font_size;
-
-   if (!g_settings.video.font_enable)
-      return false;
-
-   if (font_renderer_create_default(&font_driver, &font))
-   {
-      glGenTextures(1, &font_tex);
-      glBindTexture(GL_TEXTURE_2D, font_tex);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-      glBindTexture(GL_TEXTURE_2D, textures[TEXTURE_MAIN].id);
-      glGetIntegerv(GL_MAX_TEXTURE_SIZE, &max_font_size);
-   }
-   else
-   {
-      RARCH_WARN("Couldn't init font renderer.\n");
-      return false;
-   }
-
-   for (i = 0; i < 4; i++)
-   {
-      font_color[4 * i + 0] = g_settings.video.msg_color_r;
-      font_color[4 * i + 1] = g_settings.video.msg_color_g;
-      font_color[4 * i + 2] = g_settings.video.msg_color_b;
-      font_color[4 * i + 3] = 1.0;
-   }
-
-   for (i = 0; i < 4; i++)
-   {
-      for (j = 0; j < 3; j++)
-         font_color_dark[4 * i + j] = 0.3 * font_color[4 * i + j];
-      font_color_dark[4 * i + 3] = 1.0;
-   }
-
-   return true;
-}
-
-static void calculate_msg_geometry(const struct font_output *head, struct font_rect *rect)
-{
-   int x_min = head->off_x;
-   int x_max = head->off_x + head->width+10;
-   int y_min = head->off_y;
-   int y_max = head->off_y + head->height+1;
-
-   while ((head = head->next))
-   {
-      int left = head->off_x;
-      int right = head->off_x + head->width;
-      int bottom = head->off_y;
-      int top = head->off_y + head->height;
-
-      if (left < x_min)
-         x_min = left;
-      if (right > x_max)
-         x_max = right;
-
-      if (bottom < y_min)
-         y_min = bottom;
-      if (top > y_max)
-         y_max = top;
-   }
-
-   rect->x = x_min;
-   rect->y = y_min;
-   rect->width = x_max - x_min;
-   rect->height = y_max - y_min;
-}
-
-static void adjust_power_of_two(gl_t *gl, struct font_rect *geom)
-{
-   // Some systems really hate NPOT textures.
-   geom->pot_width  = next_pow2(geom->width);
-   geom->pot_height = next_pow2(geom->height);
-
-   if (geom->pot_width > max_font_size)
-      geom->pot_width = max_font_size;
-   if (geom->pot_height > max_font_size)
-      geom->pot_height = max_font_size;
-
-   if ((geom->pot_width > font_tex_w) || (geom->pot_height > font_tex_h))
-   {
-      font_tex_buf = (uint32_t*)realloc(font_tex_buf,
-            geom->pot_width * geom->pot_height * sizeof(uint32_t));
-
-      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, geom->pot_width, geom->pot_height,
-            0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-
-      font_tex_w = geom->pot_width;
-      font_tex_h = geom->pot_height;
-   }
-}
-
-static void copy_glyph(const struct font_output *head, const struct font_rect *geom, uint32_t *buffer, unsigned width, unsigned height)
-{
-   int h, w, x, y, font_width, font_height;
-   uint8_t *src;
-   uint32_t *dst;
-
-   // head has top-left oriented coords.
-   x = head->off_x - geom->x;
-   y = head->off_y - geom->y;
-   y = height - head->height - y - 1;
-
-   src = (uint8_t*)head->output;
-   font_width  = head->width  + ((x < 0) ? x : 0);
-   font_height = head->height + ((y < 0) ? y : 0);
-
-   if (x < 0)
-   {
-      src += -x;
-      x    = 0;
-   }
-
-   if (y < 0)
-   {
-      src += -y * head->pitch;
-      y    = 0;
-   }
-
-   if (x + font_width > (int)width)
-      font_width = width - x;
-
-   if (y + font_height > (int)height)
-      font_height = height - y;
-
-   dst = (uint32_t*)(buffer + y * width + x);
-   for (h = 0; h < font_height; h++, dst += width, src += head->pitch)
-   {
-      uint8_t *d = (uint8_t*)dst;
-      for (w = 0; w < font_width; w++)
-      {
-         *d++ = 0xff;
-         *d++ = 0xff;
-         *d++ = 0xff;
-         *d++ = src[w];
-      }
-   }
-}
-
-static void blit_fonts(gl_t *gl, const struct font_output *head, const struct font_rect *geom)
-{
-   memset(font_tex_buf, 0, font_tex_w * font_tex_h * sizeof(uint32_t));
-
-   while (head)
-   {
-      copy_glyph(head, geom, font_tex_buf, font_tex_w, font_tex_h);
-      head = head->next;
-   }
-
-   glPixelStorei(GL_UNPACK_ALIGNMENT, 8);
-   glTexSubImage2D(GL_TEXTURE_2D,
-      0, 0, 0, font_tex_w, font_tex_h,
-      GL_RGBA, GL_UNSIGNED_BYTE, font_tex_buf);
-}
-
-static void calculate_font_coords(gl_t *gl,
-      GLfloat font_vertex[8], GLfloat font_vertex_dark[8], GLfloat font_tex_coords[8], GLfloat scale, GLfloat pos_x, GLfloat pos_y)
-{
-   unsigned i;
-   GLfloat scale_factor, lx, hx, ly, hy, shift_x, shift_y;
-   
-   scale_factor = scale;
-   lx = pos_x;
-   hx = (GLfloat)font_last_width * scale_factor / gl->vp.width + lx;
-   ly = pos_y;
-   hy = (GLfloat)font_last_height * scale_factor / gl->vp.height + ly;
-
-   font_vertex[0] = lx;
-   font_vertex[2] = hx;
-   font_vertex[4] = lx;
-   font_vertex[6] = hx;
-   font_vertex[1] = hy;
-   font_vertex[3] = hy;
-   font_vertex[5] = ly;
-   font_vertex[7] = ly;
-
-   shift_x = 2.0f / gl->vp.width;
-   shift_y = 2.0f / gl->vp.height;
-   for (i = 0; i < 4; i++)
-   {
-      font_vertex_dark[2 * i + 0] = font_vertex[2 * i + 0] - shift_x;
-      font_vertex_dark[2 * i + 1] = font_vertex[2 * i + 1] - shift_y;
-   }
-
-   lx = 0.0f;
-   hx = (GLfloat)font_last_width / font_tex_w;
-   ly = 1.0f - (GLfloat)font_last_height / font_tex_h; 
-   hy = 1.0f;
-
-   font_tex_coords[0] = lx;
-   font_tex_coords[2] = hx;
-   font_tex_coords[4] = lx;
-   font_tex_coords[6] = hx;
-   font_tex_coords[1] = ly;
-   font_tex_coords[3] = ly;
-   font_tex_coords[5] = hy;
-   font_tex_coords[7] = hy;
-}
-
-static void lakka_draw_text(struct font_output_list *out, float x, float y, float scale, float alpha)
-{
-   int i;
-   struct font_output *head;
-   struct font_rect geom;
-   struct gl_ortho ortho = {0, 1, 0, 1, -1, 1};
    gl_t *gl = (gl_t*)driver.video_data;
+   if (!gl)
+      return;
+
+   gl_set_viewport(gl, gl->win_width, gl->win_height, false, false);
+
+   struct font_params params = {0};
+   params.x = x / gl->vp.width;
+   params.y = 1.0f - y / gl->vp.height;
 
    if (alpha > global_alpha)
       alpha = global_alpha;
 
-   if (!font || !gl || !out)
-      return;
+   params.scale = scale;
+   params.color = FONT_COLOR_RGBA(255, 255, 255, (uint8_t)(255 * alpha));
 
-   for (i = 0; i < 4; i++)
-   {
-      font_color[4 * i + 0] = 1.0;
-      font_color[4 * i + 1] = 1.0;
-      font_color[4 * i + 2] = 1.0;
-      font_color[4 * i + 3] = alpha;
-   }
-
-   if (gl->shader && gl->shader->use)
-      gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
-
-   gl_set_viewport(gl, gl->win_width, gl->win_height, true, false);
-
-   glEnable(GL_BLEND);
-
-   GLfloat font_vertex[8]; 
-   GLfloat font_vertex_dark[8]; 
-   GLfloat font_tex_coords[8];
-
-   glBindTexture(GL_TEXTURE_2D, font_tex);
-
-   gl->coords.tex_coord = font_tex_coords;
-
-   head = (struct font_output*)out->head;
-
-   calculate_msg_geometry(head, &geom);
-   adjust_power_of_two(gl, &geom);
-   blit_fonts(gl, head, &geom);
-
-   font_last_width = geom.width;
-   font_last_height = geom.height;
-
-   calculate_font_coords(gl, font_vertex, font_vertex_dark, font_tex_coords, 
-         scale, x / gl->win_width, (gl->win_height - y) / gl->win_height);
-
-   gl->coords.vertex = font_vertex;
-   gl->coords.color  = font_color;
-   gl_shader_set_coords(gl, &gl->coords, &gl->mvp);
-   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-
-   // Post - Go back to old rendering path.
-   gl->coords.vertex    = gl->vertex_ptr;
-   gl->coords.tex_coord = gl->tex_coords;
-   gl->coords.color     = gl->white_color_ptr;
-   glBindTexture(GL_TEXTURE_2D, textures[TEXTURE_MAIN].id);
-
-   glDisable(GL_BLEND);
-
-   gl_set_projection(gl, &ortho, true);
+   if (font_driver)
+      font_driver->render_msg(font, str, &params);
 }
 
 void lakka_draw_background(void)
@@ -518,8 +226,8 @@ void lakka_draw_background(void)
       0.1, 0.74, 0.61, global_alpha,
       0.1, 0.74, 0.61, global_alpha,
    };
-   gl_t *gl = (gl_t*)driver.video_data;
 
+   gl_t *gl = (gl_t*)driver.video_data;
    if (!gl)
       return;
 
@@ -531,6 +239,8 @@ void lakka_draw_background(void)
 
    if (gl->shader && gl->shader->use)
       gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
+
+   gl->coords.vertices = 4;
    gl_shader_set_coords(gl, &gl->coords, &gl->mvp_no_rot);
 
    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
@@ -584,6 +294,7 @@ void lakka_draw_icon(GLuint texture, float x, float y, float alpha, float rotati
    matrix_scale(&mscal, scale, scale, 1);
    matrix_multiply(&mymat, &mscal, &mymat);
 
+   gl->coords.vertices = 4;
    gl_shader_set_coords(gl, &gl->coords, &mymat);
 
    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
@@ -619,7 +330,7 @@ static void lakka_draw_subitems(int i, int j)
             subitem->alpha, 
             0, 
             subitem->zoom);
-         lakka_draw_text(&resume_label, 
+         lakka_draw_text("Resume", 
             156 + HSPACING*(i+2) + all_categories_x + dim/2.0, 
             300 + subitem->y + 15, 
             1, 
@@ -637,7 +348,7 @@ static void lakka_draw_subitems(int i, int j)
                subitem->alpha, 
                0, 
                subitem->zoom);
-         lakka_draw_text(&subitem->out, 
+         lakka_draw_text(subitem->name, 
                156 + HSPACING * (i+2) + all_categories_x + dim/2.0, 
                300 + subitem->y + 15, 
                1, 
@@ -665,7 +376,7 @@ static void lakka_draw_items(int i)
          j > active_category->active_item - 4 &&
          j < active_category->active_item + 10) // performance improvement
       {
-         lakka_draw_icon(category->item_icon, 
+         lakka_draw_icon(category->item_icon,
             156 + HSPACING*(i+1) + all_categories_x - dim/2.0, 
             300 + item->y + dim/2.0, 
             item->alpha, 
@@ -673,7 +384,7 @@ static void lakka_draw_items(int i)
             item->zoom);
 
          if (depth == 0)
-            lakka_draw_text(&item->out, 
+            lakka_draw_text(item->name,
                156 + HSPACING * (i+1) + all_categories_x + dim/2.0, 
                300 + item->y + 15, 
                1, 
@@ -732,12 +443,12 @@ static void lakka_frame(void)
    if (depth == 0)
    {
       if (active_category)
-         lakka_draw_text(&active_category->out, 15.0, 40.0, 1, 1.0);
+         lakka_draw_text(active_category->name, 15.0, 40.0, 1, 1.0);
    }
    else
    {
       if (active_item)
-         lakka_draw_text(&active_item->out, 15.0, 40.0, 1, 1.0);
+         lakka_draw_text(active_item->name, 15.0, 40.0, 1, 1.0);
 
       lakka_draw_icon(textures[TEXTURE_ARROW].id,
             156 + HSPACING*(menu_active_category+1) + all_categories_x + 150 +-dim/2.0,
@@ -937,6 +648,12 @@ static void lakka_context_destroy(void *data)
       }
    }
 
+   if (font_driver)
+   {
+      font_driver->free(font);
+      font_driver = NULL;
+   }
+
    //if (numtweens)
    //   free(tweens);
 }
@@ -1034,29 +751,21 @@ void lakka_settings_context_reset(void)
 
    category->icon = textures[TEXTURE_SETTINGS].id;
    category->item_icon = textures[TEXTURE_SETTING].id;
-   if (font_driver)
-      font_driver->render_msg(font, category->name, &category->out);
 
    // General options item
 
    item = (menu_item_t*)&category->items[0];
-   if (font_driver)
-      font_driver->render_msg(font, item->name, &item->out);
 
    // General options subitems
    for (k = 0; k < 2; k++)
    {
       menu_subitem_t *subitem = (menu_subitem_t*)&item->subitems[k];
       subitem->icon = textures[TEXTURE_SUBSETTING].id;
-      if (font_driver)
-         font_driver->render_msg(font, subitem->name, &subitem->out);
    }
 
    // Quit item
 
    item = (menu_item_t*)&category->items[1];
-   if (font_driver)
-      font_driver->render_msg(font, item->name, &item->out);
 }
 
 
@@ -1069,6 +778,9 @@ static void lakka_context_reset(void *data)
 
    if (!rgui)
       return;
+
+   gl_font_init_first(&font_driver, &font, gl,
+         *g_settings.video.font_path ? g_settings.video.font_path : NULL, g_settings.video.font_size);
 
    fill_pathname_join(dirpath, g_settings.assets_directory, "lakka", sizeof(dirpath));
    fill_pathname_slash(dirpath, sizeof(dirpath));
@@ -1086,12 +798,6 @@ static void lakka_context_reset(void *data)
 
    for (k = 0; k < TEXTURE_LAST; k++)
       textures[k].id = png_texture_load(textures[k].path, &dim, &dim);
-
-   if (font_driver)
-   {
-      font_driver->render_msg(font, "Run", &run_label);
-      font_driver->render_msg(font, "Resume", &resume_label);
-   }
 
    lakka_settings_context_reset();
    for (i = 1; i < num_categories; i++)
@@ -1131,15 +837,9 @@ static void lakka_context_reset(void *data)
       category->icon = png_texture_load(texturepath, &dim, &dim);
       category->item_icon = png_texture_load(content_texturepath, &dim, &dim);
       
-      if (font_driver)
-         font_driver->render_msg(font, category->name, &category->out);
-
       for (j = 0; j < category->num_items; j++)
       {
          menu_item_t *item = (menu_item_t*)&category->items[j];
-
-         if (font_driver)
-            font_driver->render_msg(font, item->name, &item->out);
 
          for (k = 0; k < item->num_subitems; k++)
          {
@@ -1163,9 +863,6 @@ static void lakka_context_reset(void *data)
                   subitem->icon = textures[TEXTURE_RELOAD].id;
                   break;
             }
-
-            if (font_driver)
-               font_driver->render_msg(font, subitem->name, &subitem->out);
          }
       }
    }
@@ -1231,9 +928,6 @@ static void lakka_init_items(int i, menu_category_t *category, core_info_t *info
             subitem->alpha = 0;
             subitem->zoom = k ? I_PASSIVE_ZOOM : I_ACTIVE_ZOOM;
             subitem->y = k ? VSPACING * (3+k) : VSPACING * 2.4;
-
-            if (font_driver)
-               font_driver->render_msg(font, subitem->name, &subitem->out);
          }
       }
    }
@@ -1288,8 +982,6 @@ static void *lakka_init(void)
    gl_t *gl = (gl_t*)driver.video_data;
    if (!rgui || !gl)
       return NULL;
-
-   init_font(gl, g_settings.video.font_path, g_settings.video.font_size, gl->win_width, gl->win_height);
 
    lakka_init_core_info(rgui);
    categories = (menu_category_t*)calloc(num_categories, sizeof(menu_category_t));

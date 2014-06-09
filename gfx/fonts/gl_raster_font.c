@@ -18,352 +18,246 @@
 #include "../gl_common.h"
 #include "../shader_common.h"
 
-static bool gl_init_font(void *data, const char *font_path, float font_size, unsigned win_width, unsigned win_height)
+typedef struct
 {
-   size_t i, j;
-   (void)win_width;
-   (void)win_height;
+   gl_t *gl;
+   GLuint tex;
+   unsigned tex_width, tex_height;
 
-   if (!g_settings.video.font_enable)
-      return false;
+   const font_renderer_driver_t *font_driver;
+   void *font_data;
+} gl_raster_t;
 
-   (void)font_size;
-   gl_t *gl = (gl_t*)data;
+static void *gl_init_font(void *gl_data, const char *font_path, float font_size)
+{
+   gl_raster_t *font = (gl_raster_t*)calloc(1, sizeof(*font));
+   if (!font)
+      return NULL;
 
-   if (font_renderer_create_default(&gl->font_driver, &gl->font))
-   {
-      glGenTextures(1, &gl->font_tex);
-      glBindTexture(GL_TEXTURE_2D, gl->font_tex);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-      glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
-      glGetIntegerv(GL_MAX_TEXTURE_SIZE, &gl->max_font_size);
-   }
-   else
+   font->gl = (gl_t*)gl_data;
+
+   if (!font_renderer_create_default(&font->font_driver, &font->font_data, font_path, font_size))
    {
       RARCH_WARN("Couldn't init font renderer.\n");
-      return false;
+      free(font);
+      return NULL;
    }
 
-   for (i = 0; i < 4; i++)
+   glGenTextures(1, &font->tex);
+   glBindTexture(GL_TEXTURE_2D, font->tex);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
+   const struct font_atlas *atlas = font->font_driver->get_atlas(font->font_data);
+
+   unsigned width = next_pow2(atlas->width);
+   unsigned height = next_pow2(atlas->height);
+   // Ideally, we'd use single component textures, but the difference in ways to do that between core GL and GLES/legacy GL
+   // is too great to bother going down that route.
+   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+
+   uint8_t *tmp_buffer = (uint8_t*)malloc(atlas->width * atlas->height * 4);
+   if (tmp_buffer)
    {
-      gl->font_color[4 * i + 0] = g_settings.video.msg_color_r;
-      gl->font_color[4 * i + 1] = g_settings.video.msg_color_g;
-      gl->font_color[4 * i + 2] = g_settings.video.msg_color_b;
-      gl->font_color[4 * i + 3] = 1.0;
-   }
-
-   for (i = 0; i < 4; i++)
-   {
-      for (j = 0; j < 3; j++)
-         gl->font_color_dark[4 * i + j] = 0.3 * gl->font_color[4 * i + j];
-      gl->font_color_dark[4 * i + 3] = 1.0;
-   }
-
-   return true;
-}
-
-void gl_deinit_font(void *data)
-{
-   gl_t *gl = (gl_t*)data;
-
-   if (gl->font)
-   {
-      gl->font_driver->free(gl->font);
-      glDeleteTextures(1, &gl->font_tex);
-
-      if (gl->font_tex_buf)
-         free(gl->font_tex_buf);
-   }
-}
-
-// Somewhat overwhelming code just to render some damn fonts.
-// We aim to use NPOT textures for compatibility with old and shitty cards.
-// Also, we want to avoid reallocating a texture for each glyph (performance dips), so we
-// contruct the whole texture using one call, and copy straight to it with
-// glTexSubImage.
-
-struct font_rect
-{
-   int x, y;
-   int width, height;
-   int pot_width, pot_height;
-};
-
-static void calculate_msg_geometry(const struct font_output *head, struct font_rect *rect)
-{
-   int x_min = head->off_x;
-   int x_max = head->off_x + head->width;
-   int y_min = head->off_y;
-   int y_max = head->off_y + head->height;
-
-   while ((head = head->next))
-   {
-      int left = head->off_x;
-      int right = head->off_x + head->width;
-      int bottom = head->off_y;
-      int top = head->off_y + head->height;
-
-      if (left < x_min)
-         x_min = left;
-      if (right > x_max)
-         x_max = right;
-
-      if (bottom < y_min)
-         y_min = bottom;
-      if (top > y_max)
-         y_max = top;
-   }
-
-   rect->x = x_min;
-   rect->y = y_min;
-   rect->width = x_max - x_min;
-   rect->height = y_max - y_min;
-}
-
-static void adjust_power_of_two(gl_t *gl, struct font_rect *geom)
-{
-   // Some systems really hate NPOT textures.
-   geom->pot_width  = next_pow2(geom->width);
-   geom->pot_height = next_pow2(geom->height);
-
-   if (geom->pot_width > gl->max_font_size)
-      geom->pot_width = gl->max_font_size;
-   if (geom->pot_height > gl->max_font_size)
-      geom->pot_height = gl->max_font_size;
-
-   if ((geom->pot_width > gl->font_tex_w) || (geom->pot_height > gl->font_tex_h))
-   {
-      gl->font_tex_buf = (uint32_t*)realloc(gl->font_tex_buf,
-            geom->pot_width * geom->pot_height * sizeof(uint32_t));
-
-      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, geom->pot_width, geom->pot_height,
-            0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-
-      gl->font_tex_w = geom->pot_width;
-      gl->font_tex_h = geom->pot_height;
-   }
-}
-
-static void copy_glyph(const struct font_output *head, const struct font_rect *geom, uint32_t *buffer, unsigned width, unsigned height)
-{
-   int h, w;
-   // head has top-left oriented coords.
-   int x = head->off_x - geom->x;
-   int y = head->off_y - geom->y;
-   y     = height - head->height - y - 1;
-
-   const uint8_t *src = head->output;
-   int font_width  = head->width  + ((x < 0) ? x : 0);
-   int font_height = head->height + ((y < 0) ? y : 0);
-
-   if (x < 0)
-   {
-      src += -x;
-      x    = 0;
-   }
-
-   if (y < 0)
-   {
-      src += -y * head->pitch;
-      y    = 0;
-   }
-
-   if (x + font_width > (int)width)
-      font_width = width - x;
-
-   if (y + font_height > (int)height)
-      font_height = height - y;
-
-   uint32_t *dst = buffer + y * width + x;
-   for (h = 0; h < font_height; h++, dst += width, src += head->pitch)
-   {
-      uint8_t *d = (uint8_t*)dst;
-      for (w = 0; w < font_width; w++)
+      unsigned i;
+      uint8_t *dst = tmp_buffer;
+      const uint8_t *src = atlas->buffer;
+      for (i = 0; i < atlas->width * atlas->height; i++)
       {
-         *d++ = 0xff;
-         *d++ = 0xff;
-         *d++ = 0xff;
-         *d++ = src[w];
+         *dst++ = 0xff;
+         *dst++ = 0xff;
+         *dst++ = 0xff;
+         *dst++ = *src++;
       }
-   }
-}
-
-// Old style "blitting", so we can render all the fonts in one go.
-// TODO: Is it possible that fonts could overlap if we blit without alpha blending?
-static void blit_fonts(gl_t *gl, const struct font_output *head, const struct font_rect *geom)
-{
-   memset(gl->font_tex_buf, 0, gl->font_tex_w * gl->font_tex_h * sizeof(uint32_t));
-
-   while (head)
-   {
-      copy_glyph(head, geom, gl->font_tex_buf, gl->font_tex_w, gl->font_tex_h);
-      head = head->next;
+      glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, atlas->width, atlas->height, GL_RGBA, GL_UNSIGNED_BYTE, tmp_buffer);
+      free(tmp_buffer);
    }
 
-   glPixelStorei(GL_UNPACK_ALIGNMENT, 8);
-   glTexSubImage2D(GL_TEXTURE_2D,
-      0, 0, 0, gl->font_tex_w, gl->font_tex_h,
-      GL_RGBA, GL_UNSIGNED_BYTE, gl->font_tex_buf);
+   font->tex_width  = width;
+   font->tex_height = height;
+
+   glBindTexture(GL_TEXTURE_2D, font->gl->texture[font->gl->tex_index]);
+   return font;
 }
 
-static void calculate_font_coords(gl_t *gl,
-      GLfloat font_vertex[8], GLfloat font_vertex_dark[8], GLfloat font_tex_coords[8], GLfloat scale, GLfloat pos_x, GLfloat pos_y)
+void gl_free_font(void *data)
 {
-   unsigned i;
-   GLfloat scale_factor = scale;
-
-   GLfloat lx = pos_x;
-   GLfloat hx = (GLfloat)gl->font_last_width * scale_factor / gl->vp.width + lx;
-   GLfloat ly = pos_y;
-   GLfloat hy = (GLfloat)gl->font_last_height * scale_factor / gl->vp.height + ly;
-
-   font_vertex[0] = lx;
-   font_vertex[2] = hx;
-   font_vertex[4] = lx;
-   font_vertex[6] = hx;
-   font_vertex[1] = hy;
-   font_vertex[3] = hy;
-   font_vertex[5] = ly;
-   font_vertex[7] = ly;
-
-   GLfloat shift_x = 2.0f / gl->vp.width;
-   GLfloat shift_y = 2.0f / gl->vp.height;
-   for (i = 0; i < 4; i++)
-   {
-      font_vertex_dark[2 * i + 0] = font_vertex[2 * i + 0] - shift_x;
-      font_vertex_dark[2 * i + 1] = font_vertex[2 * i + 1] - shift_y;
-   }
-
-   lx = 0.0f;
-   hx = (GLfloat)gl->font_last_width / gl->font_tex_w;
-   ly = 1.0f - (GLfloat)gl->font_last_height / gl->font_tex_h; 
-   hy = 1.0f;
-
-   font_tex_coords[0] = lx;
-   font_tex_coords[2] = hx;
-   font_tex_coords[4] = lx;
-   font_tex_coords[6] = hx;
-   font_tex_coords[1] = ly;
-   font_tex_coords[3] = ly;
-   font_tex_coords[5] = hy;
-   font_tex_coords[7] = hy;
-}
-
-static void setup_font(void *data, const char *msg, GLfloat scale, GLfloat pos_x, GLfloat pos_y)
-{
-   gl_t *gl = (gl_t*)data;
-   if (!gl->font)
+   gl_raster_t *font = (gl_raster_t*)data;
+   if (!font)
       return;
 
-   if (gl->shader && gl->shader->use)
-      gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
+   if (font->font_driver && font->font_data)
+      font->font_driver->free(font->font_data);
 
-   gl_set_viewport(gl, gl->win_width, gl->win_height, false, false);
+   glDeleteTextures(1, &font->tex);
+   free(font);
+}
 
-   glEnable(GL_BLEND);
+#define emit(c, vx, vy) do { \
+   font_vertex[     2 * (6 * i + c) + 0] = (x + (delta_x + off_x + vx * width) * scale) * inv_win_width; \
+   font_vertex[     2 * (6 * i + c) + 1] = (y + (delta_y - off_y - vy * height) * scale) * inv_win_height; \
+   font_tex_coords[ 2 * (6 * i + c) + 0] = (tex_x + vx * width) * inv_tex_size_x; \
+   font_tex_coords[ 2 * (6 * i + c) + 1] = (tex_y + vy * height) * inv_tex_size_y; \
+   font_color[      4 * (6 * i + c) + 0] = color[0]; \
+   font_color[      4 * (6 * i + c) + 1] = color[1]; \
+   font_color[      4 * (6 * i + c) + 2] = color[2]; \
+   font_color[      4 * (6 * i + c) + 3] = color[3]; \
+} while(0)
 
-   GLfloat font_vertex[8]; 
-   GLfloat font_vertex_dark[8]; 
-   GLfloat font_tex_coords[8];
+static void render_message(gl_raster_t *font, const char *msg, GLfloat scale, const GLfloat color[4], GLfloat pos_x, GLfloat pos_y)
+{
+   unsigned i;
+   gl_t *gl = font->gl;
 
-   glBindTexture(GL_TEXTURE_2D, gl->font_tex);
+   glBindTexture(GL_TEXTURE_2D, font->tex);
 
-   gl->coords.tex_coord = font_tex_coords;
+#define MAX_MSG_LEN_CHUNK 64
+   GLfloat font_tex_coords[2 * 6 * MAX_MSG_LEN_CHUNK];
+   GLfloat font_vertex[2 * 6 * MAX_MSG_LEN_CHUNK]; 
+   GLfloat font_color[4 * 6 * MAX_MSG_LEN_CHUNK];
 
-   struct font_output_list out;
+   unsigned msg_len_full = strlen(msg);
+   unsigned msg_len = min(msg_len_full, MAX_MSG_LEN_CHUNK);
 
-   // If we get the same message, there's obviously no need to render fonts again ...
-   if (strcmp(gl->font_last_msg, msg) != 0)
+   int x = roundf(pos_x * gl->vp.width);
+   int y = roundf(pos_y * gl->vp.height);
+   int delta_x = 0;
+   int delta_y = 0;
+
+   float inv_tex_size_x = 1.0f / font->tex_width;
+   float inv_tex_size_y = 1.0f / font->tex_height;
+   float inv_win_width  = 1.0f / font->gl->vp.width;
+   float inv_win_height = 1.0f / font->gl->vp.height;
+
+   while (msg_len_full)
    {
-      gl->font_driver->render_msg(gl->font, msg, &out);
-      struct font_output *head = out.head;
+      // Rebind shaders so attrib cache gets reset.
+      if (gl->shader && gl->shader->use)
+         gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
 
-      struct font_rect geom;
-      calculate_msg_geometry(head, &geom);
-      adjust_power_of_two(gl, &geom);
-      blit_fonts(gl, head, &geom);
+      for (i = 0; i < msg_len; i++)
+      {
+         const struct font_glyph *gly = font->font_driver->get_glyph(font->font_data, (uint8_t)msg[i]);
+         if (!gly)
+            gly = font->font_driver->get_glyph(font->font_data, '?'); // Do something smarter here ...
+         if (!gly)
+            continue;
 
-      gl->font_driver->free_output(gl->font, &out);
-      strlcpy(gl->font_last_msg, msg, sizeof(gl->font_last_msg));
+         int off_x  = gly->draw_offset_x;
+         int off_y  = gly->draw_offset_y;
+         int tex_x  = gly->atlas_offset_x;
+         int tex_y  = gly->atlas_offset_y;
+         int width  = gly->width;
+         int height = gly->height;
 
-      gl->font_last_width = geom.width;
-      gl->font_last_height = geom.height;
+         emit(0, 0, 1); // Bottom-left
+         emit(1, 1, 1); // Bottom-right
+         emit(2, 0, 0); // Top-left
+
+         emit(3, 1, 0); // Top-right
+         emit(4, 0, 0); // Top-left
+         emit(5, 1, 1); // Bottom-right
+#undef emit
+
+         delta_x += gly->advance_x;
+         delta_y -= gly->advance_y;
+      }
+
+      gl->coords.tex_coord = font_tex_coords;
+      gl->coords.vertex    = font_vertex;
+      gl->coords.color     = font_color;
+      gl->coords.vertices  = 6 * msg_len;
+      gl_shader_set_coords(gl, &gl->coords, &gl->mvp_no_rot);
+      glDrawArrays(GL_TRIANGLES, 0, 6 * msg_len);
+
+      msg_len_full -= msg_len;
+      msg += msg_len;
+      msg_len = min(msg_len_full, MAX_MSG_LEN_CHUNK);
    }
-   calculate_font_coords(gl, font_vertex, font_vertex_dark, font_tex_coords, 
-         scale, pos_x, pos_y);
-   
-   gl->coords.vertex = font_vertex_dark;
-   gl->coords.color  = gl->font_color_dark;
-   gl_shader_set_coords(gl, &gl->coords, &gl->mvp);
-   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-
-   gl->coords.vertex = font_vertex;
-   gl->coords.color  = gl->font_color;
-   gl_shader_set_coords(gl, &gl->coords, &gl->mvp);
-   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
    // Post - Go back to old rendering path.
    gl->coords.vertex    = gl->vertex_ptr;
    gl->coords.tex_coord = gl->tex_coords;
    gl->coords.color     = gl->white_color_ptr;
+   gl->coords.vertices  = 4;
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
-
-   glDisable(GL_BLEND);
-
-   struct gl_ortho ortho = {0, 1, 0, 1, -1, 1};
-   gl_set_projection(gl, &ortho, true);
 }
 
-static void gl_render_msg(void *data, const char *msg, void *parms)
+static void gl_render_msg(void *data, const char *msg, const struct font_params *params)
 {
-   GLfloat x, y, scale, alpha;
-   gl_t *gl;
-   font_params_t *params;
-   int i;
+   GLfloat x, y, scale, drop_mod;
+   GLfloat color[4], color_dark[4];
+   int drop_x, drop_y;
+   bool full_screen;
 
-   (void)data;
-   (void)msg;
-   
-   gl = (gl_t*)data;
-   params = (font_params_t*)parms;
-
-   if (!gl)
+   gl_raster_t *font = (gl_raster_t*)data;
+   if (!font)
       return;
+
+   gl_t *gl = font->gl;
 
    if (params)
    {
       x = params->x;
       y = params->y;
       scale = params->scale;
-      alpha = params->alpha;
+      full_screen = params->full_screen;
+      drop_x = params->drop_x;
+      drop_y = params->drop_y;
+      drop_mod = params->drop_mod;
+
+      color[0] = FONT_COLOR_GET_RED(params->color) / 255.0f;
+      color[1] = FONT_COLOR_GET_GREEN(params->color) / 255.0f;
+      color[2] = FONT_COLOR_GET_BLUE(params->color) / 255.0f;
+      color[3] = FONT_COLOR_GET_ALPHA(params->color) / 255.0f;
 
       // If alpha is 0.0f, turn it into default 1.0f
-      if (alpha <= 0.0f)
-         alpha = 1.0f;
+      if (color[3] <= 0.0f)
+         color[3] = 1.0f;
    }
    else
    {
       x = g_settings.video.msg_pos_x;
       y = g_settings.video.msg_pos_y;
-      scale = g_settings.video.font_scale ? (GLfloat)gl->vp.width / (GLfloat)gl->full_x : 1.0f;
-      alpha = 1.0f;
+      scale = 1.0f;
+      full_screen = false;
+
+      color[0] = g_settings.video.msg_color_r;
+      color[1] = g_settings.video.msg_color_g;
+      color[2] = g_settings.video.msg_color_b;
+      color[3] = 1.0f;
+
+      drop_x = -2;
+      drop_y = -2;
+      drop_mod = 0.3f;
    }
 
-   for (i = 0; i < 4; i++)
+   gl_set_viewport(gl, gl->win_width, gl->win_height, full_screen, false);
+   glEnable(GL_BLEND);
+   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+   glBlendEquation(GL_FUNC_ADD);
+
+   if (drop_x || drop_y)
    {
-      gl->font_color[4 * i + 3] = alpha;
-      gl->font_color_dark[4 * i + 3] = alpha;
-   }
+      color_dark[0] = color[0] * drop_mod;
+      color_dark[1] = color[1] * drop_mod;
+      color_dark[2] = color[2] * drop_mod;
+      color_dark[3] = color[3];
 
-   setup_font(data, msg, scale, x, y);
+      render_message(font, msg, scale, color_dark,
+            x + scale * drop_x / gl->vp.width, y + scale * drop_y / gl->vp.height);
+   }
+   render_message(font, msg, scale, color, x, y);
+
+   glDisable(GL_BLEND);
+   gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
 }
 
 const gl_font_renderer_t gl_raster_font = {
    gl_init_font,
-   gl_deinit_font,
+   gl_free_font,
    gl_render_msg,
    "GL raster",
 };

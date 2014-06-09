@@ -478,7 +478,8 @@ static void lima_gfx_free(void *data) {
 static void lima_init_font(lima_video_t *vid, const char *font_path, unsigned font_size) {
   if (!g_settings.video.font_enable) return;
 
-  if (font_renderer_create_default(&vid->font_driver, &vid->font)) {
+  if (font_renderer_create_default(&vid->font_driver, &vid->font,
+           *g_settings.video.font_path ? g_settings.video.font_path : NULL, g_settings.video.font_size)) {
     int r = g_settings.video.msg_color_r * 255;
     int g = g_settings.video.msg_color_g * 255;
     int b = g_settings.video.msg_color_b * 255;
@@ -498,8 +499,8 @@ static void lima_render_msg(lima_video_t *vid, const char *msg) {
   unsigned req_size;
   limare_data_t *lima = vid->lima;
 
-  const int msg_base_x = g_settings.video.msg_pos_x * lima->font_width;
-  const int msg_base_y = (1.0 - g_settings.video.msg_pos_y) * lima->font_height;
+  int msg_base_x = g_settings.video.msg_pos_x * lima->font_width;
+  int msg_base_y = (1.0 - g_settings.video.msg_pos_y) * lima->font_height;
 
   if (vid->font == NULL) return;
 
@@ -523,11 +524,16 @@ static void lima_render_msg(lima_video_t *vid, const char *msg) {
 
   memset(lima->buffer, 0, req_size);
 
-  vid->font_driver->render_msg(vid->font, msg, &out);
+  /* FIXME: Untested new font rendering code. */
+  const struct font_atlas *atlas = vid->font_driver->get_atlas(vid->font);
 
-  for (head = out.head; head; head = head->next) {
-    int base_x = msg_base_x + head->off_x;
-    int base_y = msg_base_y - head->off_y - head->height;
+  for (; msg; msg++) {
+    const struct font_glyph *glyph = vid->font_driver->get_glyph(vid->font, (uint8_t)*msg);
+    if (!glyph)
+       continue;
+
+    int base_x = msg_base_x + glyph->draw_offset_x;
+    int base_y = msg_base_y + glyph->draw_offset_y;
 
     const int max_width  = lima->font_width - base_x;
     const int max_height = lima->font_height - base_y;
@@ -535,7 +541,7 @@ static void lima_render_msg(lima_video_t *vid, const char *msg) {
     int glyph_width  = head->width;
     int glyph_height = head->height;
 
-    const uint8_t *src = head->output;
+    const uint8_t *src = atlas->buffer + glyph->atlas_offset_x + glyph->atlas_offset_y * atlas->width;
 
     if (base_x < 0) {
        src -= base_x;
@@ -544,7 +550,7 @@ static void lima_render_msg(lima_video_t *vid, const char *msg) {
     }
 
     if (base_y < 0) {
-       src -= base_y * (int)head->pitch;
+       src -= base_y * (int)atlas->width;
        glyph_height += base_y;
        base_y = 0;
     }
@@ -556,10 +562,11 @@ static void lima_render_msg(lima_video_t *vid, const char *msg) {
 
     put_glyph_rgba4444(lima, src, vid->font_rgb,
                        glyph_width, glyph_height,
-                       head->pitch, base_x, base_y);
-  }
+                       atlas->width, base_x, base_y);
 
-  vid->font_driver->free_output(vid->font, &out);
+    msg_base_x += glyph->advance_x;
+    msg_base_y += glyph->advance_y;
+  }
 }
 
 static void *lima_gfx_init(const video_info_t *video, const input_driver_t **input, void **input_data) {

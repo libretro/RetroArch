@@ -72,7 +72,7 @@ static void rmenu_render_background(void)
 
 static void rmenu_render_messagebox(const char *message)
 {
-   font_params_t font_parms;
+   struct font_params font_parms;
 
    size_t i, j;
 
@@ -117,7 +117,7 @@ static void rmenu_render_messagebox(const char *message)
 static void rmenu_render(void)
 {
    size_t begin, end;
-   font_params_t font_parms;
+   struct font_params font_parms;
    rgui_handle_t *rgui = (rgui_handle_t*)driver.menu;
 
    if (!rgui)
