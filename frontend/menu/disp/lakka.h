@@ -42,7 +42,7 @@ typedef struct
    float  alpha;
    float  zoom;
    float  y;
-   struct font_output_list out;
+   //struct font_output_list out;
 } menu_subitem_t;
 
 typedef struct
@@ -55,7 +55,7 @@ typedef struct
    int    active_subitem;
    int num_subitems;
    menu_subitem_t *subitems;
-   struct font_output_list out;
+   //struct font_output_list out;
 } menu_item_t;
 
 typedef struct
@@ -69,7 +69,7 @@ typedef struct
    int    active_item;
    int    num_items;
    menu_item_t *items;
-   struct font_output_list out;
+   //struct font_output_list out;
 } menu_category_t;
 
 typedef float (*easingFunc)(float, float, float, float);
