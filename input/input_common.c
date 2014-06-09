@@ -1225,51 +1225,70 @@ void input_config_autoconfigure_joypad(unsigned index, const char *name, const c
    }
 }
 
-void input_get_bind_string(char *buf, const struct retro_keybind *bind, size_t size)
+const struct retro_keybind *input_get_auto_bind(unsigned port, unsigned id)
+{
+   int joy_index = g_settings.input.joypad_map[port];
+   if (joy_index < 0)
+      return NULL;
+   return &g_settings.input.autoconf_binds[joy_index][id];
+}
+
+static void input_get_bind_string_joykey(char *buf, const char *prefix, const struct retro_keybind *bind, size_t size)
+{
+   if (driver.input->set_keybinds)
+   {
+      struct platform_bind key_label;
+      strlcpy(key_label.desc, "Unknown", sizeof(key_label.desc));
+      key_label.joykey = bind->joykey;
+      driver.input->set_keybinds(&key_label, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
+      snprintf(buf, size, "%s%s (btn) ", prefix, key_label.desc);
+   }
+   else if (GET_HAT_DIR(bind->joykey))
+   {
+      const char *dir;
+      switch (GET_HAT_DIR(bind->joykey))
+      {
+         case HAT_UP_MASK: dir = "up"; break;
+         case HAT_DOWN_MASK: dir = "down"; break;
+         case HAT_LEFT_MASK: dir = "left"; break;
+         case HAT_RIGHT_MASK: dir = "right"; break;
+         default: dir = "?"; break;
+      }
+      snprintf(buf, size, "%sHat #%u %s ", prefix, (unsigned)GET_HAT(bind->joykey), dir);
+   }
+   else
+      snprintf(buf, size, "%s%u (btn) ", prefix, (unsigned)bind->joykey);
+}
+
+static void input_get_bind_string_joyaxis(char *buf, const char *prefix, const struct retro_keybind *bind, size_t size)
+{
+   unsigned axis = 0;
+   char dir = '\0';
+   if (AXIS_NEG_GET(bind->joyaxis) != AXIS_DIR_NONE)
+   {
+      dir = '-';
+      axis = AXIS_NEG_GET(bind->joyaxis);
+   }
+   else if (AXIS_POS_GET(bind->joyaxis) != AXIS_DIR_NONE)
+   {
+      dir = '+';
+      axis = AXIS_POS_GET(bind->joyaxis);
+   }
+   snprintf(buf, size, "%s%c%u (axis) ", prefix, dir, axis);
+}
+
+void input_get_bind_string(char *buf, const struct retro_keybind *bind,
+      const struct retro_keybind *auto_bind, size_t size)
 {
    *buf = '\0';
    if (bind->joykey != NO_BTN)
-   {
-      if (driver.input->set_keybinds)
-      {
-         struct platform_bind key_label;
-         strlcpy(key_label.desc, "Unknown", sizeof(key_label.desc));
-         key_label.joykey = bind->joykey;
-         driver.input->set_keybinds(&key_label, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
-         snprintf(buf, size, "%s (btn) ", key_label.desc);
-      }
-      else if (GET_HAT_DIR(bind->joykey))
-      {
-         const char *dir;
-         switch (GET_HAT_DIR(bind->joykey))
-         {
-            case HAT_UP_MASK: dir = "up"; break;
-            case HAT_DOWN_MASK: dir = "down"; break;
-            case HAT_LEFT_MASK: dir = "left"; break;
-            case HAT_RIGHT_MASK: dir = "right"; break;
-            default: dir = "?"; break;
-         }
-         snprintf(buf, size, "Hat #%u %s ", (unsigned)GET_HAT(bind->joykey), dir);
-      }
-      else
-         snprintf(buf, size, "%u (btn) ", (unsigned)bind->joykey);
-   }
+      input_get_bind_string_joykey(buf, "", bind, size);
    else if (bind->joyaxis != AXIS_NONE)
-   {
-      unsigned axis = 0;
-      char dir = '\0';
-      if (AXIS_NEG_GET(bind->joyaxis) != AXIS_DIR_NONE)
-      {
-         dir = '-';
-         axis = AXIS_NEG_GET(bind->joyaxis);
-      }
-      else if (AXIS_POS_GET(bind->joyaxis) != AXIS_DIR_NONE)
-      {
-         dir = '+';
-         axis = AXIS_POS_GET(bind->joyaxis);
-      }
-      snprintf(buf, size, "%c%u (axis) ", dir, axis);
-   }
+      input_get_bind_string_joyaxis(buf, "", bind, size);
+   else if (auto_bind && auto_bind->joykey != NO_BTN)
+      input_get_bind_string_joykey(buf, "Auto: ", auto_bind, size);
+   else if (auto_bind && auto_bind->joyaxis != AXIS_NONE)
+      input_get_bind_string_joyaxis(buf, "Auto: ", auto_bind, size);
 
 #ifndef RARCH_CONSOLE
    char key[64];

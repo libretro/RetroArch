@@ -143,7 +143,9 @@ struct input_bind_map
 
 extern const struct input_bind_map input_config_bind_map[];
 
-void input_get_bind_string(char *buf, const struct retro_keybind *bind, size_t size);
+const struct retro_keybind *input_get_auto_bind(unsigned port, unsigned id);
+// auto_bind can be NULL.
+void input_get_bind_string(char *buf, const struct retro_keybind *bind, const struct retro_keybind *auto_bind, size_t size);
 
 struct input_key_map
 {

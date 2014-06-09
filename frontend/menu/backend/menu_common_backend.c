@@ -522,6 +522,8 @@ static int menu_info_screen_iterate(unsigned action)
    if (driver.video_data && driver.menu_ctx && driver.menu_ctx->render)
       driver.menu_ctx->render();
 
+   // FIXME: This is unused code, why was it even here?
+#if 0
    static const unsigned binds[] = {
       RETRO_DEVICE_ID_JOYPAD_UP,
       RETRO_DEVICE_ID_JOYPAD_DOWN,
@@ -545,9 +547,11 @@ static int menu_info_screen_iterate(unsigned action)
       else
       {
          const struct retro_keybind *bind = &g_settings.input.binds[0][binds[i]];
-         input_get_bind_string(desc[i], bind, sizeof(desc[i]));
+         const struct retro_keybind *auto_bind = input_get_auto_bind(0, binds[i]);
+         input_get_bind_string(desc[i], bind, auto_bind, sizeof(desc[i]));
       }
    }
+#endif
 
    switch (driver.menu->info_selection)
    {
@@ -1484,7 +1488,8 @@ static int menu_start_screen_iterate(unsigned action)
       else
       {
          const struct retro_keybind *bind = &g_settings.input.binds[0][binds[i]];
-         input_get_bind_string(desc[i], bind, sizeof(desc[i]));
+         const struct retro_keybind *auto_bind = input_get_auto_bind(0, binds[i]);
+         input_get_bind_string(desc[i], bind, auto_bind, sizeof(desc[i]));
       }
    }
 
@@ -4997,7 +5002,10 @@ static void menu_common_setting_set_label(char *type_str, size_t type_str_size, 
       menu_common_setting_set_label_perf(type_str, type_str_size, w, type, perf_counters_libretro,
             type - RGUI_SETTINGS_LIBRETRO_PERF_COUNTERS_BEGIN);
    else if (type >= RGUI_SETTINGS_BIND_BEGIN && type <= RGUI_SETTINGS_BIND_ALL_LAST)
-      input_get_bind_string(type_str, &g_settings.input.binds[driver.menu->current_pad][type - RGUI_SETTINGS_BIND_BEGIN], type_str_size);
+   {
+      const struct retro_keybind *auto_bind = input_get_auto_bind(driver.menu->current_pad, type - RGUI_SETTINGS_BIND_BEGIN);
+      input_get_bind_string(type_str, &g_settings.input.binds[driver.menu->current_pad][type - RGUI_SETTINGS_BIND_BEGIN], auto_bind, type_str_size);
+   }
    else
    {
       switch (type)
