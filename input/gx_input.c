@@ -190,52 +190,49 @@ static void gx_input_free_input(void *data)
    free(data);
 }
 
-static void *gx_input_init(void)
-{
-   if (driver.input_data)
-      return driver.input_data;
 
-   gx_input_t *gx = (gx_input_t*)calloc(1, sizeof(*gx));
-   if (!gx)
-      return NULL;
-
-   SYS_SetResetCallback(reset_cb);
-#ifdef HW_RVL
-   SYS_SetPowerCallback(power_callback);
-#endif
-
-   gx->joypad = input_joypad_init_driver(g_settings.input.joypad_driver);
-
-   driver.input_data_own = true;
-   return gx;
-}
-
-static const char* const GC_CONTROLLER_NAMES[NUM_DEVICES][4] =
+static const char* const GC_CONTROLLER_NAMES[NUM_DEVICES][MAX_PLAYERS] =
 {
    {
    "GameCube Controller (Player 1)",
    "GameCube Controller (Player 2)",
    "GameCube Controller (Player 3)",
-   "GameCube Controller (Player 4)"
+   "GameCube Controller (Player 4)",
+   "GameCube Controller (Player 5)",
+   "GameCube Controller (Player 6)",
+   "GameCube Controller (Player 7)",
+   "GameCube Controller (Player 8)"
    },
 #ifdef HW_RVL
    {
    "Wiimote Controller (Player 1)",
    "Wiimote Controller (Player 2)",
    "Wiimote Controller (Player 3)",
-   "Wiimote Controller (Player 4)"
+   "Wiimote Controller (Player 4)",
+   "Wiimote Controller (Player 5)",
+   "Wiimote Controller (Player 6)",
+   "Wiimote Controller (Player 7)",
+   "Wiimote Controller (Player 8)"
    },
    {
    "NunChuk Controller (Player 1)",
    "NunChuk Controller (Player 2)",
    "NunChuk Controller (Player 3)",
-   "NunChuk Controller (Player 4)"
+   "NunChuk Controller (Player 4)",
+   "NunChuk Controller (Player 5)",
+   "NunChuk Controller (Player 6)",
+   "NunChuk Controller (Player 7)",
+   "NunChuk Controller (Player 8)"
    },
    {
    "Classic Controller (Player 1)",
    "Classic Controller (Player 2)",
    "Classic Controller (Player 3)",
-   "Classic Controller (Player 4)"
+   "Classic Controller (Player 4)",
+   "Classic Controller (Player 5)",
+   "Classic Controller (Player 6)",
+   "Classic Controller (Player 7)",
+   "Classic Controller (Player 8)"
    },
 #endif
 #ifdef HAVE_LIBSICKSAXIS
@@ -243,7 +240,11 @@ static const char* const GC_CONTROLLER_NAMES[NUM_DEVICES][4] =
    "SixAxis Controller (Player 1)",
    "SixAxis Controller (Player 2)",
    "SixAxis Controller (Player 3)",
-   "SixAxis Controller (Player 4)"
+   "SixAxis Controller (Player 4)",
+   "SixAxis Controller (Player 5)",
+   "SixAxis Controller (Player 6)",
+   "SixAxis Controller (Player 7)",
+   "SixAxis Controller (Player 8)"
    },
 #endif
 };
@@ -273,20 +274,69 @@ static const char *gx_joypad_name(unsigned pad)
    }
 }
 
-static void handle_hotplug(void *data, unsigned port, uint32_t ptype)
+static const char *gx_joypad_name_static(void *data, unsigned pad)
+{
+   gx_input_t *gx = (gx_input_t*)data;
+
+   switch (gx->ptype[pad])
+   {
+#ifdef HW_RVL
+      case WPAD_EXP_NONE:
+         return GC_CONTROLLER_NAMES[1][pad];
+      case WPAD_EXP_NUNCHUK:
+         return GC_CONTROLLER_NAMES[2][pad];
+      case WPAD_EXP_CLASSIC:
+         return GC_CONTROLLER_NAMES[3][pad];
+#ifdef HAVE_LIBSICKSAXIS
+      case WPAD_EXP_SICKSAXIS:
+         return GC_CONTROLLER_NAMES[4][pad];
+#endif
+#endif
+      case WPAD_EXP_GAMECUBE:
+         return GC_CONTROLLER_NAMES[0][pad];
+      default:
+         return NULL;
+   }
+}
+
+static void *gx_input_init(void)
 {
    int autoconf_pad;
+   if (driver.input_data)
+      return driver.input_data;
+
+   gx_input_t *gx = (gx_input_t*)calloc(1, sizeof(*gx));
+   if (!gx)
+      return NULL;
+
+   SYS_SetResetCallback(reset_cb);
+#ifdef HW_RVL
+   SYS_SetPowerCallback(power_callback);
+#endif
+
+   gx->joypad = input_joypad_init_driver(g_settings.input.joypad_driver);
+
+   for (autoconf_pad = 0; autoconf_pad < MAX_PADS; autoconf_pad++)
+   {
+      gx->ptype[autoconf_pad] = WPAD_EXP_GAMECUBE;
+      strlcpy(g_settings.input.device_names[autoconf_pad], gx_joypad_name_static(gx, autoconf_pad), sizeof(g_settings.input.device_names[autoconf_pad]));
+      input_config_autoconfigure_joypad(autoconf_pad, gx_joypad_name_static(gx, autoconf_pad), gx->joypad->ident);
+   }
+
+   driver.input_data_own = true;
+   return gx;
+}
+
+static void handle_hotplug(void *data, unsigned port, uint32_t ptype)
+{
    gx_input_t *gx = (gx_input_t*)data;
    gx->ptype[port] = ptype;
 
    if (!g_settings.input.autodetect_enable)
       return;
 
-   for (autoconf_pad = 0; autoconf_pad < MAX_PLAYERS; autoconf_pad++)
-   {
-      strlcpy(g_settings.input.device_names[autoconf_pad], gx_joypad_name(autoconf_pad), sizeof(g_settings.input.device_names[autoconf_pad]));
-      input_config_autoconfigure_joypad(autoconf_pad, gx_joypad_name(autoconf_pad), gx_joypad.ident);
-   }
+   strlcpy(g_settings.input.device_names[port], gx_joypad_name(port), sizeof(g_settings.input.device_names[port]));
+   input_config_autoconfigure_joypad(port, gx_joypad_name(port), gx_joypad.ident);
 }
 
 static void gx_input_poll(void *data)
@@ -586,6 +636,7 @@ static bool gx_joypad_init(void)
    for (i = 0; i < MAX_PADS; i++)
       ss_initialize(&dev[i]);
 #endif
+
 
    return true;
 }

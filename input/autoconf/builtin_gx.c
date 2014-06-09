@@ -112,6 +112,22 @@ const char* const input_builtin_autoconfs[] =
    "input_device = \"GameCube Controller (Player 4)\" \n"
    "input_driver = \"gx\"                    \n"
    GXINPUT_GAMECUBE_DEFAULT_BINDS,
+
+   "input_device = \"GameCube Controller (Player 5)\" \n"
+   "input_driver = \"gx\"                    \n"
+   GXINPUT_GAMECUBE_DEFAULT_BINDS,
+
+   "input_device = \"GameCube Controller (Player 6)\" \n"
+   "input_driver = \"gx\"                    \n"
+   GXINPUT_GAMECUBE_DEFAULT_BINDS,
+
+   "input_device = \"GameCube Controller (Player 7)\" \n"
+   "input_driver = \"gx\"                    \n"
+   GXINPUT_GAMECUBE_DEFAULT_BINDS,
+
+   "input_device = \"GameCube Controller (Player 8)\" \n"
+   "input_driver = \"gx\"                    \n"
+   GXINPUT_GAMECUBE_DEFAULT_BINDS,
 #ifdef HW_RVL
    "input_device = \"Wiimote Controller (Player 1)\" \n"
    "input_driver = \"gx\"                    \n"
@@ -126,6 +142,22 @@ const char* const input_builtin_autoconfs[] =
    GXINPUT_WIIMOTE_DEFAULT_BINDS,
 
    "input_device = \"Wiimote Controller (Player 4)\" \n"
+   "input_driver = \"gx\"                    \n"
+   GXINPUT_WIIMOTE_DEFAULT_BINDS,
+
+   "input_device = \"Wiimote Controller (Player 5)\" \n"
+   "input_driver = \"gx\"                    \n"
+   GXINPUT_WIIMOTE_DEFAULT_BINDS,
+
+   "input_device = \"Wiimote Controller (Player 6)\" \n"
+   "input_driver = \"gx\"                    \n"
+   GXINPUT_WIIMOTE_DEFAULT_BINDS,
+
+   "input_device = \"Wiimote Controller (Player 7)\" \n"
+   "input_driver = \"gx\"                    \n"
+   GXINPUT_WIIMOTE_DEFAULT_BINDS,
+
+   "input_device = \"Wiimote Controller (Player 8)\" \n"
    "input_driver = \"gx\"                    \n"
    GXINPUT_WIIMOTE_DEFAULT_BINDS,
 
@@ -145,6 +177,22 @@ const char* const input_builtin_autoconfs[] =
    "input_driver = \"gx\"                    \n"
    GXINPUT_NUNCHUK_DEFAULT_BINDS,
 
+   "input_device = \"NunChuk Controller (Player 5)\" \n"
+   "input_driver = \"gx\"                    \n"
+   GXINPUT_NUNCHUK_DEFAULT_BINDS,
+
+   "input_device = \"NunChuk Controller (Player 6)\" \n"
+   "input_driver = \"gx\"                    \n"
+   GXINPUT_NUNCHUK_DEFAULT_BINDS,
+
+   "input_device = \"NunChuk Controller (Player 7)\" \n"
+   "input_driver = \"gx\"                    \n"
+   GXINPUT_NUNCHUK_DEFAULT_BINDS,
+
+   "input_device = \"NunChuk Controller (Player 8)\" \n"
+   "input_driver = \"gx\"                    \n"
+   GXINPUT_NUNCHUK_DEFAULT_BINDS,
+
    "input_device = \"Classic Controller (Player 1)\" \n"
    "input_driver = \"gx\"                    \n"
    GXINPUT_CLASSIC_DEFAULT_BINDS,
@@ -158,6 +206,22 @@ const char* const input_builtin_autoconfs[] =
    GXINPUT_CLASSIC_DEFAULT_BINDS,
 
    "input_device = \"Classic Controller (Player 4)\" \n"
+   "input_driver = \"gx\"                    \n"
+   GXINPUT_CLASSIC_DEFAULT_BINDS,
+
+   "input_device = \"Classic Controller (Player 5)\" \n"
+   "input_driver = \"gx\"                    \n"
+   GXINPUT_CLASSIC_DEFAULT_BINDS,
+
+   "input_device = \"Classic Controller (Player 6)\" \n"
+   "input_driver = \"gx\"                    \n"
+   GXINPUT_CLASSIC_DEFAULT_BINDS,
+
+   "input_device = \"Classic Controller (Player 7)\" \n"
+   "input_driver = \"gx\"                    \n"
+   GXINPUT_CLASSIC_DEFAULT_BINDS,
+
+   "input_device = \"Classic Controller (Player 8)\" \n"
    "input_driver = \"gx\"                    \n"
    GXINPUT_CLASSIC_DEFAULT_BINDS,
 #endif
