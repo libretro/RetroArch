@@ -25,79 +25,79 @@
 
 void menu_clear_navigation(void *data)
 {
-   rgui_handle_t *rgui = (rgui_handle_t*)data;
-   rgui->selection_ptr = 0;
+   menu_handle_t *menu = (menu_handle_t*)data;
+   menu->selection_ptr = 0;
 
    if (driver.menu_ctx && driver.menu_ctx->navigation_clear)
-      driver.menu_ctx->navigation_clear(rgui);
+      driver.menu_ctx->navigation_clear(menu);
 }
 
 void menu_decrement_navigation(void *data)
 {
-   rgui_handle_t *rgui = (rgui_handle_t*)data;
-   rgui->selection_ptr--;
+   menu_handle_t *menu = (menu_handle_t*)data;
+   menu->selection_ptr--;
 
    if (driver.menu_ctx && driver.menu_ctx->navigation_decrement)
-      driver.menu_ctx->navigation_decrement(rgui);
+      driver.menu_ctx->navigation_decrement(menu);
 }
 
 void menu_increment_navigation(void *data)
 {
-   rgui_handle_t *rgui = (rgui_handle_t*)data;
-   rgui->selection_ptr++;
+   menu_handle_t *menu = (menu_handle_t*)data;
+   menu->selection_ptr++;
 
    if (driver.menu_ctx && driver.menu_ctx->navigation_increment)
-      driver.menu_ctx->navigation_increment(rgui);
+      driver.menu_ctx->navigation_increment(menu);
 }
 
 void menu_set_navigation(void *data, size_t i)
 {
-   rgui_handle_t *rgui = (rgui_handle_t*)data;
-   rgui->selection_ptr = i; 
+   menu_handle_t *menu = (menu_handle_t*)data;
+   menu->selection_ptr = i; 
 
    if (driver.menu_ctx && driver.menu_ctx->navigation_set)
-      driver.menu_ctx->navigation_set(rgui);
+      driver.menu_ctx->navigation_set(menu);
 }
 
 void menu_set_navigation_last(void *data)
 {
-   rgui_handle_t *rgui = (rgui_handle_t*)data;
-   rgui->selection_ptr = file_list_get_size(rgui->selection_buf) - 1;
+   menu_handle_t *menu = (menu_handle_t*)data;
+   menu->selection_ptr = file_list_get_size(menu->selection_buf) - 1;
 
    if (driver.menu_ctx && driver.menu_ctx->navigation_set_last)
-      driver.menu_ctx->navigation_set_last(rgui);
+      driver.menu_ctx->navigation_set_last(menu);
 }
 
 void menu_descend_alphabet(void *data, size_t *ptr_out)
 {
-   rgui_handle_t *rgui = (rgui_handle_t*)data;
-   if (!rgui->scroll_indices_size)
+   menu_handle_t *menu = (menu_handle_t*)data;
+   if (!menu->scroll_indices_size)
       return;
    size_t ptr = *ptr_out;
    if (ptr == 0)
       return;
-   size_t i = rgui->scroll_indices_size - 1;
-   while (i && rgui->scroll_indices[i - 1] >= ptr)
+   size_t i = menu->scroll_indices_size - 1;
+   while (i && menu->scroll_indices[i - 1] >= ptr)
       i--;
-   *ptr_out = rgui->scroll_indices[i - 1];
+   *ptr_out = menu->scroll_indices[i - 1];
 
    if (driver.menu_ctx && driver.menu_ctx->navigation_descend_alphabet)
-      driver.menu_ctx->navigation_descend_alphabet(rgui, ptr_out);
+      driver.menu_ctx->navigation_descend_alphabet(menu, ptr_out);
 }
 
 void menu_ascend_alphabet(void *data, size_t *ptr_out)
 {
-   rgui_handle_t *rgui = (rgui_handle_t*)data;
-   if (!rgui->scroll_indices_size)
+   menu_handle_t *menu = (menu_handle_t*)data;
+   if (!menu->scroll_indices_size)
       return;
    size_t ptr = *ptr_out;
-   if (ptr == rgui->scroll_indices[rgui->scroll_indices_size - 1])
+   if (ptr == menu->scroll_indices[menu->scroll_indices_size - 1])
       return;
    size_t i = 0;
-   while (i < rgui->scroll_indices_size - 1 && rgui->scroll_indices[i + 1] <= ptr)
+   while (i < menu->scroll_indices_size - 1 && menu->scroll_indices[i + 1] <= ptr)
       i++;
-   *ptr_out = rgui->scroll_indices[i + 1];
+   *ptr_out = menu->scroll_indices[i + 1];
 
    if (driver.menu_ctx && driver.menu_ctx->navigation_descend_alphabet)
-      driver.menu_ctx->navigation_descend_alphabet(rgui, ptr_out);
+      driver.menu_ctx->navigation_descend_alphabet(menu, ptr_out);
 }

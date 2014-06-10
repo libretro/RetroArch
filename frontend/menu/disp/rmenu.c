@@ -118,9 +118,9 @@ static void rmenu_render(void)
 {
    size_t begin, end;
    struct font_params font_parms;
-   rgui_handle_t *rgui = (rgui_handle_t*)driver.menu;
+   menu_handle_t *menu = (menu_handle_t*)driver.menu;
 
-   if (!rgui)
+   if (!menu)
       return;
 
    if (!render_normal)
@@ -129,18 +129,18 @@ static void rmenu_render(void)
       return;
    }
 
-   if (rgui->need_refresh && 
+   if (menu->need_refresh && 
          (g_extern.lifecycle_state & (1ULL << MODE_MENU))
-         && !rgui->msg_force)
+         && !menu->msg_force)
       return;
 
-   if (!rgui->selection_buf)
+   if (!menu->selection_buf)
       return;
 
-   begin = (rgui->selection_ptr >= (ENTRIES_HEIGHT / 2)) ?  (rgui->selection_ptr - (ENTRIES_HEIGHT / 2)) : 0;
-   end = ((rgui->selection_ptr + ENTRIES_HEIGHT) <= file_list_get_size(rgui->selection_buf)) ? rgui->selection_ptr + ENTRIES_HEIGHT : file_list_get_size(rgui->selection_buf);
+   begin = (menu->selection_ptr >= (ENTRIES_HEIGHT / 2)) ?  (menu->selection_ptr - (ENTRIES_HEIGHT / 2)) : 0;
+   end = ((menu->selection_ptr + ENTRIES_HEIGHT) <= file_list_get_size(menu->selection_buf)) ? menu->selection_ptr + ENTRIES_HEIGHT : file_list_get_size(menu->selection_buf);
 
-   if (file_list_get_size(rgui->selection_buf) <= ENTRIES_HEIGHT)
+   if (file_list_get_size(menu->selection_buf) <= ENTRIES_HEIGHT)
       begin = 0;
 
    if (end - begin > ENTRIES_HEIGHT)
@@ -152,7 +152,7 @@ static void rmenu_render(void)
    const char *dir = NULL;
    unsigned menu_type = 0;
    unsigned menu_type_is = 0;
-   file_list_get_last(rgui->menu_stack, &dir, &menu_type);
+   file_list_get_last(menu->menu_stack, &dir, &menu_type);
 
    if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->type_is)
       menu_type_is = driver.menu_ctx->backend->type_is(menu_type);
@@ -267,11 +267,11 @@ static void rmenu_render(void)
       snprintf(title, sizeof(title), "ASSETS DIR %s", dir);
    else
    {
-      if (rgui->defer_core)
+      if (menu->defer_core)
          snprintf(title, sizeof(title), "CONTENT %s", dir);
       else
       {
-         const char *core_name = rgui->info.library_name;
+         const char *core_name = menu->info.library_name;
          if (!core_name)
             core_name = g_extern.system.info.library_name;
          if (!core_name)
@@ -292,13 +292,13 @@ static void rmenu_render(void)
       driver.video_poke->set_osd_msg(driver.video_data, title_buf, &font_parms);
 
    char title_msg[64];
-   const char *core_name = rgui->info.library_name;
+   const char *core_name = menu->info.library_name;
    if (!core_name)
       core_name = g_extern.system.info.library_name;
    if (!core_name)
       core_name = "No Core";
 
-   const char *core_version = rgui->info.library_version;
+   const char *core_version = menu->info.library_version;
    if (!core_version)
       core_version = g_extern.system.info.library_version;
    if (!core_version)
@@ -322,7 +322,7 @@ static void rmenu_render(void)
    {
       const char *path = 0;
       unsigned type = 0;
-      file_list_get_at_offset(rgui->selection_buf, i, &path, &type);
+      file_list_get_at_offset(menu->selection_buf, i, &path, &type);
       char message[256];
       char type_str[256];
 
@@ -352,9 +352,9 @@ static void rmenu_render(void)
          else if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->shader_manager_get_str)
          {
             if (type >= MENU_SETTINGS_SHADER_PARAMETER_0 && type <= MENU_SETTINGS_SHADER_PARAMETER_LAST)
-               driver.menu_ctx->backend->shader_manager_get_str(rgui->parameter_shader, type_str, sizeof(type_str), type);
+               driver.menu_ctx->backend->shader_manager_get_str(menu->parameter_shader, type_str, sizeof(type_str), type);
             else
-               driver.menu_ctx->backend->shader_manager_get_str(rgui->shader, type_str, sizeof(type_str), type);
+               driver.menu_ctx->backend->shader_manager_get_str(menu->shader, type_str, sizeof(type_str), type);
          }
       }
       else
@@ -365,7 +365,7 @@ static void rmenu_render(void)
          if (type == MENU_FILE_PLAIN)
          {
             strlcpy(type_str, "(CORE)", sizeof(type_str));
-            file_list_get_alt_at_offset(rgui->selection_buf, i, &path);
+            file_list_get_alt_at_offset(menu->selection_buf, i, &path);
             w = 6;
          }
          else
@@ -415,7 +415,7 @@ static void rmenu_render(void)
 
       char entry_title_buf[256];
       char type_str_buf[64];
-      bool selected = i == rgui->selection_ptr;
+      bool selected = i == menu->selection_ptr;
 
       strlcpy(entry_title_buf, path, sizeof(entry_title_buf));
       strlcpy(type_str_buf, type_str, sizeof(type_str_buf));
@@ -427,7 +427,7 @@ static void rmenu_render(void)
 
       snprintf(message, sizeof(message), "%c %s", selected ? '>' : ' ', entry_title_buf);
 
-      //blit_line(rgui, x, y, message, selected);
+      //blit_line(menu, x, y, message, selected);
       font_parms.x = POSITION_EDGE_MIN + POSITION_OFFSET;
       font_parms.y = POSITION_EDGE_MIN + POSITION_RENDER_OFFSET + (POSITION_OFFSET * j);
       font_parms.scale = FONT_SIZE_NORMAL;
@@ -445,7 +445,7 @@ static void rmenu_render(void)
 
 void rmenu_set_texture(void *data)
 {
-   rgui_handle_t *rgui = (rgui_handle_t*)data;
+   menu_handle_t *menu = (menu_handle_t*)data;
 
    if (menu_texture_inited)
       return;
@@ -453,34 +453,34 @@ void rmenu_set_texture(void *data)
    if (driver.video_data && driver.video_poke && driver.video_poke->set_texture_enable && menu_texture && menu_texture->pixels)
    {
       driver.video_poke->set_texture_frame(driver.video_data, menu_texture->pixels,
-            true, rgui->width, rgui->height, 1.0f);
+            true, menu->width, menu->height, 1.0f);
       menu_texture_inited = true;
    }
 }
 
 static void rmenu_context_reset(void *data)
 {
-   rgui_handle_t *rgui = (rgui_handle_t*)data;
+   menu_handle_t *menu = (menu_handle_t*)data;
 
-   if (!rgui)
+   if (!menu)
       return;
 
    texture_image_load(driver.video_data, g_extern.menu_texture_path, menu_texture);
-   rgui->width = menu_texture->width;
-   rgui->height = menu_texture->height;
+   menu->width = menu_texture->width;
+   menu->height = menu_texture->height;
 
    menu_texture_inited = false;
 }
 
 static void *rmenu_init(void)
 {
-   rgui_handle_t *rgui = (rgui_handle_t*)calloc(1, sizeof(*rgui));
+   menu_handle_t *menu = (menu_handle_t*)calloc(1, sizeof(*menu));
 
-   if (!rgui)
+   if (!menu)
       return NULL;
 
    menu_texture = (struct texture_image*)calloc(1, sizeof(*menu_texture));
-   return rgui;
+   return menu;
 }
 
 static void rmenu_context_destroy(void *data)
@@ -494,10 +494,10 @@ static void rmenu_free(void *data)
 
 static int rmenu_input_postprocess(uint64_t old_state)
 {
-   rgui_handle_t *rgui = (rgui_handle_t*)driver.menu;
+   menu_handle_t *menu = (menu_handle_t*)driver.menu;
    int ret = 0;
 
-   if ((rgui->trigger_state & (1ULL << RARCH_MENU_TOGGLE)) &&
+   if ((menu->trigger_state & (1ULL << RARCH_MENU_TOGGLE)) &&
          g_extern.main_is_init &&
          !g_extern.libretro_dummy)
    {
@@ -510,12 +510,12 @@ static int rmenu_input_postprocess(uint64_t old_state)
 
 static void rmenu_init_core_info(void *data)
 {
-   rgui_handle_t *rgui = (rgui_handle_t*)data;
+   menu_handle_t *menu = (menu_handle_t*)data;
 
-   core_info_list_free(rgui->core_info);
-   rgui->core_info = NULL;
+   core_info_list_free(menu->core_info);
+   menu->core_info = NULL;
    if (*g_settings.libretro_directory)
-      rgui->core_info = core_info_list_new(g_settings.libretro_directory);
+      menu->core_info = core_info_list_new(g_settings.libretro_directory);
 }
 
 const menu_ctx_driver_t menu_ctx_rmenu = {

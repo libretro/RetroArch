@@ -155,9 +155,9 @@ static void* rmenu_xui_init(void)
    HRESULT hr;
    TypefaceDescriptor typeface = {0};
 
-   rgui_handle_t *rgui = (rgui_handle_t*)calloc(1, sizeof(*rgui));
+   menu_handle_t *menu = (menu_handle_t*)calloc(1, sizeof(*menu));
 
-   if (!rgui)
+   if (!menu)
       return NULL;
 
    d3d_video_t *d3d= (d3d_video_t*)driver.video_data;
@@ -227,10 +227,10 @@ static void* rmenu_xui_init(void)
 
    xui_msg_queue = msg_queue_new(16);
 
-   return rgui;
+   return menu;
 
 error:
-   free(rgui);
+   free(menu);
    return NULL;
 }
 
@@ -668,20 +668,20 @@ static void rmenu_xui_render(void)
 
 static void rmenu_xui_populate_entries(void *data, unsigned i)
 {
-   rgui_handle_t *rgui = (rgui_handle_t*)data;
-   XuiListSetCurSelVisible(m_menulist, rgui->selection_ptr);
+   menu_handle_t *menu = (menu_handle_t*)data;
+   XuiListSetCurSelVisible(m_menulist, menu->selection_ptr);
 }
 
 static void rmenu_xui_navigation_clear(void *data)
 {
-   rgui_handle_t *rgui = (rgui_handle_t*)data;
-   XuiListSetCurSelVisible(m_menulist, rgui->selection_ptr);
+   menu_handle_t *menu = (menu_handle_t*)data;
+   XuiListSetCurSelVisible(m_menulist, menu->selection_ptr);
 }
 
 static void rmenu_xui_navigation_set_visible(void *data)
 {
-   rgui_handle_t *rgui = (rgui_handle_t*)data;
-   XuiListSetCurSelVisible(m_menulist, rgui->selection_ptr);
+   menu_handle_t *menu = (menu_handle_t*)data;
+   XuiListSetCurSelVisible(m_menulist, menu->selection_ptr);
 }
 
 static void rmenu_xui_navigation_alphabet(void *data, size_t *ptr_out)
@@ -722,12 +722,12 @@ static void rmenu_xui_list_set_selection(void *data)
 
 static void rmenu_xui_init_core_info(void *data)
 {
-   rgui_handle_t *rgui = (rgui_handle_t*)data;
+   menu_handle_t *menu = (menu_handle_t*)data;
 
-   core_info_list_free(rgui->core_info);
-   rgui->core_info = NULL;
+   core_info_list_free(menu->core_info);
+   menu->core_info = NULL;
    if (*g_settings.libretro_directory)
-      rgui->core_info = core_info_list_new(g_settings.libretro_directory);
+      menu->core_info = core_info_list_new(g_settings.libretro_directory);
 }
 
 const menu_ctx_driver_t menu_ctx_rmenu_xui = {

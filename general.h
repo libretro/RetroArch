@@ -332,9 +332,9 @@ struct settings
    char content_directory[PATH_MAX];
    char assets_directory[PATH_MAX];
 #if defined(HAVE_MENU)
-   char rgui_content_directory[PATH_MAX];
-   char rgui_config_directory[PATH_MAX];
-   bool rgui_show_start_screen;
+   char menu_content_directory[PATH_MAX];
+   char menu_config_directory[PATH_MAX];
+   bool menu_show_start_screen;
 #endif
    bool fps_show;
    bool load_dummy_on_core_shutdown;

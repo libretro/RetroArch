@@ -71,7 +71,7 @@ typedef enum
    MENU_SETTINGS,
    MENU_INFO_SCREEN,
    MENU_START_SCREEN,
-} rgui_file_type_t;
+} menu_file_type_t;
 
 typedef enum
 {
@@ -90,7 +90,7 @@ typedef enum
    MENU_ACTION_MAPPING_PREVIOUS,
    MENU_ACTION_MAPPING_NEXT,
    MENU_ACTION_NOOP
-} rgui_action_t;
+} menu_action_t;
 
 void menu_poll_bind_get_rested_axes(void *data);
 void menu_poll_bind_state(void *data);

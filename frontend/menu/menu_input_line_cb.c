@@ -30,71 +30,71 @@
 
 void menu_key_start_line(void *data, const char *label, input_keyboard_line_complete_t cb)
 {
-   rgui_handle_t *rgui = (rgui_handle_t*)data;
+   menu_handle_t *menu = (menu_handle_t*)data;
 
-   if (!rgui)
+   if (!menu)
       return;
 
-   rgui->keyboard.display = true;
-   rgui->keyboard.label = label;
-   rgui->keyboard.buffer = input_keyboard_start_line(rgui, cb);
+   menu->keyboard.display = true;
+   menu->keyboard.label = label;
+   menu->keyboard.buffer = input_keyboard_start_line(menu, cb);
 }
 
 static void menu_key_end_line(void *data)
 {
-   rgui_handle_t *rgui = (rgui_handle_t*)data;
+   menu_handle_t *menu = (menu_handle_t*)data;
 
-   if (!rgui)
+   if (!menu)
       return;
 
-   rgui->keyboard.display = false;
-   rgui->keyboard.label = NULL;
-   rgui->old_input_state = -1ULL; // Avoid triggering states on pressing return.
+   menu->keyboard.display = false;
+   menu->keyboard.label = NULL;
+   menu->old_input_state = -1ULL; // Avoid triggering states on pressing return.
 }
 
 static void menu_search_callback(void *userdata, const char *str)
 {
-   rgui_handle_t *rgui = (rgui_handle_t*)userdata;
+   menu_handle_t *menu = (menu_handle_t*)userdata;
 
    if (str && *str)
-      file_list_search(rgui->selection_buf, str, &rgui->selection_ptr);
-   menu_key_end_line(rgui);
+      file_list_search(menu->selection_buf, str, &menu->selection_ptr);
+   menu_key_end_line(menu);
 }
 
 #ifdef HAVE_NETPLAY
 void netplay_port_callback(void *userdata, const char *str)
 {
-   rgui_handle_t *rgui = (rgui_handle_t*)userdata;
+   menu_handle_t *menu = (menu_handle_t*)userdata;
 
    if (str && *str)
       g_extern.netplay_port = strtoul(str, NULL, 0);
-   menu_key_end_line(rgui);
+   menu_key_end_line(menu);
 }
 
 void netplay_ipaddress_callback(void *userdata, const char *str)
 {
-   rgui_handle_t *rgui = (rgui_handle_t*)userdata;
+   menu_handle_t *menu = (menu_handle_t*)userdata;
 
    if (str && *str)
       strlcpy(g_extern.netplay_server, str, sizeof(g_extern.netplay_server));
-   menu_key_end_line(rgui);
+   menu_key_end_line(menu);
 }
 
 void netplay_nickname_callback(void *userdata, const char *str)
 {
-   rgui_handle_t *rgui = (rgui_handle_t*)userdata;
+   menu_handle_t *menu = (menu_handle_t*)userdata;
 
    if (str && *str)
       strlcpy(g_extern.netplay_nick, str, sizeof(g_extern.netplay_nick));
-   menu_key_end_line(rgui);
+   menu_key_end_line(menu);
 }
 #endif
 
 void audio_device_callback(void *userdata, const char *str)
 {
-   rgui_handle_t *rgui = (rgui_handle_t*)userdata;
+   menu_handle_t *menu = (menu_handle_t*)userdata;
 
-   if (!rgui)
+   if (!menu)
    {
       RARCH_ERR("Cannot invoke audio device setting callback, menu handle is not initialized.\n");
       return;
@@ -102,15 +102,15 @@ void audio_device_callback(void *userdata, const char *str)
 
    if (str && *str)
       strlcpy(g_settings.audio.device, str, sizeof(g_settings.audio.device));
-   menu_key_end_line(rgui);
+   menu_key_end_line(menu);
 }
 
 #ifdef HAVE_SHADER_MANAGER
 void preset_filename_callback(void *userdata, const char *str)
 {
-   rgui_handle_t *rgui = (rgui_handle_t*)userdata;
+   menu_handle_t *menu = (menu_handle_t*)userdata;
 
-   if (!rgui)
+   if (!menu)
    {
       RARCH_ERR("Cannot invoke preset setting callback, menu handle is not initialized.\n");
       return;
@@ -118,7 +118,7 @@ void preset_filename_callback(void *userdata, const char *str)
 
    if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->shader_manager_save_preset)
       driver.menu_ctx->backend->shader_manager_save_preset(str && *str ? str : NULL, false);
-   menu_key_end_line(rgui);
+   menu_key_end_line(menu);
 }
 #endif
 
@@ -144,7 +144,7 @@ void menu_key_event(bool down, unsigned keycode, uint32_t character, uint16_t mo
 
 void menu_poll_bind_state(void *data)
 {
-   struct rgui_bind_state *state = (struct rgui_bind_state*)data;
+   struct menu_bind_state *state = (struct menu_bind_state*)data;
 
    if (!state)
       return;
@@ -184,7 +184,7 @@ void menu_poll_bind_get_rested_axes(void *data)
 {
    unsigned i, a;
    const rarch_joypad_driver_t *joypad = NULL;
-   struct rgui_bind_state *state = (struct rgui_bind_state*)data;
+   struct menu_bind_state *state = (struct menu_bind_state*)data;
 
    if (!state)
       return;
@@ -203,11 +203,11 @@ void menu_poll_bind_get_rested_axes(void *data)
          state->axis_state[i].rested_axes[a] = input_joypad_axis_raw(joypad, i, a);
 }
 
-static bool menu_poll_find_trigger_pad(struct rgui_bind_state *state, struct rgui_bind_state *new_state, unsigned p)
+static bool menu_poll_find_trigger_pad(struct menu_bind_state *state, struct menu_bind_state *new_state, unsigned p)
 {
    unsigned a, b, h;
-   const struct rgui_bind_state_port *n = (const struct rgui_bind_state_port*)&new_state->state[p];
-   const struct rgui_bind_state_port *o = (const struct rgui_bind_state_port*)&state->state[p];
+   const struct menu_bind_state_port *n = (const struct menu_bind_state_port*)&new_state->state[p];
+   const struct menu_bind_state_port *o = (const struct menu_bind_state_port*)&state->state[p];
 
    for (b = 0; b < MENU_MAX_BUTTONS; b++)
    {
@@ -268,9 +268,9 @@ static bool menu_poll_find_trigger_pad(struct rgui_bind_state *state, struct rgu
 bool menu_poll_find_trigger(void *data1, void *data2)
 {
    unsigned i;
-   struct rgui_bind_state *state, *new_state;
-   state     = (struct rgui_bind_state*)data1;
-   new_state = (struct rgui_bind_state*)data2;
+   struct menu_bind_state *state, *new_state;
+   state     = (struct menu_bind_state*)data1;
+   new_state = (struct menu_bind_state*)data2;
 
    if (!state || !new_state)
       return false;
@@ -288,16 +288,16 @@ bool menu_poll_find_trigger(void *data1, void *data2)
 
 bool menu_custom_bind_keyboard_cb(void *data, unsigned code)
 {
-   rgui_handle_t *rgui = (rgui_handle_t*)data;
+   menu_handle_t *menu = (menu_handle_t*)data;
 
-   if (!rgui)
+   if (!menu)
       return false;
 
-   rgui->binds.target->key = (enum retro_key)code;
-   rgui->binds.begin++;
-   rgui->binds.target++;
-   rgui->binds.timeout_end = rarch_get_time_usec() + MENU_KEYBOARD_BIND_TIMEOUT_SECONDS * 1000000;
-   return rgui->binds.begin <= rgui->binds.last;
+   menu->binds.target->key = (enum retro_key)code;
+   menu->binds.begin++;
+   menu->binds.target++;
+   menu->binds.timeout_end = rarch_get_time_usec() + MENU_KEYBOARD_BIND_TIMEOUT_SECONDS * 1000000;
+   return menu->binds.begin <= menu->binds.last;
 }
 
 uint64_t menu_input(void)

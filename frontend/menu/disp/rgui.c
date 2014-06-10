@@ -141,11 +141,11 @@ static void blit_line(int x, int y, const char *message, bool green)
    }
 }
 
-static void init_font(rgui_handle_t *rgui, const uint8_t *font_bmp_buf)
+static void init_font(menu_handle_t *menu, const uint8_t *font_bmp_buf)
 {
    unsigned i;
    uint8_t *font = (uint8_t *) calloc(1, FONT_OFFSET(256));
-   rgui->alloc_font = true;
+   menu->alloc_font = true;
    for (i = 0; i < 256; i++)
    {
       unsigned y = i / 16;
@@ -154,21 +154,21 @@ static void init_font(rgui_handle_t *rgui, const uint8_t *font_bmp_buf)
             font_bmp_buf + 54 + 3 * (256 * (255 - 16 * y) + 16 * x));
    }
 
-   rgui->font = font;
+   menu->font = font;
 }
 
 static bool rguidisp_init_font(void *data)
 {
-   rgui_handle_t *rgui = (rgui_handle_t*)data;
+   menu_handle_t *menu = (menu_handle_t*)data;
 
    const uint8_t *font_bmp_buf = NULL;
    const uint8_t *font_bin_buf = bitmap_bin;
    bool ret = true;
 
    if (font_bmp_buf)
-      init_font(rgui, font_bmp_buf);
+      init_font(menu, font_bmp_buf);
    else if (font_bin_buf)
-      rgui->font = font_bin_buf;
+      menu->font = font_bin_buf;
    else
       ret = false;
 
@@ -592,19 +592,19 @@ static void *rgui_init(void)
    uint16_t *framebuf = menu_framebuf;
    size_t framebuf_pitch;
 
-   rgui_handle_t *rgui = (rgui_handle_t*)calloc(1, sizeof(*rgui));
+   menu_handle_t *menu = (menu_handle_t*)calloc(1, sizeof(*menu));
 
-   if (!rgui)
+   if (!menu)
       return NULL;
 
-   rgui->frame_buf = framebuf;
-   rgui->width = 320;
-   rgui->height = 240;
-   framebuf_pitch = rgui->width * sizeof(uint16_t);
+   menu->frame_buf = framebuf;
+   menu->width = 320;
+   menu->height = 240;
+   framebuf_pitch = menu->width * sizeof(uint16_t);
 
-   rgui->frame_buf_pitch = framebuf_pitch;
+   menu->frame_buf_pitch = framebuf_pitch;
 
-   bool ret = rguidisp_init_font(rgui);
+   bool ret = rguidisp_init_font(menu);
 
    if (!ret)
    {
@@ -615,15 +615,15 @@ static void *rgui_init(void)
       return NULL;
    }
 
-   return rgui;
+   return menu;
 }
 
 static void rgui_free(void *data)
 {
-   rgui_handle_t *rgui = (rgui_handle_t*)data;
+   menu_handle_t *menu = (menu_handle_t*)data;
 
-   if (rgui->alloc_font)
-      free((uint8_t*)rgui->font);
+   if (menu->alloc_font)
+      free((uint8_t*)menu->font);
 }
 
 static int rgui_input_postprocess(uint64_t old_state)
@@ -645,21 +645,21 @@ static int rgui_input_postprocess(uint64_t old_state)
 
 void rgui_set_texture(void *data)
 {
-   rgui_handle_t *rgui = (rgui_handle_t*)data;
+   menu_handle_t *menu = (menu_handle_t*)data;
 
    if (driver.video_data && driver.video_poke && driver.video_poke->set_texture_frame)
       driver.video_poke->set_texture_frame(driver.video_data, menu_framebuf,
-            false, rgui->width, rgui->height, 1.0f);
+            false, menu->width, menu->height, 1.0f);
 }
 
 static void rgui_init_core_info(void *data)
 {
-   rgui_handle_t *rgui = (rgui_handle_t*)data;
+   menu_handle_t *menu = (menu_handle_t*)data;
 
-   core_info_list_free(rgui->core_info);
-   rgui->core_info = NULL;
+   core_info_list_free(menu->core_info);
+   menu->core_info = NULL;
    if (*g_settings.libretro_directory)
-      rgui->core_info = core_info_list_new(g_settings.libretro_directory);
+      menu->core_info = core_info_list_new(g_settings.libretro_directory);
 }
 
 const menu_ctx_driver_t menu_ctx_rgui = {

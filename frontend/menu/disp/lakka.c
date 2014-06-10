@@ -773,10 +773,10 @@ static void lakka_context_reset(void *data)
 {
    int i, j, k;
    char path[256], dirpath[256];;
-   rgui_handle_t *rgui = (rgui_handle_t*)data;
+   menu_handle_t *menu = (menu_handle_t*)data;
    gl_t *gl = (gl_t*)driver.video_data;
 
-   if (!rgui)
+   if (!menu)
       return;
 
    gl_font_init_first(&font_driver, &font, gl,
@@ -811,7 +811,7 @@ static void lakka_context_reset(void *data)
       fill_pathname_join(dirpath, g_settings.assets_directory, "lakka", sizeof(dirpath));
       fill_pathname_slash(dirpath, sizeof(dirpath));
 
-      info_list = (core_info_list_t*)rgui->core_info;
+      info_list = (core_info_list_t*)menu->core_info;
       info = NULL;
 
       if (info_list)
@@ -935,10 +935,10 @@ static void lakka_init_items(int i, menu_category_t *category, core_info_t *info
 
 static void lakka_free(void *data)
 {
-   rgui_handle_t *rgui = (rgui_handle_t*)data;
+   menu_handle_t *menu = (menu_handle_t*)data;
 
-   if (rgui->alloc_font)
-      free((uint8_t*)rgui->font);
+   if (menu->alloc_font)
+      free((uint8_t*)menu->font);
 }
 
 static int lakka_input_postprocess(uint64_t old_state)
@@ -961,29 +961,29 @@ static int lakka_input_postprocess(uint64_t old_state)
 static void lakka_init_core_info(void *data)
 {
    core_info_list_t *core;
-   rgui_handle_t *rgui = (rgui_handle_t*)data;
+   menu_handle_t *menu = (menu_handle_t*)data;
 
-   core_info_list_free(rgui->core_info);
-   rgui->core_info = NULL;
+   core_info_list_free(menu->core_info);
+   menu->core_info = NULL;
 
-   rgui->core_info = (core_info_list_t*)core_info_list_new(*g_settings.libretro_directory ? g_settings.libretro_directory : "/usr/lib/libretro");
+   menu->core_info = (core_info_list_t*)core_info_list_new(*g_settings.libretro_directory ? g_settings.libretro_directory : "/usr/lib/libretro");
 
-   if (rgui->core_info)
+   if (menu->core_info)
    {
-      core = (core_info_list_t*)rgui->core_info;
-      num_categories = rgui->core_info ? core->count + 1 : 1;
+      core = (core_info_list_t*)menu->core_info;
+      num_categories = menu->core_info ? core->count + 1 : 1;
    }
 }
 
 static void *lakka_init(void)
 {
    int i, j;
-   rgui_handle_t *rgui = (rgui_handle_t*)calloc(1, sizeof(*rgui));
+   menu_handle_t *menu = (menu_handle_t*)calloc(1, sizeof(*menu));
    gl_t *gl = (gl_t*)driver.video_data;
-   if (!rgui || !gl)
+   if (!menu || !gl)
       return NULL;
 
-   lakka_init_core_info(rgui);
+   lakka_init_core_info(menu);
    categories = (menu_category_t*)calloc(num_categories, sizeof(menu_category_t));
 
    lakka_init_settings();
@@ -994,7 +994,7 @@ static void *lakka_init(void)
       core_info_list_t *info_list;
       menu_category_t *category = (menu_category_t*)&categories[i];
 
-      info_list = (core_info_list_t*)rgui->core_info;
+      info_list = (core_info_list_t*)menu->core_info;
       info = NULL;
 
       if (info_list)
@@ -1011,7 +1011,7 @@ static void *lakka_init(void)
       lakka_init_items(i, category, info, g_settings.content_directory);
    }
 
-   return rgui;
+   return menu;
 }
 
 const menu_ctx_driver_t menu_ctx_lakka = {

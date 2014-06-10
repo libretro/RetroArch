@@ -339,7 +339,7 @@ void config_set_defaults(void)
    g_settings.libretro_log_level   = libretro_log_level;
 
 #ifdef HAVE_MENU
-   g_settings.rgui_show_start_screen = rgui_show_start_screen;
+   g_settings.menu_show_start_screen = menu_show_start_screen;
 #endif
 
 #ifdef HAVE_LOCATION
@@ -423,8 +423,8 @@ void config_set_defaults(void)
    *g_settings.audio.filter_dir = '\0';
    *g_settings.audio.dsp_plugin = '\0';
 #ifdef HAVE_MENU
-   *g_settings.rgui_content_directory = '\0';
-   *g_settings.rgui_config_directory = '\0';
+   *g_settings.menu_content_directory = '\0';
+   *g_settings.menu_config_directory = '\0';
 #endif
    g_settings.core_specific_config = default_core_specific_config;
 
@@ -526,10 +526,10 @@ static void config_load_core_specific(void)
       return;
 
 #ifdef HAVE_MENU
-   if (*g_settings.rgui_config_directory)
+   if (*g_settings.menu_config_directory)
    {
-      path_resolve_realpath(g_settings.rgui_config_directory, sizeof(g_settings.rgui_config_directory));
-      strlcpy(g_extern.core_specific_config_path, g_settings.rgui_config_directory, sizeof(g_extern.core_specific_config_path));
+      path_resolve_realpath(g_settings.menu_config_directory, sizeof(g_settings.menu_config_directory));
+      strlcpy(g_extern.core_specific_config_path, g_settings.menu_config_directory, sizeof(g_extern.core_specific_config_path));
    }
    else
 #endif
@@ -1027,13 +1027,13 @@ bool config_load_file(const char *path, bool set_defaults)
    if (!strcmp(g_settings.assets_directory, "default"))
       *g_settings.assets_directory = '\0';
 #ifdef HAVE_MENU
-   CONFIG_GET_PATH(rgui_content_directory, "rgui_browser_directory");
-   if (!strcmp(g_settings.rgui_content_directory, "default"))
-      *g_settings.rgui_content_directory = '\0';
-   CONFIG_GET_PATH(rgui_config_directory, "rgui_config_directory");
-   if (!strcmp(g_settings.rgui_config_directory, "default"))
-      *g_settings.rgui_config_directory = '\0';
-   CONFIG_GET_BOOL(rgui_show_start_screen, "rgui_show_start_screen");
+   CONFIG_GET_PATH(menu_content_directory, "rgui_browser_directory");
+   if (!strcmp(g_settings.menu_content_directory, "default"))
+      *g_settings.menu_content_directory = '\0';
+   CONFIG_GET_PATH(menu_config_directory, "rgui_config_directory");
+   if (!strcmp(g_settings.menu_config_directory, "default"))
+      *g_settings.menu_config_directory = '\0';
+   CONFIG_GET_BOOL(menu_show_start_screen, "rgui_show_start_screen");
 #endif
    CONFIG_GET_INT(libretro_log_level, "libretro_log_level");
 
@@ -1422,9 +1422,9 @@ bool config_save_file(const char *path)
    config_set_path(conf, "content_directory", *g_settings.content_directory ? g_settings.content_directory : "default");
    config_set_path(conf, "assets_directory", *g_settings.assets_directory ? g_settings.assets_directory : "default");
 #ifdef HAVE_MENU
-   config_set_path(conf, "rgui_browser_directory", *g_settings.rgui_content_directory ? g_settings.rgui_content_directory : "default");
-   config_set_path(conf, "rgui_config_directory", *g_settings.rgui_config_directory ? g_settings.rgui_config_directory : "default");
-   config_set_bool(conf, "rgui_show_start_screen", g_settings.rgui_show_start_screen);
+   config_set_path(conf, "rgui_browser_directory", *g_settings.menu_content_directory ? g_settings.menu_content_directory : "default");
+   config_set_path(conf, "rgui_config_directory", *g_settings.menu_config_directory ? g_settings.menu_config_directory : "default");
+   config_set_bool(conf, "rgui_show_start_screen", g_settings.menu_show_start_screen);
 #endif
 
    config_set_path(conf, "game_history_path", g_settings.game_history_path);

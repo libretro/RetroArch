@@ -18,20 +18,20 @@
 
 void menu_update_system_info(void *data, bool *load_no_rom)
 {
-   rgui_handle_t *rgui = (rgui_handle_t*)data;
+   menu_handle_t *menu = (menu_handle_t*)data;
 
 #ifdef HAVE_DYNAMIC
-   libretro_free_system_info(&rgui->info);
+   libretro_free_system_info(&menu->info);
    if (*g_settings.libretro)
    {
-      libretro_get_system_info(g_settings.libretro, &rgui->info, load_no_rom);
+      libretro_get_system_info(g_settings.libretro, &menu->info, load_no_rom);
 #endif
       // Keep track of info for the currently selected core.
-      if (rgui->core_info)
+      if (menu->core_info)
       {
-         if (core_info_list_get_info(rgui->core_info, rgui->core_info_current, g_settings.libretro))
+         if (core_info_list_get_info(menu->core_info, menu->core_info_current, g_settings.libretro))
          {
-            const core_info_t *info = (const core_info_t*)rgui->core_info_current;
+            const core_info_t *info = (const core_info_t*)menu->core_info_current;
 
             RARCH_LOG("[Core Info]:\n");
             if (info->display_name)
@@ -185,15 +185,15 @@ void load_menu_game_history(unsigned game_index)
 
 static void menu_init_history(void *data)
 {
-   rgui_handle_t *rgui = (rgui_handle_t*)data;
+   menu_handle_t *menu = (menu_handle_t*)data;
 
-   if (!rgui)
+   if (!menu)
       return;
 
-   if (rgui->history)
+   if (menu->history)
    {
-      rom_history_free(rgui->history);
-      rgui->history = NULL;
+      rom_history_free(menu->history);
+      menu->history = NULL;
    }
 
    if (*g_extern.config_path)
@@ -208,27 +208,27 @@ static void menu_init_history(void *data)
       }
 
       RARCH_LOG("[Menu]: Opening history: %s.\n", history_path);
-      rgui->history = rom_history_init(history_path, g_settings.game_history_size);
+      menu->history = rom_history_init(history_path, g_settings.game_history_size);
    }
 }
 
 static void menu_update_libretro_info(void *data)
 {
-   rgui_handle_t *rgui = (rgui_handle_t*)data;
+   menu_handle_t *menu = (menu_handle_t*)data;
 
-   if (!rgui)
+   if (!menu)
       return;
 
 #ifndef HAVE_DYNAMIC
-   retro_get_system_info(&rgui->info);
+   retro_get_system_info(&menu->info);
 #endif
 
-   core_info_list_free(rgui->core_info);
-   rgui->core_info = NULL;
+   core_info_list_free(menu->core_info);
+   menu->core_info = NULL;
    if (*g_settings.libretro_directory)
-      rgui->core_info = core_info_list_new(g_settings.libretro_directory);
+      menu->core_info = core_info_list_new(g_settings.libretro_directory);
 
-   menu_update_system_info(rgui, NULL);
+   menu_update_system_info(menu, NULL);
 }
 
 void load_menu_game_prepare_dummy(void)
@@ -306,78 +306,78 @@ bool load_menu_game(void)
 
 void *menu_init(const void *data)
 {
-   rgui_handle_t *rgui;
+   menu_handle_t *menu;
    menu_ctx_driver_t *menu_ctx = (menu_ctx_driver_t*)data;
 
    if (!menu_ctx)
       return NULL;
 
-   rgui = (rgui_handle_t*)menu_ctx->init();
+   menu = (menu_handle_t*)menu_ctx->init();
 
-   if (!rgui)
+   if (!menu)
       return NULL;
 
    strlcpy(g_settings.menu.driver, menu_ctx->ident, sizeof(g_settings.menu.driver));
 
-   rgui->menu_stack = (file_list_t*)calloc(1, sizeof(file_list_t));
-   rgui->selection_buf = (file_list_t*)calloc(1, sizeof(file_list_t));
-   rgui->core_info_current = (core_info_t*)calloc(1, sizeof(core_info_t));
+   menu->menu_stack = (file_list_t*)calloc(1, sizeof(file_list_t));
+   menu->selection_buf = (file_list_t*)calloc(1, sizeof(file_list_t));
+   menu->core_info_current = (core_info_t*)calloc(1, sizeof(core_info_t));
 #ifdef HAVE_SHADER_MANAGER
-   rgui->shader = (struct gfx_shader*)calloc(1, sizeof(struct gfx_shader));
+   menu->shader = (struct gfx_shader*)calloc(1, sizeof(struct gfx_shader));
 #endif
-   file_list_push(rgui->menu_stack, "", MENU_SETTINGS, 0);
-   menu_clear_navigation(rgui);
-   rgui->push_start_screen = g_settings.rgui_show_start_screen;
-   g_settings.rgui_show_start_screen = false;
+   file_list_push(menu->menu_stack, "", MENU_SETTINGS, 0);
+   menu_clear_navigation(menu);
+   menu->push_start_screen = g_settings.menu_show_start_screen;
+   g_settings.menu_show_start_screen = false;
 
    if (menu_ctx && menu_ctx->backend && menu_ctx->backend->entries_init) 
-      menu_ctx->backend->entries_init(rgui, MENU_SETTINGS);
+      menu_ctx->backend->entries_init(menu, MENU_SETTINGS);
 
-   rgui->trigger_state = 0;
-   rgui->old_input_state = 0;
-   rgui->do_held = false;
-   rgui->frame_buf_show = true;
-   rgui->current_pad = 0;
+   menu->trigger_state = 0;
+   menu->old_input_state = 0;
+   menu->do_held = false;
+   menu->frame_buf_show = true;
+   menu->current_pad = 0;
 
-   menu_update_libretro_info(rgui);
+   menu_update_libretro_info(menu);
 
    if (menu_ctx && menu_ctx->backend && menu_ctx->backend->shader_manager_init)
-      menu_ctx->backend->shader_manager_init(rgui);
+      menu_ctx->backend->shader_manager_init(menu);
 
-   menu_init_history(rgui);
-   rgui->last_time = rarch_get_time_usec();
+   menu_init_history(menu);
+   menu->last_time = rarch_get_time_usec();
 
-   return rgui;
+   return menu;
 }
 
 void menu_free(void *data)
 {
-   rgui_handle_t *rgui = (rgui_handle_t*)data;
+   menu_handle_t *menu = (menu_handle_t*)data;
 
-   if (!rgui)
+   if (!menu)
       return;
   
 #ifdef HAVE_SHADER_MANAGER
-   if (rgui->shader)
-      free(rgui->shader);
-   rgui->shader = NULL;
+   if (menu->shader)
+      free(menu->shader);
+   menu->shader = NULL;
 #endif
 
    if (driver.menu_ctx && driver.menu_ctx->free)
-      driver.menu_ctx->free(rgui);
+      driver.menu_ctx->free(menu);
 
 #ifdef HAVE_DYNAMIC
-   libretro_free_system_info(&rgui->info);
+   libretro_free_system_info(&menu->info);
 #endif
 
-   file_list_free(rgui->menu_stack);
-   file_list_free(rgui->selection_buf);
+   file_list_free(menu->menu_stack);
+   file_list_free(menu->selection_buf);
 
-   rom_history_free(rgui->history);
-   core_info_list_free(rgui->core_info);
+   rom_history_free(menu->history);
+   core_info_list_free(menu->core_info);
 
-   if (rgui->core_info_current)
-      free(rgui->core_info_current);
+   if (menu->core_info_current)
+      free(menu->core_info_current);
 
    free(data);
 }
@@ -619,8 +619,8 @@ bool menu_save_new_config(void)
    char config_dir[PATH_MAX];
    *config_dir = '\0';
 
-   if (*g_settings.rgui_config_directory)
-      strlcpy(config_dir, g_settings.rgui_config_directory, sizeof(config_dir));
+   if (*g_settings.menu_config_directory)
+      strlcpy(config_dir, g_settings.menu_config_directory, sizeof(config_dir));
    else if (*g_extern.config_path) // Fallback
       fill_pathname_basedir(config_dir, g_extern.config_path, sizeof(config_dir));
    else

@@ -467,14 +467,14 @@ typedef struct menu_ctx_driver
 #define MAX_PLAYERS 8
 #endif
 
-struct rgui_bind_state_port
+struct menu_bind_state_port
 {
    bool buttons[MENU_MAX_BUTTONS];
    int16_t axes[MENU_MAX_AXES];
    uint16_t hats[MENU_MAX_HATS];
 };
 
-struct rgui_bind_axis_state
+struct menu_bind_axis_state
 {
    // Default axis state.
    int16_t rested_axes[MENU_MAX_AXES];
@@ -482,15 +482,15 @@ struct rgui_bind_axis_state
    int16_t locked_axes[MENU_MAX_AXES];
 };
 
-struct rgui_bind_state
+struct menu_bind_state
 {
    struct retro_keybind *target;
    int64_t timeout_end; // For keyboard binding.
    unsigned begin;
    unsigned last;
    unsigned player;
-   struct rgui_bind_state_port state[MAX_PLAYERS];
-   struct rgui_bind_axis_state axis_state[MAX_PLAYERS];
+   struct menu_bind_state_port state[MAX_PLAYERS];
+   struct menu_bind_axis_state axis_state[MAX_PLAYERS];
    bool skip;
 };
 
@@ -545,7 +545,7 @@ typedef struct
    void *history;
    retro_time_t last_time; // Used to throttle RGUI in case VSync is broken.
 
-   struct rgui_bind_state binds;
+   struct menu_bind_state binds;
    struct
    {
       const char **buffer;
@@ -558,7 +558,7 @@ typedef struct
    retro_time_t delta;
    retro_time_t target_msec;
    retro_time_t sleep_msec;
-} rgui_handle_t;
+} menu_handle_t;
 
 enum rarch_display_type
 {
@@ -590,7 +590,7 @@ typedef struct driver
    void *video_data;
    void *input_data;
 #ifdef HAVE_MENU
-   rgui_handle_t *menu;
+   menu_handle_t *menu;
    const menu_ctx_driver_t *menu_ctx;
 #endif
 

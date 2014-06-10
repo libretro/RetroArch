@@ -512,7 +512,7 @@ static void init_menu(void)
       return;
 
    find_menu_driver();
-   if (!(driver.menu = (rgui_handle_t*)menu_init(driver.menu_ctx)))
+   if (!(driver.menu = (menu_handle_t*)menu_init(driver.menu_ctx)))
    {
       RARCH_ERR("Cannot initialize menu.\n");
       rarch_fail(1, "init_menu()");
