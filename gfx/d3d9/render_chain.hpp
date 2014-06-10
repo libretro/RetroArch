@@ -16,7 +16,7 @@
 #ifndef RENDER_CHAIN_HPP__
 #define RENDER_CHAIN_HPP__
 
-#include "d3d9.hpp"
+#include "d3d.hpp"
 #include "../state_tracker.h"
 #include "../shader_parse.h"
 

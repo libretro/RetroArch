@@ -14,7 +14,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../d3d9/d3d9.hpp"
+#include "../d3d9/d3d.hpp"
 #include "d3d_font.h"
 #include "../gfx_common.h"
 #include "../../general.h"

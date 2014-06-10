@@ -15,7 +15,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "d3d9.hpp"
+#include "d3d.hpp"
 #include "render_chain.hpp"
 #include "../../file.h"
 #include "../gfx_common.h"
