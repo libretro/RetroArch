@@ -29,7 +29,7 @@
 
 #include "../file_ext.h"
 
-#if defined(RARCH_CONSOLE) || defined(__QNX__)
+#if defined(RARCH_CONSOLE) || defined(RARCH_MOBILE)
 #include "../config.def.h"
 #endif
 
