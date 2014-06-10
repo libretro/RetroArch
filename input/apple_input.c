@@ -244,8 +244,7 @@ enum input_devices
    DEVICE_LAST
 };
 
-extern const rarch_joypad_driver_t apple_joypad;
-static const rarch_joypad_driver_t* const g_joydriver = &apple_joypad;
+static const rarch_joypad_driver_t *joypad;
 
 apple_input_data_t g_current_input_data;
 
@@ -480,7 +479,7 @@ static bool apple_key_pressed(enum retro_key key)
 
 static bool apple_is_pressed(unsigned port_num, const struct retro_keybind *binds, unsigned key)
 {
-   return apple_key_pressed(binds[key].key) || input_joypad_pressed(g_joydriver, port_num, binds, key);
+   return apple_key_pressed(binds[key].key) || input_joypad_pressed(joypad, port_num, binds, key);
 }
 
 // Exported input driver
@@ -488,6 +487,8 @@ static void *apple_input_init(void)
 {
    input_init_keyboard_lut(apple_key_map_hidusage);
    memset(&g_current_input_data, 0, sizeof(g_current_input_data));
+
+   joypad = input_joypad_init_driver(g_settings.input.joypad_driver);
    return (void*)-1;
 }
 
@@ -507,7 +508,7 @@ static void apple_input_poll(void *data)
          &g_current_input_data.touches[i].full_x, &g_current_input_data.touches[i].full_y);
    }
 
-   input_joypad_poll(g_joydriver);
+   input_joypad_poll(joypad);
    g_current_input_data.pad_buttons[0] |= apple_input_get_icade_buttons();
 
    g_current_input_data.mouse_delta[0] = 0;
@@ -524,7 +525,7 @@ static int16_t apple_input_state(void *data, const struct retro_keybind **binds,
          return (id < RARCH_BIND_LIST_END) ? apple_is_pressed(port, binds[port], id) : 0;
          
       case RETRO_DEVICE_ANALOG:
-         return input_joypad_analog(g_joydriver, port, index, id, binds[port]);
+         return input_joypad_analog(joypad, port, index, id, binds[port]);
       
       case RETRO_DEVICE_KEYBOARD:
          return apple_key_pressed(id);
@@ -586,8 +587,8 @@ static void apple_input_free_input(void *data)
 {
    (void)data;
     
-   if (g_joydriver && g_joydriver->destroy)
-      g_joydriver->destroy();
+   if (joypad)
+      joypad->destroy();
 }
 
 static void apple_input_set_keybinds(void *data, unsigned device, unsigned port,
@@ -695,7 +696,7 @@ static void apple_input_set_keybinds(void *data, unsigned device, unsigned port,
 static bool apple_input_set_rumble(void *data, unsigned port, enum retro_rumble_effect effect, uint16_t strength)
 {
    (void)data;
-   return input_joypad_set_rumble(g_joydriver, port, effect, strength);
+   return input_joypad_set_rumble(joypad, port, effect, strength);
 }
 
 static uint64_t apple_input_get_capabilities(void *data)
@@ -720,7 +721,7 @@ static unsigned apple_devices_size(void *data)
 
 const rarch_joypad_driver_t *apple_get_joypad_driver(void *data)
 {
-   return g_joydriver;
+   return joypad;
 }
 
 const input_driver_t input_apple = {

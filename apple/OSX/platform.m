@@ -194,9 +194,6 @@ static char** waiting_argv;
    _wantReload = false;
 
    apple_start_iteration();
-   
-   extern void osx_pad_init();
-   osx_pad_init();
 }
 
 - (BOOL)applicationShouldTerminateAfterLastWindowClosed:(NSApplication *)theApplication
