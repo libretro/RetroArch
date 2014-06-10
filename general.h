@@ -277,11 +277,6 @@ struct settings
       char device_names[MAX_PLAYERS][64];
       bool debug_enable;
       bool autodetect_enable;
-#ifdef ANDROID
-      unsigned back_behavior;
-      unsigned icade_profile[MAX_PLAYERS];
-      unsigned icade_count;
-#endif
       bool netplay_client_swap_input;
 
       unsigned turbo_period;

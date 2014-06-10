@@ -381,9 +381,6 @@ void config_set_defaults(void)
    g_settings.input.debug_enable = input_debug_enable;
    g_settings.input.autodetect_enable = input_autodetect_enable;
    *g_settings.input.keyboard_layout = '\0';
-#ifdef ANDROID
-   g_settings.input.back_behavior = BACK_BUTTON_QUIT;
-#endif
 
    for (i = 0; i < MAX_PLAYERS; i++)
    {
@@ -1106,14 +1103,6 @@ bool config_load_file(const char *path, bool set_defaults)
       CONFIG_GET_INT_EXTERN(netplay_port, "netplay_ip_port");
 #endif
 
-#ifdef ANDROID
-   CONFIG_GET_INT(input.back_behavior, "input_back_behavior");
-   CONFIG_GET_INT(input.icade_profile[0], "input_autodetect_icade_profile_pad1");
-   CONFIG_GET_INT(input.icade_profile[1], "input_autodetect_icade_profile_pad2");
-   CONFIG_GET_INT(input.icade_profile[2], "input_autodetect_icade_profile_pad3");
-   CONFIG_GET_INT(input.icade_profile[3], "input_autodetect_icade_profile_pad4");
-#endif
-
    CONFIG_GET_BOOL_EXTERN(config_save_on_exit, "config_save_on_exit");
 
    if (!g_extern.has_set_save_path && config_get_path(conf, "savefile_directory", tmp_str, sizeof(tmp_str)))
@@ -1437,14 +1426,6 @@ bool config_save_file(const char *path)
    config_set_path(conf, "input_overlay", g_settings.input.overlay);
    config_set_float(conf, "input_overlay_opacity", g_settings.input.overlay_opacity);
    config_set_float(conf, "input_overlay_scale", g_settings.input.overlay_scale);
-#endif
-
-#ifdef ANDROID
-   config_set_int(conf, "input_back_behavior", g_settings.input.back_behavior);
-   config_set_int(conf, "input_autodetect_icade_profile_pad1", g_settings.input.icade_profile[0]);
-   config_set_int(conf, "input_autodetect_icade_profile_pad2", g_settings.input.icade_profile[1]);
-   config_set_int(conf, "input_autodetect_icade_profile_pad3", g_settings.input.icade_profile[2]);
-   config_set_int(conf, "input_autodetect_icade_profile_pad4", g_settings.input.icade_profile[3]);
 #endif
 
    config_set_bool(conf, "gamma_correction", g_extern.console.screen.gamma_correction);

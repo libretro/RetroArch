@@ -679,16 +679,6 @@ const rarch_setting_t* setting_data_get_list(void)
          END_SUB_GROUP()
 #endif
 
-#ifdef ANDROID
-         START_SUB_GROUP("Android")
-         CONFIG_UINT(g_settings.input.back_behavior,         "input_back_behavior",        "Back Behavior",              BACK_BUTTON_QUIT)
-         CONFIG_UINT(g_settings.input.icade_profile[0],      "input_autodetect_icade_profile_pad1", "iCade 1",           DEFAULT_ME_YO)
-         CONFIG_UINT(g_settings.input.icade_profile[1],      "input_autodetect_icade_profile_pad2", "iCade 2",           DEFAULT_ME_YO)
-         CONFIG_UINT(g_settings.input.icade_profile[2],      "input_autodetect_icade_profile_pad3", "iCade 3",           DEFAULT_ME_YO)
-         CONFIG_UINT(g_settings.input.icade_profile[3],      "input_autodetect_icade_profile_pad4", "iCade 4",           DEFAULT_ME_YO)
-         END_SUB_GROUP()
-#endif
-
          // The second argument to config bind is 1 based for players and 0 only for meta keys
          START_SUB_GROUP("Meta Keys")
          for (i = 0; i != RARCH_BIND_LIST_END; i ++)
