@@ -602,10 +602,6 @@ void rarch_input_poll(void)
 #endif
 }
 
-#ifndef RARCH_CONSOLE
-/* TODO/FIXME - I'd really like to know why this breaks jumping in games like Mario World on consoles - can't
- * jump high with this - binds that need to be initialized? */
-
 // Turbo scheme: If turbo button is held, all buttons pressed except for D-pad will go into
 // a turbo mode. Until the button is released again, the input state will be modulated by a periodic pulse defined
 // by the configured duty cycle.
@@ -621,7 +617,6 @@ static bool input_apply_turbo(unsigned port, unsigned id, bool res)
    else
       return res;
 }
-#endif
 
 static int16_t input_state(unsigned port, unsigned device, unsigned index, unsigned id)
 {
@@ -667,13 +662,9 @@ static int16_t input_state(unsigned port, unsigned device, unsigned index, unsig
    }
 #endif
 
-#ifndef RARCH_CONSOLE
-/* TODO/FIXME - I'd really like to know why this breaks jumping in games like Mario World on consoles - can't
- * jump high with this - binds that need to be initialized? */
    // Don't allow turbo for D-pad.
    if (device == RETRO_DEVICE_JOYPAD && (id < RETRO_DEVICE_ID_JOYPAD_UP || id > RETRO_DEVICE_ID_JOYPAD_RIGHT))
       res = input_apply_turbo(port, id, res);
-#endif
 
 #ifdef HAVE_BSV_MOVIE
    if (g_extern.bsv.movie && !g_extern.bsv.movie_playback)
@@ -2703,7 +2694,6 @@ void rarch_check_overlay(void)
 }
 #endif
 
-#ifndef RARCH_CONSOLE
 static void check_grab_mouse_toggle(void)
 {
    static bool old_pressed;
@@ -2724,7 +2714,6 @@ static void check_grab_mouse_toggle(void)
 
    old_pressed = pressed;
 }
-#endif
 
 static void do_state_checks(void)
 {
@@ -2738,9 +2727,7 @@ static void do_state_checks(void)
 
    check_turbo();
 
-#ifndef RARCH_CONSOLE
    check_grab_mouse_toggle();
-#endif
 
 #ifdef HAVE_OVERLAY
    rarch_check_overlay();
