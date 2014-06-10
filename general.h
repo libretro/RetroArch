@@ -672,9 +672,6 @@ struct global
       struct
       {
          unsigned mode;
-#ifdef RARCH_CONSOLE
-         unsigned volume_level;
-#endif
       } sound;
    } console;
 

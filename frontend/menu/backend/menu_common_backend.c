@@ -403,9 +403,6 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
 #ifdef __CELLOS_LV2__
          file_list_push(menu->selection_buf, "System BGM Control", MENU_SETTINGS_CUSTOM_BGM_CONTROL_ENABLE, 0);
 #endif
-#ifdef _XBOX1
-         file_list_push(menu->selection_buf, "Volume Effect", MENU_SETTINGS_AUDIO_DSP_EFFECT, 0);
-#endif
          file_list_push(menu->selection_buf, "Volume Level", MENU_SETTINGS_AUDIO_VOLUME, 0);
          break;
       case MENU_SETTINGS_DRIVERS:
@@ -5373,11 +5370,6 @@ static void menu_common_setting_set_label(char *type_str, size_t type_str_size, 
          case MENU_SETTINGS_CUSTOM_BIND_MODE:
             strlcpy(type_str, driver.menu->bind_mode_keyboard ? "Keyboard" : "Joypad", type_str_size);
             break;
-         case MENU_SETTINGS_AUDIO_DSP_EFFECT:
-#ifdef RARCH_CONSOLE
-            strlcpy(type_str, (g_extern.console.sound.volume_level) ? "Loud" : "Normal", type_str_size);
-            break;
-#endif
          case MENU_SETTINGS_AUDIO_VOLUME:
             snprintf(type_str, type_str_size, "%.1f dB", g_extern.audio_data.volume_db);
             break;

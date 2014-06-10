@@ -440,9 +440,6 @@ void config_set_defaults(void)
 
    g_extern.console.screen.resolutions.current.id = 0;
    g_extern.console.sound.mode = SOUND_MODE_NORMAL;
-#ifdef _XBOX1
-   g_extern.console.sound.volume_level = 0;
-#endif
 #endif
    
 #ifdef HAVE_OVERLAY
@@ -893,9 +890,6 @@ bool config_load_file(const char *path, bool set_defaults)
 
    CONFIG_GET_INT_EXTERN(console.screen.flicker_filter_index, "flicker_filter_index");
    CONFIG_GET_INT_EXTERN(console.screen.soft_filter_index, "soft_filter_index");
-#ifdef _XBOX1
-   CONFIG_GET_INT_EXTERN(console.sound.volume_level, "sound_volume_level");
-#endif
    CONFIG_GET_INT_EXTERN(console.screen.resolutions.current.id, "current_resolution_id");
    CONFIG_GET_INT_EXTERN(console.sound.mode, "sound_mode");
 #endif
@@ -1429,9 +1423,6 @@ bool config_save_file(const char *path)
 #endif
 
    config_set_bool(conf, "gamma_correction", g_extern.console.screen.gamma_correction);
-#ifdef _XBOX1
-   config_set_int(conf, "sound_volume_level", g_extern.console.sound.volume_level);
-#endif
    bool triple_buffering_enable_val = g_extern.lifecycle_state & (1ULL << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE);
    bool soft_filter_enable_val = g_extern.lifecycle_state & (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE);
    bool flicker_filter_enable_val = g_extern.lifecycle_state & (1ULL << MODE_VIDEO_FLICKER_FILTER_ENABLE);

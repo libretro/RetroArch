@@ -357,18 +357,6 @@ static void *dsound_init(const char *device, unsigned rate, unsigned latency)
       goto error;
 
    IDirectSoundBuffer_SetVolume(ds->dsb, DSBVOLUME_MAX);
-
-#ifdef _XBOX
-   if(g_extern.console.sound.volume_level == 1)
-   {
-      dsmb.dwMixBinCount = 8;
-      dsmb.lpMixBinVolumePairs = dsmbvp;
-      
-      IDirectSoundBuffer_SetHeadroom(ds->dsb, DSBHEADROOM_MIN);
-      IDirectSoundBuffer_SetMixBins(ds->dsb, &dsmb);
-   }
-#endif
-
    IDirectSoundBuffer_SetCurrentPosition(ds->dsb, 0);
 
    dsound_clear_buffer(ds);
