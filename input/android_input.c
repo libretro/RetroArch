@@ -448,7 +448,7 @@ static void input_autodetect_get_device_name(void *data, char *buf, size_t size,
 }
 
 static void handle_hotplug(void *data, unsigned port, unsigned id,
-      int source, bool *primary)
+      int source)
 {
    struct android_app *android_app = (struct android_app*)data;
 
@@ -616,7 +616,6 @@ static void handle_hotplug(void *data, unsigned port, unsigned id,
    {
       device = DEVICE_NVIDIA_SHIELD;
       port = 0; // Shield is always player 1.
-      *primary = true;
       strlcpy(name_buf, "NVIDIA Shield", sizeof(name_buf));
    }
    else if (strstr(name_buf, "Samsung Game Pad EI-GP20"))
@@ -641,7 +640,7 @@ static void handle_hotplug(void *data, unsigned port, unsigned id,
    if (source == AINPUT_SOURCE_KEYBOARD && device != DEVICE_XPERIA_PLAY)
       device = DEVICE_KEYBOARD_RETROPAD;
 
-   if (device != DEVICE_NONE)
+   if (device != DEVICE_NONE && name_buf[0] != '\0')
    {
       strlcpy(g_settings.input.device_names[port], name_buf, sizeof(g_settings.input.device_names[port]));
       input_config_autoconfigure_joypad(port, name_buf, android_joypad.ident);
@@ -704,24 +703,8 @@ static void android_input_poll(void *data)
                {
                   port = android->pads_connected;
                   if (g_settings.input.autodetect_enable)
-                  {
-                     bool primary = false;
-                     handle_hotplug(android_app, port, id, source, &primary);
-
-                     if (primary)
-                     {
-                        RARCH_LOG("Found primary input device.\n");
-                        memmove(android->state_device_ids + 1, android->state_device_ids,
-                              android->pads_connected * sizeof(android->state_device_ids[0]));
-                        port = 0;
-                        android->state_device_ids[0] = id;
-                        android->pads_connected++;
-                     }
-                     else
-                        android->state_device_ids[android->pads_connected++] = id;
-                  }
-                  else
-                     android->state_device_ids[android->pads_connected++] = id;
+                     handle_hotplug(android_app, port, id, source);
+                  android->state_device_ids[android->pads_connected++] = id;
                }
 
                if (type_event == AINPUT_EVENT_TYPE_MOTION)
@@ -950,25 +933,17 @@ const input_driver_t input_android = {
 
 static bool android_joypad_init(void)
 {
-   int i;
-
-   for (i = 0; i < MAX_PLAYERS; i++)
-      strlcpy(g_settings.input.device_names[i], "Custom", sizeof(g_settings.input.device_names[i]));
-
-   if ((dlopen("/system/lib/libandroid.so", RTLD_LOCAL | RTLD_LAZY)) != 0)
-   {
-      engine_handle_dpad = engine_handle_dpad_default;
-      p_AMotionEvent_getAxisValue = dlsym(RTLD_DEFAULT, "AMotionEvent_getAxisValue");
-
-      if (p_AMotionEvent_getAxisValue)
-      {
-         RARCH_LOG("Set engine_handle_dpad to 'Get Axis Value' (for reading extra analog sticks)");
-         engine_handle_dpad = engine_handle_dpad_getaxisvalue;
-      }
-   }
-   else
+   engine_handle_dpad = engine_handle_dpad_default;
+   if ((dlopen("/system/lib/libandroid.so", RTLD_LOCAL | RTLD_LAZY)) == 0)
    {
       RARCH_WARN("Unable to open libandroid.so\n");
+      return true;
+   }
+
+   if ((p_AMotionEvent_getAxisValue = dlsym(RTLD_DEFAULT, "AMotionEvent_getAxisValue")))
+   {
+      RARCH_LOG("Set engine_handle_dpad to 'Get Axis Value' (for reading extra analog sticks)");
+      engine_handle_dpad = engine_handle_dpad_getaxisvalue;
    }
 
    return true;
