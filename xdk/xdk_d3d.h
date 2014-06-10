@@ -89,8 +89,8 @@ typedef struct d3d_video
    LPDIRECT3DTEXTURE lpTexture_ot;
 #endif
 #ifdef HAVE_MENU
-   bool rgui_texture_enable;
-   bool rgui_texture_full_screen;
+   bool menu_texture_enable;
+   bool menu_texture_full_screen;
 #endif
    D3DVIEWPORT final_viewport;
    video_info_t video_info;

@@ -350,7 +350,7 @@ static void setup_video_mode(void *data)
 
 static void init_texture(void *data, unsigned width, unsigned height)
 {
-   unsigned g_filter, rgui_w, rgui_h;
+   unsigned g_filter, menu_w, menu_h;
    struct __gx_regdef *__gx = (struct __gx_regdef*)__gxregs;
    gx_video_t *gx = (gx_video_t*)data;
    struct __gx_texobj *fb_ptr = (struct __gx_texobj*)&g_tex.obj;
@@ -359,18 +359,18 @@ static void init_texture(void *data, unsigned width, unsigned height)
    width &= ~3;
    height &= ~3;
    g_filter = g_settings.video.smooth ? GX_LINEAR : GX_NEAR;
-   rgui_w = 320;
-   rgui_h = 240;
+   menu_w = 320;
+   menu_h = 240;
 
    if (driver.menu)
    {
-      rgui_w = driver.menu->width;
-      rgui_h = driver.menu->height;
+      menu_w = driver.menu->width;
+      menu_h = driver.menu->height;
    }
 
-   __GX_InitTexObj(fb_ptr, g_tex.data, width, height, (gx->rgb32) ? GX_TF_RGBA8 : gx->rgui_texture_enable ? GX_TF_RGB5A3 : GX_TF_RGB565, GX_CLAMP, GX_CLAMP, GX_FALSE);
+   __GX_InitTexObj(fb_ptr, g_tex.data, width, height, (gx->rgb32) ? GX_TF_RGBA8 : gx->menu_texture_enable ? GX_TF_RGB5A3 : GX_TF_RGB565, GX_CLAMP, GX_CLAMP, GX_FALSE);
    __GX_InitTexObjFilterMode(fb_ptr, g_filter, g_filter);
-   __GX_InitTexObj(menu_ptr, menu_tex.data, rgui_w, rgui_h, GX_TF_RGB5A3, GX_CLAMP, GX_CLAMP, GX_FALSE);
+   __GX_InitTexObj(menu_ptr, menu_tex.data, menu_w, menu_h, GX_TF_RGB5A3, GX_CLAMP, GX_CLAMP, GX_FALSE);
    __GX_InitTexObjFilterMode(menu_ptr, g_filter, g_filter);
    __GX_InvalidateTexAll(__gx);
 }
@@ -892,7 +892,7 @@ static bool gx_frame(void *data, const void *frame,
    RARCH_PERFORMANCE_INIT(gx_frame);
    RARCH_PERFORMANCE_START(gx_frame);
 
-   if(!gx || (!frame && !gx->rgui_texture_enable))
+   if(!gx || (!frame && !gx->menu_texture_enable))
       return true;
 
    if (!frame)
@@ -904,7 +904,7 @@ static bool gx_frame(void *data, const void *frame,
       clear_efb = GX_TRUE;
    }
 
-   while (((g_vsync || gx->rgui_texture_enable)) && !g_draw_done)
+   while (((g_vsync || gx->menu_texture_enable)) && !g_draw_done)
       OSSleepThread(g_video_cond);
 
    width = min(g_tex.width, width);
@@ -928,7 +928,7 @@ static bool gx_frame(void *data, const void *frame,
 
       if (gx->rgb32)
          convert_texture32(frame, g_tex.data, width, height, pitch);
-      else if (gx->rgui_texture_enable)
+      else if (gx->menu_texture_enable)
          convert_texture16_conv(frame, g_tex.data, width, height, pitch);
       else
          convert_texture16(frame, g_tex.data, width, height, pitch);
@@ -937,7 +937,7 @@ static bool gx_frame(void *data, const void *frame,
       RARCH_PERFORMANCE_STOP(gx_frame_convert);
    }
 
-   if (gx->rgui_texture_enable && gx->menu_data)
+   if (gx->menu_texture_enable && gx->menu_data)
    {
       convert_texture16(gx->menu_data, menu_tex.data, driver.menu->width, driver.menu->height, driver.menu->width * 2);
       DCFlushRange(menu_tex.data, driver.menu->width * driver.menu->height * 2);
@@ -949,7 +949,7 @@ static bool gx_frame(void *data, const void *frame,
    __GX_LoadTexObj(&g_tex.obj, GX_TEXMAP0);
    __GX_CallDispList(__gx, display_list, display_list_size);
 
-   if (gx->rgui_texture_enable)
+   if (gx->menu_texture_enable)
    {
       __GX_SetCurrentMtx(__gx, GX_PNMTX1);
       GX_LoadTexObj(&menu_tex.obj, GX_TEXMAP0);
@@ -985,7 +985,7 @@ static bool gx_frame(void *data, const void *frame,
 #endif
    }
 
-   if (msg && !gx->rgui_texture_enable)
+   if (msg && !gx->menu_texture_enable)
    {
       unsigned x = 7 * (gx->double_strike ? 1 : 2);
       unsigned y = gx->vp.full_height - (35 * (gx->double_strike ? 1 : 2));
@@ -1072,7 +1072,7 @@ static void gx_set_texture_enable(void *data, bool enable, bool full_screen)
 
    if (gx)
    {
-      gx->rgui_texture_enable = enable;
+      gx->menu_texture_enable = enable;
       // need to make sure the game texture is the right pixel format for menu overlay
       gx->should_resize = true;
    }

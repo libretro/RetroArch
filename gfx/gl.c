@@ -1459,20 +1459,20 @@ static inline void gl_draw_texture(void *data)
 {
    gl_t *gl = (gl_t*)data;
 
-   if (!gl->rgui_texture)
+   if (!gl->menu_texture)
       return;
 
    const GLfloat color[] = {
-      1.0f, 1.0f, 1.0f, gl->rgui_texture_alpha,
-      1.0f, 1.0f, 1.0f, gl->rgui_texture_alpha,
-      1.0f, 1.0f, 1.0f, gl->rgui_texture_alpha,
-      1.0f, 1.0f, 1.0f, gl->rgui_texture_alpha,
+      1.0f, 1.0f, 1.0f, gl->menu_texture_alpha,
+      1.0f, 1.0f, 1.0f, gl->menu_texture_alpha,
+      1.0f, 1.0f, 1.0f, gl->menu_texture_alpha,
+      1.0f, 1.0f, 1.0f, gl->menu_texture_alpha,
    };
 
    gl->coords.vertex = vertexes_flipped;
    gl->coords.tex_coord = tex_coords;
    gl->coords.color = color;
-   glBindTexture(GL_TEXTURE_2D, gl->rgui_texture);
+   glBindTexture(GL_TEXTURE_2D, gl->menu_texture);
 
    if (gl->shader)
       gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
@@ -1481,7 +1481,7 @@ static inline void gl_draw_texture(void *data)
 
    glEnable(GL_BLEND);
 
-   if (gl->rgui_texture_full_screen)
+   if (gl->menu_texture_full_screen)
    {
       glViewport(0, 0, gl->win_width, gl->win_height);
       glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
@@ -1630,7 +1630,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
    if (g_extern.lifecycle_state & (1ULL << MODE_MENU) && driver.menu_ctx && driver.menu_ctx->frame)
       driver.menu_ctx->frame();
 
-   if (gl->rgui_texture_enable)
+   if (gl->menu_texture_enable)
       gl_draw_texture(gl);
 #endif
 
@@ -1675,7 +1675,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
 #ifdef HAVE_GL_ASYNC_READBACK
 #ifdef HAVE_MENU
    // Don't readback if we're in RGUI.
-   else if (gl->pbo_readback_enable && !gl->rgui_texture_enable)
+   else if (gl->pbo_readback_enable && !gl->menu_texture_enable)
       gl_pbo_async_readback(gl);
 #endif
 #endif
@@ -1765,8 +1765,8 @@ static void gl_free(void *data)
    glDeleteTextures(gl->textures, gl->texture);
 
 #if defined(HAVE_MENU)
-   if (gl->rgui_texture)
-      glDeleteTextures(1, &gl->rgui_texture);
+   if (gl->menu_texture)
+      glDeleteTextures(1, &gl->menu_texture);
 #endif
 
 #ifdef HAVE_OVERLAY
@@ -2885,19 +2885,19 @@ static void gl_set_texture_frame(void *data,
 
    context_bind_hw_render(gl, false);
 
-   if (!gl->rgui_texture)
+   if (!gl->menu_texture)
    {
-      glGenTextures(1, &gl->rgui_texture);
-      glBindTexture(GL_TEXTURE_2D, gl->rgui_texture);
+      glGenTextures(1, &gl->menu_texture);
+      glBindTexture(GL_TEXTURE_2D, gl->menu_texture);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
    }
    else
-      glBindTexture(GL_TEXTURE_2D, gl->rgui_texture);
+      glBindTexture(GL_TEXTURE_2D, gl->menu_texture);
 
-   gl->rgui_texture_alpha = alpha;
+   gl->menu_texture_alpha = alpha;
 
    unsigned base_size = rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
    glPixelStorei(GL_UNPACK_ALIGNMENT, get_alignment(width * base_size));
@@ -2927,8 +2927,8 @@ static void gl_set_texture_enable(void *data, bool state, bool full_screen)
 
    if (gl)
    {
-      gl->rgui_texture_enable = state;
-      gl->rgui_texture_full_screen = full_screen;
+      gl->menu_texture_enable = state;
+      gl->menu_texture_full_screen = full_screen;
    }
 }
 #endif

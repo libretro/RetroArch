@@ -499,7 +499,7 @@ static void d3d_draw_texture(void *data)
    menu_texture->x = 0;
    menu_texture->y = 0;
 
-   if (d3d->rgui_texture_enable)
+   if (d3d->menu_texture_enable)
    {
       d3d->dev->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_ONE);
       d3d->dev->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
@@ -919,7 +919,7 @@ static bool d3d_frame(void *data, const void *frame,
    if (g_extern.lifecycle_state & (1ULL << MODE_MENU) && driver.menu_ctx && driver.menu_ctx->frame)
       driver.menu_ctx->frame();
 
-   if (d3d && d3d->rgui_texture_enable)
+   if (d3d && d3d->menu_texture_enable)
       d3d_draw_texture(d3d);
 #endif
 
@@ -1019,8 +1019,8 @@ static void d3d_set_texture_frame(void *data,
 static void d3d_set_texture_enable(void *data, bool state, bool full_screen)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
-   d3d->rgui_texture_enable = state;
-   d3d->rgui_texture_full_screen = full_screen;
+   d3d->menu_texture_enable = state;
+   d3d->menu_texture_full_screen = full_screen;
 }
 #endif
 

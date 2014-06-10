@@ -33,7 +33,7 @@ typedef struct gx_video
    bool double_strike;
    bool rgb32;
    uint32_t *menu_data; // FIXME: Should be const uint16_t*.
-   bool rgui_texture_enable;
+   bool menu_texture_enable;
    rarch_viewport_t vp;
    unsigned scale;
 #ifdef HAVE_OVERLAY

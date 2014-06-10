@@ -307,10 +307,10 @@ typedef struct gl
    void *readback_buffer_screenshot;
 
 #if defined(HAVE_MENU)
-   GLuint rgui_texture;
-   bool rgui_texture_enable;
-   bool rgui_texture_full_screen;
-   GLfloat rgui_texture_alpha;
+   GLuint menu_texture;
+   bool menu_texture_enable;
+   bool menu_texture_full_screen;
+   GLfloat menu_texture_alpha;
 #endif
 
 #ifdef HAVE_GL_SYNC

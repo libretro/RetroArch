@@ -71,8 +71,8 @@ typedef struct limare_data {
 
   int program;
 
-  int program_rgui_rgba16;
-  int program_rgui_rgba32;
+  int program_menu_rgba16;
+  int program_menu_rgba32;
 
   float screen_aspect;
   float frame_aspect;
@@ -131,7 +131,7 @@ static const char *fshader_main_src =
 
 /* Header for RGUI fragment shader. */
 /* Use mediump, which makes uColor into a (single-precision) float[4]. */
-static const char *fshader_rgui_header_src =
+static const char *fshader_menu_header_src =
   "precision mediump float;\n"
   "\n"
   "varying vec2 coord;\n"
@@ -141,7 +141,7 @@ static const char *fshader_rgui_header_src =
   "\n";
 
 /* Main (template) for RGUI fragment shader. */
-static const char *fshader_rgui_main_src =
+static const char *fshader_menu_main_src =
   "void main()\n"
   "{\n"
   "    vec4 pixel = texture2D(in_texture, coord)%s;\n"
@@ -393,27 +393,27 @@ static int create_programs(limare_data_t *pdata) {
   if (limare_link(pdata->state)) goto fail;
 
   /* Create shader program for RGUI with RGBA4444 pixel data. */
-  pdata->program_rgui_rgba16 = limare_program_new(pdata->state);
-  if (pdata->program_rgui_rgba16 < 0) goto fail;
+  pdata->program_menu_rgba16 = limare_program_new(pdata->state);
+  if (pdata->program_menu_rgba16 < 0) goto fail;
 
-  snprintf(tmpbufm, 1024, fshader_rgui_main_src, ".abgr");
-  strncpy(tmpbuf, fshader_rgui_header_src, 1024);
+  snprintf(tmpbufm, 1024, fshader_menu_main_src, ".abgr");
+  strncpy(tmpbuf, fshader_menu_header_src, 1024);
   strcat(tmpbuf, tmpbufm);
 
-  if (vertex_shader_attach(pdata->state, pdata->program_rgui_rgba16, vshader_src)) goto fail;
-  if (fragment_shader_attach(pdata->state, pdata->program_rgui_rgba16, tmpbuf)) goto fail;
+  if (vertex_shader_attach(pdata->state, pdata->program_menu_rgba16, vshader_src)) goto fail;
+  if (fragment_shader_attach(pdata->state, pdata->program_menu_rgba16, tmpbuf)) goto fail;
   if (limare_link(pdata->state)) goto fail;
 
   /* Create shader program for RGUI with RGBA8888 pixel data. */
-  pdata->program_rgui_rgba32 = limare_program_new(pdata->state);
-  if (pdata->program_rgui_rgba32 < 0) goto fail;
+  pdata->program_menu_rgba32 = limare_program_new(pdata->state);
+  if (pdata->program_menu_rgba32 < 0) goto fail;
 
-  snprintf(tmpbufm, 1024, fshader_rgui_main_src, ".abgr");
-  strncpy(tmpbuf, fshader_rgui_header_src, 1024);
+  snprintf(tmpbufm, 1024, fshader_menu_main_src, ".abgr");
+  strncpy(tmpbuf, fshader_menu_header_src, 1024);
   strcat(tmpbuf, tmpbufm);
 
-  if (vertex_shader_attach(pdata->state, pdata->program_rgui_rgba32, vshader_src)) goto fail;
-  if (fragment_shader_attach(pdata->state, pdata->program_rgui_rgba32, tmpbuf)) goto fail;
+  if (vertex_shader_attach(pdata->state, pdata->program_menu_rgba32, vshader_src)) goto fail;
+  if (fragment_shader_attach(pdata->state, pdata->program_menu_rgba32, tmpbuf)) goto fail;
   if (limare_link(pdata->state)) goto fail;
 
   return 0;
@@ -450,11 +450,11 @@ typedef struct lima_video {
   unsigned width;
   unsigned height;
 
-  /* RGUI data */
-  int rgui_rotation;
-  float rgui_alpha;
-  bool rgui_active;
-  bool rgui_rgb32;
+  /* MENU data */
+  int menu_rotation;
+  float menu_alpha;
+  bool menu_active;
+  bool menu_rgb32;
 
   bool aspect_changed;
 
@@ -578,7 +578,7 @@ static void *lima_gfx_init(const video_info_t *video, const input_driver_t **inp
   vid = calloc(1, sizeof(lima_video_t));
   if (!vid) return NULL;
 
-  vid->rgui_alpha = 1.0f;
+  vid->menu_alpha = 1.0f;
 
   lima = calloc(1, sizeof(limare_data_t));
   if (!lima) goto fail;
@@ -662,7 +662,7 @@ static bool lima_gfx_frame(void *data, const void *frame,
   vid = data;
 
   /* Check if neither RGUI nor emulator framebuffer is to be displayed. */
-  if (!vid->rgui_active && frame == NULL) return true;
+  if (!vid->menu_active && frame == NULL) return true;
 
   lima = vid->lima;
 
@@ -726,7 +726,7 @@ static bool lima_gfx_frame(void *data, const void *frame,
     limare_attribute_pointer(lima->state, "in_vertex", LIMARE_ATTRIB_FLOAT,
 				 3, 0, 4, lima->vertices);
     limare_attribute_pointer(lima->state, "in_coord", LIMARE_ATTRIB_FLOAT,
-				 2, 0, 4, lima->coords + vid->rgui_rotation * 4);
+				 2, 0, 4, lima->coords + vid->menu_rotation * 4);
 
     limare_texture_attach(lima->state, "in_texture", lima->cur_texture->handle);
 
@@ -759,12 +759,12 @@ static bool lima_gfx_frame(void *data, const void *frame,
       limare_texture_mipmap_upload(lima->state, lima->font_texture->handle, 0, lima->buffer);
 
     /* We re-use the RGBA16 RGUI program here. */
-    limare_program_current(lima->state, lima->program_rgui_rgba16);
+    limare_program_current(lima->state, lima->program_menu_rgba16);
 
     limare_attribute_pointer(lima->state, "in_vertex", LIMARE_ATTRIB_FLOAT,
 				 3, 0, 4, font_vertices);
     limare_attribute_pointer(lima->state, "in_coord", LIMARE_ATTRIB_FLOAT,
-				 2, 0, 4, lima->coords + vid->rgui_rotation * 4);
+				 2, 0, 4, lima->coords + vid->menu_rotation * 4);
 
     limare_texture_attach(lima->state, "in_texture", lima->font_texture->handle);
     limare_uniform_attach(lima->state, "uColor", 4, font_color);
@@ -774,18 +774,18 @@ static bool lima_gfx_frame(void *data, const void *frame,
     limare_disable(lima->state, GL_BLEND);
   }
 
-  if (vid->rgui_active && lima->cur_texture_rgui != NULL) {
-    float color[4] = {1.0f, 1.0f, 1.0f, vid->rgui_alpha};
+  if (vid->menu_active && lima->cur_texture_rgui != NULL) {
+    float color[4] = {1.0f, 1.0f, 1.0f, vid->menu_alpha};
 
-    if (vid->rgui_rgb32)
-      limare_program_current(lima->state, lima->program_rgui_rgba32);
+    if (vid->menu_rgb32)
+      limare_program_current(lima->state, lima->program_menu_rgba32);
     else
-      limare_program_current(lima->state, lima->program_rgui_rgba16);
+      limare_program_current(lima->state, lima->program_menu_rgba16);
 
     limare_attribute_pointer(lima->state, "in_vertex", LIMARE_ATTRIB_FLOAT,
 				 3, 0, 4, lima->vertices);
     limare_attribute_pointer(lima->state, "in_coord", LIMARE_ATTRIB_FLOAT,
-				 2, 0, 4, lima->coords + vid->rgui_rotation * 4);
+				 2, 0, 4, lima->coords + vid->menu_rotation * 4);
 
     limare_texture_attach(lima->state, "in_texture", lima->cur_texture_rgui->handle);
     limare_uniform_attach(lima->state, "uColor", 4, color);
@@ -826,7 +826,7 @@ static bool lima_gfx_focus(void *data) {
 static void lima_gfx_set_rotation(void *data, unsigned rotation) {
   lima_video_t *vid = data;
 
-  vid->rgui_rotation = rotation;
+  vid->menu_rotation = rotation;
 }
 
 static void lima_gfx_viewport_info(void *data, struct rarch_viewport *vp) {
@@ -872,8 +872,8 @@ static void lima_set_texture_frame(void *data, const void *frame, bool rgb32,
   const unsigned format = rgb32 ? LIMA_TEXEL_FORMAT_RGBA_8888 :
                                   LIMA_TEXEL_FORMAT_RGBA_4444;
 
-  vid->rgui_rgb32 = rgb32;
-  vid->rgui_alpha = alpha;
+  vid->menu_rgb32 = rgb32;
+  vid->menu_alpha = alpha;
 
   tex = vid->lima->cur_texture_rgui;
 
@@ -904,7 +904,7 @@ upload:
 
 static void lima_set_texture_enable(void *data, bool state, bool full_screen) {
   lima_video_t *vid = data;
-  vid->rgui_active = state;
+  vid->menu_active = state;
 }
 
 static void lima_set_osd_msg(void *data, const char *msg, void *userdata) {

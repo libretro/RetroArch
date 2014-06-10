@@ -74,7 +74,7 @@ typedef struct __attribute__((packed)) psp1_sprite
 
 } psp1_sprite_t;
 
-typedef struct psp1_rgui_frame
+typedef struct psp1_menu_frame
 {
    void* dList;
    void* frame;
@@ -84,7 +84,7 @@ typedef struct psp1_rgui_frame
 
    PspGeContext context_storage;
 
-} psp1_rgui_frame_t;
+} psp1_menu_frame_t;
 
 typedef struct psp1_video
 {
@@ -98,7 +98,7 @@ typedef struct psp1_video
    bool rgb32;
    int bpp_log2;
 
-   psp1_rgui_frame_t rgui;
+   psp1_menu_frame_t rgui;
 
    //not implemented
    unsigned rotation;

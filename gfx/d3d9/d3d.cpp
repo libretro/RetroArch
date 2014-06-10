@@ -1153,7 +1153,7 @@ static void d3d_show_mouse(void *data, bool state)
 }
 
 #ifdef HAVE_MENU
-static void d3d_set_rgui_texture_frame(void *data,
+static void d3d_set_menu_texture_frame(void *data,
       const void *frame, bool rgb32, unsigned width, unsigned height,
       float alpha)
 {
@@ -1218,7 +1218,7 @@ static void d3d_set_rgui_texture_frame(void *data,
    }
 }
 
-static void d3d_set_rgui_texture_enable(void *data, bool state, bool full_screen)
+static void d3d_set_menu_texture_enable(void *data, bool state, bool full_screen)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
 
@@ -1239,8 +1239,8 @@ static const video_poke_interface_t d3d_poke_interface = {
    d3d_set_aspect_ratio,
    d3d_apply_state_changes,
 #ifdef HAVE_MENU
-   d3d_set_rgui_texture_frame,
-   d3d_set_rgui_texture_enable,
+   d3d_set_menu_texture_frame,
+   d3d_set_menu_texture_enable,
 #endif
    d3d_set_osd_msg,
 
