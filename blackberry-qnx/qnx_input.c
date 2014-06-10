@@ -40,6 +40,7 @@ struct touches
 
 typedef struct qnx_input
 {
+   unsigned pads_connected;
    struct touches touch[MAX_TOUCH];
    unsigned touch_count;
 
@@ -47,17 +48,16 @@ typedef struct qnx_input
    /*The first touch_count indices of touch_map will be a valid, active index in touch array.
     * Saves us from searching through touch array when polling state.
     */
+   input_device_t *port_device[MAX_PADS];
 } qnx_input_t;
 
 input_device_t devices[MAX_PADS];
-input_device_t *port_device[MAX_PADS];
 
 static unsigned screen_width, screen_height;
 
-unsigned pads_connected;
 
-static void qnx_input_autodetect_gamepad(input_device_t* controller);
-static void initController(input_device_t* controller);
+static void qnx_input_autodetect_gamepad(void *data, input_device_t* controller);
+static void initController(void *data, input_device_t* controller);
 
 #ifdef HAVE_BB10
 static void process_gamepad_event(void *data, screen_event_t screen_event, int type)
@@ -98,11 +98,15 @@ static void process_gamepad_event(void *data, screen_event_t screen_event, int t
       g_extern.lifecycle_state ^= (1ULL << RARCH_MENU_TOGGLE);
 }
 
-static void loadController(input_device_t* controller)
+static void loadController(void *data, input_device_t* controller)
 {
    int device;
+   qnx_input_t *qnx = (qnx_input_t*)data;
 
    (void)device;
+
+   if (!qnx)
+      return;
 
    // Query libscreen for information about this device.
    screen_get_device_property_iv(controller->handle, SCREEN_PROPERTY_TYPE, &controller->type);
@@ -123,7 +127,7 @@ static void loadController(input_device_t* controller)
    }
 
    //Screen service will map supported controllers, we still might need to adjust.
-   qnx_input_autodetect_gamepad(controller);
+   qnx_input_autodetect_gamepad(qnx, controller);
 
    if (controller->type == SCREEN_EVENT_GAMEPAD)
       RARCH_LOG("Gamepad Device Connected:\n");
@@ -140,12 +144,14 @@ static void loadController(input_device_t* controller)
 }
 
 extern screen_context_t screen_ctx;
-void discoverControllers(void)
+
+static void discoverControllers(void *data)
 {
    // Get an array of all available devices.
    int deviceCount;
    unsigned i;
    screen_event_t *event;
+   qnx_input_t *qnx = (qnx_input_t*)data;
 
    (void)event;
 
@@ -154,10 +160,10 @@ void discoverControllers(void)
    screen_get_context_property_pv(screen_ctx, SCREEN_PROPERTY_DEVICES, (void**)devices_found);
 
    // Scan the list for gamepad and joystick devices.
-   for(i = 0; i < pads_connected; ++i)
-      initController(&devices[i]);
+   for(i = 0; i < qnx->pads_connected; ++i)
+      initController(qnx, &devices[i]);
 
-   pads_connected = 0;
+   qnx->pads_connected = 0;
 
    for (i = 0; i < deviceCount; i++)
    {
@@ -166,11 +172,11 @@ void discoverControllers(void)
 
       if (type == SCREEN_EVENT_GAMEPAD || type == SCREEN_EVENT_JOYSTICK || type == SCREEN_EVENT_KEYBOARD)
       {
-         devices[pads_connected].handle = devices_found[i];
-         devices[pads_connected].index = pads_connected;
-         loadController(&devices[pads_connected]);
+         devices[qnx->pads_connected].handle = devices_found[i];
+         devices[qnx->pads_connected].index = qnx->pads_connected;
+         loadController(qnx, &devices[qnx->pads_connected]);
 
-         if (pads_connected == MAX_PADS)
+         if (qnx->pads_connected == MAX_PADS)
             break;
       }
    }
@@ -178,16 +184,21 @@ void discoverControllers(void)
    free(devices_found);
 }
 #else
-void init_playbook_keyboard()
+void init_playbook_keyboard(void *data)
 {
+   qnx_input_t *qnx = (qnx_input_t*)data;
    strlcpy(devices[0].id, "0A5C-8502", sizeof(devices[0].id));
-   qnx_input_autodetect_gamepad(&devices[0]);
-   pads_connected = 1;
+   qnx_input_autodetect_gamepad(qnx, &devices[0]);
+   qnx->pads_connected = 1;
 }
 #endif
 
-static void initController(input_device_t* controller)
+static void initController(void *data, input_device_t* controller)
 {
+   qnx_input_t *qnx = (qnx_input_t*)data;
+   if (!qnx)
+      return;
+
     // Initialize controller values.
 #ifdef HAVE_BB10
     controller->handle = 0;
@@ -204,8 +215,13 @@ static void initController(input_device_t* controller)
     memset(controller->id, 0, sizeof(controller->id));
 }
 
-static void qnx_input_autodetect_gamepad(input_device_t* controller)
+static void qnx_input_autodetect_gamepad(void *data, input_device_t* controller)
 {
+   qnx_input_t *qnx = (qnx_input_t*)data;
+
+   if (!qnx)
+      return;
+
    //ID: A-BBBB-CCCC-D.D
    //A is the device's index in the array returned by screen_get_context_property_pv()
    //BBBB is the device's Vendor ID (in hexadecimal)
@@ -251,9 +267,9 @@ static void qnx_input_autodetect_gamepad(input_device_t* controller)
 
    if (input_qnx.set_keybinds && (controller->device != DEVICE_NONE))
    {
-      input_qnx.set_keybinds((void*)controller, controller->device, pads_connected, 0,
+      input_qnx.set_keybinds((void*)controller, controller->device, qnx->pads_connected, 0,
             (1ULL << KEYBINDS_ACTION_SET_DEFAULT_BINDS));
-      pads_connected++;
+      qnx->pads_connected++;
    }
 }
 
@@ -448,7 +464,7 @@ static void handle_screen_event(void *data, bps_event_t *event)
                   if (!devices[i].handle)
                   {
                      devices[i].handle = device;
-                     loadController(&devices[i]);
+                     loadController(data, &devices[i]);
                      break;
                   }
                }
@@ -460,7 +476,7 @@ static void handle_screen_event(void *data, bps_event_t *event)
                   if (device == devices[i].handle)
                   {
                      RARCH_LOG("Device %s: Disconnected.\n", devices[i].id);
-                     initController(&devices[i]);
+                     initController(data, &devices[i]);
                      break;
                   }
                }
@@ -545,12 +561,12 @@ static void *qnx_input_init(void)
 
    for (i = 0; i < MAX_PADS; ++i)
    {
-      initController(&devices[i]);
-      port_device[i] = 0;
+      initController(qnx, &devices[i]);
+      qnx->port_device[i] = 0;
    }
 #ifdef HAVE_BB10
    //Find currently connected gamepads
-   discoverControllers();
+   discoverControllers(qnx);
 #else
    init_playbook_keyboard();
 #endif
@@ -594,17 +610,15 @@ static int16_t qnx_input_state(void *data, const struct retro_keybind **retro_ke
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
-         if(port_device[port])
+         if(qnx->port_device[port])
          {
-            if (port_device[port]->device == DEVICE_KEYBOARD
+            if (qnx->port_device[port]->device == DEVICE_KEYBOARD
 #ifdef HAVE_BB10
-            		|| port_device[port]->device == DEVICE_KEYPAD
+                  || qnx->port_device[port]->device == DEVICE_KEYPAD
 #endif
-            		)
-               return ((port_device[port]->buttons & (1 << id)) && (port < pads_connected) );
-            else{
-               return ((port_device[port]->buttons & retro_keybinds[port][id].joykey) && (port < pads_connected));
-            }
+               )
+               return ((qnx->port_device[port]->buttons & (1 << id)) && (port < qnx->pads_connected) );
+            return ((qnx->port_device[port]->buttons & retro_keybinds[port][id].joykey) && (port < qnx->pads_connected));
          }
          break;
 #ifdef HAVE_BB10
@@ -612,18 +626,18 @@ static int16_t qnx_input_state(void *data, const struct retro_keybind **retro_ke
          //Need to return [-0x8000, 0x7fff]
          //Gamepad API gives us [-128, 127] with (0,0) center
          //Untested
-         if(port_device[port])
+         if(qnx->port_device[port])
          {
             switch ((index << 1) | id)
             {
                case (RETRO_DEVICE_INDEX_ANALOG_LEFT << 1) | RETRO_DEVICE_ID_ANALOG_X:
-                  return port_device[port]->analog0[0] * 256;
+                  return qnx->port_device[port]->analog0[0] * 256;
                case (RETRO_DEVICE_INDEX_ANALOG_LEFT << 1) | RETRO_DEVICE_ID_ANALOG_Y:
-                  return port_device[port]->analog0[1] * 256;
+                  return qnx->port_device[port]->analog0[1] * 256;
                case (RETRO_DEVICE_INDEX_ANALOG_RIGHT << 1) | RETRO_DEVICE_ID_ANALOG_X:
-                  return port_device[port]->analog1[0] * 256;
+                  return qnx->port_device[port]->analog1[0] * 256;
                case (RETRO_DEVICE_INDEX_ANALOG_RIGHT << 1) | RETRO_DEVICE_ID_ANALOG_Y:
-                  return port_device[port]->analog1[1] * 256;
+                  return qnx->port_device[port]->analog1[1] * 256;
                default:
                   break;
             }
@@ -710,7 +724,7 @@ static void qnx_input_set_keybinds(void *data, unsigned device, unsigned port,
             g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R3].def_joykey     = SCREEN_R3_GAME_BUTTON;
             g_settings.input.binds[port][RARCH_MENU_TOGGLE].def_joykey             = SCREEN_MENU3_GAME_BUTTON;
             controller->port = port;
-            port_device[port] = controller;
+            qnx->port_device[port] = controller;
             break;
          case DEVICE_KEYPAD:
             strlcpy(g_settings.input.device_names[port], "BlackBerry Q10 Keypad",
@@ -734,7 +748,7 @@ static void qnx_input_set_keybinds(void *data, unsigned device, unsigned port,
             g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R3].def_joykey     = NO_BTN;
             g_settings.input.binds[port][RARCH_MENU_TOGGLE].def_joykey             = KEYCODE_P & 0xFF;
             controller->port = port;
-            port_device[port] = controller;
+            qnx->port_device[port] = controller;
             break;
 #endif
          case DEVICE_KEYBOARD:
@@ -759,7 +773,7 @@ static void qnx_input_set_keybinds(void *data, unsigned device, unsigned port,
             g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R3].def_joykey     = NO_BTN;
             g_settings.input.binds[port][RARCH_MENU_TOGGLE].def_joykey             = KEYCODE_TILDE;
             controller->port = port;
-            port_device[port] = controller;
+            qnx->port_device[port] = controller;
             break;
          case DEVICE_IPEGA:
             strlcpy(g_settings.input.device_names[port], "iPega PG-9017",
@@ -783,7 +797,7 @@ static void qnx_input_set_keybinds(void *data, unsigned device, unsigned port,
             g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R3].def_joykey     = 0;
             g_settings.input.binds[port][RARCH_MENU_TOGGLE].def_joykey             = 0;
             controller->port = port;
-            port_device[port] = controller;
+            qnx->port_device[port] = controller;
             break;
 #ifdef HAVE_BB10
          case DEVICE_UNKNOWN:
@@ -808,7 +822,7 @@ static void qnx_input_set_keybinds(void *data, unsigned device, unsigned port,
             g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R3].def_joykey     = SCREEN_R3_GAME_BUTTON;
             g_settings.input.binds[port][RARCH_MENU_TOGGLE].def_joykey             = NO_BTN; //TODO: Find a good mappnig
             controller->port = port;
-            port_device[port] = controller;
+            qnx->port_device[port] = controller;
             break;
 #endif
          case DEVICE_NONE:
@@ -834,7 +848,7 @@ static void qnx_input_set_keybinds(void *data, unsigned device, unsigned port,
             g_settings.input.binds[port][RETRO_DEVICE_ID_JOYPAD_R3].def_joykey     = NO_BTN;
             g_settings.input.binds[port][RARCH_MENU_TOGGLE].def_joykey     = NO_BTN;
             controller->port = -1;
-            port_device[port] = 0;
+            qnx->port_device[port] = 0;
             break;
       }
 
