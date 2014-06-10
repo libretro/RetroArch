@@ -27,10 +27,10 @@
 #include "../../../driver.h"
 
 #define MAX_TOUCH 16
-#define PRESSED_UP(x, y)    ((y <= dzone_min))
-#define PRESSED_DOWN(x, y)  ((y >= dzone_max))
-#define PRESSED_LEFT(x, y)  ((x <= dzone_min))
-#define PRESSED_RIGHT(x, y) ((x >= dzone_max))
+#define PRESSED_UP(x, y)    ((y <= (-g_settings.input.axis_threshold)))
+#define PRESSED_DOWN(x, y)  ((y >= (g_settings.input.axis_threshold)))
+#define PRESSED_LEFT(x, y)  ((x <= (-g_settings.input.axis_threshold)))
+#define PRESSED_RIGHT(x, y) ((x >= (g_settings.input.axis_threshold)))
 
 typedef struct
 {
@@ -63,7 +63,7 @@ enum
 
 typedef struct android_input
 {
-   jmethodID onBackPressed;
+   //jmethodID onBackPressed;
    unsigned pads_connected;
    int state_device_ids[MAX_PADS];
    uint8_t pad_state[MAX_PADS][(LAST_KEYCODE + 7) / 8];
@@ -75,9 +75,9 @@ typedef struct android_input
    unsigned pointer_count;
    ASensorManager* sensorManager;
    ASensorEventQueue* sensorEventQueue;
+   const rarch_joypad_driver_t *joypad;
 } android_input_t;
 
-extern const rarch_joypad_driver_t android_joypad;
 
 void (*engine_handle_dpad)(void *data, AInputEvent*, int, char*, size_t, int, bool);
 static bool android_input_set_sensor_state(void *data, unsigned port, enum retro_sensor_action action, unsigned event_rate);
@@ -110,8 +110,6 @@ static void engine_handle_dpad_default(void *data, AInputEvent *event,
 {
    size_t motion_pointer = AMotionEvent_getAction(event) >> AMOTION_EVENT_ACTION_POINTER_INDEX_SHIFT;
    android_input_t *android = (android_input_t*)data;
-   float dzone_min = -g_settings.input.axis_threshold;
-   float dzone_max = g_settings.input.axis_threshold;
    float x = AMotionEvent_getX(event, motion_pointer);
    float y = AMotionEvent_getY(event, motion_pointer);
 
@@ -157,98 +155,19 @@ static void engine_handle_dpad_getaxisvalue(void *data, AInputEvent *event,
             port, x, y, z, rz, source);
 }
 
-static bool android_input_use_keycode_lut;
-static uint64_t android_input_keycode_lut[LAST_KEYCODE];
-
 static void *android_input_init(void)
 {
-   JNIEnv *env;
-   jclass class;
-   unsigned i, j, k;
-   struct android_app *android_app = (struct android_app*)g_android;
    android_input_t *android = (android_input_t*)calloc(1, sizeof(*android));
    if (!android)
       return NULL;
 
    android->pads_connected = 0;
 
-   // TODO: rewrite code to not change input binds
-   /*
-   if (!android_input_use_keycode_lut)
-   {
-      for (j = 0; j < LAST_KEYCODE; j++)
-         android_input_keycode_lut[j] = 0;
+   android->joypad = input_joypad_init_driver(g_settings.input.joypad_driver);
 
-      if (!g_settings.input.autodetect_enable)
-      {
-         for (j = 0; j < MAX_PADS; j++)
-         {
-            uint8_t shift = 8 + (j * 8);
-            for (k = 0; k < RARCH_FIRST_CUSTOM_BIND; k++)
-            {
-               if (g_settings.input.binds[j][k].valid && g_settings.input.binds[j][k].joykey && g_settings.input.binds[j][k].joykey < LAST_KEYCODE)
-               {
-                  RARCH_LOG("binding %llu to %d (p%d)\n", g_settings.input.binds[j][k].joykey, k, j);
-                  android_input_keycode_lut[g_settings.input.binds[j][k].joykey] |= ((k + 1) << shift);
-               }
-            }
-         }
-      }
-
-      android_input_use_keycode_lut = true;
-   }
-
-   memcpy(android->keycode_lut, android_input_keycode_lut, sizeof(android_input_keycode_lut));
-
-   for (i = 0; i < MAX_PADS; i++)
-   {
-      for (j = 0; j < RARCH_FIRST_META_KEY; j++)
-      {
-         g_settings.input.binds[i][j].id = i;
-         g_settings.input.binds[i][j].joykey = 0;
-      }
-
-      g_settings.input.binds[i][RETRO_DEVICE_ID_JOYPAD_B].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_B);
-      g_settings.input.binds[i][RETRO_DEVICE_ID_JOYPAD_Y].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_Y);
-      g_settings.input.binds[i][RETRO_DEVICE_ID_JOYPAD_SELECT].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_SELECT);
-      g_settings.input.binds[i][RETRO_DEVICE_ID_JOYPAD_START].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_START);
-      g_settings.input.binds[i][RETRO_DEVICE_ID_JOYPAD_UP].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_UP);
-      g_settings.input.binds[i][RETRO_DEVICE_ID_JOYPAD_DOWN].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN);
-      g_settings.input.binds[i][RETRO_DEVICE_ID_JOYPAD_LEFT].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT);
-      g_settings.input.binds[i][RETRO_DEVICE_ID_JOYPAD_RIGHT].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT);
-      g_settings.input.binds[i][RETRO_DEVICE_ID_JOYPAD_A].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_A);
-      g_settings.input.binds[i][RETRO_DEVICE_ID_JOYPAD_X].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_X);
-      g_settings.input.binds[i][RETRO_DEVICE_ID_JOYPAD_L].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_L);
-      g_settings.input.binds[i][RETRO_DEVICE_ID_JOYPAD_R].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_R);
-      g_settings.input.binds[i][RETRO_DEVICE_ID_JOYPAD_L2].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_L2);
-      g_settings.input.binds[i][RETRO_DEVICE_ID_JOYPAD_R2].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_R2);
-      g_settings.input.binds[i][RETRO_DEVICE_ID_JOYPAD_L3].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_L3);
-      g_settings.input.binds[i][RETRO_DEVICE_ID_JOYPAD_R3].joykey = (1ULL << RETRO_DEVICE_ID_JOYPAD_R3);
-   }
-   */
-
-   for (i = 0; i < MAX_PLAYERS; i++)
-      strlcpy(g_settings.input.device_names[i], "Custom", sizeof(g_settings.input.device_names[i]));
-
-   if ((dlopen("/system/lib/libandroid.so", RTLD_LOCAL | RTLD_LAZY)) == 0)
-   {
-      RARCH_WARN("Unable to open libandroid.so\n");
-   }
-   else
-   {
-      p_AMotionEvent_getAxisValue = dlsym(RTLD_DEFAULT, "AMotionEvent_getAxisValue");
-
-      if (p_AMotionEvent_getAxisValue)
-      {
-         RARCH_LOG("Setting engine_handle_dpad to 'Get Axis Value' (for reading extra analog sticks)");
-         engine_handle_dpad = engine_handle_dpad_getaxisvalue;
-      }
-      else
-      {
-         RARCH_LOG("Setting engine_handle_dpad to 'Default'");
-         engine_handle_dpad = engine_handle_dpad_default;
-      }
-   }
+#if 0
+   JNIEnv *env;
+   jclass class;
 
    env = jni_thread_getenv();
    if (!env)
@@ -258,7 +177,6 @@ static void *android_input_init(void)
    if (!class)
       goto retobj;
 
-#if 0
    GET_METHOD_ID(env, android->onBackPressed, class, "onBackPressed", "()V");
    if (!android->onBackPressed)
    {
@@ -267,7 +185,6 @@ static void *android_input_init(void)
    }
 #endif
 
-retobj:
    return android;
 }
 
@@ -1776,7 +1693,6 @@ static void android_input_poll(void *data)
          // Read all pending events.
          do
          {
-            //int processed = 0;
             while (AInputQueue_getEvent(android_app->inputQueue, &event) >= 0)
             {
                bool long_msg_enable = false;
@@ -1864,12 +1780,7 @@ static void android_input_poll(void *data)
                }
 
                AInputQueue_finishEvent(android_app->inputQueue, event, handled);
-               //processed = 1;
             }
-#if 0
-            if (processed == 0)
-               RARCH_WARN("Failure reading next input event: %s\n", strerror(errno));
-#endif
          }while (AInputQueue_hasEvents(android_app->inputQueue));
       }
       else if (ident == LOOPER_ID_USER)
@@ -1898,30 +1809,9 @@ static int16_t android_input_state(void *data, const struct retro_keybind **bind
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
-#if 1
-         return input_joypad_pressed(&android_joypad, port, binds[port], id);
-#else
-         return ((android->pad_state[port] & binds[port][id].joykey) && (port < android->pads_connected));
-#endif
+         return input_joypad_pressed(android->joypad, port, binds[port], id);
       case RETRO_DEVICE_ANALOG:
-#if 1
-         return input_joypad_analog(&android_joypad, port, index, id, binds[port]);
-#else
-         if (port >= android->pads_connected)
-            return 0;
-         switch ((index << 1) | id)
-         {
-            case (RETRO_DEVICE_INDEX_ANALOG_LEFT << 1) | RETRO_DEVICE_ID_ANALOG_X:
-               return android->analog_state[port][0][0];
-            case (RETRO_DEVICE_INDEX_ANALOG_LEFT << 1) | RETRO_DEVICE_ID_ANALOG_Y:
-               return android->analog_state[port][0][1];
-            case (RETRO_DEVICE_INDEX_ANALOG_RIGHT << 1) | RETRO_DEVICE_ID_ANALOG_X:
-               return android->analog_state[port][1][0];
-            case (RETRO_DEVICE_INDEX_ANALOG_RIGHT << 1) | RETRO_DEVICE_ID_ANALOG_Y:
-               return android->analog_state[port][1][1];
-         }
-         break;
-#endif
+         return input_joypad_analog(android->joypad, port, index, id, binds[port]);
       case RETRO_DEVICE_POINTER:
          switch (id)
          {
@@ -1955,8 +1845,11 @@ static int16_t android_input_state(void *data, const struct retro_keybind **bind
 
 static bool android_input_key_pressed(void *data, int key)
 {
+   android_input_t *android = (android_input_t*)data;
+   if (!android)
+      return false;
    return ((g_extern.lifecycle_state | driver.overlay_state.buttons) & (1ULL << key))
-      || input_joypad_pressed(&android_joypad, 0, g_settings.input.binds[0], key);
+      || input_joypad_pressed(android->joypad, 0, g_settings.input.binds[0], key);
 }
 
 static void android_input_free_input(void *data)
@@ -2060,7 +1953,8 @@ unsigned android_input_devices_size(void *data)
 
 static const rarch_joypad_driver_t *android_input_get_joypad_driver(void *data)
 {
-   return &android_joypad;
+   android_input_t *android = (android_input_t*)data;
+   return android->joypad;
 }
 
 const input_driver_t input_android = {
@@ -2083,6 +1977,27 @@ const input_driver_t input_android = {
 
 static bool android_joypad_init(void)
 {
+   int i;
+
+   for (i = 0; i < MAX_PLAYERS; i++)
+      strlcpy(g_settings.input.device_names[i], "Custom", sizeof(g_settings.input.device_names[i]));
+
+   if ((dlopen("/system/lib/libandroid.so", RTLD_LOCAL | RTLD_LAZY)) != 0)
+   {
+      engine_handle_dpad = engine_handle_dpad_default;
+      p_AMotionEvent_getAxisValue = dlsym(RTLD_DEFAULT, "AMotionEvent_getAxisValue");
+
+      if (p_AMotionEvent_getAxisValue)
+      {
+         RARCH_LOG("Set engine_handle_dpad to 'Get Axis Value' (for reading extra analog sticks)");
+         engine_handle_dpad = engine_handle_dpad_getaxisvalue;
+      }
+   }
+   else
+   {
+      RARCH_WARN("Unable to open libandroid.so\n");
+   }
+
    return true;
 }
 
