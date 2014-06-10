@@ -48,18 +48,6 @@ const char* const input_builtin_autoconfs[] =
    "input_driver = \"android\"                    \n"
    SHIELD_DEFAULT_BINDS,
 
-   "input_device = \"NVIDIA Shield\" \n"
-   "input_driver = \"android\"                    \n"
-   SHIELD_DEFAULT_BINDS,
-
-   "input_device = \"NVIDIA Shield\" \n"
-   "input_driver = \"android\"                    \n"
-   SHIELD_DEFAULT_BINDS,
-
-   "input_device = \"NVIDIA Shield\" \n"
-   "input_driver = \"android\"                    \n"
-   SHIELD_DEFAULT_BINDS,
-
    NULL
 };
 
