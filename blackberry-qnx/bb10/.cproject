@@ -19,17 +19,13 @@
 						<toolChain id="com.qnx.qcc.toolChain.exe.debug.1548729917" name="QNX QCC" superClass="com.qnx.qcc.toolChain">
 							<option id="com.qnx.qcc.option.cpu.925329345" name="Target CPU:" superClass="com.qnx.qcc.option.cpu" value="com.qnx.qcc.option.gen.cpu.armle-v7" valueType="enumerated"/>
 							<targetPlatform archList="all" binaryParser="com.qnx.tools.ide.qde.core.QDEBynaryParser" id="com.qnx.qcc.targetPlatform.1688311389" osList="all" superClass="com.qnx.qcc.targetPlatform"/>
-							<builder buildPath="${workspace_loc:/RetroArch}/Device-Debug" id="com.qnx.nto.1782756032" keepEnvironmentInBuildfile="false" name="CDT Internal Builder" parallelBuildOn="true" parallelizationNumber="optimal" superClass="com.qnx.nto">
-								<outputEntries>
-									<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="outputPath" name=""/>
-								</outputEntries>
-							</builder>
+							<builder buildPath="${workspace_loc:/RetroArch}/Device-Debug" id="com.qnx.nto.1782756032" keepEnvironmentInBuildfile="false" name="CDT Internal Builder" parallelBuildOn="true" parallelizationNumber="optimal" superClass="com.qnx.nto"/>
 							<tool id="com.qnx.qcc.tool.compiler.142351173" name="QCC Compiler" superClass="com.qnx.qcc.tool.compiler">
 								<option id="com.qnx.qcc.option.compiler.optlevel.1785341332" name="Optimization Level" superClass="com.qnx.qcc.option.compiler.optlevel" value="com.qnx.qcc.option.compiler.optlevel.0" valueType="enumerated"/>
 								<option id="com.qnx.qcc.option.compile.debug.750054689" name="Debug (-g)" superClass="com.qnx.qcc.option.compile.debug" value="true" valueType="boolean"/>
 								<option id="com.qnx.qcc.option.compiler.includePath.1332494375" name="Include Directories (-I)" superClass="com.qnx.qcc.option.compiler.includePath" valueType="includePath">
-									<listOptionValue builtIn="false" value="/home/squarepusher/bbndk-bb10/target_10_2_0_1155/qnx6/usr/include/freetype2"/>
-									<listOptionValue builtIn="false" value="/home/squarepusher/bbndk-bb10/target_10_2_0_1155/target-override/usr/include"/>
+									<listOptionValue builtIn="false" value="${QNX_TARGET}/usr/include/freetype2"/>
+									<listOptionValue builtIn="false" value="${QNX_TARGET}/../target-override/usr/include"/>
 								</option>
 								<option id="com.qnx.qcc.option.compiler.security.1348091274" name="Enhanced Security (-fstack-protector-strong)" superClass="com.qnx.qcc.option.compiler.security" value="true" valueType="boolean"/>
 								<option id="com.qnx.qcc.option.compiler.defines.107606349" name="Defines (-D)" superClass="com.qnx.qcc.option.compiler.defines" valueType="definedSymbols">
@@ -71,43 +67,28 @@
 							</tool>
 							<tool id="com.qnx.qcc.tool.assembler.2035959754" name="QCC Assembler" superClass="com.qnx.qcc.tool.assembler">
 								<option id="com.qnx.qcc.option.assembler.debug.540367047" name="Debug (-g)" superClass="com.qnx.qcc.option.assembler.debug" value="true" valueType="boolean"/>
-								<option id="com.qnx.qcc.option.assembler.includePath.2140652935" name="Include Directories (-I)" superClass="com.qnx.qcc.option.assembler.includePath" valueType="includePath">
-									<listOptionValue builtIn="false" value="/home/squarepusher/bbndk-bb10/target_10_2_0_1155/qnx6/usr/include/freetype2"/>
-									<listOptionValue builtIn="false" value="/home/squarepusher/bbndk-bb10/target_10_2_0_1155/target-override/usr/include"/>
-								</option>
-								<option id="com.qnx.qcc.option.assembler.defines.807954862" name="Defines (-D)" superClass="com.qnx.qcc.option.assembler.defines" valueType="definedSymbols">
-									<listOptionValue builtIn="false" value="HAVE_DYLIB"/>
-									<listOptionValue builtIn="false" value="HAVE_ALSA"/>
-									<listOptionValue builtIn="false" value="RARCH_INTERNAL"/>
-									<listOptionValue builtIn="false" value="HAVE_CC_RESAMPLER"/>
-									<listOptionValue builtIn="false" value="HAVE_NEON"/>
-									<listOptionValue builtIn="false" value="HAVE_RGUI"/>
-									<listOptionValue builtIn="false" value="HAVE_MENU"/>
-									<listOptionValue builtIn="false" value="RARCH_MOBILE"/>
-									<listOptionValue builtIn="false" value="SINC_LOWER_QUALITY"/>
-									<listOptionValue builtIn="false" value="HAVE_FBO"/>
-									<listOptionValue builtIn="false" value="HAVE_GRIFFIN"/>
-									<listOptionValue builtIn="false" value="__LIBRETRO__"/>
-									<listOptionValue builtIn="false" value="HAVE_DYNAMIC"/>
-									<listOptionValue builtIn="false" value="HAVE_ZLIB"/>
-									<listOptionValue builtIn="false" value="HAVE_OPENGLES"/>
-									<listOptionValue builtIn="false" value="HAVE_OPENGLES2"/>
-									<listOptionValue builtIn="false" value="HAVE_NULLINPUT"/>
-									<listOptionValue builtIn="false" value="HAVE_AL"/>
-									<listOptionValue builtIn="false" value="HAVE_THREADS"/>
-									<listOptionValue builtIn="false" value="HAVE_OVERLAY"/>
-									<listOptionValue builtIn="false" value="HAVE_GLSL"/>
-									<listOptionValue builtIn="false" value="USING_GL20"/>
-									<listOptionValue builtIn="false" value="HAVE_OPENGL"/>
-									<listOptionValue builtIn="false" value="_FORTIFY_SOURCE=2"/>
-								</option>
 								<inputType id="com.qnx.qcc.inputType.assembler.1280447837" superClass="com.qnx.qcc.inputType.assembler"/>
 							</tool>
 							<tool id="com.qnx.qcc.tool.linker.743621919" name="QCC Linker" superClass="com.qnx.qcc.tool.linker">
 								<option id="com.qnx.qcc.option.linker.debug.615314687" name="Debug (-g)" superClass="com.qnx.qcc.option.linker.debug" value="true" valueType="boolean"/>
-								<option id="com.qnx.qcc.option.linker.libraryPaths.710932267" name="Library Paths (-L)" superClass="com.qnx.qcc.option.linker.libraryPaths" valueType="libPaths"/>
+								<option id="com.qnx.qcc.option.linker.libraryPaths.710932267" name="Library Paths (-L)" superClass="com.qnx.qcc.option.linker.libraryPaths" valueType="libPaths">
+									<listOptionValue builtIn="false" value="${QNX_TARGET}/../target-override/${CPUVARDIR}/lib"/>
+									<listOptionValue builtIn="false" value="${QNX_TARGET}/../target-override/${CPUVARDIR}/usr/lib"/>
+								</option>
 								<option id="com.qnx.qcc.option.linker.security.1411611248" name="Enhanced Security (-Wl,-z,relro -Wl,-z,now)" superClass="com.qnx.qcc.option.linker.security" value="true" valueType="boolean"/>
-								<option id="com.qnx.qcc.option.linker.libraries.534847974" name="Libraries (-l)" superClass="com.qnx.qcc.option.linker.libraries" valueType="libs"/>
+								<option id="com.qnx.qcc.option.linker.libraries.534847974" name="Libraries (-l)" superClass="com.qnx.qcc.option.linker.libraries" valueType="libs">
+									<listOptionValue builtIn="false" value="bps"/>
+									<listOptionValue builtIn="false" value="asound"/>
+									<listOptionValue builtIn="false" value="OpenAL"/>
+									<listOptionValue builtIn="false" value="png"/>
+									<listOptionValue builtIn="false" value="c"/>
+									<listOptionValue builtIn="false" value="z"/>
+									<listOptionValue builtIn="false" value="screen"/>
+									<listOptionValue builtIn="false" value="EGL"/>
+									<listOptionValue builtIn="false" value="GLESv2"/>
+									<listOptionValue builtIn="false" value="freetype"/>
+									<listOptionValue builtIn="false" value="m"/>
+								</option>
 								<inputType id="com.qnx.qcc.inputType.linker.254436236" superClass="com.qnx.qcc.inputType.linker">
 									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
 									<additionalInput kind="additionalinput" paths="$(LIBS)"/>
@@ -116,6 +97,29 @@
 							<tool id="com.qnx.qcc.tool.archiver.235941332" name="QCC Archiver" superClass="com.qnx.qcc.tool.archiver"/>
 						</toolChain>
 					</folderInfo>
+					<fileInfo id="com.qnx.qcc.configuration.exe.debug.381170420.1258732047" name="sinc_neon.S" rcbsApplicability="disable" resourcePath="src/sinc_neon.S" toolsToInvoke="com.qnx.qcc.tool.assembler.2035959754.991633861">
+						<tool command="qcc" commandLinePattern="${COMMAND}  ${OUTPUT_FLAG} ${OUTPUT_PREFIX}${OUTPUT} ${INPUTS} ${FLAGS}" id="com.qnx.qcc.tool.assembler.2035959754.991633861" name="QCC Assembler" superClass="com.qnx.qcc.tool.assembler.2035959754">
+							<option id="com.qnx.qcc.option.assembler.qccoptions.1129161676" name="QCC Options" superClass="com.qnx.qcc.option.assembler.qccoptions" valueType="stringList">
+								<listOptionValue builtIn="false" value="-mcpu=cortex-a9"/>
+								<listOptionValue builtIn="false" value="-marm"/>
+								<listOptionValue builtIn="false" value="-mfpu=neon"/>
+							</option>
+							<inputType id="com.qnx.qcc.inputType.assembler.1085916531" superClass="com.qnx.qcc.inputType.assembler"/>
+						</tool>
+					</fileInfo>
+					<fileInfo id="com.qnx.qcc.configuration.exe.debug.381170420.973423226" name="utils_neon.S" rcbsApplicability="disable" resourcePath="src/utils_neon.S" toolsToInvoke="com.qnx.qcc.tool.assembler.2035959754.347573070">
+						<tool id="com.qnx.qcc.tool.assembler.2035959754.347573070" name="QCC Assembler" superClass="com.qnx.qcc.tool.assembler.2035959754">
+							<option id="com.qnx.qcc.option.assembler.qccoptions.1775882432" name="QCC Options" superClass="com.qnx.qcc.option.assembler.qccoptions" valueType="stringList">
+								<listOptionValue builtIn="false" value="-mcpu=cortex-a9"/>
+								<listOptionValue builtIn="false" value="-marm"/>
+								<listOptionValue builtIn="false" value="-mfpu=neon"/>
+							</option>
+							<inputType id="com.qnx.qcc.inputType.assembler.1121112632" superClass="com.qnx.qcc.inputType.assembler"/>
+						</tool>
+					</fileInfo>
+					<sourceEntries>
+						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="src"/>
+					</sourceEntries>
 				</configuration>
 			</storageModule>
 			<storageModule moduleId="org.eclipse.cdt.core.externalSettings"/>
@@ -213,8 +217,28 @@
 							<tool id="com.qnx.qcc.tool.archiver.1590791010" name="QCC Archiver" superClass="com.qnx.qcc.tool.archiver"/>
 						</toolChain>
 					</folderInfo>
+					<fileInfo id="com.qnx.qcc.configuration.exe.release.648144057.1567247301" name="sinc_neon.S" rcbsApplicability="disable" resourcePath="src/sinc_neon.S" toolsToInvoke="com.qnx.qcc.tool.assembler.599691721.61424297">
+						<tool id="com.qnx.qcc.tool.assembler.599691721.61424297" name="QCC Assembler" superClass="com.qnx.qcc.tool.assembler.599691721">
+							<option id="com.qnx.qcc.option.assembler.qccoptions.1232679431" name="QCC Options" superClass="com.qnx.qcc.option.assembler.qccoptions" valueType="stringList">
+								<listOptionValue builtIn="false" value="-mcpu=cortex-a9"/>
+								<listOptionValue builtIn="false" value="-marm"/>
+								<listOptionValue builtIn="false" value="-mfpu=neon"/>
+							</option>
+							<inputType id="com.qnx.qcc.inputType.assembler.1064746892" superClass="com.qnx.qcc.inputType.assembler"/>
+						</tool>
+					</fileInfo>
+					<fileInfo id="com.qnx.qcc.configuration.exe.release.648144057.1910510900" name="utils_neon.S" rcbsApplicability="disable" resourcePath="src/utils_neon.S" toolsToInvoke="com.qnx.qcc.tool.assembler.599691721.237427487">
+						<tool id="com.qnx.qcc.tool.assembler.599691721.237427487" name="QCC Assembler" superClass="com.qnx.qcc.tool.assembler.599691721">
+							<option id="com.qnx.qcc.option.assembler.qccoptions.1196541901" name="QCC Options" superClass="com.qnx.qcc.option.assembler.qccoptions" valueType="stringList">
+								<listOptionValue builtIn="false" value="-mcpu=cortex-a9"/>
+								<listOptionValue builtIn="false" value="-marm"/>
+								<listOptionValue builtIn="false" value="-mfpu=neon"/>
+							</option>
+							<inputType id="com.qnx.qcc.inputType.assembler.1045628756" superClass="com.qnx.qcc.inputType.assembler"/>
+						</tool>
+					</fileInfo>
 					<sourceEntries>
-						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="src"/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>
@@ -316,8 +340,28 @@
 							<tool id="com.qnx.qcc.tool.archiver.509463185" name="QCC Archiver" superClass="com.qnx.qcc.tool.archiver"/>
 						</toolChain>
 					</folderInfo>
+					<fileInfo id="com.qnx.qcc.configuration.exe.profile.617031134.1663499231" name="sinc_neon.S" rcbsApplicability="disable" resourcePath="src/sinc_neon.S" toolsToInvoke="com.qnx.qcc.tool.assembler.1306097437.1064225480">
+						<tool id="com.qnx.qcc.tool.assembler.1306097437.1064225480" name="QCC Assembler" superClass="com.qnx.qcc.tool.assembler.1306097437">
+							<option id="com.qnx.qcc.option.assembler.qccoptions.655240149" name="QCC Options" superClass="com.qnx.qcc.option.assembler.qccoptions" valueType="stringList">
+								<listOptionValue builtIn="false" value="-mcpu=cortex-a9"/>
+								<listOptionValue builtIn="false" value="-marm"/>
+								<listOptionValue builtIn="false" value="-mfpu=neon"/>
+							</option>
+							<inputType id="com.qnx.qcc.inputType.assembler.1486816912" superClass="com.qnx.qcc.inputType.assembler"/>
+						</tool>
+					</fileInfo>
+					<fileInfo id="com.qnx.qcc.configuration.exe.profile.617031134.415465679" name="utils_neon.S" rcbsApplicability="disable" resourcePath="src/utils_neon.S" toolsToInvoke="com.qnx.qcc.tool.assembler.1306097437.609090486">
+						<tool id="com.qnx.qcc.tool.assembler.1306097437.609090486" name="QCC Assembler" superClass="com.qnx.qcc.tool.assembler.1306097437">
+							<option id="com.qnx.qcc.option.assembler.qccoptions.1755349708" name="QCC Options" superClass="com.qnx.qcc.option.assembler.qccoptions" valueType="stringList">
+								<listOptionValue builtIn="false" value="-mcpu=cortex-a9"/>
+								<listOptionValue builtIn="false" value="-marm"/>
+								<listOptionValue builtIn="false" value="-mfpu=neon"/>
+							</option>
+							<inputType id="com.qnx.qcc.inputType.assembler.2120030339" superClass="com.qnx.qcc.inputType.assembler"/>
+						</tool>
+					</fileInfo>
 					<sourceEntries>
-						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="src"/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>
@@ -419,8 +463,28 @@
 							<tool id="com.qnx.qcc.tool.archiver.147959592" name="QCC Archiver" superClass="com.qnx.qcc.tool.archiver"/>
 						</toolChain>
 					</folderInfo>
+					<fileInfo id="com.qnx.qcc.configuration.exe.profile.coverage.2128233679.502727032" name="sinc_neon.S" rcbsApplicability="disable" resourcePath="src/sinc_neon.S" toolsToInvoke="com.qnx.qcc.tool.assembler.483492359.863211175">
+						<tool id="com.qnx.qcc.tool.assembler.483492359.863211175" name="QCC Assembler" superClass="com.qnx.qcc.tool.assembler.483492359">
+							<option id="com.qnx.qcc.option.assembler.qccoptions.1877438134" name="QCC Options" superClass="com.qnx.qcc.option.assembler.qccoptions" valueType="stringList">
+								<listOptionValue builtIn="false" value="-mcpu=cortex-a9"/>
+								<listOptionValue builtIn="false" value="-marm"/>
+								<listOptionValue builtIn="false" value="-mfpu=neon"/>
+							</option>
+							<inputType id="com.qnx.qcc.inputType.assembler.1995010572" superClass="com.qnx.qcc.inputType.assembler"/>
+						</tool>
+					</fileInfo>
+					<fileInfo id="com.qnx.qcc.configuration.exe.profile.coverage.2128233679.536693408" name="utils_neon.S" rcbsApplicability="disable" resourcePath="src/utils_neon.S" toolsToInvoke="com.qnx.qcc.tool.assembler.483492359.168355956">
+						<tool id="com.qnx.qcc.tool.assembler.483492359.168355956" name="QCC Assembler" superClass="com.qnx.qcc.tool.assembler.483492359">
+							<option id="com.qnx.qcc.option.assembler.qccoptions.107131003" name="QCC Options" superClass="com.qnx.qcc.option.assembler.qccoptions" valueType="stringList">
+								<listOptionValue builtIn="false" value="-mcpu=cortex-a9"/>
+								<listOptionValue builtIn="false" value="-marm"/>
+								<listOptionValue builtIn="false" value="-mfpu=neon"/>
+							</option>
+							<inputType id="com.qnx.qcc.inputType.assembler.177597270" superClass="com.qnx.qcc.inputType.assembler"/>
+						</tool>
+					</fileInfo>
 					<sourceEntries>
-						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="src"/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>
@@ -519,8 +583,28 @@
 							<tool id="com.qnx.qcc.tool.archiver.987519416" name="QCC Archiver" superClass="com.qnx.qcc.tool.archiver"/>
 						</toolChain>
 					</folderInfo>
+					<fileInfo id="com.qnx.qcc.configuration.exe.debug.647263012.1858756515" name="sinc_neon.S" rcbsApplicability="disable" resourcePath="src/sinc_neon.S" toolsToInvoke="com.qnx.qcc.tool.assembler.2099172774.486453221">
+						<tool id="com.qnx.qcc.tool.assembler.2099172774.486453221" name="QCC Assembler" superClass="com.qnx.qcc.tool.assembler.2099172774">
+							<option id="com.qnx.qcc.option.assembler.qccoptions.1756931693" name="QCC Options" superClass="com.qnx.qcc.option.assembler.qccoptions" valueType="stringList">
+								<listOptionValue builtIn="false" value="-mcpu=cortex-a9"/>
+								<listOptionValue builtIn="false" value="-marm"/>
+								<listOptionValue builtIn="false" value="-mfpu=neon"/>
+							</option>
+							<inputType id="com.qnx.qcc.inputType.assembler.919891290" superClass="com.qnx.qcc.inputType.assembler"/>
+						</tool>
+					</fileInfo>
+					<fileInfo id="com.qnx.qcc.configuration.exe.debug.647263012.789881881" name="utils_neon.S" rcbsApplicability="disable" resourcePath="src/utils_neon.S" toolsToInvoke="com.qnx.qcc.tool.assembler.2099172774.690326989">
+						<tool id="com.qnx.qcc.tool.assembler.2099172774.690326989" name="QCC Assembler" superClass="com.qnx.qcc.tool.assembler.2099172774">
+							<option id="com.qnx.qcc.option.assembler.qccoptions.258310796" name="QCC Options" superClass="com.qnx.qcc.option.assembler.qccoptions" valueType="stringList">
+								<listOptionValue builtIn="false" value="-mcpu=cortex-a9"/>
+								<listOptionValue builtIn="false" value="-marm"/>
+								<listOptionValue builtIn="false" value="-mfpu=neon"/>
+							</option>
+							<inputType id="com.qnx.qcc.inputType.assembler.1709199876" superClass="com.qnx.qcc.inputType.assembler"/>
+						</tool>
+					</fileInfo>
 					<sourceEntries>
-						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="src"/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>
@@ -621,8 +705,28 @@
 							<tool id="com.qnx.qcc.tool.archiver.189229959" name="QCC Archiver" superClass="com.qnx.qcc.tool.archiver"/>
 						</toolChain>
 					</folderInfo>
+					<fileInfo id="com.qnx.qcc.configuration.exe.profile.398924846.1522534830" name="sinc_neon.S" rcbsApplicability="disable" resourcePath="src/sinc_neon.S" toolsToInvoke="com.qnx.qcc.tool.assembler.752341444.244474138">
+						<tool id="com.qnx.qcc.tool.assembler.752341444.244474138" name="QCC Assembler" superClass="com.qnx.qcc.tool.assembler.752341444">
+							<option id="com.qnx.qcc.option.assembler.qccoptions.651615185" name="QCC Options" superClass="com.qnx.qcc.option.assembler.qccoptions" valueType="stringList">
+								<listOptionValue builtIn="false" value="-mcpu=cortex-a9"/>
+								<listOptionValue builtIn="false" value="-marm"/>
+								<listOptionValue builtIn="false" value="-mfpu=neon"/>
+							</option>
+							<inputType id="com.qnx.qcc.inputType.assembler.251174326" superClass="com.qnx.qcc.inputType.assembler"/>
+						</tool>
+					</fileInfo>
+					<fileInfo id="com.qnx.qcc.configuration.exe.profile.398924846.187017604" name="utils_neon.S" rcbsApplicability="disable" resourcePath="src/utils_neon.S" toolsToInvoke="com.qnx.qcc.tool.assembler.752341444.1503771397">
+						<tool id="com.qnx.qcc.tool.assembler.752341444.1503771397" name="QCC Assembler" superClass="com.qnx.qcc.tool.assembler.752341444">
+							<option id="com.qnx.qcc.option.assembler.qccoptions.1622160611" name="QCC Options" superClass="com.qnx.qcc.option.assembler.qccoptions" valueType="stringList">
+								<listOptionValue builtIn="false" value="-mcpu=cortex-a9"/>
+								<listOptionValue builtIn="false" value="-marm"/>
+								<listOptionValue builtIn="false" value="-mfpu=neon"/>
+							</option>
+							<inputType id="com.qnx.qcc.inputType.assembler.73976963" superClass="com.qnx.qcc.inputType.assembler"/>
+						</tool>
+					</fileInfo>
 					<sourceEntries>
-						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="src"/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>
@@ -723,8 +827,28 @@
 							<tool id="com.qnx.qcc.tool.archiver.42203404" name="QCC Archiver" superClass="com.qnx.qcc.tool.archiver"/>
 						</toolChain>
 					</folderInfo>
+					<fileInfo id="com.qnx.qcc.configuration.exe.profile.coverage.817388964.209316731" name="sinc_neon.S" rcbsApplicability="disable" resourcePath="src/sinc_neon.S" toolsToInvoke="com.qnx.qcc.tool.assembler.435181371.1251968865">
+						<tool id="com.qnx.qcc.tool.assembler.435181371.1251968865" name="QCC Assembler" superClass="com.qnx.qcc.tool.assembler.435181371">
+							<option id="com.qnx.qcc.option.assembler.qccoptions.1241557846" name="QCC Options" superClass="com.qnx.qcc.option.assembler.qccoptions" valueType="stringList">
+								<listOptionValue builtIn="false" value="-mcpu=cortex-a9"/>
+								<listOptionValue builtIn="false" value="-marm"/>
+								<listOptionValue builtIn="false" value="-mfpu=neon"/>
+							</option>
+							<inputType id="com.qnx.qcc.inputType.assembler.528382439" superClass="com.qnx.qcc.inputType.assembler"/>
+						</tool>
+					</fileInfo>
+					<fileInfo id="com.qnx.qcc.configuration.exe.profile.coverage.817388964.948765454" name="utils_neon.S" rcbsApplicability="disable" resourcePath="src/utils_neon.S" toolsToInvoke="com.qnx.qcc.tool.assembler.435181371.50421175">
+						<tool id="com.qnx.qcc.tool.assembler.435181371.50421175" name="QCC Assembler" superClass="com.qnx.qcc.tool.assembler.435181371">
+							<option id="com.qnx.qcc.option.assembler.qccoptions.1447558744" name="QCC Options" superClass="com.qnx.qcc.option.assembler.qccoptions" valueType="stringList">
+								<listOptionValue builtIn="false" value="-mcpu=cortex-a9"/>
+								<listOptionValue builtIn="false" value="-marm"/>
+								<listOptionValue builtIn="false" value="-mfpu=neon"/>
+							</option>
+							<inputType id="com.qnx.qcc.inputType.assembler.1731015472" superClass="com.qnx.qcc.inputType.assembler"/>
+						</tool>
+					</fileInfo>
 					<sourceEntries>
-						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="src"/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>
