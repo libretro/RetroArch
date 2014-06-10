@@ -79,16 +79,26 @@ static void hidpad_ps3_disconnect(struct hidpad_ps3_data* device)
 
 static uint32_t hidpad_ps3_get_buttons(struct hidpad_ps3_data* device)
 {
-   #define KEY(X) RETRO_DEVICE_ID_JOYPAD_##X
    static const uint32_t button_mapping[17] =
    {
-      KEY(SELECT), KEY(L3),    KEY(R3),   KEY(START),
-      KEY(UP),     KEY(RIGHT), KEY(DOWN), KEY(LEFT),
-      KEY(L2),     KEY(R2),    KEY(L),    KEY(R),
-      KEY(X),      KEY(A),     KEY(B),    KEY(Y),
+      RETRO_DEVICE_ID_JOYPAD_SELECT,
+      RETRO_DEVICE_ID_JOYPAD_L3,
+      RETRO_DEVICE_ID_JOYPAD_R3,
+      RETRO_DEVICE_ID_JOYPAD_START,
+      RETRO_DEVICE_ID_JOYPAD_UP,
+      RETRO_DEVICE_ID_JOYPAD_RIGHT,
+      RETRO_DEVICE_ID_JOYPAD_DOWN,
+      RETRO_DEVICE_ID_JOYPAD_LEFT,
+      RETRO_DEVICE_ID_JOYPAD_L2,
+      RETRO_DEVICE_ID_JOYPAD_R2,
+      RETRO_DEVICE_ID_JOYPAD_L,
+      RETRO_DEVICE_ID_JOYPAD_R,
+      RETRO_DEVICE_ID_JOYPAD_X,
+      RETRO_DEVICE_ID_JOYPAD_A,
+      RETRO_DEVICE_ID_JOYPAD_B,
+      RETRO_DEVICE_ID_JOYPAD_Y,
       16 //< PS Button
    };
-   #undef KEY
 
    const uint32_t pressed_keys = device->data[3] | (device->data[4] << 8) | ((device->data[5] & 1) << 16);
    uint32_t result = 0;
