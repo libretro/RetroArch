@@ -513,7 +513,6 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
 
 static int menu_info_screen_iterate(unsigned action)
 {
-   unsigned i;
    char msg[1024];
 
    if (!driver.menu)
