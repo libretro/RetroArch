@@ -485,10 +485,15 @@ static bool apple_is_pressed(unsigned port_num, const struct retro_keybind *bind
 // Exported input driver
 static void *apple_input_init(void)
 {
+   if (driver.input_data)
+       return driver.input_data;
+
    input_init_keyboard_lut(apple_key_map_hidusage);
    memset(&g_current_input_data, 0, sizeof(g_current_input_data));
 
    joypad = input_joypad_init_driver(g_settings.input.joypad_driver);
+    
+   driver.input_data_own = true;
    return (void*)-1;
 }
 
