@@ -19,7 +19,7 @@
 #include <android/keycodes.h>
 #include <unistd.h>
 #include <dlfcn.h>
-#include "input_autodetect.h"
+#include "jni_macros.h"
 #include "../../../frontend/platform/platform_android.h"
 #include "../../../input/input_common.h"
 #include "../../../performance.h"
@@ -31,6 +31,152 @@
 #define PRESSED_DOWN(x, y)  ((y >= (g_settings.input.axis_threshold)))
 #define PRESSED_LEFT(x, y)  ((x <= (-g_settings.input.axis_threshold)))
 #define PRESSED_RIGHT(x, y) ((x >= (g_settings.input.axis_threshold)))
+
+#define MAX_PADS 8
+
+#define AKEY_EVENT_NO_ACTION 255
+
+enum {
+   ICADE_PROFILE_RED_SAMURAI = 0,
+   ICADE_PROFILE_IPEGA_PG9017,
+   ICADE_PROFILE_IPEGA_PG9017_MODE2,
+   ICADE_PROFILE_GAMESTOP_WIRELESS,
+   ICADE_PROFILE_G910,
+   ICADE_PROFILE_MOGA_HERO_POWER,
+} icade_profile_enums;
+
+enum {
+   AKEYCODE_META_FUNCTION_ON = 8,
+   AKEYCODE_NUMPAD_LCK_0    = 96,
+   AKEYCODE_NUMPAD_LCK_1    = 97,
+   AKEYCODE_NUMPAD_LCK_2    = 98,
+   AKEYCODE_NUMPAD_LCK_3    = 99,
+   AKEYCODE_NUMPAD_LCK_4    = 100,
+   AKEYCODE_NUMPAD_LCK_5    = 101,
+   AKEYCODE_NUMPAD_LCK_6    = 102,
+   AKEYCODE_NUMPAD_LCK_7    = 103,
+   AKEYCODE_NUMPAD_LCK_8    = 104,
+   AKEYCODE_NUMPAD_LCK_9    = 105,
+   AKEYCODE_OTHR_108        = 108,
+   AKEYCODE_NUMPAD_SUB      = 109,
+   AKEYCODE_ESCAPE          = 111,
+   AKEYCODE_FORWARD_DEL     = 112,
+   AKEYCODE_CTRL_LEFT       = 113,
+   AKEYCODE_CTRL_RIGHT      = 114,
+   AKEYCODE_CAPS_LOCK       = 115,
+   AKEYCODE_SCROLL_LOCK     = 116,
+   AKEYCODE_SYSRQ           = 120, AKEYCODE_BREAK           = 121,
+   AKEYCODE_MOVE_HOME       = 122,
+   AKEYCODE_MOVE_END        = 123,
+   AKEYCODE_INSERT          = 124,
+   AKEYCODE_FORWARD         = 125,
+   AKEYCODE_MEDIA_PLAY      = 126,
+   AKEYCODE_MEDIA_PAUSE     = 127,
+   AKEYCODE_F1              = 131,
+   AKEYCODE_F2              = 132,
+   AKEYCODE_F3              = 133,
+   AKEYCODE_F4              = 134,
+   AKEYCODE_F5              = 135,
+   AKEYCODE_F6              = 136,
+   AKEYCODE_F7              = 137,
+   AKEYCODE_F8              = 138,
+   AKEYCODE_F9              = 139,
+   AKEYCODE_NUMPAD_1        = 145,
+   AKEYCODE_NUMPAD_2        = 146,
+   AKEYCODE_NUMPAD_3        = 147,
+   AKEYCODE_NUMPAD_4        = 148,
+   AKEYCODE_NUMPAD_5        = 149,
+   AKEYCODE_NUMPAD_6        = 150,
+   AKEYCODE_NUMPAD_7        = 151,
+   AKEYCODE_NUMPAD_8        = 152,
+   AKEYCODE_NUMPAD_9        = 153,
+   AKEYCODE_WINDOW          = 171,
+   AKEYCODE_BUTTON_1        = 188,
+   AKEYCODE_BUTTON_2        = 189,
+   AKEYCODE_BUTTON_3        = 190,
+   AKEYCODE_BUTTON_4        = 191,
+   AKEYCODE_BUTTON_5        = 192,
+   AKEYCODE_BUTTON_6        = 193,
+   AKEYCODE_BUTTON_7        = 194,
+   AKEYCODE_BUTTON_8        = 195,
+   AKEYCODE_BUTTON_9        = 196,
+   AKEYCODE_BUTTON_10       = 197,
+   AKEYCODE_BUTTON_11       = 198,
+   AKEYCODE_BUTTON_12       = 199,
+   AKEYCODE_BUTTON_13       = 200,
+   AKEYCODE_BUTTON_14       = 201,
+   AKEYCODE_BUTTON_15       = 202,
+   AKEYCODE_BUTTON_16       = 203,
+   AKEYCODE_ASSIST          = 219,
+};
+
+#define LAST_KEYCODE AKEYCODE_ASSIST
+
+enum input_devices
+{
+   DEVICE_NONE = 0,
+   DEVICE_LOGITECH_RUMBLEPAD2,
+   DEVICE_LOGITECH_DUAL_ACTION,
+   DEVICE_LOGITECH_PRECISION_GAMEPAD,
+   DEVICE_ICONTROLPAD_HID_JOYSTICK,
+   DEVICE_ICONTROLPAD_BLUEZ_IME,
+   DEVICE_TTT_THT_ARCADE,
+   DEVICE_TOMMO_NEOGEOX_ARCADE,
+   DEVICE_MADCATZ_PC_USB_STICK,
+   DEVICE_LOGICOOL_RUMBLEPAD2,
+   DEVICE_IDROID_X360,
+   DEVICE_ZEEMOTE_STEELSERIES,
+   DEVICE_HUIJIA_USB_SNES,
+   DEVICE_SUPER_SMARTJOY,
+   DEVICE_SAITEK_RUMBLE_P480,
+   DEVICE_MS_SIDEWINDER_DUAL_STRIKE,
+   DEVICE_MS_SIDEWINDER,
+   DEVICE_MS_XBOX,
+   DEVICE_WISEGROUP_PLAYSTATION2,
+   DEVICE_JCPS102_PLAYSTATION2,
+   DEVICE_GENERIC_PLAYSTATION2_CONVERTER,
+   DEVICE_PSMOVE_NAVI,
+   DEVICE_JXD_S7300B,
+   DEVICE_JXD_S7800B,
+   DEVICE_IDROID_CON,
+   DEVICE_GENIUS_MAXFIRE_G08XU,
+   DEVICE_USB_2_AXIS_8_BUTTON_GAMEPAD,
+   DEVICE_BUFFALO_BGC_FC801,
+   DEVICE_RETROUSB_RETROPAD,
+   DEVICE_RETROUSB_SNES_RETROPORT,
+   DEVICE_CYPRESS_USB,
+   DEVICE_MAYFLASH_WII_CLASSIC,
+   DEVICE_SZMY_POWER_DUAL_BOX_WII,
+   DEVICE_ARCHOS_GAMEPAD,
+   DEVICE_JXD_S5110,
+   DEVICE_JXD_S5110_SKELROM,
+   DEVICE_XPERIA_PLAY,
+   DEVICE_BROADCOM_BLUETOOTH_HID,
+   DEVICE_THRUST_PREDATOR,
+   DEVICE_DRAGONRISE,
+   DEVICE_PLAYSTATION3_VERSION1,
+   DEVICE_PLAYSTATION3_VERSION2,
+   DEVICE_MOGA_IME,
+   DEVICE_NYKO_PLAYPAD_PRO,
+   DEVICE_TOODLES_2008_CHIMP,
+   DEVICE_MOGA,
+   DEVICE_SEGA_VIRTUA_STICK_HIGH_GRADE,
+   DEVICE_CCPCREATIONS_WIIUSE_IME,
+   DEVICE_KEYBOARD_RETROPAD,
+   DEVICE_OUYA,
+   DEVICE_ONLIVE_WIRELESS_CONTROLLER,
+   DEVICE_TOMEE_NES_USB,
+   DEVICE_THRUSTMASTER_T_MINI,
+   DEVICE_GAMEMID,
+   DEVICE_DEFENDER_GAME_RACER_CLASSIC,
+   DEVICE_HOLTEK_JC_U912F,
+   DEVICE_NVIDIA_SHIELD,
+   DEVICE_MUCH_IREADGO_I5,
+   DEVICE_WIKIPAD,
+   DEVICE_FC30_GAMEPAD,
+   DEVICE_SAMSUNG_GAMEPAD_EIGP20,
+   DEVICE_LAST
+};
 
 typedef struct
 {
@@ -188,9 +334,9 @@ static void *android_input_init(void)
    return android;
 }
 
-int zeus_id = -1;
-int zeus_second_id = -1;
-unsigned zeus_port;
+static int zeus_id = -1;
+static int zeus_second_id = -1;
+static unsigned zeus_port;
 
 static void android_input_set_keybinds(void *data, unsigned device,
       unsigned port, unsigned id, unsigned keybind_action)
@@ -1673,9 +1819,258 @@ static void android_input_poll_event_type_key(android_input_t *android, struct a
       *handled = 0;
 }
 
+static void input_autodetect_get_device_name(void *data, char *buf, size_t size, int id)
+{
+   jclass class;
+   jmethodID method, getName;
+   jobject device, name;
+   JNIEnv *env = (JNIEnv*)jni_thread_getenv();
+
+   if (!env)
+      return;
+
+   buf[0] = '\0';
+
+   class = NULL;
+   FIND_CLASS(env, class, "android/view/InputDevice");
+   if (!class)
+      return;
+
+   method = NULL;
+   GET_STATIC_METHOD_ID(env, method, class, "getDevice", "(I)Landroid/view/InputDevice;");
+   if (!method)
+      return;
+
+   device = NULL;
+   CALL_OBJ_STATIC_METHOD_PARAM(env, device, class, method, (jint)id);
+   if (!device)
+   {
+      RARCH_ERR("Failed to find device for ID: %d\n", id);
+      return;
+   }
+
+   getName = NULL;
+   GET_METHOD_ID(env, getName, class, "getName", "()Ljava/lang/String;");
+   if (!getName)
+      return;
+
+   name = NULL;
+   CALL_OBJ_METHOD(env, name, device, getName);
+   if (!name)
+   {
+      RARCH_ERR("Failed to find name for device ID: %d\n", id);
+      return;
+   }
+
+   const char *str = (*env)->GetStringUTFChars(env, name, 0);
+   if (str)
+      strlcpy(buf, str, size);
+   (*env)->ReleaseStringUTFChars(env, name, str);
+}
+
+static void handle_hotplug(void *data, char *msg,
+      size_t sizeof_msg, unsigned port, unsigned id,
+      int source, bool *primary)
+{
+   struct android_app *android_app = (struct android_app*)data;
+
+   unsigned device;
+   char name_buf[256], *current_ime;
+   name_buf[0] = 0;
+
+   if (port > MAX_PADS)
+   {
+      snprintf(msg, sizeof_msg, "Max number of pads reached.\n");
+      return;
+   }
+
+   current_ime = (char*)android_app->current_ime;
+
+   input_autodetect_get_device_name(android_app, name_buf, sizeof(name_buf), id);
+
+   RARCH_LOG("device name: %s\n", name_buf);
+
+   /* Shitty hack put back in again */
+   if (strstr(name_buf, "keypad-game-zeus") || strstr(name_buf, "keypad-zeus"))
+   {
+      if (zeus_id < 0)
+      {
+         RARCH_LOG("zeus_pad 1 detected: %d\n", id);
+         zeus_id = id;
+         zeus_port = port;
+      }
+      else
+      {
+         RARCH_LOG("zeus_pad 2 detected: %d\n", id);
+         zeus_second_id = id;
+      }
+   }
+
+   device = 0;
+
+   if (strstr(name_buf,"Logitech") && strstr(name_buf, "RumblePad 2"))
+      device = DEVICE_LOGITECH_RUMBLEPAD2;
+   else if (strstr(name_buf, "Logitech") && strstr(name_buf, "Dual Action"))
+      device = DEVICE_LOGITECH_DUAL_ACTION;
+   else if (strstr(name_buf, "Logitech") && strstr(name_buf, "Precision"))
+      device = DEVICE_LOGITECH_PRECISION_GAMEPAD;
+   else if (strstr(name_buf, "iControlPad-")) // followed by a 4 (hex) char HW id
+      device = DEVICE_ICONTROLPAD_HID_JOYSTICK;
+   else if (strstr(name_buf, "SEGA VIRTUA STICK High Grade"))
+      device = DEVICE_SEGA_VIRTUA_STICK_HIGH_GRADE;
+   else if (strstr(name_buf, "TTT THT Arcade console 2P USB Play"))
+      device = DEVICE_TTT_THT_ARCADE;
+   else if (strstr(name_buf, "TOMMO NEOGEOX Arcade Stick"))
+      device = DEVICE_TOMMO_NEOGEOX_ARCADE;
+   else if (strstr(name_buf, "Onlive Wireless Controller"))
+      device = DEVICE_ONLIVE_WIRELESS_CONTROLLER;
+   else if (strstr(name_buf, "MadCatz") && strstr(name_buf, "PC USB Wired Stick"))
+      device = DEVICE_MADCATZ_PC_USB_STICK;
+   else if (strstr(name_buf, "Logicool") && strstr(name_buf, "RumblePad 2"))
+      device = DEVICE_LOGICOOL_RUMBLEPAD2;
+   else if (strstr(name_buf, "Sun4i-keypad"))
+      device = DEVICE_IDROID_X360;
+   else if (strstr(name_buf, "Zeemote") && strstr(name_buf, "Steelseries free"))
+      device = DEVICE_ZEEMOTE_STEELSERIES;
+   else if (strstr(name_buf, "HuiJia  USB GamePad"))
+      device = DEVICE_HUIJIA_USB_SNES;
+   else if (strstr(name_buf, "Smartjoy Family Super Smartjoy 2"))
+      device = DEVICE_SUPER_SMARTJOY;
+   else if (strstr(name_buf, "Jess Tech Dual Analog Rumble Pad"))
+      device = DEVICE_SAITEK_RUMBLE_P480;
+   else if (strstr(name_buf, "mtk-kpd"))
+      device = DEVICE_MUCH_IREADGO_I5;
+   else if (strstr(name_buf, "Wikipad"))
+      device = DEVICE_WIKIPAD;
+   else if (strstr(name_buf, "Microsoft"))
+   {
+      if (strstr(name_buf, "Dual Strike"))
+         device = DEVICE_MS_SIDEWINDER_DUAL_STRIKE;
+      else if (strstr(name_buf, "SideWinder"))
+         device = DEVICE_MS_SIDEWINDER;
+      else if (strstr(name_buf, "X-Box 360") || strstr(name_buf, "X-Box")
+            || strstr(name_buf, "Xbox 360 Wireless Receiver"))
+         device = DEVICE_MS_XBOX;
+   }
+   else if (strstr(name_buf, "WiseGroup"))
+   {
+      if (strstr(name_buf, "TigerGame") || strstr(name_buf, "Game Controller Adapter")
+            || strstr(name_buf, "JC-PS102U") || strstr(name_buf, "Dual USB Joypad"))
+      {
+         if (strstr(name_buf, "WiseGroup"))
+            device = DEVICE_WISEGROUP_PLAYSTATION2;
+         else if (strstr(name_buf, "JC-PS102U"))
+            device = DEVICE_JCPS102_PLAYSTATION2;
+         else
+            device = DEVICE_GENERIC_PLAYSTATION2_CONVERTER;
+      }
+   }
+   else if (strstr(name_buf, "PLAYSTATION(R)3") || strstr(name_buf, "Dualshock3")
+         || strstr(name_buf,"Sixaxis") || strstr(name_buf, "Gasia,Co") ||
+         (strstr(name_buf, "Gamepad 0") || strstr(name_buf, "Gamepad 1") || 
+          strstr(name_buf, "Gamepad 2") || strstr(name_buf, "Gamepad 3")))
+   {
+      if (strstr(name_buf, "Gamepad 0") || strstr(name_buf, "Gamepad 1") || 
+            strstr(name_buf, "Gamepad 2") || strstr(name_buf, "Gamepad 3"))
+         device = DEVICE_PLAYSTATION3_VERSION1;
+      else
+         device = DEVICE_PLAYSTATION3_VERSION2;
+   }
+   else if (strstr(name_buf, "MOGA"))
+      device = DEVICE_MOGA;
+   else if (strstr(name_buf, "Sony Navigation Controller"))
+      device = DEVICE_PSMOVE_NAVI;
+   else if (strstr(name_buf, "OUYA Game Controller"))
+      device = DEVICE_OUYA;
+   else if (strstr(name_buf, "adc joystick"))
+      device = DEVICE_JXD_S7300B;
+   else if (strstr(name_buf, "idroid:con"))
+      device = DEVICE_IDROID_CON;
+   else if (strstr(name_buf, "NYKO PLAYPAD PRO"))
+      device = DEVICE_NYKO_PLAYPAD_PRO;
+   else if (strstr(name_buf, "2-Axis, 8-Button"))
+      device = DEVICE_GENIUS_MAXFIRE_G08XU;
+   else if (strstr(name_buf, "USB,2-axis 8-button gamepad"))
+      device = DEVICE_USB_2_AXIS_8_BUTTON_GAMEPAD;
+   else if (strstr(name_buf, "BUFFALO BGC-FC801"))
+      device = DEVICE_BUFFALO_BGC_FC801;
+   else if (strstr(name_buf, "8Bitdo FC30"))
+      device = DEVICE_FC30_GAMEPAD;
+   else if (strstr(name_buf, "RetroUSB.com RetroPad"))
+      device = DEVICE_RETROUSB_RETROPAD;
+   else if (strstr(name_buf, "RetroUSB.com SNES RetroPort"))
+      device = DEVICE_RETROUSB_SNES_RETROPORT;
+   else if (strstr(name_buf, "CYPRESS USB"))
+      device = DEVICE_CYPRESS_USB;
+   else if (strstr(name_buf, "Mayflash Wii Classic"))
+      device = DEVICE_MAYFLASH_WII_CLASSIC;
+   else if (strstr(name_buf, "SZMy-power LTD CO.  Dual Box WII"))
+      device = DEVICE_SZMY_POWER_DUAL_BOX_WII;
+   else if (strstr(name_buf, "Toodles 2008 ChImp"))
+      device = DEVICE_TOODLES_2008_CHIMP;
+   else if (strstr(name_buf, "joy_key"))
+      device = DEVICE_ARCHOS_GAMEPAD;
+   else if (strstr(name_buf, "matrix_keyboard"))
+      device = DEVICE_JXD_S5110;
+   else if (strstr(name_buf, "tincore_adc_joystick"))
+      device = DEVICE_JXD_S5110_SKELROM;
+   else if (strstr(name_buf, "keypad-zeus") || (strstr(name_buf, "keypad-game-zeus")))
+      device = DEVICE_XPERIA_PLAY;
+   else if (strstr(name_buf, "Broadcom Bluetooth HID"))
+      device = DEVICE_BROADCOM_BLUETOOTH_HID;
+   else if (strstr(name_buf, "USB Gamepad"))
+      device = DEVICE_THRUST_PREDATOR;
+   else if (strstr(name_buf, "ADC joystick"))
+      device = DEVICE_JXD_S7800B;
+   else if (strstr(name_buf, "DragonRise"))
+      device = DEVICE_DRAGONRISE;
+   else if (strstr(name_buf, "Thrustmaster T Mini"))
+      device = DEVICE_THRUSTMASTER_T_MINI;
+   else if (strstr(name_buf, "2Axes 11Keys Game  Pad"))
+      device = DEVICE_TOMEE_NES_USB;
+   else if (strstr(name_buf, "rk29-keypad") || strstr(name_buf, "GAMEMID"))
+      device = DEVICE_GAMEMID;
+   else if (strstr(name_buf, "USB Gamepad"))
+      device = DEVICE_DEFENDER_GAME_RACER_CLASSIC;
+   else if (strstr(name_buf, "HOLTEK JC - U912F vibration game"))
+      device = DEVICE_HOLTEK_JC_U912F;
+   else if (strstr(name_buf, "NVIDIA Controller"))
+   {
+      device = DEVICE_NVIDIA_SHIELD;
+      port = 0; // Shield is always player 1.
+      *primary = true;
+   }
+   else if (strstr(name_buf, "Samsung Game Pad EI-GP20"))
+      device = DEVICE_SAMSUNG_GAMEPAD_EIGP20;
+
+   if (strstr(current_ime, "net.obsidianx.android.mogaime"))
+   {
+      device = DEVICE_MOGA_IME;
+      snprintf(name_buf, sizeof(name_buf), "MOGA IME");
+   }
+   else if (strstr(current_ime, "com.ccpcreations.android.WiiUseAndroid"))
+   {
+      device = DEVICE_CCPCREATIONS_WIIUSE_IME;
+      snprintf(name_buf, sizeof(name_buf), "ccpcreations WiiUse");
+   }
+   else if (strstr(current_ime, "com.hexad.bluezime"))
+   {
+      device = DEVICE_ICONTROLPAD_BLUEZ_IME;
+      snprintf(name_buf, sizeof(name_buf), "iControlpad SPP mode (using Bluez IME)");
+   }
+
+   if (source == AINPUT_SOURCE_KEYBOARD && device != DEVICE_XPERIA_PLAY)
+      device = DEVICE_KEYBOARD_RETROPAD;
+
+   if (driver.input->set_keybinds)
+      driver.input->set_keybinds(driver.input_data, device, port, id,
+            (1ULL << KEYBINDS_ACTION_SET_DEFAULT_BINDS));
+
+   if (name_buf[0] != 0)
+      snprintf(msg, sizeof_msg, "Port %d: %s.\n", port, name_buf);
+}
 
 // Handle all events. If our activity is in pause state, block until we're unpaused.
-
 static void android_input_poll(void *data)
 {
    int ident;
@@ -1731,7 +2126,7 @@ static void android_input_poll(void *data)
                   if (g_settings.input.autodetect_enable)
                   {
                      bool primary = false;
-                     input_autodetect_setup(android_app, msg, sizeof(msg), port, id, source, &primary);
+                     handle_hotplug(android_app, msg, sizeof(msg), port, id, source, &primary);
 
                      if (primary)
                      {
