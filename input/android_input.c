@@ -931,8 +931,21 @@ const input_driver_t input_android = {
    android_input_get_joypad_driver,
 };
 
+static const char *android_joypad_name(unsigned pad)
+{
+   return g_settings.input.device_names[pad];
+}
+
 static bool android_joypad_init(void)
 {
+   unsigned autoconf_pad;
+
+   for (autoconf_pad = 0; autoconf_pad < MAX_PLAYERS; autoconf_pad++)
+   {
+      strlcpy(g_settings.input.device_names[autoconf_pad], android_joypad_name(autoconf_pad), sizeof(g_settings.input.device_names[autoconf_pad]));
+      input_config_autoconfigure_joypad(autoconf_pad, android_joypad_name(autoconf_pad), android_joypad.ident);
+   }
+
    engine_handle_dpad = engine_handle_dpad_default;
    if ((dlopen("/system/lib/libandroid.so", RTLD_LOCAL | RTLD_LAZY)) == 0)
    {
@@ -1002,10 +1015,6 @@ static bool android_joypad_query_pad(unsigned pad)
    return (pad < MAX_PLAYERS && pad < android->pads_connected);
 }
 
-static const char *android_joypad_name(unsigned pad)
-{
-   return NULL;
-}
 
 static void android_joypad_destroy(void)
 {
