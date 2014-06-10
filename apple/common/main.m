@@ -92,7 +92,7 @@ void apple_run_core(NSString* core, const char* file)
         char basedir[256];
         fill_pathname_basedir(basedir, file ? file : "", sizeof(basedir));
         if (file && access(basedir, R_OK | W_OK | X_OK))
-            apple_display_alert("The directory containing the selected file must have write premissions. This will prevent zipped content from loading, and will cause some cores to not function.", "Warning");
+            apple_display_alert("The directory containing the selected file must have write permissions. This will prevent zipped content from loading, and will cause some cores to not function.", "Warning");
         else
             apple_display_alert("Failed to load content.", "Error");
         
