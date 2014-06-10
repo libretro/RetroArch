@@ -762,8 +762,8 @@ static bool d3d_frame(void *data, const void *frame,
    }
 
 #ifdef HAVE_MENU
-   if (d3d->rgui && d3d->rgui->enabled)
-      d3d_overlay_render(d3d, d3d->rgui);
+   if (d3d->menu && d3d->menu->enabled)
+      d3d_overlay_render(d3d, d3d->menu);
 #endif
 
 #ifdef HAVE_OVERLAY
@@ -860,7 +860,7 @@ static void d3d_free(void *data)
    d3d_free_overlays(d3d);
 #endif
 #ifdef HAVE_MENU
-   d3d_free_overlay(d3d, d3d->rgui);
+   d3d_free_overlay(d3d, d3d->menu);
 #endif
    if (d3d->dev)
       d3d->dev->Release();
@@ -1159,27 +1159,27 @@ static void d3d_set_menu_texture_frame(void *data,
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
 
-   if (!d3d->rgui->tex || d3d->rgui->tex_w != width || d3d->rgui->tex_h != height)
+   if (!d3d->menu->tex || d3d->menu->tex_w != width || d3d->menu->tex_h != height)
    {
-      if (d3d->rgui && d3d->rgui->tex)
-         d3d->rgui->tex->Release();
+      if (d3d->menu && d3d->menu->tex)
+         d3d->menu->tex->Release();
       if (FAILED(d3d->dev->CreateTexture(width, height, 1,
                   0, D3DFMT_A8R8G8B8,
                   D3DPOOL_MANAGED,
-                  &d3d->rgui->tex, NULL)))
+                  &d3d->menu->tex, NULL)))
       {
-         RARCH_ERR("[D3D]: Failed to create rgui texture\n");
+         RARCH_ERR("[D3D]: Failed to create menu texture.\n");
          return;
       }
-      d3d->rgui->tex_w = width;
-      d3d->rgui->tex_h = height;
+      d3d->menu->tex_w = width;
+      d3d->menu->tex_h = height;
    }
 
-   d3d->rgui->alpha_mod = alpha;
+   d3d->menu->alpha_mod = alpha;
 
 
    D3DLOCKED_RECT d3dlr;
-   if (SUCCEEDED(d3d->rgui->tex->LockRect(0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK)))
+   if (SUCCEEDED(d3d->menu->tex->LockRect(0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK)))
    {
       if (rgb32)
       {
@@ -1213,8 +1213,8 @@ static void d3d_set_menu_texture_frame(void *data,
          }
       }
 
-      if (d3d->rgui)
-         d3d->rgui->tex->UnlockRect(0);
+      if (d3d->menu)
+         d3d->menu->tex->UnlockRect(0);
    }
 }
 
@@ -1222,11 +1222,11 @@ static void d3d_set_menu_texture_enable(void *data, bool state, bool full_screen
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
 
-   if (!d3d || !d3d->rgui)
+   if (!d3d || !d3d->menu)
       return;
 
-   d3d->rgui->enabled = state;
-   d3d->rgui->fullscreen = full_screen;
+   d3d->menu->enabled = state;
+   d3d->menu->fullscreen = full_screen;
 }
 #endif
 
@@ -1264,18 +1264,18 @@ static bool d3d_construct(void *data, const video_info_t *info, const input_driv
 #endif
 
 #ifdef HAVE_MENU
-   if (d3d->rgui)
-      free(d3d->rgui);
+   if (d3d->menu)
+      free(d3d->menu);
 
-   d3d->rgui = (overlay_t*)calloc(1, sizeof(overlay_t));
-   d3d->rgui->tex_coords.x = 0;
-   d3d->rgui->tex_coords.y = 0;
-   d3d->rgui->tex_coords.w = 1;
-   d3d->rgui->tex_coords.h = 1;
-   d3d->rgui->vert_coords.x = 0;
-   d3d->rgui->vert_coords.y = 1;
-   d3d->rgui->vert_coords.w = 1;
-   d3d->rgui->vert_coords.h = -1;
+   d3d->menu = (overlay_t*)calloc(1, sizeof(overlay_t));
+   d3d->menu->tex_coords.x = 0;
+   d3d->menu->tex_coords.y = 0;
+   d3d->menu->tex_coords.w = 1;
+   d3d->menu->tex_coords.h = 1;
+   d3d->menu->vert_coords.x = 0;
+   d3d->menu->vert_coords.y = 1;
+   d3d->menu->vert_coords.w = 1;
+   d3d->menu->vert_coords.h = -1;
 #endif
 
 #ifdef HAVE_WINDOW
@@ -1425,7 +1425,7 @@ static void *d3d_init(const video_info_t *info, const input_driver_t **input,
    vid->overlays_enabled = false;
 #endif
    vid->chain            = NULL;
-   vid->rgui             = NULL;
+   vid->menu             = NULL;
 
    if (!d3d_construct(vid, info, input, input_data))
    {

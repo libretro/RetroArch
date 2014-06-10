@@ -98,7 +98,7 @@ typedef struct psp1_video
    bool rgb32;
    int bpp_log2;
 
-   psp1_menu_frame_t rgui;
+   psp1_menu_frame_t menu;
 
    //not implemented
    unsigned rotation;
@@ -123,16 +123,16 @@ static void *psp_init(const video_info_t *video,
 
    psp->main_dList         = memalign(16, 256); // make sure to allocate more space if bigger display lists are needed.
    psp->frame_dList        = memalign(16, 256);
-   psp->rgui.dList         = memalign(16, 256);
-   psp->rgui.frame         = memalign(16,  2 * 480 * 272);
+   psp->menu.dList         = memalign(16, 256);
+   psp->menu.frame         = memalign(16,  2 * 480 * 272);
    psp->frame_coords       = memalign(64,  1 * sizeof(psp1_sprite_t));
-   psp->rgui.frame_coords  = memalign(64, 16 * sizeof(psp1_sprite_t));
+   psp->menu.frame_coords  = memalign(64, 16 * sizeof(psp1_sprite_t));
 
    memset(psp->frame_coords      , 0,  1 * sizeof(psp1_sprite_t));
-   memset(psp->rgui.frame_coords , 0, 16 * sizeof(psp1_sprite_t));
+   memset(psp->menu.frame_coords , 0, 16 * sizeof(psp1_sprite_t));
    sceKernelDcacheWritebackInvalidateAll();
    psp->frame_coords       = TO_UNCACHED_PTR(psp->frame_coords);
-   psp->rgui.frame_coords  = TO_UNCACHED_PTR(psp->rgui.frame_coords);;
+   psp->menu.frame_coords  = TO_UNCACHED_PTR(psp->menu.frame_coords);;
 
    psp->frame_coords->v0.x = 60;
    psp->frame_coords->v0.y = 0;
@@ -356,9 +356,9 @@ static bool psp_frame(void *data, const void *frame,
 
    sceGuFinish();
 
-   if(psp->rgui.active)
+   if(psp->menu.active)
    {
-      sceGuSendList(GU_TAIL, psp->rgui.dList, &(psp->rgui.context_storage));
+      sceGuSendList(GU_TAIL, psp->menu.dList, &(psp->menu.context_storage));
       sceGuSync(0, 0);
    }
 
@@ -400,12 +400,12 @@ static void psp_free(void *data)
       free(psp->frame_dList);
    if (psp->frame_coords)
       free(TO_CACHED_PTR(psp->frame_coords));
-   if (psp->rgui.frame_coords)
-      free(TO_CACHED_PTR(psp->rgui.frame_coords));
-   if (psp->rgui.dList)
-      free(psp->rgui.dList);
-   if (psp->rgui.frame)
-      free(psp->rgui.frame);
+   if (psp->menu.frame_coords)
+      free(TO_CACHED_PTR(psp->menu.frame_coords));
+   if (psp->menu.dList)
+      free(psp->menu.dList);
+   if (psp->menu.frame)
+      free(psp->menu.frame);
 
    free(data);
 }
@@ -426,46 +426,46 @@ static void psp_set_texture_frame(void *data, const void *frame, bool rgb32,
    psp1_video_t *psp = (psp1_video_t*)data;
 
 #ifdef DEBUG
-   rarch_assert((width*height) < (480 * 272));  // psp->rgui.frame buffer size is (480 * 272)*2 Bytes
+   rarch_assert((width*height) < (480 * 272));  // psp->menu.frame buffer size is (480 * 272)*2 Bytes
 #endif
 
-   // rendering the rgui frame as a single sprite is slow
+   // rendering the menu frame as a single sprite is slow
    // so we render it as 16 vertical stripes instead
 
    for (i=0;i<16;i++)
    {
-      psp->rgui.frame_coords[i].v0.x = (i)   * SCEGU_SCR_WIDTH / 16 ;
-      psp->rgui.frame_coords[i].v1.x = (i+1) * SCEGU_SCR_WIDTH / 16 ;
+      psp->menu.frame_coords[i].v0.x = (i)   * SCEGU_SCR_WIDTH / 16 ;
+      psp->menu.frame_coords[i].v1.x = (i+1) * SCEGU_SCR_WIDTH / 16 ;
 
-//      psp->rgui.frame_coords[i].v0.y = 0;
-      psp->rgui.frame_coords[i].v1.y = SCEGU_SCR_HEIGHT ;
+      //psp->menu.frame_coords[i].v0.y = 0;
+      psp->menu.frame_coords[i].v1.y = SCEGU_SCR_HEIGHT ;
 
 
-      psp->rgui.frame_coords[i].v0.u = (i)   * width / 16 ;
-      psp->rgui.frame_coords[i].v1.u = (i+1) * width / 16 ;
+      psp->menu.frame_coords[i].v0.u = (i)   * width / 16 ;
+      psp->menu.frame_coords[i].v1.u = (i+1) * width / 16 ;
 
-//      psp->rgui.frame_coords[i].v0.v = 0;
-      psp->rgui.frame_coords[i].v1.v = height;
+      //psp->menu.frame_coords[i].v0.v = 0;
+      psp->menu.frame_coords[i].v1.v = height;
    }
 
 
    sceKernelDcacheWritebackRange(frame,width * height * 2);
 
    sceGuStart(GU_DIRECT, psp->main_dList);
-   sceGuCopyImage(GU_PSM_4444, 0, 0, width, height, width, (void*)frame, 0, 0, width, psp->rgui.frame);
+   sceGuCopyImage(GU_PSM_4444, 0, 0, width, height, width, (void*)frame, 0, 0, width, psp->menu.frame);
    sceGuFinish();
 
-   sceGuStart(GU_SEND, psp->rgui.dList);
+   sceGuStart(GU_SEND, psp->menu.dList);
    sceGuTexSync();
    sceGuTexMode(GU_PSM_4444, 0, 0, GU_FALSE);
    sceGuTexFunc(GU_TFX_REPLACE, GU_TCC_RGB);
-   sceGuTexImage(0, next_pow2(width), next_pow2(height), width, psp->rgui.frame);
+   sceGuTexImage(0, next_pow2(width), next_pow2(height), width, psp->menu.frame);
    sceGuEnable(GU_BLEND);
 
 //   sceGuBlendFunc(GU_ADD, GU_SRC_ALPHA, GU_ONE_MINUS_SRC_ALPHA, 0, 0); // default blending
    sceGuBlendFunc(GU_ADD, GU_FIX, GU_FIX, 0xF0F0F0F0, 0x0F0F0F0F);
 ;
-   sceGuDrawArray(GU_SPRITES, GU_TEXTURE_16BIT | GU_COLOR_4444 | GU_VERTEX_16BIT | GU_TRANSFORM_2D, 32, NULL, psp->rgui.frame_coords);
+   sceGuDrawArray(GU_SPRITES, GU_TEXTURE_16BIT | GU_COLOR_4444 | GU_VERTEX_16BIT | GU_TRANSFORM_2D, 32, NULL, psp->menu.frame_coords);
    sceGuFinish();
 
 }
@@ -475,7 +475,7 @@ static void psp_set_texture_enable(void *data, bool state, bool full_screen)
    (void) full_screen;
 
    psp1_video_t *psp = (psp1_video_t*)data;
-   psp->rgui.active = state;
+   psp->menu.active = state;
 
 }
 

@@ -1064,18 +1064,18 @@ static bool d3d_construct(void *data, const video_info_t *info, const input_driv
 #endif
 
 #ifdef HAVE_MENU
-   if (d3d->rgui)
-      free(d3d->rgui);
+   if (d3d->menu)
+      free(d3d->menu);
 
-   d3d->rgui = (overlay_t*)calloc(1, sizeof(overlay_t));
-   d3d->rgui->tex_coords.x = 0;
-   d3d->rgui->tex_coords.y = 0;
-   d3d->rgui->tex_coords.w = 1;
-   d3d->rgui->tex_coords.h = 1;
-   d3d->rgui->vert_coords.x = 0;
-   d3d->rgui->vert_coords.y = 1;
-   d3d->rgui->vert_coords.w = 1;
-   d3d->rgui->vert_coords.h = -1;
+   d3d->menu = (overlay_t*)calloc(1, sizeof(overlay_t));
+   d3d->menu->tex_coords.x = 0;
+   d3d->menu->tex_coords.y = 0;
+   d3d->menu->tex_coords.w = 1;
+   d3d->menu->tex_coords.h = 1;
+   d3d->menu->vert_coords.x = 0;
+   d3d->menu->vert_coords.y = 1;
+   d3d->menu->vert_coords.w = 1;
+   d3d->menu->vert_coords.h = -1;
 #endif
 
 #ifdef HAVE_WINDOW
@@ -1237,7 +1237,7 @@ static void *d3d_init(const video_info_t *info, const input_driver_t **input, vo
 #endif
    vid->should_resize        = false;
    vid->vsync                = info->vsync;
-   vid->rgui             = NULL;
+   vid->menu                 = NULL;
 
    if (!d3d_construct(vid, info, input, input_data))
    {

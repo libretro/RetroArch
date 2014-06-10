@@ -2508,7 +2508,7 @@ void rarch_disk_control_set_eject(bool new_state, bool log)
       else
          RARCH_LOG("%s\n", msg);
 
-      // Only noise in RGUI.
+      // Only noise in menu.
       if (log)
       {
          msg_queue_clear(g_extern.msg_queue);
@@ -3009,7 +3009,7 @@ error:
    return 1;
 }
 
-static inline bool check_enter_rgui(void)
+static inline bool check_enter_menu(void)
 {
    static bool old_rmenu_toggle = true;
 
@@ -3085,7 +3085,7 @@ bool rarch_main_iterate(void)
    if (input_key_pressed_func(RARCH_QUIT_KEY) || !video_alive_func())
       return false;
 
-   if (check_enter_rgui())
+   if (check_enter_menu())
       return false; // Enter menu, don't exit.
 
    if (g_extern.exec)

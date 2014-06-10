@@ -50,7 +50,7 @@ typedef struct limare_texture {
   int handle;
   unsigned format;
 
-  bool rgui;
+  bool menu;
 } limare_texture_t;
 
 typedef struct vec2f {
@@ -92,7 +92,7 @@ typedef struct limare_data {
   unsigned texture_slots;
 
   limare_texture_t *cur_texture;
-  limare_texture_t *cur_texture_rgui;
+  limare_texture_t *cur_texture_menu;
 
   unsigned font_width;
   unsigned font_height;
@@ -199,7 +199,7 @@ static int destroy_textures(limare_data_t *pdata) {
   int ret;
 
   pdata->cur_texture = NULL;
-  pdata->cur_texture_rgui = NULL;
+  pdata->cur_texture_menu = NULL;
 
   for (i = 0; i < pdata->texture_slots; ++i) {
     free(pdata->textures[i]);
@@ -774,7 +774,7 @@ static bool lima_gfx_frame(void *data, const void *frame,
     limare_disable(lima->state, GL_BLEND);
   }
 
-  if (vid->menu_active && lima->cur_texture_rgui != NULL) {
+  if (vid->menu_active && lima->cur_texture_menu != NULL) {
     float color[4] = {1.0f, 1.0f, 1.0f, vid->menu_alpha};
 
     if (vid->menu_rgb32)
@@ -787,7 +787,7 @@ static bool lima_gfx_frame(void *data, const void *frame,
     limare_attribute_pointer(lima->state, "in_coord", LIMARE_ATTRIB_FLOAT,
 				 2, 0, 4, lima->coords + vid->menu_rotation * 4);
 
-    limare_texture_attach(lima->state, "in_texture", lima->cur_texture_rgui->handle);
+    limare_texture_attach(lima->state, "in_texture", lima->cur_texture_menu->handle);
     limare_uniform_attach(lima->state, "uColor", 4, color);
 
     limare_enable(lima->state, GL_BLEND);
@@ -875,7 +875,7 @@ static void lima_set_texture_frame(void *data, const void *frame, bool rgb32,
   vid->menu_rgb32 = rgb32;
   vid->menu_alpha = alpha;
 
-  tex = vid->lima->cur_texture_rgui;
+  tex = vid->lima->cur_texture_menu;
 
   /* Current RGUI doesn't change dimensions, so we should hit this most of the time. */
   if (tex != NULL && tex->width == width &&
@@ -887,7 +887,7 @@ static void lima_set_texture_frame(void *data, const void *frame, bool rgb32,
       tex = add_texture(vid->lima, width, height, frame, format);
 
       if (tex != NULL) {
-        vid->lima->cur_texture_rgui = tex;
+        vid->lima->cur_texture_menu = tex;
         goto upload;
       }
 

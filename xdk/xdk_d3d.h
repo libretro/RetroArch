@@ -111,7 +111,7 @@ typedef struct d3d_video
    unsigned tex_h;
 
 #ifdef HAVE_MENU
-   overlay_t *rgui;
+   overlay_t *menu;
 #endif
 } d3d_video_t;
 

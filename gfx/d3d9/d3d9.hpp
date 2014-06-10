@@ -172,7 +172,7 @@ typedef struct d3d_video
 #endif
 
 #ifdef HAVE_MENU
-      overlay_t *rgui;
+      overlay_t *menu;
 #endif
       void *chain;
 } d3d_video_t;
