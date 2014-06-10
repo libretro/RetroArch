@@ -183,14 +183,6 @@ static void discoverControllers(void *data)
 
    free(devices_found);
 }
-#else
-void init_playbook_keyboard(void *data)
-{
-   qnx_input_t *qnx = (qnx_input_t*)data;
-   strlcpy(devices[0].id, "0A5C-8502", sizeof(devices[0].id));
-   qnx_input_autodetect_gamepad(qnx, &devices[0]);
-   qnx->pads_connected = 1;
-}
 #endif
 
 static void initController(void *data, input_device_t* controller)
@@ -568,7 +560,10 @@ static void *qnx_input_init(void)
    //Find currently connected gamepads
    discoverControllers(qnx);
 #else
-   init_playbook_keyboard();
+   //Initialize Playbook keyboard
+   strlcpy(devices[0].id, "0A5C-8502", sizeof(devices[0].id));
+   qnx_input_autodetect_gamepad(qnx, &devices[0]);
+   qnx->pads_connected = 1;
 #endif
 
    return qnx;
