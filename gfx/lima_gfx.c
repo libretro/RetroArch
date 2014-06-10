@@ -62,7 +62,7 @@ typedef struct vec3f {
 } vec3f_t;
 
 /* Create three shader programs. One is for displaying only the emulator core pixel data. *
- * The other two are for displaying the RGUI, where the pixel data can be provided in     *
+ * The other two are for displaying the menu, where the pixel data can be provided in     *
  * two different formats. Current RetroArch only seems to ever use a single format, but   *
  * this is not set in stone, therefore making two programs necessary.                     */
 
@@ -129,7 +129,7 @@ static const char *fshader_main_src =
   "    gl_FragColor = vec4(pixel, 1.0);\n"
   "}\n";
 
-/* Header for RGUI fragment shader. */
+/* Header for menu fragment shader. */
 /* Use mediump, which makes uColor into a (single-precision) float[4]. */
 static const char *fshader_menu_header_src =
   "precision mediump float;\n"
@@ -140,7 +140,7 @@ static const char *fshader_menu_header_src =
   "uniform sampler2D in_texture;\n"
   "\n";
 
-/* Main (template) for RGUI fragment shader. */
+/* Main (template) for menu fragment shader. */
 static const char *fshader_menu_main_src =
   "void main()\n"
   "{\n"
@@ -392,7 +392,7 @@ static int create_programs(limare_data_t *pdata) {
   if (fragment_shader_attach(pdata->state, pdata->program, tmpbuf)) goto fail;
   if (limare_link(pdata->state)) goto fail;
 
-  /* Create shader program for RGUI with RGBA4444 pixel data. */
+  /* Create shader program for menu with RGBA4444 pixel data. */
   pdata->program_menu_rgba16 = limare_program_new(pdata->state);
   if (pdata->program_menu_rgba16 < 0) goto fail;
 
@@ -404,7 +404,7 @@ static int create_programs(limare_data_t *pdata) {
   if (fragment_shader_attach(pdata->state, pdata->program_menu_rgba16, tmpbuf)) goto fail;
   if (limare_link(pdata->state)) goto fail;
 
-  /* Create shader program for RGUI with RGBA8888 pixel data. */
+  /* Create shader program for menu with RGBA8888 pixel data. */
   pdata->program_menu_rgba32 = limare_program_new(pdata->state);
   if (pdata->program_menu_rgba32 < 0) goto fail;
 
@@ -661,7 +661,7 @@ static bool lima_gfx_frame(void *data, const void *frame,
 
   vid = data;
 
-  /* Check if neither RGUI nor emulator framebuffer is to be displayed. */
+  /* Check if neither menu nor emulator framebuffer is to be displayed. */
   if (!vid->menu_active && frame == NULL) return true;
 
   lima = vid->lima;
@@ -758,7 +758,7 @@ static bool lima_gfx_frame(void *data, const void *frame,
     if (upload_font)
       limare_texture_mipmap_upload(lima->state, lima->font_texture->handle, 0, lima->buffer);
 
-    /* We re-use the RGBA16 RGUI program here. */
+    /* We re-use the RGBA16 menu program here. */
     limare_program_current(lima->state, lima->program_menu_rgba16);
 
     limare_attribute_pointer(lima->state, "in_vertex", LIMARE_ATTRIB_FLOAT,
@@ -877,7 +877,7 @@ static void lima_set_texture_frame(void *data, const void *frame, bool rgb32,
 
   tex = vid->lima->cur_texture_menu;
 
-  /* Current RGUI doesn't change dimensions, so we should hit this most of the time. */
+  /* Current menu doesn't change dimensions, so we should hit this most of the time. */
   if (tex != NULL && tex->width == width &&
       tex->height == height && tex->format == format) goto upload;
 
@@ -891,7 +891,7 @@ static void lima_set_texture_frame(void *data, const void *frame, bool rgb32,
         goto upload;
       }
 
-      RARCH_ERR("video_lima: failed to allocate new RGUI texture with dimensions %ux%u\n",
+      RARCH_ERR("video_lima: failed to allocate new menu texture with dimensions %ux%u\n",
             width, height);
     }
   }

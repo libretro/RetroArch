@@ -106,7 +106,7 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
                MENU_SETTINGS_SHADER_PRESET_SAVE, 0);
          file_list_push(menu->selection_buf, "Parameters (Current)",
                MENU_SETTINGS_SHADER_PARAMETERS, 0);
-         file_list_push(menu->selection_buf, "Parameters (RGUI)",
+         file_list_push(menu->selection_buf, "Parameters (Menu)",
                MENU_SETTINGS_SHADER_PRESET_PARAMETERS, 0);
          file_list_push(menu->selection_buf, "Shader Passes",
                MENU_SETTINGS_SHADER_PASSES, 0);
@@ -1462,16 +1462,16 @@ static int menu_start_screen_iterate(unsigned action)
    }
 
    snprintf(msg, sizeof(msg),
-         "-- Welcome to RetroArch / RGUI --\n"
+         "-- Welcome to RetroArch --\n"
          " \n" // strtok_r doesn't split empty strings.
 
-         "Basic RGUI controls:\n"
+         "Basic Menu controls:\n"
          "    Scroll (Up): %-20s\n"
          "  Scroll (Down): %-20s\n"
          "      Accept/OK: %-20s\n"
          "           Back: %-20s\n"
          "           Info: %-20s\n"
-         "Enter/Exit RGUI: %-20s\n"
+         "Enter/Exit Menu: %-20s\n"
          " Exit RetroArch: %-20s\n"
          " \n"
 
@@ -2758,11 +2758,11 @@ static void menu_common_shader_manager_set_preset(void *data, unsigned type, con
 #ifdef HAVE_SHADER_MANAGER
    struct gfx_shader *shader = (struct gfx_shader*)data;
 
-   RARCH_LOG("Setting RGUI shader: %s.\n", path ? path : "N/A (stock)");
+   RARCH_LOG("Setting Menu shader: %s.\n", path ? path : "N/A (stock)");
 
    if (video_set_shader_func((enum rarch_shader_type)type, path))
    {
-      // Makes sure that we use RGUI CGP shader on driver reinit.
+      // Makes sure that we use Menu CGP shader on driver reinit.
       // Only do this when the cgp actually works to avoid potential errors.
       strlcpy(g_settings.video.shader_path, path ? path : "",
             sizeof(g_settings.video.shader_path));
@@ -2770,9 +2770,9 @@ static void menu_common_shader_manager_set_preset(void *data, unsigned type, con
 
       if (path && shader)
       {
-         // Load stored CGP into RGUI menu on success.
+         // Load stored CGP into menu on success.
          // Used when a preset is directly loaded.
-         // No point in updating when the CGP was created from RGUI itself.
+         // No point in updating when the CGP was created from the menu itself.
          config_file_t *conf = config_file_new(path);
          if (conf)
          {
@@ -2787,7 +2787,7 @@ static void menu_common_shader_manager_set_preset(void *data, unsigned type, con
    }
    else
    {
-      RARCH_ERR("Setting RGUI CGP failed.\n");
+      RARCH_ERR("Setting Menu CGP failed.\n");
       g_settings.video.shader_enable = false;
    }
 #endif
@@ -4593,7 +4593,7 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
          g_settings.video.swap_interval = min(g_settings.video.swap_interval, 4);
          g_settings.video.swap_interval = max(g_settings.video.swap_interval, 1);
          if (old != g_settings.video.swap_interval && driver.video && driver.video_data)
-            video_set_nonblock_state_func(false); // This will update the current swap interval. Since we're in RGUI now, always apply VSync.
+            video_set_nonblock_state_func(false); // This will update the current swap interval. Since we're in the menu now, always apply VSync.
 
          break;
       }

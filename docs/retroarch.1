@@ -16,7 +16,7 @@ retroarch \- The reference frontend for the libretro API.
 libretro is an abstraction of a game system, and can be implemented by any frontend.
 The libretro API is designed for games and emulators.
 \fBretroarch\fR focuses on exposing needed functionality for the game system through the use of command line and configuration files.
-It also features a simple built-in UI called RGUI.
+It also features a simple built-in UI.
 
 .SH "EXAMPLE COMMANDLINE"
 
@@ -25,15 +25,15 @@ It also features a simple built-in UI called RGUI.
 retroarch --config ~/.config/retroarch/retroarch.cfg --libretro /path/to/libretro/core.so /path/to/rom.rom --verbose
 
 .TP
-\fBNo command line options will start RetroArch in RGUI mode.\fR
+\fBNo command line options will start RetroArch in menu mode.\fR
 retroarch
 
 .TP
-\fBStart RetroArch in RGUI, with verbose logging.\fR
+\fBStart RetroArch in menu mode, with verbose logging.\fR
 retroarch --menu --verbose
 
-.SH "RGUI"
-RGUI is the built-in GUI system for RetroArch. It is aimed at being controlled with a gamepad only.
+.SH "Menu"
+Refers to the built-in GUI system for RetroArch. It is aimed at being controlled with a gamepad only.
 
 .SH "DEFAULT CONTROLS"
 By default, only keyboard input is accepted.
@@ -52,7 +52,7 @@ Prints help text.
 
 .TP
 \fB--menu\fR
-Starts directly in in-game menu (RGUI) if enabled.
+Starts directly in in-game menu if enabled.
 Does not require a ROM or libretro implementation to be set.
 These can be loaded afterwards in the menu.
 If no arguments are passed to retroarch, it is equivalent to calling retroarch with this as only argument.
@@ -98,7 +98,7 @@ If RetroArch creates a new default config file, it will attempt to load the skel
 This allows distributions to set up default paths for libretro cores, and similar things.
 A configuration file does not need to define every possible option, only those which should be overridden.
 
-If config_save_on_exit = true is set in the config file, RetroArch will overwrite the config file on exit. Settings can be changed from within RGUI.
+If config_save_on_exit = true is set in the config file, RetroArch will overwrite the config file on exit. Settings can be changed from within the menu.
 If RetroArch overwrites a config file, formatting, comments, etc will be lost.
 If RetroArch creates a default config file, it will have config_save_on_exit set automatically.
 

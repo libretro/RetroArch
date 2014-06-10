@@ -1674,7 +1674,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
    }
 #ifdef HAVE_GL_ASYNC_READBACK
 #ifdef HAVE_MENU
-   // Don't readback if we're in RGUI.
+   // Don't readback if we're in menu mode.
    else if (gl->pbo_readback_enable && !gl->menu_texture_enable)
       gl_pbo_async_readback(gl);
 #endif
@@ -2568,7 +2568,7 @@ static bool gl_read_viewport(void *data, uint8_t *buffer)
 #ifdef HAVE_GL_ASYNC_READBACK
    if (gl->pbo_readback_enable)
    {
-      // Don't readback if we're in RGUI.
+      // Don't readback if we're in menu mode.
       if (!gl->pbo_readback_valid[gl->pbo_readback_index]) // We haven't buffered up enough frames yet, come back later.
       {
          context_bind_hw_render(gl, true);

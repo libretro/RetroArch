@@ -329,7 +329,7 @@ static void rgui_render(void)
    else if (menu_type == MENU_SETTINGS_SHADER_PARAMETERS)
       strlcpy(title, "SHADER PARAMETERS (CURRENT)", sizeof(title));
    else if (menu_type == MENU_SETTINGS_SHADER_PRESET_PARAMETERS)
-      strlcpy(title, "SHADER PARAMETERS (RGUI PRESET)", sizeof(title));
+      strlcpy(title, "SHADER PARAMETERS (MENU PRESET)", sizeof(title));
 #endif
    else if (menu_type == MENU_SETTINGS_FONT_OPTIONS)
       strlcpy(title, "FONT OPTIONS", sizeof(title));

@@ -41,7 +41,7 @@ More developer-centric stuff is found [here](https://github.com/libretro/libretr
 
 RetroArch attempts to be small and lean,
 while still having all the useful core features expected from an emulator. 
-It is designed to be very portable and features a gamepad-centric UI called RGUI.
+It is designed to be very portable and features a gamepad-centric UI.
 It also has a full-featured command-line interface.
 
 In some areas, RetroArch goes beyond and emphasizes on not-so-common technical features such as multi-pass shader support,
@@ -109,7 +109,7 @@ A sample configuration file is installed to /etc/retroarch.cfg. This is the syst
 RetroArch will on startup create a config file in $XDG\_CONFIG\_HOME/retroarch/retroarch.cfg if doesn't exist.
 Users only need to configure a certain option if the desired value deviates from the value defined in config.def.h.
 
-To configure joypads, use RGUI or the <tt>retroarch-joyconfig</tt> command-line tool.
+To configure joypads, use the built-in menu or the <tt>retroarch-joyconfig</tt> command-line tool.
 
 ## Compiling and installing
 

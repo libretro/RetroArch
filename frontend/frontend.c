@@ -154,7 +154,7 @@ static int main_entry_iterate_menu_preinit(args_type() args)
 
    // Menu should always run with vsync on.
    video_set_nonblock_state_func(false);
-   // Stop all rumbling when entering RGUI.
+   // Stop all rumbling when entering the menu.
    for (i = 0; i < MAX_PLAYERS; i++)
    {
       driver_set_rumble_state(i, RETRO_RUMBLE_STRONG, 0);

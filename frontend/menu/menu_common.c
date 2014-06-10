@@ -552,7 +552,7 @@ bool menu_iterate(void)
 
    rarch_render_cached_frame();
 
-   // Throttle in case VSync is broken (avoid 1000+ FPS RGUI).
+   // Throttle in case VSync is broken (avoid 1000+ FPS Menu).
    driver.menu->time = rarch_get_time_usec();
    driver.menu->delta = (driver.menu->time - driver.menu->last_time) / 1000;
    driver.menu->target_msec = 750 / g_settings.video.refresh_rate; // Try to sleep less, so we can hopefully rely on FPS logger.

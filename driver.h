@@ -543,7 +543,7 @@ typedef struct
    unsigned current_pad;
 
    void *history;
-   retro_time_t last_time; // Used to throttle RGUI in case VSync is broken.
+   retro_time_t last_time; // Used to throttle menu in case VSync is broken.
 
    struct menu_bind_state binds;
    struct
