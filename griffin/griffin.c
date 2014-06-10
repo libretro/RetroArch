@@ -308,7 +308,7 @@ INPUT
 #elif defined(XENON)
 #include "../xenon/xenon360_input.c"
 #elif defined(ANDROID)
-#include "../android/native/jni/input_android.c"
+#include "../input/android_input.c"
 #elif defined(IOS) || defined(OSX)
 #include "../input/apple_input.c"
 #include "../input/apple_joypad.c"

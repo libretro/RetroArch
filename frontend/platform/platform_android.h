@@ -18,6 +18,7 @@
 #ifndef _PLATFORM_ANDROID_H
 #define _PLATFORM_ANDROID_H
 
+#include <jni.h>
 #include <poll.h>
 #include <sched.h>
 
@@ -159,6 +160,65 @@ enum {
    // Set by thread when it will no longer reply to commands.
    APP_CMD_DEAD,
 };
+
+#define JNI_EXCEPTION(env) \
+   if ((*env)->ExceptionOccurred(env)) \
+   { \
+      (*env)->ExceptionDescribe(env); \
+      (*env)->ExceptionClear(env); \
+   }
+
+#define FIND_CLASS(env, var, classname) \
+   var = (*env)->FindClass(env, classname); \
+   JNI_EXCEPTION(env)
+
+#define GET_OBJECT_CLASS(env, var, clazz_obj) \
+   var = (*env)->GetObjectClass(env, clazz_obj); \
+   JNI_EXCEPTION(env)
+
+#define GET_FIELD_ID(env, var, clazz, fieldName, fieldDescriptor) \
+   var = (*env)->GetFieldID(env, clazz, fieldName, fieldDescriptor); \
+   JNI_EXCEPTION(env)
+
+#define GET_METHOD_ID(env, var, clazz, methodName, fieldDescriptor) \
+   var = (*env)->GetMethodID(env, clazz, methodName, fieldDescriptor); \
+   JNI_EXCEPTION(env)
+
+#define GET_STATIC_METHOD_ID(env, var, clazz, methodName, fieldDescriptor) \
+   var = (*env)->GetStaticMethodID(env, clazz, methodName, fieldDescriptor); \
+   JNI_EXCEPTION(env)
+
+#define CALL_OBJ_METHOD(env, var, clazz_obj, methodId) \
+   var = (*env)->CallObjectMethod(env, clazz_obj, methodId); \
+   JNI_EXCEPTION(env)
+
+#define CALL_OBJ_STATIC_METHOD(env, var, clazz, methodId) \
+   var = (*env)->CallStaticObjectMethod(env, clazz, methodId); \
+   JNI_EXCEPTION(env)
+
+#define CALL_OBJ_STATIC_METHOD_PARAM(env, var, clazz, methodId, ...) \
+   var = (*env)->CallStaticObjectMethod(env, clazz, methodId, __VA_ARGS__); \
+   JNI_EXCEPTION(env)
+
+#define CALL_OBJ_METHOD_PARAM(env, var, clazz_obj, methodId, ...) \
+   var = (*env)->CallObjectMethod(env, clazz_obj, methodId, __VA_ARGS__); \
+   JNI_EXCEPTION(env)
+
+#define CALL_VOID_METHOD(env, clazz_obj, methodId) \
+   (*env)->CallVoidMethod(env, clazz_obj, methodId); \
+   JNI_EXCEPTION(env)
+
+#define CALL_VOID_METHOD_PARAM(env, clazz_obj, methodId, ...) \
+   (*env)->CallVoidMethod(env, clazz_obj, methodId, __VA_ARGS__); \
+   JNI_EXCEPTION(env)
+
+#define CALL_BOOLEAN_METHOD(env, var, clazz_obj, methodId) \
+   var = (*env)->CallBooleanMethod(env, clazz_obj, methodId); \
+   JNI_EXCEPTION(env)
+
+#define CALL_DOUBLE_METHOD(env, var, clazz_obj, methodId) \
+   var = (*env)->CallDoubleMethod(env, clazz_obj, methodId); \
+   JNI_EXCEPTION(env)
 
 extern void engine_handle_cmd(void*);
 extern JNIEnv *jni_thread_getenv(void);

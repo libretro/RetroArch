@@ -23,7 +23,6 @@
 
 #include "platform_android.h"
 #include "../menu/menu_common.h"
-#include "../../android/native/jni/jni_macros.h"
 
 #include "../../conf/config_file.h"
 #include "../../general.h"

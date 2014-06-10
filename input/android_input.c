@@ -19,12 +19,11 @@
 #include <android/keycodes.h>
 #include <unistd.h>
 #include <dlfcn.h>
-#include "jni_macros.h"
-#include "../../../frontend/platform/platform_android.h"
-#include "../../../input/input_common.h"
-#include "../../../performance.h"
-#include "../../../general.h"
-#include "../../../driver.h"
+#include "../frontend/platform/platform_android.h"
+#include "input_common.h"
+#include "../performance.h"
+#include "../general.h"
+#include "../driver.h"
 
 #define MAX_TOUCH 16
 #define PRESSED_UP(x, y)    ((y <= (-g_settings.input.axis_threshold)))

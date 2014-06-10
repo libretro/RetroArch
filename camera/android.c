@@ -17,7 +17,6 @@
 
 #include "../gfx/glsym/glsym.h"
 #include "../driver.h"
-#include "../android/native/jni/jni_macros.h"
 
 typedef struct android_camera
 {
