@@ -927,7 +927,7 @@ static const video_poke_interface_t lima_poke_interface = {
 #endif
   lima_set_aspect_ratio,
   lima_apply_state_changes,
-#if defined(HAVE_RGUI) || defined(HAVE_RMENU) /* TODO: only HAVE_MENU i think */
+#ifdef HAVE_MENU
   lima_set_texture_frame,
   lima_set_texture_enable,
 #endif

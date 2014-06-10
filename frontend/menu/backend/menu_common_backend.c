@@ -3912,10 +3912,8 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
             if (driver.menu->current_pad < MAX_PLAYERS - 1)
                driver.menu->current_pad++;
          }
-#ifdef HAVE_RGUI
          if (port != driver.menu->current_pad)
             driver.menu->need_refresh = true;
-#endif
          port = driver.menu->current_pad;
          break;
       case MENU_SETTINGS_BIND_DEVICE:
