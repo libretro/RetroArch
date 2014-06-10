@@ -2798,6 +2798,7 @@ void rarch_main_clear_state(void)
 
    if (g_extern.log_file)
       fclose(g_extern.log_file);
+   g_extern.log_file = NULL;
 
    memset(&g_extern, 0, sizeof(g_extern));
 

@@ -257,10 +257,6 @@ void main_exit(args_type() args)
 
 #if defined(HAVE_LOGGER) && !defined(ANDROID)
    logger_shutdown();
-#elif defined(HAVE_FILE_LOGGER)
-   if (g_extern.log_file)
-      fclose(g_extern.log_file);
-   g_extern.log_file = NULL;
 #endif
 
    if (driver.frontend_ctx && driver.frontend_ctx->deinit)
