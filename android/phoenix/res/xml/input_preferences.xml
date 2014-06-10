@@ -1,17 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- General -->
-    <PreferenceCategory android:title="@string/general" >
-         <ListPreference
-             android:entries="@array/back_options"
-             android:entryValues="@array/back_options_values"
-             android:defaultValue="0"
-             android:key="input_back_behavior"
-             android:summary="@string/back_behavior_desc"
-             android:title="@string/back_behavior" />
-    </PreferenceCategory>
-
     <!-- IME -->
     <PreferenceCategory android:title="@string/ime" >
          <Preference
@@ -28,30 +17,6 @@
             android:summary="@string/config_autodetect_desc"
             android:title="@string/enable"
             android:disableDependentsState="true" />
-        <ListPreference
-            android:entries="@array/icade_profiles"
-            android:entryValues="@array/icade_profiles_values"
-            android:key="input_autodetect_icade_profile_pad1"
-            android:summary="@string/icade_profile_pad_one_desc"
-            android:title="@string/icade_profile_pad_one" />
-        <ListPreference
-            android:entries="@array/icade_profiles"
-            android:entryValues="@array/icade_profiles_values"
-            android:key="input_autodetect_icade_profile_pad2"
-            android:summary="@string/icade_profile_pad_two_desc"
-            android:title="@string/icade_profile_pad_two" />
-        <ListPreference
-            android:entries="@array/icade_profiles"
-            android:entryValues="@array/icade_profiles_values"
-            android:key="input_autodetect_icade_profile_pad3"
-            android:summary="@string/icade_profile_pad_three_desc"
-            android:title="@string/icade_profile_pad_three" />
-        <ListPreference
-            android:entries="@array/icade_profiles"
-            android:entryValues="@array/icade_profiles_values"
-            android:key="input_autodetect_icade_profile_pad4"
-            android:summary="@string/icade_profile_pad_four_desc"
-            android:title="@string/icade_profile_pad_four" />
     </PreferenceCategory>
 
     <!-- Debug Input Reporting -->

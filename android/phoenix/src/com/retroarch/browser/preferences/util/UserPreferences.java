@@ -209,12 +209,6 @@ public final class UserPreferences
 		config.setBoolean("input_debug_enable", prefs.getBoolean("input_debug_enable", false));
 		config.setInt("input_back_behavior", Integer.parseInt(prefs.getString("input_back_behavior", "0")));
 
-		// Set the iCade profiles
-		config.setInt("input_autodetect_icade_profile_pad1", Integer.parseInt(prefs.getString("input_autodetect_icade_profile_pad1", "0")));
-		config.setInt("input_autodetect_icade_profile_pad2", Integer.parseInt(prefs.getString("input_autodetect_icade_profile_pad2", "0")));
-		config.setInt("input_autodetect_icade_profile_pad3", Integer.parseInt(prefs.getString("input_autodetect_icade_profile_pad3", "0")));
-		config.setInt("input_autodetect_icade_profile_pad4", Integer.parseInt(prefs.getString("input_autodetect_icade_profile_pad4", "0")));
-
 		// Set the video refresh rate.
 		config.setDouble("video_refresh_rate", getRefreshRate(ctx));
 
