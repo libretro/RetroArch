@@ -272,6 +272,7 @@ public final class UserPreferences
 		config.setBoolean("video_font_enable", prefs.getBoolean("video_font_enable", true));
 		config.setString("game_history_path", dataDir + "/retroarch-history.txt");
 
+		// FIXME: This is incomplete. Need analog axes as well.
 		for (int i = 1; i <= 4; i++)
 		{
 			final String[] btns =
@@ -284,7 +285,10 @@ public final class UserPreferences
 			for (String b : btns)
 			{
 				String p = "input_player" + i + "_" + b + "_btn";
-				config.setInt(p, prefs.getInt(p, 0));
+				if (prefs.contains(p))
+					config.setInt(p, prefs.getInt(p, 0));
+				else
+					config.setString(p, "nul");
 			}
 		}
 
