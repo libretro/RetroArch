@@ -458,6 +458,7 @@ static void handle_hotplug(void *data, unsigned *port, unsigned id,
          RARCH_LOG("zeus_pad 2 detected: %d\n", id);
          zeus_second_id = id;
       }
+      strlcpy(name_buf, "Xperia Play", sizeof(name_buf));
    }
 
    device = 0;
@@ -581,7 +582,10 @@ static void handle_hotplug(void *data, unsigned *port, unsigned id,
    else if (strstr(name_buf, "tincore_adc_joystick"))
       device = DEVICE_JXD_S5110_SKELROM;
    else if (strstr(name_buf, "keypad-zeus") || (strstr(name_buf, "keypad-game-zeus")))
+   {
       device = DEVICE_XPERIA_PLAY;
+      strlcpy(name, "Xperia Play", sizeof(name_buf));
+   }
    else if (strstr(name_buf, "Broadcom Bluetooth HID"))
       device = DEVICE_BROADCOM_BLUETOOTH_HID;
    else if (strstr(name_buf, "USB Gamepad"))

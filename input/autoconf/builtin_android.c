@@ -41,6 +41,21 @@ DECL_AXIS(r_y_plus,  -3) \
 DECL_AXIS(r_y_minus, +3) \
 "input_menu_toggle_btn = 108\n"
 
+#define ZEUS_DEFAULT_BINDS \
+DECL_BTN(a, 4) \
+DECL_BTN(b, 23) \
+DECL_BTN(x, 100) \
+DECL_BTN(y, 99) \
+DECL_BTN(start, 108) \
+DECL_BTN(select, 109) \
+DECL_BTN(up, 19) \
+DECL_BTN(down, 20) \
+DECL_BTN(left, 21) \
+DECL_BTN(right, 22) \
+DECL_BTN(l, 102) \
+DECL_BTN(r, 103) \
+"input_menu_toggle_btn = 82\n"
+
 #define SIXAXIS_DEFAULT_BINDS \
 DECL_BTN(a, 97) \
 DECL_BTN(b, 96) \
@@ -140,6 +155,10 @@ const char* const input_builtin_autoconfs[] =
    "input_device = \"NVIDIA Shield\" \n"
    "input_driver = \"android\"                    \n"
    SHIELD_DEFAULT_BINDS,
+
+   "input_device = \"Xperia Play\" \n"
+   "input_driver = \"android\"                    \n"
+   ZEUS_DEFAULT_BINDS,
 
    "input_device = \"RumblePad 2\" \n"
    "input_driver = \"android\"                    \n"
