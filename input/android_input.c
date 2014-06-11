@@ -200,18 +200,16 @@ enum
 
 typedef struct android_input
 {
-   //jmethodID onBackPressed;
    unsigned pads_connected;
    int state_device_ids[MAX_PADS];
    uint8_t pad_state[MAX_PADS][(LAST_KEYCODE + 7) / 8];
    
-   uint64_t keycode_lut[LAST_KEYCODE];
    int16_t analog_state[MAX_PADS][MAX_AXIS];
    sensor_t accelerometer_state;
    struct input_pointer pointer[MAX_TOUCH];
    unsigned pointer_count;
-   ASensorManager* sensorManager;
-   ASensorEventQueue* sensorEventQueue;
+   ASensorManager *sensorManager;
+   ASensorEventQueue *sensorEventQueue;
    const rarch_joypad_driver_t *joypad;
 } android_input_t;
 
@@ -299,28 +297,7 @@ static void *android_input_init(void)
       return NULL;
 
    android->pads_connected = 0;
-
    android->joypad = input_joypad_init_driver(g_settings.input.joypad_driver);
-
-#if 0
-   JNIEnv *env;
-   jclass class;
-
-   env = jni_thread_getenv();
-   if (!env)
-      goto retobj;
-
-   GET_OBJECT_CLASS(env, class, android_app->activity->clazz);
-   if (!class)
-      goto retobj;
-
-   GET_METHOD_ID(env, android->onBackPressed, class, "onBackPressed", "()V");
-   if (!android->onBackPressed)
-   {
-      RARCH_ERR("Could not set onBackPressed JNI function pointer.\n");
-      goto retobj;
-   }
-#endif
 
    return android;
 }
@@ -332,41 +309,44 @@ static unsigned zeus_port;
 static int android_input_poll_event_type_motion(android_input_t *android, AInputEvent *event,
       float *x, float *y, int port, int source)
 {
+   int getaction, action;
+   size_t motion_pointer;
+   bool keyup;
+
    if (source & ~(AINPUT_SOURCE_TOUCHSCREEN | AINPUT_SOURCE_MOUSE))
-   {
       return 1;
+
+   getaction = AMotionEvent_getAction(event);
+   action = getaction & AMOTION_EVENT_ACTION_MASK;
+   motion_pointer = getaction >> AMOTION_EVENT_ACTION_POINTER_INDEX_SHIFT;
+   keyup = (
+         action == AMOTION_EVENT_ACTION_UP ||
+         action == AMOTION_EVENT_ACTION_CANCEL ||
+         action == AMOTION_EVENT_ACTION_POINTER_UP) ||
+      (source == AINPUT_SOURCE_MOUSE &&
+       action != AMOTION_EVENT_ACTION_DOWN);
+
+   if (keyup && motion_pointer < MAX_TOUCH)
+   {
+      memmove(android->pointer + motion_pointer, 
+            android->pointer + motion_pointer + 1,
+            (MAX_TOUCH - motion_pointer - 1) * sizeof(struct input_pointer));
+      if (android->pointer_count > 0)
+         android->pointer_count--;
    }
    else
    {
-      int getaction = AMotionEvent_getAction(event);
-      int action = getaction & AMOTION_EVENT_ACTION_MASK;
-      size_t motion_pointer = getaction >> AMOTION_EVENT_ACTION_POINTER_INDEX_SHIFT;
-      bool keyup = (action == AMOTION_EVENT_ACTION_UP ||
-            action == AMOTION_EVENT_ACTION_CANCEL || action == AMOTION_EVENT_ACTION_POINTER_UP) ||
-         (source == AINPUT_SOURCE_MOUSE && action != AMOTION_EVENT_ACTION_DOWN);
-
-      if (keyup && motion_pointer < MAX_TOUCH)
+      int pointer_max = min(AMotionEvent_getPointerCount(event), MAX_TOUCH);
+      for (motion_pointer = 0; motion_pointer < pointer_max; motion_pointer++)
       {
-         memmove(android->pointer + motion_pointer, 
-               android->pointer + motion_pointer + 1,
-               (MAX_TOUCH - motion_pointer - 1) * sizeof(struct input_pointer));
-         if (android->pointer_count > 0)
-            android->pointer_count--;
-      }
-      else
-      {
-         int pointer_max = min(AMotionEvent_getPointerCount(event), MAX_TOUCH);
-         for (motion_pointer = 0; motion_pointer < pointer_max; motion_pointer++)
-         {
-            *x = AMotionEvent_getX(event, motion_pointer);
-            *y = AMotionEvent_getY(event, motion_pointer);
+         *x = AMotionEvent_getX(event, motion_pointer);
+         *y = AMotionEvent_getY(event, motion_pointer);
 
-            input_translate_coord_viewport(*x, *y,
-                  &android->pointer[motion_pointer].x, &android->pointer[motion_pointer].y,
-                  &android->pointer[motion_pointer].full_x, &android->pointer[motion_pointer].full_y);
+         input_translate_coord_viewport(*x, *y,
+               &android->pointer[motion_pointer].x, &android->pointer[motion_pointer].y,
+               &android->pointer[motion_pointer].full_x, &android->pointer[motion_pointer].full_y);
 
-            android->pointer_count = max(android->pointer_count, motion_pointer + 1);
-         }
+         android->pointer_count = max(android->pointer_count, motion_pointer + 1);
       }
    }
 
@@ -385,7 +365,7 @@ static void android_input_poll_event_type_key(android_input_t *android, struct a
    else if (action == AKEY_EVENT_ACTION_DOWN)
       set_bit(android->pad_state[port], keycode);
 
-   if ((keycode == AKEYCODE_VOLUME_UP || keycode == AKEYCODE_VOLUME_DOWN))// && android->keycode_lut[keycode] == 0)
+   if ((keycode == AKEYCODE_VOLUME_UP || keycode == AKEYCODE_VOLUME_DOWN))
       *handled = 0;
 }
 
@@ -653,7 +633,7 @@ static void android_input_poll(void *data)
       if (ident == LOOPER_ID_INPUT)
       {
          bool debug_enable = g_settings.input.debug_enable;
-         AInputEvent* event = NULL;
+         AInputEvent *event = NULL;
 
          // Read all pending events.
          do
