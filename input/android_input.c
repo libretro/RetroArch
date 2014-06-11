@@ -548,7 +548,10 @@ static void handle_hotplug(void *data, unsigned *port, unsigned id,
    else if (strstr(name_buf, "Sony Navigation Controller"))
       device = DEVICE_PSMOVE_NAVI;
    else if (strstr(name_buf, "OUYA Game Controller"))
+   {
       device = DEVICE_OUYA;
+      strlcpy(name_buf, "OUYA", sizeof(name_buf));
+   }
    else if (strstr(name_buf, "adc joystick"))
       device = DEVICE_JXD_S7300B;
    else if (strstr(name_buf, "idroid:con"))
