@@ -369,7 +369,7 @@ static void android_input_poll_event_type_key(android_input_t *android, struct a
       *handled = 0;
 }
 
-static void input_autodetect_get_device_name(void *data, char *buf, size_t size, int id)
+static void handle_hotplug_get_device_name(void *data, char *buf, size_t size, int id)
 {
    jclass class;
    jmethodID method, getName;
@@ -416,6 +416,8 @@ static void input_autodetect_get_device_name(void *data, char *buf, size_t size,
    if (str)
       strlcpy(buf, str, size);
    (*env)->ReleaseStringUTFChars(env, name, str);
+
+   RARCH_LOG("device name: %s\n", buf);
 }
 
 static void handle_hotplug(void *data, unsigned port, unsigned id,
@@ -435,9 +437,8 @@ static void handle_hotplug(void *data, unsigned port, unsigned id,
 
    current_ime = (char*)android_app->current_ime;
 
-   input_autodetect_get_device_name(android_app, name_buf, sizeof(name_buf), id);
+   handle_hotplug_get_device_name(android_app, name_buf, sizeof(name_buf), id);
 
-   RARCH_LOG("device name: %s\n", name_buf);
 
    /* Shitty hack put back in again */
    if (strstr(name_buf, "keypad-game-zeus") || strstr(name_buf, "keypad-zeus"))
