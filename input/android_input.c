@@ -459,7 +459,10 @@ static void handle_hotplug(void *data, unsigned port, unsigned id,
    device = 0;
 
    if (strstr(name_buf,"Logitech") && strstr(name_buf, "RumblePad 2"))
+   {
       device = DEVICE_LOGITECH_RUMBLEPAD2;
+      strlcpy(name_buf, "RumblePad 2", sizeof(name_buf));
+   }
    else if (strstr(name_buf, "Logitech") && strstr(name_buf, "Dual Action"))
       device = DEVICE_LOGITECH_DUAL_ACTION;
    else if (strstr(name_buf, "Logitech") && strstr(name_buf, "Precision"))

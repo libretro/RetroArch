@@ -41,12 +41,42 @@ DECL_AXIS(r_y_plus,  -3) \
 DECL_AXIS(r_y_minus, +3) \
 "input_menu_toggle_btn = 108\n"
 
+#define RUMBLEPAD2_DEFAULT_BINDS \
+DECL_BTN(a, 190) \
+DECL_BTN(b, 189) \
+DECL_BTN(x, 191) \
+DECL_BTN(y, 188) \
+DECL_BTN(start, 197) \
+DECL_BTN(select, 196) \
+DECL_AXIS(up, -5) \
+DECL_AXIS(down, +5) \
+DECL_AXIS(left, -4) \
+DECL_AXIS(right, +4) \
+DECL_BTN(l, 192) \
+DECL_BTN(r, 193) \
+DECL_BTN(l2, 194) \
+DECL_BTN(r2, 195) \
+DECL_BTN(l3, 198) \
+DECL_BTN(r3, 199) \
+DECL_AXIS(l_x_plus,  +0) \
+DECL_AXIS(l_x_minus, -0) \
+DECL_AXIS(l_y_plus,  +1) \
+DECL_AXIS(l_y_minus, -1) \
+DECL_AXIS(r_x_plus,  +2) \
+DECL_AXIS(r_x_minus, -2) \
+DECL_AXIS(r_y_plus,  -3) \
+DECL_AXIS(r_y_minus, +3)
+
 // Some hardcoded autoconfig information. Will be used for pads with no autoconfig cfg files.
 const char* const input_builtin_autoconfs[] =
 {
    "input_device = \"NVIDIA Shield\" \n"
    "input_driver = \"android\"                    \n"
    SHIELD_DEFAULT_BINDS,
+
+   "input_device = \"RumblePad 2\" \n"
+   "input_driver = \"android\"                    \n"
+   RUMBLEPAD2_DEFAULT_BINDS,
 
    NULL
 };
