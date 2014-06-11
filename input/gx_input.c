@@ -110,16 +110,6 @@ enum
 
 #define MAX_PADS 4
 
-enum input_devices
-{
-   DEVICE_GAMECUBE = 0,
-   DEVICE_WIIMOTE,
-   DEVICE_NUNCHUK,
-   DEVICE_CLASSIC,
-   DEVICE_SIXAXIS,
-   DEVICE_LAST
-};
-
 typedef struct gx_input
 {
    uint64_t pad_state[MAX_PADS];
@@ -598,11 +588,6 @@ static const rarch_joypad_driver_t *gx_input_get_joypad_driver(void *data)
    return &gx_joypad;
 }
 
-static unsigned gx_input_devices_size(void *data)
-{
-   return DEVICE_LAST;
-}
-
 const input_driver_t input_gx = {
    gx_input_init,
    gx_input_poll,
@@ -613,7 +598,7 @@ const input_driver_t input_gx = {
    NULL,
    NULL,
    gx_input_get_capabilities,
-   gx_input_devices_size,
+   NULL,
    "gx",
 
    NULL,

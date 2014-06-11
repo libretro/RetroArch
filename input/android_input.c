@@ -902,11 +902,6 @@ static float android_input_get_sensor_input(void *data, unsigned port, unsigned 
    return 0;
 }
 
-unsigned android_input_devices_size(void *data)
-{
-   return DEVICE_LAST;
-}
-
 static const rarch_joypad_driver_t *android_input_get_joypad_driver(void *data)
 {
    android_input_t *android = (android_input_t*)data;
@@ -923,7 +918,7 @@ const input_driver_t input_android = {
    android_input_set_sensor_state,
    android_input_get_sensor_input,
    android_input_get_capabilities,
-   android_input_devices_size,
+   NULL,
    "android_input",
 
    NULL,

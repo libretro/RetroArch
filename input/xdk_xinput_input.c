@@ -27,12 +27,6 @@
 
 #define MAX_PADS 4
 
-enum input_devices
-{
-   DEVICE_XBOX_PAD = 0,
-   DEVICE_LAST
-};
-
 typedef struct xdk_input
 {
    uint64_t pad_state[MAX_PADS];
@@ -273,11 +267,6 @@ static const rarch_joypad_driver_t *xdk_input_get_joypad_driver(void *data)
    return xdk->joypad;
 }
 
-static unsigned xdk_input_devices_size(void *data)
-{
-   return DEVICE_LAST;
-}
-
 const input_driver_t input_xinput = 
 {
    xdk_input_init,
@@ -289,7 +278,7 @@ const input_driver_t input_xinput =
    NULL,
    NULL,
    xdk_input_get_capabilities,
-   xdk_input_devices_size,
+   NULL,
    "xinput",
 
    NULL,

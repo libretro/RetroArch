@@ -51,16 +51,6 @@ static void nullinput_input_free_input(void *data)
    (void)data;
 }
 
-static void nullinput_set_keybinds(void *data, unsigned device,
-      unsigned port, unsigned id, unsigned keybind_action)
-{
-   (void)data;
-   (void)device;
-   (void)port;
-   (void)id;
-   (void)keybind_action;
-}
-
 static uint64_t nullinput_get_capabilities(void *data)
 {
    uint64_t caps = 0;
@@ -75,21 +65,16 @@ static bool nullinput_set_sensor_state(void *data, unsigned port, enum retro_sen
    return false;
 }
 
-static unsigned nullinput_devices_size(void *data)
-{
-   return 0;
-}
-
 const input_driver_t input_null = {
    nullinput_input_init,
    nullinput_input_poll,
    nullinput_input_state,
    nullinput_input_key_pressed,
    nullinput_input_free_input,
-   nullinput_set_keybinds,
+   NULL,
    nullinput_set_sensor_state,
    NULL,
    nullinput_get_capabilities,
-   nullinput_devices_size,
+   NULL,
    "null",
 };

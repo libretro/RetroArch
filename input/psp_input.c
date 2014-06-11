@@ -36,13 +36,6 @@
 
 #define MAX_PADS 1
 
-enum input_devices
-{
-   DEVICE_PSP = 0,
-   DEVICE_LAST
-};
-
-
 typedef struct psp_input
 {
    uint64_t pad_state;
@@ -172,11 +165,6 @@ static const rarch_joypad_driver_t *psp_input_get_joypad_driver(void *data)
    return psp->joypad;
 }
 
-static unsigned psp_input_devices_size(void *data)
-{
-   return DEVICE_LAST;
-}
-
 const input_driver_t input_psp = {
    psp_input_initialize,
    psp_input_poll,
@@ -187,7 +175,7 @@ const input_driver_t input_psp = {
    NULL,
    NULL,
    psp_input_get_capabilities,
-   psp_input_devices_size,
+   NULL,
    "psp",
 
    NULL,
