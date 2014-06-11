@@ -440,6 +440,8 @@ static void frontend_android_get_environment_settings(int *argc, char *argv[],
 
    // Config file
    CALL_OBJ_METHOD_PARAM(env, jstr, obj, android_app->getStringExtra, (*env)->NewStringUTF(env, "CONFIGFILE"));
+
+   *config_path = '\0';
    if (android_app->getStringExtra && jstr)
    {
       const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
@@ -449,7 +451,7 @@ static void frontend_android_get_environment_settings(int *argc, char *argv[],
       (*env)->ReleaseStringUTFChars(env, jstr, argv);
 
       RARCH_LOG("Config file: [%s].\n", config_path);
-      if (args)
+      if (args && *config_path)
          args->config_path = config_path;
    }
 
@@ -486,14 +488,14 @@ static void frontend_android_get_environment_settings(int *argc, char *argv[],
       (*env)->ReleaseStringUTFChars(env, jstr, argv);
 
       RARCH_LOG("Libretro path: [%s].\n", core_path);
-      if (args)
+      if (args && *core_path)
          args->libretro_path = core_path;
    }
 
    // Content
    CALL_OBJ_METHOD_PARAM(env, jstr, obj, android_app->getStringExtra, (*env)->NewStringUTF(env, "ROM"));
-   *path = '\0';
 
+   *path = '\0';
    if (android_app->getStringExtra && jstr)
    {
       const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
@@ -505,7 +507,7 @@ static void frontend_android_get_environment_settings(int *argc, char *argv[],
       if (*path)
       {
          RARCH_LOG("Auto-start game %s.\n", path);
-         if (args)
+         if (args && *path)
             args->rom_path = path;
       }
    }
