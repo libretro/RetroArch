@@ -506,9 +506,15 @@ static void handle_hotplug(void *data, unsigned *port, unsigned id,
    else if (strstr(name_buf, "Microsoft"))
    {
       if (strstr(name_buf, "Dual Strike"))
+      {
          device = DEVICE_MS_SIDEWINDER_DUAL_STRIKE;
+         strlcpy(name_buf, "SideWinder Dual Strike", sizeof(name_buf));
+      }
       else if (strstr(name_buf, "SideWinder"))
+      {
          device = DEVICE_MS_SIDEWINDER;
+         strlcpy(name_buf, "SideWinder Classic", sizeof(name_buf));
+      }
       else if (strstr(name_buf, "X-Box 360")
             || strstr(name_buf, "Xbox 360 Wireless Receiver"))
       {
@@ -524,7 +530,10 @@ static void handle_hotplug(void *data, unsigned *port, unsigned id,
             || strstr(name_buf, "JC-PS102U") || strstr(name_buf, "Dual USB Joypad"))
       {
          if (strstr(name_buf, "WiseGroup"))
+         {
             device = DEVICE_WISEGROUP_PLAYSTATION2;
+            strlcpy(name_buf, "PlayStation2 WiseGroup", sizeof(name_buf));
+         }
          else if (strstr(name_buf, "JC-PS102U"))
             device = DEVICE_JCPS102_PLAYSTATION2;
          else

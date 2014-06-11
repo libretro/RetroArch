@@ -95,7 +95,68 @@ DECL_AXIS(r_y_plus, +3) \
 DECL_AXIS(r_y_minus, -3) \
 "input_menu_toggle_btn = 82\n"
 
-#define SIXAXIS_DEFAULT_BINDS \
+#define SIDEWINDER_DUAL_STRIKE_DEFAULT_BINDS \
+DECL_BTN(a, 190) \
+DECL_BTN(b, 191) \
+DECL_BTN(x, 188) \
+DECL_BTN(y, 189) \
+DECL_BTN(start, 192) \
+DECL_BTN(select, 193) \
+DECL_BTN(up, h0up) \
+DECL_BTN(down, h0down) \
+DECL_BTN(left, h0left) \
+DECL_BTN(right, h0right) \
+DECL_BTN(l, 194) \
+DECL_BTN(r, 195) \
+DECL_AXIS(r_x_plus,  +0) \
+DECL_AXIS(r_x_minus, -0) \
+DECL_AXIS(r_y_plus, -1) \
+DECL_AXIS(r_y_minus, +1) \
+"input_menu_toggle_btn = 196\n"
+
+#define SIDEWINDER_CLASSIC_DEFAULT_BINDS \
+DECL_BTN(a, 97) \
+DECL_BTN(b, 96) \
+DECL_BTN(x, 99) \
+DECL_BTN(y, 100) \
+DECL_BTN(start, 104) \
+DECL_BTN(select, 105) \
+DECL_AXIS(up, -1) \
+DECL_AXIS(down, +1) \
+DECL_AXIS(left, -0) \
+DECL_AXIS(right, +0) \
+DECL_BTN(l, 102) \
+DECL_BTN(r, 103) \
+DECL_BTN(l2, 101) \
+DECL_BTN(r2, 98)
+
+#define PS2_WISEGROUP_DEFAULT_BINDS \
+DECL_BTN(a, 189) \
+DECL_BTN(b, 190) \
+DECL_BTN(x, 188) \
+DECL_BTN(y, 191) \
+DECL_BTN(start, 196) \
+DECL_BTN(select, 197) \
+DECL_BTN(up, h0up) \
+DECL_BTN(down, h0down) \
+DECL_BTN(left, h0left) \
+DECL_BTN(right, h0right) \
+DECL_BTN(l, 194) \
+DECL_BTN(r, 195) \
+DECL_BTN(l2, 192) \
+DECL_BTN(r2, 193) \
+DECL_BTN(l3, 198) \
+DECL_BTN(r3, 199) \
+DECL_AXIS(l_x_plus, +0) \
+DECL_AXIS(l_x_minus, -0) \
+DECL_AXIS(l_y_plus, +1) \
+DECL_AXIS(l_y_minus, -1) \
+DECL_AXIS(r_x_plus,  +2) \
+DECL_AXIS(r_x_minus, -2) \
+DECL_AXIS(r_y_plus, +3) \
+DECL_AXIS(r_y_minus, -3)
+
+#define PS3_DEFAULT_BINDS \
 DECL_BTN(a, 97) \
 DECL_BTN(b, 96) \
 DECL_BTN(x, 100) \
@@ -211,13 +272,25 @@ const char* const input_builtin_autoconfs[] =
    "input_driver = \"android\"                    \n"
    RUMBLEPAD2_DEFAULT_BINDS,
 
+   "input_device = \"SideWinder Dual Strike\" \n"
+   "input_driver = \"android\"                    \n"
+   SIDEWINDER_DUAL_STRIKE_DEFAULT_BINDS,
+
+   "input_device = \"SideWinder Classic\" \n"
+   "input_driver = \"android\"                    \n"
+   SIDEWINDER_CLASSIC_DEFAULT_BINDS,
+
    "input_device = \"XBox 360\" \n"
    "input_driver = \"android\"                    \n"
    XBOX360_DEFAULT_BINDS,
 
+   "input_device = \"PlayStation2 WiseGroup\" \n"
+   "input_driver = \"android\"                    \n"
+   PS2_WISEGROUP_DEFAULT_BINDS,
+
    "input_device = \"PlayStation3\" \n"
    "input_driver = \"android\"                    \n"
-   SIXAXIS_DEFAULT_BINDS,
+   PS3_DEFAULT_BINDS,
 
    "input_device = \"HuiJia\" \n"
    "input_driver = \"android\"                    \n"
