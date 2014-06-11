@@ -424,7 +424,7 @@ static void handle_hotplug_get_device_name(void *data, char *buf, size_t size, i
    RARCH_LOG("device name: %s\n", buf);
 }
 
-static void handle_hotplug(void *data, unsigned port, unsigned id,
+static void handle_hotplug(void *data, unsigned *port, unsigned id,
       int source)
 {
    struct android_app *android_app = (struct android_app*)data;
@@ -433,7 +433,7 @@ static void handle_hotplug(void *data, unsigned port, unsigned id,
    char name_buf[256], *current_ime;
    name_buf[0] = 0;
 
-   if (port > MAX_PADS)
+   if (*port > MAX_PADS)
    {
       RARCH_ERR("Max number of pads reached.\n");
       return;
@@ -451,7 +451,7 @@ static void handle_hotplug(void *data, unsigned port, unsigned id,
       {
          RARCH_LOG("zeus_pad 1 detected: %d\n", id);
          zeus_id = id;
-         zeus_port = port;
+         zeus_port = *port;
       }
       else
       {
@@ -603,7 +603,7 @@ static void handle_hotplug(void *data, unsigned port, unsigned id,
    else if (strstr(name_buf, "NVIDIA Controller"))
    {
       device = DEVICE_NVIDIA_SHIELD;
-      //port = 0; // Shield is always player 1.
+      *port = 0; // Shield is always player 1. FIXME: This is kinda ugly. We really need to find a way to detect useless input devices like gpio-keys in a general way.
       strlcpy(name_buf, "NVIDIA Shield", sizeof(name_buf));
    }
    else if (strstr(name_buf, "Samsung Game Pad EI-GP20"))
@@ -630,9 +630,9 @@ static void handle_hotplug(void *data, unsigned port, unsigned id,
 
    if (device != DEVICE_NONE && name_buf[0] != '\0')
    {
-      strlcpy(g_settings.input.device_names[port], name_buf, sizeof(g_settings.input.device_names[port]));
-      input_config_autoconfigure_joypad(port, name_buf, android_joypad.ident);
-      RARCH_LOG("Port %d: %s.\n", port, name_buf);
+      strlcpy(g_settings.input.device_names[*port], name_buf, sizeof(g_settings.input.device_names[*port]));
+      input_config_autoconfigure_joypad(*port, name_buf, android_joypad.ident);
+      RARCH_LOG("Port %d: %s.\n", *port, name_buf);
    }
 }
 
@@ -688,9 +688,9 @@ static void android_input_poll(void *data)
 
                if (port < 0)
                {
-                  port = android->pads_connected;
                   if (g_settings.input.autodetect_enable)
-                     handle_hotplug(android_app, port, id, source);
+                     handle_hotplug(android_app, &android->pads_connected, id, source);
+                  port = android->pads_connected;
                   android->state_device_ids[android->pads_connected++] = id;
                }
 
