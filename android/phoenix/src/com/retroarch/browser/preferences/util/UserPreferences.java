@@ -124,7 +124,6 @@ public final class UserPreferences
 		readbackBool(config, edit, "input_overlay_enable");
 		readbackDouble(config, edit, "input_overlay_opacity");
 		readbackBool(config, edit, "input_autodetect_enable");
-		//readbackInt(config, edit, "input_back_behavior");
 
 		// Video Settings
 		readbackBool(config, edit, "video_scale_integer");
@@ -207,7 +206,6 @@ public final class UserPreferences
 		config.setBoolean("video_vsync", prefs.getBoolean("video_vsync", true));
 		config.setBoolean("input_autodetect_enable", prefs.getBoolean("input_autodetect_enable", true));
 		config.setBoolean("input_debug_enable", prefs.getBoolean("input_debug_enable", false));
-		config.setInt("input_back_behavior", Integer.parseInt(prefs.getString("input_back_behavior", "0")));
 
 		// Set the video refresh rate.
 		config.setDouble("video_refresh_rate", getRefreshRate(ctx));
