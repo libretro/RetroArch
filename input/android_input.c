@@ -501,8 +501,13 @@ static void handle_hotplug(void *data, unsigned port, unsigned id,
          device = DEVICE_MS_SIDEWINDER_DUAL_STRIKE;
       else if (strstr(name_buf, "SideWinder"))
          device = DEVICE_MS_SIDEWINDER;
-      else if (strstr(name_buf, "X-Box 360") || strstr(name_buf, "X-Box")
+      else if (strstr(name_buf, "X-Box 360")
             || strstr(name_buf, "Xbox 360 Wireless Receiver"))
+      {
+         device = DEVICE_MS_XBOX;
+         strlcpy(name_buf, "XBox 360", sizeof(name_buf));
+      }
+      else if (strstr(name_buf, "X-Box"))
          device = DEVICE_MS_XBOX;
    }
    else if (strstr(name_buf, "WiseGroup"))
