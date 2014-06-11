@@ -528,6 +528,7 @@ static void handle_hotplug(void *data, unsigned port, unsigned id,
          device = DEVICE_PLAYSTATION3_VERSION1;
       else
          device = DEVICE_PLAYSTATION3_VERSION2;
+      strlcpy(name_buf, "PlayStation3", sizeof(name_buf));
    }
    else if (strstr(name_buf, "MOGA"))
       device = DEVICE_MOGA;
