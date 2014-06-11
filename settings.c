@@ -785,7 +785,7 @@ bool config_load_file(const char *path, bool set_defaults)
    if (g_extern.verbose)
    {
       RARCH_LOG_OUTPUT("=== Config ===\n");
-      config_file_dump_all(conf, stderr);
+      config_file_dump_all(conf);
       RARCH_LOG_OUTPUT("=== Config end ===\n");
    }
 

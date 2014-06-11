@@ -13,7 +13,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #include "config_file.h"
 #include <stdlib.h>
 #include <string.h>
@@ -25,6 +24,7 @@
 #include "../msvc/msvc_compat.h"
 #include "../file.h"
 #include "../miscellaneous.h"
+#include "../general.h"
 
 #if !defined(_WIN32) && !defined(__CELLOS_LV2__) && !defined(_XBOX)
 #include <sys/param.h> // PATH_MAX
@@ -818,19 +818,19 @@ void config_file_dump(config_file_t *conf, FILE *file)
    }
 }
 
-void config_file_dump_all(config_file_t *conf, FILE *file)
+void config_file_dump_all(config_file_t *conf)
 {
    struct include_list *includes = conf->includes;
    while (includes)
    {
-      fprintf(file, "#include \"%s\"\n", includes->path);
+      RARCH_LOG("#include \"%s\"\n", includes->path);
       includes = includes->next;
    }
 
    struct config_entry_list *list = conf->entries;
    while (list)
    {
-      fprintf(file, "%s = \"%s\" %s\n", list->key, list->value, list->readonly ? "(included)" : "");
+      RARCH_LOG("%s = \"%s\" %s\n", list->key, list->value, list->readonly ? "(included)" : "");
       list = list->next;
    }
 }

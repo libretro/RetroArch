@@ -107,7 +107,7 @@ bool config_file_write(config_file_t *conf, const char *path);
 // Dump the current config to an already opened file. Does not close the file.
 void config_file_dump(config_file_t *conf, FILE *file);
 // Also dumps inherited values, useful for logging.
-void config_file_dump_all(config_file_t *conf, FILE *file);
+void config_file_dump_all(config_file_t *conf);
 
 #ifdef __cplusplus
 }

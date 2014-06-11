@@ -599,7 +599,7 @@ static void handle_hotplug(void *data, unsigned port, unsigned id,
    else if (strstr(name_buf, "NVIDIA Controller"))
    {
       device = DEVICE_NVIDIA_SHIELD;
-      port = 0; // Shield is always player 1.
+      //port = 0; // Shield is always player 1.
       strlcpy(name_buf, "NVIDIA Shield", sizeof(name_buf));
    }
    else if (strstr(name_buf, "Samsung Game Pad EI-GP20"))
@@ -630,7 +630,6 @@ static void handle_hotplug(void *data, unsigned port, unsigned id,
       input_config_autoconfigure_joypad(port, name_buf, android_joypad.ident);
       RARCH_LOG("Port %d: %s.\n", port, name_buf);
    }
-
 }
 
 // Handle all events. If our activity is in pause state, block until we're unpaused.
@@ -660,7 +659,7 @@ static void android_input_poll(void *data)
                int predispatched;
 
                msg[0] = 0;
-               predispatched = AInputQueue_preDispatchEvent(android_app->inputQueue,event);
+               predispatched = AInputQueue_preDispatchEvent(android_app->inputQueue, event);
 
                if (predispatched)
                   continue;
@@ -721,7 +720,7 @@ static void android_input_poll(void *data)
 
                AInputQueue_finishEvent(android_app->inputQueue, event, handled);
             }
-         }while (AInputQueue_hasEvents(android_app->inputQueue));
+         } while (AInputQueue_hasEvents(android_app->inputQueue));
       }
       else if (ident == LOOPER_ID_USER)
       {

@@ -409,7 +409,10 @@ static bool android_run_events (void *data)
 static void frontend_android_get_environment_settings(int *argc, char *argv[],
       void *data, void *params_data)
 {
-   char config_path[PATH_MAX], core_path[PATH_MAX], path[PATH_MAX];
+   static char config_path[PATH_MAX];
+   static char core_path[PATH_MAX];
+   static char path[PATH_MAX];
+
    JNIEnv *env;
    jobject obj = NULL;
    jstring jstr = NULL;
@@ -422,6 +425,16 @@ static void frontend_android_get_environment_settings(int *argc, char *argv[],
    if (!env)
       return;
 
+   struct rarch_main_wrap *args = (struct rarch_main_wrap*)params_data;
+   if (args)
+   {
+      args->touched    = true;
+      args->no_rom     = false;
+      args->verbose    = false;
+      args->sram_path  = NULL;
+      args->state_path = NULL;
+   }
+
    CALL_OBJ_METHOD(env, obj, android_app->activity->clazz, android_app->getIntent);
    RARCH_LOG("Checking arguments passed from intent ...\n");
 
@@ -431,11 +444,13 @@ static void frontend_android_get_environment_settings(int *argc, char *argv[],
    {
       const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
 
-      if (*argv && argv[0] != '\0')
+      if (*argv && *argv)
          strlcpy(config_path, argv, sizeof(config_path));
       (*env)->ReleaseStringUTFChars(env, jstr, argv);
 
       RARCH_LOG("Config file: [%s].\n", config_path);
+      if (args)
+         args->config_path = config_path;
    }
 
    // Current IME
@@ -459,47 +474,39 @@ static void frontend_android_get_environment_settings(int *argc, char *argv[],
       RARCH_LOG("USED: [%s].\n", used ? "true" : "false");
    }
 
-   //LIBRETRO
+   // LIBRETRO
    CALL_OBJ_METHOD_PARAM(env, jstr, obj, android_app->getStringExtra, (*env)->NewStringUTF(env, "LIBRETRO"));
 
+   *core_path = '\0';
    if (android_app->getStringExtra && jstr)
    {
       const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
-
-      if (*argv && argv[0] != '\0')
+      if (*argv && *argv)
          strlcpy(core_path, argv, sizeof(core_path));
       (*env)->ReleaseStringUTFChars(env, jstr, argv);
 
       RARCH_LOG("Libretro path: [%s].\n", core_path);
+      if (args)
+         args->libretro_path = core_path;
    }
 
    // Content
    CALL_OBJ_METHOD_PARAM(env, jstr, obj, android_app->getStringExtra, (*env)->NewStringUTF(env, "ROM"));
+   *path = '\0';
+
    if (android_app->getStringExtra && jstr)
    {
       const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
 
-      if (*argv && argv[0] != '\0')
+      if (*argv && *argv)
          strlcpy(path, argv, sizeof(path));
       (*env)->ReleaseStringUTFChars(env, jstr, argv);
 
-      if (path[0] != '\0')
+      if (*path)
       {
-         struct rarch_main_wrap *args = (struct rarch_main_wrap*)params_data;
-
+         RARCH_LOG("Auto-start game %s.\n", path);
          if (args)
-         {
-            args->touched        = true;
-            args->no_rom         = false;
-            args->verbose        = false;
-            args->config_path    = strdup(config_path);
-            args->sram_path      = NULL;
-            args->state_path     = NULL;
-            args->rom_path       = strdup(path);
-            args->libretro_path  = strdup(core_path);
-
-            RARCH_LOG("Auto-start game %s.\n", path);
-         }
+            args->rom_path = path;
       }
    }
 }
