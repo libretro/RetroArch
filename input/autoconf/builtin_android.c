@@ -23,10 +23,10 @@ DECL_BTN(x, 100) \
 DECL_BTN(y, 99) \
 DECL_BTN(start, 107) \
 DECL_BTN(select, 106) \
-DECL_AXIS(up, -5) \
-DECL_AXIS(down, +5) \
-DECL_AXIS(left, -4) \
-DECL_AXIS(right, +4) \
+DECL_BTN(up, h0up) \
+DECL_BTN(down, h0down) \
+DECL_BTN(left, h0left) \
+DECL_BTN(right, h0right) \
 DECL_BTN(l, 102) \
 DECL_BTN(r, 103) \
 DECL_AXIS(l2, +6) \

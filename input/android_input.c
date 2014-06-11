@@ -203,6 +203,7 @@ typedef struct android_input
    unsigned pads_connected;
    int state_device_ids[MAX_PADS];
    uint8_t pad_state[MAX_PADS][(LAST_KEYCODE + 7) / 8];
+   int8_t hat_state[MAX_PADS][2];
    
    int16_t analog_state[MAX_PADS][MAX_AXIS];
    sensor_t accelerometer_state;
@@ -273,13 +274,16 @@ static void engine_handle_dpad_getaxisvalue(void *data, AInputEvent *event,
    float brake = AMotionEvent_getAxisValue(event, AXIS_BRAKE, motion_pointer);
    float gas = AMotionEvent_getAxisValue(event, AXIS_GAS, motion_pointer);
 
+   android->hat_state[port][0] = (int)hatx;
+   android->hat_state[port][1] = (int)haty;
+
    // XXX: this could be a loop instead, but do we really want to loop through every axis?
    android->analog_state[port][0] = (int16_t)(x * 32767.0f);
    android->analog_state[port][1] = (int16_t)(y * 32767.0f);
    android->analog_state[port][2] = (int16_t)(z * 32767.0f);
    android->analog_state[port][3] = (int16_t)(rz * 32767.0f);
-   android->analog_state[port][4] = (int16_t)(hatx * 32767.0f);
-   android->analog_state[port][5] = (int16_t)(haty * 32767.0f);
+   //android->analog_state[port][4] = (int16_t)(hatx * 32767.0f);
+   //android->analog_state[port][5] = (int16_t)(haty * 32767.0f);
    android->analog_state[port][6] = (int16_t)(ltrig * 32767.0f);
    android->analog_state[port][7] = (int16_t)(rtrig * 32767.0f);
    android->analog_state[port][8] = (int16_t)(brake * 32767.0f);
@@ -944,10 +948,25 @@ static bool android_joypad_button(unsigned port_num, uint16_t joykey)
 {
    android_input_t *android = (android_input_t*)driver.input_data;
 
-   if (!android || port_num >= MAX_PADS || joykey >= LAST_KEYCODE)
+   if (!android || port_num >= MAX_PADS)
       return false;
 
-   return get_bit(android->pad_state[port_num], joykey);
+   if (GET_HAT_DIR(joykey))
+   {
+      unsigned h = GET_HAT(joykey);
+      if (h > 0)
+         return false;
+      switch (GET_HAT_DIR(joykey))
+      {
+         case HAT_LEFT_MASK:  return android->hat_state[port_num][0] == -1;
+         case HAT_RIGHT_MASK: return android->hat_state[port_num][0] ==  1;
+         case HAT_UP_MASK:    return android->hat_state[port_num][1] == -1;
+         case HAT_DOWN_MASK:  return android->hat_state[port_num][1] ==  1;
+         default: return false;
+      }
+   }
+   else
+      return joykey < LAST_KEYCODE && get_bit(android->pad_state[port_num], joykey);
 }
 
 static int16_t android_joypad_axis(unsigned port_num, uint32_t joyaxis)
