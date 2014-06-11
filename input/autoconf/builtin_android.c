@@ -93,6 +93,21 @@ DECL_AXIS(r_x_minus, -2) \
 DECL_AXIS(r_y_plus, +3) \
 DECL_AXIS(r_y_minus, -3)
 
+#define HUIJIA_DEFAULT_BINDS \
+DECL_BTN(a, 189) \
+DECL_BTN(b, 190) \
+DECL_BTN(x, 188) \
+DECL_BTN(y, 191) \
+DECL_BTN(start, 197) \
+DECL_BTN(select, 196) \
+DECL_AXIS(up, -1) \
+DECL_AXIS(down, +1) \
+DECL_AXIS(left, -0) \
+DECL_AXIS(right, +0) \
+DECL_BTN(l, 194) \
+DECL_BTN(r, 195)
+
+
 #define RUMBLEPAD2_DEFAULT_BINDS \
 DECL_BTN(a, 190) \
 DECL_BTN(b, 189) \
@@ -137,6 +152,10 @@ const char* const input_builtin_autoconfs[] =
    "input_device = \"PlayStation3\" \n"
    "input_driver = \"android\"                    \n"
    SIXAXIS_DEFAULT_BINDS,
+
+   "input_device = \"HuiJia\" \n"
+   "input_driver = \"android\"                    \n"
+   HUIJIA_DEFAULT_BINDS,
 
    NULL
 };

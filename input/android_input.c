@@ -486,7 +486,10 @@ static void handle_hotplug(void *data, unsigned port, unsigned id,
    else if (strstr(name_buf, "Zeemote") && strstr(name_buf, "Steelseries free"))
       device = DEVICE_ZEEMOTE_STEELSERIES;
    else if (strstr(name_buf, "HuiJia  USB GamePad"))
+   {
       device = DEVICE_HUIJIA_USB_SNES;
+      strlcpy(name_buf, "HuiJia", sizeof(name_buf));
+   }
    else if (strstr(name_buf, "Smartjoy Family Super Smartjoy 2"))
       device = DEVICE_SUPER_SMARTJOY;
    else if (strstr(name_buf, "Jess Tech Dual Analog Rumble Pad"))
