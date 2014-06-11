@@ -1128,8 +1128,10 @@ void input_config_parse_joy_axis(config_file_t *conf, const char *prefix,
             bind->joyaxis = AXIS_POS(axis);
          else
             bind->joyaxis = AXIS_NEG(axis);
-
       }
+
+      // Ensure that d-pad emulation doesn't screw this over.
+      bind->orig_joyaxis = bind->joyaxis;
    }
 }
 
