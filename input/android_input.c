@@ -611,7 +611,10 @@ static void handle_hotplug(void *data, unsigned *port, unsigned id,
       strlcpy(name_buf, "NVIDIA Shield", sizeof(name_buf));
    }
    else if (strstr(name_buf, "Samsung Game Pad EI-GP20"))
+   {
       device = DEVICE_SAMSUNG_GAMEPAD_EIGP20;
+      strlcpy(name_buf, "Samsung Gamepad EI-GP20", sizeof(name_buf));
+   }
 
    if (strstr(current_ime, "net.obsidianx.android.mogaime"))
    {

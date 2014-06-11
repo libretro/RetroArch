@@ -56,6 +56,20 @@ DECL_BTN(l, 102) \
 DECL_BTN(r, 103) \
 "input_menu_toggle_btn = 82\n"
 
+#define SAMSUNG_EIGP20_DEFAULT_BINDS \
+DECL_BTN(a, 97) \
+DECL_BTN(b, 96) \
+DECL_BTN(x, 99) \
+DECL_BTN(y, 100) \
+DECL_BTN(start, 108) \
+DECL_BTN(select, 109) \
+DECL_BTN(up, h0up) \
+DECL_BTN(down, h0down) \
+DECL_BTN(left, h0left) \
+DECL_BTN(right, h0right) \
+DECL_BTN(l, 102) \
+DECL_BTN(r, 103)
+
 #define SIXAXIS_DEFAULT_BINDS \
 DECL_BTN(a, 97) \
 DECL_BTN(b, 96) \
@@ -159,6 +173,10 @@ const char* const input_builtin_autoconfs[] =
    "input_device = \"Xperia Play\" \n"
    "input_driver = \"android\"                    \n"
    ZEUS_DEFAULT_BINDS,
+
+   "input_device = \"Samsung Gamepad EI-GP20\" \n"
+   "input_driver = \"android\"                    \n"
+   SAMSUNG_EIGP20_DEFAULT_BINDS,
 
    "input_device = \"RumblePad 2\" \n"
    "input_driver = \"android\"                    \n"
