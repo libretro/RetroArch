@@ -430,8 +430,11 @@ static void handle_hotplug(void *data, unsigned *port, unsigned id,
    struct android_app *android_app = (struct android_app*)data;
 
    unsigned device;
-   char name_buf[256], *current_ime;
-   name_buf[0] = 0;
+   char device_name[256], name_buf[256];
+   name_buf[0] = device_name[0] = 0;
+
+   if (!g_settings.input.autodetect_enable)
+      return;
 
    if (*port > MAX_PADS)
    {
@@ -439,13 +442,10 @@ static void handle_hotplug(void *data, unsigned *port, unsigned id,
       return;
    }
 
-   current_ime = (char*)android_app->current_ime;
+   handle_hotplug_get_device_name(android_app, device_name, sizeof(device_name), id);
 
-   handle_hotplug_get_device_name(android_app, name_buf, sizeof(name_buf), id);
-
-
-   /* Shitty hack put back in again */
-   if (strstr(name_buf, "keypad-game-zeus") || strstr(name_buf, "keypad-zeus"))
+   //FIXME: Ugly hack, see other FIXME note below.
+   if (strstr(device_name, "keypad-game-zeus") || strstr(device_name, "keypad-zeus"))
    {
       if (zeus_id < 0)
       {
@@ -463,191 +463,154 @@ static void handle_hotplug(void *data, unsigned *port, unsigned id,
 
    device = 0;
 
-   if (strstr(name_buf,"Logitech") && strstr(name_buf, "RumblePad 2"))
-   {
-      device = DEVICE_LOGITECH_RUMBLEPAD2;
+   if (strstr(device_name,"Logitech") && strstr(device_name, "RumblePad 2"))
       strlcpy(name_buf, "RumblePad 2", sizeof(name_buf));
-   }
-   else if (strstr(name_buf, "Logitech") && strstr(name_buf, "Dual Action"))
+   else if (strstr(device_name, "Logitech") && strstr(device_name, "Dual Action"))
       device = DEVICE_LOGITECH_DUAL_ACTION;
-   else if (strstr(name_buf, "Logitech") && strstr(name_buf, "Precision"))
+   else if (strstr(device_name, "Logitech") && strstr(device_name, "Precision"))
       device = DEVICE_LOGITECH_PRECISION_GAMEPAD;
-   else if (strstr(name_buf, "iControlPad-")) // followed by a 4 (hex) char HW id
+   else if (strstr(device_name, "iControlPad-")) // followed by a 4 (hex) char HW id
       device = DEVICE_ICONTROLPAD_HID_JOYSTICK;
-   else if (strstr(name_buf, "SEGA VIRTUA STICK High Grade"))
+   else if (strstr(device_name, "SEGA VIRTUA STICK High Grade"))
       device = DEVICE_SEGA_VIRTUA_STICK_HIGH_GRADE;
-   else if (strstr(name_buf, "TTT THT Arcade console 2P USB Play"))
+   else if (strstr(device_name, "TTT THT Arcade console 2P USB Play"))
       device = DEVICE_TTT_THT_ARCADE;
-   else if (strstr(name_buf, "TOMMO NEOGEOX Arcade Stick"))
+   else if (strstr(device_name, "TOMMO NEOGEOX Arcade Stick"))
       device = DEVICE_TOMMO_NEOGEOX_ARCADE;
-   else if (strstr(name_buf, "Onlive Wireless Controller"))
+   else if (strstr(device_name, "Onlive Wireless Controller"))
       device = DEVICE_ONLIVE_WIRELESS_CONTROLLER;
-   else if (strstr(name_buf, "MadCatz") && strstr(name_buf, "PC USB Wired Stick"))
+   else if (strstr(device_name, "MadCatz") && strstr(device_name, "PC USB Wired Stick"))
       device = DEVICE_MADCATZ_PC_USB_STICK;
-   else if (strstr(name_buf, "Logicool") && strstr(name_buf, "RumblePad 2"))
+   else if (strstr(device_name, "Logicool") && strstr(device_name, "RumblePad 2"))
       device = DEVICE_LOGICOOL_RUMBLEPAD2;
-   else if (strstr(name_buf, "Sun4i-keypad"))
+   else if (strstr(device_name, "Sun4i-keypad"))
       device = DEVICE_IDROID_X360;
-   else if (strstr(name_buf, "Zeemote") && strstr(name_buf, "Steelseries free"))
+   else if (strstr(device_name, "Zeemote") && strstr(device_name, "Steelseries free"))
       device = DEVICE_ZEEMOTE_STEELSERIES;
-   else if (strstr(name_buf, "HuiJia  USB GamePad"))
-   {
-      device = DEVICE_HUIJIA_USB_SNES;
+   else if (strstr(device_name, "HuiJia  USB GamePad"))
       strlcpy(name_buf, "HuiJia", sizeof(name_buf));
-   }
-   else if (strstr(name_buf, "Smartjoy Family Super Smartjoy 2"))
+   else if (strstr(device_name, "Smartjoy Family Super Smartjoy 2"))
       device = DEVICE_SUPER_SMARTJOY;
-   else if (strstr(name_buf, "Jess Tech Dual Analog Rumble Pad"))
+   else if (strstr(device_name, "Jess Tech Dual Analog Rumble Pad"))
       device = DEVICE_SAITEK_RUMBLE_P480;
-   else if (strstr(name_buf, "mtk-kpd"))
+   else if (strstr(device_name, "mtk-kpd"))
       device = DEVICE_MUCH_IREADGO_I5;
-   else if (strstr(name_buf, "Wikipad"))
+   else if (strstr(device_name, "Wikipad"))
       device = DEVICE_WIKIPAD;
-   else if (strstr(name_buf, "Microsoft"))
+   else if (strstr(device_name, "Microsoft"))
    {
-      if (strstr(name_buf, "Dual Strike"))
-      {
-         device = DEVICE_MS_SIDEWINDER_DUAL_STRIKE;
-         strlcpy(name_buf, "SideWinder Dual Strike", sizeof(name_buf));
-      }
-      else if (strstr(name_buf, "SideWinder"))
-      {
-         device = DEVICE_MS_SIDEWINDER;
+      if (strstr(device_name, "Dual Strike"))
+         strlcpy(device_name, "SideWinder Dual Strike", sizeof(device_name));
+      else if (strstr(device_name, "SideWinder"))
          strlcpy(name_buf, "SideWinder Classic", sizeof(name_buf));
-      }
-      else if (strstr(name_buf, "X-Box 360")
-            || strstr(name_buf, "Xbox 360 Wireless Receiver"))
-      {
-         device = DEVICE_MS_XBOX;
+      else if (strstr(device_name, "X-Box 360")
+            || strstr(device_name, "Xbox 360 Wireless Receiver")
+            || strstr(device_name, "X-Box"))
          strlcpy(name_buf, "XBox 360", sizeof(name_buf));
-      }
-      else if (strstr(name_buf, "X-Box"))
-         device = DEVICE_MS_XBOX;
    }
-   else if (strstr(name_buf, "WiseGroup"))
+   else if (strstr(device_name, "WiseGroup"))
    {
-      if (strstr(name_buf, "TigerGame") || strstr(name_buf, "Game Controller Adapter")
-            || strstr(name_buf, "JC-PS102U") || strstr(name_buf, "Dual USB Joypad"))
+      if (strstr(device_name, "TigerGame") || strstr(device_name, "Game Controller Adapter")
+            || strstr(device_name, "JC-PS102U") || strstr(device_name, "Dual USB Joypad"))
       {
-         if (strstr(name_buf, "WiseGroup"))
-         {
-            device = DEVICE_WISEGROUP_PLAYSTATION2;
+         if (strstr(device_name, "WiseGroup"))
             strlcpy(name_buf, "PlayStation2 WiseGroup", sizeof(name_buf));
-         }
-         else if (strstr(name_buf, "JC-PS102U"))
+         else if (strstr(device_name, "JC-PS102U"))
             device = DEVICE_JCPS102_PLAYSTATION2;
          else
             device = DEVICE_GENERIC_PLAYSTATION2_CONVERTER;
       }
    }
-   else if (strstr(name_buf, "PLAYSTATION(R)3") || strstr(name_buf, "Dualshock3")
-         || strstr(name_buf,"Sixaxis") || strstr(name_buf, "Gasia,Co") ||
-         (strstr(name_buf, "Gamepad 0") || strstr(name_buf, "Gamepad 1") || 
-          strstr(name_buf, "Gamepad 2") || strstr(name_buf, "Gamepad 3")))
-   {
-      if (strstr(name_buf, "Gamepad 0") || strstr(name_buf, "Gamepad 1") || 
-            strstr(name_buf, "Gamepad 2") || strstr(name_buf, "Gamepad 3"))
-         device = DEVICE_PLAYSTATION3_VERSION1;
-      else
-         device = DEVICE_PLAYSTATION3_VERSION2;
+   else if (strstr(device_name, "PLAYSTATION(R)3") || strstr(device_name, "Dualshock3")
+         || strstr(device_name, "Sixaxis") || strstr(device_name, "Gasia,Co") ||
+         (strstr(device_name, "Gamepad 0") || strstr(device_name, "Gamepad 1") || 
+          strstr(device_name, "Gamepad 2") || strstr(device_name, "Gamepad 3")))
       strlcpy(name_buf, "PlayStation3", sizeof(name_buf));
-   }
-   else if (strstr(name_buf, "MOGA"))
+   else if (strstr(device_name, "MOGA"))
       device = DEVICE_MOGA;
-   else if (strstr(name_buf, "Sony Navigation Controller"))
+   else if (strstr(device_name, "Sony Navigation Controller"))
       device = DEVICE_PSMOVE_NAVI;
-   else if (strstr(name_buf, "OUYA Game Controller"))
-   {
-      device = DEVICE_OUYA;
+   else if (strstr(device_name, "OUYA Game Controller"))
       strlcpy(name_buf, "OUYA", sizeof(name_buf));
-   }
-   else if (strstr(name_buf, "adc joystick"))
+   else if (strstr(device_name, "adc joystick"))
       device = DEVICE_JXD_S7300B;
-   else if (strstr(name_buf, "idroid:con"))
+   else if (strstr(device_name, "idroid:con"))
       device = DEVICE_IDROID_CON;
-   else if (strstr(name_buf, "NYKO PLAYPAD PRO"))
+   else if (strstr(device_name, "NYKO PLAYPAD PRO"))
       device = DEVICE_NYKO_PLAYPAD_PRO;
-   else if (strstr(name_buf, "2-Axis, 8-Button"))
+   else if (strstr(device_name, "2-Axis, 8-Button"))
       device = DEVICE_GENIUS_MAXFIRE_G08XU;
-   else if (strstr(name_buf, "USB,2-axis 8-button gamepad"))
+   else if (strstr(device_name, "USB,2-axis 8-button gamepad"))
       device = DEVICE_USB_2_AXIS_8_BUTTON_GAMEPAD;
-   else if (strstr(name_buf, "BUFFALO BGC-FC801"))
+   else if (strstr(device_name, "BUFFALO BGC-FC801"))
       device = DEVICE_BUFFALO_BGC_FC801;
-   else if (strstr(name_buf, "8Bitdo FC30"))
+   else if (strstr(device_name, "8Bitdo FC30"))
       device = DEVICE_FC30_GAMEPAD;
-   else if (strstr(name_buf, "RetroUSB.com RetroPad"))
+   else if (strstr(device_name, "RetroUSB.com RetroPad"))
       device = DEVICE_RETROUSB_RETROPAD;
-   else if (strstr(name_buf, "RetroUSB.com SNES RetroPort"))
+   else if (strstr(device_name, "RetroUSB.com SNES RetroPort"))
       device = DEVICE_RETROUSB_SNES_RETROPORT;
-   else if (strstr(name_buf, "CYPRESS USB"))
+   else if (strstr(device_name, "CYPRESS USB"))
       device = DEVICE_CYPRESS_USB;
-   else if (strstr(name_buf, "Mayflash Wii Classic"))
+   else if (strstr(device_name, "Mayflash Wii Classic"))
       device = DEVICE_MAYFLASH_WII_CLASSIC;
-   else if (strstr(name_buf, "SZMy-power LTD CO.  Dual Box WII"))
+   else if (strstr(device_name, "SZMy-power LTD CO.  Dual Box WII"))
       device = DEVICE_SZMY_POWER_DUAL_BOX_WII;
-   else if (strstr(name_buf, "Toodles 2008 ChImp"))
+   else if (strstr(device_name, "Toodles 2008 ChImp"))
       device = DEVICE_TOODLES_2008_CHIMP;
-   else if (strstr(name_buf, "joy_key"))
+   else if (strstr(device_name, "joy_key"))
       device = DEVICE_ARCHOS_GAMEPAD;
-   else if (strstr(name_buf, "matrix_keyboard"))
+   else if (strstr(device_name, "matrix_keyboard"))
       device = DEVICE_JXD_S5110;
-   else if (strstr(name_buf, "tincore_adc_joystick"))
+   else if (strstr(device_name, "tincore_adc_joystick"))
       device = DEVICE_JXD_S5110_SKELROM;
-   else if (strstr(name_buf, "keypad-zeus") || (strstr(name_buf, "keypad-game-zeus")))
-   {
-      device = DEVICE_XPERIA_PLAY;
+   else if (strstr(device_name, "keypad-zeus") || (strstr(device_name, "keypad-game-zeus")))
       strlcpy(name_buf, "Xperia Play", sizeof(name_buf));
-   }
-   else if (strstr(name_buf, "Broadcom Bluetooth HID"))
+   else if (strstr(device_name, "Broadcom Bluetooth HID"))
       device = DEVICE_BROADCOM_BLUETOOTH_HID;
-   else if (strstr(name_buf, "USB Gamepad"))
+   else if (strstr(device_name, "USB Gamepad"))
       device = DEVICE_THRUST_PREDATOR;
-   else if (strstr(name_buf, "ADC joystick"))
+   else if (strstr(device_name, "ADC joystick"))
       device = DEVICE_JXD_S7800B;
-   else if (strstr(name_buf, "DragonRise"))
+   else if (strstr(device_name, "DragonRise"))
       device = DEVICE_DRAGONRISE;
-   else if (strstr(name_buf, "Thrustmaster T Mini"))
+   else if (strstr(device_name, "Thrustmaster T Mini"))
       device = DEVICE_THRUSTMASTER_T_MINI;
-   else if (strstr(name_buf, "2Axes 11Keys Game  Pad"))
+   else if (strstr(device_name, "2Axes 11Keys Game  Pad"))
       device = DEVICE_TOMEE_NES_USB;
-   else if (strstr(name_buf, "rk29-keypad") || strstr(name_buf, "GAMEMID"))
+   else if (strstr(device_name, "rk29-keypad") || strstr(device_name, "GAMEMID"))
       device = DEVICE_GAMEMID;
-   else if (strstr(name_buf, "USB Gamepad"))
+   else if (strstr(device_name, "USB Gamepad"))
       device = DEVICE_DEFENDER_GAME_RACER_CLASSIC;
-   else if (strstr(name_buf, "HOLTEK JC - U912F vibration game"))
+   else if (strstr(device_name, "HOLTEK JC - U912F vibration game"))
       device = DEVICE_HOLTEK_JC_U912F;
-   else if (strstr(name_buf, "NVIDIA Controller"))
+   else if (strstr(device_name, "NVIDIA Controller"))
    {
-      device = DEVICE_NVIDIA_SHIELD;
       *port = 0; // Shield is always player 1. FIXME: This is kinda ugly. We really need to find a way to detect useless input devices like gpio-keys in a general way.
       strlcpy(name_buf, "NVIDIA Shield", sizeof(name_buf));
    }
-   else if (strstr(name_buf, "Samsung Game Pad EI-GP20"))
-   {
-      device = DEVICE_SAMSUNG_GAMEPAD_EIGP20;
+   else if (strstr(device_name, "Samsung Game Pad EI-GP20"))
       strlcpy(name_buf, "Samsung Gamepad EI-GP20", sizeof(name_buf));
-   }
 
-   if (strstr(current_ime, "net.obsidianx.android.mogaime"))
+   if (strstr(android_app->current_ime, "net.obsidianx.android.mogaime"))
    {
       device = DEVICE_MOGA_IME;
       strlcpy(name_buf, "MOGA IME", sizeof(name_buf));
    }
-   else if (strstr(current_ime, "com.ccpcreations.android.WiiUseAndroid"))
+   else if (strstr(android_app->current_ime, "com.ccpcreations.android.WiiUseAndroid"))
    {
       device = DEVICE_CCPCREATIONS_WIIUSE_IME;
       strlcpy(name_buf, "ccpcreations WiiUse", sizeof(name_buf));
    }
-   else if (strstr(current_ime, "com.hexad.bluezime"))
+   else if (strstr(android_app->current_ime, "com.hexad.bluezime"))
    {
-      device = DEVICE_ICONTROLPAD_BLUEZ_IME;
       strlcpy(name_buf, "iControlpad SPP mode (using Bluez IME)", sizeof(name_buf));
    }
 
    if (source == AINPUT_SOURCE_KEYBOARD && device != DEVICE_XPERIA_PLAY)
       device = DEVICE_KEYBOARD_RETROPAD;
 
-   if (device != DEVICE_NONE && name_buf[0] != '\0')
+   if (name_buf[0] != '\0')
    {
       strlcpy(g_settings.input.device_names[*port], name_buf, sizeof(g_settings.input.device_names[*port]));
       input_config_autoconfigure_joypad(*port, name_buf, android_joypad.ident);
@@ -704,8 +667,7 @@ static void android_input_poll(void *data)
 
                if (port < 0)
                {
-                  if (g_settings.input.autodetect_enable)
-                     handle_hotplug(android_app, &android->pads_connected, id, source);
+                  handle_hotplug(android_app, &android->pads_connected, id, source);
                   port = android->pads_connected;
                   android->state_device_ids[android->pads_connected++] = id;
                }
