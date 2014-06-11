@@ -231,18 +231,17 @@ const char* apple_keycode_hidusage_to_name(uint32_t hid_usage)
 
 #ifdef IOS
 extern void apple_gamecontroller_poll_all(void);
-#endif
 
 enum input_devices
 {
    DEVICE_NONE = 0,
-#if defined(IOS)
    DEVICE_WIIMOTE,
    DEVICE_SIXAXIS,
    DEVICE_MFI,
-#endif
    DEVICE_LAST
 };
+
+#endif
 
 static const rarch_joypad_driver_t *joypad;
 
@@ -596,12 +595,12 @@ static void apple_input_free_input(void *data)
       joypad->destroy();
 }
 
+#ifdef IOS
 static void apple_input_set_keybinds(void *data, unsigned device, unsigned port,
       unsigned id, unsigned keybind_action)
 {
    (void)device;
 
-#ifdef IOS
    if (keybind_action & (1ULL << KEYBINDS_ACTION_SET_DEFAULT_BINDS))
    {
       switch (device)
@@ -685,7 +684,6 @@ static void apple_input_set_keybinds(void *data, unsigned device, unsigned port,
               break;
       }
    }
-#endif
 
    if (keybind_action & (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL))
    {
@@ -697,6 +695,7 @@ static void apple_input_set_keybinds(void *data, unsigned device, unsigned port,
          snprintf(ret->desc, sizeof(ret->desc), "Button %llu", ret->joykey);
    }
 }
+#endif
 
 static bool apple_input_set_rumble(void *data, unsigned port, enum retro_rumble_effect effect, uint16_t strength)
 {
@@ -719,10 +718,12 @@ static uint64_t apple_input_get_capabilities(void *data)
    return caps;
 }
 
+#ifdef IOS
 static unsigned apple_devices_size(void *data)
 {
    return DEVICE_LAST;
 }
+#endif
 
 const rarch_joypad_driver_t *apple_get_joypad_driver(void *data)
 {
@@ -735,11 +736,19 @@ const input_driver_t input_apple = {
    apple_input_state,
    apple_bind_button_pressed,
    apple_input_free_input,
+#ifdef IOS
    apple_input_set_keybinds,
+#else
+   NULL,
+#endif
    NULL,
    NULL,
    apple_input_get_capabilities,
+#ifdef IOS
    apple_devices_size,
+#else
+    NULL,
+#endif
    "apple_input",
    NULL,
    apple_input_set_rumble,
