@@ -64,7 +64,7 @@ static uint32_t can_run;
 
 #define INCPOS(POS) { POS##_position = (POS##_position + 1) % 64; }
 
-void btpad_queue_reset()
+void btpad_queue_reset(void)
 {
    insert_position = 0;
    read_position = 0;
@@ -78,11 +78,11 @@ void btpad_queue_run(uint32_t count)
    btpad_queue_process();
 }
 
-void btpad_queue_process()
+void btpad_queue_process(void)
 {
    for (; can_run && (insert_position != read_position); can_run --)
    {
-      struct btpad_queue_command* cmd = &commands[read_position];
+      struct btpad_queue_command* cmd = (struct btpad_queue_command*)&commands[read_position];
 
            if (cmd->command == btstack_set_power_mode_ptr)
          bt_send_cmd_ptr(cmd->command, cmd->btstack_set_power_mode.on);
@@ -104,7 +104,7 @@ void btpad_queue_process()
 
 void btpad_queue_btstack_set_power_mode(uint8_t on)
 {
-   struct btpad_queue_command* cmd = &commands[insert_position];
+   struct btpad_queue_command* cmd = (struct btpad_queue_command*)&commands[insert_position];
 
    cmd->command = btstack_set_power_mode_ptr;
    cmd->btstack_set_power_mode.on = on;
@@ -113,9 +113,9 @@ void btpad_queue_btstack_set_power_mode(uint8_t on)
    btpad_queue_process();
 }
 
-void btpad_queue_hci_read_bd_addr()
+void btpad_queue_hci_read_bd_addr(void)
 {
-   struct btpad_queue_command* cmd = &commands[insert_position];
+   struct btpad_queue_command* cmd = (struct btpad_queue_command*)&commands[insert_position];
 
    cmd->command = hci_read_bd_addr_ptr;
 
@@ -125,7 +125,7 @@ void btpad_queue_hci_read_bd_addr()
 
 void btpad_queue_hci_disconnect(uint16_t handle, uint8_t reason)
 {
-   struct btpad_queue_command* cmd = &commands[insert_position];
+   struct btpad_queue_command* cmd = (struct btpad_queue_command*)&commands[insert_position];
 
    cmd->command = hci_disconnect_ptr;
    cmd->hci_disconnect.handle = handle;
@@ -137,7 +137,7 @@ void btpad_queue_hci_disconnect(uint16_t handle, uint8_t reason)
 
 void btpad_queue_hci_inquiry(uint32_t lap, uint8_t length, uint8_t num_responses)
 {
-   struct btpad_queue_command* cmd = &commands[insert_position];
+   struct btpad_queue_command* cmd = (struct btpad_queue_command*)&commands[insert_position];
 
    cmd->command = hci_inquiry_ptr;
    cmd->hci_inquiry.lap = lap;
@@ -150,7 +150,7 @@ void btpad_queue_hci_inquiry(uint32_t lap, uint8_t length, uint8_t num_responses
 
 void btpad_queue_hci_remote_name_request(bd_addr_t bd_addr, uint8_t page_scan_repetition_mode, uint8_t reserved, uint16_t clock_offset)
 {
-   struct btpad_queue_command* cmd = &commands[insert_position];
+   struct btpad_queue_command* cmd = (struct btpad_queue_command*)&commands[insert_position];
 
    cmd->command = hci_remote_name_request_ptr;
    memcpy(cmd->hci_remote_name_request.bd_addr, bd_addr, sizeof(bd_addr_t));
@@ -164,7 +164,7 @@ void btpad_queue_hci_remote_name_request(bd_addr_t bd_addr, uint8_t page_scan_re
 
 void btpad_queue_hci_pin_code_request_reply(bd_addr_t bd_addr, bd_addr_t pin)
 {
-   struct btpad_queue_command* cmd = &commands[insert_position];
+   struct btpad_queue_command* cmd = (struct btpad_queue_command*)&commands[insert_position];
 
    cmd->command = hci_pin_code_request_reply_ptr;
    memcpy(cmd->hci_pin_code_request_reply.bd_addr, bd_addr, sizeof(bd_addr_t));
@@ -173,4 +173,3 @@ void btpad_queue_hci_pin_code_request_reply(bd_addr_t bd_addr, bd_addr_t pin)
    INCPOS(insert);
    btpad_queue_process();
 }
-

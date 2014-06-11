@@ -26,7 +26,12 @@
 #include "btpad_queue.h"
 
 // Private interface
-enum btpad_state { BTPAD_EMPTY, BTPAD_CONNECTING, BTPAD_CONNECTED };
+enum btpad_state
+{
+   BTPAD_EMPTY,
+   BTPAD_CONNECTING,
+   BTPAD_CONNECTED
+};
 
 struct apple_pad_connection
 {
@@ -48,11 +53,9 @@ void apple_pad_send_control(struct apple_pad_connection* connection, uint8_t* da
    bt_send_l2cap_ptr(connection->channels[0], data, size);
 }
 
-
 static bool inquiry_off;
 static bool inquiry_running;
 
-// External interface (MAIN THREAD ONLY)
 void btpad_set_inquiry_state(bool on)
 {
    inquiry_off = !on;
@@ -64,7 +67,8 @@ void btpad_set_inquiry_state(bool on)
 // Internal interface:
 static struct apple_pad_connection* btpad_find_empty_connection()
 {
-   for (int i = 0; i != MAX_PLAYERS; i ++)
+   int i;
+   for (i = 0; i != MAX_PLAYERS; i ++)
       if (g_connections[i].state == BTPAD_EMPTY)
          return &g_connections[i];
    
@@ -73,7 +77,8 @@ static struct apple_pad_connection* btpad_find_empty_connection()
 
 static struct apple_pad_connection* btpad_find_connection_for(uint16_t handle, bd_addr_t address)
 {
-   for (int i = 0; i < MAX_PLAYERS; i ++)
+   int i;
+   for (i = 0; i < MAX_PLAYERS; i ++)
    {
       if (!g_connections[i].handle && !g_connections[i].has_address)
          continue;
@@ -98,9 +103,10 @@ static void btpad_close_connection(struct apple_pad_connection* connection)
    memset(connection, 0, sizeof(struct apple_pad_connection));
 }
 
-static void btpad_close_all_connections()
+static void btpad_close_all_connections(void)
 {
-   for (int i = 0; i < MAX_PLAYERS; i ++)
+   int i;
+   for (i = 0; i < MAX_PLAYERS; i ++)
       btpad_close_connection(&g_connections[i]);
 }
 
@@ -138,9 +144,7 @@ void btpad_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
          break;
 
          case HCI_EVENT_COMMAND_STATUS:
-         {
-            btpad_queue_run(packet[3]);
-         }
+         btpad_queue_run(packet[3]);
          break;
 
          case HCI_EVENT_COMMAND_COMPLETE:
@@ -150,8 +154,10 @@ void btpad_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
             if (COMMAND_COMPLETE_EVENT(packet, (*hci_read_bd_addr_ptr)))
             {
                bt_flip_addr_ptr(event_addr, &packet[6]);
-               if (!packet[5]) RARCH_LOG("BTpad: Local address is %s\n", bd_addr_to_str_ptr(event_addr));
-               else            RARCH_LOG("BTpad: Failed to get local address (Status: %02X)\n", packet[5]);               
+               if (!packet[5])
+                  RARCH_LOG("BTpad: Local address is %s\n", bd_addr_to_str_ptr(event_addr));
+               else
+                  RARCH_LOG("BTpad: Failed to get local address (Status: %02X)\n", packet[5]);               
             }
          }
          break;
@@ -162,7 +168,8 @@ void btpad_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
             {
                bt_flip_addr_ptr(event_addr, &packet[3]);
 
-               struct apple_pad_connection* connection = btpad_find_empty_connection();
+               struct apple_pad_connection* connection = (struct apple_pad_connection*)btpad_find_empty_connection();
+
                if (connection)
                {
                   RARCH_LOG("BTpad: Inquiry found device\n");
@@ -196,7 +203,7 @@ void btpad_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
             const uint16_t psm = READ_BT_16(packet, 11);
             const uint16_t channel_id = READ_BT_16(packet, 13);
 
-            struct apple_pad_connection* connection = btpad_find_connection_for(handle, event_addr);
+            struct apple_pad_connection* connection = (struct apple_pad_connection*)btpad_find_connection_for(handle, event_addr);
 
             if (!packet[2])
             {
@@ -234,7 +241,7 @@ void btpad_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
             const uint32_t psm = READ_BT_16(packet, 10);
             const uint32_t channel_id = READ_BT_16(packet, 12);
       
-            struct apple_pad_connection* connection = btpad_find_connection_for(handle, event_addr);
+            struct apple_pad_connection* connection = (struct apple_pad_connection*)btpad_find_connection_for(handle, event_addr);
 
             if (!connection)
             {
@@ -262,7 +269,7 @@ void btpad_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
          {
             bt_flip_addr_ptr(event_addr, &packet[3]);
             
-            struct apple_pad_connection* connection = btpad_find_connection_for(0, event_addr);
+            struct apple_pad_connection* connection = (struct apple_pad_connection*)btpad_find_connection_for(0, event_addr);
 
             if (!connection)
             {
@@ -278,12 +285,10 @@ void btpad_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
          break;
 
          case HCI_EVENT_PIN_CODE_REQUEST:
-         {
-            RARCH_LOG("BTpad: Sending WiiMote PIN\n");
+         RARCH_LOG("BTpad: Sending WiiMote PIN\n");
 
-            bt_flip_addr_ptr(event_addr, &packet[2]);
-            btpad_queue_hci_pin_code_request_reply(event_addr, &packet[2]);
-         }
+         bt_flip_addr_ptr(event_addr, &packet[2]);
+         btpad_queue_hci_pin_code_request_reply(event_addr, &packet[2]);
          break;
 
          case HCI_EVENT_DISCONNECTION_COMPLETE:
@@ -292,7 +297,8 @@ void btpad_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
 
             if (!packet[2])
             {
-               struct apple_pad_connection* connection = btpad_find_connection_for(handle, 0);
+               struct apple_pad_connection* connection = (struct apple_pad_connection*)btpad_find_connection_for(handle, 0);
+
                if (connection)
                {
                   connection->handle = 0;
@@ -316,9 +322,10 @@ void btpad_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
    }
    else if (packet_type == L2CAP_DATA_PACKET)
    {
-      for (int i = 0; i < MAX_PLAYERS; i ++)
+      int i;
+      for (i = 0; i < MAX_PLAYERS; i ++)
       {
-         struct apple_pad_connection* connection = &g_connections[i];
+         struct apple_pad_connection* connection = (struct apple_pad_connection*)&g_connections[i];
    
          if (connection->state == BTPAD_CONNECTED && (connection->channels[0] == channel || connection->channels[1] == channel))
             apple_joypad_packet(connection->slot, packet, size);

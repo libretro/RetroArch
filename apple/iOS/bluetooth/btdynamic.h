@@ -20,9 +20,9 @@
 #include "btstack/utils.h"
 #include "btstack/btstack.h"
 
-bool btstack_try_load();
+bool btstack_try_load(void);
 void btstack_set_poweron(bool on);
-bool btstack_is_running();
+bool btstack_is_running(void);
 
 #ifndef BUILDING_BTDYNAMIC
 #define BTDIMPORT extern
@@ -38,7 +38,7 @@ BTDIMPORT btstack_packet_handler_t (*bt_register_packet_handler_ptr)(btstack_pac
 BTDIMPORT int (*bt_send_cmd_ptr)(const hci_cmd_t *cmd, ...);
 BTDIMPORT void (*bt_send_l2cap_ptr)(uint16_t local_cid, uint8_t *data, uint16_t len);
 BTDIMPORT void (*run_loop_init_ptr)(RUN_LOOP_TYPE type);
-BTDIMPORT void (*run_loop_execute_ptr)();
+BTDIMPORT void (*run_loop_execute_ptr)(void);
 
 BTDIMPORT const hci_cmd_t* btstack_set_power_mode_ptr;
 BTDIMPORT const hci_cmd_t* hci_delete_stored_link_key_ptr;
