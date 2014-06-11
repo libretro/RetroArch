@@ -584,7 +584,7 @@ static void handle_hotplug(void *data, unsigned *port, unsigned id,
    else if (strstr(name_buf, "keypad-zeus") || (strstr(name_buf, "keypad-game-zeus")))
    {
       device = DEVICE_XPERIA_PLAY;
-      strlcpy(name, "Xperia Play", sizeof(name_buf));
+      strlcpy(name_buf, "Xperia Play", sizeof(name_buf));
    }
    else if (strstr(name_buf, "Broadcom Bluetooth HID"))
       device = DEVICE_BROADCOM_BLUETOOTH_HID;
@@ -656,7 +656,7 @@ static void android_input_poll(void *data)
          AInputEvent *event = NULL;
 
          // Read all pending events.
-         do
+         while (AInputQueue_hasEvents(android_app->inputQueue))
          {
             while (AInputQueue_getEvent(android_app->inputQueue, &event) >= 0)
             {
@@ -668,9 +668,6 @@ static void android_input_poll(void *data)
 
                msg[0] = 0;
                predispatched = AInputQueue_preDispatchEvent(android_app->inputQueue, event);
-
-               if (predispatched)
-                  continue;
 
                source = AInputEvent_getSource(event);
                id = AInputEvent_getDeviceId(event);
@@ -726,9 +723,10 @@ static void android_input_poll(void *data)
                   RARCH_LOG("Input debug: %s\n", msg);
                }
 
-               AInputQueue_finishEvent(android_app->inputQueue, event, handled);
+               if (!predispatched)
+                  AInputQueue_finishEvent(android_app->inputQueue, event, handled);
             }
-         } while (AInputQueue_hasEvents(android_app->inputQueue));
+         }
       }
       else if (ident == LOOPER_ID_USER)
       {
