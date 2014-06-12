@@ -230,19 +230,8 @@ public final class UserPreferences
 		config.setString("video_shader", shaderPath);
 		config.setBoolean("video_shader_enable", prefs.getBoolean("video_shader_enable", false) && new File(shaderPath).exists());
 
-		// Set whether or not custom overlays are being used.
-		final boolean useOverlay = prefs.getBoolean("input_overlay_enable", true);
-		config.setBoolean("input_overlay_enable", useOverlay); // Not used by RetroArch directly.
-		if (useOverlay)
-		{
-			String overlayPath = prefs.getString("input_overlay", dataDir + "/overlays/snes/snes.cfg");
-			config.setString("input_overlay", overlayPath);
-			config.setDouble("input_overlay_opacity", prefs.getFloat("input_overlay_opacity", 0.7f));
-		}
-		else
-		{
-			config.setString("input_overlay", "");
-		}
+		config.setBoolean("input_overlay_enable", prefs.getBoolean("input_overlay_enable", true));
+		config.setString("input_overlay", prefs.getString("input_overlay", ""));
 
 		// Set whether or not custom directories are being used.
 		final boolean usingCustomSaveFileDir = prefs.getBoolean("savefile_directory_enable", false);

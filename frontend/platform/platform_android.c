@@ -407,6 +407,12 @@ static bool android_run_events (void *data)
    return true;
 }
 
+static void frontend_android_get_name(char *name, size_t sizeof_name)
+{
+   int len = __system_property_get("ro.product.model", name);
+   (void)len;
+}
+
 static void frontend_android_get_environment_settings(int *argc, char *argv[],
       void *data, void *params_data)
 {
@@ -514,12 +520,25 @@ static void frontend_android_get_environment_settings(int *argc, char *argv[],
       }
    }
 
-   frontend_android_get_name(&model_id, sizeof(model_id));
+   frontend_android_get_name(model_id, sizeof(model_id));
+
+   // Set audio latency hint values per device (in case we need >64ms latency for good sound)
 
    if (!strcmp(model_id, "R800x"))
       g_defaults.settings.out_latency = 128;
    else if (!strcmp(model_id, "GAMEMID_BT"))
       g_defaults.settings.out_latency = 160;
+
+   // Explicitly disable input overlay by default for gamepad-like/console devices
+   if (
+         !strcmp(model_id, "OUYA Console") ||
+         !strcmp(model_id, "R800x") ||
+         !strcmp(model_id, "GAMEMID_BT") ||
+         !strcmp(model_id, "SHIELD")
+         )
+      g_defaults.settings.input_overlay_enable = false;
+   else
+      g_defaults.settings.input_overlay_enable = true;   // Enable input overlay by default
 }
 
 #if 0
@@ -709,16 +728,11 @@ static void frontend_android_shutdown(bool unused)
    exit(0);
 }
 
-static void frontend_android_get_name(char *name, size_t sizeof_name)
-{
-   int len = __system_property_get("ro.product.model", name);
-   (void)len;
-}
 
 static int frontend_android_get_rating(void)
 {
    char model_id[PROP_VALUE_MAX];
-   frontend_android_get_name(&model_id, sizeof(model_id));
+   frontend_android_get_name(model_id, sizeof(model_id));
 
    RARCH_LOG("ro.product.model: (%s).\n", model_id);
 

@@ -315,6 +315,7 @@ void config_set_defaults(void)
    if (!g_defaults.settings.out_latency)
       g_defaults.settings.out_latency = out_latency;
 
+
    g_settings.audio.latency = g_defaults.settings.out_latency;
    g_settings.audio.sync = audio_sync;
    g_settings.audio.rate_control = rate_control;
@@ -380,7 +381,12 @@ void config_set_defaults(void)
    g_settings.input.netplay_client_swap_input = netplay_client_swap_input;
    g_settings.input.turbo_period = turbo_period;
    g_settings.input.turbo_duty_cycle = turbo_duty_cycle;
+
    g_settings.input.overlay_enable = false;
+
+   if (g_defaults.settings.input_overlay_enable)
+      g_settings.input.overlay_enable = g_defaults.settings.input_overlay_enable;
+
    g_settings.input.overlay_opacity = 0.7f;
    g_settings.input.overlay_scale = 1.0f;
    g_settings.input.debug_enable = input_debug_enable;
@@ -451,7 +457,7 @@ void config_set_defaults(void)
    if (default_overlay_dir)
    {
       fill_pathname_expand_special(g_extern.overlay_dir, default_overlay_dir, sizeof(g_extern.overlay_dir));
-      if (g_settings.input.overlay[0] == '\0\)
+      if (g_settings.input.overlay[0] == '\0')
             fill_pathname_join(g_settings.input.overlay, g_extern.overlay_dir, "gamepads/retropad/retropad.cfg", sizeof(g_settings.input.overlay));
    }
 #endif
