@@ -224,8 +224,6 @@ public final class MainMenuFragment extends PreferenceListFragment implements On
 					SharedPreferences prefs = UserPreferences.getPreferences(ctx);
 					SharedPreferences.Editor edit = prefs.edit();
 					edit.putString("video_refresh_rate", Double.toString(60.00d));
-					edit.putBoolean("input_overlay_enable", false);
-					edit.putBoolean("input_autodetect_enable", true);
 					edit.putBoolean("audio_latency_auto", true);
 					edit.commit();
 					UserPreferences.updateConfigFile(ctx);
@@ -246,8 +244,6 @@ public final class MainMenuFragment extends PreferenceListFragment implements On
 				{
 					SharedPreferences prefs = UserPreferences.getPreferences(ctx);
 					SharedPreferences.Editor edit = prefs.edit();
-					edit.putBoolean("input_overlay_enable", false);
-					edit.putBoolean("input_autodetect_enable", true);
 					edit.putBoolean("audio_latency_auto", false);
 					edit.commit();
 					UserPreferences.updateConfigFile(ctx);
