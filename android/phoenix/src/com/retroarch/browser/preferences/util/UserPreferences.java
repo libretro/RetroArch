@@ -177,18 +177,8 @@ public final class UserPreferences
 		{
 			int buffersize = getLowLatencyBufferSize(ctx);
 
-			boolean lowLatency = hasLowLatencyAudio(ctx);
-			Log.i(TAG, "Audio is low latency: " + (lowLatency ? "yes" : "no"));
-
 			config.setInt("audio_latency", 64);
-			if (lowLatency)
-			{
-				config.setInt("audio_block_frames", buffersize);
-			}
-			else
-			{
-				config.setInt("audio_block_frames", 0);
-			}
+			config.setInt("audio_block_frames", buffersize);
 		}
 		else
 		{
@@ -460,20 +450,6 @@ public final class UserPreferences
 				.getProperty(AudioManager.PROPERTY_OUTPUT_FRAMES_PER_BUFFER));
 		Log.i(TAG, "Queried ideal buffer size (frames): " + buffersize);
 		return buffersize;
-	}
-
-	/**
-	 * Checks whether or not a device supports low-latency audio.
-	 * 
-	 * @param ctx the current {@link Context}.
-	 * 
-	 * @return true if the device supports low-latency audio; false otherwise.
-	 */
-	@TargetApi(17)
-	private static boolean hasLowLatencyAudio(Context ctx)
-	{
-		//PackageManager pm = ctx.getPackageManager();
-		return true;//pm.hasSystemFeature(PackageManager.FEATURE_AUDIO_LOW_LATENCY);
 	}
 
 	/**
