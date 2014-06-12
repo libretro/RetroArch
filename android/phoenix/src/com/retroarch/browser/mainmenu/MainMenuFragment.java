@@ -224,47 +224,6 @@ public final class MainMenuFragment extends PreferenceListFragment implements On
 					SharedPreferences prefs = UserPreferences.getPreferences(ctx);
 					SharedPreferences.Editor edit = prefs.edit();
 					edit.putString("video_refresh_rate", Double.toString(60.00d));
-					edit.putBoolean("audio_latency_auto", true);
-					edit.commit();
-					UserPreferences.updateConfigFile(ctx);
-				}
-			});
-			alert.show();
-			retval = true;
-		}
-		else if (Build.MODEL.equals("GAMEMID_BT"))
-		{
-			AlertDialog.Builder alert = new AlertDialog.Builder(ctx);
-			alert.setTitle(R.string.game_mid_detected);
-			alert.setMessage(messageId);
-			alert.setPositiveButton(R.string.ok, new DialogInterface.OnClickListener()
-			{
-				@Override
-				public void onClick(DialogInterface dialog, int which)
-				{
-					SharedPreferences prefs = UserPreferences.getPreferences(ctx);
-					SharedPreferences.Editor edit = prefs.edit();
-					edit.putBoolean("audio_latency_auto", false);
-					edit.commit();
-					UserPreferences.updateConfigFile(ctx);
-				}
-			});
-			alert.show();
-			retval = true;
-		}
-		else if (Build.MODEL.equals("OUYA Console"))
-		{
-			AlertDialog.Builder alert = new AlertDialog.Builder(ctx);
-			alert.setTitle(R.string.ouya_detected);
-			alert.setMessage(messageId);
-			alert.setPositiveButton(R.string.ok, new DialogInterface.OnClickListener()
-			{
-				@Override
-				public void onClick(DialogInterface dialog, int which)
-				{
-					SharedPreferences prefs = UserPreferences.getPreferences(ctx);
-					SharedPreferences.Editor edit = prefs.edit();
-					edit.putBoolean("audio_latency_auto", true);
 					edit.commit();
 					UserPreferences.updateConfigFile(ctx);
 				}
@@ -286,7 +245,6 @@ public final class MainMenuFragment extends PreferenceListFragment implements On
 					SharedPreferences.Editor edit = prefs.edit();
 					edit.putBoolean("video_threaded", false);
 					edit.putString("video_refresh_rate", Double.toString(59.19132938771038));
-					edit.putBoolean("audio_latency_auto", false);
 					edit.commit();
 					UserPreferences.updateConfigFile(ctx);
 				}
@@ -307,7 +265,6 @@ public final class MainMenuFragment extends PreferenceListFragment implements On
 					SharedPreferences prefs = UserPreferences.getPreferences(ctx);
 					SharedPreferences.Editor edit = prefs.edit();
 					edit.putString("video_refresh_rate", Double.toString(59.65));
-					edit.putBoolean("audio_latency_auto", false);
 					edit.commit();
 					UserPreferences.updateConfigFile(ctx);
 				}

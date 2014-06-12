@@ -18,10 +18,4 @@
         android:summary="@string/audio_latency_desc"
         android:title="@string/audio_latency"
         android:dependency="audio_enable" />
-    <CheckBoxPreference 
-        android:defaultValue="true"
-        android:key="audio_latency_auto"
-        android:summary="@string/auto_audio_latency_desc"
-        android:title="@string/auto_audio_latency"
-        android:dependency="audio_enable" />
 </PreferenceScreen>

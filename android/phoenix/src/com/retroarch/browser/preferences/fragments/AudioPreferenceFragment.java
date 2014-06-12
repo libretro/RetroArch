@@ -19,13 +19,5 @@ public final class AudioPreferenceFragment extends PreferenceListFragment
 		
 		// Add audio preferences from the XML.
 		addPreferencesFromResource(R.xml.audio_preferences);
-		
-		// Disable automatic detection of optimal audio latency if a device is below Android 4.1
-		final CheckBoxPreference autoDetectAudioLatency = (CheckBoxPreference) findPreference("audio_latency_auto");
-		if (Build.VERSION.SDK_INT < Build.VERSION_CODES.JELLY_BEAN)
-		{
-			autoDetectAudioLatency.setChecked(false);
-			autoDetectAudioLatency.setEnabled(false);
-		}
 	}
 }
