@@ -409,7 +409,7 @@ static void handle_hotplug(void *data, unsigned *port, unsigned id,
    else if (strstr(device_name, "TTT THT Arcade console 2P USB Play"))
       device = DEVICE_TTT_THT_ARCADE;
    else if (strstr(device_name, "TOMMO NEOGEOX Arcade Stick"))
-      device = DEVICE_TOMMO_NEOGEOX_ARCADE;
+      strlcpy(name_buf, "TOMMO Neo-Geo X", sizeof(name_buf));
    else if (strstr(device_name, "Onlive Wireless Controller"))
       device = DEVICE_ONLIVE_WIRELESS_CONTROLLER;
    else if (strstr(device_name, "MadCatz") && strstr(device_name, "PC USB Wired Stick"))
@@ -429,7 +429,7 @@ static void handle_hotplug(void *data, unsigned *port, unsigned id,
    else if (strstr(device_name, "mtk-kpd"))
       device = DEVICE_MUCH_IREADGO_I5;
    else if (strstr(device_name, "Wikipad"))
-      device = DEVICE_WIKIPAD;
+      strlcpy(name_buf, "Wikipad", sizeof(name_buf));
    else if (strstr(device_name, "Microsoft"))
    {
       if (strstr(device_name, "Dual Strike"))
@@ -492,7 +492,7 @@ static void handle_hotplug(void *data, unsigned *port, unsigned id,
    else if (strstr(device_name, "Toodles 2008 ChImp"))
       device = DEVICE_TOODLES_2008_CHIMP;
    else if (strstr(device_name, "joy_key"))
-      device = DEVICE_ARCHOS_GAMEPAD;
+      strlcpy(name_buf, "Archos Gamepad", sizeof(name_buf));
    else if (strstr(device_name, "matrix_keyboard"))
       device = DEVICE_JXD_S5110;
    else if (strstr(device_name, "tincore_adc_joystick"))

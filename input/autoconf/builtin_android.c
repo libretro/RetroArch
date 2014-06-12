@@ -56,6 +56,41 @@ DECL_BTN(l, 102) \
 DECL_BTN(r, 103) \
 "input_menu_toggle_btn = 82\n"
 
+// TODO
+// - Analog sticks
+// - L2 / R2 buttons
+#define WIKIPAD_DEFAULT_BINDS \
+DECL_BTN(a, 96) \
+DECL_BTN(b, 97) \
+DECL_BTN(x, 99) \
+DECL_BTN(y, 100) \
+DECL_BTN(start, 108) \
+DECL_BTN(select, 109) \
+DECL_BTN(up, 19) \
+DECL_BTN(down, 20) \
+DECL_BTN(left, 21) \
+DECL_BTN(right, 22) \
+DECL_BTN(l, 102) \
+DECL_BTN(r, 103) \
+DECL_BTN(l3, 106) \
+DECL_BTN(r3, 107)
+
+#define ARCHOS_GAMEPAD_DEFAULT_BINDS \
+DECL_BTN(a, 97) \
+DECL_BTN(b, 96) \
+DECL_BTN(x, 100) \
+DECL_BTN(y, 99) \
+DECL_BTN(start, 108) \
+DECL_BTN(select, 109) \
+DECL_BTN(up, 19) \
+DECL_BTN(down, 20) \
+DECL_BTN(left, 21) \
+DECL_BTN(right, 22) \
+DECL_BTN(l, 102) \
+DECL_BTN(r, 103) \
+DECL_BTN(l2, 104) \
+DECL_BTN(r2, 105)
+
 #define SAMSUNG_EIGP20_DEFAULT_BINDS \
 DECL_BTN(a, 97) \
 DECL_BTN(b, 96) \
@@ -248,6 +283,17 @@ DECL_AXIS(right, +0) \
 DECL_BTN(l, 194) \
 DECL_BTN(r, 195)
 
+#define TOMMO_NEOGEOX_DEFAULT_BINDS \
+DECL_BTN(a, 97) \
+DECL_BTN(b, 96) \
+DECL_BTN(x, 98) \
+DECL_BTN(y, 99) \
+DECL_BTN(start, 105) \
+DECL_BTN(select, 104) \
+DECL_BTN(up, 19) \
+DECL_BTN(down, 20) \
+DECL_BTN(left, 21) \
+DECL_BTN(right, 22)
 
 #define RUMBLEPAD2_DEFAULT_BINDS \
 DECL_BTN(a, 190) \
@@ -285,6 +331,18 @@ const char* const input_builtin_autoconfs[] =
    "input_device = \"Xperia Play\" \n"
    "input_driver = \"android\"                    \n"
    ZEUS_DEFAULT_BINDS,
+
+   "input_device = \"Archos Gamepad\" \n"
+   "input_driver = \"android\"                    \n"
+   ARCHOS_GAMEPAD_DEFAULT_BINDS,
+
+   "input_device = \"Wikipad\" \n"
+   "input_driver = \"android\"                    \n"
+   WIKIPAD_DEFAULT_BINDS,
+
+   "input_device = \"TOMMO Neo-Geo X\" \n"
+   "input_driver = \"android\"                    \n"
+   TOMMO_NEOGEOX_DEFAULT_BINDS,
 
    "input_device = \"Samsung Gamepad EI-GP20\" \n"
    "input_driver = \"android\"                    \n"
