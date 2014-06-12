@@ -3,9 +3,7 @@ package com.retroarch.browser.preferences.fragments;
 import com.retroarch.R;
 import com.retroarch.browser.preferences.fragments.util.PreferenceListFragment;
 
-import android.os.Build;
 import android.os.Bundle;
-import android.preference.CheckBoxPreference;
 
 /**
  * A {@link PreferenceListFragment} responsible for handling the audio preferences.

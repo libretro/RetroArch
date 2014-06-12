@@ -10,7 +10,6 @@ import java.io.IOException;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager.NameNotFoundException;
@@ -81,14 +80,11 @@ public final class MainMenuFragment extends PreferenceListFragment implements On
 		{
 			prefs.edit().putBoolean("first_time_refreshrate_calculate", true).commit();
 
-			if (!detectDevice(false))
-			{
-				AlertDialog.Builder alert = new AlertDialog.Builder(ctx)
+			AlertDialog.Builder alert = new AlertDialog.Builder(ctx)
 						.setTitle(R.string.welcome_to_retroarch)
 						.setMessage(R.string.welcome_to_retroarch_desc)
 						.setPositiveButton(R.string.ok, null);
-				alert.show();
-			}
+			alert.show();
 
 			// First-run, so we show the GPL waiver agreement dialog.
 			GPLWaiverDialogFragment.newInstance().show(getFragmentManager(), "gplWaiver");
@@ -202,85 +198,7 @@ public final class MainMenuFragment extends PreferenceListFragment implements On
 
 		return version;
 	}
-
-	private boolean detectDevice(boolean show_dialog)
-	{
-		boolean retval = false;
-
-		final boolean mentionPlayStore = !Build.MODEL.equals("OUYA Console");
-		final int messageId = (mentionPlayStore ? R.string.detect_device_msg_general : R.string.detect_device_msg_ouya);
-
-		Log.i("Device MODEL", Build.MODEL);
-		if (Build.MODEL.equals("SHIELD"))
-		{
-			AlertDialog.Builder alert = new AlertDialog.Builder(ctx);
-			alert.setTitle(R.string.nvidia_shield_detected);
-			alert.setMessage(messageId);
-			alert.setPositiveButton(R.string.ok, new DialogInterface.OnClickListener()
-			{
-				@Override
-				public void onClick(DialogInterface dialog, int which)
-				{
-					SharedPreferences prefs = UserPreferences.getPreferences(ctx);
-					SharedPreferences.Editor edit = prefs.edit();
-					edit.putString("video_refresh_rate", Double.toString(60.00d));
-					edit.commit();
-					UserPreferences.updateConfigFile(ctx);
-				}
-			});
-			alert.show();
-			retval = true;
-		}
-		else if (Build.MODEL.equals("R800x"))
-		{
-			AlertDialog.Builder alert = new AlertDialog.Builder(ctx);
-			alert.setTitle(R.string.xperia_play_detected);
-			alert.setMessage(messageId);
-			alert.setPositiveButton(R.string.ok, new DialogInterface.OnClickListener()
-			{
-				@Override
-				public void onClick(DialogInterface dialog, int which)
-				{
-					SharedPreferences prefs = UserPreferences.getPreferences(ctx);
-					SharedPreferences.Editor edit = prefs.edit();
-					edit.putBoolean("video_threaded", false);
-					edit.putString("video_refresh_rate", Double.toString(59.19132938771038));
-					edit.commit();
-					UserPreferences.updateConfigFile(ctx);
-				}
-			});
-			alert.show();
-			retval = true;
-		}
-		else if (Build.ID.equals("JSS15J"))
-		{
-			AlertDialog.Builder alert = new AlertDialog.Builder(ctx);
-			alert.setTitle(R.string.nexus_7_2013_detected);
-			alert.setMessage(messageId);
-			alert.setPositiveButton(R.string.ok, new DialogInterface.OnClickListener()
-			{
-				@Override
-				public void onClick(DialogInterface dialog, int which)
-				{
-					SharedPreferences prefs = UserPreferences.getPreferences(ctx);
-					SharedPreferences.Editor edit = prefs.edit();
-					edit.putString("video_refresh_rate", Double.toString(59.65));
-					edit.commit();
-					UserPreferences.updateConfigFile(ctx);
-				}
-			});
-			alert.show();
-			retval = true;
-		}
-
-		if (show_dialog)
-		{
-			Toast.makeText(ctx, R.string.no_optimal_settings, Toast.LENGTH_SHORT).show();
-		}
-
-		return retval;
-	}
-
+	
 	@Override
 	public boolean onPreferenceClick(Preference preference)
 	{

@@ -182,11 +182,7 @@ public final class UserPreferences
 		config.setBoolean("video_vsync", prefs.getBoolean("video_vsync", true));
 		config.setBoolean("input_autodetect_enable", prefs.getBoolean("input_autodetect_enable", true));
 		config.setBoolean("input_debug_enable", prefs.getBoolean("input_debug_enable", false));
-
-		// Set the video refresh rate.
 		config.setDouble("video_refresh_rate", getRefreshRate(ctx));
-
-		// Set whether or not we're using threaded video.
 		config.setBoolean("video_threaded", prefs.getBoolean("video_threaded", true));
 
 		// Refactor these weird values - 'full', 'auto', 'square', whatever -

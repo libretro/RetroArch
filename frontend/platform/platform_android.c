@@ -416,7 +416,7 @@ static void frontend_android_get_name(char *name, size_t sizeof_name)
 static void frontend_android_get_environment_settings(int *argc, char *argv[],
       void *data, void *params_data)
 {
-   char model_id[PROP_VALUE_MAX];
+   char device_model[PROP_VALUE_MAX], device_id[PROP_VALUE_MAX];
    static char config_path[PATH_MAX];
    static char core_path[PATH_MAX];
    static char path[PATH_MAX];
@@ -520,21 +520,31 @@ static void frontend_android_get_environment_settings(int *argc, char *argv[],
       }
    }
 
-   frontend_android_get_name(model_id, sizeof(model_id));
+   frontend_android_get_name(device_model, sizeof(device_model));
+   __system_property_get("ro.product.id", device_id);
 
-   // Set audio latency hint values per device (in case we need >64ms latency for good sound)
+   g_defaults.settings.video_threaded_enable = true;
 
-   if (!strcmp(model_id, "R800x"))
+   // Set automatic default values per device
+   if (!strcmp(device_model, "SHIELD")) { }
+   else if (!strcmp(device_model, "R800x"))
+   {
       g_defaults.settings.out_latency = 128;
-   else if (!strcmp(model_id, "GAMEMID_BT"))
+      g_defaults.settings.video_refresh_rate = 59.19132938771038;
+      g_defaults.settings.video_threaded_enable = false;
+   }
+   else if (!strcmp(device_model, "GAMEMID_BT"))
+   {
       g_defaults.settings.out_latency = 160;
+   }
+   else if (!strcmp(device_id, "JSS15J")) { }
 
    // Explicitly disable input overlay by default for gamepad-like/console devices
    if (
-         !strcmp(model_id, "OUYA Console") ||
-         !strcmp(model_id, "R800x") ||
-         !strcmp(model_id, "GAMEMID_BT") ||
-         !strcmp(model_id, "SHIELD")
+         !strcmp(device_model, "OUYA Console") ||
+         !strcmp(device_model, "R800x") ||
+         !strcmp(device_model, "GAMEMID_BT") ||
+         !strcmp(device_model, "SHIELD")
          )
       g_defaults.settings.input_overlay_enable = false;
    else
@@ -731,16 +741,16 @@ static void frontend_android_shutdown(bool unused)
 
 static int frontend_android_get_rating(void)
 {
-   char model_id[PROP_VALUE_MAX];
-   frontend_android_get_name(model_id, sizeof(model_id));
+   char device_model[PROP_VALUE_MAX];
+   frontend_android_get_name(device_model, sizeof(device_model));
 
-   RARCH_LOG("ro.product.model: (%s).\n", model_id);
+   RARCH_LOG("ro.product.model: (%s).\n", device_model);
 
-   if (!strcmp(model_id, "R800x"))
+   if (!strcmp(device_model, "R800x"))
       return 6;
-   else if (!strcmp(model_id, "GT-I9505"))
+   else if (!strcmp(device_model, "GT-I9505"))
       return 12;
-   else if (!strcmp(model_id, "SHIELD"))
+   else if (!strcmp(device_model, "SHIELD"))
       return 13;
    return -1;
 }

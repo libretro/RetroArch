@@ -279,6 +279,10 @@ void config_set_defaults(void)
    g_settings.video.black_frame_insertion = black_frame_insertion;
    g_settings.video.swap_interval = swap_interval;
    g_settings.video.threaded = video_threaded;
+
+   if (g_defaults.settings.video_threaded_enable != video_threaded)
+      g_settings.video.threaded = g_defaults.settings.video_threaded_enable;
+
    g_settings.video.shared_context = video_shared_context;
    g_settings.video.smooth = video_smooth;
    g_settings.video.force_aspect = force_aspect;
@@ -300,6 +304,10 @@ void config_set_defaults(void)
    g_settings.video.msg_color_b = ((message_color >>  0) & 0xff) / 255.0f;
 
    g_settings.video.refresh_rate = refresh_rate;
+
+   if (g_defaults.settings.video_refresh_rate > 0.0 && g_defaults.settings.video_refresh_rate != refresh_rate)
+      g_settings.video.refresh_rate = g_defaults.settings.video_refresh_rate;
+
    g_settings.video.post_filter_record = post_filter_record;
    g_settings.video.gpu_record = gpu_record;
    g_settings.video.gpu_screenshot = gpu_screenshot;

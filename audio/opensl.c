@@ -125,9 +125,14 @@ static void *sl_init(const char *device, unsigned rate, unsigned latency)
    GOTO_IF_FAIL(SLEngineItf_CreateOutputMix(sl->engine, &sl->output_mix, 0, NULL, NULL));
    GOTO_IF_FAIL(SLObjectItf_Realize(sl->output_mix, SL_BOOLEAN_FALSE));
 
+   //FIXME - come up with solution for this - we will need to get AudioManager.PROPERTY_OUTPUT_FRAMES_PER_BUFFER
+   //through JNI - see commit for reference -
+   //https://github.com/libretro/RetroArch/commit/9ed3f3847c608b26c792c6dcbc3711ed946226b3
+#if 0
    if (g_settings.audio.block_frames)
       sl->buf_size = g_settings.audio.block_frames * 4;
    else
+#endif
       sl->buf_size = next_pow2(32 * latency);
 
    sl->buf_count = (latency * 4 * rate + 500) / 1000;
