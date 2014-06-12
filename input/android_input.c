@@ -512,7 +512,7 @@ static void handle_hotplug(void *data, unsigned *port, unsigned id,
    else if (strstr(device_name, "2Axes 11Keys Game  Pad"))
       device = DEVICE_TOMEE_NES_USB;
    else if (strstr(device_name, "rk29-keypad") || strstr(device_name, "GAMEMID"))
-      device = DEVICE_GAMEMID;
+      strlcpy(name_buf, "GameMID", sizeof(name_buf));
    else if (strstr(device_name, "USB Gamepad"))
       device = DEVICE_DEFENDER_GAME_RACER_CLASSIC;
    else if (strstr(device_name, "HOLTEK JC - U912F vibration game"))
