@@ -451,7 +451,8 @@ void config_set_defaults(void)
    if (default_overlay_dir)
    {
       fill_pathname_expand_special(g_extern.overlay_dir, default_overlay_dir, sizeof(g_extern.overlay_dir));
-      fill_pathname_join(g_settings.input.overlay, g_extern.overlay_dir, "gamepads/retropad/retropad.cfg", sizeof(g_settings.input.overlay));
+      if (g_settings.input.overlay[0] == '\0\)
+            fill_pathname_join(g_settings.input.overlay, g_extern.overlay_dir, "gamepads/retropad/retropad.cfg", sizeof(g_settings.input.overlay));
    }
 #endif
 
