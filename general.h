@@ -142,6 +142,7 @@ struct defaults
    struct
    {
       int out_latency;
+      bool input_overlay_enable;
    } settings; 
 };
 
@@ -286,6 +287,7 @@ struct settings
       unsigned turbo_period;
       unsigned turbo_duty_cycle;
 
+      bool overlay_enable;
       char overlay[PATH_MAX];
       float overlay_opacity;
       float overlay_scale;

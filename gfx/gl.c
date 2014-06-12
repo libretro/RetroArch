@@ -2773,6 +2773,9 @@ static void gl_render_overlay(void *data)
    unsigned i, j;
    gl_t *gl = (gl_t*)data;
 
+   if (!g_settings.input.overlay_enable)
+      return;
+
    GLfloat white_color_mod[16] = {
       1.0f, 1.0f, 1.0f, 1.0f,
       1.0f, 1.0f, 1.0f, 1.0f,

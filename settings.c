@@ -380,6 +380,7 @@ void config_set_defaults(void)
    g_settings.input.netplay_client_swap_input = netplay_client_swap_input;
    g_settings.input.turbo_period = turbo_period;
    g_settings.input.turbo_duty_cycle = turbo_duty_cycle;
+   g_settings.input.overlay_enable = false;
    g_settings.input.overlay_opacity = 0.7f;
    g_settings.input.overlay_scale = 1.0f;
    g_settings.input.debug_enable = input_debug_enable;
@@ -450,9 +451,7 @@ void config_set_defaults(void)
    if (default_overlay_dir)
    {
       fill_pathname_expand_special(g_extern.overlay_dir, default_overlay_dir, sizeof(g_extern.overlay_dir));
-#if defined(RARCH_MOBILE)
       fill_pathname_join(g_settings.input.overlay, g_extern.overlay_dir, "gamepads/retropad/retropad.cfg", sizeof(g_settings.input.overlay));
-#endif
    }
 #endif
 
@@ -1042,6 +1041,7 @@ bool config_load_file(const char *path, bool set_defaults)
    if (!strcmp(g_extern.overlay_dir, "default"))
       *g_extern.overlay_dir = '\0';
 
+   CONFIG_GET_BOOL(input.overlay_enable, "input_overlay_enable");
    CONFIG_GET_PATH(input.overlay, "input_overlay");
    CONFIG_GET_FLOAT(input.overlay_opacity, "input_overlay_opacity");
    CONFIG_GET_FLOAT(input.overlay_scale, "input_overlay_scale");
@@ -1422,6 +1422,7 @@ bool config_save_file(const char *path)
 #ifdef HAVE_OVERLAY
    config_set_path(conf, "overlay_directory", *g_extern.overlay_dir ? g_extern.overlay_dir : "default");
    config_set_path(conf, "input_overlay", g_settings.input.overlay);
+   config_set_bool(conf, "input_overlay_enable", g_settings.input.overlay_enable);
    config_set_float(conf, "input_overlay_opacity", g_settings.input.overlay_opacity);
    config_set_float(conf, "input_overlay_scale", g_settings.input.overlay_scale);
 #endif

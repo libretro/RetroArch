@@ -332,6 +332,7 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
          break;
       case MENU_SETTINGS_OVERLAY_OPTIONS:
          file_list_clear(menu->selection_buf);
+         file_list_push(menu->selection_buf, "Overlay Enable", MENU_SETTINGS_OVERLAY_ENABLE, 0);
          file_list_push(menu->selection_buf, "Overlay Preset", MENU_SETTINGS_OVERLAY_PRESET, 0);
          file_list_push(menu->selection_buf, "Overlay Opacity", MENU_SETTINGS_OVERLAY_OPACITY, 0);
          file_list_push(menu->selection_buf, "Overlay Scale", MENU_SETTINGS_OVERLAY_SCALE, 0);
@@ -3752,6 +3753,12 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
             menu_save_new_config();
          break;
 #ifdef HAVE_OVERLAY
+      case MENU_SETTINGS_OVERLAY_ENABLE:
+         if (action == MENU_ACTION_OK)
+            g_settings.input.overlay_enable = !g_settings.input.overlay_enable;
+         else if (action == MENU_ACTION_START)
+            g_settings.input.overlay_enable = g_defaults.settings.input_overlay_enable;
+         break;
       case MENU_SETTINGS_OVERLAY_PRESET:
          switch (action)
          {
@@ -3760,16 +3767,12 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
                menu_clear_navigation(driver.menu);
                driver.menu->need_refresh = true;
                break;
-
-#ifndef __QNX__ // FIXME: Why ifndef QNX?
             case MENU_ACTION_START:
                if (driver.overlay)
                   input_overlay_free(driver.overlay);
                driver.overlay = NULL;
                *g_settings.input.overlay = '\0';
                break;
-#endif
-
             default:
                break;
          }
@@ -5429,6 +5432,9 @@ static void menu_common_setting_set_label(char *type_str, size_t type_str_size, 
             snprintf(type_str, type_str_size, g_settings.osk.enable ? "ON" : "OFF");
             break;
 #endif
+         case MENU_SETTINGS_OVERLAY_ENABLE:
+            snprintf(type_str, type_str_size, g_settings.input.overlay_enable ? "ON" : "OFF");
+            break;
          case MENU_SETTINGS_FONT_ENABLE:
             snprintf(type_str, type_str_size, g_settings.video.font_enable ? "ON" : "OFF");
             break;
