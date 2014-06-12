@@ -20,6 +20,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <sys/resource.h>
+#include <sys/system_properties.h>
 
 #include "platform_android.h"
 #include "../menu/menu_common.h"
@@ -702,8 +703,20 @@ static void frontend_android_shutdown(bool unused)
 
 static int frontend_android_get_rating(void)
 {
-   /* TODO/FIXME - look at unique identifier per device and 
-    * determine rating for some */
+   char model_id[PROP_VALUE_MAX];
+   int len;
+
+   len = __system_property_get("ro.product.model", model_id);
+   (void)len;
+
+   RARCH_LOG("ro.product.model: (%s).\n", model_id);
+
+   if (!strcmp(model_id, "R800x"))
+      return 6;
+   else if (!strcmp(model_id, "GT-I9505"))
+      return 12;
+   else if (!strcmp(model_id, "SHIELD"))
+      return 13;
    return -1;
 }
 
