@@ -466,7 +466,7 @@ static void handle_hotplug(void *data, unsigned *port, unsigned id,
    else if (strstr(device_name, "OUYA Game Controller"))
       strlcpy(name_buf, "OUYA", sizeof(name_buf));
    else if (strstr(device_name, "adc joystick"))
-      device = DEVICE_JXD_S7300B;
+      strlcpy(name_buf, "JXD S7300B", sizeof(name_buf));
    else if (strstr(device_name, "idroid:con"))
       device = DEVICE_IDROID_CON;
    else if (strstr(device_name, "NYKO PLAYPAD PRO"))
@@ -494,9 +494,9 @@ static void handle_hotplug(void *data, unsigned *port, unsigned id,
    else if (strstr(device_name, "joy_key"))
       strlcpy(name_buf, "Archos Gamepad", sizeof(name_buf));
    else if (strstr(device_name, "matrix_keyboard"))
-      device = DEVICE_JXD_S5110;
+      strlcpy(name_buf, "JXD S5110B", sizeof(name_buf));
    else if (strstr(device_name, "tincore_adc_joystick"))
-      device = DEVICE_JXD_S5110_SKELROM;
+      strlcpy(name_buf, "JXD S5110B (Skelrom)", sizeof(name_buf));
    else if (strstr(device_name, "keypad-zeus") || (strstr(device_name, "keypad-game-zeus")))
       strlcpy(name_buf, "Xperia Play", sizeof(name_buf));
    else if (strstr(device_name, "Broadcom Bluetooth HID"))
@@ -504,7 +504,7 @@ static void handle_hotplug(void *data, unsigned *port, unsigned id,
    else if (strstr(device_name, "USB Gamepad"))
       device = DEVICE_THRUST_PREDATOR;
    else if (strstr(device_name, "ADC joystick"))
-      device = DEVICE_JXD_S7800B;
+      strlcpy(name_buf, "JXD S7800B", sizeof(name_buf));
    else if (strstr(device_name, "DragonRise"))
       device = DEVICE_DRAGONRISE;
    else if (strstr(device_name, "Thrustmaster T Mini"))

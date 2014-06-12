@@ -295,6 +295,72 @@ DECL_BTN(down, 20) \
 DECL_BTN(left, 21) \
 DECL_BTN(right, 22)
 
+//TODO
+// - Analog sticks (?)
+#define JXD_S5110B_DEFAULT_BINDS \
+DECL_BTN(a, 96) \
+DECL_BTN(b, 97) \
+DECL_BTN(x, 99) \
+DECL_BTN(y, 100) \
+DECL_BTN(start, 62) \
+DECL_BTN(select, 66) \
+DECL_BTN(up, 19) \
+DECL_BTN(down, 20) \
+DECL_BTN(left, 21) \
+DECL_BTN(right, 22) \
+DECL_BTN(l, 102) \
+DECL_BTN(r, 103)
+
+//TODO
+// - Analog sticks (?)
+#define JXD_S5110B_SKELROM_DEFAULT_BINDS \
+DECL_BTN(a, 96) \
+DECL_BTN(b, 97) \
+DECL_BTN(x, 99) \
+DECL_BTN(y, 100) \
+DECL_BTN(start, 108) \
+DECL_BTN(select, 109) \
+DECL_BTN(up, 19) \
+DECL_BTN(down, 20) \
+DECL_BTN(left, 21) \
+DECL_BTN(right, 22) \
+DECL_BTN(l, 102) \
+DECL_BTN(r, 103)
+
+//TODO
+// - Analog sticks (?)
+#define JXD_S7300B_DEFAULT_BINDS \
+DECL_BTN(a, 96) \
+DECL_BTN(b, 97) \
+DECL_BTN(x, 99) \
+DECL_BTN(y, 100) \
+DECL_BTN(start, 66) \
+DECL_BTN(select, 62) \
+DECL_BTN(up, 19) \
+DECL_BTN(down, 20) \
+DECL_BTN(left, 21) \
+DECL_BTN(right, 22) \
+DECL_BTN(l, 102) \
+DECL_BTN(r, 103)
+
+//TODO
+// - Analog sticks
+#define JXD_S7800B_DEFAULT_BINDS \
+DECL_BTN(a, 96) \
+DECL_BTN(b, 97) \
+DECL_BTN(x, 99) \
+DECL_BTN(y, 100) \
+DECL_BTN(start, 108) \
+DECL_BTN(select, 109) \
+DECL_BTN(up, 19) \
+DECL_BTN(down, 20) \
+DECL_BTN(left, 21) \
+DECL_BTN(right, 22) \
+DECL_BTN(l, 102) \
+DECL_BTN(r, 103) \
+DECL_BTN(l2, 104) \
+DECL_BTN(r2, 105)
+
 #define RUMBLEPAD2_DEFAULT_BINDS \
 DECL_BTN(a, 190) \
 DECL_BTN(b, 189) \
@@ -331,6 +397,22 @@ const char* const input_builtin_autoconfs[] =
    "input_device = \"Xperia Play\" \n"
    "input_driver = \"android\"                    \n"
    ZEUS_DEFAULT_BINDS,
+
+   "input_device = \"JXD S5110B\" \n"
+   "input_driver = \"android\"                    \n"
+   JXD_S5110B_DEFAULT_BINDS,
+
+   "input_device = \"JXD S7300B\" \n"
+   "input_driver = \"android\"                    \n"
+   JXD_S7300B_DEFAULT_BINDS,
+
+   "input_device = \"JXD S5110B (Skelrom)\" \n"
+   "input_driver = \"android\"                    \n"
+   JXD_S5110B_SKELROM_DEFAULT_BINDS,
+
+   "input_device = \"JXD S7800B\" \n"
+   "input_driver = \"android\"                    \n"
+   JXD_S7800B_DEFAULT_BINDS,
 
    "input_device = \"Archos Gamepad\" \n"
    "input_driver = \"android\"                    \n"
