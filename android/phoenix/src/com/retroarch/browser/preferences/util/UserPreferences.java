@@ -176,14 +176,7 @@ public final class UserPreferences
 		if (Build.VERSION.SDK_INT >= 17 && prefs.getBoolean("audio_latency_auto", true))
 		{
 			int buffersize = getLowLatencyBufferSize(ctx);
-
-			config.setInt("audio_latency", 64);
 			config.setInt("audio_block_frames", buffersize);
-		}
-		else
-		{
-			String latency_audio = prefs.getString("audio_latency", "64");
-			config.setInt("audio_latency", Integer.parseInt(latency_audio));
 		}
 
 		config.setBoolean("audio_enable", prefs.getBoolean("audio_enable", true));

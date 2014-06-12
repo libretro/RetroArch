@@ -226,7 +226,6 @@ public final class MainMenuFragment extends PreferenceListFragment implements On
 					edit.putString("video_refresh_rate", Double.toString(60.00d));
 					edit.putBoolean("input_overlay_enable", false);
 					edit.putBoolean("input_autodetect_enable", true);
-					edit.putString("audio_latency", "64");
 					edit.putBoolean("audio_latency_auto", true);
 					edit.commit();
 					UserPreferences.updateConfigFile(ctx);
@@ -249,7 +248,6 @@ public final class MainMenuFragment extends PreferenceListFragment implements On
 					SharedPreferences.Editor edit = prefs.edit();
 					edit.putBoolean("input_overlay_enable", false);
 					edit.putBoolean("input_autodetect_enable", true);
-					edit.putString("audio_latency", "160");
 					edit.putBoolean("audio_latency_auto", false);
 					edit.commit();
 					UserPreferences.updateConfigFile(ctx);
@@ -272,7 +270,6 @@ public final class MainMenuFragment extends PreferenceListFragment implements On
 					SharedPreferences.Editor edit = prefs.edit();
 					edit.putBoolean("input_overlay_enable", false);
 					edit.putBoolean("input_autodetect_enable", true);
-					edit.putString("audio_latency", "64");
 					edit.putBoolean("audio_latency_auto", true);
 					edit.commit();
 					UserPreferences.updateConfigFile(ctx);
@@ -297,7 +294,6 @@ public final class MainMenuFragment extends PreferenceListFragment implements On
 					edit.putBoolean("input_overlay_enable", false);
 					edit.putBoolean("input_autodetect_enable", true);
 					edit.putString("video_refresh_rate", Double.toString(59.19132938771038));
-					edit.putString("audio_latency", "128");
 					edit.putBoolean("audio_latency_auto", false);
 					edit.commit();
 					UserPreferences.updateConfigFile(ctx);
@@ -319,7 +315,6 @@ public final class MainMenuFragment extends PreferenceListFragment implements On
 					SharedPreferences prefs = UserPreferences.getPreferences(ctx);
 					SharedPreferences.Editor edit = prefs.edit();
 					edit.putString("video_refresh_rate", Double.toString(59.65));
-					edit.putString("audio_latency", "64");
 					edit.putBoolean("audio_latency_auto", false);
 					edit.commit();
 					UserPreferences.updateConfigFile(ctx);
