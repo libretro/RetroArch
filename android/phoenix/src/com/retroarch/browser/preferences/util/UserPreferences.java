@@ -230,7 +230,7 @@ public final class UserPreferences
 		config.setString("video_shader", shaderPath);
 		config.setBoolean("video_shader_enable", prefs.getBoolean("video_shader_enable", false) && new File(shaderPath).exists());
 
-		config.setBoolean("input_overlay_enable", prefs.getBoolean("input_overlay_enable", true));
+		config.setBoolean("input_overlay_enable", prefs.getBoolean("input_overlay_enable", false));
 		config.setString("input_overlay", prefs.getString("input_overlay", ""));
 
 		// Set whether or not custom directories are being used.

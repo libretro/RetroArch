@@ -384,8 +384,7 @@ void config_set_defaults(void)
 
    g_settings.input.overlay_enable = false;
 
-   if (g_defaults.settings.input_overlay_enable)
-      g_settings.input.overlay_enable = g_defaults.settings.input_overlay_enable;
+   g_settings.input.overlay_enable = g_defaults.settings.input_overlay_enable;
 
    g_settings.input.overlay_opacity = 0.7f;
    g_settings.input.overlay_scale = 1.0f;
