@@ -2438,7 +2438,7 @@ static int menu_common_iterate(unsigned action)
                rarch_environment_cb(RETRO_ENVIRONMENT_SET_LIBRETRO_PATH, (void*)path);
 
 #if defined(GEKKO) && defined(HW_RVL)
-               fill_pathname_join(g_extern.fullpath, default_paths.core_dir,
+               fill_pathname_join(g_extern.fullpath, g_defaults.core_dir,
                      SALAMANDER_FILE, sizeof(g_extern.fullpath));
 #else
                fill_pathname_join(g_settings.libretro, dir, path, sizeof(g_settings.libretro));
@@ -3725,7 +3725,7 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
          if (action == MENU_ACTION_OK)
          {
 #if defined(GEKKO) && defined(HW_RVL)
-            fill_pathname_join(g_extern.fullpath, default_paths.core_dir, SALAMANDER_FILE,
+            fill_pathname_join(g_extern.fullpath, g_defaults.core_dir, SALAMANDER_FILE,
                   sizeof(g_extern.fullpath));
 #endif
             g_extern.lifecycle_state &= ~(1ULL << MODE_GAME);

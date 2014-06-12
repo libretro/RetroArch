@@ -550,7 +550,7 @@ static void process_pending_intent(void *data)
    if (android_app->getPendingIntentConfigPath && jstr)
    {
       const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
-      strlcpy(default_paths.config_path, argv, sizeof(default_paths.config_path));
+      strlcpy(g_defaults.config_path, argv, sizeof(g_defaults.config_path));
       (*env)->ReleaseStringUTFChars(env, jstr, argv);
 
       RARCH_LOG("Config file: [%s].\n", g_extern.config_path);
@@ -574,11 +574,11 @@ static void process_pending_intent(void *data)
    if (android_app->getPendingIntentLibretroPath && jstr)
    {
       const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
-      strlcpy(default_paths.core_path, argv, sizeof(default_paths.core_path));
+      strlcpy(g_defaults.core_path, argv, sizeof(g_defaults.core_path));
       (*env)->ReleaseStringUTFChars(env, jstr, argv);
    }
 
-   RARCH_LOG("Libretro path: [%s].\n", default_paths.core_path);
+   RARCH_LOG("Libretro path: [%s].\n", g_defaults.core_path);
 
    if (startgame)
    {

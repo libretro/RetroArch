@@ -25,7 +25,7 @@
 #include "../file_ext.h"
 #include "frontend_context.h"
 
-struct defaults default_paths;
+struct defaults g_defaults;
 
 //We need to set libretro to the first entry in the cores
 //directory so that it will be saved to the config file
@@ -84,11 +84,11 @@ static void find_and_set_first_file(char *path, size_t sizeof_path, const char *
 
    char first_file[PATH_MAX] = {0};
    find_first_libretro_core(first_file, sizeof(first_file),
-         default_paths.core_dir, ext);
+         g_defaults.core_dir, ext);
 
    if (first_file)
    {
-      fill_pathname_join(path, default_paths.core_dir, first_file, sizeof_path);
+      fill_pathname_join(path, g_defaults.core_dir, first_file, sizeof_path);
       RARCH_LOG("libretro_path now set to: %s.\n", path);
    }
    else
@@ -100,13 +100,13 @@ static void salamander_init(char *libretro_path, size_t sizeof_libretro_path)
    //normal executable loading path
    bool config_file_exists = false;
 
-   if (path_file_exists(default_paths.config_path))
+   if (path_file_exists(g_defaults.config_path))
       config_file_exists = true;
 
    if (config_file_exists)
    {
       char tmp_str[PATH_MAX];
-      config_file_t * conf = (config_file_t*)config_file_new(default_paths.config_path);
+      config_file_t * conf = (config_file_t*)config_file_new(g_defaults.config_path);
 
       if (conf)
       {
@@ -132,7 +132,7 @@ static void salamander_init(char *libretro_path, size_t sizeof_libretro_path)
       if (conf)
       {
          config_set_string(conf, "libretro_path", libretro_path);
-         config_file_write(conf, default_paths.config_path);
+         config_file_write(conf, g_defaults.config_path);
          config_file_free(conf);
       }
    }

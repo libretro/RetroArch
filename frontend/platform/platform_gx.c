@@ -175,20 +175,20 @@ static void frontend_gx_get_environment_settings(int *argc, char *argv[],
 #ifdef HW_DOL
    chdir("carda:/retroarch");
 #endif
-   getcwd(default_paths.core_dir, MAXPATHLEN);
-   char *last_slash = strrchr(default_paths.core_dir, '/');
+   getcwd(g_defaults.core_dir, MAXPATHLEN);
+   char *last_slash = strrchr(g_defaults.core_dir, '/');
    if (last_slash)
       *last_slash = 0;
-   char *device_end = strchr(default_paths.core_dir, '/');
+   char *device_end = strchr(g_defaults.core_dir, '/');
    if (device_end)
-      snprintf(default_paths.port_dir, sizeof(default_paths.port_dir), "%.*s/retroarch", device_end - default_paths.core_dir, default_paths.core_dir);
+      snprintf(g_defaults.port_dir, sizeof(g_defaults.port_dir), "%.*s/retroarch", device_end - g_defaults.core_dir, g_defaults.core_dir);
    else
-      fill_pathname_join(default_paths.port_dir, default_paths.port_dir, "retroarch", sizeof(default_paths.port_dir));
-   fill_pathname_join(default_paths.overlay_dir, default_paths.core_dir, "overlays", sizeof(default_paths.overlay_dir));
-   fill_pathname_join(default_paths.config_path, default_paths.port_dir, "retroarch.cfg", sizeof(default_paths.config_path));
-   fill_pathname_join(default_paths.system_dir, default_paths.port_dir, "system", sizeof(default_paths.system_dir));
-   fill_pathname_join(default_paths.sram_dir, default_paths.port_dir, "savefiles", sizeof(default_paths.sram_dir));
-   fill_pathname_join(default_paths.savestate_dir, default_paths.port_dir, "savefiles", sizeof(default_paths.savestate_dir));
+      fill_pathname_join(g_defaults.port_dir, g_defaults.port_dir, "retroarch", sizeof(g_defaults.port_dir));
+   fill_pathname_join(g_defaults.overlay_dir, g_defaults.core_dir, "overlays", sizeof(g_defaults.overlay_dir));
+   fill_pathname_join(g_defaults.config_path, g_defaults.port_dir, "retroarch.cfg", sizeof(g_defaults.config_path));
+   fill_pathname_join(g_defaults.system_dir, g_defaults.port_dir, "system", sizeof(g_defaults.system_dir));
+   fill_pathname_join(g_defaults.sram_dir, g_defaults.port_dir, "savefiles", sizeof(g_defaults.sram_dir));
+   fill_pathname_join(g_defaults.savestate_dir, g_defaults.port_dir, "savefiles", sizeof(g_defaults.savestate_dir));
 
 #ifdef IS_SALAMANDER
    if (*argc > 2 && argv[1] != NULL && argv[2] != NULL)
@@ -295,7 +295,7 @@ static void frontend_gx_exitspawn(char *core_path, size_t sizeof_core_path)
 
    // FIXME/TODO - hack
    // direct loading failed (out of memory), try to jump to salamander then load the correct core
-   fill_pathname_join(core_path, default_paths.core_dir, "boot.dol", sizeof_core_path);
+   fill_pathname_join(core_path, g_defaults.core_dir, "boot.dol", sizeof_core_path);
 #endif
    frontend_gx_exec(core_path, should_load_game);
 }

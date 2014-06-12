@@ -175,13 +175,13 @@ static void frontend_ps3_get_environment_settings(int *argc, char *argv[],
       if((get_attributes & CELL_GAME_ATTRIBUTE_APP_HOME) == CELL_GAME_ATTRIBUTE_APP_HOME)
          RARCH_LOG("RetroArch was launched from host machine (APP_HOME).\n");
 
-      ret = cellGameContentPermit(contentInfoPath, default_paths.port_dir);
+      ret = cellGameContentPermit(contentInfoPath, g_defaults.port_dir);
 
 #ifdef HAVE_MULTIMAN
       if (g_extern.lifecycle_state & (1ULL << MODE_EXTLAUNCH_MULTIMAN))
       {
          fill_pathname_join(contentInfoPath, "/dev_hdd0/game/", EMULATOR_CONTENT_DIR, sizeof(contentInfoPath));
-         fill_pathname_join(default_paths.port_dir, contentInfoPath, "USRDIR", sizeof(default_paths.port_dir));
+         fill_pathname_join(g_defaults.port_dir, contentInfoPath, "USRDIR", sizeof(g_defaults.port_dir));
       }
 #endif
 
@@ -191,21 +191,21 @@ static void frontend_ps3_get_environment_settings(int *argc, char *argv[],
       {
          RARCH_LOG("cellGameContentPermit() OK.\n");
          RARCH_LOG("contentInfoPath : [%s].\n", contentInfoPath);
-         RARCH_LOG("usrDirPath : [%s].\n", default_paths.port_dir);
+         RARCH_LOG("usrDirPath : [%s].\n", g_defaults.port_dir);
       }
 
-      fill_pathname_join(default_paths.core_dir, default_paths.port_dir, "cores", sizeof(default_paths.core_dir));
-      fill_pathname_join(default_paths.core_info_dir, default_paths.port_dir, "cores", sizeof(default_paths.core_info_dir));
-      fill_pathname_join(default_paths.savestate_dir, default_paths.core_dir, "savestates", sizeof(default_paths.savestate_dir));
-      fill_pathname_join(default_paths.sram_dir, default_paths.core_dir, "savefiles", sizeof(default_paths.sram_dir));
-      fill_pathname_join(default_paths.system_dir, default_paths.core_dir, "system", sizeof(default_paths.system_dir));
-      fill_pathname_join(default_paths.shader_dir,  default_paths.core_dir, "shaders", sizeof(default_paths.shader_dir));
-      fill_pathname_join(default_paths.config_path, default_paths.port_dir, "retroarch.cfg",  sizeof(default_paths.config_path));
-      fill_pathname_join(default_paths.overlay_dir, default_paths.core_dir, "overlays", sizeof(default_paths.overlay_dir));
-      fill_pathname_join(default_paths.assets_dir,   default_paths.core_dir, "media", sizeof(default_paths.assets_dir));
+      fill_pathname_join(g_defaults.core_dir, g_defaults.port_dir, "cores", sizeof(g_defaults.core_dir));
+      fill_pathname_join(g_defaults.core_info_dir, g_defaults.port_dir, "cores", sizeof(g_defaults.core_info_dir));
+      fill_pathname_join(g_defaults.savestate_dir, g_defaults.core_dir, "savestates", sizeof(g_defaults.savestate_dir));
+      fill_pathname_join(g_defaults.sram_dir, g_defaults.core_dir, "savefiles", sizeof(g_defaults.sram_dir));
+      fill_pathname_join(g_defaults.system_dir, g_defaults.core_dir, "system", sizeof(g_defaults.system_dir));
+      fill_pathname_join(g_defaults.shader_dir,  g_defaults.core_dir, "shaders", sizeof(g_defaults.shader_dir));
+      fill_pathname_join(g_defaults.config_path, g_defaults.port_dir, "retroarch.cfg",  sizeof(g_defaults.config_path));
+      fill_pathname_join(g_defaults.overlay_dir, g_defaults.core_dir, "overlays", sizeof(g_defaults.overlay_dir));
+      fill_pathname_join(g_defaults.assets_dir,   g_defaults.core_dir, "media", sizeof(g_defaults.assets_dir));
 #ifndef IS_SALAMANDER
 #ifdef HAVE_RMENU
-      fill_pathname_join(g_extern.menu_texture_path, default_paths.core_dir, "borders/Menu/main-menu_1080p.png",
+      fill_pathname_join(g_extern.menu_texture_path, g_defaults.core_dir, "borders/Menu/main-menu_1080p.png",
             sizeof(g_extern.menu_texture_path));
 #endif
 #endif

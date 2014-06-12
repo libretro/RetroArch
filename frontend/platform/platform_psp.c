@@ -58,16 +58,16 @@ static void frontend_psp_get_environment_settings(int *argc, char *argv[],
 
    strlcpy(eboot_path, argv[0], sizeof(eboot_path));
 
-   fill_pathname_basedir(default_paths.port_dir, argv[0], sizeof(default_paths.port_dir));
-   RARCH_LOG("port dir: [%s]\n", default_paths.port_dir);
+   fill_pathname_basedir(g_defaults.port_dir, argv[0], sizeof(g_defaults.port_dir));
+   RARCH_LOG("port dir: [%s]\n", g_defaults.port_dir);
 
-   fill_pathname_join(default_paths.assets_dir, default_paths.port_dir, "media", sizeof(default_paths.assets_dir));
-   fill_pathname_join(default_paths.core_dir, default_paths.port_dir, "cores", sizeof(default_paths.core_dir));
-   fill_pathname_join(default_paths.core_info_dir, default_paths.port_dir, "cores", sizeof(default_paths.core_info_dir));
-   fill_pathname_join(default_paths.savestate_dir, default_paths.core_dir, "savestates", sizeof(default_paths.savestate_dir));
-   fill_pathname_join(default_paths.sram_dir, default_paths.core_dir, "savefiles", sizeof(default_paths.sram_dir));
-   fill_pathname_join(default_paths.system_dir, default_paths.core_dir, "system", sizeof(default_paths.system_dir));
-   fill_pathname_join(default_paths.config_path, default_paths.port_dir, "retroarch.cfg", sizeof(default_paths.config_path));
+   fill_pathname_join(g_defaults.assets_dir, g_defaults.port_dir, "media", sizeof(g_defaults.assets_dir));
+   fill_pathname_join(g_defaults.core_dir, g_defaults.port_dir, "cores", sizeof(g_defaults.core_dir));
+   fill_pathname_join(g_defaults.core_info_dir, g_defaults.port_dir, "cores", sizeof(g_defaults.core_info_dir));
+   fill_pathname_join(g_defaults.savestate_dir, g_defaults.core_dir, "savestates", sizeof(g_defaults.savestate_dir));
+   fill_pathname_join(g_defaults.sram_dir, g_defaults.core_dir, "savefiles", sizeof(g_defaults.sram_dir));
+   fill_pathname_join(g_defaults.system_dir, g_defaults.core_dir, "system", sizeof(g_defaults.system_dir));
+   fill_pathname_join(g_defaults.config_path, g_defaults.port_dir, "retroarch.cfg", sizeof(g_defaults.config_path));
 
    if (argv[1] && (argv[1][0] != '\0'))
    {

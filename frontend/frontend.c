@@ -313,30 +313,28 @@ returntype main_entry(signature())
    if (driver.frontend_ctx && driver.frontend_ctx->environment_get)
    {
       driver.frontend_ctx->environment_get(rarch_argc_ptr, rarch_argv_ptr, args, wrap_args);
-#if defined(RARCH_CONSOLE) || defined(RARCH_MOBILE)
-      if (*default_paths.autoconfig_dir)
-         path_mkdir(default_paths.autoconfig_dir);
-      if (*default_paths.audio_filter_dir)
-         path_mkdir(default_paths.audio_filter_dir);
-      if (*default_paths.assets_dir)
-         path_mkdir(default_paths.assets_dir);
-      if (*default_paths.core_dir)
-         path_mkdir(default_paths.core_dir);
-      if (*default_paths.core_info_dir)
-         path_mkdir(default_paths.core_info_dir);
-      if (*default_paths.overlay_dir)
-         path_mkdir(default_paths.overlay_dir);
-      if (*default_paths.port_dir)
-         path_mkdir(default_paths.port_dir);
-      if (*default_paths.shader_dir)
-         path_mkdir(default_paths.shader_dir);
-      if (*default_paths.savestate_dir)
-         path_mkdir(default_paths.savestate_dir);
-      if (*default_paths.sram_dir)
-         path_mkdir(default_paths.sram_dir);
-      if (*default_paths.system_dir)
-         path_mkdir(default_paths.system_dir);
-#endif
+      if (*g_defaults.autoconfig_dir)
+         path_mkdir(g_defaults.autoconfig_dir);
+      if (*g_defaults.audio_filter_dir)
+         path_mkdir(g_defaults.audio_filter_dir);
+      if (*g_defaults.assets_dir)
+         path_mkdir(g_defaults.assets_dir);
+      if (*g_defaults.core_dir)
+         path_mkdir(g_defaults.core_dir);
+      if (*g_defaults.core_info_dir)
+         path_mkdir(g_defaults.core_info_dir);
+      if (*g_defaults.overlay_dir)
+         path_mkdir(g_defaults.overlay_dir);
+      if (*g_defaults.port_dir)
+         path_mkdir(g_defaults.port_dir);
+      if (*g_defaults.shader_dir)
+         path_mkdir(g_defaults.shader_dir);
+      if (*g_defaults.savestate_dir)
+         path_mkdir(g_defaults.savestate_dir);
+      if (*g_defaults.sram_dir)
+         path_mkdir(g_defaults.sram_dir);
+      if (*g_defaults.system_dir)
+         path_mkdir(g_defaults.system_dir);
 
       if (wrap_args->touched)
       {

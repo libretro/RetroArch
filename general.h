@@ -138,6 +138,11 @@ struct defaults
    char sram_dir[PATH_MAX];
    char screenshot_dir[PATH_MAX];
    char system_dir[PATH_MAX];
+
+   struct
+   {
+      int out_latency;
+   } settings; 
 };
 
 // All config related settings go here.
@@ -709,7 +714,7 @@ struct rarch_main_wrap
 // Public data structures
 extern struct settings g_settings;
 extern struct global g_extern;
-extern struct defaults default_paths;
+extern struct defaults g_defaults;
 /////////
 
 // Public functions

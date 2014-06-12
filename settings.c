@@ -31,7 +31,7 @@
 
 struct settings g_settings;
 struct global g_extern;
-struct defaults default_paths;
+struct defaults g_defaults;
 
 const char *config_get_default_audio(void)
 {
@@ -470,33 +470,33 @@ void config_set_defaults(void)
    if (default_config_path)
       fill_pathname_expand_special(g_extern.config_path, default_config_path, sizeof(g_extern.config_path));
 
-   if (*default_paths.audio_filter_dir)
-      strlcpy(g_settings.audio.filter_dir, default_paths.audio_filter_dir, sizeof(g_settings.audio.filter_dir));
-   if (*default_paths.assets_dir)
-      strlcpy(g_settings.assets_directory, default_paths.assets_dir, sizeof(g_settings.assets_directory));
-   if (*default_paths.core_dir)
-      strlcpy(g_settings.libretro_directory, default_paths.core_dir, sizeof(g_settings.libretro_directory));
-   if (*default_paths.core_path)
-      strlcpy(g_settings.libretro, default_paths.core_path, sizeof(g_settings.libretro));
-   if (*default_paths.core_info_dir)
-      strlcpy(g_settings.libretro_info_path, default_paths.core_info_dir, sizeof(g_settings.libretro_info_path));
+   if (*g_defaults.audio_filter_dir)
+      strlcpy(g_settings.audio.filter_dir, g_defaults.audio_filter_dir, sizeof(g_settings.audio.filter_dir));
+   if (*g_defaults.assets_dir)
+      strlcpy(g_settings.assets_directory, g_defaults.assets_dir, sizeof(g_settings.assets_directory));
+   if (*g_defaults.core_dir)
+      strlcpy(g_settings.libretro_directory, g_defaults.core_dir, sizeof(g_settings.libretro_directory));
+   if (*g_defaults.core_path)
+      strlcpy(g_settings.libretro, g_defaults.core_path, sizeof(g_settings.libretro));
+   if (*g_defaults.core_info_dir)
+      strlcpy(g_settings.libretro_info_path, g_defaults.core_info_dir, sizeof(g_settings.libretro_info_path));
 #ifdef HAVE_OVERLAY
-   if (*default_paths.overlay_dir)
-      strlcpy(g_extern.overlay_dir, default_paths.overlay_dir, sizeof(g_extern.overlay_dir));
+   if (*g_defaults.overlay_dir)
+      strlcpy(g_extern.overlay_dir, g_defaults.overlay_dir, sizeof(g_extern.overlay_dir));
 #endif
-   if (*default_paths.shader_dir)
-      strlcpy(g_settings.video.shader_dir, default_paths.shader_dir, sizeof(g_settings.video.shader_dir));
-   if (*default_paths.savestate_dir)
-      strlcpy(g_extern.savestate_dir, default_paths.savestate_dir, sizeof(g_extern.savestate_dir));
-   if (*default_paths.sram_dir)
-      strlcpy(g_extern.savefile_dir, default_paths.sram_dir, sizeof(g_extern.savefile_dir));
-   if (*default_paths.system_dir)
-      strlcpy(g_settings.system_directory, default_paths.system_dir, sizeof(g_settings.system_directory));
-   if (*default_paths.screenshot_dir)
-      strlcpy(g_settings.screenshot_directory, default_paths.screenshot_dir, sizeof(g_settings.screenshot_directory));
+   if (*g_defaults.shader_dir)
+      strlcpy(g_settings.video.shader_dir, g_defaults.shader_dir, sizeof(g_settings.video.shader_dir));
+   if (*g_defaults.savestate_dir)
+      strlcpy(g_extern.savestate_dir, g_defaults.savestate_dir, sizeof(g_extern.savestate_dir));
+   if (*g_defaults.sram_dir)
+      strlcpy(g_extern.savefile_dir, g_defaults.sram_dir, sizeof(g_extern.savefile_dir));
+   if (*g_defaults.system_dir)
+      strlcpy(g_settings.system_directory, g_defaults.system_dir, sizeof(g_settings.system_directory));
+   if (*g_defaults.screenshot_dir)
+      strlcpy(g_settings.screenshot_directory, g_defaults.screenshot_dir, sizeof(g_settings.screenshot_directory));
 
-   if (*default_paths.config_path)
-      strlcpy(g_extern.config_path, default_paths.config_path, sizeof(g_extern.config_path));
+   if (*g_defaults.config_path)
+      strlcpy(g_extern.config_path, g_defaults.config_path, sizeof(g_extern.config_path));
 
    g_extern.config_save_on_exit = config_save_on_exit;
 
