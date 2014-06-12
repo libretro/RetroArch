@@ -410,6 +410,7 @@ static bool android_run_events (void *data)
 static void frontend_android_get_environment_settings(int *argc, char *argv[],
       void *data, void *params_data)
 {
+   char model_id[PROP_VALUE_MAX];
    static char config_path[PATH_MAX];
    static char core_path[PATH_MAX];
    static char path[PATH_MAX];
@@ -512,6 +513,13 @@ static void frontend_android_get_environment_settings(int *argc, char *argv[],
             args->rom_path = path;
       }
    }
+
+   frontend_android_get_name(&model_id, sizeof(model_id));
+
+   if (!strcmp(model_id, "R800x"))
+      g_defaults.settings.out_latency = 128;
+   else if (!strcmp(model_id, "GAMEMID_BT"))
+      g_defaults.settings.out_latency = 160;
 }
 
 #if 0
