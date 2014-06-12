@@ -217,6 +217,7 @@ const frontend_ctx_driver_t frontend_ctx_psp = {
    NULL,                         /* process_events */
    frontend_psp_exec,            /* exec */
    frontend_psp_shutdown,        /* shutdown */
+   NULL,                         /* get_name */
    frontend_psp_get_rating,      /* get_rating */
    "psp",
 };

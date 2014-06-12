@@ -131,6 +131,7 @@ const frontend_ctx_driver_t frontend_ctx_apple = {
    NULL,                         /* process_events */
    NULL,                         /* exec */
    NULL,                         /* shutdown */
+   NULL,                         /* get_name */
    frontend_apple_get_rating,    /* get_rating */
    "apple",
 };

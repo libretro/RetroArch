@@ -41,6 +41,7 @@ typedef struct frontend_ctx_driver
    int (*process_events)(void *data);
    void (*exec)(const char *, bool);
    void (*shutdown)(bool);
+   int (*get_name)(char *, size_t);
    int (*get_rating)(void);
 
    // Human readable string.

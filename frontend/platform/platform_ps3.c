@@ -440,6 +440,7 @@ const frontend_ctx_driver_t frontend_ctx_ps3 = {
    NULL,                         /* process_events */
    frontend_ps3_exec,            /* exec */
    NULL,                         /* shutdown */
+   NULL,                         /* get_name */
    frontend_ps3_get_rating,      /* get_rating */
    "ps3",
 };

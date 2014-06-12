@@ -21,12 +21,6 @@
 #include <stddef.h>
 #include <string.h>
 
-static int frontend_null_get_rating(void)
-{
-   /* TODO/FIXME: Determine rating */
-   return -1;
-}
-
 const frontend_ctx_driver_t frontend_ctx_null = {
    NULL,                         /* environment_get */
    NULL,                         /* init */
@@ -36,6 +30,7 @@ const frontend_ctx_driver_t frontend_ctx_null = {
    NULL,                         /* process_events */
    NULL,                         /* exec */
    NULL,                         /* shutdown */
-   frontend_null_get_rating,     /* get_rating */
+   NULL,                         /* get_name */
+   NULL,                         /* get_rating */
    "null",
 };

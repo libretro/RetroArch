@@ -302,8 +302,6 @@ static int frontend_xdk_get_rating(void)
    return 11;
 #elif defined(_XBOX1)
    return 7;
-#else
-   return -1;
 #endif
 }
 
@@ -316,6 +314,7 @@ const frontend_ctx_driver_t frontend_ctx_xdk = {
    NULL,                         /* process_events */
    frontend_xdk_exec,            /* exec */
    NULL,                         /* shutdown */
+   NULL,                         /* get_name */
    frontend_xdk_get_rating,      /* get_rating */
    "xdk",
 };

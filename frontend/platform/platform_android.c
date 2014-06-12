@@ -701,13 +701,16 @@ static void frontend_android_shutdown(bool unused)
    exit(0);
 }
 
+static void frontend_android_get_name(char *name, size_t sizeof_name)
+{
+   int len = __system_property_get("ro.product.model", name);
+   (void)len;
+}
+
 static int frontend_android_get_rating(void)
 {
    char model_id[PROP_VALUE_MAX];
-   int len;
-
-   len = __system_property_get("ro.product.model", model_id);
-   (void)len;
+   frontend_android_get_name(&model_id, sizeof(model_id));
 
    RARCH_LOG("ro.product.model: (%s).\n", model_id);
 
@@ -729,6 +732,7 @@ const frontend_ctx_driver_t frontend_ctx_android = {
    frontend_android_process_events, /* process_events */
    NULL,                         /* exec */
    frontend_android_shutdown,    /* shutdown */
+   frontend_android_get_name,    /* get_name */
    frontend_android_get_rating,  /* get_rating */
    "android",
 };
