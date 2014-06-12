@@ -311,7 +311,11 @@ void config_set_defaults(void)
    g_settings.audio.in_rate = out_rate;
    if (audio_device)
       strlcpy(g_settings.audio.device, audio_device, sizeof(g_settings.audio.device));
-   g_settings.audio.latency = out_latency;
+
+   if (!g_defaults.settings.out_latency)
+      g_defaults.settings.out_latency = out_latency;
+
+   g_settings.audio.latency = g_defaults.settings.out_latency;
    g_settings.audio.sync = audio_sync;
    g_settings.audio.rate_control = rate_control;
    g_settings.audio.rate_control_delta = rate_control_delta;
