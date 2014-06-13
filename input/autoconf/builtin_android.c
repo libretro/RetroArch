@@ -57,7 +57,7 @@ DECL_BTN(r, 103) \
 "input_menu_toggle_btn = 82\n"
 
 // TODO
-// - Analog sticks
+// - Analog sticks - verify if they work
 // - L2 / R2 buttons
 #define WIKIPAD_DEFAULT_BINDS \
 DECL_BTN(a, 96) \
@@ -73,8 +73,18 @@ DECL_BTN(right, 22) \
 DECL_BTN(l, 102) \
 DECL_BTN(r, 103) \
 DECL_BTN(l3, 106) \
-DECL_BTN(r3, 107)
+DECL_BTN(r3, 107) \
+DECL_AXIS(l_x_plus,  +0) \
+DECL_AXIS(l_x_minus, -0) \
+DECL_AXIS(l_y_plus,  +1) \
+DECL_AXIS(l_y_minus, -1) \
+DECL_AXIS(r_x_plus,  +2) \
+DECL_AXIS(r_x_minus, -2) \
+DECL_AXIS(r_y_plus,  -3) \
+DECL_AXIS(r_y_minus, +3)
 
+// TODO
+// - Analog sticks - verify if they work
 #define ARCHOS_GAMEPAD_DEFAULT_BINDS \
 DECL_BTN(a, 97) \
 DECL_BTN(b, 96) \
@@ -89,8 +99,18 @@ DECL_BTN(right, 22) \
 DECL_BTN(l, 102) \
 DECL_BTN(r, 103) \
 DECL_BTN(l2, 104) \
-DECL_BTN(r2, 105)
+DECL_BTN(r2, 105) \
+DECL_AXIS(l_x_plus,  +0) \
+DECL_AXIS(l_x_minus, -0) \
+DECL_AXIS(l_y_plus,  +1) \
+DECL_AXIS(l_y_minus, -1) \
+DECL_AXIS(r_x_plus,  +2) \
+DECL_AXIS(r_x_minus, -2) \
+DECL_AXIS(r_y_plus,  -3) \
+DECL_AXIS(r_y_minus, +3)
 
+// TODO
+// - Analog sticks - verify if they work
 #define SAMSUNG_EIGP20_DEFAULT_BINDS \
 DECL_BTN(a, 97) \
 DECL_BTN(b, 96) \
@@ -103,7 +123,15 @@ DECL_BTN(down, h0down) \
 DECL_BTN(left, h0left) \
 DECL_BTN(right, h0right) \
 DECL_BTN(l, 102) \
-DECL_BTN(r, 103)
+DECL_BTN(r, 103) \
+DECL_AXIS(l_x_plus,  +0) \
+DECL_AXIS(l_x_minus, -0) \
+DECL_AXIS(l_y_plus,  +1) \
+DECL_AXIS(l_y_minus, -1) \
+DECL_AXIS(r_x_plus,  +2) \
+DECL_AXIS(r_x_minus, -2) \
+DECL_AXIS(r_y_plus,  -3) \
+DECL_AXIS(r_y_minus, +3)
 
 #define OUYA_DEFAULT_BINDS \
 DECL_BTN(a, 97) \
@@ -327,8 +355,8 @@ DECL_BTN(right, 22) \
 DECL_BTN(l, 102) \
 DECL_BTN(r, 103)
 
-//TODO
-// - Analog sticks (?)
+// TODO
+// - Analog sticks - verify if they work
 #define JXD_S7300B_DEFAULT_BINDS \
 DECL_BTN(a, 96) \
 DECL_BTN(b, 97) \
@@ -341,10 +369,18 @@ DECL_BTN(down, 20) \
 DECL_BTN(left, 21) \
 DECL_BTN(right, 22) \
 DECL_BTN(l, 102) \
-DECL_BTN(r, 103)
+DECL_BTN(r, 103) \
+DECL_AXIS(l_x_plus, +0) \
+DECL_AXIS(l_x_minus, -0) \
+DECL_AXIS(l_y_plus, +1) \
+DECL_AXIS(l_y_minus, -1) \
+DECL_AXIS(r_x_plus,  +2) \
+DECL_AXIS(r_x_minus, -2) \
+DECL_AXIS(r_y_plus, +3) \
+DECL_AXIS(r_y_minus, -3)
 
 //TODO
-// - Analog sticks
+// - Analog sticks - verify if they work
 #define JXD_S7800B_DEFAULT_BINDS \
 DECL_BTN(a, 96) \
 DECL_BTN(b, 97) \
@@ -359,7 +395,15 @@ DECL_BTN(right, 22) \
 DECL_BTN(l, 102) \
 DECL_BTN(r, 103) \
 DECL_BTN(l2, 104) \
-DECL_BTN(r2, 105)
+DECL_BTN(r2, 105) \
+DECL_AXIS(l_x_plus, +0) \
+DECL_AXIS(l_x_minus, -0) \
+DECL_AXIS(l_y_plus, +1) \
+DECL_AXIS(l_y_minus, -1) \
+DECL_AXIS(r_x_plus,  +2) \
+DECL_AXIS(r_x_minus, -2) \
+DECL_AXIS(r_y_plus, +3) \
+DECL_AXIS(r_y_minus, -3)
 
 #define RUMBLEPAD2_DEFAULT_BINDS \
 DECL_BTN(a, 190) \
