@@ -427,7 +427,7 @@ static void handle_hotplug(void *data, unsigned *port, unsigned id,
    else if (strstr(device_name, "Jess Tech Dual Analog Rumble Pad"))
       device = DEVICE_SAITEK_RUMBLE_P480;
    else if (strstr(device_name, "mtk-kpd"))
-      device = DEVICE_MUCH_IREADGO_I5;
+      strlcpy(name_buf, "MUCH iReadyGo i5", sizeof(name_buf));
    else if (strstr(device_name, "Wikipad"))
       strlcpy(name_buf, "Wikipad", sizeof(name_buf));
    else if (strstr(device_name, "Microsoft"))
@@ -478,7 +478,7 @@ static void handle_hotplug(void *data, unsigned *port, unsigned id,
    else if (strstr(device_name, "BUFFALO BGC-FC801"))
       device = DEVICE_BUFFALO_BGC_FC801;
    else if (strstr(device_name, "8Bitdo FC30"))
-      device = DEVICE_FC30_GAMEPAD;
+      strlcpy(name_buf, "FC30 Gamepad", sizeof(name_buf));
    else if (strstr(device_name, "RetroUSB.com RetroPad"))
       device = DEVICE_RETROUSB_RETROPAD;
    else if (strstr(device_name, "RetroUSB.com SNES RetroPort"))

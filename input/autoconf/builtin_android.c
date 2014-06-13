@@ -57,6 +57,20 @@ DECL_BTN(right, h0right) \
 DECL_BTN(l, 194) \
 DECL_BTN(r, 195)
 
+#define FC30_GAMEPAD_DEFAULT_BINDS \
+DECL_BTN(up, 19) \
+DECL_BTN(down, 20) \
+DECL_BTN(left, 21) \
+DECL_BTN(right, 22) \
+DECL_BTN(a, 96) \
+DECL_BTN(b, 97) \
+DECL_BTN(x, 99) \
+DECL_BTN(y, 100) \
+DECL_BTN(l, 102) \
+DECL_BTN(r, 103) \
+DECL_BTN(select, 98) \
+DECL_BTN(start, 108)
+
 #define ZEUS_DEFAULT_BINDS \
 DECL_BTN(a, 4) \
 DECL_BTN(b, 23) \
@@ -71,6 +85,28 @@ DECL_BTN(right, 22) \
 DECL_BTN(l, 102) \
 DECL_BTN(r, 103) \
 "input_menu_toggle_btn = 82\n"
+
+// TODO
+// - Analog sticks - verify if they work
+#define MUCH_IREADYGO_I5_DEFAULT_BINDS \
+DECL_BTN(a, 97) \
+DECL_BTN(b, 23) \
+DECL_BTN(x, 100) \
+DECL_BTN(y, 99) \
+DECL_BTN(up, 19) \
+DECL_BTN(down, 20) \
+DECL_BTN(left, 21) \
+DECL_BTN(right, 22) \
+DECL_BTN(l, 102) \
+DECL_BTN(r, 103) \
+DECL_AXIS(l_x_plus,  +0) \
+DECL_AXIS(l_x_minus, -0) \
+DECL_AXIS(l_y_plus,  +1) \
+DECL_AXIS(l_y_minus, -1) \
+DECL_AXIS(r_x_plus,  +2) \
+DECL_AXIS(r_x_minus, -2) \
+DECL_AXIS(r_y_plus,  -3) \
+DECL_AXIS(r_y_minus, +3)
 
 // TODO
 // - Analog sticks - verify if they work
@@ -509,6 +545,10 @@ const char* const input_builtin_autoconfs[] =
    "input_device = \"SideWinder Classic\" \n"
    "input_driver = \"android\"                    \n"
    SIDEWINDER_CLASSIC_DEFAULT_BINDS,
+   
+   "input_device = \"MUCH iReadyGo i5\" \n"
+   "input_driver = \"android\"                    \n"
+   MUCH_IREADYGO_I5_DEFAULT_BINDS
 
    "input_device = \"XBox 360\" \n"
    "input_driver = \"android\"                    \n"
