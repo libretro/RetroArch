@@ -220,12 +220,18 @@ public final class UserPreferences
 		config.setBoolean("input_overlay_enable", prefs.getBoolean("input_overlay_enable", false));
 		config.setString("input_overlay", prefs.getString("input_overlay", ""));
 
-		final boolean usingCustomSaveFileDir = prefs.getBoolean("savefile_directory_enable", false);
-		final boolean usingCustomSaveStateDir = prefs.getBoolean("savestate_directory_enable", false);
-		final boolean usingCustomSystemDir = prefs.getBoolean("system_directory_enable", false);
-		config.setString("savefile_directory", usingCustomSaveFileDir ? prefs.getString("savefile_directory", "") : "");
-		config.setString("savestate_directory", usingCustomSaveStateDir ? prefs.getString("savestate_directory", "") : "");
-		config.setString("system_directory", usingCustomSystemDir ? prefs.getString("system_directory", "") : "");
+		if (prefs.getBoolean("savefile_directory_enable", false))
+		{
+		   config.setString("savefile_directory", prefs.getString("savefile_directory", ""));
+		}
+		if (prefs.getBoolean("savestate_directory_enable", false))
+		{
+		   config.setString("savestate_directory", prefs.getString("savestate_directory", ""));
+		}
+		if (prefs.getBoolean("system_directory_enable", false))
+		{
+		   config.setString("system_directory", prefs.getString("system_directory", ""));
+		}
 
 		config.setBoolean("video_font_enable", prefs.getBoolean("video_font_enable", true));
 		config.setString("game_history_path", dataDir + "/retroarch-history.txt");

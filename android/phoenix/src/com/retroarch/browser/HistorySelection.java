@@ -128,6 +128,7 @@ public final class HistorySelection extends DialogFragment
 			retro.putExtra("LIBRETRO", corePath);
 			retro.putExtra("CONFIGFILE", UserPreferences.getDefaultConfigPath(ctx));
 			retro.putExtra("IME", current_ime);
+			retro.putExtra("DATADIR", getActivity().getApplicationInfo().dataDir);
 			startActivity(retro);
 			dismiss();
 		}

@@ -217,6 +217,7 @@ public final class MainMenuFragment extends PreferenceListFragment implements On
 			retro.putExtra("LIBRETRO", libretro_path);
 			retro.putExtra("CONFIGFILE", UserPreferences.getDefaultConfigPath(ctx));
 			retro.putExtra("IME", current_ime);
+			retro.putExtra("DATADIR", ctx.getApplicationInfo().dataDir);
 			startActivity(retro);
 		}
 		// Load Core Preference
@@ -290,6 +291,7 @@ public final class MainMenuFragment extends PreferenceListFragment implements On
 		retro.putExtra("LIBRETRO", libretro_path);
 		retro.putExtra("CONFIGFILE", UserPreferences.getDefaultConfigPath(ctx));
 		retro.putExtra("IME", current_ime);
+		retro.putExtra("DATADIR", ctx.getApplicationInfo().dataDir);
 		startActivity(retro);
 	}
 }

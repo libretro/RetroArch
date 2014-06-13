@@ -280,6 +280,7 @@ public final class DetectCoreDirectoryFragment extends DirectoryFragment
 		retro.putExtra("LIBRETRO", corePath);
 		retro.putExtra("CONFIGFILE", UserPreferences.getDefaultConfigPath(getActivity()));
 		retro.putExtra("IME", current_ime);
+		retro.putExtra("DATADIR", getActivity().getApplicationInfo().dataDir);
 		startActivity(retro);
 		dismiss();
 	}
