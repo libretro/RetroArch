@@ -156,7 +156,8 @@ static void frontend_xdk_get_environment_settings(int *argc, char *argv[],
 #endif
 
 #ifndef IS_SALAMANDER
-   char path[PATH_MAX];
+   static char path[PATH_MAX];
+   *path = '\0';
 #if defined(_XBOX1)
    RARCH_LOG("Gets here top.\n");
    LAUNCH_DATA ptr;
@@ -212,7 +213,7 @@ static void frontend_xdk_get_environment_settings(int *argc, char *argv[],
             args->config_path    = NULL;
             args->sram_path      = NULL;
             args->state_path     = NULL;
-            args->rom_path       = strdup(path);
+            args->rom_path       = path;
             args->libretro_path  = NULL;
 
             RARCH_LOG("Auto-start game %s.\n", path);

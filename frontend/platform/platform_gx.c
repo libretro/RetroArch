@@ -200,7 +200,8 @@ static void frontend_gx_get_environment_settings(int *argc, char *argv[],
    // needed on Wii; loaders follow a dumb standard where the path and filename are separate in the argument list
    if (*argc > 2 && argv[1] != NULL && argv[2] != NULL)
    {
-      char path[PATH_MAX];
+      static char path[PATH_MAX];
+      *path = '\0';
       struct rarch_main_wrap *args = (struct rarch_main_wrap*)params_data;
 
       if (args)
@@ -213,7 +214,7 @@ static void frontend_gx_get_environment_settings(int *argc, char *argv[],
          args->config_path    = NULL;
          args->sram_path      = NULL;
          args->state_path     = NULL;
-         args->rom_path       = strdup(path);
+         args->rom_path       = path;
          args->libretro_path  = NULL;
       }
    }

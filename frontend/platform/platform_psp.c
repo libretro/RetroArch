@@ -71,7 +71,8 @@ static void frontend_psp_get_environment_settings(int *argc, char *argv[],
 
    if (argv[1] && (argv[1][0] != '\0'))
    {
-      char path[PATH_MAX];
+      static char path[PATH_MAX];
+      *path = '\0';
       struct rarch_main_wrap *args = (struct rarch_main_wrap*)params_data;
 
       if (args)
@@ -84,7 +85,7 @@ static void frontend_psp_get_environment_settings(int *argc, char *argv[],
          args->config_path    = NULL;
          args->sram_path      = NULL;
          args->state_path     = NULL;
-         args->rom_path       = strdup(path);
+         args->rom_path       = path;
          args->libretro_path  = NULL;
 
          RARCH_LOG("argv[0]: %s\n", argv[0]);
