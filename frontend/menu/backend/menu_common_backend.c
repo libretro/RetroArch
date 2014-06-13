@@ -2472,9 +2472,14 @@ static int menu_common_iterate(unsigned action)
 
                if (driver.overlay)
                   input_overlay_free(driver.overlay);
-               driver.overlay = input_overlay_new(g_settings.input.overlay);
-               if (!driver.overlay)
-                  RARCH_ERR("Failed to load overlay.\n");
+               driver.overlay = NULL;
+
+               if (g_settings.input.overlay_enable)
+               {
+                  driver.overlay = input_overlay_new(g_settings.input.overlay);
+                  if (!driver.overlay)
+                     RARCH_ERR("Failed to load overlay.\n");
+               }
 
                menu_flush_stack_type(MENU_SETTINGS_OPTIONS);
             }
@@ -3773,11 +3778,33 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
          break;
 #ifdef HAVE_OVERLAY
       case MENU_SETTINGS_OVERLAY_ENABLE:
-         if (action == MENU_ACTION_OK)
+      {
+         bool changed = false;
+         if (action == MENU_ACTION_OK || action == MENU_ACTION_LEFT || action == MENU_ACTION_RIGHT)
+         {
             g_settings.input.overlay_enable = !g_settings.input.overlay_enable;
+            changed = true;
+         }
          else if (action == MENU_ACTION_START)
+         {
             g_settings.input.overlay_enable = g_defaults.settings.input_overlay_enable;
+            changed = true;
+         }
+
+         if (changed)
+         {
+            if (driver.overlay)
+               input_overlay_free(driver.overlay);
+            driver.overlay = NULL;
+            if (g_settings.input.overlay_enable && *g_settings.input.overlay)
+            {
+               driver.overlay = input_overlay_new(g_settings.input.overlay);
+               if (!driver.overlay)
+                  RARCH_ERR("Failed to load overlay.\n");
+            }
+         }
          break;
+      }
       case MENU_SETTINGS_OVERLAY_PRESET:
          switch (action)
          {
@@ -4081,7 +4108,7 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
             break;
          }
       case MENU_SETTINGS_DEVICE_AUTODETECT_ENABLE:
-         if (action == MENU_ACTION_OK)
+         if (action == MENU_ACTION_OK || action == MENU_ACTION_LEFT || action == MENU_ACTION_RIGHT)
             g_settings.input.autodetect_enable = !g_settings.input.autodetect_enable;
          break;
       case MENU_SETTINGS_CUSTOM_BIND_MODE:

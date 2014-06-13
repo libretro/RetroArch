@@ -390,8 +390,6 @@ void config_set_defaults(void)
    g_settings.input.turbo_period = turbo_period;
    g_settings.input.turbo_duty_cycle = turbo_duty_cycle;
 
-   g_settings.input.overlay_enable = false;
-
    g_settings.input.overlay_enable = g_defaults.settings.input_overlay_enable;
 
    g_settings.input.overlay_opacity = 0.7f;
