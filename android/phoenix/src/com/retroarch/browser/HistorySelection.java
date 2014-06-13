@@ -8,6 +8,7 @@ import java.io.InputStreamReader;
 
 import com.retroarch.R;
 import com.retroarch.browser.mainmenu.MainMenuActivity;
+import com.retroarch.browser.mainmenu.MainMenuFragment;
 import com.retroarch.browser.preferences.util.UserPreferences;
 import com.retroarch.browser.retroactivity.RetroActivityFuture;
 import com.retroarch.browser.retroactivity.RetroActivityPast;
@@ -104,6 +105,7 @@ public final class HistorySelection extends DialogFragment
 		return rootView;
 	}
 
+
 	private final OnItemClickListener onItemClickListener = new OnItemClickListener()
 	{
 		@Override
@@ -124,11 +126,12 @@ public final class HistorySelection extends DialogFragment
 					Settings.Secure.DEFAULT_INPUT_METHOD);
 			Toast.makeText(ctx, String.format(getString(R.string.loading_gamepath), gamePath), Toast.LENGTH_SHORT).show();
 			Intent retro = getRetroActivity();
-			retro.putExtra("ROM", gamePath);
-			retro.putExtra("LIBRETRO", corePath);
-			retro.putExtra("CONFIGFILE", UserPreferences.getDefaultConfigPath(ctx));
-			retro.putExtra("IME", current_ime);
-			retro.putExtra("DATADIR", getActivity().getApplicationInfo().dataDir);
+			MainMenuFragment.startRetroActivity(retro,
+					gamePath,
+					corePath,
+					UserPreferences.getDefaultConfigPath(ctx),
+					current_ime,
+					getActivity().getApplicationInfo().dataDir);
 			startActivity(retro);
 			dismiss();
 		}

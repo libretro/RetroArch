@@ -209,15 +209,16 @@ public final class MainMenuFragment extends PreferenceListFragment implements On
 		if (prefKey.equals("resumeContentPref"))
 		{
 			UserPreferences.updateConfigFile(ctx);
-
 			final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(ctx);
-			final String libretro_path = prefs.getString("libretro_path", ctx.getApplicationInfo().dataDir + "/cores");
-			final String current_ime = Settings.Secure.getString(ctx.getContentResolver(), Settings.Secure.DEFAULT_INPUT_METHOD);
 			final Intent retro = getRetroActivity();
-			retro.putExtra("LIBRETRO", libretro_path);
-			retro.putExtra("CONFIGFILE", UserPreferences.getDefaultConfigPath(ctx));
-			retro.putExtra("IME", current_ime);
-			retro.putExtra("DATADIR", ctx.getApplicationInfo().dataDir);
+			
+			MainMenuFragment.startRetroActivity(
+					retro,
+					null,
+					prefs.getString("libretro_path", ctx.getApplicationInfo().dataDir + "/cores"),
+					UserPreferences.getDefaultConfigPath(ctx),
+					Settings.Secure.getString(ctx.getContentResolver(), Settings.Secure.DEFAULT_INPUT_METHOD),
+					 ctx.getApplicationInfo().dataDir);
 			startActivity(retro);
 		}
 		// Load Core Preference
@@ -281,17 +282,29 @@ public final class MainMenuFragment extends PreferenceListFragment implements On
 	public void onDirectoryFragmentClosed(String path)
 	{
 		final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(ctx);
-		final String libretro_path = prefs.getString("libretro_path", "");
 
 		UserPreferences.updateConfigFile(ctx);
-		String current_ime = Settings.Secure.getString(ctx.getContentResolver(), Settings.Secure.DEFAULT_INPUT_METHOD);
 		Toast.makeText(ctx, String.format(getString(R.string.loading_data), path), Toast.LENGTH_SHORT).show();
 		Intent retro = getRetroActivity();
-		retro.putExtra("ROM", path);
-		retro.putExtra("LIBRETRO", libretro_path);
-		retro.putExtra("CONFIGFILE", UserPreferences.getDefaultConfigPath(ctx));
-		retro.putExtra("IME", current_ime);
-		retro.putExtra("DATADIR", ctx.getApplicationInfo().dataDir);
+		MainMenuFragment.startRetroActivity(
+				retro,
+				path,
+				prefs.getString("libretro_path", ""),
+				UserPreferences.getDefaultConfigPath(ctx),
+				Settings.Secure.getString(ctx.getContentResolver(), Settings.Secure.DEFAULT_INPUT_METHOD),
+				ctx.getApplicationInfo().dataDir);
 		startActivity(retro);
+	}
+	
+	public static void startRetroActivity(Intent retro, String contentPath, String corePath,
+			String configFilePath, String imePath, String dataDirPath)
+	{
+		if (contentPath != null) {
+			retro.putExtra("ROM", contentPath);
+		}
+		retro.putExtra("LIBRETRO", corePath);
+		retro.putExtra("CONFIGFILE", configFilePath);
+		retro.putExtra("IME", imePath);
+		retro.putExtra("DATADIR", dataDirPath);
 	}
 }

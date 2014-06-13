@@ -29,6 +29,7 @@ import com.retroarch.R;
 import com.retroarch.browser.FileWrapper;
 import com.retroarch.browser.IconAdapter;
 import com.retroarch.browser.ModuleWrapper;
+import com.retroarch.browser.mainmenu.MainMenuFragment;
 import com.retroarch.browser.preferences.util.UserPreferences;
 import com.retroarch.browser.retroactivity.RetroActivityFuture;
 import com.retroarch.browser.retroactivity.RetroActivityPast;
@@ -275,12 +276,13 @@ public final class DetectCoreDirectoryFragment extends DirectoryFragment
 			retro = new Intent(getActivity(), RetroActivityPast.class);
 
 		UserPreferences.updateConfigFile(getActivity());
-		String current_ime = Settings.Secure.getString(getActivity().getContentResolver(), Settings.Secure.DEFAULT_INPUT_METHOD);
-		retro.putExtra("ROM", contentPath);
-		retro.putExtra("LIBRETRO", corePath);
-		retro.putExtra("CONFIGFILE", UserPreferences.getDefaultConfigPath(getActivity()));
-		retro.putExtra("IME", current_ime);
-		retro.putExtra("DATADIR", getActivity().getApplicationInfo().dataDir);
+		MainMenuFragment.startRetroActivity(
+				retro,
+				contentPath,
+				corePath,
+				UserPreferences.getDefaultConfigPath(getActivity()),
+				Settings.Secure.getString(getActivity().getContentResolver(), Settings.Secure.DEFAULT_INPUT_METHOD),
+				getActivity().getApplicationInfo().dataDir);
 		startActivity(retro);
 		dismiss();
 	}
