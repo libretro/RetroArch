@@ -170,7 +170,7 @@
 						<string key="resetGame:">id</string>
 						<string key="saveState:">id</string>
 						<string key="showPauseMenu:">id</string>
-						<string key="showRGUI:">id</string>
+						<string key="showMenu:">id</string>
 						<string key="startBluetooth">id</string>
 						<string key="stopBluetooth">id</string>
 					</dictionary>
@@ -203,8 +203,8 @@
 							<string key="name">showPauseMenu:</string>
 							<string key="candidateClassName">id</string>
 						</object>
-						<object class="IBActionInfo" key="showRGUI:">
-							<string key="name">showRGUI:</string>
+						<object class="IBActionInfo" key="showMenu:">
+							<string key="name">showMenu:</string>
 							<string key="candidateClassName">id</string>
 						</object>
 						<object class="IBActionInfo" key="startBluetooth">

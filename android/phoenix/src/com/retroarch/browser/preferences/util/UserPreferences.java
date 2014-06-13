@@ -187,7 +187,7 @@ public final class UserPreferences
 		config.setBoolean("video_threaded", prefs.getBoolean("video_threaded", true));
 
 		// Refactor these weird values - 'full', 'auto', 'square', whatever -
-		// go by what we have in RGUI - makes maintaining state easier too
+		// go by what we have in the menu - makes maintaining state easier too
 		String aspect = prefs.getString("video_aspect_ratio", "auto");
 		if (aspect.equals("full"))
 		{
