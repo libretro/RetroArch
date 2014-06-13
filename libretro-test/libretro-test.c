@@ -310,6 +310,7 @@ static void check_variables(void)
    float last_rate = last_sample_rate;
    struct retro_system_av_info info;
    retro_get_system_av_info(&info);
+
    if ((last != last_aspect && last != 0.0f) || (last_rate != last_sample_rate && last_rate != 0.0f))
    {
       // SET_SYSTEM_AV_INFO can only be called within retro_run().
@@ -317,8 +318,12 @@ static void check_variables(void)
       // on last and last_rate ensures this path is never hit that early.
       // last_aspect and last_sample_rate are not updated until retro_get_system_av_info(),
       // which must come after retro_load_game().
-      bool ret = environ_cb(RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO, &info);
-      logging.log(RETRO_LOG_INFO, "SET_SYSTEM_AV_INFO = %u.\n", ret);
+      bool ret;
+      if (last_rate != last_sample_rate && last_rate != 0.0f) // If audio rate changes, go through SET_SYSTEM_AV_INFO.
+         ret = environ_cb(RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO, &info);
+      else // If only aspect changed, take the simpler path.
+         ret = environ_cb(RETRO_ENVIRONMENT_SET_GEOMETRY, &info.geometry);
+      logging.log(RETRO_LOG_INFO, "SET_SYSTEM_AV_INFO/SET_GEOMETRY = %u.\n", ret);
    }
 }
 
