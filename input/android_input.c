@@ -423,7 +423,7 @@ static void handle_hotplug(void *data, unsigned *port, unsigned id,
    else if (strstr(device_name, "HuiJia  USB GamePad"))
       strlcpy(name_buf, "HuiJia", sizeof(name_buf));
    else if (strstr(device_name, "Smartjoy Family Super Smartjoy 2"))
-      device = DEVICE_SUPER_SMARTJOY;
+      strlcpy(name_buf, "Super Smartjoy 2", sizeof(name_buf));
    else if (strstr(device_name, "Jess Tech Dual Analog Rumble Pad"))
       device = DEVICE_SAITEK_RUMBLE_P480;
    else if (strstr(device_name, "mtk-kpd"))
