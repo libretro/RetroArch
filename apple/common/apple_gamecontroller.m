@@ -135,10 +135,8 @@ static void apple_gamecontroller_disconnect(GCController* controller)
 
 void apple_gamecontroller_init(void)
 {
-    if (!apple_gamecontroller_available()) {
-        /* The Gamecontroller framework is not available... */
+    if (!apple_gamecontroller_available())
         return;
-    }
     
     [[NSNotificationCenter defaultCenter] addObserverForName:GCControllerDidConnectNotification
                                                       object:nil
