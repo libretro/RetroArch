@@ -400,6 +400,8 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
          file_list_clear(menu->selection_buf);
          file_list_push(menu->selection_buf, "DSP Filter", MENU_SETTINGS_AUDIO_DSP_FILTER, 0);
          file_list_push(menu->selection_buf, "Audio Mute", MENU_SETTINGS_AUDIO_MUTE, 0);
+         file_list_push(menu->selection_buf, "Audio Latency (Hint)", MENU_SETTINGS_AUDIO_LATENCY, 0);
+         file_list_push(menu->selection_buf, "Audio Sync", MENU_SETTINGS_AUDIO_SYNC, 0);
          file_list_push(menu->selection_buf, "Rate Control Delta", MENU_SETTINGS_AUDIO_CONTROL_RATE_DELTA, 0);
 #ifdef __CELLOS_LV2__
          file_list_push(menu->selection_buf, "System BGM Control", MENU_SETTINGS_CUSTOM_BGM_CONTROL_ENABLE, 0);
@@ -3610,6 +3612,23 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
          else
             g_extern.audio_data.mute = !g_extern.audio_data.mute;
          break;
+      case MENU_SETTINGS_AUDIO_LATENCY:
+         if (action == MENU_ACTION_START)
+            g_settings.audio.latency = out_latency;
+         else if (action == MENU_ACTION_LEFT)
+         {
+            if (g_settings.audio.latency > 0)
+               g_settings.audio.latency--;
+         }
+         else if (action == MENU_ACTION_RIGHT)
+            g_settings.audio.latency++;
+         break;
+      case MENU_SETTINGS_AUDIO_SYNC:
+         if (action == MENU_ACTION_OK)
+            g_settings.audio.sync = !g_settings.audio.sync;
+         else if (action == MENU_ACTION_START)
+            g_settings.audio.sync = audio_sync;
+         break;
       case MENU_SETTINGS_AUDIO_CONTROL_RATE_DELTA:
          if (action == MENU_ACTION_START)
          {
@@ -5164,6 +5183,12 @@ static void menu_common_setting_set_label(char *type_str, size_t type_str_size, 
                strlcpy(type_str, "-1 (auto)", type_str_size);
             else
                snprintf(type_str, type_str_size, "%d", g_extern.state_slot);
+            break;
+         case MENU_SETTINGS_AUDIO_LATENCY:
+            snprintf(type_str, type_str_size, "%d ms", g_settings.audio.latency);
+            break;
+         case MENU_SETTINGS_AUDIO_SYNC:
+            strlcpy(type_str, g_settings.audio.sync ? "ON" : "OFF", type_str_size);
             break;
          case MENU_SETTINGS_AUDIO_MUTE:
             strlcpy(type_str, g_extern.audio_data.mute ? "ON" : "OFF", type_str_size);
