@@ -405,7 +405,7 @@ static void handle_hotplug(void *data, unsigned *port, unsigned id,
    else if (strstr(device_name, "iControlPad-")) // followed by a 4 (hex) char HW id
       device = DEVICE_ICONTROLPAD_HID_JOYSTICK;
    else if (strstr(device_name, "SEGA VIRTUA STICK High Grade"))
-      device = DEVICE_SEGA_VIRTUA_STICK_HIGH_GRADE;
+      strlcpy(name_buf, "Sega Virtua Stick", sizeof(name_buf));
    else if (strstr(device_name, "TTT THT Arcade console 2P USB Play"))
       device = DEVICE_TTT_THT_ARCADE;
    else if (strstr(device_name, "TOMMO NEOGEOX Arcade Stick"))

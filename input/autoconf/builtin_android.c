@@ -42,6 +42,25 @@ DECL_AXIS(r_y_minus, +3) \
 "input_menu_toggle_btn = 108\n"
 
 // TODO
+// Verify if stick works
+#define SEGA_VIRTUA_STICK_DEFAULT_BINDS \
+DECL_BTN(up, h0up) \
+DECL_BTN(down, h0down) \
+DECL_BTN(left, h0left) \
+DECL_BTN(right, h0right) \
+DECL_BTN(y, 96) \
+DECL_BTN(x, 99) \
+DECL_BTN(b, 97) \
+DECL_BTN(a, 98) \
+DECL_BTN(r, 101) \
+DECL_BTN(r2, 103) \
+DECL_BTN(l, 100) \
+DECL_BTN(l2, 102) \
+DECL_BTN(start, 105) \
+DECL_BTN(select, 110) \
+"input_menu_toggle_btn = 104\n"
+
+// TODO
 // - D-pad - verify if it works
 #define SUPER_SMARTJOY2_DEFAULT_BINDS \
 DECL_BTN(a, 189) \
@@ -553,6 +572,10 @@ const char* const input_builtin_autoconfs[] =
    "input_device = \"XBox 360\" \n"
    "input_driver = \"android\"                    \n"
    XBOX360_DEFAULT_BINDS,
+
+   "input_device = \"Sega Virtua Stick\" \n"
+   "input_driver = \"android\"                    \n"
+   SEGA_VIRTUA_STICK_DEFAULT_BINDS,
 
    "input_device = \"PlayStation2 WiseGroup\" \n"
    "input_driver = \"android\"                    \n"
