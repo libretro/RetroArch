@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2013-2014 - pinumbernumber
- *  
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -19,6 +19,6 @@
 #include "../input_common.h"
 #define DECL_BTN(btn, bind) "input_" #btn "_btn = " #bind "\n"
 #define DECL_AXIS(axis, bind) "input_" #axis "_axis = " #bind "\n"
+#define DECL_MENU(btn) "input_menu_toggle_btn = " #btn "\n"
 
 #endif
-

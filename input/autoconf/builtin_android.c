@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2014 - Daniel De Matteis
- *  
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -39,7 +39,7 @@ DECL_AXIS(r_x_plus,  +2) \
 DECL_AXIS(r_x_minus, -2) \
 DECL_AXIS(r_y_plus,  -3) \
 DECL_AXIS(r_y_minus, +3) \
-"input_menu_toggle_btn = 108\n"
+DECL_MENU(108)
 
 // TODO
 // Verify buttons
@@ -101,7 +101,7 @@ DECL_BTN(l, 100) \
 DECL_BTN(l2, 102) \
 DECL_BTN(start, 105) \
 DECL_BTN(select, 110) \
-"input_menu_toggle_btn = 104\n"
+DECL_MENU(104)
 
 // TODO
 // - D-pad - verify if it works
@@ -146,7 +146,7 @@ DECL_BTN(left, 21) \
 DECL_BTN(right, 22) \
 DECL_BTN(l, 102) \
 DECL_BTN(r, 103) \
-"input_menu_toggle_btn = 82\n"
+DECL_MENU(82)
 
 // TODO
 // - Analog sticks - verify if they work
@@ -270,7 +270,7 @@ DECL_AXIS(r_x_plus,  +2) \
 DECL_AXIS(r_x_minus, -2) \
 DECL_AXIS(r_y_plus, +3) \
 DECL_AXIS(r_y_minus, -3) \
-"input_menu_toggle_btn = 82\n"
+DECL_MENU(82)
 
 #define SIDEWINDER_DUAL_STRIKE_DEFAULT_BINDS \
 DECL_BTN(a, 190) \
@@ -289,7 +289,7 @@ DECL_AXIS(r_x_plus,  +0) \
 DECL_AXIS(r_x_minus, -0) \
 DECL_AXIS(r_y_plus, -1) \
 DECL_AXIS(r_y_minus, +1) \
-"input_menu_toggle_btn = 196\n"
+DECL_MENU(196)
 
 #define SIDEWINDER_CLASSIC_DEFAULT_BINDS \
 DECL_BTN(a, 97) \
@@ -462,7 +462,7 @@ DECL_AXIS(r_x_plus,  +2) \
 DECL_AXIS(r_x_minus, -2) \
 DECL_AXIS(r_y_plus, +3) \
 DECL_AXIS(r_y_minus, -3) \
-"input_menu_toggle_btn = 82\n"
+DECL_MENU(82)
 
 #define HUIJIA_DEFAULT_BINDS \
 DECL_BTN(a, 189) \
@@ -735,7 +735,7 @@ const char* const input_builtin_autoconfs[] =
    "input_device = \"SideWinder Classic\" \n"
    "input_driver = \"android\"                    \n"
    SIDEWINDER_CLASSIC_DEFAULT_BINDS,
-   
+
    "input_device = \"MUCH iReadyGo i5\" \n"
    "input_driver = \"android\"                    \n"
    MUCH_IREADYGO_I5_DEFAULT_BINDS
