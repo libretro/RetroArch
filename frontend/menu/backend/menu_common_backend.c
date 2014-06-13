@@ -3629,7 +3629,7 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
             g_settings.audio.latency++;
          break;
       case MENU_SETTINGS_AUDIO_SYNC:
-         if (action == MENU_ACTION_OK)
+         if (action == MENU_ACTION_OK || action == MENU_ACTION_LEFT || action == MENU_ACTION_RIGHT)
             g_settings.audio.sync = !g_settings.audio.sync;
          else if (action == MENU_ACTION_START)
             g_settings.audio.sync = audio_sync;
