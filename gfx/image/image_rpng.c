@@ -117,9 +117,6 @@ static bool rpng_image_load_argb_shift(const char *path, struct texture_image *o
    else if (strstr(path, ".png"))
    {
       bool ret = rpng_load_image_argb(path, &out_img->pixels, &out_img->width, &out_img->height);
-
-      RARCH_LOG("[RPNG]: Using RPNG loader.\n");
-
       if (!ret)
          return false;
 
