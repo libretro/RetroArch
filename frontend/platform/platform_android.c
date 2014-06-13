@@ -417,9 +417,6 @@ static void frontend_android_get_environment_settings(int *argc, char *argv[],
       void *data, void *params_data)
 {
    char device_model[PROP_VALUE_MAX], device_id[PROP_VALUE_MAX];
-   static char config_path[PATH_MAX];
-   static char core_path[PATH_MAX];
-   static char path[PATH_MAX];
 
    JNIEnv *env;
    jobject obj = NULL;
@@ -449,9 +446,11 @@ static void frontend_android_get_environment_settings(int *argc, char *argv[],
    // Config file
    CALL_OBJ_METHOD_PARAM(env, jstr, obj, android_app->getStringExtra, (*env)->NewStringUTF(env, "CONFIGFILE"));
 
-   *config_path = '\0';
    if (android_app->getStringExtra && jstr)
    {
+      static char config_path[PATH_MAX];
+      *config_path = '\0';
+
       const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
 
       if (*argv && *argv)
@@ -460,7 +459,7 @@ static void frontend_android_get_environment_settings(int *argc, char *argv[],
 
       RARCH_LOG("Config file: [%s].\n", config_path);
       if (args && *config_path)
-         args->config_path = strdup(config_path);
+         args->config_path = config_path;
    }
 
    // Current IME
@@ -487,9 +486,11 @@ static void frontend_android_get_environment_settings(int *argc, char *argv[],
    // LIBRETRO
    CALL_OBJ_METHOD_PARAM(env, jstr, obj, android_app->getStringExtra, (*env)->NewStringUTF(env, "LIBRETRO"));
 
-   *core_path = '\0';
    if (android_app->getStringExtra && jstr)
    {
+      static char core_path[PATH_MAX];
+      *core_path = '\0';
+
       const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
       if (*argv && *argv)
          strlcpy(core_path, argv, sizeof(core_path));
@@ -497,15 +498,17 @@ static void frontend_android_get_environment_settings(int *argc, char *argv[],
 
       RARCH_LOG("Libretro path: [%s].\n", core_path);
       if (args && *core_path)
-         args->libretro_path = strdup(core_path);
+         args->libretro_path = core_path;
    }
 
    // Content
    CALL_OBJ_METHOD_PARAM(env, jstr, obj, android_app->getStringExtra, (*env)->NewStringUTF(env, "ROM"));
 
-   *path = '\0';
    if (android_app->getStringExtra && jstr)
    {
+      static char path[PATH_MAX];
+      *path = '\0';
+
       const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
 
       if (*argv && *argv)
@@ -516,16 +519,18 @@ static void frontend_android_get_environment_settings(int *argc, char *argv[],
       {
          RARCH_LOG("Auto-start game %s.\n", path);
          if (args && *path)
-            args->rom_path = strdup(path);
+            args->rom_path = path;
       }
    }
 
    // Content
    CALL_OBJ_METHOD_PARAM(env, jstr, obj, android_app->getStringExtra, (*env)->NewStringUTF(env, "DATADIR"));
 
-   *path = '\0';
    if (android_app->getStringExtra && jstr)
    {
+      static char path[PATH_MAX];
+      *path = '\0';
+
       const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
 
       if (*argv && *argv)
@@ -540,8 +545,8 @@ static void frontend_android_get_environment_settings(int *argc, char *argv[],
             fill_pathname_join(g_defaults.savestate_dir, path, "savestates", sizeof(g_defaults.savestate_dir));
             fill_pathname_join(g_defaults.sram_dir, path, "savefiles", sizeof(g_defaults.sram_dir));
             fill_pathname_join(g_defaults.system_dir, path, "system", sizeof(g_defaults.system_dir));
-            args->sram_path  = strdup(g_defaults.sram_dir);
-            args->state_path = strdup(g_defaults.savestate_dir);
+            args->sram_path  = path;
+            args->state_path = path;
          }
       }
    }
