@@ -157,26 +157,20 @@ public final class UserPreferences
 
 		Log.i(TAG, "Writing config to: " + path);
 
-		// Native library and data directories.
 		final String dataDir = ctx.getApplicationInfo().dataDir;
 		final String nativeLibraryDir = ctx.getApplicationInfo().nativeLibraryDir;
 
 		final SharedPreferences prefs = getPreferences(ctx);
-		final String libretro_path = prefs.getString("libretro_path", nativeLibraryDir);
 		
-
-		config.setString("libretro_path", libretro_path);
+		config.setString("libretro_path", prefs.getString("libretro_path", nativeLibraryDir));
 		config.setString("rgui_browser_directory", prefs.getString("rgui_browser_directory", ""));
 		config.setBoolean("audio_rate_control", prefs.getBoolean("audio_rate_control", true));
-
-		int optimalRate = getOptimalSamplingRate(ctx);
-		config.setInt("audio_out_rate", optimalRate);
+		config.setInt("audio_out_rate", getOptimalSamplingRate(ctx));
 
 		// Refactor this entire mess and make this usable for per-core config
 		if (Build.VERSION.SDK_INT >= 17 && prefs.getBoolean("audio_latency_auto", true))
 		{
-			int buffersize = getLowLatencyBufferSize(ctx);
-			config.setInt("audio_block_frames", buffersize);
+			config.setInt("audio_block_frames", getLowLatencyBufferSize(ctx));
 		}
 
 		config.setBoolean("audio_enable", prefs.getBoolean("audio_enable", true));
@@ -218,18 +212,14 @@ public final class UserPreferences
 			config.setDouble("video_aspect_ratio", aspect_ratio);
 		}
 
-		// Set whether or not integer scaling is enabled.
 		config.setBoolean("video_scale_integer", prefs.getBoolean("video_scale_integer", false));
-
-		// Set whether or not shaders are being used.
-		String shaderPath = prefs.getString("video_shader", "");
-		config.setString("video_shader", shaderPath);
-		config.setBoolean("video_shader_enable", prefs.getBoolean("video_shader_enable", false) && new File(shaderPath).exists());
+		config.setString("video_shader", prefs.getString("video_shader", ""));
+		config.setBoolean("video_shader_enable", prefs.getBoolean("video_shader_enable", false) &&
+				new File(prefs.getString("video_shader", "")).exists());
 
 		config.setBoolean("input_overlay_enable", prefs.getBoolean("input_overlay_enable", false));
 		config.setString("input_overlay", prefs.getString("input_overlay", ""));
 
-		// Set whether or not custom directories are being used.
 		final boolean usingCustomSaveFileDir = prefs.getBoolean("savefile_directory_enable", false);
 		final boolean usingCustomSaveStateDir = prefs.getBoolean("savestate_directory_enable", false);
 		final boolean usingCustomSystemDir = prefs.getBoolean("system_directory_enable", false);

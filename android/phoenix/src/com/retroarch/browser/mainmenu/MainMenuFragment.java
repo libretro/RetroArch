@@ -88,6 +88,7 @@ public final class MainMenuFragment extends PreferenceListFragment implements On
 
 			// First-run, so we show the GPL waiver agreement dialog.
 			GPLWaiverDialogFragment.newInstance().show(getFragmentManager(), "gplWaiver");
+			UserPreferences.updateConfigFile(ctx);
 		}
 	}
 
