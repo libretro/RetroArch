@@ -42,6 +42,49 @@ DECL_AXIS(r_y_minus, +3) \
 "input_menu_toggle_btn = 108\n"
 
 // TODO
+// Verify buttons
+#define IDROID_X360_DEFAULT_BINDS \
+DECL_BTN(a, 69) \
+DECL_BTN(b, 124) \
+DECL_BTN(x, 76) \
+DECL_BTN(y, 123) \
+DECL_BTN(start, 126) \
+DECL_BTN(select, 70) \
+DECL_BTN(up, 19) \
+DECL_BTN(down, 20) \
+DECL_BTN(left, 21) \
+DECL_BTN(right, 22) \
+DECL_BTN(l, 71) \
+DECL_BTN(r, 112) \
+DECL_AXIS(l2, +6) \
+DECL_AXIS(r2, +7) \
+DECL_BTN(l_x_plus,  150) \
+DECL_BTN(l_x_minus, 148) \
+DECL_BTN(l_y_plus,  152) \
+DECL_BTN(l_y_minus, 146) \
+DECL_BTN(r_x_plus,  113) \
+DECL_BTN(r_x_minus, 72) \
+DECL_BTN(r_y_plus,  92) \
+DECL_BTN(r_y_minus, 93) \
+"input_menu_toggle_btn = 82\n"
+
+#define LOGITECH_PRECISION_DEFAULT_BINDS \
+DECL_BTN(a, 190) \
+DECL_BTN(b, 189) \
+DECL_BTN(x, 191) \
+DECL_BTN(y, 188) \
+DECL_BTN(start, 197) \
+DECL_BTN(select, 196) \
+DECL_BTN(up, h0up) \
+DECL_BTN(down, h0down) \
+DECL_BTN(left, h0left) \
+DECL_BTN(right, h0right) \
+DECL_BTN(l, 192) \
+DECL_BTN(r, 193) \
+DECL_BTN(l2, 194) \
+DECL_BTN(r2, 195)
+
+// TODO
 // Verify if stick works
 #define SEGA_VIRTUA_STICK_DEFAULT_BINDS \
 DECL_BTN(up, h0up) \
@@ -264,6 +307,58 @@ DECL_BTN(r, 103) \
 DECL_BTN(l2, 101) \
 DECL_BTN(r2, 98)
 
+#define PS2_JCPS102_DEFAULT_BINDS \
+DECL_BTN(a, 189) \
+DECL_BTN(b, 190) \
+DECL_BTN(x, 188) \
+DECL_BTN(y, 191) \
+DECL_BTN(start, 196) \
+DECL_BTN(select, 197) \
+DECL_BTN(up, 200) \
+DECL_BTN(down, 202) \
+DECL_BTN(left, 203) \
+DECL_BTN(right, 201) \
+DECL_BTN(l, 194) \
+DECL_BTN(r, 195) \
+DECL_BTN(l2, 195) \
+DECL_BTN(r2, 193) \
+DECL_BTN(l3, 198) \
+DECL_BTN(r3, 199) \
+DECL_AXIS(l_x_plus, +0) \
+DECL_AXIS(l_x_minus, -0) \
+DECL_AXIS(l_y_plus, +1) \
+DECL_AXIS(l_y_minus, -1) \
+DECL_AXIS(r_x_plus,  +2) \
+DECL_AXIS(r_x_minus, -2) \
+DECL_AXIS(r_y_plus, +3) \
+DECL_AXIS(r_y_minus, -3)
+
+#define PS2_GENERIC_DEFAULT_BINDS \
+DECL_BTN(a, 189) \
+DECL_BTN(b, 190) \
+DECL_BTN(x, 188) \
+DECL_BTN(y, 191) \
+DECL_BTN(start, 196) \
+DECL_BTN(select, 197) \
+DECL_BTN(up, 200) \
+DECL_BTN(down, 202) \
+DECL_BTN(left, 203) \
+DECL_BTN(right, 201) \
+DECL_BTN(l, 194) \
+DECL_BTN(r, 192) \
+DECL_BTN(l2, 195) \
+DECL_BTN(r2, 193) \
+DECL_BTN(l3, 198) \
+DECL_BTN(r3, 199) \
+DECL_AXIS(l_x_plus, +0) \
+DECL_AXIS(l_x_minus, -0) \
+DECL_AXIS(l_y_plus, +1) \
+DECL_AXIS(l_y_minus, -1) \
+DECL_AXIS(r_x_plus,  +2) \
+DECL_AXIS(r_x_minus, -2) \
+DECL_AXIS(r_y_plus, +3) \
+DECL_AXIS(r_y_minus, -3)
+
 #define PS2_WISEGROUP_DEFAULT_BINDS \
 DECL_BTN(a, 189) \
 DECL_BTN(b, 190) \
@@ -477,6 +572,36 @@ DECL_AXIS(r_x_minus, -2) \
 DECL_AXIS(r_y_plus, +3) \
 DECL_AXIS(r_y_minus, -3)
 
+// TODO
+// Verify if Dpad works
+// Verify if sticks work
+#define LOGICOOL_RUMBLEPAD2_DEFAULT_BINDS \
+DECL_BTN(a, 98) \
+DECL_BTN(b, 97) \
+DECL_BTN(x, 99) \
+DECL_BTN(y, 96) \
+DECL_BTN(start, 105) \
+DECL_BTN(select, 104) \
+DECL_BTN(up, h0up) \
+DECL_BTN(down, h0down) \
+DECL_BTN(left, h0left) \
+DECL_BTN(right, h0right) \
+DECL_BTN(l, 100) \
+DECL_BTN(r, 101) \
+DECL_BTN(l2, 102) \
+DECL_BTN(r2, 103) \
+DECL_AXIS(l_x_plus,  +0) \
+DECL_AXIS(l_x_minus, -0) \
+DECL_AXIS(l_y_plus,  +1) \
+DECL_AXIS(l_y_minus, -1) \
+DECL_AXIS(r_x_plus,  +2) \
+DECL_AXIS(r_x_minus, -2) \
+DECL_AXIS(r_y_plus,  -3) \
+DECL_AXIS(r_y_minus, +3)
+
+// TODO
+// Verify if Dpad works
+// Verify if sticks work
 #define RUMBLEPAD2_DEFAULT_BINDS \
 DECL_BTN(a, 190) \
 DECL_BTN(b, 189) \
@@ -494,6 +619,35 @@ DECL_BTN(l2, 194) \
 DECL_BTN(r2, 195) \
 DECL_BTN(l3, 198) \
 DECL_BTN(r3, 199) \
+DECL_AXIS(l_x_plus,  +0) \
+DECL_AXIS(l_x_minus, -0) \
+DECL_AXIS(l_y_plus,  +1) \
+DECL_AXIS(l_y_minus, -1) \
+DECL_AXIS(r_x_plus,  +2) \
+DECL_AXIS(r_x_minus, -2) \
+DECL_AXIS(r_y_plus,  -3) \
+DECL_AXIS(r_y_minus, +3)
+
+// TODO
+// Verify if Dpad works
+// Verify if sticks work
+#define LOGITECH_DUAL_ACTION_DEFAULT_BINDS \
+DECL_BTN(a, 100) \
+DECL_BTN(b, 99) \
+DECL_BTN(x, 97) \
+DECL_BTN(y, 96) \
+DECL_BTN(start, 108) \
+DECL_BTN(select, 109) \
+DECL_BTN(up, h0up) \
+DECL_BTN(down, h0down) \
+DECL_BTN(left, h0left) \
+DECL_BTN(right, h0right) \
+DECL_BTN(l, 102) \
+DECL_BTN(r, 103) \
+DECL_BTN(l2, 104) \
+DECL_BTN(r2, 105) \
+DECL_BTN(l3, 106) \
+DECL_BTN(r3, 107) \
 DECL_AXIS(l_x_plus,  +0) \
 DECL_AXIS(l_x_minus, -0) \
 DECL_AXIS(l_y_plus,  +1) \
@@ -542,6 +696,18 @@ const char* const input_builtin_autoconfs[] =
    "input_driver = \"android\"                    \n"
    TOMMO_NEOGEOX_DEFAULT_BINDS,
 
+   "input_device = \"Logitech Precision\" \n"
+   "input_driver = \"android\"                    \n"
+   LOGITECH_PRECISION_DEFAULT_BINDS,
+
+   "input_device = \"Logitech Dual Action\" \n"
+   "input_driver = \"android\"                    \n"
+   LOGITECH_DUAL_ACTION_DEFAULT_BINDS,
+
+   "input_device = \"iDroid x360\" \n"
+   "input_driver = \"android\"                    \n"
+   IDROID_X360_DEFAULT_BINDS,
+
    "input_device = \"Samsung Gamepad EI-GP20\" \n"
    "input_driver = \"android\"                    \n"
    SAMSUNG_EIGP20_DEFAULT_BINDS,
@@ -553,6 +719,10 @@ const char* const input_builtin_autoconfs[] =
    "input_device = \"OUYA\" \n"
    "input_driver = \"android\"                    \n"
    OUYA_DEFAULT_BINDS,
+
+   "input_device = \"Logicool RumblePad 2\" \n"
+   "input_driver = \"android\"                    \n"
+   LOGICOOL_RUMBLEPAD2_DEFAULT_BINDS,
 
    "input_device = \"RumblePad 2\" \n"
    "input_driver = \"android\"                    \n"
@@ -577,6 +747,14 @@ const char* const input_builtin_autoconfs[] =
    "input_device = \"Sega Virtua Stick\" \n"
    "input_driver = \"android\"                    \n"
    SEGA_VIRTUA_STICK_DEFAULT_BINDS,
+
+   "input_device = \"PlayStation2 JCPS102\" \n"
+   "input_driver = \"android\"                    \n"
+   PS2_JCPS102_DEFAULT_BINDS,
+
+   "input_device = \"PlayStation2 Generic\" \n"
+   "input_driver = \"android\"                    \n"
+   PS2_GENERIC_DEFAULT_BINDS,
 
    "input_device = \"PlayStation2 WiseGroup\" \n"
    "input_driver = \"android\"                    \n"

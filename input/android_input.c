@@ -399,9 +399,9 @@ static void handle_hotplug(void *data, unsigned *port, unsigned id,
    if (strstr(device_name,"Logitech") && strstr(device_name, "RumblePad 2"))
       strlcpy(name_buf, "RumblePad 2", sizeof(name_buf));
    else if (strstr(device_name, "Logitech") && strstr(device_name, "Dual Action"))
-      device = DEVICE_LOGITECH_DUAL_ACTION;
+      strlcpy(name_buf, "Logitech Dual Action", sizeof(name_buf));
    else if (strstr(device_name, "Logitech") && strstr(device_name, "Precision"))
-      device = DEVICE_LOGITECH_PRECISION_GAMEPAD;
+      strlcpy(name_buf, "Logitech Precision", sizeof(name_buf));
    else if (strstr(device_name, "iControlPad-")) // followed by a 4 (hex) char HW id
       device = DEVICE_ICONTROLPAD_HID_JOYSTICK;
    else if (strstr(device_name, "SEGA VIRTUA STICK High Grade"))
@@ -415,9 +415,9 @@ static void handle_hotplug(void *data, unsigned *port, unsigned id,
    else if (strstr(device_name, "MadCatz") && strstr(device_name, "PC USB Wired Stick"))
       device = DEVICE_MADCATZ_PC_USB_STICK;
    else if (strstr(device_name, "Logicool") && strstr(device_name, "RumblePad 2"))
-      device = DEVICE_LOGICOOL_RUMBLEPAD2;
+      strlcpy(name_buf, "Logicool RumblePad 2", sizeof(name_buf));
    else if (strstr(device_name, "Sun4i-keypad"))
-      device = DEVICE_IDROID_X360;
+      strlcpy(name_buf, "iDroid x360", sizeof(name_buf));
    else if (strstr(device_name, "Zeemote") && strstr(device_name, "Steelseries free"))
       device = DEVICE_ZEEMOTE_STEELSERIES;
    else if (strstr(device_name, "HuiJia  USB GamePad"))
@@ -449,9 +449,9 @@ static void handle_hotplug(void *data, unsigned *port, unsigned id,
          if (strstr(device_name, "WiseGroup"))
             strlcpy(name_buf, "PlayStation2 WiseGroup", sizeof(name_buf));
          else if (strstr(device_name, "JC-PS102U"))
-            device = DEVICE_JCPS102_PLAYSTATION2;
+            strlcpy(name_buf, "PlayStation2 JCPS102", sizeof(name_buf));
          else
-            device = DEVICE_GENERIC_PLAYSTATION2_CONVERTER;
+            strlcpy(name_buf, "PlayStation2 Generic", sizeof(name_buf));
       }
    }
    else if (strstr(device_name, "PLAYSTATION(R)3") || strstr(device_name, "Dualshock3")
