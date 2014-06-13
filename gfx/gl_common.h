@@ -197,14 +197,6 @@ typedef struct gl_shader_backend gl_shader_backend_t;
 #define MAX_SHADERS 16
 #define MAX_TEXTURES 8
 
-struct gl_overlay_data
-{
-   GLuint tex;
-   GLfloat tex_coord[8];
-   GLfloat vertex_coord[8];
-   GLfloat alpha_mod;
-};
-
 typedef struct gl
 {
    const gfx_ctx_driver_t *ctx_driver;
@@ -290,10 +282,13 @@ typedef struct gl
    video_info_t video_info;
 
 #ifdef HAVE_OVERLAY
-   struct gl_overlay_data *overlay;
    unsigned overlays;
    bool overlay_enable;
    bool overlay_full_screen;
+   GLuint *overlay_tex;
+   GLfloat *overlay_vertex_coord;
+   GLfloat *overlay_tex_coord;
+   GLfloat *overlay_color_coord;
 #endif
 
 #ifdef HAVE_GL_ASYNC_READBACK

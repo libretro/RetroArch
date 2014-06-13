@@ -1722,12 +1722,16 @@ static void gl_free_overlay(gl_t *gl)
    if (!gl)
       return;
 
-   for (i = 0; i < gl->overlays; i++)
-      if (gl->overlay[i].tex)
-         glDeleteTextures(1, &gl->overlay[i].tex);
+   glDeleteTextures(gl->overlays, gl->overlay_tex);
 
-   free(gl->overlay);
-   gl->overlay = NULL;
+   free(gl->overlay_tex);
+   free(gl->overlay_vertex_coord);
+   free(gl->overlay_tex_coord);
+   free(gl->overlay_color_coord);
+   gl->overlay_tex = NULL;
+   gl->overlay_vertex_coord = NULL;
+   gl->overlay_tex_coord = NULL;
+   gl->overlay_color_coord = NULL;
    gl->overlays = 0;
 }
 #endif
@@ -2659,7 +2663,7 @@ static bool gl_read_viewport(void *data, uint8_t *buffer)
 static void gl_free_overlay(gl_t *gl);
 static bool gl_overlay_load(void *data, const struct texture_image *images, unsigned num_images)
 {
-   unsigned i;
+   unsigned i, j;
    gl_t *gl = (gl_t*)data;
    if (!gl)
       return false;
@@ -2667,20 +2671,25 @@ static bool gl_overlay_load(void *data, const struct texture_image *images, unsi
    context_bind_hw_render(gl, false);
 
    gl_free_overlay(gl);
-   gl->overlay = (struct gl_overlay_data*)calloc(num_images, sizeof(*gl->overlay));
-   if (!gl->overlay)
+   gl->overlay_tex = (GLuint*)calloc(num_images, sizeof(*gl->overlay_tex));
+   if (!gl->overlay_tex)
    {
       context_bind_hw_render(gl, true);
       return false;
    }
 
+   gl->overlay_vertex_coord = (GLfloat*)calloc(2 * 4 * num_images, sizeof(GLfloat));
+   gl->overlay_tex_coord    = (GLfloat*)calloc(2 * 4 * num_images, sizeof(GLfloat));
+   gl->overlay_color_coord  = (GLfloat*)calloc(4 * 4 * num_images, sizeof(GLfloat));
+   if (!gl->overlay_vertex_coord || !gl->overlay_tex_coord || !gl->overlay_color_coord)
+      return false;
+
    gl->overlays = num_images;
+   glGenTextures(num_images, gl->overlay_tex);
 
    for (i = 0; i < num_images; i++)
    {
-      struct gl_overlay_data *data = &gl->overlay[i];
-      glGenTextures(1, &data->tex);
-      glBindTexture(GL_TEXTURE_2D, data->tex);
+      glBindTexture(GL_TEXTURE_2D, gl->overlay_tex[i]);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -2693,7 +2702,8 @@ static bool gl_overlay_load(void *data, const struct texture_image *images, unsi
 
       gl_overlay_tex_geom(gl, i, 0, 0, 1, 1); // Default. Stretch to whole screen.
       gl_overlay_vertex_geom(gl, i, 0, 0, 1, 1);
-      gl->overlay[i].alpha_mod = 1.0f;
+      for (j = 0; j < 16; j++)
+         gl->overlay_color_coord[16 * i + j] = 1.0f;
    }
 
    context_bind_hw_render(gl, true);
@@ -2705,17 +2715,15 @@ static void gl_overlay_tex_geom(void *data,
       GLfloat x, GLfloat y,
       GLfloat w, GLfloat h)
 {
-   struct gl_overlay_data *o;
    gl_t *gl = (gl_t*)data;
-
    if (!gl)
       return;
 
-   o = (struct gl_overlay_data*)&gl->overlay[image];
-   o->tex_coord[0] = x;     o->tex_coord[1] = y;
-   o->tex_coord[2] = x + w; o->tex_coord[3] = y;
-   o->tex_coord[4] = x;     o->tex_coord[5] = y + h;
-   o->tex_coord[6] = x + w; o->tex_coord[7] = y + h;
+   GLfloat *tex = &gl->overlay_tex_coord[image * 8];
+   tex[0] = x;     tex[1] = y;
+   tex[2] = x + w; tex[3] = y;
+   tex[4] = x;     tex[5] = y + h;
+   tex[6] = x + w; tex[7] = y + h;
 }
 
 static void gl_overlay_vertex_geom(void *data,
@@ -2723,21 +2731,20 @@ static void gl_overlay_vertex_geom(void *data,
       float x, float y,
       float w, float h)
 {
-   struct gl_overlay_data *o;
    gl_t *gl = (gl_t*)data;
-
    if (!gl)
       return;
-   o = (struct gl_overlay_data*)&gl->overlay[image];
+
+   GLfloat *vertex = &gl->overlay_vertex_coord[image * 8];
 
    // Flipped, so we preserve top-down semantics.
    y = 1.0f - y;
    h = -h;
 
-   o->vertex_coord[0] = x;     o->vertex_coord[1] = y;
-   o->vertex_coord[2] = x + w; o->vertex_coord[3] = y;
-   o->vertex_coord[4] = x;     o->vertex_coord[5] = y + h;
-   o->vertex_coord[6] = x + w; o->vertex_coord[7] = y + h;
+   vertex[0] = x;     vertex[1] = y;
+   vertex[2] = x + w; vertex[3] = y;
+   vertex[4] = x;     vertex[5] = y + h;
+   vertex[6] = x + w; vertex[7] = y + h;
 }
 
 static void gl_overlay_enable(void *data, bool state)
@@ -2762,28 +2769,26 @@ static void gl_overlay_full_screen(void *data, bool enable)
 
 static void gl_overlay_set_alpha(void *data, unsigned image, float mod)
 {
+   unsigned i;
    gl_t *gl = (gl_t*)data;
+   if (!gl)
+      return;
 
-   if (gl)
-      gl->overlay[image].alpha_mod = mod;
+   GLfloat *color = &gl->overlay_color_coord[image * 16];
+   color[ 0 + 3] = mod;
+   color[ 4 + 3] = mod;
+   color[ 8 + 3] = mod;
+   color[12 + 3] = mod;
 }
 
 static void gl_render_overlay(void *data)
 {
    unsigned i, j;
    gl_t *gl = (gl_t*)data;
-
-   if (!g_settings.input.overlay_enable)
+   if (!gl)
       return;
 
-   GLfloat white_color_mod[16] = {
-      1.0f, 1.0f, 1.0f, 1.0f,
-      1.0f, 1.0f, 1.0f, 1.0f,
-      1.0f, 1.0f, 1.0f, 1.0f,
-      1.0f, 1.0f, 1.0f, 1.0f,
-   };
-
-   if (!gl)
+   if (!g_settings.input.overlay_enable)
       return;
 
    glEnable(GL_BLEND);
@@ -2791,27 +2796,26 @@ static void gl_render_overlay(void *data)
    if (gl->overlay_full_screen)
       glViewport(0, 0, gl->win_width, gl->win_height);
 
+   // Ensure that we reset the attrib array.
+   if (gl->shader)
+      gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
+   gl->coords.vertex    = gl->overlay_vertex_coord;
+   gl->coords.tex_coord = gl->overlay_tex_coord;
+   gl->coords.color     = gl->overlay_color_coord;
+   gl->coords.vertices  = 4 * gl->overlays;
+   gl_shader_set_coords(gl, &gl->coords, &gl->mvp_no_rot);
+
    for (i = 0; i < gl->overlays; i++)
    {
-      // Ensure that we reset the attrib array.
-      if (gl->shader)
-         gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
-
-      glBindTexture(GL_TEXTURE_2D, gl->overlay[i].tex);
-      for (j = 0; j < 4; j++)
-         white_color_mod[3 + j * 4] = gl->overlay[i].alpha_mod;
-      gl->coords.vertex    = gl->overlay[i].vertex_coord;
-      gl->coords.tex_coord = gl->overlay[i].tex_coord;
-      gl->coords.color     = white_color_mod;
-      gl->coords.vertices  = 4;
-      gl_shader_set_coords(gl, &gl->coords, &gl->mvp_no_rot);
-      glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+      glBindTexture(GL_TEXTURE_2D, gl->overlay_tex[i]);
+      glDrawArrays(GL_TRIANGLE_STRIP, 4 * i, 4);
    }
 
    glDisable(GL_BLEND);
    gl->coords.vertex    = gl->vertex_ptr;
    gl->coords.tex_coord = gl->tex_coords;
    gl->coords.color     = gl->white_color_ptr;
+   gl->coords.vertices  = 4;
    if (gl->overlay_full_screen)
       glViewport(gl->vp.x, gl->vp.y, gl->vp.width, gl->vp.height);
 }
