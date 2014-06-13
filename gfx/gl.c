@@ -1718,7 +1718,6 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
 #ifdef HAVE_OVERLAY
 static void gl_free_overlay(gl_t *gl)
 {
-   unsigned i;
    if (!gl)
       return;
 
@@ -2769,7 +2768,6 @@ static void gl_overlay_full_screen(void *data, bool enable)
 
 static void gl_overlay_set_alpha(void *data, unsigned image, float mod)
 {
-   unsigned i;
    gl_t *gl = (gl_t*)data;
    if (!gl)
       return;
@@ -2783,7 +2781,7 @@ static void gl_overlay_set_alpha(void *data, unsigned image, float mod)
 
 static void gl_render_overlay(void *data)
 {
-   unsigned i, j;
+   unsigned i;
    gl_t *gl = (gl_t*)data;
    if (!gl)
       return;
