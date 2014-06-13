@@ -462,7 +462,7 @@ void config_set_defaults(void)
    if (default_overlay_dir)
    {
       fill_pathname_expand_special(g_extern.overlay_dir, default_overlay_dir, sizeof(g_extern.overlay_dir));
-      if (g_settings.input.overlay[0] == '\0')
+      if (!*g_settings.input.overlay)
             fill_pathname_join(g_settings.input.overlay, g_extern.overlay_dir, "gamepads/retropad/retropad.cfg", sizeof(g_settings.input.overlay));
    }
 #endif
@@ -501,9 +501,9 @@ void config_set_defaults(void)
 #endif
    if (*g_defaults.shader_dir)
       strlcpy(g_settings.video.shader_dir, g_defaults.shader_dir, sizeof(g_settings.video.shader_dir));
-   if (*g_defaults.savestate_dir)
+   if (!g_extern.has_set_state_path && *g_defaults.savestate_dir)
       strlcpy(g_extern.savestate_dir, g_defaults.savestate_dir, sizeof(g_extern.savestate_dir));
-   if (*g_defaults.sram_dir)
+   if (!g_extern.has_set_save_path && *g_defaults.sram_dir)
       strlcpy(g_extern.savefile_dir, g_defaults.sram_dir, sizeof(g_extern.savefile_dir));
    if (*g_defaults.system_dir)
       strlcpy(g_settings.system_directory, g_defaults.system_dir, sizeof(g_settings.system_directory));
