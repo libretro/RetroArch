@@ -172,6 +172,13 @@ public final class UserPreferences
 		int optimalRate = getOptimalSamplingRate(ctx);
 		config.setInt("audio_out_rate", optimalRate);
 
+		// Refactor this entire mess and make this usable for per-core config
+		if (Build.VERSION.SDK_INT >= 17 && prefs.getBoolean("audio_latency_auto", true))
+		{
+			int buffersize = getLowLatencyBufferSize(ctx);
+			config.setInt("audio_block_frames", buffersize);
+		}
+
 		config.setBoolean("audio_enable", prefs.getBoolean("audio_enable", true));
 		config.setBoolean("video_smooth", prefs.getBoolean("video_smooth", true));
 		config.setBoolean("video_allow_rotate", prefs.getBoolean("video_allow_rotate", true));
@@ -404,6 +411,23 @@ public final class UserPreferences
 
 		return Integer.parseInt(manager
 				.getProperty(AudioManager.PROPERTY_OUTPUT_SAMPLE_RATE));
+	}
+
+	/**
+	 * Gets the optimal buffer size for low-latency audio playback.
+	 * 
+	 * @param ctx the current {@link Context}.
+	 * 
+	 * @return the optimal output buffer size in decimal PCM frames.
+	 */
+	@TargetApi(17)
+	private static int getLowLatencyBufferSize(Context ctx)
+	{
+		AudioManager manager = (AudioManager) ctx.getSystemService(Context.AUDIO_SERVICE);
+		int buffersize = Integer.parseInt(manager
+				.getProperty(AudioManager.PROPERTY_OUTPUT_FRAMES_PER_BUFFER));
+		Log.i(TAG, "Queried ideal buffer size (frames): " + buffersize);
+		return buffersize;
 	}
 
 	/**
