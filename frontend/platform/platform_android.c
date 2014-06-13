@@ -545,8 +545,8 @@ static void frontend_android_get_environment_settings(int *argc, char *argv[],
             fill_pathname_join(g_defaults.savestate_dir, path, "savestates", sizeof(g_defaults.savestate_dir));
             fill_pathname_join(g_defaults.sram_dir, path, "savefiles", sizeof(g_defaults.sram_dir));
             fill_pathname_join(g_defaults.system_dir, path, "system", sizeof(g_defaults.system_dir));
-            args->sram_path  = path;
-            args->state_path = path;
+            args->sram_path  = g_defaults.sram_dir;
+            args->state_path = g_defaults.savestate_dir;
          }
       }
    }
