@@ -42,6 +42,52 @@ DECL_AXIS(r_y_minus, +3) \
 DECL_MENU(108)
 
 // TODO
+// Verify if stick works
+// Verify whether or not hats can go or
+// analog stick
+#define TTT_HT_PLAYER1_DEFAULT_BINDS \
+DECL_BTN(a, 193) \
+DECL_BTN(b, 192) \
+DECL_BTN(x, 189) \
+DECL_BTN(y, 188) \
+DECL_BTN(start, 196) \
+DECL_BTN(select, 195) \
+DECL_BTN(up, h0up) \
+DECL_BTN(down, h0down) \
+DECL_BTN(left, h0left) \
+DECL_BTN(right, h0right) \
+DECL_BTN(l, 190) \
+DECL_BTN(r, 194) \
+DECL_BTN(l2, 194) \
+DECL_BTN(r2, 191) \
+DECL_AXIS(l_x_plus,  +0) \
+DECL_AXIS(l_x_minus, -0) \
+DECL_AXIS(l_y_plus,  +1) \
+DECL_AXIS(l_y_minus, -1)
+
+// TODO
+// Verify if stick works
+#define TTT_HT_PLAYER2_DEFAULT_BINDS \
+DECL_BTN(a, 200) \
+DECL_BTN(b, 199) \
+DECL_BTN(x, 201) \
+DECL_BTN(y, 198) \
+DECL_BTN(start, 99) \
+DECL_BTN(select, 98) \
+DECL_BTN(up, 101) \
+DECL_BTN(down, 100) \
+DECL_BTN(left, 98) \
+DECL_BTN(right, 99) \
+DECL_BTN(l, 202) \
+DECL_BTN(r, 203) \
+DECL_BTN(l2, 96) \
+DECL_BTN(r2, 97) \
+DECL_AXIS(l_x_plus,  +0) \
+DECL_AXIS(l_x_minus, -0) \
+DECL_AXIS(l_y_plus,  +1) \
+DECL_AXIS(l_y_minus, -1)
+
+// TODO
 // Verify buttons
 #define IDROID_X360_DEFAULT_BINDS \
 DECL_BTN(a, 69) \
@@ -760,6 +806,14 @@ const char* const input_builtin_autoconfs[] =
    "input_device = \"SZMy Power Dual Box Wii\" \n"
    "input_driver = \"android\"                    \n"
    SZMY_POWER_DUAL_BOX_WII_CLASSIC_DEFAULT_BINDS,
+
+   "input_device = \"TTT THT Arcade (Player 1)\" \n"
+   "input_driver = \"android\"                    \n"
+   TTT_HT_PLAYER1_DEFAULT_BINDS,
+
+   "input_device = \"TTT THT Arcade (Player 2)\" \n"
+   "input_driver = \"android\"                    \n"
+   TTT_HT_PLAYER2_DEFAULT_BINDS,
 
    "input_device = \"JXD S7300B\" \n"
    "input_driver = \"android\"                    \n"

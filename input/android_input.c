@@ -407,7 +407,26 @@ static void handle_hotplug(void *data, unsigned *port, unsigned id,
    else if (strstr(device_name, "SEGA VIRTUA STICK High Grade"))
       strlcpy(name_buf, "Sega Virtua Stick", sizeof(name_buf));
    else if (strstr(device_name, "TTT THT Arcade console 2P USB Play"))
-      device = DEVICE_TTT_THT_ARCADE;
+   {
+      //FIXME - need to do a similar thing here as we did for nVidia Shield
+      //and Xperia Play. We need to keep 'count' of the amount of similar (grouped)
+      //devices.
+      //
+      //For Xperia Play - count similar devices and bind them to the same 'player'
+      //port
+      //
+      //For nVidia Shield - see above
+      //
+      //For TTT HT - keep track of how many of these 'pads' are already
+      //connected, and based on that, assign one of them to be Player 1 and
+      //the other to be Player 2.
+      //
+      //If this is finally implemented right, then these port conditionals can go.
+      if (*port == 0)
+         strlcpy(name_buf, "TTT THT Arcade (Player 1)", sizeof(name_buf));
+      else if (*port == 1)
+         strlcpy(name_buf, "TTT THT Arcade (Player 2)", sizeof(name_buf));
+   }      
    else if (strstr(device_name, "TOMMO NEOGEOX Arcade Stick"))
       strlcpy(name_buf, "TOMMO Neo-Geo X", sizeof(name_buf));
    else if (strstr(device_name, "Onlive Wireless Controller"))
