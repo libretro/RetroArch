@@ -433,6 +433,7 @@ static bool device_is_game_console(const char *name)
          !strcmp(name, "OUYA Console") ||
          device_is_xperia_play(name) ||
          !strcmp(name, "GAMEMID_BT") ||
+         !strcmp(name, "S7800") ||
          !strcmp(name, "SHIELD")
          )
       return true;
