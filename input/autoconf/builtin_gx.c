@@ -97,24 +97,12 @@ DECL_AXIS(r_y_minus, +3)
 // Some hardcoded autoconfig information. Will be used for pads with no autoconfig cfg files.
 const char* const input_builtin_autoconfs[] =
 {
-   "input_device = \"GameCube Controller\" \n"
-   "input_driver = \"gx\"                    \n"
-   GXINPUT_GAMECUBE_DEFAULT_BINDS,
-
+   DECL_AUTOCONF_DEVICE("GameCube Controller", "gx", GXINPUT_GAMECUBE_DEFAULT_BINDS),
 #ifdef HW_RVL
-   "input_device = \"Wiimote Controller\" \n"
-   "input_driver = \"gx\"                    \n"
-   GXINPUT_WIIMOTE_DEFAULT_BINDS,
-
-   "input_device = \"NunChuk Controller\" \n"
-   "input_driver = \"gx\"                    \n"
-   GXINPUT_NUNCHUK_DEFAULT_BINDS,
-
-   "input_device = \"Classic Controller\" \n"
-   "input_driver = \"gx\"                    \n"
-   GXINPUT_CLASSIC_DEFAULT_BINDS,
+   DECL_AUTOCONF_DEVICE("Wiimote Controller", "gx", GXINPUT_WIIMOTE_DEFAULT_BINDS),
+   DECL_AUTOCONF_DEVICE("NunChuk Controller", "gx", GXINPUT_NUNCHUK_DEFAULT_BINDS),
+   DECL_AUTOCONF_DEVICE("Classic Controller", "gx", GXINPUT_CLASSIC_DEFAULT_BINDS),
 #endif
-
    NULL
 };
 
