@@ -92,6 +92,8 @@ static bool renderchain_create_first_pass(void *data, const video_info_t *info)
    if (FAILED(ret))
       return false;
 
+   D3DDevice_SetSamplerState_AddressU(d3dr, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
+   D3DDevice_SetSamplerState_AddressV(d3dr, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
 #ifdef _XBOX1
    d3dr->SetRenderState(D3DRS_LIGHTING, FALSE);
 #endif
@@ -143,8 +145,6 @@ static void renderchain_render_pass(void *data, const void *frame, unsigned widt
    RD3DDevice_SetViewport(d3d->dev, &d3d->final_viewport);
    D3DDevice_SetSamplerState_MinFilter(d3dr, 0, g_settings.video.smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT);
    D3DDevice_SetSamplerState_MagFilter(d3dr, 0, g_settings.video.smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT);
-   D3DDevice_SetSamplerState_AddressU(d3dr, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
-   D3DDevice_SetSamplerState_AddressV(d3dr, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
 
 #if defined(_XBOX1)
    RD3DDevice_SetVertexShader(d3dr, D3DFVF_XYZ | D3DFVF_TEX1);
