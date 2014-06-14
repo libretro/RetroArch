@@ -413,6 +413,19 @@ static void frontend_android_get_name(char *name, size_t sizeof_name)
    (void)len;
 }
 
+static bool device_is_game_console(const char *name)
+{
+   if (
+         !strcmp(name, "OUYA Console") ||
+         !strcmp(name, "R800x") ||
+         !strcmp(name, "GAMEMID_BT") ||
+         !strcmp(name, "SHIELD")
+         )
+      return true;
+
+   return false;
+}
+
 static void frontend_android_get_environment_settings(int *argc, char *argv[],
       void *data, void *params_data)
 {
@@ -571,12 +584,7 @@ static void frontend_android_get_environment_settings(int *argc, char *argv[],
    else if (!strcmp(device_id, "JSS15J")) { }
 
    // Explicitly disable input overlay by default for gamepad-like/console devices
-   if (
-         !strcmp(device_model, "OUYA Console") ||
-         !strcmp(device_model, "R800x") ||
-         !strcmp(device_model, "GAMEMID_BT") ||
-         !strcmp(device_model, "SHIELD")
-         )
+   if (device_is_game_console(device_model))
       g_defaults.settings.input_overlay_enable = false;
    else
       g_defaults.settings.input_overlay_enable = true;   // Enable input overlay by default
