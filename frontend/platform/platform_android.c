@@ -413,11 +413,25 @@ static void frontend_android_get_name(char *name, size_t sizeof_name)
    (void)len;
 }
 
+static bool device_is_xperia_play(const char *name)
+{
+   if (
+         !strcmp(name, "R800x") ||
+         !strcmp(name, "R800at") ||
+         !strcmp(name, "R800i") ||
+         !strcmp(name, "R800a") ||
+         !strcmp(name, "SO-01D")
+         )
+      return true;
+
+   return false;
+}
+
 static bool device_is_game_console(const char *name)
 {
    if (
          !strcmp(name, "OUYA Console") ||
-         !strcmp(name, "R800x") ||
+         device_is_xperia_play(name) ||
          !strcmp(name, "GAMEMID_BT") ||
          !strcmp(name, "SHIELD")
          )
@@ -425,6 +439,7 @@ static bool device_is_game_console(const char *name)
 
    return false;
 }
+
 
 static void frontend_android_get_environment_settings(int *argc, char *argv[],
       void *data, void *params_data)
@@ -570,8 +585,7 @@ static void frontend_android_get_environment_settings(int *argc, char *argv[],
    g_defaults.settings.video_threaded_enable = true;
 
    // Set automatic default values per device
-   if (!strcmp(device_model, "SHIELD")) { }
-   else if (!strcmp(device_model, "R800x"))
+   if (device_is_xperia_play(device_model))
    {
       g_defaults.settings.out_latency = 128;
       g_defaults.settings.video_refresh_rate = 59.19132938771038;
@@ -785,7 +799,7 @@ static int frontend_android_get_rating(void)
 
    RARCH_LOG("ro.product.model: (%s).\n", device_model);
 
-   if (!strcmp(device_model, "R800x"))
+   if (device_is_xperia_play(device_model))
       return 6;
    else if (!strcmp(device_model, "GT-I9505"))
       return 12;
