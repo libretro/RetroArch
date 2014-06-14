@@ -518,7 +518,7 @@ static void d3d_overlay_render(void *data, overlay_t *overlay)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
 
-   if (!overlay || !overlay->tex || !g_settings.input.overlay_enable)
+   if (!overlay || !overlay->tex)
       return;
 
    struct overlay_vertex
@@ -767,7 +767,7 @@ static bool d3d_frame(void *data, const void *frame,
 #endif
 
 #ifdef HAVE_OVERLAY
-   if (d3d->overlays_enabled)
+   if (d3d->overlays_enabled && g_settings.input.overlay_enable)
    {
       for (unsigned i = 0; i < d3d->overlays.size(); i++)
          d3d_overlay_render(d3d, &d3d->overlays[i]);
