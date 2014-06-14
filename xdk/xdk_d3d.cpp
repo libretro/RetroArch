@@ -87,36 +87,6 @@ void d3d_deinit_shader(void *data)
 }
 #endif
 
-static void renderchain_clear(void *data)
-{
-   d3d_video_t *d3d = (d3d_video_t*)data;
-
-   if (d3d->tex)
-      d3d->tex->Release();
-   d3d->tex = NULL;
-   if (d3d->vertex_buf)
-      d3d->vertex_buf->Release();
-   d3d->vertex_buf = NULL;
-
-#ifdef _XBOX360
-   if (d3d->vertex_decl)
-      d3d->vertex_decl->Release();
-   d3d->vertex_decl = NULL;
-#endif
-}
-
-static void renderchain_free(void *data)
-{
-   d3d_video_t *chain = (d3d_video_t*)data;
-
-   renderchain_clear(chain);
-   //renderchain_destroy_stock_shader(chain);
-#ifndef DONT_HAVE_STATE_TRACKER
-   if (chain->tracker)
-      state_tracker_free(chain->tracker);
-#endif
-}
-
 static void d3d_deinit_chain(void *data)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
@@ -217,81 +187,6 @@ static bool d3d_set_shader(void *data, enum rarch_shader_type type, const char *
       RARCH_ERR("[D3D]: Cannot find shader core for path: %s.\n", path);
       return false;
    }
-
-   return true;
-}
-
-bool renderchain_init_shader_fvf(void *data, void *pass_)
-{
-   d3d_video_t *chain = (d3d_video_t*)data;
-   d3d_video_t *pass = (d3d_video_t*)data;
-   LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)chain->dev;
-
-#if defined(_XBOX360)
-   static const D3DVERTEXELEMENT VertexElements[] =
-   {
-      { 0, 0 * sizeof(float), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_POSITION, 0 },
-      { 0, 2 * sizeof(float), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 0 },
-      D3DDECL_END()
-   };
-
-   if (FAILED(d3dr->CreateVertexDeclaration(VertexElements, &pass->vertex_decl)))
-      return false;
-#endif
-
-   return true;
-}
-
-static bool renderchain_create_first_pass(void *data, const video_info_t *info)
-{
-   HRESULT ret;
-   d3d_video_t *chain = (d3d_video_t*)data;
-   LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)chain->dev;
-
-   ret = D3DDevice_CreateVertexBuffers(d3dr, 4 * sizeof(Vertex), 
-         D3DUSAGE_WRITEONLY, D3DFVF_CUSTOMVERTEX, D3DPOOL_MANAGED, &chain->vertex_buf, NULL);
-
-   if (FAILED(ret))
-      return false;
-
-   ret = d3dr->CreateTexture(chain->tex_w, chain->tex_h, 1, 0, info->rgb32 ? D3DFMT_LIN_X8R8G8B8 : D3DFMT_LIN_R5G6B5,
-         0, &chain->tex
-#ifdef _XBOX360
-         , NULL
-#endif
-         );
-
-   if (FAILED(ret))
-      return false;
-
-#ifdef _XBOX1
-   d3dr->SetRenderState(D3DRS_LIGHTING, FALSE);
-#endif
-   d3dr->SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
-   d3dr->SetRenderState(D3DRS_ZENABLE, FALSE);
-
-   if (!renderchain_init_shader_fvf(chain, chain))
-      return false;
-
-   return true;
-}
-
-
-static bool renderchain_init(void *data, const video_info_t *info)
-{
-   d3d_video_t *chain = (d3d_video_t*)data;
-   LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)chain->dev;
-
-   chain->pixel_size   = info->rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
-
-   if (!renderchain_create_first_pass(chain, info))
-      return false;
-
-   if (g_extern.console.screen.viewports.custom_vp.width == 0)
-      g_extern.console.screen.viewports.custom_vp.width = chain->screen_width;
-
-   if (g_extern.console.screen.viewports.custom_vp.height == 0)
-      g_extern.console.screen.viewports.custom_vp.height = chain->screen_height;
 
    return true;
 }
