@@ -470,7 +470,7 @@ static void handle_hotplug(void *data, unsigned *port, unsigned id,
    else if (strstr(device_name, "idroid:con"))
       device = DEVICE_IDROID_CON;
    else if (strstr(device_name, "NYKO PLAYPAD PRO"))
-      device = DEVICE_NYKO_PLAYPAD_PRO;
+      strlcpy(name_buf, "Nyko Playpad Pro", sizeof(name_buf));
    else if (strstr(device_name, "2-Axis, 8-Button"))
       device = DEVICE_GENIUS_MAXFIRE_G08XU;
    else if (strstr(device_name, "USB,2-axis 8-button gamepad"))
@@ -486,9 +486,9 @@ static void handle_hotplug(void *data, unsigned *port, unsigned id,
    else if (strstr(device_name, "CYPRESS USB"))
       device = DEVICE_CYPRESS_USB;
    else if (strstr(device_name, "Mayflash Wii Classic"))
-      device = DEVICE_MAYFLASH_WII_CLASSIC;
+      strlcpy(name_buf, "Mayflash Wii Classic", sizeof(name_buf));
    else if (strstr(device_name, "SZMy-power LTD CO.  Dual Box WII"))
-      device = DEVICE_SZMY_POWER_DUAL_BOX_WII;
+      strlcpy(name_buf, "SZMy Power Dual Box Wii", sizeof(name_buf));
    else if (strstr(device_name, "Toodles 2008 ChImp"))
       device = DEVICE_TOODLES_2008_CHIMP;
    else if (strstr(device_name, "joy_key"))

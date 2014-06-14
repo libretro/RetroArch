@@ -224,26 +224,6 @@ static void android_input_set_keybinds(void *data, unsigned device,
             android->keycode_lut[198]  |= ((RETRO_DEVICE_ID_JOYPAD_L3+1) << shift);
             android->keycode_lut[199]  |= ((RETRO_DEVICE_ID_JOYPAD_R3+1) << shift);
             break;
-         case DEVICE_NYKO_PLAYPAD_PRO:
-            g_settings.input.device[port] = device;
-            strlcpy(g_settings.input.device_names[port], "Nyko Playpad Pro",
-                  sizeof(g_settings.input.device_names[port]));
-
-            android->keycode_lut[19] |=  ((RETRO_DEVICE_ID_JOYPAD_UP+1)      << shift);
-            android->keycode_lut[20] |=  ((RETRO_DEVICE_ID_JOYPAD_DOWN+1)      << shift);
-            android->keycode_lut[21] |=  ((RETRO_DEVICE_ID_JOYPAD_LEFT+1)      << shift);
-            android->keycode_lut[22] |=  ((RETRO_DEVICE_ID_JOYPAD_RIGHT+1)      << shift);
-            android->keycode_lut[99]  |= ((RETRO_DEVICE_ID_JOYPAD_Y+1) << shift);
-            android->keycode_lut[100]  |= ((RETRO_DEVICE_ID_JOYPAD_X+1) << shift);
-            android->keycode_lut[96]  |= ((RETRO_DEVICE_ID_JOYPAD_B+1) << shift);
-            android->keycode_lut[97]  |= ((RETRO_DEVICE_ID_JOYPAD_A+1) << shift);
-            android->keycode_lut[102]  |= ((RETRO_DEVICE_ID_JOYPAD_L+1) << shift);
-            android->keycode_lut[103]  |= ((RETRO_DEVICE_ID_JOYPAD_R+1) << shift);
-            android->keycode_lut[108] |=  ((RETRO_DEVICE_ID_JOYPAD_START+1)      << shift);
-            android->keycode_lut[4] |=  ((RETRO_DEVICE_ID_JOYPAD_SELECT+1)      << shift);
-            android->keycode_lut[106] |=  ((RETRO_DEVICE_ID_JOYPAD_L3+1)      << shift);
-            android->keycode_lut[107] |=  ((RETRO_DEVICE_ID_JOYPAD_R3+1)      << shift);
-            break;
          case DEVICE_ONLIVE_WIRELESS_CONTROLLER:
             g_settings.input.device[port] = device;
             strlcpy(g_settings.input.device_names[port], "Onlive Wireless",
@@ -346,48 +326,6 @@ static void android_input_set_keybinds(void *data, unsigned device,
             android->keycode_lut[102]  |= ((RETRO_DEVICE_ID_JOYPAD_L+1) << shift);
             android->keycode_lut[103]  |= ((RETRO_DEVICE_ID_JOYPAD_R+1) << shift);
             android->keycode_lut[104]  |= ((RETRO_DEVICE_ID_JOYPAD_START+1) << shift);
-            break;
-         case DEVICE_MAYFLASH_WII_CLASSIC:
-            g_settings.input.device[port] = device;
-            strlcpy(g_settings.input.device_names[port], "Mayflash Wii Classic",
-                  sizeof(g_settings.input.device_names[port]));
-
-            android->keycode_lut[199] |=  ((RETRO_DEVICE_ID_JOYPAD_UP+1)      << shift);
-            android->keycode_lut[201] |=  ((RETRO_DEVICE_ID_JOYPAD_DOWN+1)      << shift);
-            android->keycode_lut[200] |=  ((RETRO_DEVICE_ID_JOYPAD_LEFT+1)      << shift);
-            android->keycode_lut[202] |=  ((RETRO_DEVICE_ID_JOYPAD_RIGHT+1)      << shift);
-
-            android->keycode_lut[190] |=  ((RETRO_DEVICE_ID_JOYPAD_X+1)      << shift);
-            android->keycode_lut[189] |=  ((RETRO_DEVICE_ID_JOYPAD_B+1) << shift);
-            android->keycode_lut[188] |= ((RETRO_DEVICE_ID_JOYPAD_A+1)  << shift);
-            android->keycode_lut[191] |=  ((RETRO_DEVICE_ID_JOYPAD_Y+1)      << shift);
-            android->keycode_lut[192] |=  ((RETRO_DEVICE_ID_JOYPAD_L+1)      << shift);
-            android->keycode_lut[193] |=  ((RETRO_DEVICE_ID_JOYPAD_R+1)      << shift);
-            android->keycode_lut[194] |=  ((RETRO_DEVICE_ID_JOYPAD_L2+1)      << shift);
-            android->keycode_lut[195] |=  ((RETRO_DEVICE_ID_JOYPAD_R2+1)      << shift);
-            android->keycode_lut[196] |=  ((RETRO_DEVICE_ID_JOYPAD_SELECT+1)      << shift);
-            android->keycode_lut[197] |=  ((RETRO_DEVICE_ID_JOYPAD_START+1)      << shift);
-            break;
-         case DEVICE_SZMY_POWER_DUAL_BOX_WII:
-            g_settings.input.device[port] = device;
-            strlcpy(g_settings.input.device_names[port], "SZMy Power Dual Box Wii",
-                  sizeof(g_settings.input.device_names[port]));
-
-            android->keycode_lut[200] |=  ((RETRO_DEVICE_ID_JOYPAD_UP+1)      << shift);
-            android->keycode_lut[202] |=  ((RETRO_DEVICE_ID_JOYPAD_DOWN+1)      << shift);
-            android->keycode_lut[203] |=  ((RETRO_DEVICE_ID_JOYPAD_LEFT+1)      << shift);
-            android->keycode_lut[201] |=  ((RETRO_DEVICE_ID_JOYPAD_RIGHT+1)      << shift);
-
-            android->keycode_lut[189] |=  ((RETRO_DEVICE_ID_JOYPAD_A+1) << shift);
-            android->keycode_lut[190] |=  ((RETRO_DEVICE_ID_JOYPAD_B+1)      << shift);
-            android->keycode_lut[188] |= ((RETRO_DEVICE_ID_JOYPAD_X+1)  << shift);
-            android->keycode_lut[191] |=  ((RETRO_DEVICE_ID_JOYPAD_Y+1)      << shift);
-            android->keycode_lut[192] |=  ((RETRO_DEVICE_ID_JOYPAD_L+1)      << shift);
-            android->keycode_lut[193] |=  ((RETRO_DEVICE_ID_JOYPAD_R+1)      << shift);
-            android->keycode_lut[194] |=  ((RETRO_DEVICE_ID_JOYPAD_L2+1)      << shift);
-            android->keycode_lut[195] |=  ((RETRO_DEVICE_ID_JOYPAD_R2+1)      << shift);
-            android->keycode_lut[196] |=  ((RETRO_DEVICE_ID_JOYPAD_SELECT+1)      << shift);
-            android->keycode_lut[197] |=  ((RETRO_DEVICE_ID_JOYPAD_START+1)      << shift);
             break;
          case DEVICE_TOODLES_2008_CHIMP:
             g_settings.input.device[port] = device;

@@ -66,7 +66,88 @@ DECL_BTN(r_x_plus,  113) \
 DECL_BTN(r_x_minus, 72) \
 DECL_BTN(r_y_plus,  92) \
 DECL_BTN(r_y_minus, 93) \
-"input_menu_toggle_btn = 82\n"
+DECL_MENU(82)
+
+// TODO
+// Add menu button (?)
+// Verify if sticks work
+#define NYKO_PLAYPAD_PRO_DEFAULT_BINDS \
+DECL_BTN(a, 97) \
+DECL_BTN(b, 96) \
+DECL_BTN(x, 100) \
+DECL_BTN(y, 99) \
+DECL_BTN(start, 108) \
+DECL_BTN(select, 4) \
+DECL_BTN(up, 19) \
+DECL_BTN(down, 20) \
+DECL_BTN(left, 21) \
+DECL_BTN(right, 22) \
+DECL_BTN(l, 102) \
+DECL_BTN(r, 103) \
+DECL_BTN(l3, 106) \
+DECL_BTN(r3, 107) \
+DECL_AXIS(l_x_plus,  +0) \
+DECL_AXIS(l_x_minus, -0) \
+DECL_AXIS(l_y_plus,  +1) \
+DECL_AXIS(l_y_minus, -1) \
+DECL_AXIS(r_x_plus,  +2) \
+DECL_AXIS(r_x_minus, -2) \
+DECL_AXIS(r_y_plus,  -3) \
+DECL_AXIS(r_y_minus, +3)
+
+// TODO
+// Add menu button
+// Verify if sticks work
+#define MAYFLASH_WII_CLASSIC_DEFAULT_BINDS \
+DECL_BTN(a, 188) \
+DECL_BTN(b, 189) \
+DECL_BTN(x, 190) \
+DECL_BTN(y, 191) \
+DECL_BTN(start, 197) \
+DECL_BTN(select, 196) \
+DECL_BTN(up, 199) \
+DECL_BTN(down, 201) \
+DECL_BTN(left, 200) \
+DECL_BTN(right, 202) \
+DECL_BTN(l, 192) \
+DECL_BTN(r, 193) \
+DECL_BTN(l2, 194) \
+DECL_BTN(r2, 195) \
+DECL_AXIS(l_x_plus,  +0) \
+DECL_AXIS(l_x_minus, -0) \
+DECL_AXIS(l_y_plus,  +1) \
+DECL_AXIS(l_y_minus, -1) \
+DECL_AXIS(r_x_plus,  +2) \
+DECL_AXIS(r_x_minus, -2) \
+DECL_AXIS(r_y_plus,  -3) \
+DECL_AXIS(r_y_minus, +3)
+
+// TODO
+// Add menu button
+// Verify if sticks work
+#define SZMY_POWER_DUAL_BOX_WII_CLASSIC_DEFAULT_BINDS \
+DECL_BTN(a, 189) \
+DECL_BTN(b, 190) \
+DECL_BTN(x, 188) \
+DECL_BTN(y, 191) \
+DECL_BTN(start, 197) \
+DECL_BTN(select, 196) \
+DECL_BTN(up, 200) \
+DECL_BTN(down, 202) \
+DECL_BTN(left, 203) \
+DECL_BTN(right, 201) \
+DECL_BTN(l, 192) \
+DECL_BTN(r, 193) \
+DECL_BTN(l2, 194) \
+DECL_BTN(r2, 195) \
+DECL_AXIS(l_x_plus,  +0) \
+DECL_AXIS(l_x_minus, -0) \
+DECL_AXIS(l_y_plus,  +1) \
+DECL_AXIS(l_y_minus, -1) \
+DECL_AXIS(r_x_plus,  +2) \
+DECL_AXIS(r_x_minus, -2) \
+DECL_AXIS(r_y_plus,  -3) \
+DECL_AXIS(r_y_minus, +3)
 
 #define LOGITECH_PRECISION_DEFAULT_BINDS \
 DECL_BTN(a, 190) \
@@ -672,6 +753,14 @@ const char* const input_builtin_autoconfs[] =
    "input_driver = \"android\"                    \n"
    JXD_S5110B_DEFAULT_BINDS,
 
+   "input_device = \"Mayflash Wii Classic\" \n"
+   "input_driver = \"android\"                    \n"
+   MAYFLASH_WII_CLASSIC_DEFAULT_BINDS,
+
+   "input_device = \"SZMy Power Dual Box Wii\" \n"
+   "input_driver = \"android\"                    \n"
+   SZMY_POWER_DUAL_BOX_WII_CLASSIC_DEFAULT_BINDS,
+
    "input_device = \"JXD S7300B\" \n"
    "input_driver = \"android\"                    \n"
    JXD_S7300B_DEFAULT_BINDS,
@@ -771,6 +860,10 @@ const char* const input_builtin_autoconfs[] =
    "input_device = \"Super Smartjoy 2\" \n"
    "input_driver = \"android\"                    \n"
    SUPER_SMARTJOY2_DEFAULT_BINDS,
+
+   "input_device = \"Nyko Playpad Pro\" \n"
+   "input_driver = \"android\"                    \n"
+   NYKO_PLAYPAD_PRO_DEFAULT_BINDS,
 
    NULL
 };
