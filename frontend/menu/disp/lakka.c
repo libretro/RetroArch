@@ -205,14 +205,15 @@ static void lakka_draw_text(const char *str, float x, float y, float scale, floa
    gl_set_viewport(gl, gl->win_width, gl->win_height, false, false);
 
    struct font_params params = {0};
-   params.x = x / gl->vp.width;
-   params.y = 1.0f - y / gl->vp.height;
+   params.x = x / gl->win_width;
+   params.y = 1.0f - y / gl->win_height;
 
    if (alpha > global_alpha)
       alpha = global_alpha;
 
    params.scale = scale;
    params.color = FONT_COLOR_RGBA(255, 255, 255, (uint8_t)(255 * alpha));
+   params.full_screen = true;
 
    if (font_driver)
       font_driver->render_msg(font, str, &params);
