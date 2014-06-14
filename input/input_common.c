@@ -80,6 +80,8 @@ static const rarch_joypad_driver_t *joypad_drivers[] = {
 #ifdef __MACH__
    &apple_joypad,
 #endif
+#ifdef __QNX__
+   &qnx_joypad,
 #endif
    NULL,
 };
