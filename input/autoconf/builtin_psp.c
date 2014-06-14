@@ -43,10 +43,7 @@ DECL_AXIS(r_y_minus, +3)
 // Some hardcoded autoconfig information. Will be used for pads with no autoconfig cfg files.
 const char* const input_builtin_autoconfs[] =
 {
-   "input_device = \"PSP Controller\" \n"
-   "input_driver = \"psp\"                    \n"
-   PSPINPUT_DEFAULT_BINDS,
-
+   DECL_AUTOCONF_DEVICE("PSP Controller", "psp", PSPINPUT_DEFAULT_BINDS),
    NULL
 };
 
