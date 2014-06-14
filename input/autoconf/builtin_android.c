@@ -881,7 +881,7 @@ const char* const input_builtin_autoconfs[] =
 
    "input_device = \"MUCH iReadyGo i5\" \n"
    "input_driver = \"android\"                    \n"
-   MUCH_IREADYGO_I5_DEFAULT_BINDS
+   MUCH_IREADYGO_I5_DEFAULT_BINDS,
 
    "input_device = \"XBox 360\" \n"
    "input_driver = \"android\"                    \n"
