@@ -44,10 +44,7 @@ DECL_AXIS(r_y_minus, +3)
 // Some hardcoded autoconfig information. Will be used for pads with no autoconfig cfg files.
 const char* const input_builtin_autoconfs[] =
 {
-   "input_device = \"XInput Controller\" \n"
-   "input_driver = \"xdk\"                    \n"
-   XINPUT_DEFAULT_BINDS,
-
+   DECL_AUTOCONF_DEVICE("XInput Controller", "xdk", XINPUT_DEFAULT_BINDS),
    NULL
 };
 

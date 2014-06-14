@@ -45,10 +45,7 @@ DECL_AXIS(r_y_minus, +3)
 // Some hardcoded autoconfig information. Will be used for pads with no autoconfig cfg files.
 const char* const input_builtin_autoconfs[] =
 {
-   "input_device = \"SixAxis Controller\" \n"
-   "input_driver = \"ps3\"                    \n"
-   PS3INPUT_DEFAULT_BINDS,
-
+   DECL_AUTOCONF_DEVICE("SixAxis Controller", "ps3", PS3INPUT_DEFAULT_BINDS),
    NULL
 };
 

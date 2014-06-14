@@ -787,137 +787,38 @@ DECL_AXIS(r_y_minus, +3)
 // Some hardcoded autoconfig information. Will be used for pads with no autoconfig cfg files.
 const char* const input_builtin_autoconfs[] =
 {
-   "input_device = \"NVIDIA Shield\" \n"
-   "input_driver = \"android\"                    \n"
-   SHIELD_DEFAULT_BINDS,
-
-   "input_device = \"Xperia Play\" \n"
-   "input_driver = \"android\"                    \n"
-   ZEUS_DEFAULT_BINDS,
-
-   "input_device = \"JXD S5110B\" \n"
-   "input_driver = \"android\"                    \n"
-   JXD_S5110B_DEFAULT_BINDS,
-
-   "input_device = \"Mayflash Wii Classic\" \n"
-   "input_driver = \"android\"                    \n"
-   MAYFLASH_WII_CLASSIC_DEFAULT_BINDS,
-
-   "input_device = \"SZMy Power Dual Box Wii\" \n"
-   "input_driver = \"android\"                    \n"
-   SZMY_POWER_DUAL_BOX_WII_CLASSIC_DEFAULT_BINDS,
-
-   "input_device = \"TTT THT Arcade (Player 1)\" \n"
-   "input_driver = \"android\"                    \n"
-   TTT_HT_PLAYER1_DEFAULT_BINDS,
-
-   "input_device = \"TTT THT Arcade (Player 2)\" \n"
-   "input_driver = \"android\"                    \n"
-   TTT_HT_PLAYER2_DEFAULT_BINDS,
-
-   "input_device = \"JXD S7300B\" \n"
-   "input_driver = \"android\"                    \n"
-   JXD_S7300B_DEFAULT_BINDS,
-
-   "input_device = \"JXD S5110B (Skelrom)\" \n"
-   "input_driver = \"android\"                    \n"
-   JXD_S5110B_SKELROM_DEFAULT_BINDS,
-
-   "input_device = \"JXD S7800B\" \n"
-   "input_driver = \"android\"                    \n"
-   JXD_S7800B_DEFAULT_BINDS,
-
-   "input_device = \"Archos Gamepad\" \n"
-   "input_driver = \"android\"                    \n"
-   ARCHOS_GAMEPAD_DEFAULT_BINDS,
-
-   "input_device = \"Wikipad\" \n"
-   "input_driver = \"android\"                    \n"
-   WIKIPAD_DEFAULT_BINDS,
-
-   "input_device = \"TOMMO Neo-Geo X\" \n"
-   "input_driver = \"android\"                    \n"
-   TOMMO_NEOGEOX_DEFAULT_BINDS,
-
-   "input_device = \"Logitech Precision\" \n"
-   "input_driver = \"android\"                    \n"
-   LOGITECH_PRECISION_DEFAULT_BINDS,
-
-   "input_device = \"Logitech Dual Action\" \n"
-   "input_driver = \"android\"                    \n"
-   LOGITECH_DUAL_ACTION_DEFAULT_BINDS,
-
-   "input_device = \"iDroid x360\" \n"
-   "input_driver = \"android\"                    \n"
-   IDROID_X360_DEFAULT_BINDS,
-
-   "input_device = \"Samsung Gamepad EI-GP20\" \n"
-   "input_driver = \"android\"                    \n"
-   SAMSUNG_EIGP20_DEFAULT_BINDS,
-
-   "input_device = \"GameMID\" \n"
-   "input_driver = \"android\"                    \n"
-   GAMEMID_DEFAULT_BINDS,
-
-   "input_device = \"OUYA\" \n"
-   "input_driver = \"android\"                    \n"
-   OUYA_DEFAULT_BINDS,
-
-   "input_device = \"Logicool RumblePad 2\" \n"
-   "input_driver = \"android\"                    \n"
-   LOGICOOL_RUMBLEPAD2_DEFAULT_BINDS,
-
-   "input_device = \"RumblePad 2\" \n"
-   "input_driver = \"android\"                    \n"
-   RUMBLEPAD2_DEFAULT_BINDS,
-
-   "input_device = \"SideWinder Dual Strike\" \n"
-   "input_driver = \"android\"                    \n"
-   SIDEWINDER_DUAL_STRIKE_DEFAULT_BINDS,
-
-   "input_device = \"SideWinder Classic\" \n"
-   "input_driver = \"android\"                    \n"
-   SIDEWINDER_CLASSIC_DEFAULT_BINDS,
-
-   "input_device = \"MUCH iReadyGo i5\" \n"
-   "input_driver = \"android\"                    \n"
-   MUCH_IREADYGO_I5_DEFAULT_BINDS,
-
-   "input_device = \"XBox 360\" \n"
-   "input_driver = \"android\"                    \n"
-   XBOX360_DEFAULT_BINDS,
-
-   "input_device = \"Sega Virtua Stick\" \n"
-   "input_driver = \"android\"                    \n"
-   SEGA_VIRTUA_STICK_DEFAULT_BINDS,
-
-   "input_device = \"PlayStation2 JCPS102\" \n"
-   "input_driver = \"android\"                    \n"
-   PS2_JCPS102_DEFAULT_BINDS,
-
-   "input_device = \"PlayStation2 Generic\" \n"
-   "input_driver = \"android\"                    \n"
-   PS2_GENERIC_DEFAULT_BINDS,
-
-   "input_device = \"PlayStation2 WiseGroup\" \n"
-   "input_driver = \"android\"                    \n"
-   PS2_WISEGROUP_DEFAULT_BINDS,
-
-   "input_device = \"PlayStation3\" \n"
-   "input_driver = \"android\"                    \n"
-   PS3_DEFAULT_BINDS,
-
-   "input_device = \"HuiJia\" \n"
-   "input_driver = \"android\"                    \n"
-   HUIJIA_DEFAULT_BINDS,
-
-   "input_device = \"Super Smartjoy 2\" \n"
-   "input_driver = \"android\"                    \n"
-   SUPER_SMARTJOY2_DEFAULT_BINDS,
-
-   "input_device = \"Nyko Playpad Pro\" \n"
-   "input_driver = \"android\"                    \n"
-   NYKO_PLAYPAD_PRO_DEFAULT_BINDS,
-
+   DECL_AUTOCONF_DEVICE("NVIDIA Shield", "android", SHIELD_DEFAULT_BINDS),
+   DECL_AUTOCONF_DEVICE("Xperia Play", "android", ZEUS_DEFAULT_BINDS),
+   DECL_AUTOCONF_DEVICE("JXD S5110B", "android", JXD_S5110B_DEFAULT_BINDS),
+   DECL_AUTOCONF_DEVICE("Mayflash Wii Classic", "android", MAYFLASH_WII_CLASSIC_DEFAULT_BINDS),
+   DECL_AUTOCONF_DEVICE("SZMy Power Dual Box Wii", "android", SZMY_POWER_DUAL_BOX_WII_CLASSIC_DEFAULT_BINDS),
+   DECL_AUTOCONF_DEVICE("TTT THT Arcade (Player 1)", "android", TTT_HT_PLAYER1_DEFAULT_BINDS),
+   DECL_AUTOCONF_DEVICE("TTT THT Arcade (Player 2)", "android", TTT_HT_PLAYER2_DEFAULT_BINDS),
+   DECL_AUTOCONF_DEVICE("JXD S7300B", "android", JXD_S7300B_DEFAULT_BINDS),
+   DECL_AUTOCONF_DEVICE("JXD S5110B (Skelrom)", "android", JXD_S5110B_SKELROM_DEFAULT_BINDS),
+   DECL_AUTOCONF_DEVICE("JXD S7800B", "android", JXD_S7800B_DEFAULT_BINDS),
+   DECL_AUTOCONF_DEVICE("Archos Gamepad", "android", ARCHOS_GAMEPAD_DEFAULT_BINDS),
+   DECL_AUTOCONF_DEVICE("Wikipad", "android", WIKIPAD_DEFAULT_BINDS),
+   DECL_AUTOCONF_DEVICE("TOMMO Neo-Geo X", "android", TOMMO_NEOGEOX_DEFAULT_BINDS),
+   DECL_AUTOCONF_DEVICE("Logitech Precision", "android", LOGITECH_PRECISION_DEFAULT_BINDS),
+   DECL_AUTOCONF_DEVICE("Logitech Dual Action", "android", LOGITECH_DUAL_ACTION_DEFAULT_BINDS),
+   DECL_AUTOCONF_DEVICE("iDroid x360", "android", IDROID_X360_DEFAULT_BINDS),
+   DECL_AUTOCONF_DEVICE("Samsung Gamepad EI-GP20", "android", SAMSUNG_EIGP20_DEFAULT_BINDS),
+   DECL_AUTOCONF_DEVICE("GameMID", "android", GAMEMID_DEFAULT_BINDS),
+   DECL_AUTOCONF_DEVICE("OUYA", "android", OUYA_DEFAULT_BINDS),
+   DECL_AUTOCONF_DEVICE("Logicool RumblePad 2", "android", LOGICOOL_RUMBLEPAD2_DEFAULT_BINDS),
+   DECL_AUTOCONF_DEVICE("RumblePad 2", "android", RUMBLEPAD2_DEFAULT_BINDS),
+   DECL_AUTOCONF_DEVICE("SideWinder Dual Strike", "android", SIDEWINDER_DUAL_STRIKE_DEFAULT_BINDS),
+   DECL_AUTOCONF_DEVICE("SideWinder Classic", "android", SIDEWINDER_CLASSIC_DEFAULT_BINDS),
+   DECL_AUTOCONF_DEVICE("MUCH iReadyGo i5", "android", MUCH_IREADYGO_I5_DEFAULT_BINDS),
+   DECL_AUTOCONF_DEVICE("XBox 360", "android", XBOX360_DEFAULT_BINDS),
+   DECL_AUTOCONF_DEVICE("Sega Virtua Stick", "android", SEGA_VIRTUA_STICK_DEFAULT_BINDS),
+   DECL_AUTOCONF_DEVICE("PlayStation2 JCPS102", "android", PS2_JCPS102_DEFAULT_BINDS),
+   DECL_AUTOCONF_DEVICE("PlayStation2 Generic", "android", PS2_GENERIC_DEFAULT_BINDS),
+   DECL_AUTOCONF_DEVICE("PlayStation2 WiseGroup", "android", PS2_WISEGROUP_DEFAULT_BINDS),
+   DECL_AUTOCONF_DEVICE("PlayStation3", "android", PS3_DEFAULT_BINDS),
+   DECL_AUTOCONF_DEVICE("HuiJia", "android", HUIJIA_DEFAULT_BINDS),
+   DECL_AUTOCONF_DEVICE("Super Smartjoy 2", "android", SUPER_SMARTJOY2_DEFAULT_BINDS),
+   DECL_AUTOCONF_DEVICE("Nyko Playpad Pro", "android", NYKO_PLAYPAD_PRO_DEFAULT_BINDS),
    NULL
 };
