@@ -584,6 +584,7 @@ static void frontend_android_get_environment_settings(int *argc, char *argv[],
    __system_property_get("ro.product.id", device_id);
 
    g_defaults.settings.video_threaded_enable = true;
+   g_defaults.settings.input_overlay_enable = true;   // Enable input overlay by default
 
    // Set automatic default values per device
    if (device_is_xperia_play(device_model))
@@ -593,16 +594,11 @@ static void frontend_android_get_environment_settings(int *argc, char *argv[],
       g_defaults.settings.video_threaded_enable = false;
    }
    else if (!strcmp(device_model, "GAMEMID_BT"))
-   {
       g_defaults.settings.out_latency = 160;
-   }
-   else if (!strcmp(device_id, "JSS15J")) { }
 
    // Explicitly disable input overlay by default for gamepad-like/console devices
    if (device_is_game_console(device_model))
       g_defaults.settings.input_overlay_enable = false;
-   else
-      g_defaults.settings.input_overlay_enable = true;   // Enable input overlay by default
 }
 
 #if 0
