@@ -296,7 +296,7 @@ static const char* const XBOX_CONTROLLER_NAMES[4] =
 
 static const char *xdk_joypad_name(unsigned pad)
 {
-   return XBOX_CONTROLLER_NAMES[pad];
+   return g_settings.input.device_names[pad];
 }
 
 static bool xdk_joypad_init(void)
@@ -305,7 +305,7 @@ static bool xdk_joypad_init(void)
 
    for (autoconf_pad = 0; autoconf_pad < MAX_PLAYERS; autoconf_pad++)
    {
-      strlcpy(g_settings.input.device_names[autoconf_pad], xdk_joypad_name(autoconf_pad), sizeof(g_settings.input.device_names[autoconf_pad]));
+      strlcpy(g_settings.input.device_names[autoconf_pad], "XInput Controller", sizeof(g_settings.input.device_names[autoconf_pad]));
       input_config_autoconfigure_joypad(autoconf_pad, xdk_joypad_name(autoconf_pad), xdk_joypad.ident);
    }
 

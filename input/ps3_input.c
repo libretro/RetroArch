@@ -370,21 +370,9 @@ const input_driver_t input_ps3 = {
    ps3_input_get_joypad_driver,
 };
 
-static const char* const PS3_CONTROLLER_NAMES[8] = 
-{
-   "SixAxis Controller (Player 1)",
-   "SixAxis Controller (Player 2)",
-   "SixAxis Controller (Player 3)",
-   "SixAxis Controller (Player 4)",
-   "SixAxis Controller (Player 5)",
-   "SixAxis Controller (Player 6)",
-   "SixAxis Controller (Player 7)",
-   "SixAxis Controller (Player 8)"
-};
-
 static const char *ps3_joypad_name(unsigned pad)
 {
-   return PS3_CONTROLLER_NAMES[pad];
+   return g_settings.input.device_names[pad];
 }
 
 static bool ps3_joypad_init(void)
@@ -393,7 +381,7 @@ static bool ps3_joypad_init(void)
 
    for (autoconf_pad = 0; autoconf_pad < MAX_PLAYERS; autoconf_pad++)
    {
-      strlcpy(g_settings.input.device_names[autoconf_pad], ps3_joypad_name(autoconf_pad), sizeof(g_settings.input.device_names[autoconf_pad]));
+      strlcpy(g_settings.input.device_names[autoconf_pad], "SixAxis Controller", sizeof(g_settings.input.device_names[autoconf_pad]));
       input_config_autoconfigure_joypad(autoconf_pad, ps3_joypad_name(autoconf_pad), ps3_joypad.ident);
    }
 

@@ -97,131 +97,20 @@ DECL_AXIS(r_y_minus, +3)
 // Some hardcoded autoconfig information. Will be used for pads with no autoconfig cfg files.
 const char* const input_builtin_autoconfs[] =
 {
-   "input_device = \"GameCube Controller (Player 1)\" \n"
+   "input_device = \"GameCube Controller\" \n"
    "input_driver = \"gx\"                    \n"
    GXINPUT_GAMECUBE_DEFAULT_BINDS,
 
-   "input_device = \"GameCube Controller (Player 2)\" \n"
-   "input_driver = \"gx\"                    \n"
-   GXINPUT_GAMECUBE_DEFAULT_BINDS,
-
-   "input_device = \"GameCube Controller (Player 3)\" \n"
-   "input_driver = \"gx\"                    \n"
-   GXINPUT_GAMECUBE_DEFAULT_BINDS,
-
-   "input_device = \"GameCube Controller (Player 4)\" \n"
-   "input_driver = \"gx\"                    \n"
-   GXINPUT_GAMECUBE_DEFAULT_BINDS,
-
-   "input_device = \"GameCube Controller (Player 5)\" \n"
-   "input_driver = \"gx\"                    \n"
-   GXINPUT_GAMECUBE_DEFAULT_BINDS,
-
-   "input_device = \"GameCube Controller (Player 6)\" \n"
-   "input_driver = \"gx\"                    \n"
-   GXINPUT_GAMECUBE_DEFAULT_BINDS,
-
-   "input_device = \"GameCube Controller (Player 7)\" \n"
-   "input_driver = \"gx\"                    \n"
-   GXINPUT_GAMECUBE_DEFAULT_BINDS,
-
-   "input_device = \"GameCube Controller (Player 8)\" \n"
-   "input_driver = \"gx\"                    \n"
-   GXINPUT_GAMECUBE_DEFAULT_BINDS,
 #ifdef HW_RVL
-   "input_device = \"Wiimote Controller (Player 1)\" \n"
+   "input_device = \"Wiimote Controller\" \n"
    "input_driver = \"gx\"                    \n"
    GXINPUT_WIIMOTE_DEFAULT_BINDS,
 
-   "input_device = \"Wiimote Controller (Player 2)\" \n"
-   "input_driver = \"gx\"                    \n"
-   GXINPUT_WIIMOTE_DEFAULT_BINDS,
-
-   "input_device = \"Wiimote Controller (Player 3)\" \n"
-   "input_driver = \"gx\"                    \n"
-   GXINPUT_WIIMOTE_DEFAULT_BINDS,
-
-   "input_device = \"Wiimote Controller (Player 4)\" \n"
-   "input_driver = \"gx\"                    \n"
-   GXINPUT_WIIMOTE_DEFAULT_BINDS,
-
-   "input_device = \"Wiimote Controller (Player 5)\" \n"
-   "input_driver = \"gx\"                    \n"
-   GXINPUT_WIIMOTE_DEFAULT_BINDS,
-
-   "input_device = \"Wiimote Controller (Player 6)\" \n"
-   "input_driver = \"gx\"                    \n"
-   GXINPUT_WIIMOTE_DEFAULT_BINDS,
-
-   "input_device = \"Wiimote Controller (Player 7)\" \n"
-   "input_driver = \"gx\"                    \n"
-   GXINPUT_WIIMOTE_DEFAULT_BINDS,
-
-   "input_device = \"Wiimote Controller (Player 8)\" \n"
-   "input_driver = \"gx\"                    \n"
-   GXINPUT_WIIMOTE_DEFAULT_BINDS,
-
-   "input_device = \"NunChuk Controller (Player 1)\" \n"
+   "input_device = \"NunChuk Controller\" \n"
    "input_driver = \"gx\"                    \n"
    GXINPUT_NUNCHUK_DEFAULT_BINDS,
 
-   "input_device = \"NunChuk Controller (Player 2)\" \n"
-   "input_driver = \"gx\"                    \n"
-   GXINPUT_NUNCHUK_DEFAULT_BINDS,
-
-   "input_device = \"NunChuk Controller (Player 3)\" \n"
-   "input_driver = \"gx\"                    \n"
-   GXINPUT_NUNCHUK_DEFAULT_BINDS,
-
-   "input_device = \"NunChuk Controller (Player 4)\" \n"
-   "input_driver = \"gx\"                    \n"
-   GXINPUT_NUNCHUK_DEFAULT_BINDS,
-
-   "input_device = \"NunChuk Controller (Player 5)\" \n"
-   "input_driver = \"gx\"                    \n"
-   GXINPUT_NUNCHUK_DEFAULT_BINDS,
-
-   "input_device = \"NunChuk Controller (Player 6)\" \n"
-   "input_driver = \"gx\"                    \n"
-   GXINPUT_NUNCHUK_DEFAULT_BINDS,
-
-   "input_device = \"NunChuk Controller (Player 7)\" \n"
-   "input_driver = \"gx\"                    \n"
-   GXINPUT_NUNCHUK_DEFAULT_BINDS,
-
-   "input_device = \"NunChuk Controller (Player 8)\" \n"
-   "input_driver = \"gx\"                    \n"
-   GXINPUT_NUNCHUK_DEFAULT_BINDS,
-
-   "input_device = \"Classic Controller (Player 1)\" \n"
-   "input_driver = \"gx\"                    \n"
-   GXINPUT_CLASSIC_DEFAULT_BINDS,
-
-   "input_device = \"Classic Controller (Player 2)\" \n"
-   "input_driver = \"gx\"                    \n"
-   GXINPUT_CLASSIC_DEFAULT_BINDS,
-
-   "input_device = \"Classic Controller (Player 3)\" \n"
-   "input_driver = \"gx\"                    \n"
-   GXINPUT_CLASSIC_DEFAULT_BINDS,
-
-   "input_device = \"Classic Controller (Player 4)\" \n"
-   "input_driver = \"gx\"                    \n"
-   GXINPUT_CLASSIC_DEFAULT_BINDS,
-
-   "input_device = \"Classic Controller (Player 5)\" \n"
-   "input_driver = \"gx\"                    \n"
-   GXINPUT_CLASSIC_DEFAULT_BINDS,
-
-   "input_device = \"Classic Controller (Player 6)\" \n"
-   "input_driver = \"gx\"                    \n"
-   GXINPUT_CLASSIC_DEFAULT_BINDS,
-
-   "input_device = \"Classic Controller (Player 7)\" \n"
-   "input_driver = \"gx\"                    \n"
-   GXINPUT_CLASSIC_DEFAULT_BINDS,
-
-   "input_device = \"Classic Controller (Player 8)\" \n"
+   "input_device = \"Classic Controller\" \n"
    "input_driver = \"gx\"                    \n"
    GXINPUT_CLASSIC_DEFAULT_BINDS,
 #endif

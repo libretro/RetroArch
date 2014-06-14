@@ -45,35 +45,7 @@ DECL_AXIS(r_y_minus, +3)
 // Some hardcoded autoconfig information. Will be used for pads with no autoconfig cfg files.
 const char* const input_builtin_autoconfs[] =
 {
-   "input_device = \"SixAxis Controller (Player 1)\" \n"
-   "input_driver = \"ps3\"                    \n"
-   PS3INPUT_DEFAULT_BINDS,
-
-   "input_device = \"SixAxis Controller (Player 2)\" \n"
-   "input_driver = \"ps3\"                    \n"
-   PS3INPUT_DEFAULT_BINDS,
-
-   "input_device = \"SixAxis Controller (Player 3)\" \n"
-   "input_driver = \"ps3\"                    \n"
-   PS3INPUT_DEFAULT_BINDS,
-
-   "input_device = \"SixAxis Controller (Player 4)\" \n"
-   "input_driver = \"ps3\"                    \n"
-   PS3INPUT_DEFAULT_BINDS,
-
-   "input_device = \"SixAxis Controller (Player 5)\" \n"
-   "input_driver = \"ps3\"                    \n"
-   PS3INPUT_DEFAULT_BINDS,
-
-   "input_device = \"SixAxis Controller (Player 6)\" \n"
-   "input_driver = \"ps3\"                    \n"
-   PS3INPUT_DEFAULT_BINDS,
-
-   "input_device = \"SixAxis Controller (Player 7)\" \n"
-   "input_driver = \"ps3\"                    \n"
-   PS3INPUT_DEFAULT_BINDS,
-
-   "input_device = \"SixAxis Controller (Player 8)\" \n"
+   "input_device = \"SixAxis Controller\" \n"
    "input_driver = \"ps3\"                    \n"
    PS3INPUT_DEFAULT_BINDS,
 

@@ -180,65 +180,6 @@ static void gx_input_free_input(void *data)
    free(data);
 }
 
-
-static const char* const GC_CONTROLLER_NAMES[NUM_DEVICES][MAX_PLAYERS] =
-{
-   {
-   "GameCube Controller (Player 1)",
-   "GameCube Controller (Player 2)",
-   "GameCube Controller (Player 3)",
-   "GameCube Controller (Player 4)",
-   "GameCube Controller (Player 5)",
-   "GameCube Controller (Player 6)",
-   "GameCube Controller (Player 7)",
-   "GameCube Controller (Player 8)"
-   },
-#ifdef HW_RVL
-   {
-   "Wiimote Controller (Player 1)",
-   "Wiimote Controller (Player 2)",
-   "Wiimote Controller (Player 3)",
-   "Wiimote Controller (Player 4)",
-   "Wiimote Controller (Player 5)",
-   "Wiimote Controller (Player 6)",
-   "Wiimote Controller (Player 7)",
-   "Wiimote Controller (Player 8)"
-   },
-   {
-   "NunChuk Controller (Player 1)",
-   "NunChuk Controller (Player 2)",
-   "NunChuk Controller (Player 3)",
-   "NunChuk Controller (Player 4)",
-   "NunChuk Controller (Player 5)",
-   "NunChuk Controller (Player 6)",
-   "NunChuk Controller (Player 7)",
-   "NunChuk Controller (Player 8)"
-   },
-   {
-   "Classic Controller (Player 1)",
-   "Classic Controller (Player 2)",
-   "Classic Controller (Player 3)",
-   "Classic Controller (Player 4)",
-   "Classic Controller (Player 5)",
-   "Classic Controller (Player 6)",
-   "Classic Controller (Player 7)",
-   "Classic Controller (Player 8)"
-   },
-#endif
-#ifdef HAVE_LIBSICKSAXIS
-   {
-   "SixAxis Controller (Player 1)",
-   "SixAxis Controller (Player 2)",
-   "SixAxis Controller (Player 3)",
-   "SixAxis Controller (Player 4)",
-   "SixAxis Controller (Player 5)",
-   "SixAxis Controller (Player 6)",
-   "SixAxis Controller (Player 7)",
-   "SixAxis Controller (Player 8)"
-   },
-#endif
-};
-
 static const char *gx_joypad_name(unsigned pad)
 {
    gx_input_t *gx = (gx_input_t*)driver.input_data;
@@ -247,18 +188,18 @@ static const char *gx_joypad_name(unsigned pad)
    {
 #ifdef HW_RVL
       case WPAD_EXP_NONE:
-         return GC_CONTROLLER_NAMES[1][pad];
+         return "Wiimote Controller";
       case WPAD_EXP_NUNCHUK:
-         return GC_CONTROLLER_NAMES[2][pad];
+         return "Nunchuk Controller";
       case WPAD_EXP_CLASSIC:
-         return GC_CONTROLLER_NAMES[3][pad];
+         return "Classic Controller";
 #ifdef HAVE_LIBSICKSAXIS
       case WPAD_EXP_SICKSAXIS:
-         return GC_CONTROLLER_NAMES[4][pad];
+         return "Sixaxis Controller";
 #endif
 #endif
       case WPAD_EXP_GAMECUBE:
-         return GC_CONTROLLER_NAMES[0][pad];
+         return "Gamecube Controller";
       default:
          return NULL;
    }
@@ -272,18 +213,18 @@ static const char *gx_joypad_name_static(void *data, unsigned pad)
    {
 #ifdef HW_RVL
       case WPAD_EXP_NONE:
-         return GC_CONTROLLER_NAMES[1][pad];
+         return "Wiimote Controller";
       case WPAD_EXP_NUNCHUK:
-         return GC_CONTROLLER_NAMES[2][pad];
+         return "Nunchuk Controller";
       case WPAD_EXP_CLASSIC:
-         return GC_CONTROLLER_NAMES[3][pad];
+         return "Classic Controller";
 #ifdef HAVE_LIBSICKSAXIS
       case WPAD_EXP_SICKSAXIS:
-         return GC_CONTROLLER_NAMES[4][pad];
+         return "Sixaxis Controller";
 #endif
 #endif
       case WPAD_EXP_GAMECUBE:
-         return GC_CONTROLLER_NAMES[0][pad];
+         return "Gamecube Controller";
       default:
          return NULL;
    }
