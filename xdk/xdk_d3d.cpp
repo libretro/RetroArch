@@ -38,55 +38,7 @@
 
 #include "render_chain_xdk.cpp"
 
-static bool d3d_init_shader(void *data)
-{
-   d3d_video_t *d3d = (d3d_video_t*)data;
-   const gl_shader_backend_t *backend = NULL;
-
-   const char *shader_path = g_settings.video.shader_path;
-   enum rarch_shader_type type = gfx_shader_parse_type(shader_path, DEFAULT_SHADER_TYPE);
-   
-   switch (type)
-   {
-      case RARCH_SHADER_HLSL:
-#ifdef HAVE_HLSL
-         RARCH_LOG("[D3D]: Using HLSL shader backend.\n");
-         backend = &hlsl_backend;
-#endif
-         break;
-   }
-
-   if (!backend)
-   {
-      RARCH_ERR("[GL]: Didn't find valid shader backend. Continuing without shaders.\n");
-      return true;
-   }
-
-
-   d3d->shader = backend;
-   return d3d->shader->init(d3d, shader_path);
-}
-
-#ifdef HAVE_SHADERS
-void d3d_deinit_shader(void *data)
-{
-   d3d_video_t *d3d = (d3d_video_t*)data;
-#ifdef HAVE_CG
-   if (!d3d->cgCtx)
-      return;
-
-   cgD3D9UnloadAllPrograms();
-   cgD3D9SetDevice(NULL);
-   cgDestroyContext(d3d->cgCtx);
-   d3d->cgCtx = NULL;
-#else
-   if (d3d->shader && d3d->shader->deinit)
-      d3d->shader->deinit();
-   d3d->shader = NULL;
-#endif
-}
-#endif
-
+//OK
 static void d3d_deinit_chain(void *data)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
@@ -100,7 +52,7 @@ static void d3d_deinit_chain(void *data)
 #endif
 }
 
-
+//OK
 static void d3d_deinitialize(void *data)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
@@ -145,6 +97,7 @@ static void d3d_free(void *data)
 #endif
 }
 
+//OK
 static void d3d_viewport_info(void *data, struct rarch_viewport *vp)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
@@ -158,6 +111,7 @@ static void d3d_viewport_info(void *data, struct rarch_viewport *vp)
    vp->full_height = d3d->screen_height;
 }
 
+//OK
 static void d3d_set_rotation(void *data, unsigned rot)
 {
    (void)data;
@@ -207,7 +161,7 @@ static bool d3d_init_chain(void *data, const video_info_t *info)
    if (!renderchain_init(d3d->chain, &d3d->video_info, d3dr, d3d->cgCtx, &d3d->final_viewport, &link_info,
             d3d->video_info.rgb32 ? ARGB : RGB565))
    {
-      RARCH_ERR("[D3D9]: Failed to init render chain.\n");
+      RARCH_ERR("[D3D]: Failed to init render chain.\n");
       return false;
    }
 
@@ -231,7 +185,7 @@ static bool d3d_init_chain(void *data, const video_info_t *info)
 
       if (!renderchain_add_pass(d3d->chain, &link_info))
       {
-         RARCH_ERR("[D3D9]: Failed to add pass.\n");
+         RARCH_ERR("[D3D]: Failed to add pass.\n");
          return false;
       }
    }
@@ -247,7 +201,7 @@ static bool d3d_init_chain(void *data, const video_info_t *info)
 #ifndef DONT_HAVE_STATE_TRACKER
    if (!d3d_init_imports(d3d))
    {
-      RARCH_ERR("[D3D9]: Failed to init imports.\n");
+      RARCH_ERR("[D3D]: Failed to init imports.\n");
       return false;
    }
 #endif
@@ -269,6 +223,7 @@ static void d3d_reinit_renderchain(void *data, const video_info_t *video)
    d3d_init_chain(d3d, video);
 }
 
+//OK
 static bool d3d_init_base(void *data, const video_info_t *info)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
@@ -282,17 +237,29 @@ static bool d3d_init_base(void *data, const video_info_t *info)
       return false;
    }
 
-   if (d3d->d3d_err = d3d->g_pD3D->CreateDevice(0,
+   if (FAILED(d3d->d3d_err = d3d->g_pD3D->CreateDevice(
+            d3d->cur_mon_id,
             D3DDEVTYPE_HAL,
-            NULL,
+            d3d->hWnd,
             D3DCREATE_HARDWARE_VERTEXPROCESSING,
             &d3dpp,
-            &d3d->dev) != S_OK)
+            &d3d->dev)))
    {
-      RARCH_ERR("[D3D]: Failed to initialize device.\n");
-      return false;
-   }
+      RARCH_WARN("[D3D]: Failed to init device with hardware vertex processing (code: 0x%x). Trying to fall back to software vertex processing.\n",
+                 (unsigned)d3d->d3d_err);
 
+      if (FAILED(d3d->d3d_err = d3d->g_pD3D->CreateDevice(
+                  d3d->cur_mon_id,
+                  D3DDEVTYPE_HAL,
+                  d3d->hWnd,
+                  D3DCREATE_SOFTWARE_VERTEXPROCESSING,
+                  &d3dpp,
+                  &d3d->dev)))
+      {
+         RARCH_ERR("Failed to initialize device.\n");
+         return false;
+      }
+   }
 
    return true;
 }
@@ -392,11 +359,11 @@ static void d3d_draw_texture(void *data)
 static void d3d_calculate_rect(void *data, unsigned width, unsigned height,
    bool keep, float desired_aspect);
 
+//OK
 static bool d3d_initialize(void *data, const video_info_t *info)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
    bool ret = true;
-
    if (!d3d->g_pD3D)
       ret = d3d_init_base(d3d, info);
    else if (d3d->needs_restore)
@@ -474,6 +441,7 @@ static bool d3d_initialize(void *data, const video_info_t *info)
 }
 
 
+//OK
 bool d3d_restore(void *data)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
@@ -490,6 +458,7 @@ bool d3d_restore(void *data)
    return !d3d->needs_restore;
 }
 
+//OK
 static void d3d_set_viewport(void *data, int x, int y, unsigned width, unsigned height)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
@@ -515,6 +484,7 @@ static void d3d_set_viewport(void *data, int x, int y, unsigned width, unsigned 
 #endif
 }
 
+//OK
 static void d3d_calculate_rect(void *data, unsigned width, unsigned height,
    bool keep, float desired_aspect)
 {
@@ -654,6 +624,7 @@ static bool d3d_frame(void *data, const void *frame,
    return true;
 }
 
+//OK
 static void d3d_set_nonblock_state(void *data, bool state)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
@@ -663,6 +634,7 @@ static void d3d_set_nonblock_state(void *data, bool state)
       d3d->ctx_driver->swap_interval(d3d, state ? 0 : 1);
 }
 
+//OK
 static bool d3d_alive(void *data)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
@@ -683,6 +655,7 @@ static bool d3d_alive(void *data)
    return !quit;
 }
 
+//OK
 static bool d3d_focus(void *data)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
@@ -691,6 +664,7 @@ static bool d3d_focus(void *data)
    return false;
 }
 
+//OK
 static void d3d_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
@@ -718,6 +692,7 @@ static void d3d_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
    d3d->should_resize = true;
 }
 
+//OK
 static void d3d_apply_state_changes(void *data)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
@@ -744,11 +719,17 @@ static void d3d_set_texture_enable(void *data, bool state, bool full_screen)
 }
 #endif
 
+//OK
 static void d3d_set_osd_msg(void *data, const char *msg, const struct font_params *params)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
 
-   if (d3d->font_ctx && d3d->font_ctx->render_msg)
+#ifndef _XBOX
+   if (params)
+      d3d_set_font_rect(d3d, params);
+#endif
+
+   if (d3d && d3d->font_ctx && d3d->font_ctx->render_msg)
       d3d->font_ctx->render_msg(d3d, msg, params);
 }
 
@@ -877,11 +858,18 @@ static bool d3d_construct(void *data, const video_info_t *info, const input_driv
    SetFocus(d3d->hWnd);
 #endif
 
-#ifdef HAVE_WINDOW
-   ShowWindow(d3d->hWnd, SW_RESTORE);
-   UpdateWindow(d3d->hWnd);
-   SetForegroundWindow(d3d->hWnd);
-   SetFocus(d3d->hWnd);
+#if 0
+#ifdef HAVE_SHADERS
+   // This should only be done once here
+   // to avoid set_shader() to be overridden
+   // later.
+   enum rarch_shader_type type = gfx_shader_parse_type(g_settings.video.shader_path, RARCH_SHADER_NONE);
+   if (g_settings.video.shader_enable && type == RARCH_SHADER_CG)
+      d3d->cg_shader = g_settings.video.shader_path;
+
+   if (!d3d_process_shader(d3d))
+      return false;
+#endif
 #endif
 
    d3d->video_info = *info;
@@ -896,6 +884,7 @@ static bool d3d_construct(void *data, const video_info_t *info, const input_driv
    return true;
 }
 
+//OK
 static const gfx_ctx_driver_t *d3d_get_context(void *data)
 {
    // TODO: GL core contexts through ANGLE?
@@ -914,6 +903,7 @@ static const gfx_ctx_driver_t *d3d_get_context(void *data)
 
 static void *d3d_init(const video_info_t *info, const input_driver_t **input, void **input_data)
 {
+#ifdef _XBOX
    if (driver.video_data)
    {
       d3d_video_t *vid = (d3d_video_t*)driver.video_data;
@@ -929,6 +919,7 @@ static void *d3d_init(const video_info_t *info, const input_driver_t **input, vo
       driver.input_data_own = true;
       return driver.video_data;
    }
+#endif
 
    d3d_video_t *vid = new d3d_video_t();
    if (!vid)
