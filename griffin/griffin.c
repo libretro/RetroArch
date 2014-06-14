@@ -314,7 +314,7 @@ INPUT
 #include "../input/apple_input.c"
 #include "../input/apple_joypad.c"
 #elif defined(__QNX__)
-#include "../blackberry-qnx/qnx_input.c"
+#include "../input/qnx_input.c"
 #elif defined(EMSCRIPTEN)
 #include "../input/rwebinput_input.c"
 #endif
