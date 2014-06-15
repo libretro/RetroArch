@@ -237,6 +237,8 @@ ifeq ($(HAVE_OPENGL), 1)
 
    ifeq ($(HAVE_VIDEOCORE), 1)
       OBJ += gfx/context/vc_egl_ctx.o
+      DEFINES += $(EGL_CFLAGS)
+      LIBS += $(EGL_LIBS)
    endif
 
    ifeq ($(HAVE_MALI_FBDEV), 1)
