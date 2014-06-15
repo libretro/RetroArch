@@ -25,11 +25,8 @@
 #include "../general.h"
 #include "../driver.h"
 #include "../performance.h"
-
-#ifdef HAVE_FREETYPE
 #include "fonts/fonts.h"
 #include "../file.h"
-#endif
 
 typedef struct
 {
