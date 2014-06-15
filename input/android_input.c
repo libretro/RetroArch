@@ -449,6 +449,8 @@ static void handle_hotplug(void *data, unsigned *port, unsigned id,
       strlcpy(name_buf, "MUCH iReadyGo i5", sizeof(name_buf));
    else if (strstr(device_name, "Wikipad"))
       strlcpy(name_buf, "Wikipad", sizeof(name_buf));
+   else if (strstr(device_name, "360 Wireless"))
+      strlcpy(name_buf, "XBox 360 Wireless", sizeof(name_buf));
    else if (strstr(device_name, "Microsoft"))
    {
       if (strstr(device_name, "Dual Strike"))
@@ -456,7 +458,6 @@ static void handle_hotplug(void *data, unsigned *port, unsigned id,
       else if (strstr(device_name, "SideWinder"))
          strlcpy(name_buf, "SideWinder Classic", sizeof(name_buf));
       else if (strstr(device_name, "X-Box 360")
-            || strstr(device_name, "Xbox 360 Wireless Receiver")
             || strstr(device_name, "X-Box"))
          strlcpy(name_buf, "XBox 360", sizeof(name_buf));
    }
