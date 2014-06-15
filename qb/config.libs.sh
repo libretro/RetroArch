@@ -23,14 +23,14 @@ add_define_make DYLIB_LIB "$DYLIB"
 [ "$OS" = 'Darwin' ] && HAVE_X11=no # X11 breaks on recent OSXes even if present.
 
 [ -d /opt/vc/lib ] && add_library_dirs /opt/vc/lib
-check_lib VIDEOCORE -lbcm_host bcm_host_init "-lvcos -lvchiq_arm" 
+check_lib VIDEOCORE -lbcm_host bcm_host_init "-lvcos -lvchiq_arm  -lvchostif"
 
 if [ "$HAVE_VIDEOCORE" = 'yes' ]; then
    [ -d /opt/vc/include ] && add_include_dirs /opt/vc/include
    [ -d /opt/vc/include/interface/vcos/pthreads ] && add_include_dirs /opt/vc/include/interface/vcos/pthreads
    [ -d /opt/vc/include/interface/vmcs_host/linux ] && add_include_dirs /opt/vc/include/interface/vmcs_host/linux
    HAVE_GLES='auto'
-   EXTRA_GL_LIBS="-lEGL -lGLESv2 -lbcm_host -lvcos -lvchiq_arm"
+   EXTRA_GL_LIBS="-lEGL -lGLESv2 -lbcm_host -lvcos -lvchiq_arm -lvchostif"
 fi
 
 if [ "$HAVE_NEON" = "yes" ]; then
@@ -80,7 +80,9 @@ if [ "$HAVE_EGL" != "no" ]; then
    if [ "$HAVE_EGL" = "no" ]; then
       HAVE_EGL=auto && check_lib EGL "-lEGL $EXTRA_GL_LIBS"
       [ "$HAVE_EGL" = "yes" ] && EGL_LIBS=-lEGL
-   fi
+  else
+      EGL_LIBS="$EGL_LIBS $EXTRA_GL_LIBS"
+  fi
 fi
 
 if [ "$LIBRETRO" ]; then
