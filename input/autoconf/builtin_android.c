@@ -564,6 +564,32 @@ DECL_AXIS(r_x_minus, -2) \
 DECL_AXIS(r_y_plus, +3) \
 DECL_AXIS(r_y_minus, -3)
 
+#define XBOX360_WIRELESS_DEFAULT_BINDS \
+DECL_BTN(a, 97) \
+DECL_BTN(b, 96) \
+DECL_BTN(x, 100) \
+DECL_BTN(y, 99) \
+DECL_BTN(start, 108) \
+DECL_BTN(select, 4) \
+DECL_BTN(up, 19) \
+DECL_BTN(down, 20) \
+DECL_BTN(left, 21) \
+DECL_BTN(right, 22) \
+DECL_BTN(l, 102) \
+DECL_BTN(r, 103) \
+DECL_AXIS(l2, +6) \
+DECL_AXIS(r2, +7) \
+DECL_BTN(l3, 106) \
+DECL_BTN(r3, 107) \
+DECL_AXIS(l_x_plus, +0) \
+DECL_AXIS(l_x_minus, -0) \
+DECL_AXIS(l_y_plus, +1) \
+DECL_AXIS(l_y_minus, -1) \
+DECL_AXIS(r_x_plus,  +2) \
+DECL_AXIS(r_x_minus, -2) \
+DECL_AXIS(r_y_plus, +3) \
+DECL_AXIS(r_y_minus, -3)
+
 #define XBOX360_DEFAULT_BINDS \
 DECL_BTN(a, 97) \
 DECL_BTN(b, 96) \
@@ -812,6 +838,7 @@ const char* const input_builtin_autoconfs[] =
    DECL_AUTOCONF_DEVICE("SideWinder Classic", "android", SIDEWINDER_CLASSIC_DEFAULT_BINDS),
    DECL_AUTOCONF_DEVICE("MUCH iReadyGo i5", "android", MUCH_IREADYGO_I5_DEFAULT_BINDS),
    DECL_AUTOCONF_DEVICE("XBox 360", "android", XBOX360_DEFAULT_BINDS),
+   DECL_AUTOCONF_DEVICE("XBox 360 Wireless", "android", XBOX360_WIRELESS_DEFAULT_BINDS),
    DECL_AUTOCONF_DEVICE("Sega Virtua Stick", "android", SEGA_VIRTUA_STICK_DEFAULT_BINDS),
    DECL_AUTOCONF_DEVICE("PlayStation2 JCPS102", "android", PS2_JCPS102_DEFAULT_BINDS),
    DECL_AUTOCONF_DEVICE("PlayStation2 Generic", "android", PS2_GENERIC_DEFAULT_BINDS),
