@@ -146,7 +146,7 @@ static void *vg_init(const video_info_t *video, const input_driver_t **input, vo
       {
          vg->mFontsOn = true;
 
-         vg->mFontHeight = g_settings.video.font_size * (g_settings.video.font_scale ? (float) vg->mScreenWidth / 1280.0f : 1.0f);
+         vg->mFontHeight = g_settings.video.font_size;
 
          vg->mPaintFg = vgCreatePaint();
          vg->mPaintBg = vgCreatePaint();
