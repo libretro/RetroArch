@@ -686,10 +686,10 @@ bool rarch_environment_cb(unsigned cmd, void *data)
 
 #if defined(HAVE_OPENGLES3)
             case RETRO_HW_CONTEXT_OPENGLES_VERSION:
-#endif
                RARCH_LOG("Requesting OpenGLES%u.%u context.\n",
                      cb->version_major, cb->version_minor);
                break;
+#endif
 
             case RETRO_HW_CONTEXT_OPENGL:
             case RETRO_HW_CONTEXT_OPENGL_CORE:
