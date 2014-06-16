@@ -55,6 +55,28 @@ int scond_broadcast(scond_t *cond);
 #endif
 void scond_signal(scond_t *cond);
 
+#ifndef RARCH_INTERNAL
+static inline void retro_sleep(unsigned msec)
+{
+#if defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
+   sys_timer_usleep(1000 * msec);
+#elif defined(PSP)
+   sceKernelDelayThread(1000 * msec);
+#elif defined(_WIN32)
+   Sleep(msec);
+#elif defined(XENON)
+   udelay(1000 * msec);
+#elif defined(GEKKO) || defined(__PSL1GHT__) || defined(__QNX__)
+   usleep(1000 * msec);
+#else
+   struct timespec tv = {0};
+   tv.tv_sec = msec / 1000;
+   tv.tv_nsec = (msec % 1000) * 1000000;
+   nanosleep(&tv, NULL);
+#endif
+}
+#endif
+
 #ifdef __cplusplus
 }
 #endif
