@@ -20,7 +20,62 @@
 #include <ogcsys.h>
 #include <gccore.h>
 #include <ogc/cond.h>
-#include "../gx/sdk_defines.h"
+
+#ifndef OSThread
+#define OSThread lwp_t
+#endif
+
+#ifndef OSCond
+#define OSCond lwpq_t
+#endif
+
+#ifndef OSThreadQueue
+#define OSThreadQueue lwpq_t
+#endif
+
+#ifndef OSInitMutex
+#define OSInitMutex(mutex) LWP_MutexInit(mutex, 0)
+#endif
+
+#ifndef OSLockMutex
+#define OSLockMutex(mutex) LWP_MutexLock(mutex)
+#endif
+
+#ifndef OSUnlockMutex
+#define OSUnlockMutex(mutex) LWP_MutexUnlock(mutex)
+#endif
+
+#ifndef OSTryLockMutex
+#define OSTryLockMutex(mutex) LWP_MutexTryLock(mutex)
+#endif
+
+#ifndef OSInitCond
+#define OSInitCond(cond) LWP_CondInit(cond)
+#endif
+
+#ifndef OSSignalCond
+#define OSSignalCond(cond) LWP_ThreadSignal(cond)
+#endif
+
+#ifndef OSWaitCond
+#define OSWaitCond(cond, mutex) LWP_CondWait(cond, mutex)
+#endif
+
+#ifndef OSInitThreadQueue
+#define OSInitThreadQueue(queue) LWP_InitQueue(queue)
+#endif
+
+#ifndef OSSleepThread
+#define OSSleepThread(queue) LWP_ThreadSleep(queue)
+#endif
+
+#ifndef OSJoinThread
+#define OSJoinThread(thread, val) LWP_JoinThread(thread, val)
+#endif
+
+#ifndef OSCreateThread
+#define OSCreateThread(thread, func, intarg, ptrarg, stackbase, stacksize, priority, attrs) LWP_CreateThread(thread, func, ptrarg, stackbase, stacksize, priority)
+#endif
 
 #define STACKSIZE (8 * 1024)
 
