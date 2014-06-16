@@ -927,6 +927,32 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          break;
       }
 
+      case RETRO_ENVIRONMENT_SET_GEOMETRY:
+      {
+         RARCH_LOG("Environ SET_GEOMETRY.\n");
+         const struct retro_game_geometry *in_geom = (const struct retro_game_geometry*)data;
+         struct retro_game_geometry *geom = &g_extern.system.av_info.geometry;
+
+         // Can potentially be called every frame, don't do anything unless required.
+         if (geom->base_width != in_geom->base_width ||
+               geom->base_height != in_geom->base_height ||
+               geom->aspect_ratio != in_geom->aspect_ratio)
+         {
+            geom->base_width   = in_geom->base_width;
+            geom->base_height  = in_geom->base_height;
+            geom->aspect_ratio = in_geom->aspect_ratio;
+            RARCH_LOG("SET_GEOMETRY: %ux%u, aspect: %.3f.\n",
+                  geom->base_width, geom->base_height, geom->aspect_ratio);
+
+            // Forces recomputation of aspect ratios if using core-dependent aspect ratios.
+            if (driver.video_poke && driver.video_poke->set_aspect_ratio && driver.video_data)
+               driver.video_poke->set_aspect_ratio(driver.video_data, g_settings.video.aspect_ratio_idx);
+            
+            // TODO: Figure out what to do, if anything, with recording.
+         }
+         break;
+      }
+
       // Private extensions for internal use, not part of libretro API.
       case RETRO_ENVIRONMENT_SET_LIBRETRO_PATH:
          RARCH_LOG("Environ (Private) SET_LIBRETRO_PATH.\n");
