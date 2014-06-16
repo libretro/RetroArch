@@ -1087,6 +1087,7 @@ static void parse_input(int argc, char *argv[])
                strlcpy(g_settings.libretro_directory, optarg, sizeof(g_settings.libretro_directory));
                g_extern.has_set_libretro = true;
                g_extern.has_set_libretro_directory = true;
+               RARCH_WARN("Using old --libretro behavior. Setting libretro_directory to \"%s\" instead.\n", optarg);
             }
             else
             {

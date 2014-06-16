@@ -42,17 +42,18 @@ public final class UserPreferences
 		// Native library directory and data directory for this front-end.
 		final String nativeLibraryDir = ctx.getApplicationInfo().nativeLibraryDir;
 		final String dataDir = ctx.getApplicationInfo().dataDir;
+		final String coreDir = dataDir + "/cores/";
 		
 		// Get libretro name and path
 		final SharedPreferences prefs = getPreferences(ctx);
-		final String libretro_path = prefs.getString("libretro_path", nativeLibraryDir);
+		final String libretro_path = prefs.getString("libretro_path", coreDir);
 
 		// Check if global config is being used. Return true upon failure.
 		final boolean globalConfigEnabled = prefs.getBoolean("global_config_enable", true);
 
 		String append_path;
 		// If we aren't using the global config.
-		if (!globalConfigEnabled && !libretro_path.equals(nativeLibraryDir))
+		if (!globalConfigEnabled && !libretro_path.equals(coreDir))
 		{
 			String sanitized_name = sanitizeLibretroPath(libretro_path);
 			append_path = File.separator + sanitized_name + ".cfg";
@@ -158,11 +159,13 @@ public final class UserPreferences
 		Log.i(TAG, "Writing config to: " + path);
 
 		final String dataDir = ctx.getApplicationInfo().dataDir;
+		final String coreDir = dataDir + "/cores/";
 		final String nativeLibraryDir = ctx.getApplicationInfo().nativeLibraryDir;
 
 		final SharedPreferences prefs = getPreferences(ctx);
 		
-		config.setString("libretro_path", prefs.getString("libretro_path", nativeLibraryDir));
+		config.setString("libretro_path", prefs.getString("libretro_path", coreDir));
+		config.setString("libretro_directory", coreDir);
 		config.setString("rgui_browser_directory", prefs.getString("rgui_browser_directory", ""));
 		config.setBoolean("audio_rate_control", prefs.getBoolean("audio_rate_control", true));
 		config.setInt("audio_out_rate", getOptimalSamplingRate(ctx));
@@ -217,7 +220,8 @@ public final class UserPreferences
 		config.setBoolean("video_shader_enable", prefs.getBoolean("video_shader_enable", false) &&
 				new File(prefs.getString("video_shader", "")).exists());
 
-		config.setBoolean("input_overlay_enable", prefs.getBoolean("input_overlay_enable", false));
+		if (prefs.contains("input_overlay_enable"))
+			config.setBoolean("input_overlay_enable", prefs.getBoolean("input_overlay_enable", true));
 		config.setString("input_overlay", prefs.getString("input_overlay", ""));
 
 		if (prefs.getBoolean("savefile_directory_enable", false))

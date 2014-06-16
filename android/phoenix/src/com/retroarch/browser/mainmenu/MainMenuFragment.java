@@ -215,7 +215,7 @@ public final class MainMenuFragment extends PreferenceListFragment implements On
 			MainMenuFragment.startRetroActivity(
 					retro,
 					null,
-					prefs.getString("libretro_path", ctx.getApplicationInfo().dataDir + "/cores"),
+					prefs.getString("libretro_path", ctx.getApplicationInfo().dataDir + "/cores/"),
 					UserPreferences.getDefaultConfigPath(ctx),
 					Settings.Secure.getString(ctx.getContentResolver(), Settings.Secure.DEFAULT_INPUT_METHOD),
 					 ctx.getApplicationInfo().dataDir);
