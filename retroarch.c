@@ -2964,7 +2964,7 @@ int rarch_main_init(int argc, char *argv[])
 #endif
 
 #ifdef HAVE_NETPLAY
-   g_extern.use_sram = g_extern.use_sram && !g_extern.sram_save_disable && !g_extern.netplay_is_client;
+   g_extern.use_sram = g_extern.use_sram && !g_extern.sram_save_disable && (!g_extern.netplay || !g_extern.netplay_is_client);
 #else
    g_extern.use_sram = g_extern.use_sram && !g_extern.sram_save_disable;
 #endif
