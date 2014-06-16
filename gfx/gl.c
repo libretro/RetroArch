@@ -1965,6 +1965,7 @@ static void gl_init_pbo_readback(void *data)
    unsigned i;
    gl_t *gl = (gl_t*)data;
    // Only bother with this if we're doing FFmpeg GPU recording.
+   // Check g_extern.recording and not g_extern.rec, because recording is not initialized yet.
    gl->pbo_readback_enable = g_settings.video.gpu_record && g_extern.recording;
    if (!gl->pbo_readback_enable)
       return;

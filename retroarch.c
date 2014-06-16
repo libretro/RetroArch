@@ -239,7 +239,6 @@ static void recording_dump_frame(const void *data, unsigned width, unsigned heig
          msg_queue_push(g_extern.msg_queue, msg, 1, 180);
 
          rarch_deinit_recording();
-         g_extern.recording = false;
          return;
       }
 
@@ -299,7 +298,7 @@ static void video_frame(const void *data, unsigned width, unsigned height, size_
    // Slightly messy code,
    // but we really need to do processing before blocking on VSync for best possible scheduling.
 #ifdef HAVE_RECORD
-   if (g_extern.recording && (!g_extern.filter.filter || !g_settings.video.post_filter_record || !data || g_extern.record_gpu_buffer))
+   if (g_extern.rec && (!g_extern.filter.filter || !g_settings.video.post_filter_record || !data || g_extern.record_gpu_buffer))
       recording_dump_frame(data, width, height, pitch);
 #endif
 
@@ -324,7 +323,7 @@ static void video_frame(const void *data, unsigned width, unsigned height, size_
       RARCH_PERFORMANCE_STOP(softfilter_process);
 
 #ifdef HAVE_RECORD
-      if (g_extern.recording && g_settings.video.post_filter_record)
+      if (g_extern.rec && g_settings.video.post_filter_record)
          recording_dump_frame(g_extern.filter.buffer, owidth, oheight, opitch);
 #endif
 
@@ -339,8 +338,8 @@ void rarch_render_cached_frame(void)
 {
 #ifdef HAVE_RECORD
    // Cannot allow FFmpeg recording when pushing duped frames.
-   bool recording = g_extern.recording;
-   g_extern.recording = false;
+   void *recording = g_extern.rec;
+   g_extern.rec = NULL;
 #endif
 
    const void *frame = g_extern.frame_cache.data;
@@ -356,14 +355,14 @@ void rarch_render_cached_frame(void)
          g_extern.frame_cache.pitch);
 
 #ifdef HAVE_RECORD
-   g_extern.recording = recording;
+   g_extern.rec = recording;
 #endif
 }
 
 static bool audio_flush(const int16_t *data, size_t samples)
 {
 #ifdef HAVE_RECORD
-   if (g_extern.recording)
+   if (g_extern.rec)
    {
       struct ffemu_audio_data ffemu_data = {0};
       ffemu_data.data                    = data;
@@ -1334,10 +1333,15 @@ void rarch_init_recording(void)
    if (!g_extern.recording)
       return;
 
+   if (g_extern.libretro_dummy)
+   {
+      RARCH_WARN("Using libretro dummy core. Skipping recording.\n");
+      return;
+   }
+
    if (!g_settings.video.gpu_record && g_extern.system.hw_render_callback.context_type)
    {
       RARCH_WARN("Libretro core is hardware rendered. Must use post-shaded FFmpeg recording as well.\n");
-      g_extern.recording = false;
       return;
    }
 
@@ -1367,7 +1371,6 @@ void rarch_init_recording(void)
       {
          RARCH_ERR("Failed to get viewport information from video driver. "
                "Cannot start recording ...\n");
-         g_extern.recording = false;
          return;
       }
 
@@ -1392,7 +1395,6 @@ void rarch_init_recording(void)
       if (!g_extern.record_gpu_buffer)
       {
          RARCH_ERR("Failed to allocate GPU record buffer.\n");
-         g_extern.recording = false;
          return;
       }
    }
@@ -1430,8 +1432,6 @@ void rarch_init_recording(void)
    if (!ffemu_init_first(&g_extern.rec_driver, &g_extern.rec, &params))
    {
       RARCH_ERR("Failed to start FFmpeg recording.\n");
-      g_extern.recording = false;
-
       free(g_extern.record_gpu_buffer);
       g_extern.record_gpu_buffer = NULL;
    }
@@ -3030,7 +3030,7 @@ static inline void update_frame_time(void)
 
    bool is_locked_fps = g_extern.is_paused || driver.nonblock_state;
 #ifdef HAVE_RECORD
-   is_locked_fps |= g_extern.recording;
+   is_locked_fps |= !!g_extern.rec;
 #endif
 
    if (!g_extern.system.frame_time_last || is_locked_fps)
