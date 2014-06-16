@@ -56,6 +56,18 @@ int scond_broadcast(scond_t *cond);
 void scond_signal(scond_t *cond);
 
 #ifndef RARCH_INTERNAL
+#if defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
+#include <sys/timer.h>
+#elif defined(XENON)
+#include <time/time.h>
+#elif defined(GEKKO) || defined(__PSL1GHT__) || defined(__QNX__)
+#include <unistd.h>
+#elif defined(PSP)
+#include <pspthreadman.h>
+#else
+#include <time.h>
+#endif
+
 static inline void retro_sleep(unsigned msec)
 {
 #if defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
