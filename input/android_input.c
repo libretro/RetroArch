@@ -148,7 +148,7 @@ typedef struct android_input
 } android_input_t;
 
 
-void (*engine_handle_dpad)(void *data, AInputEvent*, int, char*, size_t, int, bool);
+void (*engine_handle_dpad)(android_input_t *android, AInputEvent*, int, char*, size_t, int, bool);
 static bool android_input_set_sensor_state(void *data, unsigned port, enum retro_sensor_action action, unsigned event_rate);
 
 extern float AMotionEvent_getAxisValue(const AInputEvent* motion_event,
@@ -173,12 +173,11 @@ static inline void set_bit(uint8_t *buf, unsigned bit)
    buf[bit >> 3] |= 1 << (bit & 7);
 }
 
-static void engine_handle_dpad_default(void *data, AInputEvent *event,
+static void engine_handle_dpad_default(android_input_t *android, AInputEvent *event,
       int port, char *msg, size_t msg_sizeof,
       int source, bool debug_enable)
 {
    size_t motion_pointer = AMotionEvent_getAction(event) >> AMOTION_EVENT_ACTION_POINTER_INDEX_SHIFT;
-   android_input_t *android = (android_input_t*)data;
    float x = AMotionEvent_getX(event, motion_pointer);
    float y = AMotionEvent_getY(event, motion_pointer);
 
@@ -190,12 +189,11 @@ static void engine_handle_dpad_default(void *data, AInputEvent *event,
             port, x, y, source);
 }
 
-static void engine_handle_dpad_getaxisvalue(void *data, AInputEvent *event,
+static void engine_handle_dpad_getaxisvalue(android_input_t *android, AInputEvent *event,
       int port, char *msg, size_t msg_sizeof, int source,
       bool debug_enable)
 {
    size_t motion_pointer = AMotionEvent_getAction(event) >> AMOTION_EVENT_ACTION_POINTER_INDEX_SHIFT;
-   android_input_t *android = (android_input_t*)data;
    float x = AMotionEvent_getAxisValue(event, AXIS_X, motion_pointer);
    float y = AMotionEvent_getAxisValue(event, AXIS_Y, motion_pointer);
    float z = AMotionEvent_getAxisValue(event, AXIS_Z, motion_pointer);
@@ -306,7 +304,7 @@ static void android_input_poll_event_type_key(android_input_t *android, struct a
       *handled = 0;
 }
 
-static void handle_hotplug_get_device_name(void *data, char *buf, size_t size, int id)
+static void handle_hotplug_get_device_name(char *buf, size_t size, int id)
 {
    jclass class;
    jmethodID method, getName;
@@ -357,11 +355,9 @@ static void handle_hotplug_get_device_name(void *data, char *buf, size_t size, i
    RARCH_LOG("device name: %s\n", buf);
 }
 
-static void handle_hotplug(void *data, unsigned *port, unsigned id,
+static void handle_hotplug(struct android_app *android_app, unsigned *port, unsigned id,
       int source)
 {
-   struct android_app *android_app = (struct android_app*)data;
-
    unsigned device;
    char device_name[256], name_buf[256];
    name_buf[0] = device_name[0] = 0;
@@ -375,7 +371,7 @@ static void handle_hotplug(void *data, unsigned *port, unsigned id,
       return;
    }
 
-   handle_hotplug_get_device_name(android_app, device_name, sizeof(device_name), id);
+   handle_hotplug_get_device_name(device_name, sizeof(device_name), id);
 
    //FIXME: Ugly hack, see other FIXME note below.
    if (strstr(device_name, "keypad-game-zeus") || strstr(device_name, "keypad-zeus"))
