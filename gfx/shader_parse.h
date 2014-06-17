@@ -18,7 +18,8 @@
 
 #include "../boolean.h"
 #include "state_tracker.h"
-#include "../general.h"
+#include "../conf/config_file.h"
+#include "../miscellaneous.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -39,6 +40,14 @@ extern "C" {
 #ifndef GFX_MAX_PARAMETERS
 #define GFX_MAX_PARAMETERS 64
 #endif
+
+enum rarch_shader_type
+{
+   RARCH_SHADER_CG,
+   RARCH_SHADER_HLSL,
+   RARCH_SHADER_GLSL,
+   RARCH_SHADER_NONE
+};
 
 enum gfx_scale_type
 {
@@ -141,11 +150,11 @@ struct gfx_shader
    char script_class[512];
 };
 
-bool gfx_shader_read_conf_cgp(config_file_t *conf, void *data);
-void gfx_shader_write_conf_cgp(config_file_t *conf, void *data);
+bool gfx_shader_read_conf_cgp(config_file_t *conf, struct gfx_shader *shader);
+void gfx_shader_write_conf_cgp(config_file_t *conf, struct gfx_shader *shader);
 
-void gfx_shader_resolve_relative(void *data, const char *ref_path);
-bool gfx_shader_resolve_parameters(config_file_t *conf, void *data);
+void gfx_shader_resolve_relative(struct gfx_shader *shader, const char *ref_path);
+bool gfx_shader_resolve_parameters(config_file_t *conf, struct gfx_shader *shader);
 
 enum rarch_shader_type gfx_shader_parse_type(const char *path, enum rarch_shader_type fallback);
 

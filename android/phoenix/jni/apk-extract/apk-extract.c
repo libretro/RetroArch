@@ -2,6 +2,8 @@
 #include "file.h"
 
 #include <stdio.h>
+#include <string.h>
+#include "miscellaneous.h"
 #include "../native/com_retroarch_browser_NativeInterface.h"
 
 //#define VERBOSE_LOG

@@ -195,10 +195,9 @@ static bool check_fbo_proc(gl_t *gl)
 
 ////////////////// Shaders
 
-static bool gl_shader_init(void *data)
+static bool gl_shader_init(gl_t *gl)
 {
    bool ret;
-   gl_t *gl = (gl_t*)data;
    const gl_shader_backend_t *backend = NULL;
 
    const char *shader_path = (g_settings.video.shader_enable && *g_settings.video.shader_path) ?
@@ -264,10 +263,8 @@ static bool gl_shader_init(void *data)
    return ret;
 }
 
-static inline void gl_shader_deinit(void *data)
+static inline void gl_shader_deinit(gl_t *gl)
 {
-   gl_t *gl = (gl_t*)data;
-
    if (!gl)
       return;
 
@@ -319,10 +316,8 @@ static void gl_set_mvp(const void *data)
 }
 #endif
 
-void gl_shader_set_coords(void *data, const struct gl_coords *coords, const math_matrix *mat)
+void gl_shader_set_coords(gl_t *gl, const struct gl_coords *coords, const math_matrix *mat)
 {
-   gl_t *gl = (gl_t*)data;
-
    if (!gl)
       return;
 
@@ -363,21 +358,18 @@ void apple_bind_game_view_fbo(void);
 #endif
 
 #ifdef HAVE_FBO
-static void gl_shader_scale(void *data, unsigned index, struct gfx_fbo_scale *scale)
+static void gl_shader_scale(gl_t *gl, unsigned index, struct gfx_fbo_scale *scale)
 {
-   gl_t *gl = (gl_t*)data;
-
    scale->valid = false;
    if (gl->shader)
       gl->shader->shader_scale(index, scale);
 }
 
-static void gl_compute_fbo_geometry(void *data, unsigned width, unsigned height,
+static void gl_compute_fbo_geometry(gl_t *gl, unsigned width, unsigned height,
       unsigned vp_width, unsigned vp_height)
 {
    int i;
    unsigned last_width, last_height, last_max_width, last_max_height;
-   gl_t *gl = (gl_t*)data;
    last_width = width;
    last_height = height;
    last_max_width = gl->tex_w;
@@ -475,11 +467,9 @@ static inline GLenum min_filter_to_mag(GLenum type)
    }
 }
 
-static void gl_create_fbo_textures(void *data)
+static void gl_create_fbo_textures(gl_t *gl)
 {
    int i;
-   gl_t *gl = (gl_t*)data;
-
    if (!gl)
       return;
 
@@ -575,11 +565,9 @@ static void gl_create_fbo_textures(void *data)
    glBindTexture(GL_TEXTURE_2D, 0);
 }
 
-static bool gl_create_fbo_targets(void *data)
+static bool gl_create_fbo_targets(gl_t *gl)
 {
    int i;
-   gl_t *gl = (gl_t*)data;
-
    if (!gl)
       return false;
 
@@ -603,10 +591,8 @@ error:
    return false;
 }
 
-void gl_deinit_fbo(void *data)
+void gl_deinit_fbo(gl_t *gl)
 {
-   gl_t *gl = (gl_t*)data;
-
    if (gl->fbo_inited)
    {
       glDeleteTextures(gl->fbo_pass, gl->fbo_texture);
@@ -618,10 +604,9 @@ void gl_deinit_fbo(void *data)
    }
 }
 
-void gl_init_fbo(void *data, unsigned width, unsigned height)
+void gl_init_fbo(gl_t *gl, unsigned width, unsigned height)
 {
    int i;
-   gl_t *gl = (gl_t*)data;
 
    if (!gl || gl_shader_num(gl) == 0)
       return;
@@ -788,10 +773,8 @@ static bool gl_init_hw_render(gl_t *gl, unsigned width, unsigned height)
 #endif
 #endif
 
-void gl_set_projection(void *data, struct gl_ortho *ortho, bool allow_rotate)
+void gl_set_projection(gl_t *gl, struct gl_ortho *ortho, bool allow_rotate)
 {
-   gl_t *gl = (gl_t*)data;
-
    if (!gl)
       return;
 
@@ -809,11 +792,10 @@ void gl_set_projection(void *data, struct gl_ortho *ortho, bool allow_rotate)
       gl->mvp = gl->mvp_no_rot;
 }
 
-void gl_set_viewport(void *data, unsigned width, unsigned height, bool force_full, bool allow_rotate)
+void gl_set_viewport(gl_t *gl, unsigned width, unsigned height, bool force_full, bool allow_rotate)
 {
    int x, y;
    float device_aspect = 0.0f;
-   gl_t *gl = (gl_t*)data;
    struct gl_ortho ortho = {0, 1, 0, 1, -1, 1};
 
    if (!gl)
@@ -936,11 +918,9 @@ static inline void gl_start_frame_fbo(gl_t *gl)
 #endif
 }
 
-static void gl_check_fbo_dimensions(void *data)
+static void gl_check_fbo_dimensions(gl_t *gl)
 {
    int i;
-   gl_t *gl = (gl_t*)data;
-
    if (!gl)
       return;
 
@@ -976,10 +956,9 @@ static void gl_check_fbo_dimensions(void *data)
    }
 }
 
-static void gl_frame_fbo(void *data, const struct gl_tex_info *tex_info)
+static void gl_frame_fbo(gl_t *gl, const struct gl_tex_info *tex_info)
 {
    int i;
-   gl_t *gl = (gl_t*)data;
    GLfloat fbo_tex_coords[8] = {0.0f};
 
    if (!gl)
@@ -1095,9 +1074,8 @@ static void gl_frame_fbo(void *data, const struct gl_tex_info *tex_info)
 }
 #endif
 
-static void gl_update_resize(void *data)
+static void gl_update_resize(gl_t *gl)
 {
-   gl_t *gl = (gl_t*)data;
 #ifdef HAVE_FBO
    if (!gl->fbo_inited)
       gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
@@ -1113,9 +1091,8 @@ static void gl_update_resize(void *data)
 #endif
 }
 
-static void gl_update_input_size(void *data, unsigned width, unsigned height, unsigned pitch, bool clear)
+static void gl_update_input_size(gl_t *gl, unsigned width, unsigned height, unsigned pitch, bool clear)
 {
-   gl_t *gl = (gl_t*)data;
    // Res change. Need to clear out texture.
    if ((width != gl->last_width[gl->tex_index] || height != gl->last_height[gl->tex_index]) && gl->empty_buf)
    {
@@ -1154,9 +1131,8 @@ static void gl_update_input_size(void *data, unsigned width, unsigned height, un
 
 // It is *much* faster (order of mangnitude on my setup) to use a custom SIMD-optimized conversion routine than letting GL do it :(
 #if !defined(HAVE_PSGL) && !defined(HAVE_OPENGLES2)
-static inline void gl_convert_frame_rgb16_32(void *data, void *output, const void *input, int width, int height, int in_pitch)
+static inline void gl_convert_frame_rgb16_32(gl_t *gl, void *output, const void *input, int width, int height, int in_pitch)
 {
-   gl_t *gl = (gl_t*)data;
    if (width != gl->scaler.in_width || height != gl->scaler.in_height)
    {
       gl->scaler.in_width    = width;
@@ -1176,10 +1152,9 @@ static inline void gl_convert_frame_rgb16_32(void *data, void *output, const voi
 #endif
 
 #ifdef HAVE_OPENGLES2
-static inline void gl_convert_frame_argb8888_abgr8888(void *data, void *output, const void *input,
+static inline void gl_convert_frame_argb8888_abgr8888(gl_t *gl, void *output, const void *input,
       int width, int height, int in_pitch)
 {
-   gl_t *gl = (gl_t*)data;
    if (width != gl->scaler.in_width || height != gl->scaler.in_height)
    {
       gl->scaler.in_width    = width;
@@ -1198,10 +1173,9 @@ static inline void gl_convert_frame_argb8888_abgr8888(void *data, void *output, 
 }
 #endif
 
-static void gl_init_textures_data(void *data)
+static void gl_init_textures_data(gl_t *gl)
 {
    unsigned i;
-   gl_t *gl = (gl_t*)data;
    for (i = 0; i < gl->textures; i++)
    {
       gl->last_width[i]  = gl->tex_w;
@@ -1219,10 +1193,9 @@ static void gl_init_textures_data(void *data)
    }
 }
 
-static void gl_init_textures(void *data, const video_info_t *video)
+static void gl_init_textures(gl_t *gl, const video_info_t *video)
 {
    unsigned i;
-   gl_t *gl = (gl_t*)data;
 #if defined(HAVE_EGL) && defined(HAVE_OPENGLES2)
    // Use regular textures if we use HW render.
    gl->egl_images = !gl->hw_render_use && check_eglimage_proc() &&
@@ -1297,9 +1270,8 @@ static void gl_init_textures(void *data, const video_info_t *video)
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
 }
 
-static inline void gl_copy_frame(void *data, const void *frame, unsigned width, unsigned height, unsigned pitch)
+static inline void gl_copy_frame(gl_t *gl, const void *frame, unsigned width, unsigned height, unsigned pitch)
 {
-   gl_t *gl = (gl_t*)data;
 #if defined(HAVE_OPENGLES2)
 #if defined(HAVE_EGL)
    if (gl->egl_images)
@@ -1407,25 +1379,22 @@ static inline void gl_copy_frame(void *data, const void *frame, unsigned width, 
 #endif
 }
 
-static inline void gl_set_prev_texture(void *data, const struct gl_tex_info *tex_info)
+static inline void gl_set_prev_texture(gl_t *gl, const struct gl_tex_info *tex_info)
 {
-   gl_t *gl = (gl_t*)data;
    memmove(gl->prev_info + 1, gl->prev_info, sizeof(*tex_info) * (gl->textures - 1));
    memcpy(&gl->prev_info[0], tex_info, sizeof(*tex_info));
 }
 
-static inline void gl_set_shader_viewport(void *data, unsigned shader)
+static inline void gl_set_shader_viewport(gl_t *gl, unsigned shader)
 {
-   gl_t *gl = (gl_t*)data;
    if (gl->shader)
       gl->shader->use(gl, shader);
    gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
 }
 
 #if defined(HAVE_GL_ASYNC_READBACK) && defined(HAVE_MENU)
-static void gl_pbo_async_readback(void *data)
+static void gl_pbo_async_readback(gl_t *gl)
 {
-   gl_t *gl = (gl_t*)data;
    glBindBuffer(GL_PIXEL_PACK_BUFFER, gl->pbo_readback[gl->pbo_readback_index++]);
    gl->pbo_readback_index &= 3;
 
@@ -1455,10 +1424,8 @@ static void gl_pbo_async_readback(void *data)
 #endif
 
 #if defined(HAVE_MENU)
-static inline void gl_draw_texture(void *data)
+static inline void gl_draw_texture(gl_t *gl)
 {
-   gl_t *gl = (gl_t*)data;
-
    if (!gl->menu_texture)
       return;
 
@@ -1933,10 +1900,8 @@ static bool resolve_extensions(gl_t *gl)
    return true;
 }
 
-static inline void gl_set_texture_fmts(void *data, bool rgb32)
+static inline void gl_set_texture_fmts(gl_t *gl, bool rgb32)
 {
-   gl_t *gl = (gl_t*)data;
-
    gl->internal_fmt = rgb32 ? RARCH_GL_INTERNAL_FORMAT32 : RARCH_GL_INTERNAL_FORMAT16;
    gl->texture_type = rgb32 ? RARCH_GL_TEXTURE_TYPE32 : RARCH_GL_TEXTURE_TYPE16;
    gl->texture_fmt  = rgb32 ? RARCH_GL_FORMAT32 : RARCH_GL_FORMAT16;
@@ -1960,10 +1925,9 @@ static inline void gl_set_texture_fmts(void *data, bool rgb32)
 }
 
 #ifdef HAVE_GL_ASYNC_READBACK
-static void gl_init_pbo_readback(void *data)
+static void gl_init_pbo_readback(gl_t *gl)
 {
    unsigned i;
-   gl_t *gl = (gl_t*)data;
    // Only bother with this if we're doing FFmpeg GPU recording.
    // Check g_extern.recording and not g_extern.rec, because recording is not initialized yet.
    gl->pbo_readback_enable = g_settings.video.gpu_record && g_extern.recording;

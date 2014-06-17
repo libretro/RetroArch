@@ -46,6 +46,11 @@ static DSMIXBINS dsmb;
 #include <stdint.h>
 #include <string.h>
 
+#ifndef _XBOX
+// Need these includes in MinGW-w64 4.9 it seems ...
+#include <mmreg.h>
+#include <mmsystem.h>
+#endif
 #include <dsound.h>
 #include "../fifo_buffer.h"
 #include "../general.h"

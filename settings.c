@@ -520,8 +520,6 @@ void config_set_defaults(void)
 
    /* Avoid reloading config on every ROM load */
    g_extern.block_config_read = default_block_config_read;
-
-   rarch_init_msg_queue();
 }
 
 static void parse_config_file(void);

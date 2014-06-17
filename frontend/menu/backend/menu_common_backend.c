@@ -56,7 +56,7 @@ static inline struct gfx_shader *shader_manager_get_current_shader(void *data, u
    }
 
    if (type == MENU_SETTINGS_SHADER_PRESET_PARAMETERS)
-      shader = (struct gfx_shader *)menu->shader;
+      shader = menu->shader;
 
    if (!shader && driver.video_poke && driver.video_data && driver.video_poke->get_current_shader)
       shader = driver.video_poke->get_current_shader(driver.video_data);
@@ -82,7 +82,7 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
       {
          file_list_clear(menu->selection_buf);
 
-         struct gfx_shader *shader = (struct gfx_shader*)shader_manager_get_current_shader(menu, menu_type);
+         struct gfx_shader *shader = shader_manager_get_current_shader(menu, menu_type);
          if (shader)
             for (i = 0; i < shader->num_parameters; i++)
                file_list_push(menu->selection_buf, shader->parameters[i].desc, MENU_SETTINGS_SHADER_PARAMETER_0 + i, 0);
@@ -91,7 +91,7 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
       }
       case MENU_SETTINGS_SHADER_OPTIONS:
       {
-         struct gfx_shader *shader = (struct gfx_shader*)menu->shader;
+         struct gfx_shader *shader = menu->shader;
 
          if (!shader)
             return;
@@ -224,7 +224,7 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
          break;
       case MENU_SETTINGS_CORE_INFO:
          {
-            core_info_t *info = (core_info_t*)menu->core_info_current;
+            core_info_t *info = menu->core_info_current;
             file_list_clear(menu->selection_buf);
 
             if (info->data)
@@ -2395,7 +2395,7 @@ static int menu_common_iterate(unsigned action)
                }
                else
                {
-                  struct gfx_shader *shader = (struct gfx_shader*)driver.menu->shader;
+                  struct gfx_shader *shader = driver.menu->shader;
                   unsigned pass = (menu_type - MENU_SETTINGS_SHADER_0) / 3;
 
                   fill_pathname_join(shader->pass[pass].source.path,
@@ -2725,7 +2725,7 @@ static void menu_common_shader_manager_init(void *data)
    }
    else if (strcmp(ext, "glsl") == 0 || strcmp(ext, "cg") == 0)
    {
-      struct gfx_shader *shader = (struct gfx_shader*)menu->shader;
+      struct gfx_shader *shader = menu->shader;
 
       strlcpy(shader->pass[0].source.path, g_settings.video.shader_path,
             sizeof(shader->pass[0].source.path));
@@ -2758,11 +2758,9 @@ static void menu_common_shader_manager_init(void *data)
 #endif
 }
 
-static void menu_common_shader_manager_set_preset(void *data, unsigned type, const char *path)
+static void menu_common_shader_manager_set_preset(struct gfx_shader *shader, unsigned type, const char *path)
 {
 #ifdef HAVE_SHADER_MANAGER
-   struct gfx_shader *shader = (struct gfx_shader*)data;
-
    RARCH_LOG("Setting Menu shader: %s.\n", path ? path : "N/A (stock)");
 
    if (video_set_shader_func((enum rarch_shader_type)type, path))
@@ -2798,15 +2796,14 @@ static void menu_common_shader_manager_set_preset(void *data, unsigned type, con
 #endif
 }
 
-static void menu_common_shader_manager_get_str(void *data, char *type_str, size_t type_str_size, unsigned type)
+static void menu_common_shader_manager_get_str(struct gfx_shader *shader, char *type_str, size_t type_str_size, unsigned type)
 {
-   (void)data;
+   (void)shader;
    (void)type_str;
    (void)type_str_size;
    (void)type;
 
 #ifdef HAVE_SHADER_MANAGER
-   struct gfx_shader *shader = (struct gfx_shader*)data;
    if (type == MENU_SETTINGS_SHADER_APPLY)
       *type_str = '\0';
    else if (type >= MENU_SETTINGS_SHADER_PARAMETER_0 && type <= MENU_SETTINGS_SHADER_PARAMETER_LAST)
@@ -2953,11 +2950,10 @@ static void menu_common_shader_manager_save_preset(const char *basename, bool ap
 #endif
 }
 
-static unsigned menu_common_shader_manager_get_type(void *data)
+static unsigned menu_common_shader_manager_get_type(const struct gfx_shader *shader)
 {
 #ifdef HAVE_SHADER_MANAGER
    unsigned i, type;
-   const struct gfx_shader *shader = (const struct gfx_shader*)data;
 
    // All shader types must be the same, or we cannot use it.
    type = RARCH_SHADER_NONE;
@@ -3039,16 +3035,11 @@ static int menu_common_shader_manager_setting_toggle(unsigned setting, unsigned 
    }
    else if (setting >= MENU_SETTINGS_SHADER_PARAMETER_0 && setting <= MENU_SETTINGS_SHADER_PARAMETER_LAST)
    {
-      struct gfx_shader *shader;
-      struct gfx_shader_parameter *param;
-
-      shader = (struct gfx_shader*)driver.menu->parameter_shader;
-
+      struct gfx_shader *shader = driver.menu->parameter_shader;
       if (!shader)
          return 0;
 
-      param = (struct gfx_shader_parameter*)&shader->parameters[setting - MENU_SETTINGS_SHADER_PARAMETER_0];
-
+      struct gfx_shader_parameter *param = &shader->parameters[setting - MENU_SETTINGS_SHADER_PARAMETER_0];
       if (!param)
          return 0;
 
@@ -3077,12 +3068,11 @@ static int menu_common_shader_manager_setting_toggle(unsigned setting, unsigned 
       driver.menu_ctx->backend->setting_set(setting, action);
    else if (((dist_shader % 3) == 0 || setting == MENU_SETTINGS_SHADER_PRESET))
    {
-      struct gfx_shader *shader = NULL;
-      struct gfx_shader_pass *pass = NULL;
       dist_shader /= 3;
-      shader = (struct gfx_shader*)driver.menu->shader;
+      struct gfx_shader *shader = driver.menu->shader;
+      struct gfx_shader_pass *pass = NULL;
       if (shader && setting == MENU_SETTINGS_SHADER_PRESET)
-         pass = (struct gfx_shader_pass*)&shader->pass[dist_shader];
+         pass = &shader->pass[dist_shader];
 
       switch (action)
       {
@@ -3103,11 +3093,9 @@ static int menu_common_shader_manager_setting_toggle(unsigned setting, unsigned 
    }
    else if ((dist_filter % 3) == 0)
    {
-      struct gfx_shader *shader = NULL;
-      struct gfx_shader_pass *pass = NULL;
       dist_filter /= 3;
-      shader = (struct gfx_shader*)driver.menu->shader;
-      pass = (struct gfx_shader_pass*)&shader->pass[dist_filter];
+      struct gfx_shader *shader = driver.menu->shader;
+      struct gfx_shader_pass *pass = &shader->pass[dist_filter];
       switch (action)
       {
          case MENU_ACTION_START:
@@ -3129,11 +3117,9 @@ static int menu_common_shader_manager_setting_toggle(unsigned setting, unsigned 
    }
    else if ((dist_scale % 3) == 0)
    {
-      struct gfx_shader *shader = NULL;
-      struct gfx_shader_pass *pass = NULL;
       dist_scale /= 3;
-      shader = (struct gfx_shader*)driver.menu->shader;
-      pass = (struct gfx_shader_pass*)&shader->pass[dist_scale];
+      struct gfx_shader *shader = driver.menu->shader;
+      struct gfx_shader_pass *pass = &shader->pass[dist_scale];
       switch (action)
       {
          case MENU_ACTION_START:
@@ -4722,7 +4708,7 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
 #ifdef HAVE_SHADER_MANAGER
       case MENU_SETTINGS_SHADER_PASSES:
          {
-            struct gfx_shader *shader = (struct gfx_shader*)driver.menu->shader;
+            struct gfx_shader *shader = driver.menu->shader;
 
             switch (action)
             {
@@ -4759,7 +4745,7 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
          break;
       case MENU_SETTINGS_SHADER_APPLY:
       {
-         struct gfx_shader *shader = (struct gfx_shader*)driver.menu->shader;
+         struct gfx_shader *shader = driver.menu->shader;
          unsigned type = RARCH_SHADER_NONE;
 
          if (!driver.video || !driver.video->set_shader || action != MENU_ACTION_OK)

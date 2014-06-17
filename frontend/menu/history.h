@@ -25,26 +25,26 @@ extern "C" {
 typedef struct rom_history rom_history_t;
 
 rom_history_t *rom_history_init(const char *path, size_t size);
-void rom_history_free(void *data);
+void rom_history_free(rom_history_t *hist);
 
-void rom_history_clear(void *data);
+void rom_history_clear(rom_history_t *hist);
 
-size_t rom_history_size(void *data);
+size_t rom_history_size(rom_history_t *hist);
 
-void rom_history_get_index(void *data,
+void rom_history_get_index(rom_history_t *hist,
       size_t index,
       const char **path, const char **core_path,
       const char **core_name);
 
-void rom_history_push(void *data,
+void rom_history_push(rom_history_t *hist,
       const char *path, const char *core_path,
       const char *core_name);
 
-const char* rom_history_get_path(void *data,
+const char* rom_history_get_path(rom_history_t *hist,
       unsigned index);
-const char* rom_history_get_core_path(void *data,
+const char* rom_history_get_core_path(rom_history_t *hist,
       unsigned index);
-const char* rom_history_get_core_name(void *data,
+const char* rom_history_get_core_name(rom_history_t *hist,
       unsigned index);
 
 #ifdef __cplusplus

@@ -64,7 +64,7 @@ bool gl_load_luts(const struct gfx_shader *generic_shader, GLuint *lut_textures)
       RARCH_LOG("Loading texture image from: \"%s\" ...\n",
             generic_shader->lut[i].path);
 
-      if (!texture_image_load(driver.video_data, generic_shader->lut[i].path, &img))
+      if (!texture_image_load(&img, generic_shader->lut[i].path))
       {
          RARCH_ERR("Failed to load texture image from: \"%s\"\n", generic_shader->lut[i].path);
          return false;
@@ -74,7 +74,7 @@ bool gl_load_luts(const struct gfx_shader *generic_shader, GLuint *lut_textures)
             gl_wrap_type_to_enum(generic_shader->lut[i].wrap),
             generic_shader->lut[i].filter != RARCH_FILTER_NEAREST,
             generic_shader->lut[i].mipmap);
-      texture_image_free(driver.video_data, &img);
+      texture_image_free(&img);
    }
 
    glBindTexture(GL_TEXTURE_2D, 0);

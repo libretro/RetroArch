@@ -465,7 +465,7 @@ static void rmenu_context_reset(void *data)
    if (!menu)
       return;
 
-   texture_image_load(driver.video_data, g_extern.menu_texture_path, menu_texture);
+   texture_image_load(menu_texture, g_extern.menu_texture_path);
    menu->width = menu_texture->width;
    menu->height = menu_texture->height;
 
@@ -485,7 +485,7 @@ static void *rmenu_init(void)
 
 static void rmenu_context_destroy(void *data)
 {
-   texture_image_free(driver.video_data, menu_texture);
+   texture_image_free(menu_texture);
 }
 
 static void rmenu_free(void *data)

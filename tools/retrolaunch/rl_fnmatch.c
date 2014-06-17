@@ -79,7 +79,7 @@ int rl_fnmatch(const char *pattern, const char *string, int flags) {
 		case '\\':
 			c++;
 			// Dangling escape at end of pattern
-			if (c == '\0') {
+			if (*c == '\0') { // FIXME: Was c == '\0' (makes no sense). Not sure if c == NULL or *c == '\0' is intended. Assuming *c due to c++ right before.
 				return FNM_NOMATCH;
 			}
 		default:

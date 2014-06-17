@@ -21,7 +21,6 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <sys/types.h>
-#include "general.h"
 #include "file_path.h"
 
 #ifdef __cplusplus
