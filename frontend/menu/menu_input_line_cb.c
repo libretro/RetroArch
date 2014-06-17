@@ -142,10 +142,8 @@ void menu_key_event(bool down, unsigned keycode, uint32_t character, uint16_t mo
    }
 }
 
-void menu_poll_bind_state(void *data)
+void menu_poll_bind_state(struct menu_bind_state *state)
 {
-   struct menu_bind_state *state = (struct menu_bind_state*)data;
-
    if (!state)
       return;
 
@@ -180,11 +178,10 @@ void menu_poll_bind_state(void *data)
    }
 }
 
-void menu_poll_bind_get_rested_axes(void *data)
+void menu_poll_bind_get_rested_axes(struct menu_bind_state *state)
 {
    unsigned i, a;
    const rarch_joypad_driver_t *joypad = NULL;
-   struct menu_bind_state *state = (struct menu_bind_state*)data;
 
    if (!state)
       return;
@@ -265,12 +262,9 @@ static bool menu_poll_find_trigger_pad(struct menu_bind_state *state, struct men
    return false;
 }
 
-bool menu_poll_find_trigger(void *data1, void *data2)
+bool menu_poll_find_trigger(struct menu_bind_state *state, struct menu_bind_state *new_state)
 {
    unsigned i;
-   struct menu_bind_state *state, *new_state;
-   state     = (struct menu_bind_state*)data1;
-   new_state = (struct menu_bind_state*)data2;
 
    if (!state || !new_state)
       return false;
