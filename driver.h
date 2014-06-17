@@ -27,6 +27,7 @@
 #include "gfx/scaler/scaler.h"
 #include "gfx/image/image.h"
 #include "gfx/filters/softfilter.h"
+#include "gfx/shader_parse.h"
 #include "audio/dsp_filter.h"
 #include "input/overlay.h"
 #include "frontend/frontend_context.h"
@@ -165,14 +166,6 @@ struct platform_bind
 {
    uint64_t joykey;
    char desc[64];
-};
-
-enum rarch_shader_type
-{
-   RARCH_SHADER_CG,
-   RARCH_SHADER_HLSL,
-   RARCH_SHADER_GLSL,
-   RARCH_SHADER_NONE
 };
 
 #if defined(_XBOX360)
@@ -538,7 +531,7 @@ typedef struct
    struct retro_system_info info;
    bool load_no_rom;
 
-   void *shader;
+   struct gfx_shader *shader;
    void *parameter_shader; // Points to either shader or graphics driver current shader.
    unsigned current_pad;
 
