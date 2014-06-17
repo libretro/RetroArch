@@ -44,7 +44,7 @@ static d3d_video_t *curD3D = NULL;
 static bool d3d_quit = false;
 static void *dinput;
 
-extern bool d3d_restore(void *data);
+extern bool d3d_restore(d3d_video_t *data);
 
 static void d3d_resize(void *data, unsigned new_width, unsigned new_height)
 {

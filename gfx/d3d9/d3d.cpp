@@ -49,9 +49,8 @@ static BOOL CALLBACK monitor_enum_proc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT
 }
 
 // Multi-monitor support.
-RECT d3d_monitor_rect(void *data)
+static RECT d3d_monitor_rect(d3d_video_t *d3d)
 {
-   d3d_video_t *d3d = (d3d_video_t*)data;
    Monitor::num_mons = 0;
    EnumDisplayMonitors(NULL, NULL, monitor_enum_proc, 0);
 
@@ -86,9 +85,8 @@ RECT d3d_monitor_rect(void *data)
 }
 #endif
 
-void d3d_recompute_pass_sizes(void *data)
+static void d3d_recompute_pass_sizes(d3d_video_t *d3d)
 {
-   d3d_video_t *d3d = (d3d_video_t*)data;
    LinkInfo link_info = {0};
    link_info.pass = &d3d->shader.pass[0];
    link_info.tex_w = link_info.tex_h = d3d->video_info.input_scale * RARCH_SCALE_BASE;
@@ -418,7 +416,7 @@ static bool d3d_init_base(void *data, const video_info_t *info)
    return true;
 }
 
-static void d3d_calculate_rect(void *data, unsigned width, unsigned height,
+static void d3d_calculate_rect(d3d_video_t *d3d, unsigned width, unsigned height,
    bool keep, float desired_aspect);
 
 static bool d3d_initialize(void *data, const video_info_t *info)
@@ -497,9 +495,8 @@ static bool d3d_initialize(void *data, const video_info_t *info)
    return true;
 }
 
-bool d3d_restore(void *data)
+bool d3d_restore(d3d_video_t *d3d)
 {
-   d3d_video_t *d3d = (d3d_video_t*)data;
 #ifdef _XBOX
    d3d->needs_restore = false;
 #else
@@ -517,9 +514,8 @@ bool d3d_restore(void *data)
 #include "d3d_overlays.cpp"
 #endif
 
-static void d3d_set_viewport(void *data, int x, int y, unsigned width, unsigned height)
+static void d3d_set_viewport(d3d_video_t *d3d, int x, int y, unsigned width, unsigned height)
 {
-   d3d_video_t *d3d = (d3d_video_t*)data;
    D3DVIEWPORT viewport;
 
    // D3D doesn't support negative X/Y viewports ...
@@ -540,11 +536,9 @@ static void d3d_set_viewport(void *data, int x, int y, unsigned width, unsigned 
    d3d_set_font_rect(d3d, NULL);
 }
 
-static void d3d_calculate_rect(void *data, unsigned width, unsigned height,
+static void d3d_calculate_rect(d3d_video_t *d3d, unsigned width, unsigned height,
    bool keep, float desired_aspect)
 {
-   d3d_video_t *d3d = (d3d_video_t*)data;
-
    if (g_settings.video.scale_integer)
    {
       struct rarch_viewport vp = {0};
@@ -1019,10 +1013,9 @@ static void d3d_get_poke_interface(void *data, const video_poke_interface_t **if
 }
 
 // Delay constructor due to lack of exceptions.
-static bool d3d_construct(void *data, const video_info_t *info, const input_driver_t **input,
+static bool d3d_construct(d3d_video_t *d3d, const video_info_t *info, const input_driver_t **input,
       void **input_data)
 {
-   d3d_video_t *d3d = (d3d_video_t*)data;
    d3d->should_resize = false;
 #ifndef _XBOX
    gfx_set_dwm();

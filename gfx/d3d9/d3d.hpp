@@ -113,8 +113,6 @@ typedef struct
 void d3d_set_font_rect(void *data, const struct font_params *params);
 bool d3d_process_shader(void *data);
 void d3d_update_title(void *data);
-void d3d_recompute_pass_sizes(void *data);
-RECT d3d_monitor_rect(void *data);
 bool d3d_init_shader(void *data);
 void d3d_deinit_shader(void *data);
 bool d3d_init_imports(void *data);
