@@ -17,8 +17,15 @@
 #ifndef DRIVER_MENU_H__
 #define DRIVER_MENU_H__
 
+#include <stddef.h>
+#include <stdint.h>
+#include "boolean.h"
 #include "frontend/menu/file_list.h"
 #include "frontend/menu/history.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 typedef struct menu_ctx_driver_backend
 {
@@ -173,7 +180,9 @@ typedef struct
    retro_time_t sleep_msec;
 } menu_handle_t;
 
-
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 
