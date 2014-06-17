@@ -33,10 +33,10 @@ typedef struct menu_ctx_driver_backend
    void     (*entries_init)(void*, unsigned);
    int      (*iterate)(unsigned);
    void     (*shader_manager_init)(void *);
-   void     (*shader_manager_get_str)(void *, char *, size_t, unsigned);
-   void     (*shader_manager_set_preset)(void *, unsigned, const char*);
+   void     (*shader_manager_get_str)(struct gfx_shader *, char *, size_t, unsigned);
+   void     (*shader_manager_set_preset)(struct gfx_shader *, unsigned, const char*);
    void     (*shader_manager_save_preset)(const char *, bool);
-   unsigned (*shader_manager_get_type)(void *);
+   unsigned (*shader_manager_get_type)(const struct gfx_shader *);
    int      (*shader_manager_setting_toggle)(unsigned, unsigned);
    unsigned (*type_is)(unsigned);
    int      (*core_setting_toggle)(unsigned, unsigned);
