@@ -22,6 +22,7 @@
 #include "boolean.h"
 #include "frontend/menu/file_list.h"
 #include "frontend/menu/history.h"
+#include "frontend/info/core_info.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -138,8 +139,8 @@ typedef struct
    bool msg_force;
    bool push_start_screen;
 
-   void *core_info;
-   void *core_info_current;
+   core_info_list_t *core_info;
+   core_info_t *core_info_current;
    bool defer_core;
    char deferred_path[PATH_MAX];
 
@@ -159,7 +160,7 @@ typedef struct
    bool load_no_rom;
 
    struct gfx_shader *shader;
-   void *parameter_shader; // Points to either shader or graphics driver current shader.
+   struct gfx_shader *parameter_shader; // Points to either shader or graphics driver current shader.
    unsigned current_pad;
 
    rom_history_t *history;
