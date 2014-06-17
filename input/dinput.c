@@ -644,14 +644,14 @@ static bool guid_is_xinput_device(const GUID* product_guid)
    /* Go through RAWINPUT (WinXP and later) to find HID devices. */
    if (!raw_devs)
    {
-      if ((GetRawInputDeviceList(NULL, &num_raw_devs, sizeof (RAWINPUTDEVICELIST)) == -1) || (!num_raw_devs))
+      if ((GetRawInputDeviceList(NULL, &num_raw_devs, sizeof(RAWINPUTDEVICELIST)) == (UINT)-1) || (!num_raw_devs))
          return false;
 
-      raw_devs = (PRAWINPUTDEVICELIST) malloc(sizeof(RAWINPUTDEVICELIST) * num_raw_devs);
+      raw_devs = (PRAWINPUTDEVICELIST)malloc(sizeof(RAWINPUTDEVICELIST) * num_raw_devs);
       if (!raw_devs)
          return false;
 
-      if (GetRawInputDeviceList(raw_devs, &num_raw_devs, sizeof (RAWINPUTDEVICELIST)) == -1)
+      if (GetRawInputDeviceList(raw_devs, &num_raw_devs, sizeof (RAWINPUTDEVICELIST)) == (UINT)-1)
       {
          free(raw_devs);
          raw_devs = NULL;
