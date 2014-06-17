@@ -224,7 +224,7 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
          break;
       case MENU_SETTINGS_CORE_INFO:
          {
-            core_info_t *info = (core_info_t*)menu->core_info_current;
+            core_info_t *info = menu->core_info_current;
             file_list_clear(menu->selection_buf);
 
             if (info->data)
