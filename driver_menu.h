@@ -18,6 +18,7 @@
 #define DRIVER_MENU_H__
 
 #include "frontend/menu/file_list.h"
+#include "frontend/menu/history.h"
 
 typedef struct menu_ctx_driver_backend
 {
@@ -154,7 +155,7 @@ typedef struct
    void *parameter_shader; // Points to either shader or graphics driver current shader.
    unsigned current_pad;
 
-   void *history;
+   rom_history_t *history;
    retro_time_t last_time; // Used to throttle menu in case VSync is broken.
 
    struct menu_bind_state binds;
