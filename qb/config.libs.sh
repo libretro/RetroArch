@@ -80,9 +80,9 @@ if [ "$HAVE_EGL" != "no" ]; then
    if [ "$HAVE_EGL" = "no" ]; then
       HAVE_EGL=auto && check_lib EGL "-lEGL $EXTRA_GL_LIBS"
       [ "$HAVE_EGL" = "yes" ] && EGL_LIBS=-lEGL
-  else
+   else
       EGL_LIBS="$EGL_LIBS $EXTRA_GL_LIBS"
-  fi
+   fi
 fi
 
 if [ "$LIBRETRO" ]; then
