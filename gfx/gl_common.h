@@ -397,12 +397,12 @@ extern void glBufferSubDataTextureReferenceRA( GLenum target, GLintptr offset, G
 #endif
 #endif
 
-void gl_set_projection(void *data, struct gl_ortho *ortho, bool allow_rotate);
-void gl_set_viewport(void *data, unsigned width, unsigned height, bool force_full, bool allow_rotate);
-void gl_shader_set_coords(void *data, const struct gl_coords *coords, const math_matrix *mat);
+void gl_set_projection(gl_t *gl, struct gl_ortho *ortho, bool allow_rotate);
+void gl_set_viewport(gl_t *gl, unsigned width, unsigned height, bool force_full, bool allow_rotate);
+void gl_shader_set_coords(gl_t *gl, const struct gl_coords *coords, const math_matrix *mat);
 
-void gl_init_fbo(void *data, unsigned width, unsigned height);
-void gl_deinit_fbo(void *data);
+void gl_init_fbo(gl_t *gl, unsigned width, unsigned height);
+void gl_deinit_fbo(gl_t *gl);
 
 static inline GLenum gl_wrap_type_to_enum(enum gfx_wrap_type type)
 {
