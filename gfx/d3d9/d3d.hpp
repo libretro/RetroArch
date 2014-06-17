@@ -110,20 +110,9 @@ typedef struct
    LPDIRECT3DVERTEXBUFFER vert_buf;
 } overlay_t;
 
-void d3d_set_font_rect(void *data, const struct font_params *params);
-bool d3d_process_shader(void *data);
-void d3d_update_title(void *data);
 bool d3d_init_shader(void *data);
 void d3d_deinit_shader(void *data);
-bool d3d_init_imports(void *data);
-bool d3d_init_luts(void *data);
-bool d3d_init_singlepass(void *data);
-bool d3d_init_multipass(void *data);
-bool d3d_init_chain(void *data, const video_info_t *video_info);
-void d3d_deinit_chain(void *data);
-void d3d_show_cursor(void *data, bool state);
 void d3d_make_d3dpp(void *data, const video_info_t *info, D3DPRESENT_PARAMETERS *d3dpp);
-bool d3d_alive_func(void *data);
 
 typedef struct d3d_video
 {

@@ -31,6 +31,13 @@
 #define HAVE_SHADERS
 #endif
 
+//forward decls
+static bool d3d_init_luts(d3d_video_t *d3d);
+static void d3d_set_font_rect(d3d_video_t *d3d, const struct font_params *params);
+static bool d3d_process_shader(d3d_video_t *d3d);
+static bool d3d_init_multipass(d3d_video_t *d3d);
+static void d3d_deinit_chain(d3d_video_t *d3d);
+
 #ifdef HAVE_MONITOR
 #define IDI_ICON 1
 #define MAX_MONITORS 9
@@ -125,9 +132,8 @@ static void d3d_recompute_pass_sizes(d3d_video_t *d3d)
 }
 
 #ifndef DONT_HAVE_STATE_TRACKER
-bool d3d_init_imports(void *data)
+static bool d3d_init_imports(d3d_video_t *d3d)
 {
-   d3d_video_t *d3d = (d3d_video_t*)data;
    if (!d3d->shader.variables)
       return true;
 
@@ -159,9 +165,8 @@ bool d3d_init_imports(void *data)
 }
 #endif
 
-bool d3d_init_chain(void *data, const video_info_t *video_info)
+static bool d3d_init_chain(d3d_video_t *d3d, const video_info_t *video_info)
 {
-   d3d_video_t *d3d = (d3d_video_t*)data;
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
    // Setup information for first pass.
    LinkInfo link_info = {0};
@@ -224,9 +229,8 @@ bool d3d_init_chain(void *data, const video_info_t *video_info)
 }
 
 #ifdef HAVE_FBO
-bool d3d_init_multipass(void *data)
+static bool d3d_init_multipass(d3d_video_t *d3d)
 {
-   d3d_video_t *d3d = (d3d_video_t*)data;
    config_file_t *conf = config_file_new(d3d->cg_shader.c_str());
    if (!conf)
    {
@@ -278,10 +282,9 @@ bool d3d_init_multipass(void *data)
 }
 #endif
 
-void d3d_set_font_rect(void *data, const struct font_params *params)
+static void d3d_set_font_rect(d3d_video_t *d3d, const struct font_params *params)
 {
 #ifndef _XBOX
-   d3d_video_t *d3d = (d3d_video_t*)data;
    float pos_x = g_settings.video.msg_pos_x;
    float pos_y = g_settings.video.msg_pos_y;
    float font_size = g_settings.video.font_size;
@@ -306,9 +309,8 @@ void d3d_set_font_rect(void *data, const struct font_params *params)
 #endif
 }
 
-bool d3d_init_singlepass(void *data)
+static bool d3d_init_singlepass(d3d_video_t *d3d)
 {
-   d3d_video_t *d3d = (d3d_video_t*)data;
    memset(&d3d->shader, 0, sizeof(d3d->shader));
    d3d->shader.passes = 1;
    gfx_shader_pass &pass = d3d->shader.pass[0];
@@ -320,9 +322,8 @@ bool d3d_init_singlepass(void *data)
    return true;
 }
 
-bool d3d_process_shader(void *data)
+static bool d3d_process_shader(d3d_video_t *d3d)
 {
-   d3d_video_t *d3d = (d3d_video_t*)data;
 #ifdef HAVE_FBO
    if (strcmp(path_get_extension(d3d->cg_shader.c_str()), "cgp") == 0)
       return d3d_init_multipass(d3d);
@@ -331,9 +332,8 @@ bool d3d_process_shader(void *data)
    return d3d_init_singlepass(d3d);
 }
 
-bool d3d_init_luts(void *data)
+static bool d3d_init_luts(d3d_video_t *d3d)
 {
-   d3d_video_t *d3d = (d3d_video_t*)data;
    for (unsigned i = 0; i < d3d->shader.luts; i++)
    {
       bool ret = renderchain_add_lut(d3d->chain, d3d->shader.lut[i].id, d3d->shader.lut[i].path,
@@ -348,9 +348,8 @@ bool d3d_init_luts(void *data)
    return true;
 }
 
-void d3d_deinit_chain(void *data)
+static void d3d_deinit_chain(d3d_video_t *d3d)
 {
-   d3d_video_t *d3d = (d3d_video_t*)data;
    if (d3d->chain)
       delete (renderchain_t *)d3d->chain;
    d3d->chain = NULL;
