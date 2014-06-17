@@ -16,6 +16,7 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <fat.h>
 #include <gctypes.h>
@@ -28,6 +29,10 @@
 #define EXECUTE_ADDR ((uint8_t *) 0x91800000)
 #define BOOTER_ADDR ((uint8_t *) 0x93000000)
 #define ARGS_ADDR ((uint8_t *) 0x93200000)
+
+#ifndef PATH_MAX
+#define PATH_MAX 4096
+#endif
 
 extern uint8_t _binary_wii_app_booter_app_booter_bin_start[];
 extern uint8_t _binary_wii_app_booter_app_booter_bin_end[];
