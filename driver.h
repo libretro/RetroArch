@@ -31,6 +31,7 @@
 #include "audio/dsp_filter.h"
 #include "input/overlay.h"
 #include "frontend/frontend_context.h"
+#include "frontend/menu/file_list.h"
 #ifndef _WIN32
 #include "miscellaneous.h"
 #endif
@@ -503,8 +504,8 @@ typedef struct
    size_t frame_buf_pitch;
    bool frame_buf_show;
 
-   void *menu_stack;
-   void *selection_buf;
+   file_list_t *menu_stack;
+   file_list_t *selection_buf;
    size_t selection_ptr;
    unsigned info_selection;
    bool need_refresh;
