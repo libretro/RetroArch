@@ -199,19 +199,15 @@ static bool rpng_gx_convert_texture32(struct texture_image *image)
 
 #endif
 
-void texture_image_free(void *data, void *image_data)
+void texture_image_free(struct texture_image *img)
 {
-   struct texture_image *img = (struct texture_image*)image_data;
-
    free(img->pixels);
    memset(img, 0, sizeof(*img));
 }
 
-bool texture_image_load(void *data, const char *path, void *image_data)
+bool texture_image_load(struct texture_image *out_img, const char *path)
 {
-   (void)data;
    bool ret;
-   struct texture_image *out_img = (struct texture_image*)image_data;
 
    // This interface "leak" is very ugly. FIXME: Fix this properly ...
    if (driver.gfx_use_rgba)
@@ -224,7 +220,7 @@ bool texture_image_load(void *data, const char *path, void *image_data)
    {
       if (!rpng_gx_convert_texture32(out_img))
       {
-         texture_image_free(data, out_img);
+         texture_image_free(out_img);
          ret = false;
       }
    }

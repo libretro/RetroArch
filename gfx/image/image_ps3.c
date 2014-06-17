@@ -304,15 +304,12 @@ error:
    return false;
 }
 
-bool texture_image_load(void *data, const char *path, void *image_data)
+bool texture_image_load(struct texture_image *out_img, const char *path)
 {
-   (void)data;
-   struct texture_image *out_img = (struct texture_image*)image_data;
-
    if (!out_img)
       return false;
 
-   if(strstr(path, ".PNG") != NULL || strstr(path, ".png") != NULL)
+   if (strstr(path, ".PNG") != NULL || strstr(path, ".png") != NULL)
    {
       if (!ps3_load_png(path, out_img))
          return false;
@@ -326,9 +323,8 @@ bool texture_image_load(void *data, const char *path, void *image_data)
    return true;
 }
 
-void texture_image_free(void *data, void *image_data)
+void texture_image_free(struct texture_image *img)
 {
-   struct texture_image *img = (struct texture_image*)image_data;
    if (!img)
       return;
 

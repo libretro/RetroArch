@@ -38,22 +38,7 @@ struct texture_image
 #endif
 };
 
-typedef struct image_ctx_driver
-{
-   bool (*load)(void*, const char*, void *);
-   void (*free)(void *, void *);
-   // Human readable string.
-   const char *ident;
-} image_ctx_driver_t;
-
-#if 0
-extern const image_ctx_driver_t image_ctx_xdk1;
-extern const image_ctx_driver_t image_ctx_ps3;
-extern const image_ctx_driver_t image_ctx_sdl;
-extern const image_ctx_driver_t image_ctx_rpng;
-#endif
-
-bool texture_image_load(void *data, const char *path, void *img);
-void texture_image_free(void *data, void *img);
+bool texture_image_load(struct texture_image *img, const char *path);
+void texture_image_free(struct texture_image *img);
 
 #endif

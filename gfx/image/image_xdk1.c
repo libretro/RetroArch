@@ -17,17 +17,16 @@
 #include "image.h"
 #include "../../xdk/xdk_d3d.h"
 
-bool texture_image_load(void *data, const char *path, void *image_data)
+bool texture_image_load(struct texture_image *out_img, const char *path)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
-   struct texture_image *out_img = (struct texture_image*)image_data;
 
    D3DXIMAGE_INFO m_imageInfo;
 
    out_img->pixels      = NULL;
    out_img->vertex_buf  = NULL;
 
-   if(FAILED(D3DXCreateTextureFromFileExA(d3d->dev,
+   if (FAILED(D3DXCreateTextureFromFileExA(d3d->dev,
          path, D3DX_DEFAULT, D3DX_DEFAULT, D3DX_DEFAULT, 0, D3DFMT_A8R8G8B8,
          D3DPOOL_MANAGED, D3DX_DEFAULT, D3DX_DEFAULT, 0, &m_imageInfo, NULL,
          &out_img->pixels)))
@@ -50,10 +49,8 @@ bool texture_image_load(void *data, const char *path, void *image_data)
    return true;
 }
 
-void texture_image_free(void *data, void *image_data)
+void texture_image_free(struct texture_image *img)
 {
-   struct texture_image *img = (struct texture_image*)image_data;
-
    if (!img)
       return;
 
