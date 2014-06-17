@@ -236,7 +236,7 @@ bool zlib_parse_file(const char *file, zlib_file_cb file_cb, void *userdata)
 
    const struct zlib_file_backend *backend = zlib_get_default_file_backend();
    if (!backend)
-      return NULL;
+      return false;
 
    ssize_t zip_size = 0;
    void *handle = backend->open(file);

@@ -571,7 +571,7 @@ static bool verify_command(const char *cmd)
 bool network_cmd_send(const char *cmd_)
 {
    if (!netplay_init_network())
-      return NULL;
+      return false;
 
    char *command = strdup(cmd_);
    if (!command)
