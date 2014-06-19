@@ -3,6 +3,7 @@ TARGET = retroarch.js
 OBJ = frontend/platform/platform_emscripten.o \
 		frontend/platform/platform_null.o \
 		frontend/frontend.o \
+		frontend/menu/menu_input_line_cb.o \
 		retroarch.o \
 		file.o \
 		file_path.o \
@@ -19,6 +20,7 @@ OBJ = frontend/platform/platform_emscripten.o \
 		gfx/gfx_common.o \
 		input/input_common.o \
 		input/rwebinput_input.o \
+		input/keyboard_line.o \
 		core_options.o \
 		patch.o \
 		compat/compat.o \
@@ -27,6 +29,7 @@ OBJ = frontend/platform/platform_emscripten.o \
 		cheats.o \
 		audio/utils.o \
 		audio/rwebaudio.o \
+		audio/dsp_filter.o \
 		input/overlay.o \
 		fifo_buffer.o \
 		gfx/scaler/scaler.o \
@@ -39,6 +42,7 @@ OBJ = frontend/platform/platform_emscripten.o \
 		gfx/fonts/fonts.o \
 		gfx/fonts/bitmapfont.o \
 		gfx/image/image_rpng.o \
+		gfx/filter.o \
 		audio/resampler.o \
 		audio/sinc.o \
 		audio/cc_resampler.o \
@@ -93,7 +97,7 @@ ifeq ($(HAVE_ZLIB), 1)
    OBJ += gfx/rpng/rpng.o file_extract.o
    DEFINES += -DHAVE_ZLIB
    ifeq ($(WANT_MINIZ), 1)
-      OBJ += deps/miniz/miniz.o
+      OBJ += deps/rzlib/adler32.o deps/rzlib/compress.o deps/rzlib/crc32.o deps/rzlib/deflate.o deps/rzlib/gzclose.o deps/rzlib/gzlib.o deps/rzlib/gzread.o deps/rzlib/gzwrite.o deps/rzlib/inffast.o deps/rzlib/inflate.o deps/rzlib/inftrees.o deps/rzlib/trees.o deps/rzlib/uncompr.o deps/rzlib/zutil.o deps/rzlib/ioapi.o deps/rzlib/unzip.o
       DEFINES += -DWANT_MINIZ
    else
       LIBS += -lz

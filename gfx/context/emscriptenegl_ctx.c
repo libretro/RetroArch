@@ -42,15 +42,17 @@ static bool g_inited;
 static unsigned g_fb_width;
 static unsigned g_fb_height;
 
-static void gfx_ctx_swap_interval(unsigned interval)
+static void gfx_ctx_swap_interval(void *data, unsigned interval)
 {
+   (void)data;
    // no way to control vsync in WebGL
    (void)interval;
 }
 
-static void gfx_ctx_check_window(bool *quit,
+static void gfx_ctx_check_window(void *data, bool *quit,
       bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
 {
+   (void)data;
    (void)frame_count;
    int iWidth, iHeight, isFullscreen;
 
@@ -68,20 +70,23 @@ static void gfx_ctx_check_window(bool *quit,
    *quit   = false;
 }
 
-static void gfx_ctx_swap_buffers(void)
+static void gfx_ctx_swap_buffers(void *data)
 {
+   (void)data;
    // no-op in emscripten, no way to force swap/wait for vsync in browsers
    //eglSwapBuffers(g_egl_dpy, g_egl_surf);
 }
 
-static void gfx_ctx_set_resize(unsigned width, unsigned height)
+static void gfx_ctx_set_resize(void *data, unsigned width, unsigned height)
 {
+   (void)data;
    (void)width;
    (void)height;
 }
 
-static void gfx_ctx_update_window_title(void)
+static void gfx_ctx_update_window_title(void *data)
 {
+   (void)data;
    char buf[128], buf_fps[128];
    bool fps_draw = g_settings.fps_show;
    gfx_get_fps(buf, sizeof(buf), fps_draw ? buf_fps : NULL, sizeof(buf_fps));
@@ -90,16 +95,18 @@ static void gfx_ctx_update_window_title(void)
       msg_queue_push(g_extern.msg_queue, buf_fps, 1, 1);
 }
 
-static void gfx_ctx_get_video_size(unsigned *width, unsigned *height)
+static void gfx_ctx_get_video_size(void *data, unsigned *width, unsigned *height)
 {
+   (void)data;
    *width  = g_fb_width;
    *height = g_fb_height;
 }
 
-static void gfx_ctx_destroy(void);
+static void gfx_ctx_destroy(void *data);
 
-static bool gfx_ctx_init(void)
+static bool gfx_ctx_init(void *data)
 {
+   (void)data;
    EGLint width;
    EGLint height;
 
@@ -164,14 +171,15 @@ static bool gfx_ctx_init(void)
    return true;
 
 error:
-   gfx_ctx_destroy();
+   gfx_ctx_destroy(data);
    return false;
 }
 
-static bool gfx_ctx_set_video_mode(
+static bool gfx_ctx_set_video_mode(void *data,
       unsigned width, unsigned height,
       bool fullscreen)
 {
+   (void)data;
    if (g_inited)
       return false;
 
@@ -179,8 +187,9 @@ static bool gfx_ctx_set_video_mode(
    return true;
 }
 
-static bool gfx_ctx_bind_api(enum gfx_ctx_api api, unsigned major, unsigned minor)
+static bool gfx_ctx_bind_api(void *data, enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
+   (void)data;
    (void)major;
    (void)minor;
    switch (api)
@@ -192,8 +201,9 @@ static bool gfx_ctx_bind_api(enum gfx_ctx_api api, unsigned major, unsigned mino
    }
 }
 
-static void gfx_ctx_destroy(void)
+static void gfx_ctx_destroy(void *data)
 {
+   (void)data;
    if (g_egl_dpy)
    {
       eglMakeCurrent(g_egl_dpy, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
@@ -218,8 +228,9 @@ static void gfx_ctx_destroy(void)
    g_inited       = false;
 }
 
-static void gfx_ctx_input_driver(const input_driver_t **input, void **input_data)
+static void gfx_ctx_input_driver(void *data, const input_driver_t **input, void **input_data)
 {
+   (void)data;
    *input = NULL;
 
    void *rwebinput = input_rwebinput.init();
@@ -231,8 +242,9 @@ static void gfx_ctx_input_driver(const input_driver_t **input, void **input_data
    }
 }
 
-static bool gfx_ctx_has_focus(void)
+static bool gfx_ctx_has_focus(void *data)
 {
+   (void)data;
    return g_inited;
 }
 
@@ -241,18 +253,21 @@ static gfx_ctx_proc_t gfx_ctx_get_proc_address(const char *symbol)
    return eglGetProcAddress(symbol);
 }
 
-static float gfx_ctx_translate_aspect(unsigned width, unsigned height)
+static float gfx_ctx_translate_aspect(void *data, unsigned width, unsigned height)
 {
+   (void)data;
    return (float)width / height;
 }
 
-static bool gfx_ctx_init_egl_image_buffer(const video_info_t *video)
+static bool gfx_ctx_init_egl_image_buffer(void *data, const video_info_t *video)
 {
+   (void)data;
    return false;
 }
 
-static bool gfx_ctx_write_egl_image(const void *frame, unsigned width, unsigned height, unsigned pitch, bool rgb32, unsigned index, void **image_handle)
+static bool gfx_ctx_write_egl_image(void *data, const void *frame, unsigned width, unsigned height, unsigned pitch, bool rgb32, unsigned index, void **image_handle)
 {
+   (void)data;
    return false;
 }
 
