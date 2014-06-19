@@ -25,12 +25,14 @@ if [ "$USE_LANG_C" = 'yes' ]; then
 #include <stdio.h>
 int main(void) { puts("Hai world!"); return 0; }
 EOF
-	for CC in ${CC:=$(which ${CROSS_COMPILE}gcc ${CROSS_COMPILE}cc ${CROSS_COMPILE}clang)} ''; do
-		"$CC" -o "$TEMP_EXE" "$TEMP_C" >/dev/null 2>&1 && break
-	done
+   if [ -z "$CC" ]; then
+      for CC in ${CC:=$(which ${CROSS_COMPILE}gcc ${CROSS_COMPILE}cc ${CROSS_COMPILE}clang)} ''; do
+         "$CC" -o "$TEMP_EXE" "$TEMP_C" >/dev/null 2>&1 && break
+      done
+   fi
 	[ "$CC" ] || { echo "$ECHOBUF ... Not found. Exiting."; exit 1;}
 	echo "$ECHOBUF ... $CC"
-	rm "$TEMP_C" "$TEMP_EXE"
+	rm -f "$TEMP_C" "$TEMP_EXE"
 fi
 
 # Checking for working C++
@@ -41,10 +43,12 @@ if [ "$USE_LANG_CXX" = 'yes' ]; then
 #include <iostream>
 int main() { std::cout << "Hai guise" << std::endl; return 0; }
 EOF
-	for CXX in ${CXX:=$(which ${CROSS_COMPILE}g++ ${CROSS_COMPILE}c++ ${CROSS_COMPILE}clang++)} ''; do
-		"$CXX" -o "$TEMP_EXE" "$TEMP_CXX" >/dev/null 2>&1 && break
-	done
+   if [ -z "$CXX" ]; then
+      for CXX in ${CXX:=$(which ${CROSS_COMPILE}g++ ${CROSS_COMPILE}c++ ${CROSS_COMPILE}clang++)} ''; do
+         "$CXX" -o "$TEMP_EXE" "$TEMP_CXX" >/dev/null 2>&1 && break
+      done
+   fi
 	[ "$CXX" ] || { echo "$ECHOBUF ... Not found. Exiting."; exit 1;}
 	echo "$ECHOBUF ... $CXX"
-	rm "$TEMP_CXX" "$TEMP_EXE"
+	rm -f "$TEMP_CXX" "$TEMP_EXE"
 fi
