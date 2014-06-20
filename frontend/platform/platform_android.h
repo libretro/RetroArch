@@ -49,6 +49,7 @@ struct android_app
    sthread_t *thread;
    char current_ime[PATH_MAX];
    jmethodID getIntent;
+   jmethodID onRetroArchExit;
    jmethodID getStringExtra;
    jmethodID clearPendingIntent;
    jmethodID hasPendingIntent;

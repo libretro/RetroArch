@@ -132,7 +132,7 @@ public final class UserPreferences
 		readbackBool(config, edit, "video_allow_rotate");
 		readbackBool(config, edit, "video_font_enable");
 		readbackBool(config, edit, "video_vsync");
-		//readbackDouble(config, edit, "video_refresh_rate");
+		readbackString(config, edit, "video_refresh_rate");
 
 		// Path settings
 		readbackString(config, edit, "rgui_browser_directory");
