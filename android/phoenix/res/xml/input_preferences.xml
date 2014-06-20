@@ -19,15 +19,6 @@
             android:disableDependentsState="true" />
     </PreferenceCategory>
 
-    <!-- Debug Input Reporting -->
-    <PreferenceCategory android:title="@string/debug_input_reporting" >
-        <CheckBoxPreference
-            android:defaultValue="false"
-            android:key="input_debug_enable"
-            android:summary="@string/debug_input_reporting_desc"
-            android:title="@string/enable" />
-    </PreferenceCategory>
-
     <!-- Touchscreen Overlay -->
     <PreferenceCategory android:title="@string/touchscreen_overlay" >
         <CheckBoxPreference

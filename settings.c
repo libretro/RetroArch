@@ -394,7 +394,6 @@ void config_set_defaults(void)
 
    g_settings.input.overlay_opacity = 0.7f;
    g_settings.input.overlay_scale = 1.0f;
-   g_settings.input.debug_enable = input_debug_enable;
    g_settings.input.autodetect_enable = input_autodetect_enable;
    *g_settings.input.keyboard_layout = '\0';
 
@@ -1093,8 +1092,6 @@ bool config_load_file(const char *path, bool set_defaults)
 
    CONFIG_GET_INT(input.turbo_period, "input_turbo_period");
    CONFIG_GET_INT(input.turbo_duty_cycle, "input_duty_cycle");
-
-   CONFIG_GET_BOOL(input.debug_enable, "input_debug_enable");
 
    CONFIG_GET_BOOL(input.autodetect_enable, "input_autodetect_enable");
    CONFIG_GET_PATH(input.autoconfig_dir, "joypad_autoconfig_dir");

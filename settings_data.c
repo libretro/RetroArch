@@ -668,7 +668,6 @@ const rarch_setting_t* setting_data_get_list(void)
 
          START_SUB_GROUP("Misc")
          CONFIG_BOOL(g_settings.input.netplay_client_swap_input, "netplay_client_swap_input", "Swap Netplay Input",     netplay_client_swap_input)
-         CONFIG_BOOL(g_settings.input.debug_enable,         "input_debug_enable",         "Enable Input Debugging",     input_debug_enable)
          END_SUB_GROUP()
 
 #ifdef HAVE_OVERLAY

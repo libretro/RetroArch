@@ -148,7 +148,7 @@ typedef struct android_input
 } android_input_t;
 
 
-void (*engine_handle_dpad)(android_input_t *android, AInputEvent*, int, char*, size_t, int, bool);
+void (*engine_handle_dpad)(android_input_t *android, AInputEvent*, int, int);
 static bool android_input_set_sensor_state(void *data, unsigned port, enum retro_sensor_action action, unsigned event_rate);
 
 extern float AMotionEvent_getAxisValue(const AInputEvent* motion_event,
@@ -173,9 +173,7 @@ static inline void set_bit(uint8_t *buf, unsigned bit)
    buf[bit >> 3] |= 1 << (bit & 7);
 }
 
-static void engine_handle_dpad_default(android_input_t *android, AInputEvent *event,
-      int port, char *msg, size_t msg_sizeof,
-      int source, bool debug_enable)
+static void engine_handle_dpad_default(android_input_t *android, AInputEvent *event, int port, int source)
 {
    size_t motion_pointer = AMotionEvent_getAction(event) >> AMOTION_EVENT_ACTION_POINTER_INDEX_SHIFT;
    float x = AMotionEvent_getX(event, motion_pointer);
@@ -183,15 +181,9 @@ static void engine_handle_dpad_default(android_input_t *android, AInputEvent *ev
 
    android->analog_state[port][0] = (int16_t)(x * 32767.0f);
    android->analog_state[port][1] = (int16_t)(y * 32767.0f);
-
-   if (debug_enable)
-      snprintf(msg, msg_sizeof, "Pad %d : x = %.2f, y = %.2f, src %d.\n",
-            port, x, y, source);
 }
 
-static void engine_handle_dpad_getaxisvalue(android_input_t *android, AInputEvent *event,
-      int port, char *msg, size_t msg_sizeof, int source,
-      bool debug_enable)
+static void engine_handle_dpad_getaxisvalue(android_input_t *android, AInputEvent *event, int port, int source)
 {
    size_t motion_pointer = AMotionEvent_getAction(event) >> AMOTION_EVENT_ACTION_POINTER_INDEX_SHIFT;
    float x = AMotionEvent_getAxisValue(event, AXIS_X, motion_pointer);
@@ -219,10 +211,6 @@ static void engine_handle_dpad_getaxisvalue(android_input_t *android, AInputEven
    android->analog_state[port][7] = (int16_t)(rtrig * 32767.0f);
    android->analog_state[port][8] = (int16_t)(brake * 32767.0f);
    android->analog_state[port][9] = (int16_t)(gas * 32767.0f);
-
-   if (debug_enable)
-      snprintf(msg, msg_sizeof, "Pad %d : x %.2f, y %.2f, z %.2f, rz %.2f, src %d.\n",
-            port, x, y, z, rz, source);
 }
 
 static void *android_input_init(void)
@@ -577,7 +565,6 @@ static void android_input_poll(void *data)
    {
       if (ident == LOOPER_ID_INPUT)
       {
-         bool debug_enable = g_settings.input.debug_enable;
          AInputEvent *event = NULL;
 
          // Read all pending events.
@@ -585,13 +572,10 @@ static void android_input_poll(void *data)
          {
             while (AInputQueue_getEvent(android_app->inputQueue, &event) >= 0)
             {
-               bool long_msg_enable = false;
                int32_t handled = 1;
-               char msg[128];
                int source, id, keycode, type_event, port;
                int predispatched;
 
-               msg[0] = 0;
                predispatched = AInputQueue_preDispatchEvent(android_app->inputQueue, event);
 
                source = AInputEvent_getSource(event);
@@ -625,26 +609,12 @@ static void android_input_poll(void *data)
                   float y = 0.0f;
 
                   if (android_input_poll_event_type_motion(android, event, &x, &y, port, source))
-                     engine_handle_dpad(android, event, port, msg, sizeof(msg), source, debug_enable);
-                  else
-                  {
-                     if (debug_enable)
-                        snprintf(msg, sizeof(msg), "Pad %d : x = %.2f, y = %.2f, src %d.\n", port, x, y, source);
-                  }
+                     engine_handle_dpad(android, event, port, source);
                }
                else if (type_event == AINPUT_EVENT_TYPE_KEY)
                {
                   keycode = AKeyEvent_getKeyCode(event);
                   android_input_poll_event_type_key(android, android_app, event, port, keycode, source, type_event, &handled);
-                  if (debug_enable)
-                     snprintf(msg, sizeof(msg), "Pad %d : %d, src = %d.\n", port, keycode, source);
-               }
-
-               if (msg[0] != 0)
-               {
-                  msg_queue_clear(g_extern.msg_queue);
-                  msg_queue_push(g_extern.msg_queue, msg, 0, long_msg_enable ? 180 : 30);
-                  RARCH_LOG("Input debug: %s\n", msg);
                }
 
                if (!predispatched)
