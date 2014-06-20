@@ -4165,17 +4165,17 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
 #endif
       case MENU_SAVEFILE_DIR_PATH:
          if (action == MENU_ACTION_START)
-            *g_extern.savefile_dir = '\0';
+            strlcpy(g_extern.savefile_dir, g_defaults.sram_dir, sizeof(g_extern.savefile_dir));
          break;
 #ifdef HAVE_OVERLAY
       case MENU_OVERLAY_DIR_PATH:
          if (action == MENU_ACTION_START)
-            *g_extern.overlay_dir = '\0';
+            strlcpy(g_extern.overlay_dir, g_defaults.overlay_dir, sizeof(g_extern.overlay_dir));
          break;
 #endif
       case MENU_SAVESTATE_DIR_PATH:
          if (action == MENU_ACTION_START)
-            *g_extern.savestate_dir = '\0';
+            strlcpy(g_extern.savestate_dir, g_defaults.savestate_dir, sizeof(g_extern.savestate_dir));
          break;
       case MENU_LIBRETRO_DIR_PATH:
          if (action == MENU_ACTION_START)
