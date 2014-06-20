@@ -40,7 +40,6 @@ public final class UserPreferences
 		final String external = System.getenv("EXTERNAL_STORAGE");
 
 		// Native library directory and data directory for this front-end.
-		final String nativeLibraryDir = ctx.getApplicationInfo().nativeLibraryDir;
 		final String dataDir = ctx.getApplicationInfo().dataDir;
 		final String coreDir = dataDir + "/cores/";
 		
@@ -160,7 +159,6 @@ public final class UserPreferences
 
 		final String dataDir = ctx.getApplicationInfo().dataDir;
 		final String coreDir = dataDir + "/cores/";
-		final String nativeLibraryDir = ctx.getApplicationInfo().nativeLibraryDir;
 
 		final SharedPreferences prefs = getPreferences(ctx);
 		

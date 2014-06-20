@@ -31,11 +31,12 @@
 #include "../shader_glsl.h"
 #endif
 
+static bool g_use_hw_ctx;
+static EGLContext g_egl_hw_ctx;
 static EGLContext g_egl_ctx;
 static EGLSurface g_egl_surf;
 static EGLDisplay g_egl_dpy;
 static EGLConfig g_config;
-static bool g_resize;
 static bool g_es3;
 
 static void gfx_ctx_set_swap_interval(void *data, unsigned interval)
@@ -48,17 +49,30 @@ static void gfx_ctx_set_swap_interval(void *data, unsigned interval)
 static void gfx_ctx_destroy(void *data)
 {
    (void)data;
-   RARCH_LOG("gfx_ctx_destroy().\n");
-   eglMakeCurrent(g_egl_dpy, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
-   eglDestroyContext(g_egl_dpy, g_egl_ctx);
-   eglDestroySurface(g_egl_dpy, g_egl_surf);
-   eglTerminate(g_egl_dpy);
 
-   g_egl_dpy = EGL_NO_DISPLAY;
-   g_egl_surf = EGL_NO_SURFACE;
-   g_egl_ctx = EGL_NO_CONTEXT;
-   g_config   = 0;
-   g_resize   = false;
+   if (g_egl_dpy)
+   {
+      if (g_egl_ctx)
+      {
+         eglMakeCurrent(g_egl_dpy, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+         eglDestroyContext(g_egl_dpy, g_egl_ctx);
+      }
+
+      if (g_egl_hw_ctx)
+         eglDestroyContext(g_egl_dpy, g_egl_hw_ctx);
+
+      if (g_egl_surf)
+         eglDestroySurface(g_egl_dpy, g_egl_surf);
+      eglTerminate(g_egl_dpy);
+   }
+
+   // Be as careful as possible in deinit.
+
+   g_egl_ctx     = NULL;
+   g_egl_hw_ctx  = NULL;
+   g_egl_surf    = NULL;
+   g_egl_dpy     = NULL;
+   g_config      = 0;
 }
 
 static void gfx_ctx_get_video_size(void *data, unsigned *width, unsigned *height)
@@ -101,27 +115,20 @@ static bool gfx_ctx_init(void *data)
       EGL_NONE
    };
 
-   RARCH_LOG("Initializing context\n");
-
-   if ((g_egl_dpy = eglGetDisplay(EGL_DEFAULT_DISPLAY)) == EGL_NO_DISPLAY)
+   g_egl_dpy = eglGetDisplay(EGL_DEFAULT_DISPLAY);
+   if (!g_egl_dpy)
    {
-      RARCH_ERR("eglGetDisplay failed.\n");
+      RARCH_ERR("[Android/EGL]: Couldn't get EGL display.\n");
       goto error;
    }
 
    if (!eglInitialize(g_egl_dpy, &egl_version_major, &egl_version_minor))
-   {
-      RARCH_ERR("eglInitialize failed.\n");
       goto error;
-   }
 
    RARCH_LOG("[ANDROID/EGL]: EGL version: %d.%d\n", egl_version_major, egl_version_minor);
 
    if (!eglChooseConfig(g_egl_dpy, attribs, &g_config, 1, &num_config))
-   {
-      RARCH_ERR("eglChooseConfig failed.\n");
       goto error;
-   }
 
    int var = eglGetConfigAttrib(g_egl_dpy, g_config, EGL_NATIVE_VISUAL_ID, &format);
 
@@ -133,28 +140,31 @@ static bool gfx_ctx_init(void *data)
 
    ANativeWindow_setBuffersGeometry(android_app->window, 0, 0, format);
 
-   if (!(g_egl_surf = eglCreateWindowSurface(g_egl_dpy, g_config, android_app->window, 0)))
-   {
-      RARCH_ERR("eglCreateWindowSurface failed.\n");
+   g_egl_ctx = eglCreateContext(g_egl_dpy, g_config, EGL_NO_CONTEXT, context_attributes);
+
+   if (g_egl_ctx == EGL_NO_CONTEXT)
       goto error;
+
+   if (g_use_hw_ctx)
+   {
+      g_egl_hw_ctx = eglCreateContext(g_egl_dpy, g_config, g_egl_ctx,
+            context_attributes);
+      RARCH_LOG("[Android/EGL]: Created shared context: %p.\n", (void*)g_egl_hw_ctx);
+
+      if (g_egl_hw_ctx == EGL_NO_CONTEXT)
+         goto error;
    }
 
-   if (!(g_egl_ctx = eglCreateContext(g_egl_dpy, g_config, 0, context_attributes)))
-   {
-      RARCH_ERR("eglCreateContext failed.\n");
+   g_egl_surf = eglCreateWindowSurface(g_egl_dpy, g_config, android_app->window, 0);
+   if (!g_egl_surf)
       goto error;
-   }
 
    if (!eglMakeCurrent(g_egl_dpy, g_egl_surf, g_egl_surf, g_egl_ctx))
-   {
-      RARCH_ERR("eglMakeCurrent failed.\n");
       goto error;
-   }
 
    return true;
 
 error:
-   RARCH_ERR("EGL error: %d.\n", eglGetError());
    gfx_ctx_destroy(data);
    return false;
 }
@@ -256,6 +266,14 @@ static bool gfx_ctx_has_focus(void *data)
    return true;
 }
 
+static void android_gfx_ctx_bind_hw_render(void *data, bool enable)
+{
+   (void)data;
+   g_use_hw_ctx = enable;
+   if (g_egl_dpy && g_egl_surf)
+      eglMakeCurrent(g_egl_dpy, g_egl_surf, g_egl_surf, enable ? g_egl_hw_ctx : g_egl_ctx);
+}
+
 const gfx_ctx_driver_t gfx_ctx_android = {
    gfx_ctx_init,
    gfx_ctx_destroy,
@@ -277,4 +295,5 @@ const gfx_ctx_driver_t gfx_ctx_android = {
 #endif
    NULL,
    "android",
+   android_gfx_ctx_bind_hw_render,
 };
