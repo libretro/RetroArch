@@ -1116,7 +1116,7 @@ bool config_load_file(const char *path, bool set_defaults)
    if (!g_extern.has_set_save_path && config_get_path(conf, "savefile_directory", tmp_str, sizeof(tmp_str)))
    {
       if (!strcmp(tmp_str, "default"))
-         *g_extern.savefile_dir = '\0';
+         strlcpy(g_extern.savefile_dir, g_defaults.sram_dir, sizeof(g_extern.savefile_dir));
       else if (path_is_directory(tmp_str))
       {
          strlcpy(g_extern.savefile_dir, tmp_str, sizeof(g_extern.savefile_dir));
@@ -1130,7 +1130,7 @@ bool config_load_file(const char *path, bool set_defaults)
    if (!g_extern.has_set_state_path && config_get_path(conf, "savestate_directory", tmp_str, sizeof(tmp_str)))
    {
       if (!strcmp(tmp_str, "default"))
-         *g_extern.savestate_dir = '\0';
+         strlcpy(g_extern.savestate_dir, g_defaults.savestate_dir, sizeof(g_extern.savestate_dir));
       else if (path_is_directory(tmp_str))
       {
          strlcpy(g_extern.savestate_dir, tmp_str, sizeof(g_extern.savestate_dir));

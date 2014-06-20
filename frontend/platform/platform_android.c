@@ -148,7 +148,7 @@ void engine_handle_cmd(void *data)
    }
 }
 
-static inline void android_app_write_cmd (void *data, int8_t cmd)
+static inline void android_app_write_cmd(void *data, int8_t cmd)
 {
    struct android_app *android_app = (struct android_app*)data;
 
@@ -159,7 +159,7 @@ static inline void android_app_write_cmd (void *data, int8_t cmd)
       RARCH_ERR("Failure writing android_app cmd: %s\n", strerror(errno));
 }
 
-static void android_app_set_input (void *data, AInputQueue* inputQueue)
+static void android_app_set_input(void *data, AInputQueue* inputQueue)
 {
    struct android_app *android_app = (struct android_app*)data;
 
@@ -174,7 +174,7 @@ static void android_app_set_input (void *data, AInputQueue* inputQueue)
    slock_unlock(android_app->mutex);
 }
 
-static void android_app_set_window (void *data, ANativeWindow* window)
+static void android_app_set_window(void *data, ANativeWindow* window)
 {
    struct android_app *android_app = (struct android_app*)data;
 
@@ -196,7 +196,7 @@ static void android_app_set_window (void *data, ANativeWindow* window)
    slock_unlock(android_app->mutex);
 }
 
-static void android_app_set_activity_state (void *data, int8_t cmd)
+static void android_app_set_activity_state(void *data, int8_t cmd)
 {
    struct android_app *android_app = (struct android_app*)data;
 
@@ -215,7 +215,7 @@ static void android_app_set_activity_state (void *data, int8_t cmd)
 
 static void onDestroy(ANativeActivity* activity)
 {
-   struct android_app* android_app = (struct android_app*)activity->instance;
+   struct android_app *android_app = (struct android_app*)activity->instance;
 
    if (!android_app)
       return;
@@ -256,7 +256,7 @@ static void onStop(ANativeActivity* activity)
    android_app_set_activity_state((struct android_app*)activity->instance, APP_CMD_STOP);
 }
 
-static void onConfigurationChanged (ANativeActivity *activity)
+static void onConfigurationChanged(ANativeActivity *activity)
 {
    struct android_app* android_app = (struct android_app*)activity->instance;
 
@@ -317,7 +317,8 @@ JNIEnv *jni_thread_getenv(void)
 static void jni_thread_destruct(void *value)
 {
    JNIEnv *env = (JNIEnv*)value;
-   struct android_app* android_app = (struct android_app*)g_android;
+   struct android_app *android_app = (struct android_app*)g_android;
+   RARCH_LOG("jni_thread_destruct()\n");
 
    if (!env)
       return;
@@ -371,8 +372,8 @@ void ANativeActivity_onCreate(ANativeActivity* activity,
    memset(android_app, 0, sizeof(struct android_app));
    android_app->activity = activity;
 
-   android_app->mutex = (slock_t*)slock_new();
-   android_app->cond  = (scond_t*)scond_new();
+   android_app->mutex = slock_new();
+   android_app->cond  = scond_new();
 
    if (pipe(msgpipe))
    {
@@ -382,7 +383,7 @@ void ANativeActivity_onCreate(ANativeActivity* activity,
    android_app->msgread = msgpipe[0];
    android_app->msgwrite = msgpipe[1];
 
-   android_app->thread = (sthread_t*)sthread_create(android_app_entry, android_app);
+   android_app->thread = sthread_create(android_app_entry, android_app);
 
    // Wait for thread to start.
    slock_lock(android_app->mutex);
@@ -393,7 +394,7 @@ void ANativeActivity_onCreate(ANativeActivity* activity,
    activity->instance = android_app;
 }
 
-static bool android_run_events (void *data)
+static bool android_run_events(void *data)
 {
    int id = ALooper_pollOnce(-1, NULL, NULL, NULL);
 
@@ -574,8 +575,6 @@ static void frontend_android_get_environment_settings(int *argc, char *argv[],
             fill_pathname_join(g_defaults.savestate_dir, path, "savestates", sizeof(g_defaults.savestate_dir));
             fill_pathname_join(g_defaults.sram_dir, path, "savefiles", sizeof(g_defaults.sram_dir));
             fill_pathname_join(g_defaults.system_dir, path, "system", sizeof(g_defaults.system_dir));
-            args->sram_path  = g_defaults.sram_dir;
-            args->state_path = g_defaults.savestate_dir;
          }
       }
    }
@@ -744,6 +743,7 @@ static void frontend_android_init(void *data)
 
    GET_OBJECT_CLASS(env, class, android_app->activity->clazz);
    GET_METHOD_ID(env, android_app->getIntent, class, "getIntent", "()Landroid/content/Intent;");
+   GET_METHOD_ID(env, android_app->onRetroArchExit, class, "onRetroArchExit", "()V");
    CALL_OBJ_METHOD(env, obj, android_app->activity->clazz, android_app->getIntent);
 #if 0
    GET_METHOD_ID(env, android_app->hasPendingIntent, class, "hasPendingIntent", "()Z");
@@ -764,13 +764,17 @@ static void frontend_android_init(void *data)
 
 static void frontend_android_deinit(void *data)
 {
-   struct android_app* android_app = (struct android_app*)data;
+   struct android_app *android_app = (struct android_app*)data;
 
    if (!android_app)
       return;
 
    RARCH_LOG("Deinitializing RetroArch ...\n");
    android_app->activityState = APP_CMD_DEAD;
+
+   JNIEnv *env = jni_thread_getenv();
+   if (env && android_app->onRetroArchExit)
+      CALL_VOID_METHOD(env, android_app->activity->clazz, android_app->onRetroArchExit);
 
    if (android_app->inputQueue)
    {
@@ -782,12 +786,9 @@ static void frontend_android_deinit(void *data)
 static void frontend_android_shutdown(bool unused)
 {
    (void)unused;
-   // exit() here is nasty.
-   // pthread_exit(NULL) or return NULL; causes hanging ...
-   // Should probably call ANativeActivity_finish(), but it's bugged, it will hang our app.
+   // Cleaner approaches don't work sadly.
    exit(0);
 }
-
 
 static int frontend_android_get_rating(void)
 {
