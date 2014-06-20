@@ -157,6 +157,7 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
          break;
       case MENU_SETTINGS_VIDEO_OPTIONS:
          file_list_clear(menu->selection_buf);
+         file_list_push(menu->selection_buf, "HW Shared Context", MENU_SETTINGS_VIDEO_HW_SHARED_CONTEXT, 0);
 #if defined(GEKKO) || defined(__CELLOS_LV2__)
          file_list_push(menu->selection_buf, "Screen Resolution", MENU_SETTINGS_VIDEO_RESOLUTION, 0);
 #endif
@@ -4478,6 +4479,23 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
          break;
 #endif
 
+      case MENU_SETTINGS_VIDEO_HW_SHARED_CONTEXT:
+         switch (action)
+         {
+            case MENU_ACTION_START:
+               g_settings.video.shared_context = video_shared_context;
+               break;
+
+            case MENU_ACTION_LEFT:
+            case MENU_ACTION_RIGHT:
+            case MENU_ACTION_OK:
+               g_settings.video.shared_context = !g_settings.video.shared_context;
+               break;
+
+            default:
+               break;
+         }
+         break;
       case MENU_SETTINGS_VIDEO_VSYNC:
          switch (action)
          {
@@ -5030,6 +5048,9 @@ static void menu_common_setting_set_label(char *type_str, size_t type_str_size, 
             break;
          case MENU_SETTINGS_VIDEO_VSYNC:
             strlcpy(type_str, g_settings.video.vsync ? "ON" : "OFF", type_str_size);
+            break;
+         case MENU_SETTINGS_VIDEO_HW_SHARED_CONTEXT:
+            strlcpy(type_str, g_settings.video.shared_context ? "ON" : "OFF", type_str_size);
             break;
          case MENU_SETTINGS_VIDEO_HARD_SYNC:
             strlcpy(type_str, g_settings.video.hard_sync ? "ON" : "OFF", type_str_size);
