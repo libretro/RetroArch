@@ -131,10 +131,17 @@ enum
 
 #define MAX_AXIS 10
 
+typedef struct state_device
+{
+   int id;
+   int port;
+   char name[256];
+} state_device_t;
+
 typedef struct android_input
 {
    unsigned pads_connected;
-   int state_device_ids[MAX_PADS];
+   state_device_t pad_states[MAX_PADS];
    uint8_t pad_state[MAX_PADS][(LAST_KEYCODE + 7) / 8];
    int8_t hat_state[MAX_PADS][2];
    
@@ -300,13 +307,13 @@ static int android_input_get_id_port(android_input_t *android, int id, int sourc
       return 0; // touch overlay is always player 1
 
    for (i = 0; i < android->pads_connected; i++)
-      if (android->state_device_ids[i] == id)
+      if (android->pad_states[i].id == id)
          return i;
 
    return -1;
 }
 
-static bool android_input_get_id_name(char *buf, size_t size, int id)
+static bool android_input_lookup_name(char *buf, size_t size, int id)
 {
    jclass class;
    jmethodID method, getName;
@@ -360,7 +367,22 @@ error:
    return false;
 }
 
-static void handle_hotplug(struct android_app *android_app, unsigned *port, unsigned id,
+/*
+ * Returns the index inside android->pad_states
+ */
+static int android_input_get_id_index_from_name(android_input_t *android, const char *name)
+{
+   int i;
+   for (i = 0; i < android->pads_connected; i++)
+   {
+      if (strcmp(name, android->pad_states[i].name) == 0)
+         return i;
+   }
+
+   return -1;
+}
+
+static void handle_hotplug(android_input_t *android, struct android_app *android_app, unsigned *port, unsigned id,
       int source)
 {
    unsigned device;
@@ -376,7 +398,7 @@ static void handle_hotplug(struct android_app *android_app, unsigned *port, unsi
       return;
    }
 
-   android_input_get_id_name(device_name, sizeof(device_name), id);
+   android_input_lookup_name(device_name, sizeof(device_name), id);
 
    //FIXME: Ugly hack, see other FIXME note below.
    if (strstr(device_name, "keypad-game-zeus") || strstr(device_name, "keypad-zeus"))
@@ -568,6 +590,14 @@ static void handle_hotplug(struct android_app *android_app, unsigned *port, unsi
       input_config_autoconfigure_joypad(*port, name_buf, android_joypad.ident);
       RARCH_LOG("Port %d: %s.\n", *port, name_buf);
    }
+
+   *port = android->pads_connected;
+   android->pad_states[android->pads_connected].id = id;
+   android->pad_states[android->pads_connected].port = *port;
+   strlcpy(android->pad_states[*port].name, name_buf,
+         sizeof(android->pad_states[*port].name));
+
+   android->pads_connected++;
 }
 
 
@@ -605,11 +635,7 @@ static void android_input_poll(void *data)
                port = android_input_get_id_port(android, id, source);
 
                if (port < 0)
-               {
-                  handle_hotplug(android_app, &android->pads_connected, id, source);
-                  port = android->pads_connected;
-                  android->state_device_ids[android->pads_connected++] = id;
-               }
+                  handle_hotplug(android, android_app, &android->pads_connected, id, source);
 
                if (type_event == AINPUT_EVENT_TYPE_MOTION)
                {
