@@ -595,13 +595,9 @@ static void frontend_android_get_environment_settings(int *argc, char *argv[],
    else if (!strcmp(device_model, "GAMEMID_BT"))
       g_defaults.settings.out_latency = 160;
    else if (!strcmp(device_model, "SHIELD"))
-   {
-      g_defaults.settings.video_refresh_rate = 59.90;
-   }
+      g_defaults.settings.video_refresh_rate = 60.0;
    else if (!strcmp(device_model, "JSS15J"))
-   {
       g_defaults.settings.video_refresh_rate = 59.65;
-   }
 
    // Explicitly disable input overlay by default for gamepad-like/console devices
    if (device_is_game_console(device_model))

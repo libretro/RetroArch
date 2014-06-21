@@ -183,7 +183,7 @@ public final class UserPreferences
 		config.setInt("rewind_granularity", Integer.parseInt(prefs.getString("rewind_granularity", "1")));
 		config.setBoolean("video_vsync", prefs.getBoolean("video_vsync", true));
 		config.setBoolean("input_autodetect_enable", prefs.getBoolean("input_autodetect_enable", true));
-		config.setDouble("video_refresh_rate", getRefreshRate(ctx));
+		config.setString("video_refresh_rate", prefs.getString("video_refresh_rate", ""));
 		config.setBoolean("video_threaded", prefs.getBoolean("video_threaded", true));
 
 		// Refactor these weird values - 'full', 'auto', 'square', whatever -
@@ -339,59 +339,6 @@ public final class UserPreferences
 	public static SharedPreferences getPreferences(Context ctx)
 	{
 		return PreferenceManager.getDefaultSharedPreferences(ctx);
-	}
-
-	/**
-	 * Retrieves an approximate display refresh rate for a device.
-	 * <p>
-	 * Note that some devices will return completely wrong values
-	 * with the {@link Display#getRefreshRate()} method, and so
-	 * this method attempts to ballpark an appropriate value.
-	 * 
-	 * @param ctx the current {@link Context}.
-	 * 
-	 * @return an approximately correct display refresh rate for a device.
-	 */
-	private static double getRefreshRate(Context ctx)
-	{
-		double rate = 0;
-		SharedPreferences prefs = getPreferences(ctx);
-		String refresh_rate = prefs.getString("video_refresh_rate", "");
-		if (!refresh_rate.isEmpty())
-		{
-			try
-			{
-				rate = Double.parseDouble(refresh_rate);
-			}
-			catch (NumberFormatException e)
-			{
-				Log.e(TAG, "Cannot parse: " + refresh_rate + " as a double!");
-				rate = getDisplayRefreshRate(ctx);
-			}
-		}
-		else
-		{
-			rate = getDisplayRefreshRate(ctx);
-		}
-
-		Log.i(TAG, "Using refresh rate: " + rate + " Hz.");
-		return rate;
-	}
-
-	// Utility function used with getRefreshRate.
-	private static double getDisplayRefreshRate(Context ctx)
-	{
-		// Android is *very* likely to screw this up.
-		// It is rarely a good value to use, so make sure it's not
-		// completely wrong. Some phones return refresh rates that are
-		// completely bogus
-		// (like 0.3 Hz, etc), so try to be very conservative here.
-		final WindowManager wm = (WindowManager) ctx.getSystemService(Context.WINDOW_SERVICE);
-		final Display display = wm.getDefaultDisplay();
-		double rate = display.getRefreshRate();
-		if (rate > 61.0 || rate < 58.0)
-			rate = 59.95;
-		return rate;
 	}
 
 	/**
