@@ -147,19 +147,19 @@ rarch_softfilter_t *rarch_softfilter_new(const char *filter_path,
       enum retro_pixel_format in_pixel_format,
       unsigned max_width, unsigned max_height)
 {
-   unsigned i, cpu_features, output_fmts, input_fmts, input_fmt;
-   softfilter_get_implementation_t cb;
-    
-   i = 0;
-
-   (void)i;
+   unsigned cpu_features, output_fmts, input_fmts, input_fmt;
    (void)filter_path;
+
+#if defined(HAVE_FILTERS_BUILTIN)
+   if (!g_settings.video.filter_idx)
+      return NULL;
+#endif
 
    rarch_softfilter_t *filt = (rarch_softfilter_t*)calloc(1, sizeof(*filt));
    if (!filt)
       return NULL;
 
-   cb = NULL;
+   softfilter_get_implementation_t cb = NULL;
 #if defined(HAVE_FILTERS_BUILTIN)
    cb = (softfilter_get_implementation_t)softfilter_get_implementation_from_idx(g_settings.video.filter_idx);
 #elif defined(HAVE_DYLIB)
@@ -256,6 +256,7 @@ rarch_softfilter_t *rarch_softfilter_new(const char *filter_path,
       goto error;
    filt->threads = threads;
 
+   unsigned i;
    for (i = 0; i < threads; i++)
    {
       filt->thread_data[i].userdata = filt->impl_data;
