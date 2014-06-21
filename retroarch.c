@@ -903,6 +903,13 @@ static void parse_input(int argc, char *argv[])
    g_extern.has_set_netplay_delay_frames = false;
    g_extern.has_set_netplay_ip_port = false;
 
+   g_extern.ups_pref = false;
+   g_extern.bps_pref = false;
+   g_extern.ips_pref = false;
+   *g_extern.ups_name = '\0';
+   *g_extern.bps_name = '\0';
+   *g_extern.ips_name = '\0';
+
    *g_extern.subsystem = '\0';
 
    if (argc < 2)
