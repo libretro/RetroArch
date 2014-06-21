@@ -600,6 +600,16 @@ static void handle_hotplug(android_input_t *android, struct android_app *android
    android->pads_connected++;
 }
 
+static int android_input_get_id(android_input_t *android, AInputEvent *event)
+{
+   int id = AInputEvent_getDeviceId(event);
+
+   // Needs to be cleaned up
+   if (id == zeus_second_id)
+      id = zeus_id;
+
+   return id;
+}
 
 // Handle all events. If our activity is in pause state, block until we're unpaused.
 static void android_input_poll(void *data)
@@ -627,15 +637,14 @@ static void android_input_poll(void *data)
                predispatched = AInputQueue_preDispatchEvent(android_app->inputQueue, event);
 
                source = AInputEvent_getSource(event);
-               id = AInputEvent_getDeviceId(event);
-               if (id == zeus_second_id)
-                  id = zeus_id;
+               id = android_input_get_id(android, event);
 
-               type_event = AInputEvent_getType(event);
                port = android_input_get_id_port(android, id, source);
 
                if (port < 0)
                   handle_hotplug(android, android_app, &android->pads_connected, id, source);
+
+               type_event = AInputEvent_getType(event);
 
                if (type_event == AINPUT_EVENT_TYPE_MOTION)
                {
