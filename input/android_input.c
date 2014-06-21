@@ -229,8 +229,8 @@ static int zeus_id = -1;
 static int zeus_second_id = -1;
 static unsigned zeus_port;
 
-static int android_input_poll_event_type_motion(android_input_t *android, AInputEvent *event,
-      float *x, float *y, int port, int source)
+static inline int android_input_poll_event_type_motion(android_input_t *android, AInputEvent *event,
+      int port, int source)
 {
    int getaction, action;
    size_t motion_pointer;
@@ -259,13 +259,14 @@ static int android_input_poll_event_type_motion(android_input_t *android, AInput
    }
    else
    {
+      float x, y;
       int pointer_max = min(AMotionEvent_getPointerCount(event), MAX_TOUCH);
       for (motion_pointer = 0; motion_pointer < pointer_max; motion_pointer++)
       {
-         *x = AMotionEvent_getX(event, motion_pointer);
-         *y = AMotionEvent_getY(event, motion_pointer);
+         x = AMotionEvent_getX(event, motion_pointer);
+         y = AMotionEvent_getY(event, motion_pointer);
 
-         input_translate_coord_viewport(*x, *y,
+         input_translate_coord_viewport(x, y,
                &android->pointer[motion_pointer].x, &android->pointer[motion_pointer].y,
                &android->pointer[motion_pointer].full_x, &android->pointer[motion_pointer].full_y);
 
@@ -276,7 +277,7 @@ static int android_input_poll_event_type_motion(android_input_t *android, AInput
    return 0;
 }
 
-static void android_input_poll_event_type_key(android_input_t *android, struct android_app *android_app,
+static inline void android_input_poll_event_type_key(android_input_t *android, struct android_app *android_app,
       AInputEvent *event, int port, int keycode, int source, int type_event, int *handled)
 {
    int action  = AKeyEvent_getAction(event);
@@ -573,7 +574,7 @@ static void android_input_poll(void *data)
             while (AInputQueue_getEvent(android_app->inputQueue, &event) >= 0)
             {
                int32_t handled = 1;
-               int source, id, keycode, type_event, port;
+               int source, id, type_event, port;
                int predispatched;
 
                predispatched = AInputQueue_preDispatchEvent(android_app->inputQueue, event);
@@ -605,15 +606,12 @@ static void android_input_poll(void *data)
 
                if (type_event == AINPUT_EVENT_TYPE_MOTION)
                {
-                  float x = 0.0f;
-                  float y = 0.0f;
-
-                  if (android_input_poll_event_type_motion(android, event, &x, &y, port, source))
+                  if (android_input_poll_event_type_motion(android, event, port, source))
                      engine_handle_dpad(android, event, port, source);
                }
                else if (type_event == AINPUT_EVENT_TYPE_KEY)
                {
-                  keycode = AKeyEvent_getKeyCode(event);
+                  int keycode = AKeyEvent_getKeyCode(event);
                   android_input_poll_event_type_key(android, android_app, event, port, keycode, source, type_event, &handled);
                }
 
