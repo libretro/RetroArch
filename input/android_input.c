@@ -234,7 +234,6 @@ static void *android_input_init(void)
 
 static int zeus_id = -1;
 static int zeus_second_id = -1;
-static unsigned zeus_port;
 
 static inline int android_input_poll_event_type_motion(android_input_t *android, AInputEvent *event,
       int port, int source)
@@ -407,7 +406,6 @@ static void handle_hotplug(android_input_t *android, struct android_app *android
       {
          RARCH_LOG("zeus_pad 1 detected: %d\n", id);
          zeus_id = id;
-         zeus_port = *port;
       }
       else
       {
