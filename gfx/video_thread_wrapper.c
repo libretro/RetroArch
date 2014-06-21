@@ -89,7 +89,6 @@ typedef struct thread_video
    bool nonblock;
 
    retro_time_t last_time;
-   retro_time_t target_frame_time;
    unsigned hit_count;
    unsigned miss_count;
 
@@ -444,7 +443,8 @@ static bool thread_frame(void *data, const void *frame_,
 #ifndef RARCH_CONSOLE
    if (!thr->nonblock)
    {
-      retro_time_t target = thr->last_time + thr->target_frame_time;
+      retro_time_t target_frame_time = (retro_time_t)roundf(1000000LL / g_settings.video.refresh_rate);
+      retro_time_t target = thr->last_time + target_frame_time;
       // Ideally, use absolute time, but that is only a good idea on POSIX.
       while (thr->frame.updated)
       {
@@ -531,7 +531,6 @@ static bool thread_init(thread_video_t *thr, const video_info_t *info, const inp
 
    memset(thr->frame.buffer, 0x80, max_size);
 
-   thr->target_frame_time = (retro_time_t)roundf(1000000LL / g_settings.video.refresh_rate);
    thr->last_time = rarch_get_time_usec();
 
    thr->thread = sthread_create(thread_loop, thr);
