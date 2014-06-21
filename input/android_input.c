@@ -554,6 +554,19 @@ static void handle_hotplug(struct android_app *android_app, unsigned *port, unsi
    }
 }
 
+static int android_input_get_id_port(android_input_t *android, int id, int source)
+{
+   unsigned i;
+   if (source & (AINPUT_SOURCE_TOUCHSCREEN | AINPUT_SOURCE_MOUSE | AINPUT_SOURCE_TOUCHPAD))
+      return 0; // touch overlay is always player 1
+
+   for (i = 0; i < android->pads_connected; i++)
+      if (android->state_device_ids[i] == id)
+         return i;
+
+   return -1;
+}
+
 // Handle all events. If our activity is in pause state, block until we're unpaused.
 static void android_input_poll(void *data)
 {
@@ -585,17 +598,7 @@ static void android_input_poll(void *data)
                   id = zeus_id;
 
                type_event = AInputEvent_getType(event);
-               port = -1;
-
-               if (source & (AINPUT_SOURCE_TOUCHSCREEN | AINPUT_SOURCE_MOUSE | AINPUT_SOURCE_TOUCHPAD))
-                  port = 0; // touch overlay is always player 1
-               else
-               {
-                  unsigned i;
-                  for (i = 0; i < android->pads_connected; i++)
-                     if (android->state_device_ids[i] == id)
-                        port = i;
-               }
+               port = android_input_get_id_port(android, id, source);
 
                if (port < 0)
                {
