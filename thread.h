@@ -64,6 +64,7 @@ void scond_signal(scond_t *cond);
 #include <unistd.h>
 #elif defined(PSP)
 #include <pspthreadman.h>
+#include <psputils.h>
 #elif defined(_WIN32) && !defined(_XBOX)
 #include <windows.h>
 #else
