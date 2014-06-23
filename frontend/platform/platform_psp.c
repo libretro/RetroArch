@@ -27,6 +27,7 @@
 
 #include "../../psp/sdk_defines.h"
 #include "../../file.h"
+#include "../../general.h"
 
 #if defined(HAVE_KERNEL_PRX) || defined(IS_SALAMANDER)
 #include "../../psp1/kernel_functions.h"
