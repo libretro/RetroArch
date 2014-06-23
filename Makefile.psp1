@@ -25,7 +25,7 @@ RARCH_DEFINES = -DPSP -D_MIPS_ARCH_ALLEGREX1 -DHAVE_LIBRETRO_MANAGEMENT -DHAVE_Z
 
 LIBDIR =
 LDFLAGS =
-LIBS = $(WHOLE_START) -lretro_psp1 $(WHOLE_END) -lstdc++ -lpspgu -lpspgum -lm -lpspaudio -lpspfpu -lpsppower -lpsprtc
+LIBS = $(WHOLE_START) -lretro_psp1 $(WHOLE_END) -lstdc++ -lpspgu -lpspgum -lm -lpspaudio -lpspfpu -lpsppower -lpsprtc -lpthread-psp
 
 ifeq ($(HAVE_THREADS), 1)
 RARCH_DEFINES += -DHAVE_THREADS
