@@ -256,10 +256,12 @@ else
    HAVE_XVIDEO='no'
 fi
 
-check_pkgconf UDEV libudev
-if [ "$HAVE_UDEV" = "no" ]; then
-   HAVE_UDEV=auto && check_lib UDEV "-ludev"
-   [ "$HAVE_UDEV" = "yes" ] && UDEV_LIBS=-ludev
+if [ "$HAVE_UDEV" != "no" ]; then
+   check_pkgconf UDEV libudev
+   if [ "$HAVE_UDEV" = "no" ]; then
+      HAVE_UDEV=auto && check_lib UDEV "-ludev"
+      [ "$HAVE_UDEV" = "yes" ] && UDEV_LIBS=-ludev
+   fi
 fi
 
 check_lib STRL -lc strlcpy
