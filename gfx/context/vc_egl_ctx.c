@@ -37,6 +37,8 @@
 #include <VG/openvg.h>
 #include <bcm_host.h>
 
+static bool g_use_hw_ctx;
+static EGLContext g_egl_hw_ctx;
 static EGLContext g_egl_ctx;
 static EGLSurface g_egl_surf;
 static EGLDisplay g_egl_dpy;
@@ -186,6 +188,16 @@ static bool gfx_ctx_init(void *data)
    if (!g_egl_ctx)
       goto error;
 
+   if (g_use_hw_ctx)
+   {
+      g_egl_hw_ctx = eglCreateContext(g_egl_dpy, g_config, g_egl_ctx,
+            context_attributes);
+      RARCH_LOG("[VC/EGL]: Created shared context: %p.\n", (void*)g_egl_hw_ctx);
+
+      if (g_egl_hw_ctx == EGL_NO_CONTEXT)
+         goto error;
+   }
+
    // create an EGL window surface
    if (graphics_get_display_size(0 /* LCD */, &g_fb_width, &g_fb_height) < 0)
       goto error;
@@ -302,6 +314,9 @@ static void gfx_ctx_destroy(void *data)
          eglDestroyContext(g_egl_dpy, g_egl_ctx);
       }
 
+      if (g_egl_hw_ctx)
+         eglDestroyContext(g_egl_dpy, g_egl_hw_ctx);
+
       if (g_eglimage_ctx)
       {
          eglBindAPI(EGL_OPENVG_API);
@@ -329,6 +344,7 @@ static void gfx_ctx_destroy(void *data)
    }
 
    g_egl_ctx      = NULL;
+   g_egl_hw_ctx   = NULL;
    g_eglimage_ctx = NULL;
    g_egl_surf     = NULL;
    g_pbuff_surf   = NULL;
@@ -474,6 +490,15 @@ static bool gfx_ctx_write_egl_image(void *data, const void *frame, unsigned widt
    return ret;
 }
 
+static void vc_gfx_ctx_bind_hw_render(void *data, bool enable)
+{
+   (void)data;
+   g_use_hw_ctx = enable;
+
+   if (g_egl_dpy && g_egl_surf)
+      eglMakeCurrent(g_egl_dpy, g_egl_surf, g_egl_surf, enable ? g_egl_hw_ctx : g_egl_ctx);
+}
+
 const gfx_ctx_driver_t gfx_ctx_videocore = {
    gfx_ctx_init,
    gfx_ctx_destroy,
@@ -493,4 +518,5 @@ const gfx_ctx_driver_t gfx_ctx_videocore = {
    gfx_ctx_write_egl_image,
    NULL,
    "videocore",
+   vc_gfx_ctx_bind_hw_render,
 };
