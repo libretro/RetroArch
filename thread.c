@@ -159,7 +159,12 @@ void scond_wait(scond_t *cond, slock_t *lock)
 {
    WaitForSingleObject(cond->event, 0);
 
+#if MSC_VER <= 1310
+   slock_unlock(lock);
+   WaitForSingleObject(cond->event, INFINITE);
+#else
    SignalObjectAndWait(lock->lock, cond->event, INFINITE, FALSE);
+#endif
 
    slock_lock(lock);
 }
@@ -167,8 +172,12 @@ void scond_wait(scond_t *cond, slock_t *lock)
 bool scond_wait_timeout(scond_t *cond, slock_t *lock, int64_t timeout_us)
 {
    WaitForSingleObject(cond->event, 0);
-
+#if MSC_VER <= 1310
+   slock_unlock(lock);
+   DWORD res = WaitForSingleObject(cond->event, (DWORD)(timeout_us) / 1000);
+#else
    DWORD res = SignalObjectAndWait(lock->lock, cond->event, (DWORD)(timeout_us) / 1000, FALSE);
+#endif
 
    slock_lock(lock);
    return res == WAIT_OBJECT_0;
