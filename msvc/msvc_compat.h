@@ -57,6 +57,10 @@ typedef int ssize_t;
 #define PATH_MAX _MAX_PATH
 #endif
 
+#ifndef SIZE_MAX
+#define SIZE_MAX _UI32_MAX
+#endif
+
 #endif
 #endif
 
