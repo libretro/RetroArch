@@ -20,6 +20,10 @@
 #include "boolean.h"
 #include <stdint.h>
 
+#if defined(__cplusplus) && !defined(MSC_VER)
+extern "C" {
+#endif
+
 // Implements the bare minimum needed for RetroArch. :)
 
 typedef struct sthread sthread_t;
@@ -88,5 +92,8 @@ static inline void retro_sleep(unsigned msec)
 }
 #endif
 
+#if defined(__cplusplus) && !defined(MSC_VER)
+}
 #endif
 
+#endif
