@@ -20,10 +20,6 @@
 #include "boolean.h"
 #include <stdint.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 // Implements the bare minimum needed for RetroArch. :)
 
 typedef struct sthread sthread_t;
@@ -89,10 +85,6 @@ static inline void retro_sleep(unsigned msec)
    tv.tv_nsec = (msec % 1000) * 1000000;
    nanosleep(&tv, NULL);
 #endif
-}
-#endif
-
-#ifdef __cplusplus
 }
 #endif
 
