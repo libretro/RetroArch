@@ -26,6 +26,8 @@
 #endif
 #elif defined(GEKKO)
 #include "thread/gx_pthread.h"
+#elif defined(PSP)
+#include "thread/psp_pthread.h"
 #else
 #include <pthread.h>
 #include <time.h>

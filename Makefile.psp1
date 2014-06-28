@@ -2,7 +2,7 @@ BUILD_PRX         = 1
 DEBUG             = 0
 HAVE_KERNEL_PRX   = 1
 HAVE_FILE_LOGGER  = 0
-HAVE_THREADS      = 0
+HAVE_THREADS      = 1
 
 TARGET = retroarchpsp
 
@@ -25,11 +25,10 @@ RARCH_DEFINES = -DPSP -D_MIPS_ARCH_ALLEGREX1 -DHAVE_LIBRETRO_MANAGEMENT -DHAVE_Z
 
 LIBDIR =
 LDFLAGS =
-LIBS = $(WHOLE_START) -lretro_psp1 $(WHOLE_END) -lstdc++ -lpspgu -lpspgum -lm -lpspaudio -lpspfpu -lpsppower -lpsprtc -lpthread-psp
+LIBS = $(WHOLE_START) -lretro_psp1 $(WHOLE_END) -lstdc++ -lpspgu -lpspgum -lm -lpspaudio -lpspfpu -lpsppower -lpsprtc
 
 ifeq ($(HAVE_THREADS), 1)
 RARCH_DEFINES += -DHAVE_THREADS
-LIBS += -lpthread-psp
 endif
 
 ifeq ($(HAVE_FILE_LOGGER), 1)
