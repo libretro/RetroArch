@@ -73,7 +73,6 @@ typedef struct qnx_input
    input_device_t *port_device[MAX_PADS];
    input_device_t devices[MAX_PADS];
    const rarch_joypad_driver_t *joypad;
-   unsigned screen_width, screen_height;
    int16_t analog_state[MAX_PADS][2][2];
    uint64_t pad_state[MAX_PADS];
 } qnx_input_t;
@@ -410,17 +409,19 @@ static void process_touch_event(void *data, screen_event_t event, int type)
          {
             if(qnx->pointer[i].contact_id == contact_id)
             {
+               gl_t *gl = (gl_t*)driver.video_data;
+
                //During a move, we can go ~30 pixel into the bezel which gives negative
                //numbers or numbers larger than the screen res. Normalize.
                if(pos[0] < 0)
                   pos[0] = 0;
-               if(pos[0] > qnx->screen_width)
-                  pos[0] = qnx->screen_width;
+               if(pos[0] > gl->full_x)
+                  pos[0] = gl->full_x;
 
                if(pos[1] < 0)
                   pos[1] = 0;
-               if(pos[1] > qnx->screen_height)
-                  pos[1] = qnx->screen_height;
+               if(pos[1] > gl->full_y)
+                  pos[1] = gl->full_y;
 
                input_translate_coord_viewport(pos[0], pos[1],
                      &qnx->pointer[i].x, &qnx->pointer[i].y,
@@ -561,10 +562,6 @@ static void *qnx_input_init(void)
    qnx_input_t *qnx = (qnx_input_t*)calloc(1, sizeof(*qnx));
    if (!qnx)
       return NULL;
-
-   //Get screen dimensions
-   if(gfx_ctx_bbqnx.get_video_size)
-      gfx_ctx_bbqnx.get_video_size(driver.video_data, &qnx->screen_width, &qnx->screen_height);
 
    for (i = 0; i < MAX_TOUCH; ++i)
    {
