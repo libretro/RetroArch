@@ -72,6 +72,8 @@ static void resampler_CC_process(void *re_, struct resampler_data *data)
    {
       while (fraction < ratio)
       {
+         if (inp == inp_max)
+            goto done;
          __asm__ (
                ".set      push               \n"
                ".set      noreorder          \n"
@@ -105,8 +107,6 @@ static void resampler_CC_process(void *re_, struct resampler_data *data)
                : "r"(inp));
 
          inp++;
-         if (inp == inp_max)
-            goto done;
       }
       __asm__ (
             ".set    push                       \n"
