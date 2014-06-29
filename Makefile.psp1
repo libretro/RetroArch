@@ -1,8 +1,10 @@
-BUILD_PRX         = 1
-DEBUG             = 0
-HAVE_KERNEL_PRX   = 1
-HAVE_FILE_LOGGER  = 0
-HAVE_THREADS      = 1
+BUILD_PRX          = 1
+DEBUG              = 0
+HAVE_KERNEL_PRX    = 1
+HAVE_FILE_LOGGER   = 0
+HAVE_THREADS       = 1
+BIG_STACK          = 0
+WHOLE_ARCHIVE_LINK = 0
 
 TARGET = retroarchpsp
 
@@ -37,6 +39,10 @@ endif
 
 ifeq ($(HAVE_KERNEL_PRX), 1)
 CFLAGS += -DHAVE_KERNEL_PRX
+endif
+
+ifeq ($(BIG_STACK), 1)
+CFLAGS += -DBIG_STACK
 endif
 
 CFLAGS += $(RARCH_DEFINES)
