@@ -38,10 +38,12 @@
 
 #define WINDOW_BUFFERS 2
 
+static bool g_use_hw_ctx;
+static EGLContext g_egl_hw_ctx;
 static EGLContext g_egl_ctx;
 static EGLSurface g_egl_surf;
 static EGLDisplay g_egl_dpy;
-static EGLConfig egl_config;
+static EGLConfig g_config;
 static bool g_resize;
 
 screen_context_t screen_ctx;
@@ -68,7 +70,7 @@ static void gfx_ctx_qnx_destroy(void *data)
    g_egl_dpy = EGL_NO_DISPLAY;
    g_egl_surf = EGL_NO_SURFACE;
    g_egl_ctx = EGL_NO_CONTEXT;
-   egl_config   = 0;
+   g_config   = 0;
    g_resize   = false;
 }
 
@@ -161,16 +163,22 @@ static bool gfx_ctx_qnx_init(void *data)
 
    RARCH_LOG("[BLACKBERRY QNX/EGL]: EGL version: %d.%d\n", egl_version_major, egl_version_minor);
 
-   if (!eglChooseConfig(g_egl_dpy, attribs, &egl_config, 1, &num_config))
-   {
-      RARCH_ERR("eglChooseConfig failed.\n");
+   if (!eglChooseConfig(g_egl_dpy, attribs, &g_config, 1, &num_config))
       goto error;
-   }
 
-   if ((g_egl_ctx = eglCreateContext(g_egl_dpy, egl_config, 0, context_attributes)) == EGL_NO_CONTEXT)
-   {
-      RARCH_ERR("eglCreateContext failed.\n");
+   g_egl_ctx = eglCreateContext(g_egl_dpy, g_config, EGL_NO_CONTEXT, context_attributes);
+
+   if (g_egl_ctx == EGL_NO_CONTEXT)
       goto error;
+
+   if (g_use_hw_ctx)
+   {
+      g_egl_hw_ctx = eglCreateContext(g_egl_dpy, g_config, g_egl_ctx,
+            context_attributes);
+      RARCH_LOG("[Android/EGL]: Created shared context: %p.\n", (void*)g_egl_hw_ctx);
+
+      if (g_egl_hw_ctx == EGL_NO_CONTEXT)
+         goto error;
    }
 
    if(!screen_win)
@@ -264,7 +272,7 @@ static bool gfx_ctx_qnx_init(void *data)
       goto error;
    }
 
-   if (!(g_egl_surf = eglCreateWindowSurface(g_egl_dpy, egl_config, screen_win, 0)))
+   if (!(g_egl_surf = eglCreateWindowSurface(g_egl_dpy, g_config, screen_win, 0)))
    {
       RARCH_ERR("eglCreateWindowSurface failed.\n");
       goto error;
@@ -378,6 +386,14 @@ static bool gfx_ctx_qnx_has_focus(void *data)
    return true;
 }
 
+static void gfx_qnx_ctx_bind_hw_render(void *data, bool enable)
+{
+   (void)data;
+   g_use_hw_ctx = enable;
+   if (g_egl_dpy && g_egl_surf)
+      eglMakeCurrent(g_egl_dpy, g_egl_surf, g_egl_surf, enable ? g_egl_hw_ctx : g_egl_ctx);
+}
+
 const gfx_ctx_driver_t gfx_ctx_bbqnx = {
    gfx_ctx_qnx_init,
    gfx_ctx_qnx_destroy,
@@ -399,4 +415,5 @@ const gfx_ctx_driver_t gfx_ctx_bbqnx = {
 #endif
    NULL,
    "blackberry_qnx",
+   gfx_qnx_ctx_bind_hw_render,
 };
