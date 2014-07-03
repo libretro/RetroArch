@@ -57,7 +57,8 @@ HAVE_SDL = 0
 HAVE_ZLIB = 1
 HAVE_FBO = 1
 WANT_MINIZ = 1
-MEMORY = 67108864
+#MEMORY = 67108864
+MEMORY = 134217728
 LTO = 0
 # XXX: setting this to 1/2 currently crashes Firefox nightly
 PRECISE_F32 = 0
