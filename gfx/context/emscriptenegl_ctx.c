@@ -32,14 +32,12 @@
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
 
-static EGLContext g_egl_hw_ctx;
 static EGLContext g_egl_ctx;
 static EGLSurface g_egl_surf;
 static EGLDisplay g_egl_dpy;
 static EGLConfig g_config;
 
 static bool g_inited;
-static bool g_use_hw_ctx;
 
 static unsigned g_fb_width;
 static unsigned g_fb_height;
@@ -154,16 +152,6 @@ static bool gfx_ctx_init(void *data)
    g_egl_ctx = eglCreateContext(g_egl_dpy, g_config, EGL_NO_CONTEXT, context_attributes);
    if (!g_egl_ctx)
       goto error;
-
-   if (g_use_hw_ctx)
-   {
-      g_egl_hw_ctx = eglCreateContext(g_egl_dpy, g_config, g_egl_ctx,
-            context_attributes);
-      RARCH_LOG("[VC/EGL]: Created shared context: %p.\n", (void*)g_egl_hw_ctx);
-
-      if (g_egl_hw_ctx == EGL_NO_CONTEXT)
-         goto error;
-   }
 
    // create an EGL window surface
    g_egl_surf = eglCreateWindowSurface(g_egl_dpy, g_config, 0, NULL);
@@ -283,14 +271,6 @@ static bool gfx_ctx_write_egl_image(void *data, const void *frame, unsigned widt
    return false;
 }
 
-static void gfx_ctx_bind_hw_render(void *data, bool enable)
-{
-   (void)data;
-   g_use_hw_ctx = enable;
-   if (g_egl_dpy && g_egl_surf)
-      eglMakeCurrent(g_egl_dpy, g_egl_surf, g_egl_surf, enable ? g_egl_hw_ctx : g_egl_ctx);
-}
-
 const gfx_ctx_driver_t gfx_ctx_emscripten = {
    gfx_ctx_init,
    gfx_ctx_destroy,
@@ -310,5 +290,4 @@ const gfx_ctx_driver_t gfx_ctx_emscripten = {
    gfx_ctx_write_egl_image,
    NULL,
    "emscripten",
-   gfx_ctx_bind_hw_render,
 };
