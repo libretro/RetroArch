@@ -17,7 +17,7 @@
 
 typedef struct rwebinput_state
 {
-   char keys[32];
+   uint8_t keys[32];
    int mouse_x;
    int mouse_y;
    char mouse_l;

@@ -19,6 +19,7 @@
 
 #include "../boolean.h"
 #include "../general.h"
+#include "keyboard_line.h"
 
 #include "../emscripten/RWebInput.h"
 
@@ -92,6 +93,17 @@ static int16_t rwebinput_mouse_state(rwebinput_input_t *rwebinput, unsigned id)
    }
 }
 
+static int16_t rwebinput_analog_pressed(rwebinput_input_t *rwebinput, const struct retro_keybind *binds, unsigned index, unsigned id)
+{
+   unsigned id_minus = 0;
+   unsigned id_plus  = 0;
+   input_conv_analog_id_to_bind_id(index, id, &id_minus, &id_plus);
+
+   int16_t pressed_minus = rwebinput_is_pressed(rwebinput, binds, id_minus) ? -0x7fff : 0;
+   int16_t pressed_plus = rwebinput_is_pressed(rwebinput, binds, id_plus) ? 0x7fff : 0;
+   return pressed_plus + pressed_minus;
+}
+
 static int16_t rwebinput_input_state(void *data, const struct retro_keybind **binds, unsigned port, unsigned device, unsigned index, unsigned id)
 {
    rwebinput_input_t *rwebinput = (rwebinput_input_t*)data;
@@ -100,6 +112,9 @@ static int16_t rwebinput_input_state(void *data, const struct retro_keybind **bi
    {
       case RETRO_DEVICE_JOYPAD:
          return rwebinput_is_pressed(rwebinput, binds[port], id);
+
+      case RETRO_DEVICE_ANALOG:
+         return rwebinput_analog_pressed(rwebinput, binds[port], index, id);
 
       case RETRO_DEVICE_KEYBOARD:
          return rwebinput_key_pressed(rwebinput, id);
@@ -127,6 +142,23 @@ static void rwebinput_input_poll(void *data)
    rwebinput_input_t *rwebinput = (rwebinput_input_t*)data;
 
    rwebinput_state_t *state = RWebInputPoll(rwebinput->context);
+
+   // get new keys
+   for (unsigned i = 0; i < 32; i++)
+   {
+      if (state->keys[i] != rwebinput->state.keys[i])
+      {
+         uint8_t diff = state->keys[i] ^ rwebinput->state.keys[i];
+         for (unsigned k = 0; diff; diff >>= 1, k++)
+         {
+            if (diff & 1)
+            {
+               input_keyboard_event((state->keys[i] & (1 << k)) != 0, input_translate_keysym_to_rk(i * 8 + k), 0, 0);
+            }
+         }
+      }
+   }
+
    memcpy(&rwebinput->state, state, sizeof(rwebinput->state));
 }
 
@@ -141,6 +173,7 @@ static uint64_t rwebinput_get_capabilities(void *data)
    uint64_t caps = 0;
 
    caps |= (1 << RETRO_DEVICE_JOYPAD);
+   caps |= (1 << RETRO_DEVICE_ANALOG);
    caps |= (1 << RETRO_DEVICE_KEYBOARD);
    caps |= (1 << RETRO_DEVICE_MOUSE);
 

@@ -60,7 +60,7 @@ WANT_MINIZ = 1
 MEMORY = 67108864
 LTO = 0
 # XXX: setting this to 1/2 currently crashes Firefox nightly
-PRECISE_F32 = 0
+PRECISE_F32 = 2
 
 ifneq ($(NATIVE_ZLIB),)
    WANT_MINIZ = 0

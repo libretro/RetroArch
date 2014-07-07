@@ -58,7 +58,7 @@ var LibraryRWebInput = {
       }
    },
 
-   RWebInputInit: function(latency) {
+   RWebInputInit: function() {
       if (RI.contexts.length === 0) {
          document.addEventListener('keyup', RI.eventHandler, false);
          document.addEventListener('keydown', RI.eventHandler, false);
