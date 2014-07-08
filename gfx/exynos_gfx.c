@@ -1331,8 +1331,8 @@ static bool exynos_gfx_frame(void *data, const void *frame, unsigned width,
   return true;
 
 fail:
-  /* Since we didn't managed to issue a pageflip to this page, set *
-   * it to 'unused' again, and hope that it works next time.       */
+  /* Since we didn't manage to issue a pageflip to this page, set *
+   * it to 'unused' again, and hope that it works next time.      */
   page->used = false;
 
   return false;
