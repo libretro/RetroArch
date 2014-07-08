@@ -60,14 +60,16 @@ const void* apple_get_frontend_settings(void)
    
    if (settings[0].type == ST_NONE)
    {
+       const char *GROUP_NAME = "Frontend Settings";
+       const char *SUBGROUP_NAME = "Frontend";
       settings[0] = setting_data_group_setting(ST_GROUP, "Frontend Settings");
       settings[1] = setting_data_group_setting(ST_SUB_GROUP, "Frontend");
       settings[2] = setting_data_bool_setting("ios_use_file_log", "Enable File Logging",
-                                               &apple_frontend_settings.logging_enabled, false);
+                                               &apple_frontend_settings.logging_enabled, false, GROUP_NAME, SUBGROUP_NAME);
       settings[2].change_handler = apple_refresh_frontend_config;
-      settings[3] = setting_data_bool_setting("ios_tv_mode", "TV Mode", &apple_use_tv_mode, false);
+      settings[3] = setting_data_bool_setting("ios_tv_mode", "TV Mode", &apple_use_tv_mode, false, GROUP_NAME, SUBGROUP_NAME);
       settings[4] = setting_data_string_setting(ST_STRING, "ios_btmode", "Bluetooth Input Type", apple_frontend_settings.bluetooth_mode,
-                                                 sizeof(apple_frontend_settings.bluetooth_mode), "none");                                                 
+                                                 sizeof(apple_frontend_settings.bluetooth_mode), "none", GROUP_NAME, SUBGROUP_NAME);
       settings[4].change_handler = apple_refresh_frontend_config;
 
       // Set ios_btmode options based on runtime environment
@@ -77,7 +79,7 @@ const void* apple_get_frontend_settings(void)
          settings[4].values = "icade|keyboard|small_keyboard";
 
       settings[5] = setting_data_string_setting(ST_STRING, "ios_orientations", "Screen Orientations", apple_frontend_settings.orientations,
-                                                 sizeof(apple_frontend_settings.orientations), "both");
+                                                 sizeof(apple_frontend_settings.orientations), "both", GROUP_NAME, SUBGROUP_NAME);
       settings[5].values = "both|landscape|portrait";
       settings[6] = setting_data_group_setting(ST_END_SUB_GROUP, 0);
       
