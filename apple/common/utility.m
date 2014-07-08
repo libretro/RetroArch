@@ -48,7 +48,7 @@ void apple_display_alert(const char *message, const char *title)
 NSString* objc_get_value_from_config(config_file_t* config, NSString* name, NSString* defaultValue)
 {
    NSString *result;
-   char* data = 0;
+   char* data = NULL;
    if (config)
       config_get_string(config, name.UTF8String, &data);
    
