@@ -34,7 +34,7 @@
 #include "gfx_common.h"
 #include "fonts/fonts.h"
 
-/* TODO: Honor these properties: vsync, RGUI rotation, RGUI alpha, aspect ratio change */
+/* TODO: Honor these properties: vsync, menu rotation, menu alpha, aspect ratio change */
 
 /* Set to '1' to enable debug logging code. */
 #define EXYNOS_GFX_DEBUG_LOG 0
@@ -60,12 +60,12 @@ enum exynos_buffer_type {
 /* We have to handle three types of 'data' from the frontend, each abstracted by a *
  * G2D image object. The image objects are then backed by some storage buffer.     *
  * (1) the emulator framebuffer (backed by main buffer)                            *
- * (2) the RGUI buffer (backed by aux buffer)                                      *
+ * (2) the menu buffer (backed by aux buffer)                                      *
  * (3) the font rendering buffer (backed by aux buffer)                            */
 enum exynos_image_type {
   exynos_image_frame = 0,
   exynos_image_font,
-  exynos_image_rgui,
+  exynos_image_menu,
   exynos_image_count
 };
 
@@ -77,7 +77,7 @@ static const struct exynos_config_default {
 } defaults[exynos_image_count] = {
   {1024, 640, exynos_buffer_main, G2D_COLOR_FMT_RGB565   | G2D_ORDER_AXRGB, 2}, /* frame */
   {720,  368, exynos_buffer_aux,  G2D_COLOR_FMT_ARGB4444 | G2D_ORDER_AXRGB, 2}, /* font */
-  {400,  240, exynos_buffer_aux,  G2D_COLOR_FMT_ARGB4444 | G2D_ORDER_RGBAX, 2}  /* RGUI */
+  {400,  240, exynos_buffer_aux,  G2D_COLOR_FMT_ARGB4444 | G2D_ORDER_RGBAX, 2}  /* menu */
 };
 
 
@@ -968,9 +968,9 @@ static int exynos_blit_frame(struct exynos_data *pdata, const void *frame,
   return 0;
 }
 
-static int exynos_blend_rgui(struct exynos_data *pdata,
+static int exynos_blend_menu(struct exynos_data *pdata,
                              unsigned rotation) {
-  struct g2d_image *src = pdata->src[exynos_image_rgui];
+  struct g2d_image *src = pdata->src[exynos_image_menu];
 
 #if (EXYNOS_GFX_DEBUG_PERF == 1)
   perf_g2d(&pdata->perf, true);
@@ -981,7 +981,7 @@ static int exynos_blend_rgui(struct exynos_data *pdata,
                           pdata->blit_params[1], pdata->blit_params[2],
                           pdata->blit_params[3], G2D_OP_OVER) ||
       g2d_exec(pdata->g2d)) {
-    RARCH_ERR("video_exynos: failed to blend RGUI\n");
+    RARCH_ERR("video_exynos: failed to blend menu\n");
     return -1;
   }
 
@@ -1052,9 +1052,9 @@ struct exynos_video {
   unsigned width;
   unsigned height;
 
-  /* RGUI data */
-  unsigned rgui_rotation;
-  bool rgui_active;
+  /* menu data */
+  unsigned menu_rotation;
+  bool menu_active;
 
   bool aspect_changed;
 };
@@ -1271,8 +1271,8 @@ static bool exynos_gfx_frame(void *data, const void *frame, unsigned width,
   struct exynos_video *vid = data;
   struct exynos_page *page = NULL;
 
-  /* Check if neither RGUI nor emulator framebuffer is to be displayed. */
-  if (!vid->rgui_active && frame == NULL) return true;
+  /* Check if neither menu nor emulator framebuffer is to be displayed. */
+  if (!vid->menu_active && frame == NULL) return true;
 
   if (frame != NULL) {
     if (width != vid->width || height != vid->height) {
@@ -1302,15 +1302,15 @@ static bool exynos_gfx_frame(void *data, const void *frame, unsigned width,
 
   if (vid->width == 0 || vid->height == 0) {
     /* If at this point the dimension parameters are still zero, setup some  *
-     * fake blit parameters so that RGUI and font rendering work properly.   */
+     * fake blit parameters so that menu and font rendering work properly.   */
     exynos_set_fake_blit(vid->data);
   }
 
   if (page == NULL)
     page = exynos_free_page(vid->data);
 
-  if (vid->rgui_active) {
-    if (exynos_blend_rgui(vid->data, vid->rgui_rotation) != 0)
+  if (vid->menu_active) {
+    if (exynos_blend_menu(vid->data, vid->menu_rotation) != 0)
       goto fail;
   }
 
@@ -1354,7 +1354,7 @@ static bool exynos_gfx_focus(void *data) {
 static void exynos_gfx_set_rotation(void *data, unsigned rotation) {
   struct exynos_video *vid = data;
 
-  vid->rgui_rotation = rotation;
+  vid->menu_rotation = rotation;
 }
 
 static void exynos_gfx_viewport_info(void *data, struct rarch_viewport *vp) {
@@ -1396,11 +1396,11 @@ static void exynos_apply_state_changes(void *data) {
 
 static void exynos_set_texture_frame(void *data, const void *frame, bool rgb32,
                                      unsigned width, unsigned height, float alpha) {
-  const enum exynos_buffer_type buf_type = defaults[exynos_image_rgui].buf_type;
+  const enum exynos_buffer_type buf_type = defaults[exynos_image_menu].buf_type;
 
   struct exynos_video *vid = data;
   struct exynos_data *pdata = vid->data;
-  struct g2d_image *src = pdata->src[exynos_image_rgui];
+  struct g2d_image *src = pdata->src[exynos_image_menu];
 
   const unsigned size = width * height * (rgb32 ? 4 : 2);
 
@@ -1428,7 +1428,7 @@ static void exynos_set_texture_frame(void *data, const void *frame, bool rgb32,
 
 static void exynos_set_texture_enable(void *data, bool state, bool full_screen) {
   struct exynos_video *vid = data;
-  vid->rgui_active = state;
+  vid->menu_active = state;
 }
 
 static void exynos_set_osd_msg(void *data, const char *msg, void *userdata) {
@@ -1451,7 +1451,7 @@ static const video_poke_interface_t exynos_poke_interface = {
 #endif
   exynos_set_aspect_ratio,
   exynos_apply_state_changes,
-#if defined(HAVE_RGUI) || defined(HAVE_RMENU) /* TODO: only HAVE_MENU i think? */
+#ifdef HAVE_MENU
   exynos_set_texture_frame,
   exynos_set_texture_enable,
 #endif
