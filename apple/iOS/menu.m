@@ -875,10 +875,8 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
    
    [cores addObject:[RAMenuItemBasic itemWithDescription:BOXSTRING("New Config for Core")
                                                   action: ^{ [weakSelf createNewConfig]; }]];
-   
-   core_list = (const core_info_list_t*)core_info_list_get();
 
-   if !(core_list)
+   if (!(core_list = (const core_info_list_t*)core_info_list_get()))
       return;
 
    for (i = 0; i < core_list->count; i ++)
@@ -1003,16 +1001,11 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 
 - (UITableViewCell*)cellForTableView:(UITableView*)tableView
 {
+   UITableViewCell *result;
    static NSString* const cell_id = @"RAMenuItemCoreList";
 
-   UITableViewCell* result = [tableView dequeueReusableCellWithIdentifier:cell_id];
-   if (!result)
-   {
+   if (!(result = [tableView dequeueReusableCellWithIdentifier:cell_id]))
       result = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleValue1 reuseIdentifier:cell_id];
-//      UIButton* infoButton = [UIButton buttonWithType:UIButtonTypeInfoDark];
-//      [infoButton addTarget:self action:@selector(infoButtonTapped:) forControlEvents:UIControlEventTouchUpInside];
-//      result.accessoryView = infoButton;
-   }
 
    result.textLabel.text = apple_get_core_display_name(self.core);
    return result;
@@ -1060,7 +1053,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 
       [self.sections addObject:core_section];
 
-      if (core_list = (core_info_list_t*)core_info_list_get())
+      if ((core_list = (core_info_list_t*)core_info_list_get()))
       {
          if (_path)
          {
@@ -1094,6 +1087,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 - (void)load:(uint32_t)count coresFromList:(const core_info_t*)list toSection:(NSMutableArray*)array
 {
    int i;
+    
    for (i = 0; i < count; i++)
       [array addObject:[[RAMenuItemCoreList alloc] initWithCore:apple_get_core_id(&list[i]) parent:self]];
 }
@@ -1111,7 +1105,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
    if ((self = [super initWithStyle:UITableViewStylePlain]))
    {
       FILE *file;
-      NSMutableArray* data = [NSMutableArray arrayWithObject:@""];
+      NSMutableArray* data = [NSMutableArray arrayWithObject:BOXSTRING("")];
 
       fflush(stdout);
       fflush(stderr);
@@ -1154,7 +1148,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
       result = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleValue1 reuseIdentifier:cell_id];
       result.selectionStyle = UITableViewCellSelectionStyleNone;
 
-      result.textLabel.text = @"Slot";
+      result.textLabel.text = BOXSTRING("Slot");
       
       UISegmentedControl* accessory = [[UISegmentedControl alloc] initWithItems:@[@"0", @"1", @"2", @"3", @"4", @"5", @"6", @"7", @"8", @"9"]];
       [accessory addTarget:[self class] action:@selector(changed:) forControlEvents:UIControlEventValueChanged];
