@@ -35,17 +35,6 @@ enum setting_type
    ST_END_SUB_GROUP
 };
                     
-enum setting_features
-{
-   SD_FEATURE_ALWAYS         = 0,
-   SD_FEATURE_MULTI_DRIVER   = 1,
-   SD_FEATURE_VIDEO_MODE     = 2,
-   SD_FEATURE_WINDOW_MANAGER = 4,
-   SD_FEATURE_SHADERS        = 8,
-   SD_FEATURE_VSYNC          = 16,
-   SD_FEATURE_AUDIO_DEVICE   = 32
-};
-
 enum setting_flags
 {
    SD_FLAG_PATH_DIR    = 1,

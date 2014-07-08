@@ -398,21 +398,10 @@ rarch_setting_t setting_data_bind_setting(const char* name,
 }
 
 
-#ifdef IOS
-static const uint32_t features = SD_FEATURE_SHADERS;
-#elif defined(OSX)
-static const uint32_t features = SD_FEATURE_VIDEO_MODE | SD_FEATURE_SHADERS |
-SD_FEATURE_VSYNC | SD_FEATURE_AUDIO_DEVICE;
-#else
-static const uint32_t features = SD_FEATURE_VSYNC;
-#endif
-
 #define g_settings fake_settings
 #define g_extern fake_extern
 
-#define DEFAULT_ME_YO 0
 #define NEXT (list[index++])
-#define WITH_FEATURE(FTS)                       if (!FTS || features & FTS)
 #define START_GROUP(NAME)                       { NEXT = setting_data_group_setting (ST_GROUP, NAME);
 #define END_GROUP()                             NEXT = setting_data_group_setting (ST_END_GROUP, 0); }
 #define START_SUB_GROUP(NAME)                   { NEXT = setting_data_group_setting (ST_SUB_GROUP, NAME);
@@ -467,7 +456,7 @@ const rarch_setting_t* setting_data_get_list(void)
       /***********/
       /* DRIVERS */
       /***********/
-      WITH_FEATURE(SD_FEATURE_MULTI_DRIVER) START_GROUP("Drivers")
+      START_GROUP("Drivers")
          START_SUB_GROUP("Drivers")
          CONFIG_STRING(g_settings.video.driver,             "video_driver",               "Video Driver",               config_get_default_video())
 #ifdef HAVE_OPENGL
@@ -482,7 +471,7 @@ const rarch_setting_t* setting_data_get_list(void)
          CONFIG_STRING(g_settings.location.driver,          "location_driver",            "Location Driver",            config_get_default_location())
 #endif         
          CONFIG_STRING(g_settings.input.joypad_driver,      "input_joypad_driver",        "Joypad Driver",              "")
-         CONFIG_STRING(g_settings.input.keyboard_layout,    "input_keyboard_layout",      "Keyboard Layout",            DEFAULT_ME_YO)
+         CONFIG_STRING(g_settings.input.keyboard_layout,    "input_keyboard_layout",      "Keyboard Layout",            "")
 
          END_SUB_GROUP()
          END_GROUP()
@@ -493,24 +482,24 @@ const rarch_setting_t* setting_data_get_list(void)
          START_GROUP("Paths")
          START_SUB_GROUP("Paths")
 #ifdef HAVE_MENU
-         CONFIG_PATH(g_settings.menu_content_directory,     "rgui_browser_directory",     "Content Directory",          DEFAULT_ME_YO)                WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
-         CONFIG_PATH(g_settings.assets_directory,           "assets_directory",           "Assets Directory",           DEFAULT_ME_YO)                WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
-         CONFIG_PATH(g_settings.menu_config_directory,      "rgui_config_directory",      "Config Directory",           DEFAULT_ME_YO)                WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
+         CONFIG_PATH(g_settings.menu_content_directory,     "rgui_browser_directory",     "Content Directory",          "")                WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
+         CONFIG_PATH(g_settings.assets_directory,           "assets_directory",           "Assets Directory",           "")                WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
+         CONFIG_PATH(g_settings.menu_config_directory,      "rgui_config_directory",      "Config Directory",           "")                WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
          CONFIG_BOOL(g_settings.menu_show_start_screen,     "rgui_show_start_screen",     "Show Start Screen",          menu_show_start_screen)
 #endif
-         CONFIG_PATH(g_settings.libretro,                   "libretro_path",              "Libretro Path",              DEFAULT_ME_YO)                WITH_FLAGS(SD_FLAG_ALLOW_EMPTY)
+         CONFIG_PATH(g_settings.libretro,                   "libretro_path",              "Libretro Path",              "")                WITH_FLAGS(SD_FLAG_ALLOW_EMPTY)
          CONFIG_PATH(g_settings.libretro_info_path,         "libretro_info_path",         "Core Info Directory",        default_libretro_info_path)   WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
-         CONFIG_PATH(g_settings.core_options_path,          "core_options_path",          "Core Options Path",          DEFAULT_ME_YO)                WITH_FLAGS(SD_FLAG_ALLOW_EMPTY)
-         CONFIG_PATH(g_settings.cheat_database,             "cheat_database_path",        "Cheat Database",             DEFAULT_ME_YO)                WITH_FLAGS(SD_FLAG_ALLOW_EMPTY)
-         CONFIG_PATH(g_settings.cheat_settings_path,        "cheat_settings_path",        "Cheat Settings",             DEFAULT_ME_YO)                WITH_FLAGS(SD_FLAG_ALLOW_EMPTY)
-         CONFIG_PATH(g_settings.game_history_path,          "game_history_path",          "Content History Path",       DEFAULT_ME_YO)                WITH_FLAGS(SD_FLAG_ALLOW_EMPTY)
+         CONFIG_PATH(g_settings.core_options_path,          "core_options_path",          "Core Options Path",          "")                WITH_FLAGS(SD_FLAG_ALLOW_EMPTY)
+         CONFIG_PATH(g_settings.cheat_database,             "cheat_database_path",        "Cheat Database",             "")                WITH_FLAGS(SD_FLAG_ALLOW_EMPTY)
+         CONFIG_PATH(g_settings.cheat_settings_path,        "cheat_settings_path",        "Cheat Settings",             "")                WITH_FLAGS(SD_FLAG_ALLOW_EMPTY)
+         CONFIG_PATH(g_settings.game_history_path,          "game_history_path",          "Content History Path",       "")                WITH_FLAGS(SD_FLAG_ALLOW_EMPTY)
          CONFIG_UINT(g_settings.game_history_size,          "game_history_size",          "Content History Size",       game_history_size)
 
 
 #ifdef HAVE_OVERLAY
          CONFIG_PATH(g_extern.overlay_dir,                  "overlay_directory",          "Overlay Directory",          default_overlay_dir) WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
 #endif
-         CONFIG_PATH(g_settings.screenshot_directory,       "screenshot_directory",       "Screenshot Directory",       DEFAULT_ME_YO)                WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
+         CONFIG_PATH(g_settings.screenshot_directory,       "screenshot_directory",       "Screenshot Directory",       "")                WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
 
          // savefile_directory
          // savestate_directory
@@ -530,7 +519,7 @@ const rarch_setting_t* setting_data_get_list(void)
          CONFIG_UINT(g_settings.rewind_granularity,         "rewind_granularity",         "Rewind Granularity",         rewind_granularity)
          CONFIG_FLOAT(g_settings.slowmotion_ratio,          "slowmotion_ratio",           "Slow Motion Ratio",          slowmotion_ratio)       WITH_RANGE(0, 1)
          CONFIG_FLOAT(g_settings.fastforward_ratio,         "fastforward_ratio",          "Fast Forward Ratio",         fastforward_ratio)
-         CONFIG_BOOL(g_settings.fps_show,                   "fps_show",                   "Show Framerate",             DEFAULT_ME_YO)
+         CONFIG_BOOL(g_settings.fps_show,                   "fps_show",                   "Show Framerate",             "")
          END_SUB_GROUP()
 
          START_SUB_GROUP("Saves")
@@ -547,7 +536,7 @@ const rarch_setting_t* setting_data_get_list(void)
          /* VIDEO */
          /*********/
          START_GROUP("Video")
-         WITH_FEATURE(SD_FEATURE_VIDEO_MODE) START_SUB_GROUP("Monitor")
+         START_SUB_GROUP("Monitor")
          CONFIG_UINT(g_settings.video.monitor_index,        "video_monitor_index",        "Monitor Index",              monitor_index)
          CONFIG_BOOL(g_settings.video.fullscreen,           "video_fullscreen",           "Use Fullscreen mode",        fullscreen)
          CONFIG_BOOL(g_settings.video.windowed_fullscreen,  "video_windowed_fullscreen",  "Windowed Fullscreen Mode",   windowed_fullscreen)
@@ -557,7 +546,7 @@ const rarch_setting_t* setting_data_get_list(void)
          END_SUB_GROUP()
 
          /* Video: Window Manager */
-         WITH_FEATURE(SD_FEATURE_WINDOW_MANAGER) START_SUB_GROUP("Window Manager")
+         START_SUB_GROUP("Window Manager")
          CONFIG_BOOL(g_settings.video.disable_composition,  "video_disable_composition",  "Disable Window Composition",     disable_composition)
          END_SUB_GROUP()
 
@@ -579,16 +568,16 @@ const rarch_setting_t* setting_data_get_list(void)
          CONFIG_UINT(g_extern.console.screen.viewports.custom_vp.height,   "custom_viewport_height",  "Custom Viewport Height",  0)
 
          CONFIG_BOOL(g_settings.video.smooth,               "video_smooth",               "Use bilinear filtering",     video_smooth)
-         CONFIG_UINT(g_settings.video.rotation,             "video_rotation",             "Rotation",                   DEFAULT_ME_YO)
+         CONFIG_UINT(g_settings.video.rotation,             "video_rotation",             "Rotation",                   "")
          END_SUB_GROUP()
 
-         WITH_FEATURE(SD_FEATURE_SHADERS) START_SUB_GROUP("Shader")
+         START_SUB_GROUP("Shader")
          CONFIG_BOOL(g_settings.video.shader_enable,        "video_shader_enable",        "Enable Shaders",             shader_enable)
          CONFIG_PATH(g_settings.video.shader_dir,           "video_shader_dir",           "Shader Directory",           default_shader_dir)  WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
-         CONFIG_PATH(g_settings.video.shader_path,          "video_shader",               "Shader",                     DEFAULT_ME_YO)       WITH_FLAGS(SD_FLAG_ALLOW_EMPTY)
+         CONFIG_PATH(g_settings.video.shader_path,          "video_shader",               "Shader",                     "")       WITH_FLAGS(SD_FLAG_ALLOW_EMPTY)
          END_SUB_GROUP()
 
-         WITH_FEATURE(SD_FEATURE_VSYNC) START_SUB_GROUP("Sync")
+         START_SUB_GROUP("Sync")
          CONFIG_BOOL(g_settings.video.threaded,             "video_threaded",             "Threaded Video",         video_threaded)
          CONFIG_BOOL(g_settings.video.vsync,                "video_vsync",                "VSync",                      vsync)
          CONFIG_UINT(g_settings.video.swap_interval,        "video_swap_interval",        "VSync Swap Interval",        swap_interval)       WITH_RANGE(1, 4)
@@ -604,11 +593,11 @@ const rarch_setting_t* setting_data_get_list(void)
          CONFIG_BOOL(g_settings.video.allow_rotate,         "video_allow_rotate",         "Allow rotation",             allow_rotate)
          CONFIG_BOOL(g_settings.video.crop_overscan,        "video_crop_overscan",        "Crop Overscan (reload)",     crop_overscan)
 
-         CONFIG_PATH(g_settings.video.filter_path,          "video_filter",               "Software filter",            DEFAULT_ME_YO)       WITH_FLAGS(SD_FLAG_ALLOW_EMPTY)
+         CONFIG_PATH(g_settings.video.filter_path,          "video_filter",               "Software filter",            "")       WITH_FLAGS(SD_FLAG_ALLOW_EMPTY)
          END_SUB_GROUP()
 
          START_SUB_GROUP("Messages")
-         CONFIG_PATH(g_settings.video.font_path,            "video_font_path",            "Font Path",                  DEFAULT_ME_YO)       WITH_FLAGS(SD_FLAG_ALLOW_EMPTY)
+         CONFIG_PATH(g_settings.video.font_path,            "video_font_path",            "Font Path",                  "")       WITH_FLAGS(SD_FLAG_ALLOW_EMPTY)
          CONFIG_FLOAT(g_settings.video.font_size,           "video_font_size",            "OSD Font Size",              font_size)
          CONFIG_BOOL(g_settings.video.font_enable,          "video_font_enable",          "OSD Font Enable",            font_enable)
          CONFIG_FLOAT(g_settings.video.msg_pos_x,           "video_message_pos_x",        "Message X Position",         message_pos_offset_x)
@@ -623,7 +612,7 @@ const rarch_setting_t* setting_data_get_list(void)
          START_GROUP("Audio")
          START_SUB_GROUP("State")
          CONFIG_BOOL(g_settings.audio.enable,               "audio_enable",               "Audio Enable",                     audio_enable)
-         CONFIG_BOOL(g_extern.audio_data.mute,              "audio_mute",                 "Audio Mute",                 DEFAULT_ME_YO)
+         CONFIG_BOOL(g_extern.audio_data.mute,              "audio_mute",                 "Audio Mute",                 false)
          CONFIG_FLOAT(g_settings.audio.volume,              "audio_volume",               "Volume Level",               audio_volume)
          END_SUB_GROUP()
 
@@ -632,13 +621,13 @@ const rarch_setting_t* setting_data_get_list(void)
          CONFIG_UINT(g_settings.audio.latency,              "audio_latency",              "Latency",                    g_defaults.settings.out_latency ? g_defaults.settings.out_latency : out_latency)
          CONFIG_BOOL(g_settings.audio.rate_control,         "audio_rate_control",         "Enable Rate Control",        rate_control)
          CONFIG_FLOAT(g_settings.audio.rate_control_delta,  "audio_rate_control_delta",   "Rate Control Delta",         rate_control_delta)
-         CONFIG_UINT(g_settings.audio.block_frames,         "audio_block_frames",         "Block Frames",               DEFAULT_ME_YO)
+         CONFIG_UINT(g_settings.audio.block_frames,         "audio_block_frames",         "Block Frames",               0)
          END_SUB_GROUP()
 
-         WITH_FEATURE(SD_FEATURE_AUDIO_DEVICE) START_SUB_GROUP("Misc")
-         CONFIG_STRING(g_settings.audio.device,             "audio_device",               "Device",                     DEFAULT_ME_YO)
+         START_SUB_GROUP("Misc")
+         CONFIG_STRING(g_settings.audio.device,             "audio_device",               "Device",                     "")
          CONFIG_UINT(g_settings.audio.out_rate,             "audio_out_rate",             "Ouput Rate",                 out_rate)
-         CONFIG_PATH(g_settings.audio.dsp_plugin,           "audio_dsp_plugin",           "DSP Plugin",                 DEFAULT_ME_YO)          WITH_FLAGS(SD_FLAG_ALLOW_EMPTY)
+         CONFIG_PATH(g_settings.audio.dsp_plugin,           "audio_dsp_plugin",           "DSP Plugin",                 "")          WITH_FLAGS(SD_FLAG_ALLOW_EMPTY)
          END_SUB_GROUP()
          END_GROUP()
 
@@ -648,7 +637,7 @@ const rarch_setting_t* setting_data_get_list(void)
          START_GROUP("Input")
          START_SUB_GROUP("Input")
          CONFIG_BOOL(g_settings.input.autodetect_enable,    "input_autodetect_enable",    "Autodetect Enable",   input_autodetect_enable)
-         CONFIG_PATH(g_settings.input.autoconfig_dir,       "joypad_autoconfig_dir",      "Joypad Autoconfig Directory",DEFAULT_ME_YO)          WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
+         CONFIG_PATH(g_settings.input.autoconfig_dir,       "joypad_autoconfig_dir",      "Joypad Autoconfig Directory", "")          WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
          END_SUB_GROUP()
 
          START_SUB_GROUP("Joypad Mapping")
@@ -673,7 +662,7 @@ const rarch_setting_t* setting_data_get_list(void)
 #ifdef HAVE_OVERLAY
          START_SUB_GROUP("Overlay")
          CONFIG_BOOL(g_settings.input.overlay_enable,            "input_overlay_enable",            "Overlay Enable",        default_overlay_enable)
-         CONFIG_PATH(g_settings.input.overlay,              "input_overlay",              "Input Overlay",              DEFAULT_ME_YO) WITH_FLAGS(SD_FLAG_ALLOW_EMPTY) WITH_VALUES("cfg")
+         CONFIG_PATH(g_settings.input.overlay,              "input_overlay",              "Input Overlay",              "") WITH_FLAGS(SD_FLAG_ALLOW_EMPTY) WITH_VALUES("cfg")
          CONFIG_FLOAT(g_settings.input.overlay_opacity,     "input_overlay_opacity",      "Overlay Opacity",            0.7f) WITH_RANGE(0, 1)
          CONFIG_FLOAT(g_settings.input.overlay_scale,       "input_overlay_scale",        "Overlay Scale",              1.0f)
          END_SUB_GROUP()
