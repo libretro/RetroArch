@@ -777,7 +777,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
       settings = [NSMutableArray arrayWithObjects:BOXSTRING(""), nil];
       [self.sections addObject:settings];
 
-      for (setting = setting_data; setting->type < ST_NONE; setting++)
+      for (setting = &setting_data[0]; setting->type < ST_NONE; setting++)
          if (setting->type == ST_GROUP)
             [settings addObject:[RAMenuItemBasic itemWithDescription:BOXSTRING(setting->name) action:
             ^{

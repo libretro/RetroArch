@@ -18,6 +18,10 @@
 
 #include "general.h"
 
+#define SETTINGS_DATA_LIST_SIZE 512
+
+#define BINDFOR(s) (*(&s)->value.keybind)
+
 enum setting_type
 {
    ST_NONE = 0,
@@ -84,7 +88,6 @@ typedef struct rarch_setting_t
    } value;
 }  rarch_setting_t;
 
-#define BINDFOR(s) (*(&s)->value.keybind)
 
 
 void setting_data_reset_setting(const rarch_setting_t* setting);

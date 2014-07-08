@@ -428,12 +428,12 @@ WITH_FLAGS(SD_FLAG_HAS_RANGE)
 const rarch_setting_t* setting_data_get_list(void)
 {
    int i, player, index;
-   static rarch_setting_t list[512];
+   static rarch_setting_t list[SETTINGS_DATA_LIST_SIZE];
    static bool initialized = false;
 
    if (!initialized)
    {
-      for (i = 0; i < 512; i++)
+      for (i = 0; i < SETTINGS_DATA_LIST_SIZE; i++)
       {
          list[i].type = ST_NONE;
          list[i].name = NULL;
@@ -460,7 +460,7 @@ const rarch_setting_t* setting_data_get_list(void)
          START_SUB_GROUP("Drivers")
          CONFIG_STRING(g_settings.video.driver,             "video_driver",               "Video Driver",               config_get_default_video())
 #ifdef HAVE_OPENGL
-         CONFIG_STRING(g_settings.video.gl_context,         "video_gl_context",           "OpenGL Driver",              "")
+         CONFIG_STRING(g_settings.video.gl_context,         "video_gl_context",           "OpenGL Context Driver",      "")
 #endif
          CONFIG_STRING(g_settings.audio.driver,             "audio_driver",               "Audio Driver",               config_get_default_audio())
          CONFIG_STRING(g_settings.input.driver,             "input_driver",               "Input Driver",               config_get_default_input())
