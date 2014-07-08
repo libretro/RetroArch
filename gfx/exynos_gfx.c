@@ -1473,11 +1473,6 @@ const video_driver_t video_exynos = {
   NULL, /* set_shader */
   exynos_gfx_free,
   "exynos",
-
-#ifdef HAVE_MENU
-  NULL, /* restart */
-#endif
-
   exynos_gfx_set_rotation,
   exynos_gfx_viewport_info,
   NULL, /* read_viewport */
