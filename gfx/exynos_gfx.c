@@ -1069,7 +1069,9 @@ static int exynos_init_font(struct exynos_video *vid) {
 
   if (!g_settings.video.font_enable) return 0;
 
-  if (font_renderer_create_default(&vid->font_driver, &vid->font)) {
+  if (font_renderer_create_default(&vid->font_driver, &vid->font,
+      *g_settings.video.font_path ? g_settings.video.font_path : NULL,
+      g_settings.video.font_size)) {
     const int r = g_settings.video.msg_color_r * 255;
     const int g = g_settings.video.msg_color_g * 255;
     const int b = g_settings.video.msg_color_b * 255;
@@ -1106,12 +1108,10 @@ static int exynos_render_msg(struct exynos_video *vid,
   struct exynos_data *pdata = vid->data;
   struct g2d_image *dst = pdata->src[exynos_image_font];
 
-  struct font_output_list out;
-  struct font_output *head;
-  int ret;
+  const struct font_atlas *atlas;
 
-  const int msg_base_x = g_settings.video.msg_pos_x * dst->width;
-  const int msg_base_y = (1.0f - g_settings.video.msg_pos_y) * dst->height;
+  int msg_base_x = g_settings.video.msg_pos_x * dst->width;
+  int msg_base_y = (1.0f - g_settings.video.msg_pos_y) * dst->height;
 
   if (vid->font == NULL || vid->font_driver == NULL)
     return -1;
@@ -1119,19 +1119,23 @@ static int exynos_render_msg(struct exynos_video *vid,
   if (clear_buffer(pdata->g2d, dst) != 0)
     return -1;
 
-  vid->font_driver->render_msg(vid->font, msg, &out);
+  atlas = vid->font_driver->get_atlas(vid->font);
 
-  for (head = out.head; head; head = head->next) {
-    int base_x = msg_base_x + head->off_x;
-    int base_y = msg_base_y - head->off_y - head->height;
+  for (; msg; ++msg) {
+    const struct font_glyph *glyph = vid->font_driver->get_glyph(vid->font, (uint8_t)*msg);
+    if (glyph == NULL)
+      continue;
+
+    int base_x = msg_base_x + glyph->draw_offset_x;
+    int base_y = msg_base_y + glyph->draw_offset_y;
 
     const int max_width  = dst->width - base_x;
     const int max_height = dst->height - base_y;
 
-    int glyph_width  = head->width;
-    int glyph_height = head->height;
+    int glyph_width  = glyph->width;
+    int glyph_height = glyph->height;
 
-    const uint8_t *src = head->output;
+    const uint8_t *src = atlas->buffer + glyph->atlas_offset_x + glyph->atlas_offset_y * atlas->width;
 
     if (base_x < 0) {
        src -= base_x;
@@ -1140,7 +1144,7 @@ static int exynos_render_msg(struct exynos_video *vid,
     }
 
     if (base_y < 0) {
-       src -= base_y * (int)head->pitch;
+       src -= base_y * (int)atlas->width;
        glyph_height += base_y;
        base_y = 0;
     }
@@ -1152,14 +1156,13 @@ static int exynos_render_msg(struct exynos_video *vid,
 
     put_glyph_rgba4444(pdata, src, vid->font_rgb,
                        glyph_width, glyph_height,
-                       head->pitch, base_x, base_y);
+                       atlas->width, base_x, base_y);
+
+    msg_base_x += glyph->advance_x;
+    msg_base_y += glyph->advance_y;
   }
 
-  ret = exynos_blend_font(pdata);
-
-  vid->font_driver->free_output(vid->font, &out);
-
-  return ret;
+  return exynos_blend_font(pdata);
 }
 
 
@@ -1431,12 +1434,12 @@ static void exynos_set_texture_enable(void *data, bool state, bool full_screen) 
   vid->menu_active = state;
 }
 
-static void exynos_set_osd_msg(void *data, const char *msg, void *userdata) {
+static void exynos_set_osd_msg(void *data, const char *msg, const struct font_params *params) {
   struct exynos_video *vid = data;
 
   /* TODO: what does this do? */
   (void)msg;
-  (void)userdata;
+  (void)params;
 }
 
 static void exynos_show_mouse(void *data, bool state) {
