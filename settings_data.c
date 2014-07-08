@@ -508,6 +508,7 @@ const rarch_setting_t* setting_data_get_list(void)
 
 
 #ifdef HAVE_OVERLAY
+         CONFIG_BOOL(g_settings.input.overlay_enable,            "input_overlay_enable",            "Overlay Enable",        default_overlay_enable)
          CONFIG_PATH(g_extern.overlay_dir,                  "overlay_directory",          "Overlay Directory",          default_overlay_dir) WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
 #endif
          CONFIG_PATH(g_settings.screenshot_directory,       "screenshot_directory",       "Screenshot Directory",       DEFAULT_ME_YO)                WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)

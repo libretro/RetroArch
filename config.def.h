@@ -342,6 +342,8 @@ static const char *default_overlay_dir = NULL;
 #endif
 #endif
 
+static const bool default_overlay_enable = false;
+
 #if defined(__QNX__)
 static const char *default_shader_dir = "/app/native/shaders_glsl/";
 #elif defined(ANDROID)
