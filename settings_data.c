@@ -58,12 +58,14 @@ static const char* get_input_config_key(const rarch_setting_t* setting, const ch
 #ifdef APPLE
 static const char* get_key_name(const rarch_setting_t* setting)
 {
+   uint32_t hidkey, i;
+
    if (BINDFOR(*setting).key == RETROK_UNKNOWN)
       return "nul";
 
-   uint32_t hidkey = input_translate_rk_to_keysym(BINDFOR(*setting).key);
+   hidkey = input_translate_rk_to_keysym(BINDFOR(*setting).key);
 
-   for (int i = 0; apple_key_name_map[i].hid_id; i ++)
+   for (i = 0; apple_key_name_map[i].hid_id; i++)
       if (apple_key_name_map[i].hid_id == hidkey)
          return apple_key_name_map[i].keyname;
 
@@ -86,7 +88,6 @@ static const char* get_button_name(const rarch_setting_t* setting)
 static const char* get_axis_name(const rarch_setting_t* setting)
 {
    static char buffer[32];
-
    uint32_t joyaxis = BINDFOR(*setting).joyaxis;
 
    if (AXIS_NEG_GET(joyaxis) != AXIS_DIR_NONE)
@@ -138,64 +139,64 @@ void setting_data_reset_setting(const rarch_setting_t* setting)
 
 void setting_data_reset(const rarch_setting_t* settings)
 {
-   const rarch_setting_t *i;
+   const rarch_setting_t *setting;
    memset(&fake_settings, 0, sizeof(fake_settings));
    memset(&fake_extern, 0, sizeof(fake_extern));
 
-   for (i = settings; i->type != ST_NONE; i ++)
-      setting_data_reset_setting(i);
+   for (setting = settings; setting->type != ST_NONE; setting++)
+      setting_data_reset_setting(setting);
 }
 
 bool setting_data_load_config_path(const rarch_setting_t* settings, const char* path)
 {
-   config_file_t* config = (config_file_t*)config_file_new(path);
+   config_file_t *config;
 
-   if (config)
-   {
-      setting_data_load_config(settings, config);
-      config_file_free(config);
-   }
+   if (!(config = (config_file_t*)config_file_new(path)))
+      return NULL;
+
+   setting_data_load_config(settings, config);
+   config_file_free(config);
 
    return config;
 }
 
 bool setting_data_load_config(const rarch_setting_t* settings, config_file_t* config)
 {
-   const rarch_setting_t *i;
+   const rarch_setting_t *setting;
    if (!config)
       return false;
 
-   for (i = settings; i->type != ST_NONE; i ++)
+   for (setting = settings; setting->type != ST_NONE; setting++)
    {
-      switch (i->type)
+      switch (setting->type)
       {
          case ST_BOOL:
-            config_get_bool  (config, i->name, i->value.boolean);
+            config_get_bool  (config, setting->name, setting->value.boolean);
             break;
          case ST_PATH:
-            config_get_path  (config, i->name, i->value.string, i->size);
+            config_get_path  (config, setting->name, setting->value.string, setting->size);
             break;
          case ST_STRING:
-            config_get_array (config, i->name, i->value.string, i->size);
+            config_get_array (config, setting->name, setting->value.string, setting->size);
             break;
          case ST_INT:
-            config_get_int(config, i->name, i->value.integer);
-            ENFORCE_RANGE(i, integer);
+            config_get_int(config, setting->name, setting->value.integer);
+            ENFORCE_RANGE(setting, integer);
             break;
          case ST_UINT:
-            config_get_uint(config, i->name, i->value.unsigned_integer);
-            ENFORCE_RANGE(i, unsigned_integer);
+            config_get_uint(config, setting->name, setting->value.unsigned_integer);
+            ENFORCE_RANGE(setting, unsigned_integer);
             break;
          case ST_FLOAT:
-            config_get_float(config, i->name, i->value.fraction);
-            ENFORCE_RANGE(i, fraction);
+            config_get_float(config, setting->name, setting->value.fraction);
+            ENFORCE_RANGE(setting, fraction);
             break;         
          case ST_BIND:
             {
-               const char *prefix = (const char *)get_input_config_prefix(i);
-               input_config_parse_key       (config, prefix, i->name, i->value.keybind);
-               input_config_parse_joy_button(config, prefix, i->name, i->value.keybind);
-               input_config_parse_joy_axis  (config, prefix, i->name, i->value.keybind);
+               const char *prefix = (const char *)get_input_config_prefix(setting);
+               input_config_parse_key       (config, prefix, setting->name, setting->value.keybind);
+               input_config_parse_joy_button(config, prefix, setting->name, setting->value.keybind);
+               input_config_parse_joy_axis  (config, prefix, setting->name, setting->value.keybind);
             }
             break;
          case ST_HEX:
@@ -210,10 +211,10 @@ bool setting_data_load_config(const rarch_setting_t* settings, config_file_t* co
 
 bool setting_data_save_config_path(const rarch_setting_t* settings, const char* path)
 {
+   config_file_t* config;
    bool result = false;
-   config_file_t* config = (config_file_t*)config_file_new(path);
 
-   if (!config)
+   if (!(config = (config_file_t*)config_file_new(path)))
       config = config_file_new(0);
 
    setting_data_save_config(settings, config);
@@ -225,42 +226,43 @@ bool setting_data_save_config_path(const rarch_setting_t* settings, const char* 
 
 bool setting_data_save_config(const rarch_setting_t* settings, config_file_t* config)
 {
-   const rarch_setting_t *i;
+   const rarch_setting_t *setting;
+
    if (!config)
       return false;
 
-   for (i = settings; i->type != ST_NONE; i ++)
+   for (setting = settings; setting->type != ST_NONE; setting++)
    {
-      switch (i->type)
+      switch (setting->type)
       {
          case ST_BOOL:
-            config_set_bool(config, i->name, *i->value.boolean);
+            config_set_bool(config, setting->name, *setting->value.boolean);
             break;
          case ST_PATH:
-            config_set_path(config, i->name,  i->value.string);
+            config_set_path(config, setting->name,  setting->value.string);
             break;
          case ST_STRING:
-            config_set_string(config, i->name,  i->value.string);
+            config_set_string(config, setting->name,  setting->value.string);
             break;
          case ST_INT:
-            ENFORCE_RANGE(i, integer);         
-            config_set_int(config, i->name, *i->value.integer);
+            ENFORCE_RANGE(setting, integer);
+            config_set_int(config, setting->name, *setting->value.integer);
             break;
          case ST_UINT:
-            ENFORCE_RANGE(i, unsigned_integer);         
-            config_set_uint64(config, i->name, *i->value.unsigned_integer);
+            ENFORCE_RANGE(setting, unsigned_integer);         
+            config_set_uint64(config, setting->name, *setting->value.unsigned_integer);
             break;
          case ST_FLOAT:
-            ENFORCE_RANGE(i, fraction);         
-            config_set_float(config, i->name, *i->value.fraction);
+            ENFORCE_RANGE(setting, fraction);         
+            config_set_float(config, setting->name, *setting->value.fraction);
             break;
          case ST_BIND:
             //FIXME: make portable
 #ifdef APPLE
-            config_set_string(config, get_input_config_key(i, 0     ), get_key_name(i));
+            config_set_string(config, get_input_config_key(setting, 0     ), get_key_name(setting));
 #endif
-            config_set_string(config, get_input_config_key(i, "btn" ), get_button_name(i));
-            config_set_string(config, get_input_config_key(i, "axis"), get_axis_name(i));
+            config_set_string(config, get_input_config_key(setting, "btn" ), get_button_name(setting));
+            config_set_string(config, get_input_config_key(setting, "axis"), get_axis_name(setting));
             break;
          case ST_HEX:
             break;
@@ -274,15 +276,16 @@ bool setting_data_save_config(const rarch_setting_t* settings, config_file_t* co
 
 const rarch_setting_t* setting_data_find_setting(const rarch_setting_t* settings, const char* name)
 {
-   const rarch_setting_t *i;
+   const rarch_setting_t *setting;
+
    if (!name)
-      return 0;
+      return NULL;
 
-   for (i = settings; i->type != ST_NONE; i ++)
-      if (i->type <= ST_GROUP && strcmp(i->name, name) == 0)
-         return i;
+   for (setting = settings; setting->type != ST_NONE; setting++)
+      if (setting->type <= ST_GROUP && strcmp(setting->name, name) == 0)
+         return setting;
 
-   return 0;
+   return NULL;
 }
 
 void setting_data_set_with_string_representation(const rarch_setting_t* setting, const char* value)
@@ -381,6 +384,7 @@ rarch_setting_t setting_data_string_setting(enum setting_type type,
       unsigned size, const char* default_value)
 {
    rarch_setting_t result = { type, name, size, description };
+
    result.value.string = target;
    result.default_value.string = default_value;
    return result;
@@ -391,6 +395,7 @@ rarch_setting_t setting_data_bind_setting(const char* name,
       uint32_t index, const struct retro_keybind* default_value)
 {
    rarch_setting_t result = { ST_BIND, name, 0, description };
+
    result.value.keybind = target;
    result.default_value.keybind = default_value;
    result.index = index;
