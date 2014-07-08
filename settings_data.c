@@ -629,7 +629,7 @@ const rarch_setting_t* setting_data_get_list(void)
 
          START_SUB_GROUP("Sync")
          CONFIG_BOOL(g_settings.audio.sync,                 "audio_sync",                 "Enable Sync",                audio_sync)
-         CONFIG_UINT(g_settings.audio.latency,              "audio_latency",              "Latency",                    g_defaults.settings.out_latency)
+         CONFIG_UINT(g_settings.audio.latency,              "audio_latency",              "Latency",                    g_defaults.settings.out_latency ? g_defaults.settings.out_latency : out_latency)
          CONFIG_BOOL(g_settings.audio.rate_control,         "audio_rate_control",         "Enable Rate Control",        rate_control)
          CONFIG_FLOAT(g_settings.audio.rate_control_delta,  "audio_rate_control_delta",   "Rate Control Delta",         rate_control_delta)
          CONFIG_UINT(g_settings.audio.block_frames,         "audio_block_frames",         "Block Frames",               DEFAULT_ME_YO)
