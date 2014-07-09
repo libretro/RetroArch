@@ -20,7 +20,6 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "../../common/rarch_wrapper.h"
 #include "btdynamic.h"
 #include "btpad.h"
 #include "btpad_queue.h"

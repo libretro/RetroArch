@@ -18,7 +18,6 @@
 #include <objc/runtime.h>
 
 #import "../common/RetroArch_Apple.h"
-#include "../common/rarch_wrapper.h"
 #include "../../input/apple_input.h"
 
 #include "../../file.h"

@@ -18,8 +18,6 @@
 #include <dlfcn.h>
 #include <CoreFoundation/CFRunLoop.h>
 
-#include "../../common/rarch_wrapper.h"
-
 #define BUILDING_BTDYNAMIC
 #include "btdynamic.h"
 
