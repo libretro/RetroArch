@@ -575,7 +575,7 @@ const rarch_setting_t* setting_data_get_list(void)
          CONFIG_UINT(g_extern.console.screen.viewports.custom_vp.height,   "custom_viewport_height",  "Custom Viewport Height",  0, GROUP_NAME, SUBGROUP_NAME)
 
          CONFIG_BOOL(g_settings.video.smooth,               "video_smooth",               "Use bilinear filtering",     video_smooth, GROUP_NAME, SUBGROUP_NAME)
-         CONFIG_UINT(g_settings.video.rotation,             "video_rotation",             "Rotation",                   "", GROUP_NAME, SUBGROUP_NAME)
+         CONFIG_UINT(g_settings.video.rotation,             "video_rotation",             "Rotation",                   0, GROUP_NAME, SUBGROUP_NAME)
          END_SUB_GROUP()
 
          START_SUB_GROUP("Shader")
