@@ -17,17 +17,6 @@
 #import "RetroArch_Apple.h"
 #include "../../general.h"
 
-#ifdef HAVE_LOCATION
-#include <CoreLocation/CoreLocation.h>
-
-static CLLocationManager *locationManager;
-static bool locationChanged;
-static CLLocationDegrees currentLatitude;
-static CLLocationDegrees currentLongitude;
-static CLLocationAccuracy currentHorizontalAccuracy;
-static CLLocationAccuracy currentVerticalAccuracy;
-#endif
-
 // Define compatibility symbols and categories
 #ifdef IOS
 
@@ -83,17 +72,7 @@ static CLLocationAccuracy currentVerticalAccuracy;
 static GLKView *g_view;
 static UIView *g_pause_indicator_view;
 
-#ifdef HAVE_CAMERA
-static AVCaptureSession *_session;
-static NSString *_sessionPreset;
-CVOpenGLESTextureCacheRef textureCache;
-GLuint outputTexture;
-static bool newFrame = false;
-#endif
-
 #elif defined(OSX)
-
-#include "../../input/apple_input.h"
 
 static bool g_has_went_fullscreen;
 static NSOpenGLPixelFormat* g_format;
@@ -237,6 +216,13 @@ static bool g_is_syncing = true;
 }
 
 #ifdef HAVE_CAMERA
+
+static AVCaptureSession *_session;
+static NSString *_sessionPreset;
+CVOpenGLESTextureCacheRef textureCache;
+GLuint outputTexture;
+static bool newFrame = false;
+
 void event_process_camera_frame(void* pixelBufferPtr)
 {
     CVPixelBufferRef pixelBuffer = (CVPixelBufferRef)pixelBufferPtr;
@@ -369,6 +355,15 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
 #endif
 
 #ifdef HAVE_LOCATION
+#include <CoreLocation/CoreLocation.h>
+
+static CLLocationManager *locationManager;
+static bool locationChanged;
+static CLLocationDegrees currentLatitude;
+static CLLocationDegrees currentLongitude;
+static CLLocationAccuracy currentHorizontalAccuracy;
+static CLLocationAccuracy currentVerticalAccuracy;
+
 - (bool)onLocationHasChanged
 {
    bool hasChanged = locationChanged;
@@ -392,6 +387,7 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
 - (void)locationManager:(CLLocationManager *)manager didUpdateLocations:(NSArray *)locations
 {
     CLLocation *location;
+    
     locationChanged = true;
     location = (CLLocation*)[locations objectAtIndex:([locations count] - 1)];
     currentLatitude  = [location coordinate].latitude;
