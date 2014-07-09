@@ -169,15 +169,12 @@ static bool g_is_syncing = true;
 
 - (void)viewWillLayoutSubviews
 {
-   float tenpctw, tenpcth, width, height;
    UIInterfaceOrientation orientation = self.interfaceOrientation;
    CGRect screenSize = [[UIScreen mainScreen] bounds];
-   
-   width = ((int)orientation < 3) ? CGRectGetWidth(screenSize) : CGRectGetHeight(screenSize);
-   height = ((int)orientation < 3) ? CGRectGetHeight(screenSize) : CGRectGetWidth(screenSize);
-
-   tenpctw = width / 10.0f;
-   tenpcth = height / 10.0f;
+   float width = ((int)orientation < 3) ? CGRectGetWidth(screenSize) : CGRectGetHeight(screenSize);
+   float height = ((int)orientation < 3) ? CGRectGetHeight(screenSize) : CGRectGetWidth(screenSize);
+   float tenpctw = width / 10.0f;
+   float tenpcth = height / 10.0f;
    
    g_pause_indicator_view.frame = CGRectMake(tenpctw * 4.0f, 0.0f, tenpctw * 2.0f, tenpcth);
    [g_pause_indicator_view viewWithTag:1].frame = CGRectMake(0, 0, tenpctw * 2.0f, tenpcth);
@@ -225,16 +222,13 @@ static bool newFrame = false;
 
 void event_process_camera_frame(void* pixelBufferPtr)
 {
+    CVOpenGLESTextureRef renderTexture;
     CVPixelBufferRef pixelBuffer = (CVPixelBufferRef)pixelBufferPtr;
-    
-    size_t width, height;
     CVReturn ret;
-    
-    width  = CVPixelBufferGetWidth(pixelBuffer);
-    height = CVPixelBufferGetHeight(pixelBuffer);
+    size_t width  = CVPixelBufferGetWidth(pixelBuffer);
+    size_t height = CVPixelBufferGetHeight(pixelBuffer);
     
     CVPixelBufferLockBaseAddress(pixelBuffer, 0);
-    CVOpenGLESTextureRef renderTexture;
     
     //TODO - rewrite all this
     // create a texture from our render target.
@@ -279,22 +273,20 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
 
 - (void) onCameraInit
 {
-    CVReturn ret;
-    int width, height;
     NSError *error;
     AVCaptureVideoDataOutput * dataOutput;
     AVCaptureDeviceInput *input;
     AVCaptureDevice *videoDevice;
     
     //FIXME - dehardcode this
-    width = 640;
-    height = 480;
+    int width = 640;
+    int height = 480;
     
 #if COREVIDEO_USE_EAGLCONTEXT_CLASS_IN_API
-    ret = CVOpenGLESTextureCacheCreate(kCFAllocatorDefault, NULL, g_context, NULL, &textureCache);
+    CVReturn ret = CVOpenGLESTextureCacheCreate(kCFAllocatorDefault, NULL, g_context, NULL, &textureCache);
     
 #else
-    ret = CVOpenGLESTextureCacheCreate(kCFAllocatorDefault, NULL, (__bridge void *)g_context, NULL, &textureCache);
+    CVReturn ret = CVOpenGLESTextureCacheCreate(kCFAllocatorDefault, NULL, (__bridge void *)g_context, NULL, &textureCache);
 #endif
     
     //-- Setup Capture Session.
@@ -386,10 +378,9 @@ static CLLocationAccuracy currentVerticalAccuracy;
 
 - (void)locationManager:(CLLocationManager *)manager didUpdateLocations:(NSArray *)locations
 {
-    CLLocation *location;
+    CLLocation *location = (CLLocation*)[locations objectAtIndex:([locations count] - 1)];
     
     locationChanged = true;
-    location = (CLLocation*)[locations objectAtIndex:([locations count] - 1)];
     currentLatitude  = [location coordinate].latitude;
     currentLongitude = [location coordinate].longitude;
     currentHorizontalAccuracy = location.horizontalAccuracy;
