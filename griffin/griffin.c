@@ -114,8 +114,6 @@ VIDEO CONTEXT
 #include "../gfx/context/androidegl_ctx.c"
 #elif defined(__QNX__)
 #include "../gfx/context/bbqnx_ctx.c"
-#elif defined(IOS) || defined(OSX)
-#include "../gfx/context/apple_gl_ctx.c"
 #elif defined(EMSCRIPTEN)
 #include "../gfx/context/emscriptenegl_ctx.c"
 #endif
