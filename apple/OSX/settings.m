@@ -47,7 +47,6 @@ static void* const associated_name_tag = (void*)&associated_name_tag;
 - (void)runForSetting:(const rarch_setting_t*)setting onWindow:(NSWindow*)window
 {
    self.setting = setting;
- 
    self.timer = [NSTimer timerWithTimeInterval:.1f target:self selector:@selector(checkBind:) userInfo:nil repeats:YES];
    [[NSRunLoop currentRunLoop] addTimer:self.timer forMode:NSModalPanelRunLoopMode];
    
@@ -65,8 +64,9 @@ static void* const associated_name_tag = (void*)&associated_name_tag;
 
 - (void)checkBind:(NSTimer*)send
 {
-   int32_t value = 0;
-   int32_t index = _setting->index ? _setting->index - 1 : 0;
+   int32_t value, index;
+   value = 0;
+   index = _setting->index ? _setting->index - 1 : 0;
    
    if ((value = apple_input_find_any_key()))
       BINDFOR(*_setting).key = input_translate_keysym_to_rk(value);
@@ -138,15 +138,17 @@ NSWindowDelegate>
 
 - (void)awakeFromNib
 {
+   int i;
+   const rarch_setting_t *setting_data;
    NSMutableArray* thisGroup = nil;
    NSMutableArray* thisSubGroup = nil;
    self.settings = [NSMutableArray array];
 
    setting_data_load_current();
 
-   const rarch_setting_t *setting_data = (const rarch_setting_t *)setting_data_get_list();
+   setting_data = (const rarch_setting_t *)setting_data_get_list();
 
-   for (int i = 0; setting_data[i].type; i ++)
+   for (i = 0; setting_data[i].type; i ++)
    {
       switch (setting_data[i].type)
       {
@@ -266,27 +268,30 @@ NSWindowDelegate>
    }
    else
    {
-      const rarch_setting_t* setting_data = (const rarch_setting_t*)setting_data_get_list();
-      const rarch_setting_t* setting = (const rarch_setting_t*)&setting_data[[item intValue]];
-      char buffer[PATH_MAX];
-      
-      if ([[tableColumn identifier] isEqualToString:BOXSTRING("left")])
-         return BOXSTRING(setting->short_description);
-      else
-      {
-         switch (setting->type)
-         {
-            case ST_BOOL:
-                 return BOXINT(*setting->value.boolean);
-            default:
-                 return BOXSTRING(setting_data_get_string_representation(setting, buffer, sizeof(buffer)));
-         }
-      }
+       char buffer[PATH_MAX];
+       const rarch_setting_t* setting_data, *setting;
+       setting_data = (const rarch_setting_t*)setting_data_get_list();
+       setting = (const rarch_setting_t*)&setting_data[[item intValue]];
+       
+       if ([[tableColumn identifier] isEqualToString:BOXSTRING("left")])
+           return BOXSTRING(setting->short_description);
+       else
+       {
+           switch (setting->type)
+           {
+               case ST_BOOL:
+                   return BOXINT(*setting->value.boolean);
+               default:
+                   return BOXSTRING(setting_data_get_string_representation(setting, buffer, sizeof(buffer)));
+           }
+       }
    }
 }
 
 - (NSCell*)outlineView:(NSOutlineView *)outlineView dataCellForTableColumn:(NSTableColumn *)tableColumn item:(id)item
 {
+   const rarch_setting_t *setting_data, *setting;
+    
    if (!tableColumn)
       return nil;
    
@@ -296,8 +301,8 @@ NSWindowDelegate>
    if ([[tableColumn identifier] isEqualToString:BOXSTRING("left")])
       return [tableColumn dataCell];
 
-   const rarch_setting_t *setting_data = (const rarch_setting_t *)setting_data_get_list();
-   const rarch_setting_t *setting      = (const rarch_setting_t *)&setting_data[[item intValue]];
+   setting_data = (const rarch_setting_t *)setting_data_get_list();
+   setting      = (const rarch_setting_t *)&setting_data[[item intValue]];
 
    switch (setting->type)
    {
@@ -318,11 +323,13 @@ NSWindowDelegate>
       
       if ([item isKindOfClass:[NSNumber class]])
       {
-         const rarch_setting_t* setting_data = (const rarch_setting_t*)setting_data_get_list();
-         const rarch_setting_t* setting      = (const rarch_setting_t*)&setting_data[[item intValue]];
-   
-         switch (setting->type)
-         {
+          const rarch_setting_t *setting_data, *setting;
+          
+          setting_data = (const rarch_setting_t*)setting_data_get_list();
+          setting      = (const rarch_setting_t*)&setting_data[[item intValue]];
+          
+          switch (setting->type)
+          {
             case ST_BOOL:
                  *setting->value.boolean = !*setting->value.boolean;
                  break;
@@ -331,7 +338,7 @@ NSWindowDelegate>
                  break;
              default:
                  break;
-         }
+          }
       }
    }
 }
@@ -341,16 +348,18 @@ NSWindowDelegate>
    if ([notification object] == self.outline)
    {
       NSText* editor = [[notification userInfo] objectForKey:BOXSTRING("NSFieldEditor")];
-      
       id item = [self.outline itemAtRow:[self.outline selectedRow]];
 
       if ([item isKindOfClass:[NSNumber class]])
       {
-         const rarch_setting_t* setting_data = (const rarch_setting_t *)setting_data_get_list();
-         const rarch_setting_t* setting = (const rarch_setting_t*)&setting_data[[item intValue]];
-         NSString *editor_string = (NSString*)editor.string;
-         
-         setting_data_set_with_string_representation(setting, editor_string.UTF8String);
+          NSString *editor_string;
+          const rarch_setting_t *setting_data, *setting;
+          
+          setting_data = (const rarch_setting_t *)setting_data_get_list();
+          setting = (const rarch_setting_t*)&setting_data[[item intValue]];
+          editor_string = (NSString*)editor.string;
+          
+          setting_data_set_with_string_representation(setting, editor_string.UTF8String);
       }
    }
 }
