@@ -17,7 +17,6 @@
 #include <string.h>
 
 #import "RetroArch_Apple.h"
-#include "rarch_wrapper.h"
 #include "../../frontend/frontend.h"
 #include "../../file.h"
 

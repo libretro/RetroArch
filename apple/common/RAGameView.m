@@ -15,8 +15,6 @@
  */
 
 #import "RetroArch_Apple.h"
-#include "../common/rarch_wrapper.h"
-
 #include "../../general.h"
 
 #ifdef HAVE_LOCATION

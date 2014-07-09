@@ -18,7 +18,6 @@
 #include <stdlib.h>
 
 #include "../../../boolean.h"
-#include "../rarch_wrapper.h"
 
 #include "wiimote.h"
 
