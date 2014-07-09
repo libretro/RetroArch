@@ -72,19 +72,10 @@
 static GLKView *g_view;
 static UIView *g_pause_indicator_view;
 
-#elif defined(OSX)
-
-static bool g_has_went_fullscreen;
-static NSOpenGLPixelFormat* g_format;
-
 #endif
 
-static bool g_initialized;
 static RAGameView* g_instance;
 static GLContextClass* g_context;
-
-static int g_fast_forward_skips;
-static bool g_is_syncing = true;
 
 
 @implementation RAGameView

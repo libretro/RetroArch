@@ -1,6 +1,15 @@
 #include "../../gfx/gfx_common.h"
 #include "../../gfx/gfx_context.h"
 
+static bool g_initialized;
+static int g_fast_forward_skips;
+static bool g_is_syncing = true;
+
+#ifdef OSX
+static bool g_has_went_fullscreen;
+static NSOpenGLPixelFormat* g_format;
+#endif
+
 static RAScreen* get_chosen_screen(void)
 {
 #if defined(OSX) && !defined(MAC_OS_X_VERSION_10_6)
