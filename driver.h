@@ -474,6 +474,7 @@ typedef struct driver
    bool stdin_claimed;
    bool block_hotkey;
    bool block_input;
+   bool block_libretro_input;
    bool nonblock_state;
 
    // Opaque handles to currently running window.

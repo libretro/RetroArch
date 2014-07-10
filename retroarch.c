@@ -647,7 +647,7 @@ static int16_t input_state(unsigned port, unsigned device, unsigned index, unsig
    };
 
    int16_t res = 0;
-   if (id < RARCH_FIRST_META_KEY || device == RETRO_DEVICE_KEYBOARD)
+   if (!driver.block_libretro_input && (id < RARCH_FIRST_META_KEY || device == RETRO_DEVICE_KEYBOARD))
       res = input_input_state_func(binds, port, device, index, id);
 
 #ifdef HAVE_OVERLAY
@@ -2356,9 +2356,14 @@ static void check_turbo(void)
       g_settings.input.binds[7],
    };
 
-   for (i = 0; i < MAX_PLAYERS; i++)
-      g_extern.turbo_frame_enable[i] =
-         input_input_state_func(binds, i, RETRO_DEVICE_JOYPAD, 0, RARCH_TURBO_ENABLE);
+   if (driver.block_libretro_input)
+      memset(g_extern.turbo_frame_enable, 0, sizeof(g_extern.turbo_frame_enable));
+   else
+   {
+      for (i = 0; i < MAX_PLAYERS; i++)
+         g_extern.turbo_frame_enable[i] =
+            input_input_state_func(binds, i, RETRO_DEVICE_JOYPAD, 0, RARCH_TURBO_ENABLE);
+   }
 }
 
 static void check_shader_dir(void)
@@ -2679,15 +2684,18 @@ static void check_netplay_flip(void)
 
 void rarch_check_block_hotkey(void)
 {
+   // Don't block the check to RARCH_ENABLE_HOTKEY unless we're really supposed to.
    driver.block_hotkey = driver.block_input;
 
-   // If we haven't bound anything to this,
-   // always allow hotkeys.
+   // If we haven't bound anything to this, always allow hotkeys.
    static const struct retro_keybind *bind = &g_settings.input.binds[0][RARCH_ENABLE_HOTKEY];
-   if (!driver.block_hotkey && bind->key == RETROK_UNKNOWN && bind->joykey == NO_BTN && bind->joyaxis == AXIS_NONE)
-      return;
+   bool use_hotkey_enable = bind->key != RETROK_UNKNOWN || bind->joykey != NO_BTN || bind->joyaxis != AXIS_NONE;
+   bool enable_hotkey = input_key_pressed_func(RARCH_ENABLE_HOTKEY);
 
-   driver.block_hotkey = driver.block_input || !input_key_pressed_func(RARCH_ENABLE_HOTKEY);
+   driver.block_hotkey = driver.block_input || (use_hotkey_enable && !enable_hotkey);
+
+   // If we hold ENABLE_HOTKEY button, block all libretro input to allow hotkeys to be bound to same keys as RetroPad.
+   driver.block_libretro_input = use_hotkey_enable && enable_hotkey;
 }
 
 #ifdef HAVE_OVERLAY

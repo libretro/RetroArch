@@ -103,7 +103,7 @@ static PyObject *py_read_input(PyObject *self, PyObject *args)
    if (player > MAX_PLAYERS || player < 1 || key >= RARCH_FIRST_META_KEY)
       return NULL;
 
-   int16_t res = input_input_state_func(py_binds, player - 1, RETRO_DEVICE_JOYPAD, 0, key);
+   int16_t res = driver.block_libretro_input ? 0 : input_input_state_func(py_binds, player - 1, RETRO_DEVICE_JOYPAD, 0, key);
    return PyBool_FromLong(res);
 }
 

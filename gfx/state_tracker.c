@@ -251,10 +251,13 @@ static void update_input(state_tracker_t *tracker)
       input_push_analog_dpad(g_settings.input.autoconf_binds[i], g_settings.input.analog_dpad_mode[i]);
 
    uint16_t state[2] = {0};
-   for (i = 4; i < 16; i++)
+   if (!driver.block_libretro_input)
    {
-      state[0] |= (input_input_state_func(binds, 0, RETRO_DEVICE_JOYPAD, 0, buttons[i - 4]) ? 1 : 0) << i;
-      state[1] |= (input_input_state_func(binds, 1, RETRO_DEVICE_JOYPAD, 0, buttons[i - 4]) ? 1 : 0) << i;
+      for (i = 4; i < 16; i++)
+      {
+         state[0] |= (input_input_state_func(binds, 0, RETRO_DEVICE_JOYPAD, 0, buttons[i - 4]) ? 1 : 0) << i;
+         state[1] |= (input_input_state_func(binds, 1, RETRO_DEVICE_JOYPAD, 0, buttons[i - 4]) ? 1 : 0) << i;
+      }
    }
 
    for (i = 0; i < 2; i++)

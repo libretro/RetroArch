@@ -898,7 +898,7 @@ static bool get_self_input_state(netplay_t *handle)
    struct delta_frame *ptr = &handle->buffer[handle->self_ptr];
 
    uint32_t state = 0;
-   if (handle->frame_count > 0) // First frame we always give zero input since relying on input from first frame screws up when we use -F 0.
+   if (!driver.block_libretro_input && handle->frame_count > 0) // First frame we always give zero input since relying on input from first frame screws up when we use -F 0.
    {
       retro_input_state_t cb = handle->cbs.state_cb;
       for (i = 0; i < RARCH_FIRST_META_KEY; i++)
