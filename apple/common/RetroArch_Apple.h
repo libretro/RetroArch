@@ -44,7 +44,6 @@
 #endif
 
 extern char** apple_argv;
-extern bool apple_is_paused;
 extern bool apple_use_tv_mode;
 extern NSString* apple_core;
 
