@@ -821,6 +821,10 @@ fail_alloc:
 static void exynos_free(struct exynos_data *pdata) {
   unsigned i;
 
+  /* Disable the CRTC. */
+  drmModeSetCrtc(pdata->fd, pdata->drm->crtc_id, 0,
+                 0, 0, &pdata->drm->connector_id, 1, NULL);
+
   clean_up_pages(pdata->pages, pdata->num_pages);
 
   free(pdata->pages);
