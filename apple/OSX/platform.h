@@ -43,7 +43,6 @@
    NSString* _file;
    NSString* _core;
    
-   bool _isTerminating;
    bool _loaded;
    bool _wantReload;
 }

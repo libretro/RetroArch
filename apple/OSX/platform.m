@@ -200,7 +200,6 @@ static char** waiting_argv;
 - (NSApplicationTerminateReply)applicationShouldTerminate:(NSApplication *)sender
 {
     NSApplicationTerminateReply reply = NSTerminateNow;
-   _isTerminating = true;
 
    if (g_extern.main_is_init)
        reply = NSTerminateCancel;
@@ -277,7 +276,7 @@ static char** waiting_argv;
    [[NSApplication sharedApplication] endSheet:self.coreSelectSheet returnCode:0];
    [self.coreSelectSheet orderOut:self];
 
-   if (_isTerminating)
+   if (g_extern.system.shutdown)
       return;
 
    cb = (NSComboBox*)[[self.coreSelectSheet contentView] viewWithTag:1];
@@ -298,7 +297,7 @@ static char** waiting_argv;
 
 - (void)unloadingCore:(const NSString*)core
 {
-   if (_isTerminating)
+   if (g_extern.system.shutdown)
       [[NSApplication sharedApplication] terminate:nil];
 
    if (_wantReload)
