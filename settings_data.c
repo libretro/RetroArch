@@ -518,20 +518,18 @@ const rarch_setting_t* setting_data_get_list(void)
          /*************/
          /* EMULATION */
          /*************/
-         START_GROUP("Emulation")
-         START_SUB_GROUP("Emulation")
-         CONFIG_BOOL(g_settings.pause_nonactive,            "pause_nonactive",            "Pause when inactive",        pause_nonactive, GROUP_NAME, SUBGROUP_NAME)
+         START_GROUP("Options")
+         START_SUB_GROUP("General Options")
+         CONFIG_BOOL(g_settings.fps_show,                   "fps_show",                   "Show Framerate",             "", GROUP_NAME, SUBGROUP_NAME)
          CONFIG_BOOL(g_settings.rewind_enable,              "rewind_enable",              "Rewind",                     rewind_enable, GROUP_NAME, SUBGROUP_NAME)
          //CONFIG_INT(g_settings.rewind_buffer_size,          "rewind_buffer_size",         "Rewind Buffer Size",       rewind_buffer_size)     WITH_SCALE(1000000)
          CONFIG_UINT(g_settings.rewind_granularity,         "rewind_granularity",         "Rewind Granularity",         rewind_granularity, GROUP_NAME, SUBGROUP_NAME)
-         CONFIG_FLOAT(g_settings.slowmotion_ratio,          "slowmotion_ratio",           "Slow Motion Ratio",          slowmotion_ratio, GROUP_NAME, SUBGROUP_NAME)       WITH_RANGE(0, 1)
-         CONFIG_FLOAT(g_settings.fastforward_ratio,         "fastforward_ratio",          "Fast Forward Ratio",         fastforward_ratio, GROUP_NAME, SUBGROUP_NAME)
-         CONFIG_BOOL(g_settings.fps_show,                   "fps_show",                   "Show Framerate",             "", GROUP_NAME, SUBGROUP_NAME)
-         END_SUB_GROUP()
-
-         START_SUB_GROUP("Saves")
-         CONFIG_UINT(g_settings.autosave_interval,          "autosave_interval",          "Autosave Interval",          autosave_interval, GROUP_NAME, SUBGROUP_NAME)
-         CONFIG_BOOL(g_settings.block_sram_overwrite,       "block_sram_overwrite",       "Block SRAM overwrite",       block_sram_overwrite, GROUP_NAME, SUBGROUP_NAME)
+         CONFIG_BOOL(g_settings.block_sram_overwrite,       "block_sram_overwrite",       "SRAM Block overwrite",       block_sram_overwrite, GROUP_NAME, SUBGROUP_NAME)
+         CONFIG_UINT(g_settings.autosave_interval,          "autosave_interval",          "SRAM Autosave",          autosave_interval, GROUP_NAME, SUBGROUP_NAME)
+         CONFIG_BOOL(g_settings.video.disable_composition,  "video_disable_composition",  "Window Compositing",         disable_composition, GROUP_NAME, SUBGROUP_NAME)
+         CONFIG_BOOL(g_settings.pause_nonactive,            "pause_nonactive",            "Window Unfocus Pause",       pause_nonactive, GROUP_NAME, SUBGROUP_NAME)
+         CONFIG_FLOAT(g_settings.fastforward_ratio,         "fastforward_ratio",          "Maximum Run Speed",         fastforward_ratio, GROUP_NAME, SUBGROUP_NAME)
+         CONFIG_FLOAT(g_settings.slowmotion_ratio,          "slowmotion_ratio",           "Slow-Motion Ratio",          slowmotion_ratio, GROUP_NAME, SUBGROUP_NAME)       WITH_RANGE(0, 1)
          CONFIG_BOOL(g_settings.savestate_auto_index,       "savestate_auto_index",       "Save State Auto Index",      savestate_auto_index, GROUP_NAME, SUBGROUP_NAME)
          CONFIG_BOOL(g_settings.savestate_auto_save,        "savestate_auto_save",        "Auto Save State",            savestate_auto_save, GROUP_NAME, SUBGROUP_NAME)
          CONFIG_BOOL(g_settings.savestate_auto_load,        "savestate_auto_load",        "Auto Load State",            savestate_auto_load, GROUP_NAME, SUBGROUP_NAME)
@@ -554,7 +552,6 @@ const rarch_setting_t* setting_data_get_list(void)
 
          /* Video: Window Manager */
          START_SUB_GROUP("Window Manager")
-         CONFIG_BOOL(g_settings.video.disable_composition,  "video_disable_composition",  "Disable Window Composition",     disable_composition, GROUP_NAME, SUBGROUP_NAME)
          END_SUB_GROUP()
 
          START_SUB_GROUP("Aspect")
