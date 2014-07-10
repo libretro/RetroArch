@@ -526,7 +526,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
                                   action:^{ [weakSelf.navigationController pushViewController:[RAFrontendSettingsMenu new] animated:YES]; }],
                                nil];
    
-   if (!apple_is_running)
+   if (!g_extern.main_is_init)
    {
       [self.sections addObject:[NSArray arrayWithObjects:BOXSTRING("Content"),
                                  [RAMenuItemBasic itemWithDescription:BOXSTRING("Choose Core")
@@ -557,7 +557,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
    
    [self.sections addObject:settings];
    
-   if (apple_is_running)
+   if (g_extern.main_is_init)
       self.navigationItem.leftBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:BOXSTRING("Resume") style:UIBarButtonItemStyleBordered target:[RetroArch_iOS get] action:@selector(showGameView)];
    else
       self.navigationItem.leftBarButtonItem = nil;

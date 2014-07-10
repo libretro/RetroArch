@@ -180,10 +180,7 @@ static char** waiting_argv;
       apple_display_alert("No libretro cores were found.\nSelect \"Go->Cores Directory\" from the menu and place libretro dylib files there.", "RetroArch");
    
    if (waiting_argc)
-   {
-      apple_is_running = true;
-      apple_rarch_load_content(&waiting_argc, waiting_argv);
-   }
+       apple_rarch_load_content(&waiting_argc, waiting_argv);
    else if (!_wantReload)
       apple_run_core(nil, 0);
    else
@@ -202,12 +199,15 @@ static char** waiting_argv;
 
 - (NSApplicationTerminateReply)applicationShouldTerminate:(NSApplication *)sender
 {
+    NSApplicationTerminateReply reply = NSTerminateNow;
    _isTerminating = true;
 
-   if (apple_is_running)
-      g_extern.system.shutdown = true;
+   if (g_extern.main_is_init)
+       reply = NSTerminateCancel;
+       
+   g_extern.system.shutdown = true;
 
-   return apple_is_running ? NSTerminateCancel : NSTerminateNow;
+   return reply;
 }
 
 
@@ -255,9 +255,9 @@ static char** waiting_argv;
 // This utility function will queue the self.core and self.file instance values for running.
 - (void)runCore
 {
-   _wantReload = apple_is_running;
+   _wantReload = g_extern.main_is_init;
 
-   if (!apple_is_running)
+   if (!g_extern.main_is_init)
       apple_run_core(self.core, self.file.UTF8String);
    else
       g_extern.system.shutdown = true;
@@ -324,7 +324,7 @@ static char** waiting_argv;
 
 - (IBAction)basicEvent:(id)sender
 {
-   if (!apple_is_running)
+   if (!g_extern.main_is_init)
       return;
 
    apple_event_basic_command([sender tag]);

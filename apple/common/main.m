@@ -23,7 +23,6 @@
 id<RetroArch_Platform> apple_platform;
 
 #pragma mark EMULATION
-bool apple_is_running;
 bool apple_use_tv_mode;
 NSString* apple_core;
 
@@ -31,12 +30,7 @@ void apple_rarch_exited(void)
 {
    NSString *used_core = (NSString*)apple_core;
    apple_core = 0;
-   
-   if (apple_is_running)
-   {
-      apple_is_running = false;
-      [apple_platform unloadingCore:used_core];
-   }
+   [apple_platform unloadingCore:used_core];
    
 #ifdef OSX
    [used_core release];
@@ -53,14 +47,10 @@ void apple_run_core(NSString* core, const char* file)
    int argc;
     
    (void)config_path;
-
-   if (apple_is_running)
-       return;
     
     [apple_platform loadingCore:core withFile:file];
     
     apple_core = core;
-    apple_is_running = true;
 
    if (file && core)
    {
