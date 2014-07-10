@@ -27,13 +27,11 @@
 
 static CFRunLoopObserverRef iterate_observer;
 
-extern bool apple_is_running;
-
 extern void apple_rarch_exited(void);
 
 static void do_iteration(void)
 {
-   if (!(iterate_observer && apple_is_running && !g_extern.is_paused))
+   if (!(iterate_observer && g_extern.main_is_init && !g_extern.is_paused))
       return;
 
    if (main_entry_iterate(0, NULL, NULL))
@@ -91,7 +89,7 @@ void apple_refresh_config(void)
    memset(g_settings.input.overlay, 0, sizeof(g_settings.input.overlay));
    memset(g_settings.video.shader_path, 0, sizeof(g_settings.video.shader_path));
 
-   if (!apple_is_running)
+   if (!g_extern.main_is_init)
       return;
 
    uninit_drivers();
