@@ -501,13 +501,13 @@ const rarch_setting_t* setting_data_get_list(void)
          CONFIG_PATH(g_settings.cheat_settings_path,        "cheat_settings_path",        "Cheat Settings",             "", GROUP_NAME, SUBGROUP_NAME)                WITH_FLAGS(SD_FLAG_ALLOW_EMPTY)
          CONFIG_PATH(g_settings.game_history_path,          "game_history_path",          "Content History Path",       "", GROUP_NAME, SUBGROUP_NAME)                WITH_FLAGS(SD_FLAG_ALLOW_EMPTY)
          CONFIG_UINT(g_settings.game_history_size,          "game_history_size",          "Content History Size",       game_history_size, GROUP_NAME, SUBGROUP_NAME)
-
+         CONFIG_PATH(g_settings.video.shader_dir,           "video_shader_dir",           "Shader Directory",           default_shader_dir, GROUP_NAME, SUBGROUP_NAME)  WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
 
 #ifdef HAVE_OVERLAY
          CONFIG_PATH(g_extern.overlay_dir,                  "overlay_directory",          "Overlay Directory",          default_overlay_dir, GROUP_NAME, SUBGROUP_NAME) WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
 #endif
          CONFIG_PATH(g_settings.screenshot_directory,       "screenshot_directory",       "Screenshot Directory",       "", GROUP_NAME, SUBGROUP_NAME)                WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
-
+         CONFIG_PATH(g_settings.input.autoconfig_dir,       "joypad_autoconfig_dir",      "Joypad Autoconfig Directory", "", GROUP_NAME, SUBGROUP_NAME)          WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
          // savefile_directory
          // savestate_directory
          // system_directory
@@ -520,6 +520,7 @@ const rarch_setting_t* setting_data_get_list(void)
          /*************/
          START_GROUP("Options")
          START_SUB_GROUP("General Options")
+         CONFIG_BOOL(g_extern.config_save_on_exit,          "config_save_on_exit",        "Configuration Save On Exit", config_save_on_exit, GROUP_NAME, SUBGROUP_NAME)
          CONFIG_BOOL(g_settings.fps_show,                   "fps_show",                   "Show Framerate",             "", GROUP_NAME, SUBGROUP_NAME)
          CONFIG_BOOL(g_settings.rewind_enable,              "rewind_enable",              "Rewind",                     rewind_enable, GROUP_NAME, SUBGROUP_NAME)
          //CONFIG_INT(g_settings.rewind_buffer_size,          "rewind_buffer_size",         "Rewind Buffer Size",       rewind_buffer_size)     WITH_SCALE(1000000)
@@ -550,10 +551,6 @@ const rarch_setting_t* setting_data_get_list(void)
          CONFIG_FLOAT(g_settings.video.refresh_rate,        "video_refresh_rate",         "Refresh Rate",               refresh_rate, GROUP_NAME, SUBGROUP_NAME)
          END_SUB_GROUP()
 
-         /* Video: Window Manager */
-         START_SUB_GROUP("Window Manager")
-         END_SUB_GROUP()
-
          START_SUB_GROUP("Aspect")
          CONFIG_BOOL(g_settings.video.force_aspect,         "video_force_aspect",         "Force aspect ratio",         force_aspect, GROUP_NAME, SUBGROUP_NAME)
          CONFIG_FLOAT(g_settings.video.aspect_ratio,        "video_aspect_ratio",         "Aspect Ratio",               aspect_ratio, GROUP_NAME, SUBGROUP_NAME)
@@ -577,7 +574,6 @@ const rarch_setting_t* setting_data_get_list(void)
 
          START_SUB_GROUP("Shader")
          CONFIG_BOOL(g_settings.video.shader_enable,        "video_shader_enable",        "Enable Shaders",             shader_enable, GROUP_NAME, SUBGROUP_NAME)
-         CONFIG_PATH(g_settings.video.shader_dir,           "video_shader_dir",           "Shader Directory",           default_shader_dir, GROUP_NAME, SUBGROUP_NAME)  WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
          CONFIG_PATH(g_settings.video.shader_path,          "video_shader",               "Shader",                     "", GROUP_NAME, SUBGROUP_NAME)       WITH_FLAGS(SD_FLAG_ALLOW_EMPTY)
          END_SUB_GROUP()
 
@@ -641,7 +637,6 @@ const rarch_setting_t* setting_data_get_list(void)
          START_GROUP("Input")
          START_SUB_GROUP("Input")
          CONFIG_BOOL(g_settings.input.autodetect_enable,    "input_autodetect_enable",    "Autodetect Enable",   input_autodetect_enable, GROUP_NAME, SUBGROUP_NAME)
-         CONFIG_PATH(g_settings.input.autoconfig_dir,       "joypad_autoconfig_dir",      "Joypad Autoconfig Directory", "", GROUP_NAME, SUBGROUP_NAME)          WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
          END_SUB_GROUP()
 
          START_SUB_GROUP("Joypad Mapping")
@@ -706,7 +701,6 @@ const rarch_setting_t* setting_data_get_list(void)
          /********/
          START_GROUP("Misc")
          START_SUB_GROUP("Misc")
-         CONFIG_BOOL(g_extern.config_save_on_exit,          "config_save_on_exit",        "Configuration Save On Exit", config_save_on_exit, GROUP_NAME, SUBGROUP_NAME)
          CONFIG_BOOL(g_settings.network_cmd_enable,         "network_cmd_enable",         "Network Commands",           network_cmd_enable, GROUP_NAME, SUBGROUP_NAME)
          //CONFIG_INT(g_settings.network_cmd_port,            "network_cmd_port",           "Network Command Port",       network_cmd_port, GROUP_NAME, SUBGROUP_NAME)
          CONFIG_BOOL(g_settings.stdin_cmd_enable,           "stdin_cmd_enable",           "stdin command",              stdin_cmd_enable, GROUP_NAME, SUBGROUP_NAME)
