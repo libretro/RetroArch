@@ -37,8 +37,6 @@ Depends: 	${shlibs:Depends},
 		python3
 Replaces: ssnes
 Description: Simple frontend for the libretro library.
- RetroArch attempts to be very small and lean, while still having all of the
- useful core features expected form an emulator. It is a command-line-only
- interface, though RetroArch-Phoenix provides a minimal GUI.
- .
- RetroArch supports both Cg shaders and bsnes-style XML shaders.
+ RetroArch is a modular multi-system emulator that attempts to be very small
+ and lean, while still having all of the useful core features expected from
+ an emulator. It provides a simple built-in GUI, the RGUI.

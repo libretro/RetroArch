@@ -1,13 +1,12 @@
 This package was debianized by Hunter Kaller (hizzlekizzle) <hunter_kaller@yahoo.com> on
 Tue, 14 Apr 2010 11:03:43 -0500.
 
-It was downloaded from http://themaister./
+It was downloaded from <https://github.com/libretro/RetroArch>
 
-Upstream Author:
+Upstream Authors:
 
-	Themaister
-	Squarepusher
-
+    Hans-Kristian Arntzen (Themaister) <maister@archlinux.us>
+    Daniel De Matteis (Squarepusher, aka twinaphex) libretro@gmail.com
 
 Copyright:
 
@@ -15,7 +14,7 @@ Copyright:
 
 License:
 
-     licensed under the terms of the GNU General Public License version 2
+    Licensed under the terms of the GNU General Public License version 3
 
 The Debian packaging is:
 
