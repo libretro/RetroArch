@@ -1,0 +1,7 @@
+retroarch (1.0.0.2-0ubuntu10) UNRELEASED; urgency=low
+
+  * Update icon (finally) and use SVG instead of PNG.
+  * Updated to latest git. Includes recent shader changes.
+  * Includes KMS resolution updates.
+
+ -- Hunter Kaller (hizzlekizzle) <hunter_kaller@yahoo.com>  Thu, 03 Jul 2014 13:24:59 -0500
