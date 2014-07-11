@@ -24,8 +24,6 @@ configure: configure-stamp
 configure-stamp:
 	dh_testdir
 	# Add here commands to configure the package.
-	# apply patch with quilt
-	#quilt push
 	# See ./configure --help for valid flags
 	# disable flags (i.e. --disable-ffmpeg for example) if there is no package relative to the feature in Build-Depends
 	./configure --prefix=/usr --enable-rgui --enable-kms --enable-cg --disable-ffmpeg --enable-freetype --enable-python --enable-udev --enable-libxml2 --enable-zlib
@@ -49,9 +47,6 @@ build-stamp: configure-stamp
 
 clean: 
 	dh_testdir
-	# remove specific patches for debian:
-	#quilt pop
-	
 	dh_testroot
 	rm -f build-stamp configure-stamp
 
@@ -70,7 +65,6 @@ install: build
 	# Add here commands to install the package into debian/retroarch.
 	$(MAKE) DESTDIR=$(CURDIR)/debian/retroarch PREFIX=/usr install
 	cp $(CURDIR)/debian/retroarch.desktop $(CURDIR)/debian/retroarch/usr/share/applications
-	#cp $(CURDIR)/media/retroarch.svg $(CURDIR)/debian/retroarch/usr/share/pixmaps/
 
 # Build architecture-independent files here.
 binary-indep: install
