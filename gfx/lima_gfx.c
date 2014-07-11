@@ -493,9 +493,6 @@ static void lima_init_font(lima_video_t *vid, const char *font_path, unsigned fo
 }
 
 static void lima_render_msg(lima_video_t *vid, const char *msg) {
-  struct font_output_list out;
-  struct font_output *head;
-
   unsigned req_size;
   limare_data_t *lima = vid->lima;
 
@@ -907,12 +904,12 @@ static void lima_set_texture_enable(void *data, bool state, bool full_screen) {
   vid->menu_active = state;
 }
 
-static void lima_set_osd_msg(void *data, const char *msg, void *userdata) {
-  lima_video_t *vid = data;
+static void lima_set_osd_msg(void *data, const char *msg, const struct font_params *params) {
+  (void)data;
 
   /* TODO: what does this do? */
   (void)msg;
-  (void)userdata;
+  (void)params;
 }
 
 static void lima_show_mouse(void *data, bool state) {
