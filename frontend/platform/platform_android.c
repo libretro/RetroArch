@@ -483,7 +483,7 @@ static void frontend_android_get_environment_settings(int *argc, char *argv[],
 
       const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
 
-      if (*argv && *argv)
+      if (argv && *argv)
          strlcpy(config_path, argv, sizeof(config_path));
       (*env)->ReleaseStringUTFChars(env, jstr, argv);
 
@@ -522,7 +522,7 @@ static void frontend_android_get_environment_settings(int *argc, char *argv[],
       *core_path = '\0';
 
       const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
-      if (*argv && *argv)
+      if (argv && *argv)
          strlcpy(core_path, argv, sizeof(core_path));
       (*env)->ReleaseStringUTFChars(env, jstr, argv);
 
@@ -541,7 +541,7 @@ static void frontend_android_get_environment_settings(int *argc, char *argv[],
 
       const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
 
-      if (*argv && *argv)
+      if (argv && *argv)
          strlcpy(path, argv, sizeof(path));
       (*env)->ReleaseStringUTFChars(env, jstr, argv);
 
@@ -563,7 +563,7 @@ static void frontend_android_get_environment_settings(int *argc, char *argv[],
 
       const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
 
-      if (*argv && *argv)
+      if (argv && *argv)
          strlcpy(path, argv, sizeof(path));
       (*env)->ReleaseStringUTFChars(env, jstr, argv);
 
