@@ -247,7 +247,6 @@ static struct rxml_node *rxml_parse_node(const char **ptr_)
 
       if (!closing_tag)
       {
-         free(closing_tag);
          goto error;
       }
 
