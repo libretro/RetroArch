@@ -513,8 +513,5 @@ clean:
 	rm -f $(TARGET)
 	rm -f tools/retrolaunch/retrolaunch
 	rm -f tools/retroarch-joyconfig
-	rm -f config.h
-	rm -f config.log
-	rm -f config.mk
 
 .PHONY: all install uninstall clean
