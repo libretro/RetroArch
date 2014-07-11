@@ -535,8 +535,8 @@ static void lima_render_msg(lima_video_t *vid, const char *msg) {
     const int max_width  = lima->font_width - base_x;
     const int max_height = lima->font_height - base_y;
 
-    int glyph_width  = head->width;
-    int glyph_height = head->height;
+    int glyph_width  = glyph->width;
+    int glyph_height = glyph->height;
 
     const uint8_t *src = atlas->buffer + glyph->atlas_offset_x + glyph->atlas_offset_y * atlas->width;
 
