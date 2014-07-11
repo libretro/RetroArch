@@ -1,7 +1,7 @@
 #include "../../gfx/gfx_common.h"
 #include "../../gfx/gfx_context.h"
+#include "../../gfx/gl_common.h"
 
-static bool g_initialized;
 static int g_fast_forward_skips;
 static bool g_is_syncing = true;
 
@@ -30,14 +30,12 @@ static bool apple_gfx_ctx_init(void *data)
    (void)data;
    // Make sure the view was created
    [RAGameView get];
-   g_initialized = true;
    return true;
 }
 
 static void apple_gfx_ctx_destroy(void *data)
 {
    (void)data;
-   g_initialized = false;
 
    [GLContextClass clearCurrentContext];
 
@@ -132,10 +130,9 @@ static void apple_gfx_ctx_get_video_size(void *data, unsigned* width, unsigned* 
 {
    RAScreen *screen = (RAScreen*)get_chosen_screen();
    CGRect size = screen.bounds;
-
-   (void)data;
+   gl_t *gl = (gl_t*)data;
 	
-   if (g_initialized)
+   if (gl)
    {
 #if defined(OSX)
       CGRect cgrect = (CGRect)NSRectToCGRect([g_view frame]);
