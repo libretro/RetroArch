@@ -111,8 +111,14 @@ void rom_history_push(rom_history_t *hist,
 static void rom_history_write_file(rom_history_t *hist)
 {
    size_t i;
-   FILE *file = fopen(hist->conf_path, "w");
-   if (!file || !hist)
+   FILE *file = NULL;
+
+   if (!hist)
+      return;
+
+   file = fopen(hist->conf_path, "w");
+
+   if (!file)
       return;
 
    for (i = 0; i < hist->size; i++)
