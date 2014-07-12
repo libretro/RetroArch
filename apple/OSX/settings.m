@@ -339,6 +339,9 @@ NSWindowDelegate>
              default:
                  break;
           }
+          
+          if (setting->change_handler)
+              setting->change_handler(setting);
       }
    }
 }

@@ -48,6 +48,8 @@ enum setting_flags
    SD_FLAG_HAS_RANGE   = 16
 };
 
+typedef void (*change_handler_t)(const void *data);
+
 typedef struct rarch_setting_t
 {
    enum setting_type type;
@@ -67,7 +69,7 @@ typedef struct rarch_setting_t
    const char* values;
    uint64_t flags;
    
-   void (*change_handler)(const struct rarch_setting_t* setting);
+   change_handler_t change_handler;
    
    union
    {
