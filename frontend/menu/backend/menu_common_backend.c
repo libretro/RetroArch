@@ -135,6 +135,7 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
          file_list_push(menu->selection_buf, "Libretro Logging Level", MENU_SETTINGS_LIBRETRO_LOG_LEVEL, 0);
          file_list_push(menu->selection_buf, "Logging Verbosity", MENU_SETTINGS_LOGGING_VERBOSITY, 0);
          file_list_push(menu->selection_buf, "Performance Counters", MENU_SETTINGS_PERFORMANCE_COUNTERS_ENABLE, 0);
+         file_list_push(menu->selection_buf, "Content History Size", MENU_CONTENT_HISTORY_SIZE, 0);
          file_list_push(menu->selection_buf, "Configuration Save On Exit", MENU_SETTINGS_CONFIG_SAVE_ON_EXIT, 0);
          file_list_push(menu->selection_buf, "Configuration Per-Core", MENU_SETTINGS_PER_CORE_CONFIG, 0);
 #ifdef HAVE_SCREENSHOTS
@@ -3763,35 +3764,46 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
          if (action == MENU_ACTION_OK)
             menu_save_new_config();
          break;
-#ifdef HAVE_OVERLAY
-      case MENU_SETTINGS_OVERLAY_ENABLE:
-      {
-         bool changed = false;
-         if (action == MENU_ACTION_OK || action == MENU_ACTION_LEFT || action == MENU_ACTION_RIGHT)
+      case MENU_CONTENT_HISTORY_SIZE:
+         if (action == MENU_ACTION_RIGHT)
+            g_settings.game_history_size++;
+         else if (action == MENU_ACTION_LEFT)
          {
-            g_settings.input.overlay_enable = !g_settings.input.overlay_enable;
-            changed = true;
+            if (g_settings.game_history_size > 0)
+               g_settings.game_history_size--;
          }
          else if (action == MENU_ACTION_START)
+            g_settings.game_history_size = game_history_size;
+         break;
+#ifdef HAVE_OVERLAY
+      case MENU_SETTINGS_OVERLAY_ENABLE:
          {
-            g_settings.input.overlay_enable = g_defaults.settings.input_overlay_enable;
-            changed = true;
-         }
-
-         if (changed)
-         {
-            if (driver.overlay)
-               input_overlay_free(driver.overlay);
-            driver.overlay = NULL;
-            if (g_settings.input.overlay_enable && *g_settings.input.overlay)
+            bool changed = false;
+            if (action == MENU_ACTION_OK || action == MENU_ACTION_LEFT || action == MENU_ACTION_RIGHT)
             {
-               driver.overlay = input_overlay_new(g_settings.input.overlay);
-               if (!driver.overlay)
-                  RARCH_ERR("Failed to load overlay.\n");
+               g_settings.input.overlay_enable = !g_settings.input.overlay_enable;
+               changed = true;
+            }
+            else if (action == MENU_ACTION_START)
+            {
+               g_settings.input.overlay_enable = g_defaults.settings.input_overlay_enable;
+               changed = true;
+            }
+
+            if (changed)
+            {
+               if (driver.overlay)
+                  input_overlay_free(driver.overlay);
+               driver.overlay = NULL;
+               if (g_settings.input.overlay_enable && *g_settings.input.overlay)
+               {
+                  driver.overlay = input_overlay_new(g_settings.input.overlay);
+                  if (!driver.overlay)
+                     RARCH_ERR("Failed to load overlay.\n");
+               }
             }
          }
-         break;
-      }
+      break;
       case MENU_SETTINGS_OVERLAY_PRESET:
          switch (action)
          {
@@ -5244,6 +5256,9 @@ static void menu_common_setting_set_label(char *type_str, size_t type_str_size, 
             break;
          case MENU_BROWSER_DIR_PATH:
             strlcpy(type_str, *g_settings.menu_content_directory ? g_settings.menu_content_directory : "<default>", type_str_size);
+            break;
+         case MENU_CONTENT_HISTORY_SIZE:
+            snprintf(type_str, type_str_size, "%d", g_settings.game_history_size);
             break;
          case MENU_CONTENT_DIR_PATH:
             strlcpy(type_str, *g_settings.content_directory ? g_settings.content_directory : "<default>", type_str_size);
