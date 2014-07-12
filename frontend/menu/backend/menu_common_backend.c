@@ -295,6 +295,7 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
          break;
       case MENU_SETTINGS_OPTIONS:
          file_list_clear(menu->selection_buf);
+         file_list_push(menu->selection_buf, "Driver Options", MENU_SETTINGS_DRIVERS, 0);
          file_list_push(menu->selection_buf, "General Options", MENU_SETTINGS_GENERAL_OPTIONS, 0);
          file_list_push(menu->selection_buf, "Video Options", MENU_SETTINGS_VIDEO_OPTIONS, 0);
 #ifdef HAVE_SHADER_MANAGER
@@ -482,7 +483,6 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
          file_list_push(menu->selection_buf, "Core Options", MENU_SETTINGS_CORE_OPTIONS, 0);
          file_list_push(menu->selection_buf, "Core Information", MENU_SETTINGS_CORE_INFO, 0);
          file_list_push(menu->selection_buf, "Settings", MENU_SETTINGS_OPTIONS, 0);
-         file_list_push(menu->selection_buf, "Drivers", MENU_SETTINGS_DRIVERS, 0);
 
          if (g_extern.perfcnt_enable)
             file_list_push(menu->selection_buf, "Performance Counters", MENU_SETTINGS_PERFORMANCE_COUNTERS, 0);
