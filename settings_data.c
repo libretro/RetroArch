@@ -463,8 +463,8 @@ const rarch_setting_t* setting_data_get_list(void)
       /***********/
       /* DRIVERS */
       /***********/
-         START_GROUP("Drivers")
-         START_SUB_GROUP("Drivers")
+         START_GROUP("Driver Options")
+         START_SUB_GROUP("Driver Options")
          CONFIG_STRING(g_settings.video.driver,             "video_driver",               "Video Driver",               config_get_default_video(), GROUP_NAME, SUBGROUP_NAME)
 #ifdef HAVE_OPENGL
          CONFIG_STRING(g_settings.video.gl_context,         "video_gl_context",           "OpenGL Context Driver",      "", GROUP_NAME, SUBGROUP_NAME)
@@ -483,36 +483,6 @@ const rarch_setting_t* setting_data_get_list(void)
          END_SUB_GROUP()
          END_GROUP()
 
-         /*********/
-         /* PATHS */
-         /*********/
-         START_GROUP("Path Options")
-         START_SUB_GROUP("Paths")
-#ifdef HAVE_MENU
-         CONFIG_PATH(g_settings.menu_content_directory,     "rgui_browser_directory",     "Content Directory",          "", GROUP_NAME, SUBGROUP_NAME)                WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
-         CONFIG_PATH(g_settings.assets_directory,           "assets_directory",           "Assets Directory",           "", GROUP_NAME, SUBGROUP_NAME)                WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
-         CONFIG_PATH(g_settings.menu_config_directory,      "rgui_config_directory",      "Config Directory",           "", GROUP_NAME, SUBGROUP_NAME)                WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
-         CONFIG_BOOL(g_settings.menu_show_start_screen,     "rgui_show_start_screen",     "Show Start Screen",          menu_show_start_screen, GROUP_NAME, SUBGROUP_NAME)
-#endif
-         CONFIG_PATH(g_settings.libretro,                   "libretro_path",              "Libretro Path",              "", GROUP_NAME, SUBGROUP_NAME)                WITH_FLAGS(SD_FLAG_ALLOW_EMPTY)
-         CONFIG_PATH(g_settings.libretro_info_path,         "libretro_info_path",         "Core Info Directory",        default_libretro_info_path, GROUP_NAME, SUBGROUP_NAME)   WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
-         CONFIG_PATH(g_settings.core_options_path,          "core_options_path",          "Core Options Path",          "", "Paths", SUBGROUP_NAME)                WITH_FLAGS(SD_FLAG_ALLOW_EMPTY)
-         CONFIG_PATH(g_settings.cheat_database,             "cheat_database_path",        "Cheat Database",             "", "Paths", SUBGROUP_NAME)                WITH_FLAGS(SD_FLAG_ALLOW_EMPTY)
-         CONFIG_PATH(g_settings.cheat_settings_path,        "cheat_settings_path",        "Cheat Settings",             "", GROUP_NAME, SUBGROUP_NAME)                WITH_FLAGS(SD_FLAG_ALLOW_EMPTY)
-         CONFIG_PATH(g_settings.game_history_path,          "game_history_path",          "Content History Path",       "", GROUP_NAME, SUBGROUP_NAME)                WITH_FLAGS(SD_FLAG_ALLOW_EMPTY)
-         CONFIG_UINT(g_settings.game_history_size,          "game_history_size",          "Content History Size",       game_history_size, GROUP_NAME, SUBGROUP_NAME)
-         CONFIG_PATH(g_settings.video.shader_dir,           "video_shader_dir",           "Shader Directory",           default_shader_dir, GROUP_NAME, SUBGROUP_NAME)  WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
-
-#ifdef HAVE_OVERLAY
-         CONFIG_PATH(g_extern.overlay_dir,                  "overlay_directory",          "Overlay Directory",          default_overlay_dir, GROUP_NAME, SUBGROUP_NAME) WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
-#endif
-         CONFIG_PATH(g_settings.screenshot_directory,       "screenshot_directory",       "Screenshot Directory",       "", GROUP_NAME, SUBGROUP_NAME)                WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
-         CONFIG_PATH(g_settings.input.autoconfig_dir,       "joypad_autoconfig_dir",      "Joypad Autoconfig Directory", "", GROUP_NAME, SUBGROUP_NAME)          WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
-         // savefile_directory
-         // savestate_directory
-         // system_directory
-         END_SUB_GROUP()
-         END_GROUP()
 
 
          /*************/
@@ -572,10 +542,6 @@ const rarch_setting_t* setting_data_get_list(void)
          CONFIG_UINT(g_settings.video.rotation,             "video_rotation",             "Rotation",                   0, GROUP_NAME, SUBGROUP_NAME)
          END_SUB_GROUP()
 
-         START_SUB_GROUP("Shader")
-         CONFIG_BOOL(g_settings.video.shader_enable,        "video_shader_enable",        "Enable Shaders",             shader_enable, GROUP_NAME, SUBGROUP_NAME)
-         CONFIG_PATH(g_settings.video.shader_path,          "video_shader",               "Shader",                     "", GROUP_NAME, SUBGROUP_NAME)       WITH_FLAGS(SD_FLAG_ALLOW_EMPTY)
-         END_SUB_GROUP()
 
          START_SUB_GROUP("Sync")
          CONFIG_BOOL(g_settings.video.threaded,             "video_threaded",             "Threaded Video",         video_threaded, GROUP_NAME, SUBGROUP_NAME)
@@ -596,6 +562,16 @@ const rarch_setting_t* setting_data_get_list(void)
          CONFIG_PATH(g_settings.video.filter_path,          "video_filter",               "Software filter",            "", GROUP_NAME, SUBGROUP_NAME)       WITH_FLAGS(SD_FLAG_ALLOW_EMPTY)
          END_SUB_GROUP()
 
+         END_GROUP()
+
+         START_GROUP("Shader Options")
+         START_SUB_GROUP("State")
+         CONFIG_BOOL(g_settings.video.shader_enable,        "video_shader_enable",        "Enable Shaders",             shader_enable, GROUP_NAME, SUBGROUP_NAME)
+         CONFIG_PATH(g_settings.video.shader_path,          "video_shader",               "Shader",                     "", GROUP_NAME, SUBGROUP_NAME)       WITH_FLAGS(SD_FLAG_ALLOW_EMPTY)
+         END_SUB_GROUP()
+         END_GROUP()
+
+         START_GROUP("Font Options")
          START_SUB_GROUP("Messages")
          CONFIG_PATH(g_settings.video.font_path,            "video_font_path",            "Font Path",                  "", GROUP_NAME, SUBGROUP_NAME)       WITH_FLAGS(SD_FLAG_ALLOW_EMPTY)
          CONFIG_FLOAT(g_settings.video.font_size,           "video_font_size",            "OSD Font Size",              font_size, GROUP_NAME, SUBGROUP_NAME)
@@ -666,6 +642,37 @@ const rarch_setting_t* setting_data_get_list(void)
          CONFIG_FLOAT(g_settings.input.overlay_scale,       "input_overlay_scale",        "Overlay Scale",              1.0f, GROUP_NAME, SUBGROUP_NAME)
          END_SUB_GROUP()
 #endif
+
+         /*********/
+         /* PATHS */
+         /*********/
+         START_GROUP("Path Options")
+         START_SUB_GROUP("Paths")
+#ifdef HAVE_MENU
+         CONFIG_PATH(g_settings.menu_content_directory,     "rgui_browser_directory",     "Content Directory",          "", GROUP_NAME, SUBGROUP_NAME)                WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
+         CONFIG_PATH(g_settings.assets_directory,           "assets_directory",           "Assets Directory",           "", GROUP_NAME, SUBGROUP_NAME)                WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
+         CONFIG_PATH(g_settings.menu_config_directory,      "rgui_config_directory",      "Config Directory",           "", GROUP_NAME, SUBGROUP_NAME)                WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
+         CONFIG_BOOL(g_settings.menu_show_start_screen,     "rgui_show_start_screen",     "Show Start Screen",          menu_show_start_screen, GROUP_NAME, SUBGROUP_NAME)
+#endif
+         CONFIG_PATH(g_settings.libretro,                   "libretro_path",              "Libretro Path",              "", GROUP_NAME, SUBGROUP_NAME)                WITH_FLAGS(SD_FLAG_ALLOW_EMPTY)
+         CONFIG_PATH(g_settings.libretro_info_path,         "libretro_info_path",         "Core Info Directory",        default_libretro_info_path, GROUP_NAME, SUBGROUP_NAME)   WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
+         CONFIG_PATH(g_settings.core_options_path,          "core_options_path",          "Core Options Path",          "", "Paths", SUBGROUP_NAME)                WITH_FLAGS(SD_FLAG_ALLOW_EMPTY)
+         CONFIG_PATH(g_settings.cheat_database,             "cheat_database_path",        "Cheat Database",             "", "Paths", SUBGROUP_NAME)                WITH_FLAGS(SD_FLAG_ALLOW_EMPTY)
+         CONFIG_PATH(g_settings.cheat_settings_path,        "cheat_settings_path",        "Cheat Settings",             "", GROUP_NAME, SUBGROUP_NAME)                WITH_FLAGS(SD_FLAG_ALLOW_EMPTY)
+         CONFIG_PATH(g_settings.game_history_path,          "game_history_path",          "Content History Path",       "", GROUP_NAME, SUBGROUP_NAME)                WITH_FLAGS(SD_FLAG_ALLOW_EMPTY)
+         CONFIG_UINT(g_settings.game_history_size,          "game_history_size",          "Content History Size",       game_history_size, GROUP_NAME, SUBGROUP_NAME)
+         CONFIG_PATH(g_settings.video.shader_dir,           "video_shader_dir",           "Shader Directory",           default_shader_dir, GROUP_NAME, SUBGROUP_NAME)  WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
+
+#ifdef HAVE_OVERLAY
+         CONFIG_PATH(g_extern.overlay_dir,                  "overlay_directory",          "Overlay Directory",          default_overlay_dir, GROUP_NAME, SUBGROUP_NAME) WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
+#endif
+         CONFIG_PATH(g_settings.screenshot_directory,       "screenshot_directory",       "Screenshot Directory",       "", GROUP_NAME, SUBGROUP_NAME)                WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
+         CONFIG_PATH(g_settings.input.autoconfig_dir,       "joypad_autoconfig_dir",      "Joypad Autoconfig Directory", "", GROUP_NAME, SUBGROUP_NAME)          WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
+         // savefile_directory
+         // savestate_directory
+         // system_directory
+         END_SUB_GROUP()
+         END_GROUP()
 
          // The second argument to config bind is 1 based for players and 0 only for meta keys
          START_SUB_GROUP("Meta Keys")
