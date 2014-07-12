@@ -486,7 +486,7 @@ const rarch_setting_t* setting_data_get_list(void)
          /*********/
          /* PATHS */
          /*********/
-         START_GROUP("Paths")
+         START_GROUP("Path Options")
          START_SUB_GROUP("Paths")
 #ifdef HAVE_MENU
          CONFIG_PATH(g_settings.menu_content_directory,     "rgui_browser_directory",     "Content Directory",          "", GROUP_NAME, SUBGROUP_NAME)                WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
@@ -518,7 +518,7 @@ const rarch_setting_t* setting_data_get_list(void)
          /*************/
          /* EMULATION */
          /*************/
-         START_GROUP("Options")
+         START_GROUP("General Options")
          START_SUB_GROUP("General Options")
          CONFIG_BOOL(g_extern.config_save_on_exit,          "config_save_on_exit",        "Configuration Save On Exit", config_save_on_exit, GROUP_NAME, SUBGROUP_NAME)
          CONFIG_BOOL(g_settings.fps_show,                   "fps_show",                   "Show Framerate",             fps_show, GROUP_NAME, SUBGROUP_NAME)
@@ -541,7 +541,7 @@ const rarch_setting_t* setting_data_get_list(void)
          /*********/
          /* VIDEO */
          /*********/
-         START_GROUP("Video")
+         START_GROUP("Video Options")
          START_SUB_GROUP("Monitor")
          CONFIG_UINT(g_settings.video.monitor_index,        "video_monitor_index",        "Monitor Index",              monitor_index, GROUP_NAME, SUBGROUP_NAME)
          CONFIG_BOOL(g_settings.video.fullscreen,           "video_fullscreen",           "Use Fullscreen mode",        fullscreen, GROUP_NAME, SUBGROUP_NAME)
@@ -609,7 +609,7 @@ const rarch_setting_t* setting_data_get_list(void)
          /*********/
          /* AUDIO */
          /*********/
-         START_GROUP("Audio")
+         START_GROUP("Audio Options")
          START_SUB_GROUP("State")
          CONFIG_BOOL(g_settings.audio.enable,               "audio_enable",               "Audio Enable",                     audio_enable, GROUP_NAME, SUBGROUP_NAME)
          CONFIG_BOOL(g_extern.audio_data.mute,              "audio_mute",                 "Audio Mute",                 false, GROUP_NAME, SUBGROUP_NAME)
@@ -634,7 +634,7 @@ const rarch_setting_t* setting_data_get_list(void)
          /*********/
          /* INPUT */
          /*********/
-         START_GROUP("Input")
+         START_GROUP("Input Options")
          START_SUB_GROUP("Input")
          CONFIG_BOOL(g_settings.input.autodetect_enable,    "input_autodetect_enable",    "Autodetect Enable",   input_autodetect_enable, GROUP_NAME, SUBGROUP_NAME)
          END_SUB_GROUP()
@@ -659,7 +659,7 @@ const rarch_setting_t* setting_data_get_list(void)
          END_SUB_GROUP()
 
 #ifdef HAVE_OVERLAY
-         START_SUB_GROUP("Overlay")
+         START_SUB_GROUP("Overlay Options")
          CONFIG_BOOL(g_settings.input.overlay_enable,            "input_overlay_enable",            "Overlay Enable",        default_overlay_enable, GROUP_NAME, SUBGROUP_NAME)
          CONFIG_PATH(g_settings.input.overlay,              "input_overlay",              "Input Overlay",              "", GROUP_NAME, SUBGROUP_NAME) WITH_FLAGS(SD_FLAG_ALLOW_EMPTY) WITH_VALUES("cfg")
          CONFIG_FLOAT(g_settings.input.overlay_opacity,     "input_overlay_opacity",      "Overlay Opacity",            0.7f, GROUP_NAME, SUBGROUP_NAME) WITH_RANGE(0, 1)
