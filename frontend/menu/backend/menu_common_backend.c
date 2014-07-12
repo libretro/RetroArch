@@ -161,7 +161,7 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
 #if defined(GEKKO) || defined(__CELLOS_LV2__)
          file_list_push(menu->selection_buf, "Screen Resolution", MENU_SETTINGS_VIDEO_RESOLUTION, 0);
 #endif
-         file_list_push(menu->selection_buf, "Soft Filter", MENU_SETTINGS_VIDEO_SOFTFILTER, 0);
+         file_list_push(menu->selection_buf, "Software Filter", MENU_SETTINGS_VIDEO_SOFTFILTER, 0);
 #if defined(__CELLOS_LV2__)
          file_list_push(menu->selection_buf, "PAL60 Mode", MENU_SETTINGS_VIDEO_PAL60, 0);
 #endif
@@ -362,7 +362,7 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
          file_list_push(menu->selection_buf, "Core Directory", MENU_LIBRETRO_DIR_PATH, 0);
          file_list_push(menu->selection_buf, "Core Info Directory", MENU_LIBRETRO_INFO_DIR_PATH, 0);
 #ifdef HAVE_DYLIB
-         file_list_push(menu->selection_buf, "Soft Filter Directory", MENU_FILTER_DIR_PATH, 0);
+         file_list_push(menu->selection_buf, "Software Filter Directory", MENU_FILTER_DIR_PATH, 0);
 #endif
          file_list_push(menu->selection_buf, "DSP Filter Directory", MENU_DSP_FILTER_DIR_PATH, 0);
 #ifdef HAVE_SHADER_MANAGER
