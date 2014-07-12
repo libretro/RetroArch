@@ -506,7 +506,12 @@ const rarch_setting_t* setting_data_get_list(void)
          CONFIG_BOOL(g_settings.savestate_auto_load,        "savestate_auto_load",        "Auto Load State",            savestate_auto_load, GROUP_NAME, SUBGROUP_NAME)
          CONFIG_INT(g_extern.state_slot,                    "state_slot",                 "State Slot",                 0, GROUP_NAME, SUBGROUP_NAME)
          END_SUB_GROUP()
-         END_GROUP()
+       START_SUB_GROUP("Miscellaneous")
+       CONFIG_BOOL(g_settings.network_cmd_enable,         "network_cmd_enable",         "Network Commands",           network_cmd_enable, GROUP_NAME, SUBGROUP_NAME)
+       //CONFIG_INT(g_settings.network_cmd_port,            "network_cmd_port",           "Network Command Port",       network_cmd_port, GROUP_NAME, SUBGROUP_NAME)
+       CONFIG_BOOL(g_settings.stdin_cmd_enable,           "stdin_cmd_enable",           "stdin command",              stdin_cmd_enable, GROUP_NAME, SUBGROUP_NAME)
+       END_SUB_GROUP()
+       END_GROUP()
 
          /*********/
          /* VIDEO */
@@ -552,7 +557,7 @@ const rarch_setting_t* setting_data_get_list(void)
          CONFIG_BOOL(g_settings.video.black_frame_insertion,"video_black_frame_insertion","Black Frame Insertion",      black_frame_insertion, GROUP_NAME, SUBGROUP_NAME)
          END_SUB_GROUP()
 
-         START_SUB_GROUP("Misc")
+         START_SUB_GROUP("Miscellaneous")
          CONFIG_BOOL(g_settings.video.post_filter_record,   "video_post_filter_record",   "Post filter record",         post_filter_record, GROUP_NAME, SUBGROUP_NAME)
          CONFIG_BOOL(g_settings.video.gpu_record,           "video_gpu_record",           "GPU Record",                 gpu_record, GROUP_NAME, SUBGROUP_NAME)
          CONFIG_BOOL(g_settings.video.gpu_screenshot,       "video_gpu_screenshot",       "GPU Screenshot",             gpu_screenshot, GROUP_NAME, SUBGROUP_NAME)
@@ -600,7 +605,7 @@ const rarch_setting_t* setting_data_get_list(void)
          CONFIG_UINT(g_settings.audio.block_frames,         "audio_block_frames",         "Block Frames",               0, GROUP_NAME, SUBGROUP_NAME)
          END_SUB_GROUP()
 
-         START_SUB_GROUP("Misc")
+         START_SUB_GROUP("Miscellaneous")
          CONFIG_STRING(g_settings.audio.device,             "audio_device",               "Device",                     "", GROUP_NAME, SUBGROUP_NAME)
          CONFIG_UINT(g_settings.audio.out_rate,             "audio_out_rate",             "Ouput Rate",                 out_rate, GROUP_NAME, SUBGROUP_NAME)
          CONFIG_PATH(g_settings.audio.dsp_plugin,           "audio_dsp_plugin",           "DSP Plugin",                 "", GROUP_NAME, SUBGROUP_NAME)          WITH_FLAGS(SD_FLAG_ALLOW_EMPTY)
@@ -611,7 +616,7 @@ const rarch_setting_t* setting_data_get_list(void)
          /* INPUT */
          /*********/
          START_GROUP("Input Options")
-         START_SUB_GROUP("Input")
+         START_SUB_GROUP("State")
          CONFIG_BOOL(g_settings.input.autodetect_enable,    "input_autodetect_enable",    "Autodetect Enable",   input_autodetect_enable, GROUP_NAME, SUBGROUP_NAME)
          END_SUB_GROUP()
 
@@ -629,18 +634,48 @@ const rarch_setting_t* setting_data_get_list(void)
          CONFIG_UINT(g_settings.input.turbo_period,         "input_turbo_period",         "Turbo Period",               turbo_period, GROUP_NAME, SUBGROUP_NAME)
          CONFIG_UINT(g_settings.input.turbo_duty_cycle,     "input_duty_cycle",           "Duty Cycle",                 turbo_duty_cycle, GROUP_NAME, SUBGROUP_NAME)
          END_SUB_GROUP()
-
-         START_SUB_GROUP("Misc")
+       
+       // The second argument to config bind is 1 based for players and 0 only for meta keys
+       START_SUB_GROUP("Meta Keys")
+       for (i = 0; i != RARCH_BIND_LIST_END; i ++)
+           if (input_config_bind_map[i].meta)
+           {
+               const struct input_bind_map* bind = &input_config_bind_map[i];
+               CONFIG_BIND(g_settings.input.binds[0][i], 0, bind->base, bind->desc, &retro_keybinds_1[i], GROUP_NAME, SUBGROUP_NAME)
+           }
+       END_SUB_GROUP()
+       
+       for (player = 0; player < MAX_PLAYERS; player ++)
+       {
+           char buffer[32];
+           const struct retro_keybind* const defaults = (player == 0) ? retro_keybinds_1 : retro_keybinds_rest;
+           
+           snprintf(buffer, 32, "Player %d", player + 1);
+           START_SUB_GROUP(strdup(buffer))
+           for (i = 0; i != RARCH_BIND_LIST_END; i ++)
+           {
+               if (!input_config_bind_map[i].meta)
+               {
+                   const struct input_bind_map* bind = (const struct input_bind_map*)&input_config_bind_map[i];
+                   CONFIG_BIND(g_settings.input.binds[player][i], player + 1, bind->base, bind->desc, &defaults[i], GROUP_NAME, SUBGROUP_NAME)
+               }
+           }
+           END_SUB_GROUP()
+       }
+         START_SUB_GROUP("Miscellaneous")
          CONFIG_BOOL(g_settings.input.netplay_client_swap_input, "netplay_client_swap_input", "Swap Netplay Input",     netplay_client_swap_input, GROUP_NAME, SUBGROUP_NAME)
          END_SUB_GROUP()
+         END_GROUP()
 
 #ifdef HAVE_OVERLAY
-         START_SUB_GROUP("Overlay Options")
+         START_GROUP("Overlay Options")
+         START_SUB_GROUP("State")
          CONFIG_BOOL(g_settings.input.overlay_enable,            "input_overlay_enable",            "Overlay Enable",        default_overlay_enable, GROUP_NAME, SUBGROUP_NAME)
          CONFIG_PATH(g_settings.input.overlay,              "input_overlay",              "Input Overlay",              "", GROUP_NAME, SUBGROUP_NAME) WITH_FLAGS(SD_FLAG_ALLOW_EMPTY) WITH_VALUES("cfg")
          CONFIG_FLOAT(g_settings.input.overlay_opacity,     "input_overlay_opacity",      "Overlay Opacity",            0.7f, GROUP_NAME, SUBGROUP_NAME) WITH_RANGE(0, 1)
          CONFIG_FLOAT(g_settings.input.overlay_scale,       "input_overlay_scale",        "Overlay Scale",              1.0f, GROUP_NAME, SUBGROUP_NAME)
          END_SUB_GROUP()
+         END_GROUP()
 #endif
 
          /*********/
@@ -671,46 +706,6 @@ const rarch_setting_t* setting_data_get_list(void)
          // savefile_directory
          // savestate_directory
          // system_directory
-         END_SUB_GROUP()
-         END_GROUP()
-
-         // The second argument to config bind is 1 based for players and 0 only for meta keys
-         START_SUB_GROUP("Meta Keys")
-         for (i = 0; i != RARCH_BIND_LIST_END; i ++)
-            if (input_config_bind_map[i].meta)
-            {
-               const struct input_bind_map* bind = &input_config_bind_map[i];
-               CONFIG_BIND(g_settings.input.binds[0][i], 0, bind->base, bind->desc, &retro_keybinds_1[i], GROUP_NAME, SUBGROUP_NAME)
-            }
-      END_SUB_GROUP()
-
-         for (player = 0; player < MAX_PLAYERS; player ++)
-         {
-            char buffer[32];
-            const struct retro_keybind* const defaults = (player == 0) ? retro_keybinds_1 : retro_keybinds_rest;
-
-            snprintf(buffer, 32, "Player %d", player + 1);
-            START_SUB_GROUP(strdup(buffer))
-               for (i = 0; i != RARCH_BIND_LIST_END; i ++)
-               {
-                  if (!input_config_bind_map[i].meta)
-                  {
-                     const struct input_bind_map* bind = (const struct input_bind_map*)&input_config_bind_map[i];
-                     CONFIG_BIND(g_settings.input.binds[player][i], player + 1, bind->base, bind->desc, &defaults[i], GROUP_NAME, SUBGROUP_NAME)
-                  }
-               }
-            END_SUB_GROUP()
-         }
-      END_GROUP()
-
-         /********/
-         /* Misc */
-         /********/
-         START_GROUP("Misc")
-         START_SUB_GROUP("Misc")
-         CONFIG_BOOL(g_settings.network_cmd_enable,         "network_cmd_enable",         "Network Commands",           network_cmd_enable, GROUP_NAME, SUBGROUP_NAME)
-         //CONFIG_INT(g_settings.network_cmd_port,            "network_cmd_port",           "Network Command Port",       network_cmd_port, GROUP_NAME, SUBGROUP_NAME)
-         CONFIG_BOOL(g_settings.stdin_cmd_enable,           "stdin_cmd_enable",           "stdin command",              stdin_cmd_enable, GROUP_NAME, SUBGROUP_NAME)
          END_SUB_GROUP()
          END_GROUP()
    }
