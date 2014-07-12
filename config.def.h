@@ -488,6 +488,9 @@ static const float audio_volume = 0.0;
 // Misc
 //////////////
 
+// Enables displaying the current frames per second.
+static const bool fps_show = false;
+
 // Enables use of rewind. This will incur some memory footprint depending on the save state buffer.
 static const bool rewind_enable = false;
 
