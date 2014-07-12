@@ -193,7 +193,7 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
 #endif
          file_list_push(menu->selection_buf, "VSync Swap Interval", MENU_SETTINGS_VIDEO_SWAP_INTERVAL, 0);
 #if defined(HAVE_THREADS) && !defined(GEKKO)
-         file_list_push(menu->selection_buf, "Threaded Driver", MENU_SETTINGS_VIDEO_THREADED, 0);
+         file_list_push(menu->selection_buf, "Threaded Video", MENU_SETTINGS_VIDEO_THREADED, 0);
 #endif
 #if !defined(RARCH_CONSOLE) && !defined(RARCH_MOBILE)
          file_list_push(menu->selection_buf, "Windowed Scale (X)", MENU_SETTINGS_VIDEO_WINDOW_SCALE_X, 0);

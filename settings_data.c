@@ -534,8 +534,8 @@ const rarch_setting_t* setting_data_get_list(void)
          END_SUB_GROUP()
 
          START_SUB_GROUP("Scaling")
-         CONFIG_FLOAT(g_settings.video.xscale,              "video_xscale",               "X Scale",                    xscale, GROUP_NAME, SUBGROUP_NAME)
-         CONFIG_FLOAT(g_settings.video.yscale,              "video_yscale",               "Y Scale",                    yscale, GROUP_NAME, SUBGROUP_NAME)
+         CONFIG_FLOAT(g_settings.video.xscale,              "video_xscale",               "Windowed Scale (X)",                    xscale, GROUP_NAME, SUBGROUP_NAME)
+         CONFIG_FLOAT(g_settings.video.yscale,              "video_yscale",               "Windowed Scale (Y)",                    yscale, GROUP_NAME, SUBGROUP_NAME)
          CONFIG_BOOL(g_settings.video.scale_integer,        "video_scale_integer",        "Integer Scale",      scale_integer, GROUP_NAME, SUBGROUP_NAME)
 
          CONFIG_INT(g_extern.console.screen.viewports.custom_vp.x,         "custom_viewport_x",       "Custom Viewport X",       0, GROUP_NAME, SUBGROUP_NAME)
@@ -548,7 +548,7 @@ const rarch_setting_t* setting_data_get_list(void)
          END_SUB_GROUP()
 
 
-         START_SUB_GROUP("Sync")
+         START_SUB_GROUP("Synchronization")
          CONFIG_BOOL(g_settings.video.threaded,             "video_threaded",             "Threaded Video",         video_threaded, GROUP_NAME, SUBGROUP_NAME)
          CONFIG_BOOL(g_settings.video.vsync,                "video_vsync",                "VSync",                      vsync, GROUP_NAME, SUBGROUP_NAME)
          CONFIG_UINT(g_settings.video.swap_interval,        "video_swap_interval",        "VSync Swap Interval",        swap_interval, GROUP_NAME, SUBGROUP_NAME)       WITH_RANGE(1, 4)
@@ -597,7 +597,7 @@ const rarch_setting_t* setting_data_get_list(void)
          CONFIG_FLOAT(g_settings.audio.volume,              "audio_volume",               "Volume Level",               audio_volume, GROUP_NAME, SUBGROUP_NAME)
          END_SUB_GROUP()
 
-         START_SUB_GROUP("Sync")
+         START_SUB_GROUP("Synchronization")
          CONFIG_BOOL(g_settings.audio.sync,                 "audio_sync",                 "Enable Sync",                audio_sync, GROUP_NAME, SUBGROUP_NAME)
          CONFIG_UINT(g_settings.audio.latency,              "audio_latency",              "Latency",                    g_defaults.settings.out_latency ? g_defaults.settings.out_latency : out_latency, GROUP_NAME, SUBGROUP_NAME)
          CONFIG_BOOL(g_settings.audio.rate_control,         "audio_rate_control",         "Enable Rate Control",        rate_control, GROUP_NAME, SUBGROUP_NAME)
