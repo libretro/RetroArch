@@ -43,4 +43,16 @@
 #include <GL/glext.h>
 #endif
 
+#ifndef GL_MAP_WRITE_BIT
+#define GL_MAP_WRITE_BIT 0x0002
+#endif
+
+#ifndef GL_MAP_INVALIDATE_BUFFER_BIT
+#define GL_MAP_INVALIDATE_BUFFER_BIT 0x0008
+#endif
+
+#ifndef GL_RED_INTEGER
+#define GL_RED_INTEGER 0x8D94
+#endif
+
 #endif
