@@ -19,6 +19,8 @@
 #include <string.h>
 #include <X11/Xatom.h>
 #include <math.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 #include "../image/image.h"
 #include "../../general.h"
 #include "../../input/input_common.h"
@@ -126,8 +128,9 @@ void x11_suspend_screensaver(Window wnd)
    snprintf(cmd, sizeof(cmd), "xdg-screensaver suspend %d", (int)wnd);
 
    int ret = system(cmd);
-
-   if (ret != 0)
+   if (ret == -1)
+      RARCH_WARN("Failed to launch xdg-screensaver.\n");
+   else if (WEXITSTATUS(ret))
       RARCH_WARN("Could not suspend screen saver.\n");
 }
 
