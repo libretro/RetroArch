@@ -152,13 +152,17 @@ static bool get_video_mode(Display *dpy, unsigned width, unsigned height, XF86Vi
    bool ret = false;
    float minimum_fps_diff = 0.0f;
 
+   // If we use black frame insertion, we fake a 60 Hz monitor for 120 Hz one, etc, so try to match that.
+   float refresh_mod = g_settings.video.black_frame_insertion ? 0.5f : 1.0f;
+
    for (i = 0; i < num_modes; i++)
    {
       const XF86VidModeModeInfo *m = modes[i];
       if (m->hdisplay == width && m->vdisplay == height)
       {
-         float refresh = m->dotclock * 1000.0f / (m->htotal * m->vtotal);
+         float refresh = refresh_mod * m->dotclock * 1000.0f / (m->htotal * m->vtotal);
          float diff = fabsf(refresh - g_settings.video.refresh_rate);
+
          if (!ret || diff < minimum_fps_diff)
          {
             *mode = *m;

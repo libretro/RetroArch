@@ -584,6 +584,9 @@ static bool gfx_ctx_set_video_mode(void *data,
          attrib_ptr = NULL;
    }
 
+   // If we use black frame insertion, we fake a 60 Hz monitor for 120 Hz one, etc, so try to match that.
+   float refresh_mod = g_settings.video.black_frame_insertion ? 0.5f : 1.0f;
+
    // Find desired video mode, and use that.
    // If not fullscreen, we get desired windowed size, which is not appropriate.
    if ((width == 0 && height == 0) || !fullscreen)
@@ -600,7 +603,7 @@ static bool gfx_ctx_set_video_mode(void *data,
          if (width != g_connector->modes[i].hdisplay || height != g_connector->modes[i].vdisplay)
             continue;
 
-         float diff = fabsf(g_connector->modes[i].vrefresh - g_settings.video.refresh_rate);
+         float diff = fabsf(refresh_mod * g_connector->modes[i].vrefresh - g_settings.video.refresh_rate);
          if (!g_drm_mode || diff < minimum_fps_diff)
          {
             g_drm_mode = &g_connector->modes[i];
