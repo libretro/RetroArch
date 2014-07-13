@@ -34,6 +34,7 @@
 #include <unistd.h>
 #include <sched.h>
 #include <sys/time.h>
+#include <math.h>
 
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
@@ -599,19 +600,11 @@ static bool gfx_ctx_set_video_mode(void *data,
          if (width != g_connector->modes[i].hdisplay || height != g_connector->modes[i].vdisplay)
             continue;
 
-         if (!g_drm_mode)
+         float diff = fabsf(g_connector->modes[i].vrefresh - g_settings.video.refresh_rate);
+         if (!g_drm_mode || diff < minimum_fps_diff)
          {
             g_drm_mode = &g_connector->modes[i];
-            minimum_fps_diff = g_drm_mode->vrefresh - g_settings.video.refresh_rate;
-         }
-         else
-         {
-            float diff = g_connector->modes[i].vrefresh - g_settings.video.refresh_rate;
-            if (diff < minimum_fps_diff)
-            {
-               g_drm_mode = &g_connector->modes[i];
-               minimum_fps_diff = diff;
-            }
+            minimum_fps_diff = diff;
          }
       }
    }

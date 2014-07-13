@@ -18,6 +18,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <X11/Xatom.h>
+#include <math.h>
 #include "../image/image.h"
 #include "../../general.h"
 #include "../../input/input_common.h"
@@ -146,13 +147,21 @@ static bool get_video_mode(Display *dpy, unsigned width, unsigned height, XF86Vi
    *desktop_mode = *modes[0];
 
    bool ret = false;
+   float minimum_fps_diff = 0.0f;
+
    for (i = 0; i < num_modes; i++)
    {
-      if (modes[i]->hdisplay == width && modes[i]->vdisplay == height)
+      const XF86VidModeModeInfo *m = modes[i];
+      if (m->hdisplay == width && m->vdisplay == height)
       {
-         *mode = *modes[i];
+         float refresh = m->dotclock * 1000.0f / (m->htotal * m->vtotal);
+         float diff = fabsf(refresh - g_settings.video.refresh_rate);
+         if (!ret || diff < minimum_fps_diff)
+         {
+            *mode = *m;
+            minimum_fps_diff = diff;
+         }
          ret = true;
-         break;
       }
    }
 
