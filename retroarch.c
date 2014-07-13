@@ -693,6 +693,8 @@ static void print_features(void)
    puts("");
    puts("Features:");
    _PSUPP(sdl, "SDL", "SDL drivers");
+   _PSUPP(x11, "X11", "X11 drivers");
+   _PSUPP(wayland, "Wayland", "Wayland drivers");
    _PSUPP(thread, "Threads", "Threading support");
    _PSUPP(opengl, "OpenGL", "OpenGL driver");
    _PSUPP(kms, "KMS", "KMS/EGL context support");

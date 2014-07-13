@@ -130,6 +130,8 @@ const char *config_get_default_input(void)
          return "dinput";
       case INPUT_X:
          return "x";
+      case INPUT_WAYLAND:
+         return "wayland";
       case INPUT_XENON360:
          return "xenon360";
       case INPUT_XINPUT:

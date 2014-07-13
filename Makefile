@@ -255,6 +255,12 @@ ifeq ($(HAVE_OPENGL), 1)
          LIBS += $(EGL_LIBS)
       endif
    endif
+
+   ifeq ($(HAVE_WAYLAND), 1)
+   ifeq ($(HAVE_EGL), 1)
+      OBJ += gfx/context/wayland_ctx.o
+   endif
+   endif
 	
    ifeq ($(HAVE_GLES), 1)
       LIBS += $(GLES_LIBS)
@@ -275,6 +281,12 @@ ifeq ($(HAVE_OPENGL), 1)
 
    OBJ += gfx/shader_glsl.o 
    DEFINES += -DHAVE_GLSL
+endif
+
+ifeq ($(HAVE_WAYLAND), 1)
+   #OBJ += input/wayland.o
+   DEFINES += $(WAYLAND_CFLAGS)
+   LIBS += $(WAYLAND_LIBS)
 endif
 
 ifeq ($(HAVE_VG), 1)
