@@ -60,6 +60,7 @@ enum
 {
    TEXTURE_MAIN = 0,
    TEXTURE_FONT,
+   TEXTURE_BG,
    TEXTURE_SETTINGS,
    TEXTURE_SETTING,
    TEXTURE_SUBSETTING,
@@ -221,11 +222,11 @@ static void lakka_draw_text(const char *str, float x, float y, float scale, floa
 
 void lakka_draw_background(void)
 {
-   GLfloat background_color[] = {
-      0.1, 0.74, 0.61, global_alpha,
-      0.1, 0.74, 0.61, global_alpha,
-      0.1, 0.74, 0.61, global_alpha,
-      0.1, 0.74, 0.61, global_alpha,
+   GLfloat color[] = {
+      1.0f, 1.0f, 1.0f, global_alpha,
+      1.0f, 1.0f, 1.0f, global_alpha,
+      1.0f, 1.0f, 1.0f, global_alpha,
+      1.0f, 1.0f, 1.0f, global_alpha,
    };
 
    gl_t *gl = (gl_t*)driver.video_data;
@@ -235,8 +236,8 @@ void lakka_draw_background(void)
    glEnable(GL_BLEND);
 
    gl->coords.tex_coord = gl->tex_coords;
-   gl->coords.color = background_color;
-   glBindTexture(GL_TEXTURE_2D, 0);
+   gl->coords.color = color;
+   glBindTexture(GL_TEXTURE_2D, textures[TEXTURE_BG].id);
 
    if (gl->shader && gl->shader->use)
       gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
@@ -786,6 +787,7 @@ static void lakka_context_reset(void *data)
    fill_pathname_join(dirpath, g_settings.assets_directory, "lakka", sizeof(dirpath));
    fill_pathname_slash(dirpath, sizeof(dirpath));
 
+   fill_pathname_join(textures[TEXTURE_BG].path, dirpath, "bg.png", sizeof(textures[TEXTURE_BG].path));
    fill_pathname_join(textures[TEXTURE_SETTINGS].path, dirpath, "settings.png", sizeof(textures[TEXTURE_SETTINGS].path));
    fill_pathname_join(textures[TEXTURE_SETTING].path, dirpath, "setting.png", sizeof(textures[TEXTURE_SETTING].path));
    fill_pathname_join(textures[TEXTURE_SUBSETTING].path, dirpath, "subsetting.png", sizeof(textures[TEXTURE_SUBSETTING].path));
