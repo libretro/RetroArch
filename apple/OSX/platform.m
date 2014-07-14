@@ -249,17 +249,6 @@ static char** waiting_argv;
    [[NSApplication sharedApplication] runModalForWindow:panel];
 }
 
-// This utility function will queue the self.core and self.file instance values for running.
-- (void)runCore
-{
-   _wantReload = g_extern.main_is_init;
-
-   if (!g_extern.main_is_init)
-      apple_run_core(self.core, self.file.UTF8String);
-   else
-      g_extern.system.shutdown = true;
-}
-
 - (void)chooseCore
 {
    [[NSApplication sharedApplication] beginSheet:self.coreSelectSheet modalForWindow:self.window modalDelegate:nil didEndSelector:nil contextInfo:nil];
@@ -283,7 +272,12 @@ static char** waiting_argv;
    self.core = objc_getAssociatedObject(cb.objectValueOfSelectedItem, associated_core_key);
 #endif
 
-   [self runCore];
+    _wantReload = g_extern.main_is_init;
+    
+    if (!g_extern.main_is_init)
+        apple_run_core(self.core, self.file.UTF8String);
+    else
+        g_extern.system.shutdown = true;
 }
 
 #pragma mark RetroArch_Platform
