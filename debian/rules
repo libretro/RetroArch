@@ -1,0 +1,105 @@
+#!/usr/bin/make -f
+# -*- makefile -*-
+# Sample debian/rules that uses debhelper.
+# This file was originally written by Joey Hess and Craig Small.
+# As a special exception, when this file is copied by dh-make into a
+# dh-make output file, you may use that output file without restriction.
+# This special exception was added by Craig Small in version 0.37 of dh-make.
+
+# Uncomment this to turn on verbose mode.
+#export DH_VERBOSE=1
+
+
+QUILT=QUILT_PATCHES=debian/patches quilt --quiltrc /dev/null
+PATCH := $(QUILT) push -a || [ "$$($(QUILT) applied)" = "$$(grep -v '^\#' debian/patches/series)" ]
+UNPATCH := $(QUILT) pop -a || [ "$$($(QUILT) applied 2>&1)" = "No patches applied" ]
+
+patch:
+	$(PATCH)
+	
+unpatch:
+	$(UNPATCH)
+
+configure: configure-stamp
+configure-stamp:
+	dh_testdir
+	# Add here commands to configure the package.
+	# See ./configure --help for valid flags
+	# disable flags (i.e. --disable-ffmpeg for example) if there is no package relative to the feature in Build-Depends
+	./configure --prefix=/usr --enable-rgui --enable-kms --enable-cg --disable-ffmpeg --enable-freetype --enable-python --enable-udev --enable-libxml2 --enable-zlib
+	touch configure-stamp
+
+build: build-arch build-indep
+
+build-arch: build-stamp
+
+build-indep: build-stamp
+
+build-stamp: configure-stamp  
+	dh_testdir
+
+	# Add here commands to compile the package.
+	touch config.mk
+	$(MAKE)
+	#docbook-to-man debian/retroarch.sgml > retroarch
+
+	touch $@
+
+clean: 
+	dh_testdir
+	dh_testroot
+	rm -f build-stamp configure-stamp
+
+	# Add here commands to clean up after the build process.
+	touch config.mk
+	$(MAKE) clean
+
+	dh_clean 
+
+install: build
+	dh_testdir
+	dh_testroot
+	dh_prep  
+	dh_installdirs
+
+	# Add here commands to install the package into debian/retroarch.
+	$(MAKE) DESTDIR=$(CURDIR)/debian/retroarch PREFIX=/usr install
+	cp $(CURDIR)/debian/retroarch.desktop $(CURDIR)/debian/retroarch/usr/share/applications
+
+# Build architecture-independent files here.
+binary-indep: install
+# We have nothing to do by default.
+
+# Build architecture-dependent files here.
+binary-arch: install
+	dh_testdir
+	dh_testroot
+	dh_installchangelogs 
+	dh_installdocs
+	dh_installexamples
+#	dh_install
+#	dh_installmenu
+#	dh_installdebconf
+#	dh_installlogrotate
+#	dh_installemacsen
+#	dh_installpam
+#	dh_installmime
+#	dh_python
+#	dh_installinit
+#	dh_installcron
+#	dh_installinfo
+	dh_installman
+	dh_link
+	dh_strip
+	dh_compress
+	dh_fixperms
+#	dh_perl
+#	dh_makeshlibs
+	dh_installdeb
+	dh_shlibdeps
+	dh_gencontrol
+	dh_md5sums
+	dh_builddeb
+
+binary: binary-indep binary-arch
+.PHONY: build clean binary-indep binary-arch binary install configure

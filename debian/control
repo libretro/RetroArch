@@ -1,0 +1,45 @@
+Source: retroarch
+Section: otherosfs
+Priority: extra
+Maintainer: Hunter Kaller (hizzlekizzle) <hunter_kaller@yahoo.com>
+Build-Depends:	debhelper (>= 9),
+		libc6-dev (>= 2.13),
+		libsdl1.2-dev,
+		libasound2-dev,
+		libxv-dev,
+		libopenal-dev,
+		libsamplerate0-dev,
+		libxml2-dev,
+		libsdl-ttf2.0-dev,
+		libfreetype6-dev,
+		libsdl-image1.2-dev,
+		libgbm-dev,
+		libdrm-dev,
+		libegl1-mesa-dev,
+		python3-dev,
+		nvidia-cg-dev,
+		zlib1g-dev
+Standards-Version: 3.9.5
+Homepage: http://www.libretro.com/
+Vcs-Git: git://github.com/libretro/RetroArch.git
+Vcs-Browser: https://github.com/libretro/RetroArch
+
+Package: retroarch
+Architecture: any
+Depends: 	${shlibs:Depends},
+		${misc:Depends},
+		libsdl1.2debian,
+		libopenal1,
+		libqtgui4,
+		libsdl-image1.2,
+		libsdl-ttf2.0-0,
+		nvidia-cg-toolkit,
+		python3
+Replaces: ssnes
+Description: Simple frontend for the libretro library.
+ RetroArch is an open source, multi-platform frontend for the libretro API. 
+ It can be used as a modular multi emulator system, game engine, media player 
+ and 3D technical demonstration. These features are available through 
+ libretro cores.
+ .
+ It provides a simple built-in GUI, the RGUI.
