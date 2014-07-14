@@ -186,8 +186,16 @@ static char** waiting_argv;
 
    waiting_argc = 0;
    _wantReload = false;
+}
 
+- (void)applicationDidBecomeActive:(NSNotification *)notification
+{
    apple_start_iteration();
+}
+
+- (void)applicationWillResignActive:(NSNotification *)notification
+{
+   apple_stop_iteration();
 }
 
 - (BOOL)applicationShouldTerminateAfterLastWindowClosed:(NSApplication *)theApplication
