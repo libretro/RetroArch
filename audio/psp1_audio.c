@@ -36,8 +36,8 @@ typedef struct psp1_audio
    volatile uint16_t writePos;
 } psp1_audio_t;
 
-#define AUDIO_OUT_COUNT 128u
-#define AUDIO_BUFFER_SIZE (1u<<11u)
+#define AUDIO_OUT_COUNT 512u
+#define AUDIO_BUFFER_SIZE (1u<<13u)
 #define AUDIO_BUFFER_SIZE_MASK (AUDIO_BUFFER_SIZE-1)
 
 static int audioMainLoop(SceSize args, void* argp)
