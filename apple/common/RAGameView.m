@@ -179,13 +179,13 @@ static GLContextClass* g_context;
    ];
 }
 
-// NOTE: This version only runs on iOS6
+// NOTE: This version runs on iOS6+
 - (NSUInteger)supportedInterfaceOrientations
 {
    return apple_frontend_settings.orientation_flags;
 }
 
-// NOTE: This version runs on iOS2-iOS5, but not iOS6
+// NOTE: This version runs on iOS2-iOS5, but not iOS6+
 - (BOOL)shouldAutorotateToInterfaceOrientation:(UIInterfaceOrientation)interfaceOrientation
 {
    switch (interfaceOrientation)
