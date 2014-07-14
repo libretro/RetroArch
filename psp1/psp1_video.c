@@ -93,18 +93,31 @@ typedef struct psp1_video
    void* draw_buffer;
    void* texture;
    psp1_sprite_t* frame_coords;
+   int tex_filter;
 
    bool vsync;
    bool rgb32;
    int bpp_log2;
 
+
    psp1_menu_frame_t menu;
 
-   //not implemented
+   rarch_viewport_t vp;
+
    unsigned rotation;
+   bool vblank_not_reached;
+   bool keep_aspect;
+   bool should_resize;
 
 } psp1_video_t;
 
+static void psp_update_frame_coords(psp1_video_t* psp);
+static void psp_update_viewport(psp1_video_t* psp);
+
+static void psp_on_vblank(u32 sub, psp1_video_t *psp)
+{
+   psp->vblank_not_reached = false;
+}
 
 static void *psp_init(const video_info_t *video,
       const input_driver_t **input, void **input_data)
@@ -120,6 +133,13 @@ static void *psp_init(const video_info_t *video,
       return NULL;
 
    sceGuInit();
+
+   psp->vp.x           = 0;
+   psp->vp.y           = 0;
+   psp->vp.width       = SCEGU_SCR_WIDTH;
+   psp->vp.height      = SCEGU_SCR_HEIGHT;
+   psp->vp.full_width  = SCEGU_SCR_WIDTH;
+   psp->vp.full_height = SCEGU_SCR_HEIGHT;
 
    psp->main_dList         = memalign(16, 256); // make sure to allocate more space if bigger display lists are needed.
    psp->frame_dList        = memalign(16, 256);
@@ -202,6 +222,8 @@ static void *psp_init(const video_info_t *video,
 
    }
 
+   psp->tex_filter = video->smooth? GU_LINEAR : GU_NEAREST;
+
    sceDisplayWaitVblankStart();   // TODO : check if necessary
    sceGuDisplay(GU_FALSE);
 
@@ -212,7 +234,7 @@ static void *psp_init(const video_info_t *video,
    sceGuClearColor(0);
    sceGuScissor(0, 0, SCEGU_SCR_WIDTH, SCEGU_SCR_HEIGHT);
    sceGuEnable(GU_SCISSOR_TEST);
-   sceGuTexFilter(GU_LINEAR, GU_LINEAR);  // TODO , move this to display list
+   sceGuTexFilter(psp->tex_filter, psp->tex_filter);
    sceGuTexWrap (GU_CLAMP, GU_CLAMP);
    sceGuEnable(GU_TEXTURE_2D);
    sceGuDisable(GU_DEPTH_TEST);
@@ -259,6 +281,13 @@ static void *psp_init(const video_info_t *video,
       *input_data = pspinput;
    }
 
+   psp->vblank_not_reached = true;
+   sceKernelRegisterSubIntrHandler(PSP_VBLANK_INT, 0, psp_on_vblank, psp);
+   sceKernelEnableSubIntr(PSP_VBLANK_INT, 0);
+
+   psp->keep_aspect = true;
+   psp->should_resize = true;
+
    return psp;
 error:
    RARCH_ERR("PSP1 video could not be initialized.\n");
@@ -285,6 +314,7 @@ static bool psp_frame(void *data, const void *frame,
    if (!(((uint32_t)frame&0x04000000) || (frame == RETRO_HW_FRAME_BUFFER_VALID))) // let the core decide when to sync when HW_RENDER
       sceGuSync(0, 0);
 
+
    pspDebugScreenSetBase(psp->draw_buffer);
 
    pspDebugScreenSetXY(0,0);
@@ -302,9 +332,13 @@ static bool psp_frame(void *data, const void *frame,
    if (msg)
       pspDebugScreenPuts(msg);
 
-   if (psp->vsync)
+   if ((psp->vsync)&&(psp->vblank_not_reached))
       sceDisplayWaitVblankStart();
 
+   psp->vblank_not_reached = true;
+
+   RARCH_PERFORMANCE_INIT(psp_frame_run);
+   RARCH_PERFORMANCE_START(psp_frame_run);
 
 
 #ifdef DISPLAY_FPS
@@ -325,17 +359,18 @@ static bool psp_frame(void *data, const void *frame,
    psp->draw_buffer = FROM_GU_POINTER(sceGuSwapBuffers());
    g_extern.frame_count++;
 
-   psp->frame_coords->v0.x = (SCEGU_SCR_WIDTH - width * SCEGU_SCR_HEIGHT / height) / 2;
-//   psp->frame_coords->v0.y = 0;
+   if (psp->should_resize)
+      psp_update_viewport(psp);
+
 //   psp->frame_coords->v0.u = 0;
 //   psp->frame_coords->v0.v = 0;
 
-   psp->frame_coords->v1.x = (SCEGU_SCR_WIDTH + width * SCEGU_SCR_HEIGHT / height) / 2;
-//   psp->frame_coords->v1.y = SCEGU_SCR_HEIGHT;
    psp->frame_coords->v1.u = width;
    psp->frame_coords->v1.v = height;
 
    sceGuStart(GU_DIRECT, psp->main_dList);
+
+   sceGuTexFilter(psp->tex_filter, psp->tex_filter);
 
    if (((uint32_t)frame&0x04000000) || (frame == RETRO_HW_FRAME_BUFFER_VALID)) // frame in VRAM ? texture/palette was set in core so draw directly
    {
@@ -356,6 +391,8 @@ static bool psp_frame(void *data, const void *frame,
    }
 
    sceGuFinish();
+
+   RARCH_PERFORMANCE_STOP(psp_frame_run);
 
    if(psp->menu.active)
    {
@@ -409,12 +446,9 @@ static void psp_free(void *data)
       free(psp->menu.frame);
 
    free(data);
-}
 
-static void psp_set_rotation(void *data, unsigned rotation)
-{
-   psp1_video_t *psp = (psp1_video_t*)data;
-   psp->rotation = rotation;
+   sceKernelDisableSubIntr(PSP_VBLANK_INT, 0);
+   sceKernelReleaseSubIntrHandler(PSP_VBLANK_INT,0);
 }
 
 static void psp_set_texture_frame(void *data, const void *frame, bool rgb32,
@@ -460,6 +494,7 @@ static void psp_set_texture_frame(void *data, const void *frame, bool rgb32,
    sceGuTexSync();
    sceGuTexMode(GU_PSM_4444, 0, 0, GU_FALSE);
    sceGuTexFunc(GU_TFX_REPLACE, GU_TCC_RGB);
+   sceGuTexFilter(GU_LINEAR, GU_LINEAR);
    sceGuTexImage(0, next_pow2(width), next_pow2(height), width, psp->menu.frame);
    sceGuEnable(GU_BLEND);
 
@@ -480,10 +515,169 @@ static void psp_set_texture_enable(void *data, bool state, bool full_screen)
 
 }
 
+static void psp_update_frame_coords(psp1_video_t* psp)
+{
+   psp1_vertex_t *v0, *v1;
+
+   if (psp->rotation & 0x2)
+   {
+      v0 = &psp->frame_coords->v1;
+      v1 = &psp->frame_coords->v0;
+   }
+   else
+   {
+      v0 = &psp->frame_coords->v0;
+      v1 = &psp->frame_coords->v1;
+   }
+
+   if (psp->rotation & 0x1)
+   {
+      v0->x = psp->vp.x + psp->vp.width;
+      v1->x = psp->vp.x;
+   }
+   else
+   {
+      v0->x = psp->vp.x;
+      v1->x = psp->vp.x + psp->vp.width;
+   }
+
+   v0->y = psp->vp.y;
+   v1->y = psp->vp.y + psp->vp.height;
+}
+
+static void psp_update_viewport(psp1_video_t* psp)
+{
+   int x, y;
+   float device_aspect = SCEGU_SCR_WIDTH / SCEGU_SCR_HEIGHT;
+   float width = SCEGU_SCR_WIDTH;
+   float height = SCEGU_SCR_HEIGHT;
+   x = 0;
+   y = 0;
+
+   if (g_settings.video.scale_integer)
+   {
+      gfx_scale_integer(&psp->vp, SCEGU_SCR_WIDTH, SCEGU_SCR_HEIGHT, g_extern.system.aspect_ratio, psp->keep_aspect);
+      width  = psp->vp.width;
+      height = psp->vp.height;
+   }
+   else if (psp->keep_aspect)
+   {
+      float desired_aspect = g_extern.system.aspect_ratio;
+      float delta;
+
+#if defined(HAVE_MENU)
+      if (g_settings.video.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
+      {
+         const struct rarch_viewport *custom =
+            &g_extern.console.screen.viewports.custom_vp;
+
+         x      = custom->x;
+         y      = custom->y;
+         width  = custom->width;
+         height = custom->height;
+      }
+      else
+#endif
+      {
+         if ((fabsf(device_aspect - desired_aspect) < 0.0001f)||(fabsf((16.0/9.0) - desired_aspect) < 0.0001f))
+         {
+            // If the aspect ratios of screen and desired aspect ratio are sufficiently equal (floating point stuff),
+            // assume they are actually equal.
+         }
+         else if (device_aspect > desired_aspect)
+         {
+            delta = (desired_aspect / device_aspect - 1.0f) / 2.0f + 0.5f;
+            x     = (int)roundf(width * (0.5f - delta));
+            width = (unsigned)roundf(2.0f * width * delta);
+         }
+         else
+         {
+            delta  = (device_aspect / desired_aspect - 1.0f) / 2.0f + 0.5f;
+            y      = (int)roundf(height * (0.5f - delta));
+            height = (unsigned)roundf(2.0f * height * delta);
+         }
+      }
+
+      psp->vp.x      = x;
+      psp->vp.y      = y;
+      psp->vp.width  = width;
+      psp->vp.height = height;
+   }
+   else
+   {
+      psp->vp.x = psp->vp.y = 0;
+      psp->vp.width = width;
+      psp->vp.height = height;
+   }
+
+   psp_update_frame_coords(psp);
+
+   psp->should_resize = false;
+
+}
+
+static void psp_set_rotation(void *data, unsigned rotation)
+{
+   psp1_video_t *psp = (psp1_video_t*)data;
+
+   psp->rotation = rotation;
+   psp->should_resize = true;
+}
+static void psp_set_filtering(void *data, unsigned index, bool smooth)
+{
+   psp1_video_t *psp = (psp1_video_t*)data;
+   psp->tex_filter = smooth? GU_LINEAR : GU_NEAREST;
+}
+
+static void psp_set_aspect_ratio(void *data, unsigned aspectratio_index)
+{
+   psp1_video_t *psp = (psp1_video_t*)data;
+
+   switch (aspectratio_index)
+   {
+      case ASPECT_RATIO_SQUARE:
+         gfx_set_square_pixel_viewport(g_extern.system.av_info.geometry.base_width, g_extern.system.av_info.geometry.base_height);
+         break;
+
+      case ASPECT_RATIO_CORE:
+         gfx_set_core_viewport();
+         break;
+
+      case ASPECT_RATIO_CONFIG:
+         gfx_set_config_viewport();
+         break;
+
+      default:
+         break;
+   }
+
+   g_extern.system.aspect_ratio = aspectratio_lut[aspectratio_index].value;
+
+   psp->keep_aspect = true;
+   psp->should_resize = true;
+}
+
+static void psp_apply_state_changes(void *data)
+{
+   psp1_video_t *psp = (psp1_video_t*)data;
+   psp->should_resize = true;
+}
+
+static void psp_viewport_info(void *data, struct rarch_viewport *vp)
+{
+   psp1_video_t *psp = (psp1_video_t*)data;
+   *vp = psp->vp;
+}
+
+static bool psp_read_viewport(void *data, uint8_t *buffer)
+{
+   return false;
+}
+
 static const video_poke_interface_t psp_poke_interface = {
-   NULL, /* set_filtering */
-   NULL,
-   NULL,
+   psp_set_filtering,
+   psp_set_aspect_ratio,
+   psp_apply_state_changes,
 #ifdef HAVE_MENU
    psp_set_texture_frame,
    psp_set_texture_enable,
@@ -510,8 +704,8 @@ const video_driver_t video_psp1 = {
    "psp1",
 
    psp_set_rotation,
-   NULL,
-   NULL,
+   psp_viewport_info,
+   NULL, /* psp_read_viewport */
 #ifdef HAVE_OVERLAY
    NULL,
 #endif
