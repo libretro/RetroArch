@@ -37,6 +37,9 @@ Depends: 	${shlibs:Depends},
 		python3
 Replaces: ssnes
 Description: Simple frontend for the libretro library.
- RetroArch is a modular multi-system emulator that attempts to be very small
- and lean, while still having all of the useful core features expected from
- an emulator. It provides a simple built-in GUI, the RGUI.
+ RetroArch is an open source, multi-platform frontend for the libretro API. 
+ It can be used as a modular multi emulator system, game engine, media player 
+ and 3D technical demonstration. These features are available through 
+ libretro cores.
+ .
+ It provides a simple built-in GUI, the RGUI.
