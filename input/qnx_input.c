@@ -108,7 +108,7 @@ static void process_gamepad_event(void *data, screen_event_t screen_event, int t
    screen_get_event_property_iv(screen_event, SCREEN_PROPERTY_BUTTONS, &controller->buttons);
 
    uint64_t *state_cur = (uint64_t*)&qnx->pad_state[controller->port];
-   int i;
+   //int i;
 
    *state_cur = 0;
    for (i = 0; i < 20; i++)
@@ -334,7 +334,7 @@ static void process_keyboard_event(void *data, screen_event_t event, int type)
          if (flags & KEY_DOWN)
          {
             controller->buttons |= 1 << b;
-            *state_cur |= 1 << b
+            *state_cur |= 1 << b;
          }
          else
             controller->buttons &= ~(1<<b);
@@ -437,6 +437,7 @@ static void process_touch_event(void *data, screen_event_t event, int type)
 static void handle_screen_event(void *data, bps_event_t *event)
 {
    int type;
+   qnx_input_t *qnx = (qnx_input_t*)data;
 
    screen_event_t screen_event = screen_event_get_event(event);
    screen_get_event_property_iv(screen_event, SCREEN_PROPERTY_TYPE, &type);
@@ -626,7 +627,7 @@ static int16_t qnx_input_state(void *data, const struct retro_keybind **retro_ke
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
-         return input_joypad_pressed(qnx->joypad, port, binds[port], id);
+         return input_joypad_pressed(qnx->joypad, port, (unsigned int)g_settings.input.binds[port], id);
 #ifdef HAVE_BB10
       case RETRO_DEVICE_ANALOG:
          //Need to return [-0x8000, 0x7fff]
