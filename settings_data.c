@@ -406,6 +406,16 @@ rarch_setting_t setting_data_bind_setting(const char* name,
    return result;
 }
 
+static void general_change_handler(const void *data)
+{
+    const rarch_setting_t *setting = (const rarch_setting_t*)data;
+    
+    if (!setting)
+       return;
+    
+    g_settings.fps_show = setting->value.boolean;
+}
+
 
 #define g_settings fake_settings
 #define g_extern fake_extern
@@ -493,7 +503,7 @@ const rarch_setting_t* setting_data_get_list(void)
          START_GROUP("General Options")
          START_SUB_GROUP("General Options")
          CONFIG_BOOL(g_extern.config_save_on_exit,          "config_save_on_exit",        "Configuration Save On Exit", config_save_on_exit, GROUP_NAME, SUBGROUP_NAME, NULL)
-         CONFIG_BOOL(g_settings.fps_show,                   "fps_show",                   "Show Framerate",             fps_show, GROUP_NAME, SUBGROUP_NAME, NULL)
+         CONFIG_BOOL(g_settings.fps_show,                   "fps_show",                   "Show Framerate",             fps_show, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
          CONFIG_BOOL(g_settings.rewind_enable,              "rewind_enable",              "Rewind",                     rewind_enable, GROUP_NAME, SUBGROUP_NAME, NULL)
          //CONFIG_INT(g_settings.rewind_buffer_size,          "rewind_buffer_size",         "Rewind Buffer Size",       rewind_buffer_size)     WITH_SCALE(1000000)
          CONFIG_UINT(g_settings.rewind_granularity,         "rewind_granularity",         "Rewind Granularity",         rewind_granularity, GROUP_NAME, SUBGROUP_NAME, NULL)
