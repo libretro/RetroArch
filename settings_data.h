@@ -109,11 +109,11 @@ const char* setting_data_get_string_representation(const rarch_setting_t* settin
 
 // List building helper functions
 rarch_setting_t setting_data_group_setting(enum setting_type type, const char* name);
-rarch_setting_t setting_data_bool_setting(const char* name, const char* description, bool* target, bool default_value, const char * group, const char *subgroup);
-rarch_setting_t setting_data_int_setting(const char* name, const char* description, int* target, int default_value, const char *group, const char *subgroup);
-rarch_setting_t setting_data_uint_setting(const char* name, const char* description, unsigned int* target, unsigned int default_value, const char *group, const char *subgroup);
-rarch_setting_t setting_data_float_setting(const char* name, const char* description, float* target, float default_value, const char *group, const char *subgroup);
-rarch_setting_t setting_data_string_setting(enum setting_type type, const char* name, const char* description, char* target, unsigned size, const char* default_value, const char *group, const char *subgroup);
+rarch_setting_t setting_data_bool_setting(const char* name, const char* description, bool* target, bool default_value, const char * group, const char *subgroup, change_handler_t change_handler);
+rarch_setting_t setting_data_int_setting(const char* name, const char* description, int* target, int default_value, const char *group, const char *subgroup, change_handler_t change_handler);
+rarch_setting_t setting_data_uint_setting(const char* name, const char* description, unsigned int* target, unsigned int default_value, const char *group, const char *subgroup, change_handler_t change_handler);
+rarch_setting_t setting_data_float_setting(const char* name, const char* description, float* target, float default_value, const char *group, const char *subgroup, change_handler_t change_handler);
+rarch_setting_t setting_data_string_setting(enum setting_type type, const char* name, const char* description, char* target, unsigned size, const char* default_value, const char *group, const char *subgroup, change_handler_t change_handler);
 rarch_setting_t setting_data_bind_setting(const char* name, const char* description, struct retro_keybind* target, uint32_t index,
                                     const struct retro_keybind* default_value, const char *group, const char *subgroup);
 
