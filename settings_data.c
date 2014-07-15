@@ -415,6 +415,8 @@ static void general_change_handler(const void *data)
     
     if (!strcmp(setting->name, "fps_show"))
        g_settings.fps_show = *setting->value.boolean;
+    else if (!strcmp(setting->name, "pause_nonactive"))
+        g_settings.pause_nonactive = *setting->value.boolean;
     else if (!strcmp(setting->name, "config_save_on_exit"))
        g_extern.config_save_on_exit = *setting->value.boolean;
     else if (!strcmp(setting->name, "rewind_enable"))
@@ -449,6 +451,28 @@ static void general_change_handler(const void *data)
         g_settings.video.fullscreen = *setting->value.boolean;
         rarch_reinit_drivers();
     }
+    else if (!strcmp(setting->name, "video_crop_overscan"))
+        g_settings.video.crop_overscan = *setting->value.boolean;
+    else if (!strcmp(setting->name, "input_overlay_enable"))
+    {
+        g_settings.input.overlay_enable = *setting->value.boolean;
+        
+        if (driver.overlay)
+            input_overlay_free(driver.overlay);
+        driver.overlay = NULL;
+        if (g_settings.input.overlay_enable && *g_settings.input.overlay)
+        {
+            driver.overlay = input_overlay_new(g_settings.input.overlay);
+            if (!driver.overlay)
+                RARCH_ERR("Failed to load overlay.\n");
+        }
+    }
+    else if (!strcmp(setting->name, "input_overlay_opacity"))
+        g_settings.input.overlay_opacity = *setting->value.fraction;
+    else if (!strcmp(setting->name, "audio_sync"))
+        g_settings.audio.sync = *setting->value.boolean;
+    else if (!strcmp(setting->name, "audio_mute"))
+        g_extern.audio_data.mute = *setting->value.boolean;
 }
 
 
@@ -545,7 +569,7 @@ const rarch_setting_t* setting_data_get_list(void)
          CONFIG_BOOL(g_settings.block_sram_overwrite,       "block_sram_overwrite",       "SRAM Block overwrite",       block_sram_overwrite, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
          CONFIG_UINT(g_settings.autosave_interval,          "autosave_interval",          "SRAM Autosave",          autosave_interval, GROUP_NAME, SUBGROUP_NAME, NULL)
          CONFIG_BOOL(g_settings.video.disable_composition,  "video_disable_composition",  "Window Compositing",         disable_composition, GROUP_NAME, SUBGROUP_NAME, NULL)
-         CONFIG_BOOL(g_settings.pause_nonactive,            "pause_nonactive",            "Window Unfocus Pause",       pause_nonactive, GROUP_NAME, SUBGROUP_NAME, NULL)
+         CONFIG_BOOL(g_settings.pause_nonactive,            "pause_nonactive",            "Window Unfocus Pause",       pause_nonactive, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
          CONFIG_FLOAT(g_settings.fastforward_ratio,         "fastforward_ratio",          "Maximum Run Speed",         fastforward_ratio, GROUP_NAME, SUBGROUP_NAME, NULL)
          CONFIG_FLOAT(g_settings.slowmotion_ratio,          "slowmotion_ratio",           "Slow-Motion Ratio",          slowmotion_ratio, GROUP_NAME, SUBGROUP_NAME, NULL)       WITH_RANGE(0, 1)
          CONFIG_BOOL(g_settings.savestate_auto_index,       "savestate_auto_index",       "Save State Auto Index",      savestate_auto_index, GROUP_NAME, SUBGROUP_NAME, NULL)
@@ -609,7 +633,7 @@ const rarch_setting_t* setting_data_get_list(void)
          CONFIG_BOOL(g_settings.video.gpu_record,           "video_gpu_record",           "GPU Record",                 gpu_record, GROUP_NAME, SUBGROUP_NAME, NULL)
          CONFIG_BOOL(g_settings.video.gpu_screenshot,       "video_gpu_screenshot",       "GPU Screenshot",             gpu_screenshot, GROUP_NAME, SUBGROUP_NAME, NULL)
          CONFIG_BOOL(g_settings.video.allow_rotate,         "video_allow_rotate",         "Allow rotation",             allow_rotate, GROUP_NAME, SUBGROUP_NAME, NULL)
-         CONFIG_BOOL(g_settings.video.crop_overscan,        "video_crop_overscan",        "Crop Overscan (reload)",     crop_overscan, GROUP_NAME, SUBGROUP_NAME, NULL)
+         CONFIG_BOOL(g_settings.video.crop_overscan,        "video_crop_overscan",        "Crop Overscan (reload)",     crop_overscan, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
 
          CONFIG_PATH(g_settings.video.filter_path,          "video_filter",               "Software filter",            "", GROUP_NAME, SUBGROUP_NAME, NULL)       WITH_FLAGS(SD_FLAG_ALLOW_EMPTY)
          END_SUB_GROUP()
@@ -640,12 +664,12 @@ const rarch_setting_t* setting_data_get_list(void)
          START_GROUP("Audio Options")
          START_SUB_GROUP("State")
          CONFIG_BOOL(g_settings.audio.enable,               "audio_enable",               "Audio Enable",                     audio_enable, GROUP_NAME, SUBGROUP_NAME, NULL)
-         CONFIG_BOOL(g_extern.audio_data.mute,              "audio_mute",                 "Audio Mute",                 false, GROUP_NAME, SUBGROUP_NAME, NULL)
+         CONFIG_BOOL(g_extern.audio_data.mute,              "audio_mute",                 "Audio Mute",                 false, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
          CONFIG_FLOAT(g_settings.audio.volume,              "audio_volume",               "Volume Level",               audio_volume, GROUP_NAME, SUBGROUP_NAME, NULL)
          END_SUB_GROUP()
 
          START_SUB_GROUP("Synchronization")
-         CONFIG_BOOL(g_settings.audio.sync,                 "audio_sync",                 "Enable Sync",                audio_sync, GROUP_NAME, SUBGROUP_NAME, NULL)
+         CONFIG_BOOL(g_settings.audio.sync,                 "audio_sync",                 "Enable Sync",                audio_sync, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
          CONFIG_UINT(g_settings.audio.latency,              "audio_latency",              "Latency",                    g_defaults.settings.out_latency ? g_defaults.settings.out_latency : out_latency, GROUP_NAME, SUBGROUP_NAME, NULL)
          CONFIG_BOOL(g_settings.audio.rate_control,         "audio_rate_control",         "Enable Rate Control",        rate_control, GROUP_NAME, SUBGROUP_NAME, NULL)
          CONFIG_FLOAT(g_settings.audio.rate_control_delta,  "audio_rate_control_delta",   "Rate Control Delta",         rate_control_delta, GROUP_NAME, SUBGROUP_NAME, NULL)
@@ -717,9 +741,9 @@ const rarch_setting_t* setting_data_get_list(void)
 #ifdef HAVE_OVERLAY
          START_GROUP("Overlay Options")
          START_SUB_GROUP("State")
-         CONFIG_BOOL(g_settings.input.overlay_enable,            "input_overlay_enable",            "Overlay Enable",        default_overlay_enable, GROUP_NAME, SUBGROUP_NAME, NULL)
+         CONFIG_BOOL(g_settings.input.overlay_enable,            "input_overlay_enable",            "Overlay Enable",        default_overlay_enable, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
          CONFIG_PATH(g_settings.input.overlay,              "input_overlay",              "Overlay Preset",              "", GROUP_NAME, SUBGROUP_NAME, NULL) WITH_FLAGS(SD_FLAG_ALLOW_EMPTY) WITH_VALUES("cfg")
-         CONFIG_FLOAT(g_settings.input.overlay_opacity,     "input_overlay_opacity",      "Overlay Opacity",            0.7f, GROUP_NAME, SUBGROUP_NAME, NULL) WITH_RANGE(0, 1)
+         CONFIG_FLOAT(g_settings.input.overlay_opacity,     "input_overlay_opacity",      "Overlay Opacity",            0.7f, GROUP_NAME, SUBGROUP_NAME, general_change_handler) WITH_RANGE(0, 1)
          CONFIG_FLOAT(g_settings.input.overlay_scale,       "input_overlay_scale",        "Overlay Scale",              1.0f, GROUP_NAME, SUBGROUP_NAME, NULL)
          END_SUB_GROUP()
          END_GROUP()
