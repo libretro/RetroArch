@@ -429,6 +429,26 @@ static void general_change_handler(const void *data)
         g_settings.rewind_granularity = *setting->value.unsigned_integer;
     else if (!strcmp(setting->name, "block_sram_overwrite"))
         g_settings.block_sram_overwrite = *setting->value.boolean;
+    else if (!strcmp(setting->name, "video_smooth"))
+    {
+        g_settings.video.smooth = *setting->value.boolean;
+        
+        if (driver.video_data && driver.video_poke && driver.video_poke->set_filtering)
+            driver.video_poke->set_filtering(driver.video_data, 1, g_settings.video.smooth);
+    }
+    else if (!strcmp(setting->name, "video_vsync"))
+        g_settings.video.vsync = *setting->value.boolean;
+    else if (!strcmp(setting->name, "video_hard_sync"))
+        g_settings.video.hard_sync = *setting->value.boolean;
+    else if (!strcmp(setting->name, "video_hard_sync_frames"))
+        g_settings.video.hard_sync_frames = *setting->value.unsigned_integer;
+    else if (!strcmp(setting->name, "video_scale_integer"))
+        g_settings.video.scale_integer = *setting->value.boolean;
+    else if (!strcmp(setting->name, "video_fullscreen"))
+    {
+        g_settings.video.fullscreen = *setting->value.boolean;
+        rarch_reinit_drivers();
+    }
 }
 
 
@@ -546,7 +566,7 @@ const rarch_setting_t* setting_data_get_list(void)
          START_GROUP("Video Options")
          START_SUB_GROUP("Monitor")
          CONFIG_UINT(g_settings.video.monitor_index,        "video_monitor_index",        "Monitor Index",              monitor_index, GROUP_NAME, SUBGROUP_NAME, NULL)
-         CONFIG_BOOL(g_settings.video.fullscreen,           "video_fullscreen",           "Use Fullscreen mode",        fullscreen, GROUP_NAME, SUBGROUP_NAME, NULL)
+         CONFIG_BOOL(g_settings.video.fullscreen,           "video_fullscreen",           "Use Fullscreen mode",        fullscreen, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
          CONFIG_BOOL(g_settings.video.windowed_fullscreen,  "video_windowed_fullscreen",  "Windowed Fullscreen Mode",   windowed_fullscreen, GROUP_NAME, SUBGROUP_NAME, NULL)
          CONFIG_UINT(g_settings.video.fullscreen_x,         "video_fullscreen_x",         "Fullscreen Width",           fullscreen_x, GROUP_NAME, SUBGROUP_NAME, NULL)
          CONFIG_UINT(g_settings.video.fullscreen_y,         "video_fullscreen_y",         "Fullscreen Height",          fullscreen_y, GROUP_NAME, SUBGROUP_NAME, NULL)
@@ -563,24 +583,24 @@ const rarch_setting_t* setting_data_get_list(void)
          START_SUB_GROUP("Scaling")
          CONFIG_FLOAT(g_settings.video.xscale,              "video_xscale",               "Windowed Scale (X)",                    xscale, GROUP_NAME, SUBGROUP_NAME, NULL)
          CONFIG_FLOAT(g_settings.video.yscale,              "video_yscale",               "Windowed Scale (Y)",                    yscale, GROUP_NAME, SUBGROUP_NAME, NULL)
-         CONFIG_BOOL(g_settings.video.scale_integer,        "video_scale_integer",        "Integer Scale",      scale_integer, GROUP_NAME, SUBGROUP_NAME, NULL)
+         CONFIG_BOOL(g_settings.video.scale_integer,        "video_scale_integer",        "Integer Scale",      scale_integer, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
 
          CONFIG_INT(g_extern.console.screen.viewports.custom_vp.x,         "custom_viewport_x",       "Custom Viewport X",       0, GROUP_NAME, SUBGROUP_NAME, NULL)
          CONFIG_INT(g_extern.console.screen.viewports.custom_vp.y,         "custom_viewport_y",       "Custom Viewport Y",       0, GROUP_NAME, SUBGROUP_NAME, NULL)
          CONFIG_UINT(g_extern.console.screen.viewports.custom_vp.width,    "custom_viewport_width",   "Custom Viewport Width",   0, GROUP_NAME, SUBGROUP_NAME, NULL)
          CONFIG_UINT(g_extern.console.screen.viewports.custom_vp.height,   "custom_viewport_height",  "Custom Viewport Height",  0, GROUP_NAME, SUBGROUP_NAME, NULL)
 
-         CONFIG_BOOL(g_settings.video.smooth,               "video_smooth",               "Use bilinear filtering",     video_smooth, GROUP_NAME, SUBGROUP_NAME, NULL)
+         CONFIG_BOOL(g_settings.video.smooth,               "video_smooth",               "Use bilinear filtering",     video_smooth, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
          CONFIG_UINT(g_settings.video.rotation,             "video_rotation",             "Rotation",                   0, GROUP_NAME, SUBGROUP_NAME, NULL)
          END_SUB_GROUP()
 
 
          START_SUB_GROUP("Synchronization")
          CONFIG_BOOL(g_settings.video.threaded,             "video_threaded",             "Threaded Video",         video_threaded, GROUP_NAME, SUBGROUP_NAME, NULL)
-         CONFIG_BOOL(g_settings.video.vsync,                "video_vsync",                "VSync",                      vsync, GROUP_NAME, SUBGROUP_NAME, NULL)
+         CONFIG_BOOL(g_settings.video.vsync,                "video_vsync",                "VSync",                      vsync, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
          CONFIG_UINT(g_settings.video.swap_interval,        "video_swap_interval",        "VSync Swap Interval",        swap_interval, GROUP_NAME, SUBGROUP_NAME, NULL)       WITH_RANGE(1, 4)
-         CONFIG_BOOL(g_settings.video.hard_sync,            "video_hard_sync",            "Hard GPU Sync",              hard_sync, GROUP_NAME, SUBGROUP_NAME, NULL)
-         CONFIG_UINT(g_settings.video.hard_sync_frames,     "video_hard_sync_frames",     "Hard GPU Sync Frames",       hard_sync_frames, GROUP_NAME, SUBGROUP_NAME, NULL)    WITH_RANGE(0, 3)
+         CONFIG_BOOL(g_settings.video.hard_sync,            "video_hard_sync",            "Hard GPU Sync",              hard_sync, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
+         CONFIG_UINT(g_settings.video.hard_sync_frames,     "video_hard_sync_frames",     "Hard GPU Sync Frames",       hard_sync_frames, GROUP_NAME, SUBGROUP_NAME, general_change_handler)    WITH_RANGE(0, 3)
          CONFIG_BOOL(g_settings.video.black_frame_insertion,"video_black_frame_insertion","Black Frame Insertion",      black_frame_insertion, GROUP_NAME, SUBGROUP_NAME, NULL)
          END_SUB_GROUP()
 
