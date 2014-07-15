@@ -141,14 +141,18 @@ static void *psp_init(const video_info_t *video,
    psp->vp.full_width  = SCEGU_SCR_WIDTH;
    psp->vp.full_height = SCEGU_SCR_HEIGHT;
 
-   psp->main_dList         = memalign(16, 256); // make sure to allocate more space if bigger display lists are needed.
-   psp->frame_dList        = memalign(16, 256);
-   psp->menu.dList         = memalign(16, 256);
+   // make sure anything using uncached pointers reserves whole cachelines (memory address and size need to be a multiple of 64)
+   // so it isn't overwritten by an unlucky cache writeback.
+   // this includes display lists since the Gu library uses unchached pointers to write to them.
+
+   psp->main_dList         = memalign(64, 256); // allocate more space if bigger display lists are needed.
+   psp->frame_dList        = memalign(64, 256);
+   psp->menu.dList         = memalign(64, 256);
    psp->menu.frame         = memalign(16,  2 * 480 * 272);
-   psp->frame_coords       = memalign(64,  1 * sizeof(psp1_sprite_t));
+   psp->frame_coords       = memalign(64, 16 * sizeof(psp1_sprite_t));
    psp->menu.frame_coords  = memalign(64, 16 * sizeof(psp1_sprite_t));
 
-   memset(psp->frame_coords      , 0,  1 * sizeof(psp1_sprite_t));
+   memset(psp->frame_coords      , 0, 16 * sizeof(psp1_sprite_t));
    memset(psp->menu.frame_coords , 0, 16 * sizeof(psp1_sprite_t));
    sceKernelDcacheWritebackInvalidateAll();
    psp->frame_coords       = TO_UNCACHED_PTR(psp->frame_coords);
