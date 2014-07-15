@@ -438,6 +438,11 @@ static void general_change_handler(const void *data)
         if (driver.video_data && driver.video_poke && driver.video_poke->set_filtering)
             driver.video_poke->set_filtering(driver.video_data, 1, g_settings.video.smooth);
     }
+    else if (!strcmp(setting->name, "video_monitor_index"))
+    {
+        g_settings.video.monitor_index = *setting->value.unsigned_integer;
+        rarch_reinit_drivers();
+    }
     else if (!strcmp(setting->name, "video_vsync"))
         g_settings.video.vsync = *setting->value.boolean;
     else if (!strcmp(setting->name, "video_hard_sync"))
@@ -451,8 +456,20 @@ static void general_change_handler(const void *data)
         g_settings.video.fullscreen = *setting->value.boolean;
         rarch_reinit_drivers();
     }
+    else if (!strcmp(setting->name, "video_rotation"))
+    {
+        g_settings.video.rotation = *setting->value.unsigned_integer;
+        video_set_rotation_func((g_settings.video.rotation + g_extern.system.rotation) % 4);
+    }
+    else if (!strcmp(setting->name, "video_threaded"))
+    {
+        g_settings.video.threaded = *setting->value.boolean;
+        rarch_reinit_drivers();
+    }
     else if (!strcmp(setting->name, "video_crop_overscan"))
         g_settings.video.crop_overscan = *setting->value.boolean;
+    else if (!strcmp(setting->name, "video_black_frame_insertion"))
+        g_settings.video.black_frame_insertion = *setting->value.boolean;
     else if (!strcmp(setting->name, "input_overlay_enable"))
     {
         g_settings.input.overlay_enable = *setting->value.boolean;
@@ -473,6 +490,10 @@ static void general_change_handler(const void *data)
         g_settings.audio.sync = *setting->value.boolean;
     else if (!strcmp(setting->name, "audio_mute"))
         g_extern.audio_data.mute = *setting->value.boolean;
+    else if (!strcmp(setting->name, "state_slot"))
+        g_extern.state_slot = *setting->value.integer;
+    else if (!strcmp(setting->name, "input_autodetect_enable"))
+        g_settings.input.autodetect_enable = *setting->value.boolean;
 }
 
 
@@ -575,7 +596,7 @@ const rarch_setting_t* setting_data_get_list(void)
          CONFIG_BOOL(g_settings.savestate_auto_index,       "savestate_auto_index",       "Save State Auto Index",      savestate_auto_index, GROUP_NAME, SUBGROUP_NAME, NULL)
          CONFIG_BOOL(g_settings.savestate_auto_save,        "savestate_auto_save",        "Auto Save State",            savestate_auto_save, GROUP_NAME, SUBGROUP_NAME, NULL)
          CONFIG_BOOL(g_settings.savestate_auto_load,        "savestate_auto_load",        "Auto Load State",            savestate_auto_load, GROUP_NAME, SUBGROUP_NAME, NULL)
-         CONFIG_INT(g_extern.state_slot,                    "state_slot",                 "State Slot",                 0, GROUP_NAME, SUBGROUP_NAME, NULL)
+         CONFIG_INT(g_extern.state_slot,                    "state_slot",                 "State Slot",                 0, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
          END_SUB_GROUP()
        START_SUB_GROUP("Miscellaneous")
        CONFIG_BOOL(g_settings.network_cmd_enable,         "network_cmd_enable",         "Network Commands",           network_cmd_enable, GROUP_NAME, SUBGROUP_NAME, NULL)
@@ -589,7 +610,7 @@ const rarch_setting_t* setting_data_get_list(void)
          /*********/
          START_GROUP("Video Options")
          START_SUB_GROUP("Monitor")
-         CONFIG_UINT(g_settings.video.monitor_index,        "video_monitor_index",        "Monitor Index",              monitor_index, GROUP_NAME, SUBGROUP_NAME, NULL)
+         CONFIG_UINT(g_settings.video.monitor_index,        "video_monitor_index",        "Monitor Index",              monitor_index, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
          CONFIG_BOOL(g_settings.video.fullscreen,           "video_fullscreen",           "Use Fullscreen mode",        fullscreen, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
          CONFIG_BOOL(g_settings.video.windowed_fullscreen,  "video_windowed_fullscreen",  "Windowed Fullscreen Mode",   windowed_fullscreen, GROUP_NAME, SUBGROUP_NAME, NULL)
          CONFIG_UINT(g_settings.video.fullscreen_x,         "video_fullscreen_x",         "Fullscreen Width",           fullscreen_x, GROUP_NAME, SUBGROUP_NAME, NULL)
@@ -615,17 +636,17 @@ const rarch_setting_t* setting_data_get_list(void)
          CONFIG_UINT(g_extern.console.screen.viewports.custom_vp.height,   "custom_viewport_height",  "Custom Viewport Height",  0, GROUP_NAME, SUBGROUP_NAME, NULL)
 
          CONFIG_BOOL(g_settings.video.smooth,               "video_smooth",               "Use bilinear filtering",     video_smooth, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
-         CONFIG_UINT(g_settings.video.rotation,             "video_rotation",             "Rotation",                   0, GROUP_NAME, SUBGROUP_NAME, NULL)
+         CONFIG_UINT(g_settings.video.rotation,             "video_rotation",             "Rotation",                   0, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
          END_SUB_GROUP()
 
 
          START_SUB_GROUP("Synchronization")
-         CONFIG_BOOL(g_settings.video.threaded,             "video_threaded",             "Threaded Video",         video_threaded, GROUP_NAME, SUBGROUP_NAME, NULL)
+         CONFIG_BOOL(g_settings.video.threaded,             "video_threaded",             "Threaded Video",         video_threaded, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
          CONFIG_BOOL(g_settings.video.vsync,                "video_vsync",                "VSync",                      vsync, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
          CONFIG_UINT(g_settings.video.swap_interval,        "video_swap_interval",        "VSync Swap Interval",        swap_interval, GROUP_NAME, SUBGROUP_NAME, NULL)       WITH_RANGE(1, 4)
          CONFIG_BOOL(g_settings.video.hard_sync,            "video_hard_sync",            "Hard GPU Sync",              hard_sync, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
          CONFIG_UINT(g_settings.video.hard_sync_frames,     "video_hard_sync_frames",     "Hard GPU Sync Frames",       hard_sync_frames, GROUP_NAME, SUBGROUP_NAME, general_change_handler)    WITH_RANGE(0, 3)
-         CONFIG_BOOL(g_settings.video.black_frame_insertion,"video_black_frame_insertion","Black Frame Insertion",      black_frame_insertion, GROUP_NAME, SUBGROUP_NAME, NULL)
+         CONFIG_BOOL(g_settings.video.black_frame_insertion, "video_black_frame_insertion", "Black Frame Insertion",      black_frame_insertion, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
          END_SUB_GROUP()
 
          START_SUB_GROUP("Miscellaneous")
@@ -688,7 +709,7 @@ const rarch_setting_t* setting_data_get_list(void)
          /*********/
          START_GROUP("Input Options")
          START_SUB_GROUP("State")
-         CONFIG_BOOL(g_settings.input.autodetect_enable,    "input_autodetect_enable",    "Autodetect Enable",   input_autodetect_enable, GROUP_NAME, SUBGROUP_NAME, NULL)
+         CONFIG_BOOL(g_settings.input.autodetect_enable,    "input_autodetect_enable",    "Autodetect Enable",   input_autodetect_enable, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
          END_SUB_GROUP()
 
          START_SUB_GROUP("Joypad Mapping")
