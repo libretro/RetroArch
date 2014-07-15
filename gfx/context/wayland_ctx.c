@@ -24,6 +24,8 @@
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
 #include <signal.h>
+#include <sys/poll.h>
+#include <unistd.h>
 
 static EGLContext g_egl_ctx;
 static EGLContext g_egl_hw_ctx;
@@ -34,8 +36,11 @@ static bool g_resize;
 static unsigned g_width, g_height;
 
 static struct wl_display *g_dpy;
+static struct wl_registry *g_registry;
 static struct wl_compositor *g_compositor;
 static struct wl_surface *g_surface;
+static struct wl_shell_surface *g_shell_surf;
+static struct wl_shell *g_shell;
 static struct wl_egl_window *g_win;
 static int g_fd;
 
@@ -56,6 +61,63 @@ static void sighandler(int sig)
    (void)sig;
    g_quit = 1;
 }
+
+// Shell surface callbacks
+static void shell_surface_handle_ping(void *data, struct wl_shell_surface *shell_surface,
+      uint32_t serial)
+{
+   (void)data;
+   wl_shell_surface_pong(shell_surface, serial);
+}
+
+static void shell_surface_handle_configure(void *data, struct wl_shell_surface *shell_surface,
+      uint32_t edges, int32_t width, int32_t height)
+{
+   (void)data;
+   (void)shell_surface;
+   (void)edges;
+   g_width = width;
+   g_height = height;
+}
+
+static void shell_surface_handle_popup_done(void *data, struct wl_shell_surface *shell_surface)
+{
+   (void)data;
+   (void)shell_surface;
+}
+
+static const struct wl_shell_surface_listener shell_surface_listener = {
+   shell_surface_handle_ping,
+   shell_surface_handle_configure,
+   shell_surface_handle_popup_done,
+};
+
+// Registry callbacks
+static void registry_handle_global(void *data, struct wl_registry *reg, uint32_t id, const char *interface, uint32_t version)
+{
+   (void)data;
+   (void)version;
+
+   if (!strcmp(interface, "wl_compositor"))
+      g_compositor = wl_registry_bind(reg, id, &wl_compositor_interface, 1);
+   else if (!strcmp(interface, "wl_shell"))
+      g_shell = wl_registry_bind(reg, id, &wl_shell_interface, 1);
+}
+
+static void registry_handle_global_remove(void *data, struct wl_registry *registry,
+      uint32_t id)
+{
+   (void)data;
+   (void)registry;
+   (void)id;
+}
+
+static const struct wl_registry_listener registry_listener = {
+   registry_handle_global,
+   registry_handle_global_remove,
+};
+
+
 
 static void gfx_ctx_get_video_size(void *data, unsigned *width, unsigned *height);
 static void gfx_ctx_destroy(void *data);
@@ -105,13 +167,36 @@ static void gfx_ctx_swap_interval(void *data, unsigned interval)
    }
 }
 
+static void flush_wayland_fd(void)
+{
+   wl_display_dispatch_pending(g_dpy);
+   wl_display_flush(g_dpy);
+
+   struct pollfd fd = {0};
+   fd.fd = g_fd;
+   fd.events = POLLIN | POLLOUT | POLLERR | POLLHUP;
+
+   if (poll(&fd, 1, 0) > 0)
+   {
+      if (fd.revents & (POLLERR | POLLHUP))
+      {
+         close(g_fd);
+         g_quit = true;
+      }
+
+      if (fd.revents & POLLIN)
+         wl_display_dispatch(g_dpy);
+      if (fd.revents & POLLOUT)
+         wl_display_flush(g_dpy);
+   }
+}
+
 static void gfx_ctx_check_window(void *data, bool *quit,
       bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
 {
    (void)frame_count;
 
-   wl_display_dispatch_pending(g_dpy);
-   wl_display_flush(g_dpy);
+   flush_wayland_fd();
 
    unsigned new_width = *width, new_height = *height;
    gfx_ctx_get_video_size(data, &new_width, &new_height);
@@ -155,28 +240,6 @@ static void gfx_ctx_get_video_size(void *data, unsigned *width, unsigned *height
    *width = 640;
    *height = 480;
 }
-
-static void registry_handle_global(void *data, struct wl_registry *reg, uint32_t id, const char *interface, uint32_t version)
-{
-   (void)data;
-   (void)version;
-
-   if (!strcmp(interface, "wl_compositor"))
-      g_compositor = wl_registry_bind(reg, id, &wl_compositor_interface, 1);
-}
-
-static void registry_handle_global_remove(void *data, struct wl_registry *registry,
-      uint32_t id)
-{
-   (void)data;
-   (void)registry;
-   (void)id;
-}
-
-static const struct wl_registry_listener registry_listener = {
-   registry_handle_global,
-   registry_handle_global_remove,
-};
 
 static bool gfx_ctx_init(void *data)
 {
@@ -244,7 +307,8 @@ static bool gfx_ctx_init(void *data)
       goto error;
    }
 
-   wl_registry_add_listener(wl_display_get_registry(g_dpy), &registry_listener, NULL);
+   g_registry = wl_display_get_registry(g_dpy);
+   wl_registry_add_listener(g_registry, &registry_listener, NULL);
    wl_display_dispatch(g_dpy);
    if (!g_compositor)
    {
@@ -366,8 +430,11 @@ static bool gfx_ctx_set_video_mode(void *data,
 
    g_surface = wl_compositor_create_surface(g_compositor);
    g_win = wl_egl_window_create(g_surface, 640, 480);
+   g_shell_surf = wl_shell_get_shell_surface(g_shell, g_surface);
 
-   g_egl_surf = eglCreateWindowSurface(g_egl_dpy, g_config, (EGLNativeWindowType)g_win, NULL);
+   wl_shell_surface_add_listener(g_shell_surf, &shell_surface_listener, NULL);
+   wl_shell_surface_set_toplevel(g_shell_surf);
+   wl_shell_surface_set_class(g_shell_surf, "RetroArch");
 
    g_egl_ctx = eglCreateContext(g_egl_dpy, g_config, EGL_NO_CONTEXT,
          attr != egl_attribs ? egl_attribs : NULL);
@@ -396,8 +463,8 @@ static bool gfx_ctx_set_video_mode(void *data,
    RARCH_LOG("[Wayland/EGL]: Current context: %p.\n", (void*)eglGetCurrentContext());
 
    gfx_ctx_swap_interval(data, g_interval);
-   wl_display_dispatch_pending(g_dpy);
-   wl_display_flush(g_dpy);
+
+   flush_wayland_fd();
    return true;
 
 error:
@@ -408,6 +475,7 @@ error:
 static void gfx_ctx_destroy(void *data)
 {
    (void)data;
+
    if (g_egl_dpy)
    {
       if (g_egl_ctx)
@@ -430,7 +498,32 @@ static void gfx_ctx_destroy(void *data)
    g_egl_dpy     = NULL;
    g_config      = 0;
 
-   // Do not close g_dpy. We'll keep one for the entire application lifecycle to work-around nVidia EGL limitations.
+   if (g_win)
+      wl_egl_window_destroy(g_win);
+   if (g_shell)
+      wl_shell_destroy(g_shell);
+   if (g_compositor)
+      wl_compositor_destroy(g_compositor);
+   if (g_registry)
+      wl_registry_destroy(g_registry);
+   if (g_shell_surf)
+      wl_shell_surface_destroy(g_shell_surf);
+   if (g_surface)
+      wl_surface_destroy(g_surface);
+
+   if (g_dpy)
+   {
+      wl_display_flush(g_dpy);
+      wl_display_disconnect(g_dpy);
+   }
+
+   g_win        = NULL;
+   g_shell      = NULL;
+   g_compositor = NULL;
+   g_registry   = NULL;
+   g_dpy        = NULL;
+   g_shell_surf = NULL;
+   g_surface    = NULL;
 }
 
 static void gfx_ctx_input_driver(void *data, const input_driver_t **input, void **input_data)
