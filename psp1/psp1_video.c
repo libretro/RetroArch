@@ -108,6 +108,7 @@ typedef struct psp1_video
    bool vblank_not_reached;
    bool keep_aspect;
    bool should_resize;
+   bool hw_render;
 
 } psp1_video_t;
 
@@ -291,6 +292,7 @@ static void *psp_init(const video_info_t *video,
 
    psp->keep_aspect = true;
    psp->should_resize = true;
+   psp->hw_render = false;
 
    return psp;
 error:
@@ -315,9 +317,13 @@ static bool psp_frame(void *data, const void *frame,
    if (!width || !height)
       return false;
 
-   if (!(((uint32_t)frame&0x04000000) || (frame == RETRO_HW_FRAME_BUFFER_VALID))) // let the core decide when to sync when HW_RENDER
-      sceGuSync(0, 0);
+   if (((uint32_t)frame&0x04000000) || (frame == RETRO_HW_FRAME_BUFFER_VALID))
+      psp->hw_render = true;
+   else if (frame)
+      psp->hw_render = false;
 
+   if (!psp->hw_render)
+      sceGuSync(0, 0); // let the core decide when to sync when HW_RENDER
 
    pspDebugScreenSetBase(psp->draw_buffer);
 
@@ -375,12 +381,10 @@ static bool psp_frame(void *data, const void *frame,
    sceGuStart(GU_DIRECT, psp->main_dList);
 
    sceGuTexFilter(psp->tex_filter, psp->tex_filter);
+   sceGuClear(GU_COLOR_BUFFER_BIT);
 
-   if (((uint32_t)frame&0x04000000) || (frame == RETRO_HW_FRAME_BUFFER_VALID)) // frame in VRAM ? texture/palette was set in core so draw directly
-   {
-      sceGuClear(GU_COLOR_BUFFER_BIT);
+   if (psp->hw_render) // frame in VRAM ? texture/palette was set in core so draw directly
       sceGuDrawArray(GU_SPRITES, GU_TEXTURE_16BIT | GU_COLOR_4444 | GU_VERTEX_16BIT | GU_TRANSFORM_2D, 2, NULL, (void*)(psp->frame_coords));
-   }
    else
    {
       if (frame!=NULL)
@@ -388,8 +392,6 @@ static bool psp_frame(void *data, const void *frame,
          sceKernelDcacheWritebackRange(frame,pitch * height);
          sceGuCopyImage(GU_PSM_5650, ((u32)frame & 0xF) >> psp->bpp_log2, 0, width, height, pitch >> psp->bpp_log2, (void*)((u32)frame & ~0xF), 0, 0, width, psp->texture);
       }
-
-      sceGuClear(GU_COLOR_BUFFER_BIT);
       sceGuTexImage(0, next_pow2(width), next_pow2(height), width, psp->texture);
       sceGuCallList(psp->frame_dList);
    }
