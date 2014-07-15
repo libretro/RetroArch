@@ -270,7 +270,7 @@ static void qnx_input_autodetect_gamepad(void *data, input_device_t* controller,
    if (name_buf[0] != '\0')
    {
       strlcpy(g_settings.input.device_names[port], name_buf, sizeof(g_settings.input.device_names[port]));
-      input_config_autoconfigure_joypad(port, name_buf, android_joypad.ident);
+      input_config_autoconfigure_joypad(port, name_buf, qnx->joypad);
 
       controller->port = port;
       qnx->port_device[port] = controller;
