@@ -440,8 +440,8 @@ static bool gfx_ctx_set_video_mode(void *data,
    EGLint *attr = egl_attribs;
    attr = egl_fill_attribs(attr);
 
-   g_width = DEFAULT_WINDOWED_WIDTH;
-   g_height = DEFAULT_WINDOWED_HEIGHT;
+   g_width = width ? width : DEFAULT_WINDOWED_WIDTH;
+   g_height = height ? height : DEFAULT_WINDOWED_HEIGHT;
 
    g_surface = wl_compositor_create_surface(g_compositor);
    g_win = wl_egl_window_create(g_surface, g_width, g_height);
