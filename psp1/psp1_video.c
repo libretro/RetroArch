@@ -108,6 +108,7 @@ typedef struct psp1_video
    bool vblank_not_reached;
    bool keep_aspect;
    bool should_resize;
+   bool hw_render;
 
 } psp1_video_t;
 
@@ -141,14 +142,18 @@ static void *psp_init(const video_info_t *video,
    psp->vp.full_width  = SCEGU_SCR_WIDTH;
    psp->vp.full_height = SCEGU_SCR_HEIGHT;
 
-   psp->main_dList         = memalign(16, 256); // make sure to allocate more space if bigger display lists are needed.
-   psp->frame_dList        = memalign(16, 256);
-   psp->menu.dList         = memalign(16, 256);
+   // make sure anything using uncached pointers reserves whole cachelines (memory address and size need to be a multiple of 64)
+   // so it isn't overwritten by an unlucky cache writeback.
+   // this includes display lists since the Gu library uses unchached pointers to write to them.
+
+   psp->main_dList         = memalign(64, 256); // allocate more space if bigger display lists are needed.
+   psp->frame_dList        = memalign(64, 256);
+   psp->menu.dList         = memalign(64, 256);
    psp->menu.frame         = memalign(16,  2 * 480 * 272);
-   psp->frame_coords       = memalign(64,  1 * sizeof(psp1_sprite_t));
+   psp->frame_coords       = memalign(64, 16 * sizeof(psp1_sprite_t));
    psp->menu.frame_coords  = memalign(64, 16 * sizeof(psp1_sprite_t));
 
-   memset(psp->frame_coords      , 0,  1 * sizeof(psp1_sprite_t));
+   memset(psp->frame_coords      , 0, 16 * sizeof(psp1_sprite_t));
    memset(psp->menu.frame_coords , 0, 16 * sizeof(psp1_sprite_t));
    sceKernelDcacheWritebackInvalidateAll();
    psp->frame_coords       = TO_UNCACHED_PTR(psp->frame_coords);
@@ -287,6 +292,7 @@ static void *psp_init(const video_info_t *video,
 
    psp->keep_aspect = true;
    psp->should_resize = true;
+   psp->hw_render = false;
 
    return psp;
 error:
@@ -311,9 +317,13 @@ static bool psp_frame(void *data, const void *frame,
    if (!width || !height)
       return false;
 
-   if (!(((uint32_t)frame&0x04000000) || (frame == RETRO_HW_FRAME_BUFFER_VALID))) // let the core decide when to sync when HW_RENDER
-      sceGuSync(0, 0);
+   if (((uint32_t)frame&0x04000000) || (frame == RETRO_HW_FRAME_BUFFER_VALID))
+      psp->hw_render = true;
+   else if (frame)
+      psp->hw_render = false;
 
+   if (!psp->hw_render)
+      sceGuSync(0, 0); // let the core decide when to sync when HW_RENDER
 
    pspDebugScreenSetBase(psp->draw_buffer);
 
@@ -371,12 +381,10 @@ static bool psp_frame(void *data, const void *frame,
    sceGuStart(GU_DIRECT, psp->main_dList);
 
    sceGuTexFilter(psp->tex_filter, psp->tex_filter);
+   sceGuClear(GU_COLOR_BUFFER_BIT);
 
-   if (((uint32_t)frame&0x04000000) || (frame == RETRO_HW_FRAME_BUFFER_VALID)) // frame in VRAM ? texture/palette was set in core so draw directly
-   {
-      sceGuClear(GU_COLOR_BUFFER_BIT);
+   if (psp->hw_render) // frame in VRAM ? texture/palette was set in core so draw directly
       sceGuDrawArray(GU_SPRITES, GU_TEXTURE_16BIT | GU_COLOR_4444 | GU_VERTEX_16BIT | GU_TRANSFORM_2D, 2, NULL, (void*)(psp->frame_coords));
-   }
    else
    {
       if (frame!=NULL)
@@ -384,8 +392,6 @@ static bool psp_frame(void *data, const void *frame,
          sceKernelDcacheWritebackRange(frame,pitch * height);
          sceGuCopyImage(GU_PSM_5650, ((u32)frame & 0xF) >> psp->bpp_log2, 0, width, height, pitch >> psp->bpp_log2, (void*)((u32)frame & ~0xF), 0, 0, width, psp->texture);
       }
-
-      sceGuClear(GU_COLOR_BUFFER_BIT);
       sceGuTexImage(0, next_pow2(width), next_pow2(height), width, psp->texture);
       sceGuCallList(psp->frame_dList);
    }
