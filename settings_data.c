@@ -413,7 +413,16 @@ static void general_change_handler(const void *data)
     if (!setting)
        return;
     
-    g_settings.fps_show = *setting->value.boolean;
+    if (!strcmp(setting->name, "fps_show"))
+       g_settings.fps_show = *setting->value.boolean;
+    else if (!strcmp(setting->name, "rewind_enable"))
+    {
+        g_settings.rewind_enable = *setting->value.boolean;
+        if (g_settings.rewind_enable)
+            rarch_init_rewind();
+        else
+            rarch_deinit_rewind();
+    }
 }
 
 
@@ -504,7 +513,7 @@ const rarch_setting_t* setting_data_get_list(void)
          START_SUB_GROUP("General Options")
          CONFIG_BOOL(g_extern.config_save_on_exit,          "config_save_on_exit",        "Configuration Save On Exit", config_save_on_exit, GROUP_NAME, SUBGROUP_NAME, NULL)
          CONFIG_BOOL(g_settings.fps_show,                   "fps_show",                   "Show Framerate",             fps_show, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
-         CONFIG_BOOL(g_settings.rewind_enable,              "rewind_enable",              "Rewind",                     rewind_enable, GROUP_NAME, SUBGROUP_NAME, NULL)
+         CONFIG_BOOL(g_settings.rewind_enable,              "rewind_enable",              "Rewind",                     rewind_enable, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
          //CONFIG_INT(g_settings.rewind_buffer_size,          "rewind_buffer_size",         "Rewind Buffer Size",       rewind_buffer_size)     WITH_SCALE(1000000)
          CONFIG_UINT(g_settings.rewind_granularity,         "rewind_granularity",         "Rewind Granularity",         rewind_granularity, GROUP_NAME, SUBGROUP_NAME, NULL)
          CONFIG_BOOL(g_settings.block_sram_overwrite,       "block_sram_overwrite",       "SRAM Block overwrite",       block_sram_overwrite, GROUP_NAME, SUBGROUP_NAME, NULL)
