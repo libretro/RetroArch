@@ -78,6 +78,8 @@ static void shell_surface_handle_configure(void *data, struct wl_shell_surface *
    (void)edges;
    g_width = width;
    g_height = height;
+
+   RARCH_LOG("[Wayland/EGL]: Surface configure: %u x %u.\n", g_width, g_height);
 }
 
 static void shell_surface_handle_popup_done(void *data, struct wl_shell_surface *shell_surface)
@@ -220,8 +222,7 @@ static void gfx_ctx_swap_buffers(void *data)
 static void gfx_ctx_set_resize(void *data, unsigned width, unsigned height)
 {
    (void)data;
-   (void)width;
-   (void)height;
+   wl_egl_window_resize(g_win, width, height, 0, 0);
 }
 
 static void gfx_ctx_update_window_title(void *data)
@@ -238,9 +239,12 @@ static void gfx_ctx_update_window_title(void *data)
 static void gfx_ctx_get_video_size(void *data, unsigned *width, unsigned *height)
 {
    (void)data;
-   *width = 640;
-   *height = 480;
+   *width = g_width;
+   *height = g_height;
 }
+
+#define DEFAULT_WINDOWED_WIDTH 640
+#define DEFAULT_WINDOWED_HEIGHT 480
 
 static bool gfx_ctx_init(void *data)
 {
@@ -311,9 +315,16 @@ static bool gfx_ctx_init(void *data)
    g_registry = wl_display_get_registry(g_dpy);
    wl_registry_add_listener(g_registry, &registry_listener, NULL);
    wl_display_dispatch(g_dpy);
+
    if (!g_compositor)
    {
       RARCH_ERR("Failed to create compositor.\n");
+      goto error;
+   }
+
+   if (!g_shell)
+   {
+      RARCH_ERR("Failed to create shell.\n");
       goto error;
    }
 
@@ -429,8 +440,11 @@ static bool gfx_ctx_set_video_mode(void *data,
    EGLint *attr = egl_attribs;
    attr = egl_fill_attribs(attr);
 
+   g_width = DEFAULT_WINDOWED_WIDTH;
+   g_height = DEFAULT_WINDOWED_HEIGHT;
+
    g_surface = wl_compositor_create_surface(g_compositor);
-   g_win = wl_egl_window_create(g_surface, 640, 480);
+   g_win = wl_egl_window_create(g_surface, g_width, g_height);
    g_shell_surf = wl_shell_get_shell_surface(g_shell, g_surface);
 
    wl_shell_surface_add_listener(g_shell_surf, &shell_surface_listener, NULL);
@@ -465,6 +479,9 @@ static bool gfx_ctx_set_video_mode(void *data,
    RARCH_LOG("[Wayland/EGL]: Current context: %p.\n", (void*)eglGetCurrentContext());
 
    gfx_ctx_swap_interval(data, g_interval);
+
+   if (fullscreen)
+      wl_shell_surface_set_fullscreen(g_shell_surf, WL_SHELL_SURFACE_FULLSCREEN_METHOD_DEFAULT, 0, NULL);
 
    flush_wayland_fd();
    return true;
@@ -526,6 +543,8 @@ static void gfx_ctx_destroy(void *data)
    g_dpy        = NULL;
    g_shell_surf = NULL;
    g_surface    = NULL;
+
+   g_width = g_height = 0;
 }
 
 static void gfx_ctx_input_driver(void *data, const input_driver_t **input, void **input_data)
