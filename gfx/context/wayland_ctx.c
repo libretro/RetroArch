@@ -229,7 +229,8 @@ static void gfx_ctx_update_window_title(void *data)
    (void)data;
    char buf[128], buf_fps[128];
    bool fps_draw = g_settings.fps_show;
-   gfx_get_fps(buf, sizeof(buf), fps_draw ? buf_fps : NULL, sizeof(buf_fps));
+   if (gfx_get_fps(buf, sizeof(buf), fps_draw ? buf_fps : NULL, sizeof(buf_fps)))
+      wl_shell_surface_set_title(g_shell_surf, buf);
    if (fps_draw)
       msg_queue_push(g_extern.msg_queue, buf_fps, 1, 1);
 }
@@ -435,6 +436,7 @@ static bool gfx_ctx_set_video_mode(void *data,
    wl_shell_surface_add_listener(g_shell_surf, &shell_surface_listener, NULL);
    wl_shell_surface_set_toplevel(g_shell_surf);
    wl_shell_surface_set_class(g_shell_surf, "RetroArch");
+   wl_shell_surface_set_title(g_shell_surf, "RetroArch");
 
    g_egl_ctx = eglCreateContext(g_egl_dpy, g_config, EGL_NO_CONTEXT,
          attr != egl_attribs ? egl_attribs : NULL);
