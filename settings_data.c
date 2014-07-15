@@ -413,7 +413,7 @@ static void general_change_handler(const void *data)
     if (!setting)
        return;
     
-    g_settings.fps_show = setting->value.boolean;
+    g_settings.fps_show = *setting->value.boolean;
 }
 
 
