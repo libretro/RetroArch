@@ -590,6 +590,42 @@ static void general_change_handler(const void *data)
     }
     else if (!strcmp(setting->name, "video_allow_rotate"))
         g_settings.video.allow_rotate = *setting->value.boolean;
+    else if (!strcmp(setting->name, "video_windowed_fullscreen"))
+        g_settings.video.windowed_fullscreen = *setting->value.boolean;
+    else if (!strcmp(setting->name, "video_fullscreen_x"))
+        g_settings.video.fullscreen_x = *setting->value.unsigned_integer;
+    else if (!strcmp(setting->name, "video_fullscreen_y"))
+        g_settings.video.fullscreen_y = *setting->value.unsigned_integer;
+    else if (!strcmp(setting->name, "video_refresh_rate"))
+    {
+        driver_set_monitor_refresh_rate(*setting->value.fraction);
+        /* In case refresh rate update forced non-block video. */
+        video_set_nonblock_state_func(false);
+    }
+    else if (!strcmp(setting->name, "video_xscale"))
+    {
+        float *scale = (float*)&g_settings.video.xscale;
+        
+        *scale = roundf(*setting->value.fraction);
+        *scale = max(*scale, 1.0f);
+        
+        if (!g_settings.video.fullscreen)
+            rarch_reinit_drivers();
+    }
+    else if (!strcmp(setting->name, "video_yscale"))
+    {
+        float *scale = (float*)&g_settings.video.yscale;
+        
+        *scale = roundf(*setting->value.fraction);
+        *scale = max(*scale, 1.0f);
+        
+        if (!g_settings.video.fullscreen)
+            rarch_reinit_drivers();
+    }
+    else if (!strcmp(setting->name, "video_message_pos_x"))
+        g_settings.video.msg_pos_x = *setting->value.fraction;
+    else if (!strcmp(setting->name, "video_message_pos_y"))
+        g_settings.video.msg_pos_y = *setting->value.fraction;
 }
 
 
@@ -681,7 +717,7 @@ const rarch_setting_t* setting_data_get_list(void)
          CONFIG_BOOL(g_extern.config_save_on_exit,          "config_save_on_exit",        "Configuration Save On Exit", config_save_on_exit, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
          CONFIG_BOOL(g_settings.fps_show,                   "fps_show",                   "Show Framerate",             fps_show, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
          CONFIG_BOOL(g_settings.rewind_enable,              "rewind_enable",              "Rewind",                     rewind_enable, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
-         //CONFIG_INT(g_settings.rewind_buffer_size,          "rewind_buffer_size",         "Rewind Buffer Size",       rewind_buffer_size, NULL)     WITH_SCALE(1000000)
+         //CONFIG_SIZE(g_settings.rewind_buffer_size,          "rewind_buffer_size",         "Rewind Buffer Size",       rewind_buffer_size, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
          CONFIG_UINT(g_settings.rewind_granularity,         "rewind_granularity",         "Rewind Granularity",         rewind_granularity, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
          CONFIG_BOOL(g_settings.block_sram_overwrite,       "block_sram_overwrite",       "SRAM Block overwrite",       block_sram_overwrite, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
          CONFIG_UINT(g_settings.autosave_interval,          "autosave_interval",          "SRAM Autosave",          autosave_interval, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
@@ -708,10 +744,10 @@ const rarch_setting_t* setting_data_get_list(void)
          START_SUB_GROUP("Monitor")
          CONFIG_UINT(g_settings.video.monitor_index,        "video_monitor_index",        "Monitor Index",              monitor_index, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
          CONFIG_BOOL(g_settings.video.fullscreen,           "video_fullscreen",           "Use Fullscreen mode",        fullscreen, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
-         CONFIG_BOOL(g_settings.video.windowed_fullscreen,  "video_windowed_fullscreen",  "Windowed Fullscreen Mode",   windowed_fullscreen, GROUP_NAME, SUBGROUP_NAME, NULL)
-         CONFIG_UINT(g_settings.video.fullscreen_x,         "video_fullscreen_x",         "Fullscreen Width",           fullscreen_x, GROUP_NAME, SUBGROUP_NAME, NULL)
-         CONFIG_UINT(g_settings.video.fullscreen_y,         "video_fullscreen_y",         "Fullscreen Height",          fullscreen_y, GROUP_NAME, SUBGROUP_NAME, NULL)
-         CONFIG_FLOAT(g_settings.video.refresh_rate,        "video_refresh_rate",         "Refresh Rate",               refresh_rate, GROUP_NAME, SUBGROUP_NAME, NULL)
+         CONFIG_BOOL(g_settings.video.windowed_fullscreen,  "video_windowed_fullscreen",  "Windowed Fullscreen Mode",   windowed_fullscreen, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
+         CONFIG_UINT(g_settings.video.fullscreen_x,         "video_fullscreen_x",         "Fullscreen Width",           fullscreen_x, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
+         CONFIG_UINT(g_settings.video.fullscreen_y,         "video_fullscreen_y",         "Fullscreen Height",          fullscreen_y, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
+         CONFIG_FLOAT(g_settings.video.refresh_rate,        "video_refresh_rate",         "Refresh Rate",               refresh_rate, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
          END_SUB_GROUP()
 
          START_SUB_GROUP("Aspect")
@@ -722,8 +758,8 @@ const rarch_setting_t* setting_data_get_list(void)
          END_SUB_GROUP()
 
          START_SUB_GROUP("Scaling")
-         CONFIG_FLOAT(g_settings.video.xscale,              "video_xscale",               "Windowed Scale (X)",                    xscale, GROUP_NAME, SUBGROUP_NAME, NULL)
-         CONFIG_FLOAT(g_settings.video.yscale,              "video_yscale",               "Windowed Scale (Y)",                    yscale, GROUP_NAME, SUBGROUP_NAME, NULL)
+         CONFIG_FLOAT(g_settings.video.xscale,              "video_xscale",               "Windowed Scale (X)",                    xscale, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
+         CONFIG_FLOAT(g_settings.video.yscale,              "video_yscale",               "Windowed Scale (Y)",                    yscale, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
          CONFIG_BOOL(g_settings.video.scale_integer,        "video_scale_integer",        "Integer Scale",      scale_integer, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
 
          CONFIG_INT(g_extern.console.screen.viewports.custom_vp.x,         "custom_viewport_x",       "Custom Viewport X",       0, GROUP_NAME, SUBGROUP_NAME, NULL)
@@ -769,8 +805,8 @@ const rarch_setting_t* setting_data_get_list(void)
          CONFIG_PATH(g_settings.video.font_path,            "video_font_path",            "Font Path",                  "", GROUP_NAME, SUBGROUP_NAME, general_change_handler)       WITH_FLAGS(SD_FLAG_ALLOW_EMPTY)
          CONFIG_FLOAT(g_settings.video.font_size,           "video_font_size",            "OSD Font Size",              font_size, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
          CONFIG_BOOL(g_settings.video.font_enable,          "video_font_enable",          "OSD Font Enable",            font_enable, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
-         CONFIG_FLOAT(g_settings.video.msg_pos_x,           "video_message_pos_x",        "Message X Position",         message_pos_offset_x, GROUP_NAME, SUBGROUP_NAME, NULL)
-         CONFIG_FLOAT(g_settings.video.msg_pos_y,           "video_message_pos_y",        "Message Y Position",         message_pos_offset_y, GROUP_NAME, SUBGROUP_NAME, NULL)
+         CONFIG_FLOAT(g_settings.video.msg_pos_x,           "video_message_pos_x",        "Message X Position",         message_pos_offset_x, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
+         CONFIG_FLOAT(g_settings.video.msg_pos_y,           "video_message_pos_y",        "Message Y Position",         message_pos_offset_y, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
          /* message color */
          END_SUB_GROUP()
          END_GROUP()
