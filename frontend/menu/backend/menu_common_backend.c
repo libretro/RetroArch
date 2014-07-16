@@ -140,8 +140,7 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
          file_list_push(menu->selection_buf, "Libretro Logging Level", MENU_SETTINGS_LIBRETRO_LOG_LEVEL, 0);
          file_list_push(menu->selection_buf, "Logging Verbosity", MENU_SETTINGS_LOGGING_VERBOSITY, 0);
          file_list_push(menu->selection_buf, "Performance Counters", MENU_SETTINGS_PERFORMANCE_COUNTERS_ENABLE, 0);
-         current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "game_history_size");
-         if (current_setting)
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "game_history_size")))
          {
             *current_setting->value.unsigned_integer = g_settings.game_history_size;
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_CONTENT_HISTORY_SIZE, 0);
@@ -149,23 +148,31 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
          file_list_push(menu->selection_buf, "Configuration Save On Exit", MENU_SETTINGS_CONFIG_SAVE_ON_EXIT, 0);
          file_list_push(menu->selection_buf, "Configuration Per-Core", MENU_SETTINGS_PER_CORE_CONFIG, 0);
 #ifdef HAVE_SCREENSHOTS
-         file_list_push(menu->selection_buf, "GPU Screenshots", MENU_SETTINGS_GPU_SCREENSHOT, 0);
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "video_gpu_screenshot")))
+         {
+            *current_setting->value.boolean = g_settings.video.gpu_screenshot;
+            file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_GPU_SCREENSHOT, 0);
+         }
 #endif
          file_list_push(menu->selection_buf, "Load Dummy On Core Shutdown", MENU_SETTINGS_LOAD_DUMMY_ON_CORE_SHUTDOWN, 0);
-         current_setting = setting_data_find_setting(setting_data, "fps_show");
-         if (current_setting)
+         if ((current_setting = setting_data_find_setting(setting_data, "fps_show")))
          {
             *current_setting->value.boolean = g_settings.fps_show;
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_DEBUG_TEXT, 0);
          }
          file_list_push(menu->selection_buf, "Maximum Run Speed", MENU_SETTINGS_FASTFORWARD_RATIO, 0);
          file_list_push(menu->selection_buf, "Slow-Motion Ratio", MENU_SETTINGS_SLOWMOTION_RATIO, 0);
-         file_list_push(menu->selection_buf, "Rewind", MENU_SETTINGS_REWIND_ENABLE, 0);
+
+         if ((current_setting = setting_data_find_setting(setting_data, "rewind_enable")))
+         {
+            *current_setting->value.boolean = g_settings.rewind_enable;
+            file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_REWIND_ENABLE, 0);
+         }
+
          file_list_push(menu->selection_buf, "Rewind Granularity", MENU_SETTINGS_REWIND_GRANULARITY, 0);
          file_list_push(menu->selection_buf, "SRAM Block Overwrite", MENU_SETTINGS_BLOCK_SRAM_OVERWRITE, 0);
 #if defined(HAVE_THREADS)
-         current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "autosave_interval");
-         if (current_setting)
+         if ((current_setting = setting_data_find_setting(setting_data, "autosave_interval")))
          {
             *current_setting->value.unsigned_integer = g_settings.autosave_interval;
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_SRAM_AUTOSAVE, 0);
@@ -3459,30 +3466,37 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
             file_list_push(driver.menu->menu_stack, "", MENU_START_SCREEN, 0);
          break;
       case MENU_SETTINGS_REWIND_ENABLE:
-         if (action == MENU_ACTION_OK ||
-               action == MENU_ACTION_LEFT ||
-               action == MENU_ACTION_RIGHT)
+         current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "rewind_enable");
+
+         if (current_setting)
          {
-            g_settings.rewind_enable = !g_settings.rewind_enable;
-            if (g_settings.rewind_enable)
-               rarch_init_rewind();
-            else
-               rarch_deinit_rewind();
-         }
-         else if (action == MENU_ACTION_START)
-         {
-            g_settings.rewind_enable = false;
-            rarch_deinit_rewind();
+            if (action == MENU_ACTION_OK ||
+                  action == MENU_ACTION_LEFT ||
+                  action == MENU_ACTION_RIGHT)
+               *current_setting->value.boolean = !(*current_setting->value.boolean);
+            else if (action == MENU_ACTION_START)
+               *current_setting->value.boolean = false;
+
+            if (current_setting->change_handler)
+               current_setting->change_handler(current_setting);
          }
          break;
 #ifdef HAVE_SCREENSHOTS
       case MENU_SETTINGS_GPU_SCREENSHOT:
-         if (action == MENU_ACTION_OK ||
-               action == MENU_ACTION_LEFT ||
-               action == MENU_ACTION_RIGHT)
-            g_settings.video.gpu_screenshot = !g_settings.video.gpu_screenshot;
-         else if (action == MENU_ACTION_START)
-            g_settings.video.gpu_screenshot = true;
+         current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "video_gpu_screenshot");
+
+         if (current_setting)
+         {
+            if (action == MENU_ACTION_OK ||
+                  action == MENU_ACTION_LEFT ||
+                  action == MENU_ACTION_RIGHT)
+               *current_setting->value.boolean = !(*current_setting->value.boolean);
+            else if (action == MENU_ACTION_START)
+               *current_setting->value.boolean = false;
+
+            if (current_setting->change_handler)
+               current_setting->change_handler(current_setting);
+         }
          break;
 #endif
       case MENU_SETTINGS_REWIND_GRANULARITY:
