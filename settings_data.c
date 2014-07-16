@@ -807,7 +807,9 @@ rarch_setting_t* setting_data_get_list(void)
          //CONFIG_SIZE(g_settings.rewind_buffer_size,          "rewind_buffer_size",         "Rewind Buffer Size",       rewind_buffer_size, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
          CONFIG_UINT(g_settings.rewind_granularity,         "rewind_granularity",         "Rewind Granularity",         rewind_granularity, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
          CONFIG_BOOL(g_settings.block_sram_overwrite,       "block_sram_overwrite",       "SRAM Block overwrite",       block_sram_overwrite, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
+#ifdef HAVE_THREADS
          CONFIG_UINT(g_settings.autosave_interval,          "autosave_interval",          "SRAM Autosave",          autosave_interval, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
+#endif
          CONFIG_BOOL(g_settings.video.disable_composition,  "video_disable_composition",  "Window Compositing",         disable_composition, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
          CONFIG_BOOL(g_settings.pause_nonactive,            "pause_nonactive",            "Window Unfocus Pause",       pause_nonactive, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
          CONFIG_FLOAT(g_settings.fastforward_ratio,         "fastforward_ratio",          "Maximum Run Speed",         fastforward_ratio, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
@@ -864,18 +866,24 @@ rarch_setting_t* setting_data_get_list(void)
 
 
          START_SUB_GROUP("Synchronization")
+#if defined(HAVE_THREADS) && !defined(RARCH_CONSOLE)
          CONFIG_BOOL(g_settings.video.threaded,             "video_threaded",             "Threaded Video",         video_threaded, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
+#endif
          CONFIG_BOOL(g_settings.video.vsync,                "video_vsync",                "VSync",                      vsync, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
          CONFIG_UINT(g_settings.video.swap_interval,        "video_swap_interval",        "VSync Swap Interval",        swap_interval, GROUP_NAME, SUBGROUP_NAME, general_change_handler)       WITH_RANGE(1, 4)
          CONFIG_BOOL(g_settings.video.hard_sync,            "video_hard_sync",            "Hard GPU Sync",              hard_sync, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
          CONFIG_UINT(g_settings.video.hard_sync_frames,     "video_hard_sync_frames",     "Hard GPU Sync Frames",       hard_sync_frames, GROUP_NAME, SUBGROUP_NAME, general_change_handler)    WITH_RANGE(0, 3)
+#if !defined(RARCH_MOBILE)
          CONFIG_BOOL(g_settings.video.black_frame_insertion, "video_black_frame_insertion", "Black Frame Insertion",      black_frame_insertion, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
+#endif
          END_SUB_GROUP()
 
          START_SUB_GROUP("Miscellaneous")
          CONFIG_BOOL(g_settings.video.post_filter_record,   "video_post_filter_record",   "Post filter record Enable",         post_filter_record, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
          CONFIG_BOOL(g_settings.video.gpu_record,           "video_gpu_record",           "GPU Record",                 gpu_record, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
+#ifdef HAVE_SCREENSHOTS
          CONFIG_BOOL(g_settings.video.gpu_screenshot,       "video_gpu_screenshot",       "GPU Screenshot Enable",             gpu_screenshot, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
+#endif
          CONFIG_BOOL(g_settings.video.allow_rotate,         "video_allow_rotate",         "Allow rotation",             allow_rotate, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
          CONFIG_BOOL(g_settings.video.crop_overscan,        "video_crop_overscan",        "Crop Overscan (reload)",     crop_overscan, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
 #ifndef HAVE_FILTERS_BUILTIN

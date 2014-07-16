@@ -147,13 +147,11 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
          }
          file_list_push(menu->selection_buf, "Configuration Save On Exit", MENU_SETTINGS_CONFIG_SAVE_ON_EXIT, 0);
          file_list_push(menu->selection_buf, "Configuration Per-Core", MENU_SETTINGS_PER_CORE_CONFIG, 0);
-#ifdef HAVE_SCREENSHOTS
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "video_gpu_screenshot")))
          {
             *current_setting->value.boolean = g_settings.video.gpu_screenshot;
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_GPU_SCREENSHOT, 0);
          }
-#endif
          file_list_push(menu->selection_buf, "Load Dummy On Core Shutdown", MENU_SETTINGS_LOAD_DUMMY_ON_CORE_SHUTDOWN, 0);
          if ((current_setting = setting_data_find_setting(setting_data, "fps_show")))
          {
@@ -171,13 +169,11 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
 
          file_list_push(menu->selection_buf, "Rewind Granularity", MENU_SETTINGS_REWIND_GRANULARITY, 0);
          file_list_push(menu->selection_buf, "SRAM Block Overwrite", MENU_SETTINGS_BLOCK_SRAM_OVERWRITE, 0);
-#if defined(HAVE_THREADS)
          if ((current_setting = setting_data_find_setting(setting_data, "autosave_interval")))
          {
             *current_setting->value.unsigned_integer = g_settings.autosave_interval;
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_SRAM_AUTOSAVE, 0);
          }
-#endif
          file_list_push(menu->selection_buf, "Window Compositing", MENU_SETTINGS_WINDOW_COMPOSITING_ENABLE, 0);
          file_list_push(menu->selection_buf, "Window Unfocus Pause", MENU_SETTINGS_PAUSE_IF_WINDOW_FOCUS_LOST, 0);
          file_list_push(menu->selection_buf, "Savestate Autosave On Exit", MENU_SETTINGS_SAVESTATE_AUTO_SAVE, 0);
@@ -206,7 +202,11 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
          file_list_push(menu->selection_buf, "Soft filtering", MENU_SETTINGS_SOFT_DISPLAY_FILTER, 0);
          file_list_push(menu->selection_buf, "Flicker filtering", MENU_SETTINGS_FLICKER_FILTER, 0);
 #endif
-         file_list_push(menu->selection_buf, "Integer Scale", MENU_SETTINGS_VIDEO_INTEGER_SCALE, 0);
+         if ((current_setting = setting_data_find_setting(setting_data, "video_scale_integer")))
+         {
+            *current_setting->value.boolean = g_settings.video.scale_integer;
+            file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_VIDEO_INTEGER_SCALE, 0);
+         }
          file_list_push(menu->selection_buf, "Aspect Ratio", MENU_SETTINGS_VIDEO_ASPECT_RATIO, 0);
          file_list_push(menu->selection_buf, "Custom Ratio", MENU_SETTINGS_CUSTOM_VIEWPORT, 0);
          if ((current_setting = setting_data_find_setting(setting_data, "video_fullscreen")))
@@ -222,13 +222,21 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
          file_list_push(menu->selection_buf, "VSync", MENU_SETTINGS_VIDEO_VSYNC, 0);
          file_list_push(menu->selection_buf, "Hard GPU Sync", MENU_SETTINGS_VIDEO_HARD_SYNC, 0);
          file_list_push(menu->selection_buf, "Hard GPU Sync Frames", MENU_SETTINGS_VIDEO_HARD_SYNC_FRAMES, 0);
-#if !defined(RARCH_MOBILE)
-         file_list_push(menu->selection_buf, "Black Frame Insertion", MENU_SETTINGS_VIDEO_BLACK_FRAME_INSERTION, 0);
-#endif
-         file_list_push(menu->selection_buf, "VSync Swap Interval", MENU_SETTINGS_VIDEO_SWAP_INTERVAL, 0);
-#if defined(HAVE_THREADS) && !defined(GEKKO)
-         file_list_push(menu->selection_buf, "Threaded Video", MENU_SETTINGS_VIDEO_THREADED, 0);
-#endif
+         if ((current_setting = setting_data_find_setting(setting_data, "video_black_frame_insertion")))
+         {
+            *current_setting->value.boolean = g_settings.video.black_frame_insertion;
+            file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_VIDEO_BLACK_FRAME_INSERTION, 0);
+         }
+         if ((current_setting = setting_data_find_setting(setting_data, "video_swap_interval")))
+         {
+            *current_setting->value.unsigned_integer = g_settings.video.swap_interval;
+            file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_VIDEO_SWAP_INTERVAL, 0);
+         }
+         if ((current_setting = setting_data_find_setting(setting_data, "video_threaded")))
+         {
+            *current_setting->value.boolean = g_settings.video.threaded;
+            file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_VIDEO_THREADED, 0);
+         }
          if ((current_setting = setting_data_find_setting(setting_data, "video_xscale")))
          {
             *current_setting->value.fraction = g_settings.video.xscale;
@@ -4402,15 +4410,18 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
          break;
 
       case MENU_SETTINGS_VIDEO_INTEGER_SCALE:
-         if (action == MENU_ACTION_START)
-            g_settings.video.scale_integer = scale_integer;
-         else if (action == MENU_ACTION_LEFT ||
-               action == MENU_ACTION_RIGHT ||
-               action == MENU_ACTION_OK)
-            g_settings.video.scale_integer = !g_settings.video.scale_integer;
+         if ((current_setting = setting_data_find_setting(setting_data, "video_scale_integer")))
+         {
+            if (action == MENU_ACTION_START)
+               *current_setting->value.boolean = scale_integer;
+            else if (action == MENU_ACTION_LEFT ||
+                  action == MENU_ACTION_RIGHT ||
+                  action == MENU_ACTION_OK)
+               *current_setting->value.boolean = !(*current_setting->value.boolean);
 
-         if (driver.video_data && driver.video_poke && driver.video_poke->apply_state_changes)
-            driver.video_poke->apply_state_changes(driver.video_data);
+            if (current_setting->change_handler)
+               current_setting->change_handler(current_setting);
+         }
          break;
 
       case MENU_SETTINGS_VIDEO_ASPECT_RATIO:
@@ -4600,20 +4611,26 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
          break;
 
       case MENU_SETTINGS_VIDEO_BLACK_FRAME_INSERTION:
-         switch (action)
+         if ((current_setting = setting_data_find_setting(setting_data, "video_black_frame_insertion")))
          {
-            case MENU_ACTION_START:
-               g_settings.video.black_frame_insertion = false;
-               break;
+            switch (action)
+            {
+               case MENU_ACTION_START:
+                  *current_setting->value.boolean = false;
+                  break;
 
-            case MENU_ACTION_LEFT:
-            case MENU_ACTION_RIGHT:
-            case MENU_ACTION_OK:
-               g_settings.video.black_frame_insertion = !g_settings.video.black_frame_insertion;
-               break;
+               case MENU_ACTION_LEFT:
+               case MENU_ACTION_RIGHT:
+               case MENU_ACTION_OK:
+                  *current_setting->value.boolean = !(*current_setting->value.boolean);
+                  break;
 
-            default:
-               break;
+               default:
+                  break;
+            }
+
+            if (current_setting->change_handler)
+               current_setting->change_handler(current_setting);
          }
          break;
 
@@ -4701,50 +4718,48 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
          break;
 #ifdef HAVE_THREADS
       case MENU_SETTINGS_VIDEO_THREADED:
-      {
-         bool old = g_settings.video.threaded;
-         if (action == MENU_ACTION_OK ||
-               action == MENU_ACTION_LEFT ||
-               action == MENU_ACTION_RIGHT)
-            g_settings.video.threaded = !g_settings.video.threaded;
-         else if (action == MENU_ACTION_START)
-            g_settings.video.threaded = false;
+         if ((current_setting = setting_data_find_setting(setting_data, "video_threaded")))
+         {
+            if (action == MENU_ACTION_OK ||
+                  action == MENU_ACTION_LEFT ||
+                  action == MENU_ACTION_RIGHT)
+               *current_setting->value.boolean = !(*current_setting->value.boolean);
+            else if (action == MENU_ACTION_START)
+               *current_setting->value.boolean = false;
 
-         if (g_settings.video.threaded != old)
-            rarch_reinit_drivers();
+            if (current_setting->change_handler)
+               current_setting->change_handler(current_setting);
+         }
          break;
-      }
 #endif
 
       case MENU_SETTINGS_VIDEO_SWAP_INTERVAL:
-      {
-         unsigned old = g_settings.video.swap_interval;
-         switch (action)
+         if ((current_setting = setting_data_find_setting(setting_data, "video_swap_interval")))
          {
-            case MENU_ACTION_START:
-               g_settings.video.swap_interval = 1;
-               break;
+            switch (action)
+            {
+               case MENU_ACTION_START:
+                  *current_setting->value.unsigned_integer = 1;
+                  break;
 
-            case MENU_ACTION_LEFT:
-               g_settings.video.swap_interval--;
-               break;
+               case MENU_ACTION_LEFT:
+                  *current_setting->value.unsigned_integer = *current_setting->value.unsigned_integer - 1;
+                  break;
 
-            case MENU_ACTION_RIGHT:
-            case MENU_ACTION_OK:
-               g_settings.video.swap_interval++;
-               break;
+               case MENU_ACTION_RIGHT:
+               case MENU_ACTION_OK:
+                  *current_setting->value.unsigned_integer = *current_setting->value.unsigned_integer + 1;
+                  break;
 
-            default:
-               break;
+               default:
+                  break;
+            }
+
+            if (current_setting->change_handler)
+               current_setting->change_handler(current_setting);
+
+            break;
          }
-
-         g_settings.video.swap_interval = min(g_settings.video.swap_interval, 4);
-         g_settings.video.swap_interval = max(g_settings.video.swap_interval, 1);
-         if (old != g_settings.video.swap_interval && driver.video && driver.video_data)
-            video_set_nonblock_state_func(false); // This will update the current swap interval. Since we're in the menu now, always apply VSync.
-
-         break;
-      }
 
       case MENU_SETTINGS_VIDEO_HARD_SYNC_FRAMES:
          switch (action)
