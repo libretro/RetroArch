@@ -443,6 +443,11 @@ static void general_change_handler(const void *data)
         g_settings.video.monitor_index = *setting->value.unsigned_integer;
         rarch_reinit_drivers();
     }
+    else if (!strcmp(setting->name, "video_disable_composition"))
+    {
+        g_settings.video.disable_composition = *setting->value.boolean;
+        rarch_reinit_drivers();
+    }
     else if (!strcmp(setting->name, "video_vsync"))
         g_settings.video.vsync = *setting->value.boolean;
     else if (!strcmp(setting->name, "video_hard_sync"))
@@ -494,6 +499,35 @@ static void general_change_handler(const void *data)
         g_extern.state_slot = *setting->value.integer;
     else if (!strcmp(setting->name, "input_autodetect_enable"))
         g_settings.input.autodetect_enable = *setting->value.boolean;
+    else if (!strcmp(setting->name, "input_turbo_period"))
+        g_settings.input.turbo_period = *setting->value.unsigned_integer;
+    else if (!strcmp(setting->name, "input_duty_cycle"))
+        g_settings.input.turbo_duty_cycle = *setting->value.unsigned_integer;
+    else if (!strcmp(setting->name, "input_axis_threshold"))
+        g_settings.input.axis_threshold = *setting->value.fraction;
+    else if (!strcmp(setting->name, "savestate_auto_save"))
+        g_settings.savestate_auto_save = *setting->value.boolean;
+    else if (!strcmp(setting->name, "savestate_auto_load"))
+        g_settings.savestate_auto_load = *setting->value.boolean;
+    else if (!strcmp(setting->name, "savestate_auto_index"))
+        g_settings.savestate_auto_index = *setting->value.boolean;
+    else if (!strcmp(setting->name, "slowmotion_ratio"))
+        g_settings.slowmotion_ratio = max(min(*setting->value.fraction, 10.0f), 1.0f);
+    else if (!strcmp(setting->name, "fastforward_ratio"))
+    {
+        if (*setting->value.fraction < 0.95f)
+            g_settings.fastforward_ratio = fastforward_ratio;
+        else
+            g_settings.fastforward_ratio = max(min(*setting->value.fraction, 10.0f), 1.0f);
+    }
+    else if (!strcmp(setting->name, "autosave_interval"))
+    {
+        rarch_deinit_autosave();
+        g_settings.autosave_interval = *setting->value.unsigned_integer;
+        
+        if (g_settings.autosave_interval)
+            rarch_init_autosave();
+    }
 }
 
 
@@ -588,14 +622,14 @@ const rarch_setting_t* setting_data_get_list(void)
          //CONFIG_INT(g_settings.rewind_buffer_size,          "rewind_buffer_size",         "Rewind Buffer Size",       rewind_buffer_size)     WITH_SCALE(1000000)
          CONFIG_UINT(g_settings.rewind_granularity,         "rewind_granularity",         "Rewind Granularity",         rewind_granularity, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
          CONFIG_BOOL(g_settings.block_sram_overwrite,       "block_sram_overwrite",       "SRAM Block overwrite",       block_sram_overwrite, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
-         CONFIG_UINT(g_settings.autosave_interval,          "autosave_interval",          "SRAM Autosave",          autosave_interval, GROUP_NAME, SUBGROUP_NAME, NULL)
-         CONFIG_BOOL(g_settings.video.disable_composition,  "video_disable_composition",  "Window Compositing",         disable_composition, GROUP_NAME, SUBGROUP_NAME, NULL)
+         CONFIG_UINT(g_settings.autosave_interval,          "autosave_interval",          "SRAM Autosave",          autosave_interval, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
+         CONFIG_BOOL(g_settings.video.disable_composition,  "video_disable_composition",  "Window Compositing",         disable_composition, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
          CONFIG_BOOL(g_settings.pause_nonactive,            "pause_nonactive",            "Window Unfocus Pause",       pause_nonactive, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
-         CONFIG_FLOAT(g_settings.fastforward_ratio,         "fastforward_ratio",          "Maximum Run Speed",         fastforward_ratio, GROUP_NAME, SUBGROUP_NAME, NULL)
-         CONFIG_FLOAT(g_settings.slowmotion_ratio,          "slowmotion_ratio",           "Slow-Motion Ratio",          slowmotion_ratio, GROUP_NAME, SUBGROUP_NAME, NULL)       WITH_RANGE(0, 1)
-         CONFIG_BOOL(g_settings.savestate_auto_index,       "savestate_auto_index",       "Save State Auto Index",      savestate_auto_index, GROUP_NAME, SUBGROUP_NAME, NULL)
-         CONFIG_BOOL(g_settings.savestate_auto_save,        "savestate_auto_save",        "Auto Save State",            savestate_auto_save, GROUP_NAME, SUBGROUP_NAME, NULL)
-         CONFIG_BOOL(g_settings.savestate_auto_load,        "savestate_auto_load",        "Auto Load State",            savestate_auto_load, GROUP_NAME, SUBGROUP_NAME, NULL)
+         CONFIG_FLOAT(g_settings.fastforward_ratio,         "fastforward_ratio",          "Maximum Run Speed",         fastforward_ratio, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
+         CONFIG_FLOAT(g_settings.slowmotion_ratio,          "slowmotion_ratio",           "Slow-Motion Ratio",          slowmotion_ratio, GROUP_NAME, SUBGROUP_NAME, general_change_handler)       WITH_RANGE(0, 1)
+         CONFIG_BOOL(g_settings.savestate_auto_index,       "savestate_auto_index",       "Save State Auto Index",      savestate_auto_index, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
+         CONFIG_BOOL(g_settings.savestate_auto_save,        "savestate_auto_save",        "Auto Save State",            savestate_auto_save, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
+         CONFIG_BOOL(g_settings.savestate_auto_load,        "savestate_auto_load",        "Auto Load State",            savestate_auto_load, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
          CONFIG_INT(g_extern.state_slot,                    "state_slot",                 "State Slot",                 0, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
          END_SUB_GROUP()
        START_SUB_GROUP("Miscellaneous")
@@ -722,9 +756,9 @@ const rarch_setting_t* setting_data_get_list(void)
          END_SUB_GROUP()
 
          START_SUB_GROUP("Turbo/Deadzone")
-         CONFIG_FLOAT(g_settings.input.axis_threshold,      "input_axis_threshold",       "Axis Deadzone",              axis_threshold, GROUP_NAME, SUBGROUP_NAME, NULL)
-         CONFIG_UINT(g_settings.input.turbo_period,         "input_turbo_period",         "Turbo Period",               turbo_period, GROUP_NAME, SUBGROUP_NAME, NULL)
-         CONFIG_UINT(g_settings.input.turbo_duty_cycle,     "input_duty_cycle",           "Duty Cycle",                 turbo_duty_cycle, GROUP_NAME, SUBGROUP_NAME, NULL)
+         CONFIG_FLOAT(g_settings.input.axis_threshold,      "input_axis_threshold",       "Axis Deadzone",              axis_threshold, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
+         CONFIG_UINT(g_settings.input.turbo_period,         "input_turbo_period",         "Turbo Period",               turbo_period, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
+         CONFIG_UINT(g_settings.input.turbo_duty_cycle,     "input_duty_cycle",           "Duty Cycle",                 turbo_duty_cycle, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
          END_SUB_GROUP()
        
        // The second argument to config bind is 1 based for players and 0 only for meta keys
