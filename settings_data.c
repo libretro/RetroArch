@@ -626,6 +626,14 @@ static void general_change_handler(const void *data)
         g_settings.video.msg_pos_x = *setting->value.fraction;
     else if (!strcmp(setting->name, "video_message_pos_y"))
         g_settings.video.msg_pos_y = *setting->value.fraction;
+    else if (!strcmp(setting->name, "network_cmd_enable"))
+        g_settings.network_cmd_enable = *setting->value.boolean;
+    else if (!strcmp(setting->name, "stdin_cmd_enable"))
+        g_settings.stdin_cmd_enable = *setting->value.boolean;
+    else if (!strcmp(setting->name, "video_post_filter_record"))
+        g_settings.video.post_filter_record = *setting->value.boolean;
+    else if (!strcmp(setting->name, "video_gpu_record"))
+        g_settings.video.gpu_record = *setting->value.boolean;
 }
 
 
@@ -731,9 +739,9 @@ const rarch_setting_t* setting_data_get_list(void)
          CONFIG_INT(g_extern.state_slot,                    "state_slot",                 "State Slot",                 0, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
          END_SUB_GROUP()
        START_SUB_GROUP("Miscellaneous")
-       CONFIG_BOOL(g_settings.network_cmd_enable,         "network_cmd_enable",         "Network Commands",           network_cmd_enable, GROUP_NAME, SUBGROUP_NAME, NULL)
+       CONFIG_BOOL(g_settings.network_cmd_enable,         "network_cmd_enable",         "Network Commands",           network_cmd_enable, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
        //CONFIG_INT(g_settings.network_cmd_port,            "network_cmd_port",           "Network Command Port",       network_cmd_port, GROUP_NAME, SUBGROUP_NAME, NULL)
-       CONFIG_BOOL(g_settings.stdin_cmd_enable,           "stdin_cmd_enable",           "stdin command",              stdin_cmd_enable, GROUP_NAME, SUBGROUP_NAME, NULL)
+       CONFIG_BOOL(g_settings.stdin_cmd_enable,           "stdin_cmd_enable",           "stdin command",              stdin_cmd_enable, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
        END_SUB_GROUP()
        END_GROUP()
 
@@ -782,8 +790,8 @@ const rarch_setting_t* setting_data_get_list(void)
          END_SUB_GROUP()
 
          START_SUB_GROUP("Miscellaneous")
-         CONFIG_BOOL(g_settings.video.post_filter_record,   "video_post_filter_record",   "Post filter record",         post_filter_record, GROUP_NAME, SUBGROUP_NAME, NULL)
-         CONFIG_BOOL(g_settings.video.gpu_record,           "video_gpu_record",           "GPU Record",                 gpu_record, GROUP_NAME, SUBGROUP_NAME, NULL)
+         CONFIG_BOOL(g_settings.video.post_filter_record,   "video_post_filter_record",   "Post filter record Enable",         post_filter_record, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
+         CONFIG_BOOL(g_settings.video.gpu_record,           "video_gpu_record",           "GPU Record",                 gpu_record, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
          CONFIG_BOOL(g_settings.video.gpu_screenshot,       "video_gpu_screenshot",       "GPU Screenshot Enable",             gpu_screenshot, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
          CONFIG_BOOL(g_settings.video.allow_rotate,         "video_allow_rotate",         "Allow rotation",             allow_rotate, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
          CONFIG_BOOL(g_settings.video.crop_overscan,        "video_crop_overscan",        "Crop Overscan (reload)",     crop_overscan, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
