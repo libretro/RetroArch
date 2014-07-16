@@ -515,10 +515,20 @@ static void general_change_handler(const void *data)
         g_extern.audio_data.volume_db = min(g_extern.audio_data.volume_db, 12.0f);
         g_extern.audio_data.volume_gain = db_to_gain(g_extern.audio_data.volume_db);
     }
+    else if (!strcmp(setting->name, "audio_device"))
+        strlcpy(g_settings.audio.device, setting->value.string, sizeof(g_settings.audio.device));
     else if (!strcmp(setting->name, "audio_block_frames"))
         g_settings.audio.block_frames = *setting->value.unsigned_integer;
     else if (!strcmp(setting->name, "audio_latency"))
         g_settings.audio.latency = *setting->value.unsigned_integer;
+    else if (!strcmp(setting->name, "audio_dsp_plugin"))
+    {
+#ifdef HAVE_DYLIB
+        strlcpy(g_settings.audio.dsp_plugin, *setting->value.string, sizeof(g_settings.audio.dsp_plugin));
+#endif
+        rarch_deinit_dsp_filter();
+        rarch_init_dsp_filter();
+    }
     else if (!strcmp(setting->name, "state_slot"))
         g_extern.state_slot = *setting->value.integer;
     else if (!strcmp(setting->name, "audio_rate_control_delta"))
@@ -534,6 +544,8 @@ static void general_change_handler(const void *data)
             g_settings.audio.rate_control_delta = *setting->value.fraction;
         }
     }
+    else if (!strcmp(setting->name, "audio_out_rate"))
+        g_settings.audio.out_rate = *setting->value.unsigned_integer;
     else if (!strcmp(setting->name, "input_autodetect_enable"))
         g_settings.input.autodetect_enable = *setting->value.boolean;
     else if (!strcmp(setting->name, "input_turbo_period"))
@@ -604,6 +616,8 @@ static void general_change_handler(const void *data)
         /* In case refresh rate update forced non-block video. */
         video_set_nonblock_state_func(false);
     }
+    else if (!strcmp(setting->name,  "video_aspect_ratio"))
+        g_settings.video.aspect_ratio = *setting->value.fraction;
     else if (!strcmp(setting->name, "video_xscale"))
     {
         float *scale = (float*)&g_settings.video.xscale;
@@ -689,6 +703,13 @@ static void general_change_handler(const void *data)
         strlcpy(g_settings.cheat_settings_path, setting->value.string, sizeof(g_settings.cheat_settings_path));
     else if (!strcmp(setting->name, "video_shader_dir"))
         strlcpy(g_settings.video.filter_dir, setting->value.string, sizeof(g_settings.video.filter_dir));
+    else if (!strcmp(setting->name, "video_aspect_ratio_auto"))
+        g_settings.video.aspect_ratio_auto = *setting->value.boolean;
+    else if (!strcmp(setting->name, "video_filter"))
+    {
+        strlcpy(g_settings.video.filter_path, setting->value.string, sizeof(g_settings.video.filter_path));
+        rarch_reinit_drivers();
+    }
 }
 
 
@@ -815,8 +836,8 @@ const rarch_setting_t* setting_data_get_list(void)
 
          START_SUB_GROUP("Aspect")
          CONFIG_BOOL(g_settings.video.force_aspect,         "video_force_aspect",         "Force aspect ratio",         force_aspect, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
-         CONFIG_FLOAT(g_settings.video.aspect_ratio,        "video_aspect_ratio",         "Aspect Ratio",               aspect_ratio, GROUP_NAME, SUBGROUP_NAME, NULL)
-         CONFIG_BOOL(g_settings.video.aspect_ratio_auto,    "video_aspect_ratio_auto",    "Use Auto Aspect Ratio",      aspect_ratio_auto, GROUP_NAME, SUBGROUP_NAME, NULL)
+         CONFIG_FLOAT(g_settings.video.aspect_ratio,        "video_aspect_ratio",         "Aspect Ratio",               aspect_ratio, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
+         CONFIG_BOOL(g_settings.video.aspect_ratio_auto,    "video_aspect_ratio_auto",    "Use Auto Aspect Ratio",      aspect_ratio_auto, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
          CONFIG_UINT(g_settings.video.aspect_ratio_idx,     "aspect_ratio_index",         "Aspect Ratio Index",         aspect_ratio_idx, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
          END_SUB_GROUP()
 
@@ -850,8 +871,9 @@ const rarch_setting_t* setting_data_get_list(void)
          CONFIG_BOOL(g_settings.video.gpu_screenshot,       "video_gpu_screenshot",       "GPU Screenshot Enable",             gpu_screenshot, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
          CONFIG_BOOL(g_settings.video.allow_rotate,         "video_allow_rotate",         "Allow rotation",             allow_rotate, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
          CONFIG_BOOL(g_settings.video.crop_overscan,        "video_crop_overscan",        "Crop Overscan (reload)",     crop_overscan, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
-
-         CONFIG_PATH(g_settings.video.filter_path,          "video_filter",               "Software filter",            "", GROUP_NAME, SUBGROUP_NAME, NULL)       WITH_FLAGS(SD_FLAG_ALLOW_EMPTY)
+#ifndef HAVE_FILTERS_BUILTIN
+         CONFIG_PATH(g_settings.video.filter_path,          "video_filter",               "Software filter",            "", GROUP_NAME, SUBGROUP_NAME, general_change_handler)       WITH_FLAGS(SD_FLAG_ALLOW_EMPTY)
+#endif
          END_SUB_GROUP()
 
          END_GROUP()
@@ -892,9 +914,9 @@ const rarch_setting_t* setting_data_get_list(void)
          END_SUB_GROUP()
 
          START_SUB_GROUP("Miscellaneous")
-         CONFIG_STRING(g_settings.audio.device,             "audio_device",               "Device",                     "", GROUP_NAME, SUBGROUP_NAME, NULL)
-         CONFIG_UINT(g_settings.audio.out_rate,             "audio_out_rate",             "Ouput Rate",                 out_rate, GROUP_NAME, SUBGROUP_NAME, NULL)
-         CONFIG_PATH(g_settings.audio.dsp_plugin,           "audio_dsp_plugin",           "DSP Plugin",                 "", GROUP_NAME, SUBGROUP_NAME, NULL)          WITH_FLAGS(SD_FLAG_ALLOW_EMPTY)
+         CONFIG_STRING(g_settings.audio.device,             "audio_device",               "Device",                     "", GROUP_NAME, SUBGROUP_NAME, general_change_handler)
+         CONFIG_UINT(g_settings.audio.out_rate,             "audio_out_rate",             "Ouput Rate",                 out_rate, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
+         CONFIG_PATH(g_settings.audio.dsp_plugin,           "audio_dsp_plugin",           "DSP Plugin",                 "", GROUP_NAME, SUBGROUP_NAME, general_change_handler)          WITH_FLAGS(SD_FLAG_ALLOW_EMPTY)
          END_SUB_GROUP()
          END_GROUP()
 
