@@ -634,6 +634,14 @@ static void general_change_handler(const void *data)
         g_settings.video.post_filter_record = *setting->value.boolean;
     else if (!strcmp(setting->name, "video_gpu_record"))
         g_settings.video.gpu_record = *setting->value.boolean;
+#ifdef HAVE_OVERLAY
+    else if (!strcmp(setting->name, "overlay_directory"))
+        strlcpy(g_extern.overlay_dir, setting->value.string, sizeof(g_extern.overlay_dir));
+#endif
+    else if (!strcmp(setting->name, "joypad_autoconfig_dir"))
+        strlcpy(g_settings.input.autoconfig_dir, setting->value.string, sizeof(g_settings.input.autoconfig_dir));
+    else if (!strcmp(setting->name, "screenshot_directory"))
+        strlcpy(g_settings.screenshot_directory, setting->value.string, sizeof(g_settings.screenshot_directory));
 }
 
 
@@ -930,10 +938,10 @@ const rarch_setting_t* setting_data_get_list(void)
          CONFIG_PATH(g_settings.video.shader_dir,           "video_shader_dir",           "Shader Directory",           default_shader_dir, GROUP_NAME, SUBGROUP_NAME, NULL)  WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
 
 #ifdef HAVE_OVERLAY
-         CONFIG_PATH(g_extern.overlay_dir,                  "overlay_directory",          "Overlay Directory",          default_overlay_dir, GROUP_NAME, SUBGROUP_NAME, NULL) WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
+         CONFIG_PATH(g_extern.overlay_dir,                  "overlay_directory",          "Overlay Directory",          default_overlay_dir, GROUP_NAME, SUBGROUP_NAME, general_change_handler) WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
 #endif
-         CONFIG_PATH(g_settings.screenshot_directory,       "screenshot_directory",       "Screenshot Directory",       "", GROUP_NAME, SUBGROUP_NAME, NULL)                WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
-         CONFIG_PATH(g_settings.input.autoconfig_dir,       "joypad_autoconfig_dir",      "Joypad Autoconfig Directory", "", GROUP_NAME, SUBGROUP_NAME, NULL)          WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
+         CONFIG_PATH(g_settings.screenshot_directory,       "screenshot_directory",       "Screenshot Directory",       "", GROUP_NAME, SUBGROUP_NAME, general_change_handler)                WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
+         CONFIG_PATH(g_settings.input.autoconfig_dir,       "joypad_autoconfig_dir",      "Joypad Autoconfig Directory", "", GROUP_NAME, SUBGROUP_NAME, general_change_handler)          WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
          // savefile_directory
          // savestate_directory
          // system_directory
