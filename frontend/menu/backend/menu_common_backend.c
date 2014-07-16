@@ -3466,9 +3466,7 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
             file_list_push(driver.menu->menu_stack, "", MENU_START_SCREEN, 0);
          break;
       case MENU_SETTINGS_REWIND_ENABLE:
-         current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "rewind_enable");
-
-         if (current_setting)
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "rewind_enable")))
          {
             if (action == MENU_ACTION_OK ||
                   action == MENU_ACTION_LEFT ||
@@ -3483,9 +3481,7 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
          break;
 #ifdef HAVE_SCREENSHOTS
       case MENU_SETTINGS_GPU_SCREENSHOT:
-         current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "video_gpu_screenshot");
-
-         if (current_setting)
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "video_gpu_screenshot")))
          {
             if (action == MENU_ACTION_OK ||
                   action == MENU_ACTION_LEFT ||
@@ -3565,9 +3561,7 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
          break;
 #if defined(HAVE_THREADS)
       case MENU_SETTINGS_SRAM_AUTOSAVE:
-         current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "autosave_interval");
-
-         if (current_setting)
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "autosave_interval")))
          {
             if (action == MENU_ACTION_OK || action == MENU_ACTION_RIGHT)
                *current_setting->value.unsigned_integer += 10;
@@ -3738,9 +3732,7 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
          }
          break;
       case MENU_SETTINGS_DEBUG_TEXT:
-         current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "fps_show");
-
-         if (current_setting)
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "fps_show")))
          {
             if (action == MENU_ACTION_START)
                *current_setting->value.boolean = false;
@@ -3805,9 +3797,7 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
             menu_save_new_config();
          break;
       case MENU_CONTENT_HISTORY_SIZE:
-         current_setting = setting_data_find_setting(setting_data, "game_history_size");
-
-         if (current_setting)
+         if ((current_setting = setting_data_find_setting(setting_data, "game_history_size")))
          {
             if (action == MENU_ACTION_RIGHT)
                *current_setting->value.unsigned_integer = *current_setting->value.unsigned_integer + 1;
