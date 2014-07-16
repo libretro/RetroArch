@@ -168,7 +168,11 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
          }
 
          file_list_push(menu->selection_buf, "Rewind Granularity", MENU_SETTINGS_REWIND_GRANULARITY, 0);
-         file_list_push(menu->selection_buf, "SRAM Block Overwrite", MENU_SETTINGS_BLOCK_SRAM_OVERWRITE, 0);
+         if ((current_setting = setting_data_find_setting(setting_data, "block_sram_overwrite")))
+         {
+            *current_setting->value.boolean = g_settings.block_sram_overwrite;
+            file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_BLOCK_SRAM_OVERWRITE, 0);
+         }
          if ((current_setting = setting_data_find_setting(setting_data, "autosave_interval")))
          {
             *current_setting->value.unsigned_integer = g_settings.autosave_interval;
@@ -449,7 +453,11 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
       case MENU_SETTINGS_AUDIO_OPTIONS:
          file_list_clear(menu->selection_buf);
          file_list_push(menu->selection_buf, "DSP Filter", MENU_SETTINGS_AUDIO_DSP_FILTER, 0);
-         file_list_push(menu->selection_buf, "Audio Mute", MENU_SETTINGS_AUDIO_MUTE, 0);
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "audio_mute")))
+         {
+            *current_setting->value.boolean = g_extern.audio_data.mute;
+            file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_AUDIO_MUTE, 0);
+         }
          file_list_push(menu->selection_buf, "Audio Latency (Hint)", MENU_SETTINGS_AUDIO_LATENCY, 0);
          file_list_push(menu->selection_buf, "Audio Sync", MENU_SETTINGS_AUDIO_SYNC, 0);
          file_list_push(menu->selection_buf, "Rate Control Delta", MENU_SETTINGS_AUDIO_CONTROL_RATE_DELTA, 0);
@@ -3562,11 +3570,8 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
             g_settings.savestate_auto_load = true;
          break;
       case MENU_SETTINGS_BLOCK_SRAM_OVERWRITE:
-         if (action == MENU_ACTION_OK || action == MENU_ACTION_RIGHT
-               || action == MENU_ACTION_LEFT)
-            g_settings.block_sram_overwrite = !g_settings.block_sram_overwrite;
-         else if (action == MENU_ACTION_START)
-            g_settings.block_sram_overwrite = false;
+         if ((current_setting = setting_data_find_setting(setting_data, "block_sram_overwrite")))
+            menu_common_setting_set_current_boolean(current_setting, false, action);
          break;
       case MENU_SETTINGS_PER_CORE_CONFIG:
          if (action == MENU_ACTION_OK || action == MENU_ACTION_RIGHT
@@ -3642,10 +3647,8 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
          }
          break;
       case MENU_SETTINGS_AUDIO_MUTE:
-         if (action == MENU_ACTION_START)
-            g_extern.audio_data.mute = false;
-         else
-            g_extern.audio_data.mute = !g_extern.audio_data.mute;
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "audio_mute")))
+            menu_common_setting_set_current_boolean(current_setting, false, action);
          break;
       case MENU_SETTINGS_AUDIO_LATENCY:
          if (action == MENU_ACTION_START)
