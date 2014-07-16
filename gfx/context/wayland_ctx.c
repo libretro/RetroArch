@@ -119,6 +119,44 @@ static const struct wl_registry_listener registry_listener = {
    registry_handle_global_remove,
 };
 
+static const struct wl_pointer_listener pointer_listener = {
+   pointer_handle_enter,
+   pointer_handle_leave,
+   pointer_handle_motion,
+   pointer_handle_button,
+   pointer_handle_axis,
+};
+
+static void seat_handle_capabilities(void *data,
+      struct wl_seat *seat, enum wl_seat_capability caps)
+{
+   if ((caps & WL_SEAT_CAPABILITY_KEYBOARD) && !g_wl_keyboard)
+   {
+      g_wl_keyboard = wl_seat_get_keyboard(seat);
+      wl_keyboard_add_listener(g_wl_keyboard, &keyboard_listener, NULL);
+   }
+   else if (!(caps & WL_SEAT_CAPABILITY_KEYBOARD) && g_wl_keyboard)
+   {
+      wl_keyboard_destroy(g_wl_keyboard);
+      g_wl_keyboard = NULL;
+   }
+
+   if ((caps & WL_SEAT_CAPABILITY_POINTER) && !g_wl_pointer)
+   {
+      g_wl_pointer = wl_seat_get_pointer(seat);
+      wl_pointer_add_listener(g_wl_pointer, &pointer_listener, NULL);
+   }
+   else if (!(caps & WL_SEAT_CAPABILITY_POINTER) && g_wl_pointer)
+   {
+      wl_pointer_destroy(g_wl_pointer);
+      g_wl_pointer = NULL;
+   }
+}
+
+// Seat callbacks
+static const struct wl_seat_listener seat_listener = {
+   seat_handle_capabilities,
+};
 
 
 static void gfx_ctx_get_video_size(void *data, unsigned *width, unsigned *height);
