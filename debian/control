@@ -4,15 +4,10 @@ Priority: extra
 Maintainer: Hunter Kaller (hizzlekizzle) <hunter_kaller@yahoo.com>
 Build-Depends:	debhelper (>= 9),
 		libc6-dev (>= 2.13),
-		libsdl1.2-dev,
 		libasound2-dev,
 		libxv-dev,
 		libopenal-dev,
-		libsamplerate0-dev,
-		libxml2-dev,
-		libsdl-ttf2.0-dev,
 		libfreetype6-dev,
-		libsdl-image1.2-dev,
 		libgbm-dev,
 		libdrm-dev,
 		libegl1-mesa-dev,
@@ -28,11 +23,7 @@ Package: retroarch
 Architecture: any
 Depends: 	${shlibs:Depends},
 		${misc:Depends},
-		libsdl1.2debian,
 		libopenal1,
-		libqtgui4,
-		libsdl-image1.2,
-		libsdl-ttf2.0-0,
 		nvidia-cg-toolkit,
 		python3
 Replaces: ssnes
