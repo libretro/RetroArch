@@ -164,7 +164,12 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
          file_list_push(menu->selection_buf, "Rewind Granularity", MENU_SETTINGS_REWIND_GRANULARITY, 0);
          file_list_push(menu->selection_buf, "SRAM Block Overwrite", MENU_SETTINGS_BLOCK_SRAM_OVERWRITE, 0);
 #if defined(HAVE_THREADS)
-         file_list_push(menu->selection_buf, "SRAM Autosave", MENU_SETTINGS_SRAM_AUTOSAVE, 0);
+         current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "autosave_interval");
+         if (current_setting)
+         {
+            *current_setting->value.unsigned_integer = g_settings.autosave_interval;
+            file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_SRAM_AUTOSAVE, 0);
+         }
 #endif
          file_list_push(menu->selection_buf, "Window Compositing", MENU_SETTINGS_WINDOW_COMPOSITING_ENABLE, 0);
          file_list_push(menu->selection_buf, "Window Unfocus Pause", MENU_SETTINGS_PAUSE_IF_WINDOW_FOCUS_LOST, 0);
@@ -3546,27 +3551,22 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
          break;
 #if defined(HAVE_THREADS)
       case MENU_SETTINGS_SRAM_AUTOSAVE:
-         if (action == MENU_ACTION_OK || action == MENU_ACTION_RIGHT)
+         current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "autosave_interval");
+
+         if (current_setting)
          {
-            rarch_deinit_autosave();
-            g_settings.autosave_interval += 10;
-            if (g_settings.autosave_interval)
-               rarch_init_autosave();
-         }
-         else if (action == MENU_ACTION_LEFT)
-         {
-            if (g_settings.autosave_interval)
+            if (action == MENU_ACTION_OK || action == MENU_ACTION_RIGHT)
+               *current_setting->value.unsigned_integer += 10;
+            else if (action == MENU_ACTION_LEFT)
             {
-               rarch_deinit_autosave();
-               g_settings.autosave_interval -= min(10, g_settings.autosave_interval);
-               if (g_settings.autosave_interval)
-                  rarch_init_autosave();
+               if (*current_setting->value.unsigned_integer)
+                  *current_setting->value.unsigned_integer -= min(10, *current_setting->value.unsigned_integer);
             }
-         }
-         else if (action == MENU_ACTION_START)
-         {
-            rarch_deinit_autosave();
-            g_settings.autosave_interval = 0;
+            else if (action == MENU_ACTION_START)
+               *current_setting->value.unsigned_integer = 0;
+
+            if (current_setting->change_handler)
+               current_setting->change_handler(current_setting);
          }
          break;
 #endif
