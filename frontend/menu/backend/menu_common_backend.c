@@ -209,10 +209,16 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
          file_list_push(menu->selection_buf, "Integer Scale", MENU_SETTINGS_VIDEO_INTEGER_SCALE, 0);
          file_list_push(menu->selection_buf, "Aspect Ratio", MENU_SETTINGS_VIDEO_ASPECT_RATIO, 0);
          file_list_push(menu->selection_buf, "Custom Ratio", MENU_SETTINGS_CUSTOM_VIEWPORT, 0);
-#if !defined(RARCH_CONSOLE) && !defined(RARCH_MOBILE)
-         file_list_push(menu->selection_buf, "Toggle Fullscreen", MENU_SETTINGS_TOGGLE_FULLSCREEN, 0);
-#endif
-         file_list_push(menu->selection_buf, "Rotation", MENU_SETTINGS_VIDEO_ROTATION, 0);
+         if ((current_setting = setting_data_find_setting(setting_data, "video_fullscreen")))
+         {
+            *current_setting->value.boolean = g_settings.video.fullscreen;
+            file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_TOGGLE_FULLSCREEN, 0);
+         }
+         if ((current_setting = setting_data_find_setting(setting_data, "video_rotation")))
+         {
+            *current_setting->value.unsigned_integer = g_settings.video.rotation;
+            file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_VIDEO_ROTATION, 0);
+         }
          file_list_push(menu->selection_buf, "VSync", MENU_SETTINGS_VIDEO_VSYNC, 0);
          file_list_push(menu->selection_buf, "Hard GPU Sync", MENU_SETTINGS_VIDEO_HARD_SYNC, 0);
          file_list_push(menu->selection_buf, "Hard GPU Sync Frames", MENU_SETTINGS_VIDEO_HARD_SYNC_FRAMES, 0);
@@ -4268,22 +4274,23 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
             *g_settings.input.autoconfig_dir = '\0';
          break;
       case MENU_SETTINGS_VIDEO_ROTATION:
-         if (action == MENU_ACTION_START)
+         if ((current_setting = setting_data_find_setting(setting_data, "video_rotation")))
          {
-            g_settings.video.rotation = ORIENTATION_NORMAL;
-            video_set_rotation_func((g_settings.video.rotation + g_extern.system.rotation) % 4);
-         }
-         else if (action == MENU_ACTION_LEFT)
-         {
-            if (g_settings.video.rotation > 0)
-               g_settings.video.rotation--;
-            video_set_rotation_func((g_settings.video.rotation + g_extern.system.rotation) % 4);
-         }
-         else if (action == MENU_ACTION_RIGHT)
-         {
-            if (g_settings.video.rotation < LAST_ORIENTATION)
-               g_settings.video.rotation++;
-            video_set_rotation_func((g_settings.video.rotation + g_extern.system.rotation) % 4);
+            if (action == MENU_ACTION_START)
+               *current_setting->value.unsigned_integer = ORIENTATION_NORMAL;
+            else if (action == MENU_ACTION_LEFT)
+            {
+               if (*current_setting->value.unsigned_integer > 0)
+                  *current_setting->value.unsigned_integer = *current_setting->value.unsigned_integer - 1;
+            }
+            else if (action == MENU_ACTION_RIGHT)
+            {
+               if (*current_setting->value.unsigned_integer < LAST_ORIENTATION)
+                  *current_setting->value.unsigned_integer = *current_setting->value.unsigned_integer + 1;
+            }
+
+            if (current_setting->change_handler)
+               current_setting->change_handler(current_setting);
          }
          break;
 
@@ -4419,10 +4426,14 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
          break;
 
       case MENU_SETTINGS_TOGGLE_FULLSCREEN:
-         if (action == MENU_ACTION_OK)
+         if ((current_setting = setting_data_find_setting(setting_data, "video_fullscreen")))
          {
-            g_settings.video.fullscreen = !g_settings.video.fullscreen;
-            rarch_reinit_drivers();
+            if (action == MENU_ACTION_OK)
+            {
+               *current_setting->value.boolean = !(*current_setting->value.boolean);
+               if (current_setting->change_handler)
+                  current_setting->change_handler(current_setting);
+            }
          }
          break;
 
