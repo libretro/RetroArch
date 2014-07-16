@@ -3407,6 +3407,24 @@ static int menu_common_setting_set_perf(unsigned setting, unsigned action,
    return 0;
 }
 
+static void menu_common_setting_set_current_boolean(rarch_setting_t *setting, bool default_value, unsigned action)
+{
+   switch (action)
+   {
+      case MENU_ACTION_OK:
+      case MENU_ACTION_LEFT:
+      case MENU_ACTION_RIGHT:
+         *setting->value.boolean = !(*setting->value.boolean);
+         break;
+      case MENU_ACTION_START:
+         *setting->value.boolean = false;
+         break;
+   }
+
+   if (setting->change_handler)
+      setting->change_handler(setting);
+}
+
 static int menu_common_setting_set(unsigned setting, unsigned action)
 {
    rarch_setting_t *setting_data, *current_setting;
@@ -3487,34 +3505,12 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
          break;
       case MENU_SETTINGS_REWIND_ENABLE:
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "rewind_enable")))
-         {
-            if (action == MENU_ACTION_OK ||
-                  action == MENU_ACTION_LEFT ||
-                  action == MENU_ACTION_RIGHT)
-               *current_setting->value.boolean = !(*current_setting->value.boolean);
-            else if (action == MENU_ACTION_START)
-               *current_setting->value.boolean = false;
-
-            if (current_setting->change_handler)
-               current_setting->change_handler(current_setting);
-         }
+            menu_common_setting_set_current_boolean(current_setting, false, action);
          break;
-#ifdef HAVE_SCREENSHOTS
       case MENU_SETTINGS_GPU_SCREENSHOT:
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "video_gpu_screenshot")))
-         {
-            if (action == MENU_ACTION_OK ||
-                  action == MENU_ACTION_LEFT ||
-                  action == MENU_ACTION_RIGHT)
-               *current_setting->value.boolean = !(*current_setting->value.boolean);
-            else if (action == MENU_ACTION_START)
-               *current_setting->value.boolean = false;
-
-            if (current_setting->change_handler)
-               current_setting->change_handler(current_setting);
-         }
+            menu_common_setting_set_current_boolean(current_setting, false, action);
          break;
-#endif
       case MENU_SETTINGS_REWIND_GRANULARITY:
          if (action == MENU_ACTION_OK || action == MENU_ACTION_RIGHT)
             g_settings.rewind_granularity++;
@@ -3753,15 +3749,7 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
          break;
       case MENU_SETTINGS_DEBUG_TEXT:
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "fps_show")))
-         {
-            if (action == MENU_ACTION_START)
-               *current_setting->value.boolean = false;
-            else if (action == MENU_ACTION_LEFT || action == MENU_ACTION_RIGHT)
-               *current_setting->value.boolean = !*current_setting->value.boolean;
-
-            if (current_setting->change_handler)
-               current_setting->change_handler(current_setting);
-         }
+            menu_common_setting_set_current_boolean(current_setting, false, action);
          break;
       case MENU_SETTINGS_DISK_INDEX:
          {
@@ -4411,17 +4399,7 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
 
       case MENU_SETTINGS_VIDEO_INTEGER_SCALE:
          if ((current_setting = setting_data_find_setting(setting_data, "video_scale_integer")))
-         {
-            if (action == MENU_ACTION_START)
-               *current_setting->value.boolean = scale_integer;
-            else if (action == MENU_ACTION_LEFT ||
-                  action == MENU_ACTION_RIGHT ||
-                  action == MENU_ACTION_OK)
-               *current_setting->value.boolean = !(*current_setting->value.boolean);
-
-            if (current_setting->change_handler)
-               current_setting->change_handler(current_setting);
-         }
+            menu_common_setting_set_current_boolean(current_setting, scale_integer, action);
          break;
 
       case MENU_SETTINGS_VIDEO_ASPECT_RATIO:
@@ -4612,28 +4590,8 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
 
       case MENU_SETTINGS_VIDEO_BLACK_FRAME_INSERTION:
          if ((current_setting = setting_data_find_setting(setting_data, "video_black_frame_insertion")))
-         {
-            switch (action)
-            {
-               case MENU_ACTION_START:
-                  *current_setting->value.boolean = false;
-                  break;
-
-               case MENU_ACTION_LEFT:
-               case MENU_ACTION_RIGHT:
-               case MENU_ACTION_OK:
-                  *current_setting->value.boolean = !(*current_setting->value.boolean);
-                  break;
-
-               default:
-                  break;
-            }
-
-            if (current_setting->change_handler)
-               current_setting->change_handler(current_setting);
-         }
+            menu_common_setting_set_current_boolean(current_setting, false, action);
          break;
-
       case MENU_SETTINGS_VIDEO_CROP_OVERSCAN:
          switch (action)
          {
@@ -4716,23 +4674,10 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
                current_setting->change_handler(current_setting);
          }
          break;
-#ifdef HAVE_THREADS
       case MENU_SETTINGS_VIDEO_THREADED:
          if ((current_setting = setting_data_find_setting(setting_data, "video_threaded")))
-         {
-            if (action == MENU_ACTION_OK ||
-                  action == MENU_ACTION_LEFT ||
-                  action == MENU_ACTION_RIGHT)
-               *current_setting->value.boolean = !(*current_setting->value.boolean);
-            else if (action == MENU_ACTION_START)
-               *current_setting->value.boolean = false;
-
-            if (current_setting->change_handler)
-               current_setting->change_handler(current_setting);
-         }
+            menu_common_setting_set_current_boolean(current_setting, false, action);
          break;
-#endif
-
       case MENU_SETTINGS_VIDEO_SWAP_INTERVAL:
          if ((current_setting = setting_data_find_setting(setting_data, "video_swap_interval")))
          {
