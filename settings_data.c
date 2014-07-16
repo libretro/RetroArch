@@ -847,8 +847,10 @@ rarch_setting_t* setting_data_get_list(void)
          END_SUB_GROUP()
 
          START_SUB_GROUP("Scaling")
+#if !defined(RARCH_CONSOLE) && !defined(RARCH_MOBILE)
          CONFIG_FLOAT(g_settings.video.xscale,              "video_xscale",               "Windowed Scale (X)",                    xscale, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
          CONFIG_FLOAT(g_settings.video.yscale,              "video_yscale",               "Windowed Scale (Y)",                    yscale, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
+#endif
          CONFIG_BOOL(g_settings.video.scale_integer,        "video_scale_integer",        "Integer Scale",      scale_integer, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
 
          CONFIG_INT(g_extern.console.screen.viewports.custom_vp.x,         "custom_viewport_x",       "Custom Viewport X",       0, GROUP_NAME, SUBGROUP_NAME, NULL)

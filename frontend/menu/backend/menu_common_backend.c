@@ -229,10 +229,16 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
 #if defined(HAVE_THREADS) && !defined(GEKKO)
          file_list_push(menu->selection_buf, "Threaded Video", MENU_SETTINGS_VIDEO_THREADED, 0);
 #endif
-#if !defined(RARCH_CONSOLE) && !defined(RARCH_MOBILE)
-         file_list_push(menu->selection_buf, "Windowed Scale (X)", MENU_SETTINGS_VIDEO_WINDOW_SCALE_X, 0);
-         file_list_push(menu->selection_buf, "Windowed Scale (Y)", MENU_SETTINGS_VIDEO_WINDOW_SCALE_Y, 0);
-#endif
+         if ((current_setting = setting_data_find_setting(setting_data, "video_xscale")))
+         {
+            *current_setting->value.fraction = g_settings.video.xscale;
+            file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_VIDEO_WINDOW_SCALE_X, 0);
+         }
+         if ((current_setting = setting_data_find_setting(setting_data, "video_yscale")))
+         {
+            *current_setting->value.fraction = g_settings.video.yscale;
+            file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_VIDEO_WINDOW_SCALE_Y, 0);
+         }
          file_list_push(menu->selection_buf, "Crop Overscan (reload)", MENU_SETTINGS_VIDEO_CROP_OVERSCAN, 0);
          file_list_push(menu->selection_buf, "Monitor Index", MENU_SETTINGS_VIDEO_MONITOR_INDEX, 0);
          file_list_push(menu->selection_buf, "Estimated Monitor FPS", MENU_SETTINGS_VIDEO_REFRESH_RATE_AUTO, 0);
@@ -4630,38 +4636,69 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
          break;
 
       case MENU_SETTINGS_VIDEO_WINDOW_SCALE_X:
-      case MENU_SETTINGS_VIDEO_WINDOW_SCALE_Y:
-      {
-         float *scale = setting == MENU_SETTINGS_VIDEO_WINDOW_SCALE_X ? &g_settings.video.xscale : &g_settings.video.yscale;
-         float old_scale = *scale;
-
-         switch (action)
+         if ((current_setting = setting_data_find_setting(setting_data, "video_xscale")))
          {
-            case MENU_ACTION_START:
-               *scale = 3.0f;
-               break;
+            float *scale = (float*)&g_settings.video.xscale;
+            float old_scale = *scale;
 
-            case MENU_ACTION_LEFT:
-               *scale -= 1.0f;
-               break;
+            switch (action)
+            {
+               case MENU_ACTION_START:
+                  *scale = 3.0f;
+                  break;
 
-            case MENU_ACTION_RIGHT:
-               *scale += 1.0f;
-               break;
+               case MENU_ACTION_LEFT:
+                  *scale -= 1.0f;
+                  break;
 
-            default:
-               break;
+               case MENU_ACTION_RIGHT:
+                  *scale += 1.0f;
+                  break;
+
+               default:
+                  break;
+            }
+
+            *scale = roundf(*scale);
+            *scale = max(*scale, 1.0f);
+            *current_setting->value.fraction = *scale;
+
+            if (old_scale != *scale && current_setting->change_handler)
+               current_setting->change_handler(current_setting);
          }
-
-         *scale = roundf(*scale);
-         *scale = max(*scale, 1.0f);
-
-         if (old_scale != *scale && !g_settings.video.fullscreen)
-            rarch_reinit_drivers();
-
          break;
-      }
+      case MENU_SETTINGS_VIDEO_WINDOW_SCALE_Y:
+         if ((current_setting = setting_data_find_setting(setting_data, "video_yscale")))
+         {
+            float *scale = (float*)&g_settings.video.yscale;
+            float old_scale = *scale;
 
+            switch (action)
+            {
+               case MENU_ACTION_START:
+                  *scale = 3.0f;
+                  break;
+
+               case MENU_ACTION_LEFT:
+                  *scale -= 1.0f;
+                  break;
+
+               case MENU_ACTION_RIGHT:
+                  *scale += 1.0f;
+                  break;
+
+               default:
+                  break;
+            }
+
+            *scale = roundf(*scale);
+            *scale = max(*scale, 1.0f);
+            *current_setting->value.fraction = *scale;
+
+            if (old_scale != *scale && current_setting->change_handler)
+               current_setting->change_handler(current_setting);
+         }
+         break;
 #ifdef HAVE_THREADS
       case MENU_SETTINGS_VIDEO_THREADED:
       {
