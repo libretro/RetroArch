@@ -274,9 +274,9 @@ bool setting_data_save_config(const rarch_setting_t* settings, config_file_t* co
    return true;
 }
 
-const rarch_setting_t* setting_data_find_setting(const rarch_setting_t* settings, const char* name)
+rarch_setting_t* setting_data_find_setting(rarch_setting_t* settings, const char* name)
 {
-   const rarch_setting_t *setting;
+   rarch_setting_t *setting;
 
    if (!name)
       return NULL;
@@ -740,7 +740,7 @@ WITH_FLAGS(SD_FLAG_HAS_RANGE)
 
 #define WITH_VALUES(VALUES) (list[index -1]).values = VALUES;
 
-const rarch_setting_t* setting_data_get_list(void)
+rarch_setting_t* setting_data_get_list(void)
 {
    int i, player, index;
    static rarch_setting_t list[SETTINGS_DATA_LIST_SIZE];

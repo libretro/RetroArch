@@ -102,7 +102,7 @@ bool setting_data_load_config(const rarch_setting_t* settings, config_file_t* co
 bool setting_data_save_config_path(const rarch_setting_t* settings, const char* path);
 bool setting_data_save_config(const rarch_setting_t* settings, config_file_t* config);
 
-const rarch_setting_t* setting_data_find_setting(const rarch_setting_t* settings, const char* name);
+rarch_setting_t* setting_data_find_setting(rarch_setting_t* settings, const char* name);
 
 void setting_data_set_with_string_representation(const rarch_setting_t* setting, const char* value);
 const char* setting_data_get_string_representation(const rarch_setting_t* setting, char* buffer, size_t length);
@@ -119,7 +119,7 @@ rarch_setting_t setting_data_bind_setting(const char* name, const char* descript
 
 // These functions operate only on RetroArch's main settings list
 void setting_data_load_current(void);
-const rarch_setting_t* setting_data_get_list(void);
+rarch_setting_t* setting_data_get_list(void);
 
 #ifdef APPLE
 #include "input/apple_keycode.h"

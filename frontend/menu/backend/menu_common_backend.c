@@ -72,9 +72,9 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
    unsigned i, last;
    char tmp[256];
    menu_handle_t *menu = (menu_handle_t*)data;
-   const rarch_setting_t *setting_data, *current_setting;
+   rarch_setting_t *setting_data, *current_setting;
 
-   setting_data = (const rarch_setting_t *)setting_data_get_list();
+   setting_data = (rarch_setting_t *)setting_data_get_list();
 
    if (!menu || !setting_data)
       return;
@@ -140,7 +140,12 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
          file_list_push(menu->selection_buf, "Libretro Logging Level", MENU_SETTINGS_LIBRETRO_LOG_LEVEL, 0);
          file_list_push(menu->selection_buf, "Logging Verbosity", MENU_SETTINGS_LOGGING_VERBOSITY, 0);
          file_list_push(menu->selection_buf, "Performance Counters", MENU_SETTINGS_PERFORMANCE_COUNTERS_ENABLE, 0);
-         file_list_push(menu->selection_buf, "Content History Size", MENU_CONTENT_HISTORY_SIZE, 0);
+         current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "game_history_size");
+         if (current_setting)
+         {
+            *current_setting->value.unsigned_integer = g_settings.game_history_size;
+            file_list_push(menu->selection_buf, current_setting->short_description, MENU_CONTENT_HISTORY_SIZE, 0);
+         }
          file_list_push(menu->selection_buf, "Configuration Save On Exit", MENU_SETTINGS_CONFIG_SAVE_ON_EXIT, 0);
          file_list_push(menu->selection_buf, "Configuration Per-Core", MENU_SETTINGS_PER_CORE_CONFIG, 0);
 #ifdef HAVE_SCREENSHOTS
@@ -149,7 +154,10 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
          file_list_push(menu->selection_buf, "Load Dummy On Core Shutdown", MENU_SETTINGS_LOAD_DUMMY_ON_CORE_SHUTDOWN, 0);
          current_setting = setting_data_find_setting(setting_data, "fps_show");
          if (current_setting)
+         {
+            *current_setting->value.boolean = g_settings.fps_show;
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_DEBUG_TEXT, 0);
+         }
          file_list_push(menu->selection_buf, "Maximum Run Speed", MENU_SETTINGS_FASTFORWARD_RATIO, 0);
          file_list_push(menu->selection_buf, "Slow-Motion Ratio", MENU_SETTINGS_SLOWMOTION_RATIO, 0);
          file_list_push(menu->selection_buf, "Rewind", MENU_SETTINGS_REWIND_ENABLE, 0);
@@ -3369,11 +3377,11 @@ static int menu_common_setting_set_perf(unsigned setting, unsigned action,
 
 static int menu_common_setting_set(unsigned setting, unsigned action)
 {
-   const rarch_setting_t *setting_data, *current_setting;
+   rarch_setting_t *setting_data, *current_setting;
    struct retro_perf_counter **counters;
    unsigned port = driver.menu->current_pad;
 
-   setting_data = (const rarch_setting_t *)setting_data_get_list();
+   setting_data = (rarch_setting_t *)setting_data_get_list();
 
    if (setting >= MENU_SETTINGS_PERF_COUNTERS_BEGIN && setting <= MENU_SETTINGS_PERF_COUNTERS_END)
    {
@@ -3716,7 +3724,7 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
          }
          break;
       case MENU_SETTINGS_DEBUG_TEXT:
-         current_setting = setting_data_find_setting(setting_data, "fps_show");
+         current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "fps_show");
 
          if (current_setting)
          {
@@ -3783,15 +3791,23 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
             menu_save_new_config();
          break;
       case MENU_CONTENT_HISTORY_SIZE:
-         if (action == MENU_ACTION_RIGHT)
-            g_settings.game_history_size++;
-         else if (action == MENU_ACTION_LEFT)
+         current_setting = setting_data_find_setting(setting_data, "game_history_size");
+
+         if (current_setting)
          {
-            if (g_settings.game_history_size > 0)
-               g_settings.game_history_size--;
+            if (action == MENU_ACTION_RIGHT)
+               *current_setting->value.unsigned_integer = *current_setting->value.unsigned_integer + 1;
+            else if (action == MENU_ACTION_LEFT)
+            {
+               if (*current_setting->value.unsigned_integer > 0)
+                  *current_setting->value.unsigned_integer = *current_setting->value.unsigned_integer - 1;
+            }
+            else if (action == MENU_ACTION_START)
+               *current_setting->value.unsigned_integer =  game_history_size;
+
+            if (current_setting->change_handler)
+               current_setting->change_handler(current_setting);
          }
-         else if (action == MENU_ACTION_START)
-            g_settings.game_history_size = game_history_size;
          break;
 #ifdef HAVE_OVERLAY
       case MENU_SETTINGS_OVERLAY_ENABLE:
