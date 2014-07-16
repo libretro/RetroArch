@@ -471,10 +471,21 @@ static void general_change_handler(const void *data)
         g_settings.video.threaded = *setting->value.boolean;
         rarch_reinit_drivers();
     }
+    else if (!strcmp(setting->name, "video_swap_interval"))
+    {
+        g_settings.video.swap_interval = min(*setting->value.unsigned_integer, 4);
+        g_settings.video.swap_interval = max(g_settings.video.swap_interval, 1);
+        if (driver.video && driver.video_data)
+           video_set_nonblock_state_func(false);
+    }
     else if (!strcmp(setting->name, "video_crop_overscan"))
         g_settings.video.crop_overscan = *setting->value.boolean;
     else if (!strcmp(setting->name, "video_black_frame_insertion"))
         g_settings.video.black_frame_insertion = *setting->value.boolean;
+    else if (!strcmp(setting->name, "video_font_path"))
+        strlcpy(g_settings.video.font_path, setting->value.string, sizeof(g_settings.video.font_path));
+    else if (!strcmp(setting->name, "video_font_size"))
+        g_settings.video.font_size = roundf(max(*setting->value.fraction, 1.0f));
     else if (!strcmp(setting->name, "input_overlay_enable"))
     {
         g_settings.input.overlay_enable = *setting->value.boolean;
@@ -491,12 +502,36 @@ static void general_change_handler(const void *data)
     }
     else if (!strcmp(setting->name, "input_overlay_opacity"))
         g_settings.input.overlay_opacity = *setting->value.fraction;
+    else if (!strcmp(setting->name, "audio_enable"))
+        g_settings.audio.enable = *setting->value.boolean;
     else if (!strcmp(setting->name, "audio_sync"))
         g_settings.audio.sync = *setting->value.boolean;
     else if (!strcmp(setting->name, "audio_mute"))
         g_extern.audio_data.mute = *setting->value.boolean;
+    else if (!strcmp(setting->name, "audio_volume"))
+    {
+        g_extern.audio_data.volume_db += *setting->value.fraction;
+        g_extern.audio_data.volume_db = max(g_extern.audio_data.volume_db, -80.0f);
+        g_extern.audio_data.volume_db = min(g_extern.audio_data.volume_db, 12.0f);
+        g_extern.audio_data.volume_gain = db_to_gain(g_extern.audio_data.volume_db);
+    }
+    else if (!strcmp(setting->name, "audio_latency"))
+        g_settings.audio.latency = *setting->value.unsigned_integer;
     else if (!strcmp(setting->name, "state_slot"))
         g_extern.state_slot = *setting->value.integer;
+    else if (!strcmp(setting->name, "audio_rate_control_delta"))
+    {
+        if (*setting->value.fraction < 0.0005)
+        {
+            g_settings.audio.rate_control = false;
+            g_settings.audio.rate_control_delta = 0.0;
+        }
+        else
+        {
+            g_settings.audio.rate_control = true;
+            g_settings.audio.rate_control_delta = *setting->value.fraction;
+        }
+    }
     else if (!strcmp(setting->name, "input_autodetect_enable"))
         g_settings.input.autodetect_enable = *setting->value.boolean;
     else if (!strcmp(setting->name, "input_turbo_period"))
@@ -528,6 +563,33 @@ static void general_change_handler(const void *data)
         if (g_settings.autosave_interval)
             rarch_init_autosave();
     }
+    else if (!strcmp(setting->name, "video_font_enable"))
+        g_settings.video.font_enable = *setting->value.boolean;
+    else if (!strcmp(setting->name, "video_gpu_screenshot"))
+        g_settings.video.gpu_screenshot = *setting->value.boolean;
+    else if (!strcmp(setting->name, "netplay_client_swap_input"))
+        g_settings.input.netplay_client_swap_input = *setting->value.boolean;
+    else if (!strcmp(setting->name, "input_overlay"))
+    {
+        if (driver.overlay)
+            input_overlay_free(driver.overlay);
+        
+        strlcpy(g_settings.input.overlay, setting->value.string, sizeof(g_settings.input.overlay));
+        
+        if (g_settings.input.overlay_enable && g_settings.input.overlay[0] != '\0')
+            driver.overlay = input_overlay_new(g_settings.input.overlay);
+    }
+    else if (!strcmp(setting->name, "input_overlay_scale"))
+    {
+        if (*setting->value.fraction < 0.01f) // Avoid potential divide by zero.
+            g_settings.input.overlay_scale = 0.01f;
+        else if (*setting->value.fraction > 2.0f)
+            g_settings.input.overlay_scale = 2.0f;
+        else
+            g_settings.input.overlay_scale = *setting->value.fraction;
+    }
+    else if (!strcmp(setting->name, "video_allow_rotate"))
+        g_settings.video.allow_rotate = *setting->value.boolean;
 }
 
 
@@ -619,7 +681,7 @@ const rarch_setting_t* setting_data_get_list(void)
          CONFIG_BOOL(g_extern.config_save_on_exit,          "config_save_on_exit",        "Configuration Save On Exit", config_save_on_exit, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
          CONFIG_BOOL(g_settings.fps_show,                   "fps_show",                   "Show Framerate",             fps_show, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
          CONFIG_BOOL(g_settings.rewind_enable,              "rewind_enable",              "Rewind",                     rewind_enable, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
-         //CONFIG_INT(g_settings.rewind_buffer_size,          "rewind_buffer_size",         "Rewind Buffer Size",       rewind_buffer_size)     WITH_SCALE(1000000)
+         //CONFIG_INT(g_settings.rewind_buffer_size,          "rewind_buffer_size",         "Rewind Buffer Size",       rewind_buffer_size, NULL)     WITH_SCALE(1000000)
          CONFIG_UINT(g_settings.rewind_granularity,         "rewind_granularity",         "Rewind Granularity",         rewind_granularity, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
          CONFIG_BOOL(g_settings.block_sram_overwrite,       "block_sram_overwrite",       "SRAM Block overwrite",       block_sram_overwrite, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
          CONFIG_UINT(g_settings.autosave_interval,          "autosave_interval",          "SRAM Autosave",          autosave_interval, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
@@ -677,7 +739,7 @@ const rarch_setting_t* setting_data_get_list(void)
          START_SUB_GROUP("Synchronization")
          CONFIG_BOOL(g_settings.video.threaded,             "video_threaded",             "Threaded Video",         video_threaded, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
          CONFIG_BOOL(g_settings.video.vsync,                "video_vsync",                "VSync",                      vsync, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
-         CONFIG_UINT(g_settings.video.swap_interval,        "video_swap_interval",        "VSync Swap Interval",        swap_interval, GROUP_NAME, SUBGROUP_NAME, NULL)       WITH_RANGE(1, 4)
+         CONFIG_UINT(g_settings.video.swap_interval,        "video_swap_interval",        "VSync Swap Interval",        swap_interval, GROUP_NAME, SUBGROUP_NAME, general_change_handler)       WITH_RANGE(1, 4)
          CONFIG_BOOL(g_settings.video.hard_sync,            "video_hard_sync",            "Hard GPU Sync",              hard_sync, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
          CONFIG_UINT(g_settings.video.hard_sync_frames,     "video_hard_sync_frames",     "Hard GPU Sync Frames",       hard_sync_frames, GROUP_NAME, SUBGROUP_NAME, general_change_handler)    WITH_RANGE(0, 3)
          CONFIG_BOOL(g_settings.video.black_frame_insertion, "video_black_frame_insertion", "Black Frame Insertion",      black_frame_insertion, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
@@ -686,8 +748,8 @@ const rarch_setting_t* setting_data_get_list(void)
          START_SUB_GROUP("Miscellaneous")
          CONFIG_BOOL(g_settings.video.post_filter_record,   "video_post_filter_record",   "Post filter record",         post_filter_record, GROUP_NAME, SUBGROUP_NAME, NULL)
          CONFIG_BOOL(g_settings.video.gpu_record,           "video_gpu_record",           "GPU Record",                 gpu_record, GROUP_NAME, SUBGROUP_NAME, NULL)
-         CONFIG_BOOL(g_settings.video.gpu_screenshot,       "video_gpu_screenshot",       "GPU Screenshot",             gpu_screenshot, GROUP_NAME, SUBGROUP_NAME, NULL)
-         CONFIG_BOOL(g_settings.video.allow_rotate,         "video_allow_rotate",         "Allow rotation",             allow_rotate, GROUP_NAME, SUBGROUP_NAME, NULL)
+         CONFIG_BOOL(g_settings.video.gpu_screenshot,       "video_gpu_screenshot",       "GPU Screenshot Enable",             gpu_screenshot, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
+         CONFIG_BOOL(g_settings.video.allow_rotate,         "video_allow_rotate",         "Allow rotation",             allow_rotate, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
          CONFIG_BOOL(g_settings.video.crop_overscan,        "video_crop_overscan",        "Crop Overscan (reload)",     crop_overscan, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
 
          CONFIG_PATH(g_settings.video.filter_path,          "video_filter",               "Software filter",            "", GROUP_NAME, SUBGROUP_NAME, NULL)       WITH_FLAGS(SD_FLAG_ALLOW_EMPTY)
@@ -704,9 +766,9 @@ const rarch_setting_t* setting_data_get_list(void)
 
          START_GROUP("Font Options")
          START_SUB_GROUP("Messages")
-         CONFIG_PATH(g_settings.video.font_path,            "video_font_path",            "Font Path",                  "", GROUP_NAME, SUBGROUP_NAME, NULL)       WITH_FLAGS(SD_FLAG_ALLOW_EMPTY)
-         CONFIG_FLOAT(g_settings.video.font_size,           "video_font_size",            "OSD Font Size",              font_size, GROUP_NAME, SUBGROUP_NAME, NULL)
-         CONFIG_BOOL(g_settings.video.font_enable,          "video_font_enable",          "OSD Font Enable",            font_enable, GROUP_NAME, SUBGROUP_NAME, NULL)
+         CONFIG_PATH(g_settings.video.font_path,            "video_font_path",            "Font Path",                  "", GROUP_NAME, SUBGROUP_NAME, general_change_handler)       WITH_FLAGS(SD_FLAG_ALLOW_EMPTY)
+         CONFIG_FLOAT(g_settings.video.font_size,           "video_font_size",            "OSD Font Size",              font_size, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
+         CONFIG_BOOL(g_settings.video.font_enable,          "video_font_enable",          "OSD Font Enable",            font_enable, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
          CONFIG_FLOAT(g_settings.video.msg_pos_x,           "video_message_pos_x",        "Message X Position",         message_pos_offset_x, GROUP_NAME, SUBGROUP_NAME, NULL)
          CONFIG_FLOAT(g_settings.video.msg_pos_y,           "video_message_pos_y",        "Message Y Position",         message_pos_offset_y, GROUP_NAME, SUBGROUP_NAME, NULL)
          /* message color */
@@ -718,16 +780,15 @@ const rarch_setting_t* setting_data_get_list(void)
          /*********/
          START_GROUP("Audio Options")
          START_SUB_GROUP("State")
-         CONFIG_BOOL(g_settings.audio.enable,               "audio_enable",               "Audio Enable",                     audio_enable, GROUP_NAME, SUBGROUP_NAME, NULL)
+         CONFIG_BOOL(g_settings.audio.enable,               "audio_enable",               "Audio Enable",                     audio_enable, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
          CONFIG_BOOL(g_extern.audio_data.mute,              "audio_mute",                 "Audio Mute",                 false, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
-         CONFIG_FLOAT(g_settings.audio.volume,              "audio_volume",               "Volume Level",               audio_volume, GROUP_NAME, SUBGROUP_NAME, NULL)
+         CONFIG_FLOAT(g_settings.audio.volume,              "audio_volume",               "Volume Level",               audio_volume, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
          END_SUB_GROUP()
 
          START_SUB_GROUP("Synchronization")
          CONFIG_BOOL(g_settings.audio.sync,                 "audio_sync",                 "Enable Sync",                audio_sync, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
-         CONFIG_UINT(g_settings.audio.latency,              "audio_latency",              "Latency",                    g_defaults.settings.out_latency ? g_defaults.settings.out_latency : out_latency, GROUP_NAME, SUBGROUP_NAME, NULL)
-         CONFIG_BOOL(g_settings.audio.rate_control,         "audio_rate_control",         "Enable Rate Control",        rate_control, GROUP_NAME, SUBGROUP_NAME, NULL)
-         CONFIG_FLOAT(g_settings.audio.rate_control_delta,  "audio_rate_control_delta",   "Rate Control Delta",         rate_control_delta, GROUP_NAME, SUBGROUP_NAME, NULL)
+         CONFIG_UINT(g_settings.audio.latency,              "audio_latency",              "Latency",                    g_defaults.settings.out_latency ? g_defaults.settings.out_latency : out_latency, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
+         CONFIG_FLOAT(g_settings.audio.rate_control_delta,  "audio_rate_control_delta",   "Rate Control Delta",         rate_control_delta, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
          CONFIG_UINT(g_settings.audio.block_frames,         "audio_block_frames",         "Block Frames",               0, GROUP_NAME, SUBGROUP_NAME, NULL)
          END_SUB_GROUP()
 
@@ -789,7 +850,7 @@ const rarch_setting_t* setting_data_get_list(void)
            END_SUB_GROUP()
        }
          START_SUB_GROUP("Miscellaneous")
-         CONFIG_BOOL(g_settings.input.netplay_client_swap_input, "netplay_client_swap_input", "Swap Netplay Input",     netplay_client_swap_input, GROUP_NAME, SUBGROUP_NAME, NULL)
+         CONFIG_BOOL(g_settings.input.netplay_client_swap_input, "netplay_client_swap_input", "Swap Netplay Input",     netplay_client_swap_input, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
          END_SUB_GROUP()
          END_GROUP()
 
@@ -797,9 +858,9 @@ const rarch_setting_t* setting_data_get_list(void)
          START_GROUP("Overlay Options")
          START_SUB_GROUP("State")
          CONFIG_BOOL(g_settings.input.overlay_enable,            "input_overlay_enable",            "Overlay Enable",        default_overlay_enable, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
-         CONFIG_PATH(g_settings.input.overlay,              "input_overlay",              "Overlay Preset",              "", GROUP_NAME, SUBGROUP_NAME, NULL) WITH_FLAGS(SD_FLAG_ALLOW_EMPTY) WITH_VALUES("cfg")
+         CONFIG_PATH(g_settings.input.overlay,              "input_overlay",              "Overlay Preset",              "", GROUP_NAME, SUBGROUP_NAME, general_change_handler) WITH_FLAGS(SD_FLAG_ALLOW_EMPTY) WITH_VALUES("cfg")
          CONFIG_FLOAT(g_settings.input.overlay_opacity,     "input_overlay_opacity",      "Overlay Opacity",            0.7f, GROUP_NAME, SUBGROUP_NAME, general_change_handler) WITH_RANGE(0, 1)
-         CONFIG_FLOAT(g_settings.input.overlay_scale,       "input_overlay_scale",        "Overlay Scale",              1.0f, GROUP_NAME, SUBGROUP_NAME, NULL)
+         CONFIG_FLOAT(g_settings.input.overlay_scale,       "input_overlay_scale",        "Overlay Scale",              1.0f, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
          END_SUB_GROUP()
          END_GROUP()
 #endif
