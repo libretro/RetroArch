@@ -31,6 +31,8 @@
 #include "../../../config.def.h"
 #include "../../../input/keyboard_line.h"
 
+#include "../../../settings_data.h"
+
 #ifdef HAVE_CONFIG_H
 #include "../../../config.h"
 #endif
@@ -70,8 +72,11 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
    unsigned i, last;
    char tmp[256];
    menu_handle_t *menu = (menu_handle_t*)data;
+   const rarch_setting_t *setting_data, *current_setting;
 
-   if (!menu)
+   setting_data = (const rarch_setting_t *)setting_data_get_list();
+
+   if (!menu || !setting_data)
       return;
 
    switch (menu_type)
@@ -142,7 +147,9 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
          file_list_push(menu->selection_buf, "GPU Screenshots", MENU_SETTINGS_GPU_SCREENSHOT, 0);
 #endif
          file_list_push(menu->selection_buf, "Load Dummy On Core Shutdown", MENU_SETTINGS_LOAD_DUMMY_ON_CORE_SHUTDOWN, 0);
-         file_list_push(menu->selection_buf, "Show Framerate", MENU_SETTINGS_DEBUG_TEXT, 0);
+         current_setting = setting_data_find_setting(setting_data, "fps_show");
+         if (current_setting)
+            file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_DEBUG_TEXT, 0);
          file_list_push(menu->selection_buf, "Maximum Run Speed", MENU_SETTINGS_FASTFORWARD_RATIO, 0);
          file_list_push(menu->selection_buf, "Slow-Motion Ratio", MENU_SETTINGS_SLOWMOTION_RATIO, 0);
          file_list_push(menu->selection_buf, "Rewind", MENU_SETTINGS_REWIND_ENABLE, 0);
@@ -3362,8 +3369,11 @@ static int menu_common_setting_set_perf(unsigned setting, unsigned action,
 
 static int menu_common_setting_set(unsigned setting, unsigned action)
 {
+   const rarch_setting_t *setting_data, *current_setting;
    struct retro_perf_counter **counters;
    unsigned port = driver.menu->current_pad;
+
+   setting_data = (const rarch_setting_t *)setting_data_get_list();
 
    if (setting >= MENU_SETTINGS_PERF_COUNTERS_BEGIN && setting <= MENU_SETTINGS_PERF_COUNTERS_END)
    {
@@ -3706,10 +3716,18 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
          }
          break;
       case MENU_SETTINGS_DEBUG_TEXT:
-         if (action == MENU_ACTION_START)
-            g_settings.fps_show = false;
-         else if (action == MENU_ACTION_LEFT || action == MENU_ACTION_RIGHT)
-            g_settings.fps_show = !g_settings.fps_show;
+         current_setting = setting_data_find_setting(setting_data, "fps_show");
+
+         if (current_setting)
+         {
+            if (action == MENU_ACTION_START)
+               *current_setting->value.boolean = false;
+            else if (action == MENU_ACTION_LEFT || action == MENU_ACTION_RIGHT)
+               *current_setting->value.boolean = !*current_setting->value.boolean;
+
+            if (current_setting->change_handler)
+               current_setting->change_handler(current_setting);
+         }
          break;
       case MENU_SETTINGS_DISK_INDEX:
          {

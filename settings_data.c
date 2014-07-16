@@ -524,7 +524,7 @@ static void general_change_handler(const void *data)
     else if (!strcmp(setting->name, "audio_dsp_plugin"))
     {
 #ifdef HAVE_DYLIB
-        strlcpy(g_settings.audio.dsp_plugin, *setting->value.string, sizeof(g_settings.audio.dsp_plugin));
+        strlcpy(g_settings.audio.dsp_plugin, setting->value.string, sizeof(g_settings.audio.dsp_plugin));
 #endif
         rarch_deinit_dsp_filter();
         rarch_init_dsp_filter();
