@@ -624,6 +624,15 @@ static void general_change_handler(const void *data)
         if (!g_settings.video.fullscreen)
             rarch_reinit_drivers();
     }
+    else if (!strcmp(setting->name, "video_force_aspect"))
+        g_settings.video.force_aspect = *setting->value.boolean;
+    else if (!strcmp(setting->name, "aspect_ratio_index"))
+    {
+        g_settings.video.aspect_ratio_idx = *setting->value.unsigned_integer;
+        
+        if (driver.video_data && driver.video_poke && driver.video_poke->set_aspect_ratio)
+            driver.video_poke->set_aspect_ratio(driver.video_data, g_settings.video.aspect_ratio_idx);
+    }
     else if (!strcmp(setting->name, "video_message_pos_x"))
         g_settings.video.msg_pos_x = *setting->value.fraction;
     else if (!strcmp(setting->name, "video_message_pos_y"))
@@ -805,10 +814,10 @@ const rarch_setting_t* setting_data_get_list(void)
          END_SUB_GROUP()
 
          START_SUB_GROUP("Aspect")
-         CONFIG_BOOL(g_settings.video.force_aspect,         "video_force_aspect",         "Force aspect ratio",         force_aspect, GROUP_NAME, SUBGROUP_NAME, NULL)
+         CONFIG_BOOL(g_settings.video.force_aspect,         "video_force_aspect",         "Force aspect ratio",         force_aspect, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
          CONFIG_FLOAT(g_settings.video.aspect_ratio,        "video_aspect_ratio",         "Aspect Ratio",               aspect_ratio, GROUP_NAME, SUBGROUP_NAME, NULL)
          CONFIG_BOOL(g_settings.video.aspect_ratio_auto,    "video_aspect_ratio_auto",    "Use Auto Aspect Ratio",      aspect_ratio_auto, GROUP_NAME, SUBGROUP_NAME, NULL)
-         CONFIG_UINT(g_settings.video.aspect_ratio_idx,     "aspect_ratio_index",         "Aspect Ratio Index",         aspect_ratio_idx, GROUP_NAME, SUBGROUP_NAME, NULL)
+         CONFIG_UINT(g_settings.video.aspect_ratio_idx,     "aspect_ratio_index",         "Aspect Ratio Index",         aspect_ratio_idx, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
          END_SUB_GROUP()
 
          START_SUB_GROUP("Scaling")
