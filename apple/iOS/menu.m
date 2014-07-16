@@ -731,7 +731,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
    if ((self = [super initWithStyle:UITableViewStyleGrouped]))
    {
       int i, j;
-      const rarch_setting_t *setting_data, *setting;
+      rarch_setting_t *setting_data, *setting;
       NSMutableArray* settings;
 
       _isCustom = core_info_has_custom_config(core.UTF8String);
@@ -748,7 +748,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
          _pathToSave = apple_platform.globalConfigFile;
       }
       
-      setting_data = (const rarch_setting_t*)setting_data_get_list();
+      setting_data = (rarch_setting_t*)setting_data_get_list();
       
       setting_data_reset(setting_data);
       setting_data_load_config_path(setting_data, _pathToSave.UTF8String);

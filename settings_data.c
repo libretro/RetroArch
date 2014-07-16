@@ -571,11 +571,14 @@ static void general_change_handler(const void *data)
     }
     else if (!strcmp(setting->name, "autosave_interval"))
     {
+#ifdef HAVE_THREADS
         rarch_deinit_autosave();
+#endif
         g_settings.autosave_interval = *setting->value.unsigned_integer;
-        
+#ifdef HAVE_THREADS
         if (g_settings.autosave_interval)
             rarch_init_autosave();
+#endif
     }
     else if (!strcmp(setting->name, "video_font_enable"))
         g_settings.video.font_enable = *setting->value.boolean;
