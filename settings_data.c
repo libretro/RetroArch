@@ -642,6 +642,18 @@ static void general_change_handler(const void *data)
         strlcpy(g_settings.input.autoconfig_dir, setting->value.string, sizeof(g_settings.input.autoconfig_dir));
     else if (!strcmp(setting->name, "screenshot_directory"))
         strlcpy(g_settings.screenshot_directory, setting->value.string, sizeof(g_settings.screenshot_directory));
+    else if (!strcmp(setting->name, "input_player1_joypad_index"))
+        g_settings.input.joypad_map[0] = *setting->value.integer;
+    else if (!strcmp(setting->name, "input_player2_joypad_index"))
+        g_settings.input.joypad_map[1] = *setting->value.integer;
+    else if (!strcmp(setting->name, "input_player3_joypad_index"))
+        g_settings.input.joypad_map[2] = *setting->value.integer;
+    else if (!strcmp(setting->name, "input_player4_joypad_index"))
+        g_settings.input.joypad_map[3] = *setting->value.integer;
+    else if (!strcmp(setting->name, "input_player5_joypad_index"))
+        g_settings.input.joypad_map[4] = *setting->value.integer;
+    else if (!strcmp(setting->name, "rgui_show_start_screen"))
+        g_settings.menu_show_start_screen = *setting->value.boolean;
 }
 
 
@@ -861,11 +873,11 @@ const rarch_setting_t* setting_data_get_list(void)
 
          START_SUB_GROUP("Joypad Mapping")
          //TODO: input_libretro_device_p%u
-         CONFIG_INT(g_settings.input.joypad_map[0],         "input_player1_joypad_index", "Player 1 Pad Index",         0, GROUP_NAME, SUBGROUP_NAME, NULL)
-         CONFIG_INT(g_settings.input.joypad_map[1],         "input_player2_joypad_index", "Player 2 Pad Index",         1, GROUP_NAME, SUBGROUP_NAME, NULL)
-         CONFIG_INT(g_settings.input.joypad_map[2],         "input_player3_joypad_index", "Player 3 Pad Index",         2, GROUP_NAME, SUBGROUP_NAME, NULL)
-         CONFIG_INT(g_settings.input.joypad_map[3],         "input_player4_joypad_index", "Player 4 Pad Index",         3, GROUP_NAME, SUBGROUP_NAME, NULL)
-         CONFIG_INT(g_settings.input.joypad_map[4],         "input_player5_joypad_index", "Player 5 Pad Index",         4, GROUP_NAME, SUBGROUP_NAME, NULL)
+         CONFIG_INT(g_settings.input.joypad_map[0],         "input_player1_joypad_index", "Player 1 Pad Index",         0, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
+         CONFIG_INT(g_settings.input.joypad_map[1],         "input_player2_joypad_index", "Player 2 Pad Index",         1, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
+         CONFIG_INT(g_settings.input.joypad_map[2],         "input_player3_joypad_index", "Player 3 Pad Index",         2, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
+         CONFIG_INT(g_settings.input.joypad_map[3],         "input_player4_joypad_index", "Player 4 Pad Index",         3, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
+         CONFIG_INT(g_settings.input.joypad_map[4],         "input_player5_joypad_index", "Player 5 Pad Index",         4, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
          END_SUB_GROUP()
 
          START_SUB_GROUP("Turbo/Deadzone")
@@ -921,12 +933,17 @@ const rarch_setting_t* setting_data_get_list(void)
          /* PATHS */
          /*********/
          START_GROUP("Path Options")
+         START_SUB_GROUP("State")
+#ifdef HAVE_MENU
+         CONFIG_BOOL(g_settings.menu_show_start_screen,     "rgui_show_start_screen",     "Show Start Screen",          menu_show_start_screen, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
+#endif
+         END_SUB_GROUP()
          START_SUB_GROUP("Paths")
 #ifdef HAVE_MENU
          CONFIG_PATH(g_settings.menu_content_directory,     "rgui_browser_directory",     "Content Directory",          "", GROUP_NAME, SUBGROUP_NAME, NULL)                WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
          CONFIG_PATH(g_settings.assets_directory,           "assets_directory",           "Assets Directory",           "", GROUP_NAME, SUBGROUP_NAME, NULL)                WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
          CONFIG_PATH(g_settings.menu_config_directory,      "rgui_config_directory",      "Config Directory",           "", GROUP_NAME, SUBGROUP_NAME, NULL)                WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
-         CONFIG_BOOL(g_settings.menu_show_start_screen,     "rgui_show_start_screen",     "Show Start Screen",          menu_show_start_screen, GROUP_NAME, SUBGROUP_NAME, NULL)
+
 #endif
          CONFIG_PATH(g_settings.libretro,                   "libretro_path",              "Libretro Path",              "", GROUP_NAME, SUBGROUP_NAME, NULL)                WITH_FLAGS(SD_FLAG_ALLOW_EMPTY)
          CONFIG_PATH(g_settings.libretro_info_path,         "libretro_info_path",         "Core Info Directory",        default_libretro_info_path, GROUP_NAME, SUBGROUP_NAME, NULL)   WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
