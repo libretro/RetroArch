@@ -1166,7 +1166,7 @@ void init_video_input(void)
    {
       RARCH_LOG("Graphics driver did not initialize an input driver. Attempting to pick a suitable driver.\n");
       driver.input = tmp;
-      if (driver.input != NULL)
+      if (driver.input)
       {
          driver.input_data = input_init_func();
          if (driver.input_data == NULL)
@@ -1177,8 +1177,16 @@ void init_video_input(void)
       }
       else
       {
-         RARCH_ERR("Cannot find input driver. Exiting ...\n");
-         rarch_fail(1, "init_video_input()");
+         RARCH_ERR("Cannot find input driver.\n");
+         RARCH_WARN("Going to default to first input driver...\n");
+
+         driver.input = input_drivers[0];
+
+         if (!driver.input)
+         {
+            RARCH_ERR("Still cannot find input driver. Exiting ...\n");
+            rarch_fail(1, "init_video_input()");
+         }
       }
    }
 
