@@ -500,8 +500,16 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
             *current_setting->value.boolean = g_extern.audio_data.mute;
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_AUDIO_MUTE, 0);
          }
-         file_list_push(menu->selection_buf, "Audio Latency (Hint)", MENU_SETTINGS_AUDIO_LATENCY, 0);
-         file_list_push(menu->selection_buf, "Audio Sync", MENU_SETTINGS_AUDIO_SYNC, 0);
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "audio_latency")))
+         {
+            *current_setting->value.unsigned_integer = g_settings.audio.latency;
+            file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_AUDIO_LATENCY, 0);
+         }
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "audio_sync")))
+         {
+            *current_setting->value.boolean = g_settings.audio.sync;
+            file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_AUDIO_SYNC, 0);
+         }
          file_list_push(menu->selection_buf, "Rate Control Delta", MENU_SETTINGS_AUDIO_CONTROL_RATE_DELTA, 0);
 #ifdef __CELLOS_LV2__
          file_list_push(menu->selection_buf, "System BGM Control", MENU_SETTINGS_CUSTOM_BGM_CONTROL_ENABLE, 0);
@@ -3748,21 +3756,12 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
             menu_common_setting_set_current_boolean(current_setting, action);
          break;
       case MENU_SETTINGS_AUDIO_LATENCY:
-         if (action == MENU_ACTION_START)
-            g_settings.audio.latency = out_latency;
-         else if (action == MENU_ACTION_LEFT)
-         {
-            if (g_settings.audio.latency > 0)
-               g_settings.audio.latency--;
-         }
-         else if (action == MENU_ACTION_RIGHT)
-            g_settings.audio.latency++;
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "audio_latency")))
+            menu_common_setting_set_current_unsigned_integer(current_setting, 1, action, true, false);
          break;
       case MENU_SETTINGS_AUDIO_SYNC:
-         if (action == MENU_ACTION_OK || action == MENU_ACTION_LEFT || action == MENU_ACTION_RIGHT)
-            g_settings.audio.sync = !g_settings.audio.sync;
-         else if (action == MENU_ACTION_START)
-            g_settings.audio.sync = audio_sync;
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "audio_sync")))
+            menu_common_setting_set_current_boolean(current_setting, action);
          break;
       case MENU_SETTINGS_AUDIO_CONTROL_RATE_DELTA:
          if (action == MENU_ACTION_START)
