@@ -5471,7 +5471,7 @@ static void menu_common_setting_set_label(char *type_str, size_t type_str_size, 
             snprintf(type_str, type_str_size, "%s", g_extern.netplay_nick);
             break;
          case MENU_SETTINGS_NETPLAY_MODE:
-            snprintf(type_str, type_str_size, g_extern.netplay_is_client ? "Client" : "Server");
+            snprintf(type_str, type_str_size, g_extern.netplay_is_client ? "ON" : "OFF");
             break;
          case MENU_SETTINGS_NETPLAY_SPECTATOR_MODE_ENABLE:
             snprintf(type_str, type_str_size, g_extern.netplay_is_spectate ? "ON" : "OFF");
