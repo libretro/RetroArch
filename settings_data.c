@@ -713,6 +713,14 @@ static void general_change_handler(const void *data)
         strlcpy(g_settings.video.filter_path, setting->value.string, sizeof(g_settings.video.filter_path));
         rarch_reinit_drivers();
     }
+#ifdef HAVE_CAMERA
+    else if (!strcmp(setting->name, "camera_allow"))
+        g_settings.camera.allow = *setting->value.boolean;
+#endif
+#ifdef HAVE_LOCATION
+    else if (!strcmp(setting->name, "location_allow"))
+        g_settings.location.allow = *setting->value.boolean;
+#endif
 }
 
 
@@ -1037,6 +1045,20 @@ rarch_setting_t* setting_data_get_list(void)
          // system_directory
          END_SUB_GROUP()
          END_GROUP()
+       
+       /***********/
+       /* PRIVACY */
+       /***********/
+       START_GROUP("Privacy Options")
+       START_SUB_GROUP("State")
+#ifdef HAVE_CAMERA
+         CONFIG_BOOL(g_settings.camera.allow,     "camera_allow",     "Allow Camera",          false, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
+#endif
+#ifdef HAVE_LOCATION
+         CONFIG_BOOL(g_settings.location.allow,     "location_allow",     "Allow Location",          false, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
+#endif
+       END_SUB_GROUP()
+       END_GROUP()
    }
 
    return list;
