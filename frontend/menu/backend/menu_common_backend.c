@@ -223,9 +223,15 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
             *current_setting->value.unsigned_integer = g_settings.video.rotation;
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_VIDEO_ROTATION, 0);
          }
-         file_list_push(menu->selection_buf, "VSync", MENU_SETTINGS_VIDEO_VSYNC, 0);
+         if ((current_setting = setting_data_find_setting(setting_data, "video_vsync")))
+         {
+            *current_setting->value.boolean = g_settings.video.vsync;
+            file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_VIDEO_VSYNC, 0);
+         }
+
          file_list_push(menu->selection_buf, "Hard GPU Sync", MENU_SETTINGS_VIDEO_HARD_SYNC, 0);
          file_list_push(menu->selection_buf, "Hard GPU Sync Frames", MENU_SETTINGS_VIDEO_HARD_SYNC_FRAMES, 0);
+
          if ((current_setting = setting_data_find_setting(setting_data, "video_black_frame_insertion")))
          {
             *current_setting->value.boolean = g_settings.video.black_frame_insertion;
@@ -4539,23 +4545,9 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
          }
          break;
       case MENU_SETTINGS_VIDEO_VSYNC:
-         switch (action)
-         {
-            case MENU_ACTION_START:
-               g_settings.video.vsync = true;
-               break;
-
-            case MENU_ACTION_LEFT:
-            case MENU_ACTION_RIGHT:
-            case MENU_ACTION_OK:
-               g_settings.video.vsync = !g_settings.video.vsync;
-               break;
-
-            default:
-               break;
-         }
+         if ((current_setting = setting_data_find_setting(setting_data, "video_vsync")))
+            menu_common_setting_set_current_boolean(current_setting, action);
          break;
-
       case MENU_SETTINGS_VIDEO_HARD_SYNC:
          switch (action)
          {
