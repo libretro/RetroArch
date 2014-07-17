@@ -741,6 +741,10 @@ static void general_change_handler(const void *data)
        g_extern.netplay_is_client = *setting->value.boolean;
     else if (!strcmp(setting->name, "netplay_spectator_mode_enable"))
        g_extern.netplay_is_spectate = *setting->value.boolean;
+    else if (!strcmp(setting->name, "log_verbosity"))
+       g_extern.verbose = *setting->value.boolean;
+    else if (!strcmp(setting->name, "perfcnt_enable"))
+       g_extern.perfcnt_enable = *setting->value.boolean;
 }
 
 
@@ -829,6 +833,8 @@ rarch_setting_t* setting_data_get_list(void)
          /*******************/
          START_GROUP("General Options")
          START_SUB_GROUP("General Options")
+         CONFIG_BOOL(g_extern.verbose,                      "log_verbosity",        "Logging Verbosity", false, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
+         CONFIG_BOOL(g_extern.perfcnt_enable,               "perfcnt_enable",       "Performance Counters", false, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
          CONFIG_BOOL(g_extern.config_save_on_exit,          "config_save_on_exit",        "Configuration Save On Exit", config_save_on_exit, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
          CONFIG_BOOL(g_settings.fps_show,                   "fps_show",                   "Show Framerate",             fps_show, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
          CONFIG_BOOL(g_settings.rewind_enable,              "rewind_enable",              "Rewind",                     rewind_enable, GROUP_NAME, SUBGROUP_NAME, general_change_handler)

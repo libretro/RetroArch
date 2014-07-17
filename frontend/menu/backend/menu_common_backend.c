@@ -138,8 +138,16 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
       case MENU_SETTINGS_GENERAL_OPTIONS:
          file_list_clear(menu->selection_buf);
          file_list_push(menu->selection_buf, "Libretro Logging Level", MENU_SETTINGS_LIBRETRO_LOG_LEVEL, 0);
-         file_list_push(menu->selection_buf, "Logging Verbosity", MENU_SETTINGS_LOGGING_VERBOSITY, 0);
-         file_list_push(menu->selection_buf, "Performance Counters", MENU_SETTINGS_PERFORMANCE_COUNTERS_ENABLE, 0);
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "log_verbosity")))
+         {
+            *current_setting->value.boolean = g_extern.verbose;
+            file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_LOGGING_VERBOSITY, 0);
+         }
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "perfcnt_enable")))
+         {
+            *current_setting->value.boolean = g_extern.perfcnt_enable;
+            file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_PERFORMANCE_COUNTERS_ENABLE, 0);
+         }
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "game_history_size")))
          {
             *current_setting->value.unsigned_integer = g_settings.game_history_size;
@@ -630,8 +638,11 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
          file_list_push(menu->selection_buf, "Core Information", MENU_SETTINGS_CORE_INFO, 0);
          file_list_push(menu->selection_buf, "Settings", MENU_SETTINGS_OPTIONS, 0);
 
-         if (g_extern.perfcnt_enable)
+         if (g_extern.perfcnt_enable && (current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "rewind_enable")))
+         {
+            *current_setting->value.boolean = g_extern.perfcnt_enable;
             file_list_push(menu->selection_buf, "Performance Counters", MENU_SETTINGS_PERFORMANCE_COUNTERS, 0);
+         }
 
          if (g_extern.main_is_init && !g_extern.libretro_dummy)
          {
@@ -3695,8 +3706,8 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
                g_settings.libretro_log_level++;
          break;
       case MENU_SETTINGS_LOGGING_VERBOSITY:
-         if (action == MENU_ACTION_LEFT || action == MENU_ACTION_RIGHT)
-            g_extern.verbose = !g_extern.verbose;
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "log_verbosity")))
+            menu_common_setting_set_current_boolean(current_setting, action);
          break;
       case MENU_SETTINGS_PERFORMANCE_COUNTERS_ENABLE:
          if (action == MENU_ACTION_LEFT || action == MENU_ACTION_RIGHT)
