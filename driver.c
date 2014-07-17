@@ -291,8 +291,12 @@ static void find_video_driver(void)
       RARCH_LOG_OUTPUT("Available video drivers are:\n");
       for (d = 0; video_drivers[d]; d++)
          RARCH_LOG_OUTPUT("\t%s\n", video_drivers[d]->ident);
+      RARCH_WARN("Going to default to first video driver...\n");
 
-      rarch_fail(1, "find_video_driver()");
+      driver.video = video_drivers[0];
+
+      if (!driver.video)
+         rarch_fail(1, "find_video_driver()");
    }
 }
 
