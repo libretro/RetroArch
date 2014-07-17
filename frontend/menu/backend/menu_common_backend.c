@@ -186,7 +186,11 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
             *current_setting->value.unsigned_integer = g_settings.autosave_interval;
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_SRAM_AUTOSAVE, 0);
          }
-         file_list_push(menu->selection_buf, "Window Compositing", MENU_SETTINGS_WINDOW_COMPOSITING_ENABLE, 0);
+         if ((current_setting = setting_data_find_setting(setting_data, "video_disable_composition")))
+         {
+            *current_setting->value.boolean =- g_settings.video.disable_composition;
+            file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_WINDOW_COMPOSITING_ENABLE, 0);
+         }
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "pause_nonactive")))
          {
             *current_setting->value.boolean = g_settings.pause_nonactive;
@@ -4937,16 +4941,8 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
             menu_common_setting_set_current_boolean(current_setting, action);
          break;
       case MENU_SETTINGS_WINDOW_COMPOSITING_ENABLE:
-         if (action == MENU_ACTION_OK || action == MENU_ACTION_LEFT || action == MENU_ACTION_RIGHT)
-         {
-            g_settings.video.disable_composition = !g_settings.video.disable_composition;
-            rarch_reinit_drivers();
-         }
-         else if (action == MENU_ACTION_START)
-         {
-            g_settings.video.disable_composition = false;
-            rarch_reinit_drivers();
-         }
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "video_disable_composition")))
+            menu_common_setting_set_current_boolean(current_setting, action);
          break;
 #ifdef HAVE_NETPLAY
       case MENU_SETTINGS_NETPLAY_ENABLE:
@@ -5011,18 +5007,14 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
             g_settings.osk.enable = false;
          break;
 #endif
-#ifdef HAVE_CAMERA
       case MENU_SETTINGS_PRIVACY_CAMERA_ALLOW:
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "camera_allow")))
             menu_common_setting_set_current_boolean(current_setting, action);
          break;
-#endif
-#ifdef HAVE_LOCATION
       case MENU_SETTINGS_PRIVACY_LOCATION_ALLOW:
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "location_allow")))
             menu_common_setting_set_current_boolean(current_setting, action);
          break;
-#endif
       case MENU_SETTINGS_FONT_ENABLE:
          if (action == MENU_ACTION_OK || action == MENU_ACTION_LEFT || action == MENU_ACTION_RIGHT)
             g_settings.video.font_enable = !g_settings.video.font_enable;
