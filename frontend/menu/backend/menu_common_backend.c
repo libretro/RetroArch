@@ -373,10 +373,18 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
       case MENU_SETTINGS_PRIVACY_OPTIONS:
          file_list_clear(menu->selection_buf);
 #ifdef HAVE_CAMERA
-         file_list_push(menu->selection_buf, "Allow Camera", MENU_SETTINGS_PRIVACY_CAMERA_ALLOW, 0);
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "camera_allow")))
+         {
+            *current_setting->value.boolean = g_settings.camera.allow;
+            file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_PRIVACY_CAMERA_ALLOW, 0);
+         }
 #endif
 #ifdef HAVE_LOCATION
-         file_list_push(menu->selection_buf, "Allow Location Services", MENU_SETTINGS_PRIVACY_LOCATION_ALLOW, 0);
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "location_allow")))
+         {
+            *current_setting->value.boolean = g_settings.location.allow;
+            file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_PRIVACY_LOCATION_ALLOW, 0);
+         }
 #endif
          break;
       case MENU_SETTINGS_DISK_OPTIONS:
@@ -5010,18 +5018,14 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
 #endif
 #ifdef HAVE_CAMERA
       case MENU_SETTINGS_PRIVACY_CAMERA_ALLOW:
-         if (action == MENU_ACTION_OK || action == MENU_ACTION_LEFT || action == MENU_ACTION_RIGHT)
-            g_settings.camera.allow = !g_settings.camera.allow;
-         else if (action == MENU_ACTION_START)
-            g_settings.camera.allow = false;
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "camera_allow")))
+            menu_common_setting_set_current_boolean(current_setting, false, action);
          break;
 #endif
 #ifdef HAVE_LOCATION
       case MENU_SETTINGS_PRIVACY_LOCATION_ALLOW:
-         if (action == MENU_ACTION_OK || action == MENU_ACTION_LEFT || action == MENU_ACTION_RIGHT)
-            g_settings.location.allow = !g_settings.location.allow;
-         else if (action == MENU_ACTION_START)
-            g_settings.location.allow = false;
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "location_allow")))
+            menu_common_setting_set_current_boolean(current_setting, false, action);
          break;
 #endif
       case MENU_SETTINGS_FONT_ENABLE:
