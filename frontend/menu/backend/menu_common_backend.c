@@ -4471,14 +4471,7 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
 
       case MENU_SETTINGS_TOGGLE_FULLSCREEN:
          if ((current_setting = setting_data_find_setting(setting_data, "video_fullscreen")))
-         {
-            if (action == MENU_ACTION_OK)
-            {
-               *current_setting->value.boolean = !(*current_setting->value.boolean);
-               if (current_setting->change_handler)
-                  current_setting->change_handler(current_setting);
-            }
-         }
+            menu_common_setting_set_current_boolean(current_setting, action);
          break;
 
 #if defined(GEKKO)
