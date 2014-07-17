@@ -55,14 +55,17 @@ msg_queue_t *msg_queue_new(size_t size)
 
 void msg_queue_free(msg_queue_t *queue)
 {
-   msg_queue_clear(queue);
-   free(queue->elems);
+   if (queue)
+   {
+      msg_queue_clear(queue);
+      free(queue->elems);
+   }
    free(queue);
 }
 
 void msg_queue_push(msg_queue_t *queue, const char *msg, unsigned prio, unsigned duration)
 {
-   if (queue->ptr >= queue->size)
+   if (!queue || queue->ptr >= queue->size)
       return;
 
    struct queue_elem *new_elem = (struct queue_elem*)calloc(1, sizeof(struct queue_elem));
@@ -91,6 +94,9 @@ void msg_queue_push(msg_queue_t *queue, const char *msg, unsigned prio, unsigned
 
 void msg_queue_clear(msg_queue_t *queue)
 {
+   if (!queue)
+      return;
+
    size_t i;
    for (i = 1; i < queue->ptr; i++)
    {
@@ -108,7 +114,7 @@ void msg_queue_clear(msg_queue_t *queue)
 
 const char *msg_queue_pull(msg_queue_t *queue)
 {
-   if (queue->ptr == 1) // Nothing in queue. :(
+   if (!queue || queue->ptr == 1) // Nothing in queue.
       return NULL;
 
    struct queue_elem *front = queue->elems[1];

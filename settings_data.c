@@ -615,9 +615,12 @@ static void general_change_handler(const void *data)
         g_settings.video.fullscreen_y = *setting->value.unsigned_integer;
     else if (!strcmp(setting->name, "video_refresh_rate"))
     {
-        driver_set_monitor_refresh_rate(*setting->value.fraction);
-        /* In case refresh rate update forced non-block video. */
-        video_set_nonblock_state_func(false);
+       if (driver.video && driver.video_data)
+       {
+          driver_set_monitor_refresh_rate(*setting->value.fraction);
+          /* In case refresh rate update forced non-block video. */
+          video_set_nonblock_state_func(false);
+       }
     }
     else if (!strcmp(setting->name,  "video_aspect_ratio"))
         g_settings.video.aspect_ratio = *setting->value.fraction;
