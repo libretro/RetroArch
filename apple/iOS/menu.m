@@ -771,7 +771,11 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
          [self.sections addObject:section];
          
          for (j = 1; groups[i][j]; j ++)
-            [section addObject:[RAMenuItemGeneralSetting itemForSetting:setting_data_find_setting(setting_data, groups[i][j])]];
+         {
+            rarch_setting_t *current = (rarch_setting_t*)setting_data_find_setting(setting_data, groups[i][j]);
+            if (current)
+               [section addObject:[RAMenuItemGeneralSetting itemForSetting:current]];
+         }
       }
 
       settings = [NSMutableArray arrayWithObjects:BOXSTRING(""), nil];
