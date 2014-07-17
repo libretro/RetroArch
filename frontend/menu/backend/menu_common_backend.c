@@ -188,7 +188,7 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
          }
          if ((current_setting = setting_data_find_setting(setting_data, "video_disable_composition")))
          {
-            *current_setting->value.boolean =- g_settings.video.disable_composition;
+            *current_setting->value.boolean = g_settings.video.disable_composition;
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_WINDOW_COMPOSITING_ENABLE, 0);
          }
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "pause_nonactive")))
