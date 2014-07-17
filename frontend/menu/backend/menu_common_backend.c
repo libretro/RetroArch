@@ -396,8 +396,16 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
          file_list_clear(menu->selection_buf);
          file_list_push(menu->selection_buf, "Overlay Enable", MENU_SETTINGS_OVERLAY_ENABLE, 0);
          file_list_push(menu->selection_buf, "Overlay Preset", MENU_SETTINGS_OVERLAY_PRESET, 0);
-         file_list_push(menu->selection_buf, "Overlay Opacity", MENU_SETTINGS_OVERLAY_OPACITY, 0);
-         file_list_push(menu->selection_buf, "Overlay Scale", MENU_SETTINGS_OVERLAY_SCALE, 0);
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "input_overlay_opacity")))
+         {
+            *current_setting->value.fraction = g_settings.input.overlay_opacity;
+            file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_OVERLAY_OPACITY, 0);
+         }
+         if ((current_setting = setting_data_find_setting(setting_data, "input_overlay_scale")))
+         {
+            *current_setting->value.fraction = g_settings.input.overlay_scale;
+            file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_OVERLAY_SCALE, 0);
+         }
          break;
 #ifdef HAVE_NETPLAY
       case MENU_SETTINGS_NETPLAY_OPTIONS:
@@ -3930,72 +3938,62 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
          break;
 #ifdef HAVE_OVERLAY
       case MENU_SETTINGS_OVERLAY_OPACITY:
+         if ((current_setting = setting_data_find_setting(setting_data, "input_overlay_opacity")))
          {
-            bool changed = true;
             switch (action)
             {
                case MENU_ACTION_LEFT:
-                  g_settings.input.overlay_opacity -= 0.01f;
+                  *current_setting->value.fraction = *current_setting->value.fraction - 0.01f;
 
-                  if (g_settings.input.overlay_opacity < 0.0f)
-                     g_settings.input.overlay_opacity = 0.0f;
+                  if (*current_setting->value.fraction < current_setting->min)
+                     *current_setting->value.fraction = current_setting->min;
                   break;
 
                case MENU_ACTION_RIGHT:
                case MENU_ACTION_OK:
-                  g_settings.input.overlay_opacity += 0.01f;
+                  *current_setting->value.fraction = *current_setting->value.fraction + 0.01f;
 
-                  if (g_settings.input.overlay_opacity > 1.0f)
-                     g_settings.input.overlay_opacity = 1.0f;
+                  if (*current_setting->value.fraction > current_setting->max)
+                     *current_setting->value.fraction = current_setting->max;
                   break;
 
                case MENU_ACTION_START:
-                  g_settings.input.overlay_opacity = 0.7f;
-                  break;
-
-               default:
-                  changed = false;
+                  *current_setting->value.fraction = current_setting->default_value.fraction;
                   break;
             }
 
-            if (changed && driver.overlay)
-               input_overlay_set_alpha_mod(driver.overlay,
-                     g_settings.input.overlay_opacity);
+            if (current_setting->change_handler)
+               current_setting->change_handler(current_setting);
             break;
          }
 
       case MENU_SETTINGS_OVERLAY_SCALE:
+         if ((current_setting = setting_data_find_setting(setting_data, "input_overlay_scale")))
          {
-            bool changed = true;
             switch (action)
             {
                case MENU_ACTION_LEFT:
-                  g_settings.input.overlay_scale -= 0.01f;
+                  *current_setting->value.fraction = *current_setting->value.fraction - 0.01f;
 
-                  if (g_settings.input.overlay_scale < 0.01f) // Avoid potential divide by zero.
-                     g_settings.input.overlay_scale = 0.01f;
+                  if (*current_setting->value.fraction < current_setting->min)
+                     *current_setting->value.fraction = current_setting->min;
                   break;
 
                case MENU_ACTION_RIGHT:
                case MENU_ACTION_OK:
-                  g_settings.input.overlay_scale += 0.01f;
+                  *current_setting->value.fraction = *current_setting->value.fraction + 0.01f;
 
-                  if (g_settings.input.overlay_scale > 2.0f)
-                     g_settings.input.overlay_scale = 2.0f;
+                  if (*current_setting->value.fraction > current_setting->max)
+                     *current_setting->value.fraction = current_setting->max;
                   break;
 
                case MENU_ACTION_START:
-                  g_settings.input.overlay_scale = 1.0f;
-                  break;
-
-               default:
-                  changed = false;
+                  *current_setting->value.fraction = current_setting->default_value.fraction;
                   break;
             }
 
-            if (changed && driver.overlay)
-               input_overlay_set_scale_factor(driver.overlay,
-                     g_settings.input.overlay_scale);
+            if (current_setting->change_handler)
+               current_setting->change_handler(current_setting);
             break;
          }
 #endif
