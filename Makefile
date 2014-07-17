@@ -216,7 +216,7 @@ ifeq ($(HAVE_OMAP), 1)
 endif
 
 ifeq ($(HAVE_EXYNOS), 1)
-   OBJ += gfx/exynos_gfx.o memcpy-neon.o
+   OBJ += gfx/exynos_gfx.o gfx/memcpy-neon.o
    LIBS += $(DRM_LIBS) $(EXYNOS_LIBS)
    DEFINES += $(DRM_CFLAGS) $(EXYNOS_CFLAGS)
 endif
