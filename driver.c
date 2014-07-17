@@ -134,11 +134,11 @@ static const video_driver_t *video_drivers[] = {
 #ifdef HAVE_NULLVIDEO
    &video_null,
 #endif
-#ifdef HAVE_LIMA
-   &video_lima,
-#endif
 #ifdef HAVE_OMAP
    &video_omap,
+#endif
+#ifdef HAVE_EXYNOS
+   &video_exynos,
 #endif
    NULL,
 };

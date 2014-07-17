@@ -109,6 +109,8 @@ const char *config_get_default_video(void)
          return "null";
       case VIDEO_OMAP:
          return "omap";
+      case VIDEO_EXYNOS:
+         return "exynos";
       default:
          return NULL;
    }

@@ -45,6 +45,7 @@ enum
    VIDEO_VG,
    VIDEO_NULL,
    VIDEO_OMAP,
+   VIDEO_EXYNOS,
 
    AUDIO_RSOUND,
    AUDIO_OSS,
