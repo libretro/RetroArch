@@ -171,7 +171,11 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_REWIND_ENABLE, 0);
          }
 
-         file_list_push(menu->selection_buf, "Rewind Granularity", MENU_SETTINGS_REWIND_GRANULARITY, 0);
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "rewind_granularity")))
+         {
+            *current_setting->value.unsigned_integer = g_settings.rewind_granularity;
+            file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_REWIND_GRANULARITY, 0);
+         }
          if ((current_setting = setting_data_find_setting(setting_data, "block_sram_overwrite")))
          {
             *current_setting->value.boolean = g_settings.block_sram_overwrite;
@@ -3471,27 +3475,70 @@ static void menu_common_setting_set_current_boolean(rarch_setting_t *setting, un
       setting->change_handler(setting);
 }
 
-static void menu_common_setting_set_current_fraction(rarch_setting_t *setting, float step, unsigned action)
+static void menu_common_setting_set_current_fraction(rarch_setting_t *setting, float step, unsigned action,
+      bool enforce_min_check, bool enforce_max_check)
 {
    switch (action)
    {
       case MENU_ACTION_LEFT:
          *setting->value.fraction = *setting->value.fraction - step;
 
-         if (*setting->value.fraction < setting->min)
-            *setting->value.fraction = setting->min;
+         if (enforce_min_check)
+         {
+            if (*setting->value.fraction < setting->min)
+               *setting->value.fraction = setting->min;
+         }
          break;
 
       case MENU_ACTION_RIGHT:
       case MENU_ACTION_OK:
          *setting->value.fraction = *setting->value.fraction + step;
 
-         if (*setting->value.fraction > setting->max)
-            *setting->value.fraction = setting->max;
+         if (enforce_max_check)
+         {
+            if (*setting->value.fraction > setting->max)
+               *setting->value.fraction = setting->max;
+         }
          break;
 
       case MENU_ACTION_START:
          *setting->value.fraction = setting->default_value.fraction;
+         break;
+   }
+
+   if (setting->change_handler)
+      setting->change_handler(setting);
+}
+
+static void menu_common_setting_set_current_unsigned_integer(rarch_setting_t *setting, unsigned step, unsigned action,
+      bool enforce_min_check, bool enforce_max_check)
+{
+   switch (action)
+   {
+      case MENU_ACTION_LEFT:
+         if (*setting->value.unsigned_integer != setting->min)
+            *setting->value.unsigned_integer = *setting->value.unsigned_integer - step;
+
+         if (enforce_min_check)
+         {
+            if (*setting->value.unsigned_integer < setting->min)
+               *setting->value.unsigned_integer = setting->min;
+         }
+         break;
+
+      case MENU_ACTION_RIGHT:
+      case MENU_ACTION_OK:
+         *setting->value.unsigned_integer = *setting->value.unsigned_integer + step;
+
+         if (enforce_max_check)
+         {
+            if (*setting->value.unsigned_integer > setting->max)
+               *setting->value.unsigned_integer = setting->max;
+         }
+         break;
+
+      case MENU_ACTION_START:
+         *setting->value.unsigned_integer = setting->default_value.unsigned_integer;
          break;
    }
 
@@ -3586,15 +3633,8 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
             menu_common_setting_set_current_boolean(current_setting, action);
          break;
       case MENU_SETTINGS_REWIND_GRANULARITY:
-         if (action == MENU_ACTION_OK || action == MENU_ACTION_RIGHT)
-            g_settings.rewind_granularity++;
-         else if (action == MENU_ACTION_LEFT)
-         {
-            if (g_settings.rewind_granularity > 1)
-               g_settings.rewind_granularity--;
-         }
-         else if (action == MENU_ACTION_START)
-            g_settings.rewind_granularity = 1;
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "rewind_granularity")))
+            menu_common_setting_set_current_unsigned_integer(current_setting, 1, action, true, false);
          break;
       case MENU_SETTINGS_LIBRETRO_LOG_LEVEL:
          if (action == MENU_ACTION_LEFT)
@@ -3980,11 +4020,11 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
 #ifdef HAVE_OVERLAY
       case MENU_SETTINGS_OVERLAY_OPACITY:
          if ((current_setting = setting_data_find_setting(setting_data, "input_overlay_opacity")))
-            menu_common_setting_set_current_fraction(current_setting, 0.01f, action);
+            menu_common_setting_set_current_fraction(current_setting, 0.01f, action, true, true);
          break;
       case MENU_SETTINGS_OVERLAY_SCALE:
          if ((current_setting = setting_data_find_setting(setting_data, "input_overlay_scale")))
-            menu_common_setting_set_current_fraction(current_setting, 0.01f, action);
+            menu_common_setting_set_current_fraction(current_setting, 0.01f, action, true, true);
          break;
 #endif
          // controllers
@@ -4276,23 +4316,7 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
          break;
       case MENU_SETTINGS_VIDEO_ROTATION:
          if ((current_setting = setting_data_find_setting(setting_data, "video_rotation")))
-         {
-            if (action == MENU_ACTION_START)
-               *current_setting->value.unsigned_integer = ORIENTATION_NORMAL;
-            else if (action == MENU_ACTION_LEFT)
-            {
-               if (*current_setting->value.unsigned_integer > 0)
-                  *current_setting->value.unsigned_integer = *current_setting->value.unsigned_integer - 1;
-            }
-            else if (action == MENU_ACTION_RIGHT)
-            {
-               if (*current_setting->value.unsigned_integer < LAST_ORIENTATION)
-                  *current_setting->value.unsigned_integer = *current_setting->value.unsigned_integer + 1;
-            }
-
-            if (current_setting->change_handler)
-               current_setting->change_handler(current_setting);
-         }
+            menu_common_setting_set_current_unsigned_integer(current_setting, 1, action, true, true);
          break;
 
       case MENU_SETTINGS_VIDEO_FILTER:
