@@ -247,8 +247,12 @@ static void find_audio_driver(void)
       RARCH_LOG_OUTPUT("Available audio drivers are:\n");
       for (d = 0; audio_drivers[d]; d++)
          RARCH_LOG_OUTPUT("\t%s\n", audio_drivers[d]->ident);
+      RARCH_WARN("Going to default to first audio driver...\n");
 
-      rarch_fail(1, "find_audio_driver()");
+      driver.audio = audio_drivers[0];
+
+      if (!driver.audio)
+         rarch_fail(1, "find_audio_driver()");
    }
 }
 
@@ -332,8 +336,12 @@ static void find_input_driver(void)
       RARCH_LOG_OUTPUT("Available input drivers are:\n");
       for (d = 0; input_drivers[d]; d++)
          RARCH_LOG_OUTPUT("\t%s\n", input_drivers[d]->ident);
+      RARCH_WARN("Going to default to first input driver...\n");
 
-      rarch_fail(1, "find_input_driver()");
+      driver.input = input_drivers[0];
+
+      if (!driver.input)
+         rarch_fail(1, "find_input_driver()");
    }
 }
 
