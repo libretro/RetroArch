@@ -1059,7 +1059,7 @@ static void parse_input(int argc, char *argv[])
             break;
 
          case 'v':
-            g_extern.verbose = true;
+            g_extern.verbosity = true;
             g_extern.has_set_verbosity = true;
             break;
 
@@ -2905,7 +2905,7 @@ int rarch_main_init(int argc, char *argv[])
    g_extern.error_in_init = true;
    parse_input(argc, argv);
 
-   if (g_extern.verbose)
+   if (g_extern.verbosity)
    {
       RARCH_LOG_OUTPUT("=== Build =======================================");
       print_compiler(stderr);

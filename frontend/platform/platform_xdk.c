@@ -35,8 +35,8 @@
 static HRESULT xbox_io_mount(char *szDrive, char *szDevice)
 {
 #ifndef IS_SALAMANDER
-   bool original_verbose = g_extern.verbose;
-   g_extern.verbose = true;
+   bool original_verbose = g_extern.verbosity;
+   g_extern.verbosity = true;
 #endif
    char szSourceDevice[48];
    char szDestinationDrive[16];
@@ -63,7 +63,7 @@ static HRESULT xbox_io_mount(char *szDrive, char *szDevice)
    IoCreateSymbolicLink(&LinkName, &DeviceName);
 
 #ifndef IS_SALAMANDER
-   g_extern.verbose = original_verbose;
+   g_extern.verbosity = original_verbose;
 #endif
    return S_OK;
 }
@@ -93,8 +93,8 @@ static void frontend_xdk_get_environment_settings(int *argc, char *argv[],
    (void)ret;
 
 #ifndef IS_SALAMANDER
-   bool original_verbose = g_extern.verbose;
-   g_extern.verbose = true;
+   bool original_verbose = g_extern.verbosity;
+   g_extern.verbosity = true;
 #endif
 
 #ifndef IS_SALAMANDER
@@ -223,7 +223,7 @@ static void frontend_xdk_get_environment_settings(int *argc, char *argv[],
 
 #ifndef IS_SALAMANDER
 exit:
-   g_extern.verbose = original_verbose;
+   g_extern.verbosity = original_verbose;
 #endif
 }
 
@@ -262,8 +262,8 @@ static void frontend_xdk_exitspawn(char *core_path, size_t sizeof_core_path)
 static void frontend_xdk_exec(const char *path, bool should_load_game)
 {
 #ifndef IS_SALAMANDER
-   bool original_verbose = g_extern.verbose;
-   g_extern.verbose = true;
+   bool original_verbose = g_extern.verbosity;
+   g_extern.verbosity = true;
 #endif
    (void)should_load_game;
 
@@ -293,7 +293,7 @@ static void frontend_xdk_exec(const char *path, bool should_load_game)
 #endif
 #endif
 #ifndef IS_SALAMANDER
-   g_extern.verbose = original_verbose;
+   g_extern.verbosity = original_verbose;
 #endif
 }
 

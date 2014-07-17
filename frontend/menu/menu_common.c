@@ -257,7 +257,7 @@ bool load_menu_game(void)
       return false;
 
    args.no_rom        = driver.menu->load_no_rom;
-   args.verbose       = g_extern.verbose;
+   args.verbose       = g_extern.verbosity;
    args.config_path   = *g_extern.config_path ? g_extern.config_path : NULL;
    args.sram_path     = *g_extern.savefile_dir ? g_extern.savefile_dir : NULL;
    args.state_path    = *g_extern.savestate_dir ? g_extern.savestate_dir : NULL;

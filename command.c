@@ -577,8 +577,8 @@ bool network_cmd_send(const char *cmd_)
    if (!command)
       return false;
 
-   bool old_verbose = g_extern.verbose;
-   g_extern.verbose = true;
+   bool old_verbose = g_extern.verbosity;
+   g_extern.verbosity = true;
 
    const char *cmd = NULL;
    const char *host = NULL;
@@ -609,7 +609,7 @@ bool network_cmd_send(const char *cmd_)
    bool ret = verify_command(cmd) && send_udp_packet(host, port, cmd);
    free(command);
 
-   g_extern.verbose = old_verbose;
+   g_extern.verbosity = old_verbose;
    return ret;
 }
 #endif

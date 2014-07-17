@@ -42,7 +42,7 @@
 #if defined(RARCH_DUMMY_LOG) || !defined(RARCH_INTERNAL)
 #define RARCH_LOG_VERBOSE (true)
 #else
-#define RARCH_LOG_VERBOSE g_extern.verbose
+#define RARCH_LOG_VERBOSE g_extern.verbosity
 #endif
 
 #ifndef RARCH_LOG

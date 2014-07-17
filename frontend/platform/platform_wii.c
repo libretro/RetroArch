@@ -109,8 +109,8 @@ static void dol_copy_argv_path(const char *dolpath, const char *argpath)
 void system_exec_wii(const char *_path, bool should_load_game)
 {
 #ifndef IS_SALAMANDER
-   bool original_verbose = g_extern.verbose;
-   g_extern.verbose = true;
+   bool original_verbose = g_extern.verbosity;
+   g_extern.verbosity = true;
 #endif
 
    char path[PATH_MAX];
@@ -176,6 +176,6 @@ void system_exec_wii(const char *_path, bool should_load_game)
 exit:
    (void)0;
 #ifndef IS_SALAMANDER
-   g_extern.verbose = original_verbose;
+   g_extern.verbosity = original_verbose;
 #endif
 }

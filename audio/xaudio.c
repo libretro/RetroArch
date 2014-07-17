@@ -54,7 +54,7 @@ static void *xa_init(const char *device, unsigned rate, unsigned latency)
       return NULL;
    }
 
-   if (g_extern.verbose)
+   if (g_extern.verbosity)
       xaudio2_enumerate_devices(xa->xa);
 
    return xa;

@@ -140,7 +140,7 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
          file_list_push(menu->selection_buf, "Libretro Logging Level", MENU_SETTINGS_LIBRETRO_LOG_LEVEL, 0);
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "log_verbosity")))
          {
-            *current_setting->value.boolean = g_extern.verbose;
+            *current_setting->value.boolean = g_extern.verbosity;
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_LOGGING_VERBOSITY, 0);
          }
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "perfcnt_enable")))
@@ -5174,7 +5174,7 @@ static void menu_common_setting_set_label(char *type_str, size_t type_str_size, 
             }
             break;
          case MENU_SETTINGS_LOGGING_VERBOSITY:
-            strlcpy(type_str, g_extern.verbose ? "ON" : "OFF", type_str_size);
+            strlcpy(type_str, g_extern.verbosity ? "ON" : "OFF", type_str_size);
             break;
          case MENU_SETTINGS_PERFORMANCE_COUNTERS_ENABLE:
             strlcpy(type_str, g_extern.perfcnt_enable ? "ON" : "OFF", type_str_size);

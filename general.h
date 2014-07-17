@@ -363,7 +363,7 @@ typedef struct rarch_viewport
 // All run-time- / command line flag-related globals go here.
 struct global
 {
-   bool verbose;
+   bool verbosity;
    bool perfcnt_enable;
    bool audio_active;
    bool video_active;

@@ -80,8 +80,8 @@ static void frontend_ps3_get_environment_settings(int *argc, char *argv[],
       void *args, void *params_data)
 {
 #ifndef IS_SALAMANDER
-   bool original_verbose = g_extern.verbose;
-   g_extern.verbose = true;
+   bool original_verbose = g_extern.verbosity;
+   g_extern.verbosity = true;
 #endif
 
    (void)args;
@@ -204,7 +204,7 @@ static void frontend_ps3_get_environment_settings(int *argc, char *argv[],
    }
 
 #ifndef IS_SALAMANDER
-   g_extern.verbose = original_verbose;
+   g_extern.verbosity = original_verbose;
 #endif
 }
 
@@ -306,8 +306,8 @@ static void frontend_ps3_exitspawn(char *core_path, size_t core_path_size)
    bool should_load_game = false;
 
 #ifndef IS_SALAMANDER
-   bool original_verbose = g_extern.verbose;
-   g_extern.verbose = true;
+   bool original_verbose = g_extern.verbosity;
+   g_extern.verbosity = true;
 
 #ifdef HAVE_MULTIMAN 
    if (g_extern.lifecycle_state & (1ULL << MODE_EXITSPAWN_MULTIMAN))
@@ -332,7 +332,7 @@ static void frontend_ps3_exitspawn(char *core_path, size_t core_path_size)
 #endif
 
 #ifndef IS_SALAMANDER
-   g_extern.verbose = original_verbose;
+   g_extern.verbosity = original_verbose;
 #endif
 #endif
 }
@@ -353,8 +353,8 @@ static void frontend_ps3_exec(const char *path, bool should_load_game)
    (void)should_load_game;
    char spawn_data[256];
 #ifndef IS_SALAMANDER
-   bool original_verbose = g_extern.verbose;
-   g_extern.verbose = true;
+   bool original_verbose = g_extern.verbosity;
+   g_extern.verbosity = true;
 
    char game_path[256];
    game_path[0] = '\0';
@@ -414,7 +414,7 @@ static void frontend_ps3_exec(const char *path, bool should_load_game)
    cellSysmoduleUnloadModule(CELL_SYSMODULE_NET);
 
 #ifndef IS_SALAMANDER
-   g_extern.verbose = original_verbose;
+   g_extern.verbosity = original_verbose;
 #endif
 }
 

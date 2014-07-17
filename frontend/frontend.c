@@ -338,7 +338,7 @@ returntype main_entry(signature())
 
       if (wrap_args->touched)
       {
-         g_extern.verbose = true;
+         g_extern.verbosity = true;
          rarch_main_init_wrap(wrap_args, &rarch_argc, rarch_argv);
          memcpy(argv_copy, rarch_argv, sizeof(rarch_argv));
          rarch_argv_ptr = (char**)rarch_argv;

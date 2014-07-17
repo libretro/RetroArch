@@ -56,7 +56,7 @@ RetroArch::RetroArch() :
    strlcpy(g_extern.config_path, "app/native/retroarch.cfg", sizeof(g_extern.config_path));
    config_load();
    strlcpy(g_settings.libretro, "app/native/lib", sizeof(g_settings.libretro));
-   g_extern.verbose = 1;
+   g_extern.verbosity = 1;
    coreSelectedIndex = -1;
 
    //Stop config overwritting values

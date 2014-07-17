@@ -799,7 +799,7 @@ bool config_load_file(const char *path, bool set_defaults)
       extra_path = strtok_r(NULL, ";", &save);
    }
 
-   if (g_extern.verbose)
+   if (g_extern.verbosity)
    {
       RARCH_LOG_OUTPUT("=== Config ===\n");
       config_file_dump_all(conf);
@@ -1046,7 +1046,7 @@ bool config_load_file(const char *path, bool set_defaults)
    CONFIG_GET_INT(libretro_log_level, "libretro_log_level");
 
    if (!g_extern.has_set_verbosity)
-      CONFIG_GET_BOOL_EXTERN(verbose, "log_verbosity");
+      CONFIG_GET_BOOL_EXTERN(verbosity, "log_verbosity");
 
    CONFIG_GET_BOOL_EXTERN(perfcnt_enable, "perfcnt_enable");
 
@@ -1506,7 +1506,7 @@ bool config_save_file(const char *path)
 
    config_set_bool(conf, "core_specific_config", g_settings.core_specific_config);
    config_set_int(conf, "libretro_log_level", g_settings.libretro_log_level);
-   config_set_bool(conf, "log_verbosity", g_extern.verbose);
+   config_set_bool(conf, "log_verbosity", g_extern.verbosity);
    config_set_bool(conf, "perfcnt_enable", g_extern.perfcnt_enable);
 
    bool ret = config_file_write(conf, path);
