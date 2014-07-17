@@ -464,9 +464,21 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
 #ifdef HAVE_NETPLAY
       case MENU_SETTINGS_NETPLAY_OPTIONS:
          file_list_clear(menu->selection_buf);
-         file_list_push(menu->selection_buf, "Netplay Enable", MENU_SETTINGS_NETPLAY_ENABLE, 0);
-         file_list_push(menu->selection_buf, "Netplay Mode", MENU_SETTINGS_NETPLAY_MODE, 0);
-         file_list_push(menu->selection_buf, "Spectator Mode Enable", MENU_SETTINGS_NETPLAY_SPECTATOR_MODE_ENABLE, 0);
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "netplay_enable")))
+         {
+            *current_setting->value.boolean = g_extern.netplay_enable;
+            file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_NETPLAY_ENABLE, 0);
+         }
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "netplay_mode")))
+         {
+            *current_setting->value.boolean = g_extern.netplay_is_client;
+            file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_NETPLAY_MODE, 0);
+         }
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "netplay_spectator_mode_enable")))
+         {
+            *current_setting->value.boolean = g_extern.netplay_is_spectate;
+            file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_NETPLAY_SPECTATOR_MODE_ENABLE, 0);
+         }
          file_list_push(menu->selection_buf, "Host IP Address", MENU_SETTINGS_NETPLAY_HOST_IP_ADDRESS, 0);
          file_list_push(menu->selection_buf, "TCP/UDP Port", MENU_SETTINGS_NETPLAY_TCP_UDP_PORT, 0);
          file_list_push(menu->selection_buf, "Delay Frames", MENU_SETTINGS_NETPLAY_DELAY_FRAMES, 0);
@@ -4887,16 +4899,8 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
          break;
 #ifdef HAVE_NETPLAY
       case MENU_SETTINGS_NETPLAY_ENABLE:
-         if (action == MENU_ACTION_OK || action == MENU_ACTION_LEFT || action == MENU_ACTION_RIGHT)
-         {
-            g_extern.netplay_enable = !g_extern.netplay_enable;
-            /* TODO/FIXME - toggle netplay on/off */
-         }
-         else if (action == MENU_ACTION_START)
-         {
-            g_extern.netplay_enable = false;
-            /* TODO/FIXME - toggle netplay on/off */
-         }
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "netplay_enable")))
+            menu_common_setting_set_current_boolean(current_setting, action);
          break;
       case MENU_SETTINGS_NETPLAY_HOST_IP_ADDRESS:
          if (action == MENU_ACTION_OK)
@@ -4928,16 +4932,12 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
             *g_extern.netplay_nick = '\0';
          break;
       case MENU_SETTINGS_NETPLAY_MODE:
-         if (action == MENU_ACTION_OK || action == MENU_ACTION_LEFT || action == MENU_ACTION_RIGHT)
-            g_extern.netplay_is_client = !g_extern.netplay_is_client;
-         else if (action == MENU_ACTION_START)
-            g_extern.netplay_is_client = false;
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "netplay_mode")))
+            menu_common_setting_set_current_boolean(current_setting, action);
          break;
       case MENU_SETTINGS_NETPLAY_SPECTATOR_MODE_ENABLE:
-         if (action == MENU_ACTION_OK || action == MENU_ACTION_LEFT || action == MENU_ACTION_RIGHT)
-            g_extern.netplay_is_spectate = !g_extern.netplay_is_spectate;
-         else if (action == MENU_ACTION_START)
-            g_extern.netplay_is_spectate = false;
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "netplay_spectator_mode_enable")))
+            menu_common_setting_set_current_boolean(current_setting, action);
          break;
 #endif
 #ifdef HAVE_OSK

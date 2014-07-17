@@ -735,6 +735,12 @@ static void general_change_handler(const void *data)
 #endif
     else if (!strcmp(setting->name, "video_shared_context"))
        g_settings.video.shared_context = *setting->value.boolean;
+    else if (!strcmp(setting->name, "netplay_enable"))
+       g_extern.netplay_enable = *setting->value.boolean;
+    else if (!strcmp(setting->name, "netplay_mode"))
+       g_extern.netplay_is_client = *setting->value.boolean;
+    else if (!strcmp(setting->name, "netplay_spectator_mode_enable"))
+       g_extern.netplay_is_spectate = *setting->value.boolean;
 }
 
 
@@ -1016,15 +1022,29 @@ rarch_setting_t* setting_data_get_list(void)
          END_GROUP()
 
 #ifdef HAVE_OVERLAY
+         /*******************/
+         /* OVERLAY OPTIONS */
+         /*******************/
          START_GROUP("Overlay Options")
          START_SUB_GROUP("State")
-         CONFIG_BOOL(g_settings.input.overlay_enable,            "input_overlay_enable",            "Overlay Enable",        default_overlay_enable, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
+         CONFIG_BOOL(g_settings.input.overlay_enable,            "input_overlay_enable",  "Overlay Enable",        default_overlay_enable, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
          CONFIG_PATH(g_settings.input.overlay,              "input_overlay",              "Overlay Preset",              "", GROUP_NAME, SUBGROUP_NAME, general_change_handler) WITH_FLAGS(SD_FLAG_ALLOW_EMPTY) WITH_VALUES("cfg")
          CONFIG_FLOAT(g_settings.input.overlay_opacity,     "input_overlay_opacity",      "Overlay Opacity",            0.7f, GROUP_NAME, SUBGROUP_NAME, general_change_handler) WITH_RANGE(0, 1)
          CONFIG_FLOAT(g_settings.input.overlay_scale,       "input_overlay_scale",        "Overlay Scale",              1.0f, GROUP_NAME, SUBGROUP_NAME, general_change_handler) WITH_RANGE(0, 2)
          END_SUB_GROUP()
          END_GROUP()
 #endif
+
+         /*******************/
+         /* NETPLAY OPTIONS */
+         /*******************/
+         START_GROUP("Netplay Options")
+         START_SUB_GROUP("State")
+         CONFIG_BOOL(g_extern.netplay_enable,            "netplay_enable",  "Netplay Enable",        false, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
+         CONFIG_BOOL(g_extern.netplay_is_client,         "netplay_mode",    "Netplay Mode",          false, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
+         CONFIG_BOOL(g_extern.netplay_is_spectate,       "netplay_spectator_mode_enable",    "Netplay Spectator Mode",          false, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
+         END_SUB_GROUP()
+         END_GROUP()
 
          /*********/
          /* PATHS */
