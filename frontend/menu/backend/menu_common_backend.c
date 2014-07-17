@@ -145,7 +145,11 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
             *current_setting->value.unsigned_integer = g_settings.game_history_size;
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_CONTENT_HISTORY_SIZE, 0);
          }
-         file_list_push(menu->selection_buf, "Configuration Save On Exit", MENU_SETTINGS_CONFIG_SAVE_ON_EXIT, 0);
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "config_save_on_exit")))
+         {
+            *current_setting->value.boolean = g_extern.config_save_on_exit;
+            file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_CONFIG_SAVE_ON_EXIT, 0);
+         }
          file_list_push(menu->selection_buf, "Configuration Per-Core", MENU_SETTINGS_PER_CORE_CONFIG, 0);
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "video_gpu_screenshot")))
          {
@@ -179,9 +183,21 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_SRAM_AUTOSAVE, 0);
          }
          file_list_push(menu->selection_buf, "Window Compositing", MENU_SETTINGS_WINDOW_COMPOSITING_ENABLE, 0);
-         file_list_push(menu->selection_buf, "Window Unfocus Pause", MENU_SETTINGS_PAUSE_IF_WINDOW_FOCUS_LOST, 0);
-         file_list_push(menu->selection_buf, "Savestate Autosave On Exit", MENU_SETTINGS_SAVESTATE_AUTO_SAVE, 0);
-         file_list_push(menu->selection_buf, "Savestate Autoload", MENU_SETTINGS_SAVESTATE_AUTO_LOAD, 0);
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "pause_nonactive")))
+         {
+            *current_setting->value.boolean = g_settings.pause_nonactive;
+            file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_PAUSE_IF_WINDOW_FOCUS_LOST, 0);
+         }
+         if ((current_setting = setting_data_find_setting(setting_data, "savestate_auto_save")))
+         {
+            *current_setting->value.boolean = g_settings.savestate_auto_save;
+            file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_SAVESTATE_AUTO_SAVE, 0);
+         }
+         if ((current_setting = setting_data_find_setting(setting_data, "savestate_auto_load")))
+         {
+            *current_setting->value.boolean = g_settings.savestate_auto_load;
+            file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_SAVESTATE_AUTO_LOAD, 0);
+         }
          break;
       case MENU_SETTINGS_VIDEO_OPTIONS:
          file_list_clear(menu->selection_buf);
@@ -3599,25 +3615,16 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
             g_extern.perfcnt_enable = !g_extern.perfcnt_enable;
          break;
       case MENU_SETTINGS_CONFIG_SAVE_ON_EXIT:
-         if (action == MENU_ACTION_OK || action == MENU_ACTION_RIGHT
-               || action == MENU_ACTION_LEFT)
-            g_extern.config_save_on_exit = !g_extern.config_save_on_exit;
-         else if (action == MENU_ACTION_START)
-            g_extern.config_save_on_exit = true;
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "config_save_on_exit")))
+            menu_common_setting_set_current_boolean(current_setting, action);
          break;
       case MENU_SETTINGS_SAVESTATE_AUTO_SAVE:
-         if (action == MENU_ACTION_OK || action == MENU_ACTION_RIGHT
-               || action == MENU_ACTION_LEFT)
-            g_settings.savestate_auto_save = !g_settings.savestate_auto_save;
-         else if (action == MENU_ACTION_START)
-            g_settings.savestate_auto_save = false;
+         if ((current_setting = setting_data_find_setting(setting_data, "savestate_auto_save")))
+            menu_common_setting_set_current_boolean(current_setting, action);
          break;
       case MENU_SETTINGS_SAVESTATE_AUTO_LOAD:
-         if (action == MENU_ACTION_OK || action == MENU_ACTION_RIGHT
-               || action == MENU_ACTION_LEFT)
-            g_settings.savestate_auto_load = !g_settings.savestate_auto_load;
-         else if (action == MENU_ACTION_START)
-            g_settings.savestate_auto_load = true;
+         if ((current_setting = setting_data_find_setting(setting_data, "savestate_auto_load")))
+            menu_common_setting_set_current_boolean(current_setting, action);
          break;
       case MENU_SETTINGS_BLOCK_SRAM_OVERWRITE:
          if ((current_setting = setting_data_find_setting(setting_data, "block_sram_overwrite")))
@@ -4903,10 +4910,8 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
          }
          break;
       case MENU_SETTINGS_PAUSE_IF_WINDOW_FOCUS_LOST:
-         if (action == MENU_ACTION_OK || action == MENU_ACTION_LEFT || action == MENU_ACTION_RIGHT)
-            g_settings.pause_nonactive = !g_settings.pause_nonactive;
-         else if (action == MENU_ACTION_START)
-            g_settings.pause_nonactive = false;
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "pause_nonactive")))
+            menu_common_setting_set_current_boolean(current_setting, action);
          break;
       case MENU_SETTINGS_WINDOW_COMPOSITING_ENABLE:
          if (action == MENU_ACTION_OK || action == MENU_ACTION_LEFT || action == MENU_ACTION_RIGHT)
