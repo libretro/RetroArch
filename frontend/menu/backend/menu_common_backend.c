@@ -4675,32 +4675,8 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
          break;
       case MENU_SETTINGS_VIDEO_SWAP_INTERVAL:
          if ((current_setting = setting_data_find_setting(setting_data, "video_swap_interval")))
-         {
-            switch (action)
-            {
-               case MENU_ACTION_START:
-                  *current_setting->value.unsigned_integer = 1;
-                  break;
-
-               case MENU_ACTION_LEFT:
-                  *current_setting->value.unsigned_integer = *current_setting->value.unsigned_integer - 1;
-                  break;
-
-               case MENU_ACTION_RIGHT:
-               case MENU_ACTION_OK:
-                  *current_setting->value.unsigned_integer = *current_setting->value.unsigned_integer + 1;
-                  break;
-
-               default:
-                  break;
-            }
-
-            if (current_setting->change_handler)
-               current_setting->change_handler(current_setting);
-
-            break;
-         }
-
+            menu_common_setting_set_current_unsigned_integer(current_setting, 1, action, true, true);
+         break;
       case MENU_SETTINGS_VIDEO_HARD_SYNC_FRAMES:
          if ((current_setting = setting_data_find_setting(setting_data, "video_hard_sync_frames")))
             menu_common_setting_set_current_unsigned_integer(current_setting, 1, action, true, true);
