@@ -257,8 +257,16 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_VIDEO_VSYNC, 0);
          }
 
-         file_list_push(menu->selection_buf, "Hard GPU Sync", MENU_SETTINGS_VIDEO_HARD_SYNC, 0);
-         file_list_push(menu->selection_buf, "Hard GPU Sync Frames", MENU_SETTINGS_VIDEO_HARD_SYNC_FRAMES, 0);
+         if ((current_setting = setting_data_find_setting(setting_data, "video_hard_sync")))
+         {
+            *current_setting->value.boolean = g_settings.video.hard_sync;
+            file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_VIDEO_HARD_SYNC, 0);
+         }
+         if ((current_setting = setting_data_find_setting(setting_data, "video_hard_sync_frames")))
+         {
+            *current_setting->value.unsigned_integer = g_settings.video.hard_sync_frames;
+            file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_VIDEO_HARD_SYNC_FRAMES, 0);
+         }
 
          if ((current_setting = setting_data_find_setting(setting_data, "video_black_frame_insertion")))
          {
@@ -285,7 +293,11 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
             *current_setting->value.fraction = g_settings.video.yscale;
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_VIDEO_WINDOW_SCALE_Y, 0);
          }
-         file_list_push(menu->selection_buf, "Crop Overscan (reload)", MENU_SETTINGS_VIDEO_CROP_OVERSCAN, 0);
+         if ((current_setting = setting_data_find_setting(setting_data, "video_crop_overscan")))
+         {
+            *current_setting->value.boolean = g_settings.video.crop_overscan;
+            file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_VIDEO_CROP_OVERSCAN, 0);
+         }
          file_list_push(menu->selection_buf, "Monitor Index", MENU_SETTINGS_VIDEO_MONITOR_INDEX, 0);
          file_list_push(menu->selection_buf, "Estimated Monitor FPS", MENU_SETTINGS_VIDEO_REFRESH_RATE_AUTO, 0);
          break;
@@ -4582,45 +4594,17 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
             menu_common_setting_set_current_boolean(current_setting, action);
          break;
       case MENU_SETTINGS_VIDEO_HARD_SYNC:
-         switch (action)
-         {
-            case MENU_ACTION_START:
-               g_settings.video.hard_sync = false;
-               break;
-
-            case MENU_ACTION_LEFT:
-            case MENU_ACTION_RIGHT:
-            case MENU_ACTION_OK:
-               g_settings.video.hard_sync = !g_settings.video.hard_sync;
-               break;
-
-            default:
-               break;
-         }
+         if ((current_setting = setting_data_find_setting(setting_data, "video_hard_sync")))
+            menu_common_setting_set_current_boolean(current_setting, action);
          break;
-
       case MENU_SETTINGS_VIDEO_BLACK_FRAME_INSERTION:
          if ((current_setting = setting_data_find_setting(setting_data, "video_black_frame_insertion")))
             menu_common_setting_set_current_boolean(current_setting, action);
          break;
       case MENU_SETTINGS_VIDEO_CROP_OVERSCAN:
-         switch (action)
-         {
-            case MENU_ACTION_START:
-               g_settings.video.crop_overscan = true;
-               break;
-
-            case MENU_ACTION_LEFT:
-            case MENU_ACTION_RIGHT:
-            case MENU_ACTION_OK:
-               g_settings.video.crop_overscan = !g_settings.video.crop_overscan;
-               break;
-
-            default:
-               break;
-         }
+         if ((current_setting = setting_data_find_setting(setting_data, "video_crop_overscan")))
+            menu_common_setting_set_current_boolean(current_setting, action);
          break;
-
       case MENU_SETTINGS_VIDEO_WINDOW_SCALE_X:
          if ((current_setting = setting_data_find_setting(setting_data, "video_xscale")))
          {
@@ -4718,26 +4702,8 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
          }
 
       case MENU_SETTINGS_VIDEO_HARD_SYNC_FRAMES:
-         switch (action)
-         {
-            case MENU_ACTION_START:
-               g_settings.video.hard_sync_frames = 0;
-               break;
-
-            case MENU_ACTION_LEFT:
-               if (g_settings.video.hard_sync_frames > 0)
-                  g_settings.video.hard_sync_frames--;
-               break;
-
-            case MENU_ACTION_RIGHT:
-            case MENU_ACTION_OK:
-               if (g_settings.video.hard_sync_frames < 3)
-                  g_settings.video.hard_sync_frames++;
-               break;
-
-            default:
-               break;
-         }
+         if ((current_setting = setting_data_find_setting(setting_data, "video_hard_sync_frames")))
+            menu_common_setting_set_current_unsigned_integer(current_setting, 1, action, true, true);
          break;
 
       case MENU_SETTINGS_VIDEO_MONITOR_INDEX:
