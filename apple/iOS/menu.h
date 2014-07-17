@@ -64,10 +64,10 @@
 /* numeric setting.                          */
 /*********************************************/
 @interface RAMenuItemGeneralSetting : NSObject<RAMenuItemBase>
-@property (nonatomic) const rarch_setting_t* setting;
+@property (nonatomic) rarch_setting_t* setting;
 @property (nonatomic, weak) UITableView* parentTable;
-+ (id)itemForSetting:(const rarch_setting_t*)setting;
-- (id)initWithSetting:(const rarch_setting_t*)setting;
++ (id)itemForSetting:(rarch_setting_t*)setting;
+- (id)initWithSetting:(rarch_setting_t*)setting;
 @end
 
 /*********************************************/
@@ -77,8 +77,8 @@
 /* setting.                                  */
 /*********************************************/
 @interface RAMenuItemBooleanSetting : NSObject<RAMenuItemBase>
-@property (nonatomic) const rarch_setting_t* setting;
-- (id)initWithSetting:(const rarch_setting_t*)setting;
+@property (nonatomic) rarch_setting_t* setting;
+- (id)initWithSetting:(rarch_setting_t*)setting;
 @end
 
 /*********************************************/
@@ -129,7 +129,7 @@
 /* rarch_setting_t structures.               */
 /*********************************************/
 @interface RASettingsGroupMenu : RAMenuBase
-- (id)initWithGroup:(const rarch_setting_t*)settings;
+- (id)initWithGroup:(rarch_setting_t*)settings;
 @end
 
 /*********************************************/

@@ -189,7 +189,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 
 @implementation RAMenuItemGeneralSetting
 
-+ (id)itemForSetting:(const rarch_setting_t*)setting
++ (id)itemForSetting:(rarch_setting_t*)setting
 {
    switch (setting->type)
    {
@@ -214,7 +214,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
    return item;
 }
 
-- (id)initWithSetting:(const rarch_setting_t*)setting
+- (id)initWithSetting:(rarch_setting_t*)setting
 {
    if ((self = [super init]))
       _setting = setting;
@@ -312,7 +312,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 /*********************************************/
 @implementation RAMenuItemBooleanSetting
 
-- (id)initWithSetting:(const rarch_setting_t*)setting
+- (id)initWithSetting:(rarch_setting_t*)setting
 {
    if ((self = [super init]))
       _setting = setting;
@@ -681,11 +681,11 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 /*********************************************/
 @implementation RASettingsGroupMenu
 
-- (id)initWithGroup:(const rarch_setting_t*)group
+- (id)initWithGroup:(rarch_setting_t*)group
 {
    if ((self = [super initWithStyle:UITableViewStyleGrouped]))
    {
-      const rarch_setting_t *i;
+      rarch_setting_t *i;
       NSMutableArray* settings = nil;
 
       self.title = BOXSTRING(group->name);
@@ -836,7 +836,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 
 - (id)init
 {
-   const rarch_setting_t* frontend_setting_data = apple_get_frontend_settings();
+   rarch_setting_t* frontend_setting_data = (rarch_setting_t*)apple_get_frontend_settings();
 
    if ((self = [super initWithGroup:frontend_setting_data]))
    {      
