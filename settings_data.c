@@ -485,7 +485,7 @@ static void general_change_handler(const void *data)
     else if (!strcmp(setting->name, "video_font_path"))
         strlcpy(g_settings.video.font_path, setting->value.string, sizeof(g_settings.video.font_path));
     else if (!strcmp(setting->name, "video_font_size"))
-        g_settings.video.font_size = roundf(max(*setting->value.fraction, 1.0f));
+        g_settings.video.font_size = *setting->value.fraction;
     else if (!strcmp(setting->name, "input_overlay_enable"))
     {
         g_settings.input.overlay_enable = *setting->value.boolean;

@@ -287,8 +287,16 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
          break;
       case MENU_SETTINGS_FONT_OPTIONS:
          file_list_clear(menu->selection_buf);
-         file_list_push(menu->selection_buf, "OSD Font Enable", MENU_SETTINGS_FONT_ENABLE, 0);
-         file_list_push(menu->selection_buf, "OSD Font Size", MENU_SETTINGS_FONT_SIZE, 0);
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "video_font_enable")))
+         {
+            *current_setting->value.boolean = g_settings.video.font_enable;
+            file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_FONT_ENABLE, 0);
+         }
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "video_font_size")))
+         {
+            *current_setting->value.fraction = g_settings.video.font_size;
+            file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_FONT_SIZE, 0);
+         }
          break;
       case MENU_SETTINGS_CORE_OPTIONS:
          file_list_clear(menu->selection_buf);
@@ -5016,19 +5024,24 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
             menu_common_setting_set_current_boolean(current_setting, action);
          break;
       case MENU_SETTINGS_FONT_ENABLE:
-         if (action == MENU_ACTION_OK || action == MENU_ACTION_LEFT || action == MENU_ACTION_RIGHT)
-            g_settings.video.font_enable = !g_settings.video.font_enable;
-         else if (action == MENU_ACTION_START)
-            g_settings.video.font_enable = true;
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "video_font_enable")))
+            menu_common_setting_set_current_boolean(current_setting, action);
          break;
       case MENU_SETTINGS_FONT_SIZE:
-         if (action == MENU_ACTION_LEFT)
-            g_settings.video.font_size -= 1.0f;
-         else if (action == MENU_ACTION_RIGHT)
-            g_settings.video.font_size += 1.0f;
-         else if (action == MENU_ACTION_START)
-            g_settings.video.font_size = font_size;
-         g_settings.video.font_size = roundf(max(g_settings.video.font_size, 1.0f));
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "video_font_size")))
+         {
+            if (action == MENU_ACTION_LEFT)
+               *current_setting->value.fraction = *current_setting->value.fraction - 1.0f;
+            else if (action == MENU_ACTION_RIGHT)
+               *current_setting->value.fraction = *current_setting->value.fraction + 1.0f;
+            else if (action == MENU_ACTION_START)
+               *current_setting->value.fraction = font_size;
+
+            *current_setting->value.fraction = roundf(max(*current_setting->value.fraction, 1.0f));
+
+            if (current_setting->change_handler)
+               current_setting->change_handler(current_setting);
+         }
          break;
       case MENU_SETTINGS_LOAD_DUMMY_ON_CORE_SHUTDOWN:
          if (action == MENU_ACTION_OK || action == MENU_ACTION_LEFT || action == MENU_ACTION_RIGHT)
