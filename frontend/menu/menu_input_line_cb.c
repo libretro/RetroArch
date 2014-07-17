@@ -320,9 +320,8 @@ uint64_t menu_input(void)
          input_state |= (driver.overlay_state.buttons & (UINT64_C(1) << i)) ? (1ULL << i) : 0;
 #endif
       }
-
-      input_state |= input_key_pressed_func(RARCH_MENU_TOGGLE) ? (1ULL << RARCH_MENU_TOGGLE) : 0;
    }
+   input_state |= input_key_pressed_func(RARCH_MENU_TOGGLE) ? (1ULL << RARCH_MENU_TOGGLE) : 0;
 
    input_pop_analog_dpad((struct retro_keybind*)binds[0]);
    for (i = 0; i < MAX_PLAYERS; i++)
