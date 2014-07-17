@@ -733,6 +733,8 @@ static void general_change_handler(const void *data)
     else if (!strcmp(setting->name, "location_allow"))
         g_settings.location.allow = *setting->value.boolean;
 #endif
+    else if (!strcmp(setting->name, "video_shared_context"))
+       g_settings.video.shared_context = *setting->value.boolean;
 }
 
 
@@ -850,6 +852,9 @@ rarch_setting_t* setting_data_get_list(void)
          /* VIDEO */
          /*********/
          START_GROUP("Video Options")
+         START_SUB_GROUP("State")
+         CONFIG_BOOL(g_settings.video.shared_context,  "video_shared_context",  "HW Shared Context Enable",   false, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
+         END_SUB_GROUP()
          START_SUB_GROUP("Monitor")
          CONFIG_UINT(g_settings.video.monitor_index,        "video_monitor_index",        "Monitor Index",              monitor_index, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
 #if !defined(RARCH_CONSOLE) && !defined(RARCH_MOBILE)
