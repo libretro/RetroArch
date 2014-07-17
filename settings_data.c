@@ -735,14 +735,16 @@ static void general_change_handler(const void *data)
 #endif
     else if (!strcmp(setting->name, "video_shared_context"))
        g_settings.video.shared_context = *setting->value.boolean;
+#ifdef HAVE_NETPLAY
     else if (!strcmp(setting->name, "netplay_enable"))
        g_extern.netplay_enable = *setting->value.boolean;
     else if (!strcmp(setting->name, "netplay_mode"))
        g_extern.netplay_is_client = *setting->value.boolean;
     else if (!strcmp(setting->name, "netplay_spectator_mode_enable"))
        g_extern.netplay_is_spectate = *setting->value.boolean;
+#endif
     else if (!strcmp(setting->name, "log_verbosity"))
-       g_extern.verbose = *setting->value.boolean;
+        g_extern.verbose = *setting->value.boolean;
     else if (!strcmp(setting->name, "perfcnt_enable"))
        g_extern.perfcnt_enable = *setting->value.boolean;
 }
