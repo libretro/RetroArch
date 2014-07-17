@@ -1054,7 +1054,7 @@ rarch_setting_t* setting_data_get_list(void)
 #ifdef HAVE_MENU
          CONFIG_BOOL(g_settings.menu_show_start_screen,     "rgui_show_start_screen",     "Show Start Screen",          menu_show_start_screen, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
 #endif
-         CONFIG_UINT(g_settings.game_history_size,          "game_history_size",          "Content History Size",       game_history_size, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
+         CONFIG_UINT(g_settings.game_history_size,          "game_history_size",          "Content History Size",       game_history_size, GROUP_NAME, SUBGROUP_NAME, general_change_handler) WITH_RANGE(0, 0)
          END_SUB_GROUP()
          START_SUB_GROUP("Paths")
 #ifdef HAVE_MENU

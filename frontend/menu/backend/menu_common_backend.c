@@ -3945,20 +3945,7 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
          break;
       case MENU_CONTENT_HISTORY_SIZE:
          if ((current_setting = setting_data_find_setting(setting_data, "game_history_size")))
-         {
-            if (action == MENU_ACTION_RIGHT)
-               *current_setting->value.unsigned_integer = *current_setting->value.unsigned_integer + 1;
-            else if (action == MENU_ACTION_LEFT)
-            {
-               if (*current_setting->value.unsigned_integer > 0)
-                  *current_setting->value.unsigned_integer = *current_setting->value.unsigned_integer - 1;
-            }
-            else if (action == MENU_ACTION_START)
-               *current_setting->value.unsigned_integer =  game_history_size;
-
-            if (current_setting->change_handler)
-               current_setting->change_handler(current_setting);
-         }
+            menu_common_setting_set_current_unsigned_integer(current_setting, 1, action, true, false);
          break;
 #ifdef HAVE_OVERLAY
       case MENU_SETTINGS_OVERLAY_ENABLE:
