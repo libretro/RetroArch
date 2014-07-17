@@ -3449,6 +3449,34 @@ static void menu_common_setting_set_current_boolean(rarch_setting_t *setting, bo
       setting->change_handler(setting);
 }
 
+static void menu_common_setting_set_current_fraction(rarch_setting_t *setting, float step, unsigned action)
+{
+   switch (action)
+   {
+      case MENU_ACTION_LEFT:
+         *setting->value.fraction = *setting->value.fraction - step;
+
+         if (*setting->value.fraction < setting->min)
+            *setting->value.fraction = setting->min;
+         break;
+
+      case MENU_ACTION_RIGHT:
+      case MENU_ACTION_OK:
+         *setting->value.fraction = *setting->value.fraction + step;
+
+         if (*setting->value.fraction > setting->max)
+            *setting->value.fraction = setting->max;
+         break;
+
+      case MENU_ACTION_START:
+         *setting->value.fraction = setting->default_value.fraction;
+         break;
+   }
+
+   if (setting->change_handler)
+      setting->change_handler(setting);
+}
+
 static int menu_common_setting_set(unsigned setting, unsigned action)
 {
    rarch_setting_t *setting_data, *current_setting;
@@ -3939,63 +3967,12 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
 #ifdef HAVE_OVERLAY
       case MENU_SETTINGS_OVERLAY_OPACITY:
          if ((current_setting = setting_data_find_setting(setting_data, "input_overlay_opacity")))
-         {
-            switch (action)
-            {
-               case MENU_ACTION_LEFT:
-                  *current_setting->value.fraction = *current_setting->value.fraction - 0.01f;
-
-                  if (*current_setting->value.fraction < current_setting->min)
-                     *current_setting->value.fraction = current_setting->min;
-                  break;
-
-               case MENU_ACTION_RIGHT:
-               case MENU_ACTION_OK:
-                  *current_setting->value.fraction = *current_setting->value.fraction + 0.01f;
-
-                  if (*current_setting->value.fraction > current_setting->max)
-                     *current_setting->value.fraction = current_setting->max;
-                  break;
-
-               case MENU_ACTION_START:
-                  *current_setting->value.fraction = current_setting->default_value.fraction;
-                  break;
-            }
-
-            if (current_setting->change_handler)
-               current_setting->change_handler(current_setting);
-            break;
-         }
-
+            menu_common_setting_set_current_fraction(current_setting, 0.01f, action);
+         break;
       case MENU_SETTINGS_OVERLAY_SCALE:
          if ((current_setting = setting_data_find_setting(setting_data, "input_overlay_scale")))
-         {
-            switch (action)
-            {
-               case MENU_ACTION_LEFT:
-                  *current_setting->value.fraction = *current_setting->value.fraction - 0.01f;
-
-                  if (*current_setting->value.fraction < current_setting->min)
-                     *current_setting->value.fraction = current_setting->min;
-                  break;
-
-               case MENU_ACTION_RIGHT:
-               case MENU_ACTION_OK:
-                  *current_setting->value.fraction = *current_setting->value.fraction + 0.01f;
-
-                  if (*current_setting->value.fraction > current_setting->max)
-                     *current_setting->value.fraction = current_setting->max;
-                  break;
-
-               case MENU_ACTION_START:
-                  *current_setting->value.fraction = current_setting->default_value.fraction;
-                  break;
-            }
-
-            if (current_setting->change_handler)
-               current_setting->change_handler(current_setting);
-            break;
-         }
+            menu_common_setting_set_current_fraction(current_setting, 0.01f, action);
+         break;
 #endif
          // controllers
       case MENU_SETTINGS_BIND_PLAYER:
