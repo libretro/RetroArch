@@ -321,8 +321,8 @@ public final class UserPreferences
 	private static String sanitizeLibretroPath(String path)
 	{
 		String sanitized_name = path.substring(
-				path.lastIndexOf("/") + 1,
-				path.lastIndexOf("."));
+				path.lastIndexOf('/') + 1,
+				path.lastIndexOf('.'));
 		sanitized_name = sanitized_name.replace("neon", "");
 		sanitized_name = sanitized_name.replace("libretro_", "");
 
@@ -406,7 +406,7 @@ public final class UserPreferences
 	 */
 	public static String readCPUInfo()
 	{
-		String result = "";
+		StringBuilder result = new StringBuilder(255);
 
 		try
 		{
@@ -415,7 +415,7 @@ public final class UserPreferences
 
 			String line;
 			while ((line = br.readLine()) != null)
-				result += line + "\n";
+				result.append(line).append('\n');
 			br.close();
 		}
 		catch (IOException ex)
@@ -423,6 +423,6 @@ public final class UserPreferences
 			ex.printStackTrace();
 		}
 
-		return result;
+		return result.toString();
 	}
 }
