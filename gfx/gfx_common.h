@@ -41,14 +41,6 @@ void gfx_set_dwm(void);
 void gfx_scale_integer(struct rarch_viewport *vp, unsigned win_width, unsigned win_height,
       float aspect_ratio, bool keep_aspect);
 
-#define MIN_SCALING_FACTOR (1.0f)
-
-#if defined(__CELLOS_LV2__)
-#define MAX_SCALING_FACTOR (5.0f)
-#else
-#define MAX_SCALING_FACTOR (2.0f)
-#endif
-
 enum aspect_ratio
 {
    ASPECT_RATIO_4_3 = 0,
@@ -90,8 +82,6 @@ enum rotation
    ORIENTATION_FLIPPED_ROTATED,
    ORIENTATION_END
 };
-
-#define LAST_ORIENTATION (ORIENTATION_END - 1)
 
 extern char rotation_lut[4][32];
 
