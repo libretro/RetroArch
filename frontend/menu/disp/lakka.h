@@ -21,6 +21,7 @@
 #include "../../../gfx/gl_common.h"
 #include "../../../gfx/fonts/fonts.h"
 
+#define THEME "flatui" // flatui or monochrome themes are available
 #define DELAY 0.02
 #define HSPACING 300
 #define VSPACING 75

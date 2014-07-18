@@ -784,7 +784,7 @@ static void lakka_context_reset(void *data)
    gl_font_init_first(&font_driver, &font, gl,
          *g_settings.video.font_path ? g_settings.video.font_path : NULL, g_settings.video.font_size);
 
-   fill_pathname_join(dirpath, g_settings.assets_directory, "lakka", sizeof(dirpath));
+   fill_pathname_join(dirpath, g_settings.assets_directory, THEME, sizeof(dirpath));
    fill_pathname_slash(dirpath, sizeof(dirpath));
 
    fill_pathname_join(textures[TEXTURE_BG].path, dirpath, "bg.png", sizeof(textures[TEXTURE_BG].path));
@@ -811,7 +811,7 @@ static void lakka_context_reset(void *data)
       core_info_t *info;
       core_info_list_t *info_list;
 
-      fill_pathname_join(dirpath, g_settings.assets_directory, "lakka", sizeof(dirpath));
+      fill_pathname_join(dirpath, g_settings.assets_directory, THEME, sizeof(dirpath));
       fill_pathname_slash(dirpath, sizeof(dirpath));
 
       info_list = (core_info_list_t*)menu->core_info;
