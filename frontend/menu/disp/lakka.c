@@ -782,6 +782,7 @@ static void lakka_context_reset(void *data)
    if (!menu)
       return;
 
+   fill_pathname_join(dirpath, g_settings.assets_directory, "lakka", sizeof(dirpath));
    fill_pathname_join(dirpath, g_settings.assets_directory, THEME, sizeof(dirpath));
    fill_pathname_slash(dirpath, sizeof(dirpath));
    
