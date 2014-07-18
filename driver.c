@@ -1137,7 +1137,6 @@ void init_video_input(void)
       rarch_fail(1, "init_video_input()");
    }
 
-
    driver.video_poke = NULL;
    if (driver.video->poke_interface)
       driver.video->poke_interface(driver.video_data, &driver.video_poke);
@@ -1169,7 +1168,7 @@ void init_video_input(void)
       if (driver.input)
       {
          driver.input_data = input_init_func();
-         if (driver.input_data == NULL)
+         if (!driver.input_data)
          {
             RARCH_ERR("Cannot initialize input driver. Exiting ...\n");
             rarch_fail(1, "init_video_input()");
@@ -1177,16 +1176,9 @@ void init_video_input(void)
       }
       else
       {
-         RARCH_ERR("Cannot find input driver.\n");
-         RARCH_WARN("Going to default to first input driver...\n");
-
-         driver.input = input_drivers[0];
-
-         if (!driver.input)
-         {
-            RARCH_ERR("Still cannot find input driver. Exiting ...\n");
-            rarch_fail(1, "init_video_input()");
-         }
+         // This should never really happen as tmp (driver.input) is always found before this in find_driver_input(),
+         // or we have aborted in a similar fahsion anyways.
+         rarch_fail(1, "init_video_input()");
       }
    }
 
