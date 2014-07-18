@@ -475,7 +475,11 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
          break;
       case MENU_SETTINGS_OVERLAY_OPTIONS:
          file_list_clear(menu->selection_buf);
-         file_list_push(menu->selection_buf, "Overlay Enable", MENU_SETTINGS_OVERLAY_ENABLE, 0);
+         if ((current_setting = setting_data_find_setting(setting_data, "input_overlay_enable")))
+         {
+            *current_setting->value.boolean = g_settings.input.overlay_enable;
+            file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_OVERLAY_ENABLE, 0);
+         }
          file_list_push(menu->selection_buf, "Overlay Preset", MENU_SETTINGS_OVERLAY_PRESET, 0);
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "input_overlay_opacity")))
          {
@@ -3966,33 +3970,9 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
          break;
 #ifdef HAVE_OVERLAY
       case MENU_SETTINGS_OVERLAY_ENABLE:
-         {
-            bool changed = false;
-            if (action == MENU_ACTION_OK || action == MENU_ACTION_LEFT || action == MENU_ACTION_RIGHT)
-            {
-               g_settings.input.overlay_enable = !g_settings.input.overlay_enable;
-               changed = true;
-            }
-            else if (action == MENU_ACTION_START)
-            {
-               g_settings.input.overlay_enable = g_defaults.settings.input_overlay_enable;
-               changed = true;
-            }
-
-            if (changed)
-            {
-               if (driver.overlay)
-                  input_overlay_free(driver.overlay);
-               driver.overlay = NULL;
-               if (g_settings.input.overlay_enable && *g_settings.input.overlay)
-               {
-                  driver.overlay = input_overlay_new(g_settings.input.overlay);
-                  if (!driver.overlay)
-                     RARCH_ERR("Failed to load overlay.\n");
-               }
-            }
-         }
-      break;
+         if ((current_setting = setting_data_find_setting(setting_data, "input_overlay_enable")))
+            menu_common_setting_set_current_boolean(current_setting, action);
+         break;
       case MENU_SETTINGS_OVERLAY_PRESET:
          switch (action)
          {
