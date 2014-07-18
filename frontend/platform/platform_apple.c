@@ -82,21 +82,6 @@ void apple_event_basic_command(enum basic_event_t action)
    }
 }
 
-void apple_refresh_config(void)
-{
-   // Little nudge to prevent stale values when reloading the config file
-   g_extern.block_config_read = false;
-   memset(g_settings.input.overlay, 0, sizeof(g_settings.input.overlay));
-   memset(g_settings.video.shader_path, 0, sizeof(g_settings.video.shader_path));
-
-   if (!g_extern.main_is_init)
-      return;
-
-   uninit_drivers();
-   config_load();
-   init_drivers();
-}
-
 int apple_rarch_load_content(int *argc, char* argv[])
 {
    rarch_main_clear_state();
