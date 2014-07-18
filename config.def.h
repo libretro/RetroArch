@@ -68,6 +68,9 @@ enum
    AUDIO_PSP1,
    AUDIO_NULL,
 
+   AUDIO_RESAMPLER_CC,
+   AUDIO_RESAMPLER_SINC,
+
    INPUT_ANDROID,
    INPUT_SDL,
    INPUT_X,
@@ -168,6 +171,12 @@ enum
 #define AUDIO_DEFAULT_DRIVER AUDIO_EXT
 #else
 #define AUDIO_DEFAULT_DRIVER AUDIO_NULL
+#endif
+
+#ifdef PSP
+#define AUDIO_DEFAULT_RESAMPLER_DRIVER  AUDIO_RESAMPLER_CC
+#else
+#define AUDIO_DEFAULT_RESAMPLER_DRIVER  AUDIO_RESAMPLER_SINC
 #endif
 
 #if defined(XENON)
@@ -465,12 +474,6 @@ static const int out_latency = 64;
 // Will sync audio. (recommended) 
 static const bool audio_sync = true;
 
-// Default resampler
-#if defined(PSP)
-static const char *audio_resampler = "CC";
-#else
-static const char *audio_resampler = "sinc";
-#endif
 
 // Audio rate control
 #if defined(GEKKO) || !defined(RARCH_CONSOLE)

@@ -80,6 +80,18 @@ const char *config_get_default_audio(void)
    }
 }
 
+const char *config_get_default_audio_resampler(void)
+{
+   switch (AUDIO_DEFAULT_RESAMPLER_DRIVER)
+   {
+      case AUDIO_RESAMPLER_CC:
+         return "cc";
+      case AUDIO_RESAMPLER_SINC:
+      default:
+         return "sinc";
+   }
+}
+
 const char *config_get_default_video(void)
 {
    switch (VIDEO_DEFAULT_DRIVER)
@@ -230,6 +242,7 @@ void config_set_defaults(void)
    unsigned i, j;
    const char *def_video = config_get_default_video();
    const char *def_audio = config_get_default_audio();
+   const char *def_audio_resampler = config_get_default_audio_resampler();
    const char *def_input = config_get_default_input();
 #ifdef HAVE_MENU
    const char *def_menu  = config_get_default_menu();
@@ -258,6 +271,8 @@ void config_set_defaults(void)
       strlcpy(g_settings.video.driver, def_video, sizeof(g_settings.video.driver));
    if (def_audio)
       strlcpy(g_settings.audio.driver, def_audio, sizeof(g_settings.audio.driver));
+   if (def_audio_resampler)
+      strlcpy(g_settings.audio.resampler, def_audio, sizeof(g_settings.audio.resampler));
    if (def_input)
       strlcpy(g_settings.input.driver, def_input, sizeof(g_settings.input.driver));
 #ifdef HAVE_MENU
@@ -333,7 +348,6 @@ void config_set_defaults(void)
    g_settings.audio.volume = audio_volume;
    g_extern.audio_data.volume_db   = g_settings.audio.volume;
    g_extern.audio_data.volume_gain = db_to_gain(g_settings.audio.volume);
-   strlcpy(g_settings.audio.resampler, audio_resampler, sizeof(g_settings.audio.resampler));
 
    g_settings.rewind_enable = rewind_enable;
    g_settings.rewind_buffer_size = rewind_buffer_size;

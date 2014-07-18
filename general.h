@@ -734,6 +734,7 @@ const char *config_get_default_osk(void);
 #endif
 const char *config_get_default_video(void);
 const char *config_get_default_audio(void);
+const char *config_get_default_audio_resampler(void);
 const char *config_get_default_input(void);
 
 #include "conf/config_file.h"

@@ -45,7 +45,7 @@ static const rarch_resampler_t *find_resampler_driver(const char *ident)
    if (!ident)
       return backends[0];
 
-   int i = find_resampler_driver_index(ident);
+   int i = find_resampler_driver_index(g_settings.audio.resampler);
    if (i >= 0)
       return backends[i];
    else
@@ -86,9 +86,8 @@ bool rarch_resampler_realloc(void **re, const rarch_resampler_t **backend, const
       (*backend)->free(*re);
 
    *re      = NULL;
-   *backend = NULL;
-
    *backend = find_resampler_driver(ident);
+
    if (!*backend)
       return false;
 
