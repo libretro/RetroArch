@@ -551,6 +551,8 @@ static void general_change_handler(const void *data)
     }
     else if (!strcmp(setting->name, "audio_out_rate"))
         g_settings.audio.out_rate = *setting->value.unsigned_integer;
+    else if (!strcmp(setting->name, "audio_in_rate"))
+        g_settings.audio.in_rate = *setting->value.fraction;
     else if (!strcmp(setting->name, "input_autodetect_enable"))
         g_settings.input.autodetect_enable = *setting->value.boolean;
     else if (!strcmp(setting->name, "input_turbo_period"))
@@ -974,6 +976,7 @@ rarch_setting_t* setting_data_get_list(void)
 
          START_SUB_GROUP("Miscellaneous")
          CONFIG_STRING(g_settings.audio.device,             "audio_device",               "Device",                     "", GROUP_NAME, SUBGROUP_NAME, general_change_handler)
+         CONFIG_FLOAT(g_settings.audio.in_rate,             "audio_in_rate",             "Audio Input Rate",          out_rate, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
          CONFIG_UINT(g_settings.audio.out_rate,             "audio_out_rate",             "Audio Output Rate",          out_rate, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
          CONFIG_PATH(g_settings.audio.dsp_plugin,           "audio_dsp_plugin",           "DSP Plugin",                 "", GROUP_NAME, SUBGROUP_NAME, general_change_handler)          WITH_FLAGS(SD_FLAG_ALLOW_EMPTY)
          END_SUB_GROUP()
