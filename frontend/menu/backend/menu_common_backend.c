@@ -182,8 +182,11 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
             *current_setting->value.boolean = g_settings.fps_show;
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_DEBUG_TEXT, 0);
          }
-         file_list_push(menu->selection_buf, "Maximum Run Speed", MENU_SETTINGS_FASTFORWARD_RATIO, 0);
-
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "fastforward_ratio")))
+         {
+            *current_setting->value.fraction = g_settings.fastforward_ratio;
+            file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_FASTFORWARD_RATIO, 0);
+         }
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "slowmotion_ratio")))
          {
             *current_setting->value.fraction = g_settings.slowmotion_ratio;
@@ -3885,27 +3888,8 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
          }
          break;
       case MENU_SETTINGS_FASTFORWARD_RATIO:
-         {
-            bool clamp_value = false;
-            if (action == MENU_ACTION_START)
-               g_settings.fastforward_ratio = fastforward_ratio;
-            else if (action == MENU_ACTION_LEFT)
-            {
-               g_settings.fastforward_ratio -= 0.1f;
-               if (g_settings.fastforward_ratio < 0.95f) // Avoid potential rounding errors when going from 1.1 to 1.0.
-                  g_settings.fastforward_ratio = fastforward_ratio;
-               else
-                  clamp_value = true;
-            }
-            else if (action == MENU_ACTION_RIGHT)
-            {
-               g_settings.fastforward_ratio += 0.1f;
-               clamp_value = true;
-            }
-
-            if (clamp_value)
-               g_settings.fastforward_ratio = max(min(g_settings.fastforward_ratio, 10.0f), 1.0f);
-         }
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "fastforward_ratio")))
+            menu_common_setting_set_current_fraction(current_setting, 0.1f, action, true, true);
          break;
       case MENU_SETTINGS_SLOWMOTION_RATIO:
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "slowmotion_ratio")))
@@ -5109,7 +5093,7 @@ static void menu_common_setting_set_label(char *type_str, size_t type_str_size, 
             if (g_settings.fastforward_ratio > 0.0f)
                snprintf(type_str, type_str_size, "%.1fx", g_settings.fastforward_ratio);
             else
-               strlcpy(type_str, "No Limit", type_str_size);
+               snprintf(type_str, type_str_size, "%.1fx (No Limit)", g_settings.fastforward_ratio);
             break;
          case MENU_SETTINGS_SLOWMOTION_RATIO:
             snprintf(type_str, type_str_size, "%.1fx", g_settings.slowmotion_ratio);
