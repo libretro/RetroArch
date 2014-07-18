@@ -269,7 +269,11 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
             *current_setting->value.boolean = g_settings.video.scale_integer;
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_VIDEO_INTEGER_SCALE, 0);
          }
-         file_list_push(menu->selection_buf, "Aspect Ratio", MENU_SETTINGS_VIDEO_ASPECT_RATIO, 0);
+         if ((current_setting = setting_data_find_setting(setting_data, "aspect_ratio_index")))
+         {
+            *current_setting->value.unsigned_integer = g_settings.video.aspect_ratio_idx;
+            file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_VIDEO_ASPECT_RATIO, 0);
+         }
          file_list_push(menu->selection_buf, "Custom Ratio", MENU_SETTINGS_CUSTOM_VIEWPORT, 0);
          if ((current_setting = setting_data_find_setting(setting_data, "video_fullscreen")))
          {
@@ -3788,7 +3792,7 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
                rarch_save_state();
             else
             {
-               // Disallow savestate load when we absoluetely cannot change game state.
+               // Disallow savestate load when we absolutely cannot change game state.
 #ifdef HAVE_BSV_MOVIE
                if (g_extern.bsv.movie)
                   break;
@@ -4414,23 +4418,9 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
          break;
 
       case MENU_SETTINGS_VIDEO_ASPECT_RATIO:
-         if (action == MENU_ACTION_START)
-            g_settings.video.aspect_ratio_idx = aspect_ratio_idx;
-         else if (action == MENU_ACTION_LEFT)
-         {
-            if (g_settings.video.aspect_ratio_idx > 0)
-               g_settings.video.aspect_ratio_idx--;
-         }
-         else if (action == MENU_ACTION_RIGHT)
-         {
-            if (g_settings.video.aspect_ratio_idx < LAST_ASPECT_RATIO)
-               g_settings.video.aspect_ratio_idx++;
-         }
-
-         if (driver.video_data && driver.video_poke && driver.video_poke->set_aspect_ratio)
-            driver.video_poke->set_aspect_ratio(driver.video_data, g_settings.video.aspect_ratio_idx);
+         if ((current_setting = setting_data_find_setting(setting_data, "aspect_ratio_index")))
+            menu_common_setting_set_current_unsigned_integer(current_setting, 1, action, true, true);
          break;
-
       case MENU_SETTINGS_TOGGLE_FULLSCREEN:
          if ((current_setting = setting_data_find_setting(setting_data, "video_fullscreen")))
             menu_common_setting_set_current_boolean(current_setting, action);
