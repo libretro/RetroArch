@@ -183,7 +183,12 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_DEBUG_TEXT, 0);
          }
          file_list_push(menu->selection_buf, "Maximum Run Speed", MENU_SETTINGS_FASTFORWARD_RATIO, 0);
-         file_list_push(menu->selection_buf, "Slow-Motion Ratio", MENU_SETTINGS_SLOWMOTION_RATIO, 0);
+
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "slowmotion_ratio")))
+         {
+            *current_setting->value.fraction = g_settings.slowmotion_ratio;
+            file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_SLOWMOTION_RATIO, 0);
+         }
 
          if ((current_setting = setting_data_find_setting(setting_data, "rewind_enable")))
          {
@@ -3895,16 +3900,8 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
          }
          break;
       case MENU_SETTINGS_SLOWMOTION_RATIO:
-         {
-            if (action == MENU_ACTION_START)
-               g_settings.slowmotion_ratio = slowmotion_ratio;
-            else if (action == MENU_ACTION_LEFT)
-               g_settings.slowmotion_ratio -= 0.1f;
-            else if (action == MENU_ACTION_RIGHT)
-               g_settings.slowmotion_ratio += 0.1f;
-
-            g_settings.slowmotion_ratio = max(min(g_settings.slowmotion_ratio, 10.0f), 1.0f);
-         }
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "slowmotion_ratio")))
+            menu_common_setting_set_current_fraction(current_setting, 0.1f, action, false, false);
          break;
       case MENU_SETTINGS_DEBUG_TEXT:
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "fps_show")))
