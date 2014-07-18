@@ -186,7 +186,6 @@ struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END] = {
    { "16:9",          1.7778f },
    { "16:10",         1.6f },
    { "16:15",         16.0f / 15.0f },
-#ifdef RARCH_CONSOLE
    { "1:1",           1.0f },
    { "2:1",           2.0f },
    { "3:2",           1.5f },
@@ -202,7 +201,6 @@ struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END] = {
    { "19:14",         1.3571f },
    { "30:17",         1.7647f },
    { "32:9",          3.5555f },
-#endif
    { "Config",        0.0f },
    { "Square pixel",  1.0f },
    { "Core provided", 1.0f },

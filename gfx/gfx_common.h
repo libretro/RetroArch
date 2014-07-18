@@ -47,7 +47,6 @@ enum aspect_ratio
    ASPECT_RATIO_16_9,
    ASPECT_RATIO_16_10,
    ASPECT_RATIO_16_15,
-#ifdef RARCH_CONSOLE // None of these aspect ratios make any sense.
    ASPECT_RATIO_1_1,
    ASPECT_RATIO_2_1,
    ASPECT_RATIO_3_2,
@@ -63,7 +62,6 @@ enum aspect_ratio
    ASPECT_RATIO_19_14,
    ASPECT_RATIO_30_17,
    ASPECT_RATIO_32_9,
-#endif
    ASPECT_RATIO_CONFIG,
    ASPECT_RATIO_SQUARE,
    ASPECT_RATIO_CORE,
