@@ -566,7 +566,11 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
             *current_setting->value.fraction = g_settings.input.axis_threshold;
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_INPUT_AXIS_THRESHOLD, 0);
          }
-         file_list_push(menu->selection_buf, "Autodetect Enable", MENU_SETTINGS_DEVICE_AUTODETECT_ENABLE, 0);
+         if ((current_setting = setting_data_find_setting(setting_data, "input_autodetect_enable")))
+         {
+            *current_setting->value.boolean = g_settings.input.autodetect_enable;
+            file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_DEVICE_AUTODETECT_ENABLE, 0);
+         }
 
          file_list_push(menu->selection_buf, "Bind Mode", MENU_SETTINGS_CUSTOM_BIND_MODE, 0);
          file_list_push(menu->selection_buf, "Configure All (RetroPad)", MENU_SETTINGS_CUSTOM_BIND_ALL, 0);
@@ -4191,8 +4195,8 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
             break;
          }
       case MENU_SETTINGS_DEVICE_AUTODETECT_ENABLE:
-         if (action == MENU_ACTION_OK || action == MENU_ACTION_LEFT || action == MENU_ACTION_RIGHT)
-            g_settings.input.autodetect_enable = !g_settings.input.autodetect_enable;
+         if ((current_setting = setting_data_find_setting(setting_data, "input_autodetect_enable")))
+            menu_common_setting_set_current_boolean(current_setting, action);
          break;
       case MENU_SETTINGS_CUSTOM_BIND_MODE:
          if (action == MENU_ACTION_OK || action == MENU_ACTION_LEFT || action == MENU_ACTION_RIGHT)
