@@ -558,7 +558,7 @@ static void general_change_handler(const void *data)
     else if (!strcmp(setting->name, "input_duty_cycle"))
         g_settings.input.turbo_duty_cycle = *setting->value.unsigned_integer;
     else if (!strcmp(setting->name, "input_axis_threshold"))
-        g_settings.input.axis_threshold = *setting->value.fraction;
+        g_settings.input.axis_threshold = max(min(*setting->value.fraction, 0.95f), 0.05f);
     else if (!strcmp(setting->name, "savestate_auto_save"))
         g_settings.savestate_auto_save = *setting->value.boolean;
     else if (!strcmp(setting->name, "savestate_auto_load"))
@@ -908,7 +908,7 @@ rarch_setting_t* setting_data_get_list(void)
          CONFIG_UINT(g_extern.console.screen.viewports.custom_vp.width,    "custom_viewport_width",   "Custom Viewport Width",   0, GROUP_NAME, SUBGROUP_NAME, NULL)
          CONFIG_UINT(g_extern.console.screen.viewports.custom_vp.height,   "custom_viewport_height",  "Custom Viewport Height",  0, GROUP_NAME, SUBGROUP_NAME, NULL)
 
-         CONFIG_BOOL(g_settings.video.smooth,               "video_smooth",               "Use bilinear filtering",     video_smooth, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
+         CONFIG_BOOL(g_settings.video.smooth,               "video_smooth",               "Use Bilinear Filtering",     video_smooth, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
          CONFIG_UINT(g_settings.video.rotation,             "video_rotation",             "Rotation",                   0, GROUP_NAME, SUBGROUP_NAME, general_change_handler) WITH_RANGE(0, 3)
          END_SUB_GROUP()
 
@@ -1001,7 +1001,7 @@ rarch_setting_t* setting_data_get_list(void)
          END_SUB_GROUP()
 
          START_SUB_GROUP("Turbo/Deadzone")
-         CONFIG_FLOAT(g_settings.input.axis_threshold,      "input_axis_threshold",       "Axis Deadzone",              axis_threshold, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
+         CONFIG_FLOAT(g_settings.input.axis_threshold,      "input_axis_threshold",       "Input Axis Threshold",       axis_threshold, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
          CONFIG_UINT(g_settings.input.turbo_period,         "input_turbo_period",         "Turbo Period",               turbo_period, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
          CONFIG_UINT(g_settings.input.turbo_duty_cycle,     "input_duty_cycle",           "Duty Cycle",                 turbo_duty_cycle, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
          END_SUB_GROUP()

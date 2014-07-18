@@ -241,9 +241,11 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
 #if defined(__CELLOS_LV2__)
          file_list_push(menu->selection_buf, "PAL60 Mode", MENU_SETTINGS_VIDEO_PAL60, 0);
 #endif
-#ifndef HAVE_SHADER_MANAGER
-         file_list_push(menu->selection_buf, "Default Filter", MENU_SETTINGS_VIDEO_FILTER, 0);
-#endif
+         if ((current_setting = setting_data_find_setting(setting_data, "video_smooth")))
+         {
+            *current_setting->value.boolean = g_settings.video.smooth;
+            file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_VIDEO_FILTER, 0);
+         }
 #ifdef HW_RVL
          file_list_push(menu->selection_buf, "VI Trap filtering", MENU_SETTINGS_VIDEO_SOFT_FILTER, 0);
 #endif
@@ -539,7 +541,11 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
          file_list_push(menu->selection_buf, "Device", MENU_SETTINGS_BIND_DEVICE, 0);
          file_list_push(menu->selection_buf, "Device Type", MENU_SETTINGS_BIND_DEVICE_TYPE, 0);
          file_list_push(menu->selection_buf, "Analog D-pad Mode", MENU_SETTINGS_BIND_ANALOG_MODE, 0);
-         file_list_push(menu->selection_buf, "Input Axis Threshold", MENU_SETTINGS_INPUT_AXIS_THRESHOLD, 0);
+         if ((current_setting = setting_data_find_setting(setting_data, "input_axis_threshold")))
+         {
+            *current_setting->value.fraction = g_settings.input.axis_threshold;
+            file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_INPUT_AXIS_THRESHOLD, 0);
+         }
          file_list_push(menu->selection_buf, "Autodetect Enable", MENU_SETTINGS_DEVICE_AUTODETECT_ENABLE, 0);
 
          file_list_push(menu->selection_buf, "Bind Mode", MENU_SETTINGS_CUSTOM_BIND_MODE, 0);
@@ -4150,24 +4156,8 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
          }
          break;
       case MENU_SETTINGS_INPUT_AXIS_THRESHOLD:
-         switch (action)
-         {
-            case MENU_ACTION_START:
-               g_settings.input.axis_threshold = 0.5;
-               break;
-
-            case MENU_ACTION_OK:
-            case MENU_ACTION_RIGHT:
-               g_settings.input.axis_threshold += 0.01;
-               break;
-            case MENU_ACTION_LEFT:
-               g_settings.input.axis_threshold -= 0.01;
-               break;
-
-            default:
-               break;
-         }
-         g_settings.input.axis_threshold = max(min(g_settings.input.axis_threshold, 0.95f), 0.05f);
+         if ((current_setting = setting_data_find_setting(setting_data, "input_axis_threshold")))
+            menu_common_setting_set_current_fraction(current_setting, 0.01, action, false, false);
          break;
       case MENU_SETTINGS_BIND_DEVICE_TYPE:
          {
@@ -4358,17 +4348,10 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
          if ((current_setting = setting_data_find_setting(setting_data, "video_rotation")))
             menu_common_setting_set_current_unsigned_integer(current_setting, 1, action, true, true);
          break;
-
       case MENU_SETTINGS_VIDEO_FILTER:
-         if (action == MENU_ACTION_START)
-            g_settings.video.smooth = video_smooth;
-         else
-            g_settings.video.smooth = !g_settings.video.smooth;
-
-         if (driver.video_data && driver.video_poke && driver.video_poke->set_filtering)
-            driver.video_poke->set_filtering(driver.video_data, 1, g_settings.video.smooth);
+         if ((current_setting = setting_data_find_setting(setting_data, "video_smooth")))
+            menu_common_setting_set_current_boolean(current_setting, action);
          break;
-
       case MENU_SETTINGS_DRIVER_VIDEO:
          if (action == MENU_ACTION_LEFT)
             find_prev_video_driver();
