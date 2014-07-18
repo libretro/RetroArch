@@ -4573,67 +4573,11 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
          break;
       case MENU_SETTINGS_VIDEO_WINDOW_SCALE_X:
          if ((current_setting = setting_data_find_setting(setting_data, "video_xscale")))
-         {
-            float *scale = (float*)&g_settings.video.xscale;
-            float old_scale = *scale;
-
-            switch (action)
-            {
-               case MENU_ACTION_START:
-                  *scale = 3.0f;
-                  break;
-
-               case MENU_ACTION_LEFT:
-                  *scale -= 1.0f;
-                  break;
-
-               case MENU_ACTION_RIGHT:
-                  *scale += 1.0f;
-                  break;
-
-               default:
-                  break;
-            }
-
-            *scale = roundf(*scale);
-            *scale = max(*scale, 1.0f);
-            *current_setting->value.fraction = *scale;
-
-            if (old_scale != *scale && current_setting->change_handler)
-               current_setting->change_handler(current_setting);
-         }
+            menu_common_setting_set_current_fraction(current_setting, 1.0f, action, false, false);
          break;
       case MENU_SETTINGS_VIDEO_WINDOW_SCALE_Y:
          if ((current_setting = setting_data_find_setting(setting_data, "video_yscale")))
-         {
-            float *scale = (float*)&g_settings.video.yscale;
-            float old_scale = *scale;
-
-            switch (action)
-            {
-               case MENU_ACTION_START:
-                  *scale = 3.0f;
-                  break;
-
-               case MENU_ACTION_LEFT:
-                  *scale -= 1.0f;
-                  break;
-
-               case MENU_ACTION_RIGHT:
-                  *scale += 1.0f;
-                  break;
-
-               default:
-                  break;
-            }
-
-            *scale = roundf(*scale);
-            *scale = max(*scale, 1.0f);
-            *current_setting->value.fraction = *scale;
-
-            if (old_scale != *scale && current_setting->change_handler)
-               current_setting->change_handler(current_setting);
-         }
+            menu_common_setting_set_current_fraction(current_setting, 1.0f, action, false, false);
          break;
       case MENU_SETTINGS_VIDEO_THREADED:
          if ((current_setting = setting_data_find_setting(setting_data, "video_threaded")))
