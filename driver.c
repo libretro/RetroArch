@@ -742,8 +742,8 @@ void init_audio(void)
       return;
    }
 
-#ifdef HAVE_THREADS
    find_audio_driver();
+#ifdef HAVE_THREADS
    if (g_extern.system.audio_callback.callback)
    {
       RARCH_LOG("Starting threaded audio driver ...\n");
