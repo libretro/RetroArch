@@ -1163,8 +1163,14 @@ void init_video_input(void)
    // Video driver didn't provide an input driver so we use configured one.
    if (driver.input == NULL)
    {
+
       RARCH_LOG("Graphics driver did not initialize an input driver. Attempting to pick a suitable driver.\n");
-      driver.input = tmp;
+
+      if (tmp)
+         driver.input = tmp;
+      else
+         find_input_driver();
+
       if (driver.input)
       {
          driver.input_data = input_init_func();
@@ -1177,7 +1183,7 @@ void init_video_input(void)
       else
       {
          // This should never really happen as tmp (driver.input) is always found before this in find_driver_input(),
-         // or we have aborted in a similar fahsion anyways.
+         // or we have aborted in a similar fashion anyways.
          rarch_fail(1, "init_video_input()");
       }
    }
