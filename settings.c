@@ -272,7 +272,7 @@ void config_set_defaults(void)
    if (def_audio)
       strlcpy(g_settings.audio.driver, def_audio, sizeof(g_settings.audio.driver));
    if (def_audio_resampler)
-      strlcpy(g_settings.audio.resampler, def_audio, sizeof(g_settings.audio.resampler));
+      strlcpy(g_settings.audio.resampler, def_audio_resampler, sizeof(g_settings.audio.resampler));
    if (def_input)
       strlcpy(g_settings.input.driver, def_input, sizeof(g_settings.input.driver));
 #ifdef HAVE_MENU
