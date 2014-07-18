@@ -1050,6 +1050,7 @@ rarch_setting_t* setting_data_get_list(void)
          /*******************/
          /* NETPLAY OPTIONS */
          /*******************/
+#ifdef HAVE_NETPLAY
          START_GROUP("Netplay Options")
          START_SUB_GROUP("State")
          CONFIG_BOOL(g_extern.netplay_enable,            "netplay_enable",  "Netplay Enable",        false, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
@@ -1057,6 +1058,7 @@ rarch_setting_t* setting_data_get_list(void)
          CONFIG_BOOL(g_extern.netplay_is_spectate,       "netplay_spectator_mode_enable",    "Netplay Spectator Enable",          false, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
          END_SUB_GROUP()
          END_GROUP()
+#endif
 
          /*********/
          /* PATHS */
