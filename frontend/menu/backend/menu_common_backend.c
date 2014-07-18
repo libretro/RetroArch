@@ -137,7 +137,11 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
 #endif
       case MENU_SETTINGS_GENERAL_OPTIONS:
          file_list_clear(menu->selection_buf);
-         file_list_push(menu->selection_buf, "Libretro Logging Level", MENU_SETTINGS_LIBRETRO_LOG_LEVEL, 0);
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "libretro_log_level")))
+         {
+            *current_setting->value.unsigned_integer = g_settings.libretro_log_level;
+            file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_LIBRETRO_LOG_LEVEL, 0);
+         }
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "log_verbosity")))
          {
             *current_setting->value.boolean = g_extern.verbosity;
@@ -158,13 +162,21 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
             *current_setting->value.boolean = g_extern.config_save_on_exit;
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_CONFIG_SAVE_ON_EXIT, 0);
          }
-         file_list_push(menu->selection_buf, "Configuration Per-Core", MENU_SETTINGS_PER_CORE_CONFIG, 0);
+         if ((current_setting = setting_data_find_setting(setting_data, "core_specific_config")))
+         {
+            *current_setting->value.boolean = g_settings.core_specific_config;
+            file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_PER_CORE_CONFIG, 0);
+         }
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "video_gpu_screenshot")))
          {
             *current_setting->value.boolean = g_settings.video.gpu_screenshot;
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_GPU_SCREENSHOT, 0);
          }
-         file_list_push(menu->selection_buf, "Load Dummy On Core Shutdown", MENU_SETTINGS_LOAD_DUMMY_ON_CORE_SHUTDOWN, 0);
+         if ((current_setting = setting_data_find_setting(setting_data, "dummy_on_core_shutdown")))
+         {
+            *current_setting->value.boolean = g_settings.load_dummy_on_core_shutdown;
+            file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_LOAD_DUMMY_ON_CORE_SHUTDOWN, 0);
+         }
          if ((current_setting = setting_data_find_setting(setting_data, "fps_show")))
          {
             *current_setting->value.boolean = g_settings.fps_show;
@@ -641,7 +653,7 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
          if (g_extern.perfcnt_enable && (current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "rewind_enable")))
          {
             *current_setting->value.boolean = g_extern.perfcnt_enable;
-            file_list_push(menu->selection_buf, "Performance Counters", MENU_SETTINGS_PERFORMANCE_COUNTERS, 0);
+            file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_PERFORMANCE_COUNTERS, 0);
          }
 
          if (g_extern.main_is_init && !g_extern.libretro_dummy)
@@ -3696,22 +3708,16 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
             menu_common_setting_set_current_unsigned_integer(current_setting, 1, action, true, false);
          break;
       case MENU_SETTINGS_LIBRETRO_LOG_LEVEL:
-         if (action == MENU_ACTION_LEFT)
-         {
-            if (g_settings.libretro_log_level > 0)
-               g_settings.libretro_log_level--;
-         }
-         else if (action == MENU_ACTION_RIGHT)
-            if (g_settings.libretro_log_level < 3)
-               g_settings.libretro_log_level++;
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "libretro_log_level")))
+            menu_common_setting_set_current_unsigned_integer(current_setting, 1, action, true, true);
          break;
       case MENU_SETTINGS_LOGGING_VERBOSITY:
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "log_verbosity")))
             menu_common_setting_set_current_boolean(current_setting, action);
          break;
       case MENU_SETTINGS_PERFORMANCE_COUNTERS_ENABLE:
-         if (action == MENU_ACTION_LEFT || action == MENU_ACTION_RIGHT)
-            g_extern.perfcnt_enable = !g_extern.perfcnt_enable;
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "perfcnt_enable")))
+            menu_common_setting_set_current_boolean(current_setting, action);
          break;
       case MENU_SETTINGS_CONFIG_SAVE_ON_EXIT:
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "config_save_on_exit")))
@@ -3730,11 +3736,8 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
             menu_common_setting_set_current_boolean(current_setting, action);
          break;
       case MENU_SETTINGS_PER_CORE_CONFIG:
-         if (action == MENU_ACTION_OK || action == MENU_ACTION_RIGHT
-               || action == MENU_ACTION_LEFT)
-            g_settings.core_specific_config = !g_settings.core_specific_config;
-         else if (action == MENU_ACTION_START)
-            g_settings.core_specific_config = default_core_specific_config;
+         if ((current_setting = setting_data_find_setting(setting_data, "core_specific_config")))
+            menu_common_setting_set_current_boolean(current_setting, action);
          break;
 #if defined(HAVE_THREADS)
       case MENU_SETTINGS_SRAM_AUTOSAVE:
@@ -4968,10 +4971,8 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
          }
          break;
       case MENU_SETTINGS_LOAD_DUMMY_ON_CORE_SHUTDOWN:
-         if (action == MENU_ACTION_OK || action == MENU_ACTION_LEFT || action == MENU_ACTION_RIGHT)
-            g_settings.load_dummy_on_core_shutdown = !g_settings.load_dummy_on_core_shutdown;
-         else if (action == MENU_ACTION_START)
-            g_settings.load_dummy_on_core_shutdown = load_dummy_on_core_shutdown;
+         if ((current_setting = setting_data_find_setting(setting_data, "dummy_on_core_shutdown")))
+            menu_common_setting_set_current_boolean(current_setting, action);
          break;
       default:
          break;

@@ -747,6 +747,12 @@ static void general_change_handler(const void *data)
         g_extern.verbosity = *setting->value.boolean;
     else if (!strcmp(setting->name, "perfcnt_enable"))
        g_extern.perfcnt_enable = *setting->value.boolean;
+    else if (!strcmp(setting->name, "core_specific_config"))
+       g_settings.core_specific_config = *setting->value.boolean;
+    else if (!strcmp(setting->name, "dummy_on_core_shutdown"))
+       g_settings.load_dummy_on_core_shutdown = *setting->value.boolean;
+    else if (!strcmp(setting->name, "libretro_log_level"))
+       g_settings.libretro_log_level = *setting->value.unsigned_integer;
 }
 
 
@@ -836,8 +842,11 @@ rarch_setting_t* setting_data_get_list(void)
          START_GROUP("General Options")
          START_SUB_GROUP("General Options")
          CONFIG_BOOL(g_extern.verbosity,                      "log_verbosity",        "Logging Verbosity", false, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
+         CONFIG_UINT(g_settings.libretro_log_level,           "libretro_log_level",        "Libretro Logging Level", libretro_log_level, GROUP_NAME, SUBGROUP_NAME, general_change_handler) WITH_RANGE(0, 3)
          CONFIG_BOOL(g_extern.perfcnt_enable,               "perfcnt_enable",       "Performance Counters", false, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
          CONFIG_BOOL(g_extern.config_save_on_exit,          "config_save_on_exit",        "Configuration Save On Exit", config_save_on_exit, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
+         CONFIG_BOOL(g_settings.core_specific_config,       "core_specific_config",        "Configuration Per-Core", default_core_specific_config, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
+         CONFIG_BOOL(g_settings.load_dummy_on_core_shutdown, "dummy_on_core_shutdown",      "Dummy On Core Shutdown", load_dummy_on_core_shutdown, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
          CONFIG_BOOL(g_settings.fps_show,                   "fps_show",                   "Show Framerate",             fps_show, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
          CONFIG_BOOL(g_settings.rewind_enable,              "rewind_enable",              "Rewind",                     rewind_enable, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
          //CONFIG_SIZE(g_settings.rewind_buffer_size,          "rewind_buffer_size",         "Rewind Buffer Size",       rewind_buffer_size, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
