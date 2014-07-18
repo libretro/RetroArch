@@ -325,7 +325,11 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
             *current_setting->value.boolean = g_settings.video.crop_overscan;
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_VIDEO_CROP_OVERSCAN, 0);
          }
-         file_list_push(menu->selection_buf, "Monitor Index", MENU_SETTINGS_VIDEO_MONITOR_INDEX, 0);
+         if ((current_setting = setting_data_find_setting(setting_data, "video_monitor_index")))
+         {
+            *current_setting->value.unsigned_integer = g_settings.video.monitor_index;
+            file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_VIDEO_MONITOR_INDEX, 0);
+         }
          file_list_push(menu->selection_buf, "Estimated Monitor FPS", MENU_SETTINGS_VIDEO_REFRESH_RATE_AUTO, 0);
          break;
       case MENU_SETTINGS_FONT_OPTIONS:
@@ -4593,32 +4597,9 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
          break;
 
       case MENU_SETTINGS_VIDEO_MONITOR_INDEX:
-         switch (action)
-         {
-            case MENU_ACTION_START:
-               g_settings.video.monitor_index = 0;
-               rarch_reinit_drivers();
-               break;
-
-            case MENU_ACTION_OK:
-            case MENU_ACTION_RIGHT:
-               g_settings.video.monitor_index++;
-               rarch_reinit_drivers();
-               break;
-
-            case MENU_ACTION_LEFT:
-               if (g_settings.video.monitor_index)
-               {
-                  g_settings.video.monitor_index--;
-                  rarch_reinit_drivers();
-               }
-               break;
-
-            default:
-               break;
-         }
+         if ((current_setting = setting_data_find_setting(setting_data, "video_monitor_index")))
+            menu_common_setting_set_current_unsigned_integer(current_setting, 1, action, false, false);
          break;
-
       case MENU_SETTINGS_VIDEO_REFRESH_RATE_AUTO:
          switch (action)
          {
@@ -4795,11 +4776,19 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "video_disable_composition")))
             menu_common_setting_set_current_boolean(current_setting, action);
          break;
-#ifdef HAVE_NETPLAY
       case MENU_SETTINGS_NETPLAY_ENABLE:
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "netplay_enable")))
             menu_common_setting_set_current_boolean(current_setting, action);
          break;
+      case MENU_SETTINGS_NETPLAY_MODE:
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "netplay_mode")))
+            menu_common_setting_set_current_boolean(current_setting, action);
+         break;
+      case MENU_SETTINGS_NETPLAY_SPECTATOR_MODE_ENABLE:
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "netplay_spectator_mode_enable")))
+            menu_common_setting_set_current_boolean(current_setting, action);
+         break;
+#ifdef HAVE_NETPLAY
       case MENU_SETTINGS_NETPLAY_HOST_IP_ADDRESS:
          if (action == MENU_ACTION_OK)
             menu_key_start_line(driver.menu, "IP Address: ", netplay_ipaddress_callback);
@@ -4828,14 +4817,6 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
             menu_key_start_line(driver.menu, "Nickname: ", netplay_nickname_callback);
          else if (action == MENU_ACTION_START)
             *g_extern.netplay_nick = '\0';
-         break;
-      case MENU_SETTINGS_NETPLAY_MODE:
-         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "netplay_mode")))
-            menu_common_setting_set_current_boolean(current_setting, action);
-         break;
-      case MENU_SETTINGS_NETPLAY_SPECTATOR_MODE_ENABLE:
-         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "netplay_spectator_mode_enable")))
-            menu_common_setting_set_current_boolean(current_setting, action);
          break;
 #endif
 #ifdef HAVE_OSK
