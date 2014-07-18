@@ -55,6 +55,7 @@ float global_alpha = 0;
 // Font variables
 void *font;
 const gl_font_renderer_t *font_driver;
+char font_path[PATH_MAX];
 
 enum
 {
@@ -781,11 +782,12 @@ static void lakka_context_reset(void *data)
    if (!menu)
       return;
 
-   gl_font_init_first(&font_driver, &font, gl,
-         *g_settings.video.font_path ? g_settings.video.font_path : NULL, g_settings.video.font_size);
-
    fill_pathname_join(dirpath, g_settings.assets_directory, THEME, sizeof(dirpath));
    fill_pathname_slash(dirpath, sizeof(dirpath));
+   
+   fill_pathname_join(font_path, dirpath, "font.ttf", sizeof(font_path));
+
+   gl_font_init_first(&font_driver, &font, gl, font_path, 32);
 
    fill_pathname_join(textures[TEXTURE_BG].path, dirpath, "bg.png", sizeof(textures[TEXTURE_BG].path));
    fill_pathname_join(textures[TEXTURE_SETTINGS].path, dirpath, "settings.png", sizeof(textures[TEXTURE_SETTINGS].path));
