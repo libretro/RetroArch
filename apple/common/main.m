@@ -55,7 +55,7 @@ void apple_run_core(NSString* core, const char* file)
     if (core_info_has_custom_config(apple_core.UTF8String))
         core_info_get_custom_config(apple_core.UTF8String, config_path, sizeof(config_path));
     else
-        strlcpy(config_path, apple_platform.globalConfigFile.UTF8String, sizeof(config_path));
+        strlcpy(config_path, g_defaults.config_path, sizeof(config_path));
     
     static const char* const argv_game[] = { "retroarch", "-c", config_path, "-L", core_path, file_path, 0 };
     static const char* const argv_menu[] = { "retroarch", "-c", config_path, "--menu", 0 };

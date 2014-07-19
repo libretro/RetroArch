@@ -745,7 +745,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
       else
       {
          self.title = BOXSTRING("Global Core Config");
-         _pathToSave = apple_platform.globalConfigFile;
+         _pathToSave = BOXSTRING(g_defaults.config_path);
       }
       
       setting_data = (rarch_setting_t*)setting_data_get_list();
@@ -910,7 +910,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
             char path[PATH_MAX];
             core_info_get_custom_config(core.UTF8String, path, sizeof(path));
          
-            if (![[NSFileManager defaultManager] copyItemAtPath:apple_platform.globalConfigFile toPath:BOXSTRING(path) error:nil])
+            if (![[NSFileManager defaultManager] copyItemAtPath:BOXSTRING(g_defaults.config_path) toPath:BOXSTRING(path) error:nil])
                RARCH_WARN("Could not create custom config at %s", path);
          }
          

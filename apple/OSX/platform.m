@@ -102,7 +102,6 @@ static char** waiting_argv;
 
 @synthesize window = _window;
 @synthesize configDirectory = _configDirectory;
-@synthesize globalConfigFile = _globalConfigFile;
 @synthesize coreDirectory = _coreDirectory;
 @synthesize settingsWindow = _settingsWindow;
 @synthesize coreSelectSheet = _coreSelectSheet;
@@ -113,7 +112,6 @@ static char** waiting_argv;
 {
    [_window release];
    [_configDirectory release];
-   [_globalConfigFile release];
    [_coreDirectory release];
    [_coreSelectSheet release];
    [_settingsWindow release];
@@ -139,7 +137,7 @@ static char** waiting_argv;
 
    paths = (NSArray*)NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask, YES);
    self.configDirectory = [[paths objectAtIndex:0] stringByAppendingPathComponent:BOXSTRING("RetroArch")];
-   self.globalConfigFile = [NSString stringWithFormat:BOXSTRING("%@/retroarch.cfg"), self.configDirectory];
+   snprintf(g_defaults.config_path, sizeof(g_defaults.config_path), "%s/retroarch.cfg", self.configDirectory.UTF8String);
    self.coreDirectory = [[[NSBundle mainBundle] bundlePath] stringByAppendingPathComponent:BOXSTRING("Contents/Resources/modules")];
    
 #if __MAC_OS_X_VERSION_MAX_ALLOWED >= 1070
