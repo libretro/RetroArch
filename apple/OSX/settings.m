@@ -64,9 +64,8 @@ static void* const associated_name_tag = (void*)&associated_name_tag;
 
 - (void)checkBind:(NSTimer*)send
 {
-   int32_t value, index;
-   value = 0;
-   index = _setting->index ? _setting->index - 1 : 0;
+   int32_t value = 0;
+   int32_t index = _setting->index ? _setting->index - 1 : 0;
    
    if ((value = apple_input_find_any_key()))
       BINDFOR(*_setting).key = input_translate_keysym_to_rk(value);
