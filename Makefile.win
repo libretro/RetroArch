@@ -85,6 +85,8 @@ DYNAMIC = 1
 
 HAVE_WINXINPUT = 1
 
+HAVE_LAKKA = 0
+
 ifeq ($(SLIM),)
    HAVE_SDL = 1
    HAVE_LIBXML2 = 1
@@ -113,9 +115,14 @@ endif
 JLIBS =
 
 ifeq ($(HAVE_RGUI), 1)
-   DEFINES += -DHAVE_RGUI -DHAVE_MENU
    OBJ += frontend/menu/disp/rgui.o
+   DEFINES += -DHAVE_MENU -DHAVE_RGUI
    HAVE_MENU_COMMON = 1
+ifeq ($(HAVE_LAKKA), 1)
+   OBJ += frontend/menu/backend/menu_lakka_backend.o frontend/menu/disp/lakka.o
+   DEFINES += -DHAVE_LAKKA
+   LIBS += -lpng
+endif
 endif
 
 ifeq ($(HAVE_MENU_COMMON), 1)
