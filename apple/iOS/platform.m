@@ -211,7 +211,6 @@ static void handle_touch_event(NSArray* touches)
    self.configDirectory = self.systemDirectory;
    self.globalConfigFile = [NSString stringWithFormat:@"%@/retroarch.cfg", self.configDirectory];
    self.coreDirectory = [NSBundle.mainBundle.bundlePath stringByAppendingPathComponent:@"modules"];
-   self.logPath = [self.systemDirectory stringByAppendingPathComponent:@"stdout.log"];
     
     path = (const char*)self.documentsDirectory.UTF8String;
     path_mkdir(path);
