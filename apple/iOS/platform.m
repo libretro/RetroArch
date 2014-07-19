@@ -47,11 +47,6 @@ void ios_set_bluetooth_mode(NSString* mode)
    btstack_set_poweron([mode isEqualToString:@"btstack"]);
 }
 
-static void apple_refresh_frontend_config(const void *data)
-{
-   [[RetroArch_iOS get] refreshSystemConfig];
-}
-
 const void* apple_get_frontend_settings(void)
 {
    static rarch_setting_t settings[9];
@@ -63,7 +58,7 @@ const void* apple_get_frontend_settings(void)
       settings[0] = setting_data_group_setting(ST_GROUP, "Frontend Settings");
       settings[1] = setting_data_group_setting(ST_SUB_GROUP, "Frontend");
       settings[2] = setting_data_string_setting(ST_STRING, "ios_btmode", "Bluetooth Input Type", apple_frontend_settings.bluetooth_mode,
-                                                 sizeof(apple_frontend_settings.bluetooth_mode), "none", GROUP_NAME, SUBGROUP_NAME, apple_refresh_frontend_config);
+                                                 sizeof(apple_frontend_settings.bluetooth_mode), "none", GROUP_NAME, SUBGROUP_NAME, NULL);
 
       // Set ios_btmode options based on runtime environment
       if (btstack_try_load())
