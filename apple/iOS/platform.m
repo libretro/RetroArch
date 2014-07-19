@@ -83,29 +83,6 @@ const void* apple_get_frontend_settings(void)
    return settings;
 }
 
-void ios_set_logging_state(const char *log_path, bool on)
-{
-   fflush(stdout);
-   fflush(stderr);
-   
-   if (on && !apple_frontend_settings.logging.file)
-   {
-      apple_frontend_settings.logging.file = fopen(log_path, "a");
-      apple_frontend_settings.logging.stdout = dup(1);
-      apple_frontend_settings.logging.stderr = dup(2);
-      dup2(fileno(apple_frontend_settings.logging.file), 1);
-      dup2(fileno(apple_frontend_settings.logging.file), 2);
-   }
-   else if (!on && apple_frontend_settings.logging.file)
-   {
-      dup2(apple_frontend_settings.logging.stdout, 1);
-      dup2(apple_frontend_settings.logging.stderr, 2);
-      
-      fclose(apple_frontend_settings.logging.file);
-      apple_frontend_settings.logging.file = 0;
-   }
-}
-
 
 // Input helpers: This is kept here because it needs objective-c
 static void handle_touch_event(NSArray* touches)
@@ -356,7 +333,6 @@ static void handle_touch_event(NSArray* touches)
 
    // Set bluetooth mode
    ios_set_bluetooth_mode(BOXSTRING(apple_frontend_settings.bluetooth_mode));
-   ios_set_logging_state([[RetroArch_iOS get].logPath UTF8String], apple_frontend_settings.logging_enabled);
 }
 
 @end
