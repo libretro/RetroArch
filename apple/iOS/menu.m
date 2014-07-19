@@ -614,7 +614,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 
 - (void)loadHistory
 {
-   NSString* history_path = [NSString stringWithFormat:BOXSTRING("%@/%s"), [RetroArch_iOS get].systemDirectory, ".retroarch-game-history.txt"];
+   NSString* history_path = [NSString stringWithFormat:BOXSTRING("%s/%s"), g_defaults.system_dir, ".retroarch-game-history.txt"];
    [self.navigationController pushViewController:[[RAHistoryMenu alloc] initWithHistoryPath:history_path] animated:YES];
 }
 
@@ -803,9 +803,9 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
       
       setting_data_save_config(setting_data_get_list(), config);
       
-      config_set_string(config, "system_directory", [[RetroArch_iOS get].systemDirectory UTF8String]);
-      config_set_string(config, "savefile_directory", [[RetroArch_iOS get].systemDirectory UTF8String]);
-      config_set_string(config, "savestate_directory", [[RetroArch_iOS get].systemDirectory UTF8String]);
+      config_set_string(config, "system_directory", g_defaults.system_dir);
+      config_set_string(config, "savefile_directory", g_defaults.system_dir);
+      config_set_string(config, "savestate_directory", g_defaults.system_dir);
       config_file_write(config, self.pathToSave.UTF8String);
       config_file_free(config);
    }

@@ -198,9 +198,9 @@ static void handle_touch_event(NSArray* touches)
 
    // Build system paths and test permissions
    self.documentsDirectory = [NSHomeDirectory() stringByAppendingPathComponent:@"Documents"];
-   self.systemDirectory = [self.documentsDirectory stringByAppendingPathComponent:@".RetroArch"];
+    snprintf(g_defaults.system_dir, sizeof(g_defaults.system_dir), "%s/%s", self.documentsDirectory.UTF8String, ".RetroArch");
    
-   self.configDirectory = self.systemDirectory;
+   self.configDirectory = BOXSTRING(g_defaults.system_dir);
     snprintf(g_defaults.config_path, sizeof(g_defaults.config_path), "%s/retroarch.cfg", self.configDirectory.UTF8String);
     snprintf(g_defaults.core_dir, sizeof(g_defaults.core_dir), "%s/%s", NSBundle.mainBundle.bundlePath.UTF8String, "modules");
     
@@ -215,13 +215,13 @@ static void handle_touch_event(NSArray* touches)
     }
     else
     {
-        path = self.systemDirectory.UTF8String;
+        path = g_defaults.system_dir;
         path_mkdir(path);
         
         if (access(path, 0755) != 0)
         {
             char msg[256];
-            snprintf(msg, sizeof(msg), "Failed to create or access system directory: %s", self.systemDirectory.UTF8String);
+            snprintf(msg, sizeof(msg), "Failed to create or access system directory: %s", g_defaults.system_dir);
             apple_display_alert(msg, "Error");
         }
         else
