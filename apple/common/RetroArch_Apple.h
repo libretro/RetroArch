@@ -44,7 +44,6 @@
 #endif
 
 extern char** apple_argv;
-extern bool apple_use_tv_mode;
 extern NSString* apple_core;
 
 extern id<RetroArch_Platform> apple_platform;

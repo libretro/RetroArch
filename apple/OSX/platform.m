@@ -300,8 +300,6 @@ static char** waiting_argv;
 
    if (_wantReload)
       apple_run_core(self.core, self.file.UTF8String);
-   else if(apple_use_tv_mode)
-      apple_run_core(nil, 0);
    else
       [[NSApplication sharedApplication] terminate:nil];
    
