@@ -31,7 +31,9 @@ void apple_rarch_exited(void)
    apple_core = 0;
    [apple_platform unloadingCore:used_core];
    
+#ifdef OSX
    [used_core release];
+#endif
 }
 
 void apple_run_core(NSString* core, const char* file)
