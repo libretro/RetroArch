@@ -44,19 +44,6 @@ void apple_display_alert(const char *message, const char *title)
 #endif
 }
 
-// Fetch a value from a config file, returning defaultValue if the value is not present
-NSString* objc_get_value_from_config(config_file_t* config, NSString* name, NSString* defaultValue)
-{
-   NSString *result;
-   char* data = NULL;
-   if (config)
-      config_get_string(config, name.UTF8String, &data);
-   
-   result = data ? BOXSTRING(data) : defaultValue;
-   free(data);
-   return result;
-}
-
 // Get a core ID as an NSString
 NSString *apple_get_core_id(const core_info_t *core)
 {
