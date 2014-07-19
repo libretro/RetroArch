@@ -55,10 +55,10 @@ static bool zlib_extract_callback(const char *name,
    {
       case 0: // Uncompressed
          write_file(path, cdata, size);
-         return true;
+         break;
       case 8: // Deflate
          zlib_inflate_data_to_file(path, cdata, csize, size, crc32);
-         return true;
+         break;
    }
 
    return true;
@@ -81,16 +81,23 @@ static void file_action(enum file_action action, NSString* source, NSString* tar
 {
    NSError* error = nil;
    bool result = false;
-   
    NSFileManager* manager = [NSFileManager defaultManager];
    
    switch (action)
    {
-      case FA_DELETE: result = [manager removeItemAtPath:target error:&error]; break;
-      case FA_CREATE: result = [manager createDirectoryAtPath:target withIntermediateDirectories:YES
-                                        attributes:nil error:&error]; break;
-      case FA_MOVE:   result = [manager moveItemAtPath:source toPath:target error:&error]; break;
-      case FA_UNZIP:  unzip_file([source UTF8String], [target UTF8String]); break;
+      case FA_DELETE:
+           result = [manager removeItemAtPath:target error:&error];
+           break;
+      case FA_CREATE:
+           result = [manager createDirectoryAtPath:target withIntermediateDirectories:YES
+                                        attributes:nil error:&error];
+           break;
+      case FA_MOVE:
+           result = [manager moveItemAtPath:source toPath:target error:&error];
+           break;
+      case FA_UNZIP:
+           unzip_file([source UTF8String], [target UTF8String]);
+           break;
    }
 
    if (!result && error)
