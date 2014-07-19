@@ -49,8 +49,6 @@ void ios_set_bluetooth_mode(NSString* mode)
 
 static void apple_refresh_frontend_config(const void *data)
 {
-   const rarch_setting_t *setting = (const rarch_setting_t*)data;
-   (void)setting;
    [[RetroArch_iOS get] refreshSystemConfig];
 }
 
@@ -206,7 +204,6 @@ static void handle_touch_event(NSArray* touches)
    // Build system paths and test permissions
    self.documentsDirectory = [NSHomeDirectory() stringByAppendingPathComponent:@"Documents"];
    self.systemDirectory = [self.documentsDirectory stringByAppendingPathComponent:@".RetroArch"];
-   self.systemConfigPath = [self.systemDirectory stringByAppendingPathComponent:@"frontend.cfg"];
    
    self.configDirectory = self.systemDirectory;
    self.globalConfigFile = [NSString stringWithFormat:@"%@/retroarch.cfg", self.configDirectory];
@@ -249,7 +246,6 @@ static void handle_touch_event(NSArray* touches)
    // Load system config
    frontend_settings = (const rarch_setting_t*)apple_get_frontend_settings();
    setting_data_reset(frontend_settings);
-   setting_data_load_config_path(frontend_settings, self.systemConfigPath.UTF8String);
 }
 
 - (void)applicationDidBecomeActive:(UIApplication *)application

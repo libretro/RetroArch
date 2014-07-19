@@ -853,7 +853,6 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 
 - (void)dealloc
 {
-   setting_data_save_config_path(apple_get_frontend_settings(), [[RetroArch_iOS get].systemConfigPath UTF8String]);
 }
 
 - (void)willReloadData
