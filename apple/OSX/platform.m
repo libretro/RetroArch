@@ -102,7 +102,6 @@ static char** waiting_argv;
 
 @synthesize window = _window;
 @synthesize configDirectory = _configDirectory;
-@synthesize coreDirectory = _coreDirectory;
 @synthesize settingsWindow = _settingsWindow;
 @synthesize coreSelectSheet = _coreSelectSheet;
 @synthesize file = _file;
@@ -112,7 +111,6 @@ static char** waiting_argv;
 {
    [_window release];
    [_configDirectory release];
-   [_coreDirectory release];
    [_coreSelectSheet release];
    [_settingsWindow release];
    [_file release];
@@ -138,7 +136,7 @@ static char** waiting_argv;
    paths = (NSArray*)NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask, YES);
    self.configDirectory = [[paths objectAtIndex:0] stringByAppendingPathComponent:BOXSTRING("RetroArch")];
    snprintf(g_defaults.config_path, sizeof(g_defaults.config_path), "%s/retroarch.cfg", self.configDirectory.UTF8String);
-   self.coreDirectory = [[[NSBundle mainBundle] bundlePath] stringByAppendingPathComponent:BOXSTRING("Contents/Resources/modules")];
+   snprintf(g_defaults.core_dir, sizeof(g_defaults.core_dir), "%s/%s", NSBundle.mainBundle.bundlePath.UTF8String, "Contents/Resources/modules");
    
 #if __MAC_OS_X_VERSION_MAX_ALLOWED >= 1070
    [self.window setCollectionBehavior:[self.window collectionBehavior] | NSWindowCollectionBehaviorFullScreenPrimary];
@@ -153,7 +151,7 @@ static char** waiting_argv;
    
    self.settingsWindow = [[[NSWindowController alloc] initWithWindowNibName:BOXSTRING("Settings")] autorelease];
    
-   core_info_set_core_path(self.coreDirectory.UTF8String);
+   core_info_set_core_path(g_defaults.core_dir);
    core_info_set_config_path(self.configDirectory.UTF8String);
    core_list = (const core_info_list_t*)core_info_list_get();
 
@@ -307,7 +305,7 @@ static char** waiting_argv;
 #pragma mark Menus
 - (IBAction)showCoresDirectory:(id)sender
 {
-   [[NSWorkspace sharedWorkspace] openFile:self.coreDirectory];
+   [[NSWorkspace sharedWorkspace] openFile:BOXSTRING(g_defaults.core_dir)];
 }
 
 - (IBAction)showPreferences:(id)sender

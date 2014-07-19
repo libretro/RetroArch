@@ -202,7 +202,7 @@ static void handle_touch_event(NSArray* touches)
    
    self.configDirectory = self.systemDirectory;
     snprintf(g_defaults.config_path, sizeof(g_defaults.config_path), "%s/retroarch.cfg", self.configDirectory.UTF8String);
-   self.coreDirectory = [NSBundle.mainBundle.bundlePath stringByAppendingPathComponent:@"modules"];
+    snprintf(g_defaults.core_dir, sizeof(g_defaults.core_dir), "%s/%s", NSBundle.mainBundle.bundlePath.UTF8String, "modules");
     
     path = (const char*)self.documentsDirectory.UTF8String;
     path_mkdir(path);
@@ -229,7 +229,7 @@ static void handle_touch_event(NSArray* touches)
     }
    
    // Warn if there are no cores present
-   core_info_set_core_path(self.coreDirectory.UTF8String);
+   core_info_set_core_path(g_defaults.core_dir);
    core_info_set_config_path(self.configDirectory.UTF8String);
    core_list = (const core_info_list_t*)core_info_list_get();
    
