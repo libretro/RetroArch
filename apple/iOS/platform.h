@@ -48,7 +48,6 @@ const void* apple_get_frontend_settings(void);
 
 
 @property (nonatomic) NSString* configDirectory;    // e.g. /var/mobile/Documents/.RetroArch
-@property (nonatomic) NSString* globalConfigFile;   // e.g. /var/mobile/Documents/.RetroArch/retroarch.cfg
 @property (nonatomic) NSString* coreDirectory;      // e.g. /Applications/RetroArch.app/modules
 
 @property (nonatomic) NSString* documentsDirectory; // e.g. /var/mobile/Documents

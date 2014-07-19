@@ -899,6 +899,32 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
    [self.navigationController pushViewController:[[RACoreSettingsMenu alloc] initWithCore:core] animated:YES];
 }
 
+static bool copy_config(const char *src_path, const char *dst_path)
+{
+   char ch;
+   FILE *dst;
+   FILE *src = fopen(src_path, "r");
+
+   if (!src)
+      return false;
+
+   dst = fopen(dst_path, "w");
+
+   if (!dst)
+   {
+      fclose(src);
+      return false;
+   }
+
+   while((ch = fgetc(src)) != EOF)
+      fputc(ch, dst);
+
+   fclose(src);
+   fclose(dst);
+
+   return true;
+}
+
 - (void)createNewConfig
 {
    RAFrontendSettingsMenu* __weak weakSelf = self;
@@ -909,9 +935,14 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
          {
             char path[PATH_MAX];
             core_info_get_custom_config(core.UTF8String, path, sizeof(path));
-         
-            if (![[NSFileManager defaultManager] copyItemAtPath:BOXSTRING(g_defaults.config_path) toPath:BOXSTRING(path) error:nil])
-               RARCH_WARN("Could not create custom config at %s", path);
+
+            if (g_defaults.config_path[0] != '\0' && path[0] != '\0')
+            {
+               if (!copy_config(g_defaults.config_path, path))
+               {
+                  RARCH_WARN("Could not create custom config at %s.", path);
+               }
+            }
          }
          
          [weakSelf.navigationController popViewControllerAnimated:YES];

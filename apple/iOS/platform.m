@@ -201,7 +201,7 @@ static void handle_touch_event(NSArray* touches)
    self.systemDirectory = [self.documentsDirectory stringByAppendingPathComponent:@".RetroArch"];
    
    self.configDirectory = self.systemDirectory;
-   self.globalConfigFile = [NSString stringWithFormat:@"%@/retroarch.cfg", self.configDirectory];
+    snprintf(g_defaults.config_path, sizeof(g_defaults.config_path), "%s/retroarch.cfg", self.configDirectory.UTF8String);
    self.coreDirectory = [NSBundle.mainBundle.bundlePath stringByAppendingPathComponent:@"modules"];
     
     path = (const char*)self.documentsDirectory.UTF8String;
