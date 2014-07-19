@@ -101,7 +101,6 @@ static char** waiting_argv;
 @implementation RetroArch_OSX
 
 @synthesize window = _window;
-@synthesize configDirectory = _configDirectory;
 @synthesize settingsWindow = _settingsWindow;
 @synthesize coreSelectSheet = _coreSelectSheet;
 @synthesize file = _file;
@@ -110,7 +109,6 @@ static char** waiting_argv;
 - (void)dealloc
 {
    [_window release];
-   [_configDirectory release];
    [_coreSelectSheet release];
    [_settingsWindow release];
    [_file release];
@@ -125,17 +123,15 @@ static char** waiting_argv;
 
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification
 {
-   NSArray *paths;
    NSComboBox* cb;
    const core_info_list_t* core_list;
    int i;
-    
+   NSString *paths = [NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask, YES) firstObject];
    apple_platform = self;
    _loaded = true;
 
-   paths = (NSArray*)NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask, YES);
-   self.configDirectory = [[paths objectAtIndex:0] stringByAppendingPathComponent:BOXSTRING("RetroArch")];
-   snprintf(g_defaults.config_path, sizeof(g_defaults.config_path), "%s/retroarch.cfg", self.configDirectory.UTF8String);
+    snprintf(g_defaults.menu_config_dir, sizeof(g_defaults.menu_config_dir), "%s/%s", paths.UTF8String, "RetroArch");
+   snprintf(g_defaults.config_path, sizeof(g_defaults.config_path), "%s/retroarch.cfg", g_defaults.menu_config_dir);
    snprintf(g_defaults.core_dir, sizeof(g_defaults.core_dir), "%s/%s", NSBundle.mainBundle.bundlePath.UTF8String, "Contents/Resources/modules");
    
 #if __MAC_OS_X_VERSION_MAX_ALLOWED >= 1070
@@ -152,7 +148,7 @@ static char** waiting_argv;
    self.settingsWindow = [[[NSWindowController alloc] initWithWindowNibName:BOXSTRING("Settings")] autorelease];
    
    core_info_set_core_path(g_defaults.core_dir);
-   core_info_set_config_path(self.configDirectory.UTF8String);
+   core_info_set_config_path(g_defaults.menu_config_dir);
    core_list = (const core_info_list_t*)core_info_list_get();
 
    // Create core select list

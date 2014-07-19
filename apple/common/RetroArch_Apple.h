@@ -30,8 +30,6 @@
 @protocol RetroArch_Platform
 - (void)loadingCore:(NSString*)core withFile:(const char*)file;
 - (void)unloadingCore:(NSString*)core;
-
-- (NSString*)configDirectory;   // < This returns the directory that contains retroarch.cfg and other custom configs
 @end
 
 #ifdef IOS

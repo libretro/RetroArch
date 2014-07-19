@@ -35,7 +35,6 @@
 @interface RetroArch_OSX : NSObject<RetroArch_Platform>
 {
    NSWindow* _window;
-   NSString* _configDirectory;
    NSWindowController* _settingsWindow;
    NSWindow* _coreSelectSheet;
    NSString* _file;
@@ -46,7 +45,6 @@
 }
 
 @property (nonatomic, retain) NSWindow IBOutlet* window;
-@property (nonatomic, copy) NSString* configDirectory;    // e.g. /var/mobile/Documents/.RetroArch
 
 + (RetroArch_OSX*)get;
 
