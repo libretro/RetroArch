@@ -841,14 +841,8 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
    rarch_setting_t* frontend_setting_data = (rarch_setting_t*)apple_get_frontend_settings();
 
    if ((self = [super initWithGroup:frontend_setting_data]))
-   {      
-      RAFrontendSettingsMenu* __weak weakSelf = self;
-
+   {
       self.title = BOXSTRING("Frontend Settings");
-      
-      RAMenuItemBasic* diagnostic_item = [RAMenuItemBasic itemWithDescription:BOXSTRING("Diagnostic Log")
-         action:^{ [weakSelf.navigationController pushViewController:[[RALogMenu alloc] initWithFile:[[RetroArch_iOS get].logPath UTF8String]] animated:YES]; }];
-      [self.sections insertObject:@[BOXSTRING(""), diagnostic_item] atIndex:0];
   
       _coreConfigOptions = [NSMutableArray array];
       [self.sections addObject:_coreConfigOptions];
@@ -1092,43 +1086,6 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
     
    for (i = 0; i < count; i++)
       [array addObject:[[RAMenuItemCoreList alloc] initWithCore:apple_get_core_id(&list[i]) parent:self]];
-}
-
-@end
-
-/*********************************************/
-/* RALogMenu                                 */
-/* Displays a text file line-by-line.        */
-/*********************************************/
-@implementation RALogMenu
-
-- (id)initWithFile:(const char*)path
-{
-   if ((self = [super initWithStyle:UITableViewStylePlain]))
-   {
-      FILE *file;
-      NSMutableArray* data = [NSMutableArray arrayWithObject:BOXSTRING("")];
-
-      fflush(stdout);
-      fflush(stderr);
-
-      file = fopen(path, "r");
-
-      if (file)
-      {
-         char buffer[1024];
-         while (fgets(buffer, 1024, file))
-            [data addObject:[RAMenuItemBasic itemWithDescription:BOXSTRING(buffer) action:NULL]];
-         fclose(file);
-      }
-      else
-         [data addObject:[RAMenuItemBasic itemWithDescription:@"Logging not enabled" action:NULL]];
-      
-      [self.sections addObject:data];
-      
-   }
-   
-   return self;
 }
 
 @end
