@@ -131,7 +131,7 @@ static char** waiting_argv;
 {
    NSArray *paths;
    NSComboBox* cb;
-   const core_info_list_t* cores;
+   const core_info_list_t* core_list;
    int i;
     
    apple_platform = self;
@@ -155,26 +155,24 @@ static char** waiting_argv;
    
    self.settingsWindow = [[[NSWindowController alloc] initWithWindowNibName:BOXSTRING("Settings")] autorelease];
    
-   // Create core select list
-   cb = (NSComboBox*)[[self.coreSelectSheet contentView] viewWithTag:1];
-
    core_info_set_core_path(self.coreDirectory.UTF8String);
    core_info_set_config_path(self.configDirectory.UTF8String);
-   cores = (const core_info_list_t*)core_info_list_get();
+   core_list = (const core_info_list_t*)core_info_list_get();
+
+   // Create core select list
+   cb = (NSComboBox*)[[self.coreSelectSheet contentView] viewWithTag:1];
     
-   for (i = 0; cores && i < cores->count; i ++)
+   for (i = 0; core_list && i < core_list->count; i ++)
    {
-      NSString* desc = (NSString*)BOXSTRING(cores->list[i].display_name);
+      NSString* desc = (NSString*)BOXSTRING(core_list->list[i].display_name);
 #if defined(MAC_OS_X_VERSION_10_6)
 	  /* FIXME - Rewrite this so that this is no longer an associated object - requires ObjC 2.0 runtime */
-      objc_setAssociatedObject(desc, associated_core_key, apple_get_core_id(&cores->list[i]), OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+      objc_setAssociatedObject(desc, associated_core_key, apple_get_core_id(&core_list->list[i]), OBJC_ASSOCIATION_RETAIN_NONATOMIC);
 #endif
 	   [cb addItemWithObjectValue:desc];
    }
 
-   if (cb.numberOfItems)
-      [cb selectItemAtIndex:0];
-   else
+   if (!core_list || core_list->count == 0)
       apple_display_alert("No libretro cores were found.\nSelect \"Go->Cores Directory\" from the menu and place libretro dylib files there.", "RetroArch");
    
    if (waiting_argc)

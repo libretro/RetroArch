@@ -267,7 +267,6 @@ static void handle_touch_event(NSArray* touches)
    // Warn if there are no cores present
    core_info_set_core_path(self.coreDirectory.UTF8String);
    core_info_set_config_path(self.configDirectory.UTF8String);
-    
    core_list = (const core_info_list_t*)core_info_list_get();
    
    if (!core_list || core_list->count == 0)
