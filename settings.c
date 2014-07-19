@@ -517,6 +517,10 @@ void config_set_defaults(void)
    if (*g_defaults.overlay_dir)
       strlcpy(g_extern.overlay_dir, g_defaults.overlay_dir, sizeof(g_extern.overlay_dir));
 #endif
+#ifdef HAVE_MENU
+   if (*g_defaults.menu_config_dir)
+      strlcpy(g_settings.menu_config_directory, g_defaults.menu_config_dir, sizeof(g_settings.menu_config_directory));
+#endif
    if (*g_defaults.shader_dir)
       strlcpy(g_settings.video.shader_dir, g_defaults.shader_dir, sizeof(g_settings.video.shader_dir));
    if (!g_extern.has_set_state_path && *g_defaults.savestate_dir)
