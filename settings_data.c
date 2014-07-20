@@ -137,9 +137,9 @@ void setting_data_reset(const rarch_setting_t* settings)
 
 bool setting_data_load_config_path(const rarch_setting_t* settings, const char* path)
 {
-   config_file_t *config;
+   config_file_t *config = (config_file_t*)config_file_new(path);
 
-   if (!(config = (config_file_t*)config_file_new(path)))
+   if (!config)
       return NULL;
 
    setting_data_load_config(settings, config);
@@ -199,10 +199,10 @@ bool setting_data_load_config(const rarch_setting_t* settings, config_file_t* co
 
 bool setting_data_save_config_path(const rarch_setting_t* settings, const char* path)
 {
-   config_file_t* config;
    bool result = false;
+   config_file_t* config = (config_file_t*)config_file_new(path);
 
-   if (!(config = (config_file_t*)config_file_new(path)))
+   if (!config)
       config = config_file_new(0);
 
    setting_data_save_config(settings, config);
