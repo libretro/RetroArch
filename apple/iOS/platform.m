@@ -197,6 +197,9 @@ static void handle_touch_event(NSArray* touches)
     snprintf(g_defaults.config_path, sizeof(g_defaults.config_path), "%s/retroarch.cfg", g_defaults.menu_config_dir);
     snprintf(g_defaults.core_dir, sizeof(g_defaults.core_dir), "%s/%s", NSBundle.mainBundle.bundlePath.UTF8String, "modules");
     
+    strlcpy(g_defaults.sram_dir, g_defaults.system_dir, sizeof(g_defaults.sram_dir));
+    strlcpy(g_defaults.savestate_dir, g_defaults.system_dir, sizeof(g_defaults.savestate_dir));
+    
     path = (const char*)self.documentsDirectory.UTF8String;
     path_mkdir(path);
     
