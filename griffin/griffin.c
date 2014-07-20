@@ -28,7 +28,7 @@
 #endif
 
 #ifdef __CELLOS_LV2__
-#include "../ps3/altivec_mem.c"
+#include "../mem/altivec/altivec_mem.c"
 #endif
 
 
