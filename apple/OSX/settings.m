@@ -142,9 +142,6 @@ NSWindowDelegate>
    NSMutableArray* thisGroup = nil;
    NSMutableArray* thisSubGroup = nil;
    self.settings = [NSMutableArray array];
-
-   setting_data_load_current();
-
    setting_data = (const rarch_setting_t *)setting_data_get_list();
 
    for (i = 0; setting_data[i].type; i ++)

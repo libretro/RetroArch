@@ -29,16 +29,6 @@
    }                                                  \
 }
 
-// HACK
-struct settings fake_settings;
-struct global fake_extern;
-
-void setting_data_load_current(void)
-{
-   memcpy(&fake_settings, &g_settings, sizeof(struct settings));
-   memcpy(&fake_extern, &g_extern, sizeof(struct global));
-}
-
 // Input
 static const char* get_input_config_prefix(const rarch_setting_t* setting)
 {
@@ -140,8 +130,6 @@ void setting_data_reset_setting(const rarch_setting_t* setting)
 void setting_data_reset(const rarch_setting_t* settings)
 {
    const rarch_setting_t *setting;
-   memset(&fake_settings, 0, sizeof(fake_settings));
-   memset(&fake_extern, 0, sizeof(fake_extern));
 
    for (setting = settings; setting->type != ST_NONE; setting++)
       setting_data_reset_setting(setting);
@@ -751,10 +739,6 @@ static void general_change_handler(const void *data)
     else if (!strcmp(setting->name, "libretro_log_level"))
        g_settings.libretro_log_level = *setting->value.unsigned_integer;
 }
-
-
-#define g_settings fake_settings
-#define g_extern fake_extern
 
 #define NEXT (list[index++])
 #define START_GROUP(NAME)                       { const char *GROUP_NAME = NAME; NEXT = setting_data_group_setting (ST_GROUP, NAME); 
