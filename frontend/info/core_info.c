@@ -489,7 +489,7 @@ const char *core_info_get_custom_config(const char *core_id, char *buffer, size_
    if (!core_id || !buffer || !buffer_length)
       return 0;
 
-   snprintf(buffer, buffer_length, "%s/%s", core_config_path, path_basename(core_id));
+   fill_pathname_join(buffer, core_config_path, path_basename(core_id), buffer_length);
    fill_pathname(buffer, buffer, ".cfg", buffer_length);
    return buffer;
 }
