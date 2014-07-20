@@ -775,32 +775,32 @@ void lakka_settings_context_reset(void)
 static void lakka_context_reset(void *data)
 {
    int i, j, k;
-   char path[256], dirpath[256];;
+   char path[256], mediapath[256], themepath[256];
    menu_handle_t *menu = (menu_handle_t*)data;
    gl_t *gl = (gl_t*)driver.video_data;
 
    if (!menu)
       return;
 
-   fill_pathname_join(dirpath, g_settings.assets_directory, "lakka", sizeof(dirpath));
-   fill_pathname_join(dirpath, g_settings.assets_directory, THEME, sizeof(dirpath));
-   fill_pathname_slash(dirpath, sizeof(dirpath));
+   fill_pathname_join(mediapath, g_settings.assets_directory, "lakka", sizeof(mediapath));
+   fill_pathname_join(themepath, mediapath, THEME, sizeof(themepath));
+   fill_pathname_slash(themepath, sizeof(themepath));
    
-   fill_pathname_join(font_path, dirpath, "font.ttf", sizeof(font_path));
+   fill_pathname_join(font_path, themepath, "font.ttf", sizeof(font_path));
 
    gl_font_init_first(&font_driver, &font, gl, font_path, 32);
 
-   fill_pathname_join(textures[TEXTURE_BG].path, dirpath, "bg.png", sizeof(textures[TEXTURE_BG].path));
-   fill_pathname_join(textures[TEXTURE_SETTINGS].path, dirpath, "settings.png", sizeof(textures[TEXTURE_SETTINGS].path));
-   fill_pathname_join(textures[TEXTURE_SETTING].path, dirpath, "setting.png", sizeof(textures[TEXTURE_SETTING].path));
-   fill_pathname_join(textures[TEXTURE_SUBSETTING].path, dirpath, "subsetting.png", sizeof(textures[TEXTURE_SUBSETTING].path));
-   fill_pathname_join(textures[TEXTURE_ARROW].path, dirpath, "arrow.png", sizeof(textures[TEXTURE_ARROW].path));
-   fill_pathname_join(textures[TEXTURE_RUN].path, dirpath, "run.png", sizeof(textures[TEXTURE_RUN].path));
-   fill_pathname_join(textures[TEXTURE_RESUME].path, dirpath, "resume.png", sizeof(textures[TEXTURE_RESUME].path));
-   fill_pathname_join(textures[TEXTURE_SAVESTATE].path, dirpath, "savestate.png", sizeof(textures[TEXTURE_SAVESTATE].path));
-   fill_pathname_join(textures[TEXTURE_LOADSTATE].path, dirpath, "loadstate.png", sizeof(textures[TEXTURE_LOADSTATE].path));
-   fill_pathname_join(textures[TEXTURE_SCREENSHOT].path, dirpath, "screenshot.png", sizeof(textures[TEXTURE_SCREENSHOT].path));
-   fill_pathname_join(textures[TEXTURE_RELOAD].path, dirpath, "reload.png", sizeof(textures[TEXTURE_RELOAD].path));
+   fill_pathname_join(textures[TEXTURE_BG].path, themepath, "bg.png", sizeof(textures[TEXTURE_BG].path));
+   fill_pathname_join(textures[TEXTURE_SETTINGS].path, themepath, "settings.png", sizeof(textures[TEXTURE_SETTINGS].path));
+   fill_pathname_join(textures[TEXTURE_SETTING].path, themepath, "setting.png", sizeof(textures[TEXTURE_SETTING].path));
+   fill_pathname_join(textures[TEXTURE_SUBSETTING].path, themepath, "subsetting.png", sizeof(textures[TEXTURE_SUBSETTING].path));
+   fill_pathname_join(textures[TEXTURE_ARROW].path, themepath, "arrow.png", sizeof(textures[TEXTURE_ARROW].path));
+   fill_pathname_join(textures[TEXTURE_RUN].path, themepath, "run.png", sizeof(textures[TEXTURE_RUN].path));
+   fill_pathname_join(textures[TEXTURE_RESUME].path, themepath, "resume.png", sizeof(textures[TEXTURE_RESUME].path));
+   fill_pathname_join(textures[TEXTURE_SAVESTATE].path, themepath, "savestate.png", sizeof(textures[TEXTURE_SAVESTATE].path));
+   fill_pathname_join(textures[TEXTURE_LOADSTATE].path, themepath, "loadstate.png", sizeof(textures[TEXTURE_LOADSTATE].path));
+   fill_pathname_join(textures[TEXTURE_SCREENSHOT].path, themepath, "screenshot.png", sizeof(textures[TEXTURE_SCREENSHOT].path));
+   fill_pathname_join(textures[TEXTURE_RELOAD].path, themepath, "reload.png", sizeof(textures[TEXTURE_RELOAD].path));
 
    for (k = 0; k < TEXTURE_LAST; k++)
       textures[k].id = png_texture_load(textures[k].path, &dim, &dim);
@@ -810,12 +810,13 @@ static void lakka_context_reset(void *data)
    {
       menu_category_t *category = (menu_category_t*)&categories[i];
 
-      char core_id[256], texturepath[256], content_texturepath[256], dirpath[256];
+      char core_id[256], texturepath[256], content_texturepath[256], mediapath[256], themepath[256];
       core_info_t *info;
       core_info_list_t *info_list;
 
-      fill_pathname_join(dirpath, g_settings.assets_directory, THEME, sizeof(dirpath));
-      fill_pathname_slash(dirpath, sizeof(dirpath));
+      fill_pathname_join(mediapath, g_settings.assets_directory, "lakka", sizeof(mediapath));
+      fill_pathname_join(themepath, mediapath, THEME, sizeof(themepath));
+      fill_pathname_slash(themepath, sizeof(themepath));
 
       info_list = (core_info_list_t*)menu->core_info;
       info = NULL;
@@ -832,11 +833,11 @@ static void lakka_context_reset(void *data)
       strlcpy(core_id, str_replace(core_id, "libretro-", ""), sizeof(core_id));
       strlcpy(core_id, str_replace(core_id, "libretro_", ""), sizeof(core_id));
 
-      strlcpy(texturepath, dirpath, sizeof(texturepath));
+      strlcpy(texturepath, themepath, sizeof(texturepath));
       strlcat(texturepath, core_id, sizeof(texturepath));
       strlcat(texturepath, ".png", sizeof(texturepath));
 
-      strlcpy(content_texturepath, dirpath, sizeof(content_texturepath));
+      strlcpy(content_texturepath, themepath, sizeof(content_texturepath));
       strlcat(content_texturepath, core_id, sizeof(content_texturepath));
       strlcat(content_texturepath, "-content.png", sizeof(content_texturepath));
 
