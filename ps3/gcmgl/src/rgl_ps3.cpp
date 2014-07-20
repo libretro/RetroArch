@@ -4,7 +4,7 @@
 
 #include <sdk_version.h>
 
-#include "../../mem/altivec/altivec_mem.h"
+#include "../../../mem/altivec/altivec_mem.h"
 
 #include "include/GmmAlloc.h"
 #include "include/rgl-typedefs.h"
