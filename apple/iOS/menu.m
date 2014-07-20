@@ -614,7 +614,8 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 
 - (void)loadHistory
 {
-   NSString* history_path = [NSString stringWithFormat:BOXSTRING("%s/%s"), g_defaults.system_dir, ".retroarch-game-history.txt"];
+   char history_path[PATH_MAX];
+   fill_pathname_join(history_path, g_defaults.system_dir, ".retroarch-game-history.txt", sizeof(history_path));
    [self.navigationController pushViewController:[[RAHistoryMenu alloc] initWithHistoryPath:history_path] animated:YES];
 }
 
@@ -633,11 +634,11 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
       rom_history_free(_history);
 }
 
-- (id)initWithHistoryPath:(NSString *)historyPath
+- (id)initWithHistoryPath:(const char*)historyPath
 {
    if ((self = [super initWithStyle:UITableViewStylePlain]))
    {
-      _history = rom_history_init([historyPath UTF8String], 100);
+      _history = rom_history_init(historyPath, 100);
       [self reloadData];
       self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:BOXSTRING("Clear History")
                                                 style:UIBarButtonItemStyleBordered target:self action:@selector(clearHistory)];

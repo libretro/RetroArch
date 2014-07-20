@@ -119,7 +119,7 @@
 /*********************************************/
 @interface RAHistoryMenu : RAMenuBase
 @property (nonatomic) rom_history_t* history;
-- (id)initWithHistoryPath:(NSString*)historyPath;
+- (id)initWithHistoryPath:(const char*)historyPath;
 @end
 
 /*********************************************/
