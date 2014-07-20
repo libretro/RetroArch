@@ -689,6 +689,12 @@ static void general_change_handler(const void *data)
         strlcpy(g_settings.input.autoconfig_dir, setting->value.string, sizeof(g_settings.input.autoconfig_dir));
     else if (!strcmp(setting->name, "screenshot_directory"))
         strlcpy(g_settings.screenshot_directory, setting->value.string, sizeof(g_settings.screenshot_directory));
+    else if (!strcmp(setting->name, "savefile_directory"))
+        strlcpy(g_extern.savefile_dir, setting->value.string, sizeof(g_extern.savefile_dir));
+    else if (!strcmp(setting->name, "savestate_directory"))
+        strlcpy(g_extern.savestate_dir, setting->value.string, sizeof(g_extern.savestate_dir));
+    else if (!strcmp(setting->name, "system_directory"))
+        strlcpy(g_settings.system_directory, setting->value.string, sizeof(g_settings.system_directory));
     else if (!strcmp(setting->name, "input_player1_joypad_index"))
         g_settings.input.joypad_map[0] = *setting->value.integer;
     else if (!strcmp(setting->name, "input_player2_joypad_index"))
@@ -1101,9 +1107,9 @@ rarch_setting_t* setting_data_get_list(void)
 #endif
          CONFIG_PATH(g_settings.screenshot_directory,       "screenshot_directory",       "Screenshot Directory",       "", GROUP_NAME, SUBGROUP_NAME, general_change_handler)                WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
          CONFIG_PATH(g_settings.input.autoconfig_dir,       "joypad_autoconfig_dir",      "Joypad Autoconfig Directory", "", GROUP_NAME, SUBGROUP_NAME, general_change_handler)          WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
-         // savefile_directory
-         // savestate_directory
-         // system_directory
+       CONFIG_PATH(g_extern.savefile_dir, "savefile_directory", "Savefile Directory", "", GROUP_NAME, SUBGROUP_NAME, general_change_handler);
+       CONFIG_PATH(g_extern.savestate_dir, "savestate_directory", "Savestate Directory", "", GROUP_NAME, SUBGROUP_NAME, general_change_handler)
+       CONFIG_PATH(g_settings.system_directory, "system_directory", "System Directory", "", GROUP_NAME, SUBGROUP_NAME, general_change_handler)
          END_SUB_GROUP()
          END_GROUP()
        
