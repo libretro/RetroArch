@@ -126,11 +126,11 @@ static char** waiting_argv;
    NSComboBox* cb;
    const core_info_list_t* core_list;
    int i;
-   NSString *paths = [NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask, YES) firstObject];
+   const char *paths = [[NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask, YES) firstObject] UTF8String];
    apple_platform = self;
    _loaded = true;
 
-    snprintf(g_defaults.menu_config_dir, sizeof(g_defaults.menu_config_dir), "%s/%s", paths.UTF8String, "RetroArch");
+    snprintf(g_defaults.menu_config_dir, sizeof(g_defaults.menu_config_dir), "%s/%s", paths, "RetroArch");
    snprintf(g_defaults.config_path, sizeof(g_defaults.config_path), "%s/retroarch.cfg", g_defaults.menu_config_dir);
    snprintf(g_defaults.core_dir, sizeof(g_defaults.core_dir), "%s/%s", NSBundle.mainBundle.bundlePath.UTF8String, "Contents/Resources/modules");
    
@@ -163,9 +163,6 @@ static char** waiting_argv;
 #endif
 	   [cb addItemWithObjectValue:desc];
    }
-
-   if (!core_list || core_list->count == 0)
-      apple_display_alert("No libretro cores were found.\nSelect \"Go->Cores Directory\" from the menu and place libretro dylib files there.", "RetroArch");
    
    if (waiting_argc)
        apple_rarch_load_content(&waiting_argc, waiting_argv);
