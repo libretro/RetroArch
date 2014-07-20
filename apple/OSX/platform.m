@@ -130,9 +130,9 @@ static char** waiting_argv;
    apple_platform = self;
    _loaded = true;
 
-    snprintf(g_defaults.menu_config_dir, sizeof(g_defaults.menu_config_dir), "%s/%s", paths, "RetroArch");
-   snprintf(g_defaults.config_path, sizeof(g_defaults.config_path), "%s/retroarch.cfg", g_defaults.menu_config_dir);
-   snprintf(g_defaults.core_dir, sizeof(g_defaults.core_dir), "%s/%s", NSBundle.mainBundle.bundlePath.UTF8String, "Contents/Resources/modules");
+   fill_pathname_join(g_defaults.menu_config_dir, paths, "RetroArch", sizeof(g_defaults.menu_config_dir));
+   fill_pathname_join(g_defaults.config_path, g_defaults.menu_config_dir, "retroarch.cfg", sizeof(g_defaults.config_path));
+   fill_pathname_join(g_defaults.core_dir, NSBundle.mainBundle.bundlePath.UTF8String, "Contents/Resources/modules", sizeof(g_defaults.core_dir));
    
 #if __MAC_OS_X_VERSION_MAX_ALLOWED >= 1070
    [self.window setCollectionBehavior:[self.window collectionBehavior] | NSWindowCollectionBehaviorFullScreenPrimary];
