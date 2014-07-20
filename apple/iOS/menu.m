@@ -531,7 +531,16 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
       [self.sections addObject:[NSArray arrayWithObjects:BOXSTRING("Content"),
                                  [RAMenuItemBasic itemWithDescription:BOXSTRING("Choose Core")
                                     action:^{ [weakSelf chooseCoreWithPath:nil]; }
-                                    detail:^{ return weakSelf.core ? apple_get_core_display_name(weakSelf.core) : BOXSTRING("Auto Detect"); }],
+                                    detail:^{
+                                        const core_info_t *core = (const core_info_t*)core_info_list_get_by_id(weakSelf.core.UTF8String);
+                                        
+                                        if (weakSelf.core)
+                                        {
+                                            return core ? BOXSTRING(core->display_name) : BOXSTRING(weakSelf.core.UTF8String);
+                                        }
+                                        else
+                                            return BOXSTRING("Auto Detect");
+                                    }],
                                  [RAMenuItemBasic itemWithDescription:BOXSTRING("Load Content")                 action:^{ [weakSelf loadGame]; }],
                                  [RAMenuItemBasic itemWithDescription:BOXSTRING("Load Content (History)")       action:^{ [weakSelf loadHistory]; }],
                                  nil]];
@@ -738,7 +747,8 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
       _isCustom = core_info_has_custom_config(core.UTF8String);
       if (_isCustom)
       {
-         self.title = apple_get_core_display_name(core);
+          const core_info_t *tmp = (const core_info_t*)core_info_list_get_by_id(core.UTF8String);
+          self.title = tmp ? BOXSTRING(tmp->display_name) : BOXSTRING(core.UTF8String);
          
          _pathToSave = BOXSTRING(core_info_get_custom_config(core.UTF8String, buffer, sizeof(buffer)));
          self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemTrash target:self action:@selector(deleteCustom)];
@@ -1025,12 +1035,13 @@ static bool copy_config(const char *src_path, const char *dst_path)
 - (UITableViewCell*)cellForTableView:(UITableView*)tableView
 {
    UITableViewCell *result;
+   const core_info_t *core = (const core_info_t*)core_info_list_get_by_id(self.core.UTF8String);
    static NSString* const cell_id = @"RAMenuItemCoreList";
 
    if (!(result = [tableView dequeueReusableCellWithIdentifier:cell_id]))
       result = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleValue1 reuseIdentifier:cell_id];
 
-   result.textLabel.text = apple_get_core_display_name(self.core);
+    result.textLabel.text = core ? BOXSTRING(core->display_name) : BOXSTRING(self.core.UTF8String);
    return result;
 }
 

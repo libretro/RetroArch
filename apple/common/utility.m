@@ -51,12 +51,6 @@ NSString *apple_get_core_id(const core_info_t *core)
    return BOXSTRING(core_info_get_id(core, buf, sizeof(buf)));
 }
 
-NSString *apple_get_core_display_name(NSString *core_id)
-{
-   const core_info_t *core = (const core_info_t*)core_info_list_get_by_id(core_id.UTF8String);
-   return core ? BOXSTRING(core->display_name) : core_id;
-}
-
 // Number formatter class for setting strings
 @implementation RANumberFormatter
 - (id)initWithSetting:(const rarch_setting_t*)setting
