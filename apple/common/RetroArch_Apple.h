@@ -29,7 +29,7 @@
 
 @protocol RetroArch_Platform
 - (void)loadingCore:(NSString*)core withFile:(const char*)file;
-- (void)unloadingCore:(NSString*)core;
+- (void)unloadingCore;
 @end
 
 #ifdef IOS
@@ -40,7 +40,7 @@
 #endif
 
 extern char** apple_argv;
-extern NSString* apple_core;
+extern char apple_core[PATH_MAX];
 
 extern id<RetroArch_Platform> apple_platform;
 

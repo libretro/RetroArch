@@ -550,7 +550,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
                                  nil]];
       
       [settings addObject:[RAMenuItemBasic itemWithDescription:BOXSTRING("Core")
-                              action:^{ [weakSelf.navigationController pushViewController:[[RACoreSettingsMenu alloc] initWithCore:apple_core] animated:YES]; }]];
+                              action:^{ [weakSelf.navigationController pushViewController:[[RACoreSettingsMenu alloc] initWithCore:BOXSTRING(apple_core)] animated:YES]; }]];
       [settings addObject:[RAMenuItemBasic itemWithDescription:BOXSTRING("Core Options")
                               action:^{ [weakSelf.navigationController pushViewController:[RACoreOptionsMenu new] animated:YES]; }]];
    }

@@ -282,7 +282,7 @@ static char** waiting_argv;
       [[NSDocumentController sharedDocumentController] noteNewRecentDocumentURL:[NSURL fileURLWithPath:BOXSTRING(file)]];
 }
 
-- (void)unloadingCore:(const NSString*)core
+- (void)unloadingCore
 {
    if (g_extern.system.shutdown)
       [[NSApplication sharedApplication] terminate:nil];

@@ -23,17 +23,11 @@
 id<RetroArch_Platform> apple_platform;
 
 #pragma mark EMULATION
-NSString* apple_core;
+char apple_core[PATH_MAX];
 
 void apple_rarch_exited(void)
 {
-   NSString *used_core = (NSString*)apple_core;
-   apple_core = 0;
-   [apple_platform unloadingCore:used_core];
-   
-#ifdef OSX
-   [used_core release];
-#endif
+   [apple_platform unloadingCore];
 }
 
 void apple_run_core(NSString* core, const char* file)
@@ -44,16 +38,17 @@ void apple_run_core(NSString* core, const char* file)
     
     [apple_platform loadingCore:core withFile:file];
     
-    apple_core = core;
+    if (core.UTF8String && core.UTF8String[0] != '\0')
+       strlcpy(apple_core, core.UTF8String, sizeof(apple_core));
 
    if (file && core)
    {
-      strlcpy(core_path, apple_core.UTF8String, sizeof(core_path));
+      strlcpy(core_path, apple_core, sizeof(core_path));
       strlcpy(file_path, file, sizeof(file_path));
    }
    
-    if (core_info_has_custom_config(apple_core.UTF8String))
-        core_info_get_custom_config(apple_core.UTF8String, config_path, sizeof(config_path));
+    if (core_info_has_custom_config(apple_core))
+        core_info_get_custom_config(apple_core, config_path, sizeof(config_path));
     else
         strlcpy(config_path, g_defaults.config_path, sizeof(config_path));
     

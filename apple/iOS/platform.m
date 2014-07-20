@@ -297,7 +297,7 @@ static void handle_touch_event(NSArray* touches)
    [self showGameView];
 }
 
-- (void)unloadingCore:(NSString*)core
+- (void)unloadingCore
 {
    [self showPauseMenu:self];
    

@@ -49,7 +49,7 @@
 + (RetroArch_OSX*)get;
 
 - (void)loadingCore:(NSString*)core withFile:(const char*)file;
-- (void)unloadingCore:(NSString*)core;
+- (void)unloadingCore;
 
 @end
 
