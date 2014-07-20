@@ -51,7 +51,6 @@ const void* apple_get_frontend_settings(void);
 @end
 
 // modes are: keyboard, icade and btstack
-void ios_set_bluetooth_mode(NSString* mode);
 int get_ios_version_major(void);
 
 #define IOS_IS_VERSION_7_OR_HIGHER() ((get_ios_version_major() >= 7))

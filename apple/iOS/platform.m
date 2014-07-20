@@ -40,13 +40,6 @@ int get_ios_version_major(void)
    return version;
 }
 
-void ios_set_bluetooth_mode(NSString* mode)
-{
-   apple_input_enable_small_keyboard([mode isEqualToString:@"small_keyboard"]);
-   apple_input_enable_icade([mode isEqualToString:@"icade"]);
-   btstack_set_poweron([mode isEqualToString:@"btstack"]);
-}
-
 const void* apple_get_frontend_settings(void)
 {
    static rarch_setting_t settings[9];
@@ -322,7 +315,13 @@ static void handle_touch_event(NSArray* touches)
       apple_frontend_settings.orientation_flags = UIInterfaceOrientationMaskPortrait | UIInterfaceOrientationMaskPortraitUpsideDown;
 
    // Set bluetooth mode
-   ios_set_bluetooth_mode(BOXSTRING(apple_frontend_settings.bluetooth_mode));
+    bool small_keyboard = !(strcmp(apple_frontend_settings.bluetooth_mode, "small_keyboard"));
+    bool is_icade = !(strcmp(apple_frontend_settings.bluetooth_mode, "icade"));
+    bool is_btstack = !(strcmp(apple_frontend_settings.bluetooth_mode, "btstack"));
+       
+    apple_input_enable_small_keyboard(small_keyboard);
+    apple_input_enable_icade(is_icade);
+    btstack_set_poweron(is_btstack);
 }
 
 @end
