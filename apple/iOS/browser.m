@@ -48,8 +48,8 @@ static bool zlib_extract_callback(const char *name,
    // Ignore directories
    if (name[strlen(name) - 1] == '/')
       return true;
-
-   snprintf(path, PATH_MAX, "%s/%s", (const char*)userdata, name);
+  
+   fill_pathname_join(path, (const char*)userdata, name, sizeof(path));
    
    switch (cmode)
    {
@@ -96,7 +96,7 @@ static void file_action(enum file_action action, NSString* source, NSString* tar
            result = [manager moveItemAtPath:source toPath:target error:&error];
            break;
       case FA_UNZIP:
-           unzip_file([source UTF8String], [target UTF8String]);
+           unzip_file(source.UTF8String, target.UTF8String);
            break;
    }
 

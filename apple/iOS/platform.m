@@ -191,11 +191,11 @@ static void handle_touch_event(NSArray* touches)
 
    // Build system paths and test permissions
    self.documentsDirectory = [NSHomeDirectory() stringByAppendingPathComponent:@"Documents"];
-    snprintf(g_defaults.system_dir, sizeof(g_defaults.system_dir), "%s/%s", self.documentsDirectory.UTF8String, ".RetroArch");
+    fill_pathname_join(g_defaults.system_dir, self.documentsDirectory.UTF8String, ".RetroArch", sizeof(g_defaults.system_dir));
    
     strlcpy(g_defaults.menu_config_dir, g_defaults.system_dir, sizeof(g_defaults.menu_config_dir));
-    snprintf(g_defaults.config_path, sizeof(g_defaults.config_path), "%s/retroarch.cfg", g_defaults.menu_config_dir);
-    snprintf(g_defaults.core_dir, sizeof(g_defaults.core_dir), "%s/%s", NSBundle.mainBundle.bundlePath.UTF8String, "modules");
+    fill_pathname_join(g_defaults.config_path, g_defaults.menu_config_dir, "retroarch.cfg", sizeof(g_defaults.config_path));
+    fill_pathname_join(g_defaults.core_dir, NSBundle.mainBundle.bundlePath.UTF8String, "modules", sizeof(g_defaults.core_dir));
     
     strlcpy(g_defaults.sram_dir, g_defaults.system_dir, sizeof(g_defaults.sram_dir));
     strlcpy(g_defaults.savestate_dir, g_defaults.system_dir, sizeof(g_defaults.savestate_dir));
