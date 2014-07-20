@@ -802,10 +802,6 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
          config = config_file_new(0);
       
       setting_data_save_config(setting_data_get_list(), config);
-      
-      config_set_string(config, "system_directory", g_defaults.system_dir);
-      config_set_string(config, "savefile_directory", g_defaults.system_dir);
-      config_set_string(config, "savestate_directory", g_defaults.system_dir);
       config_file_write(config, self.pathToSave.UTF8String);
       config_file_free(config);
    }
