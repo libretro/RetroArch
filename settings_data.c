@@ -1,5 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2013-2014 - Jason Fetters
+ *  Copyright (C) 2011-2014 - Daniel De Matteis
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -353,20 +354,41 @@ rarch_setting_t setting_data_group_setting(enum setting_type type, const char* n
    return result;
 }
 
-#define DEFINE_BASIC_SETTING_TYPE(TAG, TYPE, VALUE, SETTING_TYPE, GROUP, SUBGROUP, CHANGE_HANDLER_T) \
-   rarch_setting_t setting_data_##TAG##_setting(const char* name, const char* description, TYPE* target, TYPE default_value, const char *group, const char *subgroup, CHANGE_HANDLER_T change_handler) \
-{ \
-   rarch_setting_t result = { SETTING_TYPE, name, sizeof(TYPE), description, group, subgroup }; \
-   result.change_handler = change_handler; \
-   result.value.VALUE = target; \
-   result.default_value.VALUE = default_value; \
-   return result; \
+rarch_setting_t setting_data_float_setting(const char* name, const char* description, float* target, float default_value, const char *group, const char *subgroup, change_handler_t change_handler)
+{
+   rarch_setting_t result = { ST_FLOAT, name, sizeof(float), description, group, subgroup };
+   result.change_handler = change_handler;
+   result.value.fraction = target;
+   result.default_value.fraction = default_value;
+   return result;
 }
 
-   DEFINE_BASIC_SETTING_TYPE(bool, bool, boolean, ST_BOOL, const char *, const char*, change_handler_t)
-   DEFINE_BASIC_SETTING_TYPE(int, int, integer, ST_INT, const char *, const char *, change_handler_t)
-   DEFINE_BASIC_SETTING_TYPE(uint, unsigned int, unsigned_integer, ST_UINT, const char *, const char *, change_handler_t)
-   DEFINE_BASIC_SETTING_TYPE(float, float, fraction, ST_FLOAT, const char *, const char *, change_handler_t)
+rarch_setting_t setting_data_bool_setting(const char* name, const char* description, bool* target, bool default_value, const char *group, const char *subgroup, change_handler_t change_handler)
+{
+   rarch_setting_t result = { ST_BOOL, name, sizeof(bool), description, group, subgroup };
+   result.change_handler = change_handler;
+   result.value.boolean = target;
+   result.default_value.boolean = default_value;
+   return result;
+}
+
+rarch_setting_t setting_data_int_setting(const char* name, const char* description, int* target, int default_value, const char *group, const char *subgroup, change_handler_t change_handler)
+{
+    rarch_setting_t result = { ST_INT, name, sizeof(int), description, group, subgroup };
+    result.change_handler = change_handler;
+    result.value.integer = target;
+    result.default_value.integer = default_value;
+    return result;
+}
+
+rarch_setting_t setting_data_uint_setting(const char* name, const char* description, unsigned int* target, unsigned int default_value, const char *group, const char *subgroup, change_handler_t change_handler)
+{
+   rarch_setting_t result = { ST_UINT, name, sizeof(unsigned int), description, group, subgroup };
+   result.change_handler = change_handler;
+   result.value.unsigned_integer = target;
+   result.default_value.unsigned_integer = default_value;
+   return result;
+}
 
 rarch_setting_t setting_data_string_setting(enum setting_type type,
       const char* name, const char* description, char* target,
