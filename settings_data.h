@@ -118,7 +118,6 @@ rarch_setting_t setting_data_bind_setting(const char* name, const char* descript
                                     const struct retro_keybind* default_value, const char *group, const char *subgroup);
 
 // These functions operate only on RetroArch's main settings list
-void setting_data_load_current(void);
 rarch_setting_t* setting_data_get_list(void);
 
 #ifdef APPLE

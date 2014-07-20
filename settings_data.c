@@ -1,5 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2013-2014 - Jason Fetters
+ *  Copyright (C) 2011-2014 - Daniel De Matteis
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -27,16 +28,6 @@
       if (*setting->value.type > setting->max)        \
       *setting->value.type = setting->max;         \
    }                                                  \
-}
-
-// HACK
-struct settings fake_settings;
-struct global fake_extern;
-
-void setting_data_load_current(void)
-{
-   memcpy(&fake_settings, &g_settings, sizeof(struct settings));
-   memcpy(&fake_extern, &g_extern, sizeof(struct global));
 }
 
 // Input
@@ -140,8 +131,6 @@ void setting_data_reset_setting(const rarch_setting_t* setting)
 void setting_data_reset(const rarch_setting_t* settings)
 {
    const rarch_setting_t *setting;
-   memset(&fake_settings, 0, sizeof(fake_settings));
-   memset(&fake_extern, 0, sizeof(fake_extern));
 
    for (setting = settings; setting->type != ST_NONE; setting++)
       setting_data_reset_setting(setting);
@@ -149,9 +138,9 @@ void setting_data_reset(const rarch_setting_t* settings)
 
 bool setting_data_load_config_path(const rarch_setting_t* settings, const char* path)
 {
-   config_file_t *config;
+   config_file_t *config = (config_file_t*)config_file_new(path);
 
-   if (!(config = (config_file_t*)config_file_new(path)))
+   if (!config)
       return NULL;
 
    setting_data_load_config(settings, config);
@@ -211,10 +200,10 @@ bool setting_data_load_config(const rarch_setting_t* settings, config_file_t* co
 
 bool setting_data_save_config_path(const rarch_setting_t* settings, const char* path)
 {
-   config_file_t* config;
    bool result = false;
+   config_file_t* config = (config_file_t*)config_file_new(path);
 
-   if (!(config = (config_file_t*)config_file_new(path)))
+   if (!config)
       config = config_file_new(0);
 
    setting_data_save_config(settings, config);
@@ -365,20 +354,41 @@ rarch_setting_t setting_data_group_setting(enum setting_type type, const char* n
    return result;
 }
 
-#define DEFINE_BASIC_SETTING_TYPE(TAG, TYPE, VALUE, SETTING_TYPE, GROUP, SUBGROUP, CHANGE_HANDLER_T) \
-   rarch_setting_t setting_data_##TAG##_setting(const char* name, const char* description, TYPE* target, TYPE default_value, const char *group, const char *subgroup, CHANGE_HANDLER_T change_handler) \
-{ \
-   rarch_setting_t result = { SETTING_TYPE, name, sizeof(TYPE), description, group, subgroup }; \
-   result.change_handler = change_handler; \
-   result.value.VALUE = target; \
-   result.default_value.VALUE = default_value; \
-   return result; \
+rarch_setting_t setting_data_float_setting(const char* name, const char* description, float* target, float default_value, const char *group, const char *subgroup, change_handler_t change_handler)
+{
+   rarch_setting_t result = { ST_FLOAT, name, sizeof(float), description, group, subgroup };
+   result.change_handler = change_handler;
+   result.value.fraction = target;
+   result.default_value.fraction = default_value;
+   return result;
 }
 
-   DEFINE_BASIC_SETTING_TYPE(bool, bool, boolean, ST_BOOL, const char *, const char*, change_handler_t)
-   DEFINE_BASIC_SETTING_TYPE(int, int, integer, ST_INT, const char *, const char *, change_handler_t)
-   DEFINE_BASIC_SETTING_TYPE(uint, unsigned int, unsigned_integer, ST_UINT, const char *, const char *, change_handler_t)
-   DEFINE_BASIC_SETTING_TYPE(float, float, fraction, ST_FLOAT, const char *, const char *, change_handler_t)
+rarch_setting_t setting_data_bool_setting(const char* name, const char* description, bool* target, bool default_value, const char *group, const char *subgroup, change_handler_t change_handler)
+{
+   rarch_setting_t result = { ST_BOOL, name, sizeof(bool), description, group, subgroup };
+   result.change_handler = change_handler;
+   result.value.boolean = target;
+   result.default_value.boolean = default_value;
+   return result;
+}
+
+rarch_setting_t setting_data_int_setting(const char* name, const char* description, int* target, int default_value, const char *group, const char *subgroup, change_handler_t change_handler)
+{
+    rarch_setting_t result = { ST_INT, name, sizeof(int), description, group, subgroup };
+    result.change_handler = change_handler;
+    result.value.integer = target;
+    result.default_value.integer = default_value;
+    return result;
+}
+
+rarch_setting_t setting_data_uint_setting(const char* name, const char* description, unsigned int* target, unsigned int default_value, const char *group, const char *subgroup, change_handler_t change_handler)
+{
+   rarch_setting_t result = { ST_UINT, name, sizeof(unsigned int), description, group, subgroup };
+   result.change_handler = change_handler;
+   result.value.unsigned_integer = target;
+   result.default_value.unsigned_integer = default_value;
+   return result;
+}
 
 rarch_setting_t setting_data_string_setting(enum setting_type type,
       const char* name, const char* description, char* target,
@@ -751,10 +761,6 @@ static void general_change_handler(const void *data)
     else if (!strcmp(setting->name, "libretro_log_level"))
        g_settings.libretro_log_level = *setting->value.unsigned_integer;
 }
-
-
-#define g_settings fake_settings
-#define g_extern fake_extern
 
 #define NEXT (list[index++])
 #define START_GROUP(NAME)                       { const char *GROUP_NAME = NAME; NEXT = setting_data_group_setting (ST_GROUP, NAME); 
