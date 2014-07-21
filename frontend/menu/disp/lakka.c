@@ -824,14 +824,12 @@ static void lakka_context_reset(void *data)
       if (info_list)
          info = (core_info_t*)&info_list->list[i-1];
 
-      strlcpy(core_id, basename(info->path), sizeof(core_id));
-      strlcpy(core_id, str_replace(core_id, ".so", ""), sizeof(core_id));
-      strlcpy(core_id, str_replace(core_id, ".dll", ""), sizeof(core_id));
-      strlcpy(core_id, str_replace(core_id, ".dylib", ""), sizeof(core_id));
-      strlcpy(core_id, str_replace(core_id, "-libretro", ""), sizeof(core_id));
-      strlcpy(core_id, str_replace(core_id, "_libretro", ""), sizeof(core_id));
-      strlcpy(core_id, str_replace(core_id, "libretro-", ""), sizeof(core_id));
-      strlcpy(core_id, str_replace(core_id, "libretro_", ""), sizeof(core_id));
+      if (info->systemname) {
+         strlcpy(core_id, info->systemname, sizeof(core_id));
+         strlcpy(core_id, str_replace(core_id, "/", " "), sizeof(core_id));
+      } else {
+         strlcpy(core_id, "default", sizeof(core_id));
+      }
 
       strlcpy(texturepath, themepath, sizeof(texturepath));
       strlcat(texturepath, core_id, sizeof(texturepath));

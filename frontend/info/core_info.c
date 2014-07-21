@@ -145,6 +145,7 @@ core_info_list_t *core_info_list_new(const char *modules_path)
       {
          unsigned count = 0;
          config_get_string(core_info[i].data, "display_name", &core_info[i].display_name);
+         config_get_string(core_info[i].data, "systemname", &core_info[i].systemname);
          config_get_uint(core_info[i].data, "firmware_count", &count);
          core_info[i].firmware_count = count;
          if (config_get_string(core_info[i].data, "supported_extensions", &core_info[i].supported_extensions) &&
