@@ -84,16 +84,7 @@ void apple_event_basic_command(enum basic_event_t action)
 
 int apple_rarch_load_content(int *argc, char* argv[])
 {
-   rarch_main_clear_state();
-   rarch_init_msg_queue();
-   
-   if (rarch_main_init(*argc, argv))
-      return 1;
-   
-   if (!g_extern.libretro_dummy)
-      menu_rom_history_push_current();
-   
-   g_extern.lifecycle_state |= 1ULL << MODE_GAME;
+    rarch_main(*argc, argv);
    
    return 0;
 }

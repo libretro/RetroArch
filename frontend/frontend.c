@@ -65,6 +65,10 @@
 
 #endif
 
+#if !defined(__APPLE__)
+#define HAVE_MAIN_LOOP
+#endif
+
 static retro_keyboard_event_t key_event;
 
 #ifdef HAVE_MENU
@@ -374,6 +378,7 @@ returntype main_entry(signature())
       free_args(wrap_args, argv_copy, ARRAY_SIZE(argv_copy));
    free(wrap_args);
 
+#if defined(HAVE_MAIN_LOOP)
 #if defined(HAVE_MENU)
    while (!main_entry_iterate(signature_expand(), args));
 #else
@@ -381,6 +386,7 @@ returntype main_entry(signature())
 #endif
 
    main_exit(args);
+#endif
 
    returnfunc();
 }

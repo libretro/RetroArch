@@ -24,9 +24,11 @@
 #if defined(ANDROID)
 #define args_type() struct android_app*
 #define signature() void* data
+#define returntype void
 #else
 #define args_type() void*
 #define signature() int argc, char *argv[]
+#define returntype int
 #endif
 
 #ifdef __cplusplus
@@ -35,6 +37,7 @@ extern "C" {
 
 int main_entry_iterate(signature(), args_type() args);
 void main_exit(args_type() args);
+returntype main_entry(signature());
 
 #ifdef __cplusplus
 }
