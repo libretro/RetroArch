@@ -43,12 +43,12 @@ void apple_run_core(NSString* core, const char* file)
 
    if (file && core)
    {
-      strlcpy(core_path, apple_core, sizeof(core_path));
+      strlcpy(core_path, core.UTF8String, sizeof(core_path));
       strlcpy(file_path, file, sizeof(file_path));
    }
    
-    if (core_info_has_custom_config(apple_core))
-        core_info_get_custom_config(apple_core, config_path, sizeof(config_path));
+    if (core_info_has_custom_config(core.UTF8String))
+        core_info_get_custom_config(core.UTF8String, config_path, sizeof(config_path));
     else
         strlcpy(config_path, g_defaults.config_path, sizeof(config_path));
     
