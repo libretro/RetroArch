@@ -578,7 +578,7 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
 #ifdef HAVE_OSK
          if ((current_setting = setting_data_find_setting(setting_data, "osk_enable")))
          {
-            *current_setting->value.boolean = g_settings.input.autodetect_enable;
+            *current_setting->value.boolean = g_settings.input.osk.enable;
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_ONSCREEN_KEYBOARD_ENABLE, 0);
          }
 #endif
@@ -4800,12 +4800,10 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
             *g_extern.netplay_nick = '\0';
          break;
 #endif
-#ifdef HAVE_OSK
       case MENU_SETTINGS_ONSCREEN_KEYBOARD_ENABLE:
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "osk_enable")))
             menu_common_setting_set_current_boolean(current_setting, action);
          break;
-#endif
       case MENU_SETTINGS_PRIVACY_CAMERA_ALLOW:
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "camera_allow")))
             menu_common_setting_set_current_boolean(current_setting, action);
