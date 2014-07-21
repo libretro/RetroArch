@@ -225,7 +225,7 @@ static void handle_touch_event(NSArray* touches)
     }
    
    // Warn if there are no cores present
-   core_info_set_core_path(g_defaults.core_dir);
+   core_info_set_core_path();
    core_info_set_config_path(g_defaults.menu_config_dir);
    core_list = (const core_info_list_t*)core_info_list_get();
    

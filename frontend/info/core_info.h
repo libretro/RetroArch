@@ -86,7 +86,7 @@ const char *core_info_list_get_all_extensions(core_info_list_t *list);
 
 bool core_info_list_get_display_name(core_info_list_t *list, const char *path, char *buf, size_t size);
 
-void core_info_set_core_path(const char *core_path);
+void core_info_set_core_path(void);
 void core_info_set_config_path(const char *config_path);
 
 core_info_list_t *core_info_list_get(void);

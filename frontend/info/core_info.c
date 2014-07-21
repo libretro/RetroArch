@@ -434,15 +434,9 @@ void core_info_list_get_missing_firmware(core_info_list_t *core_info_list,
    qsort(info->firmware, info->firmware_count, sizeof(*info->firmware), core_info_firmware_cmp);
 }
 
-void core_info_set_core_path(const char *core_path)
+void core_info_set_core_path(void)
 {
-   if (global_core_list)
-      core_info_list_free(global_core_list);
-   
-   global_core_list = core_path ? core_info_list_new(core_path) : 0;
-
-   if (!global_core_list)
-      RARCH_WARN("No cores were found at %s", core_path ? core_path : "(null");
+   global_core_list = core_info_list_new(g_defaults.core_dir);
 }
 
 void core_info_set_config_path(const char *config_path)
@@ -453,9 +447,6 @@ void core_info_set_config_path(const char *config_path)
 
 core_info_list_t *core_info_list_get(void)
 {
-   if (!global_core_list)
-      RARCH_WARN("core_info_list_get() called before core_info_set_core_path()");
-
    return global_core_list;
 }
 
