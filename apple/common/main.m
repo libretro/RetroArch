@@ -23,7 +23,6 @@
 id<RetroArch_Platform> apple_platform;
 
 #pragma mark EMULATION
-char apple_core[PATH_MAX];
 
 void apple_rarch_exited(void)
 {
@@ -37,9 +36,6 @@ void apple_run_core(NSString* core, const char* file)
    int argc;
     
     [apple_platform loadingCore:core withFile:file];
-    
-    if (core.UTF8String && core.UTF8String[0] != '\0')
-       strlcpy(apple_core, core.UTF8String, sizeof(apple_core));
 
    if (file && core)
    {

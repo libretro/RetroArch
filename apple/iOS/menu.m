@@ -559,7 +559,12 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
                                  nil]];
       
       [settings addObject:[RAMenuItemBasic itemWithDescription:BOXSTRING("Core")
-                              action:^{ [weakSelf.navigationController pushViewController:[[RACoreSettingsMenu alloc] initWithCore:BOXSTRING(apple_core)] animated:YES]; }]];
+                              action:^{
+                                  char config_name[PATH_MAX];
+                                  fill_pathname_base(config_name, g_settings.libretro, sizeof(config_name));
+                                  
+                                  [weakSelf.navigationController pushViewController:[[RACoreSettingsMenu alloc] initWithCore:BOXSTRING(config_name)] animated:YES];
+                              }]];
       [settings addObject:[RAMenuItemBasic itemWithDescription:BOXSTRING("Core Options")
                               action:^{ [weakSelf.navigationController pushViewController:[RACoreOptionsMenu new] animated:YES]; }]];
    }

@@ -40,7 +40,6 @@
 #endif
 
 extern char** apple_argv;
-extern char apple_core[PATH_MAX];
 
 extern id<RetroArch_Platform> apple_platform;
 
