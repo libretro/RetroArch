@@ -44,13 +44,6 @@ void apple_display_alert(const char *message, const char *title)
 #endif
 }
 
-// Get a core ID as an NSString
-NSString *apple_get_core_id(const core_info_t *core)
-{
-   char buf[PATH_MAX];
-   return BOXSTRING(core_info_get_id(core, buf, sizeof(buf)));
-}
-
 // Number formatter class for setting strings
 @implementation RANumberFormatter
 - (id)initWithSetting:(const rarch_setting_t*)setting

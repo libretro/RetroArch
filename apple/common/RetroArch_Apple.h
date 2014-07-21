@@ -51,7 +51,6 @@ extern void apple_stop_iteration();
 
 // utility.m
 extern void apple_display_alert(const char *message, const char *title);
-extern NSString *apple_get_core_id(const core_info_t *core);
 
 @interface RANumberFormatter : NSNumberFormatter
 #ifdef IOS
