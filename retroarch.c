@@ -3008,9 +3008,7 @@ int rarch_main_init(int argc, char *argv[])
 
 error:
    uninit_drivers();
-   pretro_unload_game();
-   pretro_deinit();
-   uninit_libretro_sym();
+   rarch_main_deinit_core();
 
    g_extern.main_is_init = false;
    return 1;
@@ -3158,6 +3156,13 @@ bool rarch_main_iterate(void)
    return true;
 }
 
+void rarch_main_deinit_core(void)
+{
+   pretro_unload_game();
+   pretro_deinit();
+   uninit_libretro_sym();
+}
+
 void rarch_main_deinit(void)
 {
 #ifdef HAVE_NETPLAY
@@ -3194,9 +3199,8 @@ void rarch_main_deinit(void)
       save_auto_state();
 
    uninit_drivers();
-   pretro_unload_game();
-   pretro_deinit();
-   uninit_libretro_sym();
+
+   rarch_main_deinit_core();
 
    if (g_extern.temporary_roms)
    {
