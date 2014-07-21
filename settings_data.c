@@ -766,6 +766,10 @@ static void general_change_handler(const void *data)
        g_settings.load_dummy_on_core_shutdown = *setting->value.boolean;
     else if (!strcmp(setting->name, "libretro_log_level"))
        g_settings.libretro_log_level = *setting->value.unsigned_integer;
+#ifdef HAVE_OSK
+    else if (!strcmp(setting->name, "osk_enable"))
+       g_settings.osk.enable = *setting->value.boolean;
+#endif
 }
 
 #define NEXT (list[index++])
@@ -1044,6 +1048,12 @@ rarch_setting_t* setting_data_get_list(void)
            }
            END_SUB_GROUP()
        }
+#ifdef HAVE_OSK
+         START_SUB_GROUP("Onscreen Keyboard")
+         CONFIG_BOOL(g_settings.osk.enable, "osk_enable", "Onscreen Keyboard Enable",     false, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
+         END_SUB_GROUP()
+#endif
+
          START_SUB_GROUP("Miscellaneous")
          CONFIG_BOOL(g_settings.input.netplay_client_swap_input, "netplay_client_swap_input", "Swap Netplay Input",     netplay_client_swap_input, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
          END_SUB_GROUP()

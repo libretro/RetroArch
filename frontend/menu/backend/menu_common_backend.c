@@ -576,7 +576,11 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
          file_list_push(menu->selection_buf, "Configure All (RetroPad)", MENU_SETTINGS_CUSTOM_BIND_ALL, 0);
          file_list_push(menu->selection_buf, "Default All (RetroPad)", MENU_SETTINGS_CUSTOM_BIND_DEFAULT_ALL, 0);
 #ifdef HAVE_OSK
-         file_list_push(menu->selection_buf, "Onscreen Keyboard Enable", MENU_SETTINGS_ONSCREEN_KEYBOARD_ENABLE, 0);
+         if ((current_setting = setting_data_find_setting(setting_data, "osk_enable")))
+         {
+            *current_setting->value.boolean = g_settings.input.autodetect_enable;
+            file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_ONSCREEN_KEYBOARD_ENABLE, 0);
+         }
 #endif
          last = (driver.input && driver.input->set_keybinds && !driver.input->get_joypad_driver) ? (MENU_SETTINGS_BIND_BEGIN + RETRO_DEVICE_ID_JOYPAD_R3) : MENU_SETTINGS_BIND_ALL_LAST;
          for (i = MENU_SETTINGS_BIND_BEGIN; i <= last; i++)
@@ -2612,7 +2616,6 @@ static int menu_common_iterate(unsigned action)
 #endif
             if (menu_type == MENU_SETTINGS_DEFERRED_CORE)
             {
-               // FIXME: Add for consoles.
                strlcpy(g_settings.libretro, path, sizeof(g_settings.libretro));
                strlcpy(g_extern.fullpath, driver.menu->deferred_path, sizeof(g_extern.fullpath));
                load_menu_game_new_core();
@@ -4799,10 +4802,8 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
 #endif
 #ifdef HAVE_OSK
       case MENU_SETTINGS_ONSCREEN_KEYBOARD_ENABLE:
-         if (action == MENU_ACTION_OK || action == MENU_ACTION_LEFT || action == MENU_ACTION_RIGHT)
-            g_settings.osk.enable = !g_settings.osk.enable;
-         else if (action == MENU_ACTION_START)
-            g_settings.osk.enable = false;
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "osk_enable")))
+            menu_common_setting_set_current_boolean(current_setting, action);
          break;
 #endif
       case MENU_SETTINGS_PRIVACY_CAMERA_ALLOW:
