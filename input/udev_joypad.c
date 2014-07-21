@@ -98,8 +98,8 @@ static void poll_pad(unsigned p)
          switch (events[i].type)
          {
             case EV_KEY:
-               if (code >= BTN_MISC || (code >= KEY_UP && code <= KEY_DOWN))
-                  pad->buttons[pad->button_bind[code]] = events[i].value;
+	      //if (code >= BTN_MISC || (code >= KEY_UP && code <= KEY_DOWN))
+               pad->buttons[pad->button_bind[code]] = events[i].value;
                break;
 
             case EV_ABS:
@@ -148,7 +148,7 @@ static bool hotplug_available(void)
    return (poll(&fds, 1, 0) == 1) && (fds.revents & POLLIN);
 }
 
-static void check_device(const char *path, bool hotplugged);
+static void connect_device(struct udev_device *dev, bool hotplugged);
 static void remove_device(const char *path);
 
 static void handle_hotplug(void)
@@ -161,21 +161,18 @@ static void handle_hotplug(void)
    const char *action = udev_device_get_action(dev);
    const char *devnode = udev_device_get_devnode(dev);
 
-   if (!val || strcmp(val, "1") || !devnode)
-      goto end;
-
    if (!strcmp(action, "add"))
    {
       RARCH_LOG("[udev]: Hotplug add: %s.\n", devnode);
-      check_device(devnode, true);
+      connect_device(dev, true);
    }
    else if (!strcmp(action, "remove"))
    {
       RARCH_LOG("[udev]: Hotplug remove: %s.\n", devnode);
-      remove_device(devnode);
+      if (devnode)
+	 remove_device(devnode);
    }
 
-end:
    udev_device_unref(dev);
 }
 
@@ -253,11 +250,16 @@ static void udev_joypad_poll(void)
    (((1UL << ((nr) % (sizeof(long) * CHAR_BIT))) & ((addr)[(nr) / (sizeof(long) * CHAR_BIT)])) != 0)
 #define NBITS(x) ((((x) - 1) / (sizeof(long) * CHAR_BIT)) + 1)
 
-static int open_joystick(const char *path)
+static bool valid_device(struct udev_device *dev)
 {
-   int fd = open(path, O_RDWR | O_NONBLOCK);
+   struct stat st;
+   const char *devnode = udev_device_get_devnode(dev);
+   if (stat(devnode, &st) < 0)
+      return false;
+
+   int fd = open(devnode, O_RDWR | O_NONBLOCK);
    if (fd < 0)
-      return fd;
+      return false;
 
    unsigned long evbit[NBITS(EV_MAX)] = {0};
    unsigned long keybit[NBITS(KEY_MAX)] = {0};
@@ -269,16 +271,21 @@ static int open_joystick(const char *path)
       goto error;
 
    // Has to at least support EV_KEY interface.
-   if (!test_bit(EV_KEY, evbit))
+	// Since I removed the ID_INPUT_JOYSTICK restriction,
+	// I'm filtering by the existence of BTN_A to determine
+	// if this is a joypad or not. - demsullivan
+   const char *is_joystick = udev_device_get_property_value(dev, "ID_INPUT_JOYSTICK");
+   if (!test_bit(EV_KEY, evbit) || !test_bit(BTN_A, keybit) || (is_joystick && strcmp(is_joystick, "1")))
       goto error;
 
-   return fd;
+   return true;
 
 error:
    close(fd);
-   return -1;
+   return false;
 }
-
+   
+   
 static int find_vacant_pad(void)
 {
    unsigned i;
@@ -402,7 +409,7 @@ static void check_device(const char *path, bool hotplugged)
    if (pad < 0)
       return;
 
-   int fd = open_joystick(path);
+   int fd = open(path, O_RDWR | O_NONBLOCK);
    if (fd < 0)
       return;
 
@@ -426,6 +433,57 @@ static void check_device(const char *path, bool hotplugged)
       close(fd);
    }
 }
+
+static void connect_device(struct udev_device *parent, bool hotplugged)
+{
+   struct udev_enumerate *e;
+   struct udev_list_entry *item;
+   struct udev_device *d;
+   const char *name, *devnode;
+   int ret;
+
+   devnode = udev_device_get_devnode(parent);
+   if (devnode && valid_device(parent))
+   {
+      check_device(devnode, hotplugged);
+      return;
+   }
+
+   e = udev_enumerate_new(g_udev);
+   if (!e)
+      goto error;
+
+   ret = udev_enumerate_add_match_subsystem(e, "input");
+   ret += udev_enumerate_add_match_parent(e, parent);
+   if (ret)
+      goto error;
+
+   ret = udev_enumerate_scan_devices(e);
+   if (ret)
+      goto error;
+
+   for (item = udev_enumerate_get_list_entry(e);
+	item;
+	item = udev_list_entry_get_next(item))
+   {
+      name = udev_list_entry_get_name(item);
+      d = udev_device_new_from_syspath(g_udev, name);
+      devnode = udev_device_get_devnode(d);
+      if (devnode && valid_device(d))
+	 check_device(devnode, hotplugged);
+
+      udev_device_unref(d);
+   }
+
+   udev_enumerate_unref(e);
+   return;
+
+error:
+   if (e)
+      udev_enumerate_unref(e);
+	
+}
+		  
 
 static void remove_device(const char *path)
 {
@@ -487,16 +545,16 @@ static bool udev_joypad_init(void)
    if (!enumerate)
       goto error;
 
-   udev_enumerate_add_match_property(enumerate, "ID_INPUT_JOYSTICK", "1");
+   udev_enumerate_add_match_subsystem(enumerate, "input");
+   udev_enumerate_add_match_sysname(enumerate, "event*");
    udev_enumerate_scan_devices(enumerate);
    devs = udev_enumerate_get_list_entry(enumerate);
    for (item = devs; item; item = udev_list_entry_get_next(item))
    {
       const char *name = udev_list_entry_get_name(item);
       struct udev_device *dev = udev_device_new_from_syspath(g_udev, name);
-      const char *devnode = udev_device_get_devnode(dev);
-      if (devnode)
-         check_device(devnode, false);
+      connect_device(dev, false);
+
       udev_device_unref(dev);
    }
 
