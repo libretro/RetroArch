@@ -128,7 +128,6 @@ static char** waiting_argv;
    int i;
    const char *paths = [[NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask, YES) firstObject] UTF8String];
    apple_platform = self;
-   _loaded = true;
 
    fill_pathname_join(g_defaults.menu_config_dir, paths, "RetroArch", sizeof(g_defaults.menu_config_dir));
    fill_pathname_join(g_defaults.config_path, g_defaults.menu_config_dir, "retroarch.cfg", sizeof(g_defaults.config_path));
@@ -207,11 +206,7 @@ static char** waiting_argv;
    if (filenames.count == 1 && [filenames objectAtIndex:0])
    {
       self.file = [filenames objectAtIndex:0];
-      
-      if (!_loaded)
-         _wantReload = true;
-      else
-         [self chooseCore];
+      [self chooseCore];
       
       [sender replyToOpenOrPrint:NSApplicationDelegateReplySuccess];
    }

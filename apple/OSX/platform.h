@@ -39,8 +39,6 @@
    NSWindow* _coreSelectSheet;
    NSString* _file;
    NSString* _core;
-   
-   bool _loaded;
    bool _wantReload;
 }
 
