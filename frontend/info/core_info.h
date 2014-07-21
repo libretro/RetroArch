@@ -39,6 +39,7 @@ typedef struct
    char *path;
    config_file_t *data;
    char *display_name;
+   char *systemname;
    char *supported_extensions;
    char *authors;
    char *permissions;
