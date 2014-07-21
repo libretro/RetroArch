@@ -25,7 +25,6 @@
 #endif
 
 static core_info_list_t *global_core_list;
-static char core_config_path[PATH_MAX];
 
 static void core_info_list_resolve_all_extensions(core_info_list_t *core_info_list)
 {
@@ -439,12 +438,6 @@ void core_info_set_core_path(void)
    global_core_list = core_info_list_new(g_defaults.core_dir);
 }
 
-void core_info_set_config_path(const char *config_path)
-{
-   if (!config_path || strlcpy(core_config_path, config_path, sizeof(core_config_path)) >= PATH_MAX)
-      *core_config_path = '\0';
-}
-
 core_info_list_t *core_info_list_get(void)
 {
    return global_core_list;
@@ -468,7 +461,7 @@ const char *core_info_get_custom_config(const char *core_id, char *buffer, size_
    if (!core_id || !buffer || !buffer_length)
       return 0;
 
-   fill_pathname_join(buffer, core_config_path, path_basename(core_id), buffer_length);
+   fill_pathname_join(buffer, g_defaults.menu_config_dir, path_basename(core_id), buffer_length);
    fill_pathname(buffer, buffer, ".cfg", buffer_length);
    return buffer;
 }

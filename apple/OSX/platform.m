@@ -148,7 +148,6 @@ static char** waiting_argv;
    self.settingsWindow = [[[NSWindowController alloc] initWithWindowNibName:BOXSTRING("Settings")] autorelease];
    
    core_info_set_core_path();
-   core_info_set_config_path(g_defaults.menu_config_dir);
    core_list = (const core_info_list_t*)core_info_list_get();
 
    // Create core select list
