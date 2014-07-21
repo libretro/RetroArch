@@ -165,10 +165,8 @@ static char** waiting_argv;
    
    if (waiting_argc)
        rarch_main(waiting_argc, waiting_argv);
-   else if (!_wantReload)
-      apple_run_core(nil, 0);
    else
-      [self chooseCore];
+      apple_run_core(nil, 0);
 
    waiting_argc = 0;
    _wantReload = false;
