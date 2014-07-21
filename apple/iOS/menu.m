@@ -814,12 +814,12 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
    {
       config_file_t* config = (config_file_t*)config_file_new(self.pathToSave.UTF8String);
 
-      if (!config)
-         config = config_file_new(0);
-      
-      setting_data_save_config(setting_data_get_list(), config);
-      config_file_write(config, self.pathToSave.UTF8String);
-      config_file_free(config);
+      if (config)
+      {
+          setting_data_save_config(setting_data_get_list(), config);
+          config_file_write(config, self.pathToSave.UTF8String);
+          config_file_free(config);
+      }
    }
 }
 
@@ -827,10 +827,9 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 {
    if (self.isCustom && self.pathToSave)
    {
-      [[NSFileManager defaultManager] removeItemAtPath:self.pathToSave error:nil];
-      self.pathToSave = false;
-      
-      [self.navigationController popViewControllerAnimated:YES];
+       remove(self.pathToSave.UTF8String);
+       self.pathToSave = false;
+       [self.navigationController popViewControllerAnimated:YES];
    }
 }
 

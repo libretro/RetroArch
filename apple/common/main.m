@@ -22,8 +22,6 @@
 
 id<RetroArch_Platform> apple_platform;
 
-#pragma mark EMULATION
-
 void apple_rarch_exited(void)
 {
    [apple_platform unloadingCore];
