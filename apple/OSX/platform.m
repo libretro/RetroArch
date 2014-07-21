@@ -307,7 +307,7 @@ static char** waiting_argv;
 #pragma mark Menus
 - (IBAction)showCoresDirectory:(id)sender
 {
-   [[NSWorkspace sharedWorkspace] openFile:BOXSTRING(g_defaults.core_dir)];
+   [[NSWorkspace sharedWorkspace] openFile:BOXSTRING(g_settings.libretro_directory)];
 }
 
 - (IBAction)showPreferences:(id)sender
