@@ -82,13 +82,6 @@ void apple_event_basic_command(enum basic_event_t action)
    }
 }
 
-int apple_rarch_load_content(int *argc, char* argv[])
-{
-    rarch_main(*argc, argv);
-   
-   return 0;
-}
-
 static int frontend_apple_get_rating(void)
 {
    /* TODO/FIXME - look at unique identifier per device and 

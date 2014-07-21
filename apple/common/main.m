@@ -54,7 +54,7 @@ void apple_run_core(NSString* core, const char* file)
     argc = (file && core) ? 6 : 4;
     argv = (char**)((file && core) ? argv_game : argv_menu);
 
-    if (apple_rarch_load_content(&argc, argv))
+    if (rarch_main(argc, argv))
     {
         char basedir[256];
         fill_pathname_basedir(basedir, file ? file : "", sizeof(basedir));
