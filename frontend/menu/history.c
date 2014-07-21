@@ -213,7 +213,7 @@ rom_history_t *rom_history_init(const char *path, size_t size)
    rom_history_t *hist = (rom_history_t*)calloc(1, sizeof(*hist));
    if (!hist)
    {
-      RARCH_ERR("Cannot initialize content history.\n")
+       RARCH_ERR("Cannot initialize content history.\n");
       return NULL;
    }
 
