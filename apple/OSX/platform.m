@@ -19,6 +19,7 @@
 
 #import "../common/RetroArch_Apple.h"
 #include "../../input/apple_input.h"
+#include "../../frontend/menu/menu_common.h"
 
 #include "../../file.h"
 
@@ -206,7 +207,15 @@ static char** waiting_argv;
    if (filenames.count == 1 && [filenames objectAtIndex:0])
    {
       self.file = [filenames objectAtIndex:0];
-      [self chooseCore];
+       const char *core_name = driver.menu->info.library_name;
+       
+       if (core_name)
+       {
+           strlcpy(g_extern.fullpath, self.file.UTF8String, sizeof(g_extern.fullpath));
+           load_menu_game_new_core();
+       }
+       else
+         [self chooseCore];
       
       [sender replyToOpenOrPrint:NSApplicationDelegateReplySuccess];
    }
@@ -229,6 +238,14 @@ static char** waiting_argv;
       {
           NSURL *url = (NSURL*)panel.URL;
           self.file = url.path;
+          const char *core_name = driver.menu->info.library_name;
+          
+          if (core_name)
+          {
+              strlcpy(g_extern.fullpath, self.file.UTF8String, sizeof(g_extern.fullpath));
+              load_menu_game_new_core();
+          }
+          else
          [self performSelector:@selector(chooseCore) withObject:nil afterDelay:.5f];
       }
    }];
