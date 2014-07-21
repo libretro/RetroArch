@@ -119,7 +119,10 @@ static void rom_history_write_file(rom_history_t *hist)
    file = fopen(hist->conf_path, "w");
 
    if (!file)
+   {
+      RARCH_ERR("Couldn't write to content history file: %s.\n", hist->conf_path);
       return;
+   }
 
    for (i = 0; i < hist->size; i++)
    {
@@ -171,7 +174,10 @@ static bool rom_history_read_file(rom_history_t *hist, const char *path)
 {
    FILE *file = fopen(path, "r");
    if (!file || !hist)
+   {
+      RARCH_ERR("Couldn't read content history file: %s.\n", path);
       return true;
+   }
    
    char buf[3][PATH_MAX];
    struct rom_history_entry *entry = NULL;
