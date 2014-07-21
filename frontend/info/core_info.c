@@ -472,18 +472,6 @@ const core_info_t *core_info_list_get_by_id(const char *core_id)
    return 0;
 }
 
-const char *core_info_get_id(const core_info_t *info, char *buffer, size_t buffer_length)
-{
-   if (!buffer || !buffer_length)
-      return "";
-
-   if (info && info->path && strlcpy(buffer, info->path, buffer_length) < buffer_length)
-      return buffer;
-
-   *buffer = 0;
-   return buffer;
-}
-
 const char *core_info_get_custom_config(const char *core_id, char *buffer, size_t buffer_length)
 {
    if (!core_id || !buffer || !buffer_length)

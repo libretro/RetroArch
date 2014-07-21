@@ -883,8 +883,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 
    for (i = 0; i < core_list->count; i ++)
    {
-       char buf[PATH_MAX];
-       NSString* core_id = BOXSTRING(core_info_get_id(&core_list->list[i], buf, sizeof(buf)));
+       NSString* core_id = BOXSTRING(core_list->list[i].path);
 
       if (core_info_has_custom_config(core_id.UTF8String))
       {
@@ -1092,16 +1091,13 @@ static bool copy_config(const char *src_path, const char *dst_path)
       {
          if (_path)
          {
-            char buf[PATH_MAX];
             const core_info_t* core_support = NULL;
             size_t core_count = 0;
-             NSString *__core;
 
             core_info_list_get_supported_cores(core_list, _path.UTF8String, &core_support, &core_count);
-             __core = BOXSTRING(core_info_get_id(&core_support[0], buf, sizeof(buf)));
             
             if (core_count == 1 && _action)
-               [self runAction:__core];
+               [self runAction:BOXSTRING(core_support[0].path)];
             else if (core_count > 1)
                [self load:(uint32_t)core_count coresFromList:core_support toSection:core_section];
          }
@@ -1125,10 +1121,9 @@ static bool copy_config(const char *src_path, const char *dst_path)
 - (void)load:(uint32_t)count coresFromList:(const core_info_t*)list toSection:(NSMutableArray*)array
 {
    int i;
-   char buf[PATH_MAX];
     
    for (i = 0; i < count; i++)
-      [array addObject:[[RAMenuItemCoreList alloc] initWithCore:BOXSTRING(core_info_get_id(&list[i], buf, sizeof(buf))) parent:self]];
+      [array addObject:[[RAMenuItemCoreList alloc] initWithCore:BOXSTRING(list[i].path) parent:self]];
 }
 
 @end

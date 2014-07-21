@@ -91,7 +91,6 @@ void core_info_set_config_path(const char *config_path);
 
 core_info_list_t *core_info_list_get(void);
 const core_info_t *core_info_list_get_by_id(const char *core_id);
-const char *core_info_get_id(const core_info_t *info, char *buffer, size_t buffer_length);
 
 const char *core_info_get_custom_config(const char *core_id, char *buffer, size_t buffer_length);
 bool core_info_has_custom_config(const char *core_id);

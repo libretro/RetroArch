@@ -156,12 +156,10 @@ static char** waiting_argv;
     
    for (i = 0; core_list && i < core_list->count; i ++)
    {
-       char buf[PATH_MAX];
       NSString* desc = (NSString*)BOXSTRING(core_list->list[i].display_name);
-       NSString *__core = BOXSTRING(core_info_get_id(&core_list->list[i], buf, sizeof(buf)));
 #if defined(MAC_OS_X_VERSION_10_6)
 	  /* FIXME - Rewrite this so that this is no longer an associated object - requires ObjC 2.0 runtime */
-      objc_setAssociatedObject(desc, associated_core_key, __core, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+      objc_setAssociatedObject(desc, associated_core_key, BOXSTRING(core_list->list[i].path), OBJC_ASSOCIATION_RETAIN_NONATOMIC);
 #endif
 	   [cb addItemWithObjectValue:desc];
    }
