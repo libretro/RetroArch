@@ -3084,8 +3084,12 @@ void rarch_main_command(unsigned action)
    switch (action)
    {
       case RARCH_CMD_LOAD_CONTENT:
-#ifdef HAVE_MENU
-         load_menu_game_new_core();
+#ifdef HAVE_DYNAMIC
+         rarch_main_command(RARCH_CMD_LOAD_CORE);
+         g_extern.lifecycle_state |= (1ULL << MODE_LOAD_GAME);
+#else
+         rarch_environment_cb(RETRO_ENVIRONMENT_SET_LIBRETRO_PATH, (void*)g_settings.libretro);
+         rarch_environment_cb(RETRO_ENVIRONMENT_EXEC, (void*)g_extern.fullpath);
 #endif
          break;
       case RARCH_CMD_LOAD_CORE:

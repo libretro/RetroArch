@@ -438,20 +438,6 @@ void menu_flush_stack_type(unsigned final_type)
    }
 }
 
-void load_menu_game_new_core(void)
-{
-   if (!driver.menu)
-      return;
-
-#ifdef HAVE_DYNAMIC
-   rarch_main_command(RARCH_CMD_LOAD_CORE);
-   g_extern.lifecycle_state |= (1ULL << MODE_LOAD_GAME);
-#else
-   rarch_environment_cb(RETRO_ENVIRONMENT_SET_LIBRETRO_PATH, (void*)g_settings.libretro);
-   rarch_environment_cb(RETRO_ENVIRONMENT_EXEC, (void*)g_extern.fullpath);
-#endif
-}
-
 bool menu_iterate(void)
 {
    unsigned action;
