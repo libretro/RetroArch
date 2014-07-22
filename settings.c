@@ -237,6 +237,15 @@ const char *config_get_default_location(void)
 }
 #endif
 
+static void config_set_defaults_overlay(const char *path)
+{
+#ifdef HAVE_OVERLAY
+   fill_pathname_expand_special(g_extern.overlay_dir, path, sizeof(g_extern.overlay_dir));
+   if (!*g_settings.input.overlay)
+      fill_pathname_join(g_settings.input.overlay, g_extern.overlay_dir, "gamepads/retropad/retropad.cfg", sizeof(g_settings.input.overlay));
+#endif
+}
+
 void config_set_defaults(void)
 {
    unsigned i, j;
@@ -474,14 +483,7 @@ void config_set_defaults(void)
    g_extern.console.sound.mode = SOUND_MODE_NORMAL;
 #endif
    
-#ifdef HAVE_OVERLAY
-   if (default_overlay_dir)
-   {
-      fill_pathname_expand_special(g_extern.overlay_dir, default_overlay_dir, sizeof(g_extern.overlay_dir));
-      if (!*g_settings.input.overlay)
-            fill_pathname_join(g_settings.input.overlay, g_extern.overlay_dir, "gamepads/retropad/retropad.cfg", sizeof(g_settings.input.overlay));
-   }
-#endif
+   config_set_defaults_overlay(default_overlay_dir);
 
    if (default_shader_dir)
       fill_pathname_expand_special(g_settings.video.shader_dir, default_shader_dir, sizeof(g_settings.video.shader_dir));
@@ -511,10 +513,8 @@ void config_set_defaults(void)
       strlcpy(g_settings.libretro, g_defaults.core_path, sizeof(g_settings.libretro));
    if (*g_defaults.core_info_dir)
       strlcpy(g_settings.libretro_info_path, g_defaults.core_info_dir, sizeof(g_settings.libretro_info_path));
-#ifdef HAVE_OVERLAY
    if (*g_defaults.overlay_dir)
-      strlcpy(g_extern.overlay_dir, g_defaults.overlay_dir, sizeof(g_extern.overlay_dir));
-#endif
+      config_set_defaults_overlay(g_defaults.overlay_dir);
 #ifdef HAVE_MENU
    if (*g_defaults.menu_config_dir)
       strlcpy(g_settings.menu_config_directory, g_defaults.menu_config_dir, sizeof(g_settings.menu_config_directory));

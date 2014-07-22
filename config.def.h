@@ -345,8 +345,6 @@ static bool config_save_on_exit = true;
 static const char *default_overlay_dir = "app/native/overlays/";
 #elif defined(ANDROID)
 static const char *default_overlay_dir = "/data/data/com.retroarch/overlays/";
-#elif defined(IOS)
-static const char *default_overlay_dir = ":/overlays";
 #else
 static const char *default_overlay_dir = NULL;
 #endif
