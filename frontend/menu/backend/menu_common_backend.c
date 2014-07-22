@@ -3824,12 +3824,10 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
          else if (action == MENU_ACTION_RIGHT)
             g_extern.state_slot++;
          break;
-#ifdef HAVE_SCREENSHOTS
       case MENU_SETTINGS_SCREENSHOT:
          if (action == MENU_ACTION_OK)
-            rarch_take_screenshot();
+            rarch_main_command(RARCH_CMD_TAKE_SCREENSHOT);
          break;
-#endif
       case MENU_SETTINGS_RESTART_GAME:
          if (action == MENU_ACTION_OK)
          {

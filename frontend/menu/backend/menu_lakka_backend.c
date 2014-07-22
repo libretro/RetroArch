@@ -368,7 +368,7 @@ static int menu_lakka_iterate(unsigned action)
                   return -1;
                   break;
                case 3:
-                  rarch_take_screenshot();
+                  rarch_main_command(RARCH_CMD_TAKE_SCREENSHOT);
                   break;
                case 4:
                   global_alpha = 0.0;

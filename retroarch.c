@@ -78,7 +78,6 @@ static void check_fast_forward_button(void)
    old_hold_button_state = new_hold_button_state;
 }
 
-#if defined(HAVE_SCREENSHOTS) && !defined(_XBOX1)
 static bool take_screenshot_viewport(void)
 {
    struct rarch_viewport vp = {0};
@@ -192,7 +191,6 @@ void rarch_take_screenshot(void)
    else
       msg_queue_push(g_extern.msg_queue, msg, 1, 180);
 }
-#endif
 
 static void readjust_audio_input_rate(void)
 {
@@ -2601,7 +2599,6 @@ static void check_disk(void)
    old_pressed_next  = pressed_next;
 }
 
-#if defined(HAVE_SCREENSHOTS) && !defined(_XBOX)
 static void check_screenshot(void)
 {
    static bool old_pressed;
@@ -2611,7 +2608,6 @@ static void check_screenshot(void)
 
    old_pressed = pressed;
 }
-#endif
 
 static void check_mute(void)
 {
@@ -2742,9 +2738,7 @@ static void do_state_checks(void)
 {
    rarch_check_block_hotkey();
 
-#if defined(HAVE_SCREENSHOTS) && !defined(_XBOX)
    check_screenshot();
-#endif
    check_mute();
    check_volume();
 
@@ -3102,6 +3096,9 @@ void rarch_main_command(unsigned action)
          break;
       case RARCH_CMD_SAVE_STATE:
          rarch_save_state();
+         break;
+      case RARCH_CMD_TAKE_SCREENSHOT:
+         rarch_take_screenshot();
          break;
       case RARCH_CMD_QUIT:
          g_extern.system.shutdown = true;
