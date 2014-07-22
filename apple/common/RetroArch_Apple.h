@@ -43,7 +43,7 @@ extern char** apple_argv;
 extern id<RetroArch_Platform> apple_platform;
 
 // main.m
-extern void apple_run_core(NSString* core, const char* file);
+extern void apple_run_core(int argc, char **argv, NSString* core, const char* file);
 extern void apple_start_iteration(void);
 extern void apple_stop_iteration(void);
 

@@ -27,11 +27,9 @@ void apple_rarch_exited(void)
    [apple_platform unloadingCore];
 }
 
-void apple_run_core(NSString* core, const char* file)
+void apple_run_core(int argc, char **argv, NSString* core, const char* file)
 {
    static char core_path[PATH_MAX], file_path[PATH_MAX], config_path[PATH_MAX];
-   char **argv;
-   int argc;
     
     [apple_platform loadingCore:core withFile:file];
 
@@ -49,8 +47,10 @@ void apple_run_core(NSString* core, const char* file)
     static const char* const argv_game[] = { "retroarch", "-c", config_path, "-L", core_path, file_path, 0 };
     static const char* const argv_menu[] = { "retroarch", "-c", config_path, "--menu", 0 };
     
-    argc = (file && core) ? 6 : 4;
-    argv = (char**)((file && core) ? argv_game : argv_menu);
+    if (argc == 0)
+       argc = (file && core) ? 6 : 4;
+    if (!argv)
+       argv = (char**)((file && core) ? argv_game : argv_menu);
 
     if (rarch_main(argc, argv))
     {

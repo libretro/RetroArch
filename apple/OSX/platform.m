@@ -165,10 +165,7 @@ static char** waiting_argv;
 	   [cb addItemWithObjectValue:desc];
    }
    
-   if (waiting_argc)
-       rarch_main(waiting_argc, waiting_argv);
-   else
-      apple_run_core(nil, 0);
+   apple_run_core(waiting_argc, waiting_argv, nil, 0);
 
    waiting_argc = 0;
    _wantReload = false;
@@ -277,7 +274,7 @@ static char** waiting_argv;
     _wantReload = g_extern.main_is_init;
     
     if (!g_extern.main_is_init)
-        apple_run_core(self.core, g_extern.fullpath);
+        apple_run_core(0, NULL, self.core, g_extern.fullpath);
     else
         g_extern.system.shutdown = true;
 }
@@ -295,7 +292,7 @@ static char** waiting_argv;
       [[NSApplication sharedApplication] terminate:nil];
 
    if (_wantReload)
-      apple_run_core(self.core, g_extern.fullpath);
+      apple_run_core(0, NULL, self.core, g_extern.fullpath);
    else
       [[NSApplication sharedApplication] terminate:nil];
    
