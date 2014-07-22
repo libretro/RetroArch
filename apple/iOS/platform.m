@@ -236,6 +236,8 @@ static void handle_touch_event(NSArray* touches)
    // Load system config
    frontend_settings = (const rarch_setting_t*)apple_get_frontend_settings();
    setting_data_reset(frontend_settings);
+    
+   apple_run_core(0, NULL, nil, 0);
 }
 
 - (void)applicationDidBecomeActive:(UIApplication *)application
