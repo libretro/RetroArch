@@ -26,8 +26,6 @@
 
 static CFRunLoopObserverRef iterate_observer;
 
-extern void apple_rarch_exited(void);
-
 static void do_iteration(void)
 {
    if (!(iterate_observer && g_extern.main_is_init && !g_extern.is_paused))
@@ -36,7 +34,6 @@ static void do_iteration(void)
    if (main_entry_iterate(0, NULL, NULL))
    {
       main_exit(NULL);
-      apple_rarch_exited();
       return;
    }
 
@@ -62,6 +59,13 @@ void apple_stop_iteration(void)
     iterate_observer = 0;
 }
 
+extern void apple_rarch_exited(void);
+
+static void frontend_apple_shutdown(bool unused)
+{
+    apple_rarch_exited();
+}
+
 static int frontend_apple_get_rating(void)
 {
    /* TODO/FIXME - look at unique identifier per device and 
@@ -76,7 +80,7 @@ const frontend_ctx_driver_t frontend_ctx_apple = {
    NULL,                         /* process_args */
    NULL,                         /* process_events */
    NULL,                         /* exec */
-   NULL,                         /* shutdown */
+   frontend_apple_shutdown,      /* shutdown */
    NULL,                         /* get_name */
    frontend_apple_get_rating,    /* get_rating */
    "apple",

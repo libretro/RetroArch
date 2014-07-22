@@ -44,8 +44,8 @@ extern id<RetroArch_Platform> apple_platform;
 
 // main.m
 extern void apple_run_core(NSString* core, const char* file);
-extern void apple_start_iteration();
-extern void apple_stop_iteration();
+extern void apple_start_iteration(void);
+extern void apple_stop_iteration(void);
 
 // utility.m
 extern void apple_display_alert(const char *message, const char *title);
