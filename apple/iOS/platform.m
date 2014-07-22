@@ -179,8 +179,8 @@ static void handle_touch_event(NSArray* touches)
 {
    const rarch_setting_t* frontend_settings;
    const core_info_list_t* core_list;
-   const char *path;
-    
+   const char *paths;
+
    apple_platform = self;
    [self setDelegate:self];
 
@@ -191,48 +191,48 @@ static void handle_touch_event(NSArray* touches)
 
    // Build system paths and test permissions
    self.documentsDirectory = [NSHomeDirectory() stringByAppendingPathComponent:@"Documents"];
-    fill_pathname_join(g_defaults.system_dir, self.documentsDirectory.UTF8String, ".RetroArch", sizeof(g_defaults.system_dir));
-   
-    strlcpy(g_defaults.menu_config_dir, g_defaults.system_dir, sizeof(g_defaults.menu_config_dir));
-    fill_pathname_join(g_defaults.config_path, g_defaults.menu_config_dir, "retroarch.cfg", sizeof(g_defaults.config_path));
-    fill_pathname_join(g_defaults.core_dir, NSBundle.mainBundle.bundlePath.UTF8String, "modules", sizeof(g_defaults.core_dir));
-    
-    strlcpy(g_defaults.sram_dir, g_defaults.system_dir, sizeof(g_defaults.sram_dir));
-    strlcpy(g_defaults.savestate_dir, g_defaults.system_dir, sizeof(g_defaults.savestate_dir));
-    
-    path = (const char*)self.documentsDirectory.UTF8String;
-    path_mkdir(path);
-    
-    if (access(path, 0755) != 0)
-    {
-       char msg[256];
-       snprintf(msg, sizeof(msg), "Failed to create or access base directory: %s", self.documentsDirectory.UTF8String);
-       apple_display_alert(msg, "Error");
-    }
-    else
-    {
-        path = g_defaults.system_dir;
-        path_mkdir(path);
-        
-        if (access(path, 0755) != 0)
-        {
-            char msg[256];
-            snprintf(msg, sizeof(msg), "Failed to create or access system directory: %s", g_defaults.system_dir);
-            apple_display_alert(msg, "Error");
-        }
-        else
-           [self pushViewController:[RAMainMenu new] animated:YES];
-    }
-   
+   fill_pathname_join(g_defaults.system_dir, self.documentsDirectory.UTF8String, ".RetroArch", sizeof(g_defaults.system_dir));
+   fill_pathname_join(g_defaults.core_dir, NSBundle.mainBundle.bundlePath.UTF8String, "modules", sizeof(g_defaults.core_dir));
+
+   strlcpy(g_defaults.menu_config_dir, g_defaults.system_dir, sizeof(g_defaults.menu_config_dir));
+   fill_pathname_join(g_defaults.config_path, g_defaults.menu_config_dir, "retroarch.cfg", sizeof(g_defaults.config_path));
+
+   strlcpy(g_defaults.sram_dir, g_defaults.system_dir, sizeof(g_defaults.sram_dir));
+   strlcpy(g_defaults.savestate_dir, g_defaults.system_dir, sizeof(g_defaults.savestate_dir));
+
+   paths = (const char*)self.documentsDirectory.UTF8String;
+   path_mkdir(paths);
+
+   if (access(paths, 0755) != 0)
+   {
+      char msg[256];
+      snprintf(msg, sizeof(msg), "Failed to create or access base directory: %s", self.documentsDirectory.UTF8String);
+      apple_display_alert(msg, "Error");
+   }
+   else
+   {
+      paths = g_defaults.system_dir;
+      path_mkdir(paths);
+
+      if (access(paths, 0755) != 0)
+      {
+         char msg[256];
+         snprintf(msg, sizeof(msg), "Failed to create or access system directory: %s", g_defaults.system_dir);
+         apple_display_alert(msg, "Error");
+      }
+      else
+         [self pushViewController:[RAMainMenu new] animated:YES];
+   }
+
    // Warn if there are no cores present
    core_info_set_core_path();
    core_list = (const core_info_list_t*)core_info_list_get();
-   
+
    if (!core_list || core_list->count == 0)
       apple_display_alert("No libretro cores were found. You will not be able to run any content.", "Warning");
-   
+
    apple_gamecontroller_init();
-   
+
    // Load system config
    frontend_settings = (const rarch_setting_t*)apple_get_frontend_settings();
    setting_data_reset(frontend_settings);
