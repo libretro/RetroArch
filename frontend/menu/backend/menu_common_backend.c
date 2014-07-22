@@ -2138,7 +2138,7 @@ static void menu_parse_and_resolve(unsigned menu_type)
    {
       case MENU_SETTINGS_OPEN_HISTORY:
          /* History parse */
-         list_size = rom_history_size(driver.menu->history);
+         list_size = content_history_size(driver.menu->history);
 
          for (i = 0; i < list_size; i++)
          {
@@ -2149,7 +2149,7 @@ static void menu_parse_and_resolve(unsigned menu_type)
             core_path = NULL;
             core_name = NULL;
 
-            rom_history_get_index(driver.menu->history, i,
+            content_history_get_index(driver.menu->history, i,
                   &path, &core_path, &core_name);
 
             if (path)

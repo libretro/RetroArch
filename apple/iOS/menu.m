@@ -635,24 +635,24 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 
 @end
 
-/*********************************************/
-/* RAHistoryMenu                             */
-/* Menu object that displays and allows      */
-/* launching a file from the ROM history.    */
-/*********************************************/
+/*************************************************/
+/* RAHistoryMenu                                 */
+/* Menu object that displays and allows          */
+/* launching a file from the content history.    */
+/*************************************************/
 @implementation RAHistoryMenu
 
 - (void)dealloc
 {
    if (_history)
-      rom_history_free(_history);
+      content_history_free(_history);
 }
 
 - (id)initWithHistoryPath:(const char*)historyPath
 {
    if ((self = [super initWithStyle:UITableViewStylePlain]))
    {
-      _history = rom_history_init(historyPath, 100);
+      _history = content_history_init(historyPath, 100);
       [self reloadData];
       self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:BOXSTRING("Clear History")
                                                 style:UIBarButtonItemStyleBordered target:self action:@selector(clearHistory)];
@@ -664,7 +664,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 - (void)clearHistory
 {
    if (_history)
-      rom_history_clear(_history);
+      content_history_clear(_history);
    [self reloadData];
 }
 
@@ -674,12 +674,12 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
    RAHistoryMenu* __weak weakSelf = self;
    NSMutableArray *section = [NSMutableArray arrayWithObject:BOXSTRING("")];
    
-   for (i = 0; _history && i < rom_history_size(_history); i ++)
+   for (i = 0; _history && i < content_history_size(_history); i ++)
    {
-      RAMenuItemBasic* item = [RAMenuItemBasic itemWithDescription:BOXSTRING(path_basename(rom_history_get_path(weakSelf.history, i)))
-                                                            action:^{ apple_run_core(BOXSTRING(rom_history_get_core_path(weakSelf.history, i)),
-                                                                                     rom_history_get_path(weakSelf.history, i)); }
-                                                            detail:^{ return BOXSTRING(rom_history_get_core_name(weakSelf.history, i)); }];
+      RAMenuItemBasic* item = [RAMenuItemBasic itemWithDescription:BOXSTRING(path_basename(content_history_get_path(weakSelf.history, i)))
+                                                            action:^{ apple_run_core(BOXSTRING(content_history_get_core_path(weakSelf.history, i)),
+                                                                                     content_history_get_path(weakSelf.history, i)); }
+                                                            detail:^{ return BOXSTRING(content_history_get_core_name(weakSelf.history, i)); }];
       [section addObject:item];
    }
    

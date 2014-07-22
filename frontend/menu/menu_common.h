@@ -107,7 +107,7 @@ void load_menu_game_prepare(void);
 void load_menu_game_prepare_dummy(void);
 bool load_menu_game(void);
 void load_menu_game_history(unsigned game_index);
-void menu_rom_history_push_current(void);
+void menu_content_history_push_current(void);
 
 bool menu_replace_config(const char *path);
 

@@ -22,29 +22,29 @@
 extern "C" {
 #endif
 
-typedef struct rom_history rom_history_t;
+typedef struct content_history content_history_t;
 
-rom_history_t *rom_history_init(const char *path, size_t size);
-void rom_history_free(rom_history_t *hist);
+content_history_t *content_history_init(const char *path, size_t size);
+void content_history_free(content_history_t *hist);
 
-void rom_history_clear(rom_history_t *hist);
+void content_history_clear(content_history_t *hist);
 
-size_t rom_history_size(rom_history_t *hist);
+size_t content_history_size(content_history_t *hist);
 
-void rom_history_get_index(rom_history_t *hist,
+void content_history_get_index(content_history_t *hist,
       size_t index,
       const char **path, const char **core_path,
       const char **core_name);
 
-void rom_history_push(rom_history_t *hist,
+void content_history_push(content_history_t *hist,
       const char *path, const char *core_path,
       const char *core_name);
 
-const char* rom_history_get_path(rom_history_t *hist,
+const char* content_history_get_path(content_history_t *hist,
       unsigned index);
-const char* rom_history_get_core_path(rom_history_t *hist,
+const char* content_history_get_core_path(content_history_t *hist,
       unsigned index);
-const char* rom_history_get_core_name(rom_history_t *hist,
+const char* content_history_get_core_name(content_history_t *hist,
       unsigned index);
 
 #ifdef __cplusplus

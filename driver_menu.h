@@ -163,7 +163,7 @@ typedef struct
    struct gfx_shader *parameter_shader; // Points to either shader or graphics driver current shader.
    unsigned current_pad;
 
-   rom_history_t *history;
+   content_history_t *history;
    retro_time_t last_time; // Used to throttle menu in case VSync is broken.
 
    struct menu_bind_state binds;

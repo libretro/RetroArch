@@ -367,10 +367,10 @@ returntype main_entry(signature())
    if (!ret)
 #endif
    {
-      // If we started a ROM directly from command line,
-      // push it to ROM history.
+      // If we started content directly from command line,
+      // push it to content history.
       if (!g_extern.libretro_dummy)
-         menu_rom_history_push_current();
+         menu_content_history_push_current();
    }
 #endif
 

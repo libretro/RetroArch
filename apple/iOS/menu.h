@@ -112,13 +112,13 @@
 @property (nonatomic) NSString* core;
 @end
 
-/*********************************************/
-/* RAHistoryMenu                             */
-/* Menu object that displays and allows      */
-/* launching a file from the ROM history.    */
-/*********************************************/
+/*************************************************/
+/* RAHistoryMenu                                 */
+/* Menu object that displays and allows          */
+/* launching a file from the content history.    */
+/*************************************************/
 @interface RAHistoryMenu : RAMenuBase
-@property (nonatomic) rom_history_t* history;
+@property (nonatomic) content_history_t* history;
 - (id)initWithHistoryPath:(const char*)historyPath;
 @end
 

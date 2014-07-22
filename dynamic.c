@@ -251,7 +251,7 @@ static void load_symbols(bool is_dummy)
    else
    {
 #ifdef HAVE_DYNAMIC
-      // Need to use absolute path for this setting. It can be saved to ROM history,
+      // Need to use absolute path for this setting. It can be saved to content history,
       // and a relative path would break in that scenario.
       path_resolve_realpath(g_settings.libretro, sizeof(g_settings.libretro));
 

@@ -80,7 +80,7 @@ int menu_defer_core(void *info_, const char *dir, const char *path, char *deferr
    return 0;
 }
 
-void menu_rom_history_push_current(void)
+void menu_content_history_push_current(void)
 {
    // g_extern.fullpath can be relative here.
    // Ensure we're pushing absolute path.
@@ -93,7 +93,7 @@ void menu_rom_history_push_current(void)
 
    if (g_extern.system.no_game || *tmp)
       if (driver.menu && driver.menu->history)
-         rom_history_push(driver.menu->history,
+         content_history_push(driver.menu->history,
                *tmp ? tmp : NULL,
                g_settings.libretro,
                g_extern.system.info.library_name);
@@ -120,7 +120,7 @@ void load_menu_game_prepare(void)
       if (g_extern.system.no_game || *g_extern.fullpath)
 #endif
          if (driver.menu && driver.menu->history)
-            rom_history_push(driver.menu->history,
+            content_history_push(driver.menu->history,
                   *g_extern.fullpath ? g_extern.fullpath : NULL,
                   g_settings.libretro,
                   driver.menu->info.library_name ? driver.menu->info.library_name : "");
@@ -155,7 +155,7 @@ void load_menu_game_history(unsigned game_index)
    if (!driver.menu)
       return;
 
-   rom_history_get_index(driver.menu->history,
+   content_history_get_index(driver.menu->history,
          game_index, &path, &core_path, &core_name);
 
    strlcpy(g_settings.libretro, core_path, sizeof(g_settings.libretro));
@@ -173,7 +173,7 @@ static void menu_init_history(menu_handle_t *menu)
 {
    if (menu->history)
    {
-      rom_history_free(menu->history);
+      content_history_free(menu->history);
       menu->history = NULL;
    }
 
@@ -189,7 +189,7 @@ static void menu_init_history(menu_handle_t *menu)
       }
 
       RARCH_LOG("[Menu]: Opening history: %s.\n", history_path);
-      menu->history = rom_history_init(history_path, g_settings.game_history_size);
+      menu->history = content_history_init(history_path, g_settings.game_history_size);
    }
 }
 
@@ -349,7 +349,7 @@ void menu_free(void *data)
    file_list_free(menu->menu_stack);
    file_list_free(menu->selection_buf);
 
-   rom_history_free(menu->history);
+   content_history_free(menu->history);
    core_info_list_free(menu->core_info);
 
    if (menu->core_info_current)

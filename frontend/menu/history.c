@@ -26,23 +26,23 @@
 #include <stdlib.h>
 #include <string.h>
 
-struct rom_history_entry
+struct content_history_entry
 {
    char *path;
    char *core_path;
    char *core_name;
 };
 
-struct rom_history
+struct content_history
 {
-   struct rom_history_entry *entries;
+   struct content_history_entry *entries;
    size_t size;
    size_t cap;
 
    char *conf_path;
 };
 
-void rom_history_get_index(rom_history_t *hist,
+void content_history_get_index(content_history_t *hist,
       size_t index,
       const char **path, const char **core_path,
       const char **core_name)
@@ -55,7 +55,7 @@ void rom_history_get_index(rom_history_t *hist,
    *core_name = hist->entries[index].core_name;
 }
 
-static void rom_history_free_entry(struct rom_history_entry *entry)
+static void content_history_free_entry(struct content_history_entry *entry)
 {
    free(entry->path);
    free(entry->core_path);
@@ -63,7 +63,7 @@ static void rom_history_free_entry(struct rom_history_entry *entry)
    memset(entry, 0, sizeof(*entry));
 }
 
-void rom_history_push(rom_history_t *hist,
+void content_history_push(content_history_t *hist,
       const char *path, const char *core_path,
       const char *core_name)
 {
@@ -85,9 +85,9 @@ void rom_history_push(rom_history_t *hist,
             return;
 
          // Seen it before, bump to top.
-         struct rom_history_entry tmp = hist->entries[i];
+         struct content_history_entry tmp = hist->entries[i];
          memmove(hist->entries + 1, hist->entries,
-               i * sizeof(struct rom_history_entry));
+               i * sizeof(struct content_history_entry));
          hist->entries[0] = tmp;
          return;
       }
@@ -95,12 +95,12 @@ void rom_history_push(rom_history_t *hist,
 
    if (hist->size == hist->cap)
    {
-      rom_history_free_entry(&hist->entries[hist->cap - 1]);
+      content_history_free_entry(&hist->entries[hist->cap - 1]);
       hist->size--;
    }
 
    memmove(hist->entries + 1, hist->entries,
-         (hist->cap - 1) * sizeof(struct rom_history_entry));
+         (hist->cap - 1) * sizeof(struct content_history_entry));
 
    hist->entries[0].path      = path ? strdup(path) : NULL;
    hist->entries[0].core_path = strdup(core_path);
@@ -108,7 +108,7 @@ void rom_history_push(rom_history_t *hist,
    hist->size++;
 }
 
-static void rom_history_write_file(rom_history_t *hist)
+static void content_history_write_file(content_history_t *hist)
 {
    size_t i;
    FILE *file = NULL;
@@ -135,42 +135,42 @@ static void rom_history_write_file(rom_history_t *hist)
    fclose(file);
 }
 
-void rom_history_free(rom_history_t *hist)
+void content_history_free(content_history_t *hist)
 {
    size_t i;
    if (!hist)
       return;
 
    if (hist->conf_path)
-      rom_history_write_file(hist);
+      content_history_write_file(hist);
    free(hist->conf_path);
 
    for (i = 0; i < hist->cap; i++)
-      rom_history_free_entry(&hist->entries[i]);
+      content_history_free_entry(&hist->entries[i]);
    free(hist->entries);
 
    free(hist);
 }
 
-void rom_history_clear(rom_history_t *hist)
+void content_history_clear(content_history_t *hist)
 {
    size_t i;
    if (!hist)
       return;
 
    for (i = 0; i < hist->cap; i++)
-      rom_history_free_entry(&hist->entries[i]);
+      content_history_free_entry(&hist->entries[i]);
    hist->size = 0;
 }
 
-size_t rom_history_size(rom_history_t *hist)
+size_t content_history_size(content_history_t *hist)
 {
    if (hist)
       return hist->size;
    return 0;
 }
 
-static bool rom_history_read_file(rom_history_t *hist, const char *path)
+static bool content_history_read_file(content_history_t *hist, const char *path)
 {
    FILE *file = fopen(path, "r");
    if (!file || !hist)
@@ -180,7 +180,7 @@ static bool rom_history_read_file(rom_history_t *hist, const char *path)
    }
    
    char buf[3][PATH_MAX];
-   struct rom_history_entry *entry = NULL;
+   struct content_history_entry *entry = NULL;
    char *last = NULL;
    unsigned i;
 
@@ -214,33 +214,33 @@ end:
    return true;
 }
 
-rom_history_t *rom_history_init(const char *path, size_t size)
+content_history_t *content_history_init(const char *path, size_t size)
 {
-   rom_history_t *hist = (rom_history_t*)calloc(1, sizeof(*hist));
+   content_history_t *hist = (content_history_t*)calloc(1, sizeof(*hist));
    if (!hist)
    {
        RARCH_ERR("Cannot initialize content history.\n");
       return NULL;
    }
 
-   hist->entries = (struct rom_history_entry*)calloc(size, sizeof(*hist->entries));
+   hist->entries = (struct content_history_entry*)calloc(size, sizeof(*hist->entries));
    if (!hist->entries)
       goto error;
 
    hist->cap = size;
 
-   if (!rom_history_read_file(hist, path))
+   if (!content_history_read_file(hist, path))
       goto error;
 
    hist->conf_path = strdup(path);
    return hist;
 
 error:
-   rom_history_free(hist);
+   content_history_free(hist);
    return NULL;
 }
 
-const char* rom_history_get_path(rom_history_t *hist, unsigned index)
+const char* content_history_get_path(content_history_t *hist, unsigned index)
 {
    const char *path, *core_path, *core_name;
    if (!hist)
@@ -250,14 +250,14 @@ const char* rom_history_get_path(rom_history_t *hist, unsigned index)
    core_path = NULL;
    core_name = NULL;
 
-   rom_history_get_index(hist, index, &path, &core_path, &core_name);
+   content_history_get_index(hist, index, &path, &core_path, &core_name);
 
    if (path)
       return path;
    return "";
 }
 
-const char *rom_history_get_core_path(rom_history_t *hist, unsigned index)
+const char *content_history_get_core_path(content_history_t *hist, unsigned index)
 {
    const char *path, *core_path, *core_name;
    if (!hist)
@@ -267,14 +267,14 @@ const char *rom_history_get_core_path(rom_history_t *hist, unsigned index)
    core_path = NULL;
    core_name = NULL;
 
-   rom_history_get_index(hist, index, &path, &core_path, &core_name);
+   content_history_get_index(hist, index, &path, &core_path, &core_name);
     
    if (core_path)
       return core_path;
    return "";
 }
 
-const char *rom_history_get_core_name(rom_history_t *hist, unsigned index)
+const char *content_history_get_core_name(content_history_t *hist, unsigned index)
 {
    const char *path, *core_path, *core_name;
 
@@ -285,7 +285,7 @@ const char *rom_history_get_core_name(rom_history_t *hist, unsigned index)
    core_path = NULL;
    core_name = NULL;
 
-   rom_history_get_index(hist, index, &path, &core_path, &core_name);
+   content_history_get_index(hist, index, &path, &core_path, &core_name);
 
    if (core_name)
       return core_name;

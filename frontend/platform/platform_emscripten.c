@@ -47,10 +47,10 @@ int main(int argc, char *argv[])
 #ifdef HAVE_MENU
    g_extern.lifecycle_state |= 1ULL << MODE_GAME;
 
-   // If we started a ROM directly from command line,
-   // push it to ROM history.
+   // If we started content directly from command line,
+   // push it to content history.
    if (!g_extern.libretro_dummy)
-      menu_rom_history_push_current();
+      menu_content_history_push_current();
 #endif
 
    emscripten_set_main_loop(emscripten_mainloop, g_settings.video.vsync ? 0 : INT_MAX, 1);
