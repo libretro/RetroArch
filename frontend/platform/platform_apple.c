@@ -15,7 +15,6 @@
  */
 
 #include "../menu/menu_common.h"
-#include "../../apple/common/apple_export.h"
 #include "../../settings_data.h"
 
 #include "../frontend.h"

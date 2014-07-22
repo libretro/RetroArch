@@ -22,7 +22,6 @@
 
 #include "../../frontend/info/core_info.h"
 #include "../../settings_data.h"
-#include "apple_export.h"
 
 #define GSEVENT_TYPE_KEYDOWN 10
 #define GSEVENT_TYPE_KEYUP 11
