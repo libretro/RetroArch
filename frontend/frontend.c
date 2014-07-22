@@ -65,7 +65,7 @@
 
 #endif
 
-#if !defined(__APPLE__)
+#if !defined(__APPLE__) && !defined(EMSCRIPTEN)
 #define HAVE_MAIN_LOOP
 #endif
 

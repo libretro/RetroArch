@@ -27,32 +27,17 @@
 
 static void emscripten_mainloop(void)
 {
-   if (!main_entry_iterate(0, NULL, NULL))
-      return;
-
-   main_exit(NULL);
-   exit(0);
+   if (main_entry_iterate(0, NULL, NULL))
+   {
+      main_exit(NULL);
+      exit(0);
+   }
 }
 
 int main(int argc, char *argv[])
 {
    emscripten_set_canvas_size(800, 600);
-
-   rarch_main_clear_state();
-   rarch_init_msg_queue();
-
-   int init_ret;
-   if ((init_ret = rarch_main_init(argc, argv))) return init_ret;
-
-#ifdef HAVE_MENU
-   g_extern.lifecycle_state |= 1ULL << MODE_GAME;
-
-   // If we started content directly from command line,
-   // push it to content history.
-   if (!g_extern.libretro_dummy)
-      menu_content_history_push_current();
-#endif
-
+   rarch_main(argc, argv);
    emscripten_set_main_loop(emscripten_mainloop, g_settings.video.vsync ? 0 : INT_MAX, 1);
 
    return 0;
