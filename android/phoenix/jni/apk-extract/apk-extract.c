@@ -22,6 +22,8 @@ struct userdata
 static bool zlib_cb(const char *name, const uint8_t *cdata, unsigned cmode, uint32_t csize, uint32_t size,
       uint32_t crc32, void *userdata)
 {
+   char path[PATH_MAX];
+   char path_dir[PATH_MAX];
    struct userdata *user = userdata;
    const char *subdir = user->subdir;
    const char *dest   = user->dest;
@@ -31,8 +33,6 @@ static bool zlib_cb(const char *name, const uint8_t *cdata, unsigned cmode, uint
 
    name += strlen(subdir) + 1;
 
-   char path[PATH_MAX];
-   char path_dir[PATH_MAX];
    fill_pathname_join(path, dest, name, sizeof(path));
    fill_pathname_basedir(path_dir, path, sizeof(path_dir));
 

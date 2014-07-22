@@ -30,20 +30,17 @@ static bool zlib_extract_callback(const char *name,
                                 const uint8_t *cdata, unsigned cmode, uint32_t csize, uint32_t size,
                                 uint32_t crc32, void *userdata)
 {
-   char path[PATH_MAX];   
+   char path[PATH_MAX], msg[256];
    
-   if (cmode != 0 && cmode != 8)
-   {
-       char msg[256];
-       snprintf(msg, sizeof(msg), "Could not unzip %s (unknown mode %d)", name, cmode);
-      apple_display_alert(msg, "Action Failed");
-      return false;
-   }
-
    // Make directory
    fill_pathname_join(path, (const char*)userdata, name, sizeof(path));
    path_basedir(path);
-   path_mkdir(path);
+
+   if (!path_mkdir(path_dir))
+   {
+      RARCH_ERR("Failed to create dir: %s.\n", path_dir);
+      return false;
+   }
 
    // Ignore directories
    if (name[strlen(name) - 1] == '/')
@@ -59,6 +56,10 @@ static bool zlib_extract_callback(const char *name,
       case 8: // Deflate
          zlib_inflate_data_to_file(path, cdata, csize, size, crc32);
          break;
+      default:
+         snprintf(msg, sizeof(msg), "Could not unzip %s (unknown mode %d)", name, cmode);
+         apple_display_alert(msg, "Action Failed");
+         return false;
    }
 
    return true;
