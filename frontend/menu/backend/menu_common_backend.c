@@ -550,9 +550,7 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
          file_list_push(menu->selection_buf, "Overlay Directory", MENU_OVERLAY_DIR_PATH, 0);
 #endif
          file_list_push(menu->selection_buf, "System Directory", MENU_SYSTEM_DIR_PATH, 0);
-#ifdef HAVE_SCREENSHOTS
          file_list_push(menu->selection_buf, "Screenshot Directory", MENU_SCREENSHOT_DIR_PATH, 0);
-#endif
          file_list_push(menu->selection_buf, "Autoconfig Directory", MENU_AUTOCONFIG_DIR_PATH, 0);
          break;
       case MENU_SETTINGS_INPUT_OPTIONS:
@@ -694,9 +692,7 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
          {
             file_list_push(menu->selection_buf, "Save State", MENU_SETTINGS_SAVESTATE_SAVE, 0);
             file_list_push(menu->selection_buf, "Load State", MENU_SETTINGS_SAVESTATE_LOAD, 0);
-#ifdef HAVE_SCREENSHOTS
             file_list_push(menu->selection_buf, "Take Screenshot", MENU_SETTINGS_SCREENSHOT, 0);
-#endif
             file_list_push(menu->selection_buf, "Resume Content", MENU_SETTINGS_RESUME_GAME, 0);
             file_list_push(menu->selection_buf, "Restart Content", MENU_SETTINGS_RESTART_GAME, 0);
 
@@ -2719,13 +2715,11 @@ static int menu_common_iterate(unsigned action)
                strlcpy(g_settings.assets_directory, dir, sizeof(g_settings.assets_directory));
                menu_flush_stack_type(MENU_SETTINGS_PATH_OPTIONS);
             }
-#ifdef HAVE_SCREENSHOTS
             else if (menu_type == MENU_SCREENSHOT_DIR_PATH)
             {
                strlcpy(g_settings.screenshot_directory, dir, sizeof(g_settings.screenshot_directory));
                menu_flush_stack_type(MENU_SETTINGS_PATH_OPTIONS);
             }
-#endif
             else if (menu_type == MENU_SAVEFILE_DIR_PATH)
             {
                strlcpy(g_extern.savefile_dir, dir, sizeof(g_extern.savefile_dir));
@@ -4258,12 +4252,10 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
          if (action == MENU_ACTION_START)
             *g_settings.assets_directory = '\0';
          break;
-#ifdef HAVE_SCREENSHOTS
       case MENU_SCREENSHOT_DIR_PATH:
          if (action == MENU_ACTION_START)
             *g_settings.screenshot_directory = '\0';
          break;
-#endif
       case MENU_SAVEFILE_DIR_PATH:
          if (action == MENU_ACTION_START)
             strlcpy(g_extern.savefile_dir, g_defaults.sram_dir, sizeof(g_extern.savefile_dir));
@@ -5009,11 +5001,9 @@ static void menu_common_setting_set_label(char *type_str, size_t type_str_size, 
          case MENU_SETTINGS_REWIND_ENABLE:
             strlcpy(type_str, g_settings.rewind_enable ? "ON" : "OFF", type_str_size);
             break;
-#ifdef HAVE_SCREENSHOTS
          case MENU_SETTINGS_GPU_SCREENSHOT:
             strlcpy(type_str, g_settings.video.gpu_screenshot ? "ON" : "OFF", type_str_size);
             break;
-#endif
          case MENU_SETTINGS_REWIND_GRANULARITY:
             snprintf(type_str, type_str_size, "%u", g_settings.rewind_granularity);
             break;
@@ -5104,11 +5094,9 @@ static void menu_common_setting_set_label(char *type_str, size_t type_str_size, 
          case MENU_ASSETS_DIR_PATH:
             strlcpy(type_str, *g_settings.assets_directory ? g_settings.assets_directory : "<default>", type_str_size);
             break;
-#ifdef HAVE_SCREENSHOTS
          case MENU_SCREENSHOT_DIR_PATH:
             strlcpy(type_str, *g_settings.screenshot_directory ? g_settings.screenshot_directory : "<ROM dir>", type_str_size);
             break;
-#endif
          case MENU_SAVEFILE_DIR_PATH:
             strlcpy(type_str, *g_extern.savefile_dir ? g_extern.savefile_dir : "<ROM dir>", type_str_size);
             break;

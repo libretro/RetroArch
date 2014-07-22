@@ -592,7 +592,7 @@ SCREENSHOTS
 ============================================================ */
 #if defined(_XBOX1)
 #include "../xdk/screenshot_xdk1.c"
-#elif defined(HAVE_SCREENSHOTS)
+#else
 #include "../screenshot.c"
 #endif
 

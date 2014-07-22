@@ -372,10 +372,8 @@ static void rgui_render(void)
       snprintf(title, sizeof(title), "BROWSER DIR %s", dir);
    else if (menu_type == MENU_CONTENT_DIR_PATH)
       snprintf(title, sizeof(title), "CONTENT DIR %s", dir);
-#ifdef HAVE_SCREENSHOTS
    else if (menu_type == MENU_SCREENSHOT_DIR_PATH)
       snprintf(title, sizeof(title), "SCREENSHOT DIR %s", dir);
-#endif
    else if (menu_type == MENU_AUTOCONFIG_DIR_PATH)
       snprintf(title, sizeof(title), "AUTOCONFIG DIR %s", dir);
    else if (menu_type == MENU_SHADER_DIR_PATH)
