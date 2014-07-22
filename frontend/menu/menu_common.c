@@ -88,9 +88,6 @@ void menu_rom_history_push_current(void)
    // Ensure we're pushing absolute path.
    char tmp[PATH_MAX];
 
-   if (!driver.menu)
-      return;
-
    strlcpy(tmp, g_extern.fullpath, sizeof(tmp));
 
    if (*tmp)
@@ -163,14 +160,9 @@ void load_menu_game_history(unsigned game_index)
    rom_history_get_index(driver.menu->history,
          game_index, &path, &core_path, &core_name);
 
-   // SET_LIBRETRO_PATH is unsafe here.
-   // Risks booting different and wrong core if core doesn't exist anymore.
    strlcpy(g_settings.libretro, core_path, sizeof(g_settings.libretro));
 
-   if (path)
-      driver.menu->load_no_rom = false;
-   else
-      driver.menu->load_no_rom = true;
+   driver.menu->load_no_rom = (path) ? false : true;
 
    rarch_environment_cb(RETRO_ENVIRONMENT_EXEC, (void*)path);
 
