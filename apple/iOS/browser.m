@@ -30,15 +30,15 @@ static bool zlib_extract_callback(const char *name,
                                 const uint8_t *cdata, unsigned cmode, uint32_t csize, uint32_t size,
                                 uint32_t crc32, void *userdata)
 {
-   char path[PATH_MAX], msg[256];
+    char path[PATH_MAX];
    
    // Make directory
    fill_pathname_join(path, (const char*)userdata, name, sizeof(path));
    path_basedir(path);
 
-   if (!path_mkdir(path_dir))
+   if (!path_mkdir(path))
    {
-      RARCH_ERR("Failed to create dir: %s.\n", path_dir);
+      RARCH_ERR("Failed to create dir: %s.\n", path);
       return false;
    }
 
