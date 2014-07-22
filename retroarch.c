@@ -3098,13 +3098,25 @@ void rarch_main_command(unsigned action)
 #endif
          break;
       case RARCH_CMD_LOAD_STATE:
+         // Disallow savestate load when we absolutely cannot change game state.
+#ifdef HAVE_BSV_MOVIE
+         if (g_extern.bsv.movie)
+            break;
+#endif
+#ifdef HAVE_NETPLAY
+         if (g_extern.netplay)
+            break;
+#endif
          rarch_load_state();
+         g_extern.lifecycle_state |= (1ULL << MODE_GAME);
          break;
       case RARCH_CMD_RESET:
          rarch_game_reset();
+         g_extern.lifecycle_state |= (1ULL << MODE_GAME);
          break;
       case RARCH_CMD_SAVE_STATE:
          rarch_save_state();
+         g_extern.lifecycle_state |= (1ULL << MODE_GAME);
          break;
       case RARCH_CMD_TAKE_SCREENSHOT:
          rarch_take_screenshot();

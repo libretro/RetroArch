@@ -3787,19 +3787,7 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
             if (setting == MENU_SETTINGS_SAVESTATE_SAVE)
                rarch_main_command(RARCH_CMD_SAVE_STATE);
             else
-            {
-               // Disallow savestate load when we absolutely cannot change game state.
-#ifdef HAVE_BSV_MOVIE
-               if (g_extern.bsv.movie)
-                  break;
-#endif
-#ifdef HAVE_NETPLAY
-               if (g_extern.netplay)
-                  break;
-#endif
                rarch_main_command(RARCH_CMD_LOAD_STATE);
-            }
-            g_extern.lifecycle_state |= (1ULL << MODE_GAME);
             return -1;
          }
          else if (action == MENU_ACTION_START)
@@ -3821,7 +3809,6 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
          if (action == MENU_ACTION_OK)
          {
             rarch_main_command(RARCH_CMD_RESET);
-            g_extern.lifecycle_state |= (1ULL << MODE_GAME);
             return -1;
          }
          break;
