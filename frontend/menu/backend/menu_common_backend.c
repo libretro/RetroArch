@@ -2621,10 +2621,9 @@ static int menu_common_iterate(unsigned action)
             }
             else if (menu_type == MENU_SETTINGS_CORE)
             {
-#if defined(HAVE_DYNAMIC)
                fill_pathname_join(g_settings.libretro, dir, path, sizeof(g_settings.libretro));
-               menu_update_system_info(driver.menu, &driver.menu->load_no_rom);
-
+               rarch_main_command(RARCH_CMD_LOAD_CORE);
+#if defined(HAVE_DYNAMIC)
                // No ROM needed for this core, load game immediately.
                if (driver.menu->load_no_rom)
                {
@@ -2637,13 +2636,9 @@ static int menu_common_iterate(unsigned action)
                // Core selection on non-console just updates directory listing.
                // Will take affect on new ROM load.
 #elif defined(RARCH_CONSOLE)
-               rarch_environment_cb(RETRO_ENVIRONMENT_SET_LIBRETRO_PATH, (void*)path);
-
 #if defined(GEKKO) && defined(HW_RVL)
                fill_pathname_join(g_extern.fullpath, g_defaults.core_dir,
                      SALAMANDER_FILE, sizeof(g_extern.fullpath));
-#else
-               fill_pathname_join(g_settings.libretro, dir, path, sizeof(g_settings.libretro));
 #endif
                g_extern.lifecycle_state &= ~(1ULL << MODE_GAME);
                g_extern.lifecycle_state |= (1ULL << MODE_EXITSPAWN);
@@ -2807,7 +2802,7 @@ static int menu_common_iterate(unsigned action)
 
                   if (ret == -1)
                   {
-                     menu_update_system_info(driver.menu, &driver.menu->load_no_rom);
+                     rarch_main_command(RARCH_CMD_LOAD_CORE);
                      if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->defer_decision_automatic) 
                         driver.menu_ctx->backend->defer_decision_automatic();
                   }

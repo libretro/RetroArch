@@ -346,11 +346,8 @@ static int menu_lakka_iterate(unsigned action)
                      strlcpy(g_settings.libretro, active_category->libretro, sizeof(g_settings.libretro));
 
 #ifdef HAVE_DYNAMIC
-                     menu_update_system_info(driver.menu, &driver.menu->load_no_rom);
+                     rarch_main_command(RARCH_CMD_LOAD_CORE);
                      g_extern.lifecycle_state |= (1ULL << MODE_LOAD_GAME);
-#else
-                     rarch_environment_cb(RETRO_ENVIRONMENT_SET_LIBRETRO_PATH, (void*)g_settings.libretro);
-                     rarch_environment_cb(RETRO_ENVIRONMENT_EXEC, (void*)g_extern.fullpath);
 #endif
                   }
                   return -1;

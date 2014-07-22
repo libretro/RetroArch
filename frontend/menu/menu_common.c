@@ -444,7 +444,7 @@ void load_menu_game_new_core(void)
       return;
 
 #ifdef HAVE_DYNAMIC
-   menu_update_system_info(driver.menu, &driver.menu->load_no_rom);
+   rarch_main_command(RARCH_CMD_LOAD_CORE);
    g_extern.lifecycle_state |= (1ULL << MODE_LOAD_GAME);
 #else
    rarch_environment_cb(RETRO_ENVIRONMENT_SET_LIBRETRO_PATH, (void*)g_settings.libretro);

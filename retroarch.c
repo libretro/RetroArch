@@ -3088,6 +3088,11 @@ void rarch_main_command(unsigned action)
          load_menu_game_new_core();
 #endif
          break;
+      case RARCH_CMD_LOAD_CORE:
+#ifdef HAVE_MENU
+         menu_update_system_info(driver.menu, &driver.menu->load_no_rom);
+#endif
+         break;
       case RARCH_CMD_LOAD_STATE:
          rarch_load_state();
          break;
