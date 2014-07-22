@@ -209,20 +209,6 @@ static void handle_touch_event(NSArray* touches)
       snprintf(msg, sizeof(msg), "Failed to create or access base directory: %s", self.documentsDirectory.UTF8String);
       apple_display_alert(msg, "Error");
    }
-   else
-   {
-      paths = g_defaults.system_dir;
-      path_mkdir(paths);
-
-      if (access(paths, 0755) != 0)
-      {
-         char msg[256];
-         snprintf(msg, sizeof(msg), "Failed to create or access system directory: %s", g_defaults.system_dir);
-         apple_display_alert(msg, "Error");
-      }
-      else
-         [self pushViewController:[RAMainMenu new] animated:YES];
-   }
 
    // Warn if there are no cores present
    core_info_set_core_path();
