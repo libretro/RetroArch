@@ -356,8 +356,6 @@ static const bool default_overlay_enable = false;
 static const char *default_shader_dir = "/app/native/shaders_glsl/";
 #elif defined(ANDROID)
 static const char *default_shader_dir = "/data/data/com.retroarch/shaders_glsl/";
-#elif defined(IOS)
-static const char *default_shader_dir = ":/shaders_glsl/";
 #else
 static const char *default_shader_dir = NULL;
 #endif
