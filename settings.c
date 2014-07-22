@@ -483,7 +483,8 @@ void config_set_defaults(void)
    g_extern.console.sound.mode = SOUND_MODE_NORMAL;
 #endif
    
-   config_set_defaults_overlay(default_overlay_dir);
+   if (default_overlay_dir)
+      config_set_defaults_overlay(default_overlay_dir);
 
    if (default_shader_dir)
       fill_pathname_expand_special(g_settings.video.shader_dir, default_shader_dir, sizeof(g_settings.video.shader_dir));
