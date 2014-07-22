@@ -578,9 +578,6 @@ bool menu_iterate(void)
 // This should mitigate most of the smaller bugs.
 bool menu_replace_config(const char *path)
 {
-   if (!driver.menu)
-      return false;
-
    if (strcmp(path, g_extern.config_path) == 0)
       return false;
 
@@ -594,7 +591,9 @@ bool menu_replace_config(const char *path)
    *g_extern.fullpath = '\0';
    *g_settings.libretro = '\0'; // Load core in new config.
    g_extern.lifecycle_state |= (1ULL << MODE_LOAD_GAME);
-   driver.menu->load_no_rom = false;
+
+   if (driver.menu)
+      driver.menu->load_no_rom = false;
 
    return true;
 }

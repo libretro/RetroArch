@@ -2634,7 +2634,7 @@ static int menu_common_iterate(unsigned action)
                }
 
                // Core selection on non-console just updates directory listing.
-               // Will take affect on new ROM load.
+               // Will take effect on new ROM load.
 #elif defined(RARCH_CONSOLE)
 #if defined(GEKKO) && defined(HW_RVL)
                fill_pathname_join(g_extern.fullpath, g_defaults.core_dir,
