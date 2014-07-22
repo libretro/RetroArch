@@ -46,16 +46,9 @@
 #endif
 
 #ifdef HAVE_SHADER_MANAGER
-static inline struct gfx_shader *shader_manager_get_current_shader(void *data, unsigned type)
+static inline struct gfx_shader *shader_manager_get_current_shader(menu_handle_t *menu, unsigned type)
 {
-   menu_handle_t *menu = (menu_handle_t*)data;
    struct gfx_shader *shader = NULL;
-
-   if (!menu)
-   {
-      RARCH_ERR("Cannot get current shader, menu handle is not initialized.\n");
-      return NULL;
-   }
 
    if (type == MENU_SETTINGS_SHADER_PRESET_PARAMETERS)
       shader = menu->shader;
@@ -87,7 +80,7 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
       {
          file_list_clear(menu->selection_buf);
 
-         struct gfx_shader *shader = shader_manager_get_current_shader(menu, menu_type);
+         struct gfx_shader *shader = (struct gfx_shader*)shader_manager_get_current_shader(menu, menu_type);
          if (shader)
             for (i = 0; i < shader->num_parameters; i++)
                file_list_push(menu->selection_buf, shader->parameters[i].desc, MENU_SETTINGS_SHADER_PARAMETER_0 + i, 0);

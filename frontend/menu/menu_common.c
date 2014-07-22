@@ -48,15 +48,10 @@ void menu_update_system_info(menu_handle_t *menu, bool *load_no_rom)
 }
 
 // When selection is presented back, returns 0. If it can make a decision right now, returns -1.
-int menu_defer_core(void *info_, const char *dir, const char *path, char *deferred_path, size_t sizeof_deferred_path)
+int menu_defer_core(core_info_list_t *core_info, const char *dir, const char *path, char *deferred_path, size_t sizeof_deferred_path)
 {
-   core_info_list_t *core_info;
-   const core_info_t *info;
-   size_t supported;
-
-   core_info = (core_info_list_t*)info_;
-   info = NULL;
-   supported = 0;
+   const core_info_t *info = NULL;
+   size_t supported = 0;
 
    fill_pathname_join(deferred_path, dir, path, sizeof_deferred_path);
 
@@ -674,12 +669,11 @@ static inline bool menu_list_elem_is_dir(file_list_t *buf, unsigned offset)
    return type != MENU_FILE_PLAIN;
 }
 
-void menu_build_scroll_indices(void *data)
+void menu_build_scroll_indices(file_list_t *buf)
 {
    size_t i;
    int current;
    bool current_is_dir;
-   file_list_t *buf = (file_list_t*)data;
 
    if (!driver.menu || !buf)
       return;
