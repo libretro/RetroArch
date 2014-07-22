@@ -95,7 +95,6 @@ static char** waiting_argv;
 @interface RetroArch_OSX()
 @property (nonatomic, retain) NSWindowController* settingsWindow;
 @property (nonatomic, retain) NSWindow IBOutlet* coreSelectSheet;
-@property (nonatomic, copy) NSString* file;
 @property (nonatomic, copy) NSString* core;
 @end
 
@@ -104,7 +103,6 @@ static char** waiting_argv;
 @synthesize window = _window;
 @synthesize settingsWindow = _settingsWindow;
 @synthesize coreSelectSheet = _coreSelectSheet;
-@synthesize file = _file;
 @synthesize core = _core;
 
 - (void)dealloc
@@ -112,7 +110,6 @@ static char** waiting_argv;
    [_window release];
    [_coreSelectSheet release];
    [_settingsWindow release];
-   [_file release];
    [_core release];
    [super dealloc];
 }
@@ -209,14 +206,12 @@ static char** waiting_argv;
 {
    if (filenames.count == 1 && [filenames objectAtIndex:0])
    {
-      self.file = [filenames objectAtIndex:0];
+       NSString *__core = [filenames objectAtIndex:0];
        const char *core_name = driver.menu->info.library_name;
+       strlcpy(g_extern.fullpath, __core.UTF8String, sizeof(g_extern.fullpath));
        
        if (core_name)
-       {
-           strlcpy(g_extern.fullpath, self.file.UTF8String, sizeof(g_extern.fullpath));
            rarch_main_command(RARCH_CMD_LOAD_CONTENT);
-       }
        else
          [self chooseCore];
       
@@ -240,16 +235,14 @@ static char** waiting_argv;
       if (result == NSOKButton && panel.URL)
       {
           NSURL *url = (NSURL*)panel.URL;
-          self.file = url.path;
+          NSString *__core = url.path;
           const char *core_name = driver.menu->info.library_name;
+          strlcpy(g_extern.fullpath, __core.UTF8String, sizeof(g_extern.fullpath));
           
           if (core_name)
-          {
-              strlcpy(g_extern.fullpath, self.file.UTF8String, sizeof(g_extern.fullpath));
               rarch_main_command(RARCH_CMD_LOAD_CONTENT);
-          }
           else
-         [self performSelector:@selector(chooseCore) withObject:nil afterDelay:.5f];
+              [self performSelector:@selector(chooseCore) withObject:nil afterDelay:.5f];
       }
    }];
 #else
@@ -284,7 +277,7 @@ static char** waiting_argv;
     _wantReload = g_extern.main_is_init;
     
     if (!g_extern.main_is_init)
-        apple_run_core(self.core, self.file.UTF8String);
+        apple_run_core(self.core, g_extern.fullpath);
     else
         g_extern.system.shutdown = true;
 }
@@ -302,7 +295,7 @@ static char** waiting_argv;
       [[NSApplication sharedApplication] terminate:nil];
 
    if (_wantReload)
-      apple_run_core(self.core, self.file.UTF8String);
+      apple_run_core(self.core, g_extern.fullpath);
    else
       [[NSApplication sharedApplication] terminate:nil];
    
