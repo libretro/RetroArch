@@ -56,10 +56,6 @@ static bool zlib_extract_callback(const char *name,
       case 8: // Deflate
          zlib_inflate_data_to_file(path, cdata, csize, size, crc32);
          break;
-      default:
-         snprintf(msg, sizeof(msg), "Could not unzip %s (unknown mode %d)", name, cmode);
-         apple_display_alert(msg, "Action Failed");
-         return false;
    }
 
    return true;
