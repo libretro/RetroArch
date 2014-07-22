@@ -16,10 +16,8 @@
 
 #include "menu_common.h"
 
-void menu_update_system_info(void *data, bool *load_no_rom)
+void menu_update_system_info(menu_handle_t *menu, bool *load_no_rom)
 {
-   menu_handle_t *menu = (menu_handle_t*)data;
-
 #ifdef HAVE_DYNAMIC
    libretro_free_system_info(&menu->info);
    if (*g_settings.libretro)
@@ -171,13 +169,8 @@ void load_menu_game_history(unsigned game_index)
 #endif
 }
 
-static void menu_init_history(void *data)
+static void menu_init_history(menu_handle_t *menu)
 {
-   menu_handle_t *menu = (menu_handle_t*)data;
-
-   if (!menu)
-      return;
-
    if (menu->history)
    {
       rom_history_free(menu->history);
@@ -200,13 +193,8 @@ static void menu_init_history(void *data)
    }
 }
 
-static void menu_update_libretro_info(void *data)
+static void menu_update_libretro_info(menu_handle_t *menu)
 {
-   menu_handle_t *menu = (menu_handle_t*)data;
-
-   if (!menu)
-      return;
-
 #ifndef HAVE_DYNAMIC
    retro_get_system_info(&menu->info);
 #endif

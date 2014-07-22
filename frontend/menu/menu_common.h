@@ -118,7 +118,7 @@ int menu_defer_core(void *data, const char *dir, const char *path, char *deferre
 uint64_t menu_input(void);
 
 void menu_flush_stack_type(unsigned final_type);
-void menu_update_system_info(void *data, bool *load_no_rom);
+void menu_update_system_info(menu_handle_t *menu, bool *load_no_rom);
 void menu_build_scroll_indices(void *data);
 
 #ifdef __cplusplus
