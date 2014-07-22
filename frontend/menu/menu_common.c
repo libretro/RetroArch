@@ -82,14 +82,6 @@ int menu_defer_core(void *info_, const char *dir, const char *path, char *deferr
    return 0;
 }
 
-void menu_rom_history_push(const char *path,
-      const char *core_path,
-      const char *core_name)
-{
-   if (driver.menu && driver.menu->history)
-      rom_history_push(driver.menu->history, path, core_path, core_name);
-}
-
 void menu_rom_history_push_current(void)
 {
    // g_extern.fullpath can be relative here.
@@ -105,9 +97,11 @@ void menu_rom_history_push_current(void)
       path_resolve_realpath(tmp, sizeof(tmp));
 
    if (g_extern.system.no_game || *tmp)
-      menu_rom_history_push(*tmp ? tmp : NULL,
-            g_settings.libretro,
-            g_extern.system.info.library_name);
+      if (driver.menu && driver.menu->history)
+         rom_history_push(driver.menu->history,
+               *tmp ? tmp : NULL,
+               g_settings.libretro,
+               g_extern.system.info.library_name);
 }
 
 void load_menu_game_prepare(void)
@@ -130,9 +124,11 @@ void load_menu_game_prepare(void)
 #ifdef RARCH_CONSOLE
       if (g_extern.system.no_game || *g_extern.fullpath)
 #endif
-      menu_rom_history_push(*g_extern.fullpath ? g_extern.fullpath : NULL,
-            g_settings.libretro,
-            driver.menu->info.library_name ? driver.menu->info.library_name : "");
+         if (driver.menu && driver.menu->history)
+            rom_history_push(driver.menu->history,
+                  *g_extern.fullpath ? g_extern.fullpath : NULL,
+                  g_settings.libretro,
+                  driver.menu->info.library_name ? driver.menu->info.library_name : "");
    }
 
    // redraw menu frame
