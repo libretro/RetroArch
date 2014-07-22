@@ -60,15 +60,8 @@ int menu_defer_core(core_info_list_t *core_info, const char *dir, const char *pa
 
    if (supported == 1) // Can make a decision right now.
    {
-      strlcpy(g_extern.fullpath, deferred_path, sizeof(g_extern.fullpath));
-      strlcpy(g_settings.libretro, info->path, sizeof(g_settings.libretro));
-
-#ifdef HAVE_DYNAMIC
-      g_extern.lifecycle_state |= (1ULL << MODE_LOAD_GAME);
-#else
-      rarch_environment_cb(RETRO_ENVIRONMENT_SET_LIBRETRO_PATH, (void*)g_settings.libretro);
-      rarch_environment_cb(RETRO_ENVIRONMENT_EXEC, (void*)g_extern.fullpath);
-#endif
+      rarch_environment_cb(RETRO_ENVIRONMENT_SET_LIBRETRO_PATH, (void*)info->path);
+      rarch_environment_cb(RETRO_ENVIRONMENT_EXEC, (void*)deferred_path);
       return -1;
    }
 
