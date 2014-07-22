@@ -317,9 +317,21 @@ static char** waiting_argv;
 
 - (IBAction)basicEvent:(id)sender
 {
-    unsigned cmd = (unsigned)[sender tag];
-   if (!g_extern.main_is_init)
-      return;
+   unsigned sender_tag, cmd;
+   sender_tag = (unsigned)[sender tag];
+
+   switch (sender_tag)
+   {
+      case 1:
+         cmd = RARCH_CMD_RESET;
+         break;
+      case 2:
+         cmd = RARCH_CMD_LOAD_STATE;
+         break;
+      case 3:
+         cmd = RARCH_CMD_SAVE_STATE;
+         break;
+   }
 
    rarch_main_command(cmd);
 }
