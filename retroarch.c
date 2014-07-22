@@ -3078,6 +3078,28 @@ static inline void limit_frame_time(void)
       g_extern.frame_limit.last_frame_time = rarch_get_time_usec();
 }
 
+//TODO - can we refactor command.c to do this? Should be local and not
+//stdin or network-based
+
+void rarch_main_command(unsigned action)
+{
+   switch (action)
+   {
+      case RARCH_CMD_RESET:
+         rarch_game_reset();
+         break;
+      case RARCH_CMD_LOAD_STATE:
+         rarch_load_state();
+         break;
+      case RARCH_CMD_SAVE_STATE:
+         rarch_save_state();
+         break;
+      case RARCH_CMD_QUIT:
+         g_extern.system.shutdown = true;
+         break;
+   }
+}
+
 bool rarch_main_iterate(void)
 {
    unsigned i;

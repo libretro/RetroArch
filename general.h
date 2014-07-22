@@ -87,6 +87,14 @@ extern "C" {
 
 #define MAX_PLAYERS 8
 
+enum basic_event
+{
+   RARCH_CMD_RESET = 1,
+   RARCH_CMD_LOAD_STATE,
+   RARCH_CMD_SAVE_STATE,
+   RARCH_CMD_QUIT
+};
+
 enum menu_enums
 {
    MODE_GAME = 0,
@@ -756,6 +764,7 @@ void rarch_main_init_wrap(const struct rarch_main_wrap *args, int *argc, char **
 
 int rarch_main_init(int argc, char *argv[]);
 bool rarch_main_idle_iterate(void);
+void rarch_main_command(unsigned action);
 bool rarch_main_iterate(void);
 void rarch_main_deinit(void);
 void rarch_main_deinit_core(void);

@@ -357,13 +357,13 @@ static int menu_lakka_iterate(unsigned action)
                   break;
                case 1:
                   global_alpha = 0.0;
-                  rarch_save_state();
+                  rarch_main_command(RARCH_CMD_SAVE_STATE);
                   g_extern.lifecycle_state |= (1ULL << MODE_GAME);
                   return -1;
                   break;
                case 2:
                   global_alpha = 0.0;
-                  rarch_load_state();
+                  rarch_main_command(RARCH_CMD_LOAD_STATE);
                   g_extern.lifecycle_state |= (1ULL << MODE_GAME);
                   return -1;
                   break;
@@ -372,7 +372,7 @@ static int menu_lakka_iterate(unsigned action)
                   break;
                case 4:
                   global_alpha = 0.0;
-                  rarch_game_reset();
+                  rarch_main_command(RARCH_CMD_RESET);
                   g_extern.lifecycle_state |= (1ULL << MODE_GAME);
                   return -1;
                   break;

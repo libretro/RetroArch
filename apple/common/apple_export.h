@@ -19,14 +19,7 @@
 
 #include <stdint.h>
 
-enum basic_event_t {
-   RESET = 1,
-   LOAD_STATE = 2,
-   SAVE_STATE = 3,
-   QUIT = 4
-};
 extern void apple_event_basic_command(enum basic_event_t action);
-
 extern void apple_refresh_config(void);
 
 #endif

@@ -3796,7 +3796,7 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
          if (action == MENU_ACTION_OK)
          {
             if (setting == MENU_SETTINGS_SAVESTATE_SAVE)
-               rarch_save_state();
+               rarch_main_command(RARCH_CMD_SAVE_STATE);
             else
             {
                // Disallow savestate load when we absolutely cannot change game state.
@@ -3808,7 +3808,7 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
                if (g_extern.netplay)
                   break;
 #endif
-               rarch_load_state();
+               rarch_main_command(RARCH_CMD_LOAD_STATE);
             }
             g_extern.lifecycle_state |= (1ULL << MODE_GAME);
             return -1;
@@ -3833,7 +3833,7 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
       case MENU_SETTINGS_RESTART_GAME:
          if (action == MENU_ACTION_OK)
          {
-            rarch_game_reset();
+            rarch_main_command(RARCH_CMD_RESET);
             g_extern.lifecycle_state |= (1ULL << MODE_GAME);
             return -1;
          }
