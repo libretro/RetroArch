@@ -63,25 +63,6 @@ void apple_stop_iteration(void)
     iterate_observer = 0;
 }
 
-void apple_event_basic_command(enum basic_event_t action)
-{
-   switch (action)
-   {
-      case RESET:
-         rarch_game_reset();
-         return;
-      case LOAD_STATE:
-         rarch_load_state();
-         return;
-      case SAVE_STATE:
-         rarch_save_state();
-         return;
-      case QUIT:
-         g_extern.system.shutdown = true;
-         return;
-   }
-}
-
 static int frontend_apple_get_rating(void)
 {
    /* TODO/FIXME - look at unique identifier per device and 

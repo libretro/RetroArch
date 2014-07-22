@@ -317,10 +317,11 @@ static char** waiting_argv;
 
 - (IBAction)basicEvent:(id)sender
 {
+    unsigned cmd = (unsigned)[sender tag];
    if (!g_extern.main_is_init)
       return;
 
-   apple_event_basic_command([sender tag]);
+   rarch_main_command(cmd);
 }
 
 - (void)alertDidEnd:(NSAlert *)alert returnCode:(NSInteger)returnCode contextInfo:(void *)contextInfo

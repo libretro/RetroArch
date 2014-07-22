@@ -529,14 +529,14 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
    if (g_extern.main_is_init)
    {
        [self.sections addObject:[NSArray arrayWithObjects:BOXSTRING("Actions"),
-                                 [RAMenuItemBasic itemWithDescription:BOXSTRING("Reset Content") action:^{ [weakSelf performBasicAction:RESET]; }],
-                                 [RAMenuItemBasic itemWithDescription:BOXSTRING("Close Content") action:^{ [weakSelf performBasicAction:QUIT]; }],
+                                 [RAMenuItemBasic itemWithDescription:BOXSTRING("Reset Content") action:^{ [weakSelf performBasicAction:RARCH_CMD_RESET]; }],
+                                 [RAMenuItemBasic itemWithDescription:BOXSTRING("Close Content") action:^{ [weakSelf performBasicAction:RARCH_CMD_QUIT]; }],
                                  nil]];
        
        [self.sections addObject:[NSArray arrayWithObjects:BOXSTRING("States"),
                                  [RAMenuItemStateSelect new],
-                                 [RAMenuItemBasic itemWithDescription:BOXSTRING("Load State") action:^{ [weakSelf performBasicAction:LOAD_STATE]; }],
-                                 [RAMenuItemBasic itemWithDescription:BOXSTRING("Save State") action:^{ [weakSelf performBasicAction:SAVE_STATE]; }],
+                                 [RAMenuItemBasic itemWithDescription:BOXSTRING("Load State") action:^{ [weakSelf performBasicAction:RARCH_CMD_LOAD_STATE]; }],
+                                 [RAMenuItemBasic itemWithDescription:BOXSTRING("Save State") action:^{ [weakSelf performBasicAction:RARCH_CMD_SAVE_STATE]; }],
                                  nil]];
        
        [settings addObject:[RAMenuItemBasic itemWithDescription:BOXSTRING("Core")
@@ -577,10 +577,10 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
       self.navigationItem.leftBarButtonItem = nil;
 }
 
-- (void)performBasicAction:(enum basic_event_t)action
+- (void)performBasicAction:(unsigned)action
 {
    [[RetroArch_iOS get] showGameView];
-   apple_event_basic_command(action);
+   rarch_main_command(action);
 }
 
 - (void)chooseCoreWithPath:(NSString*)path

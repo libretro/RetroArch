@@ -19,7 +19,6 @@
 
 #include <stdint.h>
 
-extern void apple_event_basic_command(enum basic_event_t action);
 extern void apple_refresh_config(void);
 
 #endif
