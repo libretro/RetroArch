@@ -40,6 +40,10 @@
 #include "input/input_common.h"
 #include "git_version.h"
 
+#ifdef HAVE_MENU
+#include "frontend/menu/menu_common.h"
+#endif
+
 #ifdef _WIN32
 #ifdef _XBOX
 #include <xtl.h>
@@ -3085,11 +3089,16 @@ void rarch_main_command(unsigned action)
 {
    switch (action)
    {
-      case RARCH_CMD_RESET:
-         rarch_game_reset();
+      case RARCH_CMD_LOAD_CONTENT:
+#ifdef HAVE_MENU
+         load_menu_game_new_core();
+#endif
          break;
       case RARCH_CMD_LOAD_STATE:
          rarch_load_state();
+         break;
+      case RARCH_CMD_RESET:
+         rarch_game_reset();
          break;
       case RARCH_CMD_SAVE_STATE:
          rarch_save_state();

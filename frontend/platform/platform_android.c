@@ -672,10 +672,9 @@ static void process_pending_intent(void *data)
 
    if (startgame)
    {
-      RARCH_LOG("Starting new game %s ...\n", g_extern.fullpath);
       g_extern.lifecycle_state &= ~(1ULL << MODE_MENU_PREINIT);
       g_extern.lifecycle_state &= ~(1ULL << MODE_GAME);
-      load_menu_game_new_core();
+      rarch_main_command(RARCH_CMD_LOAD_CONTENT);
    }
 
    CALL_VOID_METHOD(env, android_app->activity->clazz, android_app->clearPendingIntent);

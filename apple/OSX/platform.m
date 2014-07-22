@@ -210,7 +210,7 @@ static char** waiting_argv;
        if (core_name)
        {
            strlcpy(g_extern.fullpath, self.file.UTF8String, sizeof(g_extern.fullpath));
-           load_menu_game_new_core();
+           rarch_main_command(RARCH_CMD_LOAD_CONTENT);
        }
        else
          [self chooseCore];
@@ -241,7 +241,7 @@ static char** waiting_argv;
           if (core_name)
           {
               strlcpy(g_extern.fullpath, self.file.UTF8String, sizeof(g_extern.fullpath));
-              load_menu_game_new_core();
+              rarch_main_command(RARCH_CMD_LOAD_CONTENT);
           }
           else
          [self performSelector:@selector(chooseCore) withObject:nil afterDelay:.5f];

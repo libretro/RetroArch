@@ -2618,7 +2618,7 @@ static int menu_common_iterate(unsigned action)
             {
                strlcpy(g_settings.libretro, path, sizeof(g_settings.libretro));
                strlcpy(g_extern.fullpath, driver.menu->deferred_path, sizeof(g_extern.fullpath));
-               load_menu_game_new_core();
+               rarch_main_command(RARCH_CMD_LOAD_CONTENT);
                driver.menu->msg_force = true;
                ret = -1;
                menu_flush_stack_type(MENU_SETTINGS);
