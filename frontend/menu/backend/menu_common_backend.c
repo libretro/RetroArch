@@ -675,7 +675,7 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
          file_list_push(menu->selection_buf, "Core Information", MENU_SETTINGS_CORE_INFO, 0);
          file_list_push(menu->selection_buf, "Settings", MENU_SETTINGS_OPTIONS, 0);
 
-         if (g_extern.perfcnt_enable && (current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "rewind_enable")))
+         if (g_extern.perfcnt_enable && (current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "perfcnt_enable")))
          {
             *current_setting->value.boolean = g_extern.perfcnt_enable;
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_PERFORMANCE_COUNTERS, 0);

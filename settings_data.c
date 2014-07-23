@@ -496,6 +496,7 @@ static void general_change_handler(const void *data)
         strlcpy(g_settings.video.font_path, setting->value.string, sizeof(g_settings.video.font_path));
     else if (!strcmp(setting->name, "video_font_size"))
         g_settings.video.font_size = *setting->value.fraction;
+#ifdef HAVE_OVERLAY
     else if (!strcmp(setting->name, "input_overlay_enable"))
     {
         g_settings.input.overlay_enable = *setting->value.boolean;
@@ -517,6 +518,7 @@ static void general_change_handler(const void *data)
            input_overlay_set_alpha_mod(driver.overlay,
                  g_settings.input.overlay_opacity);
     }
+#endif
     else if (!strcmp(setting->name, "audio_enable"))
         g_settings.audio.enable = *setting->value.boolean;
     else if (!strcmp(setting->name, "audio_sync"))
@@ -594,8 +596,11 @@ static void general_change_handler(const void *data)
         g_settings.video.font_enable = *setting->value.boolean;
     else if (!strcmp(setting->name, "video_gpu_screenshot"))
         g_settings.video.gpu_screenshot = *setting->value.boolean;
+#ifdef HAVE_NETPLAY
     else if (!strcmp(setting->name, "netplay_client_swap_input"))
         g_settings.input.netplay_client_swap_input = *setting->value.boolean;
+#endif
+#ifdef HAVE_OVERLAY
     else if (!strcmp(setting->name, "input_overlay"))
     {
         if (driver.overlay)
@@ -619,6 +624,7 @@ static void general_change_handler(const void *data)
            input_overlay_set_scale_factor(driver.overlay,
                  g_settings.input.overlay_scale);
     }
+#endif
     else if (!strcmp(setting->name, "video_allow_rotate"))
         g_settings.video.allow_rotate = *setting->value.boolean;
     else if (!strcmp(setting->name, "video_windowed_fullscreen"))
