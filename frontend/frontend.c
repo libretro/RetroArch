@@ -46,10 +46,8 @@
 #define args_initial_ptr() data
 #else
 
-#if defined(__APPLE__) || defined(HAVE_BB10)
+#if defined(__APPLE__) || defined(HAVE_BB10) || defined(EMSCRIPTEN)
 #define main_entry rarch_main
-#elif defined(EMSCRIPTEN)
-#define main_entry _fakemain
 #else
 #define main_entry main
 #endif

@@ -3,6 +3,7 @@ TARGET = retroarch.js
 OBJ = frontend/platform/platform_emscripten.o \
 		frontend/platform/platform_null.o \
 		frontend/frontend.o \
+		frontend/frontend_context.o \
 		frontend/menu/menu_input_line_cb.o \
 		retroarch.o \
 		file.o \
