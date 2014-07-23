@@ -330,7 +330,7 @@ static int16_t winxinput_joypad_axis (unsigned port_num, uint32_t joyaxis)
       return dinput_joypad.axis(port_num, joyaxis);
 
    if (!(g_winxinput_states[xplayer].connected))
-      return false;
+      return 0;
 
    int16_t val  = 0;
    int     axis = -1;

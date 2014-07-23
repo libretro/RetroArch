@@ -371,7 +371,7 @@ static GLuint compile_program(const char *vertex, const char *fragment, unsigned
       if (!compile_shader(vert, "#define VERTEX\n#define PARAMETER_UNIFORM\n", vertex))
       {
          RARCH_ERR("Failed to compile vertex shader #%u\n", i);
-         return false;
+         return 0;
       }
 
       glAttachShader(prog, vert);
@@ -384,7 +384,7 @@ static GLuint compile_program(const char *vertex, const char *fragment, unsigned
       if (!compile_shader(frag, "#define FRAGMENT\n#define PARAMETER_UNIFORM\n", fragment))
       {
          RARCH_ERR("Failed to compile fragment shader #%u\n", i);
-         return false;
+         return 0;
       }
 
       glAttachShader(prog, frag);
