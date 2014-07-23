@@ -57,6 +57,13 @@ void *font;
 const gl_font_renderer_t *font_driver;
 char font_path[PATH_MAX];
 
+static const GLfloat vtest[] = {
+   0, 0,
+   1, 0,
+   0, 1,
+   1, 1
+};
+
 enum
 {
    TEXTURE_MAIN = 0,
@@ -234,9 +241,13 @@ void lakka_draw_background(void)
    if (!gl)
       return;
 
+   //glViewport(gl->win_width-1920, 0, 1920, 1080);
+   glViewport(0, 0, gl->win_width, gl->win_height);
+
    glEnable(GL_BLEND);
 
-   gl->coords.tex_coord = gl->tex_coords;
+   gl->coords.vertex = vtest;
+   gl->coords.tex_coord = vtest;
    gl->coords.color = color;
    glBindTexture(GL_TEXTURE_2D, textures[TEXTURE_BG].id);
 
@@ -258,13 +269,6 @@ void lakka_draw_icon(GLuint texture, float x, float y, float alpha, float rotati
       1.0f, 1.0f, 1.0f, alpha,
       1.0f, 1.0f, 1.0f, alpha,
       1.0f, 1.0f, 1.0f, alpha,
-   };
-
-   static const GLfloat vtest[] = {
-      0, 0,
-      1, 0,
-      0, 1,
-      1, 1
    };
 
    gl_t *gl = (gl_t*)driver.video_data;
@@ -335,7 +339,7 @@ static void lakka_draw_subitems(int i, int j)
             subitem->zoom);
          lakka_draw_text("Resume", 
             156 + HSPACING*(i+2) + all_categories_x + dim/2.0, 
-            300 + subitem->y + 15, 
+            300 + subitem->y + 11, 
             1, 
             subitem->alpha);
       }
@@ -353,7 +357,7 @@ static void lakka_draw_subitems(int i, int j)
                subitem->zoom);
          lakka_draw_text(subitem->name, 
                156 + HSPACING * (i+2) + all_categories_x + dim/2.0, 
-               300 + subitem->y + 15, 
+               300 + subitem->y + 11, 
                1, 
                subitem->alpha);
       }
@@ -376,7 +380,7 @@ static void lakka_draw_items(int i)
          continue;
 
       if (i == menu_active_category &&
-         j > active_category->active_item - 4 &&
+         j > active_category->active_item - 5 &&
          j < active_category->active_item + 10) // performance improvement
       {
          lakka_draw_icon(category->item_icon,
@@ -389,7 +393,7 @@ static void lakka_draw_items(int i)
          if (depth == 0)
             lakka_draw_text(item->name,
                156 + HSPACING * (i+1) + all_categories_x + dim/2.0, 
-               300 + item->y + 15, 
+               300 + item->y + 11, 
                1, 
                item->alpha);
       }
