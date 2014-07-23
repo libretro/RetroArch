@@ -333,7 +333,6 @@ void config_set_defaults(void)
    g_settings.audio.enable = audio_enable;
    g_settings.audio.out_rate = out_rate;
    g_settings.audio.block_frames = 0;
-   g_settings.audio.in_rate = out_rate;
    if (audio_device)
       strlcpy(g_settings.audio.device, audio_device, sizeof(g_settings.audio.device));
 

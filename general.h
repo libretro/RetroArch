@@ -262,7 +262,6 @@ struct settings
       bool enable;
       unsigned out_rate;
       unsigned block_frames;
-      float in_rate;
       char device[PATH_MAX];
       unsigned latency;
       bool sync;
@@ -512,6 +511,7 @@ struct global
       size_t block_chunk_size;
 
       double src_ratio;
+      float in_rate;
 
       bool use_float;
       bool mute;

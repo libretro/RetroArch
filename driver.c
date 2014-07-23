@@ -404,13 +404,13 @@ static void adjust_system_rates(void)
          RARCH_LOG("Game FPS > Monitor FPS. Cannot rely on VSync.\n");
       }
 
-      g_settings.audio.in_rate = info->sample_rate;
+      g_extern.audio_data.in_rate = info->sample_rate;
    }
    else
-      g_settings.audio.in_rate = info->sample_rate *
+      g_extern.audio_data.in_rate = info->sample_rate *
          (g_settings.video.refresh_rate / info->fps);
 
-   RARCH_LOG("Set audio input rate to: %.2f Hz.\n", g_settings.audio.in_rate);
+   RARCH_LOG("Set audio input rate to: %.2f Hz.\n", g_extern.audio_data.in_rate);
 
    if (driver.video_data)
    {
@@ -433,7 +433,7 @@ void driver_set_monitor_refresh_rate(float hz)
 
    g_extern.audio_data.orig_src_ratio =
       g_extern.audio_data.src_ratio =
-      (double)g_settings.audio.out_rate / g_settings.audio.in_rate;
+      (double)g_settings.audio.out_rate / g_extern.audio_data.in_rate;
 }
 
 void driver_set_nonblock_state(bool nonblock)
@@ -701,7 +701,7 @@ void rarch_init_dsp_filter(void)
    if (!*g_settings.audio.dsp_plugin)
       return;
 
-   g_extern.audio_data.dsp = rarch_dsp_filter_new(g_settings.audio.dsp_plugin, g_settings.audio.in_rate);
+   g_extern.audio_data.dsp = rarch_dsp_filter_new(g_settings.audio.dsp_plugin, g_extern.audio_data.in_rate);
    if (!g_extern.audio_data.dsp)
       RARCH_ERR("[DSP]: Failed to initialize DSP filter \"%s\".\n", g_settings.audio.dsp_plugin);
 }
@@ -779,9 +779,16 @@ void init_audio(void)
       g_extern.audio_data.chunk_size = g_extern.audio_data.nonblock_chunk_size;
    }
 
+   // Should never happen.
+   if (g_extern.audio_data.in_rate <= 0.0f)
+   {
+      RARCH_WARN("Input rate is invalid (%.3f Hz). Using output rate (%u Hz).\n", g_extern.audio_data.in_rate, g_settings.audio.out_rate);
+      g_extern.audio_data.in_rate = g_settings.audio.out_rate;
+   }
+
    g_extern.audio_data.orig_src_ratio =
       g_extern.audio_data.src_ratio =
-      (double)g_settings.audio.out_rate / g_settings.audio.in_rate;
+      (double)g_settings.audio.out_rate / g_extern.audio_data.in_rate;
 
    if (!rarch_resampler_realloc(&g_extern.audio_data.resampler_data, &g_extern.audio_data.resampler,
          g_settings.audio.resampler, g_extern.audio_data.orig_src_ratio))
@@ -794,7 +801,7 @@ void init_audio(void)
 
    g_extern.audio_data.data_ptr = 0;
 
-   rarch_assert(g_settings.audio.out_rate < g_settings.audio.in_rate * AUDIO_MAX_RATIO);
+   rarch_assert(g_settings.audio.out_rate < g_extern.audio_data.in_rate * AUDIO_MAX_RATIO);
    rarch_assert(g_extern.audio_data.outsamples = (float*)malloc(outsamples_max * sizeof(float)));
 
    g_extern.audio_data.rate_control = false;
