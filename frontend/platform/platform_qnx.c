@@ -53,7 +53,7 @@ static void frontend_qnx_get_environment_settings(int *argc, char *argv[],
 }
 
 const frontend_ctx_driver_t frontend_ctx_qnx = {
-   NULL,                         /* get_environment_settings */
+   frontend_qnx_get_environment_settings, /* get_environment_settings */
    frontend_qnx_init,            /* init */
    NULL,                         /* deinit */
    NULL,                         /* exitspawn */
