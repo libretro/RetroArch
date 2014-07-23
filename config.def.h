@@ -339,31 +339,10 @@ static unsigned aspect_ratio_idx = ASPECT_RATIO_CONFIG; // Use g_settings.video.
 // Save configuration file on exit
 static bool config_save_on_exit = true;
 
-#ifdef HAVE_OVERLAY
-// Default overlay directory
-#if defined(__QNX__)
-static const char *default_overlay_dir = "app/native/overlays/";
-#else
-static const char *default_overlay_dir = NULL;
-#endif
-#endif
-
 static const bool default_overlay_enable = false;
-
-#if defined(__QNX__)
-static const char *default_shader_dir = "/app/native/shaders_glsl/";
-#else
-static const char *default_shader_dir = NULL;
-#endif
 
 static const char *default_filter_dir     = NULL;
 static const char *default_dsp_filter_dir = NULL;
-
-#if defined(__QNX__)
-static const char *default_config_path = "app/native/retroarch.cfg";
-#else
-static const char *default_config_path = NULL;
-#endif
 
 #ifdef HAVE_MENU
 static bool default_block_config_read = true;
@@ -377,9 +356,7 @@ static bool default_core_specific_config = true;
 static bool default_core_specific_config = false;
 #endif
 
-#if defined(__QNX__)
-static const char *default_libretro_info_path = "/app/native/info/";
-#elif defined(_XBOX1)
+#if defined(_XBOX1)
 static const char *default_libretro_info_path = "D:";
 #elif defined(_XBOX360)
 static const char *default_libretro_info_path = "game:";
@@ -387,9 +364,7 @@ static const char *default_libretro_info_path = "game:";
 static const char *default_libretro_info_path = NULL;
 #endif
 
-#if defined(__QNX__)
-static const char *default_libretro_path = "/app/native/lib/";
-#elif defined(_XBOX1)
+#if defined(_XBOX1)
 static const char *default_libretro_path = "D:";
 #elif defined(_XBOX360)
 static const char *default_libretro_path = "game:";

@@ -475,18 +475,6 @@ void config_set_defaults(void)
    g_extern.console.sound.mode = SOUND_MODE_NORMAL;
 #endif
    
-#ifdef HAVE_OVERLAY
-   if (default_overlay_dir)
-   {
-      fill_pathname_expand_special(g_extern.overlay_dir, default_overlay_dir, sizeof(g_extern.overlay_dir));
-      if (!*g_settings.input.overlay)
-            fill_pathname_join(g_settings.input.overlay, g_extern.overlay_dir, "gamepads/retropad/retropad.cfg", sizeof(g_settings.input.overlay));
-   }
-#endif
-
-   if (default_shader_dir)
-      fill_pathname_expand_special(g_settings.video.shader_dir, default_shader_dir, sizeof(g_settings.video.shader_dir));
-
    if (default_filter_dir)
       fill_pathname_expand_special(g_settings.video.filter_dir, default_filter_dir, sizeof(g_settings.video.filter_dir));
 
@@ -498,9 +486,6 @@ void config_set_defaults(void)
 
    if (default_libretro_info_path)
       fill_pathname_expand_special(g_settings.libretro_info_path, default_libretro_info_path, sizeof(g_settings.libretro_info_path));
-
-   if (default_config_path)
-      fill_pathname_expand_special(g_extern.config_path, default_config_path, sizeof(g_extern.config_path));
 
    if (*g_defaults.audio_filter_dir)
       strlcpy(g_settings.audio.filter_dir, g_defaults.audio_filter_dir, sizeof(g_settings.audio.filter_dir));
@@ -514,14 +499,19 @@ void config_set_defaults(void)
       strlcpy(g_settings.libretro_info_path, g_defaults.core_info_dir, sizeof(g_settings.libretro_info_path));
 #ifdef HAVE_OVERLAY
    if (*g_defaults.overlay_dir)
-      strlcpy(g_extern.overlay_dir, g_defaults.overlay_dir, sizeof(g_extern.overlay_dir));
+   {
+      fill_pathname_expand_special(g_extern.overlay_dir, g_defaults.overlay_dir, sizeof(g_extern.overlay_dir));
+      if (!*g_settings.input.overlay)
+            fill_pathname_join(g_settings.input.overlay, g_extern.overlay_dir, "gamepads/retropad/retropad.cfg", sizeof(g_settings.input.overlay));
+   }
 #endif
 #ifdef HAVE_MENU
    if (*g_defaults.menu_config_dir)
       strlcpy(g_settings.menu_config_directory, g_defaults.menu_config_dir, sizeof(g_settings.menu_config_directory));
 #endif
    if (*g_defaults.shader_dir)
-      strlcpy(g_settings.video.shader_dir, g_defaults.shader_dir, sizeof(g_settings.video.shader_dir));
+      fill_pathname_expand_special(g_settings.video.shader_dir, g_defaults.shader_dir, sizeof(g_settings.video.shader_dir));
+
    if (!g_extern.has_set_state_path && *g_defaults.savestate_dir)
       strlcpy(g_extern.savestate_dir, g_defaults.savestate_dir, sizeof(g_extern.savestate_dir));
    if (!g_extern.has_set_save_path && *g_defaults.sram_dir)
@@ -532,7 +522,7 @@ void config_set_defaults(void)
       strlcpy(g_settings.screenshot_directory, g_defaults.screenshot_dir, sizeof(g_settings.screenshot_directory));
 
    if (*g_defaults.config_path)
-      strlcpy(g_extern.config_path, g_defaults.config_path, sizeof(g_extern.config_path));
+      fill_pathname_expand_special(g_extern.config_path, g_defaults.config_path, sizeof(g_extern.config_path));
 
    g_extern.config_save_on_exit = config_save_on_exit;
 

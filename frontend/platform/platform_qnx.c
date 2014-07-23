@@ -42,6 +42,16 @@ static int frontend_qnx_get_rating(void)
    return -1;
 }
 
+static void frontend_qnx_get_environment_settings(int *argc, char *argv[],
+      void *data, void *params_data)
+{
+   fill_pathname_join(g_defaults.config_path, "app/native", "retroarch.cfg", sizeof(g_defaults.config_path));
+   fill_pathname_join(g_defaults.shader_dir, "app/native", "shaders_glsl", sizeof(g_defaults.shader_dir));
+   fill_pathname_join(g_defaults.overlay_dir, "app/native", "overlays", sizeof(g_defaults.overlay_dir));
+   fill_pathname_join(g_defaults.core_dir, "app/native", "lib", sizeof(g_defaults.core_dir));
+   fill_pathname_join(g_defaults.core_info_dir, "app/native", "info", sizeof(g_defaults.core_info_dir));
+}
+
 const frontend_ctx_driver_t frontend_ctx_qnx = {
    NULL,                         /* get_environment_settings */
    frontend_qnx_init,            /* init */
