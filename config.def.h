@@ -356,22 +356,6 @@ static bool default_core_specific_config = true;
 static bool default_core_specific_config = false;
 #endif
 
-#if defined(_XBOX1)
-static const char *default_libretro_info_path = "D:";
-#elif defined(_XBOX360)
-static const char *default_libretro_info_path = "game:";
-#else
-static const char *default_libretro_info_path = NULL;
-#endif
-
-#if defined(_XBOX1)
-static const char *default_libretro_path = "D:";
-#elif defined(_XBOX360)
-static const char *default_libretro_path = "game:";
-#else
-static const char *default_libretro_path = NULL;
-#endif
-
 // Crop overscanned frames.
 static const bool crop_overscan = true;
 

@@ -1099,7 +1099,7 @@ rarch_setting_t* setting_data_get_list(void)
 
 #endif
          CONFIG_PATH(g_settings.libretro,                   "libretro_path",              "Libretro Path",              "", GROUP_NAME, SUBGROUP_NAME, general_change_handler)                WITH_FLAGS(SD_FLAG_ALLOW_EMPTY)
-         CONFIG_PATH(g_settings.libretro_info_path,         "libretro_info_path",         "Core Info Directory",        default_libretro_info_path, GROUP_NAME, SUBGROUP_NAME, general_change_handler)   WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
+         CONFIG_PATH(g_settings.libretro_info_path,         "libretro_info_path",         "Core Info Directory",        g_defaults.core_info_dir ? g_defaults.core_info_dir : "", GROUP_NAME, SUBGROUP_NAME, general_change_handler)   WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
          CONFIG_PATH(g_settings.core_options_path,          "core_options_path",          "Core Options Path",          "", "Paths", SUBGROUP_NAME, general_change_handler)                WITH_FLAGS(SD_FLAG_ALLOW_EMPTY)
          CONFIG_PATH(g_settings.cheat_database,             "cheat_database_path",        "Cheat Database",             "", "Paths", SUBGROUP_NAME, general_change_handler)                WITH_FLAGS(SD_FLAG_ALLOW_EMPTY)
          CONFIG_PATH(g_settings.cheat_settings_path,        "cheat_settings_path",        "Cheat Settings",             "", GROUP_NAME, SUBGROUP_NAME, general_change_handler)                WITH_FLAGS(SD_FLAG_ALLOW_EMPTY)

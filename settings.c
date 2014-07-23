@@ -481,12 +481,6 @@ void config_set_defaults(void)
    if (default_dsp_filter_dir)
       fill_pathname_expand_special(g_settings.audio.filter_dir, default_dsp_filter_dir, sizeof(g_settings.audio.filter_dir));
 
-   if (default_libretro_path && !g_extern.has_set_libretro_directory)
-      fill_pathname_expand_special(g_settings.libretro_directory, default_libretro_path, sizeof(g_settings.libretro_directory));
-
-   if (default_libretro_info_path)
-      fill_pathname_expand_special(g_settings.libretro_info_path, default_libretro_info_path, sizeof(g_settings.libretro_info_path));
-
    if (*g_defaults.audio_filter_dir)
       strlcpy(g_settings.audio.filter_dir, g_defaults.audio_filter_dir, sizeof(g_settings.audio.filter_dir));
    if (*g_defaults.assets_dir)
@@ -496,7 +490,7 @@ void config_set_defaults(void)
    if (*g_defaults.core_path)
       strlcpy(g_settings.libretro, g_defaults.core_path, sizeof(g_settings.libretro));
    if (*g_defaults.core_info_dir)
-      strlcpy(g_settings.libretro_info_path, g_defaults.core_info_dir, sizeof(g_settings.libretro_info_path));
+      fill_pathname_expand_special(g_settings.libretro_info_path, g_defaults.core_info_dir, sizeof(g_settings.libretro_info_path));
 #ifdef HAVE_OVERLAY
    if (*g_defaults.overlay_dir)
    {
