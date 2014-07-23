@@ -575,6 +575,10 @@ static void frontend_android_get_environment_settings(int *argc, char *argv[],
             fill_pathname_join(g_defaults.savestate_dir, path, "savestates", sizeof(g_defaults.savestate_dir));
             fill_pathname_join(g_defaults.sram_dir, path, "savefiles", sizeof(g_defaults.sram_dir));
             fill_pathname_join(g_defaults.system_dir, path, "system", sizeof(g_defaults.system_dir));
+            fill_pathname_join(g_defaults.shader_dir, path, "shaders_glsl", sizeof(g_defaults.shader_dir));
+            fill_pathname_join(g_defaults.overlay_dir, path, "overlays", sizeof(g_defaults.overlay_dir));
+            fill_pathname_join(g_defaults.core_dir, path, "cores", sizeof(g_defaults.core_dir));
+            fill_pathname_join(g_defaults.core_info_dir, path, "info", sizeof(g_defaults.core_info_dir));
          }
       }
    }

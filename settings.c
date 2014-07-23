@@ -507,7 +507,7 @@ void config_set_defaults(void)
    if (*g_defaults.assets_dir)
       strlcpy(g_settings.assets_directory, g_defaults.assets_dir, sizeof(g_settings.assets_directory));
    if (*g_defaults.core_dir)
-      strlcpy(g_settings.libretro_directory, g_defaults.core_dir, sizeof(g_settings.libretro_directory));
+      fill_pathname_expand_special(g_settings.libretro_directory, g_defaults.core_dir, sizeof(g_settings.libretro_directory));
    if (*g_defaults.core_path)
       strlcpy(g_settings.libretro, g_defaults.core_path, sizeof(g_settings.libretro));
    if (*g_defaults.core_info_dir)

@@ -343,8 +343,6 @@ static bool config_save_on_exit = true;
 // Default overlay directory
 #if defined(__QNX__)
 static const char *default_overlay_dir = "app/native/overlays/";
-#elif defined(ANDROID)
-static const char *default_overlay_dir = "/data/data/com.retroarch/overlays/";
 #else
 static const char *default_overlay_dir = NULL;
 #endif
@@ -354,8 +352,6 @@ static const bool default_overlay_enable = false;
 
 #if defined(__QNX__)
 static const char *default_shader_dir = "/app/native/shaders_glsl/";
-#elif defined(ANDROID)
-static const char *default_shader_dir = "/data/data/com.retroarch/shaders_glsl/";
 #else
 static const char *default_shader_dir = NULL;
 #endif
@@ -381,9 +377,7 @@ static bool default_core_specific_config = true;
 static bool default_core_specific_config = false;
 #endif
 
-#if defined(ANDROID)
-static const char *default_libretro_info_path = "/data/data/com.retroarch/info/";
-#elif defined(__QNX__)
+#if defined(__QNX__)
 static const char *default_libretro_info_path = "/app/native/info/";
 #elif defined(_XBOX1)
 static const char *default_libretro_info_path = "D:";
@@ -393,9 +387,7 @@ static const char *default_libretro_info_path = "game:";
 static const char *default_libretro_info_path = NULL;
 #endif
 
-#if defined(ANDROID)
-static const char *default_libretro_path = "/data/data/com.retroarch/cores/";
-#elif defined(__QNX__)
+#if defined(__QNX__)
 static const char *default_libretro_path = "/app/native/lib/";
 #elif defined(_XBOX1)
 static const char *default_libretro_path = "D:";
