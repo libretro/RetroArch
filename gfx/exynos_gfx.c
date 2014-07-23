@@ -166,10 +166,6 @@ struct exynos_data {
 #endif
 };
 
-static inline void put_pixel_argb4444(uint16_t *p, uint8_t r, uint8_t g, uint8_t b, uint8_t a) {
-  *p = (b >> 4) | ((g >> 4) << 4) | ((r >> 4) << 8) | ((a >> 4) << 12);
-}
-
 static inline unsigned align_common(unsigned i, unsigned j) {
   return (i + j - 1) & ~(j - 1);
 }
@@ -377,7 +373,7 @@ static int clear_buffer(struct g2d_context *g2d, struct g2d_image *img) {
 }
 
 /* Put a font glyph at a position in the buffer that is backing the G2D font image object. */
-static void put_glyph_rgba4444(struct exynos_data *pdata, const uint8_t *src, uint8_t *f_rgb,
+static void put_glyph_rgba4444(struct exynos_data *pdata, const uint8_t *src, uint16_t color,
                                unsigned g_width, unsigned g_height, unsigned g_pitch,
                                unsigned dst_x, unsigned dst_y) {
   const enum exynos_image_type buf_type = defaults[exynos_image_font].buf_type;
@@ -390,9 +386,9 @@ static void put_glyph_rgba4444(struct exynos_data *pdata, const uint8_t *src, ui
 
   for (y = 0; y < g_height; ++y, src += g_pitch, dst += buf_width) {
     for (x = 0; x < g_width; ++x) {
-      const uint8_t blend = src[x];
+      const uint16_t blend = src[x];
 
-      if (blend != 0) put_pixel_argb4444(&dst[x], f_rgb[0], f_rgb[1], f_rgb[2], blend);
+      dst[x] = color | ((blend << 8) & 0xf000);
     }
   }
 }
@@ -1117,6 +1113,10 @@ static int exynos_render_msg(struct exynos_video *vid,
   int msg_base_x = g_settings.video.msg_pos_x * dst->width;
   int msg_base_y = (1.0f - g_settings.video.msg_pos_y) * dst->height;
 
+  const uint16_t color = (vid->font_rgb[2] >> 4) |
+                         ((vid->font_rgb[1] >> 4) << 4) |
+                         ((vid->font_rgb[0] >> 4) << 8);
+
   if (vid->font == NULL || vid->font_driver == NULL)
     return -1;
 
@@ -1158,7 +1158,7 @@ static int exynos_render_msg(struct exynos_video *vid,
     if (glyph_width > max_width) glyph_width = max_width;
     if (glyph_height > max_height) glyph_height = max_height;
 
-    put_glyph_rgba4444(pdata, src, vid->font_rgb,
+    put_glyph_rgba4444(pdata, src, color,
                        glyph_width, glyph_height,
                        atlas->width, base_x, base_y);
 
