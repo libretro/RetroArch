@@ -271,18 +271,17 @@ static bool valid_device(struct udev_device *dev)
       goto error;
 
    // Has to at least support EV_KEY interface.
-	// Since I removed the ID_INPUT_JOYSTICK restriction,
-	// I'm filtering by the existence of BTN_A to determine
-	// if this is a joypad or not. - demsullivan
+   // Since I removed the ID_INPUT_JOYSTICK restriction,
+   // I'm filtering by the existence of BTN_A to determine
+   // if this is a joypad or not. - demsullivan
    const char *is_joystick = udev_device_get_property_value(dev, "ID_INPUT_JOYSTICK");
-   if (!test_bit(EV_KEY, evbit) || !test_bit(BTN_A, keybit) || (is_joystick && strcmp(is_joystick, "1")))
-      goto error;
-
-   return true;
+   if (test_bit(EV_KEY, evbit) && (test_bit(BTN_A, keybit) || (is_joystick != NULL && strcmp(is_joystick, "1") == 0)))
+      return true;
 
 error:
    close(fd);
    return false;
+
 }
    
    
