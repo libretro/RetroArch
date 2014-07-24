@@ -216,6 +216,7 @@ end:
 
 content_history_t *content_history_init(const char *path, size_t size)
 {
+   RARCH_LOG("Opening history: %s.\n", path);
    content_history_t *hist = (content_history_t*)calloc(1, sizeof(*hist));
    if (!hist)
    {

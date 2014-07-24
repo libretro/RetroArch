@@ -172,14 +172,6 @@ static void menu_free_history(menu_handle_t *menu)
    menu->history = NULL;
 }
 
-static void menu_init_history(menu_handle_t *menu)
-{
-   menu_free_history(menu);
-
-   RARCH_LOG("[Menu]: Opening history: %s.\n", g_settings.game_history_path);
-   menu->history = content_history_init(g_settings.game_history_path, g_settings.game_history_size);
-}
-
 static void menu_update_libretro_info(menu_handle_t *menu)
 {
 #ifndef HAVE_DYNAMIC
@@ -257,7 +249,8 @@ bool load_menu_game(void)
 
    // Update menu state which depends on config.
    menu_update_libretro_info(driver.menu);
-   menu_init_history(driver.menu);
+   menu_free_history(driver.menu);
+   driver.menu->history = content_history_init(g_settings.game_history_path, g_settings.game_history_size);
 
    if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->shader_manager_init)
       driver.menu_ctx->backend->shader_manager_init(driver.menu);
@@ -305,7 +298,7 @@ void *menu_init(const void *data)
    if (menu_ctx && menu_ctx->backend && menu_ctx->backend->shader_manager_init)
       menu_ctx->backend->shader_manager_init(menu);
 
-   menu_init_history(menu);
+   menu->history = content_history_init(g_settings.game_history_path, g_settings.game_history_size);
    menu->last_time = rarch_get_time_usec();
 
    return menu;
@@ -339,7 +332,7 @@ void menu_free(void *data)
    file_list_free(menu->menu_stack);
    file_list_free(menu->selection_buf);
 
-   content_history_free(menu->history);
+   menu_free_history(menu);
    core_info_list_free(menu->core_info);
 
    if (menu->core_info_current)
