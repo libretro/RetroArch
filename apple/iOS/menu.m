@@ -592,7 +592,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
       action: ^(NSString* core)
       {
          if (path)
-            apple_run_core(0, NULL, core, path.UTF8String);
+            apple_run_core(0, NULL, core.UTF8String, path.UTF8String);
          else
          {
             weakSelf.core = core;
@@ -617,7 +617,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
          if (item && !item.isDirectory)
          {
             if (weakSelf.core)
-               apple_run_core(0, NULL, weakSelf.core, item.path.UTF8String);
+               apple_run_core(0, NULL, weakSelf.core.UTF8String, item.path.UTF8String);
             else
                [weakSelf chooseCoreWithPath:item.path];
          }
@@ -677,7 +677,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
    for (i = 0; _history && i < content_history_size(_history); i ++)
    {
       RAMenuItemBasic* item = [RAMenuItemBasic itemWithDescription:BOXSTRING(path_basename(content_history_get_path(weakSelf.history, i)))
-                                                            action:^{ apple_run_core(0, NULL, BOXSTRING(content_history_get_core_path(weakSelf.history, i)),
+                                                            action:^{ apple_run_core(0, NULL, content_history_get_core_path(weakSelf.history, i),
                                                                                      content_history_get_path(weakSelf.history, i)); }
                                                             detail:^{ return BOXSTRING(content_history_get_core_name(weakSelf.history, i)); }];
       [section addObject:item];

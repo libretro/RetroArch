@@ -271,7 +271,7 @@ static char** waiting_argv;
 #endif
     
     if (!g_extern.main_is_init)
-        apple_run_core(0, NULL, self.core, g_extern.fullpath);
+        apple_run_core(0, NULL, self.core.UTF8String, g_extern.fullpath);
     else
         g_extern.system.shutdown = true;
 }
