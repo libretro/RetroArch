@@ -215,7 +215,6 @@ void load_menu_game_prepare_dummy(void)
       driver.menu->load_no_rom = false;
 
    g_extern.lifecycle_state |= (1ULL << MODE_LOAD_GAME);
-   g_extern.lifecycle_state &= ~(1ULL << MODE_GAME);
    g_extern.system.shutdown = false;
 }
 
@@ -565,14 +564,9 @@ bool menu_replace_config(const char *path)
 
    strlcpy(g_extern.config_path, path, sizeof(g_extern.config_path));
    g_extern.block_config_read = false;
-
-   // Load dummy core.
-   *g_extern.fullpath = '\0';
    *g_settings.libretro = '\0'; // Load core in new config.
-   g_extern.lifecycle_state |= (1ULL << MODE_LOAD_GAME);
 
-   if (driver.menu)
-      driver.menu->load_no_rom = false;
+   load_menu_game_prepare_dummy();
 
    return true;
 }
