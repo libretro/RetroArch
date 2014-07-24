@@ -1889,6 +1889,7 @@ static int menu_settings_iterate(unsigned action)
             menu_type == MENU_SETTINGS_VIDEO_SOFTFILTER ||
             menu_type == MENU_SETTINGS_AUDIO_DSP_FILTER ||
             menu_type == MENU_SETTINGS_OVERLAY_PRESET ||
+            menu_type == MENU_SETTINGS_CONTENT_HISTORY_PATH ||
             menu_type == MENU_SETTINGS_CORE ||
             menu_type == MENU_SETTINGS_CONFIG ||
             menu_type == MENU_SETTINGS_DISK_APPEND ||
@@ -2241,6 +2242,8 @@ static void menu_parse_and_resolve(unsigned menu_type)
             else if (menu_type == MENU_SETTINGS_AUDIO_DSP_FILTER)
                exts = "dsp";
             else if (menu_type == MENU_SETTINGS_OVERLAY_PRESET)
+               exts = "cfg";
+            else if (menu_type == MENU_SETTINGS_CONTENT_HISTORY_PATH)
                exts = "cfg";
             else if (menu_common_type_is(menu_type) == MENU_FILE_DIRECTORY)
                exts = ""; // we ignore files anyway
@@ -3977,7 +3980,7 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
          switch (action)
          {
             case MENU_ACTION_OK:
-               file_list_push(driver.menu->menu_stack, g_settings.game_history_path, setting, driver.menu->selection_ptr);
+               file_list_push(driver.menu->menu_stack, "", setting, driver.menu->selection_ptr);
                menu_clear_navigation(driver.menu);
                driver.menu->need_refresh = true;
                break;
