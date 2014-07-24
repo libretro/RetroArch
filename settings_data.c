@@ -38,13 +38,6 @@ static const char* get_input_config_prefix(const rarch_setting_t* setting)
    return buffer;
 }
 
-static const char* get_input_config_key(const rarch_setting_t* setting, const char* type)
-{
-   static char buffer[64];
-   snprintf(buffer, 64, "%s_%s%c%s", get_input_config_prefix(setting), setting->name, type ? '_' : '\0', type);
-   return buffer;
-}
-
 //FIXME - make portable
 #ifdef APPLE
 static const char* get_key_name(const rarch_setting_t* setting)
@@ -63,33 +56,6 @@ static const char* get_key_name(const rarch_setting_t* setting)
    return "nul";
 }
 #endif
-
-
-static const char* get_button_name(const rarch_setting_t* setting)
-{
-   static char buffer[32];
-
-   if (BINDFOR(*setting).joykey == NO_BTN)
-      return "nul";
-
-   snprintf(buffer, 32, "%lld", (long long int)(BINDFOR(*setting).joykey));
-   return buffer;
-}
-
-static const char* get_axis_name(const rarch_setting_t* setting)
-{
-   static char buffer[32];
-   uint32_t joyaxis = BINDFOR(*setting).joyaxis;
-
-   if (AXIS_NEG_GET(joyaxis) != AXIS_DIR_NONE)
-      snprintf(buffer, 8, "-%d", AXIS_NEG_GET(joyaxis));
-   else if (AXIS_POS_GET(joyaxis) != AXIS_DIR_NONE)
-      snprintf(buffer, 8, "+%d", AXIS_POS_GET(joyaxis));
-   else
-      return "nul";
-
-   return buffer;
-}
 
 void setting_data_reset_setting(const rarch_setting_t* setting)
 {
