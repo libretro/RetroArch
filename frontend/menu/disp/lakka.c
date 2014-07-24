@@ -219,6 +219,9 @@ static void lakka_draw_text(const char *str, float x, float y, float scale, floa
 
    if (alpha > global_alpha)
       alpha = global_alpha;
+   // Workaround https://github.com/libretro/RetroArch/blob/master/gfx/fonts/gl_raster_font.c#L216
+   if (alpha < 0.05)
+      alpha = 0.05;
 
    params.scale = scale;
    params.color = FONT_COLOR_RGBA(255, 255, 255, (uint8_t)(255 * alpha));
@@ -264,6 +267,9 @@ void lakka_draw_background(void)
 
 void lakka_draw_icon(GLuint texture, float x, float y, float alpha, float rotation, float scale)
 {
+   if (alpha > global_alpha)
+      alpha = global_alpha;
+
    GLfloat color[] = {
       1.0f, 1.0f, 1.0f, alpha,
       1.0f, 1.0f, 1.0f, alpha,
@@ -275,9 +281,6 @@ void lakka_draw_icon(GLuint texture, float x, float y, float alpha, float rotati
 
    if (!gl)
       return;
-   
-   if (alpha > global_alpha)
-      alpha = global_alpha;
 
    glViewport(x, gl->win_height - y, dim, dim);
 
