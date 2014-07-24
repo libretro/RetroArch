@@ -28,7 +28,7 @@ static CFRunLoopObserverRef iterate_observer;
 
 static void do_iteration(void)
 {
-   if (!(iterate_observer && g_extern.main_is_init && !g_extern.is_paused))
+   if (!(g_extern.main_is_init && !g_extern.is_paused))
       return;
 
    if (main_entry_iterate(0, NULL, NULL))
@@ -42,18 +42,12 @@ static void do_iteration(void)
 
 void apple_start_iteration(void)
 {
-   if (iterate_observer)
-       return;
-    
     iterate_observer = CFRunLoopObserverCreate(0, kCFRunLoopBeforeWaiting, true, 0, (CFRunLoopObserverCallBack)do_iteration, 0);
     CFRunLoopAddObserver(CFRunLoopGetMain(), iterate_observer, kCFRunLoopCommonModes);
 }
 
 void apple_stop_iteration(void)
 {
-   if (!iterate_observer)
-       return;
-    
     CFRunLoopObserverInvalidate(iterate_observer);
     CFRelease(iterate_observer);
     iterate_observer = 0;
