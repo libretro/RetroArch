@@ -201,16 +201,16 @@ bool setting_data_load_config_path(const rarch_setting_t* settings, const char* 
 
 rarch_setting_t* setting_data_find_setting(rarch_setting_t* settings, const char* name)
 {
-   rarch_setting_t *setting;
+   rarch_setting_t *setting = NULL;
 
    if (!name)
       return NULL;
 
    for (setting = settings; setting->type != ST_NONE; setting++)
       if (setting->type <= ST_GROUP && strcmp(setting->name, name) == 0)
-         return setting;
+         break;
 
-   return NULL;
+   return setting;
 }
 
 void setting_data_set_with_string_representation(const rarch_setting_t* setting, const char* value)
@@ -635,6 +635,8 @@ static void general_change_handler(const void *data)
         strlcpy(g_extern.savestate_dir, setting->value.string, sizeof(g_extern.savestate_dir));
     else if (!strcmp(setting->name, "system_directory"))
         strlcpy(g_settings.system_directory, setting->value.string, sizeof(g_settings.system_directory));
+    else if (!strcmp(setting->name, "extraction_directory"))
+        strlcpy(g_settings.extraction_directory, setting->value.string, sizeof(g_settings.extraction_directory));
     else if (!strcmp(setting->name, "input_player1_joypad_index"))
         g_settings.input.joypad_map[0] = *setting->value.integer;
     else if (!strcmp(setting->name, "input_player2_joypad_index"))
@@ -1057,6 +1059,7 @@ rarch_setting_t* setting_data_get_list(void)
        CONFIG_PATH(g_extern.savefile_dir, "savefile_directory", "Savefile Directory", "", GROUP_NAME, SUBGROUP_NAME, general_change_handler);
        CONFIG_PATH(g_extern.savestate_dir, "savestate_directory", "Savestate Directory", "", GROUP_NAME, SUBGROUP_NAME, general_change_handler)
        CONFIG_PATH(g_settings.system_directory, "system_directory", "System Directory", "", GROUP_NAME, SUBGROUP_NAME, general_change_handler)
+       CONFIG_PATH(g_settings.extraction_directory, "extraction_directory", "Extraction Directory", "", GROUP_NAME, SUBGROUP_NAME, general_change_handler)
          END_SUB_GROUP()
          END_GROUP()
        

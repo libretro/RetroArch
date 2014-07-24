@@ -545,6 +545,7 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
          file_list_push(menu->selection_buf, "System Directory", MENU_SYSTEM_DIR_PATH, 0);
          file_list_push(menu->selection_buf, "Screenshot Directory", MENU_SCREENSHOT_DIR_PATH, 0);
          file_list_push(menu->selection_buf, "Autoconfig Directory", MENU_AUTOCONFIG_DIR_PATH, 0);
+         file_list_push(menu->selection_buf, "Extraction Directory", MENU_EXTRACTION_DIR_PATH, 0);
          break;
       case MENU_SETTINGS_INPUT_OPTIONS:
          file_list_clear(menu->selection_buf);
@@ -1748,6 +1749,7 @@ static unsigned menu_common_type_is(unsigned type)
       type == MENU_OVERLAY_DIR_PATH ||
       type == MENU_SCREENSHOT_DIR_PATH ||
       type == MENU_AUTOCONFIG_DIR_PATH ||
+      type == MENU_EXTRACTION_DIR_PATH ||
       type == MENU_SYSTEM_DIR_PATH;
 
    if (type_found)
@@ -2785,6 +2787,11 @@ static int menu_common_iterate(unsigned action)
             else if (menu_type == MENU_AUTOCONFIG_DIR_PATH)
             {
                strlcpy(g_settings.input.autoconfig_dir, dir, sizeof(g_settings.input.autoconfig_dir));
+               menu_flush_stack_type(MENU_SETTINGS_PATH_OPTIONS);
+            }
+            else if (menu_type == MENU_EXTRACTION_DIR_PATH)
+            {
+               strlcpy(g_settings.extraction_directory, dir, sizeof(g_settings.extraction_directory));
                menu_flush_stack_type(MENU_SETTINGS_PATH_OPTIONS);
             }
             else
@@ -4285,6 +4292,10 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
          if (action == MENU_ACTION_START)
             *g_settings.input.autoconfig_dir = '\0';
          break;
+      case MENU_EXTRACTION_DIR_PATH:
+         if (action == MENU_ACTION_START)
+            *g_settings.extraction_directory = '\0';
+         break;
       case MENU_SETTINGS_VIDEO_ROTATION:
          if ((current_setting = setting_data_find_setting(setting_data, "video_rotation")))
             menu_common_setting_set_current_unsigned_integer(current_setting, 1, action, true, true);
@@ -5106,6 +5117,9 @@ static void menu_common_setting_set_label(char *type_str, size_t type_str_size, 
             break;
          case MENU_AUTOCONFIG_DIR_PATH:
             strlcpy(type_str, *g_settings.input.autoconfig_dir ? g_settings.input.autoconfig_dir : "<default>", type_str_size);
+            break;
+         case MENU_EXTRACTION_DIR_PATH:
+            strlcpy(type_str, *g_settings.extraction_directory ? g_settings.extraction_directory : "<None>", type_str_size);
             break;
          case MENU_SETTINGS_DISK_INDEX:
             {
