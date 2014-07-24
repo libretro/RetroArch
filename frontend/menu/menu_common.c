@@ -208,12 +208,11 @@ static void menu_update_libretro_info(menu_handle_t *menu)
 
 void load_menu_game_prepare_dummy(void)
 {
-   if (!driver.menu)
-      return;
-
    // Starts dummy core.
    *g_extern.fullpath = '\0';
-   driver.menu->load_no_rom = false;
+
+   if (driver.menu)
+      driver.menu->load_no_rom = false;
 
    g_extern.lifecycle_state |= (1ULL << MODE_LOAD_GAME);
    g_extern.lifecycle_state &= ~(1ULL << MODE_GAME);
