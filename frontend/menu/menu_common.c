@@ -164,13 +164,16 @@ void load_menu_game_history(unsigned game_index)
 #endif
 }
 
-static void menu_init_history(menu_handle_t *menu)
+static void menu_free_history(menu_handle_t *menu)
 {
    if (menu->history)
-   {
       content_history_free(menu->history);
-      menu->history = NULL;
-   }
+   menu->history = NULL;
+}
+
+static void menu_init_history(menu_handle_t *menu)
+{
+   menu_free_history(menu);
 
    if (*g_extern.config_path)
    {
@@ -321,6 +324,15 @@ void *menu_init(const void *data)
    return menu;
 }
 
+void menu_free_shaders(menu_handle_t *menu)
+{
+#ifdef HAVE_SHADER_MANAGER
+   if (menu->shader)
+      free(menu->shader);
+   menu->shader = NULL;
+#endif
+}
+
 void menu_free(void *data)
 {
    menu_handle_t *menu = (menu_handle_t*)data;
@@ -328,11 +340,7 @@ void menu_free(void *data)
    if (!menu)
       return;
   
-#ifdef HAVE_SHADER_MANAGER
-   if (menu->shader)
-      free(menu->shader);
-   menu->shader = NULL;
-#endif
+   menu_free_shaders(menu);
 
    if (driver.menu_ctx && driver.menu_ctx->free)
       driver.menu_ctx->free(menu);
