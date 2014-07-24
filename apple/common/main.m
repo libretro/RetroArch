@@ -32,8 +32,8 @@ void apple_run_core(int argc, char **argv, const char* core,
 {
    static char core_path[PATH_MAX], file_path[PATH_MAX],
                config_path[PATH_MAX];
-
-   [apple_platform loadingCore:BOXSTRING(core) withFile:file];
+    NSString *core_to_load = core ? BOXSTRING(core) : nil;
+   [apple_platform loadingCore:core_to_load withFile:file];
 
    if (file)
       strlcpy(file_path, file, sizeof(file_path));
