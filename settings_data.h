@@ -99,7 +99,6 @@ void setting_data_reset(const rarch_setting_t* settings);
 
 bool setting_data_load_config_path(const rarch_setting_t* settings, const char* path);
 bool setting_data_load_config(const rarch_setting_t* settings, config_file_t* config);
-bool setting_data_save_config_path(const rarch_setting_t* settings, const char* path);
 bool setting_data_save_config(const rarch_setting_t* settings, config_file_t* config);
 
 rarch_setting_t* setting_data_find_setting(rarch_setting_t* settings, const char* name);

@@ -198,21 +198,6 @@ bool setting_data_load_config(const rarch_setting_t* settings, config_file_t* co
    return true;
 }
 
-bool setting_data_save_config_path(const rarch_setting_t* settings, const char* path)
-{
-   bool result = false;
-   config_file_t* config = (config_file_t*)config_file_new(path);
-
-   if (!config)
-      config = config_file_new(0);
-
-   setting_data_save_config(settings, config);
-   result = config_file_write(config, path);
-   config_file_free(config);
-
-   return result;
-}
-
 bool setting_data_save_config(const rarch_setting_t* settings, config_file_t* config)
 {
    const rarch_setting_t *setting;
