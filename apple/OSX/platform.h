@@ -39,7 +39,6 @@
    NSWindow* _coreSelectSheet;
    NSString* _file;
    NSString* _core;
-   bool _wantReload;
 }
 
 @property (nonatomic, retain) NSWindow IBOutlet* window;

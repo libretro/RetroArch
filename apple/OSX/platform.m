@@ -168,7 +168,6 @@ static char** waiting_argv;
    apple_run_core(waiting_argc, waiting_argv, nil, 0);
 
    waiting_argc = 0;
-   _wantReload = false;
 }
 
 - (void)applicationDidBecomeActive:(NSNotification *)notification
@@ -270,8 +269,6 @@ static char** waiting_argv;
 	/* FIXME - Rewrite this so that this is no longer an associated object - requires ObjC 2.0 runtime */
    self.core = objc_getAssociatedObject(cb.objectValueOfSelectedItem, associated_core_key);
 #endif
-
-    _wantReload = g_extern.main_is_init;
     
     if (!g_extern.main_is_init)
         apple_run_core(0, NULL, self.core, g_extern.fullpath);
@@ -288,15 +285,7 @@ static char** waiting_argv;
 
 - (void)unloadingCore
 {
-   if (g_extern.system.shutdown)
-      [[NSApplication sharedApplication] terminate:nil];
-
-   if (_wantReload)
-      apple_run_core(0, NULL, self.core, g_extern.fullpath);
-   else
-      [[NSApplication sharedApplication] terminate:nil];
-   
-   _wantReload = false;
+   [[NSApplication sharedApplication] terminate:nil];
 }
 
 #pragma mark Menus
