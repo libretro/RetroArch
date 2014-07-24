@@ -530,6 +530,7 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
 #endif
          file_list_push(menu->selection_buf, "Core Directory", MENU_LIBRETRO_DIR_PATH, 0);
          file_list_push(menu->selection_buf, "Core Info Directory", MENU_LIBRETRO_INFO_DIR_PATH, 0);
+         file_list_push(menu->selection_buf, "Content History Path", MENU_SETTINGS_CONTENT_HISTORY_PATH, 0);
 #ifdef HAVE_DYLIB
          file_list_push(menu->selection_buf, "Software Filter Directory", MENU_FILTER_DIR_PATH, 0);
 #endif
@@ -2563,6 +2564,7 @@ static int menu_common_iterate(unsigned action)
                type == MENU_SETTINGS_OVERLAY_PRESET ||
                type == MENU_SETTINGS_VIDEO_SOFTFILTER ||
                type == MENU_SETTINGS_AUDIO_DSP_FILTER ||
+               type == MENU_SETTINGS_CONTENT_HISTORY_PATH ||
                type == MENU_SETTINGS_CORE ||
                type == MENU_SETTINGS_CONFIG ||
                type == MENU_SETTINGS_DISK_APPEND ||
@@ -2689,6 +2691,11 @@ static int menu_common_iterate(unsigned action)
                load_menu_game_history(driver.menu->selection_ptr);
                menu_flush_stack_type(MENU_SETTINGS);
                ret = -1;
+            }
+            else if (menu_type == MENU_SETTINGS_CONTENT_HISTORY_PATH)
+            {
+               fill_pathname_join(g_settings.game_history_path, dir, path, sizeof(g_settings.input.overlay));
+               menu_flush_stack_type(MENU_SETTINGS_PATH_OPTIONS);
             }
             else if (menu_type == MENU_BROWSER_DIR_PATH)
             {
@@ -2847,6 +2854,7 @@ static int menu_common_iterate(unsigned action)
             menu_common_type_is(menu_type) == MENU_SETTINGS_SHADER_OPTIONS ||
             menu_common_type_is(menu_type) == MENU_FILE_DIRECTORY ||
             menu_type == MENU_SETTINGS_OVERLAY_PRESET ||
+            menu_type == MENU_SETTINGS_CONTENT_HISTORY_PATH ||
             menu_type == MENU_SETTINGS_VIDEO_SOFTFILTER ||
             menu_type == MENU_SETTINGS_AUDIO_DSP_FILTER ||
             menu_type == MENU_SETTINGS_DEFERRED_CORE ||
@@ -3965,6 +3973,21 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
          }
          break;
 #endif
+      case MENU_SETTINGS_CONTENT_HISTORY_PATH:
+         switch (action)
+         {
+            case MENU_ACTION_OK:
+               file_list_push(driver.menu->menu_stack, g_settings.game_history_path, setting, driver.menu->selection_ptr);
+               menu_clear_navigation(driver.menu);
+               driver.menu->need_refresh = true;
+               break;
+            case MENU_ACTION_START:
+               *g_settings.game_history_path = '\0';
+               break;
+            default:
+               break;
+         }
+         break;
       case MENU_SETTINGS_VIDEO_SOFTFILTER:
          switch (action)
          {
@@ -5191,6 +5214,9 @@ static void menu_common_setting_set_label(char *type_str, size_t type_str_size, 
             snprintf(type_str, type_str_size, "%.2f", g_settings.input.overlay_scale);
             break;
 #endif
+         case MENU_SETTINGS_CONTENT_HISTORY_PATH:
+            strlcpy(type_str, g_settings.game_history_path ? g_settings.game_history_path : "<None>", type_str_size);
+            break;
          case MENU_SETTINGS_BIND_PLAYER:
             snprintf(type_str, type_str_size, "#%d", driver.menu->current_pad + 1);
             break;

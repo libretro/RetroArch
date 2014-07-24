@@ -176,20 +176,8 @@ static void menu_init_history(menu_handle_t *menu)
 {
    menu_free_history(menu);
 
-   if (*g_extern.config_path)
-   {
-      char history_path[PATH_MAX];
-      if (*g_settings.game_history_path)
-         strlcpy(history_path, g_settings.game_history_path, sizeof(history_path));
-      else
-      {
-         fill_pathname_resolve_relative(history_path, g_extern.config_path,
-               ".retroarch-game-history.txt", sizeof(history_path));
-      }
-
-      RARCH_LOG("[Menu]: Opening history: %s.\n", history_path);
-      menu->history = content_history_init(history_path, g_settings.game_history_size);
-   }
+   RARCH_LOG("[Menu]: Opening history: %s.\n", g_settings.game_history_path);
+   menu->history = content_history_init(g_settings.game_history_path, g_settings.game_history_size);
 }
 
 static void menu_update_libretro_info(menu_handle_t *menu)

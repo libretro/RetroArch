@@ -670,7 +670,7 @@ static void general_change_handler(const void *data)
     else if (!strcmp(setting->name, "cheat_settings_path"))
         strlcpy(g_settings.cheat_settings_path, setting->value.string, sizeof(g_settings.cheat_settings_path));
     else if (!strcmp(setting->name, "game_history_path"))
-        strlcpy(g_settings.cheat_settings_path, setting->value.string, sizeof(g_settings.cheat_settings_path));
+        strlcpy(g_settings.game_history_path, setting->value.string, sizeof(g_settings.game_history_path));
     else if (!strcmp(setting->name, "video_shader_dir"))
         strlcpy(g_settings.video.filter_dir, setting->value.string, sizeof(g_settings.video.filter_dir));
     else if (!strcmp(setting->name, "video_aspect_ratio_auto"))
