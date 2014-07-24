@@ -600,12 +600,12 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
          file_list_push(menu->selection_buf, "System BGM Control", MENU_SETTINGS_CUSTOM_BGM_CONTROL_ENABLE, 0);
 #endif
          file_list_push(menu->selection_buf, "Volume Level", MENU_SETTINGS_AUDIO_VOLUME, 0);
+         file_list_push(menu->selection_buf, "Audio Device", MENU_SETTINGS_DRIVER_AUDIO_DEVICE, 0);
          break;
       case MENU_SETTINGS_DRIVERS:
          file_list_clear(menu->selection_buf);
          file_list_push(menu->selection_buf, "Video Driver", MENU_SETTINGS_DRIVER_VIDEO, 0);
          file_list_push(menu->selection_buf, "Audio Driver", MENU_SETTINGS_DRIVER_AUDIO, 0);
-         file_list_push(menu->selection_buf, "Audio Device", MENU_SETTINGS_DRIVER_AUDIO_DEVICE, 0);
          file_list_push(menu->selection_buf, "Audio Resampler", MENU_SETTINGS_DRIVER_AUDIO_RESAMPLER, 0);
          file_list_push(menu->selection_buf, "Input Driver", MENU_SETTINGS_DRIVER_INPUT, 0);
 #ifdef HAVE_CAMERA
