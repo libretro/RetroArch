@@ -165,13 +165,6 @@ void load_menu_game_history(unsigned game_index)
 #endif
 }
 
-static void menu_free_history(menu_handle_t *menu)
-{
-   if (menu->history)
-      content_history_free(menu->history);
-   menu->history = NULL;
-}
-
 static void menu_update_libretro_info(menu_handle_t *menu)
 {
 #ifndef HAVE_DYNAMIC
@@ -249,7 +242,9 @@ bool load_menu_game(void)
 
    // Update menu state which depends on config.
    menu_update_libretro_info(driver.menu);
-   menu_free_history(driver.menu);
+
+   if (driver.menu->history)
+      content_history_free(driver.menu->history);
    driver.menu->history = content_history_init(g_settings.game_history_path, g_settings.game_history_size);
 
    if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->shader_manager_init)
@@ -332,7 +327,9 @@ void menu_free(void *data)
    file_list_free(menu->menu_stack);
    file_list_free(menu->selection_buf);
 
-   menu_free_history(menu);
+   if (menu->history)
+      content_history_free(menu->history);
+   menu->history = NULL;
    core_info_list_free(menu->core_info);
 
    if (menu->core_info_current)
