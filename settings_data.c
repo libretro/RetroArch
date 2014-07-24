@@ -136,20 +136,7 @@ void setting_data_reset(const rarch_setting_t* settings)
       setting_data_reset_setting(setting);
 }
 
-bool setting_data_load_config_path(const rarch_setting_t* settings, const char* path)
-{
-   config_file_t *config = (config_file_t*)config_file_new(path);
-
-   if (!config)
-      return NULL;
-
-   setting_data_load_config(settings, config);
-   config_file_free(config);
-
-   return config;
-}
-
-bool setting_data_load_config(const rarch_setting_t* settings, config_file_t* config)
+static bool setting_data_load_config(const rarch_setting_t* settings, config_file_t* config)
 {
    const rarch_setting_t *setting;
    if (!config)
@@ -197,6 +184,20 @@ bool setting_data_load_config(const rarch_setting_t* settings, config_file_t* co
 
    return true;
 }
+
+bool setting_data_load_config_path(const rarch_setting_t* settings, const char* path)
+{
+   config_file_t *config = (config_file_t*)config_file_new(path);
+
+   if (!config)
+      return NULL;
+
+   setting_data_load_config(settings, config);
+   config_file_free(config);
+
+   return config;
+}
+
 
 rarch_setting_t* setting_data_find_setting(rarch_setting_t* settings, const char* name)
 {
