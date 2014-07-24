@@ -146,6 +146,9 @@ static bool setting_data_load_config(const rarch_setting_t* settings, config_fil
          default:
             break;
       }
+
+      if (setting->change_handler)
+         setting->change_handler(setting);
    }
 
    return true;
