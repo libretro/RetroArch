@@ -61,6 +61,6 @@ void apple_run_core(int argc, char **argv, const char* core,
       else
          apple_display_alert("Failed to load content.", "Error");
 
-      apple_rarch_exited();
+      main_exit(NULL);
    }
 }
