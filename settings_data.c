@@ -198,56 +198,6 @@ bool setting_data_load_config(const rarch_setting_t* settings, config_file_t* co
    return true;
 }
 
-bool setting_data_save_config(const rarch_setting_t* settings, config_file_t* config)
-{
-   const rarch_setting_t *setting;
-
-   if (!config)
-      return false;
-
-   for (setting = settings; setting->type != ST_NONE; setting++)
-   {
-      switch (setting->type)
-      {
-         case ST_BOOL:
-            config_set_bool(config, setting->name, *setting->value.boolean);
-            break;
-         case ST_PATH:
-            config_set_path(config, setting->name,  setting->value.string);
-            break;
-         case ST_STRING:
-            config_set_string(config, setting->name,  setting->value.string);
-            break;
-         case ST_INT:
-            ENFORCE_RANGE(setting, integer);
-            config_set_int(config, setting->name, *setting->value.integer);
-            break;
-         case ST_UINT:
-            ENFORCE_RANGE(setting, unsigned_integer);         
-            config_set_uint64(config, setting->name, *setting->value.unsigned_integer);
-            break;
-         case ST_FLOAT:
-            ENFORCE_RANGE(setting, fraction);         
-            config_set_float(config, setting->name, *setting->value.fraction);
-            break;
-         case ST_BIND:
-            //FIXME: make portable
-#ifdef APPLE
-            config_set_string(config, get_input_config_key(setting, 0     ), get_key_name(setting));
-#endif
-            config_set_string(config, get_input_config_key(setting, "btn" ), get_button_name(setting));
-            config_set_string(config, get_input_config_key(setting, "axis"), get_axis_name(setting));
-            break;
-         case ST_HEX:
-            break;
-         default:
-            break;
-      }
-   }
-
-   return true;
-}
-
 rarch_setting_t* setting_data_find_setting(rarch_setting_t* settings, const char* name)
 {
    rarch_setting_t *setting;
