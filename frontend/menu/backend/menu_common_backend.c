@@ -479,11 +479,6 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
          break;
       case MENU_SETTINGS_OVERLAY_OPTIONS:
          file_list_clear(menu->selection_buf);
-         if ((current_setting = setting_data_find_setting(setting_data, "input_overlay_enable")))
-         {
-            *current_setting->value.boolean = g_settings.input.overlay_enable;
-            file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_OVERLAY_ENABLE, 0);
-         }
          file_list_push(menu->selection_buf, "Overlay Preset", MENU_SETTINGS_OVERLAY_PRESET, 0);
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "input_overlay_opacity")))
          {
@@ -2666,14 +2661,9 @@ static int menu_common_iterate(unsigned action)
 
                if (driver.overlay)
                   input_overlay_free(driver.overlay);
-               driver.overlay = NULL;
-
-               if (g_settings.input.overlay_enable)
-               {
-                  driver.overlay = input_overlay_new(g_settings.input.overlay);
-                  if (!driver.overlay)
-                     RARCH_ERR("Failed to load overlay.\n");
-               }
+               driver.overlay = input_overlay_new(g_settings.input.overlay);
+               if (!driver.overlay)
+                  RARCH_ERR("Failed to load overlay.\n");
 
                menu_flush_stack_type(MENU_SETTINGS_OPTIONS);
             }
@@ -3953,10 +3943,6 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
             menu_common_setting_set_current_unsigned_integer(current_setting, 1, action, true, false);
          break;
 #ifdef HAVE_OVERLAY
-      case MENU_SETTINGS_OVERLAY_ENABLE:
-         if ((current_setting = setting_data_find_setting(setting_data, "input_overlay_enable")))
-            menu_common_setting_set_current_boolean(current_setting, action);
-         break;
       case MENU_SETTINGS_OVERLAY_PRESET:
          switch (action)
          {
@@ -5350,9 +5336,6 @@ static void menu_common_setting_set_label(char *type_str, size_t type_str_size, 
             snprintf(type_str, type_str_size, g_settings.osk.enable ? "ON" : "OFF");
             break;
 #endif
-         case MENU_SETTINGS_OVERLAY_ENABLE:
-            snprintf(type_str, type_str_size, g_settings.input.overlay_enable ? "ON" : "OFF");
-            break;
          case MENU_SETTINGS_FONT_ENABLE:
             snprintf(type_str, type_str_size, g_settings.video.font_enable ? "ON" : "OFF");
             break;

@@ -2751,9 +2751,6 @@ static void gl_render_overlay(void *data)
    if (!gl)
       return;
 
-   if (!g_settings.input.overlay_enable)
-      return;
-
    glEnable(GL_BLEND);
 
    if (gl->overlay_full_screen)

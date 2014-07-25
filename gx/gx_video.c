@@ -1214,9 +1214,6 @@ static void gx_render_overlay(void *data)
 {
    gx_video_t *gx = (gx_video_t*)data;
 
-   if (!g_settings.input.overlay_enable)
-      return;
-
    GX_SetCurrentMtx(GX_PNMTX1);
    GX_SetVtxDesc(GX_VA_POS, GX_DIRECT);
    GX_SetVtxDesc(GX_VA_TEX0, GX_DIRECT);

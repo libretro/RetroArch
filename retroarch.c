@@ -491,9 +491,6 @@ size_t audio_sample_batch(const int16_t *data, size_t frames)
 #ifdef HAVE_OVERLAY
 static inline void input_poll_overlay(void)
 {
-   if (!g_settings.input.overlay_enable)
-      return;
-
    input_overlay_state_t old_key_state;
    memcpy(old_key_state.keys, driver.overlay_state.keys, sizeof(driver.overlay_state.keys));
    memset(&driver.overlay_state, 0, sizeof(driver.overlay_state));
@@ -2701,7 +2698,7 @@ void rarch_check_block_hotkey(void)
 #ifdef HAVE_OVERLAY
 void rarch_check_overlay(void)
 {
-   if (!driver.overlay || !g_settings.input.overlay_enable)
+   if (!driver.overlay)
       return;
 
    static bool old_pressed;

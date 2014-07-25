@@ -402,20 +402,6 @@ static void general_change_handler(const void *data)
     else if (!strcmp(setting->name, "video_font_size"))
         g_settings.video.font_size = *setting->value.fraction;
 #ifdef HAVE_OVERLAY
-    else if (!strcmp(setting->name, "input_overlay_enable"))
-    {
-        g_settings.input.overlay_enable = *setting->value.boolean;
-        
-        if (driver.overlay)
-            input_overlay_free(driver.overlay);
-        driver.overlay = NULL;
-        if (g_settings.input.overlay_enable && *g_settings.input.overlay)
-        {
-            driver.overlay = input_overlay_new(g_settings.input.overlay);
-            if (!driver.overlay)
-                RARCH_ERR("Failed to load overlay.\n");
-        }
-    }
     else if (!strcmp(setting->name, "input_overlay_opacity"))
     {
         g_settings.input.overlay_opacity = *setting->value.fraction;
@@ -513,7 +499,7 @@ static void general_change_handler(const void *data)
         
         strlcpy(g_settings.input.overlay, setting->value.string, sizeof(g_settings.input.overlay));
         
-        if (g_settings.input.overlay_enable && g_settings.input.overlay[0] != '\0')
+        if (g_settings.input.overlay[0] != '\0')
             driver.overlay = input_overlay_new(g_settings.input.overlay);
     }
     else if (!strcmp(setting->name, "input_overlay_scale"))
@@ -973,7 +959,6 @@ rarch_setting_t* setting_data_get_list(void)
          /*******************/
          START_GROUP("Overlay Options")
          START_SUB_GROUP("State")
-         CONFIG_BOOL(g_settings.input.overlay_enable,            "input_overlay_enable",  "Overlay Enable",        default_overlay_enable, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
          CONFIG_PATH(g_settings.input.overlay,              "input_overlay",              "Overlay Preset",              "", GROUP_NAME, SUBGROUP_NAME, general_change_handler) WITH_FLAGS(SD_FLAG_ALLOW_EMPTY) WITH_VALUES("cfg")
          CONFIG_FLOAT(g_settings.input.overlay_opacity,     "input_overlay_opacity",      "Overlay Opacity",            0.7f, GROUP_NAME, SUBGROUP_NAME, general_change_handler) WITH_RANGE(0, 1)
          CONFIG_FLOAT(g_settings.input.overlay_scale,       "input_overlay_scale",        "Overlay Scale",              1.0f, GROUP_NAME, SUBGROUP_NAME, general_change_handler) WITH_RANGE(0, 2)
