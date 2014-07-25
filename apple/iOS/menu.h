@@ -16,7 +16,7 @@
 #ifndef __APPLE_RARCH_IOS_MENU_H__
 #define __APPLE_RARCH_IOS_MENU_H__
 
-#include "../../frontend/menu/history.h"
+#include "../../history.h"
 #include "views.h"
 #include "../../settings_data.h"
 
