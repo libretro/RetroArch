@@ -786,7 +786,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
       // Add common options
       const char* emula[] = { "General Options", "rewind_enable", "fps_show", 0 };
       const char* video[] = { "Video Options", "video_scale_integer", "video_smooth", 0 };
-      const char* audio[] = { "Audio Options", "audio_mute", "audio_rate_control", "audio_rate_control_delta", 0 };
+      const char* audio[] = { "Audio Options", "audio_mute", "audio_rate_control_delta", 0 };
       const char* input[] = { "Input Options", "input_overlay", "input_overlay_opacity", 0 };
       const char** groups[] = { emula, video, audio, input, 0 };
       
