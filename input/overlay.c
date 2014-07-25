@@ -802,6 +802,8 @@ void input_overlay_next(input_overlay_t *ol)
 
 bool input_overlay_full_screen(input_overlay_t *ol)
 {
+   if (!ol)
+      return false;
    return ol->active->full_screen;
 }
 
