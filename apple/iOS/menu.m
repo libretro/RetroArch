@@ -237,10 +237,13 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
    
    [self attachDefaultingGestureTo:result];
 
-   result.textLabel.text = BOXSTRING(self.setting->short_description);
+   result.textLabel.text = BOXSTRING("N/A");
 
    if (self.setting)
    {
+       if (self.setting->short_description)
+           result.textLabel.text = BOXSTRING(self.setting->short_description);
+       
       result.detailTextLabel.text = BOXSTRING(setting_data_get_string_representation(self.setting, buffer, sizeof(buffer)));
       
       if (self.setting->type == ST_PATH)
