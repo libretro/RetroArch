@@ -57,9 +57,16 @@ void content_history_get_index(content_history_t *hist,
 
 static void content_history_free_entry(struct content_history_entry *entry)
 {
-   free(entry->path);
-   free(entry->core_path);
-   free(entry->core_name);
+   if (entry->path)
+      free(entry->path);
+   entry->path = NULL;
+   if (entry->core_path)
+      free(entry->core_path);
+   entry->core_path = NULL;
+   if (entry->core_name)
+      free(entry->core_name);
+   entry->core_name = NULL;
+
    memset(entry, 0, sizeof(*entry));
 }
 

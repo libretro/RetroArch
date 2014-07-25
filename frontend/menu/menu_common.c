@@ -242,9 +242,7 @@ void *menu_init(const void *data)
    if (!menu_ctx)
       return NULL;
 
-   menu = (menu_handle_t*)menu_ctx->init();
-
-   if (!menu)
+   if (!(menu = (menu_handle_t*)menu_ctx->init()))
       return NULL;
 
    strlcpy(g_settings.menu.driver, menu_ctx->ident, sizeof(g_settings.menu.driver));
