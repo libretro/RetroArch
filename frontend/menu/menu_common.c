@@ -179,18 +179,6 @@ static void menu_update_libretro_info(menu_handle_t *menu)
    menu_update_system_info(menu, NULL);
 }
 
-void load_menu_game_prepare_dummy(void)
-{
-   // Starts dummy core.
-   *g_extern.fullpath = '\0';
-
-   if (driver.menu)
-      driver.menu->load_no_rom = false;
-
-   g_extern.lifecycle_state |= (1ULL << MODE_LOAD_GAME);
-   g_extern.system.shutdown = false;
-}
-
 bool load_menu_game(void)
 {
    int rarch_argc, ret;
@@ -544,7 +532,7 @@ bool menu_replace_config(const char *path)
    g_extern.block_config_read = false;
    *g_settings.libretro = '\0'; // Load core in new config.
 
-   load_menu_game_prepare_dummy();
+   rarch_main_command(RARCH_CMD_PREPARE_DUMMY);
 
    return true;
 }

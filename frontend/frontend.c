@@ -90,12 +90,10 @@ static int main_entry_iterate_shutdown(args_type() args)
 {
    (void)args;
 
-#ifdef HAVE_MENU
    // Load dummy core instead of exiting RetroArch completely.
    if (g_settings.load_dummy_on_core_shutdown)
-      load_menu_game_prepare_dummy();
+      rarch_main_command(RARCH_CMD_PREPARE_DUMMY);
    else
-#endif
       return 1;
 
    return 0;

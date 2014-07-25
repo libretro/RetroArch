@@ -3118,6 +3118,17 @@ void rarch_main_command(unsigned action)
       case RARCH_CMD_TAKE_SCREENSHOT:
          rarch_take_screenshot();
          break;
+      case RARCH_CMD_PREPARE_DUMMY:
+         *g_extern.fullpath = '\0';
+
+#ifdef HAVE_MENU
+         if (driver.menu)
+            driver.menu->load_no_rom = false;
+#endif
+
+         g_extern.lifecycle_state |= (1ULL << MODE_LOAD_GAME);
+         g_extern.system.shutdown = false;
+         break;
       case RARCH_CMD_QUIT:
          g_extern.system.shutdown = true;
          break;
