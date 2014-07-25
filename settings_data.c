@@ -253,13 +253,13 @@ const char* setting_data_get_string_representation(const rarch_setting_t* settin
    return buffer;
 }
 
-static rarch_setting_t setting_data_group_setting(enum setting_type type, const char* name)
+rarch_setting_t setting_data_group_setting(enum setting_type type, const char* name)
 {
    rarch_setting_t result = { type, name };
    return result;
 }
 
-static rarch_setting_t setting_data_float_setting(const char* name, const char* description, float* target, float default_value, const char *group, const char *subgroup, change_handler_t change_handler, change_handler_t read_handler)
+rarch_setting_t setting_data_float_setting(const char* name, const char* description, float* target, float default_value, const char *group, const char *subgroup, change_handler_t change_handler, change_handler_t read_handler)
 {
    rarch_setting_t result = { ST_FLOAT, name, sizeof(float), description, group, subgroup };
    result.change_handler = change_handler;
@@ -269,7 +269,7 @@ static rarch_setting_t setting_data_float_setting(const char* name, const char* 
    return result;
 }
 
-static rarch_setting_t setting_data_bool_setting(const char* name, const char* description, bool* target, bool default_value, const char *group, const char *subgroup, change_handler_t change_handler, change_handler_t read_handler)
+rarch_setting_t setting_data_bool_setting(const char* name, const char* description, bool* target, bool default_value, const char *group, const char *subgroup, change_handler_t change_handler, change_handler_t read_handler)
 {
    rarch_setting_t result = { ST_BOOL, name, sizeof(bool), description, group, subgroup };
    result.change_handler = change_handler;
@@ -279,7 +279,7 @@ static rarch_setting_t setting_data_bool_setting(const char* name, const char* d
    return result;
 }
 
-static rarch_setting_t setting_data_int_setting(const char* name, const char* description, int* target, int default_value, const char *group, const char *subgroup, change_handler_t change_handler, change_handler_t read_handler)
+rarch_setting_t setting_data_int_setting(const char* name, const char* description, int* target, int default_value, const char *group, const char *subgroup, change_handler_t change_handler, change_handler_t read_handler)
 {
     rarch_setting_t result = { ST_INT, name, sizeof(int), description, group, subgroup };
     result.change_handler = change_handler;
@@ -289,7 +289,7 @@ static rarch_setting_t setting_data_int_setting(const char* name, const char* de
     return result;
 }
 
-static rarch_setting_t setting_data_uint_setting(const char* name, const char* description, unsigned int* target, unsigned int default_value, const char *group, const char *subgroup, change_handler_t change_handler, change_handler_t read_handler)
+rarch_setting_t setting_data_uint_setting(const char* name, const char* description, unsigned int* target, unsigned int default_value, const char *group, const char *subgroup, change_handler_t change_handler, change_handler_t read_handler)
 {
    rarch_setting_t result = { ST_UINT, name, sizeof(unsigned int), description, group, subgroup };
    result.change_handler = change_handler;
@@ -299,7 +299,7 @@ static rarch_setting_t setting_data_uint_setting(const char* name, const char* d
    return result;
 }
 
-static rarch_setting_t setting_data_string_setting(enum setting_type type,
+rarch_setting_t setting_data_string_setting(enum setting_type type,
       const char* name, const char* description, char* target,
       unsigned size, const char* default_value,
       const char *group, const char *subgroup, change_handler_t change_handler, change_handler_t read_handler)
@@ -313,7 +313,7 @@ static rarch_setting_t setting_data_string_setting(enum setting_type type,
    return result;
 }
 
-static rarch_setting_t setting_data_bind_setting(const char* name,
+rarch_setting_t setting_data_bind_setting(const char* name,
       const char* description, struct retro_keybind* target,
       uint32_t index, const struct retro_keybind* default_value,
       const char *group, const char *subgroup)
