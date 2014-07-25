@@ -21,7 +21,6 @@
 #include <stdint.h>
 #include "boolean.h"
 #include "frontend/menu/file_list.h"
-#include "frontend/menu/history.h"
 #include "frontend/info/core_info.h"
 
 #ifdef __cplusplus
@@ -163,7 +162,6 @@ typedef struct
    struct gfx_shader *parameter_shader; // Points to either shader or graphics driver current shader.
    unsigned current_pad;
 
-   content_history_t *history;
    retro_time_t last_time; // Used to throttle menu in case VSync is broken.
 
    struct menu_bind_state binds;

@@ -654,7 +654,7 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
 #if defined(HAVE_DYNAMIC) || defined(HAVE_LIBRETRO_MANAGEMENT)
          file_list_push(menu->selection_buf, "Core", MENU_SETTINGS_CORE, 0);
 #endif
-         if (menu->history)
+         if (g_extern.history)
             file_list_push(menu->selection_buf, "Load Content (History)", MENU_SETTINGS_OPEN_HISTORY, 0);
 
          if (menu->core_info && core_info_list_num_info_files(menu->core_info))
@@ -2130,7 +2130,7 @@ static void menu_parse_and_resolve(unsigned menu_type)
    {
       case MENU_SETTINGS_OPEN_HISTORY:
          /* History parse */
-         list_size = content_history_size(driver.menu->history);
+         list_size = content_history_size(g_extern.history);
 
          for (i = 0; i < list_size; i++)
          {
@@ -2141,7 +2141,7 @@ static void menu_parse_and_resolve(unsigned menu_type)
             core_path = NULL;
             core_name = NULL;
 
-            content_history_get_index(driver.menu->history, i,
+            content_history_get_index(g_extern.history, i,
                   &path, &core_path, &core_name);
 
             if (path)

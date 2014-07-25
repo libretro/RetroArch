@@ -35,6 +35,8 @@
 #include "miscellaneous.h"
 #include "gfx/filter.h"
 
+#include "frontend/menu/history.h"
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -388,6 +390,8 @@ struct global
    bool force_fullscreen;
 
    struct string_list *temporary_roms;
+
+   content_history_t *history;
 
    uint32_t cart_crc;
 
