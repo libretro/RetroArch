@@ -1472,8 +1472,8 @@ static int menu_info_screen_iterate(unsigned action)
                   "core implementations.\n"
                   " \n"
                   "Performance for software-rendered and \n"
-                  "libretro GL core implementations should be \n"
-                  "optimal (depending on your graphics card's \n"
+                  "libretro GL core implementations is \n"
+                  "dependent on your graphics card's \n"
                   "underlying GL driver).");
          else if (!strcmp(g_settings.video.driver, "sdl"))
             snprintf(msg, sizeof(msg),
@@ -1486,14 +1486,14 @@ static int menu_info_screen_iterate(unsigned action)
                   "Consider using it only as a last resort.\n"
                   " \n"
                   "WARNING: Menu support is currently not \n"
-                  "supported with this driver.");
+                  "supported by this driver.");
          else if (!strcmp(g_settings.video.driver, "d3d"))
             snprintf(msg, sizeof(msg),
                   " -- Direct3D Video driver. \n"
                   " \n"
                   "Performance for software-rendered cores \n"
-                  "should be optimal (depending on your \n"
-                  "graphics card's underlying D3D driver).");
+                  "is dependent on your graphic card's \n"
+                  "underlying D3D driver).");
          else if (!strcmp(g_settings.video.driver, "lima"))
             snprintf(msg, sizeof(msg),
                   " -- Lima Video Driver. \n"
