@@ -131,110 +131,50 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
       case MENU_SETTINGS_GENERAL_OPTIONS:
          file_list_clear(menu->selection_buf);
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "libretro_log_level")))
-         {
-            *current_setting->value.unsigned_integer = g_settings.libretro_log_level;
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_LIBRETRO_LOG_LEVEL, 0);
-         }
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "log_verbosity")))
-         {
-            *current_setting->value.boolean = g_extern.verbosity;
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_LOGGING_VERBOSITY, 0);
-         }
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "perfcnt_enable")))
-         {
-            *current_setting->value.boolean = g_extern.perfcnt_enable;
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_PERFORMANCE_COUNTERS_ENABLE, 0);
-         }
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "game_history_size")))
-         {
-            *current_setting->value.unsigned_integer = g_settings.game_history_size;
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_CONTENT_HISTORY_SIZE, 0);
-         }
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "config_save_on_exit")))
-         {
-            *current_setting->value.boolean = g_extern.config_save_on_exit;
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_CONFIG_SAVE_ON_EXIT, 0);
-         }
          if ((current_setting = setting_data_find_setting(setting_data, "core_specific_config")))
-         {
-            *current_setting->value.boolean = g_settings.core_specific_config;
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_PER_CORE_CONFIG, 0);
-         }
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "video_gpu_screenshot")))
-         {
-            *current_setting->value.boolean = g_settings.video.gpu_screenshot;
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_GPU_SCREENSHOT, 0);
-         }
          if ((current_setting = setting_data_find_setting(setting_data, "dummy_on_core_shutdown")))
-         {
-            *current_setting->value.boolean = g_settings.load_dummy_on_core_shutdown;
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_LOAD_DUMMY_ON_CORE_SHUTDOWN, 0);
-         }
          if ((current_setting = setting_data_find_setting(setting_data, "fps_show")))
-         {
-            *current_setting->value.boolean = g_settings.fps_show;
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_DEBUG_TEXT, 0);
-         }
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "fastforward_ratio")))
-         {
-            *current_setting->value.fraction = g_settings.fastforward_ratio;
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_FASTFORWARD_RATIO, 0);
-         }
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "slowmotion_ratio")))
-         {
-            *current_setting->value.fraction = g_settings.slowmotion_ratio;
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_SLOWMOTION_RATIO, 0);
-         }
 
          if ((current_setting = setting_data_find_setting(setting_data, "rewind_enable")))
-         {
-            *current_setting->value.boolean = g_settings.rewind_enable;
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_REWIND_ENABLE, 0);
-         }
 
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "rewind_granularity")))
-         {
-            *current_setting->value.unsigned_integer = g_settings.rewind_granularity;
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_REWIND_GRANULARITY, 0);
-         }
          if ((current_setting = setting_data_find_setting(setting_data, "block_sram_overwrite")))
-         {
-            *current_setting->value.boolean = g_settings.block_sram_overwrite;
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_BLOCK_SRAM_OVERWRITE, 0);
-         }
          if ((current_setting = setting_data_find_setting(setting_data, "autosave_interval")))
-         {
-            *current_setting->value.unsigned_integer = g_settings.autosave_interval;
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_SRAM_AUTOSAVE, 0);
-         }
          if ((current_setting = setting_data_find_setting(setting_data, "video_disable_composition")))
-         {
-            *current_setting->value.boolean = g_settings.video.disable_composition;
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_WINDOW_COMPOSITING_ENABLE, 0);
-         }
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "pause_nonactive")))
-         {
-            *current_setting->value.boolean = g_settings.pause_nonactive;
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_PAUSE_IF_WINDOW_FOCUS_LOST, 0);
-         }
          if ((current_setting = setting_data_find_setting(setting_data, "savestate_auto_save")))
-         {
-            *current_setting->value.boolean = g_settings.savestate_auto_save;
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_SAVESTATE_AUTO_SAVE, 0);
-         }
          if ((current_setting = setting_data_find_setting(setting_data, "savestate_auto_load")))
-         {
-            *current_setting->value.boolean = g_settings.savestate_auto_load;
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_SAVESTATE_AUTO_LOAD, 0);
-         }
          break;
       case MENU_SETTINGS_VIDEO_OPTIONS:
          file_list_clear(menu->selection_buf);
          if ((current_setting = setting_data_find_setting(setting_data, "video_shared_context")))
-         {
-            *current_setting->value.boolean = g_settings.video.shared_context;
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_VIDEO_HW_SHARED_CONTEXT, 0);
-         }
 #if defined(GEKKO) || defined(__CELLOS_LV2__)
          file_list_push(menu->selection_buf, "Screen Resolution", MENU_SETTINGS_VIDEO_RESOLUTION, 0);
 #endif
@@ -243,10 +183,7 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
          file_list_push(menu->selection_buf, "PAL60 Mode", MENU_SETTINGS_VIDEO_PAL60, 0);
 #endif
          if ((current_setting = setting_data_find_setting(setting_data, "video_smooth")))
-         {
-            *current_setting->value.boolean = g_settings.video.smooth;
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_VIDEO_FILTER, 0);
-         }
 #ifdef HW_RVL
          file_list_push(menu->selection_buf, "VI Trap filtering", MENU_SETTINGS_VIDEO_SOFT_FILTER, 0);
 #endif
@@ -258,92 +195,43 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
          file_list_push(menu->selection_buf, "Flicker filtering", MENU_SETTINGS_FLICKER_FILTER, 0);
 #endif
          if ((current_setting = setting_data_find_setting(setting_data, "video_scale_integer")))
-         {
-            *current_setting->value.boolean = g_settings.video.scale_integer;
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_VIDEO_INTEGER_SCALE, 0);
-         }
          if ((current_setting = setting_data_find_setting(setting_data, "aspect_ratio_index")))
-         {
-            *current_setting->value.unsigned_integer = g_settings.video.aspect_ratio_idx;
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_VIDEO_ASPECT_RATIO, 0);
-         }
          file_list_push(menu->selection_buf, "Custom Ratio", MENU_SETTINGS_CUSTOM_VIEWPORT, 0);
          if ((current_setting = setting_data_find_setting(setting_data, "video_fullscreen")))
-         {
-            *current_setting->value.boolean = g_settings.video.fullscreen;
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_TOGGLE_FULLSCREEN, 0);
-         }
          if ((current_setting = setting_data_find_setting(setting_data, "video_rotation")))
-         {
-            *current_setting->value.unsigned_integer = g_settings.video.rotation;
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_VIDEO_ROTATION, 0);
-         }
          if ((current_setting = setting_data_find_setting(setting_data, "video_vsync")))
-         {
-            *current_setting->value.boolean = g_settings.video.vsync;
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_VIDEO_VSYNC, 0);
-         }
-
          if ((current_setting = setting_data_find_setting(setting_data, "video_hard_sync")))
-         {
-            *current_setting->value.boolean = g_settings.video.hard_sync;
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_VIDEO_HARD_SYNC, 0);
-         }
          if ((current_setting = setting_data_find_setting(setting_data, "video_hard_sync_frames")))
-         {
-            *current_setting->value.unsigned_integer = g_settings.video.hard_sync_frames;
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_VIDEO_HARD_SYNC_FRAMES, 0);
-         }
 
          if ((current_setting = setting_data_find_setting(setting_data, "video_black_frame_insertion")))
-         {
-            *current_setting->value.boolean = g_settings.video.black_frame_insertion;
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_VIDEO_BLACK_FRAME_INSERTION, 0);
-         }
          if ((current_setting = setting_data_find_setting(setting_data, "video_swap_interval")))
-         {
-            *current_setting->value.unsigned_integer = g_settings.video.swap_interval;
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_VIDEO_SWAP_INTERVAL, 0);
-         }
          if ((current_setting = setting_data_find_setting(setting_data, "video_threaded")))
-         {
-            *current_setting->value.boolean = g_settings.video.threaded;
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_VIDEO_THREADED, 0);
-         }
          if ((current_setting = setting_data_find_setting(setting_data, "video_xscale")))
-         {
-            *current_setting->value.fraction = g_settings.video.xscale;
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_VIDEO_WINDOW_SCALE_X, 0);
-         }
          if ((current_setting = setting_data_find_setting(setting_data, "video_yscale")))
-         {
-            *current_setting->value.fraction = g_settings.video.yscale;
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_VIDEO_WINDOW_SCALE_Y, 0);
-         }
          if ((current_setting = setting_data_find_setting(setting_data, "video_crop_overscan")))
-         {
-            *current_setting->value.boolean = g_settings.video.crop_overscan;
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_VIDEO_CROP_OVERSCAN, 0);
-         }
          if ((current_setting = setting_data_find_setting(setting_data, "video_monitor_index")))
-         {
-            *current_setting->value.unsigned_integer = g_settings.video.monitor_index;
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_VIDEO_MONITOR_INDEX, 0);
-         }
          file_list_push(menu->selection_buf, "Estimated Monitor FPS", MENU_SETTINGS_VIDEO_REFRESH_RATE_AUTO, 0);
          break;
       case MENU_SETTINGS_FONT_OPTIONS:
          file_list_clear(menu->selection_buf);
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "video_font_enable")))
-         {
-            *current_setting->value.boolean = g_settings.video.font_enable;
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_FONT_ENABLE, 0);
-         }
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "video_font_size")))
-         {
-            *current_setting->value.fraction = g_settings.video.font_size;
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_FONT_SIZE, 0);
-         }
          break;
       case MENU_SETTINGS_CORE_OPTIONS:
          file_list_clear(menu->selection_buf);
@@ -459,17 +347,11 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
          file_list_clear(menu->selection_buf);
 #ifdef HAVE_CAMERA
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "camera_allow")))
-         {
-            *current_setting->value.boolean = g_settings.camera.allow;
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_PRIVACY_CAMERA_ALLOW, 0);
-         }
 #endif
 #ifdef HAVE_LOCATION
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "location_allow")))
-         {
-            *current_setting->value.boolean = g_settings.location.allow;
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_PRIVACY_LOCATION_ALLOW, 0);
-         }
 #endif
          break;
       case MENU_SETTINGS_DISK_OPTIONS:
@@ -481,34 +363,19 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
          file_list_clear(menu->selection_buf);
          file_list_push(menu->selection_buf, "Overlay Preset", MENU_SETTINGS_OVERLAY_PRESET, 0);
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "input_overlay_opacity")))
-         {
-            *current_setting->value.fraction = g_settings.input.overlay_opacity;
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_OVERLAY_OPACITY, 0);
-         }
          if ((current_setting = setting_data_find_setting(setting_data, "input_overlay_scale")))
-         {
-            *current_setting->value.fraction = g_settings.input.overlay_scale;
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_OVERLAY_SCALE, 0);
-         }
          break;
 #ifdef HAVE_NETPLAY
       case MENU_SETTINGS_NETPLAY_OPTIONS:
          file_list_clear(menu->selection_buf);
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "netplay_enable")))
-         {
-            *current_setting->value.boolean = g_extern.netplay_enable;
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_NETPLAY_ENABLE, 0);
-         }
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "netplay_mode")))
-         {
-            *current_setting->value.boolean = g_extern.netplay_is_client;
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_NETPLAY_MODE, 0);
-         }
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "netplay_spectator_mode_enable")))
-         {
-            *current_setting->value.boolean = g_extern.netplay_is_spectate;
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_NETPLAY_SPECTATOR_MODE_ENABLE, 0);
-         }
          file_list_push(menu->selection_buf, "Host IP Address", MENU_SETTINGS_NETPLAY_HOST_IP_ADDRESS, 0);
          file_list_push(menu->selection_buf, "TCP/UDP Port", MENU_SETTINGS_NETPLAY_TCP_UDP_PORT, 0);
          file_list_push(menu->selection_buf, "Delay Frames", MENU_SETTINGS_NETPLAY_DELAY_FRAMES, 0);
@@ -550,25 +417,16 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
          file_list_push(menu->selection_buf, "Device Type", MENU_SETTINGS_BIND_DEVICE_TYPE, 0);
          file_list_push(menu->selection_buf, "Analog D-pad Mode", MENU_SETTINGS_BIND_ANALOG_MODE, 0);
          if ((current_setting = setting_data_find_setting(setting_data, "input_axis_threshold")))
-         {
-            *current_setting->value.fraction = g_settings.input.axis_threshold;
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_INPUT_AXIS_THRESHOLD, 0);
-         }
          if ((current_setting = setting_data_find_setting(setting_data, "input_autodetect_enable")))
-         {
-            *current_setting->value.boolean = g_settings.input.autodetect_enable;
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_DEVICE_AUTODETECT_ENABLE, 0);
-         }
 
          file_list_push(menu->selection_buf, "Bind Mode", MENU_SETTINGS_CUSTOM_BIND_MODE, 0);
          file_list_push(menu->selection_buf, "Configure All (RetroPad)", MENU_SETTINGS_CUSTOM_BIND_ALL, 0);
          file_list_push(menu->selection_buf, "Default All (RetroPad)", MENU_SETTINGS_CUSTOM_BIND_DEFAULT_ALL, 0);
 #ifdef HAVE_OSK
          if ((current_setting = setting_data_find_setting(setting_data, "osk_enable")))
-         {
-            *current_setting->value.boolean = g_settings.input.osk.enable;
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_ONSCREEN_KEYBOARD_ENABLE, 0);
-         }
 #endif
          last = (driver.input && driver.input->set_keybinds && !driver.input->get_joypad_driver) ? (MENU_SETTINGS_BIND_BEGIN + RETRO_DEVICE_ID_JOYPAD_R3) : MENU_SETTINGS_BIND_ALL_LAST;
          for (i = MENU_SETTINGS_BIND_BEGIN; i <= last; i++)
@@ -578,20 +436,11 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
          file_list_clear(menu->selection_buf);
          file_list_push(menu->selection_buf, "DSP Filter", MENU_SETTINGS_AUDIO_DSP_FILTER, 0);
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "audio_mute")))
-         {
-            *current_setting->value.boolean = g_extern.audio_data.mute;
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_AUDIO_MUTE, 0);
-         }
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "audio_latency")))
-         {
-            *current_setting->value.unsigned_integer = g_settings.audio.latency;
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_AUDIO_LATENCY, 0);
-         }
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "audio_sync")))
-         {
-            *current_setting->value.boolean = g_settings.audio.sync;
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_AUDIO_SYNC, 0);
-         }
          file_list_push(menu->selection_buf, "Rate Control Delta", MENU_SETTINGS_AUDIO_CONTROL_RATE_DELTA, 0);
 #ifdef __CELLOS_LV2__
          file_list_push(menu->selection_buf, "System BGM Control", MENU_SETTINGS_CUSTOM_BGM_CONTROL_ENABLE, 0);

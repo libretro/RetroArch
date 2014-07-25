@@ -70,6 +70,7 @@ typedef struct rarch_setting_t
    uint64_t flags;
    
    change_handler_t change_handler;
+   change_handler_t read_handler;
    
    union
    {
@@ -103,16 +104,6 @@ rarch_setting_t* setting_data_find_setting(rarch_setting_t* settings, const char
 
 void setting_data_set_with_string_representation(const rarch_setting_t* setting, const char* value);
 const char* setting_data_get_string_representation(const rarch_setting_t* setting, char* buffer, size_t length);
-
-// List building helper functions
-rarch_setting_t setting_data_group_setting(enum setting_type type, const char* name);
-rarch_setting_t setting_data_bool_setting(const char* name, const char* description, bool* target, bool default_value, const char * group, const char *subgroup, change_handler_t change_handler);
-rarch_setting_t setting_data_int_setting(const char* name, const char* description, int* target, int default_value, const char *group, const char *subgroup, change_handler_t change_handler);
-rarch_setting_t setting_data_uint_setting(const char* name, const char* description, unsigned int* target, unsigned int default_value, const char *group, const char *subgroup, change_handler_t change_handler);
-rarch_setting_t setting_data_float_setting(const char* name, const char* description, float* target, float default_value, const char *group, const char *subgroup, change_handler_t change_handler);
-rarch_setting_t setting_data_string_setting(enum setting_type type, const char* name, const char* description, char* target, unsigned size, const char* default_value, const char *group, const char *subgroup, change_handler_t change_handler);
-rarch_setting_t setting_data_bind_setting(const char* name, const char* description, struct retro_keybind* target, uint32_t index,
-                                    const struct retro_keybind* default_value, const char *group, const char *subgroup);
 
 // These functions operate only on RetroArch's main settings list
 rarch_setting_t* setting_data_get_list(void);

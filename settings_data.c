@@ -253,62 +253,67 @@ const char* setting_data_get_string_representation(const rarch_setting_t* settin
    return buffer;
 }
 
-rarch_setting_t setting_data_group_setting(enum setting_type type, const char* name)
+static rarch_setting_t setting_data_group_setting(enum setting_type type, const char* name)
 {
    rarch_setting_t result = { type, name };
    return result;
 }
 
-rarch_setting_t setting_data_float_setting(const char* name, const char* description, float* target, float default_value, const char *group, const char *subgroup, change_handler_t change_handler)
+static rarch_setting_t setting_data_float_setting(const char* name, const char* description, float* target, float default_value, const char *group, const char *subgroup, change_handler_t change_handler, change_handler_t read_handler)
 {
    rarch_setting_t result = { ST_FLOAT, name, sizeof(float), description, group, subgroup };
    result.change_handler = change_handler;
+   result.read_handler = read_handler;
    result.value.fraction = target;
    result.default_value.fraction = default_value;
    return result;
 }
 
-rarch_setting_t setting_data_bool_setting(const char* name, const char* description, bool* target, bool default_value, const char *group, const char *subgroup, change_handler_t change_handler)
+static rarch_setting_t setting_data_bool_setting(const char* name, const char* description, bool* target, bool default_value, const char *group, const char *subgroup, change_handler_t change_handler, change_handler_t read_handler)
 {
    rarch_setting_t result = { ST_BOOL, name, sizeof(bool), description, group, subgroup };
    result.change_handler = change_handler;
+   result.read_handler = read_handler;
    result.value.boolean = target;
    result.default_value.boolean = default_value;
    return result;
 }
 
-rarch_setting_t setting_data_int_setting(const char* name, const char* description, int* target, int default_value, const char *group, const char *subgroup, change_handler_t change_handler)
+static rarch_setting_t setting_data_int_setting(const char* name, const char* description, int* target, int default_value, const char *group, const char *subgroup, change_handler_t change_handler, change_handler_t read_handler)
 {
     rarch_setting_t result = { ST_INT, name, sizeof(int), description, group, subgroup };
     result.change_handler = change_handler;
+   result.read_handler = read_handler;
     result.value.integer = target;
     result.default_value.integer = default_value;
     return result;
 }
 
-rarch_setting_t setting_data_uint_setting(const char* name, const char* description, unsigned int* target, unsigned int default_value, const char *group, const char *subgroup, change_handler_t change_handler)
+static rarch_setting_t setting_data_uint_setting(const char* name, const char* description, unsigned int* target, unsigned int default_value, const char *group, const char *subgroup, change_handler_t change_handler, change_handler_t read_handler)
 {
    rarch_setting_t result = { ST_UINT, name, sizeof(unsigned int), description, group, subgroup };
    result.change_handler = change_handler;
+   result.read_handler = read_handler;
    result.value.unsigned_integer = target;
    result.default_value.unsigned_integer = default_value;
    return result;
 }
 
-rarch_setting_t setting_data_string_setting(enum setting_type type,
+static rarch_setting_t setting_data_string_setting(enum setting_type type,
       const char* name, const char* description, char* target,
       unsigned size, const char* default_value,
-      const char *group, const char *subgroup, change_handler_t change_handler)
+      const char *group, const char *subgroup, change_handler_t change_handler, change_handler_t read_handler)
 {
    rarch_setting_t result = { type, name, size, description, group, subgroup };
     
    result.change_handler = change_handler;
+   result.read_handler = read_handler;
    result.value.string = target;
    result.default_value.string = default_value;
    return result;
 }
 
-rarch_setting_t setting_data_bind_setting(const char* name,
+static rarch_setting_t setting_data_bind_setting(const char* name,
       const char* description, struct retro_keybind* target,
       uint32_t index, const struct retro_keybind* default_value,
       const char *group, const char *subgroup)
@@ -321,7 +326,254 @@ rarch_setting_t setting_data_bind_setting(const char* name,
    return result;
 }
 
-static void general_change_handler(const void *data)
+static void general_read_handler(const void *data)
+{
+    const rarch_setting_t *setting = (const rarch_setting_t*)data;
+    
+    if (!setting)
+       return;
+    
+    if (!strcmp(setting->name, "fps_show"))
+       *setting->value.boolean = g_settings.fps_show;
+    else if (!strcmp(setting->name, "pause_nonactive"))
+       *setting->value.boolean = g_settings.pause_nonactive;
+    else if (!strcmp(setting->name, "config_save_on_exit"))
+       *setting->value.boolean = g_extern.config_save_on_exit;
+    else if (!strcmp(setting->name, "rewind_enable"))
+       *setting->value.boolean = g_settings.rewind_enable;
+    else if (!strcmp(setting->name, "rewind_granularity"))
+         *setting->value.unsigned_integer = g_settings.rewind_granularity;
+    else if (!strcmp(setting->name, "block_sram_overwrite"))
+        *setting->value.boolean = g_settings.block_sram_overwrite;
+    else if (!strcmp(setting->name, "video_smooth"))
+        *setting->value.boolean = g_settings.video.smooth;
+    else if (!strcmp(setting->name, "video_monitor_index"))
+        *setting->value.unsigned_integer = g_settings.video.monitor_index;
+    else if (!strcmp(setting->name, "video_disable_composition"))
+        *setting->value.boolean = g_settings.video.disable_composition;
+    else if (!strcmp(setting->name, "video_vsync"))
+       *setting->value.boolean = g_settings.video.vsync;
+    else if (!strcmp(setting->name, "video_hard_sync"))
+        *setting->value.boolean = g_settings.video.hard_sync;
+    else if (!strcmp(setting->name, "video_hard_sync_frames"))
+        *setting->value.unsigned_integer = g_settings.video.hard_sync_frames;
+    else if (!strcmp(setting->name, "video_scale_integer"))
+        *setting->value.boolean = g_settings.video.scale_integer;
+    else if (!strcmp(setting->name, "video_fullscreen"))
+        *setting->value.boolean = g_settings.video.fullscreen;
+    else if (!strcmp(setting->name, "video_rotation"))
+         *setting->value.unsigned_integer = g_settings.video.rotation;
+    else if (!strcmp(setting->name, "video_threaded"))
+        *setting->value.boolean = g_settings.video.threaded;
+    else if (!strcmp(setting->name, "video_swap_interval"))
+       *setting->value.unsigned_integer = g_settings.video.swap_interval;
+    else if (!strcmp(setting->name, "video_crop_overscan"))
+        *setting->value.boolean = g_settings.video.crop_overscan;
+    else if (!strcmp(setting->name, "video_black_frame_insertion"))
+        *setting->value.boolean = g_settings.video.black_frame_insertion;
+    else if (!strcmp(setting->name, "video_font_path"))
+        strlcpy(setting->value.string, g_settings.video.font_path, sizeof(setting->value.string));
+    else if (!strcmp(setting->name, "video_font_size"))
+        *setting->value.fraction = g_settings.video.font_size;
+#ifdef HAVE_OVERLAY
+    else if (!strcmp(setting->name, "input_overlay_opacity"))
+        *setting->value.fraction = g_settings.input.overlay_opacity;
+#endif
+    else if (!strcmp(setting->name, "audio_enable"))
+        *setting->value.boolean = g_settings.audio.enable;
+    else if (!strcmp(setting->name, "audio_sync"))
+        *setting->value.boolean = g_settings.audio.sync;
+    else if (!strcmp(setting->name, "audio_mute"))
+        *setting->value.boolean = g_extern.audio_data.mute;
+    else if (!strcmp(setting->name, "audio_volume"))
+        *setting->value.fraction = g_extern.audio_data.volume_db;
+    else if (!strcmp(setting->name, "audio_device"))
+        strlcpy(setting->value.string, g_settings.audio.device, sizeof(setting->value.string));
+    else if (!strcmp(setting->name, "audio_block_frames"))
+        *setting->value.unsigned_integer = g_settings.audio.block_frames;
+    else if (!strcmp(setting->name, "audio_latency"))
+        *setting->value.unsigned_integer = g_settings.audio.latency;
+    else if (!strcmp(setting->name, "audio_dsp_plugin"))
+    {
+#ifdef HAVE_DYLIB
+        strlcpy(setting->value.string, g_settings.audio.dsp_plugin, sizeof(setting->value.string));
+#endif
+    }
+    else if (!strcmp(setting->name, "state_slot"))
+        *setting->value.integer = g_extern.state_slot;
+    else if (!strcmp(setting->name, "audio_rate_control_delta"))
+    {
+       *setting->value.fraction = g_settings.audio.rate_control_delta;
+        if (*setting->value.fraction < 0.0005)
+        {
+            g_settings.audio.rate_control = false;
+            g_settings.audio.rate_control_delta = 0.0;
+        }
+        else
+        {
+            g_settings.audio.rate_control = true;
+            g_settings.audio.rate_control_delta = *setting->value.fraction;
+        }
+    }
+    else if (!strcmp(setting->name, "audio_out_rate"))
+        *setting->value.unsigned_integer = g_settings.audio.out_rate;
+    else if (!strcmp(setting->name, "input_autodetect_enable"))
+        *setting->value.boolean = g_settings.input.autodetect_enable;
+    else if (!strcmp(setting->name, "input_turbo_period"))
+        *setting->value.unsigned_integer = g_settings.input.turbo_period;
+    else if (!strcmp(setting->name, "input_duty_cycle"))
+        *setting->value.unsigned_integer = g_settings.input.turbo_duty_cycle;
+    else if (!strcmp(setting->name, "input_axis_threshold"))
+        *setting->value.fraction = g_settings.input.axis_threshold;
+    else if (!strcmp(setting->name, "savestate_auto_save"))
+        g_settings.savestate_auto_save = *setting->value.boolean;
+    else if (!strcmp(setting->name, "savestate_auto_load"))
+        g_settings.savestate_auto_load = *setting->value.boolean;
+    else if (!strcmp(setting->name, "savestate_auto_index"))
+        g_settings.savestate_auto_index = *setting->value.boolean;
+    else if (!strcmp(setting->name, "slowmotion_ratio"))
+        g_settings.slowmotion_ratio = max(min(*setting->value.fraction, 10.0f), 1.0f);
+    else if (!strcmp(setting->name, "fastforward_ratio"))
+        g_settings.fastforward_ratio = *setting->value.fraction;
+    else if (!strcmp(setting->name, "autosave_interval"))
+        *setting->value.unsigned_integer = g_settings.autosave_interval;
+    else if (!strcmp(setting->name, "video_font_enable"))
+        *setting->value.boolean = g_settings.video.font_enable;
+    else if (!strcmp(setting->name, "video_gpu_screenshot"))
+        *setting->value.boolean = g_settings.video.gpu_screenshot;
+#ifdef HAVE_NETPLAY
+    else if (!strcmp(setting->name, "netplay_client_swap_input"))
+        *setting->value.boolean = g_settings.input.netplay_client_swap_input;
+#endif
+#ifdef HAVE_OVERLAY
+    else if (!strcmp(setting->name, "input_overlay"))
+        strlcpy(setting->value.string, g_settings.input.overlay, sizeof(setting->value.string));
+    else if (!strcmp(setting->name, "input_overlay_scale"))
+       *setting->value.fraction = g_settings.input.overlay_scale;
+#endif
+    else if (!strcmp(setting->name, "video_allow_rotate"))
+        g_settings.video.allow_rotate = *setting->value.boolean;
+    else if (!strcmp(setting->name, "video_windowed_fullscreen"))
+        *setting->value.boolean = g_settings.video.windowed_fullscreen;
+    else if (!strcmp(setting->name, "video_fullscreen_x"))
+        *setting->value.unsigned_integer = g_settings.video.fullscreen_x;
+    else if (!strcmp(setting->name, "video_fullscreen_y"))
+        *setting->value.unsigned_integer = g_settings.video.fullscreen_y;
+    else if (!strcmp(setting->name, "video_refresh_rate"))
+       *setting->value.fraction = g_settings.video.refresh_rate;
+    else if (!strcmp(setting->name,  "video_aspect_ratio"))
+        *setting->value.fraction = g_settings.video.aspect_ratio;
+    else if (!strcmp(setting->name, "video_xscale"))
+       *setting->value.fraction = g_settings.video.xscale;
+    else if (!strcmp(setting->name, "video_yscale"))
+       *setting->value.fraction = g_settings.video.yscale;
+    else if (!strcmp(setting->name, "video_force_aspect"))
+        *setting->value.boolean = g_settings.video.force_aspect;
+    else if (!strcmp(setting->name, "aspect_ratio_index"))
+        *setting->value.unsigned_integer = g_settings.video.aspect_ratio_idx;
+    else if (!strcmp(setting->name, "video_message_pos_x"))
+        *setting->value.fraction = g_settings.video.msg_pos_x;
+    else if (!strcmp(setting->name, "video_message_pos_y"))
+        *setting->value.fraction = g_settings.video.msg_pos_y;
+    else if (!strcmp(setting->name, "network_cmd_enable"))
+        *setting->value.boolean = g_settings.network_cmd_enable;
+    else if (!strcmp(setting->name, "stdin_cmd_enable"))
+        *setting->value.boolean = g_settings.stdin_cmd_enable;
+    else if (!strcmp(setting->name, "video_post_filter_record"))
+        *setting->value.boolean = g_settings.video.post_filter_record;
+    else if (!strcmp(setting->name, "video_gpu_record"))
+        *setting->value.boolean = g_settings.video.gpu_record;
+#ifdef HAVE_OVERLAY
+    else if (!strcmp(setting->name, "overlay_directory"))
+        strlcpy(setting->value.string, g_extern.overlay_dir, sizeof(setting->value.string));
+#endif
+    else if (!strcmp(setting->name, "joypad_autoconfig_dir"))
+        strlcpy(setting->value.string, g_settings.input.autoconfig_dir, sizeof(setting->value.string));
+    else if (!strcmp(setting->name, "screenshot_directory"))
+        strlcpy(setting->value.string, g_settings.screenshot_directory, sizeof(setting->value.string));
+    else if (!strcmp(setting->name, "savefile_directory"))
+        strlcpy(setting->value.string, g_extern.savefile_dir, sizeof(setting->value.string));
+    else if (!strcmp(setting->name, "savestate_directory"))
+        strlcpy(setting->value.string, g_extern.savestate_dir, sizeof(setting->value.string));
+    else if (!strcmp(setting->name, "system_directory"))
+        strlcpy(setting->value.string, g_settings.system_directory,  sizeof(setting->value.string));
+    else if (!strcmp(setting->name, "extraction_directory"))
+        strlcpy(setting->value.string, g_settings.extraction_directory, sizeof(setting->value.string));
+    else if (!strcmp(setting->name, "input_player1_joypad_index"))
+        *setting->value.integer = g_settings.input.joypad_map[0];
+    else if (!strcmp(setting->name, "input_player2_joypad_index"))
+        *setting->value.integer = g_settings.input.joypad_map[1];
+    else if (!strcmp(setting->name, "input_player3_joypad_index"))
+        *setting->value.integer = g_settings.input.joypad_map[2];
+    else if (!strcmp(setting->name, "input_player4_joypad_index"))
+        *setting->value.integer = g_settings.input.joypad_map[3];
+    else if (!strcmp(setting->name, "input_player5_joypad_index"))
+        *setting->value.integer = g_settings.input.joypad_map[4];
+    else if (!strcmp(setting->name, "rgui_show_start_screen"))
+        *setting->value.boolean = g_settings.menu_show_start_screen;
+    else if (!strcmp(setting->name,  "game_history_size"))
+        *setting->value.unsigned_integer = g_settings.game_history_size;
+#ifdef HAVE_MENU
+    else if (!strcmp(setting->name, "rgui_browser_directory"))
+        strlcpy(setting->value.string, g_settings.menu_content_directory, sizeof(setting->value.string));
+    else if (!strcmp(setting->name, "assets_directory"))
+        strlcpy(setting->value.string, g_settings.assets_directory, sizeof(setting->value.string));
+    else if (!strcmp(setting->name, "rgui_config_directory"))
+        strlcpy(setting->value.string, g_settings.menu_config_directory,  sizeof(setting->value.string));
+#endif
+    else if (!strcmp(setting->name, "libretro_path"))
+        strlcpy(setting->value.string, g_settings.libretro, sizeof(setting->value.string));
+    else if (!strcmp(setting->name, "libretro_info_path"))
+        strlcpy(setting->value.string, g_settings.libretro_info_path, sizeof(setting->value.string));
+    else if (!strcmp(setting->name, "core_options_path"))
+        strlcpy(setting->value.string, g_settings.core_options_path, sizeof(setting->value.string));
+    else if (!strcmp(setting->name, "cheat_database_path"))
+        strlcpy(setting->value.string, g_settings.cheat_database,  sizeof(setting->value.string));
+    else if (!strcmp(setting->name, "cheat_settings_path"))
+        strlcpy(setting->value.string, g_settings.cheat_settings_path, sizeof(setting->value.string));
+    else if (!strcmp(setting->name, "game_history_path"))
+        strlcpy(setting->value.string, g_settings.game_history_path, sizeof(setting->value.string));
+    else if (!strcmp(setting->name, "video_shader_dir"))
+        strlcpy(setting->value.string, g_settings.video.filter_dir, sizeof(setting->value.string));
+    else if (!strcmp(setting->name, "video_aspect_ratio_auto"))
+        *setting->value.boolean = g_settings.video.aspect_ratio_auto;
+    else if (!strcmp(setting->name, "video_filter"))
+        strlcpy(setting->value.string, g_settings.video.filter_path, sizeof(setting->value.string));
+#ifdef HAVE_CAMERA
+    else if (!strcmp(setting->name, "camera_allow"))
+        *setting->value.boolean = g_settings.camera.allow;
+#endif
+#ifdef HAVE_LOCATION
+    else if (!strcmp(setting->name, "location_allow"))
+        *setting->value.boolean = g_settings.location.allow;
+#endif
+    else if (!strcmp(setting->name, "video_shared_context"))
+       *setting->value.boolean = g_settings.video.shared_context;
+#ifdef HAVE_NETPLAY
+    else if (!strcmp(setting->name, "netplay_enable"))
+       *setting->value.boolean = g_extern.netplay_enable;
+    else if (!strcmp(setting->name, "netplay_mode"))
+       *setting->value.boolean = g_extern.netplay_is_client;
+    else if (!strcmp(setting->name, "netplay_spectator_mode_enable"))
+       *setting->value.boolean = g_extern.netplay_is_spectate;
+#endif
+    else if (!strcmp(setting->name, "log_verbosity"))
+        *setting->value.boolean = g_extern.verbosity;
+    else if (!strcmp(setting->name, "perfcnt_enable"))
+       *setting->value.boolean = g_extern.perfcnt_enable;
+    else if (!strcmp(setting->name, "core_specific_config"))
+       *setting->value.boolean = g_settings.core_specific_config;
+    else if (!strcmp(setting->name, "dummy_on_core_shutdown"))
+       *setting->value.boolean = g_settings.load_dummy_on_core_shutdown;
+    else if (!strcmp(setting->name, "libretro_log_level"))
+       *setting->value.unsigned_integer = g_settings.libretro_log_level;
+#ifdef HAVE_OSK
+    else if (!strcmp(setting->name, "osk_enable"))
+       *setting->value.boolean = g_settings.osk.enable;
+#endif
+}
+
+static void general_write_handler(const void *data)
 {
     const rarch_setting_t *setting = (const rarch_setting_t*)data;
     
@@ -674,12 +926,12 @@ static void general_change_handler(const void *data)
 #define END_GROUP()                             NEXT = setting_data_group_setting (ST_END_GROUP, 0); }
 #define START_SUB_GROUP(NAME)                   { const char *SUBGROUP_NAME = NAME; NEXT = setting_data_group_setting (ST_SUB_GROUP, NAME);
 #define END_SUB_GROUP()                         NEXT = setting_data_group_setting (ST_END_SUB_GROUP, 0); }
-#define CONFIG_BOOL(TARGET, NAME, SHORT, DEF, GROUP, SUBGROUP, CHANGE_HANDLER)   NEXT = setting_data_bool_setting  (NAME, SHORT, &TARGET, DEF, GROUP, SUBGROUP, CHANGE_HANDLER);
-#define CONFIG_INT(TARGET, NAME, SHORT, DEF, GROUP, SUBGROUP, CHANGE_HANDLER)    NEXT = setting_data_int_setting   (NAME, SHORT, &TARGET, DEF, GROUP, SUBGROUP, CHANGE_HANDLER);
-#define CONFIG_UINT(TARGET, NAME, SHORT, DEF, GROUP, SUBGROUP, CHANGE_HANDLER)   NEXT = setting_data_uint_setting  (NAME, SHORT, &TARGET, DEF, GROUP, SUBGROUP, CHANGE_HANDLER);
-#define CONFIG_FLOAT(TARGET, NAME, SHORT, DEF, GROUP, SUBGROUP, CHANGE_HANDLER)  NEXT = setting_data_float_setting (NAME, SHORT, &TARGET, DEF, GROUP, SUBGROUP, CHANGE_HANDLER);
-#define CONFIG_PATH(TARGET, NAME, SHORT, DEF, GROUP, SUBGROUP, CHANGE_HANDLER)   NEXT = setting_data_string_setting(ST_PATH, NAME, SHORT, TARGET, sizeof(TARGET), DEF, GROUP, SUBGROUP, CHANGE_HANDLER);
-#define CONFIG_STRING(TARGET, NAME, SHORT, DEF, GROUP, SUBGROUP, CHANGE_HANDLER) NEXT = setting_data_string_setting(ST_STRING, NAME, SHORT, TARGET, sizeof(TARGET), DEF, GROUP, SUBGROUP, CHANGE_HANDLER);
+#define CONFIG_BOOL(TARGET, NAME, SHORT, DEF, GROUP, SUBGROUP, CHANGE_HANDLER, READ_HANDLER)   NEXT = setting_data_bool_setting  (NAME, SHORT, &TARGET, DEF, GROUP, SUBGROUP, CHANGE_HANDLER, READ_HANDLER);
+#define CONFIG_INT(TARGET, NAME, SHORT, DEF, GROUP, SUBGROUP, CHANGE_HANDLER, READ_HANDLER)    NEXT = setting_data_int_setting   (NAME, SHORT, &TARGET, DEF, GROUP, SUBGROUP, CHANGE_HANDLER, READ_HANDLER);
+#define CONFIG_UINT(TARGET, NAME, SHORT, DEF, GROUP, SUBGROUP, CHANGE_HANDLER, READ_HANDLER)   NEXT = setting_data_uint_setting  (NAME, SHORT, &TARGET, DEF, GROUP, SUBGROUP, CHANGE_HANDLER, READ_HANDLER);
+#define CONFIG_FLOAT(TARGET, NAME, SHORT, DEF, GROUP, SUBGROUP, CHANGE_HANDLER, READ_HANDLER)  NEXT = setting_data_float_setting (NAME, SHORT, &TARGET, DEF, GROUP, SUBGROUP, CHANGE_HANDLER, READ_HANDLER);
+#define CONFIG_PATH(TARGET, NAME, SHORT, DEF, GROUP, SUBGROUP, CHANGE_HANDLER, READ_HANDLER)   NEXT = setting_data_string_setting(ST_PATH, NAME, SHORT, TARGET, sizeof(TARGET), DEF, GROUP, SUBGROUP, CHANGE_HANDLER, READ_HANDLER);
+#define CONFIG_STRING(TARGET, NAME, SHORT, DEF, GROUP, SUBGROUP, CHANGE_HANDLER, READ_HANDLER) NEXT = setting_data_string_setting(ST_STRING, NAME, SHORT, TARGET, sizeof(TARGET), DEF, GROUP, SUBGROUP, CHANGE_HANDLER, READ_HANDLER);
 #define CONFIG_HEX(TARGET, NAME, SHORT, GROUP, SUBGROUP)
 #define CONFIG_BIND(TARGET, PLAYER, NAME, SHORT, DEF, GROUP, SUBGROUP) \
    NEXT = setting_data_bind_setting  (NAME, SHORT, &TARGET, PLAYER, DEF, GROUP, SUBGROUP);
@@ -726,21 +978,21 @@ rarch_setting_t* setting_data_get_list(void)
       /***********/
          START_GROUP("Driver Options")
          START_SUB_GROUP("Driver Options")
-         CONFIG_STRING(g_settings.input.driver,             "input_driver",               "Input Driver",               config_get_default_input(), GROUP_NAME, SUBGROUP_NAME, NULL)
-         CONFIG_STRING(g_settings.video.driver,             "video_driver",               "Video Driver",               config_get_default_video(), GROUP_NAME, SUBGROUP_NAME, NULL)
+         CONFIG_STRING(g_settings.input.driver,             "input_driver",               "Input Driver",               config_get_default_input(), GROUP_NAME, SUBGROUP_NAME, NULL, NULL)
+         CONFIG_STRING(g_settings.video.driver,             "video_driver",               "Video Driver",               config_get_default_video(), GROUP_NAME, SUBGROUP_NAME, NULL, NULL)
 #ifdef HAVE_OPENGL
-         CONFIG_STRING(g_settings.video.gl_context,         "video_gl_context",           "OpenGL Context Driver",      "", GROUP_NAME, SUBGROUP_NAME, NULL)
+         CONFIG_STRING(g_settings.video.gl_context,         "video_gl_context",           "OpenGL Context Driver",      "", GROUP_NAME, SUBGROUP_NAME, NULL, NULL)
 #endif
-         CONFIG_STRING(g_settings.audio.driver,             "audio_driver",               "Audio Driver",               config_get_default_audio(), GROUP_NAME, SUBGROUP_NAME, NULL)
-         CONFIG_STRING(g_settings.audio.resampler,             "audio_driver",               "Audio Resampler Driver",     config_get_default_audio_resampler(), GROUP_NAME, SUBGROUP_NAME, NULL)
+         CONFIG_STRING(g_settings.audio.driver,             "audio_driver",               "Audio Driver",               config_get_default_audio(), GROUP_NAME, SUBGROUP_NAME, NULL, NULL)
+         CONFIG_STRING(g_settings.audio.resampler,             "audio_driver",               "Audio Resampler Driver",     config_get_default_audio_resampler(), GROUP_NAME, SUBGROUP_NAME, NULL, NULL)
 #ifdef HAVE_CAMERA
-         CONFIG_STRING(g_settings.camera.device,            "camera_device",              "Camera Driver",              config_get_default_camera(), GROUP_NAME, SUBGROUP_NAME, NULL)
+         CONFIG_STRING(g_settings.camera.device,            "camera_device",              "Camera Driver",              config_get_default_camera(), GROUP_NAME, SUBGROUP_NAME, NULL, NULL)
 #endif         
 #ifdef HAVE_LOCATION
-         CONFIG_STRING(g_settings.location.driver,          "location_driver",            "Location Driver",            config_get_default_location(), GROUP_NAME, SUBGROUP_NAME, NULL)
+         CONFIG_STRING(g_settings.location.driver,          "location_driver",            "Location Driver",            config_get_default_location(), GROUP_NAME, SUBGROUP_NAME, NULL, NULL)
 #endif         
-         CONFIG_STRING(g_settings.input.joypad_driver,      "input_joypad_driver",        "Joypad Driver",              "", GROUP_NAME, SUBGROUP_NAME, NULL)
-         CONFIG_STRING(g_settings.input.keyboard_layout,    "input_keyboard_layout",      "Keyboard Layout",            "", GROUP_NAME, SUBGROUP_NAME, NULL)
+         CONFIG_STRING(g_settings.input.joypad_driver,      "input_joypad_driver",        "Joypad Driver",              "", GROUP_NAME, SUBGROUP_NAME, NULL, NULL)
+         CONFIG_STRING(g_settings.input.keyboard_layout,    "input_keyboard_layout",      "Keyboard Layout",            "", GROUP_NAME, SUBGROUP_NAME, NULL, NULL)
 
          END_SUB_GROUP()
          END_GROUP()
@@ -752,33 +1004,33 @@ rarch_setting_t* setting_data_get_list(void)
          /*******************/
          START_GROUP("General Options")
          START_SUB_GROUP("General Options")
-         CONFIG_BOOL(g_extern.verbosity,                      "log_verbosity",        "Logging Verbosity", false, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
-         CONFIG_UINT(g_settings.libretro_log_level,           "libretro_log_level",        "Libretro Logging Level", libretro_log_level, GROUP_NAME, SUBGROUP_NAME, general_change_handler) WITH_RANGE(0, 3)
-         CONFIG_BOOL(g_extern.perfcnt_enable,               "perfcnt_enable",       "Performance Counters", false, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
-         CONFIG_BOOL(g_extern.config_save_on_exit,          "config_save_on_exit",        "Configuration Save On Exit", config_save_on_exit, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
-         CONFIG_BOOL(g_settings.core_specific_config,       "core_specific_config",        "Configuration Per-Core", default_core_specific_config, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
-         CONFIG_BOOL(g_settings.load_dummy_on_core_shutdown, "dummy_on_core_shutdown",      "Dummy On Core Shutdown", load_dummy_on_core_shutdown, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
-         CONFIG_BOOL(g_settings.fps_show,                   "fps_show",                   "Show Framerate",             fps_show, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
-         CONFIG_BOOL(g_settings.rewind_enable,              "rewind_enable",              "Rewind",                     rewind_enable, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
-         //CONFIG_SIZE(g_settings.rewind_buffer_size,          "rewind_buffer_size",         "Rewind Buffer Size",       rewind_buffer_size, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
-         CONFIG_UINT(g_settings.rewind_granularity,         "rewind_granularity",         "Rewind Granularity",         rewind_granularity, GROUP_NAME, SUBGROUP_NAME, general_change_handler) WITH_RANGE(1, 32768)
-         CONFIG_BOOL(g_settings.block_sram_overwrite,       "block_sram_overwrite",       "SRAM Block overwrite",       block_sram_overwrite, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
+         CONFIG_BOOL(g_extern.verbosity,                      "log_verbosity",        "Logging Verbosity", false, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+         CONFIG_UINT(g_settings.libretro_log_level,           "libretro_log_level",        "Libretro Logging Level", libretro_log_level, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_RANGE(0, 3)
+         CONFIG_BOOL(g_extern.perfcnt_enable,               "perfcnt_enable",       "Performance Counters", false, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+         CONFIG_BOOL(g_extern.config_save_on_exit,          "config_save_on_exit",        "Configuration Save On Exit", config_save_on_exit, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+         CONFIG_BOOL(g_settings.core_specific_config,       "core_specific_config",        "Configuration Per-Core", default_core_specific_config, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+         CONFIG_BOOL(g_settings.load_dummy_on_core_shutdown, "dummy_on_core_shutdown",      "Dummy On Core Shutdown", load_dummy_on_core_shutdown, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+         CONFIG_BOOL(g_settings.fps_show,                   "fps_show",                   "Show Framerate",             fps_show, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+         CONFIG_BOOL(g_settings.rewind_enable,              "rewind_enable",              "Rewind",                     rewind_enable, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+         //CONFIG_SIZE(g_settings.rewind_buffer_size,          "rewind_buffer_size",         "Rewind Buffer Size",       rewind_buffer_size, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+         CONFIG_UINT(g_settings.rewind_granularity,         "rewind_granularity",         "Rewind Granularity",         rewind_granularity, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_RANGE(1, 32768)
+         CONFIG_BOOL(g_settings.block_sram_overwrite,       "block_sram_overwrite",       "SRAM Block overwrite",       block_sram_overwrite, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
 #ifdef HAVE_THREADS
-         CONFIG_UINT(g_settings.autosave_interval,          "autosave_interval",          "SRAM Autosave",          autosave_interval, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
+         CONFIG_UINT(g_settings.autosave_interval,          "autosave_interval",          "SRAM Autosave",          autosave_interval, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
 #endif
-         CONFIG_BOOL(g_settings.video.disable_composition,  "video_disable_composition",  "Window Compositing",         disable_composition, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
-         CONFIG_BOOL(g_settings.pause_nonactive,            "pause_nonactive",            "Window Unfocus Pause",       pause_nonactive, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
-         CONFIG_FLOAT(g_settings.fastforward_ratio,         "fastforward_ratio",          "Maximum Run Speed",         fastforward_ratio, GROUP_NAME, SUBGROUP_NAME, general_change_handler) WITH_RANGE(-1, 10)
-         CONFIG_FLOAT(g_settings.slowmotion_ratio,          "slowmotion_ratio",           "Slow-Motion Ratio",          slowmotion_ratio, GROUP_NAME, SUBGROUP_NAME, general_change_handler)       WITH_RANGE(0, 1)
-         CONFIG_BOOL(g_settings.savestate_auto_index,       "savestate_auto_index",       "Save State Auto Index",      savestate_auto_index, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
-         CONFIG_BOOL(g_settings.savestate_auto_save,        "savestate_auto_save",        "Auto Save State",            savestate_auto_save, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
-         CONFIG_BOOL(g_settings.savestate_auto_load,        "savestate_auto_load",        "Auto Load State",            savestate_auto_load, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
-         CONFIG_INT(g_extern.state_slot,                    "state_slot",                 "State Slot",                 0, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
+         CONFIG_BOOL(g_settings.video.disable_composition,  "video_disable_composition",  "Window Compositing",         disable_composition, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+         CONFIG_BOOL(g_settings.pause_nonactive,            "pause_nonactive",            "Window Unfocus Pause",       pause_nonactive, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+         CONFIG_FLOAT(g_settings.fastforward_ratio,         "fastforward_ratio",          "Maximum Run Speed",         fastforward_ratio, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_RANGE(-1, 10)
+         CONFIG_FLOAT(g_settings.slowmotion_ratio,          "slowmotion_ratio",           "Slow-Motion Ratio",          slowmotion_ratio, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)       WITH_RANGE(0, 1)
+         CONFIG_BOOL(g_settings.savestate_auto_index,       "savestate_auto_index",       "Save State Auto Index",      savestate_auto_index, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+         CONFIG_BOOL(g_settings.savestate_auto_save,        "savestate_auto_save",        "Auto Save State",            savestate_auto_save, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+         CONFIG_BOOL(g_settings.savestate_auto_load,        "savestate_auto_load",        "Auto Load State",            savestate_auto_load, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+         CONFIG_INT(g_extern.state_slot,                    "state_slot",                 "State Slot",                 0, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
          END_SUB_GROUP()
        START_SUB_GROUP("Miscellaneous")
-       CONFIG_BOOL(g_settings.network_cmd_enable,         "network_cmd_enable",         "Network Commands",           network_cmd_enable, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
+       CONFIG_BOOL(g_settings.network_cmd_enable,         "network_cmd_enable",         "Network Commands",           network_cmd_enable, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
        //CONFIG_INT(g_settings.network_cmd_port,            "network_cmd_port",           "Network Command Port",       network_cmd_port, GROUP_NAME, SUBGROUP_NAME, NULL)
-       CONFIG_BOOL(g_settings.stdin_cmd_enable,           "stdin_cmd_enable",           "stdin command",              stdin_cmd_enable, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
+       CONFIG_BOOL(g_settings.stdin_cmd_enable,           "stdin_cmd_enable",           "stdin command",              stdin_cmd_enable, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
        END_SUB_GROUP()
        END_GROUP()
 
@@ -787,64 +1039,64 @@ rarch_setting_t* setting_data_get_list(void)
          /*********/
          START_GROUP("Video Options")
          START_SUB_GROUP("State")
-         CONFIG_BOOL(g_settings.video.shared_context,  "video_shared_context",  "HW Shared Context Enable",   false, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
+         CONFIG_BOOL(g_settings.video.shared_context,  "video_shared_context",  "HW Shared Context Enable",   false, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
          END_SUB_GROUP()
          START_SUB_GROUP("Monitor")
-         CONFIG_UINT(g_settings.video.monitor_index,        "video_monitor_index",        "Monitor Index",              monitor_index, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
+         CONFIG_UINT(g_settings.video.monitor_index,        "video_monitor_index",        "Monitor Index",              monitor_index, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
 #if !defined(RARCH_CONSOLE) && !defined(RARCH_MOBILE)
-         CONFIG_BOOL(g_settings.video.fullscreen,           "video_fullscreen",           "Use Fullscreen mode",        fullscreen, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
+         CONFIG_BOOL(g_settings.video.fullscreen,           "video_fullscreen",           "Use Fullscreen mode",        fullscreen, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
 #endif
-         CONFIG_BOOL(g_settings.video.windowed_fullscreen,  "video_windowed_fullscreen",  "Windowed Fullscreen Mode",   windowed_fullscreen, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
-         CONFIG_UINT(g_settings.video.fullscreen_x,         "video_fullscreen_x",         "Fullscreen Width",           fullscreen_x, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
-         CONFIG_UINT(g_settings.video.fullscreen_y,         "video_fullscreen_y",         "Fullscreen Height",          fullscreen_y, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
-         CONFIG_FLOAT(g_settings.video.refresh_rate,        "video_refresh_rate",         "Refresh Rate",               refresh_rate, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
+         CONFIG_BOOL(g_settings.video.windowed_fullscreen,  "video_windowed_fullscreen",  "Windowed Fullscreen Mode",   windowed_fullscreen, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+         CONFIG_UINT(g_settings.video.fullscreen_x,         "video_fullscreen_x",         "Fullscreen Width",           fullscreen_x, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+         CONFIG_UINT(g_settings.video.fullscreen_y,         "video_fullscreen_y",         "Fullscreen Height",          fullscreen_y, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+         CONFIG_FLOAT(g_settings.video.refresh_rate,        "video_refresh_rate",         "Refresh Rate",               refresh_rate, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
          END_SUB_GROUP()
 
          START_SUB_GROUP("Aspect")
-         CONFIG_BOOL(g_settings.video.force_aspect,         "video_force_aspect",         "Force aspect ratio",         force_aspect, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
-         CONFIG_FLOAT(g_settings.video.aspect_ratio,        "video_aspect_ratio",         "Aspect Ratio",               aspect_ratio, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
-         CONFIG_BOOL(g_settings.video.aspect_ratio_auto,    "video_aspect_ratio_auto",    "Use Auto Aspect Ratio",      aspect_ratio_auto, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
-         CONFIG_UINT(g_settings.video.aspect_ratio_idx,     "aspect_ratio_index",         "Aspect Ratio Index",         aspect_ratio_idx, GROUP_NAME, SUBGROUP_NAME, general_change_handler) WITH_RANGE(0, LAST_ASPECT_RATIO)
+         CONFIG_BOOL(g_settings.video.force_aspect,         "video_force_aspect",         "Force aspect ratio",         force_aspect, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+         CONFIG_FLOAT(g_settings.video.aspect_ratio,        "video_aspect_ratio",         "Aspect Ratio",               aspect_ratio, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+         CONFIG_BOOL(g_settings.video.aspect_ratio_auto,    "video_aspect_ratio_auto",    "Use Auto Aspect Ratio",      aspect_ratio_auto, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+         CONFIG_UINT(g_settings.video.aspect_ratio_idx,     "aspect_ratio_index",         "Aspect Ratio Index",         aspect_ratio_idx, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_RANGE(0, LAST_ASPECT_RATIO)
          END_SUB_GROUP()
 
          START_SUB_GROUP("Scaling")
 #if !defined(RARCH_CONSOLE) && !defined(RARCH_MOBILE)
-         CONFIG_FLOAT(g_settings.video.xscale,              "video_xscale",               "Windowed Scale (X)",                    xscale, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
-         CONFIG_FLOAT(g_settings.video.yscale,              "video_yscale",               "Windowed Scale (Y)",                    yscale, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
+         CONFIG_FLOAT(g_settings.video.xscale,              "video_xscale",               "Windowed Scale (X)",                    xscale, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+         CONFIG_FLOAT(g_settings.video.yscale,              "video_yscale",               "Windowed Scale (Y)",                    yscale, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
 #endif
-         CONFIG_BOOL(g_settings.video.scale_integer,        "video_scale_integer",        "Integer Scale",      scale_integer, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
+         CONFIG_BOOL(g_settings.video.scale_integer,        "video_scale_integer",        "Integer Scale",      scale_integer, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
 
-         CONFIG_INT(g_extern.console.screen.viewports.custom_vp.x,         "custom_viewport_x",       "Custom Viewport X",       0, GROUP_NAME, SUBGROUP_NAME, NULL)
-         CONFIG_INT(g_extern.console.screen.viewports.custom_vp.y,         "custom_viewport_y",       "Custom Viewport Y",       0, GROUP_NAME, SUBGROUP_NAME, NULL)
-         CONFIG_UINT(g_extern.console.screen.viewports.custom_vp.width,    "custom_viewport_width",   "Custom Viewport Width",   0, GROUP_NAME, SUBGROUP_NAME, NULL)
-         CONFIG_UINT(g_extern.console.screen.viewports.custom_vp.height,   "custom_viewport_height",  "Custom Viewport Height",  0, GROUP_NAME, SUBGROUP_NAME, NULL)
+         CONFIG_INT(g_extern.console.screen.viewports.custom_vp.x,         "custom_viewport_x",       "Custom Viewport X",       0, GROUP_NAME, SUBGROUP_NAME, NULL, NULL)
+         CONFIG_INT(g_extern.console.screen.viewports.custom_vp.y,         "custom_viewport_y",       "Custom Viewport Y",       0, GROUP_NAME, SUBGROUP_NAME, NULL, NULL)
+         CONFIG_UINT(g_extern.console.screen.viewports.custom_vp.width,    "custom_viewport_width",   "Custom Viewport Width",   0, GROUP_NAME, SUBGROUP_NAME, NULL, NULL)
+         CONFIG_UINT(g_extern.console.screen.viewports.custom_vp.height,   "custom_viewport_height",  "Custom Viewport Height",  0, GROUP_NAME, SUBGROUP_NAME, NULL, NULL)
 
-         CONFIG_BOOL(g_settings.video.smooth,               "video_smooth",               "Use Bilinear Filtering",     video_smooth, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
-         CONFIG_UINT(g_settings.video.rotation,             "video_rotation",             "Rotation",                   0, GROUP_NAME, SUBGROUP_NAME, general_change_handler) WITH_RANGE(0, 3)
+         CONFIG_BOOL(g_settings.video.smooth,               "video_smooth",               "Use Bilinear Filtering",     video_smooth, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+         CONFIG_UINT(g_settings.video.rotation,             "video_rotation",             "Rotation",                   0, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_RANGE(0, 3)
          END_SUB_GROUP()
 
 
          START_SUB_GROUP("Synchronization")
 #if defined(HAVE_THREADS) && !defined(RARCH_CONSOLE)
-         CONFIG_BOOL(g_settings.video.threaded,             "video_threaded",             "Threaded Video",         video_threaded, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
+         CONFIG_BOOL(g_settings.video.threaded,             "video_threaded",             "Threaded Video",         video_threaded, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
 #endif
-         CONFIG_BOOL(g_settings.video.vsync,                "video_vsync",                "VSync",                      vsync, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
-         CONFIG_UINT(g_settings.video.swap_interval,        "video_swap_interval",        "VSync Swap Interval",        swap_interval, GROUP_NAME, SUBGROUP_NAME, general_change_handler)       WITH_RANGE(1, 4)
-         CONFIG_BOOL(g_settings.video.hard_sync,            "video_hard_sync",            "Hard GPU Sync",              hard_sync, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
-         CONFIG_UINT(g_settings.video.hard_sync_frames,     "video_hard_sync_frames",     "Hard GPU Sync Frames",       hard_sync_frames, GROUP_NAME, SUBGROUP_NAME, general_change_handler)    WITH_RANGE(0, 3)
+         CONFIG_BOOL(g_settings.video.vsync,                "video_vsync",                "VSync",                      vsync, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+         CONFIG_UINT(g_settings.video.swap_interval,        "video_swap_interval",        "VSync Swap Interval",        swap_interval, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)       WITH_RANGE(1, 4)
+         CONFIG_BOOL(g_settings.video.hard_sync,            "video_hard_sync",            "Hard GPU Sync",              hard_sync, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+         CONFIG_UINT(g_settings.video.hard_sync_frames,     "video_hard_sync_frames",     "Hard GPU Sync Frames",       hard_sync_frames, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)    WITH_RANGE(0, 3)
 #if !defined(RARCH_MOBILE)
-         CONFIG_BOOL(g_settings.video.black_frame_insertion, "video_black_frame_insertion", "Black Frame Insertion",      black_frame_insertion, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
+         CONFIG_BOOL(g_settings.video.black_frame_insertion, "video_black_frame_insertion", "Black Frame Insertion",      black_frame_insertion, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
 #endif
          END_SUB_GROUP()
 
          START_SUB_GROUP("Miscellaneous")
-         CONFIG_BOOL(g_settings.video.post_filter_record,   "video_post_filter_record",   "Post filter record Enable",         post_filter_record, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
-         CONFIG_BOOL(g_settings.video.gpu_record,           "video_gpu_record",           "GPU Record Enable",                 gpu_record, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
-         CONFIG_BOOL(g_settings.video.gpu_screenshot,       "video_gpu_screenshot",       "GPU Screenshot Enable",             gpu_screenshot, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
-         CONFIG_BOOL(g_settings.video.allow_rotate,         "video_allow_rotate",         "Allow rotation",             allow_rotate, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
-         CONFIG_BOOL(g_settings.video.crop_overscan,        "video_crop_overscan",        "Crop Overscan (reload)",     crop_overscan, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
+         CONFIG_BOOL(g_settings.video.post_filter_record,   "video_post_filter_record",   "Post filter record Enable",         post_filter_record, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+         CONFIG_BOOL(g_settings.video.gpu_record,           "video_gpu_record",           "GPU Record Enable",                 gpu_record, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+         CONFIG_BOOL(g_settings.video.gpu_screenshot,       "video_gpu_screenshot",       "GPU Screenshot Enable",             gpu_screenshot, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+         CONFIG_BOOL(g_settings.video.allow_rotate,         "video_allow_rotate",         "Allow rotation",             allow_rotate, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+         CONFIG_BOOL(g_settings.video.crop_overscan,        "video_crop_overscan",        "Crop Overscan (reload)",     crop_overscan, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
 #ifndef HAVE_FILTERS_BUILTIN
-         CONFIG_PATH(g_settings.video.filter_path,          "video_filter",               "Software filter",            "", GROUP_NAME, SUBGROUP_NAME, general_change_handler)       WITH_FLAGS(SD_FLAG_ALLOW_EMPTY)
+         CONFIG_PATH(g_settings.video.filter_path,          "video_filter",               "Software filter",            "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)       WITH_FLAGS(SD_FLAG_ALLOW_EMPTY)
 #endif
          END_SUB_GROUP()
 
@@ -852,18 +1104,18 @@ rarch_setting_t* setting_data_get_list(void)
 
          START_GROUP("Shader Options")
          START_SUB_GROUP("State")
-         CONFIG_BOOL(g_settings.video.shader_enable,        "video_shader_enable",        "Enable Shaders",             shader_enable, GROUP_NAME, SUBGROUP_NAME, NULL)
-         CONFIG_PATH(g_settings.video.shader_path,          "video_shader",               "Shader",                     "", GROUP_NAME, SUBGROUP_NAME, NULL)       WITH_FLAGS(SD_FLAG_ALLOW_EMPTY)
+         CONFIG_BOOL(g_settings.video.shader_enable,        "video_shader_enable",        "Enable Shaders",             shader_enable, GROUP_NAME, SUBGROUP_NAME, NULL, NULL)
+         CONFIG_PATH(g_settings.video.shader_path,          "video_shader",               "Shader",                     "", GROUP_NAME, SUBGROUP_NAME, NULL, NULL)       WITH_FLAGS(SD_FLAG_ALLOW_EMPTY)
          END_SUB_GROUP()
          END_GROUP()
 
          START_GROUP("Font Options")
          START_SUB_GROUP("Messages")
-         CONFIG_PATH(g_settings.video.font_path,            "video_font_path",            "Font Path",                  "", GROUP_NAME, SUBGROUP_NAME, general_change_handler)       WITH_FLAGS(SD_FLAG_ALLOW_EMPTY)
-         CONFIG_FLOAT(g_settings.video.font_size,           "video_font_size",            "OSD Font Size",              font_size, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
-         CONFIG_BOOL(g_settings.video.font_enable,          "video_font_enable",          "OSD Font Enable",            font_enable, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
-         CONFIG_FLOAT(g_settings.video.msg_pos_x,           "video_message_pos_x",        "Message X Position",         message_pos_offset_x, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
-         CONFIG_FLOAT(g_settings.video.msg_pos_y,           "video_message_pos_y",        "Message Y Position",         message_pos_offset_y, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
+         CONFIG_PATH(g_settings.video.font_path,            "video_font_path",            "Font Path",                  "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)       WITH_FLAGS(SD_FLAG_ALLOW_EMPTY)
+         CONFIG_FLOAT(g_settings.video.font_size,           "video_font_size",            "OSD Font Size",              font_size, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+         CONFIG_BOOL(g_settings.video.font_enable,          "video_font_enable",          "OSD Font Enable",            font_enable, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+         CONFIG_FLOAT(g_settings.video.msg_pos_x,           "video_message_pos_x",        "Message X Position",         message_pos_offset_x, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+         CONFIG_FLOAT(g_settings.video.msg_pos_y,           "video_message_pos_y",        "Message Y Position",         message_pos_offset_y, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
          /* message color */
          END_SUB_GROUP()
          END_GROUP()
@@ -873,22 +1125,22 @@ rarch_setting_t* setting_data_get_list(void)
          /*********/
          START_GROUP("Audio Options")
          START_SUB_GROUP("State")
-         CONFIG_BOOL(g_settings.audio.enable,               "audio_enable",               "Audio Enable",                     audio_enable, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
-         CONFIG_BOOL(g_extern.audio_data.mute,              "audio_mute",                 "Audio Mute",                 false, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
-         CONFIG_FLOAT(g_settings.audio.volume,              "audio_volume",               "Volume Level",               audio_volume, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
+         CONFIG_BOOL(g_settings.audio.enable,               "audio_enable",               "Audio Enable",                     audio_enable, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+         CONFIG_BOOL(g_extern.audio_data.mute,              "audio_mute",                 "Audio Mute",                 false, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+         CONFIG_FLOAT(g_settings.audio.volume,              "audio_volume",               "Volume Level",               audio_volume, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
          END_SUB_GROUP()
 
          START_SUB_GROUP("Synchronization")
-         CONFIG_BOOL(g_settings.audio.sync,                 "audio_sync",                 "Audio Sync Enable",                audio_sync, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
-         CONFIG_UINT(g_settings.audio.latency,              "audio_latency",              "Audio Latency",                    g_defaults.settings.out_latency ? g_defaults.settings.out_latency : out_latency, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
-         CONFIG_FLOAT(g_settings.audio.rate_control_delta,  "audio_rate_control_delta",   "Audio Rate Control Delta",         rate_control_delta, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
-         CONFIG_UINT(g_settings.audio.block_frames,         "audio_block_frames",         "Block Frames",               0, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
+         CONFIG_BOOL(g_settings.audio.sync,                 "audio_sync",                 "Audio Sync Enable",                audio_sync, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+         CONFIG_UINT(g_settings.audio.latency,              "audio_latency",              "Audio Latency",                    g_defaults.settings.out_latency ? g_defaults.settings.out_latency : out_latency, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+         CONFIG_FLOAT(g_settings.audio.rate_control_delta,  "audio_rate_control_delta",   "Audio Rate Control Delta",         rate_control_delta, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+         CONFIG_UINT(g_settings.audio.block_frames,         "audio_block_frames",         "Block Frames",               0, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
          END_SUB_GROUP()
 
          START_SUB_GROUP("Miscellaneous")
-         CONFIG_STRING(g_settings.audio.device,             "audio_device",               "Device",                     "", GROUP_NAME, SUBGROUP_NAME, general_change_handler)
-         CONFIG_UINT(g_settings.audio.out_rate,             "audio_out_rate",             "Audio Output Rate",          out_rate, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
-         CONFIG_PATH(g_settings.audio.dsp_plugin,           "audio_dsp_plugin",           "DSP Plugin",                 "", GROUP_NAME, SUBGROUP_NAME, general_change_handler)          WITH_FLAGS(SD_FLAG_ALLOW_EMPTY)
+         CONFIG_STRING(g_settings.audio.device,             "audio_device",               "Device",                     "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+         CONFIG_UINT(g_settings.audio.out_rate,             "audio_out_rate",             "Audio Output Rate",          out_rate, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+         CONFIG_PATH(g_settings.audio.dsp_plugin,           "audio_dsp_plugin",           "DSP Plugin",                 "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)          WITH_FLAGS(SD_FLAG_ALLOW_EMPTY)
          END_SUB_GROUP()
          END_GROUP()
 
@@ -897,22 +1149,22 @@ rarch_setting_t* setting_data_get_list(void)
          /*********/
          START_GROUP("Input Options")
          START_SUB_GROUP("State")
-         CONFIG_BOOL(g_settings.input.autodetect_enable,    "input_autodetect_enable",    "Autodetect Enable",   input_autodetect_enable, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
+         CONFIG_BOOL(g_settings.input.autodetect_enable,    "input_autodetect_enable",    "Autodetect Enable",   input_autodetect_enable, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
          END_SUB_GROUP()
 
          START_SUB_GROUP("Joypad Mapping")
          //TODO: input_libretro_device_p%u
-         CONFIG_INT(g_settings.input.joypad_map[0],         "input_player1_joypad_index", "Player 1 Pad Index",         0, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
-         CONFIG_INT(g_settings.input.joypad_map[1],         "input_player2_joypad_index", "Player 2 Pad Index",         1, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
-         CONFIG_INT(g_settings.input.joypad_map[2],         "input_player3_joypad_index", "Player 3 Pad Index",         2, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
-         CONFIG_INT(g_settings.input.joypad_map[3],         "input_player4_joypad_index", "Player 4 Pad Index",         3, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
-         CONFIG_INT(g_settings.input.joypad_map[4],         "input_player5_joypad_index", "Player 5 Pad Index",         4, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
+         CONFIG_INT(g_settings.input.joypad_map[0],         "input_player1_joypad_index", "Player 1 Pad Index",         0, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+         CONFIG_INT(g_settings.input.joypad_map[1],         "input_player2_joypad_index", "Player 2 Pad Index",         1, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+         CONFIG_INT(g_settings.input.joypad_map[2],         "input_player3_joypad_index", "Player 3 Pad Index",         2, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+         CONFIG_INT(g_settings.input.joypad_map[3],         "input_player4_joypad_index", "Player 4 Pad Index",         3, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+         CONFIG_INT(g_settings.input.joypad_map[4],         "input_player5_joypad_index", "Player 5 Pad Index",         4, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
          END_SUB_GROUP()
 
          START_SUB_GROUP("Turbo/Deadzone")
-         CONFIG_FLOAT(g_settings.input.axis_threshold,      "input_axis_threshold",       "Input Axis Threshold",       axis_threshold, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
-         CONFIG_UINT(g_settings.input.turbo_period,         "input_turbo_period",         "Turbo Period",               turbo_period, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
-         CONFIG_UINT(g_settings.input.turbo_duty_cycle,     "input_duty_cycle",           "Duty Cycle",                 turbo_duty_cycle, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
+         CONFIG_FLOAT(g_settings.input.axis_threshold,      "input_axis_threshold",       "Input Axis Threshold",       axis_threshold, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+         CONFIG_UINT(g_settings.input.turbo_period,         "input_turbo_period",         "Turbo Period",               turbo_period, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+         CONFIG_UINT(g_settings.input.turbo_duty_cycle,     "input_duty_cycle",           "Duty Cycle",                 turbo_duty_cycle, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
          END_SUB_GROUP()
        
        // The second argument to config bind is 1 based for players and 0 only for meta keys
@@ -944,12 +1196,12 @@ rarch_setting_t* setting_data_get_list(void)
        }
 #ifdef HAVE_OSK
          START_SUB_GROUP("Onscreen Keyboard")
-         CONFIG_BOOL(g_settings.osk.enable, "osk_enable", "Onscreen Keyboard Enable",     false, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
+         CONFIG_BOOL(g_settings.osk.enable, "osk_enable", "Onscreen Keyboard Enable",     false, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
          END_SUB_GROUP()
 #endif
 
          START_SUB_GROUP("Miscellaneous")
-         CONFIG_BOOL(g_settings.input.netplay_client_swap_input, "netplay_client_swap_input", "Swap Netplay Input",     netplay_client_swap_input, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
+         CONFIG_BOOL(g_settings.input.netplay_client_swap_input, "netplay_client_swap_input", "Swap Netplay Input",     netplay_client_swap_input, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
          END_SUB_GROUP()
          END_GROUP()
 
@@ -959,9 +1211,9 @@ rarch_setting_t* setting_data_get_list(void)
          /*******************/
          START_GROUP("Overlay Options")
          START_SUB_GROUP("State")
-         CONFIG_PATH(g_settings.input.overlay,              "input_overlay",              "Overlay Preset",              "", GROUP_NAME, SUBGROUP_NAME, general_change_handler) WITH_FLAGS(SD_FLAG_ALLOW_EMPTY) WITH_VALUES("cfg")
-         CONFIG_FLOAT(g_settings.input.overlay_opacity,     "input_overlay_opacity",      "Overlay Opacity",            0.7f, GROUP_NAME, SUBGROUP_NAME, general_change_handler) WITH_RANGE(0, 1)
-         CONFIG_FLOAT(g_settings.input.overlay_scale,       "input_overlay_scale",        "Overlay Scale",              1.0f, GROUP_NAME, SUBGROUP_NAME, general_change_handler) WITH_RANGE(0, 2)
+         CONFIG_PATH(g_settings.input.overlay,              "input_overlay",              "Overlay Preset",              "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_FLAGS(SD_FLAG_ALLOW_EMPTY) WITH_VALUES("cfg")
+         CONFIG_FLOAT(g_settings.input.overlay_opacity,     "input_overlay_opacity",      "Overlay Opacity",            0.7f, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_RANGE(0, 1)
+         CONFIG_FLOAT(g_settings.input.overlay_scale,       "input_overlay_scale",        "Overlay Scale",              1.0f, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_RANGE(0, 2)
          END_SUB_GROUP()
          END_GROUP()
 #endif
@@ -972,9 +1224,9 @@ rarch_setting_t* setting_data_get_list(void)
 #ifdef HAVE_NETPLAY
          START_GROUP("Netplay Options")
          START_SUB_GROUP("State")
-         CONFIG_BOOL(g_extern.netplay_enable,            "netplay_enable",  "Netplay Enable",        false, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
-         CONFIG_BOOL(g_extern.netplay_is_client,         "netplay_mode",    "Netplay Client Enable",          false, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
-         CONFIG_BOOL(g_extern.netplay_is_spectate,       "netplay_spectator_mode_enable",    "Netplay Spectator Enable",          false, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
+         CONFIG_BOOL(g_extern.netplay_enable,            "netplay_enable",  "Netplay Enable",        false, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+         CONFIG_BOOL(g_extern.netplay_is_client,         "netplay_mode",    "Netplay Client Enable",          false, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+         CONFIG_BOOL(g_extern.netplay_is_spectate,       "netplay_spectator_mode_enable",    "Netplay Spectator Enable",          false, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
          END_SUB_GROUP()
          END_GROUP()
 #endif
@@ -985,35 +1237,35 @@ rarch_setting_t* setting_data_get_list(void)
          START_GROUP("Path Options")
          START_SUB_GROUP("State")
 #ifdef HAVE_MENU
-         CONFIG_BOOL(g_settings.menu_show_start_screen,     "rgui_show_start_screen",     "Show Start Screen",          menu_show_start_screen, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
+         CONFIG_BOOL(g_settings.menu_show_start_screen,     "rgui_show_start_screen",     "Show Start Screen",          menu_show_start_screen, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
 #endif
-         CONFIG_UINT(g_settings.game_history_size,          "game_history_size",          "Content History Size",       game_history_size, GROUP_NAME, SUBGROUP_NAME, general_change_handler) WITH_RANGE(0, 0)
+         CONFIG_UINT(g_settings.game_history_size,          "game_history_size",          "Content History Size",       game_history_size, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_RANGE(0, 0)
          END_SUB_GROUP()
          START_SUB_GROUP("Paths")
 #ifdef HAVE_MENU
-         CONFIG_PATH(g_settings.menu_content_directory,     "rgui_browser_directory",     "Content Directory",          "", GROUP_NAME, SUBGROUP_NAME, general_change_handler)                WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
-         CONFIG_PATH(g_settings.assets_directory,           "assets_directory",           "Assets Directory",           "", GROUP_NAME, SUBGROUP_NAME, general_change_handler)                WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
-         CONFIG_PATH(g_settings.menu_config_directory,      "rgui_config_directory",      "Config Directory",           "", GROUP_NAME, SUBGROUP_NAME, general_change_handler)                WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
+         CONFIG_PATH(g_settings.menu_content_directory,     "rgui_browser_directory",     "Content Directory",          "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)                WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
+         CONFIG_PATH(g_settings.assets_directory,           "assets_directory",           "Assets Directory",           "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)                WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
+         CONFIG_PATH(g_settings.menu_config_directory,      "rgui_config_directory",      "Config Directory",           "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)                WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
 
 #endif
-         CONFIG_PATH(g_settings.libretro,                   "libretro_path",              "Libretro Path",              "", GROUP_NAME, SUBGROUP_NAME, general_change_handler)                WITH_FLAGS(SD_FLAG_ALLOW_EMPTY)
-         CONFIG_PATH(g_settings.libretro_info_path,         "libretro_info_path",         "Core Info Directory",        g_defaults.core_info_dir ? g_defaults.core_info_dir : "", GROUP_NAME, SUBGROUP_NAME, general_change_handler)   WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
-         CONFIG_PATH(g_settings.core_options_path,          "core_options_path",          "Core Options Path",          "", "Paths", SUBGROUP_NAME, general_change_handler)                WITH_FLAGS(SD_FLAG_ALLOW_EMPTY)
-         CONFIG_PATH(g_settings.cheat_database,             "cheat_database_path",        "Cheat Database",             "", "Paths", SUBGROUP_NAME, general_change_handler)                WITH_FLAGS(SD_FLAG_ALLOW_EMPTY)
-         CONFIG_PATH(g_settings.cheat_settings_path,        "cheat_settings_path",        "Cheat Settings",             "", GROUP_NAME, SUBGROUP_NAME, general_change_handler)                WITH_FLAGS(SD_FLAG_ALLOW_EMPTY)
-         CONFIG_PATH(g_settings.game_history_path,          "game_history_path",          "Content History Path",       "", GROUP_NAME, SUBGROUP_NAME, general_change_handler)                WITH_FLAGS(SD_FLAG_ALLOW_EMPTY)
+         CONFIG_PATH(g_settings.libretro,                   "libretro_path",              "Libretro Path",              "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)                WITH_FLAGS(SD_FLAG_ALLOW_EMPTY)
+         CONFIG_PATH(g_settings.libretro_info_path,         "libretro_info_path",         "Core Info Directory",        g_defaults.core_info_dir ? g_defaults.core_info_dir : "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)   WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
+         CONFIG_PATH(g_settings.core_options_path,          "core_options_path",          "Core Options Path",          "", "Paths", SUBGROUP_NAME, general_write_handler, general_read_handler)                WITH_FLAGS(SD_FLAG_ALLOW_EMPTY)
+         CONFIG_PATH(g_settings.cheat_database,             "cheat_database_path",        "Cheat Database",             "", "Paths", SUBGROUP_NAME, general_write_handler, general_read_handler)                WITH_FLAGS(SD_FLAG_ALLOW_EMPTY)
+         CONFIG_PATH(g_settings.cheat_settings_path,        "cheat_settings_path",        "Cheat Settings",             "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)                WITH_FLAGS(SD_FLAG_ALLOW_EMPTY)
+         CONFIG_PATH(g_settings.game_history_path,          "game_history_path",          "Content History Path",       "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)                WITH_FLAGS(SD_FLAG_ALLOW_EMPTY)
 
-         CONFIG_PATH(g_settings.video.shader_dir,           "video_shader_dir",           "Shader Directory",           g_defaults.shader_dir ? g_defaults.shader_dir : "", GROUP_NAME, SUBGROUP_NAME, general_change_handler)  WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
+         CONFIG_PATH(g_settings.video.shader_dir,           "video_shader_dir",           "Shader Directory",           g_defaults.shader_dir ? g_defaults.shader_dir : "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)  WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
 
 #ifdef HAVE_OVERLAY
-         CONFIG_PATH(g_extern.overlay_dir,                  "overlay_directory",          "Overlay Directory",          g_defaults.overlay_dir ? g_defaults.overlay_dir : "", GROUP_NAME, SUBGROUP_NAME, general_change_handler) WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
+         CONFIG_PATH(g_extern.overlay_dir,                  "overlay_directory",          "Overlay Directory",          g_defaults.overlay_dir ? g_defaults.overlay_dir : "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
 #endif
-         CONFIG_PATH(g_settings.screenshot_directory,       "screenshot_directory",       "Screenshot Directory",       "", GROUP_NAME, SUBGROUP_NAME, general_change_handler)                WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
-         CONFIG_PATH(g_settings.input.autoconfig_dir,       "joypad_autoconfig_dir",      "Joypad Autoconfig Directory", "", GROUP_NAME, SUBGROUP_NAME, general_change_handler)          WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
-       CONFIG_PATH(g_extern.savefile_dir, "savefile_directory", "Savefile Directory", "", GROUP_NAME, SUBGROUP_NAME, general_change_handler);
-       CONFIG_PATH(g_extern.savestate_dir, "savestate_directory", "Savestate Directory", "", GROUP_NAME, SUBGROUP_NAME, general_change_handler)
-       CONFIG_PATH(g_settings.system_directory, "system_directory", "System Directory", "", GROUP_NAME, SUBGROUP_NAME, general_change_handler)
-       CONFIG_PATH(g_settings.extraction_directory, "extraction_directory", "Extraction Directory", "", GROUP_NAME, SUBGROUP_NAME, general_change_handler)
+         CONFIG_PATH(g_settings.screenshot_directory,       "screenshot_directory",       "Screenshot Directory",       "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)                WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
+         CONFIG_PATH(g_settings.input.autoconfig_dir,       "joypad_autoconfig_dir",      "Joypad Autoconfig Directory", "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)          WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
+       CONFIG_PATH(g_extern.savefile_dir, "savefile_directory", "Savefile Directory", "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler);
+       CONFIG_PATH(g_extern.savestate_dir, "savestate_directory", "Savestate Directory", "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+       CONFIG_PATH(g_settings.system_directory, "system_directory", "System Directory", "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+       CONFIG_PATH(g_settings.extraction_directory, "extraction_directory", "Extraction Directory", "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
          END_SUB_GROUP()
          END_GROUP()
        
@@ -1023,10 +1275,10 @@ rarch_setting_t* setting_data_get_list(void)
        START_GROUP("Privacy Options")
        START_SUB_GROUP("State")
 #ifdef HAVE_CAMERA
-         CONFIG_BOOL(g_settings.camera.allow,     "camera_allow",     "Allow Camera",          false, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
+         CONFIG_BOOL(g_settings.camera.allow,     "camera_allow",     "Allow Camera",          false, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
 #endif
 #ifdef HAVE_LOCATION
-         CONFIG_BOOL(g_settings.location.allow,     "location_allow",     "Allow Location",          false, GROUP_NAME, SUBGROUP_NAME, general_change_handler)
+         CONFIG_BOOL(g_settings.location.allow,     "location_allow",     "Allow Location",          false, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
 #endif
        END_SUB_GROUP()
        END_GROUP()
