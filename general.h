@@ -35,7 +35,7 @@
 #include "miscellaneous.h"
 #include "gfx/filter.h"
 
-#include "frontend/menu/history.h"
+#include "history.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"

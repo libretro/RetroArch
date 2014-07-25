@@ -596,6 +596,12 @@ SCREENSHOTS
 #include "../screenshot.c"
 #endif
 
+
+/*============================================================
+HISTORY
+============================================================ */
+#include "../history.c"
+
 /*============================================================
 MENU
 ============================================================ */
@@ -603,7 +609,6 @@ MENU
 #include "../frontend/menu/menu_input_line_cb.c"
 #include "../frontend/menu/menu_common.c"
 #include "../frontend/menu/menu_navigation.c"
-#include "../frontend/menu/history.c"
 #include "../frontend/menu/file_list.c"
 
 #ifdef HAVE_MENU
