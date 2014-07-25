@@ -255,11 +255,17 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 - (void)wasSelectedOnTableView:(UITableView*)tableView ofController:(UIViewController*)controller
 {
    char buffer[256];
-   UIAlertView* alertView = [[UIAlertView alloc] initWithTitle:BOXSTRING("Enter new value") message:BOXSTRING(self.setting->short_description) delegate:self
-                                                  cancelButtonTitle:BOXSTRING("Cancel") otherButtonTitles:BOXSTRING("OK"), nil];
+   NSString *desc = BOXSTRING("N/A");
+   UIAlertView *alertView;
+   UITextField *field;
+    
+   if (self.setting && self.setting->short_description)
+      desc = BOXSTRING(self.setting->short_description);
+    
+   alertView = [[UIAlertView alloc] initWithTitle:BOXSTRING("Enter new value") message:desc delegate:self cancelButtonTitle:BOXSTRING("Cancel") otherButtonTitles:BOXSTRING("OK"), nil];
    alertView.alertViewStyle = UIAlertViewStylePlainTextInput;
 
-   UITextField* field = [alertView textFieldAtIndex:0];
+   field = [alertView textFieldAtIndex:0];
    
    field.delegate = self.formatter;
    field.placeholder = BOXSTRING(setting_data_get_string_representation(self.setting, buffer, sizeof(buffer)));
