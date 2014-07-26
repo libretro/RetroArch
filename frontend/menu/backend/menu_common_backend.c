@@ -3195,6 +3195,7 @@ static unsigned menu_common_shader_manager_get_type(const struct gfx_shader *sha
 
 static int menu_common_shader_manager_setting_toggle(unsigned setting, unsigned action)
 {
+   rarch_setting_t *setting_data, *current_setting;
    if (!driver.menu)
    {
       RARCH_ERR("Cannot toggle shader setting, menu handle is not initialized.\n");
@@ -3203,6 +3204,8 @@ static int menu_common_shader_manager_setting_toggle(unsigned setting, unsigned 
 
    (void)setting;
    (void)action;
+
+   setting_data = (rarch_setting_t *)setting_data_get_list();
 
 #ifdef HAVE_SHADER_MANAGER
    unsigned dist_shader, dist_filter, dist_scale;
@@ -3213,21 +3216,8 @@ static int menu_common_shader_manager_setting_toggle(unsigned setting, unsigned 
 
    if (setting == MENU_SETTINGS_SHADER_FILTER)
    {
-      switch (action)
-      {
-         case MENU_ACTION_START:
-            g_settings.video.smooth = true;
-            break;
-
-         case MENU_ACTION_LEFT:
-         case MENU_ACTION_RIGHT:
-         case MENU_ACTION_OK:
-            g_settings.video.smooth = !g_settings.video.smooth;
-            break;
-
-         default:
-            break;
-      }
+      if ((current_setting = setting_data_find_setting(setting_data, "video_smooth")))
+         menu_common_setting_set_current_boolean(current_setting, action);
    }
    else if ((setting == MENU_SETTINGS_SHADER_PARAMETERS || setting == MENU_SETTINGS_SHADER_PRESET_PARAMETERS) && action == MENU_ACTION_OK)
    {
