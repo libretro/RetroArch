@@ -825,6 +825,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 
       if (config)
       {
+          setting_data_save_config(setting_data_get_list(), config);
           config_file_write(config, self.pathToSave.UTF8String);
           config_file_free(config);
       }
