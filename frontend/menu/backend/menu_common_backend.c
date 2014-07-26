@@ -3787,12 +3787,8 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
          break;
       case MENU_SETTINGS_DISK_INDEX:
          {
-            const struct retro_disk_control_callback *control = &g_extern.system.disk_control;
-
-            unsigned num_disks = control->get_num_images();
-            unsigned current   = control->get_image_index();
-
             int step = 0;
+
             if (action == MENU_ACTION_RIGHT || action == MENU_ACTION_OK)
                step = 1;
             else if (action == MENU_ACTION_LEFT)
@@ -3800,6 +3796,9 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
 
             if (step)
             {
+               const struct retro_disk_control_callback *control = &g_extern.system.disk_control;
+               unsigned num_disks = control->get_num_images();
+               unsigned current   = control->get_image_index();
                unsigned next_index = (current + num_disks + 1 + step) % (num_disks + 1);
                rarch_disk_control_set_eject(true, false);
                rarch_disk_control_set_index(next_index);
