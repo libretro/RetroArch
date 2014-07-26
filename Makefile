@@ -9,6 +9,7 @@ OBJ = frontend/frontend.o \
 		frontend/platform/platform_null.o \
 		retroarch.o \
 		file.o \
+		file_list.o \
 		file_path.o \
 		hash.o \
 		driver.o \
@@ -114,7 +115,7 @@ endif
 OBJ += history.o
 
 ifeq ($(HAVE_MENU_COMMON), 1)
-   OBJ += frontend/menu/backend/menu_common_backend.o frontend/menu/menu_input_line_cb.o frontend/menu/menu_common.o frontend/menu/menu_navigation.o frontend/menu/file_list.o
+   OBJ += frontend/menu/backend/menu_common_backend.o frontend/menu/menu_input_line_cb.o frontend/menu/menu_common.o frontend/menu/menu_navigation.o 
 endif
 
 ifeq ($(HAVE_THREADS), 1)

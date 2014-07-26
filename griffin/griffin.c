@@ -504,6 +504,7 @@ FILE
 ============================================================ */
 #include "../file.c"
 #include "../file_path.c"
+#include "../file_list.c"
 
 /*============================================================
 MESSAGE
@@ -609,7 +610,6 @@ MENU
 #include "../frontend/menu/menu_input_line_cb.c"
 #include "../frontend/menu/menu_common.c"
 #include "../frontend/menu/menu_navigation.c"
-#include "../frontend/menu/file_list.c"
 
 #ifdef HAVE_MENU
 #include "../frontend/menu/backend/menu_common_backend.c"

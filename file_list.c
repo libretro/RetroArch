@@ -17,9 +17,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include "file_list.h"
-#include "../../driver.h"
-#include "../../compat/strcasestr.h"
-#include "../../msvc/msvc_compat.h"
+#include "driver.h"
+#include "compat/strcasestr.h"
+#include "msvc/msvc_compat.h"
 
 struct item_file
 {

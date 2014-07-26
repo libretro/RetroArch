@@ -20,7 +20,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include "boolean.h"
-#include "frontend/menu/file_list.h"
+#include "file_list.h"
 #include "frontend/info/core_info.h"
 
 #ifdef __cplusplus

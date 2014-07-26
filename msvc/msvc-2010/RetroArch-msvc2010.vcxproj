@@ -218,7 +218,7 @@
     <ClCompile Include="..\..\deps\rzlib\zutil.c" />
     <ClCompile Include="..\..\file_extract.c" />
     <ClCompile Include="..\..\history.c" />
-    <ClCompile Include="..\..\frontend\menu\file_list.c" />
+    <ClCompile Include="..\..\file_list.c" />
     <ClCompile Include="..\..\frontend\menu\backend\menu_common_backend.c" />
     <ClCompile Include="..\..\frontend\menu\disp\rgui.c" />
     <ClCompile Include="..\..\frontend\menu\menu_common.c" />
