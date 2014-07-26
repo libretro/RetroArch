@@ -395,15 +395,19 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
 #endif
       case MENU_SETTINGS_PATH_OPTIONS:
          file_list_clear(menu->selection_buf);
-         file_list_push(menu->selection_buf, "Browser Directory", MENU_BROWSER_DIR_PATH, 0);
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "game_history_path")))
+            file_list_push(menu->selection_buf, current_setting->short_description, MENU_BROWSER_DIR_PATH, 0);
          file_list_push(menu->selection_buf, "Content Directory", MENU_CONTENT_DIR_PATH, 0);
          file_list_push(menu->selection_buf, "Assets Directory", MENU_ASSETS_DIR_PATH, 0);
 #ifdef HAVE_DYNAMIC
          file_list_push(menu->selection_buf, "Config Directory", MENU_CONFIG_DIR_PATH, 0);
 #endif
          file_list_push(menu->selection_buf, "Core Directory", MENU_LIBRETRO_DIR_PATH, 0);
-         file_list_push(menu->selection_buf, "Core Info Directory", MENU_LIBRETRO_INFO_DIR_PATH, 0);
-         file_list_push(menu->selection_buf, "Content History Path", MENU_SETTINGS_CONTENT_HISTORY_PATH, 0);
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "libretro_info_path")))
+            file_list_push(menu->selection_buf, current_setting->short_description, MENU_LIBRETRO_INFO_DIR_PATH, 0);
+
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "game_history_path")))
+            file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_CONTENT_HISTORY_PATH, 0);
 #ifdef HAVE_DYLIB
          file_list_push(menu->selection_buf, "Software Filter Directory", MENU_FILTER_DIR_PATH, 0);
 #endif
@@ -2418,6 +2422,14 @@ static void menu_common_setting_set_current_string_path(rarch_setting_t *setting
       setting->change_handler(setting);
 }
 
+static void menu_common_setting_set_current_string_dir(rarch_setting_t *setting, const char *dir)
+{
+   strlcpy(setting->value.string, dir, setting->size);
+
+   if (setting->change_handler)
+      setting->change_handler(setting);
+}
+
 static int menu_common_iterate(unsigned action)
 {
    rarch_setting_t *setting_data, *current_setting;
@@ -2653,12 +2665,16 @@ static int menu_common_iterate(unsigned action)
             }
             else if (menu_type == MENU_SETTINGS_CONTENT_HISTORY_PATH)
             {
-               fill_pathname_join(g_settings.game_history_path, dir, path, sizeof(g_settings.input.overlay));
+               if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "game_history_path")))
+                  menu_common_setting_set_current_string_path(current_setting, dir, path);
+
                menu_flush_stack_type(MENU_SETTINGS_PATH_OPTIONS);
             }
             else if (menu_type == MENU_BROWSER_DIR_PATH)
             {
-               strlcpy(g_settings.menu_content_directory, dir, sizeof(g_settings.menu_content_directory));
+               if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "game_history_path")))
+                  menu_common_setting_set_current_string_dir(current_setting, dir);
+
                menu_flush_stack_type(MENU_SETTINGS_PATH_OPTIONS);
             }
             else if (menu_type == MENU_CONTENT_DIR_PATH)
@@ -2725,7 +2741,9 @@ static int menu_common_iterate(unsigned action)
 #endif
             else if (menu_type == MENU_LIBRETRO_INFO_DIR_PATH)
             {
-               strlcpy(g_settings.libretro_info_path, dir, sizeof(g_settings.libretro_info_path));
+               if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "libretro_info_path")))
+                  menu_common_setting_set_current_string_dir(current_setting, dir);
+
                if (driver.menu_ctx && driver.menu_ctx->init_core_info)
                   driver.menu_ctx->init_core_info(driver.menu);
                menu_flush_stack_type(MENU_SETTINGS_PATH_OPTIONS);
