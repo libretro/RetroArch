@@ -655,7 +655,7 @@ static bool d3d_frame(void *data, const void *frame,
 #endif
 
 #ifdef HAVE_OVERLAY
-   if (d3d->overlays_enabled && g_settings.input.overlay_enable)
+   if (d3d->overlays_enabled)
    {
       for (unsigned i = 0; i < d3d->overlays.size(); i++)
          d3d_overlay_render(d3d, &d3d->overlays[i]);
