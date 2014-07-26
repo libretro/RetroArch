@@ -218,8 +218,10 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
 #endif
          if ((current_setting = setting_data_find_setting(setting_data, "video_swap_interval")))
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_VIDEO_SWAP_INTERVAL, 0);
+#if defined(HAVE_THREADS) && !defined(RARCH_CONSOLE)
          if ((current_setting = setting_data_find_setting(setting_data, "video_threaded")))
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_VIDEO_THREADED, 0);
+#endif
          if ((current_setting = setting_data_find_setting(setting_data, "video_xscale")))
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_VIDEO_WINDOW_SCALE_X, 0);
          if ((current_setting = setting_data_find_setting(setting_data, "video_yscale")))
