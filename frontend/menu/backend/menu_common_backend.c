@@ -371,7 +371,8 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
          break;
       case MENU_SETTINGS_OVERLAY_OPTIONS:
          file_list_clear(menu->selection_buf);
-         file_list_push(menu->selection_buf, "Overlay Preset", MENU_SETTINGS_OVERLAY_PRESET, 0);
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "input_overlay")))
+            file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_OVERLAY_PRESET, 0);
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "input_overlay_opacity")))
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_OVERLAY_OPACITY, 0);
          if ((current_setting = setting_data_find_setting(setting_data, "input_overlay_scale")))
@@ -2311,6 +2312,7 @@ static void menu_common_defer_decision_manual(void)
 
 static int menu_common_iterate(unsigned action)
 {
+   rarch_setting_t *setting_data, *current_setting;
    int ret = 0;
    const char *dir = 0;
    unsigned menu_type = 0;
@@ -2320,6 +2322,8 @@ static int menu_common_iterate(unsigned action)
       RARCH_ERR("Cannot iterate menu, menu handle is not initialized.\n");
       return 0;
    }
+
+   setting_data = (rarch_setting_t *)setting_data_get_list();
 
    file_list_get_last(driver.menu->menu_stack, &dir, &menu_type);
 
@@ -2516,13 +2520,13 @@ static int menu_common_iterate(unsigned action)
 #ifdef HAVE_OVERLAY
             else if (menu_type == MENU_SETTINGS_OVERLAY_PRESET)
             {
-               fill_pathname_join(g_settings.input.overlay, dir, path, sizeof(g_settings.input.overlay));
+               if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "input_overlay")))
+               {
+                  fill_pathname_join(current_setting->value.string, dir, path, current_setting->size);
 
-               if (driver.overlay)
-                  input_overlay_free(driver.overlay);
-               driver.overlay = input_overlay_new(g_settings.input.overlay);
-               if (!driver.overlay)
-                  RARCH_ERR("Failed to load overlay.\n");
+                  if (current_setting->change_handler)
+                     current_setting->change_handler(current_setting);
+               }
 
                menu_flush_stack_type(MENU_SETTINGS_OPTIONS);
             }

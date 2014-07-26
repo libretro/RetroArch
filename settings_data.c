@@ -460,7 +460,7 @@ static void general_read_handler(const void *data)
     else if (!strcmp(setting->name, "video_black_frame_insertion"))
         *setting->value.boolean = g_settings.video.black_frame_insertion;
     else if (!strcmp(setting->name, "video_font_path"))
-        strlcpy(setting->value.string, g_settings.video.font_path, sizeof(setting->value.string));
+        strlcpy(setting->value.string, g_settings.video.font_path, setting->size);
     else if (!strcmp(setting->name, "video_font_size"))
         *setting->value.fraction = g_settings.video.font_size;
 #ifdef HAVE_OVERLAY
@@ -476,7 +476,7 @@ static void general_read_handler(const void *data)
     else if (!strcmp(setting->name, "audio_volume"))
         *setting->value.fraction = g_extern.audio_data.volume_db;
     else if (!strcmp(setting->name, "audio_device"))
-        strlcpy(setting->value.string, g_settings.audio.device, sizeof(setting->value.string));
+        strlcpy(setting->value.string, g_settings.audio.device, setting->size);
     else if (!strcmp(setting->name, "audio_block_frames"))
         *setting->value.unsigned_integer = g_settings.audio.block_frames;
     else if (!strcmp(setting->name, "audio_latency"))
@@ -484,7 +484,7 @@ static void general_read_handler(const void *data)
     else if (!strcmp(setting->name, "audio_dsp_plugin"))
     {
 #ifdef HAVE_DYLIB
-        strlcpy(setting->value.string, g_settings.audio.dsp_plugin, sizeof(setting->value.string));
+        strlcpy(setting->value.string, g_settings.audio.dsp_plugin, setting->size);
 #endif
     }
     else if (!strcmp(setting->name, "state_slot"))
@@ -535,7 +535,7 @@ static void general_read_handler(const void *data)
 #endif
 #ifdef HAVE_OVERLAY
     else if (!strcmp(setting->name, "input_overlay"))
-        strlcpy(setting->value.string, g_settings.input.overlay, sizeof(setting->value.string));
+        strlcpy(setting->value.string, g_settings.input.overlay, setting->size);
     else if (!strcmp(setting->name, "input_overlay_scale"))
        *setting->value.fraction = g_settings.input.overlay_scale;
 #endif
@@ -573,20 +573,20 @@ static void general_read_handler(const void *data)
         *setting->value.boolean = g_settings.video.gpu_record;
 #ifdef HAVE_OVERLAY
     else if (!strcmp(setting->name, "overlay_directory"))
-        strlcpy(setting->value.string, g_extern.overlay_dir, sizeof(setting->value.string));
+        strlcpy(setting->value.string, g_extern.overlay_dir, setting->size);
 #endif
     else if (!strcmp(setting->name, "joypad_autoconfig_dir"))
-        strlcpy(setting->value.string, g_settings.input.autoconfig_dir, sizeof(setting->value.string));
+        strlcpy(setting->value.string, g_settings.input.autoconfig_dir, setting->size);
     else if (!strcmp(setting->name, "screenshot_directory"))
-        strlcpy(setting->value.string, g_settings.screenshot_directory, sizeof(setting->value.string));
+        strlcpy(setting->value.string, g_settings.screenshot_directory, setting->size);
     else if (!strcmp(setting->name, "savefile_directory"))
-        strlcpy(setting->value.string, g_extern.savefile_dir, sizeof(setting->value.string));
+        strlcpy(setting->value.string, g_extern.savefile_dir, setting->size);
     else if (!strcmp(setting->name, "savestate_directory"))
-        strlcpy(setting->value.string, g_extern.savestate_dir, sizeof(setting->value.string));
+        strlcpy(setting->value.string, g_extern.savestate_dir, setting->size);
     else if (!strcmp(setting->name, "system_directory"))
-        strlcpy(setting->value.string, g_settings.system_directory,  sizeof(setting->value.string));
+        strlcpy(setting->value.string, g_settings.system_directory,  setting->size);
     else if (!strcmp(setting->name, "extraction_directory"))
-        strlcpy(setting->value.string, g_settings.extraction_directory, sizeof(setting->value.string));
+        strlcpy(setting->value.string, g_settings.extraction_directory, setting->size);
     else if (!strcmp(setting->name, "input_player1_joypad_index"))
         *setting->value.integer = g_settings.input.joypad_map[0];
     else if (!strcmp(setting->name, "input_player2_joypad_index"))
@@ -603,30 +603,30 @@ static void general_read_handler(const void *data)
         *setting->value.unsigned_integer = g_settings.game_history_size;
 #ifdef HAVE_MENU
     else if (!strcmp(setting->name, "rgui_browser_directory"))
-        strlcpy(setting->value.string, g_settings.menu_content_directory, sizeof(setting->value.string));
+        strlcpy(setting->value.string, g_settings.menu_content_directory, setting->size);
     else if (!strcmp(setting->name, "assets_directory"))
-        strlcpy(setting->value.string, g_settings.assets_directory, sizeof(setting->value.string));
+        strlcpy(setting->value.string, g_settings.assets_directory, setting->size);
     else if (!strcmp(setting->name, "rgui_config_directory"))
-        strlcpy(setting->value.string, g_settings.menu_config_directory,  sizeof(setting->value.string));
+        strlcpy(setting->value.string, g_settings.menu_config_directory,  setting->size);
 #endif
     else if (!strcmp(setting->name, "libretro_path"))
-        strlcpy(setting->value.string, g_settings.libretro, sizeof(setting->value.string));
+        strlcpy(setting->value.string, g_settings.libretro, setting->size);
     else if (!strcmp(setting->name, "libretro_info_path"))
-        strlcpy(setting->value.string, g_settings.libretro_info_path, sizeof(setting->value.string));
+        strlcpy(setting->value.string, g_settings.libretro_info_path, setting->size);
     else if (!strcmp(setting->name, "core_options_path"))
-        strlcpy(setting->value.string, g_settings.core_options_path, sizeof(setting->value.string));
+        strlcpy(setting->value.string, g_settings.core_options_path, setting->size);
     else if (!strcmp(setting->name, "cheat_database_path"))
-        strlcpy(setting->value.string, g_settings.cheat_database,  sizeof(setting->value.string));
+        strlcpy(setting->value.string, g_settings.cheat_database,  setting->size);
     else if (!strcmp(setting->name, "cheat_settings_path"))
-        strlcpy(setting->value.string, g_settings.cheat_settings_path, sizeof(setting->value.string));
+        strlcpy(setting->value.string, g_settings.cheat_settings_path, setting->size);
     else if (!strcmp(setting->name, "game_history_path"))
-        strlcpy(setting->value.string, g_settings.game_history_path, sizeof(setting->value.string));
+        strlcpy(setting->value.string, g_settings.game_history_path, setting->size);
     else if (!strcmp(setting->name, "video_shader_dir"))
-        strlcpy(setting->value.string, g_settings.video.filter_dir, sizeof(setting->value.string));
+        strlcpy(setting->value.string, g_settings.video.filter_dir, setting->size);
     else if (!strcmp(setting->name, "video_aspect_ratio_auto"))
         *setting->value.boolean = g_settings.video.aspect_ratio_auto;
     else if (!strcmp(setting->name, "video_filter"))
-        strlcpy(setting->value.string, g_settings.video.filter_path, sizeof(setting->value.string));
+        strlcpy(setting->value.string, g_settings.video.filter_path, setting->size);
 #ifdef HAVE_CAMERA
     else if (!strcmp(setting->name, "camera_allow"))
         *setting->value.boolean = g_settings.camera.allow;
