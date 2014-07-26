@@ -222,10 +222,12 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
          if ((current_setting = setting_data_find_setting(setting_data, "video_threaded")))
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_VIDEO_THREADED, 0);
 #endif
+#if !defined(RARCH_CONSOLE) && !defined(RARCH_MOBILE)
          if ((current_setting = setting_data_find_setting(setting_data, "video_xscale")))
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_VIDEO_WINDOW_SCALE_X, 0);
          if ((current_setting = setting_data_find_setting(setting_data, "video_yscale")))
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_VIDEO_WINDOW_SCALE_Y, 0);
+#endif
          if ((current_setting = setting_data_find_setting(setting_data, "video_crop_overscan")))
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_VIDEO_CROP_OVERSCAN, 0);
          if ((current_setting = setting_data_find_setting(setting_data, "video_monitor_index")))
