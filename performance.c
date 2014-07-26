@@ -140,7 +140,7 @@ void retro_perf_log(void)
 retro_perf_tick_t rarch_get_perf_counter(void)
 {
    retro_perf_tick_t time = 0;
-#if defined(__MACH__) && defined(__APPLE__) && defined(IOS)
+#if defined(__MACH__) && defined(__APPLE__)
     struct mach_timebase_info convfact;
     mach_timebase_info(&convfact);
     time = mach_absolute_time();
