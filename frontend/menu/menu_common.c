@@ -82,13 +82,16 @@ void menu_content_history_push_current(void)
    // Ensure we're pushing absolute path.
    char tmp[PATH_MAX];
 
+   if (!g_extern.history)
+      return;
+
    strlcpy(tmp, g_extern.fullpath, sizeof(tmp));
 
    if (*tmp)
       path_resolve_realpath(tmp, sizeof(tmp));
 
    if (g_extern.system.no_game || *tmp)
-      if (driver.menu && g_extern.history)
+      if (g_extern.history)
          content_history_push(g_extern.history,
                *tmp ? tmp : NULL,
                g_settings.libretro,
@@ -112,7 +115,14 @@ void load_menu_game_prepare(void)
          msg_queue_push(g_extern.msg_queue, str, 1, 1);
       }
 
-      menu_content_history_push_current();
+      #ifdef RARCH_CONSOLE
+      if (g_extern.system.no_game || *g_extern.fullpath)
+#endif
+         if (g_extern.history)
+            content_history_push(g_extern.history,
+                  *g_extern.fullpath ? g_extern.fullpath : NULL,
+                  g_settings.libretro,
+                  driver.menu->info.library_name ? driver.menu->info.library_name : "");
    }
 
    // redraw menu frame
