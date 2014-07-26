@@ -65,6 +65,7 @@
 #ifdef __MACH__
 #include <mach/clock.h>
 #include <mach/mach.h>
+#include <mach/mach_time.h>
 #endif
 
 #ifdef EMSCRIPTEN
@@ -139,7 +140,11 @@ void retro_perf_log(void)
 retro_perf_tick_t rarch_get_perf_counter(void)
 {
    retro_perf_tick_t time = 0;
-#if defined(__linux__) || defined(__QNX__)
+#if defined(__MACH__) && defined(__APPLE__) && defined(IOS)
+    struct mach_timebase_info convfact;
+    mach_timebase_info(&convfact);
+    time = mach_absolute_time();
+#elif defined(__linux__) || defined(__QNX__)
    struct timespec tv;
    if (clock_gettime(CLOCK_MONOTONIC, &tv) == 0)
       time = (retro_perf_tick_t)tv.tv_sec * 1000000000 + (retro_perf_tick_t)tv.tv_nsec;
