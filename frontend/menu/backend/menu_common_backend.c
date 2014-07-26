@@ -199,7 +199,7 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
          if ((current_setting = setting_data_find_setting(setting_data, "aspect_ratio_index")))
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_VIDEO_ASPECT_RATIO, 0);
          file_list_push(menu->selection_buf, "Custom Ratio", MENU_SETTINGS_CUSTOM_VIEWPORT, 0);
-#if !defined(RARCH_CONSOLE) && !defined(RARCH_CONSOLE)
+#if !defined(RARCH_CONSOLE) && !defined(RARCH_MOBILE)
          if ((current_setting = setting_data_find_setting(setting_data, "video_fullscreen")))
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_TOGGLE_FULLSCREEN, 0);
 #endif
