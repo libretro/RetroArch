@@ -212,8 +212,10 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
          if ((current_setting = setting_data_find_setting(setting_data, "video_hard_sync_frames")))
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_VIDEO_HARD_SYNC_FRAMES, 0);
 
+#if !defined(RARCH_MOBILE)
          if ((current_setting = setting_data_find_setting(setting_data, "video_black_frame_insertion")))
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_VIDEO_BLACK_FRAME_INSERTION, 0);
+#endif
          if ((current_setting = setting_data_find_setting(setting_data, "video_swap_interval")))
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_VIDEO_SWAP_INTERVAL, 0);
          if ((current_setting = setting_data_find_setting(setting_data, "video_threaded")))
