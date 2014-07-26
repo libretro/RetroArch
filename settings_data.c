@@ -178,6 +178,12 @@ rarch_setting_t* setting_data_find_setting(rarch_setting_t* settings, const char
    for (setting = settings; setting->type != ST_NONE; setting++)
       if (setting->type <= ST_GROUP && strcmp(setting->name, name) == 0)
          break;
+    
+    if (setting->short_description && setting->short_description[0] == '\0')
+        return NULL;
+    
+    if (setting->read_handler)
+        setting->read_handler(setting);
 
    return setting;
 }
