@@ -834,12 +834,12 @@ static void general_write_handler(const void *data)
 #ifdef HAVE_OVERLAY
     else if (!strcmp(setting->name, "input_overlay"))
     {
+        strlcpy(g_settings.input.overlay, setting->value.string, sizeof(g_settings.input.overlay));
+        
         if (driver.overlay)
             input_overlay_free(driver.overlay);
         
-        strlcpy(g_settings.input.overlay, setting->value.string, sizeof(g_settings.input.overlay));
-        
-        if (g_settings.input.overlay[0] != '\0')
+        if (g_settings.input.overlay && g_settings.input.overlay[0] != '\0')
             driver.overlay = input_overlay_new(g_settings.input.overlay);
     }
     else if (!strcmp(setting->name, "input_overlay_scale"))
