@@ -1400,6 +1400,7 @@ bool config_save_file(const char *path)
    config_set_bool(conf, "audio_rate_control", g_settings.audio.rate_control);
    config_set_float(conf, "audio_rate_control_delta", g_settings.audio.rate_control_delta);
    config_set_string(conf, "audio_driver", g_settings.audio.driver);
+   config_set_bool(conf, "audio_enable", g_settings.audio.enable);
    config_set_int(conf, "audio_out_rate", g_settings.audio.out_rate);
 
 #ifdef HAVE_LOCATION

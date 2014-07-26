@@ -463,6 +463,8 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
          file_list_clear(menu->selection_buf);
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "audio_dsp_plugin")))
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_AUDIO_DSP_FILTER, 0);
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "audio_enable")))
+            file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_AUDIO_ENABLE, 0);
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "audio_mute")))
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_AUDIO_MUTE, 0);
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "audio_latency")))
@@ -3713,6 +3715,10 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
             return -1;
          }
          break;
+      case MENU_SETTINGS_AUDIO_ENABLE:
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "audio_enable")))
+            menu_common_setting_set_current_boolean(current_setting, action);
+         break;
       case MENU_SETTINGS_AUDIO_MUTE:
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "audio_mute")))
             menu_common_setting_set_current_boolean(current_setting, action);
@@ -4960,6 +4966,9 @@ static void menu_common_setting_set_label(char *type_str, size_t type_str_size, 
             break;
          case MENU_SETTINGS_AUDIO_SYNC:
             strlcpy(type_str, g_settings.audio.sync ? "ON" : "OFF", type_str_size);
+            break;
+      case MENU_SETTINGS_AUDIO_ENABLE:
+            strlcpy(type_str, g_settings.audio.enable ? "ON" : "OFF", type_str_size);
             break;
          case MENU_SETTINGS_AUDIO_MUTE:
             strlcpy(type_str, g_extern.audio_data.mute ? "ON" : "OFF", type_str_size);
