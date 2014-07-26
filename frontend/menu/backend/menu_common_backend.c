@@ -397,8 +397,10 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
          file_list_clear(menu->selection_buf);
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "game_history_path")))
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_BROWSER_DIR_PATH, 0);
-         file_list_push(menu->selection_buf, "Content Directory", MENU_CONTENT_DIR_PATH, 0);
-         file_list_push(menu->selection_buf, "Assets Directory", MENU_ASSETS_DIR_PATH, 0);
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "rgui_browser_directory")))
+            file_list_push(menu->selection_buf, current_setting->short_description, MENU_CONTENT_DIR_PATH, 0);
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "assets_directory")))
+            file_list_push(menu->selection_buf, current_setting->short_description, MENU_ASSETS_DIR_PATH, 0);
 #ifdef HAVE_DYNAMIC
          file_list_push(menu->selection_buf, "Config Directory", MENU_CONFIG_DIR_PATH, 0);
 #endif
@@ -418,9 +420,11 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
 #endif
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "savestate_directory")))
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_SAVESTATE_DIR_PATH, 0);
-         file_list_push(menu->selection_buf, "Savefile Directory", MENU_SAVEFILE_DIR_PATH, 0);
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "savefile_directory")))
+            file_list_push(menu->selection_buf, current_setting->short_description, MENU_SAVEFILE_DIR_PATH, 0);
 #ifdef HAVE_OVERLAY
-         file_list_push(menu->selection_buf, "Overlay Directory", MENU_OVERLAY_DIR_PATH, 0);
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "overlay_directory")))
+            file_list_push(menu->selection_buf, current_setting->short_description, MENU_OVERLAY_DIR_PATH, 0);
 #endif
          file_list_push(menu->selection_buf, "System Directory", MENU_SYSTEM_DIR_PATH, 0);
          file_list_push(menu->selection_buf, "Screenshot Directory", MENU_SCREENSHOT_DIR_PATH, 0);
@@ -451,7 +455,8 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
          break;
       case MENU_SETTINGS_AUDIO_OPTIONS:
          file_list_clear(menu->selection_buf);
-         file_list_push(menu->selection_buf, "DSP Filter", MENU_SETTINGS_AUDIO_DSP_FILTER, 0);
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "audio_dsp_plugin")))
+            file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_AUDIO_DSP_FILTER, 0);
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "audio_mute")))
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_AUDIO_MUTE, 0);
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "audio_latency")))
@@ -2681,12 +2686,16 @@ static int menu_common_iterate(unsigned action)
             }
             else if (menu_type == MENU_CONTENT_DIR_PATH)
             {
-               strlcpy(g_settings.content_directory, dir, sizeof(g_settings.content_directory));
+               if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "rgui_browser_directory")))
+                  menu_common_setting_set_current_string_dir(current_setting, dir);
+
                menu_flush_stack_type(MENU_SETTINGS_PATH_OPTIONS);
             }
             else if (menu_type == MENU_ASSETS_DIR_PATH)
             {
-               strlcpy(g_settings.assets_directory, dir, sizeof(g_settings.assets_directory));
+               if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "assets_directory")))
+                  menu_common_setting_set_current_string_dir(current_setting, dir);
+
                menu_flush_stack_type(MENU_SETTINGS_PATH_OPTIONS);
             }
             else if (menu_type == MENU_SCREENSHOT_DIR_PATH)
@@ -2702,7 +2711,8 @@ static int menu_common_iterate(unsigned action)
 #ifdef HAVE_OVERLAY
             else if (menu_type == MENU_OVERLAY_DIR_PATH)
             {
-               strlcpy(g_extern.overlay_dir, dir, sizeof(g_extern.overlay_dir));
+               if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "overlay_directory")))
+                  menu_common_setting_set_current_string_dir(current_setting, dir);
                menu_flush_stack_type(MENU_SETTINGS_PATH_OPTIONS);
             }
 #endif
@@ -2714,11 +2724,8 @@ static int menu_common_iterate(unsigned action)
             }
             else if (menu_type == MENU_SETTINGS_AUDIO_DSP_FILTER)
             {
-#ifdef HAVE_DYLIB
-               fill_pathname_join(g_settings.audio.dsp_plugin, dir, path, sizeof(g_settings.audio.dsp_plugin));
-#endif
-               rarch_deinit_dsp_filter();
-               rarch_init_dsp_filter();
+               if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "audio_dsp_plugin")))
+                  menu_common_setting_set_current_string_path(current_setting, dir, path);
                menu_flush_stack_type(MENU_SETTINGS_AUDIO_OPTIONS);
             }
             else if (menu_type == MENU_SAVESTATE_DIR_PATH)
