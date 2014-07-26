@@ -159,6 +159,7 @@ struct defaults
       int out_latency;
       float video_refresh_rate;
       bool video_threaded_enable;
+      bool input_overlay_enable;
    } settings; 
 };
 
