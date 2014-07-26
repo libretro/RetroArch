@@ -774,8 +774,6 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
       }
       
       setting_data = (rarch_setting_t*)setting_data_get_list();
-      
-      setting_data_reset(setting_data);
       setting_data_load_config_path(setting_data, _pathToSave.UTF8String);
       
       // HACK: Load the key mapping table
