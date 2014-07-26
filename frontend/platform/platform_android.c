@@ -587,7 +587,6 @@ static void frontend_android_get_environment_settings(int *argc, char *argv[],
    __system_property_get("ro.product.id", device_id);
 
    g_defaults.settings.video_threaded_enable = true;
-   g_defaults.settings.input_overlay_enable = true;   // Enable input overlay by default
 
    // Set automatic default values per device
    if (device_is_xperia_play(device_model))
@@ -603,9 +602,12 @@ static void frontend_android_get_environment_settings(int *argc, char *argv[],
    else if (!strcmp(device_model, "JSS15J"))
       g_defaults.settings.video_refresh_rate = 59.65;
 
+   //FIXME - needs to be refactored
+#if 0
    // Explicitly disable input overlay by default for gamepad-like/console devices
    if (device_is_game_console(device_model))
       g_defaults.settings.input_overlay_enable = false;
+#endif
 }
 
 #if 0
