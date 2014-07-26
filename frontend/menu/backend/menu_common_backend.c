@@ -2310,6 +2310,114 @@ static void menu_common_defer_decision_manual(void)
    driver.menu->need_refresh = true;
 }
 
+static int menu_common_setting_set_perf(unsigned setting, unsigned action,
+      struct retro_perf_counter **counters, unsigned offset)
+{
+   if (counters[offset] && action == MENU_ACTION_START)
+   {
+      counters[offset]->total = 0;
+      counters[offset]->call_cnt = 0;
+   }
+   return 0;
+}
+
+static void menu_common_setting_set_current_boolean(rarch_setting_t *setting, unsigned action)
+{
+   switch (action)
+   {
+      case MENU_ACTION_OK:
+      case MENU_ACTION_LEFT:
+      case MENU_ACTION_RIGHT:
+         *setting->value.boolean = !(*setting->value.boolean);
+         break;
+      case MENU_ACTION_START:
+         *setting->value.boolean = setting->default_value.boolean;
+         break;
+   }
+
+   if (setting->change_handler)
+      setting->change_handler(setting);
+}
+
+static void menu_common_setting_set_current_fraction(rarch_setting_t *setting, float step, unsigned action,
+      bool enforce_min_check, bool enforce_max_check)
+{
+   switch (action)
+   {
+      case MENU_ACTION_LEFT:
+         *setting->value.fraction = *setting->value.fraction - step;
+
+         if (enforce_min_check)
+         {
+            if (*setting->value.fraction < setting->min)
+               *setting->value.fraction = setting->min;
+         }
+         break;
+
+      case MENU_ACTION_RIGHT:
+      case MENU_ACTION_OK:
+         *setting->value.fraction = *setting->value.fraction + step;
+
+         if (enforce_max_check)
+         {
+            if (*setting->value.fraction > setting->max)
+               *setting->value.fraction = setting->max;
+         }
+         break;
+
+      case MENU_ACTION_START:
+         *setting->value.fraction = setting->default_value.fraction;
+         break;
+   }
+
+   if (setting->change_handler)
+      setting->change_handler(setting);
+}
+
+static void menu_common_setting_set_current_unsigned_integer(rarch_setting_t *setting, unsigned step, unsigned action,
+      bool enforce_min_check, bool enforce_max_check)
+{
+   switch (action)
+   {
+      case MENU_ACTION_LEFT:
+         if (*setting->value.unsigned_integer != setting->min)
+            *setting->value.unsigned_integer = *setting->value.unsigned_integer - step;
+
+         if (enforce_min_check)
+         {
+            if (*setting->value.unsigned_integer < setting->min)
+               *setting->value.unsigned_integer = setting->min;
+         }
+         break;
+
+      case MENU_ACTION_RIGHT:
+      case MENU_ACTION_OK:
+         *setting->value.unsigned_integer = *setting->value.unsigned_integer + step;
+
+         if (enforce_max_check)
+         {
+            if (*setting->value.unsigned_integer > setting->max)
+               *setting->value.unsigned_integer = setting->max;
+         }
+         break;
+
+      case MENU_ACTION_START:
+         *setting->value.unsigned_integer = setting->default_value.unsigned_integer;
+         break;
+   }
+
+   if (setting->change_handler)
+      setting->change_handler(setting);
+}
+
+static void menu_common_setting_set_current_string_path(rarch_setting_t *setting, const char *dir, const char *path)
+{
+   fill_pathname_join(setting->value.string, dir, path, setting->size);
+
+   if (setting->change_handler)
+      setting->change_handler(setting);
+}
+
 static int menu_common_iterate(unsigned action)
 {
    rarch_setting_t *setting_data, *current_setting;
@@ -2521,12 +2629,7 @@ static int menu_common_iterate(unsigned action)
             else if (menu_type == MENU_SETTINGS_OVERLAY_PRESET)
             {
                if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "input_overlay")))
-               {
-                  fill_pathname_join(current_setting->value.string, dir, path, current_setting->size);
-
-                  if (current_setting->change_handler)
-                     current_setting->change_handler(current_setting);
-               }
+                  menu_common_setting_set_current_string_path(current_setting, dir, path);
 
                menu_flush_stack_type(MENU_SETTINGS_OPTIONS);
             }
@@ -3403,105 +3506,6 @@ static bool osk_callback_enter_filename_init(void *data)
 #define RARCH_DEFAULT_PORT 55435
 #endif
 
-static int menu_common_setting_set_perf(unsigned setting, unsigned action,
-      struct retro_perf_counter **counters, unsigned offset)
-{
-   if (counters[offset] && action == MENU_ACTION_START)
-   {
-      counters[offset]->total = 0;
-      counters[offset]->call_cnt = 0;
-   }
-   return 0;
-}
-
-static void menu_common_setting_set_current_boolean(rarch_setting_t *setting, unsigned action)
-{
-   switch (action)
-   {
-      case MENU_ACTION_OK:
-      case MENU_ACTION_LEFT:
-      case MENU_ACTION_RIGHT:
-         *setting->value.boolean = !(*setting->value.boolean);
-         break;
-      case MENU_ACTION_START:
-         *setting->value.boolean = setting->default_value.boolean;
-         break;
-   }
-
-   if (setting->change_handler)
-      setting->change_handler(setting);
-}
-
-static void menu_common_setting_set_current_fraction(rarch_setting_t *setting, float step, unsigned action,
-      bool enforce_min_check, bool enforce_max_check)
-{
-   switch (action)
-   {
-      case MENU_ACTION_LEFT:
-         *setting->value.fraction = *setting->value.fraction - step;
-
-         if (enforce_min_check)
-         {
-            if (*setting->value.fraction < setting->min)
-               *setting->value.fraction = setting->min;
-         }
-         break;
-
-      case MENU_ACTION_RIGHT:
-      case MENU_ACTION_OK:
-         *setting->value.fraction = *setting->value.fraction + step;
-
-         if (enforce_max_check)
-         {
-            if (*setting->value.fraction > setting->max)
-               *setting->value.fraction = setting->max;
-         }
-         break;
-
-      case MENU_ACTION_START:
-         *setting->value.fraction = setting->default_value.fraction;
-         break;
-   }
-
-   if (setting->change_handler)
-      setting->change_handler(setting);
-}
-
-static void menu_common_setting_set_current_unsigned_integer(rarch_setting_t *setting, unsigned step, unsigned action,
-      bool enforce_min_check, bool enforce_max_check)
-{
-   switch (action)
-   {
-      case MENU_ACTION_LEFT:
-         if (*setting->value.unsigned_integer != setting->min)
-            *setting->value.unsigned_integer = *setting->value.unsigned_integer - step;
-
-         if (enforce_min_check)
-         {
-            if (*setting->value.unsigned_integer < setting->min)
-               *setting->value.unsigned_integer = setting->min;
-         }
-         break;
-
-      case MENU_ACTION_RIGHT:
-      case MENU_ACTION_OK:
-         *setting->value.unsigned_integer = *setting->value.unsigned_integer + step;
-
-         if (enforce_max_check)
-         {
-            if (*setting->value.unsigned_integer > setting->max)
-               *setting->value.unsigned_integer = setting->max;
-         }
-         break;
-
-      case MENU_ACTION_START:
-         *setting->value.unsigned_integer = setting->default_value.unsigned_integer;
-         break;
-   }
-
-   if (setting->change_handler)
-      setting->change_handler(setting);
-}
 
 static int menu_common_setting_set(unsigned setting, unsigned action)
 {
