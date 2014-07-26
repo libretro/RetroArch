@@ -160,8 +160,10 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_REWIND_GRANULARITY, 0);
          if ((current_setting = setting_data_find_setting(setting_data, "block_sram_overwrite")))
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_BLOCK_SRAM_OVERWRITE, 0);
+#ifdef HAVE_THREADS
          if ((current_setting = setting_data_find_setting(setting_data, "autosave_interval")))
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_SRAM_AUTOSAVE, 0);
+#endif
          if ((current_setting = setting_data_find_setting(setting_data, "video_disable_composition")))
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_WINDOW_COMPOSITING_ENABLE, 0);
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "pause_nonactive")))
