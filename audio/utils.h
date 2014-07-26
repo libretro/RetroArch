@@ -47,7 +47,7 @@ void audio_convert_s16_to_float_altivec(float *out,
 void audio_convert_float_to_s16_altivec(int16_t *out,
       const float *in, size_t samples);
 
-#elif defined(HAVE_NEON)
+#elif defined(__ARM_NEON__)
 #define audio_convert_s16_to_float audio_convert_s16_to_float_arm
 #define audio_convert_float_to_s16 audio_convert_float_to_s16_arm
 

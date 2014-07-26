@@ -284,8 +284,7 @@ static uint64_t xgetbv_x86(uint32_t index)
 }
 #endif
 
-#if defined(HAVE_NEON)
-/* TODO/FIX - does this work on iOS? */
+#if defined(__ARM_NEON__)
 static void arm_enable_runfast_mode(void)
 {
    // RunFast mode. Enables flush-to-zero and some floating point optimizations.
@@ -424,7 +423,7 @@ uint64_t rarch_get_cpu_features(void)
    uint64_t cpu_flags = android_getCpuFeatures();
    (void)cpu_flags;
 
-#ifdef HAVE_NEON
+#ifdef __ARM_NEON__
    if (cpu_flags & ANDROID_CPU_ARM_FEATURE_NEON)
    {
       cpu |= RETRO_SIMD_NEON;
@@ -433,7 +432,7 @@ uint64_t rarch_get_cpu_features(void)
 #endif
 
    RARCH_LOG("[CPUID]: NEON: %u\n", !!(cpu & RETRO_SIMD_NEON));
-#elif defined(HAVE_NEON)
+#elif defined(__ARM_NEON__)
    cpu |= RETRO_SIMD_NEON;
    arm_enable_runfast_mode();
    RARCH_LOG("[CPUID]: NEON: %u\n", !!(cpu & RETRO_SIMD_NEON));

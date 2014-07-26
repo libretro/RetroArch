@@ -398,7 +398,6 @@
 					"-DHAVE_ZLIB",
 					"-DWANT_MINIZ",
 					"-DSINC_LOWER_QUALITY",
-					"-DHAVE_NEON",
 				);
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -453,7 +452,6 @@
 					"-DHAVE_ZLIB",
 					"-DWANT_MINIZ",
 					"-DSINC_LOWER_QUALITY",
-					"-DHAVE_NEON",
 				);
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -503,7 +501,6 @@
 					"-DWANT_MINIZ",
 					"-DSINC_LOWER_QUALITY",
 					"-DRARCH_INTERNAL",
-					"-DHAVE_NEON",
 					"-DHAVE_THREADS",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -555,7 +552,6 @@
 					"-DWANT_MINIZ",
 					"-DSINC_LOWER_QUALITY",
 					"-DRARCH_INTERNAL",
-					"-DHAVE_NEON",
 					"-DHAVE_THREADS",
 				);
 				"OTHER_CFLAGS[arch=*]" = (
@@ -584,7 +580,6 @@
 					"-DWANT_MINIZ",
 					"-DSINC_LOWER_QUALITY",
 					"-DRARCH_INTERNAL",
-					"-DHAVE_NEON",
 					"-DHAVE_THREADS",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";

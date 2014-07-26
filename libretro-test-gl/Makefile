@@ -68,7 +68,6 @@ endif
    CFLAGS += -marm
 ifneq (,$(findstring neon,$(platform)))
    CFLAGS += -mfpu=neon
-   HAVE_NEON = 1
 endif
 ifneq (,$(findstring softfloat,$(platform)))
    CFLAGS += -mfloat-abi=softfp

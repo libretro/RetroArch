@@ -12,7 +12,7 @@
  *  You should have received a copy of the GNU General Public License along with RetroArch.
  *  If not, see <http://www.gnu.org/licenses/>.
  */
-#if defined(__ARM_NEON__) || defined(HAVE_NEON)
+#if defined(__ARM_NEON__)
 
 #ifndef __MACH__
 .arm

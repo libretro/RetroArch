@@ -25,11 +25,7 @@ endif
 ifeq ($(TARGET_ARCH_ABI),armeabi-v7a)
 
 ifeq ($(HAVE_NEON),1)
-   LOCAL_CFLAGS += -DHAVE_NEON
    LOCAL_SRC_FILES += $(RARCH_DIR)/audio/utils_neon.S.neon
-endif
-
-ifeq ($(HAVE_NEON),1)
    LOCAL_SRC_FILES += $(RARCH_DIR)/audio/sinc_neon.S.neon
 endif
 LOCAL_CFLAGS += -DSINC_LOWER_QUALITY 
