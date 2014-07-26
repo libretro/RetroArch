@@ -413,9 +413,11 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
 #endif
          file_list_push(menu->selection_buf, "DSP Filter Directory", MENU_DSP_FILTER_DIR_PATH, 0);
 #ifdef HAVE_SHADER_MANAGER
-         file_list_push(menu->selection_buf, "Shader Directory", MENU_SHADER_DIR_PATH, 0);
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "video_shader_dir")))
+            file_list_push(menu->selection_buf, current_setting->short_description, MENU_SHADER_DIR_PATH, 0);
 #endif
-         file_list_push(menu->selection_buf, "Savestate Directory", MENU_SAVESTATE_DIR_PATH, 0);
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "savestate_directory")))
+            file_list_push(menu->selection_buf, current_setting->short_description, MENU_SAVESTATE_DIR_PATH, 0);
          file_list_push(menu->selection_buf, "Savefile Directory", MENU_SAVEFILE_DIR_PATH, 0);
 #ifdef HAVE_OVERLAY
          file_list_push(menu->selection_buf, "Overlay Directory", MENU_OVERLAY_DIR_PATH, 0);
@@ -2721,7 +2723,9 @@ static int menu_common_iterate(unsigned action)
             }
             else if (menu_type == MENU_SAVESTATE_DIR_PATH)
             {
-               strlcpy(g_extern.savestate_dir, dir, sizeof(g_extern.savestate_dir));
+               if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "savestate_directory")))
+                  menu_common_setting_set_current_string_dir(current_setting, dir);
+
                menu_flush_stack_type(MENU_SETTINGS_PATH_OPTIONS);
             }
             else if (menu_type == MENU_LIBRETRO_DIR_PATH)
@@ -2750,7 +2754,9 @@ static int menu_common_iterate(unsigned action)
             }
             else if (menu_type == MENU_SHADER_DIR_PATH)
             {
-               strlcpy(g_settings.video.shader_dir, dir, sizeof(g_settings.video.shader_dir));
+               if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "video_shader_dir")))
+                  menu_common_setting_set_current_string_dir(current_setting, dir);
+
                menu_flush_stack_type(MENU_SETTINGS_PATH_OPTIONS);
             }
             else if (menu_type == MENU_FILTER_DIR_PATH)

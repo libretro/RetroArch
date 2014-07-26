@@ -622,7 +622,7 @@ static void general_read_handler(const void *data)
     else if (!strcmp(setting->name, "game_history_path"))
         strlcpy(setting->value.string, g_settings.game_history_path, setting->size);
     else if (!strcmp(setting->name, "video_shader_dir"))
-        strlcpy(setting->value.string, g_settings.video.filter_dir, setting->size);
+        strlcpy(setting->value.string, g_settings.video.shader_dir, setting->size);
     else if (!strcmp(setting->name, "video_aspect_ratio_auto"))
         *setting->value.boolean = g_settings.video.aspect_ratio_auto;
     else if (!strcmp(setting->name, "video_filter"))
@@ -967,7 +967,7 @@ static void general_write_handler(const void *data)
     else if (!strcmp(setting->name, "game_history_path"))
         strlcpy(g_settings.game_history_path, setting->value.string, sizeof(g_settings.game_history_path));
     else if (!strcmp(setting->name, "video_shader_dir"))
-        strlcpy(g_settings.video.filter_dir, setting->value.string, sizeof(g_settings.video.filter_dir));
+        strlcpy(g_settings.video.shader_dir, setting->value.string, sizeof(g_settings.video.shader_dir));
     else if (!strcmp(setting->name, "video_aspect_ratio_auto"))
         g_settings.video.aspect_ratio_auto = *setting->value.boolean;
     else if (!strcmp(setting->name, "video_filter"))
