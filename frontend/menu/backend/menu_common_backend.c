@@ -426,10 +426,16 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "overlay_directory")))
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_OVERLAY_DIR_PATH, 0);
 #endif
-         file_list_push(menu->selection_buf, "System Directory", MENU_SYSTEM_DIR_PATH, 0);
-         file_list_push(menu->selection_buf, "Screenshot Directory", MENU_SCREENSHOT_DIR_PATH, 0);
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "system_directory")))
+            file_list_push(menu->selection_buf, current_setting->short_description, MENU_SYSTEM_DIR_PATH, 0);
+
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "screenshot_directory")))
+            file_list_push(menu->selection_buf, current_setting->short_description, MENU_SCREENSHOT_DIR_PATH, 0);
+
          file_list_push(menu->selection_buf, "Autoconfig Directory", MENU_AUTOCONFIG_DIR_PATH, 0);
-         file_list_push(menu->selection_buf, "Extraction Directory", MENU_EXTRACTION_DIR_PATH, 0);
+
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "extraction_directory")))
+            file_list_push(menu->selection_buf, current_setting->short_description, MENU_EXTRACTION_DIR_PATH, 0);
          break;
       case MENU_SETTINGS_INPUT_OPTIONS:
          file_list_clear(menu->selection_buf);
@@ -2700,7 +2706,9 @@ static int menu_common_iterate(unsigned action)
             }
             else if (menu_type == MENU_SCREENSHOT_DIR_PATH)
             {
-               strlcpy(g_settings.screenshot_directory, dir, sizeof(g_settings.screenshot_directory));
+               if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "screenshot_directory")))
+                  menu_common_setting_set_current_string_dir(current_setting, dir);
+
                menu_flush_stack_type(MENU_SETTINGS_PATH_OPTIONS);
             }
             else if (menu_type == MENU_SAVEFILE_DIR_PATH)
@@ -2778,7 +2786,9 @@ static int menu_common_iterate(unsigned action)
             }
             else if (menu_type == MENU_SYSTEM_DIR_PATH)
             {
-               strlcpy(g_settings.system_directory, dir, sizeof(g_settings.system_directory));
+               if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "system_directory")))
+                  menu_common_setting_set_current_string_dir(current_setting, dir);
+
                menu_flush_stack_type(MENU_SETTINGS_PATH_OPTIONS);
             }
             else if (menu_type == MENU_AUTOCONFIG_DIR_PATH)
@@ -2788,7 +2798,9 @@ static int menu_common_iterate(unsigned action)
             }
             else if (menu_type == MENU_EXTRACTION_DIR_PATH)
             {
-               strlcpy(g_settings.extraction_directory, dir, sizeof(g_settings.extraction_directory));
+               if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "extraction_directory")))
+                  menu_common_setting_set_current_string_dir(current_setting, dir);
+
                menu_flush_stack_type(MENU_SETTINGS_PATH_OPTIONS);
             }
             else
