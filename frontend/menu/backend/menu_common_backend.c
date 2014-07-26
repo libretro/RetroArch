@@ -395,9 +395,9 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
 #endif
       case MENU_SETTINGS_PATH_OPTIONS:
          file_list_clear(menu->selection_buf);
-         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "game_history_path")))
-            file_list_push(menu->selection_buf, current_setting->short_description, MENU_BROWSER_DIR_PATH, 0);
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "rgui_browser_directory")))
+            file_list_push(menu->selection_buf, current_setting->short_description, MENU_BROWSER_DIR_PATH, 0);
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "content_directory")))
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_CONTENT_DIR_PATH, 0);
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "assets_directory")))
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_ASSETS_DIR_PATH, 0);
@@ -2687,14 +2687,14 @@ static int menu_common_iterate(unsigned action)
             }
             else if (menu_type == MENU_BROWSER_DIR_PATH)
             {
-               if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "game_history_path")))
+               if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "rgui_browser_directory")))
                   menu_common_setting_set_current_string_dir(current_setting, dir);
 
                menu_flush_stack_type(MENU_SETTINGS_PATH_OPTIONS);
             }
             else if (menu_type == MENU_CONTENT_DIR_PATH)
             {
-               if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "rgui_browser_directory")))
+               if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "content_directory")))
                   menu_common_setting_set_current_string_dir(current_setting, dir);
 
                menu_flush_stack_type(MENU_SETTINGS_PATH_OPTIONS);

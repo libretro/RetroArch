@@ -601,6 +601,8 @@ static void general_read_handler(const void *data)
         *setting->value.boolean = g_settings.menu_show_start_screen;
     else if (!strcmp(setting->name,  "game_history_size"))
         *setting->value.unsigned_integer = g_settings.game_history_size;
+    else if (!strcmp(setting->name, "content_directory"))
+        strlcpy(setting->value.string, g_settings.content_directory, setting->size);
 #ifdef HAVE_MENU
     else if (!strcmp(setting->name, "rgui_browser_directory"))
         strlcpy(setting->value.string, g_settings.menu_content_directory, setting->size);
@@ -946,6 +948,8 @@ static void general_write_handler(const void *data)
         g_settings.menu_show_start_screen = *setting->value.boolean;
     else if (!strcmp(setting->name,  "game_history_size"))
         g_settings.game_history_size = *setting->value.unsigned_integer;
+    else if (!strcmp(setting->name, "content_directory"))
+        strlcpy(g_settings.content_directory, setting->value.string, sizeof(g_settings.content_directory));
 #ifdef HAVE_MENU
     else if (!strcmp(setting->name, "rgui_browser_directory"))
         strlcpy(g_settings.menu_content_directory, setting->value.string, sizeof(g_settings.menu_content_directory));
@@ -1331,7 +1335,8 @@ rarch_setting_t* setting_data_get_list(void)
          END_SUB_GROUP()
          START_SUB_GROUP("Paths")
 #ifdef HAVE_MENU
-         CONFIG_PATH(g_settings.menu_content_directory,     "rgui_browser_directory",     "Content Directory",          "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)                WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
+         CONFIG_PATH(g_settings.menu_content_directory,     "rgui_browser_directory",     "Browser Directory",          "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)                WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
+         CONFIG_PATH(g_settings.content_directory,     "content_directory",     "Content Directory",          "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)                WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
          CONFIG_PATH(g_settings.assets_directory,           "assets_directory",           "Assets Directory",           "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)                WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
          CONFIG_PATH(g_settings.menu_config_directory,      "rgui_config_directory",      "Config Directory",           "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)                WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
 
