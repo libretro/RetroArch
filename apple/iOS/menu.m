@@ -531,51 +531,47 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
    self.sections = [NSMutableArray array];
 
    settings = [NSMutableArray arrayWithObjects:BOXSTRING("Settings"),
-                               [RAMenuItemBasic itemWithDescription:BOXSTRING("Frontend")
+                               [RAMenuItemBasic itemWithDescription:BOXSTRING("Configurations")
                                   action:^{ [weakSelf.navigationController pushViewController:[RAFrontendSettingsMenu new] animated:YES]; }],
                                nil];
    
+    [self.sections addObject:[NSArray arrayWithObjects:BOXSTRING("Content"),
+                              [RAMenuItemBasic itemWithDescription:BOXSTRING("Core")
+                                                            action:^{ [weakSelf chooseCoreWithPath:nil]; }
+                                                            detail:^{
+                                                                const core_info_t *core = (const core_info_t*)core_info_list_get_by_id(weakSelf.core.UTF8String);
+                                                                
+                                                                if (weakSelf.core)
+                                                                {
+                                                                    return core ? BOXSTRING(core->display_name) : BOXSTRING(weakSelf.core.UTF8String);
+                                                                }
+                                                                else
+                                                                    return BOXSTRING("Auto Detect");
+                                                            }],
+                              [RAMenuItemBasic itemWithDescription:BOXSTRING("Load Content (History)")       action:^{ [weakSelf loadHistory]; }],
+                              [RAMenuItemBasic itemWithDescription:BOXSTRING("Load Content")                 action:^{ [weakSelf loadGame]; }],
+                              [RAMenuItemBasic itemWithDescription:BOXSTRING("Core Options")
+                                                                                action:^{ [weakSelf.navigationController pushViewController:[RACoreOptionsMenu new] animated:YES]; }],
+                              nil]];
    if (g_extern.main_is_init)
    {
+       [self.sections addObject:[NSArray arrayWithObjects:BOXSTRING("States"),
+                                 [RAMenuItemStateSelect new],
+                                 [RAMenuItemBasic itemWithDescription:BOXSTRING("Save State") action:^{ [weakSelf performBasicAction:RARCH_CMD_SAVE_STATE]; }],
+                                 [RAMenuItemBasic itemWithDescription:BOXSTRING("Load State") action:^{ [weakSelf performBasicAction:RARCH_CMD_LOAD_STATE]; }],
+                                 nil]];
        [self.sections addObject:[NSArray arrayWithObjects:BOXSTRING("Actions"),
-                                 [RAMenuItemBasic itemWithDescription:BOXSTRING("Reset Content") action:^{ [weakSelf performBasicAction:RARCH_CMD_RESET]; }],
+                                 [RAMenuItemBasic itemWithDescription:BOXSTRING("Restart Content") action:^{ [weakSelf performBasicAction:RARCH_CMD_RESET]; }],
                                  [RAMenuItemBasic itemWithDescription:BOXSTRING("Close Content") action:^{ [weakSelf performBasicAction:RARCH_CMD_QUIT]; }],
                                  nil]];
        
-       [self.sections addObject:[NSArray arrayWithObjects:BOXSTRING("States"),
-                                 [RAMenuItemStateSelect new],
-                                 [RAMenuItemBasic itemWithDescription:BOXSTRING("Load State") action:^{ [weakSelf performBasicAction:RARCH_CMD_LOAD_STATE]; }],
-                                 [RAMenuItemBasic itemWithDescription:BOXSTRING("Save State") action:^{ [weakSelf performBasicAction:RARCH_CMD_SAVE_STATE]; }],
-                                 nil]];
-       
-       [settings addObject:[RAMenuItemBasic itemWithDescription:BOXSTRING("Core")
+       [settings addObject:[RAMenuItemBasic itemWithDescription:BOXSTRING("Settings")
                                                          action:^{
                                                              char config_name[PATH_MAX];
                                                              fill_pathname_base(config_name, g_settings.libretro, sizeof(config_name));
                                                              
                                                              [weakSelf.navigationController pushViewController:[[RACoreSettingsMenu alloc] initWithCore:BOXSTRING(config_name)] animated:YES];
                                                          }]];
-       [settings addObject:[RAMenuItemBasic itemWithDescription:BOXSTRING("Core Options")
-                                                         action:^{ [weakSelf.navigationController pushViewController:[RACoreOptionsMenu new] animated:YES]; }]];
-   }
-   else
-   {
-       [self.sections addObject:[NSArray arrayWithObjects:BOXSTRING("Content"),
-                                 [RAMenuItemBasic itemWithDescription:BOXSTRING("Choose Core")
-                                                               action:^{ [weakSelf chooseCoreWithPath:nil]; }
-                                                               detail:^{
-                                                                   const core_info_t *core = (const core_info_t*)core_info_list_get_by_id(weakSelf.core.UTF8String);
-                                                                   
-                                                                   if (weakSelf.core)
-                                                                   {
-                                                                       return core ? BOXSTRING(core->display_name) : BOXSTRING(weakSelf.core.UTF8String);
-                                                                   }
-                                                                   else
-                                                                       return BOXSTRING("Auto Detect");
-                                                               }],
-                                 [RAMenuItemBasic itemWithDescription:BOXSTRING("Load Content")                 action:^{ [weakSelf loadGame]; }],
-                                 [RAMenuItemBasic itemWithDescription:BOXSTRING("Load Content (History)")       action:^{ [weakSelf loadHistory]; }],
-                                 nil]];
    }
    
    [self.sections addObject:settings];
@@ -860,7 +856,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 
    if ((self = [super initWithGroup:frontend_setting_data]))
    {
-      self.title = BOXSTRING("Frontend Settings");
+      self.title = BOXSTRING("Settings");
   
       _coreConfigOptions = [NSMutableArray array];
       [self.sections addObject:_coreConfigOptions];
