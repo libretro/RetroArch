@@ -487,6 +487,11 @@ void setting_data_get_description(const void *data, char *msg, size_t sizeof_msg
                "manually isn't really an option."
 #endif
                );
+    else if (!strcmp(setting->name, "core_specific_config"))
+         snprintf(msg, sizeof_msg,
+               " -- Load up a specific config file \n"
+               "based on the core being used.\n");
+    
 }
 
 static void general_read_handler(const void *data)

@@ -641,9 +641,8 @@ static int menu_info_screen_iterate(unsigned action)
                );
          break;
       case MENU_SETTINGS_PER_CORE_CONFIG:
-         snprintf(msg, sizeof(msg),
-               " -- Load up a specific config file \n"
-               "based on the core being used.\n");
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "core_specific_config")))
+            setting_data_get_description(current_setting, msg, sizeof(msg));
          break;
       case MENU_SETTINGS_VIDEO_WINDOW_SCALE_X:
       case MENU_SETTINGS_VIDEO_WINDOW_SCALE_Y:
