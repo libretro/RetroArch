@@ -179,6 +179,20 @@ static void menu_update_libretro_info(menu_handle_t *menu)
    menu_update_system_info(menu, NULL);
 }
 
+static void menu_environment_get(int *argc, char *argv[], void *args, void *params_data)
+{
+   struct rarch_main_wrap *wrap_args = (struct rarch_main_wrap*)params_data;
+
+   wrap_args->no_rom        = driver.menu->load_no_rom;
+   wrap_args->verbose       = g_extern.verbosity;
+   wrap_args->config_path   = *g_extern.config_path ? g_extern.config_path : NULL;
+   wrap_args->sram_path     = *g_extern.savefile_dir ? g_extern.savefile_dir : NULL;
+   wrap_args->state_path    = *g_extern.savestate_dir ? g_extern.savestate_dir : NULL;
+   wrap_args->rom_path      = *g_extern.fullpath ? g_extern.fullpath : NULL;
+   wrap_args->libretro_path = *g_settings.libretro ? g_settings.libretro : NULL;
+   wrap_args->touched       = true;
+}
+
 bool load_menu_game(void)
 {
    int *rarch_argc_ptr;
@@ -194,14 +208,7 @@ bool load_menu_game(void)
    wrap_args = (struct rarch_main_wrap*)calloc(1, sizeof(*wrap_args));
    rarch_assert(wrap_args);
 
-   wrap_args->no_rom        = driver.menu->load_no_rom;
-   wrap_args->verbose       = g_extern.verbosity;
-   wrap_args->config_path   = *g_extern.config_path ? g_extern.config_path : NULL;
-   wrap_args->sram_path     = *g_extern.savefile_dir ? g_extern.savefile_dir : NULL;
-   wrap_args->state_path    = *g_extern.savestate_dir ? g_extern.savestate_dir : NULL;
-   wrap_args->rom_path      = *g_extern.fullpath ? g_extern.fullpath : NULL;
-   wrap_args->libretro_path = *g_settings.libretro ? g_settings.libretro : NULL;
-   wrap_args->touched       = true;
+   menu_environment_get(rarch_argc_ptr, rarch_argv_ptr, NULL, wrap_args);
 
    if (wrap_args->touched)
    {

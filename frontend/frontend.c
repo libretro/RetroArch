@@ -295,12 +295,7 @@ returntype main_entry(signature())
    char *rarch_argv[MAX_ARGS] = {NULL};
    char *argv_copy[MAX_ARGS] = {NULL};
 
-   wrap_args = (struct rarch_main_wrap*)calloc(1, sizeof(*wrap_args));
-   rarch_assert(wrap_args);
-
    driver.frontend_ctx = (frontend_ctx_driver_t*)frontend_ctx_init_first();
-   rarch_argv_ptr = (char**)argv;
-   rarch_argc_ptr = (int*)&argc;
 
    if (!driver.frontend_ctx)
       RARCH_WARN("Frontend context could not be initialized.\n");
@@ -310,6 +305,12 @@ returntype main_entry(signature())
 
    rarch_main_clear_state();
    rarch_init_msg_queue();
+
+   wrap_args = (struct rarch_main_wrap*)calloc(1, sizeof(*wrap_args));
+   rarch_assert(wrap_args);
+
+   rarch_argv_ptr = (char**)argv;
+   rarch_argc_ptr = (int*)&argc;
 
    if (driver.frontend_ctx && driver.frontend_ctx->environment_get)
    {
@@ -336,15 +337,15 @@ returntype main_entry(signature())
          path_mkdir(g_defaults.sram_dir);
       if (*g_defaults.system_dir)
          path_mkdir(g_defaults.system_dir);
+   }
 
-      if (wrap_args->touched)
-      {
-         g_extern.verbosity = true;
-         rarch_main_init_wrap(wrap_args, &rarch_argc, rarch_argv);
-         memcpy(argv_copy, rarch_argv, sizeof(rarch_argv));
-         rarch_argv_ptr = (char**)rarch_argv;
-         rarch_argc_ptr = (int*)&rarch_argc;
-      }
+   if (wrap_args->touched)
+   {
+      g_extern.verbosity = true;
+      rarch_main_init_wrap(wrap_args, &rarch_argc, rarch_argv);
+      memcpy(argv_copy, rarch_argv, sizeof(rarch_argv));
+      rarch_argv_ptr = (char**)rarch_argv;
+      rarch_argc_ptr = (int*)&rarch_argc;
    }
 
    if (g_extern.main_is_init)
