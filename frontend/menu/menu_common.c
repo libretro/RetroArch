@@ -183,7 +183,6 @@ bool load_menu_game(void)
    int *rarch_argc_ptr;
    char **rarch_argv_ptr;
    struct rarch_main_wrap *wrap_args;
-   unsigned i;
    int ret, rarch_argc = 0;
    char *rarch_argv[MAX_ARGS] = {NULL};
    char *argv_copy[MAX_ARGS] = {NULL};
@@ -198,20 +197,20 @@ bool load_menu_game(void)
    wrap_args->state_path    = *g_extern.savestate_dir ? g_extern.savestate_dir : NULL;
    wrap_args->rom_path      = *g_extern.fullpath ? g_extern.fullpath : NULL;
    wrap_args->libretro_path = *g_settings.libretro ? g_settings.libretro : NULL;
+   wrap_args->touched       = true;
 
-   rarch_argc = 0;
-   ret = 0;
-
-   rarch_main_init_wrap(wrap_args, &rarch_argc, rarch_argv);
-
-   memcpy(argv_copy, rarch_argv, sizeof(rarch_argv));
-   rarch_argv_ptr = (char**)rarch_argv;
-   rarch_argc_ptr = (int*)&rarch_argc;
+   if (wrap_args->touched)
+   {
+      rarch_main_init_wrap(wrap_args, &rarch_argc, rarch_argv);
+      memcpy(argv_copy, rarch_argv, sizeof(rarch_argv));
+      rarch_argv_ptr = (char**)rarch_argv;
+      rarch_argc_ptr = (int*)&rarch_argc;
+   }
 
    if (g_extern.main_is_init)
 	   rarch_main_deinit();
 
-   if (ret = rarch_main_init(rarch_argc, rarch_argv))
+   if ((ret = rarch_main_init(rarch_argc, rarch_argv)))
    {
       free_args(wrap_args, argv_copy, ARRAY_SIZE(argv_copy));
       free(wrap_args);
