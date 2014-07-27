@@ -270,17 +270,6 @@ void main_exit(args_type() args)
       driver.frontend_ctx->shutdown(false);
 }
 
-void free_args(void *data, char **argv_copy, unsigned argv_size)
-{
-   unsigned i;
-   struct rarch_main_wrap *wrap_args = (struct rarch_main_wrap*)data;
-   if (!wrap_args || !wrap_args->touched)
-      return;
-
-   for (i = 0; i < argv_size; i++)
-      free(argv_copy[i]);
-}
-
 static void check_defaults_dirs(void)
 {
    if (*g_defaults.autoconfig_dir)
@@ -314,7 +303,7 @@ bool main_load_content(int argc, char **argv, environment_get_t environ_get,
    int *rarch_argc_ptr;
    char **rarch_argv_ptr;
    struct rarch_main_wrap *wrap_args;
-   int ret, rarch_argc = 0;
+   int i, ret, rarch_argc = 0;
    char *rarch_argv[MAX_ARGS] = {NULL};
    char *argv_copy[MAX_ARGS] = {NULL};
 
@@ -355,7 +344,8 @@ bool main_load_content(int argc, char **argv, environment_get_t environ_get,
       process_args(rarch_argc_ptr, rarch_argv_ptr);
 
 error:
-   free_args(wrap_args, argv_copy, ARRAY_SIZE(argv_copy));
+   for (i = 0; i < ARRAY_SIZE(argv_copy); i++)
+      free(argv_copy[i]);
    free(wrap_args);
    return retval;
 }
