@@ -115,14 +115,10 @@ void load_menu_game_prepare(void)
          msg_queue_push(g_extern.msg_queue, str, 1, 1);
       }
 
-      #ifdef RARCH_CONSOLE
-      if (g_extern.system.no_game || *g_extern.fullpath)
-#endif
-         if (g_extern.history)
-            content_history_push(g_extern.history,
-                  *g_extern.fullpath ? g_extern.fullpath : NULL,
-                  g_settings.libretro,
-                  driver.menu->info.library_name ? driver.menu->info.library_name : "");
+      content_history_push(g_extern.history,
+            *g_extern.fullpath ? g_extern.fullpath : NULL,
+            g_settings.libretro,
+            driver.menu->info.library_name ? driver.menu->info.library_name : "");
    }
 
    // redraw menu frame
