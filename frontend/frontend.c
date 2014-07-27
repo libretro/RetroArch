@@ -272,7 +272,7 @@ void main_exit(args_type() args)
       driver.frontend_ctx->shutdown(false);
 }
 
-static void free_args(struct rarch_main_wrap *wrap_args, char **argv_copy, unsigned argv_size)
+void free_args(struct rarch_main_wrap *wrap_args, char **argv_copy, unsigned argv_size)
 {
    unsigned i;
    if (!wrap_args->touched)
@@ -345,6 +345,9 @@ returntype main_entry(signature())
          rarch_argc_ptr = (int*)&rarch_argc;
       }
    }
+
+   if (g_extern.main_is_init)
+      rarch_main_deinit();
 
    if ((ret = rarch_main_init(*rarch_argc_ptr, rarch_argv_ptr)))
    {

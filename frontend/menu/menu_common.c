@@ -180,55 +180,61 @@ static void menu_update_libretro_info(menu_handle_t *menu)
 
 bool load_menu_game(void)
 {
-   int rarch_argc, ret;
+   int *rarch_argc_ptr;
+   char **rarch_argv_ptr;
+   struct rarch_main_wrap *wrap_args;
    unsigned i;
-   struct rarch_main_wrap args = {0};
-   char *argv_copy[MAX_ARGS];
+   int ret, rarch_argc = 0;
    char *rarch_argv[MAX_ARGS] = {NULL};
+   char *argv_copy[MAX_ARGS] = {NULL};
 
-   if (!driver.menu)
-      return false;
+   wrap_args = (struct rarch_main_wrap*)calloc(1, sizeof(*wrap_args));
+   rarch_assert(wrap_args);
 
-   args.no_rom        = driver.menu->load_no_rom;
-   args.verbose       = g_extern.verbosity;
-   args.config_path   = *g_extern.config_path ? g_extern.config_path : NULL;
-   args.sram_path     = *g_extern.savefile_dir ? g_extern.savefile_dir : NULL;
-   args.state_path    = *g_extern.savestate_dir ? g_extern.savestate_dir : NULL;
-   args.rom_path      = *g_extern.fullpath ? g_extern.fullpath : NULL;
-   args.libretro_path = *g_settings.libretro ? g_settings.libretro : NULL;
+   wrap_args->no_rom        = driver.menu->load_no_rom;
+   wrap_args->verbose       = g_extern.verbosity;
+   wrap_args->config_path   = *g_extern.config_path ? g_extern.config_path : NULL;
+   wrap_args->sram_path     = *g_extern.savefile_dir ? g_extern.savefile_dir : NULL;
+   wrap_args->state_path    = *g_extern.savestate_dir ? g_extern.savestate_dir : NULL;
+   wrap_args->rom_path      = *g_extern.fullpath ? g_extern.fullpath : NULL;
+   wrap_args->libretro_path = *g_settings.libretro ? g_settings.libretro : NULL;
 
    rarch_argc = 0;
    ret = 0;
 
-   rarch_main_init_wrap(&args, &rarch_argc, rarch_argv);
+   rarch_main_init_wrap(wrap_args, &rarch_argc, rarch_argv);
 
-   if (rarch_argc > 0)
+   memcpy(argv_copy, rarch_argv, sizeof(rarch_argv));
+   rarch_argv_ptr = (char**)rarch_argv;
+   rarch_argc_ptr = (int*)&rarch_argc;
+
+   if (g_extern.main_is_init)
+	   rarch_main_deinit();
+
+   if (ret = rarch_main_init(rarch_argc, rarch_argv))
    {
-      // The pointers themselves are not const, and can be messed around with by getopt_long().
-      memcpy(argv_copy, rarch_argv, sizeof(rarch_argv));
+      free_args(wrap_args, argv_copy, ARRAY_SIZE(argv_copy));
+      free(wrap_args);
 
-      if (g_extern.main_is_init)
-         rarch_main_deinit();
-
-      ret = rarch_main_init(rarch_argc, rarch_argv);
-
-      for (i = 0; i < ARRAY_SIZE(argv_copy); i++)
-         free(argv_copy[i]);
-   }
-
-   if (ret != 0)
-   {
       char name[PATH_MAX], msg[PATH_MAX];
 
       fill_pathname_base(name, g_extern.fullpath, sizeof(name));
       snprintf(msg, sizeof(msg), "Failed to load %s.\n", name);
       msg_queue_push(g_extern.msg_queue, msg, 1, 90);
-      driver.menu->msg_force = true;
+
+      if (driver.menu)
+         driver.menu->msg_force = true;
+
       return false;
    }
 
+   if (wrap_args)
+      free_args(wrap_args, argv_copy, ARRAY_SIZE(argv_copy));
+   free(wrap_args);
+
    // Update menu state which depends on config.
-   menu_update_libretro_info(driver.menu);
+   if (driver.menu)
+      menu_update_libretro_info(driver.menu);
 
    if (g_extern.history)
       content_history_free(g_extern.history);
