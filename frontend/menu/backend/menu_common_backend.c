@@ -1906,6 +1906,10 @@ static void menu_parse_and_resolve(unsigned menu_type)
                file_list_push(driver.menu->selection_buf, "ms0:/", menu_type, 0);
                file_list_push(driver.menu->selection_buf, "ef0:/", menu_type, 0);
                file_list_push(driver.menu->selection_buf, "host0:/", menu_type, 0);
+#elif defined(IOS)
+               file_list_push(driver.menu->selection_buf, "/var/mobile/", menu_type, 0);
+               file_list_push(driver.menu->selection_buf, g_defaults.core_dir, menu_type, 0);
+               file_list_push(driver.menu->selection_buf, "/", menu_type, 0);
 #else
                file_list_push(driver.menu->selection_buf, "/", menu_type, 0);
 #endif
