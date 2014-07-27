@@ -270,15 +270,6 @@ void *menu_init(const void *data)
    return menu;
 }
 
-void menu_free_shaders(menu_handle_t *menu)
-{
-#ifdef HAVE_SHADER_MANAGER
-   if (menu->shader)
-      free(menu->shader);
-   menu->shader = NULL;
-#endif
-}
-
 void menu_free(void *data)
 {
    menu_handle_t *menu = (menu_handle_t*)data;
@@ -286,7 +277,11 @@ void menu_free(void *data)
    if (!menu)
       return;
   
-   menu_free_shaders(menu);
+#ifdef HAVE_SHADER_MANAGER
+   if (menu->shader)
+      free(menu->shader);
+   menu->shader = NULL;
+#endif
 
    if (driver.menu_ctx && driver.menu_ctx->free)
       driver.menu_ctx->free(menu);
