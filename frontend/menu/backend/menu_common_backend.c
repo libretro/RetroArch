@@ -4054,20 +4054,17 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
       case MENU_SETTINGS_CUSTOM_BIND_ALL:
          if (action == MENU_ACTION_OK)
          {
+            driver.menu->binds.target = &g_settings.input.binds[port][0];
+            driver.menu->binds.begin = MENU_SETTINGS_BIND_BEGIN;
+            driver.menu->binds.last = MENU_SETTINGS_BIND_LAST;
             if (driver.menu->bind_mode_keyboard)
             {
-               driver.menu->binds.target = &g_settings.input.binds[port][0];
-               driver.menu->binds.begin = MENU_SETTINGS_BIND_BEGIN;
-               driver.menu->binds.last = MENU_SETTINGS_BIND_LAST;
                file_list_push(driver.menu->menu_stack, "", MENU_SETTINGS_CUSTOM_BIND_KEYBOARD, driver.menu->selection_ptr);
                driver.menu->binds.timeout_end = rarch_get_time_usec() + MENU_KEYBOARD_BIND_TIMEOUT_SECONDS * 1000000;
                input_keyboard_wait_keys(driver.menu, menu_custom_bind_keyboard_cb);
             }
             else
             {
-               driver.menu->binds.target = &g_settings.input.binds[port][0];
-               driver.menu->binds.begin = MENU_SETTINGS_BIND_BEGIN;
-               driver.menu->binds.last = MENU_SETTINGS_BIND_LAST;
                file_list_push(driver.menu->menu_stack, "", MENU_SETTINGS_CUSTOM_BIND, driver.menu->selection_ptr);
                menu_poll_bind_get_rested_axes(&driver.menu->binds);
                menu_poll_bind_state(&driver.menu->binds);
