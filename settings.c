@@ -457,12 +457,6 @@ void config_set_defaults(void)
    g_settings.core_specific_config = default_core_specific_config;
 
 #ifdef RARCH_CONSOLE
-
-   g_settings.video.msg_pos_x = 0.05f;
-   g_settings.video.msg_pos_y = 0.90f;
-   g_settings.video.aspect_ratio = -1.0f;
-
-   // g_extern
    g_extern.console.screen.gamma_correction = DEFAULT_GAMMA;
    g_extern.lifecycle_state |= (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE);
    g_extern.lifecycle_state |= (1ULL << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE);
