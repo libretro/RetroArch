@@ -103,8 +103,8 @@ void menu_free(void *data);
 
 void menu_ticker_line(char *buf, size_t len, unsigned tick, const char *str, bool selected);
 
-bool load_menu_game(void);
-void load_menu_game_history(unsigned game_index);
+bool load_menu_content(void);
+void load_menu_content_history(unsigned game_index);
 void menu_content_history_push_current(void);
 
 bool menu_replace_config(const char *path);

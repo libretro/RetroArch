@@ -99,7 +99,7 @@ void menu_content_history_push_current(void)
                g_extern.system.info.library_name);
 }
 
-static void load_menu_game_prepare(void)
+static void load_menu_content_prepare(void)
 {
    if (!driver.menu)
       return;
@@ -142,7 +142,7 @@ static void load_menu_game_prepare(void)
             MENU_TEXTURE_FULLSCREEN);
 }
 
-void load_menu_game_history(unsigned game_index)
+void load_menu_content_history(unsigned game_index)
 {
    const char *path = NULL;
    const char *core_path = NULL;
@@ -193,9 +193,9 @@ static void menu_environment_get(int *argc, char *argv[], void *args, void *para
    wrap_args->touched       = true;
 }
 
-bool load_menu_game(void)
+bool load_menu_content(void)
 {
-   load_menu_game_prepare();
+   load_menu_content_prepare();
 
    if (!(main_load_content(0, NULL, menu_environment_get,
          driver.frontend_ctx->process_args)))

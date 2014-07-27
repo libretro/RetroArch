@@ -2498,7 +2498,7 @@ static int menu_common_iterate(unsigned action)
             }
             else if (menu_type == MENU_SETTINGS_OPEN_HISTORY)
             {
-               load_menu_game_history(driver.menu->selection_ptr);
+               load_menu_content_history(driver.menu->selection_ptr);
                menu_flush_stack_type(MENU_SETTINGS);
                ret = -1;
             }
