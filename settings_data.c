@@ -491,7 +491,143 @@ void setting_data_get_description(const void *data, char *msg, size_t sizeof_msg
          snprintf(msg, sizeof_msg,
                " -- Load up a specific config file \n"
                "based on the core being used.\n");
-    
+    else if (!strcmp(setting->name, "video_xscale") ||
+          !strcmp(setting->name, "video_yscale"))
+         snprintf(msg, sizeof_msg,
+               " -- Fullscreen resolution.\n"
+               " \n"
+               "Resolution of 0 uses the \n"
+               "resolution of the environment.\n");
+    else if (!strcmp(setting->name, "video_vsync"))
+         snprintf(msg, sizeof_msg,
+               " -- Video V-Sync.\n");
+    else if (!strcmp(setting->name, "video_hard_sync"))
+         snprintf(msg, sizeof_msg,
+               " -- Attempts to hard-synchronize \n"
+               "CPU and GPU.\n"
+               " \n"
+               "Can reduce latency at cost of \n"
+               "performance.");
+    else if (!strcmp(setting->name, "video_hard_sync_frames"))
+         snprintf(msg, sizeof_msg,
+               " -- Sets how many frames CPU can \n"
+               "run ahead of GPU when using 'GPU \n"
+               "Hard Sync'.\n"
+               " \n"
+               "Maximum is 3.\n"
+               " \n"
+               " 0: Syncs to GPU immediately.\n"
+               " 1: Syncs to previous frame.\n"
+               " 2: Etc ...");
+    else if (!strcmp(setting->name, "video_black_frame_insertion"))
+         snprintf(msg, sizeof_msg,
+               " -- Inserts a black frame inbetween \n"
+               "frames.\n"
+               " \n"
+               "Useful for 120 Hz monitors who want to \n"
+               "play 60 Hz material with eliminated \n"
+               "ghosting.\n"
+               " \n"
+               "Video refresh rate should still be \n"
+               "configured as if it is a 60 Hz monitor \n"
+               "(divide refresh rate by 2).");
+    else if (!strcmp(setting->name, "video_threaded"))
+         snprintf(msg, sizeof_msg,
+               " -- Use threaded video driver.\n"
+               " \n"
+               "Using this might improve performance at \n"
+               "possible cost of latency and more video \n"
+               "stuttering.");
+    else if (!strcmp(setting->name, "video_scale_integer"))
+         snprintf(msg, sizeof_msg,
+               " -- Only scales video in integer \n"
+               "steps.\n"
+               " \n"
+               "The base size depends on system-reported \n"
+               "geometry and aspect ratio.\n"
+               " \n"
+               "If Force Aspect is not set, X/Y will be \n"
+               "integer scaled independently.");
+    else if (!strcmp(setting->name, "video_crop_overscan"))
+         snprintf(msg, sizeof_msg,
+               " -- Forces cropping of overscanned \n"
+               "frames.\n"
+               " \n"
+               "Exact behavior of this option is \n"
+               "core-implementation specific.");
+    else if (!strcmp(setting->name, "video_monitor_index"))
+         snprintf(msg, sizeof_msg,
+               " -- Which monitor to prefer.\n"
+               " \n"
+               "0 (default) means no particular monitor \n"
+               "is preferred, 1 and up (1 being first \n"
+               "monitor), suggests RetroArch to use that \n"
+               "particular monitor.");
+    else if (!strcmp(setting->name, "video_rotation"))
+         snprintf(msg, sizeof_msg,
+               " -- Forces a certain rotation \n"
+               "of the screen.\n"
+               " \n"
+               "The rotation is added to rotations which\n"
+               "the libretro core sets (see Video Allow\n"
+               "Rotate).");
+    else if (!strcmp(setting->name, "audio_volume"))
+         snprintf(msg, sizeof_msg,
+               " -- Audio volume, expressed in dB.\n"
+               " \n"
+               " 0 dB is normal volume. No gain will be applied.\n"
+               "Gain can be controlled in runtime with Input\n"
+               "Volume Up / Input Volume Down.");
+    else if (!strcmp(setting->name, "block_sram_overwrite"))
+         snprintf(msg, sizeof_msg,
+               " -- Block SRAM from being overwritten \n"
+               "when loading save states.\n"
+               " \n"
+               "Might potentially lead to buggy games.");
+    else if (!strcmp(setting->name, "fastforward_ratio"))
+         snprintf(msg, sizeof_msg,
+               " -- Fastforward ratio."
+               " \n"
+               "The maximum rate at which content will\n"
+               "be run when using fast forward.\n"
+               " \n"
+               " (E.g. 5.0 for 60 fps content => 300 fps \n"
+               "cap).\n"
+               " \n"
+               "RetroArch will go to sleep to ensure that \n"
+               "the maximum rate will not be exceeded.\n"
+               "Do not rely on this cap to be perfectly \n"
+               "accurate.");
+    else if (!strcmp(setting->name, "pause_nonactive"))
+         snprintf(msg, sizeof_msg,
+               " -- Pause gameplay when window focus \n"
+               "is lost.");
+    else if (!strcmp(setting->name, "video_gpu_screenshot"))
+         snprintf(msg, sizeof_msg,
+               " -- Screenshots output of GPU shaded \n"
+               "material if available.");
+    else if (!strcmp(setting->name, "autosave_interval"))
+         snprintf(msg, sizeof_msg,
+               " -- Autosaves the non-volatile SRAM \n"
+               "at a regular interval.\n"
+               " \n"
+               "This is disabled by default unless set \n"
+               "otherwise. The interval is measured in \n"
+               "seconds. \n"
+               " \n"
+               "A value of 0 disables autosave.");
+    else if (!strcmp(setting->name, "screenshot_directory"))
+         snprintf(msg, sizeof_msg,
+               " -- Screenshot Directory. \n"
+               " \n"
+               "Directory to dump screenshots to."
+               );
+    else if (!strcmp(setting->name, "video_swap_interval"))
+         snprintf(msg, sizeof_msg,
+               " -- VSync Swap Interval.\n"
+               " \n"
+               "Uses a custom swap interval for VSync. Set this \n"
+               "to effectively halve monitor refresh rate.");
 }
 
 static void general_read_handler(const void *data)

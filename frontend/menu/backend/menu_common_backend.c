@@ -646,93 +646,45 @@ static int menu_info_screen_iterate(unsigned action)
          break;
       case MENU_SETTINGS_VIDEO_WINDOW_SCALE_X:
       case MENU_SETTINGS_VIDEO_WINDOW_SCALE_Y:
-         snprintf(msg, sizeof(msg),
-               " -- Fullscreen resolution.\n"
-               " \n"
-               "Resolution of 0 uses the \n"
-               "resolution of the environment.\n");
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "video_xscale")) ||
+              (current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "video_xscale")) )
+            setting_data_get_description(current_setting, msg, sizeof(msg));
          break;
       case MENU_SETTINGS_VIDEO_VSYNC:
-         snprintf(msg, sizeof(msg),
-               " -- Video V-Sync.\n");
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "video_vsync")))
+            setting_data_get_description(current_setting, msg, sizeof(msg));
          break;
       case MENU_SETTINGS_VIDEO_HARD_SYNC:
-         snprintf(msg, sizeof(msg),
-               " -- Attempts to hard-synchronize \n"
-               "CPU and GPU.\n"
-               " \n"
-               "Can reduce latency at cost of \n"
-               "performance.");
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "video_hard_sync")))
+            setting_data_get_description(current_setting, msg, sizeof(msg));
          break;
       case MENU_SETTINGS_VIDEO_HARD_SYNC_FRAMES:
-         snprintf(msg, sizeof(msg),
-               " -- Sets how many frames CPU can \n"
-               "run ahead of GPU when using 'GPU \n"
-               "Hard Sync'.\n"
-               " \n"
-               "Maximum is 3.\n"
-               " \n"
-               " 0: Syncs to GPU immediately.\n"
-               " 1: Syncs to previous frame.\n"
-               " 2: Etc ...");
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "video_hard_sync_frames")))
+            setting_data_get_description(current_setting, msg, sizeof(msg));
          break;
       case MENU_SETTINGS_VIDEO_BLACK_FRAME_INSERTION:
-         snprintf(msg, sizeof(msg),
-               " -- Inserts a black frame inbetween \n"
-               "frames.\n"
-               " \n"
-               "Useful for 120 Hz monitors who want to \n"
-               "play 60 Hz material with eliminated \n"
-               "ghosting.\n"
-               " \n"
-               "Video refresh rate should still be \n"
-               "configured as if it is a 60 Hz monitor \n"
-               "(divide refresh rate by 2).");
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "video_black_frame_insertion")))
+            setting_data_get_description(current_setting, msg, sizeof(msg));
          break;
       case MENU_SETTINGS_VIDEO_THREADED:
-         snprintf(msg, sizeof(msg),
-               " -- Use threaded video driver.\n"
-               " \n"
-               "Using this might improve performance at \n"
-               "possible cost of latency and more video \n"
-               "stuttering.");
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "video_threaded")))
+            setting_data_get_description(current_setting, msg, sizeof(msg));
          break;
       case MENU_SETTINGS_VIDEO_INTEGER_SCALE:
-         snprintf(msg, sizeof(msg),
-               " -- Only scales video in integer \n"
-               "steps.\n"
-               " \n"
-               "The base size depends on system-reported \n"
-               "geometry and aspect ratio.\n"
-               " \n"
-               "If Force Aspect is not set, X/Y will be \n"
-               "integer scaled independently.");
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "video_scale_integer")))
+            setting_data_get_description(current_setting, msg, sizeof(msg));
          break;
       case MENU_SETTINGS_VIDEO_CROP_OVERSCAN:
-         snprintf(msg, sizeof(msg),
-               " -- Forces cropping of overscanned \n"
-               "frames.\n"
-               " \n"
-               "Exact behavior of this option is \n"
-               "core-implementation specific.");
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "video_crop_overscan")))
+            setting_data_get_description(current_setting, msg, sizeof(msg));
          break;
       case MENU_SETTINGS_VIDEO_MONITOR_INDEX:
-         snprintf(msg, sizeof(msg),
-               " -- Which monitor to prefer.\n"
-               " \n"
-               "0 (default) means no particular monitor \n"
-               "is preferred, 1 and up (1 being first \n"
-               "monitor), suggests RetroArch to use that \n"
-               "particular monitor.");
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "video_monitor_index")))
+            setting_data_get_description(current_setting, msg, sizeof(msg));
          break;
       case MENU_SETTINGS_VIDEO_ROTATION:
-         snprintf(msg, sizeof(msg),
-               " -- Forces a certain rotation \n"
-               "of the screen.\n"
-               " \n"
-               "The rotation is added to rotations which\n"
-               "the libretro core sets (see Video Allow\n"
-               "Rotate).");
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "video_rotation")))
+            setting_data_get_description(current_setting, msg, sizeof(msg));
          break;
       case MENU_SETTINGS_AUDIO_CONTROL_RATE_DELTA:
          snprintf(msg, sizeof(msg),
@@ -749,12 +701,8 @@ static int menu_info_screen_iterate(unsigned action)
                " input rate * (1.0 +/- (rate control delta))");
          break;
       case MENU_SETTINGS_AUDIO_VOLUME:
-         snprintf(msg, sizeof(msg),
-               " -- Audio volume, expressed in dB.\n"
-               " \n"
-               " 0 dB is normal volume. No gain will be applied.\n"
-               "Gain can be controlled in runtime with Input\n"
-               "Volume Up / Input Volume Down.");
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "audio_volume")))
+            setting_data_get_description(current_setting, msg, sizeof(msg));
          break;
       case MENU_SETTINGS_VIDEO_SOFTFILTER:
 #ifdef HAVE_FILTERS_BUILTIN
@@ -768,11 +716,8 @@ static int menu_info_screen_iterate(unsigned action)
 #endif
          break;
       case MENU_SETTINGS_BLOCK_SRAM_OVERWRITE:
-         snprintf(msg, sizeof(msg),
-               " -- Block SRAM from being overwritten \n"
-               "when loading save states.\n"
-               " \n"
-               "Might potentially lead to buggy games.");
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "block_sram_overwrite")))
+            setting_data_get_description(current_setting, msg, sizeof(msg));
          break;
       case MENU_SETTINGS_PRIVACY_CAMERA_ALLOW:
          snprintf(msg, sizeof(msg),
@@ -980,47 +925,24 @@ static int menu_info_screen_iterate(unsigned action)
                "down by factor.");
          break;
       case MENU_SETTINGS_FASTFORWARD_RATIO:
-         snprintf(msg, sizeof(msg),
-               " -- Fastforward ratio."
-               " \n"
-               "The maximum rate at which content will\n"
-               "be run when using fast forward.\n"
-               " \n"
-               " (E.g. 5.0 for 60 fps content => 300 fps \n"
-               "cap).\n"
-               " \n"
-               "RetroArch will go to sleep to ensure that \n"
-               "the maximum rate will not be exceeded.\n"
-               "Do not rely on this cap to be perfectly \n"
-               "accurate.");
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "fastforward_ratio")))
+            setting_data_get_description(current_setting, msg, sizeof(msg));
          break;
       case MENU_SETTINGS_PAUSE_IF_WINDOW_FOCUS_LOST:
-         snprintf(msg, sizeof(msg),
-               " -- Pause gameplay when window focus \n"
-               "is lost.");
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "pause_nonactive")))
+            setting_data_get_description(current_setting, msg, sizeof(msg));
          break;
       case MENU_SETTINGS_GPU_SCREENSHOT:
-         snprintf(msg, sizeof(msg),
-               " -- Screenshots output of GPU shaded \n"
-               "material if available.");
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "video_gpu_screenshot")))
+            setting_data_get_description(current_setting, msg, sizeof(msg));
          break;
       case MENU_SETTINGS_SRAM_AUTOSAVE:
-         snprintf(msg, sizeof(msg),
-               " -- Autosaves the non-volatile SRAM \n"
-               "at a regular interval.\n"
-               " \n"
-               "This is disabled by default unless set \n"
-               "otherwise. The interval is measured in \n"
-               "seconds. \n"
-               " \n"
-               "A value of 0 disables autosave.");
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "autosave_interval")))
+            setting_data_get_description(current_setting, msg, sizeof(msg));
          break;
       case MENU_SCREENSHOT_DIR_PATH:
-         snprintf(msg, sizeof(msg),
-               " -- Screenshot Directory. \n"
-               " \n"
-               "Directory to dump screenshots to."
-               );
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "screenshot_directory")))
+            setting_data_get_description(current_setting, msg, sizeof(msg));
          break;
       case MENU_SETTINGS_DRIVER_AUDIO_DEVICE:
          snprintf(msg, sizeof(msg),
@@ -1065,11 +987,8 @@ static int menu_info_screen_iterate(unsigned action)
                "Load' is set.");
          break;
       case MENU_SETTINGS_VIDEO_SWAP_INTERVAL:
-         snprintf(msg, sizeof(msg),
-               " -- VSync Swap Interval.\n"
-               " \n"
-               "Uses a custom swap interval for VSync. Set this \n"
-               "to effectively halve monitor refresh rate.");
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "video_swap_interval")))
+            setting_data_get_description(current_setting, msg, sizeof(msg));
          break;
       case MENU_SETTINGS_VIDEO_REFRESH_RATE_AUTO:
          snprintf(msg, sizeof(msg),
