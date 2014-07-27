@@ -249,6 +249,12 @@ ifeq ($(HAVE_OPENGL), 1)
       OBJ += gfx/context/mali_fbdev_ctx.o
    endif
 
+   ifeq ($(HAVE_VIVANTE_FBDEV), 1)
+      OBJ += gfx/context/vivante_fbdev_ctx.o
+      DEFINES += $(EGL_CFLAGS)
+      LIBS += $(EGL_LIBS)
+   endif
+
    ifeq ($(HAVE_X11), 1)
       ifeq ($(HAVE_GLES), 0)
          OBJ += gfx/context/glx_ctx.o

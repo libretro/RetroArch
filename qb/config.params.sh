@@ -14,6 +14,7 @@ HAVE_NETPLAY=auto       # Enable netplay support
 HAVE_OPENGL=yes         # Disable OpenGL support
 HAVE_GLES=no            # Use GLESv2 instead of desktop GL
 HAVE_MALI_FBDEV=no      # Enable Mali fbdev context support
+HAVE_VIVANTE_FBDEV=no   # Enable Vivante fbdev context support
 HAVE_GLES3=no           # Enable OpenGLES3 support
 HAVE_X11=auto           # Disable everything X11.
 HAVE_OMAP=no            # Enable OMAP video support
