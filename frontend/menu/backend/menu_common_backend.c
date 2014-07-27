@@ -580,9 +580,11 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
 
 static int menu_info_screen_iterate(unsigned action)
 {
-   char msg[1024];
+   char msg[PATH_MAX];
+   rarch_setting_t *current_setting;
+   rarch_setting_t *setting_data = (rarch_setting_t *)setting_data_get_list();
 
-   if (!driver.menu)
+   if (!driver.menu || !setting_data)
       return 0;
 
    if (driver.video_data && driver.menu_ctx && driver.menu_ctx->render)
@@ -591,77 +593,32 @@ static int menu_info_screen_iterate(unsigned action)
    switch (driver.menu->info_selection)
    {
       case MENU_SETTINGS_WINDOW_COMPOSITING_ENABLE:
-         snprintf(msg, sizeof(msg),
-               "-- Forcibly disable composition.\n"
-               "Only valid on Windows Vista/7 for now.");
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "video_disable_composition")))
+            setting_data_get_description(current_setting, msg, sizeof(msg));
          break;
       case MENU_SETTINGS_LIBRETRO_LOG_LEVEL:
-         snprintf(msg, sizeof(msg),
-               "-- Sets log level for libretro cores \n"
-               "(GET_LOG_INTERFACE). \n"
-               " \n"
-               " If a log level issued by a libretro \n"
-               " core is below libretro_log level, it \n"
-               " is ignored.\n"
-               " \n"
-               " DEBUG logs are always ignored unless \n"
-               " verbose mode is activated (--verbose).\n"
-               " \n"
-               " DEBUG = 0\n"
-               " INFO  = 1\n"
-               " WARN  = 2\n"
-               " ERROR = 3"
-               );
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "libretro_log_level")))
+            setting_data_get_description(current_setting, msg, sizeof(msg));
          break;
       case MENU_SETTINGS_LOGGING_VERBOSITY:
-         snprintf(msg, sizeof(msg),
-               "-- Enable or disable verbosity level \n"
-               "of frontend.");
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "log_verbosity")))
+            setting_data_get_description(current_setting, msg, sizeof(msg));
          break;
       case MENU_SETTINGS_PERFORMANCE_COUNTERS_ENABLE:
-         snprintf(msg, sizeof(msg),
-               "-- Enable or disable frontend \n"
-               "performance counters.");
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "perfcnt_enable")))
+            setting_data_get_description(current_setting, msg, sizeof(msg));
          break;
       case MENU_SYSTEM_DIR_PATH:
-         snprintf(msg, sizeof(msg),
-               "-- System Directory. \n"
-               " \n"
-               "Sets the 'system' directory.\n"
-               "Implementations can query for this\n"
-               "directory to load BIOSes, \n"
-               "system-specific configs, etc.");
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "system_directory")))
+            setting_data_get_description(current_setting, msg, sizeof(msg));
          break;
       case MENU_START_SCREEN:
-         snprintf(msg, sizeof(msg),
-               " -- Show startup screen in menu.\n"
-               "Is automatically set to false when seen\n"
-               "for the first time.\n"
-               " \n"
-               "This is only updated in config if\n"
-               "'Config Save On Exit' is set to true.\n");
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "rgui_show_start_screen")))
+            setting_data_get_description(current_setting, msg, sizeof(msg));
          break;
       case MENU_SETTINGS_CONFIG_SAVE_ON_EXIT:
-         snprintf(msg, sizeof(msg),
-               " -- Flushes config to disk on exit.\n"
-               "Useful for menu as settings can be\n"
-               "modified. Overwrites the config.\n"
-               " \n"
-               "#include's and comments are not \n"
-               "preserved. \n"
-               " \n"
-               "By design, the config file is \n"
-               "considered immutable as it is \n"
-               "likely maintained by the user, \n"
-               "and should not be overwritten \n"
-               "behind the user's back."
-#if defined(RARCH_CONSOLE) || defined(RARCH_MOBILE)
-               "\nThis is not not the case on \n"
-               "consoles however, where \n"
-               "looking at the config file \n"
-               "manually isn't really an option."
-#endif
-               );
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "config_save_on_exit")))
+            setting_data_get_description(current_setting, msg, sizeof(msg));
          break;
       case MENU_SETTINGS_OPEN_FILEBROWSER:
          snprintf(msg, sizeof(msg),
@@ -1481,7 +1438,10 @@ static int menu_info_screen_iterate(unsigned action)
    }
 
    if (driver.video_data && driver.menu_ctx && driver.menu_ctx->render_messagebox)
-      driver.menu_ctx->render_messagebox(msg);
+   {
+      if (*msg && msg[0] != '\0')
+         driver.menu_ctx->render_messagebox(msg);
+   }
 
    if (action == MENU_ACTION_OK)
       file_list_pop(driver.menu->menu_stack, &driver.menu->selection_ptr);

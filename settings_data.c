@@ -347,9 +347,9 @@ rarch_setting_t setting_data_group_setting(enum setting_type type, const char* n
    return result;
 }
 
-rarch_setting_t setting_data_float_setting(const char* name, const char* description, float* target, float default_value, const char *group, const char *subgroup, change_handler_t change_handler, change_handler_t read_handler)
+rarch_setting_t setting_data_float_setting(const char* name, const char* short_description, float* target, float default_value, const char *group, const char *subgroup, change_handler_t change_handler, change_handler_t read_handler)
 {
-   rarch_setting_t result = { ST_FLOAT, name, sizeof(float), description, group, subgroup };
+   rarch_setting_t result = { ST_FLOAT, name, sizeof(float), short_description, group, subgroup };
    result.change_handler = change_handler;
    result.read_handler = read_handler;
    result.value.fraction = target;
@@ -357,9 +357,9 @@ rarch_setting_t setting_data_float_setting(const char* name, const char* descrip
    return result;
 }
 
-rarch_setting_t setting_data_bool_setting(const char* name, const char* description, bool* target, bool default_value, const char *group, const char *subgroup, change_handler_t change_handler, change_handler_t read_handler)
+rarch_setting_t setting_data_bool_setting(const char* name, const char* short_description, bool* target, bool default_value, const char *group, const char *subgroup, change_handler_t change_handler, change_handler_t read_handler)
 {
-   rarch_setting_t result = { ST_BOOL, name, sizeof(bool), description, group, subgroup };
+   rarch_setting_t result = { ST_BOOL, name, sizeof(bool), short_description, group, subgroup };
    result.change_handler = change_handler;
    result.read_handler = read_handler;
    result.value.boolean = target;
@@ -367,9 +367,9 @@ rarch_setting_t setting_data_bool_setting(const char* name, const char* descript
    return result;
 }
 
-rarch_setting_t setting_data_int_setting(const char* name, const char* description, int* target, int default_value, const char *group, const char *subgroup, change_handler_t change_handler, change_handler_t read_handler)
+rarch_setting_t setting_data_int_setting(const char* name, const char* short_description, int* target, int default_value, const char *group, const char *subgroup, change_handler_t change_handler, change_handler_t read_handler)
 {
-    rarch_setting_t result = { ST_INT, name, sizeof(int), description, group, subgroup };
+    rarch_setting_t result = { ST_INT, name, sizeof(int), short_description, group, subgroup };
     result.change_handler = change_handler;
    result.read_handler = read_handler;
     result.value.integer = target;
@@ -377,9 +377,9 @@ rarch_setting_t setting_data_int_setting(const char* name, const char* descripti
     return result;
 }
 
-rarch_setting_t setting_data_uint_setting(const char* name, const char* description, unsigned int* target, unsigned int default_value, const char *group, const char *subgroup, change_handler_t change_handler, change_handler_t read_handler)
+rarch_setting_t setting_data_uint_setting(const char* name, const char* short_description, unsigned int* target, unsigned int default_value, const char *group, const char *subgroup, change_handler_t change_handler, change_handler_t read_handler)
 {
-   rarch_setting_t result = { ST_UINT, name, sizeof(unsigned int), description, group, subgroup };
+   rarch_setting_t result = { ST_UINT, name, sizeof(unsigned int), short_description, group, subgroup };
    result.change_handler = change_handler;
    result.read_handler = read_handler;
    result.value.unsigned_integer = target;
@@ -388,11 +388,11 @@ rarch_setting_t setting_data_uint_setting(const char* name, const char* descript
 }
 
 rarch_setting_t setting_data_string_setting(enum setting_type type,
-      const char* name, const char* description, char* target,
+      const char* name, const char* short_description, char* target,
       unsigned size, const char* default_value,
       const char *group, const char *subgroup, change_handler_t change_handler, change_handler_t read_handler)
 {
-   rarch_setting_t result = { type, name, size, description, group, subgroup };
+   rarch_setting_t result = { type, name, size, short_description, group, subgroup };
     
    result.change_handler = change_handler;
    result.read_handler = read_handler;
@@ -402,16 +402,91 @@ rarch_setting_t setting_data_string_setting(enum setting_type type,
 }
 
 rarch_setting_t setting_data_bind_setting(const char* name,
-      const char* description, struct retro_keybind* target,
+      const char* short_description, struct retro_keybind* target,
       uint32_t index, const struct retro_keybind* default_value,
       const char *group, const char *subgroup)
 {
-   rarch_setting_t result = { ST_BIND, name, 0, description, group, subgroup };
+   rarch_setting_t result = { ST_BIND, name, 0, short_description, group, subgroup };
 
    result.value.keybind = target;
    result.default_value.keybind = default_value;
    result.index = index;
    return result;
+}
+
+void setting_data_get_description(const void *data, char *msg, size_t sizeof_msg)
+{
+    const rarch_setting_t *setting = (const rarch_setting_t*)data;
+    
+    if (!setting)
+       return;
+
+    if (!strcmp(setting->name, "video_disable_composition"))
+       snprintf(msg, sizeof_msg,
+             "-- Forcibly disable composition.\n"
+             "Only valid on Windows Vista/7 for now.");
+    else if (!strcmp(setting->name, "libretro_log_level"))
+         snprintf(msg, sizeof_msg,
+               "-- Sets log level for libretro cores \n"
+               "(GET_LOG_INTERFACE). \n"
+               " \n"
+               " If a log level issued by a libretro \n"
+               " core is below libretro_log level, it \n"
+               " is ignored.\n"
+               " \n"
+               " DEBUG logs are always ignored unless \n"
+               " verbose mode is activated (--verbose).\n"
+               " \n"
+               " DEBUG = 0\n"
+               " INFO  = 1\n"
+               " WARN  = 2\n"
+               " ERROR = 3"
+               );
+    else if (!strcmp(setting->name, "log_verbosity"))
+         snprintf(msg, sizeof_msg,
+               "-- Enable or disable verbosity level \n"
+               "of frontend.");
+    else if (!strcmp(setting->name, "perfcnt_enable"))
+         snprintf(msg, sizeof_msg,
+               "-- Enable or disable frontend \n"
+               "performance counters.");
+    else if (!strcmp(setting->name, "system_directory"))
+         snprintf(msg, sizeof_msg,
+               "-- System Directory. \n"
+               " \n"
+               "Sets the 'system' directory.\n"
+               "Implementations can query for this\n"
+               "directory to load BIOSes, \n"
+               "system-specific configs, etc.");
+    else if (!strcmp(setting->name, "rgui_show_start_screen"))
+       snprintf(msg, sizeof_msg,
+             " -- Show startup screen in menu.\n"
+             "Is automatically set to false when seen\n"
+             "for the first time.\n"
+             " \n"
+             "This is only updated in config if\n"
+             "'Config Save On Exit' is set to true.\n");
+    else if (!strcmp(setting->name, "config_save_on_exit"))
+         snprintf(msg, sizeof_msg,
+               " -- Flushes config to disk on exit.\n"
+               "Useful for menu as settings can be\n"
+               "modified. Overwrites the config.\n"
+               " \n"
+               "#include's and comments are not \n"
+               "preserved. \n"
+               " \n"
+               "By design, the config file is \n"
+               "considered immutable as it is \n"
+               "likely maintained by the user, \n"
+               "and should not be overwritten \n"
+               "behind the user's back."
+#if defined(RARCH_CONSOLE) || defined(RARCH_MOBILE)
+               "\nThis is not not the case on \n"
+               "consoles however, where \n"
+               "looking at the config file \n"
+               "manually isn't really an option."
+#endif
+               );
 }
 
 static void general_read_handler(const void *data)

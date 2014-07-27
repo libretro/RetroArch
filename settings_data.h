@@ -116,6 +116,8 @@ rarch_setting_t setting_data_string_setting(enum setting_type type, const char* 
 rarch_setting_t setting_data_bind_setting(const char* name, const char* description, struct retro_keybind* target, uint32_t index,
  const struct retro_keybind* default_value, const char *group, const char *subgroup);
 
+void setting_data_get_description(const void *data, char *msg, size_t msg_sizeof);
+
 
 // These functions operate only on RetroArch's main settings list
 rarch_setting_t* setting_data_get_list(void);
