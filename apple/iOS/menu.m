@@ -526,14 +526,8 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 
 - (void)willReloadData
 {
-   NSMutableArray* settings;
    RAMainMenu* __weak weakSelf = self;
    self.sections = [NSMutableArray array];
-
-   settings = [NSMutableArray arrayWithObjects:BOXSTRING("Settings"),
-                               [RAMenuItemBasic itemWithDescription:BOXSTRING("Configurations")
-                                  action:^{ [weakSelf.navigationController pushViewController:[RAFrontendSettingsMenu new] animated:YES]; }],
-                               nil];
    
     [self.sections addObject:[NSArray arrayWithObjects:BOXSTRING("Content"),
                               [RAMenuItemBasic itemWithDescription:BOXSTRING("Core")
@@ -553,6 +547,17 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
                               [RAMenuItemBasic itemWithDescription:BOXSTRING("Core Options")
                                                                                 action:^{ [weakSelf.navigationController pushViewController:[RACoreOptionsMenu new] animated:YES]; }],
                               nil]];
+    [self.sections addObject:[NSMutableArray arrayWithObjects:BOXSTRING("Settings"),
+                              [RAMenuItemBasic itemWithDescription:BOXSTRING("Settings")
+                                                            action:^{
+                                                                char config_name[PATH_MAX];
+                                                                fill_pathname_base(config_name, g_settings.libretro, sizeof(config_name));
+                                                                
+                                                                [weakSelf.navigationController pushViewController:[[RACoreSettingsMenu alloc] initWithCore:BOXSTRING(config_name)] animated:YES];
+                                                            }],
+                              [RAMenuItemBasic itemWithDescription:BOXSTRING("Configurations")
+                                                            action:^{ [weakSelf.navigationController pushViewController:[RAFrontendSettingsMenu new] animated:YES]; }],
+                              nil]];
    if (g_extern.main_is_init)
    {
        [self.sections addObject:[NSArray arrayWithObjects:BOXSTRING("States"),
@@ -564,17 +569,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
                                  [RAMenuItemBasic itemWithDescription:BOXSTRING("Restart Content") action:^{ [weakSelf performBasicAction:RARCH_CMD_RESET]; }],
                                  [RAMenuItemBasic itemWithDescription:BOXSTRING("Close Content") action:^{ [weakSelf performBasicAction:RARCH_CMD_QUIT]; }],
                                  nil]];
-       
-       [settings addObject:[RAMenuItemBasic itemWithDescription:BOXSTRING("Settings")
-                                                         action:^{
-                                                             char config_name[PATH_MAX];
-                                                             fill_pathname_base(config_name, g_settings.libretro, sizeof(config_name));
-                                                             
-                                                             [weakSelf.navigationController pushViewController:[[RACoreSettingsMenu alloc] initWithCore:BOXSTRING(config_name)] animated:YES];
-                                                         }]];
    }
-   
-   [self.sections addObject:settings];
    
    if (g_extern.main_is_init)
       self.navigationItem.leftBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:BOXSTRING("Resume") style:UIBarButtonItemStyleBordered target:[RetroArch_iOS get] action:@selector(showGameView)];
