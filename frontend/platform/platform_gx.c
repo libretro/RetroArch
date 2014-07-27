@@ -301,7 +301,7 @@ static void frontend_gx_exitspawn(char *core_path, size_t sizeof_core_path)
    frontend_gx_exec(core_path, should_load_game);
 }
 
-static void frontend_gx_process_args(int *argc, char *argv[], void *args)
+static void frontend_gx_process_args(int *argc, char *argv[])
 {
 #ifndef IS_SALAMANDER
    // a big hack: sometimes salamander doesn't save the new core it loads on first boot,

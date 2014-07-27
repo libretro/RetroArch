@@ -28,16 +28,18 @@
 extern "C" {
 #endif
 
+typedef void (*environment_get_t)(int *argc, char *argv[], void *args,
+   void *params_data);
+typedef void (*process_args_t)(int *argc, char *argv[]);
+
 typedef struct frontend_ctx_driver
 {
-   void (*environment_get)(int *argc, char *argv[], void *args,
-         void *params_data);
-
+   environment_get_t environment_get;
    void (*init)(void *data);
    void (*deinit)(void *data);
    void (*exitspawn)(char *core_path, size_t sizeof_core_path);
 
-   void (*process_args)(int *argc, char *argv[], void *args);
+   process_args_t process_args;
    int (*process_events)(void *data);
    void (*exec)(const char *, bool);
    void (*shutdown)(bool);

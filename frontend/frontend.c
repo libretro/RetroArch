@@ -283,17 +283,89 @@ void free_args(void *data, char **argv_copy, unsigned argv_size)
       free(argv_copy[i]);
 }
 
-returntype main_entry(signature())
+static void check_defaults_dirs(void)
 {
+   if (*g_defaults.autoconfig_dir)
+      path_mkdir(g_defaults.autoconfig_dir);
+   if (*g_defaults.audio_filter_dir)
+      path_mkdir(g_defaults.audio_filter_dir);
+   if (*g_defaults.assets_dir)
+      path_mkdir(g_defaults.assets_dir);
+   if (*g_defaults.core_dir)
+      path_mkdir(g_defaults.core_dir);
+   if (*g_defaults.core_info_dir)
+      path_mkdir(g_defaults.core_info_dir);
+   if (*g_defaults.overlay_dir)
+      path_mkdir(g_defaults.overlay_dir);
+   if (*g_defaults.port_dir)
+      path_mkdir(g_defaults.port_dir);
+   if (*g_defaults.shader_dir)
+      path_mkdir(g_defaults.shader_dir);
+   if (*g_defaults.savestate_dir)
+      path_mkdir(g_defaults.savestate_dir);
+   if (*g_defaults.sram_dir)
+      path_mkdir(g_defaults.sram_dir);
+   if (*g_defaults.system_dir)
+      path_mkdir(g_defaults.system_dir);
+}
+
+bool main_load_content(int argc, char **argv, environment_get_t environ_get,
+      process_args_t process_args)
+{
+   bool retval = true;
    int *rarch_argc_ptr;
    char **rarch_argv_ptr;
    struct rarch_main_wrap *wrap_args;
-   declare_argc();
-   declare_argv();
-   args_type() args = (args_type())args_initial_ptr();
    int ret, rarch_argc = 0;
    char *rarch_argv[MAX_ARGS] = {NULL};
    char *argv_copy[MAX_ARGS] = {NULL};
+
+   rarch_argv_ptr = (char**)argv;
+   rarch_argc_ptr = (int*)&argc;
+
+   (void)rarch_argc_ptr;
+   (void)rarch_argv_ptr;
+
+   wrap_args = (struct rarch_main_wrap*)calloc(1, sizeof(*wrap_args));
+   rarch_assert(wrap_args);
+
+   if (environ_get)
+      environ_get(rarch_argc_ptr, rarch_argv_ptr, NULL, wrap_args);
+
+   check_defaults_dirs();
+
+   if (wrap_args->touched)
+   {
+      rarch_main_init_wrap(wrap_args, &rarch_argc, rarch_argv);
+      memcpy(argv_copy, rarch_argv, sizeof(rarch_argv));
+      rarch_argv_ptr = (char**)rarch_argv;
+      rarch_argc_ptr = (int*)&rarch_argc;
+   }
+
+   if (g_extern.main_is_init)
+      rarch_main_deinit();
+
+   if ((ret = rarch_main_init(*rarch_argc_ptr, rarch_argv_ptr)))
+   {
+      retval = false;
+      goto error;
+   }
+
+   if (process_args)
+      process_args(rarch_argc_ptr, rarch_argv_ptr);
+
+error:
+   free_args(wrap_args, argv_copy, ARRAY_SIZE(argv_copy));
+   free(wrap_args);
+   return retval;
+}
+
+returntype main_entry(signature())
+{
+   declare_argc();
+   declare_argv();
+   args_type() args = (args_type())args_initial_ptr();
+   int ret = 0;
 
    driver.frontend_ctx = (frontend_ctx_driver_t*)frontend_ctx_init_first();
 
@@ -306,62 +378,11 @@ returntype main_entry(signature())
    rarch_main_clear_state();
    rarch_init_msg_queue();
 
-   wrap_args = (struct rarch_main_wrap*)calloc(1, sizeof(*wrap_args));
-   rarch_assert(wrap_args);
-
-   rarch_argv_ptr = (char**)argv;
-   rarch_argc_ptr = (int*)&argc;
-
-   if (driver.frontend_ctx && driver.frontend_ctx->environment_get)
-   {
-      driver.frontend_ctx->environment_get(rarch_argc_ptr, rarch_argv_ptr, args, wrap_args);
-      if (*g_defaults.autoconfig_dir)
-         path_mkdir(g_defaults.autoconfig_dir);
-      if (*g_defaults.audio_filter_dir)
-         path_mkdir(g_defaults.audio_filter_dir);
-      if (*g_defaults.assets_dir)
-         path_mkdir(g_defaults.assets_dir);
-      if (*g_defaults.core_dir)
-         path_mkdir(g_defaults.core_dir);
-      if (*g_defaults.core_info_dir)
-         path_mkdir(g_defaults.core_info_dir);
-      if (*g_defaults.overlay_dir)
-         path_mkdir(g_defaults.overlay_dir);
-      if (*g_defaults.port_dir)
-         path_mkdir(g_defaults.port_dir);
-      if (*g_defaults.shader_dir)
-         path_mkdir(g_defaults.shader_dir);
-      if (*g_defaults.savestate_dir)
-         path_mkdir(g_defaults.savestate_dir);
-      if (*g_defaults.sram_dir)
-         path_mkdir(g_defaults.sram_dir);
-      if (*g_defaults.system_dir)
-         path_mkdir(g_defaults.system_dir);
-   }
-
-   if (wrap_args->touched)
-   {
-      g_extern.verbosity = true;
-      rarch_main_init_wrap(wrap_args, &rarch_argc, rarch_argv);
-      memcpy(argv_copy, rarch_argv, sizeof(rarch_argv));
-      rarch_argv_ptr = (char**)rarch_argv;
-      rarch_argc_ptr = (int*)&rarch_argc;
-   }
-
-   if (g_extern.main_is_init)
-      rarch_main_deinit();
-
-   if ((ret = rarch_main_init(*rarch_argc_ptr, rarch_argv_ptr)))
-   {
-      free_args(wrap_args, argv_copy, ARRAY_SIZE(argv_copy));
-      free(wrap_args);
+   if (!(main_load_content(argc, argv, driver.frontend_ctx->environment_get,
+         driver.frontend_ctx->process_args)))
       return_var(ret);
-   }
 
 #if defined(HAVE_MENU)
-   if (driver.frontend_ctx && driver.frontend_ctx->process_args)
-      driver.frontend_ctx->process_args(rarch_argc_ptr, rarch_argv_ptr, args);
-
    g_extern.lifecycle_state |= (1ULL << MODE_GAME);
 
 #if defined(RARCH_CONSOLE) || defined(RARCH_MOBILE)
@@ -374,10 +395,6 @@ returntype main_entry(signature())
          menu_content_history_push_current();
    }
 #endif
-
-   if (wrap_args)
-      free_args(wrap_args, argv_copy, ARRAY_SIZE(argv_copy));
-   free(wrap_args);
 
 #if defined(HAVE_MAIN_LOOP)
 #if defined(HAVE_MENU)

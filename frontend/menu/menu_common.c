@@ -195,37 +195,9 @@ static void menu_environment_get(int *argc, char *argv[], void *args, void *para
 
 bool load_menu_game(void)
 {
-   int *rarch_argc_ptr;
-   char **rarch_argv_ptr;
-   struct rarch_main_wrap *wrap_args;
-   int ret, rarch_argc = 0;
-   char *rarch_argv[MAX_ARGS] = {NULL};
-   char *argv_copy[MAX_ARGS] = {NULL};
-
-   (void)rarch_argc_ptr;
-   (void)rarch_argv_ptr;
-
-   wrap_args = (struct rarch_main_wrap*)calloc(1, sizeof(*wrap_args));
-   rarch_assert(wrap_args);
-
-   menu_environment_get(rarch_argc_ptr, rarch_argv_ptr, NULL, wrap_args);
-
-   if (wrap_args->touched)
+   if (!(main_load_content(0, NULL, menu_environment_get,
+         driver.frontend_ctx->process_args)))
    {
-      rarch_main_init_wrap(wrap_args, &rarch_argc, rarch_argv);
-      memcpy(argv_copy, rarch_argv, sizeof(rarch_argv));
-      rarch_argv_ptr = (char**)rarch_argv;
-      rarch_argc_ptr = (int*)&rarch_argc;
-   }
-
-   if (g_extern.main_is_init)
-	   rarch_main_deinit();
-
-   if ((ret = rarch_main_init(rarch_argc, rarch_argv)))
-   {
-      free_args(wrap_args, argv_copy, ARRAY_SIZE(argv_copy));
-      free(wrap_args);
-
       char name[PATH_MAX], msg[PATH_MAX];
 
       fill_pathname_base(name, g_extern.fullpath, sizeof(name));
@@ -237,10 +209,6 @@ bool load_menu_game(void)
 
       return false;
    }
-
-   if (wrap_args)
-      free_args(wrap_args, argv_copy, ARRAY_SIZE(argv_copy));
-   free(wrap_args);
 
    // Update menu state which depends on config.
    if (driver.menu)
