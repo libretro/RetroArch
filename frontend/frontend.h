@@ -38,7 +38,7 @@ extern "C" {
 int main_entry_iterate(signature(), args_type() args);
 void main_exit(args_type() args);
 returntype main_entry(signature());
-void free_args(struct rarch_main_wrap *wrap_args, char **argv_copy, unsigned argv_size);
+void free_args(void *data, char **argv_copy, unsigned argv_size);
 
 #ifdef __cplusplus
 }

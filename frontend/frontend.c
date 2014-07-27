@@ -272,10 +272,11 @@ void main_exit(args_type() args)
       driver.frontend_ctx->shutdown(false);
 }
 
-void free_args(struct rarch_main_wrap *wrap_args, char **argv_copy, unsigned argv_size)
+void free_args(void *data, char **argv_copy, unsigned argv_size)
 {
    unsigned i;
-   if (!wrap_args->touched)
+   struct rarch_main_wrap *wrap_args = (struct rarch_main_wrap*)data;
+   if (!wrap_args || !wrap_args->touched)
       return;
 
    for (i = 0; i < argv_size; i++)
