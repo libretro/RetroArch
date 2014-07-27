@@ -121,8 +121,6 @@ static int main_entry_iterate_content(args_type() args)
 
 static int main_entry_iterate_load_content(args_type() args)
 {
-   load_menu_game_prepare();
-
    if (load_menu_game())
    {
       g_extern.lifecycle_state |= (1ULL << MODE_GAME);

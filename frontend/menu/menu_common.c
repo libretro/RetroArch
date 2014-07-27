@@ -99,7 +99,7 @@ void menu_content_history_push_current(void)
                g_extern.system.info.library_name);
 }
 
-void load_menu_game_prepare(void)
+static void load_menu_game_prepare(void)
 {
    if (!driver.menu)
       return;
@@ -195,6 +195,8 @@ static void menu_environment_get(int *argc, char *argv[], void *args, void *para
 
 bool load_menu_game(void)
 {
+   load_menu_game_prepare();
+
    if (!(main_load_content(0, NULL, menu_environment_get,
          driver.frontend_ctx->process_args)))
    {
