@@ -351,6 +351,8 @@ bool main_load_content(int argc, char **argv, environment_get_t environ_get,
       goto error;
    }
 
+   g_extern.lifecycle_state |= (1ULL << MODE_GAME);
+
    if (process_args)
       process_args(rarch_argc_ptr, rarch_argv_ptr);
 
@@ -378,15 +380,13 @@ returntype main_entry(signature())
    rarch_main_clear_state();
    rarch_init_msg_queue();
 
-   if (!(main_load_content(argc, argv, driver.frontend_ctx->environment_get,
-         driver.frontend_ctx->process_args)))
+   if (!(ret = (main_load_content(argc, argv, driver.frontend_ctx->environment_get,
+         driver.frontend_ctx->process_args))))
       return_var(ret);
 
 #if defined(HAVE_MENU)
-   g_extern.lifecycle_state |= (1ULL << MODE_GAME);
-
 #if defined(RARCH_CONSOLE) || defined(RARCH_MOBILE)
-   if (!ret)
+   if (ret)
 #endif
    {
       // If we started content directly from command line,
