@@ -15,6 +15,7 @@
  */
 
 #include "menu_common.h"
+#include "../frontend.h"
 
 void menu_update_system_info(menu_handle_t *menu, bool *load_no_rom)
 {
@@ -186,6 +187,9 @@ bool load_menu_game(void)
    int ret, rarch_argc = 0;
    char *rarch_argv[MAX_ARGS] = {NULL};
    char *argv_copy[MAX_ARGS] = {NULL};
+
+   (void)rarch_argc_ptr;
+   (void)rarch_argv_ptr;
 
    wrap_args = (struct rarch_main_wrap*)calloc(1, sizeof(*wrap_args));
    rarch_assert(wrap_args);
