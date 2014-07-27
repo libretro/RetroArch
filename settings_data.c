@@ -628,6 +628,51 @@ void setting_data_get_description(const void *data, char *msg, size_t sizeof_msg
                " \n"
                "Uses a custom swap interval for VSync. Set this \n"
                "to effectively halve monitor refresh rate.");
+    else if (!strcmp(setting->name, "video_refresh_rate"))
+         snprintf(msg, sizeof_msg,
+               " -- Refresh Rate Auto.\n"
+               " \n"
+               "The accurate refresh rate of our monitor (Hz).\n"
+               "This is used to calculate audio input rate with \n"
+               "the formula: \n"
+               " \n"
+               "audio_input_rate = game input rate * display \n"
+               "refresh rate / game refresh rate\n"
+               " \n"
+               "If the implementation does not report any \n"
+               "values, NTSC defaults will be assumed for \n"
+               "compatibility.\n"
+               " \n"
+               "This value should stay close to 60Hz to avoid \n"
+               "large pitch changes. If your monitor does \n"
+               "not run at 60Hz, or something close to it, \n"
+               "disable VSync, and leave this at its default.");
+    else if (!strcmp(setting->name, "savefile_directory"))
+         snprintf(msg, sizeof_msg,
+               " -- Savefile Directory. \n"
+               " \n"
+               "Save all save files (*.srm) to this \n"
+               "directory. This includes related files like \n"
+               ".bsv, .rt, .psrm, etc...\n"
+               " \n"
+               "This will be overridden by explicit command line\n"
+               "options.");
+    else if (!strcmp(setting->name, "savestate_directory"))
+         snprintf(msg, sizeof_msg,
+               " -- Savestate Directory. \n"
+               " \n"
+               "Save all save states (*.state) to this \n"
+               "directory.\n"
+               " \n"
+               "This will be overridden by explicit command line\n"
+               "options.");
+    else if (!strcmp(setting->name, "assets_directory"))
+         snprintf(msg, sizeof_msg,
+               " -- Assets Directory. \n"
+               " \n"
+               " This location is queried by default when \n"
+               "menu interfaces try to look for loadable \n"
+               "assets, etc.");
 }
 
 static void general_read_handler(const void *data)

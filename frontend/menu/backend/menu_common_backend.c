@@ -970,12 +970,8 @@ static int menu_info_screen_iterate(unsigned action)
                );
          break;
       case MENU_ASSETS_DIR_PATH:
-         snprintf(msg, sizeof(msg),
-               " -- Assets Directory. \n"
-               " \n"
-               " This location is queried by default when \n"
-               "menu interfaces try to look for loadable \n"
-               "assets, etc.");
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "assets_directory")))
+            setting_data_get_description(current_setting, msg, sizeof(msg));
          break;
       case MENU_SETTINGS_SAVESTATE_AUTO_SAVE:
          snprintf(msg, sizeof(msg),
@@ -991,24 +987,8 @@ static int menu_info_screen_iterate(unsigned action)
             setting_data_get_description(current_setting, msg, sizeof(msg));
          break;
       case MENU_SETTINGS_VIDEO_REFRESH_RATE_AUTO:
-         snprintf(msg, sizeof(msg),
-               " -- Refresh Rate Auto.\n"
-               " \n"
-               "The accurate refresh rate of our monitor (Hz).\n"
-               "This is used to calculate audio input rate with \n"
-               "the formula: \n"
-               " \n"
-               "audio_input_rate = game input rate * display \n"
-               "refresh rate / game refresh rate\n"
-               " \n"
-               "If the implementation does not report any \n"
-               "values, NTSC defaults will be assumed for \n"
-               "compatibility.\n"
-               " \n"
-               "This value should stay close to 60Hz to avoid \n"
-               "large pitch changes. If your monitor does \n"
-               "not run at 60Hz, or something close to it, \n"
-               "disable VSync, and leave this at its default.");
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "video_refresh_rate")))
+            setting_data_get_description(current_setting, msg, sizeof(msg));
          break;
       case MENU_LIBRETRO_DIR_PATH:
          snprintf(msg, sizeof(msg),
@@ -1018,25 +998,12 @@ static int menu_info_screen_iterate(unsigned action)
                "libretro core implementations.");
          break;
       case MENU_SAVEFILE_DIR_PATH:
-         snprintf(msg, sizeof(msg),
-               " -- Savefile Directory. \n"
-               " \n"
-               "Save all save files (*.srm) to this \n"
-               "directory. This includes related files like \n"
-               ".bsv, .rt, .psrm, etc...\n"
-               " \n"
-               "This will be overridden by explicit command line\n"
-               "options.");
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "savefile_directory")))
+            setting_data_get_description(current_setting, msg, sizeof(msg));
          break;
       case MENU_SAVESTATE_DIR_PATH:
-         snprintf(msg, sizeof(msg),
-               " -- Savestate Directory. \n"
-               " \n"
-               "Save all save states (*.state) to this \n"
-               "directory.\n"
-               " \n"
-               "This will be overridden by explicit command line\n"
-               "options.");
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "savestate_directory")))
+            setting_data_get_description(current_setting, msg, sizeof(msg));
          break;
       case MENU_SETTINGS_BIND_BEGIN + RARCH_ANALOG_LEFT_X_PLUS:
       case MENU_SETTINGS_BIND_BEGIN + RARCH_ANALOG_LEFT_X_MINUS:
