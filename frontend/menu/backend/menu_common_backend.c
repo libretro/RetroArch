@@ -720,43 +720,28 @@ static int menu_info_screen_iterate(unsigned action)
             setting_data_get_description(current_setting, msg, sizeof(msg));
          break;
       case MENU_SETTINGS_PRIVACY_CAMERA_ALLOW:
-         snprintf(msg, sizeof(msg),
-               " -- Allow or disallow camera access by \n"
-               "cores.");
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "camera_allow")))
+            setting_data_get_description(current_setting, msg, sizeof(msg));
          break;
       case MENU_SETTINGS_PRIVACY_LOCATION_ALLOW:
-         snprintf(msg, sizeof(msg),
-               " -- Allow or disallow location services \n"
-               "access by cores.");
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "location_allow")))
+            setting_data_get_description(current_setting, msg, sizeof(msg));
          break;
       case MENU_SETTINGS_REWIND_ENABLE:
-         snprintf(msg, sizeof(msg),
-               " -- Enable rewinding.\n"
-               " \n"
-               "This will take a performance hit, \n"
-               "so it is disabled by default.");
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "rewind_enable")))
+            setting_data_get_description(current_setting, msg, sizeof(msg));
          break;
       case MENU_SETTINGS_REWIND_GRANULARITY:
-         snprintf(msg, sizeof(msg),
-               " -- Rewind granularity.\n"
-               " \n"
-               " When rewinding defined number of \n"
-               "frames, you can rewind several frames \n"
-               "at a time, increasing the rewinding \n"
-               "speed.");
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "rewind_granularity")))
+            setting_data_get_description(current_setting, msg, sizeof(msg));
          break;
       case MENU_SETTINGS_DEVICE_AUTODETECT_ENABLE:
-         snprintf(msg, sizeof(msg),
-               " -- Enable input auto-detection.\n"
-               " \n"
-               "Will attempt to auto-configure \n"
-               "joypads, Plug-and-Play style.");
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "input_autodetect_enable")))
+            setting_data_get_description(current_setting, msg, sizeof(msg));
          break;
       case MENU_SETTINGS_INPUT_AXIS_THRESHOLD:
-         snprintf(msg, sizeof(msg),
-               " -- Defines axis threshold.\n"
-               " \n"
-               " Possible values are [0.0, 1.0].");
+         if ((current_setting = setting_data_find_setting(setting_data, "input_axis_threshold")))
+            setting_data_get_description(current_setting, msg, sizeof(msg));
          break;
       case MENU_SETTINGS_CORE:
          snprintf(msg, sizeof(msg),
@@ -918,11 +903,8 @@ static int menu_info_screen_iterate(unsigned action)
                " -- Toggles fullscreen.");
          break;
       case MENU_SETTINGS_SLOWMOTION_RATIO:
-         snprintf(msg, sizeof(msg),
-               " -- Slowmotion ratio."
-               " \n"
-               "When slowmotion, content will slow\n"
-               "down by factor.");
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "slowmotion_ratio")))
+            setting_data_get_description(current_setting, msg, sizeof(msg));
          break;
       case MENU_SETTINGS_FASTFORWARD_RATIO:
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "fastforward_ratio")))
@@ -974,13 +956,8 @@ static int menu_info_screen_iterate(unsigned action)
             setting_data_get_description(current_setting, msg, sizeof(msg));
          break;
       case MENU_SETTINGS_SAVESTATE_AUTO_SAVE:
-         snprintf(msg, sizeof(msg),
-               " -- Automatically saves a savestate at the \n"
-               "end of RetroArch's lifetime.\n"
-               " \n"
-               "RetroArch will automatically load any savestate\n"
-               "with this path on startup if 'Savestate Auto\n"
-               "Load' is set.");
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "savestate_auto_save")))
+            setting_data_get_description(current_setting, msg, sizeof(msg));
          break;
       case MENU_SETTINGS_VIDEO_SWAP_INTERVAL:
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "video_swap_interval")))

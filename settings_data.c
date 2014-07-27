@@ -673,6 +673,53 @@ void setting_data_get_description(const void *data, char *msg, size_t sizeof_msg
                " This location is queried by default when \n"
                "menu interfaces try to look for loadable \n"
                "assets, etc.");
+    else if (!strcmp(setting->name, "slowmotion_ratio"))
+         snprintf(msg, sizeof_msg,
+               " -- Slowmotion ratio."
+               " \n"
+               "When slowmotion, content will slow\n"
+               "down by factor.");
+    else if (!strcmp(setting->name, "input_axis_threshold"))
+         snprintf(msg, sizeof_msg,
+               " -- Defines axis threshold.\n"
+               " \n"
+               " Possible values are [0.0, 1.0].");
+    else if (!strcmp(setting->name, "rewind_granularity"))
+         snprintf(msg, sizeof_msg,
+               " -- Rewind granularity.\n"
+               " \n"
+               " When rewinding defined number of \n"
+               "frames, you can rewind several frames \n"
+               "at a time, increasing the rewinding \n"
+               "speed.");
+    else if (!strcmp(setting->name, "rewind_enable"))
+         snprintf(msg, sizeof_msg,
+               " -- Enable rewinding.\n"
+               " \n"
+               "This will take a performance hit, \n"
+               "so it is disabled by default.");
+    else if (!strcmp(setting->name, "input_autodetect_enable"))
+         snprintf(msg, sizeof_msg,
+               " -- Enable input auto-detection.\n"
+               " \n"
+               "Will attempt to auto-configure \n"
+               "joypads, Plug-and-Play style.");
+    else if (!strcmp(setting->name, "camera_allow"))
+         snprintf(msg, sizeof_msg,
+               " -- Allow or disallow camera access by \n"
+               "cores.");
+    else if (!strcmp(setting->name, "location_allow"))
+       snprintf(msg, sizeof_msg,
+             " -- Allow or disallow location services \n"
+             "access by cores.");
+    else if (!strcmp(setting->name, "savestate_auto_save"))
+         snprintf(msg, sizeof_msg,
+               " -- Automatically saves a savestate at the \n"
+               "end of RetroArch's lifetime.\n"
+               " \n"
+               "RetroArch will automatically load any savestate\n"
+               "with this path on startup if 'Savestate Auto\n"
+               "Load' is set.");
 }
 
 static void general_read_handler(const void *data)
