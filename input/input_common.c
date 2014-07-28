@@ -1186,31 +1186,42 @@ static bool input_try_autoconfigure_joypad_from_conf(config_file_t *conf, unsign
    if (!conf)
       return false;
 
-   char ident[1024];
+   char ident[1024], ident_idx[1024];
    char input_driver[1024];
+   bool cond_found_idx, cond_found_general;
 
    *ident = *input_driver = '\0';
 
    config_get_array(conf, "input_device", ident, sizeof(ident));
    config_get_array(conf, "input_driver", input_driver, sizeof(input_driver));
 
-   if (!strcmp(ident, name) && !strcmp(driver, input_driver))
-   {
-      g_settings.input.autoconfigured[index] = true;
-      input_autoconfigure_joypad_conf(conf, g_settings.input.autoconf_binds[index]);
+   snprintf(ident_idx, sizeof(ident_idx), "%s_p%d", ident, index);
 
-      char msg[512];
-      snprintf(msg, sizeof(msg), "Joypad port #%u (%s) configured.",
-            index, name);
+   RARCH_LOG("ident_idx: %s\n", ident_idx);
 
-      if (!block_osd_spam)
-         msg_queue_push(g_extern.msg_queue, msg, 0, 60);
-      RARCH_LOG("%s\n", msg);
+   cond_found_idx     = !strcmp(ident_idx, name);
+   cond_found_general = !strcmp(ident, name) && !strcmp(driver, input_driver);
 
-      return true;
-   }
+   if (cond_found_idx)
+      goto found;
+   else if (cond_found_general)
+      goto found;
 
    return false;
+
+found:
+   g_settings.input.autoconfigured[index] = true;
+   input_autoconfigure_joypad_conf(conf, g_settings.input.autoconf_binds[index]);
+
+   char msg[512];
+   snprintf(msg, sizeof(msg), "Joypad port #%u (%s) configured.",
+         index, name);
+
+   if (!block_osd_spam)
+      msg_queue_push(g_extern.msg_queue, msg, 0, 60);
+   RARCH_LOG("%s\n", msg);
+
+   return true;
 }
 
 void input_config_autoconfigure_joypad(unsigned index, const char *name, const char *driver)
