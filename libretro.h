@@ -398,7 +398,7 @@ enum retro_mod
 #define RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY 9
                                            // const char ** --
                                            // Returns the "system" directory of the frontend.
-                                           // This directory can be used to store system specific ROMs such as BIOSes, configuration data, etc.
+                                           // This directory can be used to store system specific content such as BIOSes, configuration data, etc.
                                            // The returned value can be NULL.
                                            // If so, no such directory is defined,
                                            // and it's up to the implementation to find a suitable directory.
@@ -790,7 +790,7 @@ struct retro_subsystem_rom_info
    bool block_extract; // Same definition as retro_get_system_info().
    bool required; // This is set if the ROM is required to load a game. If this is set to false, a zeroed-out retro_game_info can be passed.
 
-   // ROMs can have multiple associated persistent memory types (retro_get_memory()).
+   // Content can have multiple associated persistent memory types (retro_get_memory()).
    const struct retro_subsystem_memory_info *memory;
    unsigned num_memory;
 };
@@ -809,7 +809,7 @@ struct retro_subsystem_info
    // If a frontend creates new file paths based on the ROM used (e.g. savestates), it should use the path for the first ROM to do so.
    const struct retro_subsystem_rom_info *roms;
 
-   unsigned num_roms; // Number of ROMs associated with a subsystem.
+   unsigned num_roms; // Number of content files associated with a subsystem.
    unsigned id; // The type passed to retro_load_game_special().
 };
 

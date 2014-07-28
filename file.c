@@ -404,18 +404,18 @@ bool init_rom_file(void)
 
       if (special->num_roms && !g_extern.subsystem_fullpaths)
       {
-         RARCH_ERR("libretro core requires special ROMs, but none were provided.\n");
+         RARCH_ERR("libretro core requires special content, but none were provided.\n");
          return false;
       }
       else if (special->num_roms && special->num_roms != g_extern.subsystem_fullpaths->size)
       {
-         RARCH_ERR("libretro core requires %u ROMs for subsystem \"%s\", but %u ROMs were provided.\n", special->num_roms, special->desc,
+         RARCH_ERR("libretro core requires %u content files for subsystem \"%s\", but %u content files were provided.\n", special->num_roms, special->desc,
                (unsigned)g_extern.subsystem_fullpaths->size);
          return false;
       }
       else if (!special->num_roms && g_extern.subsystem_fullpaths && g_extern.subsystem_fullpaths->size)
       {
-         RARCH_ERR("libretro core takes no ROMs for subsystem \"%s\", but %u ROMs were provided.\n", special->desc,
+         RARCH_ERR("libretro core takes no content for subsystem \"%s\", but %u content files were provided.\n", special->desc,
                (unsigned)g_extern.subsystem_fullpaths->size);
          return false;
       }

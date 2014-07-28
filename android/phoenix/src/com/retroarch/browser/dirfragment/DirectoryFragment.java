@@ -85,7 +85,7 @@ public class DirectoryFragment extends DialogFragment
 	}
 
 	/**
-	 * Listener interface for executing ROMs or performing
+	 * Listener interface for executing content or performing
 	 * other things upon the DirectoryFragment instance closing.
 	 */
 	public interface OnDirectoryFragmentClosedListener

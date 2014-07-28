@@ -43,7 +43,7 @@ By default, only keyboard input is accepted.
 .TP
 \fB[rom file]\fR
 If no rom file path is defined on the command line, \fBretroarch\fR will try to load a core with no rom. This will only work with some libretro cores.
-\fBretroarch\fR use uncompressed ROMs, but can uncompress roms in the .zip/deflate format if support for it is compiled in.
+\fBretroarch\fR use uncompressed content, but can uncompress content in the .zip/deflate format if support for it is compiled in.
 ROM types supported depend on the libretro implementation used.
 
 .TP
@@ -114,10 +114,10 @@ Every config file will be appended in order where the key-value pairs of the nex
 
 .TP
 \fB--subsystem SUBSYSTEM\fR
-Use a subsystem of the loaded libretro core. Multiple ROMs are loaded as multiple arguments.
+Use a subsystem of the loaded libretro core. Multiple content files are loaded as multiple arguments.
 If a ROM is skipped, use a blank ("") command line argument.
-ROMs must be loaded in an order which depends on the particular subsystem used.
-See verbose log output to learn how a particular subsystem wants ROMs to be loaded.
+Content must be loaded in an order which depends on the particular subsystem used.
+See verbose log output to learn how a particular subsystem wants content to be loaded.
 
 .TP
 \fB--nodevice PORT, -N PORT\fR

@@ -428,10 +428,10 @@ struct global
    char basename[PATH_MAX];
    char fullpath[PATH_MAX];
 
-   // A list of save types and associated paths for all ROMs.
+   // A list of save types and associated paths for all content.
    struct string_list *savefiles;
 
-   // For --subsystem ROMs.
+   // For --subsystem content.
    char subsystem[256];
    struct string_list *subsystem_fullpaths;
 

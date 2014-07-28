@@ -887,7 +887,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
             RARCH_LOG("Special game type: %s\n", info[i].desc);
             RARCH_LOG("  Ident: %s\n", info[i].ident);
             RARCH_LOG("  ID: %u\n", info[i].id);
-            RARCH_LOG("  ROMs:\n");
+            RARCH_LOG("  Content:\n");
             for (j = 0; j < info[i].num_roms; j++)
             {
                RARCH_LOG("    %s (%s)\n",

@@ -770,10 +770,10 @@ static void print_help(void)
 #ifdef HAVE_DYNAMIC
    puts("\t-L/--libretro: Path to libretro implementation. Overrides any config setting.");
 #endif
-   puts("\t--subsystem: Use a subsystem of the libretro core. Multiple ROMs are loaded as multiple arguments.");
+   puts("\t--subsystem: Use a subsystem of the libretro core. Multiple content files are loaded as multiple arguments.");
    puts("\t\tIf a ROM is skipped, use a blank (\"\") command line argument");
-   puts("\t\tROMs must be loaded in an order which depends on the particular subsystem used.");
-   puts("\t\tSee verbose log output to learn how a particular subsystem wants ROMs to be loaded.");
+   puts("\t\tContent must be loaded in an order which depends on the particular subsystem used.");
+   puts("\t\tSee verbose log output to learn how a particular subsystem wants content to be loaded.");
 
    printf("\t-N/--nodevice: Disconnects controller device connected to port (1 to %d).\n", MAX_PLAYERS);
    printf("\t-A/--dualanalog: Connect a DualAnalog controller to port (1 to %d).\n", MAX_PLAYERS);

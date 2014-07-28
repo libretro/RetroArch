@@ -192,7 +192,7 @@ public final class DetectCoreDirectoryFragment extends DirectoryFragment
 	       				
 	       				Enumeration<? extends ZipEntry> entries = zipFile.entries();
 
-        				// Try to handle the case of small text files bundles with ROMs.
+        				// Try to handle the case of small text files bundles with content.
         				long largestEntry = Long.MIN_VALUE;
 
         				while (entries.hasMoreElements())
