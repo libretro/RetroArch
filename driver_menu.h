@@ -156,7 +156,7 @@ typedef struct
    bool alloc_font;
 
    struct retro_system_info info;
-   bool load_no_rom;
+   bool load_no_content;
 
    struct gfx_shader *shader;
    struct gfx_shader *parameter_shader; // Points to either shader or graphics driver current shader.

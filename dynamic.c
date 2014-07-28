@@ -100,13 +100,13 @@ size_t (*pretro_get_memory_size)(unsigned);
 #define DYNAMIC_EXT "so"
 #endif
 
-static bool *load_no_rom_hook;
+static bool *load_no_content_hook;
 static bool environ_cb_get_system_info(unsigned cmd, void *data)
 {
    switch (cmd)
    {
       case RETRO_ENVIRONMENT_SET_SUPPORT_NO_GAME:
-         *load_no_rom_hook = *(const bool*)data;
+         *load_no_content_hook = *(const bool*)data;
          break;
 
       default:
@@ -116,15 +116,15 @@ static bool environ_cb_get_system_info(unsigned cmd, void *data)
    return true;
 }
 
-void libretro_get_environment_info(void (*func)(retro_environment_t), bool *load_no_rom)
+void libretro_get_environment_info(void (*func)(retro_environment_t), bool *load_no_content)
 {
-   load_no_rom_hook = load_no_rom;
+   load_no_content_hook = load_no_content;
 
-   // load_no_rom gets set in this callback.
+   // load_no_content gets set in this callback.
    func(environ_cb_get_system_info);
 }
 
-static dylib_t libretro_get_system_info_lib(const char *path, struct retro_system_info *info, bool *load_no_rom)
+static dylib_t libretro_get_system_info_lib(const char *path, struct retro_system_info *info, bool *load_no_content)
 {
    dylib_t lib = dylib_load(path);
    if (!lib)
@@ -141,26 +141,26 @@ static dylib_t libretro_get_system_info_lib(const char *path, struct retro_syste
 
    proc(info);
 
-   if (load_no_rom)
+   if (load_no_content)
    {
-      *load_no_rom = false;
+      *load_no_content = false;
       void (*set_environ)(retro_environment_t) =
          (void (*)(retro_environment_t))dylib_proc(lib, "retro_set_environment");
 
       if (!set_environ)
          return lib;
 
-      libretro_get_environment_info(set_environ, load_no_rom);
+      libretro_get_environment_info(set_environ, load_no_content);
    }
 
    return lib;
 }
 
 bool libretro_get_system_info(const char *path, struct retro_system_info *info,
-   bool *load_no_rom)
+   bool *load_no_content)
 {
    struct retro_system_info dummy_info = {0};
-   dylib_t lib = libretro_get_system_info_lib(path, &dummy_info, load_no_rom);
+   dylib_t lib = libretro_get_system_info_lib(path, &dummy_info, load_no_content);
    if (!lib)
       return false;
 

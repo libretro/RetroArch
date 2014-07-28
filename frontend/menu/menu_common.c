@@ -17,13 +17,13 @@
 #include "menu_common.h"
 #include "../frontend.h"
 
-void menu_update_system_info(menu_handle_t *menu, bool *load_no_rom)
+void menu_update_system_info(menu_handle_t *menu, bool *load_no_content)
 {
 #ifdef HAVE_DYNAMIC
    libretro_free_system_info(&menu->info);
    if (*g_settings.libretro)
    {
-      libretro_get_system_info(g_settings.libretro, &menu->info, load_no_rom);
+      libretro_get_system_info(g_settings.libretro, &menu->info, load_no_content);
 #endif
       // Keep track of info for the currently selected core.
       if (menu->core_info)
@@ -104,7 +104,7 @@ static void load_menu_content_prepare(void)
    if (!driver.menu)
       return;
 
-   if (*g_extern.fullpath || driver.menu->load_no_rom)
+   if (*g_extern.fullpath || driver.menu->load_no_content)
    {
       if (*g_extern.fullpath)
       {
@@ -156,7 +156,7 @@ void load_menu_content_history(unsigned game_index)
 
    strlcpy(g_settings.libretro, core_path, sizeof(g_settings.libretro));
 
-   driver.menu->load_no_rom = (path) ? false : true;
+   driver.menu->load_no_content = (path) ? false : true;
 
    rarch_environment_cb(RETRO_ENVIRONMENT_EXEC, (void*)path);
 
@@ -183,7 +183,7 @@ static void menu_environment_get(int *argc, char *argv[], void *args, void *para
 {
    struct rarch_main_wrap *wrap_args = (struct rarch_main_wrap*)params_data;
 
-   wrap_args->no_rom        = driver.menu->load_no_rom;
+   wrap_args->no_rom        = driver.menu->load_no_content;
    wrap_args->verbose       = g_extern.verbosity;
    wrap_args->config_path   = *g_extern.config_path ? g_extern.config_path : NULL;
    wrap_args->sram_path     = *g_extern.savefile_dir ? g_extern.savefile_dir : NULL;

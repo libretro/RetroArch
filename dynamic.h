@@ -52,12 +52,12 @@ function_t dylib_proc(dylib_t lib, const char *proc);
 // the "real" environ callback.
 //
 // For statically linked cores, pass retro_set_environment as argument.
-void libretro_get_environment_info(void (*)(retro_environment_t), bool *load_no_rom);
+void libretro_get_environment_info(void (*)(retro_environment_t), bool *load_no_content);
 
 #ifdef HAVE_DYNAMIC
 // Gets system info from an arbitrary lib.
 // The struct returned must be freed as strings are allocated dynamically.
-bool libretro_get_system_info(const char *path, struct retro_system_info *info, bool *load_no_rom);
+bool libretro_get_system_info(const char *path, struct retro_system_info *info, bool *load_no_content);
 void libretro_free_system_info(struct retro_system_info *info);
 #endif
 

@@ -2441,8 +2441,8 @@ static int menu_common_iterate(unsigned action)
                fill_pathname_join(g_settings.libretro, dir, path, sizeof(g_settings.libretro));
                rarch_main_command(RARCH_CMD_LOAD_CORE);
 #if defined(HAVE_DYNAMIC)
-               // No ROM needed for this core, load game immediately.
-               if (driver.menu->load_no_rom)
+               // No content needed for this core, load core immediately.
+               if (driver.menu->load_no_content)
                {
                   g_extern.lifecycle_state |= (1ULL << MODE_LOAD_GAME);
                   *g_extern.fullpath = '\0';

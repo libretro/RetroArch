@@ -3091,7 +3091,7 @@ void rarch_main_command(unsigned action)
          break;
       case RARCH_CMD_LOAD_CORE:
 #ifdef HAVE_MENU
-         menu_update_system_info(driver.menu, &driver.menu->load_no_rom);
+         menu_update_system_info(driver.menu, &driver.menu->load_no_content);
 #endif
          break;
       case RARCH_CMD_LOAD_STATE:
@@ -3123,7 +3123,7 @@ void rarch_main_command(unsigned action)
 
 #ifdef HAVE_MENU
          if (driver.menu)
-            driver.menu->load_no_rom = false;
+            driver.menu->load_no_content = false;
 #endif
 
          g_extern.lifecycle_state |= (1ULL << MODE_LOAD_GAME);
