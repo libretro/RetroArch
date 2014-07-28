@@ -114,7 +114,7 @@ void fill_pathname_noext(char *out_path, const char *in_path, const char *replac
 // Basename of in_basename is the string after the last '/' or '\\', i.e the filename without directories.
 // If in_basename has no '/' or '\\', the whole 'in_basename' will be used.
 // 'size' is buffer size of 'in_dir'.
-// E.g..: in_dir = "/tmp/some_dir", in_basename = "/some_roms/foo.c", replace = ".asm" =>
+// E.g..: in_dir = "/tmp/some_dir", in_basename = "/some_content/foo.c", replace = ".asm" =>
 //    in_dir = "/tmp/some_dir/foo.c.asm"
 void fill_pathname_dir(char *in_dir, const char *in_basename, const char *replace, size_t size);
 

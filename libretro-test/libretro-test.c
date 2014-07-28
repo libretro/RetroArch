@@ -109,8 +109,8 @@ void retro_set_environment(retro_environment_t cb)
 
    cb(RETRO_ENVIRONMENT_SET_VARIABLES, (void*)vars);
 
-   bool no_rom = true;
-   cb(RETRO_ENVIRONMENT_SET_SUPPORT_NO_GAME, &no_rom);
+   bool no_content = true;
+   cb(RETRO_ENVIRONMENT_SET_SUPPORT_NO_GAME, &no_content);
 
    if (!cb(RETRO_ENVIRONMENT_GET_LOG_INTERFACE, &logging))
       logging.log = fallback_log;
@@ -118,13 +118,13 @@ void retro_set_environment(retro_environment_t cb)
    static const struct retro_subsystem_memory_info mem1[] = {{ "ram1", 0x400 }, { "ram2", 0x401 }};
    static const struct retro_subsystem_memory_info mem2[] = {{ "ram3", 0x402 }, { "ram4", 0x403 }};
 
-   static const struct retro_subsystem_rom_info roms[] = {
+   static const struct retro_subsystem_rom_info content[] = {
       { "Test Rom #1", "bin", false, false, true, mem1, 2, },
       { "Test Rom #2", "bin", false, false, true, mem2, 2, },
    };
 
    static const struct retro_subsystem_info types[] = {
-      { "Foo", "foo", roms, 2, 0x200, },
+      { "Foo", "foo", content, 2, 0x200, },
       { NULL },
    };
 
