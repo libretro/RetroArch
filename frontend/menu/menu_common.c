@@ -218,7 +218,7 @@ bool load_menu_content(void)
 
    if (g_extern.history)
       content_history_free(g_extern.history);
-   g_extern.history = content_history_init(g_settings.game_history_path, g_settings.game_history_size);
+   g_extern.history = content_history_init(g_settings.content_history_path, g_settings.game_history_size);
 
    if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->shader_manager_init)
       driver.menu_ctx->backend->shader_manager_init(driver.menu);
@@ -264,7 +264,7 @@ void *menu_init(const void *data)
    if (menu_ctx && menu_ctx->backend && menu_ctx->backend->shader_manager_init)
       menu_ctx->backend->shader_manager_init(menu);
 
-   g_extern.history = content_history_init(g_settings.game_history_path, g_settings.game_history_size);
+   g_extern.history = content_history_init(g_settings.content_history_path, g_settings.game_history_size);
    menu->last_time = rarch_get_time_usec();
 
    return menu;

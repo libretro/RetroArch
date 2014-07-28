@@ -3698,7 +3698,7 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
                driver.menu->need_refresh = true;
                break;
             case MENU_ACTION_START:
-               *g_settings.game_history_path = '\0';
+               *g_settings.content_history_path = '\0';
                break;
             default:
                break;
@@ -4931,7 +4931,7 @@ static void menu_common_setting_set_label(char *type_str, size_t type_str_size, 
             break;
 #endif
          case MENU_SETTINGS_CONTENT_HISTORY_PATH:
-            strlcpy(type_str, g_settings.game_history_path ? g_settings.game_history_path : "<None>", type_str_size);
+            strlcpy(type_str, g_settings.content_history_path ? g_settings.content_history_path : "<None>", type_str_size);
             break;
          case MENU_SETTINGS_BIND_PLAYER:
             snprintf(type_str, type_str_size, "#%d", driver.menu->current_pad + 1);

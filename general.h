@@ -309,7 +309,7 @@ struct settings
    } input;
 
    char core_options_path[PATH_MAX];
-   char game_history_path[PATH_MAX];
+   char content_history_path[PATH_MAX];
    unsigned game_history_size;
 
    char libretro[PATH_MAX];

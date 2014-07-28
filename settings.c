@@ -434,7 +434,7 @@ void config_set_defaults(void)
       *g_settings.libretro_directory = '\0';
 
    *g_settings.core_options_path = '\0';
-   *g_settings.game_history_path = '\0';
+   *g_settings.content_history_path = '\0';
    *g_settings.cheat_database = '\0';
    *g_settings.cheat_settings_path = '\0';
    *g_settings.screenshot_directory = '\0';
@@ -510,7 +510,7 @@ void config_set_defaults(void)
    if (*g_defaults.config_path)
       fill_pathname_expand_special(g_extern.config_path, g_defaults.config_path, sizeof(g_extern.config_path));
    
-   fill_pathname_resolve_relative(g_settings.game_history_path, g_extern.config_path, ".retroarch-game-history.txt", sizeof(g_settings.game_history_path));
+   fill_pathname_resolve_relative(g_settings.content_history_path, g_extern.config_path, ".retroarch-game-history.txt", sizeof(g_settings.content_history_path));
 
    g_extern.config_save_on_exit = config_save_on_exit;
 
@@ -1084,7 +1084,7 @@ bool config_load_file(const char *path, bool set_defaults)
    CONFIG_GET_BOOL(stdin_cmd_enable, "stdin_cmd_enable");
 
    if (config_get_path(conf, "game_history_path", tmp_str, sizeof(tmp_str)))
-      strlcpy(g_settings.game_history_path, tmp_str, sizeof(g_settings.game_history_path));
+      strlcpy(g_settings.content_history_path, tmp_str, sizeof(g_settings.content_history_path));
    CONFIG_GET_INT(game_history_size, "game_history_size");
 
    CONFIG_GET_INT(input.turbo_period, "input_turbo_period");
@@ -1422,7 +1422,7 @@ bool config_save_file(const char *path)
    config_set_bool(conf, "rgui_show_start_screen", g_settings.menu_show_start_screen);
 #endif
 
-   config_set_path(conf, "game_history_path", g_settings.game_history_path);
+   config_set_path(conf, "game_history_path", g_settings.content_history_path);
    config_set_int(conf, "game_history_size", g_settings.game_history_size);
    config_set_path(conf, "joypad_autoconfig_dir", g_settings.input.autoconfig_dir);
    config_set_bool(conf, "input_autodetect_enable", g_settings.input.autodetect_enable);
