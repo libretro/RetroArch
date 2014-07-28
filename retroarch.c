@@ -3286,12 +3286,12 @@ void rarch_main_init_wrap(const struct rarch_main_wrap *args, int *argc, char **
    *argc = 0;
    argv[(*argc)++] = strdup("retroarch");
 
-   if (!args->no_rom)
+   if (!args->no_content)
    {
-      if (args->rom_path)
+      if (args->content_path)
       {
-         RARCH_LOG("Using content: %s.\n", args->rom_path);
-         argv[(*argc)++] = strdup(args->rom_path);
+         RARCH_LOG("Using content: %s.\n", args->content_path);
+         argv[(*argc)++] = strdup(args->content_path);
       }
       else
       {

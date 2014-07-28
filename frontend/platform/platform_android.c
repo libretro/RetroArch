@@ -464,7 +464,7 @@ static void frontend_android_get_environment_settings(int *argc, char *argv[],
    if (args)
    {
       args->touched    = true;
-      args->no_rom     = false;
+      args->no_content = false;
       args->verbose    = false;
       args->sram_path  = NULL;
       args->state_path = NULL;
@@ -549,7 +549,7 @@ static void frontend_android_get_environment_settings(int *argc, char *argv[],
       {
          RARCH_LOG("Auto-start game %s.\n", path);
          if (args && *path)
-            args->rom_path = path;
+            args->content_path = path;
       }
    }
 

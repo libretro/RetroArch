@@ -209,12 +209,12 @@ static void frontend_gx_get_environment_settings(int *argc, char *argv[],
          fill_pathname_join(path, argv[1], argv[2], sizeof(path));
 
          args->touched        = true;
-         args->no_rom         = false;
+         args->no_content     = false;
          args->verbose        = false;
          args->config_path    = NULL;
          args->sram_path      = NULL;
          args->state_path     = NULL;
-         args->rom_path       = path;
+         args->content_path   = path;
          args->libretro_path  = NULL;
       }
    }
