@@ -826,7 +826,7 @@ static void set_basename(const char *path)
       *dst = '\0';
 }
 
-static void set_special_paths(char **argv, unsigned roms)
+static void set_special_paths(char **argv, unsigned num_content)
 {
    unsigned i;
 
@@ -839,7 +839,7 @@ static void set_special_paths(char **argv, unsigned roms)
    union string_list_elem_attr attr;
    attr.i = 0;
 
-   for (i = 0; i < roms; i++)
+   for (i = 0; i < num_content; i++)
       string_list_append(g_extern.subsystem_fullpaths, argv[i], attr);
 
    // We defer SRAM path updates until we can resolve it.
@@ -1786,11 +1786,11 @@ static void fill_pathnames(void)
       const struct retro_subsystem_info *info = libretro_find_subsystem_info(g_extern.system.special, g_extern.system.num_special, g_extern.subsystem);
 
       // We'll handle this error gracefully later.
-      unsigned num_roms = min(info ? info->num_roms : 0, g_extern.subsystem_fullpaths ? g_extern.subsystem_fullpaths->size : 0);
+      unsigned num_content = min(info ? info->num_roms : 0, g_extern.subsystem_fullpaths ? g_extern.subsystem_fullpaths->size : 0);
 
       bool use_sram_dir = path_is_directory(g_extern.savefile_name);
 
-      for (i = 0; i < num_roms; i++)
+      for (i = 0; i < num_content; i++)
       {
          unsigned j;
          for (j = 0; j < info->roms[i].num_memory; j++)
