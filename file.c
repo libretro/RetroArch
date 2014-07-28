@@ -321,19 +321,19 @@ void save_ram_file(const char *path, int type)
    }
 }
 
-static bool load_roms(const struct retro_subsystem_info *special, const struct string_list *roms)
+static bool load_content(const struct retro_subsystem_info *special, const struct string_list *content)
 {
    unsigned i;
    bool ret = true;
 
-   struct retro_game_info *info = (struct retro_game_info*)calloc(roms->size, sizeof(*info));
+   struct retro_game_info *info = (struct retro_game_info*)calloc(content->size, sizeof(*info));
    if (!info)
       return false;
 
-   for (i = 0; i < roms->size; i++)
+   for (i = 0; i < content->size; i++)
    {
-      const char *path = roms->elems[i].data;
-      int attr = roms->elems[i].attr.i;
+      const char *path = content->elems[i].data;
+      int attr = content->elems[i].attr.i;
 
       bool need_fullpath = attr & 2;
       bool require_rom = attr & 4;
@@ -366,15 +366,15 @@ static bool load_roms(const struct retro_subsystem_info *special, const struct s
    }
 
    if (special)
-      ret = pretro_load_game_special(special->id, info, roms->size);
+      ret = pretro_load_game_special(special->id, info, content->size);
    else
-      ret = pretro_load_game(*roms->elems[0].data ? info : NULL);
+      ret = pretro_load_game(*content->elems[0].data ? info : NULL);
 
    if (!ret)
       RARCH_ERR("Failed to load game.\n");
 
 end:
-   for (i = 0; i < roms->size; i++)
+   for (i = 0; i < content->size; i++)
       free((void*)info[i].data);
    free(info);
    return ret;
@@ -424,8 +424,8 @@ bool init_rom_file(void)
    union string_list_elem_attr attr;
    attr.i = 0;
 
-   struct string_list *roms = string_list_new();
-   if (!roms)
+   struct string_list *content = (struct string_list*)string_list_new();
+   if (!content)
       return false;
 
    if (*g_extern.subsystem)
@@ -435,7 +435,7 @@ bool init_rom_file(void)
          attr.i  = special->roms[i].block_extract;
          attr.i |= special->roms[i].need_fullpath << 1;
          attr.i |= special->roms[i].required << 2;
-         string_list_append(roms, g_extern.subsystem_fullpaths->elems[i].data, attr);
+         string_list_append(content, g_extern.subsystem_fullpaths->elems[i].data, attr);
       }
    }
    else
@@ -443,18 +443,18 @@ bool init_rom_file(void)
       attr.i  = g_extern.system.info.block_extract;
       attr.i |= g_extern.system.info.need_fullpath << 1;
       attr.i |= (!g_extern.system.no_game) << 2;
-      string_list_append(roms, g_extern.libretro_no_rom ? "" : g_extern.fullpath, attr);
+      string_list_append(content, g_extern.libretro_no_rom ? "" : g_extern.fullpath, attr);
    }
 
 #ifdef HAVE_ZLIB
-   // Try to extract every ROM we're going to load if appropriate.
-   for (i = 0; i < roms->size; i++)
+   // Try to extract all content we're going to load if appropriate.
+   for (i = 0; i < content->size; i++)
    {
       // block extract check
-      if (roms->elems[i].attr.i & 1)
+      if (content->elems[i].attr.i & 1)
          continue;
 
-      const char *ext = path_get_extension(roms->elems[i].data);
+      const char *ext = path_get_extension(content->elems[i].data);
 
       const char *valid_ext = special ?
          special->roms[i].valid_extensions :
@@ -463,15 +463,15 @@ bool init_rom_file(void)
       if (ext && !strcasecmp(ext, "zip"))
       {
          char temporary_rom[PATH_MAX];
-         strlcpy(temporary_rom, roms->elems[i].data, sizeof(temporary_rom));
+         strlcpy(temporary_rom, content->elems[i].data, sizeof(temporary_rom));
          if (!zlib_extract_first_rom(temporary_rom, sizeof(temporary_rom), valid_ext,
                   *g_settings.extraction_directory ? g_settings.extraction_directory : NULL))
          {
             RARCH_ERR("Failed to extract ROM from zipped file: %s.\n", temporary_rom);
-            string_list_free(roms);
+            string_list_free(content);
             return false;
          }
-         string_list_set(roms, i, temporary_rom);
+         string_list_set(content, i, temporary_rom);
          string_list_append(g_extern.temporary_roms, temporary_rom, attr);
       }
    }
@@ -479,8 +479,8 @@ bool init_rom_file(void)
 
    // Set attr to need_fullpath as appropriate.
    
-   bool ret = load_roms(special, roms);
-   string_list_free(roms);
+   bool ret = load_content(special, content);
+   string_list_free(content);
    return ret;
 }
 
