@@ -21,7 +21,7 @@ It also features a simple built-in UI.
 .SH "EXAMPLE COMMANDLINE"
 
 .TP
-\fBLoad a ROM, using a specific libretro core and config file.\fR
+\fBLoad content, using a specific libretro core and config file.\fR
 retroarch --config ~/.config/retroarch/retroarch.cfg --libretro /path/to/libretro/core.so /path/to/rom.rom --verbose
 
 .TP
@@ -44,7 +44,7 @@ By default, only keyboard input is accepted.
 \fB[rom file]\fR
 If no rom file path is defined on the command line, \fBretroarch\fR will try to load a core with no rom. This will only work with some libretro cores.
 \fBretroarch\fR use uncompressed content, but can uncompress content in the .zip/deflate format if support for it is compiled in.
-ROM types supported depend on the libretro implementation used.
+Content types supported depend on the libretro implementation used.
 
 .TP
 \fB--help, -h\fR
@@ -53,7 +53,7 @@ Prints help text.
 .TP
 \fB--menu\fR
 Starts directly in in-game menu if enabled.
-Does not require a ROM or libretro implementation to be set.
+Does not require content or libretro implementation to be set.
 These can be loaded afterwards in the menu.
 If no arguments are passed to retroarch, it is equivalent to calling retroarch with this as only argument.
 
@@ -115,7 +115,7 @@ Every config file will be appended in order where the key-value pairs of the nex
 .TP
 \fB--subsystem SUBSYSTEM\fR
 Use a subsystem of the loaded libretro core. Multiple content files are loaded as multiple arguments.
-If a ROM is skipped, use a blank ("") command line argument.
+If content is skipped, use a blank ("") command line argument.
 Content must be loaded in an order which depends on the particular subsystem used.
 See verbose log output to learn how a particular subsystem wants content to be loaded.
 
@@ -212,23 +212,23 @@ This is purely cosmetic, and only serves to help players identify each other.
 
 .TP
 \fB--ups PATCH, -U PATCH\fR
-Attempts to apply an UPS patch to the current ROM image. No files are altered.
-If this flag is not specified, RetroArch will look for a .ups file with same basename as ROM specified.
+Attempts to apply an UPS patch to the current content image. No files are altered.
+If this flag is not specified, RetroArch will look for a .ups file with same basename as content specified.
 
 .TP
 \fB--bps PATCH\fR
-Attempts to apply a BPS patch to the current ROM image. No files are altered.
-If this flag is not specified, RetroArch will look for a .bps file with same basename as ROM specified.
+Attempts to apply a BPS patch to the current content image. No files are altered.
+If this flag is not specified, RetroArch will look for a .bps file with same basename as content specified.
 
 .TP
 \fB--ips PATCH\fR
-Attempts to apply a IPS patch to the current ROM image. No files are altered.
-If this flag is not specified, RetroArch will look for a .ips file with same basename as ROM specified.
+Attempts to apply a IPS patch to the current content image. No files are altered.
+If this flag is not specified, RetroArch will look for a .ips file with same basename as content specified.
 Note that RetroArch cannot perform any error checking if patching was successful due to how IPS works.
 
 .TP
 \fB--no-patch\fR
-Disables all kinds of ROM patching.
+Disables all kinds of content patching.
 
 .TP
 \fB-D, --detach\fR
