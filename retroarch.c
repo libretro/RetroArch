@@ -771,7 +771,7 @@ static void print_help(void)
    puts("\t-L/--libretro: Path to libretro implementation. Overrides any config setting.");
 #endif
    puts("\t--subsystem: Use a subsystem of the libretro core. Multiple content files are loaded as multiple arguments.");
-   puts("\t\tIf a ROM is skipped, use a blank (\"\") command line argument");
+   puts("\t\tIf a content file is skipped, use a blank (\"\") command line argument");
    puts("\t\tContent must be loaded in an order which depends on the particular subsystem used.");
    puts("\t\tSee verbose log output to learn how a particular subsystem wants content to be loaded.");
 
@@ -809,9 +809,9 @@ static void print_help(void)
    puts("\t--size: Overrides output video size when recording with FFmpeg (format: WIDTHxHEIGHT).");
 #endif
    puts("\t-v/--verbose: Verbose logging.");
-   puts("\t-U/--ups: Specifies path for UPS patch that will be applied to ROM.");
-   puts("\t--bps: Specifies path for BPS patch that will be applied to ROM.");
-   puts("\t--ips: Specifies path for IPS patch that will be applied to ROM.");
+   puts("\t-U/--ups: Specifies path for UPS patch that will be applied to content.");
+   puts("\t--bps: Specifies path for BPS patch that will be applied to content.");
+   puts("\t--ips: Specifies path for IPS patch that will be applied to content.");
    puts("\t--no-patch: Disables all forms of content patching.");
    puts("\t-D/--detach: Detach RetroArch from the running console. Not relevant for all platforms.\n");
 }

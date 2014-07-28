@@ -83,7 +83,7 @@ static void patch_rom(uint8_t **buf, ssize_t *size)
    }
    else
    {
-      RARCH_LOG("Did not find a valid ROM patch.\n");
+      RARCH_LOG("Did not find a valid content patch.\n");
       return;
    }
 
@@ -93,14 +93,14 @@ static void patch_rom(uint8_t **buf, ssize_t *size)
    uint8_t *patched_rom = (uint8_t*)malloc(target_size);
    if (!patched_rom)
    {
-      RARCH_ERR("Failed to allocate memory for patched ROM ...\n");
+      RARCH_ERR("Failed to allocate memory for patched content ...\n");
       goto error;
    }
 
    err = func((const uint8_t*)patch_data, patch_size, ret_buf, ret_size, patched_rom, &target_size);
    if (err == PATCH_SUCCESS)
    {
-      RARCH_LOG("ROM patched successfully (%s).\n", patch_desc);
+      RARCH_LOG("Content patched successfully (%s).\n", patch_desc);
       success = true;
    }
    else
@@ -340,21 +340,21 @@ static bool load_content(const struct retro_subsystem_info *special, const struc
 
       if (require_rom && !*path)
       {
-         RARCH_LOG("libretro core requires a ROM, but none were provided.\n");
+         RARCH_LOG("libretro core requires content, but nothing was provided.\n");
          ret = false;
          goto end;
       }
 
       info[i].path = *path ? path : NULL;
 
-      if (!need_fullpath && *path) // Load the ROM into memory.
+      if (!need_fullpath && *path) // Load the content into memory.
       {
-         RARCH_LOG("Loading ROM file: %s.\n", path);
-         // First ROM is significant, attempt to do patching, CRC checking, etc ...
+         RARCH_LOG("Loading content file: %s.\n", path);
+         // First content file is significant, attempt to do patching, CRC checking, etc ...
          long size = i == 0 ? read_rom_file(path, (void**)&info[i].data) : read_file(path, (void**)&info[i].data);
          if (size < 0)
          {
-            RARCH_ERR("Could not read ROM file \"%s\".\n", path);
+            RARCH_ERR("Could not read content file \"%s\".\n", path);
             ret = false;
             goto end;
          }
@@ -362,7 +362,7 @@ static bool load_content(const struct retro_subsystem_info *special, const struc
          info[i].size = size;
       }
       else
-         RARCH_LOG("ROM loading skipped. Implementation will load it on its own.\n");
+         RARCH_LOG("Content loading skipped. Implementation will load it on its own.\n");
    }
 
    if (special)
@@ -467,7 +467,7 @@ bool init_rom_file(void)
          if (!zlib_extract_first_rom(temporary_content, sizeof(temporary_content), valid_ext,
                   *g_settings.extraction_directory ? g_settings.extraction_directory : NULL))
          {
-            RARCH_ERR("Failed to extract ROM from zipped file: %s.\n", temporary_content);
+            RARCH_ERR("Failed to extract content from zipped file: %s.\n", temporary_content);
             string_list_free(content);
             return false;
          }

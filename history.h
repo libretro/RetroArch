@@ -13,8 +13,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef ROM_HISTORY_H__
-#define ROM_HISTORY_H__
+#ifndef CONTENT_HISTORY_H__
+#define CONTENT_HISTORY_H__
 
 #include <stddef.h>
 

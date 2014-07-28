@@ -512,7 +512,7 @@ void config_set_defaults(void)
    
    g_extern.config_save_on_exit = config_save_on_exit;
 
-   /* Avoid reloading config on every ROM load */
+   /* Avoid reloading config on every content load */
    g_extern.block_config_read = default_block_config_read;
 }
 

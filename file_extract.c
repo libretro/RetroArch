@@ -320,7 +320,7 @@ static bool zip_extract_cb(const char *name, const uint8_t *cdata, unsigned cmod
 {
    struct zip_extract_userdata *data = (struct zip_extract_userdata*)userdata;
 
-   // Extract first ROM that matches our list.
+   // Extract first content that matches our list.
    const char *ext = path_get_extension(name);
    if (ext && string_list_find_elem(data->ext, ext))
    {
@@ -388,7 +388,7 @@ bool zlib_extract_first_rom(char *zip_path, size_t zip_path_size, const char *va
 
    if (!userdata.found_rom)
    {
-      RARCH_ERR("Didn't find any ROMS that matched valid extensions for libretro implementation.\n");
+      RARCH_ERR("Didn't find any content that matched valid extensions for libretro implementation.\n");
       GOTO_END_ERROR();
    }
 

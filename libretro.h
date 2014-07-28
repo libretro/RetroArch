@@ -784,11 +784,11 @@ struct retro_subsystem_memory_info
 
 struct retro_subsystem_rom_info
 {
-   const char *desc; // Describes what the ROM is (SGB bios, GB rom, etc).
+   const char *desc; // Describes what the content is (SGB bios, GB rom, etc).
    const char *valid_extensions; // Same definition as retro_get_system_info().
    bool need_fullpath; // Same definition as retro_get_system_info().
    bool block_extract; // Same definition as retro_get_system_info().
-   bool required; // This is set if the ROM is required to load a game. If this is set to false, a zeroed-out retro_game_info can be passed.
+   bool required; // This is set if the content is required to load a game. If this is set to false, a zeroed-out retro_game_info can be passed.
 
    // Content can have multiple associated persistent memory types (retro_get_memory()).
    const struct retro_subsystem_memory_info *memory;
@@ -804,9 +804,9 @@ struct retro_subsystem_info
    // This identifier can be used for command-line interfaces, etc.
    const char *ident;
 
-   // Infos for each ROM. The first entry is assumed to be the "most significant" ROM for frontend purposes.
-   // E.g. with Super GameBoy, the first ROM should be the GameBoy ROM, as it is the most "significant" ROM to a user.
-   // If a frontend creates new file paths based on the ROM used (e.g. savestates), it should use the path for the first ROM to do so.
+   // Infos for each content file. The first entry is assumed to be the "most significant" content for frontend purposes.
+   // E.g. with Super GameBoy, the first content should be the GameBoy ROM, as it is the most "significant" content to a user.
+   // If a frontend creates new file paths based on the content used (e.g. savestates), it should use the path for the first ROM to do so.
    const struct retro_subsystem_rom_info *roms;
 
    unsigned num_roms; // Number of content files associated with a subsystem.
@@ -1290,7 +1290,7 @@ struct retro_system_info
                                   // This is typically set to true for libretro implementations that must load from file.
                                   // Implementations should strive for setting this to false, as it allows the frontend to perform patching, etc.
 
-   bool        block_extract;     // If true, the frontend is not allowed to extract any archives before loading the real ROM.
+   bool        block_extract;     // If true, the frontend is not allowed to extract any archives before loading the real content.
                                   // Necessary for certain libretro implementations that load games from zipped archives.
 };
 
