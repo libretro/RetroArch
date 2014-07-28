@@ -1258,7 +1258,6 @@ void input_config_autoconfigure_joypad(unsigned index, const char *name, const c
 
       for (i = 0; i < list->size; i++)
       {
-         RARCH_LOG("[AUTOINPUT]: Trying to load autoconfig file: %s.\n", list->elems[i].data);
          config_file_t *conf = config_file_new(list->elems[i].data);
          if (!conf)
             continue;
