@@ -756,7 +756,7 @@ static void print_help(void)
 #endif
    print_compiler(stdout);
    puts("===================================================================");
-   puts("Usage: retroarch [rom file] [options...]");
+   puts("Usage: retroarch [content file] [options...]");
    puts("\t-h/--help: Show this help message.");
    puts("\t--menu: Do not require content or libretro core to be loaded, starts directly in menu.");
    puts("\t\tIf no arguments are passed to RetroArch, it is equivalent to using --menu as only argument.");
@@ -812,7 +812,7 @@ static void print_help(void)
    puts("\t-U/--ups: Specifies path for UPS patch that will be applied to ROM.");
    puts("\t--bps: Specifies path for BPS patch that will be applied to ROM.");
    puts("\t--ips: Specifies path for IPS patch that will be applied to ROM.");
-   puts("\t--no-patch: Disables all forms of rom patching.");
+   puts("\t--no-patch: Disables all forms of content patching.");
    puts("\t-D/--detach: Detach RetroArch from the running console. Not relevant for all platforms.\n");
 }
 
@@ -888,7 +888,7 @@ static void set_paths(const char *path)
 
 static void parse_input(int argc, char *argv[])
 {
-   g_extern.libretro_no_rom = false;
+   g_extern.libretro_no_content = false;
    g_extern.libretro_dummy = false;
    g_extern.has_set_save_path = false;
    g_extern.has_set_state_path = false;
@@ -1260,7 +1260,7 @@ static void parse_input(int argc, char *argv[])
    else if (*g_extern.subsystem && optind < argc)
       set_special_paths(argv + optind, argc - optind);
    else
-      g_extern.libretro_no_rom = true;
+      g_extern.libretro_no_content = true;
 
    // Copy SRM/state dirs used, so they can be reused on reentrancy.
    if (g_extern.has_set_save_path && path_is_directory(g_extern.savefile_name))
@@ -2922,10 +2922,10 @@ int rarch_main_init(int argc, char *argv[])
    verify_api_version();
    pretro_init();
 
-   g_extern.use_sram = !g_extern.libretro_dummy && !g_extern.libretro_no_rom;
+   g_extern.use_sram = !g_extern.libretro_dummy && !g_extern.libretro_no_content;
    bool allow_cheats = true;
 
-   if (g_extern.libretro_no_rom && !g_extern.libretro_dummy)
+   if (g_extern.libretro_no_content && !g_extern.libretro_dummy)
    {
       if (!init_rom_file())
          goto error;
@@ -3252,7 +3252,7 @@ void rarch_main_deinit(void)
    deinit_movie();
 #endif
 
-   if (!g_extern.libretro_dummy && !g_extern.libretro_no_rom)
+   if (!g_extern.libretro_dummy && !g_extern.libretro_no_content)
       save_auto_state();
 
    uninit_drivers();

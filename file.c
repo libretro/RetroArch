@@ -443,7 +443,7 @@ bool init_rom_file(void)
       attr.i  = g_extern.system.info.block_extract;
       attr.i |= g_extern.system.info.need_fullpath << 1;
       attr.i |= (!g_extern.system.no_game) << 2;
-      string_list_append(content, g_extern.libretro_no_rom ? "" : g_extern.fullpath, attr);
+      string_list_append(content, g_extern.libretro_no_content ? "" : g_extern.fullpath, attr);
    }
 
 #ifdef HAVE_ZLIB

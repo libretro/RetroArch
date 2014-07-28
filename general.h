@@ -709,7 +709,7 @@ struct global
    jmp_buf error_sjlj_context;
    unsigned menu_toggle_behavior;
 
-   bool libretro_no_rom;
+   bool libretro_no_content;
    bool libretro_dummy;
 
    // Config file associated with per-core configs.
