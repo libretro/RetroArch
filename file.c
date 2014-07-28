@@ -384,8 +384,8 @@ bool init_rom_file(void)
 {
    unsigned i;
 
-   g_extern.temporary_roms = string_list_new();
-   if (!g_extern.temporary_roms)
+   g_extern.temporary_content = string_list_new();
+   if (!g_extern.temporary_content)
       return false;
 
    const struct retro_subsystem_info *special = NULL;
@@ -462,17 +462,17 @@ bool init_rom_file(void)
 
       if (ext && !strcasecmp(ext, "zip"))
       {
-         char temporary_rom[PATH_MAX];
-         strlcpy(temporary_rom, content->elems[i].data, sizeof(temporary_rom));
-         if (!zlib_extract_first_rom(temporary_rom, sizeof(temporary_rom), valid_ext,
+         char temporary_content[PATH_MAX];
+         strlcpy(temporary_content, content->elems[i].data, sizeof(temporary_content));
+         if (!zlib_extract_first_rom(temporary_content, sizeof(temporary_content), valid_ext,
                   *g_settings.extraction_directory ? g_settings.extraction_directory : NULL))
          {
-            RARCH_ERR("Failed to extract ROM from zipped file: %s.\n", temporary_rom);
+            RARCH_ERR("Failed to extract ROM from zipped file: %s.\n", temporary_content);
             string_list_free(content);
             return false;
          }
-         string_list_set(content, i, temporary_rom);
-         string_list_append(g_extern.temporary_roms, temporary_rom, attr);
+         string_list_set(content, i, temporary_content);
+         string_list_append(g_extern.temporary_content, temporary_content, attr);
       }
    }
 #endif

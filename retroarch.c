@@ -3259,19 +3259,19 @@ void rarch_main_deinit(void)
 
    rarch_main_deinit_core();
 
-   if (g_extern.temporary_roms)
+   if (g_extern.temporary_content)
    {
       unsigned i;
-      for (i = 0; i < g_extern.temporary_roms->size; i++)
+      for (i = 0; i < g_extern.temporary_content->size; i++)
       {
-         const char *path = g_extern.temporary_roms->elems[i].data;
+         const char *path = g_extern.temporary_content->elems[i].data;
          RARCH_LOG("Removing temporary content file: %s.\n", path);
          if (remove(path) < 0)
             RARCH_ERR("Failed to remove temporary file: %s.\n", path);
       }
    }
-   string_list_free(g_extern.temporary_roms);
-   g_extern.temporary_roms = NULL;
+   string_list_free(g_extern.temporary_content);
+   g_extern.temporary_content = NULL;
 
    string_list_free(g_extern.subsystem_fullpaths);
    string_list_free(g_extern.savefiles);

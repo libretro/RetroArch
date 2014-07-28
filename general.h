@@ -390,7 +390,7 @@ struct global
 #endif
    bool force_fullscreen;
 
-   struct string_list *temporary_roms;
+   struct string_list *temporary_content;
 
    content_history_t *history;
 
