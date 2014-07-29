@@ -41,6 +41,18 @@ message()
    echo ""
 }
 
+if [ -z "$MAKE" ]; then
+   if uname -s | grep -i MINGW32 > /dev/null 2>&1; then
+      MAKE=mingw32-make
+   else
+      if type gmake > /dev/null 2>&1; then
+         MAKE=gmake
+      else
+         MAKE=make
+      fi
+   fi
+fi
+
 if [ ! -f "`which zip`" ]; then
    echo "Cannot find 'zip'. Cannot package, quitting ..."
    exit 1
@@ -68,8 +80,8 @@ do_phoenix_build()
       git pull origin master
    fi
 
-   make -f Makefile.win clean || die "Failed to clean ..."
-   make -f Makefile.win CC="$C_COMPILER" CXX="$CXX_COMPILER" WINDRES="$WINDRES" -j4 all || die "Failed to build ..."
+   "${MAKE}" -f Makefile.win clean || die "Failed to clean ..."
+   "${MAKE}" -f Makefile.win CC="$C_COMPILER" CXX="$CXX_COMPILER" WINDRES="$WINDRES" -j4 all || die "Failed to build ..."
    touch retroarch-phoenix.cfg
    cp retroarch-phoenix.cfg retroarch-phoenix.exe ../ || die "Failed to copy ..."
 
@@ -91,12 +103,12 @@ do_build()
    fi
 
    if [ ! -f "$LIBZIPNAME" ]; then
-      make -f Makefile.win libs_${BUILDTYPE} || die "Failed to extract"
+      "${MAKE}" -f Makefile.win libs_${BUILDTYPE} || die "Failed to extract"
    fi
 
-   make -f Makefile.win clean || die "Failed to clean ..."
-   make -f Makefile.win CC="$C_COMPILER" CXX="$CXX_COMPILER" WINDRES="$WINDRES" -j4 all SLIM=1 || die "Failed to build ..."
-   make -f Makefile.win CC="$C_COMPILER" CXX="$CXX_COMPILER" WINDRES="$WINDRES" dist_${BUILDTYPE} SLIM=1 || die "Failed to dist ..."
+   "${MAKE}" -f Makefile.win clean || die "Failed to clean ..."
+   "${MAKE}" -f Makefile.win CC="$C_COMPILER" CXX="$CXX_COMPILER" WINDRES="$WINDRES" -j4 all SLIM=1 || die "Failed to build ..."
+   "${MAKE}" -f Makefile.win CC="$C_COMPILER" CXX="$CXX_COMPILER" WINDRES="$WINDRES" dist_${BUILDTYPE} SLIM=1 || die "Failed to dist ..."
    if [ -z "`find . | grep "retroarch-win"`" ]; then
       die "Did not find build ..."
    fi
@@ -114,9 +126,9 @@ do_build()
    fi
    mv -v "$ZIP_BASE" "../$ZIP_SLIM" || die "Failed to move final build ..."
 
-   make -f Makefile.win clean || die "Failed to clean ..."
-   make -f Makefile.win CC="$C_COMPILER" CXX="$CXX_COMPILER" WINDRES="$WINDRES" HAVE_D3D9=1 -j4 all || die "Failed to build ..."
-   make -f Makefile.win CC="$C_COMPILER" CXX="$CXX_COMPILER" WINDRES="$WINDRES" HAVE_D3D9=1 dist_${BUILDTYPE} || die "Failed to dist ..."
+   "${MAKE}" -f Makefile.win clean || die "Failed to clean ..."
+   "${MAKE}" -f Makefile.win CC="$C_COMPILER" CXX="$CXX_COMPILER" WINDRES="$WINDRES" HAVE_D3D9=1 -j4 all || die "Failed to build ..."
+   "${MAKE}" -f Makefile.win CC="$C_COMPILER" CXX="$CXX_COMPILER" WINDRES="$WINDRES" HAVE_D3D9=1 dist_${BUILDTYPE} || die "Failed to dist ..."
 
    if [ "$BUILD_PHOENIX_GUI" = "yes" ]; then
       zip "$ZIP_BASE" retroarch-phoenix.exe retroarch-phoenix.cfg
@@ -146,4 +158,3 @@ if [ "$BUILD_64BIT" = yes ]; then
 fi
 
 message "Built successfully! :)"
-
