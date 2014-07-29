@@ -4530,19 +4530,7 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
          break;
       case MENU_SETTINGS_FONT_SIZE:
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "video_font_size")))
-         {
-            if (action == MENU_ACTION_LEFT)
-               *current_setting->value.fraction = *current_setting->value.fraction - 1.0f;
-            else if (action == MENU_ACTION_RIGHT)
-               *current_setting->value.fraction = *current_setting->value.fraction + 1.0f;
-            else if (action == MENU_ACTION_START)
-               *current_setting->value.fraction = font_size;
-
-            *current_setting->value.fraction = roundf(max(*current_setting->value.fraction, 1.0f));
-
-            if (current_setting->change_handler)
-               current_setting->change_handler(current_setting);
-         }
+            menu_common_setting_set_current_fraction(current_setting, 1.0f, action, false, false);
          break;
       case MENU_SETTINGS_LOAD_DUMMY_ON_CORE_SHUTDOWN:
          if ((current_setting = setting_data_find_setting(setting_data, "dummy_on_core_shutdown")))
