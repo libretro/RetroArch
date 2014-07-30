@@ -77,7 +77,7 @@ endif
    CFLAGS += -DARM
 else
    CC = gcc
-   TARGET := $(TARGET_NAME)_retro.dll
+   TARGET := $(TARGET_NAME)_libretro.dll
    SHARED := -shared -static-libgcc -static-libstdc++ -s -Wl,--version-script=link.T -Wl,--no-undefined
    GL_LIB := -lopengl32
    CFLAGS += -I..
