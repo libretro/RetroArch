@@ -1301,9 +1301,17 @@ static void general_write_handler(const void *data)
     else if (!strcmp(setting->name, "netplay_enable"))
        g_extern.netplay_enable = *setting->value.boolean;
     else if (!strcmp(setting->name, "netplay_mode"))
+    {
        g_extern.netplay_is_client = *setting->value.boolean;
+       if (!g_extern.netplay_is_client)
+          *g_extern.netplay_server = '\0';
+    }
     else if (!strcmp(setting->name, "netplay_spectator_mode_enable"))
+    {
        g_extern.netplay_is_spectate = *setting->value.boolean;
+       if (g_extern.netplay_is_spectate)
+          *g_extern.netplay_server = '\0';
+    }
 #endif
     else if (!strcmp(setting->name, "log_verbosity"))
         g_extern.verbosity = *setting->value.boolean;
