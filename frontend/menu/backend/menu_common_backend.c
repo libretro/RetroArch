@@ -3110,12 +3110,14 @@ static int menu_common_shader_manager_setting_toggle(unsigned setting, unsigned 
    else if ((dist_filter % 3) == 0)
    {
       dist_filter /= 3;
-      struct gfx_shader *shader = driver.menu->shader;
-      struct gfx_shader_pass *pass = &shader->pass[dist_filter];
+      struct gfx_shader *shader = (struct gfx_shader*)driver.menu->shader;
+      struct gfx_shader_pass *pass = (struct gfx_shader_pass*)&shader->pass[dist_filter];
+
       switch (action)
       {
          case MENU_ACTION_START:
-            shader->pass[dist_filter].filter = RARCH_FILTER_UNSPEC;
+            if (shader && shader->pass)
+               shader->pass[dist_filter].filter = RARCH_FILTER_UNSPEC;
             break;
 
          case MENU_ACTION_LEFT:
@@ -3123,7 +3125,8 @@ static int menu_common_shader_manager_setting_toggle(unsigned setting, unsigned 
          case MENU_ACTION_OK:
          {
             unsigned delta = action == MENU_ACTION_LEFT ? 2 : 1;
-            pass->filter = (enum gfx_filter_type)((pass->filter + delta) % 3);
+            if (pass)
+               pass->filter = ((pass->filter + delta) % 3);
             break;
          }
 
@@ -3134,13 +3137,16 @@ static int menu_common_shader_manager_setting_toggle(unsigned setting, unsigned 
    else if ((dist_scale % 3) == 0)
    {
       dist_scale /= 3;
-      struct gfx_shader *shader = driver.menu->shader;
-      struct gfx_shader_pass *pass = &shader->pass[dist_scale];
+      struct gfx_shader *shader = (struct gfx_shader*)driver.menu->shader;
+      struct gfx_shader_pass *pass = (struct gfx_shader_pass*)&shader->pass[dist_scale];
       switch (action)
       {
          case MENU_ACTION_START:
-            pass->fbo.scale_x = pass->fbo.scale_y = 0;
-            pass->fbo.valid = false;
+            if (shader->pass)
+            {
+               pass->fbo.scale_x = pass->fbo.scale_y = 0;
+               pass->fbo.valid = false;
+            }
             break;
 
          case MENU_ACTION_LEFT:
@@ -3150,8 +3156,12 @@ static int menu_common_shader_manager_setting_toggle(unsigned setting, unsigned 
             unsigned current_scale = pass->fbo.scale_x;
             unsigned delta = action == MENU_ACTION_LEFT ? 5 : 1;
             current_scale = (current_scale + delta) % 6;
-            pass->fbo.valid = current_scale;
-            pass->fbo.scale_x = pass->fbo.scale_y = current_scale;
+
+            if (pass)
+            {
+               pass->fbo.valid = current_scale;
+               pass->fbo.scale_x = pass->fbo.scale_y = current_scale;
+            }
             break;
          }
 
