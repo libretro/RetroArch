@@ -3043,11 +3043,14 @@ static int menu_common_shader_manager_setting_toggle(unsigned setting, unsigned 
       if ((current_setting = setting_data_find_setting(setting_data, "video_smooth")))
          menu_common_setting_set_current_boolean(current_setting, action);
    }
-   else if ((setting == MENU_SETTINGS_SHADER_PARAMETERS || setting == MENU_SETTINGS_SHADER_PRESET_PARAMETERS) && action == MENU_ACTION_OK)
+   else if ((setting == MENU_SETTINGS_SHADER_PARAMETERS || setting == MENU_SETTINGS_SHADER_PRESET_PARAMETERS))
    {
-      file_list_push(driver.menu->menu_stack, "", setting, driver.menu->selection_ptr);
-      menu_clear_navigation(driver.menu);
-      driver.menu->need_refresh = true;
+      if (action == MENU_ACTION_OK)
+      {
+         file_list_push(driver.menu->menu_stack, "", setting, driver.menu->selection_ptr);
+         menu_clear_navigation(driver.menu);
+         driver.menu->need_refresh = true;
+      }
    }
    else if (setting >= MENU_SETTINGS_SHADER_PARAMETER_0 && setting <= MENU_SETTINGS_SHADER_PARAMETER_LAST)
    {
