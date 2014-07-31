@@ -257,6 +257,7 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
          }
          else
             file_list_push(menu->selection_buf, "No options available.", MENU_SETTINGS_CORE_OPTION_NONE, 0);
+            file_list_push(menu->selection_buf, "Options will appear once the core is running.", MENU_SETTINGS_CORE_OPTION_NONE, 0);
          break;
       case MENU_SETTINGS_CORE_INFO:
          {
