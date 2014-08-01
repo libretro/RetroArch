@@ -1679,18 +1679,13 @@ static void init_libretro_cbs_netplay(void)
 }
 #endif
 
-static void init_libretro_cbs_plain(void)
+static void init_libretro_cbs(void)
 {
    pretro_set_video_refresh(video_frame);
    pretro_set_audio_sample(audio_sample);
    pretro_set_audio_sample_batch(audio_sample_batch);
    pretro_set_input_state(input_state);
    pretro_set_input_poll(rarch_input_poll);
-}
-
-static void init_libretro_cbs(void)
-{
-   init_libretro_cbs_plain();
 
 #ifdef HAVE_NETPLAY
    if (g_extern.netplay)
