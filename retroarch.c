@@ -796,8 +796,8 @@ static void print_help(void)
    puts("\t--spectate: Netplay will become spectating mode.");
    puts("\t\tHost can live stream the game content to players that connect.");
    puts("\t\tHowever, the client will not be able to play. Multiple clients can connect to the host.");
-   puts("\t--nick: Picks a nickname for use with netplay. Not mandatory.");
 #endif
+   puts("\t--nick: Picks a username (for use with netplay). Not mandatory.");
 #ifdef HAVE_NETWORK_CMD
    puts("\t--command: Sends a command over UDP to an already running RetroArch process.");
    puts("\t\tAvailable commands are listed if command is invalid.");
@@ -897,7 +897,7 @@ static void parse_input(int argc, char *argv[])
    g_extern.has_set_verbosity = false;
 
    g_extern.has_set_netplay_mode = false;
-   g_extern.has_set_netplay_nickname = false;
+   g_extern.has_set_username = false;
    g_extern.has_set_netplay_ip_address = false;
    g_extern.has_set_netplay_delay_frames = false;
    g_extern.has_set_netplay_ip_port = false;
@@ -953,8 +953,8 @@ static void parse_input(int argc, char *argv[])
       { "frames", 1, NULL, 'F' },
       { "port", 1, &val, 'p' },
       { "spectate", 0, &val, 'S' },
-      { "nick", 1, &val, 'N' },
 #endif
+      { "nick", 1, &val, 'N' },
 #ifdef HAVE_NETWORK_CMD
       { "command", 1, &val, 'c' },
 #endif
@@ -1179,11 +1179,11 @@ static void parse_input(int argc, char *argv[])
                   g_extern.netplay_is_spectate = true;
                   break;
 
-               case 'N':
-                  g_extern.has_set_netplay_nickname = true;
-                  strlcpy(g_extern.netplay_nick, optarg, sizeof(g_extern.netplay_nick));
-                  break;
 #endif
+               case 'N':
+                  g_extern.has_set_username = true;
+                  strlcpy(g_settings.username, optarg, sizeof(g_settings.username));
+                  break;
 
 #ifdef HAVE_NETWORK_CMD
                case 'c':
@@ -1604,7 +1604,7 @@ static void init_netplay(void)
    g_extern.netplay = netplay_new(g_extern.netplay_is_client ? g_extern.netplay_server : NULL,
          g_extern.netplay_port ? g_extern.netplay_port : RARCH_DEFAULT_PORT,
          g_extern.netplay_sync_frames, &cbs, g_extern.netplay_is_spectate,
-         g_extern.netplay_nick);
+         g_settings.username);
 
    if (!g_extern.netplay)
    {

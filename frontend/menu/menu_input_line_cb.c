@@ -85,7 +85,7 @@ void netplay_nickname_callback(void *userdata, const char *str)
    menu_handle_t *menu = (menu_handle_t*)userdata;
 
    if (str && *str)
-      strlcpy(g_extern.netplay_nick, str, sizeof(g_extern.netplay_nick));
+      strlcpy(g_settings.username, str, sizeof(g_settings.username));
    menu_key_end_line(menu);
 }
 #endif

@@ -354,6 +354,8 @@ struct settings
    bool load_dummy_on_core_shutdown;
 
    bool core_specific_config;
+
+   char username[32];
 };
 
 typedef struct rarch_resolution
@@ -407,7 +409,7 @@ struct global
    bool has_set_verbosity;
 
    bool has_set_netplay_mode;
-   bool has_set_netplay_nickname;
+   bool has_set_username;
    bool has_set_netplay_ip_address;
    bool has_set_netplay_delay_frames;
    bool has_set_netplay_ip_port;
@@ -617,7 +619,6 @@ struct global
    bool netplay_is_spectate;
    unsigned netplay_sync_frames;
    uint16_t netplay_port;
-   char netplay_nick[32];
 #endif
 
    // FFmpeg record.

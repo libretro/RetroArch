@@ -1629,15 +1629,15 @@ rarch_setting_t* setting_data_get_list(void)
          /*******************/
          /* NETPLAY OPTIONS */
          /*******************/
-#ifdef HAVE_NETPLAY
          START_GROUP("Netplay Options")
          START_SUB_GROUP("State")
+#ifdef HAVE_NETPLAY
          CONFIG_BOOL(g_extern.netplay_enable,            "netplay_enable",  "Netplay Enable",        false, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
          CONFIG_BOOL(g_extern.netplay_is_client,         "netplay_mode",    "Netplay Client Enable",          false, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
          CONFIG_BOOL(g_extern.netplay_is_spectate,       "netplay_spectator_mode_enable",    "Netplay Spectator Enable",          false, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+#endif
          END_SUB_GROUP()
          END_GROUP()
-#endif
 
          /*********/
          /* PATHS */

@@ -342,9 +342,7 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
 #ifdef HAVE_OVERLAY
          file_list_push(menu->selection_buf, "Overlay Options", MENU_SETTINGS_OVERLAY_OPTIONS, 0);
 #endif
-#ifdef HAVE_NETPLAY
          file_list_push(menu->selection_buf, "Netplay Options", MENU_SETTINGS_NETPLAY_OPTIONS, 0);
-#endif
          file_list_push(menu->selection_buf, "Path Options", MENU_SETTINGS_PATH_OPTIONS, 0);
          if (g_extern.main_is_init && !g_extern.libretro_dummy)
          {
@@ -378,9 +376,10 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
          if ((current_setting = setting_data_find_setting(setting_data, "input_overlay_scale")))
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_OVERLAY_SCALE, 0);
          break;
-#ifdef HAVE_NETPLAY
       case MENU_SETTINGS_NETPLAY_OPTIONS:
          file_list_clear(menu->selection_buf);
+         file_list_push(menu->selection_buf, "Username", MENU_SETTINGS_NETPLAY_NICKNAME, 0);
+#ifdef HAVE_NETPLAY
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "netplay_enable")))
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_NETPLAY_ENABLE, 0);
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "netplay_mode")))
@@ -390,9 +389,8 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
          file_list_push(menu->selection_buf, "Host IP Address", MENU_SETTINGS_NETPLAY_HOST_IP_ADDRESS, 0);
          file_list_push(menu->selection_buf, "TCP/UDP Port", MENU_SETTINGS_NETPLAY_TCP_UDP_PORT, 0);
          file_list_push(menu->selection_buf, "Delay Frames", MENU_SETTINGS_NETPLAY_DELAY_FRAMES, 0);
-         file_list_push(menu->selection_buf, "Nickname", MENU_SETTINGS_NETPLAY_NICKNAME, 0);
-         break;
 #endif
+         break;
       case MENU_SETTINGS_PATH_OPTIONS:
          file_list_clear(menu->selection_buf);
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "rgui_browser_directory")))
@@ -4518,13 +4516,13 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
          else if (action == MENU_ACTION_START)
             g_extern.netplay_port = RARCH_DEFAULT_PORT;
          break;
+#endif
       case MENU_SETTINGS_NETPLAY_NICKNAME:
          if (action == MENU_ACTION_OK)
-            menu_key_start_line(driver.menu, "Nickname: ", netplay_nickname_callback);
+            menu_key_start_line(driver.menu, "Username: ", netplay_nickname_callback);
          else if (action == MENU_ACTION_START)
-            *g_extern.netplay_nick = '\0';
+            *g_settings.username = '\0';
          break;
-#endif
       case MENU_SETTINGS_ONSCREEN_KEYBOARD_ENABLE:
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "osk_enable")))
             menu_common_setting_set_current_boolean(current_setting, action);
@@ -5026,6 +5024,9 @@ static void menu_common_setting_set_label(char *type_str, size_t type_str_size, 
          case MENU_SETTINGS_WINDOW_COMPOSITING_ENABLE:
             strlcpy(type_str, g_settings.video.disable_composition ? "OFF" : "ON", type_str_size);
             break;
+         case MENU_SETTINGS_NETPLAY_NICKNAME:
+            snprintf(type_str, type_str_size, "%s", g_settings.username);
+            break;
 #ifdef HAVE_NETPLAY
          case MENU_SETTINGS_NETPLAY_ENABLE:
             strlcpy(type_str, g_extern.netplay_enable ? "ON" : "OFF", type_str_size);
@@ -5038,9 +5039,6 @@ static void menu_common_setting_set_label(char *type_str, size_t type_str_size, 
             break;
          case MENU_SETTINGS_NETPLAY_TCP_UDP_PORT:
             snprintf(type_str, type_str_size, "%d", g_extern.netplay_port ? g_extern.netplay_port : RARCH_DEFAULT_PORT);
-            break;
-         case MENU_SETTINGS_NETPLAY_NICKNAME:
-            snprintf(type_str, type_str_size, "%s", g_extern.netplay_nick);
             break;
          case MENU_SETTINGS_NETPLAY_MODE:
             snprintf(type_str, type_str_size, g_extern.netplay_is_client ? "ON" : "OFF");

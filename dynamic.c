@@ -586,13 +586,8 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          break;
 
       case RETRO_ENVIRONMENT_GET_USERNAME:
-         //TODO/FIXME - username should be decoupled from HAVE_NETPLAY
-#ifdef HAVE_NETPLAY
-         *(const char**)data = *g_extern.netplay_nick ? g_extern.netplay_nick : NULL;
-         RARCH_LOG("Environ GET_USERNAME: \"%s\".\n", g_extern.netplay_nick);
-#else
-         *(const char**)data = NULL;
-#endif
+         *(const char**)data = *g_settings.username ? g_settings.username : NULL;
+         RARCH_LOG("Environ GET_USERNAME: \"%s\".\n", g_settings.username);
          break;
 
       case RETRO_ENVIRONMENT_SET_PIXEL_FORMAT:
