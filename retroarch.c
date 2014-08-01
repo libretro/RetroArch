@@ -1475,6 +1475,17 @@ void rarch_deinit_msg_queue(void)
 
 static void init_cheats(void)
 {
+   bool allow_cheats = true;
+#ifdef HAVE_NETPLAY
+   allow_cheats &= !g_extern.netplay;
+#endif
+#ifdef HAVE_BSV_MOVIE
+   allow_cheats &= !g_extern.bsv.movie;
+#endif
+
+   if (!allow_cheats)
+      return;
+
    if (*g_settings.cheat_database)
       g_extern.cheat = cheat_manager_new(g_settings.cheat_database);
 }
@@ -2885,6 +2896,23 @@ static void validate_cpu_features(void)
 #endif
 }
 
+static void init_sram(void)
+{
+#ifdef HAVE_NETPLAY
+   g_extern.use_sram = g_extern.use_sram && !g_extern.sram_save_disable && (!g_extern.netplay || !g_extern.netplay_is_client);
+#else
+   g_extern.use_sram = g_extern.use_sram && !g_extern.sram_save_disable;
+#endif
+
+   if (!g_extern.use_sram)
+      RARCH_LOG("SRAM will not be saved.\n");
+
+#if defined(HAVE_THREADS)
+   if (g_extern.use_sram)
+      rarch_init_autosave();
+#endif
+}
+
 int rarch_main_init(int argc, char *argv[])
 {
    init_state();
@@ -2921,7 +2949,6 @@ int rarch_main_init(int argc, char *argv[])
    pretro_init();
 
    g_extern.use_sram = !g_extern.libretro_dummy && !g_extern.libretro_no_content;
-   bool allow_cheats = true;
 
    if (g_extern.libretro_no_content && !g_extern.libretro_dummy)
    {
@@ -2972,28 +2999,9 @@ int rarch_main_init(int argc, char *argv[])
    rarch_init_recording();
 #endif
 
-#ifdef HAVE_NETPLAY
-   g_extern.use_sram = g_extern.use_sram && !g_extern.sram_save_disable && (!g_extern.netplay || !g_extern.netplay_is_client);
-#else
-   g_extern.use_sram = g_extern.use_sram && !g_extern.sram_save_disable;
-#endif
+   init_sram();
 
-   if (!g_extern.use_sram)
-      RARCH_LOG("SRAM will not be saved.\n");
-
-#if defined(HAVE_THREADS)
-   if (g_extern.use_sram)
-      rarch_init_autosave();
-#endif
-
-#ifdef HAVE_NETPLAY
-   allow_cheats &= !g_extern.netplay;
-#endif
-#ifdef HAVE_BSV_MOVIE
-   allow_cheats &= !g_extern.bsv.movie;
-#endif
-   if (allow_cheats)
-      init_cheats();
+   init_cheats();
 
    g_extern.error_in_init = false;
    g_extern.main_is_init  = true;
