@@ -2731,9 +2731,12 @@ static void menu_common_shader_manager_init(void *data)
       return;
 
 #ifdef HAVE_SHADER_MANAGER
+   char cgp_path[PATH_MAX];
    config_file_t *conf = NULL;
 
    const char *config_path = NULL;
+   struct gfx_shader *shader = (struct gfx_shader*)menu->shader;
+
    if (*g_extern.core_specific_config_path && g_settings.core_specific_config)
       config_path = g_extern.core_specific_config_path;
    else if (*g_extern.config_path)
@@ -2755,7 +2758,6 @@ static void menu_common_shader_manager_init(void *data)
       strlcpy(menu->default_cgp, "menu.cgp", sizeof(menu->default_cgp));
    }
 
-   char cgp_path[PATH_MAX];
 
    const char *ext = path_get_extension(g_settings.video.shader_path);
    if (strcmp(ext, "glslp") == 0 || strcmp(ext, "cgp") == 0)
@@ -2763,18 +2765,16 @@ static void menu_common_shader_manager_init(void *data)
       conf = config_file_new(g_settings.video.shader_path);
       if (conf)
       {
-         if (gfx_shader_read_conf_cgp(conf, menu->shader))
+         if (gfx_shader_read_conf_cgp(conf, shader))
          {
-            gfx_shader_resolve_relative(menu->shader, g_settings.video.shader_path);
-            gfx_shader_resolve_parameters(conf, menu->shader);
+            gfx_shader_resolve_relative(shader, g_settings.video.shader_path);
+            gfx_shader_resolve_parameters(conf, shader);
          }
          config_file_free(conf);
       }
    }
    else if (strcmp(ext, "glsl") == 0 || strcmp(ext, "cg") == 0)
    {
-      struct gfx_shader *shader = menu->shader;
-
       strlcpy(shader->pass[0].source.path, g_settings.video.shader_path,
             sizeof(shader->pass[0].source.path));
       shader->passes = 1;
@@ -2795,10 +2795,10 @@ static void menu_common_shader_manager_init(void *data)
 
       if (conf)
       {
-         if (gfx_shader_read_conf_cgp(conf, menu->shader))
+         if (gfx_shader_read_conf_cgp(conf, shader))
          {
-            gfx_shader_resolve_relative(menu->shader, cgp_path);
-            gfx_shader_resolve_parameters(conf, menu->shader);
+            gfx_shader_resolve_relative(shader, cgp_path);
+            gfx_shader_resolve_parameters(conf, shader);
          }
          config_file_free(conf);
       }
@@ -2806,30 +2806,32 @@ static void menu_common_shader_manager_init(void *data)
 #endif
 }
 
-static void menu_common_shader_manager_set_preset(struct gfx_shader *shader, unsigned type, const char *path)
+static void menu_common_shader_manager_set_preset(struct gfx_shader *shader, unsigned type, const char *cgp_path)
 {
 #ifdef HAVE_SHADER_MANAGER
-   RARCH_LOG("Setting Menu shader: %s.\n", path ? path : "N/A (stock)");
+   RARCH_LOG("Setting Menu shader: %s.\n", cgp_path ? cgp_path : "N/A (stock)");
 
-   if (video_set_shader_func((enum rarch_shader_type)type, path))
+   if (video_set_shader_func((enum rarch_shader_type)type, cgp_path))
    {
       // Makes sure that we use Menu CGP shader on driver reinit.
       // Only do this when the cgp actually works to avoid potential errors.
-      strlcpy(g_settings.video.shader_path, path ? path : "",
+      strlcpy(g_settings.video.shader_path, cgp_path ? cgp_path : "",
             sizeof(g_settings.video.shader_path));
       g_settings.video.shader_enable = true;
 
-      if (path && shader)
+      if (cgp_path && shader)
       {
          // Load stored CGP into menu on success.
          // Used when a preset is directly loaded.
          // No point in updating when the CGP was created from the menu itself.
-         config_file_t *conf = config_file_new(path);
+         config_file_t *conf = config_file_new(cgp_path);
          if (conf)
          {
-            gfx_shader_read_conf_cgp(conf, shader);
-            gfx_shader_resolve_relative(shader, path);
-            gfx_shader_resolve_parameters(conf, shader);
+            if (gfx_shader_read_conf_cgp(conf, shader))
+            {
+               gfx_shader_resolve_relative(shader, cgp_path);
+               gfx_shader_resolve_parameters(conf, shader);
+            }
             config_file_free(conf);
          }
 
