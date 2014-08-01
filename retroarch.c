@@ -2820,7 +2820,7 @@ void rarch_main_clear_state(void)
 }
 
 #ifdef HAVE_ZLIB
-#define DEFAULT_EXT "ZIP|zip"
+#define DEFAULT_EXT "zip"
 #else
 #define DEFAULT_EXT ""
 #endif
