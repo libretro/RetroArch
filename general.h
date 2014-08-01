@@ -709,7 +709,6 @@ struct global
    bool config_save_on_exit;
    char error_string[1024];
    jmp_buf error_sjlj_context;
-   unsigned menu_toggle_behavior;
 
    bool libretro_no_content;
    bool libretro_dummy;
