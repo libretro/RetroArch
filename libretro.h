@@ -660,8 +660,14 @@ enum retro_mod
                                            //
                                            // A frontend must guarantee that this environment call completes in constant time.
 
-
-
+#define RETRO_ENVIRONMENT_GET_USERNAME 38 
+                                           // const char **
+                                           // Returns the specified username of the frontend, if specified.
+                                           // This username can be used as a nickname for a core that has online facilities or any other mode where personalization                                               // of the user is desirable.
+                                           // The returned value can be NULL.
+                                           // If this environ callback is used by a core that requires a valid username, a default username should be specified
+                                           // by the core.
+                                           //
 
 #define RETRO_MEMDESC_CONST     (1 << 0)   // The frontend will never change this memory area once retro_load_game has returned.
 #define RETRO_MEMDESC_BIGENDIAN (1 << 1)   // The memory area contains big endian data. Default is little endian.

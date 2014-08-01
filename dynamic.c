@@ -585,6 +585,16 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          RARCH_LOG("Environ SAVE_DIRECTORY: \"%s\".\n", g_extern.savefile_dir);
          break;
 
+      case RETRO_ENVIRONMENT_GET_USERNAME:
+         //TODO/FIXME - username should be decoupled from HAVE_NETPLAY
+#ifdef HAVE_NETPLAY
+         *(const char**)data = *g_extern.netplay_nick ? g_extern.netplay_nick : NULL;
+         RARCH_LOG("Environ GET_USERNAME: \"%s\".\n", g_extern.netplay_nick);
+#else
+         *(const char**)data = NULL;
+#endif
+         break;
+
       case RETRO_ENVIRONMENT_SET_PIXEL_FORMAT:
       {
          enum retro_pixel_format pix_fmt = *(const enum retro_pixel_format*)data;
