@@ -342,7 +342,10 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
 #ifdef HAVE_OVERLAY
          file_list_push(menu->selection_buf, "Overlay Options", MENU_SETTINGS_OVERLAY_OPTIONS, 0);
 #endif
+         file_list_push(menu->selection_buf, "User Options", MENU_SETTINGS_USER_OPTIONS, 0);
+#ifdef HAVE_NETPLAY
          file_list_push(menu->selection_buf, "Netplay Options", MENU_SETTINGS_NETPLAY_OPTIONS, 0);
+#endif
          file_list_push(menu->selection_buf, "Path Options", MENU_SETTINGS_PATH_OPTIONS, 0);
          if (g_extern.main_is_init && !g_extern.libretro_dummy)
          {
@@ -376,10 +379,16 @@ static void menu_common_entries_init(void *data, unsigned menu_type)
          if ((current_setting = setting_data_find_setting(setting_data, "input_overlay_scale")))
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_OVERLAY_SCALE, 0);
          break;
+      case MENU_SETTINGS_USER_OPTIONS:
+         file_list_clear(menu->selection_buf);
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "netplay_nickname")))
+            file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_NETPLAY_NICKNAME, 0);
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "user_language")))
+            file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_USER_LANGUAGE, 0);
+         break;
+#ifdef HAVE_NETPLAY
       case MENU_SETTINGS_NETPLAY_OPTIONS:
          file_list_clear(menu->selection_buf);
-         file_list_push(menu->selection_buf, "Username", MENU_SETTINGS_NETPLAY_NICKNAME, 0);
-#ifdef HAVE_NETPLAY
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "netplay_enable")))
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_NETPLAY_ENABLE, 0);
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "netplay_mode")))
@@ -1402,6 +1411,7 @@ static unsigned menu_common_type_is(unsigned type)
       type == MENU_SETTINGS_PATH_OPTIONS ||
       type == MENU_SETTINGS_PRIVACY_OPTIONS ||
       type == MENU_SETTINGS_OVERLAY_OPTIONS ||
+      type == MENU_SETTINGS_USER_OPTIONS ||
       type == MENU_SETTINGS_NETPLAY_OPTIONS ||
       type == MENU_SETTINGS_OPTIONS ||
       type == MENU_SETTINGS_DRIVERS ||
@@ -1593,6 +1603,7 @@ static int menu_settings_iterate(unsigned action)
             || menu_type == MENU_SETTINGS_PATH_OPTIONS
             || menu_type == MENU_SETTINGS_OVERLAY_OPTIONS
             || menu_type == MENU_SETTINGS_NETPLAY_OPTIONS
+            || menu_type == MENU_SETTINGS_USER_OPTIONS
             || menu_type == MENU_SETTINGS_OPTIONS
             || menu_type == MENU_SETTINGS_DRIVERS
             || menu_type == MENU_SETTINGS_PERFORMANCE_COUNTERS
@@ -2246,6 +2257,14 @@ static void menu_common_setting_set_current_unsigned_integer(rarch_setting_t *se
          *setting->value.unsigned_integer = setting->default_value.unsigned_integer;
          break;
    }
+
+   if (setting->change_handler)
+      setting->change_handler(setting);
+}
+
+void menu_common_setting_set_current_string(rarch_setting_t *setting, const char *str)
+{
+   strlcpy(setting->value.string, str, setting->size);
 
    if (setting->change_handler)
       setting->change_handler(setting);
@@ -3460,6 +3479,10 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
       case MENU_SETTINGS_GPU_SCREENSHOT:
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "video_gpu_screenshot")))
             menu_common_setting_set_current_boolean(current_setting, action);
+         break;
+      case MENU_SETTINGS_USER_LANGUAGE:
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "user_language")))
+            menu_common_setting_set_current_unsigned_integer(current_setting, 1, action, true, true);
          break;
       case MENU_SETTINGS_REWIND_GRANULARITY:
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "rewind_granularity")))
@@ -4899,6 +4922,7 @@ static void menu_common_setting_set_label(char *type_str, size_t type_str_size, 
          case MENU_SETTINGS_PATH_OPTIONS:
          case MENU_SETTINGS_OVERLAY_OPTIONS:
          case MENU_SETTINGS_NETPLAY_OPTIONS:
+         case MENU_SETTINGS_USER_OPTIONS:
          case MENU_SETTINGS_PRIVACY_OPTIONS:
          case MENU_SETTINGS_OPTIONS:
          case MENU_SETTINGS_PERFORMANCE_COUNTERS:
@@ -5023,6 +5047,26 @@ static void menu_common_setting_set_label(char *type_str, size_t type_str_size, 
             break;
          case MENU_SETTINGS_WINDOW_COMPOSITING_ENABLE:
             strlcpy(type_str, g_settings.video.disable_composition ? "OFF" : "ON", type_str_size);
+            break;
+         case MENU_SETTINGS_USER_LANGUAGE:
+            {
+               static const char *modes[] = {
+                  "English",
+                  "Japanese",
+                  "French",
+                  "Spanish",
+                  "German",
+                  "Italian",
+                  "Dutch",
+                  "Portuguese",
+                  "Russian",
+                  "Korean",
+                  "Chinese (Traditional)",
+                  "Chinese (Simplified)"
+               };
+
+               strlcpy(type_str, modes[g_settings.user_language], type_str_size);
+            }
             break;
          case MENU_SETTINGS_NETPLAY_NICKNAME:
             snprintf(type_str, type_str_size, "%s", g_settings.username);

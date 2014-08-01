@@ -456,6 +456,8 @@ void config_set_defaults(void)
 #endif
    g_settings.core_specific_config = default_core_specific_config;
 
+   g_settings.user_language = 0;
+
 #ifdef RARCH_CONSOLE
    g_extern.console.screen.gamma_correction = DEFAULT_GAMMA;
    g_extern.lifecycle_state |= (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE);
@@ -1093,6 +1095,7 @@ bool config_load_file(const char *path, bool set_defaults)
 
    if (!g_extern.has_set_username)
       CONFIG_GET_PATH(username, "netplay_nickname");
+   CONFIG_GET_INT(user_language, "user_language");
 #ifdef HAVE_NETPLAY
    if (!g_extern.has_set_netplay_mode)
       CONFIG_GET_BOOL_EXTERN(netplay_is_spectate, "netplay_spectator_mode_enable");
@@ -1474,6 +1477,7 @@ bool config_save_file(const char *path)
    config_set_int(conf, "netplay_delay_frames", g_extern.netplay_sync_frames);
 #endif
    config_set_string(conf, "netplay_nickname", g_settings.username);
+   config_set_int(conf, "user_language", g_settings.user_language);
 
    bool custom_bgm_enable_val = g_extern.lifecycle_state & (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE);
    config_set_bool(conf, "custom_bgm_enable", custom_bgm_enable_val);

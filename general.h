@@ -356,6 +356,7 @@ struct settings
    bool core_specific_config;
 
    char username[32];
+   unsigned int user_language;
 };
 
 typedef struct rarch_resolution

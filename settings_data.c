@@ -969,6 +969,8 @@ static void general_read_handler(const void *data)
     else if (!strcmp(setting->name, "osk_enable"))
        *setting->value.boolean = g_settings.osk.enable;
 #endif
+    else if (!strcmp(setting->name, "user_language"))
+       *setting->value.unsigned_integer = g_settings.user_language;
 }
 
 static void general_write_handler(const void *data)
@@ -1327,6 +1329,8 @@ static void general_write_handler(const void *data)
     else if (!strcmp(setting->name, "osk_enable"))
        g_settings.osk.enable = *setting->value.boolean;
 #endif
+    else if (!strcmp(setting->name, "user_language"))
+       g_settings.user_language = *setting->value.unsigned_integer;
 }
 
 #define NEXT (list[index++])
@@ -1626,16 +1630,26 @@ rarch_setting_t* setting_data_get_list(void)
          END_GROUP()
 #endif
 
+#ifdef HAVE_NETPLAY
          /*******************/
          /* NETPLAY OPTIONS */
          /*******************/
          START_GROUP("Netplay Options")
          START_SUB_GROUP("State")
-#ifdef HAVE_NETPLAY
          CONFIG_BOOL(g_extern.netplay_enable,            "netplay_enable",  "Netplay Enable",        false, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
          CONFIG_BOOL(g_extern.netplay_is_client,         "netplay_mode",    "Netplay Client Enable",          false, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
          CONFIG_BOOL(g_extern.netplay_is_spectate,       "netplay_spectator_mode_enable",    "Netplay Spectator Enable",          false, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+         END_SUB_GROUP()
+         END_GROUP()
 #endif
+
+         /*******************/
+         /* USER OPTIONS */
+         /*******************/
+         START_GROUP("User Options")
+         START_SUB_GROUP("State")
+         CONFIG_PATH(g_settings.username,          "netplay_nickname",   "Username",       "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+         CONFIG_UINT(g_settings.user_language,     "user_language",      "Language",       def_user_language, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_RANGE(0, RETRO_LANGUAGE_LAST-1)
          END_SUB_GROUP()
          END_GROUP()
 

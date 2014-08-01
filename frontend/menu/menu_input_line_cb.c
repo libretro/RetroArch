@@ -27,6 +27,10 @@
 #include "menu_common.h"
 #include "../../input/keyboard_line.h"
 #include "menu_input_line_cb.h"
+#include "../../settings_data.h"
+
+//forward decls
+extern void menu_common_setting_set_current_string(rarch_setting_t *setting, const char *str);
 
 void menu_key_start_line(void *data, const char *label, input_keyboard_line_complete_t cb)
 {
@@ -83,9 +87,14 @@ void netplay_ipaddress_callback(void *userdata, const char *str)
 void netplay_nickname_callback(void *userdata, const char *str)
 {
    menu_handle_t *menu = (menu_handle_t*)userdata;
-
-   if (str && *str)
-      strlcpy(g_settings.username, str, sizeof(g_settings.username));
+   rarch_setting_t *current_setting;
+   rarch_setting_t *setting_data = (rarch_setting_t *)setting_data_get_list();
+ 
+   if (str && *str && setting_data)
+   {
+      if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "netplay_nickname")))
+         menu_common_setting_set_current_string(current_setting, str);
+   }
    menu_key_end_line(menu);
 }
 #endif

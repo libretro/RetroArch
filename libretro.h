@@ -164,6 +164,26 @@ extern "C" {
 #define RETRO_REGION_NTSC  0
 #define RETRO_REGION_PAL   1
 
+// Id values for LANGUAGE
+enum retro_language
+{
+   RETRO_LANGUAGE_ENGLISH             =  0,
+   RETRO_LANGUAGE_JAPANESE            =  1,
+   RETRO_LANGUAGE_FRENCH              =  2,
+   RETRO_LANGUAGE_SPANISH             =  3,
+   RETRO_LANGUAGE_GERMAN              =  4,
+   RETRO_LANGUAGE_ITALIAN             =  5,
+   RETRO_LANGUAGE_DUTCH               =  6,
+   RETRO_LANGUAGE_PORTUGUESE          =  7,
+   RETRO_LANGUAGE_RUSSIAN             =  8,
+   RETRO_LANGUAGE_KOREAN              =  9,
+   RETRO_LANGUAGE_CHINESE_TRADITIONAL = 10,
+   RETRO_LANGUAGE_CHINESE_SIMPLIFIED  = 11,
+   RETRO_LANGUAGE_LAST,
+
+   RETRO_LANGUAGE_DUMMY          = INT_MAX // Ensure sizeof(enum) == sizeof(int)
+};
+
 // Passed to retro_get_memory_data/size().
 // If the memory type doesn't apply to the implementation NULL/0 can be returned.
 #define RETRO_MEMORY_MASK        0xff
@@ -662,11 +682,17 @@ enum retro_mod
 
 #define RETRO_ENVIRONMENT_GET_USERNAME 38 
                                            // const char **
-                                           // Returns the specified username of the frontend, if specified.
+                                           // Returns the specified username of the frontend, if specified by the user.
                                            // This username can be used as a nickname for a core that has online facilities or any other mode where personalization                                               // of the user is desirable.
                                            // The returned value can be NULL.
                                            // If this environ callback is used by a core that requires a valid username, a default username should be specified
                                            // by the core.
+                                           //
+                                           //
+#define RETRO_ENVIRONMENT_GET_LANGUAGE 39
+                                           // const unsigned * --
+                                           // Returns the specified language of the frontend, if specified by the user.
+                                           // It can be used by the core for personalization purposes.
                                            //
 
 #define RETRO_MEMDESC_CONST     (1 << 0)   // The frontend will never change this memory area once retro_load_game has returned.
