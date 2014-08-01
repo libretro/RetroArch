@@ -2674,6 +2674,8 @@ static void check_netplay_flip(void)
       netplay_flip_players(g_extern.netplay);
 
    old_pressed = pressed;
+
+   rarch_check_fullscreen();
 }
 #endif
 
@@ -2729,6 +2731,40 @@ static void check_grab_mouse_toggle(void)
    old_pressed = pressed;
 }
 
+static void check_flip(void)
+{
+   check_pause();
+   check_oneshot();
+
+   if (rarch_check_fullscreen() && g_extern.is_paused)
+      rarch_render_cached_frame();
+
+   if (g_extern.is_paused && !g_extern.is_oneshot)
+      return;
+
+   check_fast_forward_button();
+
+   check_stateslots();
+#ifdef HAVE_BSV_MOVIE
+   check_savestates(g_extern.bsv.movie);
+#else
+   check_savestates(false);
+#endif
+
+   check_rewind();
+   check_slowmotion();
+
+#ifdef HAVE_BSV_MOVIE
+   check_movie();
+#endif
+
+   check_shader_dir();
+   check_cheats();
+   check_disk();
+
+   check_reset();
+}
+
 static void do_state_checks(void)
 {
    rarch_check_block_hotkey();
@@ -2746,47 +2782,11 @@ static void do_state_checks(void)
 #endif
 
 #ifdef HAVE_NETPLAY
-   if (!g_extern.netplay)
-   {
-#endif
-      check_pause();
-      check_oneshot();
-
-      if (rarch_check_fullscreen() && g_extern.is_paused)
-         rarch_render_cached_frame();
-
-      if (g_extern.is_paused && !g_extern.is_oneshot)
-         return;
-
-      check_fast_forward_button();
-
-      check_stateslots();
-#ifdef HAVE_BSV_MOVIE
-      check_savestates(g_extern.bsv.movie);
-#else
-      check_savestates(false);
-#endif
-
-      check_rewind();
-      check_slowmotion();
-
-#ifdef HAVE_BSV_MOVIE
-      check_movie();
-#endif
-
-      check_shader_dir();
-      check_cheats();
-      check_disk();
-
-      check_reset();
-#ifdef HAVE_NETPLAY
-   }
-   else
-   {
+   if (g_extern.netplay)
       check_netplay_flip();
-      rarch_check_fullscreen();
-   }
+   else
 #endif
+      check_flip();
 }
 
 static void init_state(void)
