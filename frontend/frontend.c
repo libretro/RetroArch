@@ -102,13 +102,7 @@ static int main_entry_iterate_shutdown(args_type() args)
 
 static int main_entry_iterate_content(args_type() args)
 {
-   bool r;
-   if (g_extern.is_paused && !g_extern.is_oneshot)
-      r = rarch_main_idle_iterate();
-   else
-      r = rarch_main_iterate();
-
-   if (r)
+   if (rarch_main_iterate())
    {
       if (driver.frontend_ctx && driver.frontend_ctx->process_events)
          driver.frontend_ctx->process_events(args);
@@ -388,7 +382,7 @@ returntype main_entry(signature())
 #if defined(HAVE_MENU)
    while (!main_entry_iterate(signature_expand(), args));
 #else
-   while ((g_extern.is_paused && !g_extern.is_oneshot) ? rarch_main_idle_iterate() : rarch_main_iterate());
+   while (rarch_main_iterate());
 #endif
 
    main_exit(args);

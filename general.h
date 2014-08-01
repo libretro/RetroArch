@@ -770,7 +770,6 @@ int rarch_main(int argc, char *argv[]);
 void rarch_main_init_wrap(const struct rarch_main_wrap *args, int *argc, char **argv);
 
 int rarch_main_init(int argc, char *argv[]);
-bool rarch_main_idle_iterate(void);
 void rarch_main_command(unsigned action);
 bool rarch_main_iterate(void);
 void rarch_main_deinit(void);

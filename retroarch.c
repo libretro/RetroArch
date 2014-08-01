@@ -3159,6 +3159,13 @@ bool rarch_main_iterate(void)
    // Checks for stuff like fullscreen, save states, etc.
    do_state_checks();
 
+   if (g_extern.is_paused && !g_extern.is_oneshot)
+   {
+      rarch_input_poll();
+      rarch_sleep(10);
+      return true;
+   }
+
    // Run libretro for one frame.
 #if defined(HAVE_THREADS)
    lock_autosave();
@@ -3351,15 +3358,4 @@ void rarch_main_init_wrap(const struct rarch_main_wrap *args, int *argc, char **
    for (i = 0; i < *argc; i++)
       RARCH_LOG("arg #%d: %s\n", i, argv[i]);
 #endif
-}
-
-bool rarch_main_idle_iterate(void)
-{
-   if (input_key_pressed_func(RARCH_QUIT_KEY) || !video_alive_func())
-      return false;
-
-   do_state_checks();
-   rarch_input_poll();
-   rarch_sleep(10);
-   return true;
 }
