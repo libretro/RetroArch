@@ -1155,14 +1155,14 @@ static bool copy_config(const char *src_path, const char *dst_path)
       result.accessoryView = accessory;
    }
    
-   [(id)result.accessoryView setSelectedSegmentIndex:(g_extern.state_slot < 10) ? g_extern.state_slot : -1];
+   [(id)result.accessoryView setSelectedSegmentIndex:(g_settings.state_slot < 10) ? g_settings.state_slot : -1];
 
    return result;
 }
 
 + (void)changed:(UISegmentedControl*)sender
 {
-   g_extern.state_slot = (int)sender.selectedSegmentIndex;
+   g_settings.state_slot = (int)sender.selectedSegmentIndex;
 }
 
 - (void)wasSelectedOnTableView:(UITableView *)tableView ofController:(UIViewController *)controller

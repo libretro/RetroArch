@@ -308,6 +308,8 @@ struct settings
       char autoconfig_dir[PATH_MAX];
    } input;
 
+   int state_slot;
+
    char core_options_path[PATH_MAX];
    char content_history_path[PATH_MAX];
    unsigned game_history_size;
@@ -457,7 +459,6 @@ struct global
    char bps_name[PATH_MAX];
    char ips_name[PATH_MAX];
 
-   int state_slot;
 
    struct
    {

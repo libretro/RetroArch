@@ -905,7 +905,7 @@ bool config_load_file(const char *path, bool set_defaults)
    CONFIG_GET_INT_EXTERN(console.screen.resolutions.current.id, "current_resolution_id");
    CONFIG_GET_INT_EXTERN(console.sound.mode, "sound_mode");
 #endif
-   CONFIG_GET_INT_EXTERN(state_slot, "state_slot");
+   CONFIG_GET_INT(state_slot, "state_slot");
 
    CONFIG_GET_INT_EXTERN(console.screen.viewports.custom_vp.x, "custom_viewport_x");
    CONFIG_GET_INT_EXTERN(console.screen.viewports.custom_vp.y, "custom_viewport_y");
@@ -1467,7 +1467,7 @@ bool config_save_file(const char *path)
    // g_extern
    config_set_bool(conf, "config_save_on_exit", g_extern.config_save_on_exit);
    config_set_int(conf, "sound_mode", g_extern.console.sound.mode);
-   config_set_int(conf, "state_slot", g_extern.state_slot);
+   config_set_int(conf, "state_slot", g_settings.state_slot);
 
 #ifdef HAVE_NETPLAY
    config_set_bool(conf, "netplay_spectator_mode_enable", g_extern.netplay_is_spectate);

@@ -796,7 +796,7 @@ static void general_read_handler(const void *data)
 #endif
     }
     else if (!strcmp(setting->name, "state_slot"))
-        *setting->value.integer = g_extern.state_slot;
+        *setting->value.integer = g_settings.state_slot;
     else if (!strcmp(setting->name, "audio_rate_control_delta"))
     {
        *setting->value.fraction = g_settings.audio.rate_control_delta;
@@ -1092,7 +1092,7 @@ static void general_write_handler(const void *data)
         rarch_init_dsp_filter();
     }
     else if (!strcmp(setting->name, "state_slot"))
-        g_extern.state_slot = *setting->value.integer;
+        g_settings.state_slot = *setting->value.integer;
     else if (!strcmp(setting->name, "audio_rate_control_delta"))
     {
         if (*setting->value.fraction < 0.0005)
@@ -1443,7 +1443,7 @@ rarch_setting_t* setting_data_get_list(void)
          CONFIG_BOOL(g_settings.savestate_auto_index,       "savestate_auto_index",       "Save State Auto Index",      savestate_auto_index, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
          CONFIG_BOOL(g_settings.savestate_auto_save,        "savestate_auto_save",        "Auto Save State",            savestate_auto_save, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
          CONFIG_BOOL(g_settings.savestate_auto_load,        "savestate_auto_load",        "Auto Load State",            savestate_auto_load, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
-         CONFIG_INT(g_extern.state_slot,                    "state_slot",                 "State Slot",                 0, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+         CONFIG_INT(g_settings.state_slot,                    "state_slot",                 "State Slot",                 0, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
          END_SUB_GROUP()
        START_SUB_GROUP("Miscellaneous")
        CONFIG_BOOL(g_settings.network_cmd_enable,         "network_cmd_enable",         "Network Commands",           network_cmd_enable, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)

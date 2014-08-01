@@ -3543,15 +3543,15 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
             return -1;
          }
          else if (action == MENU_ACTION_START)
-            g_extern.state_slot = 0;
+            g_settings.state_slot = 0;
          else if (action == MENU_ACTION_LEFT)
          {
             // Slot -1 is (auto) slot.
-            if (g_extern.state_slot >= 0)
-               g_extern.state_slot--;
+            if (g_settings.state_slot >= 0)
+               g_settings.state_slot--;
          }
          else if (action == MENU_ACTION_RIGHT)
-            g_extern.state_slot++;
+            g_settings.state_slot++;
          break;
       case MENU_SETTINGS_SCREENSHOT:
          if (action == MENU_ACTION_OK)
@@ -4777,10 +4777,10 @@ static void menu_common_setting_set_label(char *type_str, size_t type_str_size, 
             break;
          case MENU_SETTINGS_SAVESTATE_SAVE:
          case MENU_SETTINGS_SAVESTATE_LOAD:
-            if (g_extern.state_slot < 0)
+            if (g_settings.state_slot < 0)
                strlcpy(type_str, "-1 (auto)", type_str_size);
             else
-               snprintf(type_str, type_str_size, "%d", g_extern.state_slot);
+               snprintf(type_str, type_str_size, "%d", g_settings.state_slot);
             break;
          case MENU_SETTINGS_AUDIO_LATENCY:
             snprintf(type_str, type_str_size, "%d ms", g_settings.audio.latency);

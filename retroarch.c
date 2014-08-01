@@ -1778,8 +1778,8 @@ static void set_savestate_auto_index(void)
 
    dir_list_free(dir_list);
 
-   g_extern.state_slot = max_index;
-   RARCH_LOG("Found last state slot: #%u\n", g_extern.state_slot);
+   g_settings.state_slot = max_index;
+   RARCH_LOG("Found last state slot: #%u\n", g_settings.state_slot);
 }
 
 static void fill_pathnames(void)
@@ -1911,9 +1911,9 @@ void rarch_load_state(void)
 {
    char load_path[PATH_MAX], msg[512];
 
-   if (g_extern.state_slot > 0)
-      snprintf(load_path, sizeof(load_path), "%s%d", g_extern.savestate_name, g_extern.state_slot);
-   else if (g_extern.state_slot < 0)
+   if (g_settings.state_slot > 0)
+      snprintf(load_path, sizeof(load_path), "%s%d", g_extern.savestate_name, g_settings.state_slot);
+   else if (g_settings.state_slot < 0)
       snprintf(load_path, sizeof(load_path), "%s.auto", g_extern.savestate_name);
    else
       snprintf(load_path, sizeof(load_path), "%s", g_extern.savestate_name);
@@ -1922,10 +1922,10 @@ void rarch_load_state(void)
    {
       if (load_state(load_path))
       {
-         if (g_extern.state_slot < 0)
+         if (g_settings.state_slot < 0)
             snprintf(msg, sizeof(msg), "Loaded state from slot #-1 (auto).");
          else
-            snprintf(msg, sizeof(msg), "Loaded state from slot #%d.", g_extern.state_slot);
+            snprintf(msg, sizeof(msg), "Loaded state from slot #%d.", g_settings.state_slot);
       }
       else
          snprintf(msg, sizeof(msg), "Failed to load state from \"%s\".", load_path);
@@ -1943,11 +1943,11 @@ void rarch_save_state(void)
    char save_path[PATH_MAX], msg[512];
 
    if (g_settings.savestate_auto_index)
-      g_extern.state_slot++;
+      g_settings.state_slot++;
 
-   if (g_extern.state_slot > 0)
-      snprintf(save_path, sizeof(save_path), "%s%d", g_extern.savestate_name, g_extern.state_slot);
-   else if (g_extern.state_slot < 0)
+   if (g_settings.state_slot > 0)
+      snprintf(save_path, sizeof(save_path), "%s%d", g_extern.savestate_name, g_settings.state_slot);
+   else if (g_settings.state_slot < 0)
       snprintf(save_path, sizeof(save_path), "%s.auto", g_extern.savestate_name);
    else
       snprintf(save_path, sizeof(save_path), "%s", g_extern.savestate_name);
@@ -1956,10 +1956,10 @@ void rarch_save_state(void)
    {
       if (save_state(save_path))
       {
-         if (g_extern.state_slot < 0)
+         if (g_settings.state_slot < 0)
             snprintf(msg, sizeof(msg), "Saved state to slot #-1 (auto).");
          else
-            snprintf(msg, sizeof(msg), "Saved state to slot #%u.", g_extern.state_slot);
+            snprintf(msg, sizeof(msg), "Saved state to slot #%u.", g_settings.state_slot);
       }
       else
          snprintf(msg, sizeof(msg), "Failed to save state to \"%s\".", save_path);
@@ -2026,13 +2026,13 @@ bool rarch_check_fullscreen(void)
 
 void rarch_state_slot_increase(void)
 {
-   g_extern.state_slot++;
+   g_settings.state_slot++;
 
    if (g_extern.msg_queue)
       msg_queue_clear(g_extern.msg_queue);
    char msg[256];
 
-   snprintf(msg, sizeof(msg), "State slot: %u", g_extern.state_slot);
+   snprintf(msg, sizeof(msg), "State slot: %u", g_settings.state_slot);
 
    if (g_extern.msg_queue)
       msg_queue_push(g_extern.msg_queue, msg, 1, 180);
@@ -2042,15 +2042,15 @@ void rarch_state_slot_increase(void)
 
 void rarch_state_slot_decrease(void)
 {
-   if (g_extern.state_slot > 0)
-      g_extern.state_slot--;
+   if (g_settings.state_slot > 0)
+      g_settings.state_slot--;
 
    if (g_extern.msg_queue)
       msg_queue_clear(g_extern.msg_queue);
 
    char msg[256];
 
-   snprintf(msg, sizeof(msg), "State slot: %u", g_extern.state_slot);
+   snprintf(msg, sizeof(msg), "State slot: %u", g_settings.state_slot);
 
    if (g_extern.msg_queue)
       msg_queue_push(g_extern.msg_queue, msg, 1, 180);
@@ -2188,10 +2188,10 @@ static void movie_record_toggle(void)
       g_settings.rewind_granularity = 1;
 
       char path[PATH_MAX];
-      if (g_extern.state_slot > 0)
+      if (g_settings.state_slot > 0)
       {
          snprintf(path, sizeof(path), "%s%u.bsv",
-               g_extern.bsv.movie_path, g_extern.state_slot);
+               g_extern.bsv.movie_path, g_settings.state_slot);
       }
       else
       {
