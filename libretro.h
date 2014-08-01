@@ -692,7 +692,7 @@ enum retro_mod
 #define RETRO_ENVIRONMENT_GET_LANGUAGE 39
                                            // const unsigned * --
                                            // Returns the specified language of the frontend, if specified by the user.
-                                           // It can be used by the core for personalization purposes.
+                                           // It can be used by the core for localization purposes.
                                            //
 
 #define RETRO_MEMDESC_CONST     (1 << 0)   // The frontend will never change this memory area once retro_load_game has returned.
