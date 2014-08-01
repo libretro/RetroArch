@@ -758,7 +758,6 @@ bool config_load_file(const char *path, bool set_defaults);
 bool config_save_file(const char *path);
 bool config_read_keybinds(const char *path);
 
-void rarch_game_reset(void);
 void rarch_main_clear_state(void);
 void rarch_init_system_info(void);
 int rarch_main(int argc, char *argv[]);

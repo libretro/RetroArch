@@ -1729,16 +1729,18 @@ void rarch_deinit_autosave(void)
    unsigned i;
    for (i = 0; i < g_extern.num_autosave; i++)
       autosave_free(g_extern.autosave[i]);
-   free(g_extern.autosave);
+
+   if (g_extern.autosave)
+      free(g_extern.autosave);
    g_extern.autosave = NULL;
+
    g_extern.num_autosave = 0;
 }
 #endif
 
 static void set_savestate_auto_index(void)
 {
-   char state_dir[PATH_MAX];
-   char state_base[PATH_MAX];
+   char state_dir[PATH_MAX], state_base[PATH_MAX];
 
    if (!g_settings.savestate_auto_index)
       return;
@@ -2324,21 +2326,12 @@ static void check_oneshot(void)
    old_rewind_state = new_rewind_state;
 }
 
-void rarch_game_reset(void)
-{
-   RARCH_LOG("Resetting content.\n");
-   msg_queue_clear(g_extern.msg_queue);
-   msg_queue_push(g_extern.msg_queue, "Reset.", 1, 120);
-   pretro_reset();
-   init_controllers(); // bSNES since v073r01 resets controllers to JOYPAD after a reset, so just enforce it here.
-}
-
 static void check_reset(void)
 {
    static bool old_state = false;
    bool new_state = input_key_pressed_func(RARCH_RESET);
    if (new_state && !old_state)
-      rarch_game_reset();
+      rarch_main_command(RARCH_CMD_RESET);
 
    old_state = new_state;
 }
@@ -3111,7 +3104,11 @@ void rarch_main_command(unsigned action)
          g_extern.lifecycle_state |= (1ULL << MODE_GAME);
          break;
       case RARCH_CMD_RESET:
-         rarch_game_reset();
+         RARCH_LOG("Resetting content.\n");
+         msg_queue_clear(g_extern.msg_queue);
+         msg_queue_push(g_extern.msg_queue, "Reset.", 1, 120);
+         pretro_reset();
+         init_controllers(); // bSNES since v073r01 resets controllers to JOYPAD after a reset, so just enforce it here.
          g_extern.lifecycle_state |= (1ULL << MODE_GAME);
          break;
       case RARCH_CMD_SAVE_STATE:
