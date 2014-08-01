@@ -843,7 +843,7 @@ static void set_special_paths(char **argv, unsigned num_content)
       string_list_append(g_extern.subsystem_fullpaths, argv[i], attr);
 
    // We defer SRAM path updates until we can resolve it.
-   // It is more complicated for special game types.
+   // It is more complicated for special content types.
 
    if (!g_extern.has_set_state_path)
       fill_pathname_noext(g_extern.savestate_name, g_extern.basename, ".state", sizeof(g_extern.savestate_name));
@@ -1462,19 +1462,15 @@ void rarch_deinit_recording(void)
 
 void rarch_init_msg_queue(void)
 {
-   if (g_extern.msg_queue)
-      return;
-
-   rarch_assert(g_extern.msg_queue = msg_queue_new(8));
+   if (!g_extern.msg_queue)
+      rarch_assert(g_extern.msg_queue = msg_queue_new(8));
 }
 
 void rarch_deinit_msg_queue(void)
 {
    if (g_extern.msg_queue)
-   {
       msg_queue_free(g_extern.msg_queue);
-      g_extern.msg_queue = NULL;
-   }
+   g_extern.msg_queue = NULL;
 }
 
 static void init_cheats(void)
@@ -1487,6 +1483,7 @@ static void deinit_cheats(void)
 {
    if (g_extern.cheat)
       cheat_manager_free(g_extern.cheat);
+   g_extern.cheat = NULL;
 }
 
 void rarch_init_rewind(void)
@@ -1568,6 +1565,7 @@ static void deinit_movie(void)
 {
    if (g_extern.bsv.movie)
       bsv_movie_free(g_extern.bsv.movie);
+   g_extern.bsv.movie = NULL;
 }
 #endif
 
@@ -1624,6 +1622,7 @@ static void deinit_netplay(void)
 {
    if (g_extern.netplay)
       netplay_free(g_extern.netplay);
+   g_extern.netplay = NULL;
 }
 #endif
 
@@ -1649,10 +1648,23 @@ static void init_command(void)
 static void deinit_command(void)
 {
    if (driver.command)
-   {
       rarch_cmd_free(driver.command);
-      driver.command = NULL;
-   }
+   driver.command = NULL;
+}
+
+static void init_libretro_cbs_netplay(void)
+{
+   pretro_set_video_refresh(g_extern.netplay_is_spectate ?
+         video_frame : video_frame_net);
+
+   pretro_set_audio_sample(g_extern.netplay_is_spectate ?
+         audio_sample : audio_sample_net);
+   pretro_set_audio_sample_batch(g_extern.netplay_is_spectate ?
+         audio_sample_batch : audio_sample_batch_net);
+
+   pretro_set_input_state(g_extern.netplay_is_spectate ?
+         (g_extern.netplay_is_client ? input_state_spectate_client : input_state_spectate)
+         : input_state_net);
 }
 #endif
 
@@ -1671,19 +1683,7 @@ static void init_libretro_cbs(void)
 
 #ifdef HAVE_NETPLAY
    if (g_extern.netplay)
-   {
-      pretro_set_video_refresh(g_extern.netplay_is_spectate ?
-            video_frame : video_frame_net);
-
-      pretro_set_audio_sample(g_extern.netplay_is_spectate ?
-            audio_sample : audio_sample_net);
-      pretro_set_audio_sample_batch(g_extern.netplay_is_spectate ?
-            audio_sample_batch : audio_sample_batch_net);
-
-      pretro_set_input_state(g_extern.netplay_is_spectate ?
-            (g_extern.netplay_is_client ? input_state_spectate_client : input_state_spectate)
-            : input_state_net);
-   }
+      init_libretro_cbs_netplay();
 #endif
 }
 
@@ -1730,14 +1730,14 @@ void rarch_deinit_autosave(void)
 
 static void set_savestate_auto_index(void)
 {
+   char state_dir[PATH_MAX];
+   char state_base[PATH_MAX];
+
    if (!g_settings.savestate_auto_index)
       return;
 
    // Find the file in the same directory as g_extern.savestate_name with the largest numeral suffix.
-   // E.g. /foo/path/game.state, will try to find /foo/path/game.state%d, where %d is the largest number available.
-
-   char state_dir[PATH_MAX];
-   char state_base[PATH_MAX];
+   // E.g. /foo/path/content.state, will try to find /foo/path/content.state%d, where %d is the largest number available.
 
    fill_pathname_basedir(state_dir, g_extern.savestate_name, sizeof(state_dir));
    fill_pathname_base(state_base, g_extern.savestate_name, sizeof(state_base));
@@ -2321,7 +2321,7 @@ static void check_oneshot(void)
 
 void rarch_game_reset(void)
 {
-   RARCH_LOG("Resetting game.\n");
+   RARCH_LOG("Resetting content.\n");
    msg_queue_clear(g_extern.msg_queue);
    msg_queue_push(g_extern.msg_queue, "Reset.", 1, 120);
    pretro_reset();
@@ -3220,6 +3220,39 @@ void rarch_main_deinit_core(void)
    uninit_libretro_sym();
 }
 
+static void deinit_temporary_content(void)
+{
+   if (g_extern.temporary_content)
+   {
+      unsigned i;
+      for (i = 0; i < g_extern.temporary_content->size; i++)
+      {
+         const char *path = g_extern.temporary_content->elems[i].data;
+         RARCH_LOG("Removing temporary content file: %s.\n", path);
+         if (remove(path) < 0)
+            RARCH_ERR("Failed to remove temporary file: %s.\n", path);
+      }
+   }
+
+   if (g_extern.temporary_content)
+      string_list_free(g_extern.temporary_content);
+   g_extern.temporary_content = NULL;
+}
+
+static void deinit_subsystem_fullpaths(void)
+{
+   if (g_extern.subsystem_fullpaths)
+      string_list_free(g_extern.subsystem_fullpaths);
+   g_extern.subsystem_fullpaths = NULL;
+}
+
+static void deinit_savefiles(void)
+{
+   if (g_extern.savefiles)
+      string_list_free(g_extern.savefiles);
+   g_extern.savefiles = NULL;
+}
+
 void rarch_main_deinit(void)
 {
 #ifdef HAVE_NETPLAY
@@ -3259,24 +3292,9 @@ void rarch_main_deinit(void)
 
    rarch_main_deinit_core();
 
-   if (g_extern.temporary_content)
-   {
-      unsigned i;
-      for (i = 0; i < g_extern.temporary_content->size; i++)
-      {
-         const char *path = g_extern.temporary_content->elems[i].data;
-         RARCH_LOG("Removing temporary content file: %s.\n", path);
-         if (remove(path) < 0)
-            RARCH_ERR("Failed to remove temporary file: %s.\n", path);
-      }
-   }
-   string_list_free(g_extern.temporary_content);
-   g_extern.temporary_content = NULL;
-
-   string_list_free(g_extern.subsystem_fullpaths);
-   string_list_free(g_extern.savefiles);
-   g_extern.subsystem_fullpaths = NULL;
-   g_extern.savefiles = NULL;
+   deinit_temporary_content();
+   deinit_subsystem_fullpaths();
+   deinit_savefiles();
 
    g_extern.main_is_init = false;
 }
