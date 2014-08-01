@@ -140,7 +140,7 @@ static bool take_screenshot_raw(void)
          width, height, -pitch, false);
 }
 
-void rarch_take_screenshot(void)
+static void rarch_take_screenshot(void)
 {
    if ((!*g_settings.screenshot_directory) && (!*g_extern.basename)) // No way to infer screenshot directory.
       return;
@@ -1461,7 +1461,7 @@ void rarch_deinit_recording(void)
 }
 #endif
 
-void rarch_init_msg_queue(void)
+static void rarch_init_msg_queue(void)
 {
    if (!g_extern.msg_queue)
       rarch_assert(g_extern.msg_queue = msg_queue_new(8));
@@ -2039,7 +2039,7 @@ bool rarch_check_fullscreen(void)
    return toggle;
 }
 
-void rarch_state_slot_increase(void)
+static void rarch_state_slot_increase(void)
 {
    g_settings.state_slot++;
 
@@ -2055,7 +2055,7 @@ void rarch_state_slot_increase(void)
    RARCH_LOG("%s\n", msg);
 }
 
-void rarch_state_slot_decrease(void)
+static void rarch_state_slot_decrease(void)
 {
    if (g_settings.state_slot > 0)
       g_settings.state_slot--;
@@ -2827,6 +2827,8 @@ void rarch_main_clear_state(void)
 
    for (i = 0; i < MAX_PLAYERS; i++)
       g_settings.input.libretro_device[i] = RETRO_DEVICE_JOYPAD;
+
+   rarch_init_msg_queue();
 }
 
 #ifdef HAVE_ZLIB

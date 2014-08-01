@@ -775,7 +775,6 @@ bool rarch_main_iterate(void);
 void rarch_main_deinit(void);
 void rarch_main_deinit_core(void);
 void rarch_render_cached_frame(void);
-void rarch_init_msg_queue(void);
 void rarch_deinit_msg_queue(void);
 void rarch_input_poll(void);
 void rarch_check_overlay(void);
@@ -790,9 +789,6 @@ void rarch_disk_control_append_image(const char *path);
 bool rarch_set_rumble_state(unsigned port, enum retro_rumble_effect effect, bool enable);
 void rarch_init_autosave(void);
 void rarch_deinit_autosave(void);
-void rarch_take_screenshot(void);
-void rarch_state_slot_increase(void);
-void rarch_state_slot_decrease(void);
 
 #ifdef HAVE_RECORD
 void rarch_init_recording(void);
