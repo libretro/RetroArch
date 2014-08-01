@@ -2076,18 +2076,23 @@ static void check_stateslots(void)
 
 static inline void flush_rewind_audio(void)
 {
-   if (g_extern.frame_is_reverse) // We just rewound. Flush rewind audio buffer.
-   {
-      g_extern.audio_active = audio_flush(g_extern.audio_data.rewind_buf + g_extern.audio_data.rewind_ptr,
-            g_extern.audio_data.rewind_size - g_extern.audio_data.rewind_ptr) && g_extern.audio_active;
-   }
+   if (!g_extern.frame_is_reverse)
+      return;
+
+   // We just rewound. Flush rewind audio buffer.
+   g_extern.audio_active = audio_flush(g_extern.audio_data.rewind_buf + g_extern.audio_data.rewind_ptr,
+         g_extern.audio_data.rewind_size - g_extern.audio_data.rewind_ptr) && g_extern.audio_active;
+
+   g_extern.frame_is_reverse = false;
 }
 
 static inline void setup_rewind_audio(void)
 {
    unsigned i;
+
    // Push audio ready to be played.
    g_extern.audio_data.rewind_ptr = g_extern.audio_data.rewind_size;
+
    for (i = 0; i < g_extern.audio_data.data_ptr; i += 2)
    {
       g_extern.audio_data.rewind_buf[--g_extern.audio_data.rewind_ptr] =
@@ -2103,7 +2108,6 @@ static inline void setup_rewind_audio(void)
 static void check_rewind(void)
 {
    flush_rewind_audio();
-   g_extern.frame_is_reverse = false;
 
    static bool first = true;
    if (first)
@@ -2166,16 +2170,20 @@ static void check_rewind(void)
 static void check_slowmotion(void)
 {
    g_extern.is_slowmotion = input_key_pressed_func(RARCH_SLOWMOTION);
-   if (g_extern.is_slowmotion)
-   {
-      msg_queue_clear(g_extern.msg_queue);
-      msg_queue_push(g_extern.msg_queue, g_extern.frame_is_reverse ? "Slow motion rewind." : "Slow motion.", 0, 30);
-   }
+
+   if (!g_extern.is_slowmotion)
+      return;
+
+   msg_queue_clear(g_extern.msg_queue);
+   msg_queue_push(g_extern.msg_queue, g_extern.frame_is_reverse ? "Slow motion rewind." : "Slow motion.", 0, 30);
 }
 
 #ifdef HAVE_BSV_MOVIE
-static void movie_record_toggle(void)
+static void check_movie_record(bool pressed)
 {
+   if (!pressed)
+      return;
+
    if (g_extern.bsv.movie)
    {
       msg_queue_clear(g_extern.msg_queue);
@@ -2185,9 +2193,10 @@ static void movie_record_toggle(void)
    }
    else
    {
+      char path[PATH_MAX], msg[PATH_MAX];
+
       g_settings.rewind_granularity = 1;
 
-      char path[PATH_MAX];
       if (g_settings.state_slot > 0)
       {
          snprintf(path, sizeof(path), "%s%u.bsv",
@@ -2199,7 +2208,6 @@ static void movie_record_toggle(void)
                g_extern.bsv.movie_path);
       }
 
-      char msg[PATH_MAX];
       snprintf(msg, sizeof(msg), "Starting movie record to \"%s\".", path);
 
       g_extern.bsv.movie = bsv_movie_init(path, RARCH_MOVIE_RECORD);
@@ -2211,12 +2219,6 @@ static void movie_record_toggle(void)
       else
          RARCH_ERR("Failed to start movie record.\n");
    }
-}
-
-static void check_movie_record(bool pressed)
-{
-   if (pressed)
-      movie_record_toggle();
 }
 
 static void check_movie_playback(bool pressed)
