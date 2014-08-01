@@ -2744,6 +2744,14 @@ static void check_grab_mouse_toggle(void)
 
 static void check_flip(void)
 {
+#ifdef HAVE_NETPLAY
+   if (g_extern.netplay)
+   {
+      check_netplay_flip();
+      return;
+   }
+#endif
+
    check_pause();
    check_oneshot();
 
@@ -2792,12 +2800,7 @@ static void do_state_checks(void)
    rarch_check_overlay();
 #endif
 
-#ifdef HAVE_NETPLAY
-   if (g_extern.netplay)
-      check_netplay_flip();
-   else
-#endif
-      check_flip();
+   check_flip();
 }
 
 static void init_state(void)
