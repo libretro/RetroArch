@@ -1464,6 +1464,19 @@ static unsigned menu_common_type_is(unsigned type)
    return ret;
 }
 
+static void menu_common_setting_push_current_menu(file_list_t *list, const char *path, unsigned type,
+      size_t directory_ptr, unsigned action)
+{
+   switch (action)
+   {
+      case MENU_ACTION_OK:
+         file_list_push(list, path, type, directory_ptr);
+         menu_clear_navigation(driver.menu);
+         driver.menu->need_refresh = true;
+         break;
+   }
+}
+
 static int menu_settings_iterate(unsigned action)
 {
    if (!driver.menu)
@@ -1527,21 +1540,15 @@ static int menu_settings_iterate(unsigned action)
                && action == MENU_ACTION_OK)
          {
             driver.menu->defer_core = type == MENU_SETTINGS_OPEN_FILEBROWSER_DEFERRED_CORE;
-            file_list_push(driver.menu->menu_stack, g_settings.menu_content_directory, MENU_FILE_DIRECTORY, driver.menu->selection_ptr);
-            menu_clear_navigation(driver.menu);
-            driver.menu->need_refresh = true;
+            menu_common_setting_push_current_menu(driver.menu->menu_stack, g_settings.menu_content_directory, MENU_FILE_DIRECTORY, driver.menu->selection_ptr, action);
          }
          else if ((type == MENU_SETTINGS_OPEN_HISTORY || menu_common_type_is(type) == MENU_FILE_DIRECTORY) && action == MENU_ACTION_OK)
          {
-            file_list_push(driver.menu->menu_stack, "", type, driver.menu->selection_ptr);
-            menu_clear_navigation(driver.menu);
-            driver.menu->need_refresh = true;
+            menu_common_setting_push_current_menu(driver.menu->menu_stack, "", type, driver.menu->selection_ptr, action);
          }
          else if ((menu_common_type_is(type) == MENU_SETTINGS || type == MENU_SETTINGS_CORE || type == MENU_SETTINGS_CONFIG || type == MENU_SETTINGS_DISK_APPEND) && action == MENU_ACTION_OK)
          {
-            file_list_push(driver.menu->menu_stack, label, type, driver.menu->selection_ptr);
-            menu_clear_navigation(driver.menu);
-            driver.menu->need_refresh = true;
+            menu_common_setting_push_current_menu(driver.menu->menu_stack, label, type, driver.menu->selection_ptr, action);
          }
          else if (type == MENU_SETTINGS_CUSTOM_VIEWPORT && action == MENU_ACTION_OK)
          {
@@ -2157,9 +2164,8 @@ static void menu_common_defer_decision_manual(void)
    if (!driver.menu)
       return;
 
-   file_list_push(driver.menu->menu_stack, g_settings.libretro_directory, MENU_SETTINGS_DEFERRED_CORE, driver.menu->selection_ptr);
-   menu_clear_navigation(driver.menu);
-   driver.menu->need_refresh = true;
+   menu_common_setting_push_current_menu(driver.menu->menu_stack, g_settings.libretro_directory, MENU_SETTINGS_DEFERRED_CORE, driver.menu->selection_ptr,
+         MENU_ACTION_OK);
 }
 
 static int menu_common_setting_set_perf(unsigned setting, unsigned action,
@@ -2410,9 +2416,8 @@ static int menu_common_iterate(unsigned action)
             char cat_path[PATH_MAX];
             fill_pathname_join(cat_path, dir, path, sizeof(cat_path));
 
-            file_list_push(driver.menu->menu_stack, cat_path, type, driver.menu->selection_ptr);
-            menu_clear_navigation(driver.menu);
-            driver.menu->need_refresh = true;
+            menu_common_setting_push_current_menu(driver.menu->menu_stack, cat_path, type, driver.menu->selection_ptr,
+                  MENU_ACTION_OK);
          }
          else
          {
@@ -3031,8 +3036,8 @@ static unsigned menu_common_shader_manager_get_type(const struct gfx_shader *sha
 #else
    return 0;
 #endif
-
 }
+
 
 static int menu_common_shader_manager_setting_toggle(unsigned setting, unsigned action)
 {
@@ -3061,14 +3066,7 @@ static int menu_common_shader_manager_setting_toggle(unsigned setting, unsigned 
          menu_common_setting_set_current_boolean(current_setting, action);
    }
    else if ((setting == MENU_SETTINGS_SHADER_PARAMETERS || setting == MENU_SETTINGS_SHADER_PRESET_PARAMETERS))
-   {
-      if (action == MENU_ACTION_OK)
-      {
-         file_list_push(driver.menu->menu_stack, "", setting, driver.menu->selection_ptr);
-         menu_clear_navigation(driver.menu);
-         driver.menu->need_refresh = true;
-      }
-   }
+      menu_common_setting_push_current_menu(driver.menu->menu_stack, "", setting, driver.menu->selection_ptr, action);
    else if (setting >= MENU_SETTINGS_SHADER_PARAMETER_0 && setting <= MENU_SETTINGS_SHADER_PARAMETER_LAST)
    {
       struct gfx_shader *shader = driver.menu->parameter_shader;
@@ -3113,9 +3111,7 @@ static int menu_common_shader_manager_setting_toggle(unsigned setting, unsigned 
       switch (action)
       {
          case MENU_ACTION_OK:
-            file_list_push(driver.menu->menu_stack, g_settings.video.shader_dir, setting, driver.menu->selection_ptr);
-            menu_clear_navigation(driver.menu);
-            driver.menu->need_refresh = true;
+            menu_common_setting_push_current_menu(driver.menu->menu_stack, g_settings.video.shader_dir, setting, driver.menu->selection_ptr, action);
             break;
 
          case MENU_ACTION_START:
@@ -3708,9 +3704,7 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
          switch (action)
          {
             case MENU_ACTION_OK:
-               file_list_push(driver.menu->menu_stack, g_extern.overlay_dir, setting, driver.menu->selection_ptr);
-               menu_clear_navigation(driver.menu);
-               driver.menu->need_refresh = true;
+               menu_common_setting_push_current_menu(driver.menu->menu_stack, g_extern.overlay_dir, setting, driver.menu->selection_ptr, action);
                break;
             case MENU_ACTION_START:
                if (driver.overlay)
@@ -3727,9 +3721,7 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
          switch (action)
          {
             case MENU_ACTION_OK:
-               file_list_push(driver.menu->menu_stack, "", setting, driver.menu->selection_ptr);
-               menu_clear_navigation(driver.menu);
-               driver.menu->need_refresh = true;
+               menu_common_setting_push_current_menu(driver.menu->menu_stack, "", setting, driver.menu->selection_ptr, action);
                break;
             case MENU_ACTION_START:
                *g_settings.content_history_path = '\0';
@@ -3776,9 +3768,7 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
          switch (action)
          {
             case MENU_ACTION_OK:
-               file_list_push(driver.menu->menu_stack, g_settings.audio.filter_dir, setting, driver.menu->selection_ptr);
-               menu_clear_navigation(driver.menu);
-               driver.menu->need_refresh = true;
+               menu_common_setting_push_current_menu(driver.menu->menu_stack, g_settings.audio.filter_dir, setting, driver.menu->selection_ptr, action);
                break;
             case MENU_ACTION_START:
                *g_settings.audio.dsp_plugin = '\0';
