@@ -60,16 +60,14 @@ static inline struct gfx_shader *shader_manager_get_current_shader(menu_handle_t
 }
 #endif
 
-static void menu_common_entries_init(void *data, unsigned menu_type)
+static void menu_common_entries_init(menu_handle_t *menu, unsigned menu_type)
 {
    unsigned i, last;
    char tmp[256];
-   menu_handle_t *menu = (menu_handle_t*)data;
-   rarch_setting_t *setting_data, *current_setting;
+   rarch_setting_t *current_setting;
+   rarch_setting_t *setting_data = (rarch_setting_t *)setting_data_get_list();
 
-   setting_data = (rarch_setting_t *)setting_data_get_list();
-
-   if (!menu || !setting_data)
+   if (!setting_data)
       return;
 
    switch (menu_type)
@@ -2724,12 +2722,8 @@ static int menu_common_iterate(unsigned action)
    return ret;
 }
 
-static void menu_common_shader_manager_init(void *data)
+static void menu_common_shader_manager_init(menu_handle_t *menu)
 {
-   menu_handle_t *menu = (menu_handle_t*)data;
-   if (!menu)
-      return;
-
 #ifdef HAVE_SHADER_MANAGER
    char cgp_path[PATH_MAX];
    config_file_t *conf = NULL;

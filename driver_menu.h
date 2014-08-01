@@ -27,57 +27,6 @@
 extern "C" {
 #endif
 
-typedef struct menu_ctx_driver_backend
-{
-   void     (*entries_init)(void*, unsigned);
-   int      (*iterate)(unsigned);
-   void     (*shader_manager_init)(void *);
-   void     (*shader_manager_get_str)(struct gfx_shader *, char *, size_t, unsigned);
-   void     (*shader_manager_set_preset)(struct gfx_shader *, unsigned, const char*);
-   void     (*shader_manager_save_preset)(const char *, bool);
-   unsigned (*shader_manager_get_type)(const struct gfx_shader *);
-   int      (*shader_manager_setting_toggle)(unsigned, unsigned);
-   unsigned (*type_is)(unsigned);
-   int      (*core_setting_toggle)(unsigned, unsigned);
-   int      (*setting_toggle)(unsigned, unsigned, unsigned);
-   int      (*setting_set)(unsigned, unsigned);
-   void     (*setting_set_label)(char *, size_t, unsigned *, unsigned);
-   void     (*defer_decision_automatic)(void);
-   void     (*defer_decision_manual)(void);
-   const char *ident;
-} menu_ctx_driver_backend_t;
-
-typedef struct menu_ctx_driver
-{
-   void  (*set_texture)(void*);
-   void  (*render_messagebox)(const char*);
-   void  (*render)(void);
-   void  (*frame)(void);
-   void* (*init)(void);
-   void  (*free)(void*);
-   void  (*context_reset)(void*);
-   void  (*context_destroy)(void*);
-   void  (*populate_entries)(void*, unsigned);
-   void  (*iterate)(void*, unsigned);
-   int   (*input_postprocess)(uint64_t);
-   void  (*navigation_clear)(void *);
-   void  (*navigation_decrement)(void *);
-   void  (*navigation_increment)(void *);
-   void  (*navigation_set)(void *);
-   void  (*navigation_set_last)(void *);
-   void  (*navigation_descend_alphabet)(void *, size_t *);
-   void  (*navigation_ascend_alphabet)(void *, size_t *);
-   void  (*list_insert)(void *, const char *, size_t);
-   void  (*list_delete)(void *, size_t);
-   void  (*list_clear)(void *);
-   void  (*list_set_selection)(void *);
-   void  (*init_core_info)(void *);
-
-   const menu_ctx_driver_backend_t *backend;
-   // Human readable string.
-   const char *ident;
-} menu_ctx_driver_t;
-
 #define MENU_MAX_BUTTONS 219
 
 #define MENU_MAX_AXES 32
@@ -178,6 +127,58 @@ typedef struct
    retro_time_t target_msec;
    retro_time_t sleep_msec;
 } menu_handle_t;
+
+typedef struct menu_ctx_driver_backend
+{
+   void     (*entries_init)(menu_handle_t *, unsigned);
+   int      (*iterate)(unsigned);
+   void     (*shader_manager_init)(menu_handle_t *);
+   void     (*shader_manager_get_str)(struct gfx_shader *, char *, size_t, unsigned);
+   void     (*shader_manager_set_preset)(struct gfx_shader *, unsigned, const char*);
+   void     (*shader_manager_save_preset)(const char *, bool);
+   unsigned (*shader_manager_get_type)(const struct gfx_shader *);
+   int      (*shader_manager_setting_toggle)(unsigned, unsigned);
+   unsigned (*type_is)(unsigned);
+   int      (*core_setting_toggle)(unsigned, unsigned);
+   int      (*setting_toggle)(unsigned, unsigned, unsigned);
+   int      (*setting_set)(unsigned, unsigned);
+   void     (*setting_set_label)(char *, size_t, unsigned *, unsigned);
+   void     (*defer_decision_automatic)(void);
+   void     (*defer_decision_manual)(void);
+   const char *ident;
+} menu_ctx_driver_backend_t;
+
+typedef struct menu_ctx_driver
+{
+   void  (*set_texture)(void*);
+   void  (*render_messagebox)(const char*);
+   void  (*render)(void);
+   void  (*frame)(void);
+   void* (*init)(void);
+   void  (*free)(void*);
+   void  (*context_reset)(void*);
+   void  (*context_destroy)(void*);
+   void  (*populate_entries)(void*, unsigned);
+   void  (*iterate)(void*, unsigned);
+   int   (*input_postprocess)(uint64_t);
+   void  (*navigation_clear)(void *);
+   void  (*navigation_decrement)(void *);
+   void  (*navigation_increment)(void *);
+   void  (*navigation_set)(void *);
+   void  (*navigation_set_last)(void *);
+   void  (*navigation_descend_alphabet)(void *, size_t *);
+   void  (*navigation_ascend_alphabet)(void *, size_t *);
+   void  (*list_insert)(void *, const char *, size_t);
+   void  (*list_delete)(void *, size_t);
+   void  (*list_clear)(void *);
+   void  (*list_set_selection)(void *);
+   void  (*init_core_info)(void *);
+
+   const menu_ctx_driver_backend_t *backend;
+   // Human readable string.
+   const char *ident;
+} menu_ctx_driver_t;
+
 
 #ifdef __cplusplus
 }
