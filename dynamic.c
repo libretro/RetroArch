@@ -590,6 +590,11 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          RARCH_LOG("Environ GET_USERNAME: \"%s\".\n", g_settings.username);
          break;
 
+      case RETRO_ENVIRONMENT_GET_LANGUAGE:
+         *(unsigned *)data = g_settings.user_language;
+         RARCH_LOG("Environ GET_LANGUAGE: \"%d\".\n", g_settings.user_language);
+         break;
+
       case RETRO_ENVIRONMENT_SET_PIXEL_FORMAT:
       {
          enum retro_pixel_format pix_fmt = *(const enum retro_pixel_format*)data;
