@@ -1500,6 +1500,11 @@ static void deinit_cheats(void)
 
 void rarch_init_rewind(void)
 {
+#ifdef HAVE_NETPLAY
+   if (g_extern.netplay)
+      return;
+#endif
+
    if (!g_settings.rewind_enable || g_extern.state_manager)
       return;
 
@@ -1907,9 +1912,19 @@ static void save_auto_state(void)
    RARCH_LOG("Auto save state to \"%s\" %s.\n", savestate_name_auto, ret ? "succeeded" : "failed");
 }
 
-void rarch_load_state(void)
+static void rarch_load_state(void)
 {
    char load_path[PATH_MAX], msg[512];
+
+   // Disallow savestate load when we absolutely cannot change game state.
+#ifdef HAVE_BSV_MOVIE
+   if (g_extern.bsv.movie)
+      return;
+#endif
+#ifdef HAVE_NETPLAY
+   if (g_extern.netplay)
+      return;
+#endif
 
    if (g_settings.state_slot > 0)
       snprintf(load_path, sizeof(load_path), "%s%d", g_extern.savestate_name, g_settings.state_slot);
@@ -1938,7 +1953,7 @@ void rarch_load_state(void)
    RARCH_LOG("%s\n", msg);
 }
 
-void rarch_save_state(void)
+static void rarch_save_state(void)
 {
    char save_path[PATH_MAX], msg[512];
 
@@ -2974,10 +2989,7 @@ int rarch_main_init(int argc, char *argv[])
    init_command();
 #endif
 
-#ifdef HAVE_NETPLAY
-   if (!g_extern.netplay)
-#endif
-      rarch_init_rewind();
+   rarch_init_rewind();
 
    init_controllers();
 
@@ -3087,15 +3099,6 @@ void rarch_main_command(unsigned action)
 #endif
          break;
       case RARCH_CMD_LOAD_STATE:
-         // Disallow savestate load when we absolutely cannot change game state.
-#ifdef HAVE_BSV_MOVIE
-         if (g_extern.bsv.movie)
-            break;
-#endif
-#ifdef HAVE_NETPLAY
-         if (g_extern.netplay)
-            break;
-#endif
          rarch_load_state();
          g_extern.lifecycle_state |= (1ULL << MODE_GAME);
          break;
