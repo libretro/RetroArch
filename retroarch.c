@@ -2178,8 +2178,7 @@ static void movie_record_toggle(void)
       msg_queue_clear(g_extern.msg_queue);
       msg_queue_push(g_extern.msg_queue, "Stopping movie record.", 2, 180);
       RARCH_LOG("Stopping movie record.\n");
-      bsv_movie_free(g_extern.bsv.movie);
-      g_extern.bsv.movie = NULL;
+      deinit_movie();
    }
    else
    {
@@ -2224,8 +2223,7 @@ static void check_movie_playback(bool pressed)
       msg_queue_push(g_extern.msg_queue, "Movie playback ended.", 1, 180);
       RARCH_LOG("Movie playback ended.\n");
 
-      bsv_movie_free(g_extern.bsv.movie);
-      g_extern.bsv.movie = NULL;
+      deinit_movie();
       g_extern.bsv.movie_end = false;
       g_extern.bsv.movie_playback = false;
    }
