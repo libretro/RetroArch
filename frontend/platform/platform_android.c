@@ -75,7 +75,7 @@ void engine_handle_cmd(void *data)
          slock_unlock(android_app->mutex);
 
          if (g_extern.is_paused)
-            rarch_reinit_drivers();
+            rarch_set_fullscreen(g_settings.video.fullscreen);
          break;
 
       case APP_CMD_RESUME:

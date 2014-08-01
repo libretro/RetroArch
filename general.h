@@ -796,10 +796,6 @@ void rarch_load_state(void);
 void rarch_save_state(void);
 void rarch_state_slot_increase(void);
 void rarch_state_slot_decrease(void);
-static inline void rarch_reinit_drivers(void)
-{
-   rarch_set_fullscreen(g_settings.video.fullscreen);
-}
 
 #ifdef HAVE_RECORD
 void rarch_init_recording(void);

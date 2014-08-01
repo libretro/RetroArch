@@ -501,7 +501,7 @@ retro_proc_address_t driver_get_proc_address(const char *sym)
 bool driver_update_system_av_info(const struct retro_system_av_info *info)
 {
    g_extern.system.av_info = *info;
-   rarch_reinit_drivers();
+   rarch_set_fullscreen(g_settings.video.fullscreen);
    // Cannot continue recording with different parameters.
    // Take the easiest route out and just restart the recording.
 #ifdef HAVE_RECORD

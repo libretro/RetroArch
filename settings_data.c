@@ -1010,12 +1010,12 @@ static void general_write_handler(const void *data)
     else if (!strcmp(setting->name, "video_monitor_index"))
     {
         g_settings.video.monitor_index = *setting->value.unsigned_integer;
-        rarch_reinit_drivers();
+        rarch_set_fullscreen(g_settings.video.fullscreen);
     }
     else if (!strcmp(setting->name, "video_disable_composition"))
     {
         g_settings.video.disable_composition = *setting->value.boolean;
-        rarch_reinit_drivers();
+        rarch_set_fullscreen(g_settings.video.fullscreen);
     }
     else if (!strcmp(setting->name, "video_vsync"))
         g_settings.video.vsync = *setting->value.boolean;
@@ -1028,7 +1028,7 @@ static void general_write_handler(const void *data)
     else if (!strcmp(setting->name, "video_fullscreen"))
     {
         g_settings.video.fullscreen = *setting->value.boolean;
-        rarch_reinit_drivers();
+        rarch_set_fullscreen(g_settings.video.fullscreen);
     }
     else if (!strcmp(setting->name, "video_rotation"))
     {
@@ -1038,7 +1038,7 @@ static void general_write_handler(const void *data)
     else if (!strcmp(setting->name, "video_threaded"))
     {
         g_settings.video.threaded = *setting->value.boolean;
-        rarch_reinit_drivers();
+        rarch_set_fullscreen(g_settings.video.fullscreen);
     }
     else if (!strcmp(setting->name, "video_swap_interval"))
     {
@@ -1197,7 +1197,7 @@ static void general_write_handler(const void *data)
         *scale = max(*scale, 1.0f);
         
         if (!g_settings.video.fullscreen)
-            rarch_reinit_drivers();
+            rarch_set_fullscreen(g_settings.video.fullscreen);
     }
     else if (!strcmp(setting->name, "video_yscale"))
     {
@@ -1207,7 +1207,7 @@ static void general_write_handler(const void *data)
         *scale = max(*scale, 1.0f);
         
         if (!g_settings.video.fullscreen)
-            rarch_reinit_drivers();
+            rarch_set_fullscreen(g_settings.video.fullscreen);
     }
     else if (!strcmp(setting->name, "video_force_aspect"))
         g_settings.video.force_aspect = *setting->value.boolean;
@@ -1289,7 +1289,7 @@ static void general_write_handler(const void *data)
     else if (!strcmp(setting->name, "video_filter"))
     {
         strlcpy(g_settings.video.filter_path, setting->value.string, sizeof(g_settings.video.filter_path));
-        rarch_reinit_drivers();
+        rarch_set_fullscreen(g_settings.video.fullscreen);
     }
 #ifdef HAVE_CAMERA
     else if (!strcmp(setting->name, "camera_allow"))
