@@ -2802,26 +2802,27 @@ static void init_state(void)
    g_extern.audio_active = true;
 }
 
-static void init_state_first(void)
+static void deinit_log_file(void)
 {
-   unsigned i;
-
-   init_state();
-   for (i = 0; i < MAX_PLAYERS; i++)
-      g_settings.input.libretro_device[i] = RETRO_DEVICE_JOYPAD;
+   if (g_extern.log_file)
+      fclose(g_extern.log_file);
+   g_extern.log_file = NULL;
 }
 
 void rarch_main_clear_state(void)
 {
+   unsigned i;
+
    memset(&g_settings, 0, sizeof(g_settings));
 
-   if (g_extern.log_file)
-      fclose(g_extern.log_file);
-   g_extern.log_file = NULL;
+   deinit_log_file();
 
    memset(&g_extern, 0, sizeof(g_extern));
 
-   init_state_first();
+   init_state();
+
+   for (i = 0; i < MAX_PLAYERS; i++)
+      g_settings.input.libretro_device[i] = RETRO_DEVICE_JOYPAD;
 }
 
 #ifdef HAVE_ZLIB
