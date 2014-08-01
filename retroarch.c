@@ -80,24 +80,25 @@ static void check_fast_forward_button(void)
 
 static bool take_screenshot_viewport(void)
 {
+   bool retval = false;
    struct rarch_viewport vp = {0};
+   char screenshot_path[PATH_MAX];
+   const char *screenshot_dir;
+   uint8_t *buffer = NULL;;
+
    video_viewport_info_func(&vp);
 
    if (!vp.width || !vp.height)
       return false;
 
-   uint8_t *buffer = (uint8_t*)malloc(vp.width * vp.height * 3);
-   if (!buffer)
+   if (!(buffer = (uint8_t*)malloc(vp.width * vp.height * 3)))
       return false;
 
    if (!video_read_viewport_func(buffer))
-   {
-      free(buffer);
-      return false;
-   }
+      goto done;
 
-   const char *screenshot_dir = g_settings.screenshot_directory;
-   char screenshot_path[PATH_MAX];
+   screenshot_dir = g_settings.screenshot_directory;
+
    if (!*g_settings.screenshot_directory)
    {
       fill_pathname_basedir(screenshot_path, g_extern.basename, sizeof(screenshot_path));
@@ -105,16 +106,16 @@ static bool take_screenshot_viewport(void)
    }
 
    // Data read from viewport is in bottom-up order, suitable for BMP.
-   if (!screenshot_dump(screenshot_dir,
-         buffer,
-         vp.width, vp.height, vp.width * 3, true))
-   {
-      free(buffer);
-      return false;
-   }
+   if (!screenshot_dump(screenshot_dir, buffer, vp.width, vp.height,
+            vp.width * 3, true))
+      goto done;
 
-   free(buffer);
-   return true;
+   retval = true;
+
+done:
+   if (buffer)
+      free(buffer);
+   return retval;
 }
 
 static bool take_screenshot_raw(void)
