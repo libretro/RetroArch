@@ -84,9 +84,9 @@ static void lakka_switch_items(void)
 
       ia = (j == active_category->active_item) ? 1.0 : 0.5;
       iz = (j == active_category->active_item) ? I_ACTIVE_ZOOM : I_PASSIVE_ZOOM;
-      iy = (j == active_category->active_item) ? VSPACING*2.4 :
-         (j  < active_category->active_item) ? VSPACING*(j - active_category->active_item - 1) :
-         VSPACING*(j - active_category->active_item + 3);
+      iy = (j == active_category->active_item) ? VSPACING*ACTIVE_ITEM_FACTOR :
+         (j  < active_category->active_item) ? VSPACING*(j - active_category->active_item + ABOVE_ITEM_OFFSET) :
+         VSPACING*(j - active_category->active_item + UNDER_ITEM_OFFSET);
 
       add_tween(DELAY, ia, &active_item->alpha, &inOutQuad, NULL);
       add_tween(DELAY, iz, &active_item->zoom,  &inOutQuad, NULL);
@@ -111,21 +111,21 @@ static void lakka_switch_subitems(void)
       {
          // Above items
          add_tween(DELAY, 0.5, &subitem->alpha, &inOutQuad, NULL);
-         add_tween(DELAY, VSPACING*(k - item->active_subitem + 2), &subitem->y, &inOutQuad, NULL);
+         add_tween(DELAY, VSPACING*(k - item->active_subitem + ABOVE_SUBITEM_OFFSET), &subitem->y, &inOutQuad, NULL);
          add_tween(DELAY, I_PASSIVE_ZOOM, &subitem->zoom, &inOutQuad, NULL);
       }
       else if (k == item->active_subitem)
       {
          // Active item
          add_tween(DELAY, 1.0, &subitem->alpha, &inOutQuad, NULL);
-         add_tween(DELAY, VSPACING*2.4, &subitem->y, &inOutQuad, NULL);
+         add_tween(DELAY, VSPACING*ACTIVE_ITEM_FACTOR, &subitem->y, &inOutQuad, NULL);
          add_tween(DELAY, I_ACTIVE_ZOOM, &subitem->zoom, &inOutQuad, NULL);
       }
       else if (k > item->active_subitem)
       {
          // Under items
          add_tween(DELAY, 0.5, &subitem->alpha, &inOutQuad, NULL);
-         add_tween(DELAY, VSPACING*(k - item->active_subitem + 3), &subitem->y, &inOutQuad, NULL);
+         add_tween(DELAY, VSPACING*(k - item->active_subitem + UNDER_ITEM_OFFSET), &subitem->y, &inOutQuad, NULL);
          add_tween(DELAY, I_PASSIVE_ZOOM, &subitem->zoom, &inOutQuad, NULL);
       }
    }
@@ -162,7 +162,7 @@ static void lakka_reset_submenu(void)
 
                subitem->alpha = 0;
                subitem->zoom = k == category->items[j].active_subitem ? I_ACTIVE_ZOOM : I_PASSIVE_ZOOM;
-               subitem->y = k == 0 ? VSPACING * 2.4 : VSPACING * (3+k);
+               subitem->y = k == 0 ? VSPACING * ACTIVE_ITEM_FACTOR : VSPACING * (3+k);
             }
          }
       }

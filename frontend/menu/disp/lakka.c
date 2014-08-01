@@ -47,9 +47,27 @@ menu_category_t *categories;
 int depth = 0;
 int num_categories = 0;
 int menu_active_category = 0;
-int dim = 192;
 float all_categories_x = 0;
 float global_alpha = 0;
+float HSPACING;
+float VSPACING;
+float C_ACTIVE_ZOOM;
+float C_PASSIVE_ZOOM;
+float I_ACTIVE_ZOOM;
+float I_PASSIVE_ZOOM;
+float FONT_SIZE;
+float MARGIN_LEFT;
+float MARGIN_TOP;
+float TITLE_MARGIN_LEFT;
+float TITLE_MARGIN_TOP;
+float LABEL_MARGIN_LEFT;
+float LABEL_MARGIN_TOP;
+int ICON_SIZE;
+char ICON_DIR[3];
+int ABOVE_SUBITEM_OFFSET;
+int ABOVE_ITEM_OFFSET;
+float ACTIVE_ITEM_FACTOR;
+int UNDER_ITEM_OFFSET;
 
 // Font variables
 void *font;
@@ -91,6 +109,105 @@ struct lakka_texture_item textures[TEXTURE_LAST];
 
 static tween_t* tweens = NULL;
 int numtweens = 0;
+
+static void lakka_responsive(void)
+{
+   gl_t *gl = (gl_t*)driver.video_data;
+   if (!gl)
+      return;
+
+   if (gl->win_width >= 2560)
+   {
+      ICON_SIZE = 256;
+      HSPACING = 400;
+      VSPACING = 100;
+      C_ACTIVE_ZOOM = 1.0;
+      C_PASSIVE_ZOOM = 0.5;
+      I_ACTIVE_ZOOM = 0.75;
+      I_PASSIVE_ZOOM = 0.35;
+      FONT_SIZE = 42.0;
+      MARGIN_LEFT = 200.0;
+      MARGIN_TOP = 400.0;
+      TITLE_MARGIN_LEFT = 20.0;
+      TITLE_MARGIN_TOP = 50.0;
+      LABEL_MARGIN_LEFT = 128;
+      LABEL_MARGIN_TOP = 15;
+      strcpy(ICON_DIR, "256");
+      ABOVE_SUBITEM_OFFSET = 2;
+      ABOVE_ITEM_OFFSET = -1;
+      ACTIVE_ITEM_FACTOR = 2.4;
+      UNDER_ITEM_OFFSET = 3;
+      return;
+   }
+
+   if (gl->win_width >= 1920)
+   {
+      ICON_SIZE = 192;
+      HSPACING = 300;
+      VSPACING = 75;
+      C_ACTIVE_ZOOM = 1.0;
+      C_PASSIVE_ZOOM = 0.5;
+      I_ACTIVE_ZOOM = 0.75;
+      I_PASSIVE_ZOOM = 0.35;
+      FONT_SIZE = 32.0;
+      MARGIN_LEFT = 156.0;
+      MARGIN_TOP = 300.0;
+      TITLE_MARGIN_LEFT = 15.0;
+      TITLE_MARGIN_TOP = 40.0;
+      LABEL_MARGIN_LEFT = 96;
+      LABEL_MARGIN_TOP = 11;
+      strcpy(ICON_DIR, "192");
+      ABOVE_SUBITEM_OFFSET = 2;
+      ABOVE_ITEM_OFFSET = -1;
+      ACTIVE_ITEM_FACTOR = 2.4;
+      UNDER_ITEM_OFFSET = 3;
+      return;
+   }
+
+   if (gl->win_width <= 640)
+   {
+      ICON_SIZE = 64;
+      HSPACING = 100.0;
+      VSPACING = 32.0;
+      C_ACTIVE_ZOOM = 1.0;
+      C_PASSIVE_ZOOM = 0.5;
+      I_ACTIVE_ZOOM = 1.0;
+      I_PASSIVE_ZOOM = 0.5;
+      FONT_SIZE = 16;
+      MARGIN_LEFT = 60.0;
+      MARGIN_TOP = 100.0;
+      TITLE_MARGIN_LEFT = 10.0;
+      TITLE_MARGIN_TOP = 24.0;
+      LABEL_MARGIN_LEFT = 35.0;
+      LABEL_MARGIN_TOP = 6.0;
+      strcpy(ICON_DIR, "64");
+      ABOVE_SUBITEM_OFFSET = 2;
+      ABOVE_ITEM_OFFSET = -1;
+      ACTIVE_ITEM_FACTOR = 2.25;
+      UNDER_ITEM_OFFSET = 3;
+      return;
+   }
+
+   ICON_SIZE = 128;
+   HSPACING = 200.0;
+   VSPACING = 50.0;
+   C_ACTIVE_ZOOM = 1.0;
+   C_PASSIVE_ZOOM = 0.5;
+   I_ACTIVE_ZOOM = 0.75;
+   I_PASSIVE_ZOOM = 0.35;
+   FONT_SIZE = 24;
+   MARGIN_LEFT = 120.0;
+   MARGIN_TOP = 200.0;
+   TITLE_MARGIN_LEFT = 15.0;
+   TITLE_MARGIN_TOP = 35.0;
+   LABEL_MARGIN_LEFT = 70.0;
+   LABEL_MARGIN_TOP = 11.0;
+   strcpy(ICON_DIR, "128");
+   ABOVE_SUBITEM_OFFSET = 2;
+   ABOVE_ITEM_OFFSET = -1;
+   ACTIVE_ITEM_FACTOR = 2.4;
+   UNDER_ITEM_OFFSET = 3;
+}
 
 static char *str_replace (const char *string, const char *substr, const char *replacement)
 {
@@ -281,7 +398,7 @@ void lakka_draw_icon(GLuint texture, float x, float y, float alpha, float rotati
    if (!gl)
       return;
 
-   glViewport(x, gl->win_height - y, dim, dim);
+   glViewport(x, gl->win_height - y, ICON_SIZE, ICON_SIZE);
 
    glEnable(GL_BLEND);
 
@@ -334,14 +451,14 @@ static void lakka_draw_subitems(int i, int j)
             && strcmp(g_extern.fullpath, &active_item->rom) == 0)
       {
          lakka_draw_icon(textures[TEXTURE_RESUME].id, 
-            156 + HSPACING*(i+2) + all_categories_x - dim/2.0, 
-            300 + subitem->y + dim/2.0, 
+            MARGIN_LEFT + HSPACING*(i+2) + all_categories_x - ICON_SIZE/2.0, 
+            MARGIN_TOP + subitem->y + ICON_SIZE/2.0, 
             subitem->alpha, 
             0, 
             subitem->zoom);
          lakka_draw_text("Resume", 
-            156 + HSPACING*(i+2) + all_categories_x + dim/2.0, 
-            300 + subitem->y + 11, 
+            MARGIN_LEFT + HSPACING*(i+2) + all_categories_x + LABEL_MARGIN_LEFT, 
+            MARGIN_TOP + subitem->y + LABEL_MARGIN_TOP, 
             1, 
             subitem->alpha);
       }
@@ -352,14 +469,14 @@ static void lakka_draw_subitems(int i, int j)
             strcmp(g_extern.fullpath, &active_item->rom) == 0))
       {
          lakka_draw_icon(subitem->icon, 
-               156 + HSPACING*(i+2) + all_categories_x - dim/2.0, 
-               300 + subitem->y + dim/2.0, 
+               MARGIN_LEFT + HSPACING*(i+2) + all_categories_x - ICON_SIZE/2.0, 
+               MARGIN_TOP + subitem->y + ICON_SIZE/2.0, 
                subitem->alpha, 
                0, 
                subitem->zoom);
          lakka_draw_text(subitem->name, 
-               156 + HSPACING * (i+2) + all_categories_x + dim/2.0, 
-               300 + subitem->y + 11, 
+               MARGIN_LEFT + HSPACING * (i+2) + all_categories_x + LABEL_MARGIN_LEFT, 
+               MARGIN_TOP + subitem->y + LABEL_MARGIN_TOP, 
                1, 
                subitem->alpha);
       }
@@ -386,16 +503,16 @@ static void lakka_draw_items(int i)
          j < active_category->active_item + 10) // performance improvement
       {
          lakka_draw_icon(category->item_icon,
-            156 + HSPACING*(i+1) + all_categories_x - dim/2.0, 
-            300 + item->y + dim/2.0, 
+            MARGIN_LEFT + HSPACING*(i+1) + all_categories_x - ICON_SIZE/2.0, 
+            MARGIN_TOP + item->y + ICON_SIZE/2.0, 
             item->alpha, 
             0, 
             item->zoom);
 
          if (depth == 0)
             lakka_draw_text(item->name,
-               156 + HSPACING * (i+1) + all_categories_x + dim/2.0, 
-               300 + item->y + 11, 
+               MARGIN_LEFT + HSPACING * (i+1) + all_categories_x + LABEL_MARGIN_LEFT, 
+               MARGIN_TOP + item->y + LABEL_MARGIN_TOP, 
                1, 
                item->alpha);
       }
@@ -421,8 +538,8 @@ static void lakka_draw_categories(void)
 
       // draw category icon
       lakka_draw_icon(category->icon, 
-            156 + (HSPACING*(i+1)) + all_categories_x - dim/2.0, 
-            300 + dim/2.0, 
+            MARGIN_LEFT + (HSPACING*(i+1)) + all_categories_x - ICON_SIZE/2.0, 
+            MARGIN_TOP + ICON_SIZE/2.0, 
             category->alpha, 
             0, 
             category->zoom);
@@ -452,16 +569,16 @@ static void lakka_frame(void)
    if (depth == 0)
    {
       if (active_category)
-         lakka_draw_text(active_category->name, 15.0, 40.0, 1, 1.0);
+         lakka_draw_text(active_category->name, TITLE_MARGIN_LEFT, TITLE_MARGIN_TOP, 1, 1.0);
    }
    else
    {
       if (active_item)
-         lakka_draw_text(active_item->name, 15.0, 40.0, 1, 1.0);
+         lakka_draw_text(active_item->name, TITLE_MARGIN_LEFT, TITLE_MARGIN_TOP, 1, 1.0);
 
       lakka_draw_icon(textures[TEXTURE_ARROW].id,
-            156 + HSPACING*(menu_active_category+1) + all_categories_x + 150 +-dim/2.0,
-            300 + VSPACING*2.4 + (dim/2.0), 1, 0, I_ACTIVE_ZOOM);
+            MARGIN_LEFT + HSPACING*(menu_active_category+1) + all_categories_x + ICON_SIZE/2.0,
+            MARGIN_TOP + VSPACING*ACTIVE_ITEM_FACTOR + ICON_SIZE/2.0, 1, 0, I_ACTIVE_ZOOM);
    }
 
    gl_set_viewport(gl, gl->win_width, gl->win_height, false, false);
@@ -691,7 +808,7 @@ void lakka_init_settings(void)
    strlcpy(item0->name, "General Options", sizeof(item0->name));
    item0->alpha          = j ? 0.5 : 1.0;
    item0->zoom           = j ? I_PASSIVE_ZOOM : I_ACTIVE_ZOOM;
-   item0->y              = j ? VSPACING*(3+j) : VSPACING*2.4;
+   item0->y              = j ? VSPACING*(UNDER_ITEM_OFFSET+j) : VSPACING * ACTIVE_ITEM_FACTOR;
    item0->active_subitem = 0;
    item0->num_subitems   = 0;
 
@@ -707,7 +824,7 @@ void lakka_init_settings(void)
    strlcpy(subitem0->name, "Libretro Logging Level", sizeof(subitem0->name));
    subitem0->alpha = k ? 1.0 : 0.5;
    subitem0->zoom = k ? I_ACTIVE_ZOOM : I_PASSIVE_ZOOM;
-   subitem0->y = k ? VSPACING * (3+k) : VSPACING * 2.4;
+   subitem0->y = k ? VSPACING * (3+k) : VSPACING * ACTIVE_ITEM_FACTOR;
 
    k = 1;
    item0->num_subitems++;
@@ -719,7 +836,7 @@ void lakka_init_settings(void)
    strlcpy(subitem1->name, "Logging Verbosity", sizeof(subitem1->name));
    subitem1->alpha = k ? 1.0 : 0.5;
    subitem1->zoom = k ? I_ACTIVE_ZOOM : I_PASSIVE_ZOOM;
-   subitem1->y = k ? VSPACING * (3+k) : VSPACING * 2.4;
+   subitem1->y = k ? VSPACING * (3+k) : VSPACING * ACTIVE_ITEM_FACTOR;
 
    k = 2;
    item0->num_subitems++;
@@ -731,7 +848,7 @@ void lakka_init_settings(void)
    strlcpy(subitem2->name, "Configuration Save On Exit", sizeof(subitem2->name));
    subitem2->alpha = k ? 1.0 : 0.5;
    subitem2->zoom = k ? I_ACTIVE_ZOOM : I_PASSIVE_ZOOM;
-   subitem2->y = k ? VSPACING * (3+k) : VSPACING * 2.4;
+   subitem2->y = k ? VSPACING * (3+k) : VSPACING * ACTIVE_ITEM_FACTOR;
 
    // Quit item
 
@@ -744,7 +861,7 @@ void lakka_init_settings(void)
    strlcpy(item1->name, "Quit RetroArch", sizeof(item1->name));
    item1->alpha          = j ? 0.5 : 1.0;
    item1->zoom           = j ? I_PASSIVE_ZOOM : I_ACTIVE_ZOOM;
-   item1->y              = j ? VSPACING*(3+j) : VSPACING*2.4;
+   item1->y              = j ? VSPACING*(UNDER_ITEM_OFFSET+j) : VSPACING * ACTIVE_ITEM_FACTOR;
    item1->active_subitem = 0;
    item1->num_subitems   = 0;
 }
@@ -781,7 +898,7 @@ void lakka_settings_context_reset(void)
 static void lakka_context_reset(void *data)
 {
    int i, j, k;
-   char path[256], mediapath[256], themepath[256];
+   char path[256], mediapath[256], themepath[256], iconpath[256];
    menu_handle_t *menu = (menu_handle_t*)data;
    gl_t *gl = (gl_t*)driver.video_data;
 
@@ -790,26 +907,27 @@ static void lakka_context_reset(void *data)
 
    fill_pathname_join(mediapath, g_settings.assets_directory, "lakka", sizeof(mediapath));
    fill_pathname_join(themepath, mediapath, THEME, sizeof(themepath));
-   fill_pathname_slash(themepath, sizeof(themepath));
+   fill_pathname_join(iconpath, themepath, ICON_DIR, sizeof(iconpath));
+   fill_pathname_slash(iconpath, sizeof(iconpath));
    
    fill_pathname_join(font_path, themepath, "font.ttf", sizeof(font_path));
 
-   gl_font_init_first(&font_driver, &font, gl, font_path, 32);
+   gl_font_init_first(&font_driver, &font, gl, font_path, FONT_SIZE);
 
-   fill_pathname_join(textures[TEXTURE_BG].path, themepath, "bg.png", sizeof(textures[TEXTURE_BG].path));
-   fill_pathname_join(textures[TEXTURE_SETTINGS].path, themepath, "settings.png", sizeof(textures[TEXTURE_SETTINGS].path));
-   fill_pathname_join(textures[TEXTURE_SETTING].path, themepath, "setting.png", sizeof(textures[TEXTURE_SETTING].path));
-   fill_pathname_join(textures[TEXTURE_SUBSETTING].path, themepath, "subsetting.png", sizeof(textures[TEXTURE_SUBSETTING].path));
-   fill_pathname_join(textures[TEXTURE_ARROW].path, themepath, "arrow.png", sizeof(textures[TEXTURE_ARROW].path));
-   fill_pathname_join(textures[TEXTURE_RUN].path, themepath, "run.png", sizeof(textures[TEXTURE_RUN].path));
-   fill_pathname_join(textures[TEXTURE_RESUME].path, themepath, "resume.png", sizeof(textures[TEXTURE_RESUME].path));
-   fill_pathname_join(textures[TEXTURE_SAVESTATE].path, themepath, "savestate.png", sizeof(textures[TEXTURE_SAVESTATE].path));
-   fill_pathname_join(textures[TEXTURE_LOADSTATE].path, themepath, "loadstate.png", sizeof(textures[TEXTURE_LOADSTATE].path));
-   fill_pathname_join(textures[TEXTURE_SCREENSHOT].path, themepath, "screenshot.png", sizeof(textures[TEXTURE_SCREENSHOT].path));
-   fill_pathname_join(textures[TEXTURE_RELOAD].path, themepath, "reload.png", sizeof(textures[TEXTURE_RELOAD].path));
+   fill_pathname_join(textures[TEXTURE_BG].path, iconpath, "bg.png", sizeof(textures[TEXTURE_BG].path));
+   fill_pathname_join(textures[TEXTURE_SETTINGS].path, iconpath, "settings.png", sizeof(textures[TEXTURE_SETTINGS].path));
+   fill_pathname_join(textures[TEXTURE_SETTING].path, iconpath, "setting.png", sizeof(textures[TEXTURE_SETTING].path));
+   fill_pathname_join(textures[TEXTURE_SUBSETTING].path, iconpath, "subsetting.png", sizeof(textures[TEXTURE_SUBSETTING].path));
+   fill_pathname_join(textures[TEXTURE_ARROW].path, iconpath, "arrow.png", sizeof(textures[TEXTURE_ARROW].path));
+   fill_pathname_join(textures[TEXTURE_RUN].path, iconpath, "run.png", sizeof(textures[TEXTURE_RUN].path));
+   fill_pathname_join(textures[TEXTURE_RESUME].path, iconpath, "resume.png", sizeof(textures[TEXTURE_RESUME].path));
+   fill_pathname_join(textures[TEXTURE_SAVESTATE].path, iconpath, "savestate.png", sizeof(textures[TEXTURE_SAVESTATE].path));
+   fill_pathname_join(textures[TEXTURE_LOADSTATE].path, iconpath, "loadstate.png", sizeof(textures[TEXTURE_LOADSTATE].path));
+   fill_pathname_join(textures[TEXTURE_SCREENSHOT].path, iconpath, "screenshot.png", sizeof(textures[TEXTURE_SCREENSHOT].path));
+   fill_pathname_join(textures[TEXTURE_RELOAD].path, iconpath, "reload.png", sizeof(textures[TEXTURE_RELOAD].path));
 
    for (k = 0; k < TEXTURE_LAST; k++)
-      textures[k].id = png_texture_load(textures[k].path, &dim, &dim);
+      textures[k].id = png_texture_load(textures[k].path, &ICON_SIZE, &ICON_SIZE);
 
    lakka_settings_context_reset();
    for (i = 1; i < num_categories; i++)
@@ -822,7 +940,8 @@ static void lakka_context_reset(void *data)
 
       fill_pathname_join(mediapath, g_settings.assets_directory, "lakka", sizeof(mediapath));
       fill_pathname_join(themepath, mediapath, THEME, sizeof(themepath));
-      fill_pathname_slash(themepath, sizeof(themepath));
+      fill_pathname_join(iconpath, themepath, ICON_DIR, sizeof(iconpath));
+      fill_pathname_slash(iconpath, sizeof(iconpath));
 
       info_list = (core_info_list_t*)menu->core_info;
       info = NULL;
@@ -837,16 +956,16 @@ static void lakka_context_reset(void *data)
          strlcpy(core_id, "default", sizeof(core_id));
       }
 
-      strlcpy(texturepath, themepath, sizeof(texturepath));
+      strlcpy(texturepath, iconpath, sizeof(texturepath));
       strlcat(texturepath, core_id, sizeof(texturepath));
       strlcat(texturepath, ".png", sizeof(texturepath));
 
-      strlcpy(content_texturepath, themepath, sizeof(content_texturepath));
+      strlcpy(content_texturepath, iconpath, sizeof(content_texturepath));
       strlcat(content_texturepath, core_id, sizeof(content_texturepath));
       strlcat(content_texturepath, "-content.png", sizeof(content_texturepath));
 
-      category->icon = png_texture_load(texturepath, &dim, &dim);
-      category->item_icon = png_texture_load(content_texturepath, &dim, &dim);
+      category->icon = png_texture_load(texturepath, &ICON_SIZE, &ICON_SIZE);
+      category->item_icon = png_texture_load(content_texturepath, &ICON_SIZE, &ICON_SIZE);
       
       for (j = 0; j < category->num_items; j++)
       {
@@ -906,7 +1025,7 @@ static void lakka_init_items(int i, menu_category_t *category, core_info_t *info
          strlcpy(item->rom, list->elems[j].data, sizeof(item->rom));
          item->alpha          = i != menu_active_category ? 0 : n ? 0.5 : 1;
          item->zoom           = n ? I_PASSIVE_ZOOM : I_ACTIVE_ZOOM;
-         item->y              = n ? VSPACING*(3+n) : VSPACING*2.4;
+         item->y              = n ? VSPACING*(UNDER_ITEM_OFFSET+n) : VSPACING*ACTIVE_ITEM_FACTOR;
          item->active_subitem = 0;
          item->num_subitems   = 5;
          item->subitems       = (menu_subitem_t*)calloc(item->num_subitems, sizeof(menu_subitem_t));
@@ -938,7 +1057,7 @@ static void lakka_init_items(int i, menu_category_t *category, core_info_t *info
             }
             subitem->alpha = 0;
             subitem->zoom = k ? I_PASSIVE_ZOOM : I_ACTIVE_ZOOM;
-            subitem->y = k ? VSPACING * (3+k) : VSPACING * 2.4;
+            subitem->y = k ? VSPACING * (3+k) : VSPACING * ACTIVE_ITEM_FACTOR;
          }
       }
    }
@@ -993,6 +1112,8 @@ static void *lakka_init(void)
    gl_t *gl = (gl_t*)driver.video_data;
    if (!menu || !gl)
       return NULL;
+
+   lakka_responsive();
 
    lakka_init_core_info(menu);
    categories = (menu_category_t*)calloc(num_categories, sizeof(menu_category_t));
