@@ -23,18 +23,22 @@
 
 #define THEME "flatui" // flatui or monochrome themes are available
 #define DELAY 0.02
-#define HSPACING 300
-#define VSPACING 75
-#define C_ACTIVE_ZOOM 1.0
-#define C_PASSIVE_ZOOM 0.5
-#define I_ACTIVE_ZOOM 0.75
-#define I_PASSIVE_ZOOM 0.35
 
 extern int depth;
 extern int num_categories;
 extern float all_categories_x;
 extern int menu_active_category;
 extern float global_alpha;
+extern float HSPACING;
+extern float VSPACING;
+extern float C_ACTIVE_ZOOM;
+extern float C_PASSIVE_ZOOM;
+extern float I_ACTIVE_ZOOM;
+extern float I_PASSIVE_ZOOM;
+extern int ABOVE_SUBITEM_OFFSET;
+extern int ABOVE_ITEM_OFFSET;
+extern float ACTIVE_ITEM_FACTOR;
+extern int UNDER_ITEM_OFFSET;
 
 typedef struct
 {
