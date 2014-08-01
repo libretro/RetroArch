@@ -395,7 +395,8 @@ static void menu_common_entries_init(menu_handle_t *menu, unsigned menu_type)
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_NETPLAY_SPECTATOR_MODE_ENABLE, 0);
          file_list_push(menu->selection_buf, "Host IP Address", MENU_SETTINGS_NETPLAY_HOST_IP_ADDRESS, 0);
          file_list_push(menu->selection_buf, "TCP/UDP Port", MENU_SETTINGS_NETPLAY_TCP_UDP_PORT, 0);
-         file_list_push(menu->selection_buf, "Delay Frames", MENU_SETTINGS_NETPLAY_DELAY_FRAMES, 0);
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "netplay_delay_frames")))
+            file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_NETPLAY_DELAY_FRAMES, 0);
 #endif
          break;
       case MENU_SETTINGS_PATH_OPTIONS:
@@ -4509,15 +4510,8 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
             *g_extern.netplay_server = '\0';
          break;
       case MENU_SETTINGS_NETPLAY_DELAY_FRAMES:
-         if (action == MENU_ACTION_LEFT)
-         {
-            if (g_extern.netplay_sync_frames != 0)
-               g_extern.netplay_sync_frames--;
-         }
-         else if (action == MENU_ACTION_RIGHT)
-            g_extern.netplay_sync_frames++;
-         else if (action == MENU_ACTION_START)
-            g_extern.netplay_sync_frames = 0;
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "netplay_delay_frames")))
+            menu_common_setting_set_current_unsigned_integer(current_setting, 1, action, true, false);
          break;
       case MENU_SETTINGS_NETPLAY_TCP_UDP_PORT:
          if (action == MENU_ACTION_OK)

@@ -954,6 +954,8 @@ static void general_read_handler(const void *data)
        *setting->value.boolean = g_extern.netplay_is_client;
     else if (!strcmp(setting->name, "netplay_spectator_mode_enable"))
        *setting->value.boolean = g_extern.netplay_is_spectate;
+    else if (!strcmp(setting->name, "netplay_delay_frames"))
+       *setting->value.unsigned_integer = g_extern.netplay_sync_frames;
 #endif
     else if (!strcmp(setting->name, "log_verbosity"))
         *setting->value.boolean = g_extern.verbosity;
@@ -1314,6 +1316,10 @@ static void general_write_handler(const void *data)
        if (g_extern.netplay_is_spectate)
           *g_extern.netplay_server = '\0';
     }
+    else if (!strcmp(setting->name, "netplay_delay_frames"))
+    {
+       g_extern.netplay_sync_frames = *setting->value.unsigned_integer;
+    }
 #endif
     else if (!strcmp(setting->name, "log_verbosity"))
         g_extern.verbosity = *setting->value.boolean;
@@ -1639,6 +1645,7 @@ rarch_setting_t* setting_data_get_list(void)
          CONFIG_BOOL(g_extern.netplay_enable,            "netplay_enable",  "Netplay Enable",        false, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
          CONFIG_BOOL(g_extern.netplay_is_client,         "netplay_mode",    "Netplay Client Enable",          false, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
          CONFIG_BOOL(g_extern.netplay_is_spectate,       "netplay_spectator_mode_enable",    "Netplay Spectator Enable",          false, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+         CONFIG_UINT(g_extern.netplay_sync_frames,       "netplay_delay_frames",      "Netplay Delay Frames",      0, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_RANGE(0, 10)
          END_SUB_GROUP()
          END_GROUP()
 #endif
