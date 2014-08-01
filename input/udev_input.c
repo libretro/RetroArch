@@ -232,7 +232,7 @@ static void udev_handle_mouse(udev_input_t *udev, const struct input_event *even
    switch (event->type)
    {
       case EV_KEY:
-         /* TODO: mouse wheel up/down */
+         /* TODO: mouse wheel up/down doesn't work */
          switch (event->code)
          {
             case BTN_LEFT:
@@ -245,6 +245,12 @@ static void udev_handle_mouse(udev_input_t *udev, const struct input_event *even
 
             case BTN_MIDDLE:
                udev->mouse_m = event->value;
+               break;
+            case BTN_FORWARD:
+               udev->mouse_wu = event->value;
+               break;
+            case BTN_BACK:
+               udev->mouse_wd = event->value;
                break;
             default:
                break;
@@ -453,6 +459,10 @@ static int16_t udev_mouse_state(udev_input_t *udev, unsigned id)
          return udev->mouse_r;
       case RETRO_DEVICE_ID_MOUSE_MIDDLE:
          return udev->mouse_m;
+      case RETRO_DEVICE_ID_MOUSE_WHEELUP:
+         return udev->mouse_wu;
+      case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
+         return udev->mouse_wd;
       default:
          return 0;
    }
