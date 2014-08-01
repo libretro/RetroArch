@@ -1909,7 +1909,7 @@ static void save_auto_state(void)
 
 void rarch_load_state(void)
 {
-   char load_path[PATH_MAX];
+   char load_path[PATH_MAX], msg[512];
 
    if (g_extern.state_slot > 0)
       snprintf(load_path, sizeof(load_path), "%s%d", g_extern.savestate_name, g_extern.state_slot);
@@ -1918,10 +1918,7 @@ void rarch_load_state(void)
    else
       snprintf(load_path, sizeof(load_path), "%s", g_extern.savestate_name);
 
-   size_t size = pretro_serialize_size();
-   char msg[512];
-
-   if (size)
+   if (pretro_serialize_size())
    {
       if (load_state(load_path))
       {
@@ -1943,10 +1940,10 @@ void rarch_load_state(void)
 
 void rarch_save_state(void)
 {
+   char save_path[PATH_MAX], msg[512];
+
    if (g_settings.savestate_auto_index)
       g_extern.state_slot++;
-
-   char save_path[PATH_MAX];
 
    if (g_extern.state_slot > 0)
       snprintf(save_path, sizeof(save_path), "%s%d", g_extern.savestate_name, g_extern.state_slot);
@@ -1955,10 +1952,7 @@ void rarch_save_state(void)
    else
       snprintf(save_path, sizeof(save_path), "%s", g_extern.savestate_name);
 
-   size_t size = pretro_serialize_size();
-   char msg[512];
-
-   if (size)
+   if (pretro_serialize_size())
    {
       if (save_state(save_path))
       {
