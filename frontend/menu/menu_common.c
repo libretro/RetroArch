@@ -144,9 +144,7 @@ static void load_menu_content_prepare(void)
 
 void load_menu_content_history(unsigned game_index)
 {
-   const char *path = NULL;
-   const char *core_path = NULL;
-   const char *core_name = NULL;
+   const char *path, *core_path, *core_name = NULL;
 
    if (!driver.menu)
       return;
@@ -519,8 +517,7 @@ bool menu_replace_config(const char *path)
 bool menu_save_new_config(void)
 {
    char config_dir[PATH_MAX], config_name[PATH_MAX], config_path[PATH_MAX], msg[512];
-   bool ret        = false;
-   bool found_path = false;
+   bool ret, found_path = false;
 
    *config_dir = '\0';
 
