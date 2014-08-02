@@ -307,6 +307,7 @@ void menu_free(void *data)
 void menu_ticker_line(char *buf, size_t len, unsigned index, const char *str, bool selected)
 {
    size_t str_len = strlen(str);
+
    if (str_len <= len)
    {
       strlcpy(buf, str, len + 1);
@@ -513,7 +514,10 @@ bool menu_replace_config(const char *path)
 // Save a new config to a file. Filename is based on heuristics to avoid typing.
 bool menu_save_new_config(void)
 {
-   char config_dir[PATH_MAX];
+   char config_dir[PATH_MAX], config_name[PATH_MAX], config_path[PATH_MAX], msg[512];
+   bool ret        = false;
+   bool found_path = false;
+
    *config_dir = '\0';
 
    if (*g_settings.menu_config_directory)
@@ -529,21 +533,19 @@ bool menu_save_new_config(void)
       return false;
    }
 
-   bool found_path = false;
-   char config_name[PATH_MAX];
-   char config_path[PATH_MAX];
    if (*g_settings.libretro && path_file_exists(g_settings.libretro)) // Infer file name based on libretro core.
    {
       unsigned i;
       // In case of collision, find an alternative name.
       for (i = 0; i < 16; i++)
       {
+         char tmp[64];
          fill_pathname_base(config_name, g_settings.libretro, sizeof(config_name));
          path_remove_extension(config_name);
          fill_pathname_join(config_path, config_dir, config_name, sizeof(config_path));
 
-         char tmp[64];
          *tmp = '\0';
+
          if (i)
             snprintf(tmp, sizeof(tmp), "-%u.cfg", i);
          else
@@ -567,8 +569,6 @@ bool menu_save_new_config(void)
       fill_pathname_join(config_path, config_dir, config_name, sizeof(config_path));
    }
 
-   char msg[512];
-   bool ret;
    if (config_save_file(config_path))
    {
       strlcpy(g_extern.config_path, config_path, sizeof(g_extern.config_path));
@@ -580,7 +580,6 @@ bool menu_save_new_config(void)
    {
       snprintf(msg, sizeof(msg), "Failed saving config to \"%s\".", config_path);
       RARCH_ERR("%s\n", msg);
-      ret = false;
    }
 
    msg_queue_clear(g_extern.msg_queue);
@@ -590,9 +589,11 @@ bool menu_save_new_config(void)
 
 static inline int menu_list_get_first_char(file_list_t *buf, unsigned offset)
 {
+   int ret;
    const char *path = NULL;
+
    file_list_get_alt_at_offset(buf, offset, &path);
-   int ret = tolower(*path);
+   ret = tolower(*path);
 
    // "Normalize" non-alphabetical entries so they are lumped together for purposes of jumping.
    if (ret < 'a')
@@ -630,11 +631,8 @@ void menu_build_scroll_indices(file_list_t *buf)
 
    for (i = 1; i < buf->size; i++)
    {
-      int first;
-      bool is_dir;
-
-      first = menu_list_get_first_char(buf, i);
-      is_dir = menu_list_elem_is_dir(buf, i);
+      int first = menu_list_get_first_char(buf, i);
+      bool is_dir = menu_list_elem_is_dir(buf, i);
 
       if ((current_is_dir && !is_dir) || (first > current))
          driver.menu->scroll_indices[driver.menu->scroll_indices_size++] = i;
