@@ -977,8 +977,9 @@ static void general_read_handler(const void *data)
 
 static void general_write_handler(const void *data)
 {
-   bool has_set_reinit = false;
-   bool has_set_rewind = false;
+   bool has_set_reinit   = false;
+   bool has_set_rewind   = false;
+   bool has_set_autosave = false;
    const rarch_setting_t *setting = (const rarch_setting_t*)data;
 
    if (!setting)
@@ -1127,14 +1128,8 @@ static void general_write_handler(const void *data)
       g_settings.fastforward_ratio = *setting->value.fraction;
    else if (!strcmp(setting->name, "autosave_interval"))
    {
-#ifdef HAVE_THREADS
-      rarch_deinit_autosave();
-#endif
       g_settings.autosave_interval = *setting->value.unsigned_integer;
-#ifdef HAVE_THREADS
-      if (g_settings.autosave_interval)
-         rarch_init_autosave();
-#endif
+      has_set_autosave = true;
    }
    else if (!strcmp(setting->name, "video_font_enable"))
       g_settings.video.font_enable = *setting->value.boolean;
@@ -1339,9 +1334,10 @@ static void general_write_handler(const void *data)
 
    if (has_set_reinit)
       rarch_main_command(RARCH_CMD_REINIT);
-
    if (has_set_rewind)
       rarch_main_command(RARCH_CMD_REWIND);
+   if (has_set_autosave)
+      rarch_main_command(RARCH_CMD_AUTOSAVE);
 }
 
 #define NEXT (list[index++])

@@ -1699,7 +1699,7 @@ static void init_libretro_cbs(void)
 }
 
 #if defined(HAVE_THREADS)
-void rarch_init_autosave(void)
+static void init_autosave(void)
 {
    unsigned i;
 
@@ -1729,7 +1729,7 @@ void rarch_init_autosave(void)
    }
 }
 
-void rarch_deinit_autosave(void)
+static void deinit_autosave(void)
 {
    unsigned i;
    for (i = 0; i < g_extern.num_autosave; i++)
@@ -2483,7 +2483,7 @@ void rarch_disk_control_append_image(const char *path)
    msg_queue_push(g_extern.msg_queue, msg, 0, 180);
 
 #if defined(HAVE_THREADS)
-   rarch_deinit_autosave();
+   deinit_autosave();
 #endif
 
    // TODO: Need to figure out what to do with subsystems case.
@@ -2498,7 +2498,7 @@ void rarch_disk_control_append_image(const char *path)
    }
 
 #if defined(HAVE_THREADS)
-   rarch_init_autosave();
+   init_autosave();
 #endif
 
    rarch_disk_control_set_eject(false, false);
@@ -2922,7 +2922,7 @@ static void init_sram(void)
 
 #if defined(HAVE_THREADS)
    if (g_extern.use_sram)
-      rarch_init_autosave();
+      init_autosave();
 #endif
 }
 
@@ -3151,6 +3151,13 @@ void rarch_main_command(unsigned action)
          else
             deinit_rewind();
          break;
+      case RARCH_CMD_AUTOSAVE:
+#ifdef HAVE_THREADS
+         deinit_autosave();
+         if (g_settings.autosave_interval)
+            init_autosave();
+#endif
+         break;
    }
 }
 
@@ -3284,7 +3291,7 @@ void rarch_main_deinit(void)
 
 #if defined(HAVE_THREADS)
    if (g_extern.use_sram)
-      rarch_deinit_autosave();
+      deinit_autosave();
 #endif
 
 #ifdef HAVE_RECORD
