@@ -380,8 +380,9 @@ static bool audio_flush(const int16_t *data, size_t samples)
    if (!g_extern.audio_active)
       return false;
 
-   const float *output_data = NULL;
+   const void *output_data = NULL;
    unsigned output_frames      = 0;
+   size_t   output_size        = sizeof(float);
 
    struct resampler_data src_data = {0};
    RARCH_PERFORMANCE_INIT(audio_convert_s16);
@@ -423,15 +424,7 @@ static bool audio_flush(const int16_t *data, size_t samples)
    output_data   = g_extern.audio_data.outsamples;
    output_frames = src_data.output_frames;
 
-   if (g_extern.audio_data.use_float)
-   {
-      if (audio_write_func(output_data, output_frames * sizeof(float) * 2) < 0)
-      {
-         RARCH_ERR("Audio backend failed to write. Will continue without sound.\n");
-         return false;
-      }
-   }
-   else
+   if (!g_extern.audio_data.use_float)
    {
       RARCH_PERFORMANCE_INIT(audio_convert_float);
       RARCH_PERFORMANCE_START(audio_convert_float);
@@ -439,11 +432,14 @@ static bool audio_flush(const int16_t *data, size_t samples)
             output_data, output_frames * 2);
       RARCH_PERFORMANCE_STOP(audio_convert_float);
 
-      if (audio_write_func(g_extern.audio_data.conv_outsamples, output_frames * sizeof(int16_t) * 2) < 0)
-      {
-         RARCH_ERR("Audio backend failed to write. Will continue without sound.\n");
-         return false;
-      }
+      output_data = g_extern.audio_data.conv_outsamples;
+      output_size = sizeof(int16_t);
+   }
+
+   if (audio_write_func(output_data, output_frames * output_size * 2) < 0)
+   {
+      RARCH_ERR("Audio backend failed to write. Will continue without sound.\n");
+      return false;
    }
 
    return true;
