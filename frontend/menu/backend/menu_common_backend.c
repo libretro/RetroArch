@@ -3719,17 +3719,8 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
          break;
 #endif
       case MENU_CONTENT_HISTORY_PATH:
-         switch (action)
-         {
-            case MENU_ACTION_OK:
-               menu_common_setting_push_current_menu(driver.menu->menu_stack, "", setting, driver.menu->selection_ptr, action);
-               break;
-            case MENU_ACTION_START:
-               *g_settings.content_history_path = '\0';
-               break;
-            default:
-               break;
-         }
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "game_history_path")))
+            menu_common_setting_set_current_path_selection(current_setting, "", setting, action);
          break;
       case MENU_SETTINGS_VIDEO_SOFTFILTER:
          switch (action)
