@@ -140,7 +140,7 @@ static bool take_screenshot_raw(void)
          width, height, -pitch, false);
 }
 
-static void rarch_take_screenshot(void)
+static void take_screenshot(void)
 {
    if ((!*g_settings.screenshot_directory) && (!*g_extern.basename)) // No way to infer screenshot directory.
       return;
@@ -2014,7 +2014,7 @@ static void check_savestates(bool immutable)
    }
 }
 
-static void rarch_set_fullscreen(bool fullscreen)
+static void set_fullscreen(bool fullscreen)
 {
    g_settings.video.fullscreen = fullscreen;
    driver.video_cache_context = g_extern.system.hw_render_callback.cache_context;
@@ -2616,7 +2616,7 @@ static void check_screenshot(void)
    static bool old_pressed;
    bool pressed = input_key_pressed_func(RARCH_SCREENSHOT);
    if (pressed && !old_pressed)
-      rarch_take_screenshot();
+      take_screenshot();
 
    old_pressed = pressed;
 }
@@ -3126,7 +3126,7 @@ void rarch_main_command(unsigned action)
          g_extern.lifecycle_state |= (1ULL << MODE_GAME);
          break;
       case RARCH_CMD_TAKE_SCREENSHOT:
-         rarch_take_screenshot();
+         take_screenshot();
          break;
       case RARCH_CMD_PREPARE_DUMMY:
          *g_extern.fullpath = '\0';
@@ -3143,7 +3143,7 @@ void rarch_main_command(unsigned action)
          g_extern.system.shutdown = true;
          break;
       case RARCH_CMD_REINIT:
-         rarch_set_fullscreen(g_settings.video.fullscreen);
+         set_fullscreen(g_settings.video.fullscreen);
          break;
       case RARCH_CMD_REWIND:
          if (g_settings.rewind_enable)
