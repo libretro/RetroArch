@@ -3211,6 +3211,24 @@ void rarch_main_command(unsigned action)
             g_extern.audio_active = false;
          }
          break;
+      case RARCH_CMD_OVERLAY_INIT:
+#ifdef HAVE_OVERLAY
+         if (*g_settings.input.overlay && g_settings.input.overlay[0] != '\0')
+         {
+            driver.overlay = input_overlay_new(g_settings.input.overlay);
+            if (!driver.overlay)
+               RARCH_ERR("Failed to load overlay.\n");
+         }
+#endif
+         break;
+      case RARCH_CMD_OVERLAY_FREE:
+#ifdef HAVE_OVERLAY
+         if (driver.overlay)
+            input_overlay_free(driver.overlay);
+         driver.overlay = NULL;
+         memset(&driver.overlay_state, 0, sizeof(driver.overlay_state));
+#endif
+         break;
    }
 }
 

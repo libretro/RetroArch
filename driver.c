@@ -1197,18 +1197,8 @@ void init_video_input(void)
    }
 
 #ifdef HAVE_OVERLAY
-   if (driver.overlay)
-   {
-      input_overlay_free(driver.overlay);
-      driver.overlay = NULL;
-   }
-
-   if (*g_settings.input.overlay)
-   {
-      driver.overlay = input_overlay_new(g_settings.input.overlay);
-      if (!driver.overlay)
-         RARCH_ERR("Failed to load overlay.\n");
-   }
+   rarch_main_command(RARCH_CMD_OVERLAY_FREE);
+   rarch_main_command(RARCH_CMD_OVERLAY_INIT);
 #endif
 
    g_extern.measure_data.frame_time_samples_count = 0;
@@ -1217,12 +1207,7 @@ void init_video_input(void)
 void uninit_video_input(void)
 {
 #ifdef HAVE_OVERLAY
-   if (driver.overlay)
-   {
-      input_overlay_free(driver.overlay);
-      driver.overlay = NULL;
-      memset(&driver.overlay_state, 0, sizeof(driver.overlay_state));
-   }
+   rarch_main_command(RARCH_CMD_OVERLAY_FREE);
 #endif
 
    if (!driver.input_data_own && driver.input_data != driver.video_data && driver.input && driver.input->free)

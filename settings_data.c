@@ -977,9 +977,11 @@ static void general_read_handler(const void *data)
 
 static void general_write_handler(const void *data)
 {
-   bool has_set_reinit   = false;
-   bool has_set_rewind   = false;
-   bool has_set_autosave = false;
+   bool has_set_reinit            = false;
+   bool has_set_rewind            = false;
+   bool has_set_autosave          = false;
+   bool has_set_overlay_init      = false;
+   bool has_set_overlay_free      = false;
    const rarch_setting_t *setting = (const rarch_setting_t*)data;
 
    if (!setting)
@@ -1144,11 +1146,8 @@ static void general_write_handler(const void *data)
    {
       strlcpy(g_settings.input.overlay, setting->value.string, sizeof(g_settings.input.overlay));
 
-      if (driver.overlay)
-         input_overlay_free(driver.overlay);
-
-      if (g_settings.input.overlay && g_settings.input.overlay[0] != '\0')
-         driver.overlay = input_overlay_new(g_settings.input.overlay);
+      has_set_overlay_free = false;
+      has_set_overlay_init = true;
    }
    else if (!strcmp(setting->name, "input_overlay_scale"))
    {
@@ -1338,6 +1337,10 @@ static void general_write_handler(const void *data)
       rarch_main_command(RARCH_CMD_REWIND);
    if (has_set_autosave)
       rarch_main_command(RARCH_CMD_AUTOSAVE);
+   if (has_set_overlay_free)
+      rarch_main_command(RARCH_CMD_OVERLAY_FREE);
+   if (has_set_overlay_init)
+      rarch_main_command(RARCH_CMD_OVERLAY_INIT);
 }
 
 #define NEXT (list[index++])

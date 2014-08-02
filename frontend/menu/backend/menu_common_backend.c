@@ -3704,9 +3704,7 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
                menu_common_setting_push_current_menu(driver.menu->menu_stack, g_extern.overlay_dir, setting, driver.menu->selection_ptr, action);
                break;
             case MENU_ACTION_START:
-               if (driver.overlay)
-                  input_overlay_free(driver.overlay);
-               driver.overlay = NULL;
+               rarch_main_command(RARCH_CMD_OVERLAY_FREE);
                *g_settings.input.overlay = '\0';
                break;
             default:
