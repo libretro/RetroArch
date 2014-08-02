@@ -36,7 +36,7 @@ void rarch_cmd_poll(rarch_cmd_t *handle);
 void rarch_cmd_set(rarch_cmd_t *handle, unsigned id);
 bool rarch_cmd_get(rarch_cmd_t *handle, unsigned id);
 
-#ifdef HAVE_NETWORK_CMD
+#if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
 bool network_cmd_send(const char *cmd);
 #endif
 
