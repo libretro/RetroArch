@@ -1531,6 +1531,11 @@ static void init_rewind(void)
 
 static void deinit_rewind(void)
 {
+#ifdef HAVE_NETPLAY
+    if (g_extern.netplay)
+        return;
+#endif
+    
    if (g_extern.state_manager)
       state_manager_free(g_extern.state_manager);
    g_extern.state_manager = NULL;
@@ -3299,11 +3304,7 @@ void rarch_main_deinit(void)
    if (g_extern.use_sram)
       save_files();
 
-#ifdef HAVE_NETPLAY
-   if (!g_extern.netplay)
-#endif
-      deinit_rewind();
-
+   deinit_rewind();
    deinit_cheats();
 
 #ifdef HAVE_BSV_MOVIE
