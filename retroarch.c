@@ -80,11 +80,11 @@ static void check_fast_forward_button(void)
 
 static bool take_screenshot_viewport(void)
 {
-   bool retval = false;
-   struct rarch_viewport vp = {0};
    char screenshot_path[PATH_MAX];
    const char *screenshot_dir;
-   uint8_t *buffer = NULL;;
+   uint8_t *buffer = NULL;
+   bool retval = false;
+   struct rarch_viewport vp = {0};
 
    video_viewport_info_func(&vp);
 
@@ -194,11 +194,11 @@ static void take_screenshot(void)
 
 static void readjust_audio_input_rate(void)
 {
-   int avail, half_size, delta_mid;
+   int half_size, delta_mid;
    unsigned write_index;
    double direction, adjust;
+   int avail = audio_write_avail_func();
 
-   avail = audio_write_avail_func();
    //RARCH_LOG_OUTPUT("Audio buffer is %u%% full\n",
    //      (unsigned)(100 - (avail * 100) / g_extern.audio_data.driver_buffer_size));
 
@@ -441,9 +441,8 @@ static void video_frame(const void *data, unsigned width, unsigned height, size_
 
    if (g_extern.filter.filter && data)
    {
-      unsigned owidth = 0;
-      unsigned oheight = 0;
-      unsigned opitch = 0;
+      unsigned owidth, oheight, opitch = 0;
+
       rarch_softfilter_get_output_size(g_extern.filter.filter,
             &owidth, &oheight, width, height);
 
@@ -473,13 +472,13 @@ static void video_frame(const void *data, unsigned width, unsigned height, size_
 
 void rarch_render_cached_frame(void)
 {
+   const void *frame = g_extern.frame_cache.data;
 #ifdef HAVE_RECORD
-   // Cannot allow FFmpeg recording when pushing duped frames.
+   // Cannot allow recording when pushing duped frames.
    void *recording = g_extern.rec;
    g_extern.rec = NULL;
 #endif
 
-   const void *frame = g_extern.frame_cache.data;
    if (frame == RETRO_HW_FRAME_BUFFER_VALID)
       frame = NULL; // Dupe
 
@@ -672,7 +671,7 @@ static inline void input_poll_overlay(void)
       if (driver.overlay_state.keys[i] != old_key_state.keys[i])
       {
          uint32_t orig_bits = old_key_state.keys[i];
-         uint32_t new_bits = driver.overlay_state.keys[i];
+         uint32_t new_bits  = driver.overlay_state.keys[i];
 
          for (j = 0; j < 32; j++)
             if ((orig_bits & (1 << j)) != (new_bits & (1 << j)))
@@ -698,8 +697,8 @@ static inline void input_poll_overlay(void)
       case ANALOG_DPAD_LSTICK:
       case ANALOG_DPAD_RSTICK:
       {
-         unsigned analog_base = g_settings.input.analog_dpad_mode[0] == ANALOG_DPAD_LSTICK ?
-            0 : 2;
+         unsigned analog_base = g_settings.input.analog_dpad_mode[0] == 
+            ANALOG_DPAD_LSTICK ? 0 : 2;
          float analog_x = (float)driver.overlay_state.analog[analog_base + 0] / 0x7fff;
          float analog_y = (float)driver.overlay_state.analog[analog_base + 1] / 0x7fff;
          driver.overlay_state.buttons |= (analog_x <= -g_settings.input.axis_threshold) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT) : 0;
@@ -1408,8 +1407,8 @@ static void init_controllers(void)
    for (i = 0; i < MAX_PLAYERS; i++)
    {
       unsigned device = g_settings.input.libretro_device[i];
-
       const struct retro_controller_description *desc = NULL;
+
       if (i < g_extern.system.num_ports)
          desc = libretro_find_controller_description(&g_extern.system.ports[i], device);
 
@@ -1445,6 +1444,7 @@ static void init_controllers(void)
 static inline bool load_save_files(void)
 {
    unsigned i;
+
    if (!g_extern.savefiles || g_extern.sram_load_disable)
       return false;
 
@@ -1457,12 +1457,13 @@ static inline bool load_save_files(void)
 static inline bool save_files(void)
 {
    unsigned i;
+
    if (!g_extern.savefiles || !g_extern.use_sram)
       return false;
 
    for (i = 0; i < g_extern.savefiles->size; i++)
    {
-      unsigned type = g_extern.savefiles->elems[i].attr.i;
+      unsigned type    = g_extern.savefiles->elems[i].attr.i;
       const char *path = g_extern.savefiles->elems[i].data;
       RARCH_LOG("Saving RAM type #%u to \"%s\".\n", type, path);
       save_ram_file(path, type);
@@ -1832,9 +1833,9 @@ static void fill_pathnames(void)
       {
          for (j = 0; j < info->roms[i].num_memory; j++)
          {
-            const struct retro_subsystem_memory_info *mem = (const struct retro_subsystem_memory_info*)&info->roms[i].memory[j];
             union string_list_elem_attr attr;
             char path[PATH_MAX], ext[32];
+            const struct retro_subsystem_memory_info *mem = (const struct retro_subsystem_memory_info*)&info->roms[i].memory[j];
 
             snprintf(ext, sizeof(ext), ".%s", mem->extension);
 
@@ -1869,6 +1870,7 @@ static void fill_pathnames(void)
    {
       char savefile_name_rtc[PATH_MAX];
       union string_list_elem_attr attr;
+
       attr.i = RETRO_MEMORY_SAVE_RAM;
       string_list_append(g_extern.savefiles, g_extern.savefile_name, attr);
 
@@ -2406,12 +2408,11 @@ static void check_shader_dir(void)
 {
    static bool old_pressed_next;
    static bool old_pressed_prev;
-   bool should_apply, pressed_next, pressed_prev;
+   bool should_apply, pressed_next, pressed_prev = false;
 
    if (!g_extern.shader_dir.list || !driver.video->set_shader)
       return;
 
-   should_apply = false;
    pressed_next = input_key_pressed_func(RARCH_SHADER_NEXT);
    pressed_prev = input_key_pressed_func(RARCH_SHADER_PREV);
 
@@ -2486,13 +2487,14 @@ static void check_cheats(void)
 void rarch_disk_control_append_image(const char *path)
 {
    char msg[512];
+   unsigned new_index;
    const struct retro_disk_control_callback *control = 
       (const struct retro_disk_control_callback*)&g_extern.system.disk_control;
    struct retro_game_info info = {0};
    rarch_disk_control_set_eject(true, false);
 
    control->add_image_index();
-   unsigned new_index = control->get_num_images();
+   new_index = control->get_num_images();
    if (!new_index)
       return;
    new_index--;
@@ -3091,16 +3093,15 @@ static inline bool check_enter_menu(void)
 
 static inline void update_frame_time(void)
 {
-   retro_time_t time, delta;
+   retro_time_t time, delta = 0;
    bool is_locked_fps;
 
    if (!g_extern.system.frame_time.callback)
       return;
 
    time = rarch_get_time_usec();
-   delta = 0;
-
    is_locked_fps = g_extern.is_paused || driver.nonblock_state;
+
 #ifdef HAVE_RECORD
    is_locked_fps |= !!g_extern.rec;
 #endif
@@ -3119,14 +3120,17 @@ static inline void update_frame_time(void)
 
 static inline void limit_frame_time(void)
 {
+   retro_time_t current, target, to_sleep_ms;
+
    if (g_settings.fastforward_ratio < 0.0f)
       return;
 
    g_extern.frame_limit.minimum_frame_time = (retro_time_t)roundf(1000000.0f / (g_extern.system.av_info.timing.fps * g_settings.fastforward_ratio));
 
-   retro_time_t current = rarch_get_time_usec();
-   retro_time_t target = g_extern.frame_limit.last_frame_time + g_extern.frame_limit.minimum_frame_time;
-   retro_time_t to_sleep_ms = (target - current) / 1000;
+   current = rarch_get_time_usec();
+   target = g_extern.frame_limit.last_frame_time + g_extern.frame_limit.minimum_frame_time;
+   to_sleep_ms = (target - current) / 1000;
+
    if (to_sleep_ms > 0)
    {
       rarch_sleep((unsigned int)to_sleep_ms);
