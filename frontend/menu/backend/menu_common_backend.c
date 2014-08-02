@@ -3757,16 +3757,8 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
          }
          break;
       case MENU_SETTINGS_AUDIO_DSP_FILTER:
-         switch (action)
-         {
-            case MENU_ACTION_OK:
-               menu_common_setting_push_current_menu(driver.menu->menu_stack, g_settings.audio.filter_dir, setting, driver.menu->selection_ptr, action);
-               break;
-            case MENU_ACTION_START:
-               rarch_main_command(RARCH_CMD_DSP_FILTER_DEINIT);
-               *g_settings.audio.dsp_plugin = '\0';
-               break;
-         }
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "audio_dsp_plugin")))
+            menu_common_setting_set_current_path_selection(current_setting, g_settings.audio.filter_dir, setting, action);
          break;
 #ifdef HAVE_OVERLAY
       case MENU_SETTINGS_OVERLAY_OPACITY:
