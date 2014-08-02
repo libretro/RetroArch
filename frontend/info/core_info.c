@@ -285,7 +285,6 @@ bool core_info_does_support_file(const core_info_t *core, const char *path)
 {
    if (!path || !core || !core->supported_extensions_list)
       return false;
-
    return string_list_find_elem_prefix(core->supported_extensions_list, ".", path_get_extension(path));
 }
 
@@ -312,8 +311,7 @@ static int core_info_qsort_cmp(const void *a_, const void *b_)
 
    if (support_a != support_b)
       return support_b - support_a;
-   else
-      return strcasecmp(a->display_name, b->display_name);
+   return strcasecmp(a->display_name, b->display_name);
 }
 
 void core_info_list_get_supported_cores(core_info_list_t *core_info_list, const char *path,
@@ -360,12 +358,9 @@ static core_info_t *find_core_info(core_info_list_t *list, const char *core)
 {
    size_t i;
 
-   if (!list)
-      return NULL;
-
    for (i = 0; i < list->count; i++)
    {
-      core_info_t *info = &list->list[i];
+      core_info_t *info = (core_info_t*)&list->list[i];
       if (info->path && !strcmp(info->path, core))
          return info;
    }
@@ -378,10 +373,10 @@ static int core_info_firmware_cmp(const void *a_, const void *b_)
    const core_info_firmware_t *a = (const core_info_firmware_t*)a_;
    const core_info_firmware_t *b = (const core_info_firmware_t*)b_;
    int order = b->missing - a->missing;
+
    if (order)
       return order;
-   else
-      return strcasecmp(a->path, b->path);
+   return strcasecmp(a->path, b->path);
 }
 
 void core_info_list_update_missing_firmware(core_info_list_t *core_info_list,
@@ -389,11 +384,12 @@ void core_info_list_update_missing_firmware(core_info_list_t *core_info_list,
 {
    size_t i;
    char path[PATH_MAX];
-   if (!core_info_list)
+   core_info_t *info = NULL;
+
+   if (!core_info_list || !core)
       return;
 
-   core_info_t *info = find_core_info(core_info_list, core);
-   if (!info)
+   if (!(info = find_core_info(core_info_list, core)))
       return;
 
    for (i = 0; i < info->firmware_count; i++)
@@ -412,14 +408,15 @@ void core_info_list_get_missing_firmware(core_info_list_t *core_info_list,
 {
    size_t i;
    char path[PATH_MAX];
-   if (!core_info_list)
+   core_info_t *info = NULL;
+
+   if (!core_info_list || !core)
       return;
 
    *firmware = NULL;
    *num_firmware = 0;
 
-   core_info_t *info = find_core_info(core_info_list, core);
-   if (!info)
+   if (!(info = find_core_info(core_info_list, core)))
       return;
 
    *firmware = info->firmware;
@@ -449,10 +446,12 @@ const core_info_t *core_info_list_get_by_id(const char *core_id)
    unsigned i;
    const core_info_list_t* cores = core_info_list_get();
 
-   if (core_id)
-      for (i = 0; i < cores->count; i ++)
-         if (cores->list[i].path && strcmp(core_id, cores->list[i].path) == 0)
-            return &cores->list[i];
+   if (!core_id || !cores)
+      return 0;
+
+   for (i = 0; i < cores->count; i ++)
+      if (cores->list[i].path && strcmp(core_id, cores->list[i].path) == 0)
+         return &cores->list[i];
 
    return 0;
 }
