@@ -230,7 +230,7 @@ static void recording_dump_frame(const void *data, unsigned width, unsigned heig
          return;
       }
 
-      // User has resized. We're kinda fucked now.
+      // User has resized. We kinda have a problem now.
       if (vp.width != g_extern.record_gpu_width || vp.height != g_extern.record_gpu_height)
       {
          static const char msg[] = "Recording terminated due to resize.";
@@ -1541,8 +1541,7 @@ static void init_movie(void)
 {
    if (g_extern.bsv.movie_start_playback)
    {
-      g_extern.bsv.movie = bsv_movie_init(g_extern.bsv.movie_start_path, RARCH_MOVIE_PLAYBACK);
-      if (!g_extern.bsv.movie)
+      if (!(g_extern.bsv.movie = bsv_movie_init(g_extern.bsv.movie_start_path, RARCH_MOVIE_PLAYBACK)))
       {
          RARCH_ERR("Failed to load movie file: \"%s\".\n", g_extern.bsv.movie_start_path);
          rarch_fail(1, "init_movie()");
@@ -1559,12 +1558,11 @@ static void init_movie(void)
       snprintf(msg, sizeof(msg), "Starting movie record to \"%s\".",
             g_extern.bsv.movie_start_path);
 
-      g_extern.bsv.movie = bsv_movie_init(g_extern.bsv.movie_start_path, RARCH_MOVIE_RECORD);
       msg_queue_clear(g_extern.msg_queue);
       msg_queue_push(g_extern.msg_queue,
             g_extern.bsv.movie ? msg : "Failed to start movie record.", 1, 180);
 
-      if (g_extern.bsv.movie)
+      if ((g_extern.bsv.movie = bsv_movie_init(g_extern.bsv.movie_start_path, RARCH_MOVIE_RECORD)))
       {
          RARCH_LOG("Starting movie record to \"%s\".\n", g_extern.bsv.movie_start_path);
          g_settings.rewind_granularity = 1;
@@ -1670,6 +1668,9 @@ static void deinit_command(void)
 #ifdef HAVE_NETPLAY
 static void init_libretro_cbs_netplay(void)
 {
+   if (!g_extern.netplay)
+      return;
+
    pretro_set_video_refresh(g_extern.netplay_is_spectate ?
          video_frame : video_frame_net);
 
@@ -1693,24 +1694,24 @@ static void init_libretro_cbs(void)
    pretro_set_input_poll(rarch_input_poll);
 
 #ifdef HAVE_NETPLAY
-   if (g_extern.netplay)
-      init_libretro_cbs_netplay();
+   init_libretro_cbs_netplay();
 #endif
 }
 
 #if defined(HAVE_THREADS)
 void rarch_init_autosave(void)
 {
+   unsigned i;
+
    if (g_settings.autosave_interval < 1 || !g_extern.savefiles)
       return;
 
-   g_extern.autosave = (autosave_t**)calloc(g_extern.savefiles->size, sizeof(*g_extern.autosave));
-   if (!g_extern.autosave)
+   if (!(g_extern.autosave = (autosave_t**)calloc(g_extern.savefiles->size,
+               sizeof(*g_extern.autosave))))
       return;
 
    g_extern.num_autosave = g_extern.savefiles->size;
 
-   unsigned i;
    for (i = 0; i < g_extern.savefiles->size; i++)
    {
       const char *path = g_extern.savefiles->elems[i].data;
@@ -1745,6 +1746,8 @@ void rarch_deinit_autosave(void)
 static void set_savestate_auto_index(void)
 {
    char state_dir[PATH_MAX], state_base[PATH_MAX];
+   size_t i;
+   unsigned max_index = 0;
 
    if (!g_settings.savestate_auto_index)
       return;
@@ -1755,13 +1758,10 @@ static void set_savestate_auto_index(void)
    fill_pathname_basedir(state_dir, g_extern.savestate_name, sizeof(state_dir));
    fill_pathname_base(state_base, g_extern.savestate_name, sizeof(state_base));
 
-   unsigned max_index = 0;
-
    struct string_list *dir_list = dir_list_new(state_dir, NULL, false);
    if (!dir_list)
       return;
 
-   size_t i;
    for (i = 0; i < dir_list->size; i++)
    {
       const char *dir_elem = dir_list->elems[i].data;
@@ -1786,9 +1786,16 @@ static void set_savestate_auto_index(void)
    RARCH_LOG("Found last state slot: #%u\n", g_settings.state_slot);
 }
 
+static void deinit_savefiles(void)
+{
+   if (g_extern.savefiles)
+      string_list_free(g_extern.savefiles);
+   g_extern.savefiles = NULL;
+}
+
 static void fill_pathnames(void)
 {
-   string_list_free(g_extern.savefiles);
+   deinit_savefiles();
    g_extern.savefiles = string_list_new();
    rarch_assert(g_extern.savefiles);
 
@@ -3257,12 +3264,6 @@ static void deinit_subsystem_fullpaths(void)
    g_extern.subsystem_fullpaths = NULL;
 }
 
-static void deinit_savefiles(void)
-{
-   if (g_extern.savefiles)
-      string_list_free(g_extern.savefiles);
-   g_extern.savefiles = NULL;
-}
 
 void rarch_main_deinit(void)
 {
