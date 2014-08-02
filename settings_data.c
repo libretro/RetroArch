@@ -855,6 +855,8 @@ static void general_read_handler(const void *data)
         *setting->value.unsigned_integer = g_settings.video.fullscreen_x;
     else if (!strcmp(setting->name, "video_fullscreen_y"))
         *setting->value.unsigned_integer = g_settings.video.fullscreen_y;
+    else if (!strcmp(setting->name, "video_refresh_rate"))
+       *setting->value.fraction = g_settings.video.refresh_rate;
     else if (!strcmp(setting->name, "video_refresh_rate_auto"))
        *setting->value.fraction = g_settings.video.refresh_rate;
     else if (!strcmp(setting->name,  "video_aspect_ratio"))
@@ -1171,6 +1173,8 @@ static void general_write_handler(const void *data)
       g_settings.video.fullscreen_x = *setting->value.unsigned_integer;
    else if (!strcmp(setting->name, "video_fullscreen_y"))
       g_settings.video.fullscreen_y = *setting->value.unsigned_integer;
+    else if (!strcmp(setting->name, "video_refresh_rate"))
+       g_settings.video.refresh_rate = *setting->value.fraction;
    else if (!strcmp(setting->name, "video_refresh_rate_auto"))
    {
       if (driver.video && driver.video_data)
@@ -1473,7 +1477,8 @@ rarch_setting_t* setting_data_get_list(void)
          CONFIG_BOOL(g_settings.video.windowed_fullscreen,  "video_windowed_fullscreen",  "Windowed Fullscreen Mode",   windowed_fullscreen, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
          CONFIG_UINT(g_settings.video.fullscreen_x,         "video_fullscreen_x",         "Fullscreen Width",           fullscreen_x, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
          CONFIG_UINT(g_settings.video.fullscreen_y,         "video_fullscreen_y",         "Fullscreen Height",          fullscreen_y, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
-         CONFIG_FLOAT(g_settings.video.refresh_rate,        "video_refresh_rate_auto",    "Refresh Rate",               refresh_rate, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+         CONFIG_FLOAT(g_settings.video.refresh_rate,        "video_refresh_rate",         "Refresh Rate",               refresh_rate, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) 
+         CONFIG_FLOAT(g_settings.video.refresh_rate,        "video_refresh_rate_auto",    "Estimated Monitor FPS",      refresh_rate, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
          END_SUB_GROUP()
 
          START_SUB_GROUP("Aspect")

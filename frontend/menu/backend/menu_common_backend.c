@@ -232,6 +232,8 @@ static void menu_common_entries_init(menu_handle_t *menu, unsigned menu_type)
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_VIDEO_CROP_OVERSCAN, 0);
          if ((current_setting = setting_data_find_setting(setting_data, "video_monitor_index")))
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_VIDEO_MONITOR_INDEX, 0);
+         if ((current_setting = setting_data_find_setting(setting_data, "video_refresh_rate")))
+            file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_VIDEO_REFRESH_RATE, 0);
          file_list_push(menu->selection_buf, "Estimated Monitor FPS", MENU_SETTINGS_VIDEO_REFRESH_RATE_AUTO, 0);
          break;
       case MENU_SETTINGS_FONT_OPTIONS:
@@ -4301,6 +4303,10 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
          if ((current_setting = setting_data_find_setting(setting_data, "video_monitor_index")))
             menu_common_setting_set_current_unsigned_integer(current_setting, 1, action, false, false);
          break;
+      case MENU_SETTINGS_VIDEO_REFRESH_RATE:
+         if ((current_setting = setting_data_find_setting(setting_data, "video_refresh_rate")))
+            menu_common_setting_set_current_fraction(current_setting, 0.001f, action, false, false);
+         break;
       case MENU_SETTINGS_VIDEO_REFRESH_RATE_AUTO:
          switch (action)
          {
@@ -4664,6 +4670,9 @@ static void menu_common_setting_set_label(char *type_str, size_t type_str_size, 
                snprintf(type_str, type_str_size, "%u", g_settings.video.monitor_index);
             else
                strlcpy(type_str, "0 (Auto)", type_str_size);
+            break;
+         case MENU_SETTINGS_VIDEO_REFRESH_RATE:
+            snprintf(type_str, type_str_size, "%.3f Hz", g_settings.video.refresh_rate);
             break;
          case MENU_SETTINGS_VIDEO_REFRESH_RATE_AUTO:
             {
