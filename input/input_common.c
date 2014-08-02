@@ -1197,7 +1197,7 @@ static bool input_try_autoconfigure_joypad_from_conf(config_file_t *conf, unsign
 
    snprintf(ident_idx, sizeof(ident_idx), "%s_p%d", ident, index);
 
-   RARCH_LOG("ident_idx: %s\n", ident_idx);
+   //RARCH_LOG("ident_idx: %s\n", ident_idx);
 
    cond_found_idx     = !strcmp(ident_idx, name);
    cond_found_general = !strcmp(ident, name) && !strcmp(driver, input_driver);
