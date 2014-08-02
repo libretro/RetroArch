@@ -784,7 +784,6 @@ int rarch_main_init(int argc, char *argv[]);
 void rarch_main_command(unsigned action);
 bool rarch_main_iterate(void);
 void rarch_main_deinit(void);
-void rarch_main_deinit_core(void);
 void rarch_render_cached_frame(void);
 void rarch_deinit_msg_queue(void);
 void rarch_input_poll(void);

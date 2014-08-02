@@ -2964,6 +2964,13 @@ static void init_sram(void)
       RARCH_LOG("SRAM will not be saved.\n");
 }
 
+static void main_deinit_core(void)
+{
+   pretro_unload_game();
+   pretro_deinit();
+   uninit_libretro_sym();
+}
+
 int rarch_main_init(int argc, char *argv[])
 {
    int sjlj_ret;
@@ -3055,7 +3062,7 @@ int rarch_main_init(int argc, char *argv[])
 
 error:
    uninit_drivers();
-   rarch_main_deinit_core();
+   main_deinit_core();
 
    g_extern.main_is_init = false;
    return 1;
@@ -3339,12 +3346,6 @@ bool rarch_main_iterate(void)
    return true;
 }
 
-void rarch_main_deinit_core(void)
-{
-   pretro_unload_game();
-   pretro_deinit();
-   uninit_libretro_sym();
-}
 
 static void deinit_temporary_content(void)
 {
@@ -3404,7 +3405,7 @@ void rarch_main_deinit(void)
 
    uninit_drivers();
 
-   rarch_main_deinit_core();
+   main_deinit_core();
 
    deinit_temporary_content();
    deinit_subsystem_fullpaths();
