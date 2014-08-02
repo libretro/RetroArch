@@ -378,6 +378,7 @@ static bool audio_flush(const int16_t *data, size_t samples)
    unsigned output_frames         = 0;
    size_t   output_size           = sizeof(float);
    struct resampler_data src_data = {0};
+   struct rarch_dsp_data dsp_data = {0};
 
 #ifdef HAVE_RECORD
    if (g_extern.rec)
@@ -401,7 +402,6 @@ static bool audio_flush(const int16_t *data, size_t samples)
          g_extern.audio_data.volume_gain);
    RARCH_PERFORMANCE_STOP(audio_convert_s16);
 
-   struct rarch_dsp_data dsp_data = {0};
    dsp_data.input                 = g_extern.audio_data.data;
    dsp_data.input_frames          = samples >> 1;
 
@@ -463,9 +463,9 @@ static void audio_sample_rewind(int16_t left, int16_t right)
 
 size_t audio_sample_batch_rewind(const int16_t *data, size_t frames)
 {
-   size_t i, samples;
+   size_t i;
+   size_t samples = frames << 1;
 
-   samples = frames << 1;
    for (i = 0; i < samples; i++)
       g_extern.audio_data.rewind_buf[--g_extern.audio_data.rewind_ptr] = data[i];
 
