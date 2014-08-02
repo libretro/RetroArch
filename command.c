@@ -64,12 +64,15 @@ static bool socket_nonblock(int fd)
 #if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
 static bool cmd_init_network(rarch_cmd_t *handle, uint16_t port)
 {
+   char port_buf[16];
+   struct addrinfo hints, *res = NULL;
+   int yes = 1;
+
    if (!netplay_init_network())
       return false;
 
    RARCH_LOG("Bringing up command interface on port %hu.\n", (unsigned short)port);
 
-   struct addrinfo hints, *res = NULL;
    memset(&hints, 0, sizeof(hints));
 #if defined(_WIN32) || defined(HAVE_SOCKET_LEGACY)
    hints.ai_family   = AF_INET;
@@ -79,8 +82,6 @@ static bool cmd_init_network(rarch_cmd_t *handle, uint16_t port)
    hints.ai_socktype = SOCK_DGRAM;
    hints.ai_flags    = AI_PASSIVE;
 
-   char port_buf[16];
-   int yes = 1;
 
    snprintf(port_buf, sizeof(port_buf), "%hu", (unsigned short)port);
    if (getaddrinfo(NULL, port_buf, &hints, &res) < 0)
@@ -210,11 +211,14 @@ static const struct cmd_map map[] = {
 
 static bool cmd_set_shader(const char *arg)
 {
+   char msg[PATH_MAX];
+   const char *ext;
+   enum rarch_shader_type type = RARCH_SHADER_NONE;
+
    if (!driver.video->set_shader)
       return false;
 
-   enum rarch_shader_type type = RARCH_SHADER_NONE;
-   const char *ext = path_get_extension(arg);
+   ext = path_get_extension(arg);
 
    if (strcmp(ext, "glsl") == 0 || strcmp(ext, "glslp") == 0)
       type = RARCH_SHADER_GLSL;
@@ -226,7 +230,6 @@ static bool cmd_set_shader(const char *arg)
 
    msg_queue_clear(g_extern.msg_queue);
 
-   char msg[PATH_MAX];
    snprintf(msg, sizeof(msg), "Shader: \"%s\"", arg);
    msg_queue_push(g_extern.msg_queue, msg, 1, 120);
    RARCH_LOG("Applying shader \"%s\".\n", arg);
@@ -241,6 +244,7 @@ static const struct cmd_action_map action_map[] = {
 static bool command_get_arg(const char *tok, const char **arg, unsigned *index)
 {
    unsigned i;
+
    for (i = 0; i < ARRAY_SIZE(map); i++)
    {
       if (strcmp(tok, map[i].str) == 0)
@@ -300,6 +304,7 @@ static void parse_msg(rarch_cmd_t *handle, char *buf)
 {
    char *save = NULL;
    const char *tok = strtok_r(buf, "\n", &save);
+
    while (tok)
    {
       parse_sub_msg(handle, tok);
@@ -321,14 +326,15 @@ bool rarch_cmd_get(rarch_cmd_t *handle, unsigned id)
 #if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
 static void network_cmd_poll(rarch_cmd_t *handle)
 {
+   fd_set fds;
+   struct timeval tmp_tv = {0};
+
    if (handle->net_fd < 0)
       return;
 
-   fd_set fds;
    FD_ZERO(&fds);
    FD_SET(handle->net_fd, &fds);
 
-   struct timeval tmp_tv = {0};
    if (select(handle->net_fd + 1, &fds, NULL, NULL, &tmp_tv) <= 0)
       return;
 
@@ -339,6 +345,7 @@ static void network_cmd_poll(rarch_cmd_t *handle)
    {
       char buf[1024];
       ssize_t ret = recvfrom(handle->net_fd, buf, sizeof(buf) - 1, 0, NULL, NULL);
+
       if (ret <= 0)
          break;
 
@@ -452,17 +459,22 @@ static size_t read_stdin(char *buf, size_t size)
 
 static void stdin_cmd_poll(rarch_cmd_t *handle)
 {
+   char *last_newline;
+   ssize_t ret;
+   ptrdiff_t msg_len;
+
    if (!handle->stdin_enable)
       return;
 
-   size_t ret = read_stdin(handle->stdin_buf + handle->stdin_buf_ptr, STDIN_BUF_SIZE - handle->stdin_buf_ptr - 1);
+   ret = read_stdin(handle->stdin_buf + handle->stdin_buf_ptr, STDIN_BUF_SIZE - handle->stdin_buf_ptr - 1);
    if (ret == 0)
       return;
 
    handle->stdin_buf_ptr += ret;
    handle->stdin_buf[handle->stdin_buf_ptr] = '\0';
 
-   char *last_newline = strrchr(handle->stdin_buf, '\n');
+   last_newline = strrchr(handle->stdin_buf, '\n');
+
    if (!last_newline)
    {
       // We're receiving bogus data in pipe (no terminating newline),
@@ -477,7 +489,7 @@ static void stdin_cmd_poll(rarch_cmd_t *handle)
    }
 
    *last_newline++ = '\0';
-   ptrdiff_t msg_len = last_newline - handle->stdin_buf;
+   msg_len = last_newline - handle->stdin_buf;
 
    parse_msg(handle, handle->stdin_buf);
 
@@ -502,7 +514,12 @@ void rarch_cmd_poll(rarch_cmd_t *handle)
 #if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
 static bool send_udp_packet(const char *host, uint16_t port, const char *msg)
 {
+   char port_buf[16];
    struct addrinfo hints, *res = NULL;
+   const struct addrinfo *tmp  = NULL;
+   int fd = -1;
+   bool ret = true;
+  
    memset(&hints, 0, sizeof(hints));
 #if defined(_WIN32) || defined(HAVE_SOCKET_LEGACY)
    hints.ai_family   = AF_INET;
@@ -511,19 +528,17 @@ static bool send_udp_packet(const char *host, uint16_t port, const char *msg)
 #endif
    hints.ai_socktype = SOCK_DGRAM;
 
-   int fd = -1;
-   bool ret = true;
-   char port_buf[16];
-
    snprintf(port_buf, sizeof(port_buf), "%hu", (unsigned short)port);
    if (getaddrinfo(host, port_buf, &hints, &res) < 0)
       return false;
 
    // Send to all possible targets.
    // "localhost" might resolve to several different IPs.
-   const struct addrinfo *tmp = res;
+   tmp = (const struct addrinfo*)res;
    while (tmp)
    {
+      ssize_t len, ret_len;
+
       fd = socket(tmp->ai_family, tmp->ai_socktype, tmp->ai_protocol);
       if (fd < 0)
       {
@@ -531,8 +546,9 @@ static bool send_udp_packet(const char *host, uint16_t port, const char *msg)
          goto end;
       }
 
-      ssize_t len = strlen(msg);
-      ssize_t ret_len = sendto(fd, msg, len, 0, tmp->ai_addr, tmp->ai_addrlen);
+      len = strlen(msg);
+      ret_len = sendto(fd, msg, len, 0, tmp->ai_addr, tmp->ai_addrlen);
+
       if (ret_len < len)
       {
          ret = false;
@@ -554,6 +570,7 @@ end:
 static bool verify_command(const char *cmd)
 {
    unsigned i;
+
    if (command_get_arg(cmd, NULL, NULL))
       return true;
 
@@ -570,22 +587,22 @@ static bool verify_command(const char *cmd)
 
 bool network_cmd_send(const char *cmd_)
 {
-   if (!netplay_init_network())
-      return false;
-
-   char *command = strdup(cmd_);
-   if (!command)
-      return false;
-
-   bool old_verbose = g_extern.verbosity;
-   g_extern.verbosity = true;
-
+   char *command, *save;
+   bool ret;
    const char *cmd = NULL;
    const char *host = NULL;
    const char *port_ = NULL;
+   bool old_verbose = g_extern.verbosity;
    uint16_t port = DEFAULT_NETWORK_CMD_PORT;
 
-   char *save;
+   if (!netplay_init_network())
+      return false;
+
+   if (!(command = strdup(cmd_)))
+      return false;
+
+   g_extern.verbosity = true;
+
    cmd = strtok_r(command, ";", &save);
    if (cmd)
       host = strtok_r(NULL, ";", &save);
@@ -606,7 +623,7 @@ bool network_cmd_send(const char *cmd_)
 
    RARCH_LOG("Sending command: \"%s\" to %s:%hu\n", cmd, host, (unsigned short)port);
 
-   bool ret = verify_command(cmd) && send_udp_packet(host, port, cmd);
+   ret = verify_command(cmd) && send_udp_packet(host, port, cmd);
    free(command);
 
    g_extern.verbosity = old_verbose;
