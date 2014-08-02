@@ -978,6 +978,7 @@ static void general_read_handler(const void *data)
 static void general_write_handler(const void *data)
 {
    bool has_set_reinit = false;
+   bool has_set_rewind = false;
    const rarch_setting_t *setting = (const rarch_setting_t*)data;
 
    if (!setting)
@@ -992,10 +993,7 @@ static void general_write_handler(const void *data)
    else if (!strcmp(setting->name, "rewind_enable"))
    {
       g_settings.rewind_enable = *setting->value.boolean;
-      if (g_settings.rewind_enable)
-         rarch_init_rewind();
-      else
-         rarch_deinit_rewind();
+      has_set_rewind = true;
    }
    else if (!strcmp(setting->name, "rewind_granularity"))
       g_settings.rewind_granularity = *setting->value.unsigned_integer;
@@ -1341,6 +1339,9 @@ static void general_write_handler(const void *data)
 
    if (has_set_reinit)
       rarch_main_command(RARCH_CMD_REINIT);
+
+   if (has_set_rewind)
+      rarch_main_command(RARCH_CMD_REWIND);
 }
 
 #define NEXT (list[index++])

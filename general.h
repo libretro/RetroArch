@@ -100,6 +100,7 @@ enum basic_event
    RARCH_CMD_PREPARE_DUMMY,
    RARCH_CMD_QUIT,
    RARCH_CMD_REINIT,
+   RARCH_CMD_REWIND,
 };
 
 enum menu_enums
@@ -780,8 +781,6 @@ void rarch_deinit_msg_queue(void);
 void rarch_input_poll(void);
 void rarch_check_overlay(void);
 void rarch_check_block_hotkey(void);
-void rarch_init_rewind(void);
-void rarch_deinit_rewind(void);
 bool rarch_check_fullscreen(void);
 void rarch_disk_control_set_eject(bool state, bool log);
 void rarch_disk_control_set_index(unsigned index);

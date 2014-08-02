@@ -1494,7 +1494,7 @@ static void deinit_cheats(void)
    g_extern.cheat = NULL;
 }
 
-void rarch_init_rewind(void)
+static void init_rewind(void)
 {
 #ifdef HAVE_NETPLAY
    if (g_extern.netplay)
@@ -1529,7 +1529,7 @@ void rarch_init_rewind(void)
    state_manager_push_do(g_extern.state_manager);
 }
 
-void rarch_deinit_rewind(void)
+static void deinit_rewind(void)
 {
    if (g_extern.state_manager)
       state_manager_free(g_extern.state_manager);
@@ -3001,8 +3001,7 @@ int rarch_main_init(int argc, char *argv[])
    init_command();
 #endif
 
-   rarch_init_rewind();
-
+   init_rewind();
    init_controllers();
 
 #ifdef HAVE_RECORD
@@ -3145,6 +3144,12 @@ void rarch_main_command(unsigned action)
          break;
       case RARCH_CMD_REINIT:
          rarch_set_fullscreen(g_settings.video.fullscreen);
+         break;
+      case RARCH_CMD_REWIND:
+         if (g_settings.rewind_enable)
+            init_rewind();
+         else
+            deinit_rewind();
          break;
    }
 }
@@ -3292,7 +3297,7 @@ void rarch_main_deinit(void)
 #ifdef HAVE_NETPLAY
    if (!g_extern.netplay)
 #endif
-      rarch_deinit_rewind();
+      deinit_rewind();
 
    deinit_cheats();
 
