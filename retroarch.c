@@ -3265,10 +3265,8 @@ static void deinit_temporary_content(void)
          if (remove(path) < 0)
             RARCH_ERR("Failed to remove temporary file: %s.\n", path);
       }
-   }
-
-   if (g_extern.temporary_content)
       string_list_free(g_extern.temporary_content);
+   }
    g_extern.temporary_content = NULL;
 }
 
