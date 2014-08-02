@@ -1318,11 +1318,11 @@ static inline bool load_save_files(void)
     return true;
 }
 
-static inline void save_files(void)
+static inline bool save_files(void)
 {
    unsigned i;
-   if (!g_extern.savefiles)
-      return;
+   if (!g_extern.savefiles || !g_extern.use_sram)
+      return false;
 
    for (i = 0; i < g_extern.savefiles->size; i++)
    {
@@ -1331,6 +1331,8 @@ static inline void save_files(void)
       RARCH_LOG("Saving RAM type #%u to \"%s\".\n", type, path);
       save_ram_file(path, type);
    }
+
+   return true;
 }
 
 #ifdef HAVE_RECORD
@@ -1912,17 +1914,20 @@ static void load_auto_state(void)
    }
 }
 
-static void save_auto_state(void)
+static bool save_auto_state(void)
 {
-   if (!g_settings.savestate_auto_save)
-      return;
-
    char savestate_name_auto[PATH_MAX];
+   if (!g_settings.savestate_auto_save || g_extern.libretro_dummy ||
+       g_extern.libretro_no_content)
+       return false;
+
    fill_pathname_noext(savestate_name_auto, g_extern.savestate_name,
          ".auto", sizeof(savestate_name_auto));
 
    bool ret = save_state(savestate_name_auto);
    RARCH_LOG("Auto save state to \"%s\" %s.\n", savestate_name_auto, ret ? "succeeded" : "failed");
+    
+   return true;
 }
 
 static void rarch_load_state(void)
@@ -3301,8 +3306,7 @@ void rarch_main_deinit(void)
    rarch_deinit_recording();
 #endif
 
-   if (g_extern.use_sram)
-      save_files();
+   save_files();
 
    deinit_rewind();
    deinit_cheats();
@@ -3311,8 +3315,7 @@ void rarch_main_deinit(void)
    deinit_movie();
 #endif
 
-   if (!g_extern.libretro_dummy && !g_extern.libretro_no_content)
-      save_auto_state();
+   save_auto_state();
 
    uninit_drivers();
 
