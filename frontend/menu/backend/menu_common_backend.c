@@ -260,7 +260,7 @@ static void menu_common_entries_init(menu_handle_t *menu, unsigned menu_type)
          break;
       case MENU_SETTINGS_CORE_INFO:
          {
-            core_info_t *info = menu->core_info_current;
+            core_info_t *info = (core_info_t*)menu->core_info_current;
             file_list_clear(menu->selection_buf);
 
             if (info->data)
@@ -558,10 +558,7 @@ static void menu_common_entries_init(menu_handle_t *menu, unsigned menu_type)
          file_list_push(menu->selection_buf, "Settings", MENU_SETTINGS_OPTIONS, 0);
 
          if (g_extern.perfcnt_enable && (current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "perfcnt_enable")))
-         {
-            *current_setting->value.boolean = g_extern.perfcnt_enable;
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_PERFORMANCE_COUNTERS, 0);
-         }
 
          if (g_extern.main_is_init && !g_extern.libretro_dummy)
          {
