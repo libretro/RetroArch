@@ -108,6 +108,8 @@ enum basic_event
    RARCH_CMD_OVERLAY_DEINIT,
    RARCH_CMD_DSP_FILTER_INIT,
    RARCH_CMD_DSP_FILTER_DEINIT,
+   RARCH_CMD_RECORD_INIT,
+   RARCH_CMD_RECORD_DEINIT,
 };
 
 enum menu_enums
@@ -794,10 +796,6 @@ void rarch_disk_control_set_index(unsigned index);
 void rarch_disk_control_append_image(const char *path);
 bool rarch_set_rumble_state(unsigned port, enum retro_rumble_effect effect, bool enable);
 
-#ifdef HAVE_RECORD
-void rarch_init_recording(void);
-void rarch_deinit_recording(void);
-#endif
 /////////
 
 #ifdef __cplusplus

@@ -505,8 +505,8 @@ bool driver_update_system_av_info(const struct retro_system_av_info *info)
       static const char *msg = "Restarting FFmpeg recording due to driver reinit.";
       msg_queue_push(g_extern.msg_queue, msg, 2, 180);
       RARCH_WARN("%s\n", msg);
-      rarch_deinit_recording();
-      rarch_init_recording();
+      rarch_main_command(RARCH_CMD_RECORD_DEINIT);
+      rarch_main_command(RARCH_CMD_RECORD_INIT);
    }
 #endif
    return true;

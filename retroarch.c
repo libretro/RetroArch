@@ -218,9 +218,138 @@ static void readjust_audio_input_rate(void)
 }
 
 #ifdef HAVE_RECORD
+static void init_recording(void)
+{
+   struct ffemu_params params = {0};
+
+   if (!g_extern.recording)
+      return;
+
+   if (g_extern.libretro_dummy)
+   {
+      RARCH_WARN("Using libretro dummy core. Skipping recording.\n");
+      return;
+   }
+
+   if (!g_settings.video.gpu_record && g_extern.system.hw_render_callback.context_type)
+   {
+      RARCH_WARN("Libretro core is hardware rendered. Must use post-shaded FFmpeg recording as well.\n");
+      return;
+   }
+
+   RARCH_LOG("Custom timing given: FPS: %.4f, Sample rate: %.4f\n", (float)g_extern.system.av_info.timing.fps, (float)g_extern.system.av_info.timing.sample_rate);
+
+   const struct retro_system_av_info *info = (const struct retro_system_av_info*)&g_extern.system.av_info;
+   params.out_width  = info->geometry.base_width;
+   params.out_height = info->geometry.base_height;
+   params.fb_width   = info->geometry.max_width;
+   params.fb_height  = info->geometry.max_height;
+   params.channels   = 2;
+   params.filename   = g_extern.record_path;
+   params.fps        = g_extern.system.av_info.timing.fps;
+   params.samplerate = g_extern.system.av_info.timing.sample_rate;
+   params.pix_fmt    = g_extern.system.pix_fmt == RETRO_PIXEL_FORMAT_XRGB8888 ? FFEMU_PIX_ARGB8888 : FFEMU_PIX_RGB565;
+   params.config     = *g_extern.record_config ? g_extern.record_config : NULL;
+
+   if (g_settings.video.gpu_record && driver.video->read_viewport)
+   {
+      struct rarch_viewport vp = {0};
+      video_viewport_info_func(&vp);
+
+      if (!vp.width || !vp.height)
+      {
+         RARCH_ERR("Failed to get viewport information from video driver. "
+               "Cannot start recording ...\n");
+         return;
+      }
+
+      params.out_width  = vp.width;
+      params.out_height = vp.height;
+      params.fb_width   = next_pow2(vp.width);
+      params.fb_height  = next_pow2(vp.height);
+
+      if (g_settings.video.force_aspect && (g_extern.system.aspect_ratio > 0.0f))
+         params.aspect_ratio  = g_extern.system.aspect_ratio;
+      else
+         params.aspect_ratio  = (float)vp.width / vp.height;
+
+      params.pix_fmt             = FFEMU_PIX_BGR24;
+      g_extern.record_gpu_width  = vp.width;
+      g_extern.record_gpu_height = vp.height;
+
+      RARCH_LOG("Detected viewport of %u x %u\n",
+            vp.width, vp.height);
+
+      g_extern.record_gpu_buffer = (uint8_t*)malloc(vp.width * vp.height * 3);
+      if (!g_extern.record_gpu_buffer)
+      {
+         RARCH_ERR("Failed to allocate GPU record buffer.\n");
+         return;
+      }
+   }
+   else
+   {
+      if (g_extern.record_width || g_extern.record_height)
+      {
+         params.out_width = g_extern.record_width;
+         params.out_height = g_extern.record_height;
+      }
+
+      if (g_settings.video.force_aspect && (g_extern.system.aspect_ratio > 0.0f))
+         params.aspect_ratio = g_extern.system.aspect_ratio;
+      else
+         params.aspect_ratio = (float)params.out_width / params.out_height;
+
+      if (g_settings.video.post_filter_record && g_extern.filter.filter)
+      {
+         unsigned max_width  = 0;
+         unsigned max_height = 0;
+
+         params.pix_fmt = g_extern.filter.out_rgb32 ? FFEMU_PIX_ARGB8888 : FFEMU_PIX_RGB565;
+
+         rarch_softfilter_get_max_output_size(g_extern.filter.filter, &max_width, &max_height);
+         params.fb_width  = next_pow2(max_width);
+         params.fb_height = next_pow2(max_height);
+      }
+   }
+
+   RARCH_LOG("Recording with FFmpeg to %s @ %ux%u. (FB size: %ux%u pix_fmt: %u)\n",
+         g_extern.record_path,
+         params.out_width, params.out_height,
+         params.fb_width, params.fb_height,
+         (unsigned)params.pix_fmt);
+
+   if (!ffemu_init_first(&g_extern.rec_driver, &g_extern.rec, &params))
+   {
+      RARCH_ERR("Failed to start FFmpeg recording.\n");
+      free(g_extern.record_gpu_buffer);
+      g_extern.record_gpu_buffer = NULL;
+   }
+}
+
+static void deinit_recording(void)
+{
+   if (!g_extern.rec || !g_extern.rec_driver)
+      return;
+
+   g_extern.rec_driver->finalize(g_extern.rec);
+   g_extern.rec_driver->free(g_extern.rec);
+
+   g_extern.rec = NULL;
+   g_extern.rec_driver = NULL;
+
+   free(g_extern.record_gpu_buffer);
+   g_extern.record_gpu_buffer = NULL;
+}
+
 static void recording_dump_frame(const void *data, unsigned width, unsigned height, size_t pitch)
 {
    struct ffemu_video_data ffemu_data = {0};
+
+   ffemu_data.pitch   = pitch;
+   ffemu_data.width   = width;
+   ffemu_data.height  = height;
+   ffemu_data.data    = data;
 
    if (g_extern.record_gpu_buffer)
    {
@@ -246,7 +375,7 @@ static void recording_dump_frame(const void *data, unsigned width, unsigned heig
          msg_queue_clear(g_extern.msg_queue);
          msg_queue_push(g_extern.msg_queue, msg, 1, 180);
 
-         rarch_deinit_recording();
+         deinit_recording();
          return;
       }
 
@@ -263,14 +392,9 @@ static void recording_dump_frame(const void *data, unsigned width, unsigned heig
 
       ffemu_data.pitch  = -ffemu_data.pitch;
    }
-   else
-   {
-      ffemu_data.pitch   = pitch;
-      ffemu_data.width   = width;
-      ffemu_data.height  = height;
-      ffemu_data.data    = data;
+
+   if (!g_extern.record_gpu_buffer)
       ffemu_data.is_dupe = !data;
-   }
 
    g_extern.rec_driver->push_video(g_extern.rec, &ffemu_data);
 }
@@ -1347,131 +1471,6 @@ static inline bool save_files(void)
    return true;
 }
 
-#ifdef HAVE_RECORD
-void rarch_init_recording(void)
-{
-   struct ffemu_params params = {0};
-
-   if (!g_extern.recording)
-      return;
-
-   if (g_extern.libretro_dummy)
-   {
-      RARCH_WARN("Using libretro dummy core. Skipping recording.\n");
-      return;
-   }
-
-   if (!g_settings.video.gpu_record && g_extern.system.hw_render_callback.context_type)
-   {
-      RARCH_WARN("Libretro core is hardware rendered. Must use post-shaded FFmpeg recording as well.\n");
-      return;
-   }
-
-   RARCH_LOG("Custom timing given: FPS: %.4f, Sample rate: %.4f\n", (float)g_extern.system.av_info.timing.fps, (float)g_extern.system.av_info.timing.sample_rate);
-
-   const struct retro_system_av_info *info = (const struct retro_system_av_info*)&g_extern.system.av_info;
-   params.out_width  = info->geometry.base_width;
-   params.out_height = info->geometry.base_height;
-   params.fb_width   = info->geometry.max_width;
-   params.fb_height  = info->geometry.max_height;
-   params.channels   = 2;
-   params.filename   = g_extern.record_path;
-   params.fps        = g_extern.system.av_info.timing.fps;
-   params.samplerate = g_extern.system.av_info.timing.sample_rate;
-   params.pix_fmt    = g_extern.system.pix_fmt == RETRO_PIXEL_FORMAT_XRGB8888 ? FFEMU_PIX_ARGB8888 : FFEMU_PIX_RGB565;
-   params.config     = *g_extern.record_config ? g_extern.record_config : NULL;
-
-   if (g_settings.video.gpu_record && driver.video->read_viewport)
-   {
-      struct rarch_viewport vp = {0};
-      video_viewport_info_func(&vp);
-
-      if (!vp.width || !vp.height)
-      {
-         RARCH_ERR("Failed to get viewport information from video driver. "
-               "Cannot start recording ...\n");
-         return;
-      }
-
-      params.out_width  = vp.width;
-      params.out_height = vp.height;
-      params.fb_width   = next_pow2(vp.width);
-      params.fb_height  = next_pow2(vp.height);
-
-      if (g_settings.video.force_aspect && (g_extern.system.aspect_ratio > 0.0f))
-         params.aspect_ratio  = g_extern.system.aspect_ratio;
-      else
-         params.aspect_ratio  = (float)vp.width / vp.height;
-
-      params.pix_fmt             = FFEMU_PIX_BGR24;
-      g_extern.record_gpu_width  = vp.width;
-      g_extern.record_gpu_height = vp.height;
-
-      RARCH_LOG("Detected viewport of %u x %u\n",
-            vp.width, vp.height);
-
-      g_extern.record_gpu_buffer = (uint8_t*)malloc(vp.width * vp.height * 3);
-      if (!g_extern.record_gpu_buffer)
-      {
-         RARCH_ERR("Failed to allocate GPU record buffer.\n");
-         return;
-      }
-   }
-   else
-   {
-      if (g_extern.record_width || g_extern.record_height)
-      {
-         params.out_width = g_extern.record_width;
-         params.out_height = g_extern.record_height;
-      }
-
-      if (g_settings.video.force_aspect && (g_extern.system.aspect_ratio > 0.0f))
-         params.aspect_ratio = g_extern.system.aspect_ratio;
-      else
-         params.aspect_ratio = (float)params.out_width / params.out_height;
-
-      if (g_settings.video.post_filter_record && g_extern.filter.filter)
-      {
-         unsigned max_width  = 0;
-         unsigned max_height = 0;
-
-         params.pix_fmt = g_extern.filter.out_rgb32 ? FFEMU_PIX_ARGB8888 : FFEMU_PIX_RGB565;
-
-         rarch_softfilter_get_max_output_size(g_extern.filter.filter, &max_width, &max_height);
-         params.fb_width  = next_pow2(max_width);
-         params.fb_height = next_pow2(max_height);
-      }
-   }
-
-   RARCH_LOG("Recording with FFmpeg to %s @ %ux%u. (FB size: %ux%u pix_fmt: %u)\n",
-         g_extern.record_path,
-         params.out_width, params.out_height,
-         params.fb_width, params.fb_height,
-         (unsigned)params.pix_fmt);
-
-   if (!ffemu_init_first(&g_extern.rec_driver, &g_extern.rec, &params))
-   {
-      RARCH_ERR("Failed to start FFmpeg recording.\n");
-      free(g_extern.record_gpu_buffer);
-      g_extern.record_gpu_buffer = NULL;
-   }
-}
-
-void rarch_deinit_recording(void)
-{
-   if (!g_extern.rec || !g_extern.rec_driver)
-      return;
-
-   g_extern.rec_driver->finalize(g_extern.rec);
-   g_extern.rec_driver->free(g_extern.rec);
-
-   g_extern.rec = NULL;
-   g_extern.rec_driver = NULL;
-
-   free(g_extern.record_gpu_buffer);
-   g_extern.record_gpu_buffer = NULL;
-}
-#endif
 
 static void rarch_init_msg_queue(void)
 {
@@ -3043,7 +3042,7 @@ int rarch_main_init(int argc, char *argv[])
    init_controllers();
 
 #ifdef HAVE_RECORD
-   rarch_init_recording();
+   init_recording();
 #endif
 
    init_sram();
@@ -3242,6 +3241,16 @@ void rarch_main_command(unsigned action)
             rarch_dsp_filter_free(g_extern.audio_data.dsp);
          g_extern.audio_data.dsp = NULL;
          break;
+      case RARCH_CMD_RECORD_INIT:
+#ifdef HAVE_RECORD
+         init_recording();
+#endif
+         break;
+      case RARCH_CMD_RECORD_DEINIT:
+#ifdef HAVE_RECORD
+         deinit_recording();
+#endif
+         break;
    }
 }
 
@@ -3379,7 +3388,7 @@ void rarch_main_deinit(void)
 #endif
 
 #ifdef HAVE_RECORD
-   rarch_deinit_recording();
+   deinit_recording();
 #endif
 
    save_files();
