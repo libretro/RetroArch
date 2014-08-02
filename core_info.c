@@ -67,12 +67,12 @@ static void core_info_list_resolve_all_firmware(core_info_list_t *core_info_list
 
    for (i = 0; i < core_info_list->count; i++)
    {
-      core_info_t *info = &core_info_list->list[i];
+      unsigned count = 0;
+      core_info_t *info = (core_info_t*)&core_info_list->list[i];
 
       if (!info->data)
          continue;
 
-      unsigned count = 0;
       if (!config_get_uint(info->data, "firmware_count", &count))
          continue;
 
@@ -97,12 +97,10 @@ static void core_info_list_resolve_all_firmware(core_info_list_t *core_info_list
 
 core_info_list_t *core_info_list_new(const char *modules_path)
 {
-   struct string_list *contents = dir_list_new(modules_path, EXT_EXECUTABLES, false);
    size_t i;
-
    core_info_t *core_info = NULL;
    core_info_list_t *core_info_list = NULL;
-
+   struct string_list *contents = (struct string_list*)dir_list_new(modules_path, EXT_EXECUTABLES, false);
    if (!contents)
       return NULL;
 
