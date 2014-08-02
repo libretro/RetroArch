@@ -216,9 +216,8 @@ bool load_menu_content(void)
    if (driver.menu)
       menu_update_libretro_info(driver.menu);
 
-   if (g_extern.history)
-      content_history_free(g_extern.history);
-   g_extern.history = content_history_init(g_settings.content_history_path, g_settings.game_history_size);
+   rarch_main_command(RARCH_CMD_HISTORY_DEINIT);
+   rarch_main_command(RARCH_CMD_HISTORY_INIT);
 
    if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->shader_manager_init)
       driver.menu_ctx->backend->shader_manager_init(driver.menu);
@@ -264,7 +263,7 @@ void *menu_init(const void *data)
    if (menu_ctx && menu_ctx->backend && menu_ctx->backend->shader_manager_init)
       menu_ctx->backend->shader_manager_init(menu);
 
-   g_extern.history = content_history_init(g_settings.content_history_path, g_settings.game_history_size);
+   rarch_main_command(RARCH_CMD_HISTORY_INIT);
    menu->last_time = rarch_get_time_usec();
 
    return menu;
@@ -293,10 +292,10 @@ void menu_free(void *data)
    file_list_free(menu->menu_stack);
    file_list_free(menu->selection_buf);
 
-   if (g_extern.history)
-      content_history_free(g_extern.history);
-   g_extern.history = NULL;
-   core_info_list_free(menu->core_info);
+   rarch_main_command(RARCH_CMD_HISTORY_DEINIT);
+
+   if (menu->core_info)
+      core_info_list_free(menu->core_info);
 
    if (menu->core_info_current)
       free(menu->core_info_current);
