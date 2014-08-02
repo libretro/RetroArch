@@ -21,7 +21,7 @@
 #include <stdint.h>
 #include "boolean.h"
 #include "file_list.h"
-#include "frontend/info/core_info.h"
+#include "core_info.h"
 
 #ifdef __cplusplus
 extern "C" {

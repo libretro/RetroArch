@@ -29,7 +29,7 @@ OBJ = frontend/frontend.o \
 		core_options.o \
 		compat/compat.o \
 		cheats.o \
-		frontend/info/core_info.o \
+		core_info.o \
 		conf/config_file.o \
 		screenshot.o \
 		gfx/scaler/scaler.o \

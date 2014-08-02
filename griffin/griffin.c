@@ -552,7 +552,7 @@ FRONTEND
 #endif
 #include "../frontend/platform/platform_null.c"
 
-#include "../frontend/info/core_info.c"
+#include "../core_info.c"
 
 /*============================================================
 MAIN

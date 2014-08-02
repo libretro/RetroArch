@@ -25,7 +25,7 @@
 #include "../../boolean.h"
 #include "../../general.h"
 #include "menu_navigation.h"
-#include "../info/core_info.h"
+#include "../../core_info.h"
 #include "../../file_list.h"
 #include "../../history.h"
 #include "../../input/input_common.h"

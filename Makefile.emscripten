@@ -50,7 +50,7 @@ OBJ = frontend/platform/platform_emscripten.o \
 		audio/cc_resampler.o \
 		audio/null.o \
 		performance.o \
-		frontend/info/core_info.o \
+		core_info.o \
 		camera/rwebcam.o
 
 HAVE_OPENGL = 1

@@ -29,7 +29,7 @@ OBJ = frontend/frontend.o \
 		compat/compat.o \
 		screenshot.o \
 		cheats.o \
-		frontend/info/core_info.o \
+		core_info.o \
 		audio/utils.o \
 		input/overlay.o \
 		fifo_buffer.o \
