@@ -345,12 +345,11 @@ void menu_ticker_line(char *buf, size_t len, unsigned index, const char *str, bo
 
 void menu_flush_stack_type(unsigned final_type)
 {
-   unsigned type;
+   unsigned type = 0;
 
    if (!driver.menu)
       return;
 
-   type = 0;
    driver.menu->need_refresh = true;
    file_list_get_last(driver.menu->menu_stack, NULL, &type);
    while (type != final_type)
@@ -362,15 +361,12 @@ void menu_flush_stack_type(unsigned final_type)
 
 bool menu_iterate(void)
 {
-   unsigned action;
+   unsigned action = MENU_ACTION_NOOP;
    static bool initial_held = true;
    static bool first_held = false;
-   uint64_t input_state;
-   int32_t input_entry_ret, ret;
-
-   input_state = 0;
-   input_entry_ret = 0;
-   ret = 0;
+   uint64_t input_state = 0;
+   int32_t input_entry_ret = 0;
+   int32_t ret = 0;
 
    if (!driver.menu)
       return false;
@@ -428,8 +424,6 @@ bool menu_iterate(void)
    if (driver.block_input)
       driver.menu->trigger_state = 0;
 
-   action = MENU_ACTION_NOOP;
-
    // don't run anything first frame, only capture held inputs for old_input_state
    if (driver.menu->trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_UP))
       action = MENU_ACTION_UP;
@@ -481,6 +475,7 @@ bool menu_iterate(void)
    {
       unsigned type = 0;
       file_list_get_last(driver.menu->menu_stack, NULL, &type);
+
       while (type != MENU_SETTINGS)
       {
          file_list_pop(driver.menu->menu_stack, &driver.menu->selection_ptr);
