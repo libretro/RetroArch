@@ -115,16 +115,9 @@ static int main_entry_iterate_content(args_type() args)
 
 static int main_entry_iterate_load_content(args_type() args)
 {
+   // If ROM load fails, we go back to menu.
    if (!load_menu_content())
-   {
-#if defined(RARCH_CONSOLE) || defined(RARCH_MOBILE)
-      // If ROM load fails, we go back to menu.
       g_extern.lifecycle_state = (1ULL << MODE_MENU_PREINIT);
-#else
-      // If ROM load fails, we exit RetroArch.
-      g_extern.system.shutdown = true;
-#endif
-   }
 
    g_extern.lifecycle_state &= ~(1ULL << MODE_LOAD_GAME);
 
