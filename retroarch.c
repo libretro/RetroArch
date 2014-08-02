@@ -330,10 +330,13 @@ static void video_frame(const void *data, unsigned width, unsigned height, size_
          recording_dump_frame(g_extern.filter.buffer, owidth, oheight, opitch);
 #endif
 
-      if (!video_frame_func(g_extern.filter.buffer, owidth, oheight, opitch, msg))
-         g_extern.video_active = false;
+      data = g_extern.filter.buffer;
+      width = owidth;
+      height = oheight;
+      pitch = opitch;
    }
-   else if (!video_frame_func(data, width, height, pitch, msg))
+
+   if (!video_frame_func(data, width, height, pitch, msg))
       g_extern.video_active = false;
 }
 
