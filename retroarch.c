@@ -480,7 +480,7 @@ static void audio_sample(int16_t left, int16_t right)
    g_extern.audio_data.data_ptr = 0;
 }
 
-size_t audio_sample_batch(const int16_t *data, size_t frames)
+static size_t audio_sample_batch(const int16_t *data, size_t frames)
 {
    if (frames > (AUDIO_CHUNK_SIZE_NONBLOCKING >> 1))
       frames = AUDIO_CHUNK_SIZE_NONBLOCKING >> 1;
