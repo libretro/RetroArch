@@ -184,13 +184,10 @@ static void rarch_take_screenshot(void)
       msg = "Failed to take screenshot.";
    }
 
+   msg_queue_push(g_extern.msg_queue, msg, 1, g_extern.is_paused ? 1 : 180);
+
    if (g_extern.is_paused)
-   {
-      msg_queue_push(g_extern.msg_queue, msg, 1, 1);
       rarch_render_cached_frame();
-   }
-   else
-      msg_queue_push(g_extern.msg_queue, msg, 1, 180);
 }
 
 static void readjust_audio_input_rate(void)
