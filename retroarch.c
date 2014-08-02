@@ -2301,10 +2301,12 @@ static void check_movie(void)
 
 static void check_pause(void)
 {
-   static bool old_state = false;
-   static bool old_focus = true;
-   bool focus = true;
-   bool new_state = input_key_pressed_func(RARCH_PAUSE_TOGGLE);
+   static bool old_state    = false;
+   static bool old_focus    = true;
+   bool focus               = true;
+   bool has_set_audio_stop  = false;
+   bool has_set_audio_start = false;
+   bool new_state           = input_key_pressed_func(RARCH_PAUSE_TOGGLE);
 
    // FRAMEADVANCE will set us into pause mode.
    new_state |= !g_extern.is_paused && input_key_pressed_func(RARCH_FRAMEADVANCE);
@@ -2319,39 +2321,31 @@ static void check_pause(void)
       if (g_extern.is_paused)
       {
          RARCH_LOG("Paused.\n");
-         if (driver.audio_data)
-            audio_stop_func();
+         has_set_audio_stop = true;
       }
       else
       {
          RARCH_LOG("Unpaused.\n");
-         if (driver.audio_data)
-         {
-            if (!g_extern.audio_data.mute && !audio_start_func())
-            {
-               RARCH_ERR("Failed to resume audio driver. Will continue without audio.\n");
-               g_extern.audio_active = false;
-            }
-         }
+         has_set_audio_start = true;
       }
    }
    else if (focus && !old_focus)
    {
       RARCH_LOG("Unpaused.\n");
-      g_extern.is_paused = false;
-      if (driver.audio_data && !g_extern.audio_data.mute && !audio_start_func())
-      {
-         RARCH_ERR("Failed to resume audio driver. Will continue without audio.\n");
-         g_extern.audio_active = false;
-      }
+      g_extern.is_paused  = false;
+      has_set_audio_start = true;
    }
    else if (!focus && old_focus)
    {
       RARCH_LOG("Paused.\n");
       g_extern.is_paused = true;
-      if (driver.audio_data)
-         audio_stop_func();
+      has_set_audio_stop = true;
    }
+
+   if (has_set_audio_stop)
+      rarch_main_command(RARCH_CMD_AUDIO_STOP);
+   if (has_set_audio_start)
+      rarch_main_command(RARCH_CMD_AUDIO_START);
 
    old_focus = focus;
    old_state = new_state;
@@ -3205,6 +3199,17 @@ void rarch_main_command(unsigned action)
          deinit_autosave();
          init_autosave();
 #endif
+         break;
+      case RARCH_CMD_AUDIO_STOP:
+         if (driver.audio_data)
+            audio_stop_func();
+         break;
+      case RARCH_CMD_AUDIO_START:
+         if (driver.audio_data && !g_extern.audio_data.mute && !audio_start_func())
+         {
+            RARCH_ERR("Failed to start audio driver. Will continue without audio.\n");
+            g_extern.audio_active = false;
+         }
          break;
    }
 }

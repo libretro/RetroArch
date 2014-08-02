@@ -159,8 +159,7 @@ static int main_entry_iterate_menu_preinit(args_type() args)
    key_event = g_extern.system.key_event;
    g_extern.system.key_event = menu_key_event;
 
-   if (driver.audio_data)
-      audio_stop_func();
+   rarch_main_command(RARCH_CMD_AUDIO_STOP);
 
    driver.menu->need_refresh = true;
    driver.menu->old_input_state |= 1ULL << RARCH_MENU_TOGGLE;
@@ -183,11 +182,7 @@ static int main_entry_iterate_menu(args_type() args)
       g_extern.lifecycle_state &= ~(1ULL << MODE_MENU);
       driver_set_nonblock_state(driver.nonblock_state);
 
-      if (driver.audio_data && !g_extern.audio_data.mute && !audio_start_func())
-      {
-         RARCH_ERR("Failed to resume audio driver. Will continue without audio.\n");
-         g_extern.audio_active = false;
-      }
+      rarch_main_command(RARCH_CMD_AUDIO_START);
 
       g_extern.lifecycle_state |= (1ULL << MODE_CLEAR_INPUT);
 

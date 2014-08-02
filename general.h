@@ -102,6 +102,8 @@ enum basic_event
    RARCH_CMD_REINIT,
    RARCH_CMD_REWIND,
    RARCH_CMD_AUTOSAVE,
+   RARCH_CMD_AUDIO_STOP,
+   RARCH_CMD_AUDIO_START,
 };
 
 enum menu_enums
