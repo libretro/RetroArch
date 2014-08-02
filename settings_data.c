@@ -1340,7 +1340,7 @@ static void general_write_handler(const void *data)
       g_settings.user_language = *setting->value.unsigned_integer;
 
    if (has_set_reinit)
-      rarch_set_fullscreen(g_settings.video.fullscreen);
+      rarch_main_command(RARCH_CMD_REINIT);
 }
 
 #define NEXT (list[index++])

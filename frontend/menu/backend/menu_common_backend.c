@@ -2574,7 +2574,7 @@ static int menu_common_iterate(unsigned action)
             else if (menu_type == MENU_SETTINGS_VIDEO_SOFTFILTER)
             {
                fill_pathname_join(g_settings.video.filter_path, dir, path, sizeof(g_settings.video.filter_path));
-               rarch_set_fullscreen(g_settings.video.fullscreen);
+               rarch_main_command(RARCH_CMD_REINIT);
                menu_flush_stack_type(MENU_SETTINGS_VIDEO_OPTIONS);
             }
             else if (menu_type == MENU_SETTINGS_AUDIO_DSP_FILTER)
@@ -3743,7 +3743,7 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
             case MENU_ACTION_OK:
 #ifdef HAVE_FILTERS_BUILTIN
                driver.menu_data_own = true;
-               rarch_set_fullscreen(g_settings.video.fullscreen);
+               rarch_main_command(RARCH_CMD_REINIT);
 #elif defined(HAVE_DYLIB)
                file_list_push(driver.menu->menu_stack, g_settings.video.filter_dir, setting, driver.menu->selection_ptr);
                menu_clear_navigation(driver.menu);
@@ -3757,7 +3757,7 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
                strlcpy(g_settings.video.filter_path, "", sizeof(g_settings.video.filter_path));
 #endif
                driver.menu_data_own = true;
-               rarch_set_fullscreen(g_settings.video.fullscreen);
+               rarch_main_command(RARCH_CMD_REINIT);
                break;
          }
          break;
@@ -4227,7 +4227,7 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
                g_extern.lifecycle_state &= ~(1ULL << MODE_VIDEO_PAL_TEMPORAL_ENABLE);
             }
 
-            rarch_set_fullscreen(g_settings.video.fullscreen);
+            rarch_main_command(RARCH_CMD_REINIT);
          }
          break;
       case MENU_SETTINGS_VIDEO_PAL60:
@@ -4243,7 +4243,7 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
                   else
                      g_extern.lifecycle_state |= (1ULL << MODE_VIDEO_PAL_TEMPORAL_ENABLE);
 
-                  rarch_set_fullscreen(g_settings.video.fullscreen);
+                  rarch_main_command(RARCH_CMD_REINIT);
                }
                break;
             case MENU_ACTION_START:
@@ -4251,7 +4251,7 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
                {
                   g_extern.lifecycle_state &= ~(1ULL << MODE_VIDEO_PAL_TEMPORAL_ENABLE);
 
-                  rarch_set_fullscreen(g_settings.video.fullscreen);
+                  rarch_main_command(RARCH_CMD_REINIT);
                }
                break;
          }

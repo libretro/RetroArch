@@ -2014,7 +2014,7 @@ static void check_savestates(bool immutable)
    }
 }
 
-void rarch_set_fullscreen(bool fullscreen)
+static void rarch_set_fullscreen(bool fullscreen)
 {
    g_settings.video.fullscreen = fullscreen;
    driver.video_cache_context = g_extern.system.hw_render_callback.cache_context;
@@ -2038,7 +2038,7 @@ bool rarch_check_fullscreen(void)
    if (toggle)
    {
       g_settings.video.fullscreen = !g_settings.video.fullscreen;
-      rarch_set_fullscreen(g_settings.video.fullscreen);
+      rarch_main_command(RARCH_CMD_REINIT);
    }
 
    was_pressed = pressed;
@@ -3142,6 +3142,9 @@ void rarch_main_command(unsigned action)
          break;
       case RARCH_CMD_QUIT:
          g_extern.system.shutdown = true;
+         break;
+      case RARCH_CMD_REINIT:
+         rarch_set_fullscreen(g_settings.video.fullscreen);
          break;
    }
 }
