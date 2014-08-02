@@ -2917,13 +2917,14 @@ static void init_sram(void)
    g_extern.use_sram = g_extern.use_sram && !g_extern.sram_save_disable;
 #endif
 
-   if (!g_extern.use_sram)
-      RARCH_LOG("SRAM will not be saved.\n");
-
-#if defined(HAVE_THREADS)
    if (g_extern.use_sram)
+   {
+#if defined(HAVE_THREADS)
       init_autosave();
 #endif
+   }
+   else
+      RARCH_LOG("SRAM will not be saved.\n");
 }
 
 int rarch_main_init(int argc, char *argv[])
@@ -3154,8 +3155,7 @@ void rarch_main_command(unsigned action)
       case RARCH_CMD_AUTOSAVE:
 #ifdef HAVE_THREADS
          deinit_autosave();
-         if (g_settings.autosave_interval)
-            init_autosave();
+         init_autosave();
 #endif
          break;
    }
