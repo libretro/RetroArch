@@ -87,7 +87,7 @@ static void menu_common_entries_init(menu_handle_t *menu, unsigned menu_type)
       }
       case MENU_SETTINGS_SHADER_OPTIONS:
       {
-         struct gfx_shader *shader = menu->shader;
+         struct gfx_shader *shader = (struct gfx_shader*)menu->shader;
 
          if (!shader)
             return;
@@ -1477,12 +1477,16 @@ static void menu_common_setting_push_current_menu(file_list_t *list, const char 
 
 static int menu_settings_iterate(unsigned action)
 {
+   const char *label = NULL;
+   const char *dir = NULL;
+   unsigned type = 0;
+   unsigned menu_type = 0;
+
    if (!driver.menu)
       return 0;
 
    driver.menu->frame_buf_pitch = driver.menu->width * 2;
-   unsigned type = 0;
-   const char *label = NULL;
+
    if (action != MENU_ACTION_REFRESH)
       file_list_get_at_offset(driver.menu->selection_buf, driver.menu->selection_ptr, &label, &type);
 
@@ -1493,8 +1497,6 @@ static int menu_settings_iterate(unsigned action)
    else if (type == MENU_SETTINGS_DISK_APPEND)
       label = g_settings.menu_content_directory;
 
-   const char *dir = NULL;
-   unsigned menu_type = 0;
    file_list_get_last(driver.menu->menu_stack, &dir, &menu_type);
 
    if (driver.menu->need_refresh)
@@ -1646,18 +1648,22 @@ static int menu_settings_iterate(unsigned action)
 
 static int menu_viewport_iterate(unsigned action)
 {
-   rarch_viewport_t *custom = &g_extern.console.screen.viewports.custom_vp;
+   int stride_x, stride_y;
+   struct retro_game_geometry *geom;
+   const char *base_msg = NULL;
+   char msg[64];
+   unsigned menu_type = 0;
+   rarch_viewport_t *custom = (rarch_viewport_t*)&g_extern.console.screen.viewports.custom_vp;
 
    if (!driver.menu)
       return 0;
 
-   unsigned menu_type = 0;
    file_list_get_last(driver.menu->menu_stack, NULL, &menu_type);
 
-   struct retro_game_geometry *geom = &g_extern.system.av_info.geometry;
-   int stride_x = g_settings.video.scale_integer ?
+   geom = (struct retro_game_geometry*)&g_extern.system.av_info.geometry;
+   stride_x = g_settings.video.scale_integer ?
       geom->base_width : 1;
-   int stride_y = g_settings.video.scale_integer ?
+   stride_y = g_settings.video.scale_integer ?
       geom->base_height : 1;
 
    switch (action)
@@ -1776,9 +1782,6 @@ static int menu_viewport_iterate(unsigned action)
    if (driver.video_data && driver.menu_ctx && driver.menu_ctx->render)
       driver.menu_ctx->render();
 
-   const char *base_msg = NULL;
-   char msg[64];
-
    if (g_settings.video.scale_integer)
    {
       custom->x = 0;
@@ -1823,18 +1826,16 @@ static int menu_viewport_iterate(unsigned action)
 
 static void menu_parse_and_resolve(unsigned menu_type)
 {
-   const core_info_t *info = NULL;
-   const char *dir;
    size_t i, list_size;
    file_list_t *list;
+   const core_info_t *info = NULL;
+   const char *dir = NULL;
 
    if (!driver.menu)
    {
       RARCH_ERR("Cannot parse and resolve menu, menu handle is not initialized.\n");
       return;
    }
-
-   dir = NULL;
 
    file_list_clear(driver.menu->selection_buf);
 
@@ -1847,12 +1848,10 @@ static void menu_parse_and_resolve(unsigned menu_type)
 
          for (i = 0; i < list_size; i++)
          {
-            const char *path, *core_path, *core_name;
             char fill_buf[PATH_MAX];
-
-            path = NULL;
-            core_path = NULL;
-            core_name = NULL;
+            const char *path      = NULL;
+            const char *core_path = NULL;
+            const char *core_name = NULL;
 
             content_history_get_index(g_extern.history, i,
                   &path, &core_path, &core_name);
@@ -2022,11 +2021,10 @@ static void menu_parse_and_resolve(unsigned menu_type)
          list_size = file_list_get_size(list);
          for (i = 0; i < list_size; i++)
          {
-            const char *path;
             char core_path[PATH_MAX], display_name[256];
+            const char *path = NULL;
             unsigned type = 0;
 
-            path = NULL;
             file_list_get_at_offset(list, i, &path, &type);
             if (type != MENU_FILE_PLAIN)
                continue;
@@ -2083,7 +2081,7 @@ static int menu_custom_bind_iterate(void *data, unsigned action)
    if (driver.video_data && driver.menu_ctx && driver.menu_ctx->render_messagebox)
       driver.menu_ctx->render_messagebox(msg);
 
-   struct menu_bind_state binds = menu->binds;
+   struct menu_bind_state binds = (struct menu_bind_state)menu->binds;
    menu_poll_bind_state(&binds);
 
    if ((binds.skip && !menu->binds.skip) || menu_poll_find_trigger(&menu->binds, &binds))
@@ -2099,12 +2097,14 @@ static int menu_custom_bind_iterate(void *data, unsigned action)
       menu->old_input_state = -1ULL;
    }
    menu->binds = binds;
+
    return 0;
 }
 
 static int menu_custom_bind_iterate_keyboard(void *data, unsigned action)
 {
    char msg[256];
+   bool timed_out = false;
    menu_handle_t *menu = (menu_handle_t*)data;
 
    (void)action; // Have to ignore action here.
@@ -2122,7 +2122,6 @@ static int menu_custom_bind_iterate_keyboard(void *data, unsigned action)
    if (driver.video_data && driver.menu_ctx && driver.menu_ctx->render_messagebox)
       driver.menu_ctx->render_messagebox(msg);
 
-   bool timed_out = false;
    if (timeout <= 0)
    {
       menu->binds.begin++;
@@ -2145,6 +2144,7 @@ static int menu_custom_bind_iterate_keyboard(void *data, unsigned action)
       if (timed_out)
          input_keyboard_wait_keys_cancel();
    }
+
    return 0;
 }
 
@@ -2310,8 +2310,8 @@ static int menu_common_iterate(unsigned action)
 {
    rarch_setting_t *setting_data, *current_setting;
    int ret = 0;
-   const char *dir = 0;
    unsigned menu_type = 0;
+   const char *dir = NULL;
 
    if (!driver.menu)
    {
@@ -2408,11 +2408,12 @@ static int menu_common_iterate(unsigned action)
 
       case MENU_ACTION_OK:
       {
+         const char *path = NULL;
+         unsigned type = 0;
+
          if (file_list_get_size(driver.menu->selection_buf) == 0)
             return 0;
 
-         const char *path = 0;
-         unsigned type = 0;
          file_list_get_at_offset(driver.menu->selection_buf, driver.menu->selection_ptr, &path, &type);
 
          if (
@@ -2448,7 +2449,7 @@ static int menu_common_iterate(unsigned action)
                }
                else
                {
-                  struct gfx_shader *shader = driver.menu->shader;
+                  struct gfx_shader *shader = (struct gfx_shader*)driver.menu->shader;
                   unsigned pass = (menu_type - MENU_SETTINGS_SHADER_0) / 3;
 
                   fill_pathname_join(shader->pass[pass].source.path,
@@ -2743,7 +2744,6 @@ static void menu_common_shader_manager_init(menu_handle_t *menu)
 #ifdef HAVE_SHADER_MANAGER
    char cgp_path[PATH_MAX];
    config_file_t *conf = NULL;
-
    const char *config_path = NULL;
    struct gfx_shader *shader = (struct gfx_shader*)menu->shader;
 
@@ -2928,8 +2928,11 @@ static void menu_common_shader_manager_get_str(struct gfx_shader *shader, char *
 static void menu_common_shader_manager_save_preset(const char *basename, bool apply)
 {
 #ifdef HAVE_SHADER_MANAGER
-   char buffer[PATH_MAX];
+   char buffer[PATH_MAX], config_directory[PATH_MAX], cgp_path[PATH_MAX];
    unsigned d, type;
+   config_file_t *conf;
+   const char *conf_path = NULL;
+   bool ret = false;
 
    if (!driver.menu)
    {
@@ -2944,8 +2947,6 @@ static void menu_common_shader_manager_save_preset(const char *basename, bool ap
 
    if (type == RARCH_SHADER_NONE)
       return;
-
-   const char *conf_path = NULL;
 
    if (basename)
    {
@@ -2963,25 +2964,20 @@ static void menu_common_shader_manager_save_preset(const char *basename, bool ap
    else
       conf_path = type == RARCH_SHADER_GLSL ? driver.menu->default_glslp : driver.menu->default_cgp;
 
-   char config_directory[PATH_MAX];
    if (*g_extern.config_path)
       fill_pathname_basedir(config_directory, g_extern.config_path, sizeof(config_directory));
    else
       *config_directory = '\0';
 
-   char cgp_path[PATH_MAX];
    const char *dirs[] = {
       g_settings.video.shader_dir,
       g_settings.menu_config_directory,
       config_directory,
    };
 
-   config_file_t *conf = config_file_new(NULL);
-   if (!conf)
+   if (!(conf = (config_file_t*)config_file_new(NULL)))
       return;
    gfx_shader_write_conf_cgp(conf, driver.menu->shader);
-
-   bool ret = false;
 
    for (d = 0; d < ARRAY_SIZE(dirs); d++)
    {
@@ -3013,10 +3009,9 @@ static void menu_common_shader_manager_save_preset(const char *basename, bool ap
 static unsigned menu_common_shader_manager_get_type(const struct gfx_shader *shader)
 {
 #ifdef HAVE_SHADER_MANAGER
-   unsigned i, type;
-
    // All shader types must be the same, or we cannot use it.
-   type = RARCH_SHADER_NONE;
+   unsigned i;
+   unsigned type = RARCH_SHADER_NONE;
 
    if (!shader)
    {
@@ -3228,8 +3223,7 @@ static int menu_common_setting_toggle(unsigned setting, unsigned action, unsigne
 
 static int menu_common_core_setting_toggle(unsigned setting, unsigned action)
 {
-   unsigned index;
-   index = setting - MENU_SETTINGS_CORE_OPTION_START;
+   unsigned index = setting - MENU_SETTINGS_CORE_OPTION_START;
 
    switch (action)
    {
@@ -3309,10 +3303,12 @@ static bool osk_callback_enter_audio_device(void *data)
    if (g_extern.lifecycle_state & (1ULL << MODE_OSK_ENTRY_SUCCESS)
          && driver.osk && driver.osk->get_text_buf)
    {
-      RARCH_LOG("OSK - Applying input data.\n");
       char tmp_str[256];
+      int num;
       wchar_t *text_buf = (wchar_t*)driver.osk->get_text_buf(driver.osk_data);
-      int num = wcstombs(tmp_str, text_buf, sizeof(tmp_str));
+
+      RARCH_LOG("OSK - Applying input data.\n");
+      num = wcstombs(tmp_str, text_buf, sizeof(tmp_str));
       tmp_str[num] = 0;
       strlcpy(g_settings.audio.device, tmp_str, sizeof(g_settings.audio.device));
       goto do_exit;
@@ -3353,16 +3349,19 @@ static bool osk_callback_enter_filename(void *data)
 
    if (g_extern.lifecycle_state & (1ULL << MODE_OSK_ENTRY_SUCCESS))
    {
-      RARCH_LOG("OSK - Applying input data.\n");
       char tmp_str[256];
       char filepath[PATH_MAX];
-      int num = wcstombs(tmp_str, driver.osk->get_text_buf(driver.osk_data), sizeof(tmp_str));
+      int num;
+      config_file_t *conf;
+
+      RARCH_LOG("OSK - Applying input data.\n");
+      num = wcstombs(tmp_str, driver.osk->get_text_buf(driver.osk_data), sizeof(tmp_str));
       tmp_str[num] = 0;
 
       fill_pathname_join(filepath, g_settings.video.shader_dir, tmp_str, sizeof(filepath));
       strlcat(filepath, ".cgp", sizeof(filepath));
       RARCH_LOG("[osk_callback_enter_filename]: filepath is: %s.\n", filepath);
-      config_file_t *conf = config_file_new(NULL);
+      conf = config_file_new(NULL);
       if (!conf)
          return false;
       gfx_shader_write_conf_cgp(conf, driver.menu->shader);
@@ -3404,11 +3403,10 @@ static bool osk_callback_enter_filename_init(void *data)
 
 static int menu_common_setting_set(unsigned setting, unsigned action)
 {
-   rarch_setting_t *setting_data, *current_setting;
+   rarch_setting_t *current_setting;
    struct retro_perf_counter **counters;
    unsigned port = driver.menu->current_pad;
-
-   setting_data = (rarch_setting_t *)setting_data_get_list();
+   rarch_setting_t *setting_data = (rarch_setting_t *)setting_data_get_list();
 
    if (setting >= MENU_SETTINGS_PERF_COUNTERS_BEGIN && setting <= MENU_SETTINGS_PERF_COUNTERS_END)
    {
@@ -3436,7 +3434,8 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
       }
       else
       {
-         struct retro_keybind *bind = &g_settings.input.binds[port][setting - MENU_SETTINGS_BIND_BEGIN];
+         struct retro_keybind *bind = (struct retro_keybind*)&g_settings.input.binds[port][setting - MENU_SETTINGS_BIND_BEGIN];
+
          if (action == MENU_ACTION_OK)
          {
             driver.menu->binds.begin = setting;
@@ -3666,7 +3665,7 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
 
             if (step)
             {
-               const struct retro_disk_control_callback *control = &g_extern.system.disk_control;
+               const struct retro_disk_control_callback *control = (const struct retro_disk_control_callback*)&g_extern.system.disk_control;
                unsigned num_disks = control->get_num_images();
                unsigned current   = control->get_image_index();
                unsigned next_index = (current + num_disks + 1 + step) % (num_disks + 1);
@@ -3857,9 +3856,9 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
          break;
       case MENU_SETTINGS_BIND_DEVICE_TYPE:
          {
-            unsigned current_device, current_index, i;
+            unsigned current_device, current_index, i, devices[128];
+            const struct retro_controller_info *desc;
             unsigned types = 0;
-            unsigned devices[128];
 
             devices[types++] = RETRO_DEVICE_NONE;
             devices[types++] = RETRO_DEVICE_JOYPAD;
@@ -3867,7 +3866,7 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
             if (!g_extern.system.num_ports)
                devices[types++] = RETRO_DEVICE_ANALOG;
 
-            const struct retro_controller_info *desc = port < g_extern.system.num_ports ? &g_extern.system.ports[port] : NULL;
+            desc = port < g_extern.system.num_ports ? &g_extern.system.ports[port] : NULL;
             if (desc)
             {
                for (i = 0; i < desc->num_types; i++)
@@ -3951,8 +3950,10 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
             unsigned i;
             struct retro_keybind *target = (struct retro_keybind*)&g_settings.input.binds[port][0];
             const struct retro_keybind *def_binds = port ? retro_keybinds_rest : retro_keybinds_1;
+
             driver.menu->binds.begin = MENU_SETTINGS_BIND_BEGIN;
             driver.menu->binds.last = MENU_SETTINGS_BIND_LAST;
+
             for (i = MENU_SETTINGS_BIND_BEGIN; i <= MENU_SETTINGS_BIND_LAST; i++, target++)
             {
                if (driver.menu->bind_mode_keyboard)
@@ -4332,7 +4333,7 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
 #ifdef HAVE_SHADER_MANAGER
       case MENU_SETTINGS_SHADER_PASSES:
          {
-            struct gfx_shader *shader = driver.menu->shader;
+            struct gfx_shader *shader = (struct gfx_shader*)driver.menu->shader;
 
             switch (action)
             {
@@ -4369,7 +4370,7 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
          break;
       case MENU_SETTINGS_SHADER_APPLY:
       {
-         struct gfx_shader *shader = driver.menu->shader;
+         struct gfx_shader *shader = (struct gfx_shader*)driver.menu->shader;
          unsigned type = RARCH_SHADER_NONE;
 
          if (!driver.video || !driver.video->set_shader || action != MENU_ACTION_OK)
@@ -4578,7 +4579,10 @@ static void menu_common_setting_set_label(char *type_str, size_t type_str_size, 
             type - MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_BEGIN);
    else if (type >= MENU_SETTINGS_BIND_BEGIN && type <= MENU_SETTINGS_BIND_ALL_LAST)
    {
-      const struct retro_keybind *auto_bind = input_get_auto_bind(driver.menu->current_pad, type - MENU_SETTINGS_BIND_BEGIN);
+      const struct retro_keybind *auto_bind = 
+         (const struct retro_keybind*)input_get_auto_bind(driver.menu->current_pad,
+               type - MENU_SETTINGS_BIND_BEGIN);
+
       input_get_bind_string(type_str, &g_settings.input.binds[driver.menu->current_pad][type - MENU_SETTINGS_BIND_BEGIN], auto_bind, type_str_size);
    }
    else
@@ -4676,6 +4680,7 @@ static void menu_common_setting_set_label(char *type_str, size_t type_str_size, 
                double refresh_rate = 0.0;
                double deviation = 0.0;
                unsigned sample_points = 0;
+
                if (driver_monitor_fps_statistics(&refresh_rate, &deviation, &sample_points))
                   snprintf(type_str, type_str_size, "%.3f Hz (%.1f%% dev, %u samples)", refresh_rate, 100.0 * deviation, sample_points);
                else
