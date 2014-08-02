@@ -90,11 +90,11 @@ static int main_entry_iterate_shutdown(args_type() args)
 {
    (void)args;
 
-   // Load dummy core instead of exiting RetroArch completely.
-   if (g_settings.load_dummy_on_core_shutdown)
-      rarch_main_command(RARCH_CMD_PREPARE_DUMMY);
-   else
+   if (!g_settings.load_dummy_on_core_shutdown)
       return 1;
+
+   // Load dummy core instead of exiting RetroArch completely.
+   rarch_main_command(RARCH_CMD_PREPARE_DUMMY);
 
    return 0;
 }

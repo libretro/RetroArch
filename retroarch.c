@@ -639,8 +639,8 @@ static int16_t input_state(unsigned port, unsigned device, unsigned index, unsig
       int16_t ret;
       if (bsv_movie_get_input(g_extern.bsv.movie, &ret))
          return ret;
-      else
-         g_extern.bsv.movie_end = true;
+
+      g_extern.bsv.movie_end = true;
    }
 #endif
 
