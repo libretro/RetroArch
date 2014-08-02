@@ -3259,6 +3259,9 @@ void rarch_main_command(unsigned action)
 #endif
          break;
       case RARCH_CMD_HISTORY_INIT:
+         if (g_extern.history)
+            return;
+
          g_extern.history = content_history_init(g_settings.content_history_path, g_settings.game_history_size);
          break;
       case RARCH_CMD_HISTORY_DEINIT:
