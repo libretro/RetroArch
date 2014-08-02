@@ -15,7 +15,7 @@
 
 #include "command.h"
 
-#ifdef HAVE_NETWORK_CMD
+#if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
 #include "netplay_compat.h"
 #include "netplay.h"
 #endif
@@ -44,7 +44,7 @@ struct rarch_cmd
    size_t stdin_buf_ptr;
 #endif
 
-#ifdef HAVE_NETWORK_CMD
+#if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
    int net_fd;
 #endif
 
@@ -155,7 +155,7 @@ error:
 
 void rarch_cmd_free(rarch_cmd_t *handle)
 {
-#ifdef HAVE_NETWORK_CMD
+#if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
    if (handle->net_fd >= 0)
       close(handle->net_fd);
 #endif
@@ -318,7 +318,7 @@ bool rarch_cmd_get(rarch_cmd_t *handle, unsigned id)
    return id < RARCH_BIND_LIST_END && handle->state[id];
 }
 
-#ifdef HAVE_NETWORK_CMD
+#if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
 static void network_cmd_poll(rarch_cmd_t *handle)
 {
    if (handle->net_fd < 0)
@@ -490,7 +490,7 @@ void rarch_cmd_poll(rarch_cmd_t *handle)
 {
    memset(handle->state, 0, sizeof(handle->state));
 
-#ifdef HAVE_NETWORK_CMD
+#if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
    network_cmd_poll(handle);
 #endif
 
