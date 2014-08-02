@@ -179,17 +179,17 @@ size_t content_history_size(content_history_t *hist)
 
 static bool content_history_read_file(content_history_t *hist, const char *path)
 {
+   char buf[3][PATH_MAX];
+   unsigned i;
+   struct content_history_entry *entry = NULL;
+   char *last = NULL;
    FILE *file = fopen(path, "r");
+
    if (!file || !hist)
    {
       RARCH_ERR("Couldn't read content history file: %s.\n", path);
       return true;
    }
-   
-   char buf[3][PATH_MAX];
-   struct content_history_entry *entry = NULL;
-   char *last = NULL;
-   unsigned i;
 
    for (hist->size = 0; hist->size < hist->cap; )
    {
@@ -250,13 +250,9 @@ error:
 
 const char* content_history_get_path(content_history_t *hist, unsigned index)
 {
-   const char *path, *core_path, *core_name;
+   const char *path, *core_path, *core_name = NULL;
    if (!hist)
       return "";
-
-   path      = NULL;
-   core_path = NULL;
-   core_name = NULL;
 
    content_history_get_index(hist, index, &path, &core_path, &core_name);
 
@@ -267,13 +263,9 @@ const char* content_history_get_path(content_history_t *hist, unsigned index)
 
 const char *content_history_get_core_path(content_history_t *hist, unsigned index)
 {
-   const char *path, *core_path, *core_name;
+   const char *path, *core_path, *core_name = NULL;
    if (!hist)
       return "";
-
-   path      = NULL;
-   core_path = NULL;
-   core_name = NULL;
 
    content_history_get_index(hist, index, &path, &core_path, &core_name);
     
@@ -284,14 +276,9 @@ const char *content_history_get_core_path(content_history_t *hist, unsigned inde
 
 const char *content_history_get_core_name(content_history_t *hist, unsigned index)
 {
-   const char *path, *core_path, *core_name;
-
+   const char *path, *core_path, *core_name = NULL;
    if (!hist)
       return "";
-
-   path      = NULL;
-   core_path = NULL;
-   core_name = NULL;
 
    content_history_get_index(hist, index, &path, &core_path, &core_name);
 
