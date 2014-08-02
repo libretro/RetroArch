@@ -1306,14 +1306,16 @@ static void init_controllers(void)
    }
 }
 
-static inline void load_save_files(void)
+static inline bool load_save_files(void)
 {
    unsigned i;
-   if (!g_extern.savefiles)
-      return;
+   if (!g_extern.savefiles || g_extern.sram_load_disable)
+      return false;
 
    for (i = 0; i < g_extern.savefiles->size; i++)
       load_ram_file(g_extern.savefiles->elems[i].data, g_extern.savefiles->elems[i].attr.i);
+    
+    return true;
 }
 
 static inline void save_files(void)
@@ -2983,9 +2985,7 @@ int rarch_main_init(int argc, char *argv[])
 
       set_savestate_auto_index();
 
-      if (!g_extern.sram_load_disable)
-         load_save_files();
-      else
+      if (load_save_files())
          RARCH_LOG("Skipping SRAM load.\n");
 
       load_auto_state();
