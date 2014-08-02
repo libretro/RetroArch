@@ -234,7 +234,7 @@ static void menu_common_entries_init(menu_handle_t *menu, unsigned menu_type)
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_VIDEO_MONITOR_INDEX, 0);
          if ((current_setting = setting_data_find_setting(setting_data, "video_refresh_rate")))
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_SETTINGS_VIDEO_REFRESH_RATE, 0);
-         file_list_push(menu->selection_buf, "Estimated Monitor FPS", MENU_SETTINGS_VIDEO_REFRESH_RATE_AUTO, 0);
+         file_list_push(menu->selection_buf, "Estimated Refresh Rate", MENU_SETTINGS_VIDEO_REFRESH_RATE_AUTO, 0);
          break;
       case MENU_SETTINGS_FONT_OPTIONS:
          file_list_clear(menu->selection_buf);
