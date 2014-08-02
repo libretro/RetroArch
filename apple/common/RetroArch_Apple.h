@@ -20,7 +20,7 @@
 #include <Foundation/Foundation.h>
 #import <CoreFoundation/CoreFoundation.h>
 
-#include "../../frontend/info/core_info.h"
+#include "../../core_info.h"
 #include "../../settings_data.h"
 
 #define GSEVENT_TYPE_KEYDOWN 10
