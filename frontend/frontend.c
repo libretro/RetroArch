@@ -273,7 +273,7 @@ static void check_defaults_dirs(void)
       path_mkdir(g_defaults.system_dir);
 }
 
-bool main_load_content(int argc, char **argv, environment_get_t environ_get,
+bool main_load_content(int argc, char **argv, args_type() args, environment_get_t environ_get,
       process_args_t process_args)
 {
    bool retval = true;
@@ -294,7 +294,7 @@ bool main_load_content(int argc, char **argv, environment_get_t environ_get,
    rarch_assert(wrap_args);
 
    if (environ_get)
-      environ_get(rarch_argc_ptr, rarch_argv_ptr, NULL, wrap_args);
+      environ_get(rarch_argc_ptr, rarch_argv_ptr, args, wrap_args);
 
    check_defaults_dirs();
 
@@ -344,7 +344,7 @@ returntype main_entry(signature())
 
    rarch_main_clear_state();
 
-   if (!(ret = (main_load_content(argc, argv, driver.frontend_ctx->environment_get,
+   if (!(ret = (main_load_content(argc, argv, args, driver.frontend_ctx->environment_get,
          driver.frontend_ctx->process_args))))
       return_var(ret);
 
