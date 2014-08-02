@@ -970,7 +970,7 @@ static int menu_info_screen_iterate(unsigned action)
             setting_data_get_description(current_setting, msg, sizeof(msg));
          break;
       case MENU_SETTINGS_VIDEO_REFRESH_RATE_AUTO:
-         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "video_refresh_rate")))
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "video_refresh_rate_auto")))
             setting_data_get_description(current_setting, msg, sizeof(msg));
          break;
       case MENU_LIBRETRO_DIR_PATH:
