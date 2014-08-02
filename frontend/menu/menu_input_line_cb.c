@@ -84,6 +84,8 @@ void netplay_ipaddress_callback(void *userdata, const char *str)
    menu_key_end_line(menu);
 }
 
+#endif
+
 void netplay_nickname_callback(void *userdata, const char *str)
 {
    menu_handle_t *menu = (menu_handle_t*)userdata;
@@ -97,7 +99,6 @@ void netplay_nickname_callback(void *userdata, const char *str)
    }
    menu_key_end_line(menu);
 }
-#endif
 
 void audio_device_callback(void *userdata, const char *str)
 {

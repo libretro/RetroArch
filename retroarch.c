@@ -795,7 +795,7 @@ static void print_help(void)
    puts("\t\tHowever, the client will not be able to play. Multiple clients can connect to the host.");
 #endif
    puts("\t--nick: Picks a username (for use with netplay). Not mandatory.");
-#ifdef HAVE_NETWORK_CMD
+#if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
    puts("\t--command: Sends a command over UDP to an already running RetroArch process.");
    puts("\t\tAvailable commands are listed if command is invalid.");
 #endif
@@ -952,7 +952,7 @@ static void parse_input(int argc, char *argv[])
       { "spectate", 0, &val, 'S' },
 #endif
       { "nick", 1, &val, 'N' },
-#ifdef HAVE_NETWORK_CMD
+#if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
       { "command", 1, &val, 'c' },
 #endif
       { "ups", 1, NULL, 'U' },
@@ -1182,7 +1182,7 @@ static void parse_input(int argc, char *argv[])
                   strlcpy(g_settings.username, optarg, sizeof(g_settings.username));
                   break;
 
-#ifdef HAVE_NETWORK_CMD
+#if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
                case 'c':
                   if (network_cmd_send(optarg))
                      exit(0);

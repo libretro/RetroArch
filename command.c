@@ -61,7 +61,7 @@ static bool socket_nonblock(int fd)
 #endif
 }
 
-#ifdef HAVE_NETWORK_CMD
+#if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
 static bool cmd_init_network(rarch_cmd_t *handle, uint16_t port)
 {
    if (!netplay_init_network())
@@ -129,7 +129,7 @@ rarch_cmd_t *rarch_cmd_new(bool stdin_enable, bool network_enable, uint16_t port
    if (!handle)
       return NULL;
 
-#ifdef HAVE_NETWORK_CMD
+#if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
    handle->net_fd = -1;
    if (network_enable && !cmd_init_network(handle, port))
       goto error;
@@ -499,7 +499,7 @@ void rarch_cmd_poll(rarch_cmd_t *handle)
 #endif
 }
 
-#ifdef HAVE_NETWORK_CMD
+#if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
 static bool send_udp_packet(const char *host, uint16_t port, const char *msg)
 {
    struct addrinfo hints, *res = NULL;
