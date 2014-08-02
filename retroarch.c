@@ -1665,6 +1665,9 @@ static void deinit_command(void)
    driver.command = NULL;
 }
 
+#endif
+
+#ifdef HAVE_NETPLAY
 static void init_libretro_cbs_netplay(void)
 {
    pretro_set_video_refresh(g_extern.netplay_is_spectate ?
@@ -2673,6 +2676,7 @@ static void check_volume(void)
 }
 
 #ifdef HAVE_NETPLAY
+
 static void check_netplay_flip(void)
 {
    static bool old_pressed;
