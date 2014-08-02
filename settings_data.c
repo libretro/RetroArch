@@ -1146,7 +1146,7 @@ static void general_write_handler(const void *data)
    {
       strlcpy(g_settings.input.overlay, setting->value.string, sizeof(g_settings.input.overlay));
 
-      has_set_overlay_free = false;
+      has_set_overlay_free = true;
       has_set_overlay_init = true;
    }
    else if (!strcmp(setting->name, "input_overlay_scale"))
