@@ -623,8 +623,7 @@ static bool input_apply_turbo(unsigned port, unsigned id, bool res)
 
    if (g_extern.turbo_enable[port] & (1 << id))
       return res && ((g_extern.turbo_count % g_settings.input.turbo_period) < g_settings.input.turbo_duty_cycle);
-   else
-      return res;
+   return res;
 }
 
 static int16_t input_state(unsigned port, unsigned device, unsigned index, unsigned id)
@@ -1764,6 +1763,7 @@ static void deinit_autosave(void)
 
 static void set_savestate_auto_index(void)
 {
+   struct string_list *dir_list;
    char state_dir[PATH_MAX], state_base[PATH_MAX];
    size_t i;
    unsigned max_index = 0;
@@ -1777,15 +1777,14 @@ static void set_savestate_auto_index(void)
    fill_pathname_basedir(state_dir, g_extern.savestate_name, sizeof(state_dir));
    fill_pathname_base(state_base, g_extern.savestate_name, sizeof(state_base));
 
-   struct string_list *dir_list = dir_list_new(state_dir, NULL, false);
-   if (!dir_list)
+   if (!(dir_list = dir_list_new(state_dir, NULL, false)))
       return;
 
    for (i = 0; i < dir_list->size; i++)
    {
+      char elem_base[PATH_MAX];
       const char *dir_elem = dir_list->elems[i].data;
 
-      char elem_base[PATH_MAX];
       fill_pathname_base(elem_base, dir_elem, sizeof(elem_base));
 
       if (strstr(elem_base, state_base) != elem_base)
