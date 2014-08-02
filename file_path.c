@@ -331,10 +331,10 @@ static int qstrcmp_dir(const void *a_, const void *b_)
 {
    const struct string_list_elem *a = (const struct string_list_elem*)a_; 
    const struct string_list_elem *b = (const struct string_list_elem*)b_; 
-
-   // Sort directories before files.
    int a_dir = a->attr.b;
    int b_dir = b->attr.b;
+
+   // Sort directories before files.
    if (a_dir != b_dir)
       return b_dir - a_dir;
    else
@@ -373,6 +373,8 @@ struct string_list *dir_list_new(const char *dir, const char *ext, bool include_
 
    do
    {
+      union string_list_elem_attr attr;
+      char file_path[PATH_MAX];
       const char *name     = ffd.cFileName;
       const char *file_ext = path_get_extension(name);
       bool is_dir          = ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY;
@@ -386,10 +388,8 @@ struct string_list *dir_list_new(const char *dir, const char *ext, bool include_
       if (!is_dir && ext_list && !string_list_find_elem_prefix(ext_list, ".", file_ext))
          continue;
 
-      char file_path[PATH_MAX];
       fill_pathname_join(file_path, dir, name, sizeof(file_path));
 
-      union string_list_elem_attr attr;
       attr.b = is_dir;
 
       if (!string_list_append(list, file_path, attr))
@@ -430,14 +430,14 @@ static bool dirent_is_directory(const char *path, const struct dirent *entry)
 
 struct string_list *dir_list_new(const char *dir, const char *ext, bool include_dirs)
 {
-   struct string_list *list = string_list_new();
+   DIR *directory = NULL;
+   const struct dirent *entry = NULL;
+   struct string_list *ext_list = NULL;
+   struct string_list *list = (struct string_list*)string_list_new();
+
    if (!list)
       return NULL;
 
-   DIR *directory = NULL;
-   const struct dirent *entry = NULL;
-
-   struct string_list *ext_list = NULL;
    if (ext)
       ext_list = string_split(ext, "|");
 
@@ -447,13 +447,15 @@ struct string_list *dir_list_new(const char *dir, const char *ext, bool include_
 
    while ((entry = readdir(directory)))
    {
+      bool is_dir;
+      char file_path[PATH_MAX];
+      union string_list_elem_attr attr;
       const char *name     = entry->d_name;
       const char *file_ext = path_get_extension(name);
 
-      char file_path[PATH_MAX];
       fill_pathname_join(file_path, dir, name, sizeof(file_path));
 
-      bool is_dir = dirent_is_directory(file_path, entry);
+      is_dir = dirent_is_directory(file_path, entry);
       if (!include_dirs && is_dir)
          continue;
 
@@ -463,7 +465,6 @@ struct string_list *dir_list_new(const char *dir, const char *ext, bool include_
       if (!is_dir && ext_list && !string_list_find_elem_prefix(ext_list, ".", file_ext))
          continue;
 
-      union string_list_elem_attr attr;
       attr.b = is_dir;
 
       if (!string_list_append(list, file_path, attr))
@@ -528,21 +529,23 @@ bool path_is_directory(const char *path)
 bool path_file_exists(const char *path)
 {
    FILE *dummy = fopen(path, "rb");
+
    if (dummy)
    {
       fclose(dummy);
       return true;
    }
+
    return false;
 }
 
 void fill_pathname(char *out_path, const char *in_path, const char *replace, size_t size)
 {
    char tmp_path[PATH_MAX];
+   char *tok;
 
    rarch_assert(strlcpy(tmp_path, in_path, sizeof(tmp_path)) < sizeof(tmp_path));
-   char *tok = (char*)strrchr(path_basename(tmp_path), '.');
-   if (tok)
+   if ((tok = (char*)strrchr(path_basename(tmp_path), '.')))
       *tok = '\0';
 
    rarch_assert(strlcpy(out_path, tmp_path, size) < size);
@@ -560,6 +563,7 @@ static char *find_last_slash(const char *str)
    const char *slash = strrchr(str, '/');
 #ifdef _WIN32
    const char *backslash = strrchr(str, '\\');
+
    if (backslash && ((slash && backslash > slash) || !slash))
       slash = backslash;
 #endif
@@ -692,12 +696,13 @@ void path_resolve_realpath(char *buf, size_t size)
 
 static bool path_mkdir_norecurse(const char *dir)
 {
+   int ret;
 #if defined(_WIN32)
-   int ret = _mkdir(dir);
+   ret = _mkdir(dir);
 #elif defined(IOS)
-   int ret = mkdir(dir, 0755);
+   ret = mkdir(dir, 0755);
 #else
-   int ret = mkdir(dir, 0750);
+   ret = mkdir(dir, 0750);
 #endif
    if (ret < 0 && errno == EEXIST && path_is_directory(dir)) // Don't treat this as an error.
       ret = 0;
