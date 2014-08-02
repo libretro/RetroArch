@@ -115,13 +115,7 @@ static int main_entry_iterate_content(args_type() args)
 
 static int main_entry_iterate_load_content(args_type() args)
 {
-   if (load_menu_content())
-   {
-      g_extern.lifecycle_state |= (1ULL << MODE_GAME);
-      if (driver.video_data && driver.video_poke && driver.video_poke->set_aspect_ratio)
-         driver.video_poke->set_aspect_ratio(driver.video_data, g_settings.video.aspect_ratio_idx);
-   }
-   else
+   if (!load_menu_content())
    {
 #if defined(RARCH_CONSOLE) || defined(RARCH_MOBILE)
       // If ROM load fails, we go back to menu.

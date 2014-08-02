@@ -222,6 +222,11 @@ bool load_menu_content(void)
    if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->shader_manager_init)
       driver.menu_ctx->backend->shader_manager_init(driver.menu);
 
+   if (driver.video_data && driver.video_poke && driver.video_poke->set_aspect_ratio)
+      driver.video_poke->set_aspect_ratio(driver.video_data, g_settings.video.aspect_ratio_idx);
+
+   g_extern.lifecycle_state |= (1ULL << MODE_GAME);
+
    return true;
 }
 
