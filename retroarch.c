@@ -3218,12 +3218,12 @@ void rarch_main_command(unsigned action)
          break;
       case RARCH_CMD_OVERLAY_INIT:
 #ifdef HAVE_OVERLAY
-         if (*g_settings.input.overlay && g_settings.input.overlay[0] != '\0')
-         {
-            driver.overlay = input_overlay_new(g_settings.input.overlay);
-            if (!driver.overlay)
-               RARCH_ERR("Failed to load overlay.\n");
-         }
+         if (!*g_settings.input.overlay)
+            break;
+
+         driver.overlay = input_overlay_new(g_settings.input.overlay);
+         if (!driver.overlay)
+            RARCH_ERR("Failed to load overlay.\n");
 #endif
          break;
       case RARCH_CMD_OVERLAY_DEINIT:

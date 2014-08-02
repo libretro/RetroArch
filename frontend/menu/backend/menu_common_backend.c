@@ -2196,6 +2196,22 @@ static void menu_common_setting_set_current_boolean(rarch_setting_t *setting, un
       setting->change_handler(setting);
 }
 
+static void menu_common_setting_set_current_path_selection(rarch_setting_t *setting, const char *start_path, unsigned type, unsigned action)
+{
+   switch (action)
+   {
+      case MENU_ACTION_OK:
+         menu_common_setting_push_current_menu(driver.menu->menu_stack, start_path, type, driver.menu->selection_ptr, action);
+         break;
+      case MENU_ACTION_START:
+         strlcpy(setting->value.string, setting->default_value.string, setting->size);
+         break;
+   }
+
+   if (setting->change_handler)
+      setting->change_handler(setting);
+}
+
 static void menu_common_setting_set_current_fraction(rarch_setting_t *setting, float step, unsigned action,
       bool enforce_min_check, bool enforce_max_check)
 {
@@ -3698,18 +3714,8 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
          break;
 #ifdef HAVE_OVERLAY
       case MENU_SETTINGS_OVERLAY_PRESET:
-         switch (action)
-         {
-            case MENU_ACTION_OK:
-               menu_common_setting_push_current_menu(driver.menu->menu_stack, g_extern.overlay_dir, setting, driver.menu->selection_ptr, action);
-               break;
-            case MENU_ACTION_START:
-               rarch_main_command(RARCH_CMD_OVERLAY_DEINIT);
-               *g_settings.input.overlay = '\0';
-               break;
-            default:
-               break;
-         }
+         if ((current_setting = setting_data_find_setting(setting_data, "input_overlay")))
+            menu_common_setting_set_current_path_selection(current_setting, g_extern.overlay_dir, setting, action);
          break;
 #endif
       case MENU_CONTENT_HISTORY_PATH:
