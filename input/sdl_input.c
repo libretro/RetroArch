@@ -263,7 +263,8 @@ static void sdl_input_poll(void *data)
    SDL_PumpEvents();
    sdl_input_t *sdl = (sdl_input_t*)data;
 
-   input_joypad_poll(sdl->joypad);
+   if (sdl->joypad)
+      sdl->joypad->poll();
    sdl_poll_mouse(sdl);
 }
 

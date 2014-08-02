@@ -171,7 +171,9 @@ void menu_poll_bind_state(struct menu_bind_state *state)
       return;
    }
 
-   input_joypad_poll(joypad);
+   if (joypad)
+      joypad->poll();
+
    for (i = 0; i < MAX_PLAYERS; i++)
    {
       for (b = 0; b < MENU_MAX_BUTTONS; b++)

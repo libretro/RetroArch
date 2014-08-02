@@ -512,7 +512,9 @@ static void apple_input_poll(void *data)
          &g_current_input_data.touches[i].full_x, &g_current_input_data.touches[i].full_y);
    }
 
-   input_joypad_poll(joypad);
+   if (joypad)
+      joypad->poll();
+
    g_current_input_data.pad_buttons[0] |= apple_input_get_icade_buttons();
 
    g_current_input_data.mouse_delta[0] = 0;

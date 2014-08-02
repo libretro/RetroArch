@@ -442,7 +442,8 @@ static void udev_input_poll(void *data)
       }
    }
 
-   input_joypad_poll(udev->joypad);
+   if (udev->joypad)
+      udev->joypad->poll();
 }
 
 static int16_t udev_mouse_state(udev_input_t *udev, unsigned id)

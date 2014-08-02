@@ -120,12 +120,6 @@ const rarch_joypad_driver_t *input_joypad_init_first(void)
    return NULL;
 }
 
-void input_joypad_poll(const rarch_joypad_driver_t *driver)
-{
-   if (driver)
-      driver->poll();
-}
-
 const char *input_joypad_name(const rarch_joypad_driver_t *driver, unsigned joypad)
 {
    if (!driver)

@@ -78,7 +78,9 @@ static void poll_joypad(const rarch_joypad_driver_t *driver,
       struct poll_data *data)
 {
    unsigned i;
-   input_joypad_poll(driver);
+
+   if (driver)
+      driver->poll();
 
    for (i = 0; i < MAX_BUTTONS; i++)
       data->buttons[i] = input_joypad_button_raw(driver, pad, i);

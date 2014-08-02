@@ -201,7 +201,8 @@ static void dinput_poll(void *data)
       di->mouse_y = point.y;
    }
 
-   input_joypad_poll(di->joypad);
+   if (di->joypad)
+      di->joypad->poll();
 }
 
 static bool dinput_keyboard_pressed(struct dinput_input *di, unsigned key)

@@ -283,7 +283,9 @@ static void x_input_poll(void *data)
       memset(x11->state, 0, sizeof(x11->state));
 
    x_input_poll_mouse(x11);
-   input_joypad_poll(x11->joypad);
+
+   if (x11->joypad)
+      x11->joypad->poll();
 }
 
 static void x_grab_mouse(void *data, bool state)

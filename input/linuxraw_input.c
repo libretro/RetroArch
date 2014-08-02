@@ -222,7 +222,8 @@ static void linuxraw_input_poll(void *data)
          linuxraw->state[c] = pressed;
    }
 
-   input_joypad_poll(linuxraw->joypad);
+   if (linuxraw->joypad)
+      linuxraw->joypad->poll();
 }
 
 static uint64_t linuxraw_get_capabilities(void *data)
