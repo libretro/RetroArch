@@ -3221,13 +3221,27 @@ void rarch_main_command(unsigned action)
          }
 #endif
          break;
-      case RARCH_CMD_OVERLAY_FREE:
+      case RARCH_CMD_OVERLAY_DEINIT:
 #ifdef HAVE_OVERLAY
          if (driver.overlay)
             input_overlay_free(driver.overlay);
          driver.overlay = NULL;
          memset(&driver.overlay_state, 0, sizeof(driver.overlay_state));
 #endif
+         break;
+      case RARCH_CMD_DSP_FILTER_INIT:
+         rarch_main_command(RARCH_CMD_DSP_FILTER_DEINIT);
+         if (!*g_settings.audio.dsp_plugin)
+            break;
+
+         g_extern.audio_data.dsp = rarch_dsp_filter_new(g_settings.audio.dsp_plugin, g_extern.audio_data.in_rate);
+         if (!g_extern.audio_data.dsp)
+            RARCH_ERR("[DSP]: Failed to initialize DSP filter \"%s\".\n", g_settings.audio.dsp_plugin);
+         break;
+      case RARCH_CMD_DSP_FILTER_DEINIT:
+         if (g_extern.audio_data.dsp)
+            rarch_dsp_filter_free(g_extern.audio_data.dsp);
+         g_extern.audio_data.dsp = NULL;
          break;
    }
 }

@@ -27,7 +27,6 @@
 #include "audio/resampler.h"
 #include "gfx/thread_wrapper.h"
 #include "audio/thread_wrapper.h"
-#include "audio/dsp_filter.h"
 #include "gfx/gfx_common.h"
 
 #ifdef HAVE_X11
@@ -696,24 +695,6 @@ void uninit_drivers(void)
       driver.audio_data = NULL;
 }
 
-void rarch_init_dsp_filter(void)
-{
-   rarch_deinit_dsp_filter();
-   if (!*g_settings.audio.dsp_plugin)
-      return;
-
-   g_extern.audio_data.dsp = rarch_dsp_filter_new(g_settings.audio.dsp_plugin, g_extern.audio_data.in_rate);
-   if (!g_extern.audio_data.dsp)
-      RARCH_ERR("[DSP]: Failed to initialize DSP filter \"%s\".\n", g_settings.audio.dsp_plugin);
-}
-
-void rarch_deinit_dsp_filter(void)
-{
-   if (g_extern.audio_data.dsp)
-      rarch_dsp_filter_free(g_extern.audio_data.dsp);
-   g_extern.audio_data.dsp = NULL;
-}
-
 void init_audio(void)
 {
    audio_convert_init_simd();
@@ -817,7 +798,7 @@ void init_audio(void)
          RARCH_WARN("Audio rate control was desired, but driver does not support needed features.\n");
    }
 
-   rarch_init_dsp_filter();
+   rarch_main_command(RARCH_CMD_DSP_FILTER_DEINIT);
 
    g_extern.measure_data.buffer_free_samples_count = 0;
 
@@ -935,7 +916,7 @@ void uninit_audio(void)
    free(g_extern.audio_data.outsamples);
    g_extern.audio_data.outsamples = NULL;
 
-   rarch_deinit_dsp_filter();
+   rarch_main_command(RARCH_CMD_DSP_FILTER_DEINIT);
 
    compute_audio_buffer_statistics();
 }
@@ -1197,7 +1178,7 @@ void init_video_input(void)
    }
 
 #ifdef HAVE_OVERLAY
-   rarch_main_command(RARCH_CMD_OVERLAY_FREE);
+   rarch_main_command(RARCH_CMD_OVERLAY_DEINIT);
    rarch_main_command(RARCH_CMD_OVERLAY_INIT);
 #endif
 
@@ -1207,7 +1188,7 @@ void init_video_input(void)
 void uninit_video_input(void)
 {
 #ifdef HAVE_OVERLAY
-   rarch_main_command(RARCH_CMD_OVERLAY_FREE);
+   rarch_main_command(RARCH_CMD_OVERLAY_DEINIT);
 #endif
 
    if (!driver.input_data_own && driver.input_data != driver.video_data && driver.input && driver.input->free)

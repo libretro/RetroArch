@@ -982,6 +982,7 @@ static void general_write_handler(const void *data)
    bool has_set_autosave          = false;
    bool has_set_overlay_init      = false;
    bool has_set_overlay_free      = false;
+   bool has_set_dsp_init          = false;
    const rarch_setting_t *setting = (const rarch_setting_t*)data;
 
    if (!setting)
@@ -1090,8 +1091,7 @@ static void general_write_handler(const void *data)
 #ifdef HAVE_DYLIB
       strlcpy(g_settings.audio.dsp_plugin, setting->value.string, sizeof(g_settings.audio.dsp_plugin));
 #endif
-      rarch_deinit_dsp_filter();
-      rarch_init_dsp_filter();
+      has_set_dsp_init = true;
    }
    else if (!strcmp(setting->name, "state_slot"))
       g_settings.state_slot = *setting->value.integer;
@@ -1338,9 +1338,11 @@ static void general_write_handler(const void *data)
    if (has_set_autosave)
       rarch_main_command(RARCH_CMD_AUTOSAVE);
    if (has_set_overlay_free)
-      rarch_main_command(RARCH_CMD_OVERLAY_FREE);
+      rarch_main_command(RARCH_CMD_OVERLAY_DEINIT);
    if (has_set_overlay_init)
       rarch_main_command(RARCH_CMD_OVERLAY_INIT);
+   if (has_set_dsp_init)
+      rarch_main_command(RARCH_CMD_DSP_FILTER_INIT);
 }
 
 #define NEXT (list[index++])

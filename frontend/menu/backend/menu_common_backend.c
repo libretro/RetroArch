@@ -3704,7 +3704,7 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
                menu_common_setting_push_current_menu(driver.menu->menu_stack, g_extern.overlay_dir, setting, driver.menu->selection_ptr, action);
                break;
             case MENU_ACTION_START:
-               rarch_main_command(RARCH_CMD_OVERLAY_FREE);
+               rarch_main_command(RARCH_CMD_OVERLAY_DEINIT);
                *g_settings.input.overlay = '\0';
                break;
             default:
@@ -3766,8 +3766,8 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
                menu_common_setting_push_current_menu(driver.menu->menu_stack, g_settings.audio.filter_dir, setting, driver.menu->selection_ptr, action);
                break;
             case MENU_ACTION_START:
+               rarch_main_command(RARCH_CMD_DSP_FILTER_DEINIT);
                *g_settings.audio.dsp_plugin = '\0';
-               rarch_deinit_dsp_filter();
                break;
          }
          break;
