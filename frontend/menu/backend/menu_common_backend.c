@@ -1849,9 +1849,7 @@ static void menu_parse_and_resolve(unsigned menu_type)
          for (i = 0; i < list_size; i++)
          {
             char fill_buf[PATH_MAX];
-            const char *path      = NULL;
-            const char *core_path = NULL;
-            const char *core_name = NULL;
+            const char *path, *core_path, *core_name = NULL;
 
             content_history_get_index(g_extern.history, i,
                   &path, &core_path, &core_name);
@@ -3061,11 +3059,9 @@ static int menu_common_shader_manager_setting_toggle(unsigned setting, unsigned 
    setting_data = (rarch_setting_t *)setting_data_get_list();
 
 #ifdef HAVE_SHADER_MANAGER
-   unsigned dist_shader, dist_filter, dist_scale;
-
-   dist_shader = setting - MENU_SETTINGS_SHADER_0;
-   dist_filter = setting - MENU_SETTINGS_SHADER_0_FILTER;
-   dist_scale  = setting - MENU_SETTINGS_SHADER_0_SCALE;
+   unsigned dist_shader = setting - MENU_SETTINGS_SHADER_0;
+   unsigned dist_filter = setting - MENU_SETTINGS_SHADER_0_FILTER;
+   unsigned dist_scale  = setting - MENU_SETTINGS_SHADER_0_SCALE;
 
    if (setting == MENU_SETTINGS_SHADER_FILTER)
    {
@@ -3076,12 +3072,13 @@ static int menu_common_shader_manager_setting_toggle(unsigned setting, unsigned 
       menu_common_setting_push_current_menu(driver.menu->menu_stack, "", setting, driver.menu->selection_ptr, action);
    else if (setting >= MENU_SETTINGS_SHADER_PARAMETER_0 && setting <= MENU_SETTINGS_SHADER_PARAMETER_LAST)
    {
-      struct gfx_shader *shader = driver.menu->parameter_shader;
-      if (!shader)
+      struct gfx_shader *shader;
+      struct gfx_shader_parameter *param;
+
+      if (!(shader = (struct gfx_shader*)driver.menu->parameter_shader))
          return 0;
 
-      struct gfx_shader_parameter *param = &shader->parameters[setting - MENU_SETTINGS_SHADER_PARAMETER_0];
-      if (!param)
+      if (!(param = &shader->parameters[setting - MENU_SETTINGS_SHADER_PARAMETER_0]))
          return 0;
 
       switch (action)
@@ -3109,9 +3106,10 @@ static int menu_common_shader_manager_setting_toggle(unsigned setting, unsigned 
       driver.menu_ctx->backend->setting_set(setting, action);
    else if (((dist_shader % 3) == 0 || setting == MENU_SETTINGS_SHADER_PRESET))
    {
-      dist_shader /= 3;
-      struct gfx_shader *shader = driver.menu->shader;
+      struct gfx_shader *shader = (struct gfx_shader*)driver.menu->shader;
       struct gfx_shader_pass *pass = NULL;
+
+      dist_shader /= 3;
       if (shader && setting == MENU_SETTINGS_SHADER_PRESET)
          pass = &shader->pass[dist_shader];
 
@@ -3132,14 +3130,15 @@ static int menu_common_shader_manager_setting_toggle(unsigned setting, unsigned 
    }
    else if ((dist_filter % 3) == 0)
    {
-      dist_filter /= 3;
       struct gfx_shader *shader = (struct gfx_shader*)driver.menu->shader;
       struct gfx_shader_pass *pass = (struct gfx_shader_pass*)&shader->pass[dist_filter];
+
+      dist_filter /= 3;
 
       switch (action)
       {
          case MENU_ACTION_START:
-            if (shader && shader->pass)
+            if (shader->pass)
                shader->pass[dist_filter].filter = RARCH_FILTER_UNSPEC;
             break;
 
@@ -3159,9 +3158,11 @@ static int menu_common_shader_manager_setting_toggle(unsigned setting, unsigned 
    }
    else if ((dist_scale % 3) == 0)
    {
-      dist_scale /= 3;
       struct gfx_shader *shader = (struct gfx_shader*)driver.menu->shader;
       struct gfx_shader_pass *pass = (struct gfx_shader_pass*)&shader->pass[dist_scale];
+
+      dist_scale /= 3;
+
       switch (action)
       {
          case MENU_ACTION_START:
@@ -3349,8 +3350,7 @@ static bool osk_callback_enter_filename(void *data)
 
    if (g_extern.lifecycle_state & (1ULL << MODE_OSK_ENTRY_SUCCESS))
    {
-      char tmp_str[256];
-      char filepath[PATH_MAX];
+      char tmp_str[256], filepath[PATH_MAX];
       int num;
       config_file_t *conf;
 
@@ -4314,9 +4314,9 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
 
             case MENU_ACTION_OK:
             {
-               double refresh_rate = 0.0;
-               double deviation = 0.0;
+               double refresh_rate, deviation = 0.0;
                unsigned sample_points = 0;
+
                if (driver_monitor_fps_statistics(&refresh_rate, &deviation, &sample_points))
                {
                   driver_set_monitor_refresh_rate(refresh_rate);
@@ -4943,6 +4943,7 @@ static void menu_common_setting_set_label(char *type_str, size_t type_str_size, 
                if (map >= 0 && map < MAX_PLAYERS)
                {
                   const char *device_name = g_settings.input.device_names[map];
+
                   if (*device_name)
                      strlcpy(type_str, device_name, type_str_size);
                   else
