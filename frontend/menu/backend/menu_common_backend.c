@@ -3132,15 +3132,14 @@ static int menu_common_shader_manager_setting_toggle(unsigned setting, unsigned 
    }
    else if ((dist_filter % 3) == 0)
    {
+      dist_filter /= 3;
       struct gfx_shader *shader = (struct gfx_shader*)driver.menu->shader;
       struct gfx_shader_pass *pass = (struct gfx_shader_pass*)&shader->pass[dist_filter];
-
-      dist_filter /= 3;
 
       switch (action)
       {
          case MENU_ACTION_START:
-            if (shader->pass)
+            if (shader && shader->pass)
                shader->pass[dist_filter].filter = RARCH_FILTER_UNSPEC;
             break;
 
@@ -3148,7 +3147,7 @@ static int menu_common_shader_manager_setting_toggle(unsigned setting, unsigned 
          case MENU_ACTION_RIGHT:
          case MENU_ACTION_OK:
          {
-            unsigned delta = action == MENU_ACTION_LEFT ? 2 : 1;
+            unsigned delta = (action == MENU_ACTION_LEFT) ? 2 : 1;
             if (pass)
                pass->filter = ((pass->filter + delta) % 3);
             break;
@@ -3160,15 +3159,14 @@ static int menu_common_shader_manager_setting_toggle(unsigned setting, unsigned 
    }
    else if ((dist_scale % 3) == 0)
    {
+      dist_scale /= 3;
       struct gfx_shader *shader = (struct gfx_shader*)driver.menu->shader;
       struct gfx_shader_pass *pass = (struct gfx_shader_pass*)&shader->pass[dist_scale];
-
-      dist_scale /= 3;
 
       switch (action)
       {
          case MENU_ACTION_START:
-            if (shader->pass)
+            if (shader && shader->pass)
             {
                pass->fbo.scale_x = pass->fbo.scale_y = 0;
                pass->fbo.valid = false;
