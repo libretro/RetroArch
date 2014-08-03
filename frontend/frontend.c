@@ -281,7 +281,8 @@ bool main_load_content(int argc, char **argv, args_type() args, environment_get_
    struct rarch_main_wrap *wrap_args;
    bool retval = true;
    int i, ret, rarch_argc = 0;
-   char *rarch_argv[MAX_ARGS], *argv_copy[MAX_ARGS] = {NULL};
+   char *rarch_argv[MAX_ARGS] = {NULL};
+   char *argv_copy [MAX_ARGS] = {NULL};
 
    rarch_argv_ptr = (char**)argv;
    rarch_argc_ptr = (int*)&argc;
