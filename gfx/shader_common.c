@@ -48,9 +48,8 @@ void gl_load_texture_data(GLuint obj, const struct texture_image *img,
 
 bool gl_load_luts(const struct gfx_shader *generic_shader, GLuint *lut_textures)
 {
-   unsigned i, num_luts;
-   
-   num_luts = min(generic_shader->luts, GFX_MAX_TEXTURES);
+   unsigned i;
+   unsigned num_luts = min(generic_shader->luts, GFX_MAX_TEXTURES);
 
    if (!generic_shader->luts)
       return true;

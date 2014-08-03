@@ -76,15 +76,14 @@ static bool dwm_composition_disabled;
 static void gfx_dwm_shutdown(void)
 {
    if (dwmlib)
-   {
       dylib_close(dwmlib);
-      dwmlib = NULL;
-   }
+   dwmlib = NULL;
 }
 
 static void gfx_init_dwm(void)
 {
    static bool inited;
+   }
    if (inited)
       return;
    inited = true;
@@ -136,7 +135,7 @@ void gfx_scale_integer(struct rarch_viewport *vp, unsigned width, unsigned heigh
    if (g_settings.video.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
    {
       const struct rarch_viewport *custom =
-         &g_extern.console.screen.viewports.custom_vp;
+         (const struct rarch_viewport*)&g_extern.console.screen.viewports.custom_vp;
 
       padding_x = width - custom->width;
       padding_y = height - custom->height;
@@ -242,6 +241,7 @@ void gfx_set_square_pixel_viewport(unsigned width, unsigned height)
 void gfx_set_core_viewport(void)
 {
    const struct retro_game_geometry *geom = &g_extern.system.av_info.geometry;
+
    if (geom->base_width <= 0.0f || geom->base_height <= 0.0f)
       return;
 
@@ -257,13 +257,13 @@ void gfx_set_config_viewport(void)
    if (g_settings.video.aspect_ratio < 0.0f)
    {
       const struct retro_game_geometry *geom = &g_extern.system.av_info.geometry;
+
       if (geom->aspect_ratio > 0.0f && g_settings.video.aspect_ratio_auto)
          aspectratio_lut[ASPECT_RATIO_CONFIG].value = geom->aspect_ratio;
       else
       {
-         unsigned base_width, base_height;
-         base_width  = geom->base_width;
-         base_height = geom->base_height;
+         unsigned base_width  = geom->base_width;
+         unsigned base_height = geom->base_height;
 
          // Get around division by zero errors
          if (base_width == 0)
