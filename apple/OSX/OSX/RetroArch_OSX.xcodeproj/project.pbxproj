@@ -330,6 +330,7 @@
 					"-DHAVE_NETPLAY",
 					"-DRARCH_INTERNAL",
 					"-DHAVE_THREADS",
+					"-DHAVE_DYLIB",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;
@@ -385,6 +386,7 @@
 					"-DHAVE_NETPLAY",
 					"-DRARCH_INTERNAL",
 					"-DHAVE_THREADS",
+					"-DHAVE_DYLIB",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;
