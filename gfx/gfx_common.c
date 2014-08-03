@@ -83,7 +83,7 @@ static void gfx_dwm_shutdown(void)
 static void gfx_init_dwm(void)
 {
    static bool inited;
-   }
+
    if (inited)
       return;
    inited = true;
