@@ -517,7 +517,8 @@ bool menu_replace_config(const char *path)
 bool menu_save_new_config(void)
 {
    char config_dir[PATH_MAX], config_name[PATH_MAX], config_path[PATH_MAX], msg[512];
-   bool ret, found_path = false;
+   bool ret = false;
+   bool found_path = false;
 
    *config_dir = '\0';
 

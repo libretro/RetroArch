@@ -2408,7 +2408,9 @@ static void check_shader_dir(void)
 {
    static bool old_pressed_next;
    static bool old_pressed_prev;
-   bool should_apply, pressed_next, pressed_prev = false;
+   bool should_apply = false;
+   bool pressed_next = false;
+   bool pressed_prev = false;
 
    if (!g_extern.shader_dir.list || !driver.video->set_shader)
       return;
