@@ -2406,8 +2406,8 @@ static void check_turbo(void)
 
 static void check_shader_dir(void)
 {
-   static bool old_pressed_next;
-   static bool old_pressed_prev;
+   static bool old_pressed_next = false;
+   static bool old_pressed_prev = false;
    bool should_apply = false;
    bool pressed_next = false;
    bool pressed_prev = false;
