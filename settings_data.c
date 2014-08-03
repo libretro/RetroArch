@@ -333,8 +333,6 @@ void setting_data_set_with_string_representation(const rarch_setting_t* setting,
          }
          break;
       case ST_PATH:
-         strlcpy(setting->value.string, value, setting->size);
-         break;
       case ST_STRING:
          strlcpy(setting->value.string, value, setting->size);
          break;
@@ -367,8 +365,6 @@ const char* setting_data_get_string_representation(const rarch_setting_t* settin
          snprintf(buffer, length, "%f", *setting->value.fraction);
          break;
       case ST_PATH:
-         strlcpy(buffer, setting->value.string, length);
-         break;
       case ST_STRING:
          strlcpy(buffer, setting->value.string, length);
          break;
@@ -414,7 +410,7 @@ rarch_setting_t setting_data_int_setting(const char* name, const char* short_des
 {
     rarch_setting_t result = { ST_INT, name, sizeof(int), short_description, group, subgroup };
     result.change_handler = change_handler;
-   result.read_handler = read_handler;
+    result.read_handler = read_handler;
     result.value.integer = target;
     result.default_value.integer = default_value;
     return result;
