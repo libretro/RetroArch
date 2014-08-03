@@ -410,7 +410,8 @@ static void menu_common_entries_init(menu_handle_t *menu, unsigned menu_type)
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "assets_directory")))
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_ASSETS_DIR_PATH, 0);
          file_list_push(menu->selection_buf, "Config Directory", MENU_CONFIG_DIR_PATH, 0);
-         file_list_push(menu->selection_buf, "Core Directory", MENU_LIBRETRO_DIR_PATH, 0);
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "libretro_dir_path")))
+            file_list_push(menu->selection_buf, current_setting->short_description, MENU_LIBRETRO_DIR_PATH, 0);
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "libretro_info_path")))
             file_list_push(menu->selection_buf, current_setting->short_description, MENU_LIBRETRO_INFO_DIR_PATH, 0);
 
@@ -2606,7 +2607,8 @@ static int menu_common_iterate(unsigned action)
             }
             else if (menu_type == MENU_LIBRETRO_DIR_PATH)
             {
-               strlcpy(g_settings.libretro_directory, dir, sizeof(g_settings.libretro_directory));
+               if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "libretro_dir_path")))
+                  menu_common_setting_set_current_string_dir(current_setting, dir);
 
                if (driver.menu_ctx && driver.menu_ctx->init_core_info)
                   driver.menu_ctx->init_core_info(driver.menu);

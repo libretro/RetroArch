@@ -964,6 +964,8 @@ static void general_read_handler(const void *data)
         strlcpy(setting->value.string, g_settings.libretro, setting->size);
     else if (!strcmp(setting->name, "libretro_info_path"))
         strlcpy(setting->value.string, g_settings.libretro_info_path, setting->size);
+    else if (!strcmp(setting->name, "libretro_dir_path"))
+        strlcpy(setting->value.string, g_settings.libretro_directory, setting->size);
     else if (!strcmp(setting->name, "core_options_path"))
         strlcpy(setting->value.string, g_settings.core_options_path, setting->size);
     else if (!strcmp(setting->name, "cheat_database_path"))
@@ -1024,6 +1026,7 @@ static void general_write_handler(const void *data)
    bool has_set_overlay_init      = false;
    bool has_set_overlay_free      = false;
    bool has_set_dsp_init          = false;
+   bool has_set_libretro_dir      = false;
    const rarch_setting_t *setting = (const rarch_setting_t*)data;
 
    if (!setting)
@@ -1310,6 +1313,8 @@ static void general_write_handler(const void *data)
       strlcpy(g_settings.libretro, setting->value.string, sizeof(g_settings.libretro));
    else if (!strcmp(setting->name, "libretro_info_path"))
       strlcpy(g_settings.libretro_info_path, setting->value.string, sizeof(g_settings.libretro_info_path));
+   else if (!strcmp(setting->name, "libretro_dir_path"))
+      strlcpy(g_settings.libretro_directory, setting->value.string, sizeof(g_settings.libretro_directory));
    else if (!strcmp(setting->name, "core_options_path"))
       strlcpy(g_settings.core_options_path, setting->value.string, sizeof(g_settings.core_options_path));
    else if (!strcmp(setting->name, "cheat_database_path"))
@@ -1386,6 +1391,13 @@ static void general_write_handler(const void *data)
       rarch_main_command(RARCH_CMD_OVERLAY_INIT);
    if (has_set_dsp_init)
       rarch_main_command(RARCH_CMD_DSP_FILTER_INIT);
+   if (has_set_libretro_dir)
+   {
+#ifdef HAVE_MENU
+      if (driver.menu_ctx && driver.menu_ctx->init_core_info)
+         driver.menu_ctx->init_core_info(driver.menu);
+#endif
+   }
 }
 
 #define NEXT (list[index++])
@@ -1729,6 +1741,7 @@ rarch_setting_t* setting_data_get_list(void)
 
 #endif
          CONFIG_PATH(g_settings.libretro,                   "libretro_path",              "Libretro Path",              "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)                WITH_FLAGS(SD_FLAG_ALLOW_EMPTY)
+         CONFIG_PATH(g_settings.libretro_directory,         "libretro_dir_path",         "Core Directory",              g_defaults.core_dir ? g_defaults.core_dir : "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)   WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
          CONFIG_PATH(g_settings.libretro_info_path,         "libretro_info_path",         "Core Info Directory",        g_defaults.core_info_dir ? g_defaults.core_info_dir : "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)   WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
          CONFIG_PATH(g_settings.core_options_path,          "core_options_path",          "Core Options Path",          "", "Paths", SUBGROUP_NAME, general_write_handler, general_read_handler)                WITH_FLAGS(SD_FLAG_ALLOW_EMPTY)
          CONFIG_PATH(g_settings.cheat_database,             "cheat_database_path",        "Cheat Database",             "", "Paths", SUBGROUP_NAME, general_write_handler, general_read_handler)                WITH_FLAGS(SD_FLAG_ALLOW_EMPTY)
