@@ -2463,16 +2463,17 @@ static void check_shader_dir(void)
 
 static void check_cheats(void)
 {
+   bool pressed_next, pressed_prev, pressed_toggle;
+   static bool old_pressed_prev    = false;
+   static bool old_pressed_next    = false;
+   static bool old_pressed_toggle  = false;
+
    if (!g_extern.cheat)
       return;
 
-   static bool old_pressed_prev;
-   static bool old_pressed_next;
-   static bool old_pressed_toggle;
-
-   bool pressed_next = input_key_pressed_func(RARCH_CHEAT_INDEX_PLUS);
-   bool pressed_prev = input_key_pressed_func(RARCH_CHEAT_INDEX_MINUS);
-   bool pressed_toggle = input_key_pressed_func(RARCH_CHEAT_TOGGLE);
+   pressed_next = input_key_pressed_func(RARCH_CHEAT_INDEX_PLUS);
+   pressed_prev = input_key_pressed_func(RARCH_CHEAT_INDEX_MINUS);
+   pressed_toggle = input_key_pressed_func(RARCH_CHEAT_TOGGLE);
 
    if (pressed_next && !old_pressed_next)
       cheat_manager_index_next(g_extern.cheat);
@@ -2613,9 +2614,9 @@ void rarch_disk_control_set_index(unsigned next_index)
 
 static void check_disk(void)
 {
-   static bool old_pressed_eject;
-   static bool old_pressed_next;
    bool pressed_eject, pressed_next;
+   static bool old_pressed_eject    = false;
+   static bool old_pressed_next     = false;
    const struct retro_disk_control_callback *control = 
       (const struct retro_disk_control_callback*)&g_extern.system.disk_control;
 
@@ -2650,8 +2651,8 @@ static void check_disk(void)
 
 static void check_screenshot(void)
 {
-   static bool old_pressed;
-   bool pressed = input_key_pressed_func(RARCH_SCREENSHOT);
+   static bool old_pressed = false;
+   bool pressed            = input_key_pressed_func(RARCH_SCREENSHOT);
 
    if (pressed && !old_pressed)
       take_screenshot();
@@ -2661,8 +2662,8 @@ static void check_screenshot(void)
 
 static void check_mute(void)
 {
-   static bool old_pressed;
-   bool pressed = input_key_pressed_func(RARCH_MUTE);
+   static bool old_pressed = false;
+   bool pressed            = input_key_pressed_func(RARCH_MUTE);
 
    if (!g_extern.audio_active)
       return;
@@ -2723,8 +2724,8 @@ static void check_volume(void)
 
 static void check_netplay_flip(void)
 {
-   static bool old_pressed;
-   bool pressed = input_key_pressed_func(RARCH_NETPLAY_FLIP);
+   static bool old_pressed = false;
+   bool pressed            = input_key_pressed_func(RARCH_NETPLAY_FLIP);
 
    if (pressed && !old_pressed)
       netplay_flip_players(g_extern.netplay);
@@ -2756,7 +2757,7 @@ void rarch_check_block_hotkey(void)
 #ifdef HAVE_OVERLAY
 void rarch_check_overlay(void)
 {
-   static bool old_pressed;
+   static bool old_pressed = false;
    bool pressed;
 
    if (!driver.overlay)
@@ -2772,9 +2773,9 @@ void rarch_check_overlay(void)
 
 static void check_grab_mouse_toggle(void)
 {
-   static bool old_pressed;
-   static bool grab_mouse_state;
-   bool pressed = input_key_pressed_func(RARCH_GRAB_MOUSE_TOGGLE) &&
+   static bool old_pressed       = false;
+   static bool grab_mouse_state  = false;
+   bool pressed                  = input_key_pressed_func(RARCH_GRAB_MOUSE_TOGGLE) &&
       driver.input->grab_mouse;
 
    if (pressed && !old_pressed)
@@ -3075,7 +3076,7 @@ error:
 static inline bool check_enter_menu(void)
 {
    static bool old_rmenu_toggle = true;
-   bool rmenu_toggle = input_key_pressed_func(RARCH_MENU_TOGGLE) || (g_extern.libretro_dummy && !old_rmenu_toggle);
+   bool rmenu_toggle            = input_key_pressed_func(RARCH_MENU_TOGGLE) || (g_extern.libretro_dummy && !old_rmenu_toggle);
 
    // Always go into menu if dummy core is loaded.
    if (rmenu_toggle && !old_rmenu_toggle)
@@ -3095,7 +3096,7 @@ static inline bool check_enter_menu(void)
 
 static inline void update_frame_time(void)
 {
-   retro_time_t time, delta = 0;
+   retro_time_t time = 0, delta = 0;
    bool is_locked_fps;
 
    if (!g_extern.system.frame_time.callback)
@@ -3122,7 +3123,7 @@ static inline void update_frame_time(void)
 
 static inline void limit_frame_time(void)
 {
-   retro_time_t current, target, to_sleep_ms;
+   retro_time_t current = 0, target = 0, to_sleep_ms = 0;
 
    if (g_settings.fastforward_ratio < 0.0f)
       return;
