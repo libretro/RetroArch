@@ -28,7 +28,7 @@
 #include <drm_fourcc.h>
 #include <libdrm/exynos_drmif.h>
 
-#include <exynos/fimg2d.h>
+#include <exynos/exynos_fimg2d.h>
 
 #include "../general.h"
 #include "gfx_common.h"
