@@ -24,13 +24,15 @@
 struct item_file
 {
    char *path;
+   char *label;
    char *alt;
    unsigned type;
    size_t directory_ptr;
 };
 
 void file_list_push(file_list_t *list,
-      const char *path, unsigned type, size_t directory_ptr)
+      const char *path, const char *label,
+      unsigned type, size_t directory_ptr)
 {
    if (!list)
       return;
@@ -43,9 +45,11 @@ void file_list_push(file_list_t *list,
    }
 
    if (driver.menu_ctx && driver.menu_ctx->list_insert)
-      driver.menu_ctx->list_insert(list, path, list->size);
+      driver.menu_ctx->list_insert(list, path, label, list->size);
 
    list->list[list->size].path = strdup(path);
+   list->list[list->size].label = strdup(label);
+
    list->list[list->size].alt = NULL;
    list->list[list->size].type = type;
    list->list[list->size].directory_ptr = directory_ptr;
@@ -70,7 +74,9 @@ void file_list_pop(file_list_t *list, size_t *directory_ptr)
    {
       if (driver.menu_ctx && driver.menu_ctx->list_delete)
          driver.menu_ctx->list_delete(list, list->size);
-      free(list->list[--list->size].path);
+      --list->size;
+      free(list->list[list->size].path);
+      free(list->list[list->size].label);
    }
 
    if (directory_ptr)
@@ -85,7 +91,10 @@ void file_list_free(file_list_t *list)
    size_t i;
 
    for (i = 0; i < list->size; i++)
+   {
       free(list->list[i].path);
+      free(list->list[i].label);
+   }
    free(list->list);
    free(list);
 }
@@ -97,6 +106,7 @@ void file_list_clear(file_list_t *list)
    for (i = 0; i < list->size; i++)
    {
       free(list->list[i].path);
+      free(list->list[i].label);
       free(list->list[i].alt);
    }
 

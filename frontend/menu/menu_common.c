@@ -247,7 +247,7 @@ void *menu_init(const void *data)
 #ifdef HAVE_SHADER_MANAGER
    menu->shader = (struct gfx_shader*)calloc(1, sizeof(struct gfx_shader));
 #endif
-   file_list_push(menu->menu_stack, "", MENU_SETTINGS, 0);
+   file_list_push(menu->menu_stack, "", "", MENU_SETTINGS, 0);
    menu_clear_navigation(menu);
    menu->push_start_screen = g_settings.menu_show_start_screen;
    g_settings.menu_show_start_screen = false;
