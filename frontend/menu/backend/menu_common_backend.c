@@ -2575,7 +2575,8 @@ static int menu_common_iterate(unsigned action)
             }
             else if (menu_type == MENU_SAVEFILE_DIR_PATH)
             {
-               strlcpy(g_extern.savefile_dir, dir, sizeof(g_extern.savefile_dir));
+               if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "savefile_directory")))
+                  menu_common_setting_set_current_string_dir(current_setting, dir);
                menu_flush_stack_type(MENU_SETTINGS_PATH_OPTIONS);
             }
 #ifdef HAVE_OVERLAY
