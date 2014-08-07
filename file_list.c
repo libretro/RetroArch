@@ -20,6 +20,7 @@
 #include "driver.h"
 #include "compat/strcasestr.h"
 #include "msvc/msvc_compat.h"
+#include "settings_data.h"
 
 struct item_file
 {
@@ -28,6 +29,7 @@ struct item_file
    char *alt;
    unsigned type;
    size_t directory_ptr;
+   struct rarch_setting_t *setting;
 };
 
 void file_list_push(file_list_t *list,
@@ -47,8 +49,21 @@ void file_list_push(file_list_t *list,
    if (driver.menu_ctx && driver.menu_ctx->list_insert)
       driver.menu_ctx->list_insert(list, path, label, list->size);
 
-   list->list[list->size].path = strdup(path);
    list->list[list->size].label = strdup(label);
+   list->list[list->size].setting = NULL;
+
+   if (label && label[0] != '\0')
+   {
+      rarch_setting_t *setting_data = (rarch_setting_t *)setting_data_get_list();
+
+      if (setting_data)
+         list->list[list->size].setting = (rarch_setting_t*)setting_data_find_setting(setting_data, label);
+   }
+
+   if (list->list[list->size].setting)
+      list->list[list->size].path = strdup(list->list[list->size].setting->short_description);
+   else
+      list->list[list->size].path = strdup(path);
 
    list->list[list->size].alt = NULL;
    list->list[list->size].type = type;

@@ -64,11 +64,6 @@ static void menu_common_entries_init(menu_handle_t *menu, unsigned menu_type)
 {
    unsigned i, last;
    char tmp[256];
-   rarch_setting_t *current_setting;
-   rarch_setting_t *setting_data = (rarch_setting_t *)setting_data_get_list();
-
-   if (!setting_data)
-      return;
 
    switch (menu_type)
    {
@@ -128,53 +123,31 @@ static void menu_common_entries_init(menu_handle_t *menu, unsigned menu_type)
 #endif
       case MENU_SETTINGS_GENERAL_OPTIONS:
          file_list_clear(menu->selection_buf);
-         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "libretro_log_level")))
-            file_list_push(menu->selection_buf, current_setting->short_description, "libretro_log_level", MENU_SETTINGS_LIBRETRO_LOG_LEVEL, 0);
-         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "log_verbosity")))
-            file_list_push(menu->selection_buf, current_setting->short_description, "log_verbosity", MENU_SETTINGS_LOGGING_VERBOSITY, 0);
-         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "perfcnt_enable")))
-            file_list_push(menu->selection_buf, current_setting->short_description, "perfcnt_enable", MENU_SETTINGS_PERFORMANCE_COUNTERS_ENABLE, 0);
-         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "game_history_size")))
-            file_list_push(menu->selection_buf, current_setting->short_description, "game_history_size", MENU_CONTENT_HISTORY_SIZE, 0);
-         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "config_save_on_exit")))
-            file_list_push(menu->selection_buf, current_setting->short_description, "config_save_on_exit", MENU_SETTINGS_CONFIG_SAVE_ON_EXIT, 0);
-         if ((current_setting = setting_data_find_setting(setting_data, "core_specific_config")))
-            file_list_push(menu->selection_buf, current_setting->short_description, "core_specific_config", MENU_SETTINGS_PER_CORE_CONFIG, 0);
-         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "video_gpu_screenshot")))
-            file_list_push(menu->selection_buf, current_setting->short_description, "video_gpu_screenshot", MENU_SETTINGS_GPU_SCREENSHOT, 0);
-         if ((current_setting = setting_data_find_setting(setting_data, "dummy_on_core_shutdown")))
-            file_list_push(menu->selection_buf, current_setting->short_description, "dummy_on_core_shutdown", MENU_SETTINGS_LOAD_DUMMY_ON_CORE_SHUTDOWN, 0);
-         if ((current_setting = setting_data_find_setting(setting_data, "fps_show")))
-            file_list_push(menu->selection_buf, current_setting->short_description, "fps_show", MENU_SETTINGS_DEBUG_TEXT, 0);
-         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "fastforward_ratio")))
-            file_list_push(menu->selection_buf, current_setting->short_description, "fastforward_ratio", MENU_SETTINGS_FASTFORWARD_RATIO, 0);
-         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "slowmotion_ratio")))
-            file_list_push(menu->selection_buf, current_setting->short_description, "slowmotion_ratio", MENU_SETTINGS_SLOWMOTION_RATIO, 0);
-
-         if ((current_setting = setting_data_find_setting(setting_data, "rewind_enable")))
-            file_list_push(menu->selection_buf, current_setting->short_description, "rewind_enable", MENU_SETTINGS_REWIND_ENABLE, 0);
-
-         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "rewind_granularity")))
-            file_list_push(menu->selection_buf, current_setting->short_description, "rewind_granularity", MENU_SETTINGS_REWIND_GRANULARITY, 0);
-         if ((current_setting = setting_data_find_setting(setting_data, "block_sram_overwrite")))
-            file_list_push(menu->selection_buf, current_setting->short_description, "block_sram_overwrite", MENU_SETTINGS_BLOCK_SRAM_OVERWRITE, 0);
+         file_list_push(menu->selection_buf, "", "libretro_log_level", MENU_SETTINGS_LIBRETRO_LOG_LEVEL, 0);
+         file_list_push(menu->selection_buf, "", "log_verbosity", MENU_SETTINGS_LOGGING_VERBOSITY, 0);
+         file_list_push(menu->selection_buf, "", "perfcnt_enable", MENU_SETTINGS_PERFORMANCE_COUNTERS_ENABLE, 0);
+         file_list_push(menu->selection_buf, "", "game_history_size", MENU_CONTENT_HISTORY_SIZE, 0);
+         file_list_push(menu->selection_buf, "", "config_save_on_exit", MENU_SETTINGS_CONFIG_SAVE_ON_EXIT, 0);
+         file_list_push(menu->selection_buf, "", "core_specific_config", MENU_SETTINGS_PER_CORE_CONFIG, 0);
+         file_list_push(menu->selection_buf, "", "video_gpu_screenshot", MENU_SETTINGS_GPU_SCREENSHOT, 0);
+         file_list_push(menu->selection_buf, "", "dummy_on_core_shutdown", MENU_SETTINGS_LOAD_DUMMY_ON_CORE_SHUTDOWN, 0);
+         file_list_push(menu->selection_buf, "", "fps_show", MENU_SETTINGS_DEBUG_TEXT, 0);
+         file_list_push(menu->selection_buf, "", "fastforward_ratio", MENU_SETTINGS_FASTFORWARD_RATIO, 0);
+         file_list_push(menu->selection_buf, "", "slowmotion_ratio", MENU_SETTINGS_SLOWMOTION_RATIO, 0);
+         file_list_push(menu->selection_buf, "", "rewind_enable", MENU_SETTINGS_REWIND_ENABLE, 0);
+         file_list_push(menu->selection_buf, "", "rewind_granularity", MENU_SETTINGS_REWIND_GRANULARITY, 0);
+         file_list_push(menu->selection_buf, "", "block_sram_overwrite", MENU_SETTINGS_BLOCK_SRAM_OVERWRITE, 0);
 #ifdef HAVE_THREADS
-         if ((current_setting = setting_data_find_setting(setting_data, "autosave_interval")))
-            file_list_push(menu->selection_buf, current_setting->short_description, "autosave_interval", MENU_SETTINGS_SRAM_AUTOSAVE, 0);
+         file_list_push(menu->selection_buf, "", "autosave_interval", MENU_SETTINGS_SRAM_AUTOSAVE, 0);
 #endif
-         if ((current_setting = setting_data_find_setting(setting_data, "video_disable_composition")))
-            file_list_push(menu->selection_buf, current_setting->short_description, "video_disable_composition", MENU_SETTINGS_WINDOW_COMPOSITING_ENABLE, 0);
-         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "pause_nonactive")))
-            file_list_push(menu->selection_buf, current_setting->short_description, "pause_nonactive", MENU_SETTINGS_PAUSE_IF_WINDOW_FOCUS_LOST, 0);
-         if ((current_setting = setting_data_find_setting(setting_data, "savestate_auto_save")))
-            file_list_push(menu->selection_buf, current_setting->short_description, "savestate_auto_save", MENU_SETTINGS_SAVESTATE_AUTO_SAVE, 0);
-         if ((current_setting = setting_data_find_setting(setting_data, "savestate_auto_load")))
-            file_list_push(menu->selection_buf, current_setting->short_description, "savestate_auto_load", MENU_SETTINGS_SAVESTATE_AUTO_LOAD, 0);
+         file_list_push(menu->selection_buf, "", "video_disable_composition", MENU_SETTINGS_WINDOW_COMPOSITING_ENABLE, 0);
+         file_list_push(menu->selection_buf, "", "pause_nonactive", MENU_SETTINGS_PAUSE_IF_WINDOW_FOCUS_LOST, 0);
+         file_list_push(menu->selection_buf, "", "savestate_auto_save", MENU_SETTINGS_SAVESTATE_AUTO_SAVE, 0);
+         file_list_push(menu->selection_buf, "", "savestate_auto_load", MENU_SETTINGS_SAVESTATE_AUTO_LOAD, 0);
          break;
       case MENU_SETTINGS_VIDEO_OPTIONS:
          file_list_clear(menu->selection_buf);
-         if ((current_setting = setting_data_find_setting(setting_data, "video_shared_context")))
-            file_list_push(menu->selection_buf, current_setting->short_description, "video_shared_context", MENU_SETTINGS_VIDEO_HW_SHARED_CONTEXT, 0);
+         file_list_push(menu->selection_buf, "", "video_shared_context", MENU_SETTINGS_VIDEO_HW_SHARED_CONTEXT, 0);
 #if defined(GEKKO) || defined(__CELLOS_LV2__)
          file_list_push(menu->selection_buf, "Screen Resolution", "", MENU_SETTINGS_VIDEO_RESOLUTION, 0);
 #endif
@@ -182,8 +155,7 @@ static void menu_common_entries_init(menu_handle_t *menu, unsigned menu_type)
 #if defined(__CELLOS_LV2__)
          file_list_push(menu->selection_buf, "PAL60 Mode", "", MENU_SETTINGS_VIDEO_PAL60, 0);
 #endif
-         if ((current_setting = setting_data_find_setting(setting_data, "video_smooth")))
-            file_list_push(menu->selection_buf, current_setting->short_description, "", MENU_SETTINGS_VIDEO_FILTER, 0);
+         file_list_push(menu->selection_buf, "", "video_smooth", MENU_SETTINGS_VIDEO_FILTER, 0);
 #ifdef HW_RVL
          file_list_push(menu->selection_buf, "VI Trap filtering", "", MENU_SETTINGS_VIDEO_SOFT_FILTER, 0);
 #endif
@@ -194,54 +166,36 @@ static void menu_common_entries_init(menu_handle_t *menu, unsigned menu_type)
          file_list_push(menu->selection_buf, "Soft filtering", "", MENU_SETTINGS_SOFT_DISPLAY_FILTER, 0);
          file_list_push(menu->selection_buf, "Flicker filtering", "", MENU_SETTINGS_FLICKER_FILTER, 0);
 #endif
-         if ((current_setting = setting_data_find_setting(setting_data, "video_scale_integer")))
-            file_list_push(menu->selection_buf, current_setting->short_description, "", MENU_SETTINGS_VIDEO_INTEGER_SCALE, 0);
-         if ((current_setting = setting_data_find_setting(setting_data, "aspect_ratio_index")))
-            file_list_push(menu->selection_buf, current_setting->short_description, "", MENU_SETTINGS_VIDEO_ASPECT_RATIO, 0);
+         file_list_push(menu->selection_buf, "", "video_scale_integer", MENU_SETTINGS_VIDEO_INTEGER_SCALE, 0);
+         file_list_push(menu->selection_buf, "", "aspect_ratio_index", MENU_SETTINGS_VIDEO_ASPECT_RATIO, 0);
          file_list_push(menu->selection_buf, "Custom Ratio", "", MENU_SETTINGS_CUSTOM_VIEWPORT, 0);
 #if !defined(RARCH_CONSOLE) && !defined(RARCH_MOBILE)
-         if ((current_setting = setting_data_find_setting(setting_data, "video_fullscreen")))
-            file_list_push(menu->selection_buf, current_setting->short_description, "", MENU_SETTINGS_TOGGLE_FULLSCREEN, 0);
+         file_list_push(menu->selection_buf, "", "video_fullscreen", MENU_SETTINGS_TOGGLE_FULLSCREEN, 0);
 #endif
-         if ((current_setting = setting_data_find_setting(setting_data, "video_rotation")))
-            file_list_push(menu->selection_buf, current_setting->short_description, "", MENU_SETTINGS_VIDEO_ROTATION, 0);
-         if ((current_setting = setting_data_find_setting(setting_data, "video_vsync")))
-            file_list_push(menu->selection_buf, current_setting->short_description, "", MENU_SETTINGS_VIDEO_VSYNC, 0);
-         if ((current_setting = setting_data_find_setting(setting_data, "video_hard_sync")))
-            file_list_push(menu->selection_buf, current_setting->short_description, "", MENU_SETTINGS_VIDEO_HARD_SYNC, 0);
-         if ((current_setting = setting_data_find_setting(setting_data, "video_hard_sync_frames")))
-            file_list_push(menu->selection_buf, current_setting->short_description, "", MENU_SETTINGS_VIDEO_HARD_SYNC_FRAMES, 0);
-
+         file_list_push(menu->selection_buf, "", "video_rotation", MENU_SETTINGS_VIDEO_ROTATION, 0);
+         file_list_push(menu->selection_buf, "", "video_vsync", MENU_SETTINGS_VIDEO_VSYNC, 0);
+         file_list_push(menu->selection_buf, "", "video_hard_sync", MENU_SETTINGS_VIDEO_HARD_SYNC, 0);
+         file_list_push(menu->selection_buf, "", "video_hard_sync_frames", MENU_SETTINGS_VIDEO_HARD_SYNC_FRAMES, 0);
 #if !defined(RARCH_MOBILE)
-         if ((current_setting = setting_data_find_setting(setting_data, "video_black_frame_insertion")))
-            file_list_push(menu->selection_buf, current_setting->short_description, "", MENU_SETTINGS_VIDEO_BLACK_FRAME_INSERTION, 0);
+         file_list_push(menu->selection_buf, "", "video_black_frame_insertion", MENU_SETTINGS_VIDEO_BLACK_FRAME_INSERTION, 0);
 #endif
-         if ((current_setting = setting_data_find_setting(setting_data, "video_swap_interval")))
-            file_list_push(menu->selection_buf, current_setting->short_description, "", MENU_SETTINGS_VIDEO_SWAP_INTERVAL, 0);
+         file_list_push(menu->selection_buf, "", "video_swap_interval", MENU_SETTINGS_VIDEO_SWAP_INTERVAL, 0);
 #if defined(HAVE_THREADS) && !defined(RARCH_CONSOLE)
-         if ((current_setting = setting_data_find_setting(setting_data, "video_threaded")))
-            file_list_push(menu->selection_buf, current_setting->short_description, "", MENU_SETTINGS_VIDEO_THREADED, 0);
+         file_list_push(menu->selection_buf, "", "video_threaded", MENU_SETTINGS_VIDEO_THREADED, 0);
 #endif
 #if !defined(RARCH_CONSOLE) && !defined(RARCH_MOBILE)
-         if ((current_setting = setting_data_find_setting(setting_data, "video_xscale")))
-            file_list_push(menu->selection_buf, current_setting->short_description, "", MENU_SETTINGS_VIDEO_WINDOW_SCALE_X, 0);
-         if ((current_setting = setting_data_find_setting(setting_data, "video_yscale")))
-            file_list_push(menu->selection_buf, current_setting->short_description, "", MENU_SETTINGS_VIDEO_WINDOW_SCALE_Y, 0);
+         file_list_push(menu->selection_buf, "", "video_xscale", MENU_SETTINGS_VIDEO_WINDOW_SCALE_X, 0);
+         file_list_push(menu->selection_buf, "", "video_yscale", MENU_SETTINGS_VIDEO_WINDOW_SCALE_Y, 0);
 #endif
-         if ((current_setting = setting_data_find_setting(setting_data, "video_crop_overscan")))
-            file_list_push(menu->selection_buf, current_setting->short_description, "", MENU_SETTINGS_VIDEO_CROP_OVERSCAN, 0);
-         if ((current_setting = setting_data_find_setting(setting_data, "video_monitor_index")))
-            file_list_push(menu->selection_buf, current_setting->short_description, "", MENU_SETTINGS_VIDEO_MONITOR_INDEX, 0);
-         if ((current_setting = setting_data_find_setting(setting_data, "video_refresh_rate")))
-            file_list_push(menu->selection_buf, current_setting->short_description, "", MENU_SETTINGS_VIDEO_REFRESH_RATE, 0);
+         file_list_push(menu->selection_buf, "", "video_crop_overscan", MENU_SETTINGS_VIDEO_CROP_OVERSCAN, 0);
+         file_list_push(menu->selection_buf, "", "video_monitor_index", MENU_SETTINGS_VIDEO_MONITOR_INDEX, 0);
+         file_list_push(menu->selection_buf, "", "video_refresh_rate", MENU_SETTINGS_VIDEO_REFRESH_RATE, 0);
          file_list_push(menu->selection_buf, "Estimated Refresh Rate", "", MENU_SETTINGS_VIDEO_REFRESH_RATE_AUTO, 0);
          break;
       case MENU_SETTINGS_FONT_OPTIONS:
          file_list_clear(menu->selection_buf);
-         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "video_font_enable")))
-            file_list_push(menu->selection_buf, current_setting->short_description, "", MENU_SETTINGS_FONT_ENABLE, 0);
-         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "video_font_size")))
-            file_list_push(menu->selection_buf, current_setting->short_description, "", MENU_SETTINGS_FONT_SIZE, 0);
+         file_list_push(menu->selection_buf, "", "video_font_enable", MENU_SETTINGS_FONT_ENABLE, 0);
+         file_list_push(menu->selection_buf, "", "video_font_size", MENU_SETTINGS_FONT_SIZE, 0);
          break;
       case MENU_SETTINGS_CORE_OPTIONS:
          file_list_clear(menu->selection_buf);
@@ -357,12 +311,10 @@ static void menu_common_entries_init(menu_handle_t *menu, unsigned menu_type)
       case MENU_SETTINGS_PRIVACY_OPTIONS:
          file_list_clear(menu->selection_buf);
 #ifdef HAVE_CAMERA
-         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "camera_allow")))
-            file_list_push(menu->selection_buf, current_setting->short_description, "", MENU_SETTINGS_PRIVACY_CAMERA_ALLOW, 0);
+         file_list_push(menu->selection_buf, "", "camera_allow", MENU_SETTINGS_PRIVACY_CAMERA_ALLOW, 0);
 #endif
 #ifdef HAVE_LOCATION
-         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "location_allow")))
-            file_list_push(menu->selection_buf, current_setting->short_description, "", MENU_SETTINGS_PRIVACY_LOCATION_ALLOW, 0);
+         file_list_push(menu->selection_buf, "", "location_allow", MENU_SETTINGS_PRIVACY_LOCATION_ALLOW, 0);
 #endif
          break;
       case MENU_SETTINGS_DISK_OPTIONS:
@@ -372,77 +324,51 @@ static void menu_common_entries_init(menu_handle_t *menu, unsigned menu_type)
          break;
       case MENU_SETTINGS_OVERLAY_OPTIONS:
          file_list_clear(menu->selection_buf);
-         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "input_overlay")))
-            file_list_push(menu->selection_buf, current_setting->short_description, "", MENU_SETTINGS_OVERLAY_PRESET, 0);
-         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "input_overlay_opacity")))
-            file_list_push(menu->selection_buf, current_setting->short_description, "", MENU_SETTINGS_OVERLAY_OPACITY, 0);
-         if ((current_setting = setting_data_find_setting(setting_data, "input_overlay_scale")))
-            file_list_push(menu->selection_buf, current_setting->short_description, "", MENU_SETTINGS_OVERLAY_SCALE, 0);
+         file_list_push(menu->selection_buf, "", "input_overlay", MENU_SETTINGS_OVERLAY_PRESET, 0);
+         file_list_push(menu->selection_buf, "", "input_overlay_opacity", MENU_SETTINGS_OVERLAY_OPACITY, 0);
+         file_list_push(menu->selection_buf, "", "input_overlay_scale", MENU_SETTINGS_OVERLAY_SCALE, 0);
          break;
       case MENU_SETTINGS_USER_OPTIONS:
          file_list_clear(menu->selection_buf);
-         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "netplay_nickname")))
-            file_list_push(menu->selection_buf, current_setting->short_description, "", MENU_SETTINGS_NETPLAY_NICKNAME, 0);
-         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "user_language")))
-            file_list_push(menu->selection_buf, current_setting->short_description, "", MENU_SETTINGS_USER_LANGUAGE, 0);
+         file_list_push(menu->selection_buf, "", "netplay_nickname", MENU_SETTINGS_NETPLAY_NICKNAME, 0);
+         file_list_push(menu->selection_buf, "", "user_language", MENU_SETTINGS_USER_LANGUAGE, 0);
          break;
 #ifdef HAVE_NETPLAY
       case MENU_SETTINGS_NETPLAY_OPTIONS:
          file_list_clear(menu->selection_buf);
-         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "netplay_enable")))
-            file_list_push(menu->selection_buf, current_setting->short_description, "", MENU_SETTINGS_NETPLAY_ENABLE, 0);
-         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "netplay_mode")))
-            file_list_push(menu->selection_buf, current_setting->short_description, "", MENU_SETTINGS_NETPLAY_MODE, 0);
-         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "netplay_spectator_mode_enable")))
-            file_list_push(menu->selection_buf, current_setting->short_description, "", MENU_SETTINGS_NETPLAY_SPECTATOR_MODE_ENABLE, 0);
+         file_list_push(menu->selection_buf, "", "netplay_enable", MENU_SETTINGS_NETPLAY_ENABLE, 0);
+         file_list_push(menu->selection_buf, "", "netplay_mode", MENU_SETTINGS_NETPLAY_MODE, 0);
+         file_list_push(menu->selection_buf, "", "netplay_spectator_mode_enable", MENU_SETTINGS_NETPLAY_SPECTATOR_MODE_ENABLE, 0);
          file_list_push(menu->selection_buf, "Host IP Address", "", MENU_SETTINGS_NETPLAY_HOST_IP_ADDRESS, 0);
          file_list_push(menu->selection_buf, "TCP/UDP Port", "", MENU_SETTINGS_NETPLAY_TCP_UDP_PORT, 0);
-         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "netplay_delay_frames")))
-            file_list_push(menu->selection_buf, current_setting->short_description, "", MENU_SETTINGS_NETPLAY_DELAY_FRAMES, 0);
+         file_list_push(menu->selection_buf, "", "netplay_delay_frames", MENU_SETTINGS_NETPLAY_DELAY_FRAMES, 0);
 #endif
          break;
       case MENU_SETTINGS_PATH_OPTIONS:
          file_list_clear(menu->selection_buf);
-         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "rgui_browser_directory")))
-            file_list_push(menu->selection_buf, current_setting->short_description, "", MENU_BROWSER_DIR_PATH, 0);
-         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "content_directory")))
-            file_list_push(menu->selection_buf, current_setting->short_description, "", MENU_CONTENT_DIR_PATH, 0);
-         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "assets_directory")))
-            file_list_push(menu->selection_buf, current_setting->short_description, "", MENU_ASSETS_DIR_PATH, 0);
+         file_list_push(menu->selection_buf, "", "rgui_browser_directory", MENU_BROWSER_DIR_PATH, 0);
+         file_list_push(menu->selection_buf, "", "content_directory", MENU_CONTENT_DIR_PATH, 0);
+         file_list_push(menu->selection_buf, "", "assets_directory", MENU_ASSETS_DIR_PATH, 0);
          file_list_push(menu->selection_buf, "Config Directory", "", MENU_CONFIG_DIR_PATH, 0);
-         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "libretro_dir_path")))
-            file_list_push(menu->selection_buf, current_setting->short_description, "", MENU_LIBRETRO_DIR_PATH, 0);
-         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "libretro_info_path")))
-            file_list_push(menu->selection_buf, current_setting->short_description, "", MENU_LIBRETRO_INFO_DIR_PATH, 0);
-
-         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "game_history_path")))
-            file_list_push(menu->selection_buf, current_setting->short_description, "", MENU_CONTENT_HISTORY_PATH, 0);
+         file_list_push(menu->selection_buf, "", "libretro_dir_path", MENU_LIBRETRO_DIR_PATH, 0);
+         file_list_push(menu->selection_buf, "", "libretro_info_path", MENU_LIBRETRO_INFO_DIR_PATH, 0);
+         file_list_push(menu->selection_buf, "", "game_history_path", MENU_CONTENT_HISTORY_PATH, 0);
 #ifdef HAVE_DYLIB
          file_list_push(menu->selection_buf, "Software Filter Directory", "", MENU_FILTER_DIR_PATH, 0);
 #endif
          file_list_push(menu->selection_buf, "DSP Filter Directory", "", MENU_DSP_FILTER_DIR_PATH, 0);
 #ifdef HAVE_SHADER_MANAGER
-         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "video_shader_dir")))
-            file_list_push(menu->selection_buf, current_setting->short_description, "", MENU_SHADER_DIR_PATH, 0);
+         file_list_push(menu->selection_buf, "", "video_shader_dir", MENU_SHADER_DIR_PATH, 0);
 #endif
-         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "savestate_directory")))
-            file_list_push(menu->selection_buf, current_setting->short_description, "", MENU_SAVESTATE_DIR_PATH, 0);
-         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "savefile_directory")))
-            file_list_push(menu->selection_buf, current_setting->short_description, "", MENU_SAVEFILE_DIR_PATH, 0);
+         file_list_push(menu->selection_buf, "", "savestate_directory", MENU_SAVESTATE_DIR_PATH, 0);
+         file_list_push(menu->selection_buf, "", "savefile_directory", MENU_SAVEFILE_DIR_PATH, 0);
 #ifdef HAVE_OVERLAY
-         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "overlay_directory")))
-            file_list_push(menu->selection_buf, current_setting->short_description, "", MENU_OVERLAY_DIR_PATH, 0);
+         file_list_push(menu->selection_buf, "", "overlay_directory", MENU_OVERLAY_DIR_PATH, 0);
 #endif
-         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "system_directory")))
-            file_list_push(menu->selection_buf, current_setting->short_description, "", MENU_SYSTEM_DIR_PATH, 0);
-
-         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "screenshot_directory")))
-            file_list_push(menu->selection_buf, current_setting->short_description, "", MENU_SCREENSHOT_DIR_PATH, 0);
-
+         file_list_push(menu->selection_buf, "", "system_directory", MENU_SYSTEM_DIR_PATH, 0);
+         file_list_push(menu->selection_buf, "", "screenshot_directory", MENU_SCREENSHOT_DIR_PATH, 0);
          file_list_push(menu->selection_buf, "Autoconfig Directory", "", MENU_AUTOCONFIG_DIR_PATH, 0);
-
-         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "extraction_directory")))
-            file_list_push(menu->selection_buf, current_setting->short_description, "", MENU_EXTRACTION_DIR_PATH, 0);
+         file_list_push(menu->selection_buf, "", "extraction_directory", MENU_EXTRACTION_DIR_PATH, 0);
          break;
       case MENU_SETTINGS_INPUT_OPTIONS:
          file_list_clear(menu->selection_buf);
@@ -450,17 +376,14 @@ static void menu_common_entries_init(menu_handle_t *menu, unsigned menu_type)
          file_list_push(menu->selection_buf, "Device", "", MENU_SETTINGS_BIND_DEVICE, 0);
          file_list_push(menu->selection_buf, "Device Type", "", MENU_SETTINGS_BIND_DEVICE_TYPE, 0);
          file_list_push(menu->selection_buf, "Analog D-pad Mode", "", MENU_SETTINGS_BIND_ANALOG_MODE, 0);
-         if ((current_setting = setting_data_find_setting(setting_data, "input_axis_threshold")))
-            file_list_push(menu->selection_buf, current_setting->short_description, "", MENU_SETTINGS_INPUT_AXIS_THRESHOLD, 0);
-         if ((current_setting = setting_data_find_setting(setting_data, "input_autodetect_enable")))
-            file_list_push(menu->selection_buf, current_setting->short_description, "",  MENU_SETTINGS_DEVICE_AUTODETECT_ENABLE, 0);
+         file_list_push(menu->selection_buf, "", "input_axis_threshold", MENU_SETTINGS_INPUT_AXIS_THRESHOLD, 0);
+         file_list_push(menu->selection_buf, "", "input_autodetect_enable",  MENU_SETTINGS_DEVICE_AUTODETECT_ENABLE, 0);
 
          file_list_push(menu->selection_buf, "Bind Mode", "", MENU_SETTINGS_CUSTOM_BIND_MODE, 0);
          file_list_push(menu->selection_buf, "Configure All (RetroPad)", "", MENU_SETTINGS_CUSTOM_BIND_ALL, 0);
          file_list_push(menu->selection_buf, "Default All (RetroPad)", "", MENU_SETTINGS_CUSTOM_BIND_DEFAULT_ALL, 0);
 #ifdef HAVE_OSK
-         if ((current_setting = setting_data_find_setting(setting_data, "osk_enable")))
-            file_list_push(menu->selection_buf, current_setting->short_description, "", MENU_SETTINGS_ONSCREEN_KEYBOARD_ENABLE, 0);
+         file_list_push(menu->selection_buf, "", "osk_enable", MENU_SETTINGS_ONSCREEN_KEYBOARD_ENABLE, 0);
 #endif
          last = (driver.input && driver.input->set_keybinds && !driver.input->get_joypad_driver) ? (MENU_SETTINGS_BIND_BEGIN + RETRO_DEVICE_ID_JOYPAD_R3) : MENU_SETTINGS_BIND_ALL_LAST;
          for (i = MENU_SETTINGS_BIND_BEGIN; i <= last; i++)
@@ -468,16 +391,11 @@ static void menu_common_entries_init(menu_handle_t *menu, unsigned menu_type)
          break;
       case MENU_SETTINGS_AUDIO_OPTIONS:
          file_list_clear(menu->selection_buf);
-         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "audio_dsp_plugin")))
-            file_list_push(menu->selection_buf, current_setting->short_description, "", MENU_SETTINGS_AUDIO_DSP_FILTER, 0);
-         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "audio_enable")))
-            file_list_push(menu->selection_buf, current_setting->short_description, "", MENU_SETTINGS_AUDIO_ENABLE, 0);
-         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "audio_mute")))
-            file_list_push(menu->selection_buf, current_setting->short_description, "", MENU_SETTINGS_AUDIO_MUTE, 0);
-         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "audio_latency")))
-            file_list_push(menu->selection_buf, current_setting->short_description, "", MENU_SETTINGS_AUDIO_LATENCY, 0);
-         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "audio_sync")))
-            file_list_push(menu->selection_buf, current_setting->short_description, "", MENU_SETTINGS_AUDIO_SYNC, 0);
+         file_list_push(menu->selection_buf, "", "audio_dsp_plugin", MENU_SETTINGS_AUDIO_DSP_FILTER, 0);
+         file_list_push(menu->selection_buf, "", "audio_enable", MENU_SETTINGS_AUDIO_ENABLE, 0);
+         file_list_push(menu->selection_buf, "", "audio_mute", MENU_SETTINGS_AUDIO_MUTE, 0);
+         file_list_push(menu->selection_buf, "", "audio_latency", MENU_SETTINGS_AUDIO_LATENCY, 0);
+         file_list_push(menu->selection_buf, "", "audio_sync", MENU_SETTINGS_AUDIO_SYNC, 0);
          file_list_push(menu->selection_buf, "Rate Control Delta", "", MENU_SETTINGS_AUDIO_CONTROL_RATE_DELTA, 0);
 #ifdef __CELLOS_LV2__
          file_list_push(menu->selection_buf, "System BGM Control", "", MENU_SETTINGS_CUSTOM_BGM_CONTROL_ENABLE, 0);
@@ -558,8 +476,7 @@ static void menu_common_entries_init(menu_handle_t *menu, unsigned menu_type)
          file_list_push(menu->selection_buf, "Core Information", "", MENU_SETTINGS_CORE_INFO, 0);
          file_list_push(menu->selection_buf, "Settings", "", MENU_SETTINGS_OPTIONS, 0);
 
-         if (g_extern.perfcnt_enable && (current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "perfcnt_enable")))
-            file_list_push(menu->selection_buf, current_setting->short_description, "", MENU_SETTINGS_PERFORMANCE_COUNTERS, 0);
+         file_list_push(menu->selection_buf, "", "perfcnt_enable", MENU_SETTINGS_PERFORMANCE_COUNTERS, 0);
 
          if (g_extern.main_is_init && !g_extern.libretro_dummy)
          {
