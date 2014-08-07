@@ -1007,7 +1007,7 @@ static int exynos_blend_font(struct exynos_data *pdata) {
   if (g2d_scale_and_blend(pdata->g2d, src, pdata->dst, 0, 0,
                           src->width, src->height, offset,
                           offset, pdata->width - offset,
-                          pdata->height - offset, G2D_OP_OVER) ||
+                          pdata->height - offset, G2D_OP_INTERPOLATE) ||
       g2d_exec(pdata->g2d)) {
     RARCH_ERR("video_exynos: failed to blend font\n");
     return -1;
