@@ -35,10 +35,10 @@ extern float C_ACTIVE_ZOOM;
 extern float C_PASSIVE_ZOOM;
 extern float I_ACTIVE_ZOOM;
 extern float I_PASSIVE_ZOOM;
-extern int ABOVE_SUBITEM_OFFSET;
-extern int ABOVE_ITEM_OFFSET;
+extern float ABOVE_SUBITEM_OFFSET;
+extern float ABOVE_ITEM_OFFSET;
 extern float ACTIVE_ITEM_FACTOR;
-extern int UNDER_ITEM_OFFSET;
+extern float UNDER_ITEM_OFFSET;
 
 typedef struct
 {
