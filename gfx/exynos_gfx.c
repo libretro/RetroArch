@@ -1125,7 +1125,7 @@ static int exynos_render_msg(struct exynos_video *vid,
 
   atlas = vid->font_driver->get_atlas(vid->font);
 
-  for (; msg; ++msg) {
+  for (; *msg; ++msg) {
     const struct font_glyph *glyph = vid->font_driver->get_glyph(vid->font, (uint8_t)*msg);
     if (glyph == NULL)
       continue;
