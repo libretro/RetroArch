@@ -64,10 +64,10 @@ float LABEL_MARGIN_LEFT;
 float LABEL_MARGIN_TOP;
 int ICON_SIZE;
 char ICON_DIR[3];
-int ABOVE_SUBITEM_OFFSET;
-int ABOVE_ITEM_OFFSET;
+float ABOVE_SUBITEM_OFFSET;
+float ABOVE_ITEM_OFFSET;
 float ACTIVE_ITEM_FACTOR;
-int UNDER_ITEM_OFFSET;
+float UNDER_ITEM_OFFSET;
 
 // Font variables
 void *font;
@@ -116,27 +116,30 @@ static void lakka_responsive(void)
    if (!gl)
       return;
 
+   C_ACTIVE_ZOOM = 1.0;
+   C_PASSIVE_ZOOM = 0.5;
+   I_ACTIVE_ZOOM = 1.0;
+   I_PASSIVE_ZOOM = 0.5;
+
+   ABOVE_SUBITEM_OFFSET = 1.5;
+   ABOVE_ITEM_OFFSET = -1.0;
+   ACTIVE_ITEM_FACTOR = 2.25;
+   UNDER_ITEM_OFFSET = 3.0;
+
    if (gl->win_width >= 2560)
    {
       ICON_SIZE = 256;
       HSPACING = 400;
-      VSPACING = 100;
-      C_ACTIVE_ZOOM = 1.0;
-      C_PASSIVE_ZOOM = 0.5;
-      I_ACTIVE_ZOOM = 0.75;
-      I_PASSIVE_ZOOM = 0.35;
+      VSPACING = 128;
       FONT_SIZE = 42.0;
       MARGIN_LEFT = 200.0;
-      MARGIN_TOP = 400.0;
+      MARGIN_TOP = 384.0;
       TITLE_MARGIN_LEFT = 20.0;
       TITLE_MARGIN_TOP = 50.0;
-      LABEL_MARGIN_LEFT = 128;
+      LABEL_MARGIN_LEFT = 128 + 16.0;
       LABEL_MARGIN_TOP = 15;
       strcpy(ICON_DIR, "256");
-      ABOVE_SUBITEM_OFFSET = 2;
-      ABOVE_ITEM_OFFSET = -1;
-      ACTIVE_ITEM_FACTOR = 2.4;
-      UNDER_ITEM_OFFSET = 3;
+
       return;
    }
 
@@ -144,23 +147,15 @@ static void lakka_responsive(void)
    {
       ICON_SIZE = 192;
       HSPACING = 300;
-      VSPACING = 75;
-      C_ACTIVE_ZOOM = 1.0;
-      C_PASSIVE_ZOOM = 0.5;
-      I_ACTIVE_ZOOM = 0.75;
-      I_PASSIVE_ZOOM = 0.35;
+      VSPACING = 96;
       FONT_SIZE = 32.0;
       MARGIN_LEFT = 156.0;
-      MARGIN_TOP = 300.0;
+      MARGIN_TOP = 288.0;
       TITLE_MARGIN_LEFT = 15.0;
       TITLE_MARGIN_TOP = 40.0;
-      LABEL_MARGIN_LEFT = 96;
-      LABEL_MARGIN_TOP = 11;
+      LABEL_MARGIN_LEFT = 96.0 + 12.0;
+      LABEL_MARGIN_TOP = 11.0;
       strcpy(ICON_DIR, "192");
-      ABOVE_SUBITEM_OFFSET = 2;
-      ABOVE_ITEM_OFFSET = -1;
-      ACTIVE_ITEM_FACTOR = 2.4;
-      UNDER_ITEM_OFFSET = 3;
       return;
    }
 
@@ -169,44 +164,28 @@ static void lakka_responsive(void)
       ICON_SIZE = 64;
       HSPACING = 100.0;
       VSPACING = 32.0;
-      C_ACTIVE_ZOOM = 1.0;
-      C_PASSIVE_ZOOM = 0.5;
-      I_ACTIVE_ZOOM = 1.0;
-      I_PASSIVE_ZOOM = 0.5;
       FONT_SIZE = 16;
       MARGIN_LEFT = 60.0;
-      MARGIN_TOP = 100.0;
+      MARGIN_TOP = 96.0;
       TITLE_MARGIN_LEFT = 10.0;
       TITLE_MARGIN_TOP = 24.0;
-      LABEL_MARGIN_LEFT = 35.0;
+      LABEL_MARGIN_LEFT = 32.0 + 4.0;
       LABEL_MARGIN_TOP = 6.0;
       strcpy(ICON_DIR, "64");
-      ABOVE_SUBITEM_OFFSET = 2;
-      ABOVE_ITEM_OFFSET = -1;
-      ACTIVE_ITEM_FACTOR = 2.25;
-      UNDER_ITEM_OFFSET = 3;
       return;
    }
 
    ICON_SIZE = 128;
    HSPACING = 200.0;
-   VSPACING = 50.0;
-   C_ACTIVE_ZOOM = 1.0;
-   C_PASSIVE_ZOOM = 0.5;
-   I_ACTIVE_ZOOM = 0.75;
-   I_PASSIVE_ZOOM = 0.35;
+   VSPACING = 64.0;
    FONT_SIZE = 24;
    MARGIN_LEFT = 120.0;
-   MARGIN_TOP = 200.0;
+   MARGIN_TOP = 192.0;
    TITLE_MARGIN_LEFT = 15.0;
    TITLE_MARGIN_TOP = 35.0;
-   LABEL_MARGIN_LEFT = 70.0;
-   LABEL_MARGIN_TOP = 11.0;
+   LABEL_MARGIN_LEFT = 64.0 + 8.0;
+   LABEL_MARGIN_TOP = 8.0;
    strcpy(ICON_DIR, "128");
-   ABOVE_SUBITEM_OFFSET = 2;
-   ABOVE_ITEM_OFFSET = -1;
-   ACTIVE_ITEM_FACTOR = 2.4;
-   UNDER_ITEM_OFFSET = 3;
 }
 
 static char *str_replace (const char *string, const char *substr, const char *replacement)
@@ -451,13 +430,13 @@ static void lakka_draw_subitems(int i, int j)
             && strcmp(g_extern.fullpath, &active_item->rom) == 0)
       {
          lakka_draw_icon(textures[TEXTURE_RESUME].id, 
-            MARGIN_LEFT + HSPACING*(i+2) + all_categories_x - ICON_SIZE/2.0, 
+            MARGIN_LEFT + HSPACING*(i+2.25) + all_categories_x - ICON_SIZE/2.0, 
             MARGIN_TOP + subitem->y + ICON_SIZE/2.0, 
             subitem->alpha, 
             0, 
             subitem->zoom);
          lakka_draw_text("Resume", 
-            MARGIN_LEFT + HSPACING*(i+2) + all_categories_x + LABEL_MARGIN_LEFT, 
+            MARGIN_LEFT + HSPACING*(i+2.25) + all_categories_x + LABEL_MARGIN_LEFT, 
             MARGIN_TOP + subitem->y + LABEL_MARGIN_TOP, 
             1, 
             subitem->alpha);
@@ -469,13 +448,13 @@ static void lakka_draw_subitems(int i, int j)
             strcmp(g_extern.fullpath, &active_item->rom) == 0))
       {
          lakka_draw_icon(subitem->icon, 
-               MARGIN_LEFT + HSPACING*(i+2) + all_categories_x - ICON_SIZE/2.0, 
+               MARGIN_LEFT + HSPACING*(i+2.25) + all_categories_x - ICON_SIZE/2.0, 
                MARGIN_TOP + subitem->y + ICON_SIZE/2.0, 
                subitem->alpha, 
                0, 
                subitem->zoom);
          lakka_draw_text(subitem->name, 
-               MARGIN_LEFT + HSPACING * (i+2) + all_categories_x + LABEL_MARGIN_LEFT, 
+               MARGIN_LEFT + HSPACING * (i+2.25) + all_categories_x + LABEL_MARGIN_LEFT, 
                MARGIN_TOP + subitem->y + LABEL_MARGIN_TOP, 
                1, 
                subitem->alpha);
