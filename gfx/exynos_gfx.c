@@ -166,10 +166,6 @@ struct exynos_data {
 #endif
 };
 
-static inline void put_pixel_argb4444(uint16_t *p, uint8_t r, uint8_t g, uint8_t b, uint8_t a) {
-  *p = (b >> 4) | ((g >> 4) << 4) | ((r >> 4) << 8) | ((a >> 4) << 12);
-}
-
 static inline unsigned align_common(unsigned i, unsigned j) {
   return (i + j - 1) & ~(j - 1);
 }
@@ -377,7 +373,7 @@ static int clear_buffer(struct g2d_context *g2d, struct g2d_image *img) {
 }
 
 /* Put a font glyph at a position in the buffer that is backing the G2D font image object. */
-static void put_glyph_rgba4444(struct exynos_data *pdata, const uint8_t *src, uint8_t *f_rgb,
+static void put_glyph_rgba4444(struct exynos_data *pdata, const uint8_t *src, uint16_t color,
                                unsigned g_width, unsigned g_height, unsigned g_pitch,
                                unsigned dst_x, unsigned dst_y) {
   const enum exynos_image_type buf_type = defaults[exynos_image_font].buf_type;
@@ -390,9 +386,9 @@ static void put_glyph_rgba4444(struct exynos_data *pdata, const uint8_t *src, ui
 
   for (y = 0; y < g_height; ++y, src += g_pitch, dst += buf_width) {
     for (x = 0; x < g_width; ++x) {
-      const uint8_t blend = src[x];
+      const uint16_t blend = src[x];
 
-      if (blend != 0) put_pixel_argb4444(&dst[x], f_rgb[0], f_rgb[1], f_rgb[2], blend);
+      dst[x] = color | ((blend << 8) & 0xf000);
     }
   }
 }
@@ -1007,7 +1003,7 @@ static int exynos_blend_font(struct exynos_data *pdata) {
   if (g2d_scale_and_blend(pdata->g2d, src, pdata->dst, 0, 0,
                           src->width, src->height, offset,
                           offset, pdata->width - offset,
-                          pdata->height - offset, G2D_OP_OVER) ||
+                          pdata->height - offset, G2D_OP_INTERPOLATE) ||
       g2d_exec(pdata->g2d)) {
     RARCH_ERR("video_exynos: failed to blend font\n");
     return -1;
@@ -1047,8 +1043,7 @@ struct exynos_video {
 
   void *font;
   const font_renderer_driver_t *font_driver;
-
-  uint8_t font_rgb[4];
+  uint16_t font_color; /* ARGB4444 */
 
   unsigned bytes_per_pixel;
 
@@ -1076,13 +1071,13 @@ static int exynos_init_font(struct exynos_video *vid) {
   if (font_renderer_create_default(&vid->font_driver, &vid->font,
       *g_settings.video.font_path ? g_settings.video.font_path : NULL,
       g_settings.video.font_size)) {
-    const int r = g_settings.video.msg_color_r * 255;
-    const int g = g_settings.video.msg_color_g * 255;
-    const int b = g_settings.video.msg_color_b * 255;
+    const int r = g_settings.video.msg_color_r * 15;
+    const int g = g_settings.video.msg_color_g * 15;
+    const int b = g_settings.video.msg_color_b * 15;
 
-    vid->font_rgb[0] = r < 0 ? 0 : (r > 255 ? 255 : r);
-    vid->font_rgb[1] = g < 0 ? 0 : (g > 255 ? 255 : g);
-    vid->font_rgb[2] = b < 0 ? 0 : (b > 255 ? 255 : b);
+    vid->font_color = ((b < 0 ? 0 : (b > 15 ? 15 : b)) << 0) |
+                      ((g < 0 ? 0 : (g > 15 ? 15 : g)) << 4) |
+                      ((r < 0 ? 0 : (r > 15 ? 15 : r)) << 8);
   } else {
     RARCH_ERR("video_exynos: creating font renderer failed\n");
     return -1;
@@ -1125,7 +1120,7 @@ static int exynos_render_msg(struct exynos_video *vid,
 
   atlas = vid->font_driver->get_atlas(vid->font);
 
-  for (; msg; ++msg) {
+  for (; *msg; ++msg) {
     const struct font_glyph *glyph = vid->font_driver->get_glyph(vid->font, (uint8_t)*msg);
     if (glyph == NULL)
       continue;
@@ -1158,7 +1153,7 @@ static int exynos_render_msg(struct exynos_video *vid,
     if (glyph_width > max_width) glyph_width = max_width;
     if (glyph_height > max_height) glyph_height = max_height;
 
-    put_glyph_rgba4444(pdata, src, vid->font_rgb,
+    put_glyph_rgba4444(pdata, src, vid->font_color,
                        glyph_width, glyph_height,
                        atlas->width, base_x, base_y);
 
