@@ -49,6 +49,7 @@ int num_categories = 0;
 int menu_active_category = 0;
 float all_categories_x = 0;
 float global_alpha = 0;
+float arrow_alpha = 0;
 float HSPACING;
 float VSPACING;
 float C_ACTIVE_ZOOM;
@@ -302,8 +303,16 @@ static void update_tweens(float dt)
 
 static void lakka_draw_text(const char *str, float x, float y, float scale, float alpha)
 {
+   if (alpha > global_alpha)
+      alpha = global_alpha;
+   if (alpha == 0)
+      return;
+
    gl_t *gl = (gl_t*)driver.video_data;
    if (!gl)
+      return;
+
+   if (x < -ICON_SIZE || x > gl->win_width + ICON_SIZE || y < -ICON_SIZE || y > gl->win_height + ICON_SIZE)
       return;
 
    gl_set_viewport(gl, gl->win_width, gl->win_height, false, false);
@@ -311,12 +320,6 @@ static void lakka_draw_text(const char *str, float x, float y, float scale, floa
    struct font_params params = {0};
    params.x = x / gl->win_width;
    params.y = 1.0f - y / gl->win_height;
-
-   if (alpha > global_alpha)
-      alpha = global_alpha;
-   // Workaround https://github.com/libretro/RetroArch/blob/master/gfx/fonts/gl_raster_font.c#L216
-   if (alpha < 0.05)
-      alpha = 0.05;
 
    params.scale = scale;
    params.color = FONT_COLOR_RGBA(255, 255, 255, (uint8_t)(255 * alpha));
@@ -365,17 +368,23 @@ void lakka_draw_icon(GLuint texture, float x, float y, float alpha, float rotati
    if (alpha > global_alpha)
       alpha = global_alpha;
 
+   if (alpha == 0)
+      return;
+
+   gl_t *gl = (gl_t*)driver.video_data;
+
+   if (!gl)
+      return;
+
+   if (x < -ICON_SIZE || x > gl->win_width + ICON_SIZE || y < -ICON_SIZE || y > gl->win_height + ICON_SIZE)
+      return;
+
    GLfloat color[] = {
       1.0f, 1.0f, 1.0f, alpha,
       1.0f, 1.0f, 1.0f, alpha,
       1.0f, 1.0f, 1.0f, alpha,
       1.0f, 1.0f, 1.0f, alpha,
    };
-
-   gl_t *gl = (gl_t*)driver.video_data;
-
-   if (!gl)
-      return;
 
    glViewport(x, gl->win_height - y, ICON_SIZE, ICON_SIZE);
 
@@ -477,9 +486,8 @@ static void lakka_draw_items(int i)
       if (!item)
          continue;
 
-      if (i == menu_active_category &&
-         j > active_category->active_item - 5 &&
-         j < active_category->active_item + 10) // performance improvement
+      if (i >= menu_active_category - 1 &&
+	 i <= menu_active_category + 1) // performance improvement
       {
          lakka_draw_icon(category->item_icon,
             MARGIN_LEFT + HSPACING*(i+1) + all_categories_x - ICON_SIZE/2.0, 
@@ -545,20 +553,14 @@ static void lakka_frame(void)
 
    lakka_draw_categories();
 
-   if (depth == 0)
-   {
-      if (active_category)
-         lakka_draw_text(active_category->name, TITLE_MARGIN_LEFT, TITLE_MARGIN_TOP, 1, 1.0);
-   }
-   else
-   {
-      if (active_item)
-         lakka_draw_text(active_item->name, TITLE_MARGIN_LEFT, TITLE_MARGIN_TOP, 1, 1.0);
+   if (depth == 0 && active_category)
+      lakka_draw_text(active_category->name, TITLE_MARGIN_LEFT, TITLE_MARGIN_TOP, 1, 1.0);
+   else if (active_item)
+      lakka_draw_text(active_item->name, TITLE_MARGIN_LEFT, TITLE_MARGIN_TOP, 1, 1.0);
 
-      lakka_draw_icon(textures[TEXTURE_ARROW].id,
-            MARGIN_LEFT + HSPACING*(menu_active_category+1) + all_categories_x + ICON_SIZE/2.0,
-            MARGIN_TOP + VSPACING*ACTIVE_ITEM_FACTOR + ICON_SIZE/2.0, 1, 0, I_ACTIVE_ZOOM);
-   }
+   lakka_draw_icon(textures[TEXTURE_ARROW].id,
+        MARGIN_LEFT + HSPACING*(menu_active_category+1) + all_categories_x + ICON_SIZE/2.0,
+        MARGIN_TOP + VSPACING*ACTIVE_ITEM_FACTOR + ICON_SIZE/2.0, arrow_alpha, 0, I_ACTIVE_ZOOM);
 
    gl_set_viewport(gl, gl->win_width, gl->win_height, false, false);
 }

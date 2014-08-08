@@ -173,6 +173,7 @@ static void lakka_open_submenu(void)
 {
    int i, j, k;
    add_tween(DELAY, -HSPACING * (menu_active_category+1), &all_categories_x, &inOutQuad, NULL);
+   add_tween(DELAY, 1.0, &arrow_alpha, &inOutQuad, NULL);
 
    // Reset contextual menu style
    lakka_reset_submenu();
@@ -221,6 +222,7 @@ static void lakka_close_submenu(void)
 {
    int i, j, k;
    add_tween(DELAY, -HSPACING * menu_active_category, &all_categories_x, &inOutQuad, NULL);
+   add_tween(DELAY, 0.0, &arrow_alpha, &inOutQuad, NULL);
    
    for (i = 0; i < num_categories; i++)
    {
