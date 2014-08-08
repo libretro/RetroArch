@@ -373,16 +373,15 @@ static int clear_buffer(struct g2d_context *g2d, struct g2d_image *img) {
 }
 
 /* Put a font glyph at a position in the buffer that is backing the G2D font image object. */
-static void put_glyph_rgba4444(struct exynos_data *pdata, const uint8_t *src, uint16_t color,
-                               unsigned g_width, unsigned g_height, unsigned g_pitch,
-                               unsigned dst_x, unsigned dst_y) {
+static void put_glyph_rgba4444(struct exynos_data *pdata, const uint8_t *__restrict__ src,
+                               uint16_t color, unsigned g_width, unsigned g_height,
+                               unsigned g_pitch, unsigned dst_x, unsigned dst_y) {
   const enum exynos_image_type buf_type = defaults[exynos_image_font].buf_type;
   const unsigned buf_width = pdata->src[exynos_image_font]->width;
 
   unsigned x, y;
-  uint16_t *dst;
-
-  dst = (uint16_t*)pdata->buf[buf_type]->vaddr + dst_y * buf_width + dst_x;
+  uint16_t *__restrict__ dst = (uint16_t*)pdata->buf[buf_type]->vaddr +
+                               dst_y * buf_width + dst_x;
 
   for (y = 0; y < g_height; ++y, src += g_pitch, dst += buf_width) {
     for (x = 0; x < g_width; ++x) {
