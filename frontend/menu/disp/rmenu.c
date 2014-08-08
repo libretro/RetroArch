@@ -151,7 +151,8 @@ static void rmenu_render(void)
    const char *dir = NULL;
    unsigned menu_type = 0;
    unsigned menu_type_is = 0;
-   file_list_get_last(menu->menu_stack, &dir, &menu_type);
+   rarch_setting_t *setting = NULL;
+   file_list_get_last(menu->menu_stack, &dir, &menu_type, setting);
 
    if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->type_is)
       menu_type_is = driver.menu_ctx->backend->type_is(menu_type);
@@ -321,7 +322,8 @@ static void rmenu_render(void)
    {
       const char *path = 0;
       unsigned type = 0;
-      file_list_get_at_offset(menu->selection_buf, i, &path, &type);
+      rarch_setting_t *setting = NULL;
+      file_list_get_at_offset(menu->selection_buf, i, &path, &type, setting);
       char message[256];
       char type_str[256];
 
@@ -364,7 +366,7 @@ static void rmenu_render(void)
          if (type == MENU_FILE_PLAIN)
          {
             strlcpy(type_str, "(CORE)", sizeof(type_str));
-            file_list_get_alt_at_offset(menu->selection_buf, i, &path);
+            file_list_get_alt_at_offset(menu->selection_buf, i, &path, setting);
             w = 6;
          }
          else

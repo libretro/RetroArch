@@ -159,19 +159,21 @@ void file_list_sort_on_alt(file_list_t *list)
 }
 
 void file_list_get_at_offset(const file_list_t *list, size_t index,
-      const char **path, unsigned *file_type)
+      const char **path, unsigned *file_type, rarch_setting_t *setting)
 {
    if (path)
       *path = list->list[index].path;
    if (file_type)
       *file_type = list->list[index].type;
+   if (setting)
+      setting = list->list[index].setting;
 }
 
 void file_list_get_last(const file_list_t *list,
-      const char **path, unsigned *file_type)
+      const char **path, unsigned *file_type, rarch_setting_t *setting)
 {
    if (list->size)
-      file_list_get_at_offset(list, list->size - 1, path, file_type);
+      file_list_get_at_offset(list, list->size - 1, path, file_type, setting);
 }
 
 bool file_list_search(const file_list_t *list, const char *needle, size_t *index)

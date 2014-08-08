@@ -16,7 +16,8 @@
 #ifndef __RARCH_SETTINGS_DATA_H__
 #define __RARCH_SETTINGS_DATA_H__
 
-#include "general.h"
+#include <stdint.h>
+#include "conf/config_file.h"
 
 #define SETTINGS_DATA_LIST_SIZE 512
 
