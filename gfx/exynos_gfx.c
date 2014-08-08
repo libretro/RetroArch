@@ -45,11 +45,6 @@
 extern void *memcpy_neon(void *dst, const void *src, size_t n);
 
 
-/* When scaling the G2D seems to need a small 'safety zone' towards the borders of   *
- * the destination buffer, otherwise leading to execution errors. This needs further *
- * investigation, but for now we just stay 4 (= 8 / 2) pixels away from the border.  */
-static const unsigned g2d_safety_zone = 8;
-
 /* We use two GEM buffers (main and aux) to handle 'data' from the frontend. */
 enum exynos_buffer_type {
   exynos_buffer_main = 0,
@@ -897,9 +892,6 @@ static void exynos_setup_scale(struct exynos_data *pdata, unsigned width,
     }
   }
 
-  w -= g2d_safety_zone;
-  h -= g2d_safety_zone;
-
   pdata->blit_params[0] = (pdata->width - w) / 2;
   pdata->blit_params[1] = (pdata->height - h) / 2;
   pdata->blit_params[2] = w;
@@ -912,13 +904,12 @@ static void exynos_setup_scale(struct exynos_data *pdata, unsigned width,
 }
 
 static void exynos_set_fake_blit(struct exynos_data *pdata) {
-  const unsigned offset = g2d_safety_zone / 2;
   unsigned i;
 
-  pdata->blit_params[0] = offset;
-  pdata->blit_params[1] = offset;
-  pdata->blit_params[2] = pdata->width - offset;
-  pdata->blit_params[3] = pdata->height - offset;
+  pdata->blit_params[0] = 0;
+  pdata->blit_params[1] = 0;
+  pdata->blit_params[2] = pdata->width;
+  pdata->blit_params[3] = pdata->height;
 
   for (i = 0; i < pdata->num_pages; ++i)
     pdata->pages[i].clear = true;
@@ -992,16 +983,14 @@ static int exynos_blend_menu(struct exynos_data *pdata,
 
 static int exynos_blend_font(struct exynos_data *pdata) {
   struct g2d_image *src = pdata->src[exynos_image_font];
-  const unsigned offset = g2d_safety_zone / 2;
 
 #if (EXYNOS_GFX_DEBUG_PERF == 1)
   perf_g2d(&pdata->perf, true);
 #endif
 
-  if (g2d_scale_and_blend(pdata->g2d, src, pdata->dst, 0, 0,
-                          src->width, src->height, offset,
-                          offset, pdata->width - offset,
-                          pdata->height - offset, G2D_OP_INTERPOLATE) ||
+  if (g2d_scale_and_blend(pdata->g2d, src, pdata->dst, 0, 0, src->width,
+                          src->height, 0, 0, pdata->width, pdata->height,
+                          G2D_OP_INTERPOLATE) ||
       g2d_exec(pdata->g2d)) {
     RARCH_ERR("video_exynos: failed to blend font\n");
     return -1;
