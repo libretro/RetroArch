@@ -1064,6 +1064,7 @@ static int exynos_init_font(struct exynos_video *vid) {
 
   const unsigned buf_height = defaults[exynos_image_font].height;
   const unsigned buf_width = align_common(pdata->aspect * (float)buf_height, 16);
+  const unsigned buf_bpp = defaults[exynos_image_font].bpp;
 
   if (!g_settings.video.font_enable) return 0;
 
@@ -1084,14 +1085,14 @@ static int exynos_init_font(struct exynos_video *vid) {
 
   /* The font buffer color type is ARGB4444. */
   if (realloc_buffer(pdata, defaults[exynos_image_font].buf_type,
-                     buf_width * buf_height * 2) != 0) {
+                     buf_width * buf_height * buf_bpp) != 0) {
     vid->font_driver->free(vid->font);
     return -1;
   }
 
   src->width = buf_width;
   src->height = buf_height;
-  src->stride = buf_width * 2;
+  src->stride = buf_width * buf_bpp;
 
 #if (EXYNOS_GFX_DEBUG_LOG == 1)
   RARCH_LOG("video_exynos: using font rendering image with size %ux%u\n",
