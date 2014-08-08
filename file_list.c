@@ -22,16 +22,6 @@
 #include "msvc/msvc_compat.h"
 #include "settings_data.h"
 
-struct item_file
-{
-   char *path;
-   char *label;
-   char *alt;
-   unsigned type;
-   size_t directory_ptr;
-   struct rarch_setting_t *setting;
-};
-
 void file_list_push(file_list_t *list,
       const char *path, const char *label,
       unsigned type, size_t directory_ptr)

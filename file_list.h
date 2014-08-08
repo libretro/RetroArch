@@ -24,7 +24,16 @@ extern "C" {
 #include "boolean.h"
 #include "settings_data.h"
 
-struct item_file;
+struct item_file
+{
+   char *path;
+   char *label;
+   char *alt;
+   unsigned type;
+   size_t directory_ptr;
+   struct rarch_setting_t *setting;
+};
+
 typedef struct file_list
 {
    struct item_file *list;
@@ -32,6 +41,7 @@ typedef struct file_list
    size_t capacity;
    size_t size;
 } file_list_t;
+
 
 void file_list_free(file_list_t *list);
 
