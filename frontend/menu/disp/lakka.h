@@ -29,6 +29,7 @@ extern int num_categories;
 extern float all_categories_x;
 extern int menu_active_category;
 extern float global_alpha;
+extern float arrow_alpha;
 extern float HSPACING;
 extern float VSPACING;
 extern float C_ACTIVE_ZOOM;
