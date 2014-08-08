@@ -115,6 +115,10 @@ static bool set_pix_conv(struct scaler_ctx *ctx)
          ctx->in_pixconv = conv_bgr24_argb8888;
          break;
 
+      case SCALER_FMT_RGBA4444:
+         ctx->in_pixconv = conv_rgba4444_argb8888;
+         break;
+
       default:
          return false;
    }

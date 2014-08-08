@@ -33,6 +33,14 @@
 
 #include "SDL/SDL_syswm.h"
 
+typedef struct sdl_menu_frame
+{
+   bool active;
+   SDL_Surface *frame;
+   struct scaler_ctx scaler;
+
+} sdl_menu_frame_t;
+
 typedef struct sdl_video
 {
    SDL_Surface *screen;
@@ -47,6 +55,8 @@ typedef struct sdl_video
    struct scaler_ctx scaler;
    unsigned last_width;
    unsigned last_height;
+
+   sdl_menu_frame_t menu;
 } sdl_video_t;
 
 static void sdl_gfx_free(void *data)
@@ -54,6 +64,9 @@ static void sdl_gfx_free(void *data)
    sdl_video_t *vid = (sdl_video_t*)data;
    if (!vid)
       return;
+
+   if (vid->menu.frame)
+      SDL_FreeSurface(vid->menu.frame);
 
    SDL_QuitSubSystem(SDL_INIT_VIDEO);
 
@@ -265,6 +278,17 @@ static void *sdl_gfx_init(const video_info_t *video, const input_driver_t **inpu
    vid->scaler.in_fmt  = video->rgb32 ? SCALER_FMT_ARGB8888 : SCALER_FMT_RGB565;
    vid->scaler.out_fmt = SCALER_FMT_ARGB8888;
 
+   vid->menu.scaler = vid->scaler;
+   vid->menu.scaler.scaler_type = SCALER_TYPE_BILINEAR;
+
+   vid->menu.frame = SDL_ConvertSurface(vid->screen, vid->screen->format, vid->screen->flags | SDL_SRCALPHA);
+
+   if (!vid->menu.frame)
+   {
+      RARCH_ERR("Failed to init menu surface: %s\n", SDL_GetError());
+      goto error;
+   }
+
    return vid;
 
 error:
@@ -320,6 +344,9 @@ static bool sdl_gfx_frame(void *data, const void *frame, unsigned width, unsigne
    scaler_ctx_scale(&vid->scaler, vid->screen->pixels, frame);
    RARCH_PERFORMANCE_STOP(sdl_scale);
 
+   if (vid->menu.active)
+      SDL_BlitSurface(vid->menu.frame, NULL, vid->screen, NULL);
+
    if (msg)
       sdl_render_msg(vid, vid->screen, msg, vid->screen->w, vid->screen->h, vid->screen->format);
 
@@ -363,6 +390,118 @@ static void sdl_gfx_viewport_info(void *data, struct rarch_viewport *vp)
    vp->height = vp->full_height = vid->screen->h;
 }
 
+static void sdl_set_filtering(void *data, unsigned index, bool smooth)
+{
+   sdl_video_t *vid = (sdl_video_t*)data;
+   vid->scaler.scaler_type = smooth ? SCALER_TYPE_BILINEAR : SCALER_TYPE_POINT;
+}
+
+static void sdl_set_aspect_ratio(void *data, unsigned aspectratio_index)
+{
+   sdl_video_t *vid = (sdl_video_t*)data;
+
+   switch (aspectratio_index)
+   {
+      case ASPECT_RATIO_SQUARE:
+         gfx_set_square_pixel_viewport(g_extern.system.av_info.geometry.base_width, g_extern.system.av_info.geometry.base_height);
+         break;
+
+      case ASPECT_RATIO_CORE:
+         gfx_set_core_viewport();
+         break;
+
+      case ASPECT_RATIO_CONFIG:
+         gfx_set_config_viewport();
+         break;
+
+      default:
+         break;
+   }
+
+   g_extern.system.aspect_ratio = aspectratio_lut[aspectratio_index].value;
+}
+
+static void sdl_apply_state_changes(void *data)
+{
+   (void)data;
+}
+
+static void sdl_set_texture_frame(void *data, const void *frame, bool rgb32,
+                               unsigned width, unsigned height, float alpha)
+{
+   (void) alpha;
+   sdl_video_t *vid = (sdl_video_t*)data;
+
+   enum scaler_pix_fmt format = rgb32 ? SCALER_FMT_ARGB8888 : SCALER_FMT_RGBA4444;
+
+   vid->menu.scaler.in_stride = width * (rgb32 ? sizeof(uint32_t) : sizeof(uint16_t));
+
+   if (
+          width != vid->menu.scaler.in_width
+       || height != vid->menu.scaler.in_height
+       || format != vid->menu.scaler.in_fmt
+      )
+   {
+      vid->menu.scaler.in_fmt    = format;
+      vid->menu.scaler.in_width  = width;
+      vid->menu.scaler.in_height = height;
+
+      vid->menu.scaler.out_width  = vid->screen->w;
+      vid->menu.scaler.out_height = vid->screen->h;
+      vid->menu.scaler.out_stride = vid->screen->pitch;
+
+      scaler_ctx_gen_filter(&vid->menu.scaler);
+   }
+
+   scaler_ctx_scale(&vid->menu.scaler, vid->menu.frame->pixels, frame);
+   SDL_SetAlpha(vid->menu.frame, SDL_SRCALPHA, 255.0 * alpha);
+}
+
+static void sdl_set_texture_enable(void *data, bool state, bool full_screen)
+{
+   (void) full_screen;
+
+   sdl_video_t *vid = (sdl_video_t*)data;
+   vid->menu.active = state;
+}
+
+static void sdl_show_mouse(void *data, bool state)
+{
+   (void)data;
+   SDL_ShowCursor(state);
+}
+
+static void sdl_grab_mouse_toggle(void *data)
+{
+   (void)data;
+   const SDL_GrabMode mode = SDL_WM_GrabInput(SDL_GRAB_QUERY);
+   SDL_WM_GrabInput(mode == SDL_GRAB_ON ? SDL_GRAB_OFF : SDL_GRAB_ON);
+}
+
+static const video_poke_interface_t sdl_poke_interface = {
+   sdl_set_filtering,
+#ifdef HAVE_FBO
+   NULL,
+   NULL,
+#endif
+   sdl_set_aspect_ratio,
+   sdl_apply_state_changes,
+#ifdef HAVE_MENU
+   sdl_set_texture_frame,
+   sdl_set_texture_enable,
+#endif
+   NULL,
+   sdl_show_mouse,
+   sdl_grab_mouse_toggle,
+   NULL
+};
+
+static void sdl_get_poke_interface(void *data, const video_poke_interface_t **iface)
+{
+   (void)data;
+   *iface = &sdl_poke_interface;
+}
+
 const video_driver_t video_sdl = {
    sdl_gfx_init,
    sdl_gfx_frame,
@@ -375,5 +514,10 @@ const video_driver_t video_sdl = {
 
    NULL,
    sdl_gfx_viewport_info,
+   NULL,
+#ifdef HAVE_OVERLAY
+   NULL,
+#endif
+   sdl_get_poke_interface
 };
 

@@ -30,7 +30,8 @@ enum scaler_pix_fmt
    SCALER_FMT_0RGB1555,
    SCALER_FMT_RGB565,
    SCALER_FMT_BGR24,
-   SCALER_FMT_YUYV
+   SCALER_FMT_YUYV,
+   SCALER_FMT_RGBA4444
 };
 
 enum scaler_type
