@@ -30,16 +30,16 @@ extern float all_categories_x;
 extern int menu_active_category;
 extern float global_alpha;
 extern float arrow_alpha;
-extern float HSPACING;
-extern float VSPACING;
-extern float C_ACTIVE_ZOOM;
-extern float C_PASSIVE_ZOOM;
-extern float I_ACTIVE_ZOOM;
-extern float I_PASSIVE_ZOOM;
-extern float ABOVE_SUBITEM_OFFSET;
-extern float ABOVE_ITEM_OFFSET;
-extern float ACTIVE_ITEM_FACTOR;
-extern float UNDER_ITEM_OFFSET;
+extern float hspacing;
+extern float vspacing;
+extern float c_active_zoom;
+extern float c_passive_zoom;
+extern float i_active_zoom;
+extern float i_passive_zoom;
+extern float above_subitem_offset;
+extern float above_item_offset;
+extern float active_item_factor;
+extern float under_item_offset;
 
 typedef struct
 {
