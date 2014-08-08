@@ -280,19 +280,29 @@ rarch_setting_t* setting_data_find_setting(rarch_setting_t* settings, const char
    rarch_setting_t *setting = NULL;
 
    if (!name)
-      return NULL;
+      goto notfound;
 
    for (setting = settings; setting->type != ST_NONE; setting++)
+   {
       if (setting->type <= ST_GROUP && strcmp(setting->name, name) == 0)
+      {
+         goto found;
          break;
+      }
+   }
     
+   goto notfound;
+found:
     if (setting->short_description && setting->short_description[0] == '\0')
-        return NULL;
+       goto notfound;
     
     if (setting->read_handler)
         setting->read_handler(setting);
 
    return setting;
+
+notfound:
+   return NULL;
 }
 
 void setting_data_set_with_string_representation(const rarch_setting_t* setting, const char* value)

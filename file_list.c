@@ -52,13 +52,10 @@ void file_list_push(file_list_t *list,
    list->list[list->size].label = strdup(label);
    list->list[list->size].setting = NULL;
 
-   if (label && label[0] != '\0')
-   {
-      rarch_setting_t *setting_data = (rarch_setting_t *)setting_data_get_list();
+   rarch_setting_t *setting_data = (rarch_setting_t *)setting_data_get_list();
 
-      if (setting_data)
-         list->list[list->size].setting = (rarch_setting_t*)setting_data_find_setting(setting_data, label);
-   }
+   if (setting_data)
+      list->list[list->size].setting = (rarch_setting_t*)setting_data_find_setting(setting_data, label);
 
    if (list->list[list->size].setting)
       list->list[list->size].path = strdup(list->list[list->size].setting->short_description);
