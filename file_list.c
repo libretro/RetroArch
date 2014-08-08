@@ -26,9 +26,6 @@ void file_list_push(file_list_t *list,
       const char *path, const char *label,
       unsigned type, size_t directory_ptr)
 {
-   if (!list)
-      return;
-
    if (list->size >= list->capacity)
    {
       list->capacity++;
