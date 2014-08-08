@@ -3027,7 +3027,7 @@ static int menu_common_shader_manager_setting_toggle(unsigned id,
    }
    else if ((id == MENU_SETTINGS_SHADER_APPLY || id == MENU_SETTINGS_SHADER_PASSES) &&
          (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->setting_set))
-      driver.menu_ctx->backend->setting_set(id, action);
+      driver.menu_ctx->backend->setting_set(id, action, setting);
    else if (((dist_shader % 3) == 0 || id == MENU_SETTINGS_SHADER_PRESET))
    {
       struct gfx_shader *shader = (struct gfx_shader*)driver.menu->shader;
@@ -3140,7 +3140,7 @@ static int menu_common_setting_toggle(unsigned id, unsigned action,
       return driver.menu_ctx->backend->core_setting_toggle(id, action);
 
    if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->setting_set)
-      return driver.menu_ctx->backend->setting_set(id, action);
+      return driver.menu_ctx->backend->setting_set(id, action, setting);
 
    return 0;
 }
@@ -3324,7 +3324,7 @@ static bool osk_callback_enter_filename_init(void *data)
 #endif
 
 
-static int menu_common_setting_set(unsigned id, unsigned action)
+static int menu_common_setting_set(unsigned id, unsigned action, rarch_setting_t *setting)
 {
    rarch_setting_t *current_setting;
    struct retro_perf_counter **counters;
