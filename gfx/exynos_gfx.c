@@ -1043,8 +1043,7 @@ struct exynos_video {
 
   void *font;
   const font_renderer_driver_t *font_driver;
-
-  uint8_t font_rgb[4];
+  uint16_t font_color; /* ARGB4444 */
 
   unsigned bytes_per_pixel;
 
@@ -1072,13 +1071,13 @@ static int exynos_init_font(struct exynos_video *vid) {
   if (font_renderer_create_default(&vid->font_driver, &vid->font,
       *g_settings.video.font_path ? g_settings.video.font_path : NULL,
       g_settings.video.font_size)) {
-    const int r = g_settings.video.msg_color_r * 255;
-    const int g = g_settings.video.msg_color_g * 255;
-    const int b = g_settings.video.msg_color_b * 255;
+    const int r = g_settings.video.msg_color_r * 15;
+    const int g = g_settings.video.msg_color_g * 15;
+    const int b = g_settings.video.msg_color_b * 15;
 
-    vid->font_rgb[0] = r < 0 ? 0 : (r > 255 ? 255 : r);
-    vid->font_rgb[1] = g < 0 ? 0 : (g > 255 ? 255 : g);
-    vid->font_rgb[2] = b < 0 ? 0 : (b > 255 ? 255 : b);
+    vid->font_color = ((b < 0 ? 0 : (b > 15 ? 15 : b)) << 0) |
+                      ((g < 0 ? 0 : (g > 15 ? 15 : g)) << 4) |
+                      ((r < 0 ? 0 : (r > 15 ? 15 : r)) << 8);
   } else {
     RARCH_ERR("video_exynos: creating font renderer failed\n");
     return -1;
@@ -1112,10 +1111,6 @@ static int exynos_render_msg(struct exynos_video *vid,
 
   int msg_base_x = g_settings.video.msg_pos_x * dst->width;
   int msg_base_y = (1.0f - g_settings.video.msg_pos_y) * dst->height;
-
-  const uint16_t color = (vid->font_rgb[2] >> 4) |
-                         ((vid->font_rgb[1] >> 4) << 4) |
-                         ((vid->font_rgb[0] >> 4) << 8);
 
   if (vid->font == NULL || vid->font_driver == NULL)
     return -1;
@@ -1158,7 +1153,7 @@ static int exynos_render_msg(struct exynos_video *vid,
     if (glyph_width > max_width) glyph_width = max_width;
     if (glyph_height > max_height) glyph_height = max_height;
 
-    put_glyph_rgba4444(pdata, src, color,
+    put_glyph_rgba4444(pdata, src, vid->font_color,
                        glyph_width, glyph_height,
                        atlas->width, base_x, base_y);
 
