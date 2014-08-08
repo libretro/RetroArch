@@ -968,7 +968,7 @@ static int exynos_blend_menu(struct exynos_data *pdata,
   if (g2d_scale_and_blend(pdata->g2d, src, pdata->dst, 0, 0,
                           src->width, src->height, pdata->blit_params[0],
                           pdata->blit_params[1], pdata->blit_params[2],
-                          pdata->blit_params[3], G2D_OP_OVER) ||
+                          pdata->blit_params[3], G2D_OP_INTERPOLATE) ||
       g2d_exec(pdata->g2d)) {
     RARCH_ERR("video_exynos: failed to blend menu\n");
     return -1;
