@@ -3324,24 +3324,24 @@ static bool osk_callback_enter_filename_init(void *data)
 #endif
 
 
-static int menu_common_setting_set(unsigned setting, unsigned action)
+static int menu_common_setting_set(unsigned id, unsigned action)
 {
    rarch_setting_t *current_setting;
    struct retro_perf_counter **counters;
    unsigned port = driver.menu->current_pad;
    rarch_setting_t *setting_data = (rarch_setting_t *)setting_data_get_list();
 
-   if (setting >= MENU_SETTINGS_PERF_COUNTERS_BEGIN && setting <= MENU_SETTINGS_PERF_COUNTERS_END)
+   if (id >= MENU_SETTINGS_PERF_COUNTERS_BEGIN && id <= MENU_SETTINGS_PERF_COUNTERS_END)
    {
       counters = (struct retro_perf_counter**)perf_counters_rarch;
-      return menu_common_setting_set_perf(setting, action, counters, setting - MENU_SETTINGS_PERF_COUNTERS_BEGIN);
+      return menu_common_setting_set_perf(id, action, counters, id - MENU_SETTINGS_PERF_COUNTERS_BEGIN);
    }
-   else if (setting >= MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_BEGIN && setting <= MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_END)
+   else if (id >= MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_BEGIN && id <= MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_END)
    {
       counters = (struct retro_perf_counter**)perf_counters_libretro;
-      return menu_common_setting_set_perf(setting, action, counters, setting - MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_BEGIN);
+      return menu_common_setting_set_perf(id, action, counters, id - MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_BEGIN);
    }
-   else if (setting >= MENU_SETTINGS_BIND_BEGIN && setting <= MENU_SETTINGS_BIND_ALL_LAST)
+   else if (id >= MENU_SETTINGS_BIND_BEGIN && id <= MENU_SETTINGS_BIND_ALL_LAST)
    {
       if (driver.input->set_keybinds && !driver.input->get_joypad_driver)
       {
@@ -3353,16 +3353,16 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
          // FIXME: The array indices here look totally wrong ... Fixed it so it looks kind of sane for now.
          if (keybind_action != KEYBINDS_ACTION_NONE)
             driver.input->set_keybinds(driver.input_data, g_settings.input.device[port], port,
-                  setting - MENU_SETTINGS_BIND_BEGIN, keybind_action);
+                  id - MENU_SETTINGS_BIND_BEGIN, keybind_action);
       }
       else
       {
-         struct retro_keybind *bind = (struct retro_keybind*)&g_settings.input.binds[port][setting - MENU_SETTINGS_BIND_BEGIN];
+         struct retro_keybind *bind = (struct retro_keybind*)&g_settings.input.binds[port][id - MENU_SETTINGS_BIND_BEGIN];
 
          if (action == MENU_ACTION_OK)
          {
-            driver.menu->binds.begin = setting;
-            driver.menu->binds.last = setting;
+            driver.menu->binds.begin  = id;
+            driver.menu->binds.last   = id;
             driver.menu->binds.target = bind;
             driver.menu->binds.player = port;
             file_list_push(driver.menu->menu_stack, "", "",
@@ -3384,7 +3384,7 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
             if (driver.menu->bind_mode_keyboard)
             {
                const struct retro_keybind *def_binds = port ? retro_keybinds_rest : retro_keybinds_1;
-               bind->key = def_binds[setting - MENU_SETTINGS_BIND_BEGIN].key;
+               bind->key = def_binds[id - MENU_SETTINGS_BIND_BEGIN].key;
             }
             else
             {
@@ -3396,7 +3396,7 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
       return 0;
    }
 
-   switch (setting)
+   switch (id)
    {
       case MENU_START_SCREEN:
          if (action == MENU_ACTION_OK)
@@ -3473,7 +3473,7 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
       case MENU_SETTINGS_SAVESTATE_LOAD:
          if (action == MENU_ACTION_OK)
          {
-            if (setting == MENU_SETTINGS_SAVESTATE_SAVE)
+            if (id == MENU_SETTINGS_SAVESTATE_SAVE)
                rarch_main_command(RARCH_CMD_SAVE_STATE);
             else
                rarch_main_command(RARCH_CMD_LOAD_STATE);
@@ -3636,12 +3636,12 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
 #ifdef HAVE_OVERLAY
       case MENU_SETTINGS_OVERLAY_PRESET:
          if ((current_setting = setting_data_find_setting(setting_data, "input_overlay")))
-            menu_common_setting_set_current_path_selection(current_setting, g_extern.overlay_dir, setting, action);
+            menu_common_setting_set_current_path_selection(current_setting, g_extern.overlay_dir, id, action);
          break;
 #endif
       case MENU_CONTENT_HISTORY_PATH:
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "game_history_path")))
-            menu_common_setting_set_current_path_selection(current_setting, "", setting, action);
+            menu_common_setting_set_current_path_selection(current_setting, "", id, action);
          break;
       case MENU_SETTINGS_VIDEO_SOFTFILTER:
          switch (action)
@@ -3661,7 +3661,7 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
                driver.menu_data_own = true;
                rarch_main_command(RARCH_CMD_REINIT);
 #elif defined(HAVE_DYLIB)
-               file_list_push(driver.menu->menu_stack, g_settings.video.filter_dir, "", setting, driver.menu->selection_ptr);
+               file_list_push(driver.menu->menu_stack, g_settings.video.filter_dir, "", id, driver.menu->selection_ptr);
                menu_clear_navigation(driver.menu);
 #endif
                driver.menu->need_refresh = true;
@@ -3679,7 +3679,7 @@ static int menu_common_setting_set(unsigned setting, unsigned action)
          break;
       case MENU_SETTINGS_AUDIO_DSP_FILTER:
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "audio_dsp_plugin")))
-            menu_common_setting_set_current_path_selection(current_setting, g_settings.audio.filter_dir, setting, action);
+            menu_common_setting_set_current_path_selection(current_setting, g_settings.audio.filter_dir, id, action);
          break;
 #ifdef HAVE_OVERLAY
       case MENU_SETTINGS_OVERLAY_OPACITY:
