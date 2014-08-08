@@ -480,7 +480,6 @@ static int exynos_g2d_init(struct exynos_data *pdata) {
     src->stride = defaults[i].width * defaults[i].bpp;
 
     src->color_mode = defaults[i].g2d_color_mode;
-    src->color = (i == exynos_image_font) ? 0x00 : 0xff000000;
 
     /* Associate GEM buffer storage with G2D image. */
     src->buf_type = G2D_IMGBUF_GEM;
