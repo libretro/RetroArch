@@ -501,7 +501,7 @@ static void menu_common_entries_init(menu_handle_t *menu, unsigned menu_type)
       driver.menu_ctx->populate_entries(menu, menu_type);
 }
 
-static int menu_info_screen_iterate(unsigned action)
+static int menu_info_screen_iterate(unsigned action, rarch_setting_t *setting)
 {
    char msg[PATH_MAX];
    rarch_setting_t *current_setting;
@@ -1393,13 +1393,12 @@ static void menu_common_setting_push_current_menu(file_list_t *list, const char 
    }
 }
 
-static int menu_settings_iterate(unsigned action)
+static int menu_settings_iterate(unsigned action, rarch_setting_t *setting)
 {
    const char *label = NULL;
    const char *dir = NULL;
    unsigned type = 0;
    unsigned menu_type = 0;
-   rarch_setting_t *setting = NULL;
 
    if (!driver.menu)
       return 0;
@@ -1565,12 +1564,11 @@ static int menu_settings_iterate(unsigned action)
    return 0;
 }
 
-static int menu_viewport_iterate(unsigned action)
+static int menu_viewport_iterate(unsigned action, rarch_setting_t *setting)
 {
    int stride_x, stride_y;
    char msg[64];
    struct retro_game_geometry *geom;
-   rarch_setting_t *setting = NULL;
    const char *base_msg = NULL;
    unsigned menu_type = 0;
    rarch_viewport_t *custom = (rarch_viewport_t*)&g_extern.console.screen.viewports.custom_vp;
@@ -2265,11 +2263,11 @@ static int menu_common_iterate(unsigned action)
    if (menu_type == MENU_START_SCREEN)
       return menu_start_screen_iterate(action);
    else if (menu_type == MENU_INFO_SCREEN)
-      return menu_info_screen_iterate(action);
+      return menu_info_screen_iterate(action, setting);
    else if (menu_common_type_is(menu_type) == MENU_SETTINGS)
-      return menu_settings_iterate(action);
+      return menu_settings_iterate(action, setting);
    else if (menu_type == MENU_SETTINGS_CUSTOM_VIEWPORT || menu_type == MENU_SETTINGS_CUSTOM_VIEWPORT_2)
-      return menu_viewport_iterate(action);
+      return menu_viewport_iterate(action, setting);
    else if (menu_type == MENU_SETTINGS_CUSTOM_BIND)
       return menu_custom_bind_iterate(driver.menu, action);
    else if (menu_type == MENU_SETTINGS_CUSTOM_BIND_KEYBOARD)
