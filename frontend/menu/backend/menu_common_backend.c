@@ -1490,7 +1490,7 @@ static int menu_settings_iterate(unsigned action)
             int ret = 0;
 
             if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->setting_toggle)
-               ret = driver.menu_ctx->backend->setting_toggle(type, action, menu_type);
+               ret = driver.menu_ctx->backend->setting_toggle(type, action, menu_type, setting);
             if (ret)
                return ret;
          }
@@ -2967,7 +2967,8 @@ static unsigned menu_common_shader_manager_get_type(const struct gfx_shader *sha
 }
 
 
-static int menu_common_shader_manager_setting_toggle(unsigned setting, unsigned action)
+static int menu_common_shader_manager_setting_toggle(unsigned id,
+      unsigned action, rarch_setting_t *setting)
 {
    rarch_setting_t *setting_data, *current_setting;
    if (!driver.menu)
@@ -2976,24 +2977,24 @@ static int menu_common_shader_manager_setting_toggle(unsigned setting, unsigned 
       return 0;
    }
 
-   (void)setting;
+   (void)id;
    (void)action;
 
    setting_data = (rarch_setting_t *)setting_data_get_list();
 
 #ifdef HAVE_SHADER_MANAGER
-   unsigned dist_shader = setting - MENU_SETTINGS_SHADER_0;
-   unsigned dist_filter = setting - MENU_SETTINGS_SHADER_0_FILTER;
-   unsigned dist_scale  = setting - MENU_SETTINGS_SHADER_0_SCALE;
+   unsigned dist_shader = id - MENU_SETTINGS_SHADER_0;
+   unsigned dist_filter = id - MENU_SETTINGS_SHADER_0_FILTER;
+   unsigned dist_scale  = id - MENU_SETTINGS_SHADER_0_SCALE;
 
-   if (setting == MENU_SETTINGS_SHADER_FILTER)
+   if (id == MENU_SETTINGS_SHADER_FILTER)
    {
       if ((current_setting = setting_data_find_setting(setting_data, "video_smooth")))
          menu_common_setting_set_current_boolean(current_setting, action);
    }
-   else if ((setting == MENU_SETTINGS_SHADER_PARAMETERS || setting == MENU_SETTINGS_SHADER_PRESET_PARAMETERS))
-      menu_common_setting_push_current_menu(driver.menu->menu_stack, "", setting, driver.menu->selection_ptr, action);
-   else if (setting >= MENU_SETTINGS_SHADER_PARAMETER_0 && setting <= MENU_SETTINGS_SHADER_PARAMETER_LAST)
+   else if ((id == MENU_SETTINGS_SHADER_PARAMETERS || id == MENU_SETTINGS_SHADER_PRESET_PARAMETERS))
+      menu_common_setting_push_current_menu(driver.menu->menu_stack, "", id, driver.menu->selection_ptr, action);
+   else if (id >= MENU_SETTINGS_SHADER_PARAMETER_0 && id <= MENU_SETTINGS_SHADER_PARAMETER_LAST)
    {
       struct gfx_shader *shader;
       struct gfx_shader_parameter *param;
@@ -3001,7 +3002,7 @@ static int menu_common_shader_manager_setting_toggle(unsigned setting, unsigned 
       if (!(shader = (struct gfx_shader*)driver.menu->parameter_shader))
          return 0;
 
-      if (!(param = &shader->parameters[setting - MENU_SETTINGS_SHADER_PARAMETER_0]))
+      if (!(param = &shader->parameters[id - MENU_SETTINGS_SHADER_PARAMETER_0]))
          return 0;
 
       switch (action)
@@ -3024,22 +3025,22 @@ static int menu_common_shader_manager_setting_toggle(unsigned setting, unsigned 
 
       param->current = min(max(param->minimum, param->current), param->maximum);
    }
-   else if ((setting == MENU_SETTINGS_SHADER_APPLY || setting == MENU_SETTINGS_SHADER_PASSES) &&
+   else if ((id == MENU_SETTINGS_SHADER_APPLY || id == MENU_SETTINGS_SHADER_PASSES) &&
          (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->setting_set))
-      driver.menu_ctx->backend->setting_set(setting, action);
-   else if (((dist_shader % 3) == 0 || setting == MENU_SETTINGS_SHADER_PRESET))
+      driver.menu_ctx->backend->setting_set(id, action);
+   else if (((dist_shader % 3) == 0 || id == MENU_SETTINGS_SHADER_PRESET))
    {
       struct gfx_shader *shader = (struct gfx_shader*)driver.menu->shader;
       struct gfx_shader_pass *pass = NULL;
 
       dist_shader /= 3;
-      if (shader && setting == MENU_SETTINGS_SHADER_PRESET)
+      if (shader && id == MENU_SETTINGS_SHADER_PRESET)
          pass = &shader->pass[dist_shader];
 
       switch (action)
       {
          case MENU_ACTION_OK:
-            menu_common_setting_push_current_menu(driver.menu->menu_stack, g_settings.video.shader_dir, setting, driver.menu->selection_ptr, action);
+            menu_common_setting_push_current_menu(driver.menu->menu_stack, g_settings.video.shader_dir, id, driver.menu->selection_ptr, action);
             break;
 
          case MENU_ACTION_START:
@@ -3119,26 +3120,27 @@ static int menu_common_shader_manager_setting_toggle(unsigned setting, unsigned 
    return 0;
 }
 
-static int menu_common_setting_toggle(unsigned setting, unsigned action, unsigned menu_type)
+static int menu_common_setting_toggle(unsigned id, unsigned action,
+      unsigned menu_type, rarch_setting_t *setting)
 {
    (void)menu_type;
 
 #ifdef HAVE_SHADER_MANAGER
-   if ((setting >= MENU_SETTINGS_SHADER_FILTER) && (setting <= MENU_SETTINGS_SHADER_LAST))
+   if ((id >= MENU_SETTINGS_SHADER_FILTER) && (id <= MENU_SETTINGS_SHADER_LAST))
    {
       if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->shader_manager_setting_toggle)
-         return driver.menu_ctx->backend->shader_manager_setting_toggle(setting, action);
+         return driver.menu_ctx->backend->shader_manager_setting_toggle(id, action, setting);
       else
          return 0;
    }
 #endif
-   if ((setting >= MENU_SETTINGS_CORE_OPTION_START) &&
+   if ((id >= MENU_SETTINGS_CORE_OPTION_START) &&
          (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->core_setting_toggle)
       )
-      return driver.menu_ctx->backend->core_setting_toggle(setting, action);
+      return driver.menu_ctx->backend->core_setting_toggle(id, action);
 
    if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->setting_set)
-      return driver.menu_ctx->backend->setting_set(setting, action);
+      return driver.menu_ctx->backend->setting_set(id, action);
 
    return 0;
 }
