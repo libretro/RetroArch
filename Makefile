@@ -108,7 +108,6 @@ ifeq ($(HAVE_RGUI), 1)
 ifeq ($(HAVE_LAKKA), 1)
    OBJ += frontend/menu/backend/menu_lakka_backend.o frontend/menu/disp/lakka.o
    DEFINES += -DHAVE_LAKKA
-   LIBS += -lpng
 endif
 endif
 
