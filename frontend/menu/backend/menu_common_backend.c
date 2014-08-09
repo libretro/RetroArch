@@ -2128,15 +2128,14 @@ static void menu_common_setting_set_current_path_selection(rarch_setting_t *sett
       setting->change_handler(setting);
 }
 
-static void menu_common_setting_set_current_fraction(rarch_setting_t *setting, unsigned action,
-      bool enforce_min_check, bool enforce_max_check)
+static void menu_common_setting_set_current_fraction(rarch_setting_t *setting, unsigned action)
 {
    switch (action)
    {
       case MENU_ACTION_LEFT:
          *setting->value.fraction = *setting->value.fraction - setting->step;
 
-         if (enforce_min_check)
+         if (setting->enforce_minrange)
          {
             if (*setting->value.fraction < setting->min)
                *setting->value.fraction = setting->min;
@@ -2147,7 +2146,7 @@ static void menu_common_setting_set_current_fraction(rarch_setting_t *setting, u
       case MENU_ACTION_OK:
          *setting->value.fraction = *setting->value.fraction + setting->step;
 
-         if (enforce_max_check)
+         if (setting->enforce_maxrange)
          {
             if (*setting->value.fraction > setting->max)
                *setting->value.fraction = setting->max;
@@ -3525,9 +3524,6 @@ static int menu_common_setting_set(unsigned id, unsigned action, rarch_setting_t
          case MENU_SETTINGS_FASTFORWARD_RATIO:
          case MENU_SETTINGS_OVERLAY_OPACITY:
          case MENU_SETTINGS_OVERLAY_SCALE:
-            if (setting)
-               menu_common_setting_set_current_fraction(setting, action, true, true);
-            break;
          case MENU_SETTINGS_SLOWMOTION_RATIO:
          case MENU_SETTINGS_INPUT_AXIS_THRESHOLD:
          case MENU_SETTINGS_VIDEO_WINDOW_SCALE_X:
@@ -3535,7 +3531,7 @@ static int menu_common_setting_set(unsigned id, unsigned action, rarch_setting_t
          case MENU_SETTINGS_FONT_SIZE:
          case MENU_SETTINGS_VIDEO_REFRESH_RATE:
             if (setting)
-               menu_common_setting_set_current_fraction(setting, action, false, false);
+               menu_common_setting_set_current_fraction(setting, action);
             break;
          case MENU_SETTINGS_DISK_INDEX:
             {

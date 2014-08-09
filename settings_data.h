@@ -95,6 +95,8 @@ typedef struct rarch_setting_t
    } value;
 
    float step;
+   bool enforce_minrange;
+   bool enforce_maxrange;
 }  rarch_setting_t;
 
 
