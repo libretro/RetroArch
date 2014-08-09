@@ -396,11 +396,11 @@ static void menu_common_entries_init(menu_handle_t *menu, unsigned menu_type)
          file_list_push(menu->selection_buf, "", "audio_mute", MENU_SETTINGS_AUDIO_MUTE, 0);
          file_list_push(menu->selection_buf, "", "audio_latency", MENU_SETTINGS_AUDIO_LATENCY, 0);
          file_list_push(menu->selection_buf, "", "audio_sync", MENU_SETTINGS_AUDIO_SYNC, 0);
-         file_list_push(menu->selection_buf, "Rate Control Delta", "", MENU_SETTINGS_AUDIO_CONTROL_RATE_DELTA, 0);
+         file_list_push(menu->selection_buf, "", "audio_rate_control_delta", MENU_SETTINGS_AUDIO_CONTROL_RATE_DELTA, 0);
 #ifdef __CELLOS_LV2__
          file_list_push(menu->selection_buf, "System BGM Control", "", MENU_SETTINGS_CUSTOM_BGM_CONTROL_ENABLE, 0);
 #endif
-         file_list_push(menu->selection_buf, "Volume Level", "", MENU_SETTINGS_AUDIO_VOLUME, 0);
+         file_list_push(menu->selection_buf, "", "audio_volume", MENU_SETTINGS_AUDIO_VOLUME, 0);
          file_list_push(menu->selection_buf, "Audio Device", "", MENU_SETTINGS_DRIVER_AUDIO_DEVICE, 0);
          break;
       case MENU_SETTINGS_DRIVERS:
@@ -3393,6 +3393,10 @@ static int menu_common_setting_set(unsigned id, unsigned action, rarch_setting_t
    }
    else if (setting && setting->type == ST_BOOL)
       menu_common_setting_set_current_boolean(setting, action);
+   else if (setting && setting->type == ST_UINT)
+      menu_common_setting_set_current_unsigned_integer(setting, action);
+   else if (setting && setting->type == ST_FLOAT)
+      menu_common_setting_set_current_fraction(setting, action);
    else
    {
       switch (id)
@@ -3401,39 +3405,6 @@ static int menu_common_setting_set(unsigned id, unsigned action, rarch_setting_t
             if (action == MENU_ACTION_OK)
                file_list_push(driver.menu->menu_stack, "", "", MENU_START_SCREEN, 0);
             break;
-         case MENU_SETTINGS_REWIND_GRANULARITY:
-         case MENU_SETTINGS_AUDIO_LATENCY:
-         case MENU_CONTENT_HISTORY_SIZE:
-         case MENU_SETTINGS_NETPLAY_DELAY_FRAMES:
-         case MENU_SETTINGS_LIBRETRO_LOG_LEVEL:
-         case MENU_SETTINGS_USER_LANGUAGE:
-         case MENU_SETTINGS_VIDEO_ROTATION:
-         case MENU_SETTINGS_VIDEO_ASPECT_RATIO:
-         case MENU_SETTINGS_VIDEO_SWAP_INTERVAL:
-         case MENU_SETTINGS_VIDEO_HARD_SYNC_FRAMES:
-         case MENU_SETTINGS_VIDEO_MONITOR_INDEX:
-            if (setting)
-               menu_common_setting_set_current_unsigned_integer(setting, action);
-            break;
-#if defined(HAVE_THREADS)
-         case MENU_SETTINGS_SRAM_AUTOSAVE:
-            if (setting)
-            {
-               if (action == MENU_ACTION_OK || action == MENU_ACTION_RIGHT)
-                  *setting->value.unsigned_integer += 10;
-               else if (action == MENU_ACTION_LEFT)
-               {
-                  if (*setting->value.unsigned_integer)
-                     *setting->value.unsigned_integer -= min(10, *setting->value.unsigned_integer);
-               }
-               else if (action == MENU_ACTION_START)
-                  *setting->value.unsigned_integer = 0;
-
-               if (setting->change_handler)
-                  setting->change_handler(setting);
-            }
-            break;
-#endif
          case MENU_SETTINGS_SAVESTATE_SAVE:
          case MENU_SETTINGS_SAVESTATE_LOAD:
             if (action == MENU_ACTION_OK)
@@ -3465,66 +3436,6 @@ static int menu_common_setting_set(unsigned id, unsigned action, rarch_setting_t
                rarch_main_command(RARCH_CMD_RESET);
                return -1;
             }
-            break;
-         case MENU_SETTINGS_AUDIO_CONTROL_RATE_DELTA:
-            if (action == MENU_ACTION_START)
-            {
-               g_settings.audio.rate_control_delta = rate_control_delta;
-               g_settings.audio.rate_control = rate_control;
-            }
-            else if (action == MENU_ACTION_LEFT)
-            {
-               if (g_settings.audio.rate_control_delta > 0.0)
-                  g_settings.audio.rate_control_delta -= 0.001;
-
-               if (g_settings.audio.rate_control_delta < 0.0005)
-               {
-                  g_settings.audio.rate_control = false;
-                  g_settings.audio.rate_control_delta = 0.0;
-               }
-               else
-                  g_settings.audio.rate_control = true;
-            }
-            else if (action == MENU_ACTION_RIGHT)
-            {
-               if (g_settings.audio.rate_control_delta < 0.2)
-                  g_settings.audio.rate_control_delta += 0.001;
-               g_settings.audio.rate_control = true;
-            }
-            break;
-         case MENU_SETTINGS_AUDIO_VOLUME:
-            {
-               float db_delta = 0.0f;
-               if (action == MENU_ACTION_START)
-               {
-                  g_extern.audio_data.volume_db = 0.0f;
-                  g_extern.audio_data.volume_gain = 1.0f;
-               }
-               else if (action == MENU_ACTION_LEFT)
-                  db_delta -= 1.0f;
-               else if (action == MENU_ACTION_RIGHT)
-                  db_delta += 1.0f;
-
-               if (db_delta != 0.0f)
-               {
-                  g_extern.audio_data.volume_db += db_delta;
-                  g_extern.audio_data.volume_db = max(g_extern.audio_data.volume_db, -80.0f);
-                  g_extern.audio_data.volume_db = min(g_extern.audio_data.volume_db, 12.0f);
-                  g_extern.audio_data.volume_gain = db_to_gain(g_extern.audio_data.volume_db);
-               }
-            }
-            break;
-         case MENU_SETTINGS_FASTFORWARD_RATIO:
-         case MENU_SETTINGS_OVERLAY_OPACITY:
-         case MENU_SETTINGS_OVERLAY_SCALE:
-         case MENU_SETTINGS_SLOWMOTION_RATIO:
-         case MENU_SETTINGS_INPUT_AXIS_THRESHOLD:
-         case MENU_SETTINGS_VIDEO_WINDOW_SCALE_X:
-         case MENU_SETTINGS_VIDEO_WINDOW_SCALE_Y:
-         case MENU_SETTINGS_FONT_SIZE:
-         case MENU_SETTINGS_VIDEO_REFRESH_RATE:
-            if (setting)
-               menu_common_setting_set_current_fraction(setting, action);
             break;
          case MENU_SETTINGS_DISK_INDEX:
             {
