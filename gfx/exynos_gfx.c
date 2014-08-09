@@ -45,11 +45,6 @@
 extern void *memcpy_neon(void *dst, const void *src, size_t n);
 
 
-/* When scaling the G2D seems to need a small 'safety zone' towards the borders of   *
- * the destination buffer, otherwise leading to execution errors. This needs further *
- * investigation, but for now we just stay 4 (= 8 / 2) pixels away from the border.  */
-static const unsigned g2d_safety_zone = 8;
-
 /* We use two GEM buffers (main and aux) to handle 'data' from the frontend. */
 enum exynos_buffer_type {
   exynos_buffer_main = 0,
@@ -373,16 +368,15 @@ static int clear_buffer(struct g2d_context *g2d, struct g2d_image *img) {
 }
 
 /* Put a font glyph at a position in the buffer that is backing the G2D font image object. */
-static void put_glyph_rgba4444(struct exynos_data *pdata, const uint8_t *src, uint16_t color,
-                               unsigned g_width, unsigned g_height, unsigned g_pitch,
-                               unsigned dst_x, unsigned dst_y) {
+static void put_glyph_rgba4444(struct exynos_data *pdata, const uint8_t *__restrict__ src,
+                               uint16_t color, unsigned g_width, unsigned g_height,
+                               unsigned g_pitch, unsigned dst_x, unsigned dst_y) {
   const enum exynos_image_type buf_type = defaults[exynos_image_font].buf_type;
   const unsigned buf_width = pdata->src[exynos_image_font]->width;
 
   unsigned x, y;
-  uint16_t *dst;
-
-  dst = (uint16_t*)pdata->buf[buf_type]->vaddr + dst_y * buf_width + dst_x;
+  uint16_t *__restrict__ dst = (uint16_t*)pdata->buf[buf_type]->vaddr +
+                               dst_y * buf_width + dst_x;
 
   for (y = 0; y < g_height; ++y, src += g_pitch, dst += buf_width) {
     for (x = 0; x < g_width; ++x) {
@@ -480,7 +474,6 @@ static int exynos_g2d_init(struct exynos_data *pdata) {
     src->stride = defaults[i].width * defaults[i].bpp;
 
     src->color_mode = defaults[i].g2d_color_mode;
-    src->color = (i == exynos_image_font) ? 0x00 : 0xff000000;
 
     /* Associate GEM buffer storage with G2D image. */
     src->buf_type = G2D_IMGBUF_GEM;
@@ -899,9 +892,6 @@ static void exynos_setup_scale(struct exynos_data *pdata, unsigned width,
     }
   }
 
-  w -= g2d_safety_zone;
-  h -= g2d_safety_zone;
-
   pdata->blit_params[0] = (pdata->width - w) / 2;
   pdata->blit_params[1] = (pdata->height - h) / 2;
   pdata->blit_params[2] = w;
@@ -914,13 +904,12 @@ static void exynos_setup_scale(struct exynos_data *pdata, unsigned width,
 }
 
 static void exynos_set_fake_blit(struct exynos_data *pdata) {
-  const unsigned offset = g2d_safety_zone / 2;
   unsigned i;
 
-  pdata->blit_params[0] = offset;
-  pdata->blit_params[1] = offset;
-  pdata->blit_params[2] = pdata->width - offset;
-  pdata->blit_params[3] = pdata->height - offset;
+  pdata->blit_params[0] = 0;
+  pdata->blit_params[1] = 0;
+  pdata->blit_params[2] = pdata->width;
+  pdata->blit_params[3] = pdata->height;
 
   for (i = 0; i < pdata->num_pages; ++i)
     pdata->pages[i].clear = true;
@@ -979,7 +968,7 @@ static int exynos_blend_menu(struct exynos_data *pdata,
   if (g2d_scale_and_blend(pdata->g2d, src, pdata->dst, 0, 0,
                           src->width, src->height, pdata->blit_params[0],
                           pdata->blit_params[1], pdata->blit_params[2],
-                          pdata->blit_params[3], G2D_OP_OVER) ||
+                          pdata->blit_params[3], G2D_OP_INTERPOLATE) ||
       g2d_exec(pdata->g2d)) {
     RARCH_ERR("video_exynos: failed to blend menu\n");
     return -1;
@@ -994,16 +983,14 @@ static int exynos_blend_menu(struct exynos_data *pdata,
 
 static int exynos_blend_font(struct exynos_data *pdata) {
   struct g2d_image *src = pdata->src[exynos_image_font];
-  const unsigned offset = g2d_safety_zone / 2;
 
 #if (EXYNOS_GFX_DEBUG_PERF == 1)
   perf_g2d(&pdata->perf, true);
 #endif
 
-  if (g2d_scale_and_blend(pdata->g2d, src, pdata->dst, 0, 0,
-                          src->width, src->height, offset,
-                          offset, pdata->width - offset,
-                          pdata->height - offset, G2D_OP_INTERPOLATE) ||
+  if (g2d_scale_and_blend(pdata->g2d, src, pdata->dst, 0, 0, src->width,
+                          src->height, 0, 0, pdata->width, pdata->height,
+                          G2D_OP_INTERPOLATE) ||
       g2d_exec(pdata->g2d)) {
     RARCH_ERR("video_exynos: failed to blend font\n");
     return -1;
@@ -1065,6 +1052,7 @@ static int exynos_init_font(struct exynos_video *vid) {
 
   const unsigned buf_height = defaults[exynos_image_font].height;
   const unsigned buf_width = align_common(pdata->aspect * (float)buf_height, 16);
+  const unsigned buf_bpp = defaults[exynos_image_font].bpp;
 
   if (!g_settings.video.font_enable) return 0;
 
@@ -1085,14 +1073,14 @@ static int exynos_init_font(struct exynos_video *vid) {
 
   /* The font buffer color type is ARGB4444. */
   if (realloc_buffer(pdata, defaults[exynos_image_font].buf_type,
-                     buf_width * buf_height * 2) != 0) {
+                     buf_width * buf_height * buf_bpp) != 0) {
     vid->font_driver->free(vid->font);
     return -1;
   }
 
   src->width = buf_width;
   src->height = buf_height;
-  src->stride = buf_width * 2;
+  src->stride = buf_width * buf_bpp;
 
 #if (EXYNOS_GFX_DEBUG_LOG == 1)
   RARCH_LOG("video_exynos: using font rendering image with size %ux%u\n",
