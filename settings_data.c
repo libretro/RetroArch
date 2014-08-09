@@ -1105,8 +1105,7 @@ static void general_write_handler(const void *data)
    }
    else if (!strcmp(setting->name, "video_swap_interval"))
    {
-      g_settings.video.swap_interval = min(*setting->value.unsigned_integer, 4);
-      g_settings.video.swap_interval = max(g_settings.video.swap_interval, 1);
+      g_settings.video.swap_interval = *setting->value.unsigned_integer;
       if (driver.video && driver.video_data)
          video_set_nonblock_state_func(false);
    }
