@@ -1734,7 +1734,7 @@ rarch_setting_t* setting_data_get_list(void)
          /*******************/
          START_GROUP("User Options")
          START_SUB_GROUP("State")
-         CONFIG_PATH(g_settings.username,          "netplay_nickname",   "Username",       "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+         CONFIG_STRING(g_settings.username,          "netplay_nickname",   "Username",       "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
          CONFIG_UINT(g_settings.user_language,     "user_language",      "Language",       def_user_language, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_RANGE(0, RETRO_LANGUAGE_LAST-1, 1, true, true)
          END_SUB_GROUP()
          END_GROUP()
