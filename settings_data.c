@@ -1186,8 +1186,14 @@ static void general_write_handler(const void *data)
    else if (!strcmp(setting->name, "fastforward_ratio"))
    {
       if (*setting->value.fraction == 0.0)
-         *setting->value.fraction = 1.0;
-      g_settings.fastforward_ratio = *setting->value.fraction;
+      {
+         if (g_settings.fastforward_ratio >= 1.0)
+            g_settings.fastforward_ratio = -1.0;
+         else
+            g_settings.fastforward_ratio = 1.0;
+      }
+      else
+         g_settings.fastforward_ratio = *setting->value.fraction;
    }
    else if (!strcmp(setting->name, "autosave_interval"))
    {
