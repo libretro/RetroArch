@@ -31,6 +31,7 @@ enum setting_type
    ST_UINT,
    ST_FLOAT,
    ST_PATH,
+   ST_DIR,
    ST_STRING,
    ST_HEX,
    ST_BIND,

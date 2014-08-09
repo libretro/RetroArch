@@ -100,6 +100,7 @@ void setting_data_reset_setting(const rarch_setting_t* setting)
          break;
       case ST_STRING:
       case ST_PATH:
+      case ST_DIR:
          if (setting->default_value.string)
          {
             if (setting->type == ST_STRING)
@@ -138,6 +139,7 @@ static bool setting_data_load_config(const rarch_setting_t* settings, config_fil
             config_get_bool  (config, setting->name, setting->value.boolean);
             break;
          case ST_PATH:
+         case ST_DIR:
             config_get_path  (config, setting->name, setting->value.string, setting->size);
             break;
          case ST_STRING:
@@ -222,6 +224,7 @@ bool setting_data_save_config(const rarch_setting_t* settings, config_file_t* co
             config_set_bool(config, setting->name, *setting->value.boolean);
             break;
          case ST_PATH:
+         case ST_DIR:
             config_set_path(config, setting->name, setting->value.string);
             break;
          case ST_STRING:
@@ -344,6 +347,7 @@ void setting_data_set_with_string_representation(const rarch_setting_t* setting,
          }
          break;
       case ST_PATH:
+      case ST_DIR:
       case ST_STRING:
          strlcpy(setting->value.string, value, setting->size);
          break;
@@ -376,6 +380,7 @@ const char* setting_data_get_string_representation(const rarch_setting_t* settin
          snprintf(buffer, length, "%f", *setting->value.fraction);
          break;
       case ST_PATH:
+      case ST_DIR:
       case ST_STRING:
          strlcpy(buffer, setting->value.string, length);
          break;
@@ -1421,6 +1426,7 @@ static void general_write_handler(const void *data)
 #define CONFIG_UINT(TARGET, NAME, SHORT, DEF, GROUP, SUBGROUP, CHANGE_HANDLER, READ_HANDLER)   NEXT = setting_data_uint_setting  (NAME, SHORT, &TARGET, DEF, GROUP, SUBGROUP, CHANGE_HANDLER, READ_HANDLER);
 #define CONFIG_FLOAT(TARGET, NAME, SHORT, DEF, GROUP, SUBGROUP, CHANGE_HANDLER, READ_HANDLER)  NEXT = setting_data_float_setting (NAME, SHORT, &TARGET, DEF, GROUP, SUBGROUP, CHANGE_HANDLER, READ_HANDLER);
 #define CONFIG_PATH(TARGET, NAME, SHORT, DEF, GROUP, SUBGROUP, CHANGE_HANDLER, READ_HANDLER)   NEXT = setting_data_string_setting(ST_PATH, NAME, SHORT, TARGET, sizeof(TARGET), DEF, GROUP, SUBGROUP, CHANGE_HANDLER, READ_HANDLER);
+#define CONFIG_DIR(TARGET, NAME, SHORT, DEF, GROUP, SUBGROUP, CHANGE_HANDLER, READ_HANDLER)   NEXT = setting_data_string_setting(ST_DIR, NAME, SHORT, TARGET, sizeof(TARGET), DEF, GROUP, SUBGROUP, CHANGE_HANDLER, READ_HANDLER);
 #define CONFIG_STRING(TARGET, NAME, SHORT, DEF, GROUP, SUBGROUP, CHANGE_HANDLER, READ_HANDLER) NEXT = setting_data_string_setting(ST_STRING, NAME, SHORT, TARGET, sizeof(TARGET), DEF, GROUP, SUBGROUP, CHANGE_HANDLER, READ_HANDLER);
 #define CONFIG_HEX(TARGET, NAME, SHORT, GROUP, SUBGROUP)
 #define CONFIG_BIND(TARGET, PLAYER, NAME, SHORT, DEF, GROUP, SUBGROUP) \
@@ -1745,31 +1751,31 @@ rarch_setting_t* setting_data_get_list(void)
          END_SUB_GROUP()
          START_SUB_GROUP("Paths")
 #ifdef HAVE_MENU
-         CONFIG_PATH(g_settings.menu_content_directory,     "rgui_browser_directory",     "Browser Directory",          "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)                WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
-         CONFIG_PATH(g_settings.content_directory,     "content_directory",     "Content Directory",          "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)                WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
-         CONFIG_PATH(g_settings.assets_directory,           "assets_directory",           "Assets Directory",           "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)                WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
-         CONFIG_PATH(g_settings.menu_config_directory,      "rgui_config_directory",      "Config Directory",           "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)                WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
+         CONFIG_DIR(g_settings.menu_content_directory,     "rgui_browser_directory",     "Browser Directory",          "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)                WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
+         CONFIG_DIR(g_settings.content_directory,     "content_directory",     "Content Directory",          "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)                WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
+         CONFIG_DIR(g_settings.assets_directory,           "assets_directory",           "Assets Directory",           "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)                WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
+         CONFIG_DIR(g_settings.menu_config_directory,      "rgui_config_directory",      "Config Directory",           "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)                WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
 
 #endif
          CONFIG_PATH(g_settings.libretro,                   "libretro_path",              "Libretro Path",              "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)                WITH_FLAGS(SD_FLAG_ALLOW_EMPTY)
-         CONFIG_PATH(g_settings.libretro_directory,         "libretro_dir_path",         "Core Directory",              g_defaults.core_dir ? g_defaults.core_dir : "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)   WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
+         CONFIG_DIR(g_settings.libretro_directory,         "libretro_dir_path",         "Core Directory",              g_defaults.core_dir ? g_defaults.core_dir : "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)   WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
          CONFIG_PATH(g_settings.libretro_info_path,         "libretro_info_path",         "Core Info Directory",        g_defaults.core_info_dir ? g_defaults.core_info_dir : "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)   WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
          CONFIG_PATH(g_settings.core_options_path,          "core_options_path",          "Core Options Path",          "", "Paths", SUBGROUP_NAME, general_write_handler, general_read_handler)                WITH_FLAGS(SD_FLAG_ALLOW_EMPTY)
          CONFIG_PATH(g_settings.cheat_database,             "cheat_database_path",        "Cheat Database",             "", "Paths", SUBGROUP_NAME, general_write_handler, general_read_handler)                WITH_FLAGS(SD_FLAG_ALLOW_EMPTY)
          CONFIG_PATH(g_settings.cheat_settings_path,        "cheat_settings_path",        "Cheat Settings",             "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)                WITH_FLAGS(SD_FLAG_ALLOW_EMPTY)
          CONFIG_PATH(g_settings.content_history_path,          "game_history_path",          "Content History Path",       "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)                WITH_FLAGS(SD_FLAG_ALLOW_EMPTY)
 
-         CONFIG_PATH(g_settings.video.shader_dir,           "video_shader_dir",           "Shader Directory",           g_defaults.shader_dir ? g_defaults.shader_dir : "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)  WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
+         CONFIG_DIR(g_settings.video.shader_dir,           "video_shader_dir",           "Shader Directory",           g_defaults.shader_dir ? g_defaults.shader_dir : "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)  WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
 
 #ifdef HAVE_OVERLAY
-         CONFIG_PATH(g_extern.overlay_dir,                  "overlay_directory",          "Overlay Directory",          g_defaults.overlay_dir ? g_defaults.overlay_dir : "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
+         CONFIG_DIR(g_extern.overlay_dir,                  "overlay_directory",          "Overlay Directory",          g_defaults.overlay_dir ? g_defaults.overlay_dir : "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
 #endif
-         CONFIG_PATH(g_settings.screenshot_directory,       "screenshot_directory",       "Screenshot Directory",       "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)                WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
-         CONFIG_PATH(g_settings.input.autoconfig_dir,       "joypad_autoconfig_dir",      "Joypad Autoconfig Directory", "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)          WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
-       CONFIG_PATH(g_extern.savefile_dir, "savefile_directory", "Savefile Directory", "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler);
-       CONFIG_PATH(g_extern.savestate_dir, "savestate_directory", "Savestate Directory", "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
-       CONFIG_PATH(g_settings.system_directory, "system_directory", "System Directory", "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
-       CONFIG_PATH(g_settings.extraction_directory, "extraction_directory", "Extraction Directory", "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+         CONFIG_DIR(g_settings.screenshot_directory,       "screenshot_directory",       "Screenshot Directory",       "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)                WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
+         CONFIG_DIR(g_settings.input.autoconfig_dir,       "joypad_autoconfig_dir",      "Joypad Autoconfig Directory", "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)          WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
+       CONFIG_DIR(g_extern.savefile_dir, "savefile_directory", "Savefile Directory", "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler);
+       CONFIG_DIR(g_extern.savestate_dir, "savestate_directory", "Savestate Directory", "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+       CONFIG_DIR(g_settings.system_directory, "system_directory", "System Directory", "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+       CONFIG_DIR(g_settings.extraction_directory, "extraction_directory", "Extraction Directory", "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
          END_SUB_GROUP()
          END_GROUP()
        
