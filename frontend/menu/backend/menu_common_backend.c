@@ -3393,942 +3393,910 @@ static int menu_common_setting_set(unsigned id, unsigned action, rarch_setting_t
       }
       return 0;
    }
-
-   switch (id)
+   else if (setting && setting->type == ST_BOOL)
+      menu_common_setting_set_current_boolean(setting, action);
+   else
    {
-      case MENU_START_SCREEN:
-         if (action == MENU_ACTION_OK)
-            file_list_push(driver.menu->menu_stack, "", "", MENU_START_SCREEN, 0);
-         break;
-      case MENU_SETTINGS_REWIND_GRANULARITY:
-      case MENU_SETTINGS_AUDIO_LATENCY:
-      case MENU_CONTENT_HISTORY_SIZE:
-      case MENU_SETTINGS_NETPLAY_DELAY_FRAMES:
-         if (setting)
-            menu_common_setting_set_current_unsigned_integer(setting, 1, action, true, false);
-         break;
-      case MENU_SETTINGS_LIBRETRO_LOG_LEVEL:
-      case MENU_SETTINGS_USER_LANGUAGE:
-      case MENU_SETTINGS_VIDEO_ROTATION:
-      case MENU_SETTINGS_VIDEO_ASPECT_RATIO:
-      case MENU_SETTINGS_VIDEO_SWAP_INTERVAL:
-      case MENU_SETTINGS_VIDEO_HARD_SYNC_FRAMES:
-         if (setting)
-            menu_common_setting_set_current_unsigned_integer(setting, 1, action, true, true);
-         break;
-      case MENU_SETTINGS_VIDEO_MONITOR_INDEX:
-         if (setting)
-            menu_common_setting_set_current_unsigned_integer(setting, 1, action, false, false);
-         break;
-      case MENU_SETTINGS_GPU_SCREENSHOT:
-      case MENU_SETTINGS_REWIND_ENABLE:
-      case MENU_SETTINGS_LOGGING_VERBOSITY:
-      case MENU_SETTINGS_PERFORMANCE_COUNTERS_ENABLE:
-      case MENU_SETTINGS_CONFIG_SAVE_ON_EXIT:
-      case MENU_SETTINGS_SAVESTATE_AUTO_SAVE:
-      case MENU_SETTINGS_SAVESTATE_AUTO_LOAD:
-      case MENU_SETTINGS_BLOCK_SRAM_OVERWRITE:
-      case MENU_SETTINGS_PER_CORE_CONFIG:
-      case MENU_SETTINGS_AUDIO_ENABLE:
-      case MENU_SETTINGS_AUDIO_MUTE:
-      case MENU_SETTINGS_AUDIO_SYNC:
-      case MENU_SETTINGS_DEBUG_TEXT:
-      case MENU_SETTINGS_DEVICE_AUTODETECT_ENABLE:
-      case MENU_SETTINGS_VIDEO_FILTER:
-      case MENU_SETTINGS_VIDEO_INTEGER_SCALE:
-      case MENU_SETTINGS_TOGGLE_FULLSCREEN:
-      case MENU_SETTINGS_VIDEO_HW_SHARED_CONTEXT:
-      case MENU_SETTINGS_VIDEO_VSYNC:
-      case MENU_SETTINGS_VIDEO_HARD_SYNC:
-      case MENU_SETTINGS_VIDEO_BLACK_FRAME_INSERTION:
-      case MENU_SETTINGS_VIDEO_CROP_OVERSCAN:
-      case MENU_SETTINGS_VIDEO_THREADED:
-      case MENU_SETTINGS_PAUSE_IF_WINDOW_FOCUS_LOST:
-      case MENU_SETTINGS_WINDOW_COMPOSITING_ENABLE:
-      case MENU_SETTINGS_NETPLAY_ENABLE:
-      case MENU_SETTINGS_NETPLAY_MODE:
-      case MENU_SETTINGS_NETPLAY_SPECTATOR_MODE_ENABLE:
-      case MENU_SETTINGS_ONSCREEN_KEYBOARD_ENABLE:
-      case MENU_SETTINGS_PRIVACY_CAMERA_ALLOW:
-      case MENU_SETTINGS_PRIVACY_LOCATION_ALLOW:
-      case MENU_SETTINGS_FONT_ENABLE:
-      case MENU_SETTINGS_LOAD_DUMMY_ON_CORE_SHUTDOWN:
-         if (setting)
-            menu_common_setting_set_current_boolean(setting, action);
-         break;
+      switch (id)
+      {
+         case MENU_START_SCREEN:
+            if (action == MENU_ACTION_OK)
+               file_list_push(driver.menu->menu_stack, "", "", MENU_START_SCREEN, 0);
+            break;
+         case MENU_SETTINGS_REWIND_GRANULARITY:
+         case MENU_SETTINGS_AUDIO_LATENCY:
+         case MENU_CONTENT_HISTORY_SIZE:
+         case MENU_SETTINGS_NETPLAY_DELAY_FRAMES:
+            if (setting)
+               menu_common_setting_set_current_unsigned_integer(setting, 1, action, true, false);
+            break;
+         case MENU_SETTINGS_LIBRETRO_LOG_LEVEL:
+         case MENU_SETTINGS_USER_LANGUAGE:
+         case MENU_SETTINGS_VIDEO_ROTATION:
+         case MENU_SETTINGS_VIDEO_ASPECT_RATIO:
+         case MENU_SETTINGS_VIDEO_SWAP_INTERVAL:
+         case MENU_SETTINGS_VIDEO_HARD_SYNC_FRAMES:
+            if (setting)
+               menu_common_setting_set_current_unsigned_integer(setting, 1, action, true, true);
+            break;
+         case MENU_SETTINGS_VIDEO_MONITOR_INDEX:
+            if (setting)
+               menu_common_setting_set_current_unsigned_integer(setting, 1, action, false, false);
+            break;
 #if defined(HAVE_THREADS)
-      case MENU_SETTINGS_SRAM_AUTOSAVE:
-         if (setting)
-         {
-            if (action == MENU_ACTION_OK || action == MENU_ACTION_RIGHT)
-               *setting->value.unsigned_integer += 10;
-            else if (action == MENU_ACTION_LEFT)
+         case MENU_SETTINGS_SRAM_AUTOSAVE:
+            if (setting)
             {
-               if (*setting->value.unsigned_integer)
-                  *setting->value.unsigned_integer -= min(10, *setting->value.unsigned_integer);
+               if (action == MENU_ACTION_OK || action == MENU_ACTION_RIGHT)
+                  *setting->value.unsigned_integer += 10;
+               else if (action == MENU_ACTION_LEFT)
+               {
+                  if (*setting->value.unsigned_integer)
+                     *setting->value.unsigned_integer -= min(10, *setting->value.unsigned_integer);
+               }
+               else if (action == MENU_ACTION_START)
+                  *setting->value.unsigned_integer = 0;
+
+               if (setting->change_handler)
+                  setting->change_handler(setting);
+            }
+            break;
+#endif
+         case MENU_SETTINGS_SAVESTATE_SAVE:
+         case MENU_SETTINGS_SAVESTATE_LOAD:
+            if (action == MENU_ACTION_OK)
+            {
+               if (id == MENU_SETTINGS_SAVESTATE_SAVE)
+                  rarch_main_command(RARCH_CMD_SAVE_STATE);
+               else
+                  rarch_main_command(RARCH_CMD_LOAD_STATE);
+               return -1;
             }
             else if (action == MENU_ACTION_START)
-               *setting->value.unsigned_integer = 0;
-
-            if (setting->change_handler)
-               setting->change_handler(setting);
-         }
-         break;
-#endif
-      case MENU_SETTINGS_SAVESTATE_SAVE:
-      case MENU_SETTINGS_SAVESTATE_LOAD:
-         if (action == MENU_ACTION_OK)
-         {
-            if (id == MENU_SETTINGS_SAVESTATE_SAVE)
-               rarch_main_command(RARCH_CMD_SAVE_STATE);
-            else
-               rarch_main_command(RARCH_CMD_LOAD_STATE);
-            return -1;
-         }
-         else if (action == MENU_ACTION_START)
-            g_settings.state_slot = 0;
-         else if (action == MENU_ACTION_LEFT)
-         {
-            // Slot -1 is (auto) slot.
-            if (g_settings.state_slot >= 0)
-               g_settings.state_slot--;
-         }
-         else if (action == MENU_ACTION_RIGHT)
-            g_settings.state_slot++;
-         break;
-      case MENU_SETTINGS_SCREENSHOT:
-         if (action == MENU_ACTION_OK)
-            rarch_main_command(RARCH_CMD_TAKE_SCREENSHOT);
-         break;
-      case MENU_SETTINGS_RESTART_GAME:
-         if (action == MENU_ACTION_OK)
-         {
-            rarch_main_command(RARCH_CMD_RESET);
-            return -1;
-         }
-         break;
-      case MENU_SETTINGS_AUDIO_CONTROL_RATE_DELTA:
-         if (action == MENU_ACTION_START)
-         {
-            g_settings.audio.rate_control_delta = rate_control_delta;
-            g_settings.audio.rate_control = rate_control;
-         }
-         else if (action == MENU_ACTION_LEFT)
-         {
-            if (g_settings.audio.rate_control_delta > 0.0)
-               g_settings.audio.rate_control_delta -= 0.001;
-
-            if (g_settings.audio.rate_control_delta < 0.0005)
-            {
-               g_settings.audio.rate_control = false;
-               g_settings.audio.rate_control_delta = 0.0;
-            }
-            else
-               g_settings.audio.rate_control = true;
-         }
-         else if (action == MENU_ACTION_RIGHT)
-         {
-            if (g_settings.audio.rate_control_delta < 0.2)
-               g_settings.audio.rate_control_delta += 0.001;
-            g_settings.audio.rate_control = true;
-         }
-         break;
-      case MENU_SETTINGS_AUDIO_VOLUME:
-         {
-            float db_delta = 0.0f;
-            if (action == MENU_ACTION_START)
-            {
-               g_extern.audio_data.volume_db = 0.0f;
-               g_extern.audio_data.volume_gain = 1.0f;
-            }
+               g_settings.state_slot = 0;
             else if (action == MENU_ACTION_LEFT)
-               db_delta -= 1.0f;
+            {
+               // Slot -1 is (auto) slot.
+               if (g_settings.state_slot >= 0)
+                  g_settings.state_slot--;
+            }
             else if (action == MENU_ACTION_RIGHT)
-               db_delta += 1.0f;
-
-            if (db_delta != 0.0f)
-            {
-               g_extern.audio_data.volume_db += db_delta;
-               g_extern.audio_data.volume_db = max(g_extern.audio_data.volume_db, -80.0f);
-               g_extern.audio_data.volume_db = min(g_extern.audio_data.volume_db, 12.0f);
-               g_extern.audio_data.volume_gain = db_to_gain(g_extern.audio_data.volume_db);
-            }
-         }
-         break;
-      case MENU_SETTINGS_FASTFORWARD_RATIO:
-      case MENU_SETTINGS_OVERLAY_OPACITY:
-      case MENU_SETTINGS_OVERLAY_SCALE:
-         if (setting)
-            menu_common_setting_set_current_fraction(setting, 0.1f, action, true, true);
-         break;
-      case MENU_SETTINGS_SLOWMOTION_RATIO:
-         if (setting)
-            menu_common_setting_set_current_fraction(setting, 0.1f, action, false, false);
-         break;
-      case MENU_SETTINGS_INPUT_AXIS_THRESHOLD:
-         if (setting)
-            menu_common_setting_set_current_fraction(setting, 0.01f, action, false, false);
-         break;
-      case MENU_SETTINGS_VIDEO_WINDOW_SCALE_X:
-      case MENU_SETTINGS_VIDEO_WINDOW_SCALE_Y:
-      case MENU_SETTINGS_FONT_SIZE:
-         if (setting)
-            menu_common_setting_set_current_fraction(setting, 1.0f, action, false, false);
-         break;
-      case MENU_SETTINGS_VIDEO_REFRESH_RATE:
-         if (setting)
-            menu_common_setting_set_current_fraction(setting, 0.001f, action, false, false);
-         break;
-      case MENU_SETTINGS_DISK_INDEX:
-         {
-            int step = 0;
-
-            if (action == MENU_ACTION_RIGHT || action == MENU_ACTION_OK)
-               step = 1;
-            else if (action == MENU_ACTION_LEFT)
-               step = -1;
-
-            if (step)
-            {
-               const struct retro_disk_control_callback *control = (const struct retro_disk_control_callback*)&g_extern.system.disk_control;
-               unsigned num_disks = control->get_num_images();
-               unsigned current   = control->get_image_index();
-               unsigned next_index = (current + num_disks + 1 + step) % (num_disks + 1);
-               rarch_disk_control_set_eject(true, false);
-               rarch_disk_control_set_index(next_index);
-               rarch_disk_control_set_eject(false, false);
-            }
-
+               g_settings.state_slot++;
             break;
-         }
-      case MENU_SETTINGS_RESTART_EMULATOR:
-         if (action == MENU_ACTION_OK)
-         {
+         case MENU_SETTINGS_SCREENSHOT:
+            if (action == MENU_ACTION_OK)
+               rarch_main_command(RARCH_CMD_TAKE_SCREENSHOT);
+            break;
+         case MENU_SETTINGS_RESTART_GAME:
+            if (action == MENU_ACTION_OK)
+            {
+               rarch_main_command(RARCH_CMD_RESET);
+               return -1;
+            }
+            break;
+         case MENU_SETTINGS_AUDIO_CONTROL_RATE_DELTA:
+            if (action == MENU_ACTION_START)
+            {
+               g_settings.audio.rate_control_delta = rate_control_delta;
+               g_settings.audio.rate_control = rate_control;
+            }
+            else if (action == MENU_ACTION_LEFT)
+            {
+               if (g_settings.audio.rate_control_delta > 0.0)
+                  g_settings.audio.rate_control_delta -= 0.001;
+
+               if (g_settings.audio.rate_control_delta < 0.0005)
+               {
+                  g_settings.audio.rate_control = false;
+                  g_settings.audio.rate_control_delta = 0.0;
+               }
+               else
+                  g_settings.audio.rate_control = true;
+            }
+            else if (action == MENU_ACTION_RIGHT)
+            {
+               if (g_settings.audio.rate_control_delta < 0.2)
+                  g_settings.audio.rate_control_delta += 0.001;
+               g_settings.audio.rate_control = true;
+            }
+            break;
+         case MENU_SETTINGS_AUDIO_VOLUME:
+            {
+               float db_delta = 0.0f;
+               if (action == MENU_ACTION_START)
+               {
+                  g_extern.audio_data.volume_db = 0.0f;
+                  g_extern.audio_data.volume_gain = 1.0f;
+               }
+               else if (action == MENU_ACTION_LEFT)
+                  db_delta -= 1.0f;
+               else if (action == MENU_ACTION_RIGHT)
+                  db_delta += 1.0f;
+
+               if (db_delta != 0.0f)
+               {
+                  g_extern.audio_data.volume_db += db_delta;
+                  g_extern.audio_data.volume_db = max(g_extern.audio_data.volume_db, -80.0f);
+                  g_extern.audio_data.volume_db = min(g_extern.audio_data.volume_db, 12.0f);
+                  g_extern.audio_data.volume_gain = db_to_gain(g_extern.audio_data.volume_db);
+               }
+            }
+            break;
+         case MENU_SETTINGS_FASTFORWARD_RATIO:
+         case MENU_SETTINGS_OVERLAY_OPACITY:
+         case MENU_SETTINGS_OVERLAY_SCALE:
+            if (setting)
+               menu_common_setting_set_current_fraction(setting, 0.1f, action, true, true);
+            break;
+         case MENU_SETTINGS_SLOWMOTION_RATIO:
+            if (setting)
+               menu_common_setting_set_current_fraction(setting, 0.1f, action, false, false);
+            break;
+         case MENU_SETTINGS_INPUT_AXIS_THRESHOLD:
+            if (setting)
+               menu_common_setting_set_current_fraction(setting, 0.01f, action, false, false);
+            break;
+         case MENU_SETTINGS_VIDEO_WINDOW_SCALE_X:
+         case MENU_SETTINGS_VIDEO_WINDOW_SCALE_Y:
+         case MENU_SETTINGS_FONT_SIZE:
+            if (setting)
+               menu_common_setting_set_current_fraction(setting, 1.0f, action, false, false);
+            break;
+         case MENU_SETTINGS_VIDEO_REFRESH_RATE:
+            if (setting)
+               menu_common_setting_set_current_fraction(setting, 0.001f, action, false, false);
+            break;
+         case MENU_SETTINGS_DISK_INDEX:
+            {
+               int step = 0;
+
+               if (action == MENU_ACTION_RIGHT || action == MENU_ACTION_OK)
+                  step = 1;
+               else if (action == MENU_ACTION_LEFT)
+                  step = -1;
+
+               if (step)
+               {
+                  const struct retro_disk_control_callback *control = (const struct retro_disk_control_callback*)&g_extern.system.disk_control;
+                  unsigned num_disks = control->get_num_images();
+                  unsigned current   = control->get_image_index();
+                  unsigned next_index = (current + num_disks + 1 + step) % (num_disks + 1);
+                  rarch_disk_control_set_eject(true, false);
+                  rarch_disk_control_set_index(next_index);
+                  rarch_disk_control_set_eject(false, false);
+               }
+
+               break;
+            }
+         case MENU_SETTINGS_RESTART_EMULATOR:
+            if (action == MENU_ACTION_OK)
+            {
 #if defined(GEKKO) && defined(HW_RVL)
-            fill_pathname_join(g_extern.fullpath, g_defaults.core_dir, SALAMANDER_FILE,
-                  sizeof(g_extern.fullpath));
+               fill_pathname_join(g_extern.fullpath, g_defaults.core_dir, SALAMANDER_FILE,
+                     sizeof(g_extern.fullpath));
 #endif
-            g_extern.lifecycle_state &= ~(1ULL << MODE_GAME);
-            g_extern.lifecycle_state |= (1ULL << MODE_EXITSPAWN);
-            return -1;
-         }
-         break;
-      case MENU_SETTINGS_RESUME_GAME:
-         if (action == MENU_ACTION_OK)
-         {
-            g_extern.lifecycle_state |= (1ULL << MODE_GAME);
-            return -1;
-         }
-         break;
-      case MENU_SETTINGS_QUIT_RARCH:
-         if (action == MENU_ACTION_OK)
-         {
-            g_extern.lifecycle_state &= ~(1ULL << MODE_GAME);
-            return -1;
-         }
-         break;
-      case MENU_SETTINGS_SAVE_CONFIG:
-         if (action == MENU_ACTION_OK)
-            menu_save_new_config();
-         break;
+               g_extern.lifecycle_state &= ~(1ULL << MODE_GAME);
+               g_extern.lifecycle_state |= (1ULL << MODE_EXITSPAWN);
+               return -1;
+            }
+            break;
+         case MENU_SETTINGS_RESUME_GAME:
+            if (action == MENU_ACTION_OK)
+            {
+               g_extern.lifecycle_state |= (1ULL << MODE_GAME);
+               return -1;
+            }
+            break;
+         case MENU_SETTINGS_QUIT_RARCH:
+            if (action == MENU_ACTION_OK)
+            {
+               g_extern.lifecycle_state &= ~(1ULL << MODE_GAME);
+               return -1;
+            }
+            break;
+         case MENU_SETTINGS_SAVE_CONFIG:
+            if (action == MENU_ACTION_OK)
+               menu_save_new_config();
+            break;
 #ifdef HAVE_OVERLAY
-      case MENU_SETTINGS_OVERLAY_PRESET:
-         if (setting)
-            menu_common_setting_set_current_path_selection(setting, g_extern.overlay_dir, id, action);
-         break;
+         case MENU_SETTINGS_OVERLAY_PRESET:
+            if (setting)
+               menu_common_setting_set_current_path_selection(setting, g_extern.overlay_dir, id, action);
+            break;
 #endif
-      case MENU_CONTENT_HISTORY_PATH:
-         if (setting)
-            menu_common_setting_set_current_path_selection(setting, "", id, action);
-         break;
-      case MENU_SETTINGS_VIDEO_SOFTFILTER:
-         switch (action)
-         {
-#ifdef HAVE_FILTERS_BUILTIN
-            case MENU_ACTION_LEFT:
-               if (g_settings.video.filter_idx > 0)
-                  g_settings.video.filter_idx--;
-               break;
-            case MENU_ACTION_RIGHT:
-               if ((g_settings.video.filter_idx + 1) != softfilter_get_last_idx())
-                  g_settings.video.filter_idx++;
-               break;
-#endif
-            case MENU_ACTION_OK:
-#ifdef HAVE_FILTERS_BUILTIN
-               driver.menu_data_own = true;
-               rarch_main_command(RARCH_CMD_REINIT);
-#elif defined(HAVE_DYLIB)
-               file_list_push(driver.menu->menu_stack, g_settings.video.filter_dir, "", id, driver.menu->selection_ptr);
-               menu_clear_navigation(driver.menu);
-#endif
-               driver.menu->need_refresh = true;
-               break;
-            case MENU_ACTION_START:
-#if defined(HAVE_FILTERS_BUILTIN)
-               g_settings.video.filter_idx = 0;
-#else
-               strlcpy(g_settings.video.filter_path, "", sizeof(g_settings.video.filter_path));
-#endif
-               driver.menu_data_own = true;
-               rarch_main_command(RARCH_CMD_REINIT);
-               break;
-         }
-         break;
-      case MENU_SETTINGS_AUDIO_DSP_FILTER:
-         if (setting)
-            menu_common_setting_set_current_path_selection(setting, g_settings.audio.filter_dir, id, action);
-         break;
-         // controllers
-      case MENU_SETTINGS_BIND_PLAYER:
-         if (action == MENU_ACTION_START)
-            driver.menu->current_pad = 0;
-         else if (action == MENU_ACTION_LEFT)
-         {
-            if (driver.menu->current_pad != 0)
-               driver.menu->current_pad--;
-         }
-         else if (action == MENU_ACTION_RIGHT)
-         {
-            if (driver.menu->current_pad < MAX_PLAYERS - 1)
-               driver.menu->current_pad++;
-         }
-         if (port != driver.menu->current_pad)
-            driver.menu->need_refresh = true;
-         port = driver.menu->current_pad;
-         break;
-      case MENU_SETTINGS_BIND_DEVICE:
-         // If set_keybinds is supported, we do it more fancy, and scroll through
-         // a list of supported devices directly.
-         if (driver.input->set_keybinds && driver.input->devices_size)
-         {
-            unsigned device_last = driver.input->devices_size(driver.input_data);
-            g_settings.input.device[port] += device_last;
-            if (action == MENU_ACTION_START)
-               g_settings.input.device[port] = 0;
-            else if (action == MENU_ACTION_LEFT)
-               g_settings.input.device[port]--;
-            else if (action == MENU_ACTION_RIGHT)
-               g_settings.input.device[port]++;
-
-            // device_last can be 0, avoid modulo.
-            if (g_settings.input.device[port] >= device_last)
-               g_settings.input.device[port] -= device_last;
-            // needs to be checked twice, in case we go right past the end of the list
-            if (g_settings.input.device[port] >= device_last)
-               g_settings.input.device[port] -= device_last;
-
-            unsigned keybind_action = (1ULL << KEYBINDS_ACTION_SET_DEFAULT_BINDS);
-
-            driver.input->set_keybinds(driver.input_data, g_settings.input.device[port], port, 0,
-                  keybind_action);
-         }
-         else
-         {
-            // When only straight g_settings.input.joypad_map[] style
-            // mapping is supported.
-            int *p = &g_settings.input.joypad_map[port];
-            if (action == MENU_ACTION_START)
-               *p = port;
-            else if (action == MENU_ACTION_LEFT)
-               (*p)--;
-            else if (action == MENU_ACTION_RIGHT)
-               (*p)++;
-
-            if (*p < -1)
-               *p = -1;
-            else if (*p >= MAX_PLAYERS)
-               *p = MAX_PLAYERS - 1;
-         }
-         break;
-      case MENU_SETTINGS_BIND_ANALOG_MODE:
-         switch (action)
-         {
-            case MENU_ACTION_START:
-               g_settings.input.analog_dpad_mode[port] = 0;
-               break;
-
-            case MENU_ACTION_OK:
-            case MENU_ACTION_RIGHT:
-               g_settings.input.analog_dpad_mode[port] = (g_settings.input.analog_dpad_mode[port] + 1) % ANALOG_DPAD_LAST;
-               break;
-
-            case MENU_ACTION_LEFT:
-               g_settings.input.analog_dpad_mode[port] = (g_settings.input.analog_dpad_mode[port] + ANALOG_DPAD_LAST - 1) % ANALOG_DPAD_LAST;
-               break;
-
-            default:
-               break;
-         }
-         break;
-      case MENU_SETTINGS_BIND_DEVICE_TYPE:
-         {
-            unsigned current_device, current_index, i, devices[128];
-            const struct retro_controller_info *desc;
-            unsigned types = 0;
-
-            devices[types++] = RETRO_DEVICE_NONE;
-            devices[types++] = RETRO_DEVICE_JOYPAD;
-            // Only push RETRO_DEVICE_ANALOG as default if we use an older core which doesn't use SET_CONTROLLER_INFO.
-            if (!g_extern.system.num_ports)
-               devices[types++] = RETRO_DEVICE_ANALOG;
-
-            desc = port < g_extern.system.num_ports ? &g_extern.system.ports[port] : NULL;
-            if (desc)
+         case MENU_CONTENT_HISTORY_PATH:
+            if (setting)
+               menu_common_setting_set_current_path_selection(setting, "", id, action);
+            break;
+         case MENU_SETTINGS_VIDEO_SOFTFILTER:
+            switch (action)
             {
-               for (i = 0; i < desc->num_types; i++)
-               {
-                  unsigned id = desc->types[i].id;
-                  if (types < ARRAY_SIZE(devices) && id != RETRO_DEVICE_NONE && id != RETRO_DEVICE_JOYPAD)
-                     devices[types++] = id;
-               }
-            }
-
-            current_device = g_settings.input.libretro_device[port];
-            current_index = 0;
-            for (i = 0; i < types; i++)
-            {
-               if (current_device == devices[i])
-               {
-                  current_index = i;
+#ifdef HAVE_FILTERS_BUILTIN
+               case MENU_ACTION_LEFT:
+                  if (g_settings.video.filter_idx > 0)
+                     g_settings.video.filter_idx--;
                   break;
-               }
+               case MENU_ACTION_RIGHT:
+                  if ((g_settings.video.filter_idx + 1) != softfilter_get_last_idx())
+                     g_settings.video.filter_idx++;
+                  break;
+#endif
+               case MENU_ACTION_OK:
+#ifdef HAVE_FILTERS_BUILTIN
+                  driver.menu_data_own = true;
+                  rarch_main_command(RARCH_CMD_REINIT);
+#elif defined(HAVE_DYLIB)
+                  file_list_push(driver.menu->menu_stack, g_settings.video.filter_dir, "", id, driver.menu->selection_ptr);
+                  menu_clear_navigation(driver.menu);
+#endif
+                  driver.menu->need_refresh = true;
+                  break;
+               case MENU_ACTION_START:
+#if defined(HAVE_FILTERS_BUILTIN)
+                  g_settings.video.filter_idx = 0;
+#else
+                  strlcpy(g_settings.video.filter_path, "", sizeof(g_settings.video.filter_path));
+#endif
+                  driver.menu_data_own = true;
+                  rarch_main_command(RARCH_CMD_REINIT);
+                  break;
             }
+            break;
+         case MENU_SETTINGS_AUDIO_DSP_FILTER:
+            if (setting)
+               menu_common_setting_set_current_path_selection(setting, g_settings.audio.filter_dir, id, action);
+            break;
+            // controllers
+         case MENU_SETTINGS_BIND_PLAYER:
+            if (action == MENU_ACTION_START)
+               driver.menu->current_pad = 0;
+            else if (action == MENU_ACTION_LEFT)
+            {
+               if (driver.menu->current_pad != 0)
+                  driver.menu->current_pad--;
+            }
+            else if (action == MENU_ACTION_RIGHT)
+            {
+               if (driver.menu->current_pad < MAX_PLAYERS - 1)
+                  driver.menu->current_pad++;
+            }
+            if (port != driver.menu->current_pad)
+               driver.menu->need_refresh = true;
+            port = driver.menu->current_pad;
+            break;
+         case MENU_SETTINGS_BIND_DEVICE:
+            // If set_keybinds is supported, we do it more fancy, and scroll through
+            // a list of supported devices directly.
+            if (driver.input->set_keybinds && driver.input->devices_size)
+            {
+               unsigned device_last = driver.input->devices_size(driver.input_data);
+               g_settings.input.device[port] += device_last;
+               if (action == MENU_ACTION_START)
+                  g_settings.input.device[port] = 0;
+               else if (action == MENU_ACTION_LEFT)
+                  g_settings.input.device[port]--;
+               else if (action == MENU_ACTION_RIGHT)
+                  g_settings.input.device[port]++;
 
-            bool updated = true;
+               // device_last can be 0, avoid modulo.
+               if (g_settings.input.device[port] >= device_last)
+                  g_settings.input.device[port] -= device_last;
+               // needs to be checked twice, in case we go right past the end of the list
+               if (g_settings.input.device[port] >= device_last)
+                  g_settings.input.device[port] -= device_last;
+
+               unsigned keybind_action = (1ULL << KEYBINDS_ACTION_SET_DEFAULT_BINDS);
+
+               driver.input->set_keybinds(driver.input_data, g_settings.input.device[port], port, 0,
+                     keybind_action);
+            }
+            else
+            {
+               // When only straight g_settings.input.joypad_map[] style
+               // mapping is supported.
+               int *p = &g_settings.input.joypad_map[port];
+               if (action == MENU_ACTION_START)
+                  *p = port;
+               else if (action == MENU_ACTION_LEFT)
+                  (*p)--;
+               else if (action == MENU_ACTION_RIGHT)
+                  (*p)++;
+
+               if (*p < -1)
+                  *p = -1;
+               else if (*p >= MAX_PLAYERS)
+                  *p = MAX_PLAYERS - 1;
+            }
+            break;
+         case MENU_SETTINGS_BIND_ANALOG_MODE:
             switch (action)
             {
                case MENU_ACTION_START:
-                  current_device = RETRO_DEVICE_JOYPAD;
+                  g_settings.input.analog_dpad_mode[port] = 0;
+                  break;
+
+               case MENU_ACTION_OK:
+               case MENU_ACTION_RIGHT:
+                  g_settings.input.analog_dpad_mode[port] = (g_settings.input.analog_dpad_mode[port] + 1) % ANALOG_DPAD_LAST;
                   break;
 
                case MENU_ACTION_LEFT:
-                  current_device = devices[(current_index + types - 1) % types];
-                  break;
-
-               case MENU_ACTION_RIGHT:
-               case MENU_ACTION_OK:
-                  current_device = devices[(current_index + 1) % types];
+                  g_settings.input.analog_dpad_mode[port] = (g_settings.input.analog_dpad_mode[port] + ANALOG_DPAD_LAST - 1) % ANALOG_DPAD_LAST;
                   break;
 
                default:
-                  updated = false;
+                  break;
             }
-
-            if (updated)
-            {
-               g_settings.input.libretro_device[port] = current_device;
-               pretro_set_controller_port_device(port, current_device);
-            }
-
             break;
-         }
-      case MENU_SETTINGS_CUSTOM_BIND_MODE:
-         if (action == MENU_ACTION_OK || action == MENU_ACTION_LEFT || action == MENU_ACTION_RIGHT)
-            driver.menu->bind_mode_keyboard = !driver.menu->bind_mode_keyboard;
-         break;
-      case MENU_SETTINGS_CUSTOM_BIND_ALL:
-         if (action == MENU_ACTION_OK)
-         {
-            driver.menu->binds.target = &g_settings.input.binds[port][0];
-            driver.menu->binds.begin = MENU_SETTINGS_BIND_BEGIN;
-            driver.menu->binds.last = MENU_SETTINGS_BIND_LAST;
-            if (driver.menu->bind_mode_keyboard)
+         case MENU_SETTINGS_BIND_DEVICE_TYPE:
             {
-               file_list_push(driver.menu->menu_stack, "", "", MENU_SETTINGS_CUSTOM_BIND_KEYBOARD, driver.menu->selection_ptr);
-               driver.menu->binds.timeout_end = rarch_get_time_usec() + MENU_KEYBOARD_BIND_TIMEOUT_SECONDS * 1000000;
-               input_keyboard_wait_keys(driver.menu, menu_custom_bind_keyboard_cb);
-            }
-            else
-            {
-               file_list_push(driver.menu->menu_stack, "", "", MENU_SETTINGS_CUSTOM_BIND, driver.menu->selection_ptr);
-               menu_poll_bind_get_rested_axes(&driver.menu->binds);
-               menu_poll_bind_state(&driver.menu->binds);
-            }
-         }
-         break;
-      case MENU_SETTINGS_CUSTOM_BIND_DEFAULT_ALL:
-         if (action == MENU_ACTION_OK)
-         {
-            unsigned i;
-            struct retro_keybind *target = (struct retro_keybind*)&g_settings.input.binds[port][0];
-            const struct retro_keybind *def_binds = port ? retro_keybinds_rest : retro_keybinds_1;
+               unsigned current_device, current_index, i, devices[128];
+               const struct retro_controller_info *desc;
+               unsigned types = 0;
 
-            driver.menu->binds.begin = MENU_SETTINGS_BIND_BEGIN;
-            driver.menu->binds.last = MENU_SETTINGS_BIND_LAST;
+               devices[types++] = RETRO_DEVICE_NONE;
+               devices[types++] = RETRO_DEVICE_JOYPAD;
+               // Only push RETRO_DEVICE_ANALOG as default if we use an older core which doesn't use SET_CONTROLLER_INFO.
+               if (!g_extern.system.num_ports)
+                  devices[types++] = RETRO_DEVICE_ANALOG;
 
-            for (i = MENU_SETTINGS_BIND_BEGIN; i <= MENU_SETTINGS_BIND_LAST; i++, target++)
+               desc = port < g_extern.system.num_ports ? &g_extern.system.ports[port] : NULL;
+               if (desc)
+               {
+                  for (i = 0; i < desc->num_types; i++)
+                  {
+                     unsigned id = desc->types[i].id;
+                     if (types < ARRAY_SIZE(devices) && id != RETRO_DEVICE_NONE && id != RETRO_DEVICE_JOYPAD)
+                        devices[types++] = id;
+                  }
+               }
+
+               current_device = g_settings.input.libretro_device[port];
+               current_index = 0;
+               for (i = 0; i < types; i++)
+               {
+                  if (current_device == devices[i])
+                  {
+                     current_index = i;
+                     break;
+                  }
+               }
+
+               bool updated = true;
+               switch (action)
+               {
+                  case MENU_ACTION_START:
+                     current_device = RETRO_DEVICE_JOYPAD;
+                     break;
+
+                  case MENU_ACTION_LEFT:
+                     current_device = devices[(current_index + types - 1) % types];
+                     break;
+
+                  case MENU_ACTION_RIGHT:
+                  case MENU_ACTION_OK:
+                     current_device = devices[(current_index + 1) % types];
+                     break;
+
+                  default:
+                     updated = false;
+               }
+
+               if (updated)
+               {
+                  g_settings.input.libretro_device[port] = current_device;
+                  pretro_set_controller_port_device(port, current_device);
+               }
+
+               break;
+            }
+         case MENU_SETTINGS_CUSTOM_BIND_MODE:
+            if (action == MENU_ACTION_OK || action == MENU_ACTION_LEFT || action == MENU_ACTION_RIGHT)
+               driver.menu->bind_mode_keyboard = !driver.menu->bind_mode_keyboard;
+            break;
+         case MENU_SETTINGS_CUSTOM_BIND_ALL:
+            if (action == MENU_ACTION_OK)
             {
+               driver.menu->binds.target = &g_settings.input.binds[port][0];
+               driver.menu->binds.begin = MENU_SETTINGS_BIND_BEGIN;
+               driver.menu->binds.last = MENU_SETTINGS_BIND_LAST;
                if (driver.menu->bind_mode_keyboard)
-                  target->key = def_binds[i - MENU_SETTINGS_BIND_BEGIN].key;
+               {
+                  file_list_push(driver.menu->menu_stack, "", "", MENU_SETTINGS_CUSTOM_BIND_KEYBOARD, driver.menu->selection_ptr);
+                  driver.menu->binds.timeout_end = rarch_get_time_usec() + MENU_KEYBOARD_BIND_TIMEOUT_SECONDS * 1000000;
+                  input_keyboard_wait_keys(driver.menu, menu_custom_bind_keyboard_cb);
+               }
                else
                {
-                  target->joykey = NO_BTN;
-                  target->joyaxis = AXIS_NONE;
+                  file_list_push(driver.menu->menu_stack, "", "", MENU_SETTINGS_CUSTOM_BIND, driver.menu->selection_ptr);
+                  menu_poll_bind_get_rested_axes(&driver.menu->binds);
+                  menu_poll_bind_state(&driver.menu->binds);
                }
             }
-         }
-         break;
-      case MENU_BROWSER_DIR_PATH:
-         if (action == MENU_ACTION_START)
-            *g_settings.menu_content_directory = '\0';
-         break;
-      case MENU_CONTENT_DIR_PATH:
-         if (action == MENU_ACTION_START)
-            *g_settings.content_directory = '\0';
-         break;
-      case MENU_ASSETS_DIR_PATH:
-         if (action == MENU_ACTION_START)
-            *g_settings.assets_directory = '\0';
-         break;
-      case MENU_SCREENSHOT_DIR_PATH:
-         if (action == MENU_ACTION_START)
-            *g_settings.screenshot_directory = '\0';
-         break;
-      case MENU_SAVEFILE_DIR_PATH:
-         if (action == MENU_ACTION_START)
-            strlcpy(g_extern.savefile_dir, g_defaults.sram_dir, sizeof(g_extern.savefile_dir));
-         break;
-#ifdef HAVE_OVERLAY
-      case MENU_OVERLAY_DIR_PATH:
-         if (action == MENU_ACTION_START)
-            strlcpy(g_extern.overlay_dir, g_defaults.overlay_dir, sizeof(g_extern.overlay_dir));
-         break;
-#endif
-      case MENU_SAVESTATE_DIR_PATH:
-         if (action == MENU_ACTION_START)
-            strlcpy(g_extern.savestate_dir, g_defaults.savestate_dir, sizeof(g_extern.savestate_dir));
-         break;
-      case MENU_LIBRETRO_DIR_PATH:
-         if (action == MENU_ACTION_START)
-         {
-            *g_settings.libretro_directory = '\0';
-            if (driver.menu_ctx && driver.menu_ctx->init_core_info)
-               driver.menu_ctx->init_core_info(driver.menu);
-         }
-         break;
-      case MENU_LIBRETRO_INFO_DIR_PATH:
-         if (action == MENU_ACTION_START)
-         {
-            *g_settings.libretro_info_path = '\0';
-            if (driver.menu_ctx && driver.menu_ctx->init_core_info)
-               driver.menu_ctx->init_core_info(driver.menu);
-         }
-         break;
-      case MENU_CONFIG_DIR_PATH:
-         if (action == MENU_ACTION_START)
-            *g_settings.menu_config_directory = '\0';
-         break;
-      case MENU_FILTER_DIR_PATH:
-         if (action == MENU_ACTION_START)
-            *g_settings.video.filter_dir = '\0';
-         break;
-      case MENU_DSP_FILTER_DIR_PATH:
-         if (action == MENU_ACTION_START)
-            *g_settings.audio.filter_dir = '\0';
-         break;
-      case MENU_SHADER_DIR_PATH:
-         if (action == MENU_ACTION_START)
-            *g_settings.video.shader_dir = '\0';
-         break;
-      case MENU_SYSTEM_DIR_PATH:
-         if (action == MENU_ACTION_START)
-            *g_settings.system_directory = '\0';
-         break;
-      case MENU_AUTOCONFIG_DIR_PATH:
-         if (action == MENU_ACTION_START)
-            *g_settings.input.autoconfig_dir = '\0';
-         break;
-      case MENU_EXTRACTION_DIR_PATH:
-         if (action == MENU_ACTION_START)
-            *g_settings.extraction_directory = '\0';
-         break;
-      case MENU_SETTINGS_DRIVER_VIDEO:
-         if (action == MENU_ACTION_LEFT)
-            find_prev_video_driver();
-         else if (action == MENU_ACTION_RIGHT)
-            find_next_video_driver();
-         break;
-      case MENU_SETTINGS_DRIVER_AUDIO:
-         if (action == MENU_ACTION_LEFT)
-            find_prev_audio_driver();
-         else if (action == MENU_ACTION_RIGHT)
-            find_next_audio_driver();
-         break;
-      case MENU_SETTINGS_DRIVER_AUDIO_DEVICE:
-         if (action == MENU_ACTION_OK)
-         {
-#ifdef HAVE_OSK
-            if (g_settings.osk.enable)
+            break;
+         case MENU_SETTINGS_CUSTOM_BIND_DEFAULT_ALL:
+            if (action == MENU_ACTION_OK)
             {
-               g_extern.osk.cb_init     = osk_callback_enter_audio_device_init;
-               g_extern.osk.cb_callback = osk_callback_enter_audio_device;
+               unsigned i;
+               struct retro_keybind *target = (struct retro_keybind*)&g_settings.input.binds[port][0];
+               const struct retro_keybind *def_binds = port ? retro_keybinds_rest : retro_keybinds_1;
+
+               driver.menu->binds.begin = MENU_SETTINGS_BIND_BEGIN;
+               driver.menu->binds.last = MENU_SETTINGS_BIND_LAST;
+
+               for (i = MENU_SETTINGS_BIND_BEGIN; i <= MENU_SETTINGS_BIND_LAST; i++, target++)
+               {
+                  if (driver.menu->bind_mode_keyboard)
+                     target->key = def_binds[i - MENU_SETTINGS_BIND_BEGIN].key;
+                  else
+                  {
+                     target->joykey = NO_BTN;
+                     target->joyaxis = AXIS_NONE;
+                  }
+               }
             }
-            else
+            break;
+         case MENU_BROWSER_DIR_PATH:
+            if (action == MENU_ACTION_START)
+               *g_settings.menu_content_directory = '\0';
+            break;
+         case MENU_CONTENT_DIR_PATH:
+            if (action == MENU_ACTION_START)
+               *g_settings.content_directory = '\0';
+            break;
+         case MENU_ASSETS_DIR_PATH:
+            if (action == MENU_ACTION_START)
+               *g_settings.assets_directory = '\0';
+            break;
+         case MENU_SCREENSHOT_DIR_PATH:
+            if (action == MENU_ACTION_START)
+               *g_settings.screenshot_directory = '\0';
+            break;
+         case MENU_SAVEFILE_DIR_PATH:
+            if (action == MENU_ACTION_START)
+               strlcpy(g_extern.savefile_dir, g_defaults.sram_dir, sizeof(g_extern.savefile_dir));
+            break;
+#ifdef HAVE_OVERLAY
+         case MENU_OVERLAY_DIR_PATH:
+            if (action == MENU_ACTION_START)
+               strlcpy(g_extern.overlay_dir, g_defaults.overlay_dir, sizeof(g_extern.overlay_dir));
+            break;
 #endif
-               menu_key_start_line(driver.menu, "Audio Device Name / IP: ", audio_device_callback);
-         }
-         else if (action == MENU_ACTION_START)
-            *g_settings.audio.device = '\0';
-         break;
-      case MENU_SETTINGS_DRIVER_AUDIO_RESAMPLER:
-         if (action == MENU_ACTION_LEFT)
-            find_prev_resampler_driver();
-         else if (action == MENU_ACTION_RIGHT)
-            find_next_resampler_driver();
-         break;
-      case MENU_SETTINGS_DRIVER_INPUT:
-         if (action == MENU_ACTION_LEFT)
-            find_prev_input_driver();
-         else if (action == MENU_ACTION_RIGHT)
-            find_next_input_driver();
-         break;
+         case MENU_SAVESTATE_DIR_PATH:
+            if (action == MENU_ACTION_START)
+               strlcpy(g_extern.savestate_dir, g_defaults.savestate_dir, sizeof(g_extern.savestate_dir));
+            break;
+         case MENU_LIBRETRO_DIR_PATH:
+            if (action == MENU_ACTION_START)
+            {
+               *g_settings.libretro_directory = '\0';
+               if (driver.menu_ctx && driver.menu_ctx->init_core_info)
+                  driver.menu_ctx->init_core_info(driver.menu);
+            }
+            break;
+         case MENU_LIBRETRO_INFO_DIR_PATH:
+            if (action == MENU_ACTION_START)
+            {
+               *g_settings.libretro_info_path = '\0';
+               if (driver.menu_ctx && driver.menu_ctx->init_core_info)
+                  driver.menu_ctx->init_core_info(driver.menu);
+            }
+            break;
+         case MENU_CONFIG_DIR_PATH:
+            if (action == MENU_ACTION_START)
+               *g_settings.menu_config_directory = '\0';
+            break;
+         case MENU_FILTER_DIR_PATH:
+            if (action == MENU_ACTION_START)
+               *g_settings.video.filter_dir = '\0';
+            break;
+         case MENU_DSP_FILTER_DIR_PATH:
+            if (action == MENU_ACTION_START)
+               *g_settings.audio.filter_dir = '\0';
+            break;
+         case MENU_SHADER_DIR_PATH:
+            if (action == MENU_ACTION_START)
+               *g_settings.video.shader_dir = '\0';
+            break;
+         case MENU_SYSTEM_DIR_PATH:
+            if (action == MENU_ACTION_START)
+               *g_settings.system_directory = '\0';
+            break;
+         case MENU_AUTOCONFIG_DIR_PATH:
+            if (action == MENU_ACTION_START)
+               *g_settings.input.autoconfig_dir = '\0';
+            break;
+         case MENU_EXTRACTION_DIR_PATH:
+            if (action == MENU_ACTION_START)
+               *g_settings.extraction_directory = '\0';
+            break;
+         case MENU_SETTINGS_DRIVER_VIDEO:
+            if (action == MENU_ACTION_LEFT)
+               find_prev_video_driver();
+            else if (action == MENU_ACTION_RIGHT)
+               find_next_video_driver();
+            break;
+         case MENU_SETTINGS_DRIVER_AUDIO:
+            if (action == MENU_ACTION_LEFT)
+               find_prev_audio_driver();
+            else if (action == MENU_ACTION_RIGHT)
+               find_next_audio_driver();
+            break;
+         case MENU_SETTINGS_DRIVER_AUDIO_DEVICE:
+            if (action == MENU_ACTION_OK)
+            {
+#ifdef HAVE_OSK
+               if (g_settings.osk.enable)
+               {
+                  g_extern.osk.cb_init     = osk_callback_enter_audio_device_init;
+                  g_extern.osk.cb_callback = osk_callback_enter_audio_device;
+               }
+               else
+#endif
+                  menu_key_start_line(driver.menu, "Audio Device Name / IP: ", audio_device_callback);
+            }
+            else if (action == MENU_ACTION_START)
+               *g_settings.audio.device = '\0';
+            break;
+         case MENU_SETTINGS_DRIVER_AUDIO_RESAMPLER:
+            if (action == MENU_ACTION_LEFT)
+               find_prev_resampler_driver();
+            else if (action == MENU_ACTION_RIGHT)
+               find_next_resampler_driver();
+            break;
+         case MENU_SETTINGS_DRIVER_INPUT:
+            if (action == MENU_ACTION_LEFT)
+               find_prev_input_driver();
+            else if (action == MENU_ACTION_RIGHT)
+               find_next_input_driver();
+            break;
 #ifdef HAVE_CAMERA
-      case MENU_SETTINGS_DRIVER_CAMERA:
-         if (action == MENU_ACTION_LEFT)
-            find_prev_camera_driver();
-         else if (action == MENU_ACTION_RIGHT)
-            find_next_camera_driver();
-         break;
+         case MENU_SETTINGS_DRIVER_CAMERA:
+            if (action == MENU_ACTION_LEFT)
+               find_prev_camera_driver();
+            else if (action == MENU_ACTION_RIGHT)
+               find_next_camera_driver();
+            break;
 #endif
 #ifdef HAVE_LOCATION
-      case MENU_SETTINGS_DRIVER_LOCATION:
-         if (action == MENU_ACTION_LEFT)
-            find_prev_location_driver();
-         else if (action == MENU_ACTION_RIGHT)
-            find_next_location_driver();
-         break;
+         case MENU_SETTINGS_DRIVER_LOCATION:
+            if (action == MENU_ACTION_LEFT)
+               find_prev_location_driver();
+            else if (action == MENU_ACTION_RIGHT)
+               find_next_location_driver();
+            break;
 #endif
 #ifdef HAVE_MENU
-      case MENU_SETTINGS_DRIVER_MENU:
-         if (action == MENU_ACTION_LEFT)
-            find_prev_menu_driver();
-         else if (action == MENU_ACTION_RIGHT)
-            find_next_menu_driver();
-         break;
+         case MENU_SETTINGS_DRIVER_MENU:
+            if (action == MENU_ACTION_LEFT)
+               find_prev_menu_driver();
+            else if (action == MENU_ACTION_RIGHT)
+               find_next_menu_driver();
+            break;
 #endif
-      case MENU_SETTINGS_VIDEO_GAMMA:
-         if (action == MENU_ACTION_START)
-         {
-            g_extern.console.screen.gamma_correction = 0;
-            if (driver.video_data && driver.video_poke && driver.video_poke->apply_state_changes)
-               driver.video_poke->apply_state_changes(driver.video_data);
-         }
-         else if (action == MENU_ACTION_LEFT)
-         {
-            if (g_extern.console.screen.gamma_correction > 0)
+         case MENU_SETTINGS_VIDEO_GAMMA:
+            if (action == MENU_ACTION_START)
             {
-               g_extern.console.screen.gamma_correction--;
+               g_extern.console.screen.gamma_correction = 0;
                if (driver.video_data && driver.video_poke && driver.video_poke->apply_state_changes)
                   driver.video_poke->apply_state_changes(driver.video_data);
             }
-         }
-         else if (action == MENU_ACTION_RIGHT)
-         {
-            if (g_extern.console.screen.gamma_correction < MAX_GAMMA_SETTING)
+            else if (action == MENU_ACTION_LEFT)
             {
-               g_extern.console.screen.gamma_correction++;
-               if (driver.video_data && driver.video_poke && driver.video_poke->apply_state_changes)
-                  driver.video_poke->apply_state_changes(driver.video_data);
+               if (g_extern.console.screen.gamma_correction > 0)
+               {
+                  g_extern.console.screen.gamma_correction--;
+                  if (driver.video_data && driver.video_poke && driver.video_poke->apply_state_changes)
+                     driver.video_poke->apply_state_changes(driver.video_data);
+               }
             }
-         }
-         break;
+            else if (action == MENU_ACTION_RIGHT)
+            {
+               if (g_extern.console.screen.gamma_correction < MAX_GAMMA_SETTING)
+               {
+                  g_extern.console.screen.gamma_correction++;
+                  if (driver.video_data && driver.video_poke && driver.video_poke->apply_state_changes)
+                     driver.video_poke->apply_state_changes(driver.video_data);
+               }
+            }
+            break;
 
 
 
 #if defined(GEKKO)
-      case MENU_SETTINGS_VIDEO_RESOLUTION:
-         if (action == MENU_ACTION_LEFT)
-         {
-            if (menu_current_gx_resolution > 0)
-               menu_current_gx_resolution--;
-         }
-         else if (action == MENU_ACTION_RIGHT)
-         {
-            if (menu_current_gx_resolution < GX_RESOLUTIONS_LAST - 1)
+         case MENU_SETTINGS_VIDEO_RESOLUTION:
+            if (action == MENU_ACTION_LEFT)
             {
+               if (menu_current_gx_resolution > 0)
+                  menu_current_gx_resolution--;
+            }
+            else if (action == MENU_ACTION_RIGHT)
+            {
+               if (menu_current_gx_resolution < GX_RESOLUTIONS_LAST - 1)
+               {
 #ifdef HW_RVL
-               if ((menu_current_gx_resolution + 1) > GX_RESOLUTIONS_640_480)
-                  if (CONF_GetVideo() != CONF_VIDEO_PAL)
-                     return 0;
+                  if ((menu_current_gx_resolution + 1) > GX_RESOLUTIONS_640_480)
+                     if (CONF_GetVideo() != CONF_VIDEO_PAL)
+                        return 0;
 #endif
 
-               menu_current_gx_resolution++;
+                  menu_current_gx_resolution++;
+               }
             }
-         }
-         else if (action == MENU_ACTION_OK)
-         {
-            if (driver.video_data)
-               gx_set_video_mode(driver.video_data, menu_gx_resolutions[menu_current_gx_resolution][0],
-                     menu_gx_resolutions[menu_current_gx_resolution][1]);
-         }
-         break;
+            else if (action == MENU_ACTION_OK)
+            {
+               if (driver.video_data)
+                  gx_set_video_mode(driver.video_data, menu_gx_resolutions[menu_current_gx_resolution][0],
+                        menu_gx_resolutions[menu_current_gx_resolution][1]);
+            }
+            break;
 #elif defined(__CELLOS_LV2__)
-      case MENU_SETTINGS_VIDEO_RESOLUTION:
-         if (action == MENU_ACTION_LEFT)
-         {
-            if (g_extern.console.screen.resolutions.current.idx)
+         case MENU_SETTINGS_VIDEO_RESOLUTION:
+            if (action == MENU_ACTION_LEFT)
             {
-               g_extern.console.screen.resolutions.current.idx--;
-               g_extern.console.screen.resolutions.current.id =
-                  g_extern.console.screen.resolutions.list[g_extern.console.screen.resolutions.current.idx];
-            }
-         }
-         else if (action == MENU_ACTION_RIGHT)
-         {
-            if (g_extern.console.screen.resolutions.current.idx + 1 <
-                  g_extern.console.screen.resolutions.count)
-            {
-               g_extern.console.screen.resolutions.current.idx++;
-               g_extern.console.screen.resolutions.current.id =
-                  g_extern.console.screen.resolutions.list[g_extern.console.screen.resolutions.current.idx];
-            }
-         }
-         else if (action == MENU_ACTION_OK)
-         {
-            if (g_extern.console.screen.resolutions.list[g_extern.console.screen.resolutions.current.idx] == CELL_VIDEO_OUT_RESOLUTION_576)
-            {
-               if (g_extern.console.screen.pal_enable)
-                  g_extern.lifecycle_state |= (1ULL<< MODE_VIDEO_PAL_ENABLE);
-            }
-            else
-            {
-               g_extern.lifecycle_state &= ~(1ULL << MODE_VIDEO_PAL_ENABLE);
-               g_extern.lifecycle_state &= ~(1ULL << MODE_VIDEO_PAL_TEMPORAL_ENABLE);
-            }
-
-            rarch_main_command(RARCH_CMD_REINIT);
-         }
-         break;
-      case MENU_SETTINGS_VIDEO_PAL60:
-         switch (action)
-         {
-            case MENU_ACTION_LEFT:
-            case MENU_ACTION_RIGHT:
-            case MENU_ACTION_OK:
-               if (g_extern.lifecycle_state & (1ULL << MODE_VIDEO_PAL_ENABLE))
+               if (g_extern.console.screen.resolutions.current.idx)
                {
-                  if (g_extern.lifecycle_state & (1ULL << MODE_VIDEO_PAL_TEMPORAL_ENABLE))
-                     g_extern.lifecycle_state &= ~(1ULL << MODE_VIDEO_PAL_TEMPORAL_ENABLE);
-                  else
-                     g_extern.lifecycle_state |= (1ULL << MODE_VIDEO_PAL_TEMPORAL_ENABLE);
-
-                  rarch_main_command(RARCH_CMD_REINIT);
+                  g_extern.console.screen.resolutions.current.idx--;
+                  g_extern.console.screen.resolutions.current.id =
+                     g_extern.console.screen.resolutions.list[g_extern.console.screen.resolutions.current.idx];
                }
-               break;
-            case MENU_ACTION_START:
-               if (g_extern.lifecycle_state & (1ULL << MODE_VIDEO_PAL_ENABLE))
+            }
+            else if (action == MENU_ACTION_RIGHT)
+            {
+               if (g_extern.console.screen.resolutions.current.idx + 1 <
+                     g_extern.console.screen.resolutions.count)
                {
+                  g_extern.console.screen.resolutions.current.idx++;
+                  g_extern.console.screen.resolutions.current.id =
+                     g_extern.console.screen.resolutions.list[g_extern.console.screen.resolutions.current.idx];
+               }
+            }
+            else if (action == MENU_ACTION_OK)
+            {
+               if (g_extern.console.screen.resolutions.list[g_extern.console.screen.resolutions.current.idx] == CELL_VIDEO_OUT_RESOLUTION_576)
+               {
+                  if (g_extern.console.screen.pal_enable)
+                     g_extern.lifecycle_state |= (1ULL<< MODE_VIDEO_PAL_ENABLE);
+               }
+               else
+               {
+                  g_extern.lifecycle_state &= ~(1ULL << MODE_VIDEO_PAL_ENABLE);
                   g_extern.lifecycle_state &= ~(1ULL << MODE_VIDEO_PAL_TEMPORAL_ENABLE);
-
-                  rarch_main_command(RARCH_CMD_REINIT);
                }
-               break;
-         }
-         break;
+
+               rarch_main_command(RARCH_CMD_REINIT);
+            }
+            break;
+         case MENU_SETTINGS_VIDEO_PAL60:
+            switch (action)
+            {
+               case MENU_ACTION_LEFT:
+               case MENU_ACTION_RIGHT:
+               case MENU_ACTION_OK:
+                  if (g_extern.lifecycle_state & (1ULL << MODE_VIDEO_PAL_ENABLE))
+                  {
+                     if (g_extern.lifecycle_state & (1ULL << MODE_VIDEO_PAL_TEMPORAL_ENABLE))
+                        g_extern.lifecycle_state &= ~(1ULL << MODE_VIDEO_PAL_TEMPORAL_ENABLE);
+                     else
+                        g_extern.lifecycle_state |= (1ULL << MODE_VIDEO_PAL_TEMPORAL_ENABLE);
+
+                     rarch_main_command(RARCH_CMD_REINIT);
+                  }
+                  break;
+               case MENU_ACTION_START:
+                  if (g_extern.lifecycle_state & (1ULL << MODE_VIDEO_PAL_ENABLE))
+                  {
+                     g_extern.lifecycle_state &= ~(1ULL << MODE_VIDEO_PAL_TEMPORAL_ENABLE);
+
+                     rarch_main_command(RARCH_CMD_REINIT);
+                  }
+                  break;
+            }
+            break;
 #endif
 #ifdef HW_RVL
-      case MENU_SETTINGS_VIDEO_SOFT_FILTER:
-         if (g_extern.lifecycle_state & (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE))
-            g_extern.lifecycle_state &= ~(1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE);
-         else
-            g_extern.lifecycle_state |= (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE);
+         case MENU_SETTINGS_VIDEO_SOFT_FILTER:
+            if (g_extern.lifecycle_state & (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE))
+               g_extern.lifecycle_state &= ~(1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE);
+            else
+               g_extern.lifecycle_state |= (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE);
 
-         if (driver.video_data && driver.video_poke && driver.video_poke->apply_state_changes)
-            driver.video_poke->apply_state_changes(driver.video_data);
-         break;
+            if (driver.video_data && driver.video_poke && driver.video_poke->apply_state_changes)
+               driver.video_poke->apply_state_changes(driver.video_data);
+            break;
 #endif
 
-      case MENU_SETTINGS_VIDEO_REFRESH_RATE_AUTO:
-         switch (action)
-         {
-            case MENU_ACTION_START:
-               g_extern.measure_data.frame_time_samples_count = 0;
-               break;
-
-            case MENU_ACTION_OK:
-            {
-               double refresh_rate, deviation = 0.0;
-               unsigned sample_points = 0;
-
-               if (driver_monitor_fps_statistics(&refresh_rate, &deviation, &sample_points))
-               {
-                  driver_set_monitor_refresh_rate(refresh_rate);
-                  // Incase refresh rate update forced non-block video.
-                  video_set_nonblock_state_func(false);
-               }
-               break;
-            }
-
-            default:
-               break;
-         }
-         break;
-#ifdef HAVE_SHADER_MANAGER
-      case MENU_SETTINGS_SHADER_PASSES:
-         {
-            struct gfx_shader *shader = (struct gfx_shader*)driver.menu->shader;
-
+         case MENU_SETTINGS_VIDEO_REFRESH_RATE_AUTO:
             switch (action)
             {
                case MENU_ACTION_START:
-                  if (shader && shader->passes)
-                     shader->passes = 0;
-                  driver.menu->need_refresh = true;
+                  g_extern.measure_data.frame_time_samples_count = 0;
                   break;
 
-               case MENU_ACTION_LEFT:
-                  if (shader && shader->passes)
-                  {
-                     shader->passes--;
-                     driver.menu->need_refresh = true;
-                  }
-                  break;
-
-               case MENU_ACTION_RIGHT:
                case MENU_ACTION_OK:
-                  if (shader && (shader->passes < GFX_MAX_SHADERS))
                   {
-                     shader->passes++;
-                     driver.menu->need_refresh = true;
+                     double refresh_rate, deviation = 0.0;
+                     unsigned sample_points = 0;
+
+                     if (driver_monitor_fps_statistics(&refresh_rate, &deviation, &sample_points))
+                     {
+                        driver_set_monitor_refresh_rate(refresh_rate);
+                        // Incase refresh rate update forced non-block video.
+                        video_set_nonblock_state_func(false);
+                     }
+                     break;
                   }
-                  break;
 
                default:
                   break;
             }
-
-            if (driver.menu->need_refresh)
-               gfx_shader_resolve_parameters(NULL, driver.menu->shader);
-         }
-         break;
-      case MENU_SETTINGS_SHADER_APPLY:
-      {
-         struct gfx_shader *shader = (struct gfx_shader*)driver.menu->shader;
-         unsigned type = RARCH_SHADER_NONE;
-
-         if (!driver.video || !driver.video->set_shader || action != MENU_ACTION_OK)
-            return 0;
-
-         RARCH_LOG("Applying shader ...\n");
-
-         if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->shader_manager_get_type)
-            type = driver.menu_ctx->backend->shader_manager_get_type(driver.menu->shader);
-
-         if (shader->passes && type != RARCH_SHADER_NONE
-               && driver.menu_ctx && driver.menu_ctx->backend &&
-               driver.menu_ctx->backend->shader_manager_save_preset)
-            driver.menu_ctx->backend->shader_manager_save_preset(NULL, true);
-         else
-         {
-            type = gfx_shader_parse_type("", DEFAULT_SHADER_TYPE);
-            if (type == RARCH_SHADER_NONE)
+            break;
+#ifdef HAVE_SHADER_MANAGER
+         case MENU_SETTINGS_SHADER_PASSES:
             {
+               struct gfx_shader *shader = (struct gfx_shader*)driver.menu->shader;
+
+               switch (action)
+               {
+                  case MENU_ACTION_START:
+                     if (shader && shader->passes)
+                        shader->passes = 0;
+                     driver.menu->need_refresh = true;
+                     break;
+
+                  case MENU_ACTION_LEFT:
+                     if (shader && shader->passes)
+                     {
+                        shader->passes--;
+                        driver.menu->need_refresh = true;
+                     }
+                     break;
+
+                  case MENU_ACTION_RIGHT:
+                  case MENU_ACTION_OK:
+                     if (shader && (shader->passes < GFX_MAX_SHADERS))
+                     {
+                        shader->passes++;
+                        driver.menu->need_refresh = true;
+                     }
+                     break;
+
+                  default:
+                     break;
+               }
+
+               if (driver.menu->need_refresh)
+                  gfx_shader_resolve_parameters(NULL, driver.menu->shader);
+            }
+            break;
+         case MENU_SETTINGS_SHADER_APPLY:
+            {
+               struct gfx_shader *shader = (struct gfx_shader*)driver.menu->shader;
+               unsigned type = RARCH_SHADER_NONE;
+
+               if (!driver.video || !driver.video->set_shader || action != MENU_ACTION_OK)
+                  return 0;
+
+               RARCH_LOG("Applying shader ...\n");
+
+               if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->shader_manager_get_type)
+                  type = driver.menu_ctx->backend->shader_manager_get_type(driver.menu->shader);
+
+               if (shader->passes && type != RARCH_SHADER_NONE
+                     && driver.menu_ctx && driver.menu_ctx->backend &&
+                     driver.menu_ctx->backend->shader_manager_save_preset)
+                  driver.menu_ctx->backend->shader_manager_save_preset(NULL, true);
+               else
+               {
+                  type = gfx_shader_parse_type("", DEFAULT_SHADER_TYPE);
+                  if (type == RARCH_SHADER_NONE)
+                  {
 #if defined(HAVE_GLSL)
-               type = RARCH_SHADER_GLSL;
+                     type = RARCH_SHADER_GLSL;
 #elif defined(HAVE_CG) || defined(HAVE_HLSL)
-               type = RARCH_SHADER_CG;
+                     type = RARCH_SHADER_CG;
 #endif
+                  }
+                  if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->shader_manager_set_preset)
+                     driver.menu_ctx->backend->shader_manager_set_preset(NULL, type, NULL);
+               }
+               break;
             }
-            if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->shader_manager_set_preset)
-               driver.menu_ctx->backend->shader_manager_set_preset(NULL, type, NULL);
-         }
-         break;
-      }
-      case MENU_SETTINGS_SHADER_PRESET_SAVE:
-         if (action == MENU_ACTION_OK)
-         {
-#ifdef HAVE_OSK
-            if (g_settings.osk.enable)
+         case MENU_SETTINGS_SHADER_PRESET_SAVE:
+            if (action == MENU_ACTION_OK)
             {
-               g_extern.osk.cb_init = osk_callback_enter_filename_init;
-               g_extern.osk.cb_callback = osk_callback_enter_filename;
-            }
-            else
+#ifdef HAVE_OSK
+               if (g_settings.osk.enable)
+               {
+                  g_extern.osk.cb_init = osk_callback_enter_filename_init;
+                  g_extern.osk.cb_callback = osk_callback_enter_filename;
+               }
+               else
 #endif
-               menu_key_start_line(driver.menu, "Preset Filename: ", preset_filename_callback);
-         }
-         break;
+                  menu_key_start_line(driver.menu, "Preset Filename: ", preset_filename_callback);
+            }
+            break;
 #endif
 #ifdef _XBOX1
-      case MENU_SETTINGS_FLICKER_FILTER:
-         switch (action)
-         {
-            case MENU_ACTION_LEFT:
-               if (g_extern.console.screen.flicker_filter_index > 0)
-                  g_extern.console.screen.flicker_filter_index--;
-               break;
-            case MENU_ACTION_RIGHT:
-               if (g_extern.console.screen.flicker_filter_index < 5)
-                  g_extern.console.screen.flicker_filter_index++;
-               break;
-            case MENU_ACTION_START:
-               g_extern.console.screen.flicker_filter_index = 0;
-               break;
-         }
-         break;
-      case MENU_SETTINGS_SOFT_DISPLAY_FILTER:
-         switch (action)
-         {
-            case MENU_ACTION_LEFT:
-            case MENU_ACTION_RIGHT:
-            case MENU_ACTION_OK:
-               if (g_extern.lifecycle_state & (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE))
-                  g_extern.lifecycle_state &= ~(1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE);
-               else
+         case MENU_SETTINGS_FLICKER_FILTER:
+            switch (action)
+            {
+               case MENU_ACTION_LEFT:
+                  if (g_extern.console.screen.flicker_filter_index > 0)
+                     g_extern.console.screen.flicker_filter_index--;
+                  break;
+               case MENU_ACTION_RIGHT:
+                  if (g_extern.console.screen.flicker_filter_index < 5)
+                     g_extern.console.screen.flicker_filter_index++;
+                  break;
+               case MENU_ACTION_START:
+                  g_extern.console.screen.flicker_filter_index = 0;
+                  break;
+            }
+            break;
+         case MENU_SETTINGS_SOFT_DISPLAY_FILTER:
+            switch (action)
+            {
+               case MENU_ACTION_LEFT:
+               case MENU_ACTION_RIGHT:
+               case MENU_ACTION_OK:
+                  if (g_extern.lifecycle_state & (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE))
+                     g_extern.lifecycle_state &= ~(1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE);
+                  else
+                     g_extern.lifecycle_state |= (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE);
+                  break;
+               case MENU_ACTION_START:
                   g_extern.lifecycle_state |= (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE);
-               break;
-            case MENU_ACTION_START:
-               g_extern.lifecycle_state |= (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE);
-               break;
-         }
-         break;
+                  break;
+            }
+            break;
 #endif
-      case MENU_SETTINGS_CUSTOM_BGM_CONTROL_ENABLE:
-         switch (action)
-         {
-            case MENU_ACTION_OK:
+         case MENU_SETTINGS_CUSTOM_BGM_CONTROL_ENABLE:
+            switch (action)
+            {
+               case MENU_ACTION_OK:
 #if (CELL_SDK_VERSION > 0x340000)
-               if (g_extern.lifecycle_state & (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE))
-                  g_extern.lifecycle_state &= ~(1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE);
-               else
-                  g_extern.lifecycle_state |= (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE);
-               if (g_extern.lifecycle_state & (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE))
-                  cellSysutilEnableBgmPlayback();
-               else
-                  cellSysutilDisableBgmPlayback();
+                  if (g_extern.lifecycle_state & (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE))
+                     g_extern.lifecycle_state &= ~(1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE);
+                  else
+                     g_extern.lifecycle_state |= (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE);
+                  if (g_extern.lifecycle_state & (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE))
+                     cellSysutilEnableBgmPlayback();
+                  else
+                     cellSysutilDisableBgmPlayback();
 
 #endif
-               break;
-            case MENU_ACTION_START:
+                  break;
+               case MENU_ACTION_START:
 #if (CELL_SDK_VERSION > 0x340000)
-               g_extern.lifecycle_state |= (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE);
+                  g_extern.lifecycle_state |= (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE);
 #endif
-               break;
-         }
-         break;
+                  break;
+            }
+            break;
 #ifdef HAVE_NETPLAY
-      case MENU_SETTINGS_NETPLAY_HOST_IP_ADDRESS:
-         if (action == MENU_ACTION_OK)
-            menu_key_start_line(driver.menu, "IP Address: ", netplay_ipaddress_callback);
-         else if (action == MENU_ACTION_START)
-            *g_extern.netplay_server = '\0';
-         break;
-      case MENU_SETTINGS_NETPLAY_TCP_UDP_PORT:
-         if (action == MENU_ACTION_OK)
-            menu_key_start_line(driver.menu, "TCP/UDP Port: ", netplay_port_callback);
-         else if (action == MENU_ACTION_START)
-            g_extern.netplay_port = RARCH_DEFAULT_PORT;
-         break;
+         case MENU_SETTINGS_NETPLAY_HOST_IP_ADDRESS:
+            if (action == MENU_ACTION_OK)
+               menu_key_start_line(driver.menu, "IP Address: ", netplay_ipaddress_callback);
+            else if (action == MENU_ACTION_START)
+               *g_extern.netplay_server = '\0';
+            break;
+         case MENU_SETTINGS_NETPLAY_TCP_UDP_PORT:
+            if (action == MENU_ACTION_OK)
+               menu_key_start_line(driver.menu, "TCP/UDP Port: ", netplay_port_callback);
+            else if (action == MENU_ACTION_START)
+               g_extern.netplay_port = RARCH_DEFAULT_PORT;
+            break;
 #endif
-      case MENU_SETTINGS_NETPLAY_NICKNAME:
-         if (action == MENU_ACTION_OK)
-            menu_key_start_line(driver.menu, "Username: ", netplay_nickname_callback);
-         else if (action == MENU_ACTION_START)
-            *g_settings.username = '\0';
-         break;
-      default:
-         break;
+         case MENU_SETTINGS_NETPLAY_NICKNAME:
+            if (action == MENU_ACTION_OK)
+               menu_key_start_line(driver.menu, "Username: ", netplay_nickname_callback);
+            else if (action == MENU_ACTION_START)
+               *g_settings.username = '\0';
+            break;
+         default:
+            break;
+      }
    }
 
    return 0;
