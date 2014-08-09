@@ -2128,13 +2128,13 @@ static void menu_common_setting_set_current_path_selection(rarch_setting_t *sett
       setting->change_handler(setting);
 }
 
-static void menu_common_setting_set_current_fraction(rarch_setting_t *setting, float step, unsigned action,
+static void menu_common_setting_set_current_fraction(rarch_setting_t *setting, unsigned action,
       bool enforce_min_check, bool enforce_max_check)
 {
    switch (action)
    {
       case MENU_ACTION_LEFT:
-         *setting->value.fraction = *setting->value.fraction - step;
+         *setting->value.fraction = *setting->value.fraction - setting->step;
 
          if (enforce_min_check)
          {
@@ -2145,7 +2145,7 @@ static void menu_common_setting_set_current_fraction(rarch_setting_t *setting, f
 
       case MENU_ACTION_RIGHT:
       case MENU_ACTION_OK:
-         *setting->value.fraction = *setting->value.fraction + step;
+         *setting->value.fraction = *setting->value.fraction + setting->step;
 
          if (enforce_max_check)
          {
@@ -2163,14 +2163,14 @@ static void menu_common_setting_set_current_fraction(rarch_setting_t *setting, f
       setting->change_handler(setting);
 }
 
-static void menu_common_setting_set_current_unsigned_integer(rarch_setting_t *setting, unsigned step, unsigned action,
+static void menu_common_setting_set_current_unsigned_integer(rarch_setting_t *setting, unsigned action,
       bool enforce_min_check, bool enforce_max_check)
 {
    switch (action)
    {
       case MENU_ACTION_LEFT:
          if (*setting->value.unsigned_integer != setting->min)
-            *setting->value.unsigned_integer = *setting->value.unsigned_integer - step;
+            *setting->value.unsigned_integer = *setting->value.unsigned_integer - setting->step;
 
          if (enforce_min_check)
          {
@@ -2181,7 +2181,7 @@ static void menu_common_setting_set_current_unsigned_integer(rarch_setting_t *se
 
       case MENU_ACTION_RIGHT:
       case MENU_ACTION_OK:
-         *setting->value.unsigned_integer = *setting->value.unsigned_integer + step;
+         *setting->value.unsigned_integer = *setting->value.unsigned_integer + setting->step;
 
          if (enforce_max_check)
          {
@@ -3408,7 +3408,7 @@ static int menu_common_setting_set(unsigned id, unsigned action, rarch_setting_t
          case MENU_CONTENT_HISTORY_SIZE:
          case MENU_SETTINGS_NETPLAY_DELAY_FRAMES:
             if (setting)
-               menu_common_setting_set_current_unsigned_integer(setting, 1, action, true, false);
+               menu_common_setting_set_current_unsigned_integer(setting, action, true, false);
             break;
          case MENU_SETTINGS_LIBRETRO_LOG_LEVEL:
          case MENU_SETTINGS_USER_LANGUAGE:
@@ -3417,11 +3417,11 @@ static int menu_common_setting_set(unsigned id, unsigned action, rarch_setting_t
          case MENU_SETTINGS_VIDEO_SWAP_INTERVAL:
          case MENU_SETTINGS_VIDEO_HARD_SYNC_FRAMES:
             if (setting)
-               menu_common_setting_set_current_unsigned_integer(setting, 1, action, true, true);
+               menu_common_setting_set_current_unsigned_integer(setting, action, true, true);
             break;
          case MENU_SETTINGS_VIDEO_MONITOR_INDEX:
             if (setting)
-               menu_common_setting_set_current_unsigned_integer(setting, 1, action, false, false);
+               menu_common_setting_set_current_unsigned_integer(setting, action, false, false);
             break;
 #if defined(HAVE_THREADS)
          case MENU_SETTINGS_SRAM_AUTOSAVE:
@@ -3526,25 +3526,16 @@ static int menu_common_setting_set(unsigned id, unsigned action, rarch_setting_t
          case MENU_SETTINGS_OVERLAY_OPACITY:
          case MENU_SETTINGS_OVERLAY_SCALE:
             if (setting)
-               menu_common_setting_set_current_fraction(setting, 0.1f, action, true, true);
+               menu_common_setting_set_current_fraction(setting, action, true, true);
             break;
          case MENU_SETTINGS_SLOWMOTION_RATIO:
-            if (setting)
-               menu_common_setting_set_current_fraction(setting, 0.1f, action, false, false);
-            break;
          case MENU_SETTINGS_INPUT_AXIS_THRESHOLD:
-            if (setting)
-               menu_common_setting_set_current_fraction(setting, 0.01f, action, false, false);
-            break;
          case MENU_SETTINGS_VIDEO_WINDOW_SCALE_X:
          case MENU_SETTINGS_VIDEO_WINDOW_SCALE_Y:
          case MENU_SETTINGS_FONT_SIZE:
-            if (setting)
-               menu_common_setting_set_current_fraction(setting, 1.0f, action, false, false);
-            break;
          case MENU_SETTINGS_VIDEO_REFRESH_RATE:
             if (setting)
-               menu_common_setting_set_current_fraction(setting, 0.001f, action, false, false);
+               menu_common_setting_set_current_fraction(setting, action, false, false);
             break;
          case MENU_SETTINGS_DISK_INDEX:
             {

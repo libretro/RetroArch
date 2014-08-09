@@ -93,6 +93,8 @@ typedef struct rarch_setting_t
       char* string;
       struct retro_keybind* keybind;
    } value;
+
+   float step;
 }  rarch_setting_t;
 
 
