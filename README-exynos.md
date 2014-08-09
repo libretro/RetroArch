@@ -55,6 +55,6 @@ The two fullscreen parameters select the mode the DRM should select. If zero, th
 The driver still suffers from some issues.
 
    - The aspect ratio computation can be improved. In particular the user supplied aspect ratio is currently unused.
-   - Font rendering and blitting is very inefficient since the backing buffer is cleared every frame. Introduce a invalidation rectangle which covers the region where font glyphs are drawn, and then only clear this region.
+   - Font rendering and blitting is very inefficient since the backing buffer is cleared every frame. Introduce a invalidation rectangle which covers the region where font glyphs are drawn, and then only clear this region. Also consider converting the buffer to A8 color format and using global color (not sure if this is possible).
    - Temporary GEM buffers are used as source for blitting operations. Support for the IOMMU has to be enabled, so that one can use the 'userptr' functionality.
    - More TODOs are pointed out in the code itself.
