@@ -63,7 +63,7 @@ float title_margin_top;
 float label_margin_left;
 float label_margin_top;
 int icon_size;
-char icon_dir[3];
+char icon_dir[4];
 float above_subitem_offset;
 float above_item_offset;
 float active_item_factor;
