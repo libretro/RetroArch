@@ -2162,8 +2162,7 @@ static void menu_common_setting_set_current_fraction(rarch_setting_t *setting, u
       setting->change_handler(setting);
 }
 
-static void menu_common_setting_set_current_unsigned_integer(rarch_setting_t *setting, unsigned action,
-      bool enforce_min_check, bool enforce_max_check)
+static void menu_common_setting_set_current_unsigned_integer(rarch_setting_t *setting, unsigned action)
 {
    switch (action)
    {
@@ -2171,7 +2170,7 @@ static void menu_common_setting_set_current_unsigned_integer(rarch_setting_t *se
          if (*setting->value.unsigned_integer != setting->min)
             *setting->value.unsigned_integer = *setting->value.unsigned_integer - setting->step;
 
-         if (enforce_min_check)
+         if (setting->enforce_minrange)
          {
             if (*setting->value.unsigned_integer < setting->min)
                *setting->value.unsigned_integer = setting->min;
@@ -2182,7 +2181,7 @@ static void menu_common_setting_set_current_unsigned_integer(rarch_setting_t *se
       case MENU_ACTION_OK:
          *setting->value.unsigned_integer = *setting->value.unsigned_integer + setting->step;
 
-         if (enforce_max_check)
+         if (setting->enforce_maxrange)
          {
             if (*setting->value.unsigned_integer > setting->max)
                *setting->value.unsigned_integer = setting->max;
@@ -3406,21 +3405,15 @@ static int menu_common_setting_set(unsigned id, unsigned action, rarch_setting_t
          case MENU_SETTINGS_AUDIO_LATENCY:
          case MENU_CONTENT_HISTORY_SIZE:
          case MENU_SETTINGS_NETPLAY_DELAY_FRAMES:
-            if (setting)
-               menu_common_setting_set_current_unsigned_integer(setting, action, true, false);
-            break;
          case MENU_SETTINGS_LIBRETRO_LOG_LEVEL:
          case MENU_SETTINGS_USER_LANGUAGE:
          case MENU_SETTINGS_VIDEO_ROTATION:
          case MENU_SETTINGS_VIDEO_ASPECT_RATIO:
          case MENU_SETTINGS_VIDEO_SWAP_INTERVAL:
          case MENU_SETTINGS_VIDEO_HARD_SYNC_FRAMES:
-            if (setting)
-               menu_common_setting_set_current_unsigned_integer(setting, action, true, true);
-            break;
          case MENU_SETTINGS_VIDEO_MONITOR_INDEX:
             if (setting)
-               menu_common_setting_set_current_unsigned_integer(setting, action, false, false);
+               menu_common_setting_set_current_unsigned_integer(setting, action);
             break;
 #if defined(HAVE_THREADS)
          case MENU_SETTINGS_SRAM_AUTOSAVE:

@@ -1541,7 +1541,7 @@ rarch_setting_t* setting_data_get_list(void)
          CONFIG_BOOL(g_settings.video.shared_context,  "video_shared_context",  "HW Shared Context Enable",   false, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
          END_SUB_GROUP()
          START_SUB_GROUP("Monitor")
-         CONFIG_UINT(g_settings.video.monitor_index,        "video_monitor_index",        "Monitor Index",              monitor_index, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+         CONFIG_UINT(g_settings.video.monitor_index,        "video_monitor_index",        "Monitor Index",              monitor_index, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_RANGE(0, 1, 1, true, false)
 #if !defined(RARCH_CONSOLE) && !defined(RARCH_MOBILE)
          CONFIG_BOOL(g_settings.video.fullscreen,           "video_fullscreen",           "Use Fullscreen mode",        fullscreen, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
 #endif
