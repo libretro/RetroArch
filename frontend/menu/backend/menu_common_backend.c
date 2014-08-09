@@ -3403,6 +3403,7 @@ static int menu_common_setting_set(unsigned id, unsigned action, rarch_setting_t
       case MENU_SETTINGS_REWIND_GRANULARITY:
       case MENU_SETTINGS_AUDIO_LATENCY:
       case MENU_CONTENT_HISTORY_SIZE:
+      case MENU_SETTINGS_NETPLAY_DELAY_FRAMES:
          if (setting)
             menu_common_setting_set_current_unsigned_integer(setting, 1, action, true, false);
          break;
@@ -3418,10 +3419,6 @@ static int menu_common_setting_set(unsigned id, unsigned action, rarch_setting_t
       case MENU_SETTINGS_VIDEO_MONITOR_INDEX:
          if (setting)
             menu_common_setting_set_current_unsigned_integer(setting, 1, action, false, false);
-         break;
-      case MENU_SETTINGS_NETPLAY_DELAY_FRAMES:
-         if (setting)
-            menu_common_setting_set_current_unsigned_integer(setting, 1, action, true, false);
          break;
       case MENU_SETTINGS_GPU_SCREENSHOT:
       case MENU_SETTINGS_REWIND_ENABLE:
