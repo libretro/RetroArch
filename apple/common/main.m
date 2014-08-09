@@ -19,6 +19,7 @@
 #import "RetroArch_Apple.h"
 #include "../../frontend/frontend.h"
 #include "../../file.h"
+#include "../../general.h"
 
 id<RetroArch_Platform> apple_platform;
 
