@@ -3324,10 +3324,11 @@ static bool osk_callback_enter_filename_init(void *data)
 
 static int menu_common_setting_set(unsigned id, unsigned action, rarch_setting_t *setting)
 {
-   rarch_setting_t *current_setting;
    struct retro_perf_counter **counters;
    unsigned port = driver.menu->current_pad;
    rarch_setting_t *setting_data = (rarch_setting_t *)setting_data_get_list();
+
+   setting = file_list_get_last_setting(driver.menu->selection_buf, driver.menu->selection_ptr);
 
    if (id >= MENU_SETTINGS_PERF_COUNTERS_BEGIN && id <= MENU_SETTINGS_PERF_COUNTERS_END)
    {
@@ -3401,69 +3402,69 @@ static int menu_common_setting_set(unsigned id, unsigned action, rarch_setting_t
             file_list_push(driver.menu->menu_stack, "", "", MENU_START_SCREEN, 0);
          break;
       case MENU_SETTINGS_REWIND_ENABLE:
-         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "rewind_enable")))
-            menu_common_setting_set_current_boolean(current_setting, action);
+         if (setting)
+            menu_common_setting_set_current_boolean(setting, action);
          break;
       case MENU_SETTINGS_GPU_SCREENSHOT:
-         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "video_gpu_screenshot")))
-            menu_common_setting_set_current_boolean(current_setting, action);
+         if (setting)
+            menu_common_setting_set_current_boolean(setting, action);
          break;
       case MENU_SETTINGS_USER_LANGUAGE:
-         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "user_language")))
-            menu_common_setting_set_current_unsigned_integer(current_setting, 1, action, true, true);
+         if (setting)
+            menu_common_setting_set_current_unsigned_integer(setting, 1, action, true, true);
          break;
       case MENU_SETTINGS_REWIND_GRANULARITY:
-         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "rewind_granularity")))
-            menu_common_setting_set_current_unsigned_integer(current_setting, 1, action, true, false);
+         if (setting)
+            menu_common_setting_set_current_unsigned_integer(setting, 1, action, true, false);
          break;
       case MENU_SETTINGS_LIBRETRO_LOG_LEVEL:
-         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "libretro_log_level")))
-            menu_common_setting_set_current_unsigned_integer(current_setting, 1, action, true, true);
+         if (setting)
+            menu_common_setting_set_current_unsigned_integer(setting, 1, action, true, true);
          break;
       case MENU_SETTINGS_LOGGING_VERBOSITY:
-         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "log_verbosity")))
-            menu_common_setting_set_current_boolean(current_setting, action);
+         if (setting)
+            menu_common_setting_set_current_boolean(setting, action);
          break;
       case MENU_SETTINGS_PERFORMANCE_COUNTERS_ENABLE:
-         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "perfcnt_enable")))
-            menu_common_setting_set_current_boolean(current_setting, action);
+         if (setting)
+            menu_common_setting_set_current_boolean(setting, action);
          break;
       case MENU_SETTINGS_CONFIG_SAVE_ON_EXIT:
-         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "config_save_on_exit")))
-            menu_common_setting_set_current_boolean(current_setting, action);
+         if (setting)
+            menu_common_setting_set_current_boolean(setting, action);
          break;
       case MENU_SETTINGS_SAVESTATE_AUTO_SAVE:
-         if ((current_setting = setting_data_find_setting(setting_data, "savestate_auto_save")))
-            menu_common_setting_set_current_boolean(current_setting, action);
+         if (setting)
+            menu_common_setting_set_current_boolean(setting, action);
          break;
       case MENU_SETTINGS_SAVESTATE_AUTO_LOAD:
-         if ((current_setting = setting_data_find_setting(setting_data, "savestate_auto_load")))
-            menu_common_setting_set_current_boolean(current_setting, action);
+         if (setting)
+            menu_common_setting_set_current_boolean(setting, action);
          break;
       case MENU_SETTINGS_BLOCK_SRAM_OVERWRITE:
-         if ((current_setting = setting_data_find_setting(setting_data, "block_sram_overwrite")))
-            menu_common_setting_set_current_boolean(current_setting, action);
+         if (setting)
+            menu_common_setting_set_current_boolean(setting, action);
          break;
       case MENU_SETTINGS_PER_CORE_CONFIG:
-         if ((current_setting = setting_data_find_setting(setting_data, "core_specific_config")))
-            menu_common_setting_set_current_boolean(current_setting, action);
+         if (setting)
+            menu_common_setting_set_current_boolean(setting, action);
          break;
 #if defined(HAVE_THREADS)
       case MENU_SETTINGS_SRAM_AUTOSAVE:
-         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "autosave_interval")))
+         if (setting)
          {
             if (action == MENU_ACTION_OK || action == MENU_ACTION_RIGHT)
-               *current_setting->value.unsigned_integer += 10;
+               *setting->value.unsigned_integer += 10;
             else if (action == MENU_ACTION_LEFT)
             {
-               if (*current_setting->value.unsigned_integer)
-                  *current_setting->value.unsigned_integer -= min(10, *current_setting->value.unsigned_integer);
+               if (*setting->value.unsigned_integer)
+                  *setting->value.unsigned_integer -= min(10, *setting->value.unsigned_integer);
             }
             else if (action == MENU_ACTION_START)
-               *current_setting->value.unsigned_integer = 0;
+               *setting->value.unsigned_integer = 0;
 
-            if (current_setting->change_handler)
-               current_setting->change_handler(current_setting);
+            if (setting->change_handler)
+               setting->change_handler(setting);
          }
          break;
 #endif
@@ -3500,20 +3501,20 @@ static int menu_common_setting_set(unsigned id, unsigned action, rarch_setting_t
          }
          break;
       case MENU_SETTINGS_AUDIO_ENABLE:
-         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "audio_enable")))
-            menu_common_setting_set_current_boolean(current_setting, action);
+         if (setting)
+            menu_common_setting_set_current_boolean(setting, action);
          break;
       case MENU_SETTINGS_AUDIO_MUTE:
-         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "audio_mute")))
-            menu_common_setting_set_current_boolean(current_setting, action);
+         if (setting)
+            menu_common_setting_set_current_boolean(setting, action);
          break;
       case MENU_SETTINGS_AUDIO_LATENCY:
-         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "audio_latency")))
-            menu_common_setting_set_current_unsigned_integer(current_setting, 1, action, true, false);
+         if (setting)
+            menu_common_setting_set_current_unsigned_integer(setting, 1, action, true, false);
          break;
       case MENU_SETTINGS_AUDIO_SYNC:
-         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "audio_sync")))
-            menu_common_setting_set_current_boolean(current_setting, action);
+         if (setting)
+            menu_common_setting_set_current_boolean(setting, action);
          break;
       case MENU_SETTINGS_AUDIO_CONTROL_RATE_DELTA:
          if (action == MENU_ACTION_START)
@@ -3564,16 +3565,16 @@ static int menu_common_setting_set(unsigned id, unsigned action, rarch_setting_t
          }
          break;
       case MENU_SETTINGS_FASTFORWARD_RATIO:
-         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "fastforward_ratio")))
-            menu_common_setting_set_current_fraction(current_setting, 0.1f, action, true, true);
+         if (setting)
+            menu_common_setting_set_current_fraction(setting, 0.1f, action, true, true);
          break;
       case MENU_SETTINGS_SLOWMOTION_RATIO:
-         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "slowmotion_ratio")))
-            menu_common_setting_set_current_fraction(current_setting, 0.1f, action, false, false);
+         if (setting)
+            menu_common_setting_set_current_fraction(setting, 0.1f, action, false, false);
          break;
       case MENU_SETTINGS_DEBUG_TEXT:
-         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "fps_show")))
-            menu_common_setting_set_current_boolean(current_setting, action);
+         if (setting)
+            menu_common_setting_set_current_boolean(setting, action);
          break;
       case MENU_SETTINGS_DISK_INDEX:
          {
@@ -3628,18 +3629,18 @@ static int menu_common_setting_set(unsigned id, unsigned action, rarch_setting_t
             menu_save_new_config();
          break;
       case MENU_CONTENT_HISTORY_SIZE:
-         if ((current_setting = setting_data_find_setting(setting_data, "game_history_size")))
-            menu_common_setting_set_current_unsigned_integer(current_setting, 1, action, true, false);
+         if (setting)
+            menu_common_setting_set_current_unsigned_integer(setting, 1, action, true, false);
          break;
 #ifdef HAVE_OVERLAY
       case MENU_SETTINGS_OVERLAY_PRESET:
-         if ((current_setting = setting_data_find_setting(setting_data, "input_overlay")))
-            menu_common_setting_set_current_path_selection(current_setting, g_extern.overlay_dir, id, action);
+         if (setting)
+            menu_common_setting_set_current_path_selection(setting, g_extern.overlay_dir, id, action);
          break;
 #endif
       case MENU_CONTENT_HISTORY_PATH:
-         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "game_history_path")))
-            menu_common_setting_set_current_path_selection(current_setting, "", id, action);
+         if (setting)
+            menu_common_setting_set_current_path_selection(setting, "", id, action);
          break;
       case MENU_SETTINGS_VIDEO_SOFTFILTER:
          switch (action)
@@ -3676,17 +3677,17 @@ static int menu_common_setting_set(unsigned id, unsigned action, rarch_setting_t
          }
          break;
       case MENU_SETTINGS_AUDIO_DSP_FILTER:
-         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "audio_dsp_plugin")))
-            menu_common_setting_set_current_path_selection(current_setting, g_settings.audio.filter_dir, id, action);
+         if (setting)
+            menu_common_setting_set_current_path_selection(setting, g_settings.audio.filter_dir, id, action);
          break;
 #ifdef HAVE_OVERLAY
       case MENU_SETTINGS_OVERLAY_OPACITY:
-         if ((current_setting = setting_data_find_setting(setting_data, "input_overlay_opacity")))
-            menu_common_setting_set_current_fraction(current_setting, 0.01f, action, true, true);
+         if (setting)
+            menu_common_setting_set_current_fraction(setting, 0.01f, action, true, true);
          break;
       case MENU_SETTINGS_OVERLAY_SCALE:
-         if ((current_setting = setting_data_find_setting(setting_data, "input_overlay_scale")))
-            menu_common_setting_set_current_fraction(current_setting, 0.01f, action, true, true);
+         if (setting)
+            menu_common_setting_set_current_fraction(setting, 0.01f, action, true, true);
          break;
 #endif
          // controllers
@@ -3772,8 +3773,8 @@ static int menu_common_setting_set(unsigned id, unsigned action, rarch_setting_t
          }
          break;
       case MENU_SETTINGS_INPUT_AXIS_THRESHOLD:
-         if ((current_setting = setting_data_find_setting(setting_data, "input_axis_threshold")))
-            menu_common_setting_set_current_fraction(current_setting, 0.01, action, false, false);
+         if (setting)
+            menu_common_setting_set_current_fraction(setting, 0.01, action, false, false);
          break;
       case MENU_SETTINGS_BIND_DEVICE_TYPE:
          {
@@ -3838,8 +3839,8 @@ static int menu_common_setting_set(unsigned id, unsigned action, rarch_setting_t
             break;
          }
       case MENU_SETTINGS_DEVICE_AUTODETECT_ENABLE:
-         if ((current_setting = setting_data_find_setting(setting_data, "input_autodetect_enable")))
-            menu_common_setting_set_current_boolean(current_setting, action);
+         if (setting)
+            menu_common_setting_set_current_boolean(setting, action);
          break;
       case MENU_SETTINGS_CUSTOM_BIND_MODE:
          if (action == MENU_ACTION_OK || action == MENU_ACTION_LEFT || action == MENU_ACTION_RIGHT)
@@ -3962,12 +3963,12 @@ static int menu_common_setting_set(unsigned id, unsigned action, rarch_setting_t
             *g_settings.extraction_directory = '\0';
          break;
       case MENU_SETTINGS_VIDEO_ROTATION:
-         if ((current_setting = setting_data_find_setting(setting_data, "video_rotation")))
-            menu_common_setting_set_current_unsigned_integer(current_setting, 1, action, true, true);
+         if (setting)
+            menu_common_setting_set_current_unsigned_integer(setting, 1, action, true, true);
          break;
       case MENU_SETTINGS_VIDEO_FILTER:
-         if ((current_setting = setting_data_find_setting(setting_data, "video_smooth")))
-            menu_common_setting_set_current_boolean(current_setting, action);
+         if (setting)
+            menu_common_setting_set_current_boolean(setting, action);
          break;
       case MENU_SETTINGS_DRIVER_VIDEO:
          if (action == MENU_ACTION_LEFT)
@@ -4061,17 +4062,17 @@ static int menu_common_setting_set(unsigned id, unsigned action, rarch_setting_t
          break;
 
       case MENU_SETTINGS_VIDEO_INTEGER_SCALE:
-         if ((current_setting = setting_data_find_setting(setting_data, "video_scale_integer")))
-            menu_common_setting_set_current_boolean(current_setting, action);
+         if (setting)
+            menu_common_setting_set_current_boolean(setting, action);
          break;
 
       case MENU_SETTINGS_VIDEO_ASPECT_RATIO:
-         if ((current_setting = setting_data_find_setting(setting_data, "aspect_ratio_index")))
-            menu_common_setting_set_current_unsigned_integer(current_setting, 1, action, true, true);
+         if (setting)
+            menu_common_setting_set_current_unsigned_integer(setting, 1, action, true, true);
          break;
       case MENU_SETTINGS_TOGGLE_FULLSCREEN:
-         if ((current_setting = setting_data_find_setting(setting_data, "video_fullscreen")))
-            menu_common_setting_set_current_boolean(current_setting, action);
+         if (setting)
+            menu_common_setting_set_current_boolean(setting, action);
          break;
 
 #if defined(GEKKO)
@@ -4178,53 +4179,53 @@ static int menu_common_setting_set(unsigned id, unsigned action, rarch_setting_t
 #endif
 
       case MENU_SETTINGS_VIDEO_HW_SHARED_CONTEXT:
-         if ((current_setting = setting_data_find_setting(setting_data, "video_shared_context")))
-            menu_common_setting_set_current_boolean(current_setting, action);
+         if (setting)
+            menu_common_setting_set_current_boolean(setting, action);
          break;
       case MENU_SETTINGS_VIDEO_VSYNC:
-         if ((current_setting = setting_data_find_setting(setting_data, "video_vsync")))
-            menu_common_setting_set_current_boolean(current_setting, action);
+         if (setting)
+            menu_common_setting_set_current_boolean(setting, action);
          break;
       case MENU_SETTINGS_VIDEO_HARD_SYNC:
-         if ((current_setting = setting_data_find_setting(setting_data, "video_hard_sync")))
-            menu_common_setting_set_current_boolean(current_setting, action);
+         if (setting)
+            menu_common_setting_set_current_boolean(setting, action);
          break;
       case MENU_SETTINGS_VIDEO_BLACK_FRAME_INSERTION:
-         if ((current_setting = setting_data_find_setting(setting_data, "video_black_frame_insertion")))
-            menu_common_setting_set_current_boolean(current_setting, action);
+         if (setting)
+            menu_common_setting_set_current_boolean(setting, action);
          break;
       case MENU_SETTINGS_VIDEO_CROP_OVERSCAN:
-         if ((current_setting = setting_data_find_setting(setting_data, "video_crop_overscan")))
-            menu_common_setting_set_current_boolean(current_setting, action);
+         if (setting)
+            menu_common_setting_set_current_boolean(setting, action);
          break;
       case MENU_SETTINGS_VIDEO_WINDOW_SCALE_X:
-         if ((current_setting = setting_data_find_setting(setting_data, "video_xscale")))
-            menu_common_setting_set_current_fraction(current_setting, 1.0f, action, false, false);
+         if (setting)
+            menu_common_setting_set_current_fraction(setting, 1.0f, action, false, false);
          break;
       case MENU_SETTINGS_VIDEO_WINDOW_SCALE_Y:
-         if ((current_setting = setting_data_find_setting(setting_data, "video_yscale")))
-            menu_common_setting_set_current_fraction(current_setting, 1.0f, action, false, false);
+         if (setting)
+            menu_common_setting_set_current_fraction(setting, 1.0f, action, false, false);
          break;
       case MENU_SETTINGS_VIDEO_THREADED:
-         if ((current_setting = setting_data_find_setting(setting_data, "video_threaded")))
-            menu_common_setting_set_current_boolean(current_setting, action);
+         if (setting)
+            menu_common_setting_set_current_boolean(setting, action);
          break;
       case MENU_SETTINGS_VIDEO_SWAP_INTERVAL:
-         if ((current_setting = setting_data_find_setting(setting_data, "video_swap_interval")))
-            menu_common_setting_set_current_unsigned_integer(current_setting, 1, action, true, true);
+         if (setting)
+            menu_common_setting_set_current_unsigned_integer(setting, 1, action, true, true);
          break;
       case MENU_SETTINGS_VIDEO_HARD_SYNC_FRAMES:
-         if ((current_setting = setting_data_find_setting(setting_data, "video_hard_sync_frames")))
-            menu_common_setting_set_current_unsigned_integer(current_setting, 1, action, true, true);
+         if (setting)
+            menu_common_setting_set_current_unsigned_integer(setting, 1, action, true, true);
          break;
 
       case MENU_SETTINGS_VIDEO_MONITOR_INDEX:
-         if ((current_setting = setting_data_find_setting(setting_data, "video_monitor_index")))
-            menu_common_setting_set_current_unsigned_integer(current_setting, 1, action, false, false);
+         if (setting)
+            menu_common_setting_set_current_unsigned_integer(setting, 1, action, false, false);
          break;
       case MENU_SETTINGS_VIDEO_REFRESH_RATE:
-         if ((current_setting = setting_data_find_setting(setting_data, "video_refresh_rate")))
-            menu_common_setting_set_current_fraction(current_setting, 0.001f, action, false, false);
+         if (setting)
+            menu_common_setting_set_current_fraction(setting, 0.001f, action, false, false);
          break;
       case MENU_SETTINGS_VIDEO_REFRESH_RATE_AUTO:
          switch (action)
@@ -4395,24 +4396,24 @@ static int menu_common_setting_set(unsigned id, unsigned action, rarch_setting_t
          }
          break;
       case MENU_SETTINGS_PAUSE_IF_WINDOW_FOCUS_LOST:
-         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "pause_nonactive")))
-            menu_common_setting_set_current_boolean(current_setting, action);
+         if (setting)
+            menu_common_setting_set_current_boolean(setting, action);
          break;
       case MENU_SETTINGS_WINDOW_COMPOSITING_ENABLE:
-         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "video_disable_composition")))
-            menu_common_setting_set_current_boolean(current_setting, action);
+         if (setting)
+            menu_common_setting_set_current_boolean(setting, action);
          break;
       case MENU_SETTINGS_NETPLAY_ENABLE:
-         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "netplay_enable")))
-            menu_common_setting_set_current_boolean(current_setting, action);
+         if (setting)
+            menu_common_setting_set_current_boolean(setting, action);
          break;
       case MENU_SETTINGS_NETPLAY_MODE:
-         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "netplay_mode")))
-            menu_common_setting_set_current_boolean(current_setting, action);
+         if (setting)
+            menu_common_setting_set_current_boolean(setting, action);
          break;
       case MENU_SETTINGS_NETPLAY_SPECTATOR_MODE_ENABLE:
-         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "netplay_spectator_mode_enable")))
-            menu_common_setting_set_current_boolean(current_setting, action);
+         if (setting)
+            menu_common_setting_set_current_boolean(setting, action);
          break;
 #ifdef HAVE_NETPLAY
       case MENU_SETTINGS_NETPLAY_HOST_IP_ADDRESS:
@@ -4422,8 +4423,8 @@ static int menu_common_setting_set(unsigned id, unsigned action, rarch_setting_t
             *g_extern.netplay_server = '\0';
          break;
       case MENU_SETTINGS_NETPLAY_DELAY_FRAMES:
-         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "netplay_delay_frames")))
-            menu_common_setting_set_current_unsigned_integer(current_setting, 1, action, true, false);
+         if (setting)
+            menu_common_setting_set_current_unsigned_integer(setting, 1, action, true, false);
          break;
       case MENU_SETTINGS_NETPLAY_TCP_UDP_PORT:
          if (action == MENU_ACTION_OK)
@@ -4439,28 +4440,28 @@ static int menu_common_setting_set(unsigned id, unsigned action, rarch_setting_t
             *g_settings.username = '\0';
          break;
       case MENU_SETTINGS_ONSCREEN_KEYBOARD_ENABLE:
-         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "osk_enable")))
-            menu_common_setting_set_current_boolean(current_setting, action);
+         if (setting)
+            menu_common_setting_set_current_boolean(setting, action);
          break;
       case MENU_SETTINGS_PRIVACY_CAMERA_ALLOW:
-         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "camera_allow")))
-            menu_common_setting_set_current_boolean(current_setting, action);
+         if (setting)
+            menu_common_setting_set_current_boolean(setting, action);
          break;
       case MENU_SETTINGS_PRIVACY_LOCATION_ALLOW:
-         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "location_allow")))
-            menu_common_setting_set_current_boolean(current_setting, action);
+         if (setting)
+            menu_common_setting_set_current_boolean(setting, action);
          break;
       case MENU_SETTINGS_FONT_ENABLE:
-         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "video_font_enable")))
-            menu_common_setting_set_current_boolean(current_setting, action);
+         if (setting)
+            menu_common_setting_set_current_boolean(setting, action);
          break;
       case MENU_SETTINGS_FONT_SIZE:
-         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "video_font_size")))
-            menu_common_setting_set_current_fraction(current_setting, 1.0f, action, false, false);
+         if (setting)
+            menu_common_setting_set_current_fraction(setting, 1.0f, action, false, false);
          break;
       case MENU_SETTINGS_LOAD_DUMMY_ON_CORE_SHUTDOWN:
-         if ((current_setting = setting_data_find_setting(setting_data, "dummy_on_core_shutdown")))
-            menu_common_setting_set_current_boolean(current_setting, action);
+         if (setting)
+            menu_common_setting_set_current_boolean(setting, action);
          break;
       default:
          break;
