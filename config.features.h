@@ -50,6 +50,18 @@ static const bool _egl_supp = true;
 static const bool _egl_supp = false;
 #endif
 
+#ifdef HAVE_X11
+static const bool _x11_supp = true;
+#else
+static const bool _x11_supp = false;
+#endif
+
+#ifdef HAVE_WAYLAND
+static const bool _wayland_supp = true;
+#else
+static const bool _wayland_supp = false;
+#endif
+
 #ifdef HAVE_XVIDEO
 static const bool _xvideo_supp = true;
 #else

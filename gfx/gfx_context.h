@@ -110,6 +110,7 @@ typedef struct gfx_ctx_driver
 
 extern const gfx_ctx_driver_t gfx_ctx_sdl_gl;
 extern const gfx_ctx_driver_t gfx_ctx_x_egl;
+extern const gfx_ctx_driver_t gfx_ctx_wayland;
 extern const gfx_ctx_driver_t gfx_ctx_glx;
 extern const gfx_ctx_driver_t gfx_ctx_d3d9;
 extern const gfx_ctx_driver_t gfx_ctx_drm_egl;

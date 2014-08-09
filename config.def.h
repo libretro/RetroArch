@@ -74,6 +74,7 @@ enum
    INPUT_ANDROID,
    INPUT_SDL,
    INPUT_X,
+   INPUT_WAYLAND,
    INPUT_DINPUT,
    INPUT_PS3,
    INPUT_PSP,
@@ -201,6 +202,8 @@ enum
 #define INPUT_DEFAULT_DRIVER INPUT_LINUXRAW
 #elif defined(HAVE_X11)
 #define INPUT_DEFAULT_DRIVER INPUT_X
+#elif defined(HAVE_WAYLAND)
+#define INPUT_DEFAULT_DRIVER INPUT_WAYLAND
 #elif defined(IOS) || defined(OSX)
 #define INPUT_DEFAULT_DRIVER INPUT_APPLE
 #elif defined(__QNX__)
