@@ -1998,7 +1998,7 @@ static int menu_custom_bind_iterate(void *data, unsigned action)
    if (driver.video_data && driver.menu_ctx && driver.menu_ctx->render_messagebox)
       driver.menu_ctx->render_messagebox(msg);
 
-   struct menu_bind_state binds = (struct menu_bind_state)menu->binds;
+   struct menu_bind_state binds = menu->binds;
    menu_poll_bind_state(&binds);
 
    if ((binds.skip && !menu->binds.skip) || menu_poll_find_trigger(&menu->binds, &binds))

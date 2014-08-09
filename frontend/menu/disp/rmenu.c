@@ -366,7 +366,7 @@ static void rmenu_render(void)
          if (type == MENU_FILE_PLAIN)
          {
             strlcpy(type_str, "(CORE)", sizeof(type_str));
-            file_list_get_alt_at_offset(menu->selection_buf, i, &path, setting);
+            file_list_get_alt_at_offset(menu->selection_buf, i, &path);
             w = 6;
          }
          else

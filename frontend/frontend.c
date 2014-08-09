@@ -280,7 +280,7 @@ bool main_load_content(int argc, char **argv, args_type() args, environment_get_
    char **rarch_argv_ptr;
    struct rarch_main_wrap *wrap_args;
    bool retval = true;
-   int i, ret, rarch_argc = 0;
+   int i, ret = 0, rarch_argc = 0;
    char *rarch_argv[MAX_ARGS] = {NULL};
    char *argv_copy [MAX_ARGS] = {NULL};
 
@@ -289,6 +289,7 @@ bool main_load_content(int argc, char **argv, args_type() args, environment_get_
 
    (void)rarch_argc_ptr;
    (void)rarch_argv_ptr;
+   (void)ret;
 
    wrap_args = (struct rarch_main_wrap*)calloc(1, sizeof(*wrap_args));
    rarch_assert(wrap_args);
