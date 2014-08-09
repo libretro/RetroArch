@@ -1184,7 +1184,11 @@ static void general_write_handler(const void *data)
    else if (!strcmp(setting->name, "slowmotion_ratio"))
       g_settings.slowmotion_ratio = max(min(*setting->value.fraction, 10.0f), 1.0f);
    else if (!strcmp(setting->name, "fastforward_ratio"))
+   {
+      if (*setting->value.fraction == 0.0)
+         *setting->value.fraction = 1.0;
       g_settings.fastforward_ratio = *setting->value.fraction;
+   }
    else if (!strcmp(setting->name, "autosave_interval"))
    {
       g_settings.autosave_interval = *setting->value.unsigned_integer;
