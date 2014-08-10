@@ -124,10 +124,10 @@ void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines)
    VISetBlack(true);
    VIFlush();
    viHeightMultiplier = 1;
-   viWidth = 640;
+   viWidth    = g_settings.video.viwidth;
 #if defined(HW_RVL)
-   if (CONF_GetAspectRatio() == CONF_ASPECT_16_9)
-      viWidth = 678;
+   //if (CONF_GetAspectRatio() == CONF_ASPECT_16_9)
+      //viWidth = 704;
 
    progressive = CONF_GetProgressiveScan() > 0 && VIDEO_HaveComponentCable();
    switch (CONF_GetVideo())
