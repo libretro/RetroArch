@@ -69,7 +69,7 @@ static const audio_driver_t *audio_drivers[] = {
 #ifdef HAVE_JACK
    &audio_jack,
 #endif
-#ifdef HAVE_SDL
+#if defined(HAVE_SDL) || defined(HAVE_SDL2)
    &audio_sdl,
 #endif
 #ifdef HAVE_XAUDIO

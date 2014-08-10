@@ -193,6 +193,10 @@ const audio_driver_t audio_sdl = {
    sdl_audio_set_nonblock_state,
    sdl_audio_free,
    NULL,
+#ifdef HAVE_SDL2
+   "sdl2"
+#else
    "sdl"
+#endif
 };
    
