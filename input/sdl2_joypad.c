@@ -29,28 +29,83 @@ typedef struct _sdl2_joypad
 } sdl2_joypad_t;
 
 static sdl2_joypad_t g_pads[MAX_PLAYERS];
+static bool has_haptic;
 
 static void sdl2_joypad_destroy(void)
 {
    unsigned i;
    for (i = 0; i < MAX_PLAYERS; i++)
    {
-      if (g_pads[i].haptic)
-         SDL_HapticClose(g_pads[i].haptic);
 
-      if (g_pads[i].joypad)
-         SDL_JoystickClose(g_pads[i].joypad);
    }
 
    SDL_QuitSubSystem(SDL_INIT_JOYSTICK);
    memset(g_pads, 0, sizeof(g_pads));
 }
 
+static void sdl2_joypad_connect(int id)
+{
+   sdl2_joypad_t *pad = &g_pads[id];
+   pad->joypad = SDL_JoystickOpen(id);
+   if (!pad->joypad)
+   {
+      RARCH_ERR("[SDL]: Couldn't open SDL joystick #%u.\n", id);
+      return;
+   }
+
+   RARCH_LOG("[SDL]: Joypad #%u connected: %s.\n",
+             id, SDL_JoystickName(pad->joypad));
+
+   pad->haptic = has_haptic ? SDL_HapticOpenFromJoystick(pad->joypad) : NULL;
+
+   if (has_haptic && !pad->haptic)
+      RARCH_WARN("[SDL]: Couldn't open haptic device of the joypad #%u: %s\n",
+                 id, SDL_GetError());
+
+   pad->rumble_effect = -1;
+
+   if (pad->haptic)
+   {
+      SDL_HapticEffect efx;
+      efx.type = SDL_HAPTIC_LEFTRIGHT;
+      efx.leftright.type = SDL_HAPTIC_LEFTRIGHT;
+      efx.leftright.large_magnitude = efx.leftright.small_magnitude = 0x4000;
+      efx.leftright.length = 5000;
+
+      if (SDL_HapticEffectSupported(pad->haptic, &efx) == SDL_FALSE)
+      {
+         pad->rumble_effect = -2;
+         RARCH_WARN("[SDL]: Joypad #%u does not support rumble.\n", id);
+      }
+   }
+
+   pad->num_axes    = SDL_JoystickNumAxes(pad->joypad);
+   pad->num_buttons = SDL_JoystickNumButtons(pad->joypad);
+   pad->num_hats    = SDL_JoystickNumHats(pad->joypad);
+   pad->num_balls   = SDL_JoystickNumBalls(pad->joypad);
+
+   RARCH_LOG("[SDL]: Joypad #%u has: %u axes, %u buttons, %u hats and %u trackballs.\n",
+             id, pad->num_axes, pad->num_buttons, pad->num_hats, pad->num_balls);
+}
+
+static void sdl2_joypad_disconnect(int id)
+{
+   RARCH_LOG("[SDL]: Joypad #%u disconnected.\n", id);
+
+   if (g_pads[id].haptic)
+      SDL_HapticClose(g_pads[id].haptic);
+
+   if (g_pads[id].joypad)
+      SDL_JoystickClose(g_pads[id].joypad);
+
+   memset(&g_pads[id], 0, sizeof(g_pads[id]));
+}
+
 static bool sdl2_joypad_init(void)
 {
    unsigned i;
-   bool has_haptic = false;
 
+   has_haptic = false;
    if (SDL_Init(SDL_INIT_JOYSTICK) < 0)
    {
       RARCH_WARN("[SDL]: Failed to initialize joystick interface: %s\n",
@@ -75,48 +130,18 @@ static bool sdl2_joypad_init(void)
 
    for (i = 0; i < num_sticks; i++)
    {
-      sdl2_joypad_t *pad = &g_pads[i];
-      pad->joypad = SDL_JoystickOpen(i);
-      if (!pad->joypad)
-      {
-         RARCH_ERR("[SDL]: Couldn't open SDL joystick #%u.\n", i);
-         goto error;
-      }
-
-      RARCH_LOG("[SDL]: Opened Joystick: %s (#%u).\n",
-                SDL_JoystickName(pad->joypad), i);
-
-      pad->haptic = has_haptic ? SDL_HapticOpenFromJoystick(pad->joypad) : NULL;
-
-      if (has_haptic && !pad->haptic)
-         RARCH_WARN("[SDL]: Couldn't open haptic device of the joypad #%u: %s\n",
-                    i, SDL_GetError());
-
-      pad->rumble_effect = -1;
-
-      if (pad->haptic)
-      {
-         SDL_HapticLeftRight efx;
-         efx.type = SDL_HAPTIC_LEFTRIGHT;
-         efx.large_magnitude = efx.large_magnitude = 0x4000;
-         efx.length = 5000;
-
-         if (SDL_HapticEffectSupported(pad->haptic, &efx) == SDL_FALSE)
-         {
-            pad->rumble_effect = -2;
-            RARCH_WARN("[SDL]: Joypad #%u does not support rumble.\n", i);
-         }
-      }
-
-
-      pad->num_axes    = SDL_JoystickNumAxes(pad->joypad);
-      pad->num_buttons = SDL_JoystickNumButtons(pad->joypad);
-      pad->num_hats    = SDL_JoystickNumHats(pad->joypad);
-      pad->num_balls   = SDL_JoystickNumBalls(pad->joypad);
-
-      RARCH_LOG("[SDL]: Joypad #%u has: %u axes, %u buttons, %u hats and %u trackballs.\n",
-                i, pad->num_axes, pad->num_buttons, pad->num_hats, pad->num_balls);
+      sdl2_joypad_connect(i);
    }
+
+   num_sticks = 0;
+   for (i = 0; i < MAX_PLAYERS; i++)
+   {
+      if (g_pads[i].joypad)
+         num_sticks++;
+   }
+
+   if (num_sticks == 0)
+      goto error;
 
    return true;
 
@@ -197,26 +222,40 @@ static int16_t sdl2_joypad_axis(unsigned port, uint32_t joyaxis)
 
 static void sdl2_joypad_poll(void)
 {
-   SDL_JoystickUpdate();
+//   SDL_JoystickUpdate();
+   SDL_Event event;
+
+   while (SDL_PollEvent(&event))
+   {
+      if (event.type == SDL_JOYDEVICEADDED)
+      {
+         sdl2_joypad_connect(event.jdevice.which);
+      }
+      else if (event.type == SDL_JOYDEVICEREMOVED)
+      {
+         sdl2_joypad_disconnect(event.jdevice.which);
+      }
+   }
 }
 
 static bool sdl2_joypad_set_rumble(unsigned pad, enum retro_rumble_effect effect, uint16_t strength)
 {
-   SDL_HapticLeftRight efx;
+   SDL_HapticEffect efx;
    memset(&efx, 0, sizeof(efx));
 
    sdl2_joypad_t *joypad = &g_pads[pad];
 
    if (!joypad->joypad || !joypad->haptic)
-      return;
+      return false;
 
    efx.type = SDL_HAPTIC_LEFTRIGHT;
-   efx.length = 5000;
+   efx.leftright.type  = SDL_HAPTIC_LEFTRIGHT;
+   efx.leftright.length = 5000;
 
    switch (effect)
    {
-      case RETRO_RUMBLE_STRONG: efx.large_magnitude = strength; break;
-      case RETRO_RUMBLE_WEAK: efx.small_magnitude = strength; break;
+      case RETRO_RUMBLE_STRONG: efx.leftright.large_magnitude = strength; break;
+      case RETRO_RUMBLE_WEAK: efx.leftright.small_magnitude = strength; break;
       default: return false;
    }
 
