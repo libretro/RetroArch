@@ -2,6 +2,7 @@ HAVE_RGUI=yes           # Disable RGUI
 HAVE_LAKKA=no           # Enable Lakka menu
 HAVE_DYNAMIC=yes        # Disable dynamic loading of libretro library
 HAVE_SDL=auto           # SDL support
+HAVE_SDL2=no            # SDL2 support (disables SDL 1.x)
 HAVE_UDEV=auto          # Udev/Evdev gamepad support
 HAVE_LIBRETRO=          # libretro library used
 HAVE_MAN_DIR=           # Manpage install directory

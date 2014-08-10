@@ -213,6 +213,12 @@ ifeq ($(HAVE_SDL), 1)
    LIBS += $(SDL_LIBS)
 endif
 
+ifeq ($(HAVE_SDL2), 1)
+   OBJ += gfx/sdl2_gfx.o
+   DEFINES += $(SDL2_CFLAGS) $(BSD_LOCAL_INC)
+   LIBS += $(SDL2_LIBS)
+endif
+
 ifeq ($(HAVE_OMAP), 1)
    OBJ += gfx/omap_gfx.o
 endif
