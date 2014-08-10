@@ -113,6 +113,8 @@ static bool sdl2_joypad_init(void)
       return false;
    }
 
+   SDL_JoystickEventState(SDL_ENABLE);
+
    // TODO: Add SDL_GameController support.
 //   if (SDL_Init(SDL_INIT_GAMECONTROLLER) < 0)
 //      RARCH_LOG("[SDL]: Failed to initialize game controller interface: %s\n",
@@ -222,10 +224,10 @@ static int16_t sdl2_joypad_axis(unsigned port, uint32_t joyaxis)
 
 static void sdl2_joypad_poll(void)
 {
-//   SDL_JoystickUpdate();
    SDL_Event event;
 
-   while (SDL_PollEvent(&event))
+   SDL_PumpEvents();
+   while (SDL_PeepEvents(&event, 1, SDL_GETEVENT, SDL_JOYDEVICEADDED, SDL_JOYDEVICEREMOVED) > 0)
    {
       if (event.type == SDL_JOYDEVICEADDED)
       {

@@ -224,8 +224,7 @@ static void sdl2_input_free(void *data)
       return;
 
    // Flush out all pending events.
-   SDL_Event event;
-   while (SDL_PollEvent(&event));
+   SDL_FlushEvents(SDL_FIRSTEVENT, SDL_LASTEVENT);
 
    sdl2_input_t *sdl = (sdl2_input_t*)data;
 
@@ -268,7 +267,8 @@ static void sdl2_input_poll(void *data)
 
    SDL_Event event;
 
-   while (SDL_PollEvent(&event))
+   SDL_PumpEvents();
+   while (SDL_PeepEvents(&event, 1, SDL_GETEVENT, SDL_MOUSEWHEEL, SDL_MOUSEWHEEL) > 0)
    {
       if (event.type == SDL_MOUSEWHEEL)
       {

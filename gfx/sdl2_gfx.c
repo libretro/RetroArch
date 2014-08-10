@@ -473,7 +473,9 @@ error:
 static void check_window(sdl2_video_t *vid)
 {
    SDL_Event event;
-   while (SDL_PollEvent(&event))
+
+   SDL_PumpEvents();
+   while (SDL_PeepEvents(&event, 1, SDL_GETEVENT, SDL_QUIT, SDL_WINDOWEVENT) > 0)
    {
       switch (event.type)
       {
@@ -482,12 +484,8 @@ static void check_window(sdl2_video_t *vid)
             break;
 
          case SDL_WINDOWEVENT:
-            switch (event.window.event)
-            {
-               case SDL_WINDOWEVENT_RESIZED:
-                  vid->should_resize = true;
-                  break;
-            }
+            if (event.window.event == SDL_WINDOWEVENT_RESIZED)
+               vid->should_resize = true;
             break;
 
          default:
