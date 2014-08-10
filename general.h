@@ -194,6 +194,7 @@ struct settings
       bool black_frame_insertion;
       unsigned swap_interval;
       unsigned hard_sync_frames;
+      unsigned viwidth;
       bool smooth;
       bool force_aspect;
       bool crop_overscan;
