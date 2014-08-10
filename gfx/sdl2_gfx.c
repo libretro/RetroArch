@@ -342,6 +342,7 @@ static void sdl_refresh_input_size(sdl2_video_t *vid, bool menu, bool rgb32,
                break;
             default:
                RARCH_ERR("Unknown/unsupported video format.\n");
+               return;
                break;
          }
       }
