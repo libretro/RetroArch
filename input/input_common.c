@@ -77,6 +77,9 @@ static const rarch_joypad_driver_t *joypad_drivers[] = {
 #ifdef HAVE_SDL
    &sdl_joypad,
 #endif
+#ifdef HAVE_SDL2
+   &sdl2_joypad,
+#endif
 #ifdef __MACH__
    &apple_joypad,
 #endif
