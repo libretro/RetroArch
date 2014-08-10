@@ -45,7 +45,7 @@ typedef struct sdl2_tex
    bool rgb32;
 } sdl2_tex_t;
 
-typedef struct sdl_video
+typedef struct _sdl2_video
 {
    SDL_Window *window;
    SDL_Renderer *renderer;
@@ -328,8 +328,23 @@ static void sdl_refresh_input_size(sdl2_video_t *vid, bool menu, bool rgb32,
       if (menu)
          format = rgb32 ? SDL_PIXELFORMAT_ARGB8888 : SDL_PIXELFORMAT_RGBA4444;
       else
-         format = rgb32 ? SDL_PIXELFORMAT_ARGB8888 : SDL_PIXELFORMAT_RGB565;
-
+      {
+         switch (g_extern.system.pix_fmt)
+         {
+            case RETRO_PIXEL_FORMAT_0RGB1555:
+               format = SDL_PIXELFORMAT_ARGB1555;
+               break;
+            case RETRO_PIXEL_FORMAT_XRGB8888:
+               format = SDL_PIXELFORMAT_ARGB8888;
+               break;
+            case RETRO_PIXEL_FORMAT_RGB565:
+               format = SDL_PIXELFORMAT_RGB565;
+               break;
+            default:
+               RARCH_ERR("Unknown/unsupported video format.\n");
+               break;
+         }
+      }
 
       SDL_SetHintWithPriority(SDL_HINT_RENDER_SCALE_QUALITY,
                               (vid->video.smooth || menu) ? "linear" : "nearest",
@@ -490,7 +505,7 @@ static bool sdl2_gfx_frame(void *data, const void *frame, unsigned width,
 
    if (frame)
    {
-      sdl_refresh_input_size(vid, false, vid->video.rgb32, width, height, pitch);
+      sdl_refresh_input_size(vid, false, vid->frame.rgb32/*vid->video.rgb32*/, width, height, pitch);
 
       RARCH_PERFORMANCE_INIT(sdl_copy_frame);
       RARCH_PERFORMANCE_START(sdl_copy_frame);
