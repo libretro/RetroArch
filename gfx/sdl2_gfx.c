@@ -47,12 +47,12 @@ typedef struct sdl2_tex
 
 typedef struct sdl_video
 {
+   SDL_Window *window;
    SDL_Renderer *renderer;
 
    sdl2_tex_t frame;
    sdl2_tex_t menu;
    sdl2_tex_t font;
-   SDL_Window *window;
 
    bool gl;
    bool quitting;
@@ -434,17 +434,17 @@ static void *sdl2_gfx_init(const video_info_t *video, const input_driver_t **inp
 
    if (input && input_data)
    {
-//      sdl_input = input_sdl.init();
-//      if (sdl_input)
-//      {
-//         *input = &input_sdl;
-//         *input_data = sdl_input;
-//      }
-//      else
-//      {
+      void *sdl2_input = input_sdl2.init();
+      if (sdl2_input)
+      {
+         *input = &input_sdl2;
+         *input_data = sdl2_input;
+      }
+      else
+      {
          *input = NULL;
          *input_data = NULL;
-//      }
+      }
    }
 
    return vid;
@@ -681,6 +681,12 @@ void sdl2_show_mouse(void *data, bool state)
    SDL_ShowCursor(state);
 }
 
+void sdl2_grab_mouse_toggle(void *data)
+{
+   sdl2_video_t *vid = (sdl2_video_t*)data;
+   SDL_SetWindowGrab(vid->window, SDL_GetWindowGrab(vid->window));
+}
+
 static video_poke_interface_t sdl2_video_poke_interface = {
    sdl2_poke_set_filtering,
 #ifdef HAVE_FBO
@@ -695,7 +701,7 @@ static video_poke_interface_t sdl2_video_poke_interface = {
 #endif
    sdl2_poke_set_osd_msg,
    sdl2_show_mouse,
-   NULL,
+   sdl2_grab_mouse_toggle,
    NULL,
 };
 

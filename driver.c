@@ -155,6 +155,9 @@ static const input_driver_t *input_drivers[] = {
 #ifdef HAVE_SDL
    &input_sdl,
 #endif
+#ifdef HAVE_SDL2
+   &input_sdl2,
+#endif
 #ifdef HAVE_DINPUT
    &input_dinput,
 #endif

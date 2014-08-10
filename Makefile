@@ -214,7 +214,7 @@ ifeq ($(HAVE_SDL), 1)
 endif
 
 ifeq ($(HAVE_SDL2), 1)
-   OBJ += gfx/sdl2_gfx.o
+   OBJ += gfx/sdl2_gfx.o input/sdl2_input.o
    DEFINES += $(SDL2_CFLAGS) $(BSD_LOCAL_INC)
    LIBS += $(SDL2_LIBS)
 endif
