@@ -331,12 +331,11 @@ static void sdl_refresh_input_size(sdl2_video_t *vid, bool menu, bool rgb32,
       {
          switch (g_extern.system.pix_fmt)
          {
-            case RETRO_PIXEL_FORMAT_0RGB1555:
-               format = SDL_PIXELFORMAT_ARGB1555;
-               break;
             case RETRO_PIXEL_FORMAT_XRGB8888:
                format = SDL_PIXELFORMAT_ARGB8888;
                break;
+            case RETRO_PIXEL_FORMAT_0RGB1555:
+               /* this assumes the frontend will convert the input to RGB565 */
             case RETRO_PIXEL_FORMAT_RGB565:
                format = SDL_PIXELFORMAT_RGB565;
                break;
