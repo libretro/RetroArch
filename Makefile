@@ -214,8 +214,8 @@ ifeq ($(HAVE_SDL), 1)
 endif
 
 ifeq ($(HAVE_SDL2), 1)
-   OBJ += gfx/sdl2_gfx.o input/sdl_input.o input/sdl2_joypad.o audio/sdl_audio.o
-   JOYCONFIG_OBJ += input/sdl2_joypad.o
+   OBJ += gfx/sdl2_gfx.o input/sdl_input.o input/sdl_joypad.o audio/sdl_audio.o
+   JOYCONFIG_OBJ += input/sdl_joypad.o
    JOYCONFIG_LIBS += $(SDL2_LIBS)
    DEFINES += $(SDL2_CFLAGS) $(BSD_LOCAL_INC)
    LIBS += $(SDL2_LIBS)
