@@ -34,7 +34,7 @@ typedef struct _sdl_joypad
 
 static sdl_joypad_t g_pads[MAX_PLAYERS];
 #ifdef HAVE_SDL2
-static bool has_haptic;
+static bool g_has_haptic;
 #endif
 
 static void sdl_joypad_connect(int id)
@@ -56,9 +56,9 @@ static void sdl_joypad_connect(int id)
 
 
 #ifdef HAVE_SDL2
-   pad->haptic = has_haptic ? SDL_HapticOpenFromJoystick(pad->joypad) : NULL;
+   pad->haptic = g_has_haptic ? SDL_HapticOpenFromJoystick(pad->joypad) : NULL;
 
-   if (has_haptic && !pad->haptic)
+   if (g_has_haptic && !pad->haptic)
       RARCH_WARN("[SDL]: Couldn't open haptic device of the joypad #%u: %s\n",
                  id, SDL_GetError());
 
@@ -124,13 +124,23 @@ static void sdl_joypad_destroy(void)
 static bool sdl_joypad_init(void)
 {
    unsigned i;
-   if (SDL_Init(SDL_INIT_JOYSTICK) < 0)
+   if (SDL_WasInit(0) == 0 && SDL_Init(SDL_INIT_JOYSTICK) < 0)
+      return false;
+   else if (SDL_InitSubSystem(SDL_INIT_JOYSTICK) < 0)
       return false;
 
-#if 0 // TODO: Add SDL_GameController support.
-   if (SDL_Init(SDL_INIT_GAMECONTROLLER) < 0)
-      RARCH_LOG("[SDL]: Failed to initialize game controller interface: %s\n",
-                SDL_GetError());
+#if HAS_SDL2
+   // TODO: Add SDL_GameController support.
+   //if (SDL_Init(SDL_INIT_GAMECONTROLLER) < 0)
+   //   RARCH_LOG("[SDL]: Failed to initialize game controller interface: %s\n",
+   //             SDL_GetError());
+
+   g_has_haptic = false;
+   if (SDL_InitSubSystem(SDL_INIT_HAPTIC) < 0)
+      RARCH_WARN("[SDL]: Failed to initialize haptic device support: %s\n",
+            SDL_GetError());
+   else
+      g_has_haptic = true;
 #endif
 
    unsigned num_sticks = SDL_NumJoysticks();
@@ -140,11 +150,24 @@ static bool sdl_joypad_init(void)
    for (i = 0; i < num_sticks; i++)
       sdl_joypad_connect(i);
 
+#ifndef HAVE_SDL2
+   /* quit if no joypad is detected. */
+   num_sticks = 0;
+   for (i = 0; i < MAX_PLAYERS; i++)
+      if (g_pads[i].joypad)
+         num_sticks++;
+
+   if (num_sticks == 0)
+      goto error;
+#endif
+
    return true;
 
+#ifndef HAVE_SDL2
 error:
    sdl_joypad_destroy();
    return false;
+#endif
 }
 
 static bool sdl_joypad_button(unsigned port, uint16_t joykey)
