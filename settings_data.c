@@ -796,8 +796,10 @@ static void general_read_handler(const void *data)
          *setting->value.unsigned_integer = g_settings.rewind_granularity;
     else if (!strcmp(setting->name, "block_sram_overwrite"))
         *setting->value.boolean = g_settings.block_sram_overwrite;
+#ifdef GEKKO
     else if (!strcmp(setting->name, "video_viwidth"))
         *setting->value.unsigned_integer = g_settings.video.viwidth;
+#endif
     else if (!strcmp(setting->name, "video_smooth"))
         *setting->value.boolean = g_settings.video.smooth;
     else if (!strcmp(setting->name, "video_monitor_index"))
@@ -1064,9 +1066,11 @@ static void general_write_handler(const void *data)
    else if (!strcmp(setting->name, "rewind_granularity"))
       g_settings.rewind_granularity = *setting->value.unsigned_integer;
    else if (!strcmp(setting->name, "block_sram_overwrite"))
-      g_settings.block_sram_overwrite = *setting->value.boolean
+      g_settings.block_sram_overwrite = *setting->value.boolean;
+#ifdef GEKKO
    else if (!strcmp(setting->name, "video_viwidth"))
       g_settings.video.viwidth = *setting->value.unsigned_integer;
+#endif
    else if (!strcmp(setting->name, "video_smooth"))
    {
       g_settings.video.smooth = *setting->value.boolean;
@@ -1581,8 +1585,9 @@ rarch_setting_t* setting_data_get_list(void)
          CONFIG_INT(g_extern.console.screen.viewports.custom_vp.y,         "custom_viewport_y",       "Custom Viewport Y",       0, GROUP_NAME, SUBGROUP_NAME, NULL, NULL)
          CONFIG_UINT(g_extern.console.screen.viewports.custom_vp.width,    "custom_viewport_width",   "Custom Viewport Width",   0, GROUP_NAME, SUBGROUP_NAME, NULL, NULL)
          CONFIG_UINT(g_extern.console.screen.viewports.custom_vp.height,   "custom_viewport_height",  "Custom Viewport Height",  0, GROUP_NAME, SUBGROUP_NAME, NULL, NULL)
-
+#ifdef GEKKO
          CONFIG_UINT(g_settings.video.viwidth,              "video_viwidth",              "Set Screen Width",           video_viwidth, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+#endif
          CONFIG_BOOL(g_settings.video.smooth,               "video_smooth",               "Use Bilinear Filtering",     video_smooth, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
          CONFIG_UINT(g_settings.video.rotation,             "video_rotation",             "Rotation",                   0, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_RANGE(0, 3, 1, true, true)
          END_SUB_GROUP()

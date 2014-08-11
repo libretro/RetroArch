@@ -150,6 +150,8 @@ static void menu_common_entries_init(menu_handle_t *menu, unsigned menu_type)
          file_list_push(menu->selection_buf, "", "video_shared_context", MENU_SETTINGS_VIDEO_HW_SHARED_CONTEXT, 0);
 #if defined(GEKKO) || defined(__CELLOS_LV2__)
          file_list_push(menu->selection_buf, "Screen Resolution", "", MENU_SETTINGS_VIDEO_RESOLUTION, 0);
+#endif
+#ifdef GEKKO
          file_list_push(menu->selection_buf, "", "video_viwidth", MENU_SETTINGS_VIDEO_VIWIDTH, 0);
 #endif
          file_list_push(menu->selection_buf, "Software Filter", "", MENU_SETTINGS_VIDEO_SOFTFILTER, 0);
@@ -4240,7 +4242,9 @@ static void menu_common_setting_set_label(char *type_str, size_t type_str_size, 
                   type_str_size);
             break;
          case MENU_SETTINGS_VIDEO_VIWIDTH:
+#ifdef GEKKO
             snprintf(type_str, type_str_size, "%d", g_settings.video.viwidth);
+#endif
             break;
          case MENU_SETTINGS_VIDEO_SOFT_FILTER:
             snprintf(type_str, type_str_size,

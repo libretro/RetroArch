@@ -1099,7 +1099,9 @@ void init_video_input(void)
    video.fullscreen = g_settings.video.fullscreen;
    video.vsync = g_settings.video.vsync && !g_extern.system.force_nonblock;
    video.force_aspect = g_settings.video.force_aspect;
+#ifdef GEKKO
    video.viwidth = g_settings.video.viwidth;
+#endif
    video.smooth = g_settings.video.smooth;
    video.input_scale = scale;
    video.rgb32 = g_extern.filter.filter ? g_extern.filter.out_rgb32 : (g_extern.system.pix_fmt == RETRO_PIXEL_FORMAT_XRGB8888);
