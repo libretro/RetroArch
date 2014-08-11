@@ -132,7 +132,7 @@ ifeq ($(HAVE_MENU_COMMON), 1)
 endif
 
 ifeq ($(HAVE_SDL2), 1)
-   OBJ += gfx/sdl2_gfx.o input/sdl2_input.o input/sdl2_joypad.o audio/sdl_audio.o
+   OBJ += gfx/sdl2_gfx.o input/sdl_input.o input/sdl2_joypad.o audio/sdl_audio.o
    JOBJ += input/sdl2_joypad.o
    LIBS += -lSDL2
    JLIBS += -lSDL2

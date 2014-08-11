@@ -449,11 +449,11 @@ static void *sdl2_gfx_init(const video_info_t *video, const input_driver_t **inp
 
    if (input && input_data)
    {
-      void *sdl2_input = input_sdl2.init();
-      if (sdl2_input)
+      void *sdl_input = input_sdl.init();
+      if (sdl_input)
       {
-         *input = &input_sdl2;
-         *input_data = sdl2_input;
+         *input = &input_sdl;
+         *input_data = sdl_input;
       }
       else
       {

@@ -30,7 +30,7 @@ typedef struct sdl_input
 
    int mouse_x, mouse_y;
    int mouse_abs_x, mouse_abs_y;
-   int mouse_l, mouse_r, mouse_m, mouse_wu, mouse_wd;
+   int mouse_l, mouse_r, mouse_m, mouse_wu, mouse_wd, mouse_wl, mouse_wr;
 } sdl_input_t;
 
 static void *sdl_input_init(void)
@@ -41,6 +41,8 @@ static void *sdl_input_init(void)
       return NULL;
 
    sdl->joypad = input_joypad_init_driver(g_settings.input.joypad_driver);
+
+   RARCH_LOG("[SDL]: Input driver initialized.\n");
    return sdl;
 }
 
@@ -52,7 +54,12 @@ static bool sdl_key_pressed(int key)
    int sym = input_translate_rk_to_keysym((enum retro_key)key);
 
    int num_keys;
-   Uint8 *keymap = SDL_GetKeyState(&num_keys);
+   const uint8_t *keymap;
+#if HAVE_SDL2
+   keymap = SDL_GetKeyboardState(&num_keys);
+#else
+   keymap = SDL_GetKeyState(&num_keys);
+#endif
    if (sym < 0 || sym >= num_keys)
       return false;
 
@@ -224,8 +231,12 @@ static void sdl_input_free(void *data)
       return;
 
    // Flush out all pending events.
+#ifdef HAVE_SDL2
+   SDL_FlushEvents(SDL_FIRSTEVENT, SDL_LASTEVENT);
+#else
    SDL_Event event;
    while (SDL_PollEvent(&event));
+#endif
 
    sdl_input_t *sdl = (sdl_input_t*)data;
 
@@ -234,6 +245,23 @@ static void sdl_input_free(void *data)
 
    free(data);
 }
+
+#ifdef HAVE_SDL2
+static void sdl_grab_mouse(void *data, bool state)
+{
+   sdl_input_t *sdl = (sdl_input_t*)data;
+
+   if (driver.video == &video_sdl2)
+   {
+      /* first member of sdl2_video_t is the window */
+      struct temp{
+         SDL_Window *w;
+      };
+      SDL_SetWindowGrab(((struct temp*)driver.video_data)->w,
+                        state ? SDL_TRUE : SDL_FALSE);
+   }
+}
+#endif
 
 static bool sdl_set_rumble(void *data, unsigned port, enum retro_rumble_effect effect, uint16_t strength)
 {
@@ -254,8 +282,10 @@ static void sdl_poll_mouse(sdl_input_t *sdl)
    sdl->mouse_l  = SDL_BUTTON(SDL_BUTTON_LEFT)      & btn ? 1 : 0;
    sdl->mouse_r  = SDL_BUTTON(SDL_BUTTON_RIGHT)     & btn ? 1 : 0;
    sdl->mouse_m  = SDL_BUTTON(SDL_BUTTON_MIDDLE)    & btn ? 1 : 0;
+#ifndef HAVE_SDL2
    sdl->mouse_wu = SDL_BUTTON(SDL_BUTTON_WHEELUP)   & btn ? 1 : 0;
    sdl->mouse_wd = SDL_BUTTON(SDL_BUTTON_WHEELDOWN) & btn ? 1 : 0;
+#endif
 }
 
 static void sdl_input_poll(void *data)
@@ -266,6 +296,21 @@ static void sdl_input_poll(void *data)
    if (sdl->joypad)
       sdl->joypad->poll();
    sdl_poll_mouse(sdl);
+
+#ifdef HAVE_SDL2
+   SDL_Event event;
+   while (SDL_PeepEvents(&event, 1, SDL_GETEVENT, SDL_MOUSEWHEEL, SDL_MOUSEWHEEL) > 0)
+   {
+      if (event.type == SDL_MOUSEWHEEL)
+      {
+         sdl->mouse_wu = event.wheel.y < 0;
+         sdl->mouse_wd = event.wheel.y > 0;
+         sdl->mouse_wl = event.wheel.x < 0;
+         sdl->mouse_wr = event.wheel.x > 0;
+         break;
+      }
+   }
+#endif
 }
 
 static uint64_t sdl_get_capabilities(void *data)
@@ -293,8 +338,13 @@ const input_driver_t input_sdl = {
    NULL,
    sdl_get_capabilities,
    NULL,
+#ifdef HAVE_SDL2
+   "sdl2",
+   sdl_grab_mouse,
+#else
    "sdl",
    NULL,
+#endif
    sdl_set_rumble,
    sdl_get_joypad_driver,
 };

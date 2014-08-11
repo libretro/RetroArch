@@ -152,11 +152,8 @@ static const input_driver_t *input_drivers[] = {
 #if defined(SN_TARGET_PSP2) || defined(PSP)
    &input_psp,
 #endif
-#ifdef HAVE_SDL
+#if defined(HAVE_SDL) || defined(HAVE_SDL2)
    &input_sdl,
-#endif
-#ifdef HAVE_SDL2
-   &input_sdl2,
 #endif
 #ifdef HAVE_DINPUT
    &input_dinput,

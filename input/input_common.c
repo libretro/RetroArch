@@ -468,7 +468,7 @@ const struct rarch_key_map rarch_key_map_sdl[] = {
 #endif
 
 #ifdef HAVE_SDL2
-const struct rarch_key_map rarch_key_map_sdl2[] = {
+const struct rarch_key_map rarch_key_map_sdl[] = {
    { SDL_SCANCODE_LEFT, RETROK_LEFT },
    { SDL_SCANCODE_RIGHT, RETROK_RIGHT },
    { SDL_SCANCODE_UP, RETROK_UP },
