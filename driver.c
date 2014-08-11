@@ -69,7 +69,7 @@ static const audio_driver_t *audio_drivers[] = {
 #ifdef HAVE_JACK
    &audio_jack,
 #endif
-#ifdef HAVE_SDL
+#if defined(HAVE_SDL) || defined(HAVE_SDL2)
    &audio_sdl,
 #endif
 #ifdef HAVE_XAUDIO
@@ -121,6 +121,9 @@ static const video_driver_t *video_drivers[] = {
 #ifdef HAVE_SDL
    &video_sdl,
 #endif
+#ifdef HAVE_SDL2
+   &video_sdl2,
+#endif
 #ifdef HAVE_XVIDEO
    &video_xvideo,
 #endif
@@ -151,6 +154,9 @@ static const input_driver_t *input_drivers[] = {
 #endif
 #ifdef HAVE_SDL
    &input_sdl,
+#endif
+#ifdef HAVE_SDL2
+   &input_sdl2,
 #endif
 #ifdef HAVE_DINPUT
    &input_dinput,

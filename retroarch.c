@@ -823,6 +823,7 @@ static void print_features(void)
    puts("");
    puts("Features:");
    _PSUPP(sdl, "SDL", "SDL drivers");
+   _PSUPP(sdl2, "SDL2", "SDL2 drivers");
    _PSUPP(x11, "X11", "X11 drivers");
    _PSUPP(wayland, "wayland", "Wayland drivers");
    _PSUPP(thread, "Threads", "Threading support");

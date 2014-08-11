@@ -14,6 +14,12 @@ static const bool _sdl_supp = true;
 static const bool _sdl_supp = false;
 #endif
 
+#ifdef HAVE_SDL2
+static const bool _sdl2_supp = true;
+#else
+static const bool _sdl2_supp = false;
+#endif
+
 #ifdef HAVE_THREADS
 static const bool _thread_supp = true;
 #else
