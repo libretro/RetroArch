@@ -1068,13 +1068,13 @@ void init_video_input(void)
       {
          // Do rounding here to simplify integer scale correctness.
          unsigned base_width = roundf(geom->base_height * g_extern.system.aspect_ratio);
-         width = roundf(base_width * g_settings.video.xscale);
-         height = roundf(geom->base_height * g_settings.video.yscale);
+         width = roundf(base_width * g_settings.video.scale);
+         height = roundf(geom->base_height * g_settings.video.scale);
       }
       else
       {
-         width = roundf(geom->base_width * g_settings.video.xscale);
-         height = roundf(geom->base_height * g_settings.video.yscale);
+         width = roundf(geom->base_width * g_settings.video.scale);
+         height = roundf(geom->base_height * g_settings.video.scale);
       }
    }
 

@@ -182,8 +182,7 @@ struct settings
    {
       char driver[32];
       char gl_context[32];
-      float xscale;
-      float yscale;
+      float scale;
       bool fullscreen;
       bool windowed_fullscreen;
       unsigned monitor_index;

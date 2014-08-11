@@ -546,8 +546,7 @@ void setting_data_get_description(const void *data, char *msg, size_t sizeof_msg
          snprintf(msg, sizeof_msg,
                " -- Load up a specific config file \n"
                "based on the core being used.\n");
-    else if (!strcmp(setting->name, "video_xscale") ||
-          !strcmp(setting->name, "video_yscale"))
+    else if (!strcmp(setting->name, "video_scale"))
          snprintf(msg, sizeof_msg,
                " -- Fullscreen resolution.\n"
                " \n"
@@ -920,10 +919,8 @@ static void general_read_handler(const void *data)
        *setting->value.fraction = g_settings.video.refresh_rate;
     else if (!strcmp(setting->name,  "video_aspect_ratio"))
         *setting->value.fraction = g_settings.video.aspect_ratio;
-    else if (!strcmp(setting->name, "video_xscale"))
-       *setting->value.fraction = g_settings.video.xscale;
-    else if (!strcmp(setting->name, "video_yscale"))
-       *setting->value.fraction = g_settings.video.yscale;
+    else if (!strcmp(setting->name, "video_scale"))
+       *setting->value.fraction = g_settings.video.scale;
     else if (!strcmp(setting->name, "video_force_aspect"))
         *setting->value.boolean = g_settings.video.force_aspect;
     else if (!strcmp(setting->name, "aspect_ratio_index"))
@@ -1259,22 +1256,9 @@ static void general_write_handler(const void *data)
    }
    else if (!strcmp(setting->name,  "video_aspect_ratio"))
       g_settings.video.aspect_ratio = *setting->value.fraction;
-   else if (!strcmp(setting->name, "video_xscale"))
+   else if (!strcmp(setting->name, "video_scale"))
    {
-      float *scale = (float*)&g_settings.video.xscale;
-
-      *scale = roundf(*setting->value.fraction);
-      *scale = max(*scale, 1.0f);
-
-      if (!g_settings.video.fullscreen)
-         has_set_reinit = true;
-   }
-   else if (!strcmp(setting->name, "video_yscale"))
-   {
-      float *scale = (float*)&g_settings.video.yscale;
-
-      *scale = roundf(*setting->value.fraction);
-      *scale = max(*scale, 1.0f);
+      g_settings.video.scale = roundf(*setting->value.fraction);
 
       if (!g_settings.video.fullscreen)
          has_set_reinit = true;
@@ -1576,8 +1560,7 @@ rarch_setting_t* setting_data_get_list(void)
 
          START_SUB_GROUP("Scaling")
 #if !defined(RARCH_CONSOLE) && !defined(RARCH_MOBILE)
-         CONFIG_FLOAT(g_settings.video.xscale,              "video_xscale",               "Windowed Scale (X)",                    xscale, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
-         CONFIG_FLOAT(g_settings.video.yscale,              "video_yscale",               "Windowed Scale (Y)",                    yscale, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+         CONFIG_FLOAT(g_settings.video.scale,              "video_scale",               "Windowed Scale",                    scale, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_RANGE(1.0, 10.0, 1.0, true, true) 
 #endif
          CONFIG_BOOL(g_settings.video.scale_integer,        "video_scale_integer",        "Integer Scale",      scale_integer, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
 

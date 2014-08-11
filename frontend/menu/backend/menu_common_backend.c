@@ -187,8 +187,7 @@ static void menu_common_entries_init(menu_handle_t *menu, unsigned menu_type)
          file_list_push(menu->selection_buf, "", "video_threaded", MENU_SETTINGS_VIDEO_THREADED, 0);
 #endif
 #if !defined(RARCH_CONSOLE) && !defined(RARCH_MOBILE)
-         file_list_push(menu->selection_buf, "", "video_xscale", MENU_SETTINGS_VIDEO_WINDOW_SCALE_X, 0);
-         file_list_push(menu->selection_buf, "", "video_yscale", MENU_SETTINGS_VIDEO_WINDOW_SCALE_Y, 0);
+         file_list_push(menu->selection_buf, "", "video_scale", MENU_SETTINGS_VIDEO_WINDOW_SCALE, 0);
 #endif
          file_list_push(menu->selection_buf, "", "video_crop_overscan", MENU_SETTINGS_VIDEO_CROP_OVERSCAN, 0);
          file_list_push(menu->selection_buf, "", "video_monitor_index", MENU_SETTINGS_VIDEO_MONITOR_INDEX, 0);
@@ -570,10 +569,8 @@ static int menu_info_screen_iterate(unsigned action, rarch_setting_t *setting)
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "core_specific_config")))
             setting_data_get_description(current_setting, msg, sizeof(msg));
          break;
-      case MENU_SETTINGS_VIDEO_WINDOW_SCALE_X:
-      case MENU_SETTINGS_VIDEO_WINDOW_SCALE_Y:
-         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "video_xscale")) ||
-              (current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "video_xscale")) )
+      case MENU_SETTINGS_VIDEO_WINDOW_SCALE:
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "video_scale")))
             setting_data_get_description(current_setting, msg, sizeof(msg));
          break;
       case MENU_SETTINGS_VIDEO_VSYNC:
@@ -4277,11 +4274,8 @@ static void menu_common_setting_set_label(char *type_str, size_t type_str_size, 
          case MENU_SETTINGS_VIDEO_THREADED:
             strlcpy(type_str, g_settings.video.threaded ? "ON" : "OFF", type_str_size);
             break;
-         case MENU_SETTINGS_VIDEO_WINDOW_SCALE_X:
-            snprintf(type_str, type_str_size, "%.1fx", g_settings.video.xscale);
-            break;
-         case MENU_SETTINGS_VIDEO_WINDOW_SCALE_Y:
-            snprintf(type_str, type_str_size, "%.1fx", g_settings.video.yscale);
+         case MENU_SETTINGS_VIDEO_WINDOW_SCALE:
+            snprintf(type_str, type_str_size, "%.1fx", g_settings.video.scale);
             break;
          case MENU_SETTINGS_VIDEO_CROP_OVERSCAN:
             strlcpy(type_str, g_settings.video.crop_overscan ? "ON" : "OFF", type_str_size);

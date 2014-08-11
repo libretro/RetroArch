@@ -284,8 +284,7 @@ void config_set_defaults(void)
 
    g_settings.load_dummy_on_core_shutdown = load_dummy_on_core_shutdown;
 
-   g_settings.video.xscale = xscale;
-   g_settings.video.yscale = yscale;
+   g_settings.video.scale = scale;
    g_settings.video.fullscreen = g_extern.force_fullscreen ? true : fullscreen;
    g_settings.video.windowed_fullscreen = windowed_fullscreen;
    g_settings.video.monitor_index = monitor_index;
@@ -808,8 +807,7 @@ bool config_load_file(const char *path, bool set_defaults)
 
    char tmp_str[PATH_MAX];
 
-   CONFIG_GET_FLOAT(video.xscale, "video_xscale");
-   CONFIG_GET_FLOAT(video.yscale, "video_yscale");
+   CONFIG_GET_FLOAT(video.scale, "video_scale");
    CONFIG_GET_INT(video.fullscreen_x, "video_fullscreen_x");
    CONFIG_GET_INT(video.fullscreen_y, "video_fullscreen_y");
 
@@ -1368,9 +1366,8 @@ bool config_save_file(const char *path)
    config_set_bool(conf,  "video_shader_enable", g_settings.video.shader_enable);
    config_set_float(conf, "video_aspect_ratio", g_settings.video.aspect_ratio);
    config_set_bool(conf,  "video_windowed_fullscreen", g_settings.video.windowed_fullscreen);
-   config_set_float(conf, "video_xscale", g_settings.video.xscale);
+   config_set_float(conf, "video_scale", g_settings.video.scale);
    config_set_int(conf,   "autosave_interval", g_settings.autosave_interval);
-   config_set_float(conf, "video_yscale", g_settings.video.yscale);
    config_set_bool(conf,  "video_crop_overscan", g_settings.video.crop_overscan);
    config_set_bool(conf,  "video_scale_integer", g_settings.video.scale_integer);
 #ifdef GEKKO

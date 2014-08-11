@@ -267,8 +267,9 @@ enum
 static const unsigned int def_user_language = 0;
 
 // Windowed
-static const float xscale = 3.0; // Real x res = aspect * base_size * xscale
-static const float yscale = 3.0; // Real y res = base_size * yscale
+// Real x resolution = aspect * base_size * x scale
+// Real y resolution = base_size * y scale
+static const float scale = 3.0;
 
 // Fullscreen
 static const bool fullscreen = false;  // To start in Fullscreen or not.
