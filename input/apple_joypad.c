@@ -133,7 +133,7 @@ static void hid_manager_device_attached(void* context, IOReturn result, void* se
     if (device_name[0] != '\0')
     {
        strlcpy(g_settings.input.device_names[connection->slot], device_name, sizeof(g_settings.input.device_names));
-       input_configure_autoconfigure_joypad(connection->slot, device_name, apple_joypad.ident);
+       input_config_autoconfigure_joypad(connection->slot, device_name, apple_joypad.ident);
        RARCH_LOG("Port %d: %s.\n", connection->slot, device_name);
     }
 }
