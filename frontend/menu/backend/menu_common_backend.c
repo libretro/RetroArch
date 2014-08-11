@@ -150,6 +150,7 @@ static void menu_common_entries_init(menu_handle_t *menu, unsigned menu_type)
          file_list_push(menu->selection_buf, "", "video_shared_context", MENU_SETTINGS_VIDEO_HW_SHARED_CONTEXT, 0);
 #if defined(GEKKO) || defined(__CELLOS_LV2__)
          file_list_push(menu->selection_buf, "Screen Resolution", "", MENU_SETTINGS_VIDEO_RESOLUTION, 0);
+         file_list_push(menu->selection_buf, "", "video_viwidth", MENU_SETTINGS_VIDEO_VIWIDTH, 0);
 #endif
          file_list_push(menu->selection_buf, "Software Filter", "", MENU_SETTINGS_VIDEO_SOFTFILTER, 0);
 #if defined(__CELLOS_LV2__)
@@ -4237,6 +4238,9 @@ static void menu_common_setting_set_label(char *type_str, size_t type_str_size, 
          case MENU_SETTINGS_VIDEO_ROTATION:
             strlcpy(type_str, rotation_lut[g_settings.video.rotation],
                   type_str_size);
+            break;
+         case MENU_SETTINGS_VIDEO_VIWIDTH:
+            snprintf(type_str, type_str_size, "%d", g_settings.video.viwidth);
             break;
          case MENU_SETTINGS_VIDEO_SOFT_FILTER:
             snprintf(type_str, type_str_size,

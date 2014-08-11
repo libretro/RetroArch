@@ -311,6 +311,9 @@ static const bool video_threaded = false;
 // Set to true if HW render cores should get their private context.
 static const bool video_shared_context = false;
 
+// Sets GC/Wii screen width
+static const unsigned video_viwidth = 640;
+
 // Smooths picture
 static const bool video_smooth = true;
 
