@@ -52,6 +52,9 @@ static bool g_use_hw_ctx;
 
 static volatile sig_atomic_t g_quit;
 
+struct wl_keyboard *g_wl_keyboard;
+struct wl_pointer  *g_wl_pointer;
+
 #ifndef EGL_OPENGL_ES3_BIT_KHR
 #define EGL_OPENGL_ES3_BIT_KHR 0x0040
 #endif
@@ -602,6 +605,146 @@ static void gfx_ctx_bind_hw_render(void *data, bool enable)
    if (g_egl_dpy && g_egl_surf)
       eglMakeCurrent(g_egl_dpy, g_egl_surf, g_egl_surf, enable ? g_egl_hw_ctx : g_egl_ctx);
 }
+
+static void keyboard_handle_keymap(void* data,
+struct wl_keyboard* keyboard,
+uint32_t format,
+int fd,
+uint32_t size)
+{
+   // TODO
+}
+
+static void keyboard_handle_enter(void* data,
+struct wl_keyboard* keyboard,
+uint32_t serial,
+struct wl_surface* surface,
+struct wl_array* keys)
+{
+   // TODO
+}
+
+static void keyboard_handle_leave(void* data,
+struct wl_keyboard* keyboard,
+uint32_t serial,
+struct wl_surface* surface)
+{
+   // TODO
+}
+
+static void keyboard_handle_key(void* data,
+struct wl_keyboard* keyboard,
+uint32_t serial,
+uint32_t time,
+uint32_t key,
+uint32_t state)
+{
+   // TODO
+}
+
+static void keyboard_handle_modifiers(void* data,
+struct wl_keyboard* keyboard,
+uint32_t serial,
+uint32_t modsDepressed,
+uint32_t modsLatched,
+uint32_t modsLocked,
+uint32_t group)
+{
+   // TODO
+}
+
+static const struct wl_keyboard_listener keyboard_listener = {
+   keyboard_handle_keymap,
+   keyboard_handle_enter,
+   keyboard_handle_leave,
+   keyboard_handle_key,
+   keyboard_handle_modifiers,
+};
+
+static void pointer_handle_enter(void* data,
+struct wl_pointer* pointer,
+uint32_t serial,
+struct wl_surface* surface,
+wl_fixed_t sx,
+wl_fixed_t sy)
+{
+   // TODO
+}
+
+static void pointer_handle_leave(void* data,
+struct wl_pointer* pointer,
+uint32_t serial,
+struct wl_surface* surface)
+{
+   // TODO
+}
+
+static void pointer_handle_motion(void* data,
+struct wl_pointer* pointer,
+uint32_t time,
+wl_fixed_t sx,
+wl_fixed_t sy)
+{
+   // TODO
+}
+
+static void pointer_handle_button(void* data,
+struct wl_pointer* wl_pointer,
+uint32_t serial,
+uint32_t time,
+uint32_t button,
+uint32_t state)
+{
+   // TODO
+}
+
+static void pointer_handle_axis(void* data,
+struct wl_pointer* wl_pointer,
+uint32_t time,
+uint32_t axis,
+wl_fixed_t value)
+{
+   // TODO
+}
+
+
+static const struct wl_pointer_listener pointer_listener = {
+   pointer_handle_enter,
+   pointer_handle_leave,
+   pointer_handle_motion,
+   pointer_handle_button,
+   pointer_handle_axis,
+};
+
+static void seat_handle_capabilities(void *data,
+struct wl_seat *seat, enum wl_seat_capability caps)
+{
+   if ((caps & WL_SEAT_CAPABILITY_KEYBOARD) && !g_wl_keyboard)
+   {
+      g_wl_keyboard = wl_seat_get_keyboard(seat);
+      wl_keyboard_add_listener(g_wl_keyboard, &keyboard_listener, NULL);
+   }
+   else if (!(caps & WL_SEAT_CAPABILITY_KEYBOARD) && g_wl_keyboard)
+   {
+      wl_keyboard_destroy(g_wl_keyboard);
+      g_wl_keyboard = NULL;
+   }
+   if ((caps & WL_SEAT_CAPABILITY_POINTER) && !g_wl_pointer)
+   {
+      g_wl_pointer = wl_seat_get_pointer(seat);
+      wl_pointer_add_listener(g_wl_pointer, &pointer_listener, NULL);
+   }
+   else if (!(caps & WL_SEAT_CAPABILITY_POINTER) && g_wl_pointer)
+   {
+      wl_pointer_destroy(g_wl_pointer);
+      g_wl_pointer = NULL;
+   }
+}
+
+// Seat callbacks
+static const struct wl_seat_listener seat_listener = {
+   seat_handle_capabilities,
+};
 
 const gfx_ctx_driver_t gfx_ctx_wayland = {
    gfx_ctx_init,
