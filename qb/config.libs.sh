@@ -159,10 +159,9 @@ check_pkgconf PULSE libpulse
 check_lib COREAUDIO "-framework AudioUnit" AudioUnitInitialize
 
 check_pkgconf SDL sdl 1.2.10
+check_pkgconf SDL2 sdl2 2.0.0
 
 if [ "$HAVE_SDL2" == 'yes' ]; then
-   check_pkgconf SDL2 sdl2 2.0.0
-
    if [ "$HAVE_SDL2" == 'yes' ] && [ "$HAVE_SDL" == 'yes' ]; then
       echo "SDL drivers will be replaced by SDL2 ones."
       HAVE_SDL=no
