@@ -750,6 +750,8 @@ static void lakka_context_reset(void *data)
    menu_handle_t *menu = (menu_handle_t*)data;
    gl_t *gl = (gl_t*)driver.video_data;
 
+   driver.gfx_use_rgba = true;
+
    if (!menu)
       return;
 
@@ -960,8 +962,6 @@ static void *lakka_init(void)
    gl_t *gl = (gl_t*)driver.video_data;
    if (!menu || !gl)
       return NULL;
-
-   driver.gfx_use_rgba = true;
 
    lakka_responsive();
 
