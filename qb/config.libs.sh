@@ -161,11 +161,11 @@ check_lib COREAUDIO "-framework AudioUnit" AudioUnitInitialize
 check_pkgconf SDL sdl 1.2.10
 check_pkgconf SDL2 sdl2 2.0.0
 
-if [ "$HAVE_SDL2" == 'yes' ]; then
-   if [ "$HAVE_SDL2" == 'yes' ] && [ "$HAVE_SDL" == 'yes' ]; then
+if [ "$HAVE_SDL2" = 'yes' ]; then
+   if [ "$HAVE_SDL2" = 'yes' ] && [ "$HAVE_SDL" = 'yes' ]; then
       echo "SDL drivers will be replaced by SDL2 ones."
       HAVE_SDL=no
-   elif [ "$HAVE_SDL2" == 'no' ]; then
+   elif [ "$HAVE_SDL2" = 'no' ]; then
       echo "SDL2 not found, skipping."
       HAVE_SDL2=no
    fi
