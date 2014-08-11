@@ -208,7 +208,7 @@ static void sdl2_gfx_set_handles(sdl2_video_t *vid)
    {
       driver.display_type  = RARCH_DISPLAY_WIN32;
       driver.video_display = 0;
-      driver.video_window  = (uintptr_t)info.window;
+      driver.video_window  = (uintptr_t)info.info.window;
    }
 #elif defined(HAVE_X11)
    SDL_SysWMinfo info;
@@ -331,12 +331,11 @@ static void sdl_refresh_input_size(sdl2_video_t *vid, bool menu, bool rgb32,
       {
          switch (g_extern.system.pix_fmt)
          {
-            case RETRO_PIXEL_FORMAT_0RGB1555:
-               format = SDL_PIXELFORMAT_ARGB1555;
-               break;
             case RETRO_PIXEL_FORMAT_XRGB8888:
                format = SDL_PIXELFORMAT_ARGB8888;
                break;
+            case RETRO_PIXEL_FORMAT_0RGB1555:
+               /* this assumes the frontend will convert the input to RGB565 */
             case RETRO_PIXEL_FORMAT_RGB565:
                format = SDL_PIXELFORMAT_RGB565;
                break;
@@ -386,7 +385,10 @@ static void *sdl2_gfx_init(const video_info_t *video, const input_driver_t **inp
 
    int i;
 
-   SDL_InitSubSystem(SDL_INIT_VIDEO);
+   if (SDL_WasInit(0) == 0 && SDL_Init(SDL_INIT_VIDEO) < 0)
+      return NULL;
+   else if (SDL_InitSubSystem(SDL_INIT_VIDEO) < 0)
+      return NULL;
 
    sdl2_video_t *vid = (sdl2_video_t*)calloc(1, sizeof(*vid));
    if (!vid)
@@ -450,11 +452,11 @@ static void *sdl2_gfx_init(const video_info_t *video, const input_driver_t **inp
 
    if (input && input_data)
    {
-      void *sdl2_input = input_sdl2.init();
-      if (sdl2_input)
+      void *sdl_input = input_sdl.init();
+      if (sdl_input)
       {
-         *input = &input_sdl2;
-         *input_data = sdl2_input;
+         *input = &input_sdl;
+         *input_data = sdl_input;
       }
       else
       {
