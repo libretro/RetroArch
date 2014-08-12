@@ -744,7 +744,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
       {
          bool state = *(const bool*)data;
          RARCH_LOG("Environ SET_SUPPORT_NO_GAME: %s.\n", state ? "yes" : "no");
-         g_extern.system.no_game = state;
+         g_extern.system.no_content = state;
          break;
       }
 

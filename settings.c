@@ -367,7 +367,7 @@ void config_set_defaults(void)
    g_settings.network_cmd_enable   = network_cmd_enable;
    g_settings.network_cmd_port     = network_cmd_port;
    g_settings.stdin_cmd_enable     = stdin_cmd_enable;
-   g_settings.game_history_size    = game_history_size;
+   g_settings.content_history_size    = default_content_history_size;
    g_settings.libretro_log_level   = libretro_log_level;
 
 #ifdef HAVE_MENU
@@ -1091,7 +1091,7 @@ bool config_load_file(const char *path, bool set_defaults)
 
    fill_pathname_resolve_relative(g_settings.content_history_path, g_extern.config_path, ".retroarch-game-history.txt", sizeof(g_settings.content_history_path));
    CONFIG_GET_PATH(content_history_path, "game_history_path");
-   CONFIG_GET_INT(game_history_size, "game_history_size");
+   CONFIG_GET_INT(content_history_size, "game_history_size");
 
    CONFIG_GET_INT(input.turbo_period, "input_turbo_period");
    CONFIG_GET_INT(input.turbo_duty_cycle, "input_duty_cycle");
@@ -1432,7 +1432,7 @@ bool config_save_file(const char *path)
 #endif
 
    config_set_path(conf, "game_history_path", g_settings.content_history_path);
-   config_set_int(conf, "game_history_size", g_settings.game_history_size);
+   config_set_int(conf, "game_history_size", g_settings.content_history_size);
    config_set_path(conf, "joypad_autoconfig_dir", g_settings.input.autoconfig_dir);
    config_set_bool(conf, "input_autodetect_enable", g_settings.input.autodetect_enable);
 

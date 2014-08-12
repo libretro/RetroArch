@@ -3272,7 +3272,7 @@ void rarch_main_command(unsigned action)
          if (g_extern.history)
             return;
 
-         g_extern.history = content_history_init(g_settings.content_history_path, g_settings.game_history_size);
+         g_extern.history = content_history_init(g_settings.content_history_path, g_settings.content_history_size);
          break;
       case RARCH_CMD_HISTORY_DEINIT:
          if (g_extern.history)

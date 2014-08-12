@@ -4456,7 +4456,7 @@ static void menu_common_setting_set_label(char *type_str, size_t type_str_size, 
             strlcpy(type_str, *g_settings.menu_content_directory ? g_settings.menu_content_directory : "<default>", type_str_size);
             break;
          case MENU_CONTENT_HISTORY_SIZE:
-            snprintf(type_str, type_str_size, "%d", g_settings.game_history_size);
+            snprintf(type_str, type_str_size, "%d", g_settings.content_history_size);
             break;
          case MENU_CONTENT_DIR_PATH:
             strlcpy(type_str, *g_settings.content_directory ? g_settings.content_directory : "<default>", type_str_size);

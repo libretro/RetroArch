@@ -499,7 +499,7 @@ static const uint16_t network_cmd_port = 55355;
 static const bool stdin_cmd_enable = false;
 
 // Number of entries that will be kept in content history file.
-static const unsigned game_history_size = 100;
+static const unsigned default_content_history_size = 100;
 
 // Show Menu start-up screen on boot.
 static const bool menu_show_start_screen = true;

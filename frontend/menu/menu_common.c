@@ -91,7 +91,7 @@ void menu_content_history_push_current(void)
    if (*tmp)
       path_resolve_realpath(tmp, sizeof(tmp));
 
-   if (g_extern.system.no_game || *tmp)
+   if (g_extern.system.no_content || *tmp)
       if (g_extern.history)
          content_history_push(g_extern.history,
                *tmp ? tmp : NULL,

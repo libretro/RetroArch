@@ -966,7 +966,7 @@ static void general_read_handler(const void *data)
     else if (!strcmp(setting->name, "rgui_show_start_screen"))
         *setting->value.boolean = g_settings.menu_show_start_screen;
     else if (!strcmp(setting->name,  "game_history_size"))
-        *setting->value.unsigned_integer = g_settings.game_history_size;
+        *setting->value.unsigned_integer = g_settings.content_history_size;
     else if (!strcmp(setting->name, "content_directory"))
         strlcpy(setting->value.string, g_settings.content_directory, setting->size);
 #ifdef HAVE_MENU
@@ -1313,7 +1313,7 @@ static void general_write_handler(const void *data)
    else if (!strcmp(setting->name, "rgui_show_start_screen"))
       g_settings.menu_show_start_screen = *setting->value.boolean;
    else if (!strcmp(setting->name,  "game_history_size"))
-      g_settings.game_history_size = *setting->value.unsigned_integer;
+      g_settings.content_history_size = *setting->value.unsigned_integer;
    else if (!strcmp(setting->name, "content_directory"))
       strlcpy(g_settings.content_directory, setting->value.string, sizeof(g_settings.content_directory));
 #ifdef HAVE_MENU
@@ -1750,7 +1750,7 @@ rarch_setting_t* setting_data_get_list(void)
 #ifdef HAVE_MENU
          CONFIG_BOOL(g_settings.menu_show_start_screen,     "rgui_show_start_screen",     "Show Start Screen",          menu_show_start_screen, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
 #endif
-         CONFIG_UINT(g_settings.game_history_size,          "game_history_size",          "Content History Size",       game_history_size, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_RANGE(0, 0, 1.0, true, false)
+         CONFIG_UINT(g_settings.content_history_size,          "game_history_size",          "Content History Size",       default_content_history_size, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_RANGE(0, 0, 1.0, true, false)
          END_SUB_GROUP()
          START_SUB_GROUP("Paths")
 #ifdef HAVE_MENU

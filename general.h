@@ -327,7 +327,7 @@ struct settings
 
    char core_options_path[PATH_MAX];
    char content_history_path[PATH_MAX];
-   unsigned game_history_size;
+   unsigned content_history_size;
 
    char libretro[PATH_MAX];
    char libretro_directory[PATH_MAX];
@@ -496,7 +496,7 @@ struct global
 
       bool block_extract;
       bool force_nonblock;
-      bool no_game;
+      bool no_content;
 
       const char *input_desc_btn[MAX_PLAYERS][RARCH_FIRST_CUSTOM_BIND];
       char valid_extensions[PATH_MAX];
