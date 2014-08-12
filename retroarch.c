@@ -142,7 +142,7 @@ static bool take_screenshot_raw(void)
 
 static void take_screenshot(void)
 {
-   bool viewport_read;
+   bool viewport_read = false;
    bool ret = false;
    const char *msg = NULL;
 
@@ -339,7 +339,8 @@ static void deinit_recording(void)
    g_extern.rec = NULL;
    g_extern.rec_driver = NULL;
 
-   free(g_extern.record_gpu_buffer);
+   if (g_extern.record_gpu_buffer)
+      free(g_extern.record_gpu_buffer);
    g_extern.record_gpu_buffer = NULL;
 }
 
