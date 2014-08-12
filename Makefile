@@ -124,9 +124,7 @@ ifeq ($(HAVE_THREADS), 1)
    endif
 endif
 
-ifeq ($(HAVE_BSV_MOVIE), 1)
    OBJ += movie.o
-endif
 
 ifeq ($(HAVE_NETPLAY), 1)
    OBJ += netplay.o

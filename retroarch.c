@@ -755,7 +755,6 @@ static int16_t input_state(unsigned port, unsigned device, unsigned index, unsig
 
    device &= RETRO_DEVICE_MASK;
 
-#ifdef HAVE_BSV_MOVIE
    if (g_extern.bsv.movie && g_extern.bsv.movie_playback)
    {
       int16_t ret;
@@ -764,7 +763,6 @@ static int16_t input_state(unsigned port, unsigned device, unsigned index, unsig
 
       g_extern.bsv.movie_end = true;
    }
-#endif
 
    static const struct retro_keybind *binds[MAX_PLAYERS] = {
       g_settings.input.binds[0],
@@ -798,10 +796,8 @@ static int16_t input_state(unsigned port, unsigned device, unsigned index, unsig
    if (device == RETRO_DEVICE_JOYPAD && (id < RETRO_DEVICE_ID_JOYPAD_UP || id > RETRO_DEVICE_ID_JOYPAD_RIGHT))
       res = input_apply_turbo(port, id, res);
 
-#ifdef HAVE_BSV_MOVIE
    if (g_extern.bsv.movie && !g_extern.bsv.movie_playback)
       bsv_movie_set_input(g_extern.bsv.movie, res);
-#endif
 
    return res;
 }
@@ -914,11 +910,9 @@ static void print_help(void)
    printf("\t-d/--device: Connect a generic device into port of the device (1 to %d).\n", MAX_PLAYERS);
    puts("\t\tFormat is port:ID, where ID is an unsigned number corresponding to the particular device.\n");
 
-#ifdef HAVE_BSV_MOVIE
    puts("\t-P/--bsvplay: Playback a BSV movie file.");
    puts("\t-R/--bsvrecord: Start recording a BSV movie file from the beginning.");
    puts("\t-M/--sram-mode: Takes an argument telling how SRAM should be handled in the session.");
-#endif
    puts("\t\t{no,}load-{no,}save describes if SRAM should be loaded, and if SRAM should be saved.");
    puts("\t\tDo note that noload-save implies that save files will be deleted and overwritten.");
 
@@ -1077,11 +1071,9 @@ static void parse_input(int argc, char *argv[])
       { "dualanalog", 1, NULL, 'A' },
       { "device", 1, NULL, 'd' },
       { "savestate", 1, NULL, 'S' },
-#ifdef HAVE_BSV_MOVIE
       { "bsvplay", 1, NULL, 'P' },
       { "bsvrecord", 1, NULL, 'R' },
       { "sram-mode", 1, NULL, 'M' },
-#endif
 #ifdef HAVE_NETPLAY
       { "host", 0, NULL, 'H' },
       { "connect", 1, NULL, 'C' },
@@ -1121,11 +1113,7 @@ static void parse_input(int argc, char *argv[])
 #define NETPLAY_ARG
 #endif
 
-#ifdef HAVE_BSV_MOVIE
 #define BSV_MOVIE_ARG "P:R:M:"
-#else
-#define BSV_MOVIE_ARG
-#endif
 
    const char *optstring = "hs:fvS:A:c:U:DN:d:" BSV_MOVIE_ARG NETPLAY_ARG DYNAMIC_ARG FFMPEG_RECORD_ARG;
 
@@ -1238,7 +1226,6 @@ static void parse_input(int argc, char *argv[])
             break;
 #endif
 
-#ifdef HAVE_BSV_MOVIE
          case 'P':
          case 'R':
             strlcpy(g_extern.bsv.movie_start_path, optarg,
@@ -1264,7 +1251,6 @@ static void parse_input(int argc, char *argv[])
                rarch_fail(1, "parse_input()");
             }
             break;
-#endif
 
 #ifdef HAVE_NETPLAY
          case 'H':
@@ -1495,9 +1481,7 @@ static void init_cheats(void)
 #ifdef HAVE_NETPLAY
    allow_cheats &= !g_extern.netplay;
 #endif
-#ifdef HAVE_BSV_MOVIE
    allow_cheats &= !g_extern.bsv.movie;
-#endif
 
    if (!allow_cheats)
       return;
@@ -1560,7 +1544,6 @@ static void deinit_rewind(void)
    g_extern.state_manager = NULL;
 }
 
-#ifdef HAVE_BSV_MOVIE
 static void init_movie(void)
 {
    if (g_extern.bsv.movie_start_playback)
@@ -1602,7 +1585,6 @@ static void deinit_movie(void)
       bsv_movie_free(g_extern.bsv.movie);
    g_extern.bsv.movie = NULL;
 }
-#endif
 
 #define RARCH_DEFAULT_PORT 55435
 
@@ -1614,13 +1596,11 @@ static void init_netplay(void)
    if (!g_extern.netplay_enable)
       return;
 
-#ifdef HAVE_BSV_MOVIE
    if (g_extern.bsv.movie_start_playback)
    {
       RARCH_WARN("Movie playback has started. Cannot start netplay.\n");
       return;
    }
-#endif
 
    cbs.frame_cb = video_frame;
    cbs.sample_cb = audio_sample;
@@ -1884,9 +1864,7 @@ static void fill_pathnames(void)
       string_list_append(g_extern.savefiles, savefile_name_rtc, attr);
    }
 
-#ifdef HAVE_BSV_MOVIE
    fill_pathname(g_extern.bsv.movie_path, g_extern.savefile_name, "", sizeof(g_extern.bsv.movie_path));
-#endif
 
    if (*g_extern.basename)
    {
@@ -1949,10 +1927,9 @@ static void rarch_load_state(void)
    char load_path[PATH_MAX], msg[512];
 
    // Disallow savestate load when we absolutely cannot change game state.
-#ifdef HAVE_BSV_MOVIE
    if (g_extern.bsv.movie)
       return;
-#endif
+
 #ifdef HAVE_NETPLAY
    if (g_extern.netplay)
       return;
@@ -2183,10 +2160,8 @@ static void check_rewind(void)
          msg_queue_push(g_extern.msg_queue, "Rewinding.", 0, g_extern.is_paused ? 1 : 30);
          pretro_unserialize(buf, g_extern.state_size);
 
-#ifdef HAVE_BSV_MOVIE
          if (g_extern.bsv.movie)
             bsv_movie_frame_rewind(g_extern.bsv.movie);
-#endif
       }
       else
          msg_queue_push(g_extern.msg_queue, "Reached end of rewind buffer.", 0, 30);
@@ -2196,11 +2171,8 @@ static void check_rewind(void)
       static unsigned cnt = 0;
 
       cnt = (cnt + 1) % (g_settings.rewind_granularity ? g_settings.rewind_granularity : 1); // Avoid possible SIGFPE.
-#ifdef HAVE_BSV_MOVIE
-      if (cnt == 0 || g_extern.bsv.movie)
-#else
-      if (cnt == 0)
-#endif
+
+      if ((cnt == 0) || g_extern.bsv.movie)
       {
          void *state;
          state_manager_push_where(g_extern.state_manager, &state);
@@ -2231,7 +2203,6 @@ static void check_slowmotion(void)
    msg_queue_push(g_extern.msg_queue, g_extern.frame_is_reverse ? "Slow motion rewind." : "Slow motion.", 0, 30);
 }
 
-#ifdef HAVE_BSV_MOVIE
 static void check_movie_record(bool pressed)
 {
    if (!pressed)
@@ -2300,7 +2271,6 @@ static void check_movie(void)
 
    old_button = new_button;
 }
-#endif
 
 static void check_pause(void)
 {
@@ -2816,18 +2786,12 @@ static void check_flip(void)
    check_fast_forward_button();
 
    check_stateslots();
-#ifdef HAVE_BSV_MOVIE
    check_savestates(g_extern.bsv.movie);
-#else
-   check_savestates(false);
-#endif
 
    check_rewind();
    check_slowmotion();
 
-#ifdef HAVE_BSV_MOVIE
    check_movie();
-#endif
 
    check_shader_dir();
    check_cheats();
@@ -3036,9 +3000,7 @@ int rarch_main_init(int argc, char *argv[])
 
       load_auto_state();
 
-#ifdef HAVE_BSV_MOVIE
       init_movie();
-#endif
 
 #ifdef HAVE_NETPLAY
       init_netplay();
@@ -3323,10 +3285,8 @@ bool rarch_main_iterate(void)
       netplay_pre_frame(g_extern.netplay);
 #endif
 
-#ifdef HAVE_BSV_MOVIE
    if (g_extern.bsv.movie)
       bsv_movie_set_frame_start(g_extern.bsv.movie);
-#endif
 
 #ifdef HAVE_CAMERA
    if (g_extern.system.camera_callback.caps)
@@ -3350,10 +3310,8 @@ bool rarch_main_iterate(void)
       input_pop_analog_dpad(g_settings.input.autoconf_binds[i]);
    }
 
-#ifdef HAVE_BSV_MOVIE
    if (g_extern.bsv.movie)
       bsv_movie_set_frame_end(g_extern.bsv.movie);
-#endif
 
 #ifdef HAVE_NETPLAY
    if (g_extern.netplay)
@@ -3418,9 +3376,7 @@ void rarch_main_deinit(void)
    deinit_rewind();
    deinit_cheats();
 
-#ifdef HAVE_BSV_MOVIE
    deinit_movie();
-#endif
 
    save_auto_state();
 
