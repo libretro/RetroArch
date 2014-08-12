@@ -115,7 +115,7 @@ static int main_entry_iterate_content(args_type() args)
 
 static int main_entry_iterate_load_content(args_type() args)
 {
-   // If ROM load fails, we go back to menu.
+   // If content loading fails, we go back to menu.
    if (!load_menu_content())
       g_extern.lifecycle_state = (1ULL << MODE_MENU_PREINIT);
 

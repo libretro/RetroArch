@@ -2404,7 +2404,7 @@ static int menu_common_iterate(unsigned action)
                }
 
                // Core selection on non-console just updates directory listing.
-               // Will take effect on new ROM load.
+               // Will take effect on new content load.
 #elif defined(RARCH_CONSOLE)
 #if defined(GEKKO) && defined(HW_RVL)
                fill_pathname_join(g_extern.fullpath, g_defaults.core_dir,
@@ -4467,10 +4467,10 @@ static void menu_common_setting_set_label(char *type_str, size_t type_str_size, 
             strlcpy(type_str, *g_settings.assets_directory ? g_settings.assets_directory : "<default>", type_str_size);
             break;
          case MENU_SCREENSHOT_DIR_PATH:
-            strlcpy(type_str, *g_settings.screenshot_directory ? g_settings.screenshot_directory : "<ROM dir>", type_str_size);
+            strlcpy(type_str, *g_settings.screenshot_directory ? g_settings.screenshot_directory : "<Content dir>", type_str_size);
             break;
          case MENU_SAVEFILE_DIR_PATH:
-            strlcpy(type_str, *g_extern.savefile_dir ? g_extern.savefile_dir : "<ROM dir>", type_str_size);
+            strlcpy(type_str, *g_extern.savefile_dir ? g_extern.savefile_dir : "<Content dir>", type_str_size);
             break;
 #ifdef HAVE_OVERLAY
          case MENU_OVERLAY_DIR_PATH:
@@ -4478,7 +4478,7 @@ static void menu_common_setting_set_label(char *type_str, size_t type_str_size, 
             break;
 #endif
          case MENU_SAVESTATE_DIR_PATH:
-            strlcpy(type_str, *g_extern.savestate_dir ? g_extern.savestate_dir : "<ROM dir>", type_str_size);
+            strlcpy(type_str, *g_extern.savestate_dir ? g_extern.savestate_dir : "<Content dir>", type_str_size);
             break;
          case MENU_LIBRETRO_DIR_PATH:
             strlcpy(type_str, *g_settings.libretro_directory ? g_settings.libretro_directory : "<None>", type_str_size);
@@ -4499,7 +4499,7 @@ static void menu_common_setting_set_label(char *type_str, size_t type_str_size, 
             strlcpy(type_str, *g_settings.video.shader_dir ? g_settings.video.shader_dir : "<default>", type_str_size);
             break;
          case MENU_SYSTEM_DIR_PATH:
-            strlcpy(type_str, *g_settings.system_directory ? g_settings.system_directory : "<ROM dir>", type_str_size);
+            strlcpy(type_str, *g_settings.system_directory ? g_settings.system_directory : "<Content dir>", type_str_size);
             break;
          case MENU_AUTOCONFIG_DIR_PATH:
             strlcpy(type_str, *g_settings.input.autoconfig_dir ? g_settings.input.autoconfig_dir : "<default>", type_str_size);

@@ -626,7 +626,7 @@ static void process_pending_intent(void *data)
    if (!env)
       return;
 
-   // ROM
+   // Content 
    jstr = (*env)->CallObjectMethod(env, android_app->activity->clazz, android_app->getPendingIntentFullPath);
    JNI_EXCEPTION(env);
    RARCH_LOG("Checking arguments passed from intent ...\n");
@@ -637,7 +637,7 @@ static void process_pending_intent(void *data)
       (*env)->ReleaseStringUTFChars(env, jstr, argv);
 
       startgame = true;
-      RARCH_LOG("ROM Filename: [%s].\n", g_extern.fullpath);
+      RARCH_LOG("Content Filename: [%s].\n", g_extern.fullpath);
    }
 
    // Config file
