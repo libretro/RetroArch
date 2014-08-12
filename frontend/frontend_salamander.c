@@ -86,7 +86,7 @@ static void find_and_set_first_file(char *path, size_t sizeof_path, const char *
    find_first_libretro_core(first_file, sizeof(first_file),
          g_defaults.core_dir, ext);
 
-   if (first_file)
+   if (first_file[0] != '\0')
    {
       fill_pathname_join(path, g_defaults.core_dir, first_file, sizeof_path);
       RARCH_LOG("libretro_path now set to: %s.\n", path);

@@ -2966,19 +2966,17 @@ static unsigned menu_common_shader_manager_get_type(const struct gfx_shader *sha
 static int menu_common_shader_manager_setting_toggle(unsigned id,
       unsigned action, rarch_setting_t *setting)
 {
-   rarch_setting_t *setting_data, *current_setting;
    if (!driver.menu)
    {
       RARCH_ERR("Cannot toggle shader setting, menu handle is not initialized.\n");
       return 0;
    }
 
-   (void)id;
-   (void)action;
-
-   setting_data = (rarch_setting_t *)setting_data_get_list();
-
 #ifdef HAVE_SHADER_MANAGER
+   rarch_setting_t *current_setting;
+
+   rarch_setting_t *setting_data = (rarch_setting_t *)setting_data_get_list();
+
    unsigned dist_shader = id - MENU_SETTINGS_SHADER_0;
    unsigned dist_filter = id - MENU_SETTINGS_SHADER_0_FILTER;
    unsigned dist_scale  = id - MENU_SETTINGS_SHADER_0_SCALE;
