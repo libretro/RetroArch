@@ -1928,9 +1928,9 @@ static inline void gl_set_texture_fmts(gl_t *gl, bool rgb32)
 static void gl_init_pbo_readback(gl_t *gl)
 {
    unsigned i;
-   // Only bother with this if we're doing FFmpeg GPU recording.
-   // Check g_extern.recording and not g_extern.rec, because recording is not initialized yet.
-   gl->pbo_readback_enable = g_settings.video.gpu_record && g_extern.recording;
+   // Only bother with this if we're doing GPU recording.
+   // Check g_extern.recording_enable and not g_extern.rec, because recording is not initialized yet.
+   gl->pbo_readback_enable = g_settings.video.gpu_record && g_extern.recording_enable;
    if (!gl->pbo_readback_enable)
       return;
 

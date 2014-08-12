@@ -45,7 +45,7 @@ It is designed to be very portable and features a gamepad-centric UI.
 It also has a full-featured command-line interface.
 
 In some areas, RetroArch goes beyond and emphasizes on not-so-common technical features such as multi-pass shader support,
-real-time rewind (Braid-style), FFmpeg video recording, etc.
+real-time rewind (Braid-style), video recording (using FFmpeg), etc.
 
 RetroArch also emphasizes on being easy to integrate into various launcher frontends.
 

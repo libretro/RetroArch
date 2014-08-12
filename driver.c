@@ -502,16 +502,15 @@ bool driver_update_system_av_info(const struct retro_system_av_info *info)
 
    // Cannot continue recording with different parameters.
    // Take the easiest route out and just restart the recording.
-#ifdef HAVE_RECORD
    if (g_extern.rec)
    {
-      static const char *msg = "Restarting FFmpeg recording due to driver reinit.";
+      static const char *msg = "Restarting recording due to driver reinit.";
       msg_queue_push(g_extern.msg_queue, msg, 2, 180);
       RARCH_WARN("%s\n", msg);
       rarch_main_command(RARCH_CMD_RECORD_DEINIT);
       rarch_main_command(RARCH_CMD_RECORD_INIT);
    }
-#endif
+
    return true;
 }
 

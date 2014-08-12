@@ -58,7 +58,7 @@
    gl->ctx_driver->write_egl_image(gl, frame, width, height, pitch, base_size, tex_index,img)
 #endif
 
-#if defined(HAVE_RECORD) && (!defined(HAVE_OPENGLES) || defined(HAVE_OPENGLES3))
+#if (!defined(HAVE_OPENGLES) || defined(HAVE_OPENGLES3))
 #define HAVE_GL_ASYNC_READBACK
 #endif
 

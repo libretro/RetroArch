@@ -356,10 +356,12 @@ ifeq ($(HAVE_ZLIB), 1)
    DEFINES += $(ZLIB_CFLAGS) -DHAVE_ZLIB_DEFLATE
 endif
 
+OBJ += record/ffemu.o 
+
 ifeq ($(HAVE_FFMPEG), 1)
-   OBJ += record/ffemu.o record/ffmpeg.o
+   OBJ += record/ffmpeg.o
    LIBS += $(AVCODEC_LIBS) $(AVFORMAT_LIBS) $(AVUTIL_LIBS) $(SWSCALE_LIBS)
-   DEFINES += $(AVCODEC_CFLAGS) $(AVFORMAT_CFLAGS) $(AVUTIL_CFLAGS) $(SWSCALE_CFLAGS) -DHAVE_RECORD
+   DEFINES += $(AVCODEC_CFLAGS) $(AVFORMAT_CFLAGS) $(AVUTIL_CFLAGS) $(SWSCALE_CFLAGS)
 endif
 
 ifeq ($(HAVE_DYNAMIC), 1)

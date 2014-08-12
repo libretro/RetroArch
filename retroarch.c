@@ -217,12 +217,11 @@ static void readjust_audio_input_rate(void)
    //      g_extern.audio_data.src_ratio, g_extern.audio_data.orig_src_ratio);
 }
 
-#ifdef HAVE_RECORD
 static void init_recording(void)
 {
    struct ffemu_params params = {0};
 
-   if (!g_extern.recording)
+   if (!g_extern.recording_enable)
       return;
 
    if (g_extern.libretro_dummy)
@@ -233,7 +232,7 @@ static void init_recording(void)
 
    if (!g_settings.video.gpu_record && g_extern.system.hw_render_callback.context_type)
    {
-      RARCH_WARN("Libretro core is hardware rendered. Must use post-shaded FFmpeg recording as well.\n");
+      RARCH_WARN("Libretro core is hardware rendered. Must use post-shaded recording as well.\n");
       return;
    }
 
@@ -313,7 +312,7 @@ static void init_recording(void)
       }
    }
 
-   RARCH_LOG("Recording with FFmpeg to %s @ %ux%u. (FB size: %ux%u pix_fmt: %u)\n",
+   RARCH_LOG("Recording to %s @ %ux%u. (FB size: %ux%u pix_fmt: %u)\n",
          g_extern.record_path,
          params.out_width, params.out_height,
          params.fb_width, params.fb_height,
@@ -321,7 +320,7 @@ static void init_recording(void)
 
    if (!ffemu_init_first(&g_extern.rec_driver, &g_extern.rec, &params))
    {
-      RARCH_ERR("Failed to start FFmpeg recording.\n");
+      RARCH_ERR("Failed to start recording.\n");
       free(g_extern.record_gpu_buffer);
       g_extern.record_gpu_buffer = NULL;
    }
@@ -332,8 +331,10 @@ static void deinit_recording(void)
    if (!g_extern.rec || !g_extern.rec_driver)
       return;
 
-   g_extern.rec_driver->finalize(g_extern.rec);
-   g_extern.rec_driver->free(g_extern.rec);
+   if (g_extern.rec_driver->finalize)
+      g_extern.rec_driver->finalize(g_extern.rec);
+   if (g_extern.rec_driver->free)
+      g_extern.rec_driver->free(g_extern.rec);
 
    g_extern.rec = NULL;
    g_extern.rec_driver = NULL;
@@ -396,9 +397,9 @@ static void recording_dump_frame(const void *data, unsigned width, unsigned heig
    if (!g_extern.record_gpu_buffer)
       ffemu_data.is_dupe = !data;
 
-   g_extern.rec_driver->push_video(g_extern.rec, &ffemu_data);
+   if (g_extern.rec_driver && g_extern.rec_driver->push_video)
+      g_extern.rec_driver->push_video(g_extern.rec, &ffemu_data);
 }
-#endif
 
 static void video_frame(const void *data, unsigned width, unsigned height, size_t pitch)
 {
@@ -431,10 +432,8 @@ static void video_frame(const void *data, unsigned width, unsigned height, size_
 
    // Slightly messy code,
    // but we really need to do processing before blocking on VSync for best possible scheduling.
-#ifdef HAVE_RECORD
    if (g_extern.rec && (!g_extern.filter.filter || !g_settings.video.post_filter_record || !data || g_extern.record_gpu_buffer))
       recording_dump_frame(data, width, height, pitch);
-#endif
 
    msg = msg_queue_pull(g_extern.msg_queue);
    driver.current_msg = msg;
@@ -455,10 +454,8 @@ static void video_frame(const void *data, unsigned width, unsigned height, size_
             data, width, height, pitch);
       RARCH_PERFORMANCE_STOP(softfilter_process);
 
-#ifdef HAVE_RECORD
       if (g_extern.rec && g_settings.video.post_filter_record)
          recording_dump_frame(g_extern.filter.buffer, owidth, oheight, opitch);
-#endif
 
       data = g_extern.filter.buffer;
       width = owidth;
@@ -473,11 +470,10 @@ static void video_frame(const void *data, unsigned width, unsigned height, size_
 void rarch_render_cached_frame(void)
 {
    const void *frame = g_extern.frame_cache.data;
-#ifdef HAVE_RECORD
+
    // Cannot allow recording when pushing duped frames.
    void *recording = g_extern.rec;
    g_extern.rec = NULL;
-#endif
 
    if (frame == RETRO_HW_FRAME_BUFFER_VALID)
       frame = NULL; // Dupe
@@ -490,9 +486,7 @@ void rarch_render_cached_frame(void)
          g_extern.frame_cache.height,
          g_extern.frame_cache.pitch);
 
-#ifdef HAVE_RECORD
    g_extern.rec = recording;
-#endif
 }
 
 static bool audio_flush(const int16_t *data, size_t samples)
@@ -503,16 +497,15 @@ static bool audio_flush(const int16_t *data, size_t samples)
    struct resampler_data src_data = {0};
    struct rarch_dsp_data dsp_data = {0};
 
-#ifdef HAVE_RECORD
    if (g_extern.rec)
    {
       struct ffemu_audio_data ffemu_data = {0};
       ffemu_data.data                    = data;
       ffemu_data.frames                  = samples / 2;
 
-      g_extern.rec_driver->push_audio(g_extern.rec, &ffemu_data);
+      if (g_extern.rec_driver && g_extern.rec_driver->push_audio)
+         g_extern.rec_driver->push_audio(g_extern.rec, &ffemu_data);
    }
-#endif
 
    if (g_extern.is_paused || g_extern.audio_data.mute)
       return true;
@@ -931,11 +924,9 @@ static void print_help(void)
    puts("\t\tAvailable commands are listed if command is invalid.");
 #endif
 
-#ifdef HAVE_RECORD
    puts("\t-r/--record: Path to record video file.\n\t\tUsing .mkv extension is recommended.");
    puts("\t--recordconfig: Path to settings used during recording.");
-   puts("\t--size: Overrides output video size when recording with FFmpeg (format: WIDTHxHEIGHT).");
-#endif
+   puts("\t--size: Overrides output video size when recording (format: WIDTHxHEIGHT).");
    puts("\t-v/--verbose: Verbose logging.");
    puts("\t-U/--ups: Specifies path for UPS patch that will be applied to content.");
    puts("\t--bps: Specifies path for BPS patch that will be applied to content.");
@@ -1059,11 +1050,9 @@ static void parse_input(int argc, char *argv[])
       { "help", 0, NULL, 'h' },
       { "save", 1, NULL, 's' },
       { "fullscreen", 0, NULL, 'f' },
-#ifdef HAVE_RECORD
       { "record", 1, NULL, 'r' },
       { "recordconfig", 1, &val, 'R' },
       { "size", 1, &val, 's' },
-#endif
       { "verbose", 0, NULL, 'v' },
       { "config", 1, NULL, 'c' },
       { "appendconfig", 1, &val, 'C' },
@@ -1095,11 +1084,7 @@ static void parse_input(int argc, char *argv[])
       { NULL, 0, NULL, 0 }
    };
 
-#ifdef HAVE_RECORD
 #define FFMPEG_RECORD_ARG "r:"
-#else
-#define FFMPEG_RECORD_ARG
-#endif
 
 #ifdef HAVE_DYNAMIC
 #define DYNAMIC_ARG "L:"
@@ -1201,12 +1186,10 @@ static void parse_input(int argc, char *argv[])
             strlcpy(g_extern.config_path, optarg, sizeof(g_extern.config_path));
             break;
 
-#ifdef HAVE_RECORD
          case 'r':
             strlcpy(g_extern.record_path, optarg, sizeof(g_extern.record_path));
-            g_extern.recording = true;
+            g_extern.recording_enable = true;
             break;
-#endif
 
 #ifdef HAVE_DYNAMIC
          case 'L':
@@ -1333,7 +1316,6 @@ static void parse_input(int argc, char *argv[])
                   g_extern.block_patch = true;
                   break;
 
-#ifdef HAVE_RECORD
                case 's':
                {
                   if (sscanf(optarg, "%ux%u", &g_extern.record_width, &g_extern.record_height) != 2)
@@ -1348,7 +1330,6 @@ static void parse_input(int argc, char *argv[])
                case 'R':
                   strlcpy(g_extern.record_config, optarg, sizeof(g_extern.record_config));
                   break;
-#endif
                case 'f':
                   print_features();
                   exit(0);
@@ -3018,9 +2999,7 @@ int rarch_main_init(int argc, char *argv[])
    init_rewind();
    init_controllers();
 
-#ifdef HAVE_RECORD
    init_recording();
-#endif
 
    init_sram();
 
@@ -3070,9 +3049,7 @@ static inline void update_frame_time(void)
    time = rarch_get_time_usec();
    is_locked_fps = g_extern.is_paused || driver.nonblock_state;
 
-#ifdef HAVE_RECORD
    is_locked_fps |= !!g_extern.rec;
-#endif
 
    if (!g_extern.system.frame_time_last || is_locked_fps)
       delta = g_extern.system.frame_time.reference;
@@ -3221,14 +3198,10 @@ void rarch_main_command(unsigned action)
          g_extern.audio_data.dsp = NULL;
          break;
       case RARCH_CMD_RECORD_INIT:
-#ifdef HAVE_RECORD
          init_recording();
-#endif
          break;
       case RARCH_CMD_RECORD_DEINIT:
-#ifdef HAVE_RECORD
          deinit_recording();
-#endif
          break;
       case RARCH_CMD_HISTORY_INIT:
          if (g_extern.history)
@@ -3367,9 +3340,7 @@ void rarch_main_deinit(void)
       deinit_autosave();
 #endif
 
-#ifdef HAVE_RECORD
    deinit_recording();
-#endif
 
    save_files();
 

@@ -638,21 +638,19 @@ struct global
    uint16_t netplay_port;
 #endif
 
-   // FFmpeg record.
-#ifdef HAVE_RECORD
+   // Recording.
    const ffemu_backend_t *rec_driver;
    void *rec;
 
    char record_path[PATH_MAX];
    char record_config[PATH_MAX];
-   bool recording;
+   bool recording_enable;
    unsigned record_width;
    unsigned record_height;
 
    uint8_t *record_gpu_buffer;
    size_t record_gpu_width;
    size_t record_gpu_height;
-#endif
 
    struct
    {

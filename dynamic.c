@@ -767,10 +767,8 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          RARCH_LOG("Environ SET_AUDIO_CALLBACK.\n");
          const struct retro_audio_callback *info = (const struct retro_audio_callback*)data;
 
-#ifdef HAVE_RECORD
          if (g_extern.rec) // A/V sync is a must.
             return false;
-#endif
 
 #ifdef HAVE_NETPLAY
          if (g_extern.netplay_enable)

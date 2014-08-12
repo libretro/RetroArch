@@ -259,10 +259,12 @@ ifeq ($(HAVE_DINPUT), 1)
    OBJ += input/dinput.o
 endif
 
+OBJ += record/ffemu.o 
+
 ifeq ($(HAVE_FFMPEG), 1)
    LIBS += -lavformat -lavcodec -lavutil -lswscale -lws2_32 -lz
-   DEFINES += -DHAVE_FFMPEG -DHAVE_RECORD -Iffmpeg
-   OBJ += record/ffemu.o record/ffmpeg.o
+   DEFINES += -DHAVE_FFMPEG -Iffmpeg
+   OBJ += record/ffmpeg.o
 endif
 
 ifneq ($(V), 1)
