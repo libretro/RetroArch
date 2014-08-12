@@ -1454,7 +1454,6 @@ void input_config_autoconfigure_joypad(unsigned index, const char *name, const c
 void input_push_analog_dpad(struct retro_keybind *binds, unsigned mode)
 {
    unsigned i;
-   unsigned analog_base;
 
    switch (mode)
    {
