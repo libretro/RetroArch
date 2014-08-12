@@ -568,6 +568,12 @@ static void sdl2_gfx_free(void *data)
    if (!vid)
       return;
 
+   if (vid->renderer)
+      SDL_DestroyRenderer(vid->renderer);
+
+   if (vid->window)
+      SDL_DestroyWindow(vid->window);
+
    SDL_QuitSubSystem(SDL_INIT_VIDEO);
 
    if (vid->font_data)
