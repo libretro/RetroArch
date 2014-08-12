@@ -327,24 +327,8 @@ static void sdl_refresh_input_size(sdl2_video_t *vid, bool menu, bool rgb32,
 
       if (menu)
          format = rgb32 ? SDL_PIXELFORMAT_ARGB8888 : SDL_PIXELFORMAT_RGBA4444;
-      else
-      {
-         switch (g_extern.system.pix_fmt)
-         {
-            case RETRO_PIXEL_FORMAT_XRGB8888:
-               format = SDL_PIXELFORMAT_ARGB8888;
-               break;
-            case RETRO_PIXEL_FORMAT_0RGB1555:
-               /* this assumes the frontend will convert the input to RGB565 */
-            case RETRO_PIXEL_FORMAT_RGB565:
-               format = SDL_PIXELFORMAT_RGB565;
-               break;
-            default:
-               RARCH_ERR("Unknown/unsupported video format.\n");
-               return;
-               break;
-         }
-      }
+      else /* this assumes the frontend will convert 0RGB1555 to RGB565 */
+         format = rgb32 ? SDL_PIXELFORMAT_ARGB8888 : SDL_PIXELFORMAT_RGB565;
 
       SDL_SetHintWithPriority(SDL_HINT_RENDER_SCALE_QUALITY,
                               (vid->video.smooth || menu) ? "linear" : "nearest",
@@ -436,6 +420,7 @@ static void *sdl2_gfx_init(const video_info_t *video, const input_driver_t **inp
       goto error;
    }
 
+   vid->video = *video;
    vid->video.smooth  = g_settings.video.smooth;
    vid->should_resize = true;
 
@@ -506,7 +491,7 @@ static bool sdl2_gfx_frame(void *data, const void *frame, unsigned width,
 
    if (frame)
    {
-      sdl_refresh_input_size(vid, false, vid->frame.rgb32/*vid->video.rgb32*/, width, height, pitch);
+      sdl_refresh_input_size(vid, false, vid->video.rgb32, width, height, pitch);
 
       RARCH_PERFORMANCE_INIT(sdl_copy_frame);
       RARCH_PERFORMANCE_START(sdl_copy_frame);
