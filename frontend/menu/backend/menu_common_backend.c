@@ -1094,6 +1094,18 @@ static int menu_info_screen_iterate(unsigned action, rarch_setting_t *setting)
                   "libretro GL core implementations is \n"
                   "dependent on your graphics card's \n"
                   "underlying GL driver).");
+         else if (!strcmp(g_settings.video.driver, "sdl2"))
+            snprintf(msg, sizeof(msg),
+                  " -- SDL 2 Video driver.\n"
+                  " \n"
+                  "This driver allows libretro GL cores to \n"
+                  "be used in addition to software-rendered \n"
+                  "core implementations.\n"
+                  " \n"
+                  "Performance for software-rendered and \n"
+                  "libretro GL core implementations is \n"
+                  "dependent on your platform SDL \n"
+                  "implementation.");
          else if (!strcmp(g_settings.video.driver, "sdl"))
             snprintf(msg, sizeof(msg),
                   " -- SDL Video driver.\n"
@@ -1102,10 +1114,7 @@ static int menu_info_screen_iterate(unsigned action, rarch_setting_t *setting)
                   "driver.\n"
                   " \n"
                   "Performance is considered to be suboptimal. \n"
-                  "Consider using it only as a last resort.\n"
-                  " \n"
-                  "WARNING: Menu support is currently not \n"
-                  "supported by this driver.");
+                  "Consider using it only as a last resort.");
          else if (!strcmp(g_settings.video.driver, "d3d"))
             snprintf(msg, sizeof(msg),
                   " -- Direct3D Video driver. \n"
