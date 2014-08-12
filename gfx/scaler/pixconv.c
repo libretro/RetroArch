@@ -310,6 +310,34 @@ void conv_rgb565_argb8888(void *output_, const void *input_,
 }
 #endif
 
+void conv_rgba4444_argb8888(void *output_, const void *input_,
+      int width, int height,
+      int out_stride, int in_stride)
+{
+   int h, w;
+   const uint16_t *input = (const uint16_t*)input_;
+   uint32_t *output      = (uint32_t*)output_;
+
+   for (h = 0; h < height; h++, output += out_stride >> 2, input += in_stride >> 1)
+   {
+      for (w = 0; w < width; w++)
+      {
+         uint32_t col = input[w];
+         uint32_t r = (col >> 12) & 0xf;
+         uint32_t g = (col >>  8) & 0xf;
+         uint32_t b = (col >>  4) & 0xf;
+         uint32_t a = (col >>  0) & 0xf;
+         r = (r << 4) | r;
+         g = (g << 4) | g;
+         b = (b << 4) | b;
+         a = (a << 4) | a;
+
+         //output[w] = (0xffu << 24) | (r << 16) | (g << 8) | (b << 0);
+         output[w] = (a << 24) | (r << 16) | (g << 8) | (b << 0);
+      }
+   }
+}
+
 #if defined(__SSE2__)
 // :( TODO: Make this saner.
 static inline void store_bgr24_sse2(void *output, __m128i a, __m128i b, __m128i c, __m128i d)
