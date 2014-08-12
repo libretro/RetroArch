@@ -518,7 +518,7 @@ static bool get_nickname(netplay_t *handle, int fd)
 static bool send_info(netplay_t *handle)
 {
    uint32_t header[3] = {
-      htonl(g_extern.cart_crc),
+      htonl(g_extern.content_crc),
       htonl(implementation_magic_value()),
       htonl(pretro_get_memory_size(RETRO_MEMORY_SAVE_RAM))
    };
@@ -566,9 +566,9 @@ static bool get_info(netplay_t *handle)
       return false;
    }
 
-   if (g_extern.cart_crc != ntohl(header[0]))
+   if (g_extern.content_crc != ntohl(header[0]))
    {
-      RARCH_ERR("Cart CRC32s differ. Cannot use different games.\n");
+      RARCH_ERR("Content CRC32s differ. Cannot use different games.\n");
       return false;
    }
 
@@ -580,7 +580,7 @@ static bool get_info(netplay_t *handle)
 
    if (pretro_get_memory_size(RETRO_MEMORY_SAVE_RAM) != ntohl(header[2]))
    {
-      RARCH_ERR("Cartridge SRAM sizes do not correspond.\n");
+      RARCH_ERR("Content SRAM sizes do not correspond.\n");
       return false;
    }
 
@@ -625,7 +625,7 @@ static uint32_t *bsv_header_generate(size_t *size, uint32_t magic)
 
    bsv_header[MAGIC_INDEX] = swap_if_little32(BSV_MAGIC);
    bsv_header[SERIALIZER_INDEX] = swap_if_big32(magic);
-   bsv_header[CRC_INDEX] = swap_if_big32(g_extern.cart_crc);
+   bsv_header[CRC_INDEX] = swap_if_big32(g_extern.content_crc);
    bsv_header[STATE_SIZE_INDEX] = swap_if_big32(serialize_size);
 
    if (serialize_size && !pretro_serialize(header + 4, serialize_size))
@@ -656,9 +656,9 @@ static bool bsv_parse_header(const uint32_t *header, uint32_t magic)
    }
 
    uint32_t in_crc = swap_if_big32(header[CRC_INDEX]);
-   if (in_crc != g_extern.cart_crc)
+   if (in_crc != g_extern.content_crc)
    {
-      RARCH_ERR("CRC32 mismatch, got 0x%x, expected 0x%x.\n", in_crc, g_extern.cart_crc);
+      RARCH_ERR("CRC32 mismatch, got 0x%x, expected 0x%x.\n", in_crc, g_extern.content_crc);
       return false;
    }
 

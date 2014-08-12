@@ -414,7 +414,7 @@ struct global
 
    content_history_t *history;
 
-   uint32_t cart_crc;
+   uint32_t content_crc;
 
    char gb_rom_path[PATH_MAX];
    char bsx_rom_path[PATH_MAX];
