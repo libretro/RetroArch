@@ -516,7 +516,7 @@ void config_set_defaults(void)
    if (*g_defaults.config_path)
       fill_pathname_expand_special(g_extern.config_path, g_defaults.config_path, sizeof(g_extern.config_path));
    
-   g_extern.config_save_on_exit = config_save_on_exit;
+   g_settings.config_save_on_exit = config_save_on_exit;
 
    /* Avoid reloading config on every content load */
    g_extern.block_config_read = default_block_config_read;
@@ -571,7 +571,7 @@ static void config_load_core_specific(void)
 void config_load(void)
 {
    // Flush out per-core configs before loading a new config.
-   if (*g_extern.core_specific_config_path && g_extern.config_save_on_exit && g_settings.core_specific_config)
+   if (*g_extern.core_specific_config_path && g_settings.config_save_on_exit && g_settings.core_specific_config)
       config_save_file(g_extern.core_specific_config_path);
 
    if (!g_extern.block_config_read)
@@ -1115,7 +1115,7 @@ bool config_load_file(const char *path, bool set_defaults)
       CONFIG_GET_INT_EXTERN(netplay_port, "netplay_ip_port");
 #endif
 
-   CONFIG_GET_BOOL_EXTERN(config_save_on_exit, "config_save_on_exit");
+   CONFIG_GET_BOOL(config_save_on_exit, "config_save_on_exit");
 
    if (!g_extern.has_set_save_path && config_get_path(conf, "savefile_directory", tmp_str, sizeof(tmp_str)))
    {
@@ -1473,7 +1473,7 @@ bool config_save_file(const char *path)
    config_set_float(conf, "slowmotion_ratio", g_settings.slowmotion_ratio);
 
    // g_extern
-   config_set_bool(conf, "config_save_on_exit", g_extern.config_save_on_exit);
+   config_set_bool(conf, "config_save_on_exit", g_settings.config_save_on_exit);
    config_set_int(conf, "sound_mode", g_extern.console.sound.mode);
    config_set_int(conf, "state_slot", g_settings.state_slot);
 

@@ -503,7 +503,7 @@ bool menu_replace_config(const char *path)
    if (strcmp(path, g_extern.config_path) == 0)
       return false;
 
-   if (g_extern.config_save_on_exit && *g_extern.config_path)
+   if (g_settings.config_save_on_exit && *g_extern.config_path)
       config_save_file(g_extern.config_path);
 
    strlcpy(g_extern.config_path, path, sizeof(g_extern.config_path));

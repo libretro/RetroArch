@@ -4400,7 +4400,7 @@ static void menu_common_setting_set_label(char *type_str, size_t type_str_size, 
             strlcpy(type_str, g_extern.perfcnt_enable ? "ON" : "OFF", type_str_size);
             break;
          case MENU_SETTINGS_CONFIG_SAVE_ON_EXIT:
-            strlcpy(type_str, g_extern.config_save_on_exit ? "ON" : "OFF", type_str_size);
+            strlcpy(type_str, g_settings.config_save_on_exit ? "ON" : "OFF", type_str_size);
             break;
          case MENU_SETTINGS_SAVESTATE_AUTO_SAVE:
             strlcpy(type_str, g_settings.savestate_auto_save ? "ON" : "OFF", type_str_size);

@@ -209,7 +209,7 @@ void main_exit(args_type() args)
 {
    g_extern.system.shutdown = false;
 
-   if (g_extern.config_save_on_exit && *g_extern.config_path)
+   if (g_settings.config_save_on_exit && *g_extern.config_path)
    {
       // save last core-specific config to the default config location, needed on
       // consoles for core switching and reusing last good config for new cores.

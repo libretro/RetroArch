@@ -788,7 +788,7 @@ static void general_read_handler(const void *data)
     else if (!strcmp(setting->name, "pause_nonactive"))
        *setting->value.boolean = g_settings.pause_nonactive;
     else if (!strcmp(setting->name, "config_save_on_exit"))
-       *setting->value.boolean = g_extern.config_save_on_exit;
+       *setting->value.boolean = g_settings.config_save_on_exit;
     else if (!strcmp(setting->name, "rewind_enable"))
        *setting->value.boolean = g_settings.rewind_enable;
     else if (!strcmp(setting->name, "rewind_granularity"))
@@ -1054,7 +1054,7 @@ static void general_write_handler(const void *data)
    else if (!strcmp(setting->name, "pause_nonactive"))
       g_settings.pause_nonactive = *setting->value.boolean;
    else if (!strcmp(setting->name, "config_save_on_exit"))
-      g_extern.config_save_on_exit = *setting->value.boolean;
+      g_settings.config_save_on_exit = *setting->value.boolean;
    else if (!strcmp(setting->name, "rewind_enable"))
    {
       g_settings.rewind_enable = *setting->value.boolean;
@@ -1505,7 +1505,7 @@ rarch_setting_t* setting_data_get_list(void)
          CONFIG_BOOL(g_extern.verbosity,                      "log_verbosity",        "Logging Verbosity", false, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
          CONFIG_UINT(g_settings.libretro_log_level,           "libretro_log_level",        "Libretro Logging Level", libretro_log_level, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_RANGE(0, 3, 1.0, true, true)
          CONFIG_BOOL(g_extern.perfcnt_enable,               "perfcnt_enable",       "Performance Counters", false, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
-         CONFIG_BOOL(g_extern.config_save_on_exit,          "config_save_on_exit",        "Configuration Save On Exit", config_save_on_exit, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+         CONFIG_BOOL(g_settings.config_save_on_exit,          "config_save_on_exit",        "Configuration Save On Exit", config_save_on_exit, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
          CONFIG_BOOL(g_settings.core_specific_config,       "core_specific_config",        "Configuration Per-Core", default_core_specific_config, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
          CONFIG_BOOL(g_settings.load_dummy_on_core_shutdown, "dummy_on_core_shutdown",      "Dummy On Core Shutdown", load_dummy_on_core_shutdown, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
          CONFIG_BOOL(g_settings.fps_show,                   "fps_show",                   "Show Framerate",             fps_show, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)

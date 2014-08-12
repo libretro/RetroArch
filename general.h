@@ -374,6 +374,8 @@ struct settings
 
    char username[32];
    unsigned int user_language;
+
+   bool config_save_on_exit;
 };
 
 typedef struct rarch_resolution
@@ -722,7 +724,6 @@ struct global
 
    bool main_is_init;
    bool error_in_init;
-   bool config_save_on_exit;
    char error_string[1024];
    jmp_buf error_sjlj_context;
 
