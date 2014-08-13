@@ -268,17 +268,15 @@ static int detect_rom_game(const char *path, char *game_name, size_t max_len)
 
 static int detect_game(const char *path, char *game_name, size_t max_len)
 {
-	if ((!strcasecmp(path + strlen(path) - 4, ".cue")) ||
-	    (!strcasecmp(path + strlen(path) - 4, ".m3u")))
+   if ((!strcasecmp(path + strlen(path) - 4, ".cue")) ||
+         (!strcasecmp(path + strlen(path) - 4, ".m3u")))
    {
-		LOG_INFO("Starting CD game detection...");
-		return detect_cd_game(path, game_name, max_len);
-	}
-   else
-   {
-		LOG_INFO("Starting rom game detection...");
-		return detect_rom_game(path, game_name, max_len);
-	}
+      LOG_INFO("Starting CD game detection...");
+      return detect_cd_game(path, game_name, max_len);
+   }
+
+   LOG_INFO("Starting rom game detection...");
+   return detect_rom_game(path, game_name, max_len);
 }
 
 static int select_core(char *core_path, size_t max_len,
