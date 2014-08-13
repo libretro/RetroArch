@@ -424,7 +424,7 @@ static void handle_hotplug(android_input_t *android, struct android_app *android
    else if (strstr(device_name, "Logitech") && strstr(device_name, "Precision"))
       strlcpy(name_buf, "Logitech Precision", sizeof(name_buf));
    else if (strstr(device_name, "iControlPad-")) // followed by a 4 (hex) char HW id
-      device = DEVICE_ICONTROLPAD_HID_JOYSTICK;
+      strlcpy(name_buf, "iControlPad HID Joystick profile", sizeof(name_buf));
    else if (strstr(device_name, "TTT THT Arcade console 2P USB Play"))
    {
       //FIXME - need to do a similar thing here as we did for nVidia Shield
@@ -547,9 +547,7 @@ static void handle_hotplug(android_input_t *android, struct android_app *android
       strlcpy(name_buf, "ccpcreations WiiUse", sizeof(name_buf));
    }
    else if (strstr(android_app->current_ime, "com.hexad.bluezime"))
-   {
       strlcpy(name_buf, "iControlpad SPP mode (using Bluez IME)", sizeof(name_buf));
-   }
 
    if (source == AINPUT_SOURCE_KEYBOARD && device != DEVICE_XPERIA_PLAY)
       device = DEVICE_KEYBOARD_RETROPAD;

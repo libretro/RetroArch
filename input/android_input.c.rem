@@ -18,54 +18,6 @@ static void android_input_set_keybinds(void *data, unsigned device,
 
       switch (device)
       {
-         case DEVICE_ICONTROLPAD_HID_JOYSTICK:
-            g_settings.input.device[port] = device;
-            strlcpy(g_settings.input.device_names[port], "iControlPad HID Joystick profile",
-                  sizeof(g_settings.input.device_names[port]));
-
-            android->keycode_lut[188] |=  ((RETRO_DEVICE_ID_JOYPAD_UP+1)       << shift);
-            android->keycode_lut[191] |=  ((RETRO_DEVICE_ID_JOYPAD_DOWN+1)     << shift);
-            android->keycode_lut[190] |=  ((RETRO_DEVICE_ID_JOYPAD_LEFT+1)     << shift);
-            android->keycode_lut[189] |=  ((RETRO_DEVICE_ID_JOYPAD_RIGHT+1)    << shift);
-            android->keycode_lut[201] |=  ((RETRO_DEVICE_ID_JOYPAD_A+1)       << shift);
-            android->keycode_lut[200] |=  ((RETRO_DEVICE_ID_JOYPAD_B+1)       << shift);
-            android->keycode_lut[198] |=  ((RETRO_DEVICE_ID_JOYPAD_X+1)       << shift);
-            android->keycode_lut[199] |=  ((RETRO_DEVICE_ID_JOYPAD_Y+1)       << shift);
-            android->keycode_lut[197] |=  ((RETRO_DEVICE_ID_JOYPAD_START+1)   << shift);
-            android->keycode_lut[196] |=  ((RETRO_DEVICE_ID_JOYPAD_SELECT+1)   << shift);
-            android->keycode_lut[192] |=  ((RETRO_DEVICE_ID_JOYPAD_L+1)        << shift);
-            android->keycode_lut[202] |=  ((RETRO_DEVICE_ID_JOYPAD_R+1)       << shift);
-            break;
-         case DEVICE_ICONTROLPAD_BLUEZ_IME:
-            g_settings.input.device[port] = device;
-            strlcpy(g_settings.input.device_names[port], "iControlPad SPP profile (using Bluez IME)",
-                  sizeof(g_settings.input.device_names[port]));
-
-            android->keycode_lut[19] |=  ((RETRO_DEVICE_ID_JOYPAD_UP+1)        << shift);
-            android->keycode_lut[20] |=  ((RETRO_DEVICE_ID_JOYPAD_DOWN+1)    << shift);
-            android->keycode_lut[21] |=  ((RETRO_DEVICE_ID_JOYPAD_LEFT+1)    << shift);
-            android->keycode_lut[22] |=  ((RETRO_DEVICE_ID_JOYPAD_RIGHT+1)  << shift);
-            android->keycode_lut[99] |=  ((RETRO_DEVICE_ID_JOYPAD_B+1)        << shift);
-            android->keycode_lut[97] |=  ((RETRO_DEVICE_ID_JOYPAD_A+1)        << shift);
-            android->keycode_lut[96] |=  ((RETRO_DEVICE_ID_JOYPAD_Y+1)        << shift);
-            android->keycode_lut[100] |=  ((RETRO_DEVICE_ID_JOYPAD_X+1)        << shift);
-            android->keycode_lut[102] |=  ((RETRO_DEVICE_ID_JOYPAD_L+1)       << shift);
-            android->keycode_lut[103] |=  ((RETRO_DEVICE_ID_JOYPAD_R+1)       << shift);
-            android->keycode_lut[108] |=  ((RETRO_DEVICE_ID_JOYPAD_START+1)     << shift);
-            android->keycode_lut[109] |=  ((RETRO_DEVICE_ID_JOYPAD_SELECT+1)   << shift);
-
-            /* left analog stick */
-            android->keycode_lut[51] |=  ((RETRO_DEVICE_ID_JOYPAD_UP+1)              << shift);
-            android->keycode_lut[47] |=  ((RETRO_DEVICE_ID_JOYPAD_DOWN+1)            << shift);
-            android->keycode_lut[29] |=  ((RETRO_DEVICE_ID_JOYPAD_LEFT+1)            << shift);
-            android->keycode_lut[32] |=  ((RETRO_DEVICE_ID_JOYPAD_RIGHT+1)           << shift);
-
-            /* right analog stick - TODO */
-            // Left - 11
-            // Right - 13
-            // Down - 12
-            // Up - 15
-            break;
          case DEVICE_MADCATZ_PC_USB_STICK:
             g_settings.input.device[port] = device;
             strlcpy(g_settings.input.device_names[port], "Madcatz PC USB Stick",
