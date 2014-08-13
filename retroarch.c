@@ -3068,7 +3068,7 @@ static inline void limit_frame_time(void)
 {
    retro_time_t current = 0, target = 0, to_sleep_ms = 0;
 
-   if (g_settings.fastforward_ratio < 0.0f)
+   if (g_settings.fastforward_ratio <= 0.0f)
       return;
 
    g_extern.frame_limit.minimum_frame_time = (retro_time_t)roundf(1000000.0f / (g_extern.system.av_info.timing.fps * g_settings.fastforward_ratio));
