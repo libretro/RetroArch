@@ -1,11 +1,29 @@
+/*  RetroArch - A frontend for libretro.
+ *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
+ *  Copyright (C) 2011-2014 - Daniel De Matteis
+ *  Copyright (C) 2012-2014 - Ficoos
+ * 
+ *  RetroArch is free software: you can redistribute it and/or modify it under the terms
+ *  of the GNU General Public License as published by the Free Software Found-
+ *  ation, either version 3 of the License, or (at your option) any later version.
+ *
+ *  RetroArch is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+ *  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+ *  PURPOSE.  See the GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License along with RetroArch.
+ *  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #if __TEST_FNMATCH__
 #include <assert.h>
 #endif
 
-#include "rl_fnmatch.h"
+#include "rarch_fnmatch.h"
 
 // Implemnentation of fnmatch(3) so it can be distributed to non *nix platforms
 // No flags are implemented ATM. We don't use them. Add flags as needed.
+
 int rl_fnmatch(const char *pattern, const char *string, int flags)
 {
    const char *c;

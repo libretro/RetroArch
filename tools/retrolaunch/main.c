@@ -15,7 +15,7 @@
 #include "sha1.h"
 #include "parser.h"
 #include "cd_detect.h"
-#include "rl_fnmatch.h"
+#include "../../compat/rarch_fnmatch.h"
 #include "../../file.h"
 
 #include "log.h"
