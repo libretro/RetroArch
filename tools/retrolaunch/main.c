@@ -49,7 +49,7 @@ static int find_hash(int fd, const char *hash, char *game_name, size_t max_len)
 }
 
 static int
-find_rom_canonical_name(const char *hash, char *game_name, size_t max_len)
+find_content_canonical_name(const char *hash, char *game_name, size_t max_len)
 {
    // TODO: Error handling
    size_t i;
@@ -209,27 +209,7 @@ static int get_run_info(struct RunInfo *info, const char *game_name)
 }
 
 
-const char *SUFFIX_MATCH[] = {
-	".a26", "a26",
-	".bin", "smd",
-	".gba", "gba",
-	".gbc", "gbc",
-	".gb", "gb",
-	".gen", "smd",
-	".gg", "gg",
-	".nds", "nds",
-	".nes", "nes",
-	".pce", "pce",
-	".sfc", "snes",
-	".smc", "snes",
-	".smd", "smd",
-	".sms", "sms",
-	".wsc", "wswan",
-	".z64", "n64",
-	NULL
-};
-
-static int detect_rom_game(const char *path, char *game_name, size_t max_len)
+static int detect_content_game(const char *path, char *game_name, size_t max_len)
 {
 	char hash[HASH_LEN + 1];
 	int rv;
@@ -247,20 +227,9 @@ static int detect_rom_game(const char *path, char *game_name, size_t max_len)
 	if ((rv = get_sha1(path, hash)) < 0)
 		LOG_WARN("Could not calculate hash: %s", strerror(-rv));
 
-	if (find_rom_canonical_name(hash, game_name, max_len) < 0)
+	if (find_content_canonical_name(hash, game_name, max_len) < 0)
    {
-		LOG_DEBUG("Could not detect rom with hash `%s` guessing", hash);
-
-		for (tmp_suffix = SUFFIX_MATCH; *tmp_suffix != NULL;
-		     tmp_suffix += 2)
-      {
-         if (!strcasecmp(suffix, *tmp_suffix))
-         {
-            snprintf(game_name, max_len, "%s.<unknown>",
-                  *(tmp_suffix + 1));
-            return 0;
-         }
-      }
+		LOG_DEBUG("Could not detect content with hash `%s`.", hash);
 		return -EINVAL;
 	}
 
@@ -272,125 +241,15 @@ static int detect_game(const char *path, char *game_name, size_t max_len)
    if ((!strcasecmp(path + strlen(path) - 4, ".cue")) ||
          (!strcasecmp(path + strlen(path) - 4, ".m3u")))
    {
-      LOG_INFO("Starting CD game detection...");
+      LOG_INFO("Starting CD game content detection...");
       return detect_cd_game(path, game_name, max_len);
    }
 
-   LOG_INFO("Starting rom game detection...");
-   return detect_rom_game(path, game_name, max_len);
-}
-
-static int select_core(char *core_path, size_t max_len,
-		const struct RunInfo *info)
-{
-   int fd = open("./cores.conf", O_RDONLY);
-   int rv;
-   int bci = 0;
-   char token[MAX_TOKEN_LEN];
-   int broken = 0;
-   if (fd < 0)
-      return -errno;
-
-   LOG_INFO("Selecting core for system '%s'", info->system);
-   while (1)
-   {
-      if ((rv = get_token(fd, token, MAX_TOKEN_LEN)) < 0)
-         goto clean;
-
-      if (rl_fnmatch(token, info->system, 0) != 0)
-      {
-         if ((rv = find_token(fd, ";")) < 0)
-            goto clean;
-         continue;
-      }
-
-      LOG_INFO("Matched system '%s'", token);
-
-      break;
-   }
-
-   if ((rv = get_token(fd, token, MAX_TOKEN_LEN)) < 0)
-      goto clean;
-
-   while (strcmp(token, ";") != 0)
-   {
-      broken = 0;
-      for (bci = 0; info->broken_cores[bci] != '\0';
-            bci += strlen(&info->broken_cores[bci]) + 1)
-      {
-
-         LOG_DEBUG("%s, %s", &info->broken_cores[bci], token);
-         if (!strcmp(&info->broken_cores[bci], token))
-         {
-            broken = 1;
-            LOG_DEBUG("Not using core %s because it is "
-                  "marked broken for this game",
-                  &info->broken_cores[bci]);
-            break;
-         }
-      }
-
-            if (!broken)
-               goto success;
-
-            if ((rv = get_token(fd, token, MAX_TOKEN_LEN)) < 0)
-               goto clean;
-   }
-   rv = -EINVAL;
-   goto clean;
-
-success:
-   snprintf(core_path, max_len, "./cores/%s.so", token);
-   rv = 0;
-clean:
-   close(fd);
-   return rv;
+   LOG_INFO("Starting game content detection...");
+   return detect_content_game(path, game_name, max_len);
 }
 
 #ifndef RARCH_CONSOLE
-static int run_retroarch(const char *path, const struct RunInfo *info)
-{
-	char core_path[PATH_MAX];
-	int i;
-	int rv;
-	const char *retro_argv[30] = { "retroarch",
-		"-L", core_path
-	};
-	int argi = 3;
-
-	if ((rv = select_core(core_path, PATH_MAX, info)) < 0)
-   {
-		LOG_WARN("Could not find suitable core");
-		return rv;
-	}
-
-	LOG_INFO("Using core at '%s'", core_path);
-	if (info->multitap)
-   {
-		retro_argv[argi] = "-4";
-		argi++;
-		LOG_INFO("Game supports multitap");
-	}
-
-	if (info->dualanalog)
-   {
-		for (i = 0; i < 8; i++)
-      {
-			retro_argv[argi] = "-A";
-			argi++;
-			retro_argv[argi] = "1";
-			argi++;
-		}
-		LOG_INFO("Game supports the dualshock controller");
-	}
-
-	retro_argv[argi] = strdup(path);
-	argi++;
-	retro_argv[argi] = NULL;
-	execvp(retro_argv[0], (char * const*)retro_argv);
-	return -errno;
-}
-
 int main(int argc, char *argv[])
 {
    struct RunInfo info;
@@ -426,10 +285,6 @@ int main(int argc, char *argv[])
       return -1;
    }
 
-   LOG_INFO("Launching '%s'", path);
-
-   rv = run_retroarch(path, &info);
-   LOG_WARN("Could not launch retroarch: %s", strerror(-rv));
-   return -rv;
+   return 0;
 }
 #endif
