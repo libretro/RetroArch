@@ -67,8 +67,10 @@ static int find_hash(int fd, const char *hash, char *game_name, size_t max_len,
          return -1;
 
       if (!strcasecmp(hash, info_content->sha1))
-         return 0;
+         break;
    }
+   
+   return 0;
 }
 
 static int
