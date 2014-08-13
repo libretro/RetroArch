@@ -1120,11 +1120,13 @@ static int menu_info_screen_iterate(unsigned action, rarch_setting_t *setting)
                   "Performance for software-rendered cores \n"
                   "is dependent on your graphic card's \n"
                   "underlying D3D driver).");
-         else if (!strcmp(g_settings.video.driver, "lima"))
+         else if (!strcmp(g_settings.video.driver, "exynos"))
             snprintf(msg, sizeof(msg),
-                  " -- Lima Video Driver. \n"
+                  " -- Exynos-G2D Video Driver. \n"
                   " \n"
-                  "This is a low-level Limare video driver. \n"
+                  "This is a low-level Exynos video driver. \n"
+                  "Uses the G2D block in Samsung Exynos SoC \n"
+                  "for blit operations. \n"
                   " \n"
                   "Performance for software rendered cores \n"
                   "should be optimal.");
