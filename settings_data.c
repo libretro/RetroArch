@@ -1187,7 +1187,7 @@ static void general_write_handler(const void *data)
    else if (!strcmp(setting->name, "savestate_auto_index"))
       g_settings.savestate_auto_index = *setting->value.boolean;
    else if (!strcmp(setting->name, "slowmotion_ratio"))
-      g_settings.slowmotion_ratio = max(min(*setting->value.fraction, 10.0f), 1.0f);
+      g_settings.slowmotion_ratio = *setting->value.fraction;
    else if (!strcmp(setting->name, "fastforward_ratio"))
       g_settings.fastforward_ratio = *setting->value.fraction;
    else if (!strcmp(setting->name, "autosave_interval"))
@@ -1509,7 +1509,7 @@ rarch_setting_t* setting_data_get_list(void)
          CONFIG_BOOL(g_settings.video.disable_composition,  "video_disable_composition",  "Window Compositing",         disable_composition, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
          CONFIG_BOOL(g_settings.pause_nonactive,            "pause_nonactive",            "Window Unfocus Pause",       pause_nonactive, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
          CONFIG_FLOAT(g_settings.fastforward_ratio,         "fastforward_ratio",          "Maximum Run Speed",         fastforward_ratio, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_RANGE(0, 10, 1.0, true, true)
-         CONFIG_FLOAT(g_settings.slowmotion_ratio,          "slowmotion_ratio",           "Slow-Motion Ratio",          slowmotion_ratio, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)       WITH_RANGE(-1, 10, 0.1, true, true)
+         CONFIG_FLOAT(g_settings.slowmotion_ratio,          "slowmotion_ratio",           "Slow-Motion Ratio",          slowmotion_ratio, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)       WITH_RANGE(1, 10, 1.0, true, true)
          CONFIG_BOOL(g_settings.savestate_auto_index,       "savestate_auto_index",       "Save State Auto Index",      savestate_auto_index, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
          CONFIG_BOOL(g_settings.savestate_auto_save,        "savestate_auto_save",        "Auto Save State",            savestate_auto_save, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
          CONFIG_BOOL(g_settings.savestate_auto_load,        "savestate_auto_load",        "Auto Load State",            savestate_auto_load, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
