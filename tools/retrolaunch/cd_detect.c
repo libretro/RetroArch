@@ -248,7 +248,7 @@ clean:
    return rv;
 }
 
-int find_first_cue(const char* m3u_path, char* cue_path, size_t max_len)
+static int find_first_cue(const char* m3u_path, char* cue_path, size_t max_len)
 {
    char c;
    int skip = 0;
