@@ -1376,15 +1376,7 @@ const struct retro_keybind *input_get_auto_bind(unsigned port, unsigned id)
 
 static void input_get_bind_string_joykey(char *buf, const char *prefix, const struct retro_keybind *bind, size_t size)
 {
-   if (driver.input->set_keybinds)
-   {
-      struct platform_bind key_label;
-      strlcpy(key_label.desc, "Unknown", sizeof(key_label.desc));
-      key_label.joykey = bind->joykey;
-      driver.input->set_keybinds(&key_label, 0, 0, 0, (1ULL << KEYBINDS_ACTION_GET_BIND_LABEL));
-      snprintf(buf, size, "%s%s (btn) ", prefix, key_label.desc);
-   }
-   else if (GET_HAT_DIR(bind->joykey))
+   if (GET_HAT_DIR(bind->joykey))
    {
       const char *dir;
       switch (GET_HAT_DIR(bind->joykey))

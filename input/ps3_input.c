@@ -358,7 +358,6 @@ const input_driver_t input_ps3 = {
    ps3_input_state,
    ps3_input_key_pressed,
    ps3_input_free_input,
-   NULL,
    ps3_input_set_sensor_state,
    NULL,
    ps3_input_get_capabilities,

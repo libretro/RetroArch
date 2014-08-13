@@ -537,7 +537,6 @@ const input_driver_t input_gx = {
    gx_input_free_input,
    NULL,
    NULL,
-   NULL,
    gx_input_get_capabilities,
    NULL,
    "gx",

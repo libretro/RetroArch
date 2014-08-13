@@ -144,10 +144,9 @@ int ButtonMap::getButtonMapping(int player, int button)
 
 void ButtonMap::mapDevice(int index, int player)
 {
-   if (input_qnx.set_keybinds)
-      input_qnx.set_keybinds((void*)&devices[index], devices[index].device, player, 0,
-         (1ULL << KEYBINDS_ACTION_SET_DEFAULT_BINDS));
-
+   // stub - set keybinds
+   // stub_set_keybinds_call_here()
+   
    refreshButtonMap(player);
 }
 

@@ -173,7 +173,6 @@ const input_driver_t input_psp = {
    psp_input_free_input,
    NULL,
    NULL,
-   NULL,
    psp_input_get_capabilities,
    NULL,
    "psp",

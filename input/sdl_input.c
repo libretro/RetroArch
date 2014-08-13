@@ -335,7 +335,6 @@ const input_driver_t input_sdl = {
    sdl_input_free,
    NULL,
    NULL,
-   NULL,
    sdl_get_capabilities,
    NULL,
 #ifdef HAVE_SDL2

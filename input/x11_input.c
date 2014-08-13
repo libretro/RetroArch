@@ -328,7 +328,6 @@ const input_driver_t input_x = {
    x_input_free,
    NULL,
    NULL,
-   NULL,
    x_input_get_capabilities,
    NULL,
    "x",

@@ -276,7 +276,6 @@ const input_driver_t input_xinput =
    xdk_input_free_input,
    NULL,
    NULL,
-   NULL,
    xdk_input_get_capabilities,
    NULL,
    "xinput",

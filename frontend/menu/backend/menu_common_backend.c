@@ -62,7 +62,7 @@ static inline struct gfx_shader *shader_manager_get_current_shader(menu_handle_t
 
 static void menu_common_entries_init(menu_handle_t *menu, unsigned menu_type)
 {
-   unsigned i, last;
+   unsigned i;
    char tmp[256];
 
    switch (menu_type)
@@ -387,8 +387,7 @@ static void menu_common_entries_init(menu_handle_t *menu, unsigned menu_type)
 #ifdef HAVE_OSK
          file_list_push(menu->selection_buf, "", "osk_enable", MENU_SETTINGS_ONSCREEN_KEYBOARD_ENABLE, 0);
 #endif
-         last = (driver.input && driver.input->set_keybinds && !driver.input->get_joypad_driver) ? (MENU_SETTINGS_BIND_BEGIN + RETRO_DEVICE_ID_JOYPAD_R3) : MENU_SETTINGS_BIND_ALL_LAST;
-         for (i = MENU_SETTINGS_BIND_BEGIN; i <= last; i++)
+         for (i = MENU_SETTINGS_BIND_BEGIN; i <= MENU_SETTINGS_BIND_ALL_LAST; i++)
             file_list_push(menu->selection_buf, input_config_bind_map[i - MENU_SETTINGS_BIND_BEGIN].desc, "", i, 0);
          break;
       case MENU_SETTINGS_AUDIO_OPTIONS:
@@ -1267,20 +1266,10 @@ static int menu_start_screen_iterate(unsigned action)
 
    for (i = 0; i < ARRAY_SIZE(binds); i++)
    {
-      if (driver.input && driver.input->set_keybinds)
-      {
-         struct platform_bind key_label;
-         strlcpy(key_label.desc, "Unknown", sizeof(key_label.desc));
-         key_label.joykey = g_settings.input.binds[0][binds[i]].joykey;
-         driver.input->set_keybinds(&key_label, 0, 0, 0, 1ULL << KEYBINDS_ACTION_GET_BIND_LABEL);
-         strlcpy(desc[i], key_label.desc, sizeof(desc[i]));
-      }
-      else
-      {
-         const struct retro_keybind *bind = &g_settings.input.binds[0][binds[i]];
-         const struct retro_keybind *auto_bind = input_get_auto_bind(0, binds[i]);
-         input_get_bind_string(desc[i], bind, auto_bind, sizeof(desc[i]));
-      }
+      const struct retro_keybind *bind = (const struct retro_keybind*)&g_settings.input.binds[0][binds[i]];
+      const struct retro_keybind *auto_bind = (const struct retro_keybind*)input_get_auto_bind(0, binds[i]);
+
+      input_get_bind_string(desc[i], bind, auto_bind, sizeof(desc[i]));
    }
 
    snprintf(msg, sizeof(msg),
@@ -3347,54 +3336,39 @@ static int menu_common_setting_set(unsigned id, unsigned action, rarch_setting_t
    }
    else if (id >= MENU_SETTINGS_BIND_BEGIN && id <= MENU_SETTINGS_BIND_ALL_LAST)
    {
-      if (driver.input->set_keybinds && !driver.input->get_joypad_driver)
+      struct retro_keybind *bind = (struct retro_keybind*)&g_settings.input.binds[port][id - MENU_SETTINGS_BIND_BEGIN];
+
+      if (action == MENU_ACTION_OK)
       {
-         unsigned keybind_action = KEYBINDS_ACTION_NONE;
+         driver.menu->binds.begin  = id;
+         driver.menu->binds.last   = id;
+         driver.menu->binds.target = bind;
+         driver.menu->binds.player = port;
+         file_list_push(driver.menu->menu_stack, "", "",
+               driver.menu->bind_mode_keyboard ? MENU_SETTINGS_CUSTOM_BIND_KEYBOARD : MENU_SETTINGS_CUSTOM_BIND, driver.menu->selection_ptr);
 
-         if (action == MENU_ACTION_START)
-            keybind_action = (1ULL << KEYBINDS_ACTION_SET_DEFAULT_BIND);
-
-         // FIXME: The array indices here look totally wrong ... Fixed it so it looks kind of sane for now.
-         if (keybind_action != KEYBINDS_ACTION_NONE)
-            driver.input->set_keybinds(driver.input_data, g_settings.input.device[port], port,
-                  id - MENU_SETTINGS_BIND_BEGIN, keybind_action);
-      }
-      else
-      {
-         struct retro_keybind *bind = (struct retro_keybind*)&g_settings.input.binds[port][id - MENU_SETTINGS_BIND_BEGIN];
-
-         if (action == MENU_ACTION_OK)
+         if (driver.menu->bind_mode_keyboard)
          {
-            driver.menu->binds.begin  = id;
-            driver.menu->binds.last   = id;
-            driver.menu->binds.target = bind;
-            driver.menu->binds.player = port;
-            file_list_push(driver.menu->menu_stack, "", "",
-                  driver.menu->bind_mode_keyboard ? MENU_SETTINGS_CUSTOM_BIND_KEYBOARD : MENU_SETTINGS_CUSTOM_BIND, driver.menu->selection_ptr);
-
-            if (driver.menu->bind_mode_keyboard)
-            {
-               driver.menu->binds.timeout_end = rarch_get_time_usec() + MENU_KEYBOARD_BIND_TIMEOUT_SECONDS * 1000000;
-               input_keyboard_wait_keys(driver.menu, menu_custom_bind_keyboard_cb);
-            }
-            else
-            {
-               menu_poll_bind_get_rested_axes(&driver.menu->binds);
-               menu_poll_bind_state(&driver.menu->binds);
-            }
+            driver.menu->binds.timeout_end = rarch_get_time_usec() + MENU_KEYBOARD_BIND_TIMEOUT_SECONDS * 1000000;
+            input_keyboard_wait_keys(driver.menu, menu_custom_bind_keyboard_cb);
          }
-         else if (action == MENU_ACTION_START)
+         else
          {
-            if (driver.menu->bind_mode_keyboard)
-            {
-               const struct retro_keybind *def_binds = port ? retro_keybinds_rest : retro_keybinds_1;
-               bind->key = def_binds[id - MENU_SETTINGS_BIND_BEGIN].key;
-            }
-            else
-            {
-               bind->joykey = NO_BTN;
-               bind->joyaxis = AXIS_NONE;
-            }
+            menu_poll_bind_get_rested_axes(&driver.menu->binds);
+            menu_poll_bind_state(&driver.menu->binds);
+         }
+      }
+      else if (action == MENU_ACTION_START)
+      {
+         if (driver.menu->bind_mode_keyboard)
+         {
+            const struct retro_keybind *def_binds = port ? retro_keybinds_rest : retro_keybinds_1;
+            bind->key = def_binds[id - MENU_SETTINGS_BIND_BEGIN].key;
+         }
+         else
+         {
+            bind->joykey = NO_BTN;
+            bind->joyaxis = AXIS_NONE;
          }
       }
       return 0;
@@ -3564,35 +3538,7 @@ static int menu_common_setting_set(unsigned id, unsigned action, rarch_setting_t
             port = driver.menu->current_pad;
             break;
          case MENU_SETTINGS_BIND_DEVICE:
-            // If set_keybinds is supported, we do it more fancy, and scroll through
-            // a list of supported devices directly.
-            if (driver.input->set_keybinds && driver.input->devices_size)
             {
-               unsigned device_last = driver.input->devices_size(driver.input_data);
-               g_settings.input.device[port] += device_last;
-               if (action == MENU_ACTION_START)
-                  g_settings.input.device[port] = 0;
-               else if (action == MENU_ACTION_LEFT)
-                  g_settings.input.device[port]--;
-               else if (action == MENU_ACTION_RIGHT)
-                  g_settings.input.device[port]++;
-
-               // device_last can be 0, avoid modulo.
-               if (g_settings.input.device[port] >= device_last)
-                  g_settings.input.device[port] -= device_last;
-               // needs to be checked twice, in case we go right past the end of the list
-               if (g_settings.input.device[port] >= device_last)
-                  g_settings.input.device[port] -= device_last;
-
-               unsigned keybind_action = (1ULL << KEYBINDS_ACTION_SET_DEFAULT_BINDS);
-
-               driver.input->set_keybinds(driver.input_data, g_settings.input.device[port], port, 0,
-                     keybind_action);
-            }
-            else
-            {
-               // When only straight g_settings.input.joypad_map[] style
-               // mapping is supported.
                int *p = &g_settings.input.joypad_map[port];
                if (action == MENU_ACTION_START)
                   *p = port;

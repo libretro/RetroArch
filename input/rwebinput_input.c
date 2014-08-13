@@ -188,7 +188,6 @@ const input_driver_t input_rwebinput = {
    rwebinput_input_free,
    NULL,
    NULL,
-   NULL,
    rwebinput_get_capabilities,
    NULL,
    "rwebinput",
