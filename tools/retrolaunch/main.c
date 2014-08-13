@@ -83,6 +83,7 @@ find_rom_canonical_name(const char *hash, char *game_name, size_t max_len)
          close(fd);
          goto clean;
       }
+
       close(fd);
    }
    rv = -1;
@@ -394,7 +395,7 @@ int main(int argc, char *argv[])
 {
    struct RunInfo info;
    int rv;
-   char game_name[MAX_TOKEN_LEN];
+   char game_name[MAX_TOKEN_LEN], game_name_test[256];
    char *path = argv[1];
 
    if (argc < 2)
@@ -411,6 +412,14 @@ int main(int argc, char *argv[])
    }
 
    LOG_INFO("Game is `%s`", game_name);
+   char *substr = strrchr(game_name, '.');
+   if (!substr)
+      *substr = '\0';
+   else
+   {
+      substr = substr + 1;
+      LOG_INFO("Game description name is `%s`", substr);
+   }
    if ((rv = get_run_info(&info, game_name)) < 0)
    {
       LOG_WARN("Could not detect run info: %s", strerror(-rv));
