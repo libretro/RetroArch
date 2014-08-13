@@ -40,9 +40,7 @@
 
 #include "sha1.h"
 
-/*
- *  Define the circular shift macro
- */
+/* Define the circular shift macro */
 #define SHA1CircularShift(bits,word) ((((word) << (bits)) & 0xFFFFFFFF) | ((word) >> (32-(bits))))
 
 void SHA1Reset(SHA1Context *context)
@@ -75,9 +73,7 @@ void SHA1ProcessMessageBlock(SHA1Context *context)
    unsigned    W[80];              /* Word sequence                */
    unsigned    A, B, C, D, E;      /* Word buffers                 */
 
-   /*
-    *  Initialize the first 16 words in the array W
-    */
+   /* Initialize the first 16 words in the array W */
    for(t = 0; t < 16; t++)
    {
       W[t] = ((unsigned) context->Message_Block[t * 4]) << 24;
@@ -87,9 +83,7 @@ void SHA1ProcessMessageBlock(SHA1Context *context)
    }
 
    for(t = 16; t < 80; t++)
-   {
       W[t] = SHA1CircularShift(1,W[t-3] ^ W[t-8] ^ W[t-14] ^ W[t-16]);
-   }
 
    A = context->Message_Digest[0];
    B = context->Message_Digest[1];
@@ -183,9 +177,7 @@ void SHA1PadMessage(SHA1Context *context)
          context->Message_Block[context->Message_Block_Index++] = 0;
    }
 
-   /*
-    *  Store the message length as the last 8 octets
-    */
+   /*  Store the message length as the last 8 octets */
    context->Message_Block[56] = (context->Length_High >> 24) & 0xFF;
    context->Message_Block[57] = (context->Length_High >> 16) & 0xFF;
    context->Message_Block[58] = (context->Length_High >> 8) & 0xFF;
@@ -248,5 +240,3 @@ void SHA1Input(     SHA1Context         *context,
       message_array++;
    }
 }
-
-
