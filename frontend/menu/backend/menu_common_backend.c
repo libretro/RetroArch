@@ -1098,14 +1098,12 @@ static int menu_info_screen_iterate(unsigned action, rarch_setting_t *setting)
             snprintf(msg, sizeof(msg),
                   " -- SDL 2 Video driver.\n"
                   " \n"
-                  "This driver allows libretro GL cores to \n"
-                  "be used in addition to software-rendered \n"
-                  "core implementations.\n"
+                  "This is an SDL 2 software-rendered video \n"
+                  "driver.\n"
                   " \n"
-                  "Performance for software-rendered and \n"
-                  "libretro GL core implementations is \n"
-                  "dependent on your platform SDL \n"
-                  "implementation.");
+                  "Performance for software-rendered libretro \n"
+                  "core implementations is dependent \n"
+                  "on your platform SDL implementation.");
          else if (!strcmp(g_settings.video.driver, "sdl"))
             snprintf(msg, sizeof(msg),
                   " -- SDL Video driver.\n"
