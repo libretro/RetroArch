@@ -579,6 +579,7 @@ static void frontend_android_get_environment_settings(int *argc, char *argv[],
             fill_pathname_join(g_defaults.overlay_dir, path, "overlays", sizeof(g_defaults.overlay_dir));
             fill_pathname_join(g_defaults.core_dir, path, "cores", sizeof(g_defaults.core_dir));
             fill_pathname_join(g_defaults.core_info_dir, path, "info", sizeof(g_defaults.core_info_dir));
+            fill_pathname_join(g_defaults.autoconfig_dir, path, "autoconfig", sizeof(g_defaults.autoconfig_dir));
          }
       }
    }
