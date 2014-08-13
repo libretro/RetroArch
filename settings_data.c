@@ -1037,9 +1037,7 @@ static void general_read_handler(const void *data)
 
 static void general_write_handler(const void *data)
 {
-   bool has_set_reinit            = false;
-   bool has_set_rewind            = false;
-   bool has_set_autosave          = false;
+   unsigned rarch_cmd = RARCH_CMD_NONE;
    bool has_set_overlay_init      = false;
    bool has_set_overlay_free      = false;
    bool has_set_dsp_init          = false;
@@ -1058,7 +1056,7 @@ static void general_write_handler(const void *data)
    else if (!strcmp(setting->name, "rewind_enable"))
    {
       g_settings.rewind_enable = *setting->value.boolean;
-      has_set_rewind = true;
+      rarch_cmd = RARCH_CMD_REWIND;
    }
    else if (!strcmp(setting->name, "rewind_granularity"))
       g_settings.rewind_granularity = *setting->value.unsigned_integer;
@@ -1078,12 +1076,12 @@ static void general_write_handler(const void *data)
    else if (!strcmp(setting->name, "video_monitor_index"))
    {
       g_settings.video.monitor_index = *setting->value.unsigned_integer;
-      has_set_reinit = true;
+      rarch_cmd = RARCH_CMD_REINIT;
    }
    else if (!strcmp(setting->name, "video_disable_composition"))
    {
       g_settings.video.disable_composition = *setting->value.boolean;
-      has_set_reinit = true;
+      rarch_cmd = RARCH_CMD_REINIT;
    }
    else if (!strcmp(setting->name, "video_vsync"))
       g_settings.video.vsync = *setting->value.boolean;
@@ -1096,7 +1094,7 @@ static void general_write_handler(const void *data)
    else if (!strcmp(setting->name, "video_fullscreen"))
    {
       g_settings.video.fullscreen = *setting->value.boolean;
-      has_set_reinit = true;
+      rarch_cmd = RARCH_CMD_REINIT;
    }
    else if (!strcmp(setting->name, "video_rotation"))
    {
@@ -1106,7 +1104,7 @@ static void general_write_handler(const void *data)
    else if (!strcmp(setting->name, "video_threaded"))
    {
       g_settings.video.threaded = *setting->value.boolean;
-      has_set_reinit = true;
+      rarch_cmd = RARCH_CMD_REINIT;
    }
    else if (!strcmp(setting->name, "video_swap_interval"))
    {
@@ -1153,7 +1151,7 @@ static void general_write_handler(const void *data)
 #ifdef HAVE_DYLIB
       strlcpy(g_settings.audio.dsp_plugin, setting->value.string, sizeof(g_settings.audio.dsp_plugin));
 #endif
-      has_set_dsp_init = true;
+      rarch_cmd = RARCH_CMD_DSP_FILTER_INIT;
    }
    else if (!strcmp(setting->name, "state_slot"))
       g_settings.state_slot = *setting->value.integer;
@@ -1193,7 +1191,7 @@ static void general_write_handler(const void *data)
    else if (!strcmp(setting->name, "autosave_interval"))
    {
       g_settings.autosave_interval = *setting->value.unsigned_integer;
-      has_set_autosave = true;
+      rarch_cmd = RARCH_CMD_AUTOSAVE;
    }
    else if (!strcmp(setting->name, "video_font_enable"))
       g_settings.video.font_enable = *setting->value.boolean;
@@ -1251,7 +1249,7 @@ static void general_write_handler(const void *data)
       g_settings.video.scale = roundf(*setting->value.fraction);
 
       if (!g_settings.video.fullscreen)
-         has_set_reinit = true;
+         rarch_cmd = RARCH_CMD_REINIT;
    }
    else if (!strcmp(setting->name, "video_force_aspect"))
       g_settings.video.force_aspect = *setting->value.boolean;
@@ -1335,7 +1333,7 @@ static void general_write_handler(const void *data)
    else if (!strcmp(setting->name, "video_filter"))
    {
       strlcpy(g_settings.video.filter_path, setting->value.string, sizeof(g_settings.video.filter_path));
-      has_set_reinit = true;
+      rarch_cmd = RARCH_CMD_REINIT;
    }
 #ifdef HAVE_CAMERA
    else if (!strcmp(setting->name, "camera_allow"))
@@ -1384,18 +1382,14 @@ static void general_write_handler(const void *data)
    else if (!strcmp(setting->name, "user_language"))
       g_settings.user_language = *setting->value.unsigned_integer;
 
-   if (has_set_reinit)
-      rarch_main_command(RARCH_CMD_REINIT);
-   if (has_set_rewind)
-      rarch_main_command(RARCH_CMD_REWIND);
-   if (has_set_autosave)
-      rarch_main_command(RARCH_CMD_AUTOSAVE);
+   if (rarch_cmd)
+      rarch_main_command(rarch_cmd);
+
    if (has_set_overlay_free)
       rarch_main_command(RARCH_CMD_OVERLAY_DEINIT);
    if (has_set_overlay_init)
       rarch_main_command(RARCH_CMD_OVERLAY_INIT);
-   if (has_set_dsp_init)
-      rarch_main_command(RARCH_CMD_DSP_FILTER_INIT);
+
    if (has_set_libretro_dir)
    {
 #ifdef HAVE_MENU

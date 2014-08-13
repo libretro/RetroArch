@@ -91,7 +91,8 @@ extern "C" {
 
 enum basic_event
 {
-   RARCH_CMD_RESET = 1,
+   RARCH_CMD_NONE = 0,
+   RARCH_CMD_RESET,
    RARCH_CMD_LOAD_CONTENT,
    RARCH_CMD_LOAD_CORE,
    RARCH_CMD_LOAD_STATE,
