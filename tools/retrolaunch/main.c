@@ -54,7 +54,6 @@ find_content_canonical_name(const char *hash, char *game_name, size_t max_len)
    // TODO: Error handling
    size_t i;
    int rv, fd, offs;
-   char *dat_path;
    const char *dat_name, *dat_name_dot;
    struct string_list *files = dir_list_new("db", "dat", false);
 
@@ -63,8 +62,7 @@ find_content_canonical_name(const char *hash, char *game_name, size_t max_len)
 
    for (i = 0; i < files->size; i++)
    {
-      dat_path = files->elems[i].data;
-      dat_name = path_basename(dat_path);
+      dat_name = path_basename(files->elems[i].data);
 
       dat_name_dot = strchr(dat_name, '.');
       if (!dat_name_dot)
@@ -73,7 +71,7 @@ find_content_canonical_name(const char *hash, char *game_name, size_t max_len)
       offs = dat_name_dot - dat_name + 1;
       memcpy(game_name, dat_name, offs);
 
-      fd = open(dat_path, O_RDONLY);
+      fd = open(files->elems[i].data, O_RDONLY);
       if (fd < 0)
          continue;
 
@@ -212,10 +210,8 @@ static int get_run_info(struct RunInfo *info, const char *game_name)
 static int detect_content_game(const char *path, char *game_name, size_t max_len)
 {
 	char hash[HASH_LEN + 1];
-	int rv;
-	const char **tmp_suffix;
-
 	const char *suffix = strrchr(path, '.');
+
 	if (!suffix)
    {
 		LOG_WARN("Could not find extension for: %s", path);
@@ -224,8 +220,11 @@ static int detect_content_game(const char *path, char *game_name, size_t max_len
 
 	memset(hash, 0, sizeof(hash));
 
-	if ((rv = get_sha1(path, hash)) < 0)
+   get_sha1(path, hash);
+#if 0
+	if (rv < 0)
 		LOG_WARN("Could not calculate hash: %s", strerror(-rv));
+#endif
 
 	if (find_content_canonical_name(hash, game_name, max_len) < 0)
    {
@@ -236,7 +235,7 @@ static int detect_content_game(const char *path, char *game_name, size_t max_len
 	return 0;
 }
 
-static int detect_game(const char *path, char *game_name, size_t max_len)
+int detect_file(const char *path, char *game_name, size_t max_len)
 {
    if ((!strcasecmp(path + strlen(path) - 4, ".cue")) ||
          (!strcasecmp(path + strlen(path) - 4, ".m3u")))
@@ -264,10 +263,10 @@ int main(int argc, char *argv[])
    }
 
    LOG_INFO("Analyzing '%s'", path);
-   if ((rv = detect_game(path, game_name, MAX_TOKEN_LEN)) < 0)
+   if ((rv = detect_file(path, game_name, MAX_TOKEN_LEN)) < 0)
    {
       LOG_WARN("Could not detect game: %s", strerror(-rv));
-      return -rv;
+      return -1;
    }
 
    LOG_INFO("Game is `%s`", game_name);
