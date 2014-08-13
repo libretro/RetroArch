@@ -43,7 +43,7 @@ static int find_hash(int fd, const char *hash, char *game_name, size_t max_len)
       if (get_token(fd, token, MAX_TOKEN_LEN) < 0)
          return -1;
 
-      if (strcasecmp(hash, token) == 0)
+      if (!strcasecmp(hash, token))
          return 0;
    }
 }
@@ -93,12 +93,11 @@ clean:
 
 static int get_sha1(const char *path, char *result)
 {
-   int fd;
    int rv;
    unsigned char buff[4096];
    SHA1Context sha;
+   int fd = open(path, O_RDONLY);
 
-   fd = open(path, O_RDONLY);
    if (fd < 0)
       return -errno;
 
@@ -169,9 +168,9 @@ static int read_launch_conf(struct RunInfo *info, const char *game_name)
 
 	while (strcmp(token, ";") != 0)
    {
-      if (strcmp(token, "multitap") == 0)
+      if (!strcmp(token, "multitap"))
          info->multitap = 1;
-      else if (strcmp(token, "dualanalog") == 0)
+      else if (!strcmp(token, "dualanalog"))
          info->dualanalog = 1;
       else if (token[0] == '!')
       {
@@ -254,7 +253,7 @@ static int detect_rom_game(const char *path, char *game_name, size_t max_len)
 		for (tmp_suffix = SUFFIX_MATCH; *tmp_suffix != NULL;
 		     tmp_suffix += 2)
       {
-         if (strcasecmp(suffix, *tmp_suffix) == 0)
+         if (!strcasecmp(suffix, *tmp_suffix))
          {
             snprintf(game_name, max_len, "%s.<unknown>",
                   *(tmp_suffix + 1));
@@ -269,8 +268,8 @@ static int detect_rom_game(const char *path, char *game_name, size_t max_len)
 
 static int detect_game(const char *path, char *game_name, size_t max_len)
 {
-	if ((strcasecmp(path + strlen(path) - 4, ".cue") == 0) ||
-	    (strcasecmp(path + strlen(path) - 4, ".m3u") == 0))
+	if ((!strcasecmp(path + strlen(path) - 4, ".cue")) ||
+	    (!strcasecmp(path + strlen(path) - 4, ".m3u")))
    {
 		LOG_INFO("Starting CD game detection...");
 		return detect_cd_game(path, game_name, max_len);
@@ -322,7 +321,7 @@ static int select_core(char *core_path, size_t max_len,
       {
 
          LOG_DEBUG("%s, %s", &info->broken_cores[bci], token);
-         if (strcmp(&info->broken_cores[bci], token) == 0)
+         if (!strcmp(&info->broken_cores[bci], token))
          {
             broken = 1;
             LOG_DEBUG("Not using core %s because it is "
