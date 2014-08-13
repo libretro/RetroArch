@@ -2965,14 +2965,14 @@ int rarch_main_init(int argc, char *argv[])
 
    if (g_extern.libretro_no_content && !g_extern.libretro_dummy)
    {
-      if (!init_rom_file())
+      if (!init_content_file())
          goto error;
    }
    else if (!g_extern.libretro_dummy)
    {
       fill_pathnames();
 
-      if (!init_rom_file())
+      if (!init_content_file())
          goto error;
 
       set_savestate_auto_index();

@@ -39,7 +39,7 @@
 #endif
 #endif
 
-static void patch_rom(uint8_t **buf, ssize_t *size)
+static void patch_content(uint8_t **buf, ssize_t *size)
 {
    uint8_t *ret_buf = *buf;
    ssize_t ret_size = *size;
@@ -90,14 +90,14 @@ static void patch_rom(uint8_t **buf, ssize_t *size)
    RARCH_LOG("Found %s file in \"%s\", attempting to patch ...\n", patch_desc, patch_path);
 
    size_t target_size = ret_size * 4; // Just to be sure ...
-   uint8_t *patched_rom = (uint8_t*)malloc(target_size);
-   if (!patched_rom)
+   uint8_t *patched_content = (uint8_t*)malloc(target_size);
+   if (!patched_content)
    {
       RARCH_ERR("Failed to allocate memory for patched content ...\n");
       goto error;
    }
 
-   err = func((const uint8_t*)patch_data, patch_size, ret_buf, ret_size, patched_rom, &target_size);
+   err = func((const uint8_t*)patch_data, patch_size, ret_buf, ret_size, patched_content, &target_size);
    if (err == PATCH_SUCCESS)
    {
       RARCH_LOG("Content patched successfully (%s).\n", patch_desc);
@@ -109,7 +109,7 @@ static void patch_rom(uint8_t **buf, ssize_t *size)
    if (success)
    {
       free(ret_buf);
-      *buf = patched_rom;
+      *buf = patched_content;
       *size = target_size;
    }
 
@@ -122,7 +122,7 @@ error:
    free(patch_data);
 }
 
-static ssize_t read_rom_file(const char *path, void **buf)
+static ssize_t read_content_file(const char *path, void **buf)
 {
    uint8_t *ret_buf = NULL;
    ssize_t ret = read_file(path, (void**)&ret_buf);
@@ -132,7 +132,7 @@ static ssize_t read_rom_file(const char *path, void **buf)
    if (!g_extern.block_patch)
    {
       // Attempt to apply a patch.
-      patch_rom(&ret_buf, &ret);
+      patch_content(&ret_buf, &ret);
    }
    
    g_extern.content_crc = crc32_calculate(ret_buf, ret);
@@ -336,9 +336,9 @@ static bool load_content(const struct retro_subsystem_info *special, const struc
       int attr = content->elems[i].attr.i;
 
       bool need_fullpath = attr & 2;
-      bool require_rom = attr & 4;
+      bool require_content = attr & 4;
 
-      if (require_rom && !*path)
+      if (require_content && !*path)
       {
          RARCH_LOG("libretro core requires content, but nothing was provided.\n");
          ret = false;
@@ -351,7 +351,7 @@ static bool load_content(const struct retro_subsystem_info *special, const struc
       {
          RARCH_LOG("Loading content file: %s.\n", path);
          // First content file is significant, attempt to do patching, CRC checking, etc ...
-         long size = i == 0 ? read_rom_file(path, (void**)&info[i].data) : read_file(path, (void**)&info[i].data);
+         long size = i == 0 ? read_content_file(path, (void**)&info[i].data) : read_file(path, (void**)&info[i].data);
          if (size < 0)
          {
             RARCH_ERR("Could not read content file \"%s\".\n", path);
@@ -380,7 +380,7 @@ end:
    return ret;
 }
 
-bool init_rom_file(void)
+bool init_content_file(void)
 {
    unsigned i;
 
@@ -464,7 +464,7 @@ bool init_rom_file(void)
       {
          char temporary_content[PATH_MAX];
          strlcpy(temporary_content, content->elems[i].data, sizeof(temporary_content));
-         if (!zlib_extract_first_rom(temporary_content, sizeof(temporary_content), valid_ext,
+         if (!zlib_extract_first_content_file(temporary_content, sizeof(temporary_content), valid_ext,
                   *g_settings.extraction_directory ? g_settings.extraction_directory : NULL))
          {
             RARCH_ERR("Failed to extract content from zipped file: %s.\n", temporary_content);

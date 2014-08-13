@@ -30,7 +30,7 @@ typedef bool (*zlib_file_cb)(const char *name,
 bool zlib_parse_file(const char *file, zlib_file_cb file_cb, void *userdata);
 
 // Built with zlib_parse_file.
-bool zlib_extract_first_rom(char *zip_path, size_t zip_path_size, const char *valid_exts, const char *extraction_dir);
+bool zlib_extract_first_content_file(char *zip_path, size_t zip_path_size, const char *valid_exts, const char *extraction_dir);
 struct string_list *zlib_get_file_list(const char *path);
 
 bool zlib_inflate_data_to_file(const char *path, const uint8_t *data,

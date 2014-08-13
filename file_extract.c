@@ -312,7 +312,7 @@ struct zip_extract_userdata
    const char *extraction_directory;
    size_t zip_path_size;
    struct string_list *ext;
-   bool found_rom;
+   bool found_content;
 };
 
 static bool zip_extract_cb(const char *name, const uint8_t *cdata, unsigned cmode, uint32_t csize, uint32_t size,
@@ -336,14 +336,14 @@ static bool zip_extract_cb(const char *name, const uint8_t *cdata, unsigned cmod
       switch (cmode)
       {
          case 0: // Uncompressed
-            data->found_rom = write_file(new_path, cdata, size);
+            data->found_content = write_file(new_path, cdata, size);
             return false;
 
          case 8: // Deflate
             if (zlib_inflate_data_to_file(new_path, cdata, csize, size, crc32))
             {
                strlcpy(data->zip_path, new_path, data->zip_path_size);
-               data->found_rom = true;
+               data->found_content = true;
                return false;
             }
             else
@@ -357,7 +357,7 @@ static bool zip_extract_cb(const char *name, const uint8_t *cdata, unsigned cmod
    return true;
 }
 
-bool zlib_extract_first_rom(char *zip_path, size_t zip_path_size, const char *valid_exts,
+bool zlib_extract_first_content_file(char *zip_path, size_t zip_path_size, const char *valid_exts,
       const char *extraction_directory)
 {
    bool ret;
@@ -386,7 +386,7 @@ bool zlib_extract_first_rom(char *zip_path, size_t zip_path_size, const char *va
       GOTO_END_ERROR();
    }
 
-   if (!userdata.found_rom)
+   if (!userdata.found_content)
    {
       RARCH_ERR("Didn't find any content that matched valid extensions for libretro implementation.\n");
       GOTO_END_ERROR();
