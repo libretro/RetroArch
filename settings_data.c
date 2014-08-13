@@ -1038,9 +1038,6 @@ static void general_read_handler(const void *data)
 static void general_write_handler(const void *data)
 {
    unsigned rarch_cmd = RARCH_CMD_NONE;
-   bool has_set_overlay_init      = false;
-   bool has_set_overlay_free      = false;
-   bool has_set_dsp_init          = false;
    bool has_set_libretro_dir      = false;
    const rarch_setting_t *setting = (const rarch_setting_t*)data;
 
@@ -1205,9 +1202,7 @@ static void general_write_handler(const void *data)
    else if (!strcmp(setting->name, "input_overlay"))
    {
       strlcpy(g_settings.input.overlay, setting->value.string, sizeof(g_settings.input.overlay));
-
-      has_set_overlay_free = true;
-      has_set_overlay_init = true;
+      rarch_cmd = RARCH_CMD_OVERLAY_REINIT;
    }
    else if (!strcmp(setting->name, "input_overlay_scale"))
    {
@@ -1384,11 +1379,6 @@ static void general_write_handler(const void *data)
 
    if (rarch_cmd)
       rarch_main_command(rarch_cmd);
-
-   if (has_set_overlay_free)
-      rarch_main_command(RARCH_CMD_OVERLAY_DEINIT);
-   if (has_set_overlay_init)
-      rarch_main_command(RARCH_CMD_OVERLAY_INIT);
 
    if (has_set_libretro_dir)
    {

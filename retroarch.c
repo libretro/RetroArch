@@ -3184,6 +3184,10 @@ void rarch_main_command(unsigned action)
          memset(&driver.overlay_state, 0, sizeof(driver.overlay_state));
 #endif
          break;
+      case RARCH_CMD_OVERLAY_REINIT:
+         rarch_main_command(RARCH_CMD_OVERLAY_DEINIT);
+         rarch_main_command(RARCH_CMD_OVERLAY_INIT);
+         break;
       case RARCH_CMD_DSP_FILTER_INIT:
          rarch_main_command(RARCH_CMD_DSP_FILTER_DEINIT);
          if (!*g_settings.audio.dsp_plugin)
