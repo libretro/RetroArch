@@ -394,16 +394,16 @@ static int run_retroarch(const char *path, const struct RunInfo *info)
 
 int main(int argc, char *argv[])
 {
+   struct RunInfo info;
+   int rv;
+   char game_name[MAX_TOKEN_LEN];
+   char *path = argv[1];
+
    if (argc < 2)
    {
       printf("usage: retrolaunch <ROM>\n");
       return -1;
    }
-
-   char game_name[MAX_TOKEN_LEN];
-   char *path = argv[1];
-   struct RunInfo info;
-   int rv;
 
    LOG_INFO("Analyzing '%s'", path);
    if ((rv = detect_game(path, game_name, MAX_TOKEN_LEN)) < 0)
@@ -425,7 +425,4 @@ int main(int argc, char *argv[])
    LOG_WARN("Could not launch retroarch: %s", strerror(-rv));
    return -rv;
 }
-
-// Stub just so that it compiles
-void rarch_init_msg_queue(void) {}
 #endif
