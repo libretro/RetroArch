@@ -23,33 +23,57 @@
 #define SHA1_LEN 40
 #define HASH_LEN SHA1_LEN
 
-static int find_hash(int fd, const char *hash, char *game_name, size_t max_len)
+struct core_file 
 {
-	char token[MAX_TOKEN_LEN] = {0};
+   char   name[PATH_MAX];
+   char   desc[PATH_MAX];
+   char serial[PATH_MAX];
+   char   size[PATH_MAX];
+   char   sha1[PATH_MAX];
+};
+
+static int find_hash(int fd, const char *hash, char *game_name, size_t max_len,
+      struct core_file *info_content)
+{
+   if (!info_content)
+      return -1;
+
 	while (1)
    {
-      if (find_token(fd, "game") < 0)
-         return -1;
-
-      if (find_token(fd, "name") < 0)
-         return -1;
+      if (find_token(fd, "game") < 0) return -1;
+      if (find_token(fd, "name") < 0) return -1;
 
       if (get_token(fd, game_name, max_len) < 0)
          return -1;
 
-      if (find_token(fd, "sha1") < 0)
+      if (find_token(fd, "description") < 0) return -1;
+
+      if (get_token(fd, info_content->desc, sizeof(info_content->desc)) < 0)
          return -1;
 
-      if (get_token(fd, token, MAX_TOKEN_LEN) < 0)
+      if (find_token(fd, "size") < 0) return -1;
+
+      if (get_token(fd, info_content->size, sizeof(info_content->size)) < 0)
          return -1;
 
-      if (!strcasecmp(hash, token))
+#if 0
+      if (find_token(fd, "serial") == 0)
+         get_token(fd, info_content->serial, sizeof(info_content->serial));
+#endif
+
+      if (find_token(fd, "sha1") < 0) return -1;
+
+      if (get_token(fd, info_content->sha1, MAX_TOKEN_LEN) < 0)
+         return -1;
+
+      if (!strcasecmp(hash, info_content->sha1))
          return 0;
    }
 }
 
 static int
-find_content_canonical_name(const char *hash, char *game_name, size_t max_len)
+find_content_canonical_name(const char *hash, char *game_name, size_t max_len,
+      struct core_file *info_content)
 {
    // TODO: Error handling
    size_t i;
@@ -75,7 +99,8 @@ find_content_canonical_name(const char *hash, char *game_name, size_t max_len)
       if (fd < 0)
          continue;
 
-      if (find_hash(fd, hash, game_name + offs, max_len - offs) == 0)
+      if (find_hash(fd, hash,game_name + offs,
+               max_len - offs, info_content) == 0)
       {
          rv = 0;
          close(fd);
@@ -207,9 +232,10 @@ static int get_run_info(struct RunInfo *info, const char *game_name)
 }
 
 
-static int detect_content_game(const char *path, char *game_name, size_t max_len)
+static int detect_content_game(const char *path, char *game_name,
+      size_t max_len, struct core_file *info_content)
 {
-	char hash[HASH_LEN + 1];
+	char hash[HASH_LEN + 1], *substr;
 	const char *suffix = strrchr(path, '.');
 
 	if (!suffix)
@@ -226,16 +252,21 @@ static int detect_content_game(const char *path, char *game_name, size_t max_len
 		LOG_WARN("Could not calculate hash: %s", strerror(-rv));
 #endif
 
-	if (find_content_canonical_name(hash, game_name, max_len) < 0)
+	if (find_content_canonical_name(hash, game_name, max_len, info_content) < 0)
    {
 		LOG_DEBUG("Could not detect content with hash `%s`.", hash);
 		return -EINVAL;
 	}
 
+   substr = strrchr(game_name, '.');
+   if (substr)
+      strcpy(info_content->name, substr + 1);
+
 	return 0;
 }
 
-int detect_file(const char *path, char *game_name, size_t max_len)
+int detect_file(const char *path, char *game_name, size_t max_len,
+      struct core_file *info_content)
 {
    if ((!strcasecmp(path + strlen(path) - 4, ".cue")) ||
          (!strcasecmp(path + strlen(path) - 4, ".m3u")))
@@ -244,14 +275,14 @@ int detect_file(const char *path, char *game_name, size_t max_len)
       return detect_cd_game(path, game_name, max_len);
    }
 
-   LOG_INFO("Starting game content detection...");
-   return detect_content_game(path, game_name, max_len);
+   return detect_content_game(path, game_name, max_len, info_content);
 }
 
 #ifndef RARCH_CONSOLE
 int main(int argc, char *argv[])
 {
    struct RunInfo info;
+   struct core_file info_content;
    int rv;
    char game_name[MAX_TOKEN_LEN], game_name_test[256];
    char *path = argv[1];
@@ -263,21 +294,18 @@ int main(int argc, char *argv[])
    }
 
    LOG_INFO("Analyzing '%s'", path);
-   if ((rv = detect_file(path, game_name, MAX_TOKEN_LEN)) < 0)
+   if ((rv = detect_file(path, game_name, MAX_TOKEN_LEN, &info_content)) < 0)
    {
       LOG_WARN("Could not detect game: %s", strerror(-rv));
       return -1;
    }
 
-   LOG_INFO("Game is `%s`", game_name);
-   char *substr = strrchr(game_name, '.');
-   if (!substr)
-      *substr = '\0';
-   else
-   {
-      substr = substr + 1;
-      LOG_INFO("Game description name is `%s`", substr);
-   }
+   LOG_INFO("Content Name        : `%s`", info_content.name);
+   LOG_INFO("Content Description : `%s`", info_content.desc);
+   LOG_INFO("Content Serial      : `%s`", info_content.serial);
+   LOG_INFO("Content Size        : `%s`", info_content.size);
+   LOG_INFO("Content SHA-1       : `%s`", info_content.sha1);
+
    if ((rv = get_run_info(&info, game_name)) < 0)
    {
       LOG_WARN("Could not detect run info: %s", strerror(-rv));
