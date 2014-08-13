@@ -97,24 +97,6 @@ static void android_input_set_keybinds(void *data, unsigned device,
             android->keycode_lut[102]  |=  ((RETRO_DEVICE_ID_JOYPAD_L+1)      << shift);
             android->keycode_lut[103]  |=  ((RETRO_DEVICE_ID_JOYPAD_R+1)      << shift);
             break;
-         case DEVICE_SAITEK_RUMBLE_P480:
-            g_settings.input.device[port] = device;
-            strlcpy(g_settings.input.device_names[port], "Saitek Rumble P480",
-                  sizeof(g_settings.input.device_names[port]));
-
-            android->keycode_lut[190]  |=  ((RETRO_DEVICE_ID_JOYPAD_B+1)      << shift);
-            android->keycode_lut[188]  |=  ((RETRO_DEVICE_ID_JOYPAD_Y+1)      << shift);
-            android->keycode_lut[196]  |=  ((RETRO_DEVICE_ID_JOYPAD_SELECT+1) << shift);
-            android->keycode_lut[197] |= ((RETRO_DEVICE_ID_JOYPAD_START+1)   << shift);
-            android->keycode_lut[191]  |=  ((RETRO_DEVICE_ID_JOYPAD_A+1)      << shift);
-            android->keycode_lut[189]  |=  ((RETRO_DEVICE_ID_JOYPAD_X+1)      << shift);
-            android->keycode_lut[192]  |=  ((RETRO_DEVICE_ID_JOYPAD_L+1)      << shift);
-            android->keycode_lut[194]  |=  ((RETRO_DEVICE_ID_JOYPAD_R+1)      << shift);
-            android->keycode_lut[193]  |=  ((RETRO_DEVICE_ID_JOYPAD_L2+1)     << shift);
-            android->keycode_lut[195]  |=  ((RETRO_DEVICE_ID_JOYPAD_R2+1)     << shift);
-            android->keycode_lut[198] |= ((RETRO_DEVICE_ID_JOYPAD_L3+1)      << shift);
-            android->keycode_lut[199] |= ((RETRO_DEVICE_ID_JOYPAD_R3+1)      << shift);
-            break;
          case DEVICE_KEYBOARD_RETROPAD:
             g_settings.input.device[port] = device;
             strlcpy(g_settings.input.device_names[port], "Generic Keyboard",

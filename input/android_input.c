@@ -465,7 +465,7 @@ static void handle_hotplug(android_input_t *android, struct android_app *android
    else if (strstr(device_name, "Smartjoy Family Super Smartjoy 2"))
       strlcpy(name_buf, "Super Smartjoy 2", sizeof(name_buf));
    else if (strstr(device_name, "Jess Tech Dual Analog Rumble Pad"))
-      device = DEVICE_SAITEK_RUMBLE_P480;
+      strlcpy(name_buf, device_name, sizeof(name_buf));
    else if (strstr(device_name, "mtk-kpd"))
       strlcpy(name_buf, "MUCH iReadyGo i5", sizeof(name_buf));
    else if (strstr(device_name, "Wikipad"))
