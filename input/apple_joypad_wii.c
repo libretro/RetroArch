@@ -17,8 +17,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "../../../boolean.h"
-
+#include "../boolean.h"
 #include "wiimote.h"
 
 static void* hidpad_wii_connect(struct apple_pad_connection* connection, uint32_t slot)

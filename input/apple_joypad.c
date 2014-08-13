@@ -158,9 +158,9 @@ static void append_matching_dictionary(CFMutableArrayRef array, uint32_t page, u
 }
 #endif
 
-#include "../apple/common/hidpad/wiimote.c"
-#include "../apple/common/hidpad/apple_ps3_pad.c"
-#include "../apple/common/hidpad/apple_wii_pad.c"
+#include "wiimote.c"
+#include "apple_joypad_ps3.c"
+#include "apple_joypad_wii.c"
 
 typedef struct
 {

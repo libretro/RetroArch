@@ -43,7 +43,7 @@
 #include <string.h>
 #include <math.h>
 #include <unistd.h>
-#include "../../../boolean.h"
+#include "../boolean.h"
 
 #include "wiimote.h"
 
