@@ -425,8 +425,6 @@ static void handle_hotplug(android_input_t *android, struct android_app *android
       strlcpy(name_buf, "Logitech Precision", sizeof(name_buf));
    else if (strstr(device_name, "iControlPad-")) // followed by a 4 (hex) char HW id
       device = DEVICE_ICONTROLPAD_HID_JOYSTICK;
-   else if (strstr(device_name, "SEGA VIRTUA STICK High Grade"))
-      strlcpy(name_buf, "Sega Virtua Stick", sizeof(name_buf));
    else if (strstr(device_name, "TTT THT Arcade console 2P USB Play"))
    {
       //FIXME - need to do a similar thing here as we did for nVidia Shield
@@ -448,8 +446,6 @@ static void handle_hotplug(android_input_t *android, struct android_app *android
       else if (*port == 1)
          strlcpy(name_buf, "TTT THT Arcade (Player 2)", sizeof(name_buf));
    }      
-   else if (strstr(device_name, "TOMMO NEOGEOX Arcade Stick"))
-      strlcpy(name_buf, "TOMMO Neo-Geo X", sizeof(name_buf));
    else if (strstr(device_name, "Onlive Wireless Controller"))
       device = DEVICE_ONLIVE_WIRELESS_CONTROLLER;
    else if (strstr(device_name, "MadCatz") && strstr(device_name, "PC USB Wired Stick"))
@@ -460,16 +456,8 @@ static void handle_hotplug(android_input_t *android, struct android_app *android
       strlcpy(name_buf, "iDroid x360", sizeof(name_buf));
    else if (strstr(device_name, "Zeemote") && strstr(device_name, "Steelseries free"))
       device = DEVICE_ZEEMOTE_STEELSERIES;
-   else if (strstr(device_name, "HuiJia  USB GamePad"))
-      strlcpy(name_buf, "HuiJia", sizeof(name_buf));
-   else if (strstr(device_name, "Smartjoy Family Super Smartjoy 2"))
-      strlcpy(name_buf, "Super Smartjoy 2", sizeof(name_buf));
-   else if (strstr(device_name, "Jess Tech Dual Analog Rumble Pad"))
-      strlcpy(name_buf, device_name, sizeof(name_buf));
    else if (strstr(device_name, "mtk-kpd"))
       strlcpy(name_buf, "MUCH iReadyGo i5", sizeof(name_buf));
-   else if (strstr(device_name, "Wikipad"))
-      strlcpy(name_buf, "Wikipad", sizeof(name_buf));
    else if (strstr(device_name, "360 Wireless"))
       strlcpy(name_buf, "XBox 360 Wireless", sizeof(name_buf));
    else if (strstr(device_name, "Microsoft"))
@@ -504,22 +492,14 @@ static void handle_hotplug(android_input_t *android, struct android_app *android
       device = DEVICE_MOGA;
    else if (strstr(device_name, "Sony Navigation Controller"))
       device = DEVICE_PSMOVE_NAVI;
-   else if (strstr(device_name, "OUYA Game Controller"))
-      strlcpy(name_buf, "OUYA", sizeof(name_buf));
    else if (strstr(device_name, "adc joystick"))
       strlcpy(name_buf, "JXD S7300B", sizeof(name_buf));
    else if (strstr(device_name, "idroid:con"))
       device = DEVICE_IDROID_CON;
-   else if (strstr(device_name, "NYKO PLAYPAD PRO"))
-      strlcpy(name_buf, "Nyko Playpad Pro", sizeof(name_buf));
    else if (strstr(device_name, "2-Axis, 8-Button"))
       device = DEVICE_GENIUS_MAXFIRE_G08XU;
    else if (strstr(device_name, "USB,2-axis 8-button gamepad"))
       device = DEVICE_USB_2_AXIS_8_BUTTON_GAMEPAD;
-   else if (strstr(device_name, "BUFFALO BGC-FC801"))
-      device = DEVICE_BUFFALO_BGC_FC801;
-   else if (strstr(device_name, "8Bitdo FC30"))
-      strlcpy(name_buf, "FC30 Gamepad", sizeof(name_buf));
    else if (strstr(device_name, "RetroUSB.com RetroPad"))
       device = DEVICE_RETROUSB_RETROPAD;
    else if (strstr(device_name, "RetroUSB.com SNES RetroPort"))
@@ -544,8 +524,6 @@ static void handle_hotplug(android_input_t *android, struct android_app *android
       device = DEVICE_THRUST_PREDATOR;
    else if (strstr(device_name, "ADC joystick"))
       strlcpy(name_buf, "JXD S7800B", sizeof(name_buf));
-   else if (strstr(device_name, "DragonRise"))
-      device = DEVICE_DRAGONRISE;
    else if (strstr(device_name, "Thrustmaster T Mini"))
       device = DEVICE_THRUSTMASTER_T_MINI;
    else if (strstr(device_name, "2Axes 11Keys Game  Pad"))
@@ -561,8 +539,8 @@ static void handle_hotplug(android_input_t *android, struct android_app *android
       *port = 0; // Shield is always player 1. FIXME: This is kinda ugly. We really need to find a way to detect useless input devices like gpio-keys in a general way.
       strlcpy(name_buf, "NVIDIA Shield", sizeof(name_buf));
    }
-   else if (strstr(device_name, "Samsung Game Pad EI-GP20"))
-      strlcpy(name_buf, "Samsung Gamepad EI-GP20", sizeof(name_buf));
+   else if (device_name[0] != '\0')
+      strlcpy(name_buf, device_name, sizeof(name_buf));
 
    if (strstr(android_app->current_ime, "net.obsidianx.android.mogaime"))
    {
