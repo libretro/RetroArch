@@ -1503,7 +1503,7 @@ static void init_rewind(void)
       return;
    }
 
-   RARCH_LOG("Initing rewind buffer with size: %u MB\n", (unsigned)(g_settings.rewind_buffer_size / 1000000));
+   RARCH_LOG("Initializing rewind buffer with size: %u MB\n", (unsigned)(g_settings.rewind_buffer_size / 1000000));
    g_extern.state_manager = state_manager_new(g_extern.state_size, g_settings.rewind_buffer_size);
 
    if (!g_extern.state_manager)
