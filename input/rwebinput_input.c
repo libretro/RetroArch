@@ -189,7 +189,6 @@ const input_driver_t input_rwebinput = {
    NULL,
    NULL,
    rwebinput_get_capabilities,
-   NULL,
    "rwebinput",
    rwebinput_grab_mouse,
 };

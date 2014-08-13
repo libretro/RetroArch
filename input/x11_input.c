@@ -329,7 +329,6 @@ const input_driver_t input_x = {
    NULL,
    NULL,
    x_input_get_capabilities,
-   NULL,
    "x",
    x_grab_mouse,
    x_set_rumble,

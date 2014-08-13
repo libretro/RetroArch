@@ -336,7 +336,6 @@ const input_driver_t input_sdl = {
    NULL,
    NULL,
    sdl_get_capabilities,
-   NULL,
 #ifdef HAVE_SDL2
    "sdl2",
    sdl_grab_mouse,

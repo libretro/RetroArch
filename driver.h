@@ -268,7 +268,6 @@ typedef struct input_driver
    bool (*set_sensor_state)(void *data, unsigned port, enum retro_sensor_action action, unsigned rate);
    float (*get_sensor_input)(void *data, unsigned port, unsigned id);
    uint64_t (*get_capabilities)(void *data);
-   unsigned (*devices_size)(void *data);
    const char *ident;
 
    void (*grab_mouse)(void *data, bool state);

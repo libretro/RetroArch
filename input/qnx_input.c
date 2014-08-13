@@ -834,7 +834,6 @@ const input_driver_t input_qnx = {
    NULL,
    NULL,
    qnx_input_get_capabilities,
-   NULL,
    "qnx_input",
    NULL,
    NULL,

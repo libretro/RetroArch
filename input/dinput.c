@@ -566,7 +566,6 @@ const input_driver_t input_dinput = {
    NULL,
    NULL,
    dinput_get_capabilities,
-   NULL,
    "dinput",
 
    dinput_grab_mouse,

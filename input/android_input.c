@@ -808,7 +808,6 @@ const input_driver_t input_android = {
    android_input_set_sensor_state,
    android_input_get_sensor_input,
    android_input_get_capabilities,
-   NULL,
    "android_input",
 
    NULL,

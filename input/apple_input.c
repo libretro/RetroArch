@@ -618,13 +618,6 @@ static uint64_t apple_input_get_capabilities(void *data)
    return caps;
 }
 
-#ifdef IOS
-static unsigned apple_devices_size(void *data)
-{
-   return DEVICE_LAST;
-}
-#endif
-
 const rarch_joypad_driver_t *apple_get_joypad_driver(void *data)
 {
    return joypad;
@@ -639,11 +632,6 @@ const input_driver_t input_apple = {
    NULL,
    NULL,
    apple_input_get_capabilities,
-#ifdef IOS
-   apple_devices_size,
-#else
-    NULL,
-#endif
    "apple_input",
    NULL,
    apple_input_set_rumble,
