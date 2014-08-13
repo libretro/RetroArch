@@ -446,8 +446,6 @@ static void handle_hotplug(android_input_t *android, struct android_app *android
       else if (*port == 1)
          strlcpy(name_buf, "TTT THT Arcade (Player 2)", sizeof(name_buf));
    }      
-   else if (strstr(device_name, "Onlive Wireless Controller"))
-      device = DEVICE_ONLIVE_WIRELESS_CONTROLLER;
    else if (strstr(device_name, "MadCatz") && strstr(device_name, "PC USB Wired Stick"))
       device = DEVICE_MADCATZ_PC_USB_STICK;
    else if (strstr(device_name, "Logicool") && strstr(device_name, "RumblePad 2"))
@@ -497,13 +495,9 @@ static void handle_hotplug(android_input_t *android, struct android_app *android
    else if (strstr(device_name, "idroid:con"))
       device = DEVICE_IDROID_CON;
    else if (strstr(device_name, "2-Axis, 8-Button"))
-      device = DEVICE_GENIUS_MAXFIRE_G08XU;
+      strlcpy(name_buf, "Genius Maxfire G08XU", sizeof(name_buf));
    else if (strstr(device_name, "USB,2-axis 8-button gamepad"))
       device = DEVICE_USB_2_AXIS_8_BUTTON_GAMEPAD;
-   else if (strstr(device_name, "RetroUSB.com RetroPad"))
-      device = DEVICE_RETROUSB_RETROPAD;
-   else if (strstr(device_name, "RetroUSB.com SNES RetroPort"))
-      device = DEVICE_RETROUSB_SNES_RETROPORT;
    else if (strstr(device_name, "CYPRESS USB"))
       device = DEVICE_CYPRESS_USB;
    else if (strstr(device_name, "Mayflash Wii Classic"))
@@ -527,7 +521,7 @@ static void handle_hotplug(android_input_t *android, struct android_app *android
    else if (strstr(device_name, "Thrustmaster T Mini"))
       device = DEVICE_THRUSTMASTER_T_MINI;
    else if (strstr(device_name, "2Axes 11Keys Game  Pad"))
-      device = DEVICE_TOMEE_NES_USB;
+      strlcpy(name_buf, "Tomee NES USB", sizeof(name_buf));
    else if (strstr(device_name, "rk29-keypad") || strstr(device_name, "GAMEMID"))
       strlcpy(name_buf, "GameMID", sizeof(name_buf));
    else if (strstr(device_name, "USB Gamepad"))

@@ -151,42 +151,6 @@ static void android_input_set_keybinds(void *data, unsigned device,
             android->keycode_lut[198]  |= ((RETRO_DEVICE_ID_JOYPAD_L3+1) << shift);
             android->keycode_lut[199]  |= ((RETRO_DEVICE_ID_JOYPAD_R3+1) << shift);
             break;
-         case DEVICE_ONLIVE_WIRELESS_CONTROLLER:
-            g_settings.input.device[port] = device;
-            strlcpy(g_settings.input.device_names[port], "Onlive Wireless",
-                  sizeof(g_settings.input.device_names[port]));
-
-            /* TODO - Does D-pad work as D-pad? */
-
-            android->keycode_lut[102] |=  ((RETRO_DEVICE_ID_JOYPAD_START+1)      << shift);
-            android->keycode_lut[4] |=  ((RETRO_DEVICE_ID_JOYPAD_SELECT+1)      << shift);
-
-            android->keycode_lut[100] |=  ((RETRO_DEVICE_ID_JOYPAD_X+1)      << shift);
-            android->keycode_lut[99] |=  ((RETRO_DEVICE_ID_JOYPAD_Y+1)      << shift);
-            android->keycode_lut[96] |=  ((RETRO_DEVICE_ID_JOYPAD_B+1)      << shift);
-            android->keycode_lut[97] |=  ((RETRO_DEVICE_ID_JOYPAD_A+1)      << shift);
-            android->keycode_lut[102] |=  ((RETRO_DEVICE_ID_JOYPAD_L+1)      << shift);
-            android->keycode_lut[103] |=  ((RETRO_DEVICE_ID_JOYPAD_R+1)      << shift);
-
-            /* TODO - 
-             * LT - find out value
-             * RT - find out value
-             */
-            break;
-         case DEVICE_GENIUS_MAXFIRE_G08XU:
-            g_settings.input.device[port] = device;
-            strlcpy(g_settings.input.device_names[port], "Genius Maxfire G08XU",
-                  sizeof(g_settings.input.device_names[port]));
-
-            android->keycode_lut[97]  |= ((RETRO_DEVICE_ID_JOYPAD_A+1) << shift);
-            android->keycode_lut[96]  |= ((RETRO_DEVICE_ID_JOYPAD_B+1) << shift);
-            android->keycode_lut[99]  |= ((RETRO_DEVICE_ID_JOYPAD_X+1) << shift);
-            android->keycode_lut[98]  |= ((RETRO_DEVICE_ID_JOYPAD_Y+1) << shift);
-            android->keycode_lut[100]  |= ((RETRO_DEVICE_ID_JOYPAD_L+1) << shift);
-            android->keycode_lut[101]  |= ((RETRO_DEVICE_ID_JOYPAD_R+1) << shift);
-            android->keycode_lut[102]  |= ((RETRO_DEVICE_ID_JOYPAD_SELECT+1) << shift);
-            android->keycode_lut[103]  |= ((RETRO_DEVICE_ID_JOYPAD_START+1) << shift);
-            break;
          case DEVICE_USB_2_AXIS_8_BUTTON_GAMEPAD:
             g_settings.input.device[port] = device;
             strlcpy(g_settings.input.device_names[port], "USB 2 Axis 8 button",
@@ -200,30 +164,6 @@ static void android_input_set_keybinds(void *data, unsigned device,
             android->keycode_lut[193]  |= ((RETRO_DEVICE_ID_JOYPAD_R+1) << shift);
             android->keycode_lut[194]  |= ((RETRO_DEVICE_ID_JOYPAD_SELECT+1) << shift);
             android->keycode_lut[195]  |= ((RETRO_DEVICE_ID_JOYPAD_START+1) << shift);
-            break;
-         case DEVICE_RETROUSB_RETROPAD:
-            g_settings.input.device[port] = device;
-            strlcpy(g_settings.input.device_names[port], "RetroUSB NES",
-                  sizeof(g_settings.input.device_names[port]));
-
-            android->keycode_lut[97]  |= ((RETRO_DEVICE_ID_JOYPAD_A+1) << shift);
-            android->keycode_lut[96]  |= ((RETRO_DEVICE_ID_JOYPAD_B+1) << shift);
-            android->keycode_lut[98]  |= ((RETRO_DEVICE_ID_JOYPAD_SELECT+1) << shift);
-            android->keycode_lut[99]  |= ((RETRO_DEVICE_ID_JOYPAD_START+1) << shift);
-            break;
-         case DEVICE_RETROUSB_SNES_RETROPORT:
-            g_settings.input.device[port] = device;
-            strlcpy(g_settings.input.device_names[port], "RetroUSB SNES",
-                  sizeof(g_settings.input.device_names[port]));
-
-            android->keycode_lut[101]  |= ((RETRO_DEVICE_ID_JOYPAD_A+1) << shift);
-            android->keycode_lut[97]  |= ((RETRO_DEVICE_ID_JOYPAD_B+1) << shift);
-            android->keycode_lut[100]  |= ((RETRO_DEVICE_ID_JOYPAD_X+1) << shift);
-            android->keycode_lut[96]  |= ((RETRO_DEVICE_ID_JOYPAD_Y+1) << shift);
-            android->keycode_lut[102]  |= ((RETRO_DEVICE_ID_JOYPAD_L+1) << shift);
-            android->keycode_lut[103]  |= ((RETRO_DEVICE_ID_JOYPAD_R+1) << shift);
-            android->keycode_lut[98]  |= ((RETRO_DEVICE_ID_JOYPAD_SELECT+1) << shift);
-            android->keycode_lut[99]  |= ((RETRO_DEVICE_ID_JOYPAD_START+1) << shift);
             break;
          case DEVICE_CYPRESS_USB:
             g_settings.input.device[port] = device;
@@ -290,16 +230,6 @@ static void android_input_set_keybinds(void *data, unsigned device,
             android->keycode_lut[193]  |=  ((RETRO_DEVICE_ID_JOYPAD_R2+1)     << shift);
             android->keycode_lut[196]  |=  ((RETRO_DEVICE_ID_JOYPAD_SELECT+1) << shift);
             android->keycode_lut[197] |= ((RETRO_DEVICE_ID_JOYPAD_START+1)   << shift);
-            break;
-         case DEVICE_TOMEE_NES_USB:
-            g_settings.input.device[port] = device;
-            strlcpy(g_settings.input.device_names[port], "Tomee NES USB",
-                  sizeof(g_settings.input.device_names[port]));
-
-            android->keycode_lut[105]|= ((RETRO_DEVICE_ID_JOYPAD_START+1)    << shift);
-            android->keycode_lut[104]|= ((RETRO_DEVICE_ID_JOYPAD_SELECT+1)    << shift);
-            android->keycode_lut[96]|= ((RETRO_DEVICE_ID_JOYPAD_A+1)    << shift);
-            android->keycode_lut[97]|= ((RETRO_DEVICE_ID_JOYPAD_B+1)    << shift);
             break;
          case DEVICE_THRUSTMASTER_T_MINI:
             g_settings.input.device[port] = device;
