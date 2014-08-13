@@ -208,7 +208,7 @@ static void sdl2_gfx_set_handles(sdl2_video_t *vid)
    {
       driver.display_type  = RARCH_DISPLAY_WIN32;
       driver.video_display = 0;
-      driver.video_window  = (uintptr_t)info.info.window;
+      driver.video_window  = (uintptr_t)info.info.win.window;
    }
 #elif defined(HAVE_X11)
    SDL_SysWMinfo info;
