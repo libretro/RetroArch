@@ -478,7 +478,8 @@ static void menu_common_entries_init(menu_handle_t *menu, unsigned menu_type)
          file_list_push(menu->selection_buf, "Core Information", "", MENU_SETTINGS_CORE_INFO, 0);
          file_list_push(menu->selection_buf, "Settings", "", MENU_SETTINGS_OPTIONS, 0);
 
-         file_list_push(menu->selection_buf, "", "perfcnt_enable", MENU_SETTINGS_PERFORMANCE_COUNTERS, 0);
+         if (g_extern.perfcnt_enable)
+            file_list_push(menu->selection_buf, "", "perfcnt_enable", MENU_SETTINGS_PERFORMANCE_COUNTERS, 0);
 
          if (g_extern.main_is_init && !g_extern.libretro_dummy)
          {
