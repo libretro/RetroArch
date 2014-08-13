@@ -54,7 +54,7 @@ JOYCONFIG_OBJ = tools/retroarch-joyconfig.o \
 	tools/input_common_joyconfig.o
 
 RETROLAUNCH_OBJ = tools/retrolaunch/main.o \
-	tools/retrolaunch/sha1.o \
+	hash.o \
 	tools/retrolaunch/parser.o \
 	tools/retrolaunch/cd_detect.o \
 	compat/rarch_fnmatch.o \

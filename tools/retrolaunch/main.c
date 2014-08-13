@@ -12,7 +12,7 @@
 #include <stdio.h>
 #include <limits.h>
 
-#include "sha1.h"
+#include "../../hash.h"
 #include "parser.h"
 #include "cd_detect.h"
 #include "../../compat/rarch_fnmatch.h"
