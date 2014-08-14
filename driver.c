@@ -839,7 +839,7 @@ void driver_set_nonblock_state(bool nonblock)
    }
 
    if (g_extern.audio_active && driver.audio_data)
-      audio_set_nonblock_state_func(g_settings.audio.sync ? nonblock : true);
+      driver.audio->set_nonblock_state(driver.audio_data, g_settings.audio.sync ? nonblock : true);
 
    g_extern.audio_data.chunk_size = nonblock ?
       g_extern.audio_data.nonblock_chunk_size : g_extern.audio_data.block_chunk_size;
@@ -1120,12 +1120,12 @@ void init_audio(void)
    }
 
    g_extern.audio_data.use_float = false;
-   if (g_extern.audio_active && driver.audio->use_float && audio_use_float_func())
+   if (g_extern.audio_active && driver.audio->use_float && driver.audio->use_float(driver.audio_data))
       g_extern.audio_data.use_float = true;
 
    if (!g_settings.audio.sync && g_extern.audio_active)
    {
-      audio_set_nonblock_state_func(true);
+      driver.audio->set_nonblock_state(driver.audio_data, true);
       g_extern.audio_data.chunk_size = g_extern.audio_data.nonblock_chunk_size;
    }
 
@@ -1171,7 +1171,7 @@ void init_audio(void)
    g_extern.measure_data.buffer_free_samples_count = 0;
 
    if (g_extern.audio_active && !g_extern.audio_data.mute && g_extern.system.audio_callback.callback) // Threaded driver is initially stopped.
-      audio_start_func();
+      driver.audio->start(driver.audio_data);
 }
 
 

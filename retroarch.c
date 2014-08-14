@@ -2634,8 +2634,8 @@ static void check_mute(void)
       if (driver.audio_data)
       {
          if (g_extern.audio_data.mute)
-            audio_stop_func();
-         else if (!audio_start_func())
+            driver.audio->stop(driver.audio_data);
+         else if (!driver.audio->start(driver.audio_data))
          {
             RARCH_ERR("Failed to unmute audio.\n");
             g_extern.audio_active = false;
@@ -3157,10 +3157,10 @@ void rarch_main_command(unsigned action)
          break;
       case RARCH_CMD_AUDIO_STOP:
          if (driver.audio_data)
-            audio_stop_func();
+            driver.audio->stop(driver.audio_data);
          break;
       case RARCH_CMD_AUDIO_START:
-         if (driver.audio_data && !g_extern.audio_data.mute && !audio_start_func())
+         if (driver.audio_data && !g_extern.audio_data.mute && !driver.audio->start(driver.audio_data))
          {
             RARCH_ERR("Failed to start audio driver. Will continue without audio.\n");
             g_extern.audio_active = false;
