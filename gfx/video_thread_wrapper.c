@@ -175,10 +175,11 @@ static void thread_update_driver_state(thread_video_t *thr)
 #if defined(HAVE_MENU)
    if (thr->texture.frame_updated)
    {
-      thr->poke->set_texture_frame(thr->driver_data,
-            thr->texture.frame, thr->texture.rgb32,
-            thr->texture.width, thr->texture.height,
-            thr->texture.alpha);
+      if (thr->poke && thr->poke->set_texture_frame)
+         thr->poke->set_texture_frame(thr->driver_data,
+               thr->texture.frame, thr->texture.rgb32,
+               thr->texture.width, thr->texture.height,
+               thr->texture.alpha);
       thr->texture.frame_updated = false;
    }
 
@@ -192,7 +193,10 @@ static void thread_update_driver_state(thread_video_t *thr)
    {
       unsigned i;
       for (i = 0; i < thr->alpha_mods; i++)
-         thr->overlay->set_alpha(thr->driver_data, i, thr->alpha_mod[i]);
+      {
+         if (thr->overlay && thr->overlay->set_alpha)
+            thr->overlay->set_alpha(thr->driver_data, i, thr->alpha_mod[i]);
+      }
       thr->alpha_update = false;
    }
    slock_unlock(thr->alpha_lock);
@@ -200,7 +204,8 @@ static void thread_update_driver_state(thread_video_t *thr)
 
    if (thr->apply_state_changes)
    {
-      thr->poke->apply_state_changes(thr->driver_data);
+      if (thr->poke && thr->poke->apply_state_changes)
+         thr->poke->apply_state_changes(thr->driver_data);
       thr->apply_state_changes = false;
    }
 }
@@ -213,6 +218,7 @@ static void thread_loop(void *data)
 
    for (;;)
    {
+      bool ret = false;
       bool updated = false;
       slock_lock(thr->lock);
       while (thr->send_cmd == CMD_NONE && !thr->frame.updated)
@@ -233,13 +239,17 @@ static void thread_loop(void *data)
 
          case CMD_FREE:
             if (thr->driver_data)
-               thr->driver->free(thr->driver_data);
+            {
+               if (thr->driver && thr->driver->free)
+                  thr->driver->free(thr->driver_data);
+            }
             thr->driver_data = NULL;
             thread_reply(thr, CMD_FREE);
             return;
 
          case CMD_SET_ROTATION:
-            thr->driver->set_rotation(thr->driver_data, thr->cmd_data.i);
+            if (thr->driver && thr->driver->set_rotation)
+               thr->driver->set_rotation(thr->driver_data, thr->cmd_data.i);
             thread_reply(thr, CMD_SET_ROTATION);
             break;
 
@@ -253,7 +263,11 @@ static void thread_loop(void *data)
                // This means frame() callback in threaded wrapper will be called from this thread, causing a timeout, and no frame to be rendered.
                // To avoid this, set a flag so wrapper can see if it's called in this "special" way.
                thr->frame.within_thread = true;
-               thr->cmd_data.b = thr->driver->read_viewport(thr->driver_data, (uint8_t*)thr->cmd_data.v);
+
+               if (thr->driver && thr->driver->read_viewport)
+                  ret = thr->driver->read_viewport(thr->driver_data, (uint8_t*)thr->cmd_data.v);
+
+               thr->cmd_data.b = ret;
                thr->frame.within_thread = false;
                thread_reply(thr, CMD_READ_VIEWPORT);
             }
@@ -266,10 +280,7 @@ static void thread_loop(void *data)
          }
             
          case CMD_SET_SHADER:
-         {
-            bool ret = false;
-
-            if (thr->driver->set_shader)
+            if (thr->driver && thr->driver->set_shader)
                ret = thr->driver->set_shader(thr->driver_data,
                         thr->cmd_data.set_shader.type,
                         thr->cmd_data.set_shader.path);
@@ -277,58 +288,69 @@ static void thread_loop(void *data)
             thr->cmd_data.b = ret;
             thread_reply(thr, CMD_SET_SHADER);
             break;
-         }
 
          case CMD_ALIVE:
-            thr->cmd_data.b = thr->driver->alive(thr->driver_data);
+            if (thr->driver && thr->driver->alive)
+               ret = thr->driver->alive(thr->driver_data);
+
+            thr->cmd_data.b = ret;
             thread_reply(thr, CMD_ALIVE);
             break;
 
 #ifdef HAVE_OVERLAY
          case CMD_OVERLAY_ENABLE:
-            thr->overlay->enable(thr->driver_data, thr->cmd_data.b);
+            if (thr->overlay && thr->overlay->enable)
+               thr->overlay->enable(thr->driver_data, thr->cmd_data.b);
             thread_reply(thr, CMD_OVERLAY_ENABLE);
             break;
 
          case CMD_OVERLAY_LOAD:
-            thr->cmd_data.b = thr->overlay->load(thr->driver_data,
-                  thr->cmd_data.image.data,
-                  thr->cmd_data.image.num);
+
+            if (thr->overlay && thr->overlay->load)
+               ret = thr->overlay->load(thr->driver_data,
+                     thr->cmd_data.image.data,
+                     thr->cmd_data.image.num);
+
+            thr->cmd_data.b = ret;
             thr->alpha_mods = thr->cmd_data.image.num;
             thr->alpha_mod = (float*)realloc(thr->alpha_mod, thr->alpha_mods * sizeof(float));
             for (i = 0; i < thr->alpha_mods; i++) // Avoid temporary garbage data.
                thr->alpha_mod[i] = 1.0f;
             thread_reply(thr, CMD_OVERLAY_LOAD);
+
             break;
 
          case CMD_OVERLAY_TEX_GEOM:
-            thr->overlay->tex_geom(thr->driver_data,
-                  thr->cmd_data.rect.index,
-                  thr->cmd_data.rect.x,
-                  thr->cmd_data.rect.y,
-                  thr->cmd_data.rect.w,
-                  thr->cmd_data.rect.h);
+            if (thr->overlay && thr->overlay->tex_geom)
+               thr->overlay->tex_geom(thr->driver_data,
+                     thr->cmd_data.rect.index,
+                     thr->cmd_data.rect.x,
+                     thr->cmd_data.rect.y,
+                     thr->cmd_data.rect.w,
+                     thr->cmd_data.rect.h);
             thread_reply(thr, CMD_OVERLAY_TEX_GEOM);
             break;
 
          case CMD_OVERLAY_VERTEX_GEOM:
-            thr->overlay->vertex_geom(thr->driver_data,
-                  thr->cmd_data.rect.index,
-                  thr->cmd_data.rect.x,
-                  thr->cmd_data.rect.y,
-                  thr->cmd_data.rect.w,
-                  thr->cmd_data.rect.h);
+            if (thr->overlay && thr->overlay->vertex_geom)
+               thr->overlay->vertex_geom(thr->driver_data,
+                     thr->cmd_data.rect.index,
+                     thr->cmd_data.rect.x,
+                     thr->cmd_data.rect.y,
+                     thr->cmd_data.rect.w,
+                     thr->cmd_data.rect.h);
             thread_reply(thr, CMD_OVERLAY_VERTEX_GEOM);
             break;
 
          case CMD_OVERLAY_FULL_SCREEN:
-            thr->overlay->full_screen(thr->driver_data, thr->cmd_data.b);
+            if (thr->overlay && thr->overlay->full_screen)
+               thr->overlay->full_screen(thr->driver_data, thr->cmd_data.b);
             thread_reply(thr, CMD_OVERLAY_FULL_SCREEN);
             break;
 #endif
 
          case CMD_POKE_SET_FILTERING:
-            if (thr->poke->set_filtering)
+            if (thr->poke && thr->poke->set_filtering)
                thr->poke->set_filtering(thr->driver_data,
                      thr->cmd_data.filtering.index,
                      thr->cmd_data.filtering.smooth);
@@ -355,17 +377,26 @@ static void thread_loop(void *data)
          slock_lock(thr->frame.lock);
 
          thread_update_driver_state(thr);
-         bool ret = thr->driver->frame(thr->driver_data,
+         bool ret = false;
+         bool alive = false;
+         bool focus = false;
+         struct rarch_viewport vp = {0};
+         
+         if (thr->driver && thr->driver->frame)
+            ret = thr->driver->frame(thr->driver_data,
                thr->frame.buffer, thr->frame.width, thr->frame.height,
                thr->frame.pitch, *thr->frame.msg ? thr->frame.msg : NULL);
 
          slock_unlock(thr->frame.lock);
 
-         bool alive = ret && thr->driver->alive(thr->driver_data);
-         bool focus = ret && thr->driver->focus(thr->driver_data);
+         if (thr->driver && thr->driver->alive)
+            alive = ret && thr->driver->alive(thr->driver_data);
 
-         struct rarch_viewport vp = {0};
-         thr->driver->viewport_info(thr->driver_data, &vp);
+         if (thr->driver && thr->driver->focus)
+            focus = ret && thr->driver->focus(thr->driver_data);
+
+         if (thr->driver && thr->driver->viewport_info)
+            thr->driver->viewport_info(thr->driver_data, &vp);
 
          slock_lock(thr->lock);
          thr->alive = alive;
@@ -431,7 +462,10 @@ static bool thread_frame(void *data, const void *frame_,
    if (thr->frame.within_thread)
    {
       thread_update_driver_state(thr);
-      return thr->driver->frame(thr->driver_data, frame_, width, height, pitch, msg);
+
+      if (thr->driver && thr->driver->frame)
+         return thr->driver->frame(thr->driver_data, frame_, width, height, pitch, msg);
+      return false;
    }
 
    RARCH_PERFORMANCE_INIT(thread_frame);
@@ -444,8 +478,6 @@ static bool thread_frame(void *data, const void *frame_,
 
    slock_lock(thr->lock);
 
-   // scond_wait_timeout cannot be implemented on consoles.
-#ifndef RARCH_CONSOLE
    if (!thr->nonblock)
    {
       retro_time_t target_frame_time = (retro_time_t)roundf(1000000LL / g_settings.video.refresh_rate);
@@ -463,7 +495,6 @@ static bool thread_frame(void *data, const void *frame_,
             break;
       }
    }
-#endif
 
    // Drop frame if updated flag is still set, as thread is still working on last frame.
    if (!thr->frame.updated)
