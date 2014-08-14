@@ -141,8 +141,6 @@ extern int audioAddData(uint32_t portNum, float *data, uint32_t frames, float vo
 	OSK PROTOTYPES
 ============================================================ */
 
-#ifdef HAVE_OSK
-
 #ifdef __PSL1GHT__
 #include <sysutil/osk.h>
 /* define all the OSK functions */
@@ -205,8 +203,6 @@ extern int audioAddData(uint32_t portNum, float *data, uint32_t frames, float vo
 #define osk_callback_return_param result
 #define osk_callback_num_chars numCharsResultString
 #define osk_callback_return_string pResultString
-#endif
-
 #endif
 
 /*============================================================

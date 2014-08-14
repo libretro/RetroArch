@@ -415,10 +415,8 @@ typedef struct driver
    const audio_driver_t *audio;
    const video_driver_t *video;
    const input_driver_t *input;
-#ifdef HAVE_OSK
    const input_osk_driver_t *osk;
    void *osk_data;
-#endif
    const camera_driver_t *camera;
    void *camera_data;
    const location_driver_t *location;
@@ -452,9 +450,7 @@ typedef struct driver
    bool input_data_own;
    bool camera_data_own;
    bool location_data_own;
-#ifdef HAVE_OSK
    bool osk_data_own;
-#endif
 #ifdef HAVE_MENU
    bool menu_data_own;
 #endif
@@ -632,7 +628,9 @@ extern const camera_driver_t camera_null;
 extern const location_driver_t location_apple;
 extern const location_driver_t location_android;
 extern const location_driver_t location_null;
+
 extern const input_osk_driver_t input_ps3_osk;
+extern const input_osk_driver_t input_null_osk;
 
 extern const menu_ctx_driver_t menu_ctx_rmenu;
 extern const menu_ctx_driver_t menu_ctx_rmenu_xui;

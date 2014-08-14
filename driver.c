@@ -188,11 +188,11 @@ static const input_driver_t *input_drivers[] = {
    NULL,
 };
 
-#ifdef HAVE_OSK
 static const input_osk_driver_t *osk_drivers[] = {
 #ifdef __CELLOS_LV2__
    &input_ps3_osk,
 #endif
+   &input_null_osk,
    NULL,
 };
 
@@ -264,7 +264,6 @@ void uninit_osk(void)
       driver.osk->free(driver.osk_data);
    driver.osk_data = NULL;
 }
-#endif
 
 static const camera_driver_t *camera_drivers[] = {
 #ifdef HAVE_V4L2
@@ -768,9 +767,7 @@ void init_drivers_pre(void)
    find_input_driver();
    find_camera_driver();
    find_location_driver();
-#ifdef HAVE_OSK
    find_osk_driver();
-#endif
 #ifdef HAVE_MENU
    find_menu_driver();
 #endif
@@ -928,9 +925,7 @@ void init_drivers(void)
    driver.input_data_own = false;
    driver.camera_data_own = false;
    driver.location_data_own = false;
-#ifdef HAVE_OSK
    driver.osk_data_own = false;
-#endif
 #ifdef HAVE_MENU
    // By default, we want the menu to persist through driver reinits.
    driver.menu_data_own = true;
@@ -956,9 +951,7 @@ void init_drivers(void)
    if (g_extern.location_active)
       init_location();
 
-#ifdef HAVE_OSK
    init_osk();
-#endif
 
 #ifdef HAVE_MENU
    init_menu();
@@ -1057,13 +1050,11 @@ void uninit_drivers(void)
       driver.location_data = NULL;
    }
    
-#ifdef HAVE_OSK
    if (!driver.osk_data_own)
    {
       uninit_osk();
       driver.osk_data = NULL;
    }
-#endif
 
    if (!driver.input_data_own)
       driver.input_data = NULL;

@@ -314,11 +314,11 @@ INPUT
 #include "../input/rwebinput_input.c"
 #endif
 
-#ifdef HAVE_OSK
 #if defined(__CELLOS_LV2__)
 #include "../input/ps3_input_osk.c"
 #endif
-#endif
+
+#include "../input/osk/nullosk.c"
 
 #if defined(__linux__) && !defined(ANDROID) 
 #include "../input/linuxraw_input.c"

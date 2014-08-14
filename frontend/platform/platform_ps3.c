@@ -62,7 +62,6 @@ static void callback_sysutil_exit(uint64_t status, uint64_t param, void *userdat
       case CELL_SYSUTIL_REQUEST_EXITGAME:
          g_extern.system.shutdown = true;
          break;
-#ifdef HAVE_OSK
       case CELL_SYSUTIL_OSKDIALOG_LOADED:
       case CELL_SYSUTIL_OSKDIALOG_INPUT_CANCELED:
       case CELL_SYSUTIL_OSKDIALOG_FINISHED:
@@ -70,7 +69,6 @@ static void callback_sysutil_exit(uint64_t status, uint64_t param, void *userdat
          if (driver.osk && driver.osk_data)
             driver.osk->lifecycle(driver.osk_data, status);
          break;
-#endif
    }
 #endif
 }

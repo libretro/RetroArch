@@ -263,13 +263,11 @@ struct settings
       int update_interval_distance;
    } location;
 
-#ifdef HAVE_OSK
    struct
    {
       char driver[32];
       bool enable;
    } osk;
-#endif
 
    struct
    {
@@ -401,9 +399,7 @@ struct global
    bool video_active;
    bool camera_active;
    bool location_active;
-#ifdef HAVE_OSK
    bool osk_active;
-#endif
    bool force_fullscreen;
 
    struct string_list *temporary_content;
@@ -595,13 +591,11 @@ struct global
       bool movie_end;
    } bsv;
 
-#ifdef HAVE_OSK
    struct
    {
       bool (*cb_init)(void *data);
       bool (*cb_callback)(void *data);
    } osk;
-#endif
 
    bool sram_load_disable;
    bool sram_save_disable;
@@ -748,9 +742,7 @@ void config_load(void);
 void config_set_defaults(void);
 const char *config_get_default_camera(void);
 const char *config_get_default_location(void);
-#ifdef HAVE_OSK
 const char *config_get_default_osk(void);
-#endif
 const char *config_get_default_video(void);
 const char *config_get_default_audio(void);
 const char *config_get_default_audio_resampler(void);

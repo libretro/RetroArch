@@ -49,6 +49,7 @@ OBJ = frontend/frontend.o \
 		gfx/nullgfx.o \
 		audio/nullaudio.o \
 		input/nullinput.o \
+		input/osk/nullosk.o \
 		performance.o
 
 

@@ -55,6 +55,7 @@ OBJ = frontend/platform/platform_emscripten.o \
 		location/nulllocation.o \
 		camera/nullcamera.o \
 		camera/rwebcam.o \
+		input/osk/nullosk.o \
 		gfx/nullgfx.o
 
 

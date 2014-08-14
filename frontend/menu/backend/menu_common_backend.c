@@ -380,9 +380,7 @@ static void menu_common_entries_init(menu_handle_t *menu, unsigned menu_type)
          file_list_push(menu->selection_buf, "Bind Mode", "", MENU_SETTINGS_CUSTOM_BIND_MODE, 0);
          file_list_push(menu->selection_buf, "Configure All (RetroPad)", "", MENU_SETTINGS_CUSTOM_BIND_ALL, 0);
          file_list_push(menu->selection_buf, "Default All (RetroPad)", "", MENU_SETTINGS_CUSTOM_BIND_DEFAULT_ALL, 0);
-#ifdef HAVE_OSK
          file_list_push(menu->selection_buf, "", "osk_enable", MENU_SETTINGS_ONSCREEN_KEYBOARD_ENABLE, 0);
-#endif
          for (i = MENU_SETTINGS_BIND_BEGIN; i <= MENU_SETTINGS_BIND_ALL_LAST; i++)
             file_list_push(menu->selection_buf, input_config_bind_map[i - MENU_SETTINGS_BIND_BEGIN].desc, "", i, 0);
          break;
@@ -2233,7 +2231,6 @@ static int menu_common_iterate(unsigned action)
    if (driver.video_data && driver.menu_ctx && driver.menu_ctx->set_texture)
       driver.menu_ctx->set_texture(driver.menu);
 
-#ifdef HAVE_OSK
    // process pending osk init callback
    if (g_extern.osk.cb_init)
    {
@@ -2247,7 +2244,6 @@ static int menu_common_iterate(unsigned action)
       if (g_extern.osk.cb_callback(driver.osk_data))
          g_extern.osk.cb_callback = NULL;
    }
-#endif
 
    if (menu_type == MENU_START_SCREEN)
       return menu_start_screen_iterate(action);
@@ -3206,7 +3202,6 @@ static unsigned menu_current_gx_resolution = GX_RESOLUTIONS_640_480;
 #endif
 
 
-#ifdef HAVE_OSK
 static bool osk_callback_enter_audio_device(void *data)
 {
    if (g_extern.lifecycle_state & (1ULL << MODE_OSK_ENTRY_SUCCESS)
@@ -3302,7 +3297,6 @@ static bool osk_callback_enter_filename_init(void *data)
    return true;
 }
 
-#endif
 
 #ifndef RARCH_DEFAULT_PORT
 #define RARCH_DEFAULT_PORT 55435
@@ -3762,14 +3756,12 @@ static int menu_common_setting_set(unsigned id, unsigned action, rarch_setting_t
          case MENU_SETTINGS_DRIVER_AUDIO_DEVICE:
             if (action == MENU_ACTION_OK)
             {
-#ifdef HAVE_OSK
                if (g_settings.osk.enable)
                {
                   g_extern.osk.cb_init     = osk_callback_enter_audio_device_init;
                   g_extern.osk.cb_callback = osk_callback_enter_audio_device;
                }
                else
-#endif
                   menu_key_start_line(driver.menu, "Audio Device Name / IP: ", audio_device_callback);
             }
             else if (action == MENU_ACTION_START)
@@ -4038,14 +4030,12 @@ static int menu_common_setting_set(unsigned id, unsigned action, rarch_setting_t
          case MENU_SETTINGS_SHADER_PRESET_SAVE:
             if (action == MENU_ACTION_OK)
             {
-#ifdef HAVE_OSK
                if (g_settings.osk.enable)
                {
                   g_extern.osk.cb_init = osk_callback_enter_filename_init;
                   g_extern.osk.cb_callback = osk_callback_enter_filename;
                }
                else
-#endif
                   menu_key_start_line(driver.menu, "Preset Filename: ", preset_filename_callback);
             }
             break;
@@ -4661,11 +4651,9 @@ static void menu_common_setting_set_label(char *type_str, size_t type_str_size, 
          case MENU_SETTINGS_PRIVACY_LOCATION_ALLOW:
             snprintf(type_str, type_str_size, g_settings.location.allow ? "ON" : "OFF");
             break;
-#ifdef HAVE_OSK
          case MENU_SETTINGS_ONSCREEN_KEYBOARD_ENABLE:
             snprintf(type_str, type_str_size, g_settings.osk.enable ? "ON" : "OFF");
             break;
-#endif
          case MENU_SETTINGS_FONT_ENABLE:
             snprintf(type_str, type_str_size, g_settings.video.font_enable ? "ON" : "OFF");
             break;

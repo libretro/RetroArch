@@ -1023,10 +1023,8 @@ static void general_read_handler(const void *data)
        *setting->value.boolean = g_settings.load_dummy_on_core_shutdown;
     else if (!strcmp(setting->name, "libretro_log_level"))
        *setting->value.unsigned_integer = g_settings.libretro_log_level;
-#ifdef HAVE_OSK
     else if (!strcmp(setting->name, "osk_enable"))
        *setting->value.boolean = g_settings.osk.enable;
-#endif
     else if (!strcmp(setting->name, "user_language"))
        *setting->value.unsigned_integer = g_settings.user_language;
 }
@@ -1362,10 +1360,8 @@ static void general_write_handler(const void *data)
       g_settings.load_dummy_on_core_shutdown = *setting->value.boolean;
    else if (!strcmp(setting->name, "libretro_log_level"))
       g_settings.libretro_log_level = *setting->value.unsigned_integer;
-#ifdef HAVE_OSK
    else if (!strcmp(setting->name, "osk_enable"))
       g_settings.osk.enable = *setting->value.boolean;
-#endif
    else if (!strcmp(setting->name, "user_language"))
       g_settings.user_language = *setting->value.unsigned_integer;
 
@@ -1656,11 +1652,9 @@ rarch_setting_t* setting_data_get_list(void)
            }
            END_SUB_GROUP()
        }
-#ifdef HAVE_OSK
          START_SUB_GROUP("Onscreen Keyboard")
          CONFIG_BOOL(g_settings.osk.enable, "osk_enable", "Onscreen Keyboard Enable",     false, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
          END_SUB_GROUP()
-#endif
 
          START_SUB_GROUP("Miscellaneous")
          CONFIG_BOOL(g_settings.input.netplay_client_swap_input, "netplay_client_swap_input", "Swap Netplay Input",     netplay_client_swap_input, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
