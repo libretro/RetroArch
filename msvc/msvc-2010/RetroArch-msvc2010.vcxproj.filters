@@ -94,6 +94,9 @@
     <ClCompile Include="..\..\input\dinput.c">
       <Filter>input</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\input\osk\nullosk.c">
+      <Filter>input</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\input\winxinput_joypad.c">
       <Filter>input</Filter>
     </ClCompile>

@@ -299,6 +299,8 @@
     </ClCompile>
     <ClCompile Include="..\..\input\dinput.c">
     </ClCompile>
+    <ClCompile Include="..\..\input\osk\nullosk.c">
+    </ClCompile>
     <ClCompile Include="..\..\input\winxinput_joypad.c">
     </ClCompile>
     <ClCompile Include="..\..\input\input_common.c">
