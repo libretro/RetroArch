@@ -2725,7 +2725,7 @@ static void menu_common_shader_manager_set_preset(struct gfx_shader *shader, uns
 #ifdef HAVE_SHADER_MANAGER
    RARCH_LOG("Setting Menu shader: %s.\n", cgp_path ? cgp_path : "N/A (stock)");
 
-   if (video_set_shader_func((enum rarch_shader_type)type, cgp_path))
+   if (driver.video->set_shader && video_set_shader_func((enum rarch_shader_type)type, cgp_path))
    {
       // Makes sure that we use Menu CGP shader on driver reinit.
       // Only do this when the cgp actually works to avoid potential errors.
