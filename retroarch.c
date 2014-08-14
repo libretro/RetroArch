@@ -464,7 +464,7 @@ static void video_frame(const void *data, unsigned width, unsigned height, size_
       pitch = opitch;
    }
 
-   if (!video_frame_func(data, width, height, pitch, msg))
+   if (!driver.video->frame(driver.video_data, data, width, height, pitch, msg))
       g_extern.video_active = false;
 }
 
@@ -563,7 +563,7 @@ static bool audio_flush(const int16_t *data, size_t samples)
       output_size = sizeof(int16_t);
    }
 
-   if (audio_write_func(output_data, output_frames * output_size * 2) < 0)
+   if (driver.audio->write(driver.audio_data, output_data, output_frames * output_size * 2) < 0)
    {
       RARCH_ERR("Audio backend failed to write. Will continue without sound.\n");
       return false;
@@ -627,12 +627,12 @@ static inline void input_poll_overlay(void)
       RARCH_DEVICE_POINTER_SCREEN : RETRO_DEVICE_POINTER;
 
    for (i = 0;
-         input_input_state_func(NULL, 0, device, i, RETRO_DEVICE_ID_POINTER_PRESSED);
+         driver.input->input_state(driver.input_data, NULL, 0, device, i, RETRO_DEVICE_ID_POINTER_PRESSED);
          i++)
    {
-      int16_t x = input_input_state_func(NULL, 0,
+      int16_t x = driver.input->input_state(driver.input_data, NULL, 0,
             device, i, RETRO_DEVICE_ID_POINTER_X);
-      int16_t y = input_input_state_func(NULL, 0,
+      int16_t y = driver.input->input_state(driver.input_data, NULL, 0,
             device, i, RETRO_DEVICE_ID_POINTER_Y);
 
       input_overlay_state_t polled_data;
@@ -715,7 +715,7 @@ static inline void input_poll_overlay(void)
 
 void rarch_input_poll(void)
 {
-   input_poll_func();
+   driver.input->poll(driver.input_data);
 
 #ifdef HAVE_OVERLAY
    if (driver.overlay)
@@ -770,7 +770,7 @@ static int16_t input_state(unsigned port, unsigned device, unsigned index, unsig
    };
 
    if (!driver.block_libretro_input && (id < RARCH_FIRST_META_KEY || device == RETRO_DEVICE_KEYBOARD))
-      res = input_input_state_func(binds, port, device, index, id);
+      res = driver.input->input_state(driver.input_data, binds, port, device, index, id);
 
 #ifdef HAVE_OVERLAY
    if (device == RETRO_DEVICE_JOYPAD && port == 0)
@@ -2010,7 +2010,7 @@ static void set_fullscreen(bool fullscreen)
 
    // Poll input to avoid possibly stale data to corrupt things.
    if (driver.input)
-      input_poll_func();
+      driver.input->poll(driver.input_data);
 }
 
 bool rarch_check_fullscreen(void)
@@ -2355,7 +2355,7 @@ static void check_turbo(void)
    {
       for (i = 0; i < MAX_PLAYERS; i++)
          g_extern.turbo_frame_enable[i] =
-            input_input_state_func(binds, i, RETRO_DEVICE_JOYPAD, 0, RARCH_TURBO_ENABLE);
+            driver.input->input_state(driver.input_data, binds, i, RETRO_DEVICE_JOYPAD, 0, RARCH_TURBO_ENABLE);
    }
 }
 

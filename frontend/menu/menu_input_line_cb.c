@@ -159,7 +159,7 @@ void menu_poll_bind_state(struct menu_bind_state *state)
 
    unsigned i, b, a, h;
    memset(state->state, 0, sizeof(state->state));
-   state->skip = input_input_state_func(NULL, 0, RETRO_DEVICE_KEYBOARD, 0, RETROK_RETURN);
+   state->skip = driver.input->input_state(driver.input_data, NULL, 0, RETRO_DEVICE_KEYBOARD, 0, RETROK_RETURN);
 
    const rarch_joypad_driver_t *joypad = NULL;
    if (driver.input && driver.input_data && driver.input->get_joypad_driver)
@@ -326,7 +326,7 @@ uint64_t menu_input(void)
    {
       for (i = 0; i < RETRO_DEVICE_ID_JOYPAD_R2; i++)
       {
-         input_state |= input_input_state_func(binds,
+         input_state |= driver.input->input_state(driver.input_data, binds,
                0, RETRO_DEVICE_JOYPAD, 0, i) ? (1ULL << i) : 0;
 #ifdef HAVE_OVERLAY
          input_state |= (driver.overlay_state.buttons & (UINT64_C(1) << i)) ? (1ULL << i) : 0;

@@ -249,7 +249,7 @@ void init_osk(void)
    find_osk_driver();
 
    //FIXME - refactor params later based on semantics 
-   driver.osk_data = osk_init_func(0);
+   driver.osk_data = driver.osk->init(0);
 
    if (!driver.osk_data)
    {
@@ -364,7 +364,7 @@ void init_camera(void)
 
    find_camera_driver();
 
-   driver.camera_data = camera_init_func(
+   driver.camera_data = driver.camera->init(
          *g_settings.camera.device ? g_settings.camera.device : NULL,
          g_extern.system.camera_callback.caps,
          g_settings.camera.width ? g_settings.camera.width : g_extern.system.camera_callback.width,
@@ -495,7 +495,7 @@ void init_location(void)
 
    find_location_driver();
 
-   driver.location_data = location_init_func();
+   driver.location_data = driver.location->init();
 
    if (!driver.location_data)
    {
@@ -1109,7 +1109,7 @@ void init_audio(void)
    else
 #endif
    {
-      driver.audio_data = audio_init_func(*g_settings.audio.device ? g_settings.audio.device : NULL,
+      driver.audio_data = driver.audio->init(*g_settings.audio.device ? g_settings.audio.device : NULL,
             g_settings.audio.out_rate, g_settings.audio.latency);
    }
 
@@ -1489,9 +1489,9 @@ void init_video_input(void)
    }
    else
 #endif
-      driver.video_data = video_init_func(&video, &driver.input, &driver.input_data);
+      driver.video_data = driver.video->init(&video, &driver.input, &driver.input_data);
 
-   if (driver.video_data == NULL)
+   if (!driver.video_data)
    {
       RARCH_ERR("Cannot open video driver ... Exiting ...\n");
       rarch_fail(1, "init_video_input()");
@@ -1521,7 +1521,7 @@ void init_video_input(void)
 #endif
 
    // Video driver didn't provide an input driver so we use configured one.
-   if (driver.input == NULL)
+   if (!driver.input)
    {
 
       RARCH_LOG("Graphics driver did not initialize an input driver. Attempting to pick a suitable driver.\n");
@@ -1533,7 +1533,7 @@ void init_video_input(void)
 
       if (driver.input)
       {
-         driver.input_data = input_init_func();
+         driver.input_data = driver.input->init();
          if (!driver.input_data)
          {
             RARCH_ERR("Cannot initialize input driver. Exiting ...\n");
@@ -1563,11 +1563,11 @@ void uninit_video_input(void)
 #endif
 
    if (!driver.input_data_own && driver.input_data != driver.video_data && driver.input && driver.input->free)
-      input_free_func();
+      driver.input->free(driver.input_data);
 
 
    if (!driver.video_data_own && driver.video_data && driver.video && driver.video->free)
-      video_free_func();
+      driver.video->free(driver.video_data);
 
    deinit_pixel_converter();
 

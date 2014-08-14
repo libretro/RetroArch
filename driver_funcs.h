@@ -18,14 +18,6 @@
 #ifndef _RARCH_DRIVER_FUNCS_H
 #define _RARCH_DRIVER_FUNCS_H
 
-#define camera_init_func(device, caps, width, height) driver.camera->init(device, caps, width, height)
-
-#define location_init_func() driver.location->init()
-
-#define osk_init_func(unknown) driver.osk->init(unknown)
-
-#define audio_init_func(device, rate, latency)  driver.audio->init(device, rate, latency)
-#define audio_write_func(buf, size)             driver.audio->write(driver.audio_data, buf, size)
 #define audio_stop_func()                       driver.audio->stop(driver.audio_data)
 #define audio_start_func()                      driver.audio->start(driver.audio_data)
 #define audio_set_nonblock_state_func(state)    driver.audio->set_nonblock_state(driver.audio_data, state)
@@ -34,10 +26,6 @@
 #define audio_write_avail_func()                driver.audio->write_avail(driver.audio_data)
 #define audio_buffer_size_func()                driver.audio->buffer_size(driver.audio_data)
 
-#define video_init_func(video_info, input, input_data) \
-   driver.video->init(video_info, input, input_data)
-#define video_frame_func(data, width, height, pitch, msg) \
-   driver.video->frame(driver.video_data, data, width, height, pitch, msg)
 #define video_set_nonblock_state_func(state) driver.video->set_nonblock_state(driver.video_data, state)
 #define video_alive_func() driver.video->alive(driver.video_data)
 #define video_focus_func() driver.video->focus(driver.video_data)
@@ -47,12 +35,6 @@
 #define video_viewport_info_func(info) driver.video->viewport_info(driver.video_data, info)
 #define video_read_viewport_func(buffer) driver.video->read_viewport(driver.video_data, buffer)
 #define video_overlay_interface_func(iface) driver.video->overlay_interface(driver.video_data, iface)
-#define video_free_func() driver.video->free(driver.video_data)
-#define input_init_func() driver.input->init()
-#define input_poll_func() driver.input->poll(driver.input_data)
-#define input_input_state_func(retro_keybinds, port, device, index, id) \
-   driver.input->input_state(driver.input_data, retro_keybinds, port, device, index, id)
-#define input_free_func() driver.input->free(driver.input_data)
 
 static inline bool input_key_pressed_func(int key)
 {

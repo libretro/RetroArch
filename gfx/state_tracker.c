@@ -255,8 +255,8 @@ static void update_input(state_tracker_t *tracker)
    {
       for (i = 4; i < 16; i++)
       {
-         state[0] |= (input_input_state_func(binds, 0, RETRO_DEVICE_JOYPAD, 0, buttons[i - 4]) ? 1 : 0) << i;
-         state[1] |= (input_input_state_func(binds, 1, RETRO_DEVICE_JOYPAD, 0, buttons[i - 4]) ? 1 : 0) << i;
+         state[0] |= (driver.input->input_state(driver.input_data, binds, 0, RETRO_DEVICE_JOYPAD, 0, buttons[i - 4]) ? 1 : 0) << i;
+         state[1] |= (driver.input->input_state(driver.input_data, binds, 1, RETRO_DEVICE_JOYPAD, 0, buttons[i - 4]) ? 1 : 0) << i;
       }
    }
 
