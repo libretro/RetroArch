@@ -44,8 +44,11 @@ OBJ = frontend/frontend.o \
 		audio/dsp_filter.o \
 		audio/sinc.o \
 		audio/cc_resampler.o \
-		location/null.o \
+		location/nulllocation.o \
 		camera/nullcamera.o \
+		gfx/nullgfx.o \
+		audio/nullaudio.o \
+		input/nullinput.o \
 		performance.o
 
 

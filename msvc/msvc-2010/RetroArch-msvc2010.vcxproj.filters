@@ -22,8 +22,11 @@
     <ClCompile Include="..\..\netplay.c" />
     <ClCompile Include="..\..\patch.c" />
     <ClCompile Include="..\..\retroarch.c" />
-    <ClCompile Include="..\..\location\null.c" />
+    <ClCompile Include="..\..\location\nulllocation.c" />
     <ClCompile Include="..\..\camera\nullcamera.c" />
+    <ClCompile Include="..\..\gfx\nullgfx.c" />
+    <ClCompile Include="..\..\gfx\nullaudio.c" />
+    <ClCompile Include="..\..\gfx\nullinput.c" />
     <ClCompile Include="..\..\rewind.c" />
     <ClCompile Include="..\..\screenshot.c" />
     <ClCompile Include="..\..\settings.c" />

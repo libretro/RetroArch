@@ -45,7 +45,6 @@
 									<listOptionValue builtIn="false" value="HAVE_ZLIB"/>
 									<listOptionValue builtIn="false" value="HAVE_OPENGLES"/>
 									<listOptionValue builtIn="false" value="HAVE_OPENGLES2"/>
-									<listOptionValue builtIn="false" value="HAVE_NULLINPUT"/>
 									<listOptionValue builtIn="false" value="HAVE_AL"/>
 									<listOptionValue builtIn="false" value="HAVE_THREADS"/>
 									<listOptionValue builtIn="false" value="WANT_MINIZ"/>
@@ -169,7 +168,6 @@
 									<listOptionValue builtIn="false" value="HAVE_ZLIB"/>
 									<listOptionValue builtIn="false" value="HAVE_OPENGLES"/>
 									<listOptionValue builtIn="false" value="HAVE_OPENGLES2"/>
-									<listOptionValue builtIn="false" value="HAVE_NULLINPUT"/>
 									<listOptionValue builtIn="false" value="HAVE_AL"/>
 									<listOptionValue builtIn="false" value="HAVE_THREADS"/>
 									<listOptionValue builtIn="false" value="WANT_MINIZ"/>
@@ -295,7 +293,6 @@
 									<listOptionValue builtIn="false" value="HAVE_ZLIB"/>
 									<listOptionValue builtIn="false" value="HAVE_OPENGLES"/>
 									<listOptionValue builtIn="false" value="HAVE_OPENGLES2"/>
-									<listOptionValue builtIn="false" value="HAVE_NULLINPUT"/>
 									<listOptionValue builtIn="false" value="HAVE_AL"/>
 									<listOptionValue builtIn="false" value="HAVE_THREADS"/>
 									<listOptionValue builtIn="false" value="WANT_MINIZ"/>
@@ -416,7 +413,6 @@
 									<listOptionValue builtIn="false" value="HAVE_ZLIB"/>
 									<listOptionValue builtIn="false" value="HAVE_OPENGLES"/>
 									<listOptionValue builtIn="false" value="HAVE_OPENGLES2"/>
-									<listOptionValue builtIn="false" value="HAVE_NULLINPUT"/>
 									<listOptionValue builtIn="false" value="HAVE_AL"/>
 									<listOptionValue builtIn="false" value="HAVE_THREADS"/>
 									<listOptionValue builtIn="false" value="WANT_MINIZ"/>

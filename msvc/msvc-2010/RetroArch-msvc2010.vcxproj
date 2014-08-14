@@ -319,9 +319,15 @@
     </ClCompile>
     <ClCompile Include="..\..\retroarch.c">
     </ClCompile>
-    <ClCompile Include="..\..\location\null.c">
+    <ClCompile Include="..\..\location\nulllocation.c">
     </ClCompile>
     <ClCompile Include="..\..\camera\nullcamera.c">
+    </ClCompile>
+    <ClCompile Include="..\..\gfx\nullgfx.c">
+    </ClCompile>
+    <ClCompile Include="..\..\audio\nullaudio.c">
+    </ClCompile>
+    <ClCompile Include="..\..\input\nullinput.c">
     </ClCompile>
     <ClCompile Include="..\..\rewind.c">
     </ClCompile>

@@ -20,6 +20,7 @@ OBJ = frontend/platform/platform_emscripten.o \
 		rewind.o \
 		movie.o \
 		gfx/gfx_common.o \
+		input/nullinput.o \
 		input/input_common.o \
 		input/rwebinput_input.o \
 		input/keyboard_line.o \
@@ -48,12 +49,14 @@ OBJ = frontend/platform/platform_emscripten.o \
 		audio/resampler.o \
 		audio/sinc.o \
 		audio/cc_resampler.o \
-		audio/null.o \
+		audio/nullaudio.o \
 		performance.o \
 		core_info.o \
-		location/null.o \
+		location/nulllocation.o \
 		camera/nullcamera.o \
-		camera/rwebcam.o
+		camera/rwebcam.o \
+		gfx/nullgfx.o
+
 
 HAVE_OPENGL = 1
 HAVE_RGUI = 1
@@ -73,7 +76,7 @@ endif
 libretro = libretro_emscripten.bc
 
 LIBS =
-DEFINES = -DHAVE_NULLAUDIO -DRARCH_INTERNAL -DHAVE_CC_RESAMPLER
+DEFINES = -DRARCH_INTERNAL -DHAVE_CC_RESAMPLER
 LDFLAGS = -L. -s TOTAL_MEMORY=$(MEMORY) -s OUTLINING_LIMIT=50000 --js-library emscripten/library_rwebaudio.js --js-library emscripten/library_rwebinput.js --js-library emscripten/library_rwebcam.js --no-heap-copy
 
 ifeq ($(HAVE_RGUI), 1)

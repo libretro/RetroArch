@@ -96,9 +96,7 @@ static const audio_driver_t *audio_drivers[] = {
 #ifdef PSP
    &audio_psp1,
 #endif   
-#ifdef HAVE_NULLAUDIO
    &audio_null,
-#endif
    NULL,
 };
 
@@ -133,15 +131,13 @@ static const video_driver_t *video_drivers[] = {
 #ifdef HAVE_VG
    &video_vg,
 #endif
-#ifdef HAVE_NULLVIDEO
-   &video_null,
-#endif
 #ifdef HAVE_OMAP
    &video_omap,
 #endif
 #ifdef HAVE_EXYNOS
    &video_exynos,
 #endif
+   &video_null,
    NULL,
 };
 
@@ -188,9 +184,7 @@ static const input_driver_t *input_drivers[] = {
 #ifdef EMSCRIPTEN
    &input_rwebinput,
 #endif
-#ifdef HAVE_NULLINPUT
    &input_null,
-#endif
    NULL,
 };
 

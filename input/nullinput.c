@@ -71,10 +71,8 @@ const input_driver_t input_null = {
    nullinput_input_state,
    nullinput_input_key_pressed,
    nullinput_input_free_input,
-   NULL,
    nullinput_set_sensor_state,
    NULL,
    nullinput_get_capabilities,
-   NULL,
    "null",
 };

@@ -235,9 +235,7 @@ VIDEO DRIVER
 #include "../xenon/xenon360_video.c"
 #endif
 
-#if defined(HAVE_NULLVIDEO)
-#include "../gfx/null.c"
-#endif
+#include "../gfx/nullgfx.c"
 
 /*============================================================
 FONTS
@@ -331,9 +329,7 @@ INPUT
 #include "../input/x11_input.c"
 #endif
 
-#if defined(HAVE_NULLINPUT)
-#include "../input/null.c"
-#endif
+#include "../input/nullinput.c"
 
 /*============================================================
 STATE TRACKER
@@ -386,7 +382,7 @@ LOCATION
 #include "../location/android.c"
 #endif
 
-#include "../location/null.c"
+#include "../location/nulllocation.c"
 
 /*============================================================
 RSOUND
@@ -441,9 +437,7 @@ AUDIO
 #include "../audio/coreaudio.c"
 #endif
 
-#if defined(HAVE_NULLAUDIO)
-#include "../audio/null.c"
-#endif
+#include "../audio/nullaudio.c"
 
 /*============================================================
 DRIVERS
