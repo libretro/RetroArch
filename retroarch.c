@@ -197,7 +197,7 @@ static void readjust_audio_input_rate(void)
    int half_size, delta_mid;
    unsigned write_index;
    double direction, adjust;
-   int avail = audio_write_avail_func();
+   int avail = driver.audio->write_avail(driver.audio_data);
 
    //RARCH_LOG_OUTPUT("Audio buffer is %u%% full\n",
    //      (unsigned)(100 - (avail * 100) / g_extern.audio_data.driver_buffer_size));

@@ -21,10 +21,7 @@
 #define audio_stop_func()                       driver.audio->stop(driver.audio_data)
 #define audio_start_func()                      driver.audio->start(driver.audio_data)
 #define audio_set_nonblock_state_func(state)    driver.audio->set_nonblock_state(driver.audio_data, state)
-#define audio_free_func()                       driver.audio->free(driver.audio_data)
 #define audio_use_float_func()                  driver.audio->use_float(driver.audio_data)
-#define audio_write_avail_func()                driver.audio->write_avail(driver.audio_data)
-#define audio_buffer_size_func()                driver.audio->buffer_size(driver.audio_data)
 
 #define video_set_nonblock_state_func(state) driver.video->set_nonblock_state(driver.video_data, state)
 #define video_alive_func() driver.video->alive(driver.video_data)

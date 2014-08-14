@@ -1159,7 +1159,7 @@ void init_audio(void)
    {
       if (driver.audio->buffer_size && driver.audio->write_avail)
       {
-         g_extern.audio_data.driver_buffer_size = audio_buffer_size_func();
+         g_extern.audio_data.driver_buffer_size = driver.audio->buffer_size(driver.audio_data);
          g_extern.audio_data.rate_control = true;
       }
       else
