@@ -23,12 +23,9 @@
 struct hidpad_ps3_data
 {
    struct apple_pad_connection* connection;
-
    uint8_t data[512];
-  
    uint32_t slot;
    bool have_led;
-
    uint16_t motors[2];
 };
 
@@ -57,6 +54,10 @@ static void hidpad_ps3_send_control(struct hidpad_ps3_data* device)
 static void* hidpad_ps3_connect(struct apple_pad_connection* connection, uint32_t slot)
 {
    struct hidpad_ps3_data* device = (struct hidpad_ps3_data*)calloc(1, sizeof(struct hidpad_ps3_data));
+
+   if (!device)
+      return NULL;
+
    device->connection = connection;  
    device->slot = slot;
    
@@ -74,7 +75,8 @@ static void* hidpad_ps3_connect(struct apple_pad_connection* connection, uint32_
 
 static void hidpad_ps3_disconnect(struct hidpad_ps3_data* device)
 {
-   free(device);
+   if (device)
+      free(device);
 }
 
 static uint32_t hidpad_ps3_get_buttons(struct hidpad_ps3_data* device)

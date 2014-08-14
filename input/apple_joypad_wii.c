@@ -24,6 +24,9 @@ static void* hidpad_wii_connect(struct apple_pad_connection* connection, uint32_
 {
    struct wiimote_t* device = (struct wiimote_t*)calloc(1, sizeof(struct wiimote_t));
 
+   if (!device)
+      return NULL;
+
    device->connection = connection;
    device->unid = slot;
    device->state = WIIMOTE_STATE_CONNECTED;
@@ -36,7 +39,8 @@ static void* hidpad_wii_connect(struct apple_pad_connection* connection, uint32_
 
 static void hidpad_wii_disconnect(struct wiimote_t* device)
 {
-   free(device);
+   if (device)
+      free(device);
 }
 
 static int16_t hidpad_wii_get_axis(struct wiimote_t* device, unsigned axis)
@@ -61,41 +65,35 @@ static int16_t hidpad_wii_get_axis(struct wiimote_t* device, unsigned axis)
    return 0;
 }
 
-static void hidpad_wii_packet_handler(struct wiimote_t* device, uint8_t *packet, uint16_t size)
+static void hidpad_wii_packet_handler(struct wiimote_t* device,
+      uint8_t *packet, uint16_t size)
 {
+   int i;
    byte* msg = packet + 2;
+
    switch (packet[1])
    {
       case WM_RPT_BTN:
-      {
          wiimote_pressed_buttons(device, msg);
          break;
-      }
-
       case WM_RPT_READ:
-      {
          wiimote_pressed_buttons(device, msg);
-         wiimote_handshake(device, WM_RPT_READ, msg + 5, ((msg[2] & 0xF0) >> 4) + 1);
+         wiimote_handshake(device, WM_RPT_READ, msg + 5,
+               ((msg[2] & 0xF0) >> 4) + 1);
          break;
-      }
-
       case WM_RPT_CTRL_STATUS:
-      {
          wiimote_pressed_buttons(device, msg);
          wiimote_handshake(device,WM_RPT_CTRL_STATUS,msg,-1);
          break;
-      }
-
       case WM_RPT_BTN_EXP:
-      {
          wiimote_pressed_buttons(device, msg);
          wiimote_handle_expansion(device, msg+2);
          break;
-      }
    }
 
-   g_current_input_data.pad_buttons[device->unid] = device->btns | (device->exp.cc.classic.btns << 16);
-   for (int i = 0; i < 4; i ++)
+   g_current_input_data.pad_buttons[device->unid] = device->btns | 
+      (device->exp.cc.classic.btns << 16);
+   for (i = 0; i < 4; i++)
       g_current_input_data.pad_axis[device->unid][i] = hidpad_wii_get_axis(device, i);
 }
 
