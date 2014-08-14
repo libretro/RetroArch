@@ -3266,10 +3266,8 @@ bool rarch_main_iterate(void)
    if (g_extern.bsv.movie)
       bsv_movie_set_frame_start(g_extern.bsv.movie);
 
-#ifdef HAVE_CAMERA
    if (g_extern.system.camera_callback.caps)
       driver_camera_poll();
-#endif
 
    // Update binds for analog dpad modes.
    for (i = 0; i < MAX_PLAYERS; i++)

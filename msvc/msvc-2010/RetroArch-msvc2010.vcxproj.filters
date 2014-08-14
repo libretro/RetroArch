@@ -23,6 +23,7 @@
     <ClCompile Include="..\..\patch.c" />
     <ClCompile Include="..\..\retroarch.c" />
     <ClCompile Include="..\..\location\null.c" />
+    <ClCompile Include="..\..\camera\nullcamera.c" />
     <ClCompile Include="..\..\rewind.c" />
     <ClCompile Include="..\..\screenshot.c" />
     <ClCompile Include="..\..\settings.c" />

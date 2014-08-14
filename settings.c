@@ -203,7 +203,6 @@ const char *config_get_default_osk(void)
 }
 #endif
 
-#ifdef HAVE_CAMERA
 const char *config_get_default_camera(void)
 {
    switch (CAMERA_DEFAULT_DRIVER)
@@ -222,7 +221,6 @@ const char *config_get_default_camera(void)
          return NULL;
    }
 }
-#endif
 
 const char *config_get_default_location(void)
 {
@@ -249,12 +247,10 @@ void config_set_defaults(void)
 #ifdef HAVE_MENU
    const char *def_menu  = config_get_default_menu();
 #endif
-#ifdef HAVE_CAMERA
    const char *def_camera = config_get_default_camera();
 
    if (def_camera)
       strlcpy(g_settings.camera.driver, def_camera, sizeof(g_settings.camera.driver));
-#endif
 
    const char *def_location = config_get_default_location();
 
@@ -373,10 +369,7 @@ void config_set_defaults(void)
 #endif
 
    g_settings.location.allow = false;
-
-#ifdef HAVE_CAMERA
    g_settings.camera.allow = false;
-#endif
 
    rarch_assert(sizeof(g_settings.input.binds[0]) >= sizeof(retro_keybinds_1));
    rarch_assert(sizeof(g_settings.input.binds[1]) >= sizeof(retro_keybinds_rest));
@@ -975,10 +968,8 @@ bool config_load_file(const char *path, bool set_defaults)
    g_extern.audio_data.volume_db   = g_settings.audio.volume;
    g_extern.audio_data.volume_gain = db_to_gain(g_settings.audio.volume);
 
-#ifdef HAVE_CAMERA
    CONFIG_GET_STRING(camera.device, "camera_device");
    CONFIG_GET_BOOL(camera.allow, "camera_allow");
-#endif
 
    CONFIG_GET_BOOL(location.allow, "location_allow");
    CONFIG_GET_STRING(video.driver, "video_driver");
@@ -1389,10 +1380,8 @@ bool config_save_file(const char *path)
    config_set_int(conf, "aspect_ratio_index", g_settings.video.aspect_ratio_idx);
    config_set_string(conf, "audio_device", g_settings.audio.device);
    config_set_string(conf, "audio_dsp_plugin", g_settings.audio.dsp_plugin);
-#ifdef HAVE_CAMERA
    config_set_string(conf, "camera_device", g_settings.camera.device);
    config_set_bool(conf, "camera_allow", g_settings.camera.allow);
-#endif
    config_set_bool(conf, "audio_rate_control", g_settings.audio.rate_control);
    config_set_float(conf, "audio_rate_control_delta", g_settings.audio.rate_control_delta);
    config_set_string(conf, "audio_driver", g_settings.audio.driver);

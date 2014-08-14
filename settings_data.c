@@ -997,10 +997,8 @@ static void general_read_handler(const void *data)
         *setting->value.boolean = g_settings.video.aspect_ratio_auto;
     else if (!strcmp(setting->name, "video_filter"))
         strlcpy(setting->value.string, g_settings.video.filter_path, setting->size);
-#ifdef HAVE_CAMERA
     else if (!strcmp(setting->name, "camera_allow"))
         *setting->value.boolean = g_settings.camera.allow;
-#endif
     else if (!strcmp(setting->name, "location_allow"))
         *setting->value.boolean = g_settings.location.allow;
     else if (!strcmp(setting->name, "video_shared_context"))
@@ -1328,10 +1326,8 @@ static void general_write_handler(const void *data)
       strlcpy(g_settings.video.filter_path, setting->value.string, sizeof(g_settings.video.filter_path));
       rarch_cmd = RARCH_CMD_REINIT;
    }
-#ifdef HAVE_CAMERA
    else if (!strcmp(setting->name, "camera_allow"))
       g_settings.camera.allow = *setting->value.boolean;
-#endif
    else if (!strcmp(setting->name, "location_allow"))
       g_settings.location.allow = *setting->value.boolean;
    else if (!strcmp(setting->name, "video_shared_context"))
@@ -1453,9 +1449,7 @@ rarch_setting_t* setting_data_get_list(void)
 #endif
          CONFIG_STRING(g_settings.audio.driver,             "audio_driver",               "Audio Driver",               config_get_default_audio(), GROUP_NAME, SUBGROUP_NAME, NULL, NULL)
          CONFIG_STRING(g_settings.audio.resampler,             "audio_driver",               "Audio Resampler Driver",     config_get_default_audio_resampler(), GROUP_NAME, SUBGROUP_NAME, NULL, NULL)
-#ifdef HAVE_CAMERA
          CONFIG_STRING(g_settings.camera.device,            "camera_device",              "Camera Driver",              config_get_default_camera(), GROUP_NAME, SUBGROUP_NAME, NULL, NULL)
-#endif         
          CONFIG_STRING(g_settings.location.driver,          "location_driver",            "Location Driver",            config_get_default_location(), GROUP_NAME, SUBGROUP_NAME, NULL, NULL)
          CONFIG_STRING(g_settings.input.joypad_driver,      "input_joypad_driver",        "Joypad Driver",              "", GROUP_NAME, SUBGROUP_NAME, NULL, NULL)
          CONFIG_STRING(g_settings.input.keyboard_layout,    "input_keyboard_layout",      "Keyboard Layout",            "", GROUP_NAME, SUBGROUP_NAME, NULL, NULL)
@@ -1755,9 +1749,7 @@ rarch_setting_t* setting_data_get_list(void)
        /***********/
        START_GROUP("Privacy Options")
        START_SUB_GROUP("State")
-#ifdef HAVE_CAMERA
          CONFIG_BOOL(g_settings.camera.allow,     "camera_allow",     "Allow Camera",          false, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
-#endif
          CONFIG_BOOL(g_settings.location.allow,     "location_allow",     "Allow Location",          false, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
        END_SUB_GROUP()
        END_GROUP()

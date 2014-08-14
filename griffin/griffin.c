@@ -367,7 +367,6 @@ AUDIO RESAMPLER
 /*============================================================
 CAMERA
 ============================================================ */
-#ifdef HAVE_CAMERA
 #if defined(ANDROID)
 #include "../camera/android.c"
 #elif defined(EMSCRIPTEN)
@@ -378,7 +377,7 @@ CAMERA
 #include "../camera/video4linux2.c"
 #endif
 
-#endif
+#include "../camera/nullcamera.c"
 
 /*============================================================
 LOCATION

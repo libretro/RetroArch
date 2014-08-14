@@ -51,6 +51,8 @@ OBJ = frontend/platform/platform_emscripten.o \
 		audio/null.o \
 		performance.o \
 		core_info.o \
+		location/null.o \
+		camera/nullcamera.o \
 		camera/rwebcam.o
 
 HAVE_OPENGL = 1
@@ -71,7 +73,7 @@ endif
 libretro = libretro_emscripten.bc
 
 LIBS =
-DEFINES = -DHAVE_CAMERA -DHAVE_NULLAUDIO -DRARCH_INTERNAL -DHAVE_CC_RESAMPLER
+DEFINES = -DHAVE_NULLAUDIO -DRARCH_INTERNAL -DHAVE_CC_RESAMPLER
 LDFLAGS = -L. -s TOTAL_MEMORY=$(MEMORY) -s OUTLINING_LIMIT=50000 --js-library emscripten/library_rwebaudio.js --js-library emscripten/library_rwebinput.js --js-library emscripten/library_rwebcam.js --no-heap-copy
 
 ifeq ($(HAVE_RGUI), 1)

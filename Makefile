@@ -45,6 +45,7 @@ OBJ = frontend/frontend.o \
 		audio/sinc.o \
 		audio/cc_resampler.o \
 		location/null.o \
+		camera/nullcamera.o \
 		performance.o
 
 
@@ -180,7 +181,7 @@ endif
 
 ifeq ($(HAVE_V4L2),1)
    OBJ += camera/video4linux2.o
-   DEFINES += -DHAVE_CAMERA -DHAVE_V4L2
+   DEFINES += -DHAVE_V4L2
 endif
 
 ifeq ($(HAVE_JACK),1)

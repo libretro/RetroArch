@@ -321,6 +321,8 @@
     </ClCompile>
     <ClCompile Include="..\..\location\null.c">
     </ClCompile>
+    <ClCompile Include="..\..\camera\nullcamera.c">
+    </ClCompile>
     <ClCompile Include="..\..\rewind.c">
     </ClCompile>
     <ClCompile Include="..\..\screenshot.c">

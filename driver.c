@@ -272,7 +272,6 @@ void uninit_osk(void)
 }
 #endif
 
-#ifdef HAVE_CAMERA
 static const camera_driver_t *camera_drivers[] = {
 #ifdef HAVE_V4L2
    &camera_v4l2,
@@ -286,6 +285,7 @@ static const camera_driver_t *camera_drivers[] = {
 #ifdef IOS
    &camera_ios,
 #endif
+   &camera_null,
    NULL,
 };
 
@@ -399,7 +399,6 @@ void uninit_camera(void)
    }
    driver.camera_data = NULL;
 }
-#endif
 
 static const location_driver_t *location_drivers[] = {
 #ifdef ANDROID
@@ -773,9 +772,7 @@ void init_drivers_pre(void)
    find_audio_driver();
    find_video_driver();
    find_input_driver();
-#ifdef HAVE_CAMERA
    find_camera_driver();
-#endif
    find_location_driver();
 #ifdef HAVE_OSK
    find_osk_driver();
@@ -935,9 +932,7 @@ void init_drivers(void)
    driver.video_data_own = false;
    driver.audio_data_own = false;
    driver.input_data_own = false;
-#ifdef HAVE_CAMERA
    driver.camera_data_own = false;
-#endif
    driver.location_data_own = false;
 #ifdef HAVE_OSK
    driver.osk_data_own = false;
@@ -959,11 +954,9 @@ void init_drivers(void)
 
    init_audio();
 
-#ifdef HAVE_CAMERA
    // Only initialize camera driver if we're ever going to use it.
    if (g_extern.camera_active)
       init_camera();
-#endif
 
    // Only initialize location driver if we're ever going to use it.
    if (g_extern.location_active)
@@ -1058,13 +1051,11 @@ void uninit_drivers(void)
    if (!driver.video_data_own)
       driver.video_data = NULL;
 
-#ifdef HAVE_CAMERA
    if (!driver.camera_data_own)
    {
       uninit_camera();
       driver.camera_data = NULL;
    }
-#endif
 
    if (!driver.location_data_own)
    {

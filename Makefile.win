@@ -50,6 +50,7 @@ OBJ = frontend/frontend.o \
 		audio/sinc.o \
 		audio/cc_resampler.o \
 		location/null.o \
+		camera/nullcamera.o \
 		performance.o
 
 JOBJ := conf/config_file.o \

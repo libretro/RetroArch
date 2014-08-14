@@ -379,9 +379,7 @@ void uninit_libretro_sym(void)
    free(g_extern.system.special);
    free(g_extern.system.ports);
    memset(&g_extern.system, 0, sizeof(g_extern.system));
-#ifdef HAVE_CAMERA
    g_extern.camera_active = false;
-#endif
    g_extern.location_active = false;
 
    // Performance counters no longer valid.
@@ -820,7 +818,6 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          break;
       }
 
-#ifdef HAVE_CAMERA
       case RETRO_ENVIRONMENT_GET_CAMERA_INTERFACE:
       {
          RARCH_LOG("Environ GET_CAMERA_INTERFACE.\n");
@@ -831,7 +828,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          g_extern.camera_active = cb->caps != 0;
          break;
       }
-#endif
+
       case RETRO_ENVIRONMENT_GET_LOCATION_INTERFACE:
       {
          RARCH_LOG("Environ GET_LOCATION_INTERFACE.\n");

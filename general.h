@@ -246,7 +246,6 @@ struct settings
    } menu;
 #endif
 
-#ifdef HAVE_CAMERA
    struct
    {
       char driver[32];
@@ -255,7 +254,6 @@ struct settings
       unsigned width;
       unsigned height;
    } camera;
-#endif
 
    struct
    {
@@ -401,9 +399,7 @@ struct global
    bool perfcnt_enable;
    bool audio_active;
    bool video_active;
-#ifdef HAVE_CAMERA
    bool camera_active;
-#endif
    bool location_active;
 #ifdef HAVE_OSK
    bool osk_active;
@@ -750,9 +746,7 @@ extern struct defaults g_defaults;
 // Public functions
 void config_load(void);
 void config_set_defaults(void);
-#ifdef HAVE_CAMERA
 const char *config_get_default_camera(void);
-#endif
 const char *config_get_default_location(void);
 #ifdef HAVE_OSK
 const char *config_get_default_osk(void);

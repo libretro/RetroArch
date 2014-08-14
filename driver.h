@@ -419,10 +419,8 @@ typedef struct driver
    const input_osk_driver_t *osk;
    void *osk_data;
 #endif
-#ifdef HAVE_CAMERA
    const camera_driver_t *camera;
    void *camera_data;
-#endif
    const location_driver_t *location;
    void *location_data;
    void *audio_data;
@@ -452,9 +450,7 @@ typedef struct driver
    bool video_data_own;
    bool audio_data_own;
    bool input_data_own;
-#ifdef HAVE_CAMERA
    bool camera_data_own;
-#endif
    bool location_data_own;
 #ifdef HAVE_OSK
    bool osk_data_own;
@@ -520,12 +516,10 @@ void find_next_audio_driver(void);
 void find_next_input_driver(void);
 void find_next_resampler_driver(void);
 
-#ifdef HAVE_CAMERA
 void init_camera(void);
 void uninit_camera(void);
 void find_prev_camera_driver(void);
 void find_next_camera_driver(void);
-#endif
 
 void init_location(void);
 void uninit_location(void);
@@ -558,11 +552,9 @@ unsigned dspfilter_get_last_idx(void);
 const char *rarch_dspfilter_get_name(void *data);
 
 // Used by RETRO_ENVIRONMENT_GET_CAMERA_INTERFACE
-#ifdef HAVE_CAMERA
 bool driver_camera_start(void);
 void driver_camera_stop(void);
 void driver_camera_poll(void);
-#endif
 
 // Used by RETRO_ENVIRONMENT_GET_LOCATION_INTERFACE
 bool driver_location_start(void);
@@ -636,6 +628,7 @@ extern const camera_driver_t camera_v4l2;
 extern const camera_driver_t camera_android;
 extern const camera_driver_t camera_rwebcam;
 extern const camera_driver_t camera_ios;
+extern const camera_driver_t camera_null;
 extern const location_driver_t location_apple;
 extern const location_driver_t location_android;
 extern const location_driver_t location_null;
