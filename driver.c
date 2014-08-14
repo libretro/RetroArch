@@ -401,7 +401,6 @@ void uninit_camera(void)
 }
 #endif
 
-#ifdef HAVE_LOCATION
 static const location_driver_t *location_drivers[] = {
 #ifdef ANDROID
    &location_android,
@@ -409,6 +408,7 @@ static const location_driver_t *location_drivers[] = {
 #if defined(IOS) || defined(OSX)
    &location_apple,
 #endif
+   &location_null,
    NULL,
 };
 
@@ -527,7 +527,6 @@ void uninit_location(void)
    }
    driver.location_data = NULL;
 }
-#endif
 
 #ifdef HAVE_MENU
 static const menu_ctx_driver_t *menu_ctx_drivers[] = {
@@ -777,9 +776,7 @@ void init_drivers_pre(void)
 #ifdef HAVE_CAMERA
    find_camera_driver();
 #endif
-#ifdef HAVE_LOCATION
    find_location_driver();
-#endif
 #ifdef HAVE_OSK
    find_osk_driver();
 #endif
@@ -941,9 +938,7 @@ void init_drivers(void)
 #ifdef HAVE_CAMERA
    driver.camera_data_own = false;
 #endif
-#ifdef HAVE_LOCATION
    driver.location_data_own = false;
-#endif
 #ifdef HAVE_OSK
    driver.osk_data_own = false;
 #endif
@@ -970,11 +965,9 @@ void init_drivers(void)
       init_camera();
 #endif
 
-#ifdef HAVE_LOCATION
    // Only initialize location driver if we're ever going to use it.
    if (g_extern.location_active)
       init_location();
-#endif
 
 #ifdef HAVE_OSK
    init_osk();
@@ -1073,13 +1066,11 @@ void uninit_drivers(void)
    }
 #endif
 
-#ifdef HAVE_LOCATION
    if (!driver.location_data_own)
    {
       uninit_location();
       driver.location_data = NULL;
    }
-#endif
    
 #ifdef HAVE_OSK
    if (!driver.osk_data_own)

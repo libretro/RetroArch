@@ -315,9 +315,7 @@ static void menu_common_entries_init(menu_handle_t *menu, unsigned menu_type)
 #ifdef HAVE_CAMERA
          file_list_push(menu->selection_buf, "", "camera_allow", MENU_SETTINGS_PRIVACY_CAMERA_ALLOW, 0);
 #endif
-#ifdef HAVE_LOCATION
          file_list_push(menu->selection_buf, "", "location_allow", MENU_SETTINGS_PRIVACY_LOCATION_ALLOW, 0);
-#endif
          break;
       case MENU_SETTINGS_DISK_OPTIONS:
          file_list_clear(menu->selection_buf);
@@ -413,9 +411,7 @@ static void menu_common_entries_init(menu_handle_t *menu, unsigned menu_type)
 #ifdef HAVE_CAMERA
          file_list_push(menu->selection_buf, "Camera Driver", "", MENU_SETTINGS_DRIVER_CAMERA, 0);
 #endif
-#ifdef HAVE_LOCATION
          file_list_push(menu->selection_buf, "Location Driver", "", MENU_SETTINGS_DRIVER_LOCATION, 0);
-#endif
 #ifdef HAVE_MENU
          file_list_push(menu->selection_buf, "Menu Driver", "", MENU_SETTINGS_DRIVER_MENU, 0);
 #endif
@@ -3803,14 +3799,12 @@ static int menu_common_setting_set(unsigned id, unsigned action, rarch_setting_t
                find_next_camera_driver();
             break;
 #endif
-#ifdef HAVE_LOCATION
          case MENU_SETTINGS_DRIVER_LOCATION:
             if (action == MENU_ACTION_LEFT)
                find_prev_location_driver();
             else if (action == MENU_ACTION_RIGHT)
                find_next_location_driver();
             break;
-#endif
 #ifdef HAVE_MENU
          case MENU_SETTINGS_DRIVER_MENU:
             if (action == MENU_ACTION_LEFT)
@@ -4257,11 +4251,9 @@ static void menu_common_setting_set_label(char *type_str, size_t type_str_size, 
             strlcpy(type_str, g_settings.camera.driver, type_str_size);
             break;
 #endif
-#ifdef HAVE_LOCATION
          case MENU_SETTINGS_DRIVER_LOCATION:
             strlcpy(type_str, g_settings.location.driver, type_str_size);
             break;
-#endif
 #ifdef HAVE_MENU
          case MENU_SETTINGS_DRIVER_MENU:
             strlcpy(type_str, g_settings.menu.driver, type_str_size);
@@ -4676,11 +4668,9 @@ static void menu_common_setting_set_label(char *type_str, size_t type_str_size, 
             snprintf(type_str, type_str_size, g_settings.camera.allow ? "ON" : "OFF");
             break;
 #endif
-#ifdef HAVE_LOCATION
          case MENU_SETTINGS_PRIVACY_LOCATION_ALLOW:
             snprintf(type_str, type_str_size, g_settings.location.allow ? "ON" : "OFF");
             break;
-#endif
 #ifdef HAVE_OSK
          case MENU_SETTINGS_ONSCREEN_KEYBOARD_ENABLE:
             snprintf(type_str, type_str_size, g_settings.osk.enable ? "ON" : "OFF");

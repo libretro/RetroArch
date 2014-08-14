@@ -319,6 +319,8 @@
     </ClCompile>
     <ClCompile Include="..\..\retroarch.c">
     </ClCompile>
+    <ClCompile Include="..\..\location\null.c">
+    </ClCompile>
     <ClCompile Include="..\..\rewind.c">
     </ClCompile>
     <ClCompile Include="..\..\screenshot.c">

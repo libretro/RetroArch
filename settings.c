@@ -212,19 +212,18 @@ const char *config_get_default_camera(void)
          return "video4linux2";
       case CAMERA_RWEBCAM:
          return "rwebcam";
-      case CAMERA_NULL:
-         return "null";
       case CAMERA_ANDROID:
          return "android";
       case CAMERA_IOS:
          return "ios";
+      case CAMERA_NULL:
+         return "null";
       default:
          return NULL;
    }
 }
 #endif
 
-#ifdef HAVE_LOCATION
 const char *config_get_default_location(void)
 {
    switch (LOCATION_DEFAULT_DRIVER)
@@ -233,11 +232,12 @@ const char *config_get_default_location(void)
          return "android";
       case LOCATION_APPLE:
          return "apple";
+      case LOCATION_NULL:
+         return "null";
       default:
          return NULL;
    }
 }
-#endif
 
 void config_set_defaults(void)
 {
@@ -256,12 +256,10 @@ void config_set_defaults(void)
       strlcpy(g_settings.camera.driver, def_camera, sizeof(g_settings.camera.driver));
 #endif
 
-#ifdef HAVE_LOCATION
    const char *def_location = config_get_default_location();
 
    if (def_location)
       strlcpy(g_settings.location.driver, def_location, sizeof(g_settings.location.driver));
-#endif
 
 #ifdef HAVE_OSK
    const char *def_osk = config_get_default_osk();
@@ -374,9 +372,7 @@ void config_set_defaults(void)
    g_settings.menu_show_start_screen = menu_show_start_screen;
 #endif
 
-#ifdef HAVE_LOCATION
    g_settings.location.allow = false;
-#endif
 
 #ifdef HAVE_CAMERA
    g_settings.camera.allow = false;
@@ -984,10 +980,7 @@ bool config_load_file(const char *path, bool set_defaults)
    CONFIG_GET_BOOL(camera.allow, "camera_allow");
 #endif
 
-#ifdef HAVE_LOCATION
    CONFIG_GET_BOOL(location.allow, "location_allow");
-#endif
-
    CONFIG_GET_STRING(video.driver, "video_driver");
    CONFIG_GET_STRING(menu.driver, "menu_driver");
    CONFIG_GET_STRING(video.gl_context, "video_gl_context");
@@ -1406,9 +1399,7 @@ bool config_save_file(const char *path)
    config_set_bool(conf, "audio_enable", g_settings.audio.enable);
    config_set_int(conf, "audio_out_rate", g_settings.audio.out_rate);
 
-#ifdef HAVE_LOCATION
    config_set_bool(conf, "location_allow", g_settings.location.allow);
-#endif
 
    config_set_float(conf, "video_font_size", g_settings.video.font_size);
    config_set_bool(conf,  "video_font_enable", g_settings.video.font_enable);

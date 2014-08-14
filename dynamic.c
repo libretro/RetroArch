@@ -382,9 +382,7 @@ void uninit_libretro_sym(void)
 #ifdef HAVE_CAMERA
    g_extern.camera_active = false;
 #endif
-#ifdef HAVE_LOCATION
    g_extern.location_active = false;
-#endif
 
    // Performance counters no longer valid.
    retro_perf_clear();
@@ -834,7 +832,6 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          break;
       }
 #endif
-#ifdef HAVE_LOCATION
       case RETRO_ENVIRONMENT_GET_LOCATION_INTERFACE:
       {
          RARCH_LOG("Environ GET_LOCATION_INTERFACE.\n");
@@ -847,7 +844,6 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          g_extern.location_active = true;
          break;
       }
-#endif
 
       case RETRO_ENVIRONMENT_GET_LOG_INTERFACE:
       {

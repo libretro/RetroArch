@@ -22,6 +22,7 @@
     <ClCompile Include="..\..\netplay.c" />
     <ClCompile Include="..\..\patch.c" />
     <ClCompile Include="..\..\retroarch.c" />
+    <ClCompile Include="..\..\location\null.c" />
     <ClCompile Include="..\..\rewind.c" />
     <ClCompile Include="..\..\screenshot.c" />
     <ClCompile Include="..\..\settings.c" />

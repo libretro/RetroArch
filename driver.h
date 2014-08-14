@@ -423,10 +423,8 @@ typedef struct driver
    const camera_driver_t *camera;
    void *camera_data;
 #endif
-#ifdef HAVE_LOCATION
    const location_driver_t *location;
    void *location_data;
-#endif
    void *audio_data;
    void *video_data;
    void *input_data;
@@ -457,9 +455,7 @@ typedef struct driver
 #ifdef HAVE_CAMERA
    bool camera_data_own;
 #endif
-#ifdef HAVE_LOCATION
    bool location_data_own;
-#endif
 #ifdef HAVE_OSK
    bool osk_data_own;
 #endif
@@ -531,12 +527,10 @@ void find_prev_camera_driver(void);
 void find_next_camera_driver(void);
 #endif
 
-#ifdef HAVE_LOCATION
 void init_location(void);
 void uninit_location(void);
 void find_prev_location_driver(void);
 void find_next_location_driver(void);
-#endif
 
 void driver_set_monitor_refresh_rate(float hz);
 bool driver_monitor_fps_statistics(double *refresh_rate, double *deviation, unsigned *sample_points);
@@ -571,12 +565,10 @@ void driver_camera_poll(void);
 #endif
 
 // Used by RETRO_ENVIRONMENT_GET_LOCATION_INTERFACE
-#ifdef HAVE_LOCATION
 bool driver_location_start(void);
 void driver_location_stop(void);
 bool driver_location_get_position(double *lat, double *lon, double *horiz_accuracy, double *vert_accuracy);
 void driver_location_set_interval(unsigned interval_msecs, unsigned interval_distance);
-#endif
 
 #ifdef HAVE_MENU
 const void *menu_ctx_find_driver(const char *ident); // Finds driver with ident. Does not initialize.
@@ -646,6 +638,7 @@ extern const camera_driver_t camera_rwebcam;
 extern const camera_driver_t camera_ios;
 extern const location_driver_t location_apple;
 extern const location_driver_t location_android;
+extern const location_driver_t location_null;
 extern const input_osk_driver_t input_ps3_osk;
 
 extern const menu_ctx_driver_t menu_ctx_rmenu;
