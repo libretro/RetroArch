@@ -267,9 +267,13 @@ static void thread_loop(void *data)
             
          case CMD_SET_SHADER:
          {
-            bool ret = thr->driver->set_shader(thr->driver_data,
-                  thr->cmd_data.set_shader.type,
-                  thr->cmd_data.set_shader.path);
+            bool ret = false;
+
+            if (thr->driver->set_shader)
+               ret = thr->driver->set_shader(thr->driver_data,
+                        thr->cmd_data.set_shader.type,
+                        thr->cmd_data.set_shader.path);
+
             thr->cmd_data.b = ret;
             thread_reply(thr, CMD_SET_SHADER);
             break;
@@ -324,9 +328,10 @@ static void thread_loop(void *data)
 #endif
 
          case CMD_POKE_SET_FILTERING:
-            thr->poke->set_filtering(thr->driver_data,
-                  thr->cmd_data.filtering.index,
-                  thr->cmd_data.filtering.smooth);
+            if (thr->poke->set_filtering)
+               thr->poke->set_filtering(thr->driver_data,
+                     thr->cmd_data.filtering.index,
+                     thr->cmd_data.filtering.smooth);
             thread_reply(thr, CMD_POKE_SET_FILTERING);
             break;
 
