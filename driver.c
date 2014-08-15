@@ -308,8 +308,13 @@ static void find_camera_driver(void)
       RARCH_LOG_OUTPUT("Available camera drivers are:\n");
       for (d = 0; camera_drivers[d]; d++)
          RARCH_LOG_OUTPUT("\t%s\n", camera_drivers[d]->ident);
-
-      rarch_fail(1, "find_camera_driver()");
+       
+      RARCH_WARN("Going to default to first camera driver...\n");
+       
+      driver.camera = camera_drivers[0];
+       
+      if (!driver.camera)
+         rarch_fail(1, "find_camera_driver()");
    }
 }
 
