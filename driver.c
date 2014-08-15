@@ -435,8 +435,13 @@ static void find_location_driver(void)
       RARCH_LOG_OUTPUT("Available location drivers are:\n");
       for (d = 0; location_drivers[d]; d++)
          RARCH_LOG_OUTPUT("\t%s\n", location_drivers[d]->ident);
+       
+      RARCH_WARN("Going to default to first location driver...\n");
+       
+      driver.location = location_drivers[0];
 
-      rarch_fail(1, "find_location_driver()");
+      if (!driver.location)
+         rarch_fail(1, "find_location_driver()");
    }
 }
 
