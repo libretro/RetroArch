@@ -63,7 +63,7 @@ RETROLAUNCH_OBJ = tools/retrolaunch/main.o \
 	hash.o \
 	tools/retrolaunch/parser.o \
 	tools/retrolaunch/cd_detect.o \
-	compat/rarch_fnmatch.o \
+	compat/fnmatch_rarch.o \
 	tools/input_common_launch.o \
 	file_path.o \
 	compat/compat.o \

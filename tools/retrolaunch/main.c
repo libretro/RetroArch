@@ -15,7 +15,7 @@
 #include "../../hash.h"
 #include "parser.h"
 #include "cd_detect.h"
-#include "../../compat/rarch_fnmatch.h"
+#include "../../compat/fnmatch_rarch.h"
 #include "../../file.h"
 
 #include "log.h"

@@ -19,7 +19,7 @@
 #include <assert.h>
 #endif
 
-#include "rarch_fnmatch.h"
+#include "fnmatch_rarch.h"
 
 // Implemnentation of fnmatch(3) so it can be distributed to non *nix platforms
 // No flags are implemented ATM. We don't use them. Add flags as needed.
