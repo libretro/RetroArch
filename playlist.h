@@ -40,13 +40,6 @@ void content_playlist_push(content_playlist_t *playlist,
       const char *path, const char *core_path,
       const char *core_name);
 
-const char* content_playlist_get_path(content_playlist_t *playlist,
-      unsigned index);
-const char* content_playlist_get_core_path(content_playlist_t *playlist,
-      unsigned index);
-const char* content_playlist_get_core_name(content_playlist_t *playlist,
-      unsigned index);
-
 #ifdef __cplusplus
 }
 #endif
