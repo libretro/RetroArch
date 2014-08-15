@@ -87,8 +87,9 @@ const char *config_get_default_audio_resampler(void)
       case AUDIO_RESAMPLER_CC:
          return "cc";
       case AUDIO_RESAMPLER_SINC:
-      default:
          return "sinc";
+      default:
+         return NULL;
    }
 }
 
