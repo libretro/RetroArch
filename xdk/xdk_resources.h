@@ -17,7 +17,7 @@
 #ifndef RARCH_XDK_RESOURCE_H
 #define RARCH_XDK_RESOURCE_H
 
-#include "xdk_defines.h"
+#include "../gfx/d3d9/xdk_defines.h"
 
 DWORD XBResource_SizeOf( LPDIRECT3DRESOURCE pResource );
 
