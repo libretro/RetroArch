@@ -129,7 +129,7 @@ static bool sdl_joypad_init(void)
    else if (SDL_InitSubSystem(SDL_INIT_JOYSTICK) < 0)
       return false;
 
-#if HAS_SDL2
+#if HAVE_SDL2
    // TODO: Add SDL_GameController support.
    //if (SDL_Init(SDL_INIT_GAMECONTROLLER) < 0)
    //   RARCH_LOG("[SDL]: Failed to initialize game controller interface: %s\n",
