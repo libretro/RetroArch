@@ -429,6 +429,8 @@ void core_info_list_get_missing_firmware(core_info_list_t *core_info_list,
    qsort(info->firmware, info->firmware_count, sizeof(*info->firmware), core_info_firmware_cmp);
 }
 
+/* TODO - remove all of the functions below */
+
 void core_info_set_core_path(void)
 {
    global_core_list = core_info_list_new(g_defaults.core_dir);
