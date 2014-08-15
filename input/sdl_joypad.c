@@ -124,8 +124,11 @@ static void sdl_joypad_destroy(void)
 static bool sdl_joypad_init(void)
 {
    unsigned i;
-   if (SDL_WasInit(0) == 0 && SDL_Init(SDL_INIT_JOYSTICK) < 0)
-      return false;
+   if (SDL_WasInit(0) == 0)
+   {
+      if (SDL_Init(SDL_INIT_JOYSTICK) < 0)
+         return false;
+   }
    else if (SDL_InitSubSystem(SDL_INIT_JOYSTICK) < 0)
       return false;
 

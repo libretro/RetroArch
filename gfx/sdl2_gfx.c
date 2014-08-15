@@ -369,8 +369,11 @@ static void *sdl2_gfx_init(const video_info_t *video, const input_driver_t **inp
 
    int i;
 
-   if (SDL_WasInit(0) == 0 && SDL_Init(SDL_INIT_VIDEO) < 0)
-      return NULL;
+   if (SDL_WasInit(0) == 0)
+   {
+      if (SDL_Init(SDL_INIT_VIDEO) < 0)
+         return NULL;
+   }
    else if (SDL_InitSubSystem(SDL_INIT_VIDEO) < 0)
       return NULL;
 
