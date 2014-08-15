@@ -42,17 +42,17 @@ struct content_playlist
    char *conf_path;
 };
 
-void content_playlist_get_index(content_playlist_t *hist,
+void content_playlist_get_index(content_playlist_t *playlist,
       size_t index,
       const char **path, const char **core_path,
       const char **core_name)
 {
-   if (!hist)
+   if (!playlist)
       return;
 
-   *path      = hist->entries[index].path;
-   *core_path = hist->entries[index].core_path;
-   *core_name = hist->entries[index].core_name;
+   *path      = playlist->entries[index].path;
+   *core_path = playlist->entries[index].core_path;
+   *core_name = playlist->entries[index].core_name;
 }
 
 static void content_playlist_free_entry(struct content_playlist_entry *entry)
@@ -70,114 +70,114 @@ static void content_playlist_free_entry(struct content_playlist_entry *entry)
    memset(entry, 0, sizeof(*entry));
 }
 
-void content_playlist_push(content_playlist_t *hist,
+void content_playlist_push(content_playlist_t *playlist,
       const char *path, const char *core_path,
       const char *core_name)
 {
    size_t i;
 
-   if (!hist)
+   if (!playlist)
       return;
 
-   for (i = 0; i < hist->size; i++)
+   for (i = 0; i < playlist->size; i++)
    {
-      bool equal_path = (!path && !hist->entries[i].path) ||
-         (path && hist->entries[i].path && !strcmp(path, hist->entries[i].path));
+      bool equal_path = (!path && !playlist->entries[i].path) ||
+         (path && playlist->entries[i].path && !strcmp(path, playlist->entries[i].path));
 
       // Core name can have changed while still being the same core.
       // Differentiate based on the core path only.
-      if (equal_path && !strcmp(hist->entries[i].core_path, core_path))
+      if (equal_path && !strcmp(playlist->entries[i].core_path, core_path))
       {
          if (i == 0)
             return;
 
          // Seen it before, bump to top.
-         struct content_playlist_entry tmp = hist->entries[i];
-         memmove(hist->entries + 1, hist->entries,
+         struct content_playlist_entry tmp = playlist->entries[i];
+         memmove(playlist->entries + 1, playlist->entries,
                i * sizeof(struct content_playlist_entry));
-         hist->entries[0] = tmp;
+         playlist->entries[0] = tmp;
          return;
       }
    }
 
-   if (hist->size == hist->cap)
+   if (playlist->size == playlist->cap)
    {
-      content_playlist_free_entry(&hist->entries[hist->cap - 1]);
-      hist->size--;
+      content_playlist_free_entry(&playlist->entries[playlist->cap - 1]);
+      playlist->size--;
    }
 
-   memmove(hist->entries + 1, hist->entries,
-         (hist->cap - 1) * sizeof(struct content_playlist_entry));
+   memmove(playlist->entries + 1, playlist->entries,
+         (playlist->cap - 1) * sizeof(struct content_playlist_entry));
 
-   hist->entries[0].path      = path ? strdup(path) : NULL;
-   hist->entries[0].core_path = strdup(core_path);
-   hist->entries[0].core_name = strdup(core_name);
-   hist->size++;
+   playlist->entries[0].path      = path ? strdup(path) : NULL;
+   playlist->entries[0].core_path = strdup(core_path);
+   playlist->entries[0].core_name = strdup(core_name);
+   playlist->size++;
 }
 
-static void content_playlist_write_file(content_playlist_t *hist)
+static void content_playlist_write_file(content_playlist_t *playlist)
 {
    size_t i;
    FILE *file = NULL;
 
-   if (!hist)
+   if (!playlist)
       return;
 
-   file = fopen(hist->conf_path, "w");
+   file = fopen(playlist->conf_path, "w");
 
    if (!file)
    {
-      RARCH_ERR("Couldn't write to content playlist file: %s.\n", hist->conf_path);
+      RARCH_ERR("Couldn't write to content playlist file: %s.\n", playlist->conf_path);
       return;
    }
 
-   for (i = 0; i < hist->size; i++)
+   for (i = 0; i < playlist->size; i++)
    {
       fprintf(file, "%s\n%s\n%s\n",
-            hist->entries[i].path ? hist->entries[i].path : "",
-            hist->entries[i].core_path,
-            hist->entries[i].core_name);
+            playlist->entries[i].path ? playlist->entries[i].path : "",
+            playlist->entries[i].core_path,
+            playlist->entries[i].core_name);
    }
 
    fclose(file);
 }
 
-void content_playlist_free(content_playlist_t *hist)
+void content_playlist_free(content_playlist_t *playlist)
 {
    size_t i;
-   if (!hist)
+   if (!playlist)
       return;
 
-   if (hist->conf_path)
-      content_playlist_write_file(hist);
-   free(hist->conf_path);
+   if (playlist->conf_path)
+      content_playlist_write_file(playlist);
+   free(playlist->conf_path);
 
-   for (i = 0; i < hist->cap; i++)
-      content_playlist_free_entry(&hist->entries[i]);
-   free(hist->entries);
+   for (i = 0; i < playlist->cap; i++)
+      content_playlist_free_entry(&playlist->entries[i]);
+   free(playlist->entries);
 
-   free(hist);
+   free(playlist);
 }
 
-void content_playlist_clear(content_playlist_t *hist)
+void content_playlist_clear(content_playlist_t *playlist)
 {
    size_t i;
-   if (!hist)
+   if (!playlist)
       return;
 
-   for (i = 0; i < hist->cap; i++)
-      content_playlist_free_entry(&hist->entries[i]);
-   hist->size = 0;
+   for (i = 0; i < playlist->cap; i++)
+      content_playlist_free_entry(&playlist->entries[i]);
+   playlist->size = 0;
 }
 
-size_t content_playlist_size(content_playlist_t *hist)
+size_t content_playlist_size(content_playlist_t *playlist)
 {
-   if (hist)
-      return hist->size;
+   if (playlist)
+      return playlist->size;
    return 0;
 }
 
-static bool content_playlist_read_file(content_playlist_t *hist, const char *path)
+static bool content_playlist_read_file(content_playlist_t *playlist, const char *path)
 {
    char buf[3][PATH_MAX];
    unsigned i;
@@ -185,13 +185,13 @@ static bool content_playlist_read_file(content_playlist_t *hist, const char *pat
    char *last = NULL;
    FILE *file = fopen(path, "r");
 
-   if (!file || !hist)
+   if (!file || !playlist)
    {
       RARCH_ERR("Couldn't read content playlist file: %s.\n", path);
       return true;
    }
 
-   for (hist->size = 0; hist->size < hist->cap; )
+   for (playlist->size = 0; playlist->size < playlist->cap; )
    {
       for (i = 0; i < 3; i++)
       {
@@ -204,7 +204,7 @@ static bool content_playlist_read_file(content_playlist_t *hist, const char *pat
             *last = '\0';
       }
 
-      entry = &hist->entries[hist->size];
+      entry = &playlist->entries[playlist->size];
 
       if (!*buf[1] || !*buf[2])
          continue;
@@ -213,7 +213,7 @@ static bool content_playlist_read_file(content_playlist_t *hist, const char *pat
          entry->path = strdup(buf[0]);
       entry->core_path = strdup(buf[1]);
       entry->core_name = strdup(buf[2]);
-      hist->size++;
+      playlist->size++;
    }
 
 end:
@@ -224,63 +224,63 @@ end:
 content_playlist_t *content_playlist_init(const char *path, size_t size)
 {
    RARCH_LOG("Opening playlist: %s.\n", path);
-   content_playlist_t *hist = (content_playlist_t*)calloc(1, sizeof(*hist));
-   if (!hist)
+   content_playlist_t *playlist = (content_playlist_t*)calloc(1, sizeof(*playlist));
+   if (!playlist)
    {
        RARCH_ERR("Cannot initialize content playlist.\n");
       return NULL;
    }
 
-   hist->entries = (struct content_playlist_entry*)calloc(size, sizeof(*hist->entries));
-   if (!hist->entries)
+   playlist->entries = (struct content_playlist_entry*)calloc(size, sizeof(*playlist->entries));
+   if (!playlist->entries)
       goto error;
 
-   hist->cap = size;
+   playlist->cap = size;
 
-   if (!content_playlist_read_file(hist, path))
+   if (!content_playlist_read_file(playlist, path))
       goto error;
 
-   hist->conf_path = strdup(path);
-   return hist;
+   playlist->conf_path = strdup(path);
+   return playlist;
 
 error:
-   content_playlist_free(hist);
+   content_playlist_free(playlist);
    return NULL;
 }
 
-const char* content_playlist_get_path(content_playlist_t *hist, unsigned index)
+const char* content_playlist_get_path(content_playlist_t *playlist, unsigned index)
 {
    const char *path, *core_path, *core_name = NULL;
-   if (!hist)
+   if (!playlist)
       return "";
 
-   content_playlist_get_index(hist, index, &path, &core_path, &core_name);
+   content_playlist_get_index(playlist, index, &path, &core_path, &core_name);
 
    if (path)
       return path;
    return "";
 }
 
-const char *content_playlist_get_core_path(content_playlist_t *hist, unsigned index)
+const char *content_playlist_get_core_path(content_playlist_t *playlist, unsigned index)
 {
    const char *path, *core_path, *core_name = NULL;
-   if (!hist)
+   if (!playlist)
       return "";
 
-   content_playlist_get_index(hist, index, &path, &core_path, &core_name);
+   content_playlist_get_index(playlist, index, &path, &core_path, &core_name);
     
    if (core_path)
       return core_path;
    return "";
 }
 
-const char *content_playlist_get_core_name(content_playlist_t *hist, unsigned index)
+const char *content_playlist_get_core_name(content_playlist_t *playlist, unsigned index)
 {
    const char *path, *core_path, *core_name = NULL;
-   if (!hist)
+   if (!playlist)
       return "";
 
-   content_playlist_get_index(hist, index, &path, &core_path, &core_name);
+   content_playlist_get_index(playlist, index, &path, &core_path, &core_name);
 
    if (core_name)
       return core_name;

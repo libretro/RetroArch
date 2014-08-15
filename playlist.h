@@ -25,26 +25,26 @@ extern "C" {
 typedef struct content_playlist content_playlist_t;
 
 content_playlist_t *content_playlist_init(const char *path, size_t size);
-void content_playlist_free(content_playlist_t *hist);
+void content_playlist_free(content_playlist_t *playlist);
 
-void content_playlist_clear(content_playlist_t *hist);
+void content_playlist_clear(content_playlist_t *playlist);
 
-size_t content_playlist_size(content_playlist_t *hist);
+size_t content_playlist_size(content_playlist_t *playlist);
 
-void content_playlist_get_index(content_playlist_t *hist,
+void content_playlist_get_index(content_playlist_t *playlist,
       size_t index,
       const char **path, const char **core_path,
       const char **core_name);
 
-void content_playlist_push(content_playlist_t *hist,
+void content_playlist_push(content_playlist_t *playlist,
       const char *path, const char *core_path,
       const char *core_name);
 
-const char* content_playlist_get_path(content_playlist_t *hist,
+const char* content_playlist_get_path(content_playlist_t *playlist,
       unsigned index);
-const char* content_playlist_get_core_path(content_playlist_t *hist,
+const char* content_playlist_get_core_path(content_playlist_t *playlist,
       unsigned index);
-const char* content_playlist_get_core_name(content_playlist_t *hist,
+const char* content_playlist_get_core_name(content_playlist_t *playlist,
       unsigned index);
 
 #ifdef __cplusplus
