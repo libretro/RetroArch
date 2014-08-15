@@ -263,14 +263,14 @@ static void xenon360_gfx_set_rotation(void *data, unsigned rotation)
    (void)rotation;
 }
 
-
 const video_driver_t video_xenon360 = {
-   .init = xenon360_gfx_init,
-   .frame = xenon360_gfx_frame,
-   .alive = xenon360_gfx_alive,
-   .set_nonblock_state = xenon360_gfx_set_nonblock_state,
-   .focus = xenon360_gfx_focus,
-   .free = xenon360_gfx_free,
-   .ident = "xenon360"
+   xenon360_gfx_init,
+   xenon360_gfx_frame,
+   xenon360_gfx_set_nonblock_state,
+   xenon360_gfx_alive,
+   xenon360_gfx_focus,
+   NULL,
+   xenon360_gfx_free,
+   "xenon360"
 };
 
