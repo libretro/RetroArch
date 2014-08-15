@@ -32,6 +32,12 @@ typedef struct _sdl_joypad
 #endif
 } sdl_joypad_t;
 
+#ifdef HAVE_SDL2
+const int g_subsystem = SDL_INIT_GAMECONTROLLER;
+#else
+const int g_subsystem = SDL_INIT_JOYSTICK;
+#endif
+
 static sdl_joypad_t g_pads[MAX_PLAYERS];
 #ifdef HAVE_SDL2
 static bool g_has_haptic;
@@ -117,27 +123,23 @@ static void sdl_joypad_destroy(void)
    for (i = 0; i < MAX_PLAYERS; i++)
       sdl_joypad_disconnect(i);
 
-   SDL_QuitSubSystem(SDL_INIT_JOYSTICK);
+   SDL_QuitSubSystem(g_subsystem);
    memset(g_pads, 0, sizeof(g_pads));
 }
 
 static bool sdl_joypad_init(void)
 {
    unsigned i;
+
    if (SDL_WasInit(0) == 0)
    {
-      if (SDL_Init(SDL_INIT_JOYSTICK) < 0)
+      if (SDL_Init(g_subsystem) < 0)
          return false;
    }
-   else if (SDL_InitSubSystem(SDL_INIT_JOYSTICK) < 0)
+   else if (SDL_InitSubSystem(g_subsystem) < 0)
       return false;
 
 #if HAVE_SDL2
-   // TODO: Add SDL_GameController support.
-   //if (SDL_Init(SDL_INIT_GAMECONTROLLER) < 0)
-   //   RARCH_LOG("[SDL]: Failed to initialize game controller interface: %s\n",
-   //             SDL_GetError());
-
    g_has_haptic = false;
    if (SDL_InitSubSystem(SDL_INIT_HAPTIC) < 0)
       RARCH_WARN("[SDL]: Failed to initialize haptic device support: %s\n",
