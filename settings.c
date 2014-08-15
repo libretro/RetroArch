@@ -1065,7 +1065,7 @@ bool config_load_file(const char *path, bool set_defaults)
    CONFIG_GET_INT(network_cmd_port, "network_cmd_port");
    CONFIG_GET_BOOL(stdin_cmd_enable, "stdin_cmd_enable");
 
-   fill_pathname_resolve_relative(g_settings.content_history_path, g_extern.config_path, ".retroarch-game-history.txt", sizeof(g_settings.content_history_path));
+   fill_pathname_resolve_relative(g_settings.content_history_path, g_extern.config_path, "retroarch-game-history.txt", sizeof(g_settings.content_history_path));
    CONFIG_GET_PATH(content_history_path, "game_history_path");
    CONFIG_GET_INT(content_history_size, "game_history_size");
 
