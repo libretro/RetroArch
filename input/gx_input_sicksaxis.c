@@ -1,4 +1,4 @@
-#include "sicksaxis.h"
+#include "gx_input_sicksaxis.h"
 #include <gccore.h>
 #include <stdio.h>
 #include <string.h>
@@ -34,11 +34,12 @@ static int _ss_set_operational(struct ss_device *dev);
 static int _ss_build_attributes_payload(struct ss_device *dev);
 static int _ss_send_attributes_payload(struct ss_device *dev);
 
-int ss_init()
+int ss_init(void)
 {
-    if (!_ss_inited) {
-        _ss_heap_id = iosCreateHeap(SS_HEAP_SIZE);
-        _ss_inited = 1;
+    if (!_ss_inited)
+    {
+       _ss_heap_id = iosCreateHeap(SS_HEAP_SIZE);
+       _ss_inited = 1;
     }
     return 1;
 }

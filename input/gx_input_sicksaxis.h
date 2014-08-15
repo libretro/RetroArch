@@ -3,7 +3,6 @@
 
 #include <gccore.h>
 
-
 #define SS_HEAP_SIZE    4096
 #define SS_MAX_DEV      8
 #define SS_VENDOR_ID    0x054C
@@ -122,7 +121,7 @@ struct ss_device {
 }__attribute__((aligned(32)));
 
 
-int ss_init();
+int ss_init(void);
 int ss_initialize(struct ss_device *dev);
 int ss_open(struct ss_device *dev);
 int ss_close(struct ss_device *dev);

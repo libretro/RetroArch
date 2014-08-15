@@ -294,7 +294,7 @@ INPUT
 #include "../input/autoconf/builtin_psp.c"
 #elif defined(GEKKO)
 #ifdef HAVE_LIBSICKSAXIS
-#include "../gx/sicksaxis.c"
+#include "../input/gx_input_sicksaxis.c"
 #endif
 #include "../input/gx_input.c"
 #include "../input/autoconf/builtin_gx.c"
