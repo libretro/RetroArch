@@ -37,7 +37,7 @@ static void nullcamera_stop(void *data)
 static bool nullcamera_poll(void *data, retro_camera_frame_raw_framebuffer_t frame_raw_cb,
       retro_camera_frame_opengl_texture_t frame_gl_cb)
 {
-   return true;
+   return false;
 }
 
 const camera_driver_t camera_null = {
