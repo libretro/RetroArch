@@ -645,14 +645,14 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 - (void)dealloc
 {
    if (_history)
-      content_history_free(_history);
+      content_playlist_free(_history);
 }
 
 - (id)initWithHistoryPath:(const char*)historyPath
 {
    if ((self = [super initWithStyle:UITableViewStylePlain]))
    {
-      _history = content_history_init(historyPath, 100);
+      _history = content_playlist_init(historyPath, 100);
       [self reloadData];
       self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:BOXSTRING("Clear History")
                                                 style:UIBarButtonItemStyleBordered target:self action:@selector(clearHistory)];
@@ -664,7 +664,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 - (void)clearHistory
 {
    if (_history)
-      content_history_clear(_history);
+      content_playlist_clear(_history);
    [self reloadData];
 }
 
@@ -674,12 +674,12 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
    RAHistoryMenu* __weak weakSelf = self;
    NSMutableArray *section = [NSMutableArray arrayWithObject:BOXSTRING("")];
    
-   for (i = 0; _history && i < content_history_size(_history); i ++)
+   for (i = 0; _history && i < content_playlist_size(_history); i ++)
    {
-      RAMenuItemBasic* item = [RAMenuItemBasic itemWithDescription:BOXSTRING(path_basename(content_history_get_path(weakSelf.history, i)))
-                                                            action:^{ apple_run_core(0, NULL, content_history_get_core_path(weakSelf.history, i),
-                                                                                     content_history_get_path(weakSelf.history, i)); }
-                                                            detail:^{ return BOXSTRING(content_history_get_core_name(weakSelf.history, i)); }];
+      RAMenuItemBasic* item = [RAMenuItemBasic itemWithDescription:BOXSTRING(path_basename(content_playlist_get_path(weakSelf.history, i)))
+                                                            action:^{ apple_run_core(0, NULL, content_playlist_get_core_path(weakSelf.history, i),
+                                                                                     content_playlist_get_path(weakSelf.history, i)); }
+                                                            detail:^{ return BOXSTRING(content_playlist_get_core_name(weakSelf.history, i)); }];
       [section addObject:item];
    }
    

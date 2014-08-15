@@ -16,7 +16,7 @@
 #ifndef __APPLE_RARCH_IOS_MENU_H__
 #define __APPLE_RARCH_IOS_MENU_H__
 
-#include "../../history.h"
+#include "../../playlist.h"
 #include "views.h"
 #include "../../settings_data.h"
 
@@ -118,7 +118,7 @@
 /* launching a file from the content history.    */
 /*************************************************/
 @interface RAHistoryMenu : RAMenuBase
-@property (nonatomic) content_history_t* history;
+@property (nonatomic) content_playlist_t* history;
 - (id)initWithHistoryPath:(const char*)historyPath;
 @end
 
