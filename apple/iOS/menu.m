@@ -629,7 +629,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 - (void)loadHistory
 {
    char history_path[PATH_MAX];
-   fill_pathname_join(history_path, g_defaults.system_dir, ".retroarch-game-history.txt", sizeof(history_path));
+   fill_pathname_join(history_path, g_defaults.system_dir, "retroarch-content-history.txt", sizeof(history_path));
    [self.navigationController pushViewController:[[RAHistoryMenu alloc] initWithHistoryPath:history_path] animated:YES];
 }
 
