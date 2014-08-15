@@ -302,7 +302,7 @@ INPUT
 #include "../input/xdk_xinput_input.c"
 #include "../input/autoconf/builtin_xdk.c"
 #elif defined(XENON)
-#include "../xenon/xenon360_input.c"
+#include "../input/xenon360_input.c"
 #elif defined(ANDROID)
 #include "../input/android_input.c"
 #elif defined(IOS) || defined(OSX)
@@ -398,7 +398,7 @@ AUDIO
 #if defined(__CELLOS_LV2__)
 #include "../audio/ps3_audio.c"
 #elif defined(XENON)
-#include "../xenon/xenon360_audio.c"
+#include "../audio/xenon360_audio.c"
 #elif defined(GEKKO)
 #include "../audio/gx_audio.c"
 #elif defined(EMSCRIPTEN)
