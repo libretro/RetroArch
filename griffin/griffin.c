@@ -224,7 +224,7 @@ VIDEO DRIVER
 #endif
 
 #ifdef _XBOX
-#include "../xdk/xdk_d3d.cpp"
+#include "../gfx/d3d9/xdk_d3d.cpp"
 #endif
 
 #if defined(GEKKO)

@@ -19,24 +19,20 @@
 #include <xgraphics.h>
 #endif
 
-#include "../driver.h"
+#include "../../driver.h"
 #include "xdk_d3d.h"
 
 #ifdef HAVE_HLSL
-#include "../gfx/shader_hlsl.h"
+#include "../../gfx/shader_hlsl.h"
 #endif
 
-#include "./../gfx/gfx_context.h"
-#include "../general.h"
-#include "../message_queue.h"
+#include "./../../gfx/gfx_context.h"
+#include "../../general.h"
+#include "../../message_queue.h"
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
+#include "../../xdk/xdk_resources.h"
 
-#include "../xdk/xdk_resources.h"
-
-#include "render_chain_xdk.cpp"
+#include "render_chain_xdk.h"
 
 //OK
 static void d3d_deinit_chain(void *data)
