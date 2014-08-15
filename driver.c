@@ -218,7 +218,12 @@ static void find_osk_driver(void)
       for (d = 0; osk_drivers[d]; d++)
          RARCH_LOG_OUTPUT("\t%s\n", osk_drivers[d]->ident);
 
-      rarch_fail(1, "find_osk_driver()");
+      RARCH_WARN("Going to default to first OSK driver...\n");
+       
+      driver.osk = osk_drivers[0];
+       
+      if (!driver.osk)
+         rarch_fail(1, "find_osk_driver()");
    }
 }
 
