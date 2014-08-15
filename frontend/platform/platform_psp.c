@@ -25,7 +25,7 @@
 #include <stddef.h>
 #include <string.h>
 
-#include "../../psp/sdk_defines.h"
+#include "../../gfx/psp/sdk_defines.h"
 #include "../../file.h"
 #include "../../general.h"
 

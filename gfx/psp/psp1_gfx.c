@@ -21,10 +21,10 @@
 #include <pspgum.h>
 #include <psprtc.h>
 
-#include "../psp/sdk_defines.h"
-#include "../general.h"
-#include "../driver.h"
-#include "../gfx/gfx_common.h"
+#include "sdk_defines.h"
+#include "../../general.h"
+#include "../../driver.h"
+#include "../gfx_common.h"
 
 #ifndef SCEGU_SCR_WIDTH
 #define SCEGU_SCR_WIDTH 480

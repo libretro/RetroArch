@@ -230,7 +230,7 @@ VIDEO DRIVER
 #if defined(GEKKO)
 #include "../gfx/gx/gx_gfx.c"
 #elif defined(PSP)
-#include "../gfx/psp1_gfx.c"
+#include "../gfx/psp/psp1_gfx.c"
 #elif defined(XENON)
 #include "../gfx/xenon360_gfx.c"
 #endif
