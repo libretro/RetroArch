@@ -676,11 +676,40 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
    
    for (i = 0; _history && i < content_playlist_size(_history); i ++)
    {
-      RAMenuItemBasic* item = [RAMenuItemBasic itemWithDescription:BOXSTRING(path_basename(content_playlist_get_path(weakSelf.history, i)))
-                                                            action:^{ apple_run_core(0, NULL, content_playlist_get_core_path(weakSelf.history, i),
-                                                                                     content_playlist_get_path(weakSelf.history, i)); }
-                                                            detail:^{ return BOXSTRING(content_playlist_get_core_name(weakSelf.history, i)); }];
-      [section addObject:item];
+       RAMenuItemBasic *item;
+       const char *path      = NULL;
+       const char *core_path = NULL;
+       const char *core_name = NULL;
+       
+       content_playlist_get_index(weakSelf.history, i, &path, &core_path, &core_name);
+       
+       item = [
+               RAMenuItemBasic itemWithDescription:BOXSTRING(path_basename(path ? path : ""))
+               action:
+               ^{
+                   const char *path      = NULL;
+                   const char *core_path = NULL;
+                   const char *core_name = NULL;
+                   
+                   content_playlist_get_index(weakSelf.history, i, &path, &core_path, &core_name);
+                   
+                   apple_run_core(0, NULL, core_path ? core_path : "",
+                                  path ? path : "");
+               }
+               detail:
+               ^{
+                   const char *path       = NULL;
+                   const char *core_path  = NULL;
+                   const char *core_name  = NULL;
+                   
+                   content_playlist_get_index(weakSelf.history, i, &path, &core_path, &core_name);
+                   
+                   if (core_name)
+                       return BOXSTRING(core_name);
+                   return BOXSTRING("");
+               }
+                ];
+       [section addObject:item];
    }
    
    self.sections = [NSMutableArray arrayWithObject:section];
