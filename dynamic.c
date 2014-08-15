@@ -554,7 +554,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          if (driver.video && driver.video->set_rotation)
          {
             if (driver.video_data)
-               video_set_rotation_func(rotation);
+               driver.video->set_rotation(driver.video_data, rotation);
          }
          else
             return false;

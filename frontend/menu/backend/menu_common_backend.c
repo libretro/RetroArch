@@ -2725,7 +2725,7 @@ static void menu_common_shader_manager_set_preset(struct gfx_shader *shader, uns
 #ifdef HAVE_SHADER_MANAGER
    RARCH_LOG("Setting Menu shader: %s.\n", cgp_path ? cgp_path : "N/A (stock)");
 
-   if (driver.video->set_shader && video_set_shader_func((enum rarch_shader_type)type, cgp_path))
+   if (driver.video->set_shader && driver.video->set_shader(driver.video_data, (enum rarch_shader_type)type, cgp_path))
    {
       // Makes sure that we use Menu CGP shader on driver reinit.
       // Only do this when the cgp actually works to avoid potential errors.
@@ -3946,8 +3946,9 @@ static int menu_common_setting_set(unsigned id, unsigned action, rarch_setting_t
                      if (driver_monitor_fps_statistics(&refresh_rate, &deviation, &sample_points))
                      {
                         driver_set_monitor_refresh_rate(refresh_rate);
+
                         // Incase refresh rate update forced non-block video.
-                        video_set_nonblock_state_func(false);
+                        driver.video->set_nonblock_state(driver.video_data, false);
                      }
                      break;
                   }

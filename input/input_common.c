@@ -254,8 +254,8 @@ bool input_translate_coord_viewport(int mouse_x, int mouse_y,
       int16_t *res_x, int16_t *res_y, int16_t *res_screen_x, int16_t *res_screen_y)
 {
    struct rarch_viewport vp = {0};
-   if (driver.video->viewport_info)
-      video_viewport_info_func(&vp);
+   if (driver.video && driver.video->viewport_info)
+      driver.video->viewport_info(driver.video_data, &vp);
    else
       return false;
 

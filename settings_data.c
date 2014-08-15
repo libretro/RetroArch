@@ -1090,7 +1090,8 @@ static void general_write_handler(const void *data)
    else if (!strcmp(setting->name, "video_rotation"))
    {
       g_settings.video.rotation = *setting->value.unsigned_integer;
-      video_set_rotation_func((g_settings.video.rotation + g_extern.system.rotation) % 4);
+      if (driver.video && driver.video->set_rotation)
+         driver.video->set_rotation(driver.video_data, (g_settings.video.rotation + g_extern.system.rotation) % 4);
    }
    else if (!strcmp(setting->name, "video_threaded"))
    {
@@ -1101,7 +1102,7 @@ static void general_write_handler(const void *data)
    {
       g_settings.video.swap_interval = *setting->value.unsigned_integer;
       if (driver.video && driver.video_data)
-         video_set_nonblock_state_func(false);
+         driver.video->set_nonblock_state(driver.video_data, false);
    }
    else if (!strcmp(setting->name, "video_crop_overscan"))
       g_settings.video.crop_overscan = *setting->value.boolean;
@@ -1227,8 +1228,9 @@ static void general_write_handler(const void *data)
       if (driver.video && driver.video_data)
       {
          driver_set_monitor_refresh_rate(*setting->value.fraction);
+
          /* In case refresh rate update forced non-block video. */
-         video_set_nonblock_state_func(false);
+         driver.video->set_nonblock_state(driver.video_data, false);
       }
    }
    else if (!strcmp(setting->name,  "video_aspect_ratio"))

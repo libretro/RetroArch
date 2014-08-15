@@ -390,7 +390,7 @@ bool menu_iterate(void)
 #endif
    rarch_check_fullscreen();
 
-   if (input_key_pressed_func(RARCH_QUIT_KEY) || !video_alive_func())
+   if (input_key_pressed_func(RARCH_QUIT_KEY) || !driver.video->alive(driver.video_data))
    {
       g_extern.lifecycle_state |= (1ULL << MODE_GAME);
       return false;

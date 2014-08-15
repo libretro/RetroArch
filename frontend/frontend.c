@@ -132,7 +132,8 @@ static int main_entry_iterate_menu_preinit(args_type() args)
       return 1;
 
    // Menu should always run with vsync on.
-   video_set_nonblock_state_func(false);
+   driver.video->set_nonblock_state(driver.video_data, false);
+
    // Stop all rumbling when entering the menu.
    for (i = 0; i < MAX_PLAYERS; i++)
    {
@@ -174,7 +175,7 @@ static int main_entry_iterate_menu(args_type() args)
       g_extern.lifecycle_state |= (1ULL << MODE_CLEAR_INPUT);
 
       // If QUIT state came from command interface, we'll only see it once due to MODE_CLEAR_INPUT.
-      if (input_key_pressed_func(RARCH_QUIT_KEY) || !video_alive_func())
+      if (input_key_pressed_func(RARCH_QUIT_KEY) || !driver.video->alive(driver.video_data))
          return 1;
    }
 

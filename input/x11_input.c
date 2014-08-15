@@ -255,10 +255,12 @@ static void x_input_poll_mouse(x11_input_t *x11)
    x11->mouse_wd = mask & Button5Mask; 
 
    // Somewhat hacky, but seem to do the job.
-   if (x11->grab_mouse && video_focus_func())
+   if (x11->grab_mouse && driver.video->focus(driver.video_data))
    {
       struct rarch_viewport vp = {0};
-      video_viewport_info_func(&vp);
+
+      if (driver.video && driver.video->viewport_info)
+         driver.video->viewport_info(driver.video_data, &vp);
       int mid_w = vp.full_width >> 1;
       int mid_h = vp.full_height >> 1;
 
@@ -277,7 +279,7 @@ static void x_input_poll(void *data)
 {
    x11_input_t *x11 = (x11_input_t*)data;
 
-   if (video_focus_func())
+   if (driver.video->focus(driver.video_data))
       XQueryKeymap(x11->display, x11->state);
    else
       memset(x11->state, 0, sizeof(x11->state));

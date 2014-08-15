@@ -821,7 +821,7 @@ static void adjust_system_rates(void)
    if (driver.video_data)
    {
       if (g_extern.system.force_nonblock)
-         video_set_nonblock_state_func(true);
+         driver.video->set_nonblock_state(driver.video_data, true);
       else
          driver_set_nonblock_state(driver.nonblock_state);
    }
@@ -850,7 +850,7 @@ void driver_set_nonblock_state(bool nonblock)
       bool video_nb = nonblock;
       if (!g_settings.video.vsync || g_extern.system.force_nonblock)
          video_nb = true;
-      video_set_nonblock_state_func(video_nb);
+      driver.video->set_nonblock_state(driver.video_data, video_nb);
    }
 
    if (g_extern.audio_active && driver.audio_data)
@@ -1525,7 +1525,7 @@ void init_video_input(void)
    }
 
    if (driver.video->set_rotation)
-      video_set_rotation_func((g_settings.video.rotation + g_extern.system.rotation) % 4);
+      driver.video->set_rotation(driver.video_data, (g_settings.video.rotation + g_extern.system.rotation) % 4);
 
 #ifdef HAVE_X11
    if (driver.display_type == RARCH_DISPLAY_X11)

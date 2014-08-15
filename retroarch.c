@@ -86,7 +86,8 @@ static bool take_screenshot_viewport(void)
    bool retval = false;
    struct rarch_viewport vp = {0};
 
-   video_viewport_info_func(&vp);
+   if (driver.video && driver.video->viewport_info)
+      driver.video->viewport_info(driver.video_data, &vp);
 
    if (!vp.width || !vp.height)
       return false;
@@ -94,8 +95,9 @@ static bool take_screenshot_viewport(void)
    if (!(buffer = (uint8_t*)malloc(vp.width * vp.height * 3)))
       return false;
 
-   if (!video_read_viewport_func(buffer))
-      goto done;
+   if (driver.video && driver.video->read_viewport)
+      if (!driver.video->read_viewport(driver.video_data, buffer))
+         goto done;
 
    screenshot_dir = g_settings.screenshot_directory;
 
@@ -253,7 +255,8 @@ static void init_recording(void)
    if (g_settings.video.gpu_record && driver.video->read_viewport)
    {
       struct rarch_viewport vp = {0};
-      video_viewport_info_func(&vp);
+      if (driver.video && driver.video->viewport_info)
+         driver.video->viewport_info(driver.video_data, &vp);
 
       if (!vp.width || !vp.height)
       {
@@ -357,7 +360,8 @@ static void recording_dump_frame(const void *data, unsigned width, unsigned heig
    {
       struct rarch_viewport vp = {0};
 
-      video_viewport_info_func(&vp);
+      if (driver.video && driver.video->viewport_info)
+         driver.video->viewport_info(driver.video_data, &vp);
 
       if (!vp.width || !vp.height)
       {
@@ -384,8 +388,9 @@ static void recording_dump_frame(const void *data, unsigned width, unsigned heig
       // Big bottleneck.
       // Since we might need to do read-backs asynchronously, it might take 3-4 times
       // before this returns true ...
-      if (!video_read_viewport_func(g_extern.record_gpu_buffer))
-         return;
+      if (driver.video && driver.video->read_viewport)
+         if (!driver.video->read_viewport(driver.video_data, g_extern.record_gpu_buffer))
+            return;
 
       ffemu_data.pitch  = g_extern.record_gpu_width * 3;
       ffemu_data.width  = g_extern.record_gpu_width;
@@ -2267,7 +2272,7 @@ static void check_pause(void)
    new_state |= !g_extern.is_paused && input_key_pressed_func(RARCH_FRAMEADVANCE);
 
    if (g_settings.pause_nonactive)
-      focus = video_focus_func();
+      focus = driver.video->focus(driver.video_data);
 
    if (focus && new_state && !old_state)
    {
@@ -2408,7 +2413,7 @@ static void check_shader_dir(void)
       msg_queue_push(g_extern.msg_queue, msg, 1, 120);
       RARCH_LOG("Applying shader \"%s\".\n", shader);
 
-      if (!video_set_shader_func(type, shader))
+      if (!driver.video->set_shader(driver.video_data, type, shader))
          RARCH_WARN("Failed to apply shader.\n");
    }
 
@@ -3231,7 +3236,7 @@ bool rarch_main_iterate(void)
       return false;
 
    // Time to drop?
-   if (input_key_pressed_func(RARCH_QUIT_KEY) || !video_alive_func())
+   if (input_key_pressed_func(RARCH_QUIT_KEY) || !driver.video->alive(driver.video_data))
       return false;
 
    if (check_enter_menu())

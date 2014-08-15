@@ -592,7 +592,8 @@ input_overlay_t *input_overlay_new(const char *overlay)
       goto error;
    }
 
-   video_overlay_interface_func(&ol->iface);
+   if (driver.video && driver.video->overlay_interface)
+      driver.video->overlay_interface(driver.video_data, &ol->iface);
    ol->iface_data = driver.video_data;
 
    if (!ol->iface)
