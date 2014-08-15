@@ -228,11 +228,11 @@ VIDEO DRIVER
 #endif
 
 #if defined(GEKKO)
-#include "../gx/gx_video.c"
+#include "../gfx/gx/gx_gfx.c"
 #elif defined(PSP)
-#include "../psp1/psp1_video.c"
+#include "../gfx/psp1_gfx.c"
 #elif defined(XENON)
-#include "../xenon/xenon360_video.c"
+#include "../gfx/xenon360_gfx.c"
 #endif
 
 #include "../gfx/nullgfx.c"

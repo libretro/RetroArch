@@ -40,7 +40,7 @@
 #include <string.h>
 #include <gccore.h>
 #include <ogcsys.h>
-#include "../gx/ppc_asm.h"
+#include "../gfx/gx/ppc_asm.h"
 
 #include "vi_encoder.h"
 

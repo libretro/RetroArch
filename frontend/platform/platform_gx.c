@@ -19,7 +19,7 @@
 #include "../../driver.h"
 #include "../../general.h"
 #include "../../libretro_private.h"
-#include "../../gx/sdk_defines.h"
+#include "../../gfx/gx/sdk_defines.h"
 
 #include "../../file.h"
 

@@ -15,17 +15,17 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../driver.h"
-#include "../general.h"
-#include "../gfx/fonts/bitmap.h"
-#include "../frontend/menu/menu_common.h"
-#include "../gfx/gfx_common.h"
+#include "../../driver.h"
+#include "../../general.h"
+#include "../fonts/bitmap.h"
+#include "../../frontend/menu/menu_common.h"
+#include "../gfx_common.h"
 
 #ifdef HW_RVL
-#include "../wii/mem2_manager.h"
+#include "../../wii/mem2_manager.h"
 #endif
 
-#include "gx_video.h"
+#include "gx_gfx.h"
 #include <gccore.h>
 #include <ogcsys.h>
 #include <malloc.h>
@@ -33,7 +33,7 @@
 #include <string.h>
 
 #include "ppc_asm.h"
-#include "gx_video_inl.h"
+#include "gx_gfx_inl.h"
 #include "sdk_defines.h"
 
 #define SYSMEM1_SIZE 0x01800000
