@@ -657,7 +657,24 @@ extern const struct softfilter_implementation *darken_get_implementation(softfil
 extern const struct softfilter_implementation *scale2x_get_implementation(softfilter_simd_mask_t simd);
 #endif
 
-#include "driver_funcs.h"
+static inline bool input_key_pressed_func(int key)
+{
+   bool ret = false;
+
+   if (!driver.block_hotkey)
+      ret = ret || driver.input->key_pressed(driver.input_data, key);
+
+#ifdef HAVE_OVERLAY
+   ret = ret || (driver.overlay_state.buttons & (1ULL << key));
+#endif
+
+#ifdef HAVE_COMMAND
+   if (driver.command)
+      ret = ret || rarch_cmd_get(driver.command, key);
+#endif
+
+   return ret;
+}
 
 #ifdef __cplusplus
 }
