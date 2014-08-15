@@ -35,7 +35,7 @@
 #include "miscellaneous.h"
 #include "gfx/filter.h"
 
-#include "history.h"
+#include "playlist.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -404,7 +404,7 @@ struct global
 
    struct string_list *temporary_content;
 
-   content_history_t *history;
+   content_playlist_t *history;
 
    uint32_t content_crc;
 

@@ -1752,14 +1752,14 @@ static void menu_parse_and_resolve(unsigned menu_type)
    {
       case MENU_SETTINGS_OPEN_HISTORY:
          /* History parse */
-         list_size = content_history_size(g_extern.history);
+         list_size = content_playlist_size(g_extern.history);
 
          for (i = 0; i < list_size; i++)
          {
             char fill_buf[PATH_MAX];
             const char *path, *core_path, *core_name = NULL;
 
-            content_history_get_index(g_extern.history, i,
+            content_playlist_get_index(g_extern.history, i,
                   &path, &core_path, &core_name);
 
             if (path)

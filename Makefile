@@ -117,7 +117,7 @@ ifeq ($(HAVE_LAKKA), 1)
 endif
 endif
 
-OBJ += history.o
+OBJ += playlist.o
 
 ifeq ($(HAVE_MENU_COMMON), 1)
    OBJ += frontend/menu/backend/menu_common_backend.o frontend/menu/menu_input_line_cb.o frontend/menu/menu_common.o frontend/menu/menu_navigation.o 

@@ -93,7 +93,7 @@ void menu_content_history_push_current(void)
 
    if (g_extern.system.no_content || *tmp)
       if (g_extern.history)
-         content_history_push(g_extern.history,
+         content_playlist_push(g_extern.history,
                *tmp ? tmp : NULL,
                g_settings.libretro,
                g_extern.system.info.library_name);
@@ -116,7 +116,7 @@ static void load_menu_content_prepare(void)
          msg_queue_push(g_extern.msg_queue, str, 1, 1);
       }
 
-      content_history_push(g_extern.history,
+      content_playlist_push(g_extern.history,
             *g_extern.fullpath ? g_extern.fullpath : NULL,
             g_settings.libretro,
             driver.menu->info.library_name ? driver.menu->info.library_name : "");
@@ -149,7 +149,7 @@ void load_menu_content_history(unsigned game_index)
    if (!driver.menu)
       return;
 
-   content_history_get_index(g_extern.history,
+   content_playlist_get_index(g_extern.history,
          game_index, &path, &core_path, &core_name);
 
    strlcpy(g_settings.libretro, core_path, sizeof(g_settings.libretro));

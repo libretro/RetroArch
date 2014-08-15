@@ -22,29 +22,29 @@
 extern "C" {
 #endif
 
-typedef struct content_history content_history_t;
+typedef struct content_playlist content_playlist_t;
 
-content_history_t *content_history_init(const char *path, size_t size);
-void content_history_free(content_history_t *hist);
+content_playlist_t *content_playlist_init(const char *path, size_t size);
+void content_playlist_free(content_playlist_t *hist);
 
-void content_history_clear(content_history_t *hist);
+void content_playlist_clear(content_playlist_t *hist);
 
-size_t content_history_size(content_history_t *hist);
+size_t content_playlist_size(content_playlist_t *hist);
 
-void content_history_get_index(content_history_t *hist,
+void content_playlist_get_index(content_playlist_t *hist,
       size_t index,
       const char **path, const char **core_path,
       const char **core_name);
 
-void content_history_push(content_history_t *hist,
+void content_playlist_push(content_playlist_t *hist,
       const char *path, const char *core_path,
       const char *core_name);
 
-const char* content_history_get_path(content_history_t *hist,
+const char* content_playlist_get_path(content_playlist_t *hist,
       unsigned index);
-const char* content_history_get_core_path(content_history_t *hist,
+const char* content_playlist_get_core_path(content_playlist_t *hist,
       unsigned index);
-const char* content_history_get_core_name(content_history_t *hist,
+const char* content_playlist_get_core_name(content_playlist_t *hist,
       unsigned index);
 
 #ifdef __cplusplus
