@@ -348,10 +348,8 @@ static void menu_common_entries_init(menu_handle_t *menu, unsigned menu_type)
          file_list_push(menu->selection_buf, "", "libretro_dir_path", MENU_LIBRETRO_DIR_PATH, 0);
          file_list_push(menu->selection_buf, "", "libretro_info_path", MENU_LIBRETRO_INFO_DIR_PATH, 0);
          file_list_push(menu->selection_buf, "", "game_history_path", MENU_CONTENT_HISTORY_PATH, 0);
-#ifdef HAVE_DYLIB
-         file_list_push(menu->selection_buf, "Software Filter Directory", "", MENU_FILTER_DIR_PATH, 0);
-#endif
-         file_list_push(menu->selection_buf, "DSP Filter Directory", "", MENU_DSP_FILTER_DIR_PATH, 0);
+         file_list_push(menu->selection_buf, "", "video_filter_dir", MENU_FILTER_DIR_PATH, 0);
+         file_list_push(menu->selection_buf, "", "audio_filter_dir", MENU_DSP_FILTER_DIR_PATH, 0);
 #ifdef HAVE_SHADER_MANAGER
          file_list_push(menu->selection_buf, "", "video_shader_dir", MENU_SHADER_DIR_PATH, 0);
 #endif
@@ -2387,12 +2385,16 @@ static int menu_common_iterate(unsigned action)
             }
             else if (menu_type == MENU_FILTER_DIR_PATH)
             {
-               strlcpy(g_settings.video.filter_dir, dir, sizeof(g_settings.video.filter_dir));
+               if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "video_filter_dir")))
+                  menu_common_setting_set_current_string_dir(current_setting, dir);
+
                menu_flush_stack_type(MENU_SETTINGS_PATH_OPTIONS);
             }
             else if (menu_type == MENU_DSP_FILTER_DIR_PATH)
             {
-               strlcpy(g_settings.audio.filter_dir, dir, sizeof(g_settings.audio.filter_dir));
+               if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "audio_filter_dir")))
+                  menu_common_setting_set_current_string_dir(current_setting, dir);
+
                menu_flush_stack_type(MENU_SETTINGS_PATH_OPTIONS);
             }
             else if (menu_type == MENU_SYSTEM_DIR_PATH)
@@ -3539,6 +3541,8 @@ static int menu_common_setting_set(unsigned id, unsigned action, rarch_setting_t
          case MENU_SYSTEM_DIR_PATH:
          case MENU_AUTOCONFIG_DIR_PATH:
          case MENU_EXTRACTION_DIR_PATH:
+         case MENU_FILTER_DIR_PATH:
+         case MENU_DSP_FILTER_DIR_PATH:
             if (action == MENU_ACTION_START)
             {
                *setting->value.string = '\0';
@@ -3546,14 +3550,6 @@ static int menu_common_setting_set(unsigned id, unsigned action, rarch_setting_t
                if (setting->change_handler)
                   setting->change_handler(setting);
             }
-            break;
-         case MENU_FILTER_DIR_PATH:
-            if (action == MENU_ACTION_START)
-               *g_settings.video.filter_dir = '\0';
-            break;
-         case MENU_DSP_FILTER_DIR_PATH:
-            if (action == MENU_ACTION_START)
-               *g_settings.audio.filter_dir = '\0';
             break;
          case MENU_SETTINGS_DRIVER_VIDEO:
             if (action == MENU_ACTION_LEFT)

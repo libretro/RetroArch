@@ -994,6 +994,10 @@ static void general_read_handler(const void *data)
         strlcpy(setting->value.string, g_settings.cheat_settings_path, setting->size);
     else if (!strcmp(setting->name, "game_history_path"))
         strlcpy(setting->value.string, g_settings.content_history_path, setting->size);
+    else if (!strcmp(setting->name, "video_filter_dir"))
+        strlcpy(setting->value.string, g_settings.video.filter_dir, setting->size);
+    else if (!strcmp(setting->name, "audio_filter_dir"))
+        strlcpy(setting->value.string, g_settings.audio.filter_dir, setting->size);
     else if (!strcmp(setting->name, "video_shader_dir"))
         strlcpy(setting->value.string, g_settings.video.shader_dir, setting->size);
     else if (!strcmp(setting->name, "video_aspect_ratio_auto"))
@@ -1325,6 +1329,10 @@ static void general_write_handler(const void *data)
       strlcpy(g_settings.cheat_settings_path, setting->value.string, sizeof(g_settings.cheat_settings_path));
    else if (!strcmp(setting->name, "game_history_path"))
       strlcpy(g_settings.content_history_path, setting->value.string, sizeof(g_settings.content_history_path));
+   else if (!strcmp(setting->name, "video_filter_dir"))
+      strlcpy(g_settings.video.filter_dir, setting->value.string, sizeof(g_settings.video.filter_dir));
+   else if (!strcmp(setting->name, "audio_filter_dir"))
+      strlcpy(g_settings.audio.filter_dir, setting->value.string, sizeof(g_settings.audio.filter_dir));
    else if (!strcmp(setting->name, "video_shader_dir"))
       strlcpy(g_settings.video.shader_dir, setting->value.string, sizeof(g_settings.video.shader_dir));
    else if (!strcmp(setting->name, "video_aspect_ratio_auto"))
@@ -1726,7 +1734,11 @@ rarch_setting_t* setting_data_get_list(void)
          CONFIG_PATH(g_settings.cheat_settings_path,        "cheat_settings_path",        "Cheat Settings",             "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)                WITH_FLAGS(SD_FLAG_ALLOW_EMPTY)
          CONFIG_PATH(g_settings.content_history_path,          "game_history_path",          "Content History Path",       "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)                WITH_FLAGS(SD_FLAG_ALLOW_EMPTY)
 
+         CONFIG_DIR(g_settings.video.filter_dir,         "video_filter_dir",         "VideoFilter Directory",              "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)   WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
+         CONFIG_DIR(g_settings.audio.filter_dir,         "audio_filter_dir",         "AudioFilter Directory",              "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)   WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
+#ifdef HAVE_DYLIB
          CONFIG_DIR(g_settings.video.shader_dir,           "video_shader_dir",           "Shader Directory",           g_defaults.shader_dir ? g_defaults.shader_dir : "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)  WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
+#endif
 
 #ifdef HAVE_OVERLAY
          CONFIG_DIR(g_extern.overlay_dir,                  "overlay_directory",          "Overlay Directory",          g_defaults.overlay_dir ? g_defaults.overlay_dir : "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
