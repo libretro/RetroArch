@@ -573,6 +573,55 @@ void setting_data_get_description(const void *data, char *msg, size_t sizeof_msg
                " 0: Syncs to GPU immediately.\n"
                " 1: Syncs to previous frame.\n"
                " 2: Etc ...");
+    else if (!strcmp(setting->name, "audio_rate_control_delta"))
+       snprintf(msg, sizeof_msg,
+             " -- Audio rate control.\n"
+             " \n"
+             "Setting this to 0 disables rate control.\n"
+             "Any other value controls audio rate control \n"
+             "delta.\n"
+             " \n"
+             "Defines how much input rate can be adjusted \n"
+             "dynamically.\n"
+             " \n"
+             " Input rate is defined as: \n"
+             " input rate * (1.0 +/- (rate control delta))");
+    else if (!strcmp(setting->name, "video_filter"))
+#ifdef HAVE_FILTERS_BUILTIN
+       snprintf(msg, sizeof_msg,
+             " -- CPU-based video filter.");
+#else
+    snprintf(msg, sizeof_msg,
+          " -- CPU-based video filter.\n"
+          " \n"
+          "Path to a dynamic library.");
+#endif
+    else if (!strcmp(setting->name, "video_fullscreen"))
+       snprintf(msg, sizeof_msg, " -- Toggles fullscreen.");
+    else if (!strcmp(setting->name, "audio_device"))
+       snprintf(msg, sizeof_msg,
+             " -- Override the default audio device \n"
+             "the audio driver uses.\n"
+             "This is driver dependent. E.g.\n"
+#ifdef HAVE_ALSA
+             " \n"
+             "ALSA wants a PCM device."
+#endif
+#ifdef HAVE_OSS
+             " \n"
+             "OSS wants a path (e.g. /dev/dsp)."
+#endif
+#ifdef HAVE_JACK
+             " \n"
+             "JACK wants portnames (e.g. system:playback1\n"
+             ",system:playback_2)."
+#endif
+#ifdef HAVE_RSOUND
+             " \n"
+             "RSound wants an IP address to an RSound \n"
+             "server."
+#endif
+             );
     else if (!strcmp(setting->name, "video_black_frame_insertion"))
          snprintf(msg, sizeof_msg,
                " -- Inserts a black frame inbetween \n"

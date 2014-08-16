@@ -155,7 +155,7 @@ static void menu_common_entries_init(menu_handle_t *menu, unsigned menu_type)
 #ifdef GEKKO
          file_list_push(menu->selection_buf, "", "video_viwidth", MENU_SETTINGS_VIDEO_VIWIDTH, 0);
 #endif
-         file_list_push(menu->selection_buf, "Software Filter", "", MENU_SETTINGS_VIDEO_SOFTFILTER, 0);
+         file_list_push(menu->selection_buf, "", "video_filter", MENU_SETTINGS_VIDEO_SOFTFILTER, 0);
 #if defined(__CELLOS_LV2__)
          file_list_push(menu->selection_buf, "PAL60 Mode", "", MENU_SETTINGS_VIDEO_PAL60, 0);
 #endif
@@ -390,7 +390,7 @@ static void menu_common_entries_init(menu_handle_t *menu, unsigned menu_type)
          file_list_push(menu->selection_buf, "System BGM Control", "", MENU_SETTINGS_CUSTOM_BGM_CONTROL_ENABLE, 0);
 #endif
          file_list_push(menu->selection_buf, "", "audio_volume", MENU_SETTINGS_AUDIO_VOLUME, 0);
-         file_list_push(menu->selection_buf, "Audio Device", "", MENU_SETTINGS_DRIVER_AUDIO_DEVICE, 0);
+         file_list_push(menu->selection_buf, "", "audio_device", MENU_SETTINGS_DRIVER_AUDIO_DEVICE, 0);
          break;
       case MENU_SETTINGS_DRIVERS:
          file_list_clear(menu->selection_buf);
@@ -526,31 +526,6 @@ static int menu_info_screen_iterate(unsigned action, rarch_setting_t *setting)
                   "in 'Core', and use that core when \n"
                   "content is loaded."
                   );
-            break;
-         case MENU_SETTINGS_AUDIO_CONTROL_RATE_DELTA:
-            snprintf(msg, sizeof(msg),
-                  " -- Audio rate control.\n"
-                  " \n"
-                  "Setting this to 0 disables rate control.\n"
-                  "Any other value controls audio rate control \n"
-                  "delta.\n"
-                  " \n"
-                  "Defines how much input rate can be adjusted \n"
-                  "dynamically.\n"
-                  " \n"
-                  " Input rate is defined as: \n"
-                  " input rate * (1.0 +/- (rate control delta))");
-            break;
-         case MENU_SETTINGS_VIDEO_SOFTFILTER:
-#ifdef HAVE_FILTERS_BUILTIN
-            snprintf(msg, sizeof(msg),
-                  " -- CPU-based video filter.");
-#else
-            snprintf(msg, sizeof(msg),
-                  " -- CPU-based video filter.\n"
-                  " \n"
-                  "Path to a dynamic library.");
-#endif
             break;
          case MENU_SETTINGS_CORE:
             snprintf(msg, sizeof(msg),
@@ -704,35 +679,6 @@ static int menu_info_screen_iterate(unsigned action, rarch_setting_t *setting)
 #ifndef HAVE_FILTERS_BUILTIN
                   " \n"
                   "Path to a dynamic library."
-#endif
-                  );
-            break;
-         case MENU_SETTINGS_TOGGLE_FULLSCREEN:
-            snprintf(msg, sizeof(msg),
-                  " -- Toggles fullscreen.");
-            break;
-         case MENU_SETTINGS_DRIVER_AUDIO_DEVICE:
-            snprintf(msg, sizeof(msg),
-                  " -- Override the default audio device \n"
-                  "the audio driver uses.\n"
-                  "This is driver dependent. E.g.\n"
-#ifdef HAVE_ALSA
-                  " \n"
-                  "ALSA wants a PCM device."
-#endif
-#ifdef HAVE_OSS
-                  " \n"
-                  "OSS wants a path (e.g. /dev/dsp)."
-#endif
-#ifdef HAVE_JACK
-                  " \n"
-                  "JACK wants portnames (e.g. system:playback1\n"
-                  ",system:playback_2)."
-#endif
-#ifdef HAVE_RSOUND
-                  " \n"
-                  "RSound wants an IP address to an RSound \n"
-                  "server."
 #endif
                   );
             break;
