@@ -3252,6 +3252,20 @@ void rarch_main_command(unsigned action)
          if (driver.audio && driver.audio->set_nonblock_state)
             driver.audio->set_nonblock_state(driver.audio_data, boolean);
          break;
+      case RARCH_CMD_OVERLAY_SET_SCALE_FACTOR:
+#ifdef HAVE_OVERLAY
+         if (driver.overlay)
+            input_overlay_set_scale_factor(driver.overlay,
+                  g_settings.input.overlay_scale);
+#endif
+         break;
+      case RARCH_CMD_OVERLAY_SET_ALPHA_MOD:
+#ifdef HAVE_OVERLAY
+      if (driver.overlay)
+         input_overlay_set_alpha_mod(driver.overlay,
+               g_settings.input.overlay_opacity);
+#endif
+         break;
    }
 }
 

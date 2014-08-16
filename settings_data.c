@@ -1180,9 +1180,7 @@ static void general_write_handler(const void *data)
    else if (!strcmp(setting->name, "input_overlay_opacity"))
    {
       g_settings.input.overlay_opacity = *setting->value.fraction;
-      if (driver.overlay)
-         input_overlay_set_alpha_mod(driver.overlay,
-               g_settings.input.overlay_opacity);
+      rarch_cmd = RARCH_CMD_OVERLAY_SET_ALPHA_MOD;
    }
 #endif
    else if (!strcmp(setting->name, "audio_enable"))
@@ -1265,16 +1263,8 @@ static void general_write_handler(const void *data)
    }
    else if (!strcmp(setting->name, "input_overlay_scale"))
    {
-      if (*setting->value.fraction < setting->min) // Avoid potential divide by zero.
-         g_settings.input.overlay_scale = setting->min;
-      else if (*setting->value.fraction > setting->max)
-         g_settings.input.overlay_scale = setting->max;
-      else
-         g_settings.input.overlay_scale = *setting->value.fraction;
-
-      if (driver.overlay)
-         input_overlay_set_scale_factor(driver.overlay,
-               g_settings.input.overlay_scale);
+      g_settings.input.overlay_scale = *setting->value.fraction;
+      rarch_cmd = RARCH_CMD_OVERLAY_SET_SCALE_FACTOR;
    }
 #endif
    else if (!strcmp(setting->name, "video_allow_rotate"))
@@ -1748,8 +1738,8 @@ rarch_setting_t* setting_data_get_list(void)
          START_GROUP("Overlay Options")
          START_SUB_GROUP("State")
          CONFIG_PATH(g_settings.input.overlay,              "input_overlay",              "Overlay Preset",              "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_FLAGS(SD_FLAG_ALLOW_EMPTY) WITH_VALUES("cfg")
-         CONFIG_FLOAT(g_settings.input.overlay_opacity,     "input_overlay_opacity",      "Overlay Opacity",            0.7f, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_RANGE(0, 1, 0.1, true, true)
-         CONFIG_FLOAT(g_settings.input.overlay_scale,       "input_overlay_scale",        "Overlay Scale",              1.0f, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_RANGE(0, 2, 0.1, true, true)
+         CONFIG_FLOAT(g_settings.input.overlay_opacity,     "input_overlay_opacity",      "Overlay Opacity",            0.7f, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_RANGE(0, 1, 0.01, true, true)
+         CONFIG_FLOAT(g_settings.input.overlay_scale,       "input_overlay_scale",        "Overlay Scale",              1.0f, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_RANGE(0, 2, 0.01, true, true)
          END_SUB_GROUP()
          END_GROUP()
 #endif
