@@ -120,6 +120,9 @@ static void pad_connect(unsigned id)
       return;
    }
 
+   strlcpy(g_settings.input.device_names[id], pad_name(id), sizeof(g_settings.input.device_names[id]));
+   input_config_autoconfigure_joypad(id, pad_name(id), sdl_joypad.ident);
+
    RARCH_LOG("[SDL]: Joypad #%u connected: %s.\n", id, pad_name(id));
 
 #ifdef HAVE_SDL2
@@ -184,6 +187,8 @@ static void pad_disconnect(unsigned id)
       SDL_JoystickClose(g_pads[id].joypad);
       RARCH_LOG("[SDL]: Joypad #%u disconnected.\n", id);
    }
+
+   g_settings.input.device_names[id][0] = '\0';
 
    memset(&g_pads[id], 0, sizeof(g_pads[id]));
 }
