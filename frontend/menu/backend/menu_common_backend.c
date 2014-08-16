@@ -155,9 +155,8 @@ static void menu_common_entries_init(menu_handle_t *menu, unsigned menu_type)
 #if defined(GEKKO) || defined(__CELLOS_LV2__)
          file_list_push(menu->selection_buf, "Screen Resolution", "", MENU_SETTINGS_VIDEO_RESOLUTION, 0);
 #endif
-#ifdef GEKKO
-         file_list_push(menu->selection_buf, "", "video_viwidth", MENU_SETTINGS_VIDEO_VIWIDTH, 0);
-#endif
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "video_viwidth")))
+            file_list_push(menu->selection_buf, "", "video_viwidth", MENU_SETTINGS_VIDEO_VIWIDTH, 0);
          file_list_push(menu->selection_buf, "", "video_filter", MENU_SETTINGS_VIDEO_SOFTFILTER, 0);
 #if defined(__CELLOS_LV2__)
          file_list_push(menu->selection_buf, "PAL60 Mode", "", MENU_SETTINGS_VIDEO_PAL60, 0);
@@ -331,9 +330,9 @@ static void menu_common_entries_init(menu_handle_t *menu, unsigned menu_type)
          file_list_push(menu->selection_buf, "", "netplay_nickname", MENU_SETTINGS_NETPLAY_NICKNAME, 0);
          file_list_push(menu->selection_buf, "", "user_language", MENU_SETTINGS_USER_LANGUAGE, 0);
          break;
-#ifdef HAVE_NETPLAY
       case MENU_SETTINGS_NETPLAY_OPTIONS:
          file_list_clear(menu->selection_buf);
+#ifdef HAVE_NETPLAY
          file_list_push(menu->selection_buf, "", "netplay_enable", MENU_SETTINGS_NETPLAY_ENABLE, 0);
          file_list_push(menu->selection_buf, "", "netplay_mode", MENU_SETTINGS_NETPLAY_MODE, 0);
          file_list_push(menu->selection_buf, "", "netplay_spectator_mode_enable", MENU_SETTINGS_NETPLAY_SPECTATOR_MODE_ENABLE, 0);
