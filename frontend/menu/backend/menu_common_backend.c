@@ -344,7 +344,7 @@ static void menu_common_entries_init(menu_handle_t *menu, unsigned menu_type)
          file_list_push(menu->selection_buf, "", "rgui_browser_directory", MENU_BROWSER_DIR_PATH, 0);
          file_list_push(menu->selection_buf, "", "content_directory", MENU_CONTENT_DIR_PATH, 0);
          file_list_push(menu->selection_buf, "", "assets_directory", MENU_ASSETS_DIR_PATH, 0);
-         file_list_push(menu->selection_buf, "Config Directory", "", MENU_CONFIG_DIR_PATH, 0);
+         file_list_push(menu->selection_buf, "", "rgui_config_directory", MENU_CONFIG_DIR_PATH, 0);
          file_list_push(menu->selection_buf, "", "libretro_dir_path", MENU_LIBRETRO_DIR_PATH, 0);
          file_list_push(menu->selection_buf, "", "libretro_info_path", MENU_LIBRETRO_INFO_DIR_PATH, 0);
          file_list_push(menu->selection_buf, "", "game_history_path", MENU_CONTENT_HISTORY_PATH, 0);
@@ -361,7 +361,7 @@ static void menu_common_entries_init(menu_handle_t *menu, unsigned menu_type)
             file_list_push(menu->selection_buf, "", "overlay_directory", MENU_OVERLAY_DIR_PATH, 0);
          file_list_push(menu->selection_buf, "", "system_directory", MENU_SYSTEM_DIR_PATH, 0);
          file_list_push(menu->selection_buf, "", "screenshot_directory", MENU_SCREENSHOT_DIR_PATH, 0);
-         file_list_push(menu->selection_buf, "Autoconfig Directory", "", MENU_AUTOCONFIG_DIR_PATH, 0);
+         file_list_push(menu->selection_buf, "", "joypad_autoconfig_dir", MENU_AUTOCONFIG_DIR_PATH, 0);
          file_list_push(menu->selection_buf, "", "extraction_directory", MENU_EXTRACTION_DIR_PATH, 0);
          break;
       case MENU_SETTINGS_INPUT_OPTIONS:
@@ -2513,7 +2513,9 @@ static int menu_common_iterate(unsigned action)
             }
             else if (menu_type == MENU_CONFIG_DIR_PATH)
             {
-               strlcpy(g_settings.menu_config_directory, dir, sizeof(g_settings.menu_config_directory));
+               if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "rgui_config_directory")))
+                  menu_common_setting_set_current_string_dir(current_setting, dir);
+
                menu_flush_stack_type(MENU_SETTINGS_PATH_OPTIONS);
             }
             else if (menu_type == MENU_LIBRETRO_INFO_DIR_PATH)
@@ -2551,7 +2553,9 @@ static int menu_common_iterate(unsigned action)
             }
             else if (menu_type == MENU_AUTOCONFIG_DIR_PATH)
             {
-               strlcpy(g_settings.input.autoconfig_dir, dir, sizeof(g_settings.input.autoconfig_dir));
+               if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "joypad_autoconfig_dir")))
+                  menu_common_setting_set_current_string_dir(current_setting, dir);
+
                menu_flush_stack_type(MENU_SETTINGS_PATH_OPTIONS);
             }
             else if (menu_type == MENU_EXTRACTION_DIR_PATH)
