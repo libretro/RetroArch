@@ -869,6 +869,8 @@ static void general_read_handler(const void *data)
         *setting->value.boolean = g_settings.video.fullscreen;
     else if (!strcmp(setting->name, "video_rotation"))
          *setting->value.unsigned_integer = g_settings.video.rotation;
+    else if (!strcmp(setting->name, "video_gamma"))
+         *setting->value.unsigned_integer = g_extern.console.screen.gamma_correction;
     else if (!strcmp(setting->name, "video_threaded"))
         *setting->value.boolean = g_settings.video.threaded;
     else if (!strcmp(setting->name, "video_swap_interval"))
@@ -1045,6 +1047,8 @@ static void general_read_handler(const void *data)
         strlcpy(setting->value.string, g_settings.content_history_path, setting->size);
     else if (!strcmp(setting->name, "video_filter_dir"))
         strlcpy(setting->value.string, g_settings.video.filter_dir, setting->size);
+    else if (!strcmp(setting->name, "video_filter_flicker"))
+       *setting->value.unsigned_integer = g_extern.console.screen.flicker_filter_index;
     else if (!strcmp(setting->name, "audio_filter_dir"))
         strlcpy(setting->value.string, g_settings.audio.filter_dir, setting->size);
     else if (!strcmp(setting->name, "video_shader_dir"))
@@ -1147,6 +1151,12 @@ static void general_write_handler(const void *data)
       g_settings.video.rotation = *setting->value.unsigned_integer;
       if (driver.video && driver.video->set_rotation)
          driver.video->set_rotation(driver.video_data, (g_settings.video.rotation + g_extern.system.rotation) % 4);
+   }
+   else if (!strcmp(setting->name, "video_gamma"))
+   {
+      g_extern.console.screen.gamma_correction = *setting->value.unsigned_integer;
+      if (driver.video_data && driver.video_poke && driver.video_poke->apply_state_changes)
+         driver.video_poke->apply_state_changes(driver.video_data);
    }
    else if (!strcmp(setting->name, "video_threaded"))
    {
@@ -1391,6 +1401,8 @@ static void general_write_handler(const void *data)
       strlcpy(g_settings.video.filter_path, setting->value.string, sizeof(g_settings.video.filter_path));
       rarch_cmd = RARCH_CMD_REINIT;
    }
+   else if (!strcmp(setting->name, "video_filter_flicker"))
+      g_extern.console.screen.flicker_filter_index = *setting->value.unsigned_integer;
    else if (!strcmp(setting->name, "camera_allow"))
       g_settings.camera.allow = *setting->value.boolean;
    else if (!strcmp(setting->name, "location_allow"))
@@ -1463,6 +1475,12 @@ static void general_write_handler(const void *data)
 WITH_FLAGS(SD_FLAG_HAS_RANGE)
 
 #define WITH_VALUES(VALUES) (list[index -1]).values = VALUES;
+
+#ifdef GEKKO
+#define MAX_GAMMA_SETTING 2
+#else
+#define MAX_GAMMA_SETTING 1
+#endif
 
 rarch_setting_t* setting_data_get_list(void)
 {
@@ -1590,6 +1608,9 @@ rarch_setting_t* setting_data_get_list(void)
 #endif
          CONFIG_BOOL(g_settings.video.smooth,               "video_smooth",               "Use Bilinear Filtering",     video_smooth, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
          CONFIG_UINT(g_settings.video.rotation,             "video_rotation",             "Rotation",                   0, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_RANGE(0, 3, 1, true, true)
+#if defined(HW_RVL) || defined(_XBOX360)
+         CONFIG_UINT(g_extern.console.screen.gamma_correction, "video_gamma",             "Gamma",                      0, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_RANGE(0, MAX_GAMMA_SETTING, 1, true, true)
+#endif
          END_SUB_GROUP()
 
 
@@ -1614,6 +1635,9 @@ rarch_setting_t* setting_data_get_list(void)
          CONFIG_BOOL(g_settings.video.crop_overscan,        "video_crop_overscan",        "Crop Overscan (reload)",     crop_overscan, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
 #ifndef HAVE_FILTERS_BUILTIN
          CONFIG_PATH(g_settings.video.filter_path,          "video_filter",               "Software filter",            "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)       WITH_FLAGS(SD_FLAG_ALLOW_EMPTY)
+#endif
+#ifdef _XBOX1
+         CONFIG_UINT(g_settings.video.swap_interval,        "video_filter_flicker",        "Flicker filter",        0, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)       WITH_RANGE(0, 5, 1, true, true)
 #endif
          END_SUB_GROUP()
 

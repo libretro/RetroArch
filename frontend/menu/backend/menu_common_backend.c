@@ -163,13 +163,13 @@ static void menu_common_entries_init(menu_handle_t *menu, unsigned menu_type)
 #ifdef HW_RVL
          file_list_push(menu->selection_buf, "VI Trap filtering", "", MENU_SETTINGS_VIDEO_SOFT_FILTER, 0);
 #endif
-#if defined(HW_RVL) || defined(_XBOX360)
-         file_list_push(menu->selection_buf, "Gamma", "", MENU_SETTINGS_VIDEO_GAMMA, 0);
-#endif
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "video_gamma")))
+            file_list_push(menu->selection_buf, "", "video_gamma", MENU_SETTINGS_VIDEO_GAMMA, 0);
 #ifdef _XBOX1
          file_list_push(menu->selection_buf, "Soft filtering", "", MENU_SETTINGS_SOFT_DISPLAY_FILTER, 0);
-         file_list_push(menu->selection_buf, "Flicker filtering", "", MENU_SETTINGS_FLICKER_FILTER, 0);
 #endif
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "video_filter_flicker")))
+            file_list_push(menu->selection_buf, "", "video_filter_flicker", MENU_SETTINGS_FLICKER_FILTER, 0);
          file_list_push(menu->selection_buf, "", "video_scale_integer", MENU_SETTINGS_VIDEO_INTEGER_SCALE, 0);
          file_list_push(menu->selection_buf, "", "aspect_ratio_index", MENU_SETTINGS_VIDEO_ASPECT_RATIO, 0);
          file_list_push(menu->selection_buf, "Custom Ratio", "", MENU_SETTINGS_CUSTOM_VIEWPORT, 0);
@@ -2774,8 +2774,8 @@ static int menu_common_shader_manager_setting_toggle(unsigned id,
       menu_common_setting_push_current_menu(driver.menu->menu_stack, "", id, driver.menu->selection_ptr, action);
    else if (id >= MENU_SETTINGS_SHADER_PARAMETER_0 && id <= MENU_SETTINGS_SHADER_PARAMETER_LAST)
    {
-      struct gfx_shader *shader;
-      struct gfx_shader_parameter *param;
+      struct gfx_shader *shader = NULL;
+      struct gfx_shader_parameter *param = NULL;
 
       if (!(shader = (struct gfx_shader*)driver.menu->parameter_shader))
          return 0;
@@ -2950,8 +2950,6 @@ static int menu_common_core_setting_toggle(unsigned setting, unsigned action)
 }
 
 #ifdef GEKKO
-#define MAX_GAMMA_SETTING 2
-
 static unsigned menu_gx_resolutions[GX_RESOLUTIONS_LAST][2] = {
    { 512, 192 },
    { 598, 200 },
@@ -2994,8 +2992,6 @@ static unsigned menu_gx_resolutions[GX_RESOLUTIONS_LAST][2] = {
 };
 
 static unsigned menu_current_gx_resolution = GX_RESOLUTIONS_640_480;
-#else
-#define MAX_GAMMA_SETTING 1
 #endif
 
 
@@ -3560,35 +3556,6 @@ static int menu_common_setting_set(unsigned id, unsigned action, rarch_setting_t
                find_next_menu_driver();
             break;
 #endif
-         case MENU_SETTINGS_VIDEO_GAMMA:
-            if (action == MENU_ACTION_START)
-            {
-               g_extern.console.screen.gamma_correction = 0;
-               if (driver.video_data && driver.video_poke && driver.video_poke->apply_state_changes)
-                  driver.video_poke->apply_state_changes(driver.video_data);
-            }
-            else if (action == MENU_ACTION_LEFT)
-            {
-               if (g_extern.console.screen.gamma_correction > 0)
-               {
-                  g_extern.console.screen.gamma_correction--;
-                  if (driver.video_data && driver.video_poke && driver.video_poke->apply_state_changes)
-                     driver.video_poke->apply_state_changes(driver.video_data);
-               }
-            }
-            else if (action == MENU_ACTION_RIGHT)
-            {
-               if (g_extern.console.screen.gamma_correction < MAX_GAMMA_SETTING)
-               {
-                  g_extern.console.screen.gamma_correction++;
-                  if (driver.video_data && driver.video_poke && driver.video_poke->apply_state_changes)
-                     driver.video_poke->apply_state_changes(driver.video_data);
-               }
-            }
-            break;
-
-
-
 #if defined(GEKKO)
          case MENU_SETTINGS_VIDEO_RESOLUTION:
             if (action == MENU_ACTION_LEFT)
@@ -3799,22 +3766,6 @@ static int menu_common_setting_set(unsigned id, unsigned action, rarch_setting_t
             break;
 #endif
 #ifdef _XBOX1
-         case MENU_SETTINGS_FLICKER_FILTER:
-            switch (action)
-            {
-               case MENU_ACTION_LEFT:
-                  if (g_extern.console.screen.flicker_filter_index > 0)
-                     g_extern.console.screen.flicker_filter_index--;
-                  break;
-               case MENU_ACTION_RIGHT:
-                  if (g_extern.console.screen.flicker_filter_index < 5)
-                     g_extern.console.screen.flicker_filter_index++;
-                  break;
-               case MENU_ACTION_START:
-                  g_extern.console.screen.flicker_filter_index = 0;
-                  break;
-            }
-            break;
          case MENU_SETTINGS_SOFT_DISPLAY_FILTER:
             switch (action)
             {
