@@ -3266,7 +3266,18 @@ static int menu_common_setting_set(unsigned id, unsigned action, rarch_setting_t
          case MENU_SETTINGS_VIDEO_SOFTFILTER:
             switch (action)
             {
-#ifdef HAVE_FILTERS_BUILTIN
+#if defined(HAVE_DYLIB)
+               case MENU_ACTION_OK:
+                  file_list_push(driver.menu->menu_stack, g_settings.video.filter_dir, "", id, driver.menu->selection_ptr);
+                  menu_clear_navigation(driver.menu);
+                  driver.menu->need_refresh = true;
+                  break;
+               case MENU_ACTION_START:
+                  strlcpy(g_settings.video.filter_path, "", sizeof(g_settings.video.filter_path));
+                  driver.menu_data_own = true;
+                  rarch_main_command(RARCH_CMD_REINIT);
+                  break;
+#elif defined(HAVE_FILTERS_BUILTIN)
                case MENU_ACTION_LEFT:
                   if (g_settings.video.filter_idx > 0)
                      g_settings.video.filter_idx--;
@@ -3275,26 +3286,17 @@ static int menu_common_setting_set(unsigned id, unsigned action, rarch_setting_t
                   if ((g_settings.video.filter_idx + 1) != softfilter_get_last_idx())
                      g_settings.video.filter_idx++;
                   break;
-#endif
                case MENU_ACTION_OK:
-#ifdef HAVE_FILTERS_BUILTIN
                   driver.menu_data_own = true;
                   rarch_main_command(RARCH_CMD_REINIT);
-#elif defined(HAVE_DYLIB)
-                  file_list_push(driver.menu->menu_stack, g_settings.video.filter_dir, "", id, driver.menu->selection_ptr);
-                  menu_clear_navigation(driver.menu);
-#endif
                   driver.menu->need_refresh = true;
                   break;
                case MENU_ACTION_START:
-#if defined(HAVE_FILTERS_BUILTIN)
                   g_settings.video.filter_idx = 0;
-#else
-                  strlcpy(g_settings.video.filter_path, "", sizeof(g_settings.video.filter_path));
-#endif
                   driver.menu_data_own = true;
                   rarch_main_command(RARCH_CMD_REINIT);
                   break;
+#endif
             }
             break;
          case MENU_SETTINGS_AUDIO_DSP_FILTER:
