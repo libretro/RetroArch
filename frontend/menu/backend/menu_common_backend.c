@@ -2416,7 +2416,6 @@ static int menu_common_iterate(unsigned action)
                   ret = -1;
                }
             }
-#ifdef HAVE_OVERLAY
             else if (menu_type == MENU_SETTINGS_OVERLAY_PRESET)
             {
                if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "input_overlay")))
@@ -2424,7 +2423,6 @@ static int menu_common_iterate(unsigned action)
 
                menu_flush_stack_type(MENU_SETTINGS_OPTIONS);
             }
-#endif
             else if (menu_type == MENU_SETTINGS_DISK_APPEND)
             {
                char image[PATH_MAX];
@@ -2483,14 +2481,12 @@ static int menu_common_iterate(unsigned action)
                   menu_common_setting_set_current_string_dir(current_setting, dir);
                menu_flush_stack_type(MENU_SETTINGS_PATH_OPTIONS);
             }
-#ifdef HAVE_OVERLAY
             else if (menu_type == MENU_OVERLAY_DIR_PATH)
             {
                if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "overlay_directory")))
                   menu_common_setting_set_current_string_dir(current_setting, dir);
                menu_flush_stack_type(MENU_SETTINGS_PATH_OPTIONS);
             }
-#endif
             else if (menu_type == MENU_SETTINGS_VIDEO_SOFTFILTER)
             {
                fill_pathname_join(g_settings.video.filter_path, dir, path, sizeof(g_settings.video.filter_path));
