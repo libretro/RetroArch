@@ -1164,6 +1164,7 @@ static unsigned menu_common_type_is(unsigned type)
    return ret;
 }
 
+
 static void menu_common_setting_push_current_menu(file_list_t *list, const char *path, unsigned type,
       size_t directory_ptr, unsigned action)
 {
@@ -3268,9 +3269,10 @@ static int menu_common_setting_set(unsigned id, unsigned action, rarch_setting_t
             {
 #if defined(HAVE_DYLIB)
                case MENU_ACTION_OK:
-                  file_list_push(driver.menu->menu_stack, g_settings.video.filter_dir, "", id, driver.menu->selection_ptr);
-                  menu_clear_navigation(driver.menu);
-                  driver.menu->need_refresh = true;
+                  menu_common_setting_push_current_menu(
+                        driver.menu->menu_stack,
+                        g_settings.video.filter_dir, id,
+                        driver.menu->selection_ptr, action);
                   break;
                case MENU_ACTION_START:
                   strlcpy(g_settings.video.filter_path, "", sizeof(g_settings.video.filter_path));
