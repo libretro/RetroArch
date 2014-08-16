@@ -31,15 +31,7 @@
 #include "../../input/input_common.h"
 #include "../../input/keyboard_line.h"
 #include "../../performance.h"
-
-#if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
-
-#ifndef HAVE_SHADER_MANAGER
-#define HAVE_SHADER_MANAGER
-#endif
-
-#include "../../gfx/shader_parse.h"
-#endif
+#include "../../gfx/shader_common.h"
 
 #ifdef HAVE_RGUI
 #define MENU_TEXTURE_FULLSCREEN false

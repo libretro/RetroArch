@@ -16,6 +16,7 @@
 
 #include "settings_data.h"
 #include "file_path.h"
+#include "gfx/shader_common.h"
 #include "input/input_common.h"
 #include "config.def.h"
 
@@ -1809,7 +1810,7 @@ rarch_setting_t* setting_data_get_list(void)
 
          CONFIG_DIR(g_settings.video.filter_dir,         "video_filter_dir",         "VideoFilter Directory",              "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)   WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
          CONFIG_DIR(g_settings.audio.filter_dir,         "audio_filter_dir",         "AudioFilter Directory",              "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)   WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
-#ifdef HAVE_DYLIB
+#if defined(HAVE_DYLIB) && defined(HAVE_SHADER_MANAGER)
          CONFIG_DIR(g_settings.video.shader_dir,           "video_shader_dir",           "Shader Directory",           g_defaults.shader_dir ? g_defaults.shader_dir : "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)  WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
 #endif
 

@@ -27,8 +27,14 @@
 #endif
 
 #include "gfx_context.h"
-#include "shader_parse.h"
 #include "math/matrix.h"
+
+#if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
+#ifndef HAVE_SHADER_MANAGER
+#define HAVE_SHADER_MANAGER
+#endif
+
+#include "shader_parse.h"
 
 #define GL_SHADER_STOCK_BLEND (GFX_MAX_SHADERS - 1)
 
@@ -58,6 +64,7 @@ struct gl_shader_backend
 
    enum rarch_shader_type type;
 };
+#endif
 
 #ifdef HAVE_OPENGL
 void gl_load_texture_data(GLuint obj, const struct texture_image *img,
@@ -66,4 +73,3 @@ bool gl_load_luts(const struct gfx_shader *generic_shader, GLuint *lut_textures)
 #endif
 
 #endif
-

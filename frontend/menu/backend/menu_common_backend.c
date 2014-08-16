@@ -350,9 +350,8 @@ static void menu_common_entries_init(menu_handle_t *menu, unsigned menu_type)
          file_list_push(menu->selection_buf, "", "game_history_path", MENU_CONTENT_HISTORY_PATH, 0);
          file_list_push(menu->selection_buf, "", "video_filter_dir", MENU_FILTER_DIR_PATH, 0);
          file_list_push(menu->selection_buf, "", "audio_filter_dir", MENU_DSP_FILTER_DIR_PATH, 0);
-#ifdef HAVE_SHADER_MANAGER
-         file_list_push(menu->selection_buf, "", "video_shader_dir", MENU_SHADER_DIR_PATH, 0);
-#endif
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "video_shader_dir")))
+            file_list_push(menu->selection_buf, "", "video_shader_dir", MENU_SHADER_DIR_PATH, 0);
          file_list_push(menu->selection_buf, "", "savestate_directory", MENU_SAVESTATE_DIR_PATH, 0);
          file_list_push(menu->selection_buf, "", "savefile_directory", MENU_SAVEFILE_DIR_PATH, 0);
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "overlay_directory")))
