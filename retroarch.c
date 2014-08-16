@@ -3237,7 +3237,7 @@ void rarch_main_command(unsigned action)
             driver.video_poke->apply_state_changes(driver.video_data);
          break;
       case RARCH_CMD_VIDEO_SET_NONBLOCKING_STATE:
-         boolean = true; //fall-through
+         boolean = true; /* fall-through */
       case RARCH_CMD_VIDEO_SET_BLOCKING_STATE:
          if (driver.video && driver.video->set_nonblock_state)
             driver.video->set_nonblock_state(driver.video_data, boolean);
@@ -3245,6 +3245,12 @@ void rarch_main_command(unsigned action)
       case RARCH_CMD_VIDEO_SET_ASPECT_RATIO:
          if (driver.video_data && driver.video_poke && driver.video_poke->set_aspect_ratio)
             driver.video_poke->set_aspect_ratio(driver.video_data, g_settings.video.aspect_ratio_idx);
+         break;
+      case RARCH_CMD_AUDIO_SET_NONBLOCKING_STATE:
+         boolean = true; /* fall-through */
+      case RARCH_CMD_AUDIO_SET_BLOCKING_STATE:
+         if (driver.audio && driver.audio->set_nonblock_state)
+            driver.audio->set_nonblock_state(driver.audio_data, boolean);
          break;
    }
 }

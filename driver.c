@@ -1140,7 +1140,7 @@ void init_audio(void)
 
    if (!g_settings.audio.sync && g_extern.audio_active)
    {
-      driver.audio->set_nonblock_state(driver.audio_data, true);
+      rarch_main_command(RARCH_CMD_AUDIO_SET_NONBLOCKING_STATE);
       g_extern.audio_data.chunk_size = g_extern.audio_data.nonblock_chunk_size;
    }
 
