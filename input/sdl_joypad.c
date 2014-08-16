@@ -21,6 +21,7 @@ typedef struct _sdl_joypad
 {
    SDL_Joystick *joypad;
 #ifdef HAVE_SDL2
+   SDL_GameController *controller;
    SDL_Haptic *haptic;
    int rumble_effect; // -1 = not initialized, -2 = error/unsupported
 #endif
@@ -43,25 +44,89 @@ static sdl_joypad_t g_pads[MAX_PLAYERS];
 static bool g_has_haptic;
 #endif
 
-static void sdl_joypad_connect(int id)
+static const char* pad_name(unsigned id)
+{
+#ifdef HAVE_SDL2
+   if (g_pads[id].controller)
+      return SDL_GameControllerNameForIndex(id);
+   else
+      return SDL_JoystickNameForIndex(id);
+#else
+   return SDL_JoystickName(id);
+#endif
+}
+
+static uint8_t pad_get_button(sdl_joypad_t *pad, unsigned button)
+{
+#ifdef HAVE_SDL2
+   /* TODO: see if a LUT like winxinput_joypad.c's button_index_to_bitmap_code is needed. */
+   if (pad->controller)
+      return SDL_GameControllerGetButton(pad->controller, button);
+   else
+#endif
+      return SDL_JoystickGetButton(pad->joypad, button);
+}
+
+static uint8_t pad_get_hat(sdl_joypad_t *pad, unsigned hat)
+{
+#ifdef HAVE_SDL2
+   if (pad->controller)
+      return pad_get_button(pad, hat);
+   else
+#endif
+      return SDL_JoystickGetHat(pad->joypad, hat);
+}
+
+static int16_t pad_get_axis(sdl_joypad_t *pad, unsigned axis)
+{
+#ifdef HAVE_SDL2
+   /* TODO: see if a rarch <-> sdl translation is needed. */
+   if (pad->controller)
+      return SDL_GameControllerGetAxis(pad->controller, axis);
+   else
+#endif
+      return SDL_JoystickGetAxis(pad->joypad, axis);
+}
+
+static void pad_connect(unsigned id)
 {
    sdl_joypad_t *pad = &g_pads[id];
-   pad->joypad = SDL_JoystickOpen(id);
-   if (!pad->joypad)
+   bool success = false;
+
+#ifdef HAVE_SDL2
+   if (SDL_IsGameController(id))
    {
-      RARCH_ERR("[SDL]: Couldn't open SDL joystick #%u.\n", id);
+      pad->controller = SDL_GameControllerOpen(id);
+      pad->joypad     = SDL_GameControllerGetJoystick(pad->controller);
+
+      success = pad->joypad != NULL && pad->controller != NULL;
+   }
+   else
+#endif
+   {
+      pad->joypad = SDL_JoystickOpen(id);
+      success = pad->joypad != NULL;
+   }
+
+   if (!success)
+   {
+      RARCH_ERR("[SDL]: Couldn't open joystick #%u: %s.\n", id, SDL_GetError());
+
+      if (pad->joypad)
+         SDL_JoystickClose(pad->joypad);
+
+      pad->joypad = NULL;
+
       return;
    }
 
-   RARCH_LOG("[SDL]: Joypad #%u connected: %s.\n",
-#ifdef HAVE_SDL2
-             id, SDL_JoystickName(pad->joypad));
-#else
-             id, SDL_JoystickName(id));
-#endif
-
+   RARCH_LOG("[SDL]: Joypad #%u connected: %s.\n", id, pad_name(id));
 
 #ifdef HAVE_SDL2
+
+   if (pad->controller)
+      RARCH_LOG("[SDL]: Joypad #%u supports game controller api.\n", id);
+
    pad->haptic = g_has_haptic ? SDL_HapticOpenFromJoystick(pad->joypad) : NULL;
 
    if (g_has_haptic && !pad->haptic)
@@ -101,13 +166,19 @@ static void sdl_joypad_connect(int id)
 #endif
 }
 
-static void sdl_joypad_disconnect(int id)
+static void pad_disconnect(unsigned id)
 {
 #ifdef HAVE_SDL2
    if (g_pads[id].haptic)
       SDL_HapticClose(g_pads[id].haptic);
-#endif
 
+   if (g_pads[id].controller)
+   {
+      SDL_GameControllerClose(g_pads[id].controller);
+      RARCH_LOG("[SDL]: Joypad #%u disconnected.\n", id);
+   }
+   else
+#endif
    if (g_pads[id].joypad)
    {
       SDL_JoystickClose(g_pads[id].joypad);
@@ -121,7 +192,7 @@ static void sdl_joypad_destroy(void)
 {
    unsigned i;
    for (i = 0; i < MAX_PLAYERS; i++)
-      sdl_joypad_disconnect(i);
+      pad_disconnect(i);
 
    SDL_QuitSubSystem(g_subsystem);
    memset(g_pads, 0, sizeof(g_pads));
@@ -148,12 +219,14 @@ static bool sdl_joypad_init(void)
       g_has_haptic = true;
 #endif
 
+   memset(g_pads, 0, sizeof(g_pads));
+
    unsigned num_sticks = SDL_NumJoysticks();
    if (num_sticks > MAX_PLAYERS)
       num_sticks = MAX_PLAYERS;
 
    for (i = 0; i < num_sticks; i++)
-      sdl_joypad_connect(i);
+      pad_connect(i);
 
 #ifndef HAVE_SDL2
    /* quit if no joypad is detected. */
@@ -180,7 +253,7 @@ static bool sdl_joypad_button(unsigned port, uint16_t joykey)
    if (joykey == NO_BTN)
       return false;
 
-   const sdl_joypad_t *pad = &g_pads[port];
+   sdl_joypad_t *pad = &g_pads[port];
    if (!pad->joypad)
       return false;
 
@@ -191,7 +264,7 @@ static bool sdl_joypad_button(unsigned port, uint16_t joykey)
       if (hat >= pad->num_hats)
          return false;
 
-      Uint8 dir = SDL_JoystickGetHat(pad->joypad, hat);
+      Uint8 dir = pad_get_hat(pad, hat);
       switch (GET_HAT_DIR(joykey))
       {
          case HAT_UP_MASK:
@@ -208,7 +281,7 @@ static bool sdl_joypad_button(unsigned port, uint16_t joykey)
    }
    else // Check the button
    {
-      if (joykey < pad->num_buttons && SDL_JoystickGetButton(pad->joypad, joykey))
+      if (joykey < pad->num_buttons && pad_get_button(pad, joykey))
          return true;
 
       return false;
@@ -220,14 +293,14 @@ static int16_t sdl_joypad_axis(unsigned port, uint32_t joyaxis)
    if (joyaxis == AXIS_NONE)
       return 0;
 
-   const sdl_joypad_t *pad = &g_pads[port];
+   sdl_joypad_t *pad = &g_pads[port];
    if (!pad->joypad)
       return false;
 
-   Sint16 val = 0;
+   int16_t val = 0;
    if (AXIS_NEG_GET(joyaxis) < pad->num_axes)
    {
-      val = SDL_JoystickGetAxis(pad->joypad, AXIS_NEG_GET(joyaxis));
+      val = pad_get_axis(pad, AXIS_NEG_GET(joyaxis));
 
       if (val > 0)
          val = 0;
@@ -236,7 +309,7 @@ static int16_t sdl_joypad_axis(unsigned port, uint32_t joyaxis)
    }
    else if (AXIS_POS_GET(joyaxis) < pad->num_axes)
    {
-      val = SDL_JoystickGetAxis(pad->joypad, AXIS_POS_GET(joyaxis));
+      val = pad_get_axis(pad, AXIS_POS_GET(joyaxis));
 
       if (val < 0)
          val = 0;
@@ -255,11 +328,11 @@ static void sdl_joypad_poll(void)
    {
       if (event.type == SDL_JOYDEVICEADDED)
       {
-         sdl_joypad_connect(event.jdevice.which);
+         pad_connect(event.jdevice.which);
       }
       else if (event.type == SDL_JOYDEVICEREMOVED)
       {
-         sdl_joypad_disconnect(event.jdevice.which);
+         pad_disconnect(event.jdevice.which);
       }
    }
 #else
@@ -327,11 +400,7 @@ static const char *sdl_joypad_name(unsigned pad)
    if (pad >= MAX_PLAYERS)
       return NULL;
 
-#ifdef HAVE_SDL2
-   return SDL_JoystickName(g_pads[pad].joypad);
-#else
-   return SDL_JoystickName(pad);
-#endif
+   return pad_name(pad);
 }
 
 const rarch_joypad_driver_t sdl_joypad = {
