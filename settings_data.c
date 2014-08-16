@@ -1156,8 +1156,7 @@ static void general_write_handler(const void *data)
    else if (!strcmp(setting->name, "video_gamma"))
    {
       g_extern.console.screen.gamma_correction = *setting->value.unsigned_integer;
-      if (driver.video_data && driver.video_poke && driver.video_poke->apply_state_changes)
-         driver.video_poke->apply_state_changes(driver.video_data);
+      rarch_cmd = RARCH_CMD_VIDEO_APPLY_STATE_CHANGES;
    }
    else if (!strcmp(setting->name, "video_threaded"))
    {
@@ -1167,8 +1166,7 @@ static void general_write_handler(const void *data)
    else if (!strcmp(setting->name, "video_swap_interval"))
    {
       g_settings.video.swap_interval = *setting->value.unsigned_integer;
-      if (driver.video && driver.video_data)
-         driver.video->set_nonblock_state(driver.video_data, false);
+      rarch_cmd = RARCH_CMD_VIDEO_SET_BLOCKING_STATE;
    }
    else if (!strcmp(setting->name, "video_crop_overscan"))
       g_settings.video.crop_overscan = *setting->value.boolean;
@@ -1296,7 +1294,7 @@ static void general_write_handler(const void *data)
          driver_set_monitor_refresh_rate(*setting->value.fraction);
 
          /* In case refresh rate update forced non-block video. */
-         driver.video->set_nonblock_state(driver.video_data, false);
+         rarch_cmd = RARCH_CMD_VIDEO_SET_BLOCKING_STATE;
       }
    }
    else if (!strcmp(setting->name,  "video_aspect_ratio"))
