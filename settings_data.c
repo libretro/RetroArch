@@ -774,6 +774,9 @@ void setting_data_get_description(const void *data, char *msg, size_t sizeof_msg
                "RetroArch will automatically load any savestate\n"
                "with this path on startup if 'Savestate Auto\n"
                "Load' is set.");
+    else
+       snprintf(msg, sizeof_msg,
+             "-- No info on this item is available. --\n");
 }
 
 static void general_read_handler(const void *data)
