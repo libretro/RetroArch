@@ -1381,8 +1381,7 @@ static int menu_viewport_iterate(unsigned action, rarch_setting_t *setting)
          else if (custom->height >= (unsigned)stride_y)
             custom->height -= stride_y;
 
-         if (driver.video_data && driver.video_poke && driver.video_poke->apply_state_changes)
-            driver.video_poke->apply_state_changes(driver.video_data);
+         rarch_main_command(RARCH_CMD_VIDEO_APPLY_STATE_CHANGES);
          break;
 
       case MENU_ACTION_DOWN:
@@ -1395,8 +1394,7 @@ static int menu_viewport_iterate(unsigned action, rarch_setting_t *setting)
          else
             custom->height += stride_y;
 
-         if (driver.video_data && driver.video_poke && driver.video_poke->apply_state_changes)
-            driver.video_poke->apply_state_changes(driver.video_data);
+         rarch_main_command(RARCH_CMD_VIDEO_APPLY_STATE_CHANGES);
          break;
 
       case MENU_ACTION_LEFT:
@@ -1408,8 +1406,7 @@ static int menu_viewport_iterate(unsigned action, rarch_setting_t *setting)
          else if (custom->width >= (unsigned)stride_x)
             custom->width -= stride_x;
 
-         if (driver.video_data && driver.video_poke && driver.video_poke->apply_state_changes)
-            driver.video_poke->apply_state_changes(driver.video_data);
+         rarch_main_command(RARCH_CMD_VIDEO_APPLY_STATE_CHANGES);
          break;
 
       case MENU_ACTION_RIGHT:
@@ -1422,8 +1419,7 @@ static int menu_viewport_iterate(unsigned action, rarch_setting_t *setting)
          else
             custom->width += stride_x;
 
-         if (driver.video_data && driver.video_poke && driver.video_poke->apply_state_changes)
-            driver.video_poke->apply_state_changes(driver.video_data);
+         rarch_main_command(RARCH_CMD_VIDEO_APPLY_STATE_CHANGES);
          break;
 
       case MENU_ACTION_CANCEL:
@@ -1468,8 +1464,7 @@ static int menu_viewport_iterate(unsigned action, rarch_setting_t *setting)
                custom->height = vp.full_height - custom->y;
             }
 
-            if (driver.video_data && driver.video_poke && driver.video_poke->apply_state_changes)
-               driver.video_poke->apply_state_changes(driver.video_data);
+            rarch_main_command(RARCH_CMD_VIDEO_APPLY_STATE_CHANGES);
          }
          break;
 
@@ -1522,8 +1517,7 @@ static int menu_viewport_iterate(unsigned action, rarch_setting_t *setting)
    aspectratio_lut[ASPECT_RATIO_CUSTOM].value =
       (float)custom->width / custom->height;
 
-   if (driver.video_data && driver.video_poke && driver.video_poke->apply_state_changes)
-      driver.video_poke->apply_state_changes(driver.video_data);
+   rarch_main_command(RARCH_CMD_VIDEO_APPLY_STATE_CHANGES);
 
    return 0;
 }
@@ -3655,8 +3649,7 @@ static int menu_common_setting_set(unsigned id, unsigned action, rarch_setting_t
             else
                g_extern.lifecycle_state |= (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE);
 
-            if (driver.video_data && driver.video_poke && driver.video_poke->apply_state_changes)
-               driver.video_poke->apply_state_changes(driver.video_data);
+            rarch_main_command(RARCH_CMD_VIDEO_APPLY_STATE_CHANGES);
             break;
 #endif
 
@@ -3677,7 +3670,7 @@ static int menu_common_setting_set(unsigned id, unsigned action, rarch_setting_t
                         driver_set_monitor_refresh_rate(refresh_rate);
 
                         // Incase refresh rate update forced non-block video.
-                        driver.video->set_nonblock_state(driver.video_data, false);
+                        rarch_main_command(RARCH_CMD_VIDEO_SET_BLOCKING_STATE);
                      }
                      break;
                   }

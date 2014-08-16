@@ -3096,6 +3096,8 @@ static inline void limit_frame_time(void)
 
 void rarch_main_command(unsigned action)
 {
+   bool boolean = false;
+
    switch (action)
    {
       case RARCH_CMD_LOAD_CONTENT:
@@ -3229,6 +3231,16 @@ void rarch_main_command(unsigned action)
          if (driver.menu_ctx && driver.menu_ctx->init_core_info)
             driver.menu_ctx->init_core_info(driver.menu);
 #endif
+         break;
+      case RARCH_CMD_VIDEO_APPLY_STATE_CHANGES:
+         if (driver.video_data && driver.video_poke && driver.video_poke->apply_state_changes)
+            driver.video_poke->apply_state_changes(driver.video_data);
+         break;
+      case RARCH_CMD_VIDEO_SET_NONBLOCKING_STATE:
+         boolean = true; //fall-through
+      case RARCH_CMD_VIDEO_SET_BLOCKING_STATE:
+         if (driver.video && driver.video->set_nonblock_state)
+            driver.video->set_nonblock_state(driver.video_data, boolean);
          break;
    }
 }

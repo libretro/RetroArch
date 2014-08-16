@@ -821,7 +821,7 @@ static void adjust_system_rates(void)
    if (driver.video_data)
    {
       if (g_extern.system.force_nonblock)
-         driver.video->set_nonblock_state(driver.video_data, true);
+         rarch_main_command(RARCH_CMD_VIDEO_SET_NONBLOCKING_STATE);
       else
          driver_set_nonblock_state(driver.nonblock_state);
    }
