@@ -3,13 +3,14 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 44;
+	objectVersion = 45;
 	objects = {
 
 /* Begin PBXBuildFile section */
 		50351E7D192E5E8900668AB1 /* settings.m in Sources */ = {isa = PBXBuildFile; fileRef = 50351E7C192E5E8900668AB1 /* settings.m */; };
 		50351E7F192E5EC100668AB1 /* platform.m in Sources */ = {isa = PBXBuildFile; fileRef = 50351E7E192E5EC100668AB1 /* platform.m */; };
 		50535530185E0F4000926C26 /* CoreLocation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5053552F185E0F4000926C26 /* CoreLocation.framework */; };
+		50D66298199F344700CF54E3 /* Cg.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 50D66297199F344700CF54E3 /* Cg.framework */; settings = {ATTRIBUTES = (Weak, ); }; };
 		962EE0E2178B3DF6004224FF /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 962EE0E1178B3DF6004224FF /* IOKit.framework */; };
 		96355CE31788E72A0010DBFA /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96355CE21788E72A0010DBFA /* Cocoa.framework */; };
 		964DE7C417D84B57001CBB6C /* Settings.xib in Resources */ = {isa = PBXBuildFile; fileRef = 964DE7C617D84B57001CBB6C /* Settings.xib */; };
@@ -31,6 +32,8 @@
 		50351E7C192E5E8900668AB1 /* settings.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = settings.m; path = ../settings.m; sourceTree = "<group>"; };
 		50351E7E192E5EC100668AB1 /* platform.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = platform.m; path = ../platform.m; sourceTree = "<group>"; };
 		5053552F185E0F4000926C26 /* CoreLocation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreLocation.framework; path = System/Library/Frameworks/CoreLocation.framework; sourceTree = SDKROOT; };
+		50D66295199F28AC00CF54E3 /* Cg.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = Cg.framework; sourceTree = "<group>"; };
+		50D66297199F344700CF54E3 /* Cg.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cg.framework; path = ../../../../../../../Library/Frameworks/Cg.framework; sourceTree = "<group>"; };
 		962EE0E1178B3DF6004224FF /* IOKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IOKit.framework; path = ../../../../../../../System/Library/Frameworks/IOKit.framework; sourceTree = "<group>"; };
 		96355CDF1788E72A0010DBFA /* RetroArch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RetroArch.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		96355CE21788E72A0010DBFA /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = System/Library/Frameworks/Cocoa.framework; sourceTree = SDKROOT; };
@@ -58,6 +61,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				50D66298199F344700CF54E3 /* Cg.framework in Frameworks */,
 				50535530185E0F4000926C26 /* CoreLocation.framework in Frameworks */,
 				962EE0E2178B3DF6004224FF /* IOKit.framework in Frameworks */,
 				967894A91788F0E500D6CA69 /* AudioUnit.framework in Frameworks */,
@@ -105,6 +109,8 @@
 		96355CE11788E72A0010DBFA /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				50D66297199F344700CF54E3 /* Cg.framework */,
+				50D66295199F28AC00CF54E3 /* Cg.framework */,
 				5053552F185E0F4000926C26 /* CoreLocation.framework */,
 				967894A81788F0E500D6CA69 /* AudioUnit.framework */,
 				967894A61788F0D900D6CA69 /* OpenGL.framework */,
@@ -292,6 +298,11 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COMBINE_HIDPI_IMAGES = YES;
 				COPY_PHASE_STRIP = NO;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)",
+					"$(LOCAL_LIBRARY_DIR)/Frameworks",
+				);
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
@@ -305,6 +316,10 @@
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNINITIALIZED_AUTOS = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = (
+					"$(SRCROOT)/..",
+					"$(SRCROOT)/../../../gfx/inc",
+				);
 				INFOPLIST_FILE = "$(SRCROOT)/OSX/RetroArch-Info.plist";
 				MACOSX_DEPLOYMENT_TARGET = 10.5;
 				ONLY_ACTIVE_ARCH = YES;
@@ -331,6 +346,7 @@
 					"-DRARCH_INTERNAL",
 					"-DHAVE_THREADS",
 					"-DHAVE_DYLIB",
+					"-DHAVE_CG",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;
@@ -353,12 +369,21 @@
 				COMBINE_HIDPI_IMAGES = YES;
 				COPY_PHASE_STRIP = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)",
+					"$(LOCAL_LIBRARY_DIR)/Frameworks",
+				);
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
 				GCC_VERSION = "";
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNINITIALIZED_AUTOS = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = (
+					"$(SRCROOT)/..",
+					"$(SRCROOT)/../../../gfx/inc",
+				);
 				INFOPLIST_FILE = "$(SRCROOT)/OSX/RetroArch-Info.plist";
 				MACOSX_DEPLOYMENT_TARGET = 10.5;
 				ONLY_ACTIVE_ARCH = YES;
@@ -387,6 +412,7 @@
 					"-DRARCH_INTERNAL",
 					"-DHAVE_THREADS",
 					"-DHAVE_DYLIB",
+					"-DHAVE_CG",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;
