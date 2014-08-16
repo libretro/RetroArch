@@ -315,7 +315,7 @@ INPUT
 #endif
 
 #if defined(__CELLOS_LV2__)
-#include "../input/ps3_input_osk.c"
+#include "../input/osk/ps3_osk.c"
 #endif
 
 #include "../input/osk/nullosk.c"
