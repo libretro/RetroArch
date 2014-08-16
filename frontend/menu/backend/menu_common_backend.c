@@ -64,6 +64,8 @@ static void menu_common_entries_init(menu_handle_t *menu, unsigned menu_type)
 {
    unsigned i;
    char tmp[256];
+   rarch_setting_t *current_setting;
+   rarch_setting_t *setting_data = (rarch_setting_t *)setting_data_get_list();
 
    switch (menu_type)
    {
@@ -137,9 +139,8 @@ static void menu_common_entries_init(menu_handle_t *menu, unsigned menu_type)
          file_list_push(menu->selection_buf, "", "rewind_enable", MENU_SETTINGS_REWIND_ENABLE, 0);
          file_list_push(menu->selection_buf, "", "rewind_granularity", MENU_SETTINGS_REWIND_GRANULARITY, 0);
          file_list_push(menu->selection_buf, "", "block_sram_overwrite", MENU_SETTINGS_BLOCK_SRAM_OVERWRITE, 0);
-#ifdef HAVE_THREADS
-         file_list_push(menu->selection_buf, "", "autosave_interval", MENU_SETTINGS_SRAM_AUTOSAVE, 0);
-#endif
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "autosave_interval")))
+            file_list_push(menu->selection_buf, "", "autosave_interval", MENU_SETTINGS_SRAM_AUTOSAVE, 0);
          file_list_push(menu->selection_buf, "", "video_disable_composition", MENU_SETTINGS_WINDOW_COMPOSITING_ENABLE, 0);
          file_list_push(menu->selection_buf, "", "pause_nonactive", MENU_SETTINGS_PAUSE_IF_WINDOW_FOCUS_LOST, 0);
          file_list_push(menu->selection_buf, "", "savestate_auto_save", MENU_SETTINGS_SAVESTATE_AUTO_SAVE, 0);
@@ -172,23 +173,19 @@ static void menu_common_entries_init(menu_handle_t *menu, unsigned menu_type)
          file_list_push(menu->selection_buf, "", "video_scale_integer", MENU_SETTINGS_VIDEO_INTEGER_SCALE, 0);
          file_list_push(menu->selection_buf, "", "aspect_ratio_index", MENU_SETTINGS_VIDEO_ASPECT_RATIO, 0);
          file_list_push(menu->selection_buf, "Custom Ratio", "", MENU_SETTINGS_CUSTOM_VIEWPORT, 0);
-#if !defined(RARCH_CONSOLE) && !defined(RARCH_MOBILE)
-         file_list_push(menu->selection_buf, "", "video_fullscreen", MENU_SETTINGS_TOGGLE_FULLSCREEN, 0);
-#endif
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "video_fullscreen")))
+            file_list_push(menu->selection_buf, "", "video_fullscreen", MENU_SETTINGS_TOGGLE_FULLSCREEN, 0);
          file_list_push(menu->selection_buf, "", "video_rotation", MENU_SETTINGS_VIDEO_ROTATION, 0);
          file_list_push(menu->selection_buf, "", "video_vsync", MENU_SETTINGS_VIDEO_VSYNC, 0);
          file_list_push(menu->selection_buf, "", "video_hard_sync", MENU_SETTINGS_VIDEO_HARD_SYNC, 0);
          file_list_push(menu->selection_buf, "", "video_hard_sync_frames", MENU_SETTINGS_VIDEO_HARD_SYNC_FRAMES, 0);
-#if !defined(RARCH_MOBILE)
-         file_list_push(menu->selection_buf, "", "video_black_frame_insertion", MENU_SETTINGS_VIDEO_BLACK_FRAME_INSERTION, 0);
-#endif
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "video_black_frame_insertion")))
+            file_list_push(menu->selection_buf, "", "video_black_frame_insertion", MENU_SETTINGS_VIDEO_BLACK_FRAME_INSERTION, 0);
          file_list_push(menu->selection_buf, "", "video_swap_interval", MENU_SETTINGS_VIDEO_SWAP_INTERVAL, 0);
-#if defined(HAVE_THREADS) && !defined(RARCH_CONSOLE)
-         file_list_push(menu->selection_buf, "", "video_threaded", MENU_SETTINGS_VIDEO_THREADED, 0);
-#endif
-#if !defined(RARCH_CONSOLE) && !defined(RARCH_MOBILE)
-         file_list_push(menu->selection_buf, "", "video_scale", MENU_SETTINGS_VIDEO_WINDOW_SCALE, 0);
-#endif
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "video_threaded")))
+            file_list_push(menu->selection_buf, "", "video_threaded", MENU_SETTINGS_VIDEO_THREADED, 0);
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "video_scale")))
+            file_list_push(menu->selection_buf, "", "video_scale", MENU_SETTINGS_VIDEO_WINDOW_SCALE, 0);
          file_list_push(menu->selection_buf, "", "video_crop_overscan", MENU_SETTINGS_VIDEO_CROP_OVERSCAN, 0);
          file_list_push(menu->selection_buf, "", "video_monitor_index", MENU_SETTINGS_VIDEO_MONITOR_INDEX, 0);
          file_list_push(menu->selection_buf, "", "video_refresh_rate", MENU_SETTINGS_VIDEO_REFRESH_RATE, 0);
