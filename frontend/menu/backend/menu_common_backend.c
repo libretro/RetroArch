@@ -3731,19 +3731,15 @@ static int menu_common_setting_set(unsigned id, unsigned action, rarch_setting_t
 
                   case MENU_ACTION_LEFT:
                      if (shader && shader->passes)
-                     {
                         shader->passes--;
-                        driver.menu->need_refresh = true;
-                     }
+                     driver.menu->need_refresh = true;
                      break;
 
                   case MENU_ACTION_RIGHT:
                   case MENU_ACTION_OK:
                      if (shader && (shader->passes < GFX_MAX_SHADERS))
-                     {
                         shader->passes++;
-                        driver.menu->need_refresh = true;
-                     }
+                     driver.menu->need_refresh = true;
                      break;
 
                   default:
