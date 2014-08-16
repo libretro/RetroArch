@@ -357,9 +357,8 @@ static void menu_common_entries_init(menu_handle_t *menu, unsigned menu_type)
 #endif
          file_list_push(menu->selection_buf, "", "savestate_directory", MENU_SAVESTATE_DIR_PATH, 0);
          file_list_push(menu->selection_buf, "", "savefile_directory", MENU_SAVEFILE_DIR_PATH, 0);
-#ifdef HAVE_OVERLAY
-         file_list_push(menu->selection_buf, "", "overlay_directory", MENU_OVERLAY_DIR_PATH, 0);
-#endif
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "overlay_directory")))
+            file_list_push(menu->selection_buf, "", "overlay_directory", MENU_OVERLAY_DIR_PATH, 0);
          file_list_push(menu->selection_buf, "", "system_directory", MENU_SYSTEM_DIR_PATH, 0);
          file_list_push(menu->selection_buf, "", "screenshot_directory", MENU_SCREENSHOT_DIR_PATH, 0);
          file_list_push(menu->selection_buf, "Autoconfig Directory", "", MENU_AUTOCONFIG_DIR_PATH, 0);
