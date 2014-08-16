@@ -132,7 +132,7 @@ static int main_entry_iterate_menu_preinit(args_type() args)
       return 1;
 
    // Menu should always run with vsync on.
-   driver.video->set_nonblock_state(driver.video_data, false);
+   rarch_main_command(RARCH_CMD_VIDEO_SET_BLOCKING_STATE);
 
    // Stop all rumbling when entering the menu.
    for (i = 0; i < MAX_PLAYERS; i++)
