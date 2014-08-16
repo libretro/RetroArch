@@ -2284,8 +2284,9 @@ static int menu_common_iterate(unsigned action)
             }
             else if (menu_type == MENU_SETTINGS_VIDEO_SOFTFILTER)
             {
-               fill_pathname_join(g_settings.video.filter_path, dir, path, sizeof(g_settings.video.filter_path));
-               rarch_main_command(RARCH_CMD_REINIT);
+               if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "video_filter")))
+                  menu_common_setting_set_current_string_path(current_setting, dir, path);
+
                menu_flush_stack_type(MENU_SETTINGS_VIDEO_OPTIONS);
             }
             else if (menu_type == MENU_SETTINGS_AUDIO_DSP_FILTER)
