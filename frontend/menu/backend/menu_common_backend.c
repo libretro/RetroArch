@@ -2507,8 +2507,6 @@ static int menu_common_iterate(unsigned action)
                if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "libretro_dir_path")))
                   menu_common_setting_set_current_string_dir(current_setting, dir);
 
-               if (driver.menu_ctx && driver.menu_ctx->init_core_info)
-                  driver.menu_ctx->init_core_info(driver.menu);
                menu_flush_stack_type(MENU_SETTINGS_PATH_OPTIONS);
             }
             else if (menu_type == MENU_CONFIG_DIR_PATH)
@@ -2523,8 +2521,6 @@ static int menu_common_iterate(unsigned action)
                if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "libretro_info_path")))
                   menu_common_setting_set_current_string_dir(current_setting, dir);
 
-               if (driver.menu_ctx && driver.menu_ctx->init_core_info)
-                  driver.menu_ctx->init_core_info(driver.menu);
                menu_flush_stack_type(MENU_SETTINGS_PATH_OPTIONS);
             }
             else if (menu_type == MENU_SHADER_DIR_PATH)
@@ -3694,19 +3690,13 @@ static int menu_common_setting_set(unsigned id, unsigned action, rarch_setting_t
                strlcpy(g_extern.savestate_dir, g_defaults.savestate_dir, sizeof(g_extern.savestate_dir));
             break;
          case MENU_LIBRETRO_DIR_PATH:
-            if (action == MENU_ACTION_START)
-            {
-               *g_settings.libretro_directory = '\0';
-               if (driver.menu_ctx && driver.menu_ctx->init_core_info)
-                  driver.menu_ctx->init_core_info(driver.menu);
-            }
-            break;
          case MENU_LIBRETRO_INFO_DIR_PATH:
             if (action == MENU_ACTION_START)
             {
-               *g_settings.libretro_info_path = '\0';
-               if (driver.menu_ctx && driver.menu_ctx->init_core_info)
-                  driver.menu_ctx->init_core_info(driver.menu);
+               *setting->value.string = '\0';
+
+               if (setting->change_handler)
+                  setting->change_handler(setting);
             }
             break;
          case MENU_CONFIG_DIR_PATH:

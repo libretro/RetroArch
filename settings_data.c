@@ -1032,7 +1032,6 @@ static void general_read_handler(const void *data)
 static void general_write_handler(const void *data)
 {
    unsigned rarch_cmd = RARCH_CMD_NONE;
-   bool has_set_libretro_dir      = false;
    const rarch_setting_t *setting = (const rarch_setting_t*)data;
 
    if (!setting)
@@ -1306,9 +1305,15 @@ static void general_write_handler(const void *data)
    else if (!strcmp(setting->name, "libretro_path"))
       strlcpy(g_settings.libretro, setting->value.string, sizeof(g_settings.libretro));
    else if (!strcmp(setting->name, "libretro_info_path"))
+   {
       strlcpy(g_settings.libretro_info_path, setting->value.string, sizeof(g_settings.libretro_info_path));
+      rarch_cmd = RARCH_CMD_CORE_INFO_INIT;
+   }
    else if (!strcmp(setting->name, "libretro_dir_path"))
+   {
       strlcpy(g_settings.libretro_directory, setting->value.string, sizeof(g_settings.libretro_directory));
+      rarch_cmd = RARCH_CMD_CORE_INFO_INIT;
+   }
    else if (!strcmp(setting->name, "core_options_path"))
       strlcpy(g_settings.core_options_path, setting->value.string, sizeof(g_settings.core_options_path));
    else if (!strcmp(setting->name, "cheat_database_path"))
@@ -1369,14 +1374,6 @@ static void general_write_handler(const void *data)
 
    if (rarch_cmd)
       rarch_main_command(rarch_cmd);
-
-   if (has_set_libretro_dir)
-   {
-#ifdef HAVE_MENU
-      if (driver.menu_ctx && driver.menu_ctx->init_core_info)
-         driver.menu_ctx->init_core_info(driver.menu);
-#endif
-   }
 }
 
 #define NEXT (list[index++])

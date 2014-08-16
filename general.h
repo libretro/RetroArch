@@ -114,6 +114,7 @@ enum basic_event
    RARCH_CMD_RECORD_DEINIT,
    RARCH_CMD_HISTORY_DEINIT,
    RARCH_CMD_HISTORY_INIT,
+   RARCH_CMD_CORE_INFO_INIT,
 };
 
 enum menu_enums

@@ -3224,6 +3224,12 @@ void rarch_main_command(unsigned action)
             content_playlist_free(g_extern.history);
          g_extern.history = NULL;
          break;
+      case RARCH_CMD_CORE_INFO_INIT:
+#ifdef HAVE_MENU
+         if (driver.menu_ctx && driver.menu_ctx->init_core_info)
+            driver.menu_ctx->init_core_info(driver.menu);
+#endif
+         break;
    }
 }
 
