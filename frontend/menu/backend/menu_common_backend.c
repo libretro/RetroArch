@@ -3659,22 +3659,6 @@ static int menu_common_setting_set(unsigned id, unsigned action, rarch_setting_t
                }
             }
             break;
-         case MENU_BROWSER_DIR_PATH:
-            if (action == MENU_ACTION_START)
-               *g_settings.menu_content_directory = '\0';
-            break;
-         case MENU_CONTENT_DIR_PATH:
-            if (action == MENU_ACTION_START)
-               *g_settings.content_directory = '\0';
-            break;
-         case MENU_ASSETS_DIR_PATH:
-            if (action == MENU_ACTION_START)
-               *g_settings.assets_directory = '\0';
-            break;
-         case MENU_SCREENSHOT_DIR_PATH:
-            if (action == MENU_ACTION_START)
-               *g_settings.screenshot_directory = '\0';
-            break;
          case MENU_SAVEFILE_DIR_PATH:
             if (action == MENU_ACTION_START)
                strlcpy(g_extern.savefile_dir, g_defaults.sram_dir, sizeof(g_extern.savefile_dir));
@@ -3689,8 +3673,17 @@ static int menu_common_setting_set(unsigned id, unsigned action, rarch_setting_t
             if (action == MENU_ACTION_START)
                strlcpy(g_extern.savestate_dir, g_defaults.savestate_dir, sizeof(g_extern.savestate_dir));
             break;
+         case MENU_BROWSER_DIR_PATH:
+         case MENU_CONTENT_DIR_PATH:
+         case MENU_ASSETS_DIR_PATH:
+         case MENU_SCREENSHOT_DIR_PATH:
          case MENU_LIBRETRO_DIR_PATH:
          case MENU_LIBRETRO_INFO_DIR_PATH:
+         case MENU_CONFIG_DIR_PATH:
+         case MENU_SHADER_DIR_PATH:
+         case MENU_SYSTEM_DIR_PATH:
+         case MENU_AUTOCONFIG_DIR_PATH:
+         case MENU_EXTRACTION_DIR_PATH:
             if (action == MENU_ACTION_START)
             {
                *setting->value.string = '\0';
@@ -3699,10 +3692,6 @@ static int menu_common_setting_set(unsigned id, unsigned action, rarch_setting_t
                   setting->change_handler(setting);
             }
             break;
-         case MENU_CONFIG_DIR_PATH:
-            if (action == MENU_ACTION_START)
-               *g_settings.menu_config_directory = '\0';
-            break;
          case MENU_FILTER_DIR_PATH:
             if (action == MENU_ACTION_START)
                *g_settings.video.filter_dir = '\0';
@@ -3710,22 +3699,6 @@ static int menu_common_setting_set(unsigned id, unsigned action, rarch_setting_t
          case MENU_DSP_FILTER_DIR_PATH:
             if (action == MENU_ACTION_START)
                *g_settings.audio.filter_dir = '\0';
-            break;
-         case MENU_SHADER_DIR_PATH:
-            if (action == MENU_ACTION_START)
-               *g_settings.video.shader_dir = '\0';
-            break;
-         case MENU_SYSTEM_DIR_PATH:
-            if (action == MENU_ACTION_START)
-               *g_settings.system_directory = '\0';
-            break;
-         case MENU_AUTOCONFIG_DIR_PATH:
-            if (action == MENU_ACTION_START)
-               *g_settings.input.autoconfig_dir = '\0';
-            break;
-         case MENU_EXTRACTION_DIR_PATH:
-            if (action == MENU_ACTION_START)
-               *g_settings.extraction_directory = '\0';
             break;
          case MENU_SETTINGS_DRIVER_VIDEO:
             if (action == MENU_ACTION_LEFT)
