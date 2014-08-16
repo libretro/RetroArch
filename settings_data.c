@@ -1311,9 +1311,7 @@ static void general_write_handler(const void *data)
    else if (!strcmp(setting->name, "aspect_ratio_index"))
    {
       g_settings.video.aspect_ratio_idx = *setting->value.unsigned_integer;
-
-      if (driver.video_data && driver.video_poke && driver.video_poke->set_aspect_ratio)
-         driver.video_poke->set_aspect_ratio(driver.video_data, g_settings.video.aspect_ratio_idx);
+      rarch_cmd = RARCH_CMD_VIDEO_SET_ASPECT_RATIO;
    }
    else if (!strcmp(setting->name, "video_message_pos_x"))
       g_settings.video.msg_pos_x = *setting->value.fraction;

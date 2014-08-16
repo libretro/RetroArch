@@ -1266,9 +1266,8 @@ static int menu_settings_iterate(unsigned action, rarch_setting_t *setting)
             aspectratio_lut[ASPECT_RATIO_CUSTOM].value = (float)custom->width / custom->height;
 
             g_settings.video.aspect_ratio_idx = ASPECT_RATIO_CUSTOM;
-            if (driver.video_data && driver.video_poke && driver.video_poke->set_aspect_ratio)
-               driver.video_poke->set_aspect_ratio(driver.video_data,
-                     g_settings.video.aspect_ratio_idx);
+
+            rarch_main_command(RARCH_CMD_VIDEO_SET_ASPECT_RATIO);
          }
          else
          {

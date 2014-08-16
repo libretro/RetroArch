@@ -946,8 +946,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
                   geom->base_width, geom->base_height, geom->aspect_ratio);
 
             // Forces recomputation of aspect ratios if using core-dependent aspect ratios.
-            if (driver.video_poke && driver.video_poke->set_aspect_ratio && driver.video_data)
-               driver.video_poke->set_aspect_ratio(driver.video_data, g_settings.video.aspect_ratio_idx);
+            rarch_main_command(RARCH_CMD_VIDEO_SET_ASPECT_RATIO);
             
             // TODO: Figure out what to do, if anything, with recording.
          }
