@@ -1007,6 +1007,10 @@ static void deinit_shader_dir(void)
 
 static void compute_monitor_fps_statistics(void)
 {
+   double avg_fps = 0.0;
+   double stddev = 0.0;
+   unsigned samples = 0;
+
    if (g_settings.video.threaded)
    {
       RARCH_LOG("Monitor FPS estimation is disabled for threaded video.\n");
@@ -1020,9 +1024,6 @@ static void compute_monitor_fps_statistics(void)
       return;
    }
 
-   double avg_fps = 0.0;
-   double stddev = 0.0;
-   unsigned samples = 0;
    if (driver_monitor_fps_statistics(&avg_fps, &stddev, &samples))
    {
       RARCH_LOG("Average monitor Hz: %.6f Hz. (%.3f %% frame time deviation, based on %u last samples).\n",
@@ -1237,11 +1238,11 @@ static void compute_audio_buffer_statistics(void)
 
 bool driver_monitor_fps_statistics(double *refresh_rate, double *deviation, unsigned *sample_points)
 {
-   unsigned i;
+   unsigned i, samples;
    if (g_settings.video.threaded)
       return false;
 
-   unsigned samples = min(MEASURE_FRAME_TIME_SAMPLES_COUNT, g_extern.measure_data.frame_time_samples_count);
+   samples = min(MEASURE_FRAME_TIME_SAMPLES_COUNT, g_extern.measure_data.frame_time_samples_count);
    if (samples < 2)
       return false;
 
@@ -1306,6 +1307,9 @@ void uninit_audio(void)
 
 void rarch_init_filter(enum retro_pixel_format colfmt)
 {
+   unsigned width, height, pow2_x, pow2_y, maxsize;
+   struct retro_game_geometry *geom = NULL;
+
    rarch_deinit_filter();
 #ifndef HAVE_FILTERS_BUILTIN
    if (!*g_settings.video.filter_path)
@@ -1322,16 +1326,13 @@ void rarch_init_filter(enum retro_pixel_format colfmt)
       return;
    }
 
-   struct retro_game_geometry *geom = &g_extern.system.av_info.geometry;
-   unsigned width   = geom->max_width;
-   unsigned height  = geom->max_height;
-   unsigned pow2_x  = 0;
-   unsigned pow2_y  = 0;
-   unsigned maxsize = 0;
+   geom = (struct retro_game_geometry*)&g_extern.system.av_info.geometry;
+   width   = geom->max_width;
+   height  = geom->max_height;
+   pow2_x  = 0;
+   pow2_y  = 0;
+   maxsize = 0;
 
-#ifndef HAVE_FILTERS_BUILTIN
-   RARCH_LOG("Loading softfilter from \"%s\"\n", g_settings.video.filter_path);
-#endif
    g_extern.filter.filter = rarch_softfilter_new(g_settings.video.filter_path,
          RARCH_SOFTFILTER_THREADS_AUTO, colfmt, width, height);
 
@@ -1409,13 +1410,17 @@ static bool init_video_pixel_converter(unsigned size)
 
 void init_video_input(void)
 {
+   unsigned max_dim, scale, width, height;
+   const input_driver_t *tmp = NULL;
+   const struct retro_game_geometry *geom = NULL;
+
    rarch_init_filter(g_extern.system.pix_fmt);
 
    init_shader_dir();
 
-   const struct retro_game_geometry *geom = &g_extern.system.av_info.geometry;
-   unsigned max_dim = max(geom->max_width, geom->max_height);
-   unsigned scale = next_pow2(max_dim) / RARCH_SCALE_BASE;
+   geom = (const struct retro_game_geometry*)&g_extern.system.av_info.geometry;
+   max_dim = max(geom->max_width, geom->max_height);
+   scale = next_pow2(max_dim) / RARCH_SCALE_BASE;
    scale = max(scale, 1);
 
    if (g_extern.filter.filter)
@@ -1437,8 +1442,6 @@ void init_video_input(void)
 
    g_extern.system.aspect_ratio = aspectratio_lut[g_settings.video.aspect_ratio_idx].value;
 
-   unsigned width;
-   unsigned height;
    if (g_settings.video.fullscreen)
    {
       width = g_settings.video.fullscreen_x;
@@ -1488,7 +1491,7 @@ void init_video_input(void)
    video.input_scale = scale;
    video.rgb32 = g_extern.filter.filter ? g_extern.filter.out_rgb32 : (g_extern.system.pix_fmt == RETRO_PIXEL_FORMAT_XRGB8888);
 
-   const input_driver_t *tmp = driver.input;
+   tmp = (const input_driver_t*)driver.input;
    find_video_driver(); // Need to grab the "real" video driver interface on a reinit.
 #ifdef HAVE_THREADS
    if (g_settings.video.threaded && !g_extern.system.hw_render_callback.context_type) // Can't do hardware rendering with threaded driver currently.
@@ -1563,23 +1566,18 @@ void init_video_input(void)
       }
    }
 
-#ifdef HAVE_OVERLAY
    rarch_main_command(RARCH_CMD_OVERLAY_DEINIT);
    rarch_main_command(RARCH_CMD_OVERLAY_INIT);
-#endif
 
    g_extern.measure_data.frame_time_samples_count = 0;
 }
 
 void uninit_video_input(void)
 {
-#ifdef HAVE_OVERLAY
    rarch_main_command(RARCH_CMD_OVERLAY_DEINIT);
-#endif
 
    if (!driver.input_data_own && driver.input_data != driver.video_data && driver.input && driver.input->free)
       driver.input->free(driver.input_data);
-
 
    if (!driver.video_data_own && driver.video_data && driver.video && driver.video->free)
       driver.video->free(driver.video_data);

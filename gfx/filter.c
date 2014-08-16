@@ -163,6 +163,7 @@ rarch_softfilter_t *rarch_softfilter_new(const char *filter_path,
 #if defined(HAVE_FILTERS_BUILTIN)
    cb = (softfilter_get_implementation_t)softfilter_get_implementation_from_idx(g_settings.video.filter_idx);
 #elif defined(HAVE_DYLIB)
+   RARCH_LOG("Loading softfilter from \"%s\"\n", filter_path);
    filt->lib = dylib_load(filter_path);
    if (!filt->lib)
       goto error;
