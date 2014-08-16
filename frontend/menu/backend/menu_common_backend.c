@@ -25,6 +25,7 @@
 #include "../menu_input_line_cb.h"
 
 #include "../../../gfx/gfx_common.h"
+#include "../../../gfx/shader_common.h"
 #include "../../../driver.h"
 #include "../../../file_ext.h"
 #include "../../../input/input_common.h"
@@ -64,8 +65,10 @@ static void menu_common_entries_init(menu_handle_t *menu, unsigned menu_type)
 {
    unsigned i;
    char tmp[256];
-   rarch_setting_t *current_setting;
+   rarch_setting_t *current_setting = NULL;
    rarch_setting_t *setting_data = (rarch_setting_t *)setting_data_get_list();
+
+   (void)current_setting;
 
    switch (menu_type)
    {

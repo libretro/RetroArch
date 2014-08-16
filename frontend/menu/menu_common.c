@@ -144,7 +144,9 @@ static void load_menu_content_prepare(void)
 
 void load_menu_content_history(unsigned game_index)
 {
-   const char *path, *core_path, *core_name = NULL;
+   const char *path      = NULL;
+   const char *core_path = NULL;
+   const char *core_name = NULL;
 
    if (!driver.menu)
       return;
