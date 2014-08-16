@@ -3016,8 +3016,8 @@ int rarch_main_init(int argc, char *argv[])
    return 0;
 
 error:
-   uninit_drivers();
    main_deinit_core();
+   uninit_drivers();
 
    g_extern.main_is_init = false;
    return 1;
@@ -3401,9 +3401,8 @@ void rarch_main_deinit(void)
 
    save_auto_state();
 
-   uninit_drivers();
-
    main_deinit_core();
+   uninit_drivers();
 
    deinit_temporary_content();
    deinit_subsystem_fullpaths();
