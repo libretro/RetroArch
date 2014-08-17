@@ -214,6 +214,13 @@ static void readjust_audio_input_rate(void)
    //      g_extern.audio_data.src_ratio, g_extern.audio_data.orig_src_ratio);
 }
 
+static void deinit_gpu_recording(void)
+{
+   if (g_extern.record_gpu_buffer)
+      free(g_extern.record_gpu_buffer);
+   g_extern.record_gpu_buffer = NULL;
+}
+
 static void init_recording(void)
 {
    struct ffemu_params params = {0};
@@ -319,8 +326,7 @@ static void init_recording(void)
    if (!ffemu_init_first(&g_extern.rec_driver, &g_extern.rec, &params))
    {
       RARCH_ERR("Failed to start recording.\n");
-      free(g_extern.record_gpu_buffer);
-      g_extern.record_gpu_buffer = NULL;
+      deinit_gpu_recording();
    }
 }
 
@@ -337,9 +343,7 @@ static void deinit_recording(void)
    g_extern.rec = NULL;
    g_extern.rec_driver = NULL;
 
-   if (g_extern.record_gpu_buffer)
-      free(g_extern.record_gpu_buffer);
-   g_extern.record_gpu_buffer = NULL;
+   deinit_gpu_recording();
 }
 
 static void recording_dump_frame(const void *data, unsigned width, unsigned height, size_t pitch)
@@ -361,8 +365,7 @@ static void recording_dump_frame(const void *data, unsigned width, unsigned heig
       if (!vp.width || !vp.height)
       {
          RARCH_WARN("Viewport size calculation failed! Will continue using raw data. This will probably not work right ...\n");
-         free(g_extern.record_gpu_buffer);
-         g_extern.record_gpu_buffer = NULL;
+         deinit_gpu_recording();
 
          recording_dump_frame(data, width, height, pitch);
          return;
