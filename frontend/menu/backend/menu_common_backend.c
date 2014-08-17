@@ -2850,7 +2850,7 @@ static int menu_common_shader_manager_setting_toggle(unsigned id,
          {
             unsigned delta = (action == MENU_ACTION_LEFT) ? 2 : 1;
             if (pass)
-               pass->filter = (gfx_filter_type)((pass->filter + delta) % 3);
+               pass->filter = ((pass->filter + delta) % 3);
             break;
          }
 
