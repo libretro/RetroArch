@@ -1557,21 +1557,21 @@ static void general_write_handler(const void *data)
       rarch_main_command(rarch_cmd);
 }
 
-#define NEXT (list[index++])
-#define START_GROUP(NAME)                       { const char *GROUP_NAME = NAME; NEXT = setting_data_group_setting (ST_GROUP, NAME); 
-#define END_GROUP()                             NEXT = setting_data_group_setting (ST_END_GROUP, 0); }
-#define START_SUB_GROUP(NAME)                   { const char *SUBGROUP_NAME = NAME; NEXT = setting_data_group_setting (ST_SUB_GROUP, NAME);
-#define END_SUB_GROUP()                         NEXT = setting_data_group_setting (ST_END_SUB_GROUP, 0); }
-#define CONFIG_BOOL(TARGET, NAME, SHORT, DEF, GROUP, SUBGROUP, CHANGE_HANDLER, READ_HANDLER)   NEXT = setting_data_bool_setting  (NAME, SHORT, &TARGET, DEF, GROUP, SUBGROUP, CHANGE_HANDLER, READ_HANDLER);
-#define CONFIG_INT(TARGET, NAME, SHORT, DEF, GROUP, SUBGROUP, CHANGE_HANDLER, READ_HANDLER)    NEXT = setting_data_int_setting   (NAME, SHORT, &TARGET, DEF, GROUP, SUBGROUP, CHANGE_HANDLER, READ_HANDLER);
-#define CONFIG_UINT(TARGET, NAME, SHORT, DEF, GROUP, SUBGROUP, CHANGE_HANDLER, READ_HANDLER)   NEXT = setting_data_uint_setting  (NAME, SHORT, &TARGET, DEF, GROUP, SUBGROUP, CHANGE_HANDLER, READ_HANDLER);
-#define CONFIG_FLOAT(TARGET, NAME, SHORT, DEF, GROUP, SUBGROUP, CHANGE_HANDLER, READ_HANDLER)  NEXT = setting_data_float_setting (NAME, SHORT, &TARGET, DEF, GROUP, SUBGROUP, CHANGE_HANDLER, READ_HANDLER);
-#define CONFIG_PATH(TARGET, NAME, SHORT, DEF, GROUP, SUBGROUP, CHANGE_HANDLER, READ_HANDLER)   NEXT = setting_data_string_setting(ST_PATH, NAME, SHORT, TARGET, sizeof(TARGET), DEF, GROUP, SUBGROUP, CHANGE_HANDLER, READ_HANDLER);
-#define CONFIG_DIR(TARGET, NAME, SHORT, DEF, GROUP, SUBGROUP, CHANGE_HANDLER, READ_HANDLER)   NEXT = setting_data_string_setting(ST_DIR, NAME, SHORT, TARGET, sizeof(TARGET), DEF, GROUP, SUBGROUP, CHANGE_HANDLER, READ_HANDLER);
-#define CONFIG_STRING(TARGET, NAME, SHORT, DEF, GROUP, SUBGROUP, CHANGE_HANDLER, READ_HANDLER) NEXT = setting_data_string_setting(ST_STRING, NAME, SHORT, TARGET, sizeof(TARGET), DEF, GROUP, SUBGROUP, CHANGE_HANDLER, READ_HANDLER);
+#define APPEND(VALUE) if (index==list_size) { list_size *= 2; list = realloc(list, sizeof(rarch_setting_t)*list_size); } (list[index++]) = VALUE
+#define START_GROUP(NAME)                       { const char *GROUP_NAME = NAME; APPEND(setting_data_group_setting (ST_GROUP, NAME));
+#define END_GROUP()                             APPEND(setting_data_group_setting (ST_END_GROUP, 0)); }
+#define START_SUB_GROUP(NAME)                   { const char *SUBGROUP_NAME = NAME; APPEND(setting_data_group_setting (ST_SUB_GROUP, NAME));
+#define END_SUB_GROUP()                         APPEND(setting_data_group_setting (ST_END_SUB_GROUP, 0)); }
+#define CONFIG_BOOL(TARGET, NAME, SHORT, DEF, GROUP, SUBGROUP, CHANGE_HANDLER, READ_HANDLER)   APPEND(setting_data_bool_setting  (NAME, SHORT, &TARGET, DEF, GROUP, SUBGROUP, CHANGE_HANDLER, READ_HANDLER));
+#define CONFIG_INT(TARGET, NAME, SHORT, DEF, GROUP, SUBGROUP, CHANGE_HANDLER, READ_HANDLER)    APPEND(setting_data_int_setting   (NAME, SHORT, &TARGET, DEF, GROUP, SUBGROUP, CHANGE_HANDLER, READ_HANDLER));
+#define CONFIG_UINT(TARGET, NAME, SHORT, DEF, GROUP, SUBGROUP, CHANGE_HANDLER, READ_HANDLER)   APPEND(setting_data_uint_setting  (NAME, SHORT, &TARGET, DEF, GROUP, SUBGROUP, CHANGE_HANDLER, READ_HANDLER));
+#define CONFIG_FLOAT(TARGET, NAME, SHORT, DEF, GROUP, SUBGROUP, CHANGE_HANDLER, READ_HANDLER)  APPEND(setting_data_float_setting (NAME, SHORT, &TARGET, DEF, GROUP, SUBGROUP, CHANGE_HANDLER, READ_HANDLER));
+#define CONFIG_PATH(TARGET, NAME, SHORT, DEF, GROUP, SUBGROUP, CHANGE_HANDLER, READ_HANDLER)   APPEND(setting_data_string_setting(ST_PATH, NAME, SHORT, TARGET, sizeof(TARGET), DEF, GROUP, SUBGROUP, CHANGE_HANDLER, READ_HANDLER));
+#define CONFIG_DIR(TARGET, NAME, SHORT, DEF, GROUP, SUBGROUP, CHANGE_HANDLER, READ_HANDLER)   APPEND(setting_data_string_setting(ST_DIR, NAME, SHORT, TARGET, sizeof(TARGET), DEF, GROUP, SUBGROUP, CHANGE_HANDLER, READ_HANDLER));
+#define CONFIG_STRING(TARGET, NAME, SHORT, DEF, GROUP, SUBGROUP, CHANGE_HANDLER, READ_HANDLER) APPEND(setting_data_string_setting(ST_STRING, NAME, SHORT, TARGET, sizeof(TARGET), DEF, GROUP, SUBGROUP, CHANGE_HANDLER, READ_HANDLER));
 #define CONFIG_HEX(TARGET, NAME, SHORT, GROUP, SUBGROUP)
 #define CONFIG_BIND(TARGET, PLAYER, NAME, SHORT, DEF, GROUP, SUBGROUP) \
-   NEXT = setting_data_bind_setting  (NAME, SHORT, &TARGET, PLAYER, DEF, GROUP, SUBGROUP);
+   APPEND(setting_data_bind_setting  (NAME, SHORT, &TARGET, PLAYER, DEF, GROUP, SUBGROUP));
 
 #define WITH_FLAGS(FLAGS) (list[index - 1]).flags |= FLAGS;
 
@@ -1581,7 +1581,7 @@ static void general_write_handler(const void *data)
    (list[index - 1]).max = MAX; \
    (list[index - 1]).enforce_minrange = ENFORCE_MINRANGE; \
    (list[index - 1]).enforce_maxrange = ENFORCE_MAXRANGE; \
-WITH_FLAGS(SD_FLAG_HAS_RANGE)
+   WITH_FLAGS(SD_FLAG_HAS_RANGE)
 
 #define WITH_VALUES(VALUES) (list[index -1]).values = VALUES;
 
@@ -1594,29 +1594,13 @@ WITH_FLAGS(SD_FLAG_HAS_RANGE)
 rarch_setting_t* setting_data_get_list(void)
 {
    int i, player, index;
-   static rarch_setting_t list[SETTINGS_DATA_LIST_SIZE];
+   static rarch_setting_t* list = NULL;
    static bool initialized = false;
 
-   if (!initialized)
+   if (!list)
    {
-      for (i = 0; i < SETTINGS_DATA_LIST_SIZE; i++)
-      {
-         list[i].type = ST_NONE;
-         list[i].name = NULL;
-         list[i].size = 0;
-         list[i].short_description = NULL;
-         list[i].index = 0;
-         list[i].min = 0;
-         list[i].max = 0;
-         list[i].values = NULL;
-         list[i].flags = 0;
-      }
-
-      initialized = true;
-   }
-
-   if (list[0].type == ST_NONE)
-   {
+      int list_size=512;
+      list = malloc(sizeof(rarch_setting_t)*list_size);
       index = 0;
 
       /***********/
@@ -1943,6 +1927,10 @@ rarch_setting_t* setting_data_get_list(void)
          CONFIG_BOOL(g_settings.location.allow,     "location_allow",     "Allow Location",          false, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
        END_SUB_GROUP()
        END_GROUP()
+
+       rarch_setting_t terminator = { ST_NONE };
+       APPEND(terminator);
+       list = realloc(list, sizeof(rarch_setting_t)*index);//flatten this array to save ourselves some kilobytes
    }
 
    return list;
