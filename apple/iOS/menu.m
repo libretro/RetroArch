@@ -792,8 +792,9 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
       {
           const core_info_t *tmp = (const core_info_t*)core_info_list_get_by_id(core.UTF8String);
           self.title = tmp ? BOXSTRING(tmp->display_name) : BOXSTRING(core.UTF8String);
-         
-         _pathToSave = BOXSTRING(core_info_get_custom_config(core.UTF8String, buffer, sizeof(buffer)));
+
+          core_info_get_custom_config(core.UTF8String, buffer, sizeof(buffer));
+         _pathToSave = BOXSTRING(buffer);
          self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemTrash target:self action:@selector(deleteCustom)];
       }
       else
@@ -986,9 +987,7 @@ static bool copy_config(const char *src_path, const char *dst_path)
             if (g_defaults.config_path[0] != '\0' && path[0] != '\0')
             {
                if (!copy_config(g_defaults.config_path, path))
-               {
                   RARCH_WARN("Could not create custom config at %s.", path);
-               }
             }
          }
          

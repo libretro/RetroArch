@@ -456,22 +456,26 @@ const core_info_t *core_info_list_get_by_id(const char *core_id)
    return 0;
 }
 
-const char *core_info_get_custom_config(const char *core_id, char *buffer, size_t buffer_length)
+void core_info_get_custom_config(const char *core_id, char *buf, size_t sizeof_buf)
 {
-   if (!core_id || !buffer || !buffer_length)
-      return 0;
+   if (!core_id || !buf || !sizeof_buf)
+      return;
 
-   fill_pathname_join(buffer, g_defaults.menu_config_dir, path_basename(core_id), buffer_length);
-   fill_pathname(buffer, buffer, ".cfg", buffer_length);
-   return buffer;
+   fill_pathname_join(buf, g_defaults.menu_config_dir, path_basename(core_id), sizeof_buf);
+   fill_pathname(buf, buf, ".cfg", sizeof_buf);
 }
 
 bool core_info_has_custom_config(const char *core_id)
 {
    char path[PATH_MAX];
+
    if (!core_id)
       return false;
 
    core_info_get_custom_config(core_id, path, sizeof(path));
-   return path_file_exists(path);
+
+   if (path[0] != '\0')
+      return path_file_exists(path);
+
+   return false;
 }
