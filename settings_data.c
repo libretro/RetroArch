@@ -1931,7 +1931,9 @@ rarch_setting_t* setting_data_get_list(void)
 
        rarch_setting_t terminator = { ST_NONE };
        APPEND(terminator);
-       list = realloc(list, sizeof(rarch_setting_t)*index);//flatten this array to save ourselves some kilobytes
+       
+       /* flatten this array to save ourselves some kilobytes */
+       list = (rarch_setting_t*)realloc(list, sizeof(rarch_setting_t) * index); 
    }
 
    return list;
