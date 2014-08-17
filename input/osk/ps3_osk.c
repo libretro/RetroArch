@@ -193,5 +193,5 @@ const input_osk_driver_t input_ps3_osk = {
    oskutil_start,
    oskutil_lifecycle,
    oskutil_get_text_buf,
-   "ps3osk"
+   "ps3"
 };
