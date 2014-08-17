@@ -109,7 +109,18 @@ void setting_data_reset_setting(const rarch_setting_t* setting)
                fill_pathname_expand_special(setting->value.string, setting->default_value.string, setting->size);
          }
          break;
-      default:
+         /* TODO */
+      case ST_HEX:
+         break;
+      case ST_GROUP:
+         break;
+      case ST_SUB_GROUP:
+         break;
+      case ST_END_GROUP:
+         break;
+      case ST_END_SUB_GROUP:
+         break;
+      case ST_NONE:
          break;
    }
 
@@ -181,9 +192,18 @@ static bool setting_data_load_config(const rarch_setting_t* settings, config_fil
                input_config_parse_joy_axis  (config, prefix, settings->name, settings->value.keybind);
             }
             break;
+            /* TODO */
          case ST_HEX:
             break;
-         default:
+         case ST_GROUP:
+            break;
+         case ST_SUB_GROUP:
+            break;
+         case ST_END_GROUP:
+            break;
+         case ST_END_SUB_GROUP:
+            break;
+         case ST_NONE:
             break;
       }
 
@@ -278,9 +298,18 @@ bool setting_data_save_config(const rarch_setting_t* settings, config_file_t* co
                config_set_string(config, input_config_key, axis_name);
             }
             break;
+            /* TODO */
          case ST_HEX:
             break;
-         default:
+         case ST_GROUP:
+            break;
+         case ST_SUB_GROUP:
+            break;
+         case ST_END_GROUP:
+            break;
+         case ST_END_SUB_GROUP:
+            break;
+         case ST_NONE:
             break;
       }
    }
@@ -361,8 +390,23 @@ void setting_data_set_with_string_representation(const rarch_setting_t* setting,
          strlcpy(setting->value.string, value, setting->size);
          break;
 
-      default:
-         return;
+         /* TODO */
+      case ST_HEX:
+         break;
+      case ST_GROUP:
+         break;
+      case ST_SUB_GROUP:
+         break;
+      case ST_END_GROUP:
+         break;
+      case ST_END_SUB_GROUP:
+         break;
+      case ST_NONE:
+         break;
+      case ST_BOOL:
+         break;
+      case ST_BIND:
+         break;
    }
 
    if (setting->change_handler)
