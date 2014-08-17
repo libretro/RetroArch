@@ -196,23 +196,18 @@ static void take_screenshot(void)
 
 static void readjust_audio_input_rate(void)
 {
-   int half_size, delta_mid;
-   unsigned write_index;
-   double direction, adjust;
    int avail = driver.audio->write_avail(driver.audio_data);
 
    //RARCH_LOG_OUTPUT("Audio buffer is %u%% full\n",
    //      (unsigned)(100 - (avail * 100) / g_extern.audio_data.driver_buffer_size));
 
-   write_index = g_extern.measure_data.buffer_free_samples_count++ & (AUDIO_BUFFER_FREE_SAMPLES_COUNT - 1);
+   unsigned write_index = g_extern.measure_data.buffer_free_samples_count++ & (AUDIO_BUFFER_FREE_SAMPLES_COUNT - 1);
+   int      half_size   = g_extern.audio_data.driver_buffer_size / 2;
+   int      delta_mid   = avail - half_size;
+   double   direction   = (double)delta_mid / half_size;
+   double   adjust      = 1.0 + g_settings.audio.rate_control_delta * direction;
+
    g_extern.measure_data.buffer_free_samples[write_index] = avail;
-
-   half_size = g_extern.audio_data.driver_buffer_size / 2;
-   delta_mid = avail - half_size;
-   direction = (double)delta_mid / half_size;
-
-   adjust = 1.0 + g_settings.audio.rate_control_delta * direction;
-
    g_extern.audio_data.src_ratio = g_extern.audio_data.orig_src_ratio * adjust;
 
    //RARCH_LOG_OUTPUT("New rate: %lf, Orig rate: %lf\n",
@@ -409,7 +404,7 @@ static void recording_dump_frame(const void *data, unsigned width, unsigned heig
 
 static void video_frame(const void *data, unsigned width, unsigned height, size_t pitch)
 {
-   const char *msg;
+   const char *msg = NULL;
 
    if (!g_extern.video_active)
       return;
@@ -720,7 +715,8 @@ static inline void input_poll_overlay(void)
 
 void rarch_input_poll(void)
 {
-   driver.input->poll(driver.input_data);
+   if (driver.input && driver.input->poll)
+      driver.input->poll(driver.input_data);
 
 #ifdef HAVE_OVERLAY
    if (driver.overlay)
@@ -943,7 +939,7 @@ static void print_help(void)
 
 static void set_basename(const char *path)
 {
-   char *dst;
+   char *dst = NULL;
 
    strlcpy(g_extern.fullpath, path, sizeof(g_extern.fullpath));
    strlcpy(g_extern.basename, path, sizeof(g_extern.basename));
@@ -1486,7 +1482,7 @@ static void deinit_cheats(void)
 
 static void init_rewind(void)
 {
-   void *state;
+   void *state = NULL;
 #ifdef HAVE_NETPLAY
    if (g_extern.netplay)
       return;
@@ -1733,9 +1729,9 @@ static void deinit_autosave(void)
 
 static void set_savestate_auto_index(void)
 {
-   struct string_list *dir_list;
    char state_dir[PATH_MAX], state_base[PATH_MAX];
    size_t i;
+   struct string_list *dir_list = NULL;
    unsigned max_index = 0;
 
    if (!g_settings.savestate_auto_index)
@@ -2423,7 +2419,9 @@ static void check_shader_dir(void)
 
 static void check_cheats(void)
 {
-   bool pressed_next, pressed_prev, pressed_toggle;
+   bool pressed_next               = false;
+   bool pressed_prev               = false;
+   bool pressed_toggle             = false;
    static bool old_pressed_prev    = false;
    static bool old_pressed_next    = false;
    static bool old_pressed_toggle  = false;
@@ -2574,7 +2572,8 @@ void rarch_disk_control_set_index(unsigned next_index)
 
 static void check_disk(void)
 {
-   bool pressed_eject, pressed_next;
+   bool pressed_eject               = false;
+   bool pressed_next                = false;
    static bool old_pressed_eject    = false;
    static bool old_pressed_next     = false;
    const struct retro_disk_control_callback *control = 
@@ -3046,8 +3045,9 @@ static inline bool check_enter_menu(void)
 
 static inline void update_frame_time(void)
 {
-   retro_time_t time = 0, delta = 0;
-   bool is_locked_fps;
+   retro_time_t time = 0;
+   retro_time_t delta = 0;
+   bool is_locked_fps = false;
 
    if (!g_extern.system.frame_time.callback)
       return;
@@ -3071,7 +3071,9 @@ static inline void update_frame_time(void)
 
 static inline void limit_frame_time(void)
 {
-   retro_time_t current = 0, target = 0, to_sleep_ms = 0;
+   retro_time_t current = 0;
+   retro_time_t target = 0;
+   retro_time_t to_sleep_ms = 0;
 
    if (g_settings.fastforward_ratio <= 0.0f)
       return;
