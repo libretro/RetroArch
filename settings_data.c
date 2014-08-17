@@ -21,63 +21,62 @@
 #include "config.def.h"
 
 // Input
-static const char* get_input_config_prefix(const rarch_setting_t *setting)
+static void get_input_config_prefix(char *buf, size_t sizeof_buf,
+      const rarch_setting_t *setting)
 {
-   static char buffer[32];
-   snprintf(buffer, 32, "input%cplayer%d", setting->index ? '_' : '\0', setting->index);
-   return buffer;
+   snprintf(buf, sizeof_buf, "input%cplayer%d", setting->index ? '_' : '\0', setting->index);
 }
 
-static const char* get_input_config_key(const rarch_setting_t* setting, const char* type)
+static void get_input_config_key(char *buf, size_t sizeof_buf,
+      const rarch_setting_t* setting, const char* type)
 {
-   static char buffer[64];
-   snprintf(buffer, 64, "%s_%s%c%s", get_input_config_prefix(setting), setting->name, type ? '_' : '\0', type);
-   return buffer;
+   char prefix[32];
+   get_input_config_prefix(prefix, sizeof(prefix), setting);
+   snprintf(buf, sizeof_buf, "%s_%s%c%s", prefix, setting->name, type ? '_' : '\0', type);
 }
 
-//FIXME - make portable
 #ifdef APPLE
-static const char* get_key_name(const rarch_setting_t* setting)
+//FIXME - make portable
+
+static void get_key_name(char *buf, size_t sizeof_buf,
+      const rarch_setting_t* setting)
 {
    uint32_t hidkey, i;
 
    if (BINDFOR(*setting).key == RETROK_UNKNOWN)
-      return "nul";
+      return;
 
    hidkey = input_translate_rk_to_keysym(BINDFOR(*setting).key);
 
    for (i = 0; apple_key_name_map[i].hid_id; i++)
+   {
       if (apple_key_name_map[i].hid_id == hidkey)
-         return apple_key_name_map[i].keyname;
-
-   return "nul";
+      {
+         strlcpy(buf, apple_key_name_map[i].keyname, sizeof_buf);
+         break;
+      }
+   }
 }
 #endif
 
-static const char* get_button_name(const rarch_setting_t* setting)
+static void get_button_name(char *buf, size_t sizeof_buf,
+      const rarch_setting_t* setting)
 {
-   static char buffer[32];
-
    if (BINDFOR(*setting).joykey == NO_BTN)
-      return "nul";
+      return;
 
-   snprintf(buffer, 32, "%lld", (long long int)(BINDFOR(*setting).joykey));
-   return buffer;
+   snprintf(buf, sizeof_buf, "%lld", (long long int)(BINDFOR(*setting).joykey));
 }
 
-static const char* get_axis_name(const rarch_setting_t* setting)
+static void get_axis_name(char *buf, size_t sizeof_buf,
+      const rarch_setting_t* setting)
 {
-   static char buffer[32];
    uint32_t joyaxis = BINDFOR(*setting).joyaxis;
 
    if (AXIS_NEG_GET(joyaxis) != AXIS_DIR_NONE)
-      snprintf(buffer, 8, "-%d", AXIS_NEG_GET(joyaxis));
+      snprintf(buf, sizeof_buf, "-%d", AXIS_NEG_GET(joyaxis));
    else if (AXIS_POS_GET(joyaxis) != AXIS_DIR_NONE)
-      snprintf(buffer, 8, "+%d", AXIS_POS_GET(joyaxis));
-   else
-      return "nul";
-
-   return buffer;
+      snprintf(buf, sizeof_buf, "+%d", AXIS_POS_GET(joyaxis));
 }
 
 void setting_data_reset_setting(const rarch_setting_t* setting)
@@ -175,7 +174,8 @@ static bool setting_data_load_config(const rarch_setting_t* settings, config_fil
             break;         
          case ST_BIND:
             {
-               const char *prefix = (const char *)get_input_config_prefix(settings);
+               char prefix[32];
+               get_input_config_prefix(prefix, sizeof(prefix), settings);
                input_config_parse_key       (config, prefix, settings->name, settings->value.keybind);
                input_config_parse_joy_button(config, prefix, settings->name, settings->value.keybind);
                input_config_parse_joy_axis  (config, prefix, settings->name, settings->value.keybind);
@@ -257,12 +257,26 @@ bool setting_data_save_config(const rarch_setting_t* settings, config_file_t* co
             config_set_float(config, settings->name, *settings->value.fraction);
             break;
          case ST_BIND:
-            //FIXME: make portable
+            {
+               char button_name[32], axis_name[32], key_name[32],
+                    input_config_key[64];
+               strlcpy(button_name, "nul", sizeof(button_name));
+               strlcpy(axis_name,   "nul", sizeof(axis_name));
+               strlcpy(key_name,    "nul", sizeof(key_name));
+               strlcpy(input_config_key, "nul", sizeof(input_config_key));
+
+               get_button_name(button_name, sizeof(button_name), settings);
+               get_axis_name(axis_name, sizeof(axis_name), settings);
 #ifdef APPLE
-            config_set_string(config, get_input_config_key(settings, 0 ), get_key_name(settings));
+               get_key_name(key_name, sizeof(key_name), settings);
 #endif
-            config_set_string(config, get_input_config_key(settings, "btn" ), get_button_name(settings));
-            config_set_string(config, get_input_config_key(settings, "axis"), get_axis_name(settings));
+               get_input_config_key(input_config_key, sizeof(input_config_key), settings, 0);
+               config_set_string(config, input_config_key, key_name);
+               get_input_config_key(input_config_key, sizeof(input_config_key), settings, "btn");
+               config_set_string(config, input_config_key, button_name);
+               get_input_config_key(input_config_key, sizeof(input_config_key), settings, "axis");
+               config_set_string(config, input_config_key, axis_name);
+            }
             break;
          case ST_HEX:
             break;
@@ -380,9 +394,20 @@ const char* setting_data_get_string_representation(const rarch_setting_t* settin
          strlcpy(buffer, setting->value.string, length);
          break;
       case ST_BIND:
+         {
+            char button_name[32], axis_name[32], key_name[32];
+
+            strlcpy(button_name, "nul", sizeof(button_name));
+            strlcpy(axis_name,   "nul", sizeof(axis_name));
+            strlcpy(key_name,    "nul", sizeof(key_name));
+
+            get_button_name(button_name, sizeof(button_name), setting);
+            get_axis_name(axis_name, sizeof(axis_name), setting);
 #ifdef APPLE
-         snprintf(buffer, length, "[KB:%s] [JS:%s] [AX:%s]", get_key_name(setting), get_button_name(setting), get_axis_name(setting));
+            get_key_name(key_name, sizeof(key_name), setting);
 #endif
+            snprintf(buffer, length, "[KB:%s] [JS:%s] [AX:%s]", key_name, button_name, axis_name);
+         }
          break;
       default:
          return "";
