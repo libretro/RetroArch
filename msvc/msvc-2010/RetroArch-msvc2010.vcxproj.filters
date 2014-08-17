@@ -23,8 +23,6 @@
     <ClCompile Include="..\..\location\nulllocation.c" />
     <ClCompile Include="..\..\camera\nullcamera.c" />
     <ClCompile Include="..\..\gfx\nullgfx.c" />
-    <ClCompile Include="..\..\gfx\nullaudio.c" />
-    <ClCompile Include="..\..\gfx\nullinput.c" />
     <ClCompile Include="..\..\rewind.c" />
     <ClCompile Include="..\..\screenshot.c" />
     <ClCompile Include="..\..\settings.c" />
@@ -224,9 +222,6 @@
     <ClCompile Include="..\..\frontend\menu\menu_navigation.c">
       <Filter>frontend\menu</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\frontend\info\core_info.c">
-      <Filter>frontend\menu\info</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\gfx\context\d3d_ctx.cpp">
       <Filter>gfx\context</Filter>
     </ClCompile>
@@ -239,7 +234,6 @@
     <ClCompile Include="..\..\frontend\menu\backend\menu_common_backend.c">
       <Filter>frontend\menu\backend</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\settings_data.c" />
     <ClCompile Include="..\..\gfx\shader_common.c">
       <Filter>gfx</Filter>
     </ClCompile>
@@ -251,6 +245,15 @@
     </ClCompile>
     <ClCompile Include="..\..\audio\dsp_filter.c">
       <Filter>audio</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\playlist.c" />
+    <ClCompile Include="..\..\file_list.c" />
+    <ClCompile Include="..\..\core_info.c" />
+    <ClCompile Include="..\..\audio\nullaudio.c" />
+    <ClCompile Include="..\..\input\nullinput.c" />
+    <ClCompile Include="..\..\settings_data.c" />
+    <ClCompile Include="..\..\record\ffemu.c">
+      <Filter>record</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -325,6 +328,9 @@
     </Filter>
     <Filter Include="gfx\image">
       <UniqueIdentifier>{4a5338d9-92ad-4d07-bb1a-97bd6eb475e4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="record">
+      <UniqueIdentifier>{5a80dd03-b4d7-4118-92ff-55a601fd80fc}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

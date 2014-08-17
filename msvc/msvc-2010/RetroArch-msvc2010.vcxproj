@@ -319,6 +319,7 @@
     </ClCompile>
     <ClCompile Include="..\..\frontend\frontend_context.c">
     </ClCompile>
+    <ClCompile Include="..\..\record\ffemu.c" />
     <ClCompile Include="..\..\retroarch.c">
     </ClCompile>
     <ClCompile Include="..\..\location\nulllocation.c">
@@ -337,8 +338,7 @@
     </ClCompile>
     <ClCompile Include="..\..\settings.c">
     </ClCompile>
-    <ClCompile Include="..\..\settings_data.c">
-    </ClCompile>
+    <ClCompile Include="..\..\settings_data.c" />
     <ClCompile Include="..\..\thread.c">
     </ClCompile>
   </ItemGroup>
