@@ -272,7 +272,12 @@ NSWindowDelegate>
                case ST_BOOL:
                    return BOXINT(*setting->value.boolean);
                default:
-                   return BOXSTRING(setting_data_get_string_representation(setting, buffer, sizeof(buffer)));
+               {
+                   setting_data_get_string_representation(setting, buffer, sizeof(buffer));
+                   if (buffer[0] == '\0')
+                       strlcpy(buffer, "N/A", sizeof(buffer));
+                   return BOXSTRING(buffer);
+               }
            }
        }
    }

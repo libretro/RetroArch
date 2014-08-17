@@ -1214,6 +1214,8 @@ static int menu_settings_iterate(unsigned action, rarch_setting_t *setting)
 
    unsigned scroll_speed = (max(driver.menu->scroll_accel, 2) - 2) / 4 + 1;
    unsigned fast_scroll_speed = 4 + 4 * scroll_speed;
+    
+   (void)fast_scroll_speed;
 
    switch (action)
    {
