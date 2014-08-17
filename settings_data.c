@@ -369,29 +369,29 @@ void setting_data_set_with_string_representation(const rarch_setting_t* setting,
       setting->change_handler(setting);
 }
 
-const char* setting_data_get_string_representation(const rarch_setting_t* setting, char* buffer, size_t length)
+void setting_data_get_string_representation(const rarch_setting_t* setting, char* buf, size_t sizeof_buf)
 {
-   if (!setting || !buffer || !length)
-      return "";
+   if (!setting || !buf || !sizeof_buf)
+      return;
 
    switch (setting->type)
    {
       case ST_BOOL:
-         snprintf(buffer, length, "%s", *setting->value.boolean ? "True" : "False");
+         snprintf(buf, sizeof_buf, "%s", *setting->value.boolean ? "True" : "False");
          break;
       case ST_INT:
-         snprintf(buffer, length, "%d", *setting->value.integer);
+         snprintf(buf, sizeof_buf, "%d", *setting->value.integer);
          break;
       case ST_UINT:
-         snprintf(buffer, length, "%u", *setting->value.unsigned_integer);
+         snprintf(buf, sizeof_buf, "%u", *setting->value.unsigned_integer);
          break;
       case ST_FLOAT:
-         snprintf(buffer, length, "%f", *setting->value.fraction);
+         snprintf(buf, sizeof_buf, "%f", *setting->value.fraction);
          break;
       case ST_PATH:
       case ST_DIR:
       case ST_STRING:
-         strlcpy(buffer, setting->value.string, length);
+         strlcpy(buf, setting->value.string, sizeof_buf);
          break;
       case ST_BIND:
          {
@@ -406,14 +406,23 @@ const char* setting_data_get_string_representation(const rarch_setting_t* settin
 #ifdef APPLE
             get_key_name(key_name, sizeof(key_name), setting);
 #endif
-            snprintf(buffer, length, "[KB:%s] [JS:%s] [AX:%s]", key_name, button_name, axis_name);
+            snprintf(buf, sizeof_buf, "[KB:%s] [JS:%s] [AX:%s]", key_name, button_name, axis_name);
          }
          break;
-      default:
-         return "";
+         /* TODO */
+      case ST_HEX:
+         break;
+      case ST_GROUP:
+         break;
+      case ST_SUB_GROUP:
+         break;
+      case ST_END_GROUP:
+         break;
+      case ST_END_SUB_GROUP:
+         break;
+      case ST_NONE:
+         break;
    }
-
-   return buffer;
 }
 
 rarch_setting_t setting_data_group_setting(enum setting_type type, const char* name)

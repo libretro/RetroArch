@@ -241,11 +241,15 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 
    if (self.setting)
    {
-       if (self.setting->short_description)
-           result.textLabel.text = BOXSTRING(self.setting->short_description);
-       
-      result.detailTextLabel.text = BOXSTRING(setting_data_get_string_representation(self.setting, buffer, sizeof(buffer)));
-      
+      if (self.setting->short_description)
+         result.textLabel.text = BOXSTRING(self.setting->short_description);
+
+      setting_data_get_string_representation(self.setting, buffer, sizeof(buffer));
+      if (buffer[0] == '\0')
+         strlcpy(buffer, "N/A", sizeof(buffer));
+
+      result.detailTextLabel.text = BOXSTRING(buffer);
+
       if (self.setting->type == ST_PATH)
          result.detailTextLabel.text = [result.detailTextLabel.text lastPathComponent];
    }
@@ -268,7 +272,12 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
    field = [alertView textFieldAtIndex:0];
    
    field.delegate = self.formatter;
-   field.placeholder = BOXSTRING(setting_data_get_string_representation(self.setting, buffer, sizeof(buffer)));
+
+   setting_data_get_string_representation(self.setting, buffer, sizeof(buffer));
+   if (buffer[0] == '\0')
+      strlcpy(buffer, "N/A", sizeof(buffer));
+
+   field.placeholder = BOXSTRING(buffer);
 
    [alertView show];
 }

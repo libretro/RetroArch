@@ -110,7 +110,7 @@ bool setting_data_save_config(const rarch_setting_t* settings, config_file_t* co
 rarch_setting_t* setting_data_find_setting(rarch_setting_t* settings, const char* name);
 
 void setting_data_set_with_string_representation(const rarch_setting_t* setting, const char* value);
-const char* setting_data_get_string_representation(const rarch_setting_t* setting, char* buffer, size_t length);
+void setting_data_get_string_representation(const rarch_setting_t* setting, char* buf, size_t sizeof_buf);
 
 // List building helper functions
 rarch_setting_t setting_data_group_setting(enum setting_type type, const char* name);
