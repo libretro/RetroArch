@@ -19,6 +19,10 @@
 #include <stdint.h>
 #include "conf/config_file.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define SETTINGS_DATA_LIST_SIZE 512
 
 #define BINDFOR(s) (*(&s)->value.keybind)
@@ -130,6 +134,10 @@ rarch_setting_t* setting_data_get_list(void);
 
 #ifdef APPLE
 #include "input/apple_keycode.h"
+#endif
+
+#ifdef __cplusplus
+}
 #endif
 
 #endif
