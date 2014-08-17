@@ -120,68 +120,65 @@ void setting_data_reset_setting(const rarch_setting_t* setting)
 
 void setting_data_reset(const rarch_setting_t* settings)
 {
-   const rarch_setting_t *setting;
-
-   for (setting = settings; setting->type != ST_NONE; setting++)
-      setting_data_reset_setting(setting);
+   for (; settings->type != ST_NONE; settings++)
+      setting_data_reset_setting(settings);
 }
 
 static bool setting_data_load_config(const rarch_setting_t* settings, config_file_t* config)
 {
-   const rarch_setting_t *setting;
    if (!config)
       return false;
 
-   for (setting = settings; setting->type != ST_NONE; setting++)
+   for (; settings->type != ST_NONE; settings++)
    {
-      switch (setting->type)
+      switch (settings->type)
       {
          case ST_BOOL:
-            config_get_bool  (config, setting->name, setting->value.boolean);
+            config_get_bool  (config, settings->name, settings->value.boolean);
             break;
          case ST_PATH:
          case ST_DIR:
-            config_get_path  (config, setting->name, setting->value.string, setting->size);
+            config_get_path  (config, settings->name, settings->value.string, settings->size);
             break;
          case ST_STRING:
-            config_get_array (config, setting->name, setting->value.string, setting->size);
+            config_get_array (config, settings->name, settings->value.string, settings->size);
             break;
          case ST_INT:
-            config_get_int(config, setting->name, setting->value.integer);
-            if (setting->flags & SD_FLAG_HAS_RANGE)
+            config_get_int(config, settings->name, settings->value.integer);
+            if (settings->flags & SD_FLAG_HAS_RANGE)
             {
-               if (*setting->value.integer < setting->min)
-                  *setting->value.integer = setting->min;
-               if (*setting->value.integer > setting->max)
-                  *setting->value.integer = setting->max;
+               if (*settings->value.integer < settings->min)
+                  *settings->value.integer = settings->min;
+               if (*settings->value.integer > settings->max)
+                  *settings->value.integer = settings->max;
             }
             break;
          case ST_UINT:
-            config_get_uint(config, setting->name, setting->value.unsigned_integer);
-            if (setting->flags & SD_FLAG_HAS_RANGE)
+            config_get_uint(config, settings->name, settings->value.unsigned_integer);
+            if (settings->flags & SD_FLAG_HAS_RANGE)
             {
-               if (*setting->value.unsigned_integer < setting->min)
-                  *setting->value.unsigned_integer = setting->min;
-               if (*setting->value.unsigned_integer > setting->max)
-                  *setting->value.unsigned_integer = setting->max;
+               if (*settings->value.unsigned_integer < settings->min)
+                  *settings->value.unsigned_integer = settings->min;
+               if (*settings->value.unsigned_integer > settings->max)
+                  *settings->value.unsigned_integer = settings->max;
             }
             break;
          case ST_FLOAT:
-            config_get_float(config, setting->name, setting->value.fraction);
-            if (setting->flags & SD_FLAG_HAS_RANGE)
+            config_get_float(config, settings->name, settings->value.fraction);
+            if (settings->flags & SD_FLAG_HAS_RANGE)
             {
-               if (*setting->value.fraction < setting->min)
-                  *setting->value.fraction = setting->min;
-               if (*setting->value.fraction > setting->max)
-                  *setting->value.fraction = setting->max;
+               if (*settings->value.fraction < settings->min)
+                  *settings->value.fraction = settings->min;
+               if (*settings->value.fraction > settings->max)
+                  *settings->value.fraction = settings->max;
             }
             break;         
          case ST_BIND:
             {
-               const char *prefix = (const char *)get_input_config_prefix(setting);
-               input_config_parse_key       (config, prefix, setting->name, setting->value.keybind);
-               input_config_parse_joy_button(config, prefix, setting->name, setting->value.keybind);
-               input_config_parse_joy_axis  (config, prefix, setting->name, setting->value.keybind);
+               const char *prefix = (const char *)get_input_config_prefix(settings);
+               input_config_parse_key       (config, prefix, settings->name, settings->value.keybind);
+               input_config_parse_joy_button(config, prefix, settings->name, settings->value.keybind);
+               input_config_parse_joy_axis  (config, prefix, settings->name, settings->value.keybind);
             }
             break;
          case ST_HEX:
@@ -190,8 +187,8 @@ static bool setting_data_load_config(const rarch_setting_t* settings, config_fil
             break;
       }
 
-      if (setting->change_handler)
-         setting->change_handler(setting);
+      if (settings->change_handler)
+         settings->change_handler(settings);
    }
 
    return true;
@@ -212,62 +209,60 @@ bool setting_data_load_config_path(const rarch_setting_t* settings, const char* 
 
 bool setting_data_save_config(const rarch_setting_t* settings, config_file_t* config)
 {
-   const rarch_setting_t *setting;
-
    if (!config)
       return false;
 
-   for (setting = settings; setting->type != ST_NONE; setting++)
+   for (; settings->type != ST_NONE; settings++)
    {
-      switch (setting->type)
+      switch (settings->type)
       {
          case ST_BOOL:
-            config_set_bool(config, setting->name, *setting->value.boolean);
+            config_set_bool(config, settings->name, *settings->value.boolean);
             break;
          case ST_PATH:
          case ST_DIR:
-            config_set_path(config, setting->name, setting->value.string);
+            config_set_path(config, settings->name, settings->value.string);
             break;
          case ST_STRING:
-            config_set_string(config, setting->name, setting->value.string);
+            config_set_string(config, settings->name, settings->value.string);
             break;
          case ST_INT:
-            if (setting->flags & SD_FLAG_HAS_RANGE)
+            if (settings->flags & SD_FLAG_HAS_RANGE)
             {
-               if (*setting->value.integer < setting->min)
-                  *setting->value.integer = setting->min;
-               if (*setting->value.integer > setting->max)
-                  *setting->value.integer = setting->max;
+               if (*settings->value.integer < settings->min)
+                  *settings->value.integer = settings->min;
+               if (*settings->value.integer > settings->max)
+                  *settings->value.integer = settings->max;
             }
-            config_set_int(config, setting->name, *setting->value.integer);
+            config_set_int(config, settings->name, *settings->value.integer);
             break;
          case ST_UINT:
-            if (setting->flags & SD_FLAG_HAS_RANGE)
+            if (settings->flags & SD_FLAG_HAS_RANGE)
             {
-               if (*setting->value.unsigned_integer < setting->min)
-                  *setting->value.unsigned_integer = setting->min;
-               if (*setting->value.unsigned_integer > setting->max)
-                  *setting->value.unsigned_integer = setting->max;
+               if (*settings->value.unsigned_integer < settings->min)
+                  *settings->value.unsigned_integer = settings->min;
+               if (*settings->value.unsigned_integer > settings->max)
+                  *settings->value.unsigned_integer = settings->max;
             }
-            config_set_uint64(config, setting->name, *setting->value.unsigned_integer);
+            config_set_uint64(config, settings->name, *settings->value.unsigned_integer);
             break;
          case ST_FLOAT:
-            if (setting->flags & SD_FLAG_HAS_RANGE)
+            if (settings->flags & SD_FLAG_HAS_RANGE)
             {
-               if (*setting->value.fraction < setting->min)
-                  *setting->value.fraction = setting->min;
-               if (*setting->value.fraction > setting->max)
-                  *setting->value.fraction = setting->max;
+               if (*settings->value.fraction < settings->min)
+                  *settings->value.fraction = settings->min;
+               if (*settings->value.fraction > settings->max)
+                  *settings->value.fraction = settings->max;
             }
-            config_set_float(config, setting->name, *setting->value.fraction);
+            config_set_float(config, settings->name, *settings->value.fraction);
             break;
          case ST_BIND:
             //FIXME: make portable
 #ifdef APPLE
-            config_set_string(config, get_input_config_key(setting, 0 ), get_key_name(setting));
+            config_set_string(config, get_input_config_key(settings, 0 ), get_key_name(settings));
 #endif
-            config_set_string(config, get_input_config_key(setting, "btn" ), get_button_name(setting));
-            config_set_string(config, get_input_config_key(setting, "axis"), get_axis_name(setting));
+            config_set_string(config, get_input_config_key(settings, "btn" ), get_button_name(settings));
+            config_set_string(config, get_input_config_key(settings, "axis"), get_axis_name(settings));
             break;
          case ST_HEX:
             break;
@@ -282,14 +277,13 @@ bool setting_data_save_config(const rarch_setting_t* settings, config_file_t* co
 rarch_setting_t* setting_data_find_setting(rarch_setting_t* settings, const char* name)
 {
    bool found = false;
-   rarch_setting_t *setting = NULL;
 
    if (!name)
       return NULL;
 
-   for (setting = settings; setting->type != ST_NONE; setting++)
+   for (; settings->type != ST_NONE; settings++)
    {
-      if (setting->type <= ST_GROUP && strcmp(setting->name, name) == 0)
+      if (settings->type <= ST_GROUP && strcmp(settings->name, name) == 0)
       {
          found = true;
          break;
@@ -298,13 +292,13 @@ rarch_setting_t* setting_data_find_setting(rarch_setting_t* settings, const char
     
    if (found)
    {
-      if (setting->short_description && setting->short_description[0] == '\0')
+      if (settings->short_description && settings->short_description[0] == '\0')
          return NULL;
 
-      if (setting->read_handler)
-         setting->read_handler(setting);
+      if (settings->read_handler)
+         settings->read_handler(settings);
 
-      return setting;
+      return settings;
    }
 
    return NULL;
