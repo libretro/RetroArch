@@ -1553,7 +1553,9 @@ static void menu_parse_and_resolve(unsigned menu_type)
          for (i = 0; i < list_size; i++)
          {
             char fill_buf[PATH_MAX];
-            const char *path, *core_path, *core_name = NULL;
+            const char *path      = NULL;
+            const char *core_path = NULL;
+            const char *core_name = NULL;
 
             content_playlist_get_index(g_extern.history, i,
                   &path, &core_path, &core_name);
