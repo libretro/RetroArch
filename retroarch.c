@@ -556,7 +556,7 @@ static bool audio_flush(const int16_t *data, size_t samples)
       RARCH_PERFORMANCE_INIT(audio_convert_float);
       RARCH_PERFORMANCE_START(audio_convert_float);
       audio_convert_float_to_s16(g_extern.audio_data.conv_outsamples,
-            output_data, output_frames * 2);
+            (const float*)output_data, output_frames * 2);
       RARCH_PERFORMANCE_STOP(audio_convert_float);
 
       output_data = g_extern.audio_data.conv_outsamples;

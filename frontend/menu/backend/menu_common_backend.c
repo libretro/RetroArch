@@ -500,7 +500,7 @@ static int menu_info_screen_iterate(unsigned action, rarch_setting_t *setting)
    if (driver.video_data && driver.menu_ctx && driver.menu_ctx->render)
       driver.menu_ctx->render();
 
-   current_setting = file_list_get_last_setting(driver.menu->selection_buf, driver.menu->selection_ptr);
+   current_setting = (rarch_setting_t*)file_list_get_last_setting(driver.menu->selection_buf, driver.menu->selection_ptr);
 
    if (current_setting)
             setting_data_get_description(current_setting, msg, sizeof(msg));
@@ -3052,7 +3052,7 @@ static bool osk_callback_enter_filename(void *data)
       config_file_t *conf;
 
       RARCH_LOG("OSK - Applying input data.\n");
-      num = wcstombs(tmp_str, driver.osk->get_text_buf(driver.osk_data), sizeof(tmp_str));
+      num = wcstombs(tmp_str, (const wchar_t*)driver.osk->get_text_buf(driver.osk_data), sizeof(tmp_str));
       tmp_str[num] = 0;
 
       fill_pathname_join(filepath, g_settings.video.shader_dir, tmp_str, sizeof(filepath));
@@ -3102,7 +3102,7 @@ static int menu_common_setting_set(unsigned id, unsigned action, rarch_setting_t
    struct retro_perf_counter **counters;
    unsigned port = driver.menu->current_pad;
 
-   setting = file_list_get_last_setting(driver.menu->selection_buf, driver.menu->selection_ptr);
+   setting = (rarch_setting_t*)file_list_get_last_setting(driver.menu->selection_buf, driver.menu->selection_ptr);
 
    if (id >= MENU_SETTINGS_PERF_COUNTERS_BEGIN && id <= MENU_SETTINGS_PERF_COUNTERS_END)
    {

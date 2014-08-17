@@ -56,7 +56,7 @@ enum gfx_scale_type
    RARCH_SCALE_VIEWPORT
 };
 
-enum gfx_filter_type
+enum
 {
    RARCH_FILTER_UNSPEC = 0,
    RARCH_FILTER_LINEAR,
@@ -110,7 +110,7 @@ struct gfx_shader_pass
 
    char alias[64];
    struct gfx_fbo_scale fbo;
-   enum gfx_filter_type filter;
+   unsigned filter;
    enum gfx_wrap_type wrap;
    unsigned frame_count_mod;
    bool mipmap;
@@ -120,7 +120,7 @@ struct gfx_shader_lut
 {
    char id[64];
    char path[PATH_MAX];
-   enum gfx_filter_type filter;
+   unsigned filter;
    enum gfx_wrap_type wrap;
    bool mipmap;
 };
