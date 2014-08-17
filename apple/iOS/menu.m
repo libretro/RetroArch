@@ -922,9 +922,10 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 
    for (i = 0; i < core_list->count; i ++)
    {
+       char path[PATH_MAX];
        NSString* core_id = BOXSTRING(core_list->list[i].path);
 
-      if (core_info_has_custom_config(core_id.UTF8String))
+      if (core_info_has_custom_config(core_id.UTF8String, path, sizeof(path)))
       {
          [cores addObject:[RAMenuItemBasic itemWithDescription:BOXSTRING(core_list->list[i].display_name)
                                                    association:core_id
