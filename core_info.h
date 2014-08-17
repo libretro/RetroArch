@@ -92,8 +92,7 @@ void core_info_set_core_path(void);
 core_info_list_t *core_info_list_get(void);
 const core_info_t *core_info_list_get_by_id(const char *core_id);
 
-void core_info_get_custom_config(const char *core_id, char *buf, size_t sizeof_buf);
-bool core_info_has_custom_config(const char *core_id);
+bool core_info_has_custom_config(const char *core_id, char *buf, size_t sizeof_buf);
 
 #ifdef __cplusplus
 }

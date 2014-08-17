@@ -787,13 +787,11 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
       rarch_setting_t *setting_data, *setting;
       NSMutableArray* settings;
 
-      _isCustom = core_info_has_custom_config(core.UTF8String);
+      _isCustom = core_info_has_custom_config(core.UTF8String, buffer, sizeof(buffer));
       if (_isCustom)
       {
           const core_info_t *tmp = (const core_info_t*)core_info_list_get_by_id(core.UTF8String);
           self.title = tmp ? BOXSTRING(tmp->display_name) : BOXSTRING(core.UTF8String);
-
-          core_info_get_custom_config(core.UTF8String, buffer, sizeof(buffer));
          _pathToSave = BOXSTRING(buffer);
          self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemTrash target:self action:@selector(deleteCustom)];
       }
@@ -979,11 +977,9 @@ static bool copy_config(const char *src_path, const char *dst_path)
    RAMenuCoreList* list = [[RAMenuCoreList alloc] initWithPath:nil allowAutoDetect:false
       action:^(NSString* core)
       {
-         if (!core_info_has_custom_config(core.UTF8String))
+         char path[PATH_MAX];
+         if (!core_info_has_custom_config(core.UTF8String, path, sizeof(path)))
          {
-            char path[PATH_MAX];
-            core_info_get_custom_config(core.UTF8String, path, sizeof(path));
-
             if (g_defaults.config_path[0] != '\0' && path[0] != '\0')
             {
                if (!copy_config(g_defaults.config_path, path))
