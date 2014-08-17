@@ -447,13 +447,13 @@ const core_info_t *core_info_list_get_by_id(const char *core_id)
    const core_info_list_t* cores = core_info_list_get();
 
    if (!core_id || !cores)
-      return 0;
+      return NULL;
 
    for (i = 0; i < cores->count; i ++)
       if (cores->list[i].path && strcmp(core_id, cores->list[i].path) == 0)
          return &cores->list[i];
 
-   return 0;
+   return NULL;
 }
 
 bool core_info_has_custom_config(const char *core_id,
