@@ -24,7 +24,8 @@
 static void get_input_config_prefix(char *buf, size_t sizeof_buf,
       const rarch_setting_t *setting)
 {
-   snprintf(buf, sizeof_buf, "input%cplayer%d", setting->index ? '_' : '\0', setting->index);
+   snprintf(buf, sizeof_buf, "input%cplayer%d", setting->index ? '_' : '\0',
+         setting->index);
 }
 
 static void get_input_config_key(char *buf, size_t sizeof_buf,
@@ -32,7 +33,8 @@ static void get_input_config_key(char *buf, size_t sizeof_buf,
 {
    char prefix[32];
    get_input_config_prefix(prefix, sizeof(prefix), setting);
-   snprintf(buf, sizeof_buf, "%s_%s%c%s", prefix, setting->name, type ? '_' : '\0', type);
+   snprintf(buf, sizeof_buf, "%s_%s%c%s", prefix, setting->name,
+         type ? '_' : '\0', type);
 }
 
 #ifdef APPLE
@@ -65,7 +67,8 @@ static void get_button_name(char *buf, size_t sizeof_buf,
    if (BINDFOR(*setting).joykey == NO_BTN)
       return;
 
-   snprintf(buf, sizeof_buf, "%lld", (long long int)(BINDFOR(*setting).joykey));
+   snprintf(buf, sizeof_buf, "%lld",
+         (long long int)(BINDFOR(*setting).joykey));
 }
 
 static void get_axis_name(char *buf, size_t sizeof_buf,
@@ -104,9 +107,11 @@ void setting_data_reset_setting(const rarch_setting_t* setting)
          if (setting->default_value.string)
          {
             if (setting->type == ST_STRING)
-               strlcpy(setting->value.string, setting->default_value.string, setting->size);
+               strlcpy(setting->value.string, setting->default_value.string,
+                     setting->size);
             else
-               fill_pathname_expand_special(setting->value.string, setting->default_value.string, setting->size);
+               fill_pathname_expand_special(setting->value.string,
+                     setting->default_value.string, setting->size);
          }
          break;
          /* TODO */
@@ -134,7 +139,8 @@ void setting_data_reset(const rarch_setting_t* settings)
       setting_data_reset_setting(settings);
 }
 
-static bool setting_data_load_config(const rarch_setting_t* settings, config_file_t* config)
+static bool setting_data_load_config(const rarch_setting_t* settings,
+      config_file_t* config)
 {
    if (!config)
       return false;
@@ -148,10 +154,12 @@ static bool setting_data_load_config(const rarch_setting_t* settings, config_fil
             break;
          case ST_PATH:
          case ST_DIR:
-            config_get_path  (config, settings->name, settings->value.string, settings->size);
+            config_get_path  (config, settings->name, settings->value.string,
+                  settings->size);
             break;
          case ST_STRING:
-            config_get_array (config, settings->name, settings->value.string, settings->size);
+            config_get_array (config, settings->name, settings->value.string,
+                  settings->size);
             break;
          case ST_INT:
             config_get_int(config, settings->name, settings->value.integer);
@@ -164,7 +172,9 @@ static bool setting_data_load_config(const rarch_setting_t* settings, config_fil
             }
             break;
          case ST_UINT:
-            config_get_uint(config, settings->name, settings->value.unsigned_integer);
+            config_get_uint(config, settings->name,
+                  settings->value.unsigned_integer);
+
             if (settings->flags & SD_FLAG_HAS_RANGE)
             {
                if (*settings->value.unsigned_integer < settings->min)
@@ -174,7 +184,9 @@ static bool setting_data_load_config(const rarch_setting_t* settings, config_fil
             }
             break;
          case ST_FLOAT:
-            config_get_float(config, settings->name, settings->value.fraction);
+            config_get_float(config, settings->name,
+                  settings->value.fraction);
+
             if (settings->flags & SD_FLAG_HAS_RANGE)
             {
                if (*settings->value.fraction < settings->min)
@@ -187,9 +199,12 @@ static bool setting_data_load_config(const rarch_setting_t* settings, config_fil
             {
                char prefix[32];
                get_input_config_prefix(prefix, sizeof(prefix), settings);
-               input_config_parse_key       (config, prefix, settings->name, settings->value.keybind);
-               input_config_parse_joy_button(config, prefix, settings->name, settings->value.keybind);
-               input_config_parse_joy_axis  (config, prefix, settings->name, settings->value.keybind);
+               input_config_parse_key       (config, prefix, settings->name,
+                     settings->value.keybind);
+               input_config_parse_joy_button(config, prefix, settings->name,
+                     settings->value.keybind);
+               input_config_parse_joy_axis  (config, prefix, settings->name,
+                     settings->value.keybind);
             }
             break;
             /* TODO */
@@ -214,7 +229,8 @@ static bool setting_data_load_config(const rarch_setting_t* settings, config_fil
    return true;
 }
 
-bool setting_data_load_config_path(const rarch_setting_t* settings, const char* path)
+bool setting_data_load_config_path(const rarch_setting_t* settings,
+      const char* path)
 {
    config_file_t *config = (config_file_t*)config_file_new(path);
 
@@ -227,7 +243,8 @@ bool setting_data_load_config_path(const rarch_setting_t* settings, const char* 
    return config;
 }
 
-bool setting_data_save_config(const rarch_setting_t* settings, config_file_t* config)
+bool setting_data_save_config(const rarch_setting_t* settings,
+      config_file_t* config)
 {
    if (!config)
       return false;
@@ -264,7 +281,8 @@ bool setting_data_save_config(const rarch_setting_t* settings, config_file_t* co
                if (*settings->value.unsigned_integer > settings->max)
                   *settings->value.unsigned_integer = settings->max;
             }
-            config_set_uint64(config, settings->name, *settings->value.unsigned_integer);
+            config_set_uint64(config, settings->name,
+                  *settings->value.unsigned_integer);
             break;
          case ST_FLOAT:
             if (settings->flags & SD_FLAG_HAS_RANGE)
@@ -290,11 +308,14 @@ bool setting_data_save_config(const rarch_setting_t* settings, config_file_t* co
 #ifdef APPLE
                get_key_name(key_name, sizeof(key_name), settings);
 #endif
-               get_input_config_key(input_config_key, sizeof(input_config_key), settings, 0);
+               get_input_config_key(input_config_key,
+                     sizeof(input_config_key), settings, 0);
                config_set_string(config, input_config_key, key_name);
-               get_input_config_key(input_config_key, sizeof(input_config_key), settings, "btn");
+               get_input_config_key(input_config_key,
+                     sizeof(input_config_key), settings, "btn");
                config_set_string(config, input_config_key, button_name);
-               get_input_config_key(input_config_key, sizeof(input_config_key), settings, "axis");
+               get_input_config_key(input_config_key,
+                     sizeof(input_config_key), settings, "axis");
                config_set_string(config, input_config_key, axis_name);
             }
             break;
@@ -317,7 +338,8 @@ bool setting_data_save_config(const rarch_setting_t* settings, config_file_t* co
    return true;
 }
 
-rarch_setting_t* setting_data_find_setting(rarch_setting_t* settings, const char* name)
+rarch_setting_t* setting_data_find_setting(rarch_setting_t* settings,
+      const char* name)
 {
    bool found = false;
 
@@ -347,7 +369,8 @@ rarch_setting_t* setting_data_find_setting(rarch_setting_t* settings, const char
    return NULL;
 }
 
-void setting_data_set_with_string_representation(const rarch_setting_t* setting, const char* value)
+void setting_data_set_with_string_representation(const rarch_setting_t* setting,
+      const char* value)
 {
    if (!setting || !value)
       return;
@@ -413,7 +436,8 @@ void setting_data_set_with_string_representation(const rarch_setting_t* setting,
       setting->change_handler(setting);
 }
 
-void setting_data_get_string_representation(const rarch_setting_t* setting, char* buf, size_t sizeof_buf)
+void setting_data_get_string_representation(const rarch_setting_t* setting,
+      char* buf, size_t sizeof_buf)
 {
    if (!setting || !buf || !sizeof_buf)
       return;
@@ -475,9 +499,14 @@ rarch_setting_t setting_data_group_setting(enum setting_type type, const char* n
    return result;
 }
 
-rarch_setting_t setting_data_float_setting(const char* name, const char* short_description, float* target, float default_value, const char *group, const char *subgroup, change_handler_t change_handler, change_handler_t read_handler)
+rarch_setting_t setting_data_float_setting(const char* name,
+      const char* short_description, float* target, float default_value,
+      const char *group, const char *subgroup, change_handler_t change_handler,
+      change_handler_t read_handler)
 {
-   rarch_setting_t result = { ST_FLOAT, name, sizeof(float), short_description, group, subgroup };
+   rarch_setting_t result = { ST_FLOAT, name, sizeof(float), short_description,
+      group, subgroup };
+
    result.change_handler = change_handler;
    result.read_handler = read_handler;
    result.value.fraction = target;
@@ -485,9 +514,13 @@ rarch_setting_t setting_data_float_setting(const char* name, const char* short_d
    return result;
 }
 
-rarch_setting_t setting_data_bool_setting(const char* name, const char* short_description, bool* target, bool default_value, const char *group, const char *subgroup, change_handler_t change_handler, change_handler_t read_handler)
+rarch_setting_t setting_data_bool_setting(const char* name,
+      const char* short_description, bool* target, bool default_value,
+      const char *group, const char *subgroup, change_handler_t change_handler,
+      change_handler_t read_handler)
 {
-   rarch_setting_t result = { ST_BOOL, name, sizeof(bool), short_description, group, subgroup };
+   rarch_setting_t result = { ST_BOOL, name, sizeof(bool), short_description,
+      group, subgroup };
    result.change_handler = change_handler;
    result.read_handler = read_handler;
    result.value.boolean = target;
@@ -495,9 +528,14 @@ rarch_setting_t setting_data_bool_setting(const char* name, const char* short_de
    return result;
 }
 
-rarch_setting_t setting_data_int_setting(const char* name, const char* short_description, int* target, int default_value, const char *group, const char *subgroup, change_handler_t change_handler, change_handler_t read_handler)
+rarch_setting_t setting_data_int_setting(const char* name,
+      const char* short_description, int* target, int default_value,
+      const char *group, const char *subgroup, change_handler_t change_handler,
+      change_handler_t read_handler)
 {
-    rarch_setting_t result = { ST_INT, name, sizeof(int), short_description, group, subgroup };
+    rarch_setting_t result = { ST_INT, name, sizeof(int), short_description,
+       group, subgroup };
+
     result.change_handler = change_handler;
     result.read_handler = read_handler;
     result.value.integer = target;
@@ -505,27 +543,36 @@ rarch_setting_t setting_data_int_setting(const char* name, const char* short_des
     return result;
 }
 
-rarch_setting_t setting_data_uint_setting(const char* name, const char* short_description, unsigned int* target, unsigned int default_value, const char *group, const char *subgroup, change_handler_t change_handler, change_handler_t read_handler)
+rarch_setting_t setting_data_uint_setting(const char* name,
+      const char* short_description, unsigned int* target,
+      unsigned int default_value, const char *group, const char *subgroup,
+      change_handler_t change_handler, change_handler_t read_handler)
 {
-   rarch_setting_t result = { ST_UINT, name, sizeof(unsigned int), short_description, group, subgroup };
+   rarch_setting_t result = { ST_UINT, name, sizeof(unsigned int),
+      short_description, group, subgroup };
+
    result.change_handler = change_handler;
    result.read_handler = read_handler;
    result.value.unsigned_integer = target;
    result.default_value.unsigned_integer = default_value;
+
    return result;
 }
 
 rarch_setting_t setting_data_string_setting(enum setting_type type,
       const char* name, const char* short_description, char* target,
       unsigned size, const char* default_value,
-      const char *group, const char *subgroup, change_handler_t change_handler, change_handler_t read_handler)
+      const char *group, const char *subgroup, change_handler_t change_handler,
+      change_handler_t read_handler)
 {
-   rarch_setting_t result = { type, name, size, short_description, group, subgroup };
+   rarch_setting_t result = { type, name, size, short_description, group,
+      subgroup };
     
    result.change_handler = change_handler;
    result.read_handler = read_handler;
    result.value.string = target;
    result.default_value.string = default_value;
+
    return result;
 }
 
@@ -534,15 +581,18 @@ rarch_setting_t setting_data_bind_setting(const char* name,
       uint32_t index, const struct retro_keybind* default_value,
       const char *group, const char *subgroup)
 {
-   rarch_setting_t result = { ST_BIND, name, 0, short_description, group, subgroup };
+   rarch_setting_t result = { ST_BIND, name, 0, short_description, group,
+      subgroup };
 
    result.value.keybind = target;
    result.default_value.keybind = default_value;
    result.index = index;
+
    return result;
 }
 
-void setting_data_get_description(const void *data, char *msg, size_t sizeof_msg)
+void setting_data_get_description(const void *data, char *msg,
+      size_t sizeof_msg)
 {
     const rarch_setting_t *setting = (const rarch_setting_t*)data;
     
