@@ -1179,6 +1179,12 @@ static void menu_common_setting_push_current_menu(file_list_t *list, const char 
    }
 }
 
+static void menu_action_cancel(void)
+{
+   file_list_pop(driver.menu->menu_stack, &driver.menu->selection_ptr);
+   driver.menu->need_refresh = true;
+}
+
 static int menu_settings_iterate(unsigned action, rarch_setting_t *setting)
 {
    const char *label = NULL;
@@ -1227,10 +1233,7 @@ static int menu_settings_iterate(unsigned action, rarch_setting_t *setting)
 
       case MENU_ACTION_CANCEL:
          if (file_list_get_size(driver.menu->menu_stack) > 1)
-         {
-            file_list_pop(driver.menu->menu_stack, &driver.menu->selection_ptr);
-            driver.menu->need_refresh = true;
-         }
+            menu_action_cancel();
          break;
       case MENU_ACTION_SELECT:
          {
@@ -2096,10 +2099,7 @@ static int menu_common_iterate(unsigned action)
 
       case MENU_ACTION_CANCEL:
          if (file_list_get_size(driver.menu->menu_stack) > 1)
-         {
-            file_list_pop(driver.menu->menu_stack, &driver.menu->selection_ptr);
-            driver.menu->need_refresh = true;
-         }
+            menu_action_cancel();
          break;
 
       case MENU_ACTION_OK:
