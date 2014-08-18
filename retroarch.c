@@ -81,7 +81,7 @@ static void check_fast_forward_button(void)
 static bool take_screenshot_viewport(void)
 {
    char screenshot_path[PATH_MAX];
-   const char *screenshot_dir;
+   const char *screenshot_dir = NULL;
    uint8_t *buffer = NULL;
    bool retval = false;
    struct rarch_viewport vp = {0};
@@ -444,7 +444,9 @@ static void video_frame(const void *data, unsigned width, unsigned height, size_
 
    if (g_extern.filter.filter && data)
    {
-      unsigned owidth, oheight, opitch = 0;
+      unsigned owidth  = 0;
+      unsigned oheight = 0;
+      unsigned opitch  = 0;
 
       rarch_softfilter_get_output_size(g_extern.filter.filter,
             &owidth, &oheight, width, height);
@@ -474,13 +476,13 @@ static void video_frame(const void *data, unsigned width, unsigned height, size_
 void rarch_render_cached_frame(void)
 {
    const void *frame = g_extern.frame_cache.data;
+   void *recording   = g_extern.rec;
 
-   // Cannot allow recording when pushing duped frames.
-   void *recording = g_extern.rec;
+   /* Cannot allow recording when pushing duped frames. */
    g_extern.rec = NULL;
 
    if (frame == RETRO_HW_FRAME_BUFFER_VALID)
-      frame = NULL; // Dupe
+      frame = NULL; /* Dupe */
 
    // Not 100% safe, since the library might have
    // freed the memory, but no known implementations do this :D
@@ -612,17 +614,18 @@ static size_t audio_sample_batch(const int16_t *data, size_t frames)
       frames = AUDIO_CHUNK_SIZE_NONBLOCKING >> 1;
 
    g_extern.audio_active = audio_flush(data, frames << 1) && g_extern.audio_active;
+
    return frames;
 }
 
 #ifdef HAVE_OVERLAY
 static inline void input_poll_overlay(void)
 {
+   input_overlay_state_t old_key_state;
    unsigned i, j, device;
    uint16_t key_mod = 0;
    bool polled = false;
 
-   input_overlay_state_t old_key_state;
    memcpy(old_key_state.keys, driver.overlay_state.keys, sizeof(driver.overlay_state.keys));
    memset(&driver.overlay_state, 0, sizeof(driver.overlay_state));
 
@@ -1379,15 +1382,18 @@ static void parse_input(int argc, char *argv[])
 static void init_controllers(void)
 {
    unsigned i;
+
    for (i = 0; i < MAX_PLAYERS; i++)
    {
       unsigned device = g_settings.input.libretro_device[i];
       const struct retro_controller_description *desc = NULL;
+      const char *ident = NULL;
 
       if (i < g_extern.system.num_ports)
          desc = libretro_find_controller_description(&g_extern.system.ports[i], device);
 
-      const char *ident = desc ? desc->desc : NULL;
+      if (desc)
+         ident = desc->desc;
 
       if (!ident)
       {
@@ -2135,7 +2141,7 @@ static void check_rewind(void)
 
    if (input_key_pressed_func(RARCH_REWIND))
    {
-      const void *buf;
+      const void *buf = NULL;
 
       msg_queue_clear(g_extern.msg_queue);
       if (state_manager_pop(g_extern.state_manager, &buf))
@@ -2720,12 +2726,11 @@ void rarch_check_block_hotkey(void)
 void rarch_check_overlay(void)
 {
    static bool old_pressed = false;
-   bool pressed;
+   bool pressed = input_key_pressed_func(RARCH_OVERLAY_NEXT);
 
    if (!driver.overlay)
       return;
 
-   pressed = input_key_pressed_func(RARCH_OVERLAY_NEXT);
    if (pressed && !old_pressed)
       input_overlay_next(driver.overlay);
 
@@ -2755,14 +2760,6 @@ static void check_grab_mouse_toggle(void)
 
 static void check_flip(void)
 {
-#ifdef HAVE_NETPLAY
-   if (g_extern.netplay)
-   {
-      check_netplay_flip();
-      return;
-   }
-#endif
-
    check_pause();
    check_oneshot();
 
@@ -2805,7 +2802,12 @@ static void do_state_checks(void)
    rarch_check_overlay();
 #endif
 
-   check_flip();
+#ifdef HAVE_NETPLAY
+   if (g_extern.netplay)
+      check_netplay_flip();
+   else
+#endif
+      check_flip();
 }
 
 static void init_state(void)
@@ -3028,7 +3030,8 @@ error:
 static inline bool check_enter_menu(void)
 {
    static bool old_rmenu_toggle = true;
-   bool rmenu_toggle            = input_key_pressed_func(RARCH_MENU_TOGGLE) || (g_extern.libretro_dummy && !old_rmenu_toggle);
+   bool rmenu_toggle            = input_key_pressed_func(RARCH_MENU_TOGGLE)
+      || (g_extern.libretro_dummy && !old_rmenu_toggle);
 
    // Always go into menu if dummy core is loaded.
    if (rmenu_toggle && !old_rmenu_toggle)
@@ -3221,10 +3224,8 @@ void rarch_main_command(unsigned action)
          deinit_recording();
          break;
       case RARCH_CMD_HISTORY_INIT:
-         if (g_extern.history)
-            return;
-
-         g_extern.history = content_playlist_init(g_settings.content_history_path, g_settings.content_history_size);
+         if (!g_extern.history)
+            g_extern.history = content_playlist_init(g_settings.content_history_path, g_settings.content_history_size);
          break;
       case RARCH_CMD_HISTORY_DEINIT:
          if (g_extern.history)
