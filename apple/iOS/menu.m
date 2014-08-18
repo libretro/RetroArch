@@ -787,7 +787,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
       rarch_setting_t *setting_data, *setting;
       NSMutableArray* settings;
 
-      _isCustom = core_info_has_custom_config(core.UTF8String, buffer, sizeof(buffer));
+      _isCustom = core_info_get_custom_config(core.UTF8String, buffer, sizeof(buffer));
       if (_isCustom)
       {
           const core_info_t *tmp = (const core_info_t*)core_info_list_get_by_id(core.UTF8String);
@@ -925,7 +925,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
        char path[PATH_MAX];
        NSString* core_id = BOXSTRING(core_list->list[i].path);
 
-      if (core_info_has_custom_config(core_id.UTF8String, path, sizeof(path)))
+      if (core_info_get_custom_config(core_id.UTF8String, path, sizeof(path)))
       {
          [cores addObject:[RAMenuItemBasic itemWithDescription:BOXSTRING(core_list->list[i].display_name)
                                                    association:core_id
@@ -979,7 +979,7 @@ static bool copy_config(const char *src_path, const char *dst_path)
       action:^(NSString* core)
       {
          char path[PATH_MAX];
-         if (!core_info_has_custom_config(core.UTF8String, path, sizeof(path)))
+         if (!core_info_get_custom_config(core.UTF8String, path, sizeof(path)))
          {
             if (g_defaults.config_path[0] != '\0' && path[0] != '\0')
             {
