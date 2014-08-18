@@ -1926,7 +1926,7 @@ static void menu_common_setting_set_current_fraction(rarch_setting_t *setting, u
         *setting->value.fraction  = setting->default_value.fraction;
       else if (action == MENU_ACTION_LEFT)
       {
-         *setting->value.fraction -= 0.1f;
+         *setting->value.fraction -= setting->step;
          if (*setting->value.fraction < 0.95f) // Avoid potential rounding errors when going from 1.1 to 1.0.
             *setting->value.fraction = setting->default_value.fraction;
          else
@@ -1934,11 +1934,11 @@ static void menu_common_setting_set_current_fraction(rarch_setting_t *setting, u
       }
       else if (action == MENU_ACTION_RIGHT)
       {
-         *setting->value.fraction += 0.1f;
+         *setting->value.fraction += setting->step;
          clamp_value = true;
       }
       if (clamp_value)
-         g_settings.fastforward_ratio = max(min(*setting->value.fraction, 10.0f), 1.0f);
+         g_settings.fastforward_ratio = max(min(*setting->value.fraction, setting->max), 1.0f);
    }
    else
    {
