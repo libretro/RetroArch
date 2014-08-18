@@ -1,6 +1,6 @@
 ifeq ($(GLES),3)
-   APP_PLATFORM := android-18
+   APP_PLATFORM := $(NDK_GL_HEADER_VER)
 else
-   APP_PLATFORM := android-9
+   APP_PLATFORM := $(NDK_NO_GL_HEADER_VER)
 endif
 APP_ABI := armeabi-v7a mips x86
