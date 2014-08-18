@@ -1595,7 +1595,6 @@ rarch_setting_t* setting_data_get_list(void)
 {
    int i, player, index;
    static rarch_setting_t* list = NULL;
-   static bool initialized = false;
 
    if (!list)
    {
