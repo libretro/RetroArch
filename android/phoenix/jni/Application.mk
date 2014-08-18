@@ -3,4 +3,4 @@ ifeq ($(GLES),3)
 else
    APP_PLATFORM := android-9
 endif
-APP_ABI := armeabi-v7a mips x86
+APP_ABI := $(TARGET_ABIS)
