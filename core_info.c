@@ -456,7 +456,7 @@ const core_info_t *core_info_list_get_by_id(const char *core_id)
    return NULL;
 }
 
-bool core_info_has_custom_config(const char *core_id,
+bool core_info_get_custom_config(const char *core_id,
       char *buf, size_t sizeof_buf)
 {
    if (!core_id || !buf || !sizeof_buf)

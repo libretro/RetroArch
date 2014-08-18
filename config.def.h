@@ -494,7 +494,7 @@ static const bool savestate_auto_load = true;
 static const float slowmotion_ratio = 3.0;
 
 // Maximum fast forward ratio (Zero => no limit).
-static const float fastforward_ratio = 0.0;
+static const float fastforward_ratio = -1.0;
 
 // Enable stdin/network command interface
 static const bool network_cmd_enable = false;

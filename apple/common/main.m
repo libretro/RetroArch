@@ -42,7 +42,7 @@ void apple_run_core(int argc, char **argv, const char* core,
       strlcpy(core_path, core, sizeof(core_path));
 
    strlcpy(config_path, g_defaults.config_path, sizeof(config_path));
-   core_info_has_custom_config(core, config_path, sizeof(config_path));
+   core_info_get_custom_config(core, config_path, sizeof(config_path));
 
    static const char* const argv_game[] = { "retroarch", "-c", config_path, "-L", core_path, file_path, 0 };
    static const char* const argv_menu[] = { "retroarch", "-c", config_path, "--menu", 0 };
