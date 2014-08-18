@@ -3077,19 +3077,14 @@ static inline void update_frame_time(void)
 
 static inline void limit_frame_time(void)
 {
-   retro_time_t current = 0;
-   retro_time_t target = 0;
-   retro_time_t to_sleep_ms = 0;
-
-   if (g_settings.fastforward_ratio <= 0.0f)
+   if (g_settings.fastforward_ratio < 0.0f)
       return;
 
    g_extern.frame_limit.minimum_frame_time = (retro_time_t)roundf(1000000.0f / (g_extern.system.av_info.timing.fps * g_settings.fastforward_ratio));
 
-   current = rarch_get_time_usec();
-   target = g_extern.frame_limit.last_frame_time + g_extern.frame_limit.minimum_frame_time;
-   to_sleep_ms = (target - current) / 1000;
-
+   retro_time_t current = rarch_get_time_usec();
+   retro_time_t target = g_extern.frame_limit.last_frame_time + g_extern.frame_limit.minimum_frame_time;
+   retro_time_t to_sleep_ms = (target - current) / 1000;
    if (to_sleep_ms > 0)
    {
       rarch_sleep((unsigned int)to_sleep_ms);

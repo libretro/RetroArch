@@ -1919,32 +1919,56 @@ static void menu_common_setting_set_current_path_selection(rarch_setting_t *sett
 
 static void menu_common_setting_set_current_fraction(rarch_setting_t *setting, unsigned action)
 {
-   switch (action)
+   if (!strcmp(setting->name, "fastforward_ratio"))
    {
-      case MENU_ACTION_LEFT:
-         *setting->value.fraction = *setting->value.fraction - setting->step;
+      bool clamp_value = false;
+      if (action == MENU_ACTION_START)
+        *setting->value.fraction  = setting->default_value.fraction;
+      else if (action == MENU_ACTION_LEFT)
+      {
+         *setting->value.fraction -= 0.1f;
+         if (*setting->value.fraction < 0.95f) // Avoid potential rounding errors when going from 1.1 to 1.0.
+            *setting->value.fraction = setting->default_value.fraction;
+         else
+            clamp_value = true;
+      }
+      else if (action == MENU_ACTION_RIGHT)
+      {
+         *setting->value.fraction += 0.1f;
+         clamp_value = true;
+      }
+      if (clamp_value)
+         g_settings.fastforward_ratio = max(min(*setting->value.fraction, 10.0f), 1.0f);
+   }
+   else
+   {
+      switch (action)
+      {
+         case MENU_ACTION_LEFT:
+            *setting->value.fraction = *setting->value.fraction - setting->step;
 
-         if (setting->enforce_minrange)
-         {
-            if (*setting->value.fraction < setting->min)
-               *setting->value.fraction = setting->min;
-         }
-         break;
+            if (setting->enforce_minrange)
+            {
+               if (*setting->value.fraction < setting->min)
+                  *setting->value.fraction = setting->min;
+            }
+            break;
 
-      case MENU_ACTION_RIGHT:
-      case MENU_ACTION_OK:
-         *setting->value.fraction = *setting->value.fraction + setting->step;
+         case MENU_ACTION_RIGHT:
+         case MENU_ACTION_OK:
+            *setting->value.fraction = *setting->value.fraction + setting->step;
 
-         if (setting->enforce_maxrange)
-         {
-            if (*setting->value.fraction > setting->max)
-               *setting->value.fraction = setting->max;
-         }
-         break;
+            if (setting->enforce_maxrange)
+            {
+               if (*setting->value.fraction > setting->max)
+                  *setting->value.fraction = setting->max;
+            }
+            break;
 
-      case MENU_ACTION_START:
-         *setting->value.fraction = setting->default_value.fraction;
-         break;
+         case MENU_ACTION_START:
+            *setting->value.fraction = setting->default_value.fraction;
+            break;
+      }
    }
 
    if (setting->change_handler)
