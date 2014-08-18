@@ -1,14 +1,27 @@
 #!/usr/bin/make -f
-# -*- makefile -*-
-# Sample debian/rules that uses debhelper.
-# This file was originally written by Joey Hess and Craig Small.
-# As a special exception, when this file is copied by dh-make into a
-# dh-make output file, you may use that output file without restriction.
-# This special exception was added by Craig Small in version 0.37 of dh-make.
+
+# Copyright (C) 2010 Hunter Kaller
+# Copyright (C) 2014 Sergio Benjamim
+
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2, or (at your option)
+# any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software Foundation,
+# Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 # Uncomment this to turn on verbose mode.
 #export DH_VERBOSE=1
 
+%:
+	dh $@ --parallel
 
 QUILT=QUILT_PATCHES=debian/patches quilt --quiltrc /dev/null
 PATCH := $(QUILT) push -a || [ "$$($(QUILT) applied)" = "$$(grep -v '^\#' debian/patches/series)" ]
@@ -20,86 +33,33 @@ patch:
 unpatch:
 	$(UNPATCH)
 
-configure: configure-stamp
-configure-stamp:
-	dh_testdir
-	# Add here commands to configure the package.
+override_dh_auto_configure:
 	# See ./configure --help for valid flags
 	# disable flags (i.e. --disable-ffmpeg for example) if there is no package relative to the feature in Build-Depends
 	./configure --prefix=/usr --enable-rgui --enable-kms --enable-cg --disable-ffmpeg --enable-freetype --enable-python --enable-udev --enable-libxml2 --enable-zlib
-	touch configure-stamp
 
-build: build-arch build-indep
-
-build-arch: build-stamp
-
-build-indep: build-stamp
-
-build-stamp: configure-stamp  
-	dh_testdir
-
-	# Add here commands to compile the package.
-	touch config.mk
+override_dh_auto_build:
 	$(MAKE)
-	#docbook-to-man debian/retroarch.sgml > retroarch
+	# SoftFilters
+	$(MAKE) -C gfx/filters/
+	# Audio DSP plugins
+	$(MAKE) -C audio/filters/
 
-	touch $@
-
-clean: 
-	dh_testdir
-	dh_testroot
-	rm -f build-stamp configure-stamp
-
-	# Add here commands to clean up after the build process.
-	touch config.mk
-	$(MAKE) clean
-
-	dh_clean 
-
-install: build
-	dh_testdir
-	dh_testroot
-	dh_prep  
-	dh_installdirs
-
+override_dh_auto_install:
 	# Add here commands to install the package into debian/retroarch.
 	$(MAKE) DESTDIR=$(CURDIR)/debian/retroarch PREFIX=/usr install
-	cp $(CURDIR)/debian/retroarch.desktop $(CURDIR)/debian/retroarch/usr/share/applications
+	cp $(CURDIR)/AUTHORS $(CURDIR)/debian/retroarch/usr/share/doc/retroarch/
+	cp $(CURDIR)/debian/retroarch.desktop $(CURDIR)/debian/retroarch/usr/share/applications/
+	cp $(CURDIR)/debian/retroarch.cfg $(CURDIR)/debian/retroarch/etc/
+	# SoftFilters
+	cp $(CURDIR)/gfx/filters/*.so $(CURDIR)/debian/retroarch/usr/lib/retroarch/filters/video/
+	# Audio DSP plugins
+	cd $(CURDIR)/audio/filters/ && \
+		cp *.so $(CURDIR)/debian/retroarch/usr/lib/retroarch/filters/audio/ && \
+		cp *.dsp $(CURDIR)/debian/retroarch/usr/lib/retroarch/filters/audio/
 
-# Build architecture-independent files here.
-binary-indep: install
-# We have nothing to do by default.
-
-# Build architecture-dependent files here.
-binary-arch: install
-	dh_testdir
-	dh_testroot
-	dh_installchangelogs 
-	dh_installdocs
-	dh_installexamples
-#	dh_install
-#	dh_installmenu
-#	dh_installdebconf
-#	dh_installlogrotate
-#	dh_installemacsen
-#	dh_installpam
-#	dh_installmime
-#	dh_python
-#	dh_installinit
-#	dh_installcron
-#	dh_installinfo
-	dh_installman
-	dh_link
-	dh_strip
-	dh_compress
-	dh_fixperms
-#	dh_perl
-#	dh_makeshlibs
-	dh_installdeb
-	dh_shlibdeps
-	dh_gencontrol
-	dh_md5sums
-	dh_builddeb
-
-binary: binary-indep binary-arch
-.PHONY: build clean binary-indep binary-arch binary install configure
+override_dh_auto_clean:
+	touch config.mk
+	$(MAKE) clean
+	$(MAKE) -C gfx/filters/ clean
+	$(MAKE) -C audio/filters/ clean

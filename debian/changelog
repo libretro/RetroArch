@@ -1,3 +1,12 @@
+retroarch (1.0.0.2-0ubuntu12) UNRELEASED; urgency=low
+
+  * Improve debian packaging
+  * Added DSP and video filters to the package
+  * Added some paths in retroarch.cfg
+  + No more quilt patch
+
+ -- Sérgio Benjamim <sergio_br2@yahoo.com.br>  Sun, 17 Aug 2014 23:50:00 -0300
+
 retroarch (1.0.0.2-0ubuntu11) UNRELEASED; urgency=low
 
   * Debian folder from hunterk PPA to upstream
