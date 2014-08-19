@@ -525,7 +525,7 @@ static void handle_hotplug(android_input_t *android, struct android_app *android
    else if (strstr(device_name, "rk29-keypad") || strstr(device_name, "GAMEMID"))
       strlcpy(name_buf, "GameMID", sizeof(name_buf));
    else if (strstr(device_name, "USB Gamepad"))
-      device = DEVICE_DEFENDER_GAME_RACER_CLASSIC;
+      strlcpy(name_buf, "Defender Game Racer Classic", sizeof(name_buf));
    else if (strstr(device_name, "HOLTEK JC - U912F vibration game"))
       device = DEVICE_HOLTEK_JC_U912F;
    else if (strstr(device_name, "NVIDIA Controller"))
@@ -537,15 +537,9 @@ static void handle_hotplug(android_input_t *android, struct android_app *android
       strlcpy(name_buf, device_name, sizeof(name_buf));
 
    if (strstr(android_app->current_ime, "net.obsidianx.android.mogaime"))
-   {
-      device = DEVICE_MOGA_IME;
       strlcpy(name_buf, "MOGA IME", sizeof(name_buf));
-   }
    else if (strstr(android_app->current_ime, "com.ccpcreations.android.WiiUseAndroid"))
-   {
-      device = DEVICE_CCPCREATIONS_WIIUSE_IME;
       strlcpy(name_buf, "ccpcreations WiiUse", sizeof(name_buf));
-   }
    else if (strstr(android_app->current_ime, "com.hexad.bluezime"))
       strlcpy(name_buf, "iControlpad SPP mode (using Bluez IME)", sizeof(name_buf));
 
