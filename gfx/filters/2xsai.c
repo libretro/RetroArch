@@ -63,11 +63,13 @@ static unsigned twoxsai_generic_threads(void *data)
    return filt->threads;
 }
 
-static void *twoxsai_generic_create(unsigned in_fmt, unsigned out_fmt,
+static void *twoxsai_generic_create(const struct softfilter_config *config,
+      unsigned in_fmt, unsigned out_fmt,
       unsigned max_width, unsigned max_height,
       unsigned threads, softfilter_simd_mask_t simd)
 {
    (void)simd;
+   (void)config;
 
    struct filter_data *filt = (struct filter_data*)calloc(1, sizeof(*filt));
    if (!filt)

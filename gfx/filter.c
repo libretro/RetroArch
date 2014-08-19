@@ -227,7 +227,7 @@ rarch_softfilter_t *rarch_softfilter_new(const char *filter_path,
    filt->max_width = max_width;
    filt->max_height = max_height;
 
-   filt->impl_data = filt->impl->create(input_fmt, input_fmt, max_width, max_height,
+   filt->impl_data = filt->impl->create(NULL, input_fmt, input_fmt, max_width, max_height,
          threads != RARCH_SOFTFILTER_THREADS_AUTO ? threads : rarch_get_cpu_cores(), cpu_features);
    if (!filt->impl_data)
    {

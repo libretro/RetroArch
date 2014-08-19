@@ -216,7 +216,8 @@ static unsigned phosphor2x_generic_threads(void *data)
    return filt->threads;
 }
 
-static void *phosphor2x_generic_create(unsigned in_fmt, unsigned out_fmt,
+static void *phosphor2x_generic_create(const struct softfilter_config *config,
+      unsigned in_fmt, unsigned out_fmt,
       unsigned max_width, unsigned max_height,
       unsigned threads, softfilter_simd_mask_t simd)
 {
@@ -227,6 +228,7 @@ static void *phosphor2x_generic_create(unsigned in_fmt, unsigned out_fmt,
    (void)out_fmt;
    (void)max_width;
    (void)max_height;
+   (void)config;
 
    if (!filt)
       return NULL;

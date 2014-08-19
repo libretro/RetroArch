@@ -101,7 +101,6 @@ static int get_int(void *userdata, const char *key_str, int *value, int default_
    return got;
 }
 
-// Yup, still C >__<
 #define get_array_setup() \
    struct dsp_userdata *dsp = (struct dsp_userdata*)userdata; \
  \
