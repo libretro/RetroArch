@@ -89,6 +89,8 @@ static bool set_direct_pix_conv(struct scaler_ctx *ctx)
       ctx->direct_pixconv = conv_argb8888_abgr8888;
    else if (ctx->in_fmt == SCALER_FMT_YUYV && ctx->out_fmt == SCALER_FMT_ARGB8888)
       ctx->direct_pixconv = conv_yuyv_argb8888;
+   else if (ctx->in_fmt == SCALER_FMT_RGBA4444 && ctx->out_fmt == SCALER_FMT_ARGB8888)
+      ctx->direct_pixconv = conv_rgba4444_argb8888;
    else
       return false;
 

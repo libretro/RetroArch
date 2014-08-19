@@ -32,8 +32,6 @@
 #include "config.h"
 #endif
 
-#include "SDL2/SDL_syswm.h"
-
 typedef struct sdl2_tex
 {
    SDL_Texture *tex;
@@ -369,8 +367,11 @@ static void *sdl2_gfx_init(const video_info_t *video, const input_driver_t **inp
 
    int i;
 
-   if (SDL_WasInit(0) == 0 && SDL_Init(SDL_INIT_VIDEO) < 0)
-      return NULL;
+   if (SDL_WasInit(0) == 0)
+   {
+      if (SDL_Init(SDL_INIT_VIDEO) < 0)
+         return NULL;
+   }
    else if (SDL_InitSubSystem(SDL_INIT_VIDEO) < 0)
       return NULL;
 
@@ -378,19 +379,19 @@ static void *sdl2_gfx_init(const video_info_t *video, const input_driver_t **inp
    if (!vid)
       return NULL;
 
-//   RARCH_LOG("[SDL]: supported video drivers (change with $SDL_VIDEODRIVER):\n");
+   RARCH_LOG("[SDL]: supported video drivers (change with $SDL_VIDEODRIVER):\n");
 
-//   for (i = 0; i < SDL_GetNumVideoDrivers(); ++i)
-//   {
-//      RARCH_LOG("\t%s\n", SDL_GetVideoDriver(i));
-//   }
+   for (i = 0; i < SDL_GetNumVideoDrivers(); ++i)
+   {
+      RARCH_LOG("\t%s\n", SDL_GetVideoDriver(i));
+   }
 
    RARCH_LOG("[SDL]: Available displays:\n");
    for(i = 0; i < SDL_GetNumVideoDisplays(); ++i)
    {
       SDL_DisplayMode mode;
 
-      if (SDL_GetCurrentDisplayMode(i, &mode) == 0)
+      if (SDL_GetCurrentDisplayMode(i, &mode) <= 0)
          RARCH_LOG("\tDisplay #%i mode: unknown.\n", i);
       else
          RARCH_LOG("\tDisplay #%i mode: %ix%i@%ihz.\n", i, mode.w, mode.h,
