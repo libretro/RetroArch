@@ -1,2 +1,2 @@
 filter = blargg_ntsc_snes
-tvtype = "svideo"
+blargg_ntsc_snes_tvtype = "svideo"

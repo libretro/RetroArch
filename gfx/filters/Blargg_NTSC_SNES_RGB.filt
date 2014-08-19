@@ -1,3 +1,2 @@
 filter = blargg_ntsc_snes
-
-tvtype = "rgb"
+blargg_ntsc_snes_tvtype = "rgb"
