@@ -473,7 +473,7 @@ static void handle_hotplug(android_input_t *android, struct android_app *android
       strlcpy(name_buf, "iControlpad SPP mode (using Bluez IME)", sizeof(name_buf));
 
    if (source == AINPUT_SOURCE_KEYBOARD && strcmp(name_buf, "Xperia Play"))
-      strlcpy(name_buf, "RetroKeyboard RetroPad", sizeof(name_buf));
+      strlcpy(name_buf, "RetroKeyboard", sizeof(name_buf));
 
    if (name_buf[0] != '\0')
    {

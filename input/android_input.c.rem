@@ -18,23 +18,9 @@ static void android_input_set_keybinds(void *data, unsigned device,
 
       switch (device)
       {
-         case DEVICE_ZEEMOTE_STEELSERIES:
-            g_settings.input.device[port] = device;
-            strlcpy(g_settings.input.device_names[port], "Zeemote Steelseries",
-                  sizeof(g_settings.input.device_names[port]));
-
-            android->keycode_lut[96]  |=  ((RETRO_DEVICE_ID_JOYPAD_B+1)      << shift);
-            android->keycode_lut[97]  |=  ((RETRO_DEVICE_ID_JOYPAD_A+1)      << shift);
-            android->keycode_lut[100]  |=  ((RETRO_DEVICE_ID_JOYPAD_X+1)      << shift);
-            android->keycode_lut[99]  |=  ((RETRO_DEVICE_ID_JOYPAD_Y+1)      << shift);
-            android->keycode_lut[110]  |=  ((RETRO_DEVICE_ID_JOYPAD_SELECT+1) << shift);
-            android->keycode_lut[108] |= ((RETRO_DEVICE_ID_JOYPAD_START+1)   << shift);
-            android->keycode_lut[102]  |=  ((RETRO_DEVICE_ID_JOYPAD_L+1)      << shift);
-            android->keycode_lut[103]  |=  ((RETRO_DEVICE_ID_JOYPAD_R+1)      << shift);
-            break;
          case DEVICE_KEYBOARD_RETROPAD:
             g_settings.input.device[port] = device;
-            strlcpy(g_settings.input.device_names[port], "Generic Keyboard",
+            strlcpy(g_settings.input.device_names[port], "RetroKeyboard",
                   sizeof(g_settings.input.device_names[port]));
 
             // Keyboard
