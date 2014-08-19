@@ -32,8 +32,6 @@
 #include "config.h"
 #endif
 
-#include "SDL2/SDL_syswm.h"
-
 typedef struct sdl2_tex
 {
    SDL_Texture *tex;
