@@ -464,10 +464,7 @@ FILTERS
 #include "../gfx/filters/darken.c"
 #include "../gfx/filters/epx.c"
 #include "../gfx/filters/scale2x.c"
-#include "../gfx/filters/blargg_ntsc_snes_rf.c"
-#include "../gfx/filters/blargg_ntsc_snes_composite.c"
-#include "../gfx/filters/blargg_ntsc_snes_svideo.c"
-#include "../gfx/filters/blargg_ntsc_snes_rgb.c"
+#include "../gfx/filters/blargg_ntsc_snes.c"
 #include "../gfx/filters/lq2x.c"
 #include "../gfx/filters/phosphor2x.c"
 

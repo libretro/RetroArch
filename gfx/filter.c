@@ -224,6 +224,7 @@ static const struct softfilter_config softfilter_config = {
 static bool create_softfilter_graph(rarch_softfilter_t *filt,
       enum retro_pixel_format in_pixel_format,
       unsigned max_width, unsigned max_height,
+      softfilter_simd_mask_t cpu_features,
       unsigned threads)
 {
    unsigned input_fmts, input_fmt, output_fmts;
@@ -283,7 +284,7 @@ static bool create_softfilter_graph(rarch_softfilter_t *filt,
    filt->max_height = max_height;
 
    filt->impl_data = filt->impl->create(&softfilter_config, input_fmt, input_fmt, max_width, max_height,
-         threads != RARCH_SOFTFILTER_THREADS_AUTO ? threads : rarch_get_cpu_cores(), rarch_get_cpu_features(),
+         threads != RARCH_SOFTFILTER_THREADS_AUTO ? threads : rarch_get_cpu_cores(), cpu_features,
          &userdata);
    if (!filt->impl_data)
    {
@@ -441,7 +442,7 @@ rarch_softfilter_t *rarch_softfilter_new(const char *filter_config,
 #if !defined(HAVE_FILTERS_BUILTIN) && defined(HAVE_DYLIB)
    char basedir[PATH_MAX];
 #endif
-   unsigned cpu_features;
+   softfilter_simd_mask_t cpu_features = rarch_get_cpu_features();
    struct string_list *plugs = NULL;
 
    rarch_softfilter_t *filt = (rarch_softfilter_t*)calloc(1, sizeof(*filt));
@@ -473,7 +474,7 @@ rarch_softfilter_t *rarch_softfilter_new(const char *filter_config,
 #endif
 
    if (!create_softfilter_graph(filt, in_pixel_format,
-            max_width, max_height, threads))
+            max_width, max_height, cpu_features, threads))
       goto error;
 
    return filt;
@@ -486,7 +487,7 @@ error:
 
 void rarch_softfilter_free(rarch_softfilter_t *filt)
 {
-   unsigned i;
+   unsigned i = 0;
    (void)i;
 
    if (!filt)
