@@ -111,7 +111,7 @@ struct softfilter_work_packet
 // Input sizes can very per call to softfilter_process_t, but they will never be larger than the maximum.
 typedef void *(*softfilter_create_t)(const struct softfilter_config *config, unsigned in_fmt, unsigned out_fmt,
       unsigned max_width, unsigned max_height,
-      unsigned threads, softfilter_simd_mask_t simd);
+      unsigned threads, softfilter_simd_mask_t simd, void *userdata);
 typedef void (*softfilter_destroy_t)(void *data);
 
 // Given an input size, query the output size of the filter.
@@ -145,8 +145,9 @@ struct softfilter_implementation
    softfilter_query_output_size_t query_output_size;
    softfilter_get_work_packets_t get_work_packets;
 
-   const char *ident; // Human readable identifier of implementation.
    unsigned api_version; // Must be SOFTFILTER_API_VERSION
+   const char *ident; // Human readable identifier of implementation.
+   const char *short_ident; // Computer-friendly short version of ident. Lower case, no spaces and special characters, etc.
 };
 
 #ifdef __cplusplus

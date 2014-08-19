@@ -1179,7 +1179,7 @@ static void general_read_handler(const void *data)
     else if (!strcmp(setting->name, "video_aspect_ratio_auto"))
         *setting->value.boolean = g_settings.video.aspect_ratio_auto;
     else if (!strcmp(setting->name, "video_filter"))
-        strlcpy(setting->value.string, g_settings.video.filter_path, setting->size);
+        strlcpy(setting->value.string, g_settings.video.softfilter_plugin, setting->size);
     else if (!strcmp(setting->name, "camera_allow"))
         *setting->value.boolean = g_settings.camera.allow;
     else if (!strcmp(setting->name, "location_allow"))
@@ -1324,9 +1324,7 @@ static void general_write_handler(const void *data)
       g_settings.audio.latency = *setting->value.unsigned_integer;
    else if (!strcmp(setting->name, "audio_dsp_plugin"))
    {
-#ifdef HAVE_DYLIB
       strlcpy(g_settings.audio.dsp_plugin, setting->value.string, sizeof(g_settings.audio.dsp_plugin));
-#endif
       rarch_cmd = RARCH_CMD_DSP_FILTER_INIT;
    }
    else if (!strcmp(setting->name, "state_slot"))
@@ -1507,7 +1505,7 @@ static void general_write_handler(const void *data)
       g_settings.video.aspect_ratio_auto = *setting->value.boolean;
    else if (!strcmp(setting->name, "video_filter"))
    {
-      strlcpy(g_settings.video.filter_path, setting->value.string, sizeof(g_settings.video.filter_path));
+      strlcpy(g_settings.video.softfilter_plugin, setting->value.string, sizeof(g_settings.video.softfilter_plugin));
       rarch_cmd = RARCH_CMD_REINIT;
    }
    else if (!strcmp(setting->name, "video_filter_flicker"))
@@ -1727,7 +1725,7 @@ rarch_setting_t* setting_data_get_list(void)
          CONFIG_BOOL(g_settings.video.allow_rotate,         "video_allow_rotate",         "Allow rotation",             allow_rotate, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
          CONFIG_BOOL(g_settings.video.crop_overscan,        "video_crop_overscan",        "Crop Overscan (reload)",     crop_overscan, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
 #ifndef HAVE_FILTERS_BUILTIN
-         CONFIG_PATH(g_settings.video.filter_path,          "video_filter",               "Software filter",            "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)       WITH_FLAGS(SD_FLAG_ALLOW_EMPTY)
+         CONFIG_PATH(g_settings.video.softfilter_plugin,    "video_filter",               "Software filter",            "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)       WITH_FLAGS(SD_FLAG_ALLOW_EMPTY)
 #endif
 #ifdef _XBOX1
          CONFIG_UINT(g_settings.video.swap_interval,        "video_filter_flicker",        "Flicker filter",        0, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)       WITH_RANGE(0, 5, 1, true, true)

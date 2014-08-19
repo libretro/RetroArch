@@ -66,10 +66,11 @@ static unsigned darken_threads(void *data)
 static void *darken_create(const struct softfilter_config *config,
       unsigned in_fmt, unsigned out_fmt,
       unsigned max_width, unsigned max_height,
-      unsigned threads, softfilter_simd_mask_t simd)
+      unsigned threads, softfilter_simd_mask_t simd, void *userdata)
 {
    (void)simd;
    (void)config;
+   (void)userdata;
 
    struct filter_data *filt = (struct filter_data*)calloc(1, sizeof(*filt));
    if (!filt)
@@ -164,8 +165,9 @@ static const struct softfilter_implementation darken = {
    darken_threads,
    darken_output,
    darken_packets,
-   "Darken",
    SOFTFILTER_API_VERSION,
+   "Darken",
+   "darken",
 };
 
 const struct softfilter_implementation *softfilter_get_implementation(softfilter_simd_mask_t simd)

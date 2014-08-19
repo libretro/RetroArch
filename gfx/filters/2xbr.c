@@ -37,6 +37,7 @@
  
 #include "softfilter.h"
 #include <stdlib.h>
+#include <string.h>
 
 #ifdef RARCH_INTERNAL
 #define softfilter_get_implementation twoxbr_get_implementation
@@ -223,10 +224,11 @@ static void SetupFormat(void * data)
 static void *twoxbr_generic_create(const struct softfilter_config *config,
       unsigned in_fmt, unsigned out_fmt,
       unsigned max_width, unsigned max_height,
-      unsigned threads, softfilter_simd_mask_t simd)
+      unsigned threads, softfilter_simd_mask_t simd, void *userdata)
 {
    (void)simd;
    (void)config;
+   (void)userdata;
  
    struct filter_data *filt = (struct filter_data*)calloc(1, sizeof(*filt));
    if (!filt)
@@ -720,8 +722,9 @@ static const struct softfilter_implementation twoxbr_generic = {
    twoxbr_generic_threads,
    twoxbr_generic_output,
    twoxbr_generic_packets,
-   "2xBR",
    SOFTFILTER_API_VERSION,
+   "2xBR",
+   "2xbr",
 };
  
 const struct softfilter_implementation *softfilter_get_implementation(softfilter_simd_mask_t simd)

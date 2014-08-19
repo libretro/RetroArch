@@ -1655,7 +1655,7 @@ static void menu_parse_and_resolve(unsigned menu_type)
             else if (menu_common_type_is(menu_type) == MENU_SETTINGS_SHADER_OPTIONS)
                exts = "cg|glsl";
             else if (menu_type == MENU_SETTINGS_VIDEO_SOFTFILTER)
-               exts = EXT_EXECUTABLES;
+               exts = "filt";
             else if (menu_type == MENU_SETTINGS_AUDIO_DSP_FILTER)
                exts = "dsp";
             else if (menu_type == MENU_SETTINGS_OVERLAY_PRESET)
@@ -3286,41 +3286,8 @@ static int menu_common_setting_set(unsigned id, unsigned action, rarch_setting_t
                menu_common_setting_set_current_path_selection(setting, "", id, action);
             break;
          case MENU_SETTINGS_VIDEO_SOFTFILTER:
-            switch (action)
-            {
-#if defined(HAVE_DYLIB)
-               case MENU_ACTION_OK:
-                  menu_common_setting_push_current_menu(
-                        driver.menu->menu_stack,
-                        g_settings.video.filter_dir, id,
-                        driver.menu->selection_ptr, action);
-                  break;
-               case MENU_ACTION_START:
-                  strlcpy(g_settings.video.filter_path, "", sizeof(g_settings.video.filter_path));
-                  driver.menu_data_own = true;
-                  rarch_main_command(RARCH_CMD_REINIT);
-                  break;
-#elif defined(HAVE_FILTERS_BUILTIN)
-               case MENU_ACTION_LEFT:
-                  if (g_settings.video.filter_idx > 0)
-                     g_settings.video.filter_idx--;
-                  break;
-               case MENU_ACTION_RIGHT:
-                  if ((g_settings.video.filter_idx + 1) != softfilter_get_last_idx())
-                     g_settings.video.filter_idx++;
-                  break;
-               case MENU_ACTION_OK:
-                  driver.menu_data_own = true;
-                  rarch_main_command(RARCH_CMD_REINIT);
-                  driver.menu->need_refresh = true;
-                  break;
-               case MENU_ACTION_START:
-                  g_settings.video.filter_idx = 0;
-                  driver.menu_data_own = true;
-                  rarch_main_command(RARCH_CMD_REINIT);
-                  break;
-#endif
-            }
+            if (setting)
+               menu_common_setting_set_current_path_selection(setting, g_settings.video.filter_dir, id, action);
             break;
          case MENU_SETTINGS_AUDIO_DSP_FILTER:
             if (setting)
@@ -4220,10 +4187,7 @@ static void menu_common_setting_set_label(char *type_str, size_t type_str_size, 
             strlcpy(type_str, "...", type_str_size);
             break;
          case MENU_SETTINGS_VIDEO_SOFTFILTER:
-            {
-               const char *filter_name = rarch_softfilter_get_name(g_extern.filter.filter);
-               strlcpy(type_str, filter_name ? filter_name : "N/A", type_str_size);
-            }
+            strlcpy(type_str, path_basename(g_settings.video.softfilter_plugin), type_str_size);
             break;
          case MENU_SETTINGS_AUDIO_DSP_FILTER:
             strlcpy(type_str, path_basename(g_settings.audio.dsp_plugin), type_str_size);

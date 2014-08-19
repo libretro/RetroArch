@@ -18,6 +18,7 @@
 
 #include "softfilter.h"
 #include <stdlib.h>
+#include <string.h>
 
 #ifdef RARCH_INTERNAL
 #define softfilter_get_implementation twoxsai_get_implementation
@@ -66,10 +67,11 @@ static unsigned twoxsai_generic_threads(void *data)
 static void *twoxsai_generic_create(const struct softfilter_config *config,
       unsigned in_fmt, unsigned out_fmt,
       unsigned max_width, unsigned max_height,
-      unsigned threads, softfilter_simd_mask_t simd)
+      unsigned threads, softfilter_simd_mask_t simd, void *userdata)
 {
    (void)simd;
    (void)config;
+   (void)userdata;
 
    struct filter_data *filt = (struct filter_data*)calloc(1, sizeof(*filt));
    if (!filt)
@@ -347,8 +349,9 @@ static const struct softfilter_implementation twoxsai_generic = {
    twoxsai_generic_threads,
    twoxsai_generic_output,
    twoxsai_generic_packets,
-   "2xSaI",
    SOFTFILTER_API_VERSION,
+   "2xSaI",
+   "2xsai",
 };
 
 const struct softfilter_implementation *softfilter_get_implementation(softfilter_simd_mask_t simd)

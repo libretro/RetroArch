@@ -1311,10 +1311,8 @@ void rarch_init_filter(enum retro_pixel_format colfmt)
    struct retro_game_geometry *geom = NULL;
 
    rarch_deinit_filter();
-#ifndef HAVE_FILTERS_BUILTIN
-   if (!*g_settings.video.filter_path)
+   if (!*g_settings.video.softfilter_plugin)
       return;
-#endif
 
    // Deprecated format. Gets pre-converted.
    if (colfmt == RETRO_PIXEL_FORMAT_0RGB1555)
@@ -1333,7 +1331,7 @@ void rarch_init_filter(enum retro_pixel_format colfmt)
    pow2_y  = 0;
    maxsize = 0;
 
-   g_extern.filter.filter = rarch_softfilter_new(g_settings.video.filter_path,
+   g_extern.filter.filter = rarch_softfilter_new(g_settings.video.softfilter_plugin,
          RARCH_SOFTFILTER_THREADS_AUTO, colfmt, width, height);
 
    if (!g_extern.filter.filter)

@@ -433,8 +433,8 @@ void config_set_defaults(void)
    *g_settings.video.shader_path = '\0';
    *g_settings.video.shader_dir = '\0';
    *g_settings.video.filter_dir = '\0';
-   *g_settings.video.filter_path = '\0';
    *g_settings.audio.filter_dir = '\0';
+   *g_settings.video.softfilter_plugin = '\0';
    *g_settings.audio.dsp_plugin = '\0';
 #ifdef HAVE_MENU
    *g_settings.menu_content_directory = '\0';
@@ -836,10 +836,6 @@ bool config_load_file(const char *path, bool set_defaults)
    CONFIG_GET_FLOAT(video.msg_pos_y, "video_message_pos_y");
    CONFIG_GET_INT(video.rotation, "video_rotation");
 
-#if defined(HAVE_FILTERS_BUILTIN)
-   CONFIG_GET_INT(video.filter_idx, "filter_index");
-#endif
-
 #ifdef RARCH_CONSOLE
    /* TODO - will be refactored later to make it more clean - it's more 
     * important that it works for consoles right now */
@@ -907,10 +903,6 @@ bool config_load_file(const char *path, bool set_defaults)
    CONFIG_GET_BOOL(video.gpu_record, "video_gpu_record");
    CONFIG_GET_BOOL(video.gpu_screenshot, "video_gpu_screenshot");
 
-#ifdef HAVE_DYLIB
-   CONFIG_GET_PATH(video.filter_path, "video_filter");
-#endif
-
    CONFIG_GET_PATH(video.shader_dir, "video_shader_dir");
    if (!strcmp(g_settings.video.shader_dir, "default"))
       *g_settings.video.shader_dir = '\0';
@@ -964,6 +956,7 @@ bool config_load_file(const char *path, bool set_defaults)
    CONFIG_GET_STRING(menu.driver, "menu_driver");
    CONFIG_GET_STRING(video.gl_context, "video_gl_context");
    CONFIG_GET_STRING(audio.driver, "audio_driver");
+   CONFIG_GET_PATH(video.softfilter_plugin, "video_filter");
    CONFIG_GET_PATH(audio.dsp_plugin, "audio_dsp_plugin");
    CONFIG_GET_STRING(input.driver, "input_driver");
    CONFIG_GET_STRING(input.joypad_driver, "input_joypad_driver");
@@ -1327,9 +1320,6 @@ bool config_save_file(const char *path)
    config_set_path(conf,  "libretro_info_path", g_settings.libretro_info_path);
    config_set_path(conf,  "cheat_database_path", g_settings.cheat_database);
    config_set_bool(conf,  "rewind_enable", g_settings.rewind_enable);
-#ifdef HAVE_FILTERS_BUILTIN
-   config_set_int(conf,   "filter_index",  g_settings.video.filter_idx);
-#endif
    config_set_int(conf,   "audio_latency", g_settings.audio.latency);
    config_set_bool(conf,  "audio_sync",    g_settings.audio.sync);
    config_set_int(conf,   "audio_block_frames", g_settings.audio.block_frames);
@@ -1367,6 +1357,7 @@ bool config_save_file(const char *path)
    config_set_path(conf, "screenshot_directory", *g_settings.screenshot_directory ? g_settings.screenshot_directory : "default");
    config_set_int(conf, "aspect_ratio_index", g_settings.video.aspect_ratio_idx);
    config_set_string(conf, "audio_device", g_settings.audio.device);
+   config_set_string(conf, "video_filter", g_settings.video.softfilter_plugin);
    config_set_string(conf, "audio_dsp_plugin", g_settings.audio.dsp_plugin);
    config_set_string(conf, "camera_device", g_settings.camera.device);
    config_set_bool(conf, "camera_allow", g_settings.camera.allow);
@@ -1387,7 +1378,6 @@ bool config_save_file(const char *path)
    config_set_path(conf, "savefile_directory", *g_extern.savefile_dir ? g_extern.savefile_dir : "default");
    config_set_path(conf, "savestate_directory", *g_extern.savestate_dir ? g_extern.savestate_dir : "default");
    config_set_path(conf, "video_shader_dir", *g_settings.video.shader_dir ? g_settings.video.shader_dir : "default");
-   config_set_path(conf, "video_filter", g_settings.video.filter_path);
    config_set_path(conf, "video_filter_dir", *g_settings.video.filter_dir ? g_settings.video.filter_dir : "default");
    config_set_path(conf, "audio_filter_dir", *g_settings.audio.filter_dir ? g_settings.audio.filter_dir : "default");
 

@@ -125,10 +125,11 @@ static unsigned scale2x_generic_threads(void *data)
 static void *scale2x_generic_create(const struct softfilter_config *config,
       unsigned in_fmt, unsigned out_fmt,
       unsigned max_width, unsigned max_height,
-      unsigned threads, softfilter_simd_mask_t simd)
+      unsigned threads, softfilter_simd_mask_t simd, void *userdata)
 {
    (void)simd;
    (void)config;
+   (void)userdata;
 
    struct filter_data *filt = (struct filter_data*)calloc(1, sizeof(*filt));
    if (!filt)
@@ -224,8 +225,9 @@ static const struct softfilter_implementation scale2x_generic = {
    scale2x_generic_threads,
    scale2x_generic_output,
    scale2x_generic_packets,
-   "Scale2x",
    SOFTFILTER_API_VERSION,
+   "Scale2x",
+   "scale2x",
 };
 
 const struct softfilter_implementation *softfilter_get_implementation(softfilter_simd_mask_t simd)

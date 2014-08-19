@@ -66,10 +66,11 @@ static unsigned supereagle_generic_threads(void *data)
 static void *supereagle_generic_create(const struct softfilter_config *config,
       unsigned in_fmt, unsigned out_fmt,
       unsigned max_width, unsigned max_height,
-      unsigned threads, softfilter_simd_mask_t simd)
+      unsigned threads, softfilter_simd_mask_t simd, void *userdata)
 {
    (void)simd;
    (void)config;
+   (void)userdata;
 
    struct filter_data *filt = (struct filter_data*)calloc(1, sizeof(*filt));
    if (!filt)
@@ -324,8 +325,9 @@ static const struct softfilter_implementation supereagle_generic = {
    supereagle_generic_threads,
    supereagle_generic_output,
    supereagle_generic_packets,
-   "SuperEagle",
    SOFTFILTER_API_VERSION,
+   "SuperEagle",
+   "supereagle",
 };
 
 const struct softfilter_implementation *softfilter_get_implementation(softfilter_simd_mask_t simd)
