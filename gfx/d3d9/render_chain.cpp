@@ -16,7 +16,7 @@
 #include "render_chain.hpp"
 #include <string.h>
 
-static inline D3DTEXTUREFILTERTYPE translate_filter(enum gfx_filter_type type)
+static inline D3DTEXTUREFILTERTYPE translate_filter(unsigned type)
 {
    if (type == RARCH_FILTER_UNSPEC)
       return g_settings.video.smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT;

@@ -119,7 +119,7 @@ void renderchain_start_render(void *data);
 void renderchain_end_render(void *data);
 bool renderchain_render(void *chain_data, const void *data,
       unsigned width, unsigned height, unsigned pitch, unsigned rotation);
-D3DTEXTUREFILTERTYPE renderchain_translate_filter(enum gfx_filter_type type);
+D3DTEXTUREFILTERTYPE renderchain_translate_filter(unsigned type);
 D3DTEXTUREFILTERTYPE renderchain_translate_filter(bool smooth);
 bool renderchain_create_first_pass(void *data, const LinkInfo *info, PixelFormat fmt);
 void renderchain_set_vertices(void *data, Pass &pass,
