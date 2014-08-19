@@ -36,72 +36,6 @@
 
 #define LAST_KEYCODE AKEYCODE_ASSIST
 
-enum input_devices
-{
-   DEVICE_NONE = 0,
-   DEVICE_LOGITECH_RUMBLEPAD2,
-   DEVICE_LOGITECH_DUAL_ACTION,
-   DEVICE_LOGITECH_PRECISION_GAMEPAD,
-   DEVICE_ICONTROLPAD_HID_JOYSTICK,
-   DEVICE_ICONTROLPAD_BLUEZ_IME,
-   DEVICE_TTT_THT_ARCADE,
-   DEVICE_TOMMO_NEOGEOX_ARCADE,
-   DEVICE_MADCATZ_PC_USB_STICK,
-   DEVICE_LOGICOOL_RUMBLEPAD2,
-   DEVICE_IDROID_X360,
-   DEVICE_ZEEMOTE_STEELSERIES,
-   DEVICE_HUIJIA_USB_SNES,
-   DEVICE_SUPER_SMARTJOY,
-   DEVICE_SAITEK_RUMBLE_P480,
-   DEVICE_MS_SIDEWINDER_DUAL_STRIKE,
-   DEVICE_MS_SIDEWINDER,
-   DEVICE_MS_XBOX,
-   DEVICE_WISEGROUP_PLAYSTATION2,
-   DEVICE_JCPS102_PLAYSTATION2,
-   DEVICE_GENERIC_PLAYSTATION2_CONVERTER,
-   DEVICE_PSMOVE_NAVI,
-   DEVICE_JXD_S7300B,
-   DEVICE_JXD_S7800B,
-   DEVICE_IDROID_CON,
-   DEVICE_GENIUS_MAXFIRE_G08XU,
-   DEVICE_USB_2_AXIS_8_BUTTON_GAMEPAD,
-   DEVICE_BUFFALO_BGC_FC801,
-   DEVICE_RETROUSB_RETROPAD,
-   DEVICE_RETROUSB_SNES_RETROPORT,
-   DEVICE_CYPRESS_USB,
-   DEVICE_MAYFLASH_WII_CLASSIC,
-   DEVICE_SZMY_POWER_DUAL_BOX_WII,
-   DEVICE_ARCHOS_GAMEPAD,
-   DEVICE_JXD_S5110,
-   DEVICE_JXD_S5110_SKELROM,
-   DEVICE_XPERIA_PLAY,
-   DEVICE_BROADCOM_BLUETOOTH_HID,
-   DEVICE_THRUST_PREDATOR,
-   DEVICE_DRAGONRISE,
-   DEVICE_PLAYSTATION3_VERSION1,
-   DEVICE_PLAYSTATION3_VERSION2,
-   DEVICE_MOGA_IME,
-   DEVICE_NYKO_PLAYPAD_PRO,
-   DEVICE_TOODLES_2008_CHIMP,
-   DEVICE_MOGA,
-   DEVICE_SEGA_VIRTUA_STICK_HIGH_GRADE,
-   DEVICE_CCPCREATIONS_WIIUSE_IME,
-   DEVICE_KEYBOARD_RETROPAD,
-   DEVICE_OUYA,
-   DEVICE_ONLIVE_WIRELESS_CONTROLLER,
-   DEVICE_TOMEE_NES_USB,
-   DEVICE_THRUSTMASTER_T_MINI,
-   DEVICE_GAMEMID,
-   DEVICE_DEFENDER_GAME_RACER_CLASSIC,
-   DEVICE_HOLTEK_JC_U912F,
-   DEVICE_NVIDIA_SHIELD,
-   DEVICE_MUCH_IREADGO_I5,
-   DEVICE_WIKIPAD,
-   DEVICE_FC30_GAMEPAD,
-   DEVICE_SAMSUNG_GAMEPAD_EIGP20,
-   DEVICE_LAST
-};
-
 typedef struct
 {
    float x;
@@ -384,7 +318,6 @@ static int android_input_get_id_index_from_name(android_input_t *android, const 
 static void handle_hotplug(android_input_t *android, struct android_app *android_app, unsigned *port, unsigned id,
       int source)
 {
-   unsigned device;
    char device_name[256], name_buf[256];
    name_buf[0] = device_name[0] = 0;
 
@@ -414,8 +347,6 @@ static void handle_hotplug(android_input_t *android, struct android_app *android
       }
       strlcpy(name_buf, "Xperia Play", sizeof(name_buf));
    }
-
-   device = 0;
 
    if (strstr(device_name,"Logitech") && strstr(device_name, "RumblePad 2"))
       strlcpy(name_buf, "RumblePad 2", sizeof(name_buf));
@@ -453,7 +384,7 @@ static void handle_hotplug(android_input_t *android, struct android_app *android
    else if (strstr(device_name, "Sun4i-keypad"))
       strlcpy(name_buf, "iDroid x360", sizeof(name_buf));
    else if (strstr(device_name, "Zeemote") && strstr(device_name, "Steelseries free"))
-      device = DEVICE_ZEEMOTE_STEELSERIES;
+      strlcpy(name_buf, "Zeemote Steelseries", sizeof(name_buf));
    else if (strstr(device_name, "mtk-kpd"))
       strlcpy(name_buf, "MUCH iReadyGo i5", sizeof(name_buf));
    else if (strstr(device_name, "360 Wireless"))
@@ -491,19 +422,19 @@ static void handle_hotplug(android_input_t *android, struct android_app *android
    else if (strstr(device_name, "adc joystick"))
       strlcpy(name_buf, "JXD S7300B", sizeof(name_buf));
    else if (strstr(device_name, "idroid:con"))
-      device = DEVICE_IDROID_CON;
+      strlcpy(name_buf, "i.droid", sizeof(name_buf));
    else if (strstr(device_name, "2-Axis, 8-Button"))
       strlcpy(name_buf, "Genius Maxfire G08XU", sizeof(name_buf));
    else if (strstr(device_name, "USB,2-axis 8-button gamepad"))
-      device = DEVICE_USB_2_AXIS_8_BUTTON_GAMEPAD;
+      strlcpy(name_buf, "USB 2 Axis 8 button", sizeof(name_buf));
    else if (strstr(device_name, "CYPRESS USB"))
-      device = DEVICE_CYPRESS_USB;
+      strlcpy(name_buf, "Cypress USB", sizeof(name_buf));
    else if (strstr(device_name, "Mayflash Wii Classic"))
       strlcpy(name_buf, "Mayflash Wii Classic", sizeof(name_buf));
    else if (strstr(device_name, "SZMy-power LTD CO.  Dual Box WII"))
       strlcpy(name_buf, "SZMy Power Dual Box Wii", sizeof(name_buf));
    else if (strstr(device_name, "Toodles 2008 ChImp"))
-      device = DEVICE_TOODLES_2008_CHIMP;
+      strlcpy(name_buf, "Toodles 2008 Chimp", sizeof(name_buf));
    else if (strstr(device_name, "joy_key"))
       strlcpy(name_buf, "Archos Gamepad", sizeof(name_buf));
    else if (strstr(device_name, "matrix_keyboard"))
@@ -513,11 +444,11 @@ static void handle_hotplug(android_input_t *android, struct android_app *android
    else if (strstr(device_name, "keypad-zeus") || (strstr(device_name, "keypad-game-zeus")))
       strlcpy(name_buf, "Xperia Play", sizeof(name_buf));
    else if (strstr(device_name, "USB Gamepad"))
-      device = DEVICE_THRUST_PREDATOR;
+      strlcpy(name_buf, "Thrust Predator", sizeof(name_buf));
    else if (strstr(device_name, "ADC joystick"))
       strlcpy(name_buf, "JXD S7800B", sizeof(name_buf));
    else if (strstr(device_name, "Thrustmaster T Mini"))
-      device = DEVICE_THRUSTMASTER_T_MINI;
+      strlcpy(name_buf, "Thrustmaster T Mini", sizeof(name_buf));
    else if (strstr(device_name, "2Axes 11Keys Game  Pad"))
       strlcpy(name_buf, "Tomee NES USB", sizeof(name_buf));
    else if (strstr(device_name, "rk29-keypad") || strstr(device_name, "GAMEMID"))
@@ -525,7 +456,7 @@ static void handle_hotplug(android_input_t *android, struct android_app *android
    else if (strstr(device_name, "USB Gamepad"))
       strlcpy(name_buf, "Defender Game Racer Classic", sizeof(name_buf));
    else if (strstr(device_name, "HOLTEK JC - U912F vibration game"))
-      device = DEVICE_HOLTEK_JC_U912F;
+      strlcpy(name_buf, "Elecom JC-U912F", sizeof(name_buf));
    else if (strstr(device_name, "NVIDIA Controller"))
    {
       *port = 0; // Shield is always player 1. FIXME: This is kinda ugly. We really need to find a way to detect useless input devices like gpio-keys in a general way.
@@ -541,8 +472,8 @@ static void handle_hotplug(android_input_t *android, struct android_app *android
    else if (strstr(android_app->current_ime, "com.hexad.bluezime"))
       strlcpy(name_buf, "iControlpad SPP mode (using Bluez IME)", sizeof(name_buf));
 
-   if (source == AINPUT_SOURCE_KEYBOARD && device != DEVICE_XPERIA_PLAY)
-      device = DEVICE_KEYBOARD_RETROPAD;
+   if (source == AINPUT_SOURCE_KEYBOARD && strcmp(name_buf, "Xperia Play"))
+      strlcpy(name_buf, "RetroKeyboard RetroPad", sizeof(name_buf));
 
    if (name_buf[0] != '\0')
    {
