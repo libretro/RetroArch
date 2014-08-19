@@ -443,11 +443,11 @@ static void handle_hotplug(android_input_t *android, struct android_app *android
       strlcpy(name_buf, device_name, sizeof(name_buf));
 
    if (strstr(android_app->current_ime, "net.obsidianx.android.mogaime"))
-      strlcpy(name_buf, "MOGA IME", sizeof(name_buf));
+      strlcpy(name_buf, android_app->current_ime, sizeof(name_buf));
    else if (strstr(android_app->current_ime, "com.ccpcreations.android.WiiUseAndroid"))
-      strlcpy(name_buf, "ccpcreations WiiUse", sizeof(name_buf));
+      strlcpy(name_buf, android_app->current_ime, sizeof(name_buf));
    else if (strstr(android_app->current_ime, "com.hexad.bluezime"))
-      strlcpy(name_buf, "iControlpad SPP mode (using Bluez IME)", sizeof(name_buf));
+      strlcpy(name_buf, android_app->current_ime, sizeof(name_buf));
 
    if (source == AINPUT_SOURCE_KEYBOARD && strcmp(name_buf, "Xperia Play"))
       strlcpy(name_buf, "RetroKeyboard", sizeof(name_buf));
