@@ -347,13 +347,6 @@ static void handle_hotplug(android_input_t *android, struct android_app *android
       }
       strlcpy(name_buf, "Xperia Play", sizeof(name_buf));
    }
-
-   if (strstr(device_name,"Logitech") && strstr(device_name, "RumblePad 2"))
-      strlcpy(name_buf, "RumblePad 2", sizeof(name_buf));
-   else if (strstr(device_name, "Logitech") && strstr(device_name, "Dual Action"))
-      strlcpy(name_buf, "Logitech Dual Action", sizeof(name_buf));
-   else if (strstr(device_name, "Logitech") && strstr(device_name, "Precision"))
-      strlcpy(name_buf, "Logitech Precision", sizeof(name_buf));
    else if (strstr(device_name, "iControlPad-")) // followed by a 4 (hex) char HW id
       strlcpy(name_buf, "iControlPad HID Joystick profile", sizeof(name_buf));
    else if (strstr(device_name, "TTT THT Arcade console 2P USB Play"))
@@ -377,14 +370,8 @@ static void handle_hotplug(android_input_t *android, struct android_app *android
       else if (*port == 1)
          strlcpy(name_buf, "TTT THT Arcade (Player 2)", sizeof(name_buf));
    }      
-   else if (strstr(device_name, "MadCatz") && strstr(device_name, "PC USB Wired Stick"))
-      strlcpy(name_buf, "Madcatz PC USB Stick", sizeof(name_buf));
-   else if (strstr(device_name, "Logicool") && strstr(device_name, "RumblePad 2"))
-      strlcpy(name_buf, "Logicool RumblePad 2", sizeof(name_buf));
    else if (strstr(device_name, "Sun4i-keypad"))
       strlcpy(name_buf, "iDroid x360", sizeof(name_buf));
-   else if (strstr(device_name, "Zeemote") && strstr(device_name, "Steelseries free"))
-      strlcpy(name_buf, "Zeemote Steelseries", sizeof(name_buf));
    else if (strstr(device_name, "mtk-kpd"))
       strlcpy(name_buf, "MUCH iReadyGo i5", sizeof(name_buf));
    else if (strstr(device_name, "360 Wireless"))
@@ -421,20 +408,12 @@ static void handle_hotplug(android_input_t *android, struct android_app *android
       strlcpy(name_buf, "Moga IME", sizeof(name_buf));
    else if (strstr(device_name, "adc joystick"))
       strlcpy(name_buf, "JXD S7300B", sizeof(name_buf));
-   else if (strstr(device_name, "idroid:con"))
-      strlcpy(name_buf, "i.droid", sizeof(name_buf));
    else if (strstr(device_name, "2-Axis, 8-Button"))
       strlcpy(name_buf, "Genius Maxfire G08XU", sizeof(name_buf));
    else if (strstr(device_name, "USB,2-axis 8-button gamepad"))
       strlcpy(name_buf, "USB 2 Axis 8 button", sizeof(name_buf));
-   else if (strstr(device_name, "CYPRESS USB"))
-      strlcpy(name_buf, "Cypress USB", sizeof(name_buf));
-   else if (strstr(device_name, "Mayflash Wii Classic"))
-      strlcpy(name_buf, "Mayflash Wii Classic", sizeof(name_buf));
    else if (strstr(device_name, "SZMy-power LTD CO.  Dual Box WII"))
       strlcpy(name_buf, "SZMy Power Dual Box Wii", sizeof(name_buf));
-   else if (strstr(device_name, "Toodles 2008 ChImp"))
-      strlcpy(name_buf, "Toodles 2008 Chimp", sizeof(name_buf));
    else if (strstr(device_name, "joy_key"))
       strlcpy(name_buf, "Archos Gamepad", sizeof(name_buf));
    else if (strstr(device_name, "matrix_keyboard"))
@@ -455,8 +434,6 @@ static void handle_hotplug(android_input_t *android, struct android_app *android
       strlcpy(name_buf, "GameMID", sizeof(name_buf));
    else if (strstr(device_name, "USB Gamepad"))
       strlcpy(name_buf, "Defender Game Racer Classic", sizeof(name_buf));
-   else if (strstr(device_name, "HOLTEK JC - U912F vibration game"))
-      strlcpy(name_buf, "Elecom JC-U912F", sizeof(name_buf));
    else if (strstr(device_name, "NVIDIA Controller"))
    {
       *port = 0; // Shield is always player 1. FIXME: This is kinda ugly. We really need to find a way to detect useless input devices like gpio-keys in a general way.
