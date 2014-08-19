@@ -461,12 +461,22 @@ void rmenu_set_texture(void *data)
 
 static void rmenu_context_reset(void *data)
 {
+   char menu_bg[PATH_MAX];
    menu_handle_t *menu = (menu_handle_t*)data;
 
    if (!menu)
       return;
 
-   texture_image_load(menu_texture, g_extern.menu_texture_path);
+   fill_pathname_join(menu_bg, g_settings.assets_directory, "rmenu", sizeof(menu_bg));
+#ifdef _XBOX1
+   fill_pathname_join(menu_bg, menu_bg, "sd", sizeof(menu_bg));
+#else
+   fill_pathname_join(menu_bg, menu_bg, "hd", sizeof(menu_bg));
+#endif
+   fill_pathname_join(menu_bg, menu_bg, "main_menu.png", sizeof(menu_bg));
+
+   if (path_file_exists(menu_bg))
+      texture_image_load(menu_texture, menu_bg);
    menu->width = menu_texture->width;
    menu->height = menu_texture->height;
 

@@ -142,9 +142,6 @@ static void frontend_xdk_get_environment_settings(int *argc, char *argv[],
    fill_pathname_join(g_defaults.sram_dir, g_defaults.core_dir, "savefiles", sizeof(g_defaults.sram_dir));
    fill_pathname_join(g_defaults.system_dir, g_defaults.core_dir, "system", sizeof(g_defaults.system_dir));
    fill_pathname_join(g_defaults.screenshot_dir, g_defaults.core_dir, "screenshots", sizeof(g_defaults.screenshot_dir));
-#ifndef IS_SALAMANDER
-   strlcpy(g_extern.menu_texture_path, "D:\\Media\\main-menu_480p.png", sizeof(g_extern.menu_texture_path));
-#endif
 #elif defined(_XBOX360)
    strlcpy(g_defaults.core_dir, "game:", sizeof(g_defaults.core_dir));
    strlcpy(g_defaults.core_info_dir, "game:", sizeof(g_defaults.core_info_dir));

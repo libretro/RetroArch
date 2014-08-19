@@ -193,12 +193,6 @@ static void frontend_ps3_get_environment_settings(int *argc, char *argv[],
       fill_pathname_join(g_defaults.config_path, g_defaults.port_dir, "retroarch.cfg",  sizeof(g_defaults.config_path));
       fill_pathname_join(g_defaults.overlay_dir, g_defaults.core_dir, "overlays", sizeof(g_defaults.overlay_dir));
       fill_pathname_join(g_defaults.assets_dir,   g_defaults.core_dir, "media", sizeof(g_defaults.assets_dir));
-#ifndef IS_SALAMANDER
-#ifdef HAVE_RMENU
-      fill_pathname_join(g_extern.menu_texture_path, g_defaults.core_dir, "borders/Menu/main-menu_1080p.png",
-            sizeof(g_extern.menu_texture_path));
-#endif
-#endif
    }
 
 #ifndef IS_SALAMANDER

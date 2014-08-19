@@ -851,11 +851,6 @@ bool config_load_file(const char *path, bool set_defaults)
    bool flicker_filter_enable = false;
    bool soft_filter_enable = false;
 
-#ifdef HAVE_RMENU
-   if (config_get_path(conf, "menu_texture_path", tmp_str, sizeof(tmp_str)))
-      strlcpy(g_extern.menu_texture_path, tmp_str, sizeof(g_extern.menu_texture_path));
-#endif
-
    if (config_get_bool(conf, "triple_buffering_enable", &triple_buffering_enable))
    {
       if (triple_buffering_enable)
@@ -1432,9 +1427,6 @@ bool config_save_file(const char *path)
    config_set_int(conf, "custom_viewport_height", g_extern.console.screen.viewports.custom_vp.height);
    config_set_int(conf, "custom_viewport_x", g_extern.console.screen.viewports.custom_vp.x);
    config_set_int(conf, "custom_viewport_y", g_extern.console.screen.viewports.custom_vp.y);
-#ifdef HAVE_RMENU
-   config_set_path(conf, "menu_texture_path", g_extern.menu_texture_path);
-#endif
    config_set_float(conf, "video_font_size", g_settings.video.font_size);
 
    config_set_bool(conf, "block_sram_overwrite", g_settings.block_sram_overwrite);

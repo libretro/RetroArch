@@ -433,10 +433,6 @@ struct global
    bool has_set_netplay_delay_frames;
    bool has_set_netplay_ip_port;
 
-#ifdef HAVE_RMENU
-   char menu_texture_path[PATH_MAX];
-#endif
-
    // Config associated with global "default" config.
    char config_path[PATH_MAX];
    char append_config_path[PATH_MAX];
