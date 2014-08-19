@@ -412,8 +412,6 @@ static void handle_hotplug(android_input_t *android, struct android_app *android
       strlcpy(name_buf, "Genius Maxfire G08XU", sizeof(name_buf));
    else if (strstr(device_name, "USB,2-axis 8-button gamepad"))
       strlcpy(name_buf, "USB 2 Axis 8 button", sizeof(name_buf));
-   else if (strstr(device_name, "SZMy-power LTD CO.  Dual Box WII"))
-      strlcpy(name_buf, "SZMy Power Dual Box Wii", sizeof(name_buf));
    else if (strstr(device_name, "joy_key"))
       strlcpy(name_buf, "Archos Gamepad", sizeof(name_buf));
    else if (strstr(device_name, "matrix_keyboard"))
@@ -426,8 +424,6 @@ static void handle_hotplug(android_input_t *android, struct android_app *android
       strlcpy(name_buf, "Thrust Predator", sizeof(name_buf));
    else if (strstr(device_name, "ADC joystick"))
       strlcpy(name_buf, "JXD S7800B", sizeof(name_buf));
-   else if (strstr(device_name, "Thrustmaster T Mini"))
-      strlcpy(name_buf, "Thrustmaster T Mini", sizeof(name_buf));
    else if (strstr(device_name, "2Axes 11Keys Game  Pad"))
       strlcpy(name_buf, "Tomee NES USB", sizeof(name_buf));
    else if (strstr(device_name, "rk29-keypad") || strstr(device_name, "GAMEMID"))
