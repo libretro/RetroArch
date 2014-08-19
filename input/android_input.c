@@ -447,7 +447,7 @@ static void handle_hotplug(android_input_t *android, struct android_app *android
          strlcpy(name_buf, "TTT THT Arcade (Player 2)", sizeof(name_buf));
    }      
    else if (strstr(device_name, "MadCatz") && strstr(device_name, "PC USB Wired Stick"))
-      device = DEVICE_MADCATZ_PC_USB_STICK;
+      strlcpy(name_buf, "Madcatz PC USB Stick", sizeof(name_buf));
    else if (strstr(device_name, "Logicool") && strstr(device_name, "RumblePad 2"))
       strlcpy(name_buf, "Logicool RumblePad 2", sizeof(name_buf));
    else if (strstr(device_name, "Sun4i-keypad"))
@@ -487,9 +487,7 @@ static void handle_hotplug(android_input_t *android, struct android_app *android
           strstr(device_name, "Gamepad 2") || strstr(device_name, "Gamepad 3")))
       strlcpy(name_buf, "PlayStation3", sizeof(name_buf));
    else if (strstr(device_name, "MOGA"))
-      device = DEVICE_MOGA;
-   else if (strstr(device_name, "Sony Navigation Controller"))
-      device = DEVICE_PSMOVE_NAVI;
+      strlcpy(name_buf, "Moga IME", sizeof(name_buf));
    else if (strstr(device_name, "adc joystick"))
       strlcpy(name_buf, "JXD S7300B", sizeof(name_buf));
    else if (strstr(device_name, "idroid:con"))

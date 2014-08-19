@@ -18,23 +18,6 @@ static void android_input_set_keybinds(void *data, unsigned device,
 
       switch (device)
       {
-         case DEVICE_MADCATZ_PC_USB_STICK:
-            g_settings.input.device[port] = device;
-            strlcpy(g_settings.input.device_names[port], "Madcatz PC USB Stick",
-                  sizeof(g_settings.input.device_names[port]));
-
-            android->keycode_lut[96] |= ((RETRO_DEVICE_ID_JOYPAD_Y+1) << shift);
-            android->keycode_lut[97] |= ((RETRO_DEVICE_ID_JOYPAD_B+1) << shift);
-            android->keycode_lut[98] |= ((RETRO_DEVICE_ID_JOYPAD_A+1) << shift);
-            android->keycode_lut[99] |= ((RETRO_DEVICE_ID_JOYPAD_X+1) << shift);
-            android->keycode_lut[100] |= ((RETRO_DEVICE_ID_JOYPAD_L+1) << shift);
-            android->keycode_lut[101] |= ((RETRO_DEVICE_ID_JOYPAD_L+1) << shift); /* request hack */
-            android->keycode_lut[102] |= ((RETRO_DEVICE_ID_JOYPAD_L2+1) << shift);
-            android->keycode_lut[103] |= ((RETRO_DEVICE_ID_JOYPAD_R+1) << shift); /* request hack */
-            android->keycode_lut[104] |= ((RETRO_DEVICE_ID_JOYPAD_SELECT+1) << shift);
-            android->keycode_lut[105] |= ((RETRO_DEVICE_ID_JOYPAD_START+1) << shift);
-            android->keycode_lut[110] |= ((RARCH_QUIT_KEY+1) << shift);
-            break;
          case DEVICE_ZEEMOTE_STEELSERIES:
             g_settings.input.device[port] = device;
             strlcpy(g_settings.input.device_names[port], "Zeemote Steelseries",
