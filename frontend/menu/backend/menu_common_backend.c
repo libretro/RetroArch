@@ -2055,20 +2055,6 @@ static int menu_common_iterate(unsigned action)
    if (driver.video_data && driver.menu_ctx && driver.menu_ctx->set_texture)
       driver.menu_ctx->set_texture(driver.menu);
 
-   // process pending osk init callback
-   if (g_extern.osk.cb_init)
-   {
-      if (g_extern.osk.cb_init(driver.osk_data))
-         g_extern.osk.cb_init = NULL;
-   }
-
-   // process pending osk callback
-   if (g_extern.osk.cb_callback)
-   {
-      if (g_extern.osk.cb_callback(driver.osk_data))
-         g_extern.osk.cb_callback = NULL;
-   }
-
    if (menu_type == MENU_START_SCREEN)
       return menu_start_screen_iterate(action);
    else if (menu_type == MENU_INFO_SCREEN)
@@ -3019,103 +3005,6 @@ static unsigned menu_gx_resolutions[GX_RESOLUTIONS_LAST][2] = {
 static unsigned menu_current_gx_resolution = GX_RESOLUTIONS_640_480;
 #endif
 
-
-static bool osk_callback_enter_audio_device(void *data)
-{
-   if (g_extern.lifecycle_state & (1ULL << MODE_OSK_ENTRY_SUCCESS)
-         && driver.osk && driver.osk->get_text_buf)
-   {
-      char tmp_str[256];
-      int num;
-      wchar_t *text_buf = (wchar_t*)driver.osk->get_text_buf(driver.osk_data);
-
-      RARCH_LOG("OSK - Applying input data.\n");
-      num = wcstombs(tmp_str, text_buf, sizeof(tmp_str));
-      tmp_str[num] = 0;
-      strlcpy(g_settings.audio.device, tmp_str, sizeof(g_settings.audio.device));
-      goto do_exit;
-   }
-   else if (g_extern.lifecycle_state & (1ULL << MODE_OSK_ENTRY_FAIL))
-      goto do_exit;
-
-   return false;
-
-do_exit:
-   g_extern.lifecycle_state &= ~((1ULL << MODE_OSK_ENTRY_SUCCESS) |
-         (1ULL << MODE_OSK_ENTRY_FAIL));
-   return true;
-}
-
-static bool osk_callback_enter_audio_device_init(void *data)
-{
-   if (!driver.osk)
-      return false;
-
-   if (driver.osk->write_initial_msg)
-      driver.osk->write_initial_msg(driver.osk_data, L"192.168.1.1");
-   if (driver.osk->write_msg)
-      driver.osk->write_msg(driver.osk_data, L"Enter Audio Device / IP address for audio driver.");
-   if (driver.osk->start)
-      driver.osk->start(driver.osk_data);
-
-   return true;
-}
-
-static bool osk_callback_enter_filename(void *data)
-{
-   if (!driver.osk)
-   {
-      RARCH_ERR("OSK driver is not initialized, exiting OSK callback ...\n");
-      return false;
-   }
-
-   if (g_extern.lifecycle_state & (1ULL << MODE_OSK_ENTRY_SUCCESS))
-   {
-      char tmp_str[256], filepath[PATH_MAX];
-      int num;
-      config_file_t *conf;
-
-      RARCH_LOG("OSK - Applying input data.\n");
-      num = wcstombs(tmp_str, (const wchar_t*)driver.osk->get_text_buf(driver.osk_data), sizeof(tmp_str));
-      tmp_str[num] = 0;
-
-      fill_pathname_join(filepath, g_settings.video.shader_dir, tmp_str, sizeof(filepath));
-      strlcat(filepath, ".cgp", sizeof(filepath));
-      RARCH_LOG("[osk_callback_enter_filename]: filepath is: %s.\n", filepath);
-      conf = config_file_new(NULL);
-      if (!conf)
-         return false;
-      gfx_shader_write_conf_cgp(conf, driver.menu->shader);
-      config_file_write(conf, filepath);
-      config_file_free(conf);
-      goto do_exit;
-   }
-   else if (g_extern.lifecycle_state & (1ULL << MODE_OSK_ENTRY_FAIL))
-      goto do_exit;
-
-   return false;
-do_exit:
-   g_extern.lifecycle_state &= ~((1ULL << MODE_OSK_ENTRY_SUCCESS) |
-         (1ULL << MODE_OSK_ENTRY_FAIL));
-   return true;
-}
-
-static bool osk_callback_enter_filename_init(void *data)
-{
-   if (!driver.osk)
-      return false;
-
-   if (driver.osk->write_initial_msg)
-      driver.osk->write_initial_msg(driver.osk_data, L"Save Preset");
-   if (driver.osk->write_msg)
-      driver.osk->write_msg(driver.osk_data, L"Enter filename for preset.");
-   if (driver.osk->start)
-      driver.osk->start(driver.osk_data);
-
-   return true;
-}
-
-
 #ifndef RARCH_DEFAULT_PORT
 #define RARCH_DEFAULT_PORT 55435
 #endif
@@ -3504,15 +3393,7 @@ static int menu_common_setting_set(unsigned id, unsigned action, rarch_setting_t
             break;
          case MENU_SETTINGS_DRIVER_AUDIO_DEVICE:
             if (action == MENU_ACTION_OK)
-            {
-               if (g_settings.osk.enable)
-               {
-                  g_extern.osk.cb_init     = osk_callback_enter_audio_device_init;
-                  g_extern.osk.cb_callback = osk_callback_enter_audio_device;
-               }
-               else
-                  menu_key_start_line(driver.menu, "Audio Device Name / IP: ", audio_device_callback);
-            }
+               menu_key_start_line(driver.menu, "Audio Device Name / IP: ", audio_device_callback);
             else if (action == MENU_ACTION_START)
                *g_settings.audio.device = '\0';
             break;
@@ -3745,15 +3626,7 @@ static int menu_common_setting_set(unsigned id, unsigned action, rarch_setting_t
             }
          case MENU_SETTINGS_SHADER_PRESET_SAVE:
             if (action == MENU_ACTION_OK)
-            {
-               if (g_settings.osk.enable)
-               {
-                  g_extern.osk.cb_init = osk_callback_enter_filename_init;
-                  g_extern.osk.cb_callback = osk_callback_enter_filename;
-               }
-               else
-                  menu_key_start_line(driver.menu, "Preset Filename: ", preset_filename_callback);
-            }
+               menu_key_start_line(driver.menu, "Preset Filename: ", preset_filename_callback);
             break;
 #endif
 #ifdef _XBOX1
