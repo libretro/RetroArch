@@ -31,36 +31,37 @@ enum ffemu_pix_format
    FFEMU_PIX_ARGB8888
 };
 
-// Parameters passed to ffemu_new()
+/* Parameters passed to ffemu_new() */
 struct ffemu_params
 {
-   // FPS of input video.
+   /* FPS of input video. */
    double fps;
-   // Sample rate of input audio.
+   /* Sample rate of input audio. */
    double samplerate;
 
-   // Desired output resolution.
+   /* Desired output resolution. */
    unsigned out_width;
    unsigned out_height;
 
-   // Total size of framebuffer used in input.
+   /* Total size of framebuffer used in input. */
    unsigned fb_width;
    unsigned fb_height;
 
-   // Aspect ratio of input video. Parameters are passed to the muxer,
-   // the video itself is not scaled.
+   /* Aspect ratio of input video. Parameters are passed to the muxer,
+    * the video itself is not scaled.
+    */
    float aspect_ratio;
 
-   // Audio channels.
+   /* Audio channels. */
    unsigned channels;
 
-   // Input pixel format.
+   /* Input pixel format. */
    enum ffemu_pix_format pix_fmt;
 
-   // Filename to dump to.
+   /* Filename to dump to. */
    const char *filename;
 
-   // Path to config. Optional.
+   /* Path to config. Optional. */
    const char *config;
 };
 
@@ -83,7 +84,7 @@ typedef struct ffemu_backend
 {
    void *(*init)(const struct ffemu_params *params);
    void  (*free)(void *data);
-   bool  (*push_video)(void *data, const struct ffemu_video_data *video_data);
+   bool  (*push_video)(void *data,const struct ffemu_video_data *video_data);
    bool  (*push_audio)(void *data, const struct ffemu_audio_data *audio_data);
    bool  (*finalize)(void *data);
    const char *ident;
@@ -92,7 +93,8 @@ typedef struct ffemu_backend
 extern const ffemu_backend_t ffemu_ffmpeg;
 
 const ffemu_backend_t *ffemu_find_backend(const char *ident);
-bool ffemu_init_first(const ffemu_backend_t **backend, void **data, const struct ffemu_params *params);
+bool ffemu_init_first(const ffemu_backend_t **backend, void **data,
+      const struct ffemu_params *params);
 
 #ifdef __cplusplus
 }

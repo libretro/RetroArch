@@ -39,7 +39,8 @@ const ffemu_backend_t *ffemu_find_backend(const char *ident)
    return NULL;
 }
 
-bool ffemu_init_first(const ffemu_backend_t **backend, void **data, const struct ffemu_params *params)
+bool ffemu_init_first(const ffemu_backend_t **backend, void **data,
+      const struct ffemu_params *params)
 {
    unsigned i;
    for (i = 0; ffemu_backends[i]; i++)

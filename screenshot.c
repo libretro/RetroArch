@@ -37,7 +37,7 @@ static bool write_header_bmp(FILE *file, unsigned width, unsigned height)
    unsigned size = line_size * height + 54;
    unsigned size_array = line_size * height;
 
-   // Generic BMP stuff.
+   /* Generic BMP stuff. */
    const uint8_t header[] = {
       'B', 'M',
       (uint8_t)(size >> 0), (uint8_t)(size >> 8), (uint8_t)(size >> 16), (uint8_t)(size >> 24),
@@ -123,7 +123,7 @@ static void dump_content(FILE *file, const void *frame,
          goto end;
    }
 
-   if (bgr24) // BGR24 byte order. Can directly copy.
+   if (bgr24) /* BGR24 byte order. Can directly copy. */
    {
       for (j = 0; j < height; j++, u.u8 += pitch)
          dump_line_bgr(lines[j], u.u8, width);
@@ -133,7 +133,7 @@ static void dump_content(FILE *file, const void *frame,
       for (j = 0; j < height; j++, u.u8 += pitch)
          dump_line_32(lines[j], u.u32, width);
    }
-   else // RGB565
+   else /* RGB565 */
    {
       for (j = 0; j < height; j++, u.u8 += pitch)
          dump_line_16(lines[j], u.u16, width);
@@ -148,7 +148,7 @@ end:
 }
 #endif
 
-// Take frame bottom-up.
+/* Take frame bottom-up. */
 bool screenshot_dump(const char *folder, const void *frame,
       unsigned width, unsigned height, int pitch, bool bgr24)
 {

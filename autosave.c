@@ -53,14 +53,15 @@ static void autosave_thread(void *data)
 
       if (differ)
       {
-         // Should probably deal with this more elegantly.
+         /* Should probably deal with this more elegantly. */
          FILE *file = fopen(save->path, "wb");
          if (file)
          {
-            // Avoid spamming down stderr ... :)
+            /* Avoid spamming down stderr ... */
             if (first_log)
             {
-               RARCH_LOG("Autosaving SRAM to \"%s\", will continue to check every %u seconds ...\n", save->path, save->interval);
+               RARCH_LOG("Autosaving SRAM to \"%s\", will continue to check every %u seconds ...\n",
+                     save->path, save->interval);
                first_log = false;
             }
             else
@@ -76,13 +77,17 @@ static void autosave_thread(void *data)
       }
 
       slock_lock(save->cond_lock);
+
       if (!save->quit)
-         scond_wait_timeout(save->cond, save->cond_lock, save->interval * 1000000LL);
+         scond_wait_timeout(save->cond, save->cond_lock,
+               save->interval * 1000000LL);
+
       slock_unlock(save->cond_lock);
    }
 }
 
-autosave_t *autosave_new(const char *path, const void *data, size_t size, unsigned interval)
+autosave_t *autosave_new(const char *path, const void *data, size_t size,
+      unsigned interval)
 {
    autosave_t *handle = (autosave_t*)calloc(1, sizeof(*handle));
    if (!handle)
