@@ -328,14 +328,18 @@ static void menu_common_entries_init(menu_handle_t *menu, unsigned menu_type)
          break;
       case MENU_SETTINGS_NETPLAY_OPTIONS:
          file_list_clear(menu->selection_buf);
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "netplay_enable")))
+            file_list_push(menu->selection_buf, "", "netplay_enable", MENU_SETTINGS_NETPLAY_ENABLE, 0);
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "netplay_mode")))
+            file_list_push(menu->selection_buf, "", "netplay_mode", MENU_SETTINGS_NETPLAY_MODE, 0);
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "netplay_spectator_mode_enable")))
+            file_list_push(menu->selection_buf, "", "netplay_spectator_mode_enable", MENU_SETTINGS_NETPLAY_SPECTATOR_MODE_ENABLE, 0);
 #ifdef HAVE_NETPLAY
-         file_list_push(menu->selection_buf, "", "netplay_enable", MENU_SETTINGS_NETPLAY_ENABLE, 0);
-         file_list_push(menu->selection_buf, "", "netplay_mode", MENU_SETTINGS_NETPLAY_MODE, 0);
-         file_list_push(menu->selection_buf, "", "netplay_spectator_mode_enable", MENU_SETTINGS_NETPLAY_SPECTATOR_MODE_ENABLE, 0);
          file_list_push(menu->selection_buf, "Host IP Address", "", MENU_SETTINGS_NETPLAY_HOST_IP_ADDRESS, 0);
          file_list_push(menu->selection_buf, "TCP/UDP Port", "", MENU_SETTINGS_NETPLAY_TCP_UDP_PORT, 0);
-         file_list_push(menu->selection_buf, "", "netplay_delay_frames", MENU_SETTINGS_NETPLAY_DELAY_FRAMES, 0);
 #endif
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "netplay_delay_frames")))
+            file_list_push(menu->selection_buf, "", "netplay_delay_frames", MENU_SETTINGS_NETPLAY_DELAY_FRAMES, 0);
          break;
       case MENU_SETTINGS_PATH_OPTIONS:
          file_list_clear(menu->selection_buf);
