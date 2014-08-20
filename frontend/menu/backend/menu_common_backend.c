@@ -3742,413 +3742,406 @@ static void menu_common_setting_set_label(char *type_str,
    }
    else
    {
-      switch (type)
+      if (setting && !strcmp(setting->name, "video_rotation"))
+         strlcpy(type_str, rotation_lut[*setting->value.unsigned_integer],
+               type_str_size);
+      else if (setting && !strcmp(setting->name, "video_viwidth"))
+         snprintf(type_str, type_str_size, "%d", *setting->value.unsigned_integer);
+      else if (setting && !strcmp(setting->name, "video_filter"))
+         strlcpy(type_str, path_basename(setting->value.string), type_str_size);
+      else if (setting && !strcmp(setting->name, "video_smooth"))
       {
-         case MENU_SETTINGS_VIDEO_ROTATION:
-            strlcpy(type_str, rotation_lut[g_settings.video.rotation],
-                  type_str_size);
-            break;
-         case MENU_SETTINGS_VIDEO_VIWIDTH:
-#ifdef GEKKO
-            snprintf(type_str, type_str_size, "%d", g_settings.video.viwidth);
-#endif
-            break;
-         case MENU_SETTINGS_VIDEO_SOFT_FILTER:
-            snprintf(type_str, type_str_size,
-                  (g_extern.lifecycle_state & (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE)) ? "ON" : "OFF");
-            break;
-         case MENU_SETTINGS_VIDEO_FILTER:
-            if (g_settings.video.smooth)
-               strlcpy(type_str, "Bilinear filtering", type_str_size);
-            else
-               strlcpy(type_str, "Point filtering", type_str_size);
-            break;
-         case MENU_SETTINGS_VIDEO_GAMMA:
-            snprintf(type_str, type_str_size, "%d", g_extern.console.screen.gamma_correction);
-            break;
-         case MENU_SETTINGS_VIDEO_SWAP_INTERVAL:
-            snprintf(type_str, type_str_size, "%u", g_settings.video.swap_interval);
-            break;
-         case MENU_SETTINGS_VIDEO_WINDOW_SCALE:
-            snprintf(type_str, type_str_size, "%.1fx", g_settings.video.scale);
-            break;
-         case MENU_SETTINGS_VIDEO_HARD_SYNC_FRAMES:
-            snprintf(type_str, type_str_size, "%u", g_settings.video.hard_sync_frames);
-            break;
-         case MENU_SETTINGS_DRIVER_VIDEO:
-            strlcpy(type_str, g_settings.video.driver, type_str_size);
-            break;
-         case MENU_SETTINGS_DRIVER_AUDIO:
-            strlcpy(type_str, g_settings.audio.driver, type_str_size);
-            break;
-         case MENU_SETTINGS_DRIVER_AUDIO_DEVICE:
-            strlcpy(type_str, g_settings.audio.device, type_str_size);
-            break;
-         case MENU_SETTINGS_DRIVER_AUDIO_RESAMPLER:
-            strlcpy(type_str, g_settings.audio.resampler, type_str_size);
-            break;
-         case MENU_SETTINGS_DRIVER_INPUT:
-            strlcpy(type_str, g_settings.input.driver, type_str_size);
-            break;
-         case MENU_SETTINGS_DRIVER_CAMERA:
-            strlcpy(type_str, g_settings.camera.driver, type_str_size);
-            break;
-         case MENU_SETTINGS_DRIVER_LOCATION:
-            strlcpy(type_str, g_settings.location.driver, type_str_size);
-            break;
+         if (*setting->value.boolean)
+            strlcpy(type_str, "Bilinear filtering", type_str_size);
+         else
+            strlcpy(type_str, "Point filtering", type_str_size);
+      }
+      else if (setting && !strcmp(setting->name, "video_gamma"))
+         snprintf(type_str, type_str_size, "%d", *setting->value.unsigned_integer);
+      else if (setting && !strcmp(setting->name, "video_swap_interval"))
+         snprintf(type_str, type_str_size, "%u", *setting->value.unsigned_integer);
+      else if (setting && !strcmp(setting->name, "video_scale"))
+         snprintf(type_str, type_str_size, "%.1fx", *setting->value.fraction);
+      else if (setting && !strcmp(setting->name, "video_hard_sync_frames"))
+         snprintf(type_str, type_str_size, "%u", *setting->value.unsigned_integer);
+      else if (setting && !strcmp(setting->name, "video_font_size"))
+         snprintf(type_str, type_str_size, "%.1f", *setting->value.fraction);
+      else if (setting && !strcmp(setting->name, "netplay_nickname"))
+         snprintf(type_str, type_str_size, "%s", setting->value.string);
+      else
+      {
+         switch (type)
+         {
+            case MENU_SETTINGS_VIDEO_SOFT_FILTER:
+               snprintf(type_str, type_str_size,
+                     (g_extern.lifecycle_state & (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE)) ? "ON" : "OFF");
+               break;
+            case MENU_SETTINGS_DRIVER_VIDEO:
+               strlcpy(type_str, g_settings.video.driver, type_str_size);
+               break;
+            case MENU_SETTINGS_DRIVER_AUDIO:
+               strlcpy(type_str, g_settings.audio.driver, type_str_size);
+               break;
+            case MENU_SETTINGS_DRIVER_AUDIO_DEVICE:
+               strlcpy(type_str, g_settings.audio.device, type_str_size);
+               break;
+            case MENU_SETTINGS_DRIVER_AUDIO_RESAMPLER:
+               strlcpy(type_str, g_settings.audio.resampler, type_str_size);
+               break;
+            case MENU_SETTINGS_DRIVER_INPUT:
+               strlcpy(type_str, g_settings.input.driver, type_str_size);
+               break;
+            case MENU_SETTINGS_DRIVER_CAMERA:
+               strlcpy(type_str, g_settings.camera.driver, type_str_size);
+               break;
+            case MENU_SETTINGS_DRIVER_LOCATION:
+               strlcpy(type_str, g_settings.location.driver, type_str_size);
+               break;
 #ifdef HAVE_MENU
-         case MENU_SETTINGS_DRIVER_MENU:
-            strlcpy(type_str, g_settings.menu.driver, type_str_size);
-            break;
-#endif
-         case MENU_SETTINGS_VIDEO_MONITOR_INDEX:
-            if (g_settings.video.monitor_index)
-               snprintf(type_str, type_str_size, "%u", g_settings.video.monitor_index);
-            else
-               strlcpy(type_str, "0 (Auto)", type_str_size);
-            break;
-         case MENU_SETTINGS_VIDEO_REFRESH_RATE:
-            snprintf(type_str, type_str_size, "%.3f Hz", g_settings.video.refresh_rate);
-            break;
-         case MENU_SETTINGS_VIDEO_REFRESH_RATE_AUTO:
-            {
-               double refresh_rate = 0.0;
-               double deviation = 0.0;
-               unsigned sample_points = 0;
-
-               if (driver_monitor_fps_statistics(&refresh_rate, &deviation, &sample_points))
-                  snprintf(type_str, type_str_size, "%.3f Hz (%.1f%% dev, %u samples)", refresh_rate, 100.0 * deviation, sample_points);
-               else
-                  strlcpy(type_str, "N/A", type_str_size);
+            case MENU_SETTINGS_DRIVER_MENU:
+               strlcpy(type_str, g_settings.menu.driver, type_str_size);
                break;
-            }
-         case MENU_SETTINGS_VIDEO_ASPECT_RATIO:
-            strlcpy(type_str, aspectratio_lut[g_settings.video.aspect_ratio_idx].name, type_str_size);
-            break;
-#if defined(GEKKO)
-         case MENU_SETTINGS_VIDEO_RESOLUTION:
-            strlcpy(type_str, gx_get_video_mode(), type_str_size);
-            break;
-#elif defined(__CELLOS_LV2__)
-         case MENU_SETTINGS_VIDEO_RESOLUTION:
-            {
-               unsigned width = gfx_ctx_get_resolution_width(g_extern.console.screen.resolutions.list[g_extern.console.screen.resolutions.current.idx]);
-               unsigned height = gfx_ctx_get_resolution_height(g_extern.console.screen.resolutions.list[g_extern.console.screen.resolutions.current.idx]);
-               snprintf(type_str, type_str_size, "%dx%d", width, height);
-            }
-            break;
-         case MENU_SETTINGS_VIDEO_PAL60:
-            if (g_extern.lifecycle_state & (1ULL << MODE_VIDEO_PAL_TEMPORAL_ENABLE))
-               strlcpy(type_str, "ON", type_str_size);
-            else
-               strlcpy(type_str, "OFF", type_str_size);
-            break;
 #endif
-         case MENU_FILE_PLAIN:
-            strlcpy(type_str, "(FILE)", type_str_size);
-            *w = 6;
-            break;
-         case MENU_FILE_DIRECTORY:
-            strlcpy(type_str, "(DIR)", type_str_size);
-            *w = 5;
-            break;
-         case MENU_SETTINGS_REWIND_GRANULARITY:
-            snprintf(type_str, type_str_size, "%u", g_settings.rewind_granularity);
-            break;
-         case MENU_SETTINGS_LIBRETRO_LOG_LEVEL:
-            switch(g_settings.libretro_log_level)
-            {
-               case 0:
-                  snprintf(type_str, type_str_size, "0 (Debug)");
-                  break;
-               case 1:
-                  snprintf(type_str, type_str_size, "1 (Info)");
-                  break;
-               case 2:
-                  snprintf(type_str, type_str_size, "2 (Warning)");
-                  break;
-               case 3:
-                  snprintf(type_str, type_str_size, "3 (Error)");
-                  break;
-            }
-            break;
-         case MENU_SETTINGS_SRAM_AUTOSAVE:
-            if (g_settings.autosave_interval)
-               snprintf(type_str, type_str_size, "%u seconds", g_settings.autosave_interval);
-            else
-               strlcpy(type_str, "OFF", type_str_size);
-            break;
-         case MENU_SETTINGS_SAVESTATE_SAVE:
-         case MENU_SETTINGS_SAVESTATE_LOAD:
-            if (g_settings.state_slot < 0)
-               strlcpy(type_str, "-1 (auto)", type_str_size);
-            else
-               snprintf(type_str, type_str_size, "%d", g_settings.state_slot);
-            break;
-         case MENU_SETTINGS_AUDIO_LATENCY:
-            snprintf(type_str, type_str_size, "%d ms", g_settings.audio.latency);
-            break;
-         case MENU_SETTINGS_AUDIO_CONTROL_RATE_DELTA:
-            snprintf(type_str, type_str_size, "%.3f", g_settings.audio.rate_control_delta);
-            break;
-         case MENU_SETTINGS_FASTFORWARD_RATIO:
-            if (g_settings.fastforward_ratio > 0.0f)
-               snprintf(type_str, type_str_size, "%.1fx", g_settings.fastforward_ratio);
-            else
-               snprintf(type_str, type_str_size, "%.1fx (No Limit)", g_settings.fastforward_ratio);
-            break;
-         case MENU_SETTINGS_SLOWMOTION_RATIO:
-            snprintf(type_str, type_str_size, "%.1fx", g_settings.slowmotion_ratio);
-            break;
-         case MENU_BROWSER_DIR_PATH:
-            strlcpy(type_str, *g_settings.menu_content_directory ? g_settings.menu_content_directory : "<default>", type_str_size);
-            break;
-         case MENU_CONTENT_HISTORY_SIZE:
-            snprintf(type_str, type_str_size, "%d", g_settings.content_history_size);
-            break;
-         case MENU_CONTENT_DIR_PATH:
-            strlcpy(type_str, *g_settings.content_directory ? g_settings.content_directory : "<default>", type_str_size);
-            break;
-         case MENU_ASSETS_DIR_PATH:
-            strlcpy(type_str, *g_settings.assets_directory ? g_settings.assets_directory : "<default>", type_str_size);
-            break;
-         case MENU_SCREENSHOT_DIR_PATH:
-            strlcpy(type_str, *g_settings.screenshot_directory ? g_settings.screenshot_directory : "<Content dir>", type_str_size);
-            break;
-         case MENU_SAVEFILE_DIR_PATH:
-            strlcpy(type_str, *g_extern.savefile_dir ? g_extern.savefile_dir : "<Content dir>", type_str_size);
-            break;
-#ifdef HAVE_OVERLAY
-         case MENU_OVERLAY_DIR_PATH:
-            strlcpy(type_str, *g_extern.overlay_dir ? g_extern.overlay_dir : "<default>", type_str_size);
-            break;
-#endif
-         case MENU_SAVESTATE_DIR_PATH:
-            strlcpy(type_str, *g_extern.savestate_dir ? g_extern.savestate_dir : "<Content dir>", type_str_size);
-            break;
-         case MENU_LIBRETRO_DIR_PATH:
-            strlcpy(type_str, *g_settings.libretro_directory ? g_settings.libretro_directory : "<None>", type_str_size);
-            break;
-         case MENU_LIBRETRO_INFO_DIR_PATH:
-            strlcpy(type_str, *g_settings.libretro_info_path ? g_settings.libretro_info_path : "<Core dir>", type_str_size);
-            break;
-         case MENU_CONFIG_DIR_PATH:
-            strlcpy(type_str, *g_settings.menu_config_directory ? g_settings.menu_config_directory : "<default>", type_str_size);
-            break;
-         case MENU_FILTER_DIR_PATH:
-            strlcpy(type_str, *g_settings.video.filter_dir ? g_settings.video.filter_dir : "<default>", type_str_size);
-            break;
-         case MENU_DSP_FILTER_DIR_PATH:
-            strlcpy(type_str, *g_settings.audio.filter_dir ? g_settings.audio.filter_dir : "<default>", type_str_size);
-            break;
-         case MENU_SHADER_DIR_PATH:
-            strlcpy(type_str, *g_settings.video.shader_dir ? g_settings.video.shader_dir : "<default>", type_str_size);
-            break;
-         case MENU_SYSTEM_DIR_PATH:
-            strlcpy(type_str, *g_settings.system_directory ? g_settings.system_directory : "<Content dir>", type_str_size);
-            break;
-         case MENU_AUTOCONFIG_DIR_PATH:
-            strlcpy(type_str, *g_settings.input.autoconfig_dir ? g_settings.input.autoconfig_dir : "<default>", type_str_size);
-            break;
-         case MENU_EXTRACTION_DIR_PATH:
-            strlcpy(type_str, *g_settings.extraction_directory ? g_settings.extraction_directory : "<None>", type_str_size);
-            break;
-         case MENU_SETTINGS_DISK_INDEX:
-            {
-               const struct retro_disk_control_callback *control = &g_extern.system.disk_control;
-               unsigned images = control->get_num_images();
-               unsigned current = control->get_image_index();
-               if (current >= images)
-                  strlcpy(type_str, "No Disk", type_str_size);
+            case MENU_SETTINGS_VIDEO_MONITOR_INDEX:
+               if (g_settings.video.monitor_index)
+                  snprintf(type_str, type_str_size, "%u", g_settings.video.monitor_index);
                else
-                  snprintf(type_str, type_str_size, "%u", current + 1);
+                  strlcpy(type_str, "0 (Auto)", type_str_size);
                break;
-            }
-         case MENU_SETTINGS_CONFIG:
-            if (*g_extern.config_path)
-               fill_pathname_base(type_str, g_extern.config_path, type_str_size);
-            else
-               strlcpy(type_str, "<default>", type_str_size);
-            break;
-         case MENU_SETTINGS_OPEN_FILEBROWSER:
-         case MENU_SETTINGS_OPEN_FILEBROWSER_DEFERRED_CORE:
-         case MENU_SETTINGS_OPEN_HISTORY:
-         case MENU_SETTINGS_CORE_OPTIONS:
-         case MENU_SETTINGS_CORE_INFO:
-         case MENU_SETTINGS_CUSTOM_VIEWPORT:
-         case MENU_SETTINGS_TOGGLE_FULLSCREEN:
-         case MENU_SETTINGS_VIDEO_OPTIONS:
-         case MENU_SETTINGS_FONT_OPTIONS:
-         case MENU_SETTINGS_AUDIO_OPTIONS:
-         case MENU_SETTINGS_DISK_OPTIONS:
-#ifdef HAVE_SHADER_MANAGER
-         case MENU_SETTINGS_SHADER_OPTIONS:
-         case MENU_SETTINGS_SHADER_PRESET:
-#endif
-         case MENU_SETTINGS_GENERAL_OPTIONS:
-         case MENU_SETTINGS_SHADER_PRESET_SAVE:
-         case MENU_SETTINGS_CORE:
-         case MENU_SETTINGS_DISK_APPEND:
-         case MENU_SETTINGS_INPUT_OPTIONS:
-         case MENU_SETTINGS_PATH_OPTIONS:
-         case MENU_SETTINGS_OVERLAY_OPTIONS:
-         case MENU_SETTINGS_NETPLAY_OPTIONS:
-         case MENU_SETTINGS_USER_OPTIONS:
-         case MENU_SETTINGS_PRIVACY_OPTIONS:
-         case MENU_SETTINGS_OPTIONS:
-         case MENU_SETTINGS_PERFORMANCE_COUNTERS:
-         case MENU_SETTINGS_PERFORMANCE_COUNTERS_FRONTEND:
-         case MENU_SETTINGS_PERFORMANCE_COUNTERS_LIBRETRO:
-         case MENU_SETTINGS_DRIVERS:
-         case MENU_SETTINGS_CUSTOM_BIND_ALL:
-         case MENU_SETTINGS_CUSTOM_BIND_DEFAULT_ALL:
-            strlcpy(type_str, "...", type_str_size);
-            break;
-         case MENU_SETTINGS_VIDEO_SOFTFILTER:
-            strlcpy(type_str, path_basename(g_settings.video.softfilter_plugin), type_str_size);
-            break;
-         case MENU_SETTINGS_AUDIO_DSP_FILTER:
-            strlcpy(type_str, path_basename(g_settings.audio.dsp_plugin), type_str_size);
-            break;
-#ifdef HAVE_OVERLAY
-         case MENU_SETTINGS_OVERLAY_PRESET:
-            strlcpy(type_str, path_basename(g_settings.input.overlay), type_str_size);
-            break;
-         case MENU_SETTINGS_OVERLAY_OPACITY:
-            snprintf(type_str, type_str_size, "%.2f", g_settings.input.overlay_opacity);
-            break;
-         case MENU_SETTINGS_OVERLAY_SCALE:
-            snprintf(type_str, type_str_size, "%.2f", g_settings.input.overlay_scale);
-            break;
-#endif
-         case MENU_CONTENT_HISTORY_PATH:
-            strlcpy(type_str, g_settings.content_history_path ? g_settings.content_history_path : "<None>", type_str_size);
-            break;
-         case MENU_SETTINGS_BIND_PLAYER:
-            snprintf(type_str, type_str_size, "#%d", driver.menu->current_pad + 1);
-            break;
-         case MENU_SETTINGS_BIND_DEVICE:
-            {
-               int map = g_settings.input.joypad_map[driver.menu->current_pad];
-               if (map >= 0 && map < MAX_PLAYERS)
+            case MENU_SETTINGS_VIDEO_REFRESH_RATE:
+               snprintf(type_str, type_str_size, "%.3f Hz", g_settings.video.refresh_rate);
+               break;
+            case MENU_SETTINGS_VIDEO_REFRESH_RATE_AUTO:
                {
-                  const char *device_name = g_settings.input.device_names[map];
+                  double refresh_rate = 0.0;
+                  double deviation = 0.0;
+                  unsigned sample_points = 0;
 
-                  if (*device_name)
-                     strlcpy(type_str, device_name, type_str_size);
+                  if (driver_monitor_fps_statistics(&refresh_rate, &deviation, &sample_points))
+                     snprintf(type_str, type_str_size, "%.3f Hz (%.1f%% dev, %u samples)", refresh_rate, 100.0 * deviation, sample_points);
                   else
-                     snprintf(type_str, type_str_size, "N/A (port #%u)", map);
+                     strlcpy(type_str, "N/A", type_str_size);
+                  break;
                }
+            case MENU_SETTINGS_VIDEO_ASPECT_RATIO:
+               strlcpy(type_str, aspectratio_lut[g_settings.video.aspect_ratio_idx].name, type_str_size);
+               break;
+#if defined(GEKKO)
+            case MENU_SETTINGS_VIDEO_RESOLUTION:
+               strlcpy(type_str, gx_get_video_mode(), type_str_size);
+               break;
+#elif defined(__CELLOS_LV2__)
+            case MENU_SETTINGS_VIDEO_RESOLUTION:
+               {
+                  unsigned width = gfx_ctx_get_resolution_width(g_extern.console.screen.resolutions.list[g_extern.console.screen.resolutions.current.idx]);
+                  unsigned height = gfx_ctx_get_resolution_height(g_extern.console.screen.resolutions.list[g_extern.console.screen.resolutions.current.idx]);
+                  snprintf(type_str, type_str_size, "%dx%d", width, height);
+               }
+               break;
+            case MENU_SETTINGS_VIDEO_PAL60:
+               if (g_extern.lifecycle_state & (1ULL << MODE_VIDEO_PAL_TEMPORAL_ENABLE))
+                  strlcpy(type_str, "ON", type_str_size);
                else
-                  strlcpy(type_str, "Disabled", type_str_size);
-            }
-            break;
-         case MENU_SETTINGS_BIND_ANALOG_MODE:
-            {
-               static const char *modes[] = {
-                  "None",
-                  "Left Analog",
-                  "Right Analog",
-                  "Dual Analog",
-               };
-
-               strlcpy(type_str, modes[g_settings.input.analog_dpad_mode[driver.menu->current_pad] % ANALOG_DPAD_LAST], type_str_size);
-            }
-            break;
-         case MENU_SETTINGS_INPUT_AXIS_THRESHOLD:
-            snprintf(type_str, type_str_size, "%.3f", g_settings.input.axis_threshold);
-            break;
-         case MENU_SETTINGS_BIND_DEVICE_TYPE:
-            {
-               const struct retro_controller_description *desc = NULL;
-               if (driver.menu->current_pad < g_extern.system.num_ports)
+                  strlcpy(type_str, "OFF", type_str_size);
+               break;
+#endif
+            case MENU_FILE_PLAIN:
+               strlcpy(type_str, "(FILE)", type_str_size);
+               *w = 6;
+               break;
+            case MENU_FILE_DIRECTORY:
+               strlcpy(type_str, "(DIR)", type_str_size);
+               *w = 5;
+               break;
+            case MENU_SETTINGS_REWIND_GRANULARITY:
+               snprintf(type_str, type_str_size, "%u", g_settings.rewind_granularity);
+               break;
+            case MENU_SETTINGS_LIBRETRO_LOG_LEVEL:
+               switch(g_settings.libretro_log_level)
                {
-                  desc = libretro_find_controller_description(&g_extern.system.ports[driver.menu->current_pad],
-                        g_settings.input.libretro_device[driver.menu->current_pad]);
+                  case 0:
+                     snprintf(type_str, type_str_size, "0 (Debug)");
+                     break;
+                  case 1:
+                     snprintf(type_str, type_str_size, "1 (Info)");
+                     break;
+                  case 2:
+                     snprintf(type_str, type_str_size, "2 (Warning)");
+                     break;
+                  case 3:
+                     snprintf(type_str, type_str_size, "3 (Error)");
+                     break;
                }
-
-               const char *name = desc ? desc->desc : NULL;
-               if (!name) // Find generic name.
+               break;
+            case MENU_SETTINGS_SRAM_AUTOSAVE:
+               if (g_settings.autosave_interval)
+                  snprintf(type_str, type_str_size, "%u seconds", g_settings.autosave_interval);
+               else
+                  strlcpy(type_str, "OFF", type_str_size);
+               break;
+            case MENU_SETTINGS_SAVESTATE_SAVE:
+            case MENU_SETTINGS_SAVESTATE_LOAD:
+               if (g_settings.state_slot < 0)
+                  strlcpy(type_str, "-1 (auto)", type_str_size);
+               else
+                  snprintf(type_str, type_str_size, "%d", g_settings.state_slot);
+               break;
+            case MENU_SETTINGS_AUDIO_LATENCY:
+               snprintf(type_str, type_str_size, "%d ms", g_settings.audio.latency);
+               break;
+            case MENU_SETTINGS_AUDIO_CONTROL_RATE_DELTA:
+               snprintf(type_str, type_str_size, "%.3f", g_settings.audio.rate_control_delta);
+               break;
+            case MENU_SETTINGS_FASTFORWARD_RATIO:
+               if (g_settings.fastforward_ratio > 0.0f)
+                  snprintf(type_str, type_str_size, "%.1fx", g_settings.fastforward_ratio);
+               else
+                  snprintf(type_str, type_str_size, "%.1fx (No Limit)", g_settings.fastforward_ratio);
+               break;
+            case MENU_SETTINGS_SLOWMOTION_RATIO:
+               snprintf(type_str, type_str_size, "%.1fx", g_settings.slowmotion_ratio);
+               break;
+            case MENU_BROWSER_DIR_PATH:
+               strlcpy(type_str, *g_settings.menu_content_directory ? g_settings.menu_content_directory : "<default>", type_str_size);
+               break;
+            case MENU_CONTENT_HISTORY_SIZE:
+               snprintf(type_str, type_str_size, "%d", g_settings.content_history_size);
+               break;
+            case MENU_CONTENT_DIR_PATH:
+               strlcpy(type_str, *g_settings.content_directory ? g_settings.content_directory : "<default>", type_str_size);
+               break;
+            case MENU_ASSETS_DIR_PATH:
+               strlcpy(type_str, *g_settings.assets_directory ? g_settings.assets_directory : "<default>", type_str_size);
+               break;
+            case MENU_SCREENSHOT_DIR_PATH:
+               strlcpy(type_str, *g_settings.screenshot_directory ? g_settings.screenshot_directory : "<Content dir>", type_str_size);
+               break;
+            case MENU_SAVEFILE_DIR_PATH:
+               strlcpy(type_str, *g_extern.savefile_dir ? g_extern.savefile_dir : "<Content dir>", type_str_size);
+               break;
+#ifdef HAVE_OVERLAY
+            case MENU_OVERLAY_DIR_PATH:
+               strlcpy(type_str, *g_extern.overlay_dir ? g_extern.overlay_dir : "<default>", type_str_size);
+               break;
+#endif
+            case MENU_SAVESTATE_DIR_PATH:
+               strlcpy(type_str, *g_extern.savestate_dir ? g_extern.savestate_dir : "<Content dir>", type_str_size);
+               break;
+            case MENU_LIBRETRO_DIR_PATH:
+               strlcpy(type_str, *g_settings.libretro_directory ? g_settings.libretro_directory : "<None>", type_str_size);
+               break;
+            case MENU_LIBRETRO_INFO_DIR_PATH:
+               strlcpy(type_str, *g_settings.libretro_info_path ? g_settings.libretro_info_path : "<Core dir>", type_str_size);
+               break;
+            case MENU_CONFIG_DIR_PATH:
+               strlcpy(type_str, *g_settings.menu_config_directory ? g_settings.menu_config_directory : "<default>", type_str_size);
+               break;
+            case MENU_FILTER_DIR_PATH:
+               strlcpy(type_str, *g_settings.video.filter_dir ? g_settings.video.filter_dir : "<default>", type_str_size);
+               break;
+            case MENU_DSP_FILTER_DIR_PATH:
+               strlcpy(type_str, *g_settings.audio.filter_dir ? g_settings.audio.filter_dir : "<default>", type_str_size);
+               break;
+            case MENU_SHADER_DIR_PATH:
+               strlcpy(type_str, *g_settings.video.shader_dir ? g_settings.video.shader_dir : "<default>", type_str_size);
+               break;
+            case MENU_SYSTEM_DIR_PATH:
+               strlcpy(type_str, *g_settings.system_directory ? g_settings.system_directory : "<Content dir>", type_str_size);
+               break;
+            case MENU_AUTOCONFIG_DIR_PATH:
+               strlcpy(type_str, *g_settings.input.autoconfig_dir ? g_settings.input.autoconfig_dir : "<default>", type_str_size);
+               break;
+            case MENU_EXTRACTION_DIR_PATH:
+               strlcpy(type_str, *g_settings.extraction_directory ? g_settings.extraction_directory : "<None>", type_str_size);
+               break;
+            case MENU_SETTINGS_DISK_INDEX:
                {
-                  switch (g_settings.input.libretro_device[driver.menu->current_pad])
+                  const struct retro_disk_control_callback *control = &g_extern.system.disk_control;
+                  unsigned images = control->get_num_images();
+                  unsigned current = control->get_image_index();
+                  if (current >= images)
+                     strlcpy(type_str, "No Disk", type_str_size);
+                  else
+                     snprintf(type_str, type_str_size, "%u", current + 1);
+                  break;
+               }
+            case MENU_SETTINGS_CONFIG:
+               if (*g_extern.config_path)
+                  fill_pathname_base(type_str, g_extern.config_path, type_str_size);
+               else
+                  strlcpy(type_str, "<default>", type_str_size);
+               break;
+            case MENU_SETTINGS_OPEN_FILEBROWSER:
+            case MENU_SETTINGS_OPEN_FILEBROWSER_DEFERRED_CORE:
+            case MENU_SETTINGS_OPEN_HISTORY:
+            case MENU_SETTINGS_CORE_OPTIONS:
+            case MENU_SETTINGS_CORE_INFO:
+            case MENU_SETTINGS_CUSTOM_VIEWPORT:
+            case MENU_SETTINGS_TOGGLE_FULLSCREEN:
+            case MENU_SETTINGS_VIDEO_OPTIONS:
+            case MENU_SETTINGS_FONT_OPTIONS:
+            case MENU_SETTINGS_AUDIO_OPTIONS:
+            case MENU_SETTINGS_DISK_OPTIONS:
+#ifdef HAVE_SHADER_MANAGER
+            case MENU_SETTINGS_SHADER_OPTIONS:
+            case MENU_SETTINGS_SHADER_PRESET:
+#endif
+            case MENU_SETTINGS_GENERAL_OPTIONS:
+            case MENU_SETTINGS_SHADER_PRESET_SAVE:
+            case MENU_SETTINGS_CORE:
+            case MENU_SETTINGS_DISK_APPEND:
+            case MENU_SETTINGS_INPUT_OPTIONS:
+            case MENU_SETTINGS_PATH_OPTIONS:
+            case MENU_SETTINGS_OVERLAY_OPTIONS:
+            case MENU_SETTINGS_NETPLAY_OPTIONS:
+            case MENU_SETTINGS_USER_OPTIONS:
+            case MENU_SETTINGS_PRIVACY_OPTIONS:
+            case MENU_SETTINGS_OPTIONS:
+            case MENU_SETTINGS_PERFORMANCE_COUNTERS:
+            case MENU_SETTINGS_PERFORMANCE_COUNTERS_FRONTEND:
+            case MENU_SETTINGS_PERFORMANCE_COUNTERS_LIBRETRO:
+            case MENU_SETTINGS_DRIVERS:
+            case MENU_SETTINGS_CUSTOM_BIND_ALL:
+            case MENU_SETTINGS_CUSTOM_BIND_DEFAULT_ALL:
+               strlcpy(type_str, "...", type_str_size);
+               break;
+            case MENU_SETTINGS_AUDIO_DSP_FILTER:
+               strlcpy(type_str, path_basename(g_settings.audio.dsp_plugin), type_str_size);
+               break;
+#ifdef HAVE_OVERLAY
+            case MENU_SETTINGS_OVERLAY_PRESET:
+               strlcpy(type_str, path_basename(g_settings.input.overlay), type_str_size);
+               break;
+            case MENU_SETTINGS_OVERLAY_OPACITY:
+               snprintf(type_str, type_str_size, "%.2f", g_settings.input.overlay_opacity);
+               break;
+            case MENU_SETTINGS_OVERLAY_SCALE:
+               snprintf(type_str, type_str_size, "%.2f", g_settings.input.overlay_scale);
+               break;
+#endif
+            case MENU_CONTENT_HISTORY_PATH:
+               strlcpy(type_str, g_settings.content_history_path ? g_settings.content_history_path : "<None>", type_str_size);
+               break;
+            case MENU_SETTINGS_BIND_PLAYER:
+               snprintf(type_str, type_str_size, "#%d", driver.menu->current_pad + 1);
+               break;
+            case MENU_SETTINGS_BIND_DEVICE:
+               {
+                  int map = g_settings.input.joypad_map[driver.menu->current_pad];
+                  if (map >= 0 && map < MAX_PLAYERS)
                   {
-                     case RETRO_DEVICE_NONE:
-                        name = "None";
-                        break;
-                     case RETRO_DEVICE_JOYPAD:
-                        name = "Joypad";
-                        break;
-                     case RETRO_DEVICE_ANALOG:
-                        name = "Joypad w/ Analog";
-                        break;
-                     default:
-                        name = "Unknown";
-                        break;
+                     const char *device_name = g_settings.input.device_names[map];
+
+                     if (*device_name)
+                        strlcpy(type_str, device_name, type_str_size);
+                     else
+                        snprintf(type_str, type_str_size, "N/A (port #%u)", map);
                   }
+                  else
+                     strlcpy(type_str, "Disabled", type_str_size);
                }
+               break;
+            case MENU_SETTINGS_BIND_ANALOG_MODE:
+               {
+                  static const char *modes[] = {
+                     "None",
+                     "Left Analog",
+                     "Right Analog",
+                     "Dual Analog",
+                  };
 
-               strlcpy(type_str, name, type_str_size);
-            }
-            break;
-         case MENU_SETTINGS_CUSTOM_BIND_MODE:
-            strlcpy(type_str, driver.menu->bind_mode_keyboard ? "Keyboard" : "Joypad", type_str_size);
-            break;
-         case MENU_SETTINGS_AUDIO_VOLUME:
-            snprintf(type_str, type_str_size, "%.1f dB", g_extern.audio_data.volume_db);
-            break;
+                  strlcpy(type_str, modes[g_settings.input.analog_dpad_mode[driver.menu->current_pad] % ANALOG_DPAD_LAST], type_str_size);
+               }
+               break;
+            case MENU_SETTINGS_INPUT_AXIS_THRESHOLD:
+               snprintf(type_str, type_str_size, "%.3f", g_settings.input.axis_threshold);
+               break;
+            case MENU_SETTINGS_BIND_DEVICE_TYPE:
+               {
+                  const struct retro_controller_description *desc = NULL;
+                  if (driver.menu->current_pad < g_extern.system.num_ports)
+                  {
+                     desc = libretro_find_controller_description(&g_extern.system.ports[driver.menu->current_pad],
+                           g_settings.input.libretro_device[driver.menu->current_pad]);
+                  }
+
+                  const char *name = desc ? desc->desc : NULL;
+                  if (!name) // Find generic name.
+                  {
+                     switch (g_settings.input.libretro_device[driver.menu->current_pad])
+                     {
+                        case RETRO_DEVICE_NONE:
+                           name = "None";
+                           break;
+                        case RETRO_DEVICE_JOYPAD:
+                           name = "Joypad";
+                           break;
+                        case RETRO_DEVICE_ANALOG:
+                           name = "Joypad w/ Analog";
+                           break;
+                        default:
+                           name = "Unknown";
+                           break;
+                     }
+                  }
+
+                  strlcpy(type_str, name, type_str_size);
+               }
+               break;
+            case MENU_SETTINGS_CUSTOM_BIND_MODE:
+               strlcpy(type_str, driver.menu->bind_mode_keyboard ? "Keyboard" : "Joypad", type_str_size);
+               break;
+            case MENU_SETTINGS_AUDIO_VOLUME:
+               snprintf(type_str, type_str_size, "%.1f dB", g_extern.audio_data.volume_db);
+               break;
 #ifdef _XBOX1
-         case MENU_SETTINGS_FLICKER_FILTER:
-            snprintf(type_str, type_str_size, "%d", g_extern.console.screen.flicker_filter_index);
-            break;
-         case MENU_SETTINGS_SOFT_DISPLAY_FILTER:
-            snprintf(type_str, type_str_size,
-                  (g_extern.lifecycle_state & (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE)) ? "ON" : "OFF");
-            break;
+            case MENU_SETTINGS_FLICKER_FILTER:
+               snprintf(type_str, type_str_size, "%d", g_extern.console.screen.flicker_filter_index);
+               break;
+            case MENU_SETTINGS_SOFT_DISPLAY_FILTER:
+               snprintf(type_str, type_str_size,
+                     (g_extern.lifecycle_state & (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE)) ? "ON" : "OFF");
+               break;
 #endif
-         case MENU_SETTINGS_CUSTOM_BGM_CONTROL_ENABLE:
-            strlcpy(type_str, (g_extern.lifecycle_state & (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE)) ? "ON" : "OFF", type_str_size);
-            break;
-         case MENU_SETTINGS_USER_LANGUAGE:
-            {
-               static const char *modes[] = {
-                  "English",
-                  "Japanese",
-                  "French",
-                  "Spanish",
-                  "German",
-                  "Italian",
-                  "Dutch",
-                  "Portuguese",
-                  "Russian",
-                  "Korean",
-                  "Chinese (Traditional)",
-                  "Chinese (Simplified)"
-               };
+            case MENU_SETTINGS_CUSTOM_BGM_CONTROL_ENABLE:
+               strlcpy(type_str, (g_extern.lifecycle_state & (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE)) ? "ON" : "OFF", type_str_size);
+               break;
+            case MENU_SETTINGS_USER_LANGUAGE:
+               {
+                  static const char *modes[] = {
+                     "English",
+                     "Japanese",
+                     "French",
+                     "Spanish",
+                     "German",
+                     "Italian",
+                     "Dutch",
+                     "Portuguese",
+                     "Russian",
+                     "Korean",
+                     "Chinese (Traditional)",
+                     "Chinese (Simplified)"
+                  };
 
-               strlcpy(type_str, modes[g_settings.user_language], type_str_size);
-            }
-            break;
-         case MENU_SETTINGS_NETPLAY_NICKNAME:
-            snprintf(type_str, type_str_size, "%s", g_settings.username);
-            break;
+                  strlcpy(type_str, modes[g_settings.user_language], type_str_size);
+               }
+               break;
 #ifdef HAVE_NETPLAY
-         case MENU_SETTINGS_NETPLAY_HOST_IP_ADDRESS:
-            strlcpy(type_str, g_extern.netplay_server, type_str_size);
-            break;
-         case MENU_SETTINGS_NETPLAY_DELAY_FRAMES:
-            snprintf(type_str, type_str_size, "%d", g_extern.netplay_sync_frames);
-            break;
-         case MENU_SETTINGS_NETPLAY_TCP_UDP_PORT:
-            snprintf(type_str, type_str_size, "%d", g_extern.netplay_port ? g_extern.netplay_port : RARCH_DEFAULT_PORT);
-            break;
+            case MENU_SETTINGS_NETPLAY_HOST_IP_ADDRESS:
+               strlcpy(type_str, g_extern.netplay_server, type_str_size);
+               break;
+            case MENU_SETTINGS_NETPLAY_DELAY_FRAMES:
+               snprintf(type_str, type_str_size, "%d", g_extern.netplay_sync_frames);
+               break;
+            case MENU_SETTINGS_NETPLAY_TCP_UDP_PORT:
+               snprintf(type_str, type_str_size, "%d", g_extern.netplay_port ? g_extern.netplay_port : RARCH_DEFAULT_PORT);
+               break;
 #endif
-         case MENU_SETTINGS_FONT_SIZE:
-            snprintf(type_str, type_str_size, "%.1f", g_settings.video.font_size);
-            break;
-         default:
-            *type_str = '\0';
-            *w = 0;
-            break;
+            default:
+               *type_str = '\0';
+               *w = 0;
+               break;
+         }
       }
    }
 }
