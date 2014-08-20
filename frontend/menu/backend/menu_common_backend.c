@@ -34,10 +34,6 @@
 
 #include "../../../settings_data.h"
 
-#ifdef HAVE_CONFIG_H
-#include "../../../config.h"
-#endif
-
 #if defined(__CELLOS_LV2__)
 #include <sdk_version.h>
 
