@@ -3748,12 +3748,7 @@ static void menu_common_setting_set_label(char *type_str,
       else if (setting && !strcmp(setting->name, "video_filter"))
          strlcpy(type_str, path_basename(setting->value.string), type_str_size);
       else if (setting && !strcmp(setting->name, "video_smooth"))
-      {
-         if (*setting->value.boolean)
-            strlcpy(type_str, "Bilinear filtering", type_str_size);
-         else
-            strlcpy(type_str, "Point filtering", type_str_size);
-      }
+         strlcpy(type_str, (*setting->value.boolean) ? "Bilinear filtering" : "Point filtering", type_str_size);
       else if (setting && !strcmp(setting->name, "video_gamma"))
          snprintf(type_str, type_str_size, "%d", *setting->value.unsigned_integer);
       else if (setting && !strcmp(setting->name, "video_swap_interval"))
@@ -3772,6 +3767,20 @@ static void menu_common_setting_set_label(char *type_str,
          strlcpy(type_str, aspectratio_lut[*setting->value.unsigned_integer].name, type_str_size);
       else if (setting && !strcmp(setting->name, "audio_rate_control_delta"))
          snprintf(type_str, type_str_size, "%.3f", *setting->value.fraction);
+      else if (setting && !strcmp(setting->name, "input_overlay_opacity"))
+         snprintf(type_str, type_str_size, "%.2f", *setting->value.fraction);
+      else if (setting && !strcmp(setting->name, "input_overlay_scale"))
+         snprintf(type_str, type_str_size, "%.2f", *setting->value.fraction);
+      else if (setting && !strcmp(setting->name, "input_overlay"))
+         strlcpy(type_str, path_basename(setting->value.string), type_str_size);
+      else if (setting && !strcmp(setting->name, "overlay_directory"))
+         strlcpy(type_str, *setting->value.string ? setting->value.string : "<default>", type_str_size);
+      else if (setting && !strcmp(setting->name, "game_history_size"))
+         snprintf(type_str, type_str_size, "%d", *setting->value.unsigned_integer);
+      else if (setting && !strcmp(setting->name, "rewind_granularity"))
+         snprintf(type_str, type_str_size, "%u", *setting->value.unsigned_integer);
+      else if (setting && !strcmp(setting->name, "slowmotion_ratio"))
+         snprintf(type_str, type_str_size, "%.1fx", *setting->value.fraction);
       else
       {
          switch (type)
@@ -3854,9 +3863,6 @@ static void menu_common_setting_set_label(char *type_str,
                strlcpy(type_str, "(DIR)", type_str_size);
                *w = 5;
                break;
-            case MENU_SETTINGS_REWIND_GRANULARITY:
-               snprintf(type_str, type_str_size, "%u", g_settings.rewind_granularity);
-               break;
             case MENU_SETTINGS_LIBRETRO_LOG_LEVEL:
                switch(g_settings.libretro_log_level)
                {
@@ -3896,14 +3902,8 @@ static void menu_common_setting_set_label(char *type_str,
                else
                   snprintf(type_str, type_str_size, "%.1fx (No Limit)", g_settings.fastforward_ratio);
                break;
-            case MENU_SETTINGS_SLOWMOTION_RATIO:
-               snprintf(type_str, type_str_size, "%.1fx", g_settings.slowmotion_ratio);
-               break;
             case MENU_BROWSER_DIR_PATH:
                strlcpy(type_str, *g_settings.menu_content_directory ? g_settings.menu_content_directory : "<default>", type_str_size);
-               break;
-            case MENU_CONTENT_HISTORY_SIZE:
-               snprintf(type_str, type_str_size, "%d", g_settings.content_history_size);
                break;
             case MENU_CONTENT_DIR_PATH:
                strlcpy(type_str, *g_settings.content_directory ? g_settings.content_directory : "<default>", type_str_size);
@@ -3917,11 +3917,6 @@ static void menu_common_setting_set_label(char *type_str,
             case MENU_SAVEFILE_DIR_PATH:
                strlcpy(type_str, *g_extern.savefile_dir ? g_extern.savefile_dir : "<Content dir>", type_str_size);
                break;
-#ifdef HAVE_OVERLAY
-            case MENU_OVERLAY_DIR_PATH:
-               strlcpy(type_str, *g_extern.overlay_dir ? g_extern.overlay_dir : "<default>", type_str_size);
-               break;
-#endif
             case MENU_SAVESTATE_DIR_PATH:
                strlcpy(type_str, *g_extern.savestate_dir ? g_extern.savestate_dir : "<Content dir>", type_str_size);
                break;
@@ -4006,17 +4001,6 @@ static void menu_common_setting_set_label(char *type_str,
             case MENU_SETTINGS_AUDIO_DSP_FILTER:
                strlcpy(type_str, path_basename(g_settings.audio.dsp_plugin), type_str_size);
                break;
-#ifdef HAVE_OVERLAY
-            case MENU_SETTINGS_OVERLAY_PRESET:
-               strlcpy(type_str, path_basename(g_settings.input.overlay), type_str_size);
-               break;
-            case MENU_SETTINGS_OVERLAY_OPACITY:
-               snprintf(type_str, type_str_size, "%.2f", g_settings.input.overlay_opacity);
-               break;
-            case MENU_SETTINGS_OVERLAY_SCALE:
-               snprintf(type_str, type_str_size, "%.2f", g_settings.input.overlay_scale);
-               break;
-#endif
             case MENU_CONTENT_HISTORY_PATH:
                strlcpy(type_str, g_settings.content_history_path ? g_settings.content_history_path : "<None>", type_str_size);
                break;
