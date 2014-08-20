@@ -55,7 +55,8 @@ void content_playlist_get_index(content_playlist_t *playlist,
    *core_name = playlist->entries[index].core_name;
 }
 
-static void content_playlist_free_entry(struct content_playlist_entry *entry)
+static void content_playlist_free_entry(
+      struct content_playlist_entry *entry)
 {
    if (entry->path)
       free(entry->path);
@@ -82,16 +83,17 @@ void content_playlist_push(content_playlist_t *playlist,
    for (i = 0; i < playlist->size; i++)
    {
       bool equal_path = (!path && !playlist->entries[i].path) ||
-         (path && playlist->entries[i].path && !strcmp(path, playlist->entries[i].path));
+         (path && playlist->entries[i].path &&
+          !strcmp(path,playlist->entries[i].path));
 
-      // Core name can have changed while still being the same core.
-      // Differentiate based on the core path only.
+      /* Core name can have changed while still being the same core.
+       * Differentiate based on the core path only. */
       if (equal_path && !strcmp(playlist->entries[i].core_path, core_path))
       {
          if (i == 0)
             return;
 
-         // Seen it before, bump to top.
+         /* Seen it before, bump to top. */
          struct content_playlist_entry tmp = playlist->entries[i];
          memmove(playlist->entries + 1, playlist->entries,
                i * sizeof(struct content_playlist_entry));
@@ -127,7 +129,8 @@ static void content_playlist_write_file(content_playlist_t *playlist)
 
    if (!file)
    {
-      RARCH_ERR("Couldn't write to content playlist file: %s.\n", playlist->conf_path);
+      RARCH_ERR("Couldn't write to content playlist file: %s.\n",
+            playlist->conf_path);
       return;
    }
 
@@ -177,7 +180,8 @@ size_t content_playlist_size(content_playlist_t *playlist)
    return 0;
 }
 
-static bool content_playlist_read_file(content_playlist_t *playlist, const char *path)
+static bool content_playlist_read_file(
+      content_playlist_t *playlist, const char *path)
 {
    char buf[3][PATH_MAX];
    unsigned i;
@@ -224,14 +228,16 @@ end:
 content_playlist_t *content_playlist_init(const char *path, size_t size)
 {
    RARCH_LOG("Opening playlist: %s.\n", path);
-   content_playlist_t *playlist = (content_playlist_t*)calloc(1, sizeof(*playlist));
+   content_playlist_t *playlist = (content_playlist_t*)
+      calloc(1, sizeof(*playlist));
    if (!playlist)
    {
        RARCH_ERR("Cannot initialize content playlist.\n");
       return NULL;
    }
 
-   playlist->entries = (struct content_playlist_entry*)calloc(size, sizeof(*playlist->entries));
+   playlist->entries = (struct content_playlist_entry*)calloc(size,
+         sizeof(*playlist->entries));
    if (!playlist->entries)
       goto error;
 

@@ -31,7 +31,8 @@ void file_list_push(file_list_t *list,
    {
       list->capacity++;
       list->capacity *= 2;
-      list->list = (struct item_file*)realloc(list->list, list->capacity * sizeof(struct item_file));
+      list->list = (struct item_file*)realloc(list->list,
+            list->capacity * sizeof(struct item_file));
    }
 
    if (driver.menu_ctx && driver.menu_ctx->list_insert)
@@ -43,10 +44,12 @@ void file_list_push(file_list_t *list,
    rarch_setting_t *setting_data = (rarch_setting_t *)setting_data_get_list();
 
    if (setting_data)
-      list->list[list->size].setting = (rarch_setting_t*)setting_data_find_setting(setting_data, label);
+      list->list[list->size].setting = (rarch_setting_t*)
+         setting_data_find_setting(setting_data, label);
 
    if (list->list[list->size].setting)
-      list->list[list->size].path = strdup(list->list[list->size].setting->short_description);
+      list->list[list->size].path = strdup(
+            list->list[list->size].setting->short_description);
    else
       list->list[list->size].path = strdup(path);
 
@@ -54,7 +57,6 @@ void file_list_push(file_list_t *list,
    list->list[list->size].type = type;
    list->list[list->size].directory_ptr = directory_ptr;
    list->size++;
-
 }
 
 size_t file_list_get_size(const file_list_t *list)
@@ -126,7 +128,8 @@ void file_list_get_alt_at_offset(const file_list_t *list, size_t index,
       const char **alt)
 {
    if (alt)
-      *alt = list->list[index].alt ? list->list[index].alt : list->list[index].path;
+      *alt = list->list[index].alt ?
+         list->list[index].alt : list->list[index].path;
 }
 
 static int file_list_alt_cmp(const void *a_, const void *b_)
@@ -166,7 +169,8 @@ void *file_list_get_last_setting(const file_list_t *list, int index)
    rarch_setting_t *setting_data = (rarch_setting_t*)setting_data_get_list();
 
    if (setting_data)
-      return (rarch_setting_t*)setting_data_find_setting(setting_data, list->list[index].label);
+      return (rarch_setting_t*)setting_data_find_setting(setting_data,
+            list->list[index].label);
    return NULL;
 }
 
@@ -184,14 +188,17 @@ bool file_list_search(const file_list_t *list, const char *needle, size_t *index
          continue;
 
       str = (const char *)strcasestr(alt, needle);
-      if (str == alt) // Found match with first chars, best possible match.
+      if (str == alt)
       {
+         /* Found match with first chars, best possible match. */
          *index = i;
          ret = true;
          break;
       }
-      else if (str && !ret) // Found mid-string match, but try to find a match with first chars before we settle.
+      else if (str && !ret)
       {
+         /* Found mid-string match, but try to find a match with 
+          * first characters before we settle. */
          *index = i;
          ret = true;
       }
