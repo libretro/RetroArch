@@ -19,11 +19,11 @@ interface to include support for emulators and/or game engines. libretro is comp
 ## Binaries
 
 Latest Windows binaries are currently hosted on Themaister's [homepage](http://themaister.net/retroarch.html).
-Builds can also be found on the [forum](http://forum.themaister.net/).
+Builds can also be found on the [forum](http://www.libretro.com/forums/).
 
 ## Support
 
-To reach developers, either make an issue here on Github, make a thread on the [forum](http://forum.themaister.net/),
+To reach developers, either make an issue here on Github, make a thread on the [forum](http://www.libretro.com/forums/),
 or visit our IRC channel: #retroarch @ irc.freenode.org.
 
 ## Documentation
