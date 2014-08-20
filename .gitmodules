@@ -1,0 +1,12 @@
+[submodule "shaders"]
+	path = media/shaders
+	url = https://github.com/libretro/common-shaders.git
+[submodule "overlays"]
+	path = media/overlays
+	url = https://github.com/libretro/common-overlays.git
+[submodule "assets"]
+	path = media/assets
+	url = https://github.com/libretro/retroarch-assets.git
+[submodule "autoconfig"]
+	path = media/autoconfig
+	url = https://github.com/libretro/retroarch-joypad-autoconfig.git
