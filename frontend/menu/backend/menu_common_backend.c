@@ -3737,9 +3737,7 @@ static void menu_common_setting_set_label(char *type_str,
       input_get_bind_string(type_str, &g_settings.input.binds[driver.menu->current_pad][type - MENU_SETTINGS_BIND_BEGIN], auto_bind, type_str_size);
    }
    else if (setting && setting->type == ST_BOOL)
-   {
       strlcpy(type_str, *setting->value.boolean ? "ON" : "OFF", type_str_size);
-   }
    else
    {
       if (setting && !strcmp(setting->name, "video_rotation"))
@@ -3768,6 +3766,12 @@ static void menu_common_setting_set_label(char *type_str,
          snprintf(type_str, type_str_size, "%.1f", *setting->value.fraction);
       else if (setting && !strcmp(setting->name, "netplay_nickname"))
          snprintf(type_str, type_str_size, "%s", setting->value.string);
+      else if (setting && !strcmp(setting->name, "netplay_delay_frames"))
+         snprintf(type_str, type_str_size, "%d", *setting->value.unsigned_integer);
+      else if (setting && !strcmp(setting->name, "aspect_ratio_index"))
+         strlcpy(type_str, aspectratio_lut[*setting->value.unsigned_integer].name, type_str_size);
+      else if (setting && !strcmp(setting->name, "audio_rate_control_delta"))
+         snprintf(type_str, type_str_size, "%.3f", *setting->value.fraction);
       else
       {
          switch (type)
@@ -3823,9 +3827,6 @@ static void menu_common_setting_set_label(char *type_str,
                      strlcpy(type_str, "N/A", type_str_size);
                   break;
                }
-            case MENU_SETTINGS_VIDEO_ASPECT_RATIO:
-               strlcpy(type_str, aspectratio_lut[g_settings.video.aspect_ratio_idx].name, type_str_size);
-               break;
 #if defined(GEKKO)
             case MENU_SETTINGS_VIDEO_RESOLUTION:
                strlcpy(type_str, gx_get_video_mode(), type_str_size);
@@ -3888,9 +3889,6 @@ static void menu_common_setting_set_label(char *type_str,
                break;
             case MENU_SETTINGS_AUDIO_LATENCY:
                snprintf(type_str, type_str_size, "%d ms", g_settings.audio.latency);
-               break;
-            case MENU_SETTINGS_AUDIO_CONTROL_RATE_DELTA:
-               snprintf(type_str, type_str_size, "%.3f", g_settings.audio.rate_control_delta);
                break;
             case MENU_SETTINGS_FASTFORWARD_RATIO:
                if (g_settings.fastforward_ratio > 0.0f)
@@ -4129,9 +4127,6 @@ static void menu_common_setting_set_label(char *type_str,
 #ifdef HAVE_NETPLAY
             case MENU_SETTINGS_NETPLAY_HOST_IP_ADDRESS:
                strlcpy(type_str, g_extern.netplay_server, type_str_size);
-               break;
-            case MENU_SETTINGS_NETPLAY_DELAY_FRAMES:
-               snprintf(type_str, type_str_size, "%d", g_extern.netplay_sync_frames);
                break;
             case MENU_SETTINGS_NETPLAY_TCP_UDP_PORT:
                snprintf(type_str, type_str_size, "%d", g_extern.netplay_port ? g_extern.netplay_port : RARCH_DEFAULT_PORT);
