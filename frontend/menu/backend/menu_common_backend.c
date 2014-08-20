@@ -1153,10 +1153,7 @@ static unsigned menu_common_type_is(unsigned type)
       type == MENU_SYSTEM_DIR_PATH;
 
    if (type_found)
-   {
       ret = MENU_FILE_DIRECTORY;
-      return ret;
-   }
 
    return ret;
 }
@@ -1852,20 +1849,18 @@ static int menu_custom_bind_iterate_keyboard(void *data, unsigned action)
 
 static void menu_common_defer_decision_automatic(void)
 {
-   if (!driver.menu)
-      return;
-
-   menu_flush_stack_type(MENU_SETTINGS);
-   driver.menu->msg_force = true;
+   if (driver.menu)
+   {
+      menu_flush_stack_type(MENU_SETTINGS);
+      driver.menu->msg_force = true;
+   }
 }
 
 static void menu_common_defer_decision_manual(void)
 {
-   if (!driver.menu)
-      return;
-
-   menu_common_setting_push_current_menu(driver.menu->menu_stack, g_settings.libretro_directory, MENU_SETTINGS_DEFERRED_CORE, driver.menu->selection_ptr,
-         MENU_ACTION_OK);
+   if (driver.menu)
+      menu_common_setting_push_current_menu(driver.menu->menu_stack, g_settings.libretro_directory, MENU_SETTINGS_DEFERRED_CORE, driver.menu->selection_ptr,
+            MENU_ACTION_OK);
 }
 
 static int menu_common_setting_set_perf(unsigned setting, unsigned action,
@@ -4042,14 +4037,14 @@ static void menu_common_setting_set_label(char *type_str,
                {
                   const struct retro_controller_description *desc = NULL;
                   if (driver.menu->current_pad < g_extern.system.num_ports)
-                  {
                      desc = libretro_find_controller_description(&g_extern.system.ports[driver.menu->current_pad],
                            g_settings.input.libretro_device[driver.menu->current_pad]);
-                  }
 
                   const char *name = desc ? desc->desc : NULL;
-                  if (!name) // Find generic name.
+                  if (!name)
                   {
+                     /* Find generic name. */
+
                      switch (g_settings.input.libretro_device[driver.menu->current_pad])
                      {
                         case RETRO_DEVICE_NONE:
