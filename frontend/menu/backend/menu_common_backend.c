@@ -3802,6 +3802,8 @@ static void menu_common_setting_set_label(char *type_str,
          snprintf(type_str, type_str_size, "%d ms", *setting->value.unsigned_integer);
       else if (setting && !strcmp(setting->name, "audio_dsp_plugin"))
          strlcpy(type_str, path_basename(setting->value.string), type_str_size);
+      else if (setting && !strcmp(setting->name, "video_filter_flicker"))
+         snprintf(type_str, type_str_size, "%d", *setting->value.unsigned_integer);
       else
       {
          switch (type)
@@ -4069,9 +4071,6 @@ static void menu_common_setting_set_label(char *type_str,
                strlcpy(type_str, driver.menu->bind_mode_keyboard ? "Keyboard" : "Joypad", type_str_size);
                break;
 #ifdef _XBOX1
-            case MENU_SETTINGS_FLICKER_FILTER:
-               snprintf(type_str, type_str_size, "%d", g_extern.console.screen.flicker_filter_index);
-               break;
             case MENU_SETTINGS_SOFT_DISPLAY_FILTER:
                snprintf(type_str, type_str_size,
                      (g_extern.lifecycle_state & (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE)) ? "ON" : "OFF");
