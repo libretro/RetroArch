@@ -23,12 +23,14 @@ void menu_update_system_info(menu_handle_t *menu, bool *load_no_content)
    libretro_free_system_info(&menu->info);
    if (*g_settings.libretro)
    {
-      libretro_get_system_info(g_settings.libretro, &menu->info, load_no_content);
+      libretro_get_system_info(g_settings.libretro, &menu->info,
+            load_no_content);
 #endif
-      // Keep track of info for the currently selected core.
+      /* Keep track of info for the currently selected core. */
       if (menu->core_info)
       {
-         if (core_info_list_get_info(menu->core_info, menu->core_info_current, g_settings.libretro))
+         if (core_info_list_get_info(menu->core_info,
+                  menu->core_info_current, g_settings.libretro))
          {
             const core_info_t *info = (const core_info_t*)menu->core_info_current;
 
@@ -48,8 +50,11 @@ void menu_update_system_info(menu_handle_t *menu, bool *load_no_content)
 #endif
 }
 
-// When selection is presented back, returns 0. If it can make a decision right now, returns -1.
-int menu_defer_core(core_info_list_t *core_info, const char *dir, const char *path, char *deferred_path, size_t sizeof_deferred_path)
+/* When selection is presented back, returns 0.
+ * If it can make a decision right now, returns -1.
+ */
+int menu_defer_core(core_info_list_t *core_info, const char *dir,
+      const char *path, char *deferred_path, size_t sizeof_deferred_path)
 {
    const core_info_t *info = NULL;
    size_t supported = 0;
@@ -57,9 +62,11 @@ int menu_defer_core(core_info_list_t *core_info, const char *dir, const char *pa
    fill_pathname_join(deferred_path, dir, path, sizeof_deferred_path);
 
    if (core_info)
-      core_info_list_get_supported_cores(core_info, deferred_path, &info, &supported);
+      core_info_list_get_supported_cores(core_info, deferred_path, &info,
+            &supported);
 
-   if (supported == 1) // Can make a decision right now.
+   /* Can make a decision right now. */
+   if (supported == 1)
    {
       strlcpy(g_extern.fullpath, deferred_path, sizeof(g_extern.fullpath));
 
@@ -79,9 +86,11 @@ int menu_defer_core(core_info_list_t *core_info, const char *dir, const char *pa
 
 void menu_content_history_push_current(void)
 {
-   // g_extern.fullpath can be relative here.
-   // Ensure we're pushing absolute path.
    char tmp[PATH_MAX];
+
+   /* g_extern.fullpath can be relative here.
+    * Ensure we're pushing absolute path.
+    */
 
    if (!g_extern.history)
       return;
@@ -122,7 +131,7 @@ static void load_menu_content_prepare(void)
             driver.menu->info.library_name ? driver.menu->info.library_name : "");
    }
 
-   // redraw menu frame
+   /* redraw menu frame */
    driver.menu->old_input_state = driver.menu->trigger_state = 0;
    driver.menu->do_held = false;
    driver.menu->msg_force = true;
@@ -130,7 +139,7 @@ static void load_menu_content_prepare(void)
    if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->iterate) 
       driver.menu_ctx->backend->iterate(MENU_ACTION_NOOP);
 
-   // Draw frame for loading message
+   /* Draw frame for loading message */
    if (driver.video_data && driver.video_poke && driver.video_poke->set_texture_enable)
       driver.video_poke->set_texture_enable(driver.video_data, driver.menu->frame_buf_show, MENU_TEXTURE_FULLSCREEN);
 
@@ -212,14 +221,15 @@ bool load_menu_content(void)
       return false;
    }
 
-   // Update menu state which depends on config.
+   /* Update menu state which depends on config. */
    if (driver.menu)
       menu_update_libretro_info(driver.menu);
 
    rarch_main_command(RARCH_CMD_HISTORY_DEINIT);
    rarch_main_command(RARCH_CMD_HISTORY_INIT);
 
-   if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->shader_manager_init)
+   if (driver.menu_ctx && driver.menu_ctx->backend
+         && driver.menu_ctx->backend->shader_manager_init)
       driver.menu_ctx->backend->shader_manager_init(driver.menu);
 
    rarch_main_command(RARCH_CMD_VIDEO_SET_ASPECT_RATIO);
@@ -240,7 +250,8 @@ void *menu_init(const void *data)
    if (!(menu = (menu_handle_t*)menu_ctx->init()))
       return NULL;
 
-   strlcpy(g_settings.menu.driver, menu_ctx->ident, sizeof(g_settings.menu.driver));
+   strlcpy(g_settings.menu.driver, menu_ctx->ident,
+         sizeof(g_settings.menu.driver));
 
    menu->menu_stack = (file_list_t*)calloc(1, sizeof(file_list_t));
    menu->selection_buf = (file_list_t*)calloc(1, sizeof(file_list_t));
@@ -264,7 +275,8 @@ void *menu_init(const void *data)
 
    menu_update_libretro_info(menu);
 
-   if (menu_ctx && menu_ctx->backend && menu_ctx->backend->shader_manager_init)
+   if (menu_ctx && menu_ctx->backend
+         && menu_ctx->backend->shader_manager_init)
       menu_ctx->backend->shader_manager_init(menu);
 
    rarch_main_command(RARCH_CMD_HISTORY_INIT);
@@ -307,7 +319,8 @@ void menu_free(void *data)
    free(data);
 }
 
-void menu_ticker_line(char *buf, size_t len, unsigned index, const char *str, bool selected)
+void menu_ticker_line(char *buf, size_t len, unsigned index,
+      const char *str, bool selected)
 {
    size_t str_len = strlen(str);
 
@@ -324,7 +337,7 @@ void menu_ticker_line(char *buf, size_t len, unsigned index, const char *str, bo
    }
    else
    {
-      // Wrap long strings in options with some kind of ticker line.
+      /* Wrap long strings in options with some kind of ticker line. */
       unsigned ticker_period = 2 * (str_len - len) + 4;
       unsigned phase = index % ticker_period;
 
@@ -335,7 +348,12 @@ void menu_ticker_line(char *buf, size_t len, unsigned index, const char *str, bo
       unsigned left_offset = phase - phase_left_stop;
       unsigned right_offset = (str_len - len) - (phase - phase_right_stop);
 
-      // Ticker period: [Wait at left (2 ticks), Progress to right (type_len - w), Wait at right (2 ticks), Progress to left].
+      /* Ticker period:
+       * [Wait at left (2 ticks),
+       * Progress to right(type_len - w),
+       * Wait at right (2 ticks),
+       * Progress to left].
+       */
       if (phase < phase_left_stop)
          strlcpy(buf, str, len + 1);
       else if (phase < phase_left_moving)
@@ -391,7 +409,8 @@ bool menu_iterate(void)
 #endif
    rarch_check_fullscreen();
 
-   if (input_key_pressed_func(RARCH_QUIT_KEY) || !driver.video->alive(driver.video_data))
+   if (input_key_pressed_func(RARCH_QUIT_KEY)
+         || !driver.video->alive(driver.video_data))
    {
       g_extern.lifecycle_state |= (1ULL << MODE_GAME);
       return false;
@@ -430,7 +449,9 @@ bool menu_iterate(void)
    if (driver.block_input)
       driver.menu->trigger_state = 0;
 
-   // don't run anything first frame, only capture held inputs for old_input_state
+   /* don't run anything first frame, only capture held inputs
+    * for old_input_state.
+    */
    if (driver.menu->trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_UP))
       action = MENU_ACTION_UP;
    else if (driver.menu->trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN))
@@ -452,25 +473,30 @@ bool menu_iterate(void)
    else if (driver.menu->trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_SELECT))
       action = MENU_ACTION_SELECT;
 
-   if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->iterate) 
+   if (driver.menu_ctx && driver.menu_ctx->backend
+         && driver.menu_ctx->backend->iterate) 
       input_entry_ret = driver.menu_ctx->backend->iterate(action);
 
-   if (driver.video_data && driver.video_poke && driver.video_poke->set_texture_enable)
-      driver.video_poke->set_texture_enable(driver.video_data, driver.menu->frame_buf_show, MENU_TEXTURE_FULLSCREEN);
+   if (driver.video_data && driver.video_poke &&
+         driver.video_poke->set_texture_enable)
+      driver.video_poke->set_texture_enable(driver.video_data,
+            driver.menu->frame_buf_show, MENU_TEXTURE_FULLSCREEN);
 
    rarch_render_cached_frame();
 
-   // Throttle in case VSync is broken (avoid 1000+ FPS Menu).
+   /* Throttle in case VSync is broken (avoid 1000+ FPS Menu). */
    driver.menu->time = rarch_get_time_usec();
    driver.menu->delta = (driver.menu->time - driver.menu->last_time) / 1000;
-   driver.menu->target_msec = 750 / g_settings.video.refresh_rate; // Try to sleep less, so we can hopefully rely on FPS logger.
+   driver.menu->target_msec = 750 / g_settings.video.refresh_rate;
+   /* Try to sleep less, so we can hopefully rely on FPS logger. */
    driver.menu->sleep_msec = driver.menu->target_msec - driver.menu->delta;
 
    if (driver.menu->sleep_msec > 0)
       rarch_sleep((unsigned int)driver.menu->sleep_msec);
    driver.menu->last_time = rarch_get_time_usec();
 
-   if (driver.video_data && driver.video_poke && driver.video_poke->set_texture_enable)
+   if (driver.video_data && driver.video_poke
+         && driver.video_poke->set_texture_enable)
       driver.video_poke->set_texture_enable(driver.video_data, false,
             MENU_TEXTURE_FULLSCREEN);
 
@@ -495,10 +521,12 @@ bool menu_iterate(void)
    return true;
 }
 
-// Quite intrusive and error prone.
-// Likely to have lots of small bugs.
-// Cleanly exit the main loop to ensure that all the tiny details get set properly.
-// This should mitigate most of the smaller bugs.
+/* Quite intrusive and error prone.
+ * Likely to have lots of small bugs.
+ * Cleanly exit the main loop to ensure that all the tiny details
+ * get set properly.
+ * This should mitigate most of the smaller bugs.
+ */
 bool menu_replace_config(const char *path)
 {
    if (strcmp(path, g_extern.config_path) == 0)
@@ -509,26 +537,31 @@ bool menu_replace_config(const char *path)
 
    strlcpy(g_extern.config_path, path, sizeof(g_extern.config_path));
    g_extern.block_config_read = false;
-   *g_settings.libretro = '\0'; // Load core in new config.
+   *g_settings.libretro = '\0'; /* Load core in new config. */
 
    rarch_main_command(RARCH_CMD_PREPARE_DUMMY);
 
    return true;
 }
 
-// Save a new config to a file. Filename is based on heuristics to avoid typing.
+/* Save a new config to a file. Filename is based
+ * on heuristics to avoid typing.
+ */
 bool menu_save_new_config(void)
 {
-   char config_dir[PATH_MAX], config_name[PATH_MAX], config_path[PATH_MAX], msg[512];
+   char config_dir[PATH_MAX], config_name[PATH_MAX],
+        config_path[PATH_MAX], msg[PATH_MAX];
    bool ret = false;
    bool found_path = false;
 
    *config_dir = '\0';
 
    if (*g_settings.menu_config_directory)
-      strlcpy(config_dir, g_settings.menu_config_directory, sizeof(config_dir));
-   else if (*g_extern.config_path) // Fallback
-      fill_pathname_basedir(config_dir, g_extern.config_path, sizeof(config_dir));
+      strlcpy(config_dir, g_settings.menu_config_directory,
+            sizeof(config_dir));
+   else if (*g_extern.config_path) /* Fallback */
+      fill_pathname_basedir(config_dir, g_extern.config_path,
+            sizeof(config_dir));
    else
    {
       const char *msg = "Config directory not set. Cannot save new config.";
@@ -538,10 +571,12 @@ bool menu_save_new_config(void)
       return false;
    }
 
-   if (*g_settings.libretro && path_file_exists(g_settings.libretro)) // Infer file name based on libretro core.
+   /* Infer file name based on libretro core. */
+   if (*g_settings.libretro && path_file_exists(g_settings.libretro))
    {
       unsigned i;
-      // In case of collision, find an alternative name.
+
+      /* In case of collision, find an alternative name. */
       for (i = 0; i < 16; i++)
       {
          char tmp[64];
@@ -566,12 +601,13 @@ bool menu_save_new_config(void)
       }
    }
 
-   // Fallback to system time ...
+   /* Fallback to system time... */
    if (!found_path)
    {
       RARCH_WARN("Cannot infer new config path. Use current time.\n");
       fill_dated_filename(config_name, "cfg", sizeof(config_name));
-      fill_pathname_join(config_path, config_dir, config_name, sizeof(config_path));
+      fill_pathname_join(config_path, config_dir, config_name,
+            sizeof(config_path));
    }
 
    if (config_save_file(config_path))
@@ -583,7 +619,8 @@ bool menu_save_new_config(void)
    }
    else
    {
-      snprintf(msg, sizeof(msg), "Failed saving config to \"%s\".", config_path);
+      snprintf(msg, sizeof(msg), "Failed saving config to \"%s\".",
+            config_path);
       RARCH_ERR("%s\n", msg);
    }
 
@@ -600,7 +637,9 @@ static inline int menu_list_get_first_char(file_list_t *buf, unsigned offset)
    file_list_get_alt_at_offset(buf, offset, &path);
    ret = tolower(*path);
 
-   // "Normalize" non-alphabetical entries so they are lumped together for purposes of jumping.
+   /* "Normalize" non-alphabetical entries so they are lumped together
+    * for purposes of jumping.
+    */
    if (ret < 'a')
       ret = 'a' - 1;
    else if (ret > 'z')
@@ -608,12 +647,15 @@ static inline int menu_list_get_first_char(file_list_t *buf, unsigned offset)
    return ret;
 }
 
-static inline bool menu_list_elem_is_dir(file_list_t *buf, unsigned offset)
+static inline bool menu_list_elem_is_dir(file_list_t *buf,
+      unsigned offset)
 {
    rarch_setting_t *setting = NULL;
    const char *path = NULL;
    unsigned type = 0;
+
    file_list_get_at_offset(buf, offset, &path, &type, setting);
+
    return type != MENU_FILE_PLAIN;
 }
 

@@ -29,10 +29,12 @@
 #include "menu_input_line_cb.h"
 #include "../../settings_data.h"
 
-//forward decls
-extern void menu_common_setting_set_current_string(rarch_setting_t *setting, const char *str);
+/* forward decls */
+void menu_common_setting_set_current_string(rarch_setting_t *setting,
+      const char *str);
 
-void menu_key_start_line(void *data, const char *label, input_keyboard_line_complete_t cb)
+void menu_key_start_line(void *data, const char *label,
+      input_keyboard_line_complete_t cb)
 {
    menu_handle_t *menu = (menu_handle_t*)data;
 
@@ -53,7 +55,9 @@ static void menu_key_end_line(void *data)
 
    menu->keyboard.display = false;
    menu->keyboard.label = NULL;
-   menu->old_input_state = -1ULL; // Avoid triggering states on pressing return.
+
+   /* Avoid triggering states on pressing return. */
+   menu->old_input_state = -1ULL;
 }
 
 static void menu_search_callback(void *userdata, const char *str)
@@ -126,7 +130,8 @@ void preset_filename_callback(void *userdata, const char *str)
       return;
    }
 
-   if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->shader_manager_save_preset)
+   if (driver.menu_ctx && driver.menu_ctx->backend
+         && driver.menu_ctx->backend->shader_manager_save_preset)
       driver.menu_ctx->backend->shader_manager_save_preset(str && *str ? str : NULL, false);
    menu_key_end_line(menu);
 }
@@ -154,14 +159,16 @@ void menu_key_event(bool down, unsigned keycode, uint32_t character, uint16_t mo
 
 void menu_poll_bind_state(struct menu_bind_state *state)
 {
+   unsigned i, b, a, h;
+   const rarch_joypad_driver_t *joypad = NULL;
+
    if (!state)
       return;
 
-   unsigned i, b, a, h;
    memset(state->state, 0, sizeof(state->state));
-   state->skip = driver.input->input_state(driver.input_data, NULL, 0, RETRO_DEVICE_KEYBOARD, 0, RETROK_RETURN);
+   state->skip = driver.input->input_state(driver.input_data, NULL, 0,
+         RETRO_DEVICE_KEYBOARD, 0, RETROK_RETURN);
 
-   const rarch_joypad_driver_t *joypad = NULL;
    if (driver.input && driver.input_data && driver.input->get_joypad_driver)
       joypad = driver.input->get_joypad_driver(driver.input_data);
 
@@ -228,7 +235,7 @@ static bool menu_poll_find_trigger_pad(struct menu_bind_state *state, struct men
       }
    }
 
-   // Axes are a bit tricky ...
+   /* Axes are a bit tricky ... */
    for (a = 0; a < MENU_MAX_AXES; a++)
    {
       int locked_distance = abs(n->axes[a] - new_state->axis_state[p].locked_axes[a]);
@@ -236,17 +243,20 @@ static bool menu_poll_find_trigger_pad(struct menu_bind_state *state, struct men
 
       if (abs(n->axes[a]) >= 20000 &&
             locked_distance >= 20000 &&
-            rested_distance >= 20000) // Take care of case where axis rests on +/- 0x7fff (e.g. 360 controller on Linux)
+            rested_distance >= 20000)
       {
+         /* Take care of case where axis rests on +/- 0x7fff
+          * (e.g. 360 controller on Linux)
+          */
          state->target->joyaxis = n->axes[a] > 0 ? AXIS_POS(a) : AXIS_NEG(a);
          state->target->joykey = NO_BTN;
 
-         // Lock the current axis.
+         /* Lock the current axis */
          new_state->axis_state[p].locked_axes[a] = n->axes[a] > 0 ? 0x7fff : -0x7fff;
          return true;
       }
 
-      if (locked_distance >= 20000) // Unlock the axis.
+      if (locked_distance >= 20000) /* Unlock the axis. */
          new_state->axis_state[p].locked_axes[a] = 0;
    }
 
@@ -254,6 +264,7 @@ static bool menu_poll_find_trigger_pad(struct menu_bind_state *state, struct men
    {
       uint16_t trigged = n->hats[h] & (~o->hats[h]);
       uint16_t sane_trigger = 0;
+
       if (trigged & HAT_UP_MASK)
          sane_trigger = HAT_UP_MASK;
       else if (trigged & HAT_DOWN_MASK)
@@ -274,7 +285,8 @@ static bool menu_poll_find_trigger_pad(struct menu_bind_state *state, struct men
    return false;
 }
 
-bool menu_poll_find_trigger(struct menu_bind_state *state, struct menu_bind_state *new_state)
+bool menu_poll_find_trigger(struct menu_bind_state *state,
+      struct menu_bind_state *new_state)
 {
    unsigned i;
 
@@ -285,7 +297,8 @@ bool menu_poll_find_trigger(struct menu_bind_state *state, struct menu_bind_stat
    {
       if (menu_poll_find_trigger_pad(state, new_state, i))
       {
-         g_settings.input.joypad_map[state->player] = i; // Update the joypad mapping automatically. More friendly that way.
+         // Update the joypad mapping automatically. More friendly that way.
+         g_settings.input.joypad_map[state->player] = i;
          return true;
       }
    }
@@ -302,25 +315,28 @@ bool menu_custom_bind_keyboard_cb(void *data, unsigned code)
    menu->binds.target->key = (enum retro_key)code;
    menu->binds.begin++;
    menu->binds.target++;
-   menu->binds.timeout_end = rarch_get_time_usec() + MENU_KEYBOARD_BIND_TIMEOUT_SECONDS * 1000000;
+   menu->binds.timeout_end = rarch_get_time_usec() +
+      MENU_KEYBOARD_BIND_TIMEOUT_SECONDS * 1000000;
+
    return menu->binds.begin <= menu->binds.last;
 }
 
 uint64_t menu_input(void)
 {
    unsigned i;
-   uint64_t input_state;
+   uint64_t input_state = 0;
    static const struct retro_keybind *binds[] = { g_settings.input.binds[0] };
 
    if (!driver.menu)
       return 0;
 
-   input_state = 0;
+   input_push_analog_dpad((struct retro_keybind*)binds[0],
+         (g_settings.input.analog_dpad_mode[0] == ANALOG_DPAD_NONE) ?
+         ANALOG_DPAD_LSTICK : g_settings.input.analog_dpad_mode[0]);
 
-
-   input_push_analog_dpad((struct retro_keybind*)binds[0], (g_settings.input.analog_dpad_mode[0] == ANALOG_DPAD_NONE) ? ANALOG_DPAD_LSTICK : g_settings.input.analog_dpad_mode[0]);
    for (i = 0; i < MAX_PLAYERS; i++)
-      input_push_analog_dpad(g_settings.input.autoconf_binds[i], g_settings.input.analog_dpad_mode[i]);
+      input_push_analog_dpad(g_settings.input.autoconf_binds[i],
+            g_settings.input.analog_dpad_mode[i]);
 
    if (!driver.block_libretro_input)
    {
@@ -329,11 +345,13 @@ uint64_t menu_input(void)
          input_state |= driver.input->input_state(driver.input_data, binds,
                0, RETRO_DEVICE_JOYPAD, 0, i) ? (1ULL << i) : 0;
 #ifdef HAVE_OVERLAY
-         input_state |= (driver.overlay_state.buttons & (UINT64_C(1) << i)) ? (1ULL << i) : 0;
+         input_state |= (driver.overlay_state.buttons & (UINT64_C(1) << i))
+            ? (1ULL << i) : 0;
 #endif
       }
    }
-   input_state |= input_key_pressed_func(RARCH_MENU_TOGGLE) ? (1ULL << RARCH_MENU_TOGGLE) : 0;
+   input_state |= input_key_pressed_func(RARCH_MENU_TOGGLE)
+      ? (1ULL << RARCH_MENU_TOGGLE) : 0;
 
    input_pop_analog_dpad((struct retro_keybind*)binds[0]);
    for (i = 0; i < MAX_PLAYERS; i++)

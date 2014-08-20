@@ -77,7 +77,7 @@ static int main_entry_iterate_clear_input(args_type() args)
    rarch_input_poll();
    if (!menu_input())
    {
-      // Restore libretro keyboard callback.
+      /* Restore libretro keyboard callback. */
       g_extern.system.key_event = key_event;
 
       g_extern.lifecycle_state &= ~(1ULL << MODE_CLEAR_INPUT);
@@ -93,12 +93,11 @@ static int main_entry_iterate_shutdown(args_type() args)
    if (!g_settings.load_dummy_on_core_shutdown)
       return 1;
 
-   // Load dummy core instead of exiting RetroArch completely.
+   /* Load dummy core instead of exiting RetroArch completely. */
    rarch_main_command(RARCH_CMD_PREPARE_DUMMY);
 
    return 0;
 }
-
 
 static int main_entry_iterate_content(args_type() args)
 {
@@ -115,7 +114,7 @@ static int main_entry_iterate_content(args_type() args)
 
 static int main_entry_iterate_load_content(args_type() args)
 {
-   // If content loading fails, we go back to menu.
+   /* If content loading fails, we go back to menu. */
    if (!load_menu_content())
       g_extern.lifecycle_state = (1ULL << MODE_MENU_PREINIT);
 
@@ -131,19 +130,20 @@ static int main_entry_iterate_menu_preinit(args_type() args)
    if (!driver.menu)
       return 1;
 
-   // Menu should always run with vsync on.
+   /* Menu should always run with vsync on. */
    rarch_main_command(RARCH_CMD_VIDEO_SET_BLOCKING_STATE);
 
-   // Stop all rumbling when entering the menu.
+   /* Stop all rumbling when entering the menu. */
    for (i = 0; i < MAX_PLAYERS; i++)
    {
       driver_set_rumble_state(i, RETRO_RUMBLE_STRONG, 0);
       driver_set_rumble_state(i, RETRO_RUMBLE_WEAK, 0);
    }
 
-   // Override keyboard callback to redirect to menu instead.
-   // We'll use this later for something ...
-   // FIXME: This should probably be moved to menu_common somehow.
+   /* Override keyboard callback to redirect to menu instead.
+    * We'll use this later for something ...
+    * FIXME: This should probably be moved to menu_common somehow.
+    */
    key_event = g_extern.system.key_event;
    g_extern.system.key_event = menu_key_event;
 
@@ -174,8 +174,11 @@ static int main_entry_iterate_menu(args_type() args)
 
       g_extern.lifecycle_state |= (1ULL << MODE_CLEAR_INPUT);
 
-      // If QUIT state came from command interface, we'll only see it once due to MODE_CLEAR_INPUT.
-      if (input_key_pressed_func(RARCH_QUIT_KEY) || !driver.video->alive(driver.video_data))
+      /* If QUIT state came from command interface, we'll only see it
+       * once due to MODE_CLEAR_INPUT.
+       */
+      if (input_key_pressed_func(RARCH_QUIT_KEY) ||
+            !driver.video->alive(driver.video_data))
          return 1;
    }
 
@@ -212,18 +215,22 @@ void main_exit(args_type() args)
 
    if (g_settings.config_save_on_exit && *g_extern.config_path)
    {
-      // save last core-specific config to the default config location, needed on
-      // consoles for core switching and reusing last good config for new cores.
+      /* Save last core-specific config to the default config location,
+       * needed on consoles for core switching and reusing last good 
+       * config for new cores.
+       */
       config_save_file(g_extern.config_path);
 
-      // Flush out the core specific config.
-      if (*g_extern.core_specific_config_path && g_settings.core_specific_config)
+      /* Flush out the core specific config. */
+      if (*g_extern.core_specific_config_path &&
+            g_settings.core_specific_config)
          config_save_file(g_extern.core_specific_config_path);
    }
 
    if (g_extern.main_is_init)
    {
-      driver.menu_data_own = false; // Do not want menu context to live any more.
+      /* Do not want menu context to live any more. */
+      driver.menu_data_own = false;
       rarch_main_deinit();
    }
 
@@ -238,9 +245,11 @@ void main_exit(args_type() args)
    if (driver.frontend_ctx && driver.frontend_ctx->deinit)
       driver.frontend_ctx->deinit(args);
 
-   if (g_extern.lifecycle_state & (1ULL << MODE_EXITSPAWN) && driver.frontend_ctx
+   if (g_extern.lifecycle_state & (1ULL << MODE_EXITSPAWN)
+         && driver.frontend_ctx
          && driver.frontend_ctx->exitspawn)
-      driver.frontend_ctx->exitspawn(g_settings.libretro, sizeof(g_settings.libretro));
+      driver.frontend_ctx->exitspawn(g_settings.libretro,
+            sizeof(g_settings.libretro));
 
    rarch_main_clear_state();
 
@@ -274,7 +283,8 @@ static void check_defaults_dirs(void)
       path_mkdir(g_defaults.system_dir);
 }
 
-bool main_load_content(int argc, char **argv, args_type() args, environment_get_t environ_get,
+bool main_load_content(int argc, char **argv, args_type() args,
+      environment_get_t environ_get,
       process_args_t process_args)
 {
    int *rarch_argc_ptr;
@@ -346,8 +356,9 @@ returntype main_entry(signature())
 
    rarch_main_clear_state();
 
-   if (!(ret = (main_load_content(argc, argv, args, driver.frontend_ctx->environment_get,
-         driver.frontend_ctx->process_args))))
+   if (!(ret = (main_load_content(argc, argv, args,
+                  driver.frontend_ctx->environment_get,
+                  driver.frontend_ctx->process_args))))
       return_var(ret);
 
 #if defined(HAVE_MENU)
@@ -355,8 +366,9 @@ returntype main_entry(signature())
    if (ret)
 #endif
    {
-      // If we started content directly from command line,
-      // push it to content history.
+      /* If we started content directly from command line,
+       * push it to content history.
+       */
       if (!g_extern.libretro_dummy)
          menu_content_history_push_current();
    }

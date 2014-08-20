@@ -65,11 +65,11 @@ void menu_set_navigation_last(menu_handle_t *menu)
 
 void menu_descend_alphabet(menu_handle_t *menu, size_t *ptr_out)
 {
-   size_t i, ptr;
+   size_t i   = 0;
+   size_t ptr = *ptr_out;
+
    if (!menu->scroll_indices_size)
       return;
-
-   ptr = *ptr_out;
 
    if (ptr == 0)
       return;
@@ -95,7 +95,8 @@ void menu_ascend_alphabet(menu_handle_t *menu, size_t *ptr_out)
    if (ptr == menu->scroll_indices[menu->scroll_indices_size - 1])
       return;
 
-   while (i < menu->scroll_indices_size - 1 && menu->scroll_indices[i + 1] <= ptr)
+   while (i < menu->scroll_indices_size - 1
+         && menu->scroll_indices[i + 1] <= ptr)
       i++;
    *ptr_out = menu->scroll_indices[i + 1];
 

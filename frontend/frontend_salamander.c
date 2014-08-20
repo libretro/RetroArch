@@ -27,8 +27,9 @@
 
 struct defaults g_defaults;
 
-//We need to set libretro to the first entry in the cores
-//directory so that it will be saved to the config file
+/*We need to set libretro to the first entry in the cores
+ * directory so that it will be saved to the config file
+ */
 static void find_first_libretro_core(char *first_file,
    size_t size_of_first_file, const char *dir,
    const char * ext)
@@ -37,7 +38,8 @@ static void find_first_libretro_core(char *first_file,
    size_t i;
    bool ret = false;
 
-   RARCH_LOG("Searching for valid libretro implementation in: \"%s\".\n", dir);
+   RARCH_LOG("Searching for valid libretro implementation in: \"%s\".\n",
+         dir);
 
    list = (struct string_list*)dir_list_new(dir, ext, false);
    if (!list)
@@ -77,10 +79,12 @@ static void find_first_libretro_core(char *first_file,
    dir_list_free(list);
 }
 
-static void find_and_set_first_file(char *path, size_t sizeof_path, const char *ext)
+static void find_and_set_first_file(char *path, size_t sizeof_path,
+      const char *ext)
 {
-   //Last fallback - we'll need to start the first executable file 
-   // we can find in the RetroArch cores directory
+   /* Last fallback - we'll need to start the first executable file 
+    * we can find in the RetroArch cores directory.
+    */
 
    char first_file[PATH_MAX] = {0};
    find_first_libretro_core(first_file, sizeof(first_file),
@@ -97,7 +101,7 @@ static void find_and_set_first_file(char *path, size_t sizeof_path, const char *
 
 static void salamander_init(char *libretro_path, size_t sizeof_libretro_path)
 {
-   //normal executable loading path
+   /* normal executable loading path */
    bool config_file_exists = false;
 
    if (path_file_exists(g_defaults.config_path))
@@ -115,7 +119,7 @@ static void salamander_init(char *libretro_path, size_t sizeof_libretro_path)
          strlcpy(libretro_path, tmp_str, sizeof_libretro_path);
       }
 #ifdef GEKKO
-      else // stupid libfat bug or something; somtimes it says the file is there when it doesn't
+      else /* stupid libfat bug or something; sometimes it says the file is there when it doesn't */
          config_file_exists = false;
 #endif
    }
@@ -142,10 +146,10 @@ int main(int argc, char *argv[])
 {
    char libretro_path[PATH_MAX];
    void *args = NULL;
-   struct rarch_main_wrap *wrap_args;
+   struct rarch_main_wrap *wrap_args = NULL;
+   frontend_ctx_driver_t *frontend_ctx = NULL;
 
-   frontend_ctx_driver_t *frontend_ctx = (frontend_ctx_driver_t*)frontend_ctx_init_first();
-   wrap_args = NULL;
+   frontend_ctx = (frontend_ctx_driver_t*)frontend_ctx_init_first();
 
    if (!frontend_ctx)
       return 0;
