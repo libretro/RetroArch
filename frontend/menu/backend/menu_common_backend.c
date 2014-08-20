@@ -3781,6 +3781,32 @@ static void menu_common_setting_set_label(char *type_str,
          snprintf(type_str, type_str_size, "%u", *setting->value.unsigned_integer);
       else if (setting && !strcmp(setting->name, "slowmotion_ratio"))
          snprintf(type_str, type_str_size, "%.1fx", *setting->value.fraction);
+      else if (setting && !strcmp(setting->name, "audio_volume"))
+         snprintf(type_str, type_str_size, "%.1f dB", *setting->value.fraction);
+      else if (setting && !strcmp(setting->name, "video_refresh_rate"))
+         snprintf(type_str, type_str_size, "%.3f Hz", *setting->value.fraction);
+      else if (setting && !strcmp(setting->name, "libretro_log_level"))
+      {
+         switch(*setting->value.unsigned_integer)
+         {
+            case 0:
+               snprintf(type_str, type_str_size, "0 (Debug)");
+               break;
+            case 1:
+               snprintf(type_str, type_str_size, "1 (Info)");
+               break;
+            case 2:
+               snprintf(type_str, type_str_size, "2 (Warning)");
+               break;
+            case 3:
+               snprintf(type_str, type_str_size, "3 (Error)");
+               break;
+         }
+      }
+      else if (setting && !strcmp(setting->name, "audio_latency"))
+         snprintf(type_str, type_str_size, "%d ms", *setting->value.unsigned_integer);
+      else if (setting && !strcmp(setting->name, "audio_dsp_plugin"))
+         strlcpy(type_str, path_basename(setting->value.string), type_str_size);
       else
       {
          switch (type)
@@ -3821,9 +3847,6 @@ static void menu_common_setting_set_label(char *type_str,
                else
                   strlcpy(type_str, "0 (Auto)", type_str_size);
                break;
-            case MENU_SETTINGS_VIDEO_REFRESH_RATE:
-               snprintf(type_str, type_str_size, "%.3f Hz", g_settings.video.refresh_rate);
-               break;
             case MENU_SETTINGS_VIDEO_REFRESH_RATE_AUTO:
                {
                   double refresh_rate = 0.0;
@@ -3863,23 +3886,6 @@ static void menu_common_setting_set_label(char *type_str,
                strlcpy(type_str, "(DIR)", type_str_size);
                *w = 5;
                break;
-            case MENU_SETTINGS_LIBRETRO_LOG_LEVEL:
-               switch(g_settings.libretro_log_level)
-               {
-                  case 0:
-                     snprintf(type_str, type_str_size, "0 (Debug)");
-                     break;
-                  case 1:
-                     snprintf(type_str, type_str_size, "1 (Info)");
-                     break;
-                  case 2:
-                     snprintf(type_str, type_str_size, "2 (Warning)");
-                     break;
-                  case 3:
-                     snprintf(type_str, type_str_size, "3 (Error)");
-                     break;
-               }
-               break;
             case MENU_SETTINGS_SRAM_AUTOSAVE:
                if (g_settings.autosave_interval)
                   snprintf(type_str, type_str_size, "%u seconds", g_settings.autosave_interval);
@@ -3892,9 +3898,6 @@ static void menu_common_setting_set_label(char *type_str,
                   strlcpy(type_str, "-1 (auto)", type_str_size);
                else
                   snprintf(type_str, type_str_size, "%d", g_settings.state_slot);
-               break;
-            case MENU_SETTINGS_AUDIO_LATENCY:
-               snprintf(type_str, type_str_size, "%d ms", g_settings.audio.latency);
                break;
             case MENU_SETTINGS_FASTFORWARD_RATIO:
                if (g_settings.fastforward_ratio > 0.0f)
@@ -3998,9 +4001,6 @@ static void menu_common_setting_set_label(char *type_str,
             case MENU_SETTINGS_CUSTOM_BIND_DEFAULT_ALL:
                strlcpy(type_str, "...", type_str_size);
                break;
-            case MENU_SETTINGS_AUDIO_DSP_FILTER:
-               strlcpy(type_str, path_basename(g_settings.audio.dsp_plugin), type_str_size);
-               break;
             case MENU_CONTENT_HISTORY_PATH:
                strlcpy(type_str, g_settings.content_history_path ? g_settings.content_history_path : "<None>", type_str_size);
                break;
@@ -4072,9 +4072,6 @@ static void menu_common_setting_set_label(char *type_str,
                break;
             case MENU_SETTINGS_CUSTOM_BIND_MODE:
                strlcpy(type_str, driver.menu->bind_mode_keyboard ? "Keyboard" : "Joypad", type_str_size);
-               break;
-            case MENU_SETTINGS_AUDIO_VOLUME:
-               snprintf(type_str, type_str_size, "%.1f dB", g_extern.audio_data.volume_db);
                break;
 #ifdef _XBOX1
             case MENU_SETTINGS_FLICKER_FILTER:
