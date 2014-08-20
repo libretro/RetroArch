@@ -2084,8 +2084,7 @@ static void set_fullscreen(bool fullscreen)
    g_settings.video.fullscreen = fullscreen;
    driver.video_cache_context = g_extern.system.hw_render_callback.cache_context;
    driver.video_cache_context_ack = false;
-   uninit_drivers();
-   init_drivers();
+   rarch_main_command(RARCH_CMD_RESET_CONTEXT);
    driver.video_cache_context = false;
 
    /* Poll input to avoid possibly stale data to corrupt things. */
@@ -3362,6 +3361,10 @@ void rarch_main_command(unsigned action)
          input_overlay_set_alpha_mod(driver.overlay,
                g_settings.input.overlay_opacity);
 #endif
+         break;
+      case RARCH_CMD_RESET_CONTEXT:
+         uninit_drivers();
+         init_drivers();
          break;
    }
 }
