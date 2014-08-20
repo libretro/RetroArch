@@ -142,7 +142,7 @@ typedef struct menu_ctx_driver_backend
    int      (*core_setting_toggle)(unsigned, unsigned);
    int      (*setting_toggle)(unsigned, unsigned, unsigned, rarch_setting_t*);
    int      (*setting_set)(unsigned, unsigned, rarch_setting_t *);
-   void     (*setting_set_label)(char *, size_t, unsigned *, unsigned);
+   void     (*setting_set_label)(char *, size_t, unsigned *, unsigned,unsigned);
    void     (*defer_decision_automatic)(void);
    void     (*defer_decision_manual)(void);
    const char *ident;

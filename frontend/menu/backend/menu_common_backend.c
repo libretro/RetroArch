@@ -3715,8 +3715,13 @@ static void menu_common_setting_set_label_perf(char *type_str, size_t type_str_s
    }
 }
 
-static void menu_common_setting_set_label(char *type_str, size_t type_str_size, unsigned *w, unsigned type)
+static void menu_common_setting_set_label(char *type_str,
+      size_t type_str_size, unsigned *w, unsigned type, unsigned index)
 {
+   rarch_setting_t *setting_data = (rarch_setting_t*)setting_data_get_list();
+   rarch_setting_t *setting = (rarch_setting_t*)setting_data_find_setting(setting_data,
+         driver.menu->selection_buf->list[index].label);
+
    if (type >= MENU_SETTINGS_PERF_COUNTERS_BEGIN && type <= MENU_SETTINGS_PERF_COUNTERS_END)
       menu_common_setting_set_label_perf(type_str, type_str_size, w, type, perf_counters_rarch,
             type - MENU_SETTINGS_PERF_COUNTERS_BEGIN);
@@ -3730,6 +3735,10 @@ static void menu_common_setting_set_label(char *type_str, size_t type_str_size, 
                type - MENU_SETTINGS_BIND_BEGIN);
 
       input_get_bind_string(type_str, &g_settings.input.binds[driver.menu->current_pad][type - MENU_SETTINGS_BIND_BEGIN], auto_bind, type_str_size);
+   }
+   else if (setting && setting->type == ST_BOOL)
+   {
+      strlcpy(type_str, *setting->value.boolean ? "ON" : "OFF", type_str_size);
    }
    else
    {
@@ -3757,29 +3766,11 @@ static void menu_common_setting_set_label(char *type_str, size_t type_str_size, 
          case MENU_SETTINGS_VIDEO_GAMMA:
             snprintf(type_str, type_str_size, "%d", g_extern.console.screen.gamma_correction);
             break;
-         case MENU_SETTINGS_VIDEO_VSYNC:
-            strlcpy(type_str, g_settings.video.vsync ? "ON" : "OFF", type_str_size);
-            break;
-         case MENU_SETTINGS_VIDEO_HW_SHARED_CONTEXT:
-            strlcpy(type_str, g_settings.video.shared_context ? "ON" : "OFF", type_str_size);
-            break;
-         case MENU_SETTINGS_VIDEO_HARD_SYNC:
-            strlcpy(type_str, g_settings.video.hard_sync ? "ON" : "OFF", type_str_size);
-            break;
-         case MENU_SETTINGS_VIDEO_BLACK_FRAME_INSERTION:
-            strlcpy(type_str, g_settings.video.black_frame_insertion ? "ON" : "OFF", type_str_size);
-            break;
          case MENU_SETTINGS_VIDEO_SWAP_INTERVAL:
             snprintf(type_str, type_str_size, "%u", g_settings.video.swap_interval);
             break;
-         case MENU_SETTINGS_VIDEO_THREADED:
-            strlcpy(type_str, g_settings.video.threaded ? "ON" : "OFF", type_str_size);
-            break;
          case MENU_SETTINGS_VIDEO_WINDOW_SCALE:
             snprintf(type_str, type_str_size, "%.1fx", g_settings.video.scale);
-            break;
-         case MENU_SETTINGS_VIDEO_CROP_OVERSCAN:
-            strlcpy(type_str, g_settings.video.crop_overscan ? "ON" : "OFF", type_str_size);
             break;
          case MENU_SETTINGS_VIDEO_HARD_SYNC_FRAMES:
             snprintf(type_str, type_str_size, "%u", g_settings.video.hard_sync_frames);
@@ -3831,9 +3822,6 @@ static void menu_common_setting_set_label(char *type_str, size_t type_str_size, 
                   strlcpy(type_str, "N/A", type_str_size);
                break;
             }
-         case MENU_SETTINGS_VIDEO_INTEGER_SCALE:
-            strlcpy(type_str, g_settings.video.scale_integer ? "ON" : "OFF", type_str_size);
-            break;
          case MENU_SETTINGS_VIDEO_ASPECT_RATIO:
             strlcpy(type_str, aspectratio_lut[g_settings.video.aspect_ratio_idx].name, type_str_size);
             break;
@@ -3864,12 +3852,6 @@ static void menu_common_setting_set_label(char *type_str, size_t type_str_size, 
             strlcpy(type_str, "(DIR)", type_str_size);
             *w = 5;
             break;
-         case MENU_SETTINGS_REWIND_ENABLE:
-            strlcpy(type_str, g_settings.rewind_enable ? "ON" : "OFF", type_str_size);
-            break;
-         case MENU_SETTINGS_GPU_SCREENSHOT:
-            strlcpy(type_str, g_settings.video.gpu_screenshot ? "ON" : "OFF", type_str_size);
-            break;
          case MENU_SETTINGS_REWIND_GRANULARITY:
             snprintf(type_str, type_str_size, "%u", g_settings.rewind_granularity);
             break;
@@ -3890,27 +3872,6 @@ static void menu_common_setting_set_label(char *type_str, size_t type_str_size, 
                   break;
             }
             break;
-         case MENU_SETTINGS_LOGGING_VERBOSITY:
-            strlcpy(type_str, g_extern.verbosity ? "ON" : "OFF", type_str_size);
-            break;
-         case MENU_SETTINGS_PERFORMANCE_COUNTERS_ENABLE:
-            strlcpy(type_str, g_extern.perfcnt_enable ? "ON" : "OFF", type_str_size);
-            break;
-         case MENU_SETTINGS_CONFIG_SAVE_ON_EXIT:
-            strlcpy(type_str, g_settings.config_save_on_exit ? "ON" : "OFF", type_str_size);
-            break;
-         case MENU_SETTINGS_SAVESTATE_AUTO_SAVE:
-            strlcpy(type_str, g_settings.savestate_auto_save ? "ON" : "OFF", type_str_size);
-            break;
-         case MENU_SETTINGS_SAVESTATE_AUTO_LOAD:
-            strlcpy(type_str, g_settings.savestate_auto_load ? "ON" : "OFF", type_str_size);
-            break;
-         case MENU_SETTINGS_BLOCK_SRAM_OVERWRITE:
-            strlcpy(type_str, g_settings.block_sram_overwrite ? "ON" : "OFF", type_str_size);
-            break;
-         case MENU_SETTINGS_PER_CORE_CONFIG:
-            strlcpy(type_str, g_settings.core_specific_config ? "ON" : "OFF", type_str_size);
-            break;
          case MENU_SETTINGS_SRAM_AUTOSAVE:
             if (g_settings.autosave_interval)
                snprintf(type_str, type_str_size, "%u seconds", g_settings.autosave_interval);
@@ -3927,15 +3888,6 @@ static void menu_common_setting_set_label(char *type_str, size_t type_str_size, 
          case MENU_SETTINGS_AUDIO_LATENCY:
             snprintf(type_str, type_str_size, "%d ms", g_settings.audio.latency);
             break;
-         case MENU_SETTINGS_AUDIO_SYNC:
-            strlcpy(type_str, g_settings.audio.sync ? "ON" : "OFF", type_str_size);
-            break;
-      case MENU_SETTINGS_AUDIO_ENABLE:
-            strlcpy(type_str, g_settings.audio.enable ? "ON" : "OFF", type_str_size);
-            break;
-         case MENU_SETTINGS_AUDIO_MUTE:
-            strlcpy(type_str, g_extern.audio_data.mute ? "ON" : "OFF", type_str_size);
-            break;
          case MENU_SETTINGS_AUDIO_CONTROL_RATE_DELTA:
             snprintf(type_str, type_str_size, "%.3f", g_settings.audio.rate_control_delta);
             break;
@@ -3947,9 +3899,6 @@ static void menu_common_setting_set_label(char *type_str, size_t type_str_size, 
             break;
          case MENU_SETTINGS_SLOWMOTION_RATIO:
             snprintf(type_str, type_str_size, "%.1fx", g_settings.slowmotion_ratio);
-            break;
-         case MENU_SETTINGS_DEBUG_TEXT:
-            snprintf(type_str, type_str_size, (g_settings.fps_show) ? "ON" : "OFF");
             break;
          case MENU_BROWSER_DIR_PATH:
             strlcpy(type_str, *g_settings.menu_content_directory ? g_settings.menu_content_directory : "<default>", type_str_size);
@@ -4141,9 +4090,6 @@ static void menu_common_setting_set_label(char *type_str, size_t type_str_size, 
                strlcpy(type_str, name, type_str_size);
             }
             break;
-         case MENU_SETTINGS_DEVICE_AUTODETECT_ENABLE:
-            strlcpy(type_str, g_settings.input.autodetect_enable ? "ON" : "OFF", type_str_size);
-            break;
          case MENU_SETTINGS_CUSTOM_BIND_MODE:
             strlcpy(type_str, driver.menu->bind_mode_keyboard ? "Keyboard" : "Joypad", type_str_size);
             break;
@@ -4161,12 +4107,6 @@ static void menu_common_setting_set_label(char *type_str, size_t type_str_size, 
 #endif
          case MENU_SETTINGS_CUSTOM_BGM_CONTROL_ENABLE:
             strlcpy(type_str, (g_extern.lifecycle_state & (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE)) ? "ON" : "OFF", type_str_size);
-            break;
-         case MENU_SETTINGS_PAUSE_IF_WINDOW_FOCUS_LOST:
-            strlcpy(type_str, g_settings.pause_nonactive ? "ON" : "OFF", type_str_size);
-            break;
-         case MENU_SETTINGS_WINDOW_COMPOSITING_ENABLE:
-            strlcpy(type_str, g_settings.video.disable_composition ? "OFF" : "ON", type_str_size);
             break;
          case MENU_SETTINGS_USER_LANGUAGE:
             {
@@ -4192,9 +4132,6 @@ static void menu_common_setting_set_label(char *type_str, size_t type_str_size, 
             snprintf(type_str, type_str_size, "%s", g_settings.username);
             break;
 #ifdef HAVE_NETPLAY
-         case MENU_SETTINGS_NETPLAY_ENABLE:
-            strlcpy(type_str, g_extern.netplay_enable ? "ON" : "OFF", type_str_size);
-            break;
          case MENU_SETTINGS_NETPLAY_HOST_IP_ADDRESS:
             strlcpy(type_str, g_extern.netplay_server, type_str_size);
             break;
@@ -4204,30 +4141,9 @@ static void menu_common_setting_set_label(char *type_str, size_t type_str_size, 
          case MENU_SETTINGS_NETPLAY_TCP_UDP_PORT:
             snprintf(type_str, type_str_size, "%d", g_extern.netplay_port ? g_extern.netplay_port : RARCH_DEFAULT_PORT);
             break;
-         case MENU_SETTINGS_NETPLAY_MODE:
-            snprintf(type_str, type_str_size, g_extern.netplay_is_client ? "ON" : "OFF");
-            break;
-         case MENU_SETTINGS_NETPLAY_SPECTATOR_MODE_ENABLE:
-            snprintf(type_str, type_str_size, g_extern.netplay_is_spectate ? "ON" : "OFF");
-            break;
 #endif
-         case MENU_SETTINGS_PRIVACY_CAMERA_ALLOW:
-            snprintf(type_str, type_str_size, g_settings.camera.allow ? "ON" : "OFF");
-            break;
-         case MENU_SETTINGS_PRIVACY_LOCATION_ALLOW:
-            snprintf(type_str, type_str_size, g_settings.location.allow ? "ON" : "OFF");
-            break;
-         case MENU_SETTINGS_ONSCREEN_KEYBOARD_ENABLE:
-            snprintf(type_str, type_str_size, g_settings.osk.enable ? "ON" : "OFF");
-            break;
-         case MENU_SETTINGS_FONT_ENABLE:
-            snprintf(type_str, type_str_size, g_settings.video.font_enable ? "ON" : "OFF");
-            break;
          case MENU_SETTINGS_FONT_SIZE:
             snprintf(type_str, type_str_size, "%.1f", g_settings.video.font_size);
-            break;
-         case MENU_SETTINGS_LOAD_DUMMY_ON_CORE_SHUTDOWN:
-            snprintf(type_str, type_str_size, g_settings.load_dummy_on_core_shutdown ? "ON" : "OFF");
             break;
          default:
             *type_str = '\0';
