@@ -3738,26 +3738,31 @@ static void menu_common_setting_set_label(char *type_str,
       if (setting && !strcmp(setting->name, "video_rotation"))
          strlcpy(type_str, rotation_lut[*setting->value.unsigned_integer],
                type_str_size);
-      else if (setting && !strcmp(setting->name, "video_viwidth"))
-         snprintf(type_str, type_str_size, "%d", *setting->value.unsigned_integer);
       else if (setting && !strcmp(setting->name, "video_filter"))
          strlcpy(type_str, path_basename(setting->value.string), type_str_size);
       else if (setting && !strcmp(setting->name, "video_smooth"))
          strlcpy(type_str, (*setting->value.boolean) ? "Bilinear filtering" : "Point filtering", type_str_size);
-      else if (setting && !strcmp(setting->name, "video_gamma"))
+      else if (
+               (setting && !strcmp(setting->name, "video_gamma"))
+            || (setting && !strcmp(setting->name, "video_viwidth"))
+            || (setting && !strcmp(setting->name, "netplay_delay_frames"))
+            || (setting && !strcmp(setting->name, "game_history_size"))
+            || (setting && !strcmp(setting->name, "audio_latency"))
+            || (setting && !strcmp(setting->name, "video_filter_flicker"))
+            )
          snprintf(type_str, type_str_size, "%d", *setting->value.unsigned_integer);
-      else if (setting && !strcmp(setting->name, "video_swap_interval"))
+      else if (
+               (setting && !strcmp(setting->name, "video_swap_interval"))
+            || (setting && !strcmp(setting->name, "video_hard_sync_frames"))
+            || (setting && !strcmp(setting->name, "rewind_granularity"))
+            )
          snprintf(type_str, type_str_size, "%u", *setting->value.unsigned_integer);
       else if (setting && !strcmp(setting->name, "video_scale"))
-         snprintf(type_str, type_str_size, "%.1fx", *setting->value.fraction);
-      else if (setting && !strcmp(setting->name, "video_hard_sync_frames"))
-         snprintf(type_str, type_str_size, "%u", *setting->value.unsigned_integer);
+         snprintf(type_str, type_str_size, "%.1f", *setting->value.fraction);
       else if (setting && !strcmp(setting->name, "video_font_size"))
          snprintf(type_str, type_str_size, "%.1f", *setting->value.fraction);
       else if (setting && !strcmp(setting->name, "netplay_nickname"))
          snprintf(type_str, type_str_size, "%s", setting->value.string);
-      else if (setting && !strcmp(setting->name, "netplay_delay_frames"))
-         snprintf(type_str, type_str_size, "%d", *setting->value.unsigned_integer);
       else if (setting && !strcmp(setting->name, "aspect_ratio_index"))
          strlcpy(type_str, aspectratio_lut[*setting->value.unsigned_integer].name, type_str_size);
       else if (setting && !strcmp(setting->name, "audio_rate_control_delta"))
@@ -3770,12 +3775,8 @@ static void menu_common_setting_set_label(char *type_str,
          strlcpy(type_str, path_basename(setting->value.string), type_str_size);
       else if (setting && !strcmp(setting->name, "overlay_directory"))
          strlcpy(type_str, *setting->value.string ? setting->value.string : "<default>", type_str_size);
-      else if (setting && !strcmp(setting->name, "game_history_size"))
-         snprintf(type_str, type_str_size, "%d", *setting->value.unsigned_integer);
-      else if (setting && !strcmp(setting->name, "rewind_granularity"))
-         snprintf(type_str, type_str_size, "%u", *setting->value.unsigned_integer);
       else if (setting && !strcmp(setting->name, "slowmotion_ratio"))
-         snprintf(type_str, type_str_size, "%.1fx", *setting->value.fraction);
+         snprintf(type_str, type_str_size, "%.1f", *setting->value.fraction);
       else if (setting && !strcmp(setting->name, "audio_volume"))
          snprintf(type_str, type_str_size, "%.1f dB", *setting->value.fraction);
       else if (setting && !strcmp(setting->name, "video_refresh_rate"))
@@ -3798,12 +3799,8 @@ static void menu_common_setting_set_label(char *type_str,
                break;
          }
       }
-      else if (setting && !strcmp(setting->name, "audio_latency"))
-         snprintf(type_str, type_str_size, "%d ms", *setting->value.unsigned_integer);
       else if (setting && !strcmp(setting->name, "audio_dsp_plugin"))
          strlcpy(type_str, path_basename(setting->value.string), type_str_size);
-      else if (setting && !strcmp(setting->name, "video_filter_flicker"))
-         snprintf(type_str, type_str_size, "%d", *setting->value.unsigned_integer);
       else
       {
          switch (type)
