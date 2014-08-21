@@ -50,9 +50,10 @@ override_dh_auto_install:
 	$(MAKE) DESTDIR=$(CURDIR)/debian/retroarch PREFIX=/usr install
 	cp $(CURDIR)/AUTHORS $(CURDIR)/debian/retroarch/usr/share/doc/retroarch/
 	cp $(CURDIR)/debian/retroarch.desktop $(CURDIR)/debian/retroarch/usr/share/applications/
-	cp $(CURDIR)/debian/retroarch.cfg $(CURDIR)/debian/retroarch/etc/
 	# SoftFilters
-	cp $(CURDIR)/gfx/filters/*.so $(CURDIR)/debian/retroarch/usr/lib/retroarch/filters/video/
+	cd $(CURDIR)/gfx/filters/ && \
+		cp *.so $(CURDIR)/debian/retroarch/usr/lib/retroarch/filters/video/ && \
+		cp *.filt $(CURDIR)/debian/retroarch/usr/lib/retroarch/filters/video/
 	# Audio DSP plugins
 	cd $(CURDIR)/audio/filters/ && \
 		cp *.so $(CURDIR)/debian/retroarch/usr/lib/retroarch/filters/audio/ && \
