@@ -211,6 +211,11 @@ endif
 
 ifeq ($(HAVE_SDL), 1)
    OBJ += gfx/sdl_gfx.o input/sdl_input.o input/sdl_joypad.o audio/sdl_audio.o
+
+   ifeq ($(HAVE_OPENGL), 1)
+     OBJ += gfx/context/sdl_gl_ctx.o
+   endif
+
    JOYCONFIG_OBJ += input/sdl_joypad.o
    JOYCONFIG_LIBS += $(SDL_LIBS)
    DEFINES += $(SDL_CFLAGS) $(BSD_LOCAL_INC)
@@ -219,6 +224,11 @@ endif
 
 ifeq ($(HAVE_SDL2), 1)
    OBJ += gfx/sdl2_gfx.o input/sdl_input.o input/sdl_joypad.o audio/sdl_audio.o
+
+   ifeq ($(HAVE_OPENGL), 1)
+     OBJ += gfx/context/sdl_gl_ctx.o
+   endif
+
    JOYCONFIG_OBJ += input/sdl_joypad.o
    JOYCONFIG_LIBS += $(SDL2_LIBS)
    DEFINES += $(SDL2_CFLAGS) $(BSD_LOCAL_INC)

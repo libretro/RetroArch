@@ -391,7 +391,7 @@ static void *sdl2_gfx_init(const video_info_t *video, const input_driver_t **inp
    {
       SDL_DisplayMode mode;
 
-      if (SDL_GetCurrentDisplayMode(i, &mode) <= 0)
+      if (SDL_GetCurrentDisplayMode(i, &mode) < 0)
          RARCH_LOG("\tDisplay #%i mode: unknown.\n", i);
       else
          RARCH_LOG("\tDisplay #%i mode: %ix%i@%ihz.\n", i, mode.w, mode.h,
