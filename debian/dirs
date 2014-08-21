@@ -1,5 +1,14 @@
 usr/bin
-etc/
+etc
+usr/lib/libretro
+usr/lib/retroarch/filters/video
+usr/lib/retroarch/filters/audio
+usr/share/doc/retroarch
 usr/share/man/man1
 usr/share/applications
+usr/share/libretro/assets
+usr/share/libretro/autoconfig
+usr/share/libretro/info
+usr/share/libretro/shaders
+usr/share/libretro/overlays
 usr/share/pixmaps

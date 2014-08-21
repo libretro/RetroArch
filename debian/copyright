@@ -1,24 +1,71 @@
 This package was debianized by Hunter Kaller (hizzlekizzle) <hunter_kaller@yahoo.com> on
-Tue, 14 Apr 2010 11:03:43 -0500.
+Mon, 23 Apr 2012 13:24:59 -0500.
 
 It was downloaded from <https://github.com/libretro/RetroArch>
 
 Upstream Authors:
 
-    Hans-Kristian Arntzen (Themaister) <maister@archlinux.us>
-    Daniel De Matteis (Squarepusher aka twinaphex) <libretro@gmail.com>
+    The RetroArch Team
+        Hans-Kristian Arntzen (Themaister) (main code) <maister@archlinux.us>
+        Daniel De Matteis (Squarepusher aka twinaphex) (maintainer) <libretro@gmail.com>
+        others, see `/usr/share/doc/retroarch/AUTHORS'
 
-Copyright:
+Files: *
+Copyright: 2010-2014 The RetroArch Team
+License: GPLv3
 
-    Copyright (C) 2010-2014 The RetroArch Team
+Files: libretro.h
+Copyright: 2010-2014 The RetroArch Team
+License: The MIT License (MIT)
+    Permission is hereby granted, free of charge, to any person obtaining a copy
+    of this software and associated documentation files (the "Software"), to deal
+    in the Software without restriction, including without limitation the rights
+    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+    copies of the Software, and to permit persons to whom the Software is
+    furnished to do so, subject to the following conditions:
+ .
+    The above copyright notice and this permission notice shall be included in
+    all copies or substantial portions of the Software.
+ .
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+    THE SOFTWARE.
 
+Files: performance/performance_android.c
+       performance/performance_android.h
+Copyright: 2010 The Android Open Source Project
 License:
-
-    Licensed under the terms of the GNU General Public License version 3
+    Redistribution and use in source and binary forms, with or without
+    modification, are permitted provided that the following conditions
+    are met:
+     * Redistributions of source code must retain the above copyright
+       notice, this list of conditions and the following disclaimer.
+     * Redistributions in binary form must reproduce the above copyright
+       notice, this list of conditions and the following disclaimer in
+       the documentation and/or other materials provided with the
+       distribution.
+ .
+    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+    "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+    LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+    FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+    COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+    INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+    BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
+    OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+    AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+    OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
+    OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+    SUCH DAMAGE.
 
 The Debian packaging is:
 
-    Copyright (C) 2009 Hunter Kaller (hizzlekizzle) <hunter_kaller@yahoo.com>
+    Copyright (C) 2012-2014 Hunter Kaller (hizzlekizzle) <hunter_kaller@yahoo.com>
+    Copyright (C) 2014 Sergio Benjamim (sergio-br2) <sergio_br2@yahoo.com.br>
 
 and is licensed under the GPL version 3, 
 see `/usr/share/common-licenses/GPL-3'.
