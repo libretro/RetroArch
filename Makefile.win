@@ -148,6 +148,11 @@ endif
 
 ifeq ($(HAVE_SDL), 1)
    OBJ += gfx/sdl_gfx.o input/sdl_input.o input/sdl_joypad.o audio/sdl_audio.o
+
+   ifeq ($(HAVE_OPENGL), 1)
+     OBJ += gfx/context/sdl_gl_ctx.o
+   endif
+
    JOBJ += input/sdl_joypad.o
    LIBS += -lSDL
    JLIBS += -lSDL
