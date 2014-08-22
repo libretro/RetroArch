@@ -89,10 +89,13 @@ static void sdl_ctx_destroy(void *data)
 
    if (g_win)
       SDL_DestroyWindow(g_win);
+
+   g_ctx = NULL;
 #else
-   SDL_FreeSurface(g_win);
-   g_win = NULL;
+   if (g_win)
+      SDL_FreeSurface(g_win);
 #endif
+   g_win = NULL;
 
    SDL_QuitSubSystem(SDL_INIT_VIDEO);
 }
