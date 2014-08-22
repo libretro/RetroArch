@@ -299,16 +299,14 @@ error:
 static void check_window(sdl_video_t *vid)
 {
    SDL_Event event;
-   while (SDL_PollEvent(&event))
-   {
-      switch (event.type)
-      {
-         case SDL_QUIT:
-            vid->quitting = true;
-            break;
 
-         default:
-            break;
+   SDL_PumpEvents();
+   while (SDL_PeepEvents(&event, 1, SDL_GETEVENT, SDL_QUITMASK))
+   {
+      if (event.type == SDL_QUIT)
+      {
+         vid->quitting = true;
+         break;
       }
    }
 }
