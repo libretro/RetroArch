@@ -266,18 +266,23 @@ static void sdl_ctx_check_window(void *data, bool *quit, bool *resize,unsigned *
    (void)data;
 
    SDL_Event event;
+   SDL_PumpEvents();
 
 #ifdef HAVE_SDL2
-   SDL_PumpEvents();
    while (SDL_PeepEvents(&event, 1, SDL_GETEVENT, SDL_QUIT, SDL_WINDOWEVENT) > 0)
+#else
+   while (SDL_PeepEvents(&event, 1, SDL_GETEVENT, SDL_QUITMASK|SDL_VIDEORESIZEMASK) > 0)
+#endif
    {
       switch (event.type)
       {
          case SDL_QUIT:
+#ifdef HAVE_SDL2
          case SDL_APP_TERMINATING:
+#endif
             *quit = true;
             break;
-
+#ifdef HAVE_SDL2
          case SDL_WINDOWEVENT:
             if (event.window.event == SDL_WINDOWEVENT_RESIZED)
             {
@@ -285,26 +290,17 @@ static void sdl_ctx_check_window(void *data, bool *quit, bool *resize,unsigned *
                g_new_width  = event.window.data1;
                g_new_height = event.window.data2;
             }
-            break;
-
-         default:
-            break;
-      }
-   }
 #else
-   while (SDL_PollEvent(&event))
-   {
-      switch (event.type)
-      {
-         case SDL_QUIT:
-            *quit = true;
+         case SDL_VIDEORESIZE:
+            g_resized = true;
+            g_new_width  = event.resize.w;
+            g_new_height = event.resize.h;
+#endif
             break;
-
          default:
             break;
       }
    }
-#endif
 
    if (g_resized)
    {
