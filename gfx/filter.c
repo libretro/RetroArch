@@ -335,52 +335,7 @@ static bool create_softfilter_graph(rarch_softfilter_t *filt,
    return true;
 }
 
-#ifdef HAVE_FILTERS_BUILTIN
-extern const struct softfilter_implementation *blargg_ntsc_snes_get_implementation(softfilter_simd_mask_t simd);
-extern const struct softfilter_implementation *lq2x_get_implementation(softfilter_simd_mask_t simd);
-extern const struct softfilter_implementation *phosphor2x_get_implementation(softfilter_simd_mask_t simd);
-extern const struct softfilter_implementation *twoxbr_get_implementation(softfilter_simd_mask_t simd);
-extern const struct softfilter_implementation *epx_get_implementation(softfilter_simd_mask_t simd);
-extern const struct softfilter_implementation *twoxsai_get_implementation(softfilter_simd_mask_t simd);
-extern const struct softfilter_implementation *supereagle_get_implementation(softfilter_simd_mask_t simd);
-extern const struct softfilter_implementation *supertwoxsai_get_implementation(softfilter_simd_mask_t simd);
-extern const struct softfilter_implementation *twoxbr_get_implementation(softfilter_simd_mask_t simd);
-extern const struct softfilter_implementation *darken_get_implementation(softfilter_simd_mask_t simd);
-extern const struct softfilter_implementation *scale2x_get_implementation(softfilter_simd_mask_t simd);
-
-static const softfilter_get_implementation_t soft_plugs_builtin[] = {
-   blargg_ntsc_snes_get_implementation,
-   lq2x_get_implementation,
-   phosphor2x_get_implementation,
-   twoxbr_get_implementation,
-   darken_get_implementation,
-   twoxsai_get_implementation,
-   supertwoxsai_get_implementation,
-   supereagle_get_implementation,
-   epx_get_implementation,
-   scale2x_get_implementation,
-};
-
-static bool append_softfilter_plugs(rarch_softfilter_t *filt)
-{
-   unsigned i;
-   softfilter_simd_mask_t mask = rarch_get_cpu_features();
-
-   filt->plugs = (struct rarch_soft_plug*)calloc(ARRAY_SIZE(soft_plugs_builtin), sizeof(*filt->plugs));
-   if (!filt->plugs)
-      return false;
-   filt->num_plugs = ARRAY_SIZE(soft_plugs_builtin);
-
-   for (i = 0; i < ARRAY_SIZE(soft_plugs_builtin); i++)
-   {
-      filt->plugs[i].impl = soft_plugs_builtin[i](mask);
-      if (!filt->plugs[i].impl)
-         return false;
-   }
-
-   return true;
-}
-#else
+#ifdef HAVE_DYLIB
 static bool append_softfilter_plugs(rarch_softfilter_t *filt, struct string_list *list)
 {
    unsigned i;
@@ -429,6 +384,51 @@ static bool append_softfilter_plugs(rarch_softfilter_t *filt, struct string_list
 
    return true;
 }
+#else
+extern const struct softfilter_implementation *blargg_ntsc_snes_get_implementation(softfilter_simd_mask_t simd);
+extern const struct softfilter_implementation *lq2x_get_implementation(softfilter_simd_mask_t simd);
+extern const struct softfilter_implementation *phosphor2x_get_implementation(softfilter_simd_mask_t simd);
+extern const struct softfilter_implementation *twoxbr_get_implementation(softfilter_simd_mask_t simd);
+extern const struct softfilter_implementation *epx_get_implementation(softfilter_simd_mask_t simd);
+extern const struct softfilter_implementation *twoxsai_get_implementation(softfilter_simd_mask_t simd);
+extern const struct softfilter_implementation *supereagle_get_implementation(softfilter_simd_mask_t simd);
+extern const struct softfilter_implementation *supertwoxsai_get_implementation(softfilter_simd_mask_t simd);
+extern const struct softfilter_implementation *twoxbr_get_implementation(softfilter_simd_mask_t simd);
+extern const struct softfilter_implementation *darken_get_implementation(softfilter_simd_mask_t simd);
+extern const struct softfilter_implementation *scale2x_get_implementation(softfilter_simd_mask_t simd);
+
+static const softfilter_get_implementation_t soft_plugs_builtin[] = {
+   blargg_ntsc_snes_get_implementation,
+   lq2x_get_implementation,
+   phosphor2x_get_implementation,
+   twoxbr_get_implementation,
+   darken_get_implementation,
+   twoxsai_get_implementation,
+   supertwoxsai_get_implementation,
+   supereagle_get_implementation,
+   epx_get_implementation,
+   scale2x_get_implementation,
+};
+
+static bool append_softfilter_plugs(rarch_softfilter_t *filt)
+{
+   unsigned i;
+   softfilter_simd_mask_t mask = rarch_get_cpu_features();
+
+   filt->plugs = (struct rarch_soft_plug*)calloc(ARRAY_SIZE(soft_plugs_builtin), sizeof(*filt->plugs));
+   if (!filt->plugs)
+      return false;
+   filt->num_plugs = ARRAY_SIZE(soft_plugs_builtin);
+
+   for (i = 0; i < ARRAY_SIZE(soft_plugs_builtin); i++)
+   {
+      filt->plugs[i].impl = soft_plugs_builtin[i](mask);
+      if (!filt->plugs[i].impl)
+         return false;
+   }
+
+   return true;
+}
 #endif
 
 
@@ -439,7 +439,7 @@ rarch_softfilter_t *rarch_softfilter_new(const char *filter_config,
       enum retro_pixel_format in_pixel_format,
       unsigned max_width, unsigned max_height)
 {
-#if !defined(HAVE_FILTERS_BUILTIN) && defined(HAVE_DYLIB)
+#if defined(HAVE_DYLIB)
    char basedir[PATH_MAX];
 #endif
    softfilter_simd_mask_t cpu_features = rarch_get_cpu_features();
@@ -456,10 +456,7 @@ rarch_softfilter_t *rarch_softfilter_new(const char *filter_config,
       goto error;
    }
 
-#if defined(HAVE_FILTERS_BUILTIN)
-   if (!append_softfilter_plugs(filt))
-      goto error;
-#elif defined(HAVE_DYLIB)
+#if defined(HAVE_DYLIB)
    fill_pathname_basedir(basedir, filter_config, sizeof(basedir));
 
    plugs = dir_list_new(basedir, EXT_EXECUTABLES, false);
@@ -471,6 +468,9 @@ rarch_softfilter_t *rarch_softfilter_new(const char *filter_config,
 
    string_list_free(plugs);
    plugs = NULL;
+#else
+   if (!append_softfilter_plugs(filt))
+      goto error;
 #endif
 
    if (!create_softfilter_graph(filt, in_pixel_format,
