@@ -485,6 +485,8 @@ void config_set_defaults(void)
 #endif
    if (*g_defaults.shader_dir)
       fill_pathname_expand_special(g_settings.video.shader_dir, g_defaults.shader_dir, sizeof(g_settings.video.shader_dir));
+   if (*g_defaults.autoconfig_dir)
+      strlcpy(g_settings.input.autoconfig_dir, g_defaults.autoconfig_dir, sizeof(g_settings.input.autoconfig_dir));
 
    if (!g_extern.has_set_state_path && *g_defaults.savestate_dir)
       strlcpy(g_extern.savestate_dir, g_defaults.savestate_dir, sizeof(g_extern.savestate_dir));
