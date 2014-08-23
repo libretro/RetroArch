@@ -55,6 +55,8 @@ const char *config_get_default_audio(void)
          return "opensl";
       case AUDIO_SDL:
          return "sdl";
+      case AUDIO_SDL2:
+         return "sdl2";
       case AUDIO_DSOUND:
          return "dsound";
       case AUDIO_XAUDIO:
@@ -114,6 +116,8 @@ const char *config_get_default_video(void)
          return "xvideo";
       case VIDEO_SDL:
          return "sdl";
+      case VIDEO_SDL2:
+         return "sdl2";
       case VIDEO_EXT:
          return "ext";
       case VIDEO_VG:
@@ -141,6 +145,8 @@ const char *config_get_default_input(void)
          return "psp";
       case INPUT_SDL:
          return "sdl";
+      case INPUT_SDL2:
+         return "sdl2";
       case INPUT_DINPUT:
          return "dinput";
       case INPUT_X:
