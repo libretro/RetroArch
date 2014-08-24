@@ -502,6 +502,7 @@
 					"-DSINC_LOWER_QUALITY",
 					"-DRARCH_INTERNAL",
 					"-DHAVE_THREADS",
+					"-DHAVE_FILTERS_BUILTIN",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				VALID_ARCHS = "armv7 armv7s";
@@ -553,6 +554,7 @@
 					"-DSINC_LOWER_QUALITY",
 					"-DRARCH_INTERNAL",
 					"-DHAVE_THREADS",
+					"-DHAVE_FILTERS_BUILTIN",
 				);
 				"OTHER_CFLAGS[arch=*]" = (
 					"-DNS_BLOCK_ASSERTIONS=1",
@@ -581,6 +583,7 @@
 					"-DSINC_LOWER_QUALITY",
 					"-DRARCH_INTERNAL",
 					"-DHAVE_THREADS",
+					"-DHAVE_FILTERS_BUILTIN",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE = "";
