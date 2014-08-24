@@ -3714,6 +3714,36 @@ static void menu_common_setting_set_label_perf(char *type_str, size_t type_str_s
    }
 }
 
+static void menu_common_setting_set_label_st_uint(rarch_setting_t *setting,
+      char *type_str, size_t type_str_size)
+{
+   if (setting && !strcmp(setting->name, "video_rotation"))
+      strlcpy(type_str, rotation_lut[*setting->value.unsigned_integer],
+            type_str_size);
+   else if (setting && !strcmp(setting->name, "aspect_ratio_index"))
+      strlcpy(type_str, aspectratio_lut[*setting->value.unsigned_integer].name, type_str_size);
+   else if (setting && !strcmp(setting->name, "libretro_log_level"))
+   {
+      switch(*setting->value.unsigned_integer)
+      {
+         case 0:
+            snprintf(type_str, type_str_size, "0 (Debug)");
+            break;
+         case 1:
+            snprintf(type_str, type_str_size, "1 (Info)");
+            break;
+         case 2:
+            snprintf(type_str, type_str_size, "2 (Warning)");
+            break;
+         case 3:
+            snprintf(type_str, type_str_size, "3 (Error)");
+            break;
+      }
+   }
+   else
+      snprintf(type_str, type_str_size, "%d", *setting->value.unsigned_integer);
+}
+
 static void menu_common_setting_set_label(char *type_str,
       size_t type_str_size, unsigned *w, unsigned type, unsigned index)
 {
@@ -3737,38 +3767,20 @@ static void menu_common_setting_set_label(char *type_str,
    }
    else if (setting && setting->type == ST_BOOL)
       strlcpy(type_str, *setting->value.boolean ? "ON" : "OFF", type_str_size);
+   else if (setting && setting->type == ST_UINT)
+      menu_common_setting_set_label_st_uint(setting, type_str, type_str_size);
    else
    {
-      if (setting && !strcmp(setting->name, "video_rotation"))
-         strlcpy(type_str, rotation_lut[*setting->value.unsigned_integer],
-               type_str_size);
-      else if (setting && !strcmp(setting->name, "video_filter"))
+      if (setting && !strcmp(setting->name, "video_filter"))
          strlcpy(type_str, path_basename(setting->value.string), type_str_size);
       else if (setting && !strcmp(setting->name, "video_smooth"))
          strlcpy(type_str, (*setting->value.boolean) ? "Bilinear filtering" : "Point filtering", type_str_size);
-      else if (
-               (setting && !strcmp(setting->name, "video_gamma"))
-            || (setting && !strcmp(setting->name, "video_viwidth"))
-            || (setting && !strcmp(setting->name, "netplay_delay_frames"))
-            || (setting && !strcmp(setting->name, "game_history_size"))
-            || (setting && !strcmp(setting->name, "audio_latency"))
-            || (setting && !strcmp(setting->name, "video_filter_flicker"))
-            )
-         snprintf(type_str, type_str_size, "%d", *setting->value.unsigned_integer);
-      else if (
-               (setting && !strcmp(setting->name, "video_swap_interval"))
-            || (setting && !strcmp(setting->name, "video_hard_sync_frames"))
-            || (setting && !strcmp(setting->name, "rewind_granularity"))
-            )
-         snprintf(type_str, type_str_size, "%u", *setting->value.unsigned_integer);
       else if (setting && !strcmp(setting->name, "video_scale"))
          snprintf(type_str, type_str_size, "%.1f", *setting->value.fraction);
       else if (setting && !strcmp(setting->name, "video_font_size"))
          snprintf(type_str, type_str_size, "%.1f", *setting->value.fraction);
       else if (setting && !strcmp(setting->name, "netplay_nickname"))
          snprintf(type_str, type_str_size, "%s", setting->value.string);
-      else if (setting && !strcmp(setting->name, "aspect_ratio_index"))
-         strlcpy(type_str, aspectratio_lut[*setting->value.unsigned_integer].name, type_str_size);
       else if (setting && !strcmp(setting->name, "audio_rate_control_delta"))
          snprintf(type_str, type_str_size, "%.3f", *setting->value.fraction);
       else if (setting && !strcmp(setting->name, "input_overlay_opacity"))
@@ -3785,24 +3797,6 @@ static void menu_common_setting_set_label(char *type_str,
          snprintf(type_str, type_str_size, "%.1f dB", *setting->value.fraction);
       else if (setting && !strcmp(setting->name, "video_refresh_rate"))
          snprintf(type_str, type_str_size, "%.3f Hz", *setting->value.fraction);
-      else if (setting && !strcmp(setting->name, "libretro_log_level"))
-      {
-         switch(*setting->value.unsigned_integer)
-         {
-            case 0:
-               snprintf(type_str, type_str_size, "0 (Debug)");
-               break;
-            case 1:
-               snprintf(type_str, type_str_size, "1 (Info)");
-               break;
-            case 2:
-               snprintf(type_str, type_str_size, "2 (Warning)");
-               break;
-            case 3:
-               snprintf(type_str, type_str_size, "3 (Error)");
-               break;
-         }
-      }
       else if (setting && !strcmp(setting->name, "audio_dsp_plugin"))
          strlcpy(type_str, path_basename(setting->value.string), type_str_size);
       else
