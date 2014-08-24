@@ -3721,6 +3721,13 @@ static void menu_common_setting_set_label_st_uint(rarch_setting_t *setting,
             type_str_size);
    else if (setting && !strcmp(setting->name, "aspect_ratio_index"))
       strlcpy(type_str, aspectratio_lut[*setting->value.unsigned_integer].name, type_str_size);
+   else if (setting && !strcmp(setting->name, "autosave_interval"))
+   {
+      if (*setting->value.unsigned_integer)
+         snprintf(type_str, type_str_size, "%u seconds", *setting->value.unsigned_integer);
+      else
+         strlcpy(type_str, "OFF", type_str_size);
+   }
    else if (setting && !strcmp(setting->name, "libretro_log_level"))
    {
       switch(*setting->value.unsigned_integer)
@@ -3876,12 +3883,6 @@ static void menu_common_setting_set_label(char *type_str,
             case MENU_FILE_DIRECTORY:
                strlcpy(type_str, "(DIR)", type_str_size);
                *w = 5;
-               break;
-            case MENU_SETTINGS_SRAM_AUTOSAVE:
-               if (g_settings.autosave_interval)
-                  snprintf(type_str, type_str_size, "%u seconds", g_settings.autosave_interval);
-               else
-                  strlcpy(type_str, "OFF", type_str_size);
                break;
             case MENU_SETTINGS_SAVESTATE_SAVE:
             case MENU_SETTINGS_SAVESTATE_LOAD:
