@@ -69,7 +69,6 @@ static void menu_search_callback(void *userdata, const char *str)
    menu_key_end_line(menu);
 }
 
-#ifdef HAVE_NETPLAY
 void netplay_port_callback(void *userdata, const char *str)
 {
    menu_handle_t *menu = (menu_handle_t*)userdata;
@@ -84,6 +83,7 @@ void netplay_port_callback(void *userdata, const char *str)
    menu_key_end_line(menu);
 }
 
+#ifdef HAVE_NETPLAY
 void netplay_ipaddress_callback(void *userdata, const char *str)
 {
    menu_handle_t *menu = (menu_handle_t*)userdata;
@@ -92,7 +92,6 @@ void netplay_ipaddress_callback(void *userdata, const char *str)
       strlcpy(g_extern.netplay_server, str, sizeof(g_extern.netplay_server));
    menu_key_end_line(menu);
 }
-
 #endif
 
 void netplay_nickname_callback(void *userdata, const char *str)
