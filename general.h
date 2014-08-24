@@ -626,7 +626,7 @@ struct global
    bool netplay_is_client;
    bool netplay_is_spectate;
    unsigned netplay_sync_frames;
-   uint16_t netplay_port;
+   unsigned netplay_port;
 #endif
 
    // Recording.

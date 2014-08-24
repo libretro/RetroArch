@@ -1075,6 +1075,8 @@ static void general_read_handler(const void *data)
 #ifdef HAVE_NETPLAY
     else if (!strcmp(setting->name, "netplay_client_swap_input"))
         *setting->value.boolean = g_settings.input.netplay_client_swap_input;
+    else if (!strcmp(setting->name, "netplay_tcp_udp_port"))
+        *setting->value.unsigned_integer = g_extern.netplay_port;
 #endif
 #ifdef HAVE_OVERLAY
     else if (!strcmp(setting->name, "input_overlay"))
@@ -1195,6 +1197,8 @@ static void general_read_handler(const void *data)
        *setting->value.boolean = g_extern.netplay_is_spectate;
     else if (!strcmp(setting->name, "netplay_delay_frames"))
        *setting->value.unsigned_integer = g_extern.netplay_sync_frames;
+    else if (!strcmp(setting->name, "netplay_tcp_udp_port"))
+       *setting->value.unsigned_integer = g_extern.netplay_port;
 #endif
     else if (!strcmp(setting->name, "log_verbosity"))
         *setting->value.boolean = g_extern.verbosity;
@@ -1858,6 +1862,7 @@ rarch_setting_t* setting_data_get_list(void)
          CONFIG_BOOL(g_extern.netplay_is_client,         "netplay_mode",    "Netplay Client Enable",          false, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
          CONFIG_BOOL(g_extern.netplay_is_spectate,       "netplay_spectator_mode_enable",    "Netplay Spectator Enable",          false, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
          CONFIG_UINT(g_extern.netplay_sync_frames,       "netplay_delay_frames",      "Netplay Delay Frames",      0, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_RANGE(0, 10, 1, true, false)
+         CONFIG_UINT(g_extern.netplay_port,       "netplay_tcp_udp_port",      "Netplay TCP/UDP Port",      RARCH_DEFAULT_PORT, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_RANGE(1, 99999, 1, true, true)
          END_SUB_GROUP()
          END_GROUP()
 #endif

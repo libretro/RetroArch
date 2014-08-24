@@ -336,8 +336,9 @@ static void menu_common_entries_init(menu_handle_t *menu, unsigned menu_type)
             file_list_push(menu->selection_buf, "", "netplay_spectator_mode_enable", MENU_SETTINGS_NETPLAY_SPECTATOR_MODE_ENABLE, 0);
 #ifdef HAVE_NETPLAY
          file_list_push(menu->selection_buf, "Host IP Address", "", MENU_SETTINGS_NETPLAY_HOST_IP_ADDRESS, 0);
-         file_list_push(menu->selection_buf, "TCP/UDP Port", "", MENU_SETTINGS_NETPLAY_TCP_UDP_PORT, 0);
 #endif
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "netplay_tcp_udp_port")))
+            file_list_push(menu->selection_buf, "", "netplay_tcp_udp_port", MENU_SETTINGS_NETPLAY_TCP_UDP_PORT, 0);
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "netplay_delay_frames")))
             file_list_push(menu->selection_buf, "", "netplay_delay_frames", MENU_SETTINGS_NETPLAY_DELAY_FRAMES, 0);
          break;
@@ -1972,35 +1973,44 @@ static void menu_common_setting_set_current_fraction(rarch_setting_t *setting, u
 
 static void menu_common_setting_set_current_unsigned_integer(rarch_setting_t *setting, unsigned action)
 {
-   switch (action)
+   if (!strcmp(setting->name, "netplay_tcp_udp_port"))
    {
-      case MENU_ACTION_LEFT:
-         if (*setting->value.unsigned_integer != setting->min)
-            *setting->value.unsigned_integer = *setting->value.unsigned_integer - setting->step;
-
-         if (setting->enforce_minrange)
-         {
-            if (*setting->value.unsigned_integer < setting->min)
-               *setting->value.unsigned_integer = setting->min;
-         }
-         break;
-
-      case MENU_ACTION_RIGHT:
-      case MENU_ACTION_OK:
-         *setting->value.unsigned_integer = *setting->value.unsigned_integer + setting->step;
-
-         if (setting->enforce_maxrange)
-         {
-            if (*setting->value.unsigned_integer > setting->max)
-               *setting->value.unsigned_integer = setting->max;
-         }
-         break;
-
-      case MENU_ACTION_START:
+      if (action == MENU_ACTION_OK)
+         menu_key_start_line(driver.menu, "TCP/UDP Port: ", netplay_port_callback);
+      else if (action == MENU_ACTION_START)
          *setting->value.unsigned_integer = setting->default_value.unsigned_integer;
-         break;
    }
+   else
+   {
+      switch (action)
+      {
+         case MENU_ACTION_LEFT:
+            if (*setting->value.unsigned_integer != setting->min)
+               *setting->value.unsigned_integer = *setting->value.unsigned_integer - setting->step;
 
+            if (setting->enforce_minrange)
+            {
+               if (*setting->value.unsigned_integer < setting->min)
+                  *setting->value.unsigned_integer = setting->min;
+            }
+            break;
+
+         case MENU_ACTION_RIGHT:
+         case MENU_ACTION_OK:
+            *setting->value.unsigned_integer = *setting->value.unsigned_integer + setting->step;
+
+            if (setting->enforce_maxrange)
+            {
+               if (*setting->value.unsigned_integer > setting->max)
+                  *setting->value.unsigned_integer = setting->max;
+            }
+            break;
+
+         case MENU_ACTION_START:
+            *setting->value.unsigned_integer = setting->default_value.unsigned_integer;
+            break;
+      }
+   } 
    if (setting->change_handler)
       setting->change_handler(setting);
 }
@@ -3000,11 +3010,6 @@ static unsigned menu_gx_resolutions[GX_RESOLUTIONS_LAST][2] = {
 static unsigned menu_current_gx_resolution = GX_RESOLUTIONS_640_480;
 #endif
 
-#ifndef RARCH_DEFAULT_PORT
-#define RARCH_DEFAULT_PORT 55435
-#endif
-
-
 static int menu_common_setting_set(unsigned id, unsigned action, rarch_setting_t *setting)
 {
    struct retro_perf_counter **counters;
@@ -3672,12 +3677,6 @@ static int menu_common_setting_set(unsigned id, unsigned action, rarch_setting_t
             else if (action == MENU_ACTION_START)
                *g_extern.netplay_server = '\0';
             break;
-         case MENU_SETTINGS_NETPLAY_TCP_UDP_PORT:
-            if (action == MENU_ACTION_OK)
-               menu_key_start_line(driver.menu, "TCP/UDP Port: ", netplay_port_callback);
-            else if (action == MENU_ACTION_START)
-               g_extern.netplay_port = RARCH_DEFAULT_PORT;
-            break;
 #endif
          case MENU_SETTINGS_NETPLAY_NICKNAME:
             if (action == MENU_ACTION_OK)
@@ -4097,9 +4096,6 @@ static void menu_common_setting_set_label(char *type_str,
 #ifdef HAVE_NETPLAY
             case MENU_SETTINGS_NETPLAY_HOST_IP_ADDRESS:
                strlcpy(type_str, g_extern.netplay_server, type_str_size);
-               break;
-            case MENU_SETTINGS_NETPLAY_TCP_UDP_PORT:
-               snprintf(type_str, type_str_size, "%d", g_extern.netplay_port ? g_extern.netplay_port : RARCH_DEFAULT_PORT);
                break;
 #endif
             default:

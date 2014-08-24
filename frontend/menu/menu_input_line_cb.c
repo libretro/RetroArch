@@ -73,9 +73,14 @@ static void menu_search_callback(void *userdata, const char *str)
 void netplay_port_callback(void *userdata, const char *str)
 {
    menu_handle_t *menu = (menu_handle_t*)userdata;
+   rarch_setting_t *current_setting = NULL;
+   rarch_setting_t *setting_data = (rarch_setting_t *)setting_data_get_list();
 
-   if (str && *str)
-      g_extern.netplay_port = strtoul(str, NULL, 0);
+   if (str && *str && setting_data)
+   {
+      if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "netplay_tcp_udp_port")))
+         *current_setting->value.unsigned_integer = strtoul(str, NULL, 0);
+   }
    menu_key_end_line(menu);
 }
 
@@ -93,7 +98,7 @@ void netplay_ipaddress_callback(void *userdata, const char *str)
 void netplay_nickname_callback(void *userdata, const char *str)
 {
    menu_handle_t *menu = (menu_handle_t*)userdata;
-   rarch_setting_t *current_setting;
+   rarch_setting_t *current_setting = NULL;
    rarch_setting_t *setting_data = (rarch_setting_t *)setting_data_get_list();
  
    if (str && *str && setting_data)

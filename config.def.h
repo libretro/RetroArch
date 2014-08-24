@@ -519,6 +519,9 @@ static const bool menu_show_start_screen = true;
 // Log level for libretro cores (GET_LOG_INTERFACE).
 static const unsigned libretro_log_level = 0;
 
+#ifndef RARCH_DEFAULT_PORT
+#define RARCH_DEFAULT_PORT 55435
+#endif
 
 ////////////////////
 // Keybinds, Joypad
