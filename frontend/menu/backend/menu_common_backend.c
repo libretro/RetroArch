@@ -3801,6 +3801,8 @@ static void menu_common_setting_set_label(char *type_str,
       else
          snprintf(type_str, type_str_size, setting->rounding_fraction, *setting->value.fraction);
    }
+   else if (setting && setting->type == ST_DIR)
+      strlcpy(type_str, *setting->value.string ? setting->value.string : setting->empty_path, type_str_size);
    else
    {
       if (setting && !strcmp(setting->name, "video_filter"))
@@ -3809,8 +3811,6 @@ static void menu_common_setting_set_label(char *type_str,
          snprintf(type_str, type_str_size, "%s", setting->value.string);
       else if (setting && !strcmp(setting->name, "input_overlay"))
          strlcpy(type_str, path_basename(setting->value.string), type_str_size);
-      else if (setting && !strcmp(setting->name, "overlay_directory"))
-         strlcpy(type_str, *setting->value.string ? setting->value.string : "<default>", type_str_size);
       else if (setting && !strcmp(setting->name, "audio_dsp_plugin"))
          strlcpy(type_str, path_basename(setting->value.string), type_str_size);
       else
@@ -3880,51 +3880,6 @@ static void menu_common_setting_set_label(char *type_str,
                   strlcpy(type_str, "-1 (auto)", type_str_size);
                else
                   snprintf(type_str, type_str_size, "%d", g_settings.state_slot);
-               break;
-            case MENU_BROWSER_DIR_PATH:
-               strlcpy(type_str, *g_settings.menu_content_directory ? g_settings.menu_content_directory : "<default>", type_str_size);
-               break;
-            case MENU_CONTENT_DIR_PATH:
-               strlcpy(type_str, *g_settings.content_directory ? g_settings.content_directory : "<default>", type_str_size);
-               break;
-            case MENU_ASSETS_DIR_PATH:
-               strlcpy(type_str, *g_settings.assets_directory ? g_settings.assets_directory : "<default>", type_str_size);
-               break;
-            case MENU_SCREENSHOT_DIR_PATH:
-               strlcpy(type_str, *g_settings.screenshot_directory ? g_settings.screenshot_directory : "<Content dir>", type_str_size);
-               break;
-            case MENU_SAVEFILE_DIR_PATH:
-               strlcpy(type_str, *g_extern.savefile_dir ? g_extern.savefile_dir : "<Content dir>", type_str_size);
-               break;
-            case MENU_SAVESTATE_DIR_PATH:
-               strlcpy(type_str, *g_extern.savestate_dir ? g_extern.savestate_dir : "<Content dir>", type_str_size);
-               break;
-            case MENU_LIBRETRO_DIR_PATH:
-               strlcpy(type_str, *g_settings.libretro_directory ? g_settings.libretro_directory : "<None>", type_str_size);
-               break;
-            case MENU_LIBRETRO_INFO_DIR_PATH:
-               strlcpy(type_str, *g_settings.libretro_info_path ? g_settings.libretro_info_path : "<Core dir>", type_str_size);
-               break;
-            case MENU_CONFIG_DIR_PATH:
-               strlcpy(type_str, *g_settings.menu_config_directory ? g_settings.menu_config_directory : "<default>", type_str_size);
-               break;
-            case MENU_FILTER_DIR_PATH:
-               strlcpy(type_str, *g_settings.video.filter_dir ? g_settings.video.filter_dir : "<default>", type_str_size);
-               break;
-            case MENU_DSP_FILTER_DIR_PATH:
-               strlcpy(type_str, *g_settings.audio.filter_dir ? g_settings.audio.filter_dir : "<default>", type_str_size);
-               break;
-            case MENU_SHADER_DIR_PATH:
-               strlcpy(type_str, *g_settings.video.shader_dir ? g_settings.video.shader_dir : "<default>", type_str_size);
-               break;
-            case MENU_SYSTEM_DIR_PATH:
-               strlcpy(type_str, *g_settings.system_directory ? g_settings.system_directory : "<Content dir>", type_str_size);
-               break;
-            case MENU_AUTOCONFIG_DIR_PATH:
-               strlcpy(type_str, *g_settings.input.autoconfig_dir ? g_settings.input.autoconfig_dir : "<default>", type_str_size);
-               break;
-            case MENU_EXTRACTION_DIR_PATH:
-               strlcpy(type_str, *g_settings.extraction_directory ? g_settings.extraction_directory : "<None>", type_str_size);
                break;
             case MENU_SETTINGS_DISK_INDEX:
                {

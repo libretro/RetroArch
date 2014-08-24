@@ -99,6 +99,7 @@ typedef struct rarch_setting_t
    } value;
 
    float step;
+   const char *empty_path;
    const char *rounding_fraction;
    bool enforce_minrange;
    bool enforce_maxrange;
@@ -123,7 +124,7 @@ rarch_setting_t setting_data_bool_setting(const char* name, const char* descript
 rarch_setting_t setting_data_int_setting(const char* name, const char* description, int* target, int default_value, const char *group, const char *subgroup, change_handler_t change_handler, change_handler_t read_handler);
 rarch_setting_t setting_data_uint_setting(const char* name, const char* description, unsigned int* target, unsigned int default_value, const char *group, const char *subgroup, change_handler_t change_handler, change_handler_t read_handler);
 rarch_setting_t setting_data_float_setting(const char* name, const char* description, float* target, float default_value, const char *rounding, const char *group, const char *subgroup, change_handler_t change_handler, change_handler_t read_handler);
-rarch_setting_t setting_data_string_setting(enum setting_type type, const char* name, const char* description, char* target, unsigned size, const char* default_value, const char *group, const char *subgroup, change_handler_t change_handler, change_handler_t read_handler);
+rarch_setting_t setting_data_string_setting(enum setting_type type, const char* name, const char* description, char* target, unsigned size, const char* default_value, const char *empty, const char *group, const char *subgroup, change_handler_t change_handler, change_handler_t read_handler);
 rarch_setting_t setting_data_bind_setting(const char* name, const char* description, struct retro_keybind* target, uint32_t index,
  const struct retro_keybind* default_value, const char *group, const char *subgroup);
 
