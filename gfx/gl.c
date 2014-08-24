@@ -357,6 +357,19 @@ void apple_bind_game_view_fbo(void);
 #define gl_bind_backbuffer() glBindFramebuffer(RARCH_GL_FRAMEBUFFER, 0)
 #endif
 
+static inline GLenum min_filter_to_mag(GLenum type)
+{
+   switch (type)
+   {
+      case GL_LINEAR_MIPMAP_LINEAR:
+         return GL_LINEAR;
+      case GL_NEAREST_MIPMAP_NEAREST:
+         return GL_NEAREST;
+      default:
+         return type;
+   }
+}
+
 #ifdef HAVE_FBO
 static void gl_shader_scale(gl_t *gl, unsigned index, struct gfx_fbo_scale *scale)
 {
@@ -454,18 +467,6 @@ static void gl_compute_fbo_geometry(gl_t *gl, unsigned width, unsigned height,
    }
 }
 
-static inline GLenum min_filter_to_mag(GLenum type)
-{
-   switch (type)
-   {
-      case GL_LINEAR_MIPMAP_LINEAR:
-         return GL_LINEAR;
-      case GL_NEAREST_MIPMAP_NEAREST:
-         return GL_NEAREST;
-      default:
-         return type;
-   }
-}
 
 static void gl_create_fbo_textures(gl_t *gl)
 {
