@@ -99,7 +99,7 @@ typedef struct rarch_setting_t
    } value;
 
    float step;
-   char *rounding_fraction;
+   const char *rounding_fraction;
    bool enforce_minrange;
    bool enforce_maxrange;
 }  rarch_setting_t;
