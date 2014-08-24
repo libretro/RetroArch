@@ -187,7 +187,7 @@ static void menu_common_entries_init(menu_handle_t *menu, unsigned menu_type)
          file_list_push(menu->selection_buf, "", "video_crop_overscan", MENU_SETTINGS_VIDEO_CROP_OVERSCAN, 0);
          file_list_push(menu->selection_buf, "", "video_monitor_index", MENU_SETTINGS_VIDEO_MONITOR_INDEX, 0);
          file_list_push(menu->selection_buf, "", "video_refresh_rate", MENU_SETTINGS_VIDEO_REFRESH_RATE, 0);
-         file_list_push(menu->selection_buf, "Estimated Refresh Rate", "", MENU_SETTINGS_VIDEO_REFRESH_RATE_AUTO, 0);
+         file_list_push(menu->selection_buf, "", "video_refresh_rate_auto", MENU_SETTINGS_VIDEO_REFRESH_RATE_AUTO, 0);
          break;
       case MENU_SETTINGS_FONT_OPTIONS:
          file_list_clear(menu->selection_buf);
@@ -3071,7 +3071,27 @@ static int menu_common_setting_set(unsigned id, unsigned action, rarch_setting_t
    else if (setting && setting->type == ST_UINT)
       menu_common_setting_set_current_unsigned_integer(setting, action);
    else if (setting && setting->type == ST_FLOAT)
-      menu_common_setting_set_current_fraction(setting, action);
+   {
+      if (setting && !strcmp(setting->name, "video_refresh_rate_auto"))
+      {
+         if (action == MENU_ACTION_START)
+            g_extern.measure_data.frame_time_samples_count = 0;
+         else if (action == MENU_ACTION_OK)
+         {
+            double refresh_rate, deviation = 0.0;
+            unsigned sample_points = 0;
+
+            if (driver_monitor_fps_statistics(&refresh_rate, &deviation, &sample_points))
+            {
+               driver_set_monitor_refresh_rate(refresh_rate);
+               // Incase refresh rate update forced non-block video.
+               rarch_main_command(RARCH_CMD_VIDEO_SET_BLOCKING_STATE);
+            }
+         }
+      }
+      else
+         menu_common_setting_set_current_fraction(setting, action);
+   }
    else
    {
       switch (id)
@@ -3531,31 +3551,6 @@ static int menu_common_setting_set(unsigned id, unsigned action, rarch_setting_t
             break;
 #endif
 
-         case MENU_SETTINGS_VIDEO_REFRESH_RATE_AUTO:
-            switch (action)
-            {
-               case MENU_ACTION_START:
-                  g_extern.measure_data.frame_time_samples_count = 0;
-                  break;
-
-               case MENU_ACTION_OK:
-                  {
-                     double refresh_rate, deviation = 0.0;
-                     unsigned sample_points = 0;
-
-                     if (driver_monitor_fps_statistics(&refresh_rate, &deviation, &sample_points))
-                     {
-                        driver_set_monitor_refresh_rate(refresh_rate);
-
-                        // Incase refresh rate update forced non-block video.
-                        rarch_main_command(RARCH_CMD_VIDEO_SET_BLOCKING_STATE);
-                     }
-                     break;
-                  }
-
-               default:
-                  break;
-            }
             break;
 #ifdef HAVE_SHADER_MANAGER
          case MENU_SETTINGS_SHADER_PASSES:
@@ -3776,7 +3771,21 @@ static void menu_common_setting_set_label(char *type_str,
    else if (setting && setting->type == ST_UINT)
       menu_common_setting_set_label_st_uint(setting, type_str, type_str_size);
    else if (setting && setting->type == ST_FLOAT)
-      snprintf(type_str, type_str_size, setting->rounding_fraction, *setting->value.fraction);
+   {
+      if (setting && !strcmp(setting->name, "video_refresh_rate_auto"))
+      {
+         double refresh_rate = 0.0;
+         double deviation = 0.0;
+         unsigned sample_points = 0;
+
+         if (driver_monitor_fps_statistics(&refresh_rate, &deviation, &sample_points))
+            snprintf(type_str, type_str_size, "%.3f Hz (%.1f%% dev, %u samples)", refresh_rate, 100.0 * deviation, sample_points);
+         else
+            strlcpy(type_str, "N/A", type_str_size);
+      }
+      else
+         snprintf(type_str, type_str_size, setting->rounding_fraction, *setting->value.fraction);
+   }
    else
    {
       if (setting && !strcmp(setting->name, "video_filter"))
@@ -3831,18 +3840,6 @@ static void menu_common_setting_set_label(char *type_str,
                else
                   strlcpy(type_str, "0 (Auto)", type_str_size);
                break;
-            case MENU_SETTINGS_VIDEO_REFRESH_RATE_AUTO:
-               {
-                  double refresh_rate = 0.0;
-                  double deviation = 0.0;
-                  unsigned sample_points = 0;
-
-                  if (driver_monitor_fps_statistics(&refresh_rate, &deviation, &sample_points))
-                     snprintf(type_str, type_str_size, "%.3f Hz (%.1f%% dev, %u samples)", refresh_rate, 100.0 * deviation, sample_points);
-                  else
-                     strlcpy(type_str, "N/A", type_str_size);
-                  break;
-               }
 #if defined(GEKKO)
             case MENU_SETTINGS_VIDEO_RESOLUTION:
                strlcpy(type_str, gx_get_video_mode(), type_str_size);
