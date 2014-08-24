@@ -3776,22 +3776,7 @@ static void menu_common_setting_set_label(char *type_str,
    else if (setting && setting->type == ST_UINT)
       menu_common_setting_set_label_st_uint(setting, type_str, type_str_size);
    else if (setting && setting->type == ST_FLOAT)
-      switch (setting->rounding_fraction)
-      {
-         case 1:
-            snprintf(type_str, type_str_size, "%.1f", *setting->value.fraction);
-            break;
-         case 2:
-            snprintf(type_str, type_str_size, "%.2f", *setting->value.fraction);
-            break;
-         case 3:
-            snprintf(type_str, type_str_size, "%.3f", *setting->value.fraction);
-            break;
-         case 0:
-         default:
-            snprintf(type_str, type_str_size, "%.1f", *setting->value.fraction);
-            break;
-      }
+      snprintf(type_str, type_str_size, setting->rounding_fraction, *setting->value.fraction);
    else
    {
       if (setting && !strcmp(setting->name, "video_filter"))
