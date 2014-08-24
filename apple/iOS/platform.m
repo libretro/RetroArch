@@ -51,7 +51,7 @@ const void* apple_get_frontend_settings(void)
       settings[0] = setting_data_group_setting(ST_GROUP, "Frontend Settings");
       settings[1] = setting_data_group_setting(ST_SUB_GROUP, "Frontend");
       settings[2] = setting_data_string_setting(ST_STRING, "ios_btmode", "Bluetooth Input Type", apple_frontend_settings.bluetooth_mode,
-                                                 sizeof(apple_frontend_settings.bluetooth_mode), "none", GROUP_NAME, SUBGROUP_NAME, NULL, NULL);
+                                                 sizeof(apple_frontend_settings.bluetooth_mode), "none", "<null>", GROUP_NAME, SUBGROUP_NAME, NULL, NULL);
 
       // Set ios_btmode options based on runtime environment
       if (btstack_try_load())
@@ -60,7 +60,7 @@ const void* apple_get_frontend_settings(void)
          settings[2].values = "icade|keyboard|small_keyboard";
 
       settings[3] = setting_data_string_setting(ST_STRING, "ios_orientations", "Screen Orientations", apple_frontend_settings.orientations,
-                                                 sizeof(apple_frontend_settings.orientations), "both", GROUP_NAME, SUBGROUP_NAME, NULL, NULL);
+                                                 sizeof(apple_frontend_settings.orientations), "both", "<null>", GROUP_NAME, SUBGROUP_NAME, NULL, NULL);
       settings[3].values = "both|landscape|portrait";
       settings[4] = setting_data_group_setting(ST_END_SUB_GROUP, 0);
       settings[5] = setting_data_group_setting(ST_END_GROUP, 0);
