@@ -3774,7 +3774,17 @@ static void menu_common_setting_set_label(char *type_str,
          strlcpy(type_str, *setting->value.boolean ? "ON" : "OFF", type_str_size);
    }
    else if (setting && setting->type == ST_UINT)
-      menu_common_setting_set_label_st_uint(setting, type_str, type_str_size);
+   {
+      if (setting && !strcmp(setting->name, "video_monitor_index"))
+      {
+         if (*setting->value.unsigned_integer)
+            snprintf(type_str, type_str_size, "%d", *setting->value.unsigned_integer);
+         else
+            strlcpy(type_str, "0 (Auto)", type_str_size);
+      }
+      else
+         menu_common_setting_set_label_st_uint(setting, type_str, type_str_size);
+   }
    else if (setting && setting->type == ST_FLOAT)
    {
       if (setting && !strcmp(setting->name, "video_refresh_rate_auto"))
@@ -3837,12 +3847,6 @@ static void menu_common_setting_set_label(char *type_str,
                strlcpy(type_str, g_settings.menu.driver, type_str_size);
                break;
 #endif
-            case MENU_SETTINGS_VIDEO_MONITOR_INDEX:
-               if (g_settings.video.monitor_index)
-                  snprintf(type_str, type_str_size, "%u", g_settings.video.monitor_index);
-               else
-                  strlcpy(type_str, "0 (Auto)", type_str_size);
-               break;
 #if defined(GEKKO)
             case MENU_SETTINGS_VIDEO_RESOLUTION:
                strlcpy(type_str, gx_get_video_mode(), type_str_size);
