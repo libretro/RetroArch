@@ -3775,34 +3775,35 @@ static void menu_common_setting_set_label(char *type_str,
       strlcpy(type_str, *setting->value.boolean ? "ON" : "OFF", type_str_size);
    else if (setting && setting->type == ST_UINT)
       menu_common_setting_set_label_st_uint(setting, type_str, type_str_size);
+   else if (setting && setting->type == ST_FLOAT)
+      switch (setting->rounding_fraction)
+      {
+         case 1:
+            snprintf(type_str, type_str_size, "%.1f", *setting->value.fraction);
+            break;
+         case 2:
+            snprintf(type_str, type_str_size, "%.2f", *setting->value.fraction);
+            break;
+         case 3:
+            snprintf(type_str, type_str_size, "%.3f", *setting->value.fraction);
+            break;
+         case 0:
+         default:
+            snprintf(type_str, type_str_size, "%.1f", *setting->value.fraction);
+            break;
+      }
    else
    {
       if (setting && !strcmp(setting->name, "video_filter"))
          strlcpy(type_str, path_basename(setting->value.string), type_str_size);
       else if (setting && !strcmp(setting->name, "video_smooth"))
          strlcpy(type_str, (*setting->value.boolean) ? "Bilinear filtering" : "Point filtering", type_str_size);
-      else if (setting && !strcmp(setting->name, "video_scale"))
-         snprintf(type_str, type_str_size, "%.1f", *setting->value.fraction);
-      else if (setting && !strcmp(setting->name, "video_font_size"))
-         snprintf(type_str, type_str_size, "%.1f", *setting->value.fraction);
       else if (setting && !strcmp(setting->name, "netplay_nickname"))
          snprintf(type_str, type_str_size, "%s", setting->value.string);
-      else if (setting && !strcmp(setting->name, "audio_rate_control_delta"))
-         snprintf(type_str, type_str_size, "%.3f", *setting->value.fraction);
-      else if (setting && !strcmp(setting->name, "input_overlay_opacity"))
-         snprintf(type_str, type_str_size, "%.2f", *setting->value.fraction);
-      else if (setting && !strcmp(setting->name, "input_overlay_scale"))
-         snprintf(type_str, type_str_size, "%.2f", *setting->value.fraction);
       else if (setting && !strcmp(setting->name, "input_overlay"))
          strlcpy(type_str, path_basename(setting->value.string), type_str_size);
       else if (setting && !strcmp(setting->name, "overlay_directory"))
          strlcpy(type_str, *setting->value.string ? setting->value.string : "<default>", type_str_size);
-      else if (setting && !strcmp(setting->name, "slowmotion_ratio"))
-         snprintf(type_str, type_str_size, "%.1f", *setting->value.fraction);
-      else if (setting && !strcmp(setting->name, "audio_volume"))
-         snprintf(type_str, type_str_size, "%.1f dB", *setting->value.fraction);
-      else if (setting && !strcmp(setting->name, "video_refresh_rate"))
-         snprintf(type_str, type_str_size, "%.3f Hz", *setting->value.fraction);
       else if (setting && !strcmp(setting->name, "audio_dsp_plugin"))
          strlcpy(type_str, path_basename(setting->value.string), type_str_size);
       else
@@ -3890,12 +3891,6 @@ static void menu_common_setting_set_label(char *type_str,
                   strlcpy(type_str, "-1 (auto)", type_str_size);
                else
                   snprintf(type_str, type_str_size, "%d", g_settings.state_slot);
-               break;
-            case MENU_SETTINGS_FASTFORWARD_RATIO:
-               if (g_settings.fastforward_ratio > 0.0f)
-                  snprintf(type_str, type_str_size, "%.1fx", g_settings.fastforward_ratio);
-               else
-                  snprintf(type_str, type_str_size, "%.1fx (No Limit)", g_settings.fastforward_ratio);
                break;
             case MENU_BROWSER_DIR_PATH:
                strlcpy(type_str, *g_settings.menu_content_directory ? g_settings.menu_content_directory : "<default>", type_str_size);
@@ -4026,9 +4021,6 @@ static void menu_common_setting_set_label(char *type_str,
 
                   strlcpy(type_str, modes[g_settings.input.analog_dpad_mode[driver.menu->current_pad] % ANALOG_DPAD_LAST], type_str_size);
                }
-               break;
-            case MENU_SETTINGS_INPUT_AXIS_THRESHOLD:
-               snprintf(type_str, type_str_size, "%.3f", g_settings.input.axis_threshold);
                break;
             case MENU_SETTINGS_BIND_DEVICE_TYPE:
                {
