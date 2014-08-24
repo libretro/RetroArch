@@ -3767,7 +3767,12 @@ static void menu_common_setting_set_label(char *type_str,
       input_get_bind_string(type_str, &g_settings.input.binds[driver.menu->current_pad][type - MENU_SETTINGS_BIND_BEGIN], auto_bind, type_str_size);
    }
    else if (setting && setting->type == ST_BOOL)
-      strlcpy(type_str, *setting->value.boolean ? "ON" : "OFF", type_str_size);
+   {
+      if (setting && !strcmp(setting->name, "video_smooth"))
+         strlcpy(type_str, (*setting->value.boolean) ? "Bilinear filtering" : "Point filtering", type_str_size);
+      else
+         strlcpy(type_str, *setting->value.boolean ? "ON" : "OFF", type_str_size);
+   }
    else if (setting && setting->type == ST_UINT)
       menu_common_setting_set_label_st_uint(setting, type_str, type_str_size);
    else if (setting && setting->type == ST_FLOAT)
@@ -3790,8 +3795,6 @@ static void menu_common_setting_set_label(char *type_str,
    {
       if (setting && !strcmp(setting->name, "video_filter"))
          strlcpy(type_str, path_basename(setting->value.string), type_str_size);
-      else if (setting && !strcmp(setting->name, "video_smooth"))
-         strlcpy(type_str, (*setting->value.boolean) ? "Bilinear filtering" : "Point filtering", type_str_size);
       else if (setting && !strcmp(setting->name, "netplay_nickname"))
          snprintf(type_str, type_str_size, "%s", setting->value.string);
       else if (setting && !strcmp(setting->name, "input_overlay"))
