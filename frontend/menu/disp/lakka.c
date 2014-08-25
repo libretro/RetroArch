@@ -181,7 +181,7 @@ static void lakka_responsive(void)
       return;
    }
 
-   if (1)//(gl->win_width <= 640)
+   if (gl->win_width <= 640)
    {
       icon_size = 64;
       hspacing = 100.0;
