@@ -3088,6 +3088,16 @@ static int menu_common_setting_set(unsigned id, unsigned action, rarch_setting_t
       else
          menu_common_setting_set_current_fraction(setting, action);
    }
+   else if (setting && setting->type == ST_DIR)
+   {
+      if (action == MENU_ACTION_START)
+      {
+         *setting->value.string = '\0';
+
+         if (setting->change_handler)
+            setting->change_handler(setting);
+      }
+   }
    else
    {
       switch (id)
@@ -3373,27 +3383,6 @@ static int menu_common_setting_set(unsigned id, unsigned action, rarch_setting_t
          case MENU_SAVESTATE_DIR_PATH:
             if (action == MENU_ACTION_START)
                strlcpy(g_extern.savestate_dir, g_defaults.savestate_dir, sizeof(g_extern.savestate_dir));
-            break;
-         case MENU_BROWSER_DIR_PATH:
-         case MENU_CONTENT_DIR_PATH:
-         case MENU_ASSETS_DIR_PATH:
-         case MENU_SCREENSHOT_DIR_PATH:
-         case MENU_LIBRETRO_DIR_PATH:
-         case MENU_LIBRETRO_INFO_DIR_PATH:
-         case MENU_CONFIG_DIR_PATH:
-         case MENU_SHADER_DIR_PATH:
-         case MENU_SYSTEM_DIR_PATH:
-         case MENU_AUTOCONFIG_DIR_PATH:
-         case MENU_EXTRACTION_DIR_PATH:
-         case MENU_FILTER_DIR_PATH:
-         case MENU_DSP_FILTER_DIR_PATH:
-            if (action == MENU_ACTION_START)
-            {
-               *setting->value.string = '\0';
-
-               if (setting->change_handler)
-                  setting->change_handler(setting);
-            }
             break;
          case MENU_SETTINGS_DRIVER_VIDEO:
             if (action == MENU_ACTION_LEFT)
