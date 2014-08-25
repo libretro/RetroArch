@@ -34,16 +34,17 @@ void menu_common_setting_set_current_string(rarch_setting_t *setting,
       const char *str);
 
 void menu_key_start_line(void *data, const char *label,
-      input_keyboard_line_complete_t cb)
+      const char *label_setting, input_keyboard_line_complete_t cb)
 {
    menu_handle_t *menu = (menu_handle_t*)data;
 
    if (!menu)
       return;
 
-   menu->keyboard.display = true;
-   menu->keyboard.label = label;
-   menu->keyboard.buffer = input_keyboard_start_line(menu, cb);
+   menu->keyboard.display       = true;
+   menu->keyboard.label         = label;
+   menu->keyboard.label_setting = label_setting;
+   menu->keyboard.buffer        = input_keyboard_start_line(menu, cb);
 }
 
 static void menu_key_end_line(void *data)
@@ -53,8 +54,9 @@ static void menu_key_end_line(void *data)
    if (!menu)
       return;
 
-   menu->keyboard.display = false;
-   menu->keyboard.label = NULL;
+   menu->keyboard.display       = false;
+   menu->keyboard.label         = NULL;
+   menu->keyboard.label_setting = NULL;
 
    /* Avoid triggering states on pressing return. */
    menu->old_input_state = -1ULL;
@@ -69,7 +71,7 @@ static void menu_search_callback(void *userdata, const char *str)
    menu_key_end_line(menu);
 }
 
-void netplay_port_callback(void *userdata, const char *str)
+void st_uint_callback(void *userdata, const char *str)
 {
    menu_handle_t *menu = (menu_handle_t*)userdata;
    rarch_setting_t *current_setting = NULL;
@@ -77,8 +79,22 @@ void netplay_port_callback(void *userdata, const char *str)
 
    if (str && *str && setting_data)
    {
-      if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "netplay_tcp_udp_port")))
+      if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, menu->keyboard.label_setting)))
          *current_setting->value.unsigned_integer = strtoul(str, NULL, 0);
+   }
+   menu_key_end_line(menu);
+}
+
+void st_string_callback(void *userdata, const char *str)
+{
+   menu_handle_t *menu = (menu_handle_t*)userdata;
+   rarch_setting_t *current_setting = NULL;
+   rarch_setting_t *setting_data = (rarch_setting_t *)setting_data_get_list();
+ 
+   if (str && *str && setting_data)
+   {
+      if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, menu->keyboard.label_setting)))
+         menu_common_setting_set_current_string(current_setting, str);
    }
    menu_key_end_line(menu);
 }
@@ -94,29 +110,10 @@ void netplay_ipaddress_callback(void *userdata, const char *str)
 }
 #endif
 
-void netplay_nickname_callback(void *userdata, const char *str)
-{
-   menu_handle_t *menu = (menu_handle_t*)userdata;
-   rarch_setting_t *current_setting = NULL;
-   rarch_setting_t *setting_data = (rarch_setting_t *)setting_data_get_list();
- 
-   if (str && *str && setting_data)
-   {
-      if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "netplay_nickname")))
-         menu_common_setting_set_current_string(current_setting, str);
-   }
-   menu_key_end_line(menu);
-}
 
 void audio_device_callback(void *userdata, const char *str)
 {
    menu_handle_t *menu = (menu_handle_t*)userdata;
-
-   if (!menu)
-   {
-      RARCH_ERR("Cannot invoke audio device setting callback, menu handle is not initialized.\n");
-      return;
-   }
 
    if (str && *str)
       strlcpy(g_settings.audio.device, str, sizeof(g_settings.audio.device));
@@ -127,12 +124,6 @@ void audio_device_callback(void *userdata, const char *str)
 void preset_filename_callback(void *userdata, const char *str)
 {
    menu_handle_t *menu = (menu_handle_t*)userdata;
-
-   if (!menu)
-   {
-      RARCH_ERR("Cannot invoke preset setting callback, menu handle is not initialized.\n");
-      return;
-   }
 
    if (driver.menu_ctx && driver.menu_ctx->backend
          && driver.menu_ctx->backend->shader_manager_save_preset)

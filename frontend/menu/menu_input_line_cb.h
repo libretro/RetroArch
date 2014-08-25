@@ -20,13 +20,15 @@
 #include "menu_common.h"
 #include "../../input/keyboard_line.h"
 
-void menu_key_event(bool down, unsigned keycode, uint32_t character, uint16_t key_modifiers);
+void menu_key_event(bool down, unsigned keycode, uint32_t character,
+      uint16_t key_modifiers);
+void menu_key_start_line(void *data, const char *label,
+      const char *label_setting, input_keyboard_line_complete_t cb);
 
-void menu_key_start_line(void *data, const char *label, input_keyboard_line_complete_t cb);
+void st_uint_callback(void *userdata, const char *str);
+void st_string_callback(void *userdata, const char *str);
 
-void netplay_port_callback(void *userdata, const char *str);
 void netplay_ipaddress_callback(void *userdata, const char *str);
-void netplay_nickname_callback(void *userdata, const char *str);
 void audio_device_callback(void *userdata, const char *str);
 void preset_filename_callback(void *userdata, const char *str);
 

@@ -1976,7 +1976,7 @@ static void menu_common_setting_set_current_unsigned_integer(rarch_setting_t *se
    if (!strcmp(setting->name, "netplay_tcp_udp_port"))
    {
       if (action == MENU_ACTION_OK)
-         menu_key_start_line(driver.menu, "TCP/UDP Port: ", netplay_port_callback);
+         menu_key_start_line(driver.menu, "TCP/UDP Port: ", setting->name, st_uint_callback);
       else if (action == MENU_ACTION_START)
          *setting->value.unsigned_integer = setting->default_value.unsigned_integer;
    }
@@ -3413,7 +3413,7 @@ static int menu_common_setting_set(unsigned id, unsigned action, rarch_setting_t
             break;
          case MENU_SETTINGS_DRIVER_AUDIO_DEVICE:
             if (action == MENU_ACTION_OK)
-               menu_key_start_line(driver.menu, "Audio Device Name / IP: ", audio_device_callback);
+               menu_key_start_line(driver.menu, "Audio Device Name / IP: ", "audio_device", audio_device_callback);
             else if (action == MENU_ACTION_START)
                *g_settings.audio.device = '\0';
             break;
@@ -3621,7 +3621,7 @@ static int menu_common_setting_set(unsigned id, unsigned action, rarch_setting_t
             }
          case MENU_SETTINGS_SHADER_PRESET_SAVE:
             if (action == MENU_ACTION_OK)
-               menu_key_start_line(driver.menu, "Preset Filename: ", preset_filename_callback);
+               menu_key_start_line(driver.menu, "Preset Filename: ", "shader_preset_save", preset_filename_callback);
             break;
 #endif
 #ifdef _XBOX1
@@ -3668,14 +3668,14 @@ static int menu_common_setting_set(unsigned id, unsigned action, rarch_setting_t
 #ifdef HAVE_NETPLAY
          case MENU_SETTINGS_NETPLAY_HOST_IP_ADDRESS:
             if (action == MENU_ACTION_OK)
-               menu_key_start_line(driver.menu, "IP Address: ", netplay_ipaddress_callback);
+               menu_key_start_line(driver.menu, "IP Address: ", "netplay_ip_address", netplay_ipaddress_callback);
             else if (action == MENU_ACTION_START)
                *g_extern.netplay_server = '\0';
             break;
 #endif
          case MENU_SETTINGS_NETPLAY_NICKNAME:
             if (action == MENU_ACTION_OK)
-               menu_key_start_line(driver.menu, "Username: ", netplay_nickname_callback);
+               menu_key_start_line(driver.menu, "Username: ", "netplay_nickname", st_string_callback);
             else if (action == MENU_ACTION_START)
                *g_settings.username = '\0';
             break;

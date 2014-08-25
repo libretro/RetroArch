@@ -118,6 +118,7 @@ typedef struct
    {
       const char **buffer;
       const char *label;
+      const char *label_setting;
       bool display;
    } keyboard;
 
