@@ -130,39 +130,54 @@ static void lakka_responsive(void)
 
    above_subitem_offset = 1.5;
    above_item_offset = -1.0;
-   active_item_factor = 2.25;
-   under_item_offset = 3.0;
+   active_item_factor = 2.75;
+   under_item_offset = 4.0;
 
-   if (gl->win_width >= 2560)
+   if (gl->win_width >= 3840)
    {
       icon_size = 256;
       hspacing = 400;
       vspacing = 128;
       lakka_font_size = 42.0;
-      margin_left = 200.0;
-      margin_top = 384.0;
+      margin_left = 672.0;
+      margin_top = 512;
       title_margin_left = 20.0;
       title_margin_top = 50.0;
-      label_margin_left = 128 + 16.0;
+      label_margin_left = 192;
       label_margin_top = 15;
       strcpy(icon_dir, "256");
-
       return;
    }
 
-   if (gl->win_width >= 1920)
+   if (gl->win_width >= 2560)
    {
       icon_size = 192;
       hspacing = 300;
       vspacing = 96;
       lakka_font_size = 32.0;
-      margin_left = 156.0;
-      margin_top = 288.0;
+      margin_left = 448.0;
+      margin_top = 384;
       title_margin_left = 15.0;
       title_margin_top = 40.0;
-      label_margin_left = 96.0 + 12.0;
+      label_margin_left = 144;
       label_margin_top = 11.0;
       strcpy(icon_dir, "192");
+      return;
+   }
+
+   if (gl->win_width >= 1920)
+   {
+      icon_size = 128;
+      hspacing = 200.0;
+      vspacing = 64.0;
+      lakka_font_size = 24;
+      margin_left = 336.0;
+      margin_top = 256;
+      title_margin_left = 15.0;
+      title_margin_top = 35.0;
+      label_margin_left = 85;
+      label_margin_top = 8.0;
+      strcpy(icon_dir, "128");
       return;
    }
 
@@ -173,26 +188,26 @@ static void lakka_responsive(void)
       vspacing = 32.0;
       lakka_font_size = 16;
       margin_left = 60.0;
-      margin_top = 96.0;
+      margin_top = 128.0;
       title_margin_left = 10.0;
       title_margin_top = 24.0;
-      label_margin_left = 32.0 + 4.0;
+      label_margin_left = 48;
       label_margin_top = 6.0;
       strcpy(icon_dir, "64");
       return;
    }
 
-   icon_size = 128;
-   hspacing = 200.0;
-   vspacing = 64.0;
-   lakka_font_size = 24;
-   margin_left = 120.0;
-   margin_top = 192.0;
+   icon_size = 96;
+   hspacing = 150.0;
+   vspacing = 48.0;
+   lakka_font_size = 18;
+   margin_left = 224;
+   margin_top = 192;
    title_margin_left = 15.0;
-   title_margin_top = 35.0;
-   label_margin_left = 64.0 + 8.0;
-   label_margin_top = 8.0;
-   strcpy(icon_dir, "128");
+   title_margin_top = 30.0;
+   label_margin_left = 64;
+   label_margin_top = 6.0;
+   strcpy(icon_dir, "96");
 }
 
 static char *str_replace (const char *string, const char *substr, const char *replacement)
@@ -348,7 +363,6 @@ void lakka_draw_background(void)
    if (!gl)
       return;
 
-   //glViewport(gl->win_width-1920, 0, 1920, 1080);
    glViewport(0, 0, gl->win_width, gl->win_height);
 
    glEnable(GL_BLEND);
