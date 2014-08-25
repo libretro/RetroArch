@@ -338,7 +338,7 @@ bool setting_data_save_config(const rarch_setting_t* settings,
    return true;
 }
 
-rarch_setting_t* setting_data_find_setting(rarch_setting_t* settings,
+rarch_setting_t* setting_data_find_setting(rarch_setting_t* setting,
       const char* name)
 {
    bool found = false;
@@ -346,27 +346,25 @@ rarch_setting_t* setting_data_find_setting(rarch_setting_t* settings,
    if (!name)
       return NULL;
 
-   for (; settings->type != ST_NONE; settings++)
+   for (; setting->type != ST_NONE; setting++)
    {
-      if (settings->type <= ST_GROUP && strcmp(settings->name, name) == 0)
+      if (setting->type <= ST_GROUP && strcmp(setting->name, name) == 0)
       {
          found = true;
          break;
       }
    }
-    
-   if (found)
-   {
-      if (settings->short_description && settings->short_description[0] == '\0')
-         return NULL;
 
-      if (settings->read_handler)
-         settings->read_handler(settings);
+   if (!found)
+      return NULL;
 
-      return settings;
-   }
+   if (setting->short_description && setting->short_description[0] == '\0')
+      return NULL;
 
-   return NULL;
+   if (setting->read_handler)
+      setting->read_handler(setting);
+
+   return setting;
 }
 
 void setting_data_set_with_string_representation(const rarch_setting_t* setting,
