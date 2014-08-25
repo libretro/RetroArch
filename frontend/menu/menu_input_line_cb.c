@@ -99,27 +99,6 @@ void st_string_callback(void *userdata, const char *str)
    menu_key_end_line(menu);
 }
 
-#ifdef HAVE_NETPLAY
-void netplay_ipaddress_callback(void *userdata, const char *str)
-{
-   menu_handle_t *menu = (menu_handle_t*)userdata;
-
-   if (str && *str)
-      strlcpy(g_extern.netplay_server, str, sizeof(g_extern.netplay_server));
-   menu_key_end_line(menu);
-}
-#endif
-
-
-void audio_device_callback(void *userdata, const char *str)
-{
-   menu_handle_t *menu = (menu_handle_t*)userdata;
-
-   if (str && *str)
-      strlcpy(g_settings.audio.device, str, sizeof(g_settings.audio.device));
-   menu_key_end_line(menu);
-}
-
 #ifdef HAVE_SHADER_MANAGER
 void preset_filename_callback(void *userdata, const char *str)
 {

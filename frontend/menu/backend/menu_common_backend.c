@@ -334,9 +334,8 @@ static void menu_common_entries_init(menu_handle_t *menu, unsigned menu_type)
             file_list_push(menu->selection_buf, "", "netplay_mode", MENU_SETTINGS_NETPLAY_MODE, 0);
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "netplay_spectator_mode_enable")))
             file_list_push(menu->selection_buf, "", "netplay_spectator_mode_enable", MENU_SETTINGS_NETPLAY_SPECTATOR_MODE_ENABLE, 0);
-#ifdef HAVE_NETPLAY
-         file_list_push(menu->selection_buf, "Host IP Address", "", MENU_SETTINGS_NETPLAY_HOST_IP_ADDRESS, 0);
-#endif
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "netplay_ip_address")))
+            file_list_push(menu->selection_buf, "", "netplay_ip_address", MENU_SETTINGS_NETPLAY_HOST_IP_ADDRESS, 0);
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "netplay_tcp_udp_port")))
             file_list_push(menu->selection_buf, "", "netplay_tcp_udp_port", MENU_SETTINGS_NETPLAY_TCP_UDP_PORT, 0);
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "netplay_delay_frames")))
@@ -3413,7 +3412,7 @@ static int menu_common_setting_set(unsigned id, unsigned action, rarch_setting_t
             break;
          case MENU_SETTINGS_DRIVER_AUDIO_DEVICE:
             if (action == MENU_ACTION_OK)
-               menu_key_start_line(driver.menu, "Audio Device Name / IP: ", "audio_device", audio_device_callback);
+               menu_key_start_line(driver.menu, "Audio Device Name / IP: ", "audio_device", st_string_callback);
             else if (action == MENU_ACTION_START)
                *g_settings.audio.device = '\0';
             break;
@@ -3668,7 +3667,7 @@ static int menu_common_setting_set(unsigned id, unsigned action, rarch_setting_t
 #ifdef HAVE_NETPLAY
          case MENU_SETTINGS_NETPLAY_HOST_IP_ADDRESS:
             if (action == MENU_ACTION_OK)
-               menu_key_start_line(driver.menu, "IP Address: ", "netplay_ip_address", netplay_ipaddress_callback);
+               menu_key_start_line(driver.menu, "IP Address: ", "netplay_ip_address", st_string_callback);
             else if (action == MENU_ACTION_START)
                *g_extern.netplay_server = '\0';
             break;
@@ -4030,11 +4029,6 @@ static void menu_common_setting_set_label(char *type_str,
                   strlcpy(type_str, modes[g_settings.user_language], type_str_size);
                }
                break;
-#ifdef HAVE_NETPLAY
-            case MENU_SETTINGS_NETPLAY_HOST_IP_ADDRESS:
-               strlcpy(type_str, g_extern.netplay_server, type_str_size);
-               break;
-#endif
             default:
                *type_str = '\0';
                *w = 0;

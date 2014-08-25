@@ -1216,6 +1216,10 @@ static void general_read_handler(const void *data)
        *setting->value.boolean = g_settings.osk.enable;
     else if (!strcmp(setting->name, "user_language"))
        *setting->value.unsigned_integer = g_settings.user_language;
+    else if (!strcmp(setting->name, "netplay_nickname"))
+       strlcpy(setting->value.string, g_settings.username, setting->size);
+    else if (!strcmp(setting->name, "netplay_ip_address"))
+       strlcpy(setting->value.string, g_extern.netplay_server, setting->size);
 }
 
 static void general_write_handler(const void *data)
@@ -1503,6 +1507,10 @@ static void general_write_handler(const void *data)
       strlcpy(g_settings.content_history_path, setting->value.string, sizeof(g_settings.content_history_path));
    else if (!strcmp(setting->name, "video_filter_dir"))
       strlcpy(g_settings.video.filter_dir, setting->value.string, sizeof(g_settings.video.filter_dir));
+   else if (!strcmp(setting->name, "netplay_nickname"))
+      strlcpy(g_settings.username, setting->value.string, sizeof(g_settings.username));
+    else if (!strcmp(setting->name, "netplay_ip_address"))
+      strlcpy(g_extern.netplay_server, setting->value.string, sizeof(g_extern.netplay_server));
    else if (!strcmp(setting->name, "audio_filter_dir"))
       strlcpy(g_settings.audio.filter_dir, setting->value.string, sizeof(g_settings.audio.filter_dir));
    else if (!strcmp(setting->name, "video_shader_dir"))
@@ -1861,6 +1869,7 @@ rarch_setting_t* setting_data_get_list(void)
          START_GROUP("Netplay Options")
          START_SUB_GROUP("State")
          CONFIG_BOOL(g_extern.netplay_enable,            "netplay_enable",  "Netplay Enable",        false, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+         CONFIG_STRING(g_extern.netplay_server,          "netplay_ip_address",   "IP Address",       "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
          CONFIG_BOOL(g_extern.netplay_is_client,         "netplay_mode",    "Netplay Client Enable",          false, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
          CONFIG_BOOL(g_extern.netplay_is_spectate,       "netplay_spectator_mode_enable",    "Netplay Spectator Enable",          false, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
          CONFIG_UINT(g_extern.netplay_sync_frames,       "netplay_delay_frames",      "Netplay Delay Frames",      0, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_RANGE(0, 10, 1, true, false)

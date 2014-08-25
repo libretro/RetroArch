@@ -28,8 +28,6 @@ void menu_key_start_line(void *data, const char *label,
 void st_uint_callback(void *userdata, const char *str);
 void st_string_callback(void *userdata, const char *str);
 
-void netplay_ipaddress_callback(void *userdata, const char *str);
-void audio_device_callback(void *userdata, const char *str);
 void preset_filename_callback(void *userdata, const char *str);
 
 #endif
