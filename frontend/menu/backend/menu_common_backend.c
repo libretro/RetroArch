@@ -3722,6 +3722,25 @@ static void menu_common_setting_set_label_st_uint(rarch_setting_t *setting,
       else
          strlcpy(type_str, "OFF", type_str_size);
    }
+   else if (setting && !strcmp(setting->name, "user_language"))
+   {
+      static const char *modes[] = {
+         "English",
+         "Japanese",
+         "French",
+         "Spanish",
+         "German",
+         "Italian",
+         "Dutch",
+         "Portuguese",
+         "Russian",
+         "Korean",
+         "Chinese (Traditional)",
+         "Chinese (Simplified)"
+      };
+
+      strlcpy(type_str, modes[g_settings.user_language], type_str_size);
+   }
    else if (setting && !strcmp(setting->name, "libretro_log_level"))
    {
       switch(*setting->value.unsigned_integer)
@@ -4008,26 +4027,6 @@ static void menu_common_setting_set_label(char *type_str,
 #endif
             case MENU_SETTINGS_CUSTOM_BGM_CONTROL_ENABLE:
                strlcpy(type_str, (g_extern.lifecycle_state & (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE)) ? "ON" : "OFF", type_str_size);
-               break;
-            case MENU_SETTINGS_USER_LANGUAGE:
-               {
-                  static const char *modes[] = {
-                     "English",
-                     "Japanese",
-                     "French",
-                     "Spanish",
-                     "German",
-                     "Italian",
-                     "Dutch",
-                     "Portuguese",
-                     "Russian",
-                     "Korean",
-                     "Chinese (Traditional)",
-                     "Chinese (Simplified)"
-                  };
-
-                  strlcpy(type_str, modes[g_settings.user_language], type_str_size);
-               }
                break;
             default:
                *type_str = '\0';
