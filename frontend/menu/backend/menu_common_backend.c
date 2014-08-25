@@ -291,7 +291,7 @@ static void menu_common_entries_init(menu_handle_t *menu, unsigned menu_type)
          file_list_push(menu->selection_buf, "", "Input Options", MENU_SETTINGS_INPUT_OPTIONS, 0);
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "Overlay Options")))
             file_list_push(menu->selection_buf, "", "Overlay Options", MENU_SETTINGS_OVERLAY_OPTIONS, 0);
-         file_list_push(menu->selection_buf, "User Options", "", MENU_SETTINGS_USER_OPTIONS, 0);
+         file_list_push(menu->selection_buf, "", "User Options", MENU_SETTINGS_USER_OPTIONS, 0);
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "Netplay Options")))
             file_list_push(menu->selection_buf, "", "Netplay Options", MENU_SETTINGS_NETPLAY_OPTIONS, 0);
          file_list_push(menu->selection_buf, "", "Path Options", MENU_SETTINGS_PATH_OPTIONS, 0);
@@ -3928,7 +3928,6 @@ static void menu_common_setting_set_label(char *type_str,
          case MENU_SETTINGS_SHADER_PRESET_SAVE:
          case MENU_SETTINGS_CORE:
          case MENU_SETTINGS_DISK_APPEND:
-         case MENU_SETTINGS_USER_OPTIONS:
          case MENU_SETTINGS_OPTIONS:
          case MENU_SETTINGS_PERFORMANCE_COUNTERS:
          case MENU_SETTINGS_PERFORMANCE_COUNTERS_FRONTEND:
