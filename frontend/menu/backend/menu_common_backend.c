@@ -281,29 +281,26 @@ static void menu_common_entries_init(menu_handle_t *menu, unsigned menu_type)
          break;
       case MENU_SETTINGS_OPTIONS:
          file_list_clear(menu->selection_buf);
-         file_list_push(menu->selection_buf, "Driver Options", "", MENU_SETTINGS_DRIVERS, 0);
-         file_list_push(menu->selection_buf, "General Options", "", MENU_SETTINGS_GENERAL_OPTIONS, 0);
-         file_list_push(menu->selection_buf, "Video Options", "", MENU_SETTINGS_VIDEO_OPTIONS, 0);
-#ifdef HAVE_SHADER_MANAGER
-         file_list_push(menu->selection_buf, "Shader Options", "", MENU_SETTINGS_SHADER_OPTIONS, 0);
-#endif
-         file_list_push(menu->selection_buf, "Font Options", "", MENU_SETTINGS_FONT_OPTIONS, 0);
-         file_list_push(menu->selection_buf, "Audio Options", "", MENU_SETTINGS_AUDIO_OPTIONS, 0);
-         file_list_push(menu->selection_buf, "Input Options", "", MENU_SETTINGS_INPUT_OPTIONS, 0);
-#ifdef HAVE_OVERLAY
-         file_list_push(menu->selection_buf, "Overlay Options", "", MENU_SETTINGS_OVERLAY_OPTIONS, 0);
-#endif
+         file_list_push(menu->selection_buf, "", "Driver Options", MENU_SETTINGS_DRIVERS, 0);
+         file_list_push(menu->selection_buf, "", "General Options", MENU_SETTINGS_GENERAL_OPTIONS, 0);
+         file_list_push(menu->selection_buf, "", "Video Options", MENU_SETTINGS_VIDEO_OPTIONS, 0);
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "Shader Options")))
+            file_list_push(menu->selection_buf, "", "Shader Options", MENU_SETTINGS_SHADER_OPTIONS, 0);
+         file_list_push(menu->selection_buf, "", "Font Options", MENU_SETTINGS_FONT_OPTIONS, 0);
+         file_list_push(menu->selection_buf, "", "Audio Options", MENU_SETTINGS_AUDIO_OPTIONS, 0);
+         file_list_push(menu->selection_buf, "", "Input Options", MENU_SETTINGS_INPUT_OPTIONS, 0);
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "Overlay Options")))
+            file_list_push(menu->selection_buf, "", "Overlay Options", MENU_SETTINGS_OVERLAY_OPTIONS, 0);
          file_list_push(menu->selection_buf, "User Options", "", MENU_SETTINGS_USER_OPTIONS, 0);
-#ifdef HAVE_NETPLAY
-         file_list_push(menu->selection_buf, "Netplay Options", "", MENU_SETTINGS_NETPLAY_OPTIONS, 0);
-#endif
-         file_list_push(menu->selection_buf, "Path Options", "", MENU_SETTINGS_PATH_OPTIONS, 0);
+         if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "Netplay Options")))
+            file_list_push(menu->selection_buf, "", "Netplay Options", MENU_SETTINGS_NETPLAY_OPTIONS, 0);
+         file_list_push(menu->selection_buf, "", "Path Options", MENU_SETTINGS_PATH_OPTIONS, 0);
          if (g_extern.main_is_init && !g_extern.libretro_dummy)
          {
             if (g_extern.system.disk_control.get_num_images)
                file_list_push(menu->selection_buf, "Disk Options", "", MENU_SETTINGS_DISK_OPTIONS, 0);
          }
-         file_list_push(menu->selection_buf, "Privacy Options", "", MENU_SETTINGS_PRIVACY_OPTIONS, 0);
+         file_list_push(menu->selection_buf, "", "Privacy Options", MENU_SETTINGS_PRIVACY_OPTIONS, 0);
          break;
       case MENU_SETTINGS_PRIVACY_OPTIONS:
          file_list_clear(menu->selection_buf);
@@ -3830,6 +3827,8 @@ static void menu_common_setting_set_label(char *type_str,
       strlcpy(type_str, path_basename(setting->value.string), type_str_size);
    else if (setting && setting->type == ST_STRING)
          strlcpy(type_str, setting->value.string, type_str_size);
+   else if (setting && setting->type == ST_GROUP)
+      strlcpy(type_str, "...", type_str_size);
    else
    {
       switch (type)
@@ -3922,29 +3921,18 @@ static void menu_common_setting_set_label(char *type_str,
          case MENU_SETTINGS_CORE_INFO:
          case MENU_SETTINGS_CUSTOM_VIEWPORT:
          case MENU_SETTINGS_TOGGLE_FULLSCREEN:
-         case MENU_SETTINGS_VIDEO_OPTIONS:
-         case MENU_SETTINGS_FONT_OPTIONS:
-         case MENU_SETTINGS_AUDIO_OPTIONS:
          case MENU_SETTINGS_DISK_OPTIONS:
 #ifdef HAVE_SHADER_MANAGER
-         case MENU_SETTINGS_SHADER_OPTIONS:
          case MENU_SETTINGS_SHADER_PRESET:
 #endif
-         case MENU_SETTINGS_GENERAL_OPTIONS:
          case MENU_SETTINGS_SHADER_PRESET_SAVE:
          case MENU_SETTINGS_CORE:
          case MENU_SETTINGS_DISK_APPEND:
-         case MENU_SETTINGS_INPUT_OPTIONS:
-         case MENU_SETTINGS_PATH_OPTIONS:
-         case MENU_SETTINGS_OVERLAY_OPTIONS:
-         case MENU_SETTINGS_NETPLAY_OPTIONS:
          case MENU_SETTINGS_USER_OPTIONS:
-         case MENU_SETTINGS_PRIVACY_OPTIONS:
          case MENU_SETTINGS_OPTIONS:
          case MENU_SETTINGS_PERFORMANCE_COUNTERS:
          case MENU_SETTINGS_PERFORMANCE_COUNTERS_FRONTEND:
          case MENU_SETTINGS_PERFORMANCE_COUNTERS_LIBRETRO:
-         case MENU_SETTINGS_DRIVERS:
          case MENU_SETTINGS_CUSTOM_BIND_ALL:
          case MENU_SETTINGS_CUSTOM_BIND_DEFAULT_ALL:
             strlcpy(type_str, "...", type_str_size);

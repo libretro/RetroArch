@@ -494,6 +494,8 @@ void setting_data_get_string_representation(const rarch_setting_t* setting,
 rarch_setting_t setting_data_group_setting(enum setting_type type, const char* name)
 {
    rarch_setting_t result = { type, name };
+
+   result.short_description = name;
    return result;
 }
 
@@ -1617,7 +1619,7 @@ rarch_setting_t* setting_data_get_list(void)
       /* DRIVERS */
       /***********/
          START_GROUP("Driver Options")
-         START_SUB_GROUP("Driver Options")
+         START_SUB_GROUP("State")
          CONFIG_STRING(g_settings.input.driver,             "input_driver",               "Input Driver",               config_get_default_input(), GROUP_NAME, SUBGROUP_NAME, NULL, NULL)
          CONFIG_STRING(g_settings.video.driver,             "video_driver",               "Video Driver",               config_get_default_video(), GROUP_NAME, SUBGROUP_NAME, NULL, NULL)
 #ifdef HAVE_OPENGL
