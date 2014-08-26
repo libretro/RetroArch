@@ -2035,7 +2035,7 @@ static void menu_common_setting_set_current_string_dir(rarch_setting_t *setting,
       setting->change_handler(setting);
 }
 
-static int menu_common_iterate_action(const char *dir, unsigned menu_type,
+static int menu_action_ok(const char *dir, unsigned menu_type,
       rarch_setting_t *setting)
 {
    const char *path = NULL;
@@ -2412,7 +2412,7 @@ static int menu_common_iterate(unsigned action)
          break;
 
       case MENU_ACTION_OK:
-         ret = menu_common_iterate_action(dir, menu_type, setting);
+         ret = menu_action_ok(dir, menu_type, setting);
          break;
 
       case MENU_ACTION_REFRESH:
