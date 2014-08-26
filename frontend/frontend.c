@@ -67,6 +67,8 @@
 #define HAVE_MAIN_LOOP
 #endif
 
+#define MAX_ARGS 32
+
 static retro_keyboard_event_t key_event;
 
 #ifdef HAVE_MENU
