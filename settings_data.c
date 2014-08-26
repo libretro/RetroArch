@@ -601,7 +601,19 @@ void setting_data_get_description(const void *data, char *msg,
     if (!setting)
        return;
 
-    if (!strcmp(setting->name, "video_disable_composition"))
+    if (!strcmp(setting->name, "audio_dsp_plugin"))
+       snprintf(msg, sizeof_msg,
+             " -- Audio DSP plugin.\n"
+             " Processes audio before it's sent to \n"
+             "the driver."
+             );
+    else if (!strcmp(setting->name, "libretro_dir_path"))
+       snprintf(msg, sizeof_msg,
+             " -- Core Directory. \n"
+             " \n"
+             "A directory for where to search for \n"
+             "libretro core implementations.");
+    else if (!strcmp(setting->name, "video_disable_composition"))
        snprintf(msg, sizeof_msg,
              "-- Forcibly disable composition.\n"
              "Only valid on Windows Vista/7 for now.");

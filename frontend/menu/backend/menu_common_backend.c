@@ -669,24 +669,6 @@ static int menu_info_screen_iterate(unsigned action, rarch_setting_t *setting)
                      "Depending on video driver, it might \n"
                      "force a different input driver.");
             break;
-         case MENU_SETTINGS_AUDIO_DSP_FILTER:
-            snprintf(msg, sizeof(msg),
-                  " -- Audio DSP plugin.\n"
-                  " Processes audio before it's sent to \n"
-                  "the driver."
-#ifndef HAVE_FILTERS_BUILTIN
-                  " \n"
-                  "Path to a dynamic library."
-#endif
-                  );
-            break;
-         case MENU_LIBRETRO_DIR_PATH:
-            snprintf(msg, sizeof(msg),
-                  " -- Core Directory. \n"
-                  " \n"
-                  "A directory for where to search for \n"
-                  "libretro core implementations.");
-            break;
          case MENU_SETTINGS_BIND_BEGIN + RARCH_ANALOG_LEFT_X_PLUS:
          case MENU_SETTINGS_BIND_BEGIN + RARCH_ANALOG_LEFT_X_MINUS:
          case MENU_SETTINGS_BIND_BEGIN + RARCH_ANALOG_LEFT_Y_PLUS:
