@@ -243,51 +243,70 @@ static const menu_ctx_driver_t *menu_ctx_drivers[] = {
 };
 #endif
 
+static const char *find_driver_ident(unsigned cmd, int i)
+{
+   switch (cmd)
+   {
+      case RARCH_DRIVER_LOCATION:
+         return location_drivers[i]->ident;
+      case RARCH_DRIVER_CAMERA:
+         return camera_drivers[i]->ident;
+      case RARCH_DRIVER_OSK:
+         return osk_drivers[i]->ident;
+#ifdef HAVE_MENU
+      case RARCH_DRIVER_MENU:
+         return menu_ctx_drivers[i]->ident;
+#endif
+      case RARCH_DRIVER_INPUT:
+         return input_drivers[i]->ident;
+      case RARCH_DRIVER_VIDEO:
+         return video_drivers[i]->ident;
+      case RARCH_DRIVER_AUDIO:
+         return audio_drivers[i]->ident;
+      default:
+            break;
+   }
+   return "";
+}
+
+static const void *find_driver_nonempty(unsigned cmd, int i)
+{
+   switch (cmd)
+   {
+      case RARCH_DRIVER_LOCATION:
+         return location_drivers[i];
+      case RARCH_DRIVER_CAMERA:
+         return camera_drivers[i];
+      case RARCH_DRIVER_OSK:
+         return osk_drivers[i];
+#ifdef HAVE_MENU
+      case RARCH_DRIVER_MENU:
+         return menu_ctx_drivers[i];
+#endif
+      case RARCH_DRIVER_INPUT:
+         return input_drivers[i];
+      case RARCH_DRIVER_VIDEO:
+         return video_drivers[i];
+      case RARCH_DRIVER_AUDIO:
+         return audio_drivers[i];
+      default:
+            break;
+   }
+   return NULL;
+}
+
 static int find_driver_index(unsigned cmd, const char *driver)
 {
    unsigned i;
 
    switch (cmd)
    {
-      case RARCH_DRIVER_LOCATION:
-         for (i = 0; location_drivers[i]; i++)
-            if (!strcasecmp(driver, location_drivers[i]->ident))
-               return i;
-         break;
-      case RARCH_DRIVER_CAMERA:
-         for (i = 0; camera_drivers[i]; i++)
-            if (!strcasecmp(driver, camera_drivers[i]->ident))
-               return i;
-         break;
-      case RARCH_DRIVER_OSK:
-         for (i = 0; osk_drivers[i]; i++)
-            if (!strcasecmp(driver, osk_drivers[i]->ident))
-               return i;
-         break;
-#ifdef HAVE_MENU
-      case RARCH_DRIVER_MENU:
-         for (i = 0; menu_ctx_drivers[i]; i++)
-            if (!strcasecmp(driver, menu_ctx_drivers[i]->ident))
-               return i;
-         break;
-#endif
-      case RARCH_DRIVER_INPUT:
-         for (i = 0; input_drivers[i]; i++)
-            if (!strcasecmp(driver, input_drivers[i]->ident))
-               return i;
-         break;
-      case RARCH_DRIVER_VIDEO:
-         for (i = 0; video_drivers[i]; i++)
-            if (!strcasecmp(driver, video_drivers[i]->ident))
-               return i;
-         break;
-      case RARCH_DRIVER_AUDIO:
-         for (i = 0; audio_drivers[i]; i++)
-            if (!strcasecmp(driver, audio_drivers[i]->ident))
-               return i;
-         break;
       case RARCH_DRIVER_NONE:
+         break;
       default:
+         for (i = 0; find_driver_nonempty(cmd, i) != NULL; i++)
+            if (!strcasecmp(driver, find_driver_ident(cmd, i)))
+               return i;
          break;
    }
 
