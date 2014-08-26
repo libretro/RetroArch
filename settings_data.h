@@ -23,9 +23,9 @@
 extern "C" {
 #endif
 
-#define SETTINGS_DATA_LIST_SIZE 512
+typedef void (*change_handler_t)(const void *data);
 
-#define BINDFOR(s) (*(&s)->value.keybind)
+#define BINDFOR(s) (*(&(s))->value.keybind)
 
 enum setting_type
 {
@@ -53,8 +53,6 @@ enum setting_flags
    SD_FLAG_VALUE_DESC  = 8,
    SD_FLAG_HAS_RANGE   = 16
 };
-
-typedef void (*change_handler_t)(const void *data);
 
 typedef struct rarch_setting_t
 {
@@ -105,8 +103,6 @@ typedef struct rarch_setting_t
    bool enforce_maxrange;
 }  rarch_setting_t;
 
-
-
 void setting_data_reset_setting(const rarch_setting_t* setting);
 void setting_data_reset(const rarch_setting_t* settings);
 
@@ -130,13 +126,8 @@ rarch_setting_t setting_data_bind_setting(const char* name, const char* descript
 
 void setting_data_get_description(const void *data, char *msg, size_t msg_sizeof);
 
-
 // These functions operate only on RetroArch's main settings list
 rarch_setting_t* setting_data_get_list(void);
-
-#ifdef APPLE
-#include "input/apple_keycode.h"
-#endif
 
 #ifdef __cplusplus
 }

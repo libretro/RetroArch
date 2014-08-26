@@ -20,7 +20,10 @@
 #include "input/input_common.h"
 #include "config.def.h"
 
-// Input
+#ifdef APPLE
+#include "input/apple_keycode.h"
+#endif
+
 static void get_input_config_prefix(char *buf, size_t sizeof_buf,
       const rarch_setting_t *setting)
 {
