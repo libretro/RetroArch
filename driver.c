@@ -415,7 +415,6 @@ bool driver_camera_start(void)
          return driver.camera->start(driver.camera_data);
 
       msg_queue_push(g_extern.msg_queue, "Camera is explicitly disabled.\n", 1, 180);
-      return false;
    }
    return false;
 }
@@ -504,7 +503,6 @@ bool driver_location_start(void)
          return driver.location->start(driver.location_data);
 
       msg_queue_push(g_extern.msg_queue, "Location is explicitly disabled.\n", 1, 180);
-      return false;
    }
    return false;
 }
