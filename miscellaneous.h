@@ -121,32 +121,28 @@ static inline uint32_t swap_if_big32(uint32_t val)
 {
    if (is_little_endian()) // Little-endian
       return val;
-   else
-      return (val >> 24) | ((val >> 8) & 0xFF00) | ((val << 8) & 0xFF0000) | (val << 24);
+   return (val >> 24) | ((val >> 8) & 0xFF00) | ((val << 8) & 0xFF0000) | (val << 24);
 }
 
 static inline uint32_t swap_if_little32(uint32_t val)
 {
    if (is_little_endian())
       return (val >> 24) | ((val >> 8) & 0xFF00) | ((val << 8) & 0xFF0000) | (val << 24);
-   else
-      return val;
+   return val;
 }
 
 static inline uint16_t swap_if_big16(uint16_t val)
 {
    if (is_little_endian())
       return val;
-   else
-      return (val >> 8) | (val << 8);
+   return (val >> 8) | (val << 8);
 }
 
 static inline uint16_t swap_if_little16(uint16_t val)
 {
    if (is_little_endian())
       return (val >> 8) | (val << 8);
-   else
-      return val;
+   return val;
 }
 
 // Helper macros and struct to keep track of many booleans.
