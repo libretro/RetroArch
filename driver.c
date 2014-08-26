@@ -553,18 +553,6 @@ static const menu_ctx_driver_t *menu_ctx_drivers[] = {
    NULL // zero length array is not valid
 };
 
-const void *menu_ctx_find_driver(const char *ident)
-{
-   unsigned i;
-   for (i = 0; menu_ctx_drivers[i]; i++)
-   {
-      if (strcmp(menu_ctx_drivers[i]->ident, ident) == 0)
-         return menu_ctx_drivers[i];
-   }
-
-   return NULL;
-}
-
 static int find_menu_driver_index(const char *driver)
 {
    unsigned i;

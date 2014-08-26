@@ -522,7 +522,6 @@ bool driver_location_get_position(double *lat, double *lon, double *horiz_accura
 void driver_location_set_interval(unsigned interval_msecs, unsigned interval_distance);
 
 #ifdef HAVE_MENU
-const void *menu_ctx_find_driver(const char *ident); // Finds driver with ident. Does not initialize.
 void find_prev_menu_driver(void);
 void find_next_menu_driver(void);
 void find_menu_driver(void);
