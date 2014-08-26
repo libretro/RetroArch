@@ -218,18 +218,6 @@ enum analog_dpad_mode
    ANALOG_DPAD_LAST
 };
 
-enum keybind_set_id
-{
-   KEYBINDS_ACTION_NONE = 0,
-   KEYBINDS_ACTION_SET_DEFAULT_BIND,
-   KEYBINDS_ACTION_SET_DEFAULT_BINDS,
-   KEYBINDS_ACTION_SET_ANALOG_DPAD_NONE,
-   KEYBINDS_ACTION_SET_ANALOG_DPAD_LSTICK,
-   KEYBINDS_ACTION_SET_ANALOG_DPAD_RSTICK,
-   KEYBINDS_ACTION_GET_BIND_LABEL,
-   KEYBINDS_ACTION_LAST
-};
-
 typedef struct rarch_joypad_driver rarch_joypad_driver_t;
 
 typedef struct input_driver
