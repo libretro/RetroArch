@@ -478,24 +478,17 @@ void uninit_video_input(void);
 void init_audio(void);
 void uninit_audio(void);
 
+void find_prev_driver(unsigned cmd, char *str, size_t sizeof_str);
+void find_next_driver(unsigned cmd, char *str, size_t sizeof_str);
+
 void find_prev_resampler_driver(void);
-void find_prev_video_driver(void);
-void find_prev_audio_driver(void);
-void find_prev_input_driver(void);
-void find_next_video_driver(void);
-void find_next_audio_driver(void);
-void find_next_input_driver(void);
 void find_next_resampler_driver(void);
 
 void init_camera(void);
 void uninit_camera(void);
-void find_prev_camera_driver(void);
-void find_next_camera_driver(void);
 
 void init_location(void);
 void uninit_location(void);
-void find_prev_location_driver(void);
-void find_next_location_driver(void);
 
 void driver_set_monitor_refresh_rate(float hz);
 bool driver_monitor_fps_statistics(double *refresh_rate, double *deviation, unsigned *sample_points);

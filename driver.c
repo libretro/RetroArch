@@ -317,7 +317,7 @@ static int find_driver_index(unsigned cmd, const char *driver)
    return -1;
 }
 
-static void find_prev_driver(unsigned cmd, char *str, size_t sizeof_str)
+void find_prev_driver(unsigned cmd, char *str, size_t sizeof_str)
 {
    int i = find_driver_index(cmd, str);
    if (i > 0)
@@ -326,7 +326,7 @@ static void find_prev_driver(unsigned cmd, char *str, size_t sizeof_str)
       RARCH_WARN("Couldn't find any previous driver (current one: \"%s\").\n", str);
 }
 
-static void find_next_driver(unsigned cmd, char *str, size_t sizeof_str)
+void find_next_driver(unsigned cmd, char *str, size_t sizeof_str)
 {
    int i = find_driver_index(cmd, str);
    if (i >= 0)
@@ -355,67 +355,6 @@ static void find_osk_driver(void)
       if (!driver.osk)
          rarch_fail(1, "find_osk_driver()");
    }
-}
-
-
-void find_prev_osk_driver(void)
-{
-   find_prev_driver(RARCH_DRIVER_OSK, g_settings.osk.driver, sizeof(g_settings.osk.driver));
-}
-
-void find_next_osk_driver(void)
-{
-   find_next_driver(RARCH_DRIVER_OSK, g_settings.osk.driver, sizeof(g_settings.osk.driver));
-}
-
-void find_prev_camera_driver(void)
-{
-   find_prev_driver(RARCH_DRIVER_CAMERA, g_settings.camera.driver, sizeof(g_settings.camera.driver));
-}
-
-void find_next_camera_driver(void)
-{
-   find_next_driver(RARCH_DRIVER_CAMERA, g_settings.camera.driver, sizeof(g_settings.camera.driver));
-}
-
-void find_prev_video_driver(void)
-{
-   find_prev_driver(RARCH_DRIVER_VIDEO, g_settings.video.driver, sizeof(g_settings.video.driver));
-}
-
-void find_next_video_driver(void)
-{
-   find_next_driver(RARCH_DRIVER_VIDEO, g_settings.video.driver, sizeof(g_settings.video.driver));
-}
-
-void find_prev_location_driver(void)
-{
-   find_prev_driver(RARCH_DRIVER_LOCATION, g_settings.location.driver, sizeof(g_settings.location.driver));
-}
-
-void find_next_location_driver(void)
-{
-   find_next_driver(RARCH_DRIVER_LOCATION, g_settings.location.driver, sizeof(g_settings.location.driver));
-}
-
-void find_prev_audio_driver(void)
-{
-   find_prev_driver(RARCH_DRIVER_AUDIO, g_settings.audio.driver, sizeof(g_settings.audio.driver));
-}
-
-void find_next_audio_driver(void)
-{
-   find_next_driver(RARCH_DRIVER_AUDIO, g_settings.audio.driver, sizeof(g_settings.audio.driver));
-}
-
-void find_prev_input_driver(void)
-{
-   find_prev_driver(RARCH_DRIVER_INPUT, g_settings.input.driver, sizeof(g_settings.input.driver));
-}
-
-void find_next_input_driver(void)
-{
-   find_next_driver(RARCH_DRIVER_INPUT, g_settings.input.driver, sizeof(g_settings.input.driver));
 }
 
 void init_osk(void)
