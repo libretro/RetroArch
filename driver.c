@@ -423,12 +423,11 @@ bool driver_camera_start(void)
    {
       if (g_settings.camera.allow)
          return driver.camera->start(driver.camera_data);
-      else
-         msg_queue_push(g_extern.msg_queue, "Camera is explicitly disabled.\n", 1, 180);
+
+      msg_queue_push(g_extern.msg_queue, "Camera is explicitly disabled.\n", 1, 180);
       return false;
    }
-   else
-      return false;
+   return false;
 }
 
 void driver_camera_stop(void)
@@ -532,12 +531,11 @@ bool driver_location_start(void)
    {
       if (g_settings.location.allow)
          return driver.location->start(driver.location_data);
-      else
-         msg_queue_push(g_extern.msg_queue, "Location is explicitly disabled.\n", 1, 180);
+
+      msg_queue_push(g_extern.msg_queue, "Location is explicitly disabled.\n", 1, 180);
       return false;
    }
-   else
-      return false;
+   return false;
 }
 
 void driver_location_stop(void)
