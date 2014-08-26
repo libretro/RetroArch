@@ -3416,9 +3416,9 @@ static int menu_common_setting_set(unsigned id, unsigned action, rarch_setting_t
 #ifdef HAVE_MENU
          case MENU_SETTINGS_DRIVER_MENU:
             if (action == MENU_ACTION_LEFT)
-               find_prev_menu_driver();
+               find_prev_driver(RARCH_DRIVER_MENU, g_settings.menu.driver, sizeof(g_settings.menu.driver));
             else if (action == MENU_ACTION_RIGHT)
-               find_next_menu_driver();
+               find_next_driver(RARCH_DRIVER_MENU, g_settings.menu.driver, sizeof(g_settings.menu.driver));
             break;
 #endif
 #if defined(GEKKO)
