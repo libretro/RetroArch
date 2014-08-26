@@ -196,6 +196,53 @@ static const input_osk_driver_t *osk_drivers[] = {
    NULL,
 };
 
+static const camera_driver_t *camera_drivers[] = {
+#ifdef HAVE_V4L2
+   &camera_v4l2,
+#endif
+#ifdef EMSCRIPTEN
+   &camera_rwebcam,
+#endif
+#ifdef ANDROID
+   &camera_android,
+#endif
+#ifdef IOS
+   &camera_ios,
+#endif
+   &camera_null,
+   NULL,
+};
+
+static const location_driver_t *location_drivers[] = {
+#ifdef ANDROID
+   &location_android,
+#endif
+#if defined(IOS) || defined(OSX)
+   &location_apple,
+#endif
+   &location_null,
+   NULL,
+};
+
+#ifdef HAVE_MENU
+static const menu_ctx_driver_t *menu_ctx_drivers[] = {
+#if defined(HAVE_RMENU)
+   &menu_ctx_rmenu,
+#endif
+#if defined(HAVE_RMENU_XUI)
+   &menu_ctx_rmenu_xui,
+#endif
+#if defined(HAVE_LAKKA)
+   &menu_ctx_lakka,
+#endif
+#if defined(HAVE_RGUI)
+   &menu_ctx_rgui,
+#endif
+
+   NULL // zero length array is not valid
+};
+#endif
+
 static int find_osk_driver_index(const char *driver)
 {
    unsigned i;
@@ -270,22 +317,6 @@ void uninit_osk(void)
    driver.osk_data = NULL;
 }
 
-static const camera_driver_t *camera_drivers[] = {
-#ifdef HAVE_V4L2
-   &camera_v4l2,
-#endif
-#ifdef EMSCRIPTEN
-   &camera_rwebcam,
-#endif
-#ifdef ANDROID
-   &camera_android,
-#endif
-#ifdef IOS
-   &camera_ios,
-#endif
-   &camera_null,
-   NULL,
-};
 
 static int find_camera_driver_index(const char *driver)
 {
@@ -403,16 +434,6 @@ void uninit_camera(void)
    driver.camera_data = NULL;
 }
 
-static const location_driver_t *location_drivers[] = {
-#ifdef ANDROID
-   &location_android,
-#endif
-#if defined(IOS) || defined(OSX)
-   &location_apple,
-#endif
-   &location_null,
-   NULL,
-};
 
 static int find_location_driver_index(const char *driver)
 {
@@ -536,22 +557,6 @@ void uninit_location(void)
 }
 
 #ifdef HAVE_MENU
-static const menu_ctx_driver_t *menu_ctx_drivers[] = {
-#if defined(HAVE_RMENU)
-   &menu_ctx_rmenu,
-#endif
-#if defined(HAVE_RMENU_XUI)
-   &menu_ctx_rmenu_xui,
-#endif
-#if defined(HAVE_LAKKA)
-   &menu_ctx_lakka,
-#endif
-#if defined(HAVE_RGUI)
-   &menu_ctx_rgui,
-#endif
-
-   NULL // zero length array is not valid
-};
 
 static int find_menu_driver_index(const char *driver)
 {
