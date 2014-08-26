@@ -3925,9 +3925,6 @@ static void menu_common_setting_set_label(char *type_str,
          case MENU_SETTINGS_CUSTOM_BIND_DEFAULT_ALL:
             strlcpy(type_str, "...", type_str_size);
             break;
-         case MENU_CONTENT_HISTORY_PATH:
-            strlcpy(type_str, g_settings.content_history_path ? g_settings.content_history_path : "<None>", type_str_size);
-            break;
          case MENU_SETTINGS_BIND_PLAYER:
             snprintf(type_str, type_str_size, "#%d", driver.menu->current_pad + 1);
             break;
