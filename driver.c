@@ -243,18 +243,60 @@ static const menu_ctx_driver_t *menu_ctx_drivers[] = {
 };
 #endif
 
-static int find_osk_driver_index(const char *driver)
+static int find_driver_index(unsigned cmd, const char *driver)
 {
    unsigned i;
-   for (i = 0; osk_drivers[i]; i++)
-      if (strcasecmp(driver, osk_drivers[i]->ident) == 0)
-         return i;
+
+   switch (cmd)
+   {
+      case RARCH_DRIVER_LOCATION:
+         for (i = 0; location_drivers[i]; i++)
+            if (strcasecmp(driver, location_drivers[i]->ident) == 0)
+               return i;
+         break;
+      case RARCH_DRIVER_CAMERA:
+         for (i = 0; camera_drivers[i]; i++)
+            if (strcasecmp(driver, camera_drivers[i]->ident) == 0)
+               return i;
+         break;
+      case RARCH_DRIVER_OSK:
+         for (i = 0; osk_drivers[i]; i++)
+            if (strcasecmp(driver, osk_drivers[i]->ident) == 0)
+               return i;
+         break;
+#ifdef HAVE_MENU
+      case RARCH_DRIVER_MENU:
+         for (i = 0; menu_ctx_drivers[i]; i++)
+            if (strcasecmp(driver, menu_ctx_drivers[i]->ident) == 0)
+               return i;
+         break;
+#endif
+      case RARCH_DRIVER_INPUT:
+         for (i = 0; input_drivers[i]; i++)
+            if (strcasecmp(driver, input_drivers[i]->ident) == 0)
+               return i;
+         break;
+      case RARCH_DRIVER_VIDEO:
+         for (i = 0; video_drivers[i]; i++)
+            if (strcasecmp(driver, video_drivers[i]->ident) == 0)
+               return i;
+         break;
+      case RARCH_DRIVER_AUDIO:
+         for (i = 0; audio_drivers[i]; i++)
+            if (strcasecmp(driver, audio_drivers[i]->ident) == 0)
+               return i;
+         break;
+      case RARCH_DRIVER_NONE:
+      default:
+         break;
+   }
+
    return -1;
 }
 
 static void find_osk_driver(void)
 {
-   int i = find_osk_driver_index(g_settings.osk.driver);
+   int i = find_driver_index(RARCH_DRIVER_OSK, g_settings.osk.driver);
    if (i >= 0)
       driver.osk = osk_drivers[i];
    else
@@ -276,7 +318,7 @@ static void find_osk_driver(void)
 
 void find_prev_osk_driver(void)
 {
-   int i = find_osk_driver_index(g_settings.osk.driver);
+   int i = find_driver_index(RARCH_DRIVER_OSK, g_settings.osk.driver);
    if (i > 0)
       strlcpy(g_settings.osk.driver, osk_drivers[i - 1]->ident, sizeof(g_settings.osk.driver));
    else
@@ -285,7 +327,7 @@ void find_prev_osk_driver(void)
 
 void find_next_osk_driver(void)
 {
-   int i = find_osk_driver_index(g_settings.osk.driver);
+   int i = find_driver_index(RARCH_DRIVER_OSK, g_settings.osk.driver);
    if (i >= 0 && osk_drivers[i + 1])
       strlcpy(g_settings.osk.driver, osk_drivers[i + 1]->ident, sizeof(g_settings.osk.driver));
    else
@@ -318,18 +360,10 @@ void uninit_osk(void)
 }
 
 
-static int find_camera_driver_index(const char *driver)
-{
-   unsigned i;
-   for (i = 0; camera_drivers[i]; i++)
-      if (strcasecmp(driver, camera_drivers[i]->ident) == 0)
-         return i;
-   return -1;
-}
 
 static void find_camera_driver(void)
 {
-   int i = find_camera_driver_index(g_settings.camera.driver);
+   int i = find_driver_index(RARCH_DRIVER_CAMERA, g_settings.camera.driver);
    if (i >= 0)
       driver.camera = camera_drivers[i];
    else
@@ -351,7 +385,7 @@ static void find_camera_driver(void)
 
 void find_prev_camera_driver(void)
 {
-   int i = find_camera_driver_index(g_settings.camera.driver);
+   int i = find_driver_index(RARCH_DRIVER_CAMERA, g_settings.camera.driver);
    if (i > 0)
       strlcpy(g_settings.camera.driver, camera_drivers[i - 1]->ident, sizeof(g_settings.camera.driver));
    else
@@ -360,7 +394,7 @@ void find_prev_camera_driver(void)
 
 void find_next_camera_driver(void)
 {
-   int i = find_camera_driver_index(g_settings.camera.driver);
+   int i = find_driver_index(RARCH_DRIVER_CAMERA, g_settings.camera.driver);
    if (i >= 0 && camera_drivers[i + 1])
       strlcpy(g_settings.camera.driver, camera_drivers[i + 1]->ident, sizeof(g_settings.camera.driver));
    else
@@ -435,18 +469,10 @@ void uninit_camera(void)
 }
 
 
-static int find_location_driver_index(const char *driver)
-{
-   unsigned i;
-   for (i = 0; location_drivers[i]; i++)
-      if (strcasecmp(driver, location_drivers[i]->ident) == 0)
-         return i;
-   return -1;
-}
 
 static void find_location_driver(void)
 {
-   int i = find_location_driver_index(g_settings.location.driver);
+   int i = find_driver_index(RARCH_DRIVER_LOCATION, g_settings.location.driver);
    if (i >= 0)
       driver.location = location_drivers[i];
    else
@@ -468,7 +494,7 @@ static void find_location_driver(void)
 
 void find_prev_location_driver(void)
 {
-   int i = find_location_driver_index(g_settings.location.driver);
+   int i = find_driver_index(RARCH_DRIVER_LOCATION, g_settings.location.driver);
    if (i > 0)
       strlcpy(g_settings.location.driver, location_drivers[i - 1]->ident, sizeof(g_settings.location.driver));
    else
@@ -477,7 +503,7 @@ void find_prev_location_driver(void)
 
 void find_next_location_driver(void)
 {
-   int i = find_location_driver_index(g_settings.location.driver);
+   int i = find_driver_index(RARCH_DRIVER_LOCATION, g_settings.location.driver);
    if (i >= 0 && location_drivers[i + 1])
       strlcpy(g_settings.location.driver, location_drivers[i + 1]->ident, sizeof(g_settings.location.driver));
    else
@@ -558,18 +584,10 @@ void uninit_location(void)
 
 #ifdef HAVE_MENU
 
-static int find_menu_driver_index(const char *driver)
-{
-   unsigned i;
-   for (i = 0; menu_ctx_drivers[i]; i++)
-      if (strcasecmp(driver, menu_ctx_drivers[i]->ident) == 0)
-         return i;
-   return -1;
-}
 
 void find_prev_menu_driver(void)
 {
-   int i = find_menu_driver_index(g_settings.menu.driver);
+   int i = find_driver_index(RARCH_DRIVER_MENU, g_settings.menu.driver);
    if (i > 0)
    {
       strlcpy(g_settings.menu.driver, menu_ctx_drivers[i - 1]->ident, sizeof(g_settings.menu.driver));
@@ -581,7 +599,7 @@ void find_prev_menu_driver(void)
 
 void find_next_menu_driver(void)
 {
-   int i = find_menu_driver_index(g_settings.menu.driver);
+   int i = find_driver_index(RARCH_DRIVER_MENU, g_settings.menu.driver);
    if (i >= 0 && menu_ctx_drivers[i + 1])
    {
       strlcpy(g_settings.menu.driver, menu_ctx_drivers[i + 1]->ident, sizeof(g_settings.menu.driver));
@@ -593,7 +611,7 @@ void find_next_menu_driver(void)
 
 void find_menu_driver(void)
 {
-   int i = find_menu_driver_index(g_settings.menu.driver);
+   int i = find_driver_index(RARCH_DRIVER_MENU, g_settings.menu.driver);
    if (i >= 0)
       driver.menu_ctx = menu_ctx_drivers[i];
    else
@@ -613,36 +631,10 @@ void find_menu_driver(void)
 }
 #endif
 
-static int find_audio_driver_index(const char *driver)
-{
-   unsigned i;
-   for (i = 0; audio_drivers[i]; i++)
-      if (strcasecmp(driver, audio_drivers[i]->ident) == 0)
-         return i;
-   return -1;
-}
-
-static int find_video_driver_index(const char *driver)
-{
-   unsigned i;
-   for (i = 0; video_drivers[i]; i++)
-      if (strcasecmp(driver, video_drivers[i]->ident) == 0)
-         return i;
-   return -1;
-}
-
-static int find_input_driver_index(const char *driver)
-{
-   unsigned i;
-   for (i = 0; input_drivers[i]; i++)
-      if (strcasecmp(driver, input_drivers[i]->ident) == 0)
-         return i;
-   return -1;
-}
 
 static void find_audio_driver(void)
 {
-   int i = find_audio_driver_index(g_settings.audio.driver);
+   int i = find_driver_index(RARCH_DRIVER_AUDIO, g_settings.audio.driver);
    if (i >= 0)
       driver.audio = audio_drivers[i];
    else
@@ -663,7 +655,7 @@ static void find_audio_driver(void)
 
 void find_prev_audio_driver(void)
 {
-   int i = find_audio_driver_index(g_settings.audio.driver);
+   int i = find_driver_index(RARCH_DRIVER_AUDIO, g_settings.audio.driver);
    if (i > 0)
       strlcpy(g_settings.audio.driver, audio_drivers[i - 1]->ident, sizeof(g_settings.audio.driver));
    else
@@ -672,7 +664,7 @@ void find_prev_audio_driver(void)
 
 void find_next_audio_driver(void)
 {
-   int i = find_audio_driver_index(g_settings.audio.driver);
+   int i = find_driver_index(RARCH_DRIVER_AUDIO, g_settings.audio.driver);
    if (i >= 0 && audio_drivers[i + 1])
       strlcpy(g_settings.audio.driver, audio_drivers[i + 1]->ident, sizeof(g_settings.audio.driver));
    else
@@ -690,7 +682,7 @@ static void find_video_driver(void)
    }
 #endif
 
-   int i = find_video_driver_index(g_settings.video.driver);
+   int i = find_driver_index(RARCH_DRIVER_VIDEO, g_settings.video.driver);
    if (i >= 0)
       driver.video = video_drivers[i];
    else
@@ -712,7 +704,7 @@ static void find_video_driver(void)
 void find_prev_video_driver(void)
 {
    // No need to enforce GL if HW render. This is done at driver initialize anyways.
-   int i = find_video_driver_index(g_settings.video.driver);
+   int i = find_driver_index(RARCH_DRIVER_VIDEO, g_settings.video.driver);
    if (i > 0)
       strlcpy(g_settings.video.driver, video_drivers[i - 1]->ident, sizeof(g_settings.video.driver));
    else
@@ -722,7 +714,7 @@ void find_prev_video_driver(void)
 void find_next_video_driver(void)
 {
    // No need to enforce GL if HW render. This is done at driver initialize anyways.
-   int i = find_video_driver_index(g_settings.video.driver);
+   int i = find_driver_index(RARCH_DRIVER_VIDEO, g_settings.video.driver);
    if (i >= 0 && video_drivers[i + 1])
       strlcpy(g_settings.video.driver, video_drivers[i + 1]->ident, sizeof(g_settings.video.driver));
    else
@@ -731,7 +723,7 @@ void find_next_video_driver(void)
 
 static void find_input_driver(void)
 {
-   int i = find_input_driver_index(g_settings.input.driver);
+   int i = find_driver_index(RARCH_DRIVER_INPUT, g_settings.input.driver);
    if (i >= 0)
       driver.input = input_drivers[i];
    else
@@ -752,7 +744,7 @@ static void find_input_driver(void)
 
 void find_prev_input_driver(void)
 {
-   int i = find_input_driver_index(g_settings.input.driver);
+   int i = find_driver_index(RARCH_DRIVER_INPUT, g_settings.input.driver);
    if (i > 0)
       strlcpy(g_settings.input.driver, input_drivers[i - 1]->ident, sizeof(g_settings.input.driver));
    else
@@ -761,7 +753,7 @@ void find_prev_input_driver(void)
 
 void find_next_input_driver(void)
 {
-   int i = find_input_driver_index(g_settings.input.driver);
+   int i = find_driver_index(RARCH_DRIVER_INPUT, g_settings.input.driver);
    if (i >= 0 && input_drivers[i + 1])
       strlcpy(g_settings.input.driver, input_drivers[i + 1]->ident, sizeof(g_settings.input.driver));
    else

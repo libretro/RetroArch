@@ -119,6 +119,18 @@ enum // RetroArch specific bind IDs.
    RARCH_BIND_LIST_END_NULL
 };
 
+enum
+{
+   RARCH_DRIVER_NONE = 0,
+   RARCH_DRIVER_VIDEO,
+   RARCH_DRIVER_AUDIO,
+   RARCH_DRIVER_INPUT,
+   RARCH_DRIVER_CAMERA,
+   RARCH_DRIVER_OSK,
+   RARCH_DRIVER_LOCATION,
+   RARCH_DRIVER_MENU,
+};
+
 struct retro_keybind
 {
    bool valid;
