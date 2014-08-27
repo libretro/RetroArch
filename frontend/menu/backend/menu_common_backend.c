@@ -59,8 +59,6 @@ static void menu_common_entries_init(menu_handle_t *menu, unsigned menu_type)
    rarch_setting_t *current_setting = NULL;
    rarch_setting_t *setting_data = (rarch_setting_t *)setting_data_get_list();
 
-   (void)current_setting;
-
    switch (menu_type)
    {
       case MENU_SETTINGS_SHADER_PARAMETERS:
@@ -479,7 +477,7 @@ static void menu_common_entries_init(menu_handle_t *menu, unsigned menu_type)
 static int menu_info_screen_iterate(unsigned action, rarch_setting_t *setting)
 {
    char msg[PATH_MAX];
-   rarch_setting_t *current_setting;
+   rarch_setting_t *current_setting = NULL;
    rarch_setting_t *setting_data = (rarch_setting_t *)setting_data_get_list();
 
    if (!driver.menu || !setting_data)
@@ -491,7 +489,7 @@ static int menu_info_screen_iterate(unsigned action, rarch_setting_t *setting)
    current_setting = (rarch_setting_t*)file_list_get_last_setting(driver.menu->selection_buf, driver.menu->selection_ptr);
 
    if (current_setting)
-            setting_data_get_description(current_setting, msg, sizeof(msg));
+      setting_data_get_description(current_setting, msg, sizeof(msg));
    else
    {
       switch (driver.menu->info_selection)
@@ -2722,8 +2720,7 @@ static int menu_common_shader_manager_setting_toggle(unsigned id,
       return 0;
    }
 
-   rarch_setting_t *current_setting;
-
+   rarch_setting_t *current_setting = NULL;
    rarch_setting_t *setting_data = (rarch_setting_t *)setting_data_get_list();
 
    unsigned dist_shader = id - MENU_SETTINGS_SHADER_0;
