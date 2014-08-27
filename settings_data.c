@@ -1350,6 +1350,14 @@ static void general_write_handler(const void *data)
    if (!setting)
       return;
 
+   if (!strcmp(setting->name, "quit_retroarch"))
+   {
+      if (*setting->value.boolean)
+      {
+         rarch_cmd = RARCH_CMD_QUIT_RETROARCH;
+         *setting->value.boolean = false;
+      }
+   }
    if (!strcmp(setting->name, "fps_show"))
       g_settings.fps_show = *setting->value.boolean;
    else if (!strcmp(setting->name, "pause_nonactive"))

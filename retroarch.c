@@ -3364,6 +3364,12 @@ void rarch_main_command(unsigned action)
          uninit_drivers();
          init_drivers();
          break;
+      case RARCH_CMD_QUIT_RETROARCH:
+#ifdef HAVE_MENU
+         g_extern.lifecycle_state &= ~(1ULL << MODE_MENU);
+         g_extern.lifecycle_state &= ~(1ULL << MODE_GAME);
+#endif
+         break;
    }
 }
 

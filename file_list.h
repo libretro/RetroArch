@@ -69,7 +69,8 @@ void file_list_sort_on_alt(file_list_t *list);
 
 bool file_list_search(const file_list_t *list, const char *needle, size_t *index);
 
-void *file_list_get_last_setting(const file_list_t *list, int index);
+void *file_list_get_last_setting(const file_list_t *list, int index,
+      void *settings);
 
 #ifdef __cplusplus
 }

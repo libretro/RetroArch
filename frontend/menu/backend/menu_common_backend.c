@@ -683,7 +683,10 @@ static int menu_info_screen_iterate(unsigned action, rarch_setting_t *setting)
    if (driver.video_data && driver.menu_ctx && driver.menu_ctx->render)
       driver.menu_ctx->render();
 
-   current_setting = (rarch_setting_t*)file_list_get_last_setting(driver.menu->selection_buf, driver.menu->selection_ptr);
+   current_setting = (rarch_setting_t*)file_list_get_last_setting(
+         driver.menu->selection_buf,
+         driver.menu->selection_ptr,
+         setting_data_get_list());
 
    if (current_setting)
       setting_data_get_description(current_setting, msg, sizeof(msg));
@@ -3056,12 +3059,38 @@ static unsigned menu_gx_resolutions[GX_RESOLUTIONS_LAST][2] = {
 static unsigned menu_current_gx_resolution = GX_RESOLUTIONS_640_480;
 #endif
 
+static void handle_setting(rarch_setting_t *setting,
+      unsigned id, unsigned action)
+{
+   if (setting->type == ST_BOOL)
+      menu_common_setting_set_current_boolean(setting, action);
+   else if (setting->type == ST_UINT)
+      menu_common_setting_set_current_unsigned_integer(setting, action);
+   else if (setting->type == ST_FLOAT)
+      menu_common_setting_set_current_fraction(setting, action);
+   else if (setting->type == ST_DIR)
+   {
+      if (action == MENU_ACTION_START)
+      {
+         *setting->value.string = '\0';
+
+         if (setting->change_handler)
+            setting->change_handler(setting);
+      }
+   }
+   else if (setting->type == ST_PATH)
+      menu_common_setting_set_current_path_selection(setting, setting->default_value.string, id, action);
+}
+
 static int menu_common_setting_set(unsigned id, unsigned action, rarch_setting_t *setting)
 {
    struct retro_perf_counter **counters;
    unsigned port = driver.menu->current_pad;
 
-   setting = (rarch_setting_t*)file_list_get_last_setting(driver.menu->selection_buf, driver.menu->selection_ptr);
+   setting = (rarch_setting_t*)file_list_get_last_setting(
+         driver.menu->selection_buf, driver.menu->selection_ptr,
+         setting_data_get_list()
+         );
 
    if (id >= MENU_SETTINGS_PERF_COUNTERS_BEGIN && id <= MENU_SETTINGS_PERF_COUNTERS_END)
    {
@@ -3114,560 +3143,547 @@ static int menu_common_setting_set(unsigned id, unsigned action, rarch_setting_t
       }
       return 0;
    }
-   else if (setting && setting->type == ST_BOOL)
-      menu_common_setting_set_current_boolean(setting, action);
-   else if (setting && setting->type == ST_UINT)
-      menu_common_setting_set_current_unsigned_integer(setting, action);
-   else if (setting && setting->type == ST_FLOAT)
-      menu_common_setting_set_current_fraction(setting, action);
-   else if (setting && setting->type == ST_DIR)
-   {
-      if (action == MENU_ACTION_START)
-      {
-         *setting->value.string = '\0';
-
-         if (setting->change_handler)
-            setting->change_handler(setting);
-      }
-   }
-   else if (setting && setting->type == ST_PATH)
-      menu_common_setting_set_current_path_selection(setting, setting->default_value.string, id, action);
+   else if (setting)
+      handle_setting(setting, id, action);
    else
    {
-      switch (id)
+      setting = (rarch_setting_t*)file_list_get_last_setting(
+            driver.menu->selection_buf, driver.menu->selection_ptr,
+            setting_data_get_mainmenu(true)
+            );
+
+      if (setting)
+         handle_setting(setting, id, action);
+      else
       {
-         case MENU_START_SCREEN:
-            if (action == MENU_ACTION_OK)
-               file_list_push(driver.menu->menu_stack, "", "", MENU_START_SCREEN, 0, NULL);
-            break;
-         case MENU_SETTINGS_SAVESTATE_SAVE:
-         case MENU_SETTINGS_SAVESTATE_LOAD:
-            if (action == MENU_ACTION_OK)
-            {
-               if (id == MENU_SETTINGS_SAVESTATE_SAVE)
-                  rarch_main_command(RARCH_CMD_SAVE_STATE);
-               else
-                  rarch_main_command(RARCH_CMD_LOAD_STATE);
-               return -1;
-            }
-            else if (action == MENU_ACTION_START)
-               g_settings.state_slot = 0;
-            else if (action == MENU_ACTION_LEFT)
-            {
-               // Slot -1 is (auto) slot.
-               if (g_settings.state_slot >= 0)
-                  g_settings.state_slot--;
-            }
-            else if (action == MENU_ACTION_RIGHT)
-               g_settings.state_slot++;
-            break;
-         case MENU_SETTINGS_SCREENSHOT:
-            if (action == MENU_ACTION_OK)
-               rarch_main_command(RARCH_CMD_TAKE_SCREENSHOT);
-            break;
-         case MENU_SETTINGS_RESTART_GAME:
-            if (action == MENU_ACTION_OK)
-            {
-               rarch_main_command(RARCH_CMD_RESET);
-               return -1;
-            }
-            break;
-         case MENU_SETTINGS_DISK_INDEX:
-            {
-               int step = 0;
-
-               if (action == MENU_ACTION_RIGHT || action == MENU_ACTION_OK)
-                  step = 1;
-               else if (action == MENU_ACTION_LEFT)
-                  step = -1;
-
-               if (step)
-               {
-                  const struct retro_disk_control_callback *control = (const struct retro_disk_control_callback*)&g_extern.system.disk_control;
-                  unsigned num_disks = control->get_num_images();
-                  unsigned current   = control->get_image_index();
-                  unsigned next_index = (current + num_disks + 1 + step) % (num_disks + 1);
-                  rarch_disk_control_set_eject(true, false);
-                  rarch_disk_control_set_index(next_index);
-                  rarch_disk_control_set_eject(false, false);
-               }
-
+         switch (id)
+         {
+            case MENU_START_SCREEN:
+               if (action == MENU_ACTION_OK)
+                  file_list_push(driver.menu->menu_stack, "", "", MENU_START_SCREEN, 0, NULL);
                break;
-            }
-         case MENU_SETTINGS_RESTART_EMULATOR:
-            if (action == MENU_ACTION_OK)
-            {
-#if defined(GEKKO) && defined(HW_RVL)
-               fill_pathname_join(g_extern.fullpath, g_defaults.core_dir, SALAMANDER_FILE,
-                     sizeof(g_extern.fullpath));
-#endif
-               g_extern.lifecycle_state &= ~(1ULL << MODE_GAME);
-               g_extern.lifecycle_state |= (1ULL << MODE_EXITSPAWN);
-               return -1;
-            }
-            break;
-         case MENU_SETTINGS_RESUME_GAME:
-            if (action == MENU_ACTION_OK)
-            {
-               g_extern.lifecycle_state |= (1ULL << MODE_GAME);
-               return -1;
-            }
-            break;
-         case MENU_SETTINGS_QUIT_RARCH:
-            if (action == MENU_ACTION_OK)
-            {
-               g_extern.lifecycle_state &= ~(1ULL << MODE_GAME);
-               return -1;
-            }
-            break;
-         case MENU_SETTINGS_SAVE_CONFIG:
-            if (action == MENU_ACTION_OK)
-               menu_save_new_config();
-            break;
-            // controllers
-         case MENU_SETTINGS_BIND_PLAYER:
-            if (action == MENU_ACTION_START)
-               driver.menu->current_pad = 0;
-            else if (action == MENU_ACTION_LEFT)
-            {
-               if (driver.menu->current_pad != 0)
-                  driver.menu->current_pad--;
-            }
-            else if (action == MENU_ACTION_RIGHT)
-            {
-               if (driver.menu->current_pad < MAX_PLAYERS - 1)
-                  driver.menu->current_pad++;
-            }
-            if (port != driver.menu->current_pad)
-               driver.menu->need_refresh = true;
-            port = driver.menu->current_pad;
-            break;
-         case MENU_SETTINGS_BIND_DEVICE:
-            {
-               int *p = &g_settings.input.joypad_map[port];
-               if (action == MENU_ACTION_START)
-                  *p = port;
+            case MENU_SETTINGS_SAVESTATE_SAVE:
+            case MENU_SETTINGS_SAVESTATE_LOAD:
+               if (action == MENU_ACTION_OK)
+               {
+                  if (id == MENU_SETTINGS_SAVESTATE_SAVE)
+                     rarch_main_command(RARCH_CMD_SAVE_STATE);
+                  else
+                     rarch_main_command(RARCH_CMD_LOAD_STATE);
+                  return -1;
+               }
+               else if (action == MENU_ACTION_START)
+                  g_settings.state_slot = 0;
                else if (action == MENU_ACTION_LEFT)
-                  (*p)--;
+               {
+                  // Slot -1 is (auto) slot.
+                  if (g_settings.state_slot >= 0)
+                     g_settings.state_slot--;
+               }
                else if (action == MENU_ACTION_RIGHT)
-                  (*p)++;
-
-               if (*p < -1)
-                  *p = -1;
-               else if (*p >= MAX_PLAYERS)
-                  *p = MAX_PLAYERS - 1;
-            }
-            break;
-         case MENU_SETTINGS_BIND_ANALOG_MODE:
-            switch (action)
-            {
-               case MENU_ACTION_START:
-                  g_settings.input.analog_dpad_mode[port] = 0;
-                  break;
-
-               case MENU_ACTION_OK:
-               case MENU_ACTION_RIGHT:
-                  g_settings.input.analog_dpad_mode[port] = (g_settings.input.analog_dpad_mode[port] + 1) % ANALOG_DPAD_LAST;
-                  break;
-
-               case MENU_ACTION_LEFT:
-                  g_settings.input.analog_dpad_mode[port] = (g_settings.input.analog_dpad_mode[port] + ANALOG_DPAD_LAST - 1) % ANALOG_DPAD_LAST;
-                  break;
-
-               default:
-                  break;
-            }
-            break;
-         case MENU_SETTINGS_BIND_DEVICE_TYPE:
-            {
-               unsigned current_device, current_index, i, devices[128];
-               const struct retro_controller_info *desc;
-               unsigned types = 0;
-
-               devices[types++] = RETRO_DEVICE_NONE;
-               devices[types++] = RETRO_DEVICE_JOYPAD;
-               // Only push RETRO_DEVICE_ANALOG as default if we use an older core which doesn't use SET_CONTROLLER_INFO.
-               if (!g_extern.system.num_ports)
-                  devices[types++] = RETRO_DEVICE_ANALOG;
-
-               desc = port < g_extern.system.num_ports ? &g_extern.system.ports[port] : NULL;
-               if (desc)
+                  g_settings.state_slot++;
+               break;
+            case MENU_SETTINGS_SCREENSHOT:
+               if (action == MENU_ACTION_OK)
+                  rarch_main_command(RARCH_CMD_TAKE_SCREENSHOT);
+               break;
+            case MENU_SETTINGS_RESTART_GAME:
+               if (action == MENU_ACTION_OK)
                {
-                  for (i = 0; i < desc->num_types; i++)
-                  {
-                     unsigned id = desc->types[i].id;
-                     if (types < ARRAY_SIZE(devices) && id != RETRO_DEVICE_NONE && id != RETRO_DEVICE_JOYPAD)
-                        devices[types++] = id;
-                  }
+                  rarch_main_command(RARCH_CMD_RESET);
+                  return -1;
                }
-
-               current_device = g_settings.input.libretro_device[port];
-               current_index = 0;
-               for (i = 0; i < types; i++)
+               break;
+            case MENU_SETTINGS_DISK_INDEX:
                {
-                  if (current_device == devices[i])
-                  {
-                     current_index = i;
-                     break;
-                  }
-               }
+                  int step = 0;
 
-               bool updated = true;
+                  if (action == MENU_ACTION_RIGHT || action == MENU_ACTION_OK)
+                     step = 1;
+                  else if (action == MENU_ACTION_LEFT)
+                     step = -1;
+
+                  if (step)
+                  {
+                     const struct retro_disk_control_callback *control = (const struct retro_disk_control_callback*)&g_extern.system.disk_control;
+                     unsigned num_disks = control->get_num_images();
+                     unsigned current   = control->get_image_index();
+                     unsigned next_index = (current + num_disks + 1 + step) % (num_disks + 1);
+                     rarch_disk_control_set_eject(true, false);
+                     rarch_disk_control_set_index(next_index);
+                     rarch_disk_control_set_eject(false, false);
+                  }
+
+                  break;
+               }
+            case MENU_SETTINGS_RESTART_EMULATOR:
+               if (action == MENU_ACTION_OK)
+               {
+#if defined(GEKKO) && defined(HW_RVL)
+                  fill_pathname_join(g_extern.fullpath, g_defaults.core_dir, SALAMANDER_FILE,
+                        sizeof(g_extern.fullpath));
+#endif
+                  g_extern.lifecycle_state &= ~(1ULL << MODE_GAME);
+                  g_extern.lifecycle_state |= (1ULL << MODE_EXITSPAWN);
+                  return -1;
+               }
+               break;
+            case MENU_SETTINGS_RESUME_GAME:
+               if (action == MENU_ACTION_OK)
+               {
+                  g_extern.lifecycle_state |= (1ULL << MODE_GAME);
+                  return -1;
+               }
+               break;
+            case MENU_SETTINGS_SAVE_CONFIG:
+               if (action == MENU_ACTION_OK)
+                  menu_save_new_config();
+               break;
+               // controllers
+            case MENU_SETTINGS_BIND_PLAYER:
+               if (action == MENU_ACTION_START)
+                  driver.menu->current_pad = 0;
+               else if (action == MENU_ACTION_LEFT)
+               {
+                  if (driver.menu->current_pad != 0)
+                     driver.menu->current_pad--;
+               }
+               else if (action == MENU_ACTION_RIGHT)
+               {
+                  if (driver.menu->current_pad < MAX_PLAYERS - 1)
+                     driver.menu->current_pad++;
+               }
+               if (port != driver.menu->current_pad)
+                  driver.menu->need_refresh = true;
+               port = driver.menu->current_pad;
+               break;
+            case MENU_SETTINGS_BIND_DEVICE:
+               {
+                  int *p = &g_settings.input.joypad_map[port];
+                  if (action == MENU_ACTION_START)
+                     *p = port;
+                  else if (action == MENU_ACTION_LEFT)
+                     (*p)--;
+                  else if (action == MENU_ACTION_RIGHT)
+                     (*p)++;
+
+                  if (*p < -1)
+                     *p = -1;
+                  else if (*p >= MAX_PLAYERS)
+                     *p = MAX_PLAYERS - 1;
+               }
+               break;
+            case MENU_SETTINGS_BIND_ANALOG_MODE:
                switch (action)
                {
                   case MENU_ACTION_START:
-                     current_device = RETRO_DEVICE_JOYPAD;
+                     g_settings.input.analog_dpad_mode[port] = 0;
+                     break;
+
+                  case MENU_ACTION_OK:
+                  case MENU_ACTION_RIGHT:
+                     g_settings.input.analog_dpad_mode[port] = (g_settings.input.analog_dpad_mode[port] + 1) % ANALOG_DPAD_LAST;
                      break;
 
                   case MENU_ACTION_LEFT:
-                     current_device = devices[(current_index + types - 1) % types];
-                     break;
-
-                  case MENU_ACTION_RIGHT:
-                  case MENU_ACTION_OK:
-                     current_device = devices[(current_index + 1) % types];
+                     g_settings.input.analog_dpad_mode[port] = (g_settings.input.analog_dpad_mode[port] + ANALOG_DPAD_LAST - 1) % ANALOG_DPAD_LAST;
                      break;
 
                   default:
-                     updated = false;
+                     break;
                }
-
-               if (updated)
-               {
-                  g_settings.input.libretro_device[port] = current_device;
-                  pretro_set_controller_port_device(port, current_device);
-               }
-
                break;
-            }
-         case MENU_SETTINGS_CUSTOM_BIND_MODE:
-            if (action == MENU_ACTION_OK || action == MENU_ACTION_LEFT || action == MENU_ACTION_RIGHT)
-               driver.menu->bind_mode_keyboard = !driver.menu->bind_mode_keyboard;
-            break;
-         case MENU_SETTINGS_CUSTOM_BIND_ALL:
-            if (action == MENU_ACTION_OK)
-            {
-               driver.menu->binds.target = &g_settings.input.binds[port][0];
-               driver.menu->binds.begin = MENU_SETTINGS_BIND_BEGIN;
-               driver.menu->binds.last = MENU_SETTINGS_BIND_LAST;
-               if (driver.menu->bind_mode_keyboard)
+            case MENU_SETTINGS_BIND_DEVICE_TYPE:
                {
-                  file_list_push(driver.menu->menu_stack, "", "",
-                        MENU_SETTINGS_CUSTOM_BIND_KEYBOARD,
-                        driver.menu->selection_ptr, NULL);
-                  driver.menu->binds.timeout_end = rarch_get_time_usec() + MENU_KEYBOARD_BIND_TIMEOUT_SECONDS * 1000000;
-                  input_keyboard_wait_keys(driver.menu, menu_custom_bind_keyboard_cb);
-               }
-               else
-               {
-                  file_list_push(driver.menu->menu_stack, "", "",
-                        MENU_SETTINGS_CUSTOM_BIND,
-                        driver.menu->selection_ptr, NULL);
-                  menu_poll_bind_get_rested_axes(&driver.menu->binds);
-                  menu_poll_bind_state(&driver.menu->binds);
-               }
-            }
-            break;
-         case MENU_SETTINGS_CUSTOM_BIND_DEFAULT_ALL:
-            if (action == MENU_ACTION_OK)
-            {
-               unsigned i;
-               struct retro_keybind *target = (struct retro_keybind*)&g_settings.input.binds[port][0];
-               const struct retro_keybind *def_binds = port ? retro_keybinds_rest : retro_keybinds_1;
+                  unsigned current_device, current_index, i, devices[128];
+                  const struct retro_controller_info *desc;
+                  unsigned types = 0;
 
-               driver.menu->binds.begin = MENU_SETTINGS_BIND_BEGIN;
-               driver.menu->binds.last = MENU_SETTINGS_BIND_LAST;
+                  devices[types++] = RETRO_DEVICE_NONE;
+                  devices[types++] = RETRO_DEVICE_JOYPAD;
+                  // Only push RETRO_DEVICE_ANALOG as default if we use an older core which doesn't use SET_CONTROLLER_INFO.
+                  if (!g_extern.system.num_ports)
+                     devices[types++] = RETRO_DEVICE_ANALOG;
 
-               for (i = MENU_SETTINGS_BIND_BEGIN; i <= MENU_SETTINGS_BIND_LAST; i++, target++)
+                  desc = port < g_extern.system.num_ports ? &g_extern.system.ports[port] : NULL;
+                  if (desc)
+                  {
+                     for (i = 0; i < desc->num_types; i++)
+                     {
+                        unsigned id = desc->types[i].id;
+                        if (types < ARRAY_SIZE(devices) && id != RETRO_DEVICE_NONE && id != RETRO_DEVICE_JOYPAD)
+                           devices[types++] = id;
+                     }
+                  }
+
+                  current_device = g_settings.input.libretro_device[port];
+                  current_index = 0;
+                  for (i = 0; i < types; i++)
+                  {
+                     if (current_device == devices[i])
+                     {
+                        current_index = i;
+                        break;
+                     }
+                  }
+
+                  bool updated = true;
+                  switch (action)
+                  {
+                     case MENU_ACTION_START:
+                        current_device = RETRO_DEVICE_JOYPAD;
+                        break;
+
+                     case MENU_ACTION_LEFT:
+                        current_device = devices[(current_index + types - 1) % types];
+                        break;
+
+                     case MENU_ACTION_RIGHT:
+                     case MENU_ACTION_OK:
+                        current_device = devices[(current_index + 1) % types];
+                        break;
+
+                     default:
+                        updated = false;
+                  }
+
+                  if (updated)
+                  {
+                     g_settings.input.libretro_device[port] = current_device;
+                     pretro_set_controller_port_device(port, current_device);
+                  }
+
+                  break;
+               }
+            case MENU_SETTINGS_CUSTOM_BIND_MODE:
+               if (action == MENU_ACTION_OK || action == MENU_ACTION_LEFT || action == MENU_ACTION_RIGHT)
+                  driver.menu->bind_mode_keyboard = !driver.menu->bind_mode_keyboard;
+               break;
+            case MENU_SETTINGS_CUSTOM_BIND_ALL:
+               if (action == MENU_ACTION_OK)
                {
+                  driver.menu->binds.target = &g_settings.input.binds[port][0];
+                  driver.menu->binds.begin = MENU_SETTINGS_BIND_BEGIN;
+                  driver.menu->binds.last = MENU_SETTINGS_BIND_LAST;
                   if (driver.menu->bind_mode_keyboard)
-                     target->key = def_binds[i - MENU_SETTINGS_BIND_BEGIN].key;
+                  {
+                     file_list_push(driver.menu->menu_stack, "", "",
+                           MENU_SETTINGS_CUSTOM_BIND_KEYBOARD,
+                           driver.menu->selection_ptr, NULL);
+                     driver.menu->binds.timeout_end = rarch_get_time_usec() + MENU_KEYBOARD_BIND_TIMEOUT_SECONDS * 1000000;
+                     input_keyboard_wait_keys(driver.menu, menu_custom_bind_keyboard_cb);
+                  }
                   else
                   {
-                     target->joykey = NO_BTN;
-                     target->joyaxis = AXIS_NONE;
+                     file_list_push(driver.menu->menu_stack, "", "",
+                           MENU_SETTINGS_CUSTOM_BIND,
+                           driver.menu->selection_ptr, NULL);
+                     menu_poll_bind_get_rested_axes(&driver.menu->binds);
+                     menu_poll_bind_state(&driver.menu->binds);
                   }
-               }
-            }
-            break;
-         case MENU_SETTINGS_DRIVER_VIDEO:
-            if (action == MENU_ACTION_LEFT)
-               find_prev_driver(RARCH_DRIVER_VIDEO, g_settings.video.driver, sizeof(g_settings.video.driver));
-            else if (action == MENU_ACTION_RIGHT)
-               find_next_driver(RARCH_DRIVER_VIDEO, g_settings.video.driver, sizeof(g_settings.video.driver));
-            break;
-         case MENU_SETTINGS_DRIVER_AUDIO:
-            if (action == MENU_ACTION_LEFT)
-               find_prev_driver(RARCH_DRIVER_AUDIO, g_settings.audio.driver, sizeof(g_settings.audio.driver));
-            else if (action == MENU_ACTION_RIGHT)
-               find_next_driver(RARCH_DRIVER_AUDIO, g_settings.audio.driver, sizeof(g_settings.audio.driver));
-            break;
-         case MENU_SETTINGS_DRIVER_AUDIO_DEVICE:
-            if (action == MENU_ACTION_OK)
-               menu_key_start_line(driver.menu, "Audio Device Name / IP: ", "audio_device", st_string_callback);
-            else if (action == MENU_ACTION_START)
-               *g_settings.audio.device = '\0';
-            break;
-         case MENU_SETTINGS_DRIVER_AUDIO_RESAMPLER:
-            if (action == MENU_ACTION_LEFT)
-               find_prev_resampler_driver();
-            else if (action == MENU_ACTION_RIGHT)
-               find_next_resampler_driver();
-            break;
-         case MENU_SETTINGS_DRIVER_INPUT:
-            if (action == MENU_ACTION_LEFT)
-               find_prev_driver(RARCH_DRIVER_INPUT, g_settings.input.driver, sizeof(g_settings.input.driver));
-            else if (action == MENU_ACTION_RIGHT)
-               find_next_driver(RARCH_DRIVER_INPUT, g_settings.input.driver, sizeof(g_settings.input.driver));
-            break;
-         case MENU_SETTINGS_DRIVER_CAMERA:
-            if (action == MENU_ACTION_LEFT)
-               find_prev_driver(RARCH_DRIVER_CAMERA, g_settings.camera.driver, sizeof(g_settings.camera.driver));
-            else if (action == MENU_ACTION_RIGHT)
-               find_next_driver(RARCH_DRIVER_CAMERA, g_settings.camera.driver, sizeof(g_settings.camera.driver));
-            break;
-         case MENU_SETTINGS_DRIVER_LOCATION:
-            if (action == MENU_ACTION_LEFT)
-               find_prev_driver(RARCH_DRIVER_LOCATION, g_settings.location.driver, sizeof(g_settings.location.driver));
-            else if (action == MENU_ACTION_RIGHT)
-               find_next_driver(RARCH_DRIVER_LOCATION, g_settings.location.driver, sizeof(g_settings.location.driver));
-            break;
-         case MENU_SETTINGS_DRIVER_MENU:
-            if (action == MENU_ACTION_LEFT)
-               find_prev_driver(RARCH_DRIVER_MENU, g_settings.menu.driver, sizeof(g_settings.menu.driver));
-            else if (action == MENU_ACTION_RIGHT)
-               find_next_driver(RARCH_DRIVER_MENU, g_settings.menu.driver, sizeof(g_settings.menu.driver));
-            break;
-#if defined(GEKKO)
-         case MENU_SETTINGS_VIDEO_RESOLUTION:
-            if (action == MENU_ACTION_LEFT)
-            {
-               if (menu_current_gx_resolution > 0)
-                  menu_current_gx_resolution--;
-            }
-            else if (action == MENU_ACTION_RIGHT)
-            {
-               if (menu_current_gx_resolution < GX_RESOLUTIONS_LAST - 1)
-               {
-#ifdef HW_RVL
-                  if ((menu_current_gx_resolution + 1) > GX_RESOLUTIONS_640_480)
-                     if (CONF_GetVideo() != CONF_VIDEO_PAL)
-                        return 0;
-#endif
-
-                  menu_current_gx_resolution++;
-               }
-            }
-            else if (action == MENU_ACTION_OK)
-            {
-               if (driver.video_data)
-                  gx_set_video_mode(driver.video_data, menu_gx_resolutions[menu_current_gx_resolution][0],
-                        menu_gx_resolutions[menu_current_gx_resolution][1]);
-            }
-            break;
-#elif defined(__CELLOS_LV2__)
-         case MENU_SETTINGS_VIDEO_RESOLUTION:
-            if (action == MENU_ACTION_LEFT)
-            {
-               if (g_extern.console.screen.resolutions.current.idx)
-               {
-                  g_extern.console.screen.resolutions.current.idx--;
-                  g_extern.console.screen.resolutions.current.id =
-                     g_extern.console.screen.resolutions.list[g_extern.console.screen.resolutions.current.idx];
-               }
-            }
-            else if (action == MENU_ACTION_RIGHT)
-            {
-               if (g_extern.console.screen.resolutions.current.idx + 1 <
-                     g_extern.console.screen.resolutions.count)
-               {
-                  g_extern.console.screen.resolutions.current.idx++;
-                  g_extern.console.screen.resolutions.current.id =
-                     g_extern.console.screen.resolutions.list[g_extern.console.screen.resolutions.current.idx];
-               }
-            }
-            else if (action == MENU_ACTION_OK)
-            {
-               if (g_extern.console.screen.resolutions.list[g_extern.console.screen.resolutions.current.idx] == CELL_VIDEO_OUT_RESOLUTION_576)
-               {
-                  if (g_extern.console.screen.pal_enable)
-                     g_extern.lifecycle_state |= (1ULL<< MODE_VIDEO_PAL_ENABLE);
-               }
-               else
-               {
-                  g_extern.lifecycle_state &= ~(1ULL << MODE_VIDEO_PAL_ENABLE);
-                  g_extern.lifecycle_state &= ~(1ULL << MODE_VIDEO_PAL_TEMPORAL_ENABLE);
-               }
-
-               rarch_main_command(RARCH_CMD_REINIT);
-            }
-            break;
-         case MENU_SETTINGS_VIDEO_PAL60:
-            switch (action)
-            {
-               case MENU_ACTION_LEFT:
-               case MENU_ACTION_RIGHT:
-               case MENU_ACTION_OK:
-                  if (g_extern.lifecycle_state & (1ULL << MODE_VIDEO_PAL_ENABLE))
-                  {
-                     if (g_extern.lifecycle_state & (1ULL << MODE_VIDEO_PAL_TEMPORAL_ENABLE))
-                        g_extern.lifecycle_state &= ~(1ULL << MODE_VIDEO_PAL_TEMPORAL_ENABLE);
-                     else
-                        g_extern.lifecycle_state |= (1ULL << MODE_VIDEO_PAL_TEMPORAL_ENABLE);
-
-                     rarch_main_command(RARCH_CMD_REINIT);
-                  }
-                  break;
-               case MENU_ACTION_START:
-                  if (g_extern.lifecycle_state & (1ULL << MODE_VIDEO_PAL_ENABLE))
-                  {
-                     g_extern.lifecycle_state &= ~(1ULL << MODE_VIDEO_PAL_TEMPORAL_ENABLE);
-
-                     rarch_main_command(RARCH_CMD_REINIT);
-                  }
-                  break;
-            }
-            break;
-#endif
-#ifdef HW_RVL
-         case MENU_SETTINGS_VIDEO_SOFT_FILTER:
-            if (g_extern.lifecycle_state & (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE))
-               g_extern.lifecycle_state &= ~(1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE);
-            else
-               g_extern.lifecycle_state |= (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE);
-
-            rarch_main_command(RARCH_CMD_VIDEO_APPLY_STATE_CHANGES);
-            break;
-#endif
-
-            break;
-         case MENU_SETTINGS_SHADER_PASSES:
-            {
-               struct gfx_shader *shader = (struct gfx_shader*)driver.menu->shader;
-
-               switch (action)
-               {
-                  case MENU_ACTION_START:
-                     if (shader && shader->passes)
-                        shader->passes = 0;
-                     driver.menu->need_refresh = true;
-                     break;
-
-                  case MENU_ACTION_LEFT:
-                     if (shader && shader->passes)
-                        shader->passes--;
-                     driver.menu->need_refresh = true;
-                     break;
-
-                  case MENU_ACTION_RIGHT:
-                  case MENU_ACTION_OK:
-                     if (shader && (shader->passes < GFX_MAX_SHADERS))
-                        shader->passes++;
-                     driver.menu->need_refresh = true;
-                     break;
-
-                  default:
-                     break;
-               }
-
-               if (driver.menu->need_refresh)
-                  gfx_shader_resolve_parameters(NULL, driver.menu->shader);
-            }
-            break;
-         case MENU_SETTINGS_SHADER_APPLY:
-            {
-               struct gfx_shader *shader = (struct gfx_shader*)driver.menu->shader;
-               unsigned type = RARCH_SHADER_NONE;
-
-               if (!driver.video || !driver.video->set_shader || action != MENU_ACTION_OK)
-                  return 0;
-
-               RARCH_LOG("Applying shader ...\n");
-
-               if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->shader_manager_get_type)
-                  type = driver.menu_ctx->backend->shader_manager_get_type(driver.menu->shader);
-
-               if (shader->passes && type != RARCH_SHADER_NONE
-                     && driver.menu_ctx && driver.menu_ctx->backend &&
-                     driver.menu_ctx->backend->shader_manager_save_preset)
-                  driver.menu_ctx->backend->shader_manager_save_preset(NULL, true);
-               else
-               {
-                  type = gfx_shader_parse_type("", DEFAULT_SHADER_TYPE);
-                  if (type == RARCH_SHADER_NONE)
-                  {
-#if defined(HAVE_GLSL)
-                     type = RARCH_SHADER_GLSL;
-#elif defined(HAVE_CG) || defined(HAVE_HLSL)
-                     type = RARCH_SHADER_CG;
-#endif
-                  }
-                  if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->shader_manager_set_preset)
-                     driver.menu_ctx->backend->shader_manager_set_preset(NULL, type, NULL);
                }
                break;
-            }
-         case MENU_SETTINGS_SHADER_PRESET_SAVE:
-            if (action == MENU_ACTION_OK)
-               menu_key_start_line(driver.menu, "Preset Filename: ", "shader_preset_save", preset_filename_callback);
-            break;
-#ifdef _XBOX1
-         case MENU_SETTINGS_SOFT_DISPLAY_FILTER:
-            switch (action)
-            {
-               case MENU_ACTION_LEFT:
-               case MENU_ACTION_RIGHT:
-               case MENU_ACTION_OK:
-                  if (g_extern.lifecycle_state & (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE))
-                     g_extern.lifecycle_state &= ~(1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE);
-                  else
-                     g_extern.lifecycle_state |= (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE);
-                  break;
-               case MENU_ACTION_START:
-                  g_extern.lifecycle_state |= (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE);
-                  break;
-            }
-            break;
+            case MENU_SETTINGS_CUSTOM_BIND_DEFAULT_ALL:
+               if (action == MENU_ACTION_OK)
+               {
+                  unsigned i;
+                  struct retro_keybind *target = (struct retro_keybind*)&g_settings.input.binds[port][0];
+                  const struct retro_keybind *def_binds = port ? retro_keybinds_rest : retro_keybinds_1;
+
+                  driver.menu->binds.begin = MENU_SETTINGS_BIND_BEGIN;
+                  driver.menu->binds.last = MENU_SETTINGS_BIND_LAST;
+
+                  for (i = MENU_SETTINGS_BIND_BEGIN; i <= MENU_SETTINGS_BIND_LAST; i++, target++)
+                  {
+                     if (driver.menu->bind_mode_keyboard)
+                        target->key = def_binds[i - MENU_SETTINGS_BIND_BEGIN].key;
+                     else
+                     {
+                        target->joykey = NO_BTN;
+                        target->joyaxis = AXIS_NONE;
+                     }
+                  }
+               }
+               break;
+            case MENU_SETTINGS_DRIVER_VIDEO:
+               if (action == MENU_ACTION_LEFT)
+                  find_prev_driver(RARCH_DRIVER_VIDEO, g_settings.video.driver, sizeof(g_settings.video.driver));
+               else if (action == MENU_ACTION_RIGHT)
+                  find_next_driver(RARCH_DRIVER_VIDEO, g_settings.video.driver, sizeof(g_settings.video.driver));
+               break;
+            case MENU_SETTINGS_DRIVER_AUDIO:
+               if (action == MENU_ACTION_LEFT)
+                  find_prev_driver(RARCH_DRIVER_AUDIO, g_settings.audio.driver, sizeof(g_settings.audio.driver));
+               else if (action == MENU_ACTION_RIGHT)
+                  find_next_driver(RARCH_DRIVER_AUDIO, g_settings.audio.driver, sizeof(g_settings.audio.driver));
+               break;
+            case MENU_SETTINGS_DRIVER_AUDIO_DEVICE:
+               if (action == MENU_ACTION_OK)
+                  menu_key_start_line(driver.menu, "Audio Device Name / IP: ", "audio_device", st_string_callback);
+               else if (action == MENU_ACTION_START)
+                  *g_settings.audio.device = '\0';
+               break;
+            case MENU_SETTINGS_DRIVER_AUDIO_RESAMPLER:
+               if (action == MENU_ACTION_LEFT)
+                  find_prev_resampler_driver();
+               else if (action == MENU_ACTION_RIGHT)
+                  find_next_resampler_driver();
+               break;
+            case MENU_SETTINGS_DRIVER_INPUT:
+               if (action == MENU_ACTION_LEFT)
+                  find_prev_driver(RARCH_DRIVER_INPUT, g_settings.input.driver, sizeof(g_settings.input.driver));
+               else if (action == MENU_ACTION_RIGHT)
+                  find_next_driver(RARCH_DRIVER_INPUT, g_settings.input.driver, sizeof(g_settings.input.driver));
+               break;
+            case MENU_SETTINGS_DRIVER_CAMERA:
+               if (action == MENU_ACTION_LEFT)
+                  find_prev_driver(RARCH_DRIVER_CAMERA, g_settings.camera.driver, sizeof(g_settings.camera.driver));
+               else if (action == MENU_ACTION_RIGHT)
+                  find_next_driver(RARCH_DRIVER_CAMERA, g_settings.camera.driver, sizeof(g_settings.camera.driver));
+               break;
+            case MENU_SETTINGS_DRIVER_LOCATION:
+               if (action == MENU_ACTION_LEFT)
+                  find_prev_driver(RARCH_DRIVER_LOCATION, g_settings.location.driver, sizeof(g_settings.location.driver));
+               else if (action == MENU_ACTION_RIGHT)
+                  find_next_driver(RARCH_DRIVER_LOCATION, g_settings.location.driver, sizeof(g_settings.location.driver));
+               break;
+            case MENU_SETTINGS_DRIVER_MENU:
+               if (action == MENU_ACTION_LEFT)
+                  find_prev_driver(RARCH_DRIVER_MENU, g_settings.menu.driver, sizeof(g_settings.menu.driver));
+               else if (action == MENU_ACTION_RIGHT)
+                  find_next_driver(RARCH_DRIVER_MENU, g_settings.menu.driver, sizeof(g_settings.menu.driver));
+               break;
+#if defined(GEKKO)
+            case MENU_SETTINGS_VIDEO_RESOLUTION:
+               if (action == MENU_ACTION_LEFT)
+               {
+                  if (menu_current_gx_resolution > 0)
+                     menu_current_gx_resolution--;
+               }
+               else if (action == MENU_ACTION_RIGHT)
+               {
+                  if (menu_current_gx_resolution < GX_RESOLUTIONS_LAST - 1)
+                  {
+#ifdef HW_RVL
+                     if ((menu_current_gx_resolution + 1) > GX_RESOLUTIONS_640_480)
+                        if (CONF_GetVideo() != CONF_VIDEO_PAL)
+                           return 0;
 #endif
-         case MENU_SETTINGS_CUSTOM_BGM_CONTROL_ENABLE:
-            switch (action)
-            {
-               case MENU_ACTION_OK:
+
+                     menu_current_gx_resolution++;
+                  }
+               }
+               else if (action == MENU_ACTION_OK)
+               {
+                  if (driver.video_data)
+                     gx_set_video_mode(driver.video_data, menu_gx_resolutions[menu_current_gx_resolution][0],
+                           menu_gx_resolutions[menu_current_gx_resolution][1]);
+               }
+               break;
+#elif defined(__CELLOS_LV2__)
+            case MENU_SETTINGS_VIDEO_RESOLUTION:
+               if (action == MENU_ACTION_LEFT)
+               {
+                  if (g_extern.console.screen.resolutions.current.idx)
+                  {
+                     g_extern.console.screen.resolutions.current.idx--;
+                     g_extern.console.screen.resolutions.current.id =
+                        g_extern.console.screen.resolutions.list[g_extern.console.screen.resolutions.current.idx];
+                  }
+               }
+               else if (action == MENU_ACTION_RIGHT)
+               {
+                  if (g_extern.console.screen.resolutions.current.idx + 1 <
+                        g_extern.console.screen.resolutions.count)
+                  {
+                     g_extern.console.screen.resolutions.current.idx++;
+                     g_extern.console.screen.resolutions.current.id =
+                        g_extern.console.screen.resolutions.list[g_extern.console.screen.resolutions.current.idx];
+                  }
+               }
+               else if (action == MENU_ACTION_OK)
+               {
+                  if (g_extern.console.screen.resolutions.list[g_extern.console.screen.resolutions.current.idx] == CELL_VIDEO_OUT_RESOLUTION_576)
+                  {
+                     if (g_extern.console.screen.pal_enable)
+                        g_extern.lifecycle_state |= (1ULL<< MODE_VIDEO_PAL_ENABLE);
+                  }
+                  else
+                  {
+                     g_extern.lifecycle_state &= ~(1ULL << MODE_VIDEO_PAL_ENABLE);
+                     g_extern.lifecycle_state &= ~(1ULL << MODE_VIDEO_PAL_TEMPORAL_ENABLE);
+                  }
+
+                  rarch_main_command(RARCH_CMD_REINIT);
+               }
+               break;
+            case MENU_SETTINGS_VIDEO_PAL60:
+               switch (action)
+               {
+                  case MENU_ACTION_LEFT:
+                  case MENU_ACTION_RIGHT:
+                  case MENU_ACTION_OK:
+                     if (g_extern.lifecycle_state & (1ULL << MODE_VIDEO_PAL_ENABLE))
+                     {
+                        if (g_extern.lifecycle_state & (1ULL << MODE_VIDEO_PAL_TEMPORAL_ENABLE))
+                           g_extern.lifecycle_state &= ~(1ULL << MODE_VIDEO_PAL_TEMPORAL_ENABLE);
+                        else
+                           g_extern.lifecycle_state |= (1ULL << MODE_VIDEO_PAL_TEMPORAL_ENABLE);
+
+                        rarch_main_command(RARCH_CMD_REINIT);
+                     }
+                     break;
+                  case MENU_ACTION_START:
+                     if (g_extern.lifecycle_state & (1ULL << MODE_VIDEO_PAL_ENABLE))
+                     {
+                        g_extern.lifecycle_state &= ~(1ULL << MODE_VIDEO_PAL_TEMPORAL_ENABLE);
+
+                        rarch_main_command(RARCH_CMD_REINIT);
+                     }
+                     break;
+               }
+               break;
+#endif
+#ifdef HW_RVL
+            case MENU_SETTINGS_VIDEO_SOFT_FILTER:
+               if (g_extern.lifecycle_state & (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE))
+                  g_extern.lifecycle_state &= ~(1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE);
+               else
+                  g_extern.lifecycle_state |= (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE);
+
+               rarch_main_command(RARCH_CMD_VIDEO_APPLY_STATE_CHANGES);
+               break;
+#endif
+
+               break;
+            case MENU_SETTINGS_SHADER_PASSES:
+               {
+                  struct gfx_shader *shader = (struct gfx_shader*)driver.menu->shader;
+
+                  switch (action)
+                  {
+                     case MENU_ACTION_START:
+                        if (shader && shader->passes)
+                           shader->passes = 0;
+                        driver.menu->need_refresh = true;
+                        break;
+
+                     case MENU_ACTION_LEFT:
+                        if (shader && shader->passes)
+                           shader->passes--;
+                        driver.menu->need_refresh = true;
+                        break;
+
+                     case MENU_ACTION_RIGHT:
+                     case MENU_ACTION_OK:
+                        if (shader && (shader->passes < GFX_MAX_SHADERS))
+                           shader->passes++;
+                        driver.menu->need_refresh = true;
+                        break;
+
+                     default:
+                        break;
+                  }
+
+                  if (driver.menu->need_refresh)
+                     gfx_shader_resolve_parameters(NULL, driver.menu->shader);
+               }
+               break;
+            case MENU_SETTINGS_SHADER_APPLY:
+               {
+                  struct gfx_shader *shader = (struct gfx_shader*)driver.menu->shader;
+                  unsigned type = RARCH_SHADER_NONE;
+
+                  if (!driver.video || !driver.video->set_shader || action != MENU_ACTION_OK)
+                     return 0;
+
+                  RARCH_LOG("Applying shader ...\n");
+
+                  if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->shader_manager_get_type)
+                     type = driver.menu_ctx->backend->shader_manager_get_type(driver.menu->shader);
+
+                  if (shader->passes && type != RARCH_SHADER_NONE
+                        && driver.menu_ctx && driver.menu_ctx->backend &&
+                        driver.menu_ctx->backend->shader_manager_save_preset)
+                     driver.menu_ctx->backend->shader_manager_save_preset(NULL, true);
+                  else
+                  {
+                     type = gfx_shader_parse_type("", DEFAULT_SHADER_TYPE);
+                     if (type == RARCH_SHADER_NONE)
+                     {
+#if defined(HAVE_GLSL)
+                        type = RARCH_SHADER_GLSL;
+#elif defined(HAVE_CG) || defined(HAVE_HLSL)
+                        type = RARCH_SHADER_CG;
+#endif
+                     }
+                     if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->shader_manager_set_preset)
+                        driver.menu_ctx->backend->shader_manager_set_preset(NULL, type, NULL);
+                  }
+                  break;
+               }
+            case MENU_SETTINGS_SHADER_PRESET_SAVE:
+               if (action == MENU_ACTION_OK)
+                  menu_key_start_line(driver.menu, "Preset Filename: ", "shader_preset_save", preset_filename_callback);
+               break;
+#ifdef _XBOX1
+            case MENU_SETTINGS_SOFT_DISPLAY_FILTER:
+               switch (action)
+               {
+                  case MENU_ACTION_LEFT:
+                  case MENU_ACTION_RIGHT:
+                  case MENU_ACTION_OK:
+                     if (g_extern.lifecycle_state & (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE))
+                        g_extern.lifecycle_state &= ~(1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE);
+                     else
+                        g_extern.lifecycle_state |= (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE);
+                     break;
+                  case MENU_ACTION_START:
+                     g_extern.lifecycle_state |= (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE);
+                     break;
+               }
+               break;
+#endif
+            case MENU_SETTINGS_CUSTOM_BGM_CONTROL_ENABLE:
+               switch (action)
+               {
+                  case MENU_ACTION_OK:
 #if (CELL_SDK_VERSION > 0x340000)
-                  if (g_extern.lifecycle_state & (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE))
-                     g_extern.lifecycle_state &= ~(1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE);
-                  else
-                     g_extern.lifecycle_state |= (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE);
-                  if (g_extern.lifecycle_state & (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE))
-                     cellSysutilEnableBgmPlayback();
-                  else
-                     cellSysutilDisableBgmPlayback();
+                     if (g_extern.lifecycle_state & (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE))
+                        g_extern.lifecycle_state &= ~(1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE);
+                     else
+                        g_extern.lifecycle_state |= (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE);
+                     if (g_extern.lifecycle_state & (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE))
+                        cellSysutilEnableBgmPlayback();
+                     else
+                        cellSysutilDisableBgmPlayback();
 
 #endif
-                  break;
-               case MENU_ACTION_START:
+                     break;
+                  case MENU_ACTION_START:
 #if (CELL_SDK_VERSION > 0x340000)
-                  g_extern.lifecycle_state |= (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE);
+                     g_extern.lifecycle_state |= (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE);
 #endif
-                  break;
-            }
-            break;
+                     break;
+               }
+               break;
 #ifdef HAVE_NETPLAY
-         case MENU_SETTINGS_NETPLAY_HOST_IP_ADDRESS:
-            if (action == MENU_ACTION_OK)
-               menu_key_start_line(driver.menu, "IP Address: ", "netplay_ip_address", st_string_callback);
-            else if (action == MENU_ACTION_START)
-               *g_extern.netplay_server = '\0';
-            break;
+            case MENU_SETTINGS_NETPLAY_HOST_IP_ADDRESS:
+               if (action == MENU_ACTION_OK)
+                  menu_key_start_line(driver.menu, "IP Address: ", "netplay_ip_address", st_string_callback);
+               else if (action == MENU_ACTION_START)
+                  *g_extern.netplay_server = '\0';
+               break;
 #endif
-         case MENU_SETTINGS_NETPLAY_NICKNAME:
-            if (action == MENU_ACTION_OK)
-               menu_key_start_line(driver.menu, "Username: ", "netplay_nickname", st_string_callback);
-            else if (action == MENU_ACTION_START)
-               *g_settings.username = '\0';
-            break;
-         default:
-            break;
+            case MENU_SETTINGS_NETPLAY_NICKNAME:
+               if (action == MENU_ACTION_OK)
+                  menu_key_start_line(driver.menu, "Username: ", "netplay_nickname", st_string_callback);
+               else if (action == MENU_ACTION_START)
+                  *g_settings.username = '\0';
+               break;
+            default:
+               break;
+         }
       }
    }
 
@@ -3775,6 +3791,25 @@ static void menu_common_setting_set_label_st_uint(rarch_setting_t *setting,
       snprintf(type_str, type_str_size, "%d", *setting->value.unsigned_integer);
 }
 
+static void handle_setting_label(char *type_str,
+      size_t type_str_size, rarch_setting_t *setting)
+{
+   if (setting->type == ST_BOOL)
+      menu_common_setting_set_label_st_bool(setting, type_str, type_str_size);
+   else if (setting->type == ST_UINT)
+      menu_common_setting_set_label_st_uint(setting, type_str, type_str_size);
+   else if (setting->type == ST_FLOAT)
+      menu_common_setting_set_label_st_float(setting, type_str, type_str_size);
+   else if (setting->type == ST_DIR)
+      strlcpy(type_str, *setting->value.string ? setting->value.string : setting->dir.empty_path, type_str_size);
+   else if (setting->type == ST_PATH)
+      strlcpy(type_str, path_basename(setting->value.string), type_str_size);
+   else if (setting->type == ST_STRING)
+      strlcpy(type_str, setting->value.string, type_str_size);
+   else if (setting->type == ST_GROUP)
+      strlcpy(type_str, "...", type_str_size);
+}
+
 static void menu_common_setting_set_label(char *type_str,
       size_t type_str_size, unsigned *w, unsigned type, unsigned index)
 {
@@ -3796,178 +3831,175 @@ static void menu_common_setting_set_label(char *type_str,
 
       input_get_bind_string(type_str, &g_settings.input.binds[driver.menu->current_pad][type - MENU_SETTINGS_BIND_BEGIN], auto_bind, type_str_size);
    }
-   else if (setting && setting->type == ST_BOOL)
-      menu_common_setting_set_label_st_bool(setting, type_str, type_str_size);
-   else if (setting && setting->type == ST_UINT)
-      menu_common_setting_set_label_st_uint(setting, type_str, type_str_size);
-   else if (setting && setting->type == ST_FLOAT)
-      menu_common_setting_set_label_st_float(setting, type_str, type_str_size);
-   else if (setting && setting->type == ST_DIR)
-      strlcpy(type_str, *setting->value.string ? setting->value.string : setting->dir.empty_path, type_str_size);
-   else if (setting && setting->type == ST_PATH)
-      strlcpy(type_str, path_basename(setting->value.string), type_str_size);
-   else if (setting && setting->type == ST_STRING)
-         strlcpy(type_str, setting->value.string, type_str_size);
-   else if (setting && setting->type == ST_GROUP)
-      strlcpy(type_str, "...", type_str_size);
+   else if (setting)
+      handle_setting_label(type_str, type_str_size, setting);
    else
    {
-      switch (type)
+      setting_data = (rarch_setting_t*)setting_data_get_mainmenu(true);
+
+      setting = (rarch_setting_t*)setting_data_find_setting(setting_data,
+            driver.menu->selection_buf->list[index].label);
+
+      if (setting)
       {
-         case MENU_SETTINGS_VIDEO_SOFT_FILTER:
-            snprintf(type_str, type_str_size,
-                  (g_extern.lifecycle_state & (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE)) ? "ON" : "OFF");
-            break;
-#if defined(GEKKO)
-         case MENU_SETTINGS_VIDEO_RESOLUTION:
-            strlcpy(type_str, gx_get_video_mode(), type_str_size);
-            break;
-#elif defined(__CELLOS_LV2__)
-         case MENU_SETTINGS_VIDEO_RESOLUTION:
-            {
-               unsigned width = gfx_ctx_get_resolution_width(g_extern.console.screen.resolutions.list[g_extern.console.screen.resolutions.current.idx]);
-               unsigned height = gfx_ctx_get_resolution_height(g_extern.console.screen.resolutions.list[g_extern.console.screen.resolutions.current.idx]);
-               snprintf(type_str, type_str_size, "%dx%d", width, height);
-            }
-            break;
-         case MENU_SETTINGS_VIDEO_PAL60:
-            if (g_extern.lifecycle_state & (1ULL << MODE_VIDEO_PAL_TEMPORAL_ENABLE))
-               strlcpy(type_str, "ON", type_str_size);
+         if (type == MENU_SETTINGS_CONFIG)
+         {
+            if (*g_extern.config_path)
+               fill_pathname_base(type_str, g_extern.config_path,
+                     type_str_size);
             else
-               strlcpy(type_str, "OFF", type_str_size);
-            break;
-#endif
-         case MENU_FILE_PLAIN:
-            strlcpy(type_str, "(FILE)", type_str_size);
-            *w = 6;
-            break;
-         case MENU_FILE_DIRECTORY:
-            strlcpy(type_str, "(DIR)", type_str_size);
-            *w = 5;
-            break;
-         case MENU_SETTINGS_SAVESTATE_SAVE:
-         case MENU_SETTINGS_SAVESTATE_LOAD:
+               strlcpy(type_str, "<default>", type_str_size);
+         }
+         else if (
+               type == MENU_SETTINGS_SAVESTATE_SAVE ||
+               type == MENU_SETTINGS_SAVESTATE_LOAD)
+         {
             if (g_settings.state_slot < 0)
                strlcpy(type_str, "-1 (auto)", type_str_size);
             else
                snprintf(type_str, type_str_size, "%d", g_settings.state_slot);
-            break;
-         case MENU_SETTINGS_DISK_INDEX:
-            {
-               const struct retro_disk_control_callback *control = &g_extern.system.disk_control;
-               unsigned images = control->get_num_images();
-               unsigned current = control->get_image_index();
-               if (current >= images)
-                  strlcpy(type_str, "No Disk", type_str_size);
-               else
-                  snprintf(type_str, type_str_size, "%u", current + 1);
+         }
+         else
+            handle_setting_label(type_str, type_str_size, setting);
+      }
+      else
+      {
+         switch (type)
+         {
+            case MENU_SETTINGS_VIDEO_SOFT_FILTER:
+               snprintf(type_str, type_str_size,
+                     (g_extern.lifecycle_state & (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE)) ? "ON" : "OFF");
                break;
-            }
-         case MENU_SETTINGS_CONFIG:
-            if (*g_extern.config_path)
-               fill_pathname_base(type_str, g_extern.config_path, type_str_size);
-            else
-               strlcpy(type_str, "<default>", type_str_size);
-            break;
-         case MENU_SETTINGS_OPEN_FILEBROWSER:
-         case MENU_SETTINGS_OPEN_FILEBROWSER_DEFERRED_CORE:
-         case MENU_SETTINGS_OPEN_HISTORY:
-         case MENU_SETTINGS_CORE_OPTIONS:
-         case MENU_SETTINGS_CORE_INFO:
-         case MENU_SETTINGS_CUSTOM_VIEWPORT:
-         case MENU_SETTINGS_TOGGLE_FULLSCREEN:
-         case MENU_SETTINGS_DISK_OPTIONS:
-         case MENU_SETTINGS_SHADER_PRESET:
-         case MENU_SETTINGS_SHADER_PRESET_SAVE:
-         case MENU_SETTINGS_CORE:
-         case MENU_SETTINGS_DISK_APPEND:
-         case MENU_SETTINGS_OPTIONS:
-         case MENU_SETTINGS_PERFORMANCE_COUNTERS:
-         case MENU_SETTINGS_PERFORMANCE_COUNTERS_FRONTEND:
-         case MENU_SETTINGS_PERFORMANCE_COUNTERS_LIBRETRO:
-         case MENU_SETTINGS_CUSTOM_BIND_ALL:
-         case MENU_SETTINGS_CUSTOM_BIND_DEFAULT_ALL:
-            strlcpy(type_str, "...", type_str_size);
-            break;
-         case MENU_SETTINGS_BIND_PLAYER:
-            snprintf(type_str, type_str_size, "#%d", driver.menu->current_pad + 1);
-            break;
-         case MENU_SETTINGS_BIND_DEVICE:
-            {
-               int map = g_settings.input.joypad_map[driver.menu->current_pad];
-               if (map >= 0 && map < MAX_PLAYERS)
+#if defined(GEKKO)
+            case MENU_SETTINGS_VIDEO_RESOLUTION:
+               strlcpy(type_str, gx_get_video_mode(), type_str_size);
+               break;
+#elif defined(__CELLOS_LV2__)
+            case MENU_SETTINGS_VIDEO_RESOLUTION:
                {
-                  const char *device_name = g_settings.input.device_names[map];
-
-                  if (*device_name)
-                     strlcpy(type_str, device_name, type_str_size);
-                  else
-                     snprintf(type_str, type_str_size, "N/A (port #%u)", map);
+                  unsigned width = gfx_ctx_get_resolution_width(g_extern.console.screen.resolutions.list[g_extern.console.screen.resolutions.current.idx]);
+                  unsigned height = gfx_ctx_get_resolution_height(g_extern.console.screen.resolutions.list[g_extern.console.screen.resolutions.current.idx]);
+                  snprintf(type_str, type_str_size, "%dx%d", width, height);
                }
+               break;
+            case MENU_SETTINGS_VIDEO_PAL60:
+               if (g_extern.lifecycle_state & (1ULL << MODE_VIDEO_PAL_TEMPORAL_ENABLE))
+                  strlcpy(type_str, "ON", type_str_size);
                else
-                  strlcpy(type_str, "Disabled", type_str_size);
-            }
-            break;
-         case MENU_SETTINGS_BIND_ANALOG_MODE:
-            {
-               static const char *modes[] = {
-                  "None",
-                  "Left Analog",
-                  "Right Analog",
-                  "Dual Analog",
-               };
-
-               strlcpy(type_str, modes[g_settings.input.analog_dpad_mode[driver.menu->current_pad] % ANALOG_DPAD_LAST], type_str_size);
-            }
-            break;
-         case MENU_SETTINGS_BIND_DEVICE_TYPE:
-            {
-               const struct retro_controller_description *desc = NULL;
-               if (driver.menu->current_pad < g_extern.system.num_ports)
-                  desc = libretro_find_controller_description(&g_extern.system.ports[driver.menu->current_pad],
-                        g_settings.input.libretro_device[driver.menu->current_pad]);
-
-               const char *name = desc ? desc->desc : NULL;
-               if (!name)
-               {
-                  /* Find generic name. */
-
-                  switch (g_settings.input.libretro_device[driver.menu->current_pad])
-                  {
-                     case RETRO_DEVICE_NONE:
-                        name = "None";
-                        break;
-                     case RETRO_DEVICE_JOYPAD:
-                        name = "RetroPad";
-                        break;
-                     case RETRO_DEVICE_ANALOG:
-                        name = "RetroPad w/ Analog";
-                        break;
-                     default:
-                        name = "Unknown";
-                        break;
-                  }
-               }
-
-               strlcpy(type_str, name, type_str_size);
-            }
-            break;
-         case MENU_SETTINGS_CUSTOM_BIND_MODE:
-            strlcpy(type_str, driver.menu->bind_mode_keyboard ? "RetroKeyboard" : "RetroPad", type_str_size);
-            break;
-#ifdef _XBOX1
-         case MENU_SETTINGS_SOFT_DISPLAY_FILTER:
-            snprintf(type_str, type_str_size,
-                  (g_extern.lifecycle_state & (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE)) ? "ON" : "OFF");
-            break;
+                  strlcpy(type_str, "OFF", type_str_size);
+               break;
 #endif
-         case MENU_SETTINGS_CUSTOM_BGM_CONTROL_ENABLE:
-            strlcpy(type_str, (g_extern.lifecycle_state & (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE)) ? "ON" : "OFF", type_str_size);
-            break;
-         default:
-            *type_str = '\0';
-            *w = 0;
-            break;
+            case MENU_FILE_PLAIN:
+               strlcpy(type_str, "(FILE)", type_str_size);
+               *w = 6;
+               break;
+            case MENU_FILE_DIRECTORY:
+               strlcpy(type_str, "(DIR)", type_str_size);
+               *w = 5;
+               break;
+            case MENU_SETTINGS_DISK_INDEX:
+               {
+                  const struct retro_disk_control_callback *control = &g_extern.system.disk_control;
+                  unsigned images = control->get_num_images();
+                  unsigned current = control->get_image_index();
+                  if (current >= images)
+                     strlcpy(type_str, "No Disk", type_str_size);
+                  else
+                     snprintf(type_str, type_str_size, "%u", current + 1);
+                  break;
+               }
+            case MENU_SETTINGS_CUSTOM_VIEWPORT:
+            case MENU_SETTINGS_TOGGLE_FULLSCREEN:
+            case MENU_SETTINGS_DISK_OPTIONS:
+            case MENU_SETTINGS_SHADER_PRESET:
+            case MENU_SETTINGS_SHADER_PRESET_SAVE:
+            case MENU_SETTINGS_DISK_APPEND:
+            case MENU_SETTINGS_PERFORMANCE_COUNTERS_FRONTEND:
+            case MENU_SETTINGS_PERFORMANCE_COUNTERS_LIBRETRO:
+            case MENU_SETTINGS_CUSTOM_BIND_ALL:
+            case MENU_SETTINGS_CUSTOM_BIND_DEFAULT_ALL:
+               strlcpy(type_str, "...", type_str_size);
+               break;
+            case MENU_SETTINGS_BIND_PLAYER:
+               snprintf(type_str, type_str_size, "#%d", driver.menu->current_pad + 1);
+               break;
+            case MENU_SETTINGS_BIND_DEVICE:
+               {
+                  int map = g_settings.input.joypad_map[driver.menu->current_pad];
+                  if (map >= 0 && map < MAX_PLAYERS)
+                  {
+                     const char *device_name = g_settings.input.device_names[map];
+
+                     if (*device_name)
+                        strlcpy(type_str, device_name, type_str_size);
+                     else
+                        snprintf(type_str, type_str_size, "N/A (port #%u)", map);
+                  }
+                  else
+                     strlcpy(type_str, "Disabled", type_str_size);
+               }
+               break;
+            case MENU_SETTINGS_BIND_ANALOG_MODE:
+               {
+                  static const char *modes[] = {
+                     "None",
+                     "Left Analog",
+                     "Right Analog",
+                     "Dual Analog",
+                  };
+
+                  strlcpy(type_str, modes[g_settings.input.analog_dpad_mode[driver.menu->current_pad] % ANALOG_DPAD_LAST], type_str_size);
+               }
+               break;
+            case MENU_SETTINGS_BIND_DEVICE_TYPE:
+               {
+                  const struct retro_controller_description *desc = NULL;
+                  if (driver.menu->current_pad < g_extern.system.num_ports)
+                     desc = libretro_find_controller_description(&g_extern.system.ports[driver.menu->current_pad],
+                           g_settings.input.libretro_device[driver.menu->current_pad]);
+
+                  const char *name = desc ? desc->desc : NULL;
+                  if (!name)
+                  {
+                     /* Find generic name. */
+
+                     switch (g_settings.input.libretro_device[driver.menu->current_pad])
+                     {
+                        case RETRO_DEVICE_NONE:
+                           name = "None";
+                           break;
+                        case RETRO_DEVICE_JOYPAD:
+                           name = "RetroPad";
+                           break;
+                        case RETRO_DEVICE_ANALOG:
+                           name = "RetroPad w/ Analog";
+                           break;
+                        default:
+                           name = "Unknown";
+                           break;
+                     }
+                  }
+
+                  strlcpy(type_str, name, type_str_size);
+               }
+               break;
+            case MENU_SETTINGS_CUSTOM_BIND_MODE:
+               strlcpy(type_str, driver.menu->bind_mode_keyboard ? "RetroKeyboard" : "RetroPad", type_str_size);
+               break;
+#ifdef _XBOX1
+            case MENU_SETTINGS_SOFT_DISPLAY_FILTER:
+               snprintf(type_str, type_str_size,
+                     (g_extern.lifecycle_state & (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE)) ? "ON" : "OFF");
+               break;
+#endif
+            case MENU_SETTINGS_CUSTOM_BGM_CONTROL_ENABLE:
+               strlcpy(type_str, (g_extern.lifecycle_state & (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE)) ? "ON" : "OFF", type_str_size);
+               break;
+            default:
+               *type_str = '\0';
+               *w = 0;
+               break;
+         }
       }
    }
 }

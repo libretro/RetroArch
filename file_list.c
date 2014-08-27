@@ -165,12 +165,10 @@ void file_list_get_last(const file_list_t *list,
       file_list_get_at_offset(list, list->size - 1, path, file_type, setting);
 }
 
-void *file_list_get_last_setting(const file_list_t *list, int index)
+void *file_list_get_last_setting(const file_list_t *list, int index, void *settings)
 {
-   rarch_setting_t *setting_data = (rarch_setting_t*)setting_data_get_list();
-
-   if (setting_data)
-      return (rarch_setting_t*)setting_data_find_setting(setting_data,
+   if (settings)
+      return (rarch_setting_t*)setting_data_find_setting(settings,
             list->list[index].label);
    return NULL;
 }
