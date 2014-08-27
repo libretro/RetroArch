@@ -3670,21 +3670,14 @@ static void menu_common_setting_set_label_st_uint(rarch_setting_t *setting,
    }
    else if (setting && !strcmp(setting->name, "libretro_log_level"))
    {
-      switch(*setting->value.unsigned_integer)
-      {
-         case 0:
-            snprintf(type_str, type_str_size, "0 (Debug)");
-            break;
-         case 1:
-            snprintf(type_str, type_str_size, "1 (Info)");
-            break;
-         case 2:
-            snprintf(type_str, type_str_size, "2 (Warning)");
-            break;
-         case 3:
-            snprintf(type_str, type_str_size, "3 (Error)");
-            break;
-      }
+      static const char *modes[] = {
+         "0 (Debug)",
+         "1 (Info)",
+         "2 (Warning)",
+         "3 (Error)"
+      };
+
+      strlcpy(type_str, modes[*setting->value.unsigned_integer], type_str_size);
    }
    else
       snprintf(type_str, type_str_size, "%d", *setting->value.unsigned_integer);
