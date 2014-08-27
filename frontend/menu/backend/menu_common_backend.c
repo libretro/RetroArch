@@ -2477,7 +2477,7 @@ static void menu_common_shader_manager_save_preset(const char *basename, bool ap
 {
    char buffer[PATH_MAX], config_directory[PATH_MAX], cgp_path[PATH_MAX];
    unsigned d, type = RARCH_SHADER_NONE;
-   config_file_t *conf;
+   config_file_t *conf = NULL;
    const char *conf_path = NULL;
    bool ret = false;
 
@@ -2493,6 +2493,9 @@ static void menu_common_shader_manager_save_preset(const char *basename, bool ap
    if (type == RARCH_SHADER_NONE)
       return;
 
+   conf_path = (type == RARCH_SHADER_GLSL) ? driver.menu->default_glslp : driver.menu->default_cgp;
+   *config_directory = '\0';
+
    if (basename)
    {
       strlcpy(buffer, basename, sizeof(buffer));
@@ -2504,15 +2507,10 @@ static void menu_common_shader_manager_save_preset(const char *basename, bool ap
          else if (type == RARCH_SHADER_CG)
             strlcat(buffer, ".cgp", sizeof(buffer));
       }
-      conf_path = buffer;
    }
-   else
-      conf_path = type == RARCH_SHADER_GLSL ? driver.menu->default_glslp : driver.menu->default_cgp;
 
    if (*g_extern.config_path)
       fill_pathname_basedir(config_directory, g_extern.config_path, sizeof(config_directory));
-   else
-      *config_directory = '\0';
 
    const char *dirs[] = {
       g_settings.video.shader_dir,
