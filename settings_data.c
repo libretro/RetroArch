@@ -604,7 +604,109 @@ void setting_data_get_description(const void *data, char *msg,
     if (!setting)
        return;
 
-    if (!strcmp(setting->name, "audio_dsp_plugin"))
+    if (!strcmp(setting->name, "input_driver"))
+    {
+       if (!strcmp(g_settings.input.driver, "udev"))
+          snprintf(msg, sizeof_msg,
+                " -- udev Input driver. \n"
+                " \n"
+                "This driver can run without X. \n"
+                " \n"
+                "It uses the recent evdev joypad API \n"
+                "for joystick support. It supports \n"
+                "hotplugging and force feedback (if \n"
+                "supported by device). \n"
+                " \n"
+                "The driver reads evdev events for keyboard \n"
+                "support. It also supports keyboard callback, \n"
+                "mice and touchpads. \n"
+                " \n"
+                "By default in most distros, /dev/input nodes \n"
+                "are root-only (mode 600). You can set up a udev \n"
+                "rule which makes these accessible to non-root."
+                );
+       else if (!strcmp(g_settings.input.driver, "linuxraw"))
+          snprintf(msg, sizeof_msg,
+                " -- linuxraw Input driver. \n"
+                " \n"
+                "This driver requires an active TTY. Keyboard \n"
+                "events are read directly from the TTY which \n"
+                "makes it simpler, but not as flexible as udev. \n"
+                "Mice, etc, are not supported at all. \n"
+                " \n"
+                "This driver uses the older joystick API \n"
+                "(/dev/input/js*).");
+       else
+          snprintf(msg, sizeof_msg,
+                " -- Input driver.\n"
+                " \n"
+                "Depending on video driver, it might \n"
+                "force a different input driver.");
+    }
+    else if (!strcmp(setting->name, "audio_resampler_driver"))
+    {
+       if (!strcmp(g_settings.audio.resampler, "sinc"))
+          snprintf(msg, sizeof_msg,
+                " -- Windowed SINC implementation.");
+       else if (!strcmp(g_settings.audio.resampler, "CC"))
+          snprintf(msg, sizeof_msg,
+                " -- Convoluted Cosine implementation.");
+    }
+    else if (!strcmp(setting->name, "video_driver"))
+    {
+       if (!strcmp(g_settings.video.driver, "gl"))
+          snprintf(msg, sizeof_msg,
+                " -- OpenGL Video driver. \n"
+                " \n"
+                "This driver allows libretro GL cores to  \n"
+                "be used in addition to software-rendered \n"
+                "core implementations.\n"
+                " \n"
+                "Performance for software-rendered and \n"
+                "libretro GL core implementations is \n"
+                "dependent on your graphics card's \n"
+                "underlying GL driver).");
+       else if (!strcmp(g_settings.video.driver, "sdl2"))
+          snprintf(msg, sizeof_msg,
+                " -- SDL 2 Video driver.\n"
+                " \n"
+                "This is an SDL 2 software-rendered video \n"
+                "driver.\n"
+                " \n"
+                "Performance for software-rendered libretro \n"
+                "core implementations is dependent \n"
+                "on your platform SDL implementation.");
+       else if (!strcmp(g_settings.video.driver, "sdl"))
+          snprintf(msg, sizeof_msg,
+                " -- SDL Video driver.\n"
+                " \n"
+                "This is an SDL 1.2 software-rendered video \n"
+                "driver.\n"
+                " \n"
+                "Performance is considered to be suboptimal. \n"
+                "Consider using it only as a last resort.");
+       else if (!strcmp(g_settings.video.driver, "d3d"))
+          snprintf(msg, sizeof_msg,
+                " -- Direct3D Video driver. \n"
+                " \n"
+                "Performance for software-rendered cores \n"
+                "is dependent on your graphic card's \n"
+                "underlying D3D driver).");
+       else if (!strcmp(g_settings.video.driver, "exynos"))
+          snprintf(msg, sizeof_msg,
+                " -- Exynos-G2D Video Driver. \n"
+                " \n"
+                "This is a low-level Exynos video driver. \n"
+                "Uses the G2D block in Samsung Exynos SoC \n"
+                "for blit operations. \n"
+                " \n"
+                "Performance for software rendered cores \n"
+                "should be optimal.");
+       else
+          snprintf(msg, sizeof_msg,
+                " -- Current Video driver.");
+    }
+    else if (!strcmp(setting->name, "audio_dsp_plugin"))
        snprintf(msg, sizeof_msg,
              " -- Audio DSP plugin.\n"
              " Processes audio before it's sent to \n"
@@ -1642,8 +1744,11 @@ rarch_setting_t* setting_data_get_list(void)
 #endif
          CONFIG_STRING(g_settings.audio.driver,             "audio_driver",               "Audio Driver",               config_get_default_audio(), GROUP_NAME, SUBGROUP_NAME, NULL, NULL)
          CONFIG_STRING(g_settings.audio.resampler,          "audio_resampler_driver",     "Audio Resampler Driver",     config_get_default_audio_resampler(), GROUP_NAME, SUBGROUP_NAME, NULL, NULL)
-         CONFIG_STRING(g_settings.camera.device,            "camera_device",              "Camera Driver",              config_get_default_camera(), GROUP_NAME, SUBGROUP_NAME, NULL, NULL)
+         CONFIG_STRING(g_settings.camera.driver,            "camera_driver",              "Camera Driver",              config_get_default_camera(), GROUP_NAME, SUBGROUP_NAME, NULL, NULL)
          CONFIG_STRING(g_settings.location.driver,          "location_driver",            "Location Driver",            config_get_default_location(), GROUP_NAME, SUBGROUP_NAME, NULL, NULL)
+#ifdef HAVE_MENU
+         CONFIG_STRING(g_settings.menu.driver,              "menu_driver",                "Menu Driver",                config_get_default_menu(), GROUP_NAME, SUBGROUP_NAME, NULL, NULL)
+#endif
          CONFIG_STRING(g_settings.input.joypad_driver,      "input_joypad_driver",        "Joypad Driver",              "", GROUP_NAME, SUBGROUP_NAME, NULL, NULL)
          CONFIG_STRING(g_settings.input.keyboard_layout,    "input_keyboard_layout",      "Keyboard Layout",            "", GROUP_NAME, SUBGROUP_NAME, NULL, NULL)
 

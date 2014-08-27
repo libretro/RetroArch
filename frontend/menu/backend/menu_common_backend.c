@@ -383,13 +383,13 @@ static void menu_common_entries_init(menu_handle_t *menu, unsigned menu_type)
          break;
       case MENU_SETTINGS_DRIVERS:
          file_list_clear(menu->selection_buf);
-         file_list_push(menu->selection_buf, "Video Driver", "", MENU_SETTINGS_DRIVER_VIDEO, 0);
-         file_list_push(menu->selection_buf, "Audio Driver", "", MENU_SETTINGS_DRIVER_AUDIO, 0);
-         file_list_push(menu->selection_buf, "Audio Resampler", "", MENU_SETTINGS_DRIVER_AUDIO_RESAMPLER, 0);
-         file_list_push(menu->selection_buf, "Input Driver", "", MENU_SETTINGS_DRIVER_INPUT, 0);
-         file_list_push(menu->selection_buf, "Camera Driver", "", MENU_SETTINGS_DRIVER_CAMERA, 0);
-         file_list_push(menu->selection_buf, "Location Driver", "", MENU_SETTINGS_DRIVER_LOCATION, 0);
-         file_list_push(menu->selection_buf, "Menu Driver", "", MENU_SETTINGS_DRIVER_MENU, 0);
+         file_list_push(menu->selection_buf, "", "video_driver", MENU_SETTINGS_DRIVER_VIDEO, 0);
+         file_list_push(menu->selection_buf, "", "audio_driver", MENU_SETTINGS_DRIVER_AUDIO, 0);
+         file_list_push(menu->selection_buf, "", "audio_resampler_driver", MENU_SETTINGS_DRIVER_AUDIO_RESAMPLER, 0);
+         file_list_push(menu->selection_buf, "", "input_driver", MENU_SETTINGS_DRIVER_INPUT, 0);
+         file_list_push(menu->selection_buf, "", "camera_driver", MENU_SETTINGS_DRIVER_CAMERA, 0);
+         file_list_push(menu->selection_buf, "", "location_driver", MENU_SETTINGS_DRIVER_LOCATION, 0);
+         file_list_push(menu->selection_buf, "", "menu_driver", MENU_SETTINGS_DRIVER_MENU, 0);
          break;
       case MENU_SETTINGS_PERFORMANCE_COUNTERS:
          file_list_clear(menu->selection_buf);
@@ -620,44 +620,6 @@ static int menu_info_screen_iterate(unsigned action, rarch_setting_t *setting)
                   "relevant for the libretro core itself."
                   );
             break;
-         case MENU_SETTINGS_DRIVER_INPUT:
-            if (!strcmp(g_settings.input.driver, "udev"))
-               snprintf(msg, sizeof(msg),
-                     " -- udev Input driver. \n"
-                     " \n"
-                     "This driver can run without X. \n"
-                     " \n"
-                     "It uses the recent evdev joypad API \n"
-                     "for joystick support. It supports \n"
-                     "hotplugging and force feedback (if \n"
-                     "supported by device). \n"
-                     " \n"
-                     "The driver reads evdev events for keyboard \n"
-                     "support. It also supports keyboard callback, \n"
-                     "mice and touchpads. \n"
-                     " \n"
-                     "By default in most distros, /dev/input nodes \n"
-                     "are root-only (mode 600). You can set up a udev \n"
-                     "rule which makes these accessible to non-root."
-                     );
-            else if (!strcmp(g_settings.input.driver, "linuxraw"))
-               snprintf(msg, sizeof(msg),
-                     " -- linuxraw Input driver. \n"
-                     " \n"
-                     "This driver requires an active TTY. Keyboard \n"
-                     "events are read directly from the TTY which \n"
-                     "makes it simpler, but not as flexible as udev. \n"
-                     "Mice, etc, are not supported at all. \n"
-                     " \n"
-                     "This driver uses the older joystick API \n"
-                     "(/dev/input/js*).");
-            else
-               snprintf(msg, sizeof(msg),
-                     " -- Input driver.\n"
-                     " \n"
-                     "Depending on video driver, it might \n"
-                     "force a different input driver.");
-            break;
          case MENU_SETTINGS_BIND_BEGIN + RARCH_ANALOG_LEFT_X_PLUS:
          case MENU_SETTINGS_BIND_BEGIN + RARCH_ANALOG_LEFT_X_MINUS:
          case MENU_SETTINGS_BIND_BEGIN + RARCH_ANALOG_LEFT_Y_PLUS:
@@ -833,67 +795,6 @@ static int menu_info_screen_iterate(unsigned action, rarch_setting_t *setting)
          case MENU_SETTINGS_BIND_BEGIN + RARCH_MENU_TOGGLE:
             snprintf(msg, sizeof(msg),
                   " -- Toggles menu.");
-            break;
-         case MENU_SETTINGS_DRIVER_VIDEO:
-            if (!strcmp(g_settings.video.driver, "gl"))
-               snprintf(msg, sizeof(msg),
-                     " -- OpenGL Video driver. \n"
-                     " \n"
-                     "This driver allows libretro GL cores to  \n"
-                     "be used in addition to software-rendered \n"
-                     "core implementations.\n"
-                     " \n"
-                     "Performance for software-rendered and \n"
-                     "libretro GL core implementations is \n"
-                     "dependent on your graphics card's \n"
-                     "underlying GL driver).");
-            else if (!strcmp(g_settings.video.driver, "sdl2"))
-               snprintf(msg, sizeof(msg),
-                     " -- SDL 2 Video driver.\n"
-                     " \n"
-                     "This is an SDL 2 software-rendered video \n"
-                     "driver.\n"
-                     " \n"
-                     "Performance for software-rendered libretro \n"
-                     "core implementations is dependent \n"
-                     "on your platform SDL implementation.");
-            else if (!strcmp(g_settings.video.driver, "sdl"))
-               snprintf(msg, sizeof(msg),
-                     " -- SDL Video driver.\n"
-                     " \n"
-                     "This is an SDL 1.2 software-rendered video \n"
-                     "driver.\n"
-                     " \n"
-                     "Performance is considered to be suboptimal. \n"
-                     "Consider using it only as a last resort.");
-            else if (!strcmp(g_settings.video.driver, "d3d"))
-               snprintf(msg, sizeof(msg),
-                     " -- Direct3D Video driver. \n"
-                     " \n"
-                     "Performance for software-rendered cores \n"
-                     "is dependent on your graphic card's \n"
-                     "underlying D3D driver).");
-            else if (!strcmp(g_settings.video.driver, "exynos"))
-               snprintf(msg, sizeof(msg),
-                     " -- Exynos-G2D Video Driver. \n"
-                     " \n"
-                     "This is a low-level Exynos video driver. \n"
-                     "Uses the G2D block in Samsung Exynos SoC \n"
-                     "for blit operations. \n"
-                     " \n"
-                     "Performance for software rendered cores \n"
-                     "should be optimal.");
-            else
-               snprintf(msg, sizeof(msg),
-                     " -- Current Video driver.");
-            break;
-         case MENU_SETTINGS_DRIVER_AUDIO_RESAMPLER:
-            if (!strcmp(g_settings.audio.resampler, "sinc"))
-               snprintf(msg, sizeof(msg),
-                     " -- Windowed SINC implementation.");
-            else if (!strcmp(g_settings.audio.resampler, "CC"))
-               snprintf(msg, sizeof(msg),
-                     " -- Convoluted Cosine implementation.");
             break;
          case MENU_SETTINGS_SHADER_0_FILTER + (0 * 3):
          case MENU_SETTINGS_SHADER_0_FILTER + (1 * 3):
@@ -3687,29 +3588,8 @@ static void menu_common_setting_set_label(char *type_str,
             snprintf(type_str, type_str_size,
                   (g_extern.lifecycle_state & (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE)) ? "ON" : "OFF");
             break;
-         case MENU_SETTINGS_DRIVER_VIDEO:
-            strlcpy(type_str, g_settings.video.driver, type_str_size);
-            break;
-         case MENU_SETTINGS_DRIVER_AUDIO:
-            strlcpy(type_str, g_settings.audio.driver, type_str_size);
-            break;
          case MENU_SETTINGS_DRIVER_AUDIO_DEVICE:
             strlcpy(type_str, g_settings.audio.device, type_str_size);
-            break;
-         case MENU_SETTINGS_DRIVER_AUDIO_RESAMPLER:
-            strlcpy(type_str, g_settings.audio.resampler, type_str_size);
-            break;
-         case MENU_SETTINGS_DRIVER_INPUT:
-            strlcpy(type_str, g_settings.input.driver, type_str_size);
-            break;
-         case MENU_SETTINGS_DRIVER_CAMERA:
-            strlcpy(type_str, g_settings.camera.driver, type_str_size);
-            break;
-         case MENU_SETTINGS_DRIVER_LOCATION:
-            strlcpy(type_str, g_settings.location.driver, type_str_size);
-            break;
-         case MENU_SETTINGS_DRIVER_MENU:
-            strlcpy(type_str, g_settings.menu.driver, type_str_size);
             break;
 #if defined(GEKKO)
          case MENU_SETTINGS_VIDEO_RESOLUTION:

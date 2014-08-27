@@ -750,6 +750,9 @@ const char *config_get_default_video(void);
 const char *config_get_default_audio(void);
 const char *config_get_default_audio_resampler(void);
 const char *config_get_default_input(void);
+#ifdef HAVE_MENU
+const char *config_get_default_menu(void);
+#endif
 
 #include "conf/config_file.h"
 bool config_load_file(const char *path, bool set_defaults);
