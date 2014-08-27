@@ -1570,7 +1570,9 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
    memcpy(tex_info.coord, gl->tex_coords, sizeof(gl->tex_coords));
 
    glClear(GL_COLOR_BUFFER_BIT);
-   if (g_settings.video.black_frame_insertion)
+
+   // Disable BFI during fast forward to prevent flicker
+   if (g_settings.video.black_frame_insertion && !driver.nonblock_state)
    {
       context_swap_buffers_func(gl);
       glClear(GL_COLOR_BUFFER_BIT);
