@@ -686,7 +686,7 @@ void lakka_init_settings(void)
    strlcpy(subitem0->name, "Libretro Logging Level", sizeof(subitem0->name));
    subitem0->alpha = k ? 1.0 : 0.5;
    subitem0->zoom = k ? i_active_zoom : i_passive_zoom;
-   subitem0->y = k ? vspacing * (3+k) : vspacing * active_item_factor;
+   subitem0->y = k ? vspacing * (k + under_item_offset) : vspacing * active_item_factor;
 
    k = 1;
    item0->num_subitems++;
@@ -698,7 +698,7 @@ void lakka_init_settings(void)
    strlcpy(subitem1->name, "Logging Verbosity", sizeof(subitem1->name));
    subitem1->alpha = k ? 1.0 : 0.5;
    subitem1->zoom = k ? i_active_zoom : i_passive_zoom;
-   subitem1->y = k ? vspacing * (3+k) : vspacing * active_item_factor;
+   subitem1->y = k ? vspacing * (k + under_item_offset) : vspacing * active_item_factor;
 
    k = 2;
    item0->num_subitems++;
@@ -710,7 +710,7 @@ void lakka_init_settings(void)
    strlcpy(subitem2->name, "Configuration Save On Exit", sizeof(subitem2->name));
    subitem2->alpha = k ? 1.0 : 0.5;
    subitem2->zoom = k ? i_active_zoom : i_passive_zoom;
-   subitem2->y = k ? vspacing * (3+k) : vspacing * active_item_factor;
+   subitem2->y = k ? vspacing * (k + under_item_offset) : vspacing * active_item_factor;
 
    // Quit item
 
@@ -921,7 +921,7 @@ static void lakka_init_items(int i, menu_category_t *category, core_info_t *info
             }
             subitem->alpha = 0;
             subitem->zoom = k ? i_passive_zoom : i_active_zoom;
-            subitem->y = k ? vspacing * (3+k) : vspacing * active_item_factor;
+            subitem->y = k ? vspacing * (k+under_item_offset) : vspacing * active_item_factor;
          }
       }
    }
