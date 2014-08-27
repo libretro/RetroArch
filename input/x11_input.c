@@ -81,8 +81,7 @@ static bool x_is_pressed(x11_input_t *x11, const struct retro_keybind *binds, un
       const struct retro_keybind *bind = &binds[id];
       return bind->valid && x_key_pressed(x11, binds[id].key);
    }
-   else
-      return false;
+   return false;
 }
 
 static int16_t x_pressed_analog(x11_input_t *x11, const struct retro_keybind *binds, unsigned index, unsigned id)

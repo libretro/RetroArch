@@ -103,11 +103,9 @@ static bool linuxraw_joypad_init_pad(const char *path, struct linuxraw_joypad *p
       epoll_ctl(g_epoll, EPOLL_CTL_ADD, pad->fd, &event);
       return true;
    }
-   else
-   {
-      RARCH_ERR("[Joypad]: Failed to open pad %s (error: %s).\n", path, strerror(errno));
-      return false;
-   }
+
+   RARCH_ERR("[Joypad]: Failed to open pad %s (error: %s).\n", path, strerror(errno));
+   return false;
 }
 
 static void handle_plugged_pad(void)

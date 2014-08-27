@@ -390,8 +390,7 @@ static unsigned hlsl_num(void)
 {
    if (hlsl_active)
       return cg_shader->passes;
-   else
-      return 0;
+   return 0;
 }
 
 static bool hlsl_filter_type(unsigned index, bool *smooth)
@@ -403,8 +402,7 @@ static bool hlsl_filter_type(unsigned index, bool *smooth)
       *smooth = cg_shader->pass[index - 1].filter = RARCH_FILTER_LINEAR;
       return true;
    }
-   else
-      return false;
+   return false;
 }
 
 static void hlsl_shader_scale(unsigned index, struct gfx_fbo_scale *scale)
@@ -425,8 +423,7 @@ static bool hlsl_set_mvp(void *data, const math_matrix *mat)
       prg[active_index].v_ctable->SetMatrix(d3d_device_ptr, prg[active_index].mvp, (D3DXMATRIX*)&prg[active_index].mvp_val);
       return true;
    }
-   else
-      return false;
+   return false;
 }
 
 static bool hlsl_mipmap_input(unsigned index)

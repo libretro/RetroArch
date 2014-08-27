@@ -76,8 +76,7 @@ static inline int16_t compute_axis(const struct input_absinfo *info, int value)
       return 0x7fff;
    else if (axis < -0x7fff)
       return -0x7fff;
-   else
-      return axis;
+   return axis;
 }
 
 static void poll_pad(unsigned p)
@@ -532,8 +531,7 @@ static bool udev_joypad_button(unsigned port, uint16_t joykey)
 
    if (GET_HAT_DIR(joykey))
       return udev_joypad_hat(pad, joykey);
-   else
-      return joykey < NUM_BUTTONS && pad->buttons[joykey];
+   return joykey < NUM_BUTTONS && pad->buttons[joykey];
 }
 
 static int16_t udev_joypad_axis(unsigned port, uint32_t joyaxis)

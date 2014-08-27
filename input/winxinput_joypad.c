@@ -136,9 +136,8 @@ const char* winxinput_joypad_name (unsigned pad)
 
    if (xplayer < 0)
       return dinput_joypad.name(pad);
-   else
-      // TODO: Different name if disconnected?
-      return XBOX_CONTROLLER_NAMES[xplayer];
+   // TODO: Different name if disconnected?
+   return XBOX_CONTROLLER_NAMES[xplayer];
 }
 
 static bool winxinput_joypad_init(void)
@@ -245,8 +244,7 @@ static bool winxinput_joypad_query_pad(unsigned pad)
    int xplayer = pad_index_to_xplayer_index(pad);
    if (xplayer > -1)
       return g_winxinput_states[xplayer].connected;
-   else
-      return dinput_joypad.query_pad(pad);
+   return dinput_joypad.query_pad(pad);
 }
 
 static void winxinput_joypad_destroy(void)
@@ -392,8 +390,7 @@ static bool winxinput_joypad_rumble(unsigned pad, enum retro_rumble_effect effec
    {
       if (dinput_joypad.set_rumble)
          return dinput_joypad.set_rumble(pad, effect, strength);
-      else
-         return false;
+      return false;
    }
 
 

@@ -128,8 +128,7 @@ static bool linuxraw_is_pressed(linuxraw_input_t *linuxraw, const struct retro_k
       const struct retro_keybind *bind = &binds[id];
       return bind->valid && linuxraw_key_pressed(linuxraw, binds[id].key);
    }
-   else
-      return false;
+   return false;
 }
 
 static int16_t linuxraw_analog_pressed(linuxraw_input_t *linuxraw,

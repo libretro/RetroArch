@@ -165,8 +165,8 @@ static bool gl_cg_set_mvp(void *data, const math_matrix *mat)
       cgGLSetMatrixParameterfc(prg[active_index].mvp, mat->data);
       return true;
    }
-   else
-      return false;
+
+   return false;
 }
 
 #define SET_COORD(name, coords_name, len) do { \
@@ -876,8 +876,7 @@ static unsigned gl_cg_num(void)
 {
    if (cg_active)
       return cg_shader->passes;
-   else
-      return 0;
+   return 0;
 }
 
 static bool gl_cg_filter_type(unsigned index, bool *smooth)
@@ -889,16 +888,15 @@ static bool gl_cg_filter_type(unsigned index, bool *smooth)
       *smooth = cg_shader->pass[index - 1].filter == RARCH_FILTER_LINEAR;
       return true;
    }
-   else
-      return false;
+
+   return false;
 }
 
 static enum gfx_wrap_type gl_cg_wrap_type(unsigned index)
 {
    if (cg_active && index)
       return cg_shader->pass[index - 1].wrap;
-   else
-      return RARCH_WRAP_BORDER;
+   return RARCH_WRAP_BORDER;
 }
 
 static void gl_cg_shader_scale(unsigned index, struct gfx_fbo_scale *scale)
@@ -928,8 +926,7 @@ static bool gl_cg_mipmap_input(unsigned index)
 {
    if (cg_active && index)
       return cg_shader->pass[index - 1].mipmap;
-   else
-      return false;
+   return false;
 }
 
 static struct gfx_shader *gl_cg_get_current_shader(void)

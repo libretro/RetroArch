@@ -351,8 +351,7 @@ static bool link_program(GLuint prog)
       glUseProgram(prog);
       return true;
    }
-   else
-      return false;
+   return false;
 }
 
 static GLuint compile_program(const char *vertex, const char *fragment, unsigned i)
@@ -1148,16 +1147,14 @@ static bool gl_glsl_filter_type(unsigned index, bool *smooth)
       *smooth = glsl_shader->pass[index - 1].filter == RARCH_FILTER_LINEAR;
       return true;
    }
-   else
-      return false;
+   return false;
 }
 
 static enum gfx_wrap_type gl_glsl_wrap_type(unsigned index)
 {
    if (glsl_enable && index)
       return glsl_shader->pass[index - 1].wrap;
-   else
-      return RARCH_WRAP_BORDER;
+   return RARCH_WRAP_BORDER;
 }
 
 static void gl_glsl_shader_scale(unsigned index, struct gfx_fbo_scale *scale)
@@ -1187,8 +1184,7 @@ static bool gl_glsl_mipmap_input(unsigned index)
 {
    if (glsl_enable && index)
       return glsl_shader->pass[index - 1].mipmap;
-   else
-      return false;
+   return false;
 }
 
 static struct gfx_shader *gl_glsl_get_current_shader(void)
