@@ -1210,13 +1210,9 @@ static int menu_settings_iterate(unsigned action, rarch_setting_t *setting)
             menu_common_setting_push_current_menu(driver.menu->menu_stack, g_settings.menu_content_directory, MENU_FILE_DIRECTORY, driver.menu->selection_ptr, action);
          }
          else if ((type == MENU_SETTINGS_OPEN_HISTORY || menu_common_type_is(type) == MENU_FILE_DIRECTORY) && action == MENU_ACTION_OK)
-         {
             menu_common_setting_push_current_menu(driver.menu->menu_stack, "", type, driver.menu->selection_ptr, action);
-         }
          else if ((menu_common_type_is(type) == MENU_SETTINGS || type == MENU_SETTINGS_CORE || type == MENU_SETTINGS_CONFIG || type == MENU_SETTINGS_DISK_APPEND) && action == MENU_ACTION_OK)
-         {
             menu_common_setting_push_current_menu(driver.menu->menu_stack, label, type, driver.menu->selection_ptr, action);
-         }
          else if (type == MENU_SETTINGS_CUSTOM_VIEWPORT && action == MENU_ACTION_OK)
          {
             file_list_push(driver.menu->menu_stack, "", "", type, driver.menu->selection_ptr);
@@ -2485,6 +2481,7 @@ static void menu_common_shader_manager_set_preset(struct gfx_shader *shader, uns
          // Used when a preset is directly loaded.
          // No point in updating when the CGP was created from the menu itself.
          config_file_t *conf = config_file_new(cgp_path);
+
          if (conf)
          {
             if (gfx_shader_read_conf_cgp(conf, shader))
@@ -2661,7 +2658,6 @@ static unsigned menu_common_shader_manager_get_type(const struct gfx_shader *sha
             else if (type != pass_type)
                return RARCH_SHADER_NONE;
             break;
-
          default:
             return RARCH_SHADER_NONE;
       }
@@ -3004,6 +3000,12 @@ static int menu_common_setting_set(unsigned id, unsigned action, rarch_setting_t
             setting->change_handler(setting);
       }
    }
+   else if (setting && setting->type == ST_PATH && !(strcmp(setting->name, "input_overlay")))
+   {
+#ifdef HAVE_OVERLAY
+      menu_common_setting_set_current_path_selection(setting, g_extern.overlay_dir, id, action);
+#endif
+   }
    else
    {
       switch (id)
@@ -3096,12 +3098,6 @@ static int menu_common_setting_set(unsigned id, unsigned action, rarch_setting_t
             if (action == MENU_ACTION_OK)
                menu_save_new_config();
             break;
-#ifdef HAVE_OVERLAY
-         case MENU_SETTINGS_OVERLAY_PRESET:
-            if (setting)
-               menu_common_setting_set_current_path_selection(setting, g_extern.overlay_dir, id, action);
-            break;
-#endif
          case MENU_CONTENT_HISTORY_PATH:
             if (setting)
                menu_common_setting_set_current_path_selection(setting, "", id, action);
