@@ -31,7 +31,7 @@
 #include "config.h"
 #endif
 
-#include "SDL/SDL_syswm.h"
+#include "SDL_syswm.h"
 
 typedef struct sdl_menu_frame
 {
@@ -210,25 +210,21 @@ static void sdl_render_msg(sdl_video_t *vid, SDL_Surface *buffer,
 static void sdl_gfx_set_handles(void)
 {
    // SysWMinfo headers are broken on OSX. :(
-#if defined(_WIN32)
+#if defined(_WIN32) || defined(HAVE_X11)
    SDL_SysWMinfo info;
    SDL_VERSION(&info.version);
 
    if (SDL_GetWMInfo(&info) == 1)
    {
+#if defined(_WIN32)
       driver.display_type  = RARCH_DISPLAY_WIN32;
       driver.video_display = 0;
       driver.video_window  = (uintptr_t)info.window;
-   }
 #elif defined(HAVE_X11)
-   SDL_SysWMinfo info;
-   SDL_VERSION(&info.version);
-
-   if (SDL_GetWMInfo(&info) == 1)
-   {
       driver.display_type  = RARCH_DISPLAY_X11;
       driver.video_display = (uintptr_t)info.info.x11.display;
       driver.video_window  = (uintptr_t)info.info.x11.window;
+#endif
    }
 #endif
 }
