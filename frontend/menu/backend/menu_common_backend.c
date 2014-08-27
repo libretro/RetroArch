@@ -1271,29 +1271,7 @@ static int menu_settings_iterate(unsigned action, rarch_setting_t *setting)
             menu_type == MENU_SETTINGS_OPEN_HISTORY))
    {
       driver.menu->need_refresh = false;
-      if (
-               menu_type == MENU_SETTINGS_INPUT_OPTIONS
-            || menu_type == MENU_SETTINGS_PATH_OPTIONS
-            || menu_type == MENU_SETTINGS_OVERLAY_OPTIONS
-            || menu_type == MENU_SETTINGS_NETPLAY_OPTIONS
-            || menu_type == MENU_SETTINGS_USER_OPTIONS
-            || menu_type == MENU_SETTINGS_OPTIONS
-            || menu_type == MENU_SETTINGS_DRIVERS
-            || menu_type == MENU_SETTINGS_PERFORMANCE_COUNTERS
-            || menu_type == MENU_SETTINGS_PERFORMANCE_COUNTERS_FRONTEND
-            || menu_type == MENU_SETTINGS_PERFORMANCE_COUNTERS_LIBRETRO
-            || menu_type == MENU_SETTINGS_CORE_INFO
-            || menu_type == MENU_SETTINGS_CORE_OPTIONS
-            || menu_type == MENU_SETTINGS_AUDIO_OPTIONS
-            || menu_type == MENU_SETTINGS_DISK_OPTIONS
-            || menu_type == MENU_SETTINGS_PRIVACY_OPTIONS
-            || menu_type == MENU_SETTINGS_GENERAL_OPTIONS
-            || menu_type == MENU_SETTINGS_VIDEO_OPTIONS
-            || menu_type == MENU_SETTINGS_FONT_OPTIONS
-            || menu_type == MENU_SETTINGS_SHADER_OPTIONS
-            || menu_type == MENU_SETTINGS_SHADER_PARAMETERS
-            || menu_type == MENU_SETTINGS_SHADER_PRESET_PARAMETERS
-            )
+      if (menu_common_type_is(menu_type) == MENU_SETTINGS)
          menu_common_entries_init(driver.menu, menu_type);
       else
          menu_common_entries_init(driver.menu, MENU_SETTINGS);
