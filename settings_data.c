@@ -1216,6 +1216,8 @@ static void general_read_handler(const void *data)
        *setting->value.unsigned_integer = g_extern.netplay_sync_frames;
     else if (!strcmp(setting->name, "netplay_tcp_udp_port"))
        *setting->value.unsigned_integer = g_extern.netplay_port;
+    else if (!strcmp(setting->name, "netplay_ip_address"))
+       strlcpy(setting->value.string, g_extern.netplay_server, setting->size);
 #endif
     else if (!strcmp(setting->name, "log_verbosity"))
         *setting->value.boolean = g_extern.verbosity;
@@ -1233,8 +1235,6 @@ static void general_read_handler(const void *data)
        *setting->value.unsigned_integer = g_settings.user_language;
     else if (!strcmp(setting->name, "netplay_nickname"))
        strlcpy(setting->value.string, g_settings.username, setting->size);
-    else if (!strcmp(setting->name, "netplay_ip_address"))
-       strlcpy(setting->value.string, g_extern.netplay_server, setting->size);
 }
 
 static void general_write_handler(const void *data)
@@ -1524,8 +1524,6 @@ static void general_write_handler(const void *data)
       strlcpy(g_settings.video.filter_dir, setting->value.string, sizeof(g_settings.video.filter_dir));
    else if (!strcmp(setting->name, "netplay_nickname"))
       strlcpy(g_settings.username, setting->value.string, sizeof(g_settings.username));
-    else if (!strcmp(setting->name, "netplay_ip_address"))
-      strlcpy(g_extern.netplay_server, setting->value.string, sizeof(g_extern.netplay_server));
    else if (!strcmp(setting->name, "audio_filter_dir"))
       strlcpy(g_settings.audio.filter_dir, setting->value.string, sizeof(g_settings.audio.filter_dir));
    else if (!strcmp(setting->name, "video_shader_dir"))
@@ -1546,6 +1544,8 @@ static void general_write_handler(const void *data)
    else if (!strcmp(setting->name, "video_shared_context"))
       g_settings.video.shared_context = *setting->value.boolean;
 #ifdef HAVE_NETPLAY
+   else if (!strcmp(setting->name, "netplay_ip_address"))
+      strlcpy(g_extern.netplay_server, setting->value.string, sizeof(g_extern.netplay_server));
    else if (!strcmp(setting->name, "netplay_enable"))
       g_extern.netplay_enable = *setting->value.boolean;
    else if (!strcmp(setting->name, "netplay_mode"))
@@ -1884,7 +1884,9 @@ rarch_setting_t* setting_data_get_list(void)
          START_GROUP("Netplay Options")
          START_SUB_GROUP("State")
          CONFIG_BOOL(g_extern.netplay_enable,            "netplay_enable",  "Netplay Enable",        false, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+#ifdef HAVE_NETPLAY
          CONFIG_STRING(g_extern.netplay_server,          "netplay_ip_address",   "IP Address",       "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+#endif
          CONFIG_BOOL(g_extern.netplay_is_client,         "netplay_mode",    "Netplay Client Enable",          false, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
          CONFIG_BOOL(g_extern.netplay_is_spectate,       "netplay_spectator_mode_enable",    "Netplay Spectator Enable",          false, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
          CONFIG_UINT(g_extern.netplay_sync_frames,       "netplay_delay_frames",      "Netplay Delay Frames",      0, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_RANGE(0, 10, 1, true, false)
