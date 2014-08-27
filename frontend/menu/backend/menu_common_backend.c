@@ -3588,9 +3588,6 @@ static void menu_common_setting_set_label(char *type_str,
             snprintf(type_str, type_str_size,
                   (g_extern.lifecycle_state & (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE)) ? "ON" : "OFF");
             break;
-         case MENU_SETTINGS_DRIVER_AUDIO_DEVICE:
-            strlcpy(type_str, g_settings.audio.device, type_str_size);
-            break;
 #if defined(GEKKO)
          case MENU_SETTINGS_VIDEO_RESOLUTION:
             strlcpy(type_str, gx_get_video_mode(), type_str_size);
