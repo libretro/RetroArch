@@ -1745,7 +1745,24 @@ static void menu_common_setting_set_current_path_selection(rarch_setting_t *sett
 
 static void menu_common_setting_set_current_fraction(rarch_setting_t *setting, unsigned action)
 {
-   if (!strcmp(setting->name, "fastforward_ratio"))
+   if (!strcmp(setting->name, "video_refresh_rate_auto"))
+   {
+      if (action == MENU_ACTION_START)
+         g_extern.measure_data.frame_time_samples_count = 0;
+      else if (action == MENU_ACTION_OK)
+      {
+         double refresh_rate, deviation = 0.0;
+         unsigned sample_points = 0;
+
+         if (driver_monitor_fps_statistics(&refresh_rate, &deviation, &sample_points))
+         {
+            driver_set_monitor_refresh_rate(refresh_rate);
+            // Incase refresh rate update forced non-block video.
+            rarch_main_command(RARCH_CMD_VIDEO_SET_BLOCKING_STATE);
+         }
+      }
+   }
+   else if (!strcmp(setting->name, "fastforward_ratio"))
    {
       bool clamp_value = false;
       if (action == MENU_ACTION_START)
@@ -2870,27 +2887,7 @@ static int menu_common_setting_set(unsigned id, unsigned action, rarch_setting_t
    else if (setting && setting->type == ST_UINT)
       menu_common_setting_set_current_unsigned_integer(setting, action);
    else if (setting && setting->type == ST_FLOAT)
-   {
-      if (setting && !strcmp(setting->name, "video_refresh_rate_auto"))
-      {
-         if (action == MENU_ACTION_START)
-            g_extern.measure_data.frame_time_samples_count = 0;
-         else if (action == MENU_ACTION_OK)
-         {
-            double refresh_rate, deviation = 0.0;
-            unsigned sample_points = 0;
-
-            if (driver_monitor_fps_statistics(&refresh_rate, &deviation, &sample_points))
-            {
-               driver_set_monitor_refresh_rate(refresh_rate);
-               // Incase refresh rate update forced non-block video.
-               rarch_main_command(RARCH_CMD_VIDEO_SET_BLOCKING_STATE);
-            }
-         }
-      }
-      else
-         menu_common_setting_set_current_fraction(setting, action);
-   }
+      menu_common_setting_set_current_fraction(setting, action);
    else if (setting && setting->type == ST_DIR)
    {
       if (action == MENU_ACTION_START)
