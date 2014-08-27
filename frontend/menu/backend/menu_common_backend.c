@@ -2533,14 +2533,9 @@ static void menu_common_shader_manager_set_preset(struct gfx_shader *shader, uns
 
 static void menu_common_shader_manager_get_str(struct gfx_shader *shader, char *type_str, size_t type_str_size, unsigned type)
 {
-   (void)shader;
-   (void)type_str;
-   (void)type_str_size;
-   (void)type;
+   *type_str = '\0';
 
-   if (type == MENU_SETTINGS_SHADER_APPLY)
-      *type_str = '\0';
-   else if (type >= MENU_SETTINGS_SHADER_PARAMETER_0 && type <= MENU_SETTINGS_SHADER_PARAMETER_LAST)
+   if (type >= MENU_SETTINGS_SHADER_PARAMETER_0 && type <= MENU_SETTINGS_SHADER_PARAMETER_LAST)
    {
       // menu->parameter_shader here.
       if (shader)
@@ -2548,8 +2543,6 @@ static void menu_common_shader_manager_get_str(struct gfx_shader *shader, char *
          const struct gfx_shader_parameter *param = (const struct gfx_shader_parameter*)&shader->parameters[type - MENU_SETTINGS_SHADER_PARAMETER_0];
          snprintf(type_str, type_str_size, "%.2f [%.2f %.2f]", param->current, param->minimum, param->maximum);
       }
-      else
-         *type_str = '\0';
    }
    else if (type == MENU_SETTINGS_SHADER_PASSES)
       snprintf(type_str, type_str_size, "%u", shader->passes);
@@ -2594,8 +2587,6 @@ static void menu_common_shader_manager_get_str(struct gfx_shader *shader, char *
          }
       }
    }
-   else
-      *type_str = '\0';
 }
 
 static void menu_common_shader_manager_save_preset(const char *basename, bool apply)
