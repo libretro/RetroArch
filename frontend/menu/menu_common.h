@@ -110,6 +110,7 @@ uint64_t menu_input(void);
 void menu_flush_stack_type(unsigned final_type);
 void menu_update_system_info(menu_handle_t *menu, bool *load_no_content);
 void menu_build_scroll_indices(file_list_t *buf);
+void menu_push_info_screen(void);
 
 #ifdef __cplusplus
 }

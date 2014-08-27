@@ -691,3 +691,8 @@ void menu_build_scroll_indices(file_list_t *buf)
 
    driver.menu->scroll_indices[driver.menu->scroll_indices_size++] = buf->size - 1;
 }
+
+void menu_push_info_screen(void)
+{
+   file_list_push(driver.menu->menu_stack, "", "", MENU_START_SCREEN, 0, NULL);
+}

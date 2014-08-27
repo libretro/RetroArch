@@ -3365,9 +3365,23 @@ void rarch_main_command(unsigned action)
          init_drivers();
          break;
       case RARCH_CMD_QUIT_RETROARCH:
-#ifdef HAVE_MENU
          g_extern.lifecycle_state &= ~(1ULL << MODE_MENU);
          g_extern.lifecycle_state &= ~(1ULL << MODE_GAME);
+         break;
+      case RARCH_CMD_RESUME:
+         g_extern.lifecycle_state |= (1ULL << MODE_GAME);
+         break;
+      case RARCH_CMD_RESTART_RETROARCH:
+#if defined(GEKKO) && defined(HW_RVL)
+         fill_pathname_join(g_extern.fullpath, g_defaults.core_dir, SALAMANDER_FILE,
+               sizeof(g_extern.fullpath));
+#endif
+         g_extern.lifecycle_state &= ~(1ULL << MODE_GAME);
+         g_extern.lifecycle_state |= (1ULL << MODE_EXITSPAWN);
+         break;
+      case RARCH_CMD_MENU_SAVE_CONFIG:
+#ifdef HAVE_MENU
+         menu_save_new_config();
 #endif
          break;
    }

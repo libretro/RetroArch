@@ -3158,10 +3158,6 @@ static int menu_common_setting_set(unsigned id, unsigned action, rarch_setting_t
       {
          switch (id)
          {
-            case MENU_START_SCREEN:
-               if (action == MENU_ACTION_OK)
-                  file_list_push(driver.menu->menu_stack, "", "", MENU_START_SCREEN, 0, NULL);
-               break;
             case MENU_SETTINGS_SAVESTATE_SAVE:
             case MENU_SETTINGS_SAVESTATE_LOAD:
                if (action == MENU_ACTION_OK)
@@ -3182,17 +3178,6 @@ static int menu_common_setting_set(unsigned id, unsigned action, rarch_setting_t
                }
                else if (action == MENU_ACTION_RIGHT)
                   g_settings.state_slot++;
-               break;
-            case MENU_SETTINGS_SCREENSHOT:
-               if (action == MENU_ACTION_OK)
-                  rarch_main_command(RARCH_CMD_TAKE_SCREENSHOT);
-               break;
-            case MENU_SETTINGS_RESTART_GAME:
-               if (action == MENU_ACTION_OK)
-               {
-                  rarch_main_command(RARCH_CMD_RESET);
-                  return -1;
-               }
                break;
             case MENU_SETTINGS_DISK_INDEX:
                {
@@ -3216,29 +3201,6 @@ static int menu_common_setting_set(unsigned id, unsigned action, rarch_setting_t
 
                   break;
                }
-            case MENU_SETTINGS_RESTART_EMULATOR:
-               if (action == MENU_ACTION_OK)
-               {
-#if defined(GEKKO) && defined(HW_RVL)
-                  fill_pathname_join(g_extern.fullpath, g_defaults.core_dir, SALAMANDER_FILE,
-                        sizeof(g_extern.fullpath));
-#endif
-                  g_extern.lifecycle_state &= ~(1ULL << MODE_GAME);
-                  g_extern.lifecycle_state |= (1ULL << MODE_EXITSPAWN);
-                  return -1;
-               }
-               break;
-            case MENU_SETTINGS_RESUME_GAME:
-               if (action == MENU_ACTION_OK)
-               {
-                  g_extern.lifecycle_state |= (1ULL << MODE_GAME);
-                  return -1;
-               }
-               break;
-            case MENU_SETTINGS_SAVE_CONFIG:
-               if (action == MENU_ACTION_OK)
-                  menu_save_new_config();
-               break;
                // controllers
             case MENU_SETTINGS_BIND_PLAYER:
                if (action == MENU_ACTION_START)

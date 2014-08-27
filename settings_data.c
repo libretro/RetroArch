@@ -1358,7 +1358,58 @@ static void general_write_handler(const void *data)
          *setting->value.boolean = false;
       }
    }
-   if (!strcmp(setting->name, "fps_show"))
+   else if (!strcmp(setting->name, "save_new_config"))
+   {
+      if (*setting->value.boolean)
+      {
+         rarch_cmd = RARCH_CMD_MENU_SAVE_CONFIG;
+         *setting->value.boolean = false;
+      }
+   }
+   else if (!strcmp(setting->name, "restart_retroarch"))
+   {
+      if (*setting->value.boolean)
+      {
+         rarch_cmd = RARCH_CMD_RESTART_RETROARCH;
+         *setting->value.boolean = false;
+      }
+   }
+   else if (!strcmp(setting->name, "resume_content"))
+   {
+      if (*setting->value.boolean)
+      {
+         rarch_cmd = RARCH_CMD_RESUME;
+         *setting->value.boolean = false;
+      }
+   }
+   else if (!strcmp(setting->name, "restart_content"))
+   {
+      if (*setting->value.boolean)
+      {
+         rarch_cmd = RARCH_CMD_RESET;
+         *setting->value.boolean = false;
+      }
+   }
+   else if (!strcmp(setting->name, "take_screenshot"))
+   {
+      if (*setting->value.boolean)
+      {
+         rarch_cmd = RARCH_CMD_TAKE_SCREENSHOT;
+         *setting->value.boolean = false;
+      }
+   }
+   else if (!strcmp(setting->name, "help"))
+   {
+      if (*setting->value.boolean)
+      {
+#ifdef HAVE_MENU
+         extern void menu_push_info_screen(void);
+         menu_push_info_screen();
+#endif
+         *setting->value.boolean = false;
+      }
+   }
+   else if (!strcmp(setting->name, "fps_show"))
       g_settings.fps_show = *setting->value.boolean;
    else if (!strcmp(setting->name, "pause_nonactive"))
       g_settings.pause_nonactive = *setting->value.boolean;
