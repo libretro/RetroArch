@@ -1726,7 +1726,6 @@ static void general_write_handler(const void *data)
 #ifdef HAVE_MENU
 rarch_setting_t *setting_data_get_mainmenu(bool regenerate)
 {
-   char load_game_core_msg[64];
    int index = 0;
    static rarch_setting_t* list = NULL;
    int list_size = 32;
