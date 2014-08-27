@@ -162,7 +162,7 @@ static void lakka_reset_submenu(void)
 
                subitem->alpha = 0;
                subitem->zoom = k == category->items[j].active_subitem ? i_active_zoom : i_passive_zoom;
-               subitem->y = k == 0 ? vspacing * active_item_factor : vspacing * (3+k);
+               subitem->y = k == 0 ? vspacing * active_item_factor : vspacing * (k + under_item_offset);
             }
          }
       }
