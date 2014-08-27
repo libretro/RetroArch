@@ -825,9 +825,8 @@ static bool android_joypad_button(unsigned port_num, uint16_t joykey)
          default: return false;
       }
    }
-   else
-      return joykey < LAST_KEYCODE && get_bit(android->pad_state[port_num],
-            joykey);
+   return joykey < LAST_KEYCODE && get_bit(android->pad_state[port_num],
+         joykey);
 }
 
 static int16_t android_joypad_axis(unsigned port_num, uint32_t joyaxis)
