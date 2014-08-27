@@ -1723,29 +1723,74 @@ static void general_write_handler(const void *data)
 #define MAX_GAMMA_SETTING 1
 #endif
 
-rarch_setting_t *setting_data_get_mainmenu(void)
+#ifdef HAVE_MENU
+rarch_setting_t *setting_data_get_mainmenu(bool regenerate)
 {
+   char load_game_core_msg[64];
    int index = 0;
    static rarch_setting_t* list = NULL;
-   int list_size = 10;
+   int list_size = 32;
+   static bool lists[32];
 
    if (list)
-      return list;
+   {
+      if (regenerate)
+      {
+         free(list);
+         list = NULL;
+      }
+      else
+         return list;
+   }
 
    list = (rarch_setting_t*)malloc(sizeof(rarch_setting_t) * list_size);
 
    START_GROUP("Main Menu")
       START_SUB_GROUP("State")
-      //CONFIG_BOOL(g_settings.camera.allow,     "camera_allow",     "Allow Camera",          false, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+#if defined(HAVE_DYNAMIC) || defined(HAVE_LIBRETRO_MANAGEMENT)
+      CONFIG_BOOL(lists[0],     "core_list",     "Core",          false, "...", "...", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+#endif
+      if (g_extern.history)
+      {
+         CONFIG_BOOL(lists[1],     "history_list",  "Load Content (History)", false, "...", "...", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+      }
+      if (driver.menu && driver.menu->core_info && core_info_list_num_info_files(driver.menu->core_info))
+      {
+         CONFIG_BOOL(lists[2],     "detect_core_list",  "Load Content (Detect Core)", false, "...", "...", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+      }
+      CONFIG_BOOL(lists[3],     "load_content",  "Load Content", false, "...", "...", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+      CONFIG_BOOL(lists[4],     "core_options",  "Core Options", false, "...", "...", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+      CONFIG_BOOL(lists[5],     "core_information",  "Core Information", false, "...", "...", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+      CONFIG_BOOL(lists[6],     "settings",  "Settings", false, "...", "...", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+      if (g_extern.perfcnt_enable)
+      {
+         CONFIG_BOOL(lists[7],     "performance_counters",  "Performance Counters", false, "...", "...", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+      }
+      if (g_extern.main_is_init && !g_extern.libretro_dummy)
+      {
+         CONFIG_BOOL(lists[8],     "savestate",  "Save State", false, "...", "...", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+         CONFIG_BOOL(lists[9],     "loadstate",  "Load State", false, "...", "...", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+         CONFIG_BOOL(lists[10],     "take_screenshot",  "Take Screenshot", false, "", "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+         CONFIG_BOOL(lists[11],     "resume_content",  "Resume Content", false, "", "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+         CONFIG_BOOL(lists[12],     "restart_content",  "Restart Content", false, "", "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+      }
+#ifndef HAVE_DYNAMIC
+      CONFIG_BOOL(lists[13], "restart_retroarch", "Restart RetroArch", false, "", "",GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+#endif
+      CONFIG_BOOL(lists[14], "configurations", "Configurations", false, "", "",GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+      CONFIG_BOOL(lists[15], "save_new_config", "Save New Config", false, "", "",GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+      CONFIG_BOOL(lists[16], "help", "Help", false, "", "",GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+      CONFIG_BOOL(lists[17], "quit_retroarch", "Quit RetroArch", false, "", "",GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
       END_SUB_GROUP()
-   END_GROUP()
+      END_GROUP()
 
-   rarch_setting_t terminator = { ST_NONE };
+      rarch_setting_t terminator = { ST_NONE };
    APPEND(terminator);
 
    /* flatten this array to save ourselves some kilobytes */
    return (rarch_setting_t*)realloc(list, sizeof(rarch_setting_t) * index); 
 }
+#endif
 
 rarch_setting_t *setting_data_get_list(void)
 {

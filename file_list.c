@@ -25,7 +25,8 @@
 
 void file_list_push(file_list_t *list,
       const char *path, const char *label,
-      unsigned type, size_t directory_ptr)
+      unsigned type, size_t directory_ptr,
+      void *setting_list)
 {
    if (list->size >= list->capacity)
    {
@@ -41,7 +42,7 @@ void file_list_push(file_list_t *list,
    list->list[list->size].label = strdup(label);
    list->list[list->size].setting = NULL;
 
-   rarch_setting_t *setting_data = (rarch_setting_t *)setting_data_get_list();
+   rarch_setting_t *setting_data = (rarch_setting_t *)setting_list;
 
    if (setting_data)
       list->list[list->size].setting = (rarch_setting_t*)

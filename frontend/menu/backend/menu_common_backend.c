@@ -66,10 +66,14 @@ static void menu_common_entries_init(menu_handle_t *menu, unsigned menu_type)
          {
             file_list_clear(menu->selection_buf);
 
-            struct gfx_shader *shader = (struct gfx_shader*)shader_manager_get_current_shader(menu, menu_type);
+            struct gfx_shader *shader = (struct gfx_shader*)
+               shader_manager_get_current_shader(menu, menu_type);
+
             if (shader)
                for (i = 0; i < shader->num_parameters; i++)
-                  file_list_push(menu->selection_buf, shader->parameters[i].desc, "", MENU_SETTINGS_SHADER_PARAMETER_0 + i, 0);
+                  file_list_push(menu->selection_buf,
+                        shader->parameters[i].desc, "",
+                        MENU_SETTINGS_SHADER_PARAMETER_0 + i, 0, NULL);
             menu->parameter_shader = shader;
             break;
          }
@@ -82,18 +86,19 @@ static void menu_common_entries_init(menu_handle_t *menu, unsigned menu_type)
 
             file_list_clear(menu->selection_buf);
             file_list_push(menu->selection_buf, "Apply Shader Changes", "",
-                  MENU_SETTINGS_SHADER_APPLY, 0);
-            file_list_push(menu->selection_buf, "Default Filter", "", MENU_SETTINGS_SHADER_FILTER, 0);
+                  MENU_SETTINGS_SHADER_APPLY, 0, NULL);
+            file_list_push(menu->selection_buf, "Default Filter", "",
+                  MENU_SETTINGS_SHADER_FILTER, 0, NULL);
             file_list_push(menu->selection_buf, "Load Shader Preset", "",
-                  MENU_SETTINGS_SHADER_PRESET, 0);
+                  MENU_SETTINGS_SHADER_PRESET, 0, NULL);
             file_list_push(menu->selection_buf, "Save As Shader Preset", "",
-                  MENU_SETTINGS_SHADER_PRESET_SAVE, 0);
+                  MENU_SETTINGS_SHADER_PRESET_SAVE, 0, NULL);
             file_list_push(menu->selection_buf, "Parameters (Current)", "",
-                  MENU_SETTINGS_SHADER_PARAMETERS, 0);
+                  MENU_SETTINGS_SHADER_PARAMETERS, 0, NULL);
             file_list_push(menu->selection_buf, "Parameters (Menu)", "",
-                  MENU_SETTINGS_SHADER_PRESET_PARAMETERS, 0);
+                  MENU_SETTINGS_SHADER_PRESET_PARAMETERS, 0, NULL);
             file_list_push(menu->selection_buf, "Shader Passes", "",
-                  MENU_SETTINGS_SHADER_PASSES, 0);
+                  MENU_SETTINGS_SHADER_PASSES, 0, NULL);
 
             for (i = 0; i < shader->passes; i++)
             {
@@ -101,89 +106,136 @@ static void menu_common_entries_init(menu_handle_t *menu, unsigned menu_type)
 
                snprintf(buf, sizeof(buf), "Shader #%u", i);
                file_list_push(menu->selection_buf, buf, "",
-                     MENU_SETTINGS_SHADER_0 + 3 * i, 0);
+                     MENU_SETTINGS_SHADER_0 + 3 * i, 0, NULL);
 
                snprintf(buf, sizeof(buf), "Shader #%u Filter", i);
                file_list_push(menu->selection_buf, buf, "",
-                     MENU_SETTINGS_SHADER_0_FILTER + 3 * i, 0);
+                     MENU_SETTINGS_SHADER_0_FILTER + 3 * i, 0, NULL);
 
                snprintf(buf, sizeof(buf), "Shader #%u Scale", i);
                file_list_push(menu->selection_buf, buf, "",
-                     MENU_SETTINGS_SHADER_0_SCALE + 3 * i, 0);
+                     MENU_SETTINGS_SHADER_0_SCALE + 3 * i, 0, NULL);
             }
          }
          break;
       case MENU_SETTINGS_GENERAL_OPTIONS:
          file_list_clear(menu->selection_buf);
-         file_list_push(menu->selection_buf, "", "libretro_log_level", MENU_SETTINGS_LIBRETRO_LOG_LEVEL, 0);
-         file_list_push(menu->selection_buf, "", "log_verbosity", MENU_SETTINGS_LOGGING_VERBOSITY, 0);
-         file_list_push(menu->selection_buf, "", "perfcnt_enable", MENU_SETTINGS_PERFORMANCE_COUNTERS_ENABLE, 0);
-         file_list_push(menu->selection_buf, "", "game_history_size", MENU_CONTENT_HISTORY_SIZE, 0);
-         file_list_push(menu->selection_buf, "", "config_save_on_exit", MENU_SETTINGS_CONFIG_SAVE_ON_EXIT, 0);
-         file_list_push(menu->selection_buf, "", "core_specific_config", MENU_SETTINGS_PER_CORE_CONFIG, 0);
-         file_list_push(menu->selection_buf, "", "video_gpu_screenshot", MENU_SETTINGS_GPU_SCREENSHOT, 0);
-         file_list_push(menu->selection_buf, "", "dummy_on_core_shutdown", MENU_SETTINGS_LOAD_DUMMY_ON_CORE_SHUTDOWN, 0);
-         file_list_push(menu->selection_buf, "", "fps_show", MENU_SETTINGS_DEBUG_TEXT, 0);
-         file_list_push(menu->selection_buf, "", "fastforward_ratio", MENU_SETTINGS_FASTFORWARD_RATIO, 0);
-         file_list_push(menu->selection_buf, "", "slowmotion_ratio", MENU_SETTINGS_SLOWMOTION_RATIO, 0);
-         file_list_push(menu->selection_buf, "", "rewind_enable", MENU_SETTINGS_REWIND_ENABLE, 0);
-         file_list_push(menu->selection_buf, "", "rewind_granularity", MENU_SETTINGS_REWIND_GRANULARITY, 0);
-         file_list_push(menu->selection_buf, "", "block_sram_overwrite", MENU_SETTINGS_BLOCK_SRAM_OVERWRITE, 0);
+         file_list_push(menu->selection_buf, "", "libretro_log_level",
+               MENU_SETTINGS_LIBRETRO_LOG_LEVEL, 0, setting_data);
+         file_list_push(menu->selection_buf, "", "log_verbosity",
+               MENU_SETTINGS_LOGGING_VERBOSITY, 0, setting_data);
+         file_list_push(menu->selection_buf, "", "perfcnt_enable",
+               MENU_SETTINGS_PERFORMANCE_COUNTERS_ENABLE, 0, setting_data);
+         file_list_push(menu->selection_buf, "", "game_history_size",
+               MENU_CONTENT_HISTORY_SIZE, 0, setting_data);
+         file_list_push(menu->selection_buf, "", "config_save_on_exit",
+               MENU_SETTINGS_CONFIG_SAVE_ON_EXIT, 0, setting_data);
+         file_list_push(menu->selection_buf, "", "core_specific_config",
+               MENU_SETTINGS_PER_CORE_CONFIG, 0, setting_data);
+         file_list_push(menu->selection_buf, "", "video_gpu_screenshot",
+               MENU_SETTINGS_GPU_SCREENSHOT, 0, setting_data);
+         file_list_push(menu->selection_buf, "", "dummy_on_core_shutdown",
+               MENU_SETTINGS_LOAD_DUMMY_ON_CORE_SHUTDOWN, 0, setting_data);
+         file_list_push(menu->selection_buf, "", "fps_show",
+               MENU_SETTINGS_DEBUG_TEXT, 0, setting_data);
+         file_list_push(menu->selection_buf, "", "fastforward_ratio",
+               MENU_SETTINGS_FASTFORWARD_RATIO, 0, setting_data);
+         file_list_push(menu->selection_buf, "", "slowmotion_ratio",
+               MENU_SETTINGS_SLOWMOTION_RATIO, 0, setting_data);
+         file_list_push(menu->selection_buf, "", "rewind_enable",
+               MENU_SETTINGS_REWIND_ENABLE, 0, setting_data);
+         file_list_push(menu->selection_buf, "", "rewind_granularity",
+               MENU_SETTINGS_REWIND_GRANULARITY, 0, setting_data);
+         file_list_push(menu->selection_buf, "", "block_sram_overwrite",
+               MENU_SETTINGS_BLOCK_SRAM_OVERWRITE, 0, setting_data);
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "autosave_interval")))
-            file_list_push(menu->selection_buf, "", "autosave_interval", MENU_SETTINGS_SRAM_AUTOSAVE, 0);
-         file_list_push(menu->selection_buf, "", "video_disable_composition", MENU_SETTINGS_WINDOW_COMPOSITING_ENABLE, 0);
-         file_list_push(menu->selection_buf, "", "pause_nonactive", MENU_SETTINGS_PAUSE_IF_WINDOW_FOCUS_LOST, 0);
-         file_list_push(menu->selection_buf, "", "savestate_auto_save", MENU_SETTINGS_SAVESTATE_AUTO_SAVE, 0);
-         file_list_push(menu->selection_buf, "", "savestate_auto_load", MENU_SETTINGS_SAVESTATE_AUTO_LOAD, 0);
+            file_list_push(menu->selection_buf, "", "autosave_interval",
+                  MENU_SETTINGS_SRAM_AUTOSAVE, 0, setting_data);
+         file_list_push(menu->selection_buf, "", "video_disable_composition",
+               MENU_SETTINGS_WINDOW_COMPOSITING_ENABLE, 0, setting_data);
+         file_list_push(menu->selection_buf, "", "pause_nonactive",
+               MENU_SETTINGS_PAUSE_IF_WINDOW_FOCUS_LOST, 0, setting_data);
+         file_list_push(menu->selection_buf, "", "savestate_auto_save",
+               MENU_SETTINGS_SAVESTATE_AUTO_SAVE, 0, setting_data);
+         file_list_push(menu->selection_buf, "", "savestate_auto_load",
+               MENU_SETTINGS_SAVESTATE_AUTO_LOAD, 0, setting_data);
          break;
       case MENU_SETTINGS_VIDEO_OPTIONS:
          file_list_clear(menu->selection_buf);
-         file_list_push(menu->selection_buf, "", "video_shared_context", MENU_SETTINGS_VIDEO_HW_SHARED_CONTEXT, 0);
+         file_list_push(menu->selection_buf, "", "video_shared_context",
+               MENU_SETTINGS_VIDEO_HW_SHARED_CONTEXT, 0, setting_data);
 #if defined(GEKKO) || defined(__CELLOS_LV2__)
-         file_list_push(menu->selection_buf, "Screen Resolution", "", MENU_SETTINGS_VIDEO_RESOLUTION, 0);
+         file_list_push(menu->selection_buf, "Screen Resolution", "",
+               MENU_SETTINGS_VIDEO_RESOLUTION, 0, NULL);
 #endif
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "video_viwidth")))
-            file_list_push(menu->selection_buf, "", "video_viwidth", MENU_SETTINGS_VIDEO_VIWIDTH, 0);
-         file_list_push(menu->selection_buf, "", "video_filter", MENU_SETTINGS_VIDEO_SOFTFILTER, 0);
+            file_list_push(menu->selection_buf, "", "video_viwidth",
+                  MENU_SETTINGS_VIDEO_VIWIDTH, 0, setting_data);
+         file_list_push(menu->selection_buf, "", "video_filter",
+               MENU_SETTINGS_VIDEO_SOFTFILTER, 0, setting_data);
 #if defined(__CELLOS_LV2__)
-         file_list_push(menu->selection_buf, "PAL60 Mode", "", MENU_SETTINGS_VIDEO_PAL60, 0);
+         file_list_push(menu->selection_buf, "PAL60 Mode", "",
+               MENU_SETTINGS_VIDEO_PAL60, 0, NULL);
 #endif
-         file_list_push(menu->selection_buf, "", "video_smooth", MENU_SETTINGS_VIDEO_FILTER, 0);
+         file_list_push(menu->selection_buf, "", "video_smooth",
+               MENU_SETTINGS_VIDEO_FILTER, 0, setting_data);
 #ifdef HW_RVL
-         file_list_push(menu->selection_buf, "VI Trap filtering", "", MENU_SETTINGS_VIDEO_SOFT_FILTER, 0);
+         file_list_push(menu->selection_buf, "VI Trap filtering", "",
+               MENU_SETTINGS_VIDEO_SOFT_FILTER, 0, NULL);
 #endif
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "video_gamma")))
-            file_list_push(menu->selection_buf, "", "video_gamma", MENU_SETTINGS_VIDEO_GAMMA, 0);
+            file_list_push(menu->selection_buf, "", "video_gamma",
+                  MENU_SETTINGS_VIDEO_GAMMA, 0, setting_data);
 #ifdef _XBOX1
-         file_list_push(menu->selection_buf, "Soft filtering", "", MENU_SETTINGS_SOFT_DISPLAY_FILTER, 0);
+         file_list_push(menu->selection_buf, "Soft filtering", "",
+               MENU_SETTINGS_SOFT_DISPLAY_FILTER, 0, NULL);
 #endif
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "video_filter_flicker")))
-            file_list_push(menu->selection_buf, "", "video_filter_flicker", MENU_SETTINGS_FLICKER_FILTER, 0);
-         file_list_push(menu->selection_buf, "", "video_scale_integer", MENU_SETTINGS_VIDEO_INTEGER_SCALE, 0);
-         file_list_push(menu->selection_buf, "", "aspect_ratio_index", MENU_SETTINGS_VIDEO_ASPECT_RATIO, 0);
-         file_list_push(menu->selection_buf, "Custom Ratio", "", MENU_SETTINGS_CUSTOM_VIEWPORT, 0);
+            file_list_push(menu->selection_buf, "", "video_filter_flicker",
+                  MENU_SETTINGS_FLICKER_FILTER, 0, setting_data);
+         file_list_push(menu->selection_buf, "", "video_scale_integer",
+               MENU_SETTINGS_VIDEO_INTEGER_SCALE, 0, setting_data);
+         file_list_push(menu->selection_buf, "", "aspect_ratio_index",
+               MENU_SETTINGS_VIDEO_ASPECT_RATIO, 0, setting_data);
+         file_list_push(menu->selection_buf, "Custom Ratio", "",
+               MENU_SETTINGS_CUSTOM_VIEWPORT, 0, setting_data);
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "video_fullscreen")))
-            file_list_push(menu->selection_buf, "", "video_fullscreen", MENU_SETTINGS_TOGGLE_FULLSCREEN, 0);
-         file_list_push(menu->selection_buf, "", "video_rotation", MENU_SETTINGS_VIDEO_ROTATION, 0);
-         file_list_push(menu->selection_buf, "", "video_vsync", MENU_SETTINGS_VIDEO_VSYNC, 0);
-         file_list_push(menu->selection_buf, "", "video_hard_sync", MENU_SETTINGS_VIDEO_HARD_SYNC, 0);
-         file_list_push(menu->selection_buf, "", "video_hard_sync_frames", MENU_SETTINGS_VIDEO_HARD_SYNC_FRAMES, 0);
+            file_list_push(menu->selection_buf, "", "video_fullscreen",
+                  MENU_SETTINGS_TOGGLE_FULLSCREEN, 0, setting_data);
+         file_list_push(menu->selection_buf, "", "video_rotation",
+               MENU_SETTINGS_VIDEO_ROTATION, 0, setting_data);
+         file_list_push(menu->selection_buf, "", "video_vsync",
+               MENU_SETTINGS_VIDEO_VSYNC, 0, setting_data);
+         file_list_push(menu->selection_buf, "", "video_hard_sync",
+               MENU_SETTINGS_VIDEO_HARD_SYNC, 0, setting_data);
+         file_list_push(menu->selection_buf, "", "video_hard_sync_frames",
+               MENU_SETTINGS_VIDEO_HARD_SYNC_FRAMES, 0, setting_data);
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "video_black_frame_insertion")))
-            file_list_push(menu->selection_buf, "", "video_black_frame_insertion", MENU_SETTINGS_VIDEO_BLACK_FRAME_INSERTION, 0);
-         file_list_push(menu->selection_buf, "", "video_swap_interval", MENU_SETTINGS_VIDEO_SWAP_INTERVAL, 0);
+            file_list_push(menu->selection_buf, "", "video_black_frame_insertion",
+                  MENU_SETTINGS_VIDEO_BLACK_FRAME_INSERTION, 0, setting_data);
+         file_list_push(menu->selection_buf, "", "video_swap_interval",
+               MENU_SETTINGS_VIDEO_SWAP_INTERVAL, 0, setting_data);
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "video_threaded")))
-            file_list_push(menu->selection_buf, "", "video_threaded", MENU_SETTINGS_VIDEO_THREADED, 0);
+            file_list_push(menu->selection_buf, "", "video_threaded",
+                  MENU_SETTINGS_VIDEO_THREADED, 0, setting_data);
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "video_scale")))
-            file_list_push(menu->selection_buf, "", "video_scale", MENU_SETTINGS_VIDEO_WINDOW_SCALE, 0);
-         file_list_push(menu->selection_buf, "", "video_crop_overscan", MENU_SETTINGS_VIDEO_CROP_OVERSCAN, 0);
-         file_list_push(menu->selection_buf, "", "video_monitor_index", MENU_SETTINGS_VIDEO_MONITOR_INDEX, 0);
-         file_list_push(menu->selection_buf, "", "video_refresh_rate", MENU_SETTINGS_VIDEO_REFRESH_RATE, 0);
-         file_list_push(menu->selection_buf, "", "video_refresh_rate_auto", MENU_SETTINGS_VIDEO_REFRESH_RATE_AUTO, 0);
+            file_list_push(menu->selection_buf, "", "video_scale",
+                  MENU_SETTINGS_VIDEO_WINDOW_SCALE, 0, setting_data);
+         file_list_push(menu->selection_buf, "", "video_crop_overscan",
+               MENU_SETTINGS_VIDEO_CROP_OVERSCAN, 0, setting_data);
+         file_list_push(menu->selection_buf, "", "video_monitor_index",
+               MENU_SETTINGS_VIDEO_MONITOR_INDEX, 0, setting_data);
+         file_list_push(menu->selection_buf, "", "video_refresh_rate",
+               MENU_SETTINGS_VIDEO_REFRESH_RATE, 0, setting_data);
+         file_list_push(menu->selection_buf, "", "video_refresh_rate_auto",
+               MENU_SETTINGS_VIDEO_REFRESH_RATE_AUTO, 0, setting_data);
          break;
       case MENU_SETTINGS_FONT_OPTIONS:
          file_list_clear(menu->selection_buf);
-         file_list_push(menu->selection_buf, "", "video_font_enable", MENU_SETTINGS_FONT_ENABLE, 0);
-         file_list_push(menu->selection_buf, "", "video_font_size", MENU_SETTINGS_FONT_SIZE, 0);
+         file_list_push(menu->selection_buf, "", "video_font_enable",
+               MENU_SETTINGS_FONT_ENABLE, 0, setting_data);
+         file_list_push(menu->selection_buf, "", "video_font_size",
+               MENU_SETTINGS_FONT_SIZE, 0, setting_data);
          break;
       case MENU_SETTINGS_CORE_OPTIONS:
          file_list_clear(menu->selection_buf);
@@ -195,10 +247,12 @@ static void menu_common_entries_init(menu_handle_t *menu, unsigned menu_type)
             opts = core_option_size(g_extern.system.core_options);
             for (i = 0; i < opts; i++)
                file_list_push(menu->selection_buf,
-                     core_option_get_desc(g_extern.system.core_options, i), "", MENU_SETTINGS_CORE_OPTION_START + i, 0);
+                     core_option_get_desc(g_extern.system.core_options, i), "",
+                     MENU_SETTINGS_CORE_OPTION_START + i, 0, NULL);
          }
          else
-            file_list_push(menu->selection_buf, "No options available.", "", MENU_SETTINGS_CORE_OPTION_NONE, 0);
+            file_list_push(menu->selection_buf, "No options available.", "",
+                  MENU_SETTINGS_CORE_OPTION_NONE, 0, NULL);
          break;
       case MENU_SETTINGS_CORE_INFO:
          {
@@ -209,27 +263,34 @@ static void menu_common_entries_init(menu_handle_t *menu, unsigned menu_type)
             {
                snprintf(tmp, sizeof(tmp), "Core name: %s",
                      info->display_name ? info->display_name : "");
-               file_list_push(menu->selection_buf, tmp, "", MENU_SETTINGS_CORE_INFO_NONE, 0);
+               file_list_push(menu->selection_buf, tmp, "",
+                     MENU_SETTINGS_CORE_INFO_NONE, 0, NULL);
 
                if (info->authors_list)
                {
                   strlcpy(tmp, "Authors: ", sizeof(tmp));
-                  string_list_join_concat(tmp, sizeof(tmp), info->authors_list, ", ");
-                  file_list_push(menu->selection_buf, tmp, "", MENU_SETTINGS_CORE_INFO_NONE, 0);
+                  string_list_join_concat(tmp, sizeof(tmp),
+                        info->authors_list, ", ");
+                  file_list_push(menu->selection_buf, tmp, "",
+                        MENU_SETTINGS_CORE_INFO_NONE, 0, NULL);
                }
 
                if (info->permissions_list)
                {
                   strlcpy(tmp, "Permissions: ", sizeof(tmp));
-                  string_list_join_concat(tmp, sizeof(tmp), info->permissions_list, ", ");
-                  file_list_push(menu->selection_buf, tmp, "", MENU_SETTINGS_CORE_INFO_NONE, 0);
+                  string_list_join_concat(tmp, sizeof(tmp),
+                        info->permissions_list, ", ");
+                  file_list_push(menu->selection_buf, tmp, "",
+                        MENU_SETTINGS_CORE_INFO_NONE, 0, NULL);
                }
 
                if (info->supported_extensions_list)
                {
                   strlcpy(tmp, "Supported extensions: ", sizeof(tmp));
-                  string_list_join_concat(tmp, sizeof(tmp), info->supported_extensions_list, ", ");
-                  file_list_push(menu->selection_buf, tmp, "", MENU_SETTINGS_CORE_INFO_NONE, 0);
+                  string_list_join_concat(tmp, sizeof(tmp),
+                        info->supported_extensions_list, ", ");
+                  file_list_push(menu->selection_buf, tmp, "",
+                        MENU_SETTINGS_CORE_INFO_NONE, 0, NULL);
                }
 
                if (info->firmware_count > 0)
@@ -237,19 +298,24 @@ static void menu_common_entries_init(menu_handle_t *menu, unsigned menu_type)
                   core_info_list_update_missing_firmware(menu->core_info, info->path,
                         g_settings.system_directory);
 
-                  file_list_push(menu->selection_buf, "Firmware: ", "", MENU_SETTINGS_CORE_INFO_NONE, 0);
+                  file_list_push(menu->selection_buf, "Firmware: ", "",
+                        MENU_SETTINGS_CORE_INFO_NONE, 0, NULL);
                   for (i = 0; i < info->firmware_count; i++)
                   {
                      if (info->firmware[i].desc)
                      {
                         snprintf(tmp, sizeof(tmp), "	name: %s",
                               info->firmware[i].desc ? info->firmware[i].desc : "");
-                        file_list_push(menu->selection_buf, tmp, "", MENU_SETTINGS_CORE_INFO_NONE, 0);
+                        file_list_push(menu->selection_buf, tmp, "",
+                              MENU_SETTINGS_CORE_INFO_NONE, 0, NULL);
 
                         snprintf(tmp, sizeof(tmp), "	status: %s, %s",
-                              info->firmware[i].missing ? "missing" : "present",
-                              info->firmware[i].optional ? "optional" : "required");
-                        file_list_push(menu->selection_buf, tmp, "", MENU_SETTINGS_CORE_INFO_NONE, 0);
+                              info->firmware[i].missing ?
+                              "missing" : "present",
+                              info->firmware[i].optional ?
+                              "optional" : "required");
+                        file_list_push(menu->selection_buf, tmp, "",
+                              MENU_SETTINGS_CORE_INFO_NONE, 0, NULL);
                      }
                   }
                }
@@ -257,144 +323,223 @@ static void menu_common_entries_init(menu_handle_t *menu, unsigned menu_type)
                if (info->notes)
                {
                   snprintf(tmp, sizeof(tmp), "Core notes: ");
-                  file_list_push(menu->selection_buf, tmp, "", MENU_SETTINGS_CORE_INFO_NONE, 0);
+                  file_list_push(menu->selection_buf, tmp, "",
+                        MENU_SETTINGS_CORE_INFO_NONE, 0, NULL);
 
                   for (i = 0; i < info->note_list->size; i++)
                   {
-                     snprintf(tmp, sizeof(tmp), " %s", info->note_list->elems[i].data);
-                     file_list_push(menu->selection_buf, tmp, "", MENU_SETTINGS_CORE_INFO_NONE, 0);
+                     snprintf(tmp, sizeof(tmp), " %s",
+                           info->note_list->elems[i].data);
+                     file_list_push(menu->selection_buf, tmp, "",
+                           MENU_SETTINGS_CORE_INFO_NONE, 0, NULL);
                   }
                }
             }
             else
-               file_list_push(menu->selection_buf, "No information available.", "", MENU_SETTINGS_CORE_OPTION_NONE, 0);
+               file_list_push(menu->selection_buf,
+                     "No information available.", "",
+                     MENU_SETTINGS_CORE_OPTION_NONE, 0, NULL);
          }
          break;
       case MENU_SETTINGS_OPTIONS:
          file_list_clear(menu->selection_buf);
-         file_list_push(menu->selection_buf, "", "Driver Options", MENU_SETTINGS_DRIVERS, 0);
-         file_list_push(menu->selection_buf, "", "General Options", MENU_SETTINGS_GENERAL_OPTIONS, 0);
-         file_list_push(menu->selection_buf, "", "Video Options", MENU_SETTINGS_VIDEO_OPTIONS, 0);
+         file_list_push(menu->selection_buf, "", "Driver Options",
+               MENU_SETTINGS_DRIVERS, 0, setting_data);
+         file_list_push(menu->selection_buf, "", "General Options",
+               MENU_SETTINGS_GENERAL_OPTIONS, 0, setting_data);
+         file_list_push(menu->selection_buf, "", "Video Options",
+               MENU_SETTINGS_VIDEO_OPTIONS, 0, setting_data);
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "Shader Options")))
-            file_list_push(menu->selection_buf, "", "Shader Options", MENU_SETTINGS_SHADER_OPTIONS, 0);
-         file_list_push(menu->selection_buf, "", "Font Options", MENU_SETTINGS_FONT_OPTIONS, 0);
-         file_list_push(menu->selection_buf, "", "Audio Options", MENU_SETTINGS_AUDIO_OPTIONS, 0);
-         file_list_push(menu->selection_buf, "", "Input Options", MENU_SETTINGS_INPUT_OPTIONS, 0);
+            file_list_push(menu->selection_buf, "", "Shader Options",
+                  MENU_SETTINGS_SHADER_OPTIONS, 0, setting_data);
+         file_list_push(menu->selection_buf, "", "Font Options",
+               MENU_SETTINGS_FONT_OPTIONS, 0, setting_data);
+         file_list_push(menu->selection_buf, "", "Audio Options",
+               MENU_SETTINGS_AUDIO_OPTIONS, 0, setting_data);
+         file_list_push(menu->selection_buf, "", "Input Options",
+               MENU_SETTINGS_INPUT_OPTIONS, 0, setting_data);
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "Overlay Options")))
-            file_list_push(menu->selection_buf, "", "Overlay Options", MENU_SETTINGS_OVERLAY_OPTIONS, 0);
-         file_list_push(menu->selection_buf, "", "User Options", MENU_SETTINGS_USER_OPTIONS, 0);
+            file_list_push(menu->selection_buf, "", "Overlay Options",
+                  MENU_SETTINGS_OVERLAY_OPTIONS, 0, setting_data);
+         file_list_push(menu->selection_buf, "", "User Options",
+               MENU_SETTINGS_USER_OPTIONS, 0, setting_data);
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "Netplay Options")))
-            file_list_push(menu->selection_buf, "", "Netplay Options", MENU_SETTINGS_NETPLAY_OPTIONS, 0);
-         file_list_push(menu->selection_buf, "", "Path Options", MENU_SETTINGS_PATH_OPTIONS, 0);
+            file_list_push(menu->selection_buf, "", "Netplay Options",
+                  MENU_SETTINGS_NETPLAY_OPTIONS, 0, setting_data);
+         file_list_push(menu->selection_buf, "", "Path Options",
+               MENU_SETTINGS_PATH_OPTIONS, 0, setting_data);
          if (g_extern.main_is_init && !g_extern.libretro_dummy)
          {
             if (g_extern.system.disk_control.get_num_images)
-               file_list_push(menu->selection_buf, "Disk Options", "", MENU_SETTINGS_DISK_OPTIONS, 0);
+               file_list_push(menu->selection_buf, "Disk Options", "",
+                     MENU_SETTINGS_DISK_OPTIONS, 0, NULL);
          }
-         file_list_push(menu->selection_buf, "", "Privacy Options", MENU_SETTINGS_PRIVACY_OPTIONS, 0);
+         file_list_push(menu->selection_buf, "", "Privacy Options",
+               MENU_SETTINGS_PRIVACY_OPTIONS, 0, setting_data);
          break;
       case MENU_SETTINGS_PRIVACY_OPTIONS:
          file_list_clear(menu->selection_buf);
-         file_list_push(menu->selection_buf, "", "camera_allow", MENU_SETTINGS_PRIVACY_CAMERA_ALLOW, 0);
-         file_list_push(menu->selection_buf, "", "location_allow", MENU_SETTINGS_PRIVACY_LOCATION_ALLOW, 0);
+         file_list_push(menu->selection_buf, "", "camera_allow",
+               MENU_SETTINGS_PRIVACY_CAMERA_ALLOW, 0, setting_data);
+         file_list_push(menu->selection_buf, "", "location_allow",
+               MENU_SETTINGS_PRIVACY_LOCATION_ALLOW, 0, setting_data);
          break;
       case MENU_SETTINGS_DISK_OPTIONS:
          file_list_clear(menu->selection_buf);
-         file_list_push(menu->selection_buf, "Disk Index", "", MENU_SETTINGS_DISK_INDEX, 0);
-         file_list_push(menu->selection_buf, "Disk Image Append", "", MENU_SETTINGS_DISK_APPEND, 0);
+         file_list_push(menu->selection_buf, "Disk Index", "",
+               MENU_SETTINGS_DISK_INDEX, 0, setting_data);
+         file_list_push(menu->selection_buf, "Disk Image Append", "",
+               MENU_SETTINGS_DISK_APPEND, 0, setting_data);
          break;
       case MENU_SETTINGS_OVERLAY_OPTIONS:
          file_list_clear(menu->selection_buf);
-         file_list_push(menu->selection_buf, "", "input_overlay", MENU_SETTINGS_OVERLAY_PRESET, 0);
-         file_list_push(menu->selection_buf, "", "input_overlay_opacity", MENU_SETTINGS_OVERLAY_OPACITY, 0);
-         file_list_push(menu->selection_buf, "", "input_overlay_scale", MENU_SETTINGS_OVERLAY_SCALE, 0);
+         file_list_push(menu->selection_buf, "", "input_overlay",
+               MENU_SETTINGS_OVERLAY_PRESET, 0, setting_data);
+         file_list_push(menu->selection_buf, "", "input_overlay_opacity",
+               MENU_SETTINGS_OVERLAY_OPACITY, 0, setting_data);
+         file_list_push(menu->selection_buf, "", "input_overlay_scale",
+               MENU_SETTINGS_OVERLAY_SCALE, 0, setting_data);
          break;
       case MENU_SETTINGS_USER_OPTIONS:
          file_list_clear(menu->selection_buf);
-         file_list_push(menu->selection_buf, "", "netplay_nickname", MENU_SETTINGS_NETPLAY_NICKNAME, 0);
-         file_list_push(menu->selection_buf, "", "user_language", MENU_SETTINGS_USER_LANGUAGE, 0);
+         file_list_push(menu->selection_buf, "", "netplay_nickname",
+               MENU_SETTINGS_NETPLAY_NICKNAME, 0, setting_data);
+         file_list_push(menu->selection_buf, "", "user_language",
+               MENU_SETTINGS_USER_LANGUAGE, 0, setting_data);
          break;
       case MENU_SETTINGS_NETPLAY_OPTIONS:
          file_list_clear(menu->selection_buf);
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "netplay_enable")))
-            file_list_push(menu->selection_buf, "", "netplay_enable", MENU_SETTINGS_NETPLAY_ENABLE, 0);
+            file_list_push(menu->selection_buf, "", "netplay_enable",
+                  MENU_SETTINGS_NETPLAY_ENABLE, 0, setting_data);
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "netplay_mode")))
-            file_list_push(menu->selection_buf, "", "netplay_mode", MENU_SETTINGS_NETPLAY_MODE, 0);
+            file_list_push(menu->selection_buf, "", "netplay_mode",
+                  MENU_SETTINGS_NETPLAY_MODE, 0, setting_data);
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "netplay_spectator_mode_enable")))
-            file_list_push(menu->selection_buf, "", "netplay_spectator_mode_enable", MENU_SETTINGS_NETPLAY_SPECTATOR_MODE_ENABLE, 0);
+            file_list_push(menu->selection_buf, "", "netplay_spectator_mode_enable",
+                  MENU_SETTINGS_NETPLAY_SPECTATOR_MODE_ENABLE, 0, setting_data);
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "netplay_ip_address")))
-            file_list_push(menu->selection_buf, "", "netplay_ip_address", MENU_SETTINGS_NETPLAY_HOST_IP_ADDRESS, 0);
+            file_list_push(menu->selection_buf, "", "netplay_ip_address",
+                  MENU_SETTINGS_NETPLAY_HOST_IP_ADDRESS, 0, setting_data);
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "netplay_tcp_udp_port")))
-            file_list_push(menu->selection_buf, "", "netplay_tcp_udp_port", MENU_SETTINGS_NETPLAY_TCP_UDP_PORT, 0);
+            file_list_push(menu->selection_buf, "", "netplay_tcp_udp_port",
+                  MENU_SETTINGS_NETPLAY_TCP_UDP_PORT, 0, setting_data);
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "netplay_delay_frames")))
-            file_list_push(menu->selection_buf, "", "netplay_delay_frames", MENU_SETTINGS_NETPLAY_DELAY_FRAMES, 0);
+            file_list_push(menu->selection_buf, "", "netplay_delay_frames",
+                  MENU_SETTINGS_NETPLAY_DELAY_FRAMES, 0, setting_data);
          break;
       case MENU_SETTINGS_PATH_OPTIONS:
          file_list_clear(menu->selection_buf);
-         file_list_push(menu->selection_buf, "", "rgui_browser_directory", MENU_BROWSER_DIR_PATH, 0);
-         file_list_push(menu->selection_buf, "", "content_directory", MENU_CONTENT_DIR_PATH, 0);
-         file_list_push(menu->selection_buf, "", "assets_directory", MENU_ASSETS_DIR_PATH, 0);
-         file_list_push(menu->selection_buf, "", "rgui_config_directory", MENU_CONFIG_DIR_PATH, 0);
-         file_list_push(menu->selection_buf, "", "libretro_dir_path", MENU_LIBRETRO_DIR_PATH, 0);
-         file_list_push(menu->selection_buf, "", "libretro_info_path", MENU_LIBRETRO_INFO_DIR_PATH, 0);
-         file_list_push(menu->selection_buf, "", "game_history_path", MENU_CONTENT_HISTORY_PATH, 0);
-         file_list_push(menu->selection_buf, "", "video_filter_dir", MENU_FILTER_DIR_PATH, 0);
-         file_list_push(menu->selection_buf, "", "audio_filter_dir", MENU_DSP_FILTER_DIR_PATH, 0);
+         file_list_push(menu->selection_buf, "","rgui_browser_directory",
+               MENU_BROWSER_DIR_PATH, 0, setting_data);
+         file_list_push(menu->selection_buf, "", "content_directory",
+               MENU_CONTENT_DIR_PATH, 0, setting_data);
+         file_list_push(menu->selection_buf, "", "assets_directory",
+               MENU_ASSETS_DIR_PATH, 0, setting_data);
+         file_list_push(menu->selection_buf, "", "rgui_config_directory",
+               MENU_CONFIG_DIR_PATH, 0, setting_data);
+         file_list_push(menu->selection_buf, "", "libretro_dir_path",
+               MENU_LIBRETRO_DIR_PATH, 0, setting_data);
+         file_list_push(menu->selection_buf, "", "libretro_info_path",
+               MENU_LIBRETRO_INFO_DIR_PATH, 0, setting_data);
+         file_list_push(menu->selection_buf, "", "game_history_path",
+               MENU_CONTENT_HISTORY_PATH, 0, setting_data);
+         file_list_push(menu->selection_buf, "", "video_filter_dir",
+               MENU_FILTER_DIR_PATH, 0, setting_data);
+         file_list_push(menu->selection_buf, "", "audio_filter_dir",
+               MENU_DSP_FILTER_DIR_PATH, 0, setting_data);
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "video_shader_dir")))
-            file_list_push(menu->selection_buf, "", "video_shader_dir", MENU_SHADER_DIR_PATH, 0);
-         file_list_push(menu->selection_buf, "", "savestate_directory", MENU_SAVESTATE_DIR_PATH, 0);
-         file_list_push(menu->selection_buf, "", "savefile_directory", MENU_SAVEFILE_DIR_PATH, 0);
+            file_list_push(menu->selection_buf, "", "video_shader_dir",
+                  MENU_SHADER_DIR_PATH, 0, setting_data);
+         file_list_push(menu->selection_buf, "", "savestate_directory",
+               MENU_SAVESTATE_DIR_PATH, 0, setting_data);
+         file_list_push(menu->selection_buf, "", "savefile_directory",
+               MENU_SAVEFILE_DIR_PATH, 0, setting_data);
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "overlay_directory")))
-            file_list_push(menu->selection_buf, "", "overlay_directory", MENU_OVERLAY_DIR_PATH, 0);
-         file_list_push(menu->selection_buf, "", "system_directory", MENU_SYSTEM_DIR_PATH, 0);
-         file_list_push(menu->selection_buf, "", "screenshot_directory", MENU_SCREENSHOT_DIR_PATH, 0);
-         file_list_push(menu->selection_buf, "", "joypad_autoconfig_dir", MENU_AUTOCONFIG_DIR_PATH, 0);
-         file_list_push(menu->selection_buf, "", "extraction_directory", MENU_EXTRACTION_DIR_PATH, 0);
+            file_list_push(menu->selection_buf, "", "overlay_directory",
+                  MENU_OVERLAY_DIR_PATH, 0, setting_data);
+         file_list_push(menu->selection_buf, "", "system_directory",
+               MENU_SYSTEM_DIR_PATH, 0, setting_data);
+         file_list_push(menu->selection_buf, "", "screenshot_directory",
+               MENU_SCREENSHOT_DIR_PATH, 0, setting_data);
+         file_list_push(menu->selection_buf, "", "joypad_autoconfig_dir",
+               MENU_AUTOCONFIG_DIR_PATH, 0, setting_data);
+         file_list_push(menu->selection_buf, "", "extraction_directory",
+               MENU_EXTRACTION_DIR_PATH, 0, setting_data);
          break;
       case MENU_SETTINGS_INPUT_OPTIONS:
          file_list_clear(menu->selection_buf);
-         file_list_push(menu->selection_buf, "Player", "", MENU_SETTINGS_BIND_PLAYER, 0);
-         file_list_push(menu->selection_buf, "Device", "", MENU_SETTINGS_BIND_DEVICE, 0);
-         file_list_push(menu->selection_buf, "Device Type", "", MENU_SETTINGS_BIND_DEVICE_TYPE, 0);
-         file_list_push(menu->selection_buf, "Analog D-pad Mode", "", MENU_SETTINGS_BIND_ANALOG_MODE, 0);
-         file_list_push(menu->selection_buf, "", "input_axis_threshold", MENU_SETTINGS_INPUT_AXIS_THRESHOLD, 0);
-         file_list_push(menu->selection_buf, "", "input_autodetect_enable",  MENU_SETTINGS_DEVICE_AUTODETECT_ENABLE, 0);
-
-         file_list_push(menu->selection_buf, "Bind Mode", "", MENU_SETTINGS_CUSTOM_BIND_MODE, 0);
-         file_list_push(menu->selection_buf, "Configure All (RetroPad)", "", MENU_SETTINGS_CUSTOM_BIND_ALL, 0);
-         file_list_push(menu->selection_buf, "Default All (RetroPad)", "", MENU_SETTINGS_CUSTOM_BIND_DEFAULT_ALL, 0);
-         file_list_push(menu->selection_buf, "", "osk_enable", MENU_SETTINGS_ONSCREEN_KEYBOARD_ENABLE, 0);
+         file_list_push(menu->selection_buf, "Player", "",
+               MENU_SETTINGS_BIND_PLAYER, 0, NULL);
+         file_list_push(menu->selection_buf, "Device", "",
+               MENU_SETTINGS_BIND_DEVICE, 0, NULL);
+         file_list_push(menu->selection_buf, "Device Type", "",
+               MENU_SETTINGS_BIND_DEVICE_TYPE, 0, NULL);
+         file_list_push(menu->selection_buf, "Analog D-pad Mode", "",
+               MENU_SETTINGS_BIND_ANALOG_MODE, 0, NULL);
+         file_list_push(menu->selection_buf, "", "input_axis_threshold",
+               MENU_SETTINGS_INPUT_AXIS_THRESHOLD, 0, NULL);
+         file_list_push(menu->selection_buf, "", "input_autodetect_enable",
+               MENU_SETTINGS_DEVICE_AUTODETECT_ENABLE, 0, NULL);
+         file_list_push(menu->selection_buf, "Bind Mode", "",
+               MENU_SETTINGS_CUSTOM_BIND_MODE, 0, NULL);
+         file_list_push(menu->selection_buf, "Configure All (RetroPad)", "",
+               MENU_SETTINGS_CUSTOM_BIND_ALL, 0, NULL);
+         file_list_push(menu->selection_buf, "Default All (RetroPad)", "",
+               MENU_SETTINGS_CUSTOM_BIND_DEFAULT_ALL, 0, NULL);
+         file_list_push(menu->selection_buf, "", "osk_enable",
+               MENU_SETTINGS_ONSCREEN_KEYBOARD_ENABLE, 0, setting_data);
          for (i = MENU_SETTINGS_BIND_BEGIN; i <= MENU_SETTINGS_BIND_ALL_LAST; i++)
-            file_list_push(menu->selection_buf, input_config_bind_map[i - MENU_SETTINGS_BIND_BEGIN].desc, "", i, 0);
+            file_list_push(menu->selection_buf,
+                  input_config_bind_map[i - MENU_SETTINGS_BIND_BEGIN].desc,
+                  "", i, 0, NULL);
          break;
       case MENU_SETTINGS_AUDIO_OPTIONS:
          file_list_clear(menu->selection_buf);
-         file_list_push(menu->selection_buf, "", "audio_dsp_plugin", MENU_SETTINGS_AUDIO_DSP_FILTER, 0);
-         file_list_push(menu->selection_buf, "", "audio_enable", MENU_SETTINGS_AUDIO_ENABLE, 0);
-         file_list_push(menu->selection_buf, "", "audio_mute", MENU_SETTINGS_AUDIO_MUTE, 0);
-         file_list_push(menu->selection_buf, "", "audio_latency", MENU_SETTINGS_AUDIO_LATENCY, 0);
-         file_list_push(menu->selection_buf, "", "audio_sync", MENU_SETTINGS_AUDIO_SYNC, 0);
-         file_list_push(menu->selection_buf, "", "audio_rate_control_delta", MENU_SETTINGS_AUDIO_CONTROL_RATE_DELTA, 0);
+         file_list_push(menu->selection_buf, "", "audio_dsp_plugin",
+               MENU_SETTINGS_AUDIO_DSP_FILTER, 0, setting_data);
+         file_list_push(menu->selection_buf, "", "audio_enable",
+               MENU_SETTINGS_AUDIO_ENABLE, 0, setting_data);
+         file_list_push(menu->selection_buf, "", "audio_mute",
+               MENU_SETTINGS_AUDIO_MUTE, 0, setting_data);
+         file_list_push(menu->selection_buf, "", "audio_latency",
+               MENU_SETTINGS_AUDIO_LATENCY, 0, setting_data);
+         file_list_push(menu->selection_buf, "", "audio_sync",
+               MENU_SETTINGS_AUDIO_SYNC, 0, setting_data);
+         file_list_push(menu->selection_buf, "", "audio_rate_control_delta",
+               MENU_SETTINGS_AUDIO_CONTROL_RATE_DELTA, 0, setting_data);
 #ifdef __CELLOS_LV2__
-         file_list_push(menu->selection_buf, "System BGM Control", "", MENU_SETTINGS_CUSTOM_BGM_CONTROL_ENABLE, 0);
+         file_list_push(menu->selection_buf, "System BGM Control", "",
+               MENU_SETTINGS_CUSTOM_BGM_CONTROL_ENABLE, 0, NULL);
 #endif
-         file_list_push(menu->selection_buf, "", "audio_volume", MENU_SETTINGS_AUDIO_VOLUME, 0);
-         file_list_push(menu->selection_buf, "", "audio_device", MENU_SETTINGS_DRIVER_AUDIO_DEVICE, 0);
+         file_list_push(menu->selection_buf, "", "audio_volume",
+               MENU_SETTINGS_AUDIO_VOLUME, 0, setting_data);
+         file_list_push(menu->selection_buf, "", "audio_device",
+               MENU_SETTINGS_DRIVER_AUDIO_DEVICE, 0, setting_data);
          break;
       case MENU_SETTINGS_DRIVERS:
          file_list_clear(menu->selection_buf);
-         file_list_push(menu->selection_buf, "", "video_driver", MENU_SETTINGS_DRIVER_VIDEO, 0);
-         file_list_push(menu->selection_buf, "", "audio_driver", MENU_SETTINGS_DRIVER_AUDIO, 0);
-         file_list_push(menu->selection_buf, "", "audio_resampler_driver", MENU_SETTINGS_DRIVER_AUDIO_RESAMPLER, 0);
-         file_list_push(menu->selection_buf, "", "input_driver", MENU_SETTINGS_DRIVER_INPUT, 0);
-         file_list_push(menu->selection_buf, "", "camera_driver", MENU_SETTINGS_DRIVER_CAMERA, 0);
-         file_list_push(menu->selection_buf, "", "location_driver", MENU_SETTINGS_DRIVER_LOCATION, 0);
-         file_list_push(menu->selection_buf, "", "menu_driver", MENU_SETTINGS_DRIVER_MENU, 0);
+         file_list_push(menu->selection_buf, "", "video_driver",
+               MENU_SETTINGS_DRIVER_VIDEO, 0, setting_data);
+         file_list_push(menu->selection_buf, "", "audio_driver",
+               MENU_SETTINGS_DRIVER_AUDIO, 0, setting_data);
+         file_list_push(menu->selection_buf, "", "audio_resampler_driver",
+               MENU_SETTINGS_DRIVER_AUDIO_RESAMPLER, 0, setting_data);
+         file_list_push(menu->selection_buf, "", "input_driver",
+               MENU_SETTINGS_DRIVER_INPUT, 0, setting_data);
+         file_list_push(menu->selection_buf, "", "camera_driver",
+               MENU_SETTINGS_DRIVER_CAMERA, 0, setting_data);
+         file_list_push(menu->selection_buf, "", "location_driver",
+               MENU_SETTINGS_DRIVER_LOCATION, 0, setting_data);
+         file_list_push(menu->selection_buf, "", "menu_driver",
+               MENU_SETTINGS_DRIVER_MENU, 0, setting_data);
          break;
       case MENU_SETTINGS_PERFORMANCE_COUNTERS:
          file_list_clear(menu->selection_buf);
-         file_list_push(menu->selection_buf, "Frontend Counters", "", MENU_SETTINGS_PERFORMANCE_COUNTERS_FRONTEND, 0);
-         file_list_push(menu->selection_buf, "Core Counters", "", MENU_SETTINGS_PERFORMANCE_COUNTERS_LIBRETRO, 0);
+         file_list_push(menu->selection_buf, "Frontend Counters", "",
+               MENU_SETTINGS_PERFORMANCE_COUNTERS_FRONTEND, 0, NULL);
+         file_list_push(menu->selection_buf, "Core Counters", "",
+               MENU_SETTINGS_PERFORMANCE_COUNTERS_LIBRETRO, 0, NULL);
          break;
       case MENU_SETTINGS_PERFORMANCE_COUNTERS_LIBRETRO:
          file_list_clear(menu->selection_buf);
@@ -407,7 +552,8 @@ static void menu_common_entries_init(menu_handle_t *menu, unsigned menu_type)
 
             for (i = 0; i < num; i++)
                if (counters[i] && counters[i]->ident)
-                  file_list_push(menu->selection_buf, counters[i]->ident, "", MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_BEGIN + i, 0);
+                  file_list_push(menu->selection_buf, counters[i]->ident, "",
+                        MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_BEGIN + i, 0, NULL);
          }
          break;
       case MENU_SETTINGS_PERFORMANCE_COUNTERS_FRONTEND:
@@ -421,52 +567,103 @@ static void menu_common_entries_init(menu_handle_t *menu, unsigned menu_type)
 
             for (i = 0; i < num; i++)
                if (counters[i] && counters[i]->ident)
-                  file_list_push(menu->selection_buf, counters[i]->ident, "", MENU_SETTINGS_PERF_COUNTERS_BEGIN + i, 0);
+                  file_list_push(menu->selection_buf, counters[i]->ident, "",
+                        MENU_SETTINGS_PERF_COUNTERS_BEGIN + i, 0, NULL);
          }
          break;
       case MENU_SETTINGS:
+         setting_data = (rarch_setting_t *)setting_data_get_mainmenu(true);
          file_list_clear(menu->selection_buf);
 
-#if defined(HAVE_DYNAMIC) || defined(HAVE_LIBRETRO_MANAGEMENT)
-         file_list_push(menu->selection_buf, "Core", "", MENU_SETTINGS_CORE, 0);
-#endif
-         if (g_extern.history)
-            file_list_push(menu->selection_buf, "Load Content (History)", "", MENU_SETTINGS_OPEN_HISTORY, 0);
+         if ((current_setting = (rarch_setting_t*)
+                  setting_data_find_setting(setting_data, "core_list")))
+            file_list_push(menu->selection_buf, "", "core_list",
+                  MENU_SETTINGS_CORE, 0, setting_data);
 
-         if (menu->core_info && core_info_list_num_info_files(menu->core_info))
-            file_list_push(menu->selection_buf, "Load Content (Detect Core)", "", MENU_SETTINGS_OPEN_FILEBROWSER_DEFERRED_CORE, 0);
+         if ((current_setting = (rarch_setting_t*)
+                  setting_data_find_setting(setting_data, "history_list")))
+            file_list_push(menu->selection_buf, "", "history_list",
+                  MENU_SETTINGS_OPEN_HISTORY, 0, setting_data);
 
-         if (menu->info.library_name || g_extern.system.info.library_name)
-         {
-            char load_game_core_msg[64];
-            snprintf(load_game_core_msg, sizeof(load_game_core_msg), "Load Content (%s)",
-                  menu->info.library_name ? menu->info.library_name : g_extern.system.info.library_name);
-            file_list_push(menu->selection_buf, load_game_core_msg, "", MENU_SETTINGS_OPEN_FILEBROWSER, 0);
-         }
+         if ((current_setting = (rarch_setting_t*)
+                  setting_data_find_setting(setting_data, "detect_core_list")))
+            file_list_push(menu->selection_buf, "", "detect_core_list",
+                  MENU_SETTINGS_OPEN_FILEBROWSER_DEFERRED_CORE, 0, setting_data);
 
-         file_list_push(menu->selection_buf, "Core Options", "", MENU_SETTINGS_CORE_OPTIONS, 0);
-         file_list_push(menu->selection_buf, "Core Information", "", MENU_SETTINGS_CORE_INFO, 0);
-         file_list_push(menu->selection_buf, "Settings", "", MENU_SETTINGS_OPTIONS, 0);
+         if ((current_setting = (rarch_setting_t*)
+                  setting_data_find_setting(setting_data, "load_content")))
+            file_list_push(menu->selection_buf, "", "load_content",
+                  MENU_SETTINGS_OPEN_FILEBROWSER, 0, setting_data);
 
-         if (g_extern.perfcnt_enable)
-            file_list_push(menu->selection_buf, "", "perfcnt_enable", MENU_SETTINGS_PERFORMANCE_COUNTERS, 0);
+         if ((current_setting = (rarch_setting_t*)
+                  setting_data_find_setting(setting_data, "core_options")))
+            file_list_push(menu->selection_buf, "", "core_options",
+                  MENU_SETTINGS_CORE_OPTIONS, 0, setting_data);
 
-         if (g_extern.main_is_init && !g_extern.libretro_dummy)
-         {
-            file_list_push(menu->selection_buf, "Save State", "", MENU_SETTINGS_SAVESTATE_SAVE, 0);
-            file_list_push(menu->selection_buf, "Load State", "", MENU_SETTINGS_SAVESTATE_LOAD, 0);
-            file_list_push(menu->selection_buf, "Take Screenshot", "", MENU_SETTINGS_SCREENSHOT, 0);
-            file_list_push(menu->selection_buf, "Resume Content", "", MENU_SETTINGS_RESUME_GAME, 0);
-            file_list_push(menu->selection_buf, "Restart Content", "", MENU_SETTINGS_RESTART_GAME, 0);
+         if ((current_setting = (rarch_setting_t*)
+                  setting_data_find_setting(setting_data, "core_information")))
+            file_list_push(menu->selection_buf, "", "core_information",
+                  MENU_SETTINGS_CORE_INFO, 0, setting_data);
 
-         }
-#ifndef HAVE_DYNAMIC
-         file_list_push(menu->selection_buf, "Restart RetroArch", "", MENU_SETTINGS_RESTART_EMULATOR, 0);
-#endif
-         file_list_push(menu->selection_buf, "RetroArch Config", "", MENU_SETTINGS_CONFIG, 0);
-         file_list_push(menu->selection_buf, "Save New Config", "",  MENU_SETTINGS_SAVE_CONFIG, 0);
-         file_list_push(menu->selection_buf, "Help", "", MENU_START_SCREEN, 0);
-         file_list_push(menu->selection_buf, "Quit RetroArch", "", MENU_SETTINGS_QUIT_RARCH, 0);
+         if ((current_setting = (rarch_setting_t*)
+                  setting_data_find_setting(setting_data, "settings")))
+            file_list_push(menu->selection_buf, "", "settings",
+                  MENU_SETTINGS_OPTIONS, 0, setting_data);
+
+         if ((current_setting = (rarch_setting_t*)
+                  setting_data_find_setting(setting_data, "performance_counters")))
+            file_list_push(menu->selection_buf, "", "performance_counters",
+                  MENU_SETTINGS_PERFORMANCE_COUNTERS, 0, setting_data);
+
+         if ((current_setting = (rarch_setting_t*)
+                  setting_data_find_setting(setting_data, "savestate")))
+            file_list_push(menu->selection_buf, "", "savestate",
+                  MENU_SETTINGS_SAVESTATE_SAVE, 0, setting_data);
+
+         if ((current_setting = (rarch_setting_t*)
+                  setting_data_find_setting(setting_data, "loadstate")))
+            file_list_push(menu->selection_buf, "", "loadstate",
+                  MENU_SETTINGS_SAVESTATE_LOAD, 0, setting_data);
+
+         if ((current_setting = (rarch_setting_t*)
+                  setting_data_find_setting(setting_data, "take_screenshot")))
+            file_list_push(menu->selection_buf, "", "take_screenshot",
+                  MENU_SETTINGS_SCREENSHOT, 0, setting_data);
+
+         if ((current_setting = (rarch_setting_t*)
+                  setting_data_find_setting(setting_data, "resume_content")))
+            file_list_push(menu->selection_buf, "", "resume_content",
+                  MENU_SETTINGS_RESUME_GAME, 0, setting_data);
+
+         if ((current_setting = (rarch_setting_t*)
+                  setting_data_find_setting(setting_data, "restart_content")))
+            file_list_push(menu->selection_buf, "", "restart_content",
+                  MENU_SETTINGS_RESTART_GAME, 0, setting_data);
+
+         if ((current_setting = (rarch_setting_t*)
+                  setting_data_find_setting(setting_data, "restart_retroarch")))
+            file_list_push(menu->selection_buf, "", "restart_retroarch",
+                  MENU_SETTINGS_RESTART_EMULATOR, 0, setting_data);
+
+         if ((current_setting = (rarch_setting_t*)
+                  setting_data_find_setting(setting_data, "configurations")))
+            file_list_push(menu->selection_buf, "", "configurations",
+                  MENU_SETTINGS_CONFIG, 0, setting_data);
+
+         if ((current_setting = (rarch_setting_t*)
+                  setting_data_find_setting(setting_data, "save_new_config")))
+            file_list_push(menu->selection_buf, "", "save_new_config",
+                  MENU_SETTINGS_SAVE_CONFIG, 0, setting_data);
+
+         if ((current_setting = (rarch_setting_t*)
+                  setting_data_find_setting(setting_data, "help")))
+            file_list_push(menu->selection_buf, "", "help",
+                  MENU_START_SCREEN, 0, setting_data);
+
+         if ((current_setting = (rarch_setting_t*)
+                  setting_data_find_setting(setting_data, "quit_retroarch")))
+            file_list_push(menu->selection_buf, "", "quit_retroarch",
+                  MENU_SETTINGS_QUIT_RARCH, 0, setting_data);
          break;
    }
 
@@ -1028,7 +1225,7 @@ static void menu_common_setting_push_current_menu(file_list_t *list, const char 
    switch (action)
    {
       case MENU_ACTION_OK:
-         file_list_push(list, path, "", type, directory_ptr);
+         file_list_push(list, path, "", type, directory_ptr, setting_data_get_list());
          menu_clear_navigation(driver.menu);
          driver.menu->need_refresh = true;
          break;
@@ -1097,7 +1294,8 @@ static int menu_settings_iterate(unsigned action, rarch_setting_t *setting)
          {
             const char *path = NULL;
             file_list_get_at_offset(driver.menu->selection_buf, driver.menu->selection_ptr, &path, &driver.menu->info_selection, setting);
-            file_list_push(driver.menu->menu_stack, "", "", MENU_INFO_SCREEN, driver.menu->selection_ptr);
+            file_list_push(driver.menu->menu_stack, "", "",
+                  MENU_INFO_SCREEN, driver.menu->selection_ptr, NULL);
          }
          break;
       case MENU_ACTION_LEFT:
@@ -1116,7 +1314,8 @@ static int menu_settings_iterate(unsigned action, rarch_setting_t *setting)
             menu_common_setting_push_current_menu(driver.menu->menu_stack, label, type, driver.menu->selection_ptr, action);
          else if (type == MENU_SETTINGS_CUSTOM_VIEWPORT && action == MENU_ACTION_OK)
          {
-            file_list_push(driver.menu->menu_stack, "", "", type, driver.menu->selection_ptr);
+            file_list_push(driver.menu->menu_stack, "", "",
+                  type, driver.menu->selection_ptr, NULL);
 
             // Start with something sane.
             rarch_viewport_t *custom = &g_extern.console.screen.viewports.custom_vp;
@@ -1181,7 +1380,8 @@ static int menu_settings_iterate(unsigned action, rarch_setting_t *setting)
    if (driver.menu->push_start_screen)
    {
       driver.menu->push_start_screen = false;
-      file_list_push(driver.menu->menu_stack, "", "", MENU_START_SCREEN, 0);
+      file_list_push(driver.menu->menu_stack, "", "", MENU_START_SCREEN, 0,
+            NULL);
    }
 
    return 0;
@@ -1265,7 +1465,7 @@ static int menu_viewport_iterate(unsigned action, rarch_setting_t *setting)
          {
             file_list_push(driver.menu->menu_stack, "", "",
                   MENU_SETTINGS_CUSTOM_VIEWPORT,
-                  driver.menu->selection_ptr);
+                  driver.menu->selection_ptr, NULL);
          }
          break;
 
@@ -1276,7 +1476,7 @@ static int menu_viewport_iterate(unsigned action, rarch_setting_t *setting)
          {
             file_list_push(driver.menu->menu_stack, "", "",
                   MENU_SETTINGS_CUSTOM_VIEWPORT_2,
-                  driver.menu->selection_ptr);
+                  driver.menu->selection_ptr, NULL);
          }
          break;
 
@@ -1403,7 +1603,8 @@ static void menu_parse_and_resolve(unsigned menu_type)
             else
                strlcpy(fill_buf, core_name, sizeof(fill_buf));
 
-            file_list_push(driver.menu->selection_buf, fill_buf, "", MENU_FILE_PLAIN, 0);
+            file_list_push(driver.menu->selection_buf, fill_buf, "",
+                  MENU_FILE_PLAIN, 0, NULL);
          }
          break;
       case MENU_SETTINGS_DEFERRED_CORE:
@@ -1417,19 +1618,29 @@ static void menu_parse_and_resolve(unsigned menu_type)
             {
 #if defined(GEKKO)
 #ifdef HW_RVL
-               file_list_push(driver.menu->selection_buf, "sd:/", "", menu_type, 0);
-               file_list_push(driver.menu->selection_buf, "usb:/", "", menu_type, 0);
+               file_list_push(driver.menu->selection_buf,
+                     "sd:/", "", menu_type, 0, NULL);
+               file_list_push(driver.menu->selection_buf,
+                     "usb:/", "", menu_type, 0, NULL);
 #endif
-               file_list_push(driver.menu->selection_buf, "carda:/", "", menu_type, 0);
-               file_list_push(driver.menu->selection_buf, "cardb:/", "", menu_type, 0);
+               file_list_push(driver.menu->selection_buf,
+                     "carda:/", "", menu_type, 0, NULL);
+               file_list_push(driver.menu->selection_buf,
+                     "cardb:/", "", menu_type, 0, NULL);
 #elif defined(_XBOX1)
-               file_list_push(driver.menu->selection_buf, "C:", "", menu_type, 0);
-               file_list_push(driver.menu->selection_buf, "D:", "", menu_type, 0);
-               file_list_push(driver.menu->selection_buf, "E:", "", menu_type, 0);
-               file_list_push(driver.menu->selection_buf, "F:", "", menu_type, 0);
-               file_list_push(driver.menu->selection_buf, "G:", "", menu_type, 0);
+               file_list_push(driver.menu->selection_buf,
+                     "C:", "", menu_type, 0, NULL);
+               file_list_push(driver.menu->selection_buf,
+                     "D:", "", menu_type, 0, NULL);
+               file_list_push(driver.menu->selection_buf,
+                     "E:", "", menu_type, 0, NULL);
+               file_list_push(driver.menu->selection_buf,
+                     "F:", "", menu_type, 0, NULL);
+               file_list_push(driver.menu->selection_buf,
+                     "G:", "", menu_type, 0, NULL);
 #elif defined(_XBOX360)
-               file_list_push(driver.menu->selection_buf, "game:", "", menu_type, 0);
+               file_list_push(driver.menu->selection_buf,
+                     "game:", "", menu_type, 0, NULL);
 #elif defined(_WIN32)
                unsigned drives = GetLogicalDrives();
                char drive[] = " :\\";
@@ -1437,30 +1648,49 @@ static void menu_parse_and_resolve(unsigned menu_type)
                {
                   drive[0] = 'A' + i;
                   if (drives & (1 << i))
-                     file_list_push(driver.menu->selection_buf, drive, "", menu_type, 0);
+                     file_list_push(driver.menu->selection_buf,
+                           drive, "", menu_type, 0, NULL);
                }
 #elif defined(__CELLOS_LV2__)
-               file_list_push(driver.menu->selection_buf, "/app_home/",   "", menu_type, 0);
-               file_list_push(driver.menu->selection_buf, "/dev_hdd0/",   "", menu_type, 0);
-               file_list_push(driver.menu->selection_buf, "/dev_hdd1/",   "", menu_type, 0);
-               file_list_push(driver.menu->selection_buf, "/host_root/",  "", menu_type, 0);
-               file_list_push(driver.menu->selection_buf, "/dev_usb000/", "", menu_type, 0);
-               file_list_push(driver.menu->selection_buf, "/dev_usb001/", "", menu_type, 0);
-               file_list_push(driver.menu->selection_buf, "/dev_usb002/", "", menu_type, 0);
-               file_list_push(driver.menu->selection_buf, "/dev_usb003/", "", menu_type, 0);
-               file_list_push(driver.menu->selection_buf, "/dev_usb004/", "", menu_type, 0);
-               file_list_push(driver.menu->selection_buf, "/dev_usb005/", "", menu_type, 0);
-               file_list_push(driver.menu->selection_buf, "/dev_usb006/", "", menu_type, 0);
+               file_list_push(driver.menu->selection_buf,
+                     "/app_home/",   "", menu_type, 0, NULL);
+               file_list_push(driver.menu->selection_buf,
+                     "/dev_hdd0/",   "", menu_type, 0, NULL);
+               file_list_push(driver.menu->selection_buf,
+                     "/dev_hdd1/",   "", menu_type, 0, NULL);
+               file_list_push(driver.menu->selection_buf,
+                     "/host_root/",  "", menu_type, 0, NULL);
+               file_list_push(driver.menu->selection_buf,
+                     "/dev_usb000/", "", menu_type, 0, NULL);
+               file_list_push(driver.menu->selection_buf,
+                     "/dev_usb001/", "", menu_type, 0, NULL);
+               file_list_push(driver.menu->selection_buf,
+                     "/dev_usb002/", "", menu_type, 0, NULL);
+               file_list_push(driver.menu->selection_buf,
+                     "/dev_usb003/", "", menu_type, 0, NULL);
+               file_list_push(driver.menu->selection_buf,
+                     "/dev_usb004/", "", menu_type, 0, NULL);
+               file_list_push(driver.menu->selection_buf,
+                     "/dev_usb005/", "", menu_type, 0, NULL);
+               file_list_push(driver.menu->selection_buf,
+                     "/dev_usb006/", "", menu_type, 0, NULL);
 #elif defined(PSP)
-               file_list_push(driver.menu->selection_buf, "ms0:/", "", menu_type, 0);
-               file_list_push(driver.menu->selection_buf, "ef0:/", "", menu_type, 0);
-               file_list_push(driver.menu->selection_buf, "host0:/", "", menu_type, 0);
+               file_list_push(driver.menu->selection_buf,
+                     "ms0:/", "", menu_type, 0, NULL);
+               file_list_push(driver.menu->selection_buf,
+                     "ef0:/", "", menu_type, 0, NULL);
+               file_list_push(driver.menu->selection_buf,
+                     "host0:/", "", menu_type, 0, NULL);
 #elif defined(IOS)
-               file_list_push(driver.menu->selection_buf, "/var/mobile/", "", menu_type, 0);
-               file_list_push(driver.menu->selection_buf, g_defaults.core_dir, "", menu_type, 0);
-               file_list_push(driver.menu->selection_buf, "/", "", menu_type, 0);
+               file_list_push(driver.menu->selection_buf,
+                     "/var/mobile/", "", menu_type, 0, NULL);
+               file_list_push(driver.menu->selection_buf,
+                     g_defaults.core_dir, "",menu_type, 0, NULL);
+               file_list_push(driver.menu->selection_buf, "/", "",
+                     menu_type, 0, NULL);
 #else
-               file_list_push(driver.menu->selection_buf, "/", "", menu_type, 0);
+               file_list_push(driver.menu->selection_buf, "/", "",
+                     menu_type, 0, NULL);
 #endif
                return;
             }
@@ -1514,7 +1744,8 @@ static void menu_parse_and_resolve(unsigned menu_type)
             dir_list_sort(list, true);
 
             if (menu_common_type_is(menu_type) == MENU_FILE_DIRECTORY)
-               file_list_push(driver.menu->selection_buf, "<Use this directory>", "", MENU_FILE_USE_DIRECTORY, 0);
+               file_list_push(driver.menu->selection_buf, "<Use this directory>", "",
+                     MENU_FILE_USE_DIRECTORY, 0, NULL);
 
             list_size = list->size;
             for (i = 0; i < list_size; i++)
@@ -1537,7 +1768,7 @@ static void menu_parse_and_resolve(unsigned menu_type)
                // Push menu_type further down in the chain.
                // Needed for shader manager currently.
                file_list_push(driver.menu->selection_buf, path, "",
-                     is_dir ? menu_type : MENU_FILE_PLAIN, 0);
+                     is_dir ? menu_type : MENU_FILE_PLAIN, 0, NULL);
             }
 
             if (driver.menu_ctx && driver.menu_ctx->backend->entries_init)
@@ -1578,7 +1809,8 @@ static void menu_parse_and_resolve(unsigned menu_type)
          core_info_list_get_supported_cores(driver.menu->core_info, driver.menu->deferred_path, &info, &list_size);
          for (i = 0; i < list_size; i++)
          {
-            file_list_push(driver.menu->selection_buf, info[i].path, "", MENU_FILE_PLAIN, 0);
+            file_list_push(driver.menu->selection_buf, info[i].path, "",
+                  MENU_FILE_PLAIN, 0, NULL);
             file_list_set_alt_at_offset(driver.menu->selection_buf, i, info[i].display_name);
          }
          file_list_sort_on_alt(driver.menu->selection_buf);
@@ -2852,7 +3084,9 @@ static int menu_common_setting_set(unsigned id, unsigned action, rarch_setting_t
          driver.menu->binds.target = bind;
          driver.menu->binds.player = port;
          file_list_push(driver.menu->menu_stack, "", "",
-               driver.menu->bind_mode_keyboard ? MENU_SETTINGS_CUSTOM_BIND_KEYBOARD : MENU_SETTINGS_CUSTOM_BIND, driver.menu->selection_ptr);
+               driver.menu->bind_mode_keyboard ?
+               MENU_SETTINGS_CUSTOM_BIND_KEYBOARD : MENU_SETTINGS_CUSTOM_BIND,
+               driver.menu->selection_ptr, NULL);
 
          if (driver.menu->bind_mode_keyboard)
          {
@@ -2904,7 +3138,7 @@ static int menu_common_setting_set(unsigned id, unsigned action, rarch_setting_t
       {
          case MENU_START_SCREEN:
             if (action == MENU_ACTION_OK)
-               file_list_push(driver.menu->menu_stack, "", "", MENU_START_SCREEN, 0);
+               file_list_push(driver.menu->menu_stack, "", "", MENU_START_SCREEN, 0, NULL);
             break;
          case MENU_SETTINGS_SAVESTATE_SAVE:
          case MENU_SETTINGS_SAVESTATE_LOAD:
@@ -3118,13 +3352,17 @@ static int menu_common_setting_set(unsigned id, unsigned action, rarch_setting_t
                driver.menu->binds.last = MENU_SETTINGS_BIND_LAST;
                if (driver.menu->bind_mode_keyboard)
                {
-                  file_list_push(driver.menu->menu_stack, "", "", MENU_SETTINGS_CUSTOM_BIND_KEYBOARD, driver.menu->selection_ptr);
+                  file_list_push(driver.menu->menu_stack, "", "",
+                        MENU_SETTINGS_CUSTOM_BIND_KEYBOARD,
+                        driver.menu->selection_ptr, NULL);
                   driver.menu->binds.timeout_end = rarch_get_time_usec() + MENU_KEYBOARD_BIND_TIMEOUT_SECONDS * 1000000;
                   input_keyboard_wait_keys(driver.menu, menu_custom_bind_keyboard_cb);
                }
                else
                {
-                  file_list_push(driver.menu->menu_stack, "", "", MENU_SETTINGS_CUSTOM_BIND, driver.menu->selection_ptr);
+                  file_list_push(driver.menu->menu_stack, "", "",
+                        MENU_SETTINGS_CUSTOM_BIND,
+                        driver.menu->selection_ptr, NULL);
                   menu_poll_bind_get_rested_axes(&driver.menu->binds);
                   menu_poll_bind_state(&driver.menu->binds);
                }

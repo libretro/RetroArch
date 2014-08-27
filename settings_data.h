@@ -58,7 +58,7 @@ typedef struct rarch_setting_t
 {
    enum setting_type type;
 
-   const char* name;
+   const char *name;
    uint32_t size;
    
    const char* short_description;
@@ -169,6 +169,7 @@ rarch_setting_t setting_data_bind_setting(const char* name,
 void setting_data_get_description(const void *data, char *msg,
       size_t msg_sizeof);
 
+rarch_setting_t* setting_data_get_mainmenu(bool regenerate);
 rarch_setting_t* setting_data_get_list(void);
 
 #ifdef __cplusplus
