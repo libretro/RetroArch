@@ -175,13 +175,10 @@ static ssize_t alsa_write(void *data, const void *buf_, size_t size_)
             eagain_retry = false;
             continue;
          }
-         else
-            return written;
-      }
-      else if (frames == -EAGAIN) // Expected if we're running nonblock.
-      {
          return written;
       }
+      else if (frames == -EAGAIN) // Expected if we're running nonblock.
+         return written;
       else if (frames < 0)
       {
          RARCH_ERR("[ALSA]: Unknown error occured (%s).\n", snd_strerror(frames));
@@ -199,6 +196,7 @@ static ssize_t alsa_write(void *data, const void *buf_, size_t size_)
 static bool alsa_stop(void *data)
 {
    alsa_t *alsa = (alsa_t*)data;
+
    if (alsa->can_pause && !alsa->is_paused)
    {
       if (snd_pcm_pause(alsa->pcm, 1) == 0)
@@ -206,11 +204,10 @@ static bool alsa_stop(void *data)
          alsa->is_paused = true;
          return true;
       }
-      else
-         return false;
+      return false;
    }
-   else
-      return true;
+
+   return true;
 }
 
 static void alsa_set_nonblock_state(void *data, bool state)
@@ -236,8 +233,7 @@ static bool alsa_start(void *data)
          return true;
       }
    }
-   else
-      return true;
+   return true;
 }
 
 static void alsa_free(void *data)

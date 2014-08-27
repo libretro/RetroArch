@@ -27,11 +27,11 @@ struct fifo_buffer
 fifo_buffer_t *fifo_new(size_t size)
 {
    fifo_buffer_t *buf = (fifo_buffer_t*)calloc(1, sizeof(*buf));
-   if (buf == NULL)
+   if (!buf)
       return NULL;
 
    buf->buffer = (uint8_t*)calloc(1, size + 1);
-   if (buf->buffer == NULL)
+   if (!buf->buffer)
    {
       free(buf);
       return NULL;

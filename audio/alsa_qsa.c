@@ -267,11 +267,10 @@ static bool alsa_qsa_stop(void *data)
          alsa->is_paused = true;
          return true;
       }
-      else
-         return false;
+      return false;
    }
-   else
-      return true;
+
+   return true;
 }
 
 static void alsa_qsa_set_nonblock_state(void *data, bool state)
@@ -308,9 +307,8 @@ static bool alsa_qsa_start(void *data)
          return true;
       }
    }
-   else
-      return true;
 
+   return true;
 }
 
 static bool alsa_qsa_use_float(void *data)
