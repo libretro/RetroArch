@@ -158,11 +158,9 @@ static int get_string(void *userdata, const char *key_str,
       *output = str;
       return true; 
    }
-   else
-   {
-      *output = strdup(default_output);
-      return false;
-   }
+
+   *output = strdup(default_output);
+   return false;
 }
 
 static void dspfilter_free(void *ptr)

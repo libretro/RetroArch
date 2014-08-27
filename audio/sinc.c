@@ -123,8 +123,7 @@ static inline double sinc(double val)
 {
    if (fabs(val) < 0.00001)
       return 1.0;
-   else
-      return sin(val) / val;
+   return sin(val) / val;
 }
 
 #if defined(SINC_WINDOW_LANCZOS)
