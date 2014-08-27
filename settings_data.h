@@ -169,7 +169,9 @@ rarch_setting_t setting_data_bind_setting(const char* name,
 void setting_data_get_description(const void *data, char *msg,
       size_t msg_sizeof);
 
+#ifdef HAVE_MENU
 rarch_setting_t* setting_data_get_mainmenu(bool regenerate);
+#endif
 rarch_setting_t* setting_data_get_list(void);
 
 #ifdef __cplusplus
