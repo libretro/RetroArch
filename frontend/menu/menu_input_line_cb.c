@@ -152,7 +152,7 @@ void menu_poll_bind_state(struct menu_bind_state *state)
       return;
    }
 
-   if (joypad)
+   if (joypad->poll)
       joypad->poll();
 
    for (i = 0; i < MAX_PLAYERS; i++)

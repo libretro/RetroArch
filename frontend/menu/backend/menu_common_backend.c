@@ -44,15 +44,12 @@
 
 static inline struct gfx_shader *shader_manager_get_current_shader(menu_handle_t *menu, unsigned type)
 {
-   struct gfx_shader *shader = NULL;
-
    if (type == MENU_SETTINGS_SHADER_PRESET_PARAMETERS)
-      shader = menu->shader;
+      return menu->shader;
+   else if (driver.video_poke && driver.video_data && driver.video_poke->get_current_shader)
+      return driver.video_poke->get_current_shader(driver.video_data);
 
-   if (!shader && driver.video_poke && driver.video_data && driver.video_poke->get_current_shader)
-      shader = driver.video_poke->get_current_shader(driver.video_data);
-
-   return shader;
+   return NULL;
 }
 
 static void menu_common_entries_init(menu_handle_t *menu, unsigned menu_type)
@@ -998,6 +995,7 @@ static int menu_info_screen_iterate(unsigned action, rarch_setting_t *setting)
 
    if (action == MENU_ACTION_OK)
       file_list_pop(driver.menu->menu_stack, &driver.menu->selection_ptr);
+
    return 0;
 }
 
@@ -1062,15 +1060,13 @@ static int menu_start_screen_iterate(unsigned action)
 
    if (action == MENU_ACTION_OK)
       file_list_pop(driver.menu->menu_stack, &driver.menu->selection_ptr);
+
    return 0;
 }
 
 static unsigned menu_common_type_is(unsigned type)
 {
-   unsigned ret = 0;
-   bool type_found;
-
-   type_found =
+   bool type_found =
       type == MENU_SETTINGS ||
       type == MENU_SETTINGS_GENERAL_OPTIONS ||
       type == MENU_SETTINGS_CORE_OPTIONS ||
@@ -1095,21 +1091,16 @@ static unsigned menu_common_type_is(unsigned type)
       (type == MENU_SETTINGS_INPUT_OPTIONS);
 
    if (type_found)
-   {
-      ret = MENU_SETTINGS;
-      return ret;
-   }
+      return MENU_SETTINGS;
 
-   type_found = (type >= MENU_SETTINGS_SHADER_0 &&
+   type_found = (
+         type >= MENU_SETTINGS_SHADER_0 &&
          type <= MENU_SETTINGS_SHADER_LAST &&
-         ((type - MENU_SETTINGS_SHADER_0) % 3) == 0) ||
+         (((type - MENU_SETTINGS_SHADER_0) % 3) == 0)) ||
       type == MENU_SETTINGS_SHADER_PRESET;
 
    if (type_found)
-   {
-      ret = MENU_SETTINGS_SHADER_OPTIONS;
-      return ret;
-   }
+      return MENU_SETTINGS_SHADER_OPTIONS;
 
    type_found =
       type == MENU_BROWSER_DIR_PATH ||
@@ -1130,9 +1121,9 @@ static unsigned menu_common_type_is(unsigned type)
       type == MENU_SYSTEM_DIR_PATH;
 
    if (type_found)
-      ret = MENU_FILE_DIRECTORY;
+      return MENU_FILE_DIRECTORY;
 
-   return ret;
+   return 0;
 }
 
 
@@ -1747,7 +1738,6 @@ static int menu_custom_bind_iterate(void *data, unsigned action)
    menu_handle_t *menu = (menu_handle_t*)data;
 
    (void)action; // Have to ignore action here. Only bind that should work here is Quit RetroArch or something like that.
-   (void)msg;
 
    if (driver.video_data && driver.menu_ctx && driver.menu_ctx->render)
       driver.menu_ctx->render();
@@ -1784,7 +1774,6 @@ static int menu_custom_bind_iterate_keyboard(void *data, unsigned action)
    menu_handle_t *menu = (menu_handle_t*)data;
 
    (void)action; // Have to ignore action here.
-   (void)msg;
 
    if (driver.video_data && driver.menu_ctx && driver.menu_ctx->render)
       driver.menu_ctx->render();
@@ -1983,6 +1972,7 @@ static void menu_common_setting_set_current_unsigned_integer(rarch_setting_t *se
             break;
       }
    } 
+
    if (setting->change_handler)
       setting->change_handler(setting);
 }
