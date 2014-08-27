@@ -3385,14 +3385,12 @@ static int menu_common_setting_set(unsigned id, unsigned action, rarch_setting_t
             else if (action == MENU_ACTION_RIGHT)
                find_next_driver(RARCH_DRIVER_LOCATION, g_settings.location.driver, sizeof(g_settings.location.driver));
             break;
-#ifdef HAVE_MENU
          case MENU_SETTINGS_DRIVER_MENU:
             if (action == MENU_ACTION_LEFT)
                find_prev_driver(RARCH_DRIVER_MENU, g_settings.menu.driver, sizeof(g_settings.menu.driver));
             else if (action == MENU_ACTION_RIGHT)
                find_next_driver(RARCH_DRIVER_MENU, g_settings.menu.driver, sizeof(g_settings.menu.driver));
             break;
-#endif
 #if defined(GEKKO)
          case MENU_SETTINGS_VIDEO_RESOLUTION:
             if (action == MENU_ACTION_LEFT)
@@ -3804,11 +3802,9 @@ static void menu_common_setting_set_label(char *type_str,
          case MENU_SETTINGS_DRIVER_LOCATION:
             strlcpy(type_str, g_settings.location.driver, type_str_size);
             break;
-#ifdef HAVE_MENU
          case MENU_SETTINGS_DRIVER_MENU:
             strlcpy(type_str, g_settings.menu.driver, type_str_size);
             break;
-#endif
 #if defined(GEKKO)
          case MENU_SETTINGS_VIDEO_RESOLUTION:
             strlcpy(type_str, gx_get_video_mode(), type_str_size);
