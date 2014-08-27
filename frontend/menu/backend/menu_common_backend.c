@@ -1834,7 +1834,7 @@ static void menu_common_setting_set_current_path_selection(rarch_setting_t *sett
          menu_common_setting_push_current_menu(driver.menu->menu_stack, start_path, type, driver.menu->selection_ptr, action);
          break;
       case MENU_ACTION_START:
-         strlcpy(setting->value.string, setting->default_value.string, setting->size);
+         *setting->value.string = '\0';
          break;
    }
 
@@ -3000,12 +3000,8 @@ static int menu_common_setting_set(unsigned id, unsigned action, rarch_setting_t
             setting->change_handler(setting);
       }
    }
-   else if (setting && setting->type == ST_PATH && !(strcmp(setting->name, "input_overlay")))
-   {
-#ifdef HAVE_OVERLAY
-      menu_common_setting_set_current_path_selection(setting, g_extern.overlay_dir, id, action);
-#endif
-   }
+   else if (setting && setting->type == ST_PATH)
+      menu_common_setting_set_current_path_selection(setting, setting->default_value.string, id, action);
    else
    {
       switch (id)
@@ -3097,18 +3093,6 @@ static int menu_common_setting_set(unsigned id, unsigned action, rarch_setting_t
          case MENU_SETTINGS_SAVE_CONFIG:
             if (action == MENU_ACTION_OK)
                menu_save_new_config();
-            break;
-         case MENU_CONTENT_HISTORY_PATH:
-            if (setting)
-               menu_common_setting_set_current_path_selection(setting, "", id, action);
-            break;
-         case MENU_SETTINGS_VIDEO_SOFTFILTER:
-            if (setting)
-               menu_common_setting_set_current_path_selection(setting, g_settings.video.filter_dir, id, action);
-            break;
-         case MENU_SETTINGS_AUDIO_DSP_FILTER:
-            if (setting)
-               menu_common_setting_set_current_path_selection(setting, g_settings.audio.filter_dir, id, action);
             break;
             // controllers
          case MENU_SETTINGS_BIND_PLAYER:
@@ -3702,7 +3686,7 @@ static void menu_common_setting_set_label(char *type_str,
    else if (setting && setting->type == ST_FLOAT)
       menu_common_setting_set_label_st_float(setting, type_str, type_str_size);
    else if (setting && setting->type == ST_DIR)
-      strlcpy(type_str, *setting->value.string ? setting->value.string : setting->empty_path, type_str_size);
+      strlcpy(type_str, *setting->value.string ? setting->value.string : setting->dir.empty_path, type_str_size);
    else if (setting && setting->type == ST_PATH)
       strlcpy(type_str, path_basename(setting->value.string), type_str_size);
    else if (setting && setting->type == ST_STRING)

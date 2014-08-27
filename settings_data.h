@@ -96,8 +96,12 @@ typedef struct rarch_setting_t
       struct retro_keybind* keybind;
    } value;
 
+   struct
+   {
+      const char *empty_path;
+   } dir;
+
    float step;
-   const char *empty_path;
    const char *rounding_fraction;
    bool enforce_minrange;
    bool enforce_maxrange;
