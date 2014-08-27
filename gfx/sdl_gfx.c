@@ -72,6 +72,7 @@ static void sdl_gfx_free(void *data)
       vid->font_driver->free(vid->font);
 
    scaler_ctx_gen_reset(&vid->scaler);
+   scaler_ctx_gen_reset(&vid->menu.scaler);
 
    free(vid);
 }
