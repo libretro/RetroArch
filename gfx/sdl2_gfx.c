@@ -379,11 +379,12 @@ static void *sdl2_gfx_init(const video_info_t *video, const input_driver_t **inp
    if (!vid)
       return NULL;
 
-   RARCH_LOG("[SDL]: supported video drivers (change with $SDL_VIDEODRIVER):\n");
-
-   for (i = 0; i < SDL_GetNumVideoDrivers(); ++i)
+   RARCH_LOG("[SDL]: Available renderers (change with $SDL_RENDER_DRIVER):\n");
+   for (i = 0; i < SDL_GetNumRenderDrivers(); ++i)
    {
-      RARCH_LOG("\t%s\n", SDL_GetVideoDriver(i));
+      SDL_RendererInfo renderer;
+      if (SDL_GetRenderDriverInfo(i, &renderer) == 0)
+         RARCH_LOG("\t%s\n", renderer.name);
    }
 
    RARCH_LOG("[SDL]: Available displays:\n");
