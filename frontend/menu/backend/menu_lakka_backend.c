@@ -379,9 +379,11 @@ static int menu_lakka_iterate(unsigned action)
             lakka_open_submenu();
             depth = 1;
          }
-         else if (depth == 0 && menu_active_category == 0 && active_item->active_subitem == 1) // Hardcoded "Quit" item index
+         else if (depth == 0 && menu_active_category == 0 && active_category->active_item == active_category->num_items-1)
          {
-            printf("EXIT\n");
+            add_tween(DELAY, 1.0, &global_alpha, &inOutQuad, NULL);
+            g_extern.lifecycle_state &= ~(1ULL << MODE_GAME);
+            return -1;
          }
          break;
 
