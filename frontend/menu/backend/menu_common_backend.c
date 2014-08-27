@@ -3256,20 +3256,6 @@ static int menu_common_setting_set(unsigned id, unsigned action, rarch_setting_t
                }
             }
             break;
-         case MENU_SAVEFILE_DIR_PATH:
-            if (action == MENU_ACTION_START)
-               strlcpy(g_extern.savefile_dir, g_defaults.sram_dir, sizeof(g_extern.savefile_dir));
-            break;
-#ifdef HAVE_OVERLAY
-         case MENU_OVERLAY_DIR_PATH:
-            if (action == MENU_ACTION_START)
-               strlcpy(g_extern.overlay_dir, g_defaults.overlay_dir, sizeof(g_extern.overlay_dir));
-            break;
-#endif
-         case MENU_SAVESTATE_DIR_PATH:
-            if (action == MENU_ACTION_START)
-               strlcpy(g_extern.savestate_dir, g_defaults.savestate_dir, sizeof(g_extern.savestate_dir));
-            break;
          case MENU_SETTINGS_DRIVER_VIDEO:
             if (action == MENU_ACTION_LEFT)
                find_prev_driver(RARCH_DRIVER_VIDEO, g_settings.video.driver, sizeof(g_settings.video.driver));
