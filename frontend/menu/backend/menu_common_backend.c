@@ -2534,19 +2534,14 @@ static void menu_common_shader_manager_get_str(struct gfx_shader *shader, char *
             break;
 
          case 1:
-            switch (shader->pass[pass].filter)
             {
-               case RARCH_FILTER_LINEAR:
-                  strlcpy(type_str, "Linear", type_str_size);
-                  break;
+               static const char *modes[] = {
+                  "Don't care",
+                  "Linear",
+                  "Nearest"
+               };
 
-               case RARCH_FILTER_NEAREST:
-                  strlcpy(type_str, "Nearest", type_str_size);
-                  break;
-
-               case RARCH_FILTER_UNSPEC:
-                  strlcpy(type_str, "Don't care", type_str_size);
-                  break;
+               strlcpy(type_str, modes[shader->pass[pass].filter], type_str_size);
             }
             break;
 
@@ -3870,10 +3865,10 @@ static void menu_common_setting_set_label(char *type_str,
                         name = "None";
                         break;
                      case RETRO_DEVICE_JOYPAD:
-                        name = "Joypad";
+                        name = "RetroPad";
                         break;
                      case RETRO_DEVICE_ANALOG:
-                        name = "Joypad w/ Analog";
+                        name = "RetroPad w/ Analog";
                         break;
                      default:
                         name = "Unknown";
@@ -3885,7 +3880,7 @@ static void menu_common_setting_set_label(char *type_str,
             }
             break;
          case MENU_SETTINGS_CUSTOM_BIND_MODE:
-            strlcpy(type_str, driver.menu->bind_mode_keyboard ? "Keyboard" : "Joypad", type_str_size);
+            strlcpy(type_str, driver.menu->bind_mode_keyboard ? "RetroKeyboard" : "RetroPad", type_str_size);
             break;
 #ifdef _XBOX1
          case MENU_SETTINGS_SOFT_DISPLAY_FILTER:
