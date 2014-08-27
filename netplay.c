@@ -176,16 +176,14 @@ size_t audio_sample_batch_net(const int16_t *data, size_t frames)
 {
    if (!netplay_should_skip(g_extern.netplay))
       return g_extern.netplay->cbs.sample_batch_cb(data, frames);
-   else
-      return frames;
+   return frames;
 }
 
 int16_t input_state_net(unsigned port, unsigned device, unsigned index, unsigned id)
 {
    if (netplay_is_alive(g_extern.netplay))
       return netplay_input_state(g_extern.netplay, port, device, index, id);
-   else
-      return g_extern.netplay->cbs.state_cb(port, device, index, id);
+   return g_extern.netplay->cbs.state_cb(port, device, index, id);
 }
 
 #ifndef HAVE_SOCKET_LEGACY

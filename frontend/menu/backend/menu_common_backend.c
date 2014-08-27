@@ -2629,7 +2629,7 @@ static void menu_common_shader_manager_save_preset(const char *basename, bool ap
 {
 #ifdef HAVE_SHADER_MANAGER
    char buffer[PATH_MAX], config_directory[PATH_MAX], cgp_path[PATH_MAX];
-   unsigned d, type;
+   unsigned d, type = RARCH_SHADER_NONE;
    config_file_t *conf;
    const char *conf_path = NULL;
    bool ret = false;
@@ -2642,8 +2642,6 @@ static void menu_common_shader_manager_save_preset(const char *basename, bool ap
 
    if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->shader_manager_get_type)
       type = driver.menu_ctx->backend->shader_manager_get_type(driver.menu->shader);
-   else
-      type = RARCH_SHADER_NONE;
 
    if (type == RARCH_SHADER_NONE)
       return;
@@ -2907,8 +2905,7 @@ static int menu_common_setting_toggle(unsigned id, unsigned action,
    {
       if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->shader_manager_setting_toggle)
          return driver.menu_ctx->backend->shader_manager_setting_toggle(id, action, setting);
-      else
-         return 0;
+      return 0;
    }
 #endif
    if ((id >= MENU_SETTINGS_CORE_OPTION_START) &&

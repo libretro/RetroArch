@@ -162,16 +162,15 @@ static bool rguidisp_init_font(void *data)
 
    const uint8_t *font_bmp_buf = NULL;
    const uint8_t *font_bin_buf = bitmap_bin;
-   bool ret = true;
 
    if (font_bmp_buf)
       init_font(menu, font_bmp_buf);
    else if (font_bin_buf)
       menu->font = font_bin_buf;
    else
-      ret = false;
+      return false;
 
-   return ret;
+   return true;
 }
 
 static void rgui_render_background(void)

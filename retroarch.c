@@ -3131,14 +3131,12 @@ static inline bool check_enter_menu(void)
       g_extern.lifecycle_state |= (1ULL << MODE_MENU_PREINIT);
       old_rmenu_toggle = true;
       g_extern.system.frame_time_last = 0;
-   }
-   else
-   {
-      old_rmenu_toggle = rmenu_toggle;
-      return false;
+
+      return true;
    }
 
-   return true;
+   old_rmenu_toggle = rmenu_toggle;
+   return false;
 }
 
 static inline void update_frame_time(void)
