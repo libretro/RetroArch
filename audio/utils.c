@@ -95,6 +95,7 @@ void audio_convert_float_to_s16_SSE2(int16_t *out,
 void audio_convert_s16_to_float_altivec(float *out,
       const int16_t *in, size_t samples, float gain)
 {
+   size_t samples_in = samples;
    const vector float gain_vec = { gain, gain , gain, gain };
    const vector float zero_vec = { 0.0f, 0.0f, 0.0f, 0.0f};
    // Unaligned loads/store is a bit expensive, so we optimize for the good path (very likely).
@@ -113,15 +114,15 @@ void audio_convert_s16_to_float_altivec(float *out,
          vec_st(out_lo, 16, out);
       }
 
-      audio_convert_s16_to_float_C(out, in, samples - i, gain);
+      samples_in -= i;
    }
-   else
-      audio_convert_s16_to_float_C(out, in, samples, gain);
+   audio_convert_s16_to_float_C(out, in, samples_in, gain);
 }
 
 void audio_convert_float_to_s16_altivec(int16_t *out,
       const float *in, size_t samples)
 {
+   int samples_in = samples;
    // Unaligned loads/store is a bit expensive, so we optimize for the good path (very likely).
    if (((uintptr_t)out & 15) + ((uintptr_t)in & 15) == 0)
    {
@@ -135,10 +136,9 @@ void audio_convert_float_to_s16_altivec(int16_t *out,
          vec_st(vec_packs(result0, result1), 0, out);
       }
 
-      audio_convert_float_to_s16_C(out, in, samples - i);
+      samples_in -= i;
    }
-   else
-      audio_convert_float_to_s16_C(out, in, samples);
+   audio_convert_float_to_s16_C(out, in, samples_in);
 }
 #elif defined(__ARM_NEON__)
 void audio_convert_s16_float_asm(float *out, const int16_t *in, size_t samples, const float *gain); // Avoid potential hard-float/soft-float ABI issues.

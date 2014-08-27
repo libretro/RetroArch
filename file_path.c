@@ -59,15 +59,14 @@
 // Dump stuff to file.
 bool write_file(const char *path, const void *data, size_t size)
 {
+   bool ret = false;
    FILE *file = fopen(path, "wb");
    if (!file)
       return false;
-   else
-   {
-      bool ret = fwrite(data, 1, size, file) == size;
-      fclose(file);
-      return ret;
-   }
+
+   ret = fwrite(data, 1, size, file) == size;
+   fclose(file);
+   return ret;
 }
 
 // Generic file loader.
@@ -170,7 +169,8 @@ static bool string_list_capacity(struct string_list *list, size_t cap)
 {
    rarch_assert(cap > list->size);
 
-   struct string_list_elem *new_data = (struct string_list_elem*)realloc(list->elems, cap * sizeof(*new_data));
+   struct string_list_elem *new_data = (struct string_list_elem*)
+      realloc(list->elems, cap * sizeof(*new_data));
    if (!new_data)
       return false;
 
@@ -307,8 +307,7 @@ const char *path_get_extension(const char *path)
    const char *ext = strrchr(path_basename(path), '.');
    if (ext)
       return ext + 1;
-   else
-      return "";
+   return "";
 }
 
 char *path_remove_extension(char *path)
@@ -337,8 +336,7 @@ static int qstrcmp_dir(const void *a_, const void *b_)
    // Sort directories before files.
    if (a_dir != b_dir)
       return b_dir - a_dir;
-   else
-      return strcasecmp(a->data, b->data);
+   return strcasecmp(a->data, b->data);
 }
 
 void dir_list_sort(struct string_list *list, bool dir_first)
@@ -421,8 +419,7 @@ static bool dirent_is_directory(const char *path, const struct dirent *entry)
    else if (entry->d_type == DT_UNKNOWN // This can happen on certain file systems.
          || entry->d_type == DT_LNK)
       return path_is_directory(path);
-   else
-      return false;
+   return false;
 #else // dirent struct doesn't have d_type, do it the slow way ...
    return path_is_directory(path);
 #endif
@@ -498,7 +495,7 @@ static bool path_char_is_slash(char c)
 #ifdef _WIN32
    return (c == '/') || (c == '\\');
 #else
-   return c == '/';
+   return (c == '/');
 #endif
 }
 
@@ -656,8 +653,7 @@ const char *path_basename(const char *path)
 
    if (last)
       return last + 1;
-   else
-      return path;
+   return path;
 }
 
 bool path_is_absolute(const char *path)

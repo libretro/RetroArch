@@ -346,8 +346,7 @@ static bool zip_extract_cb(const char *name, const uint8_t *cdata, unsigned cmod
                data->found_content = true;
                return false;
             }
-            else
-               return false;
+            return false;
 
          default:
             return false;
@@ -425,7 +424,7 @@ struct string_list *zlib_get_file_list(const char *path)
       string_list_free(list);
       return NULL;
    }
-   else
-      return list;
+
+   return list;
 }
 
