@@ -101,6 +101,12 @@ typedef struct rarch_setting_t
       const char *empty_path;
    } dir;
 
+   struct
+   {
+      const char *off_label;
+      const char *on_label;
+   } boolean;
+
    float step;
    const char *rounding_fraction;
    bool enforce_minrange;
@@ -110,27 +116,59 @@ typedef struct rarch_setting_t
 void setting_data_reset_setting(const rarch_setting_t* setting);
 void setting_data_reset(const rarch_setting_t* settings);
 
-bool setting_data_load_config_path(const rarch_setting_t* settings, const char* path);
-bool setting_data_save_config(const rarch_setting_t* settings, config_file_t* config);
+bool setting_data_load_config_path(const rarch_setting_t* settings,
+      const char* path);
+bool setting_data_save_config(const rarch_setting_t* settings,
+      config_file_t* config);
 
-rarch_setting_t* setting_data_find_setting(rarch_setting_t* settings, const char* name);
+rarch_setting_t* setting_data_find_setting(rarch_setting_t* settings,
+      const char* name);
 
-void setting_data_set_with_string_representation(const rarch_setting_t* setting, const char* value);
-void setting_data_get_string_representation(const rarch_setting_t* setting, char* buf, size_t sizeof_buf);
+void setting_data_set_with_string_representation(
+      const rarch_setting_t* setting, const char* value);
+void setting_data_get_string_representation(const rarch_setting_t* setting,
+      char* buf, size_t sizeof_buf);
 
 // List building helper functions
-rarch_setting_t setting_data_group_setting(enum setting_type type, const char* name);
-rarch_setting_t setting_data_bool_setting(const char* name, const char* description, bool* target, bool default_value, const char * group, const char *subgroup, change_handler_t change_handler, change_handler_t read_handler);
-rarch_setting_t setting_data_int_setting(const char* name, const char* description, int* target, int default_value, const char *group, const char *subgroup, change_handler_t change_handler, change_handler_t read_handler);
-rarch_setting_t setting_data_uint_setting(const char* name, const char* description, unsigned int* target, unsigned int default_value, const char *group, const char *subgroup, change_handler_t change_handler, change_handler_t read_handler);
-rarch_setting_t setting_data_float_setting(const char* name, const char* description, float* target, float default_value, const char *rounding, const char *group, const char *subgroup, change_handler_t change_handler, change_handler_t read_handler);
-rarch_setting_t setting_data_string_setting(enum setting_type type, const char* name, const char* description, char* target, unsigned size, const char* default_value, const char *empty, const char *group, const char *subgroup, change_handler_t change_handler, change_handler_t read_handler);
-rarch_setting_t setting_data_bind_setting(const char* name, const char* description, struct retro_keybind* target, uint32_t index,
- const struct retro_keybind* default_value, const char *group, const char *subgroup);
+rarch_setting_t setting_data_group_setting(enum setting_type type,
+      const char* name);
 
-void setting_data_get_description(const void *data, char *msg, size_t msg_sizeof);
+rarch_setting_t setting_data_bool_setting(const char* name,
+      const char* description, bool* target, bool default_value,
+      const char *off, const char *on, const char * group,
+      const char *subgroup, change_handler_t change_handler,
+      change_handler_t read_handler);
 
-// These functions operate only on RetroArch's main settings list
+rarch_setting_t setting_data_int_setting(const char* name,
+      const char* description, int* target, int default_value,
+      const char *group, const char *subgroup,
+      change_handler_t change_handler, change_handler_t read_handler);
+
+rarch_setting_t setting_data_uint_setting(const char* name,
+      const char* description, unsigned int* target,
+      unsigned int default_value, const char *group,
+      const char *subgroup, change_handler_t change_handler,
+      change_handler_t read_handler);
+
+rarch_setting_t setting_data_float_setting(const char* name,
+      const char* description, float* target, float default_value,
+      const char *rounding, const char *group, const char *subgroup,
+      change_handler_t change_handler, change_handler_t read_handler);
+
+rarch_setting_t setting_data_string_setting(enum setting_type type,
+      const char* name, const char* description, char* target,
+      unsigned size, const char* default_value, const char *empty,
+      const char *group, const char *subgroup,
+      change_handler_t change_handler, change_handler_t read_handler);
+
+rarch_setting_t setting_data_bind_setting(const char* name,
+      const char* description, struct retro_keybind* target, uint32_t index,
+      const struct retro_keybind* default_value, const char *group,
+      const char *subgroup);
+
+void setting_data_get_description(const void *data, char *msg,
+      size_t msg_sizeof);
+
 rarch_setting_t* setting_data_get_list(void);
 
 #ifdef __cplusplus

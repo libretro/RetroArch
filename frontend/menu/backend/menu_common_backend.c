@@ -3460,10 +3460,7 @@ static void menu_common_setting_set_label_perf(char *type_str, size_t type_str_s
 static void menu_common_setting_set_label_st_bool(rarch_setting_t *setting,
       char *type_str, size_t type_str_size)
 {
-   if (setting && !strcmp(setting->name, "video_smooth"))
-      strlcpy(type_str, (*setting->value.boolean) ? "Bilinear filtering" : "Point filtering", type_str_size);
-   else
-      strlcpy(type_str, *setting->value.boolean ? "ON" : "OFF", type_str_size);
+   strlcpy(type_str, *setting->value.boolean ? setting->boolean.on_label : setting->boolean.off_label, type_str_size);
 }
 
 static void menu_common_setting_set_label_st_float(rarch_setting_t *setting,
