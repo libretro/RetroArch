@@ -254,10 +254,12 @@ bool input_translate_coord_viewport(int mouse_x, int mouse_y,
       int16_t *res_x, int16_t *res_y, int16_t *res_screen_x, int16_t *res_screen_y)
 {
    struct rarch_viewport vp = {0};
-   if (driver.video && driver.video->viewport_info)
-      driver.video->viewport_info(driver.video_data, &vp);
-   else
+   bool have_viewport_info = driver.video && driver.video->viewport_info;
+
+   if (!have_viewport_info)
       return false;
+
+   driver.video->viewport_info(driver.video_data, &vp);
 
    int scaled_screen_x = (2 * mouse_x * 0x7fff) / (int)vp.full_width - 0x7fff;
    int scaled_screen_y = (2 * mouse_y * 0x7fff) / (int)vp.full_height - 0x7fff;
@@ -280,6 +282,7 @@ bool input_translate_coord_viewport(int mouse_x, int mouse_y,
    *res_y = scaled_y;
    *res_screen_x = scaled_screen_x;
    *res_screen_y = scaled_screen_y;
+
    return true;
 }
 #endif
@@ -1145,8 +1148,7 @@ enum retro_key input_translate_str_to_rk(const char *str)
 {
    if (strlen(str) == 1 && isalpha(*str))
       return (enum retro_key)(RETROK_a + (tolower(*str) - (int)'a'));
-   else
-      return find_rk_bind(str);
+   return find_rk_bind(str);
 }
 
 void input_config_parse_key(config_file_t *conf, const char *prefix, const char *btn,
@@ -1166,8 +1168,7 @@ const char *input_config_get_prefix(unsigned player, bool meta)
       return meta ? "input" : bind_player_prefix[player];
    else if (player != 0 && !meta)
       return bind_player_prefix[player];
-   else
-      return NULL; // Don't bother with meta bind for anyone else than first player.
+   return NULL; // Don't bother with meta bind for anyone else than first player.
 }
 
 unsigned input_translate_str_to_bind_id(const char *str)

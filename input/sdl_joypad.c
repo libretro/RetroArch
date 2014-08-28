@@ -49,8 +49,7 @@ static const char* pad_name(unsigned id)
 #ifdef HAVE_SDL2
    if (g_pads[id].controller)
       return SDL_GameControllerNameForIndex(id);
-   else
-      return SDL_JoystickNameForIndex(id);
+   return SDL_JoystickNameForIndex(id);
 #else
    return SDL_JoystickName(id);
 #endif
@@ -62,9 +61,8 @@ static uint8_t pad_get_button(sdl_joypad_t *pad, unsigned button)
    /* TODO: see if a LUT like winxinput_joypad.c's button_index_to_bitmap_code is needed. */
    if (pad->controller)
       return SDL_GameControllerGetButton(pad->controller, button);
-   else
 #endif
-      return SDL_JoystickGetButton(pad->joypad, button);
+   return SDL_JoystickGetButton(pad->joypad, button);
 }
 
 static uint8_t pad_get_hat(sdl_joypad_t *pad, unsigned hat)
@@ -72,9 +70,8 @@ static uint8_t pad_get_hat(sdl_joypad_t *pad, unsigned hat)
 #ifdef HAVE_SDL2
    if (pad->controller)
       return pad_get_button(pad, hat);
-   else
 #endif
-      return SDL_JoystickGetHat(pad->joypad, hat);
+   return SDL_JoystickGetHat(pad->joypad, hat);
 }
 
 static int16_t pad_get_axis(sdl_joypad_t *pad, unsigned axis)
@@ -83,9 +80,8 @@ static int16_t pad_get_axis(sdl_joypad_t *pad, unsigned axis)
    /* TODO: see if a rarch <-> sdl translation is needed. */
    if (pad->controller)
       return SDL_GameControllerGetAxis(pad->controller, axis);
-   else
 #endif
-      return SDL_JoystickGetAxis(pad->joypad, axis);
+   return SDL_JoystickGetAxis(pad->joypad, axis);
 }
 
 static void pad_connect(unsigned id)
@@ -281,16 +277,16 @@ static bool sdl_joypad_button(unsigned port, uint16_t joykey)
          case HAT_RIGHT_MASK:
             return dir & SDL_HAT_RIGHT;
          default:
-            return false;
+            break;
       }
-   }
-   else // Check the button
-   {
-      if (joykey < pad->num_buttons && pad_get_button(pad, joykey))
-         return true;
-
       return false;
    }
+
+   // Check the button
+   if (joykey < pad->num_buttons && pad_get_button(pad, joykey))
+      return true;
+
+   return false;
 }
 
 static int16_t sdl_joypad_axis(unsigned port, uint32_t joyaxis)

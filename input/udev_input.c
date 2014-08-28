@@ -499,8 +499,7 @@ static bool udev_is_pressed(udev_input_t *udev, const struct retro_keybind *bind
       const struct retro_keybind *bind = &binds[id];
       return bind->valid && get_bit(udev->key_state, input_translate_rk_to_keysym(binds[id].key));
    }
-   else
-      return false;
+   return false;
 }
 
 static int16_t udev_analog_pressed(udev_input_t *udev,

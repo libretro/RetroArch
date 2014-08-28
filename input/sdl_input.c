@@ -91,8 +91,7 @@ static bool sdl_bind_button_pressed(void *data, int key)
    const struct retro_keybind *binds = g_settings.input.binds[0];
    if (key >= 0 && key < RARCH_BIND_LIST_END)
       return sdl_is_pressed((sdl_input_t*)data, 0, binds, key);
-   else
-      return false;
+   return false;
 }
 
 static int16_t sdl_joypad_device_state(sdl_input_t *sdl, const struct retro_keybind **binds_, 
@@ -101,8 +100,7 @@ static int16_t sdl_joypad_device_state(sdl_input_t *sdl, const struct retro_keyb
    const struct retro_keybind *binds = binds_[port_num];
    if (id < RARCH_BIND_LIST_END)
       return binds[id].valid && sdl_is_pressed(sdl, port_num, binds, id);
-   else
-      return 0;
+   return 0;
 }
 
 static int16_t sdl_analog_device_state(sdl_input_t *sdl, const struct retro_keybind **binds,
