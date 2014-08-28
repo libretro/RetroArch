@@ -506,17 +506,16 @@ static void rmenu_free(void *data)
 static int rmenu_input_postprocess(uint64_t old_state)
 {
    menu_handle_t *menu = (menu_handle_t*)driver.menu;
-   int ret = 0;
 
    if ((menu->trigger_state & (1ULL << RARCH_MENU_TOGGLE)) &&
          g_extern.main_is_init &&
          !g_extern.libretro_dummy)
    {
       g_extern.lifecycle_state |= (1ULL << MODE_GAME);
-      ret = -1;
+      return -1;
    }
 
-   return ret;
+   return 0;
 }
 
 static void rmenu_init_core_info(void *data)

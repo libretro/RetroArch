@@ -627,8 +627,6 @@ static void rgui_free(void *data)
 
 static int rgui_input_postprocess(uint64_t old_state)
 {
-   int ret = 0;
-
    (void)old_state;
 
    if ((driver.menu->trigger_state & (1ULL << RARCH_MENU_TOGGLE)) &&
@@ -636,10 +634,10 @@ static int rgui_input_postprocess(uint64_t old_state)
          !g_extern.libretro_dummy)
    {
       g_extern.lifecycle_state |= (1ULL << MODE_GAME);
-      ret = -1;
+      return -1;
    }
 
-   return ret;
+   return 0;
 }
 
 void rgui_set_texture(void *data)

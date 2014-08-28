@@ -3341,12 +3341,6 @@ static int menu_common_setting_set(unsigned id, unsigned action, rarch_setting_t
                else if (action == MENU_ACTION_RIGHT)
                   find_next_driver(RARCH_DRIVER_AUDIO, g_settings.audio.driver, sizeof(g_settings.audio.driver));
                break;
-            case MENU_SETTINGS_DRIVER_AUDIO_DEVICE:
-               if (action == MENU_ACTION_OK)
-                  menu_key_start_line(driver.menu, "Audio Device Name / IP: ", "audio_device", st_string_callback);
-               else if (action == MENU_ACTION_START)
-                  *g_settings.audio.device = '\0';
-               break;
             case MENU_SETTINGS_DRIVER_AUDIO_RESAMPLER:
                if (action == MENU_ACTION_LEFT)
                   find_prev_resampler_driver();
@@ -3546,10 +3540,6 @@ static int menu_common_setting_set(unsigned id, unsigned action, rarch_setting_t
                   }
                   break;
                }
-            case MENU_SETTINGS_SHADER_PRESET_SAVE:
-               if (action == MENU_ACTION_OK)
-                  menu_key_start_line(driver.menu, "Preset Filename: ", "shader_preset_save", preset_filename_callback);
-               break;
 #ifdef _XBOX1
             case MENU_SETTINGS_SOFT_DISPLAY_FILTER:
                switch (action)
@@ -3599,11 +3589,21 @@ static int menu_common_setting_set(unsigned id, unsigned action, rarch_setting_t
                   *g_extern.netplay_server = '\0';
                break;
 #endif
+            case MENU_SETTINGS_DRIVER_AUDIO_DEVICE:
+               if (action == MENU_ACTION_OK)
+                  menu_key_start_line(driver.menu, "Audio Device Name / IP: ", "audio_device", st_string_callback);
+               else if (action == MENU_ACTION_START)
+                  *g_settings.audio.device = '\0';
+               break;
             case MENU_SETTINGS_NETPLAY_NICKNAME:
                if (action == MENU_ACTION_OK)
                   menu_key_start_line(driver.menu, "Username: ", "netplay_nickname", st_string_callback);
                else if (action == MENU_ACTION_START)
                   *g_settings.username = '\0';
+               break;
+            case MENU_SETTINGS_SHADER_PRESET_SAVE:
+               if (action == MENU_ACTION_OK)
+                  menu_key_start_line(driver.menu, "Preset Filename: ", "shader_preset_save", preset_filename_callback);
                break;
             default:
                break;
