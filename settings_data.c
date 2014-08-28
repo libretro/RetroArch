@@ -646,6 +646,51 @@ void setting_data_get_description(const void *data, char *msg,
                 "Depending on video driver, it might \n"
                 "force a different input driver.");
     }
+    else if (!strcmp(setting->name, "load_content"))
+       snprintf(msg, sizeof_msg,
+             " -- Load Content. \n"
+             "Browse for content. \n"
+             " \n"
+             "To load content, you need a \n"
+             "libretro core to use, and a \n"
+             "content file. \n"
+             " \n"
+             "To control where the menu starts \n"
+             " to browse for content, set  \n"
+             "Browser Directory. If not set,  \n"
+             "it will start in root. \n"
+             " \n"
+             "The browser will filter out \n"
+             "extensions for the last core set \n"
+             "in 'Core', and use that core when \n"
+             "content is loaded."
+             );
+    else if (!strcmp(setting->name, "core_list"))
+       snprintf(msg, sizeof_msg,
+             " -- Core Selection. \n"
+             " \n"
+             "Browse for a libretro core \n"
+             "implementation. Where the browser \n"
+             "starts depends on your Core Directory \n"
+             "path. If blank, it will start in root. \n"
+             " \n"
+             "If Core Directory is a directory, the menu \n"
+             "will use that as top folder. If Core \n"
+             "Directory is a full path, it will start \n"
+             "in the folder where the file is.");
+    else if (!strcmp(setting->name, "history_list"))
+       snprintf(msg, sizeof_msg,
+             " -- Loading content from history. \n"
+             " \n"
+             "As content is loaded, content and libretro \n"
+             "core combinations are saved to history. \n"
+             " \n"
+             "The history is saved to a file in the same \n"
+             "directory as the RetroArch config file. If \n"
+             "no config file was loaded in startup, history \n"
+             "will not be saved or loaded, and will not exist \n"
+             "in the main menu."
+             );
     else if (!strcmp(setting->name, "audio_resampler_driver"))
     {
        if (!strcmp(g_settings.audio.resampler, "sinc"))
