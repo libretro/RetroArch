@@ -194,7 +194,7 @@ static void menu_common_entries_init(menu_handle_t *menu, unsigned menu_type)
             file_list_push(menu->selection_buf, "", "video_filter_flicker",
                   MENU_SETTINGS_FLICKER_FILTER, 0, setting_data);
          file_list_push(menu->selection_buf, "", "video_scale_integer",
-               MENU_SETTINGS_VIDEO_INTEGER_SCALE, 0, setting_data);
+               0, 0, setting_data);
          file_list_push(menu->selection_buf, "", "aspect_ratio_index",
                0, 0, setting_data);
          file_list_push(menu->selection_buf, "Custom Ratio", "",
@@ -653,7 +653,7 @@ static void menu_common_entries_init(menu_handle_t *menu, unsigned menu_type)
          if ((current_setting = (rarch_setting_t*)
                   setting_data_find_setting(setting_data, "save_new_config")))
             file_list_push(menu->selection_buf, "", "save_new_config",
-                  MENU_SETTINGS_SAVE_CONFIG, 0, setting_data);
+                  0, 0, setting_data);
 
          if ((current_setting = (rarch_setting_t*)
                   setting_data_find_setting(setting_data, "help")))
