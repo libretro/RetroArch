@@ -865,13 +865,13 @@ void setting_data_get_description(const void *data, char *msg,
                " 2: Etc ...");
     else if (!strcmp(setting->name, "video_frame_delay"))
          snprintf(msg, sizeof_msg,
-               " -- Sets how many milliseconds to delay \n"
+               " -- Sets how many milliseconds to delay\n"
                "after VSync before running the core.\n"
-                " \n"
-               "Can reduce latency at cost of \n"
-               "performance."
+                "\n"
+               "Can reduce latency at cost of\n"
+               "performance.\n"
                " \n"
-               "Maximum is 15.\n");
+               "Maximum is 15.");
     else if (!strcmp(setting->name, "audio_rate_control_delta"))
        snprintf(msg, sizeof_msg,
              " -- Audio rate control.\n"
