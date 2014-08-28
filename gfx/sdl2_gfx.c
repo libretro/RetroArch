@@ -198,25 +198,21 @@ static void sdl2_render_msg(sdl2_video_t *vid, const char *msg)
 static void sdl2_gfx_set_handles(sdl2_video_t *vid)
 {
    // SysWMinfo headers are broken on OSX. :(
-#if defined(_WIN32)
+#if defined(_WIN32) || defined(HAVE_X11)
    SDL_SysWMinfo info;
    SDL_VERSION(&info.version);
 
    if (SDL_GetWindowWMInfo(vid->window, &info) == 1)
    {
+#if defined(_WIN32)
       driver.display_type  = RARCH_DISPLAY_WIN32;
       driver.video_display = 0;
       driver.video_window  = (uintptr_t)info.info.win.window;
-   }
 #elif defined(HAVE_X11)
-   SDL_SysWMinfo info;
-   SDL_VERSION(&info.version);
-
-   if (SDL_GetWindowWMInfo(vid->window, &info) == 1)
-   {
       driver.display_type  = RARCH_DISPLAY_X11;
       driver.video_display = (uintptr_t)info.info.x11.display;
       driver.video_window  = (uintptr_t)info.info.x11.window;
+#endif
    }
 #endif
 }
@@ -379,11 +375,12 @@ static void *sdl2_gfx_init(const video_info_t *video, const input_driver_t **inp
    if (!vid)
       return NULL;
 
-   RARCH_LOG("[SDL]: supported video drivers (change with $SDL_VIDEODRIVER):\n");
-
-   for (i = 0; i < SDL_GetNumVideoDrivers(); ++i)
+   RARCH_LOG("[SDL]: Available renderers (change with $SDL_RENDER_DRIVER):\n");
+   for (i = 0; i < SDL_GetNumRenderDrivers(); ++i)
    {
-      RARCH_LOG("\t%s\n", SDL_GetVideoDriver(i));
+      SDL_RendererInfo renderer;
+      if (SDL_GetRenderDriverInfo(i, &renderer) == 0)
+         RARCH_LOG("\t%s\n", renderer.name);
    }
 
    RARCH_LOG("[SDL]: Available displays:\n");

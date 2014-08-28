@@ -31,7 +31,7 @@
 #include "config.h"
 #endif
 
-#include "SDL/SDL_syswm.h"
+#include "SDL_syswm.h"
 
 typedef struct sdl_menu_frame
 {
@@ -53,8 +53,6 @@ typedef struct sdl_video
    uint8_t font_b;
 
    struct scaler_ctx scaler;
-   unsigned last_width;
-   unsigned last_height;
 
    sdl_menu_frame_t menu;
 } sdl_video_t;
@@ -74,8 +72,33 @@ static void sdl_gfx_free(void *data)
       vid->font_driver->free(vid->font);
 
    scaler_ctx_gen_reset(&vid->scaler);
+   scaler_ctx_gen_reset(&vid->menu.scaler);
 
    free(vid);
+}
+
+static void sdl_update_scaler(SDL_Surface *surf, struct scaler_ctx *scaler,
+                              enum scaler_pix_fmt format, unsigned width,
+                              unsigned height, unsigned pitch)
+{
+   if (
+          width  != scaler->in_width
+       || height != scaler->in_height
+       || format != scaler->in_fmt
+       || pitch  != scaler->in_stride
+      )
+   {
+      scaler->in_fmt    = format;
+      scaler->in_width  = width;
+      scaler->in_height = height;
+      scaler->in_stride = pitch;
+
+      scaler->out_width  = surf->w;
+      scaler->out_height = surf->h;
+      scaler->out_stride = surf->pitch;
+
+      scaler_ctx_gen_filter(scaler);
+   }
 }
 
 static void sdl_init_font(sdl_video_t *vid, const char *font_path, unsigned font_size)
@@ -100,7 +123,7 @@ static void sdl_init_font(sdl_video_t *vid, const char *font_path, unsigned font
          vid->font_b = b;
    }
    else
-      RARCH_LOG("Could not initialize fonts.\n");
+      RARCH_LOG("[SDL]: Could not initialize fonts.\n");
 }
 
 static void sdl_render_msg(sdl_video_t *vid, SDL_Surface *buffer,
@@ -187,25 +210,21 @@ static void sdl_render_msg(sdl_video_t *vid, SDL_Surface *buffer,
 static void sdl_gfx_set_handles(void)
 {
    // SysWMinfo headers are broken on OSX. :(
-#if defined(_WIN32)
+#if defined(_WIN32) || defined(HAVE_X11)
    SDL_SysWMinfo info;
    SDL_VERSION(&info.version);
 
    if (SDL_GetWMInfo(&info) == 1)
    {
+#if defined(_WIN32)
       driver.display_type  = RARCH_DISPLAY_WIN32;
       driver.video_display = 0;
       driver.video_window  = (uintptr_t)info.window;
-   }
 #elif defined(HAVE_X11)
-   SDL_SysWMinfo info;
-   SDL_VERSION(&info.version);
-
-   if (SDL_GetWMInfo(&info) == 1)
-   {
       driver.display_type  = RARCH_DISPLAY_X11;
       driver.video_display = (uintptr_t)info.info.x11.display;
       driver.video_window  = (uintptr_t)info.info.x11.window;
+#endif
    }
 #endif
 }
@@ -220,8 +239,11 @@ static void *sdl_gfx_init(const video_info_t *video, const input_driver_t **inpu
    XInitThreads();
 #endif
 
-   if (SDL_WasInit(0) == 0 && SDL_Init(SDL_INIT_VIDEO) < 0)
-      return NULL;
+   if (SDL_WasInit(0) == 0)
+   {
+      if (SDL_Init(SDL_INIT_VIDEO) < 0)
+         return NULL;
+   }
    else if (SDL_InitSubSystem(SDL_INIT_VIDEO) < 0)
       return NULL;
 
@@ -233,12 +255,10 @@ static void *sdl_gfx_init(const video_info_t *video, const input_driver_t **inpu
    rarch_assert(video_info);
    unsigned full_x = video_info->current_w;
    unsigned full_y = video_info->current_h;
-   RARCH_LOG("Detecting desktop resolution %ux%u.\n", full_x, full_y);
-
-   void *sdl_input = NULL;
+   RARCH_LOG("[SDL]: Detecting desktop resolution %ux%u.\n", full_x, full_y);
 
    if (!video->fullscreen)
-      RARCH_LOG("Creating window @ %ux%u\n", video->width, video->height);
+      RARCH_LOG("[SDL]: Creating window @ %ux%u\n", video->width, video->height);
 
    vid->screen = SDL_SetVideoMode(video->width, video->height, 32,
          SDL_HWSURFACE | SDL_HWACCEL | SDL_DOUBLEBUF | (video->fullscreen ? SDL_FULLSCREEN : 0));
@@ -248,7 +268,7 @@ static void *sdl_gfx_init(const video_info_t *video, const input_driver_t **inpu
 
    if (!vid->screen)
    {
-      RARCH_ERR("Failed to init SDL surface: %s\n", SDL_GetError());
+      RARCH_ERR("[SDL]: Failed to init SDL surface: %s\n", SDL_GetError());
       goto error;
    }
 
@@ -259,7 +279,7 @@ static void *sdl_gfx_init(const video_info_t *video, const input_driver_t **inpu
 
    if (input && input_data)
    {
-      sdl_input = input_sdl.init();
+      void *sdl_input = input_sdl.init();
       if (sdl_input)
       {
          *input = &input_sdl;
@@ -285,7 +305,7 @@ static void *sdl_gfx_init(const video_info_t *video, const input_driver_t **inpu
 
    if (!vid->menu.frame)
    {
-      RARCH_ERR("Failed to init menu surface: %s\n", SDL_GetError());
+      RARCH_ERR("[SDL]: Failed to init menu surface: %s\n", SDL_GetError());
       goto error;
    }
 
@@ -311,28 +331,15 @@ static void check_window(sdl_video_t *vid)
    }
 }
 
-static bool sdl_gfx_frame(void *data, const void *frame, unsigned width, unsigned height, unsigned pitch, const char *msg)
+static bool sdl_gfx_frame(void *data, const void *frame, unsigned width,
+                          unsigned height, unsigned pitch, const char *msg)
 {
    if (!frame)
       return true;
 
    sdl_video_t *vid = (sdl_video_t*)data;
 
-   vid->scaler.in_stride = pitch;
-   if (width != vid->last_width || height != vid->last_height)
-   {
-      vid->scaler.in_width  = width;
-      vid->scaler.in_height = height;
-
-      vid->scaler.out_width  = vid->screen->w;
-      vid->scaler.out_height = vid->screen->h;
-      vid->scaler.out_stride = vid->screen->pitch;
-
-      scaler_ctx_gen_filter(&vid->scaler);
-
-      vid->last_width  = width;
-      vid->last_height = height;
-   }
+   sdl_update_scaler(vid->screen, &vid->scaler, vid->scaler.in_fmt, width, height, pitch);
 
    if (SDL_MUSTLOCK(vid->screen))
       SDL_LockSurface(vid->screen);
@@ -401,7 +408,8 @@ static void sdl_set_aspect_ratio(void *data, unsigned aspectratio_index)
    switch (aspectratio_index)
    {
       case ASPECT_RATIO_SQUARE:
-         gfx_set_square_pixel_viewport(g_extern.system.av_info.geometry.base_width, g_extern.system.av_info.geometry.base_height);
+         gfx_set_square_pixel_viewport(g_extern.system.av_info.geometry.base_width,
+                                       g_extern.system.av_info.geometry.base_height);
          break;
 
       case ASPECT_RATIO_CORE:
@@ -432,24 +440,8 @@ static void sdl_set_texture_frame(void *data, const void *frame, bool rgb32,
 
    enum scaler_pix_fmt format = rgb32 ? SCALER_FMT_ARGB8888 : SCALER_FMT_RGBA4444;
 
-   vid->menu.scaler.in_stride = width * (rgb32 ? sizeof(uint32_t) : sizeof(uint16_t));
-
-   if (
-          width != vid->menu.scaler.in_width
-       || height != vid->menu.scaler.in_height
-       || format != vid->menu.scaler.in_fmt
-      )
-   {
-      vid->menu.scaler.in_fmt    = format;
-      vid->menu.scaler.in_width  = width;
-      vid->menu.scaler.in_height = height;
-
-      vid->menu.scaler.out_width  = vid->screen->w;
-      vid->menu.scaler.out_height = vid->screen->h;
-      vid->menu.scaler.out_stride = vid->screen->pitch;
-
-      scaler_ctx_gen_filter(&vid->menu.scaler);
-   }
+   sdl_update_scaler(vid->menu.frame, &vid->menu.scaler, format, width, height,
+                     width * (rgb32 ? sizeof(uint32_t) : sizeof(uint16_t)));
 
    scaler_ctx_scale(&vid->menu.scaler, vid->menu.frame->pixels, frame);
    SDL_SetAlpha(vid->menu.frame, SDL_SRCALPHA, 255.0 * alpha);
