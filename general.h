@@ -209,6 +209,7 @@ struct settings
       bool black_frame_insertion;
       unsigned swap_interval;
       unsigned hard_sync_frames;
+      unsigned frame_delay;
 #ifdef GEKKO
       unsigned viwidth;
 #endif

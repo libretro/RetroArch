@@ -287,6 +287,7 @@ void config_set_defaults(void)
    g_settings.video.vsync = vsync;
    g_settings.video.hard_sync = hard_sync;
    g_settings.video.hard_sync_frames = hard_sync_frames;
+   g_settings.video.frame_delay = frame_delay;
    g_settings.video.black_frame_insertion = black_frame_insertion;
    g_settings.video.swap_interval = swap_interval;
    g_settings.video.threaded = video_threaded;
@@ -825,6 +826,10 @@ bool config_load_file(const char *path, bool set_defaults)
    CONFIG_GET_INT(video.hard_sync_frames, "video_hard_sync_frames");
    if (g_settings.video.hard_sync_frames > 3)
       g_settings.video.hard_sync_frames = 3;
+
+   CONFIG_GET_INT(video.frame_delay, "video_frame_delay");
+   if (g_settings.video.frame_delay > 15)
+      g_settings.video.frame_delay = 15;
 
    CONFIG_GET_BOOL(video.black_frame_insertion, "video_black_frame_insertion");
    CONFIG_GET_INT(video.swap_interval, "video_swap_interval");
@@ -1368,6 +1373,7 @@ bool config_save_file(const char *path)
    config_set_bool(conf,  "video_vsync", g_settings.video.vsync);
    config_set_bool(conf,  "video_hard_sync", g_settings.video.hard_sync);
    config_set_int(conf,   "video_hard_sync_frames", g_settings.video.hard_sync_frames);
+   config_set_int(conf,   "video_frame_delay", g_settings.video.frame_delay);
    config_set_bool(conf,  "video_black_frame_insertion", g_settings.video.black_frame_insertion);
    config_set_bool(conf,  "video_disable_composition", g_settings.video.disable_composition);
    config_set_bool(conf,  "pause_nonactive", g_settings.pause_nonactive);

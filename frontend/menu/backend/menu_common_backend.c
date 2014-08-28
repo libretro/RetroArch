@@ -210,6 +210,8 @@ static void menu_common_entries_init(menu_handle_t *menu, unsigned menu_type)
                0, 0, setting_data);
          file_list_push(menu->selection_buf, "", "video_hard_sync_frames",
                0, 0, setting_data);
+         file_list_push(menu->selection_buf, "", "video_frame_delay",
+               0, 0, setting_data);
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "video_black_frame_insertion")))
             file_list_push(menu->selection_buf, "", "video_black_frame_insertion",
                   0, 0, setting_data);

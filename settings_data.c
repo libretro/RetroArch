@@ -863,6 +863,15 @@ void setting_data_get_description(const void *data, char *msg,
                " 0: Syncs to GPU immediately.\n"
                " 1: Syncs to previous frame.\n"
                " 2: Etc ...");
+    else if (!strcmp(setting->name, "video_frame_delay"))
+         snprintf(msg, sizeof_msg,
+               " -- Sets how many milliseconds to delay\n"
+               "after VSync before running the core.\n"
+                "\n"
+               "Can reduce latency at cost of\n"
+               "higher risk of stuttering.\n"
+               " \n"
+               "Maximum is 15.");
     else if (!strcmp(setting->name, "audio_rate_control_delta"))
        snprintf(msg, sizeof_msg,
              " -- Audio rate control.\n"
@@ -1153,6 +1162,8 @@ static void general_read_handler(const void *data)
         *setting->value.boolean = g_settings.video.hard_sync;
     else if (!strcmp(setting->name, "video_hard_sync_frames"))
         *setting->value.unsigned_integer = g_settings.video.hard_sync_frames;
+    else if (!strcmp(setting->name, "video_frame_delay"))
+        *setting->value.unsigned_integer = g_settings.video.frame_delay;
     else if (!strcmp(setting->name, "video_scale_integer"))
         *setting->value.boolean = g_settings.video.scale_integer;
     else if (!strcmp(setting->name, "video_fullscreen"))
@@ -1496,6 +1507,8 @@ static void general_write_handler(const void *data)
       g_settings.video.hard_sync = *setting->value.boolean;
    else if (!strcmp(setting->name, "video_hard_sync_frames"))
       g_settings.video.hard_sync_frames = *setting->value.unsigned_integer;
+   else if (!strcmp(setting->name, "video_frame_delay"))
+      g_settings.video.frame_delay = *setting->value.unsigned_integer;
    else if (!strcmp(setting->name, "video_scale_integer"))
       g_settings.video.scale_integer = *setting->value.boolean;
    else if (!strcmp(setting->name, "video_fullscreen"))
@@ -2019,6 +2032,7 @@ rarch_setting_t *setting_data_get_list(void)
       CONFIG_UINT(g_settings.video.swap_interval,        "video_swap_interval",        "VSync Swap Interval",        swap_interval, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)       WITH_RANGE(1, 4, 1, true, true)
       CONFIG_BOOL(g_settings.video.hard_sync,            "video_hard_sync",            "Hard GPU Sync",              hard_sync, "OFF", "ON", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
       CONFIG_UINT(g_settings.video.hard_sync_frames,     "video_hard_sync_frames",     "Hard GPU Sync Frames",       hard_sync_frames, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)    WITH_RANGE(0, 3, 1, true, true)
+      CONFIG_UINT(g_settings.video.frame_delay,          "video_frame_delay",          "Frame Delay",                frame_delay, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)    WITH_RANGE(0, 15, 1, true, true)
 #if !defined(RARCH_MOBILE)
       CONFIG_BOOL(g_settings.video.black_frame_insertion, "video_black_frame_insertion", "Black Frame Insertion",      black_frame_insertion, "OFF", "ON", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
 #endif

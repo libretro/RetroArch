@@ -3448,6 +3448,9 @@ bool rarch_main_iterate(void)
             g_settings.input.analog_dpad_mode[i]);
    }
 
+   if ((g_settings.video.frame_delay > 0) && !driver.nonblock_state)
+      rarch_sleep(g_settings.video.frame_delay);
+
    update_frame_time();
    pretro_run();
    limit_frame_time();

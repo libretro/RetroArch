@@ -310,6 +310,10 @@ static const bool hard_sync = false;
 // 2: Etc ...
 static const unsigned hard_sync_frames = 0;
 
+// Sets how many milliseconds to delay after VSync before running the core.
+// Can reduce latency at cost of higher risk of stuttering.
+static const unsigned frame_delay = 0;
+
 // Inserts a black frame inbetween frames.
 // Useful for 120 Hz monitors who want to play 60 Hz material with eliminated ghosting. video_refresh_rate should still be configured as if it is a 60 Hz monitor (divide refresh rate by 2).
 static bool black_frame_insertion = false;
