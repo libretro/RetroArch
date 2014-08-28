@@ -121,56 +121,56 @@ static void menu_common_entries_init(menu_handle_t *menu, unsigned menu_type)
       case MENU_SETTINGS_GENERAL_OPTIONS:
          file_list_clear(menu->selection_buf);
          file_list_push(menu->selection_buf, "", "libretro_log_level",
-               MENU_SETTINGS_LIBRETRO_LOG_LEVEL, 0, setting_data);
+               0, 0, setting_data);
          file_list_push(menu->selection_buf, "", "log_verbosity",
-               MENU_SETTINGS_LOGGING_VERBOSITY, 0, setting_data);
+               0, 0, setting_data);
          file_list_push(menu->selection_buf, "", "perfcnt_enable",
-               MENU_SETTINGS_PERFORMANCE_COUNTERS_ENABLE, 0, setting_data);
+               0, 0, setting_data);
          file_list_push(menu->selection_buf, "", "game_history_size",
-               MENU_CONTENT_HISTORY_SIZE, 0, setting_data);
+               0, 0, setting_data);
          file_list_push(menu->selection_buf, "", "config_save_on_exit",
-               MENU_SETTINGS_CONFIG_SAVE_ON_EXIT, 0, setting_data);
+               0, 0, setting_data);
          file_list_push(menu->selection_buf, "", "core_specific_config",
-               MENU_SETTINGS_PER_CORE_CONFIG, 0, setting_data);
+               0, 0, setting_data);
          file_list_push(menu->selection_buf, "", "video_gpu_screenshot",
-               MENU_SETTINGS_GPU_SCREENSHOT, 0, setting_data);
+               0, 0, setting_data);
          file_list_push(menu->selection_buf, "", "dummy_on_core_shutdown",
-               MENU_SETTINGS_LOAD_DUMMY_ON_CORE_SHUTDOWN, 0, setting_data);
+               0, 0, setting_data);
          file_list_push(menu->selection_buf, "", "fps_show",
-               MENU_SETTINGS_DEBUG_TEXT, 0, setting_data);
+               0, 0, setting_data);
          file_list_push(menu->selection_buf, "", "fastforward_ratio",
-               MENU_SETTINGS_FASTFORWARD_RATIO, 0, setting_data);
+               0, 0, setting_data);
          file_list_push(menu->selection_buf, "", "slowmotion_ratio",
-               MENU_SETTINGS_SLOWMOTION_RATIO, 0, setting_data);
+               0, 0, setting_data);
          file_list_push(menu->selection_buf, "", "rewind_enable",
-               MENU_SETTINGS_REWIND_ENABLE, 0, setting_data);
+               0, 0, setting_data);
          file_list_push(menu->selection_buf, "", "rewind_granularity",
-               MENU_SETTINGS_REWIND_GRANULARITY, 0, setting_data);
+               0, 0, setting_data);
          file_list_push(menu->selection_buf, "", "block_sram_overwrite",
-               MENU_SETTINGS_BLOCK_SRAM_OVERWRITE, 0, setting_data);
+               0, 0, setting_data);
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "autosave_interval")))
             file_list_push(menu->selection_buf, "", "autosave_interval",
-                  MENU_SETTINGS_SRAM_AUTOSAVE, 0, setting_data);
+                  0, 0, setting_data);
          file_list_push(menu->selection_buf, "", "video_disable_composition",
-               MENU_SETTINGS_WINDOW_COMPOSITING_ENABLE, 0, setting_data);
+               0, 0, setting_data);
          file_list_push(menu->selection_buf, "", "pause_nonactive",
-               MENU_SETTINGS_PAUSE_IF_WINDOW_FOCUS_LOST, 0, setting_data);
+               0, 0, setting_data);
          file_list_push(menu->selection_buf, "", "savestate_auto_save",
-               MENU_SETTINGS_SAVESTATE_AUTO_SAVE, 0, setting_data);
+               0, 0, setting_data);
          file_list_push(menu->selection_buf, "", "savestate_auto_load",
-               MENU_SETTINGS_SAVESTATE_AUTO_LOAD, 0, setting_data);
+               0, 0, setting_data);
          break;
       case MENU_SETTINGS_VIDEO_OPTIONS:
          file_list_clear(menu->selection_buf);
          file_list_push(menu->selection_buf, "", "video_shared_context",
-               MENU_SETTINGS_VIDEO_HW_SHARED_CONTEXT, 0, setting_data);
+               0, 0, setting_data);
 #if defined(GEKKO) || defined(__CELLOS_LV2__)
          file_list_push(menu->selection_buf, "Screen Resolution", "",
                MENU_SETTINGS_VIDEO_RESOLUTION, 0, NULL);
 #endif
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "video_viwidth")))
             file_list_push(menu->selection_buf, "", "video_viwidth",
-                  MENU_SETTINGS_VIDEO_VIWIDTH, 0, setting_data);
+                  0, 0, setting_data);
          file_list_push(menu->selection_buf, "", "video_filter",
                MENU_SETTINGS_VIDEO_SOFTFILTER, 0, setting_data);
 #if defined(__CELLOS_LV2__)
@@ -196,46 +196,46 @@ static void menu_common_entries_init(menu_handle_t *menu, unsigned menu_type)
          file_list_push(menu->selection_buf, "", "video_scale_integer",
                MENU_SETTINGS_VIDEO_INTEGER_SCALE, 0, setting_data);
          file_list_push(menu->selection_buf, "", "aspect_ratio_index",
-               MENU_SETTINGS_VIDEO_ASPECT_RATIO, 0, setting_data);
+               0, 0, setting_data);
          file_list_push(menu->selection_buf, "Custom Ratio", "",
                MENU_SETTINGS_CUSTOM_VIEWPORT, 0, setting_data);
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "video_fullscreen")))
             file_list_push(menu->selection_buf, "", "video_fullscreen",
-                  MENU_SETTINGS_TOGGLE_FULLSCREEN, 0, setting_data);
+                  0, 0, setting_data);
          file_list_push(menu->selection_buf, "", "video_rotation",
-               MENU_SETTINGS_VIDEO_ROTATION, 0, setting_data);
+               0, 0, setting_data);
          file_list_push(menu->selection_buf, "", "video_vsync",
-               MENU_SETTINGS_VIDEO_VSYNC, 0, setting_data);
+               0, 0, setting_data);
          file_list_push(menu->selection_buf, "", "video_hard_sync",
-               MENU_SETTINGS_VIDEO_HARD_SYNC, 0, setting_data);
+               0, 0, setting_data);
          file_list_push(menu->selection_buf, "", "video_hard_sync_frames",
-               MENU_SETTINGS_VIDEO_HARD_SYNC_FRAMES, 0, setting_data);
+               0, 0, setting_data);
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "video_black_frame_insertion")))
             file_list_push(menu->selection_buf, "", "video_black_frame_insertion",
-                  MENU_SETTINGS_VIDEO_BLACK_FRAME_INSERTION, 0, setting_data);
+                  0, 0, setting_data);
          file_list_push(menu->selection_buf, "", "video_swap_interval",
-               MENU_SETTINGS_VIDEO_SWAP_INTERVAL, 0, setting_data);
+               0, 0, setting_data);
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "video_threaded")))
             file_list_push(menu->selection_buf, "", "video_threaded",
-                  MENU_SETTINGS_VIDEO_THREADED, 0, setting_data);
+                  0, 0, setting_data);
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "video_scale")))
             file_list_push(menu->selection_buf, "", "video_scale",
-                  MENU_SETTINGS_VIDEO_WINDOW_SCALE, 0, setting_data);
+                  0, 0, setting_data);
          file_list_push(menu->selection_buf, "", "video_crop_overscan",
-               MENU_SETTINGS_VIDEO_CROP_OVERSCAN, 0, setting_data);
+               0, 0, setting_data);
          file_list_push(menu->selection_buf, "", "video_monitor_index",
-               MENU_SETTINGS_VIDEO_MONITOR_INDEX, 0, setting_data);
+               0, 0, setting_data);
          file_list_push(menu->selection_buf, "", "video_refresh_rate",
-               MENU_SETTINGS_VIDEO_REFRESH_RATE, 0, setting_data);
+               0, 0, setting_data);
          file_list_push(menu->selection_buf, "", "video_refresh_rate_auto",
-               MENU_SETTINGS_VIDEO_REFRESH_RATE_AUTO, 0, setting_data);
+               0, 0, setting_data);
          break;
       case MENU_SETTINGS_FONT_OPTIONS:
          file_list_clear(menu->selection_buf);
          file_list_push(menu->selection_buf, "", "video_font_enable",
-               MENU_SETTINGS_FONT_ENABLE, 0, setting_data);
+               0, 0, setting_data);
          file_list_push(menu->selection_buf, "", "video_font_size",
-               MENU_SETTINGS_FONT_SIZE, 0, setting_data);
+               0, 0, setting_data);
          break;
       case MENU_SETTINGS_CORE_OPTIONS:
          file_list_clear(menu->selection_buf);
@@ -380,9 +380,9 @@ static void menu_common_entries_init(menu_handle_t *menu, unsigned menu_type)
       case MENU_SETTINGS_PRIVACY_OPTIONS:
          file_list_clear(menu->selection_buf);
          file_list_push(menu->selection_buf, "", "camera_allow",
-               MENU_SETTINGS_PRIVACY_CAMERA_ALLOW, 0, setting_data);
+               0, 0, setting_data);
          file_list_push(menu->selection_buf, "", "location_allow",
-               MENU_SETTINGS_PRIVACY_LOCATION_ALLOW, 0, setting_data);
+               0, 0, setting_data);
          break;
       case MENU_SETTINGS_DISK_OPTIONS:
          file_list_clear(menu->selection_buf);
@@ -396,37 +396,37 @@ static void menu_common_entries_init(menu_handle_t *menu, unsigned menu_type)
          file_list_push(menu->selection_buf, "", "input_overlay",
                MENU_SETTINGS_OVERLAY_PRESET, 0, setting_data);
          file_list_push(menu->selection_buf, "", "input_overlay_opacity",
-               MENU_SETTINGS_OVERLAY_OPACITY, 0, setting_data);
+               0, 0, setting_data);
          file_list_push(menu->selection_buf, "", "input_overlay_scale",
-               MENU_SETTINGS_OVERLAY_SCALE, 0, setting_data);
+               0, 0, setting_data);
          break;
       case MENU_SETTINGS_USER_OPTIONS:
          file_list_clear(menu->selection_buf);
          file_list_push(menu->selection_buf, "", "netplay_nickname",
                MENU_SETTINGS_NETPLAY_NICKNAME, 0, setting_data);
          file_list_push(menu->selection_buf, "", "user_language",
-               MENU_SETTINGS_USER_LANGUAGE, 0, setting_data);
+               0, 0, setting_data);
          break;
       case MENU_SETTINGS_NETPLAY_OPTIONS:
          file_list_clear(menu->selection_buf);
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "netplay_enable")))
             file_list_push(menu->selection_buf, "", "netplay_enable",
-                  MENU_SETTINGS_NETPLAY_ENABLE, 0, setting_data);
+                  0, 0, setting_data);
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "netplay_mode")))
             file_list_push(menu->selection_buf, "", "netplay_mode",
-                  MENU_SETTINGS_NETPLAY_MODE, 0, setting_data);
+                  0, 0, setting_data);
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "netplay_spectator_mode_enable")))
             file_list_push(menu->selection_buf, "", "netplay_spectator_mode_enable",
-                  MENU_SETTINGS_NETPLAY_SPECTATOR_MODE_ENABLE, 0, setting_data);
+                  0, 0, setting_data);
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "netplay_ip_address")))
             file_list_push(menu->selection_buf, "", "netplay_ip_address",
                   MENU_SETTINGS_NETPLAY_HOST_IP_ADDRESS, 0, setting_data);
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "netplay_tcp_udp_port")))
             file_list_push(menu->selection_buf, "", "netplay_tcp_udp_port",
-                  MENU_SETTINGS_NETPLAY_TCP_UDP_PORT, 0, setting_data);
+                  0, 0, setting_data);
          if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "netplay_delay_frames")))
             file_list_push(menu->selection_buf, "", "netplay_delay_frames",
-                  MENU_SETTINGS_NETPLAY_DELAY_FRAMES, 0, setting_data);
+                  0, 0, setting_data);
          break;
       case MENU_SETTINGS_PATH_OPTIONS:
          file_list_clear(menu->selection_buf);
@@ -499,21 +499,21 @@ static void menu_common_entries_init(menu_handle_t *menu, unsigned menu_type)
          file_list_push(menu->selection_buf, "", "audio_dsp_plugin",
                MENU_SETTINGS_AUDIO_DSP_FILTER, 0, setting_data);
          file_list_push(menu->selection_buf, "", "audio_enable",
-               MENU_SETTINGS_AUDIO_ENABLE, 0, setting_data);
+               0, 0, setting_data);
          file_list_push(menu->selection_buf, "", "audio_mute",
-               MENU_SETTINGS_AUDIO_MUTE, 0, setting_data);
+               0, 0, setting_data);
          file_list_push(menu->selection_buf, "", "audio_latency",
-               MENU_SETTINGS_AUDIO_LATENCY, 0, setting_data);
+               0, 0, setting_data);
          file_list_push(menu->selection_buf, "", "audio_sync",
-               MENU_SETTINGS_AUDIO_SYNC, 0, setting_data);
+               0, 0, setting_data);
          file_list_push(menu->selection_buf, "", "audio_rate_control_delta",
-               MENU_SETTINGS_AUDIO_CONTROL_RATE_DELTA, 0, setting_data);
+               0, 0, setting_data);
 #ifdef __CELLOS_LV2__
          file_list_push(menu->selection_buf, "System BGM Control", "",
                MENU_SETTINGS_CUSTOM_BGM_CONTROL_ENABLE, 0, NULL);
 #endif
          file_list_push(menu->selection_buf, "", "audio_volume",
-               MENU_SETTINGS_AUDIO_VOLUME, 0, setting_data);
+               0, 0, setting_data);
          file_list_push(menu->selection_buf, "", "audio_device",
                MENU_SETTINGS_DRIVER_AUDIO_DEVICE, 0, setting_data);
          break;
@@ -628,22 +628,22 @@ static void menu_common_entries_init(menu_handle_t *menu, unsigned menu_type)
          if ((current_setting = (rarch_setting_t*)
                   setting_data_find_setting(setting_data, "take_screenshot")))
             file_list_push(menu->selection_buf, "", "take_screenshot",
-                  MENU_SETTINGS_SCREENSHOT, 0, setting_data);
+                  0, 0, setting_data);
 
          if ((current_setting = (rarch_setting_t*)
                   setting_data_find_setting(setting_data, "resume_content")))
             file_list_push(menu->selection_buf, "", "resume_content",
-                  MENU_SETTINGS_RESUME_GAME, 0, setting_data);
+                  0, 0, setting_data);
 
          if ((current_setting = (rarch_setting_t*)
                   setting_data_find_setting(setting_data, "restart_content")))
             file_list_push(menu->selection_buf, "", "restart_content",
-                  MENU_SETTINGS_RESTART_GAME, 0, setting_data);
+                  0, 0, setting_data);
 
          if ((current_setting = (rarch_setting_t*)
                   setting_data_find_setting(setting_data, "restart_retroarch")))
             file_list_push(menu->selection_buf, "", "restart_retroarch",
-                  MENU_SETTINGS_RESTART_EMULATOR, 0, setting_data);
+                  0, 0, setting_data);
 
          if ((current_setting = (rarch_setting_t*)
                   setting_data_find_setting(setting_data, "configurations")))
@@ -663,7 +663,7 @@ static void menu_common_entries_init(menu_handle_t *menu, unsigned menu_type)
          if ((current_setting = (rarch_setting_t*)
                   setting_data_find_setting(setting_data, "quit_retroarch")))
             file_list_push(menu->selection_buf, "", "quit_retroarch",
-                  MENU_SETTINGS_QUIT_RARCH, 0, setting_data);
+                  0, 0, setting_data);
          break;
    }
 
@@ -3833,7 +3833,6 @@ static void menu_common_setting_set_label(char *type_str,
                   break;
                }
             case MENU_SETTINGS_CUSTOM_VIEWPORT:
-            case MENU_SETTINGS_TOGGLE_FULLSCREEN:
             case MENU_SETTINGS_DISK_OPTIONS:
             case MENU_SETTINGS_SHADER_PRESET:
             case MENU_SETTINGS_SHADER_PRESET_SAVE:
