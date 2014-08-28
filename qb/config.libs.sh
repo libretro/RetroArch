@@ -10,12 +10,18 @@ add_define_make NOUNUSED_VARIABLE "$HAVE_NOUNUSED_VARIABLE"
 
 [ -z "$CROSS_COMPILE" ] && [ -d /opt/local/lib ] && add_library_dirs /opt/local/lib
 
+DYLIB=-ldl;
+CLIB=-lc
+PTHREADLIB=-lpthread
+SOCKETLIB=-lc
+
 if [ "$OS" = 'BSD' ]; then
    DYLIB=-lc;
 elif [ "$OS" = 'Haiku' ]; then
-   DYLIB="";
-else
-   DYLIB=-ldl;
+   DYLIB=""
+   CLIB=-lroot
+   PTHREADLIB=-lroot
+   SOCKETLIB=-lnetwork
 fi
 
 add_define_make DYLIB_LIB "$DYLIB"
@@ -107,13 +113,13 @@ else
    add_define_make MAN_DIR "${PREFIX}/share/man/man1"
 fi
 
-check_lib THREADS -lpthread pthread_create
+check_lib THREADS "$PTHREADLIB" pthread_create
 check_lib DYLIB "$DYLIB" dlopen
 
-check_lib NETPLAY -lc socket
+check_lib NETPLAY "$SOCKETLIB" socket
 if [ "$HAVE_NETPLAY" = 'yes' ]; then
    HAVE_GETADDRINFO=auto
-   check_lib GETADDRINFO -lc getaddrinfo
+   check_lib GETADDRINFO "$SOCKETLIB" getaddrinfo
    if [ "$HAVE_GETADDRINFO" = 'yes' ]; then
       HAVE_SOCKET_LEGACY='no'
    else
@@ -124,7 +130,7 @@ else
    HAVE_NETWORK_CMD='no'
 fi
 
-check_lib STDIN_CMD -lc fcntl
+check_lib STDIN_CMD "$CLIB" fcntl
 
 if [ "$HAVE_NETWORK_CMD" = "yes" ] || [ "$HAVE_STDIN_CMD" = "yes" ]; then
    HAVE_COMMAND='yes'
@@ -132,7 +138,7 @@ else
    HAVE_COMMAND='no'
 fi
 
-check_lib GETOPT_LONG -lc getopt_long
+check_lib GETOPT_LONG "$CLIB" getopt_long
 
 if [ "$HAVE_DYLIB" = 'no' ] && [ "$HAVE_DYNAMIC" = 'yes' ]; then
    echo "Dynamic loading of libretro is enabled, but your platform does not appear to have dlopen(), use --disable-dynamic or --with-libretro=\"-lretro\"".
@@ -277,9 +283,9 @@ if [ "$HAVE_UDEV" != "no" ]; then
    fi
 fi
 
-check_lib STRL -lc strlcpy
-check_lib STRCASESTR -lc strcasestr
-check_lib MMAP -lc mmap
+check_lib STRL "$CLIB" strlcpy
+check_lib STRCASESTR "$CLIB" strcasestr
+check_lib MMAP "$CLIB" mmap
 
 check_pkgconf PYTHON python3
 
