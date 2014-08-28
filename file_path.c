@@ -23,6 +23,10 @@
 #include "compat/posix_string.h"
 #include "miscellaneous.h"
 
+#ifdef __HAIKU__
+#include <kernel/image.h>
+#endif
+
 #if (defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)) || defined(__QNX__) || defined(PSP)
 #include <unistd.h> //stat() is defined here
 #endif
@@ -873,6 +877,18 @@ void fill_pathname_application_path(char *buf, size_t size)
       
       rarch_assert(strlcat(buf, "nobin", size) < size);
       return;
+   }
+#elif defined(__HAIKU__)
+   image_info info;
+   int32 cookie = 0;
+
+   while (get_next_image_info(0, &cookie, &info) == B_OK)
+   {
+      if (info.type == B_APP_IMAGE)
+      {
+         strlcpy(buf, info.name, size);
+         return;
+      }
    }
 #else
    *buf = '\0';
