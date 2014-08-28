@@ -1571,13 +1571,6 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
 
    glClear(GL_COLOR_BUFFER_BIT);
 
-   // Disable BFI during fast forward to prevent flicker
-   if (g_settings.video.black_frame_insertion && !driver.nonblock_state)
-   {
-      context_swap_buffers_func(gl);
-      glClear(GL_COLOR_BUFFER_BIT);
-   }
-
    if (gl->shader && gl->shader->set_params)
       gl->shader->set_params(gl, width, height,
          gl->tex_w, gl->tex_h,
@@ -1650,6 +1643,13 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
 #endif
 #endif
 #endif
+
+   // Disable BFI during fast forward to prevent flicker
+   if (g_settings.video.black_frame_insertion && !driver.nonblock_state)
+   {
+      context_swap_buffers_func(gl);
+      glClear(GL_COLOR_BUFFER_BIT);
+   }
 
    context_swap_buffers_func(gl);
    g_extern.frame_count++;
