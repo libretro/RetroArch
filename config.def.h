@@ -311,7 +311,7 @@ static const bool hard_sync = false;
 static const unsigned hard_sync_frames = 0;
 
 // Sets how many milliseconds to delay after VSync before running the core.
-// Can reduce latency at cost of performance.
+// Can reduce latency at cost of higher risk of stuttering.
 static const unsigned frame_delay = 0;
 
 // Inserts a black frame inbetween frames.

@@ -869,7 +869,7 @@ void setting_data_get_description(const void *data, char *msg,
                "after VSync before running the core.\n"
                 "\n"
                "Can reduce latency at cost of\n"
-               "performance.\n"
+               "higher risk of stuttering.\n"
                " \n"
                "Maximum is 15.");
     else if (!strcmp(setting->name, "audio_rate_control_delta"))
