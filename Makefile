@@ -74,6 +74,11 @@ HEADERS = $(wildcard */*/*.h) $(wildcard */*.h) $(wildcard *.h)
 
 ifeq ($(findstring Haiku,$(OS)),)
    LIBS = -lm
+   DEBUG_FLAG = -g
+else
+   LIBS = -lroot -lnetwork
+   # stable and nightly haiku builds are stuck on gdb 6.x but we use gcc4
+   DEBUG_FLAG = -gdwarf-2
 endif
 
 DEFINES = -DHAVE_CONFIG_H -DRARCH_INTERNAL -DHAVE_CC_RESAMPLER -DHAVE_OVERLAY
@@ -431,7 +436,7 @@ ifeq ($(GL_DEBUG), 1)
    CXXFLAGS += -DGL_DEBUG
 endif
 
-CFLAGS += -Wall $(OPTIMIZE_FLAG) $(INCLUDE_DIRS) -g -I.
+CFLAGS += -Wall $(OPTIMIZE_FLAG) $(INCLUDE_DIRS) $(DEBUG_FLAG) -I.
 ifeq ($(CXX_BUILD), 1)
    LINK = $(CXX)
    CFLAGS += -std=c++0x -xc++ -D__STDC_CONSTANT_MACROS

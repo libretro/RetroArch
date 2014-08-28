@@ -665,7 +665,11 @@ static config_file_t *open_default_config_file(void)
    if (xdg)
       fill_pathname_join(conf_path, xdg, "retroarch/retroarch.cfg", sizeof(conf_path));
    else if (home)
+#ifdef __HAIKU__
+      fill_pathname_join(conf_path, home, "config/settings/retroarch/retroarch.cfg", sizeof(conf_path));
+#else
       fill_pathname_join(conf_path, home, ".config/retroarch/retroarch.cfg", sizeof(conf_path));
+#endif
 
    if (xdg || home)
    {
@@ -688,7 +692,11 @@ static config_file_t *open_default_config_file(void)
       if (xdg)
          fill_pathname_join(conf_path, xdg, "retroarch/retroarch.cfg", sizeof(conf_path));
       else if (home)
+#ifdef __HAIKU__
+         fill_pathname_join(conf_path, home, "config/settings/retroarch/retroarch.cfg", sizeof(conf_path));
+#else
          fill_pathname_join(conf_path, home, ".config/retroarch/retroarch.cfg", sizeof(conf_path));
+#endif
 
       char basedir[PATH_MAX];
       fill_pathname_basedir(basedir, conf_path, sizeof(basedir));
@@ -696,7 +704,11 @@ static config_file_t *open_default_config_file(void)
       if (path_mkdir(basedir))
       {
 #ifndef GLOBAL_CONFIG_DIR
+#if defined(__HAIKU__)
+#define GLOBAL_CONFIG_DIR "/system/settings"
+#else
 #define GLOBAL_CONFIG_DIR "/etc"
+#endif
 #endif
          char skeleton_conf[PATH_MAX];
          fill_pathname_join(skeleton_conf, GLOBAL_CONFIG_DIR, "retroarch.cfg", sizeof(skeleton_conf));
