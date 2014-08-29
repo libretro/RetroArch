@@ -1232,22 +1232,17 @@ static int menu_settings_iterate(unsigned action, rarch_setting_t *setting)
    if (driver.menu->need_refresh)
       action = MENU_ACTION_NOOP;
 
-   unsigned scroll_speed = (max(driver.menu->scroll_accel, 2) - 2) / 4 + 1;
-   unsigned fast_scroll_speed = 4 + 4 * scroll_speed;
-    
-   (void)fast_scroll_speed;
-
    switch (action)
    {
       case MENU_ACTION_UP:
-         if (driver.menu->selection_ptr >= scroll_speed)
+         if (driver.menu->selection_ptr > 0)
             menu_decrement_navigation(driver.menu);
          else
             menu_set_navigation(driver.menu, file_list_get_size(driver.menu->selection_buf) - 1);
          break;
 
       case MENU_ACTION_DOWN:
-         if (driver.menu->selection_ptr + scroll_speed < file_list_get_size(driver.menu->selection_buf))
+         if ((driver.menu->selection_ptr + 1) < file_list_get_size(driver.menu->selection_buf))
             menu_increment_navigation(driver.menu);
          else
             menu_clear_navigation(driver.menu);
