@@ -2760,7 +2760,7 @@ static void check_volume(void)
    bool pressed_up   = input_key_pressed_func(RARCH_VOLUME_UP);
    bool pressed_down = input_key_pressed_func(RARCH_VOLUME_DOWN);
 
-   if (!g_extern.audio_active || !pressed_up || !pressed_down)
+   if (!pressed_up && !pressed_down)
       return;
 
    if (pressed_up)
