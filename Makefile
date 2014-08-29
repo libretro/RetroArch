@@ -139,6 +139,9 @@ endif
 
 ifeq ($(HAVE_NETPLAY), 1)
    OBJ += netplay.o
+   ifneq ($(findstring Win32,$(OS)),)
+      LIBS += -lws2_32
+   endif
 endif
 
 ifeq ($(HAVE_COMMAND), 1)
@@ -240,6 +243,34 @@ ifeq ($(HAVE_SDL2), 1)
    LIBS += $(SDL2_LIBS)
 endif
 
+ifeq ($(HAVE_D3D9), 1)
+   OBJ += gfx/d3d9/d3d.o gfx/d3d9/render_chain.o gfx/fonts/d3d_font.o gfx/fonts/d3d_w32_font.o gfx/context/d3d_ctx.o
+   DEFINES += -DHAVE_WIN32_D3D9
+   LIBS += -ld3d9 -ld3dx9 -ldxguid
+endif
+
+ifeq ($(HAVE_WINXINPUT), 1)
+   OBJ += input/winxinput_joypad.o
+   JOYCONFIG_OBJ += input/winxinput_joypad.o
+endif
+
+ifeq ($(HAVE_DINPUT), 1)
+   LIBS += -ldinput8 -ldxguid -lole32
+   OBJ += input/dinput.o
+   JOYCONFIG_LIBS += -ldinput8 -ldxguid -lole32
+   JOYCONFIG_OBJ += input/dinput.o
+endif
+
+ifeq ($(HAVE_XAUDIO), 1)
+   OBJ += audio/xaudio.o audio/xaudio-c/xaudio-c.o
+   LIBS += -lole32
+endif
+
+ifeq ($(HAVE_DSOUND), 1)
+   OBJ += audio/dsound.o
+   LIBS += -ldxguid -ldsound
+endif
+
 ifeq ($(HAVE_OMAP), 1)
    OBJ += gfx/omap_gfx.o
 endif
@@ -310,6 +341,9 @@ ifeq ($(HAVE_OPENGL), 1)
       OBJ += gfx/glsym/glsym_gl.o
       ifeq ($(OSX), 1)
          LIBS += -framework OpenGL
+      else ifneq ($(findstring Win32,$(OS)),)
+         LIBS += -lopengl32 -lgdi32 -lcomdlg32
+         OBJ += gfx/context/wgl_ctx.o gfx/context/win32_common.o
       else
          LIBS += -lGL
       endif
@@ -349,6 +383,9 @@ ifeq ($(HAVE_CG), 1)
       LIBS += -framework Cg
    else
       LIBS += -lCg -lCgGL
+      ifeq ($(HAVE_D3D9),1)
+         LIBS += -lcgD3D9
+      endif
    endif
 endif
 
@@ -437,11 +474,19 @@ ifeq ($(GL_DEBUG), 1)
 endif
 
 CFLAGS += -Wall $(OPTIMIZE_FLAG) $(INCLUDE_DIRS) $(DEBUG_FLAG) -I.
+CXXFLAGS = -std=c++0x -xc++ -D__STDC_CONSTANT_MACROS
+
 ifeq ($(CXX_BUILD), 1)
    LINK = $(CXX)
-   CFLAGS += -std=c++0x -xc++ -D__STDC_CONSTANT_MACROS
+   CFLAGS += $(CXXFLAGS)
 else
-   LINK = $(CC)
+   ifeq ($(findstring Win32,$(OS)),)
+      LINK = $(CC)
+   else
+      # directx-related code is c++
+      LINK = $(CXX)
+   endif
+
    ifneq ($(GNU90_BUILD), 1)
       ifneq ($(findstring icc,$(CC)),)
          CFLAGS += -std=c99 -D_GNU_SOURCE
@@ -460,7 +505,7 @@ endif
 
 GIT_VERSION := $(shell git rev-parse --short HEAD 2>/dev/null)
 ifneq ($(GIT_VERSION),)
-   DEFINES += -DHAVE_GIT_VERSION -DGIT_VERSION=\"$(GIT_VERSION)\"
+   DEFINES += -DHAVE_GIT_VERSION -DGIT_VERSION="\"$(GIT_VERSION)\""
    OBJ += git_version.o
 endif
 
@@ -496,6 +541,11 @@ $(OBJDIR)/%.o: %.c config.h config.mk
 	@mkdir -p $(dir $@)
 	@$(if $(Q), $(shell echo echo CC $<),)
 	$(Q)$(CC) $(CFLAGS) $(DEFINES) -MMD -c -o $@ $<
+
+$(OBJDIR)/%.o: %.cpp
+	@mkdir -p $(dir $@)
+	@$(if $(Q), $(shell echo echo CXX $<),)
+	$(Q)$(CXX) $(CFLAGS) $(CXXFLAGS) $(DEFINES) -MMD -c -o $@ $<
 
 .FORCE:
 
