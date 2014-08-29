@@ -1570,11 +1570,6 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
    memcpy(tex_info.coord, gl->tex_coords, sizeof(gl->tex_coords));
 
    glClear(GL_COLOR_BUFFER_BIT);
-   if (g_settings.video.black_frame_insertion)
-   {
-      context_swap_buffers_func(gl);
-      glClear(GL_COLOR_BUFFER_BIT);
-   }
 
    if (gl->shader && gl->shader->set_params)
       gl->shader->set_params(gl, width, height,
@@ -1648,6 +1643,13 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
 #endif
 #endif
 #endif
+
+   // Disable BFI during fast forward to prevent flicker
+   if (g_settings.video.black_frame_insertion && !driver.nonblock_state)
+   {
+      context_swap_buffers_func(gl);
+      glClear(GL_COLOR_BUFFER_BIT);
+   }
 
    context_swap_buffers_func(gl);
    g_extern.frame_count++;
@@ -2994,4 +2996,3 @@ const video_driver_t video_gl = {
 #endif
    gl_get_poke_interface,
 };
-
