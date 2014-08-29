@@ -1904,7 +1904,9 @@ rarch_setting_t *setting_data_get_mainmenu(bool regenerate)
    APPEND(terminator);
 
    /* flatten this array to save ourselves some kilobytes */
-   return (rarch_setting_t*)realloc(list, sizeof(rarch_setting_t) * index); 
+   list=realloc(list, sizeof(rarch_setting_t) * index);
+   /* do not optimize into return realloc(), list is static and must be written */
+   return (rarch_setting_t*)list;
 }
 #endif
 
@@ -2255,5 +2257,6 @@ rarch_setting_t *setting_data_get_list(void)
 
    /* flatten this array to save ourselves some kilobytes */
    list=realloc(list, sizeof(rarch_setting_t) * index);
+   /* do not optimize into return realloc(), list is static and must be written */
    return (rarch_setting_t*)list;
 }
