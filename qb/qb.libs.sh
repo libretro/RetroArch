@@ -114,8 +114,8 @@ check_pkgconf()	#$1 = HAVE_$1	$2 = package	$3 = version	$4 = critical error mess
 	answer='no'
 	$PKG_CONF_PATH --atleast-version="${3:-0.0}" "$2" && {
 		answer='yes'
-		eval $1_CFLAGS=\"$(pkg-config $2 --cflags)\"
-		eval $1_LIBS=\"$(pkg-config $2 --libs)\"
+		eval $1_CFLAGS=\"$($PKG_CONF_PATH $2 --cflags)\"
+		eval $1_LIBS=\"$($PKG_CONF_PATH $2 --libs)\"
 	}
 	
 	eval HAVE_$1="$answer"; echo "$ECHOBUF ... $answer"
