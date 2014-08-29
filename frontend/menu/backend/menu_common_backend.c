@@ -480,9 +480,9 @@ static void menu_common_entries_init(menu_handle_t *menu, unsigned menu_type)
          file_list_push(menu->selection_buf, "Analog D-pad Mode", "",
                MENU_SETTINGS_BIND_ANALOG_MODE, 0, NULL);
          file_list_push(menu->selection_buf, "", "input_axis_threshold",
-               MENU_SETTINGS_INPUT_AXIS_THRESHOLD, 0, NULL);
+               MENU_SETTINGS_INPUT_AXIS_THRESHOLD, 0, setting_data);
          file_list_push(menu->selection_buf, "", "input_autodetect_enable",
-               MENU_SETTINGS_DEVICE_AUTODETECT_ENABLE, 0, NULL);
+               MENU_SETTINGS_DEVICE_AUTODETECT_ENABLE, 0, setting_data);
          file_list_push(menu->selection_buf, "Bind Mode", "",
                MENU_SETTINGS_CUSTOM_BIND_MODE, 0, NULL);
          file_list_push(menu->selection_buf, "Configure All (RetroPad)", "",
