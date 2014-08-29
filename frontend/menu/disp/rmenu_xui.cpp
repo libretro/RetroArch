@@ -379,7 +379,6 @@ static void rmenu_xui_render(void)
    const char *dir = NULL;
    unsigned menu_type = 0;
    unsigned menu_type_is = 0;
-   rarch_setting_t *setting = NULL;
 
    if (!driver.menu || driver.menu->need_refresh && 
          (g_extern.lifecycle_state & (1ULL << MODE_MENU))
@@ -391,7 +390,7 @@ static void rmenu_xui_render(void)
 
    rmenu_xui_render_background();
 
-   file_list_get_last(driver.menu->menu_stack, &dir, &menu_type, setting);
+   file_list_get_last(driver.menu->menu_stack, &dir, &menu_type);
 
    if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->type_is)
       menu_type_is = driver.menu_ctx->backend->type_is(menu_type);
@@ -548,7 +547,7 @@ static void rmenu_xui_render(void)
    {
       const char *path = 0;
       unsigned type = 0;
-      file_list_get_at_offset(driver.menu->selection_buf, i, &path, &type, setting);
+      file_list_get_at_offset(driver.menu->selection_buf, i, &path, &type);
       char message[256];
       char type_str[256];
 

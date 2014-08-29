@@ -263,7 +263,6 @@ static void rgui_render_messagebox(const char *message)
 static void rgui_render(void)
 {
    size_t begin, end;
-   rarch_setting_t *setting = NULL;
 
    if (driver.menu->need_refresh &&
          (g_extern.lifecycle_state & (1ULL << MODE_MENU))
@@ -287,7 +286,7 @@ static void rgui_render(void)
    const char *dir = NULL;
    unsigned menu_type = 0;
    unsigned menu_type_is = 0;
-   file_list_get_last(driver.menu->menu_stack, &dir, &menu_type, setting);
+   file_list_get_last(driver.menu->menu_stack, &dir, &menu_type);
 
    if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->type_is)
       menu_type_is = driver.menu_ctx->backend->type_is(menu_type);
@@ -447,8 +446,9 @@ static void rgui_render(void)
       char message[256], type_str[256];
       const char *path = 0;
       unsigned type = 0;
-      rarch_setting_t *setting = NULL;
-      file_list_get_at_offset(driver.menu->selection_buf, i, &path, &type, setting);
+      file_list_get_at_offset(driver.menu->selection_buf, i, &path, &type);
+      rarch_setting_t *setting = (rarch_setting_t*)setting_data_find_setting(
+            setting_data_get_list(), driver.menu->selection_buf->list[i].label);
 
       unsigned w = 19;
       if (menu_type == MENU_SETTINGS_PERFORMANCE_COUNTERS)

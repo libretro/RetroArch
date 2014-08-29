@@ -259,7 +259,7 @@ void *menu_init(const void *data)
 #ifdef HAVE_SHADER_MANAGER
    menu->shader = (struct gfx_shader*)calloc(1, sizeof(struct gfx_shader));
 #endif
-   file_list_push(menu->menu_stack, "", "", MENU_SETTINGS, 0, NULL);
+   file_list_push(menu->menu_stack, "", "", MENU_SETTINGS, 0);
    menu_clear_navigation(menu);
    menu->push_start_screen = g_settings.menu_show_start_screen;
    g_settings.menu_show_start_screen = false;
@@ -374,11 +374,11 @@ void menu_flush_stack_type(unsigned final_type)
       return;
 
    driver.menu->need_refresh = true;
-   file_list_get_last(driver.menu->menu_stack, NULL, &type, setting);
+   file_list_get_last(driver.menu->menu_stack, NULL, &type);
    while (type != final_type)
    {
       file_list_pop(driver.menu->menu_stack, &driver.menu->selection_ptr);
-      file_list_get_last(driver.menu->menu_stack, NULL, &type, setting);
+      file_list_get_last(driver.menu->menu_stack, NULL, &type);
    }
 }
 
@@ -390,7 +390,6 @@ bool menu_iterate(void)
    uint64_t input_state = 0;
    int32_t input_entry_ret = 0;
    int32_t ret = 0;
-   rarch_setting_t *setting = NULL;
 
    if (!driver.menu)
       return false;
@@ -506,12 +505,12 @@ bool menu_iterate(void)
    if (ret < 0)
    {
       unsigned type = 0;
-      file_list_get_last(driver.menu->menu_stack, NULL, &type, setting);
+      file_list_get_last(driver.menu->menu_stack, NULL, &type);
 
       while (type != MENU_SETTINGS)
       {
          file_list_pop(driver.menu->menu_stack, &driver.menu->selection_ptr);
-         file_list_get_last(driver.menu->menu_stack, NULL, &type, setting);
+         file_list_get_last(driver.menu->menu_stack, NULL, &type);
       }
    }
 
@@ -650,11 +649,10 @@ static inline int menu_list_get_first_char(file_list_t *buf, unsigned offset)
 static inline bool menu_list_elem_is_dir(file_list_t *buf,
       unsigned offset)
 {
-   rarch_setting_t *setting = NULL;
    const char *path = NULL;
    unsigned type = 0;
 
-   file_list_get_at_offset(buf, offset, &path, &type, setting);
+   file_list_get_at_offset(buf, offset, &path, &type);
 
    return type != MENU_FILE_PLAIN;
 }
@@ -694,5 +692,5 @@ void menu_build_scroll_indices(file_list_t *buf)
 
 void menu_push_info_screen(void)
 {
-   file_list_push(driver.menu->menu_stack, "", "", MENU_START_SCREEN, 0, NULL);
+   file_list_push(driver.menu->menu_stack, "", "", MENU_START_SCREEN, 0);
 }

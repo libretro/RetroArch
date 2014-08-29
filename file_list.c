@@ -25,8 +25,7 @@
 
 void file_list_push(file_list_t *list,
       const char *path, const char *label,
-      unsigned type, size_t directory_ptr,
-      void *setting_list)
+      unsigned type, size_t directory_ptr)
 {
    if (list->size >= list->capacity)
    {
@@ -40,20 +39,7 @@ void file_list_push(file_list_t *list,
       driver.menu_ctx->list_insert(list, path, label, list->size);
 
    list->list[list->size].label = strdup(label);
-   list->list[list->size].setting = NULL;
-
-   rarch_setting_t *setting_data = (rarch_setting_t *)setting_list;
-
-   if (setting_data)
-      list->list[list->size].setting = (rarch_setting_t*)
-         setting_data_find_setting(setting_data, label);
-
-   if (list->list[list->size].setting)
-      list->list[list->size].path = strdup(
-            list->list[list->size].setting->short_description);
-   else
-      list->list[list->size].path = strdup(path);
-
+   list->list[list->size].path = strdup(path);
    list->list[list->size].alt = NULL;
    list->list[list->size].type = type;
    list->list[list->size].directory_ptr = directory_ptr;
@@ -148,24 +134,23 @@ void file_list_sort_on_alt(file_list_t *list)
 }
 
 void file_list_get_at_offset(const file_list_t *list, size_t index,
-      const char **path, unsigned *file_type, rarch_setting_t *setting)
+      const char **path, unsigned *file_type)
 {
    if (path)
       *path = list->list[index].path;
    if (file_type)
       *file_type = list->list[index].type;
-   if (setting)
-      setting = list->list[index].setting;
 }
 
 void file_list_get_last(const file_list_t *list,
-      const char **path, unsigned *file_type, rarch_setting_t *setting)
+      const char **path, unsigned *file_type)
 {
    if (list->size)
-      file_list_get_at_offset(list, list->size - 1, path, file_type, setting);
+      file_list_get_at_offset(list, list->size - 1, path, file_type);
 }
 
-void *file_list_get_last_setting(const file_list_t *list, int index, void *settings)
+void *file_list_get_last_setting(const file_list_t *list, int index,
+      void *settings)
 {
    if (settings)
       return (rarch_setting_t*)setting_data_find_setting(settings,
