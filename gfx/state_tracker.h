@@ -24,7 +24,7 @@ extern "C" {
 #include "../boolean.h"
 
 #ifdef HAVE_CONFIG_H
-#include "config.h"
+#include "../config.h"
 #endif
 
 enum state_tracker_type
