@@ -2878,6 +2878,54 @@ static void handle_setting(rarch_setting_t *setting,
    }
    else if (setting->type == ST_PATH)
       menu_common_setting_set_current_path_selection(setting, setting->default_value.string, id, action);
+   else if (setting->type == ST_STRING)
+   {
+      switch (id)
+      {
+         case MENU_SETTINGS_DRIVER_VIDEO:
+            if (action == MENU_ACTION_LEFT)
+               find_prev_driver(RARCH_DRIVER_VIDEO, g_settings.video.driver, sizeof(g_settings.video.driver));
+            else if (action == MENU_ACTION_RIGHT)
+               find_next_driver(RARCH_DRIVER_VIDEO, g_settings.video.driver, sizeof(g_settings.video.driver));
+            break;
+         case MENU_SETTINGS_DRIVER_AUDIO:
+            if (action == MENU_ACTION_LEFT)
+               find_prev_driver(RARCH_DRIVER_AUDIO, g_settings.audio.driver, sizeof(g_settings.audio.driver));
+            else if (action == MENU_ACTION_RIGHT)
+               find_next_driver(RARCH_DRIVER_AUDIO, g_settings.audio.driver, sizeof(g_settings.audio.driver));
+            break;
+         case MENU_SETTINGS_DRIVER_AUDIO_RESAMPLER:
+            if (action == MENU_ACTION_LEFT)
+               find_prev_resampler_driver();
+            else if (action == MENU_ACTION_RIGHT)
+               find_next_resampler_driver();
+            break;
+         case MENU_SETTINGS_DRIVER_INPUT:
+            if (action == MENU_ACTION_LEFT)
+               find_prev_driver(RARCH_DRIVER_INPUT, g_settings.input.driver, sizeof(g_settings.input.driver));
+            else if (action == MENU_ACTION_RIGHT)
+               find_next_driver(RARCH_DRIVER_INPUT, g_settings.input.driver, sizeof(g_settings.input.driver));
+            break;
+         case MENU_SETTINGS_DRIVER_CAMERA:
+            if (action == MENU_ACTION_LEFT)
+               find_prev_driver(RARCH_DRIVER_CAMERA, g_settings.camera.driver, sizeof(g_settings.camera.driver));
+            else if (action == MENU_ACTION_RIGHT)
+               find_next_driver(RARCH_DRIVER_CAMERA, g_settings.camera.driver, sizeof(g_settings.camera.driver));
+            break;
+         case MENU_SETTINGS_DRIVER_LOCATION:
+            if (action == MENU_ACTION_LEFT)
+               find_prev_driver(RARCH_DRIVER_LOCATION, g_settings.location.driver, sizeof(g_settings.location.driver));
+            else if (action == MENU_ACTION_RIGHT)
+               find_next_driver(RARCH_DRIVER_LOCATION, g_settings.location.driver, sizeof(g_settings.location.driver));
+            break;
+         case MENU_SETTINGS_DRIVER_MENU:
+            if (action == MENU_ACTION_LEFT)
+               find_prev_driver(RARCH_DRIVER_MENU, g_settings.menu.driver, sizeof(g_settings.menu.driver));
+            else if (action == MENU_ACTION_RIGHT)
+               find_next_driver(RARCH_DRIVER_MENU, g_settings.menu.driver, sizeof(g_settings.menu.driver));
+            break;
+      }
+   }
 }
 
 static int menu_common_setting_set(unsigned id, unsigned action)
@@ -3163,48 +3211,6 @@ static int menu_common_setting_set(unsigned id, unsigned action)
                      }
                   }
                }
-               break;
-            case MENU_SETTINGS_DRIVER_VIDEO:
-               if (action == MENU_ACTION_LEFT)
-                  find_prev_driver(RARCH_DRIVER_VIDEO, g_settings.video.driver, sizeof(g_settings.video.driver));
-               else if (action == MENU_ACTION_RIGHT)
-                  find_next_driver(RARCH_DRIVER_VIDEO, g_settings.video.driver, sizeof(g_settings.video.driver));
-               break;
-            case MENU_SETTINGS_DRIVER_AUDIO:
-               if (action == MENU_ACTION_LEFT)
-                  find_prev_driver(RARCH_DRIVER_AUDIO, g_settings.audio.driver, sizeof(g_settings.audio.driver));
-               else if (action == MENU_ACTION_RIGHT)
-                  find_next_driver(RARCH_DRIVER_AUDIO, g_settings.audio.driver, sizeof(g_settings.audio.driver));
-               break;
-            case MENU_SETTINGS_DRIVER_AUDIO_RESAMPLER:
-               if (action == MENU_ACTION_LEFT)
-                  find_prev_resampler_driver();
-               else if (action == MENU_ACTION_RIGHT)
-                  find_next_resampler_driver();
-               break;
-            case MENU_SETTINGS_DRIVER_INPUT:
-               if (action == MENU_ACTION_LEFT)
-                  find_prev_driver(RARCH_DRIVER_INPUT, g_settings.input.driver, sizeof(g_settings.input.driver));
-               else if (action == MENU_ACTION_RIGHT)
-                  find_next_driver(RARCH_DRIVER_INPUT, g_settings.input.driver, sizeof(g_settings.input.driver));
-               break;
-            case MENU_SETTINGS_DRIVER_CAMERA:
-               if (action == MENU_ACTION_LEFT)
-                  find_prev_driver(RARCH_DRIVER_CAMERA, g_settings.camera.driver, sizeof(g_settings.camera.driver));
-               else if (action == MENU_ACTION_RIGHT)
-                  find_next_driver(RARCH_DRIVER_CAMERA, g_settings.camera.driver, sizeof(g_settings.camera.driver));
-               break;
-            case MENU_SETTINGS_DRIVER_LOCATION:
-               if (action == MENU_ACTION_LEFT)
-                  find_prev_driver(RARCH_DRIVER_LOCATION, g_settings.location.driver, sizeof(g_settings.location.driver));
-               else if (action == MENU_ACTION_RIGHT)
-                  find_next_driver(RARCH_DRIVER_LOCATION, g_settings.location.driver, sizeof(g_settings.location.driver));
-               break;
-            case MENU_SETTINGS_DRIVER_MENU:
-               if (action == MENU_ACTION_LEFT)
-                  find_prev_driver(RARCH_DRIVER_MENU, g_settings.menu.driver, sizeof(g_settings.menu.driver));
-               else if (action == MENU_ACTION_RIGHT)
-                  find_next_driver(RARCH_DRIVER_MENU, g_settings.menu.driver, sizeof(g_settings.menu.driver));
                break;
 #if defined(GEKKO)
             case MENU_SETTINGS_VIDEO_RESOLUTION:
