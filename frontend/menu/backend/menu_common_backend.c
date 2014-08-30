@@ -2000,12 +2000,7 @@ static int menu_action_ok(const char *dir, unsigned menu_type)
          // Core selection on non-console just updates directory listing.
          // Will take effect on new content load.
 #elif defined(RARCH_CONSOLE)
-#if defined(GEKKO) && defined(HW_RVL)
-         fill_pathname_join(g_extern.fullpath, g_defaults.core_dir,
-               SALAMANDER_FILE, sizeof(g_extern.fullpath));
-#endif
-         g_extern.lifecycle_state &= ~(1ULL << MODE_GAME);
-         g_extern.lifecycle_state |= (1ULL << MODE_EXITSPAWN);
+         rarch_main_command(RARCH_CMD_RESTART_RETROARCH);
          return -1;
 #endif
 
