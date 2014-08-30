@@ -292,12 +292,14 @@ INPUT
 #include "../input/autoconf/builtin_ps3.c"
 #elif defined(SN_TARGET_PSP2) || defined(PSP)
 #include "../input/psp_input.c"
+#include "../input/psp_input_joypad.c"
 #include "../input/autoconf/builtin_psp.c"
 #elif defined(GEKKO)
 #ifdef HAVE_LIBSICKSAXIS
 #include "../input/gx_input_sicksaxis.c"
 #endif
 #include "../input/gx_input.c"
+#include "../input/gx_input_joypad.c"
 #include "../input/autoconf/builtin_gx.c"
 #elif defined(_XBOX)
 #include "../input/xdk_xinput_input.c"
@@ -306,11 +308,13 @@ INPUT
 #include "../input/xenon360_input.c"
 #elif defined(ANDROID)
 #include "../input/android_input.c"
+#include "../input/android_input_joypad.c"
 #elif defined(IOS) || defined(OSX)
 #include "../input/apple_input.c"
 #include "../input/apple_joypad.c"
 #elif defined(__QNX__)
 #include "../input/qnx_input.c"
+#include "../input/qnx_input_joypad.c"
 #elif defined(EMSCRIPTEN)
 #include "../input/rwebinput_input.c"
 #endif
