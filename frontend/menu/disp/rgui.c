@@ -285,9 +285,10 @@ static void rgui_render(void)
 
    char title[256];
    const char *dir = NULL;
+   const char *label = NULL;
    unsigned menu_type = 0;
    unsigned menu_type_is = 0;
-   file_list_get_last(driver.menu->menu_stack, &dir, &menu_type);
+   file_list_get_last(driver.menu->menu_stack, &dir, &label, &menu_type);
 
    if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->type_is)
       menu_type_is = driver.menu_ctx->backend->type_is(menu_type);
@@ -445,9 +446,10 @@ static void rgui_render(void)
    for (i = begin; i < end; i++, y += FONT_HEIGHT_STRIDE)
    {
       char message[256], type_str[256];
-      const char *path = 0;
+      const char *path = NULL;
+      const char *label = NULL;
       unsigned type = 0;
-      file_list_get_at_offset(driver.menu->selection_buf, i, &path, &type);
+      file_list_get_at_offset(driver.menu->selection_buf, i, &path, &label, &type);
       rarch_setting_t *setting = (rarch_setting_t*)setting_data_find_setting(
             setting_data_get_list(), driver.menu->selection_buf->list[i].label);
       unsigned w = 19;

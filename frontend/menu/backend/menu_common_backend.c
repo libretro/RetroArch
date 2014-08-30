@@ -1052,8 +1052,9 @@ static void menu_action_cancel(void)
 
 static int menu_settings_iterate(unsigned action)
 {
+   const char *path = NULL;
+   const char *dir  = NULL;
    const char *label = NULL;
-   const char *dir = NULL;
    unsigned type = 0;
    unsigned menu_type = 0;
 
@@ -1063,16 +1064,17 @@ static int menu_settings_iterate(unsigned action)
    driver.menu->frame_buf_pitch = driver.menu->width * 2;
 
    if (action != MENU_ACTION_REFRESH)
-      file_list_get_at_offset(driver.menu->selection_buf, driver.menu->selection_ptr, &label, &type);
+      file_list_get_at_offset(driver.menu->selection_buf,
+            driver.menu->selection_ptr, &path, &label, &type);
 
-   if (type == MENU_SETTINGS_CORE)
-      label = g_settings.libretro_directory;
-   else if (type == MENU_SETTINGS_CONFIG)
-      label = g_settings.menu_config_directory;
+   if (!strcmp(label, "core_list"))
+      dir = g_settings.libretro_directory;
+   else if (!strcmp(label, "configurations"))
+      dir = g_settings.menu_config_directory;
    else if (type == MENU_SETTINGS_DISK_APPEND)
-      label = g_settings.menu_content_directory;
+      dir = g_settings.menu_content_directory;
 
-   file_list_get_last(driver.menu->menu_stack, &dir, &menu_type);
+   file_list_get_last(driver.menu->menu_stack, &path, NULL, &menu_type);
 
    if (driver.menu->need_refresh)
       action = MENU_ACTION_NOOP;
@@ -1100,7 +1102,9 @@ static int menu_settings_iterate(unsigned action)
       case MENU_ACTION_SELECT:
          {
             const char *path = NULL;
-            file_list_get_at_offset(driver.menu->selection_buf, driver.menu->selection_ptr, &path, &driver.menu->info_selection);
+            file_list_get_at_offset(driver.menu->selection_buf,
+                  driver.menu->selection_ptr, &path, &label,
+                  &driver.menu->info_selection);
             file_list_push(driver.menu->menu_stack, "", "",
                   MENU_INFO_SCREEN, driver.menu->selection_ptr);
          }
@@ -1109,27 +1113,40 @@ static int menu_settings_iterate(unsigned action)
       case MENU_ACTION_RIGHT:
       case MENU_ACTION_OK:
       case MENU_ACTION_START:
-         if ((type == MENU_SETTINGS_OPEN_FILEBROWSER || type == MENU_SETTINGS_OPEN_FILEBROWSER_DEFERRED_CORE)
+         if ((
+                  type == MENU_SETTINGS_OPEN_FILEBROWSER ||
+                  type == MENU_SETTINGS_OPEN_FILEBROWSER_DEFERRED_CORE)
                && action == MENU_ACTION_OK)
          {
-            driver.menu->defer_core = type == MENU_SETTINGS_OPEN_FILEBROWSER_DEFERRED_CORE;
-            menu_common_setting_push_current_menu(driver.menu->menu_stack, g_settings.menu_content_directory, MENU_FILE_DIRECTORY, driver.menu->selection_ptr, action);
+            driver.menu->defer_core = (type == 
+                  MENU_SETTINGS_OPEN_FILEBROWSER_DEFERRED_CORE);
+            menu_common_setting_push_current_menu(driver.menu->menu_stack,
+                  g_settings.menu_content_directory, MENU_FILE_DIRECTORY,
+                  driver.menu->selection_ptr, action);
          }
-         else if ((type == MENU_SETTINGS_OPEN_HISTORY || menu_common_type_is(type) == MENU_FILE_DIRECTORY) && action == MENU_ACTION_OK)
-            menu_common_setting_push_current_menu(driver.menu->menu_stack, "", type, driver.menu->selection_ptr, action);
-         else if ((menu_common_type_is(type) == MENU_SETTINGS || type == MENU_SETTINGS_CORE || type == MENU_SETTINGS_CONFIG || type == MENU_SETTINGS_DISK_APPEND) && action == MENU_ACTION_OK)
-            menu_common_setting_push_current_menu(driver.menu->menu_stack, label, type, driver.menu->selection_ptr, action);
+         else if ((type == MENU_SETTINGS_OPEN_HISTORY ||
+                  menu_common_type_is(type) == MENU_FILE_DIRECTORY)
+               && action == MENU_ACTION_OK)
+            menu_common_setting_push_current_menu(driver.menu->menu_stack,
+                  "", type, driver.menu->selection_ptr, action);
+         else if ((menu_common_type_is(type) == MENU_SETTINGS ||
+                  type == MENU_SETTINGS_CORE || type == MENU_SETTINGS_CONFIG ||
+                  type == MENU_SETTINGS_DISK_APPEND) && action == MENU_ACTION_OK)
+            menu_common_setting_push_current_menu(driver.menu->menu_stack,
+                  dir ? dir : label, type, driver.menu->selection_ptr, action);
          else if (type == MENU_SETTINGS_CUSTOM_VIEWPORT && action == MENU_ACTION_OK)
          {
             file_list_push(driver.menu->menu_stack, "", "",
                   type, driver.menu->selection_ptr);
 
             // Start with something sane.
-            rarch_viewport_t *custom = &g_extern.console.screen.viewports.custom_vp;
+            rarch_viewport_t *custom = (rarch_viewport_t*)
+               &g_extern.console.screen.viewports.custom_vp;
 
             if (driver.video_data && driver.video && driver.video->viewport_info)
                driver.video->viewport_info(driver.video_data, custom);
-            aspectratio_lut[ASPECT_RATIO_CUSTOM].value = (float)custom->width / custom->height;
+            aspectratio_lut[ASPECT_RATIO_CUSTOM].value =
+               (float)custom->width / custom->height;
 
             g_settings.video.aspect_ratio_idx = ASPECT_RATIO_CUSTOM;
 
@@ -1139,8 +1156,11 @@ static int menu_settings_iterate(unsigned action)
          {
             int ret = 0;
 
-            if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->setting_toggle)
-               ret = driver.menu_ctx->backend->setting_toggle(type, action, menu_type);
+            if (driver.menu_ctx && driver.menu_ctx->backend &&
+                  driver.menu_ctx->backend->setting_toggle)
+               ret = driver.menu_ctx->backend->setting_toggle(type,
+                     action, menu_type);
+
             if (ret)
                return ret;
          }
@@ -1159,7 +1179,7 @@ static int menu_settings_iterate(unsigned action)
          break;
    }
 
-   file_list_get_last(driver.menu->menu_stack, &dir, &menu_type);
+   file_list_get_last(driver.menu->menu_stack, &path, &label, &menu_type);
 
    if (driver.menu->need_refresh && !(menu_type == MENU_FILE_DIRECTORY ||
             menu_common_type_is(menu_type) == MENU_SETTINGS_SHADER_OPTIONS ||
@@ -1195,23 +1215,28 @@ static int menu_settings_iterate(unsigned action)
 
 static int menu_viewport_iterate(unsigned action)
 {
-   int stride_x, stride_y;
+   int stride_x = 1, stride_y = 1;
    char msg[64];
-   struct retro_game_geometry *geom;
+   struct retro_game_geometry *geom = NULL;
    const char *base_msg = NULL;
+   const char *path = NULL;
+   const char *label = NULL;
    unsigned menu_type = 0;
-   rarch_viewport_t *custom = (rarch_viewport_t*)&g_extern.console.screen.viewports.custom_vp;
+   rarch_viewport_t *custom = (rarch_viewport_t*)
+      &g_extern.console.screen.viewports.custom_vp;
 
    if (!driver.menu)
       return 0;
 
-   file_list_get_last(driver.menu->menu_stack, NULL, &menu_type);
+   file_list_get_last(driver.menu->menu_stack, &path, &label, &menu_type);
 
    geom = (struct retro_game_geometry*)&g_extern.system.av_info.geometry;
-   stride_x = g_settings.video.scale_integer ?
-      geom->base_width : 1;
-   stride_y = g_settings.video.scale_integer ?
-      geom->base_height : 1;
+
+   if (g_settings.video.scale_integer)
+   {
+      stride_x = geom->base_width;
+      stride_y = geom->base_height;
+   }
 
    switch (action)
    {
@@ -1319,7 +1344,7 @@ static int menu_viewport_iterate(unsigned action)
          break;
    }
 
-   file_list_get_last(driver.menu->menu_stack, NULL, &menu_type);
+   file_list_get_last(driver.menu->menu_stack, &path, &label, &menu_type);
 
    if (driver.video_data && driver.menu_ctx && driver.menu_ctx->render)
       driver.menu_ctx->render();
@@ -1371,6 +1396,7 @@ static void menu_parse_and_resolve(unsigned menu_type)
    file_list_t *list = NULL;
    const core_info_t *info = NULL;
    const char *dir = NULL;
+   const char *label = NULL;
 
    if (!driver.menu)
    {
@@ -1417,7 +1443,7 @@ static void menu_parse_and_resolve(unsigned menu_type)
       default:
          {
             /* Directory parse */
-            file_list_get_last(driver.menu->menu_stack, &dir, &menu_type);
+            file_list_get_last(driver.menu->menu_stack, &dir, &label, &menu_type);
 
             if (!*dir)
             {
@@ -1588,16 +1614,18 @@ static void menu_parse_and_resolve(unsigned menu_type)
    {
       case MENU_SETTINGS_CORE:
          dir = NULL;
+         label = NULL;
          list = (file_list_t*)driver.menu->selection_buf;
-         file_list_get_last(driver.menu->menu_stack, &dir, &menu_type);
+         file_list_get_last(driver.menu->menu_stack, &dir, &label, &menu_type);
          list_size = file_list_get_size(list);
          for (i = 0; i < list_size; i++)
          {
             char core_path[PATH_MAX], display_name[256];
             const char *path = NULL;
+            const char *label = NULL;
             unsigned type = 0;
 
-            file_list_get_at_offset(list, i, &path, &type);
+            file_list_get_at_offset(list, i, &path, &label, &type);
             if (type != MENU_FILE_PLAIN)
                continue;
 
@@ -1920,6 +1948,7 @@ void menu_common_setting_set_current_string(rarch_setting_t *setting, const char
 static int menu_action_ok(const char *dir, unsigned menu_type)
 {
    const char *path = NULL;
+   const char *label = NULL;
    unsigned type = 0;
    rarch_setting_t *setting = NULL;
    rarch_setting_t *setting_data = (rarch_setting_t *)setting_data_get_list();
@@ -1927,7 +1956,7 @@ static int menu_action_ok(const char *dir, unsigned menu_type)
    if (file_list_get_size(driver.menu->selection_buf) == 0)
       return 0;
 
-   file_list_get_at_offset(driver.menu->selection_buf, driver.menu->selection_ptr, &path, &type);
+   file_list_get_at_offset(driver.menu->selection_buf, driver.menu->selection_ptr, &path, &label, &type);
 
    if (
          menu_common_type_is(type) == MENU_SETTINGS_SHADER_OPTIONS ||
@@ -2211,6 +2240,7 @@ static int menu_common_iterate(unsigned action)
    int ret = 0;
    unsigned menu_type = 0;
    const char *dir = NULL;
+   const char *label = NULL;
 
    if (!driver.menu)
    {
@@ -2218,7 +2248,7 @@ static int menu_common_iterate(unsigned action)
       return 0;
    }
 
-   file_list_get_last(driver.menu->menu_stack, &dir, &menu_type);
+   file_list_get_last(driver.menu->menu_stack, &dir, &label, &menu_type);
 
    if (driver.video_data && driver.menu_ctx && driver.menu_ctx->set_texture)
       driver.menu_ctx->set_texture(driver.menu);
@@ -2302,7 +2332,7 @@ static int menu_common_iterate(unsigned action)
    }
 
    // refresh values in case the stack changed
-   file_list_get_last(driver.menu->menu_stack, &dir, &menu_type);
+   file_list_get_last(driver.menu->menu_stack, &dir, &label, &menu_type);
 
    if (driver.menu->need_refresh && (menu_type == MENU_FILE_DIRECTORY ||
             menu_common_type_is(menu_type) == MENU_SETTINGS_SHADER_OPTIONS ||

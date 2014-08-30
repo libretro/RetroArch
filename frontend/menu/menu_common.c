@@ -367,22 +367,26 @@ void menu_ticker_line(char *buf, size_t len, unsigned index,
 
 void menu_flush_stack_type(unsigned final_type)
 {
+   const char *path = NULL;
+   const char *label = NULL;
    unsigned type = 0;
 
    if (!driver.menu)
       return;
 
    driver.menu->need_refresh = true;
-   file_list_get_last(driver.menu->menu_stack, NULL, &type);
+   file_list_get_last(driver.menu->menu_stack, &path, &label, &type);
    while (type != final_type)
    {
       file_list_pop(driver.menu->menu_stack, &driver.menu->selection_ptr);
-      file_list_get_last(driver.menu->menu_stack, NULL, &type);
+      file_list_get_last(driver.menu->menu_stack, &path, &label, &type);
    }
 }
 
 bool menu_iterate(void)
 {
+   const char *path = NULL;
+   const char *label = NULL;
    unsigned action = MENU_ACTION_NOOP;
    static bool initial_held = true;
    static bool first_held = false;
@@ -504,12 +508,12 @@ bool menu_iterate(void)
    if (ret < 0)
    {
       unsigned type = 0;
-      file_list_get_last(driver.menu->menu_stack, NULL, &type);
+      file_list_get_last(driver.menu->menu_stack, &path, &label, &type);
 
       while (type != MENU_SETTINGS)
       {
          file_list_pop(driver.menu->menu_stack, &driver.menu->selection_ptr);
-         file_list_get_last(driver.menu->menu_stack, NULL, &type);
+         file_list_get_last(driver.menu->menu_stack, &path, &label, &type);
       }
    }
 
@@ -649,9 +653,10 @@ static inline bool menu_list_elem_is_dir(file_list_t *buf,
       unsigned offset)
 {
    const char *path = NULL;
+   const char *label = NULL;
    unsigned type = 0;
 
-   file_list_get_at_offset(buf, offset, &path, &type);
+   file_list_get_at_offset(buf, offset, &path, &label, &type);
 
    return type != MENU_FILE_PLAIN;
 }
