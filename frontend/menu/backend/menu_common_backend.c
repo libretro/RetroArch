@@ -2856,6 +2856,20 @@ static unsigned menu_gx_resolutions[GX_RESOLUTIONS_LAST][2] = {
 static unsigned menu_current_gx_resolution = GX_RESOLUTIONS_640_480;
 #endif
 
+static void handle_driver(unsigned id, char *driver, size_t sizeof_driver,
+      unsigned action)
+{
+   switch (action)
+   {
+      case MENU_ACTION_LEFT:
+         find_prev_driver(id, driver, sizeof_driver);
+         break;
+      case MENU_ACTION_RIGHT:
+         find_next_driver(id, driver, sizeof_driver);
+         break;
+   }
+}
+
 static void handle_setting(rarch_setting_t *setting,
       unsigned id, unsigned action)
 {
@@ -2882,16 +2896,12 @@ static void handle_setting(rarch_setting_t *setting,
       switch (id)
       {
          case MENU_SETTINGS_DRIVER_VIDEO:
-            if (action == MENU_ACTION_LEFT)
-               find_prev_driver(RARCH_DRIVER_VIDEO, g_settings.video.driver, sizeof(g_settings.video.driver));
-            else if (action == MENU_ACTION_RIGHT)
-               find_next_driver(RARCH_DRIVER_VIDEO, g_settings.video.driver, sizeof(g_settings.video.driver));
+            handle_driver(RARCH_DRIVER_VIDEO, g_settings.video.driver,
+                  sizeof(g_settings.video.driver), action);
             break;
          case MENU_SETTINGS_DRIVER_AUDIO:
-            if (action == MENU_ACTION_LEFT)
-               find_prev_driver(RARCH_DRIVER_AUDIO, g_settings.audio.driver, sizeof(g_settings.audio.driver));
-            else if (action == MENU_ACTION_RIGHT)
-               find_next_driver(RARCH_DRIVER_AUDIO, g_settings.audio.driver, sizeof(g_settings.audio.driver));
+            handle_driver(RARCH_DRIVER_AUDIO, g_settings.audio.driver,
+                  sizeof(g_settings.audio.driver), action);
             break;
          case MENU_SETTINGS_DRIVER_AUDIO_RESAMPLER:
             if (action == MENU_ACTION_LEFT)
@@ -2900,28 +2910,20 @@ static void handle_setting(rarch_setting_t *setting,
                find_next_resampler_driver();
             break;
          case MENU_SETTINGS_DRIVER_INPUT:
-            if (action == MENU_ACTION_LEFT)
-               find_prev_driver(RARCH_DRIVER_INPUT, g_settings.input.driver, sizeof(g_settings.input.driver));
-            else if (action == MENU_ACTION_RIGHT)
-               find_next_driver(RARCH_DRIVER_INPUT, g_settings.input.driver, sizeof(g_settings.input.driver));
+            handle_driver(RARCH_DRIVER_INPUT, g_settings.input.driver,
+                  sizeof(g_settings.input.driver), action);
             break;
          case MENU_SETTINGS_DRIVER_CAMERA:
-            if (action == MENU_ACTION_LEFT)
-               find_prev_driver(RARCH_DRIVER_CAMERA, g_settings.camera.driver, sizeof(g_settings.camera.driver));
-            else if (action == MENU_ACTION_RIGHT)
-               find_next_driver(RARCH_DRIVER_CAMERA, g_settings.camera.driver, sizeof(g_settings.camera.driver));
+            handle_driver(RARCH_DRIVER_CAMERA, g_settings.camera.driver,
+                  sizeof(g_settings.camera.driver), action);
             break;
          case MENU_SETTINGS_DRIVER_LOCATION:
-            if (action == MENU_ACTION_LEFT)
-               find_prev_driver(RARCH_DRIVER_LOCATION, g_settings.location.driver, sizeof(g_settings.location.driver));
-            else if (action == MENU_ACTION_RIGHT)
-               find_next_driver(RARCH_DRIVER_LOCATION, g_settings.location.driver, sizeof(g_settings.location.driver));
+            handle_driver(RARCH_DRIVER_LOCATION, g_settings.location.driver,
+                  sizeof(g_settings.location.driver), action);
             break;
          case MENU_SETTINGS_DRIVER_MENU:
-            if (action == MENU_ACTION_LEFT)
-               find_prev_driver(RARCH_DRIVER_MENU, g_settings.menu.driver, sizeof(g_settings.menu.driver));
-            else if (action == MENU_ACTION_RIGHT)
-               find_next_driver(RARCH_DRIVER_MENU, g_settings.menu.driver, sizeof(g_settings.menu.driver));
+            handle_driver(RARCH_DRIVER_MENU, g_settings.menu.driver,
+                  sizeof(g_settings.menu.driver), action);
             break;
       }
    }
