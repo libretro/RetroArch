@@ -149,15 +149,6 @@ void file_list_get_last(const file_list_t *list,
       file_list_get_at_offset(list, list->size - 1, path, file_type);
 }
 
-void *file_list_get_last_setting(const file_list_t *list, int index,
-      void *settings)
-{
-   if (settings)
-      return (rarch_setting_t*)setting_data_find_setting(settings,
-            list->list[index].label);
-   return NULL;
-}
-
 bool file_list_search(const file_list_t *list, const char *needle, size_t *index)
 {
    size_t i;

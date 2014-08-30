@@ -513,6 +513,15 @@ static void menu_common_entries_init(menu_handle_t *menu, unsigned menu_type)
       driver.menu_ctx->populate_entries(menu, menu_type);
 }
 
+static void *get_last_setting(const file_list_t *list, int index,
+      rarch_setting_t *settings)
+{
+   if (settings)
+      return (rarch_setting_t*)setting_data_find_setting(settings,
+            list->list[index].label);
+   return NULL;
+}
+
 static int menu_info_screen_iterate(unsigned action)
 {
    char msg[PATH_MAX];
@@ -525,7 +534,7 @@ static int menu_info_screen_iterate(unsigned action)
    if (driver.video_data && driver.menu_ctx && driver.menu_ctx->render)
       driver.menu_ctx->render();
 
-   current_setting = (rarch_setting_t*)file_list_get_last_setting(
+   current_setting = (rarch_setting_t*)get_last_setting(
          driver.menu->selection_buf,
          driver.menu->selection_ptr,
          setting_data_get_list());
@@ -534,7 +543,7 @@ static int menu_info_screen_iterate(unsigned action)
       setting_data_get_description(current_setting, msg, sizeof(msg));
    else
    {
-      current_setting = (rarch_setting_t*)file_list_get_last_setting(
+      current_setting = (rarch_setting_t*)get_last_setting(
             driver.menu->selection_buf,
             driver.menu->selection_ptr,
             setting_data_get_mainmenu(true));
@@ -2932,7 +2941,7 @@ static int menu_common_setting_set(unsigned id, unsigned action)
 {
    struct retro_perf_counter **counters;
    unsigned port = driver.menu->current_pad;
-   rarch_setting_t *setting = (rarch_setting_t*)file_list_get_last_setting(
+   rarch_setting_t *setting = (rarch_setting_t*)get_last_setting(
          driver.menu->selection_buf, driver.menu->selection_ptr,
          setting_data_get_list()
          );
@@ -2992,7 +3001,7 @@ static int menu_common_setting_set(unsigned id, unsigned action)
       handle_setting(setting, id, action);
    else
    {
-      setting = (rarch_setting_t*)file_list_get_last_setting(
+      setting = (rarch_setting_t*)get_last_setting(
             driver.menu->selection_buf, driver.menu->selection_ptr,
             setting_data_get_mainmenu(true)
             );
