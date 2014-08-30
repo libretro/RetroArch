@@ -164,7 +164,7 @@ static void menu_common_entries_init(menu_handle_t *menu, unsigned menu_type)
          file_list_push(menu->selection_buf, "PAL60 Mode", "",
                MENU_SETTINGS_VIDEO_PAL60, 0);
 #endif
-         add_entry(menu,"video_smooth", MENU_SETTINGS_VIDEO_FILTER, setting_data);
+         add_entry(menu,"video_smooth", 0, setting_data);
 #ifdef HW_RVL
          file_list_push(menu->selection_buf, "VI Trap filtering", "",
                MENU_SETTINGS_VIDEO_SOFT_FILTER, 0);
@@ -174,7 +174,7 @@ static void menu_common_entries_init(menu_handle_t *menu, unsigned menu_type)
          file_list_push(menu->selection_buf, "Soft filtering", "",
                MENU_SETTINGS_SOFT_DISPLAY_FILTER, 0);
 #endif
-         add_entry(menu,"video_filter_flicker", MENU_SETTINGS_FLICKER_FILTER,
+         add_entry(menu,"video_filter_flicker", 0,
                setting_data);
          add_entry(menu,"video_scale_integer", 0, setting_data);
          add_entry(menu,"aspect_ratio_index", 0, setting_data);
