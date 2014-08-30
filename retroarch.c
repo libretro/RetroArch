@@ -1265,8 +1265,8 @@ static void parse_input(int argc, char *argv[])
          case 'R':
             strlcpy(g_extern.bsv.movie_start_path, optarg,
                   sizeof(g_extern.bsv.movie_start_path));
-            g_extern.bsv.movie_start_playback = c == 'P';
-            g_extern.bsv.movie_start_recording = c == 'R';
+            g_extern.bsv.movie_start_playback  = (c == 'P');
+            g_extern.bsv.movie_start_recording = (c == 'R');
             break;
 
          case 'M':

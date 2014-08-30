@@ -1767,7 +1767,10 @@ static void general_write_handler(const void *data)
       g_settings.video.shared_context = *setting->value.boolean;
 #ifdef HAVE_NETPLAY
    else if (!strcmp(setting->name, "netplay_ip_address"))
+   {
       strlcpy(g_extern.netplay_server, setting->value.string, sizeof(g_extern.netplay_server));
+      g_extern.has_set_netplay_ip_address = (g_extern.netplay_server[0] != '\0');
+   }
    else if (!strcmp(setting->name, "netplay_enable"))
       g_extern.netplay_enable = *setting->value.boolean;
    else if (!strcmp(setting->name, "netplay_mode"))
@@ -1775,6 +1778,7 @@ static void general_write_handler(const void *data)
       g_extern.netplay_is_client = *setting->value.boolean;
       if (!g_extern.netplay_is_client)
          *g_extern.netplay_server = '\0';
+      g_extern.has_set_netplay_mode = true;
    }
    else if (!strcmp(setting->name, "netplay_spectator_mode_enable"))
    {
@@ -1785,10 +1789,14 @@ static void general_write_handler(const void *data)
    else if (!strcmp(setting->name, "netplay_delay_frames"))
    {
       g_extern.netplay_sync_frames = *setting->value.unsigned_integer;
+      g_extern.has_set_netplay_delay_frames = (g_extern.netplay_sync_frames > 0);
    }
 #endif
    else if (!strcmp(setting->name, "log_verbosity"))
-      g_extern.verbosity = *setting->value.boolean;
+   {
+      g_extern.verbosity         = *setting->value.boolean;
+      g_extern.has_set_verbosity = *setting->value.boolean;
+   }
    else if (!strcmp(setting->name, "perfcnt_enable"))
       g_extern.perfcnt_enable = *setting->value.boolean;
    else if (!strcmp(setting->name, "core_specific_config"))
