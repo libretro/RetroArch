@@ -1033,12 +1033,13 @@ static unsigned menu_common_type_is(unsigned type)
 }
 
 
-static void menu_common_setting_push_current_menu(file_list_t *list, const char *path, unsigned type,
+static void menu_common_setting_push_current_menu(file_list_t *list,
+      const char *path, const char *label, unsigned type,
       size_t directory_ptr, unsigned action)
 {
    if (action == MENU_ACTION_OK)
    {
-      file_list_push(list, path, "", type, directory_ptr);
+      file_list_push(list, path, label, type, directory_ptr);
       menu_clear_navigation(driver.menu);
       driver.menu->need_refresh = true;
    }
@@ -1120,19 +1121,20 @@ static int menu_settings_iterate(unsigned action)
          {
             driver.menu->defer_core = (!strcmp(label, "detect_core_list"));
             menu_common_setting_push_current_menu(driver.menu->menu_stack,
-                  g_settings.menu_content_directory, MENU_FILE_DIRECTORY,
+                  g_settings.menu_content_directory, "", MENU_FILE_DIRECTORY,
                   driver.menu->selection_ptr, action);
          }
          else if ((!strcmp(label, "history_list") ||
                   menu_common_type_is(type) == MENU_FILE_DIRECTORY)
                && action == MENU_ACTION_OK)
             menu_common_setting_push_current_menu(driver.menu->menu_stack,
-                  "", type, driver.menu->selection_ptr, action);
+                  "", "", type, driver.menu->selection_ptr, action);
          else if ((menu_common_type_is(type) == MENU_SETTINGS ||
                   type == MENU_SETTINGS_CORE || type == MENU_SETTINGS_CONFIG ||
                   type == MENU_SETTINGS_DISK_APPEND) && action == MENU_ACTION_OK)
             menu_common_setting_push_current_menu(driver.menu->menu_stack,
-                  dir ? dir : label, type, driver.menu->selection_ptr, action);
+                  dir ? dir : label, "", type,
+                  driver.menu->selection_ptr, action);
          else if (type == MENU_SETTINGS_CUSTOM_VIEWPORT && action == MENU_ACTION_OK)
          {
             file_list_push(driver.menu->menu_stack, "", "",
@@ -1758,7 +1760,9 @@ static void menu_common_defer_decision_automatic(void)
 static void menu_common_defer_decision_manual(void)
 {
    if (driver.menu)
-      menu_common_setting_push_current_menu(driver.menu->menu_stack, g_settings.libretro_directory, MENU_SETTINGS_DEFERRED_CORE, driver.menu->selection_ptr,
+      menu_common_setting_push_current_menu(driver.menu->menu_stack,
+            g_settings.libretro_directory, "deferred_core_list",
+            MENU_SETTINGS_DEFERRED_CORE, driver.menu->selection_ptr,
             MENU_ACTION_OK);
 }
 
@@ -1791,12 +1795,16 @@ static void menu_common_setting_set_current_boolean(rarch_setting_t *setting, un
       setting->change_handler(setting);
 }
 
-static void menu_common_setting_set_current_path_selection(rarch_setting_t *setting, const char *start_path, unsigned type, unsigned action)
+static void menu_common_setting_set_current_path_selection(
+      rarch_setting_t *setting, const char *start_path, unsigned type,
+      unsigned action)
 {
    switch (action)
    {
       case MENU_ACTION_OK:
-         menu_common_setting_push_current_menu(driver.menu->menu_stack, start_path, type, driver.menu->selection_ptr, action);
+         menu_common_setting_push_current_menu(driver.menu->menu_stack,
+               start_path, "path_list", type,
+               driver.menu->selection_ptr, action);
          break;
       case MENU_ACTION_START:
          *setting->value.string = '\0';
@@ -1944,9 +1952,9 @@ void menu_common_setting_set_current_string(rarch_setting_t *setting, const char
       setting->change_handler(setting);
 }
 
-static int menu_action_ok(const char *dir, const char *label,
-      unsigned menu_type)
+static int menu_action_ok(const char *dir, unsigned menu_type)
 {
+   const char *label = NULL;
    const char *path = NULL;
    unsigned type = 0;
    rarch_setting_t *setting = NULL;
@@ -1955,7 +1963,9 @@ static int menu_action_ok(const char *dir, const char *label,
    if (file_list_get_size(driver.menu->selection_buf) == 0)
       return 0;
 
-   file_list_get_at_offset(driver.menu->selection_buf, driver.menu->selection_ptr, &path, NULL, &type);
+   file_list_get_at_offset(driver.menu->selection_buf, driver.menu->selection_ptr, &path, &label, &type);
+
+   RARCH_LOG("label is: %s\n", label);
 
    if (
          menu_common_type_is(type) == MENU_SETTINGS_SHADER_OPTIONS ||
@@ -1972,7 +1982,8 @@ static int menu_action_ok(const char *dir, const char *label,
       char cat_path[PATH_MAX];
       fill_pathname_join(cat_path, dir, path, sizeof(cat_path));
 
-      menu_common_setting_push_current_menu(driver.menu->menu_stack, cat_path, type, driver.menu->selection_ptr,
+      menu_common_setting_push_current_menu(driver.menu->menu_stack,
+            cat_path, "browser_list", type, driver.menu->selection_ptr,
             MENU_ACTION_OK);
    }
    else
@@ -2314,7 +2325,7 @@ static int menu_common_iterate(unsigned action)
          break;
 
       case MENU_ACTION_OK:
-         ret = menu_action_ok(dir, label, menu_type);
+         ret = menu_action_ok(dir, menu_type);
          break;
 
       case MENU_ACTION_REFRESH:
@@ -2656,8 +2667,10 @@ static int menu_common_shader_manager_setting_toggle(unsigned id, unsigned actio
       if ((current_setting = setting_data_find_setting(setting_data, "video_smooth")))
          menu_common_setting_set_current_boolean(current_setting, action);
    }
-   else if ((id == MENU_SETTINGS_SHADER_PARAMETERS || id == MENU_SETTINGS_SHADER_PRESET_PARAMETERS))
-      menu_common_setting_push_current_menu(driver.menu->menu_stack, "", id, driver.menu->selection_ptr, action);
+   else if ((id == MENU_SETTINGS_SHADER_PARAMETERS
+            || id == MENU_SETTINGS_SHADER_PRESET_PARAMETERS))
+      menu_common_setting_push_current_menu(driver.menu->menu_stack, "",
+            "shader_parameters", id, driver.menu->selection_ptr, action);
    else if (id >= MENU_SETTINGS_SHADER_PARAMETER_0 && id <= MENU_SETTINGS_SHADER_PARAMETER_LAST)
    {
       struct gfx_shader *shader = NULL;
@@ -2704,7 +2717,9 @@ static int menu_common_shader_manager_setting_toggle(unsigned id, unsigned actio
       switch (action)
       {
          case MENU_ACTION_OK:
-            menu_common_setting_push_current_menu(driver.menu->menu_stack, g_settings.video.shader_dir, id, driver.menu->selection_ptr, action);
+            menu_common_setting_push_current_menu(driver.menu->menu_stack,
+                  g_settings.video.shader_dir, "video_shader_preset",
+                  id, driver.menu->selection_ptr, action);
             break;
 
          case MENU_ACTION_START:
@@ -3773,7 +3788,9 @@ static void menu_common_setting_set_label(char *type_str,
                break;
 #endif
             case MENU_SETTINGS_CUSTOM_BGM_CONTROL_ENABLE:
-               strlcpy(type_str, (g_extern.lifecycle_state & (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE)) ? "ON" : "OFF", type_str_size);
+               strlcpy(type_str,
+                     (g_extern.lifecycle_state & (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE)) ? "ON" : "OFF",
+                     type_str_size);
                break;
             default:
                *type_str = '\0';
