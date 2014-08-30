@@ -27,35 +27,20 @@
 #endif
 #else
 #if defined(__CELLOS_LV2__)
-#define EXT_EXECUTABLES "self|SELF|bin|BIN"
+#define EXT_EXECUTABLES "self|bin"
 #define SALAMANDER_FILE "EBOOT.BIN"
-#define PLATFORM_NAME   "ps3"
 #elif defined(PSP)
-#define EXT_EXECUTABLES "pbp|PBP"
+#define EXT_EXECUTABLES "pbp"
 #define SALAMANDER_FILE "EBOOT.PBP"
-#define PLATFORM_NAME   "psp"
 #elif defined(_XBOX1)
-#define EXT_EXECUTABLES "xbe|XBE"
+#define EXT_EXECUTABLES "xbe"
 #define SALAMANDER_FILE "default.xbe"
-#define PLATFORM_NAME   "xdk1"
 #elif defined(_XBOX360)
-#define EXT_EXECUTABLES "xex|XEX"
+#define EXT_EXECUTABLES "xex"
 #define SALAMANDER_FILE "default.xex"
-#define PLATFORM_NAME   "xdk360"
 #elif defined(GEKKO)
-#define EXT_EXECUTABLES "dol|DOL"
+#define EXT_EXECUTABLES "dol"
 #define SALAMANDER_FILE "boot.dol"
-#ifdef HW_RVL
-#define PLATFORM_NAME   "wii"
-#else
-#define PLATFORM_NAME   "ngc"
-#endif
-#elif defined(ANDROID)
-#define PLATFORM_NAME   "android"
-#elif defined(IOS)
-#define PLATFORM_NAME   "ios"
-#elif defined(__QNX__)
-#define PLATFORM_NAME   "qnx"
 #elif defined(EMSCRIPTEN)
 #define EXT_EXECUTABLES ""
 #endif
