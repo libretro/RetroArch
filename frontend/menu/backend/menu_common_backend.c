@@ -67,7 +67,6 @@ static void menu_common_entries_init(menu_handle_t *menu, unsigned menu_type)
 {
    unsigned i;
    char tmp[256];
-   rarch_setting_t *current_setting = NULL;
    rarch_setting_t *setting_data = (rarch_setting_t *)setting_data_get_list();
 
    switch (menu_type)
