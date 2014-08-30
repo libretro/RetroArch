@@ -502,7 +502,7 @@ static void menu_common_entries_init(menu_handle_t *menu, unsigned menu_type)
          add_entry(menu,"restart_retroarch", 0, setting_data);
          add_entry(menu,"configurations", MENU_SETTINGS_CONFIG, setting_data);
          add_entry(menu,"save_new_config", 0, setting_data);
-         add_entry(menu,"help", MENU_START_SCREEN, setting_data);
+         add_entry(menu,"help", 0, setting_data);
          add_entry(menu,"quit_retroarch", 0, setting_data);
          break;
    }
@@ -1106,8 +1106,8 @@ static int menu_settings_iterate(unsigned action)
             file_list_get_at_offset(driver.menu->selection_buf,
                   driver.menu->selection_ptr, &path, &label,
                   &driver.menu->info_selection);
-            file_list_push(driver.menu->menu_stack, "", "",
-                  MENU_INFO_SCREEN, driver.menu->selection_ptr);
+            file_list_push(driver.menu->menu_stack, "", "info_screen",
+                  0, driver.menu->selection_ptr);
          }
          break;
       case MENU_ACTION_LEFT:
@@ -1208,7 +1208,7 @@ static int menu_settings_iterate(unsigned action)
    if (driver.menu->push_start_screen)
    {
       driver.menu->push_start_screen = false;
-      file_list_push(driver.menu->menu_stack, "", "", MENU_START_SCREEN, 0);
+      file_list_push(driver.menu->menu_stack, "", "help", 0, 0);
    }
 
    return 0;
@@ -2249,6 +2249,7 @@ static int menu_common_iterate(unsigned action)
    unsigned menu_type = 0;
    const char *dir = NULL;
    const char *label = NULL;
+   const char *menu_label = NULL;
 
    if (!driver.menu)
    {
@@ -2256,14 +2257,16 @@ static int menu_common_iterate(unsigned action)
       return 0;
    }
 
-   file_list_get_last(driver.menu->menu_stack, &dir, NULL, &menu_type);
+   file_list_get_last(driver.menu->menu_stack, &dir, &menu_label, &menu_type);
 
    if (driver.video_data && driver.menu_ctx && driver.menu_ctx->set_texture)
       driver.menu_ctx->set_texture(driver.menu);
 
-   if (menu_type == MENU_START_SCREEN)
+   //RARCH_LOG("Menu label: %s\n", menu_label);
+
+   if (!strcmp(menu_label, "help"))
       return menu_start_screen_iterate(action);
-   else if (menu_type == MENU_INFO_SCREEN)
+   else if (!strcmp(menu_label, "info_screen"))
       return menu_info_screen_iterate(action);
    else if (menu_common_type_is(menu_type) == MENU_SETTINGS)
       return menu_settings_iterate(action);

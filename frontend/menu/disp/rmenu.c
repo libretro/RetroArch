@@ -219,12 +219,12 @@ static void rmenu_render(void)
          (menu_type == MENU_SETTINGS_OPTIONS) ||
          (menu_type == MENU_SETTINGS_CUSTOM_VIEWPORT || menu_type == MENU_SETTINGS_CUSTOM_VIEWPORT_2) ||
          menu_type == MENU_SETTINGS_CUSTOM_BIND ||
-         menu_type == MENU_START_SCREEN ||
+         !strcmp(label, "help") ||
          menu_type == MENU_SETTINGS)
       snprintf(title, sizeof(title), "MENU %s", dir);
    else if (menu_type == MENU_SETTINGS_OPEN_HISTORY)
       strlcpy(title, "LOAD HISTORY", sizeof(title));
-   else if (menu_type == MENU_INFO_SCREEN)
+   else if (!strcmp(label, "info_screen"))
       strlcpy(title, "INFO", sizeof(title));
 #ifdef HAVE_OVERLAY
    else if (menu_type == MENU_SETTINGS_OVERLAY_PRESET)

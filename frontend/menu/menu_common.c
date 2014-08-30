@@ -696,5 +696,5 @@ void menu_build_scroll_indices(file_list_t *buf)
 
 void menu_push_info_screen(void)
 {
-   file_list_push(driver.menu->menu_stack, "", "", MENU_START_SCREEN, 0);
+   file_list_push(driver.menu->menu_stack, "", "help", 0, 0);
 }

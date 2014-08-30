@@ -61,8 +61,6 @@ typedef enum
    MENU_FILE_DEVICE,
    MENU_FILE_USE_DIRECTORY,
    MENU_SETTINGS,
-   MENU_INFO_SCREEN,
-   MENU_START_SCREEN,
 } menu_file_type_t;
 
 typedef enum
