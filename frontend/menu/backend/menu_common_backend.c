@@ -1038,13 +1038,11 @@ static unsigned menu_common_type_is(unsigned type)
 static void menu_common_setting_push_current_menu(file_list_t *list, const char *path, unsigned type,
       size_t directory_ptr, unsigned action)
 {
-   switch (action)
+   if (action == MENU_ACTION_OK)
    {
-      case MENU_ACTION_OK:
-         file_list_push(list, path, "", type, directory_ptr);
-         menu_clear_navigation(driver.menu);
-         driver.menu->need_refresh = true;
-         break;
+      file_list_push(list, path, "", type, directory_ptr);
+      menu_clear_navigation(driver.menu);
+      driver.menu->need_refresh = true;
    }
 }
 
@@ -1904,13 +1902,6 @@ static void menu_common_setting_set_current_unsigned_integer(rarch_setting_t *se
       setting->change_handler(setting);
 }
 
-void menu_common_setting_set_current_string(rarch_setting_t *setting, const char *str)
-{
-   strlcpy(setting->value.string, str, setting->size);
-
-   if (setting->change_handler)
-      setting->change_handler(setting);
-}
 
 static void menu_common_setting_set_current_string_path(rarch_setting_t *setting, const char *dir, const char *path)
 {
@@ -1920,9 +1911,9 @@ static void menu_common_setting_set_current_string_path(rarch_setting_t *setting
       setting->change_handler(setting);
 }
 
-static void menu_common_setting_set_current_string_dir(rarch_setting_t *setting, const char *dir)
+void menu_common_setting_set_current_string(rarch_setting_t *setting, const char *str)
 {
-   strlcpy(setting->value.string, dir, setting->size);
+   strlcpy(setting->value.string, str, setting->size);
 
    if (setting->change_handler)
       setting->change_handler(setting);
@@ -2068,41 +2059,41 @@ static int menu_action_ok(const char *dir, unsigned menu_type)
       else if (menu_type == MENU_BROWSER_DIR_PATH)
       {
          if ((setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "rgui_browser_directory")))
-            menu_common_setting_set_current_string_dir(setting, dir);
+            menu_common_setting_set_current_string(setting, dir);
 
          menu_flush_stack_type(MENU_SETTINGS_PATH_OPTIONS);
       }
       else if (menu_type == MENU_CONTENT_DIR_PATH)
       {
          if ((setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "content_directory")))
-            menu_common_setting_set_current_string_dir(setting, dir);
+            menu_common_setting_set_current_string(setting, dir);
 
          menu_flush_stack_type(MENU_SETTINGS_PATH_OPTIONS);
       }
       else if (menu_type == MENU_ASSETS_DIR_PATH)
       {
          if ((setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "assets_directory")))
-            menu_common_setting_set_current_string_dir(setting, dir);
+            menu_common_setting_set_current_string(setting, dir);
 
          menu_flush_stack_type(MENU_SETTINGS_PATH_OPTIONS);
       }
       else if (menu_type == MENU_SCREENSHOT_DIR_PATH)
       {
          if ((setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "screenshot_directory")))
-            menu_common_setting_set_current_string_dir(setting, dir);
+            menu_common_setting_set_current_string(setting, dir);
 
          menu_flush_stack_type(MENU_SETTINGS_PATH_OPTIONS);
       }
       else if (menu_type == MENU_SAVEFILE_DIR_PATH)
       {
          if ((setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "savefile_directory")))
-            menu_common_setting_set_current_string_dir(setting, dir);
+            menu_common_setting_set_current_string(setting, dir);
          menu_flush_stack_type(MENU_SETTINGS_PATH_OPTIONS);
       }
       else if (menu_type == MENU_OVERLAY_DIR_PATH)
       {
          if ((setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "overlay_directory")))
-            menu_common_setting_set_current_string_dir(setting, dir);
+            menu_common_setting_set_current_string(setting, dir);
          menu_flush_stack_type(MENU_SETTINGS_PATH_OPTIONS);
       }
       else if (menu_type == MENU_SETTINGS_VIDEO_SOFTFILTER)
@@ -2121,70 +2112,70 @@ static int menu_action_ok(const char *dir, unsigned menu_type)
       else if (menu_type == MENU_SAVESTATE_DIR_PATH)
       {
          if ((setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "savestate_directory")))
-            menu_common_setting_set_current_string_dir(setting, dir);
+            menu_common_setting_set_current_string(setting, dir);
 
          menu_flush_stack_type(MENU_SETTINGS_PATH_OPTIONS);
       }
       else if (menu_type == MENU_LIBRETRO_DIR_PATH)
       {
          if ((setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "libretro_dir_path")))
-            menu_common_setting_set_current_string_dir(setting, dir);
+            menu_common_setting_set_current_string(setting, dir);
 
          menu_flush_stack_type(MENU_SETTINGS_PATH_OPTIONS);
       }
       else if (menu_type == MENU_CONFIG_DIR_PATH)
       {
          if ((setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "rgui_config_directory")))
-            menu_common_setting_set_current_string_dir(setting, dir);
+            menu_common_setting_set_current_string(setting, dir);
 
          menu_flush_stack_type(MENU_SETTINGS_PATH_OPTIONS);
       }
       else if (menu_type == MENU_LIBRETRO_INFO_DIR_PATH)
       {
          if ((setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "libretro_info_path")))
-            menu_common_setting_set_current_string_dir(setting, dir);
+            menu_common_setting_set_current_string(setting, dir);
 
          menu_flush_stack_type(MENU_SETTINGS_PATH_OPTIONS);
       }
       else if (menu_type == MENU_SHADER_DIR_PATH)
       {
          if ((setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "video_shader_dir")))
-            menu_common_setting_set_current_string_dir(setting, dir);
+            menu_common_setting_set_current_string(setting, dir);
 
          menu_flush_stack_type(MENU_SETTINGS_PATH_OPTIONS);
       }
       else if (menu_type == MENU_FILTER_DIR_PATH)
       {
          if ((setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "video_filter_dir")))
-            menu_common_setting_set_current_string_dir(setting, dir);
+            menu_common_setting_set_current_string(setting, dir);
 
          menu_flush_stack_type(MENU_SETTINGS_PATH_OPTIONS);
       }
       else if (menu_type == MENU_DSP_FILTER_DIR_PATH)
       {
          if ((setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "audio_filter_dir")))
-            menu_common_setting_set_current_string_dir(setting, dir);
+            menu_common_setting_set_current_string(setting, dir);
 
          menu_flush_stack_type(MENU_SETTINGS_PATH_OPTIONS);
       }
       else if (menu_type == MENU_SYSTEM_DIR_PATH)
       {
          if ((setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "system_directory")))
-            menu_common_setting_set_current_string_dir(setting, dir);
+            menu_common_setting_set_current_string(setting, dir);
 
          menu_flush_stack_type(MENU_SETTINGS_PATH_OPTIONS);
       }
       else if (menu_type == MENU_AUTOCONFIG_DIR_PATH)
       {
          if ((setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "joypad_autoconfig_dir")))
-            menu_common_setting_set_current_string_dir(setting, dir);
+            menu_common_setting_set_current_string(setting, dir);
 
          menu_flush_stack_type(MENU_SETTINGS_PATH_OPTIONS);
       }
       else if (menu_type == MENU_EXTRACTION_DIR_PATH)
       {
          if ((setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "extraction_directory")))
-            menu_common_setting_set_current_string_dir(setting, dir);
+            menu_common_setting_set_current_string(setting, dir);
 
          menu_flush_stack_type(MENU_SETTINGS_PATH_OPTIONS);
       }
