@@ -181,6 +181,7 @@ static void menu_common_entries_init(menu_handle_t *menu, unsigned menu_type)
          file_list_push(menu->selection_buf, "Custom Ratio", "",
                MENU_SETTINGS_CUSTOM_VIEWPORT, 0);
          add_entry(menu,"video_fullscreen", 0, setting_data);
+		 add_entry(menu,"video_windowed_fullscreen", 0, setting_data);
          add_entry(menu,"video_rotation", 0, setting_data);
          add_entry(menu,"video_vsync", 0, setting_data);
          add_entry(menu,"video_hard_sync", 0, setting_data);
