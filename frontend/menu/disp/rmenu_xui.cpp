@@ -25,6 +25,7 @@
 #include "../../../gfx/gfx_common.h"
 #include "../../../gfx/gfx_context.h"
 
+#include "../../../settings_data.h"
 #include "../../../message_queue.h"
 #include "../../../general.h"
 

@@ -22,7 +22,6 @@ extern "C" {
 #endif
 
 #include "boolean.h"
-#include "settings_data.h"
 
 struct item_file
 {

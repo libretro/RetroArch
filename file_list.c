@@ -20,7 +20,6 @@
 #include "driver.h"
 #include "compat/strcasestr.h"
 #include "msvc/msvc_compat.h"
-#include "settings_data.h"
 #include "general.h"
 
 void file_list_push(file_list_t *list,

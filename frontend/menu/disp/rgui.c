@@ -32,6 +32,7 @@
 #include "../../../performance.h"
 #include "../../../input/input_common.h"
 
+#include "../../../settings_data.h"
 #include "../../../screenshot.h"
 #include "../../../gfx/fonts/bitmap.h"
 
