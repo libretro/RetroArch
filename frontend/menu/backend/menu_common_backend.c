@@ -1965,8 +1965,6 @@ static int menu_action_ok(const char *dir, unsigned menu_type)
 
    file_list_get_at_offset(driver.menu->selection_buf, driver.menu->selection_ptr, &path, &label, &type);
 
-   RARCH_LOG("label is: %s\n", label);
-
    if (
          menu_common_type_is(type) == MENU_SETTINGS_SHADER_OPTIONS ||
          menu_common_type_is(type) == MENU_FILE_DIRECTORY ||
