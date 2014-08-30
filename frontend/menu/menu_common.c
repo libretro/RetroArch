@@ -368,7 +368,6 @@ void menu_ticker_line(char *buf, size_t len, unsigned index,
 void menu_flush_stack_type(unsigned final_type)
 {
    unsigned type = 0;
-   rarch_setting_t *setting = NULL;
 
    if (!driver.menu)
       return;

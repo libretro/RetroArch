@@ -449,8 +449,8 @@ static void rgui_render(void)
       file_list_get_at_offset(driver.menu->selection_buf, i, &path, &type);
       rarch_setting_t *setting = (rarch_setting_t*)setting_data_find_setting(
             setting_data_get_list(), driver.menu->selection_buf->list[i].label);
-
       unsigned w = 19;
+       (void)setting;
       if (menu_type == MENU_SETTINGS_PERFORMANCE_COUNTERS)
          w = 28;
       else if (menu_type == MENU_SETTINGS_INPUT_OPTIONS || menu_type == MENU_SETTINGS_CUSTOM_BIND || menu_type == MENU_SETTINGS_CUSTOM_BIND_KEYBOARD)
