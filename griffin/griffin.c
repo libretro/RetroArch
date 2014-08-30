@@ -303,6 +303,7 @@ INPUT
 #include "../input/autoconf/builtin_gx.c"
 #elif defined(_XBOX)
 #include "../input/xdk_xinput_input.c"
+#include "../input/xdk_xinput_input_joypad.c"
 #include "../input/autoconf/builtin_xdk.c"
 #elif defined(XENON)
 #include "../input/xenon360_input.c"
