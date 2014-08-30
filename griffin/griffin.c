@@ -288,6 +288,7 @@ INPUT
 
 #if defined(__CELLOS_LV2__)
 #include "../input/ps3_input.c"
+#include "../input/ps3_input_joypad.c"
 #include "../input/autoconf/builtin_ps3.c"
 #elif defined(SN_TARGET_PSP2) || defined(PSP)
 #include "../input/psp_input.c"
