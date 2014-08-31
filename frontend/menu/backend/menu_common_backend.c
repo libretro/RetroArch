@@ -331,8 +331,7 @@ static void menu_common_entries_init(menu_handle_t *menu, unsigned menu_type)
          break;
       case MENU_SETTINGS_USER_OPTIONS:
          file_list_clear(menu->selection_buf);
-         add_setting_entry(menu,"netplay_nickname", MENU_SETTINGS_NETPLAY_NICKNAME,
-               setting_data);
+         add_setting_entry(menu,"netplay_nickname", 0, setting_data);
          add_setting_entry(menu,"user_language", 0, setting_data);
          break;
       case MENU_SETTINGS_NETPLAY_OPTIONS:
@@ -340,8 +339,7 @@ static void menu_common_entries_init(menu_handle_t *menu, unsigned menu_type)
          add_setting_entry(menu,"netplay_enable", 0, setting_data);
          add_setting_entry(menu,"netplay_mode", 0, setting_data);
          add_setting_entry(menu,"netplay_spectator_mode_enable", 0, setting_data);
-         add_setting_entry(menu,"netplay_ip_address",
-               MENU_SETTINGS_NETPLAY_HOST_IP_ADDRESS, setting_data);
+         add_setting_entry(menu,"netplay_ip_address", 0, setting_data);
          add_setting_entry(menu,"netplay_tcp_udp_port", 0, setting_data);
          add_setting_entry(menu,"netplay_delay_frames", 0, setting_data);
          break;
@@ -1305,6 +1303,22 @@ static void handle_setting(rarch_setting_t *setting,
          else if (action == MENU_ACTION_START)
             *setting->value.string = '\0';
       }
+      else if (!strcmp(setting->name, "netplay_nickname"))
+      {
+         if (action == MENU_ACTION_OK)
+            menu_key_start_line(driver.menu, "Username: ", "netplay_nickname", st_string_callback);
+         else if (action == MENU_ACTION_START)
+            *setting->value.string = '\0';
+      }
+#ifdef HAVE_NETPLAY
+      else if (!strcmp(setting->name, "netplay_ip_address"))
+      {
+         if (action == MENU_ACTION_OK)
+            menu_key_start_line(driver.menu, "IP Address: ", "netplay_ip_address", st_string_callback);
+         else if (action == MENU_ACTION_START)
+            *setting->value.string = '\0';
+      }
+#endif
       if (!strcmp(setting->name, "video_driver"))
          handle_driver(RARCH_DRIVER_VIDEO, g_settings.video.driver,
                sizeof(g_settings.video.driver), action);
@@ -1748,20 +1762,6 @@ static int menu_common_setting_set(unsigned id, unsigned action)
                   }
                   break;
                }
-#ifdef HAVE_NETPLAY
-            case MENU_SETTINGS_NETPLAY_HOST_IP_ADDRESS:
-               if (action == MENU_ACTION_OK)
-                  menu_key_start_line(driver.menu, "IP Address: ", "netplay_ip_address", st_string_callback);
-               else if (action == MENU_ACTION_START)
-                  *g_extern.netplay_server = '\0';
-               break;
-#endif
-            case MENU_SETTINGS_NETPLAY_NICKNAME:
-               if (action == MENU_ACTION_OK)
-                  menu_key_start_line(driver.menu, "Username: ", "netplay_nickname", st_string_callback);
-               else if (action == MENU_ACTION_START)
-                  *g_settings.username = '\0';
-               break;
             case MENU_SETTINGS_SHADER_PRESET_SAVE:
                if (action == MENU_ACTION_OK)
                   menu_key_start_line(driver.menu, "Preset Filename: ", "shader_preset_save", preset_filename_callback);
