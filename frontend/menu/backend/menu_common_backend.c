@@ -35,6 +35,10 @@
 
 #include "../../../settings_data.h"
 
+#if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
+#define HAVE_SHADER_MANAGER
+#endif
+
 static void *get_last_setting(const file_list_t *list, int index,
       rarch_setting_t *settings)
 {
@@ -1244,6 +1248,7 @@ static int menu_common_setting_set(unsigned id, unsigned action)
 #endif
                break;
             case MENU_SETTINGS_SHADER_PASSES:
+#ifdef HAVE_SHADER_MANAGER
                {
                   struct gfx_shader *shader = (struct gfx_shader*)driver.menu->shader;
 
@@ -1275,6 +1280,7 @@ static int menu_common_setting_set(unsigned id, unsigned action)
                   if (driver.menu->need_refresh)
                      gfx_shader_resolve_parameters(NULL, driver.menu->shader);
                }
+#endif
                break;
             case MENU_SETTINGS_SHADER_APPLY:
                {
@@ -2028,6 +2034,7 @@ static int menu_action_ok(const char *dir, unsigned menu_type)
    }
    else
    {
+#ifdef HAVE_SHADER_MANAGER
       if (menu_common_type_is(menu_type) == MENU_SETTINGS_SHADER_OPTIONS)
       {
          if (menu_type == MENU_SETTINGS_SHADER_PRESET)
@@ -2053,7 +2060,9 @@ static int menu_action_ok(const char *dir, unsigned menu_type)
          // Pop stack until we hit shader manager again.
          menu_flush_stack_type(MENU_SETTINGS_SHADER_OPTIONS);
       }
-      else if (menu_type == MENU_SETTINGS_DEFERRED_CORE)
+      else
+#endif
+         if (menu_type == MENU_SETTINGS_DEFERRED_CORE)
       {
          strlcpy(g_settings.libretro, path, sizeof(g_settings.libretro));
          strlcpy(g_extern.fullpath, driver.menu->deferred_path, sizeof(g_extern.fullpath));
@@ -2401,6 +2410,7 @@ static int menu_common_iterate(unsigned action)
    return ret;
 }
 
+#ifdef HAVE_SHADER_MANAGER
 static void menu_common_shader_manager_init(menu_handle_t *menu)
 {
    char cgp_path[PATH_MAX];
@@ -2677,9 +2687,6 @@ static unsigned menu_common_shader_manager_get_type(const struct gfx_shader *sha
    return type;
 }
 
-
-
-
 static int menu_common_shader_manager_setting_toggle(unsigned id, unsigned action)
 {
    if (!driver.menu)
@@ -2829,9 +2836,7 @@ static int menu_common_shader_manager_setting_toggle(unsigned id, unsigned actio
 
    return 0;
 }
-
-
-
+#endif
 
 #ifdef GEKKO
 static unsigned menu_gx_resolutions[GX_RESOLUTIONS_LAST][2] = {
@@ -3177,12 +3182,21 @@ static void menu_common_setting_set_label(char *type_str,
 
 const menu_ctx_driver_backend_t menu_ctx_backend_common = {
    menu_common_iterate,
+#ifdef HAVE_SHADER_MANAGER
    menu_common_shader_manager_init,
    menu_common_shader_manager_get_str,
    menu_common_shader_manager_set_preset,
    menu_common_shader_manager_save_preset,
    menu_common_shader_manager_get_type,
    menu_common_shader_manager_setting_toggle,
+#else
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+#endif
    menu_common_type_is,
    menu_common_setting_set_label,
    menu_common_defer_decision_automatic,
