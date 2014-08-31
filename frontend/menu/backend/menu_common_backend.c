@@ -1700,11 +1700,10 @@ static void menu_parse_and_resolve(unsigned menu_type)
          {
             char fill_buf[PATH_MAX];
             const char *path      = NULL;
-            const char *core_path = NULL;
             const char *core_name = NULL;
 
             content_playlist_get_index(g_extern.history, i,
-                  &path, &core_path, &core_name);
+                  &path, NULL, &core_name);
 
             if (path)
             {
@@ -1910,10 +1909,9 @@ static void menu_parse_and_resolve(unsigned menu_type)
                   {
                      char core_path[PATH_MAX], display_name[256];
                      const char *path = NULL;
-                     const char *label = NULL;
                      unsigned type = 0;
 
-                     file_list_get_at_offset(list, i, &path, &label, &type);
+                     file_list_get_at_offset(list, i, &path, NULL, &type);
                      if (type != MENU_FILE_PLAIN)
                         continue;
 
