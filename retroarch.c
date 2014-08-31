@@ -106,7 +106,8 @@ static bool take_screenshot_viewport(void)
 
    if (!*g_settings.screenshot_directory)
    {
-      fill_pathname_basedir(screenshot_path, g_extern.basename, sizeof(screenshot_path));
+      fill_pathname_basedir(screenshot_path, g_extern.basename,
+            sizeof(screenshot_path));
       screenshot_dir = screenshot_path;
    }
 
@@ -158,8 +159,8 @@ static void take_screenshot(void)
       return;
 
    viewport_read = (g_settings.video.gpu_screenshot ||
-         g_extern.system.hw_render_callback.context_type != RETRO_HW_CONTEXT_NONE) &&
-      driver.video->read_viewport &&
+         g_extern.system.hw_render_callback.context_type
+         != RETRO_HW_CONTEXT_NONE) && driver.video->read_viewport &&
       driver.video->viewport_info;
 
    /* Clear out message queue to avoid OSD fonts to appear on screenshot. */
@@ -170,7 +171,8 @@ static void take_screenshot(void)
 #ifdef HAVE_MENU
       /* Avoid taking screenshot of GUI overlays. */
       if (driver.video_poke && driver.video_poke->set_texture_enable)
-         driver.video_poke->set_texture_enable(driver.video_data, false, false);
+         driver.video_poke->set_texture_enable(driver.video_data,
+               false, false);
 #endif
       if (driver.video)
          rarch_render_cached_frame();
@@ -178,7 +180,8 @@ static void take_screenshot(void)
 
    if (viewport_read)
       ret = take_screenshot_viewport();
-   else if (g_extern.frame_cache.data && (g_extern.frame_cache.data != RETRO_HW_FRAME_BUFFER_VALID))
+   else if (g_extern.frame_cache.data &&
+         (g_extern.frame_cache.data != RETRO_HW_FRAME_BUFFER_VALID))
       ret = take_screenshot_raw();
    else
       RARCH_ERR("Cannot take screenshot. GPU rendering is used and read_viewport is not supported.\n");
@@ -207,7 +210,8 @@ static void readjust_audio_input_rate(void)
    //RARCH_LOG_OUTPUT("Audio buffer is %u%% full\n",
    //      (unsigned)(100 - (avail * 100) / g_extern.audio_data.driver_buffer_size));
 
-   unsigned write_index = g_extern.measure_data.buffer_free_samples_count++ & (AUDIO_BUFFER_FREE_SAMPLES_COUNT - 1);
+   unsigned write_index = g_extern.measure_data.buffer_free_samples_count++ &
+      (AUDIO_BUFFER_FREE_SAMPLES_COUNT - 1);
    int      half_size   = g_extern.audio_data.driver_buffer_size / 2;
    int      delta_mid   = avail - half_size;
    double   direction   = (double)delta_mid / half_size;
@@ -320,7 +324,10 @@ static void init_recording(void)
          unsigned max_width  = 0;
          unsigned max_height = 0;
 
-         params.pix_fmt = (g_extern.filter.out_rgb32) ? FFEMU_PIX_ARGB8888 : FFEMU_PIX_RGB565;
+         if (g_extern.filter.out_rgb32)
+            params.pix_fmt = FFEMU_PIX_ARGB8888;
+         else
+            params.pix_fmt =  FFEMU_PIX_RGB565;
 
          rarch_softfilter_get_max_output_size(g_extern.filter.filter, &max_width, &max_height);
          params.fb_width  = next_pow2(max_width);
@@ -764,6 +771,7 @@ void rarch_input_poll(void)
  * for D-pad will go into a turbo mode. Until the button is
  * released again, the input state will be modulated by a periodic pulse
  * defined by the configured duty cycle. */
+
 static bool input_apply_turbo(unsigned port, unsigned id, bool res)
 {
    if (res && g_extern.turbo_frame_enable[port])
@@ -772,7 +780,8 @@ static bool input_apply_turbo(unsigned port, unsigned id, bool res)
       g_extern.turbo_enable[port] &= ~(1 << id);
 
    if (g_extern.turbo_enable[port] & (1 << id))
-      return res && ((g_extern.turbo_count % g_settings.input.turbo_period) < g_settings.input.turbo_duty_cycle);
+      return res && ((g_extern.turbo_count % g_settings.input.turbo_period)
+            < g_settings.input.turbo_duty_cycle);
    return res;
 }
 
@@ -803,8 +812,10 @@ static int16_t input_state(unsigned port, unsigned device,
       g_settings.input.binds[7],
    };
 
-   if (!driver.block_libretro_input && (id < RARCH_FIRST_META_KEY || device == RETRO_DEVICE_KEYBOARD))
-      res = driver.input->input_state(driver.input_data, binds, port, device, index, id);
+   if (!driver.block_libretro_input && (id < RARCH_FIRST_META_KEY ||
+            device == RETRO_DEVICE_KEYBOARD))
+      res = driver.input->input_state(driver.input_data, binds, port,
+            device, index, id);
 
 #ifdef HAVE_OVERLAY
    if (device == RETRO_DEVICE_JOYPAD && port == 0)
@@ -821,7 +832,8 @@ static int16_t input_state(unsigned port, unsigned device,
 #endif
 
    /* Don't allow turbo for D-pad. */
-   if (device == RETRO_DEVICE_JOYPAD && (id < RETRO_DEVICE_ID_JOYPAD_UP || id > RETRO_DEVICE_ID_JOYPAD_RIGHT))
+   if (device == RETRO_DEVICE_JOYPAD && (id < RETRO_DEVICE_ID_JOYPAD_UP ||
+            id > RETRO_DEVICE_ID_JOYPAD_RIGHT))
       res = input_apply_turbo(port, id, res);
 
    if (g_extern.bsv.movie && !g_extern.bsv.movie_playback)
@@ -889,19 +901,22 @@ static void print_compiler(FILE *file)
 {
    fprintf(file, "\nCompiler: ");
 #if defined(_MSC_VER)
-   fprintf(file, "MSVC (%d) %u-bit\n", _MSC_VER, (unsigned)(CHAR_BIT * sizeof(size_t)));
+   fprintf(file, "MSVC (%d) %u-bit\n", _MSC_VER, (unsigned)
+         (CHAR_BIT * sizeof(size_t)));
 #elif defined(__SNC__)
    fprintf(file, "SNC (%d) %u-bit\n",
       __SN_VER__, (unsigned)(CHAR_BIT * sizeof(size_t)));
 #elif defined(_WIN32) && defined(__GNUC__)
    fprintf(file, "MinGW (%d.%d.%d) %u-bit\n",
-      __GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__, (unsigned)(CHAR_BIT * sizeof(size_t)));
+      __GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__, (unsigned)
+      (CHAR_BIT * sizeof(size_t)));
 #elif defined(__clang__)
    fprintf(file, "Clang/LLVM (%s) %u-bit\n",
       __clang_version__, (unsigned)(CHAR_BIT * sizeof(size_t)));
 #elif defined(__GNUC__)
    fprintf(file, "GCC (%d.%d.%d) %u-bit\n",
-      __GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__, (unsigned)(CHAR_BIT * sizeof(size_t)));
+      __GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__, (unsigned)
+      (CHAR_BIT * sizeof(size_t)));
 #else
    fprintf(file, "Unknown compiler %u-bit\n",
       (unsigned)(CHAR_BIT * sizeof(size_t)));
@@ -1003,8 +1018,7 @@ static void set_special_paths(char **argv, unsigned num_content)
       string_list_append(g_extern.subsystem_fullpaths, argv[i], attr);
 
    /* We defer SRAM path updates until we can resolve it.
-    * It is more complicated for special content types.
-    */
+    * It is more complicated for special content types. */
 
    if (!g_extern.has_set_state_path)
       fill_pathname_noext(g_extern.savestate_name, g_extern.basename,
@@ -1175,9 +1189,14 @@ static void parse_input(int argc, char *argv[])
 
          case 'd':
          {
+            unsigned id = 0;
+            port = 0;
             struct string_list *list = string_split(optarg, ":");
-            port = (list && list->size == 2) ? strtol(list->elems[0].data, NULL, 0) : 0;
-            unsigned id = (list && list->size == 2) ? strtoul(list->elems[1].data, NULL, 0) : 0;
+            if (list && list->size == 2)
+            {
+               port = strtol(list->elems[0].data, NULL, 0);
+               id = strtoul(list->elems[1].data, NULL, 0);
+            }
             string_list_free(list);
 
             if (port < 1 || port > MAX_PLAYERS)
@@ -1204,7 +1223,8 @@ static void parse_input(int argc, char *argv[])
             break;
 
          case 's':
-            strlcpy(g_extern.savefile_name, optarg, sizeof(g_extern.savefile_name));
+            strlcpy(g_extern.savefile_name, optarg,
+                  sizeof(g_extern.savefile_name));
             g_extern.has_set_save_path = true;
             break;
 
@@ -1213,7 +1233,8 @@ static void parse_input(int argc, char *argv[])
             break;
 
          case 'S':
-            strlcpy(g_extern.savestate_name, optarg, sizeof(g_extern.savestate_name));
+            strlcpy(g_extern.savestate_name, optarg,
+                  sizeof(g_extern.savestate_name));
             g_extern.has_set_state_path = true;
             break;
 
@@ -1235,11 +1256,13 @@ static void parse_input(int argc, char *argv[])
             break;
 
          case 'c':
-            strlcpy(g_extern.config_path, optarg, sizeof(g_extern.config_path));
+            strlcpy(g_extern.config_path, optarg,
+                  sizeof(g_extern.config_path));
             break;
 
          case 'r':
-            strlcpy(g_extern.record_path, optarg, sizeof(g_extern.record_path));
+            strlcpy(g_extern.record_path, optarg,
+                  sizeof(g_extern.record_path));
             g_extern.recording_enable = true;
             break;
 
@@ -1248,14 +1271,16 @@ static void parse_input(int argc, char *argv[])
             if (path_is_directory(optarg))
             {
                *g_settings.libretro = '\0';
-               strlcpy(g_settings.libretro_directory, optarg, sizeof(g_settings.libretro_directory));
+               strlcpy(g_settings.libretro_directory, optarg,
+                     sizeof(g_settings.libretro_directory));
                g_extern.has_set_libretro = true;
                g_extern.has_set_libretro_directory = true;
                RARCH_WARN("Using old --libretro behavior. Setting libretro_directory to \"%s\" instead.\n", optarg);
             }
             else
             {
-               strlcpy(g_settings.libretro, optarg, sizeof(g_settings.libretro));
+               strlcpy(g_settings.libretro, optarg,
+                     sizeof(g_settings.libretro));
                g_extern.has_set_libretro = true;
             }
             break;
@@ -1297,7 +1322,8 @@ static void parse_input(int argc, char *argv[])
          case 'C':
             g_extern.has_set_netplay_ip_address = true;
             g_extern.netplay_enable = true;
-            strlcpy(g_extern.netplay_server, optarg, sizeof(g_extern.netplay_server));
+            strlcpy(g_extern.netplay_server, optarg,
+                  sizeof(g_extern.netplay_server));
             break;
 
          case 'F':
@@ -1307,7 +1333,8 @@ static void parse_input(int argc, char *argv[])
 #endif
 
          case 'U':
-            strlcpy(g_extern.ups_name, optarg, sizeof(g_extern.ups_name));
+            strlcpy(g_extern.ups_name, optarg,
+                  sizeof(g_extern.ups_name));
             g_extern.ups_pref = true;
             break;
 
@@ -1338,7 +1365,8 @@ static void parse_input(int argc, char *argv[])
 #endif
                case 'N':
                   g_extern.has_set_username = true;
-                  strlcpy(g_settings.username, optarg, sizeof(g_settings.username));
+                  strlcpy(g_settings.username, optarg,
+                        sizeof(g_settings.username));
                   break;
 
 #if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
@@ -1351,16 +1379,19 @@ static void parse_input(int argc, char *argv[])
 #endif
 
                case 'C':
-                  strlcpy(g_extern.append_config_path, optarg, sizeof(g_extern.append_config_path));
+                  strlcpy(g_extern.append_config_path, optarg,
+                        sizeof(g_extern.append_config_path));
                   break;
 
                case 'B':
-                  strlcpy(g_extern.bps_name, optarg, sizeof(g_extern.bps_name));
+                  strlcpy(g_extern.bps_name, optarg,
+                        sizeof(g_extern.bps_name));
                   g_extern.bps_pref = true;
                   break;
 
                case 'I':
-                  strlcpy(g_extern.ips_name, optarg, sizeof(g_extern.ips_name));
+                  strlcpy(g_extern.ips_name, optarg,
+                        sizeof(g_extern.ips_name));
                   g_extern.ips_pref = true;
                   break;
 
@@ -1370,7 +1401,8 @@ static void parse_input(int argc, char *argv[])
 
                case 's':
                {
-                  if (sscanf(optarg, "%ux%u", &g_extern.record_width, &g_extern.record_height) != 2)
+                  if (sscanf(optarg, "%ux%u", &g_extern.record_width,
+                           &g_extern.record_height) != 2)
                   {
                      RARCH_ERR("Wrong format for --size.\n");
                      print_help();
@@ -1380,7 +1412,8 @@ static void parse_input(int argc, char *argv[])
                }
 
                case 'R':
-                  strlcpy(g_extern.record_config, optarg, sizeof(g_extern.record_config));
+                  strlcpy(g_extern.record_config, optarg,
+                        sizeof(g_extern.record_config));
                   break;
                case 'f':
                   print_features();
@@ -1417,10 +1450,14 @@ static void parse_input(int argc, char *argv[])
       g_extern.libretro_no_content = true;
 
    /* Copy SRM/state dirs used, so they can be reused on reentrancy. */
-   if (g_extern.has_set_save_path && path_is_directory(g_extern.savefile_name))
-      strlcpy(g_extern.savefile_dir, g_extern.savefile_name, sizeof(g_extern.savefile_dir));
-   if (g_extern.has_set_state_path && path_is_directory(g_extern.savestate_name))
-      strlcpy(g_extern.savestate_dir, g_extern.savestate_name, sizeof(g_extern.savestate_dir));
+   if (g_extern.has_set_save_path &&
+         path_is_directory(g_extern.savefile_name))
+      strlcpy(g_extern.savefile_dir, g_extern.savefile_name,
+            sizeof(g_extern.savefile_dir));
+   if (g_extern.has_set_state_path &&
+         path_is_directory(g_extern.savestate_name))
+      strlcpy(g_extern.savestate_dir, g_extern.savestate_name,
+            sizeof(g_extern.savestate_dir));
 }
 
 static void init_controllers(void)
@@ -1463,9 +1500,10 @@ static void init_controllers(void)
       else if (device != RETRO_DEVICE_JOYPAD)
       {
          /* Some cores do not properly range check port argument.
-          * This is broken behavior ofc, but avoid breaking cores needlessly.
-          */
-         RARCH_LOG("Connecting %s (ID: %u) to port %u.\n", ident, device, i + 1);
+          * This is broken behavior of course, but avoid breaking
+          * cores needlessly. */
+         RARCH_LOG("Connecting %s (ID: %u) to port %u.\n", ident,
+               device, i + 1);
          pretro_set_controller_port_device(i, device);
       }
    }
@@ -1593,9 +1631,11 @@ static void init_movie(void)
 {
    if (g_extern.bsv.movie_start_playback)
    {
-      if (!(g_extern.bsv.movie = bsv_movie_init(g_extern.bsv.movie_start_path, RARCH_MOVIE_PLAYBACK)))
+      if (!(g_extern.bsv.movie = bsv_movie_init(g_extern.bsv.movie_start_path,
+                  RARCH_MOVIE_PLAYBACK)))
       {
-         RARCH_ERR("Failed to load movie file: \"%s\".\n", g_extern.bsv.movie_start_path);
+         RARCH_ERR("Failed to load movie file: \"%s\".\n",
+               g_extern.bsv.movie_start_path);
          rarch_fail(1, "init_movie()");
       }
 
@@ -1614,9 +1654,11 @@ static void init_movie(void)
       msg_queue_push(g_extern.msg_queue,
             g_extern.bsv.movie ? msg : "Failed to start movie record.", 1, 180);
 
-      if ((g_extern.bsv.movie = bsv_movie_init(g_extern.bsv.movie_start_path, RARCH_MOVIE_RECORD)))
+      if ((g_extern.bsv.movie = bsv_movie_init(g_extern.bsv.movie_start_path,
+                  RARCH_MOVIE_RECORD)))
       {
-         RARCH_LOG("Starting movie record to \"%s\".\n", g_extern.bsv.movie_start_path);
+         RARCH_LOG("Starting movie record to \"%s\".\n",
+               g_extern.bsv.movie_start_path);
          g_settings.rewind_granularity = 1;
       }
       else
@@ -1660,7 +1702,8 @@ static void init_netplay(void)
    else
       RARCH_LOG("Waiting for client...\n");
 
-   g_extern.netplay = netplay_new(g_extern.netplay_is_client ? g_extern.netplay_server : NULL,
+   g_extern.netplay = netplay_new(
+         g_extern.netplay_is_client ? g_extern.netplay_server : NULL,
          g_extern.netplay_port ? g_extern.netplay_port : RARCH_DEFAULT_PORT,
          g_extern.netplay_sync_frames, &cbs, g_extern.netplay_is_spectate,
          g_settings.username);
@@ -1697,8 +1740,9 @@ static void init_command(void)
             "Cannot use this command interface.\n");
    }
 
-   if (!(driver.command = rarch_cmd_new(g_settings.stdin_cmd_enable && !driver.stdin_claimed,
-         g_settings.network_cmd_enable, g_settings.network_cmd_port)))
+   if (!(driver.command = rarch_cmd_new(g_settings.stdin_cmd_enable
+               && !driver.stdin_claimed,
+               g_settings.network_cmd_enable, g_settings.network_cmd_port)))
       RARCH_ERR("Failed to initialize command interface.\n");
 }
 
@@ -1726,7 +1770,8 @@ static void init_libretro_cbs_netplay(void)
          audio_sample_batch : audio_sample_batch_net);
 
    pretro_set_input_state(g_extern.netplay_is_spectate ?
-         (g_extern.netplay_is_client ? input_state_spectate_client : input_state_spectate)
+         (g_extern.netplay_is_client ?
+          input_state_spectate_client : input_state_spectate)
          : input_state_net);
 }
 #endif
@@ -1806,8 +1851,10 @@ static void set_savestate_auto_index(void)
     * /foo/path/content.state%d, where %d is the largest number available.
     */
 
-   fill_pathname_basedir(state_dir, g_extern.savestate_name, sizeof(state_dir));
-   fill_pathname_base(state_base, g_extern.savestate_name, sizeof(state_base));
+   fill_pathname_basedir(state_dir, g_extern.savestate_name,
+         sizeof(state_dir));
+   fill_pathname_base(state_base, g_extern.savestate_name,
+         sizeof(state_base));
 
    if (!(dir_list = dir_list_new(state_dir, NULL, false)))
       return;
@@ -1854,10 +1901,14 @@ static void fill_pathnames(void)
    {
       unsigned i, j;
       const struct retro_subsystem_info *info = 
-         (const struct retro_subsystem_info*)libretro_find_subsystem_info(g_extern.system.special, g_extern.system.num_special, g_extern.subsystem);
+         (const struct retro_subsystem_info*)libretro_find_subsystem_info(
+               g_extern.system.special, g_extern.system.num_special,
+               g_extern.subsystem);
 
       /* We'll handle this error gracefully later. */
-      unsigned num_content = min(info ? info->num_roms : 0, g_extern.subsystem_fullpaths ? g_extern.subsystem_fullpaths->size : 0);
+      unsigned num_content = min(info ? info->num_roms : 0,
+            g_extern.subsystem_fullpaths ?
+            g_extern.subsystem_fullpaths->size : 0);
 
       bool use_sram_dir = path_is_directory(g_extern.savefile_name);
 
@@ -1867,7 +1918,9 @@ static void fill_pathnames(void)
          {
             union string_list_elem_attr attr;
             char path[PATH_MAX], ext[32];
-            const struct retro_subsystem_memory_info *mem = (const struct retro_subsystem_memory_info*)&info->roms[i].memory[j];
+            const struct retro_subsystem_memory_info *mem =
+               (const struct retro_subsystem_memory_info*)
+               &info->roms[i].memory[j];
 
             snprintf(ext, sizeof(ext), ".%s", mem->extension);
 
@@ -1875,7 +1928,8 @@ static void fill_pathnames(void)
             {
                /* Redirect content fullpath to save directory. */
                strlcpy(path, g_extern.savefile_name, sizeof(path));
-               fill_pathname_dir(path, g_extern.subsystem_fullpaths->elems[i].data, ext,
+               fill_pathname_dir(path,
+                     g_extern.subsystem_fullpaths->elems[i].data, ext,
                      sizeof(path));
             }
             else
@@ -1897,7 +1951,8 @@ static void fill_pathnames(void)
       {
          fill_pathname_dir(g_extern.savefile_name, g_extern.basename, ".srm",
                sizeof(g_extern.savefile_name));
-         RARCH_LOG("Redirecting save file to \"%s\".\n", g_extern.savefile_name);
+         RARCH_LOG("Redirecting save file to \"%s\".\n",
+               g_extern.savefile_name);
       }
    }
    else
@@ -1954,7 +2009,8 @@ static void load_auto_state(void)
 
       RARCH_LOG("Found auto savestate in: %s\n", savestate_name_auto);
 
-      snprintf(msg, sizeof(msg), "Auto-loading savestate from \"%s\" %s.", savestate_name_auto, ret ? "succeeded" : "failed");
+      snprintf(msg, sizeof(msg), "Auto-loading savestate from \"%s\" %s.",
+            savestate_name_auto, ret ? "succeeded" : "failed");
       msg_queue_push(g_extern.msg_queue, msg, 1, 180);
       RARCH_LOG("%s\n", msg);
    }
@@ -1972,7 +2028,8 @@ static bool save_auto_state(void)
          ".auto", sizeof(savestate_name_auto));
 
    bool ret = save_state(savestate_name_auto);
-   RARCH_LOG("Auto save state to \"%s\" %s.\n", savestate_name_auto, ret ? "succeeded" : "failed");
+   RARCH_LOG("Auto save state to \"%s\" %s.\n", savestate_name_auto, ret ?
+         "succeeded" : "failed");
     
    return true;
 }
@@ -2087,7 +2144,8 @@ static void check_savestates(bool immutable)
 static void set_fullscreen(bool fullscreen)
 {
    g_settings.video.fullscreen = fullscreen;
-   driver.video_cache_context = g_extern.system.hw_render_callback.cache_context;
+   driver.video_cache_context = 
+      g_extern.system.hw_render_callback.cache_context;
    driver.video_cache_context_ack = false;
    rarch_main_command(RARCH_CMD_RESET_CONTEXT);
    driver.video_cache_context = false;
@@ -2477,7 +2535,8 @@ static void check_shader_dir(void)
    if (pressed_next && !old_pressed_next)
    {
       should_apply = true;
-      g_extern.shader_dir.ptr = (g_extern.shader_dir.ptr + 1) % g_extern.shader_dir.list->size;
+      g_extern.shader_dir.ptr = (g_extern.shader_dir.ptr + 1) %
+         g_extern.shader_dir.list->size;
    }
    else if (pressed_prev && !old_pressed_prev)
    {
@@ -2491,7 +2550,8 @@ static void check_shader_dir(void)
    if (should_apply)
    {
       char msg[512];
-      const char *shader          = g_extern.shader_dir.list->elems[g_extern.shader_dir.ptr].data;
+      const char *shader          = 
+         g_extern.shader_dir.list->elems[g_extern.shader_dir.ptr].data;
       enum rarch_shader_type type = RARCH_SHADER_NONE;
       const char *ext             = path_get_extension(shader);
 
@@ -2505,7 +2565,8 @@ static void check_shader_dir(void)
 
       msg_queue_clear(g_extern.msg_queue);
 
-      snprintf(msg, sizeof(msg), "Shader #%u: \"%s\".", (unsigned)g_extern.shader_dir.ptr, shader);
+      snprintf(msg, sizeof(msg), "Shader #%u: \"%s\".",
+            (unsigned)g_extern.shader_dir.ptr, shader);
       msg_queue_push(g_extern.msg_queue, msg, 1, 120);
       RARCH_LOG("Applying shader \"%s\".\n", shader);
 
@@ -2804,7 +2865,8 @@ static void check_netplay_flip(void)
 
 void rarch_check_block_hotkey(void)
 {
-   static const struct retro_keybind *bind = &g_settings.input.binds[0][RARCH_ENABLE_HOTKEY];
+   static const struct retro_keybind *bind = 
+      &g_settings.input.binds[0][RARCH_ENABLE_HOTKEY];
    bool use_hotkey_enable, enable_hotkey;
 
    /* Don't block the check to RARCH_ENABLE_HOTKEY
@@ -2812,11 +2874,13 @@ void rarch_check_block_hotkey(void)
    driver.block_hotkey = driver.block_input;
 
    // If we haven't bound anything to this, always allow hotkeys.
-   use_hotkey_enable = bind->key != RETROK_UNKNOWN || bind->joykey != NO_BTN ||
+   use_hotkey_enable = bind->key != RETROK_UNKNOWN ||
+      bind->joykey != NO_BTN ||
       bind->joyaxis != AXIS_NONE;
    enable_hotkey = input_key_pressed_func(RARCH_ENABLE_HOTKEY);
 
-   driver.block_hotkey = driver.block_input || (use_hotkey_enable && !enable_hotkey);
+   driver.block_hotkey = driver.block_input ||
+      (use_hotkey_enable && !enable_hotkey);
 
    /* If we hold ENABLE_HOTKEY button, block all libretro input to allow 
     * hotkeys to be bound to same keys as RetroPad. */
@@ -2843,7 +2907,8 @@ static void check_grab_mouse_toggle(void)
 {
    static bool old_pressed       = false;
    static bool grab_mouse_state  = false;
-   bool pressed                  = input_key_pressed_func(RARCH_GRAB_MOUSE_TOGGLE) &&
+   bool pressed                  = 
+      input_key_pressed_func(RARCH_GRAB_MOUSE_TOGGLE) &&
       driver.input->grab_mouse;
 
    if (pressed && !old_pressed)
@@ -2950,7 +3015,8 @@ void rarch_main_clear_state(void)
 
 void rarch_init_system_info(void)
 {
-   struct retro_system_info *info = (struct retro_system_info*)&g_extern.system.info;
+   struct retro_system_info *info = (struct retro_system_info*)
+      &g_extern.system.info;
    pretro_get_system_info(info);
 
    if (!info->library_name)
@@ -2962,7 +3028,8 @@ void rarch_init_system_info(void)
    snprintf(g_extern.title_buf, sizeof(g_extern.title_buf), "%s %s",
          info->library_name, info->library_version);
 #else
-   snprintf(g_extern.title_buf, sizeof(g_extern.title_buf), "RetroArch : %s %s",
+   snprintf(g_extern.title_buf, sizeof(g_extern.title_buf),
+         "RetroArch : %s %s",
          info->library_name, info->library_version);
 #endif
    strlcpy(g_extern.system.valid_extensions, info->valid_extensions ?
@@ -3315,9 +3382,11 @@ void rarch_main_command(unsigned action)
          if (!*g_settings.audio.dsp_plugin)
             break;
 
-         g_extern.audio_data.dsp = rarch_dsp_filter_new(g_settings.audio.dsp_plugin, g_extern.audio_data.in_rate);
+         g_extern.audio_data.dsp = rarch_dsp_filter_new(
+               g_settings.audio.dsp_plugin, g_extern.audio_data.in_rate);
          if (!g_extern.audio_data.dsp)
-            RARCH_ERR("[DSP]: Failed to initialize DSP filter \"%s\".\n", g_settings.audio.dsp_plugin);
+            RARCH_ERR("[DSP]: Failed to initialize DSP filter \"%s\".\n",
+                  g_settings.audio.dsp_plugin);
          break;
       case RARCH_CMD_DSP_FILTER_DEINIT:
          if (g_extern.audio_data.dsp)
@@ -3332,7 +3401,9 @@ void rarch_main_command(unsigned action)
          break;
       case RARCH_CMD_HISTORY_INIT:
          if (!g_extern.history)
-            g_extern.history = content_playlist_init(g_settings.content_history_path, g_settings.content_history_size);
+            g_extern.history = content_playlist_init(
+                  g_settings.content_history_path,
+                  g_settings.content_history_size);
          break;
       case RARCH_CMD_HISTORY_DEINIT:
          if (g_extern.history)
@@ -3346,7 +3417,8 @@ void rarch_main_command(unsigned action)
 #endif
          break;
       case RARCH_CMD_VIDEO_APPLY_STATE_CHANGES:
-         if (driver.video_data && driver.video_poke && driver.video_poke->apply_state_changes)
+         if (driver.video_data && driver.video_poke
+               && driver.video_poke->apply_state_changes)
             driver.video_poke->apply_state_changes(driver.video_data);
          break;
       case RARCH_CMD_VIDEO_SET_NONBLOCKING_STATE:
@@ -3356,8 +3428,10 @@ void rarch_main_command(unsigned action)
             driver.video->set_nonblock_state(driver.video_data, boolean);
          break;
       case RARCH_CMD_VIDEO_SET_ASPECT_RATIO:
-         if (driver.video_data && driver.video_poke && driver.video_poke->set_aspect_ratio)
-            driver.video_poke->set_aspect_ratio(driver.video_data, g_settings.video.aspect_ratio_idx);
+         if (driver.video_data && driver.video_poke
+               && driver.video_poke->set_aspect_ratio)
+            driver.video_poke->set_aspect_ratio(driver.video_data,
+                  g_settings.video.aspect_ratio_idx);
          break;
       case RARCH_CMD_AUDIO_SET_NONBLOCKING_STATE:
          boolean = true; /* fall-through */
@@ -3392,7 +3466,8 @@ void rarch_main_command(unsigned action)
          break;
       case RARCH_CMD_RESTART_RETROARCH:
 #if defined(GEKKO) && defined(HW_RVL)
-         fill_pathname_join(g_extern.fullpath, g_defaults.core_dir, SALAMANDER_FILE,
+         fill_pathname_join(g_extern.fullpath, g_defaults.core_dir,
+               SALAMANDER_FILE,
                sizeof(g_extern.fullpath));
 #endif
          g_extern.lifecycle_state &= ~(1ULL << MODE_GAME);
@@ -3415,7 +3490,8 @@ bool rarch_main_iterate(void)
       return false;
 
    /* Time to drop? */
-   if (input_key_pressed_func(RARCH_QUIT_KEY) || !driver.video->alive(driver.video_data))
+   if (input_key_pressed_func(RARCH_QUIT_KEY) ||
+         !driver.video->alive(driver.video_data))
       return false;
 
    if (check_enter_menu())
@@ -3553,7 +3629,8 @@ void rarch_main_deinit(void)
    g_extern.main_is_init = false;
 }
 
-void rarch_main_init_wrap(const struct rarch_main_wrap *args, int *argc, char **argv)
+void rarch_main_init_wrap(const struct rarch_main_wrap *args,
+      int *argc, char **argv)
 {
    *argc = 0;
    argv[(*argc)++] = strdup("retroarch");
