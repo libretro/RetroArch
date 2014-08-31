@@ -140,7 +140,6 @@ typedef struct menu_ctx_driver_backend
    unsigned (*shader_manager_get_type)(const struct gfx_shader *);
    int      (*shader_manager_setting_toggle)(unsigned, unsigned);
    unsigned (*type_is)(unsigned);
-   int      (*setting_toggle)(unsigned, unsigned, unsigned);
    void     (*setting_set_label)(char *, size_t, unsigned *, unsigned,unsigned);
    void     (*defer_decision_automatic)(void);
    void     (*defer_decision_manual)(void);
