@@ -1644,8 +1644,8 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
 #endif
 #endif
 
-   // Disable BFI during fast forward to prevent flicker
-   if (g_settings.video.black_frame_insertion && !driver.nonblock_state)
+   // Disable BFI during fast forward, slow-motion, and pause to prevent flicker
+   if (g_settings.video.black_frame_insertion && !driver.nonblock_state && !g_extern.is_slowmotion && !g_extern.is_paused)
    {
       context_swap_buffers_func(gl);
       glClear(GL_COLOR_BUFFER_BIT);
