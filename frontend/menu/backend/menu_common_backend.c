@@ -2003,6 +2003,7 @@ static int menu_action_ok(const char *dir, unsigned menu_type)
       {
          fill_pathname_join(g_settings.libretro, dir, path, sizeof(g_settings.libretro));
          rarch_main_command(RARCH_CMD_LOAD_CORE);
+         menu_flush_stack_type(MENU_SETTINGS);
 #if defined(HAVE_DYNAMIC)
          // No content needed for this core, load core immediately.
          if (driver.menu->load_no_content)
@@ -2019,8 +2020,6 @@ static int menu_action_ok(const char *dir, unsigned menu_type)
          rarch_main_command(RARCH_CMD_RESTART_RETROARCH);
          return -1;
 #endif
-
-         menu_flush_stack_type(MENU_SETTINGS);
       }
       else if (menu_type == MENU_SETTINGS_CONFIG)
       {
@@ -3286,7 +3285,6 @@ static int menu_common_setting_set(unsigned id, unsigned action)
 
                   rarch_main_command(RARCH_CMD_REINIT);
                }
-               break;
 #endif
                break;
             case MENU_SETTINGS_SHADER_PASSES:
