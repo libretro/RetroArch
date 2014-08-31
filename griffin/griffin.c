@@ -630,8 +630,6 @@ MENU
 #include "../frontend/menu/disp/lakka.c"
 #endif
 
-#endif
-
 #ifdef __cplusplus
 extern "C" {
 #endif
