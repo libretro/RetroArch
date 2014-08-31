@@ -215,7 +215,8 @@ static void readjust_audio_input_rate(void)
    int      half_size   = g_extern.audio_data.driver_buffer_size / 2;
    int      delta_mid   = avail - half_size;
    double   direction   = (double)delta_mid / half_size;
-   double   adjust      = 1.0 + g_settings.audio.rate_control_delta * direction;
+   double   adjust      = 1.0 + g_settings.audio.rate_control_delta *
+      direction;
 
    g_extern.measure_data.buffer_free_samples[write_index] = avail;
    g_extern.audio_data.src_ratio = g_extern.audio_data.orig_src_ratio * adjust;
@@ -267,7 +268,10 @@ static void init_recording(void)
    params.samplerate = g_extern.system.av_info.timing.sample_rate;
    params.pix_fmt    = (g_extern.system.pix_fmt == RETRO_PIXEL_FORMAT_XRGB8888) ?
       FFEMU_PIX_ARGB8888 : FFEMU_PIX_RGB565;
-   params.config     = *g_extern.record_config ? g_extern.record_config : NULL;
+   params.config     = NULL;
+   
+   if (*g_extern.record_config)
+      params.config = g_extern.record_config;
 
    if (g_settings.video.gpu_record && driver.video->read_viewport)
    {
@@ -287,7 +291,8 @@ static void init_recording(void)
       params.fb_width   = next_pow2(vp.width);
       params.fb_height  = next_pow2(vp.height);
 
-      if (g_settings.video.force_aspect && (g_extern.system.aspect_ratio > 0.0f))
+      if (g_settings.video.force_aspect &&
+            (g_extern.system.aspect_ratio > 0.0f))
          params.aspect_ratio  = g_extern.system.aspect_ratio;
       else
          params.aspect_ratio  = (float)vp.width / vp.height;
@@ -314,7 +319,8 @@ static void init_recording(void)
          params.out_height = g_extern.record_height;
       }
 
-      if (g_settings.video.force_aspect && (g_extern.system.aspect_ratio > 0.0f))
+      if (g_settings.video.force_aspect &&
+            (g_extern.system.aspect_ratio > 0.0f))
          params.aspect_ratio = g_extern.system.aspect_ratio;
       else
          params.aspect_ratio = (float)params.out_width / params.out_height;
@@ -329,7 +335,8 @@ static void init_recording(void)
          else
             params.pix_fmt =  FFEMU_PIX_RGB565;
 
-         rarch_softfilter_get_max_output_size(g_extern.filter.filter, &max_width, &max_height);
+         rarch_softfilter_get_max_output_size(g_extern.filter.filter,
+               &max_width, &max_height);
          params.fb_width  = next_pow2(max_width);
          params.fb_height = next_pow2(max_height);
       }
@@ -391,7 +398,8 @@ static void recording_dump_frame(const void *data, unsigned width,
       }
 
       /* User has resized. We kinda have a problem now. */
-      if (vp.width != g_extern.record_gpu_width || vp.height != g_extern.record_gpu_height)
+      if (vp.width != g_extern.record_gpu_width ||
+            vp.height != g_extern.record_gpu_height)
       {
          static const char msg[] = "Recording terminated due to resize.";
          RARCH_WARN("%s\n", msg);
@@ -414,7 +422,8 @@ static void recording_dump_frame(const void *data, unsigned width,
       ffemu_data.pitch  = g_extern.record_gpu_width * 3;
       ffemu_data.width  = g_extern.record_gpu_width;
       ffemu_data.height = g_extern.record_gpu_height;
-      ffemu_data.data   = g_extern.record_gpu_buffer + (ffemu_data.height - 1) * ffemu_data.pitch;
+      ffemu_data.data   = g_extern.record_gpu_buffer +
+         (ffemu_data.height - 1) * ffemu_data.pitch;
 
       ffemu_data.pitch  = -ffemu_data.pitch;
    }
@@ -564,8 +573,10 @@ static bool audio_flush(const int16_t *data, size_t samples)
       RARCH_PERFORMANCE_STOP(audio_dsp);
    }
 
-   src_data.data_in      = dsp_data.output ? dsp_data.output : g_extern.audio_data.data;
-   src_data.input_frames = dsp_data.output ? dsp_data.output_frames : (samples >> 1);
+   src_data.data_in      = dsp_data.output ?
+      dsp_data.output : g_extern.audio_data.data;
+   src_data.input_frames = dsp_data.output ?
+      dsp_data.output_frames : (samples >> 1);
 
    src_data.data_out = g_extern.audio_data.outsamples;
 
@@ -597,7 +608,8 @@ static bool audio_flush(const int16_t *data, size_t samples)
       output_size = sizeof(int16_t);
    }
 
-   if (driver.audio->write(driver.audio_data, output_data, output_frames * output_size * 2) < 0)
+   if (driver.audio->write(driver.audio_data, output_data,
+            output_frames * output_size * 2) < 0)
    {
       RARCH_ERR("Audio backend failed to write. Will continue without sound.\n");
       return false;
@@ -642,7 +654,8 @@ static size_t audio_sample_batch(const int16_t *data, size_t frames)
    if (frames > (AUDIO_CHUNK_SIZE_NONBLOCKING >> 1))
       frames = AUDIO_CHUNK_SIZE_NONBLOCKING >> 1;
 
-   g_extern.audio_active = audio_flush(data, frames << 1) && g_extern.audio_active;
+   g_extern.audio_active = audio_flush(data, frames << 1)
+      && g_extern.audio_active;
 
    return frames;
 }
@@ -655,14 +668,16 @@ static inline void input_poll_overlay(void)
    uint16_t key_mod = 0;
    bool polled = false;
 
-   memcpy(old_key_state.keys, driver.overlay_state.keys, sizeof(driver.overlay_state.keys));
+   memcpy(old_key_state.keys, driver.overlay_state.keys,
+         sizeof(driver.overlay_state.keys));
    memset(&driver.overlay_state, 0, sizeof(driver.overlay_state));
 
    device = input_overlay_full_screen(driver.overlay) ?
       RARCH_DEVICE_POINTER_SCREEN : RETRO_DEVICE_POINTER;
 
    for (i = 0;
-         driver.input->input_state(driver.input_data, NULL, 0, device, i, RETRO_DEVICE_ID_POINTER_PRESSED);
+         driver.input->input_state(driver.input_data, NULL, 0, device, i,
+            RETRO_DEVICE_ID_POINTER_PRESSED);
          i++)
    {
       int16_t x = driver.input->input_state(driver.input_data, NULL, 0,
@@ -688,13 +703,17 @@ static inline void input_poll_overlay(void)
    }
 
    key_mod |= (OVERLAY_GET_KEY(&driver.overlay_state, RETROK_LSHIFT) ||
-         OVERLAY_GET_KEY(&driver.overlay_state, RETROK_RSHIFT)) ? RETROKMOD_SHIFT : 0;
+         OVERLAY_GET_KEY(&driver.overlay_state, RETROK_RSHIFT)) ?
+      RETROKMOD_SHIFT : 0;
    key_mod |= (OVERLAY_GET_KEY(&driver.overlay_state, RETROK_LCTRL) ||
-         OVERLAY_GET_KEY(&driver.overlay_state, RETROK_RCTRL)) ? RETROKMOD_CTRL : 0;
+         OVERLAY_GET_KEY(&driver.overlay_state, RETROK_RCTRL)) ?
+      RETROKMOD_CTRL : 0;
    key_mod |= (OVERLAY_GET_KEY(&driver.overlay_state, RETROK_LALT) ||
-         OVERLAY_GET_KEY(&driver.overlay_state, RETROK_RALT)) ? RETROKMOD_ALT : 0;
+         OVERLAY_GET_KEY(&driver.overlay_state, RETROK_RALT)) ?
+      RETROKMOD_ALT : 0;
    key_mod |= (OVERLAY_GET_KEY(&driver.overlay_state, RETROK_LMETA) ||
-         OVERLAY_GET_KEY(&driver.overlay_state, RETROK_RMETA)) ? RETROKMOD_META : 0;
+         OVERLAY_GET_KEY(&driver.overlay_state, RETROK_RMETA)) ?
+      RETROKMOD_META : 0;
 
    /* CAPSLOCK SCROLLOCK NUMLOCK */
    for (i = 0; i < ARRAY_SIZE(driver.overlay_state.keys); i++)
@@ -717,8 +736,10 @@ static inline void input_poll_overlay(void)
       {
          unsigned bind_plus  = RARCH_ANALOG_LEFT_X_PLUS + 2 * j;
          unsigned bind_minus = bind_plus + 1;
-         driver.overlay_state.analog[j] += (driver.overlay_state.buttons & (1ULL << bind_plus)) ? 0x7fff : 0;
-         driver.overlay_state.analog[j] -= (driver.overlay_state.buttons & (1ULL << bind_minus)) ? 0x7fff : 0;
+         driver.overlay_state.analog[j] += (driver.overlay_state.buttons &
+               (1ULL << bind_plus)) ? 0x7fff : 0;
+         driver.overlay_state.analog[j] -= (driver.overlay_state.buttons &
+               (1ULL << bind_minus)) ? 0x7fff : 0;
       }
    }
 
@@ -733,10 +754,18 @@ static inline void input_poll_overlay(void)
             ANALOG_DPAD_LSTICK ? 0 : 2;
          float analog_x = (float)driver.overlay_state.analog[analog_base + 0] / 0x7fff;
          float analog_y = (float)driver.overlay_state.analog[analog_base + 1] / 0x7fff;
-         driver.overlay_state.buttons |= (analog_x <= -g_settings.input.axis_threshold) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT) : 0;
-         driver.overlay_state.buttons |= (analog_x >=  g_settings.input.axis_threshold) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT) : 0;
-         driver.overlay_state.buttons |= (analog_y <= -g_settings.input.axis_threshold) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_UP) : 0;
-         driver.overlay_state.buttons |= (analog_y >=  g_settings.input.axis_threshold) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN) : 0;
+         driver.overlay_state.buttons |=
+            (analog_x <= -g_settings.input.axis_threshold) ?
+            (1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT) : 0;
+         driver.overlay_state.buttons |=
+            (analog_x >=  g_settings.input.axis_threshold) ?
+            (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT) : 0;
+         driver.overlay_state.buttons |=
+            (analog_y <= -g_settings.input.axis_threshold) ?
+            (1ULL << RETRO_DEVICE_ID_JOYPAD_UP) : 0;
+         driver.overlay_state.buttons |=
+            (analog_y >=  g_settings.input.axis_threshold) ?
+            (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN) : 0;
          break;
       }
 
