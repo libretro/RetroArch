@@ -553,10 +553,8 @@ static void rgui_render(void)
       strlcpy(entry_title_buf, path, sizeof(entry_title_buf));
       strlcpy(type_str_buf, type_str, sizeof(type_str_buf));
 
-      if (type == MENU_FILE_PLAIN || type == MENU_FILE_DIRECTORY || type == MENU_SETTINGS_CORE_INFO_NONE)
-         menu_ticker_line(entry_title_buf, RGUI_TERM_WIDTH - (w + 1 + 2), g_extern.frame_count / 15, path, selected);
-      else
-         menu_ticker_line(type_str_buf, w, g_extern.frame_count / 15, type_str, selected);
+      menu_ticker_line(entry_title_buf, RGUI_TERM_WIDTH - (w + 1 + 2), g_extern.frame_count / 15, path, selected);
+      menu_ticker_line(type_str_buf, w, g_extern.frame_count / 15, type_str, selected);
 
       snprintf(message, sizeof(message), "%c %-*.*s %-*s",
             selected ? '>' : ' ',
