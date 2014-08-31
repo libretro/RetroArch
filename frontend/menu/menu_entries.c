@@ -45,7 +45,9 @@ void menu_entries_push(menu_handle_t *menu,
 {
    unsigned i;
    char tmp[256];
+   size_t list_size = 0;
    rarch_setting_t *setting_data = (rarch_setting_t *)setting_data_get_list();
+   bool do_action = false;
 
 #if 0
    RARCH_LOG("Label is: %s\n", label);
@@ -103,6 +105,51 @@ void menu_entries_push(menu_handle_t *menu,
    {
       switch (menu_type)
       {
+         case MENU_SETTINGS_OPEN_HISTORY:
+            file_list_clear(driver.menu->selection_buf);
+            list_size = content_playlist_size(g_extern.history);
+
+            for (i = 0; i < list_size; i++)
+            {
+               char fill_buf[PATH_MAX];
+               const char *path      = NULL;
+               const char *core_name = NULL;
+
+               content_playlist_get_index(g_extern.history, i,
+                     &path, NULL, &core_name);
+               strlcpy(fill_buf, core_name, sizeof(fill_buf));
+
+               if (path)
+               {
+                  char path_short[PATH_MAX];
+                  fill_pathname(path_short, path_basename(path), "", sizeof(path_short));
+
+                  snprintf(fill_buf, sizeof(fill_buf), "%s (%s)",
+                        path_short, core_name);
+               }
+
+               file_list_push(driver.menu->selection_buf, fill_buf, "",
+                     MENU_FILE_PLAIN, 0);
+
+               do_action = true;
+            }
+            break;
+         case MENU_SETTINGS_DEFERRED_CORE:
+            {
+               const core_info_t *info = NULL;
+               file_list_clear(driver.menu->selection_buf);
+               core_info_list_get_supported_cores(driver.menu->core_info, driver.menu->deferred_path, &info, &list_size);
+               for (i = 0; i < list_size; i++)
+               {
+                  file_list_push(driver.menu->selection_buf, info[i].path, "",
+                        MENU_FILE_PLAIN, 0);
+                  file_list_set_alt_at_offset(driver.menu->selection_buf, i, info[i].display_name);
+               }
+               file_list_sort_on_alt(driver.menu->selection_buf);
+
+               do_action = true;
+            }
+            break;
          case MENU_SETTINGS_SHADER_PARAMETERS:
          case MENU_SETTINGS_SHADER_PRESET_PARAMETERS:
             {
@@ -479,6 +526,20 @@ void menu_entries_push(menu_handle_t *menu,
             }
             break;
       }
+   }
+
+   if (do_action)
+   {
+      driver.menu->scroll_indices_size = 0;
+      if (menu_type != MENU_SETTINGS_OPEN_HISTORY)
+         menu_build_scroll_indices(driver.menu->selection_buf);
+
+      // Before a refresh, we could have deleted a file on disk, causing
+      // selection_ptr to suddendly be out of range. Ensure it doesn't overflow.
+      if (driver.menu->selection_ptr >= file_list_get_size(driver.menu->selection_buf) && file_list_get_size(driver.menu->selection_buf))
+         menu_set_navigation(driver.menu, file_list_get_size(driver.menu->selection_buf) - 1);
+      else if (!file_list_get_size(driver.menu->selection_buf))
+         menu_clear_navigation(driver.menu);
    }
 
    if (driver.menu_ctx && driver.menu_ctx->populate_entries)

@@ -1681,47 +1681,6 @@ static void menu_parse_and_resolve(unsigned menu_type)
 
    switch (menu_type)
    {
-      case MENU_SETTINGS_OPEN_HISTORY:
-         file_list_clear(driver.menu->selection_buf);
-         list_size = content_playlist_size(g_extern.history);
-
-         for (i = 0; i < list_size; i++)
-         {
-            char fill_buf[PATH_MAX];
-            const char *path      = NULL;
-            const char *core_name = NULL;
-
-            content_playlist_get_index(g_extern.history, i,
-                  &path, NULL, &core_name);
-            strlcpy(fill_buf, core_name, sizeof(fill_buf));
-
-            if (path)
-            {
-               char path_short[PATH_MAX];
-               fill_pathname(path_short, path_basename(path), "", sizeof(path_short));
-
-               snprintf(fill_buf, sizeof(fill_buf), "%s (%s)",
-                     path_short, core_name);
-            }
-
-            file_list_push(driver.menu->selection_buf, fill_buf, "",
-                  MENU_FILE_PLAIN, 0);
-         }
-         break;
-      case MENU_SETTINGS_DEFERRED_CORE:
-         {
-            const core_info_t *info = NULL;
-            file_list_clear(driver.menu->selection_buf);
-            core_info_list_get_supported_cores(driver.menu->core_info, driver.menu->deferred_path, &info, &list_size);
-            for (i = 0; i < list_size; i++)
-            {
-               file_list_push(driver.menu->selection_buf, info[i].path, "",
-                     MENU_FILE_PLAIN, 0);
-               file_list_set_alt_at_offset(driver.menu->selection_buf, i, info[i].display_name);
-            }
-            file_list_sort_on_alt(driver.menu->selection_buf);
-         }
-         break;
       default:
          {
             const char *dir = NULL;
@@ -2411,17 +2370,23 @@ static int menu_common_iterate(unsigned action)
    // refresh values in case the stack changed
    file_list_get_last(driver.menu->menu_stack, &dir, &label, &menu_type);
 
-   if (driver.menu->need_refresh && (menu_type == MENU_FILE_DIRECTORY ||
+   if (driver.menu->need_refresh &&
+         (menu_type == MENU_SETTINGS_DEFERRED_CORE ||
+         menu_type == MENU_SETTINGS_OPEN_HISTORY)
+      )
+   {
+      driver.menu->need_refresh = false;
+      menu_entries_push(driver.menu, dir, label, menu_type);
+   }
+   else if (driver.menu->need_refresh && (menu_type == MENU_FILE_DIRECTORY ||
             menu_common_type_is(menu_type) == MENU_SETTINGS_SHADER_OPTIONS ||
             menu_common_type_is(menu_type) == MENU_FILE_DIRECTORY ||
             menu_type == MENU_SETTINGS_OVERLAY_PRESET ||
             menu_type == MENU_CONTENT_HISTORY_PATH ||
             menu_type == MENU_SETTINGS_VIDEO_SOFTFILTER ||
             menu_type == MENU_SETTINGS_AUDIO_DSP_FILTER ||
-            menu_type == MENU_SETTINGS_DEFERRED_CORE ||
             menu_type == MENU_SETTINGS_CORE ||
             menu_type == MENU_SETTINGS_CONFIG ||
-            menu_type == MENU_SETTINGS_OPEN_HISTORY ||
             menu_type == MENU_SETTINGS_DISK_APPEND))
    {
       driver.menu->need_refresh = false;
