@@ -452,7 +452,8 @@ static void rmenu_xui_render(void)
    else if ((menu_type == MENU_SETTINGS_INPUT_OPTIONS) ||
          (menu_type == MENU_SETTINGS_PATH_OPTIONS) ||
          (menu_type == MENU_SETTINGS_OPTIONS) ||
-         (menu_type == MENU_SETTINGS_CUSTOM_VIEWPORT || menu_type == MENU_SETTINGS_CUSTOM_VIEWPORT_2) ||
+         (menu_type == MENU_SETTINGS_CUSTOM_VIEWPORT ||
+          !strcmp(label, "custom_viewport_2")) ||
          menu_type == MENU_SETTINGS_CUSTOM_BIND ||
          !strcmp(label, "help") ||
          menu_type == MENU_SETTINGS)

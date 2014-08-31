@@ -358,7 +358,7 @@ static void rgui_render(void)
    else if (menu_type == MENU_SETTINGS_PATH_OPTIONS ||
          menu_type == MENU_SETTINGS_OPTIONS ||
          menu_type == MENU_SETTINGS_CUSTOM_VIEWPORT ||
-         menu_type == MENU_SETTINGS_CUSTOM_VIEWPORT_2 ||
+         !strcmp(label, "custom_viewport_2") ||
          !strcmp(label, "help") ||
          menu_type == MENU_SETTINGS)
       snprintf(title, sizeof(title), "MENU %s", dir);

@@ -1529,7 +1529,7 @@ static int menu_viewport_iterate(unsigned action)
 
       case MENU_ACTION_CANCEL:
          file_list_pop(driver.menu->menu_stack, &driver.menu->selection_ptr);
-         if (menu_type == MENU_SETTINGS_CUSTOM_VIEWPORT_2)
+         if (!strcmp(label, "custom_viewport_2"))
          {
             file_list_push(driver.menu->menu_stack, "", "",
                   MENU_SETTINGS_CUSTOM_VIEWPORT,
@@ -1542,9 +1542,8 @@ static int menu_viewport_iterate(unsigned action)
          if (menu_type == MENU_SETTINGS_CUSTOM_VIEWPORT
                && !g_settings.video.scale_integer)
          {
-            file_list_push(driver.menu->menu_stack, "", "",
-                  MENU_SETTINGS_CUSTOM_VIEWPORT_2,
-                  driver.menu->selection_ptr);
+            file_list_push(driver.menu->menu_stack, "",
+                  "custom_viewport_2", 0, driver.menu->selection_ptr);
          }
          break;
 
@@ -1604,7 +1603,7 @@ static int menu_viewport_iterate(unsigned action)
    {
       if (menu_type == MENU_SETTINGS_CUSTOM_VIEWPORT)
          base_msg = "Set Upper-Left Corner";
-      else if (menu_type == MENU_SETTINGS_CUSTOM_VIEWPORT_2)
+      else if (!strcmp(label, "custom_viewport_2"))
          base_msg = "Set Bottom-Right Corner";
 
       snprintf(msg, sizeof(msg), "%s (%d, %d : %4ux%4u)",
@@ -2032,7 +2031,7 @@ static int menu_common_iterate(unsigned action)
       return menu_info_screen_iterate(action);
    else if (menu_common_type_is(menu_type) == MENU_SETTINGS)
       return menu_settings_iterate(action);
-   else if (menu_type == MENU_SETTINGS_CUSTOM_VIEWPORT || menu_type == MENU_SETTINGS_CUSTOM_VIEWPORT_2)
+   else if (menu_type == MENU_SETTINGS_CUSTOM_VIEWPORT || !strcmp(menu_label, "custom_viewport_2"))
       return menu_viewport_iterate(action);
    else if (menu_type == MENU_SETTINGS_CUSTOM_BIND)
       return menu_custom_bind_iterate(driver.menu, action);
