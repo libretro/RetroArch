@@ -413,7 +413,7 @@ static void menu_common_entries_init(menu_handle_t *menu, unsigned menu_type)
          add_setting_entry(menu,"audio_rate_control_delta", 0, setting_data);
          add_setting_entry(menu,"system_bgm_enable", 0, setting_data);
          add_setting_entry(menu,"audio_volume", 0, setting_data);
-         add_setting_entry(menu,"audio_device", MENU_SETTINGS_DRIVER_AUDIO_DEVICE, setting_data);
+         add_setting_entry(menu,"audio_device", 0, setting_data);
          break;
       case MENU_SETTINGS_DRIVERS:
          file_list_clear(menu->selection_buf);
@@ -1297,6 +1297,14 @@ static void handle_setting(rarch_setting_t *setting,
       menu_common_setting_set_current_path_selection(setting, setting->default_value.string, id, action);
    else if (setting->type == ST_STRING)
    {
+      if (!strcmp(setting->name, "audio_device"))
+      {
+         if (action == MENU_ACTION_OK)
+            menu_key_start_line(driver.menu, "Audio Device Name / IP: ",
+                  "audio_device", st_string_callback);
+         else if (action == MENU_ACTION_START)
+            *setting->value.string = '\0';
+      }
       if (!strcmp(setting->name, "video_driver"))
          handle_driver(RARCH_DRIVER_VIDEO, g_settings.video.driver,
                sizeof(g_settings.video.driver), action);
@@ -1748,12 +1756,6 @@ static int menu_common_setting_set(unsigned id, unsigned action)
                   *g_extern.netplay_server = '\0';
                break;
 #endif
-            case MENU_SETTINGS_DRIVER_AUDIO_DEVICE:
-               if (action == MENU_ACTION_OK)
-                  menu_key_start_line(driver.menu, "Audio Device Name / IP: ", "audio_device", st_string_callback);
-               else if (action == MENU_ACTION_START)
-                  *g_settings.audio.device = '\0';
-               break;
             case MENU_SETTINGS_NETPLAY_NICKNAME:
                if (action == MENU_ACTION_OK)
                   menu_key_start_line(driver.menu, "Username: ", "netplay_nickname", st_string_callback);
