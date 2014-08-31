@@ -223,6 +223,7 @@
     <ClCompile Include="..\..\frontend\menu\disp\rgui.c" />
     <ClCompile Include="..\..\frontend\menu\menu_common.c" />
     <ClCompile Include="..\..\frontend\menu\menu_input_line_cb.c" />
+    <ClCompile Include="..\..\frontend\menu\menu_entries.c" />
     <ClCompile Include="..\..\frontend\menu\menu_navigation.c" />
     <ClCompile Include="..\..\core_info.c" />
     <ClCompile Include="..\..\frontend\platform\platform_null.c" />

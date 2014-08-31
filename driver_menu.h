@@ -131,7 +131,6 @@ typedef struct
 
 typedef struct menu_ctx_driver_backend
 {
-   void     (*entries_init)(menu_handle_t *, unsigned);
    int      (*iterate)(unsigned);
    void     (*shader_manager_init)(menu_handle_t *);
    void     (*shader_manager_get_str)(struct gfx_shader *, char *, size_t, unsigned);

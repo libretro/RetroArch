@@ -219,6 +219,9 @@
     <ClCompile Include="..\..\frontend\menu\menu_input_line_cb.c">
       <Filter>frontend\menu</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\frontend\menu\menu_entries.c">
+      <Filter>frontend\menu</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\frontend\menu\menu_navigation.c">
       <Filter>frontend\menu</Filter>
     </ClCompile>

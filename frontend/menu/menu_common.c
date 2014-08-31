@@ -15,6 +15,7 @@
  */
 
 #include "menu_common.h"
+#include "menu_entries.h"
 #include "../frontend.h"
 
 void menu_update_system_info(menu_handle_t *menu, bool *load_no_content)
@@ -264,8 +265,7 @@ void *menu_init(const void *data)
    menu->push_start_screen = g_settings.menu_show_start_screen;
    g_settings.menu_show_start_screen = false;
 
-   if (menu_ctx && menu_ctx->backend && menu_ctx->backend->entries_init) 
-      menu_ctx->backend->entries_init(menu, MENU_SETTINGS);
+   menu_entries_push(menu, MENU_SETTINGS);
 
    menu->trigger_state = 0;
    menu->old_input_state = 0;
