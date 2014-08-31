@@ -1678,10 +1678,6 @@ static int menu_viewport_iterate(unsigned action)
 static void menu_parse_and_resolve(unsigned menu_type)
 {
    size_t i, list_size;
-   file_list_t *list = NULL;
-   const core_info_t *info = NULL;
-   const char *dir = NULL;
-   const char *label = NULL;
 
    if (!driver.menu)
    {
@@ -1721,18 +1717,23 @@ static void menu_parse_and_resolve(unsigned menu_type)
          }
          break;
       case MENU_SETTINGS_DEFERRED_CORE:
-         file_list_clear(driver.menu->selection_buf);
-         core_info_list_get_supported_cores(driver.menu->core_info, driver.menu->deferred_path, &info, &list_size);
-         for (i = 0; i < list_size; i++)
          {
-            file_list_push(driver.menu->selection_buf, info[i].path, "",
-                  MENU_FILE_PLAIN, 0);
-            file_list_set_alt_at_offset(driver.menu->selection_buf, i, info[i].display_name);
+            const core_info_t *info = NULL;
+            file_list_clear(driver.menu->selection_buf);
+            core_info_list_get_supported_cores(driver.menu->core_info, driver.menu->deferred_path, &info, &list_size);
+            for (i = 0; i < list_size; i++)
+            {
+               file_list_push(driver.menu->selection_buf, info[i].path, "",
+                     MENU_FILE_PLAIN, 0);
+               file_list_set_alt_at_offset(driver.menu->selection_buf, i, info[i].display_name);
+            }
+            file_list_sort_on_alt(driver.menu->selection_buf);
          }
-         file_list_sort_on_alt(driver.menu->selection_buf);
          break;
       default:
          {
+            const char *dir = NULL;
+            const char *label = NULL;
             file_list_clear(driver.menu->selection_buf);
             /* Directory parse */
             file_list_get_last(driver.menu->menu_stack, &dir, &label, &menu_type);
@@ -1900,29 +1901,30 @@ static void menu_parse_and_resolve(unsigned menu_type)
             switch (menu_type)
             {
                case MENU_SETTINGS_CORE:
-                  dir = NULL;
-                  label = NULL;
-                  list = (file_list_t*)driver.menu->selection_buf;
-                  file_list_get_last(driver.menu->menu_stack, &dir, &label, &menu_type);
-                  list_size = file_list_get_size(list);
-                  for (i = 0; i < list_size; i++)
                   {
-                     char core_path[PATH_MAX], display_name[256];
-                     const char *path = NULL;
-                     unsigned type = 0;
+                     file_list_t *list = (file_list_t*)driver.menu->selection_buf;
+                     file_list_get_last(driver.menu->menu_stack, &dir, NULL, &menu_type);
+                     list_size = file_list_get_size(list);
 
-                     file_list_get_at_offset(list, i, &path, NULL, &type);
-                     if (type != MENU_FILE_PLAIN)
-                        continue;
+                     for (i = 0; i < list_size; i++)
+                     {
+                        char core_path[PATH_MAX], display_name[256];
+                        const char *path = NULL;
+                        unsigned type = 0;
 
-                     fill_pathname_join(core_path, dir, path, sizeof(core_path));
+                        file_list_get_at_offset(list, i, &path, NULL, &type);
+                        if (type != MENU_FILE_PLAIN)
+                           continue;
 
-                     if (driver.menu->core_info &&
-                           core_info_list_get_display_name(driver.menu->core_info,
-                              core_path, display_name, sizeof(display_name)))
-                        file_list_set_alt_at_offset(list, i, display_name);
+                        fill_pathname_join(core_path, dir, path, sizeof(core_path));
+
+                        if (driver.menu->core_info &&
+                              core_info_list_get_display_name(driver.menu->core_info,
+                                 core_path, display_name, sizeof(display_name)))
+                           file_list_set_alt_at_offset(list, i, display_name);
+                     }
+                     file_list_sort_on_alt(driver.menu->selection_buf);
                   }
-                  file_list_sort_on_alt(driver.menu->selection_buf);
                   break;
             }
          }
