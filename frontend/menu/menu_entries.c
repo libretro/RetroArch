@@ -17,6 +17,7 @@
 #include "menu_entries.h"
 #include "backend/menu_common_backend.h"
 #include "../../settings_data.h"
+#include "../../file_ext.h"
 
 static inline struct gfx_shader *shader_manager_get_current_shader(menu_handle_t *menu, unsigned type)
 {
@@ -545,5 +546,239 @@ int menu_entries_push(menu_handle_t *menu,
    if (driver.menu_ctx && driver.menu_ctx->populate_entries)
       driver.menu_ctx->populate_entries(menu, path, label, menu_type);
 
+   return 0;
+}
+
+int menu_parse_and_resolve(void)
+{
+   size_t i, list_size;
+   unsigned menu_type = 0;
+
+   const char *dir = NULL;
+   const char *label = NULL;
+   /* Directory parse */
+   file_list_get_last(driver.menu->menu_stack, &dir, &label, &menu_type);
+
+   if (
+         menu_type == MENU_SETTINGS_DEFERRED_CORE ||
+         menu_type == MENU_SETTINGS_OPEN_HISTORY
+      )
+      return menu_entries_push(driver.menu, dir, label, menu_type);
+
+   if (!((menu_type == MENU_FILE_DIRECTORY ||
+            menu_common_type_is(menu_type) == MENU_SETTINGS_SHADER_OPTIONS ||
+            menu_common_type_is(menu_type) == MENU_FILE_DIRECTORY ||
+            menu_type == MENU_SETTINGS_OVERLAY_PRESET ||
+            menu_type == MENU_CONTENT_HISTORY_PATH ||
+            menu_type == MENU_SETTINGS_VIDEO_SOFTFILTER ||
+            menu_type == MENU_SETTINGS_AUDIO_DSP_FILTER ||
+            menu_type == MENU_SETTINGS_CORE ||
+            menu_type == MENU_SETTINGS_CONFIG ||
+            menu_type == MENU_SETTINGS_DISK_APPEND)))
+      return - 1;
+
+   file_list_clear(driver.menu->selection_buf);
+
+   if (!*dir)
+   {
+#if defined(GEKKO)
+#ifdef HW_RVL
+      file_list_push(driver.menu->selection_buf,
+            "sd:/", "", menu_type, 0);
+      file_list_push(driver.menu->selection_buf,
+            "usb:/", "", menu_type, 0);
+#endif
+      file_list_push(driver.menu->selection_buf,
+            "carda:/", "", menu_type, 0);
+      file_list_push(driver.menu->selection_buf,
+            "cardb:/", "", menu_type, 0);
+#elif defined(_XBOX1)
+      file_list_push(driver.menu->selection_buf,
+            "C:", "", menu_type, 0);
+      file_list_push(driver.menu->selection_buf,
+            "D:", "", menu_type, 0);
+      file_list_push(driver.menu->selection_buf,
+            "E:", "", menu_type, 0);
+      file_list_push(driver.menu->selection_buf,
+            "F:", "", menu_type, 0);
+      file_list_push(driver.menu->selection_buf,
+            "G:", "", menu_type, 0);
+#elif defined(_XBOX360)
+      file_list_push(driver.menu->selection_buf,
+            "game:", "", menu_type, 0);
+#elif defined(_WIN32)
+      unsigned drives = GetLogicalDrives();
+      char drive[] = " :\\";
+      for (i = 0; i < 32; i++)
+      {
+         drive[0] = 'A' + i;
+         if (drives & (1 << i))
+            file_list_push(driver.menu->selection_buf,
+                  drive, "", menu_type, 0);
+      }
+#elif defined(__CELLOS_LV2__)
+      file_list_push(driver.menu->selection_buf,
+            "/app_home/",   "", menu_type, 0);
+      file_list_push(driver.menu->selection_buf,
+            "/dev_hdd0/",   "", menu_type, 0);
+      file_list_push(driver.menu->selection_buf,
+            "/dev_hdd1/",   "", menu_type, 0);
+      file_list_push(driver.menu->selection_buf,
+            "/host_root/",  "", menu_type, 0);
+      file_list_push(driver.menu->selection_buf,
+            "/dev_usb000/", "", menu_type, 0);
+      file_list_push(driver.menu->selection_buf,
+            "/dev_usb001/", "", menu_type, 0);
+      file_list_push(driver.menu->selection_buf,
+            "/dev_usb002/", "", menu_type, 0);
+      file_list_push(driver.menu->selection_buf,
+            "/dev_usb003/", "", menu_type, 0);
+      file_list_push(driver.menu->selection_buf,
+            "/dev_usb004/", "", menu_type, 0);
+      file_list_push(driver.menu->selection_buf,
+            "/dev_usb005/", "", menu_type, 0);
+      file_list_push(driver.menu->selection_buf,
+            "/dev_usb006/", "", menu_type, 0);
+#elif defined(PSP)
+      file_list_push(driver.menu->selection_buf,
+            "ms0:/", "", menu_type, 0);
+      file_list_push(driver.menu->selection_buf,
+            "ef0:/", "", menu_type, 0);
+      file_list_push(driver.menu->selection_buf,
+            "host0:/", "", menu_type, 0);
+#elif defined(IOS)
+      file_list_push(driver.menu->selection_buf,
+            "/var/mobile/", "", menu_type, 0);
+      file_list_push(driver.menu->selection_buf,
+            g_defaults.core_dir, "",menu_type, 0);
+      file_list_push(driver.menu->selection_buf, "/", "",
+            menu_type, 0);
+#else
+      file_list_push(driver.menu->selection_buf, "/", "",
+            menu_type, 0);
+#endif
+      return 0;
+   }
+#if defined(GEKKO) && defined(HW_RVL)
+   LWP_MutexLock(gx_device_mutex);
+   int dev = gx_get_device_from_path(dir);
+
+   if (dev != -1 && !gx_devices[dev].mounted && gx_devices[dev].interface->isInserted())
+      fatMountSimple(gx_devices[dev].name, gx_devices[dev].interface);
+
+   LWP_MutexUnlock(gx_device_mutex);
+#endif
+
+   const char *exts;
+   char ext_buf[1024];
+   if (menu_type == MENU_SETTINGS_CORE)
+      exts = EXT_EXECUTABLES;
+   else if (menu_type == MENU_SETTINGS_CONFIG)
+      exts = "cfg";
+   else if (menu_type == MENU_SETTINGS_SHADER_PRESET)
+      exts = "cgp|glslp";
+   else if (menu_common_type_is(menu_type) == MENU_SETTINGS_SHADER_OPTIONS)
+      exts = "cg|glsl";
+   else if (menu_type == MENU_SETTINGS_VIDEO_SOFTFILTER)
+      exts = "filt";
+   else if (menu_type == MENU_SETTINGS_AUDIO_DSP_FILTER)
+      exts = "dsp";
+   else if (menu_type == MENU_SETTINGS_OVERLAY_PRESET)
+      exts = "cfg";
+   else if (menu_type == MENU_CONTENT_HISTORY_PATH)
+      exts = "cfg";
+   else if (menu_common_type_is(menu_type) == MENU_FILE_DIRECTORY)
+      exts = ""; // we ignore files anyway
+   else if (driver.menu->defer_core)
+      exts = driver.menu->core_info ? core_info_list_get_all_extensions(driver.menu->core_info) : "";
+   else if (driver.menu->info.valid_extensions)
+   {
+      exts = ext_buf;
+      if (*driver.menu->info.valid_extensions)
+         snprintf(ext_buf, sizeof(ext_buf), "%s|zip", driver.menu->info.valid_extensions);
+      else
+         *ext_buf = '\0';
+   }
+   else
+      exts = g_extern.system.valid_extensions;
+
+   struct string_list *str_list = dir_list_new(dir, exts, true);
+   if (!str_list)
+      return -1;
+
+   dir_list_sort(str_list, true);
+
+   if (menu_common_type_is(menu_type) == MENU_FILE_DIRECTORY)
+      file_list_push(driver.menu->selection_buf, "<Use this directory>", "",
+            MENU_FILE_USE_DIRECTORY, 0);
+
+   list_size = str_list->size;
+   for (i = 0; i < str_list->size; i++)
+   {
+      bool is_dir = str_list->elems[i].attr.b;
+
+      if ((menu_common_type_is(menu_type) == MENU_FILE_DIRECTORY) && !is_dir)
+         continue;
+
+      // Need to preserve slash first time.
+      const char *path = str_list->elems[i].data;
+      if (*dir)
+         path = path_basename(path);
+
+#ifdef HAVE_LIBRETRO_MANAGEMENT
+      if (menu_type == MENU_SETTINGS_CORE && (is_dir || strcasecmp(path, SALAMANDER_FILE) == 0))
+         continue;
+#endif
+
+      // Push menu_type further down in the chain.
+      // Needed for shader manager currently.
+      file_list_push(driver.menu->selection_buf, path, "",
+            is_dir ? menu_type : MENU_FILE_PLAIN, 0);
+   }
+
+   menu_entries_push(driver.menu, dir, label, menu_type);
+   string_list_free(str_list);
+
+   switch (menu_type)
+   {
+      case MENU_SETTINGS_CORE:
+         {
+            file_list_t *list = (file_list_t*)driver.menu->selection_buf;
+            file_list_get_last(driver.menu->menu_stack, &dir, NULL, &menu_type);
+            list_size = file_list_get_size(list);
+
+            for (i = 0; i < list_size; i++)
+            {
+               char core_path[PATH_MAX], display_name[256];
+               const char *path = NULL;
+               unsigned type = 0;
+
+               file_list_get_at_offset(list, i, &path, NULL, &type);
+               if (type != MENU_FILE_PLAIN)
+                  continue;
+
+               fill_pathname_join(core_path, dir, path, sizeof(core_path));
+
+               if (driver.menu->core_info &&
+                     core_info_list_get_display_name(driver.menu->core_info,
+                        core_path, display_name, sizeof(display_name)))
+                  file_list_set_alt_at_offset(list, i, display_name);
+            }
+            file_list_sort_on_alt(driver.menu->selection_buf);
+         }
+         break;
+   }
+
+   driver.menu->scroll_indices_size = 0;
+   if (menu_type != MENU_SETTINGS_OPEN_HISTORY)
+      menu_build_scroll_indices(driver.menu->selection_buf);
+
+   // Before a refresh, we could have deleted a file on disk, causing
+   // selection_ptr to suddendly be out of range. Ensure it doesn't overflow.
+   if (driver.menu->selection_ptr >= file_list_get_size(driver.menu->selection_buf) && file_list_get_size(driver.menu->selection_buf))
+      menu_set_navigation(driver.menu, file_list_get_size(driver.menu->selection_buf) - 1);
+   else if (!file_list_get_size(driver.menu->selection_buf))
+      menu_clear_navigation(driver.menu);
+   
    return 0;
 }

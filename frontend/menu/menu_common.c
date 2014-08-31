@@ -698,3 +698,61 @@ void menu_push_info_screen(void)
 {
    file_list_push(driver.menu->menu_stack, "", "help", 0, 0);
 }
+
+unsigned menu_common_type_is(unsigned type)
+{
+   if (
+         type == MENU_SETTINGS ||
+         type == MENU_SETTINGS_GENERAL_OPTIONS ||
+         type == MENU_SETTINGS_CORE_OPTIONS ||
+         type == MENU_SETTINGS_CORE_INFO ||
+         type == MENU_SETTINGS_VIDEO_OPTIONS ||
+         type == MENU_SETTINGS_FONT_OPTIONS ||
+         type == MENU_SETTINGS_SHADER_OPTIONS ||
+         type == MENU_SETTINGS_SHADER_PARAMETERS ||
+         type == MENU_SETTINGS_SHADER_PRESET_PARAMETERS ||
+         type == MENU_SETTINGS_AUDIO_OPTIONS ||
+         type == MENU_SETTINGS_DISK_OPTIONS ||
+         type == MENU_SETTINGS_PATH_OPTIONS ||
+         type == MENU_SETTINGS_PRIVACY_OPTIONS ||
+         type == MENU_SETTINGS_OVERLAY_OPTIONS ||
+         type == MENU_SETTINGS_USER_OPTIONS ||
+         type == MENU_SETTINGS_NETPLAY_OPTIONS ||
+         type == MENU_SETTINGS_OPTIONS ||
+         type == MENU_SETTINGS_DRIVERS ||
+         type == MENU_SETTINGS_PERFORMANCE_COUNTERS ||
+         type == MENU_SETTINGS_PERFORMANCE_COUNTERS_LIBRETRO ||
+         type == MENU_SETTINGS_PERFORMANCE_COUNTERS_FRONTEND ||
+         type == MENU_SETTINGS_INPUT_OPTIONS
+         )
+         return MENU_SETTINGS;
+
+   if (
+         (
+          type >= MENU_SETTINGS_SHADER_0 &&
+          type <= MENU_SETTINGS_SHADER_LAST &&
+          (((type - MENU_SETTINGS_SHADER_0) % 3) == 0)) ||
+         type == MENU_SETTINGS_SHADER_PRESET)
+      return MENU_SETTINGS_SHADER_OPTIONS;
+
+   if (
+         type == MENU_BROWSER_DIR_PATH ||
+         type == MENU_CONTENT_DIR_PATH ||
+         type == MENU_ASSETS_DIR_PATH ||
+         type == MENU_SHADER_DIR_PATH ||
+         type == MENU_FILTER_DIR_PATH ||
+         type == MENU_DSP_FILTER_DIR_PATH ||
+         type == MENU_SAVESTATE_DIR_PATH ||
+         type == MENU_LIBRETRO_DIR_PATH ||
+         type == MENU_LIBRETRO_INFO_DIR_PATH ||
+         type == MENU_CONFIG_DIR_PATH ||
+         type == MENU_SAVEFILE_DIR_PATH ||
+         type == MENU_OVERLAY_DIR_PATH ||
+         type == MENU_SCREENSHOT_DIR_PATH ||
+         type == MENU_AUTOCONFIG_DIR_PATH ||
+         type == MENU_EXTRACTION_DIR_PATH ||
+         type == MENU_SYSTEM_DIR_PATH)
+      return MENU_FILE_DIRECTORY;
+
+   return 0;
+}
