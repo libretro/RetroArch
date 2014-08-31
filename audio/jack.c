@@ -214,13 +214,17 @@ static size_t write_buffer(jack_t *jd, const float *buf, size_t size)
 {
    int i;
    size_t j;
-   jack_default_audio_sample_t out_deinterleaved_buffer[2][AUDIO_CHUNK_SIZE_NONBLOCKING];
-
-   for (i = 0; i < 2; i++)
-      for (j = 0; j < FRAMES(size); j++)
-         out_deinterleaved_buffer[i][j] = buf[j * 2 + i];
+   jack_default_audio_sample_t out_deinterleaved_buffer[2][AUDIO_CHUNK_SIZE_NONBLOCKING * AUDIO_MAX_RATIO];
 
    size_t frames = FRAMES(size);
+
+   // Avoid buffer overflow if a DSP plugin generated a huge number of frames
+   if (frames > AUDIO_CHUNK_SIZE_NONBLOCKING * AUDIO_MAX_RATIO)
+      frames = AUDIO_CHUNK_SIZE_NONBLOCKING * AUDIO_MAX_RATIO;
+
+   for (i = 0; i < 2; i++)
+      for (j = 0; j < frames; j++)
+         out_deinterleaved_buffer[i][j] = buf[j * 2 + i];
 
    size_t written = 0;
    while (written < frames)
