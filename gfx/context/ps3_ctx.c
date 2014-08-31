@@ -230,13 +230,6 @@ static bool gfx_ctx_init(void *data)
    params.depthFormat = GL_NONE;
    params.multisamplingMode = GL_MULTISAMPLING_NONE_SCE;
 
-   if (g_extern.lifecycle_state & (1ULL << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE))
-   {
-      RARCH_LOG("[PSGL Context]: Setting triple buffering.\n");
-      params.enable |= PSGL_DEVICE_PARAMETERS_BUFFERING_MODE;
-      params.bufferingMode = PSGL_BUFFERING_MODE_TRIPLE;
-   }
-
    if (g_extern.console.screen.resolutions.current.id)
    {
       params.enable |= PSGL_DEVICE_PARAMETERS_WIDTH_HEIGHT;

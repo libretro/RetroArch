@@ -454,7 +454,6 @@ void config_set_defaults(void)
    g_extern.console.sound.system_bgm_enable = false;
 #ifdef RARCH_CONSOLE
    g_extern.console.screen.gamma_correction = DEFAULT_GAMMA;
-   g_extern.lifecycle_state |= (1ULL << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE);
 
    g_extern.console.screen.resolutions.current.id = 0;
    g_extern.console.sound.mode = SOUND_MODE_NORMAL;
@@ -864,16 +863,6 @@ bool config_load_file(const char *path, bool set_defaults)
     * important that it works for consoles right now */
 
    CONFIG_GET_BOOL_EXTERN(console.screen.gamma_correction, "gamma_correction");
-
-   bool triple_buffering_enable = false;
-
-   if (config_get_bool(conf, "triple_buffering_enable", &triple_buffering_enable))
-   {
-      if (triple_buffering_enable)
-         g_extern.lifecycle_state |= (1ULL << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE);
-      else
-         g_extern.lifecycle_state &= ~(1ULL << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE);
-   }
 
    config_get_bool(conf, "custom_bgm_enable", &g_extern.console.sound.system_bgm_enable);
    config_get_bool(conf, "flicker_filter_enable", &g_extern.console.flickerfilter_enable);
@@ -1403,9 +1392,7 @@ bool config_save_file(const char *path)
 #endif
 
    config_set_bool(conf, "gamma_correction", g_extern.console.screen.gamma_correction);
-   bool triple_buffering_enable_val = g_extern.lifecycle_state & (1ULL << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE);
 
-   config_set_bool(conf, "triple_buffering_enable", triple_buffering_enable_val);
    config_set_bool(conf, "soft_filter_enable", g_extern.console.softfilter_enable);
    config_set_bool(conf, "flicker_filter_enable", g_extern.console.flickerfilter_enable);
 
