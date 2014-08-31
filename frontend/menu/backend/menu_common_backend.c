@@ -154,7 +154,7 @@ static void menu_common_entries_init(menu_handle_t *menu, unsigned menu_type)
          add_setting_entry(menu, "pal60_enable", 0, setting_data);
          add_setting_entry(menu,"video_smooth", 0, setting_data);
          add_setting_entry(menu, "soft_filter", 0, setting_data);
-         add_setting_entry(menu,"video_gamma", MENU_SETTINGS_VIDEO_GAMMA, setting_data);
+         add_setting_entry(menu,"video_gamma", 0, setting_data);
          add_setting_entry(menu,"video_filter_flicker", 0,
                setting_data);
          add_setting_entry(menu,"video_scale_integer", 0, setting_data);
