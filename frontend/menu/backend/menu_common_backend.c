@@ -1247,8 +1247,8 @@ static int menu_common_setting_set(unsigned id, unsigned action)
                }
 #endif
                break;
-            case MENU_SETTINGS_SHADER_PASSES:
 #ifdef HAVE_SHADER_MANAGER
+            case MENU_SETTINGS_SHADER_PASSES:
                {
                   struct gfx_shader *shader = (struct gfx_shader*)driver.menu->shader;
 
@@ -1280,7 +1280,6 @@ static int menu_common_setting_set(unsigned id, unsigned action)
                   if (driver.menu->need_refresh)
                      gfx_shader_resolve_parameters(NULL, driver.menu->shader);
                }
-#endif
                break;
             case MENU_SETTINGS_SHADER_APPLY:
                {
@@ -1313,12 +1312,13 @@ static int menu_common_setting_set(unsigned id, unsigned action)
                      if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->shader_manager_set_preset)
                         driver.menu_ctx->backend->shader_manager_set_preset(NULL, type, NULL);
                   }
-                  break;
                }
+               break;
             case MENU_SETTINGS_SHADER_PRESET_SAVE:
                if (action == MENU_ACTION_OK)
                   menu_key_start_line(driver.menu, "Preset Filename: ", "shader_preset_save", preset_filename_callback);
                break;
+#endif
             default:
                break;
          }
