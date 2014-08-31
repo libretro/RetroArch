@@ -805,16 +805,16 @@ void menu_common_setting_set_current_string(rarch_setting_t *setting, const char
       setting->change_handler(setting);
 }
 
-static void handle_driver(unsigned id, char *driver, size_t sizeof_driver,
+static void handle_driver(const char *label, char *driver, size_t sizeof_driver,
       unsigned action)
 {
    switch (action)
    {
       case MENU_ACTION_LEFT:
-         find_prev_driver(id, driver, sizeof_driver);
+         find_prev_driver(label, driver, sizeof_driver);
          break;
       case MENU_ACTION_RIGHT:
-         find_next_driver(id, driver, sizeof_driver);
+         find_next_driver(label, driver, sizeof_driver);
          break;
    }
 }
@@ -867,10 +867,10 @@ static void handle_setting(rarch_setting_t *setting,
       }
 #endif
       if (!strcmp(setting->name, "video_driver"))
-         handle_driver(RARCH_DRIVER_VIDEO, g_settings.video.driver,
+         handle_driver(setting->name, g_settings.video.driver,
                sizeof(g_settings.video.driver), action);
       else if (!strcmp(setting->name, "audio_driver"))
-         handle_driver(RARCH_DRIVER_AUDIO, g_settings.audio.driver,
+         handle_driver(setting->name, g_settings.audio.driver,
                sizeof(g_settings.audio.driver), action);
       else if (!strcmp(setting->name, "audio_resampler_driver"))
       {
@@ -880,16 +880,16 @@ static void handle_setting(rarch_setting_t *setting,
             find_next_resampler_driver();
       }
       else if (!strcmp(setting->name, "input_driver"))
-         handle_driver(RARCH_DRIVER_INPUT, g_settings.input.driver,
+         handle_driver(setting->name, g_settings.input.driver,
                sizeof(g_settings.input.driver), action);
       else if (!strcmp(setting->name, "camera_driver"))
-         handle_driver(RARCH_DRIVER_CAMERA, g_settings.camera.driver,
+         handle_driver(setting->name, g_settings.camera.driver,
                sizeof(g_settings.camera.driver), action);
       else if (!strcmp(setting->name, "location_driver"))
-         handle_driver(RARCH_DRIVER_LOCATION, g_settings.location.driver,
+         handle_driver(setting->name, g_settings.location.driver,
                sizeof(g_settings.location.driver), action);
       else if (!strcmp(setting->name, "menu_driver"))
-         handle_driver(RARCH_DRIVER_MENU, g_settings.menu.driver,
+         handle_driver(setting->name, g_settings.menu.driver,
                sizeof(g_settings.menu.driver), action);
    }
 }

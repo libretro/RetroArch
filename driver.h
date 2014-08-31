@@ -119,18 +119,6 @@ enum // RetroArch specific bind IDs.
    RARCH_BIND_LIST_END_NULL
 };
 
-enum
-{
-   RARCH_DRIVER_NONE = 0,
-   RARCH_DRIVER_VIDEO,
-   RARCH_DRIVER_AUDIO,
-   RARCH_DRIVER_INPUT,
-   RARCH_DRIVER_CAMERA,
-   RARCH_DRIVER_OSK,
-   RARCH_DRIVER_LOCATION,
-   RARCH_DRIVER_MENU,
-};
-
 struct retro_keybind
 {
    bool valid;
@@ -466,8 +454,8 @@ void uninit_video_input(void);
 void init_audio(void);
 void uninit_audio(void);
 
-void find_prev_driver(unsigned cmd, char *str, size_t sizeof_str);
-void find_next_driver(unsigned cmd, char *str, size_t sizeof_str);
+void find_prev_driver(const char *label, char *str, size_t sizeof_str);
+void find_next_driver(const char *label, char *str, size_t sizeof_str);
 
 void find_prev_resampler_driver(void);
 void find_next_resampler_driver(void);
