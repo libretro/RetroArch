@@ -143,7 +143,6 @@ enum menu_enums
    MODE_EXITSPAWN_START_GAME,
    MODE_EXITSPAWN_MULTIMAN,
    MODE_VIDEO_TRIPLE_BUFFERING_ENABLE,
-   MODE_VIDEO_FLICKER_FILTER_ENABLE,
    MODE_OSK_ENTRY_SUCCESS,
    MODE_OSK_ENTRY_FAIL,
    MODE_CLEAR_INPUT,
@@ -706,6 +705,7 @@ struct global
          bool system_bgm_enable;
       } sound;
 
+      bool flickerfilter_enable;
       bool softfilter_enable;
    } console;
 
