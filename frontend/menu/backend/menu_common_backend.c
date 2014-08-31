@@ -1481,11 +1481,8 @@ static int menu_settings_iterate(unsigned action)
             menu_type == MENU_SETTINGS_DISK_APPEND ||
             menu_type == MENU_SETTINGS_OPEN_HISTORY))
    {
-      bool ret = (menu_common_type_is(menu_type) == MENU_SETTINGS);
       driver.menu->need_refresh = false;
-      RARCH_LOG("Goes here?\n");
-      menu_entries_push(driver.menu, path, label,
-            ret ? menu_type : MENU_SETTINGS);
+      menu_entries_push(driver.menu, path, label, menu_type);
    }
 
    if (driver.menu_ctx && driver.menu_ctx->render)
