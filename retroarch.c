@@ -2270,6 +2270,9 @@ static void check_slowmotion(void)
    if (!g_extern.is_slowmotion)
       return;
 
+   if (g_settings.video.black_frame_insertion)
+      rarch_render_cached_frame();
+
    msg_queue_clear(g_extern.msg_queue);
    msg_queue_push(g_extern.msg_queue, g_extern.frame_is_reverse ?
          "Slow motion rewind." : "Slow motion.", 0, 30);
@@ -2393,6 +2396,9 @@ static void check_pause(void)
       rarch_main_command(RARCH_CMD_AUDIO_STOP);
    if (has_set_audio_start)
       rarch_main_command(RARCH_CMD_AUDIO_START);
+
+   if (g_extern.is_paused && g_settings.video.black_frame_insertion)
+      rarch_render_cached_frame();
 
    old_focus = focus;
    old_state = new_state;
