@@ -19,6 +19,7 @@
 
 #include "menu_common.h"
 
-void menu_entries_push(menu_handle_t *menu, unsigned menu_type);
+void menu_entries_push(menu_handle_t *menu, const char *label,
+      unsigned menu_type);
 
 #endif

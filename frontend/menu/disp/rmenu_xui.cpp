@@ -669,9 +669,12 @@ static void rmenu_xui_render(void)
    }
 }
 
-static void rmenu_xui_populate_entries(void *data, unsigned i)
+static void rmenu_xui_populate_entries(void *data, const char *label,
+      unsigned i)
 {
    menu_handle_t *menu = (menu_handle_t*)data;
+   (void)label;
+
    XuiListSetCurSelVisible(m_menulist, menu->selection_ptr);
 }
 

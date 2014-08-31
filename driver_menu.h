@@ -155,7 +155,7 @@ typedef struct menu_ctx_driver
    void  (*free)(void*);
    void  (*context_reset)(void*);
    void  (*context_destroy)(void*);
-   void  (*populate_entries)(void*, unsigned);
+   void  (*populate_entries)(void*, const char *, unsigned);
    void  (*iterate)(void*, unsigned);
    int   (*input_postprocess)(uint64_t);
    void  (*navigation_clear)(void *);
