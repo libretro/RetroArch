@@ -136,7 +136,7 @@ static void renderchain_render_pass(void *data, const void *frame, unsigned widt
 #endif
 #ifdef _XBOX1
    d3dr->SetFlickerFilter(g_extern.console.screen.flicker_filter_index);
-   d3dr->SetSoftDisplayFilter(g_extern.lifecycle_state & (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE));
+   d3dr->SetSoftDisplayFilter(g_extern.console.softfilter_enable);
 #endif
    renderchain_blit_to_texture(d3d, frame, width, height, pitch);
    renderchain_set_vertices(d3d, 1, width, height);

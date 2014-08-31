@@ -255,7 +255,7 @@ bool renderchain_render(void *chain_data, const void *data,
          current_width, current_height, chain->final_viewport);
 #ifdef _XBOX1
    d3dr->SetFlickerFilter(g_extern.console.screen.flicker_filter_index);
-   d3dr->SetSoftDisplayFilter(g_extern.lifecycle_state & (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE));
+   d3dr->SetSoftDisplayFilter(g_extern.console.softfilter_enable);
 #endif
    renderchain_blit_to_texture(chain, data, width, height, pitch);
 

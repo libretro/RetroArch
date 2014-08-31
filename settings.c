@@ -455,7 +455,6 @@ void config_set_defaults(void)
    g_extern.console.screen.gamma_correction = DEFAULT_GAMMA;
    g_extern.lifecycle_state |= (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE);
    g_extern.lifecycle_state |= (1ULL << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE);
-   g_extern.lifecycle_state |= (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE);
    g_extern.lifecycle_state |= (1ULL << MODE_VIDEO_FLICKER_FILTER_ENABLE);
 
    g_extern.console.screen.resolutions.current.id = 0;
@@ -897,12 +896,7 @@ bool config_load_file(const char *path, bool set_defaults)
    }
 
    if (config_get_bool(conf, "soft_filter_enable", &soft_filter_enable))
-   {
-      if (soft_filter_enable)
-         g_extern.lifecycle_state |= (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE);
-      else 
-         g_extern.lifecycle_state &= ~(1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE);
-   }
+      g_extern.console.softfilter_enable = soft_filter_enable;
 
    CONFIG_GET_INT_EXTERN(console.screen.flicker_filter_index, "flicker_filter_index");
    CONFIG_GET_INT_EXTERN(console.screen.soft_filter_index, "soft_filter_index");
@@ -1429,11 +1423,10 @@ bool config_save_file(const char *path)
 
    config_set_bool(conf, "gamma_correction", g_extern.console.screen.gamma_correction);
    bool triple_buffering_enable_val = g_extern.lifecycle_state & (1ULL << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE);
-   bool soft_filter_enable_val = g_extern.lifecycle_state & (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE);
    bool flicker_filter_enable_val = g_extern.lifecycle_state & (1ULL << MODE_VIDEO_FLICKER_FILTER_ENABLE);
 
    config_set_bool(conf, "triple_buffering_enable", triple_buffering_enable_val);
-   config_set_bool(conf, "soft_filter_enable", soft_filter_enable_val);
+   config_set_bool(conf, "soft_filter_enable", g_extern.console.softfilter_enable);
    config_set_bool(conf, "flicker_filter_enable", flicker_filter_enable_val);
 
    config_set_int(conf, "flicker_filter_index", g_extern.console.screen.flicker_filter_index);

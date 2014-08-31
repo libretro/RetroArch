@@ -164,15 +164,8 @@ static void menu_common_entries_init(menu_handle_t *menu, unsigned menu_type)
                MENU_SETTINGS_VIDEO_PAL60, 0);
 #endif
          add_setting_entry(menu,"video_smooth", 0, setting_data);
-#ifdef HW_RVL
-         file_list_push(menu->selection_buf, "VI Trap filtering", "",
-               MENU_SETTINGS_VIDEO_SOFT_FILTER, 0);
-#endif
+         add_setting_entry(menu, "soft_filter", 0, setting_data);
          add_setting_entry(menu,"video_gamma", MENU_SETTINGS_VIDEO_GAMMA, setting_data);
-#ifdef _XBOX1
-         file_list_push(menu->selection_buf, "Soft filtering", "",
-               MENU_SETTINGS_SOFT_DISPLAY_FILTER, 0);
-#endif
          add_setting_entry(menu,"video_filter_flicker", 0,
                setting_data);
          add_setting_entry(menu,"video_scale_integer", 0, setting_data);
@@ -3335,17 +3328,6 @@ static int menu_common_setting_set(unsigned id, unsigned action)
                }
                break;
 #endif
-#ifdef HW_RVL
-            case MENU_SETTINGS_VIDEO_SOFT_FILTER:
-               if (g_extern.lifecycle_state & (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE))
-                  g_extern.lifecycle_state &= ~(1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE);
-               else
-                  g_extern.lifecycle_state |= (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE);
-
-               rarch_main_command(RARCH_CMD_VIDEO_APPLY_STATE_CHANGES);
-               break;
-#endif
-
                break;
             case MENU_SETTINGS_SHADER_PASSES:
                {
@@ -3413,24 +3395,6 @@ static int menu_common_setting_set(unsigned id, unsigned action)
                   }
                   break;
                }
-#ifdef _XBOX1
-            case MENU_SETTINGS_SOFT_DISPLAY_FILTER:
-               switch (action)
-               {
-                  case MENU_ACTION_LEFT:
-                  case MENU_ACTION_RIGHT:
-                  case MENU_ACTION_OK:
-                     if (g_extern.lifecycle_state & (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE))
-                        g_extern.lifecycle_state &= ~(1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE);
-                     else
-                        g_extern.lifecycle_state |= (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE);
-                     break;
-                  case MENU_ACTION_START:
-                     g_extern.lifecycle_state |= (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE);
-                     break;
-               }
-               break;
-#endif
             case MENU_SETTINGS_CUSTOM_BGM_CONTROL_ENABLE:
                switch (action)
                {
@@ -3663,10 +3627,6 @@ static void menu_common_setting_set_label(char *type_str,
       {
          switch (type)
          {
-            case MENU_SETTINGS_VIDEO_SOFT_FILTER:
-               snprintf(type_str, type_str_size,
-                     (g_extern.lifecycle_state & (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE)) ? "ON" : "OFF");
-               break;
 #if defined(GEKKO)
             case MENU_SETTINGS_VIDEO_RESOLUTION:
                strlcpy(type_str, gx_get_video_mode(), type_str_size);
@@ -3782,12 +3742,6 @@ static void menu_common_setting_set_label(char *type_str,
             case MENU_SETTINGS_CUSTOM_BIND_MODE:
                strlcpy(type_str, driver.menu->bind_mode_keyboard ? "RetroKeyboard" : "RetroPad", type_str_size);
                break;
-#ifdef _XBOX1
-            case MENU_SETTINGS_SOFT_DISPLAY_FILTER:
-               snprintf(type_str, type_str_size,
-                     (g_extern.lifecycle_state & (1ULL << MODE_VIDEO_SOFT_FILTER_ENABLE)) ? "ON" : "OFF");
-               break;
-#endif
             case MENU_SETTINGS_CUSTOM_BGM_CONTROL_ENABLE:
                strlcpy(type_str,
                      (g_extern.lifecycle_state & (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE)) ? "ON" : "OFF",

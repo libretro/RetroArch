@@ -144,7 +144,6 @@ enum menu_enums
    MODE_EXITSPAWN_MULTIMAN,
    MODE_VIDEO_TRIPLE_BUFFERING_ENABLE,
    MODE_VIDEO_FLICKER_FILTER_ENABLE,
-   MODE_VIDEO_SOFT_FILTER_ENABLE,
    MODE_VIDEO_PAL_ENABLE,
    MODE_VIDEO_PAL_TEMPORAL_ENABLE,
    MODE_AUDIO_CUSTOM_BGM_ENABLE,
@@ -707,6 +706,7 @@ struct global
       {
          unsigned mode;
       } sound;
+      bool softfilter_enable;
    } console;
 
    uint64_t lifecycle_state;

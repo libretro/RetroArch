@@ -1142,6 +1142,8 @@ static void general_read_handler(const void *data)
        *setting->value.boolean = g_settings.config_save_on_exit;
     else if (!strcmp(setting->name, "rewind_enable"))
        *setting->value.boolean = g_settings.rewind_enable;
+    else if (!strcmp(setting->name, "soft_filter"))
+       *setting->value.boolean = g_extern.console.softfilter_enable;
     else if (!strcmp(setting->name, "rewind_granularity"))
          *setting->value.unsigned_integer = g_settings.rewind_granularity;
     else if (!strcmp(setting->name, "block_sram_overwrite"))
@@ -1475,6 +1477,12 @@ static void general_write_handler(const void *data)
    {
       g_settings.rewind_enable = *setting->value.boolean;
       rarch_cmd = RARCH_CMD_REWIND;
+   }
+   else if (!strcmp(setting->name, "soft_filter"))
+   {
+      g_extern.console.softfilter_enable = *setting->value.boolean;
+      if (*setting->value.boolean)
+         rarch_cmd = RARCH_CMD_VIDEO_APPLY_STATE_CHANGES;
    }
    else if (!strcmp(setting->name, "rewind_granularity"))
       g_settings.rewind_granularity = *setting->value.unsigned_integer;
@@ -2056,6 +2064,9 @@ rarch_setting_t *setting_data_get_list(void)
       CONFIG_BOOL(g_settings.video.crop_overscan,        "video_crop_overscan",        "Crop Overscan (reload)",     crop_overscan, "OFF", "ON", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
 #ifndef HAVE_FILTERS_BUILTIN
       CONFIG_PATH(g_settings.video.softfilter_plugin,    "video_filter",               "Software filter",            g_settings.video.filter_dir, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)       WITH_FLAGS(SD_FLAG_ALLOW_EMPTY) WITH_VALUES("filt")
+#endif
+#if defined(_XBOX1) || defined(HW_RVL)
+      CONFIG_BOOL(g_extern.console.softfilter_enable,   "soft_filter",   "Soft Filter Enable",         false, "OFF", "ON", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
 #endif
 #ifdef _XBOX1
       CONFIG_UINT(g_settings.video.swap_interval,        "video_filter_flicker",        "Flicker filter",        0, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)       WITH_RANGE(0, 5, 1, true, true)
