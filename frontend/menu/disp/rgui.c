@@ -122,11 +122,13 @@ static void blit_line(int x, int y, const char *message, bool green)
          {
             uint8_t rem = 1 << ((i + j * FONT_WIDTH) & 7);
             int offset = (i + j * FONT_WIDTH) >> 3;
-            bool col = (driver.menu->font[FONT_OFFSET((unsigned char)*message) + offset] & rem);
+            bool col = (driver.menu->font[FONT_OFFSET
+                  ((unsigned char)*message) + offset] & rem);
 
             if (col)
             {
-               driver.menu->frame_buf[(y + j) * (driver.menu->frame_buf_pitch >> 1) + (x + i)] = green ?
+               driver.menu->frame_buf[(y + j) *
+                  (driver.menu->frame_buf_pitch >> 1) + (x + i)] = green ?
 #if defined(GEKKO)|| defined(PSP)
                (3 << 0) | (10 << 4) | (3 << 8) | (7 << 12) : 0x7FFF;
 #else
@@ -263,16 +265,20 @@ static void rgui_render_messagebox(const char *message)
 
 static void rgui_render(void)
 {
-   size_t begin, end;
+   size_t begin = 0;
+   size_t end;
 
    if (driver.menu->need_refresh &&
          (g_extern.lifecycle_state & (1ULL << MODE_MENU))
          && !driver.menu->msg_force)
       return;
 
-   begin = (driver.menu->selection_ptr >= RGUI_TERM_HEIGHT / 2) ? driver.menu->selection_ptr - RGUI_TERM_HEIGHT / 2 : 0;
-   end   = (driver.menu->selection_ptr + RGUI_TERM_HEIGHT <= file_list_get_size(driver.menu->selection_buf)) ?
-      driver.menu->selection_ptr + RGUI_TERM_HEIGHT : file_list_get_size(driver.menu->selection_buf);
+   if (driver.menu->selection_ptr >= RGUI_TERM_HEIGHT / 2)
+      begin = driver.menu->selection_ptr - RGUI_TERM_HEIGHT / 2;
+   end   = (driver.menu->selection_ptr + RGUI_TERM_HEIGHT <=
+         file_list_get_size(driver.menu->selection_buf)) ?
+      driver.menu->selection_ptr + RGUI_TERM_HEIGHT :
+      file_list_get_size(driver.menu->selection_buf);
 
    // Do not scroll if all items are visible.
    if (file_list_get_size(driver.menu->selection_buf) <= RGUI_TERM_HEIGHT)
@@ -290,7 +296,8 @@ static void rgui_render(void)
    unsigned menu_type_is = 0;
    file_list_get_last(driver.menu->menu_stack, &dir, &label, &menu_type);
 
-   if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->type_is)
+   if (driver.menu_ctx && driver.menu_ctx->backend &&
+         driver.menu_ctx->backend->type_is)
       menu_type_is = driver.menu_ctx->backend->type_is(menu_type);
 
 #if 0
@@ -422,7 +429,8 @@ static void rgui_render(void)
    }
 
    char title_buf[256];
-   menu_ticker_line(title_buf, RGUI_TERM_WIDTH - 3, g_extern.frame_count / 15, title, true);
+   menu_ticker_line(title_buf, RGUI_TERM_WIDTH - 3,
+         g_extern.frame_count / 15, title, true);
    blit_line(RGUI_TERM_START_X + 15, 15, title_buf, true);
 
    char title_msg[64];
@@ -438,8 +446,10 @@ static void rgui_render(void)
    if (!core_version)
       core_version = "";
 
-   snprintf(title_msg, sizeof(title_msg), "%s - %s %s", PACKAGE_VERSION, core_name, core_version);
-   blit_line(RGUI_TERM_START_X + 15, (RGUI_TERM_HEIGHT * FONT_HEIGHT_STRIDE) + RGUI_TERM_START_Y + 2, title_msg, true);
+   snprintf(title_msg, sizeof(title_msg), "%s - %s %s", PACKAGE_VERSION,
+         core_name, core_version);
+   blit_line(RGUI_TERM_START_X + 15, (RGUI_TERM_HEIGHT * FONT_HEIGHT_STRIDE) +
+         RGUI_TERM_START_Y + 2, title_msg, true);
 
    unsigned x, y;
    size_t i;
@@ -453,14 +463,17 @@ static void rgui_render(void)
       const char *path = NULL;
       const char *label = NULL;
       unsigned type = 0;
-      file_list_get_at_offset(driver.menu->selection_buf, i, &path, &label, &type);
+      file_list_get_at_offset(driver.menu->selection_buf, i, &path,
+            &label, &type);
       rarch_setting_t *setting = (rarch_setting_t*)setting_data_find_setting(
             setting_data_get_list(), driver.menu->selection_buf->list[i].label);
       unsigned w = 19;
        (void)setting;
       if (menu_type == MENU_SETTINGS_PERFORMANCE_COUNTERS)
          w = 28;
-      else if (menu_type == MENU_SETTINGS_INPUT_OPTIONS || menu_type == MENU_SETTINGS_CUSTOM_BIND || menu_type == MENU_SETTINGS_CUSTOM_BIND_KEYBOARD)
+      else if (menu_type == MENU_SETTINGS_INPUT_OPTIONS ||
+            menu_type == MENU_SETTINGS_CUSTOM_BIND ||
+            menu_type == MENU_SETTINGS_CUSTOM_BIND_KEYBOARD)
          w = 21;
       else if (menu_type == MENU_SETTINGS_PATH_OPTIONS)
          w = 24;
@@ -469,7 +482,8 @@ static void rgui_render(void)
       if (type >= MENU_SETTINGS_SHADER_FILTER &&
             type <= MENU_SETTINGS_SHADER_LAST)
       {
-         // HACK. Work around that we're using the menu_type as dir type to propagate state correctly.
+         /* HACK. Work around that we're using the menu_type as dir type 
+          * to propagate state correctly. */
          if ((menu_type_is == MENU_SETTINGS_SHADER_OPTIONS)
                && (menu_type_is == MENU_SETTINGS_SHADER_OPTIONS))
          {
@@ -477,23 +491,34 @@ static void rgui_render(void)
             strlcpy(type_str, "(DIR)", sizeof(type_str));
             w = 5;
          }
-         else if (type == MENU_SETTINGS_SHADER_OPTIONS || type == MENU_SETTINGS_SHADER_PRESET || type == MENU_SETTINGS_SHADER_PARAMETERS || type == MENU_SETTINGS_SHADER_PRESET_PARAMETERS)
+         else if (
+               type == MENU_SETTINGS_SHADER_OPTIONS ||
+               type == MENU_SETTINGS_SHADER_PRESET ||
+               type == MENU_SETTINGS_SHADER_PARAMETERS ||
+               type == MENU_SETTINGS_SHADER_PRESET_PARAMETERS)
             strlcpy(type_str, "...", sizeof(type_str));
          else if (type == MENU_SETTINGS_SHADER_FILTER)
             snprintf(type_str, sizeof(type_str), "%s",
                   g_settings.video.smooth ? "Linear" : "Nearest");
-         else if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->shader_manager_get_str)
+         else if (driver.menu_ctx && driver.menu_ctx->backend &&
+               driver.menu_ctx->backend->shader_manager_get_str)
          {
-            if (type >= MENU_SETTINGS_SHADER_PARAMETER_0 && type <= MENU_SETTINGS_SHADER_PARAMETER_LAST)
-               driver.menu_ctx->backend->shader_manager_get_str(driver.menu->parameter_shader, type_str, sizeof(type_str), type);
+            if (type >= MENU_SETTINGS_SHADER_PARAMETER_0 &&
+                  type <= MENU_SETTINGS_SHADER_PARAMETER_LAST)
+               driver.menu_ctx->backend->shader_manager_get_str(
+                     driver.menu->parameter_shader, type_str,
+                     sizeof(type_str), type);
             else
-               driver.menu_ctx->backend->shader_manager_get_str(driver.menu->shader, type_str, sizeof(type_str), type);
+               driver.menu_ctx->backend->shader_manager_get_str(
+                     driver.menu->shader, type_str, sizeof(type_str), type);
          }
       }
       else
 #endif
       // Pretty-print libretro cores from menu.
-      if (menu_type == MENU_SETTINGS_CORE || menu_type == MENU_SETTINGS_DEFERRED_CORE)
+      if (
+            menu_type == MENU_SETTINGS_CORE ||
+            menu_type == MENU_SETTINGS_DEFERRED_CORE)
       {
          if (type == MENU_FILE_PLAIN)
          {
@@ -540,11 +565,15 @@ static void rgui_render(void)
          w = 0;
       }
       else if (type >= MENU_SETTINGS_CORE_OPTION_START)
-         strlcpy(type_str,
-               core_option_get_val(g_extern.system.core_options, type - MENU_SETTINGS_CORE_OPTION_START),
+         strlcpy(
+               type_str,
+               core_option_get_val(g_extern.system.core_options,
+                  type - MENU_SETTINGS_CORE_OPTION_START),
                sizeof(type_str));
-      else if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->setting_set_label)
-         driver.menu_ctx->backend->setting_set_label(type_str, sizeof(type_str), &w, type, i);
+      else if (driver.menu_ctx && driver.menu_ctx->backend &&
+            driver.menu_ctx->backend->setting_set_label)
+         driver.menu_ctx->backend->setting_set_label(type_str,
+               sizeof(type_str), &w, type, i);
 
       char entry_title_buf[256];
       char type_str_buf[64];
@@ -553,8 +582,10 @@ static void rgui_render(void)
       strlcpy(entry_title_buf, path, sizeof(entry_title_buf));
       strlcpy(type_str_buf, type_str, sizeof(type_str_buf));
 
-      menu_ticker_line(entry_title_buf, RGUI_TERM_WIDTH - (w + 1 + 2), g_extern.frame_count / 15, path, selected);
-      menu_ticker_line(type_str_buf, w, g_extern.frame_count / 15, type_str, selected);
+      menu_ticker_line(entry_title_buf, RGUI_TERM_WIDTH - (w + 1 + 2),
+            g_extern.frame_count / 15, path, selected);
+      menu_ticker_line(type_str_buf, w, g_extern.frame_count / 15,
+            type_str, selected);
 
       snprintf(message, sizeof(message), "%c %-*.*s %-*s",
             selected ? '>' : ' ',
@@ -649,9 +680,10 @@ void rgui_set_texture(void *data)
 {
    menu_handle_t *menu = (menu_handle_t*)data;
 
-   if (driver.video_data && driver.video_poke && driver.video_poke->set_texture_frame)
-      driver.video_poke->set_texture_frame(driver.video_data, menu_framebuf,
-            false, menu->width, menu->height, 1.0f);
+   if (driver.video_data && driver.video_poke &&
+         driver.video_poke->set_texture_frame)
+      driver.video_poke->set_texture_frame(driver.video_data,
+            menu_framebuf, false, menu->width, menu->height, 1.0f);
 }
 
 static void rgui_init_core_info(void *data)
