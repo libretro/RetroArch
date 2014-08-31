@@ -194,7 +194,7 @@ static void rmenu_render(void)
       strlcpy(title, "USER OPTIONS", sizeof(title));
    else if (menu_type == MENU_SETTINGS_FONT_OPTIONS)
       strlcpy(title, "FONT OPTIONS", sizeof(title));
-   else if (menu_type == MENU_SETTINGS_GENERAL_OPTIONS)
+   else if (!strcmp(dir, "General Options"))
       strlcpy(title, "GENERAL OPTIONS", sizeof(title));
    else if (menu_type == MENU_SETTINGS_PATH_OPTIONS)
       strlcpy(title, "PATH OPTIONS", sizeof(title));

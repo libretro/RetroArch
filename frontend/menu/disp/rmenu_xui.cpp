@@ -433,7 +433,7 @@ static void rmenu_xui_render(void)
 #endif
    else if (menu_type == MENU_SETTINGS_FONT_OPTIONS)
       strlcpy(title, "FONT OPTIONS", sizeof(title));
-   else if (menu_type == MENU_SETTINGS_GENERAL_OPTIONS)
+   else if (!strcmp(dir, "General Options"))
       strlcpy(title, "GENERAL OPTIONS", sizeof(title));
    else if (menu_type == MENU_SETTINGS_AUDIO_OPTIONS)
       strlcpy(title, "AUDIO OPTIONS", sizeof(title));
@@ -669,11 +669,12 @@ static void rmenu_xui_render(void)
    }
 }
 
-static void rmenu_xui_populate_entries(void *data, const char *label,
-      unsigned i)
+static void rmenu_xui_populate_entries(void *data, const char *path,
+      const char *label, unsigned i)
 {
    menu_handle_t *menu = (menu_handle_t*)data;
    (void)label;
+   (void)path;
 
    XuiListSetCurSelVisible(m_menulist, menu->selection_ptr);
 }

@@ -76,6 +76,29 @@ void menu_entries_push(menu_handle_t *menu,
       add_setting_entry(menu,"help", 0, setting_data);
       add_setting_entry(menu,"quit_retroarch", 0, setting_data);
    }
+   else if (!strcmp(path, "General Options"))
+   {
+      file_list_clear(menu->selection_buf);
+      add_setting_entry(menu,"libretro_log_level", 0, setting_data);
+      add_setting_entry(menu,"log_verbosity", 0, setting_data);
+      add_setting_entry(menu,"perfcnt_enable", 0, setting_data);
+      add_setting_entry(menu,"game_history_size", 0, setting_data);
+      add_setting_entry(menu,"config_save_on_exit", 0, setting_data);
+      add_setting_entry(menu,"core_specific_config", 0, setting_data);
+      add_setting_entry(menu,"video_gpu_screenshot", 0, setting_data);
+      add_setting_entry(menu,"dummy_on_core_shutdown", 0, setting_data);
+      add_setting_entry(menu,"fps_show", 0, setting_data);
+      add_setting_entry(menu,"fastforward_ratio", 0, setting_data);
+      add_setting_entry(menu,"slowmotion_ratio", 0, setting_data);
+      add_setting_entry(menu,"rewind_enable", 0, setting_data);
+      add_setting_entry(menu,"rewind_granularity", 0, setting_data);
+      add_setting_entry(menu,"block_sram_overwrite", 0, setting_data);
+      add_setting_entry(menu,"autosave_interval", 0, setting_data);
+      add_setting_entry(menu,"video_disable_composition", 0, setting_data);
+      add_setting_entry(menu,"pause_nonactive", 0, setting_data);
+      add_setting_entry(menu,"savestate_auto_save", 0, setting_data);
+      add_setting_entry(menu,"savestate_auto_load", 0, setting_data);
+   }
    else
    {
       switch (menu_type)
@@ -136,28 +159,6 @@ void menu_entries_push(menu_handle_t *menu,
                         MENU_SETTINGS_SHADER_0_SCALE + 3 * i, 0);
                }
             }
-            break;
-         case MENU_SETTINGS_GENERAL_OPTIONS:
-            file_list_clear(menu->selection_buf);
-            add_setting_entry(menu,"libretro_log_level", 0, setting_data);
-            add_setting_entry(menu,"log_verbosity", 0, setting_data);
-            add_setting_entry(menu,"perfcnt_enable", 0, setting_data);
-            add_setting_entry(menu,"game_history_size", 0, setting_data);
-            add_setting_entry(menu,"config_save_on_exit", 0, setting_data);
-            add_setting_entry(menu,"core_specific_config", 0, setting_data);
-            add_setting_entry(menu,"video_gpu_screenshot", 0, setting_data);
-            add_setting_entry(menu,"dummy_on_core_shutdown", 0, setting_data);
-            add_setting_entry(menu,"fps_show", 0, setting_data);
-            add_setting_entry(menu,"fastforward_ratio", 0, setting_data);
-            add_setting_entry(menu,"slowmotion_ratio", 0, setting_data);
-            add_setting_entry(menu,"rewind_enable", 0, setting_data);
-            add_setting_entry(menu,"rewind_granularity", 0, setting_data);
-            add_setting_entry(menu,"block_sram_overwrite", 0, setting_data);
-            add_setting_entry(menu,"autosave_interval", 0, setting_data);
-            add_setting_entry(menu,"video_disable_composition", 0, setting_data);
-            add_setting_entry(menu,"pause_nonactive", 0, setting_data);
-            add_setting_entry(menu,"savestate_auto_save", 0, setting_data);
-            add_setting_entry(menu,"savestate_auto_load", 0, setting_data);
             break;
          case MENU_SETTINGS_VIDEO_OPTIONS:
             file_list_clear(menu->selection_buf);
@@ -481,5 +482,5 @@ void menu_entries_push(menu_handle_t *menu,
    }
 
    if (driver.menu_ctx && driver.menu_ctx->populate_entries)
-      driver.menu_ctx->populate_entries(menu, label, menu_type);
+      driver.menu_ctx->populate_entries(menu, path, label, menu_type);
 }

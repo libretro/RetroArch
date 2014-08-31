@@ -293,6 +293,10 @@ static void rgui_render(void)
    if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->type_is)
       menu_type_is = driver.menu_ctx->backend->type_is(menu_type);
 
+#if 0
+   RARCH_LOG("Dir is: %s\n", dir);
+#endif
+
    if (menu_type == MENU_SETTINGS_CORE)
       snprintf(title, sizeof(title), "CORE SELECTION %s", dir);
    else if (menu_type == MENU_SETTINGS_DEFERRED_CORE)
@@ -335,7 +339,7 @@ static void rgui_render(void)
 #endif
    else if (menu_type == MENU_SETTINGS_FONT_OPTIONS)
       strlcpy(title, "FONT OPTIONS", sizeof(title));
-   else if (menu_type == MENU_SETTINGS_GENERAL_OPTIONS)
+   else if (!strcmp(dir, "General Options"))
       strlcpy(title, "GENERAL OPTIONS", sizeof(title));
    else if (menu_type == MENU_SETTINGS_AUDIO_OPTIONS)
       strlcpy(title, "AUDIO OPTIONS", sizeof(title));
