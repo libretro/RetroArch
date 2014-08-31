@@ -1675,16 +1675,29 @@ static int menu_viewport_iterate(unsigned action)
    return 0;
 }
 
-static void menu_parse_and_resolve(void)
+static int menu_parse_and_resolve(void)
 {
    size_t i, list_size;
    unsigned menu_type = 0;
 
    const char *dir = NULL;
    const char *label = NULL;
-   file_list_clear(driver.menu->selection_buf);
    /* Directory parse */
    file_list_get_last(driver.menu->menu_stack, &dir, &label, &menu_type);
+
+   if (!((menu_type == MENU_FILE_DIRECTORY ||
+            menu_common_type_is(menu_type) == MENU_SETTINGS_SHADER_OPTIONS ||
+            menu_common_type_is(menu_type) == MENU_FILE_DIRECTORY ||
+            menu_type == MENU_SETTINGS_OVERLAY_PRESET ||
+            menu_type == MENU_CONTENT_HISTORY_PATH ||
+            menu_type == MENU_SETTINGS_VIDEO_SOFTFILTER ||
+            menu_type == MENU_SETTINGS_AUDIO_DSP_FILTER ||
+            menu_type == MENU_SETTINGS_CORE ||
+            menu_type == MENU_SETTINGS_CONFIG ||
+            menu_type == MENU_SETTINGS_DISK_APPEND)))
+      return - 1;
+
+   file_list_clear(driver.menu->selection_buf);
 
    if (!*dir)
    {
@@ -1764,7 +1777,7 @@ static void menu_parse_and_resolve(void)
       file_list_push(driver.menu->selection_buf, "/", "",
             menu_type, 0);
 #endif
-      return;
+      return 0;
    }
 #if defined(GEKKO) && defined(HW_RVL)
    LWP_MutexLock(gx_device_mutex);
@@ -1811,7 +1824,7 @@ static void menu_parse_and_resolve(void)
 
    struct string_list *str_list = dir_list_new(dir, exts, true);
    if (!str_list)
-      return;
+      return -1;
 
    dir_list_sort(str_list, true);
 
@@ -1886,6 +1899,8 @@ static void menu_parse_and_resolve(void)
       menu_set_navigation(driver.menu, file_list_get_size(driver.menu->selection_buf) - 1);
    else if (!file_list_get_size(driver.menu->selection_buf))
       menu_clear_navigation(driver.menu);
+   
+   return 0;
 }
 
 // This only makes sense for PC so far.
@@ -2373,19 +2388,10 @@ static int menu_common_iterate(unsigned action)
       driver.menu->need_refresh = false;
       menu_entries_push(driver.menu, dir, label, menu_type);
    }
-   else if (driver.menu->need_refresh && (menu_type == MENU_FILE_DIRECTORY ||
-            menu_common_type_is(menu_type) == MENU_SETTINGS_SHADER_OPTIONS ||
-            menu_common_type_is(menu_type) == MENU_FILE_DIRECTORY ||
-            menu_type == MENU_SETTINGS_OVERLAY_PRESET ||
-            menu_type == MENU_CONTENT_HISTORY_PATH ||
-            menu_type == MENU_SETTINGS_VIDEO_SOFTFILTER ||
-            menu_type == MENU_SETTINGS_AUDIO_DSP_FILTER ||
-            menu_type == MENU_SETTINGS_CORE ||
-            menu_type == MENU_SETTINGS_CONFIG ||
-            menu_type == MENU_SETTINGS_DISK_APPEND))
+   else if (driver.menu->need_refresh)
    {
-      driver.menu->need_refresh = false;
-      menu_parse_and_resolve();
+      if (menu_parse_and_resolve() == 0)
+         driver.menu->need_refresh = false;
    }
 
    if (driver.menu_ctx && driver.menu_ctx->iterate)
