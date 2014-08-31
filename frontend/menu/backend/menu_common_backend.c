@@ -1483,7 +1483,9 @@ static int menu_settings_iterate(unsigned action)
    {
       bool ret = (menu_common_type_is(menu_type) == MENU_SETTINGS);
       driver.menu->need_refresh = false;
-      menu_entries_push(driver.menu, label, ret ? menu_type : MENU_SETTINGS);
+      RARCH_LOG("Goes here?\n");
+      menu_entries_push(driver.menu, path, label,
+            ret ? menu_type : MENU_SETTINGS);
    }
 
    if (driver.menu_ctx && driver.menu_ctx->render)
@@ -1888,7 +1890,7 @@ static void menu_parse_and_resolve(unsigned menu_type)
                      is_dir ? menu_type : MENU_FILE_PLAIN, 0);
             }
 
-            menu_entries_push(driver.menu, label, menu_type);
+            menu_entries_push(driver.menu, dir, label, menu_type);
             string_list_free(list);
          }
    }

@@ -40,13 +40,18 @@ static void add_setting_entry(menu_handle_t *menu, const char *label, unsigned i
 }
 
 void menu_entries_push(menu_handle_t *menu,
-      const char *label, unsigned menu_type)
+      const char *path, const char *label,
+      unsigned menu_type)
 {
    unsigned i;
    char tmp[256];
    rarch_setting_t *setting_data = (rarch_setting_t *)setting_data_get_list();
 
+#if 0
    RARCH_LOG("Label is: %s\n", label);
+   RARCH_LOG("Path is: %s\n", path);
+   RARCH_LOG("Menu type is: %d\n", menu_type);
+#endif
 
    if (!strcmp(label, "mainmenu"))
    {
