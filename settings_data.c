@@ -1154,6 +1154,8 @@ static void general_read_handler(const void *data)
 #endif
     else if (!strcmp(setting->name, "video_smooth"))
         *setting->value.boolean = g_settings.video.smooth;
+    else if (!strcmp(setting->name, "pal60_enable"))
+        *setting->value.boolean = g_extern.console.screen.pal60_enable;
     else if (!strcmp(setting->name, "video_monitor_index"))
         *setting->value.unsigned_integer = g_settings.video.monitor_index;
     else if (!strcmp(setting->name, "video_disable_composition"))
@@ -1498,6 +1500,18 @@ static void general_write_handler(const void *data)
 
       if (driver.video_data && driver.video_poke && driver.video_poke->set_filtering)
          driver.video_poke->set_filtering(driver.video_data, 1, g_settings.video.smooth);
+   }
+   else if (!strcmp(setting->name, "pal60_enable"))
+   {
+      g_extern.console.screen.pal60_enable = *setting->value.boolean;
+
+      if (*setting->value.boolean && g_extern.console.screen.pal_enable)
+         rarch_cmd = RARCH_CMD_REINIT;
+      else
+      {
+         g_extern.console.screen.pal60_enable = false;
+         *setting->value.boolean = false;
+      }
    }
    else if (!strcmp(setting->name, "video_monitor_index"))
    {
@@ -2035,6 +2049,9 @@ rarch_setting_t *setting_data_get_list(void)
       CONFIG_UINT(g_settings.video.viwidth,              "video_viwidth",              "Set Screen Width",           video_viwidth, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
 #endif
       CONFIG_BOOL(g_settings.video.smooth,               "video_smooth",               "Use Bilinear Filtering",     video_smooth, "Point filtering", "Bilinear filtering", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+#if defined(__CELLOS_LV2__)
+      CONFIG_BOOL(g_settings.video.smooth,               "pal60_enable",               "Use PAL60 Mode",     false, "OFF", "ON", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+#endif
       CONFIG_UINT(g_settings.video.rotation,             "video_rotation",             "Rotation",                   0, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_RANGE(0, 3, 1, true, true)
 #if defined(HW_RVL) || defined(_XBOX360)
       CONFIG_UINT(g_extern.console.screen.gamma_correction, "video_gamma",             "Gamma",                      0, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_RANGE(0, MAX_GAMMA_SETTING, 1, true, true)

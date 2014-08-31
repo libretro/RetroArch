@@ -242,17 +242,16 @@ static bool gfx_ctx_init(void *data)
       params.enable |= PSGL_DEVICE_PARAMETERS_WIDTH_HEIGHT;
       params.width = gfx_ctx_get_resolution_width(g_extern.console.screen.resolutions.current.id);
       params.height = gfx_ctx_get_resolution_height(g_extern.console.screen.resolutions.current.id);
+      g_extern.console.screen.pal_enable = false;
 
       if (params.width == 720 && params.height == 576)
       {
          RARCH_LOG("[PSGL Context]: 720x576 resolution detected, setting MODE_VIDEO_PAL_ENABLE.\n");
-         g_extern.lifecycle_state |= (1ULL << MODE_VIDEO_PAL_ENABLE);
+         g_extern.console.screen.pal_enable = true;
       }
-      else
-         g_extern.lifecycle_state &= ~(1ULL << MODE_VIDEO_PAL_ENABLE);
    }
 
-   if (g_extern.lifecycle_state & (1ULL << MODE_VIDEO_PAL_TEMPORAL_ENABLE))
+   if (g_extern.console.screen.pal60_enable)
    {
       RARCH_LOG("[PSGL Context]: Setting temporal PAL60 mode.\n");
       params.enable |= PSGL_DEVICE_PARAMETERS_RESC_PAL_TEMPORAL_MODE;

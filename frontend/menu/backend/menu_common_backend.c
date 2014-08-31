@@ -159,10 +159,7 @@ static void menu_common_entries_init(menu_handle_t *menu, unsigned menu_type)
 #endif
          add_setting_entry(menu,"video_viwidth", 0, setting_data);
          add_setting_entry(menu,"video_filter", MENU_SETTINGS_VIDEO_SOFTFILTER, setting_data);
-#if defined(__CELLOS_LV2__)
-         file_list_push(menu->selection_buf, "PAL60 Mode", "",
-               MENU_SETTINGS_VIDEO_PAL60, 0);
-#endif
+         add_setting_entry(menu, "pal60_enable", 0, setting_data);
          add_setting_entry(menu,"video_smooth", 0, setting_data);
          add_setting_entry(menu, "soft_filter", 0, setting_data);
          add_setting_entry(menu,"video_gamma", MENU_SETTINGS_VIDEO_GAMMA, setting_data);
@@ -3290,41 +3287,15 @@ static int menu_common_setting_set(unsigned id, unsigned action)
                   if (g_extern.console.screen.resolutions.list[g_extern.console.screen.resolutions.current.idx] == CELL_VIDEO_OUT_RESOLUTION_576)
                   {
                      if (g_extern.console.screen.pal_enable)
-                        g_extern.lifecycle_state |= (1ULL<< MODE_VIDEO_PAL_ENABLE);
+                        g_extern.console.screen.pal60_enable = true;
                   }
                   else
                   {
-                     g_extern.lifecycle_state &= ~(1ULL << MODE_VIDEO_PAL_ENABLE);
-                     g_extern.lifecycle_state &= ~(1ULL << MODE_VIDEO_PAL_TEMPORAL_ENABLE);
+                     g_extern.console.screen.pal_enable = false;
+                     g_extern.console.screen.pal60_enable = false;
                   }
 
                   rarch_main_command(RARCH_CMD_REINIT);
-               }
-               break;
-            case MENU_SETTINGS_VIDEO_PAL60:
-               switch (action)
-               {
-                  case MENU_ACTION_LEFT:
-                  case MENU_ACTION_RIGHT:
-                  case MENU_ACTION_OK:
-                     if (g_extern.lifecycle_state & (1ULL << MODE_VIDEO_PAL_ENABLE))
-                     {
-                        if (g_extern.lifecycle_state & (1ULL << MODE_VIDEO_PAL_TEMPORAL_ENABLE))
-                           g_extern.lifecycle_state &= ~(1ULL << MODE_VIDEO_PAL_TEMPORAL_ENABLE);
-                        else
-                           g_extern.lifecycle_state |= (1ULL << MODE_VIDEO_PAL_TEMPORAL_ENABLE);
-
-                        rarch_main_command(RARCH_CMD_REINIT);
-                     }
-                     break;
-                  case MENU_ACTION_START:
-                     if (g_extern.lifecycle_state & (1ULL << MODE_VIDEO_PAL_ENABLE))
-                     {
-                        g_extern.lifecycle_state &= ~(1ULL << MODE_VIDEO_PAL_TEMPORAL_ENABLE);
-
-                        rarch_main_command(RARCH_CMD_REINIT);
-                     }
-                     break;
                }
                break;
 #endif
@@ -3638,12 +3609,6 @@ static void menu_common_setting_set_label(char *type_str,
                   unsigned height = gfx_ctx_get_resolution_height(g_extern.console.screen.resolutions.list[g_extern.console.screen.resolutions.current.idx]);
                   snprintf(type_str, type_str_size, "%dx%d", width, height);
                }
-               break;
-            case MENU_SETTINGS_VIDEO_PAL60:
-               if (g_extern.lifecycle_state & (1ULL << MODE_VIDEO_PAL_TEMPORAL_ENABLE))
-                  strlcpy(type_str, "ON", type_str_size);
-               else
-                  strlcpy(type_str, "OFF", type_str_size);
                break;
 #endif
             case MENU_FILE_PLAIN:
