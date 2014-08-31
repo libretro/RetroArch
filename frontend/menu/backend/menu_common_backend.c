@@ -1679,13 +1679,6 @@ static void menu_parse_and_resolve(unsigned menu_type)
 {
    size_t i, list_size;
 
-   if (!driver.menu)
-   {
-      RARCH_ERR("Cannot parse and resolve menu, menu handle is not initialized.\n");
-      return;
-   }
-
-   // parsing switch
    switch (menu_type)
    {
       case MENU_SETTINGS_OPEN_HISTORY:
@@ -1700,6 +1693,7 @@ static void menu_parse_and_resolve(unsigned menu_type)
 
             content_playlist_get_index(g_extern.history, i,
                   &path, NULL, &core_name);
+            strlcpy(fill_buf, core_name, sizeof(fill_buf));
 
             if (path)
             {
@@ -1709,8 +1703,6 @@ static void menu_parse_and_resolve(unsigned menu_type)
                snprintf(fill_buf, sizeof(fill_buf), "%s (%s)",
                      path_short, core_name);
             }
-            else
-               strlcpy(fill_buf, core_name, sizeof(fill_buf));
 
             file_list_push(driver.menu->selection_buf, fill_buf, "",
                   MENU_FILE_PLAIN, 0);
