@@ -34,14 +34,6 @@
 
 #include "../../../settings_data.h"
 
-#if defined(__CELLOS_LV2__)
-#include <sdk_version.h>
-
-#if (CELL_SDK_VERSION > 0x340000)
-#include <sysutil/sysutil_bgmplayback.h>
-#endif
-#endif
-
 static inline struct gfx_shader *shader_manager_get_current_shader(menu_handle_t *menu, unsigned type)
 {
    if (type == MENU_SETTINGS_SHADER_PRESET_PARAMETERS)
@@ -419,10 +411,7 @@ static void menu_common_entries_init(menu_handle_t *menu, unsigned menu_type)
          add_setting_entry(menu,"audio_latency", 0, setting_data);
          add_setting_entry(menu,"audio_sync", 0, setting_data);
          add_setting_entry(menu,"audio_rate_control_delta", 0, setting_data);
-#ifdef __CELLOS_LV2__
-         file_list_push(menu->selection_buf, "System BGM Control", "",
-               MENU_SETTINGS_CUSTOM_BGM_CONTROL_ENABLE, 0);
-#endif
+         add_setting_entry(menu,"system_bgm_enable", 0, setting_data);
          add_setting_entry(menu,"audio_volume", 0, setting_data);
          add_setting_entry(menu,"audio_device", MENU_SETTINGS_DRIVER_AUDIO_DEVICE, setting_data);
          break;
@@ -3366,29 +3355,6 @@ static int menu_common_setting_set(unsigned id, unsigned action)
                   }
                   break;
                }
-            case MENU_SETTINGS_CUSTOM_BGM_CONTROL_ENABLE:
-               switch (action)
-               {
-                  case MENU_ACTION_OK:
-#if (CELL_SDK_VERSION > 0x340000)
-                     if (g_extern.lifecycle_state & (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE))
-                        g_extern.lifecycle_state &= ~(1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE);
-                     else
-                        g_extern.lifecycle_state |= (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE);
-                     if (g_extern.lifecycle_state & (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE))
-                        cellSysutilEnableBgmPlayback();
-                     else
-                        cellSysutilDisableBgmPlayback();
-
-#endif
-                     break;
-                  case MENU_ACTION_START:
-#if (CELL_SDK_VERSION > 0x340000)
-                     g_extern.lifecycle_state |= (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE);
-#endif
-                     break;
-               }
-               break;
 #ifdef HAVE_NETPLAY
             case MENU_SETTINGS_NETPLAY_HOST_IP_ADDRESS:
                if (action == MENU_ACTION_OK)
@@ -3706,11 +3672,6 @@ static void menu_common_setting_set_label(char *type_str,
                break;
             case MENU_SETTINGS_CUSTOM_BIND_MODE:
                strlcpy(type_str, driver.menu->bind_mode_keyboard ? "RetroKeyboard" : "RetroPad", type_str_size);
-               break;
-            case MENU_SETTINGS_CUSTOM_BGM_CONTROL_ENABLE:
-               strlcpy(type_str,
-                     (g_extern.lifecycle_state & (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE)) ? "ON" : "OFF",
-                     type_str_size);
                break;
             default:
                *type_str = '\0';

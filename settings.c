@@ -451,9 +451,9 @@ void config_set_defaults(void)
 
    g_settings.user_language = 0;
 
+   g_extern.console.sound.system_bgm_enable = false;
 #ifdef RARCH_CONSOLE
    g_extern.console.screen.gamma_correction = DEFAULT_GAMMA;
-   g_extern.lifecycle_state |= (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE);
    g_extern.lifecycle_state |= (1ULL << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE);
    g_extern.lifecycle_state |= (1ULL << MODE_VIDEO_FLICKER_FILTER_ENABLE);
 
@@ -867,7 +867,6 @@ bool config_load_file(const char *path, bool set_defaults)
    CONFIG_GET_BOOL_EXTERN(console.screen.gamma_correction, "gamma_correction");
 
    bool triple_buffering_enable = false;
-   bool custom_bgm_enable = false;
    bool flicker_filter_enable = false;
    bool soft_filter_enable = false;
 
@@ -879,13 +878,7 @@ bool config_load_file(const char *path, bool set_defaults)
          g_extern.lifecycle_state &= ~(1ULL << MODE_VIDEO_TRIPLE_BUFFERING_ENABLE);
    }
 
-   if (config_get_bool(conf, "custom_bgm_enable", &custom_bgm_enable))
-   {
-      if (custom_bgm_enable)
-         g_extern.lifecycle_state |= (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE);
-      else
-         g_extern.lifecycle_state &= ~(1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE);
-   }
+   config_get_bool(conf, "custom_bgm_enable", &g_extern.console.sound.system_bgm_enable);
 
    if (config_get_bool(conf, "flicker_filter_enable", &flicker_filter_enable))
    {
@@ -1461,8 +1454,7 @@ bool config_save_file(const char *path)
    config_set_string(conf, "netplay_nickname", g_settings.username);
    config_set_int(conf, "user_language", g_settings.user_language);
 
-   bool custom_bgm_enable_val = g_extern.lifecycle_state & (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE);
-   config_set_bool(conf, "custom_bgm_enable", custom_bgm_enable_val);
+   config_set_bool(conf, "custom_bgm_enable", g_extern.console.sound.system_bgm_enable);
 
    config_set_string(conf, "input_driver", g_settings.input.driver);
    config_set_string(conf, "input_joypad_driver", g_settings.input.joypad_driver);

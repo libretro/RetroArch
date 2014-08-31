@@ -24,6 +24,15 @@
 #include "input/apple_keycode.h"
 #endif
 
+#if defined(__CELLOS_LV2__)
+#include <sdk_version.h>
+
+#if (CELL_SDK_VERSION > 0x340000)
+#include <sysutil/sysutil_bgmplayback.h>
+#endif
+
+#endif
+
 static void get_input_config_prefix(char *buf, size_t sizeof_buf,
       const rarch_setting_t *setting)
 {
@@ -1194,6 +1203,8 @@ static void general_read_handler(const void *data)
 #endif
     else if (!strcmp(setting->name, "audio_enable"))
         *setting->value.boolean = g_settings.audio.enable;
+    else if (!strcmp(setting->name, "system_bgm_enable"))
+        *setting->value.boolean = g_extern.console.sound.system_bgm_enable;
     else if (!strcmp(setting->name, "audio_sync"))
         *setting->value.boolean = g_settings.audio.sync;
     else if (!strcmp(setting->name, "audio_mute"))
@@ -1576,6 +1587,23 @@ static void general_write_handler(const void *data)
 #endif
    else if (!strcmp(setting->name, "audio_enable"))
       g_settings.audio.enable = *setting->value.boolean;
+   else if (!strcmp(setting->name, "system_bgm_enable"))
+   {
+      g_extern.console.sound.system_bgm_enable = *setting->value.boolean;
+
+      if (*setting->value.boolean)
+      {
+#if defined(__CELLOS_LV2__) && (CELL_SDK_VERSION > 0x340000)
+         cellSysutilEnableBgmPlayback();
+#endif         
+      }
+      else
+      {
+#if defined(__CELLOS_LV2__) && (CELL_SDK_VERSION > 0x340000)
+         cellSysutilDisableBgmPlayback();
+#endif
+      }
+   }
    else if (!strcmp(setting->name, "audio_sync"))
       g_settings.audio.sync = *setting->value.boolean;
    else if (!strcmp(setting->name, "audio_mute"))
@@ -2118,6 +2146,9 @@ rarch_setting_t *setting_data_get_list(void)
       CONFIG_BOOL(g_settings.audio.enable,               "audio_enable",               "Audio Enable",                     audio_enable, "OFF", "ON", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
       CONFIG_BOOL(g_extern.audio_data.mute,              "audio_mute",                 "Audio Mute",                 false, "OFF", "ON", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
       CONFIG_FLOAT(g_settings.audio.volume,              "audio_volume",               "Volume Level",               audio_volume, "%.1f", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_RANGE(-80, 12, 1.0, true, true)
+#ifdef __CELLOS_LV2__
+      CONFIG_BOOL(g_extern.console.sound.system_bgm_enable,               "system_bgm_enable",               "System BGM Enable",                     false, "OFF", "ON", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+#endif
       END_SUB_GROUP()
 
       START_SUB_GROUP("Synchronization")

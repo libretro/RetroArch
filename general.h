@@ -144,7 +144,6 @@ enum menu_enums
    MODE_EXITSPAWN_MULTIMAN,
    MODE_VIDEO_TRIPLE_BUFFERING_ENABLE,
    MODE_VIDEO_FLICKER_FILTER_ENABLE,
-   MODE_AUDIO_CUSTOM_BGM_ENABLE,
    MODE_OSK_ENTRY_SUCCESS,
    MODE_OSK_ENTRY_FAIL,
    MODE_CLEAR_INPUT,
@@ -704,7 +703,9 @@ struct global
       struct
       {
          unsigned mode;
+         bool system_bgm_enable;
       } sound;
+
       bool softfilter_enable;
    } console;
 

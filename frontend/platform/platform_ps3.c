@@ -250,10 +250,6 @@ static void frontend_ps3_init(void *data)
    cellScreenShotSetParameter (&screenshot_param);
    cellScreenShotEnable();
 #endif
-#ifdef HAVE_SYSUTILS
-   //if (g_extern.lifecycle_state & (1ULL << MODE_AUDIO_CUSTOM_BGM_ENABLE))
-   cellSysutilEnableBgmPlayback();
-#endif
 #endif
 #endif
 }
