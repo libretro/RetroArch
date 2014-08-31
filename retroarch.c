@@ -3014,11 +3014,11 @@ static void validate_cpu_features(void)
 
 static void init_sram(void)
 {
+   g_extern.use_sram = g_extern.use_sram && !g_extern.sram_save_disable
 #ifdef HAVE_NETPLAY
-   g_extern.use_sram = g_extern.use_sram && !g_extern.sram_save_disable && (!g_extern.netplay || !g_extern.netplay_is_client);
-#else
-   g_extern.use_sram = g_extern.use_sram && !g_extern.sram_save_disable;
+   && (!g_extern.netplay || !g_extern.netplay_is_client)
 #endif
+   ;
 
    if (g_extern.use_sram)
    {
@@ -3073,7 +3073,8 @@ int rarch_main_init(int argc, char *argv[])
    verify_api_version();
    pretro_init();
 
-   g_extern.use_sram = !g_extern.libretro_dummy && !g_extern.libretro_no_content;
+   g_extern.use_sram = !g_extern.libretro_dummy &&
+      !g_extern.libretro_no_content;
 
    if (g_extern.libretro_no_content && !g_extern.libretro_dummy)
    {
@@ -3186,20 +3187,22 @@ static inline void limit_frame_time(void)
                g_settings.fastforward_ratio));
 
    retro_time_t current = rarch_get_time_usec();
-   retro_time_t target = g_extern.frame_limit.last_frame_time + g_extern.frame_limit.minimum_frame_time;
+   retro_time_t target = g_extern.frame_limit.last_frame_time + 
+      g_extern.frame_limit.minimum_frame_time;
    retro_time_t to_sleep_ms = (target - current) / 1000;
    if (to_sleep_ms > 0)
    {
       rarch_sleep((unsigned int)to_sleep_ms);
-      g_extern.frame_limit.last_frame_time += g_extern.frame_limit.minimum_frame_time; // Combat jitter a bit.
+      /* Combat jitter a bit. */
+      g_extern.frame_limit.last_frame_time += 
+         g_extern.frame_limit.minimum_frame_time;
    }
    else
       g_extern.frame_limit.last_frame_time = rarch_get_time_usec();
 }
 
-/*TODO - can we refactor command.c to do this? Should be local and not
- * stdin or network-based
- */
+/* TODO - can we refactor command.c to do this? Should be local and not
+ * stdin or network-based */
 
 void rarch_main_command(unsigned action)
 {
@@ -3212,8 +3215,10 @@ void rarch_main_command(unsigned action)
          rarch_main_command(RARCH_CMD_LOAD_CORE);
          g_extern.lifecycle_state |= (1ULL << MODE_LOAD_GAME);
 #else
-         rarch_environment_cb(RETRO_ENVIRONMENT_SET_LIBRETRO_PATH, (void*)g_settings.libretro);
-         rarch_environment_cb(RETRO_ENVIRONMENT_EXEC, (void*)g_extern.fullpath);
+         rarch_environment_cb(RETRO_ENVIRONMENT_SET_LIBRETRO_PATH,
+               (void*)g_settings.libretro);
+         rarch_environment_cb(RETRO_ENVIRONMENT_EXEC,
+               (void*)g_extern.fullpath);
 #endif
          break;
       case RARCH_CMD_LOAD_CORE:
@@ -3230,7 +3235,9 @@ void rarch_main_command(unsigned action)
          msg_queue_clear(g_extern.msg_queue);
          msg_queue_push(g_extern.msg_queue, "Reset.", 1, 120);
          pretro_reset();
-         init_controllers(); // bSNES since v073r01 resets controllers to JOYPAD after a reset, so just enforce it here.
+         /* bSNES since v073r01 resets controllers to JOYPAD
+          * after a reset, so just enforce it here. */
+         init_controllers();
          g_extern.lifecycle_state |= (1ULL << MODE_GAME);
          break;
       case RARCH_CMD_SAVE_STATE:
@@ -3274,7 +3281,8 @@ void rarch_main_command(unsigned action)
             driver.audio->stop(driver.audio_data);
          break;
       case RARCH_CMD_AUDIO_START:
-         if (driver.audio_data && !g_extern.audio_data.mute && !driver.audio->start(driver.audio_data))
+         if (driver.audio_data && !g_extern.audio_data.mute
+               && !driver.audio->start(driver.audio_data))
          {
             RARCH_ERR("Failed to start audio driver. Will continue without audio.\n");
             g_extern.audio_active = false;
