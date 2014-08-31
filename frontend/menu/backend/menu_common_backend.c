@@ -1689,13 +1689,11 @@ static void menu_parse_and_resolve(unsigned menu_type)
       return;
    }
 
-   file_list_clear(driver.menu->selection_buf);
-
    // parsing switch
    switch (menu_type)
    {
       case MENU_SETTINGS_OPEN_HISTORY:
-         /* History parse */
+         file_list_clear(driver.menu->selection_buf);
          list_size = content_playlist_size(g_extern.history);
 
          for (i = 0; i < list_size; i++)
@@ -1724,9 +1722,19 @@ static void menu_parse_and_resolve(unsigned menu_type)
          }
          break;
       case MENU_SETTINGS_DEFERRED_CORE:
+         file_list_clear(driver.menu->selection_buf);
+         core_info_list_get_supported_cores(driver.menu->core_info, driver.menu->deferred_path, &info, &list_size);
+         for (i = 0; i < list_size; i++)
+         {
+            file_list_push(driver.menu->selection_buf, info[i].path, "",
+                  MENU_FILE_PLAIN, 0);
+            file_list_set_alt_at_offset(driver.menu->selection_buf, i, info[i].display_name);
+         }
+         file_list_sort_on_alt(driver.menu->selection_buf);
          break;
       default:
          {
+            file_list_clear(driver.menu->selection_buf);
             /* Directory parse */
             file_list_get_last(driver.menu->menu_stack, &dir, &label, &menu_type);
 
@@ -1853,26 +1861,26 @@ static void menu_parse_and_resolve(unsigned menu_type)
             else
                exts = g_extern.system.valid_extensions;
 
-            struct string_list *list = dir_list_new(dir, exts, true);
-            if (!list)
+            struct string_list *str_list = dir_list_new(dir, exts, true);
+            if (!str_list)
                return;
 
-            dir_list_sort(list, true);
+            dir_list_sort(str_list, true);
 
             if (menu_common_type_is(menu_type) == MENU_FILE_DIRECTORY)
                file_list_push(driver.menu->selection_buf, "<Use this directory>", "",
                      MENU_FILE_USE_DIRECTORY, 0);
 
-            list_size = list->size;
-            for (i = 0; i < list_size; i++)
+            list_size = str_list->size;
+            for (i = 0; i < str_list->size; i++)
             {
-               bool is_dir = list->elems[i].attr.b;
+               bool is_dir = str_list->elems[i].attr.b;
 
                if ((menu_common_type_is(menu_type) == MENU_FILE_DIRECTORY) && !is_dir)
                   continue;
 
                // Need to preserve slash first time.
-               const char *path = list->elems[i].data;
+               const char *path = str_list->elems[i].data;
                if (*dir)
                   path = path_basename(path);
 
@@ -1888,51 +1896,38 @@ static void menu_parse_and_resolve(unsigned menu_type)
             }
 
             menu_entries_push(driver.menu, dir, label, menu_type);
-            string_list_free(list);
+            string_list_free(str_list);
+
+            switch (menu_type)
+            {
+               case MENU_SETTINGS_CORE:
+                  dir = NULL;
+                  label = NULL;
+                  list = (file_list_t*)driver.menu->selection_buf;
+                  file_list_get_last(driver.menu->menu_stack, &dir, &label, &menu_type);
+                  list_size = file_list_get_size(list);
+                  for (i = 0; i < list_size; i++)
+                  {
+                     char core_path[PATH_MAX], display_name[256];
+                     const char *path = NULL;
+                     const char *label = NULL;
+                     unsigned type = 0;
+
+                     file_list_get_at_offset(list, i, &path, &label, &type);
+                     if (type != MENU_FILE_PLAIN)
+                        continue;
+
+                     fill_pathname_join(core_path, dir, path, sizeof(core_path));
+
+                     if (driver.menu->core_info &&
+                           core_info_list_get_display_name(driver.menu->core_info,
+                              core_path, display_name, sizeof(display_name)))
+                        file_list_set_alt_at_offset(list, i, display_name);
+                  }
+                  file_list_sort_on_alt(driver.menu->selection_buf);
+                  break;
+            }
          }
-   }
-
-   // resolving switch
-   switch (menu_type)
-   {
-      case MENU_SETTINGS_CORE:
-         dir = NULL;
-         label = NULL;
-         list = (file_list_t*)driver.menu->selection_buf;
-         file_list_get_last(driver.menu->menu_stack, &dir, &label, &menu_type);
-         list_size = file_list_get_size(list);
-         for (i = 0; i < list_size; i++)
-         {
-            char core_path[PATH_MAX], display_name[256];
-            const char *path = NULL;
-            const char *label = NULL;
-            unsigned type = 0;
-
-            file_list_get_at_offset(list, i, &path, &label, &type);
-            if (type != MENU_FILE_PLAIN)
-               continue;
-
-            fill_pathname_join(core_path, dir, path, sizeof(core_path));
-
-            if (driver.menu->core_info &&
-                  core_info_list_get_display_name(driver.menu->core_info,
-                     core_path, display_name, sizeof(display_name)))
-               file_list_set_alt_at_offset(list, i, display_name);
-         }
-         file_list_sort_on_alt(driver.menu->selection_buf);
-         break;
-      case MENU_SETTINGS_DEFERRED_CORE:
-         core_info_list_get_supported_cores(driver.menu->core_info, driver.menu->deferred_path, &info, &list_size);
-         for (i = 0; i < list_size; i++)
-         {
-            file_list_push(driver.menu->selection_buf, info[i].path, "",
-                  MENU_FILE_PLAIN, 0);
-            file_list_set_alt_at_offset(driver.menu->selection_buf, i, info[i].display_name);
-         }
-         file_list_sort_on_alt(driver.menu->selection_buf);
-         break;
-      default:
-         (void)0;
    }
 
    driver.menu->scroll_indices_size = 0;
