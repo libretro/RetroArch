@@ -14,7 +14,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "menu_common.h"
+#include "menu_entries.h"
 #include "backend/menu_common_backend.h"
 #include "../../settings_data.h"
 

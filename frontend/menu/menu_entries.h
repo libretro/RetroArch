@@ -17,6 +17,8 @@
 #ifndef MENU_ENTRIES_H__
 #define MENU_ENTRIES_H__
 
+#include "menu_common.h"
+
 void menu_entries_push(menu_handle_t *menu, unsigned menu_type);
 
 #endif
