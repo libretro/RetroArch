@@ -39,7 +39,7 @@ static void add_setting_entry(menu_handle_t *menu, const char *label, unsigned i
             id, 0);
 }
 
-void menu_entries_push(menu_handle_t *menu,
+int menu_entries_push(menu_handle_t *menu,
       const char *path, const char *label,
       unsigned menu_type)
 {
@@ -171,7 +171,7 @@ void menu_entries_push(menu_handle_t *menu,
                struct gfx_shader *shader = (struct gfx_shader*)menu->shader;
 
                if (!shader)
-                  return;
+                  return -1;
 
                file_list_clear(menu->selection_buf);
                file_list_push(menu->selection_buf, "Apply Shader Changes", "",
@@ -544,4 +544,6 @@ void menu_entries_push(menu_handle_t *menu,
 
    if (driver.menu_ctx && driver.menu_ctx->populate_entries)
       driver.menu_ctx->populate_entries(menu, path, label, menu_type);
+
+   return 0;
 }

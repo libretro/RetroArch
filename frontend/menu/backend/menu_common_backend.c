@@ -1685,6 +1685,12 @@ static int menu_parse_and_resolve(void)
    /* Directory parse */
    file_list_get_last(driver.menu->menu_stack, &dir, &label, &menu_type);
 
+   if (
+         menu_type == MENU_SETTINGS_DEFERRED_CORE ||
+         menu_type == MENU_SETTINGS_OPEN_HISTORY
+      )
+      return menu_entries_push(driver.menu, dir, label, menu_type);
+
    if (!((menu_type == MENU_FILE_DIRECTORY ||
             menu_common_type_is(menu_type) == MENU_SETTINGS_SHADER_OPTIONS ||
             menu_common_type_is(menu_type) == MENU_FILE_DIRECTORY ||
@@ -2380,15 +2386,7 @@ static int menu_common_iterate(unsigned action)
    // refresh values in case the stack changed
    file_list_get_last(driver.menu->menu_stack, &dir, &label, &menu_type);
 
-   if (driver.menu->need_refresh &&
-         (menu_type == MENU_SETTINGS_DEFERRED_CORE ||
-         menu_type == MENU_SETTINGS_OPEN_HISTORY)
-      )
-   {
-      driver.menu->need_refresh = false;
-      menu_entries_push(driver.menu, dir, label, menu_type);
-   }
-   else if (driver.menu->need_refresh)
+   if (driver.menu->need_refresh)
    {
       if (menu_parse_and_resolve() == 0)
          driver.menu->need_refresh = false;
