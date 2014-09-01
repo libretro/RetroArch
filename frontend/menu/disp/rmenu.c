@@ -416,6 +416,20 @@ static void rmenu_render(void)
       else if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->setting_set_label)
          driver.menu_ctx->backend->setting_set_label(type_str, sizeof(type_str), &w, type, i);
 
+      if (type_str[0] == '\0' && w == 0)
+      {
+         if (type == MENU_FILE_PLAIN)
+         {
+            strlcpy(type_str, "(FILE)", sizeof(type_str));
+            w = 6;
+         }
+         else if (type == MENU_FILE_DIRECTORY)
+         {
+            strlcpy(type_str, "(DIR)", sizeof(type_str));
+            w = 5;
+         }
+      }
+
       char entry_title_buf[256];
       char type_str_buf[64];
       bool selected = i == menu->selection_ptr;

@@ -2477,14 +2477,6 @@ static void menu_common_setting_set_label(char *type_str,
                }
                break;
 #endif
-            case MENU_FILE_PLAIN:
-               strlcpy(type_str, "(FILE)", type_str_size);
-               *w = 6;
-               break;
-            case MENU_FILE_DIRECTORY:
-               strlcpy(type_str, "(DIR)", type_str_size);
-               *w = 5;
-               break;
             case MENU_SETTINGS_DISK_INDEX:
                {
                   const struct retro_disk_control_callback *control =
