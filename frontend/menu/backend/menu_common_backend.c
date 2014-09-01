@@ -1433,13 +1433,11 @@ static int menu_settings_iterate(unsigned action)
          menu_entries_pop();
          break;
       case MENU_ACTION_SELECT:
-         {
-            file_list_get_at_offset(driver.menu->selection_buf,
-                  driver.menu->selection_ptr, NULL, NULL,
-                  &driver.menu->info_selection);
-            file_list_push(driver.menu->menu_stack, "", "info_screen",
-                  0, driver.menu->selection_ptr);
-         }
+         file_list_get_at_offset(driver.menu->selection_buf,
+               driver.menu->selection_ptr, NULL, NULL,
+               &driver.menu->info_selection);
+         file_list_push(driver.menu->menu_stack, "", "info_screen",
+               0, driver.menu->selection_ptr);
          break;
       case MENU_ACTION_LEFT:
       case MENU_ACTION_RIGHT:
@@ -1478,7 +1476,7 @@ static int menu_settings_iterate(unsigned action)
    if (driver.menu_ctx && driver.menu_ctx->render)
       driver.menu_ctx->render();
 
-   // Have to defer it so we let settings refresh.
+   /* Have to defer it so we let settings refresh. */
    if (driver.menu->push_start_screen)
    {
       driver.menu->push_start_screen = false;
@@ -1810,11 +1808,11 @@ static int menu_action_ok(const char *dir, unsigned menu_type)
             fill_pathname_join(shader->pass[pass].source.path,
                   dir, path, sizeof(shader->pass[pass].source.path));
 
-            // This will reset any changed parameters.
+            /* This will reset any changed parameters. */
             gfx_shader_resolve_parameters(NULL, driver.menu->shader);
          }
 
-         // Pop stack until we hit shader manager again.
+         /* Pop stack until we hit shader manager again. */
          menu_flush_stack_type(MENU_SETTINGS_SHADER_OPTIONS);
       }
       else
