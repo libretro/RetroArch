@@ -1070,31 +1070,6 @@ static int menu_setting_set(unsigned id, unsigned action)
                   }
                }
                break;
-            case MENU_SETTINGS_CUSTOM_BIND_DEFAULT_ALL:
-               if (action == MENU_ACTION_OK)
-               {
-                  unsigned i;
-                  struct retro_keybind *target = (struct retro_keybind*)
-                     &g_settings.input.binds[port][0];
-                  const struct retro_keybind *def_binds = 
-                     port ? retro_keybinds_rest : retro_keybinds_1;
-
-                  driver.menu->binds.begin = MENU_SETTINGS_BIND_BEGIN;
-                  driver.menu->binds.last = MENU_SETTINGS_BIND_LAST;
-
-                  for (i = MENU_SETTINGS_BIND_BEGIN;
-                        i <= MENU_SETTINGS_BIND_LAST; i++, target++)
-                  {
-                     if (driver.menu->bind_mode_keyboard)
-                        target->key = def_binds[i - MENU_SETTINGS_BIND_BEGIN].key;
-                     else
-                     {
-                        target->joykey = NO_BTN;
-                        target->joyaxis = AXIS_NONE;
-                     }
-                  }
-               }
-               break;
 #if defined(GEKKO)
             case MENU_SETTINGS_VIDEO_RESOLUTION:
                if (action == MENU_ACTION_LEFT)
@@ -1261,7 +1236,31 @@ static int menu_setting_ok_toggle(unsigned type,
       const char *dir, const char *label,
       unsigned action)
 {
-   if (type >= MENU_SETTINGS_BIND_BEGIN &&
+   if (type == MENU_SETTINGS_CUSTOM_BIND_DEFAULT_ALL)
+   {
+      unsigned i;
+      struct retro_keybind *target = (struct retro_keybind*)
+         &g_settings.input.binds[driver.menu->current_pad][0];
+      const struct retro_keybind *def_binds = 
+         driver.menu->current_pad ? retro_keybinds_rest : retro_keybinds_1;
+
+      driver.menu->binds.begin = MENU_SETTINGS_BIND_BEGIN;
+      driver.menu->binds.last = MENU_SETTINGS_BIND_LAST;
+
+      for (i = MENU_SETTINGS_BIND_BEGIN;
+            i <= MENU_SETTINGS_BIND_LAST; i++, target++)
+      {
+         if (driver.menu->bind_mode_keyboard)
+            target->key = def_binds[i - MENU_SETTINGS_BIND_BEGIN].key;
+         else
+         {
+            target->joykey = NO_BTN;
+            target->joyaxis = AXIS_NONE;
+         }
+      }
+      return 0;
+   }
+   else if (type >= MENU_SETTINGS_BIND_BEGIN &&
          type <= MENU_SETTINGS_BIND_ALL_LAST)
    {
       struct retro_keybind *bind = (struct retro_keybind*)
