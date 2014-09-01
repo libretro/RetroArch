@@ -1038,37 +1038,9 @@ static int menu_setting_set(unsigned id, unsigned action)
                   break;
                }
             case MENU_SETTINGS_CUSTOM_BIND_MODE:
-               if (action == MENU_ACTION_OK || action == MENU_ACTION_LEFT ||
-                     action == MENU_ACTION_RIGHT)
+               if (action == MENU_ACTION_LEFT || action == MENU_ACTION_RIGHT)
                   driver.menu->bind_mode_keyboard =
-                     !driver.menu->bind_mode_keyboard;
-               break;
-            case MENU_SETTINGS_CUSTOM_BIND_ALL:
-               if (action == MENU_ACTION_OK)
-               {
-                  driver.menu->binds.target = &g_settings.input.binds[port][0];
-                  driver.menu->binds.begin = MENU_SETTINGS_BIND_BEGIN;
-                  driver.menu->binds.last = MENU_SETTINGS_BIND_LAST;
-
-                  file_list_push(driver.menu->menu_stack, "", "",
-                        driver.menu->bind_mode_keyboard ?
-                        MENU_SETTINGS_CUSTOM_BIND_KEYBOARD :
-                        MENU_SETTINGS_CUSTOM_BIND,
-                        driver.menu->selection_ptr);
-                  if (driver.menu->bind_mode_keyboard)
-                  {
-                     driver.menu->binds.timeout_end =
-                        rarch_get_time_usec() + 
-                        MENU_KEYBOARD_BIND_TIMEOUT_SECONDS * 1000000;
-                     input_keyboard_wait_keys(driver.menu,
-                           menu_custom_bind_keyboard_cb);
-                  }
-                  else
-                  {
-                     menu_poll_bind_get_rested_axes(&driver.menu->binds);
-                     menu_poll_bind_state(&driver.menu->binds);
-                  }
-               }
+                    !driver.menu->bind_mode_keyboard;
                break;
 #if defined(GEKKO)
             case MENU_SETTINGS_VIDEO_RESOLUTION:
@@ -1175,44 +1147,6 @@ static int menu_setting_set(unsigned id, unsigned action)
                      gfx_shader_resolve_parameters(NULL, driver.menu->shader);
                }
                break;
-            case MENU_SETTINGS_SHADER_APPLY:
-               {
-                  struct gfx_shader *shader = (struct gfx_shader*)driver.menu->shader;
-                  unsigned type = RARCH_SHADER_NONE;
-
-                  if (!driver.video || !driver.video->set_shader ||
-                        action != MENU_ACTION_OK)
-                     return 0;
-
-                  RARCH_LOG("Applying shader ...\n");
-
-                  if (driver.menu_ctx && driver.menu_ctx->backend &&
-                        driver.menu_ctx->backend->shader_manager_get_type)
-                     type = driver.menu_ctx->backend->shader_manager_get_type(
-                           driver.menu->shader);
-
-                  if (shader->passes && type != RARCH_SHADER_NONE
-                        && driver.menu_ctx && driver.menu_ctx->backend &&
-                        driver.menu_ctx->backend->shader_manager_save_preset)
-                     driver.menu_ctx->backend->shader_manager_save_preset(NULL, true);
-                  else
-                  {
-                     type = gfx_shader_parse_type("", DEFAULT_SHADER_TYPE);
-                     if (type == RARCH_SHADER_NONE)
-                     {
-#if defined(HAVE_GLSL)
-                        type = RARCH_SHADER_GLSL;
-#elif defined(HAVE_CG) || defined(HAVE_HLSL)
-                        type = RARCH_SHADER_CG;
-#endif
-                     }
-                     if (driver.menu_ctx && driver.menu_ctx->backend &&
-                           driver.menu_ctx->backend->shader_manager_set_preset)
-                        driver.menu_ctx->backend->shader_manager_set_preset(
-                              NULL, type, NULL);
-                  }
-               }
-               break;
             case MENU_SETTINGS_SHADER_PRESET_SAVE:
                if (action == MENU_ACTION_OK)
                   menu_key_start_line(driver.menu, "Preset Filename: ",
@@ -1236,7 +1170,68 @@ static int menu_setting_ok_toggle(unsigned type,
       const char *dir, const char *label,
       unsigned action)
 {
-   if (type == MENU_SETTINGS_CUSTOM_BIND_DEFAULT_ALL)
+   if (type == MENU_SETTINGS_CUSTOM_BIND_ALL)
+   {
+      driver.menu->binds.target = &g_settings.input.binds
+         [driver.menu->current_pad][0];
+      driver.menu->binds.begin = MENU_SETTINGS_BIND_BEGIN;
+      driver.menu->binds.last = MENU_SETTINGS_BIND_LAST;
+
+      file_list_push(driver.menu->menu_stack, "", "",
+            driver.menu->bind_mode_keyboard ?
+            MENU_SETTINGS_CUSTOM_BIND_KEYBOARD :
+            MENU_SETTINGS_CUSTOM_BIND,
+            driver.menu->selection_ptr);
+      if (driver.menu->bind_mode_keyboard)
+      {
+         driver.menu->binds.timeout_end =
+            rarch_get_time_usec() + 
+            MENU_KEYBOARD_BIND_TIMEOUT_SECONDS * 1000000;
+         input_keyboard_wait_keys(driver.menu,
+               menu_custom_bind_keyboard_cb);
+      }
+      else
+      {
+         menu_poll_bind_get_rested_axes(&driver.menu->binds);
+         menu_poll_bind_state(&driver.menu->binds);
+      }
+      return 0;
+   }
+#ifdef HAVE_SHADER_MANAGER
+   else if (type == MENU_SETTINGS_SHADER_APPLY)
+   {
+      struct gfx_shader *shader = (struct gfx_shader*)driver.menu->shader;
+      unsigned shader_type = RARCH_SHADER_NONE;
+
+      if (driver.menu_ctx && driver.menu_ctx->backend &&
+            driver.menu_ctx->backend->shader_manager_get_type)
+         shader_type = driver.menu_ctx->backend->shader_manager_get_type(
+               driver.menu->shader);
+
+      if (shader->passes && shader_type != RARCH_SHADER_NONE
+            && driver.menu_ctx && driver.menu_ctx->backend &&
+            driver.menu_ctx->backend->shader_manager_save_preset)
+         driver.menu_ctx->backend->shader_manager_save_preset(NULL, true);
+      else
+      {
+         shader_type = gfx_shader_parse_type("", DEFAULT_SHADER_TYPE);
+         if (shader_type == RARCH_SHADER_NONE)
+         {
+#if defined(HAVE_GLSL)
+            shader_type = RARCH_SHADER_GLSL;
+#elif defined(HAVE_CG) || defined(HAVE_HLSL)
+            shader_type = RARCH_SHADER_CG;
+#endif
+         }
+         if (driver.menu_ctx && driver.menu_ctx->backend &&
+               driver.menu_ctx->backend->shader_manager_set_preset)
+            driver.menu_ctx->backend->shader_manager_set_preset(
+                  NULL, shader_type, NULL);
+      }
+      return 0;
+   }
+#endif
+   else if (type == MENU_SETTINGS_CUSTOM_BIND_DEFAULT_ALL)
    {
       unsigned i;
       struct retro_keybind *target = (struct retro_keybind*)
