@@ -1419,9 +1419,6 @@ static int menu_settings_iterate(unsigned action)
    unsigned type = 0;
    unsigned menu_type = 0;
 
-   if (!driver.menu)
-      return 0;
-
    driver.menu->frame_buf_pitch = driver.menu->width * 2;
 
    if (action != MENU_ACTION_REFRESH)
@@ -1526,9 +1523,6 @@ static int menu_viewport_iterate(unsigned action)
    unsigned menu_type = 0;
    rarch_viewport_t *custom = (rarch_viewport_t*)
       &g_extern.console.screen.viewports.custom_vp;
-
-   if (!driver.menu)
-      return 0;
 
    file_list_get_last(driver.menu->menu_stack, NULL, &label, &menu_type);
 
@@ -1786,8 +1780,6 @@ static int menu_custom_bind_iterate_keyboard(void *data, unsigned action)
 
    return 0;
 }
-
-
 
 static int menu_action_ok(const char *dir, unsigned menu_type)
 {
@@ -2104,12 +2096,6 @@ static int menu_common_iterate(unsigned action)
    unsigned menu_type = 0;
    const char *path = NULL;
    const char *menu_label = NULL;
-
-   if (!driver.menu)
-   {
-      RARCH_ERR("Cannot iterate menu, menu handle is not initialized.\n");
-      return 0;
-   }
 
    file_list_get_last(driver.menu->menu_stack, &path, &menu_label, &menu_type);
 
