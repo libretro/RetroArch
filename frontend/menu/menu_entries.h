@@ -25,5 +25,6 @@ void menu_entries_push_info(void);
 int menu_parse_check(unsigned menu_type);
 int menu_parse_and_resolve(void);
 void menu_entries_pop(void);
+void menu_flush_stack_type(unsigned final_type);
 
 #endif

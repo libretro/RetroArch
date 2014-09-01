@@ -812,3 +812,20 @@ void menu_entries_push_info(void)
    file_list_push(driver.menu->menu_stack, "", "help", 0, 0);
 }
 
+void menu_flush_stack_type(unsigned final_type)
+{
+   const char *path = NULL;
+   const char *label = NULL;
+   unsigned type = 0;
+
+   if (!driver.menu)
+      return;
+
+   driver.menu->need_refresh = true;
+   file_list_get_last(driver.menu->menu_stack, &path, &label, &type);
+   while (type != final_type)
+   {
+      file_list_pop(driver.menu->menu_stack, &driver.menu->selection_ptr);
+      file_list_get_last(driver.menu->menu_stack, &path, &label, &type);
+   }
+}
