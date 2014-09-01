@@ -14,10 +14,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/// Config header for RetroArch
-//
-//
-
 #ifndef __CONFIG_DEF_H
 #define __CONFIG_DEF_H
 
@@ -544,107 +540,27 @@ static const unsigned turbo_duty_cycle = 3;
 static const bool input_autodetect_enable = true;
 
 #ifndef IS_SALAMANDER
-
-#define RETRO_DEF_JOYPAD_B NO_BTN
-#define RETRO_DEF_JOYPAD_Y NO_BTN
-#define RETRO_DEF_JOYPAD_SELECT NO_BTN
-#define RETRO_DEF_JOYPAD_START NO_BTN
-#define RETRO_DEF_JOYPAD_UP NO_BTN
-#define RETRO_DEF_JOYPAD_DOWN NO_BTN
-#define RETRO_DEF_JOYPAD_LEFT NO_BTN
-#define RETRO_DEF_JOYPAD_RIGHT NO_BTN
-#define RETRO_DEF_JOYPAD_A NO_BTN
-#define RETRO_DEF_JOYPAD_X NO_BTN
-#define RETRO_DEF_JOYPAD_L NO_BTN
-#define RETRO_DEF_JOYPAD_R NO_BTN
-#define RETRO_DEF_JOYPAD_L2 NO_BTN
-#define RETRO_DEF_JOYPAD_R2 NO_BTN
-#define RETRO_DEF_JOYPAD_L3 NO_BTN
-#define RETRO_DEF_JOYPAD_R3 NO_BTN
-#define RETRO_DEF_ANALOGL_DPAD_LEFT NO_BTN
-#define RETRO_DEF_ANALOGL_DPAD_RIGHT NO_BTN
-#define RETRO_DEF_ANALOGL_DPAD_UP NO_BTN
-#define RETRO_DEF_ANALOGL_DPAD_DOWN NO_BTN
-#define RETRO_DEF_ANALOGR_DPAD_LEFT NO_BTN
-#define RETRO_DEF_ANALOGR_DPAD_RIGHT NO_BTN
-#define RETRO_DEF_ANALOGR_DPAD_UP NO_BTN
-#define RETRO_DEF_ANALOGR_DPAD_DOWN NO_BTN
-
-#define RETRO_LBL_JOYPAD_B "RetroPad B Button"
-#define RETRO_LBL_JOYPAD_Y "RetroPad Y Button"
-#define RETRO_LBL_JOYPAD_SELECT "RetroPad Select Button"
-#define RETRO_LBL_JOYPAD_START "RetroPad Start Button"
-#define RETRO_LBL_JOYPAD_UP "RetroPad D-Pad Up"
-#define RETRO_LBL_JOYPAD_DOWN "RetroPad D-Pad Down"
-#define RETRO_LBL_JOYPAD_LEFT "RetroPad D-Pad Left"
-#define RETRO_LBL_JOYPAD_RIGHT "RetroPad D-Pad Right"
-#define RETRO_LBL_JOYPAD_A "RetroPad A Button"
-#define RETRO_LBL_JOYPAD_X "RetroPad X Button"
-#define RETRO_LBL_JOYPAD_L "RetroPad L Button"
-#define RETRO_LBL_JOYPAD_R "RetroPad R Button"
-#define RETRO_LBL_JOYPAD_L2 "RetroPad L2 Button"
-#define RETRO_LBL_JOYPAD_R2 "RetroPad R2 Button"
-#define RETRO_LBL_JOYPAD_L3 "RetroPad L3 Button"
-#define RETRO_LBL_JOYPAD_R3 "RetroPad R3 Button"
-#define RETRO_LBL_TURBO_ENABLE "Turbo Enable"
-#define RETRO_LBL_ANALOG_LEFT_X_PLUS "Left Analog X +"
-#define RETRO_LBL_ANALOG_LEFT_X_MINUS "Left Analog X -"
-#define RETRO_LBL_ANALOG_LEFT_Y_PLUS "Left Analog Y +"
-#define RETRO_LBL_ANALOG_LEFT_Y_MINUS "Left Analog Y -"
-#define RETRO_LBL_ANALOG_RIGHT_X_PLUS "Right Analog X +"
-#define RETRO_LBL_ANALOG_RIGHT_X_MINUS "Right Analog X -"
-#define RETRO_LBL_ANALOG_RIGHT_Y_PLUS "Right Analog Y +"
-#define RETRO_LBL_ANALOG_RIGHT_Y_MINUS "Right Analog Y -"
-#define RETRO_LBL_FAST_FORWARD_KEY "Fast Forward"
-#define RETRO_LBL_FAST_FORWARD_HOLD_KEY "Fast Forward Hold"
-#define RETRO_LBL_LOAD_STATE_KEY "Load State"
-#define RETRO_LBL_SAVE_STATE_KEY "Save State"
-#define RETRO_LBL_FULLSCREEN_TOGGLE_KEY "Fullscreen Toggle"
-#define RETRO_LBL_QUIT_KEY "Quit Key"
-#define RETRO_LBL_STATE_SLOT_PLUS "State Slot Plus"
-#define RETRO_LBL_STATE_SLOT_MINUS "State Slot Minus"
-#define RETRO_LBL_REWIND "Rewind"
-#define RETRO_LBL_MOVIE_RECORD_TOGGLE "Movie Record Toggle"
-#define RETRO_LBL_PAUSE_TOGGLE "Pause Toggle"
-#define RETRO_LBL_FRAMEADVANCE "Frame Advance"
-#define RETRO_LBL_RESET "Reset"
-#define RETRO_LBL_SHADER_NEXT "Next Shader"
-#define RETRO_LBL_SHADER_PREV "Previous Shader"
-#define RETRO_LBL_CHEAT_INDEX_PLUS "Cheat Index Plus"
-#define RETRO_LBL_CHEAT_INDEX_MINUS "Cheat Index Minus"
-#define RETRO_LBL_CHEAT_TOGGLE "Cheat Toggle"
-#define RETRO_LBL_SCREENSHOT "Screenshot"
-#define RETRO_LBL_MUTE "Mute Audio"
-#define RETRO_LBL_NETPLAY_FLIP "Netplay Flip Players"
-#define RETRO_LBL_SLOWMOTION "Slowmotion"
-#define RETRO_LBL_ENABLE_HOTKEY "Enable Hotkey"
-#define RETRO_LBL_VOLUME_UP "Volume Up"
-#define RETRO_LBL_VOLUME_DOWN "Volume Down"
-#define RETRO_LBL_OVERLAY_NEXT "Next Overlay"
-#define RETRO_LBL_DISK_EJECT_TOGGLE "Disk Eject Toggle"
-#define RETRO_LBL_DISK_NEXT "Disk Swap Next"
-#define RETRO_LBL_GRAB_MOUSE_TOGGLE "Grab mouse toggle"
-#define RETRO_LBL_MENU_TOGGLE "Menu toggle"
+#include "intl/intl.h"
 
 // Player 1
 static const struct retro_keybind retro_keybinds_1[] = {
     //     | RetroPad button            | desc                           | keyboard key  | js btn |     js axis   |
-   { true, RETRO_DEVICE_ID_JOYPAD_B,      RETRO_LBL_JOYPAD_B,              RETROK_z,       RETRO_DEF_JOYPAD_B,      0, AXIS_NONE },
-   { true, RETRO_DEVICE_ID_JOYPAD_Y,      RETRO_LBL_JOYPAD_Y,              RETROK_a,       RETRO_DEF_JOYPAD_Y,      0, AXIS_NONE },
-   { true, RETRO_DEVICE_ID_JOYPAD_SELECT, RETRO_LBL_JOYPAD_SELECT,         RETROK_RSHIFT,  RETRO_DEF_JOYPAD_SELECT, 0, AXIS_NONE },
-   { true, RETRO_DEVICE_ID_JOYPAD_START,  RETRO_LBL_JOYPAD_START,          RETROK_RETURN,  RETRO_DEF_JOYPAD_START,  0, AXIS_NONE },
-   { true, RETRO_DEVICE_ID_JOYPAD_UP,     RETRO_LBL_JOYPAD_UP,             RETROK_UP,      RETRO_DEF_JOYPAD_UP,     0, AXIS_NONE },
-   { true, RETRO_DEVICE_ID_JOYPAD_DOWN,   RETRO_LBL_JOYPAD_DOWN,           RETROK_DOWN,    RETRO_DEF_JOYPAD_DOWN,   0, AXIS_NONE },
-   { true, RETRO_DEVICE_ID_JOYPAD_LEFT,   RETRO_LBL_JOYPAD_LEFT,           RETROK_LEFT,    RETRO_DEF_JOYPAD_LEFT,   0, AXIS_NONE },
-   { true, RETRO_DEVICE_ID_JOYPAD_RIGHT,  RETRO_LBL_JOYPAD_RIGHT,          RETROK_RIGHT,   RETRO_DEF_JOYPAD_RIGHT,  0, AXIS_NONE },
-   { true, RETRO_DEVICE_ID_JOYPAD_A,      RETRO_LBL_JOYPAD_A,              RETROK_x,       RETRO_DEF_JOYPAD_A,      0, AXIS_NONE },
-   { true, RETRO_DEVICE_ID_JOYPAD_X,      RETRO_LBL_JOYPAD_X,              RETROK_s,       RETRO_DEF_JOYPAD_X,      0, AXIS_NONE },
-   { true, RETRO_DEVICE_ID_JOYPAD_L,      RETRO_LBL_JOYPAD_L,              RETROK_q,       RETRO_DEF_JOYPAD_L,      0, AXIS_NONE },
-   { true, RETRO_DEVICE_ID_JOYPAD_R,      RETRO_LBL_JOYPAD_R,              RETROK_w,       RETRO_DEF_JOYPAD_R,      0, AXIS_NONE },
-   { true, RETRO_DEVICE_ID_JOYPAD_L2,     RETRO_LBL_JOYPAD_L2,             RETROK_UNKNOWN, RETRO_DEF_JOYPAD_L2,     0, AXIS_NONE },
-   { true, RETRO_DEVICE_ID_JOYPAD_R2,     RETRO_LBL_JOYPAD_R2,             RETROK_UNKNOWN, RETRO_DEF_JOYPAD_R2,     0, AXIS_NONE },
-   { true, RETRO_DEVICE_ID_JOYPAD_L3,     RETRO_LBL_JOYPAD_L3,             RETROK_UNKNOWN, RETRO_DEF_JOYPAD_L3,     0, AXIS_NONE },
-   { true, RETRO_DEVICE_ID_JOYPAD_R3,     RETRO_LBL_JOYPAD_R3,             RETROK_UNKNOWN, RETRO_DEF_JOYPAD_R3,     0, AXIS_NONE },
+   { true, RETRO_DEVICE_ID_JOYPAD_B,      RETRO_LBL_JOYPAD_B,              RETROK_z,       NO_BTN, 0, AXIS_NONE },
+   { true, RETRO_DEVICE_ID_JOYPAD_Y,      RETRO_LBL_JOYPAD_Y,              RETROK_a,       NO_BTN, 0, AXIS_NONE },
+   { true, RETRO_DEVICE_ID_JOYPAD_SELECT, RETRO_LBL_JOYPAD_SELECT,         RETROK_RSHIFT,  NO_BTN, 0, AXIS_NONE },
+   { true, RETRO_DEVICE_ID_JOYPAD_START,  RETRO_LBL_JOYPAD_START,          RETROK_RETURN,  NO_BTN, 0, AXIS_NONE },
+   { true, RETRO_DEVICE_ID_JOYPAD_UP,     RETRO_LBL_JOYPAD_UP,             RETROK_UP,      NO_BTN, 0, AXIS_NONE },
+   { true, RETRO_DEVICE_ID_JOYPAD_DOWN,   RETRO_LBL_JOYPAD_DOWN,           RETROK_DOWN,    NO_BTN, 0, AXIS_NONE },
+   { true, RETRO_DEVICE_ID_JOYPAD_LEFT,   RETRO_LBL_JOYPAD_LEFT,           RETROK_LEFT,    NO_BTN, 0, AXIS_NONE },
+   { true, RETRO_DEVICE_ID_JOYPAD_RIGHT,  RETRO_LBL_JOYPAD_RIGHT,          RETROK_RIGHT,   NO_BTN, 0, AXIS_NONE },
+   { true, RETRO_DEVICE_ID_JOYPAD_A,      RETRO_LBL_JOYPAD_A,              RETROK_x,       NO_BTN, 0, AXIS_NONE },
+   { true, RETRO_DEVICE_ID_JOYPAD_X,      RETRO_LBL_JOYPAD_X,              RETROK_s,       NO_BTN, 0, AXIS_NONE },
+   { true, RETRO_DEVICE_ID_JOYPAD_L,      RETRO_LBL_JOYPAD_L,              RETROK_q,       NO_BTN, 0, AXIS_NONE },
+   { true, RETRO_DEVICE_ID_JOYPAD_R,      RETRO_LBL_JOYPAD_R,              RETROK_w,       NO_BTN, 0, AXIS_NONE },
+   { true, RETRO_DEVICE_ID_JOYPAD_L2,     RETRO_LBL_JOYPAD_L2,             RETROK_UNKNOWN, NO_BTN, 0, AXIS_NONE },
+   { true, RETRO_DEVICE_ID_JOYPAD_R2,     RETRO_LBL_JOYPAD_R2,             RETROK_UNKNOWN, NO_BTN, 0, AXIS_NONE },
+   { true, RETRO_DEVICE_ID_JOYPAD_L3,     RETRO_LBL_JOYPAD_L3,             RETROK_UNKNOWN, NO_BTN, 0, AXIS_NONE },
+   { true, RETRO_DEVICE_ID_JOYPAD_R3,     RETRO_LBL_JOYPAD_R3,             RETROK_UNKNOWN, NO_BTN, 0, AXIS_NONE },
 
    { true, RARCH_ANALOG_LEFT_X_PLUS,      RETRO_LBL_ANALOG_LEFT_X_PLUS,    RETROK_UNKNOWN, NO_BTN, 0, AXIS_NONE },
    { true, RARCH_ANALOG_LEFT_X_MINUS,     RETRO_LBL_ANALOG_LEFT_X_MINUS,   RETROK_UNKNOWN, NO_BTN, 0, AXIS_NONE },
@@ -655,7 +571,7 @@ static const struct retro_keybind retro_keybinds_1[] = {
    { true, RARCH_ANALOG_RIGHT_Y_PLUS,     RETRO_LBL_ANALOG_RIGHT_Y_PLUS,   RETROK_UNKNOWN, NO_BTN, 0, AXIS_NONE },
    { true, RARCH_ANALOG_RIGHT_Y_MINUS,    RETRO_LBL_ANALOG_RIGHT_Y_MINUS,  RETROK_UNKNOWN, NO_BTN, 0, AXIS_NONE },
 
-   { true, RARCH_TURBO_ENABLE,             RETRO_LBL_TURBO_ENABLE,          RETROK_UNKNOWN, NO_BTN, 0, AXIS_NONE },
+   { true, RARCH_TURBO_ENABLE,             RETRO_LBL_TURBO_ENABLE,         RETROK_UNKNOWN, NO_BTN, 0, AXIS_NONE },
    { true, RARCH_FAST_FORWARD_KEY,         RETRO_LBL_FAST_FORWARD_KEY,     RETROK_SPACE,   NO_BTN, 0, AXIS_NONE },
    { true, RARCH_FAST_FORWARD_HOLD_KEY,    RETRO_LBL_FAST_FORWARD_HOLD_KEY,RETROK_l,       NO_BTN, 0, AXIS_NONE },
    { true, RARCH_LOAD_STATE_KEY,           RETRO_LBL_LOAD_STATE_KEY,       RETROK_F4,      NO_BTN, 0, AXIS_NONE },
