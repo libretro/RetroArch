@@ -1357,7 +1357,7 @@ static int menu_settings_iterate(unsigned action)
 
    if (action != MENU_ACTION_REFRESH)
       file_list_get_at_offset(driver.menu->selection_buf,
-            driver.menu->selection_ptr, &path, &label, &type);
+            driver.menu->selection_ptr, NULL, &label, &type);
 
    if (!strcmp(label, "core_list"))
       dir = g_settings.libretro_directory;
@@ -1366,7 +1366,7 @@ static int menu_settings_iterate(unsigned action)
    else if (type == MENU_SETTINGS_DISK_APPEND)
       dir = g_settings.menu_content_directory;
 
-   file_list_get_last(driver.menu->menu_stack, &path, NULL, &menu_type);
+   file_list_get_last(driver.menu->menu_stack, NULL, NULL, &menu_type);
 
    if (driver.menu->need_refresh)
       action = MENU_ACTION_NOOP;
@@ -1394,9 +1394,8 @@ static int menu_settings_iterate(unsigned action)
          break;
       case MENU_ACTION_SELECT:
          {
-            const char *path = NULL;
             file_list_get_at_offset(driver.menu->selection_buf,
-                  driver.menu->selection_ptr, &path, &label,
+                  driver.menu->selection_ptr, NULL, NULL,
                   &driver.menu->info_selection);
             file_list_push(driver.menu->menu_stack, "", "info_screen",
                   0, driver.menu->selection_ptr);
@@ -1421,10 +1420,13 @@ static int menu_settings_iterate(unsigned action)
                && action == MENU_ACTION_OK)
             menu_entries_push(driver.menu->menu_stack,
                   "", "", type, driver.menu->selection_ptr);
-         else if ((menu_common_type_is(type) == MENU_SETTINGS ||
-                  type == MENU_SETTINGS_CORE || type == MENU_SETTINGS_CONFIG ||
+         else if ((
+                  menu_common_type_is(type) == MENU_SETTINGS ||
+                  type == MENU_SETTINGS_CORE ||
+                  type == MENU_SETTINGS_CONFIG ||
                   type == MENU_SETTINGS_DISK_APPEND) &&
-               action == MENU_ACTION_OK)
+               action == MENU_ACTION_OK
+               )
             menu_entries_push(driver.menu->menu_stack,
                   dir ? dir : label, "", type,
                   driver.menu->selection_ptr);
@@ -1438,7 +1440,8 @@ static int menu_settings_iterate(unsigned action)
             rarch_viewport_t *custom = (rarch_viewport_t*)
                &g_extern.console.screen.viewports.custom_vp;
 
-            if (driver.video_data && driver.video && driver.video->viewport_info)
+            if (driver.video_data && driver.video &&
+                  driver.video->viewport_info)
                driver.video->viewport_info(driver.video_data, custom);
             aspectratio_lut[ASPECT_RATIO_CUSTOM].value =
                (float)custom->width / custom->height;
@@ -1505,7 +1508,7 @@ static int menu_viewport_iterate(unsigned action)
    if (!driver.menu)
       return 0;
 
-   file_list_get_last(driver.menu->menu_stack, &path, &label, &menu_type);
+   file_list_get_last(driver.menu->menu_stack, NULL, &label, &menu_type);
 
    geom = (struct retro_game_geometry*)&g_extern.system.av_info.geometry;
 
@@ -1621,7 +1624,7 @@ static int menu_viewport_iterate(unsigned action)
          break;
    }
 
-   file_list_get_last(driver.menu->menu_stack, &path, &label, &menu_type);
+   file_list_get_last(driver.menu->menu_stack, NULL, &label, &menu_type);
 
    if (driver.video_data && driver.menu_ctx && driver.menu_ctx->render)
       driver.menu_ctx->render();
@@ -2077,7 +2080,7 @@ static int menu_common_iterate(unsigned action)
 {
    int ret = 0;
    unsigned menu_type = 0;
-   const char *dir = NULL;
+   const char *path = NULL;
    const char *label = NULL;
    const char *menu_label = NULL;
 
@@ -2087,7 +2090,7 @@ static int menu_common_iterate(unsigned action)
       return 0;
    }
 
-   file_list_get_last(driver.menu->menu_stack, &dir, &menu_label, &menu_type);
+   file_list_get_last(driver.menu->menu_stack, &path, &menu_label, &menu_type);
 
    if (driver.video_data && driver.menu_ctx && driver.menu_ctx->set_texture)
       driver.menu_ctx->set_texture(driver.menu);
@@ -2165,7 +2168,7 @@ static int menu_common_iterate(unsigned action)
          break;
 
       case MENU_ACTION_OK:
-         ret = menu_action_ok(dir, menu_type);
+         ret = menu_action_ok(path, menu_type);
          break;
 
       case MENU_ACTION_REFRESH:
@@ -2180,9 +2183,6 @@ static int menu_common_iterate(unsigned action)
       default:
          break;
    }
-
-   // refresh values in case the stack changed
-   file_list_get_last(driver.menu->menu_stack, &dir, &label, &menu_type);
 
    if (driver.menu->need_refresh)
    {
