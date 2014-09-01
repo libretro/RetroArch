@@ -55,6 +55,20 @@ static void add_setting_entry(menu_handle_t *menu,
             setting->name, id, 0);
 }
 
+void menu_entries_push_perfcounter(menu_handle_t *menu,
+      const struct retro_perf_counter **counters,
+      unsigned num, unsigned id)
+{
+   int i;
+   if (!counters || num == 0)
+      return;
+
+   for (i = 0; i < num; i++)
+      if (counters[i] && counters[i]->ident)
+         file_list_push(menu->selection_buf, counters[i]->ident, "",
+               id + i, 0);
+}
+
 int menu_entries_push(menu_handle_t *menu,
       const char *path, const char *label,
       unsigned menu_type)
@@ -517,33 +531,13 @@ int menu_entries_push(menu_handle_t *menu,
             break;
          case MENU_SETTINGS_PERFORMANCE_COUNTERS_LIBRETRO:
             file_list_clear(menu->selection_buf);
-            {
-               const struct retro_perf_counter **counters = (const struct retro_perf_counter**)perf_counters_libretro;
-               unsigned num = perf_ptr_libretro;
-
-               if (!counters || num == 0)
-                  break;
-
-               for (i = 0; i < num; i++)
-                  if (counters[i] && counters[i]->ident)
-                     file_list_push(menu->selection_buf, counters[i]->ident, "",
-                           MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_BEGIN + i, 0);
-            }
+            menu_entries_push_perfcounter(menu, perf_counters_libretro,
+                  perf_ptr_libretro, MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_BEGIN);
             break;
          case MENU_SETTINGS_PERFORMANCE_COUNTERS_FRONTEND:
             file_list_clear(menu->selection_buf);
-            {
-               const struct retro_perf_counter **counters = (const struct retro_perf_counter**)perf_counters_rarch;
-               unsigned num = perf_ptr_rarch;
-
-               if (!counters || num == 0)
-                  break;
-
-               for (i = 0; i < num; i++)
-                  if (counters[i] && counters[i]->ident)
-                     file_list_push(menu->selection_buf, counters[i]->ident, "",
-                           MENU_SETTINGS_PERF_COUNTERS_BEGIN + i, 0);
-            }
+            menu_entries_push_perfcounter(menu, perf_counters_rarch,
+                  perf_ptr_rarch, MENU_SETTINGS_PERF_COUNTERS_BEGIN);
             break;
       }
    }
