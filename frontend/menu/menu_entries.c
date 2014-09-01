@@ -565,7 +565,7 @@ int menu_entries_push_list(menu_handle_t *menu,
    return 0;
 }
 
-int menu_parse_check(unsigned menu_type)
+int menu_parse_check(const char *label, unsigned menu_type)
 {
    if (!((menu_type == MENU_FILE_DIRECTORY ||
             menu_common_type_is(menu_type) == MENU_SETTINGS_SHADER_OPTIONS ||
@@ -597,7 +597,7 @@ int menu_parse_and_resolve(void)
       )
       return menu_entries_push_list(driver.menu, dir, label, menu_type);
 
-   if (menu_parse_check(menu_type) == -1)
+   if (menu_parse_check(label, menu_type) == -1)
       return - 1;
 
    file_list_clear(driver.menu->selection_buf);

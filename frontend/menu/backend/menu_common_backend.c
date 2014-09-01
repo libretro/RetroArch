@@ -1471,7 +1471,7 @@ static int menu_settings_iterate(unsigned action)
 
    file_list_get_last(driver.menu->menu_stack, &path, &label, &menu_type);
 
-   if (driver.menu->need_refresh && (menu_parse_check(menu_type) == -1))
+   if (driver.menu->need_refresh && (menu_parse_check(label, menu_type) == -1))
    {
       driver.menu->need_refresh = false;
       menu_entries_push_list(driver.menu, path, label, menu_type);
@@ -1779,7 +1779,7 @@ static int menu_action_ok(const char *dir, unsigned menu_type)
    file_list_get_at_offset(driver.menu->selection_buf,
          driver.menu->selection_ptr, &path, &label, &type);
 
-   if (menu_parse_check(type) == 0)
+   if (menu_parse_check(label, type) == 0)
    {
       char cat_path[PATH_MAX];
       fill_pathname_join(cat_path, dir, path, sizeof(cat_path));
