@@ -432,7 +432,7 @@ static int menu_info_screen_iterate(unsigned action)
    }
 
    if (action == MENU_ACTION_OK)
-      file_list_pop(driver.menu->menu_stack, &driver.menu->selection_ptr);
+      menu_entries_pop();
 
    return 0;
 }
@@ -497,7 +497,7 @@ static int menu_start_screen_iterate(unsigned action)
       driver.menu_ctx->render_messagebox(msg);
 
    if (action == MENU_ACTION_OK)
-      file_list_pop(driver.menu->menu_stack, &driver.menu->selection_ptr);
+      menu_entries_pop();
 
    return 0;
 }
@@ -1497,7 +1497,7 @@ static int menu_viewport_iterate(unsigned action)
          break;
 
       case MENU_ACTION_CANCEL:
-         file_list_pop(driver.menu->menu_stack, &driver.menu->selection_ptr);
+         menu_entries_pop();
          if (!strcmp(label, "custom_viewport_2"))
          {
             file_list_push(driver.menu->menu_stack, "", "",
@@ -1507,7 +1507,7 @@ static int menu_viewport_iterate(unsigned action)
          break;
 
       case MENU_ACTION_OK:
-         file_list_pop(driver.menu->menu_stack, &driver.menu->selection_ptr);
+         menu_entries_pop();
          if (menu_type == MENU_SETTINGS_CUSTOM_VIEWPORT
                && !g_settings.video.scale_integer)
          {
@@ -1621,7 +1621,7 @@ static int menu_custom_bind_iterate(void *data, unsigned action)
       if (binds.begin <= binds.last)
          binds.target++;
       else
-         file_list_pop(menu->menu_stack, &menu->selection_ptr);
+         menu_entries_pop();
 
       // Avoid new binds triggering things right away.
       menu->trigger_state = 0;
@@ -1664,7 +1664,7 @@ static int menu_custom_bind_iterate_keyboard(void *data, unsigned action)
    // binds.begin is updated in keyboard_press callback.
    if (menu->binds.begin > menu->binds.last)
    {
-      file_list_pop(menu->menu_stack, &menu->selection_ptr);
+      menu_entries_pop();
 
       // Avoid new binds triggering things right away.
       menu->trigger_state = 0;
