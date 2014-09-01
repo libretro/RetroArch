@@ -84,8 +84,8 @@ int menu_entries_push(menu_handle_t *menu,
       add_setting_entry(menu,"core_information", MENU_SETTINGS_CORE_INFO, setting_data);
       add_setting_entry(menu,"settings", MENU_SETTINGS_OPTIONS, setting_data);
       add_setting_entry(menu,"performance_counters", MENU_SETTINGS_PERFORMANCE_COUNTERS, setting_data);
-      add_setting_entry(menu,"savestate", MENU_SETTINGS_SAVESTATE_SAVE, setting_data);
-      add_setting_entry(menu,"loadstate", MENU_SETTINGS_SAVESTATE_LOAD, setting_data);
+      add_setting_entry(menu,"savestate", 0, setting_data);
+      add_setting_entry(menu,"loadstate", 0, setting_data);
       add_setting_entry(menu,"take_screenshot", 0, setting_data);
       add_setting_entry(menu,"resume_content", 0, setting_data);
       add_setting_entry(menu,"restart_content", 0, setting_data);

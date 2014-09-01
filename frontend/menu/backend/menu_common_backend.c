@@ -2304,9 +2304,8 @@ static void menu_common_setting_set_label(char *type_str,
             else
                strlcpy(type_str, "<default>", type_str_size);
          }
-         else if (
-               type == MENU_SETTINGS_SAVESTATE_SAVE ||
-               type == MENU_SETTINGS_SAVESTATE_LOAD)
+         else if (!strcmp(setting->name, "savestate") ||
+               !strcmp(setting->name, "loadstate"))
          {
             if (g_settings.state_slot < 0)
                strlcpy(type_str, "-1 (auto)", type_str_size);
