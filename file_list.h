@@ -59,6 +59,11 @@ void file_list_get_at_offset(const file_list_t *list, size_t index,
       const char **path, const char **label,
       unsigned *type);
 
+void file_list_set_label_at_offset(file_list_t *list, size_t index,
+      const char *label);
+void file_list_get_label_at_offset(const file_list_t *list, size_t index,
+      const char **label);
+
 void file_list_set_alt_at_offset(file_list_t *list, size_t index,
       const char *alt);
 void file_list_get_alt_at_offset(const file_list_t *list, size_t index,

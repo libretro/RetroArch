@@ -1321,7 +1321,8 @@ static int menu_setting_ok_toggle(unsigned type,
    else if (type == MENU_SETTINGS_CUSTOM_VIEWPORT)
    {
       file_list_push(driver.menu->menu_stack, "", "",
-            type, driver.menu->selection_ptr);
+            MENU_SETTINGS_CUSTOM_VIEWPORT,
+            driver.menu->selection_ptr);
 
       /* Start with something sane. */
       rarch_viewport_t *custom = (rarch_viewport_t*)

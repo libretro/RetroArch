@@ -103,6 +103,21 @@ void file_list_clear(file_list_t *list)
    list->size = 0;
 }
 
+void file_list_set_label_at_offset(file_list_t *list, size_t index,
+      const char *label)
+{
+   free(list->list[index].label);
+   list->list[index].label = strdup(label);
+}
+
+void file_list_get_label_at_offset(const file_list_t *list, size_t index,
+      const char **label)
+{
+   if (label)
+      *label = list->list[index].label ?
+         list->list[index].label : list->list[index].path;
+}
+
 void file_list_set_alt_at_offset(file_list_t *list, size_t index,
       const char *alt)
 {
@@ -162,7 +177,11 @@ bool file_list_search(const file_list_t *list, const char *needle, size_t *index
       const char *str;
       file_list_get_alt_at_offset(list, i, &alt);
       if (!alt)
-         continue;
+      {
+         file_list_get_label_at_offset(list, i, &alt);
+         if (!alt)
+            continue;
+      }
 
       str = (const char *)strcasestr(alt, needle);
       if (str == alt)
