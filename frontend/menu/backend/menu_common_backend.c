@@ -425,7 +425,8 @@ static int menu_info_screen_iterate(unsigned action)
       }
    }
 
-   if (driver.video_data && driver.menu_ctx && driver.menu_ctx->render_messagebox)
+   if (driver.video_data && driver.menu_ctx &&
+         driver.menu_ctx->render_messagebox)
    {
       if (*msg && msg[0] != '\0')
          driver.menu_ctx->render_messagebox(msg);
@@ -461,8 +462,10 @@ static int menu_start_screen_iterate(unsigned action)
 
    for (i = 0; i < ARRAY_SIZE(binds); i++)
    {
-      const struct retro_keybind *bind = (const struct retro_keybind*)&g_settings.input.binds[0][binds[i]];
-      const struct retro_keybind *auto_bind = (const struct retro_keybind*)input_get_auto_bind(0, binds[i]);
+      const struct retro_keybind *bind = (const struct retro_keybind*)
+         &g_settings.input.binds[0][binds[i]];
+      const struct retro_keybind *auto_bind = (const struct retro_keybind*)
+         input_get_auto_bind(0, binds[i]);
 
       input_get_bind_string(desc[i], bind, auto_bind, sizeof(desc[i]));
    }
@@ -556,7 +559,8 @@ static int menu_common_setting_set_perf(unsigned setting, unsigned action,
    return 0;
 }
 
-static void menu_common_setting_set_current_boolean(rarch_setting_t *setting, unsigned action)
+static void menu_common_setting_set_current_boolean(
+      rarch_setting_t *setting, unsigned action)
 {
    if (
          !strcmp(setting->name, "savestate") ||
@@ -614,7 +618,8 @@ static void menu_common_setting_set_current_path_selection(
       setting->change_handler(setting);
 }
 
-static void menu_common_setting_set_current_fraction(rarch_setting_t *setting, unsigned action)
+static void menu_common_setting_set_current_fraction(
+      rarch_setting_t *setting, unsigned action)
 {
    if (!strcmp(setting->name, "video_refresh_rate_auto"))
    {
@@ -625,10 +630,11 @@ static void menu_common_setting_set_current_fraction(rarch_setting_t *setting, u
          double refresh_rate, deviation = 0.0;
          unsigned sample_points = 0;
 
-         if (driver_monitor_fps_statistics(&refresh_rate, &deviation, &sample_points))
+         if (driver_monitor_fps_statistics(&refresh_rate,
+                  &deviation, &sample_points))
          {
             driver_set_monitor_refresh_rate(refresh_rate);
-            // Incase refresh rate update forced non-block video.
+            /* Incase refresh rate update forced non-block video. */
             rarch_main_command(RARCH_CMD_VIDEO_SET_BLOCKING_STATE);
          }
       }
@@ -641,7 +647,9 @@ static void menu_common_setting_set_current_fraction(rarch_setting_t *setting, u
       else if (action == MENU_ACTION_LEFT)
       {
          *setting->value.fraction -= setting->step;
-         if (*setting->value.fraction < 0.95f) // Avoid potential rounding errors when going from 1.1 to 1.0.
+
+         /* Avoid potential rounding errors when going from 1.1 to 1.0. */
+         if (*setting->value.fraction < 0.95f) 
             *setting->value.fraction = setting->default_value.fraction;
          else
             clamp_value = true;
@@ -652,14 +660,16 @@ static void menu_common_setting_set_current_fraction(rarch_setting_t *setting, u
          clamp_value = true;
       }
       if (clamp_value)
-         g_settings.fastforward_ratio = max(min(*setting->value.fraction, setting->max), 1.0f);
+         g_settings.fastforward_ratio =
+            max(min(*setting->value.fraction, setting->max), 1.0f);
    }
    else
    {
       switch (action)
       {
          case MENU_ACTION_LEFT:
-            *setting->value.fraction = *setting->value.fraction - setting->step;
+            *setting->value.fraction =
+               *setting->value.fraction - setting->step;
 
             if (setting->enforce_minrange)
             {
@@ -670,7 +680,8 @@ static void menu_common_setting_set_current_fraction(rarch_setting_t *setting, u
 
          case MENU_ACTION_RIGHT:
          case MENU_ACTION_OK:
-            *setting->value.fraction = *setting->value.fraction + setting->step;
+            *setting->value.fraction = 
+               *setting->value.fraction + setting->step;
 
             if (setting->enforce_maxrange)
             {
@@ -689,14 +700,17 @@ static void menu_common_setting_set_current_fraction(rarch_setting_t *setting, u
       setting->change_handler(setting);
 }
 
-static void menu_common_setting_set_current_unsigned_integer(rarch_setting_t *setting, unsigned action)
+static void menu_common_setting_set_current_unsigned_integer(
+      rarch_setting_t *setting, unsigned action)
 {
    if (!strcmp(setting->name, "netplay_tcp_udp_port"))
    {
       if (action == MENU_ACTION_OK)
-         menu_key_start_line(driver.menu, "TCP/UDP Port: ", setting->name, st_uint_callback);
+         menu_key_start_line(driver.menu, "TCP/UDP Port: ",
+               setting->name, st_uint_callback);
       else if (action == MENU_ACTION_START)
-         *setting->value.unsigned_integer = setting->default_value.unsigned_integer;
+         *setting->value.unsigned_integer =
+            setting->default_value.unsigned_integer;
    }
    else
    {
@@ -704,7 +718,8 @@ static void menu_common_setting_set_current_unsigned_integer(rarch_setting_t *se
       {
          case MENU_ACTION_LEFT:
             if (*setting->value.unsigned_integer != setting->min)
-               *setting->value.unsigned_integer = *setting->value.unsigned_integer - setting->step;
+               *setting->value.unsigned_integer =
+                  *setting->value.unsigned_integer - setting->step;
 
             if (setting->enforce_minrange)
             {
@@ -715,7 +730,8 @@ static void menu_common_setting_set_current_unsigned_integer(rarch_setting_t *se
 
          case MENU_ACTION_RIGHT:
          case MENU_ACTION_OK:
-            *setting->value.unsigned_integer = *setting->value.unsigned_integer + setting->step;
+            *setting->value.unsigned_integer =
+               *setting->value.unsigned_integer + setting->step;
 
             if (setting->enforce_maxrange)
             {
@@ -725,7 +741,8 @@ static void menu_common_setting_set_current_unsigned_integer(rarch_setting_t *se
             break;
 
          case MENU_ACTION_START:
-            *setting->value.unsigned_integer = setting->default_value.unsigned_integer;
+            *setting->value.unsigned_integer =
+               setting->default_value.unsigned_integer;
             break;
       }
    } 
@@ -735,7 +752,8 @@ static void menu_common_setting_set_current_unsigned_integer(rarch_setting_t *se
 }
 
 
-static void menu_common_setting_set_current_string_path(rarch_setting_t *setting, const char *dir, const char *path)
+static void menu_common_setting_set_current_string_path(
+      rarch_setting_t *setting, const char *dir, const char *path)
 {
    fill_pathname_join(setting->value.string, dir, path, setting->size);
 
@@ -743,7 +761,8 @@ static void menu_common_setting_set_current_string_path(rarch_setting_t *setting
       setting->change_handler(setting);
 }
 
-void menu_common_setting_set_current_string(rarch_setting_t *setting, const char *str)
+void menu_common_setting_set_current_string(
+      rarch_setting_t *setting, const char *str)
 {
    strlcpy(setting->value.string, str, setting->size);
 
@@ -751,8 +770,8 @@ void menu_common_setting_set_current_string(rarch_setting_t *setting, const char
       setting->change_handler(setting);
 }
 
-static void handle_driver(const char *label, char *driver, size_t sizeof_driver,
-      unsigned action)
+static void handle_driver(const char *label, char *driver,
+      size_t sizeof_driver, unsigned action)
 {
    switch (action)
    {
@@ -785,7 +804,8 @@ static void handle_setting(rarch_setting_t *setting,
       }
    }
    else if (setting->type == ST_PATH)
-      menu_common_setting_set_current_path_selection(setting, setting->default_value.string, id, action);
+      menu_common_setting_set_current_path_selection(setting,
+            setting->default_value.string, id, action);
    else if (setting->type == ST_STRING)
    {
       if (!strcmp(setting->name, "audio_device"))
@@ -799,7 +819,8 @@ static void handle_setting(rarch_setting_t *setting,
       else if (!strcmp(setting->name, "netplay_nickname"))
       {
          if (action == MENU_ACTION_OK)
-            menu_key_start_line(driver.menu, "Username: ", "netplay_nickname", st_string_callback);
+            menu_key_start_line(driver.menu, "Username: ",
+                  "netplay_nickname", st_string_callback);
          else if (action == MENU_ACTION_START)
             *setting->value.string = '\0';
       }
@@ -807,7 +828,8 @@ static void handle_setting(rarch_setting_t *setting,
       else if (!strcmp(setting->name, "netplay_ip_address"))
       {
          if (action == MENU_ACTION_OK)
-            menu_key_start_line(driver.menu, "IP Address: ", "netplay_ip_address", st_string_callback);
+            menu_key_start_line(driver.menu, "IP Address: ",
+                  "netplay_ip_address", st_string_callback);
          else if (action == MENU_ACTION_START)
             *setting->value.string = '\0';
       }
@@ -849,19 +871,25 @@ static int menu_common_setting_set(unsigned id, unsigned action)
          setting_data_get_list()
          );
 
-   if (id >= MENU_SETTINGS_PERF_COUNTERS_BEGIN && id <= MENU_SETTINGS_PERF_COUNTERS_END)
+   if (id >= MENU_SETTINGS_PERF_COUNTERS_BEGIN &&
+         id <= MENU_SETTINGS_PERF_COUNTERS_END)
    {
       counters = (struct retro_perf_counter**)perf_counters_rarch;
-      return menu_common_setting_set_perf(id, action, counters, id - MENU_SETTINGS_PERF_COUNTERS_BEGIN);
+      return menu_common_setting_set_perf(id, action, counters,
+            id - MENU_SETTINGS_PERF_COUNTERS_BEGIN);
    }
-   else if (id >= MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_BEGIN && id <= MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_END)
+   else if (id >= MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_BEGIN &&
+         id <= MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_END)
    {
       counters = (struct retro_perf_counter**)perf_counters_libretro;
-      return menu_common_setting_set_perf(id, action, counters, id - MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_BEGIN);
+      return menu_common_setting_set_perf(id, action, counters,
+            id - MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_BEGIN);
    }
-   else if (id >= MENU_SETTINGS_BIND_BEGIN && id <= MENU_SETTINGS_BIND_ALL_LAST)
+   else if (id >= MENU_SETTINGS_BIND_BEGIN &&
+         id <= MENU_SETTINGS_BIND_ALL_LAST)
    {
-      struct retro_keybind *bind = (struct retro_keybind*)&g_settings.input.binds[port][id - MENU_SETTINGS_BIND_BEGIN];
+      struct retro_keybind *bind = (struct retro_keybind*)
+         &g_settings.input.binds[port][id - MENU_SETTINGS_BIND_BEGIN];
 
       if (action == MENU_ACTION_OK)
       {
@@ -876,8 +904,10 @@ static int menu_common_setting_set(unsigned id, unsigned action)
 
          if (driver.menu->bind_mode_keyboard)
          {
-            driver.menu->binds.timeout_end = rarch_get_time_usec() + MENU_KEYBOARD_BIND_TIMEOUT_SECONDS * 1000000;
-            input_keyboard_wait_keys(driver.menu, menu_custom_bind_keyboard_cb);
+            driver.menu->binds.timeout_end = rarch_get_time_usec() +
+               MENU_KEYBOARD_BIND_TIMEOUT_SECONDS * 1000000;
+            input_keyboard_wait_keys(driver.menu,
+                  menu_custom_bind_keyboard_cb);
          }
          else
          {
@@ -889,7 +919,8 @@ static int menu_common_setting_set(unsigned id, unsigned action)
       {
          if (driver.menu->bind_mode_keyboard)
          {
-            const struct retro_keybind *def_binds = port ? retro_keybinds_rest : retro_keybinds_1;
+            const struct retro_keybind *def_binds = port ?
+               retro_keybinds_rest : retro_keybinds_1;
             bind->key = def_binds[id - MENU_SETTINGS_BIND_BEGIN].key;
          }
          else
@@ -926,10 +957,13 @@ static int menu_common_setting_set(unsigned id, unsigned action)
 
                   if (step)
                   {
-                     const struct retro_disk_control_callback *control = (const struct retro_disk_control_callback*)&g_extern.system.disk_control;
+                     const struct retro_disk_control_callback *control =
+                        (const struct retro_disk_control_callback*)
+                        &g_extern.system.disk_control;
                      unsigned num_disks = control->get_num_images();
                      unsigned current   = control->get_image_index();
-                     unsigned next_index = (current + num_disks + 1 + step) % (num_disks + 1);
+                     unsigned next_index = (current + num_disks + 1 + step)
+                        % (num_disks + 1);
                      rarch_disk_control_set_eject(true, false);
                      rarch_disk_control_set_index(next_index);
                      rarch_disk_control_set_eject(false, false);
@@ -980,11 +1014,15 @@ static int menu_common_setting_set(unsigned id, unsigned action)
 
                   case MENU_ACTION_OK:
                   case MENU_ACTION_RIGHT:
-                     g_settings.input.analog_dpad_mode[port] = (g_settings.input.analog_dpad_mode[port] + 1) % ANALOG_DPAD_LAST;
+                     g_settings.input.analog_dpad_mode[port] =
+                        (g_settings.input.analog_dpad_mode[port] + 1)
+                        % ANALOG_DPAD_LAST;
                      break;
 
                   case MENU_ACTION_LEFT:
-                     g_settings.input.analog_dpad_mode[port] = (g_settings.input.analog_dpad_mode[port] + ANALOG_DPAD_LAST - 1) % ANALOG_DPAD_LAST;
+                     g_settings.input.analog_dpad_mode[port] =
+                        (g_settings.input.analog_dpad_mode
+                         [port] + ANALOG_DPAD_LAST - 1) % ANALOG_DPAD_LAST;
                      break;
 
                   default:
@@ -999,17 +1037,22 @@ static int menu_common_setting_set(unsigned id, unsigned action)
 
                   devices[types++] = RETRO_DEVICE_NONE;
                   devices[types++] = RETRO_DEVICE_JOYPAD;
-                  // Only push RETRO_DEVICE_ANALOG as default if we use an older core which doesn't use SET_CONTROLLER_INFO.
+
+                  /* Only push RETRO_DEVICE_ANALOG as default if we use an 
+                   * older core which doesn't use SET_CONTROLLER_INFO. */
                   if (!g_extern.system.num_ports)
                      devices[types++] = RETRO_DEVICE_ANALOG;
 
-                  desc = port < g_extern.system.num_ports ? &g_extern.system.ports[port] : NULL;
+                  desc = port < g_extern.system.num_ports ?
+                     &g_extern.system.ports[port] : NULL;
                   if (desc)
                   {
                      for (i = 0; i < desc->num_types; i++)
                      {
                         unsigned id = desc->types[i].id;
-                        if (types < ARRAY_SIZE(devices) && id != RETRO_DEVICE_NONE && id != RETRO_DEVICE_JOYPAD)
+                        if (types < ARRAY_SIZE(devices) &&
+                              id != RETRO_DEVICE_NONE &&
+                              id != RETRO_DEVICE_JOYPAD)
                            devices[types++] = id;
                      }
                   }
@@ -1033,12 +1076,14 @@ static int menu_common_setting_set(unsigned id, unsigned action)
                         break;
 
                      case MENU_ACTION_LEFT:
-                        current_device = devices[(current_index + types - 1) % types];
+                        current_device = devices
+                           [(current_index + types - 1) % types];
                         break;
 
                      case MENU_ACTION_RIGHT:
                      case MENU_ACTION_OK:
-                        current_device = devices[(current_index + 1) % types];
+                        current_device = devices
+                           [(current_index + 1) % types];
                         break;
 
                      default:
@@ -1054,8 +1099,10 @@ static int menu_common_setting_set(unsigned id, unsigned action)
                   break;
                }
             case MENU_SETTINGS_CUSTOM_BIND_MODE:
-               if (action == MENU_ACTION_OK || action == MENU_ACTION_LEFT || action == MENU_ACTION_RIGHT)
-                  driver.menu->bind_mode_keyboard = !driver.menu->bind_mode_keyboard;
+               if (action == MENU_ACTION_OK || action == MENU_ACTION_LEFT ||
+                     action == MENU_ACTION_RIGHT)
+                  driver.menu->bind_mode_keyboard =
+                     !driver.menu->bind_mode_keyboard;
                break;
             case MENU_SETTINGS_CUSTOM_BIND_ALL:
                if (action == MENU_ACTION_OK)
@@ -1063,19 +1110,22 @@ static int menu_common_setting_set(unsigned id, unsigned action)
                   driver.menu->binds.target = &g_settings.input.binds[port][0];
                   driver.menu->binds.begin = MENU_SETTINGS_BIND_BEGIN;
                   driver.menu->binds.last = MENU_SETTINGS_BIND_LAST;
+
+                  file_list_push(driver.menu->menu_stack, "", "",
+                        driver.menu->bind_mode_keyboard ?
+                        MENU_SETTINGS_CUSTOM_BIND_KEYBOARD :
+                        MENU_SETTINGS_CUSTOM_BIND,
+                        driver.menu->selection_ptr);
                   if (driver.menu->bind_mode_keyboard)
                   {
-                     file_list_push(driver.menu->menu_stack, "", "",
-                           MENU_SETTINGS_CUSTOM_BIND_KEYBOARD,
-                           driver.menu->selection_ptr);
-                     driver.menu->binds.timeout_end = rarch_get_time_usec() + MENU_KEYBOARD_BIND_TIMEOUT_SECONDS * 1000000;
-                     input_keyboard_wait_keys(driver.menu, menu_custom_bind_keyboard_cb);
+                     driver.menu->binds.timeout_end =
+                        rarch_get_time_usec() + 
+                        MENU_KEYBOARD_BIND_TIMEOUT_SECONDS * 1000000;
+                     input_keyboard_wait_keys(driver.menu,
+                           menu_custom_bind_keyboard_cb);
                   }
                   else
                   {
-                     file_list_push(driver.menu->menu_stack, "", "",
-                           MENU_SETTINGS_CUSTOM_BIND,
-                           driver.menu->selection_ptr);
                      menu_poll_bind_get_rested_axes(&driver.menu->binds);
                      menu_poll_bind_state(&driver.menu->binds);
                   }
@@ -1085,13 +1135,16 @@ static int menu_common_setting_set(unsigned id, unsigned action)
                if (action == MENU_ACTION_OK)
                {
                   unsigned i;
-                  struct retro_keybind *target = (struct retro_keybind*)&g_settings.input.binds[port][0];
-                  const struct retro_keybind *def_binds = port ? retro_keybinds_rest : retro_keybinds_1;
+                  struct retro_keybind *target = (struct retro_keybind*)
+                     &g_settings.input.binds[port][0];
+                  const struct retro_keybind *def_binds = 
+                     port ? retro_keybinds_rest : retro_keybinds_1;
 
                   driver.menu->binds.begin = MENU_SETTINGS_BIND_BEGIN;
                   driver.menu->binds.last = MENU_SETTINGS_BIND_LAST;
 
-                  for (i = MENU_SETTINGS_BIND_BEGIN; i <= MENU_SETTINGS_BIND_LAST; i++, target++)
+                  for (i = MENU_SETTINGS_BIND_BEGIN;
+                        i <= MENU_SETTINGS_BIND_LAST; i++, target++)
                   {
                      if (driver.menu->bind_mode_keyboard)
                         target->key = def_binds[i - MENU_SETTINGS_BIND_BEGIN].key;
@@ -1126,7 +1179,8 @@ static int menu_common_setting_set(unsigned id, unsigned action)
                else if (action == MENU_ACTION_OK)
                {
                   if (driver.video_data)
-                     gx_set_video_mode(driver.video_data, menu_gx_resolutions[menu_current_gx_resolution][0],
+                     gx_set_video_mode(driver.video_data, menu_gx_resolutions
+                           [menu_current_gx_resolution][0],
                            menu_gx_resolutions[menu_current_gx_resolution][1]);
                }
                break;
@@ -1138,7 +1192,8 @@ static int menu_common_setting_set(unsigned id, unsigned action)
                   {
                      g_extern.console.screen.resolutions.current.idx--;
                      g_extern.console.screen.resolutions.current.id =
-                        g_extern.console.screen.resolutions.list[g_extern.console.screen.resolutions.current.idx];
+                        g_extern.console.screen.resolutions.list
+                        [g_extern.console.screen.resolutions.current.idx];
                   }
                }
                else if (action == MENU_ACTION_RIGHT)
@@ -1148,12 +1203,15 @@ static int menu_common_setting_set(unsigned id, unsigned action)
                   {
                      g_extern.console.screen.resolutions.current.idx++;
                      g_extern.console.screen.resolutions.current.id =
-                        g_extern.console.screen.resolutions.list[g_extern.console.screen.resolutions.current.idx];
+                        g_extern.console.screen.resolutions.list
+                        [g_extern.console.screen.resolutions.current.idx];
                   }
                }
                else if (action == MENU_ACTION_OK)
                {
-                  if (g_extern.console.screen.resolutions.list[g_extern.console.screen.resolutions.current.idx] == CELL_VIDEO_OUT_RESOLUTION_576)
+                  if (g_extern.console.screen.resolutions.list[
+                        g_extern.console.screen.resolutions.current.idx] == 
+                        CELL_VIDEO_OUT_RESOLUTION_576)
                   {
                      if (g_extern.console.screen.pal_enable)
                         g_extern.console.screen.pal60_enable = true;
@@ -1171,7 +1229,8 @@ static int menu_common_setting_set(unsigned id, unsigned action)
 #ifdef HAVE_SHADER_MANAGER
             case MENU_SETTINGS_SHADER_PASSES:
                {
-                  struct gfx_shader *shader = (struct gfx_shader*)driver.menu->shader;
+                  struct gfx_shader *shader = (struct gfx_shader*)
+                     driver.menu->shader;
 
                   switch (action)
                   {
@@ -1207,13 +1266,16 @@ static int menu_common_setting_set(unsigned id, unsigned action)
                   struct gfx_shader *shader = (struct gfx_shader*)driver.menu->shader;
                   unsigned type = RARCH_SHADER_NONE;
 
-                  if (!driver.video || !driver.video->set_shader || action != MENU_ACTION_OK)
+                  if (!driver.video || !driver.video->set_shader ||
+                        action != MENU_ACTION_OK)
                      return 0;
 
                   RARCH_LOG("Applying shader ...\n");
 
-                  if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->shader_manager_get_type)
-                     type = driver.menu_ctx->backend->shader_manager_get_type(driver.menu->shader);
+                  if (driver.menu_ctx && driver.menu_ctx->backend &&
+                        driver.menu_ctx->backend->shader_manager_get_type)
+                     type = driver.menu_ctx->backend->shader_manager_get_type(
+                           driver.menu->shader);
 
                   if (shader->passes && type != RARCH_SHADER_NONE
                         && driver.menu_ctx && driver.menu_ctx->backend &&
@@ -1230,14 +1292,17 @@ static int menu_common_setting_set(unsigned id, unsigned action)
                         type = RARCH_SHADER_CG;
 #endif
                      }
-                     if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->shader_manager_set_preset)
-                        driver.menu_ctx->backend->shader_manager_set_preset(NULL, type, NULL);
+                     if (driver.menu_ctx && driver.menu_ctx->backend &&
+                           driver.menu_ctx->backend->shader_manager_set_preset)
+                        driver.menu_ctx->backend->shader_manager_set_preset(
+                              NULL, type, NULL);
                   }
                }
                break;
             case MENU_SETTINGS_SHADER_PRESET_SAVE:
                if (action == MENU_ACTION_OK)
-                  menu_key_start_line(driver.menu, "Preset Filename: ", "shader_preset_save", preset_filename_callback);
+                  menu_key_start_line(driver.menu, "Preset Filename: ",
+                        "shader_preset_save", preset_filename_callback);
                break;
 #endif
             default:
@@ -1259,11 +1324,13 @@ static int menu_common_setting_toggle(unsigned id, unsigned action,
 {
    (void)menu_type;
 
-   if ((id >= MENU_SETTINGS_SHADER_FILTER) && (id <= MENU_SETTINGS_SHADER_LAST))
+   if ((id >= MENU_SETTINGS_SHADER_FILTER) &&
+         (id <= MENU_SETTINGS_SHADER_LAST))
    {
       if (driver.menu_ctx && driver.menu_ctx->backend
             && driver.menu_ctx->backend->shader_manager_setting_toggle)
-         return driver.menu_ctx->backend->shader_manager_setting_toggle(id, action);
+         return driver.menu_ctx->backend->shader_manager_setting_toggle(
+               id, action);
       return 0;
    }
    if ((id >= MENU_SETTINGS_CORE_OPTION_START))
@@ -1310,11 +1377,13 @@ static int menu_settings_iterate(unsigned action)
          if (driver.menu->selection_ptr > 0)
             menu_decrement_navigation(driver.menu);
          else
-            menu_set_navigation(driver.menu, file_list_get_size(driver.menu->selection_buf) - 1);
+            menu_set_navigation(driver.menu,
+                  file_list_get_size(driver.menu->selection_buf) - 1);
          break;
 
       case MENU_ACTION_DOWN:
-         if ((driver.menu->selection_ptr + 1) < file_list_get_size(driver.menu->selection_buf))
+         if ((driver.menu->selection_ptr + 1) <
+               file_list_get_size(driver.menu->selection_buf))
             menu_increment_navigation(driver.menu);
          else
             menu_clear_navigation(driver.menu);
@@ -1354,11 +1423,13 @@ static int menu_settings_iterate(unsigned action)
                   "", "", type, driver.menu->selection_ptr);
          else if ((menu_common_type_is(type) == MENU_SETTINGS ||
                   type == MENU_SETTINGS_CORE || type == MENU_SETTINGS_CONFIG ||
-                  type == MENU_SETTINGS_DISK_APPEND) && action == MENU_ACTION_OK)
+                  type == MENU_SETTINGS_DISK_APPEND) &&
+               action == MENU_ACTION_OK)
             menu_entries_push(driver.menu->menu_stack,
                   dir ? dir : label, "", type,
                   driver.menu->selection_ptr);
-         else if (type == MENU_SETTINGS_CUSTOM_VIEWPORT && action == MENU_ACTION_OK)
+         else if (type == MENU_SETTINGS_CUSTOM_VIEWPORT &&
+               action == MENU_ACTION_OK)
          {
             file_list_push(driver.menu->menu_stack, "", "",
                   type, driver.menu->selection_ptr);
@@ -1521,7 +1592,8 @@ static int menu_viewport_iterate(unsigned action)
          {
             rarch_viewport_t vp;
 
-            if (driver.video_data && driver.video && driver.video->viewport_info)
+            if (driver.video_data && driver.video &&
+                  driver.video->viewport_info)
                driver.video->viewport_info(driver.video_data, &vp);
 
             if (menu_type == MENU_SETTINGS_CUSTOM_VIEWPORT)
@@ -1558,8 +1630,10 @@ static int menu_viewport_iterate(unsigned action)
    {
       custom->x = 0;
       custom->y = 0;
-      custom->width = ((custom->width + geom->base_width - 1) / geom->base_width) * geom->base_width;
-      custom->height = ((custom->height + geom->base_height - 1) / geom->base_height) * geom->base_height;
+      custom->width = ((custom->width + geom->base_width - 1) /
+            geom->base_width) * geom->base_width;
+      custom->height = ((custom->height + geom->base_height - 1) /
+            geom->base_height) * geom->base_height;
 
       base_msg = "Set scale";
       snprintf(msg, sizeof(msg), "%s (%4ux%4u, %u x %u scale)",
@@ -1579,7 +1653,8 @@ static int menu_viewport_iterate(unsigned action)
             base_msg, custom->x, custom->y, custom->width, custom->height);
    }
 
-   if (driver.video_data && driver.menu_ctx && driver.menu_ctx->render_messagebox)
+   if (driver.video_data && driver.menu_ctx &&
+         driver.menu_ctx->render_messagebox)
       driver.menu_ctx->render_messagebox(msg);
 
    if (!custom->width)
@@ -1602,12 +1677,16 @@ static int menu_custom_bind_iterate(void *data, unsigned action)
    char msg[256];
    menu_handle_t *menu = (menu_handle_t*)data;
 
-   (void)action; // Have to ignore action here. Only bind that should work here is Quit RetroArch or something like that.
+   /* Have to ignore action here. Only bind that should work here
+    * is Quit RetroArch or something like that. */
+   (void)action; 
 
    if (driver.video_data && driver.menu_ctx && driver.menu_ctx->render)
       driver.menu_ctx->render();
 
-   snprintf(msg, sizeof(msg), "[%s]\npress joypad\n(RETURN to skip)", input_config_bind_map[menu->binds.begin - MENU_SETTINGS_BIND_BEGIN].desc);
+   snprintf(msg, sizeof(msg), "[%s]\npress joypad\n(RETURN to skip)",
+         input_config_bind_map[
+         menu->binds.begin - MENU_SETTINGS_BIND_BEGIN].desc);
 
    if (driver.video_data && driver.menu_ctx && driver.menu_ctx->render_messagebox)
       driver.menu_ctx->render_messagebox(msg);
@@ -1615,7 +1694,8 @@ static int menu_custom_bind_iterate(void *data, unsigned action)
    struct menu_bind_state binds = menu->binds;
    menu_poll_bind_state(&binds);
 
-   if ((binds.skip && !menu->binds.skip) || menu_poll_find_trigger(&menu->binds, &binds))
+   if ((binds.skip && !menu->binds.skip) ||
+         menu_poll_find_trigger(&menu->binds, &binds))
    {
       binds.begin++;
       if (binds.begin <= binds.last)
@@ -1623,7 +1703,7 @@ static int menu_custom_bind_iterate(void *data, unsigned action)
       else
          menu_entries_pop();
 
-      // Avoid new binds triggering things right away.
+      /* Avoid new binds triggering things right away. */
       menu->trigger_state = 0;
       menu->old_input_state = -1ULL;
    }
@@ -1638,16 +1718,19 @@ static int menu_custom_bind_iterate_keyboard(void *data, unsigned action)
    bool timed_out = false;
    menu_handle_t *menu = (menu_handle_t*)data;
 
-   (void)action; // Have to ignore action here.
+   /* Have to ignore action here. */
+   (void)action; 
 
-   if (driver.video_data && driver.menu_ctx && driver.menu_ctx->render)
+   if (driver.video_data && driver.menu_ctx &&
+         driver.menu_ctx->render)
       driver.menu_ctx->render();
 
    int64_t current = rarch_get_time_usec();
    int timeout = (menu->binds.timeout_end - current) / 1000000;
 
    snprintf(msg, sizeof(msg), "[%s]\npress keyboard\n(timeout %d seconds)",
-         input_config_bind_map[menu->binds.begin - MENU_SETTINGS_BIND_BEGIN].desc, timeout);
+         input_config_bind_map[
+         menu->binds.begin - MENU_SETTINGS_BIND_BEGIN].desc, timeout);
 
    if (driver.video_data && driver.menu_ctx && driver.menu_ctx->render_messagebox)
       driver.menu_ctx->render_messagebox(msg);
@@ -1655,22 +1738,23 @@ static int menu_custom_bind_iterate_keyboard(void *data, unsigned action)
    if (timeout <= 0)
    {
       menu->binds.begin++;
-      menu->binds.target->key = RETROK_UNKNOWN; // Could be unsafe, but whatever.
+      menu->binds.target->key = RETROK_UNKNOWN; /* Could be unsafe, but whatever. */
       menu->binds.target++;
-      menu->binds.timeout_end = rarch_get_time_usec() + MENU_KEYBOARD_BIND_TIMEOUT_SECONDS * 1000000;
+      menu->binds.timeout_end = rarch_get_time_usec() +
+         MENU_KEYBOARD_BIND_TIMEOUT_SECONDS * 1000000;
       timed_out = true;
    }
 
-   // binds.begin is updated in keyboard_press callback.
+   /* binds.begin is updated in keyboard_press callback. */
    if (menu->binds.begin > menu->binds.last)
    {
       menu_entries_pop();
 
-      // Avoid new binds triggering things right away.
+      /* Avoid new binds triggering things right away. */
       menu->trigger_state = 0;
       menu->old_input_state = -1ULL;
 
-      // We won't be getting any key events, so just cancel early.
+      /* We won't be getting any key events, so just cancel early. */
       if (timed_out)
          input_keyboard_wait_keys_cancel();
    }
@@ -1686,12 +1770,14 @@ static int menu_action_ok(const char *dir, unsigned menu_type)
    const char *path = NULL;
    unsigned type = 0;
    rarch_setting_t *setting = NULL;
-   rarch_setting_t *setting_data = (rarch_setting_t *)setting_data_get_list();
+   rarch_setting_t *setting_data = (rarch_setting_t *)
+      setting_data_get_list();
 
    if (file_list_get_size(driver.menu->selection_buf) == 0)
       return 0;
 
-   file_list_get_at_offset(driver.menu->selection_buf, driver.menu->selection_ptr, &path, &label, &type);
+   file_list_get_at_offset(driver.menu->selection_buf,
+         driver.menu->selection_ptr, &path, &label, &type);
 
    if (menu_parse_check(type) == 0)
    {
@@ -1710,13 +1796,17 @@ static int menu_action_ok(const char *dir, unsigned menu_type)
          {
             char shader_path[PATH_MAX];
             fill_pathname_join(shader_path, dir, path, sizeof(shader_path));
-            if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->shader_manager_set_preset)
-               driver.menu_ctx->backend->shader_manager_set_preset(driver.menu->shader, gfx_shader_parse_type(shader_path, RARCH_SHADER_NONE),
+            if (driver.menu_ctx && driver.menu_ctx->backend &&
+                  driver.menu_ctx->backend->shader_manager_set_preset)
+               driver.menu_ctx->backend->shader_manager_set_preset(
+                     driver.menu->shader,
+                     gfx_shader_parse_type(shader_path, RARCH_SHADER_NONE),
                      shader_path);
          }
          else
          {
-            struct gfx_shader *shader = (struct gfx_shader*)driver.menu->shader;
+            struct gfx_shader *shader = (struct gfx_shader*)
+               driver.menu->shader;
             unsigned pass = (menu_type - MENU_SETTINGS_SHADER_0) / 3;
 
             fill_pathname_join(shader->pass[pass].source.path,
@@ -1734,7 +1824,8 @@ static int menu_action_ok(const char *dir, unsigned menu_type)
          if (menu_type == MENU_SETTINGS_DEFERRED_CORE)
       {
          strlcpy(g_settings.libretro, path, sizeof(g_settings.libretro));
-         strlcpy(g_extern.fullpath, driver.menu->deferred_path, sizeof(g_extern.fullpath));
+         strlcpy(g_extern.fullpath, driver.menu->deferred_path,
+               sizeof(g_extern.fullpath));
          rarch_main_command(RARCH_CMD_LOAD_CONTENT);
          driver.menu->msg_force = true;
          menu_flush_stack_type(MENU_SETTINGS);
@@ -1742,11 +1833,12 @@ static int menu_action_ok(const char *dir, unsigned menu_type)
       }
       else if (menu_type == MENU_SETTINGS_CORE)
       {
-         fill_pathname_join(g_settings.libretro, dir, path, sizeof(g_settings.libretro));
+         fill_pathname_join(g_settings.libretro, dir, path,
+               sizeof(g_settings.libretro));
          rarch_main_command(RARCH_CMD_LOAD_CORE);
          menu_flush_stack_type(MENU_SETTINGS);
 #if defined(HAVE_DYNAMIC)
-         // No content needed for this core, load core immediately.
+         /* No content needed for this core, load core immediately. */
          if (driver.menu->load_no_content)
          {
             g_extern.lifecycle_state |= (1ULL << MODE_LOAD_GAME);
@@ -1755,8 +1847,8 @@ static int menu_action_ok(const char *dir, unsigned menu_type)
             return -1;
          }
 
-         // Core selection on non-console just updates directory listing.
-         // Will take effect on new content load.
+         /* Core selection on non-console just updates directory listing.
+          * Will take effect on new content load. */
 #elif defined(RARCH_CONSOLE)
          rarch_main_command(RARCH_CMD_RESTART_RETROARCH);
          return -1;
@@ -1776,7 +1868,8 @@ static int menu_action_ok(const char *dir, unsigned menu_type)
       }
       else if (menu_type == MENU_SETTINGS_OVERLAY_PRESET)
       {
-         if ((setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "input_overlay")))
+         if ((setting = (rarch_setting_t*)setting_data_find_setting(
+                     setting_data, "input_overlay")))
             menu_common_setting_set_current_string_path(setting, dir, path);
 
          menu_flush_stack_type(MENU_SETTINGS_OPTIONS);
@@ -1800,130 +1893,149 @@ static int menu_action_ok(const char *dir, unsigned menu_type)
       }
       else if (menu_type == MENU_CONTENT_HISTORY_PATH)
       {
-         if ((setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "game_history_path")))
+         if ((setting = (rarch_setting_t*)setting_data_find_setting(
+                     setting_data, "game_history_path")))
             menu_common_setting_set_current_string_path(setting, dir, path);
 
          menu_flush_stack_type(MENU_SETTINGS_PATH_OPTIONS);
       }
       else if (menu_type == MENU_BROWSER_DIR_PATH)
       {
-         if ((setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "rgui_browser_directory")))
+         if ((setting = (rarch_setting_t*)setting_data_find_setting(
+                     setting_data, "rgui_browser_directory")))
             menu_common_setting_set_current_string(setting, dir);
 
          menu_flush_stack_type(MENU_SETTINGS_PATH_OPTIONS);
       }
       else if (menu_type == MENU_CONTENT_DIR_PATH)
       {
-         if ((setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "content_directory")))
+         if ((setting = (rarch_setting_t*)setting_data_find_setting(
+                     setting_data, "content_directory")))
             menu_common_setting_set_current_string(setting, dir);
 
          menu_flush_stack_type(MENU_SETTINGS_PATH_OPTIONS);
       }
       else if (menu_type == MENU_ASSETS_DIR_PATH)
       {
-         if ((setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "assets_directory")))
+         if ((setting = (rarch_setting_t*)setting_data_find_setting(
+                     setting_data, "assets_directory")))
             menu_common_setting_set_current_string(setting, dir);
 
          menu_flush_stack_type(MENU_SETTINGS_PATH_OPTIONS);
       }
       else if (menu_type == MENU_SCREENSHOT_DIR_PATH)
       {
-         if ((setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "screenshot_directory")))
+         if ((setting = (rarch_setting_t*)setting_data_find_setting(
+                     setting_data, "screenshot_directory")))
             menu_common_setting_set_current_string(setting, dir);
 
          menu_flush_stack_type(MENU_SETTINGS_PATH_OPTIONS);
       }
       else if (menu_type == MENU_SAVEFILE_DIR_PATH)
       {
-         if ((setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "savefile_directory")))
+         if ((setting = (rarch_setting_t*)setting_data_find_setting(
+                     setting_data, "savefile_directory")))
             menu_common_setting_set_current_string(setting, dir);
          menu_flush_stack_type(MENU_SETTINGS_PATH_OPTIONS);
       }
       else if (menu_type == MENU_OVERLAY_DIR_PATH)
       {
-         if ((setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "overlay_directory")))
+         if ((setting = (rarch_setting_t*)setting_data_find_setting(
+                     setting_data, "overlay_directory")))
             menu_common_setting_set_current_string(setting, dir);
          menu_flush_stack_type(MENU_SETTINGS_PATH_OPTIONS);
       }
       else if (menu_type == MENU_SETTINGS_VIDEO_SOFTFILTER)
       {
-         if ((setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "video_filter")))
+         if ((setting = (rarch_setting_t*)setting_data_find_setting(
+                     setting_data, "video_filter")))
             menu_common_setting_set_current_string_path(setting, dir, path);
 
          menu_flush_stack_type(MENU_SETTINGS_VIDEO_OPTIONS);
       }
       else if (menu_type == MENU_SETTINGS_AUDIO_DSP_FILTER)
       {
-         if ((setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "audio_dsp_plugin")))
+         if ((setting = (rarch_setting_t*)setting_data_find_setting(
+                     setting_data, "audio_dsp_plugin")))
             menu_common_setting_set_current_string_path(setting, dir, path);
          menu_flush_stack_type(MENU_SETTINGS_AUDIO_OPTIONS);
       }
       else if (menu_type == MENU_SAVESTATE_DIR_PATH)
       {
-         if ((setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "savestate_directory")))
+         if ((setting = (rarch_setting_t*)setting_data_find_setting(
+                     setting_data, "savestate_directory")))
             menu_common_setting_set_current_string(setting, dir);
 
          menu_flush_stack_type(MENU_SETTINGS_PATH_OPTIONS);
       }
       else if (menu_type == MENU_LIBRETRO_DIR_PATH)
       {
-         if ((setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "libretro_dir_path")))
+         if ((setting = (rarch_setting_t*)setting_data_find_setting(
+                     setting_data, "libretro_dir_path")))
             menu_common_setting_set_current_string(setting, dir);
 
          menu_flush_stack_type(MENU_SETTINGS_PATH_OPTIONS);
       }
       else if (menu_type == MENU_CONFIG_DIR_PATH)
       {
-         if ((setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "rgui_config_directory")))
+         if ((setting = (rarch_setting_t*)setting_data_find_setting(
+                     setting_data, "rgui_config_directory")))
             menu_common_setting_set_current_string(setting, dir);
 
          menu_flush_stack_type(MENU_SETTINGS_PATH_OPTIONS);
       }
       else if (menu_type == MENU_LIBRETRO_INFO_DIR_PATH)
       {
-         if ((setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "libretro_info_path")))
+         if ((setting = (rarch_setting_t*)setting_data_find_setting(
+                     setting_data, "libretro_info_path")))
             menu_common_setting_set_current_string(setting, dir);
 
          menu_flush_stack_type(MENU_SETTINGS_PATH_OPTIONS);
       }
       else if (menu_type == MENU_SHADER_DIR_PATH)
       {
-         if ((setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "video_shader_dir")))
+         if ((setting = (rarch_setting_t*)setting_data_find_setting(
+                     setting_data, "video_shader_dir")))
             menu_common_setting_set_current_string(setting, dir);
 
          menu_flush_stack_type(MENU_SETTINGS_PATH_OPTIONS);
       }
       else if (menu_type == MENU_FILTER_DIR_PATH)
       {
-         if ((setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "video_filter_dir")))
+         if ((setting = (rarch_setting_t*)setting_data_find_setting(
+                     setting_data, "video_filter_dir")))
             menu_common_setting_set_current_string(setting, dir);
 
          menu_flush_stack_type(MENU_SETTINGS_PATH_OPTIONS);
       }
       else if (menu_type == MENU_DSP_FILTER_DIR_PATH)
       {
-         if ((setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "audio_filter_dir")))
+         if ((setting = (rarch_setting_t*)setting_data_find_setting(
+                     setting_data, "audio_filter_dir")))
             menu_common_setting_set_current_string(setting, dir);
 
          menu_flush_stack_type(MENU_SETTINGS_PATH_OPTIONS);
       }
       else if (menu_type == MENU_SYSTEM_DIR_PATH)
       {
-         if ((setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "system_directory")))
+         if ((setting = (rarch_setting_t*)setting_data_find_setting(
+                     setting_data, "system_directory")))
             menu_common_setting_set_current_string(setting, dir);
 
          menu_flush_stack_type(MENU_SETTINGS_PATH_OPTIONS);
       }
       else if (menu_type == MENU_AUTOCONFIG_DIR_PATH)
       {
-         if ((setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "joypad_autoconfig_dir")))
+         if ((setting = (rarch_setting_t*)setting_data_find_setting(
+                     setting_data, "joypad_autoconfig_dir")))
             menu_common_setting_set_current_string(setting, dir);
 
          menu_flush_stack_type(MENU_SETTINGS_PATH_OPTIONS);
       }
       else if (menu_type == MENU_EXTRACTION_DIR_PATH)
       {
-         if ((setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "extraction_directory")))
+         if ((setting = (rarch_setting_t*)setting_data_find_setting(
+                     setting_data, "extraction_directory")))
             menu_common_setting_set_current_string(setting, dir);
 
          menu_flush_stack_type(MENU_SETTINGS_PATH_OPTIONS);
@@ -1932,7 +2044,9 @@ static int menu_action_ok(const char *dir, unsigned menu_type)
       {
          if (driver.menu->defer_core)
          {
-            int ret = menu_defer_core(driver.menu->core_info, dir, path, driver.menu->deferred_path, sizeof(driver.menu->deferred_path));
+            int ret = menu_defer_core(driver.menu->core_info, dir, path,
+                  driver.menu->deferred_path,
+                  sizeof(driver.menu->deferred_path));
 
             if (ret == -1)
             {
@@ -1945,7 +2059,8 @@ static int menu_action_ok(const char *dir, unsigned menu_type)
          }
          else
          {
-            fill_pathname_join(g_extern.fullpath, dir, path, sizeof(g_extern.fullpath));
+            fill_pathname_join(g_extern.fullpath, dir, path,
+                  sizeof(g_extern.fullpath));
             g_extern.lifecycle_state |= (1ULL << MODE_LOAD_GAME);
 
             menu_flush_stack_type(MENU_SETTINGS);
@@ -1985,7 +2100,10 @@ static int menu_common_iterate(unsigned action)
       return menu_info_screen_iterate(action);
    else if (menu_common_type_is(menu_type) == MENU_SETTINGS)
       return menu_settings_iterate(action);
-   else if (menu_type == MENU_SETTINGS_CUSTOM_VIEWPORT || !strcmp(menu_label, "custom_viewport_2"))
+   else if (
+         menu_type == MENU_SETTINGS_CUSTOM_VIEWPORT ||
+         !strcmp(menu_label, "custom_viewport_2")
+         )
       return menu_viewport_iterate(action);
    else if (menu_type == MENU_SETTINGS_CUSTOM_BIND)
       return menu_custom_bind_iterate(driver.menu, action);
@@ -2002,28 +2120,35 @@ static int menu_common_iterate(unsigned action)
    {
       case MENU_ACTION_UP:
          if (driver.menu->selection_ptr >= scroll_speed)
-            menu_set_navigation(driver.menu, driver.menu->selection_ptr - scroll_speed);
+            menu_set_navigation(driver.menu,
+                  driver.menu->selection_ptr - scroll_speed);
          else
-            menu_set_navigation(driver.menu, file_list_get_size(driver.menu->selection_buf) - 1);
+            menu_set_navigation(driver.menu,
+                  file_list_get_size(driver.menu->selection_buf) - 1);
          break;
 
       case MENU_ACTION_DOWN:
-         if (driver.menu->selection_ptr + scroll_speed < file_list_get_size(driver.menu->selection_buf))
-            menu_set_navigation(driver.menu, driver.menu->selection_ptr + scroll_speed);
+         if (driver.menu->selection_ptr + scroll_speed <
+               file_list_get_size(driver.menu->selection_buf))
+            menu_set_navigation(driver.menu,
+                  driver.menu->selection_ptr + scroll_speed);
          else
             menu_clear_navigation(driver.menu);
          break;
 
       case MENU_ACTION_LEFT:
          if (driver.menu->selection_ptr > fast_scroll_speed)
-            menu_set_navigation(driver.menu, driver.menu->selection_ptr - fast_scroll_speed);
+            menu_set_navigation(driver.menu,
+                  driver.menu->selection_ptr - fast_scroll_speed);
          else
             menu_clear_navigation(driver.menu);
          break;
 
       case MENU_ACTION_RIGHT:
-         if (driver.menu->selection_ptr + fast_scroll_speed < file_list_get_size(driver.menu->selection_buf))
-            menu_set_navigation(driver.menu, driver.menu->selection_ptr + fast_scroll_speed);
+         if (driver.menu->selection_ptr + fast_scroll_speed <
+               file_list_get_size(driver.menu->selection_buf))
+            menu_set_navigation(driver.menu,
+                  driver.menu->selection_ptr + fast_scroll_speed);
          else
             menu_set_navigation_last(driver.menu);
          break;
@@ -2122,7 +2247,8 @@ static unsigned menu_current_gx_resolution = GX_RESOLUTIONS_640_480;
 
 
 
-static void menu_common_setting_set_label_perf(char *type_str, size_t type_str_size, unsigned *w, unsigned type,
+static void menu_common_setting_set_label_perf(char *type_str,
+      size_t type_str_size, unsigned *w, unsigned type,
       const struct retro_perf_counter **counters, unsigned offset)
 {
    if (counters[offset] && counters[offset]->call_cnt)
@@ -2133,7 +2259,8 @@ static void menu_common_setting_set_label_perf(char *type_str, size_t type_str_s
 #else
             "%llu ticks, %llu runs.",
 #endif
-            ((unsigned long long)counters[offset]->total / (unsigned long long)counters[offset]->call_cnt),
+            ((unsigned long long)counters[offset]->total /
+             (unsigned long long)counters[offset]->call_cnt),
             (unsigned long long)counters[offset]->call_cnt);
    }
    else
@@ -2146,7 +2273,8 @@ static void menu_common_setting_set_label_perf(char *type_str, size_t type_str_s
 static void menu_common_setting_set_label_st_bool(rarch_setting_t *setting,
       char *type_str, size_t type_str_size)
 {
-   strlcpy(type_str, *setting->value.boolean ? setting->boolean.on_label : setting->boolean.off_label, type_str_size);
+   strlcpy(type_str, *setting->value.boolean ? setting->boolean.on_label :
+         setting->boolean.off_label, type_str_size);
 }
 
 static void menu_common_setting_set_label_st_float(rarch_setting_t *setting,
@@ -2159,12 +2287,14 @@ static void menu_common_setting_set_label_st_float(rarch_setting_t *setting,
       unsigned sample_points = 0;
 
       if (driver_monitor_fps_statistics(&refresh_rate, &deviation, &sample_points))
-         snprintf(type_str, type_str_size, "%.3f Hz (%.1f%% dev, %u samples)", refresh_rate, 100.0 * deviation, sample_points);
+         snprintf(type_str, type_str_size, "%.3f Hz (%.1f%% dev, %u samples)",
+               refresh_rate, 100.0 * deviation, sample_points);
       else
          strlcpy(type_str, "N/A", type_str_size);
    }
    else
-      snprintf(type_str, type_str_size, setting->rounding_fraction, *setting->value.fraction);
+      snprintf(type_str, type_str_size, setting->rounding_fraction,
+            *setting->value.fraction);
 }
 
 static void menu_common_setting_set_label_st_uint(rarch_setting_t *setting,
@@ -2173,7 +2303,8 @@ static void menu_common_setting_set_label_st_uint(rarch_setting_t *setting,
    if (setting && !strcmp(setting->name, "video_monitor_index"))
    {
       if (*setting->value.unsigned_integer)
-         snprintf(type_str, type_str_size, "%d", *setting->value.unsigned_integer);
+         snprintf(type_str, type_str_size, "%d",
+               *setting->value.unsigned_integer);
       else
          strlcpy(type_str, "0 (Auto)", type_str_size);
    }
@@ -2181,11 +2312,14 @@ static void menu_common_setting_set_label_st_uint(rarch_setting_t *setting,
       strlcpy(type_str, rotation_lut[*setting->value.unsigned_integer],
             type_str_size);
    else if (setting && !strcmp(setting->name, "aspect_ratio_index"))
-      strlcpy(type_str, aspectratio_lut[*setting->value.unsigned_integer].name, type_str_size);
+      strlcpy(type_str,
+            aspectratio_lut[*setting->value.unsigned_integer].name,
+            type_str_size);
    else if (setting && !strcmp(setting->name, "autosave_interval"))
    {
       if (*setting->value.unsigned_integer)
-         snprintf(type_str, type_str_size, "%u seconds", *setting->value.unsigned_integer);
+         snprintf(type_str, type_str_size, "%u seconds",
+               *setting->value.unsigned_integer);
       else
          strlcpy(type_str, "OFF", type_str_size);
    }
@@ -2217,10 +2351,12 @@ static void menu_common_setting_set_label_st_uint(rarch_setting_t *setting,
          "3 (Error)"
       };
 
-      strlcpy(type_str, modes[*setting->value.unsigned_integer], type_str_size);
+      strlcpy(type_str, modes[*setting->value.unsigned_integer],
+            type_str_size);
    }
    else
-      snprintf(type_str, type_str_size, "%d", *setting->value.unsigned_integer);
+      snprintf(type_str, type_str_size, "%d",
+            *setting->value.unsigned_integer);
 }
 
 static void handle_setting_label(char *type_str,
@@ -2233,7 +2369,10 @@ static void handle_setting_label(char *type_str,
    else if (setting->type == ST_FLOAT)
       menu_common_setting_set_label_st_float(setting, type_str, type_str_size);
    else if (setting->type == ST_DIR)
-      strlcpy(type_str, *setting->value.string ? setting->value.string : setting->dir.empty_path, type_str_size);
+      strlcpy(type_str,
+            *setting->value.string ?
+            setting->value.string : setting->dir.empty_path,
+            type_str_size);
    else if (setting->type == ST_PATH)
       strlcpy(type_str, path_basename(setting->value.string), type_str_size);
    else if (setting->type == ST_STRING)
@@ -2249,19 +2388,27 @@ static void menu_common_setting_set_label(char *type_str,
    rarch_setting_t *setting = (rarch_setting_t*)setting_data_find_setting(setting_data,
          driver.menu->selection_buf->list[index].label);
 
-   if (type >= MENU_SETTINGS_PERF_COUNTERS_BEGIN && type <= MENU_SETTINGS_PERF_COUNTERS_END)
-      menu_common_setting_set_label_perf(type_str, type_str_size, w, type, perf_counters_rarch,
+   if (type >= MENU_SETTINGS_PERF_COUNTERS_BEGIN
+         && type <= MENU_SETTINGS_PERF_COUNTERS_END)
+      menu_common_setting_set_label_perf(type_str, type_str_size, w, type,
+            perf_counters_rarch,
             type - MENU_SETTINGS_PERF_COUNTERS_BEGIN);
-   else if (type >= MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_BEGIN && type <= MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_END)
-      menu_common_setting_set_label_perf(type_str, type_str_size, w, type, perf_counters_libretro,
+   else if (type >= MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_BEGIN
+         && type <= MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_END)
+      menu_common_setting_set_label_perf(type_str, type_str_size, w, type,
+            perf_counters_libretro,
             type - MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_BEGIN);
-   else if (type >= MENU_SETTINGS_BIND_BEGIN && type <= MENU_SETTINGS_BIND_ALL_LAST)
+   else if (type >= MENU_SETTINGS_BIND_BEGIN &&
+         type <= MENU_SETTINGS_BIND_ALL_LAST)
    {
       const struct retro_keybind *auto_bind = 
-         (const struct retro_keybind*)input_get_auto_bind(driver.menu->current_pad,
+         (const struct retro_keybind*)input_get_auto_bind(
+               driver.menu->current_pad,
                type - MENU_SETTINGS_BIND_BEGIN);
 
-      input_get_bind_string(type_str, &g_settings.input.binds[driver.menu->current_pad][type - MENU_SETTINGS_BIND_BEGIN], auto_bind, type_str_size);
+      input_get_bind_string(type_str,
+            &g_settings.input.binds[driver.menu->current_pad]
+            [type - MENU_SETTINGS_BIND_BEGIN], auto_bind, type_str_size);
    }
    else if (setting)
       handle_setting_label(type_str, type_str_size, setting);
@@ -2304,8 +2451,12 @@ static void menu_common_setting_set_label(char *type_str,
 #elif defined(__CELLOS_LV2__)
             case MENU_SETTINGS_VIDEO_RESOLUTION:
                {
-                  unsigned width = gfx_ctx_get_resolution_width(g_extern.console.screen.resolutions.list[g_extern.console.screen.resolutions.current.idx]);
-                  unsigned height = gfx_ctx_get_resolution_height(g_extern.console.screen.resolutions.list[g_extern.console.screen.resolutions.current.idx]);
+                  unsigned width = gfx_ctx_get_resolution_width(
+                        g_extern.console.screen.resolutions.list
+                        [g_extern.console.screen.resolutions.current.idx]);
+                  unsigned height = gfx_ctx_get_resolution_height(
+                        g_extern.console.screen.resolutions.list
+                        [g_extern.console.screen.resolutions.current.idx]);
                   snprintf(type_str, type_str_size, "%dx%d", width, height);
                }
                break;
@@ -2320,7 +2471,9 @@ static void menu_common_setting_set_label(char *type_str,
                break;
             case MENU_SETTINGS_DISK_INDEX:
                {
-                  const struct retro_disk_control_callback *control = &g_extern.system.disk_control;
+                  const struct retro_disk_control_callback *control =
+                     (const struct retro_disk_control_callback*)
+                     &g_extern.system.disk_control;
                   unsigned images = control->get_num_images();
                   unsigned current = control->get_image_index();
                   if (current >= images)
@@ -2341,19 +2494,23 @@ static void menu_common_setting_set_label(char *type_str,
                strlcpy(type_str, "...", type_str_size);
                break;
             case MENU_SETTINGS_BIND_PLAYER:
-               snprintf(type_str, type_str_size, "#%d", driver.menu->current_pad + 1);
+               snprintf(type_str, type_str_size, "#%d",
+                     driver.menu->current_pad + 1);
                break;
             case MENU_SETTINGS_BIND_DEVICE:
                {
-                  int map = g_settings.input.joypad_map[driver.menu->current_pad];
+                  int map = g_settings.input.joypad_map
+                     [driver.menu->current_pad];
                   if (map >= 0 && map < MAX_PLAYERS)
                   {
-                     const char *device_name = g_settings.input.device_names[map];
+                     const char *device_name = 
+                        g_settings.input.device_names[map];
 
                      if (*device_name)
                         strlcpy(type_str, device_name, type_str_size);
                      else
-                        snprintf(type_str, type_str_size, "N/A (port #%u)", map);
+                        snprintf(type_str, type_str_size,
+                              "N/A (port #%u)", map);
                   }
                   else
                      strlcpy(type_str, "Disabled", type_str_size);
@@ -2368,22 +2525,27 @@ static void menu_common_setting_set_label(char *type_str,
                      "Dual Analog",
                   };
 
-                  strlcpy(type_str, modes[g_settings.input.analog_dpad_mode[driver.menu->current_pad] % ANALOG_DPAD_LAST], type_str_size);
+                  strlcpy(type_str, modes[g_settings.input.analog_dpad_mode
+                        [driver.menu->current_pad] % ANALOG_DPAD_LAST],
+                        type_str_size);
                }
                break;
             case MENU_SETTINGS_BIND_DEVICE_TYPE:
                {
                   const struct retro_controller_description *desc = NULL;
                   if (driver.menu->current_pad < g_extern.system.num_ports)
-                     desc = libretro_find_controller_description(&g_extern.system.ports[driver.menu->current_pad],
-                           g_settings.input.libretro_device[driver.menu->current_pad]);
+                     desc = libretro_find_controller_description(
+                           &g_extern.system.ports[driver.menu->current_pad],
+                           g_settings.input.libretro_device
+                           [driver.menu->current_pad]);
 
                   const char *name = desc ? desc->desc : NULL;
                   if (!name)
                   {
                      /* Find generic name. */
 
-                     switch (g_settings.input.libretro_device[driver.menu->current_pad])
+                     switch (g_settings.input.libretro_device
+                           [driver.menu->current_pad])
                      {
                         case RETRO_DEVICE_NONE:
                            name = "None";
@@ -2404,7 +2566,8 @@ static void menu_common_setting_set_label(char *type_str,
                }
                break;
             case MENU_SETTINGS_CUSTOM_BIND_MODE:
-               strlcpy(type_str, driver.menu->bind_mode_keyboard ? "RetroKeyboard" : "RetroPad", type_str_size);
+               strlcpy(type_str, driver.menu->bind_mode_keyboard ?
+                     "RetroKeyboard" : "RetroPad", type_str_size);
                break;
             default:
                *type_str = '\0';
