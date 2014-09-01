@@ -92,8 +92,8 @@ int menu_entries_push(menu_handle_t *menu,
       file_list_clear(menu->selection_buf);
       add_setting_entry(menu,"core_list", MENU_SETTINGS_CORE, setting_data);
       add_setting_entry(menu,"history_list", MENU_SETTINGS_OPEN_HISTORY, setting_data);
-      add_setting_entry(menu,"detect_core_list", MENU_SETTINGS_OPEN_FILEBROWSER_DEFERRED_CORE, setting_data);
-      add_setting_entry(menu,"load_content", MENU_SETTINGS_OPEN_FILEBROWSER, setting_data);
+      add_setting_entry(menu,"detect_core_list", 0, setting_data);
+      add_setting_entry(menu,"load_content", 0, setting_data);
       add_setting_entry(menu,"core_options", MENU_SETTINGS_CORE_OPTIONS, setting_data);
       add_setting_entry(menu,"core_information", MENU_SETTINGS_CORE_INFO, setting_data);
       add_setting_entry(menu,"settings", MENU_SETTINGS_OPTIONS, setting_data);
