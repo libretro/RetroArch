@@ -78,7 +78,7 @@ void menu_entries_pop(void)
    }
 }
 
-int menu_entries_push(menu_handle_t *menu,
+int menu_entries_push_list(menu_handle_t *menu,
       const char *path, const char *label,
       unsigned menu_type)
 {
@@ -596,7 +596,7 @@ int menu_parse_and_resolve(void)
          menu_type == MENU_SETTINGS_DEFERRED_CORE ||
          menu_type == MENU_SETTINGS_OPEN_HISTORY
       )
-      return menu_entries_push(driver.menu, dir, label, menu_type);
+      return menu_entries_push_list(driver.menu, dir, label, menu_type);
 
    if (menu_parse_check(menu_type) == -1)
       return - 1;
@@ -764,7 +764,7 @@ int menu_parse_and_resolve(void)
             is_dir ? menu_type : MENU_FILE_PLAIN, 0);
    }
 
-   menu_entries_push(driver.menu, dir, label, menu_type);
+   menu_entries_push_list(driver.menu, dir, label, menu_type);
    string_list_free(str_list);
 
    switch (menu_type)
@@ -827,5 +827,17 @@ void menu_flush_stack_type(unsigned final_type)
    {
       file_list_pop(driver.menu->menu_stack, &driver.menu->selection_ptr);
       file_list_get_last(driver.menu->menu_stack, &path, &label, &type);
+   }
+}
+
+void menu_entries_push(file_list_t *list,
+      const char *path, const char *label, unsigned type,
+      size_t directory_ptr, unsigned action)
+{
+   if (action == MENU_ACTION_OK)
+   {
+      file_list_push(list, path, label, type, directory_ptr);
+      menu_clear_navigation(driver.menu);
+      driver.menu->need_refresh = true;
    }
 }

@@ -312,7 +312,7 @@ static int menu_common_shader_manager_setting_toggle(unsigned id, unsigned actio
    }
    else if ((id == MENU_SETTINGS_SHADER_PARAMETERS
             || id == MENU_SETTINGS_SHADER_PRESET_PARAMETERS))
-      menu_common_setting_push_current_menu(driver.menu->menu_stack, "",
+      menu_entries_push(driver.menu->menu_stack, "",
             "shader_parameters", id, driver.menu->selection_ptr, action);
    else if (id >= MENU_SETTINGS_SHADER_PARAMETER_0 && id <= MENU_SETTINGS_SHADER_PARAMETER_LAST)
    {
@@ -359,7 +359,7 @@ static int menu_common_shader_manager_setting_toggle(unsigned id, unsigned actio
       switch (action)
       {
          case MENU_ACTION_OK:
-            menu_common_setting_push_current_menu(driver.menu->menu_stack,
+            menu_entries_push(driver.menu->menu_stack,
                   g_settings.video.shader_dir, "video_shader_preset",
                   id, driver.menu->selection_ptr, action);
             break;
