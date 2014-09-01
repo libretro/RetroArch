@@ -508,7 +508,7 @@ static int rmenu_input_postprocess(uint64_t old_state)
          g_extern.main_is_init &&
          !g_extern.libretro_dummy)
    {
-      g_extern.lifecycle_state |= (1ULL << MODE_GAME);
+      rarch_main_command(RARCH_CMD_RESUME);
       return -1;
    }
 

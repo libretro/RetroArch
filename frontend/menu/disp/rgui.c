@@ -643,7 +643,7 @@ static void *rgui_init(void)
       RARCH_ERR("No font bitmap or binary, abort");
       /* TODO - should be refactored - perhaps don't do rarch_fail but instead
        * exit program */
-      g_extern.lifecycle_state &= ~((1ULL << MODE_MENU) | (1ULL << MODE_GAME));
+      rarch_main_command(RARCH_CMD_QUIT_RETROARCH);
       return NULL;
    }
 
@@ -666,7 +666,7 @@ static int rgui_input_postprocess(uint64_t old_state)
          g_extern.main_is_init &&
          !g_extern.libretro_dummy)
    {
-      g_extern.lifecycle_state |= (1ULL << MODE_GAME);
+      rarch_main_command(RARCH_CMD_RESUME);
       return -1;
    }
 
