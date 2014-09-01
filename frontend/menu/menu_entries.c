@@ -502,8 +502,7 @@ int menu_entries_push_list(menu_handle_t *menu,
                   MENU_SETTINGS_CUSTOM_BIND_ALL, 0);
             file_list_push(menu->selection_buf, "Default All (RetroPad)", "",
                   MENU_SETTINGS_CUSTOM_BIND_DEFAULT_ALL, 0);
-            add_setting_entry(menu,"osk_enable", MENU_SETTINGS_ONSCREEN_KEYBOARD_ENABLE,
-                  setting_data);
+            add_setting_entry(menu,"osk_enable", 0, setting_data);
             for (i = MENU_SETTINGS_BIND_BEGIN; i <= MENU_SETTINGS_BIND_ALL_LAST; i++)
                file_list_push(menu->selection_buf,
                      input_config_bind_map[i - MENU_SETTINGS_BIND_BEGIN].desc,
