@@ -169,11 +169,6 @@ typedef enum
    MENU_SETTINGS_PERF_COUNTERS_END = MENU_SETTINGS_PERF_COUNTERS_BEGIN + (MAX_COUNTERS - 1)
 } menu_settings_t;
 
-void menu_poll_bind_get_rested_axes(struct menu_bind_state *state);
-void menu_poll_bind_state(struct menu_bind_state *state);
-bool menu_poll_find_trigger(struct menu_bind_state *state, struct menu_bind_state *new_state);
-bool menu_custom_bind_keyboard_cb(void *data, unsigned code);
-
 void *menu_init(const void *data);
 bool menu_iterate(void);
 void menu_free(void *data);
