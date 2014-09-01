@@ -1492,7 +1492,6 @@ static int menu_viewport_iterate(unsigned action)
    char msg[64];
    struct retro_game_geometry *geom = NULL;
    const char *base_msg = NULL;
-   const char *path = NULL;
    const char *label = NULL;
    unsigned menu_type = 0;
    rarch_viewport_t *custom = (rarch_viewport_t*)
@@ -2074,7 +2073,6 @@ static int menu_common_iterate(unsigned action)
    int ret = 0;
    unsigned menu_type = 0;
    const char *path = NULL;
-   const char *label = NULL;
    const char *menu_label = NULL;
 
    if (!driver.menu)
@@ -2236,9 +2234,6 @@ static unsigned menu_gx_resolutions[GX_RESOLUTIONS_LAST][2] = {
 
 static unsigned menu_current_gx_resolution = GX_RESOLUTIONS_640_480;
 #endif
-
-
-
 
 static void menu_common_setting_set_label_perf(char *type_str,
       size_t type_str_size, unsigned *w, unsigned type,
