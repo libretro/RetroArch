@@ -1147,11 +1147,6 @@ static int menu_setting_set(unsigned id, unsigned action)
                      gfx_shader_resolve_parameters(NULL, driver.menu->shader);
                }
                break;
-            case MENU_SETTINGS_SHADER_PRESET_SAVE:
-               if (action == MENU_ACTION_OK)
-                  menu_key_start_line(driver.menu, "Preset Filename: ",
-                        "shader_preset_save", preset_filename_callback);
-               break;
 #endif
             default:
                break;
@@ -1198,6 +1193,12 @@ static int menu_setting_ok_toggle(unsigned type,
       return 0;
    }
 #ifdef HAVE_SHADER_MANAGER
+   else if (type == MENU_SETTINGS_SHADER_PRESET_SAVE)
+   {
+      menu_key_start_line(driver.menu, "Preset Filename: ",
+            "shader_preset_save", preset_filename_callback);
+      return 0;
+   }
    else if (type == MENU_SETTINGS_SHADER_APPLY)
    {
       struct gfx_shader *shader = (struct gfx_shader*)driver.menu->shader;
