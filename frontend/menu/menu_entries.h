@@ -24,7 +24,6 @@ void menu_entries_push(file_list_t *list,
       size_t directory_ptr, unsigned action);
 int menu_entries_push_list(menu_handle_t *menu, const char *path,
       const char *label, unsigned menu_type);
-void menu_entries_push_info(void);
 int menu_parse_check(unsigned menu_type);
 int menu_parse_and_resolve(void);
 void menu_entries_pop(void);

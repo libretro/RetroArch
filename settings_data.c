@@ -1479,7 +1479,7 @@ static void general_write_handler(const void *data)
       if (*setting->value.boolean)
       {
 #ifdef HAVE_MENU
-         menu_entries_push_info();
+         menu_entries_push(driver.menu->menu_stack, "", "help", 0, 0, MENU_ACTION_OK);
 #endif
          *setting->value.boolean = false;
       }
