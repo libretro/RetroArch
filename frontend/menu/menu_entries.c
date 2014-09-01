@@ -797,3 +797,8 @@ int menu_parse_and_resolve(void)
    
    return 0;
 }
+
+void menu_entries_push_info(void)
+{
+   file_list_push(driver.menu->menu_stack, "", "help", 0, 0);
+}

@@ -33,6 +33,10 @@
 
 #endif
 
+#ifdef HAVE_MENU
+#include "frontend/menu/menu_entries.h"
+#endif
+
 static void get_input_config_prefix(char *buf, size_t sizeof_buf,
       const rarch_setting_t *setting)
 {
@@ -1474,8 +1478,7 @@ static void general_write_handler(const void *data)
       if (*setting->value.boolean)
       {
 #ifdef HAVE_MENU
-         extern void menu_push_info_screen(void);
-         menu_push_info_screen();
+         menu_entries_push_info();
 #endif
          *setting->value.boolean = false;
       }

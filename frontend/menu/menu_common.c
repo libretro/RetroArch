@@ -708,11 +708,6 @@ void menu_build_scroll_indices(file_list_t *buf)
       buf->size - 1;
 }
 
-void menu_push_info_screen(void)
-{
-   file_list_push(driver.menu->menu_stack, "", "help", 0, 0);
-}
-
 unsigned menu_common_type_is(unsigned type)
 {
    if (
