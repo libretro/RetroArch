@@ -372,7 +372,7 @@ void lakka_draw_background(void)
    gl->coords.color = color;
    glBindTexture(GL_TEXTURE_2D, textures[TEXTURE_BG].id);
 
-   if (gl->shader && gl->shader->use)
+   if (gl && gl->shader && gl->shader->use)
       gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
 
    gl->coords.vertices = 4;
@@ -415,7 +415,7 @@ void lakka_draw_icon(GLuint texture, float x, float y, float alpha, float rotati
    gl->coords.color = color;
    glBindTexture(GL_TEXTURE_2D, texture);
 
-   if (gl->shader && gl->shader->use)
+   if (gl && gl->shader && gl->shader->use)
       gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
 
    math_matrix mymat;
