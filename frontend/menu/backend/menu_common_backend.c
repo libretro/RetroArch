@@ -1363,7 +1363,7 @@ static int menu_settings_iterate(unsigned action)
    else if (type == MENU_SETTINGS_DISK_APPEND)
       dir = g_settings.menu_content_directory;
 
-   if (driver.menu->need_refresh)
+   if (driver.menu->need_refresh && action != MENU_ACTION_MESSAGE)
       action = MENU_ACTION_NOOP;
 
    switch (action)
