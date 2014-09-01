@@ -404,11 +404,6 @@ static void rmenu_render(void)
             w = 5;
          }
       }
-      else if (menu_type == MENU_SETTINGS_OPEN_HISTORY)
-      {
-         *type_str = '\0';
-         w = 0;
-      }
       else if (type >= MENU_SETTINGS_CORE_OPTION_START)
          strlcpy(type_str,
                core_option_get_val(g_extern.system.core_options, type - MENU_SETTINGS_CORE_OPTION_START),
