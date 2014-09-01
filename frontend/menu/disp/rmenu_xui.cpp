@@ -639,9 +639,6 @@ static void rmenu_xui_render(void)
       char type_str_buf[64];
       bool selected = i == driver.menu->selection_ptr;
 
-      strlcpy(entry_title_buf, path, sizeof(entry_title_buf));
-      strlcpy(type_str_buf, type_str, sizeof(type_str_buf));
-
 #if 0
       if ((type == MENU_FILE_PLAIN || type == MENU_FILE_DIRECTORY))
          menu_ticker_line(entry_title_buf, RXUI_TERM_WIDTH - (w + 1 + 2), g_extern.frame_count / 15, path, selected);

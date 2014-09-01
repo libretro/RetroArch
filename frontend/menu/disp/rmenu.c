@@ -420,9 +420,6 @@ static void rmenu_render(void)
       char type_str_buf[64];
       bool selected = i == menu->selection_ptr;
 
-      strlcpy(entry_title_buf, path, sizeof(entry_title_buf));
-      strlcpy(type_str_buf, type_str, sizeof(type_str_buf));
-
       menu_ticker_line(entry_title_buf, RMENU_TERM_WIDTH - (w + 1 + 2), g_extern.frame_count / 15, path, selected);
       menu_ticker_line(type_str_buf, w, g_extern.frame_count / 15, type_str, selected);
 
