@@ -1319,11 +1319,8 @@ static int menu_common_setting_set(unsigned id, unsigned action)
 #endif
 
 
-static int menu_common_setting_toggle(unsigned id, unsigned action,
-      unsigned menu_type)
+static int menu_common_setting_toggle(unsigned id, unsigned action)
 {
-   (void)menu_type;
-
    if ((id >= MENU_SETTINGS_SHADER_FILTER) &&
          (id <= MENU_SETTINGS_SHADER_LAST))
    {
@@ -1365,8 +1362,6 @@ static int menu_settings_iterate(unsigned action)
       dir = g_settings.menu_config_directory;
    else if (type == MENU_SETTINGS_DISK_APPEND)
       dir = g_settings.menu_content_directory;
-
-   file_list_get_last(driver.menu->menu_stack, NULL, NULL, &menu_type);
 
    if (driver.menu->need_refresh)
       action = MENU_ACTION_NOOP;
@@ -1452,7 +1447,7 @@ static int menu_settings_iterate(unsigned action)
          }
          else
          {
-            int ret = menu_common_setting_toggle(type, action, menu_type);
+            int ret = menu_common_setting_toggle(type, action);
 
             if (ret)
                return ret;
