@@ -514,12 +514,6 @@ static void menu_common_setting_push_current_menu(file_list_t *list,
    }
 }
 
-static void menu_action_cancel(void)
-{
-   file_list_pop(driver.menu->menu_stack, &driver.menu->selection_ptr);
-   driver.menu->need_refresh = true;
-}
-
 static int menu_common_core_setting_toggle(unsigned setting, unsigned action)
 {
    unsigned index = setting - MENU_SETTINGS_CORE_OPTION_START;
@@ -1340,8 +1334,7 @@ static int menu_settings_iterate(unsigned action)
          break;
 
       case MENU_ACTION_CANCEL:
-         if (file_list_get_size(driver.menu->menu_stack) > 1)
-            menu_action_cancel();
+         menu_entries_pop();
          break;
       case MENU_ACTION_SELECT:
          {
@@ -2057,8 +2050,7 @@ static int menu_common_iterate(unsigned action)
          break;
 
       case MENU_ACTION_CANCEL:
-         if (file_list_get_size(driver.menu->menu_stack) > 1)
-            menu_action_cancel();
+         menu_entries_pop();
          break;
 
       case MENU_ACTION_OK:

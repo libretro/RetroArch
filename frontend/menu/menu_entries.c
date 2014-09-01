@@ -69,6 +69,15 @@ void menu_entries_push_perfcounter(menu_handle_t *menu,
                id + i, 0);
 }
 
+void menu_entries_pop(void)
+{
+   if (file_list_get_size(driver.menu->menu_stack) > 1)
+   {
+      file_list_pop(driver.menu->menu_stack, &driver.menu->selection_ptr);
+      driver.menu->need_refresh = true;
+   }
+}
+
 int menu_entries_push(menu_handle_t *menu,
       const char *path, const char *label,
       unsigned menu_type)
@@ -802,3 +811,4 @@ void menu_entries_push_info(void)
 {
    file_list_push(driver.menu->menu_stack, "", "help", 0, 0);
 }
+

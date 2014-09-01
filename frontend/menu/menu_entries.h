@@ -24,5 +24,6 @@ int menu_entries_push(menu_handle_t *menu, const char *path,
 void menu_entries_push_info(void);
 int menu_parse_check(unsigned menu_type);
 int menu_parse_and_resolve(void);
+void menu_entries_pop(void);
 
 #endif
