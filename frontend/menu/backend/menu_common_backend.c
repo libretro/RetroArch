@@ -862,76 +862,15 @@ static void handle_setting(rarch_setting_t *setting,
    }
 }
 
-static int menu_common_setting_set(unsigned id, unsigned action)
+static int menu_setting_set(unsigned id, unsigned action)
 {
-   struct retro_perf_counter **counters;
    unsigned port = driver.menu->current_pad;
    rarch_setting_t *setting = (rarch_setting_t*)get_last_setting(
          driver.menu->selection_buf, driver.menu->selection_ptr,
          setting_data_get_list()
          );
 
-   if (id >= MENU_SETTINGS_PERF_COUNTERS_BEGIN &&
-         id <= MENU_SETTINGS_PERF_COUNTERS_END)
-   {
-      counters = (struct retro_perf_counter**)perf_counters_rarch;
-      return menu_common_setting_set_perf(id, action, counters,
-            id - MENU_SETTINGS_PERF_COUNTERS_BEGIN);
-   }
-   else if (id >= MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_BEGIN &&
-         id <= MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_END)
-   {
-      counters = (struct retro_perf_counter**)perf_counters_libretro;
-      return menu_common_setting_set_perf(id, action, counters,
-            id - MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_BEGIN);
-   }
-   else if (id >= MENU_SETTINGS_BIND_BEGIN &&
-         id <= MENU_SETTINGS_BIND_ALL_LAST)
-   {
-      struct retro_keybind *bind = (struct retro_keybind*)
-         &g_settings.input.binds[port][id - MENU_SETTINGS_BIND_BEGIN];
-
-      if (action == MENU_ACTION_OK)
-      {
-         driver.menu->binds.begin  = id;
-         driver.menu->binds.last   = id;
-         driver.menu->binds.target = bind;
-         driver.menu->binds.player = port;
-         file_list_push(driver.menu->menu_stack, "", "",
-               driver.menu->bind_mode_keyboard ?
-               MENU_SETTINGS_CUSTOM_BIND_KEYBOARD : MENU_SETTINGS_CUSTOM_BIND,
-               driver.menu->selection_ptr);
-
-         if (driver.menu->bind_mode_keyboard)
-         {
-            driver.menu->binds.timeout_end = rarch_get_time_usec() +
-               MENU_KEYBOARD_BIND_TIMEOUT_SECONDS * 1000000;
-            input_keyboard_wait_keys(driver.menu,
-                  menu_custom_bind_keyboard_cb);
-         }
-         else
-         {
-            menu_poll_bind_get_rested_axes(&driver.menu->binds);
-            menu_poll_bind_state(&driver.menu->binds);
-         }
-      }
-      else if (action == MENU_ACTION_START)
-      {
-         if (driver.menu->bind_mode_keyboard)
-         {
-            const struct retro_keybind *def_binds = port ?
-               retro_keybinds_rest : retro_keybinds_1;
-            bind->key = def_binds[id - MENU_SETTINGS_BIND_BEGIN].key;
-         }
-         else
-         {
-            bind->joykey = NO_BTN;
-            bind->joyaxis = AXIS_NONE;
-         }
-      }
-      return 0;
-   }
-   else if (setting)
+   if (setting)
       handle_setting(setting, id, action);
    else
    {
@@ -1318,38 +1257,42 @@ static int menu_common_setting_set(unsigned id, unsigned action)
 #include "menu_common_shader_backend.c"
 #endif
 
-
-static int menu_setting_toggle(unsigned type,
+static int menu_setting_ok_toggle(unsigned type,
       const char *dir, const char *label,
       unsigned action)
 {
-   if ((
-            !strcmp(label, "load_content") ||
-            !strcmp(label, "detect_core_list"))
-         && action == MENU_ACTION_OK)
+   if (
+         !strcmp(label, "load_content") ||
+         !strcmp(label, "detect_core_list")
+      )
    {
       driver.menu->defer_core = (!strcmp(label, "detect_core_list"));
       menu_entries_push(driver.menu->menu_stack,
             g_settings.menu_content_directory, "", MENU_FILE_DIRECTORY,
             driver.menu->selection_ptr);
+      return 0;
    }
-   else if ((!strcmp(label, "history_list") ||
-            menu_common_type_is(type) == MENU_FILE_DIRECTORY)
-         && action == MENU_ACTION_OK)
+   else if (
+         !strcmp(label, "history_list") ||
+         menu_common_type_is(type) == MENU_FILE_DIRECTORY)
+   {
       menu_entries_push(driver.menu->menu_stack,
             "", "", type, driver.menu->selection_ptr);
-   else if ((
-            menu_common_type_is(type) == MENU_SETTINGS ||
-            type == MENU_SETTINGS_CORE ||
-            type == MENU_SETTINGS_CONFIG ||
-            type == MENU_SETTINGS_DISK_APPEND) &&
-         action == MENU_ACTION_OK
-      )
+      return 0;
+   }
+   else if (
+         menu_common_type_is(type) == MENU_SETTINGS ||
+         type == MENU_SETTINGS_CORE ||
+         type == MENU_SETTINGS_CONFIG ||
+         type == MENU_SETTINGS_DISK_APPEND
+         )
+   {
       menu_entries_push(driver.menu->menu_stack,
             dir ? dir : label, "", type,
             driver.menu->selection_ptr);
-   else if (type == MENU_SETTINGS_CUSTOM_VIEWPORT &&
-         action == MENU_ACTION_OK)
+      return 0;
+   }
+   else if (type == MENU_SETTINGS_CUSTOM_VIEWPORT)
    {
       file_list_push(driver.menu->menu_stack, "", "",
             type, driver.menu->selection_ptr);
@@ -1367,7 +1310,20 @@ static int menu_setting_toggle(unsigned type,
       g_settings.video.aspect_ratio_idx = ASPECT_RATIO_CUSTOM;
 
       rarch_main_command(RARCH_CMD_VIDEO_SET_ASPECT_RATIO);
+      return 0;
    }
+   return -1;
+}
+
+static int menu_setting_toggle(unsigned type,
+      const char *dir, const char *label,
+      unsigned action)
+{
+   struct retro_perf_counter **counters = NULL;
+
+   if (action == MENU_ACTION_OK &&
+        menu_setting_ok_toggle(type, dir, label, action) == 0)
+      return 0;
    else if ((type >= MENU_SETTINGS_SHADER_FILTER) &&
          (type <= MENU_SETTINGS_SHADER_LAST))
    {
@@ -1378,8 +1334,68 @@ static int menu_setting_toggle(unsigned type,
    }
    else if ((type >= MENU_SETTINGS_CORE_OPTION_START))
       return menu_common_core_setting_toggle(type, action);
+   else if (type >= MENU_SETTINGS_PERF_COUNTERS_BEGIN &&
+         type <= MENU_SETTINGS_PERF_COUNTERS_END)
+   {
+      counters = (struct retro_perf_counter**)perf_counters_rarch;
+      return menu_common_setting_set_perf(type, action, counters,
+            type - MENU_SETTINGS_PERF_COUNTERS_BEGIN);
+   }
+   else if (type >= MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_BEGIN &&
+         type <= MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_END)
+   {
+      counters = (struct retro_perf_counter**)perf_counters_libretro;
+      return menu_common_setting_set_perf(type, action, counters,
+            type - MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_BEGIN);
+   }
+   else if (type >= MENU_SETTINGS_BIND_BEGIN &&
+         type <= MENU_SETTINGS_BIND_ALL_LAST)
+   {
+      struct retro_keybind *bind = (struct retro_keybind*)
+         &g_settings.input.binds[driver.menu->current_pad]
+         [type - MENU_SETTINGS_BIND_BEGIN];
+
+      if (action == MENU_ACTION_OK)
+      {
+         driver.menu->binds.begin  = type;
+         driver.menu->binds.last   = type;
+         driver.menu->binds.target = bind;
+         driver.menu->binds.player = driver.menu->current_pad;
+         file_list_push(driver.menu->menu_stack, "", "",
+               driver.menu->bind_mode_keyboard ?
+               MENU_SETTINGS_CUSTOM_BIND_KEYBOARD : MENU_SETTINGS_CUSTOM_BIND,
+               driver.menu->selection_ptr);
+
+         if (driver.menu->bind_mode_keyboard)
+         {
+            driver.menu->binds.timeout_end = rarch_get_time_usec() +
+               MENU_KEYBOARD_BIND_TIMEOUT_SECONDS * 1000000;
+            input_keyboard_wait_keys(driver.menu,
+                  menu_custom_bind_keyboard_cb);
+         }
+         else
+         {
+            menu_poll_bind_get_rested_axes(&driver.menu->binds);
+            menu_poll_bind_state(&driver.menu->binds);
+         }
+      }
+      else if (action == MENU_ACTION_START)
+      {
+         if (driver.menu->bind_mode_keyboard)
+         {
+            const struct retro_keybind *def_binds = driver.menu->current_pad ?
+               retro_keybinds_rest : retro_keybinds_1;
+            bind->key = def_binds[type - MENU_SETTINGS_BIND_BEGIN].key;
+         }
+         else
+         {
+            bind->joykey = NO_BTN;
+            bind->joyaxis = AXIS_NONE;
+         }
+      }
+   }
    else if (driver.menu_ctx && driver.menu_ctx->backend)
-      return menu_common_setting_set(type, action);
+      return menu_setting_set(type, action);
 
    return 0;
 }

@@ -346,7 +346,7 @@ static int menu_common_shader_manager_setting_toggle(unsigned id, unsigned actio
       param->current = min(max(param->minimum, param->current), param->maximum);
    }
    else if ((id == MENU_SETTINGS_SHADER_APPLY || id == MENU_SETTINGS_SHADER_PASSES))
-      menu_common_setting_set(id, action);
+      menu_setting_set(id, action);
    else if (((dist_shader % 3) == 0 || id == MENU_SETTINGS_SHADER_PRESET))
    {
       struct gfx_shader *shader = (struct gfx_shader*)driver.menu->shader;
