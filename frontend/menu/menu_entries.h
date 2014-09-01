@@ -21,7 +21,7 @@
 
 void menu_entries_push(file_list_t *list,
       const char *path, const char *label, unsigned type,
-      size_t directory_ptr, unsigned action);
+      size_t directory_ptr);
 int menu_entries_push_list(menu_handle_t *menu, const char *path,
       const char *label, unsigned menu_type);
 int menu_parse_check(unsigned menu_type);

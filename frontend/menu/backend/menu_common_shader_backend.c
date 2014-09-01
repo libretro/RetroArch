@@ -311,9 +311,9 @@ static int menu_common_shader_manager_setting_toggle(unsigned id, unsigned actio
          menu_common_setting_set_current_boolean(current_setting, action);
    }
    else if ((id == MENU_SETTINGS_SHADER_PARAMETERS
-            || id == MENU_SETTINGS_SHADER_PRESET_PARAMETERS))
+            || id == MENU_SETTINGS_SHADER_PRESET_PARAMETERS) && action == MENU_ACTION_OK)
       menu_entries_push(driver.menu->menu_stack, "",
-            "shader_parameters", id, driver.menu->selection_ptr, action);
+            "shader_parameters", id, driver.menu->selection_ptr);
    else if (id >= MENU_SETTINGS_SHADER_PARAMETER_0 && id <= MENU_SETTINGS_SHADER_PARAMETER_LAST)
    {
       struct gfx_shader *shader = NULL;
@@ -361,7 +361,7 @@ static int menu_common_shader_manager_setting_toggle(unsigned id, unsigned actio
          case MENU_ACTION_OK:
             menu_entries_push(driver.menu->menu_stack,
                   g_settings.video.shader_dir, "video_shader_preset",
-                  id, driver.menu->selection_ptr, action);
+                  id, driver.menu->selection_ptr);
             break;
 
          case MENU_ACTION_START:

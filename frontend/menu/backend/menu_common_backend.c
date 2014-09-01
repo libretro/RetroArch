@@ -542,8 +542,7 @@ static void defer_decision_manual(void)
    if (driver.menu)
       menu_entries_push(driver.menu->menu_stack,
             g_settings.libretro_directory, "deferred_core_list",
-            MENU_SETTINGS_DEFERRED_CORE, driver.menu->selection_ptr,
-            MENU_ACTION_OK);
+            MENU_SETTINGS_DEFERRED_CORE, driver.menu->selection_ptr);
 }
 
 static int menu_common_setting_set_perf(unsigned setting, unsigned action,
@@ -604,7 +603,7 @@ static void menu_common_setting_set_current_path_selection(
       case MENU_ACTION_OK:
          menu_entries_push(driver.menu->menu_stack,
                start_path, "path_list", type,
-               driver.menu->selection_ptr, action);
+               driver.menu->selection_ptr);
          break;
       case MENU_ACTION_START:
          *setting->value.string = '\0';
@@ -1346,19 +1345,19 @@ static int menu_settings_iterate(unsigned action)
             driver.menu->defer_core = (!strcmp(label, "detect_core_list"));
             menu_entries_push(driver.menu->menu_stack,
                   g_settings.menu_content_directory, "", MENU_FILE_DIRECTORY,
-                  driver.menu->selection_ptr, action);
+                  driver.menu->selection_ptr);
          }
          else if ((!strcmp(label, "history_list") ||
                   menu_common_type_is(type) == MENU_FILE_DIRECTORY)
                && action == MENU_ACTION_OK)
             menu_entries_push(driver.menu->menu_stack,
-                  "", "", type, driver.menu->selection_ptr, action);
+                  "", "", type, driver.menu->selection_ptr);
          else if ((menu_common_type_is(type) == MENU_SETTINGS ||
                   type == MENU_SETTINGS_CORE || type == MENU_SETTINGS_CONFIG ||
                   type == MENU_SETTINGS_DISK_APPEND) && action == MENU_ACTION_OK)
             menu_entries_push(driver.menu->menu_stack,
                   dir ? dir : label, "", type,
-                  driver.menu->selection_ptr, action);
+                  driver.menu->selection_ptr);
          else if (type == MENU_SETTINGS_CUSTOM_VIEWPORT && action == MENU_ACTION_OK)
          {
             file_list_push(driver.menu->menu_stack, "", "",
@@ -1700,8 +1699,7 @@ static int menu_action_ok(const char *dir, unsigned menu_type)
       fill_pathname_join(cat_path, dir, path, sizeof(cat_path));
 
       menu_entries_push(driver.menu->menu_stack,
-            cat_path, "browser_list", type, driver.menu->selection_ptr,
-            MENU_ACTION_OK);
+            cat_path, "browser_list", type, driver.menu->selection_ptr);
    }
    else
    {

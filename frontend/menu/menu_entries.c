@@ -827,12 +827,9 @@ void menu_flush_stack_type(unsigned final_type)
 
 void menu_entries_push(file_list_t *list,
       const char *path, const char *label, unsigned type,
-      size_t directory_ptr, unsigned action)
+      size_t directory_ptr)
 {
-   if (action == MENU_ACTION_OK)
-   {
-      file_list_push(list, path, label, type, directory_ptr);
-      menu_clear_navigation(driver.menu);
-      driver.menu->need_refresh = true;
-   }
+   file_list_push(list, path, label, type, directory_ptr);
+   menu_clear_navigation(driver.menu);
+   driver.menu->need_refresh = true;
 }
