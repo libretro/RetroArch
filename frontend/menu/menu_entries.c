@@ -563,6 +563,21 @@ int menu_entries_push(menu_handle_t *menu,
    return 0;
 }
 
+int menu_parse_check(unsigned menu_type)
+{
+   if (!((menu_type == MENU_FILE_DIRECTORY ||
+            menu_common_type_is(menu_type) == MENU_SETTINGS_SHADER_OPTIONS ||
+            menu_common_type_is(menu_type) == MENU_FILE_DIRECTORY ||
+            menu_type == MENU_SETTINGS_OVERLAY_PRESET ||
+            menu_type == MENU_CONTENT_HISTORY_PATH ||
+            menu_type == MENU_SETTINGS_VIDEO_SOFTFILTER ||
+            menu_type == MENU_SETTINGS_AUDIO_DSP_FILTER ||
+            menu_type == MENU_SETTINGS_CORE ||
+            menu_type == MENU_SETTINGS_CONFIG ||
+            menu_type == MENU_SETTINGS_DISK_APPEND)))
+      return -1;
+   return 0;
+}
 
 int menu_parse_and_resolve(void)
 {
@@ -580,16 +595,7 @@ int menu_parse_and_resolve(void)
       )
       return menu_entries_push(driver.menu, dir, label, menu_type);
 
-   if (!((menu_type == MENU_FILE_DIRECTORY ||
-            menu_common_type_is(menu_type) == MENU_SETTINGS_SHADER_OPTIONS ||
-            menu_common_type_is(menu_type) == MENU_FILE_DIRECTORY ||
-            menu_type == MENU_SETTINGS_OVERLAY_PRESET ||
-            menu_type == MENU_CONTENT_HISTORY_PATH ||
-            menu_type == MENU_SETTINGS_VIDEO_SOFTFILTER ||
-            menu_type == MENU_SETTINGS_AUDIO_DSP_FILTER ||
-            menu_type == MENU_SETTINGS_CORE ||
-            menu_type == MENU_SETTINGS_CONFIG ||
-            menu_type == MENU_SETTINGS_DISK_APPEND)))
+   if (menu_parse_check(menu_type) == -1)
       return - 1;
 
    file_list_clear(driver.menu->selection_buf);

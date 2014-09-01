@@ -1421,17 +1421,7 @@ static int menu_settings_iterate(unsigned action)
 
    file_list_get_last(driver.menu->menu_stack, &path, &label, &menu_type);
 
-   if (driver.menu->need_refresh && !(menu_type == MENU_FILE_DIRECTORY ||
-            menu_common_type_is(menu_type) == MENU_SETTINGS_SHADER_OPTIONS ||
-            menu_common_type_is(menu_type) == MENU_FILE_DIRECTORY ||
-            menu_type == MENU_SETTINGS_VIDEO_SOFTFILTER ||
-            menu_type == MENU_SETTINGS_AUDIO_DSP_FILTER ||
-            menu_type == MENU_SETTINGS_OVERLAY_PRESET ||
-            menu_type == MENU_CONTENT_HISTORY_PATH ||
-            menu_type == MENU_SETTINGS_CORE ||
-            menu_type == MENU_SETTINGS_CONFIG ||
-            menu_type == MENU_SETTINGS_DISK_APPEND ||
-            menu_type == MENU_SETTINGS_OPEN_HISTORY))
+   if (driver.menu->need_refresh && (menu_parse_check(menu_type) == -1))
    {
       driver.menu->need_refresh = false;
       menu_entries_push(driver.menu, path, label, menu_type);
@@ -1724,17 +1714,7 @@ static int menu_action_ok(const char *dir, unsigned menu_type)
 
    file_list_get_at_offset(driver.menu->selection_buf, driver.menu->selection_ptr, &path, &label, &type);
 
-   if (
-         menu_common_type_is(type) == MENU_SETTINGS_SHADER_OPTIONS ||
-         menu_common_type_is(type) == MENU_FILE_DIRECTORY ||
-         type == MENU_SETTINGS_OVERLAY_PRESET ||
-         type == MENU_SETTINGS_VIDEO_SOFTFILTER ||
-         type == MENU_SETTINGS_AUDIO_DSP_FILTER ||
-         type == MENU_CONTENT_HISTORY_PATH ||
-         type == MENU_SETTINGS_CORE ||
-         type == MENU_SETTINGS_CONFIG ||
-         type == MENU_SETTINGS_DISK_APPEND ||
-         type == MENU_FILE_DIRECTORY)
+   if (menu_parse_check(type) == 0)
    {
       char cat_path[PATH_MAX];
       fill_pathname_join(cat_path, dir, path, sizeof(cat_path));
