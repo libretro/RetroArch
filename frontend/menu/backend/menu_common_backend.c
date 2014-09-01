@@ -1379,13 +1379,7 @@ static int menu_setting_toggle(unsigned type,
 {
    struct retro_perf_counter **counters = NULL;
 
-   if (action == MENU_ACTION_OK &&
-        menu_setting_ok_toggle(type, dir, label, action) == 0)
-      return 0;
-   else if (action == MENU_ACTION_START &&
-        menu_setting_start_toggle(type, dir, label, action) == 0)
-      return 0;
-   else if ((type >= MENU_SETTINGS_SHADER_FILTER) &&
+   if ((type >= MENU_SETTINGS_SHADER_FILTER) &&
          (type <= MENU_SETTINGS_SHADER_LAST))
    {
       if (driver.menu_ctx && driver.menu_ctx->backend
@@ -1470,10 +1464,16 @@ static int menu_settings_iterate(unsigned action)
          file_list_push(driver.menu->menu_stack, "", "info_screen",
                0, driver.menu->selection_ptr);
          break;
+      case MENU_ACTION_OK:
+         if (menu_setting_ok_toggle(type, dir, label, action) == 0)
+            return 0;
+         /* fall-through */
+      case MENU_ACTION_START:
+         if (menu_setting_start_toggle(type, dir, label, action) == 0)
+            return 0;
+         /* fall-through */
       case MENU_ACTION_LEFT:
       case MENU_ACTION_RIGHT:
-      case MENU_ACTION_OK:
-      case MENU_ACTION_START:
          {
             int ret = menu_setting_toggle(type, dir,
                   label, action);
