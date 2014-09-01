@@ -1354,7 +1354,7 @@ static int menu_setting_toggle(unsigned type,
       file_list_push(driver.menu->menu_stack, "", "",
             type, driver.menu->selection_ptr);
 
-      // Start with something sane.
+      /* Start with something sane. */
       rarch_viewport_t *custom = (rarch_viewport_t*)
          &g_extern.console.screen.viewports.custom_vp;
 
@@ -2266,8 +2266,17 @@ static void menu_common_setting_set_label_perf(char *type_str,
 static void menu_common_setting_set_label_st_bool(rarch_setting_t *setting,
       char *type_str, size_t type_str_size)
 {
-   strlcpy(type_str, *setting->value.boolean ? setting->boolean.on_label :
-         setting->boolean.off_label, type_str_size);
+   if (!strcmp(setting->name, "savestate") ||
+         !strcmp(setting->name, "loadstate"))
+   {
+      if (g_settings.state_slot < 0)
+         strlcpy(type_str, "-1 (auto)", type_str_size);
+      else
+         snprintf(type_str, type_str_size, "%d", g_settings.state_slot);
+   }
+   else
+      strlcpy(type_str, *setting->value.boolean ? setting->boolean.on_label :
+            setting->boolean.off_label, type_str_size);
 }
 
 static void menu_common_setting_set_label_st_float(rarch_setting_t *setting,
@@ -2421,14 +2430,6 @@ static void menu_common_setting_set_label(char *type_str,
                      type_str_size);
             else
                strlcpy(type_str, "<default>", type_str_size);
-         }
-         else if (!strcmp(setting->name, "savestate") ||
-               !strcmp(setting->name, "loadstate"))
-         {
-            if (g_settings.state_slot < 0)
-               strlcpy(type_str, "-1 (auto)", type_str_size);
-            else
-               snprintf(type_str, type_str_size, "%d", g_settings.state_slot);
          }
          else
             handle_setting_label(type_str, type_str_size, setting);
