@@ -39,6 +39,7 @@
 #include "input/keyboard_line.h"
 #include "input/input_common.h"
 #include "git_version.h"
+#include "intl/intl.h"
 
 #ifdef HAVE_MENU
 #include "frontend/menu/menu_common.h"
@@ -184,17 +185,17 @@ static void take_screenshot(void)
          (g_extern.frame_cache.data != RETRO_HW_FRAME_BUFFER_VALID))
       ret = take_screenshot_raw();
    else
-      RARCH_ERR("Cannot take screenshot. GPU rendering is used and read_viewport is not supported.\n");
+      RARCH_ERR(RETRO_LOG_TAKE_SCREENSHOT_ERROR);
 
    if (ret)
    {
-      RARCH_LOG("Taking screenshot.\n");
-      msg = "Taking screenshot.";
+      RARCH_LOG(RETRO_LOG_TAKE_SCREENSHOT);
+      msg = RETRO_MSG_TAKE_SCREENSHOT;
    }
    else
    {
-      RARCH_WARN("Failed to take screenshot ...\n");
-      msg = "Failed to take screenshot.";
+      RARCH_WARN(RETRO_LOG_TAKE_SCREENSHOT_FAILED);
+      msg = RETRO_MSG_TAKE_SCREENSHOT_FAILED;
    }
 
    msg_queue_push(g_extern.msg_queue, msg, 1, g_extern.is_paused ? 1 : 180);
@@ -242,7 +243,7 @@ static void init_recording(void)
 
    if (g_extern.libretro_dummy)
    {
-      RARCH_WARN("Using libretro dummy core. Skipping recording.\n");
+      RARCH_WARN(RETRO_LOG_INIT_RECORDING_SKIPPED);
       return;
    }
 
@@ -350,7 +351,7 @@ static void init_recording(void)
 
    if (!ffemu_init_first(&g_extern.rec_driver, &g_extern.rec, &params))
    {
-      RARCH_ERR("Failed to start recording.\n");
+      RARCH_ERR(RETRO_LOG_INIT_RECORDING_FAILED);
       deinit_gpu_recording();
    }
 }
