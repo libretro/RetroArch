@@ -19,25 +19,40 @@
 #include "../../settings_data.h"
 #include "../../file_ext.h"
 
-static inline struct gfx_shader *shader_manager_get_current_shader(menu_handle_t *menu, unsigned type)
+static void entries_refresh(void)
+{
+   /* Before a refresh, we could have deleted a file on disk, causing
+    * selection_ptr to suddendly be out of range.
+    * Ensure it doesn't overflow. */
+   if (driver.menu->selection_ptr >= file_list_get_size(
+            driver.menu->selection_buf) &&
+         file_list_get_size(driver.menu->selection_buf))
+      menu_set_navigation(driver.menu, file_list_get_size(driver.menu->selection_buf) - 1);
+   else if (!file_list_get_size(driver.menu->selection_buf))
+      menu_clear_navigation(driver.menu);
+}
+
+static inline struct gfx_shader *shader_manager_get_current_shader(
+      menu_handle_t *menu, unsigned type)
 {
    if (type == MENU_SETTINGS_SHADER_PRESET_PARAMETERS)
       return menu->shader;
-   else if (driver.video_poke && driver.video_data && driver.video_poke->get_current_shader)
+   else if (driver.video_poke && driver.video_data &&
+         driver.video_poke->get_current_shader)
       return driver.video_poke->get_current_shader(driver.video_data);
-
    return NULL;
 }
 
-static void add_setting_entry(menu_handle_t *menu, const char *label, unsigned id,
+static void add_setting_entry(menu_handle_t *menu,
+      const char *label, unsigned id,
       rarch_setting_t *settings)
 {
    rarch_setting_t *setting = (rarch_setting_t*)
       setting_data_find_setting(settings, label);
 
    if (setting)
-      file_list_push(menu->selection_buf, setting->short_description, setting->name,
-            id, 0);
+      file_list_push(menu->selection_buf, setting->short_description,
+            setting->name, id, 0);
 }
 
 int menu_entries_push(menu_handle_t *menu,
@@ -47,7 +62,8 @@ int menu_entries_push(menu_handle_t *menu,
    unsigned i;
    char tmp[256];
    size_t list_size = 0;
-   rarch_setting_t *setting_data = (rarch_setting_t *)setting_data_get_list();
+   rarch_setting_t *setting_data = (rarch_setting_t *)
+      setting_data_get_list();
    bool do_action = false;
 
 #if 0
@@ -123,7 +139,8 @@ int menu_entries_push(menu_handle_t *menu,
                if (path)
                {
                   char path_short[PATH_MAX];
-                  fill_pathname(path_short, path_basename(path), "", sizeof(path_short));
+                  fill_pathname(path_short, path_basename(path), "",
+                        sizeof(path_short));
 
                   snprintf(fill_buf, sizeof(fill_buf), "%s (%s)",
                         path_short, core_name);
@@ -139,12 +156,14 @@ int menu_entries_push(menu_handle_t *menu,
             {
                const core_info_t *info = NULL;
                file_list_clear(driver.menu->selection_buf);
-               core_info_list_get_supported_cores(driver.menu->core_info, driver.menu->deferred_path, &info, &list_size);
+               core_info_list_get_supported_cores(driver.menu->core_info,
+                     driver.menu->deferred_path, &info, &list_size);
                for (i = 0; i < list_size; i++)
                {
                   file_list_push(driver.menu->selection_buf, info[i].path, "",
                         MENU_FILE_PLAIN, 0);
-                  file_list_set_alt_at_offset(driver.menu->selection_buf, i, info[i].display_name);
+                  file_list_set_alt_at_offset(driver.menu->selection_buf, i,
+                        info[i].display_name);
                }
                file_list_sort_on_alt(driver.menu->selection_buf);
 
@@ -535,12 +554,7 @@ int menu_entries_push(menu_handle_t *menu,
       if (menu_type != MENU_SETTINGS_OPEN_HISTORY)
          menu_build_scroll_indices(driver.menu->selection_buf);
 
-      // Before a refresh, we could have deleted a file on disk, causing
-      // selection_ptr to suddendly be out of range. Ensure it doesn't overflow.
-      if (driver.menu->selection_ptr >= file_list_get_size(driver.menu->selection_buf) && file_list_get_size(driver.menu->selection_buf))
-         menu_set_navigation(driver.menu, file_list_get_size(driver.menu->selection_buf) - 1);
-      else if (!file_list_get_size(driver.menu->selection_buf))
-         menu_clear_navigation(driver.menu);
+      entries_refresh();
    }
 
    if (driver.menu_ctx && driver.menu_ctx->populate_entries)
@@ -548,6 +562,7 @@ int menu_entries_push(menu_handle_t *menu,
 
    return 0;
 }
+
 
 int menu_parse_and_resolve(void)
 {
@@ -663,7 +678,8 @@ int menu_parse_and_resolve(void)
    LWP_MutexLock(gx_device_mutex);
    int dev = gx_get_device_from_path(dir);
 
-   if (dev != -1 && !gx_devices[dev].mounted && gx_devices[dev].interface->isInserted())
+   if (dev != -1 && !gx_devices[dev].mounted &&
+         gx_devices[dev].interface->isInserted())
       fatMountSimple(gx_devices[dev].name, gx_devices[dev].interface);
 
    LWP_MutexUnlock(gx_device_mutex);
@@ -690,12 +706,14 @@ int menu_parse_and_resolve(void)
    else if (menu_common_type_is(menu_type) == MENU_FILE_DIRECTORY)
       exts = ""; // we ignore files anyway
    else if (driver.menu->defer_core)
-      exts = driver.menu->core_info ? core_info_list_get_all_extensions(driver.menu->core_info) : "";
+      exts = driver.menu->core_info ? core_info_list_get_all_extensions(
+            driver.menu->core_info) : "";
    else if (driver.menu->info.valid_extensions)
    {
       exts = ext_buf;
       if (*driver.menu->info.valid_extensions)
-         snprintf(ext_buf, sizeof(ext_buf), "%s|zip", driver.menu->info.valid_extensions);
+         snprintf(ext_buf, sizeof(ext_buf), "%s|zip",
+               driver.menu->info.valid_extensions);
       else
          *ext_buf = '\0';
    }
@@ -726,7 +744,8 @@ int menu_parse_and_resolve(void)
          path = path_basename(path);
 
 #ifdef HAVE_LIBRETRO_MANAGEMENT
-      if (menu_type == MENU_SETTINGS_CORE && (is_dir || strcasecmp(path, SALAMANDER_FILE) == 0))
+      if (menu_type == MENU_SETTINGS_CORE && (is_dir ||
+               strcasecmp(path, SALAMANDER_FILE) == 0))
          continue;
 #endif
 
@@ -744,7 +763,8 @@ int menu_parse_and_resolve(void)
       case MENU_SETTINGS_CORE:
          {
             file_list_t *list = (file_list_t*)driver.menu->selection_buf;
-            file_list_get_last(driver.menu->menu_stack, &dir, NULL, &menu_type);
+            file_list_get_last(driver.menu->menu_stack, &dir, NULL,
+                  &menu_type);
             list_size = file_list_get_size(list);
 
             for (i = 0; i < list_size; i++)
@@ -773,12 +793,7 @@ int menu_parse_and_resolve(void)
    if (menu_type != MENU_SETTINGS_OPEN_HISTORY)
       menu_build_scroll_indices(driver.menu->selection_buf);
 
-   // Before a refresh, we could have deleted a file on disk, causing
-   // selection_ptr to suddendly be out of range. Ensure it doesn't overflow.
-   if (driver.menu->selection_ptr >= file_list_get_size(driver.menu->selection_buf) && file_list_get_size(driver.menu->selection_buf))
-      menu_set_navigation(driver.menu, file_list_get_size(driver.menu->selection_buf) - 1);
-   else if (!file_list_get_size(driver.menu->selection_buf))
-      menu_clear_navigation(driver.menu);
+   entries_refresh();
    
    return 0;
 }

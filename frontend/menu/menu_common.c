@@ -33,13 +33,15 @@ void menu_update_system_info(menu_handle_t *menu, bool *load_no_content)
          if (core_info_list_get_info(menu->core_info,
                   menu->core_info_current, g_settings.libretro))
          {
-            const core_info_t *info = (const core_info_t*)menu->core_info_current;
+            const core_info_t *info = (const core_info_t*)
+               menu->core_info_current;
 
             RARCH_LOG("[Core Info]:\n");
             if (info->display_name)
                RARCH_LOG("  Display Name: %s\n", info->display_name);
             if (info->supported_extensions)
-               RARCH_LOG("  Supported Extensions: %s\n", info->supported_extensions);
+               RARCH_LOG("  Supported Extensions: %s\n",
+                     info->supported_extensions);
             if (info->authors)
                RARCH_LOG("  Authors: %s\n", info->authors);
             if (info->permissions)
@@ -129,7 +131,8 @@ static void load_menu_content_prepare(void)
       content_playlist_push(g_extern.history,
             *g_extern.fullpath ? g_extern.fullpath : NULL,
             g_settings.libretro,
-            driver.menu->info.library_name ? driver.menu->info.library_name : "");
+            driver.menu->info.library_name ?
+            driver.menu->info.library_name : "");
    }
 
    /* redraw menu frame */
@@ -137,17 +140,21 @@ static void load_menu_content_prepare(void)
    driver.menu->do_held = false;
    driver.menu->msg_force = true;
 
-   if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->iterate) 
+   if (driver.menu_ctx && driver.menu_ctx->backend &&
+         driver.menu_ctx->backend->iterate) 
       driver.menu_ctx->backend->iterate(MENU_ACTION_NOOP);
 
    /* Draw frame for loading message */
-   if (driver.video_data && driver.video_poke && driver.video_poke->set_texture_enable)
-      driver.video_poke->set_texture_enable(driver.video_data, driver.menu->frame_buf_show, MENU_TEXTURE_FULLSCREEN);
+   if (driver.video_data && driver.video_poke &&
+         driver.video_poke->set_texture_enable)
+      driver.video_poke->set_texture_enable(driver.video_data,
+            driver.menu->frame_buf_show, MENU_TEXTURE_FULLSCREEN);
 
    if (driver.video)
       rarch_render_cached_frame();
 
-   if (driver.video_data && driver.video_poke && driver.video_poke->set_texture_enable)
+   if (driver.video_data && driver.video_poke &&
+         driver.video_poke->set_texture_enable)
       driver.video_poke->set_texture_enable(driver.video_data, false,
             MENU_TEXTURE_FULLSCREEN);
 }
@@ -189,7 +196,8 @@ static void menu_update_libretro_info(menu_handle_t *menu)
    menu_update_system_info(menu, NULL);
 }
 
-static void menu_environment_get(int *argc, char *argv[], void *args, void *params_data)
+static void menu_environment_get(int *argc, char *argv[],
+      void *args, void *params_data)
 {
    struct rarch_main_wrap *wrap_args = (struct rarch_main_wrap*)params_data;
 
@@ -582,9 +590,11 @@ bool menu_save_new_config(void)
       for (i = 0; i < 16; i++)
       {
          char tmp[64];
-         fill_pathname_base(config_name, g_settings.libretro, sizeof(config_name));
+         fill_pathname_base(config_name, g_settings.libretro,
+               sizeof(config_name));
          path_remove_extension(config_name);
-         fill_pathname_join(config_path, config_dir, config_name, sizeof(config_path));
+         fill_pathname_join(config_path, config_dir, config_name,
+               sizeof(config_path));
 
          *tmp = '\0';
 
@@ -614,8 +624,10 @@ bool menu_save_new_config(void)
 
    if (config_save_file(config_path))
    {
-      strlcpy(g_extern.config_path, config_path, sizeof(g_extern.config_path));
-      snprintf(msg, sizeof(msg), "Saved new config to \"%s\".", config_path);
+      strlcpy(g_extern.config_path, config_path,
+            sizeof(g_extern.config_path));
+      snprintf(msg, sizeof(msg), "Saved new config to \"%s\".",
+            config_path);
       RARCH_LOG("%s\n", msg);
       ret = true;
    }
@@ -631,7 +643,8 @@ bool menu_save_new_config(void)
    return ret;
 }
 
-static inline int menu_list_get_first_char(file_list_t *buf, unsigned offset)
+static inline int menu_list_get_first_char(file_list_t *buf,
+      unsigned offset)
 {
    int ret;
    const char *path = NULL;
@@ -691,7 +704,8 @@ void menu_build_scroll_indices(file_list_t *buf)
       current_is_dir = is_dir;
    }
 
-   driver.menu->scroll_indices[driver.menu->scroll_indices_size++] = buf->size - 1;
+   driver.menu->scroll_indices[driver.menu->scroll_indices_size++] = 
+      buf->size - 1;
 }
 
 void menu_push_info_screen(void)
