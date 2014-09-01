@@ -1319,22 +1319,67 @@ static int menu_common_setting_set(unsigned id, unsigned action)
 #endif
 
 
-static int menu_common_setting_toggle(unsigned id, unsigned action)
+static int menu_setting_toggle(unsigned type,
+      const char *dir, const char *label,
+      unsigned action)
 {
-   if ((id >= MENU_SETTINGS_SHADER_FILTER) &&
-         (id <= MENU_SETTINGS_SHADER_LAST))
+   if ((
+            !strcmp(label, "load_content") ||
+            !strcmp(label, "detect_core_list"))
+         && action == MENU_ACTION_OK)
+   {
+      driver.menu->defer_core = (!strcmp(label, "detect_core_list"));
+      menu_entries_push(driver.menu->menu_stack,
+            g_settings.menu_content_directory, "", MENU_FILE_DIRECTORY,
+            driver.menu->selection_ptr);
+   }
+   else if ((!strcmp(label, "history_list") ||
+            menu_common_type_is(type) == MENU_FILE_DIRECTORY)
+         && action == MENU_ACTION_OK)
+      menu_entries_push(driver.menu->menu_stack,
+            "", "", type, driver.menu->selection_ptr);
+   else if ((
+            menu_common_type_is(type) == MENU_SETTINGS ||
+            type == MENU_SETTINGS_CORE ||
+            type == MENU_SETTINGS_CONFIG ||
+            type == MENU_SETTINGS_DISK_APPEND) &&
+         action == MENU_ACTION_OK
+      )
+      menu_entries_push(driver.menu->menu_stack,
+            dir ? dir : label, "", type,
+            driver.menu->selection_ptr);
+   else if (type == MENU_SETTINGS_CUSTOM_VIEWPORT &&
+         action == MENU_ACTION_OK)
+   {
+      file_list_push(driver.menu->menu_stack, "", "",
+            type, driver.menu->selection_ptr);
+
+      // Start with something sane.
+      rarch_viewport_t *custom = (rarch_viewport_t*)
+         &g_extern.console.screen.viewports.custom_vp;
+
+      if (driver.video_data && driver.video &&
+            driver.video->viewport_info)
+         driver.video->viewport_info(driver.video_data, custom);
+      aspectratio_lut[ASPECT_RATIO_CUSTOM].value =
+         (float)custom->width / custom->height;
+
+      g_settings.video.aspect_ratio_idx = ASPECT_RATIO_CUSTOM;
+
+      rarch_main_command(RARCH_CMD_VIDEO_SET_ASPECT_RATIO);
+   }
+   else if ((type >= MENU_SETTINGS_SHADER_FILTER) &&
+         (type <= MENU_SETTINGS_SHADER_LAST))
    {
       if (driver.menu_ctx && driver.menu_ctx->backend
             && driver.menu_ctx->backend->shader_manager_setting_toggle)
          return driver.menu_ctx->backend->shader_manager_setting_toggle(
-               id, action);
-      return 0;
+               type, action);
    }
-   if ((id >= MENU_SETTINGS_CORE_OPTION_START))
-      return menu_common_core_setting_toggle(id, action);
-
-   if (driver.menu_ctx && driver.menu_ctx->backend)
-      return menu_common_setting_set(id, action);
+   else if ((type >= MENU_SETTINGS_CORE_OPTION_START))
+      return menu_common_core_setting_toggle(type, action);
+   else if (driver.menu_ctx && driver.menu_ctx->backend)
+      return menu_common_setting_set(type, action);
 
    return 0;
 }
@@ -1400,54 +1445,9 @@ static int menu_settings_iterate(unsigned action)
       case MENU_ACTION_RIGHT:
       case MENU_ACTION_OK:
       case MENU_ACTION_START:
-         if ((
-                  !strcmp(label, "load_content") ||
-                  !strcmp(label, "detect_core_list"))
-               && action == MENU_ACTION_OK)
          {
-            driver.menu->defer_core = (!strcmp(label, "detect_core_list"));
-            menu_entries_push(driver.menu->menu_stack,
-                  g_settings.menu_content_directory, "", MENU_FILE_DIRECTORY,
-                  driver.menu->selection_ptr);
-         }
-         else if ((!strcmp(label, "history_list") ||
-                  menu_common_type_is(type) == MENU_FILE_DIRECTORY)
-               && action == MENU_ACTION_OK)
-            menu_entries_push(driver.menu->menu_stack,
-                  "", "", type, driver.menu->selection_ptr);
-         else if ((
-                  menu_common_type_is(type) == MENU_SETTINGS ||
-                  type == MENU_SETTINGS_CORE ||
-                  type == MENU_SETTINGS_CONFIG ||
-                  type == MENU_SETTINGS_DISK_APPEND) &&
-               action == MENU_ACTION_OK
-               )
-            menu_entries_push(driver.menu->menu_stack,
-                  dir ? dir : label, "", type,
-                  driver.menu->selection_ptr);
-         else if (type == MENU_SETTINGS_CUSTOM_VIEWPORT &&
-               action == MENU_ACTION_OK)
-         {
-            file_list_push(driver.menu->menu_stack, "", "",
-                  type, driver.menu->selection_ptr);
-
-            // Start with something sane.
-            rarch_viewport_t *custom = (rarch_viewport_t*)
-               &g_extern.console.screen.viewports.custom_vp;
-
-            if (driver.video_data && driver.video &&
-                  driver.video->viewport_info)
-               driver.video->viewport_info(driver.video_data, custom);
-            aspectratio_lut[ASPECT_RATIO_CUSTOM].value =
-               (float)custom->width / custom->height;
-
-            g_settings.video.aspect_ratio_idx = ASPECT_RATIO_CUSTOM;
-
-            rarch_main_command(RARCH_CMD_VIDEO_SET_ASPECT_RATIO);
-         }
-         else
-         {
-            int ret = menu_common_setting_toggle(type, action);
+            int ret = menu_setting_toggle(type, dir,
+                  label, action);
 
             if (ret)
                return ret;
