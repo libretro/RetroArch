@@ -23,9 +23,6 @@
 #include "../performance.h"
 #include <stdlib.h>
 
-#ifdef HAVE_THREADS
-#include "../thread.h"
-
 struct rarch_soft_plug
 {
 #ifdef HAVE_DYLIB
@@ -33,6 +30,9 @@ struct rarch_soft_plug
 #endif
    const struct softfilter_implementation *impl;
 };
+
+#ifdef HAVE_THREADS
+#include "../thread.h"
 
 struct filter_thread_data
 {
