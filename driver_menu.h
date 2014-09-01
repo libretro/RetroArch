@@ -82,7 +82,6 @@ typedef struct
    file_list_t *menu_stack;
    file_list_t *selection_buf;
    size_t selection_ptr;
-   unsigned info_selection;
    bool need_refresh;
    bool msg_force;
    bool push_start_screen;

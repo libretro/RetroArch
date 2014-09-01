@@ -78,7 +78,12 @@ static int menu_info_screen_iterate(unsigned action)
          setting_data_get_description(current_setting, msg, sizeof(msg));
       else
       {
-         switch (driver.menu->info_selection)
+         unsigned info_type;
+         file_list_get_at_offset(driver.menu->selection_buf,
+               driver.menu->selection_ptr, NULL, NULL,
+               &info_type);
+
+         switch (info_type)
          {
             case MENU_SETTINGS_SHADER_PRESET:
                snprintf(msg, sizeof(msg),
@@ -1455,9 +1460,6 @@ static int menu_settings_iterate(unsigned action)
          menu_entries_pop();
          break;
       case MENU_ACTION_SELECT:
-         file_list_get_at_offset(driver.menu->selection_buf,
-               driver.menu->selection_ptr, NULL, NULL,
-               &driver.menu->info_selection);
          file_list_push(driver.menu->menu_stack, "", "info_screen",
                0, driver.menu->selection_ptr);
          break;
