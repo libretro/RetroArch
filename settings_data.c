@@ -1425,6 +1425,7 @@ static void general_write_handler(const void *data)
    if (!setting)
       return;
 
+   
    if (!strcmp(setting->name, "quit_retroarch"))
    {
       if (*setting->value.boolean)
@@ -1658,6 +1659,22 @@ static void general_write_handler(const void *data)
       g_settings.savestate_auto_load = *setting->value.boolean;
    else if (!strcmp(setting->name, "savestate_auto_index"))
       g_settings.savestate_auto_index = *setting->value.boolean;
+   else if (!strcmp(setting->name, "savestate"))
+   {
+      if (*setting->value.boolean)
+      {
+         rarch_cmd = RARCH_CMD_SAVE_STATE;
+         *setting->value.boolean = false;
+      }
+   }
+   else if (!strcmp(setting->name, "loadstate"))
+   {
+      if (*setting->value.boolean)
+      {
+         rarch_cmd = RARCH_CMD_LOAD_STATE;
+         *setting->value.boolean = false;
+      }
+   }
    else if (!strcmp(setting->name, "slowmotion_ratio"))
       g_settings.slowmotion_ratio = *setting->value.fraction;
    else if (!strcmp(setting->name, "fastforward_ratio"))

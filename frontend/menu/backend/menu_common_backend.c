@@ -577,16 +577,36 @@ static int menu_common_setting_set_perf(unsigned setting, unsigned action,
 
 static void menu_common_setting_set_current_boolean(rarch_setting_t *setting, unsigned action)
 {
-   switch (action)
+   if (
+         !strcmp(setting->name, "savestate") ||
+         !strcmp(setting->name, "loadstate"))
    {
-      case MENU_ACTION_OK:
-      case MENU_ACTION_LEFT:
-      case MENU_ACTION_RIGHT:
+      if (action == MENU_ACTION_START)
+         g_settings.state_slot = 0;
+      else if (action == MENU_ACTION_LEFT)
+      {
+         // Slot -1 is (auto) slot.
+         if (g_settings.state_slot >= 0)
+            g_settings.state_slot--;
+      }
+      else if (action == MENU_ACTION_RIGHT)
+         g_settings.state_slot++;
+      else if (action == MENU_ACTION_OK)
          *setting->value.boolean = !(*setting->value.boolean);
-         break;
-      case MENU_ACTION_START:
-         *setting->value.boolean = setting->default_value.boolean;
-         break;
+   }
+   else
+   {
+      switch (action)
+      {
+         case MENU_ACTION_OK:
+         case MENU_ACTION_LEFT:
+         case MENU_ACTION_RIGHT:
+            *setting->value.boolean = !(*setting->value.boolean);
+            break;
+         case MENU_ACTION_START:
+            *setting->value.boolean = setting->default_value.boolean;
+            break;
+      }
    }
 
    if (setting->change_handler)
@@ -914,27 +934,6 @@ static int menu_common_setting_set(unsigned id, unsigned action)
       {
          switch (id)
          {
-            case MENU_SETTINGS_SAVESTATE_SAVE:
-            case MENU_SETTINGS_SAVESTATE_LOAD:
-               if (action == MENU_ACTION_OK)
-               {
-                  if (id == MENU_SETTINGS_SAVESTATE_SAVE)
-                     rarch_main_command(RARCH_CMD_SAVE_STATE);
-                  else
-                     rarch_main_command(RARCH_CMD_LOAD_STATE);
-                  return -1;
-               }
-               else if (action == MENU_ACTION_START)
-                  g_settings.state_slot = 0;
-               else if (action == MENU_ACTION_LEFT)
-               {
-                  // Slot -1 is (auto) slot.
-                  if (g_settings.state_slot >= 0)
-                     g_settings.state_slot--;
-               }
-               else if (action == MENU_ACTION_RIGHT)
-                  g_settings.state_slot++;
-               break;
             case MENU_SETTINGS_DISK_INDEX:
                {
                   int step = 0;
