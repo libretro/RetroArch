@@ -409,14 +409,14 @@ static int menu_lakka_iterate(unsigned action)
 
 const menu_ctx_driver_backend_t menu_ctx_backend_lakka = {
    menu_lakka_iterate,
-#ifndef HAVE_SHADER_MANAGER
+//#ifndef HAVE_SHADER_MANAGER
    NULL,
    NULL,
    NULL,
    NULL,
    NULL,
    NULL,
-#endif
+//#endif
    NULL,
    NULL,
    "menu_lakka",
