@@ -546,7 +546,7 @@ static int menu_common_core_setting_toggle(unsigned setting, unsigned action)
    return 0;
 }
 
-static void menu_common_defer_decision_automatic(void)
+static void defer_decision_automatic(void)
 {
    if (driver.menu)
    {
@@ -555,7 +555,7 @@ static void menu_common_defer_decision_automatic(void)
    }
 }
 
-static void menu_common_defer_decision_manual(void)
+static void defer_decision_manual(void)
 {
    if (driver.menu)
       menu_common_setting_push_current_menu(driver.menu->menu_stack,
@@ -1959,15 +1959,11 @@ static int menu_action_ok(const char *dir, unsigned menu_type)
             if (ret == -1)
             {
                rarch_main_command(RARCH_CMD_LOAD_CORE);
-               if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->defer_decision_automatic) 
-                  driver.menu_ctx->backend->defer_decision_automatic();
+               defer_decision_automatic();
                return -1;
             }
             else if (ret == 0)
-            {
-               if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->defer_decision_manual) 
-                  driver.menu_ctx->backend->defer_decision_manual();
-            }
+               defer_decision_manual();
          }
          else
          {
@@ -2462,7 +2458,5 @@ const menu_ctx_driver_backend_t menu_ctx_backend_common = {
 #endif
    menu_common_type_is,
    menu_common_setting_set_label,
-   menu_common_defer_decision_automatic,
-   menu_common_defer_decision_manual,
    "menu_common",
 };
