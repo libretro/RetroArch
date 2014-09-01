@@ -1681,18 +1681,19 @@ static void init_movie(void)
             g_extern.bsv.movie_start_path);
 
       msg_queue_clear(g_extern.msg_queue);
-      msg_queue_push(g_extern.msg_queue,
-            g_extern.bsv.movie ? msg : "Failed to start movie record.", 1, 180);
-
       if ((g_extern.bsv.movie = bsv_movie_init(g_extern.bsv.movie_start_path,
                   RARCH_MOVIE_RECORD)))
       {
+         msg_queue_push(g_extern.msg_queue, msg, 1, 180);
          RARCH_LOG("Starting movie record to \"%s\".\n",
                g_extern.bsv.movie_start_path);
          g_settings.rewind_granularity = 1;
       }
       else
+      {
+         msg_queue_push(g_extern.msg_queue, "Failed to start movie record.", 1, 180);
          RARCH_ERR("Failed to start movie record.\n");
+      }
    }
 }
 
