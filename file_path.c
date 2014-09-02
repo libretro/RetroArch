@@ -28,7 +28,7 @@
 #endif
 
 #if (defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)) || defined(__QNX__) || defined(PSP)
-#include <unistd.h> //stat() is defined here
+#include <unistd.h> /* stat() is defined here */
 #endif
 
 #if defined(__CELLOS_LV2__)
@@ -60,7 +60,7 @@
 #include <unistd.h>
 #endif
 
-// Dump stuff to file.
+/* Dump to file. */
 bool write_file(const char *path, const void *data, size_t size)
 {
    bool ret = false;
@@ -73,7 +73,7 @@ bool write_file(const char *path, const void *data, size_t size)
    return ret;
 }
 
-// Generic file loader.
+/* Generic file loader. */
 long read_file(const char *path, void **buf)
 {
    long rc = 0, len = 0;
@@ -97,8 +97,9 @@ long read_file(const char *path, void **buf)
       RARCH_WARN("Didn't read whole file.\n");
 
    *buf = rom_buf;
-   // Allow for easy reading of strings to be safe.
-   // Will only work with sane character formatting (Unix).
+
+   /* Allow for easy reading of strings to be safe.
+    * Will only work with sane character formatting (Unix). */
    ((char*)rom_buf)[len] = '\0';
    fclose(file);
    return rc;
@@ -111,7 +112,7 @@ error:
    return -1;
 }
 
-// Reads file content as one string.
+/* Reads file content as one string. */
 bool read_file_string(const char *path, char **buf)
 {
    *buf = NULL;
@@ -122,10 +123,13 @@ bool read_file_string(const char *path, char **buf)
    if (!file)
       goto error;
 
-   // ftell with "r" can be troublesome ...
-   // Haven't run into issues yet though.
+   /* ftell with "r" can be troublesome ...
+    * Haven't run into issues yet though. */
    fseek(file, 0, SEEK_END);
-   len = ftell(file) + 2; // Takes account of being able to read in EOF and '\0' at end.
+
+   /* Takes account of being able to read
+    * in EOF and '\0' at end. */
+   len = ftell(file) + 2;
    rewind(file);
 
    *buf = (char*)calloc(len, sizeof(char));
@@ -136,7 +140,8 @@ bool read_file_string(const char *path, char **buf)
 
    while (ptr && !feof(file))
    {
-      size_t bufsize = (size_t)(((ptrdiff_t)*buf + (ptrdiff_t)len) - (ptrdiff_t)ptr);
+      size_t bufsize = (size_t)(((ptrdiff_t)*buf +
+               (ptrdiff_t)len) - (ptrdiff_t)ptr);
       fgets(ptr, bufsize, file);
 
       ptr += strlen(ptr);
@@ -198,7 +203,8 @@ struct string_list *string_list_new(void)
    return list;
 }
 
-bool string_list_append(struct string_list *list, const char *elem, union string_list_elem_attr attr)
+bool string_list_append(struct string_list *list, const char *elem,
+      union string_list_elem_attr attr)
 {
    if (list->size >= list->cap &&
          !string_list_capacity(list, list->cap * 2))
@@ -221,7 +227,8 @@ void string_list_set(struct string_list *list, unsigned index, const char *str)
    rarch_assert(list->elems[index].data = strdup(str));
 }
 
-void string_list_join_concat(char *buffer, size_t size, const struct string_list *list, const char *sep)
+void string_list_join_concat(char *buffer, size_t size,
+      const struct string_list *list, const char *sep)
 {
    size_t len = strlen(buffer);
    rarch_assert(len < size);
@@ -287,7 +294,8 @@ bool string_list_find_elem(const struct string_list *list, const char *elem)
    return false;
 }
 
-bool string_list_find_elem_prefix(const struct string_list *list, const char *prefix, const char *elem)
+bool string_list_find_elem_prefix(const struct string_list *list,
+      const char *prefix, const char *elem)
 {
    size_t i;
    if (!list)
@@ -337,7 +345,7 @@ static int qstrcmp_dir(const void *a_, const void *b_)
    int a_dir = a->attr.b;
    int b_dir = b->attr.b;
 
-   // Sort directories before files.
+   /* Sort directories before files. */
    if (a_dir != b_dir)
       return b_dir - a_dir;
    return strcasecmp(a->data, b->data);
@@ -352,8 +360,10 @@ void dir_list_sort(struct string_list *list, bool dir_first)
          dir_first ? qstrcmp_dir : qstrcmp_plain);
 }
 
-#ifdef _WIN32 // Because the API is just fucked up ...
-struct string_list *dir_list_new(const char *dir, const char *ext, bool include_dirs)
+#ifdef _WIN32
+
+struct string_list *dir_list_new(const char *dir,
+      const char *ext, bool include_dirs)
 {
    struct string_list *list = string_list_new();
    if (!list)
@@ -413,23 +423,25 @@ error:
    return NULL;
 }
 #else
-static bool dirent_is_directory(const char *path, const struct dirent *entry)
+static bool dirent_is_directory(const char *path,
+      const struct dirent *entry)
 {
 #if defined(PSP)
    return (entry->d_stat.st_attr & FIO_SO_IFDIR) == FIO_SO_IFDIR;
 #elif defined(DT_DIR)
    if (entry->d_type == DT_DIR)
       return true;
-   else if (entry->d_type == DT_UNKNOWN // This can happen on certain file systems.
+   else if (entry->d_type == DT_UNKNOWN /* This can happen on certain file systems. */
          || entry->d_type == DT_LNK)
       return path_is_directory(path);
    return false;
-#else // dirent struct doesn't have d_type, do it the slow way ...
+#else /* dirent struct doesn't have d_type, do it the slow way ... */
    return path_is_directory(path);
 #endif
 }
 
-struct string_list *dir_list_new(const char *dir, const char *ext, bool include_dirs)
+struct string_list *dir_list_new(const char *dir,
+      const char *ext, bool include_dirs)
 {
    DIR *directory = NULL;
    const struct dirent *entry = NULL;
@@ -463,7 +475,8 @@ struct string_list *dir_list_new(const char *dir, const char *ext, bool include_
       if (strcmp(name, ".") == 0 || strcmp(name, "..") == 0)
          continue;
 
-      if (!is_dir && ext_list && !string_list_find_elem_prefix(ext_list, ".", file_ext))
+      if (!is_dir && ext_list
+            && !string_list_find_elem_prefix(ext_list, ".", file_ext))
          continue;
 
       attr.b = is_dir;
@@ -540,12 +553,14 @@ bool path_file_exists(const char *path)
    return false;
 }
 
-void fill_pathname(char *out_path, const char *in_path, const char *replace, size_t size)
+void fill_pathname(char *out_path, const char *in_path,
+      const char *replace, size_t size)
 {
    char tmp_path[PATH_MAX];
    char *tok;
 
-   rarch_assert(strlcpy(tmp_path, in_path, sizeof(tmp_path)) < sizeof(tmp_path));
+   rarch_assert(strlcpy(tmp_path, in_path,
+            sizeof(tmp_path)) < sizeof(tmp_path));
    if ((tok = (char*)strrchr(path_basename(tmp_path), '.')))
       *tok = '\0';
 
@@ -553,7 +568,8 @@ void fill_pathname(char *out_path, const char *in_path, const char *replace, siz
    rarch_assert(strlcat(out_path, replace, size) < size);
 }
 
-void fill_pathname_noext(char *out_path, const char *in_path, const char *replace, size_t size)
+void fill_pathname_noext(char *out_path, const char *in_path,
+      const char *replace, size_t size)
 {
    rarch_assert(strlcpy(out_path, in_path, size) < size);
    rarch_assert(strlcat(out_path, replace, size) < size);
@@ -572,8 +588,8 @@ static char *find_last_slash(const char *str)
    return (char*)slash;
 }
 
-// Assumes path is a directory. Appends a slash
-// if not already there.
+/* Assumes path is a directory. Appends a slash
+ * if not already there. */
 void fill_pathname_slash(char *path, size_t size)
 {
    size_t path_len = strlen(path);
@@ -589,7 +605,8 @@ void fill_pathname_slash(char *path, size_t size)
       rarch_assert(strlcat(path, path_default_slash(), size) < size);
 }
 
-void fill_pathname_dir(char *in_dir, const char *in_basename, const char *replace, size_t size)
+void fill_pathname_dir(char *in_dir, const char *in_basename,
+      const char *replace, size_t size)
 {
    fill_pathname_slash(in_dir, size);
    const char *base = path_basename(in_basename);
@@ -609,24 +626,28 @@ void fill_pathname_base(char *out, const char *in_path, size_t size)
    rarch_assert(strlcpy(out, ptr, size) < size);
 }
 
-void fill_pathname_basedir(char *out_dir, const char *in_path, size_t size)
+void fill_pathname_basedir(char *out_dir,
+      const char *in_path, size_t size)
 {
    rarch_assert(strlcpy(out_dir, in_path, size) < size);
    path_basedir(out_dir);
 }
 
-void fill_pathname_parent_dir(char *out_dir, const char *in_dir, size_t size)
+void fill_pathname_parent_dir(char *out_dir,
+      const char *in_dir, size_t size)
 {
    rarch_assert(strlcpy(out_dir, in_dir, size) < size);
    path_parent_dir(out_dir);
 }
 
-void fill_dated_filename(char *out_filename, const char *ext, size_t size)
+void fill_dated_filename(char *out_filename,
+      const char *ext, size_t size)
 {
    time_t cur_time;
    time(&cur_time);
 
-   strftime(out_filename, size, "RetroArch-%m%d-%H%M%S.", localtime(&cur_time));
+   strftime(out_filename, size,
+         "RetroArch-%m%d-%H%M%S.", localtime(&cur_time));
    strlcat(out_filename, ext, size);
 }
 
@@ -664,7 +685,8 @@ bool path_is_absolute(const char *path)
 {
 #ifdef _WIN32
    // Many roads lead to Rome ...
-   return path[0] == '/' || (strstr(path, "\\\\") == path) || strstr(path, ":/") || strstr(path, ":\\") || strstr(path, ":\\\\");
+   return path[0] == '/' || (strstr(path, "\\\\") == path)
+      || strstr(path, ":/") || strstr(path, ":\\") || strstr(path, ":\\\\");
 #else
    return path[0] == '/';
 #endif
@@ -681,9 +703,11 @@ void path_resolve_realpath(char *buf, size_t size)
       strlcpy(buf, tmp, size);
 #else
    rarch_assert(size >= PATH_MAX);
-   // NOTE: realpath() expects at least PATH_MAX bytes in buf.
-   // Technically, PATH_MAX needn't be defined, but we rely on it anyways.
-   // POSIX 2008 can automatically allocate for you, but don't rely on that.
+
+   /* NOTE: realpath() expects at least PATH_MAX bytes in buf.
+    * Technically, PATH_MAX needn't be defined, but we rely on it anyways.
+    * POSIX 2008 can automatically allocate for you,
+    * but don't rely on that. */
    if (!realpath(tmp, buf))
       strlcpy(buf, tmp, size);
 #endif
@@ -704,7 +728,8 @@ static bool path_mkdir_norecurse(const char *dir)
 #else
    ret = mkdir(dir, 0750);
 #endif
-   if (ret < 0 && errno == EEXIST && path_is_directory(dir)) // Don't treat this as an error.
+   /* Don't treat this as an error. */
+   if (ret < 0 && errno == EEXIST && path_is_directory(dir))
       ret = 0;
    if (ret < 0)
       RARCH_ERR("mkdir(%s) error: %s.\n", dir, strerror(errno));
@@ -714,7 +739,8 @@ static bool path_mkdir_norecurse(const char *dir)
 bool path_mkdir(const char *dir)
 {
    const char *target = NULL;
-   char *basedir = strdup(dir); // Use heap. Real chance of stack overflow if we recurse too hard.
+   /* Use heap. Real chance of stack overflow if we recurse too hard. */
+   char *basedir = strdup(dir);
    bool ret = true;
 
    if (!basedir)
@@ -750,7 +776,8 @@ end:
    return ret;
 }
 
-void fill_pathname_resolve_relative(char *out_path, const char *in_refpath, const char *in_path, size_t size)
+void fill_pathname_resolve_relative(char *out_path,
+      const char *in_refpath, const char *in_path, size_t size)
 {
    if (path_is_absolute(in_path))
       rarch_assert(strlcpy(out_path, in_path, size) < size);
@@ -762,7 +789,8 @@ void fill_pathname_resolve_relative(char *out_path, const char *in_refpath, cons
    }
 }
 
-void fill_pathname_join(char *out_path, const char *dir, const char *path, size_t size)
+void fill_pathname_join(char *out_path,
+      const char *dir, const char *path, size_t size)
 {
    rarch_assert(strlcpy(out_path, dir, size) < size);
 
@@ -772,7 +800,8 @@ void fill_pathname_join(char *out_path, const char *dir, const char *path, size_
    rarch_assert(strlcat(out_path, path, size) < size);
 }
 
-void fill_pathname_expand_special(char *out_path, const char *in_path, size_t size)
+void fill_pathname_expand_special(char *out_path,
+      const char *in_path, size_t size)
 {
 #if !defined(RARCH_CONSOLE)
    if (*in_path == '~')
@@ -811,7 +840,8 @@ void fill_pathname_expand_special(char *out_path, const char *in_path, size_t si
    rarch_assert(strlcpy(out_path, in_path, size) < size);
 }
 
-void fill_pathname_abbreviate_special(char *out_path, const char *in_path, size_t size)
+void fill_pathname_abbreviate_special(char *out_path,
+      const char *in_path, size_t size)
 {
 #if !defined(RARCH_CONSOLE)
    unsigned i;
@@ -821,10 +851,11 @@ void fill_pathname_abbreviate_special(char *out_path, const char *in_path, size_
    fill_pathname_application_path(application_dir, sizeof(application_dir));
    path_basedir(application_dir);
 
-   // application_dir could be zero-string. Safeguard against this.
+   /* application_dir could be zero-string. Safeguard against this.
+    *
+    * Keep application dir in front of home, moving app dir to a
+    * new location inside home would break otherwise. */
 
-   // Keep application dir in front of home, moving app dir to a new location inside
-   // home would break otherwise.
    const char *candidates[3] = { application_dir, home, NULL };
    const char *notations[3] = { ":", "~", NULL };
    
@@ -846,7 +877,7 @@ void fill_pathname_abbreviate_special(char *out_path, const char *in_path, size_
             size--;
          }
 
-         break; // Don't allow more abbrevs to take place.
+         break; /* Don't allow more abbrevs to take place. */
       }
    }
 #endif
@@ -894,10 +925,12 @@ void fill_pathname_application_path(char *buf, size_t size)
    *buf = '\0';
    pid_t pid = getpid(); 
    char link_path[PATH_MAX];
-   static const char *exts[] = { "exe", "file", "path/a.out" }; // Linux, BSD and Solaris paths. Not standardized.
+   /* Linux, BSD and Solaris paths. Not standardized. */
+   static const char *exts[] = { "exe", "file", "path/a.out" };
    for (i = 0; i < ARRAY_SIZE(exts); i++)
    {
-      snprintf(link_path, sizeof(link_path), "/proc/%u/%s", (unsigned)pid, exts[i]);
+      snprintf(link_path, sizeof(link_path), "/proc/%u/%s",
+            (unsigned)pid, exts[i]);
       ssize_t ret = readlink(link_path, buf, size - 1);
       if (ret >= 0)
       {

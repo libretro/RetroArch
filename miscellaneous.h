@@ -40,10 +40,12 @@
 #include "retroarch_logger.h"
 #include <limits.h>
 
-// Some platforms do not set this value.
-// Just assume a value. It's usually 4KiB.
-// Platforms with a known value (like Win32)
-// set this value explicitly in platform specific headers.
+/* Some platforms do not set this value.
+ * Just assume a value. It's usually 4KiB.
+ * Platforms with a known value (like Win32)
+ * set this value explicitly in platform specific headers.
+ */
+
 #ifndef PATH_MAX
 #define PATH_MAX 4096
 #endif
@@ -121,13 +123,15 @@ static inline uint32_t swap_if_big32(uint32_t val)
 {
    if (is_little_endian()) // Little-endian
       return val;
-   return (val >> 24) | ((val >> 8) & 0xFF00) | ((val << 8) & 0xFF0000) | (val << 24);
+   return (val >> 24) | ((val >> 8) & 0xFF00) |
+      ((val << 8) & 0xFF0000) | (val << 24);
 }
 
 static inline uint32_t swap_if_little32(uint32_t val)
 {
    if (is_little_endian())
-      return (val >> 24) | ((val >> 8) & 0xFF00) | ((val << 8) & 0xFF0000) | (val << 24);
+      return (val >> 24) | ((val >> 8) & 0xFF00) |
+         ((val << 8) & 0xFF0000) | (val << 24);
    return val;
 }
 
@@ -145,9 +149,9 @@ static inline uint16_t swap_if_little16(uint16_t val)
    return val;
 }
 
-// Helper macros and struct to keep track of many booleans.
-// To check for multiple bits, use &&, not &.
-// For OR, | can be used.
+/* Helper macros and struct to keep track of many booleans.
+ * To check for multiple bits, use &&, not &.
+ * For OR, | can be used. */
 typedef struct
 {
    uint32_t data[8];

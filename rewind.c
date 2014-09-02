@@ -79,14 +79,21 @@ struct state_manager
 {
    uint8_t *data;
    size_t capacity;
-   uint8_t *head; // Reading and writing is done here.
-   uint8_t *tail; // If head comes close to this, discard a frame.
+   /* Reading and writing is done here here. */
+   uint8_t *head;
+   /* If head comes close to this, discard a frame. */
+   uint8_t *tail;
 
    uint8_t *thisblock;
    uint8_t *nextblock;
 
-   size_t blocksize; // This one is runded up from reset::blocksize.
-   size_t maxcompsize; // size_t + (blocksize + 131071) / 131072 * (blocksize + u16 + u16) + u16 + u32 + size_t (yes, the math is a bit ugly).
+   /* This one is rounded up from reset::blocksize. */
+   size_t blocksize;
+
+   /* size_t + (blocksize + 131071) / 131072 * 
+    * (blocksize + u16 + u16) + u16 + u32 + size_t
+    * (yes, the math is a bit ugly). */
+   size_t maxcompsize;
 
    unsigned entries;
    bool thisblock_valid;
@@ -103,7 +110,8 @@ state_manager_t *state_manager_new(size_t state_size, size_t buffer_size)
 
    const int maxcblkcover = UINT16_MAX * sizeof(uint16_t);
    const int maxcblks = (state->blocksize + maxcblkcover - 1) / maxcblkcover;
-   state->maxcompsize = state->blocksize + maxcblks * sizeof(uint16_t) * 2 + sizeof(uint16_t) + sizeof(uint32_t) + sizeof(size_t) * 2;
+   state->maxcompsize = state->blocksize + maxcblks * sizeof(uint16_t) * 2 +
+      sizeof(uint16_t) + sizeof(uint32_t) + sizeof(size_t) * 2;
 
    state->data = (uint8_t*)malloc(buffer_size);
 
@@ -112,12 +120,19 @@ state_manager_t *state_manager_new(size_t state_size, size_t buffer_size)
    if (!state->data || !state->thisblock || !state->nextblock)
       goto error;
 
-   // Force in a different byte at the end, so we don't need to check bounds in the innermost loop (it's expensive).
-   // There is also a large amount of data that's the same, to stop the other scan
-   // There is also some padding at the end. This is so we don't read outside the buffer end if we're reading in large blocks;
-   // it doesn't make any difference to us, but sacrificing 16 bytes to get Valgrind happy is worth it.
-   *(uint16_t*)(state->thisblock + state->blocksize + sizeof(uint16_t) * 3) = 0xFFFF;
-   *(uint16_t*)(state->nextblock + state->blocksize + sizeof(uint16_t) * 3) = 0x0000;
+   /* Force in a different byte at the end, so we don't need to check 
+    * bounds in the innermost loop (it's expensive).
+    *
+    * There is also a large amount of data that's the same, to stop the other scan
+    * There is also some padding at the end. This is so we don't read outside the 
+    * buffer end if we're reading in large blocks;
+    *
+    * It doesn't make any difference to us, but sacrificing 16 bytes to get 
+    * Valgrind happy is worth it. */
+   *(uint16_t*)(state->thisblock + state->blocksize + sizeof(uint16_t) * 3) =
+      0xFFFF;
+   *(uint16_t*)(state->nextblock + state->blocksize + sizeof(uint16_t) * 3) =
+      0x0000;
 
    state->capacity = buffer_size;
 
@@ -160,8 +175,8 @@ bool state_manager_pop(state_manager_t *state, const void **data)
    const uint8_t *compressed = state->data + start + sizeof(size_t);
    uint8_t *out = state->thisblock;
 
-   // Begin decompression code
-   // out is the last pushed (or returned) state
+   /* Begin decompression code
+    * out is the last pushed (or returned) state */
    const uint16_t *compressed16 = (const uint16_t*)compressed;
    uint16_t *out16 = (uint16_t*)out;
 
@@ -172,9 +187,12 @@ bool state_manager_pop(state_manager_t *state, const void **data)
       if (numchanged)
       {
          out16 += *compressed16++;
-         // We could do memcpy, but it seems that memcpy has a constant-per-call overhead that actually shows up.
-         // Our average size in here seems to be 8 or something.
-         // Therefore, we do something with lower overhead.
+
+         /* We could do memcpy, but it seems that memcpy has a 
+          * constant-per-call overhead that actually shows up.
+          *
+          * Our average size in here seems to be 8 or something.
+          * Therefore, we do something with lower overhead. */
          for (i = 0; i < numchanged; i++)
             out16[i] = compressed16[i];
 
@@ -190,7 +208,7 @@ bool state_manager_pop(state_manager_t *state, const void **data)
          out16 += numunchanged;
       }
    }
-   // End decompression code
+   /* End decompression code */
 
    state->entries--;
    *data = state->thisblock;
@@ -199,8 +217,10 @@ bool state_manager_pop(state_manager_t *state, const void **data)
 
 void state_manager_push_where(state_manager_t *state, void **data)
 {
-   // We need to ensure we have an uncompressed copy of the last pushed state, or we could
-   // end up applying a 'patch' to wrong savestate, and that'd blow up rather quickly.
+   /* We need to ensure we have an uncompressed copy of the last
+    * pushed state, or we could end up applying a 'patch' to wrong 
+    * savestate, and that'd blow up rather quickly. */
+
    if (!state->thisblock_valid) 
    {
       const void *ignored;
@@ -221,7 +241,10 @@ static inline int compat_ctz(unsigned x)
    return __builtin_ctz(x);
 }
 #else
-// Only checks at nibble granularity, because that's what we need.
+
+/* Only checks at nibble granularity, 
+ * because that's what we need. */
+
 static inline int compat_ctz(unsigned x)
 {
    if (x & 0x000f)
@@ -237,7 +260,9 @@ static inline int compat_ctz(unsigned x)
 #endif
 
 #include <emmintrin.h>
-// There's no equivalent in libc, you'd think so ... std::mismatch exists, but it's not optimized at all. :(
+/* There's no equivalent in libc, you'd think so ...
+ * std::mismatch exists, but it's not optimized at all. */
+
 static inline size_t find_change(const uint16_t *a, const uint16_t *b)
 {
 	const __m128i *a128 = (const __m128i*)a;
@@ -250,9 +275,10 @@ static inline size_t find_change(const uint16_t *a, const uint16_t *b)
 		__m128i c = _mm_cmpeq_epi32(v0, v1);
 
 		uint32_t mask = _mm_movemask_epi8(c);
-		if (mask != 0xffff) // Something has changed, figure out where.
+		if (mask != 0xffff) /* Something has changed, figure out where. */
 		{
-			size_t ret = (((uint8_t*)a128 - (uint8_t*)a) | (compat_ctz(~mask))) >> 1;
+			size_t ret = (((uint8_t*)a128 - (uint8_t*)a) |
+               (compat_ctz(~mask))) >> 1;
 			return ret | (a[ret] == b[ret]);
 		}
 
@@ -306,9 +332,14 @@ static inline size_t find_same(const uint16_t *a, const uint16_t *b)
 	if (*a != *b)
 #endif
 	{
-		// With this, it's random whether two consecutive identical words are caught.
-		// Luckily, compression rate is the same for both cases, and three is always caught.
-		// (We prefer to miss two-word blocks, anyways; fewer iterations of the outer loop, as well as in the decompressor.)
+		/* With this, it's random whether two consecutive identical 
+       * words are caught.
+       *
+       * Luckily, compression rate is the same for both cases, and 
+       * three is always caught.
+       *
+       * (We prefer to miss two-word blocks, anyways; fewer iterations 
+       * of the outer loop, as well as in the decompressor.) */
 		const uint32_t *a_big = (const uint32_t*)a;
 		const uint32_t *b_big = (const uint32_t*)b;
 		
@@ -340,7 +371,9 @@ recheckcapacity:;
 
       size_t headpos = state->head - state->data;
       size_t tailpos = state->tail - state->data;
-      size_t remaining = (tailpos + state->capacity - sizeof(size_t) - headpos - 1) % state->capacity + 1;
+      size_t remaining = (tailpos + state->capacity -
+            sizeof(size_t) - headpos - 1) % state->capacity + 1;
+
       if (remaining <= state->maxcompsize)
       {
          state->tail = state->data + read_size_t(state->tail);
@@ -355,7 +388,8 @@ recheckcapacity:;
       const uint8_t *newb = state->nextblock;
       uint8_t *compressed = state->head + sizeof(size_t);
 
-      // Begin compression code; 'compressed' will point to the end of the compressed data (excluding the prev pointer).
+      /* Begin compression code; 'compressed' will point to 
+       * the end of the compressed data (excluding the prev pointer). */
       const uint16_t *old16 = (const uint16_t*)oldb;
       const uint16_t *new16 = (const uint16_t*)newb;
       uint16_t *compressed16 = (uint16_t*)compressed;
@@ -377,8 +411,9 @@ recheckcapacity:;
          {
             if (skip > UINT32_MAX)
             {
-               // This will make it scan the entire thing again, but it only hits on 8GB unchanged
-               // data anyways, and if you're doing that, you've got bigger problems.
+               /* This will make it scan the entire thing again, 
+                * but it only hits on 8GB unchanged data anyways,
+                * and if you're doing that, you've got bigger problems. */
                skip = UINT32_MAX;
             }
             *compressed16++ = 0;
@@ -408,7 +443,7 @@ recheckcapacity:;
       compressed16[1] = 0;
       compressed16[2] = 0;
       compressed = (uint8_t*)(compressed16 + 3);
-      // End compression code.
+      /* End compression code. */
 
       if (compressed - state->data + state->maxcompsize > state->capacity)
       {
@@ -434,11 +469,13 @@ recheckcapacity:;
    return;
 }
 
-void state_manager_capacity(state_manager_t *state, unsigned *entries, size_t *bytes, bool *full)
+void state_manager_capacity(state_manager_t *state,
+      unsigned *entries, size_t *bytes, bool *full)
 {
    size_t headpos = state->head - state->data;
    size_t tailpos = state->tail - state->data;
-   size_t remaining = (tailpos + state->capacity - sizeof(size_t) - headpos - 1) % state->capacity + 1;
+   size_t remaining = (tailpos + state->capacity -
+         sizeof(size_t) - headpos - 1) % state->capacity + 1;
 
    if (entries)
       *entries = state->entries;

@@ -38,23 +38,26 @@ unsigned libretro_dummy_retro_api_version(void)
    return RETRO_API_VERSION;
 }
 
-void libretro_dummy_retro_set_controller_port_device(unsigned port, unsigned device)
+void libretro_dummy_retro_set_controller_port_device(
+      unsigned port, unsigned device)
 {
    (void)port;
    (void)device;
 }
 
-void libretro_dummy_retro_get_system_info(struct retro_system_info *info)
+void libretro_dummy_retro_get_system_info(
+      struct retro_system_info *info)
 {
    memset(info, 0, sizeof(*info));
    info->library_name     = "No Core";
    info->library_version  = "";
    info->need_fullpath    = false;
-   info->valid_extensions = ""; // Nothing.
+   info->valid_extensions = ""; /* Nothing. */
 }
 
-// Doesn't really matter, but need something sane.
-void libretro_dummy_retro_get_system_av_info(struct retro_system_av_info *info)
+/* Doesn't really matter, but need something sane. */
+void libretro_dummy_retro_get_system_av_info(
+      struct retro_system_av_info *info)
 {
    info->timing.fps = 60.0;
    info->timing.sample_rate = 30000.0;
@@ -77,7 +80,7 @@ void libretro_dummy_retro_set_environment(retro_environment_t cb)
 {
    dummy_environ_cb = cb;
 
-   // We know it's supported, it's internal to RetroArch.
+   /* We know it's supported, it's internal to RetroArch. */
    enum retro_pixel_format fmt = RETRO_PIXEL_FORMAT_RGB565;
    dummy_environ_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &fmt);
 }
@@ -87,7 +90,8 @@ void libretro_dummy_retro_set_audio_sample(retro_audio_sample_t cb)
    dummy_audio_cb = cb;
 }
 
-void libretro_dummy_retro_set_audio_sample_batch(retro_audio_sample_batch_t cb)
+void libretro_dummy_retro_set_audio_sample_batch(
+      retro_audio_sample_batch_t cb)
 {
    dummy_audio_batch_cb = cb;
 }
@@ -119,7 +123,7 @@ void libretro_dummy_retro_run(void)
    dummy_video_cb(frame_buf, 320, 240, 640);
 }
 
-// This should never be called, it's only used as a placeholder.
+/* This should never be called, it's only used as a placeholder. */
 bool libretro_dummy_retro_load_game(const struct retro_game_info *info)
 {
    (void)info;
@@ -134,7 +138,8 @@ unsigned libretro_dummy_retro_get_region(void)
    return RETRO_REGION_NTSC;
 }
 
-bool libretro_dummy_retro_load_game_special(unsigned type, const struct retro_game_info *info, size_t num)
+bool libretro_dummy_retro_load_game_special(unsigned type,
+      const struct retro_game_info *info, size_t num)
 {
    (void)type;
    (void)info;
@@ -154,7 +159,8 @@ bool libretro_dummy_retro_serialize(void *data, size_t size)
    return false;
 }
 
-bool libretro_dummy_retro_unserialize(const void *data, size_t size)
+bool libretro_dummy_retro_unserialize(const void *data,
+      size_t size)
 {
    (void)data;
    (void)size;
@@ -176,7 +182,8 @@ size_t libretro_dummy_retro_get_memory_size(unsigned id)
 void libretro_dummy_retro_cheat_reset(void)
 {}
 
-void libretro_dummy_retro_cheat_set(unsigned index, bool enabled, const char *code)
+void libretro_dummy_retro_cheat_set(unsigned index,
+      bool enabled, const char *code)
 {
    (void)index;
    (void)enabled;

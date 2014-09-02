@@ -30,27 +30,35 @@ typedef struct sthread sthread_t;
 
 /* Threading */
 sthread_t *sthread_create(void (*thread_func)(void*), void *userdata);
+
 int sthread_detach(sthread_t *thread);
+
 void sthread_join(sthread_t *thread);
 
 /* Mutexes */
 typedef struct slock slock_t;
 
 slock_t *slock_new(void);
+
 void slock_free(slock_t *lock);
 
 void slock_lock(slock_t *lock);
+
 void slock_unlock(slock_t *lock);
 
 /* Condition variables. */
 typedef struct scond scond_t;
 
 scond_t *scond_new(void);
+
 void scond_free(scond_t *cond);
 
 void scond_wait(scond_t *cond, slock_t *lock);
+
 bool scond_wait_timeout(scond_t *cond, slock_t *lock, int64_t timeout_us);
+
 int scond_broadcast(scond_t *cond);
+
 void scond_signal(scond_t *cond);
 
 #ifndef RARCH_INTERNAL
