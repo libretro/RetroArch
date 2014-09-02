@@ -536,23 +536,6 @@ static int menu_common_core_setting_toggle(unsigned setting, unsigned action)
    return 0;
 }
 
-static void defer_decision_automatic(void)
-{
-   if (driver.menu)
-   {
-      menu_flush_stack_type(MENU_SETTINGS);
-      driver.menu->msg_force = true;
-   }
-}
-
-static void defer_decision_manual(void)
-{
-   if (driver.menu)
-      menu_entries_push(driver.menu->menu_stack,
-            g_settings.libretro_directory, "deferred_core_list",
-            MENU_SETTINGS_DEFERRED_CORE, driver.menu->selection_ptr);
-}
-
 static int menu_common_setting_set_perf(unsigned setting, unsigned action,
       struct retro_perf_counter **counters, unsigned offset)
 {
@@ -2068,11 +2051,14 @@ static int menu_action_ok(const char *dir, unsigned menu_type)
             if (ret == -1)
             {
                rarch_main_command(RARCH_CMD_LOAD_CORE);
-               defer_decision_automatic();
+               menu_flush_stack_type(MENU_SETTINGS);
+               driver.menu->msg_force = true;
                return -1;
             }
             else if (ret == 0)
-               defer_decision_manual();
+               menu_entries_push(driver.menu->menu_stack,
+                     g_settings.libretro_directory, "deferred_core_list",
+                     MENU_SETTINGS_DEFERRED_CORE, driver.menu->selection_ptr);
          }
          else
          {
