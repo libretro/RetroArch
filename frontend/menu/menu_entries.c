@@ -71,11 +71,11 @@ void menu_entries_push_perfcounter(menu_handle_t *menu,
                id + i, 0);
 }
 
-void menu_entries_pop(void)
+void menu_entries_pop(file_list_t *list)
 {
-   if (file_list_get_size(driver.menu->menu_stack) > 1)
+   if (file_list_get_size(list) > 1)
    {
-      file_list_pop(driver.menu->menu_stack, &driver.menu->selection_ptr);
+      file_list_pop(list, &driver.menu->selection_ptr);
       driver.menu->need_refresh = true;
    }
 }
@@ -584,7 +584,7 @@ int menu_parse_check(const char *label, unsigned menu_type)
    return 0;
 }
 
-int menu_parse_and_resolve(file_list_t *list)
+int menu_parse_and_resolve(file_list_t *list, file_list_t *menu_list)
 {
    size_t i, list_size;
    unsigned menu_type = 0;
@@ -592,7 +592,7 @@ int menu_parse_and_resolve(file_list_t *list)
    const char *dir = NULL;
    const char *label = NULL;
 
-   file_list_get_last(driver.menu->menu_stack, &dir, &label, &menu_type);
+   file_list_get_last(menu_list, &dir, &label, &menu_type);
 
    if (
          menu_type == MENU_SETTINGS_DEFERRED_CORE ||
@@ -774,7 +774,7 @@ int menu_parse_and_resolve(file_list_t *list)
    {
       case MENU_SETTINGS_CORE:
          {
-            file_list_get_last(driver.menu->menu_stack, &dir, NULL,
+            file_list_get_last(menu_list, &dir, NULL,
                   &menu_type);
             list_size = file_list_get_size(list);
 
@@ -809,7 +809,8 @@ int menu_parse_and_resolve(file_list_t *list)
    return 0;
 }
 
-void menu_flush_stack_type(unsigned final_type)
+void menu_flush_stack_type(file_list_t *list,
+      unsigned final_type)
 {
    const char *path = NULL;
    const char *label = NULL;
@@ -819,11 +820,11 @@ void menu_flush_stack_type(unsigned final_type)
       return;
 
    driver.menu->need_refresh = true;
-   file_list_get_last(driver.menu->menu_stack, &path, &label, &type);
+   file_list_get_last(list, &path, &label, &type);
    while (type != final_type)
    {
-      file_list_pop(driver.menu->menu_stack, &driver.menu->selection_ptr);
-      file_list_get_last(driver.menu->menu_stack, &path, &label, &type);
+      file_list_pop(list, &driver.menu->selection_ptr);
+      file_list_get_last(list, &path, &label, &type);
    }
 }
 
