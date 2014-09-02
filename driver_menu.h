@@ -45,16 +45,18 @@ struct menu_bind_state_port
 
 struct menu_bind_axis_state
 {
-   // Default axis state.
+   /* Default axis state. */
    int16_t rested_axes[MENU_MAX_AXES];
-   // Locked axis state. If we configured an axis, avoid having the same axis state trigger something again right away.
+   /* Locked axis state. If we configured an axis,
+    * avoid having the same axis state trigger something again right away. */
    int16_t locked_axes[MENU_MAX_AXES];
 };
 
 struct menu_bind_state
 {
    struct retro_keybind *target;
-   int64_t timeout_end; // For keyboard binding.
+   /* For keyboard binding. */
+   int64_t timeout_end;
    unsigned begin;
    unsigned last;
    unsigned player;
@@ -91,8 +93,8 @@ typedef struct
    bool defer_core;
    char deferred_path[PATH_MAX];
 
-   // Quick jumping indices with L/R.
-   // Rebuilt when parsing directory.
+   /* Quick jumping indices with L/R.
+    * Rebuilt when parsing directory. */
    size_t scroll_indices[2 * (26 + 2) + 1];
    unsigned scroll_indices_size;
    unsigned scroll_accel;
@@ -107,10 +109,14 @@ typedef struct
    bool load_no_content;
 
    struct gfx_shader *shader;
-   struct gfx_shader *parameter_shader; // Points to either shader or graphics driver current shader.
+   /* Points to either shader or 
+    * graphics driver's current shader. */
+   struct gfx_shader *parameter_shader;
    unsigned current_pad;
 
-   retro_time_t last_time; // Used to throttle menu in case VSync is broken.
+   /* Used to throttle menu in case
+    * VSync is broken. */
+   retro_time_t last_time;
 
    struct menu_bind_state binds;
    struct
@@ -170,7 +176,6 @@ typedef struct menu_ctx_driver
    void  (*init_core_info)(void *);
 
    const menu_ctx_driver_backend_t *backend;
-   // Human readable string.
    const char *ident;
 } menu_ctx_driver_t;
 

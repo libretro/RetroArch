@@ -30,8 +30,8 @@ typedef struct
 {
    char *path;
    char *desc;
-   /* Set once to avoid opening the same file
-    * several times. */
+   /* Set missing once to avoid opening
+    * the same file several times. */
    bool missing;
    bool optional;
 } core_info_firmware_t;

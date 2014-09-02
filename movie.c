@@ -25,7 +25,9 @@ struct bsv_movie
 {
    FILE *file;
 
-   size_t *frame_pos; // A ring buffer keeping track of positions in the file for each frame.
+   /* A ring buffer keeping track of positions
+    * in the file for each frame. */
+   size_t *frame_pos;
    size_t frame_mask;
    size_t frame_ptr;
 
@@ -56,8 +58,10 @@ static bool init_playback(bsv_movie_t *handle, const char *path)
       return false;
    }
 
-   // Compatibility with old implementation that used incorrect documentation.
-   if (swap_if_little32(header[MAGIC_INDEX]) != BSV_MAGIC && swap_if_big32(header[MAGIC_INDEX]) != BSV_MAGIC)
+   /* Compatibility with old implementation that
+    * used incorrect documentation. */
+   if (swap_if_little32(header[MAGIC_INDEX]) != BSV_MAGIC
+         && swap_if_big32(header[MAGIC_INDEX]) != BSV_MAGIC)
    {
       RARCH_ERR("Movie file is not a valid BSV1 file.\n");
       return false;
@@ -103,7 +107,7 @@ static bool init_record(bsv_movie_t *handle, const char *path)
 
    uint32_t header[4] = {0};
 
-   // This value is supposed to show up as BSV1 in a HEX editor, big-endian.
+   /* This value is supposed to show up as BSV1 in a HEX editor, big-endian. */
    header[MAGIC_INDEX] = swap_if_little32(BSV_MAGIC);
 
    header[CRC_INDEX] = swap_if_big32(g_extern.content_crc);
@@ -170,7 +174,8 @@ bsv_movie_t *bsv_movie_init(const char *path, enum rarch_movie_type type)
    else if (!init_record(handle, path))
       goto error;
 
-   // Just pick something really large :D ~1 million frames rewind should do the trick.
+   /* Just pick something really large 
+    * ~1 million frames rewind should do the trick. */
    if (!(handle->frame_pos = (size_t*)calloc((1 << 20), sizeof(size_t))))
       goto error; 
 
@@ -201,27 +206,33 @@ void bsv_movie_frame_rewind(bsv_movie_t *handle)
 {
    handle->did_rewind = true;
 
-   // If we're at the beginning ... :)
    if ((handle->frame_ptr <= 1) && (handle->frame_pos[0] == handle->min_file_pos))
    {
+      /* If we're at the beginning... */
       handle->frame_ptr = 0;
       fseek(handle->file, handle->min_file_pos, SEEK_SET);
    }
    else
    {
-      // First time rewind is performed, the old frame is simply replayed.
-      // However, playing back that frame caused us to read data, and push data to the ring buffer.
-      // Sucessively rewinding frames, we need to rewind past the read data, plus another.
-      handle->frame_ptr = (handle->frame_ptr - (handle->first_rewind ? 1 : 2)) & handle->frame_mask;
+      /* First time rewind is performed, the old frame is simply replayed.
+       * However, playing back that frame caused us to read data, and push
+       * data to the ring buffer.
+       *
+       * Sucessively rewinding frames, we need to rewind past the read data,
+       * plus another. */
+      handle->frame_ptr = (handle->frame_ptr -
+            (handle->first_rewind ? 1 : 2)) & handle->frame_mask;
       fseek(handle->file, handle->frame_pos[handle->frame_ptr], SEEK_SET);
    }
 
-   // We rewound past the beginning. :O
    if (ftell(handle->file) <= (long)handle->min_file_pos)
    {
-      // If recording, we simply reset the starting point. Nice and easy.
+      /* We rewound past the beginning. */
+
       if (!handle->playback)
       {
+         /* If recording, we simply reset
+          * the starting point. Nice and easy. */
          fseek(handle->file, 4 * sizeof(uint32_t), SEEK_SET);
          pretro_serialize(handle->state, handle->state_size);
          fwrite(handle->state, 1, handle->state_size, handle->file);

@@ -30,14 +30,16 @@
 static bool netplay_is_alive(netplay_t *handle);
 
 static bool netplay_poll(netplay_t *handle);
-static int16_t netplay_input_state(netplay_t *handle, bool port, unsigned device, unsigned index, unsigned id);
+static int16_t netplay_input_state(netplay_t *handle, bool port,
+      unsigned device, unsigned index, unsigned id);
 
 // If we're fast-forward replaying to resync, check if we should actually show frame.
 static bool netplay_should_skip(netplay_t *handle);
 static bool netplay_can_poll(netplay_t *handle);
 static void netplay_set_spectate_input(netplay_t *handle, int16_t input);
 
-static bool netplay_send_cmd(netplay_t *handle, uint32_t cmd, const void *data, size_t size);
+static bool netplay_send_cmd(netplay_t *handle, uint32_t cmd,
+      const void *data, size_t size);
 static bool netplay_get_cmd(netplay_t *handle);
 
 #define PREV_PTR(x) ((x) == 0 ? handle->buffer_size - 1 : (x) - 1)
@@ -1570,4 +1572,3 @@ void freeaddrinfo_rarch__(struct addrinfo *res)
 }
 
 #endif
-

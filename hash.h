@@ -48,7 +48,8 @@
 #include "config.h"
 #endif
 
-// Hashes sha256 and outputs a human readable string for comparing with the cheat XML values.
+/* Hashes sha256 and outputs a human readable string
+ * for comparing with the cheat XML values. */
 void sha256_hash(char *out, const uint8_t *in, size_t size);
 
 #ifdef HAVE_ZLIB
@@ -61,7 +62,8 @@ static inline uint32_t crc32_calculate(const uint8_t *data, size_t length)
 
 static inline uint32_t crc32_adjust(uint32_t crc, uint8_t data)
 {
-   // zlib and nall have different assumptions on "sign" for this function.
+   /* zlib and nall have different
+    * assumptions on "sign" for this function. */
    return ~crc32(~crc, &data, 1);
 }
 #else

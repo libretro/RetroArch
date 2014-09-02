@@ -57,7 +57,8 @@
 #endif
 
 #if defined(_WIN32)
-// Woohoo, Winsock has headers from the STONE AGE. :D
+/* Woohoo, Winsock has headers 
+ * from the STONE AGE. :D */
 #ifndef _XBOX360
 #define close(x) closesocket(x)
 #endif
@@ -75,9 +76,9 @@
 #endif
 #endif
 
-// Compatibility layer for legacy or incomplete BSD socket implementations.
-// Only for IPv4. Mostly useful for the consoles which do not support
-// anything reasonably modern on the socket API side of things.
+/* Compatibility layer for legacy or incomplete BSD socket implementations.
+ * Only for IPv4. Mostly useful for the consoles which do not support
+ * anything reasonably modern on the socket API side of things. */
 
 #ifdef HAVE_SOCKET_LEGACY
 
@@ -108,7 +109,7 @@ void freeaddrinfo(struct addrinfo *res);
 #define AI_PASSIVE 1
 #endif
 
-// gai_strerror() not used, so we skip that.
+/* gai_strerror() not used, so we skip that. */
 
 #endif
 #endif

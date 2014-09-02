@@ -223,7 +223,7 @@ static void cheat_manager_save_config(cheat_manager_t *handle,
    }
 
    if (*conf_str)
-      conf_str[strlen(conf_str) - 1] = '\0'; // Remove the trailing ';'
+      conf_str[strlen(conf_str) - 1] = '\0'; /* Remove the trailing ';' */
 
    config_set_string(conf, sha256, conf_str);
 

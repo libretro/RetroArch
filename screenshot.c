@@ -40,16 +40,20 @@ static bool write_header_bmp(FILE *file, unsigned width, unsigned height)
    /* Generic BMP stuff. */
    const uint8_t header[] = {
       'B', 'M',
-      (uint8_t)(size >> 0), (uint8_t)(size >> 8), (uint8_t)(size >> 16), (uint8_t)(size >> 24),
+      (uint8_t)(size >> 0), (uint8_t)(size >> 8),
+      (uint8_t)(size >> 16), (uint8_t)(size >> 24),
       0, 0, 0, 0,
       54, 0, 0, 0,
       40, 0, 0, 0,
-      (uint8_t)(width >> 0), (uint8_t)(width >> 8), (uint8_t)(width >> 16), (uint8_t)(width >> 24),
-      (uint8_t)(height >> 0), (uint8_t)(height >> 8), (uint8_t)(height >> 16), (uint8_t)(height >> 24),
+      (uint8_t)(width >> 0), (uint8_t)(width >> 8),
+      (uint8_t)(width >> 16), (uint8_t)(width >> 24),
+      (uint8_t)(height >> 0), (uint8_t)(height >> 8),
+      (uint8_t)(height >> 16), (uint8_t)(height >> 24),
       1, 0,
       24, 0,
       0, 0, 0, 0,
-      (uint8_t)(size_array >> 0), (uint8_t)(size_array >> 8), (uint8_t)(size_array >> 16), (uint8_t)(size_array >> 24),
+      (uint8_t)(size_array >> 0), (uint8_t)(size_array >> 8),
+      (uint8_t)(size_array >> 16), (uint8_t)(size_array >> 24),
       19, 11, 0, 0,
       19, 11, 0, 0,
       0, 0, 0, 0,
@@ -59,7 +63,8 @@ static bool write_header_bmp(FILE *file, unsigned width, unsigned height)
    return fwrite(header, 1, sizeof(header), file) == sizeof(header);
 }
 
-static void dump_lines_file(FILE *file, uint8_t **lines, size_t line_size, unsigned height)
+static void dump_lines_file(FILE *file, uint8_t **lines,
+      size_t line_size, unsigned height)
 {
    unsigned i;
    for (i = 0; i < height; i++)
@@ -187,11 +192,13 @@ bool screenshot_dump(const char *folder, const void *frame,
       scaler.in_fmt = SCALER_FMT_RGB565;
 
    scaler_ctx_gen_filter(&scaler);
-   scaler_ctx_scale(&scaler, out_buffer, (const uint8_t*)frame + ((int)height - 1) * pitch);
+   scaler_ctx_scale(&scaler, out_buffer,
+         (const uint8_t*)frame + ((int)height - 1) * pitch);
    scaler_ctx_gen_reset(&scaler);
 
    RARCH_LOG("Using RPNG for PNG screenshots.\n");
-   bool ret = rpng_save_image_bgr24(filename, out_buffer, width, height, width * 3);
+   bool ret = rpng_save_image_bgr24(filename,
+         out_buffer, width, height, width * 3);
    if (!ret)
       RARCH_ERR("Failed to take screenshot.\n");
    free(out_buffer);
