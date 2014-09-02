@@ -1513,8 +1513,7 @@ static void init_controllers(void)
          {
             /* Do not fix g_settings.input.libretro_device[i],
              * because any use of dummy core will reset this,
-             * which is not a good idea.
-             */
+             * which is not a good idea. */
             RARCH_WARN("Input device ID %u is unknown to this libretro implementation. Using RETRO_DEVICE_JOYPAD.\n", device);
             device = RETRO_DEVICE_JOYPAD;
          }
@@ -1926,9 +1925,10 @@ static void fill_pathnames(void)
    g_extern.savefiles = string_list_new();
    rarch_assert(g_extern.savefiles);
 
-   /* For subsystems, we know exactly which RAM types are supported. */
    if (*g_extern.subsystem)
    {
+      /* For subsystems, we know exactly which RAM types are supported. */
+
       unsigned i, j;
       const struct retro_subsystem_info *info = 
          (const struct retro_subsystem_info*)libretro_find_subsystem_info(
@@ -2299,7 +2299,7 @@ static void check_rewind(void)
 
       if ((cnt == 0) || g_extern.bsv.movie)
       {
-         void *state;
+         void *state = NULL;
          state_manager_push_where(g_extern.state_manager, &state);
 
          RARCH_PERFORMANCE_INIT(rewind_serialize);
@@ -3094,7 +3094,7 @@ static void init_sram(void)
       RARCH_LOG("SRAM will not be saved.\n");
 }
 
-static void main_deinit_core(void)
+static void deinit_core(void)
 {
    pretro_unload_game();
    pretro_deinit();
@@ -3188,7 +3188,7 @@ int rarch_main_init(int argc, char *argv[])
    return 0;
 
 error:
-   main_deinit_core();
+   deinit_core();
    uninit_drivers();
 
    g_extern.main_is_init = false;
@@ -3627,7 +3627,7 @@ void rarch_main_deinit(void)
 
    save_auto_state();
 
-   main_deinit_core();
+   deinit_core();
    uninit_drivers();
 
    deinit_temporary_content();
