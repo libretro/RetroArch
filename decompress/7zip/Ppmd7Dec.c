@@ -4,35 +4,35 @@ This code is based on PPMd var.H (2001): Dmitry Shkarin : Public domain */
 
 #include "Ppmd7.h"
 
-#define kTopValue (1 << 24)
+#define PPMD7_kTopValue (1 << 24)
 
 Bool Ppmd7z_RangeDec_Init(CPpmd7z_RangeDec *p)
 {
   unsigned i;
-  p->Code = 0;
+  p->code = 0;
   p->Range = 0xFFFFFFFF;
   if (p->Stream->Read((void *)p->Stream) != 0)
     return False;
   for (i = 0; i < 4; i++)
-    p->Code = (p->Code << 8) | p->Stream->Read((void *)p->Stream);
-  return (p->Code < 0xFFFFFFFF);
+    p->code = (p->code << 8) | p->Stream->Read((void *)p->Stream);
+  return (p->code < 0xFFFFFFFF);
 }
 
 static UInt32 Range_GetThreshold(void *pp, UInt32 total)
 {
   CPpmd7z_RangeDec *p = (CPpmd7z_RangeDec *)pp;
-  return (p->Code) / (p->Range /= total);
+  return (p->code) / (p->Range /= total);
 }
 
 static void Range_Normalize(CPpmd7z_RangeDec *p)
 {
-  if (p->Range < kTopValue)
+  if (p->Range < PPMD7_kTopValue)
   {
-    p->Code = (p->Code << 8) | p->Stream->Read((void *)p->Stream);
+    p->code = (p->code << 8) | p->Stream->Read((void *)p->Stream);
     p->Range <<= 8;
-    if (p->Range < kTopValue)
+    if (p->Range < PPMD7_kTopValue)
     {
-      p->Code = (p->Code << 8) | p->Stream->Read((void *)p->Stream);
+      p->code = (p->code << 8) | p->Stream->Read((void *)p->Stream);
       p->Range <<= 8;
     }
   }
@@ -41,7 +41,7 @@ static void Range_Normalize(CPpmd7z_RangeDec *p)
 static void Range_Decode(void *pp, UInt32 start, UInt32 size)
 {
   CPpmd7z_RangeDec *p = (CPpmd7z_RangeDec *)pp;
-  p->Code -= start * p->Range;
+  p->code -= start * p->Range;
   p->Range *= size;
   Range_Normalize(p);
 }
@@ -51,7 +51,7 @@ static UInt32 Range_DecodeBit(void *pp, UInt32 size0)
   CPpmd7z_RangeDec *p = (CPpmd7z_RangeDec *)pp;
   UInt32 newBound = (p->Range >> 14) * size0;
   UInt32 symbol;
-  if (p->Code < newBound)
+  if (p->code < newBound)
   {
     symbol = 0;
     p->Range = newBound;
@@ -59,7 +59,7 @@ static UInt32 Range_DecodeBit(void *pp, UInt32 size0)
   else
   {
     symbol = 1;
-    p->Code -= newBound;
+    p->code -= newBound;
     p->Range -= newBound;
   }
   Range_Normalize(p);
@@ -84,10 +84,10 @@ int Ppmd7_DecodeSymbol(CPpmd7 *p, IPpmd7_RangeDec *rc)
     CPpmd_State *s = Ppmd7_GetStats(p, p->MinContext);
     unsigned i;
     UInt32 count, hiCnt;
-    if ((count = rc->GetThreshold(rc, p->MinContext->SummFreq)) < (hiCnt = s->Freq))
+    if ((count = rc->GetThreshold(rc, p->MinContext->SummFreq)) < (hiCnt = s->freq))
     {
       Byte symbol;
-      rc->Decode(rc, 0, s->Freq);
+      rc->Decode(rc, 0, s->freq);
       p->FoundState = s;
       symbol = s->Symbol;
       Ppmd7_Update1_0(p);
@@ -97,10 +97,10 @@ int Ppmd7_DecodeSymbol(CPpmd7 *p, IPpmd7_RangeDec *rc)
     i = p->MinContext->NumStats - 1;
     do
     {
-      if ((hiCnt += (++s)->Freq) > count)
+      if ((hiCnt += (++s)->freq) > count)
       {
         Byte symbol;
-        rc->Decode(rc, hiCnt - s->Freq, s->Freq);
+        rc->Decode(rc, hiCnt - s->freq, s->freq);
         p->FoundState = s;
         symbol = s->Symbol;
         Ppmd7_Update1(p);
@@ -155,7 +155,7 @@ int Ppmd7_DecodeSymbol(CPpmd7 *p, IPpmd7_RangeDec *rc)
     do
     {
       int k = (int)(MASK(s->Symbol));
-      hiCnt += (s->Freq & k);
+      hiCnt += (s->freq & k);
       ps[i] = s++;
       i -= k;
     }
@@ -169,9 +169,9 @@ int Ppmd7_DecodeSymbol(CPpmd7 *p, IPpmd7_RangeDec *rc)
     {
       Byte symbol;
       CPpmd_State **pps = ps;
-      for (hiCnt = 0; (hiCnt += (*pps)->Freq) <= count; pps++);
+      for (hiCnt = 0; (hiCnt += (*pps)->freq) <= count; pps++);
       s = *pps;
-      rc->Decode(rc, hiCnt - s->Freq, s->Freq);
+      rc->Decode(rc, hiCnt - s->freq, s->freq);
       Ppmd_See_Update(see);
       p->FoundState = s;
       symbol = s->Symbol;

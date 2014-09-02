@@ -307,7 +307,7 @@ static void RestartModel(CPpmd7 *p)
   {
     CPpmd_State *s = &p->FoundState[i];
     s->Symbol = (Byte)i;
-    s->Freq = 1;
+    s->freq = 1;
     SetSuccessor(s, 0);
   }
 
@@ -375,15 +375,15 @@ static CTX_PTR CreateSuccessors(CPpmd7 *p, Bool skip)
   SetSuccessor(&upState, upBranch + 1);
   
   if (c->NumStats == 1)
-    upState.Freq = ONE_STATE(c)->Freq;
+    upState.freq = ONE_STATE(c)->freq;
   else
   {
     UInt32 cf, s0;
     CPpmd_State *s;
     for (s = STATS(c); s->Symbol != upState.Symbol; s++);
-    cf = s->Freq - 1;
+    cf = s->freq - 1;
     s0 = c->SummFreq - c->NumStats - cf;
-    upState.Freq = (Byte)(1 + ((2 * cf <= s0) ? (5 * cf > s0) : ((2 * cf + 3 * s0 - 1) / (2 * s0))));
+    upState.freq = (Byte)(1 + ((2 * cf <= s0) ? (5 * cf > s0) : ((2 * cf + 3 * s0 - 1) / (2 * s0))));
   }
 
   do
@@ -424,15 +424,15 @@ static void UpdateModel(CPpmd7 *p)
   CTX_PTR c;
   unsigned s0, ns;
   
-  if (p->FoundState->Freq < MAX_FREQ / 4 && p->MinContext->Suffix != 0)
+  if (p->FoundState->freq < MAX_FREQ / 4 && p->MinContext->Suffix != 0)
   {
     c = SUFFIX(p->MinContext);
     
     if (c->NumStats == 1)
     {
       CPpmd_State *s = ONE_STATE(c);
-      if (s->Freq < 32)
-        s->Freq++;
+      if (s->freq < 32)
+        s->freq++;
     }
     else
     {
@@ -440,15 +440,15 @@ static void UpdateModel(CPpmd7 *p)
       if (s->Symbol != p->FoundState->Symbol)
       {
         do { s++; } while (s->Symbol != p->FoundState->Symbol);
-        if (s[0].Freq >= s[-1].Freq)
+        if (s[0].freq >= s[-1].freq)
         {
           SwapStates(&s[0], &s[-1]);
           s--;
         }
       }
-      if (s->Freq < MAX_FREQ - 9)
+      if (s->freq < MAX_FREQ - 9)
       {
-        s->Freq += 2;
+        s->freq += 2;
         c->SummFreq += 2;
       }
     }
@@ -498,7 +498,7 @@ static void UpdateModel(CPpmd7 *p)
     fSuccessor = REF(p->MinContext);
   }
   
-  s0 = p->MinContext->SummFreq - (ns = p->MinContext->NumStats) - (p->FoundState->Freq - 1);
+  s0 = p->MinContext->SummFreq - (ns = p->MinContext->NumStats) - (p->FoundState->freq - 1);
   
   for (c = p->MaxContext; c != p->MinContext; c = SUFFIX(c))
   {
@@ -538,13 +538,13 @@ static void UpdateModel(CPpmd7 *p)
       }
       *s = *ONE_STATE(c);
       c->Stats = REF(s);
-      if (s->Freq < MAX_FREQ / 4 - 1)
-        s->Freq <<= 1;
+      if (s->freq < MAX_FREQ / 4 - 1)
+        s->freq <<= 1;
       else
-        s->Freq = MAX_FREQ - 4;
-      c->SummFreq = (UInt16)(s->Freq + p->InitEsc + (ns > 3));
+        s->freq = MAX_FREQ - 4;
+      c->SummFreq = (UInt16)(s->freq + p->InitEsc + (ns > 3));
     }
-    cf = 2 * (UInt32)p->FoundState->Freq * (c->SummFreq + 6);
+    cf = 2 * (UInt32)p->FoundState->freq * (c->SummFreq + 6);
     sf = (UInt32)s0 + c->SummFreq;
     if (cf < 6 * sf)
     {
@@ -560,7 +560,7 @@ static void UpdateModel(CPpmd7 *p)
       CPpmd_State *s = STATS(c) + ns1;
       SetSuccessor(s, successor);
       s->Symbol = p->FoundState->Symbol;
-      s->Freq = (Byte)cf;
+      s->freq = (Byte)cf;
       c->NumStats = (UInt16)(ns1 + 1);
     }
   }
@@ -578,35 +578,35 @@ static void Rescale(CPpmd7 *p)
       s[0] = s[-1];
     *s = tmp;
   }
-  escFreq = p->MinContext->SummFreq - s->Freq;
-  s->Freq += 4;
+  escFreq = p->MinContext->SummFreq - s->freq;
+  s->freq += 4;
   adder = (p->OrderFall != 0);
-  s->Freq = (Byte)((s->Freq + adder) >> 1);
-  sumFreq = s->Freq;
+  s->freq = (Byte)((s->freq + adder) >> 1);
+  sumFreq = s->freq;
   
   i = p->MinContext->NumStats - 1;
   do
   {
-    escFreq -= (++s)->Freq;
-    s->Freq = (Byte)((s->Freq + adder) >> 1);
-    sumFreq += s->Freq;
-    if (s[0].Freq > s[-1].Freq)
+    escFreq -= (++s)->freq;
+    s->freq = (Byte)((s->freq + adder) >> 1);
+    sumFreq += s->freq;
+    if (s[0].freq > s[-1].freq)
     {
       CPpmd_State *s1 = s;
       CPpmd_State tmp = *s1;
       do
         s1[0] = s1[-1];
-      while (--s1 != stats && tmp.Freq > s1[-1].Freq);
+      while (--s1 != stats && tmp.freq > s1[-1].freq);
       *s1 = tmp;
     }
   }
   while (--i);
   
-  if (s->Freq == 0)
+  if (s->freq == 0)
   {
     unsigned numStats = p->MinContext->NumStats;
     unsigned n0, n1;
-    do { i++; } while ((--s)->Freq == 0);
+    do { i++; } while ((--s)->freq == 0);
     escFreq += i;
     p->MinContext->NumStats = (UInt16)(p->MinContext->NumStats - i);
     if (p->MinContext->NumStats == 1)
@@ -614,7 +614,7 @@ static void Rescale(CPpmd7 *p)
       CPpmd_State tmp = *stats;
       do
       {
-        tmp.Freq = (Byte)(tmp.Freq - (tmp.Freq >> 1));
+        tmp.freq = (Byte)(tmp.freq - (tmp.freq >> 1));
         escFreq >>= 1;
       }
       while (escFreq > 1);
@@ -668,13 +668,13 @@ static void NextContext(CPpmd7 *p)
 void Ppmd7_Update1(CPpmd7 *p)
 {
   CPpmd_State *s = p->FoundState;
-  s->Freq += 4;
+  s->freq += 4;
   p->MinContext->SummFreq += 4;
-  if (s[0].Freq > s[-1].Freq)
+  if (s[0].freq > s[-1].freq)
   {
     SwapStates(&s[0], &s[-1]);
     p->FoundState = --s;
-    if (s->Freq > MAX_FREQ)
+    if (s->freq > MAX_FREQ)
       Rescale(p);
   }
   NextContext(p);
@@ -682,17 +682,17 @@ void Ppmd7_Update1(CPpmd7 *p)
 
 void Ppmd7_Update1_0(CPpmd7 *p)
 {
-  p->PrevSuccess = (2 * p->FoundState->Freq > p->MinContext->SummFreq);
+  p->PrevSuccess = (2 * p->FoundState->freq > p->MinContext->SummFreq);
   p->RunLength += p->PrevSuccess;
   p->MinContext->SummFreq += 4;
-  if ((p->FoundState->Freq += 4) > MAX_FREQ)
+  if ((p->FoundState->freq += 4) > MAX_FREQ)
     Rescale(p);
   NextContext(p);
 }
 
 void Ppmd7_UpdateBin(CPpmd7 *p)
 {
-  p->FoundState->Freq = (Byte)(p->FoundState->Freq + (p->FoundState->Freq < 128 ? 1: 0));
+  p->FoundState->freq = (Byte)(p->FoundState->freq + (p->FoundState->freq < 128 ? 1: 0));
   p->PrevSuccess = 1;
   p->RunLength++;
   NextContext(p);
@@ -701,7 +701,7 @@ void Ppmd7_UpdateBin(CPpmd7 *p)
 void Ppmd7_Update2(CPpmd7 *p)
 {
   p->MinContext->SummFreq += 4;
-  if ((p->FoundState->Freq += 4) > MAX_FREQ)
+  if ((p->FoundState->freq += 4) > MAX_FREQ)
     Rescale(p);
   p->RunLength = p->InitRL;
   UpdateModel(p);

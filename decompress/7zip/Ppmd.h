@@ -43,7 +43,7 @@ typedef struct
 typedef struct
 {
   Byte Symbol;
-  Byte Freq;
+  Byte freq;
   UInt16 SuccessorLow;
   UInt16 SuccessorHigh;
 } CPpmd_State;

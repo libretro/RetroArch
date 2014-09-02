@@ -86,7 +86,7 @@ void Ppmd7_Update2(CPpmd7 *p);
 void Ppmd7_UpdateBin(CPpmd7 *p);
 
 #define Ppmd7_GetBinSumm(p) \
-    &p->BinSumm[Ppmd7Context_OneState(p->MinContext)->Freq - 1][p->PrevSuccess + \
+    &p->BinSumm[Ppmd7Context_OneState(p->MinContext)->freq - 1][p->PrevSuccess + \
     p->NS2BSIndx[Ppmd7_GetContext(p, p->MinContext->Suffix)->NumStats - 1] + \
     (p->HiBitsFlag = p->HB2Flag[p->FoundState->Symbol]) + \
     2 * p->HB2Flag[Ppmd7Context_OneState(p->MinContext)->Symbol] + \
@@ -108,7 +108,7 @@ typedef struct
 {
   IPpmd7_RangeDec p;
   UInt32 Range;
-  UInt32 Code;
+  UInt32 code;
   IByteIn *Stream;
 } CPpmd7z_RangeDec;
 

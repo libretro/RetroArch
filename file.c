@@ -139,13 +139,16 @@ static ssize_t read_content_file(const char *path, void **buf)
       For example: fullpath: /home/user/game.7z/mygame.rom
                    carchive_path: /home/user/game.7z */
 #ifdef HAVE_COMPRESSION
-   char const* archive_found = strstr(path,g_extern.carchive_path);
+   const char* archive_found = (const char*)strstr(path, g_extern.carchive_path);
    if (g_extern.is_carchive)
    {
       if(archive_found)
       {
+         /* FIXME - should use fill_pathname_relative helper function here 
+          * to avoid errors. */
          char rel_path[PATH_MAX];
-         snprintf(rel_path, sizeof(rel_path), archive_found+strlen(g_extern.carchive_path)+1);
+         snprintf(rel_path, sizeof(rel_path),
+                  "%s", archive_found + strlen(g_extern.carchive_path) + 1);
          ret = read_compressed_file(g_extern.carchive_path, rel_path, (void**)&ret_buf);
       }
    }
