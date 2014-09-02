@@ -24,33 +24,42 @@ extern "C" {
 #include "../libretro.h"
 #include <stdint.h>
 
-// Keyboard line reader. Handles textual input in a direct fashion.
+/* Keyboard line reader. Handles textual input in a direct fashion. */
 typedef struct input_keyboard_line input_keyboard_line_t;
 
-// Calls back after return is pressed with the completed line.
-// line can be NULL.
-typedef void (*input_keyboard_line_complete_t)(void *userdata, const char *line);
+/* Calls back after return is pressed with the completed line.
+ * line can be NULL. */
+typedef void (*input_keyboard_line_complete_t)(void *userdata,
+      const char *line);
 
 typedef bool (*input_keyboard_press_t)(void *userdata, unsigned code);
 
 input_keyboard_line_t *input_keyboard_line_new(void *userdata,
       input_keyboard_line_complete_t cb);
 
-// Called on every keyboard character event.
-bool input_keyboard_line_event(input_keyboard_line_t *state, uint32_t character);
+/* Called on every keyboard character event. */
+bool input_keyboard_line_event(input_keyboard_line_t *state,
+      uint32_t character);
 
-// Returns pointer to string. The underlying buffer can be reallocated at any time (or be NULL), but the pointer to it remains constant throughout the objects lifetime.
-const char **input_keyboard_line_get_buffer(const input_keyboard_line_t *state);
+/* Returns pointer to string. The underlying buffer can be reallocated at 
+ * any time (or be NULL), but the pointer to it remains constant 
+ * throughout the objects lifetime. */
+const char **input_keyboard_line_get_buffer(
+      const input_keyboard_line_t *state);
+
 void input_keyboard_line_free(input_keyboard_line_t *state);
 
-// Keyboard event utils. Called by drivers when keyboard events are fired.
-// This interfaces with the global driver struct and libretro callbacks.
-void input_keyboard_event(bool down, unsigned code, uint32_t character, uint16_t mod);
+/* Keyboard event utils. Called by drivers when keyboard events are fired.
+ * This interfaces with the global driver struct and libretro callbacks. */
+void input_keyboard_event(bool down, unsigned code, uint32_t character,
+      uint16_t mod);
+
 const char **input_keyboard_start_line(void *userdata, input_keyboard_line_complete_t cb);
 
-// Wait for keys to be pressed (used for binding keys in the menu).
-// Callback returns false when all polling is done.
+/* Wait for keys to be pressed (used for binding keys in the menu).
+ * Callback returns false when all polling is done. */
 void input_keyboard_wait_keys(void *userdata, input_keyboard_press_t cb);
+
 void input_keyboard_wait_keys_cancel(void);
 
 #ifdef __cplusplus

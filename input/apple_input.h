@@ -19,7 +19,7 @@
 
 #include "../general.h"
 
-// Input responder
+/* Input responder */
 #define MAX_TOUCHES 16
 #define MAX_KEYS 256
 
@@ -45,39 +45,55 @@ typedef struct
 } apple_input_data_t;
 
 struct apple_pad_connection;
+
 struct apple_pad_interface
 {
    void* (*connect)(struct apple_pad_connection* connection, uint32_t slot);
    void (*disconnect)(void* device);
    void (*packet_handler)(void* device, uint8_t *packet, uint16_t size);
-   void (*set_rumble)(void* device, enum retro_rumble_effect effect, uint16_t strength);
+   void (*set_rumble)(void* device, enum retro_rumble_effect effect,
+         uint16_t strength);
 };
 
 
 // Joypad data
-int32_t apple_joypad_connect(const char* name, struct apple_pad_connection* connection);
+int32_t apple_joypad_connect(const char* name,
+      struct apple_pad_connection* connection);
+
 int32_t apple_joypad_connect_gcapi(void);
+
 void apple_joypad_disconnect(uint32_t slot);
+
 void apple_joypad_packet(uint32_t slot, uint8_t* data, uint32_t length);
 
-// Determine if connected joypad is a hidpad backed device; if false apple_joypad_packet cannot be used
+/* Determine if connected joypad is a hidpad backed device.
+ * If false, apple_joypad_packet cannot be used */
 bool apple_joypad_has_interface(uint32_t slot);
 
-// This is implemented in the platform specific portions of the input code
-void apple_joypad_send_hid_control(struct apple_pad_connection* connection, uint8_t* data, size_t size);
+/* This is implemented in the platform-specific 
+ * portions of the input code */
+void apple_joypad_send_hid_control(struct apple_pad_connection* connection,
+      uint8_t* data, size_t size);
 
-// Input data for the main thread and the game thread
+/* Input data for the main thread and the game thread */
 extern apple_input_data_t g_current_input_data;
 
-// Main thread only
+/* Main thread only */
 void apple_input_enable_icade(bool on);
+
 void apple_input_enable_small_keyboard(bool on);
+
 uint32_t apple_input_get_icade_buttons(void);
+
 void apple_input_reset_icade_buttons(void);
-void apple_input_keyboard_event(bool down, unsigned code, uint32_t character, uint32_t mod);
+
+void apple_input_keyboard_event(bool down, unsigned code,
+      uint32_t character, uint32_t mod);
 
 extern int32_t apple_input_find_any_key(void);
+
 extern int32_t apple_input_find_any_button(uint32_t port);
+
 extern int32_t apple_input_find_any_axis(uint32_t port);
 
 #endif

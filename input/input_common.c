@@ -95,9 +95,11 @@ const rarch_joypad_driver_t *input_joypad_init_driver(const char *ident)
 
    for (i = 0; joypad_drivers[i]; i++)
    {
-      if (strcmp(ident, joypad_drivers[i]->ident) == 0 && joypad_drivers[i]->init())
+      if (strcmp(ident, joypad_drivers[i]->ident) == 0
+            && joypad_drivers[i]->init())
       {
-         RARCH_LOG("Found joypad driver: \"%s\".\n", joypad_drivers[i]->ident);
+         RARCH_LOG("Found joypad driver: \"%s\".\n",
+               joypad_drivers[i]->ident);
          return joypad_drivers[i];
       }
    }
@@ -112,7 +114,8 @@ const rarch_joypad_driver_t *input_joypad_init_first(void)
    {
       if (joypad_drivers[i]->init())
       {
-         RARCH_LOG("Found joypad driver: \"%s\".\n", joypad_drivers[i]->ident);
+         RARCH_LOG("Found joypad driver: \"%s\".\n",
+               joypad_drivers[i]->ident);
          return joypad_drivers[i];
       }
    }
@@ -120,7 +123,8 @@ const rarch_joypad_driver_t *input_joypad_init_first(void)
    return NULL;
 }
 
-const char *input_joypad_name(const rarch_joypad_driver_t *driver, unsigned joypad)
+const char *input_joypad_name(const rarch_joypad_driver_t *driver,
+      unsigned joypad)
 {
    if (!driver)
       return NULL;
@@ -151,8 +155,9 @@ bool input_joypad_pressed(const rarch_joypad_driver_t *driver,
    if (joy_index < 0 || joy_index >= MAX_PLAYERS)
       return false;
 
-   // Auto-binds are per joypad, not per player.
-   const struct retro_keybind *auto_binds = g_settings.input.autoconf_binds[joy_index];
+   /* Auto-binds are per joypad, not per player. */
+   const struct retro_keybind *auto_binds = 
+      g_settings.input.autoconf_binds[joy_index];
 
    if (!binds[key].valid)
       return false;
@@ -174,7 +179,8 @@ bool input_joypad_pressed(const rarch_joypad_driver_t *driver,
 }
 
 int16_t input_joypad_analog(const rarch_joypad_driver_t *driver,
-      unsigned port, unsigned index, unsigned id, const struct retro_keybind *binds)
+      unsigned port, unsigned index, unsigned id,
+      const struct retro_keybind *binds)
 {
    if (!driver)
       return 0;
@@ -183,8 +189,9 @@ int16_t input_joypad_analog(const rarch_joypad_driver_t *driver,
    if (joy_index < 0 || joy_index >= MAX_PLAYERS)
       return 0;
 
-   // Auto-binds are per joypad, not per player.
-   const struct retro_keybind *auto_binds = g_settings.input.autoconf_binds[joy_index];
+   /* Auto-binds are per joypad, not per player. */
+   const struct retro_keybind *auto_binds =
+      g_settings.input.autoconf_binds[joy_index];
 
    unsigned id_minus = 0;
    unsigned id_plus  = 0;
@@ -217,8 +224,10 @@ int16_t input_joypad_analog(const rarch_joypad_driver_t *driver,
    if (key_plus == NO_BTN)
       key_plus = auto_binds[id_plus].joykey;
 
-   int16_t digital_left  = driver->button(joy_index, (uint16_t)key_minus) ? -0x7fff : 0;
-   int16_t digital_right = driver->button(joy_index, (uint16_t)key_plus)  ?  0x7fff : 0;
+   int16_t digital_left  = driver->button(joy_index,
+         (uint16_t)key_minus) ? -0x7fff : 0;
+   int16_t digital_right = driver->button(joy_index,
+         (uint16_t)key_plus)  ?  0x7fff : 0;
    return digital_right + digital_left;
 }
 
@@ -228,7 +237,8 @@ int16_t input_joypad_axis_raw(const rarch_joypad_driver_t *driver,
    if (!driver)
       return 0;
 
-   return driver->axis(joypad, AXIS_POS(axis)) + driver->axis(joypad, AXIS_NEG(axis));
+   return driver->axis(joypad, AXIS_POS(axis)) +
+      driver->axis(joypad, AXIS_NEG(axis));
 }
 
 bool input_joypad_button_raw(const rarch_joypad_driver_t *driver,
@@ -251,7 +261,8 @@ bool input_joypad_hat_raw(const rarch_joypad_driver_t *driver,
 
 #ifndef IS_RETROLAUNCH
 bool input_translate_coord_viewport(int mouse_x, int mouse_y,
-      int16_t *res_x, int16_t *res_y, int16_t *res_screen_x, int16_t *res_screen_y)
+      int16_t *res_x, int16_t *res_y, int16_t *res_screen_x,
+      int16_t *res_screen_y)
 {
    struct rarch_viewport vp = {0};
    bool have_viewport_info = driver.video && driver.video->viewport_info;
@@ -1151,7 +1162,8 @@ enum retro_key input_translate_str_to_rk(const char *str)
    return find_rk_bind(str);
 }
 
-void input_config_parse_key(config_file_t *conf, const char *prefix, const char *btn,
+void input_config_parse_key(config_file_t *conf,
+      const char *prefix, const char *btn,
       struct retro_keybind *bind)
 {
    char tmp[64];
@@ -1168,7 +1180,8 @@ const char *input_config_get_prefix(unsigned player, bool meta)
       return meta ? "input" : bind_player_prefix[player];
    else if (player != 0 && !meta)
       return bind_player_prefix[player];
-   return NULL; // Don't bother with meta bind for anyone else than first player.
+   /* Don't bother with meta bind for anyone else than first player. */
+   return NULL;
 }
 
 unsigned input_translate_str_to_bind_id(const char *str)
@@ -1250,23 +1263,28 @@ void input_config_parse_joy_axis(config_file_t *conf, const char *prefix,
             bind->joyaxis = AXIS_NEG(axis);
       }
 
-      // Ensure that d-pad emulation doesn't screw this over.
+      /* Ensure that d-pad emulation doesn't screw this over. */
       bind->orig_joyaxis = bind->joyaxis;
    }
 }
 
 #if !defined(IS_JOYCONFIG) && !defined(IS_RETROLAUNCH)
-static void input_autoconfigure_joypad_conf(config_file_t *conf, struct retro_keybind *binds)
+static void input_autoconfigure_joypad_conf(config_file_t *conf,
+      struct retro_keybind *binds)
 {
    unsigned i;
    for (i = 0; i < RARCH_BIND_LIST_END; i++)
    {
-      input_config_parse_joy_button(conf, "input", input_config_bind_map[i].base, &binds[i]);
-      input_config_parse_joy_axis(conf, "input", input_config_bind_map[i].base, &binds[i]);
+      input_config_parse_joy_button(conf, "input",
+            input_config_bind_map[i].base, &binds[i]);
+      input_config_parse_joy_axis(conf, "input",
+            input_config_bind_map[i].base, &binds[i]);
    }
 }
 
-static bool input_try_autoconfigure_joypad_from_conf(config_file_t *conf, unsigned index, const char *name, const char *driver, bool block_osd_spam)
+static bool input_try_autoconfigure_joypad_from_conf(config_file_t *conf,
+      unsigned index, const char *name, const char *driver,
+      bool block_osd_spam)
 {
    if (!conf)
       return false;
@@ -1309,15 +1327,17 @@ found:
    return true;
 }
 
-void input_config_autoconfigure_joypad(unsigned index, const char *name, const char *driver)
+void input_config_autoconfigure_joypad(unsigned index,
+      const char *name, const char *driver)
 {
    size_t i;
 
    if (!g_settings.input.autodetect_enable)
       return;
 
-   // This will be the case if input driver is reinit. No reason to spam autoconfigure messages
-   // every time (fine in log).
+   /* This will be the case if input driver is reinit.
+    * No reason to spam autoconfigure messages
+    * every time (fine in log). */
    bool block_osd_spam = g_settings.input.autoconfigured[index] && name;
 
    for (i = 0; i < RARCH_BIND_LIST_END; i++)
@@ -1330,11 +1350,11 @@ void input_config_autoconfigure_joypad(unsigned index, const char *name, const c
    if (!name)
       return;
 
-   // false = load from both cfg files and internal
+   /* false = load from both cfg files and internal */
    bool internal_only = !*g_settings.input.autoconfig_dir;
 
 #ifdef HAVE_BUILTIN_AUTOCONFIG
-   // First internal
+   /* First internal */
    for (i = 0; input_builtin_autoconfs[i]; i++)
    {
       config_file_t *conf = config_file_new_from_string(input_builtin_autoconfs[i]);
@@ -1345,10 +1365,11 @@ void input_config_autoconfigure_joypad(unsigned index, const char *name, const c
    }
 #endif
 
-   // Now try files
+   /* Now try files */
    if (!internal_only)
    {
-      struct string_list *list = dir_list_new(g_settings.input.autoconfig_dir, "cfg", false);
+      struct string_list *list = dir_list_new(
+            g_settings.input.autoconfig_dir, "cfg", false);
       if (!list)
          return;
 
@@ -1357,7 +1378,8 @@ void input_config_autoconfigure_joypad(unsigned index, const char *name, const c
          config_file_t *conf = config_file_new(list->elems[i].data);
          if (!conf)
             continue;
-         bool success = input_try_autoconfigure_joypad_from_conf(conf, index, name, driver, block_osd_spam);
+         bool success = input_try_autoconfigure_joypad_from_conf(conf,
+               index, name, driver, block_osd_spam);
          config_file_free(conf);
          if (success)
             break;
@@ -1375,7 +1397,8 @@ const struct retro_keybind *input_get_auto_bind(unsigned port, unsigned id)
    return &g_settings.input.autoconf_binds[joy_index][id];
 }
 
-static void input_get_bind_string_joykey(char *buf, const char *prefix, const struct retro_keybind *bind, size_t size)
+static void input_get_bind_string_joykey(char *buf, const char *prefix,
+      const struct retro_keybind *bind, size_t size)
 {
    if (GET_HAT_DIR(bind->joykey))
    {
@@ -1388,13 +1411,15 @@ static void input_get_bind_string_joykey(char *buf, const char *prefix, const st
          case HAT_RIGHT_MASK: dir = "right"; break;
          default: dir = "?"; break;
       }
-      snprintf(buf, size, "%sHat #%u %s ", prefix, (unsigned)GET_HAT(bind->joykey), dir);
+      snprintf(buf, size, "%sHat #%u %s ", prefix,
+            (unsigned)GET_HAT(bind->joykey), dir);
    }
    else
       snprintf(buf, size, "%s%u (btn) ", prefix, (unsigned)bind->joykey);
 }
 
-static void input_get_bind_string_joyaxis(char *buf, const char *prefix, const struct retro_keybind *bind, size_t size)
+static void input_get_bind_string_joyaxis(char *buf, const char *prefix,
+      const struct retro_keybind *bind, size_t size)
 {
    unsigned axis = 0;
    char dir = '\0';
@@ -1436,7 +1461,8 @@ void input_get_bind_string(char *buf, const struct retro_keybind *bind,
 #endif
 }
 #else
-void input_config_autoconfigure_joypad(unsigned index, const char *name, const char *driver)
+void input_config_autoconfigure_joypad(unsigned index, const char *name,
+      const char *driver)
 {
    (void)index;
    (void)name;
@@ -1456,7 +1482,7 @@ void input_push_analog_dpad(struct retro_keybind *binds, unsigned mode)
          binds[RETRO_DEVICE_ID_JOYPAD_DOWN].orig_joyaxis  = binds[RETRO_DEVICE_ID_JOYPAD_DOWN].joyaxis;
          binds[RETRO_DEVICE_ID_JOYPAD_UP].orig_joyaxis    = binds[RETRO_DEVICE_ID_JOYPAD_UP].joyaxis;
 
-         // Inherit joyaxis from analogs.
+         /* Inherit joyaxis from analogs. */
          binds[RETRO_DEVICE_ID_JOYPAD_RIGHT].joyaxis      = binds[RARCH_ANALOG_LEFT_X_PLUS + 0].joyaxis;
          binds[RETRO_DEVICE_ID_JOYPAD_LEFT].joyaxis       = binds[RARCH_ANALOG_LEFT_X_PLUS + 1].joyaxis;
          binds[RETRO_DEVICE_ID_JOYPAD_DOWN].joyaxis       = binds[RARCH_ANALOG_LEFT_X_PLUS + 2].joyaxis;
@@ -1468,7 +1494,7 @@ void input_push_analog_dpad(struct retro_keybind *binds, unsigned mode)
          binds[RETRO_DEVICE_ID_JOYPAD_DOWN].orig_joyaxis  = binds[RETRO_DEVICE_ID_JOYPAD_DOWN].joyaxis;
          binds[RETRO_DEVICE_ID_JOYPAD_UP].orig_joyaxis    = binds[RETRO_DEVICE_ID_JOYPAD_UP].joyaxis;
 
-         // Inherit joyaxis from analogs.
+         /* Inherit joyaxis from analogs. */
          binds[RETRO_DEVICE_ID_JOYPAD_RIGHT].joyaxis      = binds[RARCH_ANALOG_RIGHT_X_PLUS + 0].joyaxis;
          binds[RETRO_DEVICE_ID_JOYPAD_LEFT].joyaxis       = binds[RARCH_ANALOG_RIGHT_X_PLUS + 1].joyaxis;
          binds[RETRO_DEVICE_ID_JOYPAD_DOWN].joyaxis       = binds[RARCH_ANALOG_RIGHT_X_PLUS + 2].joyaxis;
@@ -1482,7 +1508,7 @@ void input_push_analog_dpad(struct retro_keybind *binds, unsigned mode)
    }
 }
 
-// Restore binds temporarily overridden by input_push_analog_dpad.
+/* Restore binds temporarily overridden by input_push_analog_dpad. */
 void input_pop_analog_dpad(struct retro_keybind *binds)
 {
    unsigned i;

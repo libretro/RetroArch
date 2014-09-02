@@ -24,17 +24,20 @@
 extern "C" {
 #endif
 
-// Overlay driver acts as a medium between input drivers and video driver.
-// Coordinates are fetched from input driver, and an overlay with pressable actions are
-// displayed on-screen.
-//
-// This interface requires that the video driver has support for the overlay interface.
+/* Overlay driver acts as a medium between input drivers and video driver.
+ * Coordinates are fetched from input driver, and an overlay with pressable actions are
+ * displayed on-screen.
+ *
+ * This interface requires that the video driver has support for the overlay interface.
+ */
 typedef struct input_overlay input_overlay_t;
 
 typedef struct input_overlay_state
 {
-   uint64_t buttons;   // This is a bitmask of (1 << key_bind_id).
-   int16_t analog[4];  // Left X, Left Y, Right X, Right Y
+   /* This is a bitmask of (1 << key_bind_id). */
+   uint64_t buttons;
+   /* Left X, Left Y, Right X, Right Y */
+   int16_t analog[4]; 
    uint32_t keys[RETROK_LAST / 32 + 1];
 } input_overlay_state_t;
 
@@ -49,20 +52,25 @@ void input_overlay_enable(input_overlay_t *ol, bool enable);
 
 bool input_overlay_full_screen(input_overlay_t *ol);
 
-// norm_x and norm_y are the result of input_translate_coord_viewport().
-void input_overlay_poll(input_overlay_t *ol, input_overlay_state_t *out, int16_t norm_x, int16_t norm_y);
+/* norm_x and norm_y are the result of
+ * input_translate_coord_viewport(). */
+void input_overlay_poll(input_overlay_t *ol,
+      input_overlay_state_t *out, int16_t norm_x, int16_t norm_y);
 
-// called after all the input_overlay_poll calls to update the range modifiers for pressed/unpressed regions and alpha mods
+/* called after all the input_overlay_poll calls to
+ * update the range modifiers for pressed/unpressed regions
+ * and alpha mods */
 void input_overlay_post_poll(input_overlay_t *ol);
 
-// Call when there is nothing to poll. Allows overlay to clear certain state.
+/* Call when there is nothing to poll. Allows overlay to
+ * clear certain state. */
 void input_overlay_poll_clear(input_overlay_t *ol);
 
-// Sets a modulating factor for alpha channel. Default is 1.0.
-// The alpha factor is applied for all overlays.
+/* Sets a modulating factor for alpha channel. Default is 1.0.
+ * The alpha factor is applied for all overlays. */
 void input_overlay_set_alpha_mod(input_overlay_t *ol, float mod);
 
-// Scales the overlay by a factor of scale.
+/* Scales the overlay by a factor of scale. */
 void input_overlay_set_scale_factor(input_overlay_t *ol, float scale);
 
 void input_overlay_next(input_overlay_t *ol);
