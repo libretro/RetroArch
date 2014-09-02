@@ -220,8 +220,7 @@ static bool menu_poll_find_trigger_pad(struct menu_bind_state *state, struct men
             rested_distance >= 20000)
       {
          /* Take care of case where axis rests on +/- 0x7fff
-          * (e.g. 360 controller on Linux)
-          */
+          * (e.g. 360 controller on Linux) */
          state->target->joyaxis = n->axes[a] > 0 ? AXIS_POS(a) : AXIS_NEG(a);
          state->target->joykey = NO_BTN;
 
@@ -271,7 +270,8 @@ bool menu_poll_find_trigger(struct menu_bind_state *state,
    {
       if (menu_poll_find_trigger_pad(state, new_state, i))
       {
-         // Update the joypad mapping automatically. More friendly that way.
+         /* Update the joypad mapping automatically.
+          * More friendly that way. */
          g_settings.input.joypad_map[state->player] = i;
          return true;
       }

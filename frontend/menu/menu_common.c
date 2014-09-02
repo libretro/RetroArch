@@ -28,9 +28,10 @@ void menu_update_system_info(menu_handle_t *menu, bool *load_no_content)
       libretro_get_system_info(g_settings.libretro, &menu->info,
             load_no_content);
 #endif
-      /* Keep track of info for the currently selected core. */
       if (menu->core_info)
       {
+         /* Keep track of info for the currently selected core. */
+
          if (core_info_list_get_info(menu->core_info,
                   menu->core_info_current, g_settings.libretro))
          {
@@ -55,8 +56,7 @@ void menu_update_system_info(menu_handle_t *menu, bool *load_no_content)
 }
 
 /* When selection is presented back, returns 0.
- * If it can make a decision right now, returns -1.
- */
+ * If it can make a decision right now, returns -1. */
 int menu_defer_core(core_info_list_t *core_info, const char *dir,
       const char *path, char *deferred_path, size_t sizeof_deferred_path)
 {
@@ -92,12 +92,11 @@ void menu_content_history_push_current(void)
 {
    char tmp[PATH_MAX];
 
-   /* g_extern.fullpath can be relative here.
-    * Ensure we're pushing absolute path.
-    */
-
    if (!g_extern.history)
       return;
+
+   /* g_extern.fullpath can be relative here.
+    * Ensure we're pushing absolute path. */
 
    strlcpy(tmp, g_extern.fullpath, sizeof(tmp));
 
@@ -183,6 +182,8 @@ void load_menu_content_history(unsigned game_index)
 #endif
 }
 
+/* Update menu state which depends on config. */
+
 static void menu_update_libretro_info(menu_handle_t *menu)
 {
 #ifndef HAVE_DYNAMIC
@@ -231,7 +232,6 @@ bool load_menu_content(void)
       return false;
    }
 
-   /* Update menu state which depends on config. */
    if (driver.menu)
       menu_update_libretro_info(driver.menu);
 
@@ -519,8 +519,9 @@ bool menu_iterate(void)
  * Likely to have lots of small bugs.
  * Cleanly exit the main loop to ensure that all the tiny details
  * get set properly.
- * This should mitigate most of the smaller bugs.
- */
+ *
+ * This should mitigate most of the smaller bugs. */
+
 bool menu_replace_config(const char *path)
 {
    if (strcmp(path, g_extern.config_path) == 0)
@@ -539,8 +540,8 @@ bool menu_replace_config(const char *path)
 }
 
 /* Save a new config to a file. Filename is based
- * on heuristics to avoid typing.
- */
+ * on heuristics to avoid typing. */
+
 bool menu_save_new_config(void)
 {
    char config_dir[PATH_MAX], config_name[PATH_MAX],
@@ -637,8 +638,7 @@ static inline int menu_list_get_first_char(file_list_t *buf,
    ret = tolower(*path);
 
    /* "Normalize" non-alphabetical entries so they are lumped together
-    * for purposes of jumping.
-    */
+    * for purposes of jumping. */
    if (ret < 'a')
       ret = 'a' - 1;
    else if (ret > 'z')

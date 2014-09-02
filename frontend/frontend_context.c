@@ -43,7 +43,7 @@ static const frontend_ctx_driver_t *frontend_ctx_drivers[] = {
    &frontend_ctx_psp,
 #endif
    &frontend_ctx_null,
-   NULL // zero length array is not valid
+   NULL
 };
 
 const frontend_ctx_driver_t *frontend_ctx_find_driver(const char *ident)

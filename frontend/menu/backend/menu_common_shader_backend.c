@@ -21,12 +21,14 @@ static void menu_common_shader_manager_init(menu_handle_t *menu)
    const char *config_path = NULL;
    struct gfx_shader *shader = (struct gfx_shader*)menu->shader;
 
-   if (*g_extern.core_specific_config_path && g_settings.core_specific_config)
+   if (*g_extern.core_specific_config_path
+         && g_settings.core_specific_config)
       config_path = g_extern.core_specific_config_path;
    else if (*g_extern.config_path)
       config_path = g_extern.config_path;
 
-   // In a multi-config setting, we can't have conflicts on menu.cgp/menu.glslp.
+   /* In a multi-config setting, we can't have
+    * conflicts on menu.cgp/menu.glslp. */
    if (config_path)
    {
       fill_pathname_base(menu->default_glslp, config_path,

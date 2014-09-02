@@ -188,13 +188,15 @@ static void rgui_render_background(void)
          5, 5, driver.menu->width - 10, 5, green_filler);
 
    fill_rect(driver.menu->frame_buf, driver.menu->frame_buf_pitch,
-         5, driver.menu->height - 10, driver.menu->width - 10, 5, green_filler);
+         5, driver.menu->height - 10, driver.menu->width - 10, 5,
+         green_filler);
 
    fill_rect(driver.menu->frame_buf, driver.menu->frame_buf_pitch,
          5, 5, 5, driver.menu->height - 10, green_filler);
 
    fill_rect(driver.menu->frame_buf, driver.menu->frame_buf_pitch,
-         driver.menu->width - 10, 5, 5, driver.menu->height - 10, green_filler);
+         driver.menu->width - 10, 5, 5, driver.menu->height - 10,
+         green_filler);
 }
 
 static void rgui_render_messagebox(const char *message)
@@ -280,7 +282,7 @@ static void rgui_render(void)
       driver.menu->selection_ptr + RGUI_TERM_HEIGHT :
       file_list_get_size(driver.menu->selection_buf);
 
-   // Do not scroll if all items are visible.
+   /* Do not scroll if all items are visible. */
    if (file_list_get_size(driver.menu->selection_buf) <= RGUI_TERM_HEIGHT)
       begin = 0;
 
@@ -466,7 +468,8 @@ static void rgui_render(void)
       file_list_get_at_offset(driver.menu->selection_buf, i, &path,
             &label, &type);
       rarch_setting_t *setting = (rarch_setting_t*)setting_data_find_setting(
-            setting_data_get_list(), driver.menu->selection_buf->list[i].label);
+            setting_data_get_list(),
+            driver.menu->selection_buf->list[i].label);
       unsigned w = 19;
        (void)setting;
       if (menu_type == MENU_SETTINGS_PERFORMANCE_COUNTERS)
@@ -515,7 +518,7 @@ static void rgui_render(void)
       }
       else
 #endif
-      // Pretty-print libretro cores from menu.
+      /* Pretty-print libretro cores from menu. */
       if (
             menu_type == MENU_SETTINGS_CORE ||
             menu_type == MENU_SETTINGS_DEFERRED_CORE)

@@ -107,8 +107,10 @@ static void rmenu_render_messagebox(const char *message)
       font_parms.scale = FONT_SIZE_NORMAL;
       font_parms.color = WHITE;
 
-      if (driver.video_data && driver.video_poke && driver.video_poke->set_osd_msg)
-         driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
+      if (driver.video_data && driver.video_poke
+            && driver.video_poke->set_osd_msg)
+         driver.video_poke->set_osd_msg(driver.video_data,
+               msg, &font_parms);
    }
 
    render_normal = false;
@@ -137,8 +139,12 @@ static void rmenu_render(void)
    if (!menu->selection_buf)
       return;
 
-   begin = (menu->selection_ptr >= (ENTRIES_HEIGHT / 2)) ?  (menu->selection_ptr - (ENTRIES_HEIGHT / 2)) : 0;
-   end = ((menu->selection_ptr + ENTRIES_HEIGHT) <= file_list_get_size(menu->selection_buf)) ? menu->selection_ptr + ENTRIES_HEIGHT : file_list_get_size(menu->selection_buf);
+   begin = (menu->selection_ptr >= (ENTRIES_HEIGHT / 2)) ? 
+      (menu->selection_ptr - (ENTRIES_HEIGHT / 2)) : 0;
+   end = ((menu->selection_ptr + ENTRIES_HEIGHT) <= 
+         file_list_get_size(menu->selection_buf)) ?
+      menu->selection_ptr + ENTRIES_HEIGHT :
+      file_list_get_size(menu->selection_buf);
 
    if (file_list_get_size(menu->selection_buf) <= ENTRIES_HEIGHT)
       begin = 0;
@@ -155,7 +161,8 @@ static void rmenu_render(void)
    unsigned menu_type_is = 0;
    file_list_get_last(menu->menu_stack, &dir, &label, &menu_type);
 
-   if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->type_is)
+   if (driver.menu_ctx && driver.menu_ctx->backend
+         && driver.menu_ctx->backend->type_is)
       menu_type_is = driver.menu_ctx->backend->type_is(menu_type);
 
    if (menu_type == MENU_SETTINGS_CORE)
@@ -283,15 +290,19 @@ static void rmenu_render(void)
    }
 
    char title_buf[256];
-   menu_ticker_line(title_buf, RMENU_TERM_WIDTH, g_extern.frame_count / 15, title, true);
+   menu_ticker_line(title_buf, RMENU_TERM_WIDTH,
+         g_extern.frame_count / 15, title, true);
 
    font_parms.x = POSITION_EDGE_MIN + POSITION_OFFSET;
-   font_parms.y = POSITION_EDGE_MIN + POSITION_RENDER_OFFSET - (POSITION_OFFSET*2);
+   font_parms.y = POSITION_EDGE_MIN + POSITION_RENDER_OFFSET
+      - (POSITION_OFFSET*2);
    font_parms.scale = FONT_SIZE_NORMAL;
    font_parms.color = WHITE;
 
-   if (driver.video_data && driver.video_poke && driver.video_poke->set_osd_msg)
-      driver.video_poke->set_osd_msg(driver.video_data, title_buf, &font_parms);
+   if (driver.video_data && driver.video_poke
+         && driver.video_poke->set_osd_msg)
+      driver.video_poke->set_osd_msg(driver.video_data,
+            title_buf, &font_parms);
 
    char title_msg[64];
    const char *core_name = menu->info.library_name;
@@ -311,10 +322,13 @@ static void rmenu_render(void)
    font_parms.scale = FONT_SIZE_NORMAL;
    font_parms.color = WHITE;
 
-   snprintf(title_msg, sizeof(title_msg), "%s - %s %s", PACKAGE_VERSION, core_name, core_version);
+   snprintf(title_msg, sizeof(title_msg), "%s - %s %s",
+         PACKAGE_VERSION, core_name, core_version);
 
-   if (driver.video_data && driver.video_poke && driver.video_poke->set_osd_msg)
-      driver.video_poke->set_osd_msg(driver.video_data, title_msg, &font_parms);
+   if (driver.video_data && driver.video_poke
+         && driver.video_poke->set_osd_msg)
+      driver.video_poke->set_osd_msg(driver.video_data,
+            title_msg, &font_parms);
 
    size_t i, j;
 
@@ -330,7 +344,8 @@ static void rmenu_render(void)
       char type_str[256];
 
       unsigned w = 19;
-      if (menu_type == MENU_SETTINGS_INPUT_OPTIONS || menu_type == MENU_SETTINGS_CUSTOM_BIND)
+      if (menu_type == MENU_SETTINGS_INPUT_OPTIONS ||
+            menu_type == MENU_SETTINGS_CUSTOM_BIND)
          w = 21;
       else if (menu_type == MENU_SETTINGS_PATH_OPTIONS)
          w = 24;
@@ -339,7 +354,8 @@ static void rmenu_render(void)
       if (type >= MENU_SETTINGS_SHADER_FILTER &&
             type <= MENU_SETTINGS_SHADER_LAST)
       {
-         // HACK. Work around that we're using the menu_type as dir type to propagate state correctly.
+         /* HACK. Work around that we're using the menu_type as 
+          * dir type to propagate state correctly. */
          if ((menu_type_is == MENU_SETTINGS_SHADER_OPTIONS)
                && (menu_type_is == MENU_SETTINGS_SHADER_OPTIONS))
          {
@@ -347,23 +363,33 @@ static void rmenu_render(void)
             strlcpy(type_str, "(DIR)", sizeof(type_str));
             w = 5;
          }
-         else if (type == MENU_SETTINGS_SHADER_OPTIONS || type == MENU_SETTINGS_SHADER_PRESET || type == MENU_SETTINGS_SHADER_PARAMETERS || type == MENU_SETTINGS_SHADER_PRESET_PARAMETERS)
+         else if (
+               type == MENU_SETTINGS_SHADER_OPTIONS ||
+               type == MENU_SETTINGS_SHADER_PRESET ||
+               type == MENU_SETTINGS_SHADER_PARAMETERS ||
+               type == MENU_SETTINGS_SHADER_PRESET_PARAMETERS)
             strlcpy(type_str, "...", sizeof(type_str));
          else if (type == MENU_SETTINGS_SHADER_FILTER)
             snprintf(type_str, sizeof(type_str), "%s",
                   g_settings.video.smooth ? "Linear" : "Nearest");
-         else if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->shader_manager_get_str)
+         else if (driver.menu_ctx && driver.menu_ctx->backend
+               && driver.menu_ctx->backend->shader_manager_get_str)
          {
-            if (type >= MENU_SETTINGS_SHADER_PARAMETER_0 && type <= MENU_SETTINGS_SHADER_PARAMETER_LAST)
-               driver.menu_ctx->backend->shader_manager_get_str(menu->parameter_shader, type_str, sizeof(type_str), type);
+            if (type >= MENU_SETTINGS_SHADER_PARAMETER_0 &&
+                  type <= MENU_SETTINGS_SHADER_PARAMETER_LAST)
+               driver.menu_ctx->backend->shader_manager_get_str(
+                     menu->parameter_shader, type_str, sizeof(type_str), type);
             else
-               driver.menu_ctx->backend->shader_manager_get_str(menu->shader, type_str, sizeof(type_str), type);
+               driver.menu_ctx->backend->shader_manager_get_str(
+                     menu->shader, type_str, sizeof(type_str), type);
          }
       }
       else
 #endif
-      // Pretty-print libretro cores from menu.
-      if (menu_type == MENU_SETTINGS_CORE || menu_type == MENU_SETTINGS_DEFERRED_CORE)
+      /* Pretty-print libretro cores from menu. */
+      if (
+            menu_type == MENU_SETTINGS_CORE ||
+            menu_type == MENU_SETTINGS_DEFERRED_CORE)
       {
          if (type == MENU_FILE_PLAIN)
          {
@@ -406,10 +432,13 @@ static void rmenu_render(void)
       }
       else if (type >= MENU_SETTINGS_CORE_OPTION_START)
          strlcpy(type_str,
-               core_option_get_val(g_extern.system.core_options, type - MENU_SETTINGS_CORE_OPTION_START),
+               core_option_get_val(g_extern.system.core_options,
+                  type - MENU_SETTINGS_CORE_OPTION_START),
                sizeof(type_str));
-      else if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->setting_set_label)
-         driver.menu_ctx->backend->setting_set_label(type_str, sizeof(type_str), &w, type, i);
+      else if (driver.menu_ctx && driver.menu_ctx->backend
+            && driver.menu_ctx->backend->setting_set_label)
+         driver.menu_ctx->backend->setting_set_label(type_str,
+               sizeof(type_str), &w, type, i);
 
       if (type_str[0] == '\0' && w == 0)
       {
@@ -429,24 +458,32 @@ static void rmenu_render(void)
       char type_str_buf[64];
       bool selected = i == menu->selection_ptr;
 
-      menu_ticker_line(entry_title_buf, RMENU_TERM_WIDTH - (w + 1 + 2), g_extern.frame_count / 15, path, selected);
-      menu_ticker_line(type_str_buf, w, g_extern.frame_count / 15, type_str, selected);
+      menu_ticker_line(entry_title_buf, RMENU_TERM_WIDTH - (w + 1 + 2),
+            g_extern.frame_count / 15, path, selected);
+      menu_ticker_line(type_str_buf, w, g_extern.frame_count / 15,
+            type_str, selected);
 
-      snprintf(message, sizeof(message), "%c %s", selected ? '>' : ' ', entry_title_buf);
+      snprintf(message, sizeof(message), "%c %s",
+            selected ? '>' : ' ', entry_title_buf);
 
       //blit_line(menu, x, y, message, selected);
       font_parms.x = POSITION_EDGE_MIN + POSITION_OFFSET;
-      font_parms.y = POSITION_EDGE_MIN + POSITION_RENDER_OFFSET + (POSITION_OFFSET * j);
+      font_parms.y = POSITION_EDGE_MIN + POSITION_RENDER_OFFSET
+         + (POSITION_OFFSET * j);
       font_parms.scale = FONT_SIZE_NORMAL;
       font_parms.color = WHITE;
 
-      if (driver.video_data && driver.video_poke && driver.video_poke->set_osd_msg)
-         driver.video_poke->set_osd_msg(driver.video_data, message, &font_parms);
+      if (driver.video_data && driver.video_poke
+            && driver.video_poke->set_osd_msg)
+         driver.video_poke->set_osd_msg(driver.video_data,
+               message, &font_parms);
 
       font_parms.x = POSITION_EDGE_CENTER + POSITION_OFFSET;
 
-      if (driver.video_data && driver.video_poke && driver.video_poke->set_osd_msg)
-         driver.video_poke->set_osd_msg(driver.video_data, type_str_buf, &font_parms);
+      if (driver.video_data && driver.video_poke
+            && driver.video_poke->set_osd_msg)
+         driver.video_poke->set_osd_msg(driver.video_data,
+               type_str_buf, &font_parms);
    }
 }
 
@@ -457,9 +494,12 @@ void rmenu_set_texture(void *data)
    if (menu_texture_inited)
       return;
 
-   if (driver.video_data && driver.video_poke && driver.video_poke->set_texture_enable && menu_texture && menu_texture->pixels)
+   if (driver.video_data && driver.video_poke
+         && driver.video_poke->set_texture_enable
+         && menu_texture && menu_texture->pixels)
    {
-      driver.video_poke->set_texture_frame(driver.video_data, menu_texture->pixels,
+      driver.video_poke->set_texture_frame(driver.video_data,
+            menu_texture->pixels,
             true, menu->width, menu->height, 1.0f);
       menu_texture_inited = true;
    }
@@ -473,7 +513,8 @@ static void rmenu_context_reset(void *data)
    if (!menu)
       return;
 
-   fill_pathname_join(menu_bg, g_settings.assets_directory, "rmenu", sizeof(menu_bg));
+   fill_pathname_join(menu_bg, g_settings.assets_directory,
+         "rmenu", sizeof(menu_bg));
 #ifdef _XBOX1
    fill_pathname_join(menu_bg, menu_bg, "sd", sizeof(menu_bg));
 #else

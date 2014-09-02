@@ -200,14 +200,17 @@ static void* rmenu_xui_init(void)
       goto error;
    }
 
-   hr = XuiLoadVisualFromBinary( L"file://game:/media/rarch_scene_skin.xur", NULL);
+   hr = XuiLoadVisualFromBinary(
+         L"file://game:/media/rarch_scene_skin.xur", NULL);
    if (FAILED(hr))
    {
       RARCH_ERR("Failed to load skin.\n");
       goto error;
    }
 
-   hr = XuiSceneCreate(hdmenus_allowed ? L"file://game:/media/hd/" : L"file://game:/media/sd/", L"rarch_main.xur", NULL, &root_menu);
+   hr = XuiSceneCreate(hdmenus_allowed ?
+         L"file://game:/media/hd/" : L"file://game:/media/sd/",
+         L"rarch_main.xur", NULL, &root_menu);
    if (FAILED(hr))
    {
       RARCH_ERR("Failed to create scene 'rarch_main.xur'.\n");
@@ -215,14 +218,16 @@ static void* rmenu_xui_init(void)
    }
 
    current_menu = root_menu;
-   hr = XuiSceneNavigateFirst(app.GetRootObj(), current_menu, XUSER_INDEX_FOCUS);
+   hr = XuiSceneNavigateFirst(app.GetRootObj(),
+         current_menu, XUSER_INDEX_FOCUS);
    if (FAILED(hr))
    {
       RARCH_ERR("XuiSceneNavigateFirst failed.\n");
       goto error;
    }
 
-   if (driver.video_data && driver.video_poke && driver.video_poke->set_texture_enable)
+   if (driver.video_data && driver.video_poke
+         && driver.video_poke->set_texture_enable)
       driver.video_poke->set_texture_frame(driver.video_data, NULL,
             true, 0, 0, 1.0f);
 
@@ -274,7 +279,8 @@ static void xui_render_message(const char *msg)
 			msglen = RMENU_TERM_WIDTH;
 		}
 	#endif
-		float msg_width  = (g_extern.lifecycle_state & (1ULL << MODE_MENU_HD)) ? 160 : 100;
+		float msg_width  = (g_extern.lifecycle_state &
+            (1ULL << MODE_MENU_HD)) ? 160 : 100;
 		float msg_height = 120;
 		float msg_offset = 32;
 
@@ -283,7 +289,8 @@ static void xui_render_message(const char *msg)
 		font_parms.scale = 21;
 
 		if (driver.video_poke && driver.video_poke->set_osd_msg)
-			driver.video_poke->set_osd_msg(driver.video_data, msg, &font_parms);
+			driver.video_poke->set_osd_msg(driver.video_data,
+               msg, &font_parms);
 	}
 }
 
@@ -310,7 +317,8 @@ static void rmenu_xui_frame(void)
 
    XUIMessage msg;
    XUIMessageRender msgRender;
-   XuiMessageRender( &msg, &msgRender, app.GetDC(), 0xffffffff, XUI_BLEND_NORMAL );
+   XuiMessageRender( &msg, &msgRender,
+         app.GetDC(), 0xffffffff, XUI_BLEND_NORMAL );
    XuiSendMessage( app.GetRootObj(), &msg );
 
    XuiRenderSetViewTransform( app.GetDC(), &matOrigView );
@@ -392,9 +400,11 @@ static void rmenu_xui_render(void)
 
    rmenu_xui_render_background();
 
-   file_list_get_last(driver.menu->menu_stack, &dir, &label, &menu_type);
+   file_list_get_last(driver.menu->menu_stack, &dir,
+         &label, &menu_type);
 
-   if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->type_is)
+   if (driver.menu_ctx && driver.menu_ctx->backend
+         && driver.menu_ctx->backend->type_is)
       menu_type_is = driver.menu_ctx->backend->type_is(menu_type);
 
    if (menu_type == MENU_SETTINGS_CORE)
@@ -521,7 +531,8 @@ static void rmenu_xui_render(void)
    XuiTextElementSetText(m_menutitle, strw_buffer);
 
    char title_buf[256];
-   menu_ticker_line(title_buf, RXUI_TERM_WIDTH - 3, g_extern.frame_count / 15, title, true);
+   menu_ticker_line(title_buf, RXUI_TERM_WIDTH - 3,
+         g_extern.frame_count / 15, title, true);
    blit_line(RXUI_TERM_START_X + 15, 15, title_buf, true);
 
    char title_msg[64];
@@ -537,8 +548,11 @@ static void rmenu_xui_render(void)
    if (!core_version)
       core_version = "";
 
-   snprintf(title_msg, sizeof(title_msg), "%s - %s %s", PACKAGE_VERSION, core_name, core_version);
-   blit_line(RXUI_TERM_START_X + 15, (RXUI_TERM_HEIGHT * FONT_HEIGHT_STRIDE) + RXUI_TERM_START_Y + 2, title_msg, true);
+   snprintf(title_msg, sizeof(title_msg), "%s - %s %s",
+         PACKAGE_VERSION, core_name, core_version);
+   blit_line(RXUI_TERM_START_X + 15,
+         (RXUI_TERM_HEIGHT * FONT_HEIGHT_STRIDE) + RXUI_TERM_START_Y + 2,
+         title_msg, true);
 
    unsigned x, y;
    size_t i;
@@ -551,12 +565,14 @@ static void rmenu_xui_render(void)
       const char *path = NULL;
       const char *path = NULL;
       unsigned type = 0;
-      file_list_get_at_offset(driver.menu->selection_buf, i, &path, &label, &type);
+      file_list_get_at_offset(driver.menu->selection_buf, i,
+            &path, &label, &type);
       char message[256];
       char type_str[256];
 
       unsigned w = 19;
-      if (menu_type == MENU_SETTINGS_INPUT_OPTIONS || menu_type == MENU_SETTINGS_CUSTOM_BIND)
+      if (menu_type == MENU_SETTINGS_INPUT_OPTIONS ||
+            menu_type == MENU_SETTINGS_CUSTOM_BIND)
          w = 21;
       else if (menu_type == MENU_SETTINGS_PATH_OPTIONS)
          w = 24;
@@ -564,7 +580,8 @@ static void rmenu_xui_render(void)
       if (type >= MENU_SETTINGS_SHADER_FILTER &&
             type <= MENU_SETTINGS_SHADER_LAST)
       {
-         // HACK. Work around that we're using the menu_type as dir type to propagate state correctly.
+         /* HACK. Work around that we're using the menu_type as 
+          * dir type to propagate state correctly. */
          if ((menu_type_is == MENU_SETTINGS_SHADER_OPTIONS)
                && (menu_type_is == MENU_SETTINGS_SHADER_OPTIONS))
          {
@@ -572,17 +589,21 @@ static void rmenu_xui_render(void)
             strlcpy(type_str, "(DIR)", sizeof(type_str));
             w = 5;
          }
-         else if (type == MENU_SETTINGS_SHADER_OPTIONS || type == MENU_SETTINGS_SHADER_PRESET)
+         else if (type == MENU_SETTINGS_SHADER_OPTIONS ||
+               type == MENU_SETTINGS_SHADER_PRESET)
             strlcpy(type_str, "...", sizeof(type_str));
          else if (type == MENU_SETTINGS_SHADER_FILTER)
             snprintf(type_str, sizeof(type_str), "%s",
                   g_settings.video.smooth ? "Linear" : "Nearest");
-         else if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->shader_manager_get_str)
-            driver.menu_ctx->backend->shader_manager_get_str(driver.menu->shader, type_str, sizeof(type_str), type);
+         else if (driver.menu_ctx && driver.menu_ctx->backend
+               && driver.menu_ctx->backend->shader_manager_get_str)
+            driver.menu_ctx->backend->shader_manager_get_str(
+                  driver.menu->shader, type_str, sizeof(type_str), type);
       }
       else
       // Pretty-print libretro cores from menu.
-      if (menu_type == MENU_SETTINGS_CORE || menu_type == MENU_SETTINGS_DEFERRED_CORE)
+      if (menu_type == MENU_SETTINGS_CORE ||
+            menu_type == MENU_SETTINGS_DEFERRED_CORE)
       {
          if (type == MENU_FILE_PLAIN)
          {
@@ -625,10 +646,13 @@ static void rmenu_xui_render(void)
       }
       else if (type >= MENU_SETTINGS_CORE_OPTION_START)
          strlcpy(type_str,
-               core_option_get_val(g_extern.system.core_options, type - MENU_SETTINGS_CORE_OPTION_START),
+               core_option_get_val(g_extern.system.core_options,
+                  type - MENU_SETTINGS_CORE_OPTION_START),
                sizeof(type_str));
-      else if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->setting_set_label)
-         driver.menu_ctx->backend->setting_set_label(type_str, sizeof(type_str), &w, type, i);
+      else if (driver.menu_ctx && driver.menu_ctx->backend
+            && driver.menu_ctx->backend->setting_set_label)
+         driver.menu_ctx->backend->setting_set_label(type_str,
+               sizeof(type_str), &w, type, i);
 
       if (type_str[0] == '\0' && w == 0)
       {
@@ -703,7 +727,8 @@ static void rmenu_xui_navigation_alphabet(void *data, size_t *ptr_out)
    XuiListSetCurSelVisible(m_menulist, *ptr_out);
 }
 
-static void rmenu_xui_list_insert(void *data, const char *path, size_t list_size)
+static void rmenu_xui_list_insert(void *data,
+      const char *path, size_t list_size)
 {
    (void)data;
    wchar_t buf[PATH_MAX];
