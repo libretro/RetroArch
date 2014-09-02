@@ -789,7 +789,11 @@ bool rarch_check_fullscreen(void);
 void rarch_disk_control_set_eject(bool state, bool log);
 void rarch_disk_control_set_index(unsigned index);
 void rarch_disk_control_append_image(const char *path);
-bool rarch_set_rumble_state(unsigned port, enum retro_rumble_effect effect, bool enable);
+bool rarch_set_rumble_state(unsigned port,
+      enum retro_rumble_effect effect, bool enable);
+
+void rarch_playlist_load_content(content_playlist_t *playlist,
+      unsigned index);
 
 /////////
 

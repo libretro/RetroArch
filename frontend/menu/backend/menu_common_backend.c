@@ -1795,8 +1795,9 @@ static int menu_action_ok(const char *dir, unsigned menu_type)
    }
    else if (type == MENU_FILE_PLAYLIST_ENTRY)
    {
-      load_menu_content_history(driver.menu->selection_ptr);
-      menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS);
+      rarch_playlist_load_content(g_extern.history,
+            driver.menu->selection_ptr);
+      menu_flush_stack_type(driver.menu->menu_stack, MENU_SETTINGS);
       return -1;
    }
    else

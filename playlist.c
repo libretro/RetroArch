@@ -50,10 +50,12 @@ void content_playlist_get_index(content_playlist_t *playlist,
    if (!playlist)
       return;
 
-   *path      = playlist->entries[index].path;
+   if (path)
+      *path      = playlist->entries[index].path;
    if (core_path)
       *core_path = playlist->entries[index].core_path;
-   *core_name = playlist->entries[index].core_name;
+   if (core_name)
+      *core_name = playlist->entries[index].core_name;
 }
 
 static void content_playlist_free_entry(

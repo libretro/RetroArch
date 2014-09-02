@@ -3304,7 +3304,8 @@ void rarch_main_command(unsigned cmd)
          break;
       case RARCH_CMD_LOAD_CORE:
 #ifdef HAVE_MENU
-         menu_update_system_info(driver.menu, &driver.menu->load_no_content);
+         if (driver.menu)
+            menu_update_system_info(driver.menu, &driver.menu->load_no_content);
 #endif
          break;
       case RARCH_CMD_LOAD_STATE:
@@ -3652,6 +3653,21 @@ void rarch_main_deinit(void)
    deinit_savefiles();
 
    g_extern.main_is_init = false;
+}
+
+void rarch_playlist_load_content(content_playlist_t *playlist,
+      unsigned index)
+{
+   const char *path      = NULL;
+   const char *core_path = NULL;
+
+   content_playlist_get_index(playlist,
+         index, &path, &core_path, NULL);
+
+   strlcpy(g_settings.libretro, core_path, sizeof(g_settings.libretro));
+   rarch_environment_cb(RETRO_ENVIRONMENT_EXEC, (void*)path);
+
+   rarch_main_command(RARCH_CMD_LOAD_CORE);
 }
 
 void rarch_main_init_wrap(const struct rarch_main_wrap *args,

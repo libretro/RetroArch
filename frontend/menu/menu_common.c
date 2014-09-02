@@ -159,29 +159,6 @@ static void load_menu_content_prepare(void)
             MENU_TEXTURE_FULLSCREEN);
 }
 
-void load_menu_content_history(unsigned game_index)
-{
-   const char *path      = NULL;
-   const char *core_path = NULL;
-   const char *core_name = NULL;
-
-   if (!driver.menu)
-      return;
-
-   content_playlist_get_index(g_extern.history,
-         game_index, &path, &core_path, &core_name);
-
-   strlcpy(g_settings.libretro, core_path, sizeof(g_settings.libretro));
-
-   driver.menu->load_no_content = (path) ? false : true;
-
-   rarch_environment_cb(RETRO_ENVIRONMENT_EXEC, (void*)path);
-
-#if defined(HAVE_DYNAMIC)
-   menu_update_system_info(driver.menu, NULL);
-#endif
-}
-
 /* Update menu state which depends on config. */
 
 static void menu_update_libretro_info(menu_handle_t *menu)
