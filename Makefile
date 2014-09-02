@@ -490,6 +490,10 @@ ifeq ($(HAVE_7ZIP),1)
    JOYCONFIG_OBJ += $(7ZOBJ)
 endif
 
+ifeq ($(HAVE_VALGRIND),1)
+   DEFINES += -DNO_DLCLOSE
+endif
+
 ifneq ($(V),1)
    Q := @
 endif

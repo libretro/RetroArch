@@ -52,6 +52,11 @@ if [ "$HAVE_7ZIP" = "yes" ]; then
    add_include_dirs ./decompress/7zip/
 fi
 
+if [ "$HAVE_VALGRIND" = "yes" ]; then
+   echo "Disabling dlclose() of shared objects for Valgrind support."
+   add_define_make HAVE_VALGRIND "1"
+fi
+
 if [ "$HAVE_FLOATHARD" = "yes" ]; then
    CFLAGS="$CFLAGS -mfloat-abi=hard"
    CXXFLAGS="$CXXFLAGS -mfloat-abi=hard"
