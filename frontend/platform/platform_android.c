@@ -119,7 +119,10 @@ void engine_handle_cmd(void *data)
 
          /* The window is being hidden or closed, clean it up. */
          /* terminate display/EGL context here */
-         //RARCH_WARN("Window is terminated outside PAUSED state.\n");
+
+#if 0
+         RARCH_WARN("Window is terminated outside PAUSED state.\n");
+#endif
 
          android_app->window = NULL;
          scond_broadcast(android_app->cond);
@@ -129,16 +132,22 @@ void engine_handle_cmd(void *data)
       case APP_CMD_GAINED_FOCUS:
          g_extern.is_paused = false;
 
-         if ((android_app->sensor_state_mask & (1ULL << RETRO_SENSOR_ACCELEROMETER_ENABLE))
-               && android_app->accelerometerSensor == NULL && driver.input_data)
-            android_input_set_sensor_state(driver.input_data, 0, RETRO_SENSOR_ACCELEROMETER_ENABLE,
+         if ((android_app->sensor_state_mask 
+                  & (1ULL << RETRO_SENSOR_ACCELEROMETER_ENABLE))
+               && android_app->accelerometerSensor == NULL
+               && driver.input_data)
+            android_input_set_sensor_state(driver.input_data, 0,
+                  RETRO_SENSOR_ACCELEROMETER_ENABLE,
                   android_app->accelerometer_event_rate);
          break;
       case APP_CMD_LOST_FOCUS:
-         // Avoid draining battery while app is not being used
-         if ((android_app->sensor_state_mask & (1ULL << RETRO_SENSOR_ACCELEROMETER_ENABLE))
-               && android_app->accelerometerSensor != NULL && driver.input_data)
-            android_input_set_sensor_state(driver.input_data, 0, RETRO_SENSOR_ACCELEROMETER_DISABLE,
+         /* Avoid draining battery while app is not being used. */
+         if ((android_app->sensor_state_mask
+                  & (1ULL << RETRO_SENSOR_ACCELEROMETER_ENABLE))
+               && android_app->accelerometerSensor != NULL
+               && driver.input_data)
+            android_input_set_sensor_state(driver.input_data, 0,
+                  RETRO_SENSOR_ACCELEROMETER_DISABLE,
                   android_app->accelerometer_event_rate);
          break;
 
@@ -205,7 +214,8 @@ static void android_app_set_activity_state(void *data, int8_t cmd)
 
    slock_lock(android_app->mutex);
    android_app_write_cmd(android_app, cmd);
-   while (android_app->activityState != cmd && android_app->activityState != APP_CMD_DEAD)
+   while (android_app->activityState != cmd
+         && android_app->activityState != APP_CMD_DEAD)
       scond_wait(android_app->cond, android_app->mutex);
    slock_unlock(android_app->mutex);
 
@@ -235,30 +245,35 @@ static void onDestroy(ANativeActivity* activity)
 static void onStart(ANativeActivity* activity)
 {
    RARCH_LOG("Start: %p\n", activity);
-   android_app_set_activity_state((struct android_app*)activity->instance, APP_CMD_START);
+   android_app_set_activity_state((struct android_app*)
+         activity->instance, APP_CMD_START);
 }
 
 static void onResume(ANativeActivity* activity)
 {
    RARCH_LOG("Resume: %p\n", activity);
-   android_app_set_activity_state((struct android_app*)activity->instance, APP_CMD_RESUME);
+   android_app_set_activity_state((struct android_app*)
+         activity->instance, APP_CMD_RESUME);
 }
 
 static void onPause(ANativeActivity* activity)
 {
    RARCH_LOG("Pause: %p\n", activity);
-   android_app_set_activity_state((struct android_app*)activity->instance, APP_CMD_PAUSE);
+   android_app_set_activity_state((struct android_app*)
+         activity->instance, APP_CMD_PAUSE);
 }
 
 static void onStop(ANativeActivity* activity)
 {
    RARCH_LOG("Stop: %p\n", activity);
-   android_app_set_activity_state((struct android_app*)activity->instance, APP_CMD_STOP);
+   android_app_set_activity_state((struct android_app*)
+         activity->instance, APP_CMD_STOP);
 }
 
 static void onConfigurationChanged(ANativeActivity *activity)
 {
-   struct android_app* android_app = (struct android_app*)activity->instance;
+   struct android_app* android_app = (struct android_app*)
+      activity->instance;
 
    if (!android_app)
       return;
@@ -274,13 +289,15 @@ static void onWindowFocusChanged(ANativeActivity* activity, int focused)
          focused ? APP_CMD_GAINED_FOCUS : APP_CMD_LOST_FOCUS);
 }
 
-static void onNativeWindowCreated(ANativeActivity* activity, ANativeWindow* window)
+static void onNativeWindowCreated(ANativeActivity* activity,
+      ANativeWindow* window)
 {
    RARCH_LOG("NativeWindowCreated: %p -- %p\n", activity, window);
    android_app_set_window((struct android_app*)activity->instance, window);
 }
 
-static void onNativeWindowDestroyed(ANativeActivity* activity, ANativeWindow* window)
+static void onNativeWindowDestroyed(ANativeActivity* activity,
+      ANativeWindow* window)
 {
    RARCH_LOG("NativeWindowDestroyed: %p -- %p\n", activity, window);
    android_app_set_window((struct android_app*)activity->instance, NULL);
@@ -292,7 +309,8 @@ static void onInputQueueCreated(ANativeActivity* activity, AInputQueue* queue)
    android_app_set_input((struct android_app*)activity->instance, queue);
 }
 
-static void onInputQueueDestroyed(ANativeActivity* activity, AInputQueue* queue)
+static void onInputQueueDestroyed(ANativeActivity* activity,
+      AInputQueue* queue)
 {
    RARCH_LOG("InputQueueDestroyed: %p -- %p\n", activity, queue);
    android_app_set_input((struct android_app*)activity->instance, NULL);
@@ -356,8 +374,10 @@ void ANativeActivity_onCreate(ANativeActivity* activity,
    activity->callbacks->onInputQueueCreated = onInputQueueCreated;
    activity->callbacks->onInputQueueDestroyed = onInputQueueDestroyed;
 
-   // these are set only for the native activity, and are reset when it ends
-   ANativeActivity_setWindowFlags(activity, AWINDOW_FLAG_KEEP_SCREEN_ON | AWINDOW_FLAG_FULLSCREEN, 0);
+   /* These are set only for the native activity,
+    * and are reset when it ends. */
+   ANativeActivity_setWindowFlags(activity, AWINDOW_FLAG_KEEP_SCREEN_ON
+         | AWINDOW_FLAG_FULLSCREEN, 0);
 
    if (pthread_key_create(&thread_key, jni_thread_destruct))
       RARCH_ERR("Error initializing pthread_key\n");
@@ -385,7 +405,7 @@ void ANativeActivity_onCreate(ANativeActivity* activity,
 
    android_app->thread = sthread_create(android_app_entry, android_app);
 
-   // Wait for thread to start.
+   /* Wait for thread to start. */
    slock_lock(android_app->mutex);
    while (!android_app->running)
       scond_wait(android_app->cond, android_app->mutex);
@@ -401,7 +421,7 @@ static bool android_run_events(void *data)
    if (id == LOOPER_ID_MAIN)
       engine_handle_cmd(driver.input_data);
 
-   // Check if we are exiting.
+   /* Check if we are exiting. */
    if (g_extern.system.shutdown)
       return false;
 
@@ -443,8 +463,8 @@ static bool device_is_game_console(const char *name)
 }
 
 
-static void frontend_android_get_environment_settings(int *argc, char *argv[],
-      void *data, void *params_data)
+static void frontend_android_get_environment_settings(int *argc,
+      char *argv[], void *data, void *params_data)
 {
    char device_model[PROP_VALUE_MAX], device_id[PROP_VALUE_MAX];
 
@@ -474,7 +494,8 @@ static void frontend_android_get_environment_settings(int *argc, char *argv[],
    RARCH_LOG("Checking arguments passed from intent ...\n");
 
    // Config file
-   CALL_OBJ_METHOD_PARAM(env, jstr, obj, android_app->getStringExtra, (*env)->NewStringUTF(env, "CONFIGFILE"));
+   CALL_OBJ_METHOD_PARAM(env, jstr, obj, android_app->getStringExtra,
+         (*env)->NewStringUTF(env, "CONFIGFILE"));
 
    if (android_app->getStringExtra && jstr)
    {
@@ -493,17 +514,22 @@ static void frontend_android_get_environment_settings(int *argc, char *argv[],
    }
 
    // Current IME
-   CALL_OBJ_METHOD_PARAM(env, jstr, obj, android_app->getStringExtra, (*env)->NewStringUTF(env, "IME"));
+   CALL_OBJ_METHOD_PARAM(env, jstr, obj, android_app->getStringExtra,
+         (*env)->NewStringUTF(env, "IME"));
+
    if (android_app->getStringExtra && jstr)
    {
       const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
-      strlcpy(android_app->current_ime, argv, sizeof(android_app->current_ime));
+      strlcpy(android_app->current_ime, argv,
+            sizeof(android_app->current_ime));
       (*env)->ReleaseStringUTFChars(env, jstr, argv);
 
       RARCH_LOG("Current IME: [%s].\n", android_app->current_ime);
    }
 
-   CALL_OBJ_METHOD_PARAM(env, jstr, obj, android_app->getStringExtra, (*env)->NewStringUTF(env, "USED"));
+   CALL_OBJ_METHOD_PARAM(env, jstr, obj, android_app->getStringExtra,
+         (*env)->NewStringUTF(env, "USED"));
+
    if (android_app->getStringExtra && jstr)
    {
       const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
@@ -514,7 +540,8 @@ static void frontend_android_get_environment_settings(int *argc, char *argv[],
    }
 
    // LIBRETRO
-   CALL_OBJ_METHOD_PARAM(env, jstr, obj, android_app->getStringExtra, (*env)->NewStringUTF(env, "LIBRETRO"));
+   CALL_OBJ_METHOD_PARAM(env, jstr, obj, android_app->getStringExtra,
+         (*env)->NewStringUTF(env, "LIBRETRO"));
 
    if (android_app->getStringExtra && jstr)
    {
@@ -532,7 +559,8 @@ static void frontend_android_get_environment_settings(int *argc, char *argv[],
    }
 
    // Content
-   CALL_OBJ_METHOD_PARAM(env, jstr, obj, android_app->getStringExtra, (*env)->NewStringUTF(env, "ROM"));
+   CALL_OBJ_METHOD_PARAM(env, jstr, obj, android_app->getStringExtra,
+         (*env)->NewStringUTF(env, "ROM"));
 
    if (android_app->getStringExtra && jstr)
    {
@@ -554,7 +582,8 @@ static void frontend_android_get_environment_settings(int *argc, char *argv[],
    }
 
    // Content
-   CALL_OBJ_METHOD_PARAM(env, jstr, obj, android_app->getStringExtra, (*env)->NewStringUTF(env, "DATADIR"));
+   CALL_OBJ_METHOD_PARAM(env, jstr, obj, android_app->getStringExtra,
+         (*env)->NewStringUTF(env, "DATADIR"));
 
    if (android_app->getStringExtra && jstr)
    {
@@ -572,14 +601,22 @@ static void frontend_android_get_environment_settings(int *argc, char *argv[],
          RARCH_LOG("Data path: [%s].\n", path);
          if (args && *path)
          {
-            fill_pathname_join(g_defaults.savestate_dir, path, "savestates", sizeof(g_defaults.savestate_dir));
-            fill_pathname_join(g_defaults.sram_dir, path, "savefiles", sizeof(g_defaults.sram_dir));
-            fill_pathname_join(g_defaults.system_dir, path, "system", sizeof(g_defaults.system_dir));
-            fill_pathname_join(g_defaults.shader_dir, path, "shaders_glsl", sizeof(g_defaults.shader_dir));
-            fill_pathname_join(g_defaults.overlay_dir, path, "overlays", sizeof(g_defaults.overlay_dir));
-            fill_pathname_join(g_defaults.core_dir, path, "cores", sizeof(g_defaults.core_dir));
-            fill_pathname_join(g_defaults.core_info_dir, path, "info", sizeof(g_defaults.core_info_dir));
-            fill_pathname_join(g_defaults.autoconfig_dir, path, "autoconfig", sizeof(g_defaults.autoconfig_dir));
+            fill_pathname_join(g_defaults.savestate_dir, path,
+                  "savestates", sizeof(g_defaults.savestate_dir));
+            fill_pathname_join(g_defaults.sram_dir, path,
+                  "savefiles", sizeof(g_defaults.sram_dir));
+            fill_pathname_join(g_defaults.system_dir, path,
+                  "system", sizeof(g_defaults.system_dir));
+            fill_pathname_join(g_defaults.shader_dir, path,
+                  "shaders_glsl", sizeof(g_defaults.shader_dir));
+            fill_pathname_join(g_defaults.overlay_dir, path,
+                  "overlays", sizeof(g_defaults.overlay_dir));
+            fill_pathname_join(g_defaults.core_dir, path,
+                  "cores", sizeof(g_defaults.core_dir));
+            fill_pathname_join(g_defaults.core_info_dir,
+                  path, "info", sizeof(g_defaults.core_info_dir));
+            fill_pathname_join(g_defaults.autoconfig_dir,
+                  path, "autoconfig", sizeof(g_defaults.autoconfig_dir));
          }
       }
    }
@@ -603,9 +640,10 @@ static void frontend_android_get_environment_settings(int *argc, char *argv[],
    else if (!strcmp(device_model, "JSS15J"))
       g_defaults.settings.video_refresh_rate = 59.65;
 
-   //FIXME - needs to be refactored
+   /* FIXME - needs to be refactored */
 #if 0
-   // Explicitly disable input overlay by default for gamepad-like/console devices
+   /* Explicitly disable input overlay by default 
+    * for gamepad-like/console devices. */
    if (device_is_game_console(device_model))
       g_defaults.settings.input_overlay_enable = false;
 #endif
@@ -628,7 +666,9 @@ static void process_pending_intent(void *data)
       return;
 
    // Content 
-   jstr = (*env)->CallObjectMethod(env, android_app->activity->clazz, android_app->getPendingIntentFullPath);
+   jstr = (*env)->CallObjectMethod(env, android_app->activity->clazz,
+         android_app->getPendingIntentFullPath);
+
    JNI_EXCEPTION(env);
    RARCH_LOG("Checking arguments passed from intent ...\n");
    if (android_app->getPendingIntentFullPath && jstr)
@@ -642,7 +682,9 @@ static void process_pending_intent(void *data)
    }
 
    // Config file
-   jstr = (*env)->CallObjectMethod(env, android_app->activity->clazz, android_app->getPendingIntentConfigPath);
+   jstr = (*env)->CallObjectMethod(env, android_app->activity->clazz,
+         android_app->getPendingIntentConfigPath);
+
    JNI_EXCEPTION(env);
    if (android_app->getPendingIntentConfigPath && jstr)
    {
@@ -654,7 +696,9 @@ static void process_pending_intent(void *data)
    }
 
    // Current IME
-   jstr = (*env)->CallObjectMethod(env, android_app->activity->clazz, android_app->getPendingIntentIME);
+   jstr = (*env)->CallObjectMethod(env, android_app->activity->clazz,
+         android_app->getPendingIntentIME);
+
    JNI_EXCEPTION(env);
    if (android_app->getPendingIntentIME && jstr)
    {
@@ -666,7 +710,9 @@ static void process_pending_intent(void *data)
    }
 
    //LIBRETRO
-   jstr = (*env)->CallObjectMethod(env, android_app->activity->clazz, android_app->getPendingIntentLibretroPath);
+   jstr = (*env)->CallObjectMethod(env, android_app->activity->clazz,
+         android_app->getPendingIntentLibretroPath);
+
    JNI_EXCEPTION(env);
    if (android_app->getPendingIntentLibretroPath && jstr)
    {
@@ -684,14 +730,17 @@ static void process_pending_intent(void *data)
       rarch_main_command(RARCH_CMD_LOAD_CONTENT);
    }
 
-   CALL_VOID_METHOD(env, android_app->activity->clazz, android_app->clearPendingIntent);
+   CALL_VOID_METHOD(env, android_app->activity->clazz,
+         android_app->clearPendingIntent);
 }
 #endif
 
 static int frontend_android_process_events(void *data)
 {
-   //jboolean hasPendingIntent;
-   //JNIEnv *env;
+#if 0
+   jboolean hasPendingIntent;
+   JNIEnv *env;
+#endif
    struct android_app* android_app = (struct android_app*)data;
 
    if (g_extern.is_paused)
@@ -702,7 +751,9 @@ static int frontend_android_process_events(void *data)
    if (!env)
       return -1;
 
-   CALL_BOOLEAN_METHOD(env, hasPendingIntent, android_app->activity->clazz, android_app->hasPendingIntent);
+   CALL_BOOLEAN_METHOD(env, hasPendingIntent, android_app->activity->clazz,
+         android_app->hasPendingIntent);
+
    if (hasPendingIntent)
       process_pending_intent(android_app);
 #endif
@@ -722,7 +773,8 @@ static void frontend_android_init(void *data)
       return;
 
    looper = (ALooper*)ALooper_prepare(ALOOPER_PREPARE_ALLOW_NON_CALLBACKS);
-   ALooper_addFd(looper, android_app->msgread, LOOPER_ID_MAIN, ALOOPER_EVENT_INPUT, NULL, NULL);
+   ALooper_addFd(looper, android_app->msgread, LOOPER_ID_MAIN,
+         ALOOPER_EVENT_INPUT, NULL, NULL);
    android_app->looper = looper;
 
    slock_lock(android_app->mutex);
@@ -752,24 +804,34 @@ static void frontend_android_init(void *data)
       return;
 
    GET_OBJECT_CLASS(env, class, android_app->activity->clazz);
-   GET_METHOD_ID(env, android_app->getIntent, class, "getIntent", "()Landroid/content/Intent;");
-   GET_METHOD_ID(env, android_app->onRetroArchExit, class, "onRetroArchExit", "()V");
-   CALL_OBJ_METHOD(env, obj, android_app->activity->clazz, android_app->getIntent);
+   GET_METHOD_ID(env, android_app->getIntent, class,
+         "getIntent", "()Landroid/content/Intent;");
+   GET_METHOD_ID(env, android_app->onRetroArchExit, class,
+         "onRetroArchExit", "()V");
+   CALL_OBJ_METHOD(env, obj, android_app->activity->clazz,
+         android_app->getIntent);
 #if 0
-   GET_METHOD_ID(env, android_app->hasPendingIntent, class, "hasPendingIntent", "()Z");
-   GET_METHOD_ID(env, android_app->clearPendingIntent, class, "clearPendingIntent", "()V");
-   GET_METHOD_ID(env, android_app->getPendingIntentConfigPath, class, "getPendingIntentConfigPath",
+   GET_METHOD_ID(env, android_app->hasPendingIntent, class,
+         "hasPendingIntent", "()Z");
+   GET_METHOD_ID(env, android_app->clearPendingIntent, class,
+         "clearPendingIntent", "()V");
+   GET_METHOD_ID(env, android_app->getPendingIntentConfigPath, class,
+         "getPendingIntentConfigPath",
          "()Ljava/lang/String;");
-   GET_METHOD_ID(env, android_app->getPendingIntentLibretroPath, class, "getPendingIntentLibretroPath",
+   GET_METHOD_ID(env, android_app->getPendingIntentLibretroPath, class,
+         "getPendingIntentLibretroPath",
          "()Ljava/lang/String;");
-   GET_METHOD_ID(env, android_app->getPendingIntentFullPath, class, "getPendingIntentFullPath",
+   GET_METHOD_ID(env, android_app->getPendingIntentFullPath, class,
+         "getPendingIntentFullPath",
          "()Ljava/lang/String;");
-   GET_METHOD_ID(env, android_app->getPendingIntentIME, class, "getPendingIntentIME",
+   GET_METHOD_ID(env, android_app->getPendingIntentIME, class,
+         "getPendingIntentIME",
          "()Ljava/lang/String;");
 #endif
 
    GET_OBJECT_CLASS(env, class, obj);
-   GET_METHOD_ID(env, android_app->getStringExtra, class, "getStringExtra", "(Ljava/lang/String;)Ljava/lang/String;");
+   GET_METHOD_ID(env, android_app->getStringExtra, class,
+         "getStringExtra", "(Ljava/lang/String;)Ljava/lang/String;");
 }
 
 static void frontend_android_deinit(void *data)
@@ -784,7 +846,8 @@ static void frontend_android_deinit(void *data)
 
    JNIEnv *env = jni_thread_getenv();
    if (env && android_app->onRetroArchExit)
-      CALL_VOID_METHOD(env, android_app->activity->clazz, android_app->onRetroArchExit);
+      CALL_VOID_METHOD(env, android_app->activity->clazz,
+            android_app->onRetroArchExit);
 
    if (android_app->inputQueue)
    {

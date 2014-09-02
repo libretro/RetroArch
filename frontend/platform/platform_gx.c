@@ -110,7 +110,8 @@ static void *gx_devthread(void *a)
       unsigned i;
       for (i = 0; i < GX_DEVICE_END; i++)
       {
-         if (gx_devices[i].mounted && !gx_devices[i].interface->isInserted())
+         if (gx_devices[i].mounted && 
+               !gx_devices[i].interface->isInserted())
          {
             gx_devices[i].mounted = false;
             char n[8];
@@ -181,14 +182,22 @@ static void frontend_gx_get_environment_settings(int *argc, char *argv[],
       *last_slash = 0;
    char *device_end = strchr(g_defaults.core_dir, '/');
    if (device_end)
-      snprintf(g_defaults.port_dir, sizeof(g_defaults.port_dir), "%.*s/retroarch", device_end - g_defaults.core_dir, g_defaults.core_dir);
+      snprintf(g_defaults.port_dir, sizeof(g_defaults.port_dir),
+            "%.*s/retroarch", device_end - g_defaults.core_dir,
+            g_defaults.core_dir);
    else
-      fill_pathname_join(g_defaults.port_dir, g_defaults.port_dir, "retroarch", sizeof(g_defaults.port_dir));
-   fill_pathname_join(g_defaults.overlay_dir, g_defaults.core_dir, "overlays", sizeof(g_defaults.overlay_dir));
-   fill_pathname_join(g_defaults.config_path, g_defaults.port_dir, "retroarch.cfg", sizeof(g_defaults.config_path));
-   fill_pathname_join(g_defaults.system_dir, g_defaults.port_dir, "system", sizeof(g_defaults.system_dir));
-   fill_pathname_join(g_defaults.sram_dir, g_defaults.port_dir, "savefiles", sizeof(g_defaults.sram_dir));
-   fill_pathname_join(g_defaults.savestate_dir, g_defaults.port_dir, "savefiles", sizeof(g_defaults.savestate_dir));
+      fill_pathname_join(g_defaults.port_dir, g_defaults.port_dir,
+            "retroarch", sizeof(g_defaults.port_dir));
+   fill_pathname_join(g_defaults.overlay_dir, g_defaults.core_dir,
+         "overlays", sizeof(g_defaults.overlay_dir));
+   fill_pathname_join(g_defaults.config_path, g_defaults.port_dir,
+         "retroarch.cfg", sizeof(g_defaults.config_path));
+   fill_pathname_join(g_defaults.system_dir, g_defaults.port_dir,
+         "system", sizeof(g_defaults.system_dir));
+   fill_pathname_join(g_defaults.sram_dir, g_defaults.port_dir,
+         "savefiles", sizeof(g_defaults.sram_dir));
+   fill_pathname_join(g_defaults.savestate_dir, g_defaults.port_dir,
+         "savefiles", sizeof(g_defaults.savestate_dir));
 
 #ifdef IS_SALAMANDER
    if (*argc > 2 && argv[1] != NULL && argv[2] != NULL)
@@ -197,7 +206,8 @@ static void frontend_gx_get_environment_settings(int *argc, char *argv[],
       gx_rom_path[0] = '\0';
 #else
 #ifdef HW_RVL
-   // needed on Wii; loaders follow a dumb standard where the path and filename are separate in the argument list
+   /* needed on Wii; loaders follow a dumb standard where the path and 
+    * filename are separate in the argument list */
    if (*argc > 2 && argv[1] != NULL && argv[2] != NULL)
    {
       static char path[PATH_MAX];
@@ -239,7 +249,8 @@ static void frontend_gx_init(void *data)
    VIDEO_Init();
    GXRModeObj *rmode = VIDEO_GetPreferredMode(NULL);
    void *xfb = MEM_K0_TO_K1(SYS_AllocateFramebuffer(rmode));
-   console_init(xfb, 20, 20, rmode->fbWidth, rmode->xfbHeight, rmode->fbWidth * VI_DISPLAY_PIX_SZ);
+   console_init(xfb, 20, 20, rmode->fbWidth,
+         rmode->xfbHeight, rmode->fbWidth * VI_DISPLAY_PIX_SZ);
    VIDEO_Configure(rmode);
    VIDEO_SetNextFramebuffer(xfb);
    VIDEO_SetBlack(FALSE);
@@ -268,10 +279,14 @@ static void frontend_gx_init(void *data)
    OSThread gx_device_thread;
    gx_devices[GX_DEVICE_SD].interface = &__io_wiisd;
    gx_devices[GX_DEVICE_SD].name = "sd";
-   gx_devices[GX_DEVICE_SD].mounted = fatMountSimple(gx_devices[GX_DEVICE_SD].name, gx_devices[GX_DEVICE_SD].interface);
+   gx_devices[GX_DEVICE_SD].mounted = fatMountSimple(
+         gx_devices[GX_DEVICE_SD].name,
+         gx_devices[GX_DEVICE_SD].interface);
    gx_devices[GX_DEVICE_USB].interface = &__io_usbstorage;
    gx_devices[GX_DEVICE_USB].name = "usb";
-   gx_devices[GX_DEVICE_USB].mounted = fatMountSimple(gx_devices[GX_DEVICE_USB].name, gx_devices[GX_DEVICE_USB].interface);
+   gx_devices[GX_DEVICE_USB].mounted = fatMountSimple(
+            gx_devices[GX_DEVICE_USB].name,
+            gx_devices[GX_DEVICE_USB].interface);
 
    OSInitMutex(&gx_device_cond_mutex);
    OSInitCond(&gx_device_cond);
@@ -294,9 +309,11 @@ static void frontend_gx_exitspawn(char *core_path, size_t sizeof_core_path)
 
    frontend_gx_exec(core_path, should_load_game);
 
-   // FIXME/TODO - hack
-   // direct loading failed (out of memory), try to jump to salamander then load the correct core
-   fill_pathname_join(core_path, g_defaults.core_dir, "boot.dol", sizeof_core_path);
+   /* FIXME/TODO - hack
+    * direct loading failed (out of memory), try to jump to Salamander,
+    * then load the correct core */
+   fill_pathname_join(core_path, g_defaults.core_dir,
+         "boot.dol", sizeof_core_path);
 #endif
    frontend_gx_exec(core_path, should_load_game);
 }
@@ -304,8 +321,9 @@ static void frontend_gx_exitspawn(char *core_path, size_t sizeof_core_path)
 static void frontend_gx_process_args(int *argc, char *argv[])
 {
 #ifndef IS_SALAMANDER
-   // a big hack: sometimes salamander doesn't save the new core it loads on first boot,
-   // so we make sure g_settings.libretro is set here
+   /* A big hack: sometimes Salamander doesn't save the new core 
+    * it loads on first boot, so we make sure
+    * g_settings.libretro is set here. */
    if (!g_settings.libretro[0] && *argc >= 1 && strrchr(argv[0], '/'))
    {
       char path[PATH_MAX];

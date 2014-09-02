@@ -41,10 +41,14 @@ static HRESULT xbox_io_mount(char *szDrive, char *szDevice)
    char szSourceDevice[48];
    char szDestinationDrive[16];
 
-   snprintf(szSourceDevice, sizeof(szSourceDevice), "\\Device\\%s", szDevice);
-   snprintf(szDestinationDrive, sizeof(szDestinationDrive), "\\??\\%s", szDrive);
-   RARCH_LOG("xbox_io_mount() - source device: %s.\n", szSourceDevice);
-   RARCH_LOG("xbox_io_mount() - destination drive: %s.\n", szDestinationDrive);
+   snprintf(szSourceDevice, sizeof(szSourceDevice),
+         "\\Device\\%s", szDevice);
+   snprintf(szDestinationDrive, sizeof(szDestinationDrive),
+         "\\??\\%s", szDrive);
+   RARCH_LOG("xbox_io_mount() - source device: %s.\n",
+         szSourceDevice);
+   RARCH_LOG("xbox_io_mount() - destination drive: %s.\n",
+         szDestinationDrive);
 
    STRING DeviceName =
    {
@@ -71,7 +75,8 @@ static HRESULT xbox_io_mount(char *szDrive, char *szDevice)
 static HRESULT xbox_io_unmount(char *szDrive)
 {
    char szDestinationDrive[16];
-   snprintf(szDestinationDrive, sizeof(szDestinationDrive), "\\??\\%s", szDrive);
+   snprintf(szDestinationDrive, sizeof(szDestinationDrive),
+         "\\??\\%s", szDrive);
 
    STRING LinkName =
    {
@@ -137,19 +142,30 @@ static void frontend_xdk_get_environment_settings(int *argc, char *argv[],
 #if defined(_XBOX1)
    strlcpy(g_defaults.core_dir, "D:", sizeof(g_defaults.core_dir));
    strlcpy(g_defaults.core_info_dir, "D:", sizeof(g_defaults.core_info_dir));
-   fill_pathname_join(g_defaults.config_path, g_defaults.core_dir, "retroarch.cfg", sizeof(g_defaults.config_path));
-   fill_pathname_join(g_defaults.savestate_dir, g_defaults.core_dir, "savestates", sizeof(g_defaults.savestate_dir));
-   fill_pathname_join(g_defaults.sram_dir, g_defaults.core_dir, "savefiles", sizeof(g_defaults.sram_dir));
-   fill_pathname_join(g_defaults.system_dir, g_defaults.core_dir, "system", sizeof(g_defaults.system_dir));
-   fill_pathname_join(g_defaults.screenshot_dir, g_defaults.core_dir, "screenshots", sizeof(g_defaults.screenshot_dir));
+   fill_pathname_join(g_defaults.config_path, g_defaults.core_dir,
+         "retroarch.cfg", sizeof(g_defaults.config_path));
+   fill_pathname_join(g_defaults.savestate_dir, g_defaults.core_dir,
+         "savestates", sizeof(g_defaults.savestate_dir));
+   fill_pathname_join(g_defaults.sram_dir, g_defaults.core_dir,
+         "savefiles", sizeof(g_defaults.sram_dir));
+   fill_pathname_join(g_defaults.system_dir, g_defaults.core_dir,
+         "system", sizeof(g_defaults.system_dir));
+   fill_pathname_join(g_defaults.screenshot_dir, g_defaults.core_dir,
+         "screenshots", sizeof(g_defaults.screenshot_dir));
 #elif defined(_XBOX360)
    strlcpy(g_defaults.core_dir, "game:", sizeof(g_defaults.core_dir));
-   strlcpy(g_defaults.core_info_dir, "game:", sizeof(g_defaults.core_info_dir));
-   strlcpy(g_defaults.config_path, "game:\\retroarch.cfg", sizeof(g_defaults.config_path));
-   strlcpy(g_defaults.screenshot_dir, "game:", sizeof(g_defaults.screenshot_dir));
-   strlcpy(g_defaults.savestate_dir, "game:\\savestates", sizeof(g_defaults.savestate_dir));
-   strlcpy(g_defaults.sram_dir, "game:\\savefiles", sizeof(g_defaults.sram_dir));
-   strlcpy(g_defaults.system_dir, "game:\\system", sizeof(g_defaults.system_dir));
+   strlcpy(g_defaults.core_info_dir,
+         "game:", sizeof(g_defaults.core_info_dir));
+   strlcpy(g_defaults.config_path,
+         "game:\\retroarch.cfg", sizeof(g_defaults.config_path));
+   strlcpy(g_defaults.screenshot_dir,
+         "game:", sizeof(g_defaults.screenshot_dir));
+   strlcpy(g_defaults.savestate_dir,
+         "game:\\savestates", sizeof(g_defaults.savestate_dir));
+   strlcpy(g_defaults.sram_dir,
+         "game:\\savefiles", sizeof(g_defaults.sram_dir));
+   strlcpy(g_defaults.system_dir,
+         "game:\\system", sizeof(g_defaults.system_dir));
 #endif
 
 #ifndef IS_SALAMANDER
@@ -172,9 +188,9 @@ static void frontend_xdk_get_environment_settings(int *argc, char *argv[],
          char *extracted_path = (char*)&ptr.Data;
 
          if (extracted_path && extracted_path[0] != '\0'
-            && (strstr(extracted_path, "Pool") == NULL) /* Hack. Unknown problem */)
+            && (strstr(extracted_path, "Pool") == NULL)
+            /* Hack. Unknown problem */)
          {
-            RARCH_LOG("Gets here 3.\n");
             strlcpy(path, extracted_path, sizeof(path));
             RARCH_LOG("Auto-start game %s.\n", path);
          }
@@ -240,7 +256,8 @@ static void frontend_xdk_init(void *data)
 
 static void frontend_xdk_exec(const char *path, bool should_load_game);
 
-static void frontend_xdk_exitspawn(char *core_path, size_t sizeof_core_path)
+static void frontend_xdk_exitspawn(char *core_path,
+      size_t sizeof_core_path)
 {
    bool should_load_game = false;
 #ifndef IS_SALAMANDER

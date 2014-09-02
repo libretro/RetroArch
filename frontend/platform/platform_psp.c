@@ -65,13 +65,20 @@ static void frontend_psp_get_environment_settings(int *argc, char *argv[],
    fill_pathname_basedir(g_defaults.port_dir, argv[0], sizeof(g_defaults.port_dir));
    RARCH_LOG("port dir: [%s]\n", g_defaults.port_dir);
 
-   fill_pathname_join(g_defaults.assets_dir, g_defaults.port_dir, "media", sizeof(g_defaults.assets_dir));
-   fill_pathname_join(g_defaults.core_dir, g_defaults.port_dir, "cores", sizeof(g_defaults.core_dir));
-   fill_pathname_join(g_defaults.core_info_dir, g_defaults.port_dir, "cores", sizeof(g_defaults.core_info_dir));
-   fill_pathname_join(g_defaults.savestate_dir, g_defaults.core_dir, "savestates", sizeof(g_defaults.savestate_dir));
-   fill_pathname_join(g_defaults.sram_dir, g_defaults.core_dir, "savefiles", sizeof(g_defaults.sram_dir));
-   fill_pathname_join(g_defaults.system_dir, g_defaults.core_dir, "system", sizeof(g_defaults.system_dir));
-   fill_pathname_join(g_defaults.config_path, g_defaults.port_dir, "retroarch.cfg", sizeof(g_defaults.config_path));
+   fill_pathname_join(g_defaults.assets_dir, g_defaults.port_dir,
+         "media", sizeof(g_defaults.assets_dir));
+   fill_pathname_join(g_defaults.core_dir, g_defaults.port_dir,
+         "cores", sizeof(g_defaults.core_dir));
+   fill_pathname_join(g_defaults.core_info_dir, g_defaults.port_dir,
+         "cores", sizeof(g_defaults.core_info_dir));
+   fill_pathname_join(g_defaults.savestate_dir, g_defaults.core_dir,
+         "savestates", sizeof(g_defaults.savestate_dir));
+   fill_pathname_join(g_defaults.sram_dir, g_defaults.core_dir,
+         "savefiles", sizeof(g_defaults.sram_dir));
+   fill_pathname_join(g_defaults.system_dir, g_defaults.core_dir,
+         "system", sizeof(g_defaults.system_dir));
+   fill_pathname_join(g_defaults.config_path, g_defaults.port_dir,
+         "retroarch.cfg", sizeof(g_defaults.config_path));
 
    if (argv[1] && (argv[1][0] != '\0'))
    {
@@ -140,7 +147,8 @@ int callback_thread(SceSize args, void *argp)
 
 static int setup_callback(void)
 {
-   int thread_id = sceKernelCreateThread("update_thread", callback_thread, 0x11, 0xFA0, 0, 0);
+   int thread_id = sceKernelCreateThread("update_thread",
+         callback_thread, 0x11, 0xFA0, 0, 0);
 
    if (thread_id >= 0)
       sceKernelStartThread(thread_id, 0, 0);

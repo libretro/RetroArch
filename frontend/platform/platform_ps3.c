@@ -30,7 +30,6 @@
 static uint8_t np_pool[NP_POOL_SIZE];
 #endif
 
-//TODO - not sure if stack size needs to be lower for Salamander
 #ifdef IS_SALAMANDER
 SYS_PROCESS_PARAM(1001, 0x100000)
 #else
@@ -49,7 +48,8 @@ SYS_PROCESS_PARAM(1001, 0x200000)
 #endif
 
 #ifdef HAVE_SYSUTILS
-static void callback_sysutil_exit(uint64_t status, uint64_t param, void *userdata)
+static void callback_sysutil_exit(uint64_t status,
+      uint64_t param, void *userdata)
 {
    (void)param;
    (void)userdata;
@@ -101,7 +101,8 @@ static void frontend_ps3_get_environment_settings(int *argc, char *argv[],
 #ifdef HAVE_MULTIMAN
    /* not launched from external launcher, set default path */
    // second param is multiMAN SELF file
-   if(path_file_exists(argv[2]) && *argc > 1 && (strcmp(argv[2], EMULATOR_CONTENT_DIR) == 0))
+   if(path_file_exists(argv[2]) && *argc > 1
+         && (strcmp(argv[2], EMULATOR_CONTENT_DIR) == 0))
    {
       g_extern.lifecycle_state |= (1ULL << MODE_EXTLAUNCH_MULTIMAN);
       RARCH_LOG("Started from multiMAN, auto-game start enabled.\n");
@@ -162,7 +163,8 @@ static void frontend_ps3_get_environment_settings(int *argc, char *argv[],
             break;
       }
 
-      if((get_attributes & CELL_GAME_ATTRIBUTE_APP_HOME) == CELL_GAME_ATTRIBUTE_APP_HOME)
+      if((get_attributes & CELL_GAME_ATTRIBUTE_APP_HOME) 
+            == CELL_GAME_ATTRIBUTE_APP_HOME)
          RARCH_LOG("RetroArch was launched from host machine (APP_HOME).\n");
 
       ret = cellGameContentPermit(contentInfoPath, g_defaults.port_dir);
@@ -170,8 +172,10 @@ static void frontend_ps3_get_environment_settings(int *argc, char *argv[],
 #ifdef HAVE_MULTIMAN
       if (g_extern.lifecycle_state & (1ULL << MODE_EXTLAUNCH_MULTIMAN))
       {
-         fill_pathname_join(contentInfoPath, "/dev_hdd0/game/", EMULATOR_CONTENT_DIR, sizeof(contentInfoPath));
-         fill_pathname_join(g_defaults.port_dir, contentInfoPath, "USRDIR", sizeof(g_defaults.port_dir));
+         fill_pathname_join(contentInfoPath, "/dev_hdd0/game/",
+               EMULATOR_CONTENT_DIR, sizeof(contentInfoPath));
+         fill_pathname_join(g_defaults.port_dir, contentInfoPath,
+               "USRDIR", sizeof(g_defaults.port_dir));
       }
 #endif
 
@@ -184,15 +188,24 @@ static void frontend_ps3_get_environment_settings(int *argc, char *argv[],
          RARCH_LOG("usrDirPath : [%s].\n", g_defaults.port_dir);
       }
 
-      fill_pathname_join(g_defaults.core_dir, g_defaults.port_dir, "cores", sizeof(g_defaults.core_dir));
-      fill_pathname_join(g_defaults.core_info_dir, g_defaults.port_dir, "cores", sizeof(g_defaults.core_info_dir));
-      fill_pathname_join(g_defaults.savestate_dir, g_defaults.core_dir, "savestates", sizeof(g_defaults.savestate_dir));
-      fill_pathname_join(g_defaults.sram_dir, g_defaults.core_dir, "savefiles", sizeof(g_defaults.sram_dir));
-      fill_pathname_join(g_defaults.system_dir, g_defaults.core_dir, "system", sizeof(g_defaults.system_dir));
-      fill_pathname_join(g_defaults.shader_dir,  g_defaults.core_dir, "shaders", sizeof(g_defaults.shader_dir));
-      fill_pathname_join(g_defaults.config_path, g_defaults.port_dir, "retroarch.cfg",  sizeof(g_defaults.config_path));
-      fill_pathname_join(g_defaults.overlay_dir, g_defaults.core_dir, "overlays", sizeof(g_defaults.overlay_dir));
-      fill_pathname_join(g_defaults.assets_dir,   g_defaults.core_dir, "media", sizeof(g_defaults.assets_dir));
+      fill_pathname_join(g_defaults.core_dir, g_defaults.port_dir,
+            "cores", sizeof(g_defaults.core_dir));
+      fill_pathname_join(g_defaults.core_info_dir, g_defaults.port_dir,
+            "cores", sizeof(g_defaults.core_info_dir));
+      fill_pathname_join(g_defaults.savestate_dir, g_defaults.core_dir,
+            "savestates", sizeof(g_defaults.savestate_dir));
+      fill_pathname_join(g_defaults.sram_dir, g_defaults.core_dir,
+            "savefiles", sizeof(g_defaults.sram_dir));
+      fill_pathname_join(g_defaults.system_dir, g_defaults.core_dir,
+            "system", sizeof(g_defaults.system_dir));
+      fill_pathname_join(g_defaults.shader_dir,  g_defaults.core_dir,
+            "shaders", sizeof(g_defaults.shader_dir));
+      fill_pathname_join(g_defaults.config_path, g_defaults.port_dir,
+            "retroarch.cfg",  sizeof(g_defaults.config_path));
+      fill_pathname_join(g_defaults.overlay_dir, g_defaults.core_dir,
+            "overlays", sizeof(g_defaults.overlay_dir));
+      fill_pathname_join(g_defaults.assets_dir,   g_defaults.core_dir,
+            "media", sizeof(g_defaults.assets_dir));
    }
 
 #ifndef IS_SALAMANDER
@@ -358,12 +371,15 @@ static void frontend_ps3_exec(const char *path, bool should_load_game)
 #ifdef IS_SALAMANDER
    const char * const spawn_argv[] = { NULL};
 
-   ret = sceNpDrmProcessExitSpawn2(k_licensee, path, (const char** const)spawn_argv, NULL, (sys_addr_t)spawn_data, 256, 1000, SYS_PROCESS_PRIMARY_STACK_SIZE_1M);
+   ret = sceNpDrmProcessExitSpawn2(k_licensee, path,
+         (const char** const)spawn_argv, NULL, (sys_addr_t)spawn_data,
+         256, 1000, SYS_PROCESS_PRIMARY_STACK_SIZE_1M);
 
    if(ret <  0)
    {
       RARCH_WARN("SELF file is not of NPDRM type, trying another approach to boot it...\n");
-      sys_game_process_exitspawn(path, (const char** const)spawn_argv, NULL, NULL, 0, 1000, SYS_PROCESS_PRIMARY_STACK_SIZE_1M);
+      sys_game_process_exitspawn(path, (const char** const)spawn_argv,
+            NULL, NULL, 0, 1000, SYS_PROCESS_PRIMARY_STACK_SIZE_1M);
    }
 #else
    if (should_load_game && g_extern.fullpath[0] != '\0')
@@ -375,23 +391,30 @@ static void frontend_ps3_exec(const char *path, bool should_load_game)
          NULL
       };
 
-      ret = sceNpDrmProcessExitSpawn2(k_licensee, path, (const char** const)spawn_argv, NULL, (sys_addr_t)spawn_data, 256, 1000, SYS_PROCESS_PRIMARY_STACK_SIZE_1M);
+      ret = sceNpDrmProcessExitSpawn2(k_licensee, path,
+            (const char** const)spawn_argv, NULL,
+            (sys_addr_t)spawn_data, 256, 1000,
+            SYS_PROCESS_PRIMARY_STACK_SIZE_1M);
 
       if(ret <  0)
       {
          RARCH_WARN("SELF file is not of NPDRM type, trying another approach to boot it...\n");
-         sys_game_process_exitspawn(path, (const char** const)spawn_argv, NULL, NULL, 0, 1000, SYS_PROCESS_PRIMARY_STACK_SIZE_1M);
+         sys_game_process_exitspawn(path, (const char** const)spawn_argv,
+               NULL, NULL, 0, 1000, SYS_PROCESS_PRIMARY_STACK_SIZE_1M);
       }
    }
    else
    {
       const char * const spawn_argv[] = {NULL}; 
-      ret = sceNpDrmProcessExitSpawn2(k_licensee, path, (const char** const)spawn_argv, NULL, (sys_addr_t)spawn_data, 256, 1000, SYS_PROCESS_PRIMARY_STACK_SIZE_1M);
+      ret = sceNpDrmProcessExitSpawn2(k_licensee, path,
+            (const char** const)spawn_argv, NULL, (sys_addr_t)spawn_data,
+            256, 1000, SYS_PROCESS_PRIMARY_STACK_SIZE_1M);
 
       if(ret <  0)
       {
          RARCH_WARN("SELF file is not of NPDRM type, trying another approach to boot it...\n");
-         sys_game_process_exitspawn(path, (const char** const)spawn_argv, NULL, NULL, 0, 1000, SYS_PROCESS_PRIMARY_STACK_SIZE_1M);
+         sys_game_process_exitspawn(path, (const char** const)spawn_argv,
+               NULL, NULL, 0, 1000, SYS_PROCESS_PRIMARY_STACK_SIZE_1M);
       }
    }
 #endif
