@@ -555,6 +555,9 @@
 					"-DRARCH_INTERNAL",
 					"-DHAVE_THREADS",
 					"-DHAVE_FILTERS_BUILTIN",
+					"-D_7ZIP_ST",
+					"-DHAVE_COMPRESSION",
+					"-DHAVE_7ZIP",
 				);
 				"OTHER_CFLAGS[arch=*]" = (
 					"-DNS_BLOCK_ASSERTIONS=1",
@@ -584,6 +587,9 @@
 					"-DRARCH_INTERNAL",
 					"-DHAVE_THREADS",
 					"-DHAVE_FILTERS_BUILTIN",
+					"-D_7ZIP_ST",
+					"-DHAVE_COMPRESSION",
+					"-DHAVE_7ZIP",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE = "";
