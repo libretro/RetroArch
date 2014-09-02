@@ -103,7 +103,6 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message,
 
 static void gfx_ctx_d3d_swap_buffers(void *data)
 {
-   (void)data;
    d3d_video_t *d3d = (d3d_video_t*)data;
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
 
@@ -308,6 +307,7 @@ static bool gfx_ctx_d3d_bind_api(void *data, enum gfx_ctx_api api, unsigned majo
 static bool gfx_ctx_d3d_init(void *data)
 {
    (void)data;
+   d3d_quit = false;
    return true;
 }
 
