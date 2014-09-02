@@ -1618,25 +1618,25 @@ static void init_rewind(void)
 
    if (g_extern.system.audio_callback.callback)
    {
-      RARCH_ERR("Implementation uses threaded audio. Cannot use rewind.\n");
+      RARCH_ERR(RETRO_LOG_REWIND_INIT_FAILED_THREADED_AUDIO);
       return;
    }
 
    g_extern.state_size = pretro_serialize_size();
    if (!g_extern.state_size)
    {
-      RARCH_ERR("Implementation does not support save states. Cannot use rewind.\n");
+      RARCH_ERR(RETRO_LOG_REWIND_INIT_FAILED_NO_SAVESTATES);
       return;
    }
 
-   RARCH_LOG("Initializing rewind buffer with size: %u MB\n",
+   RARCH_LOG(RETRO_MSG_REWIND_INIT "%u MB\n",
          (unsigned)(g_settings.rewind_buffer_size / 1000000));
 
    g_extern.state_manager = state_manager_new(g_extern.state_size,
          g_settings.rewind_buffer_size);
 
    if (!g_extern.state_manager)
-      RARCH_WARN("Failed to initialize rewind buffer. Rewinding will be disabled.\n");
+      RARCH_WARN(RETRO_LOG_REWIND_INIT_FAILED);
 
    state_manager_push_where(g_extern.state_manager, &state);
    pretro_serialize(state, g_extern.state_size);
