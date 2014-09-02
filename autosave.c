@@ -46,7 +46,8 @@ static void autosave_thread(void *data)
    while (!save->quit)
    {
       autosave_lock(save);
-      bool differ = memcmp(save->buffer, save->retro_buffer, save->bufsize) != 0;
+      bool differ = memcmp(save->buffer, save->retro_buffer,
+            save->bufsize) != 0;
       if (differ)
          memcpy(save->buffer, save->retro_buffer, save->bufsize);
       autosave_unlock(save);
@@ -68,7 +69,8 @@ static void autosave_thread(void *data)
                RARCH_LOG("SRAM changed ... autosaving ...\n");
 
             bool failed = false;
-            failed |= fwrite(save->buffer, 1, save->bufsize, file) != save->bufsize;
+            failed |= fwrite(save->buffer, 1, save->bufsize, file)
+               != save->bufsize;
             failed |= fflush(file) != 0;
             failed |= fclose(file) != 0;
             if (failed)

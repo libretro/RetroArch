@@ -19,8 +19,8 @@
 #include <stdint.h>
 #include <stddef.h>
 
-// BPS/UPS/IPS implementation from bSNES (nall::).
-// Modified for RetroArch.
+/* BPS/UPS/IPS implementation from bSNES (nall::).
+ * Modified for RetroArch. */
 
 typedef enum
 {
@@ -38,7 +38,8 @@ typedef enum
    PATCH_PATCH_CHECKSUM_INVALID
 } patch_error_t;
 
-typedef patch_error_t (*patch_func_t)(const uint8_t*, size_t, const uint8_t*, size_t, uint8_t*, size_t*);
+typedef patch_error_t (*patch_func_t)(const uint8_t*, size_t,
+      const uint8_t*, size_t, uint8_t*, size_t*);
 
 patch_error_t bps_apply_patch(
       const uint8_t *patch_data, size_t patch_length,

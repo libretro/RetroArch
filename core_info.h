@@ -30,7 +30,9 @@ typedef struct
 {
    char *path;
    char *desc;
-   bool missing; // Set once to avoid opening the same file several times.
+   /* Set once to avoid opening the same file
+    * several times. */
+   bool missing;
    bool optional;
 } core_info_firmware_t;
 
@@ -65,14 +67,17 @@ void core_info_list_free(core_info_list_t *list);
 
 size_t core_info_list_num_info_files(core_info_list_t *list);
 
-bool core_info_does_support_file(const core_info_t *info, const char *path);
-bool core_info_does_support_any_file(const core_info_t *info, const struct string_list *list);
+bool core_info_does_support_file(const core_info_t *info,
+      const char *path);
 
-// Non-reentrant, does not allocate. Returns pointer to internal state.
-void core_info_list_get_supported_cores(core_info_list_t *list, const char *path,
-      const core_info_t **infos, size_t *num_infos);
+bool core_info_does_support_any_file(const core_info_t *info,
+      const struct string_list *list);
 
-// Non-reentrant, does not allocate. Returns pointer to internal state.
+/* Non-reentrant, does not allocate. Returns pointer to internal state. */
+void core_info_list_get_supported_cores(core_info_list_t *list,
+      const char *path, const core_info_t **infos, size_t *num_infos);
+
+/* Non-reentrant, does not allocate. Returns pointer to internal state. */
 void core_info_list_get_missing_firmware(core_info_list_t *list,
       const char *core, const char *systemdir,
       const core_info_firmware_t **firmware, size_t *num_firmware);
@@ -80,19 +85,23 @@ void core_info_list_get_missing_firmware(core_info_list_t *list,
 void core_info_list_update_missing_firmware(core_info_list_t *list,
       const char *core, const char *systemdir);	  
 	  
-// Shallow-copies internal state. Data in *info is invalidated when the core_info_list is freed.
-bool core_info_list_get_info(core_info_list_t *list, core_info_t *info, const char *path);
+/* Shallow-copies internal state. Data in *info is invalidated when the
+ * core_info_list is freed. */
+bool core_info_list_get_info(core_info_list_t *list,
+      core_info_t *info, const char *path);
 
 const char *core_info_list_get_all_extensions(core_info_list_t *list);
 
-bool core_info_list_get_display_name(core_info_list_t *list, const char *path, char *buf, size_t size);
+bool core_info_list_get_display_name(core_info_list_t *list,
+      const char *path, char *buf, size_t size);
 
 void core_info_set_core_path(void);
 
 core_info_list_t *core_info_list_get(void);
 const core_info_t *core_info_list_get_by_id(const char *core_id);
 
-bool core_info_get_custom_config(const char *core_id, char *buf, size_t sizeof_buf);
+bool core_info_get_custom_config(const char *core_id,
+      char *buf, size_t sizeof_buf);
 
 #ifdef __cplusplus
 }

@@ -63,19 +63,22 @@ static void patch_content(uint8_t **buf, ssize_t *size)
    bool allow_ups = !g_extern.bps_pref && !g_extern.ips_pref;
    bool allow_ips = !g_extern.ups_pref && !g_extern.bps_pref;
 
-   if (allow_ups && *g_extern.ups_name && (patch_size = read_file(g_extern.ups_name, &patch_data)) >= 0)
+   if (allow_ups && *g_extern.ups_name
+         && (patch_size = read_file(g_extern.ups_name, &patch_data)) >= 0)
    {
       patch_desc = "UPS";
       patch_path = g_extern.ups_name;
       func = ups_apply_patch;
    }
-   else if (allow_bps && *g_extern.bps_name && (patch_size = read_file(g_extern.bps_name, &patch_data)) >= 0)
+   else if (allow_bps && *g_extern.bps_name
+         && (patch_size = read_file(g_extern.bps_name, &patch_data)) >= 0)
    {
       patch_desc = "BPS";
       patch_path = g_extern.bps_name;
       func = bps_apply_patch;
    }
-   else if (allow_ips && *g_extern.ips_name && (patch_size = read_file(g_extern.ips_name, &patch_data)) >= 0)
+   else if (allow_ips && *g_extern.ips_name
+         && (patch_size = read_file(g_extern.ips_name, &patch_data)) >= 0)
    {
       patch_desc = "IPS";
       patch_path = g_extern.ips_name;
@@ -87,9 +90,10 @@ static void patch_content(uint8_t **buf, ssize_t *size)
       return;
    }
 
-   RARCH_LOG("Found %s file in \"%s\", attempting to patch ...\n", patch_desc, patch_path);
+   RARCH_LOG("Found %s file in \"%s\", attempting to patch ...\n",
+         patch_desc, patch_path);
 
-   size_t target_size = ret_size * 4; // Just to be sure ...
+   size_t target_size = ret_size * 4; /* Just to be sure. */
    uint8_t *patched_content = (uint8_t*)malloc(target_size);
    if (!patched_content)
    {
@@ -97,14 +101,17 @@ static void patch_content(uint8_t **buf, ssize_t *size)
       goto error;
    }
 
-   err = func((const uint8_t*)patch_data, patch_size, ret_buf, ret_size, patched_content, &target_size);
+   err = func((const uint8_t*)patch_data, patch_size, ret_buf,
+         ret_size, patched_content, &target_size);
+
    if (err == PATCH_SUCCESS)
    {
       RARCH_LOG("Content patched successfully (%s).\n", patch_desc);
       success = true;
    }
    else
-      RARCH_ERR("Failed to patch %s: Error #%u\n", patch_desc, (unsigned)err);
+      RARCH_ERR("Failed to patch %s: Error #%u\n", patch_desc,
+            (unsigned)err);
 
    if (success)
    {
@@ -129,22 +136,22 @@ static ssize_t read_content_file(const char *path, void **buf)
    if (ret <= 0)
       return ret;
 
+   /* Attempt to apply a patch. */
    if (!g_extern.block_patch)
-   {
-      // Attempt to apply a patch.
       patch_content(&ret_buf, &ret);
-   }
    
    g_extern.content_crc = crc32_calculate(ret_buf, ret);
    sha256_hash(g_extern.sha256, ret_buf, ret);
+
    RARCH_LOG("CRC32: 0x%x, SHA256: %s\n",
          (unsigned)g_extern.content_crc, g_extern.sha256);
    *buf = ret_buf;
    return ret;
 }
 
-// Attempt to save valuable RAM data somewhere ...
-static void dump_to_file_desperate(const void *data, size_t size, unsigned type)
+/* Attempt to save valuable RAM data somewhere. */
+static void dump_to_file_desperate(const void *data,
+      size_t size, unsigned type)
 {
 #if defined(_WIN32) && !defined(_XBOX)
    const char *base = getenv("APPDATA");
@@ -230,10 +237,13 @@ bool load_state(const char *path)
    struct sram_block *blocks = NULL;
    unsigned num_blocks = 0;
 
-   if (g_settings.block_sram_overwrite && g_extern.savefiles && g_extern.savefiles->size)
+   if (g_settings.block_sram_overwrite && g_extern.savefiles
+         && g_extern.savefiles->size)
    {
       RARCH_LOG("Blocking SRAM overwrite.\n");
-      blocks = (struct sram_block*)calloc(g_extern.savefiles->size, sizeof(*blocks));
+      blocks = (struct sram_block*)
+         calloc(g_extern.savefiles->size, sizeof(*blocks));
+
       if (blocks)
       {
          num_blocks = g_extern.savefiles->size;
@@ -249,7 +259,7 @@ bool load_state(const char *path)
       if (blocks[i].size)
          blocks[i].data = malloc(blocks[i].size);
 
-   // Backup current SRAM which is overwritten by unserialize.
+   /* Backup current SRAM which is overwritten by unserialize. */
    for (i = 0; i < num_blocks; i++)
    {
       if (blocks[i].data)
@@ -262,7 +272,7 @@ bool load_state(const char *path)
 
    ret = pretro_unserialize(buf, size);
 
-   // Flush back :D
+   /* Flush back. */
    for (i = 0; i < num_blocks; i++)
    {
       if (blocks[i].data)
@@ -321,12 +331,15 @@ void save_ram_file(const char *path, int type)
    }
 }
 
-static bool load_content(const struct retro_subsystem_info *special, const struct string_list *content)
+static bool load_content(const struct retro_subsystem_info *special,
+      const struct string_list *content)
 {
    unsigned i;
    bool ret = true;
 
-   struct retro_game_info *info = (struct retro_game_info*)calloc(content->size, sizeof(*info));
+   struct retro_game_info *info = (struct retro_game_info*)
+      calloc(content->size, sizeof(*info));
+
    if (!info)
       return false;
 
@@ -347,11 +360,17 @@ static bool load_content(const struct retro_subsystem_info *special, const struc
 
       info[i].path = *path ? path : NULL;
 
-      if (!need_fullpath && *path) // Load the content into memory.
+      if (!need_fullpath && *path)
       {
+         /* Load the content into memory. */
          RARCH_LOG("Loading content file: %s.\n", path);
-         // First content file is significant, attempt to do patching, CRC checking, etc ...
-         long size = i == 0 ? read_content_file(path, (void**)&info[i].data) : read_file(path, (void**)&info[i].data);
+
+         /* First content file is significant, attempt to do patching,
+          * CRC checking, etc. */
+         long size = i == 0 ?
+            read_content_file(path, (void**)&info[i].data) :
+            read_file(path, (void**)&info[i].data);
+
          if (size < 0)
          {
             RARCH_ERR("Could not read content file \"%s\".\n", path);
@@ -392,12 +411,13 @@ bool init_content_file(void)
 
    if (*g_extern.subsystem)
    {
-      special = libretro_find_subsystem_info(g_extern.system.special, g_extern.system.num_special,
-            g_extern.subsystem);
+      special = libretro_find_subsystem_info(g_extern.system.special,
+            g_extern.system.num_special, g_extern.subsystem);
 
       if (!special)
       {
-         RARCH_ERR("Failed to find subsystem \"%s\" in libretro implementation.\n",
+         RARCH_ERR(
+               "Failed to find subsystem \"%s\" in libretro implementation.\n",
                g_extern.subsystem);
          return false;
       }
@@ -409,13 +429,16 @@ bool init_content_file(void)
       }
       else if (special->num_roms && special->num_roms != g_extern.subsystem_fullpaths->size)
       {
-         RARCH_ERR("libretro core requires %u content files for subsystem \"%s\", but %u content files were provided.\n", special->num_roms, special->desc,
+         RARCH_ERR("libretro core requires %u content files for subsystem \"%s\", but %u content files were provided.\n",
+               special->num_roms, special->desc,
                (unsigned)g_extern.subsystem_fullpaths->size);
          return false;
       }
-      else if (!special->num_roms && g_extern.subsystem_fullpaths && g_extern.subsystem_fullpaths->size)
+      else if (!special->num_roms && g_extern.subsystem_fullpaths
+            && g_extern.subsystem_fullpaths->size)
       {
-         RARCH_ERR("libretro core takes no content for subsystem \"%s\", but %u content files were provided.\n", special->desc,
+         RARCH_ERR("libretro core takes no content for subsystem \"%s\", but %u content files were provided.\n",
+               special->desc,
                (unsigned)g_extern.subsystem_fullpaths->size);
          return false;
       }
@@ -435,7 +458,8 @@ bool init_content_file(void)
          attr.i  = special->roms[i].block_extract;
          attr.i |= special->roms[i].need_fullpath << 1;
          attr.i |= special->roms[i].required << 2;
-         string_list_append(content, g_extern.subsystem_fullpaths->elems[i].data, attr);
+         string_list_append(content,
+               g_extern.subsystem_fullpaths->elems[i].data, attr);
       }
    }
    else
@@ -443,14 +467,15 @@ bool init_content_file(void)
       attr.i  = g_extern.system.info.block_extract;
       attr.i |= g_extern.system.info.need_fullpath << 1;
       attr.i |= (!g_extern.system.no_content) << 2;
-      string_list_append(content, g_extern.libretro_no_content ? "" : g_extern.fullpath, attr);
+      string_list_append(content,
+            g_extern.libretro_no_content ? "" : g_extern.fullpath, attr);
    }
 
 #ifdef HAVE_ZLIB
-   // Try to extract all content we're going to load if appropriate.
+   /* Try to extract all content we're going to load if appropriate. */
    for (i = 0; i < content->size; i++)
    {
-      // block extract check
+      /* Block extract check. */
       if (content->elems[i].attr.i & 1)
          continue;
 
@@ -463,21 +488,27 @@ bool init_content_file(void)
       if (ext && !strcasecmp(ext, "zip"))
       {
          char temporary_content[PATH_MAX];
-         strlcpy(temporary_content, content->elems[i].data, sizeof(temporary_content));
-         if (!zlib_extract_first_content_file(temporary_content, sizeof(temporary_content), valid_ext,
-                  *g_settings.extraction_directory ? g_settings.extraction_directory : NULL))
+         strlcpy(temporary_content, content->elems[i].data,
+               sizeof(temporary_content));
+
+         if (!zlib_extract_first_content_file(temporary_content,
+                  sizeof(temporary_content), valid_ext,
+                  *g_settings.extraction_directory ?
+                  g_settings.extraction_directory : NULL))
          {
-            RARCH_ERR("Failed to extract content from zipped file: %s.\n", temporary_content);
+            RARCH_ERR("Failed to extract content from zipped file: %s.\n",
+                  temporary_content);
             string_list_free(content);
             return false;
          }
          string_list_set(content, i, temporary_content);
-         string_list_append(g_extern.temporary_content, temporary_content, attr);
+         string_list_append(g_extern.temporary_content,
+               temporary_content, attr);
       }
    }
 #endif
 
-   // Set attr to need_fullpath as appropriate.
+   /* Set attr to need_fullpath as appropriate. */
    
    bool ret = load_content(special, content);
    string_list_free(content);

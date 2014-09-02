@@ -27,7 +27,7 @@
 extern "C" {
 #endif
 
-// Handles files related to libretro.
+/* Handles files related to libretro. */
 
 bool load_state(const char *path);
 bool save_state(const char *path);

@@ -71,7 +71,8 @@ void core_option_get(core_option_manager_t *opt, struct retro_variable *var)
    var->value = NULL;
 }
 
-static bool parse_variable(core_option_manager_t *opt, size_t index, const struct retro_variable *var)
+static bool parse_variable(core_option_manager_t *opt, size_t index,
+      const struct retro_variable *var)
 {
    size_t i;
    struct core_option *option = (struct core_option*)&opt->opts[index];
@@ -126,10 +127,12 @@ static bool parse_variable(core_option_manager_t *opt, size_t index, const struc
    return true;
 }
 
-core_option_manager_t *core_option_new(const char *conf_path, const struct retro_variable *vars)
+core_option_manager_t *core_option_new(const char *conf_path,
+      const struct retro_variable *vars)
 {
    const struct retro_variable *var;
-   core_option_manager_t *opt = (core_option_manager_t*)calloc(1, sizeof(*opt));
+   core_option_manager_t *opt = (core_option_manager_t*)
+      calloc(1, sizeof(*opt));
    if (!opt)
       return NULL;
 
@@ -200,12 +203,14 @@ const char *core_option_get_val(core_option_manager_t *opt, size_t index)
    return option->vals->elems[option->index].data;
 }
 
-struct string_list *core_option_get_vals(core_option_manager_t *opt, size_t index)
+struct string_list *core_option_get_vals(
+      core_option_manager_t *opt, size_t index)
 {
    return opt->opts[index].vals;
 }
 
-void core_option_set_val(core_option_manager_t *opt, size_t index, size_t val_index)
+void core_option_set_val(core_option_manager_t *opt,
+      size_t index, size_t val_index)
 {
    struct core_option *option= (struct core_option*)&opt->opts[index];
    option->index = val_index % option->vals->size;
@@ -222,7 +227,8 @@ void core_option_next(core_option_manager_t *opt, size_t index)
 void core_option_prev(core_option_manager_t *opt, size_t index)
 {
    struct core_option *option = (struct core_option*)&opt->opts[index];
-   option->index = (option->index + option->vals->size - 1) % option->vals->size;
+   option->index = (option->index + option->vals->size - 1) %
+      option->vals->size;
    opt->updated = true;
 }
 

@@ -71,7 +71,8 @@ static bool cmd_init_network(rarch_cmd_t *handle, uint16_t port)
    if (!netplay_init_network())
       return false;
 
-   RARCH_LOG("Bringing up command interface on port %hu.\n", (unsigned short)port);
+   RARCH_LOG("Bringing up command interface on port %hu.\n",
+         (unsigned short)port);
 
    memset(&hints, 0, sizeof(hints));
 #if defined(_WIN32) || defined(HAVE_SOCKET_LEGACY)
@@ -87,14 +88,16 @@ static bool cmd_init_network(rarch_cmd_t *handle, uint16_t port)
    if (getaddrinfo(NULL, port_buf, &hints, &res) < 0)
       goto error;
 
-   handle->net_fd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
+   handle->net_fd = socket(res->ai_family,
+         res->ai_socktype, res->ai_protocol);
    if (handle->net_fd < 0)
       goto error;
 
    if (!socket_nonblock(handle->net_fd))
       goto error;
 
-   setsockopt(handle->net_fd, SOL_SOCKET, SO_REUSEADDR, CONST_CAST &yes, sizeof(int));
+   setsockopt(handle->net_fd, SOL_SOCKET,
+         SO_REUSEADDR, CONST_CAST &yes, sizeof(int));
    if (bind(handle->net_fd, res->ai_addr, res->ai_addrlen) < 0)
    {
       RARCH_ERR("Failed to bind socket.\n");
@@ -124,7 +127,8 @@ static bool cmd_init_stdin(rarch_cmd_t *handle)
 }
 #endif
 
-rarch_cmd_t *rarch_cmd_new(bool stdin_enable, bool network_enable, uint16_t port)
+rarch_cmd_t *rarch_cmd_new(bool stdin_enable,
+      bool network_enable, uint16_t port)
 {
    rarch_cmd_t *handle = (rarch_cmd_t*)calloc(1, sizeof(*handle));
    if (!handle)
@@ -241,7 +245,8 @@ static const struct cmd_action_map action_map[] = {
    { "SET_SHADER", cmd_set_shader, "<shader path>" },
 };
 
-static bool command_get_arg(const char *tok, const char **arg, unsigned *index)
+static bool command_get_arg(const char *tok,
+      const char **arg, unsigned *index)
 {
    unsigned i;
 
@@ -344,7 +349,8 @@ static void network_cmd_poll(rarch_cmd_t *handle)
    for (;;)
    {
       char buf[1024];
-      ssize_t ret = recvfrom(handle->net_fd, buf, sizeof(buf) - 1, 0, NULL, NULL);
+      ssize_t ret = recvfrom(handle->net_fd, buf,
+            sizeof(buf) - 1, 0, NULL, NULL);
 
       if (ret <= 0)
          break;
@@ -366,12 +372,12 @@ static size_t read_stdin(char *buf, size_t size)
    if (hnd == INVALID_HANDLE_VALUE)
       return 0;
 
-   // Check first if we're a pipe
-   // (not console).
+   /* Check first if we're a pipe
+    * (not console). */
    DWORD avail = 0;
    bool echo = false;
 
-   // If not a pipe, check if we're running in a console.
+   /* If not a pipe, check if we're running in a console. */
    if (!PeekNamedPipe(hnd, NULL, 0, NULL, &avail, NULL))
    {
       DWORD mode = 0;
@@ -379,22 +385,25 @@ static size_t read_stdin(char *buf, size_t size)
          return 0;
 
       if ((mode & (ENABLE_LINE_INPUT | ENABLE_ECHO_INPUT))
-            && !SetConsoleMode(hnd, mode & ~(ENABLE_LINE_INPUT | ENABLE_ECHO_INPUT)))
+            && !SetConsoleMode(hnd,
+               mode & ~(ENABLE_LINE_INPUT | ENABLE_ECHO_INPUT)))
          return 0;
 
-      // Win32, Y U NO SANE NONBLOCK READ!?
+      /* Win32, Y U NO SANE NONBLOCK READ!? */
       DWORD has_read = 0;
       INPUT_RECORD recs[256];
-      if (!PeekConsoleInput(hnd, recs, sizeof(recs) / sizeof(recs[0]), &has_read))
+      if (!PeekConsoleInput(hnd, recs,
+               sizeof(recs) / sizeof(recs[0]), &has_read))
          return 0;
 
       bool has_key = false;
       for (i = 0; i < has_read; i++)
       {
-         // Very crude, but should get the job done ...
+         /* Very crude, but should get the job done. */
          if (recs[i].EventType == KEY_EVENT &&
                recs[i].Event.KeyEvent.bKeyDown &&
-               (isgraph(recs[i].Event.KeyEvent.wVirtualKeyCode) || recs[i].Event.KeyEvent.wVirtualKeyCode == VK_RETURN))
+               (isgraph(recs[i].Event.KeyEvent.wVirtualKeyCode) ||
+                recs[i].Event.KeyEvent.wVirtualKeyCode == VK_RETURN))
          {
             has_key = true;
             echo    = true;
@@ -424,7 +433,8 @@ static size_t read_stdin(char *buf, size_t size)
       if (buf[i] == '\r')
          buf[i] = '\n';
 
-   // Console won't echo for us while in non-line mode, so do it manually ...
+   /* Console won't echo for us while in non-line mode,
+    * so do it manually ... */
    if (echo)
    {
       HANDLE hnd_out = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -438,6 +448,7 @@ static size_t read_stdin(char *buf, size_t size)
    return has_read;
 }
 #else
+
 static size_t read_stdin(char *buf, size_t size)
 {
    size_t has_read = 0;
@@ -466,7 +477,8 @@ static void stdin_cmd_poll(rarch_cmd_t *handle)
    if (!handle->stdin_enable)
       return;
 
-   ret = read_stdin(handle->stdin_buf + handle->stdin_buf_ptr, STDIN_BUF_SIZE - handle->stdin_buf_ptr - 1);
+   ret = read_stdin(handle->stdin_buf + handle->stdin_buf_ptr,
+         STDIN_BUF_SIZE - handle->stdin_buf_ptr - 1);
    if (ret == 0)
       return;
 
@@ -477,8 +489,8 @@ static void stdin_cmd_poll(rarch_cmd_t *handle)
 
    if (!last_newline)
    {
-      // We're receiving bogus data in pipe (no terminating newline),
-      // flush out the buffer.
+      /* We're receiving bogus data in pipe 
+       * (no terminating newline), flush out the buffer. */
       if (handle->stdin_buf_ptr + 1 >= STDIN_BUF_SIZE)
       {
          handle->stdin_buf_ptr = 0;
@@ -493,7 +505,8 @@ static void stdin_cmd_poll(rarch_cmd_t *handle)
 
    parse_msg(handle, handle->stdin_buf);
 
-   memmove(handle->stdin_buf, last_newline, handle->stdin_buf_ptr - msg_len);
+   memmove(handle->stdin_buf, last_newline,
+         handle->stdin_buf_ptr - msg_len);
    handle->stdin_buf_ptr -= msg_len;
 }
 #endif
@@ -512,7 +525,8 @@ void rarch_cmd_poll(rarch_cmd_t *handle)
 }
 
 #if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
-static bool send_udp_packet(const char *host, uint16_t port, const char *msg)
+static bool send_udp_packet(const char *host,
+      uint16_t port, const char *msg)
 {
    char port_buf[16];
    struct addrinfo hints, *res = NULL;
@@ -621,7 +635,8 @@ bool network_cmd_send(const char *cmd_)
    if (port_)
       port = strtoul(port_, NULL, 0);
 
-   RARCH_LOG("Sending command: \"%s\" to %s:%hu\n", cmd, host, (unsigned short)port);
+   RARCH_LOG("Sending command: \"%s\" to %s:%hu\n",
+         cmd, host, (unsigned short)port);
 
    ret = verify_command(cmd) && send_udp_packet(host, port, cmd);
    free(command);

@@ -26,7 +26,8 @@
 
 static core_info_list_t *global_core_list;
 
-static void core_info_list_resolve_all_extensions(core_info_list_t *core_info_list)
+static void core_info_list_resolve_all_extensions(
+      core_info_list_t *core_info_list)
 {
    size_t i, all_ext_len = 0;
    if (!core_info_list)
@@ -50,7 +51,8 @@ static void core_info_list_resolve_all_extensions(core_info_list_t *core_info_li
       {
          if (core_info_list->list[i].supported_extensions)
          {
-            strlcat(core_info_list->all_ext, core_info_list->list[i].supported_extensions, all_ext_len);
+            strlcat(core_info_list->all_ext,
+                  core_info_list->list[i].supported_extensions, all_ext_len);
             strlcat(core_info_list->all_ext, "|", all_ext_len);
          }
       }
@@ -58,7 +60,8 @@ static void core_info_list_resolve_all_extensions(core_info_list_t *core_info_li
    }
 }
 
-static void core_info_list_resolve_all_firmware(core_info_list_t *core_info_list)
+static void core_info_list_resolve_all_firmware(
+      core_info_list_t *core_info_list)
 {
    size_t i;
    unsigned c;
@@ -76,7 +79,9 @@ static void core_info_list_resolve_all_firmware(core_info_list_t *core_info_list
       if (!config_get_uint(info->data, "firmware_count", &count))
          continue;
 
-      info->firmware = (core_info_firmware_t*)calloc(count, sizeof(*info->firmware));
+      info->firmware = (core_info_firmware_t*)
+         calloc(count, sizeof(*info->firmware));
+
       if (!info->firmware)
          continue;
 
@@ -100,7 +105,8 @@ core_info_list_t *core_info_list_new(const char *modules_path)
    size_t i;
    core_info_t *core_info = NULL;
    core_info_list_t *core_info_list = NULL;
-   struct string_list *contents = (struct string_list*)dir_list_new(modules_path, EXT_EXECUTABLES, false);
+   struct string_list *contents = (struct string_list*)
+      dir_list_new(modules_path, EXT_EXECUTABLES, false);
    if (!contents)
       return NULL;
 
@@ -123,7 +129,8 @@ core_info_list_t *core_info_list_new(const char *modules_path)
       if (!core_info[i].path)
          break;
 
-      fill_pathname_base(info_path_base, contents->elems[i].data, sizeof(info_path_base));
+      fill_pathname_base(info_path_base, contents->elems[i].data,
+            sizeof(info_path_base));
       path_remove_extension(info_path_base);
 
 #if defined(RARCH_MOBILE) || defined(RARCH_CONSOLE)
@@ -134,7 +141,8 @@ core_info_list_t *core_info_list_new(const char *modules_path)
 
       strlcat(info_path_base, ".info", sizeof(info_path_base));
 
-      fill_pathname_join(info_path, (*g_settings.libretro_info_path) ? g_settings.libretro_info_path : modules_path,
+      fill_pathname_join(info_path, (*g_settings.libretro_info_path) ?
+            g_settings.libretro_info_path : modules_path,
             info_path_base, sizeof(info_path));
 
       core_info[i].data = config_file_new(info_path);
@@ -142,22 +150,32 @@ core_info_list_t *core_info_list_new(const char *modules_path)
       if (core_info[i].data)
       {
          unsigned count = 0;
-         config_get_string(core_info[i].data, "display_name", &core_info[i].display_name);
-         config_get_string(core_info[i].data, "systemname", &core_info[i].systemname);
+         config_get_string(core_info[i].data, "display_name",
+               &core_info[i].display_name);
+         config_get_string(core_info[i].data, "systemname",
+               &core_info[i].systemname);
          config_get_uint(core_info[i].data, "firmware_count", &count);
          core_info[i].firmware_count = count;
-         if (config_get_string(core_info[i].data, "supported_extensions", &core_info[i].supported_extensions) &&
+         if (config_get_string(core_info[i].data, "supported_extensions",
+                  &core_info[i].supported_extensions) &&
                core_info[i].supported_extensions)
-            core_info[i].supported_extensions_list = string_split(core_info[i].supported_extensions, "|");
+            core_info[i].supported_extensions_list =
+               string_split(core_info[i].supported_extensions, "|");
 
-         if (config_get_string(core_info[i].data, "authors", &core_info[i].authors) &&
+         if (config_get_string(core_info[i].data, "authors",
+                  &core_info[i].authors) &&
                core_info[i].authors)
-            core_info[i].authors_list = string_split(core_info[i].authors, "|");
+            core_info[i].authors_list =
+               string_split(core_info[i].authors, "|");
 
-         if (config_get_string(core_info[i].data, "permissions", &core_info[i].permissions) &&
+         if (config_get_string(core_info[i].data, "permissions",
+                  &core_info[i].permissions) &&
                core_info[i].permissions)
-            core_info[i].permissions_list = string_split(core_info[i].permissions, "|");
-         if (config_get_string(core_info[i].data, "notes", &core_info[i].notes) &&
+            core_info[i].permissions_list =
+               string_split(core_info[i].permissions, "|");
+
+         if (config_get_string(core_info[i].data, "notes",
+                  &core_info[i].notes) &&
                core_info[i].notes)
             core_info[i].note_list = string_split(core_info[i].notes, "|");
       }
@@ -227,7 +245,8 @@ size_t core_info_list_num_info_files(core_info_list_t *core_info_list)
    return num;
 }
 
-bool core_info_list_get_display_name(core_info_list_t *core_info_list, const char *path, char *buf, size_t size)
+bool core_info_list_get_display_name(core_info_list_t *core_info_list,
+      const char *path, char *buf, size_t size)
 {
    size_t i;
    if (!core_info_list)
@@ -236,7 +255,8 @@ bool core_info_list_get_display_name(core_info_list_t *core_info_list, const cha
    for (i = 0; i < core_info_list->count; i++)
    {
       const core_info_t *info = &core_info_list->list[i];
-      if (!strcmp(path_basename(info->path), path_basename(path)) && info->display_name)
+      if (!strcmp(path_basename(info->path), path_basename(path))
+            && info->display_name)
       {
          strlcpy(buf, info->display_name, size);
          return true;
@@ -246,7 +266,8 @@ bool core_info_list_get_display_name(core_info_list_t *core_info_list, const cha
    return false;
 }
 
-bool core_info_list_get_info(core_info_list_t *core_info_list, core_info_t *out_info, const char *path)
+bool core_info_list_get_info(core_info_list_t *core_info_list,
+      core_info_t *out_info, const char *path)
 {
    size_t i;
    if (!core_info_list || !out_info)
@@ -267,14 +288,16 @@ bool core_info_list_get_info(core_info_list_t *core_info_list, core_info_t *out_
    return false;
 }
 
-bool core_info_does_support_any_file(const core_info_t *core, const struct string_list *list)
+bool core_info_does_support_any_file(const core_info_t *core,
+      const struct string_list *list)
 {
    size_t i;
    if (!list || !core || !core->supported_extensions_list)
       return false;
 
    for (i = 0; i < list->size; i++)
-      if (string_list_find_elem_prefix(core->supported_extensions_list, ".", path_get_extension(list->elems[i].data)))
+      if (string_list_find_elem_prefix(core->supported_extensions_list,
+               ".", path_get_extension(list->elems[i].data)))
          return true;
    return false;
 }
@@ -283,7 +306,8 @@ bool core_info_does_support_file(const core_info_t *core, const char *path)
 {
    if (!path || !core || !core->supported_extensions_list)
       return false;
-   return string_list_find_elem_prefix(core->supported_extensions_list, ".", path_get_extension(path));
+   return string_list_find_elem_prefix(
+         core->supported_extensions_list, ".", path_get_extension(path));
 }
 
 const char *core_info_list_get_all_extensions(core_info_list_t *core_info_list)
@@ -293,7 +317,7 @@ const char *core_info_list_get_all_extensions(core_info_list_t *core_info_list)
    return "";
 }
 
-// qsort_r() is not in standard C, sadly.
+/* qsort_r() is not in standard C, sadly. */
 static const char *core_info_tmp_path;
 static const struct string_list *core_info_tmp_list;
 
@@ -312,8 +336,8 @@ static int core_info_qsort_cmp(const void *a_, const void *b_)
    return strcasecmp(a->display_name, b->display_name);
 }
 
-void core_info_list_get_supported_cores(core_info_list_t *core_info_list, const char *path,
-      const core_info_t **infos, size_t *num_infos)
+void core_info_list_get_supported_cores(core_info_list_t *core_info_list,
+      const char *path, const core_info_t **infos, size_t *num_infos)
 {
    if (!core_info_list)
       return;
@@ -327,8 +351,10 @@ void core_info_list_get_supported_cores(core_info_list_t *core_info_list, const 
    core_info_tmp_list = list;
 #endif
 
-   // Let supported core come first in list so we can return a pointer to them.
-   qsort(core_info_list->list, core_info_list->count, sizeof(core_info_t), core_info_qsort_cmp);
+   /* Let supported core come first in list so we can return 
+    * a pointer to them. */
+   qsort(core_info_list->list, core_info_list->count,
+         sizeof(core_info_t), core_info_qsort_cmp);
 
    size_t supported, i;
    supported = 0;
@@ -352,7 +378,8 @@ void core_info_list_get_supported_cores(core_info_list_t *core_info_list, const 
    *num_infos = supported;
 }
 
-static core_info_t *find_core_info(core_info_list_t *list, const char *core)
+static core_info_t *find_core_info(core_info_list_t *list,
+      const char *core)
 {
    size_t i;
 
@@ -394,7 +421,8 @@ void core_info_list_update_missing_firmware(core_info_list_t *core_info_list,
    {
       if (info->firmware[i].path)
       {
-         fill_pathname_join(path, systemdir, info->firmware[i].path, sizeof(path));
+         fill_pathname_join(path, systemdir,
+               info->firmware[i].path, sizeof(path));
          info->firmware[i].missing = !path_file_exists(path);
       }
    }
@@ -426,7 +454,8 @@ void core_info_list_get_missing_firmware(core_info_list_t *core_info_list,
       *num_firmware += info->firmware[i].missing;
    }
 
-   qsort(info->firmware, info->firmware_count, sizeof(*info->firmware), core_info_firmware_cmp);
+   qsort(info->firmware, info->firmware_count, sizeof(*info->firmware),
+         core_info_firmware_cmp);
 }
 
 /* TODO - remove all of the functions below */
@@ -462,7 +491,8 @@ bool core_info_get_custom_config(const char *core_id,
    if (!core_id || !buf || !sizeof_buf)
       return false;
 
-   fill_pathname_join(buf, g_defaults.menu_config_dir, path_basename(core_id), sizeof_buf);
+   fill_pathname_join(buf, g_defaults.menu_config_dir,
+         path_basename(core_id), sizeof_buf);
    fill_pathname(buf, buf, ".cfg", sizeof_buf);
 
    if (buf[0] == '\0')

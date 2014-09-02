@@ -71,7 +71,8 @@ void file_list_get_alt_at_offset(const file_list_t *list, size_t index,
 
 void file_list_sort_on_alt(file_list_t *list);
 
-bool file_list_search(const file_list_t *list, const char *needle, size_t *index);
+bool file_list_search(const file_list_t *list, const char *needle,
+      size_t *index);
 
 #ifdef __cplusplus
 }

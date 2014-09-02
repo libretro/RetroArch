@@ -24,16 +24,16 @@
 extern "C" {
 #endif
 
-// Implements the bare minimum needed for RetroArch. :)
+/* Implements the bare minimum needed for RetroArch. */
 
 typedef struct sthread sthread_t;
 
-// Threading
+/* Threading */
 sthread_t *sthread_create(void (*thread_func)(void*), void *userdata);
 int sthread_detach(sthread_t *thread);
 void sthread_join(sthread_t *thread);
 
-// Mutexes
+/* Mutexes */
 typedef struct slock slock_t;
 
 slock_t *slock_new(void);
@@ -42,7 +42,7 @@ void slock_free(slock_t *lock);
 void slock_lock(slock_t *lock);
 void slock_unlock(slock_t *lock);
 
-// Condition variables.
+/* Condition variables. */
 typedef struct scond scond_t;
 
 scond_t *scond_new(void);

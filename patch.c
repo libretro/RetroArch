@@ -13,8 +13,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-// BPS/UPS/IPS implementation from bSNES (nall::).
-// Modified for RetroArch.
+/* BPS/UPS/IPS implementation from bSNES (nall::).
+ * Modified for RetroArch. */
 
 #include "patch.h"
 #include "hash.h"
@@ -91,7 +91,8 @@ patch_error_t bps_apply_patch(
    bps.modify_checksum = ~0;
    bps.target_checksum = ~0;
 
-   if ((bps_read(&bps) != 'B') || (bps_read(&bps) != 'P') || (bps_read(&bps) != 'S') || (bps_read(&bps) != '1'))
+   if ((bps_read(&bps) != 'B') || (bps_read(&bps) != 'P') ||
+         (bps_read(&bps) != 'S') || (bps_read(&bps) != '1'))
       return PATCH_PATCH_INVALID_HEADER;
 
    size_t modify_source_size = bps_decode(&bps);
@@ -150,7 +151,9 @@ patch_error_t bps_apply_patch(
       }
    }
 
-   uint32_t modify_source_checksum = 0, modify_target_checksum = 0, modify_modify_checksum = 0;
+   uint32_t modify_source_checksum = 0, modify_target_checksum = 0,
+            modify_modify_checksum = 0;
+
    for (i = 0; i < 32; i += 8)
       modify_source_checksum |= bps_read(&bps) << i;
    for (i = 0; i < 32; i += 8)
@@ -263,9 +266,11 @@ patch_error_t ups_apply_patch(
    unsigned source_read_length = ups_decode(&data);
    unsigned target_read_length = ups_decode(&data);
 
-   if (data.source_length != source_read_length && data.source_length != target_read_length) 
+   if (data.source_length != source_read_length
+         && data.source_length != target_read_length) 
       return PATCH_SOURCE_INVALID;
-   *targetlength = (data.source_length == source_read_length ? target_read_length : source_read_length);
+   *targetlength = (data.source_length == source_read_length ?
+         target_read_length : source_read_length);
    if (data.target_length < *targetlength) 
       return PATCH_TARGET_TOO_SMALL;
    data.target_length = *targetlength;
@@ -288,7 +293,9 @@ patch_error_t ups_apply_patch(
    while (data.target_offset < data.target_length) 
       ups_target_write(&data, ups_source_read(&data));
 
-   uint32_t patch_read_checksum = 0, source_read_checksum = 0, target_read_checksum = 0;
+   uint32_t patch_read_checksum = 0, source_read_checksum = 0,
+            target_read_checksum = 0;
+
    for (i = 0; i < 4; i++) 
       source_read_checksum |= ups_patch_read(&data) << (i * 8);
    for (i = 0; i < 4; i++) 
@@ -304,15 +311,19 @@ patch_error_t ups_apply_patch(
    if (patch_result_checksum != patch_read_checksum) 
       return PATCH_PATCH_INVALID;
 
-   if (data.source_checksum == source_read_checksum && data.source_length == source_read_length) 
+   if (data.source_checksum == source_read_checksum
+         && data.source_length == source_read_length) 
    {
-      if (data.target_checksum == target_read_checksum && data.target_length == target_read_length) 
+      if (data.target_checksum == target_read_checksum
+            && data.target_length == target_read_length) 
          return PATCH_SUCCESS;
       return PATCH_TARGET_INVALID;
    } 
-   else if (data.source_checksum == target_read_checksum && data.source_length == target_read_length) 
+   else if (data.source_checksum == target_read_checksum
+         && data.source_length == target_read_length) 
    {
-      if (data.target_checksum == source_read_checksum && data.target_length == source_read_length) 
+      if (data.target_checksum == source_read_checksum
+            && data.target_length == source_read_length) 
          return PATCH_SUCCESS;
       return PATCH_TARGET_INVALID;
    } 
@@ -347,7 +358,7 @@ patch_error_t ips_apply_patch(
       address |= patchdata[offset++] << 8;
       address |= patchdata[offset++] << 0;
 
-      if (address == 0x454f46) // EOF
+      if (address == 0x454f46) /* EOF */
       {
          if (offset == patchlen)
             return PATCH_SUCCESS;
@@ -367,7 +378,7 @@ patch_error_t ips_apply_patch(
       unsigned length = patchdata[offset++] << 8;
       length |= patchdata[offset++] << 0;
 
-      if (length) // Copy
+      if (length) /* Copy */
       {
          if (offset > patchlen - length)
             break;
@@ -375,7 +386,7 @@ patch_error_t ips_apply_patch(
          while (length--)
             targetdata[address++] = patchdata[offset++];
       }
-      else // RLE
+      else /* RLE */
       {
          if (offset > patchlen - 3)
             break;
@@ -383,7 +394,7 @@ patch_error_t ips_apply_patch(
          length  = patchdata[offset++] << 8;
          length |= patchdata[offset++] << 0;
 
-         if (length == 0) // Illegal
+         if (length == 0) /* Illegal */
             break;
 
          while (length--)
