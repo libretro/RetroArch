@@ -206,7 +206,8 @@ GLboolean rglTexNameSpaceCreateNameLazy(void *data, GLuint name )
    if ( !ns->data[name] )
    {
       ns->data[name] = ns->create();
-      if ( ns->data[name] ) return GL_TRUE;
+      if (ns->data[name])
+         return GL_TRUE;
    }
    return GL_FALSE;
 }
@@ -219,7 +220,7 @@ GLboolean rglTexNameSpaceIsName(void *data, GLuint name )
    
    if ((name > 0) && (name < ns->capacity))
       return( ns->data[name] != 0 );
-   else return GL_FALSE;
+   return GL_FALSE;
 }
 
 // Generate new n names in namespace ns
@@ -432,19 +433,17 @@ static uint32_t gmmInit(const void *localMemoryBase, const void *localStartAddre
 
    memset(pAllocator, 0, sizeof(GmmAllocator));
 
-   if (pAllocator)
-   {
-      pAllocator->memoryBase = (uint32_t)localMemoryBase;
-      pAllocator->startAddress = (uint32_t)localStartAddress;
-      pAllocator->size = alignedLocalSize;
-      pAllocator->freeAddress = pAllocator->startAddress;
-      pAllocator->tileStartAddress = ((uint32_t)localStartAddress) + alignedLocalSize;
-      pAllocator->totalSize = alignedLocalSize;
-
-      pGmmLocalAllocator = pAllocator;
-   }
-   else
+   if (!pAllocator)
       return GMM_ERROR;
+
+   pAllocator->memoryBase = (uint32_t)localMemoryBase;
+   pAllocator->startAddress = (uint32_t)localStartAddress;
+   pAllocator->size = alignedLocalSize;
+   pAllocator->freeAddress = pAllocator->startAddress;
+   pAllocator->tileStartAddress = ((uint32_t)localStartAddress) + alignedLocalSize;
+   pAllocator->totalSize = alignedLocalSize;
+
+   pGmmLocalAllocator = pAllocator;
 
    pLock = cellGcmGetLabelAddress(GMM_PPU_WAIT_INDEX);
    *pLock = 0;
@@ -585,8 +584,7 @@ static GmmTileBlock *gmmFindFreeTileBlock(
 
       return pNewBlock;
    }
-   else
-      return NULL;
+   return NULL;
 }
 
 static GmmTileBlock *gmmCreateTileBlock(
@@ -845,48 +843,47 @@ static uint8_t gmmSizeToFreeIndex(uint32_t size)
 {
    if (size >= GMM_FREE_BIN_0 && size < GMM_FREE_BIN_1)
       return 0;
-   else if (size >= GMM_FREE_BIN_1 && size < GMM_FREE_BIN_2)
+   if (size >= GMM_FREE_BIN_1 && size < GMM_FREE_BIN_2)
       return 1;
-   else if (size >= GMM_FREE_BIN_2 && size < GMM_FREE_BIN_3)
+   if (size >= GMM_FREE_BIN_2 && size < GMM_FREE_BIN_3)
       return 2;
-   else if (size >= GMM_FREE_BIN_3 && size < GMM_FREE_BIN_4)
+   if (size >= GMM_FREE_BIN_3 && size < GMM_FREE_BIN_4)
       return 3;
-   else if (size >= GMM_FREE_BIN_4 && size < GMM_FREE_BIN_5)
+   if (size >= GMM_FREE_BIN_4 && size < GMM_FREE_BIN_5)
       return 4;
-   else if (size >= GMM_FREE_BIN_5 && size < GMM_FREE_BIN_6)
+   if (size >= GMM_FREE_BIN_5 && size < GMM_FREE_BIN_6)
       return 5;
-   else if (size >= GMM_FREE_BIN_6 && size < GMM_FREE_BIN_7)
+   if (size >= GMM_FREE_BIN_6 && size < GMM_FREE_BIN_7)
       return 6;
-   else if (size >= GMM_FREE_BIN_7 && size < GMM_FREE_BIN_8)
+   if (size >= GMM_FREE_BIN_7 && size < GMM_FREE_BIN_8)
       return 7;
-   else if (size >= GMM_FREE_BIN_8 && size < GMM_FREE_BIN_9)
+   if (size >= GMM_FREE_BIN_8 && size < GMM_FREE_BIN_9)
       return 8;
-   else if (size >= GMM_FREE_BIN_9 && size < GMM_FREE_BIN_10)
+   if (size >= GMM_FREE_BIN_9 && size < GMM_FREE_BIN_10)
       return 9;
-   else if (size >= GMM_FREE_BIN_10 && size < GMM_FREE_BIN_11)
+   if (size >= GMM_FREE_BIN_10 && size < GMM_FREE_BIN_11)
       return 10;
-   else if (size >= GMM_FREE_BIN_11 && size < GMM_FREE_BIN_12)
+   if (size >= GMM_FREE_BIN_11 && size < GMM_FREE_BIN_12)
       return 11;
-   else if (size >= GMM_FREE_BIN_12 && size < GMM_FREE_BIN_13)
+   if (size >= GMM_FREE_BIN_12 && size < GMM_FREE_BIN_13)
       return 12;
-   else if (size >= GMM_FREE_BIN_13 && size < GMM_FREE_BIN_14)
+   if (size >= GMM_FREE_BIN_13 && size < GMM_FREE_BIN_14)
       return 13;
-   else if (size >= GMM_FREE_BIN_14 && size < GMM_FREE_BIN_15)
+   if (size >= GMM_FREE_BIN_14 && size < GMM_FREE_BIN_15)
       return 14;
-   else if (size >= GMM_FREE_BIN_15 && size < GMM_FREE_BIN_16)
+   if (size >= GMM_FREE_BIN_15 && size < GMM_FREE_BIN_16)
       return 15;
-   else if (size >= GMM_FREE_BIN_16 && size < GMM_FREE_BIN_17)
+   if (size >= GMM_FREE_BIN_16 && size < GMM_FREE_BIN_17)
       return 16;
-   else if (size >= GMM_FREE_BIN_17 && size < GMM_FREE_BIN_18)
+   if (size >= GMM_FREE_BIN_17 && size < GMM_FREE_BIN_18)
       return 17;
-   else if (size >= GMM_FREE_BIN_18 && size < GMM_FREE_BIN_19)
+   if (size >= GMM_FREE_BIN_18 && size < GMM_FREE_BIN_19)
       return 18;
-   else if (size >= GMM_FREE_BIN_19 && size < GMM_FREE_BIN_20)
+   if (size >= GMM_FREE_BIN_19 && size < GMM_FREE_BIN_20)
       return 19;
-   else if (size >= GMM_FREE_BIN_20 && size < GMM_FREE_BIN_21)
+   if (size >= GMM_FREE_BIN_20 && size < GMM_FREE_BIN_21)
       return 20;
-   else
-      return 21;
+   return 21;
 }
 
 static void gmmAddFree(GmmAllocator *pAllocator, GmmBlock *pBlock)
@@ -2017,15 +2014,13 @@ static unsigned int findValidPitch( unsigned int pitch )
 {
    if (pitch <= validPitch[0])
       return validPitch[0];
-   else
-   {
-      // dummy linear search
-      for ( GLuint i = 0;i < validPitchCount - 1;++i )
-         if (( pitch > validPitch[i] ) && ( pitch <= validPitch[i+1] ) )
-            return validPitch[i+1];
 
-      return validPitch[validPitchCount-1];
-   }
+   // dummy linear search
+   for ( GLuint i = 0;i < validPitchCount - 1;++i )
+      if (( pitch > validPitch[i] ) && ( pitch <= validPitch[i+1] ) )
+         return validPitch[i+1];
+
+   return validPitch[validPitchCount-1];
 }
 
 static GLboolean rglDuringDestroyDevice = GL_FALSE;

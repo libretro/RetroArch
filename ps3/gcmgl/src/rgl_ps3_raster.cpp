@@ -1819,7 +1819,6 @@ static GLuint rglGetGcmTextureSize (void *data)
       bytesNeeded += layout->pixelBits * width * height / 8;
    else
       bytesNeeded += height * layout->pitch;
-
    return rglPad( bytesNeeded, faceAlign );
 }
 

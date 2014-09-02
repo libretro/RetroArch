@@ -78,11 +78,9 @@ static int rglGcmGenerateProgram (void *data, int profileIndex, const CgProgramH
 
 
    size_t parameterSize = parameterHeader->entryCount * sizeof( CgRuntimeParameter );
-   void *memoryBlock;
+   void *memoryBlock = NULL;
    if ( parameterSize )
       memoryBlock = memalign( 16, parameterSize );
-   else
-      memoryBlock = NULL;
 
    program->rtParametersCount = parameterHeader->entryCount;
    program->runtimeParameters = ( CgRuntimeParameter* )memoryBlock;
@@ -197,17 +195,16 @@ CGprogram rglpCgUpdateProgramAtIndex( CGprogramGroup group, int index, int refco
       }
 
       group->refCount += refcount;
+
       if (refcount < 0)
       {
          if (group->refCount == 0 && !group->userCreated)
             rglCgDestroyProgramGroup( group );
          return NULL;
       }
-      else
-         return group->programs[index].program;
+      return group->programs[index].program;
    }
-   else
-      return NULL;
+   return NULL;
 }
 
 static CGprogramGroup rglCgCreateProgramGroupFromFile( CGcontext ctx, const char *group_file )
@@ -286,6 +283,8 @@ CGprogramGroup rglCgCreateProgramGroup( CGcontext ctx,  const char *name, void *
       group->userCreated = true;
       group->refCount = 0;
       group->filedata = ( char* )ptr;
+      group->name = NULL;
+
       if ( name )
       {
          int len = strlen( name );
@@ -294,8 +293,6 @@ CGprogramGroup rglCgCreateProgramGroup( CGcontext ctx,  const char *name, void *
             break;
          strcpy( group->name, name );
       }
-      else
-         group->name = NULL;
 
       //copy the default values
       if ( elfConstTableSize )
@@ -743,10 +740,7 @@ static CGparameter rglAdvanceParameter( CGparameter param, int distance )
             ret |= ( arrayIndex << CG_PARAMETERSIZE );
             return ( CGparameter )ret;
          }
-         else
-         {
-            return ( CGparameter )NULL;
-         }
+         return ( CGparameter )NULL;
       }
    }
 
@@ -800,8 +794,7 @@ static CGparameter rglAdvanceParameter( CGparameter param, int distance )
       CgRuntimeParameter *nextParameter = rtParameter + offset;
       return nextParameter->id;
    }
-   else
-      return ( CGparameter )NULL;
+   return ( CGparameter )NULL;
 }
 
 void rglCgDestroyContextParam( CgRuntimeParameter* ptr )
@@ -1022,15 +1015,13 @@ static _CGparameter *_cgGetNamedParameter( _CGprogram* progPtr, const char* name
          if ( !bWasUnrolled )
             currentEntry++;
       }
-      else
-         break;//not found
+      break;//not found
    }
 
    //have we found it ?
    if ( itemIndex != -1 )
       return ( _CGparameter* )( program->runtimeParameters + itemIndex );
-   else
-      return NULL;
+   return NULL;
 }
 
 // API functions ----------------------------------------
@@ -1055,8 +1046,7 @@ CG_API CGparameter cgGetNamedParameter( CGprogram prog, const char* name )
          ret |= ( arrayIndex << CG_PARAMETERSIZE );
       return ( CGparameter )ret;
    }
-   else
-      return ( CGparameter )NULL;
+   return ( CGparameter )NULL;
 }
 
 CG_API CGparameter cgGetFirstParameter( CGprogram prog, CGenum name_space )
@@ -1116,8 +1106,7 @@ CG_API CGparameter cgGetNextParameter( CGparameter param )
             ret |= ( arrayIndex << CG_PARAMETERSIZE );
             return ( CGparameter )ret;
          }
-         else
-            return ( CGparameter )NULL;
+         return ( CGparameter )NULL;
       }
    }
 
@@ -1157,11 +1146,8 @@ CG_API CGparameter cgGetNextParameter( CGparameter param )
                      bNextExists = true;
                      break;
                   }
-                  else
-                  {
-                     //no more items at this level return null
-                     return ( CGparameter )NULL;
-                  }
+                  //no more items at this level return null
+                  return ( CGparameter )NULL;
                }
                break;
             }
@@ -1189,14 +1175,10 @@ CG_API CGparameter cgGetNextParameter( CGparameter param )
          //the next item doesn't have the same global flag... since they are grouped, it means we have quitted the current struct
          return ( CGparameter )NULL;
       }
-      else
-         return nextParam;
+      return nextParam;
    }
-   else
-   {
-      //case where we were at the root and there is no more items
-      return ( CGparameter )NULL;
-   }
+   //case where we were at the root and there is no more items
+   return ( CGparameter )NULL;
 }
 
 CG_API const char* cgGetParameterSemantic( CGparameter param )
@@ -1250,19 +1232,18 @@ CG_API CGenum cgGetParameterVariability( CGparameter param )
    CgRuntimeParameter *rtParameter = ( CgRuntimeParameter* )rglCgGLTestParameter( param );
    if ( !rtParameter )
       return ( CGenum )0;
-   else
+
    {
       unsigned int variability = rtParameter->parameterEntry->flags & CGPV_MASK;
       if ( variability == CGPV_UNIFORM )
          return CG_UNIFORM;
-      else if ( variability == CGPV_VARYING )
+      if ( variability == CGPV_VARYING )
          return CG_VARYING;
-      else if ( variability == CGPV_CONSTANT )
+      if ( variability == CGPV_CONSTANT )
          return CG_CONSTANT;
-      else if ( variability == CGPV_MIXED )
+      if ( variability == CGPV_MIXED )
          return CG_MIXED;
-      else
-         return ( CGenum )0;
+      return ( CGenum )0;
    }
 }
 
@@ -1272,17 +1253,15 @@ CG_API CGenum cgGetParameterDirection( CGparameter param )
    CgRuntimeParameter *rtParameter = ( CgRuntimeParameter* )rglCgGLTestParameter( param );
    if ( !rtParameter )
       return CG_ERROR;
-   else
    {
       unsigned int direction = rtParameter->parameterEntry->flags & CGPD_MASK;
       if ( direction == CGPD_IN )
          return CG_IN;
-      else if ( direction == CGPD_OUT )
+      if ( direction == CGPD_OUT )
          return CG_OUT;
-      else if ( direction == CGPD_INOUT )
+      if ( direction == CGPD_INOUT )
          return CG_INOUT;
-      else
-         return CG_ERROR;
+      return CG_ERROR;
    }
 }
 
@@ -2778,8 +2757,7 @@ static bool cgGetElfProgramByName( CGELFBinary *elfBinary, const char *name, CGE
 
    if ( res != -1 )
       return cgGetElfProgramByIndex( elfBinary, res, elfProgram );
-   else
-      return false;
+   return false;
 }
 
 CGprogram rglCgCreateProgram( CGcontext ctx, CGprofile profile, const CgProgramHeader *programHeader, const void *ucode, const CgParameterTableHeader *parameterHeader, const char *stringTable, const float *defaultValues )
@@ -4785,28 +4763,20 @@ static int getStride(CgBaseType *type)
    {
       if (classnames[type->_type-1] == CG_PARAMETERCLASS_MATRIX)
          return rows[type->_type-1];
-      else
-         return 1;
+      return 1;
    }
-   else
+   if (type->_type == CG_STRUCT + 128)
    {
-      if (type->_type == CG_STRUCT + 128)
-      {
-         CgStructureType *structureType = (CgStructureType *)type;
-         int res = 0;
-         int i;
-         int count = (int)structureType->_elements.size();
-         for (i=0;i<count;i++)
-            res += getStride(structureType->_elements[i]._type);
-         return res;
-      }
-      else
-      {
-         //RGL_ASSERT2(0,("arrays of arrays not supported"));
-         return -9999999;
-      }
-      //if array ??
+      CgStructureType *structureType = (CgStructureType *)type;
+      int res = 0;
+      int i;
+      int count = (int)structureType->_elements.size();
+      for (i=0;i<count;i++)
+         res += getStride(structureType->_elements[i]._type);
+      return res;
    }
+   //RGL_ASSERT2(0,("arrays of arrays not supported"));
+   return -9999999;
 }
 
 static int getSizeofSubArray(_CGNVCONTAINERS &containers, int dimensionIndex, int dimensionCount, int endianness)
