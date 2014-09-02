@@ -24,11 +24,11 @@
 #define RC_INIT2 code = 0; range = 0xFFFFFFFF; \
   { int i; for (i = 0; i < 5; i++) { RC_TEST; code = (code << 8) | RC_READ_BYTE; }}
 
-#define NORMALIZE if (range < kTopValue) { RC_TEST; range <<= 8; code = (code << 8) | RC_READ_BYTE; }
+#define BCJ2_NORMALIZE if (range < kTopValue) { RC_TEST; range <<= 8; code = (code << 8) | RC_READ_BYTE; }
 
-#define IF_BIT_0(p) ttt = *(p); bound = (range >> kNumBitModelTotalBits) * ttt; if (code < bound)
-#define UPDATE_0(p) range = bound; *(p) = (CProb)(ttt + ((kBitModelTotal - ttt) >> kNumMoveBits)); NORMALIZE;
-#define UPDATE_1(p) range -= bound; code -= bound; *(p) = (CProb)(ttt - (ttt >> kNumMoveBits)); NORMALIZE;
+#define BCJ2_IF_BIT_0(p) ttt = *(p); bound = (range >> kNumBitModelTotalBits) * ttt; if (code < bound)
+#define BCJ2_UPDATE_0(p) range = bound; *(p) = (CProb)(ttt + ((kBitModelTotal - ttt) >> kNumMoveBits)); BCJ2_NORMALIZE;
+#define BCJ2_UPDATE_1(p) range -= bound; code -= bound; *(p) = (CProb)(ttt - (ttt >> kNumMoveBits)); BCJ2_NORMALIZE;
 
 int Bcj2_Decode(
     const Byte *buf0, SizeT size0,
@@ -88,16 +88,16 @@ int Bcj2_Decode(
     else
       prob = p + 257;
 
-    IF_BIT_0(prob)
+    BCJ2_IF_BIT_0(prob)
     {
-      UPDATE_0(prob)
+      BCJ2_UPDATE_0(prob)
       prevByte = b;
     }
     else
     {
       UInt32 dest;
       const Byte *v;
-      UPDATE_1(prob)
+      BCJ2_UPDATE_1(prob)
       if (b == 0xE8)
       {
         v = buf1;

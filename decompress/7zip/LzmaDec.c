@@ -14,14 +14,14 @@
 
 #define RC_INIT_SIZE 5
 
-#define NORMALIZE if (range < kTopValue) { range <<= 8; code = (code << 8) | (*buf++); }
+#define LZMADEC_NORMALIZE if (range < kTopValue) { range <<= 8; code = (code << 8) | (*buf++); }
 
-#define IF_BIT_0(p) ttt = *(p); NORMALIZE; bound = (range >> kNumBitModelTotalBits) * ttt; if (code < bound)
+#define LZMADEC_IF_BIT_0(p) ttt = *(p); LZMADEC_NORMALIZE; bound = (range >> kNumBitModelTotalBits) * ttt; if (code < bound)
 #define UPDATE_0(p) range = bound; *(p) = (CLzmaProb)(ttt + ((kBitModelTotal - ttt) >> kNumMoveBits));
-#define UPDATE_1(p) range -= bound; code -= bound; *(p) = (CLzmaProb)(ttt - (ttt >> kNumMoveBits));
-#define GET_BIT2(p, i, A0, A1) IF_BIT_0(p) \
+#define LZMADEC_UPDATE_1(p) range -= bound; code -= bound; *(p) = (CLzmaProb)(ttt - (ttt >> kNumMoveBits));
+#define GET_BIT2(p, i, A0, A1) LZMADEC_IF_BIT_0(p) \
   { UPDATE_0(p); i = (i + i); A0; } else \
-  { UPDATE_1(p); i = (i + i) + 1; A1; }
+  { LZMADEC_UPDATE_1(p); i = (i + i) + 1; A1; }
 #define GET_BIT(p, i) GET_BIT2(p, i, ; , ;)
 
 #define TREE_GET_BIT(probs, i) { GET_BIT((probs + i), i); }
@@ -158,7 +158,7 @@ static int MY_FAST_CALL LzmaDec_DecodeReal(CLzmaDec *p, SizeT limit, const Byte 
     unsigned posState = processedPos & pbMask;
 
     prob = probs + IsMatch + (state << kNumPosBitsMax) + posState;
-    IF_BIT_0(prob)
+    LZMADEC_IF_BIT_0(prob)
     {
       unsigned symbol;
       UPDATE_0(prob);
@@ -196,9 +196,9 @@ static int MY_FAST_CALL LzmaDec_DecodeReal(CLzmaDec *p, SizeT limit, const Byte 
     }
     else
     {
-      UPDATE_1(prob);
+      LZMADEC_UPDATE_1(prob);
       prob = probs + IsRep + state;
-      IF_BIT_0(prob)
+      LZMADEC_IF_BIT_0(prob)
       {
         UPDATE_0(prob);
         state += kNumStates;
@@ -206,15 +206,15 @@ static int MY_FAST_CALL LzmaDec_DecodeReal(CLzmaDec *p, SizeT limit, const Byte 
       }
       else
       {
-        UPDATE_1(prob);
+        LZMADEC_UPDATE_1(prob);
         if (checkDicSize == 0 && processedPos == 0)
           return SZ_ERROR_DATA;
         prob = probs + IsRepG0 + state;
-        IF_BIT_0(prob)
+        LZMADEC_IF_BIT_0(prob)
         {
           UPDATE_0(prob);
           prob = probs + IsRep0Long + (state << kNumPosBitsMax) + posState;
-          IF_BIT_0(prob)
+          LZMADEC_IF_BIT_0(prob)
           {
             UPDATE_0(prob);
             dic[dicPos] = dic[(dicPos - rep0) + ((dicPos < rep0) ? dicBufSize : 0)];
@@ -223,30 +223,30 @@ static int MY_FAST_CALL LzmaDec_DecodeReal(CLzmaDec *p, SizeT limit, const Byte 
             state = state < kNumLitStates ? 9 : 11;
             continue;
           }
-          UPDATE_1(prob);
+          LZMADEC_UPDATE_1(prob);
         }
         else
         {
           UInt32 distance;
-          UPDATE_1(prob);
+          LZMADEC_UPDATE_1(prob);
           prob = probs + IsRepG1 + state;
-          IF_BIT_0(prob)
+          LZMADEC_IF_BIT_0(prob)
           {
             UPDATE_0(prob);
             distance = rep1;
           }
           else
           {
-            UPDATE_1(prob);
+            LZMADEC_UPDATE_1(prob);
             prob = probs + IsRepG2 + state;
-            IF_BIT_0(prob)
+            LZMADEC_IF_BIT_0(prob)
             {
               UPDATE_0(prob);
               distance = rep2;
             }
             else
             {
-              UPDATE_1(prob);
+              LZMADEC_UPDATE_1(prob);
               distance = rep3;
               rep3 = rep2;
             }
@@ -261,7 +261,7 @@ static int MY_FAST_CALL LzmaDec_DecodeReal(CLzmaDec *p, SizeT limit, const Byte 
       {
         unsigned limit, offset;
         CLzmaProb *probLen = prob + LenChoice;
-        IF_BIT_0(probLen)
+        LZMADEC_IF_BIT_0(probLen)
         {
           UPDATE_0(probLen);
           probLen = prob + LenLow + (posState << kLenNumLowBits);
@@ -270,9 +270,9 @@ static int MY_FAST_CALL LzmaDec_DecodeReal(CLzmaDec *p, SizeT limit, const Byte 
         }
         else
         {
-          UPDATE_1(probLen);
+          LZMADEC_UPDATE_1(probLen);
           probLen = prob + LenChoice2;
-          IF_BIT_0(probLen)
+          LZMADEC_IF_BIT_0(probLen)
           {
             UPDATE_0(probLen);
             probLen = prob + LenMid + (posState << kLenNumMidBits);
@@ -281,7 +281,7 @@ static int MY_FAST_CALL LzmaDec_DecodeReal(CLzmaDec *p, SizeT limit, const Byte 
           }
           else
           {
-            UPDATE_1(probLen);
+            LZMADEC_UPDATE_1(probLen);
             probLen = prob + LenHigh;
             offset = kLenNumLowSymbols + kLenNumMidSymbols;
             limit = (1 << kLenNumHighBits);
@@ -322,7 +322,7 @@ static int MY_FAST_CALL LzmaDec_DecodeReal(CLzmaDec *p, SizeT limit, const Byte 
             numDirectBits -= kNumAlignBits;
             do
             {
-              NORMALIZE
+              LZMADEC_NORMALIZE
               range >>= 1;
               
               {
@@ -409,7 +409,7 @@ static int MY_FAST_CALL LzmaDec_DecodeReal(CLzmaDec *p, SizeT limit, const Byte 
     }
   }
   while (dicPos < limit && buf < bufLimit);
-  NORMALIZE;
+  LZMADEC_NORMALIZE;
   p->buf = buf;
   p->range = range;
   p->code = code;
