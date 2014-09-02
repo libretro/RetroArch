@@ -1283,13 +1283,17 @@ static int menu_setting_ok_toggle(unsigned type,
    {
       driver.menu->defer_core = (!strcmp(label, "detect_core_list"));
       menu_entries_push(driver.menu->menu_stack,
-            g_settings.menu_content_directory, "", MENU_FILE_DIRECTORY,
+            g_settings.menu_content_directory, label, MENU_FILE_DIRECTORY,
             driver.menu->selection_ptr);
       return 0;
    }
-   else if (
-         !strcmp(label, "history_list") ||
-         menu_common_type_is(type) == MENU_FILE_DIRECTORY)
+   else if (!strcmp(label, "history_list"))
+   {
+      menu_entries_push(driver.menu->menu_stack,
+            "", label, type, driver.menu->selection_ptr);
+      return 0;
+   }
+   else if (menu_common_type_is(type) == MENU_FILE_DIRECTORY)
    {
       menu_entries_push(driver.menu->menu_stack,
             "", "", type, driver.menu->selection_ptr);
@@ -1303,7 +1307,7 @@ static int menu_setting_ok_toggle(unsigned type,
          )
    {
       menu_entries_push(driver.menu->menu_stack,
-            dir ? dir : label, "", type,
+            dir ? dir : label, label, type,
             driver.menu->selection_ptr);
       return 0;
    }

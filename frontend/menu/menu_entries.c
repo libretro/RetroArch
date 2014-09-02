@@ -698,19 +698,21 @@ int menu_parse_and_resolve(file_list_t *list, file_list_t *menu_list)
 
    const char *exts;
    char ext_buf[1024];
-   if (menu_type == MENU_SETTINGS_CORE)
+
+   //RARCH_LOG("LABEL: %s\n", label);
+   if (!strcmp(label, "core_list"))
       exts = EXT_EXECUTABLES;
-   else if (menu_type == MENU_SETTINGS_CONFIG)
+   else if (!strcmp(label, "configurations"))
       exts = "cfg";
-   else if (menu_type == MENU_SETTINGS_SHADER_PRESET)
+   else if (!strcmp(label, "video_shader_preset"))
       exts = "cgp|glslp";
    else if (menu_common_type_is(menu_type) == MENU_SETTINGS_SHADER_OPTIONS)
       exts = "cg|glsl";
-   else if (menu_type == MENU_SETTINGS_VIDEO_SOFTFILTER)
+   else if (!strcmp(label, "video_filter"))
       exts = "filt";
-   else if (menu_type == MENU_SETTINGS_AUDIO_DSP_FILTER)
+   else if (!strcmp(label, "audio_dsp_plugin"))
       exts = "dsp";
-   else if (menu_type == MENU_SETTINGS_OVERLAY_PRESET)
+   else if (!strcmp(label, "input_overlay"))
       exts = "cfg";
    else if (menu_type == MENU_CONTENT_HISTORY_PATH)
       exts = "cfg";
@@ -755,7 +757,7 @@ int menu_parse_and_resolve(file_list_t *list, file_list_t *menu_list)
          path = path_basename(path);
 
 #ifdef HAVE_LIBRETRO_MANAGEMENT
-      if (menu_type == MENU_SETTINGS_CORE && (is_dir ||
+      if (!strcmp(label, "core_list") && (is_dir ||
                strcasecmp(path, SALAMANDER_FILE) == 0))
          continue;
 #endif
@@ -770,34 +772,30 @@ int menu_parse_and_resolve(file_list_t *list, file_list_t *menu_list)
          dir, label, menu_type);
    string_list_free(str_list);
 
-   switch (menu_type)
+   if (!strcmp(label, "core_list"))
    {
-      case MENU_SETTINGS_CORE:
-         {
-            file_list_get_last(menu_list, &dir, NULL,
-                  &menu_type);
-            list_size = file_list_get_size(list);
+      file_list_get_last(menu_list, &dir, NULL,
+            &menu_type);
+      list_size = file_list_get_size(list);
 
-            for (i = 0; i < list_size; i++)
-            {
-               char core_path[PATH_MAX], display_name[256];
-               const char *path = NULL;
-               unsigned type = 0;
+      for (i = 0; i < list_size; i++)
+      {
+         char core_path[PATH_MAX], display_name[256];
+         const char *path = NULL;
+         unsigned type = 0;
 
-               file_list_get_at_offset(list, i, &path, NULL, &type);
-               if (type != MENU_FILE_PLAIN)
-                  continue;
+         file_list_get_at_offset(list, i, &path, NULL, &type);
+         if (type != MENU_FILE_PLAIN)
+            continue;
 
-               fill_pathname_join(core_path, dir, path, sizeof(core_path));
+         fill_pathname_join(core_path, dir, path, sizeof(core_path));
 
-               if (driver.menu->core_info &&
-                     core_info_list_get_display_name(driver.menu->core_info,
-                        core_path, display_name, sizeof(display_name)))
-                  file_list_set_alt_at_offset(list, i, display_name);
-            }
-            file_list_sort_on_alt(list);
-         }
-         break;
+         if (driver.menu->core_info &&
+               core_info_list_get_display_name(driver.menu->core_info,
+                  core_path, display_name, sizeof(display_name)))
+            file_list_set_alt_at_offset(list, i, display_name);
+      }
+      file_list_sort_on_alt(list);
    }
 
    driver.menu->scroll_indices_size = 0;
