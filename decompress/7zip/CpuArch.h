@@ -119,7 +119,6 @@ Stop_Compiling_Bad_Endian
 #define GetBe16(p) (((UInt16)((const Byte *)(p))[0] << 8) | ((const Byte *)(p))[1])
 
 Bool CPU_Is_InOrder();
-Bool CPU_Is_Aes_Supported();
 
 EXTERN_C_END
 
