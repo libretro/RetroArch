@@ -1296,7 +1296,7 @@ static int menu_setting_ok_toggle(unsigned type,
    else if (menu_common_type_is(type) == MENU_FILE_DIRECTORY)
    {
       menu_entries_push(driver.menu->menu_stack,
-            "", "", type, driver.menu->selection_ptr);
+            "", label, type, driver.menu->selection_ptr);
       return 0;
    }
    else if (
@@ -1809,8 +1809,35 @@ static int menu_action_ok(const char *dir,
    }
    else
    {
+      setting = (rarch_setting_t*)setting_data_find_setting(
+                     setting_data, menu_label);
+
+      if (setting && setting->type == ST_DIR &&
+            (
+             !strcmp(setting->name, "rgui_browser_directory") ||
+             !strcmp(setting->name, "content_directory")      ||
+             !strcmp(setting->name, "assets_directory")       ||
+             !strcmp(setting->name, "screenshot_directory")   ||
+             !strcmp(setting->name, "savefile_directory")     ||
+             !strcmp(setting->name, "overlay_directory")      ||
+             !strcmp(setting->name, "savestate_directory")    ||
+             !strcmp(setting->name, "libretro_dir_path")      ||
+             !strcmp(setting->name, "rgui_config_directory")  ||
+             !strcmp(setting->name, "libretro_info_path")     ||
+             !strcmp(setting->name, "video_shader_dir")       ||
+             !strcmp(setting->name, "video_filter_dir")       ||
+             !strcmp(setting->name, "audio_filter_dir")       ||
+             !strcmp(setting->name, "system_directory")       ||
+             !strcmp(setting->name, "joypad_autoconfig_dir")  ||
+             !strcmp(setting->name, "extraction_directory")
+            )
+         )
+      {
+         menu_common_setting_set_current_string(setting, dir);
+         menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS_PATH_OPTIONS);
+      }
 #ifdef HAVE_SHADER_MANAGER
-      if (menu_common_type_is(menu_type) == MENU_SETTINGS_SHADER_OPTIONS)
+      else if (menu_common_type_is(menu_type) == MENU_SETTINGS_SHADER_OPTIONS)
       {
          if (menu_type == MENU_SETTINGS_SHADER_PRESET)
          {
@@ -1886,14 +1913,6 @@ static int menu_action_ok(const char *dir,
             return -1;
          }
       }
-      else if (menu_type == MENU_SETTINGS_OVERLAY_PRESET)
-      {
-         if ((setting = (rarch_setting_t*)setting_data_find_setting(
-                     setting_data, "input_overlay")))
-            menu_common_setting_set_current_string_path(setting, dir, path);
-
-         menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS_OPTIONS);
-      }
       else if (menu_type == MENU_SETTINGS_DISK_APPEND)
       {
          char image[PATH_MAX];
@@ -1905,58 +1924,20 @@ static int menu_action_ok(const char *dir,
          menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS);
          return -1;
       }
+      else if (menu_type == MENU_SETTINGS_OVERLAY_PRESET)
+      {
+         if ((setting = (rarch_setting_t*)setting_data_find_setting(
+                     setting_data, "input_overlay")))
+            menu_common_setting_set_current_string_path(setting, dir, path);
+
+         menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS_OPTIONS);
+      }
       else if (menu_type == MENU_CONTENT_HISTORY_PATH)
       {
          if ((setting = (rarch_setting_t*)setting_data_find_setting(
                      setting_data, "game_history_path")))
             menu_common_setting_set_current_string_path(setting, dir, path);
 
-         menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS_PATH_OPTIONS);
-      }
-      else if (menu_type == MENU_BROWSER_DIR_PATH)
-      {
-         if ((setting = (rarch_setting_t*)setting_data_find_setting(
-                     setting_data, "rgui_browser_directory")))
-            menu_common_setting_set_current_string(setting, dir);
-
-         menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS_PATH_OPTIONS);
-      }
-      else if (menu_type == MENU_CONTENT_DIR_PATH)
-      {
-         if ((setting = (rarch_setting_t*)setting_data_find_setting(
-                     setting_data, "content_directory")))
-            menu_common_setting_set_current_string(setting, dir);
-
-         menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS_PATH_OPTIONS);
-      }
-      else if (menu_type == MENU_ASSETS_DIR_PATH)
-      {
-         if ((setting = (rarch_setting_t*)setting_data_find_setting(
-                     setting_data, "assets_directory")))
-            menu_common_setting_set_current_string(setting, dir);
-
-         menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS_PATH_OPTIONS);
-      }
-      else if (menu_type == MENU_SCREENSHOT_DIR_PATH)
-      {
-         if ((setting = (rarch_setting_t*)setting_data_find_setting(
-                     setting_data, "screenshot_directory")))
-            menu_common_setting_set_current_string(setting, dir);
-
-         menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS_PATH_OPTIONS);
-      }
-      else if (menu_type == MENU_SAVEFILE_DIR_PATH)
-      {
-         if ((setting = (rarch_setting_t*)setting_data_find_setting(
-                     setting_data, "savefile_directory")))
-            menu_common_setting_set_current_string(setting, dir);
-         menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS_PATH_OPTIONS);
-      }
-      else if (menu_type == MENU_OVERLAY_DIR_PATH)
-      {
-         if ((setting = (rarch_setting_t*)setting_data_find_setting(
-                     setting_data, "overlay_directory")))
-            menu_common_setting_set_current_string(setting, dir);
          menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS_PATH_OPTIONS);
       }
       else if (menu_type == MENU_SETTINGS_VIDEO_SOFTFILTER)
@@ -1973,86 +1954,6 @@ static int menu_action_ok(const char *dir,
                      setting_data, "audio_dsp_plugin")))
             menu_common_setting_set_current_string_path(setting, dir, path);
          menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS_AUDIO_OPTIONS);
-      }
-      else if (menu_type == MENU_SAVESTATE_DIR_PATH)
-      {
-         if ((setting = (rarch_setting_t*)setting_data_find_setting(
-                     setting_data, "savestate_directory")))
-            menu_common_setting_set_current_string(setting, dir);
-
-         menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS_PATH_OPTIONS);
-      }
-      else if (menu_type == MENU_LIBRETRO_DIR_PATH)
-      {
-         if ((setting = (rarch_setting_t*)setting_data_find_setting(
-                     setting_data, "libretro_dir_path")))
-            menu_common_setting_set_current_string(setting, dir);
-
-         menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS_PATH_OPTIONS);
-      }
-      else if (menu_type == MENU_CONFIG_DIR_PATH)
-      {
-         if ((setting = (rarch_setting_t*)setting_data_find_setting(
-                     setting_data, "rgui_config_directory")))
-            menu_common_setting_set_current_string(setting, dir);
-
-         menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS_PATH_OPTIONS);
-      }
-      else if (menu_type == MENU_LIBRETRO_INFO_DIR_PATH)
-      {
-         if ((setting = (rarch_setting_t*)setting_data_find_setting(
-                     setting_data, "libretro_info_path")))
-            menu_common_setting_set_current_string(setting, dir);
-
-         menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS_PATH_OPTIONS);
-      }
-      else if (menu_type == MENU_SHADER_DIR_PATH)
-      {
-         if ((setting = (rarch_setting_t*)setting_data_find_setting(
-                     setting_data, "video_shader_dir")))
-            menu_common_setting_set_current_string(setting, dir);
-
-         menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS_PATH_OPTIONS);
-      }
-      else if (menu_type == MENU_FILTER_DIR_PATH)
-      {
-         if ((setting = (rarch_setting_t*)setting_data_find_setting(
-                     setting_data, "video_filter_dir")))
-            menu_common_setting_set_current_string(setting, dir);
-
-         menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS_PATH_OPTIONS);
-      }
-      else if (menu_type == MENU_DSP_FILTER_DIR_PATH)
-      {
-         if ((setting = (rarch_setting_t*)setting_data_find_setting(
-                     setting_data, "audio_filter_dir")))
-            menu_common_setting_set_current_string(setting, dir);
-
-         menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS_PATH_OPTIONS);
-      }
-      else if (menu_type == MENU_SYSTEM_DIR_PATH)
-      {
-         if ((setting = (rarch_setting_t*)setting_data_find_setting(
-                     setting_data, "system_directory")))
-            menu_common_setting_set_current_string(setting, dir);
-
-         menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS_PATH_OPTIONS);
-      }
-      else if (menu_type == MENU_AUTOCONFIG_DIR_PATH)
-      {
-         if ((setting = (rarch_setting_t*)setting_data_find_setting(
-                     setting_data, "joypad_autoconfig_dir")))
-            menu_common_setting_set_current_string(setting, dir);
-
-         menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS_PATH_OPTIONS);
-      }
-      else if (menu_type == MENU_EXTRACTION_DIR_PATH)
-      {
-         if ((setting = (rarch_setting_t*)setting_data_find_setting(
-                     setting_data, "extraction_directory")))
-            menu_common_setting_set_current_string(setting, dir);
-
-         menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS_PATH_OPTIONS);
       }
       else
       {
