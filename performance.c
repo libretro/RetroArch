@@ -386,6 +386,9 @@ uint64_t rarch_get_cpu_features(void)
    if (flags[2] & (1 << 20))
       cpu |= RETRO_SIMD_SSE42;
 
+   if (flags[2] & (1 << 25))
+      cpu |= RETRO_SIMD_AES;
+
    const int avx_flags = (1 << 27) | (1 << 28);
    // Must only perform xgetbv check if we have AVX CPU support (guaranteed to have at least i686).
    if (((flags[2] & avx_flags) == avx_flags) && ((xgetbv_x86(0) & 0x6) == 0x6))
@@ -417,6 +420,7 @@ uint64_t rarch_get_cpu_features(void)
    RARCH_LOG("[CPUID]: SSSE3:  %u\n", !!(cpu & RETRO_SIMD_SSSE3));
    RARCH_LOG("[CPUID]: SSE4:   %u\n", !!(cpu & RETRO_SIMD_SSE4));
    RARCH_LOG("[CPUID]: SSE4.2: %u\n", !!(cpu & RETRO_SIMD_SSE42));
+   RARCH_LOG("[CPUID]: AES:    %u\n", !!(cpu & RETRO_SIMD_AES));
    RARCH_LOG("[CPUID]: AVX:    %u\n", !!(cpu & RETRO_SIMD_AVX));
    RARCH_LOG("[CPUID]: AVX2:   %u\n", !!(cpu & RETRO_SIMD_AVX2));
 #elif defined(ANDROID) && defined(ANDROID_ARM)
