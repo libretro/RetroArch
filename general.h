@@ -764,7 +764,6 @@ bool config_save_file(const char *path);
 bool config_read_keybinds(const char *path);
 
 void rarch_main_clear_state(void);
-void rarch_init_system_info(void);
 int rarch_main(int argc, char *argv[]);
 
 void rarch_main_init_wrap(const struct rarch_main_wrap *args, int *argc, char **argv);

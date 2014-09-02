@@ -413,8 +413,7 @@ static void recording_dump_frame(const void *data, unsigned width,
 
       /* Big bottleneck.
        * Since we might need to do read-backs asynchronously,
-       * it might take 3-4 times before this returns true ...
-       */
+       * it might take 3-4 times before this returns true. */
       if (driver.video && driver.video->read_viewport)
          if (!driver.video->read_viewport(driver.video_data,
                   g_extern.record_gpu_buffer))
@@ -625,7 +624,7 @@ static void audio_sample_rewind(int16_t left, int16_t right)
    g_extern.audio_data.rewind_buf[--g_extern.audio_data.rewind_ptr] = left;
 }
 
-size_t audio_sample_batch_rewind(const int16_t *data, size_t frames)
+static size_t audio_sample_batch_rewind(const int16_t *data, size_t frames)
 {
    size_t i;
    size_t samples = frames << 1;
@@ -1064,8 +1063,7 @@ static void set_special_paths(char **argv, unsigned num_content)
 
    /* If this is already set,
     * do not overwrite it as this was initialized before in
-    * a menu or otherwise.
-    */
+    * a menu or otherwise. */
    if (!*g_settings.system_directory)
       fill_pathname_basedir(g_settings.system_directory, argv[0],
             sizeof(g_settings.system_directory));
@@ -1573,7 +1571,7 @@ static inline bool save_files(void)
 }
 
 
-static void rarch_init_msg_queue(void)
+static void init_msg_queue(void)
 {
    if (!g_extern.msg_queue)
       rarch_assert(g_extern.msg_queue = msg_queue_new(8));
@@ -2789,7 +2787,7 @@ static void check_screenshot(void)
    bool pressed            = input_key_pressed_func(RARCH_SCREENSHOT);
 
    if (pressed && !old_pressed)
-      take_screenshot();
+      rarch_main_command(RARCH_CMD_TAKE_SCREENSHOT);
 
    old_pressed = pressed;
 }
@@ -3012,7 +3010,7 @@ void rarch_main_clear_state(void)
    for (i = 0; i < MAX_PLAYERS; i++)
       g_settings.input.libretro_device[i] = RETRO_DEVICE_JOYPAD;
 
-   rarch_init_msg_queue();
+   init_msg_queue();
 }
 
 #ifdef HAVE_ZLIB
@@ -3021,7 +3019,7 @@ void rarch_main_clear_state(void)
 #define DEFAULT_EXT ""
 #endif
 
-void rarch_init_system_info(void)
+static void init_system_info(void)
 {
    struct retro_system_info *info = (struct retro_system_info*)
       &g_extern.system.info;
@@ -3141,7 +3139,7 @@ int rarch_main_init(int argc, char *argv[])
    config_load();
 
    init_libretro_sym(g_extern.libretro_dummy);
-   rarch_init_system_info();
+   init_system_info();
 
    init_drivers_pre();
 
