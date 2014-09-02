@@ -635,7 +635,7 @@ extern "C" {
 #endif
 
 /*============================================================
-RZLIB
+DEPENDENCIES
 ============================================================ */
 #ifdef WANT_MINIZ
 #include "../deps/rzlib/adler32.c"
@@ -654,6 +654,27 @@ RZLIB
 #include "../deps/rzlib/zutil.c"
 #include "../deps/rzlib/ioapi.c"
 #include "../deps/rzlib/unzip.c"
+#endif
+
+#ifdef HAVE_7ZIP
+#include "../decompress/7zip/7zIn.c"
+#include "../decompress/7zip/7zAlloc.c"
+#include "../decompress/7zip/Bra86.c"
+#include "../decompress/7zip/CpuArch.c"
+#include "../decompress/7zip/7zFile.c"
+#include "../decompress/7zip/7zStream.c"
+#include "../decompress/7zip/7zBuf2.c"
+#include "../decompress/7zip/Ppmd7.c"
+#include "../decompress/7zip/LzmaDec.c"
+#include "../decompress/7zip/7zCrcOpt.c"
+#include "../decompress/7zip/Bra.c"
+#include "../decompress/7zip/7zDec.c"
+#include "../decompress/7zip/Bcj2.c"
+#include "../decompress/7zip/7zCrc.c"
+#include "../decompress/7zip/Lzma2Dec.c"
+#include "../decompress/7zip/7zBuf.c"
+#include "../decompress/7zip/Ppmd7Dec.c"
+#include "../decompress/7zip_support.c"
 #endif
 
 /*============================================================
