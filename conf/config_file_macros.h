@@ -17,7 +17,7 @@
 #ifndef CONFIG_FILE_MACROS_H__
 #define CONFIG_FILE_MACROS_H__
 
-// Macros to ease config getting.
+/* Macros to ease config getting. */
 #include <stdint.h>
 
 #define CONFIG_GET_BOOL_BASE(conf, base, var, key) do { \

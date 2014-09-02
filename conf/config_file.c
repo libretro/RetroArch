@@ -27,7 +27,7 @@
 #include "../general.h"
 
 #if !defined(_WIN32) && !defined(__CELLOS_LV2__) && !defined(_XBOX)
-#include <sys/param.h> // PATH_MAX
+#include <sys/param.h> /* PATH_MAX */
 #elif defined(_WIN32) && !defined(_XBOX)
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -39,7 +39,9 @@
 
 struct config_entry_list
 {
-   bool readonly; // If we got this from an #include, do not allow write.
+   /* If we got this from an #include,
+    * do not allow overwrite. */
+   bool readonly;
    char *key;
    char *value;
    struct config_entry_list *next;
@@ -61,7 +63,8 @@ struct config_file
    struct include_list *includes;
 };
 
-static config_file_t *config_file_new_internal(const char *path, unsigned depth);
+static config_file_t *config_file_new_internal(const char *path,
+      unsigned depth);
 
 static char *getaline(FILE *file)
 {
@@ -92,7 +95,8 @@ static char *extract_value(char *line, bool is_value)
       while (isspace(*line))
          line++;
 
-      // If we don't have an equal sign here, we've got an invalid string...
+      /* If we don't have an equal sign here,
+       * we've got an invalid string. */
       if (*line != '=')
          return NULL;
 
@@ -105,7 +109,7 @@ static char *extract_value(char *line, bool is_value)
    char *save;
    char *tok;
 
-   // We have a full string. Read until next ".
+   /* We have a full string. Read until next ". */
    if (*line == '"')
    {
       line++;
@@ -114,16 +118,14 @@ static char *extract_value(char *line, bool is_value)
          return NULL;
       return strdup(tok);
    }
-   else if (*line == '\0') // Nothing :(
+   else if (*line == '\0') /* Nothing */
       return NULL;
-   else // We don't have that... Read till next space.
-   {
-      tok = strtok_r(line, " \n\t\f\r\v", &save);
-      if (tok)
-         return strdup(tok);
-      else
-         return NULL;
-   }
+
+   /* We don't have that. Read until next space. */
+   tok = strtok_r(line, " \n\t\f\r\v", &save);
+   if (tok)
+      return strdup(tok);
+   return NULL;
 }
 
 static void set_list_readonly(struct config_entry_list *list)
@@ -135,7 +137,7 @@ static void set_list_readonly(struct config_entry_list *list)
    }
 }
 
-// Move semantics? :)
+/* Move semantics? */
 static void add_child_list(config_file_t *parent, config_file_t *child)
 {
    if (parent->entries)
@@ -155,7 +157,7 @@ static void add_child_list(config_file_t *parent, config_file_t *child)
 
    child->entries = NULL;
 
-   // Rebase tail.
+   /* Rebase tail. */
    if (parent->entries)
    {
       struct config_entry_list *head = parent->entries;
@@ -194,7 +196,8 @@ static void add_sub_conf(config_file_t *conf, char *line)
    char real_path[PATH_MAX];
 
 #ifdef _WIN32
-   fill_pathname_resolve_relative(real_path, conf->path, path, sizeof(real_path));
+   fill_pathname_resolve_relative(real_path, conf->path,
+         path, sizeof(real_path));
 #else
 #ifndef __CELLOS_LV2__
    if (*path == '~')
@@ -205,17 +208,19 @@ static void add_sub_conf(config_file_t *conf, char *line)
    }
    else
 #endif
-      fill_pathname_resolve_relative(real_path, conf->path, path, sizeof(real_path));
+      fill_pathname_resolve_relative(real_path, conf->path,
+            path, sizeof(real_path));
 #endif
 
-   config_file_t *sub_conf = config_file_new_internal(real_path, conf->include_depth + 1);
+   config_file_t *sub_conf = (config_file_t*)
+      config_file_new_internal(real_path, conf->include_depth + 1);
    if (!sub_conf)
    {
       free(path);
       return;
    }
 
-   // Pilfer internal list. :D
+   /* Pilfer internal list. */
    add_child_list(conf, sub_conf);
    config_file_free(sub_conf);
    free(path);
@@ -223,7 +228,8 @@ static void add_sub_conf(config_file_t *conf, char *line)
 
 static char *strip_comment(char *str)
 {
-   // Remove everything after comment. Keep #s inside string literals.
+   /* Remove everything after comment.
+    * Keep #s inside string literals. */
    char *strend = str + strlen(str);
    bool cut_comment = true;
 
@@ -258,14 +264,15 @@ static char *strip_comment(char *str)
    return str;
 }
 
-static bool parse_line(config_file_t *conf, struct config_entry_list *list, char *line)
+static bool parse_line(config_file_t *conf,
+      struct config_entry_list *list, char *line)
 {
    if (!*line)
       return false;
 
    char *comment = strip_comment(line);
 
-   // Starting line with # and include includes config files. :)
+   /* Starting line with # and include includes config files. */
    if ((comment == line) && (conf->include_depth < MAX_INCLUDE_DEPTH))
    {
       comment++;
@@ -278,7 +285,7 @@ static bool parse_line(config_file_t *conf, struct config_entry_list *list, char
    else if (conf->include_depth >= MAX_INCLUDE_DEPTH)
       fprintf(stderr, "!!! #include depth exceeded for config. Might be a cycle.\n");
 
-   // Skips to first character.
+   /* Skips to first character. */
    while (isspace(*line))
       line++;
 
@@ -319,7 +326,7 @@ bool config_append_file(config_file_t *conf, const char *path)
    if (new_conf->tail)
    {
       new_conf->tail->next = conf->entries;
-      conf->entries        = new_conf->entries; // Pilfer.
+      conf->entries        = new_conf->entries; /* Pilfer. */
       new_conf->entries    = NULL;
    }
 
@@ -327,7 +334,8 @@ bool config_append_file(config_file_t *conf, const char *path)
    return true;
 }
 
-static config_file_t *config_file_new_internal(const char *path, unsigned depth)
+static config_file_t *config_file_new_internal(
+      const char *path, unsigned depth)
 {
    struct config_file *conf = (struct config_file*)calloc(1, sizeof(*conf));
    if (!conf)
@@ -355,7 +363,8 @@ static config_file_t *config_file_new_internal(const char *path, unsigned depth)
 
    while (!feof(file))
    {
-      struct config_entry_list *list = (struct config_entry_list*)calloc(1, sizeof(*list));
+      struct config_entry_list *list = (struct config_entry_list*)
+         calloc(1, sizeof(*list));
       char *line = getaline(file);
 
       if (line)
@@ -363,15 +372,10 @@ static config_file_t *config_file_new_internal(const char *path, unsigned depth)
          if (parse_line(conf, list, line))
          {
             if (conf->entries)
-            {
                conf->tail->next = list;
-               conf->tail = list;
-            }
             else
-            {
                conf->entries = list;
-               conf->tail = list;
-            }
+            conf->tail = list;
          }
 
          free(line);
@@ -404,7 +408,8 @@ config_file_t *config_file_new_from_string(const char *from_string)
 
    for (i = 0; i < lines->size; i++)
    {
-      struct config_entry_list *list = (struct config_entry_list*)calloc(1, sizeof(*list));
+      struct config_entry_list *list = (struct config_entry_list*)
+         calloc(1, sizeof(*list));
       
       char* line = lines->elems[i].data;
     
@@ -413,15 +418,10 @@ config_file_t *config_file_new_from_string(const char *from_string)
          if (parse_line(conf, list, line))
          {
             if (conf->entries)
-            {
                conf->tail->next = list;
-               conf->tail = list;
-            }
             else
-            {
                conf->entries = list;
-               conf->tail = list;
-            }
+            conf->tail = list;
          }
       }
 
@@ -491,7 +491,7 @@ bool config_get_float(config_file_t *conf, const char *key, float *in)
    {
       if (strcmp(key, list->key) == 0)
       {
-         // strtof() is C99/POSIX. Just use the more portable kind.
+         /* strtof() is C99/POSIX. Just use the more portable kind. */
          *in = (float)strtod(list->value, NULL);
          return true;
       }
@@ -515,8 +515,7 @@ bool config_get_int(config_file_t *conf, const char *key, int *in)
             *in = val;
             return true;
          }
-         else
-            return false;
+         return false;
       }
       list = list->next;
    }
@@ -538,8 +537,7 @@ bool config_get_uint64(config_file_t *conf, const char *key, uint64_t *in)
             *in = val;
             return true;
          }
-         else
-            return false;
+         return false;
       }
       list = list->next;
    }
@@ -561,8 +559,7 @@ bool config_get_uint(config_file_t *conf, const char *key, unsigned *in)
             *in = val;
             return true;
          }
-         else
-            return false;
+         return false;
       }
       list = list->next;
    }
@@ -585,8 +582,7 @@ bool config_get_hex(config_file_t *conf, const char *key, unsigned *in)
             *in = val;
             return true;
          }
-         else
-            return false;
+         return false;
       }
       list = list->next;
    }
@@ -627,7 +623,8 @@ bool config_get_string(config_file_t *conf, const char *key, char **str)
    return false;
 }
 
-bool config_get_array(config_file_t *conf, const char *key, char *buf, size_t size)
+bool config_get_array(config_file_t *conf, const char *key,
+      char *buf, size_t size)
 {
    struct config_entry_list *list = conf->entries;
 
@@ -640,7 +637,8 @@ bool config_get_array(config_file_t *conf, const char *key, char *buf, size_t si
    return false;
 }
 
-bool config_get_path(config_file_t *conf, const char *key, char *buf, size_t size)
+bool config_get_path(config_file_t *conf, const char *key,
+      char *buf, size_t size)
 {
 #if defined(RARCH_CONSOLE)
    return config_get_array(conf, key, buf, size);
@@ -703,7 +701,8 @@ void config_set_string(config_file_t *conf, const char *key, const char *val)
       list = list->next;
    }
 
-   struct config_entry_list *elem = (struct config_entry_list*)calloc(1, sizeof(*elem));
+   struct config_entry_list *elem = (struct config_entry_list*)
+      calloc(1, sizeof(*elem));
    elem->key = strdup(key);
    elem->value = strdup(val);
 
@@ -830,7 +829,8 @@ void config_file_dump_all(config_file_t *conf)
    struct config_entry_list *list = conf->entries;
    while (list)
    {
-      RARCH_LOG("%s = \"%s\" %s\n", list->key, list->value, list->readonly ? "(included)" : "");
+      RARCH_LOG("%s = \"%s\" %s\n", list->key,
+            list->value, list->readonly ? "(included)" : "");
       list = list->next;
    }
 }
@@ -849,7 +849,8 @@ bool config_entry_exists(config_file_t *conf, const char *entry)
    return false;
 }
 
-bool config_get_entry_list_head(config_file_t *conf, struct config_file_entry *entry)
+bool config_get_entry_list_head(config_file_t *conf,
+      struct config_file_entry *entry)
 {
    const struct config_entry_list *head = conf->entries;
    if (!head)
