@@ -34,5 +34,6 @@ void menu_poll_bind_get_rested_axes(struct menu_bind_state *state);
 void menu_poll_bind_state(struct menu_bind_state *state);
 bool menu_poll_find_trigger(struct menu_bind_state *state, struct menu_bind_state *new_state);
 bool menu_custom_bind_keyboard_cb(void *data, unsigned code);
+uint64_t menu_input(void);
 
 #endif

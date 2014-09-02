@@ -88,7 +88,6 @@ typedef enum
    MENU_SETTINGS_VIDEO_RESOLUTION,
    MENU_SETTINGS_CUSTOM_VIEWPORT,
    MENU_SETTINGS_VIDEO_SOFTFILTER,
-   MENU_SETTINGS_VIDEO_OPTIONS_LAST,
    MENU_SETTINGS_FONT_OPTIONS,
    MENU_SETTINGS_SHADER_OPTIONS,
    MENU_SETTINGS_SHADER_FILTER,
@@ -183,8 +182,6 @@ bool menu_replace_config(const char *path);
 bool menu_save_new_config(void);
 
 int menu_defer_core(core_info_list_t *data, const char *dir, const char *path, char *deferred_path, size_t sizeof_deferred_path);
-
-uint64_t menu_input(void);
 
 void menu_flush_stack_type(unsigned final_type);
 void menu_update_system_info(menu_handle_t *menu, bool *load_no_content);
