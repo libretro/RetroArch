@@ -451,7 +451,9 @@ void dylib_close(dylib_t lib)
 #ifdef _WIN32
    FreeLibrary((HMODULE)lib);
 #else
+#ifndef NO_DLCLOSE
    dlclose(lib);
+#endif
 #endif
 }
 #endif
