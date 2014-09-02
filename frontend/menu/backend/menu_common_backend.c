@@ -587,14 +587,15 @@ static void menu_common_setting_set_current_boolean(
 }
 
 static void menu_common_setting_set_current_path_selection(
-      rarch_setting_t *setting, const char *start_path, unsigned type,
+      rarch_setting_t *setting, const char *start_path,
+      const char *label, unsigned type,
       unsigned action)
 {
    switch (action)
    {
       case MENU_ACTION_OK:
          menu_entries_push(driver.menu->menu_stack,
-               start_path, "path_list", type,
+               start_path, label, type,
                driver.menu->selection_ptr);
          break;
       case MENU_ACTION_START:
@@ -793,7 +794,7 @@ static void handle_setting(rarch_setting_t *setting,
    }
    else if (setting->type == ST_PATH)
       menu_common_setting_set_current_path_selection(setting,
-            setting->default_value.string, id, action);
+            setting->default_value.string, setting->name, id, action);
    else if (setting->type == ST_STRING)
    {
       if (!strcmp(setting->name, "audio_device"))
@@ -1765,7 +1766,8 @@ static int menu_custom_bind_iterate_keyboard(void *data, unsigned action)
    return 0;
 }
 
-static int menu_action_ok(const char *dir, unsigned menu_type)
+static int menu_action_ok(const char *dir,
+      const char *menu_label, unsigned menu_type)
 {
    const char *label = NULL;
    const char *path = NULL;
@@ -1781,6 +1783,7 @@ static int menu_action_ok(const char *dir, unsigned menu_type)
          driver.menu->selection_ptr, &path, &label, &type);
 
 #if 0
+   RARCH_LOG("menu label: %s\n", menu_label);
    RARCH_LOG("type     : %d\n", type == MENU_FILE_USE_DIRECTORY);
    RARCH_LOG("type id  : %d\n", type);
 #endif
@@ -1791,7 +1794,7 @@ static int menu_action_ok(const char *dir, unsigned menu_type)
       fill_pathname_join(cat_path, dir, path, sizeof(cat_path));
 
       menu_entries_push(driver.menu->menu_stack,
-            cat_path, "browser_list", type, driver.menu->selection_ptr);
+            cat_path, menu_label, type, driver.menu->selection_ptr);
    }
    else if (type == MENU_FILE_PLAYLIST_ENTRY)
    {
@@ -2168,7 +2171,7 @@ static int menu_common_iterate(unsigned action)
          break;
 
       case MENU_ACTION_OK:
-         ret = menu_action_ok(path, menu_type);
+         ret = menu_action_ok(path, menu_label, menu_type);
          break;
 
       case MENU_ACTION_REFRESH:
