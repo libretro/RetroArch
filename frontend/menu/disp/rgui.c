@@ -36,6 +36,8 @@
 #include "../../../screenshot.h"
 #include "../../../gfx/fonts/bitmap.h"
 
+#include "shared.h"
+
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
 #define HAVE_SHADER_MANAGER
 #endif
@@ -303,132 +305,11 @@ static void rgui_render(void)
       menu_type_is = driver.menu_ctx->backend->type_is(menu_type);
 
 #if 0
-   RARCH_LOG("Dir is: %s\n", dir);
+   RARCH_LOG("Dir is: %s\n", label);
 #endif
 
-   if (menu_type == MENU_SETTINGS_CORE)
-      snprintf(title, sizeof(title), "CORE SELECTION %s", dir);
-   else if (menu_type == MENU_SETTINGS_DEFERRED_CORE)
-      snprintf(title, sizeof(title), "DETECTED CORES %s", dir);
-   else if (menu_type == MENU_SETTINGS_CONFIG)
-      snprintf(title, sizeof(title), "CONFIG %s", dir);
-   else if (menu_type == MENU_SETTINGS_DISK_APPEND)
-      snprintf(title, sizeof(title), "DISK APPEND %s", dir);
-   else if (menu_type == MENU_SETTINGS_VIDEO_OPTIONS)
-      strlcpy(title, "VIDEO OPTIONS", sizeof(title));
-   else if (menu_type == MENU_SETTINGS_INPUT_OPTIONS ||
-         menu_type == MENU_SETTINGS_CUSTOM_BIND ||
-         menu_type == MENU_SETTINGS_CUSTOM_BIND_KEYBOARD)
-      strlcpy(title, "INPUT OPTIONS", sizeof(title));
-   else if (menu_type == MENU_SETTINGS_OVERLAY_OPTIONS)
-      strlcpy(title, "OVERLAY OPTIONS", sizeof(title));
-   else if (menu_type == MENU_SETTINGS_NETPLAY_OPTIONS)
-      strlcpy(title, "NETPLAY OPTIONS", sizeof(title));
-   else if (menu_type == MENU_SETTINGS_USER_OPTIONS)
-      strlcpy(title, "USER OPTIONS", sizeof(title));
-   else if (menu_type == MENU_SETTINGS_PATH_OPTIONS)
-      strlcpy(title, "PATH OPTIONS", sizeof(title));
-   else if (menu_type == MENU_SETTINGS_OPTIONS)
-      strlcpy(title, "SETTINGS", sizeof(title));
-   else if (menu_type == MENU_SETTINGS_DRIVERS)
-      strlcpy(title, "DRIVER OPTIONS", sizeof(title));
-   else if (menu_type == MENU_SETTINGS_PERFORMANCE_COUNTERS)
-      strlcpy(title, "PERFORMANCE COUNTERS", sizeof(title));
-   else if (menu_type == MENU_SETTINGS_PERFORMANCE_COUNTERS_LIBRETRO)
-      strlcpy(title, "CORE PERFORMANCE COUNTERS", sizeof(title));
-   else if (menu_type == MENU_SETTINGS_PERFORMANCE_COUNTERS_FRONTEND)
-      strlcpy(title, "FRONTEND PERFORMANCE COUNTERS", sizeof(title));
-#ifdef HAVE_SHADER_MANAGER
-   else if (menu_type == MENU_SETTINGS_SHADER_OPTIONS)
-      strlcpy(title, "SHADER OPTIONS", sizeof(title));
-   else if (menu_type == MENU_SETTINGS_SHADER_PARAMETERS)
-      strlcpy(title, "SHADER PARAMETERS (CURRENT)", sizeof(title));
-   else if (menu_type == MENU_SETTINGS_SHADER_PRESET_PARAMETERS)
-      strlcpy(title, "SHADER PARAMETERS (MENU PRESET)", sizeof(title));
-#endif
-   else if (menu_type == MENU_SETTINGS_FONT_OPTIONS)
-      strlcpy(title, "FONT OPTIONS", sizeof(title));
-   else if (!strcmp(dir, "General Options"))
-      strlcpy(title, "GENERAL OPTIONS", sizeof(title));
-   else if (menu_type == MENU_SETTINGS_AUDIO_OPTIONS)
-      strlcpy(title, "AUDIO OPTIONS", sizeof(title));
-   else if (menu_type == MENU_SETTINGS_DISK_OPTIONS)
-      strlcpy(title, "DISK OPTIONS", sizeof(title));
-   else if (menu_type == MENU_SETTINGS_CORE_OPTIONS)
-      strlcpy(title, "CORE OPTIONS", sizeof(title));
-   else if (menu_type == MENU_SETTINGS_CORE_INFO)
-      strlcpy(title, "CORE INFO", sizeof(title));
-   else if (menu_type == MENU_SETTINGS_PRIVACY_OPTIONS)
-      strlcpy(title, "PRIVACY OPTIONS", sizeof(title));
-#ifdef HAVE_SHADER_MANAGER
-   else if (menu_type_is == MENU_SETTINGS_SHADER_OPTIONS)
-      snprintf(title, sizeof(title), "SHADER %s", dir);
-#endif
-   else if (menu_type == MENU_SETTINGS_PATH_OPTIONS ||
-         menu_type == MENU_SETTINGS_OPTIONS ||
-         menu_type == MENU_SETTINGS_CUSTOM_VIEWPORT ||
-         !strcmp(label, "custom_viewport_2") ||
-         !strcmp(label, "help") ||
-         menu_type == MENU_SETTINGS)
-      snprintf(title, sizeof(title), "MENU %s", dir);
-   else if (menu_type == MENU_SETTINGS_OPEN_HISTORY)
-      strlcpy(title, "LOAD HISTORY", sizeof(title));
-   else if (!strcmp(label, "info_screen"))
-      strlcpy(title, "INFO", sizeof(title));
-#ifdef HAVE_OVERLAY
-   else if (menu_type == MENU_SETTINGS_OVERLAY_PRESET)
-      snprintf(title, sizeof(title), "OVERLAY %s", dir);
-#endif
-   else if (menu_type == MENU_SETTINGS_VIDEO_SOFTFILTER)
-      snprintf(title, sizeof(title), "FILTER %s", dir);
-   else if (menu_type == MENU_SETTINGS_AUDIO_DSP_FILTER)
-      snprintf(title, sizeof(title), "DSP FILTER %s", dir);
-   else if (menu_type == MENU_BROWSER_DIR_PATH)
-      snprintf(title, sizeof(title), "BROWSER DIR %s", dir);
-   else if (menu_type == MENU_CONTENT_DIR_PATH)
-      snprintf(title, sizeof(title), "CONTENT DIR %s", dir);
-   else if (menu_type == MENU_SCREENSHOT_DIR_PATH)
-      snprintf(title, sizeof(title), "SCREENSHOT DIR %s", dir);
-   else if (menu_type == MENU_AUTOCONFIG_DIR_PATH)
-      snprintf(title, sizeof(title), "AUTOCONFIG DIR %s", dir);
-   else if (menu_type == MENU_SHADER_DIR_PATH)
-      snprintf(title, sizeof(title), "SHADER DIR %s", dir);
-   else if (menu_type == MENU_FILTER_DIR_PATH)
-      snprintf(title, sizeof(title), "FILTER DIR %s", dir);
-   else if (menu_type == MENU_DSP_FILTER_DIR_PATH)
-      snprintf(title, sizeof(title), "DSP FILTER DIR %s", dir);
-   else if (menu_type == MENU_SAVESTATE_DIR_PATH)
-      snprintf(title, sizeof(title), "SAVESTATE DIR %s", dir);
-#ifdef HAVE_DYNAMIC
-   else if (menu_type == MENU_LIBRETRO_DIR_PATH)
-      snprintf(title, sizeof(title), "LIBRETRO DIR %s", dir);
-#endif
-   else if (menu_type == MENU_CONFIG_DIR_PATH)
-      snprintf(title, sizeof(title), "CONFIG DIR %s", dir);
-   else if (menu_type == MENU_SAVEFILE_DIR_PATH)
-      snprintf(title, sizeof(title), "SAVEFILE DIR %s", dir);
-#ifdef HAVE_OVERLAY
-   else if (menu_type == MENU_OVERLAY_DIR_PATH)
-      snprintf(title, sizeof(title), "OVERLAY DIR %s", dir);
-#endif
-   else if (menu_type == MENU_SYSTEM_DIR_PATH)
-      snprintf(title, sizeof(title), "SYSTEM DIR %s", dir);
-   else if (menu_type == MENU_ASSETS_DIR_PATH)
-      snprintf(title, sizeof(title), "ASSETS DIR %s", dir);
-   else
-   {
-      if (driver.menu->defer_core)
-         snprintf(title, sizeof(title), "CONTENT %s", dir);
-      else
-      {
-         const char *core_name = driver.menu->info.library_name;
-         if (!core_name)
-            core_name = g_extern.system.info.library_name;
-         if (!core_name)
-            core_name = "No Core";
-         snprintf(title, sizeof(title), "CONTENT (%s) %s", core_name, dir);
-      }
-   }
+   get_title(label, dir, menu_type, menu_type_is,
+         title, sizeof(title));
 
    char title_buf[256];
    menu_ticker_line(title_buf, RGUI_TERM_WIDTH - 3,
@@ -463,13 +344,14 @@ static void rgui_render(void)
    {
       char message[256], type_str[256];
       const char *path = NULL;
-      const char *label = NULL;
+      const char *entry_label = NULL;
       unsigned type = 0;
       file_list_get_at_offset(driver.menu->selection_buf, i, &path,
-            &label, &type);
+            &entry_label, &type);
       rarch_setting_t *setting = (rarch_setting_t*)setting_data_find_setting(
             setting_data_get_list(),
             driver.menu->selection_buf->list[i].label);
+
       unsigned w = 19;
        (void)setting;
       if (menu_type == MENU_SETTINGS_PERFORMANCE_COUNTERS)
@@ -519,8 +401,7 @@ static void rgui_render(void)
       else
 #endif
       /* Pretty-print libretro cores from menu. */
-      if (
-            menu_type == MENU_SETTINGS_CORE ||
+      if (menu_type == MENU_SETTINGS_CORE ||
             menu_type == MENU_SETTINGS_DEFERRED_CORE)
       {
          if (type == MENU_FILE_PLAIN)
