@@ -881,9 +881,9 @@ static int16_t input_state(unsigned port, unsigned device,
 #endif
 
 #ifdef _WIN32
-#define RARCH_DEFAULT_CONF_PATH_STR "\n\t\tDefaults to retroarch.cfg in same directory as retroarch.exe.\n\t\tIf a default config is not found, RetroArch will attempt to create one."
+#define RARCH_DEFAULT_CONF_PATH_STR "\n\t\tDefaults to retroarch.cfg in same directory as retroarch.exe.\n\t\tIf a default config is not found, " RETRO_FRONTEND " will attempt to create one."
 #else
-#define RARCH_DEFAULT_CONF_PATH_STR "\n\t\tBy default looks for config in $XDG_CONFIG_HOME/retroarch/retroarch.cfg,\n\t\t$HOME/.config/retroarch/retroarch.cfg,\n\t\tand $HOME/.retroarch.cfg.\n\t\tIf a default config is not found, RetroArch will attempt to create one based on the skeleton config (" GLOBAL_CONFIG_DIR "/retroarch.cfg)."
+#define RARCH_DEFAULT_CONF_PATH_STR "\n\t\tBy default looks for config in $XDG_CONFIG_HOME/retroarch/retroarch.cfg,\n\t\t$HOME/.config/retroarch/retroarch.cfg,\n\t\tand $HOME/.retroarch.cfg.\n\t\tIf a default config is not found," RETRO_FRONTEND " will attempt to create one based on the skeleton config (" GLOBAL_CONFIG_DIR "/retroarch.cfg)."
 #endif
 
 #include "config.features.h"
@@ -958,19 +958,19 @@ static void print_help(void)
 {
    puts("===================================================================");
 #ifdef HAVE_GIT_VERSION
-   printf("RetroArch: Frontend for libretro -- v" PACKAGE_VERSION " -- %s --\n", rarch_git_version);
+   printf(RETRO_FRONTEND ": Frontend for libretro -- v" PACKAGE_VERSION " -- %s --\n", rarch_git_version);
 #else
-   puts("RetroArch: Frontend for libretro -- v" PACKAGE_VERSION " --");
+   puts(RETRO_FRONTEND ": Frontend for libretro -- v" PACKAGE_VERSION " --");
 #endif
    print_compiler(stdout);
    puts("===================================================================");
    puts("Usage: retroarch [content file] [options...]");
    puts("\t-h/--help: Show this help message.");
    puts("\t--menu: Do not require content or libretro core to be loaded, starts directly in menu.");
-   puts("\t\tIf no arguments are passed to RetroArch, it is equivalent to using --menu as only argument.");
-   puts("\t--features: Prints available features compiled into RetroArch.");
+   puts("\t\tIf no arguments are passed to " RETRO_FRONTEND ", it is equivalent to using --menu as only argument.");
+   puts("\t--features: Prints available features compiled into " RETRO_FRONTEND ".");
    puts("\t-s/--save: Path for save file (*.srm).");
-   puts("\t-f/--fullscreen: Start RetroArch in fullscreen regardless of config settings.");
+   puts("\t-f/--fullscreen: Start " RETRO_FRONTEND " in fullscreen regardless of config settings.");
    puts("\t-S/--savestate: Path to use for save states. If not selected, *.state will be assumed.");
    puts("\t-c/--config: Path for config file." RARCH_DEFAULT_CONF_PATH_STR);
    puts("\t--appendconfig: Extra config files are loaded in, and take priority over config selected in -c (or default).");
@@ -1005,7 +1005,7 @@ static void print_help(void)
 #endif
    puts("\t--nick: Picks a username (for use with netplay). Not mandatory.");
 #if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
-   puts("\t--command: Sends a command over UDP to an already running RetroArch process.");
+   puts("\t--command: Sends a command over UDP to an already running " RETRO_FRONTEND " process.");
    puts("\t\tAvailable commands are listed if command is invalid.");
 #endif
 
@@ -1017,7 +1017,7 @@ static void print_help(void)
    puts("\t--bps: Specifies path for BPS patch that will be applied to content.");
    puts("\t--ips: Specifies path for IPS patch that will be applied to content.");
    puts("\t--no-patch: Disables all forms of content patching.");
-   puts("\t-D/--detach: Detach RetroArch from the running console. Not relevant for all platforms.\n");
+   puts("\t-D/--detach: Detach " RETRO_FRONTEND " from the running console. Not relevant for all platforms.\n");
 }
 
 static void set_basename(const char *path)
@@ -3063,7 +3063,7 @@ void rarch_init_system_info(void)
          info->library_name, info->library_version);
 #else
    snprintf(g_extern.title_buf, sizeof(g_extern.title_buf),
-         "RetroArch : %s %s",
+         RETRO_FRONTEND " : %s %s",
          info->library_name, info->library_version);
 #endif
    strlcpy(g_extern.system.valid_extensions, info->valid_extensions ?
