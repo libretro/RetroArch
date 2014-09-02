@@ -128,7 +128,8 @@ static bool xml_grab_cheats(cheat_manager_t *handle, xmlNodePtr ptr)
          if (handle->size == handle->buf_size)
          {
             handle->buf_size *= 2;
-            handle->cheats = (struct cheat*)realloc(handle->cheats, handle->buf_size * sizeof(struct cheat));
+            handle->cheats = (struct cheat*)
+               realloc(handle->cheats, handle->buf_size * sizeof(struct cheat));
             if (!handle->cheats)
                return false;
          }
@@ -153,7 +154,8 @@ static void cheat_manager_apply_cheats(cheat_manager_t *handle)
    }
 }
 
-static void cheat_manager_load_config(cheat_manager_t *handle, const char *path, const char *sha256)
+static void cheat_manager_load_config(cheat_manager_t *handle,
+      const char *path, const char *sha256)
 {
    const char *num;
    char *str, *save;
@@ -191,7 +193,8 @@ static void cheat_manager_load_config(cheat_manager_t *handle, const char *path,
    cheat_manager_apply_cheats(handle);
 }
 
-static void cheat_manager_save_config(cheat_manager_t *handle, const char *path, const char *sha256)
+static void cheat_manager_save_config(cheat_manager_t *handle,
+      const char *path, const char *sha256)
 {
    unsigned i;
    char conf_str[512] = {0};
@@ -251,7 +254,8 @@ cheat_manager_t *cheat_manager_new(const char *path)
    cur = NULL;
 
    handle->buf_size = 1;
-   handle->cheats = (struct cheat*)calloc(handle->buf_size, sizeof(struct cheat));
+   handle->cheats = (struct cheat*)
+      calloc(handle->buf_size, sizeof(struct cheat));
    if (!handle->cheats)
    {
       handle->buf_size = 0;
@@ -280,7 +284,8 @@ cheat_manager_t *cheat_manager_new(const char *path)
    head = xmlDocGetRootElement(doc);
    for (cur = head; cur; cur = cur->next)
    {
-      if (cur->type == XML_ELEMENT_NODE && strcmp((const char*)cur->name, "database") == 0)
+      if (cur->type == XML_ELEMENT_NODE
+            && strcmp((const char*)cur->name, "database") == 0)
          break;
    }
 
@@ -298,7 +303,8 @@ cheat_manager_t *cheat_manager_new(const char *path)
          if (!sha256)
             continue;
 
-         if (*g_extern.sha256 && strcmp((const char*)sha256, g_extern.sha256) == 0)
+         if (*g_extern.sha256 && strcmp((const char*)sha256,
+                  g_extern.sha256) == 0)
          {
             xmlFree(sha256);
             break;
@@ -323,7 +329,8 @@ cheat_manager_t *cheat_manager_new(const char *path)
       goto error;
    }
 
-   cheat_manager_load_config(handle, g_settings.cheat_settings_path, g_extern.sha256);
+   cheat_manager_load_config(handle,
+         g_settings.cheat_settings_path, g_extern.sha256);
 
    xmlFreeDoc(doc);
    xmlFreeParserCtxt(ctx);
@@ -346,7 +353,8 @@ void cheat_manager_free(cheat_manager_t *handle)
 
    if (handle->cheats)
    {
-      cheat_manager_save_config(handle, g_settings.cheat_settings_path, g_extern.sha256);
+      cheat_manager_save_config(handle,
+            g_settings.cheat_settings_path, g_extern.sha256);
       for (i = 0; i < handle->size; i++)
       {
          xmlFree(handle->cheats[i].desc);
@@ -363,7 +371,9 @@ static void cheat_manager_update(cheat_manager_t *handle)
 {
    msg_queue_clear(g_extern.msg_queue);
    char msg[256];
-   snprintf(msg, sizeof(msg), "Cheat: #%u [%s]: %s", handle->ptr, handle->cheats[handle->ptr].state ? "ON" : "OFF", handle->cheats[handle->ptr].desc);
+   snprintf(msg, sizeof(msg), "Cheat: #%u [%s]: %s",
+         handle->ptr, handle->cheats[handle->ptr].state ? "ON" : "OFF",
+         handle->cheats[handle->ptr].desc);
    msg_queue_push(g_extern.msg_queue, msg, 1, 180);
    RARCH_LOG("%s\n", msg);
 }

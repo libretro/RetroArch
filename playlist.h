@@ -25,6 +25,7 @@ extern "C" {
 typedef struct content_playlist content_playlist_t;
 
 content_playlist_t *content_playlist_init(const char *path, size_t size);
+
 void content_playlist_free(content_playlist_t *playlist);
 
 void content_playlist_clear(content_playlist_t *playlist);

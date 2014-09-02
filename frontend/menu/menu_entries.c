@@ -24,6 +24,7 @@ static void entries_refresh(void)
    /* Before a refresh, we could have deleted a file on disk, causing
     * selection_ptr to suddendly be out of range.
     * Ensure it doesn't overflow. */
+
    if (driver.menu->selection_ptr >= file_list_get_size(
             driver.menu->selection_buf) &&
          file_list_get_size(driver.menu->selection_buf))
@@ -588,7 +589,7 @@ int menu_parse_and_resolve(void)
 
    const char *dir = NULL;
    const char *label = NULL;
-   /* Directory parse */
+
    file_list_get_last(driver.menu->menu_stack, &dir, &label, &menu_type);
 
    if (
@@ -712,7 +713,7 @@ int menu_parse_and_resolve(void)
    else if (menu_type == MENU_CONTENT_HISTORY_PATH)
       exts = "cfg";
    else if (menu_common_type_is(menu_type) == MENU_FILE_DIRECTORY)
-      exts = ""; // we ignore files anyway
+      exts = ""; /* we ignore files anyway */
    else if (driver.menu->defer_core)
       exts = driver.menu->core_info ? core_info_list_get_all_extensions(
             driver.menu->core_info) : "";
@@ -746,7 +747,7 @@ int menu_parse_and_resolve(void)
       if ((menu_common_type_is(menu_type) == MENU_FILE_DIRECTORY) && !is_dir)
          continue;
 
-      // Need to preserve slash first time.
+      /* Need to preserve slash first time. */
       const char *path = str_list->elems[i].data;
       if (*dir)
          path = path_basename(path);
@@ -757,8 +758,8 @@ int menu_parse_and_resolve(void)
          continue;
 #endif
 
-      // Push menu_type further down in the chain.
-      // Needed for shader manager currently.
+      /* Push menu_type further down in the chain.
+       * Needed for shader manager currently. */
       file_list_push(driver.menu->selection_buf, path, "",
             is_dir ? menu_type : MENU_FILE_PLAIN, 0);
    }

@@ -29,10 +29,12 @@ static void menu_common_shader_manager_init(menu_handle_t *menu)
    // In a multi-config setting, we can't have conflicts on menu.cgp/menu.glslp.
    if (config_path)
    {
-      fill_pathname_base(menu->default_glslp, config_path, sizeof(menu->default_glslp));
+      fill_pathname_base(menu->default_glslp, config_path,
+            sizeof(menu->default_glslp));
       path_remove_extension(menu->default_glslp);
       strlcat(menu->default_glslp, ".glslp", sizeof(menu->default_glslp));
-      fill_pathname_base(menu->default_cgp, config_path, sizeof(menu->default_cgp));
+      fill_pathname_base(menu->default_cgp, config_path,
+            sizeof(menu->default_cgp));
       path_remove_extension(menu->default_cgp);
       strlcat(menu->default_cgp, ".cgp", sizeof(menu->default_cgp));
    }
@@ -89,23 +91,26 @@ static void menu_common_shader_manager_init(menu_handle_t *menu)
    }
 }
 
-static void menu_common_shader_manager_set_preset(struct gfx_shader *shader, unsigned type, const char *cgp_path)
+static void menu_common_shader_manager_set_preset(struct gfx_shader *shader,
+      unsigned type, const char *cgp_path)
 {
    RARCH_LOG("Setting Menu shader: %s.\n", cgp_path ? cgp_path : "N/A (stock)");
 
-   if (driver.video->set_shader && driver.video->set_shader(driver.video_data, (enum rarch_shader_type)type, cgp_path))
+   if (driver.video->set_shader && driver.video->set_shader(driver.video_data,
+            (enum rarch_shader_type)type, cgp_path))
    {
-      // Makes sure that we use Menu CGP shader on driver reinit.
-      // Only do this when the cgp actually works to avoid potential errors.
+      /* Makes sure that we use Menu CGP shader on driver reinit.
+       * Only do this when the cgp actually works to avoid potential errors. */
       strlcpy(g_settings.video.shader_path, cgp_path ? cgp_path : "",
             sizeof(g_settings.video.shader_path));
       g_settings.video.shader_enable = true;
 
       if (cgp_path && shader)
       {
-         // Load stored CGP into menu on success.
-         // Used when a preset is directly loaded.
-         // No point in updating when the CGP was created from the menu itself.
+         /* Load stored CGP into menu on success.
+          * Used when a preset is directly loaded.
+          * No point in updating when the CGP was 
+          * created from the menu itself. */
          config_file_t *conf = config_file_new(cgp_path);
 
          if (conf)
@@ -128,17 +133,22 @@ static void menu_common_shader_manager_set_preset(struct gfx_shader *shader, uns
    }
 }
 
-static void menu_common_shader_manager_get_str(struct gfx_shader *shader, char *type_str, size_t type_str_size, unsigned type)
+static void menu_common_shader_manager_get_str(struct gfx_shader *shader,
+      char *type_str, size_t type_str_size, unsigned type)
 {
    *type_str = '\0';
 
-   if (type >= MENU_SETTINGS_SHADER_PARAMETER_0 && type <= MENU_SETTINGS_SHADER_PARAMETER_LAST)
+   if (type >= MENU_SETTINGS_SHADER_PARAMETER_0
+         && type <= MENU_SETTINGS_SHADER_PARAMETER_LAST)
    {
-      // menu->parameter_shader here.
+      /* menu->parameter_shader here. */
       if (shader)
       {
-         const struct gfx_shader_parameter *param = (const struct gfx_shader_parameter*)&shader->parameters[type - MENU_SETTINGS_SHADER_PARAMETER_0];
-         snprintf(type_str, type_str_size, "%.2f [%.2f %.2f]", param->current, param->minimum, param->maximum);
+         const struct gfx_shader_parameter *param =
+            (const struct gfx_shader_parameter*)&shader->parameters
+            [type - MENU_SETTINGS_SHADER_PARAMETER_0];
+         snprintf(type_str, type_str_size, "%.2f [%.2f %.2f]",
+               param->current, param->minimum, param->maximum);
       }
    }
    else if (type == MENU_SETTINGS_SHADER_PASSES)
@@ -164,7 +174,8 @@ static void menu_common_shader_manager_get_str(struct gfx_shader *shader, char *
                   "Nearest"
                };
 
-               strlcpy(type_str, modes[shader->pass[pass].filter], type_str_size);
+               strlcpy(type_str, modes[shader->pass[pass].filter],
+                     type_str_size);
             }
             break;
 
@@ -181,7 +192,8 @@ static void menu_common_shader_manager_get_str(struct gfx_shader *shader, char *
    }
 }
 
-static void menu_common_shader_manager_save_preset(const char *basename, bool apply)
+static void menu_common_shader_manager_save_preset(
+      const char *basename, bool apply)
 {
    char buffer[PATH_MAX], config_directory[PATH_MAX], cgp_path[PATH_MAX];
    unsigned d, type = RARCH_SHADER_NONE;
@@ -195,19 +207,23 @@ static void menu_common_shader_manager_save_preset(const char *basename, bool ap
       return;
    }
 
-   if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->shader_manager_get_type)
-      type = driver.menu_ctx->backend->shader_manager_get_type(driver.menu->shader);
+   if (driver.menu_ctx && driver.menu_ctx->backend
+         && driver.menu_ctx->backend->shader_manager_get_type)
+      type = driver.menu_ctx->backend->shader_manager_get_type
+         (driver.menu->shader);
 
    if (type == RARCH_SHADER_NONE)
       return;
 
-   conf_path = (type == RARCH_SHADER_GLSL) ? driver.menu->default_glslp : driver.menu->default_cgp;
+   conf_path = (type == RARCH_SHADER_GLSL) ?
+      driver.menu->default_glslp : driver.menu->default_cgp;
    *config_directory = '\0';
 
    if (basename)
    {
       strlcpy(buffer, basename, sizeof(buffer));
-      // Append extension automatically as appropriate.
+
+      /* Append extension automatically as appropriate. */
       if (!strstr(basename, ".cgp") && !strstr(basename, ".glslp"))
       {
          if (type == RARCH_SHADER_GLSL)
@@ -218,7 +234,8 @@ static void menu_common_shader_manager_save_preset(const char *basename, bool ap
    }
 
    if (*g_extern.config_path)
-      fill_pathname_basedir(config_directory, g_extern.config_path, sizeof(config_directory));
+      fill_pathname_basedir(config_directory,
+            g_extern.config_path, sizeof(config_directory));
 
    const char *dirs[] = {
       g_settings.video.shader_dir,
@@ -241,8 +258,10 @@ static void menu_common_shader_manager_save_preset(const char *basename, bool ap
          RARCH_LOG("Saved shader preset to %s.\n", cgp_path);
          if (apply)
          {
-            if (driver.menu_ctx && driver.menu_ctx->backend && driver.menu_ctx->backend->shader_manager_set_preset)
-               driver.menu_ctx->backend->shader_manager_set_preset(NULL, type, cgp_path);
+            if (driver.menu_ctx && driver.menu_ctx->backend
+                  && driver.menu_ctx->backend->shader_manager_set_preset)
+               driver.menu_ctx->backend->shader_manager_set_preset(
+                     NULL, type, cgp_path);
          }
          ret = true;
          break;
@@ -256,9 +275,10 @@ static void menu_common_shader_manager_save_preset(const char *basename, bool ap
       RARCH_ERR("Failed to save shader preset. Make sure config directory and/or shader dir are writable.\n");
 }
 
-static unsigned menu_common_shader_manager_get_type(const struct gfx_shader *shader)
+static unsigned menu_common_shader_manager_get_type(
+      const struct gfx_shader *shader)
 {
-   // All shader types must be the same, or we cannot use it.
+   /* All shader types must be the same, or we cannot use it. */
    unsigned i;
    unsigned type = RARCH_SHADER_NONE;
 
@@ -290,7 +310,8 @@ static unsigned menu_common_shader_manager_get_type(const struct gfx_shader *sha
    return type;
 }
 
-static int menu_common_shader_manager_setting_toggle(unsigned id, unsigned action)
+static int menu_common_shader_manager_setting_toggle(
+      unsigned id, unsigned action)
 {
    if (!driver.menu)
    {
@@ -307,14 +328,17 @@ static int menu_common_shader_manager_setting_toggle(unsigned id, unsigned actio
 
    if (id == MENU_SETTINGS_SHADER_FILTER)
    {
-      if ((current_setting = setting_data_find_setting(setting_data, "video_smooth")))
+      if ((current_setting = setting_data_find_setting(
+                  setting_data, "video_smooth")))
          menu_common_setting_set_current_boolean(current_setting, action);
    }
    else if ((id == MENU_SETTINGS_SHADER_PARAMETERS
-            || id == MENU_SETTINGS_SHADER_PRESET_PARAMETERS) && action == MENU_ACTION_OK)
+            || id == MENU_SETTINGS_SHADER_PRESET_PARAMETERS)
+         && action == MENU_ACTION_OK)
       menu_entries_push(driver.menu->menu_stack, "",
             "shader_parameters", id, driver.menu->selection_ptr);
-   else if (id >= MENU_SETTINGS_SHADER_PARAMETER_0 && id <= MENU_SETTINGS_SHADER_PARAMETER_LAST)
+   else if (id >= MENU_SETTINGS_SHADER_PARAMETER_0
+         && id <= MENU_SETTINGS_SHADER_PARAMETER_LAST)
    {
       struct gfx_shader *shader = NULL;
       struct gfx_shader_parameter *param = NULL;
@@ -345,7 +369,8 @@ static int menu_common_shader_manager_setting_toggle(unsigned id, unsigned actio
 
       param->current = min(max(param->minimum, param->current), param->maximum);
    }
-   else if ((id == MENU_SETTINGS_SHADER_APPLY || id == MENU_SETTINGS_SHADER_PASSES))
+   else if ((id == MENU_SETTINGS_SHADER_APPLY ||
+            id == MENU_SETTINGS_SHADER_PASSES))
       menu_setting_set(id, action);
    else if (((dist_shader % 3) == 0 || id == MENU_SETTINGS_SHADER_PRESET))
    {
@@ -377,7 +402,8 @@ static int menu_common_shader_manager_setting_toggle(unsigned id, unsigned actio
    {
       dist_filter /= 3;
       struct gfx_shader *shader = (struct gfx_shader*)driver.menu->shader;
-      struct gfx_shader_pass *pass = (struct gfx_shader_pass*)&shader->pass[dist_filter];
+      struct gfx_shader_pass *pass = (struct gfx_shader_pass*)
+         &shader->pass[dist_filter];
 
       switch (action)
       {
@@ -404,7 +430,8 @@ static int menu_common_shader_manager_setting_toggle(unsigned id, unsigned actio
    {
       dist_scale /= 3;
       struct gfx_shader *shader = (struct gfx_shader*)driver.menu->shader;
-      struct gfx_shader_pass *pass = (struct gfx_shader_pass*)&shader->pass[dist_scale];
+      struct gfx_shader_pass *pass = (struct gfx_shader_pass*)
+         &shader->pass[dist_scale];
 
       switch (action)
       {

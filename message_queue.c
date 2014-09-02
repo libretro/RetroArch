@@ -42,7 +42,8 @@ msg_queue_t *msg_queue_new(size_t size)
       return NULL;
 
    queue->size = size + 1;
-   queue->elems = (struct queue_elem**)calloc(queue->size, sizeof(struct queue_elem*)); 
+   queue->elems = (struct queue_elem**)
+      calloc(queue->size,sizeof(struct queue_elem*)); 
 
    if (!queue->elems)
    {
@@ -63,12 +64,15 @@ void msg_queue_free(msg_queue_t *queue)
    free(queue);
 }
 
-void msg_queue_push(msg_queue_t *queue, const char *msg, unsigned prio, unsigned duration)
+void msg_queue_push(msg_queue_t *queue, const char *msg,
+      unsigned prio, unsigned duration)
 {
    if (!queue || queue->ptr >= queue->size)
       return;
 
-   struct queue_elem *new_elem = (struct queue_elem*)calloc(1, sizeof(struct queue_elem));
+   struct queue_elem *new_elem = (struct queue_elem*)
+      calloc(1, sizeof(struct queue_elem));
+
    new_elem->prio = prio;
    new_elem->duration = duration;
    new_elem->msg = msg ? strdup(msg) : NULL;
@@ -114,7 +118,8 @@ void msg_queue_clear(msg_queue_t *queue)
 
 const char *msg_queue_pull(msg_queue_t *queue)
 {
-   if (!queue || queue->ptr == 1) // Nothing in queue.
+   /* Nothing in queue. */
+   if (!queue || queue->ptr == 1)
       return NULL;
 
    struct queue_elem *front = queue->elems[1];
@@ -135,8 +140,10 @@ const char *msg_queue_pull(msg_queue_t *queue)
       size_t tmp_ptr = 1;
       for (;;)
       {
-         bool left = (tmp_ptr * 2 <= queue->ptr) && (queue->elems[tmp_ptr] < queue->elems[tmp_ptr * 2]);
-         bool right = (tmp_ptr * 2 + 1 <= queue->ptr) && (queue->elems[tmp_ptr] < queue->elems[tmp_ptr * 2 + 1]);
+         bool left = (tmp_ptr * 2 <= queue->ptr)
+            && (queue->elems[tmp_ptr] < queue->elems[tmp_ptr * 2]);
+         bool right = (tmp_ptr * 2 + 1 <= queue->ptr)
+            && (queue->elems[tmp_ptr] < queue->elems[tmp_ptr * 2 + 1]);
 
          if (!left && !right)
             break;
@@ -148,7 +155,8 @@ const char *msg_queue_pull(msg_queue_t *queue)
             switch_index += switch_index + 1;
          else
          {
-            if (queue->elems[tmp_ptr * 2] >= queue->elems[tmp_ptr * 2 + 1])
+            if (queue->elems[tmp_ptr * 2]
+                  >= queue->elems[tmp_ptr * 2 + 1])
                switch_index <<= 1;
             else
                switch_index += switch_index + 1;
