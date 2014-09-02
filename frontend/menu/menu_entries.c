@@ -173,7 +173,7 @@ int menu_entries_push_list(menu_handle_t *menu,
                }
 
                file_list_push(list, fill_buf, "",
-                     MENU_FILE_PLAIN, 0);
+                     MENU_FILE_PLAYLIST_ENTRY, 0);
 
                do_action = true;
             }

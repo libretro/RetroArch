@@ -1780,6 +1780,11 @@ static int menu_action_ok(const char *dir, unsigned menu_type)
    file_list_get_at_offset(driver.menu->selection_buf,
          driver.menu->selection_ptr, &path, &label, &type);
 
+#if 0
+   RARCH_LOG("type     : %d\n", type == MENU_FILE_USE_DIRECTORY);
+   RARCH_LOG("type id  : %d\n", type);
+#endif
+
    if (menu_parse_check(label, type) == 0)
    {
       char cat_path[PATH_MAX];
@@ -1787,6 +1792,12 @@ static int menu_action_ok(const char *dir, unsigned menu_type)
 
       menu_entries_push(driver.menu->menu_stack,
             cat_path, "browser_list", type, driver.menu->selection_ptr);
+   }
+   else if (type == MENU_FILE_PLAYLIST_ENTRY)
+   {
+      load_menu_content_history(driver.menu->selection_ptr);
+      menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS);
+      return -1;
    }
    else
    {
@@ -1883,12 +1894,6 @@ static int menu_action_ok(const char *dir, unsigned menu_type)
 
          g_extern.lifecycle_state |= 1ULL << MODE_GAME;
 
-         menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS);
-         return -1;
-      }
-      else if (menu_type == MENU_SETTINGS_OPEN_HISTORY)
-      {
-         load_menu_content_history(driver.menu->selection_ptr);
          menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS);
          return -1;
       }

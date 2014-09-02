@@ -176,8 +176,7 @@ static int main_entry_iterate_menu(args_type() args)
    g_extern.lifecycle_state |= (1ULL << MODE_CLEAR_INPUT);
 
    /* If QUIT state came from command interface, we'll only see it
-    * once due to MODE_CLEAR_INPUT.
-    */
+    * once due to MODE_CLEAR_INPUT. */
    if (input_key_pressed_func(RARCH_QUIT_KEY) ||
          !driver.video->alive(driver.video_data))
       return 1;
