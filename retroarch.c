@@ -2064,79 +2064,70 @@ static bool save_auto_state(void)
    return true;
 }
 
-static void rarch_load_state(void)
-{
-   char path[PATH_MAX], msg[PATH_MAX];
-
-   if (g_settings.state_slot > 0)
-      snprintf(path, sizeof(path), "%s%d",
-            g_extern.savestate_name, g_settings.state_slot);
-   else if (g_settings.state_slot < 0)
-      snprintf(path, sizeof(path), "%s.auto",
-            g_extern.savestate_name);
-   else
-      strlcpy(path, g_extern.savestate_name, sizeof(path));
-
-   if (pretro_serialize_size())
-   {
-      if (load_state(path))
-      {
-         if (g_settings.state_slot < 0)
-            snprintf(msg, sizeof(msg),
-                  "Loaded state from slot #-1 (auto).");
-         else
-            snprintf(msg, sizeof(msg),
-                  "Loaded state from slot #%d.", g_settings.state_slot);
-      }
-      else
-         snprintf(msg, sizeof(msg),
-               "Failed to load state from \"%s\".", path);
-   }
-   else
-      strlcpy(msg, "Core does not support save states.", sizeof(msg));
-
-   msg_queue_clear(g_extern.msg_queue);
-   msg_queue_push(g_extern.msg_queue, msg, 2, 180);
-   RARCH_LOG("%s\n", msg);
-}
-
-static void rarch_save_state(void)
-{
-   char path[PATH_MAX], msg[PATH_MAX];
-
-   if (g_settings.state_slot > 0)
-      snprintf(path, sizeof(path), "%s%d",
-            g_extern.savestate_name, g_settings.state_slot);
-   else if (g_settings.state_slot < 0)
-      snprintf(path, sizeof(path), "%s.auto",
-            g_extern.savestate_name);
-   else
-      strlcpy(path, g_extern.savestate_name, sizeof(path));
-
-   if (pretro_serialize_size())
-   {
-      if (save_state(path))
-      {
-         if (g_settings.state_slot < 0)
-            snprintf(msg, sizeof(msg),
-                  "Saved state to slot #-1 (auto).");
-         else
-            snprintf(msg, sizeof(msg),
-                  "Saved state to slot #%u.", g_settings.state_slot);
-      }
-      else
-         snprintf(msg, sizeof(msg),
-               "Failed to save state to \"%s\".", path);
-   }
-   else
-      strlcpy(msg, "Core does not support save states.", sizeof(msg));
-
-   msg_queue_clear(g_extern.msg_queue);
-   msg_queue_push(g_extern.msg_queue, msg, 2, 180);
-   RARCH_LOG("%s\n", msg);
-}
-
 /* Save or load state here. */
+
+static void rarch_load_state(const char *path,
+      char *msg, size_t sizeof_msg)
+{
+   if (load_state(path))
+   {
+      if (g_settings.state_slot < 0)
+         snprintf(msg, sizeof_msg,
+               "Loaded state from slot #-1 (auto).");
+      else
+         snprintf(msg, sizeof_msg,
+               "Loaded state from slot #%d.", g_settings.state_slot);
+   }
+   else
+      snprintf(msg, sizeof_msg,
+            "Failed to load state from \"%s\".", path);
+}
+
+static void rarch_save_state(const char *path,
+      char *msg, size_t sizeof_msg)
+{
+   if (save_state(path))
+   {
+      if (g_settings.state_slot < 0)
+         snprintf(msg, sizeof_msg,
+               "Saved state to slot #-1 (auto).");
+      else
+         snprintf(msg, sizeof_msg,
+               "Saved state to slot #%u.", g_settings.state_slot);
+   }
+   else
+      snprintf(msg, sizeof_msg,
+            "Failed to save state to \"%s\".", path);
+}
+
+static void main_state(unsigned cmd)
+{
+   char path[PATH_MAX], msg[PATH_MAX];
+
+   if (g_settings.state_slot > 0)
+      snprintf(path, sizeof(path), "%s%d",
+            g_extern.savestate_name, g_settings.state_slot);
+   else if (g_settings.state_slot < 0)
+      snprintf(path, sizeof(path), "%s.auto",
+            g_extern.savestate_name);
+   else
+      strlcpy(path, g_extern.savestate_name, sizeof(path));
+
+   if (pretro_serialize_size())
+   {
+      if (cmd == RARCH_CMD_SAVE_STATE)
+         rarch_save_state(path, msg, sizeof(msg));
+      else if (cmd == RARCH_CMD_LOAD_STATE)
+         rarch_load_state(path, msg, sizeof(msg));
+   }
+   else
+      strlcpy(msg, "Core does not support save states.", sizeof(msg));
+
+   msg_queue_clear(g_extern.msg_queue);
+   msg_queue_push(g_extern.msg_queue, msg, 2, 180);
+   RARCH_LOG("%s\n", msg);
+}
+
 
 static void check_savestates(bool immutable)
 {
@@ -3277,11 +3268,11 @@ static inline void limit_frame_time(void)
 /* TODO - can we refactor command.c to do this? Should be local and not
  * stdin or network-based */
 
-void rarch_main_command(unsigned action)
+void rarch_main_command(unsigned cmd)
 {
    bool boolean = false;
 
-   switch (action)
+   switch (cmd)
    {
       case RARCH_CMD_LOAD_CONTENT:
 #ifdef HAVE_DYNAMIC
@@ -3308,7 +3299,7 @@ void rarch_main_command(unsigned action)
          if (g_extern.netplay)
             return;
 #endif
-         rarch_load_state();
+         main_state(cmd);
          g_extern.lifecycle_state |= (1ULL << MODE_GAME);
          break;
       case RARCH_CMD_RESET:
@@ -3325,7 +3316,7 @@ void rarch_main_command(unsigned action)
          if (g_settings.savestate_auto_index)
             g_settings.state_slot++;
 
-         rarch_save_state();
+         main_state(cmd);
          g_extern.lifecycle_state |= (1ULL << MODE_GAME);
          break;
       case RARCH_CMD_TAKE_SCREENSHOT:
