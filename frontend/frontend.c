@@ -197,7 +197,7 @@ int main_entry_iterate(signature(), args_type() args)
       return main_entry_iterate_content(args);
 #ifdef HAVE_MENU
    if (g_extern.lifecycle_state & (1ULL << MODE_MENU_PREINIT))
-      main_entry_iterate_menu_preinit(args);
+      return main_entry_iterate_menu_preinit(args);
    if (g_extern.lifecycle_state & (1ULL << MODE_MENU))
       return main_entry_iterate_menu(args);
 #endif
