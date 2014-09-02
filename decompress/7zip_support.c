@@ -156,7 +156,7 @@ static SRes ConvertUtf16toCharString(const UInt16 *s, char *outstring)
 
 
 // Extract the relative path relative_path from a 7z archive archive_path and allocate a buf for it to write it in.
-long read_7zip_file(const char * archive_path, const char *relative_path, void **buf)
+int read_7zip_file(const char * archive_path, const char *relative_path, void **buf)
 {
    CFileInStream archiveStream;
    CLookToRead lookStream;

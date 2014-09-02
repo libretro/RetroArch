@@ -20,7 +20,8 @@
 extern "C" {
 #endif
 
-long read_7zip_file(const char * archive_path, const char *relative_path, void **buf);
+int read_7zip_file(const char * archive_path,
+      const char *relative_path, void **buf);
 
 #ifdef __cplusplus
 }
