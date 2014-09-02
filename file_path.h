@@ -26,6 +26,10 @@
 extern "C" {
 #endif
 
+#ifdef HAVE_COMPRESSION
+long read_compressed_file(const char * archive_path, const char *relative_path, void **buf);
+#endif
+
 long read_file(const char *path, void **buf);
 bool read_file_string(const char *path, char **buf);
 bool write_file(const char *path, const void *buf, size_t size);

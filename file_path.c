@@ -60,6 +60,10 @@
 #include <unistd.h>
 #endif
 
+#ifdef HAVE_7ZIP
+#include "decompress/7zip_support.h"
+#endif
+
 /* Dump to file. */
 bool write_file(const char *path, const void *data, size_t size)
 {
@@ -72,6 +76,17 @@ bool write_file(const char *path, const void *data, size_t size)
    fclose(file);
    return ret;
 }
+
+/* Generic compressed file loader. */
+#ifdef HAVE_COMPRESSION
+long read_compressed_file(const char * archive_path, const char *relative_path, void **buf)
+{
+#ifdef HAVE_7ZIP
+   return read_7zip_file(archive_path,relative_path,buf);
+#endif
+   return -1;
+}
+#endif
 
 /* Generic file loader. */
 long read_file(const char *path, void **buf)
