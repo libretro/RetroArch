@@ -41,6 +41,8 @@
 #include "config.h"
 #endif
 
+driver_t driver;
+
 static const audio_driver_t *audio_drivers[] = {
 #ifdef HAVE_ALSA
    &audio_alsa,
@@ -175,7 +177,8 @@ static const input_driver_t *input_drivers[] = {
 #if defined(__linux__) && !defined(ANDROID)
    &input_linuxraw,
 #endif
-#if defined(IOS) || defined(OSX) //< Don't use __APPLE__ as it breaks basic SDL builds
+#if defined(IOS) || defined(OSX)
+   /* Don't use __APPLE__ as it breaks basic SDL builds */
    &input_apple,
 #endif
 #ifdef __QNX__
@@ -238,8 +241,7 @@ static const menu_ctx_driver_t *menu_ctx_drivers[] = {
 #if defined(HAVE_RGUI)
    &menu_ctx_rgui,
 #endif
-
-   NULL // zero length array is not valid
+   NULL
 };
 #endif
 
@@ -358,13 +360,13 @@ static void find_osk_driver(void)
 
 void init_osk(void)
 {
-   // Resource leaks will follow if osk is initialized twice.
+   /* Resource leaks will follow if osk is initialized twice. */
    if (driver.osk_data)
       return;
 
    find_osk_driver();
 
-   //FIXME - refactor params later based on semantics 
+   /* FIXME - refactor params later based on semantics  */
    driver.osk_data = driver.osk->init(0);
 
    if (!driver.osk_data)
@@ -391,7 +393,8 @@ static void find_camera_driver(void)
    else
    {
       unsigned d;
-      RARCH_ERR("Couldn't find any camera driver named \"%s\"\n", g_settings.camera.driver);
+      RARCH_ERR("Couldn't find any camera driver named \"%s\"\n",
+            g_settings.camera.driver);
       RARCH_LOG_OUTPUT("Available camera drivers are:\n");
       for (d = 0; camera_drivers[d]; d++)
          RARCH_LOG_OUTPUT("\t%s\n", camera_drivers[d]->ident);
@@ -413,7 +416,8 @@ bool driver_camera_start(void)
       if (g_settings.camera.allow)
          return driver.camera->start(driver.camera_data);
 
-      msg_queue_push(g_extern.msg_queue, "Camera is explicitly disabled.\n", 1, 180);
+      msg_queue_push(g_extern.msg_queue,
+            "Camera is explicitly disabled.\n", 1, 180);
    }
    return false;
 }
@@ -434,7 +438,7 @@ void driver_camera_poll(void)
 
 void init_camera(void)
 {
-   // Resource leaks will follow if camera is initialized twice.
+   /* Resource leaks will follow if camera is initialized twice. */
    if (driver.camera_data)
       return;
 
@@ -443,8 +447,10 @@ void init_camera(void)
    driver.camera_data = driver.camera->init(
          *g_settings.camera.device ? g_settings.camera.device : NULL,
          g_extern.system.camera_callback.caps,
-         g_settings.camera.width ? g_settings.camera.width : g_extern.system.camera_callback.width,
-         g_settings.camera.height ? g_settings.camera.height : g_extern.system.camera_callback.height);
+         g_settings.camera.width ?
+         g_settings.camera.width : g_extern.system.camera_callback.width,
+         g_settings.camera.height ?
+         g_settings.camera.height : g_extern.system.camera_callback.height);
 
    if (!driver.camera_data)
    {
@@ -479,7 +485,8 @@ static void find_location_driver(void)
    else
    {
       unsigned d;
-      RARCH_ERR("Couldn't find any location driver named \"%s\"\n", g_settings.location.driver);
+      RARCH_ERR("Couldn't find any location driver named \"%s\"\n",
+            g_settings.location.driver);
       RARCH_LOG_OUTPUT("Available location drivers are:\n");
       for (d = 0; location_drivers[d]; d++)
          RARCH_LOG_OUTPUT("\t%s\n", location_drivers[d]->ident);
@@ -512,17 +519,22 @@ void driver_location_stop(void)
       driver.location->stop(driver.location_data);
 }
 
-void driver_location_set_interval(unsigned interval_msecs, unsigned interval_distance)
+void driver_location_set_interval(unsigned interval_msecs,
+      unsigned interval_distance)
 {
-   if (driver.location && driver.location->set_interval && driver.location_data)
-      driver.location->set_interval(driver.location_data, interval_msecs, interval_distance);
+   if (driver.location && driver.location->set_interval
+         && driver.location_data)
+      driver.location->set_interval(driver.location_data,
+            interval_msecs, interval_distance);
 }
 
-bool driver_location_get_position(double *lat, double *lon, double *horiz_accuracy,
-      double *vert_accuracy)
+bool driver_location_get_position(double *lat, double *lon,
+      double *horiz_accuracy, double *vert_accuracy)
 {
-   if (driver.location && driver.location->get_position && driver.location_data)
-      return driver.location->get_position(driver.location_data, lat, lon, horiz_accuracy, vert_accuracy);
+   if (driver.location && driver.location->get_position
+         && driver.location_data)
+      return driver.location->get_position(driver.location_data,
+            lat, lon, horiz_accuracy, vert_accuracy);
 
    *lat = 0.0;
    *lon = 0.0;
@@ -533,7 +545,7 @@ bool driver_location_get_position(double *lat, double *lon, double *horiz_accura
 
 void init_location(void)
 {
-   // Resource leaks will follow if location interface is initialized twice.
+   /* Resource leaks will follow if location interface is initialized twice. */
    if (driver.location_data)
       return;
 
@@ -574,7 +586,8 @@ void find_menu_driver(void)
    else
    {
       unsigned d;
-      RARCH_WARN("Couldn't find any menu driver named \"%s\"\n", g_settings.menu.driver);
+      RARCH_WARN("Couldn't find any menu driver named \"%s\"\n",
+            g_settings.menu.driver);
       RARCH_LOG_OUTPUT("Available menu drivers are:\n");
       for (d = 0; menu_ctx_drivers[d]; d++)
          RARCH_LOG_OUTPUT("\t%s\n", menu_ctx_drivers[d]->ident);
@@ -597,7 +610,8 @@ static void find_audio_driver(void)
    else
    {
       unsigned d;
-      RARCH_ERR("Couldn't find any audio driver named \"%s\"\n", g_settings.audio.driver);
+      RARCH_ERR("Couldn't find any audio driver named \"%s\"\n",
+            g_settings.audio.driver);
       RARCH_LOG_OUTPUT("Available audio drivers are:\n");
       for (d = 0; audio_drivers[d]; d++)
          RARCH_LOG_OUTPUT("\t%s\n", audio_drivers[d]->ident);
@@ -628,7 +642,8 @@ static void find_video_driver(void)
    else
    {
       unsigned d;
-      RARCH_ERR("Couldn't find any video driver named \"%s\"\n", g_settings.video.driver);
+      RARCH_ERR("Couldn't find any video driver named \"%s\"\n",
+            g_settings.video.driver);
       RARCH_LOG_OUTPUT("Available video drivers are:\n");
       for (d = 0; video_drivers[d]; d++)
          RARCH_LOG_OUTPUT("\t%s\n", video_drivers[d]->ident);
@@ -650,7 +665,8 @@ static void find_input_driver(void)
    else
    {
       unsigned d;
-      RARCH_ERR("Couldn't find any input driver named \"%s\"\n", g_settings.input.driver);
+      RARCH_ERR("Couldn't find any input driver named \"%s\"\n",
+            g_settings.input.driver);
       RARCH_LOG_OUTPUT("Available input drivers are:\n");
       for (d = 0; input_drivers[d]; d++)
          RARCH_LOG_OUTPUT("\t%s\n", input_drivers[d]->ident);
@@ -686,13 +702,15 @@ static void adjust_system_rates(void)
       return;
 
    float timing_skew = fabs(1.0f - info->fps / g_settings.video.refresh_rate);
-   if (timing_skew > 0.05f) // We don't want to adjust pitch too much. If we have extreme cases, just don't readjust at all.
+   if (timing_skew > 0.05f)
    {
+      /* We don't want to adjust pitch too much. If we have extreme cases,
+       * just don't readjust at all. */
       RARCH_LOG("Timings deviate too much. Will not adjust. (Display = %.2f Hz, Game = %.2f Hz)\n",
             g_settings.video.refresh_rate,
             (float)info->fps);
 
-      // We won't be able to do VSync reliably as game FPS > monitor FPS.
+      /* We won't be able to do VSync reliably as game FPS > monitor FPS. */
       if (info->fps > g_settings.video.refresh_rate)
       {
          g_extern.system.force_nonblock = true;
@@ -705,7 +723,8 @@ static void adjust_system_rates(void)
       g_extern.audio_data.in_rate = info->sample_rate *
          (g_settings.video.refresh_rate / info->fps);
 
-   RARCH_LOG("Set audio input rate to: %.2f Hz.\n", g_extern.audio_data.in_rate);
+   RARCH_LOG("Set audio input rate to: %.2f Hz.\n",
+         g_extern.audio_data.in_rate);
 
    if (driver.video_data)
    {
@@ -733,7 +752,7 @@ void driver_set_monitor_refresh_rate(float hz)
 
 void driver_set_nonblock_state(bool nonblock)
 {
-   // Only apply non-block-state for video if we're using vsync.
+   /* Only apply non-block-state for video if we're using vsync. */
    if (g_extern.video_active && driver.video_data)
    {
       bool video_nb = nonblock;
@@ -743,30 +762,38 @@ void driver_set_nonblock_state(bool nonblock)
    }
 
    if (g_extern.audio_active && driver.audio_data)
-      driver.audio->set_nonblock_state(driver.audio_data, g_settings.audio.sync ? nonblock : true);
+      driver.audio->set_nonblock_state(driver.audio_data,
+            g_settings.audio.sync ? nonblock : true);
 
    g_extern.audio_data.chunk_size = nonblock ?
       g_extern.audio_data.nonblock_chunk_size : g_extern.audio_data.block_chunk_size;
 }
 
-bool driver_set_rumble_state(unsigned port, enum retro_rumble_effect effect, uint16_t strength)
+bool driver_set_rumble_state(unsigned port,
+      enum retro_rumble_effect effect, uint16_t strength)
 {
    if (driver.input && driver.input_data && driver.input->set_rumble)
-      return driver.input->set_rumble(driver.input_data, port, effect, strength);
+      return driver.input->set_rumble(driver.input_data,
+            port, effect, strength);
    return false;
 }
 
-bool driver_set_sensor_state(unsigned port, enum retro_sensor_action action, unsigned rate)
+bool driver_set_sensor_state(unsigned port,
+      enum retro_sensor_action action, unsigned rate)
 {
-   if (driver.input && driver.input_data && driver.input->set_sensor_state)
-      return driver.input->set_sensor_state(driver.input_data, port, action, rate);
+   if (driver.input && driver.input_data &&
+         driver.input->set_sensor_state)
+      return driver.input->set_sensor_state(driver.input_data,
+            port, action, rate);
    return false;
 }
 
 float driver_sensor_get_input(unsigned port, unsigned id)
 {
-   if (driver.input && driver.input_data && driver.input->get_sensor_input)
-      return driver.input->get_sensor_input(driver.input_data, port, id);
+   if (driver.input && driver.input_data &&
+         driver.input->get_sensor_input)
+      return driver.input->get_sensor_input(driver.input_data,
+            port, id);
    return 0.0f;
 }
 
@@ -793,8 +820,8 @@ bool driver_update_system_av_info(const struct retro_system_av_info *info)
    g_extern.system.av_info = *info;
    rarch_main_command(RARCH_CMD_REINIT);
 
-   // Cannot continue recording with different parameters.
-   // Take the easiest route out and just restart the recording.
+   /* Cannot continue recording with different parameters.
+    * Take the easiest route out and just restart the recording. */
    if (g_extern.rec)
    {
       static const char *msg = "Restarting recording due to driver reinit.";
@@ -831,7 +858,7 @@ void init_drivers(void)
    driver.location_data_own = false;
    driver.osk_data_own = false;
 #ifdef HAVE_MENU
-   // By default, we want the menu to persist through driver reinits.
+   /* By default, we want the menu to persist through driver reinits. */
    driver.menu_data_own = true;
 #endif
 
@@ -847,11 +874,11 @@ void init_drivers(void)
 
    init_audio();
 
-   // Only initialize camera driver if we're ever going to use it.
+   /* Only initialize camera driver if we're ever going to use it. */
    if (g_extern.camera_active)
       init_camera();
 
-   // Only initialize location driver if we're ever going to use it.
+   /* Only initialize location driver if we're ever going to use it. */
    if (g_extern.location_active)
       init_location();
 
@@ -864,7 +891,7 @@ void init_drivers(void)
       driver.menu_ctx->context_reset(driver.menu);
 #endif
 
-   // Keep non-throttled state as good as possible.
+   /* Keep non-throttled state as good as possible. */
    if (driver.nonblock_state)
       driver_set_nonblock_state(driver.nonblock_state);
 
@@ -888,7 +915,6 @@ static void deinit_pixel_converter(void)
 
 static void deinit_shader_dir(void)
 {
-   // It handles NULL, no worries :D
    dir_list_free(g_extern.shader_dir.list);
    g_extern.shader_dir.list = NULL;
    g_extern.shader_dir.ptr  = 0;
@@ -906,9 +932,11 @@ static void compute_monitor_fps_statistics(void)
       return;
    }
 
-   if (g_extern.measure_data.frame_time_samples_count < 2 * MEASURE_FRAME_TIME_SAMPLES_COUNT)
+   if (g_extern.measure_data.frame_time_samples_count <
+         2 * MEASURE_FRAME_TIME_SAMPLES_COUNT)
    {
-      RARCH_LOG("Does not have enough samples for monitor refresh rate estimation. Requires to run for at least %u frames.\n",
+      RARCH_LOG(
+            "Does not have enough samples for monitor refresh rate estimation. Requires to run for at least %u frames.\n",
             2 * MEASURE_FRAME_TIME_SAMPLES_COUNT);
       return;
    }
@@ -924,7 +952,8 @@ void uninit_drivers(void)
 {
    uninit_audio();
 
-   if (g_extern.system.hw_render_callback.context_destroy && !driver.video_cache_context)
+   if (g_extern.system.hw_render_callback.context_destroy &&
+         !driver.video_cache_context)
       g_extern.system.hw_render_callback.context_destroy();
 
 #ifdef HAVE_MENU
@@ -972,23 +1001,28 @@ void init_audio(void)
 {
    audio_convert_init_simd();
 
-   // Resource leaks will follow if audio is initialized twice.
+   /* Resource leaks will follow if audio is initialized twice. */
    if (driver.audio_data)
       return;
 
-   // Accomodate rewind since at some point we might have two full buffers.
+   /* Accomodate rewind since at some point we might have two full buffers. */
    size_t max_bufsamples = AUDIO_CHUNK_SIZE_NONBLOCKING * 2;
-   size_t outsamples_max = max_bufsamples * AUDIO_MAX_RATIO * g_settings.slowmotion_ratio;
+   size_t outsamples_max = max_bufsamples *
+      AUDIO_MAX_RATIO * g_settings.slowmotion_ratio;
 
-   // Used for recording even if audio isn't enabled.
-   rarch_assert(g_extern.audio_data.conv_outsamples = (int16_t*)malloc(outsamples_max * sizeof(int16_t)));
+   /* Used for recording even if audio isn't enabled. */
+   rarch_assert(g_extern.audio_data.conv_outsamples =
+         (int16_t*)malloc(outsamples_max * sizeof(int16_t)));
 
    g_extern.audio_data.block_chunk_size    = AUDIO_CHUNK_SIZE_BLOCKING;
    g_extern.audio_data.nonblock_chunk_size = AUDIO_CHUNK_SIZE_NONBLOCKING;
-   g_extern.audio_data.chunk_size          = g_extern.audio_data.block_chunk_size;
+   g_extern.audio_data.chunk_size          = 
+      g_extern.audio_data.block_chunk_size;
 
-   // Needs to be able to hold full content of a full max_bufsamples in addition to its own.
-   rarch_assert(g_extern.audio_data.rewind_buf = (int16_t*)malloc(max_bufsamples * sizeof(int16_t)));
+   /* Needs to be able to hold full content of a full max_bufsamples
+    * in addition to its own. */
+   rarch_assert(g_extern.audio_data.rewind_buf = (int16_t*)
+         malloc(max_bufsamples * sizeof(int16_t)));
    g_extern.audio_data.rewind_size             = max_bufsamples;
 
    if (!g_settings.audio.enable)
@@ -1014,7 +1048,8 @@ void init_audio(void)
    else
 #endif
    {
-      driver.audio_data = driver.audio->init(*g_settings.audio.device ? g_settings.audio.device : NULL,
+      driver.audio_data = driver.audio->init(*g_settings.audio.device ?
+            g_settings.audio.device : NULL,
             g_settings.audio.out_rate, g_settings.audio.latency);
    }
 
@@ -1025,7 +1060,8 @@ void init_audio(void)
    }
 
    g_extern.audio_data.use_float = false;
-   if (g_extern.audio_active && driver.audio->use_float && driver.audio->use_float(driver.audio_data))
+   if (g_extern.audio_active && driver.audio->use_float &&
+         driver.audio->use_float(driver.audio_data))
       g_extern.audio_data.use_float = true;
 
    if (!g_settings.audio.sync && g_extern.audio_active)
@@ -1034,10 +1070,11 @@ void init_audio(void)
       g_extern.audio_data.chunk_size = g_extern.audio_data.nonblock_chunk_size;
    }
 
-   // Should never happen.
+   /* Should never happen. */
    if (g_extern.audio_data.in_rate <= 0.0f)
    {
-      RARCH_WARN("Input rate is invalid (%.3f Hz). Using output rate (%u Hz).\n", g_extern.audio_data.in_rate, g_settings.audio.out_rate);
+      RARCH_WARN("Input rate is invalid (%.3f Hz). Using output rate (%u Hz).\n",
+            g_extern.audio_data.in_rate, g_settings.audio.out_rate);
       g_extern.audio_data.in_rate = g_settings.audio.out_rate;
    }
 
@@ -1045,26 +1082,33 @@ void init_audio(void)
       g_extern.audio_data.src_ratio =
       (double)g_settings.audio.out_rate / g_extern.audio_data.in_rate;
 
-   if (!rarch_resampler_realloc(&g_extern.audio_data.resampler_data, &g_extern.audio_data.resampler,
+   if (!rarch_resampler_realloc(&g_extern.audio_data.resampler_data,
+            &g_extern.audio_data.resampler,
          g_settings.audio.resampler, g_extern.audio_data.orig_src_ratio))
    {
-      RARCH_ERR("Failed to initialize resampler \"%s\".\n", g_settings.audio.resampler);
+      RARCH_ERR("Failed to initialize resampler \"%s\".\n",
+            g_settings.audio.resampler);
       g_extern.audio_active = false;
    }
 
-   rarch_assert(g_extern.audio_data.data = (float*)malloc(max_bufsamples * sizeof(float)));
+   rarch_assert(g_extern.audio_data.data = (float*)
+         malloc(max_bufsamples * sizeof(float)));
 
    g_extern.audio_data.data_ptr = 0;
 
-   rarch_assert(g_settings.audio.out_rate < g_extern.audio_data.in_rate * AUDIO_MAX_RATIO);
-   rarch_assert(g_extern.audio_data.outsamples = (float*)malloc(outsamples_max * sizeof(float)));
+   rarch_assert(g_settings.audio.out_rate <
+         g_extern.audio_data.in_rate * AUDIO_MAX_RATIO);
+   rarch_assert(g_extern.audio_data.outsamples = (float*)
+         malloc(outsamples_max * sizeof(float)));
 
    g_extern.audio_data.rate_control = false;
-   if (!g_extern.system.audio_callback.callback && g_extern.audio_active && g_settings.audio.rate_control)
+   if (!g_extern.system.audio_callback.callback && g_extern.audio_active &&
+         g_settings.audio.rate_control)
    {
       if (driver.audio->buffer_size && driver.audio->write_avail)
       {
-         g_extern.audio_data.driver_buffer_size = driver.audio->buffer_size(driver.audio_data);
+         g_extern.audio_data.driver_buffer_size = 
+            driver.audio->buffer_size(driver.audio_data);
          g_extern.audio_data.rate_control = true;
       }
       else
@@ -1075,15 +1119,20 @@ void init_audio(void)
 
    g_extern.measure_data.buffer_free_samples_count = 0;
 
-   if (g_extern.audio_active && !g_extern.audio_data.mute && g_extern.system.audio_callback.callback) // Threaded driver is initially stopped.
+   if (g_extern.audio_active && !g_extern.audio_data.mute &&
+         g_extern.system.audio_callback.callback)
+   {
+      /* Threaded driver is initially stopped. */
       driver.audio->start(driver.audio_data);
+   }
 }
 
 
 static void compute_audio_buffer_statistics(void)
 {
    unsigned i, samples;
-   samples = min(g_extern.measure_data.buffer_free_samples_count, AUDIO_BUFFER_FREE_SAMPLES_COUNT);
+   samples = min(g_extern.measure_data.buffer_free_samples_count,
+         AUDIO_BUFFER_FREE_SAMPLES_COUNT);
    if (samples < 3)
       return;
 
@@ -1102,7 +1151,8 @@ static void compute_audio_buffer_statistics(void)
 
    unsigned stddev = (unsigned)sqrt((double)accum_var / (samples - 2));
 
-   float avg_filled = 1.0f - (float)avg / g_extern.audio_data.driver_buffer_size;
+   float avg_filled = 1.0f - (float)avg /
+      g_extern.audio_data.driver_buffer_size;
    float deviation = (float)stddev / g_extern.audio_data.driver_buffer_size;
 
    unsigned low_water_size = g_extern.audio_data.driver_buffer_size * 3 / 4;
@@ -1125,17 +1175,19 @@ static void compute_audio_buffer_statistics(void)
          (100.0 * high_water_count) / (samples - 1));
 }
 
-bool driver_monitor_fps_statistics(double *refresh_rate, double *deviation, unsigned *sample_points)
+bool driver_monitor_fps_statistics(double *refresh_rate,
+      double *deviation, unsigned *sample_points)
 {
    unsigned i, samples;
    if (g_settings.video.threaded)
       return false;
 
-   samples = min(MEASURE_FRAME_TIME_SAMPLES_COUNT, g_extern.measure_data.frame_time_samples_count);
+   samples = min(MEASURE_FRAME_TIME_SAMPLES_COUNT,
+         g_extern.measure_data.frame_time_samples_count);
    if (samples < 2)
       return false;
 
-   // Measure statistics on frame time (microsecs), *not* FPS.
+   /* Measure statistics on frame time (microsecs), *not* FPS. */
    retro_time_t accum = 0;
    for (i = 0; i < samples; i++)
       accum += g_extern.measure_data.frame_time_samples[i];
@@ -1149,7 +1201,7 @@ bool driver_monitor_fps_statistics(double *refresh_rate, double *deviation, unsi
    retro_time_t avg = accum / samples;
    retro_time_t accum_var = 0;
 
-   // Drop first measurement. It is likely to be bad.
+   /* Drop first measurement. It is likely to be bad. */
    for (i = 0; i < samples; i++)
    {
       retro_time_t diff = g_extern.measure_data.frame_time_samples[i] - avg;
@@ -1181,7 +1233,8 @@ void uninit_audio(void)
       return;
    }
 
-   rarch_resampler_freep(&g_extern.audio_data.resampler, &g_extern.audio_data.resampler_data);
+   rarch_resampler_freep(&g_extern.audio_data.resampler,
+         &g_extern.audio_data.resampler_data);
 
    free(g_extern.audio_data.data);
    g_extern.audio_data.data = NULL;
@@ -1203,7 +1256,7 @@ void rarch_init_filter(enum retro_pixel_format colfmt)
    if (!*g_settings.video.softfilter_plugin)
       return;
 
-   // Deprecated format. Gets pre-converted.
+   /* Deprecated format. Gets pre-converted. */
    if (colfmt == RETRO_PIXEL_FORMAT_0RGB1555)
       colfmt = RETRO_PIXEL_FORMAT_RGB565;
 
@@ -1220,7 +1273,8 @@ void rarch_init_filter(enum retro_pixel_format colfmt)
    pow2_y  = 0;
    maxsize = 0;
 
-   g_extern.filter.filter = rarch_softfilter_new(g_settings.video.softfilter_plugin,
+   g_extern.filter.filter = rarch_softfilter_new(
+         g_settings.video.softfilter_plugin,
          RARCH_SOFTFILTER_THREADS_AUTO, colfmt, width, height);
 
    if (!g_extern.filter.filter)
@@ -1229,16 +1283,19 @@ void rarch_init_filter(enum retro_pixel_format colfmt)
       return;
    }
 
-   rarch_softfilter_get_max_output_size(g_extern.filter.filter, &width, &height);
+   rarch_softfilter_get_max_output_size(g_extern.filter.filter,
+         &width, &height);
    pow2_x  = next_pow2(width);
    pow2_y  = next_pow2(height);
    maxsize = max(pow2_x, pow2_y); 
    g_extern.filter.scale = maxsize / RARCH_SCALE_BASE;
 
-   g_extern.filter.out_rgb32 = rarch_softfilter_get_output_format(g_extern.filter.filter) == RETRO_PIXEL_FORMAT_XRGB8888;
-   g_extern.filter.out_bpp = g_extern.filter.out_rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
+   g_extern.filter.out_rgb32 = rarch_softfilter_get_output_format(
+         g_extern.filter.filter) == RETRO_PIXEL_FORMAT_XRGB8888;
+   g_extern.filter.out_bpp = g_extern.filter.out_rgb32 ?
+      sizeof(uint32_t) : sizeof(uint16_t);
 
-   // TODO: Aligned output.
+   /* TODO: Aligned output. */
    g_extern.filter.buffer = malloc(width * height * g_extern.filter.out_bpp);
    if (!g_extern.filter.buffer)
       goto error;
@@ -1256,7 +1313,9 @@ static void init_shader_dir(void)
    if (!*g_settings.video.shader_dir)
       return;
 
-   g_extern.shader_dir.list = dir_list_new(g_settings.video.shader_dir, "cg|cgp|glsl|glslp", false);
+   g_extern.shader_dir.list = dir_list_new(g_settings.video.shader_dir,
+         "cg|cgp|glsl|glslp", false);
+
    if (!g_extern.shader_dir.list || g_extern.shader_dir.list->size == 0)
    {
       deinit_shader_dir();
@@ -1267,12 +1326,14 @@ static void init_shader_dir(void)
    dir_list_sort(g_extern.shader_dir.list, false);
 
    for (i = 0; i < g_extern.shader_dir.list->size; i++)
-      RARCH_LOG("Found shader \"%s\"\n", g_extern.shader_dir.list->elems[i].data);
+      RARCH_LOG("Found shader \"%s\"\n",
+            g_extern.shader_dir.list->elems[i].data);
 }
 
 static bool init_video_pixel_converter(unsigned size)
 {
-   // This function can be called multiple times without deiniting first on consoles.
+   /* This function can be called multiple times
+    * without deiniting first on consoles. */
    deinit_pixel_converter();
 
    if (g_extern.system.pix_fmt == RETRO_PIXEL_FORMAT_0RGB1555)
@@ -1282,7 +1343,7 @@ static bool init_video_pixel_converter(unsigned size)
       driver.scaler.scaler_type = SCALER_TYPE_POINT;
       driver.scaler.in_fmt      = SCALER_FMT_0RGB1555;
 
-      // TODO: Pick either ARGB8888 or RGB565 depending on driver ...
+      /* TODO: Pick either ARGB8888 or RGB565 depending on driver. */
       driver.scaler.out_fmt     = SCALER_FMT_RGB565;
 
       if (!scaler_ctx_gen_filter(&driver.scaler))
@@ -1313,12 +1374,12 @@ void init_video_input(void)
    if (g_extern.filter.filter)
       scale = g_extern.filter.scale;
 
-   // Update core-dependent aspect ratio values.
+   /* Update core-dependent aspect ratio values. */
    gfx_set_square_pixel_viewport(geom->base_width, geom->base_height);
    gfx_set_core_viewport();
    gfx_set_config_viewport();
 
-   // Update CUSTOM viewport.
+   /* Update CUSTOM viewport. */
    rarch_viewport_t *custom_vp = &g_extern.console.screen.viewports.custom_vp;
    if (g_settings.video.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
    {
@@ -1338,8 +1399,9 @@ void init_video_input(void)
    {
       if (g_settings.video.force_aspect)
       {
-         // Do rounding here to simplify integer scale correctness.
-         unsigned base_width = roundf(geom->base_height * g_extern.system.aspect_ratio);
+         /* Do rounding here to simplify integer scale correctness. */
+         unsigned base_width = roundf(geom->base_height *
+               g_extern.system.aspect_ratio);
          width = roundf(base_width * g_settings.video.scale);
          height = roundf(geom->base_height * g_settings.video.scale);
       }
@@ -1379,10 +1441,12 @@ void init_video_input(void)
    video.rgb32 = g_extern.filter.filter ? g_extern.filter.out_rgb32 : (g_extern.system.pix_fmt == RETRO_PIXEL_FORMAT_XRGB8888);
 
    tmp = (const input_driver_t*)driver.input;
-   find_video_driver(); // Need to grab the "real" video driver interface on a reinit.
+   /* Need to grab the "real" video driver interface on a reinit. */
+   find_video_driver();
 #ifdef HAVE_THREADS
-   if (g_settings.video.threaded && !g_extern.system.hw_render_callback.context_type) // Can't do hardware rendering with threaded driver currently.
+   if (g_settings.video.threaded && !g_extern.system.hw_render_callback.context_type)
    {
+      /* Can't do hardware rendering with threaded driver currently. */
       RARCH_LOG("Starting threaded video driver ...\n");
       if (!rarch_threaded_video_init(&driver.video, &driver.video_data,
                &driver.input, &driver.input_data,
@@ -1394,7 +1458,8 @@ void init_video_input(void)
    }
    else
 #endif
-      driver.video_data = driver.video->init(&video, &driver.input, &driver.input_data);
+      driver.video_data = driver.video->init(&video, &driver.input,
+            &driver.input_data);
 
    if (!driver.video_data)
    {
@@ -1406,16 +1471,18 @@ void init_video_input(void)
    if (driver.video->poke_interface)
       driver.video->poke_interface(driver.video_data, &driver.video_poke);
 
-   // Force custom viewport to have sane parameters.
-   if (driver.video->viewport_info && (!custom_vp->width || !custom_vp->height))
+   if (driver.video->viewport_info && (!custom_vp->width ||
+            !custom_vp->height))
    {
+      /* Force custom viewport to have sane parameters. */
       custom_vp->width = width;
       custom_vp->height = height;
       driver.video->viewport_info(driver.video_data, custom_vp);
    }
 
    if (driver.video->set_rotation)
-      driver.video->set_rotation(driver.video_data, (g_settings.video.rotation + g_extern.system.rotation) % 4);
+      driver.video->set_rotation(driver.video_data,
+            (g_settings.video.rotation + g_extern.system.rotation) % 4);
 
 #ifdef HAVE_X11
    if (driver.display_type == RARCH_DISPLAY_X11)
@@ -1425,10 +1492,9 @@ void init_video_input(void)
    }
 #endif
 
-   // Video driver didn't provide an input driver so we use configured one.
    if (!driver.input)
    {
-
+      /* Video driver didn't provide an input driver so we use configured one. */
       RARCH_LOG("Graphics driver did not initialize an input driver. Attempting to pick a suitable driver.\n");
 
       if (tmp)
@@ -1447,8 +1513,9 @@ void init_video_input(void)
       }
       else
       {
-         // This should never really happen as tmp (driver.input) is always found before this in find_driver_input(),
-         // or we have aborted in a similar fashion anyways.
+         /* This should never really happen as tmp (driver.input) is always 
+          * found before this in find_driver_input(), or we have aborted 
+          * in a similar fashion anyways. */
          rarch_fail(1, "init_video_input()");
       }
    }
@@ -1463,10 +1530,12 @@ void uninit_video_input(void)
 {
    rarch_main_command(RARCH_CMD_OVERLAY_DEINIT);
 
-   if (!driver.input_data_own && driver.input_data != driver.video_data && driver.input && driver.input->free)
+   if (!driver.input_data_own && driver.input_data != driver.video_data &&
+         driver.input && driver.input->free)
       driver.input->free(driver.input_data);
 
-   if (!driver.video_data_own && driver.video_data && driver.video && driver.video->free)
+   if (!driver.video_data_own && driver.video_data && driver.video
+         && driver.video->free)
       driver.video->free(driver.video_data);
 
    deinit_pixel_converter();
@@ -1476,6 +1545,3 @@ void uninit_video_input(void)
    deinit_shader_dir();
    compute_monitor_fps_statistics();
 }
-
-driver_t driver;
-

@@ -50,24 +50,32 @@ extern "C" {
 #endif
 
 #define AUDIO_CHUNK_SIZE_BLOCKING 512
-#define AUDIO_CHUNK_SIZE_NONBLOCKING 2048 // So we don't get complete line-noise when fast-forwarding audio.
+
+/* So we don't get complete line-noise when fast-forwarding audio. */
+#define AUDIO_CHUNK_SIZE_NONBLOCKING 2048
+
 #define AUDIO_MAX_RATIO 16
 
-// Specialized _POINTER that targets the full screen regardless of viewport.
-// Should not be used by a libretro implementation as coordinates returned make no sense.
-// It is only used internally for overlays.
+/* Specialized _POINTER that targets the full screen regardless of viewport.
+ * Should not be used by a libretro implementation as coordinates returned
+ * make no sense.
+ *
+ * It is only used internally for overlays. */
 #define RARCH_DEVICE_POINTER_SCREEN (RETRO_DEVICE_POINTER | 0x10000)
 
-// libretro has 16 buttons from 0-15 (libretro.h)
-// Analog binds use RETRO_DEVICE_ANALOG, but we follow the same scheme internally
-// in RetroArch for simplicity,
-// so they are mapped into [16, 23].
+/* libretro has 16 buttons from 0-15 (libretro.h)
+ * Analog binds use RETRO_DEVICE_ANALOG, but we follow the same scheme
+ * internally in RetroArch for simplicity, so they are mapped into [16, 23].
+ */
 #define RARCH_FIRST_CUSTOM_BIND 16
 #define RARCH_FIRST_META_KEY RARCH_CUSTOM_BIND_LIST_END
-enum // RetroArch specific bind IDs.
+
+/* RetroArch specific bind IDs. */
+enum
 {
-   // Custom binds that extend the scope of RETRO_DEVICE_JOYPAD for RetroArch specifically.
-   // Analogs (RETRO_DEVICE_ANALOG)
+   /* Custom binds that extend the scope of RETRO_DEVICE_JOYPAD for
+    * RetroArch specifically.
+    * Analogs (RETRO_DEVICE_ANALOG) */
    RARCH_ANALOG_LEFT_X_PLUS = RARCH_FIRST_CUSTOM_BIND,
    RARCH_ANALOG_LEFT_X_MINUS,
    RARCH_ANALOG_LEFT_Y_PLUS,
@@ -77,12 +85,13 @@ enum // RetroArch specific bind IDs.
    RARCH_ANALOG_RIGHT_Y_PLUS,
    RARCH_ANALOG_RIGHT_Y_MINUS,
 
-   // Turbo
+   /* Turbo */
    RARCH_TURBO_ENABLE,
 
    RARCH_CUSTOM_BIND_LIST_END,
 
-   // Command binds. Not related to game input, only usable for port 0.
+   /* Command binds. Not related to game input,
+    * only usable for port 0. */
    RARCH_FAST_FORWARD_KEY = RARCH_FIRST_META_KEY,
    RARCH_FAST_FORWARD_HOLD_KEY,
    RARCH_LOAD_STATE_KEY,
@@ -126,17 +135,19 @@ struct retro_keybind
    const char *desc;
    enum retro_key key;
 
-   // PC only uses lower 16-bits.
-   // Full 64-bit can be used for port-specific purposes, like simplifying multiple binds, etc.
+   /* PC only uses lower 16-bits.
+    * Full 64-bit can be used for port-specific purposes,
+    * like simplifying multiple binds, etc. */
    uint64_t joykey;
 
-   // Default key binding value - for resetting bind to default
+   /* Default key binding value - for resetting bind to default */
    uint64_t def_joykey;
 
    uint32_t joyaxis;
    uint32_t def_joyaxis;
 
-   uint32_t orig_joyaxis; // Used by input_{push,pop}_analog_dpad().
+   /* Used by input_{push,pop}_analog_dpad(). */
+   uint32_t orig_joyaxis;
 };
 
 struct platform_bind
@@ -154,8 +165,10 @@ typedef struct video_info
    bool force_aspect;
    unsigned viwidth;
    bool smooth;
-   unsigned input_scale; // Maximum input size: RARCH_SCALE_BASE * input_scale
-   bool rgb32; // Use 32-bit RGBA rather than native XBGR1555.
+   /* Maximum input size: RARCH_SCALE_BASE * input_scale */
+   unsigned input_scale;
+   /* Use 32bit RGBA rather than native XBGR1555. */
+   bool rgb32;
 } video_info_t;
 
 typedef struct audio_driver
@@ -164,13 +177,19 @@ typedef struct audio_driver
    ssize_t (*write)(void *data, const void *buf, size_t size);
    bool (*stop)(void *data);
    bool (*start)(void *data);
-   void (*set_nonblock_state)(void *data, bool toggle); // Should we care about blocking in audio thread? Fast forwarding.
+
+   /* Should we care about blocking in audio thread? Fast forwarding. */
+   void (*set_nonblock_state)(void *data, bool toggle);
    void (*free)(void *data);
-   bool (*use_float)(void *data); // Defines if driver will take standard floating point samples, or int16_t samples.
+
+   /* Defines if driver will take standard floating point samples,
+    * or int16_t samples. */
+   bool (*use_float)(void *data);
    const char *ident;
 
-   size_t (*write_avail)(void *data); // Optional
-   size_t (*buffer_size)(void *data); // Optional
+   /* Optional. */
+   size_t (*write_avail)(void *data);
+   size_t (*buffer_size)(void *data);
 } audio_driver_t;
 
 #define AXIS_NEG(x) (((uint32_t)(x) << 16) | UINT16_C(0xFFFF))
@@ -181,7 +200,7 @@ typedef struct audio_driver
 #define AXIS_NEG_GET(x) (((uint32_t)(x) >> 16) & UINT16_C(0xFFFF))
 #define AXIS_POS_GET(x) ((uint32_t)(x) & UINT16_C(0xFFFF))
 
-#define NO_BTN UINT16_C(0xFFFF) // I hope no joypad will ever have this many buttons ... ;)
+#define NO_BTN UINT16_C(0xFFFF)
 
 #define HAT_UP_SHIFT 15
 #define HAT_DOWN_SHIFT 14
@@ -242,17 +261,18 @@ typedef struct input_osk_driver
 
 typedef struct camera_driver
 {
-   // FIXME: params for initialization - queries for resolution, framerate, color format
-   // which might or might not be honored
+   /* FIXME: params for initialization - queries for resolution,
+    * framerate, color format which might or might not be honored. */
    void *(*init)(const char *device, uint64_t buffer_types, unsigned width, unsigned height);
+
    void (*free)(void *data);
 
    bool (*start)(void *data);
    void (*stop)(void *data);
 
-   // Polls the camera driver.
-   // Will call the appropriate callback if a new frame is ready.
-   // Returns true if a new frame was handled.
+   /* Polls the camera driver.
+    * Will call the appropriate callback if a new frame is ready.
+    * Returns true if a new frame was handled. */
    bool (*poll)(void *data,
          retro_camera_frame_raw_framebuffer_t frame_raw_cb,
          retro_camera_frame_opengl_texture_t frame_gl_cb);
@@ -292,9 +312,13 @@ struct font_params
    float x;
    float y;
    float scale;
-   float drop_mod; // Drop shadow color multiplier.
-   int drop_x, drop_y; // Drop shadow offset. If both are 0, no drop shadow will be rendered.
-   uint32_t color; // ABGR. Use the macros.
+   /* Drop shadow color multiplier. */
+   float drop_mod;
+   /* Drop shadow offset.
+    * If both are 0, no drop shadow will be rendered. */
+   int drop_x, drop_y;
+   /* ABGR. Use the macros. */
+   uint32_t color;
    bool full_screen;
 };
 #define FONT_COLOR_RGBA(r, g, b, a) (((r) << 0) | ((g) << 8) | ((b) << 16) | ((a) << 24))
@@ -303,7 +327,9 @@ struct font_params
 #define FONT_COLOR_GET_BLUE(col)  (((col) >> 16) & 0xff)
 #define FONT_COLOR_GET_ALPHA(col) (((col) >> 24) & 0xff)
 
-// Optionally implemented interface to poke more deeply into video driver.
+/* Optionally implemented interface to poke more
+ * deeply into video driver. */
+
 typedef struct video_poke_interface
 {
    void (*set_filtering)(void *data, unsigned index, bool smooth);
@@ -315,8 +341,12 @@ typedef struct video_poke_interface
    void (*apply_state_changes)(void *data);
 
 #ifdef HAVE_MENU
-   void (*set_texture_frame)(void *data, const void *frame, bool rgb32, unsigned width, unsigned height, float alpha); // Update texture.
-   void (*set_texture_enable)(void *data, bool enable, bool full_screen); // Enable/disable rendering.
+   /* Update texture. */
+   void (*set_texture_frame)(void *data, const void *frame, bool rgb32,
+         unsigned width, unsigned height, float alpha);
+
+   /* Enable or disable rendering. */
+   void (*set_texture_enable)(void *data, bool enable, bool full_screen);
 #endif
    void (*set_osd_msg)(void *data, const char *msg, const struct font_params *params);
 
@@ -328,22 +358,38 @@ typedef struct video_poke_interface
 
 typedef struct video_driver
 {
-   void *(*init)(const video_info_t *video, const input_driver_t **input, void **input_data); 
-   // Should the video driver act as an input driver as well? :)
-   // The video initialization might preinitialize an input driver to override the settings in case the video driver relies on input driver for event handling, e.g.
-   bool (*frame)(void *data, const void *frame, unsigned width, unsigned height, unsigned pitch, const char *msg); // msg is for showing a message on the screen along with the video frame.
-   void (*set_nonblock_state)(void *data, bool toggle); // Should we care about syncing to vblank? Fast forwarding.
-   // Is the window still active?
+   /* Should the video driver act as an input driver as well?
+    * The video initialization might preinitialize an input driver 
+    * to override the settings in case the video driver relies on 
+    * input driver for event handling. */
+   void *(*init)(const video_info_t *video, const input_driver_t **input,
+         void **input_data); 
+
+   /* msg is for showing a message on the screen along with the video frame. */
+   bool (*frame)(void *data, const void *frame, unsigned width,
+         unsigned height, unsigned pitch, const char *msg);
+
+   /* Should we care about syncing to vblank? Fast forwarding. */
+   void (*set_nonblock_state)(void *data, bool toggle);
+
+   /* Is the window still active? */
    bool (*alive)(void *data);
-   bool (*focus)(void *data); // Does the window have focus?
-   bool (*set_shader)(void *data, enum rarch_shader_type type, const char *path); // Sets shader. Might not be implemented. Will be moved to poke_interface later.
+
+   /* Does the window have focus? */
+   bool (*focus)(void *data);
+
+   /* Sets shader. Might not be implemented. Will be moved to
+    * poke_interface later. */
+   bool (*set_shader)(void *data, enum rarch_shader_type type,
+         const char *path);
+
    void (*free)(void *data);
    const char *ident;
 
    void (*set_rotation)(void *data, unsigned rotation);
    void (*viewport_info)(void *data, struct rarch_viewport *vp);
 
-   // Reads out in BGR byte order (24bpp).
+   /* Reads out in BGR byte order (24bpp). */
    bool (*read_viewport)(void *data, uint8_t *buffer);
 
 #ifdef HAVE_OVERLAY
@@ -354,10 +400,13 @@ typedef struct video_driver
 
 enum rarch_display_type
 {
-   RARCH_DISPLAY_NONE = 0, // Non-bindable types like consoles, KMS, VideoCore, etc.
-   RARCH_DISPLAY_X11, // video_display => Display*, video_window => Window
-   RARCH_DISPLAY_WIN32, // video_display => N/A, video_window => HWND
-   RARCH_DISPLAY_OSX // ?!
+   /* Non-bindable types like consoles, KMS, VideoCore, etc. */
+   RARCH_DISPLAY_NONE = 0,
+   /* video_display => Display*, video_window => Window */
+   RARCH_DISPLAY_X11,
+   /* video_display => N/A, video_window => HWND */
+   RARCH_DISPLAY_WIN32,
+   RARCH_DISPLAY_OSX
 };
 
 typedef struct driver
@@ -382,20 +431,24 @@ typedef struct driver
 
    bool threaded_video;
 
-   // If set during context deinit, the driver should keep
-   // graphics context alive to avoid having to reset all context state.
+   /* If set during context deinit, the driver should keep
+    * graphics context alive to avoid having to reset all 
+    * context state. */
    bool video_cache_context;
-   bool video_cache_context_ack; // Set to true by driver if context caching succeeded.
 
-   // Set this to true if the platform in question needs to 'own' the respective
-   // handle and therefore skip regular RetroArch driver teardown/reiniting procedure.
-   // If set to true, the 'free' function will get skipped. It is then up to the
-   // driver implementation to properly handle 'reiniting' inside the 'init' function
-   // and make sure it returns the existing handle instead of allocating and returning
-   // a pointer to a new handle.
-   //
-   // Typically, if a driver intends to make use of this, it should set this to true
-   // at the end of its 'init' function.
+   /* Set to true by driver if context caching succeeded. */
+   bool video_cache_context_ack;
+
+   /* Set this to true if the platform in question needs to 'own' the respective
+    * handle and therefore skip regular RetroArch driver teardown/reiniting procedure.
+    *
+    * If set to true, the 'free' function will get skipped. It is then up to the
+    * driver implementation to properly handle 'reiniting' inside the 'init' function
+    * and make sure it returns the existing handle instead of allocating and returning
+    * a pointer to a new handle.
+    *
+    * Typically, if a driver intends to make use of this, it should set this to true
+    * at the end of its 'init' function. */
    bool video_data_own;
    bool audio_data_own;
    bool input_data_own;
@@ -415,22 +468,25 @@ typedef struct driver
    bool block_libretro_input;
    bool nonblock_state;
 
-   // Opaque handles to currently running window.
-   // Used by e.g. input drivers which bind to a window.
-   // Drivers are responsible for setting these if an input driver
-   // could potentially make use of this.
+   /* Opaque handles to currently running window.
+    * Used by e.g. input drivers which bind to a window.
+    * Drivers are responsible for setting these if an input driver
+    * could potentially make use of this. */
    uintptr_t video_display;
    uintptr_t video_window;
    enum rarch_display_type display_type;
 
-   // Used for 15-bit -> 16-bit conversions that take place before being passed to video driver.
+   /* Used for 15-bit -> 16-bit conversions that take place before
+    * being passed to video driver. */
    struct scaler_ctx scaler;
    void *scaler_out;
 
-   // Graphics driver requires RGBA byte order data (ABGR on little-endian) for 32-bit.
-   // This takes effect for overlay and shader cores that wants to load data into graphics driver.
-   // Kinda hackish to place it here, it is only used for GLES.
-   // TODO: Refactor this better.
+   /* Graphics driver requires RGBA byte order data (ABGR on little-endian)
+    * for 32-bit.
+    * This takes effect for overlay and shader cores that wants to load
+    * data into graphics driver. Kinda hackish to place it here, it is only
+    * used for GLES.
+    * TODO: Refactor this better. */
    bool gfx_use_rgba;
 
 #ifdef HAVE_OVERLAY
@@ -438,10 +494,10 @@ typedef struct driver
    input_overlay_state_t overlay_state;
 #endif
 
-   // Interface for "poking".
+   /* Interface for "poking". */
    const video_poke_interface_t *video_poke;
 
-   // last message given to the video driver
+   /* Last message given to the video driver */
    const char *current_msg;
 } driver_t;
 
@@ -467,17 +523,23 @@ void init_location(void);
 void uninit_location(void);
 
 void driver_set_monitor_refresh_rate(float hz);
-bool driver_monitor_fps_statistics(double *refresh_rate, double *deviation, unsigned *sample_points);
+bool driver_monitor_fps_statistics(double *refresh_rate,
+      double *deviation, unsigned *sample_points);
 void driver_set_nonblock_state(bool nonblock);
 
-// Used by RETRO_ENVIRONMENT_SET_HW_RENDER.
+/* Used by RETRO_ENVIRONMENT_SET_HW_RENDER. */
 uintptr_t driver_get_current_framebuffer(void);
+
 retro_proc_address_t driver_get_proc_address(const char *sym);
 
-// Used by RETRO_ENVIRONMENT_GET_RUMBLE_INTERFACE
-bool driver_set_rumble_state(unsigned port, enum retro_rumble_effect effect, uint16_t strength);
-// Used by RETRO_ENVIRONMENT_GET_SENSOR_INTERFACE
-bool driver_set_sensor_state(unsigned port, enum retro_sensor_action action, unsigned rate);
+/* Used by RETRO_ENVIRONMENT_GET_RUMBLE_INTERFACE */
+bool driver_set_rumble_state(unsigned port,
+      enum retro_rumble_effect effect, uint16_t strength);
+
+/* Used by RETRO_ENVIRONMENT_GET_SENSOR_INTERFACE */
+bool driver_set_sensor_state(unsigned port,
+      enum retro_sensor_action action, unsigned rate);
+
 float driver_sensor_get_input(unsigned port, unsigned action);
 
 #ifdef HAVE_DYLIB
@@ -499,8 +561,10 @@ void driver_camera_poll(void);
 // Used by RETRO_ENVIRONMENT_GET_LOCATION_INTERFACE
 bool driver_location_start(void);
 void driver_location_stop(void);
-bool driver_location_get_position(double *lat, double *lon, double *horiz_accuracy, double *vert_accuracy);
-void driver_location_set_interval(unsigned interval_msecs, unsigned interval_distance);
+bool driver_location_get_position(double *lat, double *lon,
+      double *horiz_accuracy, double *vert_accuracy);
+void driver_location_set_interval(unsigned interval_msecs,
+      unsigned interval_distance);
 
 #ifdef HAVE_MENU
 void find_menu_driver(void);
@@ -509,9 +573,10 @@ void find_menu_driver(void);
 // Used by RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO
 bool driver_update_system_av_info(const struct retro_system_av_info *info);
 
+
 extern driver_t driver;
 
-//////////////////////////////////////////////// Backends
+/* Backends */
 extern const audio_driver_t audio_rsound;
 extern const audio_driver_t audio_oss;
 extern const audio_driver_t audio_alsa;
@@ -599,6 +664,7 @@ static inline bool input_key_pressed_func(int key)
 
    return ret;
 }
+
 
 #ifdef __cplusplus
 }
