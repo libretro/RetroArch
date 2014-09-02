@@ -17,18 +17,21 @@
 #ifndef MENU_ENTRIES_H__
 #define MENU_ENTRIES_H__
 
+#include <stdlib.h>
 #include "menu_common.h"
+#include "../../file_list.h"
 
 void menu_entries_push(file_list_t *list,
       const char *path, const char *label, unsigned type,
       size_t directory_ptr);
 
-int menu_entries_push_list(menu_handle_t *menu, const char *path,
+int menu_entries_push_list(menu_handle_t *menu,
+      file_list_t *list, const char *path,
       const char *label, unsigned menu_type);
 
 int menu_parse_check(const char *label, unsigned menu_type);
 
-int menu_parse_and_resolve(void);
+int menu_parse_and_resolve(file_list_t *list);
 
 void menu_entries_pop(void);
 

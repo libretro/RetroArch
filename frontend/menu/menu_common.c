@@ -274,7 +274,8 @@ void *menu_init(const void *data)
    menu->push_start_screen = g_settings.menu_show_start_screen;
    g_settings.menu_show_start_screen = false;
 
-   menu_entries_push_list(menu, "", "mainmenu", 0);
+   menu_entries_push_list(menu, menu->selection_buf,
+         "", "mainmenu", 0);
 
    menu->trigger_state = 0;
    menu->old_input_state = 0;

@@ -1480,7 +1480,8 @@ static int menu_settings_iterate(unsigned action)
    if (driver.menu->need_refresh && (menu_parse_check(label, menu_type) == -1))
    {
       driver.menu->need_refresh = false;
-      menu_entries_push_list(driver.menu, path, label, menu_type);
+      menu_entries_push_list(driver.menu,
+            driver.menu->selection_buf, path, label, menu_type);
    }
 
    if (driver.menu_ctx && driver.menu_ctx->render)
@@ -2179,7 +2180,7 @@ static int menu_common_iterate(unsigned action)
 
    if (driver.menu->need_refresh)
    {
-      if (menu_parse_and_resolve() == 0)
+      if (menu_parse_and_resolve(driver.menu->selection_buf) == 0)
          driver.menu->need_refresh = false;
    }
 
