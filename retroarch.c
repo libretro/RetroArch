@@ -612,7 +612,7 @@ static bool audio_flush(const int16_t *data, size_t samples)
    if (driver.audio->write(driver.audio_data, output_data,
             output_frames * output_size * 2) < 0)
    {
-      RARCH_ERR("Audio backend failed to write. Will continue without sound.\n");
+      RARCH_ERR(RETRO_LOG_AUDIO_WRITE_FAILED);
       return false;
    }
 
@@ -1501,7 +1501,8 @@ static void init_controllers(void)
       const char *ident = NULL;
 
       if (i < g_extern.system.num_ports)
-         desc = libretro_find_controller_description(&g_extern.system.ports[i], device);
+         desc = libretro_find_controller_description(
+               &g_extern.system.ports[i], device);
 
       if (desc)
          ident = desc->desc;
@@ -1716,7 +1717,7 @@ static void init_netplay(void)
 
    if (g_extern.bsv.movie_start_playback)
    {
-      RARCH_WARN("Movie playback has started. Cannot start netplay.\n");
+      RARCH_WARN(RETRO_LOG_MOVIE_STARTED_INIT_NETPLAY_FAILED);
       return;
    }
 
@@ -1742,11 +1743,11 @@ static void init_netplay(void)
    if (!g_extern.netplay)
    {
       g_extern.netplay_is_client = false;
-      RARCH_WARN("Failed to initialize netplay ...\n");
+      RARCH_WARN(RETRO_LOG_INIT_NETPLAY_FAILED);
 
       if (g_extern.msg_queue)
          msg_queue_push(g_extern.msg_queue,
-               "Failed to initialize netplay ...",
+               RETRO_MSG_INIT_NETPLAY_FAILED,
                0, 180);
    }
 }
@@ -1846,7 +1847,7 @@ static void init_autosave(void)
                pretro_get_memory_size(type),
                g_settings.autosave_interval);
          if (!g_extern.autosave[i])
-            RARCH_WARN("Could not initialize autosave.\n");
+            RARCH_WARN(RETRO_LOG_INIT_AUTOSAVE_FAILED);
       }
    }
 }
@@ -2188,7 +2189,8 @@ static void set_fullscreen(bool fullscreen)
 
 bool rarch_check_fullscreen(void)
 {
-   /* If we go fullscreen we drop all drivers and reinitialize to be safe. */
+   /* If we go fullscreen we drop all drivers and 
+    * reinitialize to be safe. */
    static bool was_pressed = false;
    bool pressed = input_key_pressed_func(RARCH_FULLSCREEN_TOGGLE_KEY);
    bool toggle = pressed && !was_pressed;
@@ -2241,7 +2243,7 @@ static void rarch_state_slot_decrease(void)
 
 static void check_stateslots(void)
 {
-   // Save state slots
+   /* Save state slots */
    static bool old_should_slot_increase = false;
    static bool old_should_slot_decrease = false;
    bool should_slot_increase = input_key_pressed_func(RARCH_STATE_SLOT_PLUS);
@@ -2314,7 +2316,7 @@ static void check_rewind(void)
          g_extern.frame_is_reverse = true;
          setup_rewind_audio();
 
-         msg_queue_push(g_extern.msg_queue, "Rewinding.", 0,
+         msg_queue_push(g_extern.msg_queue, RETRO_MSG_REWINDING, 0,
                g_extern.is_paused ? 1 : 30);
          pretro_unserialize(buf, g_extern.state_size);
 
@@ -2323,7 +2325,7 @@ static void check_rewind(void)
       }
       else
          msg_queue_push(g_extern.msg_queue,
-               "Reached end of rewind buffer.", 0, 30);
+               RETRO_MSG_REWIND_REACHED_END, 0, 30);
    }
    else
    {
@@ -2375,8 +2377,9 @@ static void check_movie_record(bool pressed)
    if (g_extern.bsv.movie)
    {
       msg_queue_clear(g_extern.msg_queue);
-      msg_queue_push(g_extern.msg_queue, "Stopping movie record.", 2, 180);
-      RARCH_LOG("Stopping movie record.\n");
+      msg_queue_push(g_extern.msg_queue,
+            RETRO_MSG_MOVIE_RECORD_STOPPING, 2, 180);
+      RARCH_LOG(RETRO_LOG_MOVIE_RECORD_STOPPING);
       deinit_movie();
    }
    else
@@ -2414,8 +2417,9 @@ static void check_movie_playback(bool pressed)
 {
    if (g_extern.bsv.movie_end || pressed)
    {
-      msg_queue_push(g_extern.msg_queue, "Movie playback ended.", 1, 180);
-      RARCH_LOG("Movie playback ended.\n");
+      msg_queue_push(g_extern.msg_queue,
+            RETRO_MSG_MOVIE_PLAYBACK_ENDED, 1, 180);
+      RARCH_LOG(RETRO_LOG_MOVIE_PLAYBACK_ENDED);
 
       deinit_movie();
       g_extern.bsv.movie_end = false;
@@ -2670,10 +2674,9 @@ void rarch_disk_control_append_image(const char *path)
    if (!*g_extern.subsystem)
    {
       /* Update paths for our new image.
-       * If we actually use append_image,
-       * we assume that we started out in a single disk case,
-       * and that this way of doing it makes the most sense.
-       */
+       * If we actually use append_image, we assume that we
+       * started out in a single disk case, and that this way
+       * of doing it makes the most sense. */
       set_paths(path);
       fill_pathnames();
    }
@@ -3080,7 +3083,7 @@ static void verify_api_version(void)
    RARCH_LOG("Version of libretro API: %u\n", pretro_api_version());
    RARCH_LOG("Compiled against API: %u\n", RETRO_API_VERSION);
    if (pretro_api_version() != RETRO_API_VERSION)
-      RARCH_WARN("RetroArch is compiled against a different version of libretro than this libretro implementation.\n");
+      RARCH_WARN(RETRO_LOG_LIBRETRO_ABI_BREAK);
 }
 
 /* Make sure we haven't compiled for something we cannot run.
@@ -3329,7 +3332,7 @@ void rarch_main_command(unsigned action)
          g_extern.lifecycle_state |= (1ULL << MODE_GAME);
          break;
       case RARCH_CMD_RESET:
-         RARCH_LOG("Resetting content.\n");
+         RARCH_LOG(RETRO_LOG_RESETTING_CONTENT);
          msg_queue_clear(g_extern.msg_queue);
          msg_queue_push(g_extern.msg_queue, "Reset.", 1, 120);
          pretro_reset();
