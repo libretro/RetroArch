@@ -467,23 +467,23 @@ ifeq ($(HAVE_7ZIP),1)
    DEFINES += -D_7ZIP_ST
    DEFINES += -DHAVE_7ZIP
    DEFINES += -DHAVE_COMPRESSION
-   7ZOBJ = 	decompress/7zip/7zIn.o \
-		decompress/7zip/7zAlloc.o \
-		decompress/7zip/Bra86.o \
-		decompress/7zip/CpuArch.o \
-		decompress/7zip/7zFile.o \
-		decompress/7zip/7zStream.o \
-		decompress/7zip/7zBuf2.o \
-		decompress/7zip/Ppmd7.o \
-		decompress/7zip/LzmaDec.o \
-		decompress/7zip/7zCrcOpt.o \
-		decompress/7zip/Bra.o \
-		decompress/7zip/7zDec.o \
-		decompress/7zip/Bcj2.o \
-		decompress/7zip/7zCrc.o \
-		decompress/7zip/Lzma2Dec.o \
-		decompress/7zip/7zBuf.o \
-		decompress/7zip/Ppmd7Dec.o \
+   7ZOBJ = 	deps/7zip/7zIn.o \
+		deps/7zip/7zAlloc.o \
+		deps/7zip/Bra86.o \
+		deps/7zip/CpuArch.o \
+		deps/7zip/7zFile.o \
+		deps/7zip/7zStream.o \
+		deps/7zip/7zBuf2.o \
+		deps/7zip/Ppmd7.o \
+		deps/7zip/LzmaDec.o \
+		deps/7zip/7zCrcOpt.o \
+		deps/7zip/Bra.o \
+		deps/7zip/7zDec.o \
+		deps/7zip/Bcj2.o \
+		deps/7zip/7zCrc.o \
+		deps/7zip/Lzma2Dec.o \
+		deps/7zip/7zBuf.o \
+		deps/7zip/Ppmd7Dec.o \
 		decompress/7zip_support.o 
    OBJ += $(7ZOBJ)
    RETROLAUNCH_OBJ += $(7ZOBJ)

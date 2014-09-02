@@ -22,11 +22,11 @@
 #include <string.h>
 #include "../miscellaneous.h"
 
-#include "7zip/7z.h"
-#include "7zip/7zAlloc.h"
-#include "7zip/7zCrc.h"
-#include "7zip/7zFile.h"
-#include "7zip/7zVersion.h"
+#include "../deps/7zip/7z.h"
+#include "../deps/7zip/7zAlloc.h"
+#include "../deps/7zip/7zCrc.h"
+#include "../deps/7zip/7zFile.h"
+#include "../deps/7zip/7zVersion.h"
 
 static ISzAlloc g_Alloc = { SzAlloc, SzFree };
 
