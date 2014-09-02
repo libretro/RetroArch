@@ -165,23 +165,22 @@ static int main_entry_iterate_menu(args_type() args)
    {
       if (driver.frontend_ctx && driver.frontend_ctx->process_events)
          driver.frontend_ctx->process_events(args);
+      return 0;
    }
-   else
-   {
-      g_extern.lifecycle_state &= ~(1ULL << MODE_MENU);
-      driver_set_nonblock_state(driver.nonblock_state);
 
-      rarch_main_command(RARCH_CMD_AUDIO_START);
+   g_extern.lifecycle_state &= ~(1ULL << MODE_MENU);
+   driver_set_nonblock_state(driver.nonblock_state);
 
-      g_extern.lifecycle_state |= (1ULL << MODE_CLEAR_INPUT);
+   rarch_main_command(RARCH_CMD_AUDIO_START);
 
-      /* If QUIT state came from command interface, we'll only see it
-       * once due to MODE_CLEAR_INPUT.
-       */
-      if (input_key_pressed_func(RARCH_QUIT_KEY) ||
-            !driver.video->alive(driver.video_data))
-         return 1;
-   }
+   g_extern.lifecycle_state |= (1ULL << MODE_CLEAR_INPUT);
+
+   /* If QUIT state came from command interface, we'll only see it
+    * once due to MODE_CLEAR_INPUT.
+    */
+   if (input_key_pressed_func(RARCH_QUIT_KEY) ||
+         !driver.video->alive(driver.video_data))
+      return 1;
 
    return 0;
 }
@@ -190,22 +189,19 @@ int main_entry_iterate(signature(), args_type() args)
 {
    if (g_extern.system.shutdown)
       return main_entry_iterate_shutdown(args);
-   else if (g_extern.lifecycle_state & (1ULL << MODE_CLEAR_INPUT))
+   if (g_extern.lifecycle_state & (1ULL << MODE_CLEAR_INPUT))
       return main_entry_iterate_clear_input(args);
-   else if (g_extern.lifecycle_state & (1ULL << MODE_LOAD_GAME))
+   if (g_extern.lifecycle_state & (1ULL << MODE_LOAD_GAME))
       return main_entry_iterate_load_content(args);
-   else if (g_extern.lifecycle_state & (1ULL << MODE_GAME))
+   if (g_extern.lifecycle_state & (1ULL << MODE_GAME))
       return main_entry_iterate_content(args);
 #ifdef HAVE_MENU
-   else if (g_extern.lifecycle_state & (1ULL << MODE_MENU_PREINIT))
+   if (g_extern.lifecycle_state & (1ULL << MODE_MENU_PREINIT))
       main_entry_iterate_menu_preinit(args);
-   else if (g_extern.lifecycle_state & (1ULL << MODE_MENU))
+   if (g_extern.lifecycle_state & (1ULL << MODE_MENU))
       return main_entry_iterate_menu(args);
 #endif
-   else
-      return 1;
-
-   return 0;
+   return 1;
 }
 #endif
 
