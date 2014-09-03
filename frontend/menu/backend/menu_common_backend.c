@@ -114,6 +114,7 @@ static int menu_info_screen_iterate(unsigned action)
                      "in the menu might not be correct."
                      );
                break;
+#if 0
             case MENU_SETTINGS_SHADER_APPLY:
                snprintf(msg, sizeof(msg),
                      " -- Apply Shader Changes. \n"
@@ -132,6 +133,7 @@ static int menu_info_screen_iterate(unsigned action)
                      "saved to Shader Directory."
                      );
                break;
+#endif
             case MENU_SETTINGS_SHADER_PASSES:
                snprintf(msg, sizeof(msg),
                      " -- Shader Passes. \n"
@@ -1188,9 +1190,8 @@ static int menu_setting_ok_toggle(unsigned type,
             "shader_preset_save", preset_filename_callback);
       return 0;
    }
-   else if (type == MENU_SETTINGS_SHADER_APPLY)
+   else if (!strcmp(label, "shader_apply_changes"))
    {
-      struct gfx_shader *shader = (struct gfx_shader*)driver.menu->shader;
       unsigned shader_type = RARCH_SHADER_NONE;
 
       if (driver.menu_ctx && driver.menu_ctx->backend &&
@@ -1198,7 +1199,7 @@ static int menu_setting_ok_toggle(unsigned type,
          shader_type = driver.menu_ctx->backend->shader_manager_get_type(
                driver.menu->shader);
 
-      if (shader->passes && shader_type != RARCH_SHADER_NONE
+      if (driver.menu->shader->passes && shader_type != RARCH_SHADER_NONE
             && driver.menu_ctx && driver.menu_ctx->backend &&
             driver.menu_ctx->backend->shader_manager_save_preset)
          driver.menu_ctx->backend->shader_manager_save_preset(NULL, true);
@@ -1375,7 +1376,7 @@ static int menu_setting_toggle(unsigned type,
       if (driver.menu_ctx && driver.menu_ctx->backend
             && driver.menu_ctx->backend->shader_manager_setting_toggle)
          return driver.menu_ctx->backend->shader_manager_setting_toggle(
-               type, action);
+               type, label, action);
    }
    else if ((type >= MENU_SETTINGS_CORE_OPTION_START))
       return menu_common_core_setting_toggle(type, action);

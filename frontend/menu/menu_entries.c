@@ -221,8 +221,8 @@ int menu_entries_push_list(menu_handle_t *menu,
                   return -1;
 
                file_list_clear(list);
-               file_list_push(list, "Apply Shader Changes", "",
-                     MENU_SETTINGS_SHADER_APPLY, 0);
+               file_list_push(list, "Apply Shader Changes", "shader_apply_changes",
+                     MENU_FILE_SWITCH, 0);
                file_list_push(list, "Default Filter", "",
                      MENU_SETTINGS_SHADER_FILTER, 0);
                file_list_push(list, "Load Shader Preset", "",

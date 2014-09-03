@@ -61,6 +61,7 @@ typedef enum
    MENU_FILE_DEVICE,
    MENU_FILE_PLAYLIST_ENTRY,
    MENU_FILE_USE_DIRECTORY,
+   MENU_FILE_SWITCH,
    MENU_SETTINGS,
 } menu_file_type_t;
 
@@ -92,7 +93,6 @@ typedef enum
    MENU_SETTINGS_SHADER_OPTIONS,
    MENU_SETTINGS_SHADER_FILTER,
    MENU_SETTINGS_SHADER_PRESET,
-   MENU_SETTINGS_SHADER_APPLY,
    MENU_SETTINGS_SHADER_PARAMETERS, // Modifies current shader directly. Will not get saved to CGP.
    MENU_SETTINGS_SHADER_PRESET_PARAMETERS, // Modifies shader preset currently in menu.
    MENU_SETTINGS_SHADER_PASSES,

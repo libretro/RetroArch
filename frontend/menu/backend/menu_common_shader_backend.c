@@ -309,7 +309,7 @@ static unsigned menu_common_shader_manager_get_type(
 }
 
 static int menu_common_shader_manager_setting_toggle(
-      unsigned id, unsigned action)
+      unsigned id, const char *label, unsigned action)
 {
    if (!driver.menu)
    {
@@ -367,7 +367,7 @@ static int menu_common_shader_manager_setting_toggle(
 
       param->current = min(max(param->minimum, param->current), param->maximum);
    }
-   else if ((id == MENU_SETTINGS_SHADER_APPLY ||
+   else if ((!strcmp(label, "shader_apply_changes") ||
             id == MENU_SETTINGS_SHADER_PASSES))
       menu_setting_set(id, action);
    else if (((dist_shader % 3) == 0 || id == MENU_SETTINGS_SHADER_PRESET))
