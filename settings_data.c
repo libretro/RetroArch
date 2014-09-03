@@ -1147,7 +1147,7 @@ static void general_read_handler(const void *data)
     if (!setting)
        return;
     
-    else if (!strcmp(setting->name, "audio_rate_control_delta"))
+    if (!strcmp(setting->name, "audio_rate_control_delta"))
     {
        *setting->value.fraction = g_settings.audio.rate_control_delta;
         if (*setting->value.fraction < 0.0005)
@@ -1161,22 +1161,6 @@ static void general_read_handler(const void *data)
             g_settings.audio.rate_control_delta = *setting->value.fraction;
         }
     }
-    else if (!strcmp(setting->name, "video_gpu_screenshot"))
-        *setting->value.boolean = g_settings.video.gpu_screenshot;
-#ifdef HAVE_NETPLAY
-    else if (!strcmp(setting->name, "netplay_client_swap_input"))
-        *setting->value.boolean = g_settings.input.netplay_client_swap_input;
-    else if (!strcmp(setting->name, "netplay_tcp_udp_port"))
-        *setting->value.unsigned_integer = g_extern.netplay_port;
-#endif
-    else if (!strcmp(setting->name, "video_allow_rotate"))
-        g_settings.video.allow_rotate = *setting->value.boolean;
-    else if (!strcmp(setting->name, "video_windowed_fullscreen"))
-        *setting->value.boolean = g_settings.video.windowed_fullscreen;
-    else if (!strcmp(setting->name, "video_fullscreen_x"))
-        *setting->value.unsigned_integer = g_settings.video.fullscreen_x;
-    else if (!strcmp(setting->name, "video_fullscreen_y"))
-        *setting->value.unsigned_integer = g_settings.video.fullscreen_y;
     else if (!strcmp(setting->name, "video_refresh_rate_auto"))
        *setting->value.fraction = g_settings.video.refresh_rate;
     else if (!strcmp(setting->name, "input_player1_joypad_index"))
@@ -1189,30 +1173,6 @@ static void general_read_handler(const void *data)
         *setting->value.integer = g_settings.input.joypad_map[3];
     else if (!strcmp(setting->name, "input_player5_joypad_index"))
         *setting->value.integer = g_settings.input.joypad_map[4];
-    else if (!strcmp(setting->name, "rgui_show_start_screen"))
-        *setting->value.boolean = g_settings.menu_show_start_screen;
-    else if (!strcmp(setting->name,  "game_history_size"))
-        *setting->value.unsigned_integer = g_settings.content_history_size;
-    else if (!strcmp(setting->name, "audio_filter_dir"))
-        strlcpy(setting->value.string, g_settings.audio.filter_dir, setting->size);
-    else if (!strcmp(setting->name, "video_shader_dir"))
-        strlcpy(setting->value.string, g_settings.video.shader_dir, setting->size);
-    else if (!strcmp(setting->name, "video_filter"))
-        strlcpy(setting->value.string, g_settings.video.softfilter_plugin, setting->size);
-#ifdef HAVE_NETPLAY
-    else if (!strcmp(setting->name, "netplay_enable"))
-       *setting->value.boolean = g_extern.netplay_enable;
-    else if (!strcmp(setting->name, "netplay_mode"))
-       *setting->value.boolean = g_extern.netplay_is_client;
-    else if (!strcmp(setting->name, "netplay_spectator_mode_enable"))
-       *setting->value.boolean = g_extern.netplay_is_spectate;
-    else if (!strcmp(setting->name, "netplay_delay_frames"))
-       *setting->value.unsigned_integer = g_extern.netplay_sync_frames;
-    else if (!strcmp(setting->name, "netplay_tcp_udp_port"))
-       *setting->value.unsigned_integer = g_extern.netplay_port;
-    else if (!strcmp(setting->name, "netplay_ip_address"))
-       strlcpy(setting->value.string, g_extern.netplay_server, setting->size);
-#endif
     else if (!strcmp(setting->name, "log_verbosity"))
         *setting->value.boolean = g_extern.verbosity;
 }
@@ -1314,7 +1274,9 @@ static void general_write_handler(const void *data)
    else if (!strcmp(setting->name, "video_rotation"))
    {
       if (driver.video && driver.video->set_rotation)
-         driver.video->set_rotation(driver.video_data, (*setting->value.unsigned_integer + g_extern.system.rotation) % 4);
+         driver.video->set_rotation(driver.video_data,
+               (*setting->value.unsigned_integer +
+                g_extern.system.rotation) % 4);
    }
    else if (!strcmp(setting->name, "video_gamma"))
       rarch_cmd = RARCH_CMD_VIDEO_APPLY_STATE_CHANGES;
@@ -1378,26 +1340,12 @@ static void general_write_handler(const void *data)
    }
    else if (!strcmp(setting->name, "autosave_interval"))
       rarch_cmd = RARCH_CMD_AUTOSAVE;
-   else if (!strcmp(setting->name, "video_gpu_screenshot"))
-      g_settings.video.gpu_screenshot = *setting->value.boolean;
-#ifdef HAVE_NETPLAY
-   else if (!strcmp(setting->name, "netplay_client_swap_input"))
-      g_settings.input.netplay_client_swap_input = *setting->value.boolean;
-#endif
 #ifdef HAVE_OVERLAY
    else if (!strcmp(setting->name, "input_overlay"))
       rarch_cmd = RARCH_CMD_OVERLAY_REINIT;
    else if (!strcmp(setting->name, "input_overlay_scale"))
       rarch_cmd = RARCH_CMD_OVERLAY_SET_SCALE_FACTOR;
 #endif
-   else if (!strcmp(setting->name, "video_allow_rotate"))
-      g_settings.video.allow_rotate = *setting->value.boolean;
-   else if (!strcmp(setting->name, "video_windowed_fullscreen"))
-      g_settings.video.windowed_fullscreen = *setting->value.boolean;
-   else if (!strcmp(setting->name, "video_fullscreen_x"))
-      g_settings.video.fullscreen_x = *setting->value.unsigned_integer;
-   else if (!strcmp(setting->name, "video_fullscreen_y"))
-      g_settings.video.fullscreen_y = *setting->value.unsigned_integer;
    else if (!strcmp(setting->name, "video_refresh_rate_auto"))
    {
       if (driver.video && driver.video_data)
@@ -1427,49 +1375,28 @@ static void general_write_handler(const void *data)
       g_settings.input.joypad_map[3] = *setting->value.integer;
    else if (!strcmp(setting->name, "input_player5_joypad_index"))
       g_settings.input.joypad_map[4] = *setting->value.integer;
-   else if (!strcmp(setting->name, "rgui_show_start_screen"))
-      g_settings.menu_show_start_screen = *setting->value.boolean;
-   else if (!strcmp(setting->name,  "game_history_size"))
-      g_settings.content_history_size = *setting->value.unsigned_integer;
    else if (!strcmp(setting->name, "libretro_info_path"))
       rarch_cmd = RARCH_CMD_CORE_INFO_INIT;
    else if (!strcmp(setting->name, "libretro_dir_path"))
       rarch_cmd = RARCH_CMD_CORE_INFO_INIT;
-   else if (!strcmp(setting->name, "audio_filter_dir"))
-      strlcpy(g_settings.audio.filter_dir, setting->value.string, sizeof(g_settings.audio.filter_dir));
-   else if (!strcmp(setting->name, "video_shader_dir"))
-      strlcpy(g_settings.video.shader_dir, setting->value.string, sizeof(g_settings.video.shader_dir));
    else if (!strcmp(setting->name, "video_filter"))
-   {
-      strlcpy(g_settings.video.softfilter_plugin, setting->value.string, sizeof(g_settings.video.softfilter_plugin));
       rarch_cmd = RARCH_CMD_REINIT;
-   }
 #ifdef HAVE_NETPLAY
    else if (!strcmp(setting->name, "netplay_ip_address"))
-   {
-      strlcpy(g_extern.netplay_server, setting->value.string, sizeof(g_extern.netplay_server));
-      g_extern.has_set_netplay_ip_address = (g_extern.netplay_server[0] != '\0');
-   }
-   else if (!strcmp(setting->name, "netplay_enable"))
-      g_extern.netplay_enable = *setting->value.boolean;
+      g_extern.has_set_netplay_ip_address = (setting->value.string[0] != '\0');
    else if (!strcmp(setting->name, "netplay_mode"))
    {
-      g_extern.netplay_is_client = *setting->value.boolean;
       if (!g_extern.netplay_is_client)
          *g_extern.netplay_server = '\0';
       g_extern.has_set_netplay_mode = true;
    }
    else if (!strcmp(setting->name, "netplay_spectator_mode_enable"))
    {
-      g_extern.netplay_is_spectate = *setting->value.boolean;
       if (g_extern.netplay_is_spectate)
          *g_extern.netplay_server = '\0';
    }
    else if (!strcmp(setting->name, "netplay_delay_frames"))
-   {
-      g_extern.netplay_sync_frames = *setting->value.unsigned_integer;
       g_extern.has_set_netplay_delay_frames = (g_extern.netplay_sync_frames > 0);
-   }
 #endif
    else if (!strcmp(setting->name, "log_verbosity"))
    {
