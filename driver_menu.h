@@ -140,7 +140,7 @@ typedef struct menu_ctx_driver_backend
    void     (*shader_manager_save_preset)(const char *, bool);
    unsigned (*shader_manager_get_type)(const struct gfx_shader *);
    int      (*shader_manager_setting_toggle)(unsigned, const char *, unsigned);
-   unsigned (*type_is)(unsigned);
+   unsigned (*type_is)(const char *, unsigned);
    void     (*setting_set_label)(char *, size_t, unsigned *, unsigned,unsigned);
    const char *ident;
 } menu_ctx_driver_backend_t;

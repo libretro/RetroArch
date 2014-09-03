@@ -109,7 +109,7 @@ int menu_entries_push_list(menu_handle_t *menu,
       add_setting_entry(menu,list,"core_options", MENU_SETTINGS_CORE_OPTIONS, setting_data);
       add_setting_entry(menu,list,"core_information", MENU_SETTINGS_CORE_INFO, setting_data);
       add_setting_entry(menu,list,"settings", MENU_SETTINGS_OPTIONS, setting_data);
-      add_setting_entry(menu,list,"performance_counters", MENU_SETTINGS_PERFORMANCE_COUNTERS, setting_data);
+      add_setting_entry(menu,list,"performance_counters", MENU_FILE_SWITCH, setting_data);
       add_setting_entry(menu,list,"savestate", 0, setting_data);
       add_setting_entry(menu,list,"loadstate", 0, setting_data);
       add_setting_entry(menu,list,"take_screenshot", 0, setting_data);
@@ -174,6 +174,14 @@ int menu_entries_push_list(menu_handle_t *menu,
 
          do_action = true;
       }
+   }
+   else if (!strcmp(label, "performance_counters"))
+   {
+      file_list_clear(list);
+      file_list_push(list, "Frontend Counters", "",
+            MENU_SETTINGS_PERFORMANCE_COUNTERS_FRONTEND, 0);
+      file_list_push(list, "Core Counters", "",
+            MENU_SETTINGS_PERFORMANCE_COUNTERS_LIBRETRO, 0);
    }
    else
    {
@@ -535,13 +543,6 @@ int menu_entries_push_list(menu_handle_t *menu,
             add_setting_entry(menu,list,"location_driver", 0, setting_data);
             add_setting_entry(menu,list,"menu_driver", 0, setting_data);
             break;
-         case MENU_SETTINGS_PERFORMANCE_COUNTERS:
-            file_list_clear(list);
-            file_list_push(list, "Frontend Counters", "",
-                  MENU_SETTINGS_PERFORMANCE_COUNTERS_FRONTEND, 0);
-            file_list_push(list, "Core Counters", "",
-                  MENU_SETTINGS_PERFORMANCE_COUNTERS_LIBRETRO, 0);
-            break;
          case MENU_SETTINGS_PERFORMANCE_COUNTERS_LIBRETRO:
             file_list_clear(list);
             menu_entries_push_perfcounter(menu, list, perf_counters_libretro,
@@ -576,8 +577,8 @@ int menu_parse_check(const char *label, unsigned menu_type)
    RARCH_LOG("label is menu_parse_check: %s\n", label);
 #endif
    if (!((menu_type == MENU_FILE_DIRECTORY ||
-            menu_common_type_is(menu_type) == MENU_SETTINGS_SHADER_OPTIONS ||
-            menu_common_type_is(menu_type) == MENU_FILE_DIRECTORY ||
+            menu_common_type_is(label, menu_type) == MENU_SETTINGS_SHADER_OPTIONS ||
+            menu_common_type_is(label, menu_type) == MENU_FILE_DIRECTORY ||
             menu_type == MENU_SETTINGS_OVERLAY_PRESET ||
             menu_type == MENU_CONTENT_HISTORY_PATH ||
             !strcmp(label, "video_filter") ||
@@ -723,7 +724,7 @@ int menu_parse_and_resolve(file_list_t *list, file_list_t *menu_list)
       exts = "cfg";
    else if (menu_type == MENU_CONTENT_HISTORY_PATH)
       exts = "cfg";
-   else if (menu_common_type_is(menu_type) == MENU_FILE_DIRECTORY)
+   else if (menu_common_type_is(label, menu_type) == MENU_FILE_DIRECTORY)
       exts = ""; /* we ignore files anyway */
    else if (driver.menu->defer_core)
       exts = g_extern.core_info ? core_info_list_get_all_extensions(
@@ -746,7 +747,7 @@ int menu_parse_and_resolve(file_list_t *list, file_list_t *menu_list)
 
    dir_list_sort(str_list, true);
 
-   if (menu_common_type_is(menu_type) == MENU_FILE_DIRECTORY)
+   if (menu_common_type_is(label, menu_type) == MENU_FILE_DIRECTORY)
       file_list_push(list, "<Use this directory>", "",
             MENU_FILE_USE_DIRECTORY, 0);
 
@@ -755,7 +756,7 @@ int menu_parse_and_resolve(file_list_t *list, file_list_t *menu_list)
    {
       bool is_dir = str_list->elems[i].attr.b;
 
-      if ((menu_common_type_is(menu_type) == MENU_FILE_DIRECTORY) && !is_dir)
+      if ((menu_common_type_is(label, menu_type) == MENU_FILE_DIRECTORY) && !is_dir)
          continue;
 
       /* Need to preserve slash first time. */

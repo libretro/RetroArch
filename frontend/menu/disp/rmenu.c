@@ -165,7 +165,7 @@ static void rmenu_render(void)
 
    if (driver.menu_ctx && driver.menu_ctx->backend
          && driver.menu_ctx->backend->type_is)
-      menu_type_is = driver.menu_ctx->backend->type_is(menu_type);
+      menu_type_is = driver.menu_ctx->backend->type_is(label, menu_type);
 
    get_title(label, dir, menu_type, menu_type_is,
          title, sizeof(title));

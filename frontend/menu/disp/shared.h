@@ -31,7 +31,7 @@ static void get_title(const char *label, const char *dir,
       strlcpy(title, "SETTINGS", sizeof_title);
    else if (menu_type == MENU_SETTINGS_DRIVERS)
       strlcpy(title, "DRIVER OPTIONS", sizeof_title);
-   else if (menu_type == MENU_SETTINGS_PERFORMANCE_COUNTERS)
+   else if (!strcmp(label, "performance_counters"))
       strlcpy(title, "PERFORMANCE COUNTERS", sizeof_title);
    else if (menu_type == MENU_SETTINGS_PERFORMANCE_COUNTERS_LIBRETRO)
       strlcpy(title, "CORE PERFORMANCE COUNTERS", sizeof_title);

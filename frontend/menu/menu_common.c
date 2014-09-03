@@ -640,7 +640,7 @@ void menu_build_scroll_indices(file_list_t *buf)
       buf->size - 1;
 }
 
-unsigned menu_common_type_is(unsigned type)
+unsigned menu_common_type_is(const char *label, unsigned type)
 {
    if (
          type == MENU_SETTINGS ||
@@ -661,7 +661,7 @@ unsigned menu_common_type_is(unsigned type)
          type == MENU_SETTINGS_NETPLAY_OPTIONS ||
          type == MENU_SETTINGS_OPTIONS ||
          type == MENU_SETTINGS_DRIVERS ||
-         type == MENU_SETTINGS_PERFORMANCE_COUNTERS ||
+         !strcmp(label, "performance_counters") ||
          type == MENU_SETTINGS_PERFORMANCE_COUNTERS_LIBRETRO ||
          type == MENU_SETTINGS_PERFORMANCE_COUNTERS_FRONTEND ||
          type == MENU_SETTINGS_INPUT_OPTIONS

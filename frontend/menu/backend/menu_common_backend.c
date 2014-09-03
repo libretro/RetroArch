@@ -1278,14 +1278,14 @@ static int menu_setting_ok_toggle(unsigned type,
             "", label, type, driver.menu->selection_ptr);
       return 0;
    }
-   else if (menu_common_type_is(type) == MENU_FILE_DIRECTORY)
+   else if (menu_common_type_is(label, type) == MENU_FILE_DIRECTORY)
    {
       menu_entries_push(driver.menu->menu_stack,
             "", label, type, driver.menu->selection_ptr);
       return 0;
    }
    else if (
-         menu_common_type_is(type) == MENU_SETTINGS ||
+         menu_common_type_is(label, type) == MENU_SETTINGS ||
          type == MENU_SETTINGS_CORE ||
          type == MENU_SETTINGS_CONFIG ||
          type == MENU_SETTINGS_DISK_APPEND
@@ -1989,7 +1989,7 @@ static int menu_common_iterate(unsigned action)
       return menu_start_screen_iterate(action);
    else if (!strcmp(menu_label, "info_screen"))
       return menu_info_screen_iterate(action);
-   else if (menu_common_type_is(menu_type) == MENU_SETTINGS)
+   else if (menu_common_type_is(menu_label, menu_type) == MENU_SETTINGS)
       return menu_settings_iterate(action);
    else if (
          menu_type == MENU_SETTINGS_CUSTOM_VIEWPORT ||

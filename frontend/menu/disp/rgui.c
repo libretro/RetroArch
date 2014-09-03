@@ -302,7 +302,7 @@ static void rgui_render(void)
 
    if (driver.menu_ctx && driver.menu_ctx->backend &&
          driver.menu_ctx->backend->type_is)
-      menu_type_is = driver.menu_ctx->backend->type_is(menu_type);
+      menu_type_is = driver.menu_ctx->backend->type_is(label, menu_type);
 
 #if 0
    RARCH_LOG("Dir is: %s\n", label);
@@ -354,7 +354,7 @@ static void rgui_render(void)
 
       unsigned w = 19;
        (void)setting;
-      if (menu_type == MENU_SETTINGS_PERFORMANCE_COUNTERS)
+      if (!strcmp(label, "performance_counters"))
          w = 28;
       else if (menu_type == MENU_SETTINGS_INPUT_OPTIONS ||
             menu_type == MENU_SETTINGS_CUSTOM_BIND ||

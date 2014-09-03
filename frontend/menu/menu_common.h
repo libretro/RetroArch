@@ -119,7 +119,6 @@ typedef enum
    MENU_SETTINGS_PRIVACY_OPTIONS,
    MENU_SETTINGS_OPTIONS,
    MENU_SETTINGS_DRIVERS,
-   MENU_SETTINGS_PERFORMANCE_COUNTERS,
    MENU_SETTINGS_PERFORMANCE_COUNTERS_LIBRETRO,
    MENU_SETTINGS_PERFORMANCE_COUNTERS_FRONTEND,
    MENU_SETTINGS_DISK_OPTIONS,
@@ -188,7 +187,7 @@ void menu_update_system_info(menu_handle_t *menu, bool *load_no_content);
 
 void menu_build_scroll_indices(file_list_t *buf);
 
-unsigned menu_common_type_is(unsigned type);
+unsigned menu_common_type_is(const char *label, unsigned type);
 
 #ifdef __cplusplus
 }
