@@ -21,38 +21,38 @@
 
 void menu_update_system_info(menu_handle_t *menu, bool *load_no_content)
 {
-#ifdef HAVE_DYNAMIC
+   const core_info_t *info = NULL;
+#if defined(HAVE_DYNAMIC) && defined(HAVE_MENU)
    libretro_free_system_info(&menu->info);
-   if (*g_settings.libretro)
-   {
-      libretro_get_system_info(g_settings.libretro, &menu->info,
-            load_no_content);
-#endif
-      if (g_extern.core_info)
-      {
-         /* Keep track of info for the currently selected core. */
+   if (!(*g_settings.libretro))
+      return;
 
-         if (core_info_list_get_info(g_extern.core_info,
-                  g_extern.core_info_current, g_settings.libretro))
-         {
-            const core_info_t *info = (const core_info_t*)
-               g_extern.core_info_current;
-
-            RARCH_LOG("[Core Info]:\n");
-            if (info->display_name)
-               RARCH_LOG("  Display Name: %s\n", info->display_name);
-            if (info->supported_extensions)
-               RARCH_LOG("  Supported Extensions: %s\n",
-                     info->supported_extensions);
-            if (info->authors)
-               RARCH_LOG("  Authors: %s\n", info->authors);
-            if (info->permissions)
-               RARCH_LOG("  Permissions: %s\n", info->permissions);
-         }
-      }
-#ifdef HAVE_DYNAMIC
-   }
+   libretro_get_system_info(g_settings.libretro, &menu->info,
+         load_no_content);
 #endif
+   if (!g_extern.core_info)
+      return;
+
+   if (!core_info_list_get_info(g_extern.core_info,
+            g_extern.core_info_current, g_settings.libretro))
+      return;
+
+   /* Keep track of info for the currently selected core. */
+   info = (const core_info_t*)g_extern.core_info_current;
+
+   if (!g_extern.verbosity)
+      return;
+
+   RARCH_LOG("[Core Info]:\n");
+   if (info->display_name)
+      RARCH_LOG("Display Name = %s\n", info->display_name);
+   if (info->supported_extensions)
+      RARCH_LOG("Supported Extensions = %s\n",
+            info->supported_extensions);
+   if (info->authors)
+      RARCH_LOG("Authors = %s\n", info->authors);
+   if (info->permissions)
+      RARCH_LOG("Permissions = %s\n", info->permissions);
 }
 
 void menu_content_history_push_current(void)
