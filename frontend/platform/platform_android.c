@@ -725,8 +725,8 @@ static void process_pending_intent(void *data)
 
    if (startgame)
    {
-      g_extern.lifecycle_state &= ~(1ULL << MODE_MENU_PREINIT);
-      g_extern.lifecycle_state &= ~(1ULL << MODE_GAME);
+      rarch_main_set_state(RARCH_ACTION_STATE_MENU_PREINIT_FINISHED);
+      rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED);
       rarch_main_command(RARCH_CMD_LOAD_CONTENT);
    }
 
