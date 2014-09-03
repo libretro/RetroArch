@@ -21,9 +21,9 @@ static void get_title(const char *label, const char *dir,
       strlcpy(title, "INPUT OPTIONS", sizeof_title);
    else if (menu_type == MENU_SETTINGS_OVERLAY_OPTIONS)
       strlcpy(title, "OVERLAY OPTIONS", sizeof_title);
-   else if (menu_type == MENU_SETTINGS_NETPLAY_OPTIONS)
+   else if (!strcmp(label, "Netplay Options"))
       strlcpy(title, "NETPLAY OPTIONS", sizeof_title);
-   else if (menu_type == MENU_SETTINGS_USER_OPTIONS)
+   else if (!strcmp(label, "User Options"))
       strlcpy(title, "USER OPTIONS", sizeof_title);
    else if (menu_type == MENU_SETTINGS_PATH_OPTIONS)
       strlcpy(title, "PATH OPTIONS", sizeof_title);

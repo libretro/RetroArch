@@ -657,8 +657,8 @@ unsigned menu_common_type_is(const char *label, unsigned type)
          type == MENU_SETTINGS_PATH_OPTIONS ||
          type == MENU_SETTINGS_PRIVACY_OPTIONS ||
          type == MENU_SETTINGS_OVERLAY_OPTIONS ||
-         type == MENU_SETTINGS_USER_OPTIONS ||
-         type == MENU_SETTINGS_NETPLAY_OPTIONS ||
+         !strcmp(label, "User Options") ||
+         !strcmp(label, "Netplay Options") ||
          type == MENU_SETTINGS_OPTIONS ||
          type == MENU_SETTINGS_DRIVERS ||
          !strcmp(label, "performance_counters") ||

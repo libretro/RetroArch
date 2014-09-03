@@ -287,6 +287,22 @@ int menu_entries_push_list(menu_handle_t *menu,
 
       do_action = true;
    }
+   else if (!strcmp(label, "User Options"))
+   {
+      file_list_clear(list);
+      add_setting_entry(menu,list,"netplay_nickname", 0, setting_data);
+      add_setting_entry(menu,list,"user_language", 0, setting_data);
+   }
+   else if (!strcmp(label, "Netplay Options"))
+   {
+      file_list_clear(list);
+      add_setting_entry(menu,list,"netplay_enable", 0, setting_data);
+      add_setting_entry(menu,list,"netplay_mode", 0, setting_data);
+      add_setting_entry(menu,list,"netplay_spectator_mode_enable", 0, setting_data);
+      add_setting_entry(menu,list,"netplay_ip_address", 0, setting_data);
+      add_setting_entry(menu,list,"netplay_tcp_udp_port", 0, setting_data);
+      add_setting_entry(menu,list,"netplay_delay_frames", 0, setting_data);
+   }
    else
    {
       switch (menu_type)
@@ -416,9 +432,8 @@ int menu_entries_push_list(menu_handle_t *menu,
             add_setting_entry(menu,list,"Input Options", MENU_SETTINGS_INPUT_OPTIONS, setting_data);
             add_setting_entry(menu,list,"Overlay Options", MENU_SETTINGS_OVERLAY_OPTIONS,
                   setting_data);
-            add_setting_entry(menu,list,"User Options", MENU_SETTINGS_USER_OPTIONS, setting_data);
-            add_setting_entry(menu,list,"Netplay Options", MENU_SETTINGS_NETPLAY_OPTIONS,
-                  setting_data);
+            add_setting_entry(menu,list,"User Options", MENU_FILE_SWITCH, setting_data);
+            add_setting_entry(menu,list,"Netplay Options", MENU_FILE_SWITCH, setting_data);
             add_setting_entry(menu,list,"Path Options", MENU_SETTINGS_PATH_OPTIONS, setting_data);
             if (g_extern.main_is_init && !g_extern.libretro_dummy)
             {
@@ -447,20 +462,6 @@ int menu_entries_push_list(menu_handle_t *menu,
                   setting_data);
             add_setting_entry(menu,list,"input_overlay_opacity", 0, setting_data);
             add_setting_entry(menu,list,"input_overlay_scale", 0, setting_data);
-            break;
-         case MENU_SETTINGS_USER_OPTIONS:
-            file_list_clear(list);
-            add_setting_entry(menu,list,"netplay_nickname", 0, setting_data);
-            add_setting_entry(menu,list,"user_language", 0, setting_data);
-            break;
-         case MENU_SETTINGS_NETPLAY_OPTIONS:
-            file_list_clear(list);
-            add_setting_entry(menu,list,"netplay_enable", 0, setting_data);
-            add_setting_entry(menu,list,"netplay_mode", 0, setting_data);
-            add_setting_entry(menu,list,"netplay_spectator_mode_enable", 0, setting_data);
-            add_setting_entry(menu,list,"netplay_ip_address", 0, setting_data);
-            add_setting_entry(menu,list,"netplay_tcp_udp_port", 0, setting_data);
-            add_setting_entry(menu,list,"netplay_delay_frames", 0, setting_data);
             break;
          case MENU_SETTINGS_PATH_OPTIONS:
             file_list_clear(list);
