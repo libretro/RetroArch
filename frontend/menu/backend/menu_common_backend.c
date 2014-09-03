@@ -1873,12 +1873,10 @@ static int menu_action_ok(const char *dir,
       }
       else if (!strcmp(menu_label, "video_shader_pass"))
       {
-         struct gfx_shader *shader = (struct gfx_shader*)
-            driver.menu->shader;
          unsigned pass = (menu_type - MENU_SETTINGS_SHADER_0) / 3;
 
-         fill_pathname_join(shader->pass[pass].source.path,
-               dir, path, sizeof(shader->pass[pass].source.path));
+         fill_pathname_join(driver.menu->shader->pass[pass].source.path,
+               dir, path, sizeof(driver.menu->shader->pass[pass].source.path));
 
          /* This will reset any changed parameters. */
          gfx_shader_resolve_parameters(NULL, driver.menu->shader);
