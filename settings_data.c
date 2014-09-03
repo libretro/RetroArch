@@ -1452,13 +1452,11 @@ rarch_setting_t *setting_data_get_mainmenu(bool regenerate)
 
    if (list)
    {
-      if (regenerate)
-      {
-         free(list);
-         list = NULL;
-      }
-      else
+      if (!regenerate)
          return list;
+
+      free(list);
+      list = NULL;
    }
 
    list = (rarch_setting_t*)malloc(sizeof(rarch_setting_t) * list_size);
