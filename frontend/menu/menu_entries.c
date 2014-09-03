@@ -706,7 +706,7 @@ int menu_parse_and_resolve(file_list_t *list, file_list_t *menu_list)
       exts = "cfg";
    else if (!strcmp(label, "video_shader_preset"))
       exts = "cgp|glslp";
-   else if (menu_common_type_is(menu_type) == MENU_SETTINGS_SHADER_OPTIONS)
+   else if (!strcmp(label, "video_shader_pass"))
       exts = "cg|glsl";
    else if (!strcmp(label, "video_filter"))
       exts = "filt";

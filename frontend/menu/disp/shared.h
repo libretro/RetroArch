@@ -60,8 +60,10 @@ static void get_title(const char *label, const char *dir,
    else if (menu_type == MENU_SETTINGS_PRIVACY_OPTIONS)
       strlcpy(title, "PRIVACY OPTIONS", sizeof_title);
 #ifdef HAVE_SHADER_MANAGER
-   else if (menu_type_is == MENU_SETTINGS_SHADER_OPTIONS)
+   else if (!strcmp(label, "video_shader_pass"))
       snprintf(title, sizeof_title, "SHADER %s", dir);
+   else if (!strcmp(label, "video_shader_preset"))
+      snprintf(title, sizeof_title, "SHADER PRESET %s", dir);
 #endif
    else if (menu_type == MENU_SETTINGS_PATH_OPTIONS ||
          menu_type == MENU_SETTINGS_OPTIONS ||

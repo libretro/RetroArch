@@ -387,7 +387,9 @@ static int menu_common_shader_manager_setting_toggle(
       {
          case MENU_ACTION_OK:
             menu_entries_push(driver.menu->menu_stack,
-                  g_settings.video.shader_dir, "video_shader_preset",
+                  g_settings.video.shader_dir, 
+                  (id == MENU_SETTINGS_SHADER_PRESET) ?
+                  "video_shader_preset" : "video_shader_pass",
                   id, driver.menu->selection_ptr);
             break;
 
