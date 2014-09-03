@@ -184,10 +184,6 @@ bool menu_replace_config(const char *path);
 
 bool menu_save_new_config(void);
 
-int rarch_defer_core(const core_info_t *info, core_info_list_t *data,
-      const char *dir, const char *path, char *deferred_path,
-      size_t sizeof_deferred_path);
-
 void menu_update_system_info(menu_handle_t *menu, bool *load_no_content);
 
 void menu_build_scroll_indices(file_list_t *buf);

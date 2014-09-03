@@ -795,6 +795,10 @@ bool rarch_set_rumble_state(unsigned port,
 void rarch_playlist_load_content(content_playlist_t *playlist,
       unsigned index);
 
+int rarch_defer_core(const core_info_t *info, core_info_list_t *data,
+      const char *dir, const char *path, char *deferred_path,
+      size_t sizeof_deferred_path);
+
 /////////
 
 #ifdef __cplusplus

@@ -3724,3 +3724,25 @@ void rarch_main_init_wrap(const struct rarch_main_wrap *args,
       RARCH_LOG("arg #%d: %s\n", i, argv[i]);
 #endif
 }
+
+/* When selection is presented back, returns 0.
+ * If it can make a decision right now, returns -1. */
+
+int rarch_defer_core(const core_info_t *info,
+      core_info_list_t *core_info, const char *dir,
+      const char *path, char *deferred_path, size_t sizeof_deferred_path)
+{
+   size_t supported = 0;
+
+   fill_pathname_join(deferred_path, dir, path, sizeof_deferred_path);
+
+   if (core_info)
+      core_info_list_get_supported_cores(core_info, deferred_path, &info,
+            &supported);
+
+   /* Can make a decision right now. */
+   if (supported == 1)
+      return -1;
+
+   return 0;
+}
