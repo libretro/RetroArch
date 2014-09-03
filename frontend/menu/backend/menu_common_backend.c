@@ -78,356 +78,340 @@ static int menu_info_screen_iterate(unsigned action)
          setting_data_get_description(current_setting, msg, sizeof(msg));
       else
       {
+         const char *label = NULL;
          unsigned info_type;
          file_list_get_at_offset(driver.menu->selection_buf,
-               driver.menu->selection_ptr, NULL, NULL,
+               driver.menu->selection_ptr, NULL, &label,
                &info_type);
 
-         switch (info_type)
+         if (menu_entries_get_description(label, msg, sizeof(msg)) == -1)
          {
-            case MENU_SETTINGS_SHADER_PRESET:
-               snprintf(msg, sizeof(msg),
-                     " -- Load Shader Preset. \n"
-                     " \n"
-                     " Load a "
+            switch (info_type)
+            {
+               case MENU_SETTINGS_SHADER_PRESET:
+                  snprintf(msg, sizeof(msg),
+                        " -- Load Shader Preset. \n"
+                        " \n"
+                        " Load a "
 #ifdef HAVE_CG
-                     "Cg"
+                        "Cg"
 #endif
 #ifdef HAVE_GLSL
 #ifdef HAVE_CG
-                     "/"
+                        "/"
 #endif
-                     "GLSL"
+                        "GLSL"
 #endif
 #ifdef HAVE_HLSL
 #if defined(HAVE_CG) || defined(HAVE_HLSL)
-                     "/"
+                        "/"
 #endif
-                     "HLSL"
+                        "HLSL"
 #endif
-                     " preset directly. \n"
-                     "The menu shader menu is updated accordingly. \n"
-                     " \n"
-                     "If the CGP uses scaling methods which are not \n"
-                     "simple, (i.e. source scaling, same scaling \n"
-                     "factor for X/Y), the scaling factor displayed \n"
-                     "in the menu might not be correct."
-                     );
-               break;
-#if 0
-            case MENU_SETTINGS_SHADER_APPLY:
-               snprintf(msg, sizeof(msg),
-                     " -- Apply Shader Changes. \n"
-                     " \n"
-                     "After changing shader settings, use this to \n"
-                     "apply changes. \n"
-                     " \n"
-                     "Changing shader settings is a somewhat \n"
-                     "expensive operation so it has to be \n"
-                     "done explicitly. \n"
-                     " \n"
-                     "When you apply shaders, the menu shader \n"
-                     "settings are saved to a temporary file (either \n"
-                     "menu.cgp or menu.glslp) and loaded. The file \n"
-                     "persists after RetroArch exits. The file is \n"
-                     "saved to Shader Directory."
-                     );
-               break;
-#endif
-            case MENU_SETTINGS_SHADER_PASSES:
-               snprintf(msg, sizeof(msg),
-                     " -- Shader Passes. \n"
-                     " \n"
-                     "RetroArch allows you to mix and match various \n"
-                     "shaders with arbitrary shader passes, with \n"
-                     "custom hardware filters and scale factors. \n"
-                     " \n"
-                     "This option specifies the number of shader \n"
-                     "passes to use. If you set this to 0, and use \n"
-                     "Apply Shader Changes, you use a 'blank' shader. \n"
-                     " \n"
-                     "The Default Filter option will affect the \n"
-                     "stretching filter.");
-               break;
-            case MENU_SETTINGS_BIND_DEVICE:
-               snprintf(msg, sizeof(msg),
-                     " -- Input Device. \n"
-                     " \n"
-                     "Picks which gamepad to use for player N. \n"
-                     "The name of the pad is available."
-                     );
-               break;
-            case MENU_SETTINGS_BIND_DEVICE_TYPE:
-               snprintf(msg, sizeof(msg),
-                     " -- Input Device Type. \n"
-                     " \n"
-                     "Picks which device type to use. This is \n"
-                     "relevant for the libretro core itself."
-                     );
-               break;
-            case MENU_SETTINGS_BIND_BEGIN + RARCH_ANALOG_LEFT_X_PLUS:
-            case MENU_SETTINGS_BIND_BEGIN + RARCH_ANALOG_LEFT_X_MINUS:
-            case MENU_SETTINGS_BIND_BEGIN + RARCH_ANALOG_LEFT_Y_PLUS:
-            case MENU_SETTINGS_BIND_BEGIN + RARCH_ANALOG_LEFT_Y_MINUS:
-            case MENU_SETTINGS_BIND_BEGIN + RARCH_ANALOG_RIGHT_X_PLUS:
-            case MENU_SETTINGS_BIND_BEGIN + RARCH_ANALOG_RIGHT_X_MINUS:
-            case MENU_SETTINGS_BIND_BEGIN + RARCH_ANALOG_RIGHT_Y_PLUS:
-            case MENU_SETTINGS_BIND_BEGIN + RARCH_ANALOG_RIGHT_Y_MINUS:
-               snprintf(msg, sizeof(msg),
-                     " -- Axis for analog stick (DualShock-esque).\n"
-                     " \n"
-                     "Bound as usual, however, if a real analog \n"
-                     "axis is bound, it can be read as a true analog.\n"
-                     " \n"
-                     "Positive X axis is right. \n"
-                     "Positive Y axis is down.");
-               break;
-            case MENU_SETTINGS_BIND_BEGIN + RARCH_SHADER_NEXT:
-               snprintf(msg, sizeof(msg),
-                     " -- Applies next shader in directory.");
-               break;
-            case MENU_SETTINGS_BIND_BEGIN + RARCH_SHADER_PREV:
-               snprintf(msg, sizeof(msg),
-                     " -- Applies previous shader in directory.");
-               break;
-            case MENU_SETTINGS_BIND_BEGIN + RARCH_LOAD_STATE_KEY:
-               snprintf(msg, sizeof(msg),
-                     " -- Loads state.");
-               break;
-            case MENU_SETTINGS_BIND_BEGIN + RARCH_SAVE_STATE_KEY:
-               snprintf(msg, sizeof(msg),
-                     " -- Saves state.");
-               break;
-            case MENU_SETTINGS_BIND_BEGIN + RARCH_STATE_SLOT_PLUS:
-            case MENU_SETTINGS_BIND_BEGIN + RARCH_STATE_SLOT_MINUS:
-               snprintf(msg, sizeof(msg),
-                     " -- State slots.\n"
-                     " \n"
-                     " With slot set to 0, save state name is *.state \n"
-                     " (or whatever defined on commandline).\n"
-                     "When slot is != 0, path will be (path)(d), \n"
-                     "where (d) is slot number.");
-               break;
-            case MENU_SETTINGS_BIND_BEGIN + RARCH_TURBO_ENABLE:
-               snprintf(msg, sizeof(msg),
-                     " -- Turbo enable.\n"
-                     " \n"
-                     "Holding the turbo while pressing another \n"
-                     "button will let the button enter a turbo \n"
-                     "mode where the button state is modulated \n"
-                     "with a periodic signal. \n"
-                     " \n"
-                     "The modulation stops when the button \n"
-                     "itself (not turbo button) is released.");
-               break;
-            case MENU_SETTINGS_BIND_BEGIN + RARCH_FAST_FORWARD_HOLD_KEY:
-               snprintf(msg, sizeof(msg),
-                     " -- Hold for fast-forward. Releasing button \n"
-                     "disables fast-forward.");
-               break;
-            case MENU_SETTINGS_BIND_BEGIN + RARCH_QUIT_KEY:
-               snprintf(msg, sizeof(msg),
-                     " -- Key to exit RetroArch cleanly."
+                        " preset directly. \n"
+                        "The menu shader menu is updated accordingly. \n"
+                        " \n"
+                        "If the CGP uses scaling methods which are not \n"
+                        "simple, (i.e. source scaling, same scaling \n"
+                        "factor for X/Y), the scaling factor displayed \n"
+                        "in the menu might not be correct."
+                        );
+                  break;
+               case MENU_SETTINGS_SHADER_PASSES:
+                  snprintf(msg, sizeof(msg),
+                        " -- Shader Passes. \n"
+                        " \n"
+                        "RetroArch allows you to mix and match various \n"
+                        "shaders with arbitrary shader passes, with \n"
+                        "custom hardware filters and scale factors. \n"
+                        " \n"
+                        "This option specifies the number of shader \n"
+                        "passes to use. If you set this to 0, and use \n"
+                        "Apply Shader Changes, you use a 'blank' shader. \n"
+                        " \n"
+                        "The Default Filter option will affect the \n"
+                        "stretching filter.");
+                  break;
+               case MENU_SETTINGS_BIND_DEVICE:
+                  snprintf(msg, sizeof(msg),
+                        " -- Input Device. \n"
+                        " \n"
+                        "Picks which gamepad to use for player N. \n"
+                        "The name of the pad is available."
+                        );
+                  break;
+               case MENU_SETTINGS_BIND_DEVICE_TYPE:
+                  snprintf(msg, sizeof(msg),
+                        " -- Input Device Type. \n"
+                        " \n"
+                        "Picks which device type to use. This is \n"
+                        "relevant for the libretro core itself."
+                        );
+                  break;
+               case MENU_SETTINGS_BIND_BEGIN + RARCH_ANALOG_LEFT_X_PLUS:
+               case MENU_SETTINGS_BIND_BEGIN + RARCH_ANALOG_LEFT_X_MINUS:
+               case MENU_SETTINGS_BIND_BEGIN + RARCH_ANALOG_LEFT_Y_PLUS:
+               case MENU_SETTINGS_BIND_BEGIN + RARCH_ANALOG_LEFT_Y_MINUS:
+               case MENU_SETTINGS_BIND_BEGIN + RARCH_ANALOG_RIGHT_X_PLUS:
+               case MENU_SETTINGS_BIND_BEGIN + RARCH_ANALOG_RIGHT_X_MINUS:
+               case MENU_SETTINGS_BIND_BEGIN + RARCH_ANALOG_RIGHT_Y_PLUS:
+               case MENU_SETTINGS_BIND_BEGIN + RARCH_ANALOG_RIGHT_Y_MINUS:
+                  snprintf(msg, sizeof(msg),
+                        " -- Axis for analog stick (DualShock-esque).\n"
+                        " \n"
+                        "Bound as usual, however, if a real analog \n"
+                        "axis is bound, it can be read as a true analog.\n"
+                        " \n"
+                        "Positive X axis is right. \n"
+                        "Positive Y axis is down.");
+                  break;
+               case MENU_SETTINGS_BIND_BEGIN + RARCH_SHADER_NEXT:
+                  snprintf(msg, sizeof(msg),
+                        " -- Applies next shader in directory.");
+                  break;
+               case MENU_SETTINGS_BIND_BEGIN + RARCH_SHADER_PREV:
+                  snprintf(msg, sizeof(msg),
+                        " -- Applies previous shader in directory.");
+                  break;
+               case MENU_SETTINGS_BIND_BEGIN + RARCH_LOAD_STATE_KEY:
+                  snprintf(msg, sizeof(msg),
+                        " -- Loads state.");
+                  break;
+               case MENU_SETTINGS_BIND_BEGIN + RARCH_SAVE_STATE_KEY:
+                  snprintf(msg, sizeof(msg),
+                        " -- Saves state.");
+                  break;
+               case MENU_SETTINGS_BIND_BEGIN + RARCH_STATE_SLOT_PLUS:
+               case MENU_SETTINGS_BIND_BEGIN + RARCH_STATE_SLOT_MINUS:
+                  snprintf(msg, sizeof(msg),
+                        " -- State slots.\n"
+                        " \n"
+                        " With slot set to 0, save state name is *.state \n"
+                        " (or whatever defined on commandline).\n"
+                        "When slot is != 0, path will be (path)(d), \n"
+                        "where (d) is slot number.");
+                  break;
+               case MENU_SETTINGS_BIND_BEGIN + RARCH_TURBO_ENABLE:
+                  snprintf(msg, sizeof(msg),
+                        " -- Turbo enable.\n"
+                        " \n"
+                        "Holding the turbo while pressing another \n"
+                        "button will let the button enter a turbo \n"
+                        "mode where the button state is modulated \n"
+                        "with a periodic signal. \n"
+                        " \n"
+                        "The modulation stops when the button \n"
+                        "itself (not turbo button) is released.");
+                  break;
+               case MENU_SETTINGS_BIND_BEGIN + RARCH_FAST_FORWARD_HOLD_KEY:
+                  snprintf(msg, sizeof(msg),
+                        " -- Hold for fast-forward. Releasing button \n"
+                        "disables fast-forward.");
+                  break;
+               case MENU_SETTINGS_BIND_BEGIN + RARCH_QUIT_KEY:
+                  snprintf(msg, sizeof(msg),
+                        " -- Key to exit RetroArch cleanly."
 #if !defined(RARCH_MOBILE) && !defined(RARCH_CONSOLE)
-                     "\nKilling it in any hard way (SIGKILL, \n"
-                     "etc) will terminate without saving\n"
-                     "RAM, etc. On Unix-likes,\n"
-                     "SIGINT/SIGTERM allows\n"
-                     "a clean deinitialization."
+                        "\nKilling it in any hard way (SIGKILL, \n"
+                        "etc) will terminate without saving\n"
+                        "RAM, etc. On Unix-likes,\n"
+                        "SIGINT/SIGTERM allows\n"
+                        "a clean deinitialization."
 #endif
-                     );
-               break;
-            case MENU_SETTINGS_BIND_BEGIN + RARCH_REWIND:
-               snprintf(msg, sizeof(msg),
-                     " -- Hold button down to rewind.\n"
-                     " \n"
-                     "Rewind must be enabled.");
-               break;
-            case MENU_SETTINGS_BIND_BEGIN + RARCH_MOVIE_RECORD_TOGGLE:
-               snprintf(msg, sizeof(msg),
-                     " -- Toggle between recording and not.");
-               break;
-            case MENU_SETTINGS_BIND_BEGIN + RARCH_PAUSE_TOGGLE:
-               snprintf(msg, sizeof(msg),
-                     " -- Toggle between paused and non-paused state.");
-               break;
-            case MENU_SETTINGS_BIND_BEGIN + RARCH_FRAMEADVANCE:
-               snprintf(msg, sizeof(msg),
-                     " -- Frame advance when content is paused.");
-               break;
-            case MENU_SETTINGS_BIND_BEGIN + RARCH_RESET:
-               snprintf(msg, sizeof(msg),
-                     " -- Reset the content.\n");
-               break;
-            case MENU_SETTINGS_BIND_BEGIN + RARCH_CHEAT_INDEX_PLUS:
-               snprintf(msg, sizeof(msg),
-                     " -- Increment cheat index.\n");
-               break;
-            case MENU_SETTINGS_BIND_BEGIN + RARCH_CHEAT_INDEX_MINUS:
-               snprintf(msg, sizeof(msg),
-                     " -- Decrement cheat index.\n");
-               break;
-            case MENU_SETTINGS_BIND_BEGIN + RARCH_CHEAT_TOGGLE:
-               snprintf(msg, sizeof(msg),
-                     " -- Toggle cheat index.\n");
-               break;
-            case MENU_SETTINGS_BIND_BEGIN + RARCH_SCREENSHOT:
-               snprintf(msg, sizeof(msg),
-                     " -- Take screenshot.");
-               break;
-            case MENU_SETTINGS_BIND_BEGIN + RARCH_MUTE:
-               snprintf(msg, sizeof(msg),
-                     " -- Mute/unmute audio.");
-               break;
-            case MENU_SETTINGS_BIND_BEGIN + RARCH_NETPLAY_FLIP:
-               snprintf(msg, sizeof(msg),
-                     " -- Netplay flip players.");
-               break;
-            case MENU_SETTINGS_BIND_BEGIN + RARCH_SLOWMOTION:
-               snprintf(msg, sizeof(msg),
-                     " -- Hold for slowmotion.");
-               break;
-            case MENU_SETTINGS_BIND_BEGIN + RARCH_ENABLE_HOTKEY:
-               snprintf(msg, sizeof(msg),
-                     " -- Enable other hotkeys.\n"
-                     " \n"
-                     " If this hotkey is bound to either keyboard, \n"
-                     "joybutton or joyaxis, all other hotkeys will \n"
-                     "be disabled unless this hotkey is also held \n"
-                     "at the same time. \n"
-                     " \n"
-                     "This is useful for RETRO_KEYBOARD centric \n"
-                     "implementations which query a large area of \n"
-                     "the keyboard, where it is not desirable that \n"
-                     "hotkeys get in the way.");
-               break;
-            case MENU_SETTINGS_BIND_BEGIN + RARCH_VOLUME_UP:
-               snprintf(msg, sizeof(msg),
-                     " -- Increases audio volume.");
-               break;
-            case MENU_SETTINGS_BIND_BEGIN + RARCH_VOLUME_DOWN:
-               snprintf(msg, sizeof(msg),
-                     " -- Decreases audio volume.");
-               break;
-            case MENU_SETTINGS_BIND_BEGIN + RARCH_OVERLAY_NEXT:
-               snprintf(msg, sizeof(msg),
-                     " -- Toggles to next overlay.\n"
-                     " \n"
-                     "Wraps around.");
-               break;
-            case MENU_SETTINGS_BIND_BEGIN + RARCH_DISK_EJECT_TOGGLE:
-               snprintf(msg, sizeof(msg),
-                     " -- Toggles eject for disks.\n"
-                     " \n"
-                     "Used for multiple-disk content.");
-               break;
-            case MENU_SETTINGS_BIND_BEGIN + RARCH_DISK_NEXT:
-               snprintf(msg, sizeof(msg),
-                     " -- Cycles through disk images. Use after \n"
-                     "ejecting. \n"
-                     " \n"
-                     " Complete by toggling eject again.");
-               break;
-            case MENU_SETTINGS_BIND_BEGIN + RARCH_GRAB_MOUSE_TOGGLE:
-               snprintf(msg, sizeof(msg),
-                     " -- Toggles mouse grab.\n"
-                     " \n"
-                     "When mouse is grabbed, RetroArch hides the \n"
-                     "mouse, and keeps the mouse pointer inside \n"
-                     "the window to allow relative mouse input to \n"
-                     "work better.");
-               break;
-            case MENU_SETTINGS_BIND_BEGIN + RARCH_MENU_TOGGLE:
-               snprintf(msg, sizeof(msg),
-                     " -- Toggles menu.");
-               break;
-            case MENU_SETTINGS_SHADER_0_FILTER + (0 * 3):
-            case MENU_SETTINGS_SHADER_0_FILTER + (1 * 3):
-            case MENU_SETTINGS_SHADER_0_FILTER + (2 * 3):
-            case MENU_SETTINGS_SHADER_0_FILTER + (3 * 3):
-            case MENU_SETTINGS_SHADER_0_FILTER + (4 * 3):
-            case MENU_SETTINGS_SHADER_0_FILTER + (5 * 3):
-            case MENU_SETTINGS_SHADER_0_FILTER + (6 * 3):
-            case MENU_SETTINGS_SHADER_0_FILTER + (7 * 3):
-            case MENU_SETTINGS_SHADER_0_FILTER + (8 * 3):
-            case MENU_SETTINGS_SHADER_0_FILTER + (9 * 3):
-            case MENU_SETTINGS_SHADER_0_FILTER + (10 * 3):
-            case MENU_SETTINGS_SHADER_0_FILTER + (11 * 3):
-            case MENU_SETTINGS_SHADER_0_FILTER + (12 * 3):
-            case MENU_SETTINGS_SHADER_0_FILTER + (13 * 3):
-            case MENU_SETTINGS_SHADER_0_FILTER + (14 * 3):
-            case MENU_SETTINGS_SHADER_0_FILTER + (15 * 3):
-               snprintf(msg, sizeof(msg),
-                     " -- Hardware filter for this pass. \n"
-                     " \n"
-                     "If 'Don't Care' is set, 'Default \n"
-                     "Filter' will be used."
-                     );
-               break;
-            case MENU_SETTINGS_SHADER_0 + (0 * 3):
-            case MENU_SETTINGS_SHADER_0 + (1 * 3):
-            case MENU_SETTINGS_SHADER_0 + (2 * 3):
-            case MENU_SETTINGS_SHADER_0 + (3 * 3):
-            case MENU_SETTINGS_SHADER_0 + (4 * 3):
-            case MENU_SETTINGS_SHADER_0 + (5 * 3):
-            case MENU_SETTINGS_SHADER_0 + (6 * 3):
-            case MENU_SETTINGS_SHADER_0 + (7 * 3):
-            case MENU_SETTINGS_SHADER_0 + (8 * 3):
-            case MENU_SETTINGS_SHADER_0 + (9 * 3):
-            case MENU_SETTINGS_SHADER_0 + (10 * 3):
-            case MENU_SETTINGS_SHADER_0 + (11 * 3):
-            case MENU_SETTINGS_SHADER_0 + (12 * 3):
-            case MENU_SETTINGS_SHADER_0 + (13 * 3):
-            case MENU_SETTINGS_SHADER_0 + (14 * 3):
-            case MENU_SETTINGS_SHADER_0 + (15 * 3):
-               snprintf(msg, sizeof(msg),
-                     " -- Path to shader. \n"
-                     " \n"
-                     "All shaders must be of the same \n"
-                     "type (i.e. CG, GLSL or HLSL). \n"
-                     " \n"
-                     "Set Shader Directory to set where \n"
-                     "the browser starts to look for \n"
-                     "shaders."
-                     );
-               break;
-            case MENU_SETTINGS_SHADER_0_SCALE + (0 * 3):
-            case MENU_SETTINGS_SHADER_0_SCALE + (1 * 3):
-            case MENU_SETTINGS_SHADER_0_SCALE + (2 * 3):
-            case MENU_SETTINGS_SHADER_0_SCALE + (3 * 3):
-            case MENU_SETTINGS_SHADER_0_SCALE + (4 * 3):
-            case MENU_SETTINGS_SHADER_0_SCALE + (5 * 3):
-            case MENU_SETTINGS_SHADER_0_SCALE + (6 * 3):
-            case MENU_SETTINGS_SHADER_0_SCALE + (7 * 3):
-            case MENU_SETTINGS_SHADER_0_SCALE + (8 * 3):
-            case MENU_SETTINGS_SHADER_0_SCALE + (9 * 3):
-            case MENU_SETTINGS_SHADER_0_SCALE + (10 * 3):
-            case MENU_SETTINGS_SHADER_0_SCALE + (11 * 3):
-            case MENU_SETTINGS_SHADER_0_SCALE + (12 * 3):
-            case MENU_SETTINGS_SHADER_0_SCALE + (13 * 3):
-            case MENU_SETTINGS_SHADER_0_SCALE + (14 * 3):
-            case MENU_SETTINGS_SHADER_0_SCALE + (15 * 3):
-               snprintf(msg, sizeof(msg),
-                     " -- Scale for this pass. \n"
-                     " \n"
-                     "The scale factor accumulates, i.e. 2x \n"
-                     "for first pass and 2x for second pass \n"
-                     "will give you a 4x total scale. \n"
-                     " \n"
-                     "If there is a scale factor for last \n"
-                     "pass, the result is stretched to \n"
-                     "screen with the filter specified in \n"
-                     "'Default Filter'. \n"
-                     " \n"
-                     "If 'Don't Care' is set, either 1x \n"
-                     "scale or stretch to fullscreen will \n"
-                     "be used depending if it's not the last \n"
-                     "pass or not."
-                     );
-               break;
-            default:
-               snprintf(msg, sizeof(msg),
-                     "-- No info on this item available. --\n");
+                        );
+                  break;
+               case MENU_SETTINGS_BIND_BEGIN + RARCH_REWIND:
+                  snprintf(msg, sizeof(msg),
+                        " -- Hold button down to rewind.\n"
+                        " \n"
+                        "Rewind must be enabled.");
+                  break;
+               case MENU_SETTINGS_BIND_BEGIN + RARCH_MOVIE_RECORD_TOGGLE:
+                  snprintf(msg, sizeof(msg),
+                        " -- Toggle between recording and not.");
+                  break;
+               case MENU_SETTINGS_BIND_BEGIN + RARCH_PAUSE_TOGGLE:
+                  snprintf(msg, sizeof(msg),
+                        " -- Toggle between paused and non-paused state.");
+                  break;
+               case MENU_SETTINGS_BIND_BEGIN + RARCH_FRAMEADVANCE:
+                  snprintf(msg, sizeof(msg),
+                        " -- Frame advance when content is paused.");
+                  break;
+               case MENU_SETTINGS_BIND_BEGIN + RARCH_RESET:
+                  snprintf(msg, sizeof(msg),
+                        " -- Reset the content.\n");
+                  break;
+               case MENU_SETTINGS_BIND_BEGIN + RARCH_CHEAT_INDEX_PLUS:
+                  snprintf(msg, sizeof(msg),
+                        " -- Increment cheat index.\n");
+                  break;
+               case MENU_SETTINGS_BIND_BEGIN + RARCH_CHEAT_INDEX_MINUS:
+                  snprintf(msg, sizeof(msg),
+                        " -- Decrement cheat index.\n");
+                  break;
+               case MENU_SETTINGS_BIND_BEGIN + RARCH_CHEAT_TOGGLE:
+                  snprintf(msg, sizeof(msg),
+                        " -- Toggle cheat index.\n");
+                  break;
+               case MENU_SETTINGS_BIND_BEGIN + RARCH_SCREENSHOT:
+                  snprintf(msg, sizeof(msg),
+                        " -- Take screenshot.");
+                  break;
+               case MENU_SETTINGS_BIND_BEGIN + RARCH_MUTE:
+                  snprintf(msg, sizeof(msg),
+                        " -- Mute/unmute audio.");
+                  break;
+               case MENU_SETTINGS_BIND_BEGIN + RARCH_NETPLAY_FLIP:
+                  snprintf(msg, sizeof(msg),
+                        " -- Netplay flip players.");
+                  break;
+               case MENU_SETTINGS_BIND_BEGIN + RARCH_SLOWMOTION:
+                  snprintf(msg, sizeof(msg),
+                        " -- Hold for slowmotion.");
+                  break;
+               case MENU_SETTINGS_BIND_BEGIN + RARCH_ENABLE_HOTKEY:
+                  snprintf(msg, sizeof(msg),
+                        " -- Enable other hotkeys.\n"
+                        " \n"
+                        " If this hotkey is bound to either keyboard, \n"
+                        "joybutton or joyaxis, all other hotkeys will \n"
+                        "be disabled unless this hotkey is also held \n"
+                        "at the same time. \n"
+                        " \n"
+                        "This is useful for RETRO_KEYBOARD centric \n"
+                        "implementations which query a large area of \n"
+                        "the keyboard, where it is not desirable that \n"
+                        "hotkeys get in the way.");
+                  break;
+               case MENU_SETTINGS_BIND_BEGIN + RARCH_VOLUME_UP:
+                  snprintf(msg, sizeof(msg),
+                        " -- Increases audio volume.");
+                  break;
+               case MENU_SETTINGS_BIND_BEGIN + RARCH_VOLUME_DOWN:
+                  snprintf(msg, sizeof(msg),
+                        " -- Decreases audio volume.");
+                  break;
+               case MENU_SETTINGS_BIND_BEGIN + RARCH_OVERLAY_NEXT:
+                  snprintf(msg, sizeof(msg),
+                        " -- Toggles to next overlay.\n"
+                        " \n"
+                        "Wraps around.");
+                  break;
+               case MENU_SETTINGS_BIND_BEGIN + RARCH_DISK_EJECT_TOGGLE:
+                  snprintf(msg, sizeof(msg),
+                        " -- Toggles eject for disks.\n"
+                        " \n"
+                        "Used for multiple-disk content.");
+                  break;
+               case MENU_SETTINGS_BIND_BEGIN + RARCH_DISK_NEXT:
+                  snprintf(msg, sizeof(msg),
+                        " -- Cycles through disk images. Use after \n"
+                        "ejecting. \n"
+                        " \n"
+                        " Complete by toggling eject again.");
+                  break;
+               case MENU_SETTINGS_BIND_BEGIN + RARCH_GRAB_MOUSE_TOGGLE:
+                  snprintf(msg, sizeof(msg),
+                        " -- Toggles mouse grab.\n"
+                        " \n"
+                        "When mouse is grabbed, RetroArch hides the \n"
+                        "mouse, and keeps the mouse pointer inside \n"
+                        "the window to allow relative mouse input to \n"
+                        "work better.");
+                  break;
+               case MENU_SETTINGS_BIND_BEGIN + RARCH_MENU_TOGGLE:
+                  snprintf(msg, sizeof(msg),
+                        " -- Toggles menu.");
+                  break;
+               case MENU_SETTINGS_SHADER_0_FILTER + (0 * 3):
+               case MENU_SETTINGS_SHADER_0_FILTER + (1 * 3):
+               case MENU_SETTINGS_SHADER_0_FILTER + (2 * 3):
+               case MENU_SETTINGS_SHADER_0_FILTER + (3 * 3):
+               case MENU_SETTINGS_SHADER_0_FILTER + (4 * 3):
+               case MENU_SETTINGS_SHADER_0_FILTER + (5 * 3):
+               case MENU_SETTINGS_SHADER_0_FILTER + (6 * 3):
+               case MENU_SETTINGS_SHADER_0_FILTER + (7 * 3):
+               case MENU_SETTINGS_SHADER_0_FILTER + (8 * 3):
+               case MENU_SETTINGS_SHADER_0_FILTER + (9 * 3):
+               case MENU_SETTINGS_SHADER_0_FILTER + (10 * 3):
+               case MENU_SETTINGS_SHADER_0_FILTER + (11 * 3):
+               case MENU_SETTINGS_SHADER_0_FILTER + (12 * 3):
+               case MENU_SETTINGS_SHADER_0_FILTER + (13 * 3):
+               case MENU_SETTINGS_SHADER_0_FILTER + (14 * 3):
+               case MENU_SETTINGS_SHADER_0_FILTER + (15 * 3):
+                  snprintf(msg, sizeof(msg),
+                        " -- Hardware filter for this pass. \n"
+                        " \n"
+                        "If 'Don't Care' is set, 'Default \n"
+                        "Filter' will be used."
+                        );
+                  break;
+               case MENU_SETTINGS_SHADER_0 + (0 * 3):
+               case MENU_SETTINGS_SHADER_0 + (1 * 3):
+               case MENU_SETTINGS_SHADER_0 + (2 * 3):
+               case MENU_SETTINGS_SHADER_0 + (3 * 3):
+               case MENU_SETTINGS_SHADER_0 + (4 * 3):
+               case MENU_SETTINGS_SHADER_0 + (5 * 3):
+               case MENU_SETTINGS_SHADER_0 + (6 * 3):
+               case MENU_SETTINGS_SHADER_0 + (7 * 3):
+               case MENU_SETTINGS_SHADER_0 + (8 * 3):
+               case MENU_SETTINGS_SHADER_0 + (9 * 3):
+               case MENU_SETTINGS_SHADER_0 + (10 * 3):
+               case MENU_SETTINGS_SHADER_0 + (11 * 3):
+               case MENU_SETTINGS_SHADER_0 + (12 * 3):
+               case MENU_SETTINGS_SHADER_0 + (13 * 3):
+               case MENU_SETTINGS_SHADER_0 + (14 * 3):
+               case MENU_SETTINGS_SHADER_0 + (15 * 3):
+                  snprintf(msg, sizeof(msg),
+                        " -- Path to shader. \n"
+                        " \n"
+                        "All shaders must be of the same \n"
+                        "type (i.e. CG, GLSL or HLSL). \n"
+                        " \n"
+                        "Set Shader Directory to set where \n"
+                        "the browser starts to look for \n"
+                        "shaders."
+                        );
+                  break;
+               case MENU_SETTINGS_SHADER_0_SCALE + (0 * 3):
+               case MENU_SETTINGS_SHADER_0_SCALE + (1 * 3):
+               case MENU_SETTINGS_SHADER_0_SCALE + (2 * 3):
+               case MENU_SETTINGS_SHADER_0_SCALE + (3 * 3):
+               case MENU_SETTINGS_SHADER_0_SCALE + (4 * 3):
+               case MENU_SETTINGS_SHADER_0_SCALE + (5 * 3):
+               case MENU_SETTINGS_SHADER_0_SCALE + (6 * 3):
+               case MENU_SETTINGS_SHADER_0_SCALE + (7 * 3):
+               case MENU_SETTINGS_SHADER_0_SCALE + (8 * 3):
+               case MENU_SETTINGS_SHADER_0_SCALE + (9 * 3):
+               case MENU_SETTINGS_SHADER_0_SCALE + (10 * 3):
+               case MENU_SETTINGS_SHADER_0_SCALE + (11 * 3):
+               case MENU_SETTINGS_SHADER_0_SCALE + (12 * 3):
+               case MENU_SETTINGS_SHADER_0_SCALE + (13 * 3):
+               case MENU_SETTINGS_SHADER_0_SCALE + (14 * 3):
+               case MENU_SETTINGS_SHADER_0_SCALE + (15 * 3):
+                  snprintf(msg, sizeof(msg),
+                        " -- Scale for this pass. \n"
+                        " \n"
+                        "The scale factor accumulates, i.e. 2x \n"
+                        "for first pass and 2x for second pass \n"
+                        "will give you a 4x total scale. \n"
+                        " \n"
+                        "If there is a scale factor for last \n"
+                        "pass, the result is stretched to \n"
+                        "screen with the filter specified in \n"
+                        "'Default Filter'. \n"
+                        " \n"
+                        "If 'Don't Care' is set, either 1x \n"
+                        "scale or stretch to fullscreen will \n"
+                        "be used depending if it's not the last \n"
+                        "pass or not."
+                        );
+                  break;
+               default:
+                  snprintf(msg, sizeof(msg),
+                        "-- No info on this item available. --\n");
+            }
          }
       }
    }

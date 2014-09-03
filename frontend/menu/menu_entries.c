@@ -840,3 +840,31 @@ void menu_entries_push(file_list_t *list,
    menu_clear_navigation(driver.menu);
    driver.menu->need_refresh = true;
 }
+
+int menu_entries_get_description(const char *label, 
+      char *msg, size_t sizeof_msg)
+{
+   if (!strcmp(label, "shader_apply_changes"))
+   {
+      snprintf(msg, sizeof_msg,
+            " -- Apply Shader Changes. \n"
+            " \n"
+            "After changing shader settings, use this to \n"
+            "apply changes. \n"
+            " \n"
+            "Changing shader settings is a somewhat \n"
+            "expensive operation so it has to be \n"
+            "done explicitly. \n"
+            " \n"
+            "When you apply shaders, the menu shader \n"
+            "settings are saved to a temporary file (either \n"
+            "menu.cgp or menu.glslp) and loaded. The file \n"
+            "persists after RetroArch exits. The file is \n"
+            "saved to Shader Directory."
+            );
+
+      return 0;
+   }
+
+   return -1;
+}
