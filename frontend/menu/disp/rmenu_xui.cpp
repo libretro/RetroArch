@@ -504,9 +504,7 @@ static void rmenu_xui_render(void)
          }
       }
       else if (menu_type == MENU_SETTINGS_CONFIG ||
-#ifdef HAVE_OVERLAY
             menu_type == MENU_SETTINGS_OVERLAY_PRESET ||
-#endif
             !strcmp(label, "video_filter") ||
             !strcmp(label, "audio_dsp_plugin") ||
             menu_type == MENU_SETTINGS_DISK_APPEND ||

@@ -76,10 +76,8 @@ static void get_title(const char *label, const char *dir,
       strlcpy(title, "LOAD HISTORY", sizeof_title);
    else if (!strcmp(label, "info_screen"))
       strlcpy(title, "INFO", sizeof_title);
-#ifdef HAVE_OVERLAY
    else if (menu_type == MENU_SETTINGS_OVERLAY_PRESET)
       snprintf(title, sizeof_title, "OVERLAY %s", dir);
-#endif
    else if (!strcmp(label, "video_filter"))
       snprintf(title, sizeof_title, "FILTER %s", dir);
    else if (!strcmp(label, "audio_dsp_plugin"))
@@ -108,10 +106,8 @@ static void get_title(const char *label, const char *dir,
       snprintf(title, sizeof_title, "CONFIG DIR %s", dir);
    else if (menu_type == MENU_SAVEFILE_DIR_PATH)
       snprintf(title, sizeof_title, "SAVEFILE DIR %s", dir);
-#ifdef HAVE_OVERLAY
    else if (menu_type == MENU_OVERLAY_DIR_PATH)
       snprintf(title, sizeof_title, "OVERLAY DIR %s", dir);
-#endif
    else if (menu_type == MENU_SYSTEM_DIR_PATH)
       snprintf(title, sizeof_title, "SYSTEM DIR %s", dir);
    else if (menu_type == MENU_ASSETS_DIR_PATH)
