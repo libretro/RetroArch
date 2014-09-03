@@ -869,7 +869,7 @@ static void lakka_context_reset(void *data)
       fill_pathname_join(iconpath, themepath, icon_dir, sizeof(iconpath));
       fill_pathname_slash(iconpath, sizeof(iconpath));
 
-      info_list = (core_info_list_t*)menu->core_info;
+      info_list = (core_info_list_t*)g_extern.core_info;
       info = NULL;
 
       if (info_list)
@@ -1024,21 +1024,10 @@ static int lakka_input_postprocess(uint64_t old_state)
 
 static void lakka_init_core_info(void *data)
 {
-   core_info_list_t *core;
-   menu_handle_t *menu = (menu_handle_t*)data;
+   (void)data;
 
-   core_info_list_free(menu->core_info);
-   menu->core_info = NULL;
-
-   menu->core_info = (core_info_list_t*)
-      core_info_list_new(*g_settings.libretro_directory ?
-            g_settings.libretro_directory : "/usr/lib/libretro");
-
-   if (menu->core_info)
-   {
-      core = (core_info_list_t*)menu->core_info;
-      num_categories = menu->core_info ? core->count + 1 : 1;
-   }
+   if (g_extern.core_info)
+      num_categories = g_extern.core_info->count + 1;
 }
 
 static void *lakka_init(void)
@@ -1063,7 +1052,7 @@ static void *lakka_init(void)
       core_info_list_t *info_list;
       menu_category_t *category = (menu_category_t*)&categories[i];
 
-      info_list = (core_info_list_t*)menu->core_info;
+      info_list = (core_info_list_t*)g_extern.core_info;
       info = NULL;
 
       if (info_list)

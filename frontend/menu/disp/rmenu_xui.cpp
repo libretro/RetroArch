@@ -640,16 +640,6 @@ static void rmenu_xui_list_set_selection(void *data)
       XuiListSetCurSel(m_menulist, file_list_get_directory_ptr(list));
 }
 
-static void rmenu_xui_init_core_info(void *data)
-{
-   menu_handle_t *menu = (menu_handle_t*)data;
-
-   core_info_list_free(menu->core_info);
-   menu->core_info = NULL;
-   if (*g_settings.libretro_directory)
-      menu->core_info = core_info_list_new(g_settings.libretro_directory);
-}
-
 const menu_ctx_driver_t menu_ctx_rmenu_xui = {
    NULL,
    rmenu_xui_render_messagebox,
@@ -673,7 +663,7 @@ const menu_ctx_driver_t menu_ctx_rmenu_xui = {
    rmenu_xui_list_delete,
    rmenu_xui_list_clear,
    rmenu_xui_list_set_selection,
-   rmenu_xui_init_core_info,
+   NULL,
    &menu_ctx_backend_common,
    "rmenu_xui",
 };

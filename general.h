@@ -32,6 +32,7 @@
 #include "audio/dsp_filter.h"
 #include "compat/strl.h"
 #include "core_options.h"
+#include "core_info.h"
 #include "miscellaneous.h"
 #include "gfx/filter.h"
 
@@ -411,6 +412,8 @@ struct global
    struct string_list *temporary_content;
 
    content_playlist_t *history;
+   core_info_list_t *core_info;
+   core_info_t *core_info_current;
 
    uint32_t content_crc;
 

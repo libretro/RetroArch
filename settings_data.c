@@ -1948,7 +1948,7 @@ rarch_setting_t *setting_data_get_mainmenu(bool regenerate)
       {
          CONFIG_BOOL(lists[1],     "history_list",  "Load Content (History)", false, "...", "...", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
       }
-      if (driver.menu && driver.menu->core_info && core_info_list_num_info_files(driver.menu->core_info))
+      if (driver.menu && g_extern.core_info && core_info_list_num_info_files(g_extern.core_info))
       {
          CONFIG_BOOL(lists[2],     "detect_core_list",  "Load Content (Detect Core)", false, "...", "...", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
       }

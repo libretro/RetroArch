@@ -28,15 +28,15 @@ void menu_update_system_info(menu_handle_t *menu, bool *load_no_content)
       libretro_get_system_info(g_settings.libretro, &menu->info,
             load_no_content);
 #endif
-      if (menu->core_info)
+      if (g_extern.core_info)
       {
          /* Keep track of info for the currently selected core. */
 
-         if (core_info_list_get_info(menu->core_info,
-                  menu->core_info_current, g_settings.libretro))
+         if (core_info_list_get_info(g_extern.core_info,
+                  g_extern.core_info_current, g_settings.libretro))
          {
             const core_info_t *info = (const core_info_t*)
-               menu->core_info_current;
+               g_extern.core_info_current;
 
             RARCH_LOG("[Core Info]:\n");
             if (info->display_name)
@@ -95,10 +95,9 @@ static void load_menu_content_prepare(void)
       }
 
       content_playlist_push(g_extern.history,
-            *g_extern.fullpath ? g_extern.fullpath : NULL,
+            g_extern.fullpath,
             g_settings.libretro,
-            driver.menu->info.library_name ?
-            driver.menu->info.library_name : "");
+            driver.menu->info.library_name);
    }
 
    /* redraw menu frame */
@@ -133,10 +132,10 @@ static void menu_update_libretro_info(menu_handle_t *menu)
    retro_get_system_info(&menu->info);
 #endif
 
-   core_info_list_free(menu->core_info);
-   menu->core_info = NULL;
+   core_info_list_free(g_extern.core_info);
+   g_extern.core_info = NULL;
    if (*g_settings.libretro_directory)
-      menu->core_info = core_info_list_new(g_settings.libretro_directory);
+      g_extern.core_info = core_info_list_new(g_settings.libretro_directory);
 
    menu_update_system_info(menu, NULL);
 }
@@ -208,7 +207,7 @@ void *menu_init(const void *data)
 
    menu->menu_stack = (file_list_t*)calloc(1, sizeof(file_list_t));
    menu->selection_buf = (file_list_t*)calloc(1, sizeof(file_list_t));
-   menu->core_info_current = (core_info_t*)calloc(1, sizeof(core_info_t));
+   g_extern.core_info_current = (core_info_t*)calloc(1, sizeof(core_info_t));
 #ifdef HAVE_SHADER_MANAGER
    menu->shader = (struct gfx_shader*)calloc(1, sizeof(struct gfx_shader));
 #endif
@@ -263,11 +262,11 @@ void menu_free(void *data)
 
    rarch_main_command(RARCH_CMD_HISTORY_DEINIT);
 
-   if (menu->core_info)
-      core_info_list_free(menu->core_info);
+   if (g_extern.core_info)
+      core_info_list_free(g_extern.core_info);
 
-   if (menu->core_info_current)
-      free(menu->core_info_current);
+   if (g_extern.core_info_current)
+      free(g_extern.core_info_current);
 
    free(data);
 }

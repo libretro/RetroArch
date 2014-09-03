@@ -183,7 +183,7 @@ int menu_entries_push_list(menu_handle_t *menu,
             {
                const core_info_t *info = NULL;
                file_list_clear(list);
-               core_info_list_get_supported_cores(driver.menu->core_info,
+               core_info_list_get_supported_cores(g_extern.core_info,
                      driver.menu->deferred_path, &info, &list_size);
                for (i = 0; i < list_size; i++)
                {
@@ -313,7 +313,7 @@ int menu_entries_push_list(menu_handle_t *menu,
             break;
          case MENU_SETTINGS_CORE_INFO:
             {
-               core_info_t *info = (core_info_t*)menu->core_info_current;
+               core_info_t *info = (core_info_t*)g_extern.core_info_current;
                file_list_clear(list);
 
                if (info->data)
@@ -352,7 +352,8 @@ int menu_entries_push_list(menu_handle_t *menu,
 
                   if (info->firmware_count > 0)
                   {
-                     core_info_list_update_missing_firmware(menu->core_info, info->path,
+                     core_info_list_update_missing_firmware(
+                           g_extern.core_info, info->path,
                            g_settings.system_directory);
 
                      file_list_push(list, "Firmware: ", "",
@@ -725,8 +726,8 @@ int menu_parse_and_resolve(file_list_t *list, file_list_t *menu_list)
    else if (menu_common_type_is(menu_type) == MENU_FILE_DIRECTORY)
       exts = ""; /* we ignore files anyway */
    else if (driver.menu->defer_core)
-      exts = driver.menu->core_info ? core_info_list_get_all_extensions(
-            driver.menu->core_info) : "";
+      exts = g_extern.core_info ? core_info_list_get_all_extensions(
+            g_extern.core_info) : "";
    else if (driver.menu->info.valid_extensions)
    {
       exts = ext_buf;
@@ -795,8 +796,8 @@ int menu_parse_and_resolve(file_list_t *list, file_list_t *menu_list)
 
          fill_pathname_join(core_path, dir, path, sizeof(core_path));
 
-         if (driver.menu->core_info &&
-               core_info_list_get_display_name(driver.menu->core_info,
+         if (g_extern.core_info &&
+               core_info_list_get_display_name(g_extern.core_info,
                   core_path, display_name, sizeof(display_name)))
             file_list_set_alt_at_offset(list, i, display_name);
       }

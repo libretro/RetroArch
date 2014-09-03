@@ -3437,6 +3437,10 @@ void rarch_main_command(unsigned cmd)
          g_extern.history = NULL;
          break;
       case RARCH_CMD_CORE_INFO_INIT:
+         core_info_list_free(g_extern.core_info);
+         g_extern.core_info = NULL;
+         if (*g_settings.libretro_directory)
+            g_extern.core_info = core_info_list_new(g_settings.libretro_directory);
 #ifdef HAVE_MENU
          if (driver.menu_ctx && driver.menu_ctx->init_core_info)
             driver.menu_ctx->init_core_info(driver.menu);

@@ -1948,7 +1948,7 @@ static int menu_action_ok(const char *dir,
          if (driver.menu->defer_core)
          {
             const core_info_t *info = NULL;
-            int ret = rarch_defer_core(info, driver.menu->core_info,
+            int ret = rarch_defer_core(info, g_extern.core_info,
                   dir, path, driver.menu->deferred_path,
                   sizeof(driver.menu->deferred_path));
 

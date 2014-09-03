@@ -445,16 +445,6 @@ static int rmenu_input_postprocess(uint64_t old_state)
    return 0;
 }
 
-static void rmenu_init_core_info(void *data)
-{
-   menu_handle_t *menu = (menu_handle_t*)data;
-
-   core_info_list_free(menu->core_info);
-   menu->core_info = NULL;
-   if (*g_settings.libretro_directory)
-      menu->core_info = core_info_list_new(g_settings.libretro_directory);
-}
-
 const menu_ctx_driver_t menu_ctx_rmenu = {
    rmenu_set_texture,
    rmenu_render_messagebox,
@@ -478,7 +468,7 @@ const menu_ctx_driver_t menu_ctx_rmenu = {
    NULL,
    NULL,
    NULL,
-   rmenu_init_core_info,
+   NULL,
    &menu_ctx_backend_common,
    "rmenu",
 };
