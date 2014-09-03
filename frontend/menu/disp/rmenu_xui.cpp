@@ -121,8 +121,6 @@ CRetroArch app;
 wchar_t strw_buffer[PATH_MAX];
 char str_buffer[PATH_MAX];
 
-static int process_input_ret = 0;
-
 /* Register custom classes */
 HRESULT CRetroArch::RegisterXuiClasses (void)
 {
@@ -343,30 +341,14 @@ static void rmenu_xui_frame(void)
 
 static int rmenu_xui_input_postprocess(uint64_t old_state)
 {
-   bool quit = false;
-   bool resize = false;
-   unsigned width;
-   unsigned height;
-   unsigned frame_count;
-
-   (void)width;
-   (void)height;
-   (void)frame_count;
-
    if ((driver.menu->trigger_state & (1ULL << RARCH_MENU_TOGGLE)) &&
       g_extern.main_is_init)
    {
       rarch_main_command(RARCH_CMD_RESUME);
-      process_input_ret = -1;
+      return -1;
    }
 
-   if (quit)
-      process_input_ret = -1;
-
-   int process_input_ret_old = process_input_ret; 
-   process_input_ret = 0;
-
-   return process_input_ret_old;
+   return 0;
 }
 
 static void blit_line(int x, int y, const char *message, bool green)
