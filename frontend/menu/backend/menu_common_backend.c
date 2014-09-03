@@ -1286,7 +1286,7 @@ static int menu_setting_ok_toggle(unsigned type,
    }
    else if (
          menu_common_type_is(label, type) == MENU_SETTINGS ||
-         type == MENU_SETTINGS_CORE ||
+         !strcmp(label, "core_list") ||
          type == MENU_SETTINGS_CONFIG ||
          type == MENU_SETTINGS_DISK_APPEND
          )
@@ -1880,7 +1880,7 @@ static int menu_action_ok(const char *dir,
          menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS);
          return -1;
       }
-      else if (menu_type == MENU_SETTINGS_CORE)
+      else if (!strcmp(menu_label, "core_list"))
       {
          fill_pathname_join(g_settings.libretro, dir, path,
                sizeof(g_settings.libretro));

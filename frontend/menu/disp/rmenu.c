@@ -270,7 +270,7 @@ static void rmenu_render(void)
 #endif
       /* Pretty-print libretro cores from menu. */
       if (
-            menu_type == MENU_SETTINGS_CORE ||
+            !strcmp(label, "core_list") ||
             menu_type == MENU_SETTINGS_DEFERRED_CORE)
       {
          if (type == MENU_FILE_PLAIN)

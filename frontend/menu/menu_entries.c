@@ -102,7 +102,7 @@ int menu_entries_push_list(menu_handle_t *menu,
    {
       setting_data = (rarch_setting_t *)setting_data_get_mainmenu(true);
       file_list_clear(list);
-      add_setting_entry(menu,list,"core_list", MENU_SETTINGS_CORE, setting_data);
+      add_setting_entry(menu,list,"core_list", 0, setting_data);
       add_setting_entry(menu,list,"history_list", 0, setting_data);
       add_setting_entry(menu,list,"detect_core_list", 0, setting_data);
       add_setting_entry(menu,list,"load_content", 0, setting_data);
@@ -582,7 +582,7 @@ int menu_parse_check(const char *label, unsigned menu_type)
             menu_type == MENU_CONTENT_HISTORY_PATH ||
             !strcmp(label, "video_filter") ||
             !strcmp(label, "audio_dsp_plugin") ||
-            menu_type == MENU_SETTINGS_CORE ||
+            !strcmp(label, "core_list") ||
             menu_type == MENU_SETTINGS_CONFIG ||
             menu_type == MENU_SETTINGS_DISK_APPEND)))
       return -1;
