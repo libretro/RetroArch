@@ -91,6 +91,23 @@ static void draw_frame(bool enable)
       rarch_render_cached_frame();
 }
 
+static void throttle_frame(void)
+{
+   if (!driver.menu)
+      return;
+
+   /* Throttle in case VSync is broken (avoid 1000+ FPS Menu). */
+   driver.menu->time = rarch_get_time_usec();
+   driver.menu->delta = (driver.menu->time - driver.menu->last_time) / 1000;
+   driver.menu->target_msec = 750 / g_settings.video.refresh_rate;
+   /* Try to sleep less, so we can hopefully rely on FPS logger. */
+   driver.menu->sleep_msec = driver.menu->target_msec - driver.menu->delta;
+
+   if (driver.menu->sleep_msec > 0)
+      rarch_sleep((unsigned int)driver.menu->sleep_msec);
+   driver.menu->last_time = rarch_get_time_usec();
+}
+
 static void load_menu_content_prepare(void)
 {
    if (!driver.menu)
@@ -320,6 +337,30 @@ void menu_ticker_line(char *buf, size_t len, unsigned index,
    }
 }
 
+static unsigned input_frame(uint64_t trigger_state)
+{
+   if (trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_UP))
+      return MENU_ACTION_UP;
+   if (trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN))
+      return MENU_ACTION_DOWN;
+   if (trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT))
+      return MENU_ACTION_LEFT;
+   if (trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT))
+      return MENU_ACTION_RIGHT;
+   if (trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_L))
+      return MENU_ACTION_SCROLL_UP;
+   if (trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_R))
+      return MENU_ACTION_SCROLL_DOWN;
+   if (trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_B))
+      return MENU_ACTION_CANCEL;
+   if (trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_A))
+      return MENU_ACTION_OK;
+   if (trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_START))
+      return MENU_ACTION_START;
+   if (trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_SELECT))
+      return MENU_ACTION_SELECT;
+   return MENU_ACTION_NOOP;
+}
 
 bool menu_iterate(void)
 {
@@ -392,44 +433,14 @@ bool menu_iterate(void)
    /* don't run anything first frame, only capture held inputs
     * for old_input_state.
     */
-   if (driver.menu->trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_UP))
-      action = MENU_ACTION_UP;
-   else if (driver.menu->trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN))
-      action = MENU_ACTION_DOWN;
-   else if (driver.menu->trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT))
-      action = MENU_ACTION_LEFT;
-   else if (driver.menu->trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT))
-      action = MENU_ACTION_RIGHT;
-   else if (driver.menu->trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_L))
-      action = MENU_ACTION_SCROLL_UP;
-   else if (driver.menu->trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_R))
-      action = MENU_ACTION_SCROLL_DOWN;
-   else if (driver.menu->trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_B))
-      action = MENU_ACTION_CANCEL;
-   else if (driver.menu->trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_A))
-      action = MENU_ACTION_OK;
-   else if (driver.menu->trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_START))
-      action = MENU_ACTION_START;
-   else if (driver.menu->trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_SELECT))
-      action = MENU_ACTION_SELECT;
+   action = input_frame(driver.menu->trigger_state);
 
    if (driver.menu_ctx && driver.menu_ctx->backend
          && driver.menu_ctx->backend->iterate) 
       input_entry_ret = driver.menu_ctx->backend->iterate(action);
 
    draw_frame(true);
-
-   /* Throttle in case VSync is broken (avoid 1000+ FPS Menu). */
-   driver.menu->time = rarch_get_time_usec();
-   driver.menu->delta = (driver.menu->time - driver.menu->last_time) / 1000;
-   driver.menu->target_msec = 750 / g_settings.video.refresh_rate;
-   /* Try to sleep less, so we can hopefully rely on FPS logger. */
-   driver.menu->sleep_msec = driver.menu->target_msec - driver.menu->delta;
-
-   if (driver.menu->sleep_msec > 0)
-      rarch_sleep((unsigned int)driver.menu->sleep_msec);
-   driver.menu->last_time = rarch_get_time_usec();
-
+   throttle_frame();
    draw_frame(false);
 
    if (driver.menu_ctx && driver.menu_ctx->input_postprocess)
