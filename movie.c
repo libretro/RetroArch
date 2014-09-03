@@ -107,7 +107,8 @@ static bool init_record(bsv_movie_t *handle, const char *path)
 
    uint32_t header[4] = {0};
 
-   /* This value is supposed to show up as BSV1 in a HEX editor, big-endian. */
+   /* This value is supposed to show up as
+    * BSV1 in a HEX editor, big-endian. */
    header[MAGIC_INDEX] = swap_if_little32(BSV_MAGIC);
 
    header[CRC_INDEX] = swap_if_big32(g_extern.content_crc);

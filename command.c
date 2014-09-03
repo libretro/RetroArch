@@ -364,7 +364,6 @@ static void network_cmd_poll(rarch_cmd_t *handle)
 #ifdef HAVE_STDIN_CMD
 
 #ifdef _WIN32
-// Oh you, Win32 ... <_<
 static size_t read_stdin(char *buf, size_t size)
 {
    DWORD i;
@@ -546,8 +545,8 @@ static bool send_udp_packet(const char *host,
    if (getaddrinfo(host, port_buf, &hints, &res) < 0)
       return false;
 
-   // Send to all possible targets.
-   // "localhost" might resolve to several different IPs.
+   /* Send to all possible targets.
+    * "localhost" might resolve to several different IPs. */
    tmp = (const struct addrinfo*)res;
    while (tmp)
    {

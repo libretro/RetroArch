@@ -24,10 +24,13 @@ autosave_t *autosave_new(const char *path, const void *data,
       size_t size, unsigned interval);
 
 void autosave_lock(autosave_t *handle);
+
 void autosave_unlock(autosave_t *handle);
+
 void autosave_free(autosave_t *handle);
 
 void lock_autosave(void);
+
 void unlock_autosave(void);
 
 #endif

@@ -133,13 +133,22 @@ static ssize_t read_content_file(const char *path, void **buf)
 {
    uint8_t *ret_buf = NULL;
    ssize_t ret = -1;
-   /* Here we check, whether the file, we are about to read is inside an archive, or not.
-      We determine, whether a file is inside a compressed archive, by checking, if the archive string is a substring of the
-      complete path
-      For example: fullpath: /home/user/game.7z/mygame.rom
-                   carchive_path: /home/user/game.7z */
+
+   /* Here we check, whether the file, we are about to read is 
+    * inside an archive, or not.
+    *
+    * We determine, whether a file is inside a compressed archive,
+    * by checking, if the archive string is a substring of the
+    * complete path
+    *
+    * For example: fullpath: /home/user/game.7z/mygame.rom
+    * carchive_path: /home/user/game.7z
+    * */
+
 #ifdef HAVE_COMPRESSION
-   const char* archive_found = (const char*)strstr(path, g_extern.carchive_path);
+   const char* archive_found = (const char*)strstr(path,
+         g_extern.carchive_path);
+
    if (g_extern.is_carchive)
    {
       if(archive_found)
@@ -149,7 +158,8 @@ static ssize_t read_content_file(const char *path, void **buf)
          char rel_path[PATH_MAX];
          snprintf(rel_path, sizeof(rel_path),
                   "%s", archive_found + strlen(g_extern.carchive_path) + 1);
-         ret = read_compressed_file(g_extern.carchive_path, rel_path, (void**)&ret_buf);
+         ret = read_compressed_file(g_extern.carchive_path,
+               rel_path, (void**)&ret_buf);
       }
    }
    else
@@ -450,7 +460,8 @@ bool init_content_file(void)
          RARCH_ERR("libretro core requires special content, but none were provided.\n");
          return false;
       }
-      else if (special->num_roms && special->num_roms != g_extern.subsystem_fullpaths->size)
+      else if (special->num_roms && special->num_roms
+            != g_extern.subsystem_fullpaths->size)
       {
          RARCH_ERR("libretro core requires %u content files for subsystem \"%s\", but %u content files were provided.\n",
                special->num_roms, special->desc,

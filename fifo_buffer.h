@@ -13,8 +13,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __BUFFER_H
-#define __BUFFER_H
+#ifndef __FIFO_BUFFER_H
+#define __FIFO_BUFFER_H
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -24,10 +24,7 @@
 extern "C" {
 #endif
 
-#ifndef FIFO_BUF_TYPEDEF
-#define FIFO_BUF_TYPEDEF
 typedef struct fifo_buffer fifo_buffer_t;
-#endif
 
 fifo_buffer_t *fifo_new(size_t size);
 void fifo_write(fifo_buffer_t *buffer, const void *in_buf, size_t size);

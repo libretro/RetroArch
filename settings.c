@@ -591,6 +591,7 @@ static void config_load_core_specific(void)
       /* Force some parameters which are implied when using core specific configs.
        * Don't have the core config file overwrite the libretro path. */
       strlcpy(g_settings.libretro, tmp, sizeof(g_settings.libretro));
+
       /* This must be true for core specific configs. */
       g_settings.core_specific_config = true;
    }
@@ -653,10 +654,12 @@ static config_file_t *open_default_config_file(void)
       }
 
       if (saved)
-         RARCH_WARN("Created new config file in: \"%s\".\n", conf_path); // WARN here to make sure user has a good chance of seeing it.
+         RARCH_WARN("Created new config file in: \"%s\".\n", conf_path);
       else
       {
-         RARCH_ERR("Failed to create new config file in: \"%s\".\n", conf_path);
+         /* WARN here to make sure user has a good chance of seeing it. */
+         RARCH_ERR("Failed to create new config file in: \"%s\".\n",
+               conf_path);
          config_file_free(conf);
          conf = NULL;
       }
@@ -691,10 +694,12 @@ static config_file_t *open_default_config_file(void)
       }
       
       if (saved)
-         RARCH_WARN("Created new config file in: \"%s\".\n", conf_path); // WARN here to make sure user has a good chance of seeing it.
+         RARCH_WARN("Created new config file in: \"%s\".\n", conf_path);
       else
       {
-         RARCH_ERR("Failed to create new config file in: \"%s\".\n", conf_path);
+         /* WARN here to make sure user has a good chance of seeing it. */
+         RARCH_ERR("Failed to create new config file in: \"%s\".\n",
+               conf_path);
          config_file_free(conf);
          conf = NULL;
       }
@@ -708,7 +713,7 @@ static config_file_t *open_default_config_file(void)
    const char *xdg  = getenv("XDG_CONFIG_HOME");
    const char *home = getenv("HOME");
 
-   // XDG_CONFIG_HOME falls back to $HOME/.config.
+   /* XDG_CONFIG_HOME falls back to $HOME/.config. */
    if (xdg)
       fill_pathname_join(conf_path, xdg,
             "retroarch/retroarch.cfg", sizeof(conf_path));
@@ -727,7 +732,7 @@ static config_file_t *open_default_config_file(void)
       conf = config_file_new(conf_path);
    }
 
-   // Fallback to $HOME/.retroarch.cfg.
+   /* Fallback to $HOME/.retroarch.cfg. */
    if (!conf && home)
    {
       fill_pathname_join(conf_path, home,
@@ -736,10 +741,10 @@ static config_file_t *open_default_config_file(void)
       conf = config_file_new(conf_path);
    }
 
-   // Try to create a new config file.
+   /* Try to create a new config file. */
    if (!conf && (home || xdg))
    {
-      // XDG_CONFIG_HOME falls back to $HOME/.config.
+      /* XDG_CONFIG_HOME falls back to $HOME/.config. */
       if (xdg)
          fill_pathname_join(conf_path, xdg,
                "retroarch/retroarch.cfg", sizeof(conf_path));
@@ -776,14 +781,16 @@ static config_file_t *open_default_config_file(void)
          bool saved = false;
          if (conf)
          {
-            config_set_bool(conf, "config_save_on_exit", true); // Since this is a clean config file, we can safely use config_save_on_exit.
+            /* Since this is a clean config file, we can safely use config_save_on_exit. */
+            config_set_bool(conf, "config_save_on_exit", true);
             saved = config_file_write(conf, conf_path);
          }
 
          if (saved)
-            RARCH_WARN("Created new config file in: \"%s\".\n", conf_path); // WARN here to make sure user has a good chance of seeing it.
+            RARCH_WARN("Created new config file in: \"%s\".\n", conf_path);
          else
          {
+            /* WARN here to make sure user has a good chance of seeing it. */
             RARCH_ERR("Failed to create new config file in: \"%s\".\n", conf_path);
             config_file_free(conf);
             conf = NULL;
@@ -993,7 +1000,7 @@ bool config_load_file(const char *path, bool set_defaults)
       }
    }
 
-   // Audio settings.
+   /* Audio settings. */
    CONFIG_GET_BOOL(audio.enable, "audio_enable");
    CONFIG_GET_INT(audio.out_rate, "audio_out_rate");
    CONFIG_GET_INT(audio.block_frames, "audio_block_frames");
@@ -1026,7 +1033,7 @@ bool config_load_file(const char *path, bool set_defaults)
    if (!g_extern.has_set_libretro_directory)
       CONFIG_GET_PATH(libretro_directory, "libretro_directory");
 
-   // Safe-guard against older behavior.
+   /* Safe-guard against older behavior. */
    if (path_is_directory(g_settings.libretro))
    {
       RARCH_WARN("\"libretro_path\" is a directory, using this for \"libretro_directory\" instead.\n");
