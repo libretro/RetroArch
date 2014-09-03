@@ -351,7 +351,7 @@ static int menu_lakka_iterate(unsigned action)
 
 #ifdef HAVE_DYNAMIC
                      rarch_main_command(RARCH_CMD_LOAD_CORE);
-                     g_extern.lifecycle_state |= (1ULL << MODE_LOAD_GAME);
+                     rarch_main_set_state(RARCH_ACTION_STATE_LOAD_CONTENT);
 #endif
                   }
                   return -1;
@@ -384,7 +384,7 @@ static int menu_lakka_iterate(unsigned action)
          else if (depth == 0 && menu_active_category == 0 && active_category->active_item == active_category->num_items-1)
          {
             add_tween(DELAY, 1.0, &global_alpha, &inOutQuad, NULL);
-            g_extern.lifecycle_state &= ~(1ULL << MODE_GAME);
+            rarch_main_set_state(RARCH_ACTION_STATE_RUNNING_FINISHED);
             return -1;
          }
          break;

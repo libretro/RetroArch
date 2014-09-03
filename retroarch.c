@@ -3292,14 +3292,26 @@ void rarch_main_set_state(unsigned cmd)
       case RARCH_ACTION_STATE_MENU_PREINIT:
          g_extern.lifecycle_state |= (1ULL << MODE_MENU_PREINIT);
          break;
+      case RARCH_ACTION_STATE_MENU_PREINIT_FINISHED:
+         g_extern.lifecycle_state &= ~(1ULL << MODE_MENU_PREINIT);
+         break;
       case RARCH_ACTION_STATE_LOAD_CONTENT:
          g_extern.lifecycle_state |= (1ULL << MODE_LOAD_GAME);
          break;
-      case RARCH_ACTION_STATE_RUN_CONTENT:
+      case RARCH_ACTION_STATE_LOAD_CONTENT_FINISHED:
+         g_extern.lifecycle_state &= ~(1ULL << MODE_LOAD_GAME);
+         break;
+      case RARCH_ACTION_STATE_RUNNING:
          g_extern.lifecycle_state |= (1ULL << MODE_GAME);
          break;
-      case RARCH_ACTION_STATE_STOP_CONTENT:
+      case RARCH_ACTION_STATE_RUNNING_FINISHED:
          g_extern.lifecycle_state &= ~(1ULL << MODE_GAME);
+         break;
+      case RARCH_ACTION_STATE_MENU_RUNNING:
+         g_extern.lifecycle_state |= (1ULL << MODE_MENU);
+         break;
+      case RARCH_ACTION_STATE_MENU_RUNNING_FINISHED:
+         g_extern.lifecycle_state &= ~(1ULL << MODE_MENU);
          break;
       case RARCH_ACTION_STATE_EXITSPAWN:
          g_extern.lifecycle_state |= (1ULL << MODE_EXITSPAWN);
@@ -3520,7 +3532,7 @@ void rarch_main_command(unsigned cmd)
          rarch_main_set_state(RARCH_ACTION_STATE_QUIT);
          break;
       case RARCH_CMD_RESUME:
-         rarch_main_set_state(RARCH_ACTION_STATE_RUN_CONTENT);
+         rarch_main_set_state(RARCH_ACTION_STATE_RUNNING);
          break;
       case RARCH_CMD_RESTART_RETROARCH:
 #if defined(GEKKO) && defined(HW_RVL)
@@ -3528,7 +3540,7 @@ void rarch_main_command(unsigned cmd)
                SALAMANDER_FILE,
                sizeof(g_extern.fullpath));
 #endif
-         rarch_main_set_state(RARCH_ACTION_STATE_STOP_CONTENT);
+         rarch_main_set_state(RARCH_ACTION_STATE_RUNNING_FINISHED);
          rarch_main_set_state(RARCH_ACTION_STATE_EXITSPAWN);
          break;
       case RARCH_CMD_MENU_SAVE_CONFIG:

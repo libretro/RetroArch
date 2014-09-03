@@ -378,7 +378,7 @@ bool menu_iterate(void)
    if (g_extern.lifecycle_state & (1ULL << MODE_MENU_PREINIT))
    {
       driver.menu->need_refresh = true;
-      g_extern.lifecycle_state &= ~(1ULL << MODE_MENU_PREINIT);
+      rarch_main_set_state(RARCH_ACTION_STATE_MENU_PREINIT_FINISHED);
       driver.menu->old_input_state |= 1ULL << RARCH_MENU_TOGGLE;
    }
 

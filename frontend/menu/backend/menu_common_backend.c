@@ -1907,7 +1907,7 @@ static int menu_action_ok(const char *dir,
          /* No content needed for this core, load core immediately. */
          if (driver.menu->load_no_content)
          {
-            g_extern.lifecycle_state |= (1ULL << MODE_LOAD_GAME);
+            rarch_main_set_state(RARCH_ACTION_STATE_LOAD_CONTENT);
             *g_extern.fullpath = '\0';
             driver.menu->msg_force = true;
             return -1;
@@ -1976,7 +1976,7 @@ static int menu_action_ok(const char *dir,
          {
             fill_pathname_join(g_extern.fullpath, dir, path,
                   sizeof(g_extern.fullpath));
-            g_extern.lifecycle_state |= (1ULL << MODE_LOAD_GAME);
+            rarch_main_set_state(RARCH_ACTION_STATE_LOAD_CONTENT);
 
             menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS);
             driver.menu->msg_force = true;

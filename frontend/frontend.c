@@ -103,13 +103,14 @@ static int main_entry_iterate_shutdown(args_type() args)
 
 static int main_entry_iterate_content(args_type() args)
 {
-   if (rarch_main_iterate())
+   if (!rarch_main_iterate())
    {
-      if (driver.frontend_ctx && driver.frontend_ctx->process_events)
-         driver.frontend_ctx->process_events(args);
+      rarch_main_set_state(RARCH_ACTION_STATE_RUNNING_FINISHED);
+      return 0;
    }
-   else
-      g_extern.lifecycle_state &= ~(1ULL << MODE_GAME);
+
+   if (driver.frontend_ctx && driver.frontend_ctx->process_events)
+      driver.frontend_ctx->process_events(args);
 
    return 0;
 }
@@ -120,7 +121,7 @@ static int main_entry_iterate_load_content(args_type() args)
    if (!load_menu_content())
       g_extern.lifecycle_state = (1ULL << MODE_MENU_PREINIT);
 
-   g_extern.lifecycle_state &= ~(1ULL << MODE_LOAD_GAME);
+   rarch_main_set_state(RARCH_ACTION_STATE_LOAD_CONTENT_FINISHED);
 
    return 0;
 }
@@ -153,8 +154,8 @@ static int main_entry_iterate_menu_preinit(args_type() args)
    driver.menu->need_refresh = true;
    driver.menu->old_input_state |= 1ULL << RARCH_MENU_TOGGLE;
 
-   g_extern.lifecycle_state &= ~(1ULL << MODE_MENU_PREINIT);
-   g_extern.lifecycle_state |= (1ULL << MODE_MENU);
+   rarch_main_set_state(RARCH_ACTION_STATE_MENU_PREINIT_FINISHED);
+   rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING);
 
    return 0;
 }
@@ -168,7 +169,7 @@ static int main_entry_iterate_menu(args_type() args)
       return 0;
    }
 
-   g_extern.lifecycle_state &= ~(1ULL << MODE_MENU);
+   rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED);
    driver_set_nonblock_state(driver.nonblock_state);
 
    rarch_main_command(RARCH_CMD_AUDIO_START);
