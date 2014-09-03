@@ -470,7 +470,7 @@ static void rmenu_xui_render(void)
       else
       // Pretty-print libretro cores from menu.
       if (!strcmp(label, "core_list") ||
-            menu_type == MENU_SETTINGS_DEFERRED_CORE)
+            !strcmp(label, "deferred_core_list"))
       {
          if (type == MENU_FILE_PLAIN)
          {

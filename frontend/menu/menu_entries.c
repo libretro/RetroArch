@@ -270,28 +270,27 @@ int menu_entries_push_list(menu_handle_t *menu,
                "No information available.", "",
                MENU_SETTINGS_CORE_OPTION_NONE, 0);
    }
+   else if (!strcmp(label, "deferred_core_list"))
+   {
+      const core_info_t *info = NULL;
+      file_list_clear(list);
+      core_info_list_get_supported_cores(g_extern.core_info,
+            driver.menu->deferred_path, &info, &list_size);
+      for (i = 0; i < list_size; i++)
+      {
+         file_list_push(list, info[i].path, "",
+               MENU_FILE_PLAIN, 0);
+         file_list_set_alt_at_offset(list, i,
+               info[i].display_name);
+      }
+      file_list_sort_on_alt(list);
+
+      do_action = true;
+   }
    else
    {
       switch (menu_type)
       {
-         case MENU_SETTINGS_DEFERRED_CORE:
-            {
-               const core_info_t *info = NULL;
-               file_list_clear(list);
-               core_info_list_get_supported_cores(g_extern.core_info,
-                     driver.menu->deferred_path, &info, &list_size);
-               for (i = 0; i < list_size; i++)
-               {
-                  file_list_push(list, info[i].path, "",
-                        MENU_FILE_PLAIN, 0);
-                  file_list_set_alt_at_offset(list, i,
-                        info[i].display_name);
-               }
-               file_list_sort_on_alt(list);
-
-               do_action = true;
-            }
-            break;
          case MENU_SETTINGS_SHADER_PARAMETERS:
          case MENU_SETTINGS_SHADER_PRESET_PARAMETERS:
             {
@@ -604,7 +603,7 @@ int menu_parse_and_resolve(file_list_t *list, file_list_t *menu_list)
 #endif
 
    if (!strcmp(label, "history_list") || 
-         menu_type == MENU_SETTINGS_DEFERRED_CORE)
+         !strcmp(label, "deferred_core_list"))
       return menu_entries_push_list(driver.menu, list, dir, label, menu_type);
 
    if (menu_parse_check(label, menu_type) == -1)

@@ -1870,7 +1870,7 @@ static int menu_action_ok(const char *dir,
                MENU_SETTINGS_SHADER_OPTIONS);
       }
 #endif
-      else if (menu_type == MENU_SETTINGS_DEFERRED_CORE)
+      else if (!strcmp(menu_label, "deferred_core_list"))
       {
          strlcpy(g_settings.libretro, path, sizeof(g_settings.libretro));
          strlcpy(g_extern.fullpath, driver.menu->deferred_path,
@@ -1953,7 +1953,7 @@ static int menu_action_ok(const char *dir,
             else if (ret == 0)
                menu_entries_push(driver.menu->menu_stack,
                      g_settings.libretro_directory, "deferred_core_list",
-                     MENU_SETTINGS_DEFERRED_CORE, driver.menu->selection_ptr);
+                     0, driver.menu->selection_ptr);
          }
          else
          {

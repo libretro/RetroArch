@@ -7,7 +7,7 @@ static void get_title(const char *label, const char *dir,
 {
    if (!strcmp(label, "core_list"))
       snprintf(title, sizeof_title, "CORE SELECTION %s", dir);
-   else if (menu_type == MENU_SETTINGS_DEFERRED_CORE)
+   else if (!strcmp(label, "deferred_core_list"))
       snprintf(title, sizeof_title, "DETECTED CORES %s", dir);
    else if (menu_type == MENU_SETTINGS_CONFIG)
       snprintf(title, sizeof_title, "CONFIG %s", dir);
