@@ -1857,34 +1857,34 @@ static int menu_action_ok(const char *dir,
          menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS_AUDIO_OPTIONS);
       }
 #ifdef HAVE_SHADER_MANAGER
-      else if (menu_common_type_is(menu_type) == MENU_SETTINGS_SHADER_OPTIONS)
+      else if (!strcmp(menu_label, "video_shader_preset"))
       {
-         if (menu_type == MENU_SETTINGS_SHADER_PRESET)
-         {
-            char shader_path[PATH_MAX];
-            fill_pathname_join(shader_path, dir, path, sizeof(shader_path));
-            if (driver.menu_ctx && driver.menu_ctx->backend &&
-                  driver.menu_ctx->backend->shader_manager_set_preset)
-               driver.menu_ctx->backend->shader_manager_set_preset(
-                     driver.menu->shader,
-                     gfx_shader_parse_type(shader_path, RARCH_SHADER_NONE),
-                     shader_path);
-         }
-         else
-         {
-            struct gfx_shader *shader = (struct gfx_shader*)
-               driver.menu->shader;
-            unsigned pass = (menu_type - MENU_SETTINGS_SHADER_0) / 3;
-
-            fill_pathname_join(shader->pass[pass].source.path,
-                  dir, path, sizeof(shader->pass[pass].source.path));
-
-            /* This will reset any changed parameters. */
-            gfx_shader_resolve_parameters(NULL, driver.menu->shader);
-         }
-
+         char shader_path[PATH_MAX];
+         fill_pathname_join(shader_path, dir, path, sizeof(shader_path));
+         if (driver.menu_ctx && driver.menu_ctx->backend &&
+               driver.menu_ctx->backend->shader_manager_set_preset)
+            driver.menu_ctx->backend->shader_manager_set_preset(
+                  driver.menu->shader,
+                  gfx_shader_parse_type(shader_path, RARCH_SHADER_NONE),
+                  shader_path);
          /* Pop stack until we hit shader manager again. */
-         menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS_SHADER_OPTIONS);
+         menu_flush_stack_type(driver.menu->menu_stack,
+               MENU_SETTINGS_SHADER_OPTIONS);
+      }
+      else if (!strcmp(menu_label, "video_shader_pass"))
+      {
+         struct gfx_shader *shader = (struct gfx_shader*)
+            driver.menu->shader;
+         unsigned pass = (menu_type - MENU_SETTINGS_SHADER_0) / 3;
+
+         fill_pathname_join(shader->pass[pass].source.path,
+               dir, path, sizeof(shader->pass[pass].source.path));
+
+         /* This will reset any changed parameters. */
+         gfx_shader_resolve_parameters(NULL, driver.menu->shader);
+         /* Pop stack until we hit shader manager again. */
+         menu_flush_stack_type(driver.menu->menu_stack,
+               MENU_SETTINGS_SHADER_OPTIONS);
       }
       else
 #endif
