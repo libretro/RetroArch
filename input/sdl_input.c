@@ -51,11 +51,12 @@ static bool sdl_key_pressed(int key)
    if (key >= RETROK_LAST)
       return false;
 
-   int sym = input_translate_rk_to_keysym((enum retro_key)key);
+   unsigned sym = input_translate_rk_to_keysym((enum retro_key)key);
 
    int num_keys;
    const uint8_t *keymap;
 #if HAVE_SDL2
+   sym = SDL_GetScancodeFromKey(sym);
    keymap = SDL_GetKeyboardState(&num_keys);
 #else
    keymap = SDL_GetKeyState(&num_keys);
