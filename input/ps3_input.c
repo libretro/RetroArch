@@ -59,8 +59,7 @@ static inline int16_t convert_u8_to_s16(uint8_t val)
 {
    if (val == 0)
       return -0x7fff;
-   else
-      return val * 0x0101 - 0x8000;
+   return val * 0x0101 - 0x8000;
 }
 
 static void ps3_input_poll(void *data)
