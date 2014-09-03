@@ -323,7 +323,7 @@ bool main_load_content(int argc, char **argv, args_type() args,
       goto error;
    }
 
-   g_extern.lifecycle_state |= (1ULL << MODE_GAME);
+   rarch_main_command(RARCH_CMD_RESUME);
 
    if (process_args)
       process_args(rarch_argc_ptr, rarch_argv_ptr);
