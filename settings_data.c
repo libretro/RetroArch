@@ -1147,88 +1147,6 @@ static void general_read_handler(const void *data)
     if (!setting)
        return;
     
-    if (!strcmp(setting->name, "fps_show"))
-       *setting->value.boolean = g_settings.fps_show;
-    else if (!strcmp(setting->name, "pause_nonactive"))
-       *setting->value.boolean = g_settings.pause_nonactive;
-    else if (!strcmp(setting->name, "config_save_on_exit"))
-       *setting->value.boolean = g_settings.config_save_on_exit;
-    else if (!strcmp(setting->name, "rewind_enable"))
-       *setting->value.boolean = g_settings.rewind_enable;
-    else if (!strcmp(setting->name, "soft_filter"))
-       *setting->value.boolean = g_extern.console.softfilter_enable;
-    else if (!strcmp(setting->name, "rewind_granularity"))
-         *setting->value.unsigned_integer = g_settings.rewind_granularity;
-    else if (!strcmp(setting->name, "block_sram_overwrite"))
-        *setting->value.boolean = g_settings.block_sram_overwrite;
-#ifdef GEKKO
-    else if (!strcmp(setting->name, "video_viwidth"))
-        *setting->value.unsigned_integer = g_settings.video.viwidth;
-#endif
-    else if (!strcmp(setting->name, "video_smooth"))
-        *setting->value.boolean = g_settings.video.smooth;
-    else if (!strcmp(setting->name, "pal60_enable"))
-        *setting->value.boolean = g_extern.console.screen.pal60_enable;
-    else if (!strcmp(setting->name, "video_monitor_index"))
-        *setting->value.unsigned_integer = g_settings.video.monitor_index;
-    else if (!strcmp(setting->name, "video_disable_composition"))
-        *setting->value.boolean = g_settings.video.disable_composition;
-    else if (!strcmp(setting->name, "video_vsync"))
-       *setting->value.boolean = g_settings.video.vsync;
-    else if (!strcmp(setting->name, "video_hard_sync"))
-        *setting->value.boolean = g_settings.video.hard_sync;
-    else if (!strcmp(setting->name, "video_hard_sync_frames"))
-        *setting->value.unsigned_integer = g_settings.video.hard_sync_frames;
-    else if (!strcmp(setting->name, "video_frame_delay"))
-        *setting->value.unsigned_integer = g_settings.video.frame_delay;
-    else if (!strcmp(setting->name, "video_scale_integer"))
-        *setting->value.boolean = g_settings.video.scale_integer;
-    else if (!strcmp(setting->name, "video_fullscreen"))
-        *setting->value.boolean = g_settings.video.fullscreen;
-    else if (!strcmp(setting->name, "video_rotation"))
-         *setting->value.unsigned_integer = g_settings.video.rotation;
-    else if (!strcmp(setting->name, "video_gamma"))
-         *setting->value.unsigned_integer = g_extern.console.screen.gamma_correction;
-    else if (!strcmp(setting->name, "video_threaded"))
-        *setting->value.boolean = g_settings.video.threaded;
-    else if (!strcmp(setting->name, "video_swap_interval"))
-       *setting->value.unsigned_integer = g_settings.video.swap_interval;
-    else if (!strcmp(setting->name, "video_crop_overscan"))
-        *setting->value.boolean = g_settings.video.crop_overscan;
-    else if (!strcmp(setting->name, "video_black_frame_insertion"))
-        *setting->value.boolean = g_settings.video.black_frame_insertion;
-    else if (!strcmp(setting->name, "video_font_path"))
-        strlcpy(setting->value.string, g_settings.video.font_path, setting->size);
-    else if (!strcmp(setting->name, "video_font_size"))
-        *setting->value.fraction = g_settings.video.font_size;
-#ifdef HAVE_OVERLAY
-    else if (!strcmp(setting->name, "input_overlay_opacity"))
-        *setting->value.fraction = g_settings.input.overlay_opacity;
-#endif
-    else if (!strcmp(setting->name, "audio_enable"))
-        *setting->value.boolean = g_settings.audio.enable;
-    else if (!strcmp(setting->name, "system_bgm_enable"))
-        *setting->value.boolean = g_extern.console.sound.system_bgm_enable;
-    else if (!strcmp(setting->name, "audio_sync"))
-        *setting->value.boolean = g_settings.audio.sync;
-    else if (!strcmp(setting->name, "audio_mute"))
-        *setting->value.boolean = g_extern.audio_data.mute;
-    else if (!strcmp(setting->name, "audio_volume"))
-        *setting->value.fraction = g_extern.audio_data.volume_db;
-    else if (!strcmp(setting->name, "audio_device"))
-        strlcpy(setting->value.string, g_settings.audio.device, setting->size);
-    else if (!strcmp(setting->name, "audio_block_frames"))
-        *setting->value.unsigned_integer = g_settings.audio.block_frames;
-    else if (!strcmp(setting->name, "audio_latency"))
-        *setting->value.unsigned_integer = g_settings.audio.latency;
-    else if (!strcmp(setting->name, "audio_dsp_plugin"))
-    {
-#ifdef HAVE_DYLIB
-        strlcpy(setting->value.string, g_settings.audio.dsp_plugin, setting->size);
-#endif
-    }
-    else if (!strcmp(setting->name, "state_slot"))
-        *setting->value.integer = g_settings.state_slot;
     else if (!strcmp(setting->name, "audio_rate_control_delta"))
     {
        *setting->value.fraction = g_settings.audio.rate_control_delta;
@@ -1243,30 +1161,6 @@ static void general_read_handler(const void *data)
             g_settings.audio.rate_control_delta = *setting->value.fraction;
         }
     }
-    else if (!strcmp(setting->name, "audio_out_rate"))
-        *setting->value.unsigned_integer = g_settings.audio.out_rate;
-    else if (!strcmp(setting->name, "input_autodetect_enable"))
-        *setting->value.boolean = g_settings.input.autodetect_enable;
-    else if (!strcmp(setting->name, "input_turbo_period"))
-        *setting->value.unsigned_integer = g_settings.input.turbo_period;
-    else if (!strcmp(setting->name, "input_duty_cycle"))
-        *setting->value.unsigned_integer = g_settings.input.turbo_duty_cycle;
-    else if (!strcmp(setting->name, "input_axis_threshold"))
-        *setting->value.fraction = g_settings.input.axis_threshold;
-    else if (!strcmp(setting->name, "savestate_auto_save"))
-        g_settings.savestate_auto_save = *setting->value.boolean;
-    else if (!strcmp(setting->name, "savestate_auto_load"))
-        g_settings.savestate_auto_load = *setting->value.boolean;
-    else if (!strcmp(setting->name, "savestate_auto_index"))
-        g_settings.savestate_auto_index = *setting->value.boolean;
-    else if (!strcmp(setting->name, "slowmotion_ratio"))
-        g_settings.slowmotion_ratio = *setting->value.fraction;
-    else if (!strcmp(setting->name, "fastforward_ratio"))
-        g_settings.fastforward_ratio = *setting->value.fraction;
-    else if (!strcmp(setting->name, "autosave_interval"))
-        *setting->value.unsigned_integer = g_settings.autosave_interval;
-    else if (!strcmp(setting->name, "video_font_enable"))
-        *setting->value.boolean = g_settings.video.font_enable;
     else if (!strcmp(setting->name, "video_gpu_screenshot"))
         *setting->value.boolean = g_settings.video.gpu_screenshot;
 #ifdef HAVE_NETPLAY
@@ -1274,12 +1168,6 @@ static void general_read_handler(const void *data)
         *setting->value.boolean = g_settings.input.netplay_client_swap_input;
     else if (!strcmp(setting->name, "netplay_tcp_udp_port"))
         *setting->value.unsigned_integer = g_extern.netplay_port;
-#endif
-#ifdef HAVE_OVERLAY
-    else if (!strcmp(setting->name, "input_overlay"))
-        strlcpy(setting->value.string, g_settings.input.overlay, setting->size);
-    else if (!strcmp(setting->name, "input_overlay_scale"))
-       *setting->value.fraction = g_settings.input.overlay_scale;
 #endif
     else if (!strcmp(setting->name, "video_allow_rotate"))
         g_settings.video.allow_rotate = *setting->value.boolean;
@@ -1289,46 +1177,8 @@ static void general_read_handler(const void *data)
         *setting->value.unsigned_integer = g_settings.video.fullscreen_x;
     else if (!strcmp(setting->name, "video_fullscreen_y"))
         *setting->value.unsigned_integer = g_settings.video.fullscreen_y;
-    else if (!strcmp(setting->name, "video_refresh_rate"))
-       *setting->value.fraction = g_settings.video.refresh_rate;
     else if (!strcmp(setting->name, "video_refresh_rate_auto"))
        *setting->value.fraction = g_settings.video.refresh_rate;
-    else if (!strcmp(setting->name,  "video_aspect_ratio"))
-        *setting->value.fraction = g_settings.video.aspect_ratio;
-    else if (!strcmp(setting->name, "video_scale"))
-       *setting->value.fraction = g_settings.video.scale;
-    else if (!strcmp(setting->name, "video_force_aspect"))
-        *setting->value.boolean = g_settings.video.force_aspect;
-    else if (!strcmp(setting->name, "aspect_ratio_index"))
-        *setting->value.unsigned_integer = g_settings.video.aspect_ratio_idx;
-    else if (!strcmp(setting->name, "video_message_pos_x"))
-        *setting->value.fraction = g_settings.video.msg_pos_x;
-    else if (!strcmp(setting->name, "video_message_pos_y"))
-        *setting->value.fraction = g_settings.video.msg_pos_y;
-    else if (!strcmp(setting->name, "network_cmd_enable"))
-        *setting->value.boolean = g_settings.network_cmd_enable;
-    else if (!strcmp(setting->name, "stdin_cmd_enable"))
-        *setting->value.boolean = g_settings.stdin_cmd_enable;
-    else if (!strcmp(setting->name, "video_post_filter_record"))
-        *setting->value.boolean = g_settings.video.post_filter_record;
-    else if (!strcmp(setting->name, "video_gpu_record"))
-        *setting->value.boolean = g_settings.video.gpu_record;
-#ifdef HAVE_OVERLAY
-    else if (!strcmp(setting->name, "overlay_directory"))
-        strlcpy(setting->value.string, g_extern.overlay_dir, setting->size);
-#endif
-    else if (!strcmp(setting->name, "joypad_autoconfig_dir"))
-        strlcpy(setting->value.string, g_settings.input.autoconfig_dir, setting->size);
-    else if (!strcmp(setting->name, "screenshot_directory"))
-        strlcpy(setting->value.string, g_settings.screenshot_directory, setting->size);
-    else if (!strcmp(setting->name, "savefile_directory"))
-        strlcpy(setting->value.string, g_extern.savefile_dir, setting->size);
-    else if (!strcmp(setting->name, "savestate_directory"))
-        strlcpy(setting->value.string, g_extern.savestate_dir, setting->size);
-    else if (!strcmp(setting->name, "system_directory"))
-        strlcpy(setting->value.string, g_settings.system_directory,  setting->size);
-    else if (!strcmp(setting->name, "extraction_directory"))
-        strlcpy(setting->value.string, g_settings.extraction_directory, setting->size);
     else if (!strcmp(setting->name, "input_player1_joypad_index"))
         *setting->value.integer = g_settings.input.joypad_map[0];
     else if (!strcmp(setting->name, "input_player2_joypad_index"))
@@ -1343,48 +1193,12 @@ static void general_read_handler(const void *data)
         *setting->value.boolean = g_settings.menu_show_start_screen;
     else if (!strcmp(setting->name,  "game_history_size"))
         *setting->value.unsigned_integer = g_settings.content_history_size;
-    else if (!strcmp(setting->name, "content_directory"))
-        strlcpy(setting->value.string, g_settings.content_directory, setting->size);
-#ifdef HAVE_MENU
-    else if (!strcmp(setting->name, "rgui_browser_directory"))
-        strlcpy(setting->value.string, g_settings.menu_content_directory, setting->size);
-    else if (!strcmp(setting->name, "assets_directory"))
-        strlcpy(setting->value.string, g_settings.assets_directory, setting->size);
-    else if (!strcmp(setting->name, "rgui_config_directory"))
-        strlcpy(setting->value.string, g_settings.menu_config_directory,  setting->size);
-#endif
-    else if (!strcmp(setting->name, "libretro_path"))
-        strlcpy(setting->value.string, g_settings.libretro, setting->size);
-    else if (!strcmp(setting->name, "libretro_info_path"))
-        strlcpy(setting->value.string, g_settings.libretro_info_path, setting->size);
-    else if (!strcmp(setting->name, "libretro_dir_path"))
-        strlcpy(setting->value.string, g_settings.libretro_directory, setting->size);
-    else if (!strcmp(setting->name, "core_options_path"))
-        strlcpy(setting->value.string, g_settings.core_options_path, setting->size);
-    else if (!strcmp(setting->name, "cheat_database_path"))
-        strlcpy(setting->value.string, g_settings.cheat_database,  setting->size);
-    else if (!strcmp(setting->name, "cheat_settings_path"))
-        strlcpy(setting->value.string, g_settings.cheat_settings_path, setting->size);
-    else if (!strcmp(setting->name, "game_history_path"))
-        strlcpy(setting->value.string, g_settings.content_history_path, setting->size);
-    else if (!strcmp(setting->name, "video_filter_dir"))
-        strlcpy(setting->value.string, g_settings.video.filter_dir, setting->size);
-    else if (!strcmp(setting->name, "video_filter_flicker"))
-       *setting->value.unsigned_integer = g_extern.console.screen.flicker_filter_index;
     else if (!strcmp(setting->name, "audio_filter_dir"))
         strlcpy(setting->value.string, g_settings.audio.filter_dir, setting->size);
     else if (!strcmp(setting->name, "video_shader_dir"))
         strlcpy(setting->value.string, g_settings.video.shader_dir, setting->size);
-    else if (!strcmp(setting->name, "video_aspect_ratio_auto"))
-        *setting->value.boolean = g_settings.video.aspect_ratio_auto;
     else if (!strcmp(setting->name, "video_filter"))
         strlcpy(setting->value.string, g_settings.video.softfilter_plugin, setting->size);
-    else if (!strcmp(setting->name, "camera_allow"))
-        *setting->value.boolean = g_settings.camera.allow;
-    else if (!strcmp(setting->name, "location_allow"))
-        *setting->value.boolean = g_settings.location.allow;
-    else if (!strcmp(setting->name, "video_shared_context"))
-       *setting->value.boolean = g_settings.video.shared_context;
 #ifdef HAVE_NETPLAY
     else if (!strcmp(setting->name, "netplay_enable"))
        *setting->value.boolean = g_extern.netplay_enable;
@@ -1401,20 +1215,6 @@ static void general_read_handler(const void *data)
 #endif
     else if (!strcmp(setting->name, "log_verbosity"))
         *setting->value.boolean = g_extern.verbosity;
-    else if (!strcmp(setting->name, "perfcnt_enable"))
-       *setting->value.boolean = g_extern.perfcnt_enable;
-    else if (!strcmp(setting->name, "core_specific_config"))
-       *setting->value.boolean = g_settings.core_specific_config;
-    else if (!strcmp(setting->name, "dummy_on_core_shutdown"))
-       *setting->value.boolean = g_settings.load_dummy_on_core_shutdown;
-    else if (!strcmp(setting->name, "libretro_log_level"))
-       *setting->value.unsigned_integer = g_settings.libretro_log_level;
-    else if (!strcmp(setting->name, "osk_enable"))
-       *setting->value.boolean = g_settings.osk.enable;
-    else if (!strcmp(setting->name, "user_language"))
-       *setting->value.unsigned_integer = g_settings.user_language;
-    else if (!strcmp(setting->name, "netplay_nickname"))
-       strlcpy(setting->value.string, g_settings.username, setting->size);
 }
 
 static void general_write_handler(const void *data)
@@ -1484,117 +1284,50 @@ static void general_write_handler(const void *data)
          *setting->value.boolean = false;
       }
    }
-   else if (!strcmp(setting->name, "fps_show"))
-      g_settings.fps_show = *setting->value.boolean;
-   else if (!strcmp(setting->name, "pause_nonactive"))
-      g_settings.pause_nonactive = *setting->value.boolean;
-   else if (!strcmp(setting->name, "config_save_on_exit"))
-      g_settings.config_save_on_exit = *setting->value.boolean;
    else if (!strcmp(setting->name, "rewind_enable"))
-   {
-      g_settings.rewind_enable = *setting->value.boolean;
       rarch_cmd = RARCH_CMD_REWIND;
-   }
    else if (!strcmp(setting->name, "soft_filter"))
    {
-      g_extern.console.softfilter_enable = *setting->value.boolean;
       if (*setting->value.boolean)
          rarch_cmd = RARCH_CMD_VIDEO_APPLY_STATE_CHANGES;
    }
-   else if (!strcmp(setting->name, "rewind_granularity"))
-      g_settings.rewind_granularity = *setting->value.unsigned_integer;
-   else if (!strcmp(setting->name, "block_sram_overwrite"))
-      g_settings.block_sram_overwrite = *setting->value.boolean;
-#ifdef GEKKO
-   else if (!strcmp(setting->name, "video_viwidth"))
-      g_settings.video.viwidth = *setting->value.unsigned_integer;
-#endif
    else if (!strcmp(setting->name, "video_smooth"))
    {
-      g_settings.video.smooth = *setting->value.boolean;
-
-      if (driver.video_data && driver.video_poke && driver.video_poke->set_filtering)
-         driver.video_poke->set_filtering(driver.video_data, 1, g_settings.video.smooth);
+      if (driver.video_data && driver.video_poke
+            && driver.video_poke->set_filtering)
+         driver.video_poke->set_filtering(driver.video_data,
+               1, g_settings.video.smooth);
    }
    else if (!strcmp(setting->name, "pal60_enable"))
    {
-      g_extern.console.screen.pal60_enable = *setting->value.boolean;
-
       if (*setting->value.boolean && g_extern.console.screen.pal_enable)
          rarch_cmd = RARCH_CMD_REINIT;
       else
-      {
-         g_extern.console.screen.pal60_enable = false;
          *setting->value.boolean = false;
-      }
    }
    else if (!strcmp(setting->name, "video_monitor_index"))
-   {
-      g_settings.video.monitor_index = *setting->value.unsigned_integer;
       rarch_cmd = RARCH_CMD_REINIT;
-   }
    else if (!strcmp(setting->name, "video_disable_composition"))
-   {
-      g_settings.video.disable_composition = *setting->value.boolean;
       rarch_cmd = RARCH_CMD_REINIT;
-   }
-   else if (!strcmp(setting->name, "video_vsync"))
-      g_settings.video.vsync = *setting->value.boolean;
-   else if (!strcmp(setting->name, "video_hard_sync"))
-      g_settings.video.hard_sync = *setting->value.boolean;
-   else if (!strcmp(setting->name, "video_hard_sync_frames"))
-      g_settings.video.hard_sync_frames = *setting->value.unsigned_integer;
-   else if (!strcmp(setting->name, "video_frame_delay"))
-      g_settings.video.frame_delay = *setting->value.unsigned_integer;
-   else if (!strcmp(setting->name, "video_scale_integer"))
-      g_settings.video.scale_integer = *setting->value.boolean;
    else if (!strcmp(setting->name, "video_fullscreen"))
-   {
-      g_settings.video.fullscreen = *setting->value.boolean;
       rarch_cmd = RARCH_CMD_REINIT;
-   }
    else if (!strcmp(setting->name, "video_rotation"))
    {
-      g_settings.video.rotation = *setting->value.unsigned_integer;
       if (driver.video && driver.video->set_rotation)
-         driver.video->set_rotation(driver.video_data, (g_settings.video.rotation + g_extern.system.rotation) % 4);
+         driver.video->set_rotation(driver.video_data, (*setting->value.unsigned_integer + g_extern.system.rotation) % 4);
    }
    else if (!strcmp(setting->name, "video_gamma"))
-   {
-      g_extern.console.screen.gamma_correction = *setting->value.unsigned_integer;
       rarch_cmd = RARCH_CMD_VIDEO_APPLY_STATE_CHANGES;
-   }
    else if (!strcmp(setting->name, "video_threaded"))
-   {
-      g_settings.video.threaded = *setting->value.boolean;
       rarch_cmd = RARCH_CMD_REINIT;
-   }
    else if (!strcmp(setting->name, "video_swap_interval"))
-   {
-      g_settings.video.swap_interval = *setting->value.unsigned_integer;
       rarch_cmd = RARCH_CMD_VIDEO_SET_BLOCKING_STATE;
-   }
-   else if (!strcmp(setting->name, "video_crop_overscan"))
-      g_settings.video.crop_overscan = *setting->value.boolean;
-   else if (!strcmp(setting->name, "video_black_frame_insertion"))
-      g_settings.video.black_frame_insertion = *setting->value.boolean;
-   else if (!strcmp(setting->name, "video_font_path"))
-      strlcpy(g_settings.video.font_path, setting->value.string, sizeof(g_settings.video.font_path));
-   else if (!strcmp(setting->name, "video_font_size"))
-      g_settings.video.font_size = *setting->value.fraction;
 #ifdef HAVE_OVERLAY
    else if (!strcmp(setting->name, "input_overlay_opacity"))
-   {
-      g_settings.input.overlay_opacity = *setting->value.fraction;
       rarch_cmd = RARCH_CMD_OVERLAY_SET_ALPHA_MOD;
-   }
 #endif
-   else if (!strcmp(setting->name, "audio_enable"))
-      g_settings.audio.enable = *setting->value.boolean;
    else if (!strcmp(setting->name, "system_bgm_enable"))
    {
-      g_extern.console.sound.system_bgm_enable = *setting->value.boolean;
-
       if (*setting->value.boolean)
       {
 #if defined(__CELLOS_LV2__) && (CELL_SDK_VERSION > 0x340000)
@@ -1608,28 +1341,10 @@ static void general_write_handler(const void *data)
 #endif
       }
    }
-   else if (!strcmp(setting->name, "audio_sync"))
-      g_settings.audio.sync = *setting->value.boolean;
-   else if (!strcmp(setting->name, "audio_mute"))
-      g_extern.audio_data.mute = *setting->value.boolean;
    else if (!strcmp(setting->name, "audio_volume"))
-   {
-      g_extern.audio_data.volume_db = *setting->value.fraction;
-      g_extern.audio_data.volume_gain = db_to_gain(g_extern.audio_data.volume_db);
-   }
-   else if (!strcmp(setting->name, "audio_device"))
-      strlcpy(g_settings.audio.device, setting->value.string, sizeof(g_settings.audio.device));
-   else if (!strcmp(setting->name, "audio_block_frames"))
-      g_settings.audio.block_frames = *setting->value.unsigned_integer;
-   else if (!strcmp(setting->name, "audio_latency"))
-      g_settings.audio.latency = *setting->value.unsigned_integer;
+      g_extern.audio_data.volume_gain = db_to_gain(*setting->value.fraction);
    else if (!strcmp(setting->name, "audio_dsp_plugin"))
-   {
-      strlcpy(g_settings.audio.dsp_plugin, setting->value.string, sizeof(g_settings.audio.dsp_plugin));
       rarch_cmd = RARCH_CMD_DSP_FILTER_INIT;
-   }
-   else if (!strcmp(setting->name, "state_slot"))
-      g_settings.state_slot = *setting->value.integer;
    else if (!strcmp(setting->name, "audio_rate_control_delta"))
    {
       if (*setting->value.fraction < 0.0005)
@@ -1643,22 +1358,8 @@ static void general_write_handler(const void *data)
          g_settings.audio.rate_control_delta = *setting->value.fraction;
       }
    }
-   else if (!strcmp(setting->name, "audio_out_rate"))
-      g_settings.audio.out_rate = *setting->value.unsigned_integer;
-   else if (!strcmp(setting->name, "input_autodetect_enable"))
-      g_settings.input.autodetect_enable = *setting->value.boolean;
-   else if (!strcmp(setting->name, "input_turbo_period"))
-      g_settings.input.turbo_period = *setting->value.unsigned_integer;
-   else if (!strcmp(setting->name, "input_duty_cycle"))
-      g_settings.input.turbo_duty_cycle = *setting->value.unsigned_integer;
    else if (!strcmp(setting->name, "input_axis_threshold"))
       g_settings.input.axis_threshold = max(min(*setting->value.fraction, 0.95f), 0.05f);
-   else if (!strcmp(setting->name, "savestate_auto_save"))
-      g_settings.savestate_auto_save = *setting->value.boolean;
-   else if (!strcmp(setting->name, "savestate_auto_load"))
-      g_settings.savestate_auto_load = *setting->value.boolean;
-   else if (!strcmp(setting->name, "savestate_auto_index"))
-      g_settings.savestate_auto_index = *setting->value.boolean;
    else if (!strcmp(setting->name, "savestate"))
    {
       if (*setting->value.boolean)
@@ -1675,17 +1376,8 @@ static void general_write_handler(const void *data)
          *setting->value.boolean = false;
       }
    }
-   else if (!strcmp(setting->name, "slowmotion_ratio"))
-      g_settings.slowmotion_ratio = *setting->value.fraction;
-   else if (!strcmp(setting->name, "fastforward_ratio"))
-      g_settings.fastforward_ratio = *setting->value.fraction;
    else if (!strcmp(setting->name, "autosave_interval"))
-   {
-      g_settings.autosave_interval = *setting->value.unsigned_integer;
       rarch_cmd = RARCH_CMD_AUTOSAVE;
-   }
-   else if (!strcmp(setting->name, "video_font_enable"))
-      g_settings.video.font_enable = *setting->value.boolean;
    else if (!strcmp(setting->name, "video_gpu_screenshot"))
       g_settings.video.gpu_screenshot = *setting->value.boolean;
 #ifdef HAVE_NETPLAY
@@ -1694,15 +1386,9 @@ static void general_write_handler(const void *data)
 #endif
 #ifdef HAVE_OVERLAY
    else if (!strcmp(setting->name, "input_overlay"))
-   {
-      strlcpy(g_settings.input.overlay, setting->value.string, sizeof(g_settings.input.overlay));
       rarch_cmd = RARCH_CMD_OVERLAY_REINIT;
-   }
    else if (!strcmp(setting->name, "input_overlay_scale"))
-   {
-      g_settings.input.overlay_scale = *setting->value.fraction;
       rarch_cmd = RARCH_CMD_OVERLAY_SET_SCALE_FACTOR;
-   }
 #endif
    else if (!strcmp(setting->name, "video_allow_rotate"))
       g_settings.video.allow_rotate = *setting->value.boolean;
@@ -1712,8 +1398,6 @@ static void general_write_handler(const void *data)
       g_settings.video.fullscreen_x = *setting->value.unsigned_integer;
    else if (!strcmp(setting->name, "video_fullscreen_y"))
       g_settings.video.fullscreen_y = *setting->value.unsigned_integer;
-    else if (!strcmp(setting->name, "video_refresh_rate"))
-       g_settings.video.refresh_rate = *setting->value.fraction;
    else if (!strcmp(setting->name, "video_refresh_rate_auto"))
    {
       if (driver.video && driver.video_data)
@@ -1724,8 +1408,6 @@ static void general_write_handler(const void *data)
          rarch_cmd = RARCH_CMD_VIDEO_SET_BLOCKING_STATE;
       }
    }
-   else if (!strcmp(setting->name,  "video_aspect_ratio"))
-      g_settings.video.aspect_ratio = *setting->value.fraction;
    else if (!strcmp(setting->name, "video_scale"))
    {
       g_settings.video.scale = roundf(*setting->value.fraction);
@@ -1733,41 +1415,8 @@ static void general_write_handler(const void *data)
       if (!g_settings.video.fullscreen)
          rarch_cmd = RARCH_CMD_REINIT;
    }
-   else if (!strcmp(setting->name, "video_force_aspect"))
-      g_settings.video.force_aspect = *setting->value.boolean;
    else if (!strcmp(setting->name, "aspect_ratio_index"))
-   {
-      g_settings.video.aspect_ratio_idx = *setting->value.unsigned_integer;
       rarch_cmd = RARCH_CMD_VIDEO_SET_ASPECT_RATIO;
-   }
-   else if (!strcmp(setting->name, "video_message_pos_x"))
-      g_settings.video.msg_pos_x = *setting->value.fraction;
-   else if (!strcmp(setting->name, "video_message_pos_y"))
-      g_settings.video.msg_pos_y = *setting->value.fraction;
-   else if (!strcmp(setting->name, "network_cmd_enable"))
-      g_settings.network_cmd_enable = *setting->value.boolean;
-   else if (!strcmp(setting->name, "stdin_cmd_enable"))
-      g_settings.stdin_cmd_enable = *setting->value.boolean;
-   else if (!strcmp(setting->name, "video_post_filter_record"))
-      g_settings.video.post_filter_record = *setting->value.boolean;
-   else if (!strcmp(setting->name, "video_gpu_record"))
-      g_settings.video.gpu_record = *setting->value.boolean;
-#ifdef HAVE_OVERLAY
-   else if (!strcmp(setting->name, "overlay_directory"))
-      strlcpy(g_extern.overlay_dir, setting->value.string, sizeof(g_extern.overlay_dir));
-#endif
-   else if (!strcmp(setting->name, "joypad_autoconfig_dir"))
-      strlcpy(g_settings.input.autoconfig_dir, setting->value.string, sizeof(g_settings.input.autoconfig_dir));
-   else if (!strcmp(setting->name, "screenshot_directory"))
-      strlcpy(g_settings.screenshot_directory, setting->value.string, sizeof(g_settings.screenshot_directory));
-   else if (!strcmp(setting->name, "savefile_directory"))
-      strlcpy(g_extern.savefile_dir, setting->value.string, sizeof(g_extern.savefile_dir));
-   else if (!strcmp(setting->name, "savestate_directory"))
-      strlcpy(g_extern.savestate_dir, setting->value.string, sizeof(g_extern.savestate_dir));
-   else if (!strcmp(setting->name, "system_directory"))
-      strlcpy(g_settings.system_directory, setting->value.string, sizeof(g_settings.system_directory));
-   else if (!strcmp(setting->name, "extraction_directory"))
-      strlcpy(g_settings.extraction_directory, setting->value.string, sizeof(g_settings.extraction_directory));
    else if (!strcmp(setting->name, "input_player1_joypad_index"))
       g_settings.input.joypad_map[0] = *setting->value.integer;
    else if (!strcmp(setting->name, "input_player2_joypad_index"))
@@ -1782,59 +1431,19 @@ static void general_write_handler(const void *data)
       g_settings.menu_show_start_screen = *setting->value.boolean;
    else if (!strcmp(setting->name,  "game_history_size"))
       g_settings.content_history_size = *setting->value.unsigned_integer;
-   else if (!strcmp(setting->name, "content_directory"))
-      strlcpy(g_settings.content_directory, setting->value.string, sizeof(g_settings.content_directory));
-#ifdef HAVE_MENU
-   else if (!strcmp(setting->name, "rgui_browser_directory"))
-      strlcpy(g_settings.menu_content_directory, setting->value.string, sizeof(g_settings.menu_content_directory));
-   else if (!strcmp(setting->name, "assets_directory"))
-      strlcpy(g_settings.assets_directory, setting->value.string, sizeof(g_settings.assets_directory));
-   else if (!strcmp(setting->name, "rgui_config_directory"))
-      strlcpy(g_settings.menu_config_directory, setting->value.string, sizeof(g_settings.menu_config_directory));
-#endif
-   else if (!strcmp(setting->name, "libretro_path"))
-      strlcpy(g_settings.libretro, setting->value.string, sizeof(g_settings.libretro));
    else if (!strcmp(setting->name, "libretro_info_path"))
-   {
-      strlcpy(g_settings.libretro_info_path, setting->value.string, sizeof(g_settings.libretro_info_path));
       rarch_cmd = RARCH_CMD_CORE_INFO_INIT;
-   }
    else if (!strcmp(setting->name, "libretro_dir_path"))
-   {
-      strlcpy(g_settings.libretro_directory, setting->value.string, sizeof(g_settings.libretro_directory));
       rarch_cmd = RARCH_CMD_CORE_INFO_INIT;
-   }
-   else if (!strcmp(setting->name, "core_options_path"))
-      strlcpy(g_settings.core_options_path, setting->value.string, sizeof(g_settings.core_options_path));
-   else if (!strcmp(setting->name, "cheat_database_path"))
-      strlcpy(g_settings.cheat_database, setting->value.string, sizeof(g_settings.cheat_database));
-   else if (!strcmp(setting->name, "cheat_settings_path"))
-      strlcpy(g_settings.cheat_settings_path, setting->value.string, sizeof(g_settings.cheat_settings_path));
-   else if (!strcmp(setting->name, "game_history_path"))
-      strlcpy(g_settings.content_history_path, setting->value.string, sizeof(g_settings.content_history_path));
-   else if (!strcmp(setting->name, "video_filter_dir"))
-      strlcpy(g_settings.video.filter_dir, setting->value.string, sizeof(g_settings.video.filter_dir));
-   else if (!strcmp(setting->name, "netplay_nickname"))
-      strlcpy(g_settings.username, setting->value.string, sizeof(g_settings.username));
    else if (!strcmp(setting->name, "audio_filter_dir"))
       strlcpy(g_settings.audio.filter_dir, setting->value.string, sizeof(g_settings.audio.filter_dir));
    else if (!strcmp(setting->name, "video_shader_dir"))
       strlcpy(g_settings.video.shader_dir, setting->value.string, sizeof(g_settings.video.shader_dir));
-   else if (!strcmp(setting->name, "video_aspect_ratio_auto"))
-      g_settings.video.aspect_ratio_auto = *setting->value.boolean;
    else if (!strcmp(setting->name, "video_filter"))
    {
       strlcpy(g_settings.video.softfilter_plugin, setting->value.string, sizeof(g_settings.video.softfilter_plugin));
       rarch_cmd = RARCH_CMD_REINIT;
    }
-   else if (!strcmp(setting->name, "video_filter_flicker"))
-      g_extern.console.screen.flicker_filter_index = *setting->value.unsigned_integer;
-   else if (!strcmp(setting->name, "camera_allow"))
-      g_settings.camera.allow = *setting->value.boolean;
-   else if (!strcmp(setting->name, "location_allow"))
-      g_settings.location.allow = *setting->value.boolean;
-   else if (!strcmp(setting->name, "video_shared_context"))
-      g_settings.video.shared_context = *setting->value.boolean;
 #ifdef HAVE_NETPLAY
    else if (!strcmp(setting->name, "netplay_ip_address"))
    {
@@ -1867,18 +1476,6 @@ static void general_write_handler(const void *data)
       g_extern.verbosity         = *setting->value.boolean;
       g_extern.has_set_verbosity = *setting->value.boolean;
    }
-   else if (!strcmp(setting->name, "perfcnt_enable"))
-      g_extern.perfcnt_enable = *setting->value.boolean;
-   else if (!strcmp(setting->name, "core_specific_config"))
-      g_settings.core_specific_config = *setting->value.boolean;
-   else if (!strcmp(setting->name, "dummy_on_core_shutdown"))
-      g_settings.load_dummy_on_core_shutdown = *setting->value.boolean;
-   else if (!strcmp(setting->name, "libretro_log_level"))
-      g_settings.libretro_log_level = *setting->value.unsigned_integer;
-   else if (!strcmp(setting->name, "osk_enable"))
-      g_settings.osk.enable = *setting->value.boolean;
-   else if (!strcmp(setting->name, "user_language"))
-      g_settings.user_language = *setting->value.unsigned_integer;
 
    if (rarch_cmd)
       rarch_main_command(rarch_cmd);
@@ -2098,7 +1695,7 @@ rarch_setting_t *setting_data_get_list(void)
 #endif
       CONFIG_BOOL(g_settings.video.smooth,               "video_smooth",               "Use Bilinear Filtering",     video_smooth, "Point filtering", "Bilinear filtering", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
 #if defined(__CELLOS_LV2__)
-      CONFIG_BOOL(g_settings.video.smooth,               "pal60_enable",               "Use PAL60 Mode",     false, "OFF", "ON", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+      CONFIG_BOOL(g_extern.console.screen.pal60_enable,               "pal60_enable",               "Use PAL60 Mode",     false, "OFF", "ON", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
 #endif
       CONFIG_UINT(g_settings.video.rotation,             "video_rotation",             "Rotation",                   0, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_RANGE(0, 3, 1, true, true)
 #if defined(HW_RVL) || defined(_XBOX360)
