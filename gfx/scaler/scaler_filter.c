@@ -101,8 +101,7 @@ static inline double filter_sinc(double phase)
 {
    if (fabs(phase) < 0.0001)
       return 1.0;
-   else
-      return sin(phase) / phase;
+   return sin(phase) / phase;
 }
 
 static void gen_filter_sinc_sub(struct scaler_filter *filter, int len, int pos, int step, double phase_mul)

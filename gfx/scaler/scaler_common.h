@@ -25,8 +25,7 @@ static inline uint8_t clamp_8bit(int val)
       return 255;
    else if (val < 0)
       return 0;
-   else
-      return (uint8_t)val;
+   return (uint8_t)val;
 }
 
 #endif
