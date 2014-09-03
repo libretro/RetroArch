@@ -646,7 +646,7 @@ unsigned menu_common_type_is(const char *label, unsigned type)
          type == MENU_SETTINGS ||
          type == MENU_SETTINGS_GENERAL_OPTIONS ||
          type == MENU_SETTINGS_CORE_OPTIONS ||
-         type == MENU_SETTINGS_CORE_INFO ||
+         !strcmp(label, "core_information") ||
          type == MENU_SETTINGS_VIDEO_OPTIONS ||
          type == MENU_SETTINGS_FONT_OPTIONS ||
          type == MENU_SETTINGS_SHADER_OPTIONS ||

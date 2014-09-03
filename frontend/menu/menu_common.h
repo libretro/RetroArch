@@ -106,7 +106,6 @@ typedef enum
 
    // settings options are done here too
    MENU_SETTINGS_CORE,
-   MENU_SETTINGS_CORE_INFO,
    MENU_SETTINGS_DEFERRED_CORE,
    MENU_SETTINGS_CONFIG,
    MENU_SETTINGS_CORE_OPTIONS,
