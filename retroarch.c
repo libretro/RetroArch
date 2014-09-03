@@ -3317,8 +3317,8 @@ void rarch_main_set_state(unsigned cmd)
          g_extern.lifecycle_state |= (1ULL << MODE_EXITSPAWN);
          break;
       case RARCH_ACTION_STATE_QUIT:
-         g_extern.lifecycle_state &= ~(1ULL << MODE_MENU);
-         g_extern.lifecycle_state &= ~(1ULL << MODE_GAME);
+         rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED);
+         rarch_main_set_state(RARCH_ACTION_STATE_RUNNING_FINISHED);
          break;
       case RARCH_ACTION_STATE_NONE:
       default:
@@ -3359,7 +3359,7 @@ void rarch_main_command(unsigned cmd)
             return;
 #endif
          main_state(cmd);
-         rarch_main_command(RARCH_CMD_RESUME);
+         rarch_main_set_state(RARCH_ACTION_STATE_RUNNING);
          break;
       case RARCH_CMD_RESET:
          RARCH_LOG(RETRO_LOG_RESETTING_CONTENT);
@@ -3369,14 +3369,14 @@ void rarch_main_command(unsigned cmd)
          /* bSNES since v073r01 resets controllers to JOYPAD
           * after a reset, so just enforce it here. */
          init_controllers();
-         rarch_main_command(RARCH_CMD_RESUME);
+         rarch_main_set_state(RARCH_ACTION_STATE_RUNNING);
          break;
       case RARCH_CMD_SAVE_STATE:
          if (g_settings.savestate_auto_index)
             g_settings.state_slot++;
 
          main_state(cmd);
-         rarch_main_command(RARCH_CMD_RESUME);
+         rarch_main_set_state(RARCH_ACTION_STATE_RUNNING);
          break;
       case RARCH_CMD_TAKE_SCREENSHOT:
          take_screenshot();
