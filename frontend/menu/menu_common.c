@@ -205,8 +205,7 @@ bool load_menu_content(void)
       driver.menu_ctx->backend->shader_manager_init(driver.menu);
 
    rarch_main_command(RARCH_CMD_VIDEO_SET_ASPECT_RATIO);
-
-   g_extern.lifecycle_state |= (1ULL << MODE_GAME);
+   rarch_main_command(RARCH_CMD_RESUME);
 
    return true;
 }
@@ -393,7 +392,7 @@ bool menu_iterate(void)
    if (input_key_pressed_func(RARCH_QUIT_KEY)
          || !driver.video->alive(driver.video_data))
    {
-      g_extern.lifecycle_state |= (1ULL << MODE_GAME);
+      rarch_main_command(RARCH_CMD_RESUME);
       return false;
    }
 
