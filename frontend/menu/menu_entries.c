@@ -61,7 +61,7 @@ void menu_entries_push_perfcounter(menu_handle_t *menu,
       const struct retro_perf_counter **counters,
       unsigned num, unsigned id)
 {
-   int i;
+   unsigned i;
    if (!counters || num == 0)
       return;
 
