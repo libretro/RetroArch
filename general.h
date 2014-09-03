@@ -131,6 +131,17 @@ enum basic_event
    RARCH_CMD_MENU_SAVE_CONFIG,
 };
 
+enum action_state
+{
+   RARCH_ACTION_STATE_NONE = 0,
+   RARCH_ACTION_STATE_MENU_PREINIT,
+   RARCH_ACTION_STATE_LOAD_CONTENT,
+   RARCH_ACTION_STATE_RUN_CONTENT,
+   RARCH_ACTION_STATE_STOP_CONTENT,
+   RARCH_ACTION_STATE_EXITSPAWN,
+   RARCH_ACTION_STATE_QUIT,
+};
+
 enum menu_enums
 {
    MODE_GAME = 0,
@@ -780,6 +791,7 @@ int rarch_main(int argc, char *argv[]);
 void rarch_main_init_wrap(const struct rarch_main_wrap *args, int *argc, char **argv);
 
 int rarch_main_init(int argc, char *argv[]);
+void rarch_main_set_state(unsigned action);
 void rarch_main_command(unsigned action);
 bool rarch_main_iterate(void);
 void rarch_main_deinit(void);

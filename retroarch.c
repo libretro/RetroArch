@@ -3221,7 +3221,7 @@ static inline bool check_enter_menu(void)
    /* Always go into menu if dummy core is loaded. */
    if (rmenu_toggle && !old_rmenu_toggle)
    {
-      g_extern.lifecycle_state |= (1ULL << MODE_MENU_PREINIT);
+      rarch_main_set_state(RARCH_ACTION_STATE_MENU_PREINIT);
       old_rmenu_toggle = true;
       g_extern.system.frame_time_last = 0;
 
@@ -3285,6 +3285,35 @@ static inline void limit_frame_time(void)
 /* TODO - can we refactor command.c to do this? Should be local and not
  * stdin or network-based */
 
+void rarch_main_set_state(unsigned cmd)
+{
+   switch (cmd)
+   {
+      case RARCH_ACTION_STATE_MENU_PREINIT:
+         g_extern.lifecycle_state |= (1ULL << MODE_MENU_PREINIT);
+         break;
+      case RARCH_ACTION_STATE_LOAD_CONTENT:
+         g_extern.lifecycle_state |= (1ULL << MODE_LOAD_GAME);
+         break;
+      case RARCH_ACTION_STATE_RUN_CONTENT:
+         g_extern.lifecycle_state |= (1ULL << MODE_GAME);
+         break;
+      case RARCH_ACTION_STATE_STOP_CONTENT:
+         g_extern.lifecycle_state &= ~(1ULL << MODE_GAME);
+         break;
+      case RARCH_ACTION_STATE_EXITSPAWN:
+         g_extern.lifecycle_state |= (1ULL << MODE_EXITSPAWN);
+         break;
+      case RARCH_ACTION_STATE_QUIT:
+         g_extern.lifecycle_state &= ~(1ULL << MODE_MENU);
+         g_extern.lifecycle_state &= ~(1ULL << MODE_GAME);
+         break;
+      case RARCH_ACTION_STATE_NONE:
+      default:
+         break;
+   }
+}
+
 void rarch_main_command(unsigned cmd)
 {
    bool boolean = false;
@@ -3294,7 +3323,7 @@ void rarch_main_command(unsigned cmd)
       case RARCH_CMD_LOAD_CONTENT:
 #ifdef HAVE_DYNAMIC
          rarch_main_command(RARCH_CMD_LOAD_CORE);
-         g_extern.lifecycle_state |= (1ULL << MODE_LOAD_GAME);
+         rarch_main_set_state(RARCH_ACTION_STATE_LOAD_CONTENT);
 #else
          rarch_environment_cb(RETRO_ENVIRONMENT_SET_LIBRETRO_PATH,
                (void*)g_settings.libretro);
@@ -3348,7 +3377,7 @@ void rarch_main_command(unsigned cmd)
             driver.menu->load_no_content = false;
 #endif
 
-         g_extern.lifecycle_state |= (1ULL << MODE_LOAD_GAME);
+         rarch_main_set_state(RARCH_ACTION_STATE_LOAD_CONTENT);
          g_extern.system.shutdown = false;
          break;
       case RARCH_CMD_QUIT:
@@ -3488,11 +3517,10 @@ void rarch_main_command(unsigned cmd)
          init_drivers();
          break;
       case RARCH_CMD_QUIT_RETROARCH:
-         g_extern.lifecycle_state &= ~(1ULL << MODE_MENU);
-         g_extern.lifecycle_state &= ~(1ULL << MODE_GAME);
+         rarch_main_set_state(RARCH_ACTION_STATE_QUIT);
          break;
       case RARCH_CMD_RESUME:
-         g_extern.lifecycle_state |= (1ULL << MODE_GAME);
+         rarch_main_set_state(RARCH_ACTION_STATE_RUN_CONTENT);
          break;
       case RARCH_CMD_RESTART_RETROARCH:
 #if defined(GEKKO) && defined(HW_RVL)
@@ -3500,8 +3528,8 @@ void rarch_main_command(unsigned cmd)
                SALAMANDER_FILE,
                sizeof(g_extern.fullpath));
 #endif
-         g_extern.lifecycle_state &= ~(1ULL << MODE_GAME);
-         g_extern.lifecycle_state |= (1ULL << MODE_EXITSPAWN);
+         rarch_main_set_state(RARCH_ACTION_STATE_STOP_CONTENT);
+         rarch_main_set_state(RARCH_ACTION_STATE_EXITSPAWN);
          break;
       case RARCH_CMD_MENU_SAVE_CONFIG:
 #ifdef HAVE_MENU
