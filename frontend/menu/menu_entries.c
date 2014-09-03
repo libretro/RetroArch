@@ -103,7 +103,7 @@ int menu_entries_push_list(menu_handle_t *menu,
       setting_data = (rarch_setting_t *)setting_data_get_mainmenu(true);
       file_list_clear(list);
       add_setting_entry(menu,list,"core_list", MENU_SETTINGS_CORE, setting_data);
-      add_setting_entry(menu,list,"history_list", MENU_SETTINGS_OPEN_HISTORY, setting_data);
+      add_setting_entry(menu,list,"history_list", 0, setting_data);
       add_setting_entry(menu,list,"detect_core_list", 0, setting_data);
       add_setting_entry(menu,list,"load_content", 0, setting_data);
       add_setting_entry(menu,list,"core_options", MENU_SETTINGS_CORE_OPTIONS, setting_data);
@@ -144,40 +144,41 @@ int menu_entries_push_list(menu_handle_t *menu,
       add_setting_entry(menu,list,"savestate_auto_save", 0, setting_data);
       add_setting_entry(menu,list,"savestate_auto_load", 0, setting_data);
    }
+   else if (!strcmp(label, "history_list"))
+   {
+      file_list_clear(list);
+      list_size = content_playlist_size(g_extern.history);
+
+      for (i = 0; i < list_size; i++)
+      {
+         char fill_buf[PATH_MAX];
+         const char *path      = NULL;
+         const char *core_name = NULL;
+
+         content_playlist_get_index(g_extern.history, i,
+               &path, NULL, &core_name);
+         strlcpy(fill_buf, core_name, sizeof(fill_buf));
+
+         if (path)
+         {
+            char path_short[PATH_MAX];
+            fill_pathname(path_short, path_basename(path), "",
+                  sizeof(path_short));
+
+            snprintf(fill_buf, sizeof(fill_buf), "%s (%s)",
+                  path_short, core_name);
+         }
+
+         file_list_push(list, fill_buf, "",
+               MENU_FILE_PLAYLIST_ENTRY, 0);
+
+         do_action = true;
+      }
+   }
    else
    {
       switch (menu_type)
       {
-         case MENU_SETTINGS_OPEN_HISTORY:
-            file_list_clear(list);
-            list_size = content_playlist_size(g_extern.history);
-
-            for (i = 0; i < list_size; i++)
-            {
-               char fill_buf[PATH_MAX];
-               const char *path      = NULL;
-               const char *core_name = NULL;
-
-               content_playlist_get_index(g_extern.history, i,
-                     &path, NULL, &core_name);
-               strlcpy(fill_buf, core_name, sizeof(fill_buf));
-
-               if (path)
-               {
-                  char path_short[PATH_MAX];
-                  fill_pathname(path_short, path_basename(path), "",
-                        sizeof(path_short));
-
-                  snprintf(fill_buf, sizeof(fill_buf), "%s (%s)",
-                        path_short, core_name);
-               }
-
-               file_list_push(list, fill_buf, "",
-                     MENU_FILE_PLAYLIST_ENTRY, 0);
-
-               do_action = true;
-            }
-            break;
          case MENU_SETTINGS_DEFERRED_CORE:
             {
                const core_info_t *info = NULL;
@@ -556,7 +557,7 @@ int menu_entries_push_list(menu_handle_t *menu,
    if (do_action)
    {
       driver.menu->scroll_indices_size = 0;
-      if (menu_type != MENU_SETTINGS_OPEN_HISTORY)
+      if (strcmp(label, "history_list") != 0)
          menu_build_scroll_indices(list);
 
       entries_refresh(list);
@@ -594,10 +595,12 @@ int menu_parse_and_resolve(file_list_t *list, file_list_t *menu_list)
 
    file_list_get_last(menu_list, &dir, &label, &menu_type);
 
-   if (
-         menu_type == MENU_SETTINGS_DEFERRED_CORE ||
-         menu_type == MENU_SETTINGS_OPEN_HISTORY
-      )
+#if 0
+   RARCH_LOG("label: %s\n", label);
+#endif
+
+   if (!strcmp(label, "history_list") || 
+         menu_type == MENU_SETTINGS_DEFERRED_CORE)
       return menu_entries_push_list(driver.menu, list, dir, label, menu_type);
 
    if (menu_parse_check(label, menu_type) == -1)
@@ -799,7 +802,7 @@ int menu_parse_and_resolve(file_list_t *list, file_list_t *menu_list)
    }
 
    driver.menu->scroll_indices_size = 0;
-   if (menu_type != MENU_SETTINGS_OPEN_HISTORY)
+   if (strcmp(label, "history_list") != 0)
       menu_build_scroll_indices(list);
 
    entries_refresh(list);

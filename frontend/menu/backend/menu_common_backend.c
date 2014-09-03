@@ -1886,9 +1886,8 @@ static int menu_action_ok(const char *dir,
          menu_flush_stack_type(driver.menu->menu_stack,
                MENU_SETTINGS_SHADER_OPTIONS);
       }
-      else
 #endif
-         if (menu_type == MENU_SETTINGS_DEFERRED_CORE)
+      else if (menu_type == MENU_SETTINGS_DEFERRED_CORE)
       {
          strlcpy(g_settings.libretro, path, sizeof(g_settings.libretro));
          strlcpy(g_extern.fullpath, driver.menu->deferred_path,
