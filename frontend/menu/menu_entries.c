@@ -780,8 +780,7 @@ int menu_parse_and_resolve(file_list_t *list, file_list_t *menu_list)
 
    if (!strcmp(label, "core_list"))
    {
-      file_list_get_last(menu_list, &dir, NULL,
-            &menu_type);
+      file_list_get_last(menu_list, &dir, NULL, NULL);
       list_size = file_list_get_size(list);
 
       for (i = 0; i < list_size; i++)

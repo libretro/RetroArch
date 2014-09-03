@@ -97,6 +97,7 @@ static void menu_common_shader_manager_set_preset(struct gfx_shader *shader,
       unsigned type, const char *cgp_path)
 {
    RARCH_LOG("Setting Menu shader: %s.\n", cgp_path ? cgp_path : "N/A (stock)");
+   g_settings.video.shader_enable = false;
 
    if (driver.video->set_shader && driver.video->set_shader(driver.video_data,
             (enum rarch_shader_type)type, cgp_path))
@@ -127,11 +128,6 @@ static void menu_common_shader_manager_set_preset(struct gfx_shader *shader,
 
          driver.menu->need_refresh = true;
       }
-   }
-   else
-   {
-      RARCH_ERR("Setting Menu CGP failed.\n");
-      g_settings.video.shader_enable = false;
    }
 }
 

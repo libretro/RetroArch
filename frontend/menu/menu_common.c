@@ -104,11 +104,10 @@ void menu_content_history_push_current(void)
       path_resolve_realpath(tmp, sizeof(tmp));
 
    if (g_extern.system.no_content || *tmp)
-      if (g_extern.history)
-         content_playlist_push(g_extern.history,
-               *tmp ? tmp : NULL,
-               g_settings.libretro,
-               g_extern.system.info.library_name);
+      content_playlist_push(g_extern.history,
+            *tmp ? tmp : NULL,
+            g_settings.libretro,
+            g_extern.system.info.library_name);
 }
 
 static void load_menu_content_prepare(void)
@@ -614,8 +613,8 @@ static inline int menu_list_get_first_char(file_list_t *buf,
    file_list_get_alt_at_offset(buf, offset, &path);
    ret = tolower(*path);
 
-   /* "Normalize" non-alphabetical entries so they are lumped together
-    * for purposes of jumping. */
+   /* "Normalize" non-alphabetical entries so they 
+    * are lumped together for purposes of jumping. */
    if (ret < 'a')
       ret = 'a' - 1;
    else if (ret > 'z')
