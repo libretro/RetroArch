@@ -77,6 +77,20 @@ void menu_content_history_push_current(void)
             g_extern.system.info.library_name);
 }
 
+static void draw_frame(bool enable)
+{
+   if (driver.video_data && driver.video_poke &&
+         driver.video_poke->set_texture_enable)
+      driver.video_poke->set_texture_enable(driver.video_data,
+            enable, MENU_TEXTURE_FULLSCREEN);
+
+   if (!enable)
+      return;
+
+   if (driver.video)
+      rarch_render_cached_frame();
+}
+
 static void load_menu_content_prepare(void)
 {
    if (!driver.menu)
@@ -109,19 +123,8 @@ static void load_menu_content_prepare(void)
          driver.menu_ctx->backend->iterate) 
       driver.menu_ctx->backend->iterate(MENU_ACTION_NOOP);
 
-   /* Draw frame for loading message */
-   if (driver.video_data && driver.video_poke &&
-         driver.video_poke->set_texture_enable)
-      driver.video_poke->set_texture_enable(driver.video_data,
-            driver.menu->frame_buf_show, MENU_TEXTURE_FULLSCREEN);
-
-   if (driver.video)
-      rarch_render_cached_frame();
-
-   if (driver.video_data && driver.video_poke &&
-         driver.video_poke->set_texture_enable)
-      driver.video_poke->set_texture_enable(driver.video_data, false,
-            MENU_TEXTURE_FULLSCREEN);
+   draw_frame(true);
+   draw_frame(false);
 }
 
 /* Update menu state which depends on config. */
@@ -317,6 +320,7 @@ void menu_ticker_line(char *buf, size_t len, unsigned index,
    }
 }
 
+
 bool menu_iterate(void)
 {
    const char *path = NULL;
@@ -413,12 +417,7 @@ bool menu_iterate(void)
          && driver.menu_ctx->backend->iterate) 
       input_entry_ret = driver.menu_ctx->backend->iterate(action);
 
-   if (driver.video_data && driver.video_poke &&
-         driver.video_poke->set_texture_enable)
-      driver.video_poke->set_texture_enable(driver.video_data,
-            driver.menu->frame_buf_show, MENU_TEXTURE_FULLSCREEN);
-
-   rarch_render_cached_frame();
+   draw_frame(true);
 
    /* Throttle in case VSync is broken (avoid 1000+ FPS Menu). */
    driver.menu->time = rarch_get_time_usec();
@@ -431,10 +430,7 @@ bool menu_iterate(void)
       rarch_sleep((unsigned int)driver.menu->sleep_msec);
    driver.menu->last_time = rarch_get_time_usec();
 
-   if (driver.video_data && driver.video_poke
-         && driver.video_poke->set_texture_enable)
-      driver.video_poke->set_texture_enable(driver.video_data, false,
-            MENU_TEXTURE_FULLSCREEN);
+   draw_frame(false);
 
    if (driver.menu_ctx && driver.menu_ctx->input_postprocess)
       ret = driver.menu_ctx->input_postprocess(driver.menu->old_input_state);
