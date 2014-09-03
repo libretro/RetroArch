@@ -1836,6 +1836,26 @@ static int menu_action_ok(const char *dir,
          menu_common_setting_set_current_string(setting, dir);
          menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS_PATH_OPTIONS);
       }
+      else if (setting && !strcmp(setting->name, "input_overlay"))
+      {
+         menu_common_setting_set_current_string_path(setting, dir, path);
+         menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS_OPTIONS);
+      }
+      else if (setting && !strcmp(setting->name, "game_history_path"))
+      {
+         menu_common_setting_set_current_string_path(setting, dir, path);
+         menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS_PATH_OPTIONS);
+      }
+      else if (setting && !strcmp(setting->name, "video_filter"))
+      {
+         menu_common_setting_set_current_string_path(setting, dir, path);
+         menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS_VIDEO_OPTIONS);
+      }
+      else if (setting && !strcmp(setting->name, "audio_dsp_plugin"))
+      {
+         menu_common_setting_set_current_string_path(setting, dir, path);
+         menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS_AUDIO_OPTIONS);
+      }
 #ifdef HAVE_SHADER_MANAGER
       else if (menu_common_type_is(menu_type) == MENU_SETTINGS_SHADER_OPTIONS)
       {
@@ -1923,37 +1943,6 @@ static int menu_action_ok(const char *dir,
 
          menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS);
          return -1;
-      }
-      else if (menu_type == MENU_SETTINGS_OVERLAY_PRESET)
-      {
-         if ((setting = (rarch_setting_t*)setting_data_find_setting(
-                     setting_data, "input_overlay")))
-            menu_common_setting_set_current_string_path(setting, dir, path);
-
-         menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS_OPTIONS);
-      }
-      else if (menu_type == MENU_CONTENT_HISTORY_PATH)
-      {
-         if ((setting = (rarch_setting_t*)setting_data_find_setting(
-                     setting_data, "game_history_path")))
-            menu_common_setting_set_current_string_path(setting, dir, path);
-
-         menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS_PATH_OPTIONS);
-      }
-      else if (menu_type == MENU_SETTINGS_VIDEO_SOFTFILTER)
-      {
-         if ((setting = (rarch_setting_t*)setting_data_find_setting(
-                     setting_data, "video_filter")))
-            menu_common_setting_set_current_string_path(setting, dir, path);
-
-         menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS_VIDEO_OPTIONS);
-      }
-      else if (menu_type == MENU_SETTINGS_AUDIO_DSP_FILTER)
-      {
-         if ((setting = (rarch_setting_t*)setting_data_find_setting(
-                     setting_data, "audio_dsp_plugin")))
-            menu_common_setting_set_current_string_path(setting, dir, path);
-         menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS_AUDIO_OPTIONS);
       }
       else
       {
