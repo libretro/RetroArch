@@ -290,8 +290,8 @@ static void rmenu_render(void)
 #ifdef HAVE_OVERLAY
             menu_type == MENU_SETTINGS_OVERLAY_PRESET ||
 #endif
-            menu_type == MENU_SETTINGS_VIDEO_SOFTFILTER ||
-            menu_type == MENU_SETTINGS_AUDIO_DSP_FILTER ||
+            !strcmp(label, "video_filter") ||
+            !strcmp(label, "audio_dsp_plugin") ||
             menu_type == MENU_SETTINGS_DISK_APPEND ||
             menu_type_is == MENU_FILE_DIRECTORY)
       {

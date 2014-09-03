@@ -262,7 +262,7 @@ int menu_entries_push_list(menu_handle_t *menu,
                   MENU_SETTINGS_VIDEO_RESOLUTION, 0);
 #endif
             add_setting_entry(menu,list,"video_viwidth", 0, setting_data);
-            add_setting_entry(menu,list,"video_filter", MENU_SETTINGS_VIDEO_SOFTFILTER, setting_data);
+            add_setting_entry(menu,list,"video_filter", 0, setting_data);
             add_setting_entry(menu,list, "pal60_enable", 0, setting_data);
             add_setting_entry(menu,list,"video_smooth", 0, setting_data);
             add_setting_entry(menu,list, "soft_filter", 0, setting_data);
@@ -514,7 +514,7 @@ int menu_entries_push_list(menu_handle_t *menu,
             break;
          case MENU_SETTINGS_AUDIO_OPTIONS:
             file_list_clear(list);
-            add_setting_entry(menu,list,"audio_dsp_plugin", MENU_SETTINGS_AUDIO_DSP_FILTER, setting_data);
+            add_setting_entry(menu,list,"audio_dsp_plugin", 0, setting_data);
             add_setting_entry(menu,list,"audio_enable", 0, setting_data);
             add_setting_entry(menu,list,"audio_mute", 0, setting_data);
             add_setting_entry(menu,list,"audio_latency", 0, setting_data);
@@ -571,13 +571,14 @@ int menu_entries_push_list(menu_handle_t *menu,
 
 int menu_parse_check(const char *label, unsigned menu_type)
 {
+   RARCH_LOG("label is menu_parse_check: %s\n", label);
    if (!((menu_type == MENU_FILE_DIRECTORY ||
             menu_common_type_is(menu_type) == MENU_SETTINGS_SHADER_OPTIONS ||
             menu_common_type_is(menu_type) == MENU_FILE_DIRECTORY ||
             menu_type == MENU_SETTINGS_OVERLAY_PRESET ||
             menu_type == MENU_CONTENT_HISTORY_PATH ||
-            menu_type == MENU_SETTINGS_VIDEO_SOFTFILTER ||
-            menu_type == MENU_SETTINGS_AUDIO_DSP_FILTER ||
+            !strcmp(label, "video_filter") ||
+            !strcmp(label, "audio_dsp_plugin") ||
             menu_type == MENU_SETTINGS_CORE ||
             menu_type == MENU_SETTINGS_CONFIG ||
             menu_type == MENU_SETTINGS_DISK_APPEND)))

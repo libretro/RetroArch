@@ -80,9 +80,9 @@ static void get_title(const char *label, const char *dir,
    else if (menu_type == MENU_SETTINGS_OVERLAY_PRESET)
       snprintf(title, sizeof_title, "OVERLAY %s", dir);
 #endif
-   else if (menu_type == MENU_SETTINGS_VIDEO_SOFTFILTER)
+   else if (!strcmp(label, "video_filter"))
       snprintf(title, sizeof_title, "FILTER %s", dir);
-   else if (menu_type == MENU_SETTINGS_AUDIO_DSP_FILTER)
+   else if (!strcmp(label, "audio_dsp_plugin"))
       snprintf(title, sizeof_title, "DSP FILTER %s", dir);
    else if (!strcmp(label, "rgui_browser_directory"))
       snprintf(title, sizeof_title, "BROWSER DIR %s", dir);
