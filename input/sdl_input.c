@@ -23,6 +23,7 @@
 #include <stdlib.h>
 #include "../libretro.h"
 #include "input_common.h"
+#include "keyboard_line.h"
 
 typedef struct sdl_input
 {
@@ -51,11 +52,12 @@ static bool sdl_key_pressed(int key)
    if (key >= RETROK_LAST)
       return false;
 
-   int sym = input_translate_rk_to_keysym((enum retro_key)key);
+   unsigned sym = input_translate_rk_to_keysym((enum retro_key)key);
 
    int num_keys;
    const uint8_t *keymap;
 #if HAVE_SDL2
+   sym = SDL_GetScancodeFromKey(sym);
    keymap = SDL_GetKeyboardState(&num_keys);
 #else
    keymap = SDL_GetKeyState(&num_keys);
@@ -295,11 +297,37 @@ static void sdl_input_poll(void *data)
       sdl->joypad->poll();
    sdl_poll_mouse(sdl);
 
-#ifdef HAVE_SDL2
    SDL_Event event;
-   while (SDL_PeepEvents(&event, 1, SDL_GETEVENT, SDL_MOUSEWHEEL, SDL_MOUSEWHEEL) > 0)
+#ifdef HAVE_SDL2
+   while (SDL_PeepEvents(&event, 1, SDL_GETEVENT, SDL_KEYDOWN, SDL_MOUSEWHEEL) > 0)
+#else
+   while (SDL_PeepEvents(&event, 1, SDL_GETEVENT, SDL_KEYEVENTMASK) > 0)
+#endif
    {
-      if (event.type == SDL_MOUSEWHEEL)
+      if (event.type == SDL_KEYDOWN || event.type == SDL_KEYUP)
+      {
+         uint16_t mod = 0;
+         unsigned code = input_translate_keysym_to_rk(event.key.keysym.sym);
+
+         if (event.key.keysym.mod & KMOD_SHIFT)
+            mod |= RETROKMOD_SHIFT;
+
+         if (event.key.keysym.mod & KMOD_CTRL)
+            mod |= RETROKMOD_CTRL;
+
+         if (event.key.keysym.mod & KMOD_ALT)
+            mod |= RETROKMOD_ALT;
+
+         if (event.key.keysym.mod & KMOD_NUM)
+            mod |= RETROKMOD_NUMLOCK;
+
+         if (event.key.keysym.mod & KMOD_CAPS)
+            mod |= RETROKMOD_CAPSLOCK;
+
+         input_keyboard_event(event.type == SDL_KEYDOWN, code, code, mod);
+      }
+#ifdef HAVE_SDL2
+      else if (event.type == SDL_MOUSEWHEEL)
       {
          sdl->mouse_wu = event.wheel.y < 0;
          sdl->mouse_wd = event.wheel.y > 0;
@@ -307,8 +335,8 @@ static void sdl_input_poll(void *data)
          sdl->mouse_wr = event.wheel.x > 0;
          break;
       }
-   }
 #endif
+   }
 }
 
 static uint64_t sdl_get_capabilities(void *data)
