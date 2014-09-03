@@ -79,7 +79,9 @@ void st_uint_callback(void *userdata, const char *str)
 
    if (str && *str && setting_data)
    {
-      if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, menu->keyboard.label_setting)))
+      if ((current_setting = (rarch_setting_t*)
+               setting_data_find_setting(
+                  setting_data, menu->keyboard.label_setting)))
          *current_setting->value.unsigned_integer = strtoul(str, NULL, 0);
    }
    menu_key_end_line(menu);
@@ -93,7 +95,9 @@ void st_string_callback(void *userdata, const char *str)
  
    if (str && *str && setting_data)
    {
-      if ((current_setting = (rarch_setting_t*)setting_data_find_setting(setting_data, menu->keyboard.label_setting)))
+      if ((current_setting = (rarch_setting_t*)
+               setting_data_find_setting(
+                  setting_data, menu->keyboard.label_setting)))
          menu_common_setting_set_current_string(current_setting, str);
    }
    menu_key_end_line(menu);
@@ -106,7 +110,8 @@ void preset_filename_callback(void *userdata, const char *str)
 
    if (driver.menu_ctx && driver.menu_ctx->backend
          && driver.menu_ctx->backend->shader_manager_save_preset)
-      driver.menu_ctx->backend->shader_manager_save_preset(str && *str ? str : NULL, false);
+      driver.menu_ctx->backend->shader_manager_save_preset(
+            str && *str ? str : NULL, false);
    menu_key_end_line(menu);
 }
 #endif
@@ -127,7 +132,8 @@ void menu_key_event(bool down, unsigned keycode, uint32_t character, uint16_t mo
    {
       driver.menu->keyboard.display = true;
       driver.menu->keyboard.label = "Search: ";
-      driver.menu->keyboard.buffer = input_keyboard_start_line(driver.menu, menu_search_callback);
+      driver.menu->keyboard.buffer = 
+         input_keyboard_start_line(driver.menu, menu_search_callback);
    }
 }
 
@@ -163,10 +169,14 @@ void menu_poll_bind_state(struct menu_bind_state *state)
          state->state[i].axes[a] = input_joypad_axis_raw(joypad, i, a);
       for (h = 0; h < MENU_MAX_HATS; h++)
       {
-         state->state[i].hats[h] |= input_joypad_hat_raw(joypad, i, HAT_UP_MASK, h) ? HAT_UP_MASK : 0;
-         state->state[i].hats[h] |= input_joypad_hat_raw(joypad, i, HAT_DOWN_MASK, h) ? HAT_DOWN_MASK : 0;
-         state->state[i].hats[h] |= input_joypad_hat_raw(joypad, i, HAT_LEFT_MASK, h) ? HAT_LEFT_MASK : 0;
-         state->state[i].hats[h] |= input_joypad_hat_raw(joypad, i, HAT_RIGHT_MASK, h) ? HAT_RIGHT_MASK : 0;
+         state->state[i].hats[h] |= 
+            input_joypad_hat_raw(joypad, i, HAT_UP_MASK, h) ? HAT_UP_MASK : 0;
+         state->state[i].hats[h] |=
+            input_joypad_hat_raw(joypad, i, HAT_DOWN_MASK, h) ? HAT_DOWN_MASK : 0;
+         state->state[i].hats[h] |=
+            input_joypad_hat_raw(joypad, i, HAT_LEFT_MASK, h) ? HAT_LEFT_MASK : 0;
+         state->state[i].hats[h] |=
+            input_joypad_hat_raw(joypad, i, HAT_RIGHT_MASK, h) ? HAT_RIGHT_MASK : 0;
       }
    }
 }
@@ -190,14 +200,18 @@ void menu_poll_bind_get_rested_axes(struct menu_bind_state *state)
 
    for (i = 0; i < MAX_PLAYERS; i++)
       for (a = 0; a < MENU_MAX_AXES; a++)
-         state->axis_state[i].rested_axes[a] = input_joypad_axis_raw(joypad, i, a);
+         state->axis_state[i].rested_axes[a] =
+            input_joypad_axis_raw(joypad, i, a);
 }
 
-static bool menu_poll_find_trigger_pad(struct menu_bind_state *state, struct menu_bind_state *new_state, unsigned p)
+static bool menu_poll_find_trigger_pad(struct menu_bind_state *state,
+      struct menu_bind_state *new_state, unsigned p)
 {
    unsigned a, b, h;
-   const struct menu_bind_state_port *n = (const struct menu_bind_state_port*)&new_state->state[p];
-   const struct menu_bind_state_port *o = (const struct menu_bind_state_port*)&state->state[p];
+   const struct menu_bind_state_port *n = (const struct menu_bind_state_port*)
+      &new_state->state[p];
+   const struct menu_bind_state_port *o = (const struct menu_bind_state_port*)
+      &state->state[p];
 
    for (b = 0; b < MENU_MAX_BUTTONS; b++)
    {
@@ -212,8 +226,10 @@ static bool menu_poll_find_trigger_pad(struct menu_bind_state *state, struct men
    /* Axes are a bit tricky ... */
    for (a = 0; a < MENU_MAX_AXES; a++)
    {
-      int locked_distance = abs(n->axes[a] - new_state->axis_state[p].locked_axes[a]);
-      int rested_distance = abs(n->axes[a] - new_state->axis_state[p].rested_axes[a]);
+      int locked_distance = abs(n->axes[a] - 
+            new_state->axis_state[p].locked_axes[a]);
+      int rested_distance = abs(n->axes[a] - 
+            new_state->axis_state[p].rested_axes[a]);
 
       if (abs(n->axes[a]) >= 20000 &&
             locked_distance >= 20000 &&
