@@ -1938,7 +1938,7 @@ static int menu_action_ok(const char *dir,
          fill_pathname_join(image, dir, path, sizeof(image));
          rarch_disk_control_append_image(image);
 
-         g_extern.lifecycle_state |= 1ULL << MODE_GAME;
+         rarch_main_command(RARCH_CMD_RESUME);
 
          menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS);
          return -1;

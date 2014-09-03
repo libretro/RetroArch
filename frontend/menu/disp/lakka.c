@@ -1012,7 +1012,7 @@ static int lakka_input_postprocess(uint64_t old_state)
          !g_extern.libretro_dummy)
    {
       global_alpha = 0;
-      g_extern.lifecycle_state |= (1ULL << MODE_GAME);
+      rarch_main_command(RARCH_CMD_RESUME);
       return -1;
    }
 

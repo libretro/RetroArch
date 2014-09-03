@@ -341,7 +341,9 @@ static int menu_lakka_iterate(unsigned action)
                   global_alpha = 0.0;
                   if (g_extern.main_is_init && !g_extern.libretro_dummy
                         && strcmp(g_extern.fullpath, active_item->rom) == 0)
-                     g_extern.lifecycle_state |= (1ULL << MODE_GAME);
+                  {
+                     rarch_main_command(RARCH_CMD_RESUME);
+                  }
                   else
                   {
                      strlcpy(g_extern.fullpath, active_item->rom, sizeof(g_extern.fullpath));
