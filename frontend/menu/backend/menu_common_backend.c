@@ -1805,7 +1805,7 @@ static int menu_action_ok(const char *dir,
          && (type == MENU_FILE_USE_DIRECTORY))
    {
       menu_common_setting_set_current_string(setting, dir);
-      menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS_PATH_OPTIONS);
+      menu_flush_stack_label(driver.menu->menu_stack, "Path Options");
    }
    else if (setting && !strcmp(setting->name, "input_overlay")
          && type == MENU_FILE_PLAIN)
@@ -1817,7 +1817,7 @@ static int menu_action_ok(const char *dir,
          && type == MENU_FILE_PLAIN)
    {
       menu_common_setting_set_current_string_path(setting, dir, path);
-      menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS_PATH_OPTIONS);
+      menu_flush_stack_label(driver.menu->menu_stack, "Path Options");
    }
    else if (setting && !strcmp(setting->name, "video_filter")
          && type == MENU_FILE_PLAIN)

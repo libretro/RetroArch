@@ -448,7 +448,7 @@ int menu_entries_push_list(menu_handle_t *menu,
       add_setting_entry(menu,list,"Overlay Options", MENU_FILE_SWITCH, setting_data);
       add_setting_entry(menu,list,"User Options", MENU_FILE_SWITCH, setting_data);
       add_setting_entry(menu,list,"Netplay Options", MENU_FILE_SWITCH, setting_data);
-      add_setting_entry(menu,list,"Path Options", MENU_SETTINGS_PATH_OPTIONS, setting_data);
+      add_setting_entry(menu,list,"Path Options", MENU_FILE_SWITCH, setting_data);
       if (g_extern.main_is_init && !g_extern.libretro_dummy)
       {
          if (g_extern.system.disk_control.get_num_images)
@@ -457,6 +457,27 @@ int menu_entries_push_list(menu_handle_t *menu,
       }
       add_setting_entry(menu,list,"Privacy Options",
             MENU_FILE_SWITCH, setting_data);
+   }
+   else if (!strcmp(label, "Path Options"))
+   {
+      file_list_clear(list);
+      add_setting_entry(menu,list,"rgui_browser_directory", 0, setting_data);
+      add_setting_entry(menu,list,"content_directory", 0, setting_data);
+      add_setting_entry(menu,list,"assets_directory", 0, setting_data);
+      add_setting_entry(menu,list,"rgui_config_directory", 0, setting_data);
+      add_setting_entry(menu,list,"libretro_dir_path", 0, setting_data);
+      add_setting_entry(menu,list,"libretro_info_path", 0, setting_data);
+      add_setting_entry(menu,list,"game_history_path", 0, setting_data);
+      add_setting_entry(menu,list,"video_filter_dir", 0, setting_data);
+      add_setting_entry(menu,list,"audio_filter_dir", 0, setting_data);
+      add_setting_entry(menu,list,"video_shader_dir", 0, setting_data);
+      add_setting_entry(menu,list,"savestate_directory", 0, setting_data);
+      add_setting_entry(menu,list,"savefile_directory", 0, setting_data);
+      add_setting_entry(menu,list,"overlay_directory", 0, setting_data);
+      add_setting_entry(menu,list,"system_directory", 0, setting_data);
+      add_setting_entry(menu,list,"screenshot_directory", 0, setting_data);
+      add_setting_entry(menu,list,"joypad_autoconfig_dir", 0, setting_data);
+      add_setting_entry(menu,list,"extraction_directory", 0, setting_data);
    }
    else
    {
@@ -525,26 +546,6 @@ int menu_entries_push_list(menu_handle_t *menu,
                   MENU_SETTINGS_DISK_INDEX, 0);
             file_list_push(list, "Disk Image Append", "",
                   MENU_SETTINGS_DISK_APPEND, 0);
-            break;
-         case MENU_SETTINGS_PATH_OPTIONS:
-            file_list_clear(list);
-            add_setting_entry(menu,list,"rgui_browser_directory", 0, setting_data);
-            add_setting_entry(menu,list,"content_directory", 0, setting_data);
-            add_setting_entry(menu,list,"assets_directory", 0, setting_data);
-            add_setting_entry(menu,list,"rgui_config_directory", 0, setting_data);
-            add_setting_entry(menu,list,"libretro_dir_path", 0, setting_data);
-            add_setting_entry(menu,list,"libretro_info_path", 0, setting_data);
-            add_setting_entry(menu,list,"game_history_path", 0, setting_data);
-            add_setting_entry(menu,list,"video_filter_dir", 0, setting_data);
-            add_setting_entry(menu,list,"audio_filter_dir", 0, setting_data);
-            add_setting_entry(menu,list,"video_shader_dir", 0, setting_data);
-            add_setting_entry(menu,list,"savestate_directory", 0, setting_data);
-            add_setting_entry(menu,list,"savefile_directory", 0, setting_data);
-            add_setting_entry(menu,list,"overlay_directory", 0, setting_data);
-            add_setting_entry(menu,list,"system_directory", 0, setting_data);
-            add_setting_entry(menu,list,"screenshot_directory", 0, setting_data);
-            add_setting_entry(menu,list,"joypad_autoconfig_dir", 0, setting_data);
-            add_setting_entry(menu,list,"extraction_directory", 0, setting_data);
             break;
       }
    }
