@@ -491,8 +491,8 @@ int menu_entries_push_list(menu_handle_t *menu,
             MENU_FILE_SWITCH, 0);
       file_list_push(list, "Default Filter", "",
             MENU_SETTINGS_SHADER_FILTER, 0);
-      file_list_push(list, "Load Shader Preset", "",
-            MENU_SETTINGS_SHADER_PRESET, 0);
+      file_list_push(list, "Load Shader Preset", "video_shader_preset",
+            MENU_FILE_SWITCH, 0);
       file_list_push(list, "Shader Preset Save As",
             "video_shader_preset_save_as", MENU_FILE_SWITCH, 0);
       file_list_push(list, "Parameters (Current)", "",
@@ -565,7 +565,7 @@ int menu_entries_push_list(menu_handle_t *menu,
 
 int menu_parse_check(const char *label, unsigned menu_type)
 {
-#if 0
+#if 1
    RARCH_LOG("label is menu_parse_check: %s\n", label);
 #endif
    if (!((menu_type == MENU_FILE_DIRECTORY ||
@@ -883,6 +883,36 @@ int menu_entries_get_description(const char *label,
 
       return 0;
    }
-
+   else if (!strcmp(label, "video_shader_preset")) 
+   {
+      snprintf(msg, sizeof_msg,
+            " -- Load Shader Preset. \n"
+            " \n"
+            " Load a "
+#ifdef HAVE_CG
+            "Cg"
+#endif
+#ifdef HAVE_GLSL
+#ifdef HAVE_CG
+            "/"
+#endif
+            "GLSL"
+#endif
+#ifdef HAVE_HLSL
+#if defined(HAVE_CG) || defined(HAVE_HLSL)
+            "/"
+#endif
+            "HLSL"
+#endif
+            " preset directly. \n"
+            "The menu shader menu is updated accordingly. \n"
+            " \n"
+            "If the CGP uses scaling methods which are not \n"
+            "simple, (i.e. source scaling, same scaling \n"
+            "factor for X/Y), the scaling factor displayed \n"
+            "in the menu might not be correct."
+            );
+      return 0;
+   }
    return -1;
 }

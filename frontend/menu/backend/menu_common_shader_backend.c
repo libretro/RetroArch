@@ -324,6 +324,8 @@ static int menu_common_shader_manager_setting_toggle(
    unsigned dist_filter = id - MENU_SETTINGS_SHADER_0_FILTER;
    unsigned dist_scale  = id - MENU_SETTINGS_SHADER_0_SCALE;
 
+   RARCH_LOG("shader label: %s\n", label);
+
    if (id == MENU_SETTINGS_SHADER_FILTER)
    {
       if ((current_setting = setting_data_find_setting(
@@ -370,13 +372,13 @@ static int menu_common_shader_manager_setting_toggle(
    else if (!strcmp(label, "shader_apply_changes") ||
             id == MENU_SETTINGS_SHADER_PASSES)
       menu_setting_set(id, action);
-   else if (((dist_shader % 3) == 0 || id == MENU_SETTINGS_SHADER_PRESET))
+   else if (!strcmp(label, "video_shader_preset"))
    {
       struct gfx_shader *shader = (struct gfx_shader*)driver.menu->shader;
       struct gfx_shader_pass *pass = NULL;
 
       dist_shader /= 3;
-      if (shader && id == MENU_SETTINGS_SHADER_PRESET)
+      if (shader)
          pass = &shader->pass[dist_shader];
 
       switch (action)
@@ -384,14 +386,35 @@ static int menu_common_shader_manager_setting_toggle(
          case MENU_ACTION_OK:
             menu_entries_push(driver.menu->menu_stack,
                   g_settings.video.shader_dir, 
-                  (id == MENU_SETTINGS_SHADER_PRESET) ?
-                  "video_shader_preset" : "video_shader_pass",
+                  "video_shader_preset",
                   id, driver.menu->selection_ptr);
             break;
 
          case MENU_ACTION_START:
             if (pass)
                *pass->source.path = '\0';
+            break;
+
+         default:
+            break;
+      }
+   }
+   else if ((dist_shader % 3) == 0)
+   {
+      struct gfx_shader *shader = (struct gfx_shader*)driver.menu->shader;
+
+      dist_shader /= 3;
+
+      switch (action)
+      {
+         case MENU_ACTION_OK:
+            menu_entries_push(driver.menu->menu_stack,
+                  g_settings.video.shader_dir, 
+                  "video_shader_pass",
+                  id, driver.menu->selection_ptr);
+            break;
+
+         case MENU_ACTION_START:
             break;
 
          default:

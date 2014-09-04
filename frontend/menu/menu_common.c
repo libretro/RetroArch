@@ -664,7 +664,7 @@ unsigned menu_common_type_is(const char *label, unsigned type)
           type >= MENU_SETTINGS_SHADER_0 &&
           type <= MENU_SETTINGS_SHADER_LAST &&
           (((type - MENU_SETTINGS_SHADER_0) % 3) == 0)) ||
-         type == MENU_SETTINGS_SHADER_PRESET)
+         !strcmp(label, "video_shader_preset"))
       return MENU_SETTINGS_SHADER_OPTIONS;
 
    if (

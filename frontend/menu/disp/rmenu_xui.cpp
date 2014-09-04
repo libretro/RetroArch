@@ -442,9 +442,7 @@ static void rmenu_xui_render(void)
       if (type >= MENU_SETTINGS_SHADER_FILTER &&
             type <= MENU_SETTINGS_SHADER_LAST)
       {
-         if (type == MENU_SETTINGS_SHADER_PRESET)
-            strlcpy(type_str, "...", sizeof(type_str));
-         else if (type == MENU_SETTINGS_SHADER_FILTER)
+         if (type == MENU_SETTINGS_SHADER_FILTER)
             snprintf(type_str, sizeof(type_str), "%s",
                   g_settings.video.smooth ? "Linear" : "Nearest");
          else if (driver.menu_ctx && driver.menu_ctx->backend

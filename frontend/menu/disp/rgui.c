@@ -363,7 +363,6 @@ static void rgui_render(void)
             type <= MENU_SETTINGS_SHADER_LAST)
       {
          if (
-               type == MENU_SETTINGS_SHADER_PRESET ||
                type == MENU_SETTINGS_SHADER_PARAMETERS ||
                type == MENU_SETTINGS_SHADER_PRESET_PARAMETERS)
             strlcpy(type_str, "...", sizeof(type_str));

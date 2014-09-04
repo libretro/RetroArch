@@ -88,35 +88,6 @@ static int menu_info_screen_iterate(unsigned action)
          {
             switch (info_type)
             {
-               case MENU_SETTINGS_SHADER_PRESET:
-                  snprintf(msg, sizeof(msg),
-                        " -- Load Shader Preset. \n"
-                        " \n"
-                        " Load a "
-#ifdef HAVE_CG
-                        "Cg"
-#endif
-#ifdef HAVE_GLSL
-#ifdef HAVE_CG
-                        "/"
-#endif
-                        "GLSL"
-#endif
-#ifdef HAVE_HLSL
-#if defined(HAVE_CG) || defined(HAVE_HLSL)
-                        "/"
-#endif
-                        "HLSL"
-#endif
-                        " preset directly. \n"
-                        "The menu shader menu is updated accordingly. \n"
-                        " \n"
-                        "If the CGP uses scaling methods which are not \n"
-                        "simple, (i.e. source scaling, same scaling \n"
-                        "factor for X/Y), the scaling factor displayed \n"
-                        "in the menu might not be correct."
-                        );
-                  break;
                case MENU_SETTINGS_SHADER_PASSES:
                   snprintf(msg, sizeof(msg),
                         " -- Shader Passes. \n"
@@ -1352,8 +1323,9 @@ static int menu_setting_toggle(unsigned type,
 {
    struct retro_perf_counter **counters = NULL;
 
-   if ((type >= MENU_SETTINGS_SHADER_FILTER) &&
-         (type <= MENU_SETTINGS_SHADER_LAST))
+   if ((!strcmp(label, "video_shader_preset")) ||
+         ((type >= MENU_SETTINGS_SHADER_FILTER) &&
+         (type <= MENU_SETTINGS_SHADER_LAST)))
    {
       if (driver.menu_ctx && driver.menu_ctx->backend
             && driver.menu_ctx->backend->shader_manager_setting_toggle)
@@ -2332,7 +2304,6 @@ static void menu_common_setting_set_label(char *type_str,
                break;
 #endif
             case MENU_SETTINGS_CUSTOM_VIEWPORT:
-            case MENU_SETTINGS_SHADER_PRESET:
             case MENU_SETTINGS_CUSTOM_BIND_ALL:
             case MENU_SETTINGS_CUSTOM_BIND_DEFAULT_ALL:
                strlcpy(type_str, "...", type_str_size);
