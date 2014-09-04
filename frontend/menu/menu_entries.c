@@ -470,8 +470,7 @@ int menu_entries_push_list(menu_handle_t *menu,
             break;
          case MENU_SETTINGS_OVERLAY_OPTIONS:
             file_list_clear(list);
-            add_setting_entry(menu,list,"input_overlay", MENU_SETTINGS_OVERLAY_PRESET,
-                  setting_data);
+            add_setting_entry(menu,list,"input_overlay", 0, setting_data);
             add_setting_entry(menu,list,"input_overlay_opacity", 0, setting_data);
             add_setting_entry(menu,list,"input_overlay_scale", 0, setting_data);
             break;
@@ -567,7 +566,7 @@ int menu_parse_check(const char *label, unsigned menu_type)
    if (!((menu_type == MENU_FILE_DIRECTORY ||
             menu_common_type_is(label, menu_type) == MENU_SETTINGS_SHADER_OPTIONS ||
             menu_common_type_is(label, menu_type) == MENU_FILE_DIRECTORY ||
-            menu_type == MENU_SETTINGS_OVERLAY_PRESET ||
+            !strcmp(label, "input_overlay") ||
             menu_type == MENU_CONTENT_HISTORY_PATH ||
             !strcmp(label, "video_filter") ||
             !strcmp(label, "audio_dsp_plugin") ||

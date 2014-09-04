@@ -76,7 +76,7 @@ static void get_title(const char *label, const char *dir,
       strlcpy(title, "LOAD HISTORY", sizeof_title);
    else if (!strcmp(label, "info_screen"))
       strlcpy(title, "INFO", sizeof_title);
-   else if (menu_type == MENU_SETTINGS_OVERLAY_PRESET)
+   else if (!strcmp(label, "input_overlay"))
       snprintf(title, sizeof_title, "OVERLAY %s", dir);
    else if (!strcmp(label, "video_filter"))
       snprintf(title, sizeof_title, "FILTER %s", dir);
