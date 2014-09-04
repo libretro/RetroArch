@@ -712,7 +712,7 @@ int menu_parse_and_resolve(file_list_t *list, file_list_t *menu_list)
       exts = "cfg";
    else if (menu_common_type_is(label, menu_type) == MENU_FILE_DIRECTORY)
       exts = ""; /* we ignore files anyway */
-   else if (driver.menu->defer_core)
+   else if (!strcmp(label, "detect_core_list"))
       exts = g_extern.core_info ? core_info_list_get_all_extensions(
             g_extern.core_info) : "";
    else if (driver.menu->info.valid_extensions)
