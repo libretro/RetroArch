@@ -433,20 +433,8 @@ static void *sdl2_gfx_init(const video_info_t *video, const input_driver_t **inp
 
    sdl2_gfx_set_handles(vid);
 
-   if (input && input_data)
-   {
-      void *sdl_input = input_sdl.init();
-      if (sdl_input)
-      {
-         *input = &input_sdl;
-         *input_data = sdl_input;
-      }
-      else
-      {
-         *input = NULL;
-         *input_data = NULL;
-      }
-   }
+   *input = NULL;
+   *input_data = NULL;
 
    return vid;
 
