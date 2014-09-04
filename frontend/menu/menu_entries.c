@@ -104,7 +104,7 @@ int menu_entries_push_list(menu_handle_t *menu,
       file_list_clear(list);
       add_setting_entry(menu,list,"core_list", 0, setting_data);
       add_setting_entry(menu,list,"history_list", 0, setting_data);
-      add_setting_entry(menu,list,"detect_core_list", 0, setting_data);
+      add_setting_entry(menu,list,"deferred_core_list", 0, setting_data);
       add_setting_entry(menu,list,"load_content", 0, setting_data);
       add_setting_entry(menu,list,"core_options", MENU_SETTINGS_CORE_OPTIONS, setting_data);
       add_setting_entry(menu,list,"core_information", 0, setting_data);
@@ -279,7 +279,7 @@ int menu_entries_push_list(menu_handle_t *menu,
       for (i = 0; i < list_size; i++)
       {
          file_list_push(list, info[i].path, "",
-               MENU_FILE_CORE, 0);
+               MENU_FILE_PLAIN, 0);
          file_list_set_alt_at_offset(list, i,
                info[i].display_name);
       }

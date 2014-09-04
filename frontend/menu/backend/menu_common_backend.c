@@ -1263,7 +1263,7 @@ static int menu_setting_ok_toggle(unsigned type,
    }
    else if (
          !strcmp(label, "load_content") ||
-         !strcmp(label, "detect_core_list")
+         !strcmp(label, "deferred_core_list")
       )
    {
       menu_entries_push(driver.menu->menu_stack,
@@ -1913,7 +1913,7 @@ static int menu_action_ok(const char *dir,
       menu_entries_push(driver.menu->menu_stack,
             cat_path, menu_label, type, driver.menu->selection_ptr);
    }
-   else if (!strcmp(label, "detect_core_list")
+   else if (!strcmp(label, "deferred_core_list")
          && type == MENU_FILE_PLAIN)
    {
       const core_info_t *info = NULL;
