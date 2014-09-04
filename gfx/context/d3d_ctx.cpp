@@ -71,29 +71,29 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message,
     switch (message)
     {
         case WM_CREATE:
-			LPCREATESTRUCT p_cs;
-			p_cs = (LPCREATESTRUCT)lParam;
-			curD3D = (d3d_video_t*)p_cs->lpCreateParams;
-			break;
+            LPCREATESTRUCT p_cs;
+            p_cs = (LPCREATESTRUCT)lParam;
+            curD3D = (d3d_video_t*)p_cs->lpCreateParams;
+            break;
 
         case WM_CHAR:
         case WM_KEYDOWN:
         case WM_KEYUP:
         case WM_SYSKEYUP:
         case WM_SYSKEYDOWN:
-			return win32_handle_keyboard_event(hWnd, message, wParam, lParam);
+            return win32_handle_keyboard_event(hWnd, message, wParam, lParam);
 
         case WM_DESTROY:
-			d3d_quit = true;
-			return 0;
+            d3d_quit = true;
+            return 0;
         case WM_SIZE:
-			unsigned new_width, new_height;
-			new_width = LOWORD(lParam);
-			new_height = HIWORD(lParam);
+            unsigned new_width, new_height;
+            new_width = LOWORD(lParam);
+            new_height = HIWORD(lParam);
 
-			if (new_width && new_height)
-				d3d_resize(driver.video_data, new_width, new_height);
-			return 0;
+            if (new_width && new_height)
+                d3d_resize(driver.video_data, new_width, new_height);
+            return 0;
     }
     if (dinput_handle_message(dinput, message, wParam, lParam))
         return 0;
@@ -173,7 +173,9 @@ void d3d_make_d3dpp(void *data, const video_info_t *info, D3DPRESENT_PARAMETERS 
       }
    }
    else
+   {
       d3dpp->PresentationInterval = D3DPRESENT_INTERVAL_IMMEDIATE;
+   }
 
    d3dpp->SwapEffect = D3DSWAPEFFECT_DISCARD;
    d3dpp->BackBufferCount = 2;
@@ -351,13 +353,13 @@ static void gfx_ctx_d3d_get_video_size(void *data, unsigned *width, unsigned *he
    }
    else
    {
-	   *width = 640;
-	   *height = 480;
+      *width = 640;
+      *height = 480;
       g_extern.lifecycle_state &= ~(1ULL << MODE_MENU_HD);
    }
 
    if(video_mode.fIsWideScreen)
-	   g_extern.lifecycle_state |= (1ULL << MODE_MENU_WIDESCREEN);
+      g_extern.lifecycle_state |= (1ULL << MODE_MENU_WIDESCREEN);
    else
       g_extern.lifecycle_state &= ~(1ULL << MODE_MENU_WIDESCREEN);
 #elif defined(_XBOX1)
@@ -372,20 +374,23 @@ static void gfx_ctx_d3d_get_video_size(void *data, unsigned *width, unsigned *he
       // Check for 16:9 mode (PAL REGION)
       if(video_mode & XC_VIDEO_FLAGS_WIDESCREEN)
       {
+         //60 Hz, 720x480i
          if(video_mode & XC_VIDEO_FLAGS_PAL_60Hz)
-         {	//60 Hz, 720x480i
+         {
             *width = 720;
             *height = 480;
          }
-         else
-         {	//50 Hz, 720x576i
+         else //50 Hz, 720x576i
+         {
             *width = 720;
             *height = 576;
          }
          g_extern.lifecycle_state |= (1ULL << MODE_MENU_WIDESCREEN);
       }
       else
+      {
          g_extern.lifecycle_state &= ~(1ULL << MODE_MENU_WIDESCREEN);
+      }
    }
    else
    {
@@ -396,29 +401,31 @@ static void gfx_ctx_d3d_get_video_size(void *data, unsigned *width, unsigned *he
          *height = 480;
          g_extern.lifecycle_state |= (1ULL << MODE_MENU_WIDESCREEN);
       }
-	  else
-       g_extern.lifecycle_state &= ~(1ULL << MODE_MENU_WIDESCREEN);
+      else
+      {
+         g_extern.lifecycle_state &= ~(1ULL << MODE_MENU_WIDESCREEN);
+      }
    }
 
    if(XGetAVPack() == XC_AV_PACK_HDTV)
    {
       if(video_mode & XC_VIDEO_FLAGS_HDTV_480p)
       {
-         *width	= 640;
+         *width = 640;
          *height  = 480;
          g_extern.lifecycle_state &= ~(1ULL << MODE_MENU_WIDESCREEN);
          g_extern.lifecycle_state |= (1ULL << MODE_MENU_HD);
       }
-	   else if(video_mode & XC_VIDEO_FLAGS_HDTV_720p)
+      else if(video_mode & XC_VIDEO_FLAGS_HDTV_720p)
       {
-         *width	= 1280;
+         *width = 1280;
          *height  = 720;
          g_extern.lifecycle_state |= (1ULL << MODE_MENU_WIDESCREEN);
          g_extern.lifecycle_state |= (1ULL << MODE_MENU_HD);
       }
-	   else if(video_mode & XC_VIDEO_FLAGS_HDTV_1080i)
+      else if(video_mode & XC_VIDEO_FLAGS_HDTV_1080i)
       {
-         *width	= 1920;
+         *width = 1920;
          *height  = 1080;
          g_extern.lifecycle_state |= (1ULL << MODE_MENU_WIDESCREEN);
          g_extern.lifecycle_state |= (1ULL << MODE_MENU_HD);
@@ -450,7 +457,7 @@ const gfx_ctx_driver_t gfx_ctx_d3d9 = {
    gfx_ctx_d3d_swap_interval,
    NULL,
    gfx_ctx_d3d_get_video_size,
-   NULL,							
+   NULL,
    gfx_ctx_d3d_update_title,
    gfx_ctx_d3d_check_window,
    d3d_resize,
