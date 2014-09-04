@@ -39,12 +39,10 @@ static void get_title(const char *label, const char *dir,
       strlcpy(title, "CORE PERFORMANCE COUNTERS", sizeof_title);
    else if (!strcmp(label, "Shader Options"))
       strlcpy(title, "SHADER OPTIONS", sizeof_title);
-#ifdef HAVE_SHADER_MANAGER
-   else if (menu_type == MENU_SETTINGS_SHADER_PARAMETERS)
+   else if (!strcmp(label, "video_shader_parameters"))
       strlcpy(title, "SHADER PARAMETERS (CURRENT)", sizeof_title);
-   else if (menu_type == MENU_SETTINGS_SHADER_PRESET_PARAMETERS)
+   else if (!strcmp(label, "video_shader_preset_parameters"))
       strlcpy(title, "SHADER PARAMETERS (MENU PRESET)", sizeof_title);
-#endif
    else if (!strcmp(label, "Font Options"))
       strlcpy(title, "FONT OPTIONS", sizeof_title);
    else if (!strcmp(label, "General Options"))
@@ -59,12 +57,10 @@ static void get_title(const char *label, const char *dir,
       strlcpy(title, "CORE INFO", sizeof_title);
    else if (!strcmp(label, "Privacy Options"))
       strlcpy(title, "PRIVACY OPTIONS", sizeof_title);
-#ifdef HAVE_SHADER_MANAGER
    else if (!strcmp(label, "video_shader_pass"))
       snprintf(title, sizeof_title, "SHADER %s", dir);
    else if (!strcmp(label, "video_shader_preset"))
       snprintf(title, sizeof_title, "SHADER PRESET %s", dir);
-#endif
    else if (menu_type == MENU_SETTINGS_CUSTOM_VIEWPORT ||
          !strcmp(label, "custom_viewport_2") ||
          !strcmp(label, "help") ||

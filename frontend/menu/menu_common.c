@@ -634,6 +634,19 @@ void menu_build_scroll_indices(file_list_t *buf)
 unsigned menu_common_type_is(const char *label, unsigned type)
 {
    if (
+         (
+          type >= MENU_SETTINGS_SHADER_0 &&
+          type <= MENU_SETTINGS_SHADER_LAST &&
+          (((type - MENU_SETTINGS_SHADER_0) % 3) == 0)
+          )
+         ||
+         !strcmp(label, "video_shader_default_filter") ||
+         !strcmp(label, "video_shader_passes") ||
+         !strcmp(label, "video_shader_preset")
+         )
+      return MENU_SETTINGS_SHADER_OPTIONS;
+
+   if (
          type == MENU_SETTINGS ||
          !strcmp(label, "General Options") ||
          !strcmp(label, "core_options") ||
@@ -641,8 +654,8 @@ unsigned menu_common_type_is(const char *label, unsigned type)
          !strcmp(label, "Video Options") ||
          !strcmp(label, "Font Options") ||
          !strcmp(label, "Shader Options") ||
-         type == MENU_SETTINGS_SHADER_PARAMETERS ||
-         type == MENU_SETTINGS_SHADER_PRESET_PARAMETERS ||
+         !strcmp(label, "video_shader_parameters") ||
+         !strcmp(label, "video_shader_preset_parameters") ||
          !strcmp(label, "Audio Options") ||
          !strcmp(label, "disk_options") ||
          !strcmp(label, "Path Options") ||
@@ -659,13 +672,6 @@ unsigned menu_common_type_is(const char *label, unsigned type)
          )
          return MENU_SETTINGS;
 
-   if (
-         (
-          type >= MENU_SETTINGS_SHADER_0 &&
-          type <= MENU_SETTINGS_SHADER_LAST &&
-          (((type - MENU_SETTINGS_SHADER_0) % 3) == 0)) ||
-         !strcmp(label, "video_shader_preset"))
-      return MENU_SETTINGS_SHADER_OPTIONS;
 
    if (
          !strcmp(label, "rgui_browser_directory") ||

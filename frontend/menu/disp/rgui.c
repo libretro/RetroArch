@@ -358,32 +358,6 @@ static void rgui_render(void)
       if (!strcmp(label, "performance_counters"))
          w = 28;
 
-#ifdef HAVE_SHADER_MANAGER
-      if (type >= MENU_SETTINGS_SHADER_FILTER &&
-            type <= MENU_SETTINGS_SHADER_LAST)
-      {
-         if (
-               type == MENU_SETTINGS_SHADER_PARAMETERS ||
-               type == MENU_SETTINGS_SHADER_PRESET_PARAMETERS)
-            strlcpy(type_str, "...", sizeof(type_str));
-         else if (type == MENU_SETTINGS_SHADER_FILTER)
-            snprintf(type_str, sizeof(type_str), "%s",
-                  g_settings.video.smooth ? "Linear" : "Nearest");
-         else if (driver.menu_ctx && driver.menu_ctx->backend &&
-               driver.menu_ctx->backend->shader_manager_get_str)
-         {
-            if (type >= MENU_SETTINGS_SHADER_PARAMETER_0 &&
-                  type <= MENU_SETTINGS_SHADER_PARAMETER_LAST)
-               driver.menu_ctx->backend->shader_manager_get_str(
-                     driver.menu->parameter_shader, type_str,
-                     sizeof(type_str), type);
-            else
-               driver.menu_ctx->backend->shader_manager_get_str(
-                     driver.menu->shader, type_str, sizeof(type_str), type);
-         }
-      }
-      else
-#endif
       if (type == MENU_FILE_CORE)
       {
          strlcpy(type_str, "(CORE)", sizeof(type_str));
@@ -417,7 +391,7 @@ static void rgui_render(void)
       else if (driver.menu_ctx && driver.menu_ctx->backend &&
             driver.menu_ctx->backend->setting_set_label)
          driver.menu_ctx->backend->setting_set_label(type_str,
-               sizeof(type_str), &w, type, i);
+               sizeof(type_str), &w, type, label, entry_label, i);
 
       char entry_title_buf[256];
       char type_str_buf[64];

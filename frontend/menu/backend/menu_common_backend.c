@@ -88,21 +88,6 @@ static int menu_info_screen_iterate(unsigned action)
          {
             switch (info_type)
             {
-               case MENU_SETTINGS_SHADER_PASSES:
-                  snprintf(msg, sizeof(msg),
-                        " -- Shader Passes. \n"
-                        " \n"
-                        "RetroArch allows you to mix and match various \n"
-                        "shaders with arbitrary shader passes, with \n"
-                        "custom hardware filters and scale factors. \n"
-                        " \n"
-                        "This option specifies the number of shader \n"
-                        "passes to use. If you set this to 0, and use \n"
-                        "Apply Shader Changes, you use a 'blank' shader. \n"
-                        " \n"
-                        "The Default Filter option will affect the \n"
-                        "stretching filter.");
-                  break;
                case MENU_SETTINGS_BIND_DEVICE:
                   snprintf(msg, sizeof(msg),
                         " -- Input Device. \n"
@@ -808,7 +793,8 @@ static void handle_setting(rarch_setting_t *setting,
    }
 }
 
-static int menu_setting_set(unsigned id, unsigned action)
+static int menu_setting_set(unsigned id, const char *label,
+      unsigned action)
 {
    unsigned port = driver.menu->current_pad;
    rarch_setting_t *setting = (rarch_setting_t*)get_last_setting(
@@ -850,11 +836,43 @@ static int menu_setting_set(unsigned id, unsigned action)
                rarch_disk_control_set_eject(false, false);
             }
          }
-         else if (!strcmp(setting->name, "disk_image_append"))
-         {
-         }
 
          handle_setting(setting, id, action);
+      }
+      else if (!strcmp(label, "video_shader_passes"))
+      {
+#ifdef HAVE_SHADER_MANAGER
+         struct gfx_shader *shader = (struct gfx_shader*)
+            driver.menu->shader;
+
+         switch (action)
+         {
+            case MENU_ACTION_START:
+               if (shader && shader->passes)
+                  shader->passes = 0;
+               driver.menu->need_refresh = true;
+               break;
+
+            case MENU_ACTION_LEFT:
+               if (shader && shader->passes)
+                  shader->passes--;
+               driver.menu->need_refresh = true;
+               break;
+
+            case MENU_ACTION_RIGHT:
+            case MENU_ACTION_OK:
+               if (shader && (shader->passes < GFX_MAX_SHADERS))
+                  shader->passes++;
+               driver.menu->need_refresh = true;
+               break;
+
+            default:
+               break;
+         }
+
+         if (driver.menu->need_refresh)
+            gfx_shader_resolve_parameters(NULL, driver.menu->shader);
+#endif
       }
       else
       {
@@ -1061,42 +1079,6 @@ static int menu_setting_set(unsigned id, unsigned action)
                }
 #endif
                break;
-#ifdef HAVE_SHADER_MANAGER
-            case MENU_SETTINGS_SHADER_PASSES:
-               {
-                  struct gfx_shader *shader = (struct gfx_shader*)
-                     driver.menu->shader;
-
-                  switch (action)
-                  {
-                     case MENU_ACTION_START:
-                        if (shader && shader->passes)
-                           shader->passes = 0;
-                        driver.menu->need_refresh = true;
-                        break;
-
-                     case MENU_ACTION_LEFT:
-                        if (shader && shader->passes)
-                           shader->passes--;
-                        driver.menu->need_refresh = true;
-                        break;
-
-                     case MENU_ACTION_RIGHT:
-                     case MENU_ACTION_OK:
-                        if (shader && (shader->passes < GFX_MAX_SHADERS))
-                           shader->passes++;
-                        driver.menu->need_refresh = true;
-                        break;
-
-                     default:
-                        break;
-                  }
-
-                  if (driver.menu->need_refresh)
-                     gfx_shader_resolve_parameters(NULL, driver.menu->shader);
-               }
-               break;
-#endif
             default:
                break;
          }
@@ -1323,9 +1305,7 @@ static int menu_setting_toggle(unsigned type,
 {
    struct retro_perf_counter **counters = NULL;
 
-   if ((!strcmp(label, "video_shader_preset")) ||
-         ((type >= MENU_SETTINGS_SHADER_FILTER) &&
-         (type <= MENU_SETTINGS_SHADER_LAST)))
+   if (menu_common_type_is(label, type) == MENU_SETTINGS_SHADER_OPTIONS)
    {
       if (driver.menu_ctx && driver.menu_ctx->backend
             && driver.menu_ctx->backend->shader_manager_setting_toggle)
@@ -1349,7 +1329,7 @@ static int menu_setting_toggle(unsigned type,
             type - MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_BEGIN);
    }
    else if (driver.menu_ctx && driver.menu_ctx->backend)
-      return menu_setting_set(type, action);
+      return menu_setting_set(type, label, action);
 
    return 0;
 }
@@ -2220,13 +2200,24 @@ static void handle_setting_label(char *type_str,
 }
 
 static void menu_common_setting_set_label(char *type_str,
-      size_t type_str_size, unsigned *w, unsigned type, unsigned index)
+      size_t type_str_size, unsigned *w, unsigned type, 
+      const char *menu_label, const char *label, unsigned index)
 {
    rarch_setting_t *setting_data = (rarch_setting_t*)setting_data_get_list();
    rarch_setting_t *setting = (rarch_setting_t*)setting_data_find_setting(setting_data,
          driver.menu->selection_buf->list[index].label);
 
-   if (type >= MENU_SETTINGS_PERF_COUNTERS_BEGIN
+   if (!strcmp(menu_label, "Shader Options")
+         &&
+         driver.menu_ctx && driver.menu_ctx->backend &&
+         driver.menu_ctx->backend->shader_manager_get_str
+      )
+   {
+      driver.menu_ctx->backend->shader_manager_get_str(
+            driver.menu->shader, type_str, type_str_size,
+            menu_label, label, type);
+   }
+   else if (type >= MENU_SETTINGS_PERF_COUNTERS_BEGIN
          && type <= MENU_SETTINGS_PERF_COUNTERS_END)
       menu_common_setting_set_label_perf(type_str, type_str_size, w, type,
             perf_counters_rarch,

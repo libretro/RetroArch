@@ -132,11 +132,14 @@ static void menu_common_shader_manager_set_preset(struct gfx_shader *shader,
 }
 
 static void menu_common_shader_manager_get_str(struct gfx_shader *shader,
-      char *type_str, size_t type_str_size, unsigned type)
+      char *type_str, size_t type_str_size, const char *menu_label,
+      const char *label, unsigned type)
 {
    *type_str = '\0';
 
-   if (type >= MENU_SETTINGS_SHADER_PARAMETER_0
+   if (!strcmp(label, "video_shader_passes"))
+      snprintf(type_str, type_str_size, "%u", shader->passes);
+   else if (type >= MENU_SETTINGS_SHADER_PARAMETER_0
          && type <= MENU_SETTINGS_SHADER_PARAMETER_LAST)
    {
       /* menu->parameter_shader here. */
@@ -149,8 +152,9 @@ static void menu_common_shader_manager_get_str(struct gfx_shader *shader,
                param->current, param->minimum, param->maximum);
       }
    }
-   else if (type == MENU_SETTINGS_SHADER_PASSES)
-      snprintf(type_str, type_str_size, "%u", shader->passes);
+   else if (!strcmp(label, "video_shader_default_filter"))
+      snprintf(type_str, type_str_size, "%s",
+            g_settings.video.smooth ? "Linear" : "Nearest");
    else if (type >= MENU_SETTINGS_SHADER_0 && type <= MENU_SETTINGS_SHADER_LAST)
    {
       unsigned pass = (type - MENU_SETTINGS_SHADER_0) / 3;
@@ -324,17 +328,17 @@ static int menu_common_shader_manager_setting_toggle(
    unsigned dist_filter = id - MENU_SETTINGS_SHADER_0_FILTER;
    unsigned dist_scale  = id - MENU_SETTINGS_SHADER_0_SCALE;
 
-   if (id == MENU_SETTINGS_SHADER_FILTER)
+   if (!strcmp(label, "video_shader_default_filter"))
    {
       if ((current_setting = setting_data_find_setting(
                   setting_data, "video_smooth")))
          menu_common_setting_set_current_boolean(current_setting, action);
    }
-   else if ((id == MENU_SETTINGS_SHADER_PARAMETERS
-            || id == MENU_SETTINGS_SHADER_PRESET_PARAMETERS)
+   else if ((!strcmp(label, "video_shader_parameters") ||
+            !strcmp(label, "video_shader_preset_parameters"))
          && action == MENU_ACTION_OK)
       menu_entries_push(driver.menu->menu_stack, "",
-            "shader_parameters", id, driver.menu->selection_ptr);
+            "video_shader_parameters", MENU_FILE_SWITCH, driver.menu->selection_ptr);
    else if (id >= MENU_SETTINGS_SHADER_PARAMETER_0
          && id <= MENU_SETTINGS_SHADER_PARAMETER_LAST)
    {
@@ -368,8 +372,8 @@ static int menu_common_shader_manager_setting_toggle(
       param->current = min(max(param->minimum, param->current), param->maximum);
    }
    else if (!strcmp(label, "shader_apply_changes") ||
-            id == MENU_SETTINGS_SHADER_PASSES)
-      menu_setting_set(id, action);
+         !strcmp(label, "video_shader_passes"))
+      menu_setting_set(id, label, action);
    else if (!strcmp(label, "video_shader_preset"))
    {
       struct gfx_shader *shader = (struct gfx_shader*)driver.menu->shader;

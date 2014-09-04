@@ -33,9 +33,9 @@ static void entries_refresh(file_list_t *list)
 }
 
 static inline struct gfx_shader *shader_manager_get_current_shader(
-      menu_handle_t *menu, unsigned type)
+      menu_handle_t *menu, const char *label, unsigned type)
 {
-   if (type == MENU_SETTINGS_SHADER_PRESET_PARAMETERS)
+   if (!strcmp(label, "video_shader_preset_parameters"))
       return menu->shader;
    else if (driver.video_poke && driver.video_data &&
          driver.video_poke->get_current_shader)
@@ -489,18 +489,18 @@ int menu_entries_push_list(menu_handle_t *menu,
       file_list_clear(list);
       file_list_push(list, "Apply Shader Changes", "shader_apply_changes",
             MENU_FILE_SWITCH, 0);
-      file_list_push(list, "Default Filter", "",
-            MENU_SETTINGS_SHADER_FILTER, 0);
+      file_list_push(list, "Default Filter", "video_shader_default_filter",
+            0, 0);
       file_list_push(list, "Load Shader Preset", "video_shader_preset",
             MENU_FILE_SWITCH, 0);
       file_list_push(list, "Shader Preset Save As",
             "video_shader_preset_save_as", MENU_FILE_SWITCH, 0);
-      file_list_push(list, "Parameters (Current)", "",
-            MENU_SETTINGS_SHADER_PARAMETERS, 0);
-      file_list_push(list, "Parameters (Menu)", "",
-            MENU_SETTINGS_SHADER_PRESET_PARAMETERS, 0);
-      file_list_push(list, "Shader Passes", "",
-            MENU_SETTINGS_SHADER_PASSES, 0);
+      file_list_push(list, "Parameters (Current)",
+            "video_shader_parameters", MENU_FILE_SWITCH, 0);
+      file_list_push(list, "Parameters (Menu)",
+            "video_shader_preset_parameters", MENU_FILE_SWITCH, 0);
+      file_list_push(list, "Shader Passes", "video_shader_passes",
+            0, 0);
 
       for (i = 0; i < shader->passes; i++)
       {
@@ -525,27 +525,22 @@ int menu_entries_push_list(menu_handle_t *menu,
       file_list_push(list, "Disk Index", "disk_index", 0, 0);
       file_list_push(list, "Disk Image Append", "disk_image_append", 0, 0);
    }
-   else
+   else if (
+         !strcmp(label, "video_shader_preset_parameters") ||
+         !strcmp(label, "video_shader_parameters")
+         )
    {
-      switch (menu_type)
-      {
-         case MENU_SETTINGS_SHADER_PARAMETERS:
-         case MENU_SETTINGS_SHADER_PRESET_PARAMETERS:
-            {
-               file_list_clear(list);
+      file_list_clear(list);
 
-               struct gfx_shader *shader = (struct gfx_shader*)
-                  shader_manager_get_current_shader(menu, menu_type);
+      struct gfx_shader *shader = (struct gfx_shader*)
+         shader_manager_get_current_shader(menu, label, menu_type);
 
-               if (shader)
-                  for (i = 0; i < shader->num_parameters; i++)
-                     file_list_push(list,
-                           shader->parameters[i].desc, "",
-                           MENU_SETTINGS_SHADER_PARAMETER_0 + i, 0);
-               menu->parameter_shader = shader;
-            }
-            break;
-      }
+      if (shader)
+         for (i = 0; i < shader->num_parameters; i++)
+            file_list_push(list,
+                  shader->parameters[i].desc, "",
+                  MENU_SETTINGS_SHADER_PARAMETER_0 + i, 0);
+      menu->parameter_shader = shader;
    }
 
    if (do_action)
@@ -911,6 +906,41 @@ int menu_entries_get_description(const char *label,
             "simple, (i.e. source scaling, same scaling \n"
             "factor for X/Y), the scaling factor displayed \n"
             "in the menu might not be correct."
+            );
+      return 0;
+   }
+   else if (!strcmp(label, "video_shader_passes")) 
+   {
+      snprintf(msg, sizeof_msg,
+            " -- Shader Passes. \n"
+            " \n"
+            "RetroArch allows you to mix and match various \n"
+            "shaders with arbitrary shader passes, with \n"
+            "custom hardware filters and scale factors. \n"
+            " \n"
+            "This option specifies the number of shader \n"
+            "passes to use. If you set this to 0, and use \n"
+            "Apply Shader Changes, you use a 'blank' shader. \n"
+            " \n"
+            "The Default Filter option will affect the \n"
+            "stretching filter.");
+      return 0;
+   }
+   else if (!strcmp(label, "video_shader_parameters"))
+   {
+      snprintf(msg, sizeof_msg,
+            "-- Shader Parameters. \n"
+            " \n"
+            "Modifies current shader directly. Will not be \n"
+            "saved to CGP/GLSLP preset file.");
+      return 0;
+   }
+   else if (!strcmp(label, "video_shader_preset_parameters"))
+   {
+      snprintf(msg, sizeof_msg,
+            "-- Shader Preset Parameters. \n"
+            " \n"
+            "Modifies shader preset currently in menu."
             );
       return 0;
    }
