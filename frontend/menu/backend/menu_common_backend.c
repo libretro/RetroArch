@@ -1282,7 +1282,7 @@ static int menu_setting_ok_toggle(unsigned type,
    else if (
          menu_common_type_is(label, type) == MENU_SETTINGS ||
          !strcmp(label, "core_list") ||
-         type == MENU_SETTINGS_CONFIG ||
+         !strcmp(label, "configurations") ||
          type == MENU_SETTINGS_DISK_APPEND
          )
    {
@@ -1893,7 +1893,7 @@ static int menu_action_ok(const char *dir,
       return -1;
 #endif
    }
-   else if (menu_type == MENU_SETTINGS_CONFIG
+   else if (!strcmp(menu_label, "configurations")
          && type == MENU_FILE_PLAIN)
    {
       char config[PATH_MAX];
@@ -2285,7 +2285,7 @@ static void menu_common_setting_set_label(char *type_str,
 
       if (setting)
       {
-         if (type == MENU_SETTINGS_CONFIG)
+         if (!strcmp(setting->name, "configurations"))
          {
             if (*g_extern.config_path)
                fill_pathname_base(type_str, g_extern.config_path,

@@ -9,7 +9,7 @@ static void get_title(const char *label, const char *dir,
       snprintf(title, sizeof_title, "CORE SELECTION %s", dir);
    else if (!strcmp(label, "deferred_core_list"))
       snprintf(title, sizeof_title, "DETECTED CORES %s", dir);
-   else if (menu_type == MENU_SETTINGS_CONFIG)
+   else if (!strcmp(label, "configurations"))
       snprintf(title, sizeof_title, "CONFIG %s", dir);
    else if (menu_type == MENU_SETTINGS_DISK_APPEND)
       snprintf(title, sizeof_title, "DISK APPEND %s", dir);

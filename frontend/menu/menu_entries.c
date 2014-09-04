@@ -116,7 +116,7 @@ int menu_entries_push_list(menu_handle_t *menu,
       add_setting_entry(menu,list,"resume_content", MENU_FILE_SWITCH, setting_data);
       add_setting_entry(menu,list,"restart_content", MENU_FILE_SWITCH, setting_data);
       add_setting_entry(menu,list,"restart_retroarch", MENU_FILE_SWITCH, setting_data);
-      add_setting_entry(menu,list,"configurations", MENU_SETTINGS_CONFIG, setting_data);
+      add_setting_entry(menu,list,"configurations", 0, setting_data);
       add_setting_entry(menu,list,"save_new_config", MENU_FILE_SWITCH, setting_data);
       add_setting_entry(menu,list,"help", MENU_FILE_SWITCH, setting_data);
       add_setting_entry(menu,list,"quit_retroarch", MENU_FILE_SWITCH, setting_data);
@@ -577,7 +577,7 @@ int menu_parse_check(const char *label, unsigned menu_type)
             !strcmp(label, "video_filter") ||
             !strcmp(label, "audio_dsp_plugin") ||
             !strcmp(label, "core_list") ||
-            menu_type == MENU_SETTINGS_CONFIG ||
+            !strcmp(label, "configurations") ||
             menu_type == MENU_SETTINGS_DISK_APPEND)))
       return -1;
    return 0;
