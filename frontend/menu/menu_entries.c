@@ -500,7 +500,7 @@ int menu_entries_push_list(menu_handle_t *menu,
             "video_shader_parameters", MENU_FILE_SWITCH, 0);
       file_list_push(list, "Parameters (Menu)",
             "video_shader_preset_parameters", MENU_FILE_SWITCH, 0);
-      file_list_push(list, "Shader Passes", "video_shader_passes",
+      file_list_push(list, "Shader Passes", "video_shader_num_passes",
             0, 0);
 
       for (i = 0; i < shader->passes; i++)
@@ -910,7 +910,7 @@ int menu_entries_get_description(const char *label,
             );
       return 0;
    }
-   else if (!strcmp(label, "video_shader_passes")) 
+   else if (!strcmp(label, "video_shader_num_passes")) 
    {
       snprintf(msg, sizeof_msg,
             " -- Shader Passes. \n"

@@ -137,7 +137,7 @@ static void menu_common_shader_manager_get_str(struct gfx_shader *shader,
 {
    *type_str = '\0';
 
-   if (!strcmp(label, "video_shader_passes"))
+   if (!strcmp(label, "video_shader_num_passes"))
       snprintf(type_str, type_str_size, "%u", shader->passes);
    else if (type >= MENU_SETTINGS_SHADER_PARAMETER_0
          && type <= MENU_SETTINGS_SHADER_PARAMETER_LAST)
@@ -372,7 +372,7 @@ static int menu_common_shader_manager_setting_toggle(
       menu_entries_push(driver.menu->menu_stack, "",
             "video_shader_parameters", MENU_FILE_SWITCH, driver.menu->selection_ptr);
    else if (!strcmp(label, "shader_apply_changes") ||
-         !strcmp(label, "video_shader_passes"))
+         !strcmp(label, "video_shader_num_passes"))
       menu_setting_set(id, label, action);
    else if (!strcmp(label, "video_shader_preset"))
    {

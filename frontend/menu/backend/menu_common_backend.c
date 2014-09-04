@@ -839,7 +839,7 @@ static int menu_setting_set(unsigned id, const char *label,
 
          handle_setting(setting, id, action);
       }
-      else if (!strcmp(label, "video_shader_passes"))
+      else if (!strcmp(label, "video_shader_num_passes"))
       {
 #ifdef HAVE_SHADER_MANAGER
          struct gfx_shader *shader = (struct gfx_shader*)

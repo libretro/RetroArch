@@ -641,7 +641,7 @@ unsigned menu_common_type_is(const char *label, unsigned type)
           )
          ||
          !strcmp(label, "video_shader_default_filter") ||
-         !strcmp(label, "video_shader_passes") ||
+         !strcmp(label, "video_shader_num_passes") ||
          !strcmp(label, "video_shader_preset")
          )
       return MENU_SETTINGS_SHADER_OPTIONS;
