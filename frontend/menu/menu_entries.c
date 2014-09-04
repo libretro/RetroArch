@@ -102,24 +102,24 @@ int menu_entries_push_list(menu_handle_t *menu,
    {
       setting_data = (rarch_setting_t *)setting_data_get_mainmenu(true);
       file_list_clear(list);
-      add_setting_entry(menu,list,"core_list", 0, setting_data);
-      add_setting_entry(menu,list,"history_list", 0, setting_data);
-      add_setting_entry(menu,list,"detect_core_list", 0, setting_data);
-      add_setting_entry(menu,list,"load_content", 0, setting_data);
+      add_setting_entry(menu,list,"core_list", MENU_FILE_SWITCH, setting_data);
+      add_setting_entry(menu,list,"history_list", MENU_FILE_SWITCH, setting_data);
+      add_setting_entry(menu,list,"detect_core_list", MENU_FILE_SWITCH, setting_data);
+      add_setting_entry(menu,list,"load_content", MENU_FILE_SWITCH, setting_data);
       add_setting_entry(menu,list,"core_options", MENU_FILE_SWITCH, setting_data);
-      add_setting_entry(menu,list,"core_information", 0, setting_data);
+      add_setting_entry(menu,list,"core_information", MENU_FILE_SWITCH, setting_data);
       add_setting_entry(menu,list,"settings", MENU_SETTINGS_OPTIONS, setting_data);
       add_setting_entry(menu,list,"performance_counters", MENU_FILE_SWITCH, setting_data);
       add_setting_entry(menu,list,"savestate", 0, setting_data);
       add_setting_entry(menu,list,"loadstate", 0, setting_data);
-      add_setting_entry(menu,list,"take_screenshot", 0, setting_data);
-      add_setting_entry(menu,list,"resume_content", 0, setting_data);
-      add_setting_entry(menu,list,"restart_content", 0, setting_data);
-      add_setting_entry(menu,list,"restart_retroarch", 0, setting_data);
+      add_setting_entry(menu,list,"take_screenshot", MENU_FILE_SWITCH, setting_data);
+      add_setting_entry(menu,list,"resume_content", MENU_FILE_SWITCH, setting_data);
+      add_setting_entry(menu,list,"restart_content", MENU_FILE_SWITCH, setting_data);
+      add_setting_entry(menu,list,"restart_retroarch", MENU_FILE_SWITCH, setting_data);
       add_setting_entry(menu,list,"configurations", MENU_SETTINGS_CONFIG, setting_data);
-      add_setting_entry(menu,list,"save_new_config", 0, setting_data);
-      add_setting_entry(menu,list,"help", 0, setting_data);
-      add_setting_entry(menu,list,"quit_retroarch", 0, setting_data);
+      add_setting_entry(menu,list,"save_new_config", MENU_FILE_SWITCH, setting_data);
+      add_setting_entry(menu,list,"help", MENU_FILE_SWITCH, setting_data);
+      add_setting_entry(menu,list,"quit_retroarch", MENU_FILE_SWITCH, setting_data);
    }
    else if (!strcmp(path, "General Options"))
    {
