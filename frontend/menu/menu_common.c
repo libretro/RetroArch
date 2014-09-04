@@ -640,7 +640,7 @@ unsigned menu_common_type_is(const char *label, unsigned type)
          !strcmp(label, "core_information") ||
          !strcmp(label, "Video Options") ||
          !strcmp(label, "Font Options") ||
-         type == MENU_SETTINGS_SHADER_OPTIONS ||
+         !strcmp(label, "Shader Options") ||
          type == MENU_SETTINGS_SHADER_PARAMETERS ||
          type == MENU_SETTINGS_SHADER_PRESET_PARAMETERS ||
          !strcmp(label, "Audio Options") ||

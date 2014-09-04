@@ -362,17 +362,7 @@ static void rgui_render(void)
       if (type >= MENU_SETTINGS_SHADER_FILTER &&
             type <= MENU_SETTINGS_SHADER_LAST)
       {
-         /* HACK. Work around that we're using the menu_type as dir type 
-          * to propagate state correctly. */
-         if ((menu_type_is == MENU_SETTINGS_SHADER_OPTIONS)
-               && (menu_type_is == MENU_SETTINGS_SHADER_OPTIONS))
-         {
-            type = MENU_FILE_DIRECTORY;
-            strlcpy(type_str, "(DIR)", sizeof(type_str));
-            w = 5;
-         }
-         else if (
-               type == MENU_SETTINGS_SHADER_OPTIONS ||
+         if (
                type == MENU_SETTINGS_SHADER_PRESET ||
                type == MENU_SETTINGS_SHADER_PARAMETERS ||
                type == MENU_SETTINGS_SHADER_PRESET_PARAMETERS)

@@ -37,9 +37,9 @@ static void get_title(const char *label, const char *dir,
       strlcpy(title, "FRONTEND PERFORMANCE COUNTERS", sizeof_title);
    else if (!strcmp(label, "core_counters"))
       strlcpy(title, "CORE PERFORMANCE COUNTERS", sizeof_title);
-#ifdef HAVE_SHADER_MANAGER
-   else if (menu_type == MENU_SETTINGS_SHADER_OPTIONS)
+   else if (!strcmp(label, "Shader Options"))
       strlcpy(title, "SHADER OPTIONS", sizeof_title);
+#ifdef HAVE_SHADER_MANAGER
    else if (menu_type == MENU_SETTINGS_SHADER_PARAMETERS)
       strlcpy(title, "SHADER PARAMETERS (CURRENT)", sizeof_title);
    else if (menu_type == MENU_SETTINGS_SHADER_PRESET_PARAMETERS)

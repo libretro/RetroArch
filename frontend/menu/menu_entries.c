@@ -441,7 +441,7 @@ int menu_entries_push_list(menu_handle_t *menu,
       add_setting_entry(menu,list,"Driver Options", MENU_FILE_SWITCH, setting_data);
       add_setting_entry(menu,list,"General Options", MENU_FILE_SWITCH, setting_data);
       add_setting_entry(menu,list,"Video Options", MENU_FILE_SWITCH, setting_data);
-      add_setting_entry(menu,list,"Shader Options", MENU_SETTINGS_SHADER_OPTIONS, setting_data);
+      add_setting_entry(menu,list,"Shader Options", MENU_FILE_SWITCH, setting_data);
       add_setting_entry(menu,list,"Font Options", MENU_FILE_SWITCH, setting_data);
       add_setting_entry(menu,list,"Audio Options", MENU_FILE_SWITCH, setting_data);
       add_setting_entry(menu,list,"Input Options", MENU_FILE_SWITCH, setting_data);
@@ -479,6 +479,46 @@ int menu_entries_push_list(menu_handle_t *menu,
       add_setting_entry(menu,list,"joypad_autoconfig_dir", 0, setting_data);
       add_setting_entry(menu,list,"extraction_directory", 0, setting_data);
    }
+   else if (!strcmp(label, "Shader Options"))
+   {
+      struct gfx_shader *shader = (struct gfx_shader*)menu->shader;
+
+      if (!shader)
+         return -1;
+
+      file_list_clear(list);
+      file_list_push(list, "Apply Shader Changes", "shader_apply_changes",
+            MENU_FILE_SWITCH, 0);
+      file_list_push(list, "Default Filter", "",
+            MENU_SETTINGS_SHADER_FILTER, 0);
+      file_list_push(list, "Load Shader Preset", "",
+            MENU_SETTINGS_SHADER_PRESET, 0);
+      file_list_push(list, "Save As Shader Preset", "",
+            MENU_SETTINGS_SHADER_PRESET_SAVE, 0);
+      file_list_push(list, "Parameters (Current)", "",
+            MENU_SETTINGS_SHADER_PARAMETERS, 0);
+      file_list_push(list, "Parameters (Menu)", "",
+            MENU_SETTINGS_SHADER_PRESET_PARAMETERS, 0);
+      file_list_push(list, "Shader Passes", "",
+            MENU_SETTINGS_SHADER_PASSES, 0);
+
+      for (i = 0; i < shader->passes; i++)
+      {
+         char buf[64];
+
+         snprintf(buf, sizeof(buf), "Shader #%u", i);
+         file_list_push(list, buf, "",
+               MENU_SETTINGS_SHADER_0 + 3 * i, 0);
+
+         snprintf(buf, sizeof(buf), "Shader #%u Filter", i);
+         file_list_push(list, buf, "",
+               MENU_SETTINGS_SHADER_0_FILTER + 3 * i, 0);
+
+         snprintf(buf, sizeof(buf), "Shader #%u Scale", i);
+         file_list_push(list, buf, "",
+               MENU_SETTINGS_SHADER_0_SCALE + 3 * i, 0);
+      }
+   }
    else
    {
       switch (menu_type)
@@ -497,47 +537,6 @@ int menu_entries_push_list(menu_handle_t *menu,
                            shader->parameters[i].desc, "",
                            MENU_SETTINGS_SHADER_PARAMETER_0 + i, 0);
                menu->parameter_shader = shader;
-               break;
-            }
-         case MENU_SETTINGS_SHADER_OPTIONS:
-            {
-               struct gfx_shader *shader = (struct gfx_shader*)menu->shader;
-
-               if (!shader)
-                  return -1;
-
-               file_list_clear(list);
-               file_list_push(list, "Apply Shader Changes", "shader_apply_changes",
-                     MENU_FILE_SWITCH, 0);
-               file_list_push(list, "Default Filter", "",
-                     MENU_SETTINGS_SHADER_FILTER, 0);
-               file_list_push(list, "Load Shader Preset", "",
-                     MENU_SETTINGS_SHADER_PRESET, 0);
-               file_list_push(list, "Save As Shader Preset", "",
-                     MENU_SETTINGS_SHADER_PRESET_SAVE, 0);
-               file_list_push(list, "Parameters (Current)", "",
-                     MENU_SETTINGS_SHADER_PARAMETERS, 0);
-               file_list_push(list, "Parameters (Menu)", "",
-                     MENU_SETTINGS_SHADER_PRESET_PARAMETERS, 0);
-               file_list_push(list, "Shader Passes", "",
-                     MENU_SETTINGS_SHADER_PASSES, 0);
-
-               for (i = 0; i < shader->passes; i++)
-               {
-                  char buf[64];
-
-                  snprintf(buf, sizeof(buf), "Shader #%u", i);
-                  file_list_push(list, buf, "",
-                        MENU_SETTINGS_SHADER_0 + 3 * i, 0);
-
-                  snprintf(buf, sizeof(buf), "Shader #%u Filter", i);
-                  file_list_push(list, buf, "",
-                        MENU_SETTINGS_SHADER_0_FILTER + 3 * i, 0);
-
-                  snprintf(buf, sizeof(buf), "Shader #%u Scale", i);
-                  file_list_push(list, buf, "",
-                        MENU_SETTINGS_SHADER_0_SCALE + 3 * i, 0);
-               }
             }
             break;
          case MENU_SETTINGS_DISK_OPTIONS:

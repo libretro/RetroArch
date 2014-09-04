@@ -1843,9 +1843,7 @@ static int menu_action_ok(const char *dir,
                driver.menu->shader,
                gfx_shader_parse_type(shader_path, RARCH_SHADER_NONE),
                shader_path);
-      /* Pop stack until we hit shader manager again. */
-      menu_flush_stack_type(driver.menu->menu_stack,
-            MENU_SETTINGS_SHADER_OPTIONS);
+      menu_flush_stack_label(driver.menu->menu_stack, "Shader Options");
    }
    else if (!strcmp(menu_label, "video_shader_pass")
          && type == MENU_FILE_PLAIN)
@@ -1857,9 +1855,7 @@ static int menu_action_ok(const char *dir,
 
       /* This will reset any changed parameters. */
       gfx_shader_resolve_parameters(NULL, driver.menu->shader);
-      /* Pop stack until we hit shader manager again. */
-      menu_flush_stack_type(driver.menu->menu_stack,
-            MENU_SETTINGS_SHADER_OPTIONS);
+      menu_flush_stack_label(driver.menu->menu_stack, "Shader Options");
    }
 #endif
    else if (!strcmp(menu_label, "deferred_core_list")
