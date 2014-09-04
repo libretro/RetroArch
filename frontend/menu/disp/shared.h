@@ -15,7 +15,7 @@ static void get_title(const char *label, const char *dir,
       snprintf(title, sizeof_title, "DISK APPEND %s", dir);
    else if (menu_type == MENU_SETTINGS_VIDEO_OPTIONS)
       strlcpy(title, "VIDEO OPTIONS", sizeof_title);
-   else if (menu_type == MENU_SETTINGS_INPUT_OPTIONS ||
+   else if (!strcmp(label, "Input Options") ||
          menu_type == MENU_SETTINGS_CUSTOM_BIND ||
          menu_type == MENU_SETTINGS_CUSTOM_BIND_KEYBOARD)
       strlcpy(title, "INPUT OPTIONS", sizeof_title);

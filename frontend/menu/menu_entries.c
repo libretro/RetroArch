@@ -357,6 +357,31 @@ int menu_entries_push_list(menu_handle_t *menu,
       add_setting_entry(menu,list,"audio_volume", 0, setting_data);
       add_setting_entry(menu,list,"audio_device", 0, setting_data);
    }
+   else if (!strcmp(label, "Input Options"))
+   {
+      file_list_clear(list);
+      file_list_push(list, "Player", "",
+            MENU_SETTINGS_BIND_PLAYER, 0);
+      file_list_push(list, "Device", "",
+            MENU_SETTINGS_BIND_DEVICE, 0);
+      file_list_push(list, "Device Type", "",
+            MENU_SETTINGS_BIND_DEVICE_TYPE, 0);
+      file_list_push(list, "Analog D-pad Mode", "",
+            MENU_SETTINGS_BIND_ANALOG_MODE, 0);
+      add_setting_entry(menu,list,"input_axis_threshold", 0, setting_data);
+      add_setting_entry(menu,list,"input_autodetect_enable", 0, setting_data);
+      file_list_push(list, "Bind Mode", "",
+            MENU_SETTINGS_CUSTOM_BIND_MODE, 0);
+      file_list_push(list, "Configure All (RetroPad)", "",
+            MENU_SETTINGS_CUSTOM_BIND_ALL, 0);
+      file_list_push(list, "Default All (RetroPad)", "",
+            MENU_SETTINGS_CUSTOM_BIND_DEFAULT_ALL, 0);
+      add_setting_entry(menu,list,"osk_enable", 0, setting_data);
+      for (i = MENU_SETTINGS_BIND_BEGIN; i <= MENU_SETTINGS_BIND_ALL_LAST; i++)
+         file_list_push(list,
+               input_config_bind_map[i - MENU_SETTINGS_BIND_BEGIN].desc,
+               "", i, 0);
+   }
    else
    {
       switch (menu_type)
@@ -466,7 +491,7 @@ int menu_entries_push_list(menu_handle_t *menu,
             add_setting_entry(menu,list,"Shader Options", MENU_SETTINGS_SHADER_OPTIONS, setting_data);
             add_setting_entry(menu,list,"Font Options", MENU_SETTINGS_FONT_OPTIONS, setting_data);
             add_setting_entry(menu,list,"Audio Options", MENU_FILE_SWITCH, setting_data);
-            add_setting_entry(menu,list,"Input Options", MENU_SETTINGS_INPUT_OPTIONS, setting_data);
+            add_setting_entry(menu,list,"Input Options", MENU_FILE_SWITCH, setting_data);
             add_setting_entry(menu,list,"Overlay Options", MENU_FILE_SWITCH, setting_data);
             add_setting_entry(menu,list,"User Options", MENU_FILE_SWITCH, setting_data);
             add_setting_entry(menu,list,"Netplay Options", MENU_FILE_SWITCH, setting_data);
@@ -506,30 +531,6 @@ int menu_entries_push_list(menu_handle_t *menu,
             add_setting_entry(menu,list,"screenshot_directory", 0, setting_data);
             add_setting_entry(menu,list,"joypad_autoconfig_dir", 0, setting_data);
             add_setting_entry(menu,list,"extraction_directory", 0, setting_data);
-            break;
-         case MENU_SETTINGS_INPUT_OPTIONS:
-            file_list_clear(list);
-            file_list_push(list, "Player", "",
-                  MENU_SETTINGS_BIND_PLAYER, 0);
-            file_list_push(list, "Device", "",
-                  MENU_SETTINGS_BIND_DEVICE, 0);
-            file_list_push(list, "Device Type", "",
-                  MENU_SETTINGS_BIND_DEVICE_TYPE, 0);
-            file_list_push(list, "Analog D-pad Mode", "",
-                  MENU_SETTINGS_BIND_ANALOG_MODE, 0);
-            add_setting_entry(menu,list,"input_axis_threshold", 0, setting_data);
-            add_setting_entry(menu,list,"input_autodetect_enable", 0, setting_data);
-            file_list_push(list, "Bind Mode", "",
-                  MENU_SETTINGS_CUSTOM_BIND_MODE, 0);
-            file_list_push(list, "Configure All (RetroPad)", "",
-                  MENU_SETTINGS_CUSTOM_BIND_ALL, 0);
-            file_list_push(list, "Default All (RetroPad)", "",
-                  MENU_SETTINGS_CUSTOM_BIND_DEFAULT_ALL, 0);
-            add_setting_entry(menu,list,"osk_enable", 0, setting_data);
-            for (i = MENU_SETTINGS_BIND_BEGIN; i <= MENU_SETTINGS_BIND_ALL_LAST; i++)
-               file_list_push(list,
-                     input_config_bind_map[i - MENU_SETTINGS_BIND_BEGIN].desc,
-                     "", i, 0);
             break;
          case MENU_SETTINGS_DRIVERS:
             file_list_clear(list);
