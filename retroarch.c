@@ -839,6 +839,14 @@ static int16_t input_state(unsigned port, unsigned device,
       g_settings.input.binds[5],
       g_settings.input.binds[6],
       g_settings.input.binds[7],
+      g_settings.input.binds[8],
+      g_settings.input.binds[9],
+      g_settings.input.binds[10],
+      g_settings.input.binds[11],
+      g_settings.input.binds[12],
+      g_settings.input.binds[13],
+      g_settings.input.binds[14],
+      g_settings.input.binds[15],
    };
 
    if (!driver.block_libretro_input && (id < RARCH_FIRST_META_KEY ||
@@ -2516,6 +2524,14 @@ static void check_turbo(void)
       g_settings.input.binds[5],
       g_settings.input.binds[6],
       g_settings.input.binds[7],
+      g_settings.input.binds[8],
+      g_settings.input.binds[9],
+      g_settings.input.binds[10],
+      g_settings.input.binds[11],
+      g_settings.input.binds[12],
+      g_settings.input.binds[13],
+      g_settings.input.binds[14],
+      g_settings.input.binds[15],
    };
 
    g_extern.turbo_count++;

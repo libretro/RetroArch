@@ -32,7 +32,7 @@ extern "C" {
 #define MENU_MAX_HATS 4
 
 #ifndef MAX_PLAYERS
-#define MAX_PLAYERS 8
+#define MAX_PLAYERS 16
 #endif
 
 struct menu_bind_state_port

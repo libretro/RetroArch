@@ -999,6 +999,14 @@ static const char *bind_player_prefix[MAX_PLAYERS] = {
    "input_player6",
    "input_player7",
    "input_player8",
+   "input_player9",
+   "input_player10",
+   "input_player11",
+   "input_player12",
+   "input_player13",
+   "input_player14",
+   "input_player15",
+   "input_player16",
 };
 
 #define DECLARE_BIND(x, bind, desc) { true, 0, #x, desc, bind }

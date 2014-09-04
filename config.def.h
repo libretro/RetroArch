@@ -604,7 +604,7 @@ static const struct retro_keybind retro_keybinds_1[] = {
    { true, RARCH_MENU_TOGGLE,              RETRO_LBL_MENU_TOGGLE,          RETROK_F1,      NO_BTN, 0, AXIS_NONE },
 };
 
-// Player 2-5
+// Players 2 to MAX_PLAYERS
 static const struct retro_keybind retro_keybinds_rest[] = {
     //     | RetroPad button            | desc                           | keyboard key  | js btn |     js axis   |
    { true, RETRO_DEVICE_ID_JOYPAD_B,      RETRO_LBL_JOYPAD_B,              RETROK_UNKNOWN, NO_BTN, 0, AXIS_NONE },

@@ -88,7 +88,7 @@
 extern "C" {
 #endif
 
-#define MAX_PLAYERS 8
+#define MAX_PLAYERS 16
 
 enum basic_event
 {
