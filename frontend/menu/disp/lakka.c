@@ -257,10 +257,26 @@ void add_tween(float duration, float target_value, float* subject,
       easingFunc easing, tweenCallback callback)
 {
    tween_t *tween;
+   tween_t *tweens_tmp;
 
    numtweens++;
 
-   tweens = (tween_t*)realloc(tweens, numtweens * sizeof(tween_t));
+   tweens_tmp = (tween_t*)realloc(tweens, numtweens * sizeof(tween_t));
+   if (tweens_tmp != NULL)
+   {
+       tweens = tweens_tmp;
+   }
+   else // realloc failed
+   {
+      if (tweens != NULL)
+      {
+         free(tweens);
+         tweens = NULL;
+      }
+
+      return;
+   }
+   
    tween = (tween_t*)&tweens[numtweens-1];
 
    if (!tween)
@@ -379,7 +395,7 @@ void lakka_draw_background(void)
    gl->coords.color = color;
    glBindTexture(GL_TEXTURE_2D, textures[TEXTURE_BG].id);
 
-   if (gl && gl->shader && gl->shader->use)
+   if (gl->shader && gl->shader->use)
       gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
 
    gl->coords.vertices = 4;
@@ -424,7 +440,7 @@ void lakka_draw_icon(GLuint texture, float x, float y,
    gl->coords.color = color;
    glBindTexture(GL_TEXTURE_2D, texture);
 
-   if (gl && gl->shader && gl->shader->use)
+   if (gl->shader && gl->shader->use)
       gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
 
    math_matrix mymat;
@@ -577,7 +593,6 @@ static void lakka_draw_categories(void)
 
 static void lakka_frame(void)
 {
-   struct font_output_list *msg;
    gl_t *gl = (gl_t*)driver.video_data;
    menu_category_t *active_category = (menu_category_t*)
       &categories[menu_active_category];
@@ -597,7 +612,7 @@ static void lakka_frame(void)
 
    lakka_draw_categories();
 
-   if (depth == 0 && active_category)
+   if (depth == 0)
       lakka_draw_text(active_category->name,
             title_margin_left, title_margin_top, 1, 1.0);
    else if (active_item)
@@ -632,7 +647,7 @@ static GLuint png_texture_load(const char * file_name)
 
 static void lakka_context_destroy(void *data)
 {
-   int i, j, k;
+   int i, j;
    gl_t *gl = (gl_t*)driver.video_data;
 
    for (i = 0; i < TEXTURE_LAST; i++)
@@ -808,7 +823,7 @@ void lakka_settings_context_reset(void)
 static void lakka_context_reset(void *data)
 {
    int i, j, k;
-   char path[256], mediapath[256], themepath[256], iconpath[256];
+   char mediapath[256], themepath[256], iconpath[256];
    menu_handle_t *menu = (menu_handle_t*)data;
    gl_t *gl = (gl_t*)driver.video_data;
 
@@ -875,7 +890,7 @@ static void lakka_context_reset(void *data)
       if (info_list)
          info = (core_info_t*)&info_list->list[i-1];
 
-      if (info->systemname) {
+      if (info != NULL && info->systemname) {
          strlcpy(core_id, info->systemname, sizeof(core_id));
          strlcpy(core_id, str_replace(core_id, "/", " "), sizeof(core_id));
       } else {
@@ -928,8 +943,12 @@ static void lakka_init_items(int i, menu_category_t *category,
       core_info_t *info, const char* path)
 {
    int num_items, j, n, k;
-   struct string_list *list = (struct string_list*)
-      dir_list_new(path, info->supported_extensions, true);
+   struct string_list *list;
+
+   if (category == NULL || info == NULL)
+      return;
+
+   list = (struct string_list*)dir_list_new(path, info->supported_extensions, true);
 
    dir_list_sort(list, true);
 
@@ -1032,7 +1051,7 @@ static void lakka_init_core_info(void *data)
 
 static void *lakka_init(void)
 {
-   int i, j;
+   int i;
    menu_handle_t *menu = (menu_handle_t*)calloc(1, sizeof(*menu));
    gl_t *gl = (gl_t*)driver.video_data;
    if (!menu || !gl)
@@ -1057,6 +1076,9 @@ static void *lakka_init(void)
 
       if (info_list)
          info = (core_info_t*)&info_list->list[i-1];
+
+      if (info == NULL)
+         return NULL;
 
       strlcpy(category->name, info->display_name, sizeof(category->name));
       strlcpy(category->libretro, info->path, sizeof(category->libretro));
