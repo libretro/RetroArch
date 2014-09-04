@@ -1874,7 +1874,7 @@ static int menu_action_ok(const char *dir,
       return -1;
    }
    else if (!strcmp(menu_label, "core_list")
-         && type == MENU_FILE_PLAIN)
+         && type == MENU_FILE_CORE)
    {
       fill_pathname_join(g_settings.libretro, dir, path,
             sizeof(g_settings.libretro));
