@@ -246,7 +246,7 @@ void *menu_init(const void *data)
 
    menu_update_libretro_info(menu);
 
-   if (menu_ctx && menu_ctx->backend
+   if (menu_ctx->backend
          && menu_ctx->backend->shader_manager_init)
       menu_ctx->backend->shader_manager_init(menu);
 
