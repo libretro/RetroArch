@@ -446,16 +446,7 @@ bool menu_iterate(void)
       ret = driver.menu_ctx->input_postprocess(driver.menu->old_input_state);
 
    if (ret < 0)
-   {
-      unsigned type = 0;
-      file_list_get_last(driver.menu->menu_stack, &path, &label, &type);
-
-      while (type != MENU_SETTINGS)
-      {
-         file_list_pop(driver.menu->menu_stack, &driver.menu->selection_ptr);
-         file_list_get_last(driver.menu->menu_stack, &path, &label, &type);
-      }
-   }
+      menu_flush_stack_type(driver.menu->menu_stack, MENU_SETTINGS);
 
    if (ret || input_entry_ret)
       return false;
