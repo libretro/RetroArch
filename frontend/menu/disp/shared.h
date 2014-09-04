@@ -11,7 +11,7 @@ static void get_title(const char *label, const char *dir,
       snprintf(title, sizeof_title, "DETECTED CORES %s", dir);
    else if (!strcmp(label, "configurations"))
       snprintf(title, sizeof_title, "CONFIG %s", dir);
-   else if (menu_type == MENU_SETTINGS_DISK_APPEND)
+   else if (!strcmp(label, "disk_image_append"))
       snprintf(title, sizeof_title, "DISK APPEND %s", dir);
    else if (!strcmp(label, "Video Options"))
       strlcpy(title, "VIDEO OPTIONS", sizeof_title);

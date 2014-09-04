@@ -522,10 +522,8 @@ int menu_entries_push_list(menu_handle_t *menu,
    else if (!strcmp(label, "disk_options"))
    {
       file_list_clear(list);
-      file_list_push(list, "Disk Index", "disk_index",
-            MENU_SETTINGS_DISK_INDEX, 0);
-      file_list_push(list, "Disk Image Append", "disk_image_append",
-            MENU_SETTINGS_DISK_APPEND, 0);
+      file_list_push(list, "Disk Index", "disk_index", 0, 0);
+      file_list_push(list, "Disk Image Append", "disk_image_append", 0, 0);
    }
    else
    {
@@ -579,7 +577,7 @@ int menu_parse_check(const char *label, unsigned menu_type)
             !strcmp(label, "audio_dsp_plugin") ||
             !strcmp(label, "core_list") ||
             !strcmp(label, "configurations") ||
-            menu_type == MENU_SETTINGS_DISK_APPEND)))
+            !strcmp(label, "disk_image_append"))))
       return -1;
    return 0;
 }

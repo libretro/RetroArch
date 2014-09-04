@@ -855,37 +855,40 @@ static int menu_setting_set(unsigned id, unsigned action)
             );
 
       if (setting)
+      {
+         if (!strcmp(setting->name, "disk_index"))
+         {
+            int step = 0;
+
+            if (action == MENU_ACTION_RIGHT || action == MENU_ACTION_OK)
+               step = 1;
+            else if (action == MENU_ACTION_LEFT)
+               step = -1;
+
+            if (step)
+            {
+               const struct retro_disk_control_callback *control =
+                  (const struct retro_disk_control_callback*)
+                  &g_extern.system.disk_control;
+               unsigned num_disks = control->get_num_images();
+               unsigned current   = control->get_image_index();
+               unsigned next_index = (current + num_disks + 1 + step)
+                  % (num_disks + 1);
+               rarch_disk_control_set_eject(true, false);
+               rarch_disk_control_set_index(next_index);
+               rarch_disk_control_set_eject(false, false);
+            }
+         }
+         else if (!strcmp(setting->name, "disk_image_append"))
+         {
+         }
+
          handle_setting(setting, id, action);
+      }
       else
       {
          switch (id)
          {
-            case MENU_SETTINGS_DISK_INDEX:
-               {
-                  int step = 0;
-
-                  if (action == MENU_ACTION_RIGHT || action == MENU_ACTION_OK)
-                     step = 1;
-                  else if (action == MENU_ACTION_LEFT)
-                     step = -1;
-
-                  if (step)
-                  {
-                     const struct retro_disk_control_callback *control =
-                        (const struct retro_disk_control_callback*)
-                        &g_extern.system.disk_control;
-                     unsigned num_disks = control->get_num_images();
-                     unsigned current   = control->get_image_index();
-                     unsigned next_index = (current + num_disks + 1 + step)
-                        % (num_disks + 1);
-                     rarch_disk_control_set_eject(true, false);
-                     rarch_disk_control_set_index(next_index);
-                     rarch_disk_control_set_eject(false, false);
-                  }
-
-                  break;
-               }
-               // controllers
             case MENU_SETTINGS_BIND_PLAYER:
                if (action == MENU_ACTION_START)
                   driver.menu->current_pad = 0;
@@ -1283,7 +1286,7 @@ static int menu_setting_ok_toggle(unsigned type,
          menu_common_type_is(label, type) == MENU_SETTINGS ||
          !strcmp(label, "core_list") ||
          !strcmp(label, "configurations") ||
-         type == MENU_SETTINGS_DISK_APPEND
+         !strcmp(label, "disk_image_append")
          )
    {
       menu_entries_push(driver.menu->menu_stack,
@@ -1397,7 +1400,7 @@ static int menu_settings_iterate(unsigned action)
       dir = g_settings.libretro_directory;
    else if (!strcmp(label, "configurations"))
       dir = g_settings.menu_config_directory;
-   else if (type == MENU_SETTINGS_DISK_APPEND)
+   else if (!strcmp(label, "disk_image_append"))
       dir = g_settings.menu_content_directory;
 
    if (driver.menu->need_refresh && action != MENU_ACTION_MESSAGE)
@@ -1906,8 +1909,7 @@ static int menu_action_ok(const char *dir,
          return -1;
       }
    }
-   else if (menu_type == MENU_SETTINGS_DISK_APPEND
-         && type == MENU_FILE_PLAIN)
+   else if (!strcmp(menu_label, "disk_image_append") && type == MENU_FILE_PLAIN)
    {
       char image[PATH_MAX];
       fill_pathname_join(image, dir, path, sizeof(image));
@@ -2293,6 +2295,18 @@ static void menu_common_setting_set_label(char *type_str,
             else
                strlcpy(type_str, "<default>", type_str_size);
          }
+         else if (!strcmp(setting->name, "disk_index"))
+         {
+            const struct retro_disk_control_callback *control =
+               (const struct retro_disk_control_callback*)
+               &g_extern.system.disk_control;
+            unsigned images = control->get_num_images();
+            unsigned current = control->get_image_index();
+            if (current >= images)
+               strlcpy(type_str, "No Disk", type_str_size);
+            else
+               snprintf(type_str, type_str_size, "%u", current + 1);
+         }
          else
             handle_setting_label(type_str, type_str_size, setting);
       }
@@ -2317,23 +2331,9 @@ static void menu_common_setting_set_label(char *type_str,
                }
                break;
 #endif
-            case MENU_SETTINGS_DISK_INDEX:
-               {
-                  const struct retro_disk_control_callback *control =
-                     (const struct retro_disk_control_callback*)
-                     &g_extern.system.disk_control;
-                  unsigned images = control->get_num_images();
-                  unsigned current = control->get_image_index();
-                  if (current >= images)
-                     strlcpy(type_str, "No Disk", type_str_size);
-                  else
-                     snprintf(type_str, type_str_size, "%u", current + 1);
-                  break;
-               }
             case MENU_SETTINGS_CUSTOM_VIEWPORT:
             case MENU_SETTINGS_SHADER_PRESET:
             case MENU_SETTINGS_SHADER_PRESET_SAVE:
-            case MENU_SETTINGS_DISK_APPEND:
             case MENU_SETTINGS_CUSTOM_BIND_ALL:
             case MENU_SETTINGS_CUSTOM_BIND_DEFAULT_ALL:
                strlcpy(type_str, "...", type_str_size);
