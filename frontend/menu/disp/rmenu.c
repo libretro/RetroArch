@@ -280,10 +280,7 @@ static void rmenu_render(void)
                   type - MENU_SETTINGS_CORE_OPTION_START),
                sizeof(type_str));
       else if (type == MENU_FILE_SWITCH)
-      {
          strlcpy(type_str, "...", sizeof(type_str));
-         w = 5;
-      }
       else if (driver.menu_ctx && driver.menu_ctx->backend
             && driver.menu_ctx->backend->setting_set_label)
          driver.menu_ctx->backend->setting_set_label(type_str,
