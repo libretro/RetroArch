@@ -47,7 +47,7 @@ static void get_title(const char *label, const char *dir,
 #endif
    else if (!strcmp(label, "Font Options"))
       strlcpy(title, "FONT OPTIONS", sizeof_title);
-   else if (!strcmp(dir, "General Options"))
+   else if (!strcmp(label, "General Options"))
       strlcpy(title, "GENERAL OPTIONS", sizeof_title);
    else if (!strcmp(label, "Audio Options"))
       strlcpy(title, "AUDIO OPTIONS", sizeof_title);
