@@ -225,12 +225,7 @@ static void rmenu_render(void)
       char message[256];
       char type_str[256];
 
-      unsigned w = 19;
-      if (menu_type == MENU_SETTINGS_INPUT_OPTIONS ||
-            menu_type == MENU_SETTINGS_CUSTOM_BIND)
-         w = 21;
-      else if (menu_type == MENU_SETTINGS_PATH_OPTIONS)
-         w = 24;
+      unsigned w = 21;
 
 #ifdef HAVE_SHADER_MANAGER
       if (type >= MENU_SETTINGS_SHADER_FILTER &&

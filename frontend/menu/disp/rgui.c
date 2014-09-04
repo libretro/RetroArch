@@ -352,16 +352,11 @@ static void rgui_render(void)
             setting_data_get_list(),
             driver.menu->selection_buf->list[i].label);
 
-      unsigned w = 19;
-       (void)setting;
+      unsigned w = 21; 
+      (void)setting;
+
       if (!strcmp(label, "performance_counters"))
          w = 28;
-      else if (menu_type == MENU_SETTINGS_INPUT_OPTIONS ||
-            menu_type == MENU_SETTINGS_CUSTOM_BIND ||
-            menu_type == MENU_SETTINGS_CUSTOM_BIND_KEYBOARD)
-         w = 21;
-      else if (menu_type == MENU_SETTINGS_PATH_OPTIONS)
-         w = 24;
 
 #ifdef HAVE_SHADER_MANAGER
       if (type >= MENU_SETTINGS_SHADER_FILTER &&
