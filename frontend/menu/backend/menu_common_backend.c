@@ -1266,7 +1266,6 @@ static int menu_setting_ok_toggle(unsigned type,
          !strcmp(label, "detect_core_list")
       )
    {
-      driver.menu->defer_core = (!strcmp(label, "detect_core_list"));
       menu_entries_push(driver.menu->menu_stack,
             g_settings.menu_content_directory, label, MENU_FILE_DIRECTORY,
             driver.menu->selection_ptr);
@@ -1914,45 +1913,43 @@ static int menu_action_ok(const char *dir,
       menu_entries_push(driver.menu->menu_stack,
             cat_path, menu_label, type, driver.menu->selection_ptr);
    }
-   else
+   else if (!strcmp(label, "detect_core_list")
+         && type == MENU_FILE_PLAIN)
    {
-      if (driver.menu->defer_core)
+      const core_info_t *info = NULL;
+      int ret = rarch_defer_core(info, g_extern.core_info,
+            dir, path, driver.menu->deferred_path,
+            sizeof(driver.menu->deferred_path));
+
+      if (ret == -1)
       {
-         const core_info_t *info = NULL;
-         int ret = rarch_defer_core(info, g_extern.core_info,
-               dir, path, driver.menu->deferred_path,
-               sizeof(driver.menu->deferred_path));
-
-         if (ret == -1)
-         {
-            strlcpy(g_extern.fullpath, driver.menu->deferred_path,
-                  sizeof(g_extern.fullpath));
-
-            if (path_file_exists(info->path))
-               strlcpy(g_settings.libretro, info->path,
-                     sizeof(g_settings.libretro));
-
-            rarch_main_command(RARCH_CMD_LOAD_CONTENT);
-            rarch_main_command(RARCH_CMD_LOAD_CORE);
-            menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS);
-            driver.menu->msg_force = true;
-            return -1;
-         }
-         else if (ret == 0)
-            menu_entries_push(driver.menu->menu_stack,
-                  g_settings.libretro_directory, "deferred_core_list",
-                  0, driver.menu->selection_ptr);
-      }
-      else
-      {
-         fill_pathname_join(g_extern.fullpath, dir, path,
+         strlcpy(g_extern.fullpath, driver.menu->deferred_path,
                sizeof(g_extern.fullpath));
-         rarch_main_set_state(RARCH_ACTION_STATE_LOAD_CONTENT);
 
+         if (path_file_exists(info->path))
+            strlcpy(g_settings.libretro, info->path,
+                  sizeof(g_settings.libretro));
+
+         rarch_main_command(RARCH_CMD_LOAD_CONTENT);
+         rarch_main_command(RARCH_CMD_LOAD_CORE);
          menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS);
          driver.menu->msg_force = true;
          return -1;
       }
+      else if (ret == 0)
+         menu_entries_push(driver.menu->menu_stack,
+               g_settings.libretro_directory, "deferred_core_list",
+               0, driver.menu->selection_ptr);
+   }
+   else
+   {
+      fill_pathname_join(g_extern.fullpath, dir, path,
+            sizeof(g_extern.fullpath));
+      rarch_main_set_state(RARCH_ACTION_STATE_LOAD_CONTENT);
+
+      menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS);
+      driver.menu->msg_force = true;
+      return -1;
    }
 
    return 0;
