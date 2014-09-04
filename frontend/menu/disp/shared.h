@@ -51,7 +51,7 @@ static void get_title(const char *label, const char *dir,
       strlcpy(title, "GENERAL OPTIONS", sizeof_title);
    else if (!strcmp(label, "Audio Options"))
       strlcpy(title, "AUDIO OPTIONS", sizeof_title);
-   else if (menu_type == MENU_SETTINGS_DISK_OPTIONS)
+   else if (!strcmp(label, "disk_options"))
       strlcpy(title, "DISK OPTIONS", sizeof_title);
    else if (!strcmp(label, "core_options"))
       strlcpy(title, "CORE OPTIONS", sizeof_title);

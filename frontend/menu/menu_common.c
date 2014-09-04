@@ -644,7 +644,7 @@ unsigned menu_common_type_is(const char *label, unsigned type)
          type == MENU_SETTINGS_SHADER_PARAMETERS ||
          type == MENU_SETTINGS_SHADER_PRESET_PARAMETERS ||
          !strcmp(label, "Audio Options") ||
-         type == MENU_SETTINGS_DISK_OPTIONS ||
+         !strcmp(label, "disk_options") ||
          !strcmp(label, "Path Options") ||
          !strcmp(label, "Privacy Options") ||
          !strcmp(label, "Overlay Options") ||

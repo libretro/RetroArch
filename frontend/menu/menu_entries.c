@@ -452,8 +452,8 @@ int menu_entries_push_list(menu_handle_t *menu,
       if (g_extern.main_is_init && !g_extern.libretro_dummy)
       {
          if (g_extern.system.disk_control.get_num_images)
-            file_list_push(list, "Disk Options", "",
-                  MENU_SETTINGS_DISK_OPTIONS, 0);
+            file_list_push(list, "Disk Options", "disk_options",
+                  MENU_FILE_SWITCH, 0);
       }
       add_setting_entry(menu,list,"Privacy Options",
             MENU_FILE_SWITCH, setting_data);
@@ -519,6 +519,14 @@ int menu_entries_push_list(menu_handle_t *menu,
                MENU_SETTINGS_SHADER_0_SCALE + 3 * i, 0);
       }
    }
+   else if (!strcmp(label, "disk_options"))
+   {
+      file_list_clear(list);
+      file_list_push(list, "Disk Index", "disk_index",
+            MENU_SETTINGS_DISK_INDEX, 0);
+      file_list_push(list, "Disk Image Append", "disk_image_append",
+            MENU_SETTINGS_DISK_APPEND, 0);
+   }
    else
    {
       switch (menu_type)
@@ -538,13 +546,6 @@ int menu_entries_push_list(menu_handle_t *menu,
                            MENU_SETTINGS_SHADER_PARAMETER_0 + i, 0);
                menu->parameter_shader = shader;
             }
-            break;
-         case MENU_SETTINGS_DISK_OPTIONS:
-            file_list_clear(list);
-            file_list_push(list, "Disk Index", "",
-                  MENU_SETTINGS_DISK_INDEX, 0);
-            file_list_push(list, "Disk Image Append", "",
-                  MENU_SETTINGS_DISK_APPEND, 0);
             break;
       }
    }

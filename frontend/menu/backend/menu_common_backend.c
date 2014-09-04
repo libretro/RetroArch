@@ -2331,7 +2331,6 @@ static void menu_common_setting_set_label(char *type_str,
                   break;
                }
             case MENU_SETTINGS_CUSTOM_VIEWPORT:
-            case MENU_SETTINGS_DISK_OPTIONS:
             case MENU_SETTINGS_SHADER_PRESET:
             case MENU_SETTINGS_SHADER_PRESET_SAVE:
             case MENU_SETTINGS_DISK_APPEND:
