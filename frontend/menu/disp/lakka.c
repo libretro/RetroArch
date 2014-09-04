@@ -257,10 +257,26 @@ void add_tween(float duration, float target_value, float* subject,
       easingFunc easing, tweenCallback callback)
 {
    tween_t *tween;
+   tween_t *tweens_tmp;
 
    numtweens++;
 
-   tweens = (tween_t*)realloc(tweens, numtweens * sizeof(tween_t));
+   tweens_tmp = (tween_t*)realloc(tweens, numtweens * sizeof(tween_t));
+   if (tweens_tmp != NULL)
+   {
+       tweens = tweens_tmp;
+   }
+   else // realloc failed
+   {
+      if (tweens != NULL)
+      {
+         free(tweens);
+         tweens = NULL;
+      }
+
+      return;
+   }
+   
    tween = (tween_t*)&tweens[numtweens-1];
 
    if (!tween)
