@@ -279,7 +279,7 @@ int menu_entries_push_list(menu_handle_t *menu,
       for (i = 0; i < list_size; i++)
       {
          file_list_push(list, info[i].path, "",
-               MENU_FILE_PLAIN, 0);
+               MENU_FILE_CORE, 0);
          file_list_set_alt_at_offset(list, i,
                info[i].display_name);
       }
@@ -760,6 +760,10 @@ int menu_parse_and_resolve(file_list_t *list, file_list_t *menu_list)
 
       /* Push menu_type further down in the chain.
        * Needed for shader manager currently. */
+      if (!strcmp(label, "core_list"))
+         file_list_push(list, path, "",
+               is_dir ? MENU_FILE_DIRECTORY : MENU_FILE_CORE, 0);
+      else
       file_list_push(list, path, "",
             is_dir ? MENU_FILE_DIRECTORY : MENU_FILE_PLAIN, 0);
    }

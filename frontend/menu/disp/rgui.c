@@ -400,22 +400,11 @@ static void rgui_render(void)
       }
       else
 #endif
-      /* Pretty-print libretro cores from menu. */
-      if (!strcmp(label, "core_list") ||
-            !strcmp(label, "deferred_core_list"))
+      if (type == MENU_FILE_CORE)
       {
-         if (type == MENU_FILE_PLAIN)
-         {
-            strlcpy(type_str, "(CORE)", sizeof(type_str));
-            file_list_get_alt_at_offset(driver.menu->selection_buf, i, &path);
-            w = 6;
-         }
-         else
-         {
-            strlcpy(type_str, "(DIR)", sizeof(type_str));
-            type = MENU_FILE_DIRECTORY;
-            w = 5;
-         }
+         strlcpy(type_str, "(CORE)", sizeof(type_str));
+         file_list_get_alt_at_offset(driver.menu->selection_buf, i, &path);
+         w = 6;
       }
       else if (type == MENU_FILE_PLAIN)
       {
