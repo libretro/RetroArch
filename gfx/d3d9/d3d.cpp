@@ -836,7 +836,7 @@ static bool d3d_set_shader(void *data, enum rarch_shader_type type, const char *
 
    auto old_shader = d3d->cg_shader;
    bool restore_old = false;
-   d3d->cg_shader = path;
+   d3d->cg_shader = shader;
 
    if (!d3d_process_shader(d3d) || !d3d_restore(d3d))
    {
