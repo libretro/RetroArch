@@ -874,7 +874,7 @@ static void lakka_context_reset(void *data)
       if (info_list)
          info = (core_info_t*)&info_list->list[i-1];
 
-      if (info->systemname) {
+      if (info != NULL && info->systemname) {
          strlcpy(core_id, info->systemname, sizeof(core_id));
          strlcpy(core_id, str_replace(core_id, "/", " "), sizeof(core_id));
       } else {
@@ -927,8 +927,12 @@ static void lakka_init_items(int i, menu_category_t *category,
       core_info_t *info, const char* path)
 {
    int num_items, j, n, k;
-   struct string_list *list = (struct string_list*)
-      dir_list_new(path, info->supported_extensions, true);
+   struct string_list *list;
+
+   if (category == NULL || info == NULL)
+      return;
+
+   list = (struct string_list*)dir_list_new(path, info->supported_extensions, true);
 
    dir_list_sort(list, true);
 
@@ -1056,6 +1060,9 @@ static void *lakka_init(void)
 
       if (info_list)
          info = (core_info_t*)&info_list->list[i-1];
+
+      if (info == NULL)
+         return NULL;
 
       strlcpy(category->name, info->display_name, sizeof(category->name));
       strlcpy(category->libretro, info->path, sizeof(category->libretro));
