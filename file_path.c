@@ -506,16 +506,21 @@ struct string_list *dir_list_new(const char *dir,
       union string_list_elem_attr attr;
       const char *name     = entry->d_name;
       const char *file_ext = path_get_extension(name);
-      bool is_compressed_file = path_is_compressed_file(file_path);
+      bool is_compressed_file = false;
       bool supported_by_core  = false;
       attr.i                  = RARCH_FILETYPE_UNSET;
-
-      if (string_list_find_elem_prefix(ext_list, ".", file_ext))
-         supported_by_core = true;
 
       fill_pathname_join(file_path, dir, name, sizeof(file_path));
 
       is_dir = dirent_is_directory(file_path, entry);
+
+      if (!is_dir)
+      {
+         is_compressed_file = path_is_compressed_file(file_path);
+         if (string_list_find_elem_prefix(ext_list, ".", file_ext))
+            supported_by_core = true;
+      }
+
       if (!include_dirs && is_dir)
          continue;
 
