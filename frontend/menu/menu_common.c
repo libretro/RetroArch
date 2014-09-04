@@ -677,22 +677,22 @@ unsigned menu_common_type_is(const char *label, unsigned type)
       return MENU_SETTINGS_SHADER_OPTIONS;
 
    if (
-         type == MENU_BROWSER_DIR_PATH ||
-         type == MENU_CONTENT_DIR_PATH ||
-         type == MENU_ASSETS_DIR_PATH ||
-         type == MENU_SHADER_DIR_PATH ||
-         type == MENU_FILTER_DIR_PATH ||
-         type == MENU_DSP_FILTER_DIR_PATH ||
-         type == MENU_SAVESTATE_DIR_PATH ||
-         type == MENU_LIBRETRO_DIR_PATH ||
-         type == MENU_LIBRETRO_INFO_DIR_PATH ||
-         type == MENU_CONFIG_DIR_PATH ||
-         type == MENU_SAVEFILE_DIR_PATH ||
-         type == MENU_OVERLAY_DIR_PATH ||
-         type == MENU_SCREENSHOT_DIR_PATH ||
-         type == MENU_AUTOCONFIG_DIR_PATH ||
-         type == MENU_EXTRACTION_DIR_PATH ||
-         type == MENU_SYSTEM_DIR_PATH)
+         !strcmp(label, "rgui_browser_directory") ||
+         !strcmp(label, "content_directory") ||
+         !strcmp(label, "assets_directory") ||
+         !strcmp(label, "video_shader_dir") ||
+         !strcmp(label, "video_filter_dir") ||
+         !strcmp(label, "audio_filter_dir") ||
+         !strcmp(label, "savestate_directory") ||
+         !strcmp(label, "libretro_dir_path") ||
+         !strcmp(label, "libretro_info_path") ||
+         !strcmp(label, "rgui_config_directory") ||
+         !strcmp(label, "savefile_directory") ||
+         !strcmp(label, "overlay_directory") ||
+         !strcmp(label, "screenshot_directory") ||
+         !strcmp(label, "joypad_autoconfig_dir") ||
+         !strcmp(label, "extraction_directory") ||
+         !strcmp(label, "system_directory"))
       return MENU_FILE_DIRECTORY;
 
    return 0;

@@ -84,34 +84,36 @@ static void get_title(const char *label, const char *dir,
       snprintf(title, sizeof_title, "DSP FILTER %s", dir);
    else if (!strcmp(label, "rgui_browser_directory"))
       snprintf(title, sizeof_title, "BROWSER DIR %s", dir);
-   else if (menu_type == MENU_CONTENT_DIR_PATH)
+   else if (!strcmp(label, "content_directory"))
       snprintf(title, sizeof_title, "CONTENT DIR %s", dir);
-   else if (menu_type == MENU_SCREENSHOT_DIR_PATH)
+   else if (!strcmp(label, "screenshot_directory"))
       snprintf(title, sizeof_title, "SCREENSHOT DIR %s", dir);
-   else if (menu_type == MENU_AUTOCONFIG_DIR_PATH)
-      snprintf(title, sizeof_title, "AUTOCONFIG DIR %s", dir);
-   else if (menu_type == MENU_SHADER_DIR_PATH)
+   else if (!strcmp(label, "video_shader_dir"))
       snprintf(title, sizeof_title, "SHADER DIR %s", dir);
-   else if (menu_type == MENU_FILTER_DIR_PATH)
+   else if (!strcmp(label, "video_filter_dir"))
       snprintf(title, sizeof_title, "FILTER DIR %s", dir);
-   else if (menu_type == MENU_DSP_FILTER_DIR_PATH)
+   else if (!strcmp(label, "audio_filter_dir"))
       snprintf(title, sizeof_title, "DSP FILTER DIR %s", dir);
-   else if (menu_type == MENU_SAVESTATE_DIR_PATH)
+   else if (!strcmp(label, "savestate_directory"))
       snprintf(title, sizeof_title, "SAVESTATE DIR %s", dir);
-#ifdef HAVE_DYNAMIC
-   else if (menu_type == MENU_LIBRETRO_DIR_PATH)
+   else if (!strcmp(label, "libretro_dir_path"))
       snprintf(title, sizeof_title, "LIBRETRO DIR %s", dir);
-#endif
-   else if (menu_type == MENU_CONFIG_DIR_PATH)
+   else if (!strcmp(label, "libretro_info_path"))
+      snprintf(title, sizeof_title, "LIBRETRO INFO DIR %s", dir);
+   else if (!strcmp(label, "rgui_config_directory"))
       snprintf(title, sizeof_title, "CONFIG DIR %s", dir);
-   else if (menu_type == MENU_SAVEFILE_DIR_PATH)
+   else if (!strcmp(label, "savefile_directory"))
       snprintf(title, sizeof_title, "SAVEFILE DIR %s", dir);
-   else if (menu_type == MENU_OVERLAY_DIR_PATH)
+   else if (!strcmp(label, "overlay_directory"))
       snprintf(title, sizeof_title, "OVERLAY DIR %s", dir);
-   else if (menu_type == MENU_SYSTEM_DIR_PATH)
+   else if (!strcmp(label, "system_directory"))
       snprintf(title, sizeof_title, "SYSTEM DIR %s", dir);
-   else if (menu_type == MENU_ASSETS_DIR_PATH)
+   else if (!strcmp(label, "assets_directory"))
       snprintf(title, sizeof_title, "ASSETS DIR %s", dir);
+   else if (!strcmp(label, "extraction_directory"))
+      snprintf(title, sizeof_title, "EXTRACTION DIR %s", dir);
+   else if (!strcmp(label, "joypad_autoconfig_dir"))
+      snprintf(title, sizeof_title, "AUTOCONFIG DIR %s", dir);
    else
    {
       if (driver.menu->defer_core)

@@ -465,36 +465,23 @@ int menu_entries_push_list(menu_handle_t *menu,
             break;
          case MENU_SETTINGS_PATH_OPTIONS:
             file_list_clear(list);
-            add_setting_entry(menu,list,"rgui_browser_directory",
-                  MENU_BROWSER_DIR_PATH, setting_data);
-            add_setting_entry(menu,list,"content_directory",
-                  MENU_CONTENT_DIR_PATH, setting_data);
-            add_setting_entry(menu,list,"assets_directory",
-                  MENU_ASSETS_DIR_PATH, setting_data);
-            add_setting_entry(menu,list,"rgui_config_directory",
-                  MENU_CONFIG_DIR_PATH, setting_data);
-            add_setting_entry(menu,list,"libretro_dir_path",
-                  MENU_LIBRETRO_DIR_PATH, setting_data);
-            add_setting_entry(menu,list,"libretro_info_path",
-                  MENU_LIBRETRO_INFO_DIR_PATH, setting_data);
-            add_setting_entry(menu,list,"game_history_path",
-                  MENU_CONTENT_HISTORY_PATH, setting_data);
-            add_setting_entry(menu,list,"video_filter_dir",
-                  MENU_FILTER_DIR_PATH, setting_data);
-            add_setting_entry(menu,list,"audio_filter_dir",
-                  MENU_DSP_FILTER_DIR_PATH, setting_data);
-            add_setting_entry(menu,list,"video_shader_dir", MENU_SHADER_DIR_PATH, setting_data);
-            add_setting_entry(menu,list,"savestate_directory", MENU_SAVESTATE_DIR_PATH,
-                  setting_data);
-            add_setting_entry(menu,list,"savefile_directory", MENU_SAVEFILE_DIR_PATH, setting_data);
-            add_setting_entry(menu,list,"overlay_directory", MENU_OVERLAY_DIR_PATH, setting_data);
-            add_setting_entry(menu,list,"system_directory", MENU_SYSTEM_DIR_PATH, setting_data);
-            add_setting_entry(menu,list,"screenshot_directory", MENU_SCREENSHOT_DIR_PATH,
-                  setting_data);
-            add_setting_entry(menu,list,"joypad_autoconfig_dir", MENU_AUTOCONFIG_DIR_PATH,
-                  setting_data);
-            add_setting_entry(menu,list,"extraction_directory", MENU_EXTRACTION_DIR_PATH,
-                  setting_data);
+            add_setting_entry(menu,list,"rgui_browser_directory", 0, setting_data);
+            add_setting_entry(menu,list,"content_directory", 0, setting_data);
+            add_setting_entry(menu,list,"assets_directory", 0, setting_data);
+            add_setting_entry(menu,list,"rgui_config_directory", 0, setting_data);
+            add_setting_entry(menu,list,"libretro_dir_path", 0, setting_data);
+            add_setting_entry(menu,list,"libretro_info_path", 0, setting_data);
+            add_setting_entry(menu,list,"game_history_path", MENU_CONTENT_HISTORY_PATH, setting_data);
+            add_setting_entry(menu,list,"video_filter_dir", 0, setting_data);
+            add_setting_entry(menu,list,"audio_filter_dir", 0, setting_data);
+            add_setting_entry(menu,list,"video_shader_dir", 0, setting_data);
+            add_setting_entry(menu,list,"savestate_directory", 0, setting_data);
+            add_setting_entry(menu,list,"savefile_directory", 0, setting_data);
+            add_setting_entry(menu,list,"overlay_directory", 0, setting_data);
+            add_setting_entry(menu,list,"system_directory", 0, setting_data);
+            add_setting_entry(menu,list,"screenshot_directory", 0, setting_data);
+            add_setting_entry(menu,list,"joypad_autoconfig_dir", 0, setting_data);
+            add_setting_entry(menu,list,"extraction_directory", 0, setting_data);
             break;
          case MENU_SETTINGS_INPUT_OPTIONS:
             file_list_clear(list);
@@ -746,9 +733,7 @@ int menu_parse_and_resolve(file_list_t *list, file_list_t *menu_list)
 
    dir_list_sort(str_list, true);
 
-   //FIXME - needs to be refactored to use actual strings instead 
-   //of type here
-   //if (menu_common_type_is(label, menu_type) == MENU_FILE_DIRECTORY)
+   if (menu_common_type_is(label, menu_type) == MENU_FILE_DIRECTORY)
       file_list_push(list, "<Use this directory>", "",
             MENU_FILE_USE_DIRECTORY, 0);
 
