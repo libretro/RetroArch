@@ -112,7 +112,7 @@ static void get_binds(config_file_t *conf, config_file_t *auto_conf, int player,
 
    if (!driver->query_pad(joypad))
    {
-      fprintf(stderr, "Couldn't open joystick #%u.\n", joypad);
+      fprintf(stderr, "Couldn't open joystick #%d.\n", joypad);
       exit(1);
    }
 
@@ -203,7 +203,7 @@ static void get_binds(config_file_t *conf, config_file_t *auto_conf, int player,
          {
             if (new_poll.buttons[j] && !old_poll.buttons[j])
             {
-               fprintf(stderr, "\tJoybutton pressed: %u\n", j);
+               fprintf(stderr, "\tJoybutton pressed: %d\n", j);
                char key[64];
                snprintf(key, sizeof(key), "%s_%s_btn",
                      input_config_get_prefix(player_index, input_config_bind_map[i].meta), input_config_bind_map[i].base);
