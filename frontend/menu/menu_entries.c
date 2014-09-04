@@ -178,10 +178,10 @@ int menu_entries_push_list(menu_handle_t *menu,
    else if (!strcmp(label, "performance_counters"))
    {
       file_list_clear(list);
-      file_list_push(list, "Frontend Counters", "",
-            MENU_SETTINGS_PERFORMANCE_COUNTERS_FRONTEND, 0);
-      file_list_push(list, "Core Counters", "",
-            MENU_SETTINGS_PERFORMANCE_COUNTERS_LIBRETRO, 0);
+      file_list_push(list, "Frontend Counters", "frontend_counters",
+            MENU_FILE_SWITCH, 0);
+      file_list_push(list, "Core Counters", "core_counters",
+            MENU_FILE_SWITCH, 0);
    }
    else if (!strcmp(label, "core_information"))
    {
@@ -302,6 +302,18 @@ int menu_entries_push_list(menu_handle_t *menu,
       add_setting_entry(menu,list,"netplay_ip_address", 0, setting_data);
       add_setting_entry(menu,list,"netplay_tcp_udp_port", 0, setting_data);
       add_setting_entry(menu,list,"netplay_delay_frames", 0, setting_data);
+   }
+   else if (!strcmp(label, "core_counters"))
+   {
+      file_list_clear(list);
+      menu_entries_push_perfcounter(menu, list, perf_counters_libretro,
+            perf_ptr_libretro, MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_BEGIN);
+   }
+   else if (!strcmp(label, "frontend_counters"))
+   {
+      file_list_clear(list);
+      menu_entries_push_perfcounter(menu, list, perf_counters_rarch,
+            perf_ptr_rarch, MENU_SETTINGS_PERF_COUNTERS_BEGIN);
    }
    else
    {
@@ -528,16 +540,6 @@ int menu_entries_push_list(menu_handle_t *menu,
             add_setting_entry(menu,list,"camera_driver", 0, setting_data);
             add_setting_entry(menu,list,"location_driver", 0, setting_data);
             add_setting_entry(menu,list,"menu_driver", 0, setting_data);
-            break;
-         case MENU_SETTINGS_PERFORMANCE_COUNTERS_LIBRETRO:
-            file_list_clear(list);
-            menu_entries_push_perfcounter(menu, list, perf_counters_libretro,
-                  perf_ptr_libretro, MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_BEGIN);
-            break;
-         case MENU_SETTINGS_PERFORMANCE_COUNTERS_FRONTEND:
-            file_list_clear(list);
-            menu_entries_push_perfcounter(menu, list, perf_counters_rarch,
-                  perf_ptr_rarch, MENU_SETTINGS_PERF_COUNTERS_BEGIN);
             break;
       }
    }

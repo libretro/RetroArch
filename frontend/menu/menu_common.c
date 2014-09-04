@@ -662,8 +662,8 @@ unsigned menu_common_type_is(const char *label, unsigned type)
          type == MENU_SETTINGS_OPTIONS ||
          type == MENU_SETTINGS_DRIVERS ||
          !strcmp(label, "performance_counters") ||
-         type == MENU_SETTINGS_PERFORMANCE_COUNTERS_LIBRETRO ||
-         type == MENU_SETTINGS_PERFORMANCE_COUNTERS_FRONTEND ||
+         !strcmp(label, "frontend_counters") ||
+         !strcmp(label, "core_counters") ||
          type == MENU_SETTINGS_INPUT_OPTIONS
          )
          return MENU_SETTINGS;

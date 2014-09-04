@@ -2339,8 +2339,6 @@ static void menu_common_setting_set_label(char *type_str,
             case MENU_SETTINGS_SHADER_PRESET:
             case MENU_SETTINGS_SHADER_PRESET_SAVE:
             case MENU_SETTINGS_DISK_APPEND:
-            case MENU_SETTINGS_PERFORMANCE_COUNTERS_FRONTEND:
-            case MENU_SETTINGS_PERFORMANCE_COUNTERS_LIBRETRO:
             case MENU_SETTINGS_CUSTOM_BIND_ALL:
             case MENU_SETTINGS_CUSTOM_BIND_DEFAULT_ALL:
                strlcpy(type_str, "...", type_str_size);

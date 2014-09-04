@@ -33,10 +33,10 @@ static void get_title(const char *label, const char *dir,
       strlcpy(title, "DRIVER OPTIONS", sizeof_title);
    else if (!strcmp(label, "performance_counters"))
       strlcpy(title, "PERFORMANCE COUNTERS", sizeof_title);
-   else if (menu_type == MENU_SETTINGS_PERFORMANCE_COUNTERS_LIBRETRO)
-      strlcpy(title, "CORE PERFORMANCE COUNTERS", sizeof_title);
-   else if (menu_type == MENU_SETTINGS_PERFORMANCE_COUNTERS_FRONTEND)
+   else if (!strcmp(label, "frontend_counters"))
       strlcpy(title, "FRONTEND PERFORMANCE COUNTERS", sizeof_title);
+   else if (!strcmp(label, "core_counters"))
+      strlcpy(title, "CORE PERFORMANCE COUNTERS", sizeof_title);
 #ifdef HAVE_SHADER_MANAGER
    else if (menu_type == MENU_SETTINGS_SHADER_OPTIONS)
       strlcpy(title, "SHADER OPTIONS", sizeof_title);
