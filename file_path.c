@@ -406,12 +406,18 @@ struct string_list *dir_list_new(const char *dir,
       const char *name        = ffd.cFileName;
       const char *file_ext    = path_get_extension(name);
       bool is_dir             = ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY;
-      bool is_compressed_file = path_is_compressed_file(file_path);
+      bool is_compressed_file = false;
       bool supported_by_core  = false;
       attr.i                  = RARCH_FILETYPE_UNSET;
 
-      if (string_list_find_elem_prefix(ext_list, ".", file_ext))
-         supported_by_core = true;
+      fill_pathname_join(file_path, dir, name, sizeof(file_path));
+
+      if (!is_dir)
+      {
+         is_compressed_file = path_is_compressed_file(file_path);
+         if (string_list_find_elem_prefix(ext_list, ".", file_ext))
+            supported_by_core = true;
+      }
 
       if (!include_dirs && is_dir)
          continue;
@@ -421,8 +427,6 @@ struct string_list *dir_list_new(const char *dir,
 
       if (!is_compressed_file && !is_dir && ext_list && !supported_by_core)
          continue;
-
-      fill_pathname_join(file_path, dir, name, sizeof(file_path));
 
       if (is_dir)
          attr.i = RARCH_DIRECTORY;
@@ -584,7 +588,6 @@ bool path_is_compressed_file(const char* path)
 {
 #ifdef HAVE_COMPRESSION
    const char* file_ext = path_get_extension(path);
-
 #ifdef HAVE_7ZIP
    if (strcmp(file_ext,"7z") == 0)
    {
