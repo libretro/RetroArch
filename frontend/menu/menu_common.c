@@ -634,12 +634,9 @@ void menu_build_scroll_indices(file_list_t *buf)
 unsigned menu_common_type_is(const char *label, unsigned type)
 {
    if (
-         (
-          type >= MENU_SETTINGS_SHADER_0 &&
-          type <= MENU_SETTINGS_SHADER_LAST &&
-          (((type - MENU_SETTINGS_SHADER_0) % 3) == 0)
-          )
-         ||
+         !strcmp(label, "video_shader_pass") ||
+         !strcmp(label, "video_shader_filter_pass") ||
+         !strcmp(label, "video_shader_scale_pass") ||
          !strcmp(label, "video_shader_default_filter") ||
          !strcmp(label, "video_shader_num_passes") ||
          !strcmp(label, "video_shader_preset")

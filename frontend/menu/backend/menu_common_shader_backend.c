@@ -321,6 +321,10 @@ static int menu_common_shader_manager_setting_toggle(
       return 0;
    }
 
+#if 1
+   RARCH_LOG("shader label: %s\n", label);
+#endif
+
    rarch_setting_t *current_setting = NULL;
    rarch_setting_t *setting_data = (rarch_setting_t *)setting_data_get_list();
 
@@ -376,13 +380,6 @@ static int menu_common_shader_manager_setting_toggle(
       menu_setting_set(id, label, action);
    else if (!strcmp(label, "video_shader_preset"))
    {
-      struct gfx_shader *shader = (struct gfx_shader*)driver.menu->shader;
-      struct gfx_shader_pass *pass = NULL;
-
-      dist_shader /= 3;
-      if (shader)
-         pass = &shader->pass[dist_shader];
-
       switch (action)
       {
          case MENU_ACTION_OK:
@@ -393,15 +390,13 @@ static int menu_common_shader_manager_setting_toggle(
             break;
 
          case MENU_ACTION_START:
-            if (pass)
-               *pass->source.path = '\0';
             break;
 
          default:
             break;
       }
    }
-   else if ((dist_shader % 3) == 0)
+   else if (!strcmp(label, "video_shader_pass"))
    {
       struct gfx_shader *shader = (struct gfx_shader*)driver.menu->shader;
 
@@ -423,7 +418,7 @@ static int menu_common_shader_manager_setting_toggle(
             break;
       }
    }
-   else if ((dist_filter % 3) == 0)
+   else if (!strcmp(label, "video_shader_filter_pass"))
    {
       dist_filter /= 3;
       struct gfx_shader *shader = (struct gfx_shader*)driver.menu->shader;
@@ -451,7 +446,7 @@ static int menu_common_shader_manager_setting_toggle(
          break;
       }
    }
-   else if ((dist_scale % 3) == 0)
+   else if (!strcmp(label, "video_shader_scale_pass"))
    {
       dist_scale /= 3;
       struct gfx_shader *shader = (struct gfx_shader*)driver.menu->shader;

@@ -508,15 +508,15 @@ int menu_entries_push_list(menu_handle_t *menu,
          char buf[64];
 
          snprintf(buf, sizeof(buf), "Shader #%u", i);
-         file_list_push(list, buf, "",
+         file_list_push(list, buf, "video_shader_pass",
                MENU_SETTINGS_SHADER_0 + 3 * i, 0);
 
          snprintf(buf, sizeof(buf), "Shader #%u Filter", i);
-         file_list_push(list, buf, "",
+         file_list_push(list, buf, "video_shader_filter_pass",
                MENU_SETTINGS_SHADER_0_FILTER + 3 * i, 0);
 
          snprintf(buf, sizeof(buf), "Shader #%u Scale", i);
-         file_list_push(list, buf, "",
+         file_list_push(list, buf, "video_shader_scale_pass",
                MENU_SETTINGS_SHADER_0_SCALE + 3 * i, 0);
       }
    }
@@ -942,6 +942,51 @@ int menu_entries_get_description(const char *label,
             "-- Shader Preset Parameters. \n"
             " \n"
             "Modifies shader preset currently in menu."
+            );
+      return 0;
+   }
+   else if (!strcmp(label, "video_shader_pass"))
+   {
+      snprintf(msg, sizeof_msg,
+            " -- Path to shader. \n"
+            " \n"
+            "All shaders must be of the same \n"
+            "type (i.e. CG, GLSL or HLSL). \n"
+            " \n"
+            "Set Shader Directory to set where \n"
+            "the browser starts to look for \n"
+            "shaders."
+            );
+      return 0;
+   }
+   else if (!strcmp(label, "video_shader_filter_pass"))
+   {
+      snprintf(msg, sizeof_msg,
+            " -- Hardware filter for this pass. \n"
+            " \n"
+            "If 'Don't Care' is set, 'Default \n"
+            "Filter' will be used."
+            );
+      return 0;
+   }
+   else if (!strcmp(label, "video_shader_scale_pass"))
+   {
+      snprintf(msg, sizeof_msg,
+            " -- Scale for this pass. \n"
+            " \n"
+            "The scale factor accumulates, i.e. 2x \n"
+            "for first pass and 2x for second pass \n"
+            "will give you a 4x total scale. \n"
+            " \n"
+            "If there is a scale factor for last \n"
+            "pass, the result is stretched to \n"
+            "screen with the filter specified in \n"
+            "'Default Filter'. \n"
+            " \n"
+            "If 'Don't Care' is set, either 1x \n"
+            "scale or stretch to fullscreen will \n"
+            "be used depending if it's not the last \n"
+            "pass or not."
             );
       return 0;
    }
