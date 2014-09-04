@@ -1874,7 +1874,7 @@ static int menu_action_ok(const char *dir,
    }
 #endif
    else if (!strcmp(menu_label, "deferred_core_list")
-         && type == MENU_FILE_PLAIN)
+         && type == MENU_FILE_CORE)
    {
       strlcpy(g_settings.libretro, path, sizeof(g_settings.libretro));
       strlcpy(g_extern.fullpath, driver.menu->deferred_path,
