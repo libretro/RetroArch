@@ -367,8 +367,8 @@ static int menu_common_shader_manager_setting_toggle(
 
       param->current = min(max(param->minimum, param->current), param->maximum);
    }
-   else if ((!strcmp(label, "shader_apply_changes") ||
-            id == MENU_SETTINGS_SHADER_PASSES))
+   else if (!strcmp(label, "shader_apply_changes") ||
+            id == MENU_SETTINGS_SHADER_PASSES)
       menu_setting_set(id, action);
    else if (((dist_shader % 3) == 0 || id == MENU_SETTINGS_SHADER_PRESET))
    {
@@ -408,7 +408,7 @@ static int menu_common_shader_manager_setting_toggle(
       switch (action)
       {
          case MENU_ACTION_START:
-            if (shader && shader->pass)
+            if (shader)
                shader->pass[dist_filter].filter = RARCH_FILTER_UNSPEC;
             break;
 
@@ -436,7 +436,7 @@ static int menu_common_shader_manager_setting_toggle(
       switch (action)
       {
          case MENU_ACTION_START:
-            if (shader && shader->pass)
+            if (shader)
             {
                pass->fbo.scale_x = pass->fbo.scale_y = 0;
                pass->fbo.valid = false;
