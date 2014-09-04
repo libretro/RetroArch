@@ -1787,19 +1787,12 @@ static int menu_action_ok(const char *dir,
    else if (!strcmp(menu_label, "detect_core_list")
          && type == MENU_FILE_PLAIN)
    {
-      const core_info_t *info = NULL;
-      int ret = rarch_defer_core(info, g_extern.core_info,
+      int ret = rarch_defer_core(g_extern.core_info,
             dir, path, driver.menu->deferred_path,
             sizeof(driver.menu->deferred_path));
 
       if (ret == -1)
       {
-         strlcpy(g_extern.fullpath, driver.menu->deferred_path,
-               sizeof(g_extern.fullpath));
-
-         if (path_file_exists(info->path))
-            strlcpy(g_settings.libretro, info->path,
-                  sizeof(g_settings.libretro));
 
          rarch_main_command(RARCH_CMD_LOAD_CONTENT);
          rarch_main_command(RARCH_CMD_LOAD_CORE);
