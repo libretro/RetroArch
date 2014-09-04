@@ -35,7 +35,8 @@ static void entries_refresh(file_list_t *list)
 static inline struct gfx_shader *shader_manager_get_current_shader(
       menu_handle_t *menu, const char *label, unsigned type)
 {
-   if (!strcmp(label, "video_shader_preset_parameters"))
+   if (!strcmp(label, "video_shader_preset_parameters") ||
+         !strcmp(label, "video_shader_parameters"))
       return menu->shader;
    else if (driver.video_poke && driver.video_data &&
          driver.video_poke->get_current_shader)
@@ -538,7 +539,7 @@ int menu_entries_push_list(menu_handle_t *menu,
       if (shader)
          for (i = 0; i < shader->num_parameters; i++)
             file_list_push(list,
-                  shader->parameters[i].desc, "",
+                  shader->parameters[i].desc, label,
                   MENU_SETTINGS_SHADER_PARAMETER_0 + i, 0);
       menu->parameter_shader = shader;
    }

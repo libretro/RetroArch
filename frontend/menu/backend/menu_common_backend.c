@@ -1305,7 +1305,10 @@ static int menu_setting_toggle(unsigned type,
 {
    struct retro_perf_counter **counters = NULL;
 
-   if (menu_common_type_is(label, type) == MENU_SETTINGS_SHADER_OPTIONS)
+   if ((menu_common_type_is(label, type) == MENU_SETTINGS_SHADER_OPTIONS) ||
+         !strcmp(label, "video_shader_parameters") ||
+         !strcmp(label, "video_shader_preset_parameters")
+         )
    {
       if (driver.menu_ctx && driver.menu_ctx->backend
             && driver.menu_ctx->backend->shader_manager_setting_toggle)
@@ -2207,7 +2210,9 @@ static void menu_common_setting_set_label(char *type_str,
    rarch_setting_t *setting = (rarch_setting_t*)setting_data_find_setting(setting_data,
          driver.menu->selection_buf->list[index].label);
 
-   if (!strcmp(menu_label, "Shader Options")
+   if ((!strcmp(menu_label, "Shader Options") ||
+            !strcmp(menu_label, "video_shader_parameters") ||
+            !strcmp(menu_label, "video_shader_preset_parameters"))
          &&
          driver.menu_ctx && driver.menu_ctx->backend &&
          driver.menu_ctx->backend->shader_manager_get_str

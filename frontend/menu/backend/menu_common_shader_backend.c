@@ -334,11 +334,6 @@ static int menu_common_shader_manager_setting_toggle(
                   setting_data, "video_smooth")))
          menu_common_setting_set_current_boolean(current_setting, action);
    }
-   else if ((!strcmp(label, "video_shader_parameters") ||
-            !strcmp(label, "video_shader_preset_parameters"))
-         && action == MENU_ACTION_OK)
-      menu_entries_push(driver.menu->menu_stack, "",
-            "video_shader_parameters", MENU_FILE_SWITCH, driver.menu->selection_ptr);
    else if (id >= MENU_SETTINGS_SHADER_PARAMETER_0
          && id <= MENU_SETTINGS_SHADER_PARAMETER_LAST)
    {
@@ -371,6 +366,11 @@ static int menu_common_shader_manager_setting_toggle(
 
       param->current = min(max(param->minimum, param->current), param->maximum);
    }
+   else if ((!strcmp(label, "video_shader_parameters") ||
+            !strcmp(label, "video_shader_preset_parameters"))
+         && action == MENU_ACTION_OK)
+      menu_entries_push(driver.menu->menu_stack, "",
+            "video_shader_parameters", MENU_FILE_SWITCH, driver.menu->selection_ptr);
    else if (!strcmp(label, "shader_apply_changes") ||
          !strcmp(label, "video_shader_passes"))
       menu_setting_set(id, label, action);
