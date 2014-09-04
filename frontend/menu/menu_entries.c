@@ -565,7 +565,7 @@ int menu_entries_push_list(menu_handle_t *menu,
 
 int menu_parse_check(const char *label, unsigned menu_type)
 {
-#if 1
+#if 0
    RARCH_LOG("label is menu_parse_check: %s\n", label);
 #endif
    if (!((menu_type == MENU_FILE_DIRECTORY ||

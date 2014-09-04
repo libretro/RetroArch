@@ -324,8 +324,6 @@ static int menu_common_shader_manager_setting_toggle(
    unsigned dist_filter = id - MENU_SETTINGS_SHADER_0_FILTER;
    unsigned dist_scale  = id - MENU_SETTINGS_SHADER_0_SCALE;
 
-   RARCH_LOG("shader label: %s\n", label);
-
    if (id == MENU_SETTINGS_SHADER_FILTER)
    {
       if ((current_setting = setting_data_find_setting(
