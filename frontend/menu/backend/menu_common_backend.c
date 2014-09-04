@@ -1761,9 +1761,10 @@ static int menu_action_ok(const char *dir,
    const char *label = NULL;
    const char *path = NULL;
    unsigned type = 0;
-   rarch_setting_t *setting = NULL;
    rarch_setting_t *setting_data = (rarch_setting_t *)
       setting_data_get_list();
+   rarch_setting_t *setting = (rarch_setting_t*)
+      setting_data_find_setting(setting_data, menu_label);
 
    if (file_list_get_size(driver.menu->selection_buf) == 0)
       return 0;
@@ -1777,7 +1778,135 @@ static int menu_action_ok(const char *dir,
    RARCH_LOG("type id  : %d\n", type);
 #endif
 
-   if (menu_parse_check(label, type) == 0)
+   if (type == MENU_FILE_PLAYLIST_ENTRY)
+   {
+      rarch_playlist_load_content(g_extern.history,
+            driver.menu->selection_ptr);
+      menu_flush_stack_type(driver.menu->menu_stack, MENU_SETTINGS);
+      return -1;
+   }
+   else if ((setting && setting->type == ST_DIR)
+         && (type == MENU_FILE_USE_DIRECTORY))
+   {
+      menu_common_setting_set_current_string(setting, dir);
+      menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS_PATH_OPTIONS);
+   }
+   else if (setting && !strcmp(setting->name, "input_overlay")
+         && type == MENU_FILE_PLAIN)
+   {
+      menu_common_setting_set_current_string_path(setting, dir, path);
+      menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS_OPTIONS);
+   }
+   else if (setting && !strcmp(setting->name, "game_history_path")
+         && type == MENU_FILE_PLAIN)
+   {
+      menu_common_setting_set_current_string_path(setting, dir, path);
+      menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS_PATH_OPTIONS);
+   }
+   else if (setting && !strcmp(setting->name, "video_filter")
+         && type == MENU_FILE_PLAIN)
+   {
+      menu_common_setting_set_current_string_path(setting, dir, path);
+      menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS_VIDEO_OPTIONS);
+   }
+   else if (setting && !strcmp(setting->name, "audio_dsp_plugin")
+         && type == MENU_FILE_PLAIN)
+   {
+      menu_common_setting_set_current_string_path(setting, dir, path);
+      menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS_AUDIO_OPTIONS);
+   }
+#ifdef HAVE_SHADER_MANAGER
+   else if (!strcmp(menu_label, "video_shader_preset")
+         && type == MENU_FILE_PLAIN)
+   {
+      char shader_path[PATH_MAX];
+      fill_pathname_join(shader_path, dir, path, sizeof(shader_path));
+      if (driver.menu_ctx && driver.menu_ctx->backend &&
+            driver.menu_ctx->backend->shader_manager_set_preset)
+         driver.menu_ctx->backend->shader_manager_set_preset(
+               driver.menu->shader,
+               gfx_shader_parse_type(shader_path, RARCH_SHADER_NONE),
+               shader_path);
+      /* Pop stack until we hit shader manager again. */
+      menu_flush_stack_type(driver.menu->menu_stack,
+            MENU_SETTINGS_SHADER_OPTIONS);
+   }
+   else if (!strcmp(menu_label, "video_shader_pass")
+         && type == MENU_FILE_PLAIN)
+   {
+      unsigned pass = (menu_type - MENU_SETTINGS_SHADER_0) / 3;
+
+      fill_pathname_join(driver.menu->shader->pass[pass].source.path,
+            dir, path, sizeof(driver.menu->shader->pass[pass].source.path));
+
+      /* This will reset any changed parameters. */
+      gfx_shader_resolve_parameters(NULL, driver.menu->shader);
+      /* Pop stack until we hit shader manager again. */
+      menu_flush_stack_type(driver.menu->menu_stack,
+            MENU_SETTINGS_SHADER_OPTIONS);
+   }
+#endif
+   else if (!strcmp(menu_label, "deferred_core_list")
+         && type == MENU_FILE_PLAIN)
+   {
+      strlcpy(g_settings.libretro, path, sizeof(g_settings.libretro));
+      strlcpy(g_extern.fullpath, driver.menu->deferred_path,
+            sizeof(g_extern.fullpath));
+      rarch_main_command(RARCH_CMD_LOAD_CONTENT);
+      driver.menu->msg_force = true;
+      menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS);
+      return -1;
+   }
+   else if (!strcmp(menu_label, "core_list")
+         && type == MENU_FILE_PLAIN)
+   {
+      fill_pathname_join(g_settings.libretro, dir, path,
+            sizeof(g_settings.libretro));
+      rarch_main_command(RARCH_CMD_LOAD_CORE);
+      menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS);
+#if defined(HAVE_DYNAMIC)
+      /* No content needed for this core, load core immediately. */
+      if (driver.menu->load_no_content)
+      {
+         rarch_main_set_state(RARCH_ACTION_STATE_LOAD_CONTENT);
+         *g_extern.fullpath = '\0';
+         driver.menu->msg_force = true;
+         return -1;
+      }
+
+      /* Core selection on non-console just updates directory listing.
+       * Will take effect on new content load. */
+#elif defined(RARCH_CONSOLE)
+      rarch_main_command(RARCH_CMD_RESTART_RETROARCH);
+      return -1;
+#endif
+   }
+   else if (menu_type == MENU_SETTINGS_CONFIG
+         && type == MENU_FILE_PLAIN)
+   {
+      char config[PATH_MAX];
+      fill_pathname_join(config, dir, path, sizeof(config));
+      menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS);
+      driver.menu->msg_force = true;
+      if (menu_replace_config(config))
+      {
+         menu_clear_navigation(driver.menu);
+         return -1;
+      }
+   }
+   else if (menu_type == MENU_SETTINGS_DISK_APPEND
+         && type == MENU_FILE_PLAIN)
+   {
+      char image[PATH_MAX];
+      fill_pathname_join(image, dir, path, sizeof(image));
+      rarch_disk_control_append_image(image);
+
+      rarch_main_command(RARCH_CMD_RESUME);
+
+      menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS);
+      return -1;
+   }
+   else if (menu_parse_check(label, type) == 0)
    {
       char cat_path[PATH_MAX];
       fill_pathname_join(cat_path, dir, path, sizeof(cat_path));
@@ -1785,186 +1914,44 @@ static int menu_action_ok(const char *dir,
       menu_entries_push(driver.menu->menu_stack,
             cat_path, menu_label, type, driver.menu->selection_ptr);
    }
-   else if (type == MENU_FILE_PLAYLIST_ENTRY)
-   {
-      rarch_playlist_load_content(g_extern.history,
-            driver.menu->selection_ptr);
-      menu_flush_stack_type(driver.menu->menu_stack, MENU_SETTINGS);
-      return -1;
-   }
    else
    {
-      setting = (rarch_setting_t*)setting_data_find_setting(
-                     setting_data, menu_label);
+      if (driver.menu->defer_core)
+      {
+         const core_info_t *info = NULL;
+         int ret = rarch_defer_core(info, g_extern.core_info,
+               dir, path, driver.menu->deferred_path,
+               sizeof(driver.menu->deferred_path));
 
-      if (setting && setting->type == ST_DIR &&
-            (
-             !strcmp(setting->name, "rgui_browser_directory") ||
-             !strcmp(setting->name, "content_directory")      ||
-             !strcmp(setting->name, "assets_directory")       ||
-             !strcmp(setting->name, "screenshot_directory")   ||
-             !strcmp(setting->name, "savefile_directory")     ||
-             !strcmp(setting->name, "overlay_directory")      ||
-             !strcmp(setting->name, "savestate_directory")    ||
-             !strcmp(setting->name, "libretro_dir_path")      ||
-             !strcmp(setting->name, "rgui_config_directory")  ||
-             !strcmp(setting->name, "libretro_info_path")     ||
-             !strcmp(setting->name, "video_shader_dir")       ||
-             !strcmp(setting->name, "video_filter_dir")       ||
-             !strcmp(setting->name, "audio_filter_dir")       ||
-             !strcmp(setting->name, "system_directory")       ||
-             !strcmp(setting->name, "joypad_autoconfig_dir")  ||
-             !strcmp(setting->name, "extraction_directory")
-            )
-         )
-      {
-         menu_common_setting_set_current_string(setting, dir);
-         menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS_PATH_OPTIONS);
-      }
-      else if (setting && !strcmp(setting->name, "input_overlay"))
-      {
-         menu_common_setting_set_current_string_path(setting, dir, path);
-         menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS_OPTIONS);
-      }
-      else if (setting && !strcmp(setting->name, "game_history_path"))
-      {
-         menu_common_setting_set_current_string_path(setting, dir, path);
-         menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS_PATH_OPTIONS);
-      }
-      else if (setting && !strcmp(setting->name, "video_filter"))
-      {
-         menu_common_setting_set_current_string_path(setting, dir, path);
-         menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS_VIDEO_OPTIONS);
-      }
-      else if (setting && !strcmp(setting->name, "audio_dsp_plugin"))
-      {
-         menu_common_setting_set_current_string_path(setting, dir, path);
-         menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS_AUDIO_OPTIONS);
-      }
-#ifdef HAVE_SHADER_MANAGER
-      else if (!strcmp(menu_label, "video_shader_preset"))
-      {
-         char shader_path[PATH_MAX];
-         fill_pathname_join(shader_path, dir, path, sizeof(shader_path));
-         if (driver.menu_ctx && driver.menu_ctx->backend &&
-               driver.menu_ctx->backend->shader_manager_set_preset)
-            driver.menu_ctx->backend->shader_manager_set_preset(
-                  driver.menu->shader,
-                  gfx_shader_parse_type(shader_path, RARCH_SHADER_NONE),
-                  shader_path);
-         /* Pop stack until we hit shader manager again. */
-         menu_flush_stack_type(driver.menu->menu_stack,
-               MENU_SETTINGS_SHADER_OPTIONS);
-      }
-      else if (!strcmp(menu_label, "video_shader_pass"))
-      {
-         unsigned pass = (menu_type - MENU_SETTINGS_SHADER_0) / 3;
-
-         fill_pathname_join(driver.menu->shader->pass[pass].source.path,
-               dir, path, sizeof(driver.menu->shader->pass[pass].source.path));
-
-         /* This will reset any changed parameters. */
-         gfx_shader_resolve_parameters(NULL, driver.menu->shader);
-         /* Pop stack until we hit shader manager again. */
-         menu_flush_stack_type(driver.menu->menu_stack,
-               MENU_SETTINGS_SHADER_OPTIONS);
-      }
-#endif
-      else if (!strcmp(menu_label, "deferred_core_list"))
-      {
-         strlcpy(g_settings.libretro, path, sizeof(g_settings.libretro));
-         strlcpy(g_extern.fullpath, driver.menu->deferred_path,
-               sizeof(g_extern.fullpath));
-         rarch_main_command(RARCH_CMD_LOAD_CONTENT);
-         driver.menu->msg_force = true;
-         menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS);
-         return -1;
-      }
-      else if (!strcmp(menu_label, "core_list"))
-      {
-         fill_pathname_join(g_settings.libretro, dir, path,
-               sizeof(g_settings.libretro));
-         rarch_main_command(RARCH_CMD_LOAD_CORE);
-         menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS);
-#if defined(HAVE_DYNAMIC)
-         /* No content needed for this core, load core immediately. */
-         if (driver.menu->load_no_content)
+         if (ret == -1)
          {
-            rarch_main_set_state(RARCH_ACTION_STATE_LOAD_CONTENT);
-            *g_extern.fullpath = '\0';
-            driver.menu->msg_force = true;
-            return -1;
-         }
-
-         /* Core selection on non-console just updates directory listing.
-          * Will take effect on new content load. */
-#elif defined(RARCH_CONSOLE)
-         rarch_main_command(RARCH_CMD_RESTART_RETROARCH);
-         return -1;
-#endif
-      }
-      else if (menu_type == MENU_SETTINGS_CONFIG)
-      {
-         char config[PATH_MAX];
-         fill_pathname_join(config, dir, path, sizeof(config));
-         menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS);
-         driver.menu->msg_force = true;
-         if (menu_replace_config(config))
-         {
-            menu_clear_navigation(driver.menu);
-            return -1;
-         }
-      }
-      else if (menu_type == MENU_SETTINGS_DISK_APPEND)
-      {
-         char image[PATH_MAX];
-         fill_pathname_join(image, dir, path, sizeof(image));
-         rarch_disk_control_append_image(image);
-
-         rarch_main_command(RARCH_CMD_RESUME);
-
-         menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS);
-         return -1;
-      }
-      else
-      {
-         if (driver.menu->defer_core)
-         {
-            const core_info_t *info = NULL;
-            int ret = rarch_defer_core(info, g_extern.core_info,
-                  dir, path, driver.menu->deferred_path,
-                  sizeof(driver.menu->deferred_path));
-
-            if (ret == -1)
-            {
-               strlcpy(g_extern.fullpath, driver.menu->deferred_path,
-                     sizeof(g_extern.fullpath));
-
-               if (path_file_exists(info->path))
-                  strlcpy(g_settings.libretro, info->path,
-                        sizeof(g_settings.libretro));
-
-               rarch_main_command(RARCH_CMD_LOAD_CONTENT);
-               rarch_main_command(RARCH_CMD_LOAD_CORE);
-               menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS);
-               driver.menu->msg_force = true;
-               return -1;
-            }
-            else if (ret == 0)
-               menu_entries_push(driver.menu->menu_stack,
-                     g_settings.libretro_directory, "deferred_core_list",
-                     0, driver.menu->selection_ptr);
-         }
-         else
-         {
-            fill_pathname_join(g_extern.fullpath, dir, path,
+            strlcpy(g_extern.fullpath, driver.menu->deferred_path,
                   sizeof(g_extern.fullpath));
-            rarch_main_set_state(RARCH_ACTION_STATE_LOAD_CONTENT);
 
+            if (path_file_exists(info->path))
+               strlcpy(g_settings.libretro, info->path,
+                     sizeof(g_settings.libretro));
+
+            rarch_main_command(RARCH_CMD_LOAD_CONTENT);
+            rarch_main_command(RARCH_CMD_LOAD_CORE);
             menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS);
             driver.menu->msg_force = true;
             return -1;
          }
+         else if (ret == 0)
+            menu_entries_push(driver.menu->menu_stack,
+                  g_settings.libretro_directory, "deferred_core_list",
+                  0, driver.menu->selection_ptr);
+      }
+      else
+      {
+         fill_pathname_join(g_extern.fullpath, dir, path,
+               sizeof(g_extern.fullpath));
+         rarch_main_set_state(RARCH_ACTION_STATE_LOAD_CONTENT);
+
+         menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS);
+         driver.menu->msg_force = true;
+         return -1;
       }
    }
 
