@@ -304,7 +304,7 @@ bool gfx_shader_resolve_parameters(config_file_t *conf, struct gfx_shader *shade
 
       while (shader->num_parameters < ARRAY_SIZE(shader->parameters) && fgets(line, sizeof(line), file))
       {
-         int ret = sscanf(line, "#pragma parameter %64s \"%64[^\"]\" %f %f %f %f",
+         int ret = sscanf(line, "#pragma parameter %63s \"%63[^\"]\" %f %f %f %f",
                param->id, param->desc, &param->initial, &param->minimum, &param->maximum, &param->step);
 
          if (ret >= 5)
