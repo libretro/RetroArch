@@ -1472,7 +1472,7 @@ rarch_setting_t *setting_data_get_mainmenu(bool regenerate)
       }
       if (driver.menu && g_extern.core_info && core_info_list_num_info_files(g_extern.core_info))
       {
-         CONFIG_BOOL(lists[2],     "deferred_core_list",  "Load Content (Detect Core)", false, "...", "...", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+         CONFIG_BOOL(lists[2],     "detect_core_list",  "Load Content (Detect Core)", false, "...", "...", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
       }
       CONFIG_BOOL(lists[3],     "load_content",  "Load Content", false, "...", "...", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
       CONFIG_BOOL(lists[4],     "core_options",  "Core Options", false, "...", "...", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
