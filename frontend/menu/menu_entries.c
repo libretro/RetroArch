@@ -106,7 +106,7 @@ int menu_entries_push_list(menu_handle_t *menu,
       add_setting_entry(menu,list,"history_list", 0, setting_data);
       add_setting_entry(menu,list,"detect_core_list", 0, setting_data);
       add_setting_entry(menu,list,"load_content", 0, setting_data);
-      add_setting_entry(menu,list,"core_options", MENU_SETTINGS_CORE_OPTIONS, setting_data);
+      add_setting_entry(menu,list,"core_options", MENU_FILE_SWITCH, setting_data);
       add_setting_entry(menu,list,"core_information", 0, setting_data);
       add_setting_entry(menu,list,"settings", MENU_SETTINGS_OPTIONS, setting_data);
       add_setting_entry(menu,list,"performance_counters", MENU_FILE_SWITCH, setting_data);
@@ -328,6 +328,22 @@ int menu_entries_push_list(menu_handle_t *menu,
       add_setting_entry(menu,list,"input_overlay_opacity", 0, setting_data);
       add_setting_entry(menu,list,"input_overlay_scale", 0, setting_data);
    }
+   else if (!strcmp(label, "core_options"))
+   {
+      file_list_clear(list);
+      if (g_extern.system.core_options)
+      {
+         size_t i;
+         size_t opts = core_option_size(g_extern.system.core_options);
+         for (i = 0; i < opts; i++)
+            file_list_push(list,
+                  core_option_get_desc(g_extern.system.core_options, i), "",
+                  MENU_SETTINGS_CORE_OPTION_START + i, 0);
+      }
+      else
+         file_list_push(list, "No options available.", "",
+               MENU_SETTINGS_CORE_OPTION_NONE, 0);
+   }
    else
    {
       switch (menu_type)
@@ -428,23 +444,6 @@ int menu_entries_push_list(menu_handle_t *menu,
             file_list_clear(list);
             add_setting_entry(menu,list,"video_font_enable", 0, setting_data);
             add_setting_entry(menu,list,"video_font_size", 0, setting_data);
-            break;
-         case MENU_SETTINGS_CORE_OPTIONS:
-            file_list_clear(list);
-
-            if (g_extern.system.core_options)
-            {
-               size_t i, opts;
-
-               opts = core_option_size(g_extern.system.core_options);
-               for (i = 0; i < opts; i++)
-                  file_list_push(list,
-                        core_option_get_desc(g_extern.system.core_options, i), "",
-                        MENU_SETTINGS_CORE_OPTION_START + i, 0);
-            }
-            else
-               file_list_push(list, "No options available.", "",
-                     MENU_SETTINGS_CORE_OPTION_NONE, 0);
             break;
          case MENU_SETTINGS_OPTIONS:
             file_list_clear(list);
