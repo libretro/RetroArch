@@ -577,7 +577,6 @@ static void lakka_draw_categories(void)
 
 static void lakka_frame(void)
 {
-   struct font_output_list *msg;
    gl_t *gl = (gl_t*)driver.video_data;
    menu_category_t *active_category = (menu_category_t*)
       &categories[menu_active_category];
@@ -632,7 +631,7 @@ static GLuint png_texture_load(const char * file_name)
 
 static void lakka_context_destroy(void *data)
 {
-   int i, j, k;
+   int i, j;
    gl_t *gl = (gl_t*)driver.video_data;
 
    for (i = 0; i < TEXTURE_LAST; i++)
@@ -808,7 +807,7 @@ void lakka_settings_context_reset(void)
 static void lakka_context_reset(void *data)
 {
    int i, j, k;
-   char path[256], mediapath[256], themepath[256], iconpath[256];
+   char mediapath[256], themepath[256], iconpath[256];
    menu_handle_t *menu = (menu_handle_t*)data;
    gl_t *gl = (gl_t*)driver.video_data;
 
@@ -1032,7 +1031,7 @@ static void lakka_init_core_info(void *data)
 
 static void *lakka_init(void)
 {
-   int i, j;
+   int i;
    menu_handle_t *menu = (menu_handle_t*)calloc(1, sizeof(*menu));
    gl_t *gl = (gl_t*)driver.video_data;
    if (!menu || !gl)
