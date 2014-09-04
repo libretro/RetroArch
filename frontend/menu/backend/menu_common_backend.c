@@ -1850,7 +1850,7 @@ static int menu_action_ok(const char *dir,
    else if (!strcmp(menu_label, "video_shader_pass")
          && type == MENU_FILE_PLAIN)
    {
-      unsigned pass = (menu_type - MENU_SETTINGS_SHADER_0) / 3;
+      unsigned pass = (menu_type) / 3;
 
       fill_pathname_join(driver.menu->shader->pass[pass].source.path,
             dir, path, sizeof(driver.menu->shader->pass[pass].source.path));
