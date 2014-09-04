@@ -650,7 +650,7 @@ unsigned menu_common_type_is(const char *label, unsigned type)
          !strcmp(label, "Overlay Options") ||
          !strcmp(label, "User Options") ||
          !strcmp(label, "Netplay Options") ||
-         type == MENU_SETTINGS_OPTIONS ||
+         !strcmp(label, "settings") ||
          !strcmp(label, "Driver Options") ||
          !strcmp(label, "performance_counters") ||
          !strcmp(label, "frontend_counters") ||

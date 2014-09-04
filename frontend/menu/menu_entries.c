@@ -108,7 +108,7 @@ int menu_entries_push_list(menu_handle_t *menu,
       add_setting_entry(menu,list,"load_content", MENU_FILE_SWITCH, setting_data);
       add_setting_entry(menu,list,"core_options", MENU_FILE_SWITCH, setting_data);
       add_setting_entry(menu,list,"core_information", MENU_FILE_SWITCH, setting_data);
-      add_setting_entry(menu,list,"settings", MENU_SETTINGS_OPTIONS, setting_data);
+      add_setting_entry(menu,list,"settings", MENU_FILE_SWITCH, setting_data);
       add_setting_entry(menu,list,"performance_counters", MENU_FILE_SWITCH, setting_data);
       add_setting_entry(menu,list,"savestate", 0, setting_data);
       add_setting_entry(menu,list,"loadstate", 0, setting_data);
@@ -435,6 +435,29 @@ int menu_entries_push_list(menu_handle_t *menu,
       add_setting_entry(menu,list,"video_font_enable", 0, setting_data);
       add_setting_entry(menu,list,"video_font_size", 0, setting_data);
    }
+   else if (!strcmp(label, "settings"))
+   {
+      file_list_clear(list);
+      add_setting_entry(menu,list,"Driver Options", MENU_FILE_SWITCH, setting_data);
+      add_setting_entry(menu,list,"General Options", MENU_FILE_SWITCH, setting_data);
+      add_setting_entry(menu,list,"Video Options", MENU_FILE_SWITCH, setting_data);
+      add_setting_entry(menu,list,"Shader Options", MENU_SETTINGS_SHADER_OPTIONS, setting_data);
+      add_setting_entry(menu,list,"Font Options", MENU_FILE_SWITCH, setting_data);
+      add_setting_entry(menu,list,"Audio Options", MENU_FILE_SWITCH, setting_data);
+      add_setting_entry(menu,list,"Input Options", MENU_FILE_SWITCH, setting_data);
+      add_setting_entry(menu,list,"Overlay Options", MENU_FILE_SWITCH, setting_data);
+      add_setting_entry(menu,list,"User Options", MENU_FILE_SWITCH, setting_data);
+      add_setting_entry(menu,list,"Netplay Options", MENU_FILE_SWITCH, setting_data);
+      add_setting_entry(menu,list,"Path Options", MENU_SETTINGS_PATH_OPTIONS, setting_data);
+      if (g_extern.main_is_init && !g_extern.libretro_dummy)
+      {
+         if (g_extern.system.disk_control.get_num_images)
+            file_list_push(list, "Disk Options", "",
+                  MENU_SETTINGS_DISK_OPTIONS, 0);
+      }
+      add_setting_entry(menu,list,"Privacy Options",
+            MENU_FILE_SWITCH, setting_data);
+   }
    else
    {
       switch (menu_type)
@@ -495,28 +518,6 @@ int menu_entries_push_list(menu_handle_t *menu,
                         MENU_SETTINGS_SHADER_0_SCALE + 3 * i, 0);
                }
             }
-            break;
-         case MENU_SETTINGS_OPTIONS:
-            file_list_clear(list);
-            add_setting_entry(menu,list,"Driver Options", MENU_FILE_SWITCH, setting_data);
-            add_setting_entry(menu,list,"General Options", MENU_FILE_SWITCH, setting_data);
-            add_setting_entry(menu,list,"Video Options", MENU_FILE_SWITCH, setting_data);
-            add_setting_entry(menu,list,"Shader Options", MENU_SETTINGS_SHADER_OPTIONS, setting_data);
-            add_setting_entry(menu,list,"Font Options", MENU_FILE_SWITCH, setting_data);
-            add_setting_entry(menu,list,"Audio Options", MENU_FILE_SWITCH, setting_data);
-            add_setting_entry(menu,list,"Input Options", MENU_FILE_SWITCH, setting_data);
-            add_setting_entry(menu,list,"Overlay Options", MENU_FILE_SWITCH, setting_data);
-            add_setting_entry(menu,list,"User Options", MENU_FILE_SWITCH, setting_data);
-            add_setting_entry(menu,list,"Netplay Options", MENU_FILE_SWITCH, setting_data);
-            add_setting_entry(menu,list,"Path Options", MENU_SETTINGS_PATH_OPTIONS, setting_data);
-            if (g_extern.main_is_init && !g_extern.libretro_dummy)
-            {
-               if (g_extern.system.disk_control.get_num_images)
-                  file_list_push(list, "Disk Options", "",
-                        MENU_SETTINGS_DISK_OPTIONS, 0);
-            }
-            add_setting_entry(menu,list,"Privacy Options",
-                  MENU_FILE_SWITCH, setting_data);
             break;
          case MENU_SETTINGS_DISK_OPTIONS:
             file_list_clear(list);

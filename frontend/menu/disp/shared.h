@@ -27,7 +27,7 @@ static void get_title(const char *label, const char *dir,
       strlcpy(title, "USER OPTIONS", sizeof_title);
    else if (menu_type == MENU_SETTINGS_PATH_OPTIONS)
       strlcpy(title, "PATH OPTIONS", sizeof_title);
-   else if (menu_type == MENU_SETTINGS_OPTIONS)
+   else if (!strcmp(label, "settings"))
       strlcpy(title, "SETTINGS", sizeof_title);
    else if (!strcmp(label, "Driver Options"))
       strlcpy(title, "DRIVER OPTIONS", sizeof_title);
@@ -66,7 +66,7 @@ static void get_title(const char *label, const char *dir,
       snprintf(title, sizeof_title, "SHADER PRESET %s", dir);
 #endif
    else if (menu_type == MENU_SETTINGS_PATH_OPTIONS ||
-         menu_type == MENU_SETTINGS_OPTIONS ||
+         !strcmp(label, "settings") ||
          menu_type == MENU_SETTINGS_CUSTOM_VIEWPORT ||
          !strcmp(label, "custom_viewport_2") ||
          !strcmp(label, "help") ||
