@@ -1784,6 +1784,34 @@ static int menu_action_ok(const char *dir,
       menu_flush_stack_type(driver.menu->menu_stack, MENU_SETTINGS);
       return -1;
    }
+   else if (!strcmp(menu_label, "detect_core_list")
+         && type == MENU_FILE_PLAIN)
+   {
+      const core_info_t *info = NULL;
+      int ret = rarch_defer_core(info, g_extern.core_info,
+            dir, path, driver.menu->deferred_path,
+            sizeof(driver.menu->deferred_path));
+
+      if (ret == -1)
+      {
+         strlcpy(g_extern.fullpath, driver.menu->deferred_path,
+               sizeof(g_extern.fullpath));
+
+         if (path_file_exists(info->path))
+            strlcpy(g_settings.libretro, info->path,
+                  sizeof(g_settings.libretro));
+
+         rarch_main_command(RARCH_CMD_LOAD_CONTENT);
+         rarch_main_command(RARCH_CMD_LOAD_CORE);
+         menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS);
+         driver.menu->msg_force = true;
+         return -1;
+      }
+      else if (ret == 0)
+         menu_entries_push(driver.menu->menu_stack,
+               g_settings.libretro_directory, "deferred_core_list",
+               0, driver.menu->selection_ptr);
+   }
    else if ((setting && setting->type == ST_DIR)
          && (type == MENU_FILE_USE_DIRECTORY))
    {
@@ -1845,35 +1873,6 @@ static int menu_action_ok(const char *dir,
             MENU_SETTINGS_SHADER_OPTIONS);
    }
 #endif
-   else if (!strcmp(label, "detect_core_list")
-         && type == MENU_FILE_PLAIN)
-   {
-      RARCH_LOG("Gets here?\n");
-      const core_info_t *info = NULL;
-      int ret = rarch_defer_core(info, g_extern.core_info,
-            dir, path, driver.menu->deferred_path,
-            sizeof(driver.menu->deferred_path));
-
-      if (ret == -1)
-      {
-         strlcpy(g_extern.fullpath, driver.menu->deferred_path,
-               sizeof(g_extern.fullpath));
-
-         if (path_file_exists(info->path))
-            strlcpy(g_settings.libretro, info->path,
-                  sizeof(g_settings.libretro));
-
-         rarch_main_command(RARCH_CMD_LOAD_CONTENT);
-         rarch_main_command(RARCH_CMD_LOAD_CORE);
-         menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS);
-         driver.menu->msg_force = true;
-         return -1;
-      }
-      else if (ret == 0)
-         menu_entries_push(driver.menu->menu_stack,
-               g_settings.libretro_directory, "deferred_core_list",
-               0, driver.menu->selection_ptr);
-   }
    else if (!strcmp(menu_label, "deferred_core_list")
          && type == MENU_FILE_PLAIN)
    {
