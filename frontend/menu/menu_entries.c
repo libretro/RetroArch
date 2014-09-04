@@ -482,7 +482,7 @@ int menu_entries_push_list(menu_handle_t *menu,
             add_setting_entry(menu,list,"rgui_config_directory", 0, setting_data);
             add_setting_entry(menu,list,"libretro_dir_path", 0, setting_data);
             add_setting_entry(menu,list,"libretro_info_path", 0, setting_data);
-            add_setting_entry(menu,list,"game_history_path", MENU_CONTENT_HISTORY_PATH, setting_data);
+            add_setting_entry(menu,list,"game_history_path", 0, setting_data);
             add_setting_entry(menu,list,"video_filter_dir", 0, setting_data);
             add_setting_entry(menu,list,"audio_filter_dir", 0, setting_data);
             add_setting_entry(menu,list,"video_shader_dir", 0, setting_data);
@@ -567,7 +567,7 @@ int menu_parse_check(const char *label, unsigned menu_type)
             menu_common_type_is(label, menu_type) == MENU_SETTINGS_SHADER_OPTIONS ||
             menu_common_type_is(label, menu_type) == MENU_FILE_DIRECTORY ||
             !strcmp(label, "input_overlay") ||
-            menu_type == MENU_CONTENT_HISTORY_PATH ||
+            !strcmp(label, "game_history_path") ||
             !strcmp(label, "video_filter") ||
             !strcmp(label, "audio_dsp_plugin") ||
             !strcmp(label, "core_list") ||
@@ -709,7 +709,7 @@ int menu_parse_and_resolve(file_list_t *list, file_list_t *menu_list)
       exts = "dsp";
    else if (!strcmp(label, "input_overlay"))
       exts = "cfg";
-   else if (menu_type == MENU_CONTENT_HISTORY_PATH)
+   else if (!strcmp(label, "game_history_path"))
       exts = "cfg";
    else if (menu_common_type_is(label, menu_type) == MENU_FILE_DIRECTORY)
       exts = ""; /* we ignore files anyway */
