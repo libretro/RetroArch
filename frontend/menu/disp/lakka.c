@@ -956,7 +956,7 @@ static void lakka_init_items(int i, menu_category_t *category,
 
    for (j = 0; j < num_items; j++)
    {
-      if (list->elems[j].attr.b) // is a directory
+      if (list->elems[j].attr.i == RARCH_DIRECTORY) // is a directory
          lakka_init_items(i, category, info, list->elems[j].data);
       else
       {

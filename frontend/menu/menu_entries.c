@@ -746,7 +746,7 @@ int menu_parse_and_resolve(file_list_t *list, file_list_t *menu_list)
    list_size = str_list->size;
    for (i = 0; i < str_list->size; i++)
    {
-      bool is_dir = str_list->elems[i].attr.b;
+      bool is_dir = (str_list->elems[i].attr.i == RARCH_DIRECTORY);
 
       if ((menu_common_type_is(label, menu_type) == MENU_FILE_DIRECTORY) && !is_dir)
          continue;
