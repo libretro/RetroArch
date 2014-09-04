@@ -56,7 +56,7 @@ extern "C" {
 
 typedef enum
 {
-   MENU_FILE_PLAIN,
+   MENU_FILE_PLAIN = 1,
    MENU_FILE_DIRECTORY,
    MENU_FILE_DEVICE,
    MENU_FILE_PLAYLIST_ENTRY,

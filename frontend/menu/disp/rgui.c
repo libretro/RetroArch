@@ -417,29 +417,21 @@ static void rgui_render(void)
             w = 5;
          }
       }
-      else if (menu_type == MENU_SETTINGS_CONFIG ||
-            menu_type == MENU_SETTINGS_OVERLAY_PRESET ||
-            !strcmp(label, "video_filter") ||
-            !strcmp(label, "audio_dsp_plugin") ||
-            menu_type == MENU_SETTINGS_DISK_APPEND ||
-            menu_type_is == MENU_FILE_DIRECTORY)
+      else if (type == MENU_FILE_PLAIN)
       {
-         if (type == MENU_FILE_PLAIN)
-         {
-            strlcpy(type_str, "(FILE)", sizeof(type_str));
-            w = 6;
-         }
-         else if (type == MENU_FILE_USE_DIRECTORY)
-         {
-            *type_str = '\0';
-            w = 0;
-         }
-         else
-         {
-            strlcpy(type_str, "(DIR)", sizeof(type_str));
-            type = MENU_FILE_DIRECTORY;
-            w = 5;
-         }
+         strlcpy(type_str, "(FILE)", sizeof(type_str));
+         w = 6;
+      }
+      else if (type == MENU_FILE_USE_DIRECTORY)
+      {
+         *type_str = '\0';
+         w = 0;
+      }
+      else if (type == MENU_FILE_DIRECTORY)
+      {
+         strlcpy(type_str, "(DIR)", sizeof(type_str));
+         type = MENU_FILE_DIRECTORY;
+         w = 5;
       }
       else if (type >= MENU_SETTINGS_CORE_OPTION_START)
          strlcpy(
@@ -453,20 +445,6 @@ static void rgui_render(void)
             driver.menu_ctx->backend->setting_set_label)
          driver.menu_ctx->backend->setting_set_label(type_str,
                sizeof(type_str), &w, type, i);
-
-      if (type_str[0] == '\0' && w == 0)
-      {
-         if (type == MENU_FILE_PLAIN)
-         {
-            strlcpy(type_str, "(FILE)", sizeof(type_str));
-            w = 6;
-         }
-         else if (type == MENU_FILE_DIRECTORY)
-         {
-            strlcpy(type_str, "(DIR)", sizeof(type_str));
-            w = 5;
-         }
-      }
 
       char entry_title_buf[256];
       char type_str_buf[64];
