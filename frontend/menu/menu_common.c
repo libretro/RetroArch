@@ -656,7 +656,7 @@ unsigned menu_common_type_is(const char *label, unsigned type)
          type == MENU_SETTINGS_DISK_OPTIONS ||
          type == MENU_SETTINGS_PATH_OPTIONS ||
          !strcmp(label, "Privacy Options") ||
-         type == MENU_SETTINGS_OVERLAY_OPTIONS ||
+         !strcmp(label, "Overlay Options") ||
          !strcmp(label, "User Options") ||
          !strcmp(label, "Netplay Options") ||
          type == MENU_SETTINGS_OPTIONS ||

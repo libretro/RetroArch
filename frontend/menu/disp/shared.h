@@ -19,7 +19,7 @@ static void get_title(const char *label, const char *dir,
          menu_type == MENU_SETTINGS_CUSTOM_BIND ||
          menu_type == MENU_SETTINGS_CUSTOM_BIND_KEYBOARD)
       strlcpy(title, "INPUT OPTIONS", sizeof_title);
-   else if (menu_type == MENU_SETTINGS_OVERLAY_OPTIONS)
+   else if (!strcmp(label, "Overlay Options"))
       strlcpy(title, "OVERLAY OPTIONS", sizeof_title);
    else if (!strcmp(label, "Netplay Options"))
       strlcpy(title, "NETPLAY OPTIONS", sizeof_title);

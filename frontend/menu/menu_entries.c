@@ -321,6 +321,13 @@ int menu_entries_push_list(menu_handle_t *menu,
       add_setting_entry(menu,list,"camera_allow", 0, setting_data);
       add_setting_entry(menu,list,"location_allow", 0, setting_data);
    }
+   else if (!strcmp(label, "Overlay Options"))
+   {
+      file_list_clear(list);
+      add_setting_entry(menu,list,"input_overlay", 0, setting_data);
+      add_setting_entry(menu,list,"input_overlay_opacity", 0, setting_data);
+      add_setting_entry(menu,list,"input_overlay_scale", 0, setting_data);
+   }
    else
    {
       switch (menu_type)
@@ -448,8 +455,7 @@ int menu_entries_push_list(menu_handle_t *menu,
             add_setting_entry(menu,list,"Font Options", MENU_SETTINGS_FONT_OPTIONS, setting_data);
             add_setting_entry(menu,list,"Audio Options", MENU_SETTINGS_AUDIO_OPTIONS, setting_data);
             add_setting_entry(menu,list,"Input Options", MENU_SETTINGS_INPUT_OPTIONS, setting_data);
-            add_setting_entry(menu,list,"Overlay Options", MENU_SETTINGS_OVERLAY_OPTIONS,
-                  setting_data);
+            add_setting_entry(menu,list,"Overlay Options", MENU_FILE_SWITCH, setting_data);
             add_setting_entry(menu,list,"User Options", MENU_FILE_SWITCH, setting_data);
             add_setting_entry(menu,list,"Netplay Options", MENU_FILE_SWITCH, setting_data);
             add_setting_entry(menu,list,"Path Options", MENU_SETTINGS_PATH_OPTIONS, setting_data);
@@ -468,12 +474,6 @@ int menu_entries_push_list(menu_handle_t *menu,
                   MENU_SETTINGS_DISK_INDEX, 0);
             file_list_push(list, "Disk Image Append", "",
                   MENU_SETTINGS_DISK_APPEND, 0);
-            break;
-         case MENU_SETTINGS_OVERLAY_OPTIONS:
-            file_list_clear(list);
-            add_setting_entry(menu,list,"input_overlay", 0, setting_data);
-            add_setting_entry(menu,list,"input_overlay_opacity", 0, setting_data);
-            add_setting_entry(menu,list,"input_overlay_scale", 0, setting_data);
             break;
          case MENU_SETTINGS_PATH_OPTIONS:
             file_list_clear(list);
