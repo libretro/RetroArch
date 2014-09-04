@@ -1171,7 +1171,7 @@ static int menu_setting_ok_toggle(unsigned type,
       return 0;
    }
 #ifdef HAVE_SHADER_MANAGER
-   else if (type == MENU_SETTINGS_SHADER_PRESET_SAVE)
+   else if (!strcmp(label, "video_shader_preset_save_as"))
    {
       menu_key_start_line(driver.menu, "Preset Filename: ",
             "shader_preset_save", preset_filename_callback);
@@ -2333,7 +2333,6 @@ static void menu_common_setting_set_label(char *type_str,
 #endif
             case MENU_SETTINGS_CUSTOM_VIEWPORT:
             case MENU_SETTINGS_SHADER_PRESET:
-            case MENU_SETTINGS_SHADER_PRESET_SAVE:
             case MENU_SETTINGS_CUSTOM_BIND_ALL:
             case MENU_SETTINGS_CUSTOM_BIND_DEFAULT_ALL:
                strlcpy(type_str, "...", type_str_size);

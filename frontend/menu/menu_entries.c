@@ -493,8 +493,8 @@ int menu_entries_push_list(menu_handle_t *menu,
             MENU_SETTINGS_SHADER_FILTER, 0);
       file_list_push(list, "Load Shader Preset", "",
             MENU_SETTINGS_SHADER_PRESET, 0);
-      file_list_push(list, "Save As Shader Preset", "",
-            MENU_SETTINGS_SHADER_PRESET_SAVE, 0);
+      file_list_push(list, "Shader Preset Save As",
+            "video_shader_preset_save_as", MENU_FILE_SWITCH, 0);
       file_list_push(list, "Parameters (Current)", "",
             MENU_SETTINGS_SHADER_PARAMETERS, 0);
       file_list_push(list, "Parameters (Menu)", "",
