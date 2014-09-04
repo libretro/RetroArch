@@ -382,6 +382,17 @@ int menu_entries_push_list(menu_handle_t *menu,
                input_config_bind_map[i - MENU_SETTINGS_BIND_BEGIN].desc,
                "", i, 0);
    }
+   else if (!strcmp(label, "Driver Options"))
+   {
+      file_list_clear(list);
+      add_setting_entry(menu,list,"video_driver", 0, setting_data);
+      add_setting_entry(menu,list,"audio_driver", 0, setting_data);
+      add_setting_entry(menu,list,"audio_resampler_driver", 0, setting_data);
+      add_setting_entry(menu,list,"input_driver", 0, setting_data);
+      add_setting_entry(menu,list,"camera_driver", 0, setting_data);
+      add_setting_entry(menu,list,"location_driver", 0, setting_data);
+      add_setting_entry(menu,list,"menu_driver", 0, setting_data);
+   }
    else
    {
       switch (menu_type)
@@ -485,7 +496,7 @@ int menu_entries_push_list(menu_handle_t *menu,
             break;
          case MENU_SETTINGS_OPTIONS:
             file_list_clear(list);
-            add_setting_entry(menu,list,"Driver Options", MENU_SETTINGS_DRIVERS, setting_data);
+            add_setting_entry(menu,list,"Driver Options", MENU_FILE_SWITCH, setting_data);
             add_setting_entry(menu,list,"General Options", MENU_SETTINGS_GENERAL_OPTIONS, setting_data);
             add_setting_entry(menu,list,"Video Options", MENU_SETTINGS_VIDEO_OPTIONS, setting_data);
             add_setting_entry(menu,list,"Shader Options", MENU_SETTINGS_SHADER_OPTIONS, setting_data);
@@ -531,16 +542,6 @@ int menu_entries_push_list(menu_handle_t *menu,
             add_setting_entry(menu,list,"screenshot_directory", 0, setting_data);
             add_setting_entry(menu,list,"joypad_autoconfig_dir", 0, setting_data);
             add_setting_entry(menu,list,"extraction_directory", 0, setting_data);
-            break;
-         case MENU_SETTINGS_DRIVERS:
-            file_list_clear(list);
-            add_setting_entry(menu,list,"video_driver", 0, setting_data);
-            add_setting_entry(menu,list,"audio_driver", 0, setting_data);
-            add_setting_entry(menu,list,"audio_resampler_driver", 0, setting_data);
-            add_setting_entry(menu,list,"input_driver", 0, setting_data);
-            add_setting_entry(menu,list,"camera_driver", 0, setting_data);
-            add_setting_entry(menu,list,"location_driver", 0, setting_data);
-            add_setting_entry(menu,list,"menu_driver", 0, setting_data);
             break;
       }
    }

@@ -29,7 +29,7 @@ static void get_title(const char *label, const char *dir,
       strlcpy(title, "PATH OPTIONS", sizeof_title);
    else if (menu_type == MENU_SETTINGS_OPTIONS)
       strlcpy(title, "SETTINGS", sizeof_title);
-   else if (menu_type == MENU_SETTINGS_DRIVERS)
+   else if (!strcmp(label, "Driver Options"))
       strlcpy(title, "DRIVER OPTIONS", sizeof_title);
    else if (!strcmp(label, "performance_counters"))
       strlcpy(title, "PERFORMANCE COUNTERS", sizeof_title);
