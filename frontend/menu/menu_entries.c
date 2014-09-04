@@ -497,7 +497,7 @@ int menu_entries_push_list(menu_handle_t *menu,
          case MENU_SETTINGS_OPTIONS:
             file_list_clear(list);
             add_setting_entry(menu,list,"Driver Options", MENU_FILE_SWITCH, setting_data);
-            add_setting_entry(menu,list,"General Options", MENU_SETTINGS_GENERAL_OPTIONS, setting_data);
+            add_setting_entry(menu,list,"General Options", MENU_FILE_SWITCH, setting_data);
             add_setting_entry(menu,list,"Video Options", MENU_SETTINGS_VIDEO_OPTIONS, setting_data);
             add_setting_entry(menu,list,"Shader Options", MENU_SETTINGS_SHADER_OPTIONS, setting_data);
             add_setting_entry(menu,list,"Font Options", MENU_SETTINGS_FONT_OPTIONS, setting_data);
