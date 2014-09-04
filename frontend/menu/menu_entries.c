@@ -393,6 +393,42 @@ int menu_entries_push_list(menu_handle_t *menu,
       add_setting_entry(menu,list,"location_driver", 0, setting_data);
       add_setting_entry(menu,list,"menu_driver", 0, setting_data);
    }
+   else if (!strcmp(label, "Video Options"))
+   {
+      file_list_clear(list);
+      add_setting_entry(menu,list,"video_shared_context", 0, setting_data);
+#if defined(GEKKO) || defined(__CELLOS_LV2__)
+      file_list_push(list, "Screen Resolution", "",
+            MENU_SETTINGS_VIDEO_RESOLUTION, 0);
+#endif
+      add_setting_entry(menu,list,"video_viwidth", 0, setting_data);
+      add_setting_entry(menu,list,"video_filter", 0, setting_data);
+      add_setting_entry(menu,list, "pal60_enable", 0, setting_data);
+      add_setting_entry(menu,list,"video_smooth", 0, setting_data);
+      add_setting_entry(menu,list, "soft_filter", 0, setting_data);
+      add_setting_entry(menu,list,"video_gamma", 0, setting_data);
+      add_setting_entry(menu,list,"video_filter_flicker", 0,
+            setting_data);
+      add_setting_entry(menu,list,"video_scale_integer", 0, setting_data);
+      add_setting_entry(menu,list,"aspect_ratio_index", 0, setting_data);
+      file_list_push(list, "Custom Ratio", "",
+            MENU_SETTINGS_CUSTOM_VIEWPORT, 0);
+      add_setting_entry(menu,list,"video_fullscreen", 0, setting_data);
+      add_setting_entry(menu,list,"video_windowed_fullscreen", 0, setting_data);
+      add_setting_entry(menu,list,"video_rotation", 0, setting_data);
+      add_setting_entry(menu,list,"video_vsync", 0, setting_data);
+      add_setting_entry(menu,list,"video_hard_sync", 0, setting_data);
+      add_setting_entry(menu,list,"video_hard_sync_frames", 0, setting_data);
+      add_setting_entry(menu,list,"video_frame_delay", 0, setting_data);
+      add_setting_entry(menu,list,"video_black_frame_insertion", 0, setting_data);
+      add_setting_entry(menu,list,"video_swap_interval", 0, setting_data);
+      add_setting_entry(menu,list,"video_threaded", 0, setting_data);
+      add_setting_entry(menu,list,"video_scale", 0, setting_data);
+      add_setting_entry(menu,list,"video_crop_overscan", 0, setting_data);
+      add_setting_entry(menu,list,"video_monitor_index", 0, setting_data);
+      add_setting_entry(menu,list,"video_refresh_rate", 0, setting_data);
+      add_setting_entry(menu,list,"video_refresh_rate_auto", 0, setting_data);
+   }
    else
    {
       switch (menu_type)
@@ -454,41 +490,6 @@ int menu_entries_push_list(menu_handle_t *menu,
                }
             }
             break;
-         case MENU_SETTINGS_VIDEO_OPTIONS:
-            file_list_clear(list);
-            add_setting_entry(menu,list,"video_shared_context", 0, setting_data);
-#if defined(GEKKO) || defined(__CELLOS_LV2__)
-            file_list_push(list, "Screen Resolution", "",
-                  MENU_SETTINGS_VIDEO_RESOLUTION, 0);
-#endif
-            add_setting_entry(menu,list,"video_viwidth", 0, setting_data);
-            add_setting_entry(menu,list,"video_filter", 0, setting_data);
-            add_setting_entry(menu,list, "pal60_enable", 0, setting_data);
-            add_setting_entry(menu,list,"video_smooth", 0, setting_data);
-            add_setting_entry(menu,list, "soft_filter", 0, setting_data);
-            add_setting_entry(menu,list,"video_gamma", 0, setting_data);
-            add_setting_entry(menu,list,"video_filter_flicker", 0,
-                  setting_data);
-            add_setting_entry(menu,list,"video_scale_integer", 0, setting_data);
-            add_setting_entry(menu,list,"aspect_ratio_index", 0, setting_data);
-            file_list_push(list, "Custom Ratio", "",
-                  MENU_SETTINGS_CUSTOM_VIEWPORT, 0);
-            add_setting_entry(menu,list,"video_fullscreen", 0, setting_data);
-            add_setting_entry(menu,list,"video_windowed_fullscreen", 0, setting_data);
-            add_setting_entry(menu,list,"video_rotation", 0, setting_data);
-            add_setting_entry(menu,list,"video_vsync", 0, setting_data);
-            add_setting_entry(menu,list,"video_hard_sync", 0, setting_data);
-            add_setting_entry(menu,list,"video_hard_sync_frames", 0, setting_data);
-            add_setting_entry(menu,list,"video_frame_delay", 0, setting_data);
-            add_setting_entry(menu,list,"video_black_frame_insertion", 0, setting_data);
-            add_setting_entry(menu,list,"video_swap_interval", 0, setting_data);
-            add_setting_entry(menu,list,"video_threaded", 0, setting_data);
-            add_setting_entry(menu,list,"video_scale", 0, setting_data);
-            add_setting_entry(menu,list,"video_crop_overscan", 0, setting_data);
-            add_setting_entry(menu,list,"video_monitor_index", 0, setting_data);
-            add_setting_entry(menu,list,"video_refresh_rate", 0, setting_data);
-            add_setting_entry(menu,list,"video_refresh_rate_auto", 0, setting_data);
-            break;
          case MENU_SETTINGS_FONT_OPTIONS:
             file_list_clear(list);
             add_setting_entry(menu,list,"video_font_enable", 0, setting_data);
@@ -498,7 +499,7 @@ int menu_entries_push_list(menu_handle_t *menu,
             file_list_clear(list);
             add_setting_entry(menu,list,"Driver Options", MENU_FILE_SWITCH, setting_data);
             add_setting_entry(menu,list,"General Options", MENU_FILE_SWITCH, setting_data);
-            add_setting_entry(menu,list,"Video Options", MENU_SETTINGS_VIDEO_OPTIONS, setting_data);
+            add_setting_entry(menu,list,"Video Options", MENU_FILE_SWITCH, setting_data);
             add_setting_entry(menu,list,"Shader Options", MENU_SETTINGS_SHADER_OPTIONS, setting_data);
             add_setting_entry(menu,list,"Font Options", MENU_SETTINGS_FONT_OPTIONS, setting_data);
             add_setting_entry(menu,list,"Audio Options", MENU_FILE_SWITCH, setting_data);
