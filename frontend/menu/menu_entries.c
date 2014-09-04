@@ -344,6 +344,19 @@ int menu_entries_push_list(menu_handle_t *menu,
          file_list_push(list, "No options available.", "",
                MENU_SETTINGS_CORE_OPTION_NONE, 0);
    }
+   else if (!strcmp(label, "Audio Options"))
+   {
+      file_list_clear(list);
+      add_setting_entry(menu,list,"audio_dsp_plugin", 0, setting_data);
+      add_setting_entry(menu,list,"audio_enable", 0, setting_data);
+      add_setting_entry(menu,list,"audio_mute", 0, setting_data);
+      add_setting_entry(menu,list,"audio_latency", 0, setting_data);
+      add_setting_entry(menu,list,"audio_sync", 0, setting_data);
+      add_setting_entry(menu,list,"audio_rate_control_delta", 0, setting_data);
+      add_setting_entry(menu,list,"system_bgm_enable", 0, setting_data);
+      add_setting_entry(menu,list,"audio_volume", 0, setting_data);
+      add_setting_entry(menu,list,"audio_device", 0, setting_data);
+   }
    else
    {
       switch (menu_type)
@@ -452,7 +465,7 @@ int menu_entries_push_list(menu_handle_t *menu,
             add_setting_entry(menu,list,"Video Options", MENU_SETTINGS_VIDEO_OPTIONS, setting_data);
             add_setting_entry(menu,list,"Shader Options", MENU_SETTINGS_SHADER_OPTIONS, setting_data);
             add_setting_entry(menu,list,"Font Options", MENU_SETTINGS_FONT_OPTIONS, setting_data);
-            add_setting_entry(menu,list,"Audio Options", MENU_SETTINGS_AUDIO_OPTIONS, setting_data);
+            add_setting_entry(menu,list,"Audio Options", MENU_FILE_SWITCH, setting_data);
             add_setting_entry(menu,list,"Input Options", MENU_SETTINGS_INPUT_OPTIONS, setting_data);
             add_setting_entry(menu,list,"Overlay Options", MENU_FILE_SWITCH, setting_data);
             add_setting_entry(menu,list,"User Options", MENU_FILE_SWITCH, setting_data);
@@ -517,18 +530,6 @@ int menu_entries_push_list(menu_handle_t *menu,
                file_list_push(list,
                      input_config_bind_map[i - MENU_SETTINGS_BIND_BEGIN].desc,
                      "", i, 0);
-            break;
-         case MENU_SETTINGS_AUDIO_OPTIONS:
-            file_list_clear(list);
-            add_setting_entry(menu,list,"audio_dsp_plugin", 0, setting_data);
-            add_setting_entry(menu,list,"audio_enable", 0, setting_data);
-            add_setting_entry(menu,list,"audio_mute", 0, setting_data);
-            add_setting_entry(menu,list,"audio_latency", 0, setting_data);
-            add_setting_entry(menu,list,"audio_sync", 0, setting_data);
-            add_setting_entry(menu,list,"audio_rate_control_delta", 0, setting_data);
-            add_setting_entry(menu,list,"system_bgm_enable", 0, setting_data);
-            add_setting_entry(menu,list,"audio_volume", 0, setting_data);
-            add_setting_entry(menu,list,"audio_device", 0, setting_data);
             break;
          case MENU_SETTINGS_DRIVERS:
             file_list_clear(list);
@@ -820,6 +821,25 @@ void menu_flush_stack_type(file_list_t *list,
    driver.menu->need_refresh = true;
    file_list_get_last(list, &path, &label, &type);
    while (type != final_type)
+   {
+      file_list_pop(list, &driver.menu->selection_ptr);
+      file_list_get_last(list, &path, &label, &type);
+   }
+}
+
+void menu_flush_stack_label(file_list_t *list,
+      const char *needle)
+{
+   const char *path = NULL;
+   const char *label = NULL;
+   unsigned type = 0;
+
+   if (!driver.menu)
+      return;
+
+   driver.menu->need_refresh = true;
+   file_list_get_last(list, &path, &label, &type);
+   while (strcmp(needle, label) != 0)
    {
       file_list_pop(list, &driver.menu->selection_ptr);
       file_list_get_last(list, &path, &label, &type);

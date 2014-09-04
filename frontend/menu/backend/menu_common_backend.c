@@ -1829,7 +1829,7 @@ static int menu_action_ok(const char *dir,
          && type == MENU_FILE_PLAIN)
    {
       menu_common_setting_set_current_string_path(setting, dir, path);
-      menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS_AUDIO_OPTIONS);
+      menu_flush_stack_label(driver.menu->menu_stack, "Audio Options");
    }
 #ifdef HAVE_SHADER_MANAGER
    else if (!strcmp(menu_label, "video_shader_preset")
