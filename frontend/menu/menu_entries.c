@@ -784,7 +784,7 @@ int menu_parse_and_resolve(file_list_t *list, file_list_t *menu_list)
          unsigned type = 0;
 
          file_list_get_at_offset(list, i, &path, NULL, &type);
-         if (type != MENU_FILE_PLAIN)
+         if (type != MENU_FILE_CORE)
             continue;
 
          fill_pathname_join(core_path, dir, path, sizeof(core_path));
