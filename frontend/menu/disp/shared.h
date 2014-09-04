@@ -45,7 +45,7 @@ static void get_title(const char *label, const char *dir,
    else if (menu_type == MENU_SETTINGS_SHADER_PRESET_PARAMETERS)
       strlcpy(title, "SHADER PARAMETERS (MENU PRESET)", sizeof_title);
 #endif
-   else if (menu_type == MENU_SETTINGS_FONT_OPTIONS)
+   else if (!strcmp(label, "Font Options"))
       strlcpy(title, "FONT OPTIONS", sizeof_title);
    else if (!strcmp(dir, "General Options"))
       strlcpy(title, "GENERAL OPTIONS", sizeof_title);

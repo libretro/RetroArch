@@ -648,7 +648,7 @@ unsigned menu_common_type_is(const char *label, unsigned type)
          !strcmp(label, "core_options") ||
          !strcmp(label, "core_information") ||
          !strcmp(label, "Video Options") ||
-         type == MENU_SETTINGS_FONT_OPTIONS ||
+         !strcmp(label, "Font Options") ||
          type == MENU_SETTINGS_SHADER_OPTIONS ||
          type == MENU_SETTINGS_SHADER_PARAMETERS ||
          type == MENU_SETTINGS_SHADER_PRESET_PARAMETERS ||

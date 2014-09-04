@@ -429,6 +429,12 @@ int menu_entries_push_list(menu_handle_t *menu,
       add_setting_entry(menu,list,"video_refresh_rate", 0, setting_data);
       add_setting_entry(menu,list,"video_refresh_rate_auto", 0, setting_data);
    }
+   else if (!strcmp(label, "Font Options"))
+   {
+      file_list_clear(list);
+      add_setting_entry(menu,list,"video_font_enable", 0, setting_data);
+      add_setting_entry(menu,list,"video_font_size", 0, setting_data);
+   }
    else
    {
       switch (menu_type)
@@ -490,18 +496,13 @@ int menu_entries_push_list(menu_handle_t *menu,
                }
             }
             break;
-         case MENU_SETTINGS_FONT_OPTIONS:
-            file_list_clear(list);
-            add_setting_entry(menu,list,"video_font_enable", 0, setting_data);
-            add_setting_entry(menu,list,"video_font_size", 0, setting_data);
-            break;
          case MENU_SETTINGS_OPTIONS:
             file_list_clear(list);
             add_setting_entry(menu,list,"Driver Options", MENU_FILE_SWITCH, setting_data);
             add_setting_entry(menu,list,"General Options", MENU_FILE_SWITCH, setting_data);
             add_setting_entry(menu,list,"Video Options", MENU_FILE_SWITCH, setting_data);
             add_setting_entry(menu,list,"Shader Options", MENU_SETTINGS_SHADER_OPTIONS, setting_data);
-            add_setting_entry(menu,list,"Font Options", MENU_SETTINGS_FONT_OPTIONS, setting_data);
+            add_setting_entry(menu,list,"Font Options", MENU_FILE_SWITCH, setting_data);
             add_setting_entry(menu,list,"Audio Options", MENU_FILE_SWITCH, setting_data);
             add_setting_entry(menu,list,"Input Options", MENU_FILE_SWITCH, setting_data);
             add_setting_entry(menu,list,"Overlay Options", MENU_FILE_SWITCH, setting_data);
