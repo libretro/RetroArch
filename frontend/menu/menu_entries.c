@@ -617,28 +617,28 @@ int menu_parse_and_resolve(file_list_t *list, file_list_t *menu_list)
 #if defined(GEKKO)
 #ifdef HW_RVL
       file_list_push(list,
-            "sd:/", "", menu_type, 0);
+            "sd:/", "", MENU_FILE_DIRECTORY, 0);
       file_list_push(list,
-            "usb:/", "", menu_type, 0);
+            "usb:/", "", MENU_FILE_DIRECTORY, 0);
 #endif
       file_list_push(list,
-            "carda:/", "", menu_type, 0);
+            "carda:/", "", MENU_FILE_DIRECTORY, 0);
       file_list_push(list,
-            "cardb:/", "", menu_type, 0);
+            "cardb:/", "", MENU_FILE_DIRECTORY, 0);
 #elif defined(_XBOX1)
       file_list_push(list,
-            "C:", "", menu_type, 0);
+            "C:", "", MENU_FILE_DIRECTORY, 0);
       file_list_push(list,
-            "D:", "", menu_type, 0);
+            "D:", "", MENU_FILE_DIRECTORY, 0);
       file_list_push(list,
-            "E:", "", menu_type, 0);
+            "E:", "", MENU_FILE_DIRECTORY, 0);
       file_list_push(list,
-            "F:", "", menu_type, 0);
+            "F:", "", MENU_FILE_DIRECTORY, 0);
       file_list_push(list,
-            "G:", "", menu_type, 0);
+            "G:", "", MENU_FILE_DIRECTORY, 0);
 #elif defined(_XBOX360)
       file_list_push(list,
-            "game:", "", menu_type, 0);
+            "game:", "", MENU_FILE_DIRECTORY, 0);
 #elif defined(_WIN32)
       unsigned drives = GetLogicalDrives();
       char drive[] = " :\\";
@@ -647,48 +647,48 @@ int menu_parse_and_resolve(file_list_t *list, file_list_t *menu_list)
          drive[0] = 'A' + i;
          if (drives & (1 << i))
             file_list_push(list,
-                  drive, "", menu_type, 0);
+                  drive, "", MENU_FILE_DIRECTORY, 0);
       }
 #elif defined(__CELLOS_LV2__)
       file_list_push(list,
-            "/app_home/",   "", menu_type, 0);
+            "/app_home/",   "", MENU_FILE_DIRECTORY, 0);
       file_list_push(list,
-            "/dev_hdd0/",   "", menu_type, 0);
+            "/dev_hdd0/",   "", MENU_FILE_DIRECTORY, 0);
       file_list_push(list,
-            "/dev_hdd1/",   "", menu_type, 0);
+            "/dev_hdd1/",   "", MENU_FILE_DIRECTORY, 0);
       file_list_push(list,
-            "/host_root/",  "", menu_type, 0);
+            "/host_root/",  "", MENU_FILE_DIRECTORY, 0);
       file_list_push(list,
-            "/dev_usb000/", "", menu_type, 0);
+            "/dev_usb000/", "", MENU_FILE_DIRECTORY, 0);
       file_list_push(list,
-            "/dev_usb001/", "", menu_type, 0);
+            "/dev_usb001/", "", MENU_FILE_DIRECTORY, 0);
       file_list_push(list,
-            "/dev_usb002/", "", menu_type, 0);
+            "/dev_usb002/", "", MENU_FILE_DIRECTORY, 0);
       file_list_push(list,
-            "/dev_usb003/", "", menu_type, 0);
+            "/dev_usb003/", "", MENU_FILE_DIRECTORY, 0);
       file_list_push(list,
-            "/dev_usb004/", "", menu_type, 0);
+            "/dev_usb004/", "", MENU_FILE_DIRECTORY, 0);
       file_list_push(list,
-            "/dev_usb005/", "", menu_type, 0);
+            "/dev_usb005/", "", MENU_FILE_DIRECTORY, 0);
       file_list_push(list,
-            "/dev_usb006/", "", menu_type, 0);
+            "/dev_usb006/", "", MENU_FILE_DIRECTORY, 0);
 #elif defined(PSP)
       file_list_push(list,
-            "ms0:/", "", menu_type, 0);
+            "ms0:/", "", MENU_FILE_DIRECTORY, 0);
       file_list_push(list,
-            "ef0:/", "", menu_type, 0);
+            "ef0:/", "", MENU_FILE_DIRECTORY, 0);
       file_list_push(list,
-            "host0:/", "", menu_type, 0);
+            "host0:/", "", MENU_FILE_DIRECTORY, 0);
 #elif defined(IOS)
       file_list_push(list,
-            "/var/mobile/", "", menu_type, 0);
+            "/var/mobile/", "", MENU_FILE_DIRECTORY, 0);
       file_list_push(list,
-            g_defaults.core_dir, "",menu_type, 0);
+            g_defaults.core_dir, "", MENU_FILE_DIRECTORY, 0);
       file_list_push(list, "/", "",
-            menu_type, 0);
+            MENU_FILE_DIRECTORY, 0);
 #else
       file_list_push(list, "/", "",
-            menu_type, 0);
+            MENU_FILE_DIRECTORY, 0);
 #endif
       return 0;
    }
@@ -746,7 +746,9 @@ int menu_parse_and_resolve(file_list_t *list, file_list_t *menu_list)
 
    dir_list_sort(str_list, true);
 
-   if (menu_common_type_is(label, menu_type) == MENU_FILE_DIRECTORY)
+   //FIXME - needs to be refactored to use actual strings instead 
+   //of type here
+   //if (menu_common_type_is(label, menu_type) == MENU_FILE_DIRECTORY)
       file_list_push(list, "<Use this directory>", "",
             MENU_FILE_USE_DIRECTORY, 0);
 
@@ -764,15 +766,17 @@ int menu_parse_and_resolve(file_list_t *list, file_list_t *menu_list)
          path = path_basename(path);
 
 #ifdef HAVE_LIBRETRO_MANAGEMENT
+#ifdef RARCH_CONSOLE
       if (!strcmp(label, "core_list") && (is_dir ||
                strcasecmp(path, SALAMANDER_FILE) == 0))
          continue;
+#endif
 #endif
 
       /* Push menu_type further down in the chain.
        * Needed for shader manager currently. */
       file_list_push(list, path, "",
-            is_dir ? menu_type : MENU_FILE_PLAIN, 0);
+            is_dir ? MENU_FILE_DIRECTORY : MENU_FILE_PLAIN, 0);
    }
 
    menu_entries_push_list(driver.menu, list,
