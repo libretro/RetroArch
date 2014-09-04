@@ -357,12 +357,13 @@ static int qstrcmp_dir(const void *a_, const void *b_)
 {
    const struct string_list_elem *a = (const struct string_list_elem*)a_; 
    const struct string_list_elem *b = (const struct string_list_elem*)b_; 
-   int a_dir = a->attr.b;
-   int b_dir = b->attr.b;
+   int a_type = a->attr.i;
+   int b_type = b->attr.i;
+
 
    /* Sort directories before files. */
-   if (a_dir != b_dir)
-      return b_dir - a_dir;
+   if (a_type != b_type)
+      return b_type - a_type;
    return strcasecmp(a->data, b->data);
 }
 
@@ -402,9 +403,15 @@ struct string_list *dir_list_new(const char *dir,
    {
       union string_list_elem_attr attr;
       char file_path[PATH_MAX];
-      const char *name     = ffd.cFileName;
-      const char *file_ext = path_get_extension(name);
-      bool is_dir          = ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY;
+      const char *name        = ffd.cFileName;
+      const char *file_ext    = path_get_extension(name);
+      bool is_dir             = ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY;
+      bool is_compressed_file = path_is_compressed_file(file_path);
+      bool supported_by_core  = false;
+      attr.i                  = RARCH_FILETYPE_UNSET;
+
+      if (string_list_find_elem_prefix(ext_list, ".", file_ext))
+         supported_by_core = true;
 
       if (!include_dirs && is_dir)
          continue;
@@ -412,12 +419,27 @@ struct string_list *dir_list_new(const char *dir,
       if (strcmp(name, ".") == 0 || strcmp(name, "..") == 0)
          continue;
 
-      if (!is_dir && ext_list && !string_list_find_elem_prefix(ext_list, ".", file_ext))
+      if (!is_compressed_file && !is_dir && ext_list && !supported_by_core)
          continue;
 
       fill_pathname_join(file_path, dir, name, sizeof(file_path));
 
-      attr.b = is_dir;
+      if (is_dir)
+         attr.i = RARCH_DIRECTORY;
+      if (is_compressed_file)
+         attr.i = RARCH_COMPRESSED_ARCHIVE;
+      /* The order of these ifs is important.
+       * If the file format is explicitly supported by the libretro-core, we
+       * need to immediately load it and not designate it as a compressed file.
+       *
+       * Example: .zip could be supported as a image by the core and as a
+       * compressed_file. In that case, we have to interpret it as a image.
+       *
+       * */
+      if (supported_by_core)
+         attr.i = RARCH_PLAIN_FILE;
+
+
 
       if (!string_list_append(list, file_path, attr))
          goto error;
@@ -480,6 +502,12 @@ struct string_list *dir_list_new(const char *dir,
       union string_list_elem_attr attr;
       const char *name     = entry->d_name;
       const char *file_ext = path_get_extension(name);
+      bool is_compressed_file = path_is_compressed_file(file_path);
+      bool supported_by_core  = false;
+      attr.i                  = RARCH_FILETYPE_UNSET;
+
+      if (string_list_find_elem_prefix(ext_list, ".", file_ext))
+         supported_by_core = true;
 
       fill_pathname_join(file_path, dir, name, sizeof(file_path));
 
@@ -490,11 +518,23 @@ struct string_list *dir_list_new(const char *dir,
       if (strcmp(name, ".") == 0 || strcmp(name, "..") == 0)
          continue;
 
-      if (!is_dir && ext_list
-            && !string_list_find_elem_prefix(ext_list, ".", file_ext))
+      if (!is_dir && ext_list && !is_compressed_file && !supported_by_core)
          continue;
 
-      attr.b = is_dir;
+      if (is_dir)
+         attr.i = RARCH_DIRECTORY;
+      if (is_compressed_file)
+         attr.i = RARCH_COMPRESSED_ARCHIVE;
+      /* The order of these ifs is important.
+       * If the file format is explicitly supported by the libretro-core, we
+       * need to immediately load it and not designate it as a compressed file.
+       *
+       * Example: .zip could be supported as a image by the core and as a
+       * compressed_file. In that case, we have to interpret it as a image.
+       *
+       * */
+      if (supported_by_core)
+         attr.i = RARCH_PLAIN_FILE;
 
       if (!string_list_append(list, file_path, attr))
          goto error;
@@ -540,6 +580,21 @@ static const char *path_default_slash(void)
 #endif
 }
 
+bool path_is_compressed_file(const char* path)
+{
+#ifdef HAVE_COMPRESSION
+   const char* file_ext = path_get_extension(path);
+
+#ifdef HAVE_7ZIP
+   if (strcmp(file_ext,"7z") == 0)
+   {
+      return true;
+   }
+#endif
+
+#endif
+   return false;
+}
 
 bool path_is_directory(const char *path)
 {
