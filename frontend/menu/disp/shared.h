@@ -57,7 +57,7 @@ static void get_title(const char *label, const char *dir,
       strlcpy(title, "CORE OPTIONS", sizeof_title);
    else if (!strcmp(label, "core_information"))
       strlcpy(title, "CORE INFO", sizeof_title);
-   else if (menu_type == MENU_SETTINGS_PRIVACY_OPTIONS)
+   else if (!strcmp(label, "Privacy Options"))
       strlcpy(title, "PRIVACY OPTIONS", sizeof_title);
 #ifdef HAVE_SHADER_MANAGER
    else if (!strcmp(label, "video_shader_pass"))

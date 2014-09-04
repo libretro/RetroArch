@@ -315,6 +315,12 @@ int menu_entries_push_list(menu_handle_t *menu,
       menu_entries_push_perfcounter(menu, list, perf_counters_rarch,
             perf_ptr_rarch, MENU_SETTINGS_PERF_COUNTERS_BEGIN);
    }
+   else if (!strcmp(label, "Privacy Options"))
+   {
+      file_list_clear(list);
+      add_setting_entry(menu,list,"camera_allow", 0, setting_data);
+      add_setting_entry(menu,list,"location_allow", 0, setting_data);
+   }
    else
    {
       switch (menu_type)
@@ -453,13 +459,8 @@ int menu_entries_push_list(menu_handle_t *menu,
                   file_list_push(list, "Disk Options", "",
                         MENU_SETTINGS_DISK_OPTIONS, 0);
             }
-            add_setting_entry(menu,list,"Privacy Options", MENU_SETTINGS_PRIVACY_OPTIONS,
-                  setting_data);
-            break;
-         case MENU_SETTINGS_PRIVACY_OPTIONS:
-            file_list_clear(list);
-            add_setting_entry(menu,list,"camera_allow", 0, setting_data);
-            add_setting_entry(menu,list,"location_allow", 0, setting_data);
+            add_setting_entry(menu,list,"Privacy Options",
+                  MENU_FILE_SWITCH, setting_data);
             break;
          case MENU_SETTINGS_DISK_OPTIONS:
             file_list_clear(list);
