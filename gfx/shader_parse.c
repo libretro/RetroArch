@@ -51,12 +51,10 @@ static enum gfx_wrap_type wrap_str_to_mode(const char *wrap_mode)
       return RARCH_WRAP_REPEAT;
    else if (strcmp(wrap_mode, "mirrored_repeat") == 0)
       return RARCH_WRAP_MIRRORED_REPEAT;
-   else
-   {
-      RARCH_WARN("Invalid wrapping type %s. Valid ones are: clamp_to_border (default), clamp_to_edge, repeat and mirrored_repeat. Falling back to default.\n",
-            wrap_mode);
-      return RARCH_WRAP_DEFAULT;
-   }
+
+   RARCH_WARN("Invalid wrapping type %s. Valid ones are: clamp_to_border (default), clamp_to_edge, repeat and mirrored_repeat. Falling back to default.\n",
+         wrap_mode);
+   return RARCH_WRAP_DEFAULT;
 }
 
 // CGP
@@ -176,9 +174,9 @@ static bool shader_parse_pass(config_file_t *conf, struct gfx_shader_pass *pass,
       }
    }
 
+   print_buf(attr_name_buf, "scale%u", i);
    if (scale->type_x == RARCH_SCALE_ABSOLUTE)
    {
-      print_buf(attr_name_buf, "scale%u", i);
       if (config_get_int(conf, attr_name_buf, &iattr))
          scale->abs_x = iattr;
       else
@@ -190,7 +188,6 @@ static bool shader_parse_pass(config_file_t *conf, struct gfx_shader_pass *pass,
    }
    else
    {
-      print_buf(attr_name_buf, "scale%u", i);
       if (config_get_float(conf, attr_name_buf, &fattr))
          scale->scale_x = fattr;
       else
@@ -201,9 +198,9 @@ static bool shader_parse_pass(config_file_t *conf, struct gfx_shader_pass *pass,
       }
    }
 
+   print_buf(attr_name_buf, "scale%u", i);
    if (scale->type_y == RARCH_SCALE_ABSOLUTE)
    {
-      print_buf(attr_name_buf, "scale%u", i);
       if (config_get_int(conf, attr_name_buf, &iattr))
          scale->abs_y = iattr;
       else
@@ -215,7 +212,6 @@ static bool shader_parse_pass(config_file_t *conf, struct gfx_shader_pass *pass,
    }
    else
    {
-      print_buf(attr_name_buf, "scale%u", i);
       if (config_get_float(conf, attr_name_buf, &fattr))
          scale->scale_y = fattr;
       else
