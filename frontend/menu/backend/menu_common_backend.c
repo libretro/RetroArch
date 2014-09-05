@@ -39,6 +39,9 @@
 #define HAVE_SHADER_MANAGER
 #endif
 
+// FIXME: Ugly hack, nees to be refactored badly
+static size_t hack_shader_pass = 0;
+
 static void *get_last_setting(const file_list_t *list, int index,
       rarch_setting_t *settings)
 {
@@ -1624,6 +1627,7 @@ static int menu_custom_bind_iterate_keyboard(void *data, unsigned action)
    return 0;
 }
 
+
 static int menu_action_ok(const char *dir,
       const char *menu_label, unsigned menu_type)
 {
@@ -1722,10 +1726,8 @@ static int menu_action_ok(const char *dir,
    else if (!strcmp(menu_label, "video_shader_pass")
          && type == MENU_FILE_PLAIN)
    {
-      unsigned pass = menu_type - MENU_SETTINGS_SHADER_PASS_0;
-
-      fill_pathname_join(driver.menu->shader->pass[pass].source.path,
-            dir, path, sizeof(driver.menu->shader->pass[pass].source.path));
+      fill_pathname_join(driver.menu->shader->pass[hack_shader_pass].source.path,
+            dir, path, sizeof(driver.menu->shader->pass[hack_shader_pass].source.path));
 
       /* This will reset any changed parameters. */
       gfx_shader_resolve_parameters(NULL, driver.menu->shader);

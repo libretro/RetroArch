@@ -388,12 +388,12 @@ static int menu_common_shader_manager_setting_toggle(
    }
    else if (!strcmp(label, "video_shader_pass"))
    {
-      unsigned pass = id - MENU_SETTINGS_SHADER_PASS_0;
+      hack_shader_pass = id - MENU_SETTINGS_SHADER_PASS_0;
       struct gfx_shader *shader = (struct gfx_shader*)driver.menu->shader;
       struct gfx_shader_pass *shader_pass = NULL;
 
       if (shader)
-         shader_pass = (struct gfx_shader_pass*)&shader->pass[pass];
+         shader_pass = (struct gfx_shader_pass*)&shader->pass[hack_shader_pass];
 
       switch (action)
       {
