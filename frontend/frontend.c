@@ -82,7 +82,8 @@ static int main_entry_iterate_clear_input(args_type() args)
       /* Restore libretro keyboard callback. */
       g_extern.system.key_event = key_event;
 
-      g_extern.lifecycle_state &= ~(1ULL << MODE_CLEAR_INPUT);
+
+      rarch_main_set_state(RARCH_ACTION_STATE_FLUSH_INPUT_FINISHED);
    }
 
    return 0;
@@ -173,11 +174,8 @@ static int main_entry_iterate_menu(args_type() args)
    driver_set_nonblock_state(driver.nonblock_state);
 
    rarch_main_command(RARCH_CMD_AUDIO_START);
+   rarch_main_set_state(RARCH_ACTION_STATE_FLUSH_INPUT);
 
-   g_extern.lifecycle_state |= (1ULL << MODE_CLEAR_INPUT);
-
-   /* If QUIT state came from command interface, we'll only see it
-    * once due to MODE_CLEAR_INPUT. */
    if (input_key_pressed_func(RARCH_QUIT_KEY) ||
          !driver.video->alive(driver.video_data))
       return 1;

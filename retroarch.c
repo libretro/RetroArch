@@ -3336,6 +3336,12 @@ void rarch_main_set_state(unsigned cmd)
          rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED);
          rarch_main_set_state(RARCH_ACTION_STATE_RUNNING_FINISHED);
          break;
+      case RARCH_ACTION_STATE_FLUSH_INPUT:
+         g_extern.lifecycle_state |= (1ULL << MODE_CLEAR_INPUT);
+         break;
+      case RARCH_ACTION_STATE_FLUSH_INPUT_FINISHED:
+         g_extern.lifecycle_state &= ~(1ULL << MODE_CLEAR_INPUT);
+         break;
       case RARCH_ACTION_STATE_NONE:
       default:
          break;
