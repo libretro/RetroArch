@@ -69,10 +69,26 @@
 
 #define MAX_ARGS 32
 
+int (*frontend_loop)(args_type() args);
+
 static retro_keyboard_event_t key_event;
 
+int main_entry_iterate_content(args_type() args)
+{
+   if (!rarch_main_iterate())
+   {
+      rarch_main_set_state(RARCH_ACTION_STATE_RUNNING_FINISHED);
+      return 0;
+   }
+
+   if (driver.frontend_ctx && driver.frontend_ctx->process_events)
+      driver.frontend_ctx->process_events(args);
+
+   return 0;
+}
+
 #ifdef HAVE_MENU
-static int main_entry_iterate_clear_input(args_type() args)
+int main_entry_iterate_clear_input(args_type() args)
 {
    (void)args;
 
@@ -102,21 +118,8 @@ static int main_entry_iterate_shutdown(args_type() args)
    return 0;
 }
 
-static int main_entry_iterate_content(args_type() args)
-{
-   if (!rarch_main_iterate())
-   {
-      rarch_main_set_state(RARCH_ACTION_STATE_RUNNING_FINISHED);
-      return 0;
-   }
 
-   if (driver.frontend_ctx && driver.frontend_ctx->process_events)
-      driver.frontend_ctx->process_events(args);
-
-   return 0;
-}
-
-static int main_entry_iterate_load_content(args_type() args)
+int main_entry_iterate_load_content(args_type() args)
 {
    if (!load_menu_content())
    {
@@ -131,7 +134,7 @@ static int main_entry_iterate_load_content(args_type() args)
    return 0;
 }
 
-static int main_entry_iterate_menu_preinit(args_type() args)
+int main_entry_iterate_menu_preinit(args_type() args)
 {
    int i;
 
@@ -164,7 +167,7 @@ static int main_entry_iterate_menu_preinit(args_type() args)
    return 0;
 }
 
-static int main_entry_iterate_menu(args_type() args)
+int main_entry_iterate_menu(args_type() args)
 {
    if (menu_iterate())
    {
@@ -190,18 +193,9 @@ int main_entry_iterate(signature(), args_type() args)
 {
    if (g_extern.system.shutdown)
       return main_entry_iterate_shutdown(args);
-   if (g_extern.lifecycle_state & (1ULL << MODE_CLEAR_INPUT))
-      return main_entry_iterate_clear_input(args);
-   if (g_extern.lifecycle_state & (1ULL << MODE_LOAD_GAME))
-      return main_entry_iterate_load_content(args);
-   if (g_extern.lifecycle_state & (1ULL << MODE_GAME))
-      return main_entry_iterate_content(args);
-#ifdef HAVE_MENU
-   if (g_extern.lifecycle_state & (1ULL << MODE_MENU_PREINIT))
-      return main_entry_iterate_menu_preinit(args);
-   if (g_extern.lifecycle_state & (1ULL << MODE_MENU))
-      return main_entry_iterate_menu(args);
-#endif
+   if (frontend_loop)
+      return frontend_loop(args);
+
    return 1;
 }
 #endif
