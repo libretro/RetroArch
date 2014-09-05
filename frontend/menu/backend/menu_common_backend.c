@@ -1051,33 +1051,7 @@ static int menu_setting_ok_toggle(unsigned type,
    }
    else if (!strcmp(label, "shader_apply_changes"))
    {
-      unsigned shader_type = RARCH_SHADER_NONE;
-
-      if (driver.menu_ctx && driver.menu_ctx->backend &&
-            driver.menu_ctx->backend->shader_manager_get_type)
-         shader_type = driver.menu_ctx->backend->shader_manager_get_type(
-               driver.menu->shader);
-
-      if (driver.menu->shader->passes && shader_type != RARCH_SHADER_NONE
-            && driver.menu_ctx && driver.menu_ctx->backend &&
-            driver.menu_ctx->backend->shader_manager_save_preset)
-         driver.menu_ctx->backend->shader_manager_save_preset(NULL, true);
-      else
-      {
-         shader_type = gfx_shader_parse_type("", DEFAULT_SHADER_TYPE);
-         if (shader_type == RARCH_SHADER_NONE)
-         {
-#if defined(HAVE_GLSL)
-            shader_type = RARCH_SHADER_GLSL;
-#elif defined(HAVE_CG) || defined(HAVE_HLSL)
-            shader_type = RARCH_SHADER_CG;
-#endif
-         }
-         if (driver.menu_ctx && driver.menu_ctx->backend &&
-               driver.menu_ctx->backend->shader_manager_set_preset)
-            driver.menu_ctx->backend->shader_manager_set_preset(
-                  NULL, shader_type, NULL);
-      }
+      rarch_main_command(RARCH_CMD_SHADERS_APPLY_CHANGES);
       return 0;
    }
 #endif

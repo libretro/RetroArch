@@ -3535,9 +3535,9 @@ void rarch_main_command(unsigned cmd)
          break;
       case RARCH_CMD_OVERLAY_SET_ALPHA_MOD:
 #ifdef HAVE_OVERLAY
-      if (driver.overlay)
-         input_overlay_set_alpha_mod(driver.overlay,
-               g_settings.input.overlay_opacity);
+         if (driver.overlay)
+            input_overlay_set_alpha_mod(driver.overlay,
+                  g_settings.input.overlay_opacity);
 #endif
          break;
       case RARCH_CMD_RESET_CONTEXT:
@@ -3562,6 +3562,39 @@ void rarch_main_command(unsigned cmd)
       case RARCH_CMD_MENU_SAVE_CONFIG:
 #ifdef HAVE_MENU
          menu_save_new_config();
+#endif
+         break;
+      case RARCH_CMD_SHADERS_APPLY_CHANGES:
+#ifdef HAVE_MENU
+         {
+            unsigned shader_type = RARCH_SHADER_NONE;
+
+            if (driver.menu_ctx && driver.menu_ctx->backend &&
+                  driver.menu_ctx->backend->shader_manager_get_type)
+               shader_type = driver.menu_ctx->backend->shader_manager_get_type(
+                     driver.menu->shader);
+
+            if (driver.menu->shader->passes && shader_type != RARCH_SHADER_NONE
+                  && driver.menu_ctx && driver.menu_ctx->backend &&
+                  driver.menu_ctx->backend->shader_manager_save_preset)
+               driver.menu_ctx->backend->shader_manager_save_preset(NULL, true);
+            else
+            {
+               shader_type = gfx_shader_parse_type("", DEFAULT_SHADER_TYPE);
+               if (shader_type == RARCH_SHADER_NONE)
+               {
+#if defined(HAVE_GLSL)
+                  shader_type = RARCH_SHADER_GLSL;
+#elif defined(HAVE_CG) || defined(HAVE_HLSL)
+                  shader_type = RARCH_SHADER_CG;
+#endif
+               }
+               if (driver.menu_ctx && driver.menu_ctx->backend &&
+                     driver.menu_ctx->backend->shader_manager_set_preset)
+                  driver.menu_ctx->backend->shader_manager_set_preset(
+                        NULL, shader_type, NULL);
+            }
+         }
 #endif
          break;
    }

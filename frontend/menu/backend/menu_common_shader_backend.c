@@ -331,6 +331,7 @@ static int menu_common_shader_manager_setting_toggle(
    else if (id >= MENU_SETTINGS_SHADER_PARAMETER_0
          && id <= MENU_SETTINGS_SHADER_PARAMETER_LAST)
    {
+      bool apply_changes = false;
       struct gfx_shader *shader = NULL;
       struct gfx_shader_parameter *param = NULL;
 
@@ -344,14 +345,17 @@ static int menu_common_shader_manager_setting_toggle(
       {
          case MENU_ACTION_START:
             param->current = param->initial;
+            apply_changes = true;
             break;
 
          case MENU_ACTION_LEFT:
             param->current -= param->step;
+            apply_changes = true;
             break;
 
          case MENU_ACTION_RIGHT:
             param->current += param->step;
+            apply_changes = true;
             break;
 
          default:
@@ -359,6 +363,9 @@ static int menu_common_shader_manager_setting_toggle(
       }
 
       param->current = min(max(param->minimum, param->current), param->maximum);
+
+      if (apply_changes)
+         rarch_main_command(RARCH_CMD_SHADERS_APPLY_CHANGES);
    }
    else if ((!strcmp(label, "video_shader_parameters") ||
             !strcmp(label, "video_shader_preset_parameters"))
