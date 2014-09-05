@@ -109,6 +109,12 @@ int menu_entries_push_list(menu_handle_t *menu,
       add_setting_entry(menu,list,"load_content", MENU_FILE_SWITCH, setting_data);
       add_setting_entry(menu,list,"core_options", MENU_FILE_SWITCH, setting_data);
       add_setting_entry(menu,list,"core_information", MENU_FILE_SWITCH, setting_data);
+      if (g_extern.main_is_init && !g_extern.libretro_dummy)
+      {
+         if (g_extern.system.disk_control.get_num_images)
+            file_list_push(list, "Core Disk Options", "disk_options",
+                  MENU_FILE_SWITCH, 0);
+      }
       add_setting_entry(menu,list,"settings", MENU_FILE_SWITCH, setting_data);
       add_setting_entry(menu,list,"performance_counters", MENU_FILE_SWITCH, setting_data);
       add_setting_entry(menu,list,"savestate", 0, setting_data);
@@ -450,12 +456,6 @@ int menu_entries_push_list(menu_handle_t *menu,
       add_setting_entry(menu,list,"User Options", MENU_FILE_SWITCH, setting_data);
       add_setting_entry(menu,list,"Netplay Options", MENU_FILE_SWITCH, setting_data);
       add_setting_entry(menu,list,"Path Options", MENU_FILE_SWITCH, setting_data);
-      if (g_extern.main_is_init && !g_extern.libretro_dummy)
-      {
-         if (g_extern.system.disk_control.get_num_images)
-            file_list_push(list, "Disk Options", "disk_options",
-                  MENU_FILE_SWITCH, 0);
-      }
       add_setting_entry(menu,list,"Privacy Options",
             MENU_FILE_SWITCH, setting_data);
    }
