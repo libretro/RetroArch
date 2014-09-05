@@ -376,13 +376,7 @@ returntype main_entry(signature())
 #if defined(RARCH_CONSOLE) || defined(RARCH_MOBILE)
    if (ret)
 #endif
-   {
-      /* If we started content directly from command line,
-       * push it to content history.
-       */
-      if (!g_extern.libretro_dummy)
-         menu_content_history_push_current();
-   }
+      menu_content_history_push_current();
 #else
    frontend_loop = main_entry_iterate_content_nomenu;
 #endif

@@ -62,6 +62,9 @@ void menu_content_history_push_current(void)
    if (!g_extern.history)
       return;
 
+   if (!g_extern.libretro_dummy)
+      return;
+
    /* g_extern.fullpath can be relative here.
     * Ensure we're pushing absolute path. */
 
