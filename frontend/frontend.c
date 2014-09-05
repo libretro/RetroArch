@@ -103,6 +103,16 @@ int main_entry_iterate_content(signature(), args_type() args)
    return 0;
 }
 
+#ifndef HAVE_MENU
+static int main_entry_iterate_content_nomenu(signature(), args_type() args)
+{
+   if (!rarch_main_iterate())
+      return 1;
+
+   return 0;
+}
+#endif
+
 #ifdef HAVE_MENU
 int main_entry_iterate_clear_input(signature(), args_type() args)
 {
@@ -370,14 +380,12 @@ returntype main_entry(signature())
       if (!g_extern.libretro_dummy)
          menu_content_history_push_current();
    }
+#else
+   frontend_loop = main_entry_iterate_content_nomenu;
 #endif
 
 #if defined(HAVE_MAIN_LOOP)
-#if defined(HAVE_MENU)
    while (frontend_loop && !frontend_loop(signature_expand(), args));
-#else
-   while (rarch_main_iterate());
-#endif
 
    main_exit(args);
 #endif
