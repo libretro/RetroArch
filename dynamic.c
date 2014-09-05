@@ -1046,7 +1046,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
             *g_extern.fullpath = '\0';
 
 #if defined(RARCH_CONSOLE)
-         rarch_main_set_state(RARCH_ACTION_STATE_STOP_CONTENT);
+         rarch_main_set_state(RARCH_ACTION_STATE_RUNNING_FINISHED);
          rarch_main_set_state(RARCH_ACTION_STATE_EXITSPAWN);
          g_extern.lifecycle_state |= (1ULL << MODE_EXITSPAWN_START_GAME);
 #elif defined(HAVE_DYNAMIC)
