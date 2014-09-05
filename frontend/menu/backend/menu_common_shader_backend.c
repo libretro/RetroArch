@@ -155,42 +155,35 @@ static void menu_common_shader_manager_get_str(struct gfx_shader *shader,
    else if (!strcmp(label, "video_shader_default_filter"))
       snprintf(type_str, type_str_size, "%s",
             g_settings.video.smooth ? "Linear" : "Nearest");
-   else if (type >= MENU_SETTINGS_SHADER_0 && type <= MENU_SETTINGS_SHADER_LAST)
+   else if (!strcmp(label, "video_shader_pass"))
    {
-      unsigned pass = (type - MENU_SETTINGS_SHADER_0) / 3;
-      switch ((type - MENU_SETTINGS_SHADER_0) % 3)
-      {
-         case 0:
-            if (*shader->pass[pass].source.path)
-               fill_pathname_base(type_str,
-                     shader->pass[pass].source.path, type_str_size);
-            else
-               strlcpy(type_str, "N/A", type_str_size);
-            break;
+      unsigned pass = (type - MENU_SETTINGS_SHADER_PASS_0);
+      if (*shader->pass[pass].source.path)
+         fill_pathname_base(type_str,
+               shader->pass[pass].source.path, type_str_size);
+      else
+         strlcpy(type_str, "N/A", type_str_size);
+   }
+   else if (!strcmp(label, "video_shader_filter_pass"))
+   {
+      unsigned pass = (type - MENU_SETTINGS_SHADER_PASS_FILTER_0);
+      static const char *modes[] = {
+         "Don't care",
+         "Linear",
+         "Nearest"
+      };
 
-         case 1:
-            {
-               static const char *modes[] = {
-                  "Don't care",
-                  "Linear",
-                  "Nearest"
-               };
-
-               strlcpy(type_str, modes[shader->pass[pass].filter],
-                     type_str_size);
-            }
-            break;
-
-         case 2:
-         {
-            unsigned scale = shader->pass[pass].fbo.scale_x;
-            if (!scale)
-               strlcpy(type_str, "Don't care", type_str_size);
-            else
-               snprintf(type_str, type_str_size, "%ux", scale);
-            break;
-         }
-      }
+      strlcpy(type_str, modes[shader->pass[pass].filter],
+            type_str_size);
+   }
+   else if (!strcmp(label, "video_shader_scale_pass"))
+   {
+      unsigned pass = (type - MENU_SETTINGS_SHADER_PASS_SCALE_0);
+      unsigned scale = shader->pass[pass].fbo.scale_x;
+      if (!scale)
+         strlcpy(type_str, "Don't care", type_str_size);
+      else
+         snprintf(type_str, type_str_size, "%ux", scale);
    }
 }
 
@@ -328,9 +321,6 @@ static int menu_common_shader_manager_setting_toggle(
    rarch_setting_t *current_setting = NULL;
    rarch_setting_t *setting_data = (rarch_setting_t *)setting_data_get_list();
 
-   unsigned dist_shader = id - MENU_SETTINGS_SHADER_0;
-   unsigned dist_filter = id - MENU_SETTINGS_SHADER_0_FILTER;
-   unsigned dist_scale  = id - MENU_SETTINGS_SHADER_0_SCALE;
 
    if (!strcmp(label, "video_shader_default_filter"))
    {
@@ -398,9 +388,12 @@ static int menu_common_shader_manager_setting_toggle(
    }
    else if (!strcmp(label, "video_shader_pass"))
    {
+      unsigned pass = id - MENU_SETTINGS_SHADER_PASS_0;
       struct gfx_shader *shader = (struct gfx_shader*)driver.menu->shader;
+      struct gfx_shader_pass *shader_pass = NULL;
 
-      dist_shader /= 3;
+      if (shader)
+         shader_pass = (struct gfx_shader_pass*)&shader->pass[pass];
 
       switch (action)
       {
@@ -410,8 +403,9 @@ static int menu_common_shader_manager_setting_toggle(
                   "video_shader_pass",
                   id, driver.menu->selection_ptr);
             break;
-
          case MENU_ACTION_START:
+            if (shader_pass)
+               *shader_pass->source.path = '\0';
             break;
 
          default:
@@ -420,16 +414,16 @@ static int menu_common_shader_manager_setting_toggle(
    }
    else if (!strcmp(label, "video_shader_filter_pass"))
    {
-      dist_filter /= 3;
+      unsigned pass = id - MENU_SETTINGS_SHADER_PASS_FILTER_0;
       struct gfx_shader *shader = (struct gfx_shader*)driver.menu->shader;
-      struct gfx_shader_pass *pass = (struct gfx_shader_pass*)
-         &shader->pass[dist_filter];
+      struct gfx_shader_pass *shader_pass = (struct gfx_shader_pass*)
+         &shader->pass[pass];
 
       switch (action)
       {
          case MENU_ACTION_START:
             if (shader)
-               shader->pass[dist_filter].filter = RARCH_FILTER_UNSPEC;
+               shader->pass[pass].filter = RARCH_FILTER_UNSPEC;
             break;
 
          case MENU_ACTION_LEFT:
@@ -437,8 +431,8 @@ static int menu_common_shader_manager_setting_toggle(
          case MENU_ACTION_OK:
          {
             unsigned delta = (action == MENU_ACTION_LEFT) ? 2 : 1;
-            if (pass)
-               pass->filter = ((pass->filter + delta) % 3);
+            if (shader_pass)
+               shader_pass->filter = ((shader_pass->filter + delta) % 3);
             break;
          }
 
@@ -448,18 +442,18 @@ static int menu_common_shader_manager_setting_toggle(
    }
    else if (!strcmp(label, "video_shader_scale_pass"))
    {
-      dist_scale /= 3;
+      unsigned pass = id - MENU_SETTINGS_SHADER_PASS_SCALE_0;
       struct gfx_shader *shader = (struct gfx_shader*)driver.menu->shader;
-      struct gfx_shader_pass *pass = (struct gfx_shader_pass*)
-         &shader->pass[dist_scale];
+      struct gfx_shader_pass *shader_pass = (struct gfx_shader_pass*)
+         &shader->pass[pass];
 
       switch (action)
       {
          case MENU_ACTION_START:
             if (shader)
             {
-               pass->fbo.scale_x = pass->fbo.scale_y = 0;
-               pass->fbo.valid = false;
+               shader_pass->fbo.scale_x = shader_pass->fbo.scale_y = 0;
+               shader_pass->fbo.valid = false;
             }
             break;
 
@@ -467,14 +461,14 @@ static int menu_common_shader_manager_setting_toggle(
          case MENU_ACTION_RIGHT:
          case MENU_ACTION_OK:
          {
-            unsigned current_scale = pass->fbo.scale_x;
+            unsigned current_scale = shader_pass->fbo.scale_x;
             unsigned delta = action == MENU_ACTION_LEFT ? 5 : 1;
             current_scale = (current_scale + delta) % 6;
 
-            if (pass)
+            if (shader_pass)
             {
-               pass->fbo.valid = current_scale;
-               pass->fbo.scale_x = pass->fbo.scale_y = current_scale;
+               shader_pass->fbo.valid = current_scale;
+               shader_pass->fbo.scale_x = shader_pass->fbo.scale_y = current_scale;
             }
             break;
          }

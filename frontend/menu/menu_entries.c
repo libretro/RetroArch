@@ -509,15 +509,15 @@ int menu_entries_push_list(menu_handle_t *menu,
 
          snprintf(buf, sizeof(buf), "Shader #%u", i);
          file_list_push(list, buf, "video_shader_pass",
-               MENU_SETTINGS_SHADER_0 + 3 * i, 0);
+               MENU_SETTINGS_SHADER_PASS_0 + i, 0);
 
          snprintf(buf, sizeof(buf), "Shader #%u Filter", i);
          file_list_push(list, buf, "video_shader_filter_pass",
-               MENU_SETTINGS_SHADER_0_FILTER + 3 * i, 0);
+               MENU_SETTINGS_SHADER_PASS_FILTER_0 + i, 0);
 
          snprintf(buf, sizeof(buf), "Shader #%u Scale", i);
          file_list_push(list, buf, "video_shader_scale_pass",
-               MENU_SETTINGS_SHADER_0_SCALE + 3 * i, 0);
+               MENU_SETTINGS_SHADER_PASS_SCALE_0 + i, 0);
       }
    }
    else if (!strcmp(label, "disk_options"))
