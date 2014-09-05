@@ -307,7 +307,7 @@ int menu_entries_push_list(menu_handle_t *menu,
       add_setting_entry(menu,list,"netplay_mode", 0, setting_data);
       add_setting_entry(menu,list,"netplay_spectator_mode_enable", 0, setting_data);
       add_setting_entry(menu,list,"netplay_ip_address", 0, setting_data);
-      add_setting_entry(menu,list,"netplay_tcp_udp_port", 0, setting_data);
+      add_setting_entry(menu,list,"netplay_tcp_udp_port", MENU_FILE_LINEFEED, setting_data);
       add_setting_entry(menu,list,"netplay_delay_frames", 0, setting_data);
    }
    else if (!strcmp(label, "core_counters"))

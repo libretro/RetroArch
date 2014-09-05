@@ -552,12 +552,12 @@ static void menu_common_setting_set_current_fraction(
 }
 
 static void menu_common_setting_set_current_unsigned_integer(
-      rarch_setting_t *setting, unsigned action)
+      rarch_setting_t *setting, unsigned id, unsigned action)
 {
-   if (!strcmp(setting->name, "netplay_tcp_udp_port"))
+   if (id == MENU_FILE_LINEFEED)
    {
       if (action == MENU_ACTION_OK)
-         menu_key_start_line(driver.menu, "TCP/UDP Port: ",
+         menu_key_start_line(driver.menu, setting->short_description,
                setting->name, st_uint_callback);
       else if (action == MENU_ACTION_START)
          *setting->value.unsigned_integer =
@@ -641,7 +641,7 @@ static void handle_setting(rarch_setting_t *setting,
    if (setting->type == ST_BOOL)
       menu_common_setting_set_current_boolean(setting, action);
    else if (setting->type == ST_UINT)
-      menu_common_setting_set_current_unsigned_integer(setting, action);
+      menu_common_setting_set_current_unsigned_integer(setting, id, action);
    else if (setting->type == ST_FLOAT)
       menu_common_setting_set_current_fraction(setting, action);
    else if (setting->type == ST_DIR)
