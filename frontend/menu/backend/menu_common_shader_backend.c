@@ -314,7 +314,7 @@ static int menu_common_shader_manager_setting_toggle(
       return 0;
    }
 
-#if 1
+#if 0
    RARCH_LOG("shader label: %s\n", label);
 #endif
 
