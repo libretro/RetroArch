@@ -195,6 +195,10 @@ static bool content_playlist_read_file(
    if (!file || !playlist)
    {
       RARCH_ERR("Couldn't read content playlist file: %s.\n", path);
+
+      if (file)
+         fclose(file);
+
       return true;
    }
 
