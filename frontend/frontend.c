@@ -118,9 +118,13 @@ static int main_entry_iterate_content(args_type() args)
 
 static int main_entry_iterate_load_content(args_type() args)
 {
-   /* If content loading fails, we go back to menu. */
    if (!load_menu_content())
-      g_extern.lifecycle_state = (1ULL << MODE_MENU_PREINIT);
+   {
+      /* If content loading fails, we go back to menu. */
+      rarch_main_set_state(RARCH_ACTION_STATE_RUNNING_FINISHED);
+      if (driver.menu)
+         rarch_main_set_state(RARCH_ACTION_STATE_MENU_PREINIT);
+   }
 
    rarch_main_set_state(RARCH_ACTION_STATE_LOAD_CONTENT_FINISHED);
 
@@ -131,32 +135,31 @@ static int main_entry_iterate_menu_preinit(args_type() args)
 {
    int i;
 
-   if (!driver.menu)
-      return 1;
-
    /* Menu should always run with vsync on. */
    rarch_main_command(RARCH_CMD_VIDEO_SET_BLOCKING_STATE);
 
-   /* Stop all rumbling when entering the menu. */
+   /* Stop all rumbling before entering the menu. */
    for (i = 0; i < MAX_PLAYERS; i++)
    {
       driver_set_rumble_state(i, RETRO_RUMBLE_STRONG, 0);
       driver_set_rumble_state(i, RETRO_RUMBLE_WEAK, 0);
    }
 
-   /* Override keyboard callback to redirect to menu instead.
-    * We'll use this later for something ...
-    * FIXME: This should probably be moved to menu_common somehow. */
-   key_event = g_extern.system.key_event;
-   g_extern.system.key_event = menu_key_event;
-
    rarch_main_command(RARCH_CMD_AUDIO_STOP);
 
-   driver.menu->need_refresh = true;
-   driver.menu->old_input_state |= 1ULL << RARCH_MENU_TOGGLE;
+   if (driver.menu)
+   {
+      /* Override keyboard callback to redirect to menu instead.
+       * We'll use this later for something ...
+       * FIXME: This should probably be moved to menu_common somehow. */
+      key_event = g_extern.system.key_event;
+      g_extern.system.key_event = menu_key_event;
 
-   rarch_main_set_state(RARCH_ACTION_STATE_MENU_PREINIT_FINISHED);
-   rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING);
+      driver.menu->need_refresh = true;
+      driver.menu->old_input_state |= 1ULL << RARCH_MENU_TOGGLE;
+      rarch_main_set_state(RARCH_ACTION_STATE_MENU_PREINIT_FINISHED);
+      rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING);
+   }
 
    return 0;
 }
