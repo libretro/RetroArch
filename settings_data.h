@@ -166,7 +166,7 @@ rarch_setting_t setting_data_bind_setting(const char* name,
       const struct retro_keybind* default_value, const char *group,
       const char *subgroup);
 
-void setting_data_get_description(const void *data, char *msg,
+int setting_data_get_description(const char *label, char *msg,
       size_t msg_sizeof);
 
 #ifdef HAVE_MENU

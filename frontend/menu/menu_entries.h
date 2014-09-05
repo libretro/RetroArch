@@ -38,7 +38,4 @@ void menu_entries_pop(file_list_t *list);
 void menu_flush_stack_type(file_list_t *list, unsigned final_type);
 void menu_flush_stack_label(file_list_t *list, const char *needle);
 
-int menu_entries_get_description(const char *label, char *msg,
-      size_t sizeof_msg);
-
 #endif
