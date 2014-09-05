@@ -612,6 +612,19 @@ static void menu_common_setting_set_current_string_path(
       setting->change_handler(setting);
 }
 
+void menu_common_set_current_string_based_on_label(
+      const char *label, const char *str)
+{
+   if (!strcmp(label, "video_shader_preset_save_as"))
+   {
+#ifdef HAVE_SHADER_MANAGER
+      if (driver.menu_ctx && driver.menu_ctx->backend
+            && driver.menu_ctx->backend->shader_manager_save_preset)
+         driver.menu_ctx->backend->shader_manager_save_preset(str, false);
+#endif
+   }
+}
+
 void menu_common_setting_set_current_string(
       rarch_setting_t *setting, const char *str)
 {
@@ -659,7 +672,7 @@ static void handle_setting(rarch_setting_t *setting,
             setting->default_value.string, setting->name, id, action);
    else if (setting->type == ST_STRING)
    {
-      if (id == MENU_FILE_LINEFEED)
+      if (id == MENU_FILE_LINEFEED || id == MENU_FILE_LINEFEED_SWITCH)
       {
          if (action == MENU_ACTION_OK)
             menu_key_start_line(driver.menu, setting->short_description,
@@ -1028,9 +1041,9 @@ static int menu_setting_ok_toggle(unsigned type,
 #ifdef HAVE_SHADER_MANAGER
    else if (!strcmp(label, "video_shader_preset_save_as"))
    {
-      menu_key_start_line(driver.menu, "Preset Filename: ",
-            "shader_preset_save", preset_filename_callback);
-      return 0;
+      if (action == MENU_ACTION_OK)
+         menu_key_start_line(driver.menu, "Preset Filename",
+               label, st_string_callback);
    }
    else if (!strcmp(label, "shader_apply_changes"))
    {

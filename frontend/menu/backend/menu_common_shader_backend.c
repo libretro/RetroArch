@@ -193,7 +193,6 @@ static void menu_common_shader_manager_save_preset(
    char buffer[PATH_MAX], config_directory[PATH_MAX], cgp_path[PATH_MAX];
    unsigned d, type = RARCH_SHADER_NONE;
    config_file_t *conf = NULL;
-   const char *conf_path = NULL;
    bool ret = false;
 
    if (!driver.menu)
@@ -210,8 +209,6 @@ static void menu_common_shader_manager_save_preset(
    if (type == RARCH_SHADER_NONE)
       return;
 
-   conf_path = (type == RARCH_SHADER_GLSL) ?
-      driver.menu->default_glslp : driver.menu->default_cgp;
    *config_directory = '\0';
 
    if (basename)
@@ -226,6 +223,12 @@ static void menu_common_shader_manager_save_preset(
          else if (type == RARCH_SHADER_CG)
             strlcat(buffer, ".cgp", sizeof(buffer));
       }
+   }
+   else
+   {
+      const char *conf_path = (type == RARCH_SHADER_GLSL) ?
+         driver.menu->default_glslp : driver.menu->default_cgp;
+      strlcpy(buffer, conf_path, sizeof(buffer));
    }
 
    if (*g_extern.config_path)
@@ -247,7 +250,7 @@ static void menu_common_shader_manager_save_preset(
       if (!*dirs[d])
          continue;
 
-      fill_pathname_join(cgp_path, dirs[d], conf_path, sizeof(cgp_path));
+      fill_pathname_join(cgp_path, dirs[d], buffer, sizeof(cgp_path));
       if (config_file_write(conf, cgp_path))
       {
          RARCH_LOG("Saved shader preset to %s.\n", cgp_path);
