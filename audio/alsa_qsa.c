@@ -123,7 +123,7 @@ static void *alsa_qsa_init(const char *device, unsigned rate, unsigned latency)
    else
       alsa->buf_size = next_pow2(32 * latency);
 
-   RARCH_LOG("[ALSA QSA]: buffer size: %d bytes\n", alsa->buf_size);
+   RARCH_LOG("[ALSA QSA]: buffer size: %u bytes\n", alsa->buf_size);
 
    alsa->buf_count = (latency * 4 * rate + 500) / 1000;
    alsa->buf_count = (alsa->buf_count + alsa->buf_size / 2) / alsa->buf_size;

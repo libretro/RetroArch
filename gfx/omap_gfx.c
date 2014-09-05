@@ -371,7 +371,7 @@ static int omapfb_alloc_mem(omapfb_data_t *pdata) {
   mi.size = mem_size;
 
   if (ioctl(pdata->fd, OMAPFB_SETUP_MEM, &mi) != 0) {
-    RARCH_ERR("video_omap: allocation of %d bytes of VRAM failed\n", mem_size);
+    RARCH_ERR("video_omap: allocation of %u bytes of VRAM failed\n", mem_size);
     return -1;
   }
 

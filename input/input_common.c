@@ -1387,7 +1387,7 @@ static bool input_try_autoconfigure_joypad_from_conf(config_file_t *conf,
    config_get_array(conf, "input_device", ident, sizeof(ident));
    config_get_array(conf, "input_driver", input_driver, sizeof(input_driver));
 
-   snprintf(ident_idx, sizeof(ident_idx), "%s_p%d", ident, index);
+   snprintf(ident_idx, sizeof(ident_idx), "%s_p%u", ident, index);
 
    //RARCH_LOG("ident_idx: %s\n", ident_idx);
 

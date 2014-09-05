@@ -264,7 +264,7 @@ static void ffmpeg_audio_resolve_sample_rate(ffmpeg_t *handle,
       }
 
       params->sample_rate = best_rate;
-      RARCH_LOG("[FFmpeg]: Using output sampling rate: %u.\n", best_rate);
+      RARCH_LOG("[FFmpeg]: Using output sampling rate: %d.\n", best_rate);
    }
 }
 

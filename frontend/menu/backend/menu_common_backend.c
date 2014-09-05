@@ -2170,7 +2170,7 @@ static void menu_common_setting_set_label(char *type_str,
                   unsigned height = gfx_ctx_get_resolution_height(
                         g_extern.console.screen.resolutions.list
                         [g_extern.console.screen.resolutions.current.idx]);
-                  snprintf(type_str, type_str_size, "%dx%d", width, height);
+                  snprintf(type_str, type_str_size, "%ux%u", width, height);
                }
                break;
 #endif
@@ -2180,7 +2180,7 @@ static void menu_common_setting_set_label(char *type_str,
                strlcpy(type_str, "...", type_str_size);
                break;
             case MENU_SETTINGS_BIND_PLAYER:
-               snprintf(type_str, type_str_size, "#%d",
+               snprintf(type_str, type_str_size, "#%u",
                      driver.menu->current_pad + 1);
                break;
             case MENU_SETTINGS_BIND_DEVICE:
@@ -2196,7 +2196,7 @@ static void menu_common_setting_set_label(char *type_str,
                         strlcpy(type_str, device_name, type_str_size);
                      else
                         snprintf(type_str, type_str_size,
-                              "N/A (port #%u)", map);
+                              "N/A (port #%d)", map);
                   }
                   else
                      strlcpy(type_str, "Disabled", type_str_size);

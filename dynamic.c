@@ -619,7 +619,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
 
       case RETRO_ENVIRONMENT_GET_LANGUAGE:
          *(unsigned *)data = g_settings.user_language;
-         RARCH_LOG("Environ GET_LANGUAGE: \"%d\".\n",
+         RARCH_LOG("Environ GET_LANGUAGE: \"%u\".\n",
                g_settings.user_language);
          break;
 

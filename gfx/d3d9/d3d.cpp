@@ -251,7 +251,7 @@ static bool d3d_init_multipass(d3d_video_t *d3d)
 
    gfx_shader_resolve_relative(&d3d->shader, d3d->cg_shader.c_str());
 
-   RARCH_LOG("[D3D9 Meta-Cg] Found %d shaders.\n", d3d->shader.passes);
+   RARCH_LOG("[D3D9 Meta-Cg] Found %u shaders.\n", d3d->shader.passes);
 
    for (unsigned i = 0; i < d3d->shader.passes; i++)
    {

@@ -2458,7 +2458,7 @@ void PopulateDataForParamArray( CgParameterEntry* paramEntry, CgParameterEntry* 
             *nvParamStrings += prefixLengthIn;
          }
          // rest of array name for array and index
-         sprintf( *nvParamStrings, "%s[%d]", ( strtab->data + paramEntry->nameOffset ), element );
+         sprintf( *nvParamStrings, "%s[%u]", ( strtab->data + paramEntry->nameOffset ), element );
 
          if (!prefix)
             prefix = *nvParamStrings;
@@ -2499,7 +2499,7 @@ void PopulateDataForParamArray( CgParameterEntry* paramEntry, CgParameterEntry* 
             *nvParamStrings += prefixLengthIn;
          }
          // rest of array name for array and index
-         sprintf( *nvParamStrings, "%s[%d]", ( strtab->data + paramEntry->nameOffset ), element );
+         sprintf( *nvParamStrings, "%s[%u]", ( strtab->data + paramEntry->nameOffset ), element );
          *nvParamStrings += strlen( *nvParamStrings );
          prefixLength = strlen( prefix );
 
