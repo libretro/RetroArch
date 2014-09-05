@@ -133,8 +133,6 @@ bool load_menu_content(void);
 
 void load_menu_content_history(unsigned game_index);
 
-void menu_content_history_push_current(void);
-
 bool menu_replace_config(const char *path);
 
 bool menu_save_new_config(void);

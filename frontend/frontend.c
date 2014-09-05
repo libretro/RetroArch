@@ -376,7 +376,7 @@ returntype main_entry(signature())
 #if defined(RARCH_CONSOLE) || defined(RARCH_MOBILE)
    if (ret)
 #endif
-      menu_content_history_push_current();
+      rarch_playlist_push(g_extern.history, g_extern.fullpath);
 #else
    frontend_loop = main_entry_iterate_content_nomenu;
 #endif

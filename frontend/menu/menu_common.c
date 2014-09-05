@@ -55,31 +55,6 @@ void menu_update_system_info(menu_handle_t *menu, bool *load_no_content)
       RARCH_LOG("Permissions = %s\n", info->permissions);
 }
 
-void menu_content_history_push_current(void)
-{
-   char tmp[PATH_MAX];
-
-   if (!g_extern.history)
-      return;
-
-   if (!g_extern.libretro_dummy)
-      return;
-
-   /* g_extern.fullpath can be relative here.
-    * Ensure we're pushing absolute path. */
-
-   strlcpy(tmp, g_extern.fullpath, sizeof(tmp));
-
-   if (*tmp)
-      path_resolve_realpath(tmp, sizeof(tmp));
-
-   if (g_extern.system.no_content || *tmp)
-      content_playlist_push(g_extern.history,
-            *tmp ? tmp : NULL,
-            g_settings.libretro,
-            g_extern.system.info.library_name);
-}
-
 static void draw_frame(bool enable)
 {
    if (driver.video_data && driver.video_poke &&

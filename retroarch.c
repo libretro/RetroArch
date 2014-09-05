@@ -3770,6 +3770,29 @@ void rarch_main_deinit(void)
    g_extern.main_is_init = false;
 }
 
+void rarch_playlist_push(content_playlist_t *playlist,
+      const char *path)
+{
+   char tmp[PATH_MAX];
+
+   if (!playlist || !g_extern.libretro_dummy)
+      return;
+
+   /* path can be relative here.
+    * Ensure we're pushing absolute path. */
+
+   strlcpy(tmp, path, sizeof(tmp));
+
+   if (*tmp)
+      path_resolve_realpath(tmp, sizeof(tmp));
+
+   if (g_extern.system.no_content || *tmp)
+      content_playlist_push(playlist,
+            *tmp ? tmp : NULL,
+            g_settings.libretro,
+            g_extern.system.info.library_name);
+}
+
 void rarch_playlist_load_content(content_playlist_t *playlist,
       unsigned index)
 {

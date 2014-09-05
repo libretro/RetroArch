@@ -814,6 +814,9 @@ void rarch_disk_control_append_image(const char *path);
 bool rarch_set_rumble_state(unsigned port,
       enum retro_rumble_effect effect, bool enable);
 
+void rarch_playlist_push(content_playlist_t *playlist,
+      const char *path);
+
 void rarch_playlist_load_content(content_playlist_t *playlist,
       unsigned index);
 
