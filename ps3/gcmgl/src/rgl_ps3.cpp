@@ -419,7 +419,7 @@ static uint32_t gmmInit(const void *localMemoryBase, const void *localStartAddre
       const uint32_t localSize)
 {
    GmmAllocator *pAllocator;
-   uint32_t alignedLocalSize, alignedMainSize;
+   uint32_t alignedLocalSize;
    uint32_t localEndAddress = (uint32_t)localStartAddress + localSize;
 
    localEndAddress = (localEndAddress / GMM_TILE_ALIGNMENT) * GMM_TILE_ALIGNMENT;
