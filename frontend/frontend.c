@@ -19,6 +19,7 @@
 #include "../general.h"
 #include "../conf/config_file.h"
 #include "../file.h"
+#include "../performance.h"
 
 #include "frontend_context.h"
 
@@ -113,7 +114,6 @@ static int main_entry_iterate_content_nomenu(signature(), args_type() args)
 }
 #endif
 
-#ifdef HAVE_MENU
 int main_entry_iterate_clear_input(signature(), args_type() args)
 {
    (void)args;
@@ -122,25 +122,24 @@ int main_entry_iterate_clear_input(signature(), args_type() args)
       return main_entry_iterate_shutdown(signature_expand(), args);
 
    rarch_input_poll();
-   if (!menu_input())
-   {
-      /* Restore libretro keyboard callback. */
-      g_extern.system.key_event = key_event;
+#ifdef HAVE_MENU
+   if (menu_input())
+      return 0;
+#endif
 
-
-      rarch_main_set_state(RARCH_ACTION_STATE_FLUSH_INPUT_FINISHED);
-   }
+   /* Restore libretro keyboard callback. */
+   g_extern.system.key_event = key_event;
+   rarch_main_set_state(RARCH_ACTION_STATE_FLUSH_INPUT_FINISHED);
 
    return 0;
 }
-
-
 
 int main_entry_iterate_load_content(signature(), args_type() args)
 {
    if (g_extern.system.shutdown)
       return main_entry_iterate_shutdown(signature_expand(), args);
 
+#ifdef HAVE_MENU
    if (!load_menu_content())
    {
       /* If content loading fails, we go back to menu. */
@@ -148,12 +147,14 @@ int main_entry_iterate_load_content(signature(), args_type() args)
       if (driver.menu)
          rarch_main_set_state(RARCH_ACTION_STATE_MENU_PREINIT);
    }
+#endif
 
    rarch_main_set_state(RARCH_ACTION_STATE_LOAD_CONTENT_FINISHED);
 
    return 0;
 }
 
+#ifdef HAVE_MENU
 int main_entry_iterate_menu_preinit(signature(), args_type() args)
 {
    int i;
@@ -237,8 +238,10 @@ void main_exit(args_type() args)
 
    if (g_extern.main_is_init)
    {
+#ifdef HAVE_MENU
       /* Do not want menu context to live any more. */
       driver.menu_data_own = false;
+#endif
       rarch_main_deinit();
    }
 

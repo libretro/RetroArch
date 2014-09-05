@@ -1019,7 +1019,9 @@ bool config_load_file(const char *path, bool set_defaults)
 
    CONFIG_GET_BOOL(location.allow, "location_allow");
    CONFIG_GET_STRING(video.driver, "video_driver");
+#ifdef HAVE_MENU
    CONFIG_GET_STRING(menu.driver, "menu_driver");
+#endif
    CONFIG_GET_STRING(video.gl_context, "video_gl_context");
    CONFIG_GET_STRING(audio.driver, "audio_driver");
    CONFIG_GET_PATH(video.softfilter_plugin, "video_filter");
@@ -1440,7 +1442,9 @@ bool config_save_file(const char *path)
    config_set_int(conf,   "video_fullscreen_x", g_settings.video.fullscreen_x);
    config_set_int(conf,   "video_fullscreen_y", g_settings.video.fullscreen_y);
    config_set_string(conf,"video_driver", g_settings.video.driver);
+#ifdef HAVE_MENU
    config_set_string(conf,"menu_driver", g_settings.menu.driver);
+#endif
    config_set_bool(conf,  "video_vsync", g_settings.video.vsync);
    config_set_bool(conf,  "video_hard_sync", g_settings.video.hard_sync);
    config_set_int(conf,   "video_hard_sync_frames",

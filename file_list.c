@@ -34,8 +34,10 @@ void file_list_push(file_list_t *list,
             list->capacity * sizeof(struct item_file));
    }
 
+#ifdef HAVE_MENU
    if (driver.menu_ctx && driver.menu_ctx->list_insert)
       driver.menu_ctx->list_insert(list, path, label, list->size);
+#endif
 
    list->list[list->size].label = strdup(label);
    list->list[list->size].path = strdup(path);
@@ -60,8 +62,10 @@ void file_list_pop(file_list_t *list, size_t *directory_ptr)
 {
    if (!(list->size == 0))
    {
+#ifdef HAVE_MENU
       if (driver.menu_ctx && driver.menu_ctx->list_delete)
          driver.menu_ctx->list_delete(list, list->size);
+#endif
       --list->size;
       free(list->list[list->size].path);
       free(list->list[list->size].label);
@@ -70,8 +74,10 @@ void file_list_pop(file_list_t *list, size_t *directory_ptr)
    if (directory_ptr)
       *directory_ptr = list->list[list->size].directory_ptr;
 
+#ifdef HAVE_MENU
    if (driver.menu_ctx && driver.menu_ctx->list_set_selection)
       driver.menu_ctx->list_set_selection(list);
+#endif
 }
 
 void file_list_free(file_list_t *list)
@@ -98,8 +104,10 @@ void file_list_clear(file_list_t *list)
       free(list->list[i].alt);
    }
 
+#ifdef HAVE_MENU
    if (driver.menu_ctx && driver.menu_ctx->list_clear)
       driver.menu_ctx->list_clear(list);
+#endif
    list->size = 0;
 }
 
