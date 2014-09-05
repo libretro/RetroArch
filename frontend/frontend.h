@@ -27,8 +27,6 @@
 extern "C" {
 #endif
 
-int main_entry_iterate(signature(), args_type() args);
-
 void main_exit(args_type() args);
 
 returntype main_entry(signature());

@@ -27,10 +27,12 @@
 #if defined(ANDROID)
 #define args_type() struct android_app*
 #define signature() void* data
+#define signature_expand() data
 #define returntype void
 #else
 #define args_type() void*
 #define signature() int argc, char *argv[]
+#define signature_expand() argc, argv
 #define returntype int
 #endif
 
@@ -72,14 +74,14 @@ const frontend_ctx_driver_t *frontend_ctx_find_driver(const char *ident); // Fin
 const frontend_ctx_driver_t *frontend_ctx_init_first(void); // Finds first suitable driver and initializes.
 
 #ifdef HAVE_MENU
-int main_entry_iterate_content(args_type() args);
-int main_entry_iterate_menu_preinit(args_type() args);
-int main_entry_iterate_menu(args_type() args);
-int main_entry_iterate_clear_input(args_type() args);
-int main_entry_iterate_load_content(args_type() args);
+int main_entry_iterate_content(signature(), args_type() args);
+int main_entry_iterate_menu_preinit(signature(), args_type() args);
+int main_entry_iterate_menu(signature(), args_type() args);
+int main_entry_iterate_clear_input(signature(), args_type() args);
+int main_entry_iterate_load_content(signature(), args_type() args);
 #endif
 
-extern int (*frontend_loop)(args_type() args);
+extern int (*frontend_loop)(signature(), args_type() args);
 
 
 #ifdef __cplusplus

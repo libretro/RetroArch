@@ -69,12 +69,28 @@
 
 #define MAX_ARGS 32
 
-int (*frontend_loop)(args_type() args);
+int (*frontend_loop)(signature(), args_type() args);
 
 static retro_keyboard_event_t key_event;
 
-int main_entry_iterate_content(args_type() args)
+static int main_entry_iterate_shutdown(signature(), args_type() args)
 {
+   (void)args;
+
+   if (!g_settings.load_dummy_on_core_shutdown)
+      return 1;
+
+   /* Load dummy core instead of exiting RetroArch completely. */
+   rarch_main_command(RARCH_CMD_PREPARE_DUMMY);
+
+   return 0;
+}
+
+int main_entry_iterate_content(signature(), args_type() args)
+{
+   if (g_extern.system.shutdown)
+      return main_entry_iterate_shutdown(signature_expand(), args);
+
    if (!rarch_main_iterate())
    {
       rarch_main_set_state(RARCH_ACTION_STATE_RUNNING_FINISHED);
@@ -88,9 +104,12 @@ int main_entry_iterate_content(args_type() args)
 }
 
 #ifdef HAVE_MENU
-int main_entry_iterate_clear_input(args_type() args)
+int main_entry_iterate_clear_input(signature(), args_type() args)
 {
    (void)args;
+
+   if (g_extern.system.shutdown)
+      return main_entry_iterate_shutdown(signature_expand(), args);
 
    rarch_input_poll();
    if (!menu_input())
@@ -105,22 +124,13 @@ int main_entry_iterate_clear_input(args_type() args)
    return 0;
 }
 
-static int main_entry_iterate_shutdown(args_type() args)
+
+
+int main_entry_iterate_load_content(signature(), args_type() args)
 {
-   (void)args;
+   if (g_extern.system.shutdown)
+      return main_entry_iterate_shutdown(signature_expand(), args);
 
-   if (!g_settings.load_dummy_on_core_shutdown)
-      return 1;
-
-   /* Load dummy core instead of exiting RetroArch completely. */
-   rarch_main_command(RARCH_CMD_PREPARE_DUMMY);
-
-   return 0;
-}
-
-
-int main_entry_iterate_load_content(args_type() args)
-{
    if (!load_menu_content())
    {
       /* If content loading fails, we go back to menu. */
@@ -134,9 +144,12 @@ int main_entry_iterate_load_content(args_type() args)
    return 0;
 }
 
-int main_entry_iterate_menu_preinit(args_type() args)
+int main_entry_iterate_menu_preinit(signature(), args_type() args)
 {
    int i;
+
+   if (g_extern.system.shutdown)
+      return main_entry_iterate_shutdown(signature_expand(), args);
 
    /* Menu should always run with vsync on. */
    rarch_main_command(RARCH_CMD_VIDEO_SET_BLOCKING_STATE);
@@ -167,8 +180,11 @@ int main_entry_iterate_menu_preinit(args_type() args)
    return 0;
 }
 
-int main_entry_iterate_menu(args_type() args)
+int main_entry_iterate_menu(signature(), args_type() args)
 {
+   if (g_extern.system.shutdown)
+      return main_entry_iterate_shutdown(signature_expand(), args);
+
    if (menu_iterate())
    {
       if (driver.frontend_ctx && driver.frontend_ctx->process_events)
@@ -187,16 +203,6 @@ int main_entry_iterate_menu(args_type() args)
       return 1;
 
    return 0;
-}
-
-int main_entry_iterate(signature(), args_type() args)
-{
-   if (g_extern.system.shutdown)
-      return main_entry_iterate_shutdown(args);
-   if (frontend_loop)
-      return frontend_loop(args);
-
-   return 1;
 }
 #endif
 
@@ -368,7 +374,7 @@ returntype main_entry(signature())
 
 #if defined(HAVE_MAIN_LOOP)
 #if defined(HAVE_MENU)
-   while (!main_entry_iterate(signature_expand(), args));
+   while (frontend_loop && !frontend_loop(signature_expand(), args));
 #else
    while (rarch_main_iterate());
 #endif
