@@ -297,8 +297,8 @@ int menu_entries_push_list(menu_handle_t *menu,
    else if (!strcmp(label, "User Options"))
    {
       file_list_clear(list);
-      add_setting_entry(menu,list,"netplay_nickname", 0, setting_data);
-      add_setting_entry(menu,list,"user_language", 0, setting_data);
+      add_setting_entry(menu,list,"netplay_nickname", MENU_FILE_LINEFEED, setting_data);
+      add_setting_entry(menu,list,"user_language", MENU_FILE_LINEFEED, setting_data);
    }
    else if (!strcmp(label, "Netplay Options"))
    {
@@ -362,7 +362,7 @@ int menu_entries_push_list(menu_handle_t *menu,
       add_setting_entry(menu,list,"audio_rate_control_delta", 0, setting_data);
       add_setting_entry(menu,list,"system_bgm_enable", 0, setting_data);
       add_setting_entry(menu,list,"audio_volume", 0, setting_data);
-      add_setting_entry(menu,list,"audio_device", 0, setting_data);
+      add_setting_entry(menu,list,"audio_device", MENU_FILE_LINEFEED, setting_data);
    }
    else if (!strcmp(label, "Input Options"))
    {

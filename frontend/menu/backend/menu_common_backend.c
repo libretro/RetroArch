@@ -636,7 +636,7 @@ static void handle_driver(const char *label, char *driver,
 }
 
 static void handle_setting(rarch_setting_t *setting,
-      unsigned id, unsigned action)
+      unsigned id, const char *label, unsigned action)
 {
    if (setting->type == ST_BOOL)
       menu_common_setting_set_current_boolean(setting, action);
@@ -659,33 +659,15 @@ static void handle_setting(rarch_setting_t *setting,
             setting->default_value.string, setting->name, id, action);
    else if (setting->type == ST_STRING)
    {
-      if (!strcmp(setting->name, "audio_device"))
+      if (id == MENU_FILE_LINEFEED)
       {
          if (action == MENU_ACTION_OK)
-            menu_key_start_line(driver.menu, "Audio Device Name / IP: ",
-                  "audio_device", st_string_callback);
+            menu_key_start_line(driver.menu, setting->short_description,
+                  setting->name, st_string_callback);
          else if (action == MENU_ACTION_START)
             *setting->value.string = '\0';
       }
-      else if (!strcmp(setting->name, "netplay_nickname"))
-      {
-         if (action == MENU_ACTION_OK)
-            menu_key_start_line(driver.menu, "Username: ",
-                  "netplay_nickname", st_string_callback);
-         else if (action == MENU_ACTION_START)
-            *setting->value.string = '\0';
-      }
-#ifdef HAVE_NETPLAY
-      else if (!strcmp(setting->name, "netplay_ip_address"))
-      {
-         if (action == MENU_ACTION_OK)
-            menu_key_start_line(driver.menu, "IP Address: ",
-                  "netplay_ip_address", st_string_callback);
-         else if (action == MENU_ACTION_START)
-            *setting->value.string = '\0';
-      }
-#endif
-      if (!strcmp(setting->name, "video_driver"))
+      else if (!strcmp(setting->name, "video_driver"))
          handle_driver(setting->name, g_settings.video.driver,
                sizeof(g_settings.video.driver), action);
       else if (!strcmp(setting->name, "audio_driver"))
@@ -723,7 +705,7 @@ static int menu_setting_set(unsigned id, const char *label,
          );
 
    if (setting)
-      handle_setting(setting, id, action);
+      handle_setting(setting, id, label, action);
    else
    {
       setting = (rarch_setting_t*)get_last_setting(
@@ -757,7 +739,7 @@ static int menu_setting_set(unsigned id, const char *label,
             }
          }
 
-         handle_setting(setting, id, action);
+         handle_setting(setting, id, label, action);
       }
       else if (!strcmp(label, "video_shader_num_passes"))
       {
