@@ -1045,8 +1045,17 @@ static void lakka_init_core_info(void *data)
 {
    (void)data;
 
-   if (g_extern.core_info)
+   core_info_list_free(g_extern.core_info);
+   g_extern.core_info = NULL;
+   if (*g_settings.libretro_directory) {
+      g_extern.core_info = core_info_list_new(g_settings.libretro_directory);
+   }
+
+   if (g_extern.core_info) {
       num_categories = g_extern.core_info->count + 1;
+   } else {
+     num_categories = 1;
+   }
 }
 
 static void *lakka_init(void)

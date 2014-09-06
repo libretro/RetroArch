@@ -135,7 +135,7 @@ static void apple_gfx_ctx_get_video_size(void *data, unsigned* width, unsigned* 
    if (gl)
    {
 #if defined(OSX)
-      CGRect cgrect = (CGRect)NSRectToCGRect([g_view frame]);
+      CGRect cgrect = NSRectToCGRect([g_view frame]);
       size = CGRectMake(0, 0, CGRectGetWidth(cgrect), CGRectGetHeight(cgrect));
 #else
       size = g_view.bounds;
