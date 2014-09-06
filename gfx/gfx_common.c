@@ -45,12 +45,12 @@ bool gfx_get_fps(char *buf, size_t size, char *buf_fps, size_t size_fps)
          last_fps = time_to_fps(time, new_time, FPS_UPDATE_INTERVAL);
          time = new_time;
 
-         snprintf(buf, size, "%s || FPS: %6.1f || Frames: %d", g_extern.title_buf, last_fps, g_extern.frame_count);
+         snprintf(buf, size, "%s || FPS: %6.1f || Frames: %u", g_extern.title_buf, last_fps, g_extern.frame_count);
          ret = true;
       }
 
       if (buf_fps)
-         snprintf(buf_fps, size_fps, "FPS: %6.1f || Frames: %d", last_fps, g_extern.frame_count);
+         snprintf(buf_fps, size_fps, "FPS: %6.1f || Frames: %u", last_fps, g_extern.frame_count);
    }
    else
    {

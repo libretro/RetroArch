@@ -1934,7 +1934,7 @@ static void set_savestate_auto_index(void)
    dir_list_free(dir_list);
 
    g_settings.state_slot = max_index;
-   RARCH_LOG("Found last state slot: #%u\n", g_settings.state_slot);
+   RARCH_LOG("Found last state slot: #%d\n", g_settings.state_slot);
 }
 
 static void deinit_savefiles(void)
@@ -2118,7 +2118,7 @@ static void rarch_save_state(const char *path,
                "Saved state to slot #-1 (auto).");
       else
          snprintf(msg, sizeof_msg,
-               "Saved state to slot #%u.", g_settings.state_slot);
+               "Saved state to slot #%d.", g_settings.state_slot);
    }
    else
       snprintf(msg, sizeof_msg,
@@ -2213,7 +2213,7 @@ static void state_slot(void)
    if (g_extern.msg_queue)
       msg_queue_clear(g_extern.msg_queue);
 
-   snprintf(msg, sizeof(msg), "State slot: %u",
+   snprintf(msg, sizeof(msg), "State slot: %d",
          g_settings.state_slot);
 
    if (g_extern.msg_queue)
@@ -2378,7 +2378,7 @@ static void check_movie_record(bool pressed)
 
       if (g_settings.state_slot > 0)
       {
-         snprintf(path, sizeof(path), "%s%u.bsv",
+         snprintf(path, sizeof(path), "%s%d.bsv",
                g_extern.bsv.movie_path, g_settings.state_slot);
       }
       else

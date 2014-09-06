@@ -37,7 +37,7 @@ static void *xa_init(const char *device, unsigned rate, unsigned latency)
 
    size_t bufsize = latency * rate / 1000;
 
-   RARCH_LOG("XAudio2: Requesting %d ms latency, using %d ms latency.\n",
+   RARCH_LOG("XAudio2: Requesting %u ms latency, using %d ms latency.\n",
          latency, (int)bufsize * 1000 / rate);
 
    xa->bufsize = bufsize * 2 * sizeof(float);
