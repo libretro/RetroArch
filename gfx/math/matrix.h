@@ -25,7 +25,7 @@ typedef struct math_matrix
 
 #define MAT_ELEM(mat, r, c) ((mat).data[4 * (c) + (r)])
 
-void matrix_load_identity(math_matrix *mat);
+void matrix_identity(math_matrix *mat);
 void matrix_transpose(math_matrix *out, const math_matrix *in);
 
 void matrix_rotate_x(math_matrix *mat, float rad);

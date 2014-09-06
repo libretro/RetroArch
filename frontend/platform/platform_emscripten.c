@@ -27,7 +27,7 @@
 
 static void emscripten_mainloop(void)
 {
-   if (main_entry_iterate(0, NULL, NULL))
+   if (frontend_loop || (frontend_loop && frontend_loop(0, NULL, NULL)))
    {
       main_exit(NULL);
       exit(0);

@@ -35,7 +35,7 @@ struct apple_pad_connection
 
 static IOHIDManagerRef g_hid_manager;
 
-void apple_pad_send_control(struct apple_pad_connection* connection, uint8_t* data, size_t size)
+static void apple_pad_send_control(struct apple_pad_connection* connection, uint8_t* data, size_t size)
 {
     IOHIDDeviceSetReport(connection->device, kIOHIDReportTypeOutput, 0x01, data + 1, size - 1);
 }

@@ -358,12 +358,12 @@ static void handle_hotplug(android_input_t *android,
    {
       if (zeus_id < 0)
       {
-         RARCH_LOG("zeus_pad 1 detected: %d\n", id);
+         RARCH_LOG("zeus_pad 1 detected: %u\n", id);
          zeus_id = id;
       }
       else
       {
-         RARCH_LOG("zeus_pad 2 detected: %d\n", id);
+         RARCH_LOG("zeus_pad 2 detected: %u\n", id);
          zeus_second_id = id;
       }
       strlcpy(name_buf, "Xperia Play", sizeof(name_buf));

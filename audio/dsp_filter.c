@@ -51,7 +51,7 @@ struct rarch_dsp_filter
    unsigned num_instances;
 };
 
-const struct dspfilter_implementation *find_implementation(rarch_dsp_filter_t *dsp, const char *ident)
+static const struct dspfilter_implementation *find_implementation(rarch_dsp_filter_t *dsp, const char *ident)
 {
    unsigned i;
    for (i = 0; i < dsp->num_plugs; i++)

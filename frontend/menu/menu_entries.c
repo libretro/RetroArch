@@ -33,14 +33,79 @@ static void entries_refresh(file_list_t *list)
 }
 
 static inline struct gfx_shader *shader_manager_get_current_shader(
-      menu_handle_t *menu, unsigned type)
+      menu_handle_t *menu, const char *label, unsigned type)
 {
-   if (type == MENU_SETTINGS_SHADER_PRESET_PARAMETERS)
+   if (!strcmp(label, "video_shader_preset_parameters") ||
+         !strcmp(label, "video_shader_parameters"))
       return menu->shader;
    else if (driver.video_poke && driver.video_data &&
          driver.video_poke->get_current_shader)
       return driver.video_poke->get_current_shader(driver.video_data);
    return NULL;
+}
+
+static inline bool menu_list_elem_is_dir(file_list_t *buf,
+      unsigned offset)
+{
+   const char *path = NULL;
+   const char *label = NULL;
+   unsigned type = 0;
+
+   file_list_get_at_offset(buf, offset, &path, &label, &type);
+
+   return type != MENU_FILE_PLAIN;
+}
+
+static inline int menu_list_get_first_char(file_list_t *buf,
+      unsigned offset)
+{
+   int ret;
+   const char *path = NULL;
+
+   file_list_get_alt_at_offset(buf, offset, &path);
+   ret = tolower(*path);
+
+   /* "Normalize" non-alphabetical entries so they 
+    * are lumped together for purposes of jumping. */
+   if (ret < 'a')
+      ret = 'a' - 1;
+   else if (ret > 'z')
+      ret = 'z' + 1;
+   return ret;
+}
+
+static void menu_build_scroll_indices(file_list_t *buf)
+{
+   size_t i;
+   int current;
+   bool current_is_dir;
+
+   if (!driver.menu || !buf)
+      return;
+
+   driver.menu->scroll_indices_size = 0;
+   if (!buf->size)
+      return;
+
+   driver.menu->scroll_indices[driver.menu->scroll_indices_size++] = 0;
+
+   current = menu_list_get_first_char(buf, 0);
+   current_is_dir = menu_list_elem_is_dir(buf, 0);
+
+   for (i = 1; i < buf->size; i++)
+   {
+      int first = menu_list_get_first_char(buf, i);
+      bool is_dir = menu_list_elem_is_dir(buf, i);
+
+      if ((current_is_dir && !is_dir) || (first > current))
+         driver.menu->scroll_indices[driver.menu->scroll_indices_size++] = i;
+
+      current = first;
+      current_is_dir = is_dir;
+   }
+
+   driver.menu->scroll_indices[driver.menu->scroll_indices_size++] = 
+      buf->size - 1;
 }
 
 static void add_setting_entry(menu_handle_t *menu,
@@ -108,6 +173,12 @@ int menu_entries_push_list(menu_handle_t *menu,
       add_setting_entry(menu,list,"load_content", MENU_FILE_SWITCH, setting_data);
       add_setting_entry(menu,list,"core_options", MENU_FILE_SWITCH, setting_data);
       add_setting_entry(menu,list,"core_information", MENU_FILE_SWITCH, setting_data);
+      if (g_extern.main_is_init && !g_extern.libretro_dummy)
+      {
+         if (g_extern.system.disk_control.get_num_images)
+            file_list_push(list, "Core Disk Options", "disk_options",
+                  MENU_FILE_SWITCH, 0);
+      }
       add_setting_entry(menu,list,"settings", MENU_FILE_SWITCH, setting_data);
       add_setting_entry(menu,list,"performance_counters", MENU_FILE_SWITCH, setting_data);
       add_setting_entry(menu,list,"savestate", 0, setting_data);
@@ -290,8 +361,8 @@ int menu_entries_push_list(menu_handle_t *menu,
    else if (!strcmp(label, "User Options"))
    {
       file_list_clear(list);
-      add_setting_entry(menu,list,"netplay_nickname", 0, setting_data);
-      add_setting_entry(menu,list,"user_language", 0, setting_data);
+      add_setting_entry(menu,list,"netplay_nickname", MENU_FILE_LINEFEED, setting_data);
+      add_setting_entry(menu,list,"user_language", MENU_FILE_LINEFEED, setting_data);
    }
    else if (!strcmp(label, "Netplay Options"))
    {
@@ -300,7 +371,7 @@ int menu_entries_push_list(menu_handle_t *menu,
       add_setting_entry(menu,list,"netplay_mode", 0, setting_data);
       add_setting_entry(menu,list,"netplay_spectator_mode_enable", 0, setting_data);
       add_setting_entry(menu,list,"netplay_ip_address", 0, setting_data);
-      add_setting_entry(menu,list,"netplay_tcp_udp_port", 0, setting_data);
+      add_setting_entry(menu,list,"netplay_tcp_udp_port", MENU_FILE_LINEFEED, setting_data);
       add_setting_entry(menu,list,"netplay_delay_frames", 0, setting_data);
    }
    else if (!strcmp(label, "core_counters"))
@@ -355,7 +426,7 @@ int menu_entries_push_list(menu_handle_t *menu,
       add_setting_entry(menu,list,"audio_rate_control_delta", 0, setting_data);
       add_setting_entry(menu,list,"system_bgm_enable", 0, setting_data);
       add_setting_entry(menu,list,"audio_volume", 0, setting_data);
-      add_setting_entry(menu,list,"audio_device", 0, setting_data);
+      add_setting_entry(menu,list,"audio_device", MENU_FILE_LINEFEED, setting_data);
    }
    else if (!strcmp(label, "Input Options"))
    {
@@ -449,12 +520,6 @@ int menu_entries_push_list(menu_handle_t *menu,
       add_setting_entry(menu,list,"User Options", MENU_FILE_SWITCH, setting_data);
       add_setting_entry(menu,list,"Netplay Options", MENU_FILE_SWITCH, setting_data);
       add_setting_entry(menu,list,"Path Options", MENU_FILE_SWITCH, setting_data);
-      if (g_extern.main_is_init && !g_extern.libretro_dummy)
-      {
-         if (g_extern.system.disk_control.get_num_images)
-            file_list_push(list, "Disk Options", "disk_options",
-                  MENU_FILE_SWITCH, 0);
-      }
       add_setting_entry(menu,list,"Privacy Options",
             MENU_FILE_SWITCH, setting_data);
    }
@@ -489,34 +554,34 @@ int menu_entries_push_list(menu_handle_t *menu,
       file_list_clear(list);
       file_list_push(list, "Apply Shader Changes", "shader_apply_changes",
             MENU_FILE_SWITCH, 0);
-      file_list_push(list, "Default Filter", "",
-            MENU_SETTINGS_SHADER_FILTER, 0);
-      file_list_push(list, "Load Shader Preset", "",
-            MENU_SETTINGS_SHADER_PRESET, 0);
+      file_list_push(list, "Default Filter", "video_shader_default_filter",
+            0, 0);
+      file_list_push(list, "Load Shader Preset", "video_shader_preset",
+            MENU_FILE_SWITCH, 0);
       file_list_push(list, "Shader Preset Save As",
-            "video_shader_preset_save_as", MENU_FILE_SWITCH, 0);
-      file_list_push(list, "Parameters (Current)", "",
-            MENU_SETTINGS_SHADER_PARAMETERS, 0);
-      file_list_push(list, "Parameters (Menu)", "",
-            MENU_SETTINGS_SHADER_PRESET_PARAMETERS, 0);
-      file_list_push(list, "Shader Passes", "",
-            MENU_SETTINGS_SHADER_PASSES, 0);
+            "video_shader_preset_save_as", MENU_FILE_LINEFEED_SWITCH, 0);
+      file_list_push(list, "Parameters (Current)",
+            "video_shader_parameters", MENU_FILE_SWITCH, 0);
+      file_list_push(list, "Parameters (Menu)",
+            "video_shader_preset_parameters", MENU_FILE_SWITCH, 0);
+      file_list_push(list, "Shader Passes", "video_shader_num_passes",
+            0, 0);
 
       for (i = 0; i < shader->passes; i++)
       {
          char buf[64];
 
          snprintf(buf, sizeof(buf), "Shader #%u", i);
-         file_list_push(list, buf, "",
-               MENU_SETTINGS_SHADER_0 + 3 * i, 0);
+         file_list_push(list, buf, "video_shader_pass",
+               MENU_SETTINGS_SHADER_PASS_0 + i, 0);
 
          snprintf(buf, sizeof(buf), "Shader #%u Filter", i);
-         file_list_push(list, buf, "",
-               MENU_SETTINGS_SHADER_0_FILTER + 3 * i, 0);
+         file_list_push(list, buf, "video_shader_filter_pass",
+               MENU_SETTINGS_SHADER_PASS_FILTER_0 + i, 0);
 
          snprintf(buf, sizeof(buf), "Shader #%u Scale", i);
-         file_list_push(list, buf, "",
-               MENU_SETTINGS_SHADER_0_SCALE + 3 * i, 0);
+         file_list_push(list, buf, "video_shader_scale_pass",
+               MENU_SETTINGS_SHADER_PASS_SCALE_0 + i, 0);
       }
    }
    else if (!strcmp(label, "disk_options"))
@@ -525,27 +590,22 @@ int menu_entries_push_list(menu_handle_t *menu,
       file_list_push(list, "Disk Index", "disk_index", 0, 0);
       file_list_push(list, "Disk Image Append", "disk_image_append", 0, 0);
    }
-   else
+   else if (
+         !strcmp(label, "video_shader_preset_parameters") ||
+         !strcmp(label, "video_shader_parameters")
+         )
    {
-      switch (menu_type)
-      {
-         case MENU_SETTINGS_SHADER_PARAMETERS:
-         case MENU_SETTINGS_SHADER_PRESET_PARAMETERS:
-            {
-               file_list_clear(list);
+      file_list_clear(list);
 
-               struct gfx_shader *shader = (struct gfx_shader*)
-                  shader_manager_get_current_shader(menu, menu_type);
+      struct gfx_shader *shader = (struct gfx_shader*)
+         shader_manager_get_current_shader(menu, label, menu_type);
 
-               if (shader)
-                  for (i = 0; i < shader->num_parameters; i++)
-                     file_list_push(list,
-                           shader->parameters[i].desc, "",
-                           MENU_SETTINGS_SHADER_PARAMETER_0 + i, 0);
-               menu->parameter_shader = shader;
-            }
-            break;
-      }
+      if (shader)
+         for (i = 0; i < shader->num_parameters; i++)
+            file_list_push(list,
+                  shader->parameters[i].desc, label,
+                  MENU_SETTINGS_SHADER_PARAMETER_0 + i, 0);
+      menu->parameter_shader = shader;
    }
 
    if (do_action)
@@ -831,6 +891,25 @@ void menu_flush_stack_type(file_list_t *list,
    }
 }
 
+void menu_entries_pop_stack(file_list_t *list,
+      const char *needle)
+{
+   const char *path = NULL;
+   const char *label = NULL;
+   unsigned type = 0;
+
+   if (!driver.menu)
+      return;
+
+   driver.menu->need_refresh = true;
+   file_list_get_last(list, &path, &label, &type);
+   while (strcmp(needle, label) == 0)
+   {
+      file_list_pop(list, &driver.menu->selection_ptr);
+      file_list_get_last(list, &path, &label, &type);
+   }
+}
+
 void menu_flush_stack_label(file_list_t *list,
       const char *needle)
 {
@@ -857,32 +936,4 @@ void menu_entries_push(file_list_t *list,
    file_list_push(list, path, label, type, directory_ptr);
    menu_clear_navigation(driver.menu);
    driver.menu->need_refresh = true;
-}
-
-int menu_entries_get_description(const char *label, 
-      char *msg, size_t sizeof_msg)
-{
-   if (!strcmp(label, "shader_apply_changes"))
-   {
-      snprintf(msg, sizeof_msg,
-            " -- Apply Shader Changes. \n"
-            " \n"
-            "After changing shader settings, use this to \n"
-            "apply changes. \n"
-            " \n"
-            "Changing shader settings is a somewhat \n"
-            "expensive operation so it has to be \n"
-            "done explicitly. \n"
-            " \n"
-            "When you apply shaders, the menu shader \n"
-            "settings are saved to a temporary file (either \n"
-            "menu.cgp or menu.glslp) and loaded. The file \n"
-            "persists after RetroArch exits. The file is \n"
-            "saved to Shader Directory."
-            );
-
-      return 0;
-   }
-
-   return -1;
 }

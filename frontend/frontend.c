@@ -19,6 +19,7 @@
 #include "../general.h"
 #include "../conf/config_file.h"
 #include "../file.h"
+#include "../performance.h"
 
 #include "frontend_context.h"
 
@@ -37,7 +38,6 @@
 
 #define main_entry android_app_entry
 #define returntype void
-#define signature_expand() data
 #define returnfunc() exit(0)
 #define return_negative() return
 #define return_var(var) return
@@ -53,7 +53,6 @@
 #endif
 
 #define returntype int
-#define signature_expand() argc, argv
 #define returnfunc() return 0
 #define return_negative() return 1
 #define return_var(var) return var
@@ -69,26 +68,11 @@
 
 #define MAX_ARGS 32
 
+int (*frontend_loop)(signature(), args_type() args);
+
 static retro_keyboard_event_t key_event;
 
-#ifdef HAVE_MENU
-static int main_entry_iterate_clear_input(args_type() args)
-{
-   (void)args;
-
-   rarch_input_poll();
-   if (!menu_input())
-   {
-      /* Restore libretro keyboard callback. */
-      g_extern.system.key_event = key_event;
-
-      g_extern.lifecycle_state &= ~(1ULL << MODE_CLEAR_INPUT);
-   }
-
-   return 0;
-}
-
-static int main_entry_iterate_shutdown(args_type() args)
+static int main_entry_iterate_shutdown(signature(), args_type() args)
 {
    (void)args;
 
@@ -101,8 +85,11 @@ static int main_entry_iterate_shutdown(args_type() args)
    return 0;
 }
 
-static int main_entry_iterate_content(args_type() args)
+int main_entry_iterate_content(signature(), args_type() args)
 {
+   if (g_extern.system.shutdown)
+      return main_entry_iterate_shutdown(signature_expand(), args);
+
    if (!rarch_main_iterate())
    {
       rarch_main_set_state(RARCH_ACTION_STATE_RUNNING_FINISHED);
@@ -115,53 +102,98 @@ static int main_entry_iterate_content(args_type() args)
    return 0;
 }
 
-static int main_entry_iterate_load_content(args_type() args)
+#ifndef HAVE_MENU
+static int main_entry_iterate_content_nomenu(signature(), args_type() args)
 {
-   /* If content loading fails, we go back to menu. */
+   if (!rarch_main_iterate())
+      return 1;
+
+   return 0;
+}
+#endif
+
+int main_entry_iterate_clear_input(signature(), args_type() args)
+{
+   (void)args;
+
+   if (g_extern.system.shutdown)
+      return main_entry_iterate_shutdown(signature_expand(), args);
+
+   rarch_input_poll();
+#ifdef HAVE_MENU
+   if (menu_input())
+      return 0;
+#endif
+
+   /* Restore libretro keyboard callback. */
+   g_extern.system.key_event = key_event;
+   rarch_main_set_state(RARCH_ACTION_STATE_FLUSH_INPUT_FINISHED);
+
+   return 0;
+}
+
+int main_entry_iterate_load_content(signature(), args_type() args)
+{
+   if (g_extern.system.shutdown)
+      return main_entry_iterate_shutdown(signature_expand(), args);
+
+#ifdef HAVE_MENU
    if (!load_menu_content())
-      g_extern.lifecycle_state = (1ULL << MODE_MENU_PREINIT);
+   {
+      /* If content loading fails, we go back to menu. */
+      rarch_main_set_state(RARCH_ACTION_STATE_RUNNING_FINISHED);
+      if (driver.menu)
+         rarch_main_set_state(RARCH_ACTION_STATE_MENU_PREINIT);
+   }
+#endif
 
    rarch_main_set_state(RARCH_ACTION_STATE_LOAD_CONTENT_FINISHED);
 
    return 0;
 }
 
-static int main_entry_iterate_menu_preinit(args_type() args)
+#ifdef HAVE_MENU
+int main_entry_iterate_menu_preinit(signature(), args_type() args)
 {
    int i;
 
-   if (!driver.menu)
-      return 1;
+   if (g_extern.system.shutdown)
+      return main_entry_iterate_shutdown(signature_expand(), args);
 
    /* Menu should always run with vsync on. */
    rarch_main_command(RARCH_CMD_VIDEO_SET_BLOCKING_STATE);
 
-   /* Stop all rumbling when entering the menu. */
+   /* Stop all rumbling before entering the menu. */
    for (i = 0; i < MAX_PLAYERS; i++)
    {
       driver_set_rumble_state(i, RETRO_RUMBLE_STRONG, 0);
       driver_set_rumble_state(i, RETRO_RUMBLE_WEAK, 0);
    }
 
-   /* Override keyboard callback to redirect to menu instead.
-    * We'll use this later for something ...
-    * FIXME: This should probably be moved to menu_common somehow. */
-   key_event = g_extern.system.key_event;
-   g_extern.system.key_event = menu_key_event;
-
    rarch_main_command(RARCH_CMD_AUDIO_STOP);
 
-   driver.menu->need_refresh = true;
-   driver.menu->old_input_state |= 1ULL << RARCH_MENU_TOGGLE;
+   if (driver.menu)
+   {
+      /* Override keyboard callback to redirect to menu instead.
+       * We'll use this later for something ...
+       * FIXME: This should probably be moved to menu_common somehow. */
+      key_event = g_extern.system.key_event;
+      g_extern.system.key_event = menu_key_event;
 
-   rarch_main_set_state(RARCH_ACTION_STATE_MENU_PREINIT_FINISHED);
-   rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING);
+      driver.menu->need_refresh = true;
+      driver.menu->old_input_state |= 1ULL << RARCH_MENU_TOGGLE;
+      rarch_main_set_state(RARCH_ACTION_STATE_MENU_PREINIT_FINISHED);
+      rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING);
+   }
 
    return 0;
 }
 
-static int main_entry_iterate_menu(args_type() args)
+int main_entry_iterate_menu(signature(), args_type() args)
 {
+   if (g_extern.system.shutdown)
+      return main_entry_iterate_shutdown(signature_expand(), args);
+
    if (menu_iterate())
    {
       if (driver.frontend_ctx && driver.frontend_ctx->process_events)
@@ -173,35 +205,13 @@ static int main_entry_iterate_menu(args_type() args)
    driver_set_nonblock_state(driver.nonblock_state);
 
    rarch_main_command(RARCH_CMD_AUDIO_START);
+   rarch_main_set_state(RARCH_ACTION_STATE_FLUSH_INPUT);
 
-   g_extern.lifecycle_state |= (1ULL << MODE_CLEAR_INPUT);
-
-   /* If QUIT state came from command interface, we'll only see it
-    * once due to MODE_CLEAR_INPUT. */
    if (input_key_pressed_func(RARCH_QUIT_KEY) ||
          !driver.video->alive(driver.video_data))
       return 1;
 
    return 0;
-}
-
-int main_entry_iterate(signature(), args_type() args)
-{
-   if (g_extern.system.shutdown)
-      return main_entry_iterate_shutdown(args);
-   if (g_extern.lifecycle_state & (1ULL << MODE_CLEAR_INPUT))
-      return main_entry_iterate_clear_input(args);
-   if (g_extern.lifecycle_state & (1ULL << MODE_LOAD_GAME))
-      return main_entry_iterate_load_content(args);
-   if (g_extern.lifecycle_state & (1ULL << MODE_GAME))
-      return main_entry_iterate_content(args);
-#ifdef HAVE_MENU
-   if (g_extern.lifecycle_state & (1ULL << MODE_MENU_PREINIT))
-      return main_entry_iterate_menu_preinit(args);
-   if (g_extern.lifecycle_state & (1ULL << MODE_MENU))
-      return main_entry_iterate_menu(args);
-#endif
-   return 1;
 }
 #endif
 
@@ -226,8 +236,10 @@ void main_exit(args_type() args)
 
    if (g_extern.main_is_init)
    {
+#ifdef HAVE_MENU
       /* Do not want menu context to live any more. */
       driver.menu_data_own = false;
+#endif
       rarch_main_deinit();
    }
 
@@ -362,21 +374,13 @@ returntype main_entry(signature())
 #if defined(RARCH_CONSOLE) || defined(RARCH_MOBILE)
    if (ret)
 #endif
-   {
-      /* If we started content directly from command line,
-       * push it to content history.
-       */
-      if (!g_extern.libretro_dummy)
-         menu_content_history_push_current();
-   }
+      rarch_playlist_push(g_extern.history, g_extern.fullpath);
+#else
+   frontend_loop = main_entry_iterate_content_nomenu;
 #endif
 
 #if defined(HAVE_MAIN_LOOP)
-#if defined(HAVE_MENU)
-   while (!main_entry_iterate(signature_expand(), args));
-#else
-   while (rarch_main_iterate());
-#endif
+   while (frontend_loop && !frontend_loop(signature_expand(), args));
 
    main_exit(args);
 #endif

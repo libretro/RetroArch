@@ -148,7 +148,7 @@ static int omapfb_detect_screen(omapfb_data_t *pdata) {
   int fb_id, overlay_id = -1, display_id = -1;
   char buff[64], manager_name[64], display_name[64];
   struct stat status;
-  int fd, i, ret;
+  int i, ret;
   int w, h;
   FILE *f;
 
@@ -295,8 +295,6 @@ static int omapfb_mmap(omapfb_data_t *pdata) {
 }
 
 static int omapfb_backup_state(omapfb_data_t *pdata) {
-  struct omapfb_plane_info pi;
-  struct omapfb_mem_info mi;
   void* mem;
 
   assert(pdata->saved_state == NULL);
@@ -371,7 +369,7 @@ static int omapfb_alloc_mem(omapfb_data_t *pdata) {
   mi.size = mem_size;
 
   if (ioctl(pdata->fd, OMAPFB_SETUP_MEM, &mi) != 0) {
-    RARCH_ERR("video_omap: allocation of %d bytes of VRAM failed\n", mem_size);
+    RARCH_ERR("video_omap: allocation of %u bytes of VRAM failed\n", mem_size);
     return -1;
   }
 

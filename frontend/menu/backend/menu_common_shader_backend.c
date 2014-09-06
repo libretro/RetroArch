@@ -132,11 +132,14 @@ static void menu_common_shader_manager_set_preset(struct gfx_shader *shader,
 }
 
 static void menu_common_shader_manager_get_str(struct gfx_shader *shader,
-      char *type_str, size_t type_str_size, unsigned type)
+      char *type_str, size_t type_str_size, const char *menu_label,
+      const char *label, unsigned type)
 {
    *type_str = '\0';
 
-   if (type >= MENU_SETTINGS_SHADER_PARAMETER_0
+   if (!strcmp(label, "video_shader_num_passes"))
+      snprintf(type_str, type_str_size, "%u", shader->passes);
+   else if (type >= MENU_SETTINGS_SHADER_PARAMETER_0
          && type <= MENU_SETTINGS_SHADER_PARAMETER_LAST)
    {
       /* menu->parameter_shader here. */
@@ -149,44 +152,38 @@ static void menu_common_shader_manager_get_str(struct gfx_shader *shader,
                param->current, param->minimum, param->maximum);
       }
    }
-   else if (type == MENU_SETTINGS_SHADER_PASSES)
-      snprintf(type_str, type_str_size, "%u", shader->passes);
-   else if (type >= MENU_SETTINGS_SHADER_0 && type <= MENU_SETTINGS_SHADER_LAST)
+   else if (!strcmp(label, "video_shader_default_filter"))
+      snprintf(type_str, type_str_size, "%s",
+            g_settings.video.smooth ? "Linear" : "Nearest");
+   else if (!strcmp(label, "video_shader_pass"))
    {
-      unsigned pass = (type - MENU_SETTINGS_SHADER_0) / 3;
-      switch ((type - MENU_SETTINGS_SHADER_0) % 3)
-      {
-         case 0:
-            if (*shader->pass[pass].source.path)
-               fill_pathname_base(type_str,
-                     shader->pass[pass].source.path, type_str_size);
-            else
-               strlcpy(type_str, "N/A", type_str_size);
-            break;
+      unsigned pass = (type - MENU_SETTINGS_SHADER_PASS_0);
+      if (*shader->pass[pass].source.path)
+         fill_pathname_base(type_str,
+               shader->pass[pass].source.path, type_str_size);
+      else
+         strlcpy(type_str, "N/A", type_str_size);
+   }
+   else if (!strcmp(label, "video_shader_filter_pass"))
+   {
+      unsigned pass = (type - MENU_SETTINGS_SHADER_PASS_FILTER_0);
+      static const char *modes[] = {
+         "Don't care",
+         "Linear",
+         "Nearest"
+      };
 
-         case 1:
-            {
-               static const char *modes[] = {
-                  "Don't care",
-                  "Linear",
-                  "Nearest"
-               };
-
-               strlcpy(type_str, modes[shader->pass[pass].filter],
-                     type_str_size);
-            }
-            break;
-
-         case 2:
-         {
-            unsigned scale = shader->pass[pass].fbo.scale_x;
-            if (!scale)
-               strlcpy(type_str, "Don't care", type_str_size);
-            else
-               snprintf(type_str, type_str_size, "%ux", scale);
-            break;
-         }
-      }
+      strlcpy(type_str, modes[shader->pass[pass].filter],
+            type_str_size);
+   }
+   else if (!strcmp(label, "video_shader_scale_pass"))
+   {
+      unsigned pass = (type - MENU_SETTINGS_SHADER_PASS_SCALE_0);
+      unsigned scale = shader->pass[pass].fbo.scale_x;
+      if (!scale)
+         strlcpy(type_str, "Don't care", type_str_size);
+      else
+         snprintf(type_str, type_str_size, "%ux", scale);
    }
 }
 
@@ -196,7 +193,6 @@ static void menu_common_shader_manager_save_preset(
    char buffer[PATH_MAX], config_directory[PATH_MAX], cgp_path[PATH_MAX];
    unsigned d, type = RARCH_SHADER_NONE;
    config_file_t *conf = NULL;
-   const char *conf_path = NULL;
    bool ret = false;
 
    if (!driver.menu)
@@ -213,8 +209,6 @@ static void menu_common_shader_manager_save_preset(
    if (type == RARCH_SHADER_NONE)
       return;
 
-   conf_path = (type == RARCH_SHADER_GLSL) ?
-      driver.menu->default_glslp : driver.menu->default_cgp;
    *config_directory = '\0';
 
    if (basename)
@@ -229,6 +223,12 @@ static void menu_common_shader_manager_save_preset(
          else if (type == RARCH_SHADER_CG)
             strlcat(buffer, ".cgp", sizeof(buffer));
       }
+   }
+   else
+   {
+      const char *conf_path = (type == RARCH_SHADER_GLSL) ?
+         driver.menu->default_glslp : driver.menu->default_cgp;
+      strlcpy(buffer, conf_path, sizeof(buffer));
    }
 
    if (*g_extern.config_path)
@@ -250,7 +250,7 @@ static void menu_common_shader_manager_save_preset(
       if (!*dirs[d])
          continue;
 
-      fill_pathname_join(cgp_path, dirs[d], conf_path, sizeof(cgp_path));
+      fill_pathname_join(cgp_path, dirs[d], buffer, sizeof(cgp_path));
       if (config_file_write(conf, cgp_path))
       {
          RARCH_LOG("Saved shader preset to %s.\n", cgp_path);
@@ -317,27 +317,24 @@ static int menu_common_shader_manager_setting_toggle(
       return 0;
    }
 
+#if 0
+   RARCH_LOG("shader label: %s\n", label);
+#endif
+
    rarch_setting_t *current_setting = NULL;
    rarch_setting_t *setting_data = (rarch_setting_t *)setting_data_get_list();
 
-   unsigned dist_shader = id - MENU_SETTINGS_SHADER_0;
-   unsigned dist_filter = id - MENU_SETTINGS_SHADER_0_FILTER;
-   unsigned dist_scale  = id - MENU_SETTINGS_SHADER_0_SCALE;
 
-   if (id == MENU_SETTINGS_SHADER_FILTER)
+   if (!strcmp(label, "video_shader_default_filter"))
    {
       if ((current_setting = setting_data_find_setting(
                   setting_data, "video_smooth")))
          menu_common_setting_set_current_boolean(current_setting, action);
    }
-   else if ((id == MENU_SETTINGS_SHADER_PARAMETERS
-            || id == MENU_SETTINGS_SHADER_PRESET_PARAMETERS)
-         && action == MENU_ACTION_OK)
-      menu_entries_push(driver.menu->menu_stack, "",
-            "shader_parameters", id, driver.menu->selection_ptr);
    else if (id >= MENU_SETTINGS_SHADER_PARAMETER_0
          && id <= MENU_SETTINGS_SHADER_PARAMETER_LAST)
    {
+      bool apply_changes = false;
       struct gfx_shader *shader = NULL;
       struct gfx_shader_parameter *param = NULL;
 
@@ -351,14 +348,17 @@ static int menu_common_shader_manager_setting_toggle(
       {
          case MENU_ACTION_START:
             param->current = param->initial;
+            apply_changes = true;
             break;
 
          case MENU_ACTION_LEFT:
             param->current -= param->step;
+            apply_changes = true;
             break;
 
          case MENU_ACTION_RIGHT:
             param->current += param->step;
+            apply_changes = true;
             break;
 
          default:
@@ -366,50 +366,74 @@ static int menu_common_shader_manager_setting_toggle(
       }
 
       param->current = min(max(param->minimum, param->current), param->maximum);
+
+      if (apply_changes)
+         rarch_main_command(RARCH_CMD_SHADERS_APPLY_CHANGES);
    }
+   else if ((!strcmp(label, "video_shader_parameters") ||
+            !strcmp(label, "video_shader_preset_parameters"))
+         && action == MENU_ACTION_OK)
+      menu_entries_push(driver.menu->menu_stack, "",
+            "video_shader_parameters", MENU_FILE_SWITCH, driver.menu->selection_ptr);
    else if (!strcmp(label, "shader_apply_changes") ||
-            id == MENU_SETTINGS_SHADER_PASSES)
-      menu_setting_set(id, action);
-   else if (((dist_shader % 3) == 0 || id == MENU_SETTINGS_SHADER_PRESET))
+         !strcmp(label, "video_shader_num_passes"))
+      menu_setting_set(id, label, action);
+   else if (!strcmp(label, "video_shader_preset"))
    {
-      struct gfx_shader *shader = (struct gfx_shader*)driver.menu->shader;
-      struct gfx_shader_pass *pass = NULL;
-
-      dist_shader /= 3;
-      if (shader && id == MENU_SETTINGS_SHADER_PRESET)
-         pass = &shader->pass[dist_shader];
-
       switch (action)
       {
          case MENU_ACTION_OK:
             menu_entries_push(driver.menu->menu_stack,
                   g_settings.video.shader_dir, 
-                  (id == MENU_SETTINGS_SHADER_PRESET) ?
-                  "video_shader_preset" : "video_shader_pass",
+                  "video_shader_preset",
                   id, driver.menu->selection_ptr);
             break;
 
          case MENU_ACTION_START:
-            if (pass)
-               *pass->source.path = '\0';
             break;
 
          default:
             break;
       }
    }
-   else if ((dist_filter % 3) == 0)
+   else if (!strcmp(label, "video_shader_pass"))
    {
-      dist_filter /= 3;
+      hack_shader_pass = id - MENU_SETTINGS_SHADER_PASS_0;
       struct gfx_shader *shader = (struct gfx_shader*)driver.menu->shader;
-      struct gfx_shader_pass *pass = (struct gfx_shader_pass*)
-         &shader->pass[dist_filter];
+      struct gfx_shader_pass *shader_pass = NULL;
+
+      if (shader)
+         shader_pass = (struct gfx_shader_pass*)&shader->pass[hack_shader_pass];
+
+      switch (action)
+      {
+         case MENU_ACTION_OK:
+            menu_entries_push(driver.menu->menu_stack,
+                  g_settings.video.shader_dir, 
+                  "video_shader_pass",
+                  id, driver.menu->selection_ptr);
+            break;
+         case MENU_ACTION_START:
+            if (shader_pass)
+               *shader_pass->source.path = '\0';
+            break;
+
+         default:
+            break;
+      }
+   }
+   else if (!strcmp(label, "video_shader_filter_pass"))
+   {
+      unsigned pass = id - MENU_SETTINGS_SHADER_PASS_FILTER_0;
+      struct gfx_shader *shader = (struct gfx_shader*)driver.menu->shader;
+      struct gfx_shader_pass *shader_pass = (struct gfx_shader_pass*)
+         &shader->pass[pass];
 
       switch (action)
       {
          case MENU_ACTION_START:
             if (shader)
-               shader->pass[dist_filter].filter = RARCH_FILTER_UNSPEC;
+               shader->pass[pass].filter = RARCH_FILTER_UNSPEC;
             break;
 
          case MENU_ACTION_LEFT:
@@ -417,8 +441,8 @@ static int menu_common_shader_manager_setting_toggle(
          case MENU_ACTION_OK:
          {
             unsigned delta = (action == MENU_ACTION_LEFT) ? 2 : 1;
-            if (pass)
-               pass->filter = ((pass->filter + delta) % 3);
+            if (shader_pass)
+               shader_pass->filter = ((shader_pass->filter + delta) % 3);
             break;
          }
 
@@ -426,20 +450,20 @@ static int menu_common_shader_manager_setting_toggle(
          break;
       }
    }
-   else if ((dist_scale % 3) == 0)
+   else if (!strcmp(label, "video_shader_scale_pass"))
    {
-      dist_scale /= 3;
+      unsigned pass = id - MENU_SETTINGS_SHADER_PASS_SCALE_0;
       struct gfx_shader *shader = (struct gfx_shader*)driver.menu->shader;
-      struct gfx_shader_pass *pass = (struct gfx_shader_pass*)
-         &shader->pass[dist_scale];
+      struct gfx_shader_pass *shader_pass = (struct gfx_shader_pass*)
+         &shader->pass[pass];
 
       switch (action)
       {
          case MENU_ACTION_START:
             if (shader)
             {
-               pass->fbo.scale_x = pass->fbo.scale_y = 0;
-               pass->fbo.valid = false;
+               shader_pass->fbo.scale_x = shader_pass->fbo.scale_y = 0;
+               shader_pass->fbo.valid = false;
             }
             break;
 
@@ -447,14 +471,14 @@ static int menu_common_shader_manager_setting_toggle(
          case MENU_ACTION_RIGHT:
          case MENU_ACTION_OK:
          {
-            unsigned current_scale = pass->fbo.scale_x;
+            unsigned current_scale = shader_pass->fbo.scale_x;
             unsigned delta = action == MENU_ACTION_LEFT ? 5 : 1;
             current_scale = (current_scale + delta) % 6;
 
-            if (pass)
+            if (shader_pass)
             {
-               pass->fbo.valid = current_scale;
-               pass->fbo.scale_x = pass->fbo.scale_y = current_scale;
+               shader_pass->fbo.valid = current_scale;
+               shader_pass->fbo.scale_x = shader_pass->fbo.scale_y = current_scale;
             }
             break;
          }

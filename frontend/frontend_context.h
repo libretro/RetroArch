@@ -24,6 +24,19 @@
 #include "../config.h"
 #endif
 
+#if defined(ANDROID)
+#include "platform/platform_android.h"
+#define args_type() struct android_app*
+#define signature() void* data
+#define signature_expand() data
+#define returntype void
+#else
+#define args_type() void*
+#define signature() int argc, char *argv[]
+#define signature_expand() argc, argv
+#define returntype int
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -60,6 +73,17 @@ extern const frontend_ctx_driver_t frontend_ctx_null;
 
 const frontend_ctx_driver_t *frontend_ctx_find_driver(const char *ident); // Finds driver with ident. Does not initialize.
 const frontend_ctx_driver_t *frontend_ctx_init_first(void); // Finds first suitable driver and initializes.
+
+int main_entry_iterate_clear_input(signature(), args_type() args);
+int main_entry_iterate_load_content(signature(), args_type() args);
+int main_entry_iterate_content(signature(), args_type() args);
+#ifdef HAVE_MENU
+int main_entry_iterate_menu_preinit(signature(), args_type() args);
+int main_entry_iterate_menu(signature(), args_type() args);
+#endif
+
+extern int (*frontend_loop)(signature(), args_type() args);
+
 
 #ifdef __cplusplus
 }

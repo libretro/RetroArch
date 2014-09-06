@@ -31,7 +31,7 @@ static void do_iteration(void)
    if (!(g_extern.main_is_init && !g_extern.is_paused))
       return;
 
-   if (main_entry_iterate(0, NULL, NULL))
+   if (!frontend_loop || (frontend_loop && frontend_loop(0, NULL, NULL)))
    {
       main_exit(NULL);
       return;

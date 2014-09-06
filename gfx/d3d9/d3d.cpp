@@ -251,7 +251,7 @@ static bool d3d_init_multipass(d3d_video_t *d3d)
 
    gfx_shader_resolve_relative(&d3d->shader, d3d->cg_shader.c_str());
 
-   RARCH_LOG("[D3D9 Meta-Cg] Found %d shaders.\n", d3d->shader.passes);
+   RARCH_LOG("[D3D9 Meta-Cg] Found %u shaders.\n", d3d->shader.passes);
 
    for (unsigned i = 0; i < d3d->shader.passes; i++)
    {
@@ -834,9 +834,9 @@ static bool d3d_set_shader(void *data, enum rarch_shader_type type, const char *
    if (path && type == RARCH_SHADER_CG)
       shader = path;
 
-   auto old_shader = d3d->cg_shader;
+   std::string old_shader = d3d->cg_shader;
    bool restore_old = false;
-   d3d->cg_shader = path;
+   d3d->cg_shader = shader;
 
    if (!d3d_process_shader(d3d) || !d3d_restore(d3d))
    {

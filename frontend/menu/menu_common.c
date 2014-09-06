@@ -55,28 +55,6 @@ void menu_update_system_info(menu_handle_t *menu, bool *load_no_content)
       RARCH_LOG("Permissions = %s\n", info->permissions);
 }
 
-void menu_content_history_push_current(void)
-{
-   char tmp[PATH_MAX];
-
-   if (!g_extern.history)
-      return;
-
-   /* g_extern.fullpath can be relative here.
-    * Ensure we're pushing absolute path. */
-
-   strlcpy(tmp, g_extern.fullpath, sizeof(tmp));
-
-   if (*tmp)
-      path_resolve_realpath(tmp, sizeof(tmp));
-
-   if (g_extern.system.no_content || *tmp)
-      content_playlist_push(g_extern.history,
-            *tmp ? tmp : NULL,
-            g_settings.libretro,
-            g_extern.system.info.library_name);
-}
-
 static void draw_frame(bool enable)
 {
    if (driver.video_data && driver.video_poke &&
@@ -363,8 +341,6 @@ static unsigned input_frame(uint64_t trigger_state)
 
 bool menu_iterate(void)
 {
-   const char *path = NULL;
-   const char *label = NULL;
    unsigned action = MENU_ACTION_NOOP;
    static bool initial_held = true;
    static bool first_held = false;
@@ -567,72 +543,18 @@ bool menu_save_new_config(void)
    return ret;
 }
 
-static inline int menu_list_get_first_char(file_list_t *buf,
-      unsigned offset)
-{
-   int ret;
-   const char *path = NULL;
-
-   file_list_get_alt_at_offset(buf, offset, &path);
-   ret = tolower(*path);
-
-   /* "Normalize" non-alphabetical entries so they 
-    * are lumped together for purposes of jumping. */
-   if (ret < 'a')
-      ret = 'a' - 1;
-   else if (ret > 'z')
-      ret = 'z' + 1;
-   return ret;
-}
-
-static inline bool menu_list_elem_is_dir(file_list_t *buf,
-      unsigned offset)
-{
-   const char *path = NULL;
-   const char *label = NULL;
-   unsigned type = 0;
-
-   file_list_get_at_offset(buf, offset, &path, &label, &type);
-
-   return type != MENU_FILE_PLAIN;
-}
-
-void menu_build_scroll_indices(file_list_t *buf)
-{
-   size_t i;
-   int current;
-   bool current_is_dir;
-
-   if (!driver.menu || !buf)
-      return;
-
-   driver.menu->scroll_indices_size = 0;
-   if (!buf->size)
-      return;
-
-   driver.menu->scroll_indices[driver.menu->scroll_indices_size++] = 0;
-
-   current = menu_list_get_first_char(buf, 0);
-   current_is_dir = menu_list_elem_is_dir(buf, 0);
-
-   for (i = 1; i < buf->size; i++)
-   {
-      int first = menu_list_get_first_char(buf, i);
-      bool is_dir = menu_list_elem_is_dir(buf, i);
-
-      if ((current_is_dir && !is_dir) || (first > current))
-         driver.menu->scroll_indices[driver.menu->scroll_indices_size++] = i;
-
-      current = first;
-      current_is_dir = is_dir;
-   }
-
-   driver.menu->scroll_indices[driver.menu->scroll_indices_size++] = 
-      buf->size - 1;
-}
-
 unsigned menu_common_type_is(const char *label, unsigned type)
 {
+   if (
+         !strcmp(label, "video_shader_pass") ||
+         !strcmp(label, "video_shader_filter_pass") ||
+         !strcmp(label, "video_shader_scale_pass") ||
+         !strcmp(label, "video_shader_default_filter") ||
+         !strcmp(label, "video_shader_num_passes") ||
+         !strcmp(label, "video_shader_preset")
+         )
+      return MENU_SETTINGS_SHADER_OPTIONS;
+
    if (
          type == MENU_SETTINGS ||
          !strcmp(label, "General Options") ||
@@ -641,8 +563,8 @@ unsigned menu_common_type_is(const char *label, unsigned type)
          !strcmp(label, "Video Options") ||
          !strcmp(label, "Font Options") ||
          !strcmp(label, "Shader Options") ||
-         type == MENU_SETTINGS_SHADER_PARAMETERS ||
-         type == MENU_SETTINGS_SHADER_PRESET_PARAMETERS ||
+         !strcmp(label, "video_shader_parameters") ||
+         !strcmp(label, "video_shader_preset_parameters") ||
          !strcmp(label, "Audio Options") ||
          !strcmp(label, "disk_options") ||
          !strcmp(label, "Path Options") ||
@@ -659,13 +581,6 @@ unsigned menu_common_type_is(const char *label, unsigned type)
          )
          return MENU_SETTINGS;
 
-   if (
-         (
-          type >= MENU_SETTINGS_SHADER_0 &&
-          type <= MENU_SETTINGS_SHADER_LAST &&
-          (((type - MENU_SETTINGS_SHADER_0) % 3) == 0)) ||
-         type == MENU_SETTINGS_SHADER_PRESET)
-      return MENU_SETTINGS_SHADER_OPTIONS;
 
    if (
          !strcmp(label, "rgui_browser_directory") ||

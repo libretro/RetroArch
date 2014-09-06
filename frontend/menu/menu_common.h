@@ -60,6 +60,8 @@ typedef enum
    MENU_FILE_PLAIN,
    MENU_FILE_DIRECTORY,
    MENU_FILE_DEVICE,
+   MENU_FILE_LINEFEED,
+   MENU_FILE_LINEFEED_SWITCH,
    MENU_FILE_CORE,
    MENU_FILE_PLAYLIST_ENTRY,
    MENU_FILE_USE_DIRECTORY,
@@ -90,17 +92,14 @@ typedef enum
    MENU_SETTINGS_VIDEO_RESOLUTION = MENU_SETTINGS + 1,
    MENU_SETTINGS_CUSTOM_VIEWPORT,
    MENU_SETTINGS_SHADER_OPTIONS,
-   MENU_SETTINGS_SHADER_FILTER,
-   MENU_SETTINGS_SHADER_PRESET,
-   MENU_SETTINGS_SHADER_PARAMETERS, // Modifies current shader directly. Will not get saved to CGP.
-   MENU_SETTINGS_SHADER_PRESET_PARAMETERS, // Modifies shader preset currently in menu.
-   MENU_SETTINGS_SHADER_PASSES,
    MENU_SETTINGS_SHADER_PARAMETER_0,
    MENU_SETTINGS_SHADER_PARAMETER_LAST = MENU_SETTINGS_SHADER_PARAMETER_0 + (GFX_MAX_PARAMETERS - 1),
-   MENU_SETTINGS_SHADER_0,
-   MENU_SETTINGS_SHADER_0_FILTER,
-   MENU_SETTINGS_SHADER_0_SCALE,
-   MENU_SETTINGS_SHADER_LAST = MENU_SETTINGS_SHADER_0_SCALE + (3 * (GFX_MAX_SHADERS - 1)),
+   MENU_SETTINGS_SHADER_PASS_0,
+   MENU_SETTINGS_SHADER_PASS_LAST = MENU_SETTINGS_SHADER_PASS_0 + (GFX_MAX_SHADERS - 1),
+   MENU_SETTINGS_SHADER_PASS_FILTER_0,
+   MENU_SETTINGS_SHADER_PASS_FILTER_LAST = MENU_SETTINGS_SHADER_PASS_FILTER_0  + (GFX_MAX_SHADERS - 1),
+   MENU_SETTINGS_SHADER_PASS_SCALE_0,
+   MENU_SETTINGS_SHADER_PASS_SCALE_LAST = MENU_SETTINGS_SHADER_PASS_SCALE_0  + (GFX_MAX_SHADERS - 1),
 
    MENU_SETTINGS_BIND_PLAYER,
    MENU_SETTINGS_BIND_DEVICE,
@@ -136,15 +135,11 @@ bool load_menu_content(void);
 
 void load_menu_content_history(unsigned game_index);
 
-void menu_content_history_push_current(void);
-
 bool menu_replace_config(const char *path);
 
 bool menu_save_new_config(void);
 
 void menu_update_system_info(menu_handle_t *menu, bool *load_no_content);
-
-void menu_build_scroll_indices(file_list_t *buf);
 
 unsigned menu_common_type_is(const char *label, unsigned type);
 

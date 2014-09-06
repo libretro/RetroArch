@@ -654,7 +654,7 @@ static int exynos_init(struct exynos_data *pdata, unsigned bpp) {
     }
 
     if (drm->mode == NULL) {
-      RARCH_ERR("video_exynos: requested resolution (%dx%d) not available\n",
+      RARCH_ERR("video_exynos: requested resolution (%ux%u) not available\n",
                 g_settings.video.fullscreen_x, g_settings.video.fullscreen_y);
       goto fail;
     }

@@ -48,10 +48,10 @@ static uint16_t __attribute((aligned(64))) menu_framebuf[400 * 240];
 static uint16_t menu_framebuf[400 * 240];
 #endif
 
-#define RGUI_TERM_START_X 15
-#define RGUI_TERM_START_Y 27
-#define RGUI_TERM_WIDTH (((driver.menu->width - RGUI_TERM_START_X - 15) / (FONT_WIDTH_STRIDE)))
-#define RGUI_TERM_HEIGHT (((driver.menu->height - RGUI_TERM_START_Y - 15) / (FONT_HEIGHT_STRIDE)) - 1)
+#define RGUI_TERM_START_X (driver.menu->width / 21)
+#define RGUI_TERM_START_Y (driver.menu->height / 9)
+#define RGUI_TERM_WIDTH (((driver.menu->width - RGUI_TERM_START_X - RGUI_TERM_START_X) / (FONT_WIDTH_STRIDE)))
+#define RGUI_TERM_HEIGHT (((driver.menu->height - RGUI_TERM_START_Y - RGUI_TERM_START_X) / (FONT_HEIGHT_STRIDE)) - 1)
 
 static void rgui_copy_glyph(uint8_t *glyph, const uint8_t *buf)
 {
@@ -313,8 +313,8 @@ static void rgui_render(void)
 
    char title_buf[256];
    menu_ticker_line(title_buf, RGUI_TERM_WIDTH - 3,
-         g_extern.frame_count / 15, title, true);
-   blit_line(RGUI_TERM_START_X + 15, 15, title_buf, true);
+         g_extern.frame_count / RGUI_TERM_START_X, title, true);
+   blit_line(RGUI_TERM_START_X + RGUI_TERM_START_X, RGUI_TERM_START_X, title_buf, true);
 
    char title_msg[64];
    const char *core_name = driver.menu->info.library_name;
@@ -331,7 +331,7 @@ static void rgui_render(void)
 
    snprintf(title_msg, sizeof(title_msg), "%s - %s %s", PACKAGE_VERSION,
          core_name, core_version);
-   blit_line(RGUI_TERM_START_X + 15, (RGUI_TERM_HEIGHT * FONT_HEIGHT_STRIDE) +
+   blit_line(RGUI_TERM_START_X + RGUI_TERM_START_X, (RGUI_TERM_HEIGHT * FONT_HEIGHT_STRIDE) +
          RGUI_TERM_START_Y + 2, title_msg, true);
 
    unsigned x, y;
@@ -358,33 +358,6 @@ static void rgui_render(void)
       if (!strcmp(label, "performance_counters"))
          w = 28;
 
-#ifdef HAVE_SHADER_MANAGER
-      if (type >= MENU_SETTINGS_SHADER_FILTER &&
-            type <= MENU_SETTINGS_SHADER_LAST)
-      {
-         if (
-               type == MENU_SETTINGS_SHADER_PRESET ||
-               type == MENU_SETTINGS_SHADER_PARAMETERS ||
-               type == MENU_SETTINGS_SHADER_PRESET_PARAMETERS)
-            strlcpy(type_str, "...", sizeof(type_str));
-         else if (type == MENU_SETTINGS_SHADER_FILTER)
-            snprintf(type_str, sizeof(type_str), "%s",
-                  g_settings.video.smooth ? "Linear" : "Nearest");
-         else if (driver.menu_ctx && driver.menu_ctx->backend &&
-               driver.menu_ctx->backend->shader_manager_get_str)
-         {
-            if (type >= MENU_SETTINGS_SHADER_PARAMETER_0 &&
-                  type <= MENU_SETTINGS_SHADER_PARAMETER_LAST)
-               driver.menu_ctx->backend->shader_manager_get_str(
-                     driver.menu->parameter_shader, type_str,
-                     sizeof(type_str), type);
-            else
-               driver.menu_ctx->backend->shader_manager_get_str(
-                     driver.menu->shader, type_str, sizeof(type_str), type);
-         }
-      }
-      else
-#endif
       if (type == MENU_FILE_CORE)
       {
          strlcpy(type_str, "(CORE)", sizeof(type_str));
@@ -413,23 +386,20 @@ static void rgui_render(void)
                core_option_get_val(g_extern.system.core_options,
                   type - MENU_SETTINGS_CORE_OPTION_START),
                sizeof(type_str));
-      else if (type == MENU_FILE_SWITCH)
-      {
+      else if (type == MENU_FILE_SWITCH || type == MENU_FILE_LINEFEED_SWITCH)
          strlcpy(type_str, "...", sizeof(type_str));
-         w = 5;
-      }
       else if (driver.menu_ctx && driver.menu_ctx->backend &&
             driver.menu_ctx->backend->setting_set_label)
          driver.menu_ctx->backend->setting_set_label(type_str,
-               sizeof(type_str), &w, type, i);
+               sizeof(type_str), &w, type, label, entry_label, i);
 
       char entry_title_buf[256];
       char type_str_buf[64];
       bool selected = i == driver.menu->selection_ptr;
 
       menu_ticker_line(entry_title_buf, RGUI_TERM_WIDTH - (w + 1 + 2),
-            g_extern.frame_count / 15, path, selected);
-      menu_ticker_line(type_str_buf, w, g_extern.frame_count / 15,
+            g_extern.frame_count / RGUI_TERM_START_X, path, selected);
+      menu_ticker_line(type_str_buf, w, g_extern.frame_count / RGUI_TERM_START_X,
             type_str, selected);
 
       snprintf(message, sizeof(message), "%c %-*.*s %-*s",

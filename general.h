@@ -129,6 +129,7 @@ enum basic_event
    RARCH_CMD_QUIT_RETROARCH,
    RARCH_CMD_RESUME,
    RARCH_CMD_MENU_SAVE_CONFIG,
+   RARCH_CMD_SHADERS_APPLY_CHANGES,
 };
 
 enum action_state
@@ -143,6 +144,8 @@ enum action_state
    RARCH_ACTION_STATE_MENU_RUNNING,
    RARCH_ACTION_STATE_MENU_RUNNING_FINISHED,
    RARCH_ACTION_STATE_EXITSPAWN,
+   RARCH_ACTION_STATE_FLUSH_INPUT,
+   RARCH_ACTION_STATE_FLUSH_INPUT_FINISHED,
    RARCH_ACTION_STATE_QUIT,
 };
 
@@ -810,6 +813,9 @@ void rarch_disk_control_set_index(unsigned index);
 void rarch_disk_control_append_image(const char *path);
 bool rarch_set_rumble_state(unsigned port,
       enum retro_rumble_effect effect, bool enable);
+
+void rarch_playlist_push(content_playlist_t *playlist,
+      const char *path);
 
 void rarch_playlist_load_content(content_playlist_t *playlist,
       unsigned index);

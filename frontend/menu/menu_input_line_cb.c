@@ -32,6 +32,8 @@
 /* forward decls */
 void menu_common_setting_set_current_string(rarch_setting_t *setting,
       const char *str);
+void menu_common_set_current_string_based_on_label(
+      const char *label, const char *str);
 
 void menu_key_start_line(void *data, const char *label,
       const char *label_setting, input_keyboard_line_complete_t cb)
@@ -99,22 +101,11 @@ void st_string_callback(void *userdata, const char *str)
                setting_data_find_setting(
                   setting_data, menu->keyboard.label_setting)))
          menu_common_setting_set_current_string(current_setting, str);
+      else
+         menu_common_set_current_string_based_on_label(menu->keyboard.label_setting, str);
    }
    menu_key_end_line(menu);
 }
-
-#ifdef HAVE_SHADER_MANAGER
-void preset_filename_callback(void *userdata, const char *str)
-{
-   menu_handle_t *menu = (menu_handle_t*)userdata;
-
-   if (driver.menu_ctx && driver.menu_ctx->backend
-         && driver.menu_ctx->backend->shader_manager_save_preset)
-      driver.menu_ctx->backend->shader_manager_save_preset(
-            str && *str ? str : NULL, false);
-   menu_key_end_line(menu);
-}
-#endif
 
 void menu_key_event(bool down, unsigned keycode, uint32_t character, uint16_t mod)
 {

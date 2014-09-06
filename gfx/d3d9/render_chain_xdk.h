@@ -130,14 +130,12 @@ static void renderchain_render_pass(void *data, const void *frame, unsigned widt
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
-#ifndef _XBOX1
-   DWORD fetchConstant;
-   UINT64 pendingMask3;
-#endif
+
 #ifdef _XBOX1
    d3dr->SetFlickerFilter(g_extern.console.screen.flicker_filter_index);
    d3dr->SetSoftDisplayFilter(g_extern.console.softfilter_enable);
 #endif
+
    renderchain_blit_to_texture(d3d, frame, width, height, pitch);
    renderchain_set_vertices(d3d, 1, width, height);
 

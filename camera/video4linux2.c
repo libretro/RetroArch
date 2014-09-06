@@ -158,7 +158,6 @@ static bool init_device(void *data)
    struct v4l2_cropcap cropcap;
    struct v4l2_crop crop;
    struct v4l2_format fmt;
-   unsigned min;
    video4linux_t *v4l = (video4linux_t*)data;
 
    if (xioctl(v4l->fd, VIDIOC_QUERYCAP, &cap) < 0)
@@ -376,7 +375,6 @@ static bool preprocess_image(void *data)
 {
    video4linux_t *v4l = (video4linux_t*)data;
    struct v4l2_buffer buf;
-   unsigned i;
 
    memset(&buf, 0, sizeof(buf));
 

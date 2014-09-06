@@ -227,32 +227,6 @@ static void rmenu_render(void)
 
       unsigned w = 21;
 
-#ifdef HAVE_SHADER_MANAGER
-      if (type >= MENU_SETTINGS_SHADER_FILTER &&
-            type <= MENU_SETTINGS_SHADER_LAST)
-      {
-         if (
-               type == MENU_SETTINGS_SHADER_PRESET ||
-               type == MENU_SETTINGS_SHADER_PARAMETERS ||
-               type == MENU_SETTINGS_SHADER_PRESET_PARAMETERS)
-            strlcpy(type_str, "...", sizeof(type_str));
-         else if (type == MENU_SETTINGS_SHADER_FILTER)
-            snprintf(type_str, sizeof(type_str), "%s",
-                  g_settings.video.smooth ? "Linear" : "Nearest");
-         else if (driver.menu_ctx && driver.menu_ctx->backend
-               && driver.menu_ctx->backend->shader_manager_get_str)
-         {
-            if (type >= MENU_SETTINGS_SHADER_PARAMETER_0 &&
-                  type <= MENU_SETTINGS_SHADER_PARAMETER_LAST)
-               driver.menu_ctx->backend->shader_manager_get_str(
-                     menu->parameter_shader, type_str, sizeof(type_str), type);
-            else
-               driver.menu_ctx->backend->shader_manager_get_str(
-                     menu->shader, type_str, sizeof(type_str), type);
-         }
-      }
-      else
-#endif
       if (type == MENU_FILE_CORE)
       {
          strlcpy(type_str, "(CORE)", sizeof(type_str));
@@ -280,15 +254,12 @@ static void rmenu_render(void)
                core_option_get_val(g_extern.system.core_options,
                   type - MENU_SETTINGS_CORE_OPTION_START),
                sizeof(type_str));
-      else if (type == MENU_FILE_SWITCH)
-      {
+      else if (type == MENU_FILE_SWITCH || type == MENU_FILE_LINEFEED_SWITCH)
          strlcpy(type_str, "...", sizeof(type_str));
-         w = 5;
-      }
       else if (driver.menu_ctx && driver.menu_ctx->backend
             && driver.menu_ctx->backend->setting_set_label)
          driver.menu_ctx->backend->setting_set_label(type_str,
-               sizeof(type_str), &w, type, i);
+               sizeof(type_str), &w, type, label, entry_label, i);
 
       char entry_title_buf[256];
       char type_str_buf[64];

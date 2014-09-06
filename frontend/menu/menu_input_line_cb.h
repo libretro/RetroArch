@@ -29,8 +29,6 @@ void st_uint_callback(void *userdata, const char *str);
 
 void st_string_callback(void *userdata, const char *str);
 
-void preset_filename_callback(void *userdata, const char *str);
-
 void menu_poll_bind_get_rested_axes(struct menu_bind_state *state);
 
 void menu_poll_bind_state(struct menu_bind_state *state);

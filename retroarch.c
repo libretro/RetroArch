@@ -1934,7 +1934,7 @@ static void set_savestate_auto_index(void)
    dir_list_free(dir_list);
 
    g_settings.state_slot = max_index;
-   RARCH_LOG("Found last state slot: #%u\n", g_settings.state_slot);
+   RARCH_LOG("Found last state slot: #%d\n", g_settings.state_slot);
 }
 
 static void deinit_savefiles(void)
@@ -2118,7 +2118,7 @@ static void rarch_save_state(const char *path,
                "Saved state to slot #-1 (auto).");
       else
          snprintf(msg, sizeof_msg,
-               "Saved state to slot #%u.", g_settings.state_slot);
+               "Saved state to slot #%d.", g_settings.state_slot);
    }
    else
       snprintf(msg, sizeof_msg,
@@ -2213,7 +2213,7 @@ static void state_slot(void)
    if (g_extern.msg_queue)
       msg_queue_clear(g_extern.msg_queue);
 
-   snprintf(msg, sizeof(msg), "State slot: %u",
+   snprintf(msg, sizeof(msg), "State slot: %d",
          g_settings.state_slot);
 
    if (g_extern.msg_queue)
@@ -2378,7 +2378,7 @@ static void check_movie_record(bool pressed)
 
       if (g_settings.state_slot > 0)
       {
-         snprintf(path, sizeof(path), "%s%u.bsv",
+         snprintf(path, sizeof(path), "%s%d.bsv",
                g_extern.bsv.movie_path, g_settings.state_slot);
       }
       else
@@ -3303,6 +3303,9 @@ static inline void limit_frame_time(void)
 
 void rarch_main_set_state(unsigned cmd)
 {
+
+   frontend_loop = NULL;
+
    switch (cmd)
    {
       case RARCH_ACTION_STATE_MENU_PREINIT:
@@ -3336,10 +3339,29 @@ void rarch_main_set_state(unsigned cmd)
          rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED);
          rarch_main_set_state(RARCH_ACTION_STATE_RUNNING_FINISHED);
          break;
+      case RARCH_ACTION_STATE_FLUSH_INPUT:
+         g_extern.lifecycle_state |= (1ULL << MODE_CLEAR_INPUT);
+         break;
+      case RARCH_ACTION_STATE_FLUSH_INPUT_FINISHED:
+         g_extern.lifecycle_state &= ~(1ULL << MODE_CLEAR_INPUT);
+         break;
       case RARCH_ACTION_STATE_NONE:
       default:
          break;
    }
+
+   if (g_extern.lifecycle_state & (1ULL << MODE_CLEAR_INPUT))
+      frontend_loop = main_entry_iterate_clear_input;
+   else if (g_extern.lifecycle_state & (1ULL << MODE_LOAD_GAME))
+      frontend_loop = main_entry_iterate_load_content;
+   else if (g_extern.lifecycle_state & (1ULL << MODE_GAME))
+      frontend_loop = main_entry_iterate_content;
+#ifdef HAVE_MENU
+   else if (g_extern.lifecycle_state & (1ULL << MODE_MENU_PREINIT))
+      frontend_loop = main_entry_iterate_menu_preinit;
+   else if (g_extern.lifecycle_state & (1ULL << MODE_MENU))
+      frontend_loop = main_entry_iterate_menu;
+#endif
 }
 
 void rarch_main_command(unsigned cmd)
@@ -3535,9 +3557,9 @@ void rarch_main_command(unsigned cmd)
          break;
       case RARCH_CMD_OVERLAY_SET_ALPHA_MOD:
 #ifdef HAVE_OVERLAY
-      if (driver.overlay)
-         input_overlay_set_alpha_mod(driver.overlay,
-               g_settings.input.overlay_opacity);
+         if (driver.overlay)
+            input_overlay_set_alpha_mod(driver.overlay,
+                  g_settings.input.overlay_opacity);
 #endif
          break;
       case RARCH_CMD_RESET_CONTEXT:
@@ -3562,6 +3584,39 @@ void rarch_main_command(unsigned cmd)
       case RARCH_CMD_MENU_SAVE_CONFIG:
 #ifdef HAVE_MENU
          menu_save_new_config();
+#endif
+         break;
+      case RARCH_CMD_SHADERS_APPLY_CHANGES:
+#ifdef HAVE_MENU
+         {
+            unsigned shader_type = RARCH_SHADER_NONE;
+
+            if (driver.menu_ctx && driver.menu_ctx->backend &&
+                  driver.menu_ctx->backend->shader_manager_get_type)
+               shader_type = driver.menu_ctx->backend->shader_manager_get_type(
+                     driver.menu->shader);
+
+            if (driver.menu->shader->passes && shader_type != RARCH_SHADER_NONE
+                  && driver.menu_ctx && driver.menu_ctx->backend &&
+                  driver.menu_ctx->backend->shader_manager_save_preset)
+               driver.menu_ctx->backend->shader_manager_save_preset(NULL, true);
+            else
+            {
+               shader_type = gfx_shader_parse_type("", DEFAULT_SHADER_TYPE);
+               if (shader_type == RARCH_SHADER_NONE)
+               {
+#if defined(HAVE_GLSL)
+                  shader_type = RARCH_SHADER_GLSL;
+#elif defined(HAVE_CG) || defined(HAVE_HLSL)
+                  shader_type = RARCH_SHADER_CG;
+#endif
+               }
+               if (driver.menu_ctx && driver.menu_ctx->backend &&
+                     driver.menu_ctx->backend->shader_manager_set_preset)
+                  driver.menu_ctx->backend->shader_manager_set_preset(
+                        NULL, shader_type, NULL);
+            }
+         }
 #endif
          break;
    }
@@ -3713,6 +3768,29 @@ void rarch_main_deinit(void)
    deinit_savefiles();
 
    g_extern.main_is_init = false;
+}
+
+void rarch_playlist_push(content_playlist_t *playlist,
+      const char *path)
+{
+   char tmp[PATH_MAX];
+
+   if (!playlist || !g_extern.libretro_dummy)
+      return;
+
+   /* path can be relative here.
+    * Ensure we're pushing absolute path. */
+
+   strlcpy(tmp, path, sizeof(tmp));
+
+   if (*tmp)
+      path_resolve_realpath(tmp, sizeof(tmp));
+
+   if (g_extern.system.no_content || *tmp)
+      content_playlist_push(playlist,
+            *tmp ? tmp : NULL,
+            g_settings.libretro,
+            g_extern.system.info.library_name);
 }
 
 void rarch_playlist_load_content(content_playlist_t *playlist,

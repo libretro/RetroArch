@@ -42,7 +42,7 @@ static bool g_es3;
 static void gfx_ctx_set_swap_interval(void *data, unsigned interval)
 {
    (void)data;
-   RARCH_LOG("gfx_ctx_set_swap_interval(%d).\n", interval);
+   RARCH_LOG("gfx_ctx_set_swap_interval(%u).\n", interval);
    eglSwapInterval(g_egl_dpy, interval);
 }
 

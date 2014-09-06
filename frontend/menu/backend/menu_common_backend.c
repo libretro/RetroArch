@@ -39,6 +39,9 @@
 #define HAVE_SHADER_MANAGER
 #endif
 
+// FIXME: Ugly hack, nees to be refactored badly
+static size_t hack_shader_pass = 0;
+
 static void *get_last_setting(const file_list_t *list, int index,
       rarch_setting_t *settings)
 {
@@ -51,6 +54,8 @@ static void *get_last_setting(const file_list_t *list, int index,
 static int menu_info_screen_iterate(unsigned action)
 {
    char msg[PATH_MAX];
+   char needle[PATH_MAX];
+   unsigned info_type = 0;
    rarch_setting_t *current_setting = NULL;
    rarch_setting_t *setting_data = (rarch_setting_t *)setting_data_get_list();
 
@@ -66,353 +71,224 @@ static int menu_info_screen_iterate(unsigned action)
          setting_data_get_list());
 
    if (current_setting)
-      setting_data_get_description(current_setting, msg, sizeof(msg));
-   else
-   {
-      current_setting = (rarch_setting_t*)get_last_setting(
+      strlcpy(needle, current_setting->name, sizeof(needle));
+   else if ((current_setting = (rarch_setting_t*)get_last_setting(
             driver.menu->selection_buf,
             driver.menu->selection_ptr,
-            setting_data_get_mainmenu(true));
-
-      if (current_setting)
-         setting_data_get_description(current_setting, msg, sizeof(msg));
-      else
-      {
+            setting_data_get_mainmenu(true))))
+   {
+      strlcpy(needle, current_setting->name, sizeof(needle));
+   }
+   else
+   {
          const char *label = NULL;
-         unsigned info_type;
          file_list_get_at_offset(driver.menu->selection_buf,
                driver.menu->selection_ptr, NULL, &label,
                &info_type);
 
-         if (menu_entries_get_description(label, msg, sizeof(msg)) == -1)
-         {
-            switch (info_type)
-            {
-               case MENU_SETTINGS_SHADER_PRESET:
-                  snprintf(msg, sizeof(msg),
-                        " -- Load Shader Preset. \n"
-                        " \n"
-                        " Load a "
-#ifdef HAVE_CG
-                        "Cg"
-#endif
-#ifdef HAVE_GLSL
-#ifdef HAVE_CG
-                        "/"
-#endif
-                        "GLSL"
-#endif
-#ifdef HAVE_HLSL
-#if defined(HAVE_CG) || defined(HAVE_HLSL)
-                        "/"
-#endif
-                        "HLSL"
-#endif
-                        " preset directly. \n"
-                        "The menu shader menu is updated accordingly. \n"
-                        " \n"
-                        "If the CGP uses scaling methods which are not \n"
-                        "simple, (i.e. source scaling, same scaling \n"
-                        "factor for X/Y), the scaling factor displayed \n"
-                        "in the menu might not be correct."
-                        );
-                  break;
-               case MENU_SETTINGS_SHADER_PASSES:
-                  snprintf(msg, sizeof(msg),
-                        " -- Shader Passes. \n"
-                        " \n"
-                        "RetroArch allows you to mix and match various \n"
-                        "shaders with arbitrary shader passes, with \n"
-                        "custom hardware filters and scale factors. \n"
-                        " \n"
-                        "This option specifies the number of shader \n"
-                        "passes to use. If you set this to 0, and use \n"
-                        "Apply Shader Changes, you use a 'blank' shader. \n"
-                        " \n"
-                        "The Default Filter option will affect the \n"
-                        "stretching filter.");
-                  break;
-               case MENU_SETTINGS_BIND_DEVICE:
-                  snprintf(msg, sizeof(msg),
-                        " -- Input Device. \n"
-                        " \n"
-                        "Picks which gamepad to use for player N. \n"
-                        "The name of the pad is available."
-                        );
-                  break;
-               case MENU_SETTINGS_BIND_DEVICE_TYPE:
-                  snprintf(msg, sizeof(msg),
-                        " -- Input Device Type. \n"
-                        " \n"
-                        "Picks which device type to use. This is \n"
-                        "relevant for the libretro core itself."
-                        );
-                  break;
-               case MENU_SETTINGS_BIND_BEGIN + RARCH_ANALOG_LEFT_X_PLUS:
-               case MENU_SETTINGS_BIND_BEGIN + RARCH_ANALOG_LEFT_X_MINUS:
-               case MENU_SETTINGS_BIND_BEGIN + RARCH_ANALOG_LEFT_Y_PLUS:
-               case MENU_SETTINGS_BIND_BEGIN + RARCH_ANALOG_LEFT_Y_MINUS:
-               case MENU_SETTINGS_BIND_BEGIN + RARCH_ANALOG_RIGHT_X_PLUS:
-               case MENU_SETTINGS_BIND_BEGIN + RARCH_ANALOG_RIGHT_X_MINUS:
-               case MENU_SETTINGS_BIND_BEGIN + RARCH_ANALOG_RIGHT_Y_PLUS:
-               case MENU_SETTINGS_BIND_BEGIN + RARCH_ANALOG_RIGHT_Y_MINUS:
-                  snprintf(msg, sizeof(msg),
-                        " -- Axis for analog stick (DualShock-esque).\n"
-                        " \n"
-                        "Bound as usual, however, if a real analog \n"
-                        "axis is bound, it can be read as a true analog.\n"
-                        " \n"
-                        "Positive X axis is right. \n"
-                        "Positive Y axis is down.");
-                  break;
-               case MENU_SETTINGS_BIND_BEGIN + RARCH_SHADER_NEXT:
-                  snprintf(msg, sizeof(msg),
-                        " -- Applies next shader in directory.");
-                  break;
-               case MENU_SETTINGS_BIND_BEGIN + RARCH_SHADER_PREV:
-                  snprintf(msg, sizeof(msg),
-                        " -- Applies previous shader in directory.");
-                  break;
-               case MENU_SETTINGS_BIND_BEGIN + RARCH_LOAD_STATE_KEY:
-                  snprintf(msg, sizeof(msg),
-                        " -- Loads state.");
-                  break;
-               case MENU_SETTINGS_BIND_BEGIN + RARCH_SAVE_STATE_KEY:
-                  snprintf(msg, sizeof(msg),
-                        " -- Saves state.");
-                  break;
-               case MENU_SETTINGS_BIND_BEGIN + RARCH_STATE_SLOT_PLUS:
-               case MENU_SETTINGS_BIND_BEGIN + RARCH_STATE_SLOT_MINUS:
-                  snprintf(msg, sizeof(msg),
-                        " -- State slots.\n"
-                        " \n"
-                        " With slot set to 0, save state name is *.state \n"
-                        " (or whatever defined on commandline).\n"
-                        "When slot is != 0, path will be (path)(d), \n"
-                        "where (d) is slot number.");
-                  break;
-               case MENU_SETTINGS_BIND_BEGIN + RARCH_TURBO_ENABLE:
-                  snprintf(msg, sizeof(msg),
-                        " -- Turbo enable.\n"
-                        " \n"
-                        "Holding the turbo while pressing another \n"
-                        "button will let the button enter a turbo \n"
-                        "mode where the button state is modulated \n"
-                        "with a periodic signal. \n"
-                        " \n"
-                        "The modulation stops when the button \n"
-                        "itself (not turbo button) is released.");
-                  break;
-               case MENU_SETTINGS_BIND_BEGIN + RARCH_FAST_FORWARD_HOLD_KEY:
-                  snprintf(msg, sizeof(msg),
-                        " -- Hold for fast-forward. Releasing button \n"
-                        "disables fast-forward.");
-                  break;
-               case MENU_SETTINGS_BIND_BEGIN + RARCH_QUIT_KEY:
-                  snprintf(msg, sizeof(msg),
-                        " -- Key to exit RetroArch cleanly."
+         if (label)
+            strlcpy(needle, label, sizeof(needle));
+   }
+   
+   if (needle[0] == '\0' || setting_data_get_description(needle, msg, sizeof(msg)) == -1)
+   {
+      switch (info_type)
+      {
+         case MENU_SETTINGS_BIND_DEVICE:
+            snprintf(msg, sizeof(msg),
+                  " -- Input Device. \n"
+                  " \n"
+                  "Picks which gamepad to use for player N. \n"
+                  "The name of the pad is available."
+                  );
+            break;
+         case MENU_SETTINGS_BIND_DEVICE_TYPE:
+            snprintf(msg, sizeof(msg),
+                  " -- Input Device Type. \n"
+                  " \n"
+                  "Picks which device type to use. This is \n"
+                  "relevant for the libretro core itself."
+                  );
+            break;
+         case MENU_SETTINGS_BIND_BEGIN + RARCH_ANALOG_LEFT_X_PLUS:
+         case MENU_SETTINGS_BIND_BEGIN + RARCH_ANALOG_LEFT_X_MINUS:
+         case MENU_SETTINGS_BIND_BEGIN + RARCH_ANALOG_LEFT_Y_PLUS:
+         case MENU_SETTINGS_BIND_BEGIN + RARCH_ANALOG_LEFT_Y_MINUS:
+         case MENU_SETTINGS_BIND_BEGIN + RARCH_ANALOG_RIGHT_X_PLUS:
+         case MENU_SETTINGS_BIND_BEGIN + RARCH_ANALOG_RIGHT_X_MINUS:
+         case MENU_SETTINGS_BIND_BEGIN + RARCH_ANALOG_RIGHT_Y_PLUS:
+         case MENU_SETTINGS_BIND_BEGIN + RARCH_ANALOG_RIGHT_Y_MINUS:
+            snprintf(msg, sizeof(msg),
+                  " -- Axis for analog stick (DualShock-esque).\n"
+                  " \n"
+                  "Bound as usual, however, if a real analog \n"
+                  "axis is bound, it can be read as a true analog.\n"
+                  " \n"
+                  "Positive X axis is right. \n"
+                  "Positive Y axis is down.");
+            break;
+         case MENU_SETTINGS_BIND_BEGIN + RARCH_SHADER_NEXT:
+            snprintf(msg, sizeof(msg),
+                  " -- Applies next shader in directory.");
+            break;
+         case MENU_SETTINGS_BIND_BEGIN + RARCH_SHADER_PREV:
+            snprintf(msg, sizeof(msg),
+                  " -- Applies previous shader in directory.");
+            break;
+         case MENU_SETTINGS_BIND_BEGIN + RARCH_LOAD_STATE_KEY:
+            snprintf(msg, sizeof(msg),
+                  " -- Loads state.");
+            break;
+         case MENU_SETTINGS_BIND_BEGIN + RARCH_SAVE_STATE_KEY:
+            snprintf(msg, sizeof(msg),
+                  " -- Saves state.");
+            break;
+         case MENU_SETTINGS_BIND_BEGIN + RARCH_STATE_SLOT_PLUS:
+         case MENU_SETTINGS_BIND_BEGIN + RARCH_STATE_SLOT_MINUS:
+            snprintf(msg, sizeof(msg),
+                  " -- State slots.\n"
+                  " \n"
+                  " With slot set to 0, save state name is *.state \n"
+                  " (or whatever defined on commandline).\n"
+                  "When slot is != 0, path will be (path)(d), \n"
+                  "where (d) is slot number.");
+            break;
+         case MENU_SETTINGS_BIND_BEGIN + RARCH_TURBO_ENABLE:
+            snprintf(msg, sizeof(msg),
+                  " -- Turbo enable.\n"
+                  " \n"
+                  "Holding the turbo while pressing another \n"
+                  "button will let the button enter a turbo \n"
+                  "mode where the button state is modulated \n"
+                  "with a periodic signal. \n"
+                  " \n"
+                  "The modulation stops when the button \n"
+                  "itself (not turbo button) is released.");
+            break;
+         case MENU_SETTINGS_BIND_BEGIN + RARCH_FAST_FORWARD_HOLD_KEY:
+            snprintf(msg, sizeof(msg),
+                  " -- Hold for fast-forward. Releasing button \n"
+                  "disables fast-forward.");
+            break;
+         case MENU_SETTINGS_BIND_BEGIN + RARCH_QUIT_KEY:
+            snprintf(msg, sizeof(msg),
+                  " -- Key to exit RetroArch cleanly."
 #if !defined(RARCH_MOBILE) && !defined(RARCH_CONSOLE)
-                        "\nKilling it in any hard way (SIGKILL, \n"
-                        "etc) will terminate without saving\n"
-                        "RAM, etc. On Unix-likes,\n"
-                        "SIGINT/SIGTERM allows\n"
-                        "a clean deinitialization."
+                  "\nKilling it in any hard way (SIGKILL, \n"
+                  "etc) will terminate without saving\n"
+                  "RAM, etc. On Unix-likes,\n"
+                  "SIGINT/SIGTERM allows\n"
+                  "a clean deinitialization."
 #endif
-                        );
-                  break;
-               case MENU_SETTINGS_BIND_BEGIN + RARCH_REWIND:
-                  snprintf(msg, sizeof(msg),
-                        " -- Hold button down to rewind.\n"
-                        " \n"
-                        "Rewind must be enabled.");
-                  break;
-               case MENU_SETTINGS_BIND_BEGIN + RARCH_MOVIE_RECORD_TOGGLE:
-                  snprintf(msg, sizeof(msg),
-                        " -- Toggle between recording and not.");
-                  break;
-               case MENU_SETTINGS_BIND_BEGIN + RARCH_PAUSE_TOGGLE:
-                  snprintf(msg, sizeof(msg),
-                        " -- Toggle between paused and non-paused state.");
-                  break;
-               case MENU_SETTINGS_BIND_BEGIN + RARCH_FRAMEADVANCE:
-                  snprintf(msg, sizeof(msg),
-                        " -- Frame advance when content is paused.");
-                  break;
-               case MENU_SETTINGS_BIND_BEGIN + RARCH_RESET:
-                  snprintf(msg, sizeof(msg),
-                        " -- Reset the content.\n");
-                  break;
-               case MENU_SETTINGS_BIND_BEGIN + RARCH_CHEAT_INDEX_PLUS:
-                  snprintf(msg, sizeof(msg),
-                        " -- Increment cheat index.\n");
-                  break;
-               case MENU_SETTINGS_BIND_BEGIN + RARCH_CHEAT_INDEX_MINUS:
-                  snprintf(msg, sizeof(msg),
-                        " -- Decrement cheat index.\n");
-                  break;
-               case MENU_SETTINGS_BIND_BEGIN + RARCH_CHEAT_TOGGLE:
-                  snprintf(msg, sizeof(msg),
-                        " -- Toggle cheat index.\n");
-                  break;
-               case MENU_SETTINGS_BIND_BEGIN + RARCH_SCREENSHOT:
-                  snprintf(msg, sizeof(msg),
-                        " -- Take screenshot.");
-                  break;
-               case MENU_SETTINGS_BIND_BEGIN + RARCH_MUTE:
-                  snprintf(msg, sizeof(msg),
-                        " -- Mute/unmute audio.");
-                  break;
-               case MENU_SETTINGS_BIND_BEGIN + RARCH_NETPLAY_FLIP:
-                  snprintf(msg, sizeof(msg),
-                        " -- Netplay flip players.");
-                  break;
-               case MENU_SETTINGS_BIND_BEGIN + RARCH_SLOWMOTION:
-                  snprintf(msg, sizeof(msg),
-                        " -- Hold for slowmotion.");
-                  break;
-               case MENU_SETTINGS_BIND_BEGIN + RARCH_ENABLE_HOTKEY:
-                  snprintf(msg, sizeof(msg),
-                        " -- Enable other hotkeys.\n"
-                        " \n"
-                        " If this hotkey is bound to either keyboard, \n"
-                        "joybutton or joyaxis, all other hotkeys will \n"
-                        "be disabled unless this hotkey is also held \n"
-                        "at the same time. \n"
-                        " \n"
-                        "This is useful for RETRO_KEYBOARD centric \n"
-                        "implementations which query a large area of \n"
-                        "the keyboard, where it is not desirable that \n"
-                        "hotkeys get in the way.");
-                  break;
-               case MENU_SETTINGS_BIND_BEGIN + RARCH_VOLUME_UP:
-                  snprintf(msg, sizeof(msg),
-                        " -- Increases audio volume.");
-                  break;
-               case MENU_SETTINGS_BIND_BEGIN + RARCH_VOLUME_DOWN:
-                  snprintf(msg, sizeof(msg),
-                        " -- Decreases audio volume.");
-                  break;
-               case MENU_SETTINGS_BIND_BEGIN + RARCH_OVERLAY_NEXT:
-                  snprintf(msg, sizeof(msg),
-                        " -- Toggles to next overlay.\n"
-                        " \n"
-                        "Wraps around.");
-                  break;
-               case MENU_SETTINGS_BIND_BEGIN + RARCH_DISK_EJECT_TOGGLE:
-                  snprintf(msg, sizeof(msg),
-                        " -- Toggles eject for disks.\n"
-                        " \n"
-                        "Used for multiple-disk content.");
-                  break;
-               case MENU_SETTINGS_BIND_BEGIN + RARCH_DISK_NEXT:
-                  snprintf(msg, sizeof(msg),
-                        " -- Cycles through disk images. Use after \n"
-                        "ejecting. \n"
-                        " \n"
-                        " Complete by toggling eject again.");
-                  break;
-               case MENU_SETTINGS_BIND_BEGIN + RARCH_GRAB_MOUSE_TOGGLE:
-                  snprintf(msg, sizeof(msg),
-                        " -- Toggles mouse grab.\n"
-                        " \n"
-                        "When mouse is grabbed, RetroArch hides the \n"
-                        "mouse, and keeps the mouse pointer inside \n"
-                        "the window to allow relative mouse input to \n"
-                        "work better.");
-                  break;
-               case MENU_SETTINGS_BIND_BEGIN + RARCH_MENU_TOGGLE:
-                  snprintf(msg, sizeof(msg),
-                        " -- Toggles menu.");
-                  break;
-               case MENU_SETTINGS_SHADER_0_FILTER + (0 * 3):
-               case MENU_SETTINGS_SHADER_0_FILTER + (1 * 3):
-               case MENU_SETTINGS_SHADER_0_FILTER + (2 * 3):
-               case MENU_SETTINGS_SHADER_0_FILTER + (3 * 3):
-               case MENU_SETTINGS_SHADER_0_FILTER + (4 * 3):
-               case MENU_SETTINGS_SHADER_0_FILTER + (5 * 3):
-               case MENU_SETTINGS_SHADER_0_FILTER + (6 * 3):
-               case MENU_SETTINGS_SHADER_0_FILTER + (7 * 3):
-               case MENU_SETTINGS_SHADER_0_FILTER + (8 * 3):
-               case MENU_SETTINGS_SHADER_0_FILTER + (9 * 3):
-               case MENU_SETTINGS_SHADER_0_FILTER + (10 * 3):
-               case MENU_SETTINGS_SHADER_0_FILTER + (11 * 3):
-               case MENU_SETTINGS_SHADER_0_FILTER + (12 * 3):
-               case MENU_SETTINGS_SHADER_0_FILTER + (13 * 3):
-               case MENU_SETTINGS_SHADER_0_FILTER + (14 * 3):
-               case MENU_SETTINGS_SHADER_0_FILTER + (15 * 3):
-                  snprintf(msg, sizeof(msg),
-                        " -- Hardware filter for this pass. \n"
-                        " \n"
-                        "If 'Don't Care' is set, 'Default \n"
-                        "Filter' will be used."
-                        );
-                  break;
-               case MENU_SETTINGS_SHADER_0 + (0 * 3):
-               case MENU_SETTINGS_SHADER_0 + (1 * 3):
-               case MENU_SETTINGS_SHADER_0 + (2 * 3):
-               case MENU_SETTINGS_SHADER_0 + (3 * 3):
-               case MENU_SETTINGS_SHADER_0 + (4 * 3):
-               case MENU_SETTINGS_SHADER_0 + (5 * 3):
-               case MENU_SETTINGS_SHADER_0 + (6 * 3):
-               case MENU_SETTINGS_SHADER_0 + (7 * 3):
-               case MENU_SETTINGS_SHADER_0 + (8 * 3):
-               case MENU_SETTINGS_SHADER_0 + (9 * 3):
-               case MENU_SETTINGS_SHADER_0 + (10 * 3):
-               case MENU_SETTINGS_SHADER_0 + (11 * 3):
-               case MENU_SETTINGS_SHADER_0 + (12 * 3):
-               case MENU_SETTINGS_SHADER_0 + (13 * 3):
-               case MENU_SETTINGS_SHADER_0 + (14 * 3):
-               case MENU_SETTINGS_SHADER_0 + (15 * 3):
-                  snprintf(msg, sizeof(msg),
-                        " -- Path to shader. \n"
-                        " \n"
-                        "All shaders must be of the same \n"
-                        "type (i.e. CG, GLSL or HLSL). \n"
-                        " \n"
-                        "Set Shader Directory to set where \n"
-                        "the browser starts to look for \n"
-                        "shaders."
-                        );
-                  break;
-               case MENU_SETTINGS_SHADER_0_SCALE + (0 * 3):
-               case MENU_SETTINGS_SHADER_0_SCALE + (1 * 3):
-               case MENU_SETTINGS_SHADER_0_SCALE + (2 * 3):
-               case MENU_SETTINGS_SHADER_0_SCALE + (3 * 3):
-               case MENU_SETTINGS_SHADER_0_SCALE + (4 * 3):
-               case MENU_SETTINGS_SHADER_0_SCALE + (5 * 3):
-               case MENU_SETTINGS_SHADER_0_SCALE + (6 * 3):
-               case MENU_SETTINGS_SHADER_0_SCALE + (7 * 3):
-               case MENU_SETTINGS_SHADER_0_SCALE + (8 * 3):
-               case MENU_SETTINGS_SHADER_0_SCALE + (9 * 3):
-               case MENU_SETTINGS_SHADER_0_SCALE + (10 * 3):
-               case MENU_SETTINGS_SHADER_0_SCALE + (11 * 3):
-               case MENU_SETTINGS_SHADER_0_SCALE + (12 * 3):
-               case MENU_SETTINGS_SHADER_0_SCALE + (13 * 3):
-               case MENU_SETTINGS_SHADER_0_SCALE + (14 * 3):
-               case MENU_SETTINGS_SHADER_0_SCALE + (15 * 3):
-                  snprintf(msg, sizeof(msg),
-                        " -- Scale for this pass. \n"
-                        " \n"
-                        "The scale factor accumulates, i.e. 2x \n"
-                        "for first pass and 2x for second pass \n"
-                        "will give you a 4x total scale. \n"
-                        " \n"
-                        "If there is a scale factor for last \n"
-                        "pass, the result is stretched to \n"
-                        "screen with the filter specified in \n"
-                        "'Default Filter'. \n"
-                        " \n"
-                        "If 'Don't Care' is set, either 1x \n"
-                        "scale or stretch to fullscreen will \n"
-                        "be used depending if it's not the last \n"
-                        "pass or not."
-                        );
-                  break;
-               default:
-                  snprintf(msg, sizeof(msg),
-                        "-- No info on this item available. --\n");
-            }
-         }
+                  );
+            break;
+         case MENU_SETTINGS_BIND_BEGIN + RARCH_REWIND:
+            snprintf(msg, sizeof(msg),
+                  " -- Hold button down to rewind.\n"
+                  " \n"
+                  "Rewind must be enabled.");
+            break;
+         case MENU_SETTINGS_BIND_BEGIN + RARCH_MOVIE_RECORD_TOGGLE:
+            snprintf(msg, sizeof(msg),
+                  " -- Toggle between recording and not.");
+            break;
+         case MENU_SETTINGS_BIND_BEGIN + RARCH_PAUSE_TOGGLE:
+            snprintf(msg, sizeof(msg),
+                  " -- Toggle between paused and non-paused state.");
+            break;
+         case MENU_SETTINGS_BIND_BEGIN + RARCH_FRAMEADVANCE:
+            snprintf(msg, sizeof(msg),
+                  " -- Frame advance when content is paused.");
+            break;
+         case MENU_SETTINGS_BIND_BEGIN + RARCH_RESET:
+            snprintf(msg, sizeof(msg),
+                  " -- Reset the content.\n");
+            break;
+         case MENU_SETTINGS_BIND_BEGIN + RARCH_CHEAT_INDEX_PLUS:
+            snprintf(msg, sizeof(msg),
+                  " -- Increment cheat index.\n");
+            break;
+         case MENU_SETTINGS_BIND_BEGIN + RARCH_CHEAT_INDEX_MINUS:
+            snprintf(msg, sizeof(msg),
+                  " -- Decrement cheat index.\n");
+            break;
+         case MENU_SETTINGS_BIND_BEGIN + RARCH_CHEAT_TOGGLE:
+            snprintf(msg, sizeof(msg),
+                  " -- Toggle cheat index.\n");
+            break;
+         case MENU_SETTINGS_BIND_BEGIN + RARCH_SCREENSHOT:
+            snprintf(msg, sizeof(msg),
+                  " -- Take screenshot.");
+            break;
+         case MENU_SETTINGS_BIND_BEGIN + RARCH_MUTE:
+            snprintf(msg, sizeof(msg),
+                  " -- Mute/unmute audio.");
+            break;
+         case MENU_SETTINGS_BIND_BEGIN + RARCH_NETPLAY_FLIP:
+            snprintf(msg, sizeof(msg),
+                  " -- Netplay flip players.");
+            break;
+         case MENU_SETTINGS_BIND_BEGIN + RARCH_SLOWMOTION:
+            snprintf(msg, sizeof(msg),
+                  " -- Hold for slowmotion.");
+            break;
+         case MENU_SETTINGS_BIND_BEGIN + RARCH_ENABLE_HOTKEY:
+            snprintf(msg, sizeof(msg),
+                  " -- Enable other hotkeys.\n"
+                  " \n"
+                  " If this hotkey is bound to either keyboard, \n"
+                  "joybutton or joyaxis, all other hotkeys will \n"
+                  "be disabled unless this hotkey is also held \n"
+                  "at the same time. \n"
+                  " \n"
+                  "This is useful for RETRO_KEYBOARD centric \n"
+                  "implementations which query a large area of \n"
+                  "the keyboard, where it is not desirable that \n"
+                  "hotkeys get in the way.");
+            break;
+         case MENU_SETTINGS_BIND_BEGIN + RARCH_VOLUME_UP:
+            snprintf(msg, sizeof(msg),
+                  " -- Increases audio volume.");
+            break;
+         case MENU_SETTINGS_BIND_BEGIN + RARCH_VOLUME_DOWN:
+            snprintf(msg, sizeof(msg),
+                  " -- Decreases audio volume.");
+            break;
+         case MENU_SETTINGS_BIND_BEGIN + RARCH_OVERLAY_NEXT:
+            snprintf(msg, sizeof(msg),
+                  " -- Toggles to next overlay.\n"
+                  " \n"
+                  "Wraps around.");
+            break;
+         case MENU_SETTINGS_BIND_BEGIN + RARCH_DISK_EJECT_TOGGLE:
+            snprintf(msg, sizeof(msg),
+                  " -- Toggles eject for disks.\n"
+                  " \n"
+                  "Used for multiple-disk content.");
+            break;
+         case MENU_SETTINGS_BIND_BEGIN + RARCH_DISK_NEXT:
+            snprintf(msg, sizeof(msg),
+                  " -- Cycles through disk images. Use after \n"
+                  "ejecting. \n"
+                  " \n"
+                  " Complete by toggling eject again.");
+            break;
+         case MENU_SETTINGS_BIND_BEGIN + RARCH_GRAB_MOUSE_TOGGLE:
+            snprintf(msg, sizeof(msg),
+                  " -- Toggles mouse grab.\n"
+                  " \n"
+                  "When mouse is grabbed, RetroArch hides the \n"
+                  "mouse, and keeps the mouse pointer inside \n"
+                  "the window to allow relative mouse input to \n"
+                  "work better.");
+            break;
+         case MENU_SETTINGS_BIND_BEGIN + RARCH_MENU_TOGGLE:
+            snprintf(msg, sizeof(msg),
+                  " -- Toggles menu.");
+            break;
+         default:
+            snprintf(msg, sizeof(msg),
+                  "-- No info on this item available. --\n");
       }
    }
 
@@ -676,12 +552,12 @@ static void menu_common_setting_set_current_fraction(
 }
 
 static void menu_common_setting_set_current_unsigned_integer(
-      rarch_setting_t *setting, unsigned action)
+      rarch_setting_t *setting, unsigned id, unsigned action)
 {
-   if (!strcmp(setting->name, "netplay_tcp_udp_port"))
+   if (id == MENU_FILE_LINEFEED)
    {
       if (action == MENU_ACTION_OK)
-         menu_key_start_line(driver.menu, "TCP/UDP Port: ",
+         menu_key_start_line(driver.menu, setting->short_description,
                setting->name, st_uint_callback);
       else if (action == MENU_ACTION_START)
          *setting->value.unsigned_integer =
@@ -736,6 +612,19 @@ static void menu_common_setting_set_current_string_path(
       setting->change_handler(setting);
 }
 
+void menu_common_set_current_string_based_on_label(
+      const char *label, const char *str)
+{
+   if (!strcmp(label, "video_shader_preset_save_as"))
+   {
+#ifdef HAVE_SHADER_MANAGER
+      if (driver.menu_ctx && driver.menu_ctx->backend
+            && driver.menu_ctx->backend->shader_manager_save_preset)
+         driver.menu_ctx->backend->shader_manager_save_preset(str, false);
+#endif
+   }
+}
+
 void menu_common_setting_set_current_string(
       rarch_setting_t *setting, const char *str)
 {
@@ -760,12 +649,12 @@ static void handle_driver(const char *label, char *driver,
 }
 
 static void handle_setting(rarch_setting_t *setting,
-      unsigned id, unsigned action)
+      unsigned id, const char *label, unsigned action)
 {
    if (setting->type == ST_BOOL)
       menu_common_setting_set_current_boolean(setting, action);
    else if (setting->type == ST_UINT)
-      menu_common_setting_set_current_unsigned_integer(setting, action);
+      menu_common_setting_set_current_unsigned_integer(setting, id, action);
    else if (setting->type == ST_FLOAT)
       menu_common_setting_set_current_fraction(setting, action);
    else if (setting->type == ST_DIR)
@@ -783,33 +672,15 @@ static void handle_setting(rarch_setting_t *setting,
             setting->default_value.string, setting->name, id, action);
    else if (setting->type == ST_STRING)
    {
-      if (!strcmp(setting->name, "audio_device"))
+      if (id == MENU_FILE_LINEFEED || id == MENU_FILE_LINEFEED_SWITCH)
       {
          if (action == MENU_ACTION_OK)
-            menu_key_start_line(driver.menu, "Audio Device Name / IP: ",
-                  "audio_device", st_string_callback);
+            menu_key_start_line(driver.menu, setting->short_description,
+                  setting->name, st_string_callback);
          else if (action == MENU_ACTION_START)
             *setting->value.string = '\0';
       }
-      else if (!strcmp(setting->name, "netplay_nickname"))
-      {
-         if (action == MENU_ACTION_OK)
-            menu_key_start_line(driver.menu, "Username: ",
-                  "netplay_nickname", st_string_callback);
-         else if (action == MENU_ACTION_START)
-            *setting->value.string = '\0';
-      }
-#ifdef HAVE_NETPLAY
-      else if (!strcmp(setting->name, "netplay_ip_address"))
-      {
-         if (action == MENU_ACTION_OK)
-            menu_key_start_line(driver.menu, "IP Address: ",
-                  "netplay_ip_address", st_string_callback);
-         else if (action == MENU_ACTION_START)
-            *setting->value.string = '\0';
-      }
-#endif
-      if (!strcmp(setting->name, "video_driver"))
+      else if (!strcmp(setting->name, "video_driver"))
          handle_driver(setting->name, g_settings.video.driver,
                sizeof(g_settings.video.driver), action);
       else if (!strcmp(setting->name, "audio_driver"))
@@ -837,7 +708,8 @@ static void handle_setting(rarch_setting_t *setting,
    }
 }
 
-static int menu_setting_set(unsigned id, unsigned action)
+static int menu_setting_set(unsigned id, const char *label,
+      unsigned action)
 {
    unsigned port = driver.menu->current_pad;
    rarch_setting_t *setting = (rarch_setting_t*)get_last_setting(
@@ -846,7 +718,7 @@ static int menu_setting_set(unsigned id, unsigned action)
          );
 
    if (setting)
-      handle_setting(setting, id, action);
+      handle_setting(setting, id, label, action);
    else
    {
       setting = (rarch_setting_t*)get_last_setting(
@@ -879,11 +751,43 @@ static int menu_setting_set(unsigned id, unsigned action)
                rarch_disk_control_set_eject(false, false);
             }
          }
-         else if (!strcmp(setting->name, "disk_image_append"))
+
+         handle_setting(setting, id, label, action);
+      }
+      else if (!strcmp(label, "video_shader_num_passes"))
+      {
+#ifdef HAVE_SHADER_MANAGER
+         struct gfx_shader *shader = (struct gfx_shader*)
+            driver.menu->shader;
+
+         switch (action)
          {
+            case MENU_ACTION_START:
+               if (shader && shader->passes)
+                  shader->passes = 0;
+               driver.menu->need_refresh = true;
+               break;
+
+            case MENU_ACTION_LEFT:
+               if (shader && shader->passes)
+                  shader->passes--;
+               driver.menu->need_refresh = true;
+               break;
+
+            case MENU_ACTION_RIGHT:
+            case MENU_ACTION_OK:
+               if (shader && (shader->passes < GFX_MAX_SHADERS))
+                  shader->passes++;
+               driver.menu->need_refresh = true;
+               break;
+
+            default:
+               break;
          }
 
-         handle_setting(setting, id, action);
+         if (driver.menu->need_refresh)
+            gfx_shader_resolve_parameters(NULL, driver.menu->shader);
+#endif
       }
       else
       {
@@ -1090,42 +994,6 @@ static int menu_setting_set(unsigned id, unsigned action)
                }
 #endif
                break;
-#ifdef HAVE_SHADER_MANAGER
-            case MENU_SETTINGS_SHADER_PASSES:
-               {
-                  struct gfx_shader *shader = (struct gfx_shader*)
-                     driver.menu->shader;
-
-                  switch (action)
-                  {
-                     case MENU_ACTION_START:
-                        if (shader && shader->passes)
-                           shader->passes = 0;
-                        driver.menu->need_refresh = true;
-                        break;
-
-                     case MENU_ACTION_LEFT:
-                        if (shader && shader->passes)
-                           shader->passes--;
-                        driver.menu->need_refresh = true;
-                        break;
-
-                     case MENU_ACTION_RIGHT:
-                     case MENU_ACTION_OK:
-                        if (shader && (shader->passes < GFX_MAX_SHADERS))
-                           shader->passes++;
-                        driver.menu->need_refresh = true;
-                        break;
-
-                     default:
-                        break;
-                  }
-
-                  if (driver.menu->need_refresh)
-                     gfx_shader_resolve_parameters(NULL, driver.menu->shader);
-               }
-               break;
-#endif
             default:
                break;
          }
@@ -1173,39 +1041,13 @@ static int menu_setting_ok_toggle(unsigned type,
 #ifdef HAVE_SHADER_MANAGER
    else if (!strcmp(label, "video_shader_preset_save_as"))
    {
-      menu_key_start_line(driver.menu, "Preset Filename: ",
-            "shader_preset_save", preset_filename_callback);
-      return 0;
+      if (action == MENU_ACTION_OK)
+         menu_key_start_line(driver.menu, "Preset Filename",
+               label, st_string_callback);
    }
    else if (!strcmp(label, "shader_apply_changes"))
    {
-      unsigned shader_type = RARCH_SHADER_NONE;
-
-      if (driver.menu_ctx && driver.menu_ctx->backend &&
-            driver.menu_ctx->backend->shader_manager_get_type)
-         shader_type = driver.menu_ctx->backend->shader_manager_get_type(
-               driver.menu->shader);
-
-      if (driver.menu->shader->passes && shader_type != RARCH_SHADER_NONE
-            && driver.menu_ctx && driver.menu_ctx->backend &&
-            driver.menu_ctx->backend->shader_manager_save_preset)
-         driver.menu_ctx->backend->shader_manager_save_preset(NULL, true);
-      else
-      {
-         shader_type = gfx_shader_parse_type("", DEFAULT_SHADER_TYPE);
-         if (shader_type == RARCH_SHADER_NONE)
-         {
-#if defined(HAVE_GLSL)
-            shader_type = RARCH_SHADER_GLSL;
-#elif defined(HAVE_CG) || defined(HAVE_HLSL)
-            shader_type = RARCH_SHADER_CG;
-#endif
-         }
-         if (driver.menu_ctx && driver.menu_ctx->backend &&
-               driver.menu_ctx->backend->shader_manager_set_preset)
-            driver.menu_ctx->backend->shader_manager_set_preset(
-                  NULL, shader_type, NULL);
-      }
+      rarch_main_command(RARCH_CMD_SHADERS_APPLY_CHANGES);
       return 0;
    }
 #endif
@@ -1352,8 +1194,10 @@ static int menu_setting_toggle(unsigned type,
 {
    struct retro_perf_counter **counters = NULL;
 
-   if ((type >= MENU_SETTINGS_SHADER_FILTER) &&
-         (type <= MENU_SETTINGS_SHADER_LAST))
+   if ((menu_common_type_is(label, type) == MENU_SETTINGS_SHADER_OPTIONS) ||
+         !strcmp(label, "video_shader_parameters") ||
+         !strcmp(label, "video_shader_preset_parameters")
+         )
    {
       if (driver.menu_ctx && driver.menu_ctx->backend
             && driver.menu_ctx->backend->shader_manager_setting_toggle)
@@ -1377,7 +1221,7 @@ static int menu_setting_toggle(unsigned type,
             type - MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_BEGIN);
    }
    else if (driver.menu_ctx && driver.menu_ctx->backend)
-      return menu_setting_set(type, action);
+      return menu_setting_set(type, label, action);
 
    return 0;
 }
@@ -1753,6 +1597,7 @@ static int menu_custom_bind_iterate_keyboard(void *data, unsigned action)
    return 0;
 }
 
+
 static int menu_action_ok(const char *dir,
       const char *menu_label, unsigned menu_type)
 {
@@ -1808,31 +1653,13 @@ static int menu_action_ok(const char *dir,
          && (type == MENU_FILE_USE_DIRECTORY))
    {
       menu_common_setting_set_current_string(setting, dir);
-      menu_flush_stack_label(driver.menu->menu_stack, "Path Options");
+      menu_entries_pop_stack(driver.menu->menu_stack, setting->name);
    }
-   else if (setting && !strcmp(setting->name, "input_overlay")
-         && type == MENU_FILE_PLAIN)
+   else if ((setting && setting->type == ST_PATH)
+         && (type == MENU_FILE_PLAIN))
    {
       menu_common_setting_set_current_string_path(setting, dir, path);
-      menu_flush_stack_label(driver.menu->menu_stack, "settings");
-   }
-   else if (setting && !strcmp(setting->name, "game_history_path")
-         && type == MENU_FILE_PLAIN)
-   {
-      menu_common_setting_set_current_string_path(setting, dir, path);
-      menu_flush_stack_label(driver.menu->menu_stack, "Path Options");
-   }
-   else if (setting && !strcmp(setting->name, "video_filter")
-         && type == MENU_FILE_PLAIN)
-   {
-      menu_common_setting_set_current_string_path(setting, dir, path);
-      menu_flush_stack_label(driver.menu->menu_stack, "Video Options");
-   }
-   else if (setting && !strcmp(setting->name, "audio_dsp_plugin")
-         && type == MENU_FILE_PLAIN)
-   {
-      menu_common_setting_set_current_string_path(setting, dir, path);
-      menu_flush_stack_label(driver.menu->menu_stack, "Audio Options");
+      menu_entries_pop_stack(driver.menu->menu_stack, setting->name);
    }
 #ifdef HAVE_SHADER_MANAGER
    else if (!strcmp(menu_label, "video_shader_preset")
@@ -1851,10 +1678,8 @@ static int menu_action_ok(const char *dir,
    else if (!strcmp(menu_label, "video_shader_pass")
          && type == MENU_FILE_PLAIN)
    {
-      unsigned pass = (menu_type) / 3;
-
-      fill_pathname_join(driver.menu->shader->pass[pass].source.path,
-            dir, path, sizeof(driver.menu->shader->pass[pass].source.path));
+      fill_pathname_join(driver.menu->shader->pass[hack_shader_pass].source.path,
+            dir, path, sizeof(driver.menu->shader->pass[hack_shader_pass].source.path));
 
       /* This will reset any changed parameters. */
       gfx_shader_resolve_parameters(NULL, driver.menu->shader);
@@ -2248,13 +2073,26 @@ static void handle_setting_label(char *type_str,
 }
 
 static void menu_common_setting_set_label(char *type_str,
-      size_t type_str_size, unsigned *w, unsigned type, unsigned index)
+      size_t type_str_size, unsigned *w, unsigned type, 
+      const char *menu_label, const char *label, unsigned index)
 {
    rarch_setting_t *setting_data = (rarch_setting_t*)setting_data_get_list();
    rarch_setting_t *setting = (rarch_setting_t*)setting_data_find_setting(setting_data,
          driver.menu->selection_buf->list[index].label);
 
-   if (type >= MENU_SETTINGS_PERF_COUNTERS_BEGIN
+   if ((!strcmp(menu_label, "Shader Options") ||
+            !strcmp(menu_label, "video_shader_parameters") ||
+            !strcmp(menu_label, "video_shader_preset_parameters"))
+         &&
+         driver.menu_ctx && driver.menu_ctx->backend &&
+         driver.menu_ctx->backend->shader_manager_get_str
+      )
+   {
+      driver.menu_ctx->backend->shader_manager_get_str(
+            driver.menu->shader, type_str, type_str_size,
+            menu_label, label, type);
+   }
+   else if (type >= MENU_SETTINGS_PERF_COUNTERS_BEGIN
          && type <= MENU_SETTINGS_PERF_COUNTERS_END)
       menu_common_setting_set_label_perf(type_str, type_str_size, w, type,
             perf_counters_rarch,
@@ -2327,18 +2165,17 @@ static void menu_common_setting_set_label(char *type_str,
                   unsigned height = gfx_ctx_get_resolution_height(
                         g_extern.console.screen.resolutions.list
                         [g_extern.console.screen.resolutions.current.idx]);
-                  snprintf(type_str, type_str_size, "%dx%d", width, height);
+                  snprintf(type_str, type_str_size, "%ux%u", width, height);
                }
                break;
 #endif
             case MENU_SETTINGS_CUSTOM_VIEWPORT:
-            case MENU_SETTINGS_SHADER_PRESET:
             case MENU_SETTINGS_CUSTOM_BIND_ALL:
             case MENU_SETTINGS_CUSTOM_BIND_DEFAULT_ALL:
                strlcpy(type_str, "...", type_str_size);
                break;
             case MENU_SETTINGS_BIND_PLAYER:
-               snprintf(type_str, type_str_size, "#%d",
+               snprintf(type_str, type_str_size, "#%u",
                      driver.menu->current_pad + 1);
                break;
             case MENU_SETTINGS_BIND_DEVICE:
@@ -2354,7 +2191,7 @@ static void menu_common_setting_set_label(char *type_str,
                         strlcpy(type_str, device_name, type_str_size);
                      else
                         snprintf(type_str, type_str_size,
-                              "N/A (port #%u)", map);
+                              "N/A (port #%d)", map);
                   }
                   else
                      strlcpy(type_str, "Disabled", type_str_size);
