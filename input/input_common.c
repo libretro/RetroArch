@@ -843,7 +843,9 @@ const struct rarch_key_map rarch_key_map_linux[] = {
    //{ ?, RETROK_EXCLAIM },
    //{ ?, RETROK_QUOTEDBL },
    //{ ?, RETROK_HASH },
+#ifdef ANDROID
    { KEY_DOLLAR, RETROK_DOLLAR },
+#endif
    //{ ?, RETROK_AMPERSAND },
    { KEY_APOSTROPHE, RETROK_QUOTE },
    { KEY_KPLEFTPAREN, RETROK_LEFTPAREN },
@@ -966,7 +968,9 @@ const struct rarch_key_map rarch_key_map_linux[] = {
    { KEY_BREAK, RETROK_BREAK },
    { KEY_MENU, RETROK_MENU },
    { KEY_POWER, RETROK_POWER },
+#ifndef ANDROID
    { KEY_EURO, RETROK_EURO },
+#endif
    { KEY_UNDO, RETROK_UNDO },
    { 0, RETROK_UNKNOWN },
 };
