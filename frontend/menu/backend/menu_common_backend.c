@@ -1728,7 +1728,7 @@ static int menu_action_ok(const char *dir,
       fill_pathname_join(config, dir, path, sizeof(config));
       menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS);
       driver.menu->msg_force = true;
-      if (menu_replace_config(config))
+      if (rarch_replace_config(config))
       {
          menu_clear_navigation(driver.menu);
          return -1;

@@ -3892,3 +3892,29 @@ int rarch_defer_core(core_info_list_t *core_info, const char *dir,
 
    return 0;
 }
+
+/* Quite intrusive and error prone.
+ * Likely to have lots of small bugs.
+ * Cleanly exit the main loop to ensure that all the tiny details
+ * get set properly.
+ *
+ * This should mitigate most of the smaller bugs. */
+
+bool rarch_replace_config(const char *path)
+{
+   /* If config file to be replaced is the same as the 
+    * current config file, exit. */
+   if (!strcmp(path, g_extern.config_path))
+      return false;
+
+   if (g_settings.config_save_on_exit && *g_extern.config_path)
+      config_save_file(g_extern.config_path);
+
+   strlcpy(g_extern.config_path, path, sizeof(g_extern.config_path));
+   g_extern.block_config_read = false;
+   *g_settings.libretro = '\0'; /* Load core in new config. */
+
+   rarch_main_command(RARCH_CMD_PREPARE_DUMMY);
+
+   return true;
+}

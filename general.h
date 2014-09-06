@@ -795,6 +795,8 @@ bool config_read_keybinds(const char *path);
 void rarch_main_clear_state(void);
 int rarch_main(int argc, char *argv[]);
 
+bool rarch_replace_config(const char *path);
+
 void rarch_main_init_wrap(const struct rarch_main_wrap *args, int *argc, char **argv);
 
 int rarch_main_init(int argc, char *argv[]);

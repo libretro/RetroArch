@@ -425,30 +425,6 @@ bool menu_iterate(void)
    return true;
 }
 
-/* Quite intrusive and error prone.
- * Likely to have lots of small bugs.
- * Cleanly exit the main loop to ensure that all the tiny details
- * get set properly.
- *
- * This should mitigate most of the smaller bugs. */
-
-bool menu_replace_config(const char *path)
-{
-   if (strcmp(path, g_extern.config_path) == 0)
-      return false;
-
-   if (g_settings.config_save_on_exit && *g_extern.config_path)
-      config_save_file(g_extern.config_path);
-
-   strlcpy(g_extern.config_path, path, sizeof(g_extern.config_path));
-   g_extern.block_config_read = false;
-   *g_settings.libretro = '\0'; /* Load core in new config. */
-
-   rarch_main_command(RARCH_CMD_PREPARE_DUMMY);
-
-   return true;
-}
-
 /* Save a new config to a file. Filename is based
  * on heuristics to avoid typing. */
 
