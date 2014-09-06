@@ -376,6 +376,22 @@ void dir_list_sort(struct string_list *list, bool dir_first)
          dir_first ? qstrcmp_dir : qstrcmp_plain);
 }
 
+struct string_list *compressed_file_list_new(const char *path,
+      const char* ext)
+{
+#ifdef HAVE_COMPRESSION
+   const char* file_ext = path_get_extension(path);
+#ifdef HAVE_7ZIP
+   if (strcmp(file_ext,"7z") == 0)
+   {
+      return compressed_7zip_file_list_new(path,ext);
+   }
+#endif
+
+#endif
+   return NULL;
+}
+
 #ifdef _WIN32
 
 struct string_list *dir_list_new(const char *dir,
@@ -442,8 +458,6 @@ struct string_list *dir_list_new(const char *dir,
        * */
       if (supported_by_core)
          attr.i = RARCH_PLAIN_FILE;
-
-
 
       if (!string_list_append(list, file_path, attr))
          goto error;

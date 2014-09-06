@@ -67,6 +67,8 @@ struct string_list
    size_t cap;
 };
 
+struct string_list *compressed_file_list_new(const char *filename,
+      const char* ext);
 struct string_list *dir_list_new(const char *dir, const char *ext,
       bool include_dirs);
 void dir_list_sort(struct string_list *list, bool dir_first);
