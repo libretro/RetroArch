@@ -1073,7 +1073,8 @@ enum retro_log_level
 };
 
 /* Logging function. Takes log level argument as well. */
-typedef void (*retro_log_printf_t)(enum retro_log_level level, const char *fmt, ...);
+typedef void (*retro_log_printf_t)(enum retro_log_level level,
+      const char *fmt, ...);
 
 struct retro_log_callback
 {
