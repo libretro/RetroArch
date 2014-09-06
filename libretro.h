@@ -433,7 +433,8 @@ enum retro_mod
                                             * Sets a message to be displayed in implementation-specific manner 
                                             * for a certain amount of 'frames'.
                                             * Should not be used for trivial messages, which should simply be 
-                                            * logged via RETRO_ENVIRONMENT_GET_LOG_INTERFACE (or as a fallback, stderr).
+                                            * logged via RETRO_ENVIRONMENT_GET_LOG_INTERFACE (or as a 
+                                            * fallback, stderr).
                                             */
 #define RETRO_ENVIRONMENT_SHUTDOWN      7  /* N/A (NULL) --
                                             * Requests the frontend to shutdown.
@@ -476,7 +477,9 @@ enum retro_mod
                                             * Sets the internal pixel format used by the implementation.
                                             * The default pixel format is RETRO_PIXEL_FORMAT_0RGB1555.
                                             * This pixel format however, is deprecated (see enum retro_pixel_format).
-                                            * If the call returns false, the frontend does not support this pixel format.
+                                            * If the call returns false, the frontend does not support this pixel 
+                                            * format.
+                                            *
                                             * This function should be called inside retro_load_game() or 
                                             * retro_get_system_av_info().
                                             */
@@ -495,13 +498,15 @@ enum retro_mod
                                             */
 #define RETRO_ENVIRONMENT_SET_DISK_CONTROL_INTERFACE 13
                                            /* const struct retro_disk_control_callback * --
-                                            * Sets an interface which frontend can use to eject and insert disk images.
-                                            * This is used for games which consist of multiple images and must be manually
-                                            * swapped out by the user (e.g. PSX).
+                                            * Sets an interface which frontend can use to eject and insert 
+                                            * disk images.
+                                            * This is used for games which consist of multiple images and 
+                                            * must be manually swapped out by the user (e.g. PSX).
                                             */
 #define RETRO_ENVIRONMENT_SET_HW_RENDER 14
                                            /* struct retro_hw_render_callback * --
-                                            * Sets an interface to let a libretro core render with hardware acceleration.
+                                            * Sets an interface to let a libretro core render with 
+                                            * hardware acceleration.
                                             * Should be called in retro_load_game().
                                             * If successful, libretro cores will be able to render to a 
                                             * frontend-provided framebuffer.
@@ -514,33 +519,44 @@ enum retro_mod
                                            /* struct retro_variable * --
                                             * Interface to acquire user-defined information from environment
                                             * that cannot feasibly be supported in a multi-system way.
-                                            * 'key' should be set to a key which has already been set by SET_VARIABLES.
+                                            * 'key' should be set to a key which has already been set by 
+                                            * SET_VARIABLES.
                                             * 'data' will be set to a value or NULL.
                                             */
 #define RETRO_ENVIRONMENT_SET_VARIABLES 16
                                            /* const struct retro_variable * --
                                             * Allows an implementation to signal the environment
-                                            * which variables it might want to check for later using GET_VARIABLE.
-                                            * This allows the frontend to present these variables to a user dynamically.
-                                            * This should be called as early as possible (ideally in retro_set_environment).
+                                            * which variables it might want to check for later using 
+                                            * GET_VARIABLE.
+                                            * This allows the frontend to present these variables to 
+                                            * a user dynamically.
+                                            * This should be called as early as possible (ideally in 
+                                            * retro_set_environment).
                                             *
-                                            * 'data' points to an array of retro_variable structs terminated by a 
-                                            * { NULL, NULL } element.
-                                            * retro_variable::key should be namespaced to not collide with other 
-                                            * implementations' keys. E.g. A core called 'foo' should use keys named as 'foo_option'.
-                                            * retro_variable::value should contain a human readable description of the key as well 
-                                            * as a '|' delimited list of expected values.
-                                            * The number of possible options should be very limited, i.e. it should be feasible 
-                                            * to cycle through options without a keyboard.
+                                            * 'data' points to an array of retro_variable structs 
+                                            * terminated by a { NULL, NULL } element.
+                                            * retro_variable::key should be namespaced to not collide 
+                                            * with other implementations' keys. E.g. A core called 
+                                            * 'foo' should use keys named as 'foo_option'.
+                                            * retro_variable::value should contain a human readable 
+                                            * description of the key as well as a '|' delimited list 
+                                            * of expected values.
+                                            *
+                                            * The number of possible options should be very limited, 
+                                            * i.e. it should be feasible to cycle through options 
+                                            * without a keyboard.
+                                            *
                                             * First entry should be treated as a default.
                                             *
                                             * Example entry:
                                             * { "foo_option", "Speed hack coprocessor X; false|true" }
                                             *
-                                            * Text before first ';' is description. This ';' must be followed by a space, and 
-                                            * followed by a list of possible values split up with '|'.
-                                            * Only strings are operated on. The possible values will generally be displayed 
-                                            * and stored as-is by the frontend.
+                                            * Text before first ';' is description. This ';' must be 
+                                            * followed by a space, and followed by a list of possible 
+                                            * values split up with '|'.
+                                            *
+                                            * Only strings are operated on. The possible values will 
+                                            * generally be displayed and stored as-is by the frontend.
                                             */
 #define RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE 17
                                            /* bool * --
@@ -560,7 +576,8 @@ enum retro_mod
                                             * Retrieves the absolute path from where this libretro 
                                             * implementation was loaded.
                                             * NULL is returned if the libretro was loaded statically 
-                                            * (i.e. linked statically to frontend), or if the path cannot be determined.
+                                            * (i.e. linked statically to frontend), or if the path cannot be 
+                                            * determined.
                                             * Mostly useful in cooperation with SET_SUPPORT_NO_GAME as assets can 
                                             * be loaded without ugly hacks.
                                             */
@@ -574,8 +591,8 @@ enum retro_mod
                                             * being available for writing.
                                             * The callback can be called from any thread, so a core using this must 
                                             * have a thread safe audio implementation.
-                                            * It is intended for games where audio and video are completely asynchronous 
-                                            * and audio can be generated on the fly.
+                                            * It is intended for games where audio and video are completely 
+                                            * asynchronous and audio can be generated on the fly.
                                             * This interface is not recommended for use with emulators which have 
                                             * highly synchronous audio.
                                             *
@@ -747,31 +764,34 @@ enum retro_mod
 #define RETRO_ENVIRONMENT_SET_SUBSYSTEM_INFO 34
                                            /* const struct retro_subsystem_info * --
                                             * This environment call introduces the concept of libretro "subsystems".
-                                            * A subsystem is a variant of a libretro core which supports different kinds of games.
-                                            * The purpose of this is to support e.g. emulators which might have special needs, 
-                                            * e.g. Super Nintendos Super GameBoy, Sufami Turbo.
-                                            * It can also be used to pick among subsystems in an explicit way if the libretro 
-                                            * implementation is a multi-system emulator itself.
+                                            * A subsystem is a variant of a libretro core which supports 
+                                            * different kinds of games.
+                                            * The purpose of this is to support e.g. emulators which might 
+                                            * have special needs, e.g. Super Nintendo's Super GameBoy, Sufami Turbo.
+                                            * It can also be used to pick among subsystems in an explicit way 
+                                            * if the libretro implementation is a multi-system emulator itself.
                                             *
                                             * Loading a game via a subsystem is done with retro_load_game_special(),
-                                            * and this environment call allows a libretro core to expose which subsystems are 
-                                            * supported for use with retro_load_game_special().
-                                            * A core passes an array of retro_game_special_info which is terminated with a zeroed 
-                                            * out retro_game_special_info struct.
+                                            * and this environment call allows a libretro core to expose which 
+                                            * subsystems are supported for use with retro_load_game_special().
+                                            * A core passes an array of retro_game_special_info which is terminated 
+                                            * with a zeroed out retro_game_special_info struct.
                                             *
-                                            * If a core wants to use this functionality, SET_SUBSYSTEM_INFO **MUST** be 
-                                            * called from within retro_set_environment().
+                                            * If a core wants to use this functionality, SET_SUBSYSTEM_INFO
+                                            * **MUST** be called from within retro_set_environment().
                                             */
 #define RETRO_ENVIRONMENT_SET_CONTROLLER_INFO 35
                                            /* const struct retro_controller_info * --
-                                            * This environment call lets a libretro core tell the frontend which
-                                            * controller types are recognized in calls to retro_set_controller_port_device().
+                                            * This environment call lets a libretro core tell the frontend 
+                                            * which controller types are recognized in calls to 
+                                            * retro_set_controller_port_device().
                                             *
                                             * Some emulators such as Super Nintendo
-                                            * support multiple lightgun types which must be specifically selected from.
-                                            * It is therefore sometimes necessary for a frontend to be able to tell
-                                            * the core about a special kind of input device which is not covered by the
-                                            * libretro input API.
+                                            * support multiple lightgun types which must be specifically 
+                                            * selected from.
+                                            * It is therefore sometimes necessary for a frontend to be able 
+                                            * to tell the core about a special kind of input device which is 
+                                            * not covered by the libretro input API.
                                             *
                                             * In order for a frontend to understand the workings of an input device,
                                             * it must be a specialized type
@@ -780,9 +800,10 @@ enum retro_mod
                                             * Which devices are supported can vary per input port.
                                             * The core must pass an array of const struct retro_controller_info which 
                                             * is terminated with a blanked out struct. Each element of the struct 
-                                            * corresponds to an ascending port index to retro_set_controller_port_device().
-                                            * Even if special device types are set in the libretro core, libretro should 
-                                            * only poll input based on the base input device types.
+                                            * corresponds to an ascending port index to 
+                                            * retro_set_controller_port_device().
+                                            * Even if special device types are set in the libretro core, 
+                                            * libretro should only poll input based on the base input device types.
                                             */
 #define RETRO_ENVIRONMENT_SET_MEMORY_MAPS (36 | RETRO_ENVIRONMENT_EXPERIMENTAL)
                                            /* const struct retro_memory_map * --
@@ -790,27 +811,31 @@ enum retro_mod
                                             * about the memory maps this core emulates.
                                             * This can be used to implement, for example, cheats in a core-agnostic way.
                                             *
-                                            * Should only be used by emulators; it doesn't make much sense for anything else.
-                                            * It is recommended to expose all relevant pointers through retro_get_memory_* as well.
+                                            * Should only be used by emulators; it doesn't make much sense for 
+                                            * anything else.
+                                            * It is recommended to expose all relevant pointers through 
+                                            * retro_get_memory_* as well.
                                             *
                                             * Can be called from retro_init and retro_load_game.
                                             */
 #define RETRO_ENVIRONMENT_SET_GEOMETRY 37
                                            /* const struct retro_game_geometry * --
-                                            * This environment call is similar to SET_SYSTEM_AV_INFO for changing video parameters,
-                                            * but provides a guarantee that drivers will not be reinitialized.
+                                            * This environment call is similar to SET_SYSTEM_AV_INFO for changing 
+                                            * video parameters, but provides a guarantee that drivers will not be 
+                                            * reinitialized.
                                             * This can only be called from within retro_run().
                                             *
-                                            * The purpose of this call is to allow a core to alter nominal width/heights as 
-                                            * well as aspect ratios on-the-fly, which can be useful for some emulators to 
-                                            * change in run-time.
+                                            * The purpose of this call is to allow a core to alter nominal 
+                                            * width/heights as well as aspect ratios on-the-fly, which can be 
+                                            * useful for some emulators to change in run-time.
                                             *
                                             * max_width/max_height arguments are ignored and cannot be changed
                                             * with this call as this could potentially require a reinitialization or a 
                                             * non-constant time operation.
                                             * If max_width/max_height are to be changed, SET_SYSTEM_AV_INFO is required.
                                             *
-                                            * A frontend must guarantee that this environment call completes in constant time.
+                                            * A frontend must guarantee that this environment call completes in 
+                                            * constant time.
                                             */
 #define RETRO_ENVIRONMENT_GET_USERNAME 38 
                                            /* const char **
