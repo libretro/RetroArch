@@ -3564,7 +3564,7 @@ CGGL_API void cgGLEnableClientState( CGparameter param )
 CGGL_API void cgGLDisableClientState( CGparameter param )
 {
    GLuint index;
-   CgParameterResource *parameterResource;
+   CgParameterResource *parameterResource = NULL;
    CgRuntimeParameter *_ptr = (CgRuntimeParameter*)rglCgGLTestParameter( param );
 
    if (_ptr)
