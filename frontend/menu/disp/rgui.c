@@ -380,6 +380,16 @@ static void rgui_render(void)
          type = MENU_FILE_DIRECTORY;
          w = 5;
       }
+      else if (type == MENU_FILE_CARCHIVE)
+      {
+         strlcpy(type_str, "(COMP)", sizeof(type_str));
+         w = 6;
+      }
+      else if (type == MENU_FILE_IN_CARCHIVE)
+      {
+         strlcpy(type_str, "(CFILE)", sizeof(type_str));
+         w = 7;
+      }
       else if (type >= MENU_SETTINGS_CORE_OPTION_START)
          strlcpy(
                type_str,
