@@ -309,7 +309,7 @@ void SHA1Reset(SHA1Context *context)
    context->Corrupted  = 0;
 }
 
-void SHA1ProcessMessageBlock(SHA1Context *context)
+static void SHA1ProcessMessageBlock(SHA1Context *context)
 {
    const unsigned K[] =            /* Constants defined in SHA-1   */      
    {
@@ -401,7 +401,7 @@ void SHA1ProcessMessageBlock(SHA1Context *context)
    context->Message_Block_Index = 0;
 }
 
-void SHA1PadMessage(SHA1Context *context)
+static void SHA1PadMessage(SHA1Context *context)
 {
    /*
     *  Check to see if the current message block is too small to hold

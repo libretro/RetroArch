@@ -82,7 +82,7 @@ static void *gl_init_font(void *gl_data, const char *font_path, float font_size)
    return font;
 }
 
-void gl_free_font(void *data)
+static void gl_free_font(void *data)
 {
    gl_raster_t *font = (gl_raster_t*)data;
    if (!font)

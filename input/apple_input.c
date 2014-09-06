@@ -618,7 +618,7 @@ static uint64_t apple_input_get_capabilities(void *data)
    return caps;
 }
 
-const rarch_joypad_driver_t *apple_get_joypad_driver(void *data)
+static const rarch_joypad_driver_t *apple_get_joypad_driver(void *data)
 {
    return joypad;
 }
