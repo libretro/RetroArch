@@ -1753,6 +1753,30 @@ static int menu_action_ok(const char *dir,
       menu_entries_push(driver.menu->menu_stack,
             cat_path, menu_label, type, driver.menu->selection_ptr);
    }
+   else if (type == MENU_FILE_CARCHIVE)
+   {
+      char cat_path[PATH_MAX];
+      fill_pathname_join(cat_path, dir, path, sizeof(cat_path));
+
+      menu_entries_push(driver.menu->menu_stack,
+            cat_path, menu_label, type, driver.menu->selection_ptr);
+      return 0;
+   }
+#ifdef HAVE_COMPRESSION
+   else if (type == MENU_FILE_IN_CARCHIVE)
+   {
+      fill_pathname_join(g_extern.fullpath, dir, path,
+            sizeof(g_extern.fullpath));
+
+      g_extern.is_carchive = true;
+      strncpy(g_extern.carchive_path,dir,sizeof(g_extern.carchive_path));
+
+      rarch_main_set_state(RARCH_ACTION_STATE_LOAD_CONTENT);
+      menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS);
+      driver.menu->msg_force = true;
+      return -1;
+   }
+#endif
    else
    {
       fill_pathname_join(g_extern.fullpath, dir, path,

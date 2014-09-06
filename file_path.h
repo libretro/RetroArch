@@ -26,6 +26,19 @@
 extern "C" {
 #endif
 
+/* Order in this enum is equivalent to negative sort order in filelist
+ *  (i.e. DIRECTORY is on top of PLAIN_FILE) */
+enum
+{
+   RARCH_FILETYPE_UNSET,
+   RARCH_PLAIN_FILE,
+   RARCH_COMPRESSED_FILE_IN_ARCHIVE,
+   RARCH_COMPRESSED_ARCHIVE,
+   RARCH_DIRECTORY,
+   RARCH_FILE_UNSUPPORTED,
+} FILE_TYPES;
+
+
 #ifdef HAVE_COMPRESSION
 long read_compressed_file(const char * archive_path, const char *relative_path, void **buf);
 #endif
@@ -54,6 +67,8 @@ struct string_list
    size_t cap;
 };
 
+struct string_list *compressed_file_list_new(const char *filename,
+      const char* ext);
 struct string_list *dir_list_new(const char *dir, const char *ext,
       bool include_dirs);
 void dir_list_sort(struct string_list *list, bool dir_first);
@@ -71,6 +86,8 @@ void string_list_join_concat(char *buffer, size_t size,
 void string_list_set(struct string_list *list, unsigned index,
       const char *str);
 
+/* path_is_compressed_file also means: The compressed file is supported */
+bool path_is_compressed_file(const char *path);
 bool path_is_directory(const char *path);
 bool path_file_exists(const char *path);
 
