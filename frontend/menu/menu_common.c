@@ -86,42 +86,6 @@ static void throttle_frame(void)
    driver.menu->last_time = rarch_get_time_usec();
 }
 
-static void load_menu_content_prepare(void)
-{
-   if (!driver.menu)
-      return;
-
-   if (*g_extern.fullpath || driver.menu->load_no_content)
-   {
-      if (*g_extern.fullpath)
-      {
-         char tmp[PATH_MAX];
-         char str[PATH_MAX];
-
-         fill_pathname_base(tmp, g_extern.fullpath, sizeof(tmp));
-         snprintf(str, sizeof(str), "INFO - Loading %s ...", tmp);
-         msg_queue_push(g_extern.msg_queue, str, 1, 1);
-      }
-
-      content_playlist_push(g_extern.history,
-            g_extern.fullpath,
-            g_settings.libretro,
-            driver.menu->info.library_name);
-   }
-
-   /* redraw menu frame */
-   driver.menu->old_input_state = driver.menu->trigger_state = 0;
-   driver.menu->do_held = false;
-   driver.menu->msg_force = true;
-
-   if (driver.menu_ctx && driver.menu_ctx->backend &&
-         driver.menu_ctx->backend->iterate) 
-      driver.menu_ctx->backend->iterate(MENU_ACTION_NOOP);
-
-   draw_frame(true);
-   draw_frame(false);
-}
-
 /* Update menu state which depends on config. */
 
 static void menu_update_libretro_info(menu_handle_t *menu)
@@ -155,7 +119,38 @@ static void menu_environment_get(int *argc, char *argv[],
 
 bool load_menu_content(void)
 {
-   load_menu_content_prepare();
+   if (driver.menu)
+   {
+      if (*g_extern.fullpath || driver.menu->load_no_content)
+      {
+         if (*g_extern.fullpath)
+         {
+            char tmp[PATH_MAX];
+            char str[PATH_MAX];
+
+            fill_pathname_base(tmp, g_extern.fullpath, sizeof(tmp));
+            snprintf(str, sizeof(str), "INFO - Loading %s ...", tmp);
+            msg_queue_push(g_extern.msg_queue, str, 1, 1);
+         }
+
+         content_playlist_push(g_extern.history,
+               g_extern.fullpath,
+               g_settings.libretro,
+               driver.menu->info.library_name);
+      }
+   }
+
+   /* redraw menu frame */
+   driver.menu->old_input_state = driver.menu->trigger_state = 0;
+   driver.menu->do_held = false;
+   driver.menu->msg_force = true;
+
+   if (driver.menu_ctx && driver.menu_ctx->backend &&
+         driver.menu_ctx->backend->iterate) 
+      driver.menu_ctx->backend->iterate(MENU_ACTION_NOOP);
+
+   draw_frame(true);
+   draw_frame(false);
 
    if (!(main_load_content(0, NULL, NULL, menu_environment_get,
          driver.frontend_ctx->process_args)))

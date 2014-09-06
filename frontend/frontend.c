@@ -17,7 +17,6 @@
 
 #include "frontend.h"
 #include "../general.h"
-#include "../performance.h"
 
 #include "frontend_context.h"
 
