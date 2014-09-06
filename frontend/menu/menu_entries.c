@@ -798,7 +798,6 @@ int menu_parse_and_resolve(file_list_t *list, file_list_t *menu_list)
 
    if (path_is_compressed_file(dir))
    {
-      printf("Uncompressing file_list from dir\n.");
       str_list = compressed_file_list_new(dir,exts);
    }
    else
