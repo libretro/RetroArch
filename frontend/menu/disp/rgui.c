@@ -48,8 +48,8 @@ static uint16_t __attribute((aligned(64))) menu_framebuf[400 * 240];
 static uint16_t menu_framebuf[400 * 240];
 #endif
 
-#define RGUI_TERM_START_X 15
-#define RGUI_TERM_START_Y 27
+#define RGUI_TERM_START_X (driver.menu->width / 21)
+#define RGUI_TERM_START_Y (driver.menu->height / 9)
 #define RGUI_TERM_WIDTH (((driver.menu->width - RGUI_TERM_START_X - RGUI_TERM_START_X) / (FONT_WIDTH_STRIDE)))
 #define RGUI_TERM_HEIGHT (((driver.menu->height - RGUI_TERM_START_Y - RGUI_TERM_START_X) / (FONT_HEIGHT_STRIDE)) - 1)
 
