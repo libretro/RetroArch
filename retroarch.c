@@ -3582,9 +3582,90 @@ void rarch_main_command(unsigned cmd)
          rarch_main_set_state(RARCH_ACTION_STATE_EXITSPAWN);
          break;
       case RARCH_CMD_MENU_SAVE_CONFIG:
-#ifdef HAVE_MENU
-         menu_save_new_config();
-#endif
+         {
+            /* Save a new config to a file. Filename is based
+             * on heuristics to avoid typing. */
+
+            char config_dir[PATH_MAX], config_name[PATH_MAX],
+                 config_path[PATH_MAX], msg[PATH_MAX];
+            bool found_path = false;
+
+            *config_dir = '\0';
+
+            if (*g_settings.menu_config_directory)
+               strlcpy(config_dir, g_settings.menu_config_directory,
+                     sizeof(config_dir));
+            else if (*g_extern.config_path) /* Fallback */
+               fill_pathname_basedir(config_dir, g_extern.config_path,
+                     sizeof(config_dir));
+            else
+            {
+               const char *msg = "Config directory not set. Cannot save new config.";
+               msg_queue_clear(g_extern.msg_queue);
+               msg_queue_push(g_extern.msg_queue, msg, 1, 180);
+               RARCH_ERR("%s\n", msg);
+               return;
+            }
+
+            /* Infer file name based on libretro core. */
+            if (*g_settings.libretro && path_file_exists(g_settings.libretro))
+            {
+               unsigned i;
+
+               /* In case of collision, find an alternative name. */
+               for (i = 0; i < 16; i++)
+               {
+                  char tmp[64];
+                  fill_pathname_base(config_name, g_settings.libretro,
+                        sizeof(config_name));
+                  path_remove_extension(config_name);
+                  fill_pathname_join(config_path, config_dir, config_name,
+                        sizeof(config_path));
+
+                  *tmp = '\0';
+
+                  if (i)
+                     snprintf(tmp, sizeof(tmp), "-%u.cfg", i);
+                  else
+                     strlcpy(tmp, ".cfg", sizeof(tmp));
+
+                  strlcat(config_path, tmp, sizeof(config_path));
+
+                  if (!path_file_exists(config_path))
+                  {
+                     found_path = true;
+                     break;
+                  }
+               }
+            }
+
+            /* Fallback to system time... */
+            if (!found_path)
+            {
+               RARCH_WARN("Cannot infer new config path. Use current time.\n");
+               fill_dated_filename(config_name, "cfg", sizeof(config_name));
+               fill_pathname_join(config_path, config_dir, config_name,
+                     sizeof(config_path));
+            }
+
+            if (config_save_file(config_path))
+            {
+               strlcpy(g_extern.config_path, config_path,
+                     sizeof(g_extern.config_path));
+               snprintf(msg, sizeof(msg), "Saved new config to \"%s\".",
+                     config_path);
+               RARCH_LOG("%s\n", msg);
+            }
+            else
+            {
+               snprintf(msg, sizeof(msg), "Failed saving config to \"%s\".",
+                     config_path);
+               RARCH_ERR("%s\n", msg);
+            }
+
+            msg_queue_clear(g_extern.msg_queue);
+            msg_queue_push(g_extern.msg_queue, msg, 1, 180);
+         }
          break;
       case RARCH_CMD_SHADERS_APPLY_CHANGES:
 #ifdef HAVE_MENU

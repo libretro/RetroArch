@@ -383,9 +383,9 @@ struct settings
 
    char content_directory[PATH_MAX];
    char assets_directory[PATH_MAX];
+   char menu_config_directory[PATH_MAX];
 #if defined(HAVE_MENU)
    char menu_content_directory[PATH_MAX];
-   char menu_config_directory[PATH_MAX];
    bool menu_show_start_screen;
 #endif
    bool fps_show;

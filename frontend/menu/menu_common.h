@@ -135,8 +135,6 @@ bool load_menu_content(void);
 
 void load_menu_content_history(unsigned game_index);
 
-bool menu_save_new_config(void);
-
 void menu_update_system_info(menu_handle_t *menu, bool *load_no_content);
 
 unsigned menu_common_type_is(const char *label, unsigned type);
