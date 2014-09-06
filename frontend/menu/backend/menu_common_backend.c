@@ -1653,31 +1653,13 @@ static int menu_action_ok(const char *dir,
          && (type == MENU_FILE_USE_DIRECTORY))
    {
       menu_common_setting_set_current_string(setting, dir);
-      menu_flush_stack_label(driver.menu->menu_stack, "Path Options");
+      menu_entries_pop_stack(driver.menu->menu_stack, setting->name);
    }
-   else if (setting && !strcmp(setting->name, "input_overlay")
-         && type == MENU_FILE_PLAIN)
+   else if ((setting && setting->type == ST_PATH)
+         && (type == MENU_FILE_PLAIN))
    {
       menu_common_setting_set_current_string_path(setting, dir, path);
-      menu_flush_stack_label(driver.menu->menu_stack, "settings");
-   }
-   else if (setting && !strcmp(setting->name, "game_history_path")
-         && type == MENU_FILE_PLAIN)
-   {
-      menu_common_setting_set_current_string_path(setting, dir, path);
-      menu_flush_stack_label(driver.menu->menu_stack, "Path Options");
-   }
-   else if (setting && !strcmp(setting->name, "video_filter")
-         && type == MENU_FILE_PLAIN)
-   {
-      menu_common_setting_set_current_string_path(setting, dir, path);
-      menu_flush_stack_label(driver.menu->menu_stack, "Video Options");
-   }
-   else if (setting && !strcmp(setting->name, "audio_dsp_plugin")
-         && type == MENU_FILE_PLAIN)
-   {
-      menu_common_setting_set_current_string_path(setting, dir, path);
-      menu_flush_stack_label(driver.menu->menu_stack, "Audio Options");
+      menu_entries_pop_stack(driver.menu->menu_stack, setting->name);
    }
 #ifdef HAVE_SHADER_MANAGER
    else if (!strcmp(menu_label, "video_shader_preset")

@@ -1744,28 +1744,28 @@ rarch_setting_t *setting_data_get_mainmenu(bool regenerate)
    START_GROUP("Main Menu")
       START_SUB_GROUP("State")
 #if defined(HAVE_DYNAMIC) || defined(HAVE_LIBRETRO_MANAGEMENT)
-      CONFIG_BOOL(lists[0],     "core_list",     "Core",          false, "...", "...", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+      CONFIG_BOOL(lists[0],     "core_list",     "Core",          false, "", "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
 #endif
       if (g_extern.history)
       {
-         CONFIG_BOOL(lists[1],     "history_list",  "Load Content (History)", false, "...", "...", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+         CONFIG_BOOL(lists[1],     "history_list",  "Load Content (History)", false, "", "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
       }
       if (driver.menu && g_extern.core_info && core_info_list_num_info_files(g_extern.core_info))
       {
-         CONFIG_BOOL(lists[2],     "detect_core_list",  "Load Content (Detect Core)", false, "...", "...", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+         CONFIG_BOOL(lists[2],     "detect_core_list",  "Load Content (Detect Core)", false, "", "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
       }
-      CONFIG_BOOL(lists[3],     "load_content",  "Load Content", false, "...", "...", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
-      CONFIG_BOOL(lists[4],     "core_options",  "Core Options", false, "...", "...", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
-      CONFIG_BOOL(lists[5],     "core_information",  "Core Information", false, "...", "...", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
-      CONFIG_BOOL(lists[6],     "settings",  "Settings", false, "...", "...", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+      CONFIG_BOOL(lists[3],     "load_content",  "Load Content", false, "", "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+      CONFIG_BOOL(lists[4],     "core_options",  "Core Options", false, "", "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+      CONFIG_BOOL(lists[5],     "core_information",  "Core Information", false, "", "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+      CONFIG_BOOL(lists[6],     "settings",  "Settings", false, "", "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
       if (g_extern.perfcnt_enable)
       {
-         CONFIG_BOOL(lists[7],     "performance_counters",  "Performance Counters", false, "...", "...", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+         CONFIG_BOOL(lists[7],     "performance_counters",  "Performance Counters", false, "", "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
       }
       if (g_extern.main_is_init && !g_extern.libretro_dummy)
       {
-         CONFIG_BOOL(lists[8],     "savestate",  "Save State", false, "...", "...", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
-         CONFIG_BOOL(lists[9],     "loadstate",  "Load State", false, "...", "...", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+         CONFIG_BOOL(lists[8],     "savestate",  "Save State", false, "", "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+         CONFIG_BOOL(lists[9],     "loadstate",  "Load State", false, "", "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
          CONFIG_BOOL(lists[10],     "take_screenshot",  "Take Screenshot", false, "", "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
          CONFIG_BOOL(lists[11],     "resume_content",  "Resume Content", false, "", "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
          CONFIG_BOOL(lists[12],     "restart_content",  "Restart Content", false, "", "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
