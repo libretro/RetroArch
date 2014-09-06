@@ -519,7 +519,6 @@ static void psp_set_texture_frame(void *data, const void *frame, bool rgb32,
    (void) rgb32;
    (void) alpha;
 
-   int i;
    psp1_video_t *psp = (psp1_video_t*)data;
 
 #ifdef DEBUG

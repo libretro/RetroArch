@@ -129,7 +129,7 @@ static void sdl_init_font(sdl_video_t *vid, const char *font_path, unsigned font
 static void sdl_render_msg(sdl_video_t *vid, SDL_Surface *buffer,
       const char *msg, unsigned width, unsigned height, const SDL_PixelFormat *fmt)
 {
-   int x, y, msg_base_x, msg_base_y, delta_x, delta_y;
+   int x, y, msg_base_x, msg_base_y;
    unsigned rshift, gshift, bshift;
 
    if (!vid->font)

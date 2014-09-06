@@ -286,7 +286,7 @@ int main(int argc, char *argv[])
    struct RunInfo info;
    struct core_file info_content;
    int rv;
-   char game_name[MAX_TOKEN_LEN], game_name_test[256];
+   char game_name[MAX_TOKEN_LEN];
    char *path = argv[1];
 
    if (argc < 2)
