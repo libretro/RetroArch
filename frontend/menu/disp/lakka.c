@@ -642,6 +642,8 @@ static GLuint png_texture_load(const char * file_name)
    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
+   free(ti.pixels);
+
    return texture;
 }
 
@@ -891,8 +893,9 @@ static void lakka_context_reset(void *data)
          info = (core_info_t*)&info_list->list[i-1];
 
       if (info != NULL && info->systemname) {
-         strlcpy(core_id, info->systemname, sizeof(core_id));
-         strlcpy(core_id, str_replace(core_id, "/", " "), sizeof(core_id));
+         char *tmp = str_replace(info->systemname, "/", " ");
+         strlcpy(core_id, tmp, sizeof(core_id));
+         free(tmp);
       } else {
          strlcpy(core_id, "default", sizeof(core_id));
       }
@@ -1021,6 +1024,10 @@ static void lakka_free(void *data)
 
    if (menu->alloc_font)
       free((uint8_t*)menu->font);
+
+   if (g_extern.core_info)
+      core_info_list_free(g_extern.core_info);
+   g_extern.core_info = NULL;
 }
 
 static int lakka_input_postprocess(uint64_t old_state)
