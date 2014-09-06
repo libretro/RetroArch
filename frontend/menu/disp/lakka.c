@@ -630,7 +630,7 @@ static void lakka_frame(void)
 
 static GLuint png_texture_load(const char * file_name)
 {
-   struct texture_image ti;
+   struct texture_image ti = {0};
    texture_image_load(&ti, file_name);
 
    /* Generate the OpenGL texture object */
