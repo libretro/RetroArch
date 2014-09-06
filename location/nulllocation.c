@@ -16,10 +16,6 @@
 
 #include "../driver.h"
 
-typedef struct null_location
-{
-} nulllocation_t;
-
 static void *null_location_init(void)
 {
    return NULL;
