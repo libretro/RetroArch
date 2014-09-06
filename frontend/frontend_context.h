@@ -25,6 +25,7 @@
 #endif
 
 #if defined(ANDROID)
+#include "platform/platform_android.h"
 #define args_type() struct android_app*
 #define signature() void* data
 #define signature_expand() data

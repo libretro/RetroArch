@@ -341,8 +341,6 @@ static unsigned input_frame(uint64_t trigger_state)
 
 bool menu_iterate(void)
 {
-   const char *path = NULL;
-   const char *label = NULL;
    unsigned action = MENU_ACTION_NOOP;
    static bool initial_held = true;
    static bool first_held = false;

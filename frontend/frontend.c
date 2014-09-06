@@ -38,7 +38,6 @@
 
 #define main_entry android_app_entry
 #define returntype void
-#define signature_expand() data
 #define returnfunc() exit(0)
 #define return_negative() return
 #define return_var(var) return
@@ -54,7 +53,6 @@
 #endif
 
 #define returntype int
-#define signature_expand() argc, argv
 #define returnfunc() return 0
 #define return_negative() return 1
 #define return_var(var) return var

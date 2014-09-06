@@ -843,7 +843,7 @@ const struct rarch_key_map rarch_key_map_linux[] = {
    //{ ?, RETROK_EXCLAIM },
    //{ ?, RETROK_QUOTEDBL },
    //{ ?, RETROK_HASH },
-#ifdef ANDROID
+#ifndef ANDROID
    { KEY_DOLLAR, RETROK_DOLLAR },
 #endif
    //{ ?, RETROK_AMPERSAND },
