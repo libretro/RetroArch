@@ -358,7 +358,7 @@ static void find_osk_driver(void)
    }
 }
 
-void init_osk(void)
+static void init_osk(void)
 {
    /* Resource leaks will follow if osk is initialized twice. */
    if (driver.osk_data)
@@ -376,7 +376,7 @@ void init_osk(void)
    }
 }
 
-void uninit_osk(void)
+static void uninit_osk(void)
 {
    if (driver.osk_data && driver.osk && driver.osk->free)
       driver.osk->free(driver.osk_data);

@@ -92,7 +92,7 @@ struct rarch_softfilter
 #endif
 };
 
-const struct softfilter_implementation *softfilter_find_implementation(rarch_softfilter_t *filt, const char *ident)
+static const struct softfilter_implementation *softfilter_find_implementation(rarch_softfilter_t *filt, const char *ident)
 {
    unsigned i;
    for (i = 0; i < filt->num_plugs; i++)
