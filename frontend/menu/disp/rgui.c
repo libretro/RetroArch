@@ -50,8 +50,8 @@ static uint16_t menu_framebuf[400 * 240];
 
 #define RGUI_TERM_START_X 15
 #define RGUI_TERM_START_Y 27
-#define RGUI_TERM_WIDTH (((driver.menu->width - RGUI_TERM_START_X - 15) / (FONT_WIDTH_STRIDE)))
-#define RGUI_TERM_HEIGHT (((driver.menu->height - RGUI_TERM_START_Y - 15) / (FONT_HEIGHT_STRIDE)) - 1)
+#define RGUI_TERM_WIDTH (((driver.menu->width - RGUI_TERM_START_X - RGUI_TERM_START_X) / (FONT_WIDTH_STRIDE)))
+#define RGUI_TERM_HEIGHT (((driver.menu->height - RGUI_TERM_START_Y - RGUI_TERM_START_X) / (FONT_HEIGHT_STRIDE)) - 1)
 
 static void rgui_copy_glyph(uint8_t *glyph, const uint8_t *buf)
 {
@@ -313,8 +313,8 @@ static void rgui_render(void)
 
    char title_buf[256];
    menu_ticker_line(title_buf, RGUI_TERM_WIDTH - 3,
-         g_extern.frame_count / 15, title, true);
-   blit_line(RGUI_TERM_START_X + 15, 15, title_buf, true);
+         g_extern.frame_count / RGUI_TERM_START_X, title, true);
+   blit_line(RGUI_TERM_START_X + RGUI_TERM_START_X, RGUI_TERM_START_X, title_buf, true);
 
    char title_msg[64];
    const char *core_name = driver.menu->info.library_name;
@@ -331,7 +331,7 @@ static void rgui_render(void)
 
    snprintf(title_msg, sizeof(title_msg), "%s - %s %s", PACKAGE_VERSION,
          core_name, core_version);
-   blit_line(RGUI_TERM_START_X + 15, (RGUI_TERM_HEIGHT * FONT_HEIGHT_STRIDE) +
+   blit_line(RGUI_TERM_START_X + RGUI_TERM_START_X, (RGUI_TERM_HEIGHT * FONT_HEIGHT_STRIDE) +
          RGUI_TERM_START_Y + 2, title_msg, true);
 
    unsigned x, y;
@@ -398,8 +398,8 @@ static void rgui_render(void)
       bool selected = i == driver.menu->selection_ptr;
 
       menu_ticker_line(entry_title_buf, RGUI_TERM_WIDTH - (w + 1 + 2),
-            g_extern.frame_count / 15, path, selected);
-      menu_ticker_line(type_str_buf, w, g_extern.frame_count / 15,
+            g_extern.frame_count / RGUI_TERM_START_X, path, selected);
+      menu_ticker_line(type_str_buf, w, g_extern.frame_count / RGUI_TERM_START_X,
             type_str, selected);
 
       snprintf(message, sizeof(message), "%c %-*.*s %-*s",
