@@ -315,6 +315,9 @@ static char** waiting_argv;
       case 3:
          cmd = RARCH_CMD_SAVE_STATE;
          break;
+      default:
+         cmd = RARCH_CMD_NONE;
+         break;
    }
 
    rarch_main_command(cmd);
