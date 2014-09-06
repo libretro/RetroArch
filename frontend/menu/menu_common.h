@@ -141,8 +141,6 @@ bool menu_save_new_config(void);
 
 void menu_update_system_info(menu_handle_t *menu, bool *load_no_content);
 
-void menu_build_scroll_indices(file_list_t *buf);
-
 unsigned menu_common_type_is(const char *label, unsigned type);
 
 #ifdef __cplusplus

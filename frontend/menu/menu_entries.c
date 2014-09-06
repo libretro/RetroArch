@@ -44,6 +44,70 @@ static inline struct gfx_shader *shader_manager_get_current_shader(
    return NULL;
 }
 
+static inline bool menu_list_elem_is_dir(file_list_t *buf,
+      unsigned offset)
+{
+   const char *path = NULL;
+   const char *label = NULL;
+   unsigned type = 0;
+
+   file_list_get_at_offset(buf, offset, &path, &label, &type);
+
+   return type != MENU_FILE_PLAIN;
+}
+
+static inline int menu_list_get_first_char(file_list_t *buf,
+      unsigned offset)
+{
+   int ret;
+   const char *path = NULL;
+
+   file_list_get_alt_at_offset(buf, offset, &path);
+   ret = tolower(*path);
+
+   /* "Normalize" non-alphabetical entries so they 
+    * are lumped together for purposes of jumping. */
+   if (ret < 'a')
+      ret = 'a' - 1;
+   else if (ret > 'z')
+      ret = 'z' + 1;
+   return ret;
+}
+
+static void menu_build_scroll_indices(file_list_t *buf)
+{
+   size_t i;
+   int current;
+   bool current_is_dir;
+
+   if (!driver.menu || !buf)
+      return;
+
+   driver.menu->scroll_indices_size = 0;
+   if (!buf->size)
+      return;
+
+   driver.menu->scroll_indices[driver.menu->scroll_indices_size++] = 0;
+
+   current = menu_list_get_first_char(buf, 0);
+   current_is_dir = menu_list_elem_is_dir(buf, 0);
+
+   for (i = 1; i < buf->size; i++)
+   {
+      int first = menu_list_get_first_char(buf, i);
+      bool is_dir = menu_list_elem_is_dir(buf, i);
+
+      if ((current_is_dir && !is_dir) || (first > current))
+         driver.menu->scroll_indices[driver.menu->scroll_indices_size++] = i;
+
+      current = first;
+      current_is_dir = is_dir;
+   }
+
+   driver.menu->scroll_indices[driver.menu->scroll_indices_size++] = 
+      buf->size - 1;
+}
+
 static void add_setting_entry(menu_handle_t *menu,
       file_list_t *list,
       const char *label, unsigned id,
