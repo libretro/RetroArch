@@ -115,7 +115,7 @@ static void file_action(enum file_action action, NSString* source, NSString* tar
 {
    RADirectoryItem* item = [RADirectoryItem new];
    item.path = BOXSTRING(element->data);
-   item.isDirectory = element->attr.b;
+   item.isDirectory = (element->attr.i == RARCH_DIRECTORY);
    return item;
 }
 
@@ -256,7 +256,7 @@ static void file_action(enum file_action action, NSString* source, NSString* tar
          const char* basename = path_basename(contents->elems[i].data);
       
          uint32_t section = isalpha(basename[0]) ? (toupper(basename[0]) - 'A') + 2 : 1;
-         section = contents->elems[i].attr.b ? 0 : section;
+         section = (contents->elems[i].attr.i == RARCH_DIRECTORY) ? 0 : section;
 
          [self.sections[section] addObject:[RADirectoryItem directoryItemFromElement:&contents->elems[i]]];
       }
@@ -432,7 +432,7 @@ static void file_action(enum file_action action, NSString* source, NSString* tar
 
          for (i = 0; i < contents->size; i ++)
          {
-            if (contents->elems[i].attr.b)
+            if (contents->elems[i].attr.i == RARCH_DIRECTORY)
             {
                const char* basename = path_basename(contents->elems[i].data);
                

@@ -629,6 +629,7 @@ int menu_parse_check(const char *label, unsigned menu_type)
    RARCH_LOG("label is menu_parse_check: %s\n", label);
 #endif
    if (!((menu_type == MENU_FILE_DIRECTORY ||
+            menu_type == MENU_FILE_CARCHIVE ||
             menu_common_type_is(label, menu_type) == MENU_SETTINGS_SHADER_OPTIONS ||
             menu_common_type_is(label, menu_type) == MENU_FILE_DIRECTORY ||
             !strcmp(label, "input_overlay") ||
@@ -793,7 +794,16 @@ int menu_parse_and_resolve(file_list_t *list, file_list_t *menu_list)
    else
       exts = g_extern.system.valid_extensions;
 
-   struct string_list *str_list = dir_list_new(dir, exts, true);
+   struct string_list *str_list = NULL;
+
+   if (path_is_compressed_file(dir))
+   {
+      str_list = compressed_file_list_new(dir,exts);
+   }
+   else
+   {
+      str_list = dir_list_new(dir, exts, true);
+   }
    if (!str_list)
       return -1;
 
@@ -806,7 +816,24 @@ int menu_parse_and_resolve(file_list_t *list, file_list_t *menu_list)
    list_size = str_list->size;
    for (i = 0; i < str_list->size; i++)
    {
-      bool is_dir = str_list->elems[i].attr.b;
+      menu_file_type_t file_type = 0;
+      switch (str_list->elems[i].attr.i)
+      {
+         case RARCH_DIRECTORY:
+            file_type = MENU_FILE_DIRECTORY;
+            break;
+         case RARCH_COMPRESSED_ARCHIVE:
+            file_type = MENU_FILE_CARCHIVE;
+            break;
+         case RARCH_COMPRESSED_FILE_IN_ARCHIVE:
+            file_type = MENU_FILE_IN_CARCHIVE;
+            break;
+         case RARCH_PLAIN_FILE:
+         default:
+            file_type = MENU_FILE_PLAIN;
+            break;
+      }
+      bool is_dir = (file_type == MENU_FILE_DIRECTORY);
 
       if ((menu_common_type_is(label, menu_type) == MENU_FILE_DIRECTORY) && !is_dir)
          continue;
@@ -827,11 +854,17 @@ int menu_parse_and_resolve(file_list_t *list, file_list_t *menu_list)
       /* Push menu_type further down in the chain.
        * Needed for shader manager currently. */
       if (!strcmp(label, "core_list"))
+      {
+         /* Compressed cores are unsupported */
+         if (file_type == MENU_FILE_CARCHIVE)
+            continue;
+
          file_list_push(list, path, "",
                is_dir ? MENU_FILE_DIRECTORY : MENU_FILE_CORE, 0);
+      }
       else
       file_list_push(list, path, "",
-            is_dir ? MENU_FILE_DIRECTORY : MENU_FILE_PLAIN, 0);
+            file_type, 0);
    }
 
    menu_entries_push_list(driver.menu, list,

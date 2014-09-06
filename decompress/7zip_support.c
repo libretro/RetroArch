@@ -21,12 +21,15 @@
 
 #include <string.h>
 #include "../miscellaneous.h"
+#include "../file_path.h"
 
 #include "../deps/7zip/7z.h"
 #include "../deps/7zip/7zAlloc.h"
 #include "../deps/7zip/7zCrc.h"
 #include "../deps/7zip/7zFile.h"
 #include "../deps/7zip/7zVersion.h"
+
+
 
 static ISzAlloc g_Alloc = { SzAlloc, SzFree };
 
@@ -225,7 +228,6 @@ int read_7zip_file(const char * archive_path, const char *relative_path, void **
          res = ConvertUtf16toCharString(temp,infile);
 
          UInt64 filesize = f->Size;
-         (void)filesize;
 
          if (strcmp(infile,relative_path) == 0)
          {
@@ -266,4 +268,150 @@ int read_7zip_file(const char * archive_path, const char *relative_path, void **
    else
       RARCH_ERR("\nUnspecified error in 7-ZIP archive, error number was: #%d\n", res);
    return -1;
+}
+
+struct string_list *compressed_7zip_file_list_new(const char *path,
+      const char* ext)
+{
+
+   struct string_list *ext_list = NULL;
+   struct string_list *list = (struct string_list*)string_list_new();
+   if (!list)
+   {
+      RARCH_ERR("Could not allocate list memory in compressed_7zip_file_list_new\n.");
+      return NULL;
+   }
+
+   if (ext)
+      ext_list = string_split(ext, "|");
+
+   /* 7Zip part begin */
+   CFileInStream archiveStream;
+   CLookToRead lookStream;
+   CSzArEx db;
+   SRes res;
+   ISzAlloc allocImp;
+   ISzAlloc allocTempImp;
+   UInt16 *temp = NULL;
+   size_t tempSize = 0;
+   long outsize = -1;
+
+   //These are the allocation routines - currently using the non-standard 7zip choices.
+   allocImp.Alloc = SzAlloc;
+   allocImp.Free = SzFree;
+   allocTempImp.Alloc = SzAllocTemp;
+   allocTempImp.Free = SzFreeTemp;
+
+   if (InFile_Open(&archiveStream.file, path))
+   {
+      RARCH_ERR("Could not open %s as 7z archive\n.",path);
+      goto error;
+   }
+   FileInStream_CreateVTable(&archiveStream);
+   LookToRead_CreateVTable(&lookStream, False);
+   lookStream.realStream = &archiveStream.s;
+   LookToRead_Init(&lookStream);
+   CrcGenerateTable();
+   SzArEx_Init(&db);
+   res = SzArEx_Open(&db, &lookStream.s, &allocImp, &allocTempImp);
+   if (res == SZ_OK)
+   {
+      UInt32 i;
+      UInt32 blockIndex = 0xFFFFFFFF;
+      Byte *outBuffer = 0;
+      size_t outBufferSize = 0;
+      for (i = 0; i < db.db.NumFiles; i++)
+      {
+         size_t offset = 0;
+         size_t outSizeProcessed = 0;
+         const CSzFileItem *f = db.db.Files + i;
+         size_t len;
+         if (f->IsDir)
+         {
+            /* we skip over everything, which is a directory. */
+            continue;
+         }
+         len = SzArEx_GetFileNameUtf16(&db, i, NULL);
+         if (len > tempSize)
+         {
+            SzFree(NULL, temp);
+            tempSize = len;
+            temp = (UInt16 *) SzAlloc(NULL, tempSize * sizeof(temp[0]));
+            if (temp == 0)
+            {
+               res = SZ_ERROR_MEM;
+               break;
+            }
+         }
+         SzArEx_GetFileNameUtf16(&db, i, temp);
+         char infile[PATH_MAX];
+         res = ConvertUtf16toCharString(temp, infile);
+
+         const char *file_ext = path_get_extension(infile);
+         bool supported_by_core  = false;
+
+         union string_list_elem_attr attr;
+
+         if (string_list_find_elem_prefix(ext_list, ".", file_ext))
+            supported_by_core = true;
+
+         /*
+          * Currently we only support files without subdirs in the archives.
+          * Folders are not supported (differences between win and lin.
+          * Archives within archives should imho never be supported.
+          */
+
+         if (!supported_by_core)
+            continue;
+
+         attr.i = RARCH_COMPRESSED_FILE_IN_ARCHIVE;
+
+         if (!string_list_append(list, infile, attr))
+            goto error;
+
+      }
+   }
+   SzArEx_Free(&db, &allocImp);
+   SzFree(NULL, temp);
+   File_Close(&archiveStream.file);
+
+   if (res != SZ_OK)
+   {
+      //Error handling:
+      if (res == SZ_ERROR_UNSUPPORTED)
+      {
+         RARCH_ERR("7Zip decoder doesn't support this archive\n");
+         goto error;
+      }
+      else if (res == SZ_ERROR_MEM)
+      {
+         RARCH_ERR("7Zip decoder could not allocate memory\n");
+         goto error;
+      }
+      else if (res == SZ_ERROR_CRC)
+      {
+         RARCH_ERR("7Zip decoder encountered a CRC error in the archive\n");
+         goto error;
+      }
+      else
+      {
+         RARCH_ERR(
+               "\nUnspecified error in 7-ZIP archive, error number was: #%d\n",
+               res);
+         goto error;
+      }
+   }
+
+   string_list_free(ext_list);
+   return list;
+
+error:
+   RARCH_ERR("Failed to open compressed_file: \"%s\"\n", path);
+   SzArEx_Free(&db, &allocImp);
+   SzFree(NULL, temp);
+   File_Close(&archiveStream.file);
+   string_list_free(list);
+   string_list_free(ext_list);
+   return NULL;
+
 }

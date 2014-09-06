@@ -151,16 +151,29 @@ static ssize_t read_content_file(const char *path, void **buf)
 
    if (g_extern.is_carchive)
    {
-      if(archive_found)
-      {
-         /* FIXME - should use fill_pathname_relative helper function here 
-          * to avoid errors. */
-         char rel_path[PATH_MAX];
-         snprintf(rel_path, sizeof(rel_path),
-                  "%s", archive_found + strlen(g_extern.carchive_path) + 1);
-         ret = read_compressed_file(g_extern.carchive_path,
-               rel_path, (void**)&ret_buf);
-      }
+         if(archive_found)
+         {
+            if (strlen(path) < strlen(g_extern.carchive_path)+2)
+            {
+               /*
+                * This error condition happens for example, when
+                * carchive_path == path, or
+                * carchive_path + '/' == path.
+                */
+               RARCH_ERR("Could not extract image path %s from carchive path %s.\n",
+                     path, g_extern.carchive_path);
+               return -1;
+            }
+            ret = read_compressed_file(g_extern.carchive_path,
+                  archive_found + strlen(g_extern.carchive_path) + 1, (void**)&ret_buf);
+         }
+         else
+         {
+            /* If we didn't actually find the archivename in the filename
+             * the given path is not inside the archive. Then we proceed to just load the file.
+             */
+            ret = read_file(path, (void**)&ret_buf);
+         }
    }
    else
 #endif
