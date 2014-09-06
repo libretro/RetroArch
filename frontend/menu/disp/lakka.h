@@ -53,7 +53,7 @@ typedef struct
 typedef struct
 {
    char  name[256];
-   char  rom[256];
+   char  rom[PATH_MAX];
    float  alpha;
    float  zoom;
    float  y;
@@ -65,7 +65,7 @@ typedef struct
 typedef struct
 {
    char  name[256];
-   char  libretro[256];
+   char  libretro[PATH_MAX];
    GLuint icon;
    GLuint item_icon;
    float  alpha;

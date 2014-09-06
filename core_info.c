@@ -208,6 +208,7 @@ void core_info_list_free(core_info_list_t *core_info_list)
       core_info_t *info = (core_info_t*)&core_info_list->list[i];
 
       free(info->path);
+      free(info->systemname);
       free(info->display_name);
       free(info->supported_extensions);
       free(info->authors);
