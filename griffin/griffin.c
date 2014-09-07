@@ -27,11 +27,6 @@
 #include "../msvc/msvc_compat.h"
 #endif
 
-#ifdef __CELLOS_LV2__
-#include "../mem/altivec/altivec_mem.c"
-#endif
-
-
 /*============================================================
 CONSOLE EXTENSIONS
 ============================================================ */
