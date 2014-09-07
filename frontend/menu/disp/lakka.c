@@ -649,7 +649,7 @@ static GLuint png_texture_load(const char * file_name)
 
 static void lakka_context_destroy(void *data)
 {
-   int i, j;
+   int i, j, k;
    gl_t *gl = (gl_t*)driver.video_data;
 
    for (i = 0; i < TEXTURE_LAST; i++)
@@ -672,9 +672,12 @@ static void lakka_context_destroy(void *data)
 
          item = (menu_item_t*)&category->items[j];
 
-         if (item)
+         if (!item)
+            continue;
+
+         for (k = 0; k < item->num_subitems; k++ )
          {
-            subitem = (menu_subitem_t*)&item->subitems[j];
+            subitem = (menu_subitem_t*)&item->subitems[k];
 
             if (subitem)
                glDeleteTextures(1, &subitem->icon);
