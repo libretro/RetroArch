@@ -1103,7 +1103,7 @@ static void *lakka_init(void)
       category->active_item = 0;
       category->num_items   = 0;
       category->items       = (menu_item_t*)
-         calloc(category->num_items, sizeof(menu_item_t));
+         calloc(category->num_items + 1, sizeof(menu_item_t));
 
       lakka_init_items(i, category, info, g_settings.content_directory);
    }
