@@ -540,7 +540,7 @@ static void lakka_draw_items(int i)
          continue;
 
       if (i >= menu_active_category - 1 &&
-	 i <= menu_active_category + 1) /* performance improvement */
+         i <= menu_active_category + 1) /* performance improvement */
       {
          lakka_draw_icon(category->item_icon,
             margin_left + hspacing*(i+1) +
@@ -649,7 +649,7 @@ static GLuint png_texture_load(const char * file_name)
 
 static void lakka_context_destroy(void *data)
 {
-   int i, j;
+   int i, j, k;
    gl_t *gl = (gl_t*)driver.video_data;
 
    for (i = 0; i < TEXTURE_LAST; i++)
@@ -672,9 +672,12 @@ static void lakka_context_destroy(void *data)
 
          item = (menu_item_t*)&category->items[j];
 
-         if (item)
+         if (!item)
+            continue;
+
+         for (k = 0; k < item->num_subitems; k++ )
          {
-            subitem = (menu_subitem_t*)&item->subitems[j];
+            subitem = (menu_subitem_t*)&item->subitems[k];
 
             if (subitem)
                glDeleteTextures(1, &subitem->icon);
@@ -892,11 +895,14 @@ static void lakka_context_reset(void *data)
       if (info_list)
          info = (core_info_t*)&info_list->list[i-1];
 
-      if (info != NULL && info->systemname) {
+      if (info != NULL && info->systemname)
+      {
          char *tmp = str_replace(info->systemname, "/", " ");
          strlcpy(core_id, tmp, sizeof(core_id));
          free(tmp);
-      } else {
+      }
+      else
+      {
          strlcpy(core_id, "default", sizeof(core_id));
       }
 
@@ -1016,6 +1022,8 @@ static void lakka_init_items(int i, menu_category_t *category,
          }
       }
    }
+
+   string_list_free(list);
 }
 
 static void lakka_free(void *data)
@@ -1054,13 +1062,17 @@ static void lakka_init_core_info(void *data)
 
    core_info_list_free(g_extern.core_info);
    g_extern.core_info = NULL;
-   if (*g_settings.libretro_directory) {
+   if (*g_settings.libretro_directory)
+   {
       g_extern.core_info = core_info_list_new(g_settings.libretro_directory);
    }
 
-   if (g_extern.core_info) {
+   if (g_extern.core_info)
+   {
       num_categories = g_extern.core_info->count + 1;
-   } else {
+   }
+   else
+   {
      num_categories = 1;
    }
 }
@@ -1070,6 +1082,7 @@ static void *lakka_init(void)
    int i;
    menu_handle_t *menu = (menu_handle_t*)calloc(1, sizeof(*menu));
    gl_t *gl = (gl_t*)driver.video_data;
+
    if (!menu || !gl)
       return NULL;
 
@@ -1103,7 +1116,7 @@ static void *lakka_init(void)
       category->active_item = 0;
       category->num_items   = 0;
       category->items       = (menu_item_t*)
-         calloc(category->num_items, sizeof(menu_item_t));
+         calloc(category->num_items + 1, sizeof(menu_item_t));
 
       lakka_init_items(i, category, info, g_settings.content_directory);
    }
