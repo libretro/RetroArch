@@ -654,7 +654,6 @@ int setting_data_get_description(const char *label, char *msg,
                 "Depending on video driver, it might \n"
                 "force a different input driver.");
 
-       return 0;
     }
     else if (!strcmp(label, "load_content"))
     {
@@ -676,7 +675,6 @@ int setting_data_get_description(const char *label, char *msg,
              "in 'Core', and use that core when \n"
              "content is loaded."
              );
-       return 0;
     }
     else if (!strcmp(label, "core_list"))
     {
@@ -692,7 +690,6 @@ int setting_data_get_description(const char *label, char *msg,
              "will use that as top folder. If Core \n"
              "Directory is a full path, it will start \n"
              "in the folder where the file is.");
-       return 0;
     }
     else if (!strcmp(label, "history_list"))
     {
@@ -708,7 +705,6 @@ int setting_data_get_description(const char *label, char *msg,
              "will not be saved or loaded, and will not exist \n"
              "in the main menu."
              );
-       return 0;
     }
     else if (!strcmp(label, "audio_resampler_driver"))
     {
@@ -718,7 +714,6 @@ int setting_data_get_description(const char *label, char *msg,
        else if (!strcmp(g_settings.audio.resampler, "CC"))
           snprintf(msg, sizeof_msg,
                 " -- Convoluted Cosine implementation.");
-       return 0;
     }
     else if (!strcmp(label, "video_driver"))
     {
@@ -773,7 +768,6 @@ int setting_data_get_description(const char *label, char *msg,
        else
           snprintf(msg, sizeof_msg,
                 " -- Current Video driver.");
-       return 0;
     }
     else if (!strcmp(label, "audio_dsp_plugin"))
     {
@@ -782,7 +776,6 @@ int setting_data_get_description(const char *label, char *msg,
              " Processes audio before it's sent to \n"
              "the driver."
              );
-       return 0;
     }
     else if (!strcmp(label, "libretro_dir_path"))
     {
@@ -791,14 +784,12 @@ int setting_data_get_description(const char *label, char *msg,
              " \n"
              "A directory for where to search for \n"
              "libretro core implementations.");
-       return 0;
     }
     else if (!strcmp(label, "video_disable_composition"))
     {
        snprintf(msg, sizeof_msg,
              "-- Forcibly disable composition.\n"
              "Only valid on Windows Vista/7 for now.");
-       return 0;
     }
     else if (!strcmp(label, "libretro_log_level"))
     {
@@ -818,21 +809,18 @@ int setting_data_get_description(const char *label, char *msg,
                " WARN  = 2\n"
                " ERROR = 3"
                );
-       return 0;
     }
     else if (!strcmp(label, "log_verbosity"))
     {
          snprintf(msg, sizeof_msg,
                "-- Enable or disable verbosity level \n"
                "of frontend.");
-       return 0;
     }
     else if (!strcmp(label, "perfcnt_enable"))
     {
          snprintf(msg, sizeof_msg,
                "-- Enable or disable frontend \n"
                "performance counters.");
-       return 0;
     }
     else if (!strcmp(label, "system_directory"))
     {
@@ -843,7 +831,6 @@ int setting_data_get_description(const char *label, char *msg,
                "Implementations can query for this\n"
                "directory to load BIOSes, \n"
                "system-specific configs, etc.");
-         return 0;
     }
     else if (!strcmp(label, "rgui_show_start_screen"))
     {
@@ -854,7 +841,6 @@ int setting_data_get_description(const char *label, char *msg,
              " \n"
              "This is only updated in config if\n"
              "'Config Save On Exit' is set to true.\n");
-       return 0;
     }
     else if (!strcmp(label, "config_save_on_exit"))
     {
@@ -878,14 +864,12 @@ int setting_data_get_description(const char *label, char *msg,
                "manually isn't really an option."
 #endif
                );
-         return 0;
     }
     else if (!strcmp(label, "core_specific_config"))
     {
          snprintf(msg, sizeof_msg,
                " -- Load up a specific config file \n"
                "based on the core being used.\n");
-         return 0;
     }
     else if (!strcmp(label, "video_scale"))
     {
@@ -894,13 +878,11 @@ int setting_data_get_description(const char *label, char *msg,
                " \n"
                "Resolution of 0 uses the \n"
                "resolution of the environment.\n");
-         return 0;
     }
     else if (!strcmp(label, "video_vsync"))
     {
          snprintf(msg, sizeof_msg,
                " -- Video V-Sync.\n");
-         return 0;
     }
     else if (!strcmp(label, "video_hard_sync"))
     {
@@ -910,7 +892,6 @@ int setting_data_get_description(const char *label, char *msg,
                " \n"
                "Can reduce latency at cost of \n"
                "performance.");
-         return 0;
     }
     else if (!strcmp(label, "video_hard_sync_frames"))
     {
@@ -924,7 +905,6 @@ int setting_data_get_description(const char *label, char *msg,
                " 0: Syncs to GPU immediately.\n"
                " 1: Syncs to previous frame.\n"
                " 2: Etc ...");
-         return 0;
     }
     else if (!strcmp(label, "video_frame_delay"))
     {
@@ -936,7 +916,6 @@ int setting_data_get_description(const char *label, char *msg,
                "higher risk of stuttering.\n"
                " \n"
                "Maximum is 15.");
-       return 0;
     }
     else if (!strcmp(label, "audio_rate_control_delta"))
     {
@@ -952,7 +931,6 @@ int setting_data_get_description(const char *label, char *msg,
              " \n"
              " Input rate is defined as: \n"
              " input rate * (1.0 +/- (rate control delta))");
-       return 0;
     }
     else if (!strcmp(label, "video_filter"))
     {
@@ -965,12 +943,10 @@ int setting_data_get_description(const char *label, char *msg,
           " \n"
           "Path to a dynamic library.");
 #endif
-       return 0;
     }
     else if (!strcmp(label, "video_fullscreen"))
     {
        snprintf(msg, sizeof_msg, " -- Toggles fullscreen.");
-       return 0;
     }
     else if (!strcmp(label, "audio_device"))
     {
@@ -997,7 +973,6 @@ int setting_data_get_description(const char *label, char *msg,
              "server."
 #endif
              );
-         return 0;
     }
     else if (!strcmp(label, "video_black_frame_insertion"))
     {
@@ -1012,7 +987,6 @@ int setting_data_get_description(const char *label, char *msg,
              "Video refresh rate should still be \n"
              "configured as if it is a 60 Hz monitor \n"
              "(divide refresh rate by 2).");
-       return 0;
     }
     else if (!strcmp(label, "video_threaded"))
     {
@@ -1022,7 +996,6 @@ int setting_data_get_description(const char *label, char *msg,
                "Using this might improve performance at \n"
                "possible cost of latency and more video \n"
                "stuttering.");
-       return 0;
     }
     else if (!strcmp(label, "video_scale_integer"))
     {
@@ -1035,7 +1008,6 @@ int setting_data_get_description(const char *label, char *msg,
                " \n"
                "If Force Aspect is not set, X/Y will be \n"
                "integer scaled independently.");
-         return 0;
     }
     else if (!strcmp(label, "video_crop_overscan"))
     {
@@ -1045,7 +1017,6 @@ int setting_data_get_description(const char *label, char *msg,
                " \n"
                "Exact behavior of this option is \n"
                "core-implementation specific.");
-         return 0;
     }
     else if (!strcmp(label, "video_monitor_index"))
     {
@@ -1056,7 +1027,6 @@ int setting_data_get_description(const char *label, char *msg,
                "is preferred, 1 and up (1 being first \n"
                "monitor), suggests RetroArch to use that \n"
                "particular monitor.");
-         return 0;
     }
     else if (!strcmp(label, "video_rotation"))
     {
@@ -1067,7 +1037,6 @@ int setting_data_get_description(const char *label, char *msg,
                "The rotation is added to rotations which\n"
                "the libretro core sets (see Video Allow\n"
                "Rotate).");
-         return 0;
     }
     else if (!strcmp(label, "audio_volume"))
     {
@@ -1077,7 +1046,6 @@ int setting_data_get_description(const char *label, char *msg,
                " 0 dB is normal volume. No gain will be applied.\n"
                "Gain can be controlled in runtime with Input\n"
                "Volume Up / Input Volume Down.");
-         return 0;
     }
     else if (!strcmp(label, "block_sram_overwrite"))
     {
@@ -1086,7 +1054,6 @@ int setting_data_get_description(const char *label, char *msg,
                "when loading save states.\n"
                " \n"
                "Might potentially lead to buggy games.");
-         return 0;
     }
     else if (!strcmp(label, "fastforward_ratio"))
     {
@@ -1103,21 +1070,18 @@ int setting_data_get_description(const char *label, char *msg,
                "the maximum rate will not be exceeded.\n"
                "Do not rely on this cap to be perfectly \n"
                "accurate.");
-         return 0;
     }
     else if (!strcmp(label, "pause_nonactive"))
     {
          snprintf(msg, sizeof_msg,
                " -- Pause gameplay when window focus \n"
                "is lost.");
-         return 0;
     }
     else if (!strcmp(label, "video_gpu_screenshot"))
     {
          snprintf(msg, sizeof_msg,
                " -- Screenshots output of GPU shaded \n"
                "material if available.");
-         return 0;
     }
     else if (!strcmp(label, "autosave_interval"))
     {
@@ -1130,7 +1094,6 @@ int setting_data_get_description(const char *label, char *msg,
                "seconds. \n"
                " \n"
                "A value of 0 disables autosave.");
-         return 0;
     }
     else if (!strcmp(label, "screenshot_directory"))
     {
@@ -1139,7 +1102,6 @@ int setting_data_get_description(const char *label, char *msg,
                " \n"
                "Directory to dump screenshots to."
                );
-         return 0;
     }
     else if (!strcmp(label, "video_swap_interval"))
     {
@@ -1148,7 +1110,6 @@ int setting_data_get_description(const char *label, char *msg,
                " \n"
                "Uses a custom swap interval for VSync. Set this \n"
                "to effectively halve monitor refresh rate.");
-         return 0;
     }
     else if (!strcmp(label, "video_refresh_rate_auto"))
     {
@@ -1170,7 +1131,6 @@ int setting_data_get_description(const char *label, char *msg,
                "large pitch changes. If your monitor does \n"
                "not run at 60Hz, or something close to it, \n"
                "disable VSync, and leave this at its default.");
-         return 0;
     }
     else if (!strcmp(label, "savefile_directory"))
     {
@@ -1183,7 +1143,6 @@ int setting_data_get_description(const char *label, char *msg,
              " \n"
              "This will be overridden by explicit command line\n"
              "options.");
-       return 0;
     }
     else if (!strcmp(label, "savestate_directory"))
     {
@@ -1195,7 +1154,6 @@ int setting_data_get_description(const char *label, char *msg,
                " \n"
                "This will be overridden by explicit command line\n"
                "options.");
-         return 0;
     }
     else if (!strcmp(label, "assets_directory"))
     {
@@ -1205,7 +1163,6 @@ int setting_data_get_description(const char *label, char *msg,
              " This location is queried by default when \n"
              "menu interfaces try to look for loadable \n"
              "assets, etc.");
-       return 0;
     }
     else if (!strcmp(label, "slowmotion_ratio"))
     {
@@ -1214,7 +1171,6 @@ int setting_data_get_description(const char *label, char *msg,
                " \n"
                "When slowmotion, content will slow\n"
                "down by factor.");
-         return 0;
     }
     else if (!strcmp(label, "input_axis_threshold"))
     {
@@ -1222,7 +1178,6 @@ int setting_data_get_description(const char *label, char *msg,
                " -- Defines axis threshold.\n"
                " \n"
                " Possible values are [0.0, 1.0].");
-         return 0;
     }
     else if (!strcmp(label, "rewind_granularity"))
     {
@@ -1233,7 +1188,6 @@ int setting_data_get_description(const char *label, char *msg,
                "frames, you can rewind several frames \n"
                "at a time, increasing the rewinding \n"
                "speed.");
-         return 0;
     }
     else if (!strcmp(label, "rewind_enable"))
     {
@@ -1242,7 +1196,6 @@ int setting_data_get_description(const char *label, char *msg,
                " \n"
                "This will take a performance hit, \n"
                "so it is disabled by default.");
-         return 0;
     }
     else if (!strcmp(label, "input_autodetect_enable"))
     {
@@ -1251,21 +1204,18 @@ int setting_data_get_description(const char *label, char *msg,
                " \n"
                "Will attempt to auto-configure \n"
                "joypads, Plug-and-Play style.");
-         return 0;
     }
     else if (!strcmp(label, "camera_allow"))
     {
          snprintf(msg, sizeof_msg,
                " -- Allow or disallow camera access by \n"
                "cores.");
-         return 0;
     }
     else if (!strcmp(label, "location_allow"))
     {
        snprintf(msg, sizeof_msg,
              " -- Allow or disallow location services \n"
              "access by cores.");
-         return 0;
     }
     else if (!strcmp(label, "savestate_auto_save"))
     {
@@ -1276,7 +1226,6 @@ int setting_data_get_description(const char *label, char *msg,
                "RetroArch will automatically load any savestate\n"
                "with this path on startup if 'Savestate Auto\n"
                "Load' is set.");
-         return 0;
     }
     else if (!strcmp(label, "shader_apply_changes"))
     {
@@ -1297,7 +1246,6 @@ int setting_data_get_description(const char *label, char *msg,
              "saved to Shader Directory."
              );
 
-       return 0;
     }
     else if (!strcmp(label, "video_shader_preset")) 
     {
@@ -1328,7 +1276,6 @@ int setting_data_get_description(const char *label, char *msg,
              "factor for X/Y), the scaling factor displayed \n"
              "in the menu might not be correct."
              );
-       return 0;
     }
     else if (!strcmp(label, "video_shader_num_passes")) 
     {
@@ -1345,7 +1292,6 @@ int setting_data_get_description(const char *label, char *msg,
              " \n"
              "The Default Filter option will affect the \n"
              "stretching filter.");
-       return 0;
     }
     else if (!strcmp(label, "video_shader_parameters"))
     {
@@ -1354,7 +1300,6 @@ int setting_data_get_description(const char *label, char *msg,
              " \n"
              "Modifies current shader directly. Will not be \n"
              "saved to CGP/GLSLP preset file.");
-       return 0;
     }
     else if (!strcmp(label, "video_shader_preset_parameters"))
     {
@@ -1363,7 +1308,6 @@ int setting_data_get_description(const char *label, char *msg,
              " \n"
              "Modifies shader preset currently in menu."
              );
-       return 0;
     }
     else if (!strcmp(label, "video_shader_pass"))
     {
@@ -1377,7 +1321,6 @@ int setting_data_get_description(const char *label, char *msg,
              "the browser starts to look for \n"
              "shaders."
              );
-       return 0;
     }
     else if (!strcmp(label, "video_shader_filter_pass"))
     {
@@ -1387,7 +1330,6 @@ int setting_data_get_description(const char *label, char *msg,
              "If 'Don't Care' is set, 'Default \n"
              "Filter' will be used."
              );
-       return 0;
     }
     else if (!strcmp(label, "video_shader_scale_pass"))
     {
@@ -1408,16 +1350,12 @@ int setting_data_get_description(const char *label, char *msg,
              "be used depending if it's not the last \n"
              "pass or not."
              );
-       return 0;
     }
     else
-    {
        snprintf(msg, sizeof_msg,
              "-- No info on this item is available. --\n");
-       return 0;
-    }
 
-   return -1;
+    return 0;
 }
 
 static void general_read_handler(const void *data)
