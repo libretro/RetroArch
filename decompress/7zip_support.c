@@ -230,6 +230,8 @@ int read_7zip_file(const char * archive_path, const char *relative_path, void **
 
          UInt64 filesize = f->Size;
 
+         (void)filesize;
+
          if (strcmp(infile,relative_path) == 0)
          {
             res = SzArEx_Extract(&db, &lookStream.s, i,&blockIndex, &outBuffer, &outBufferSize,&offset, &outSizeProcessed,&allocImp, &allocTempImp);
@@ -297,6 +299,8 @@ struct string_list *compressed_7zip_file_list_new(const char *path,
    size_t tempSize = 0;
    long outsize = -1;
 
+   (void)outsize;
+
    //These are the allocation routines - currently using the non-standard 7zip choices.
    allocImp.Alloc = SzAlloc;
    allocImp.Free = SzFree;
@@ -321,12 +325,21 @@ struct string_list *compressed_7zip_file_list_new(const char *path,
       UInt32 blockIndex = 0xFFFFFFFF;
       Byte *outBuffer = 0;
       size_t outBufferSize = 0;
+
+      (void)blockIndex;
+      (void)outBufferSize;
+      (void)outBuffer;
+
       for (i = 0; i < db.db.NumFiles; i++)
       {
          size_t offset = 0;
          size_t outSizeProcessed = 0;
          const CSzFileItem *f = db.db.Files + i;
-         size_t len;
+         size_t len = 0;
+
+         (void)offset;
+         (void)outSizeProcessed;
+
          if (f->IsDir)
          {
             /* we skip over everything, which is a directory. */
