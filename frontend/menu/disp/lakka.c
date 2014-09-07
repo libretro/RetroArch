@@ -1019,6 +1019,8 @@ static void lakka_init_items(int i, menu_category_t *category,
          }
       }
    }
+
+   string_list_free(list);
 }
 
 static void lakka_free(void *data)
