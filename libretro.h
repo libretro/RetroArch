@@ -847,7 +847,7 @@ enum retro_mod
                                             * a default username should be specified by the core.
                                             */
 #define RETRO_ENVIRONMENT_GET_LANGUAGE 39
-                                           /* const unsigned * --
+                                           /* unsigned * --
                                             * Returns the specified language of the frontend, if specified by the user.
                                             * It can be used by the core for localization purposes.
                                             */
