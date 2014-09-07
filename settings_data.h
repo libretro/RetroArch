@@ -169,6 +169,10 @@ rarch_setting_t setting_data_bind_setting(const char* name,
 int setting_data_get_description(const char *label, char *msg,
       size_t msg_sizeof);
 
+void setting_data_get_label(char *type_str,
+      size_t type_str_size, unsigned *w, unsigned type, 
+      const char *menu_label, const char *label, unsigned index);
+
 #ifdef HAVE_MENU
 rarch_setting_t* setting_data_get_mainmenu(bool regenerate);
 #endif
