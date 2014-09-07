@@ -102,7 +102,6 @@ typedef struct
    const uint8_t *font;
    bool alloc_font;
 
-   struct retro_system_info info;
    bool load_no_content;
 
    struct gfx_shader *shader;

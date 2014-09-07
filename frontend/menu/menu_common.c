@@ -19,42 +19,6 @@
 #include "menu_entries.h"
 #include "../frontend.h"
 
-void menu_update_system_info(menu_handle_t *menu, bool *load_no_content)
-{
-   const core_info_t *info = NULL;
-#if defined(HAVE_DYNAMIC) && defined(HAVE_MENU)
-   libretro_free_system_info(&menu->info);
-   if (!(*g_settings.libretro))
-      return;
-
-   libretro_get_system_info(g_settings.libretro, &menu->info,
-         load_no_content);
-#endif
-   if (!g_extern.core_info)
-      return;
-
-   if (!core_info_list_get_info(g_extern.core_info,
-            g_extern.core_info_current, g_settings.libretro))
-      return;
-
-   /* Keep track of info for the currently selected core. */
-   info = (const core_info_t*)g_extern.core_info_current;
-
-   if (!g_extern.verbosity)
-      return;
-
-   RARCH_LOG("[Core Info]:\n");
-   if (info->display_name)
-      RARCH_LOG("Display Name = %s\n", info->display_name);
-   if (info->supported_extensions)
-      RARCH_LOG("Supported Extensions = %s\n",
-            info->supported_extensions);
-   if (info->authors)
-      RARCH_LOG("Authors = %s\n", info->authors);
-   if (info->permissions)
-      RARCH_LOG("Permissions = %s\n", info->permissions);
-}
-
 static void draw_frame(bool enable)
 {
    if (driver.video_data && driver.video_poke &&
@@ -91,7 +55,7 @@ static void throttle_frame(void)
 static void menu_update_libretro_info(menu_handle_t *menu)
 {
 #ifndef HAVE_DYNAMIC
-   retro_get_system_info(&menu->info);
+   retro_get_system_info(&g_extern.menu.info);
 #endif
 
    core_info_list_free(g_extern.core_info);
@@ -99,7 +63,7 @@ static void menu_update_libretro_info(menu_handle_t *menu)
    if (*g_settings.libretro_directory)
       g_extern.core_info = core_info_list_new(g_settings.libretro_directory);
 
-   menu_update_system_info(menu, NULL);
+   rarch_update_system_info(&g_extern.menu.info, NULL);
 }
 
 static void menu_environment_get(int *argc, char *argv[],
@@ -136,7 +100,7 @@ bool load_menu_content(void)
          content_playlist_push(g_extern.history,
                g_extern.fullpath,
                g_settings.libretro,
-               driver.menu->info.library_name);
+               g_extern.menu.info.library_name);
       }
    }
 
@@ -246,7 +210,7 @@ void menu_free(void *data)
       driver.menu_ctx->free(menu);
 
 #ifdef HAVE_DYNAMIC
-   libretro_free_system_info(&menu->info);
+   libretro_free_system_info(&g_extern.menu.info);
 #endif
 
    file_list_free(menu->menu_stack);

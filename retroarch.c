@@ -3384,7 +3384,7 @@ void rarch_main_command(unsigned cmd)
       case RARCH_CMD_LOAD_CORE:
 #ifdef HAVE_MENU
          if (driver.menu)
-            menu_update_system_info(driver.menu, &driver.menu->load_no_content);
+            rarch_update_system_info(&g_extern.menu.info, &driver.menu->load_no_content);
 #endif
          break;
       case RARCH_CMD_LOAD_STATE:
@@ -3998,4 +3998,40 @@ bool rarch_replace_config(const char *path)
    rarch_main_command(RARCH_CMD_PREPARE_DUMMY);
 
    return true;
+}
+
+void rarch_update_system_info(struct retro_system_info *_info, bool *load_no_content)
+{
+   const core_info_t *info = NULL;
+#if defined(HAVE_DYNAMIC)
+   libretro_free_system_info(_info);
+   if (!(*g_settings.libretro))
+      return;
+
+   libretro_get_system_info(g_settings.libretro, _info,
+         load_no_content);
+#endif
+   if (!g_extern.core_info)
+      return;
+
+   if (!core_info_list_get_info(g_extern.core_info,
+            g_extern.core_info_current, g_settings.libretro))
+      return;
+
+   /* Keep track of info for the currently selected core. */
+   info = (const core_info_t*)g_extern.core_info_current;
+
+   if (!g_extern.verbosity)
+      return;
+
+   RARCH_LOG("[Core Info]:\n");
+   if (info->display_name)
+      RARCH_LOG("Display Name = %s\n", info->display_name);
+   if (info->supported_extensions)
+      RARCH_LOG("Supported Extensions = %s\n",
+            info->supported_extensions);
+   if (info->authors)
+      RARCH_LOG("Authors = %s\n", info->authors);
+   if (info->permissions)
+      RARCH_LOG("Permissions = %s\n", info->permissions);
 }

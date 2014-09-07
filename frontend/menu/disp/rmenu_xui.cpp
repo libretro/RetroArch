@@ -403,13 +403,13 @@ static void rmenu_xui_render(void)
    blit_line(RXUI_TERM_START_X + 15, 15, title_buf, true);
 
    char title_msg[64];
-   const char *core_name = driver.menu->info.library_name;
+   const char *core_name = g_extern.menu.info.library_name;
    if (!core_name)
       core_name = g_extern.system.info.library_name;
    if (!core_name)
       core_name = "No Core";
 
-   const char *core_version = driver.menu->info.library_version;
+   const char *core_version = g_extern.menu.info.library_version;
    if (!core_version)
       core_version = g_extern.system.info.library_version;
    if (!core_version)

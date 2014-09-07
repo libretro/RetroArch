@@ -186,13 +186,13 @@ static void rmenu_render(void)
             title_buf, &font_parms);
 
    char title_msg[64];
-   const char *core_name = menu->info.library_name;
+   const char *core_name = g_extern.menu.info.library_name;
    if (!core_name)
       core_name = g_extern.system.info.library_name;
    if (!core_name)
       core_name = "No Core";
 
-   const char *core_version = menu->info.library_version;
+   const char *core_version = g_extern.menu.info.library_version;
    if (!core_version)
       core_version = g_extern.system.info.library_version;
    if (!core_version)

@@ -782,12 +782,12 @@ int menu_parse_and_resolve(file_list_t *list, file_list_t *menu_list)
    else if (!strcmp(label, "detect_core_list"))
       exts = g_extern.core_info ? core_info_list_get_all_extensions(
             g_extern.core_info) : "";
-   else if (driver.menu->info.valid_extensions)
+   else if (g_extern.menu.info.valid_extensions)
    {
       exts = ext_buf;
-      if (*driver.menu->info.valid_extensions)
+      if (*g_extern.menu.info.valid_extensions)
          snprintf(ext_buf, sizeof(ext_buf), "%s|zip",
-               driver.menu->info.valid_extensions);
+               g_extern.menu.info.valid_extensions);
       else
          *ext_buf = '\0';
    }

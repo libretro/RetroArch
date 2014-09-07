@@ -603,6 +603,13 @@ struct global
       bool out_rgb32;
    } filter;
 
+#ifdef HAVE_MENU
+   struct
+   {
+      struct retro_system_info info;
+   } menu;
+#endif
+
    msg_queue_t *msg_queue;
 
    bool exec;
@@ -830,6 +837,9 @@ void rarch_playlist_load_content(content_playlist_t *playlist,
 int rarch_defer_core(core_info_list_t *data,
       const char *dir, const char *path, char *deferred_path,
       size_t sizeof_deferred_path);
+
+void rarch_update_system_info(struct retro_system_info *info,
+      bool *load_no_content);
 
 #ifdef __cplusplus
 }

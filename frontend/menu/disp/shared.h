@@ -114,7 +114,7 @@ static void get_title(const char *label, const char *dir,
          snprintf(title, sizeof_title, "CONTENT %s", dir);
       else
       {
-         const char *core_name = driver.menu->info.library_name;
+         const char *core_name = g_extern.menu.info.library_name;
          if (!core_name)
             core_name = g_extern.system.info.library_name;
          if (!core_name)
