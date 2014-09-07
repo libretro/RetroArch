@@ -795,8 +795,9 @@ int menu_parse_and_resolve(file_list_t *list, file_list_t *menu_list)
       exts = g_extern.system.valid_extensions;
 
    struct string_list *str_list = NULL;
+   bool path_is_compressed = path_is_compressed_file(dir);
 
-   if (path_is_compressed_file(dir))
+   if (path_is_compressed)
    {
       str_list = compressed_file_list_new(dir,exts);
    }
@@ -838,10 +839,13 @@ int menu_parse_and_resolve(file_list_t *list, file_list_t *menu_list)
       if ((menu_common_type_is(label, menu_type) == MENU_FILE_DIRECTORY) && !is_dir)
          continue;
 
+
       /* Need to preserve slash first time. */
       const char *path = str_list->elems[i].data;
-      if (*dir)
+
+      if (*dir && !path_is_compressed)
          path = path_basename(path);
+
 
 #ifdef HAVE_LIBRETRO_MANAGEMENT
 #ifdef RARCH_CONSOLE
