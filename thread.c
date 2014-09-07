@@ -178,7 +178,8 @@ bool scond_wait_timeout(scond_t *cond, slock_t *lock, int64_t timeout_us)
    slock_unlock(lock);
    DWORD res = WaitForSingleObject(cond->event, (DWORD)(timeout_us) / 1000);
 #else
-   DWORD res = SignalObjectAndWait(lock->lock, cond->event, (DWORD)(timeout_us) / 1000, FALSE);
+   DWORD res = SignalObjectAndWait(lock->lock, cond->event,
+         (DWORD)(timeout_us) / 1000, FALSE);
 #endif
 
    slock_lock(lock);
@@ -190,7 +191,8 @@ void scond_signal(scond_t *cond)
    SetEvent(cond->event);
 }
 
-/* FIXME - check how this function should differ from scond_signal implementation */
+/* FIXME - check how this function should differ 
+ * from scond_signal implementation. */
 int scond_broadcast(scond_t *cond)
 {
    SetEvent(cond->event);
@@ -331,7 +333,8 @@ bool scond_wait_timeout(scond_t *cond, slock_t *lock, int64_t timeout_us)
 {
    struct timespec now = {0};
 
-#ifdef __MACH__ // OSX doesn't have clock_gettime ... :(
+#ifdef __MACH__
+   /* OSX doesn't have clock_gettime. */
    clock_serv_t cclock;
    mach_timespec_t mts;
    host_get_clock_service(mach_host_self(), CALENDAR_CLOCK, &cclock);
@@ -350,7 +353,8 @@ bool scond_wait_timeout(scond_t *cond, slock_t *lock, int64_t timeout_us)
    gettimeofday(&tm, NULL);
    now.tv_sec = tm.tv_sec;
    now.tv_nsec = tm.tv_usec * 1000;
-#elif !defined(GEKKO) // timeout on libogc is duration, not end time
+#elif !defined(GEKKO)
+   /* timeout on libogc is duration, not end time. */
    clock_gettime(CLOCK_REALTIME, &now);
 #endif
 

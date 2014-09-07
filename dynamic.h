@@ -60,12 +60,14 @@ function_t dylib_proc(dylib_t lib, const char *proc);
  *
  * For statically linked cores, pass retro_set_environment as argument.
  */
-void libretro_get_environment_info(void (*)(retro_environment_t), bool *load_no_content);
+void libretro_get_environment_info(void (*)(retro_environment_t),
+      bool *load_no_content);
 
 #ifdef HAVE_DYNAMIC
 /* Gets system info from an arbitrary lib.
  * The struct returned must be freed as strings are allocated dynamically. */
-bool libretro_get_system_info(const char *path, struct retro_system_info *info, bool *load_no_content);
+bool libretro_get_system_info(const char *path,
+      struct retro_system_info *info, bool *load_no_content);
 
 void libretro_free_system_info(struct retro_system_info *info);
 #endif
@@ -121,7 +123,8 @@ extern void (*pretro_cheat_set)(unsigned, bool, const char*);
 
 extern bool (*pretro_load_game)(const struct retro_game_info*);
 
-extern bool (*pretro_load_game_special)(unsigned, const struct retro_game_info*, size_t);
+extern bool (*pretro_load_game_special)(unsigned,
+      const struct retro_game_info*, size_t);
 
 extern void (*pretro_unload_game)(void);
 

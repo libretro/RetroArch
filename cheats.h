@@ -19,10 +19,13 @@
 typedef struct cheat_manager cheat_manager_t;
 
 cheat_manager_t* cheat_manager_new(const char *path);
+
 void cheat_manager_free(cheat_manager_t *handle);
 
 void cheat_manager_index_next(cheat_manager_t *handle);
+
 void cheat_manager_index_prev(cheat_manager_t *handle);
+
 void cheat_manager_toggle(cheat_manager_t *handle);
 
 #endif

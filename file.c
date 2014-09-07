@@ -165,12 +165,14 @@ static ssize_t read_content_file(const char *path, void **buf)
                return -1;
             }
             ret = read_compressed_file(g_extern.carchive_path,
-                  archive_found + strlen(g_extern.carchive_path) + 1, (void**)&ret_buf);
+                  archive_found + strlen(g_extern.carchive_path) + 1,
+                  (void**)&ret_buf);
          }
          else
          {
             /* If we didn't actually find the archivename in the filename
-             * the given path is not inside the archive. Then we proceed to just load the file.
+             * the given path is not inside the archive. Then we proceed to 
+             * just load the file.
              */
             ret = read_file(path, (void**)&ret_buf);
          }

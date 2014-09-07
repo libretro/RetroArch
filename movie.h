@@ -37,15 +37,17 @@ enum rarch_movie_type
 
 bsv_movie_t *bsv_movie_init(const char *path, enum rarch_movie_type type);
 
-// Playback
+/* Playback. */
 bool bsv_movie_get_input(bsv_movie_t *handle, int16_t *input);
 
-// Recording
+/* Recording. */
 void bsv_movie_set_input(bsv_movie_t *handle, int16_t input);
 
-// Used for rewinding while playback/record.
-void bsv_movie_set_frame_start(bsv_movie_t *handle); // Debugging purposes.
+/* Used for rewinding while playback/record. */
+void bsv_movie_set_frame_start(bsv_movie_t *handle);
+
 void bsv_movie_set_frame_end(bsv_movie_t *handle);
+
 void bsv_movie_frame_rewind(bsv_movie_t *handle);
 
 void bsv_movie_free(bsv_movie_t *handle);

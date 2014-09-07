@@ -121,7 +121,7 @@ static inline uint8_t is_little_endian(void)
 
 static inline uint32_t swap_if_big32(uint32_t val)
 {
-   if (is_little_endian()) // Little-endian
+   if (is_little_endian())
       return val;
    return (val >> 24) | ((val >> 8) & 0xFF00) |
       ((val << 8) & 0xFF0000) | (val << 24);

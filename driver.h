@@ -439,16 +439,18 @@ typedef struct driver
    /* Set to true by driver if context caching succeeded. */
    bool video_cache_context_ack;
 
-   /* Set this to true if the platform in question needs to 'own' the respective
-    * handle and therefore skip regular RetroArch driver teardown/reiniting procedure.
+   /* Set this to true if the platform in question needs to 'own' 
+    * the respective handle and therefore skip regular RetroArch 
+    * driver teardown/reiniting procedure.
     *
-    * If set to true, the 'free' function will get skipped. It is then up to the
-    * driver implementation to properly handle 'reiniting' inside the 'init' function
-    * and make sure it returns the existing handle instead of allocating and returning
-    * a pointer to a new handle.
+    * If set to true, the 'free' function will get skipped. It is 
+    * then up to the driver implementation to properly handle 
+    * 'reiniting' inside the 'init' function and make sure it 
+    * returns the existing handle instead of allocating and 
+    * returning a pointer to a new handle.
     *
-    * Typically, if a driver intends to make use of this, it should set this to true
-    * at the end of its 'init' function. */
+    * Typically, if a driver intends to make use of this, it should 
+    * set this to true at the end of its 'init' function. */
    bool video_data_own;
    bool audio_data_own;
    bool input_data_own;
@@ -553,12 +555,12 @@ unsigned dspfilter_get_last_idx(void);
 
 const char *rarch_dspfilter_get_name(void *data);
 
-// Used by RETRO_ENVIRONMENT_GET_CAMERA_INTERFACE
+/* Used by RETRO_ENVIRONMENT_GET_CAMERA_INTERFACE. */
 bool driver_camera_start(void);
 void driver_camera_stop(void);
 void driver_camera_poll(void);
 
-// Used by RETRO_ENVIRONMENT_GET_LOCATION_INTERFACE
+/* Used by RETRO_ENVIRONMENT_GET_LOCATION_INTERFACE. */
 bool driver_location_start(void);
 void driver_location_stop(void);
 bool driver_location_get_position(double *lat, double *lon,
@@ -570,9 +572,8 @@ void driver_location_set_interval(unsigned interval_msecs,
 void find_menu_driver(void);
 #endif
 
-// Used by RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO
+/* Used by RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO. */
 bool driver_update_system_av_info(const struct retro_system_av_info *info);
-
 
 extern driver_t driver;
 

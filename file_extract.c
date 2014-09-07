@@ -25,14 +25,16 @@
 
 #include "hash.h"
 
-// File backends. Can be fleshed out later, but keep it simple for now.
-// The file is mapped to memory directly (via mmap() or just plain read_file()).
+/* File backends. Can be fleshed out later, but keep it simple for now.
+ * The file is mapped to memory directly (via mmap() or just 
+ * plain read_file()).
+ */
 struct zlib_file_backend
 {
    void *(*open)(const char *path);
    const uint8_t *(*data)(void *handle);
    size_t (*size)(void *handle);
-   void (*free)(void *handle); // Closes, unmaps and frees.
+   void (*free)(void *handle); /* Closes, unmaps and frees. */
 };
 
 #ifdef HAVE_MMAP
@@ -168,7 +170,7 @@ const struct zlib_file_backend *zlib_get_default_file_backend(void)
 }
 
 
-// Modified from nall::unzip (higan).
+/* Modified from nall::unzip (higan). */
 
 #undef GOTO_END_ERROR
 #define GOTO_END_ERROR() do { \
@@ -292,7 +294,10 @@ bool zlib_parse_file(const char *file, zlib_file_cb file_cb, void *userdata)
 
       const uint8_t *cdata = data + offset + 30 + offsetNL + offsetEL;
 
-      //RARCH_LOG("OFFSET: %u, CSIZE: %u, SIZE: %u.\n", offset + 30 + offsetNL + offsetEL, csize, size);
+#if 0
+      RARCH_LOG("OFFSET: %u, CSIZE: %u, SIZE: %u.\n", offset + 30 + 
+      offsetNL + offsetEL, csize, size);
+#endif
 
       if (!file_cb(filename, cdata, cmode, csize, size, crc32, userdata))
          break;
@@ -315,12 +320,13 @@ struct zip_extract_userdata
    bool found_content;
 };
 
-static bool zip_extract_cb(const char *name, const uint8_t *cdata, unsigned cmode, uint32_t csize, uint32_t size,
+static bool zip_extract_cb(const char *name, const uint8_t *cdata,
+      unsigned cmode, uint32_t csize, uint32_t size,
       uint32_t crc32, void *userdata)
 {
    struct zip_extract_userdata *data = (struct zip_extract_userdata*)userdata;
 
-   // Extract first content that matches our list.
+   /* Extract first content that matches our list. */
    const char *ext = path_get_extension(name);
    if (ext && string_list_find_elem(data->ext, ext))
    {
@@ -335,11 +341,12 @@ static bool zip_extract_cb(const char *name, const uint8_t *cdata, unsigned cmod
 
       switch (cmode)
       {
-         case 0: // Uncompressed
+         /* Uncompressed. */
+         case 0:
             data->found_content = write_file(new_path, cdata, size);
             return false;
-
-         case 8: // Deflate
+         /* Deflate. */
+         case 8:
             if (zlib_inflate_data_to_file(new_path, cdata, csize, size, crc32))
             {
                strlcpy(data->zip_path, new_path, data->zip_path_size);
@@ -356,8 +363,8 @@ static bool zip_extract_cb(const char *name, const uint8_t *cdata, unsigned cmod
    return true;
 }
 
-bool zlib_extract_first_content_file(char *zip_path, size_t zip_path_size, const char *valid_exts,
-      const char *extraction_directory)
+bool zlib_extract_first_content_file(char *zip_path, size_t zip_path_size,
+      const char *valid_exts, const char *extraction_directory)
 {
    bool ret;
    struct zip_extract_userdata userdata = {0};
@@ -397,9 +404,9 @@ end:
    return ret;
 }
 
-static bool zlib_get_file_list_cb(const char *path, const uint8_t *cdata, unsigned cmode,
-      uint32_t csize, uint32_t size,
-      uint32_t crc32, void *userdata)
+static bool zlib_get_file_list_cb(const char *path, const uint8_t *cdata,
+      unsigned cmode, uint32_t csize, uint32_t size, uint32_t crc32,
+      void *userdata)
 {
    (void)cdata;
    (void)cmode;

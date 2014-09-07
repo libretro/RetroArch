@@ -30,7 +30,9 @@ core_option_manager_t *core_option_new(const char *conf_path,
       const struct retro_variable *vars);
 
 bool core_option_updated(core_option_manager_t *opt);
+
 void core_option_flush(core_option_manager_t *opt);
+
 void core_option_free(core_option_manager_t *opt);
 
 void core_option_get(core_option_manager_t *opt, struct retro_variable *var);
@@ -40,6 +42,7 @@ size_t core_option_size(core_option_manager_t *opt);
 
 /* Gets description and current value for an option. */
 const char *core_option_get_desc(core_option_manager_t *opt, size_t index);
+
 const char *core_option_get_val(core_option_manager_t *opt, size_t index);
 
 /* Helpers to present a list of options */
@@ -51,6 +54,7 @@ void core_option_set_val(core_option_manager_t *opt,
 
 /* Cycles through options for an option. Options wrap around. */
 void core_option_next(core_option_manager_t *opt, size_t index);
+
 void core_option_prev(core_option_manager_t *opt, size_t index);
 
 /* Sets default value for an option. */

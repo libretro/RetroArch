@@ -415,7 +415,11 @@ typedef struct rarch_viewport
    unsigned full_height;
 } rarch_viewport_t;
 
-// All run-time- / command line flag-related globals go here.
+#define AUDIO_BUFFER_FREE_SAMPLES_COUNT (8 * 1024)
+#define MEASURE_FRAME_TIME_SAMPLES_COUNT (2 * 1024)
+
+/* All run-time- / command line flag-related globals go here. */
+
 struct global
 {
    bool verbosity;
@@ -451,7 +455,7 @@ struct global
    bool has_set_netplay_delay_frames;
    bool has_set_netplay_ip_port;
 
-   // Config associated with global "default" config.
+   /* Config associated with global "default" config. */
    char config_path[PATH_MAX];
    char append_config_path[PATH_MAX];
    char input_config_path[PATH_MAX];
@@ -464,24 +468,26 @@ struct global
    char fullpath[PATH_MAX];
 
 #ifdef HAVE_COMPRESSION
-   // In case of a compressed archive, this is the path to the archive. Fullpath contains everything
+   /* In case of a compressed archive, this is the path 
+    * to the archive. Fullpath contains everything. */
    char carchive_path[PATH_MAX];
 
-   // True, in case of a compressed archive containing the rom.
+   /* True, in case of a compressed archive 
+    * containing the content file. */
    bool is_carchive;
 #endif
 
-   // A list of save types and associated paths for all content.
+   /* A list of save types and associated paths for all content. */
    struct string_list *savefiles;
 
-   // For --subsystem content.
+   /* For --subsystem content. */
    char subsystem[256];
    struct string_list *subsystem_fullpaths;
 
    char savefile_name[PATH_MAX];
    char savestate_name[PATH_MAX];
 
-   // Used on reentrancy to use a savestate dir.
+   /* Used on reentrancy to use a savestate dir. */
    char savefile_dir[PATH_MAX];
    char savestate_dir[PATH_MAX];
 
@@ -580,11 +586,9 @@ struct global
 
    struct
    {
-#define AUDIO_BUFFER_FREE_SAMPLES_COUNT (8 * 1024)
       unsigned buffer_free_samples[AUDIO_BUFFER_FREE_SAMPLES_COUNT];
       uint64_t buffer_free_samples_count;
 
-#define MEASURE_FRAME_TIME_SAMPLES_COUNT (2 * 1024)
       retro_time_t frame_time_samples[MEASURE_FRAME_TIME_SAMPLES_COUNT];
       uint64_t frame_time_samples_count;
    } measure_data;
@@ -603,19 +607,19 @@ struct global
 
    bool exec;
 
-   // Rewind support.
+   /* Rewind support. */
    state_manager_t *state_manager;
    size_t state_size;
    bool frame_is_reverse;
 
-   // Movie playback/recording support.
+   /* Movie playback/recording support. */
    struct
    {
       bsv_movie_t *movie;
       char movie_path[PATH_MAX];
       bool movie_playback;
 
-      // Immediate playback/recording.
+      /* Immediate playback/recording. */
       char movie_start_path[PATH_MAX];
       bool movie_start_recording;
       bool movie_start_playback;
@@ -632,22 +636,22 @@ struct global
    bool sram_save_disable;
    bool use_sram;
 
-   // Pausing support
+   /* Pausing support. */
    bool is_paused;
    bool is_oneshot;
    bool is_slowmotion;
 
-   // Turbo support
+   /* Turbo support. */
    bool turbo_frame_enable[MAX_PLAYERS];
    uint16_t turbo_enable[MAX_PLAYERS];
    unsigned turbo_count;
 
-   // Autosave support.
+   /* Autosave support. */
    autosave_t **autosave;
    unsigned num_autosave;
 
-   // Netplay.
 #ifdef HAVE_NETPLAY
+   /* Netplay. */
    netplay_t *netplay;
    char netplay_server[PATH_MAX];
    bool netplay_enable;
@@ -657,7 +661,7 @@ struct global
    unsigned netplay_port;
 #endif
 
-   // Recording.
+   /* Recording. */
    const ffemu_backend_t *rec_driver;
    void *rec;
 
@@ -700,7 +704,8 @@ struct global
 
    bool block_config_read;
 
-   // Settings and/or global state that is specific to a console-style implementation.
+   /* Settings and/or global state that is specific to 
+    * a console-style implementation. */
    struct
    {
       struct
@@ -739,7 +744,8 @@ struct global
 
    uint64_t lifecycle_state;
 
-   // If this is non-NULL. RARCH_LOG and friends will write to this file.
+   /* If this is non-NULL. RARCH_LOG and friends 
+    * will write to this file. */
    FILE *log_file;
 
    bool main_is_init;
@@ -750,7 +756,7 @@ struct global
    bool libretro_no_content;
    bool libretro_dummy;
 
-   // Config file associated with per-core configs.
+   /* Config file associated with per-core configs. */
    char core_specific_config_path[PATH_MAX];
 };
 
@@ -767,13 +773,12 @@ struct rarch_main_wrap
    bool touched;
 };
 
-// Public data structures
+/* Public data structures. */
 extern struct settings g_settings;
 extern struct global g_extern;
 extern struct defaults g_defaults;
-/////////
 
-// Public functions
+/* Public functions. */
 void config_load(void);
 void config_set_defaults(void);
 const char *config_get_default_camera(void);
@@ -826,8 +831,6 @@ int rarch_defer_core(core_info_list_t *data,
       const char *dir, const char *path, char *deferred_path,
       size_t sizeof_deferred_path);
 
-/////////
-
 #ifdef __cplusplus
 }
 #endif
@@ -839,11 +842,13 @@ static inline float db_to_gain(float db)
 
 static inline void rarch_fail(int error_code, const char *error)
 {
-   // We cannot longjmp unless we're in rarch_main_init().
-   // If not, something went very wrong, and we should just exit right away.
+   /* We cannot longjmp unless we're in rarch_main_init().
+    * If not, something went very wrong, and we should 
+    * just exit right away. */
    rarch_assert(g_extern.error_in_init);
 
-   strlcpy(g_extern.error_string, error, sizeof(g_extern.error_string));
+   strlcpy(g_extern.error_string, error,
+         sizeof(g_extern.error_string));
    longjmp(g_extern.error_sjlj_context, error_code);
 }
 
