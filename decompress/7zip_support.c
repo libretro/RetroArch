@@ -22,6 +22,7 @@
 #include <string.h>
 #include "../miscellaneous.h"
 #include "../file_path.h"
+#include "7zip_support.h"
 
 #include "../deps/7zip/7z.h"
 #include "../deps/7zip/7zAlloc.h"

@@ -60,7 +60,7 @@ static uint8_t pad_get_button(sdl_joypad_t *pad, unsigned button)
 #ifdef HAVE_SDL2
    /* TODO: see if a LUT like winxinput_joypad.c's button_index_to_bitmap_code is needed. */
    if (pad->controller)
-      return SDL_GameControllerGetButton(pad->controller, button);
+      return SDL_GameControllerGetButton(pad->controller, (SDL_GameControllerButton)button);
 #endif
    return SDL_JoystickGetButton(pad->joypad, button);
 }
@@ -79,7 +79,7 @@ static int16_t pad_get_axis(sdl_joypad_t *pad, unsigned axis)
 #ifdef HAVE_SDL2
    /* TODO: see if a rarch <-> sdl translation is needed. */
    if (pad->controller)
-      return SDL_GameControllerGetAxis(pad->controller, axis);
+      return SDL_GameControllerGetAxis(pad->controller, (SDL_GameControllerAxis)axis);
 #endif
    return SDL_JoystickGetAxis(pad->joypad, axis);
 }

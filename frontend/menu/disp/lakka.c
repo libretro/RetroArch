@@ -483,7 +483,7 @@ static void lakka_draw_subitems(int i, int j)
 
       if (k == 0 && g_extern.main_is_init
             && !g_extern.libretro_dummy
-            && strcmp(g_extern.fullpath, &active_item->rom) == 0)
+            && strcmp(g_extern.fullpath, active_item->rom) == 0)
       {
          lakka_draw_icon(textures[TEXTURE_RESUME].id, 
             margin_left + hspacing*(i+2.25) +
@@ -503,7 +503,7 @@ static void lakka_draw_subitems(int i, int j)
             menu_active_category == 0 ||
             (g_extern.main_is_init && 
             !g_extern.libretro_dummy &&
-            strcmp(g_extern.fullpath, &active_item->rom) == 0))
+            strcmp(g_extern.fullpath, active_item->rom) == 0))
       {
          lakka_draw_icon(subitem->icon, 
                margin_left + hspacing*(i+2.25) +

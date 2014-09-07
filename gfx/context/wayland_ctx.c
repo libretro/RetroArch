@@ -104,9 +104,9 @@ static void registry_handle_global(void *data, struct wl_registry *reg, uint32_t
    (void)version;
 
    if (!strcmp(interface, "wl_compositor"))
-      g_compositor = wl_registry_bind(reg, id, &wl_compositor_interface, 1);
+      g_compositor = (struct wl_compositor*)wl_registry_bind(reg, id, &wl_compositor_interface, 1);
    else if (!strcmp(interface, "wl_shell"))
-      g_shell = wl_registry_bind(reg, id, &wl_shell_interface, 1);
+      g_shell = (struct wl_shell*)wl_registry_bind(reg, id, &wl_shell_interface, 1);
 }
 
 static void registry_handle_global_remove(void *data, struct wl_registry *registry,
@@ -285,7 +285,10 @@ static bool gfx_ctx_init(void *data)
       EGL_NONE,
    };
 
+   EGLint egl_major = 0, egl_minor = 0;
+   EGLint num_configs;
    const EGLint *attrib_ptr;
+
    switch (g_api)
    {
       case GFX_CTX_OPENGL_API:
@@ -340,7 +343,6 @@ static bool gfx_ctx_init(void *data)
       goto error;
    }
 
-   EGLint egl_major = 0, egl_minor = 0;
    if (!eglInitialize(g_egl_dpy, &egl_major, &egl_minor))
    {
       RARCH_ERR("Failed to initialize EGL.\n");
@@ -348,7 +350,6 @@ static bool gfx_ctx_init(void *data)
    }
    RARCH_LOG("[Wayland/EGL]: EGL version: %d.%d\n", egl_major, egl_minor);
 
-   EGLint num_configs;
    if (!eglChooseConfig(g_egl_dpy, attrib_ptr, &g_config, 1, &num_configs))
    {
       RARCH_ERR("[Wayland/EGL]: eglChooseConfig failed with 0x%x.\n", eglGetError());
@@ -717,7 +718,7 @@ static const struct wl_pointer_listener pointer_listener = {
 };
 
 static void seat_handle_capabilities(void *data,
-struct wl_seat *seat, enum wl_seat_capability caps)
+struct wl_seat *seat, unsigned caps)
 {
    if ((caps & WL_SEAT_CAPABILITY_KEYBOARD) && !g_wl_keyboard)
    {

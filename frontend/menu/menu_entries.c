@@ -816,7 +816,7 @@ int menu_parse_and_resolve(file_list_t *list, file_list_t *menu_list)
    list_size = str_list->size;
    for (i = 0; i < str_list->size; i++)
    {
-      menu_file_type_t file_type = 0;
+      menu_file_type_t file_type = MENU_FILE_NONE;
       switch (str_list->elems[i].attr.i)
       {
          case RARCH_DIRECTORY:
