@@ -409,9 +409,6 @@ static void gl_compute_fbo_geometry(gl_t *gl, unsigned width, unsigned height,
          case RARCH_SCALE_VIEWPORT:
             gl->fbo_rect[i].img_width = gl->fbo_rect[i].max_img_width = gl->fbo_scale[i].scale_x * vp_width;
             break;
-
-         default:
-            break;
       }
 
       switch (gl->fbo_scale[i].type_y)
@@ -427,9 +424,6 @@ static void gl_compute_fbo_geometry(gl_t *gl, unsigned width, unsigned height,
 
          case RARCH_SCALE_VIEWPORT:
             gl->fbo_rect[i].img_height = gl->fbo_rect[i].max_img_height = gl->fbo_scale[i].scale_y * vp_height;
-            break;
-
-         default:
             break;
       }
 
