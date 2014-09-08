@@ -262,9 +262,7 @@ enum
 #define DEFAULT_ASPECT_RATIO -1.0f
 #endif
 
-////////////////
-// Video
-////////////////
+/* VIDEO */
 
 #if defined(_XBOX360)
 #define DEFAULT_GAMMA 1
@@ -274,16 +272,27 @@ enum
 
 static const unsigned int def_user_language = 0;
 
-// Windowed
-// Real x resolution = aspect * base_size * x scale
-// Real y resolution = base_size * y scale
+/* Windowed
+ * Real x resolution = aspect * base_size * x scale
+ * Real y resolution = base_size * y scale
+ */
 static const float scale = 3.0;
 
-// Fullscreen
-static const bool fullscreen = false;  // To start in Fullscreen or not.
-static const bool windowed_fullscreen = true;  // To use windowed mode or not when going fullscreen.
-static const unsigned monitor_index = 0; // Which monitor to prefer. 0 is any monitor, 1 and up selects specific monitors, 1 being the first monitor.
-static const unsigned fullscreen_x = 0; // Fullscreen resolution. A value of 0 uses the desktop resolution.
+/* Fullscreen */
+
+/* To start in Fullscreen, or not. */
+static const bool fullscreen = false;
+
+/* To use windowed mode or not when going fullscreen. */
+static const bool windowed_fullscreen = true; 
+
+/* Which monitor to prefer. 0 is any monitor, 1 and up selects
+ * specific monitors, 1 being the first monitor. */
+static const unsigned monitor_index = 0;
+
+/* Fullscreen resolution. A value of 0 uses the desktop
+ * resolution. */
+static const unsigned fullscreen_x = 0;
 static const unsigned fullscreen_y = 0;
 
 #if defined(RARCH_CONSOLE) || defined(__APPLE__)
@@ -292,72 +301,89 @@ static const bool load_dummy_on_core_shutdown = false;
 static const bool load_dummy_on_core_shutdown = true;
 #endif
 
-// Forcibly disable composition. Only valid on Windows Vista/7/8 for now.
+/* Forcibly disable composition.
+ * Only valid on Windows Vista/7/8 for now. */
 static const bool disable_composition = false;
 
-// Video VSYNC (recommended)
+/* Video VSYNC (recommended) */
 static const bool vsync = true;
 
-// Attempts to hard-synchronize CPU and GPU. Can reduce latency at cost of performance.
+/* Attempts to hard-synchronize CPU and GPU.
+ * Can reduce latency at cost of performance. */
 static const bool hard_sync = false;
-// Configures how many frames the GPU can run ahead of CPU.
-// 0: Syncs to GPU immediately.
-// 1: Syncs to previous frame.
-// 2: Etc ...
+
+/* Configures how many frames the GPU can run ahead of CPU.
+ * 0: Syncs to GPU immediately.
+ * 1: Syncs to previous frame.
+ * 2: Etc ...
+ */
 static const unsigned hard_sync_frames = 0;
 
-// Sets how many milliseconds to delay after VSync before running the core.
-// Can reduce latency at cost of higher risk of stuttering.
+/* Sets how many milliseconds to delay after VSync before running the core.
+ * Can reduce latency at cost of higher risk of stuttering.
+ */
 static const unsigned frame_delay = 0;
 
-// Inserts a black frame inbetween frames.
-// Useful for 120 Hz monitors who want to play 60 Hz material with eliminated ghosting. video_refresh_rate should still be configured as if it is a 60 Hz monitor (divide refresh rate by 2).
+/* Inserts a black frame inbetween frames.
+ * Useful for 120 Hz monitors who want to play 60 Hz material with eliminated 
+ * ghosting. video_refresh_rate should still be configured as if it 
+ * is a 60 Hz monitor (divide refresh rate by 2).
+ */
 static bool black_frame_insertion = false;
 
-// Uses a custom swap interval for VSync.
-// Set this to effectively halve monitor refresh rate.
+/* Uses a custom swap interval for VSync.
+ * Set this to effectively halve monitor refresh rate.
+ */
 static unsigned swap_interval = 1;
 
-// Threaded video. Will possibly increase performance significantly at cost of worse synchronization and latency.
+/* Threaded video. Will possibly increase performance significantly 
+ * at the cost of worse synchronization and latency.
+ */
 static const bool video_threaded = false;
 
-// Set to true if HW render cores should get their private context.
+/* Set to true if HW render cores should get their private context. */
 static const bool video_shared_context = false;
 
-// Sets GC/Wii screen width
+/* Sets GC/Wii screen width. */
 static const unsigned video_viwidth = 640;
 
-// Smooths picture
+/* Smooths picture. */
 static const bool video_smooth = true;
 
-// On resize and fullscreen, rendering area will stay 4:3
+/* On resize and fullscreen, rendering area will stay 4:3 */
 static const bool force_aspect = true; 
 
-// Enable use of shaders.
+/* Enable use of shaders. */
 #ifdef RARCH_CONSOLE
 static const bool shader_enable = true;
 #else
 static const bool shader_enable = false;
 #endif
 
-// Only scale in integer steps.
-// The base size depends on system-reported geometry and aspect ratio.
-// If video_force_aspect is not set, X/Y will be integer scaled independently.
+/* Only scale in integer steps.
+ * The base size depends on system-reported geometry and aspect ratio.
+ * If video_force_aspect is not set, X/Y will be integer scaled independently.
+ */
 static const bool scale_integer = false;
 
-// Controls aspect ratio handling.
-static const float aspect_ratio = DEFAULT_ASPECT_RATIO; // Automatic
-static const bool aspect_ratio_auto = false; // 1:1 PAR
+/* Controls aspect ratio handling. */
+
+/* Automatic */
+static const float aspect_ratio = DEFAULT_ASPECT_RATIO;
+
+/* 1:1 PAR */
+static const bool aspect_ratio_auto = false;
 
 #if defined(__CELLOS_LV2) || defined(_XBOX360)
 static unsigned aspect_ratio_idx = ASPECT_RATIO_16_9;
 #elif defined(RARCH_CONSOLE)
 static unsigned aspect_ratio_idx = ASPECT_RATIO_4_3;
 #else
-static unsigned aspect_ratio_idx = ASPECT_RATIO_CONFIG; // Use g_settings.video.aspect_ratio.
+/* Use g_settings.video.aspect_ratio. */
+static unsigned aspect_ratio_idx = ASPECT_RATIO_CONFIG;
 #endif
 
-// Save configuration file on exit
+/* Save configuration file on exit. */
 static bool config_save_on_exit = true;
 
 static const bool default_overlay_enable = false;
@@ -377,174 +403,183 @@ static bool default_core_specific_config = true;
 static bool default_core_specific_config = false;
 #endif
 
-// Crop overscanned frames.
+/* Crop overscanned frames. */
 static const bool crop_overscan = true;
 
-// Font size for on-screen messages.
+/* Font size for on-screen messages. */
 #if defined(HAVE_RMENU)
 static const float font_size = 1.0f;
 #else
 static const float font_size = 32;
 #endif
 
-// Offset for where messages will be placed on-screen. Values are in range [0.0, 1.0].
+/* Offset for where messages will be placed on-screen. 
+ * Values are in range [0.0, 1.0]. */
 static const float message_pos_offset_x = 0.05;
 #ifdef RARCH_CONSOLE
 static const float message_pos_offset_y = 0.90;
 #else
 static const float message_pos_offset_y = 0.05;
 #endif
-// Color of the message.
-static const uint32_t message_color = 0xffff00; // RGB hex value.
 
-// Record post-filtered (CPU filter) video rather than raw game output.
+/* Color of the message.
+ * RGB hex value. */
+static const uint32_t message_color = 0xffff00;
+
+/* Record post-filtered (CPU filter) video,
+ * rather than raw game output. */
 static const bool post_filter_record = false;
 
-// Screenshots post-shaded GPU output if available.
+/* Screenshots post-shaded GPU output if available. */
 static const bool gpu_screenshot = true;
 
-// Record post-shaded GPU output instead of raw game footage if available.
+/* Record post-shaded GPU output instead of raw game footage if available. */
 static const bool gpu_record = false;
 
-// OSD-messages
+/* OSD-messages. */
 static const bool font_enable = true;
 
-// The accurate refresh rate of your monitor (Hz).
-// This is used to calculate audio input rate with the formula:
-// audio_input_rate = game_input_rate * display_refresh_rate / game_refresh_rate.
-// If the implementation does not report any values,
-// NTSC defaults will be assumed for compatibility.
-// This value should stay close to 60Hz to avoid large pitch changes.
-// If your monitor does not run at 60Hz, or something close to it, disable VSync,
-// and leave this at its default.
+/* The accurate refresh rate of your monitor (Hz).
+ * This is used to calculate audio input rate with the formula:
+ * audio_input_rate = game_input_rate * display_refresh_rate / 
+ * game_refresh_rate.
+ *
+ * If the implementation does not report any values,
+ * NTSC defaults will be assumed for compatibility.
+ * This value should stay close to 60Hz to avoid large pitch changes.
+ * If your monitor does not run at 60Hz, or something close to it, 
+ * disable VSync, and leave this at its default. */
 #if defined(RARCH_CONSOLE)
 static const float refresh_rate = 60/1.001; 
 #else
 static const float refresh_rate = 59.95; 
 #endif
 
-// Allow games to set rotation. If false, rotation requests are honored, but ignored.
-// Used for setups where one manually rotates the monitor.
+/* Allow games to set rotation. If false, rotation requests are 
+ * honored, but ignored.
+ * Used for setups where one manually rotates the monitor. */
 static const bool allow_rotate = true;
 
-////////////////
-// Audio
-////////////////
+/* AUDIO */
 
-// Will enable audio or not.
+/* Will enable audio or not. */
 static const bool audio_enable = true;
 
-// Output samplerate
+/* Output samplerate. */
 static const unsigned out_rate = 48000;
 
-// Audio device (e.g. hw:0,0 or /dev/audio). If NULL, will use defaults.
+/* Audio device (e.g. hw:0,0 or /dev/audio). If NULL, will use defaults. */
 static const char *audio_device = NULL;
 
-// Desired audio latency in milliseconds. Might not be honored if driver can't provide given latency.
+/* Desired audio latency in milliseconds. Might not be honored 
+ * if driver can't provide given latency. */
 static const int out_latency = 64;
 
-// Will sync audio. (recommended) 
+/* Will sync audio. (recommended) */
 static const bool audio_sync = true;
 
-
-// Audio rate control
+/* Audio rate control. */
 #if defined(GEKKO) || !defined(RARCH_CONSOLE)
 static const bool rate_control = true;
 #else
 static const bool rate_control = false;
 #endif
 
-// Rate control delta. Defines how much rate_control is allowed to adjust input rate.
+/* Rate control delta. Defines how much rate_control 
+ * is allowed to adjust input rate. */
 static const float rate_control_delta = 0.005;
 
-// Default audio volume in dB. (0.0 dB == unity gain).
+/* Default audio volume in dB. (0.0 dB == unity gain). */
 static const float audio_volume = 0.0;
 
-//////////////
-// Misc
-//////////////
+/* MISC */
 
-// Enables displaying the current frames per second.
+/* Enables displaying the current frames per second. */
 static const bool fps_show = false;
 
-// Enables use of rewind. This will incur some memory footprint depending on the save state buffer.
+/* Enables use of rewind. This will incur some memory footprint 
+ * depending on the save state buffer. */
 static const bool rewind_enable = false;
 
-// The buffer size for the rewind buffer. This needs to be about 15-20MB per minute. Very game dependant.
-static const unsigned rewind_buffer_size = 20 << 20; // 20MiB
+/* The buffer size for the rewind buffer. This needs to be about 
+ * 15-20MB per minute. Very game dependant. */
+static const unsigned rewind_buffer_size = 20 << 20; /* 20MiB */
 
-// How many frames to rewind at a time.
+/* How many frames to rewind at a time. */
 static const unsigned rewind_granularity = 1;
 
-// Pause gameplay when gameplay loses focus.
+/* Pause gameplay when gameplay loses focus. */
 static const bool pause_nonactive = false;
 
-// Saves non-volatile SRAM at a regular interval. It is measured in seconds. A value of 0 disables autosave.
+/* Saves non-volatile SRAM at a regular interval.
+ * It is measured in seconds. A value of 0 disables autosave. */
 static const unsigned autosave_interval = 0;
 
-// When being client over netplay, use keybinds for player 1 rather than player 2.
+/* When being client over netplay, use keybinds for 
+ * player 1 rather than player 2. */
 static const bool netplay_client_swap_input = true;
 
-// On save state load, block SRAM from being overwritten.
-// This could potentially lead to buggy games.
+/* On save state load, block SRAM from being overwritten.
+ * This could potentially lead to buggy games. */
 static const bool block_sram_overwrite = false;
 
-// When saving savestates, state index is automatically incremented before saving.
-// When the content is loaded, state index will be set to the highest existing value.
+/* When saving savestates, state index is automatically 
+ * incremented before saving.
+ * When the content is loaded, state index will be set 
+ * to the highest existing value. */
 static const bool savestate_auto_index = false;
 
-// Automatically saves a savestate at the end of RetroArch's lifetime.
-// The path is $SRAM_PATH.auto.
-// RetroArch will automatically load any savestate with this path on startup if savestate_auto_load is set.
+/* Automatically saves a savestate at the end of RetroArch's lifetime.
+ * The path is $SRAM_PATH.auto.
+ * RetroArch will automatically load any savestate with this path on 
+ * startup if savestate_auto_load is set. */
 static const bool savestate_auto_save = false;
 static const bool savestate_auto_load = true;
 
-// Slowmotion ratio.
+/* Slowmotion ratio. */
 static const float slowmotion_ratio = 3.0;
 
-// Maximum fast forward ratio (Zero => no limit).
+/* Maximum fast forward ratio (Zero => no limit). */
 static const float fastforward_ratio = -1.0;
 
-// Enable stdin/network command interface
+/* Enable stdin/network command interface. */
 static const bool network_cmd_enable = false;
 static const uint16_t network_cmd_port = 55355;
 static const bool stdin_cmd_enable = false;
 
-// Number of entries that will be kept in content history file.
+/* Number of entries that will be kept in content history playlist file. */
 static const unsigned default_content_history_size = 100;
 
-// Show Menu start-up screen on boot.
+/* Show Menu start-up screen on boot. */
 static const bool menu_show_start_screen = true;
 
-// Log level for libretro cores (GET_LOG_INTERFACE).
+/* Log level for libretro cores (GET_LOG_INTERFACE). */
 static const unsigned libretro_log_level = 0;
 
 #ifndef RARCH_DEFAULT_PORT
 #define RARCH_DEFAULT_PORT 55435
 #endif
 
-////////////////////
-// Keybinds, Joypad
-////////////////////
+/* KEYBINDS, JOYPAD */
 
-// Axis threshold (between 0.0 and 1.0)
-// How far an axis must be tilted to result in a button press
+/* Axis threshold (between 0.0 and 1.0)
+ * How far an axis must be tilted to result in a button press. */
 static const float axis_threshold = 0.5;
 
-// Describes speed of which turbo-enabled buttons toggle.
+/* Describes speed of which turbo-enabled buttons toggle. */
 static const unsigned turbo_period = 6;
 static const unsigned turbo_duty_cycle = 3;
 
-// Enable input auto-detection. Will attempt to autoconfigure
-// gamepads, plug-and-play style.
+/* Enable input auto-detection. Will attempt to autoconfigure
+ * gamepads, plug-and-play style. */
 static const bool input_autodetect_enable = true;
 
 #ifndef IS_SALAMANDER
 #include "intl/intl.h"
 
-// Player 1
+/* Player 1 */
 static const struct retro_keybind retro_keybinds_1[] = {
-    //     | RetroPad button            | desc                           | keyboard key  | js btn |     js axis   |
+    /*     | RetroPad button            | desc                           | keyboard key  | js btn |     js axis   | */
    { true, RETRO_DEVICE_ID_JOYPAD_B,      RETRO_LBL_JOYPAD_B,              RETROK_z,       NO_BTN, 0, AXIS_NONE },
    { true, RETRO_DEVICE_ID_JOYPAD_Y,      RETRO_LBL_JOYPAD_Y,              RETROK_a,       NO_BTN, 0, AXIS_NONE },
    { true, RETRO_DEVICE_ID_JOYPAD_SELECT, RETRO_LBL_JOYPAD_SELECT,         RETROK_RSHIFT,  NO_BTN, 0, AXIS_NONE },
@@ -604,9 +639,9 @@ static const struct retro_keybind retro_keybinds_1[] = {
    { true, RARCH_MENU_TOGGLE,              RETRO_LBL_MENU_TOGGLE,          RETROK_F1,      NO_BTN, 0, AXIS_NONE },
 };
 
-// Players 2 to MAX_PLAYERS
+/* Players 2 to MAX_PLAYERS */
 static const struct retro_keybind retro_keybinds_rest[] = {
-    //     | RetroPad button            | desc                           | keyboard key  | js btn |     js axis   |
+    /*     | RetroPad button            | desc                           | keyboard key  | js btn |     js axis   | */
    { true, RETRO_DEVICE_ID_JOYPAD_B,      RETRO_LBL_JOYPAD_B,              RETROK_UNKNOWN, NO_BTN, 0, AXIS_NONE },
    { true, RETRO_DEVICE_ID_JOYPAD_Y,      RETRO_LBL_JOYPAD_Y,              RETROK_UNKNOWN, NO_BTN, 0, AXIS_NONE },
    { true, RETRO_DEVICE_ID_JOYPAD_SELECT, RETRO_LBL_JOYPAD_SELECT,         RETROK_UNKNOWN, NO_BTN, 0, AXIS_NONE },

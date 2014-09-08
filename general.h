@@ -51,8 +51,9 @@
 #endif
 #endif
 
-// Platform-specific headers
-// Windows
+/* Platform-specific headers */
+
+/* Windows */
 #ifdef _WIN32
 #ifdef _XBOX
 #include <xtl.h>
@@ -63,16 +64,15 @@
 #include "msvc/msvc_compat.h"
 #endif
 
-// Wii and PSL1GHT - for usleep (among others)
+/* Wii and PSL1GHT - for usleep (among others) */
 #if defined(GEKKO) || defined(__PSL1GHT__) || defined(__QNX__)
 #include <unistd.h>
 #endif
 
-// PSP
+/* PSP */
 #if defined(PSP)
 #include <pspthreadman.h>
 #endif
-//////////////
 
 #ifdef HAVE_NETPLAY
 #include "netplay.h"
@@ -204,7 +204,8 @@ struct defaults
    } settings; 
 };
 
-// All config related settings go here.
+/* All config related settings go here. */
+
 struct settings
 {
    struct 
@@ -309,7 +310,7 @@ struct settings
 
       bool rate_control;
       float rate_control_delta;
-      float volume; // dB scale
+      float volume; /* dB scale. */
       char resampler[32];
    } audio;
 
@@ -320,7 +321,8 @@ struct settings
       char keyboard_layout[64];
       struct retro_keybind binds[MAX_PLAYERS][RARCH_BIND_LIST_END];
 
-      // Set by autoconfiguration in joypad_autoconfig_dir. Does not override main binds.
+      /* Set by autoconfiguration in joypad_autoconfig_dir.
+       * Does not override main binds. */
       struct retro_keybind autoconf_binds[MAX_PLAYERS][RARCH_BIND_LIST_END];
       bool autoconfigured[MAX_PLAYERS];
 
