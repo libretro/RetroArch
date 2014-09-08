@@ -284,6 +284,15 @@ int menu_entries_push_list(menu_handle_t *menu,
                   MENU_SETTINGS_CORE_INFO_NONE, 0);
          }
 
+         if (info->licenses_list)
+         {
+            strlcpy(tmp, "License(s): ", sizeof(tmp));
+            string_list_join_concat(tmp, sizeof(tmp),
+                  info->licenses_list, ", ");
+            file_list_push(list, tmp, "",
+                  MENU_SETTINGS_CORE_INFO_NONE, 0);
+         }
+
          if (info->supported_extensions_list)
          {
             strlcpy(tmp, "Supported extensions: ", sizeof(tmp));

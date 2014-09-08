@@ -174,6 +174,12 @@ core_info_list_t *core_info_list_new(const char *modules_path)
             core_info[i].permissions_list =
                string_split(core_info[i].permissions, "|");
 
+         if (config_get_string(core_info[i].data, "license",
+                  &core_info[i].licenses) &&
+               core_info[i].licenses)
+            core_info[i].licenses_list =
+               string_split(core_info[i].licenses, "|");
+
          if (config_get_string(core_info[i].data, "notes",
                   &core_info[i].notes) &&
                core_info[i].notes)
@@ -213,12 +219,14 @@ void core_info_list_free(core_info_list_t *core_info_list)
       free(info->supported_extensions);
       free(info->authors);
       free(info->permissions);
+      free(info->licenses);
       free(info->notes);
       if (info->supported_extensions_list)
          string_list_free(info->supported_extensions_list);
       string_list_free(info->authors_list);
       string_list_free(info->note_list);
       string_list_free(info->permissions_list);
+      string_list_free(info->licenses_list);
       config_file_free(info->data);
 
       for (j = 0; j < info->firmware_count; j++)
