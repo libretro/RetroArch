@@ -20,8 +20,7 @@ static inline D3DTEXTUREFILTERTYPE translate_filter(unsigned type)
 {
    if (type == RARCH_FILTER_UNSPEC)
       return g_settings.video.smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT;
-   else
-      return type == RARCH_FILTER_LINEAR ? D3DTEXF_LINEAR : D3DTEXF_POINT;
+   return type == RARCH_FILTER_LINEAR ? D3DTEXF_LINEAR : D3DTEXF_POINT;
 }
 
 static inline D3DTEXTUREFILTERTYPE translate_filter(bool smooth)
@@ -106,13 +105,15 @@ void renderchain_clear(void *data)
    chain->luts.clear();
 }
 
-void renderchain_set_final_viewport(void *data, const D3DVIEWPORT *final_viewport)
+void renderchain_set_final_viewport(void *data,
+      const D3DVIEWPORT *final_viewport)
 {
    renderchain_t *chain = (renderchain_t*)data;
    chain->final_viewport = (D3DVIEWPORT*)final_viewport;
 }
 
-bool renderchain_set_pass_size(void *data, unsigned pass_index, unsigned width, unsigned height)
+bool renderchain_set_pass_size(void *data, unsigned pass_index,
+      unsigned width, unsigned height)
 {
    renderchain_t *chain = (renderchain_t*)data;
    LPDIRECT3DDEVICE d3dr = chain->dev;
@@ -125,7 +126,8 @@ bool renderchain_set_pass_size(void *data, unsigned pass_index, unsigned width, 
 
       if (FAILED(d3dr->CreateTexture(width, height, 1,
          D3DUSAGE_RENDERTARGET,
-         chain->passes.back().info.pass->fbo.fp_fbo ? D3DFMT_A32B32G32R32F : D3DFMT_A8R8G8B8,
+         chain->passes.back().info.pass->fbo.fp_fbo ? 
+         D3DFMT_A32B32G32R32F : D3DFMT_A8R8G8B8,
          D3DPOOL_DEFAULT,
          &pass.tex, NULL)))
          return false;
@@ -148,12 +150,15 @@ bool renderchain_add_pass(void *data, const LinkInfo *info)
    pass.last_width = 0;
    pass.last_height = 0;
 
-   renderchain_compile_shaders(chain, pass.fPrg, pass.vPrg, info->pass->source.path);
+   renderchain_compile_shaders(chain, pass.fPrg, 
+         pass.vPrg, info->pass->source.path);
+
    if (!renderchain_init_shader_fvf(chain, pass))
       return false;
 
    if (FAILED(D3DDevice_CreateVertexBuffers(d3dr, 4 * sizeof(Vertex),
-               d3dr->GetSoftwareVertexProcessing() ? D3DUSAGE_SOFTWAREPROCESSING : 0,
+               d3dr->GetSoftwareVertexProcessing() 
+               ? D3DUSAGE_SOFTWAREPROCESSING : 0,
                0,
                D3DPOOL_DEFAULT,
                &pass.vertex_buf,
@@ -162,7 +167,8 @@ bool renderchain_add_pass(void *data, const LinkInfo *info)
 
    if (FAILED(d3dr->CreateTexture(info->tex_w, info->tex_h, 1,
                D3DUSAGE_RENDERTARGET,
-               chain->passes.back().info.pass->fbo.fp_fbo ? D3DFMT_A32B32G32R32F : D3DFMT_A8R8G8B8,
+               chain->passes.back().info.pass->fbo.fp_fbo 
+               ? D3DFMT_A32B32G32R32F : D3DFMT_A8R8G8B8,
                D3DPOOL_DEFAULT,
                &pass.tex, NULL)))
       return false;
@@ -251,7 +257,8 @@ bool renderchain_render(void *chain_data, const void *data,
    unsigned current_height = height;
    unsigned out_width = 0;
    unsigned out_height = 0;
-   renderchain_convert_geometry(chain, &chain->passes[0].info, out_width, out_height,
+   renderchain_convert_geometry(chain, &chain->passes[0].info,
+         out_width, out_height,
          current_width, current_height, chain->final_viewport);
 #ifdef _XBOX1
    d3dr->SetFlickerFilter(g_extern.console.screen.flicker_filter_index);
@@ -323,11 +330,13 @@ bool renderchain_render(void *chain_data, const void *data,
 
    renderchain_end_render(chain);
    renderchain_set_shaders(chain, chain->fStock, chain->vStock);
-   renderchain_set_mvp(chain, chain->vStock, chain->final_viewport->Width, chain->final_viewport->Height, 0);
+   renderchain_set_mvp(chain, chain->vStock, chain->final_viewport->Width,
+         chain->final_viewport->Height, 0);
    return true;
 }
 
-bool renderchain_create_first_pass(void *data, const LinkInfo *info, PixelFormat fmt)
+bool renderchain_create_first_pass(void *data, const LinkInfo *info,
+      PixelFormat fmt)
 {
    renderchain_t *chain = (renderchain_t*)data;
    D3DXMATRIX ident;
@@ -349,32 +358,33 @@ bool renderchain_create_first_pass(void *data, const LinkInfo *info, PixelFormat
 
       if (FAILED(d3dr->CreateVertexBuffer(
                   4 * sizeof(Vertex),
-                  d3dr->GetSoftwareVertexProcessing() ? D3DUSAGE_SOFTWAREPROCESSING : 0,
+                  d3dr->GetSoftwareVertexProcessing() 
+                  ? D3DUSAGE_SOFTWAREPROCESSING : 0,
                   0,
                   D3DPOOL_DEFAULT,
                   &chain->prev.vertex_buf[i],
                   NULL)))
-      {
          return false;
-      }
 
       if (FAILED(d3dr->CreateTexture(info->tex_w, info->tex_h, 1, 0,
                   fmt == RGB565 ? D3DFMT_R5G6B5 : D3DFMT_X8R8G8B8,
                   D3DPOOL_MANAGED,
                   &chain->prev.tex[i], NULL)))
-      {
          return false;
-      }
 
       d3dr->SetTexture(0, chain->prev.tex[i]);
-      D3DDevice_SetSamplerState_MinFilter(d3dr, 0, translate_filter(info->pass->filter));
-      D3DDevice_SetSamplerState_MagFilter(d3dr, 0, translate_filter(info->pass->filter));
+      D3DDevice_SetSamplerState_MinFilter(d3dr, 0,
+            translate_filter(info->pass->filter));
+      D3DDevice_SetSamplerState_MagFilter(d3dr, 0,
+            translate_filter(info->pass->filter));
       D3DDevice_SetSamplerState_AddressU(d3dr, 0, D3DTADDRESS_BORDER);
       D3DDevice_SetSamplerState_AddressV(d3dr, 0, D3DTADDRESS_BORDER);
       d3dr->SetTexture(0, NULL);
    }
 
-   renderchain_compile_shaders(chain, pass.fPrg, pass.vPrg, info->pass->source.path);
+   renderchain_compile_shaders(chain, pass.fPrg,
+         pass.vPrg, info->pass->source.path);
+
    if (!renderchain_init_shader_fvf(chain, pass))
       return false;
    chain->passes.push_back(pass);
@@ -431,7 +441,7 @@ void renderchain_set_vertices(void *data, Pass &pass,
       vert[2].lut_v = 1.0f;
       vert[3].lut_v = 1.0f;
 
-      // Align texels and vertices.
+      /* Align texels and vertices. */
       for (unsigned i = 0; i < 4; i++)
       {
          vert[i].x -= 0.5f;
@@ -524,7 +534,8 @@ void renderchain_blit_to_texture(void *data, const void *frame,
    Pass &first = chain->passes[0];
    if (first.last_width != width || first.last_height != height)
    {
-      D3DTexture_LockRectClear(first, first.tex, 0, d3dlr, NULL, D3DLOCK_NOSYSLOCK);
+      D3DTexture_LockRectClear(first, first.tex, 0, d3dlr, 
+            NULL, D3DLOCK_NOSYSLOCK);
    }
 
    D3DTexture_Blit(chain, desc, d3dlr, frame, width, height, pitch);
@@ -537,8 +548,10 @@ void renderchain_render_pass(void *data, Pass &pass, unsigned pass_index)
    renderchain_set_shaders(chain, pass.fPrg, pass.vPrg);
 
    d3dr->SetTexture(0, pass.tex);
-   D3DDevice_SetSamplerState_MinFilter(d3dr, 0, translate_filter(pass.info.pass->filter));
-   D3DDevice_SetSamplerState_MagFilter(d3dr, 0, translate_filter(pass.info.pass->filter));
+   D3DDevice_SetSamplerState_MinFilter(d3dr, 0,
+         translate_filter(pass.info.pass->filter));
+   D3DDevice_SetSamplerState_MagFilter(d3dr, 0,
+         translate_filter(pass.info.pass->filter));
 
 #ifdef _XBOX1
    d3dr->SetVertexShader(D3DFVF_XYZ | D3DFVF_TEX1);
@@ -547,7 +560,8 @@ void renderchain_render_pass(void *data, Pass &pass, unsigned pass_index)
 #endif
    for (unsigned i = 0; i < 4; i++)
    {
-      D3DDevice_SetStreamSources(d3dr, i, pass.vertex_buf, 0, sizeof(Vertex));
+      D3DDevice_SetStreamSources(d3dr, i,
+            pass.vertex_buf, 0, sizeof(Vertex));
    }
 
    renderchain_bind_orig(chain, pass);
@@ -604,19 +618,24 @@ void renderchain_log_info(void *data, const LinkInfo *info)
          break;
    }
 
-   RARCH_LOG("\tBilinear filter: %s\n", info->pass->filter == RARCH_FILTER_LINEAR ? "true" : "false");
+   RARCH_LOG("\tBilinear filter: %s\n",
+         info->pass->filter == RARCH_FILTER_LINEAR ? "true" : "false");
 }
 
 void renderchain_unbind_all(void *data)
 {
    renderchain_t *chain = (renderchain_t*)data;
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)chain->dev;
-   // Have to be a bit anal about it.
-   // Render targets hate it when they have filters apparently.
+
+   /* Have to be a bit anal about it.
+    * Render targets hate it when they have filters apparently.
+    */
    for (unsigned i = 0; i < chain->bound_tex.size(); i++)
    {
-      D3DDevice_SetSamplerState_MinFilter(d3dr, chain->bound_tex[i], D3DTEXF_POINT);
-      D3DDevice_SetSamplerState_MagFilter(d3dr, chain->bound_tex[i], D3DTEXF_POINT);
+      D3DDevice_SetSamplerState_MinFilter(d3dr,
+            chain->bound_tex[i], D3DTEXF_POINT);
+      D3DDevice_SetSamplerState_MagFilter(d3dr,
+            chain->bound_tex[i], D3DTEXF_POINT);
       d3dr->SetTexture(chain->bound_tex[i], NULL);
    }
 
