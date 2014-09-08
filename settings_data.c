@@ -1177,7 +1177,18 @@ int setting_data_get_description(const char *label, char *msg,
          snprintf(msg, sizeof_msg,
                " -- Defines axis threshold.\n"
                " \n"
+               "How far an axis must be tilted to result\n"
+               "in a button press.\n"
                " Possible values are [0.0, 1.0].");
+    }
+    else if (!strcmp(label, "input_turbo_period"))
+    {
+       snprintf(msg, sizeof_msg, 
+             " -- Turbo period.\n"
+             " \n"
+             "Describes speed of which turbo-enabled\n"
+             "buttons toggle."
+             );
     }
     else if (!strcmp(label, "rewind_granularity"))
     {
@@ -1913,8 +1924,6 @@ static void general_write_handler(const void *data)
          g_settings.audio.rate_control_delta = *setting->value.fraction;
       }
    }
-   else if (!strcmp(setting->name, "input_axis_threshold"))
-      g_settings.input.axis_threshold = max(min(*setting->value.fraction, 0.95f), 0.05f);
    else if (!strcmp(setting->name, "savestate"))
    {
       if (*setting->value.boolean)
@@ -2318,7 +2327,7 @@ rarch_setting_t *setting_data_get_list(void)
       END_SUB_GROUP()
 
       START_SUB_GROUP("Turbo/Deadzone")
-      CONFIG_FLOAT(g_settings.input.axis_threshold,      "input_axis_threshold",       "Input Axis Threshold",       axis_threshold, "%.3f", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+      CONFIG_FLOAT(g_settings.input.axis_threshold,      "input_axis_threshold",       "Input Axis Threshold",       axis_threshold, "%.3f", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_RANGE(0, 1.00, 0.001, true, true)
       CONFIG_UINT(g_settings.input.turbo_period,         "input_turbo_period",         "Turbo Period",               turbo_period, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_RANGE(1, 0, 1, true, false)
       CONFIG_UINT(g_settings.input.turbo_duty_cycle,     "input_duty_cycle",           "Duty Cycle",                 turbo_duty_cycle, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_RANGE(1, 0, 1, true, false)
       END_SUB_GROUP()
