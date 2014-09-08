@@ -440,12 +440,10 @@ int menu_entries_push_list(menu_handle_t *menu,
    else if (!strcmp(label, "Input Options"))
    {
       file_list_clear(list);
-      file_list_push(list, "Player", "",
-            MENU_SETTINGS_BIND_PLAYER, 0);
+      file_list_push(list, "Player", "input_bind_player_no", 0, 0);
       file_list_push(list, "Device", "input_bind_device_id", 0, 0);
       file_list_push(list, "Device Type", "input_bind_device_type", 0, 0);
-      file_list_push(list, "Analog D-pad Mode", "",
-            MENU_SETTINGS_BIND_ANALOG_MODE, 0);
+      file_list_push(list, "Analog D-pad Mode", "input_bind_analog_dpad_mode", 0, 0);
       add_setting_entry(menu,list,"input_axis_threshold", 0, setting_data);
       add_setting_entry(menu,list,"input_autodetect_enable", 0, setting_data);
       add_setting_entry(menu,list,"input_turbo_period", 0, setting_data);

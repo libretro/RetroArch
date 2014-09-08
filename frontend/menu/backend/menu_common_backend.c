@@ -672,51 +672,53 @@ static int menu_setting_set(unsigned id, const char *label,
          }
 
       }
+      else if (!strcmp(label, "input_bind_player_no"))
+      {
+         if (action == MENU_ACTION_START)
+            driver.menu->current_pad = 0;
+         else if (action == MENU_ACTION_LEFT)
+         {
+            if (driver.menu->current_pad != 0)
+               driver.menu->current_pad--;
+         }
+         else if (action == MENU_ACTION_RIGHT)
+         {
+            if (driver.menu->current_pad < MAX_PLAYERS - 1)
+               driver.menu->current_pad++;
+         }
+         if (port != driver.menu->current_pad)
+            driver.menu->need_refresh = true;
+         port = driver.menu->current_pad;
+      }
+      else if (!strcmp(label, "input_bind_analog_dpad_mode"))
+      {
+         switch (action)
+         {
+            case MENU_ACTION_START:
+               g_settings.input.analog_dpad_mode[port] = 0;
+               break;
+
+            case MENU_ACTION_OK:
+            case MENU_ACTION_RIGHT:
+               g_settings.input.analog_dpad_mode[port] =
+                  (g_settings.input.analog_dpad_mode[port] + 1)
+                  % ANALOG_DPAD_LAST;
+               break;
+
+            case MENU_ACTION_LEFT:
+               g_settings.input.analog_dpad_mode[port] =
+                  (g_settings.input.analog_dpad_mode
+                   [port] + ANALOG_DPAD_LAST - 1) % ANALOG_DPAD_LAST;
+               break;
+
+            default:
+               break;
+         }
+      }
       else
       {
          switch (id)
          {
-            case MENU_SETTINGS_BIND_PLAYER:
-               if (action == MENU_ACTION_START)
-                  driver.menu->current_pad = 0;
-               else if (action == MENU_ACTION_LEFT)
-               {
-                  if (driver.menu->current_pad != 0)
-                     driver.menu->current_pad--;
-               }
-               else if (action == MENU_ACTION_RIGHT)
-               {
-                  if (driver.menu->current_pad < MAX_PLAYERS - 1)
-                     driver.menu->current_pad++;
-               }
-               if (port != driver.menu->current_pad)
-                  driver.menu->need_refresh = true;
-               port = driver.menu->current_pad;
-               break;
-            case MENU_SETTINGS_BIND_ANALOG_MODE:
-               switch (action)
-               {
-                  case MENU_ACTION_START:
-                     g_settings.input.analog_dpad_mode[port] = 0;
-                     break;
-
-                  case MENU_ACTION_OK:
-                  case MENU_ACTION_RIGHT:
-                     g_settings.input.analog_dpad_mode[port] =
-                        (g_settings.input.analog_dpad_mode[port] + 1)
-                        % ANALOG_DPAD_LAST;
-                     break;
-
-                  case MENU_ACTION_LEFT:
-                     g_settings.input.analog_dpad_mode[port] =
-                        (g_settings.input.analog_dpad_mode
-                         [port] + ANALOG_DPAD_LAST - 1) % ANALOG_DPAD_LAST;
-                     break;
-
-                  default:
-                     break;
-               }
-               break;
             case MENU_SETTINGS_CUSTOM_BIND_MODE:
                if (action == MENU_ACTION_LEFT || action == MENU_ACTION_RIGHT)
                   driver.menu->bind_mode_keyboard =

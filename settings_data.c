@@ -1798,6 +1798,22 @@ void setting_data_get_label(char *type_str,
 
       strlcpy(type_str, name, type_str_size);
    }
+   else if (!strcmp(label, "input_bind_player_no"))
+      snprintf(type_str, type_str_size, "#%u",
+            driver.menu->current_pad + 1);
+   else if (!strcmp(label, "input_bind_analog_dpad_mode"))
+   {
+      static const char *modes[] = {
+         "None",
+         "Left Analog",
+         "Right Analog",
+         "Dual Analog",
+      };
+
+      strlcpy(type_str, modes[g_settings.input.analog_dpad_mode
+            [driver.menu->current_pad] % ANALOG_DPAD_LAST],
+            type_str_size);
+   }
    else if (type >= MENU_SETTINGS_PERF_COUNTERS_BEGIN
          && type <= MENU_SETTINGS_PERF_COUNTERS_END)
       menu_common_setting_set_label_perf(type_str, type_str_size, w, type,
@@ -1867,24 +1883,6 @@ void setting_data_get_label(char *type_str,
             case MENU_SETTINGS_CUSTOM_BIND_ALL:
             case MENU_SETTINGS_CUSTOM_BIND_DEFAULT_ALL:
                strlcpy(type_str, "...", type_str_size);
-               break;
-            case MENU_SETTINGS_BIND_PLAYER:
-               snprintf(type_str, type_str_size, "#%u",
-                     driver.menu->current_pad + 1);
-               break;
-            case MENU_SETTINGS_BIND_ANALOG_MODE:
-               {
-                  static const char *modes[] = {
-                     "None",
-                     "Left Analog",
-                     "Right Analog",
-                     "Dual Analog",
-                  };
-
-                  strlcpy(type_str, modes[g_settings.input.analog_dpad_mode
-                        [driver.menu->current_pad] % ANALOG_DPAD_LAST],
-                        type_str_size);
-               }
                break;
             case MENU_SETTINGS_CUSTOM_BIND_MODE:
                strlcpy(type_str, driver.menu->bind_mode_keyboard ?
