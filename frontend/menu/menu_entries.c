@@ -420,7 +420,7 @@ int menu_entries_push_list(menu_handle_t *menu,
       file_list_clear(list);
       add_setting_entry(menu,list,"audio_dsp_plugin", 0, setting_data);
       add_setting_entry(menu,list,"audio_enable", 0, setting_data);
-      add_setting_entry(menu,list,"audio_mute", 0, setting_data);
+      add_setting_entry(menu,list,"audio_mute_enable", 0, setting_data);
       add_setting_entry(menu,list,"audio_latency", 0, setting_data);
       add_setting_entry(menu,list,"audio_sync", 0, setting_data);
       add_setting_entry(menu,list,"audio_rate_control_delta", 0, setting_data);

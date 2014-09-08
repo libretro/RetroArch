@@ -1555,6 +1555,16 @@ static void handle_setting_label(char *type_str,
       strlcpy(type_str, setting->value.string, type_str_size);
    else if (setting->type == ST_GROUP)
       strlcpy(type_str, "...", type_str_size);
+   else if (setting->type == ST_BIND)
+   {
+#ifdef HAVE_MENU
+      const struct retro_keybind* bind = (const struct retro_keybind*)
+         &setting->value.keybind[driver.menu->current_pad];
+      const struct retro_keybind* auto_bind = (const struct retro_keybind*)
+         input_get_auto_bind(driver.menu->current_pad, bind->id);
+      input_get_bind_string(type_str, bind, auto_bind, type_str_size);
+#endif
+   }
 }
 
 void setting_data_get_label(char *type_str,
@@ -1587,18 +1597,6 @@ void setting_data_get_label(char *type_str,
       menu_common_setting_set_label_perf(type_str, type_str_size, w, type,
             perf_counters_libretro,
             type - MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_BEGIN);
-   else if (type >= MENU_SETTINGS_BIND_BEGIN &&
-         type <= MENU_SETTINGS_BIND_ALL_LAST)
-   {
-      const struct retro_keybind *auto_bind = 
-         (const struct retro_keybind*)input_get_auto_bind(
-               driver.menu->current_pad,
-               type - MENU_SETTINGS_BIND_BEGIN);
-
-      input_get_bind_string(type_str,
-            &g_settings.input.binds[driver.menu->current_pad]
-            [type - MENU_SETTINGS_BIND_BEGIN], auto_bind, type_str_size);
-   }
    else if (setting)
       handle_setting_label(type_str, type_str_size, setting);
    else
@@ -2288,7 +2286,7 @@ rarch_setting_t *setting_data_get_list(void)
       START_GROUP("Audio Options")
       START_SUB_GROUP("State")
       CONFIG_BOOL(g_settings.audio.enable,               "audio_enable",               "Audio Enable",                     audio_enable, "OFF", "ON", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
-      CONFIG_BOOL(g_extern.audio_data.mute,              "audio_mute",                 "Audio Mute",                 false, "OFF", "ON", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+      CONFIG_BOOL(g_extern.audio_data.mute,              "audio_mute_enable",          "Audio Mute",                 false, "OFF", "ON", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
       CONFIG_FLOAT(g_settings.audio.volume,              "audio_volume",               "Volume Level",               audio_volume, "%.1f", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_RANGE(-80, 12, 1.0, true, true)
 #ifdef __CELLOS_LV2__
       CONFIG_BOOL(g_extern.console.sound.system_bgm_enable,               "system_bgm_enable",               "System BGM Enable",                     false, "OFF", "ON", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
