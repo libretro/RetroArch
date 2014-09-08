@@ -441,6 +441,8 @@ int menu_entries_push_list(menu_handle_t *menu,
             MENU_SETTINGS_BIND_ANALOG_MODE, 0);
       add_setting_entry(menu,list,"input_axis_threshold", 0, setting_data);
       add_setting_entry(menu,list,"input_autodetect_enable", 0, setting_data);
+      add_setting_entry(menu,list,"input_turbo_period", 0, setting_data);
+      add_setting_entry(menu,list,"input_duty_cycle", 0, setting_data);
       file_list_push(list, "Bind Mode", "",
             MENU_SETTINGS_CUSTOM_BIND_MODE, 0);
       file_list_push(list, "Configure All (RetroPad)", "",
@@ -449,9 +451,7 @@ int menu_entries_push_list(menu_handle_t *menu,
             MENU_SETTINGS_CUSTOM_BIND_DEFAULT_ALL, 0);
       add_setting_entry(menu,list,"osk_enable", 0, setting_data);
       for (i = MENU_SETTINGS_BIND_BEGIN; i <= MENU_SETTINGS_BIND_ALL_LAST; i++)
-         file_list_push(list,
-               input_config_bind_map[i - MENU_SETTINGS_BIND_BEGIN].desc,
-               "", i, 0);
+         add_setting_entry(menu, list, input_config_bind_map[i - MENU_SETTINGS_BIND_BEGIN].base, i, setting_data);
    }
    else if (!strcmp(label, "Driver Options"))
    {

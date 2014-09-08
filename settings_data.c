@@ -2319,8 +2319,8 @@ rarch_setting_t *setting_data_get_list(void)
 
       START_SUB_GROUP("Turbo/Deadzone")
       CONFIG_FLOAT(g_settings.input.axis_threshold,      "input_axis_threshold",       "Input Axis Threshold",       axis_threshold, "%.3f", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
-      CONFIG_UINT(g_settings.input.turbo_period,         "input_turbo_period",         "Turbo Period",               turbo_period, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
-      CONFIG_UINT(g_settings.input.turbo_duty_cycle,     "input_duty_cycle",           "Duty Cycle",                 turbo_duty_cycle, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+      CONFIG_UINT(g_settings.input.turbo_period,         "input_turbo_period",         "Turbo Period",               turbo_period, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_RANGE(1, 0, 1, true, false)
+      CONFIG_UINT(g_settings.input.turbo_duty_cycle,     "input_duty_cycle",           "Duty Cycle",                 turbo_duty_cycle, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_RANGE(1, 0, 1, true, false)
       END_SUB_GROUP()
 
       // The second argument to config bind is 1 based for players and 0 only for meta keys
