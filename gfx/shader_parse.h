@@ -65,7 +65,8 @@ enum
 
 enum gfx_wrap_type
 {
-   RARCH_WRAP_BORDER = 0, // Kinda deprecated, but keep as default. Will be translated to EDGE in GLES.
+   RARCH_WRAP_BORDER = 0, /* Kinda deprecated, but keep as default. 
+                             Will be translated to EDGE in GLES. */
    RARCH_WRAP_DEFAULT = RARCH_WRAP_BORDER,
    RARCH_WRAP_EDGE,
    RARCH_WRAP_REPEAT,
@@ -125,13 +126,13 @@ struct gfx_shader_lut
    bool mipmap;
 };
 
-// This is pretty big, shouldn't be put on the stack.
-// Avoid lots of allocation for convenience.
+/* This is pretty big, shouldn't be put on the stack.
+ * Avoid lots of allocation for convenience. */
 struct gfx_shader
 {
    enum rarch_shader_type type;
 
-   bool modern; // Only used for XML shaders.
+   bool modern; /* Only used for XML shaders. */
    char prefix[64];
 
    unsigned passes;
@@ -146,17 +147,24 @@ struct gfx_shader
    unsigned variables;
    struct state_tracker_uniform_info variable[GFX_MAX_VARIABLES];
    char script_path[PATH_MAX];
-   char *script; // Dynamically allocated. Must be free'd. Only used by XML.
+   char *script; /* Dynamically allocated. Must be free'd. Only used by XML. */
    char script_class[512];
 };
 
-bool gfx_shader_read_conf_cgp(config_file_t *conf, struct gfx_shader *shader);
-void gfx_shader_write_conf_cgp(config_file_t *conf, struct gfx_shader *shader);
+bool gfx_shader_read_conf_cgp(config_file_t *conf,
+      struct gfx_shader *shader);
 
-void gfx_shader_resolve_relative(struct gfx_shader *shader, const char *ref_path);
-bool gfx_shader_resolve_parameters(config_file_t *conf, struct gfx_shader *shader);
+void gfx_shader_write_conf_cgp(config_file_t *conf,
+      struct gfx_shader *shader);
 
-enum rarch_shader_type gfx_shader_parse_type(const char *path, enum rarch_shader_type fallback);
+void gfx_shader_resolve_relative(struct gfx_shader *shader,
+      const char *ref_path);
+
+bool gfx_shader_resolve_parameters(config_file_t *conf,
+      struct gfx_shader *shader);
+
+enum rarch_shader_type gfx_shader_parse_type(const char *path,
+      enum rarch_shader_type fallback);
 
 #ifdef __cplusplus
 }

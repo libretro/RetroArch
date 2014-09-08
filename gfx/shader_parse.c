@@ -89,7 +89,8 @@ static bool shader_parse_pass(config_file_t *conf, struct gfx_shader_pass *pass,
    char frame_count_mod[64] = {0};
    char frame_count_mod_buf[64];
    print_buf(frame_count_mod_buf, "frame_count_mod%u", i);
-   if (config_get_array(conf, frame_count_mod_buf, frame_count_mod, sizeof(frame_count_mod)))
+   if (config_get_array(conf, frame_count_mod_buf,
+            frame_count_mod, sizeof(frame_count_mod)))
       pass->frame_count_mod = strtoul(frame_count_mod, NULL, 0);
 
    // FBO types and mipmapping
@@ -225,7 +226,8 @@ static bool shader_parse_pass(config_file_t *conf, struct gfx_shader_pass *pass,
    return true;
 }
 
-static bool shader_parse_textures(config_file_t *conf, struct gfx_shader *shader)
+static bool shader_parse_textures(config_file_t *conf,
+      struct gfx_shader *shader)
 {
    const char *id;
    char *save;
@@ -238,19 +240,22 @@ static bool shader_parse_textures(config_file_t *conf, struct gfx_shader *shader
          id && shader->luts < GFX_MAX_TEXTURES;
          shader->luts++, id = strtok_r(NULL, ";", &save))
    {
-      if (!config_get_array(conf, id, shader->lut[shader->luts].path, sizeof(shader->lut[shader->luts].path)))
+      if (!config_get_array(conf, id, shader->lut[shader->luts].path,
+               sizeof(shader->lut[shader->luts].path)))
       {
          RARCH_ERR("Cannot find path to texture \"%s\" ...\n", id);
          return false;
       }
 
-      strlcpy(shader->lut[shader->luts].id, id, sizeof(shader->lut[shader->luts].id));
+      strlcpy(shader->lut[shader->luts].id, id,
+            sizeof(shader->lut[shader->luts].id));
 
       char id_filter[64];
       print_buf(id_filter, "%s_linear", id);
       bool smooth = false;
       if (config_get_bool(conf, id_filter, &smooth))
-         shader->lut[shader->luts].filter = smooth ? RARCH_FILTER_LINEAR : RARCH_FILTER_NEAREST;
+         shader->lut[shader->luts].filter = smooth ? 
+            RARCH_FILTER_LINEAR : RARCH_FILTER_NEAREST;
       else
          shader->lut[shader->luts].filter = RARCH_FILTER_UNSPEC;
 
@@ -272,7 +277,8 @@ static bool shader_parse_textures(config_file_t *conf, struct gfx_shader *shader
    return true;
 }
 
-static struct gfx_shader_parameter *find_parameter(struct gfx_shader_parameter *params, unsigned num_params, const char *id)
+static struct gfx_shader_parameter *find_parameter(
+      struct gfx_shader_parameter *params, unsigned num_params, const char *id)
 {
    unsigned i;
    for (i = 0; i < num_params; i++)
@@ -283,14 +289,16 @@ static struct gfx_shader_parameter *find_parameter(struct gfx_shader_parameter *
    return NULL;
 }
 
-bool gfx_shader_resolve_parameters(config_file_t *conf, struct gfx_shader *shader)
+bool gfx_shader_resolve_parameters(config_file_t *conf,
+      struct gfx_shader *shader)
 {
    unsigned i;
 
    shader->num_parameters = 0;
-   struct gfx_shader_parameter *param = &shader->parameters[shader->num_parameters];
+   struct gfx_shader_parameter *param = (struct gfx_shader_parameter*)
+      &shader->parameters[shader->num_parameters];
 
-   // Find all parameters in our shaders.
+   /* Find all parameters in our shaders. */
    for (i = 0; i < shader->passes; i++)
    {
       char line[2048];
@@ -298,10 +306,13 @@ bool gfx_shader_resolve_parameters(config_file_t *conf, struct gfx_shader *shade
       if (!file)
          continue;
 
-      while (shader->num_parameters < ARRAY_SIZE(shader->parameters) && fgets(line, sizeof(line), file))
+      while (shader->num_parameters < ARRAY_SIZE(shader->parameters)
+            && fgets(line, sizeof(line), file))
       {
-         int ret = sscanf(line, "#pragma parameter %63s \"%63[^\"]\" %f %f %f %f",
-               param->id, param->desc, &param->initial, &param->minimum, &param->maximum, &param->step);
+         int ret = sscanf(line,
+               "#pragma parameter %63s \"%63[^\"]\" %f %f %f %f",
+               param->id, param->desc, &param->initial,
+               &param->minimum, &param->maximum, &param->step);
 
          if (ret >= 5)
          {
@@ -312,7 +323,8 @@ bool gfx_shader_resolve_parameters(config_file_t *conf, struct gfx_shader *shade
                param->step = 0.1f * (param->maximum - param->minimum);
 
             RARCH_LOG("Found #pragma parameter %s (%s) %f %f %f %f\n",
-                  param->desc, param->id, param->initial, param->minimum, param->maximum, param->step);
+                  param->desc, param->id, param->initial,
+                  param->minimum, param->maximum, param->step);
             param->current = param->initial;
 
             shader->num_parameters++;
@@ -323,19 +335,23 @@ bool gfx_shader_resolve_parameters(config_file_t *conf, struct gfx_shader *shade
       fclose(file);
    }
 
-   // Read in parameters which override the defaults.
+   /* Read in parameters which override the defaults. */
    if (conf)
    {
       char parameters[1024];
       char *save = NULL;
       const char *id;
 
-      if (!config_get_array(conf, "parameters", parameters, sizeof(parameters)))
+      if (!config_get_array(conf, "parameters",
+               parameters, sizeof(parameters)))
          return true;
 
-      for (id = strtok_r(parameters, ";", &save); id; id = strtok_r(NULL, ";", &save))
+      for (id = strtok_r(parameters, ";", &save); id; 
+            id = strtok_r(NULL, ";", &save))
       {
-         struct gfx_shader_parameter *param = find_parameter(shader->parameters, shader->num_parameters, id);
+         struct gfx_shader_parameter *param = (struct gfx_shader_parameter*)
+            find_parameter(shader->parameters, shader->num_parameters, id);
+
          if (!param)
          {
             RARCH_WARN("[CGP/GLSLP]: Parameter %s is set in the preset, but no shader uses this parameter, ignoring.\n", id);
@@ -350,7 +366,8 @@ bool gfx_shader_resolve_parameters(config_file_t *conf, struct gfx_shader *shade
    return true;
 }
 
-static bool shader_parse_imports(config_file_t *conf, struct gfx_shader *shader)
+static bool shader_parse_imports(config_file_t *conf,
+      struct gfx_shader *shader)
 {
    char imports[1024];
    char *save = NULL;
@@ -362,7 +379,9 @@ static bool shader_parse_imports(config_file_t *conf, struct gfx_shader *shader)
          id && shader->variables < GFX_MAX_VARIABLES;
          shader->variables++, id = strtok_r(NULL, ";", &save))
    {
-      struct state_tracker_uniform_info *var = &shader->variable[shader->variables];
+      struct state_tracker_uniform_info *var = 
+         (struct state_tracker_uniform_info*)
+         &shader->variable[shader->variables];
 
       strlcpy(var->id, id, sizeof(var->id));
 
@@ -442,8 +461,10 @@ static bool shader_parse_imports(config_file_t *conf, struct gfx_shader *shader)
          var->equal = equal;
    }
 
-   config_get_path(conf, "import_script", shader->script_path, sizeof(shader->script_path));
-   config_get_array(conf, "import_script_class", shader->script_class, sizeof(shader->script_class));
+   config_get_path(conf, "import_script",
+         shader->script_path, sizeof(shader->script_path));
+   config_get_array(conf, "import_script_class",
+         shader->script_class, sizeof(shader->script_class));
 
    return true;
 }
@@ -483,7 +504,7 @@ bool gfx_shader_read_conf_cgp(config_file_t *conf, struct gfx_shader *shader)
    return true;
 }
 
-// CGP store
+/* CGP store */
 static const char *scale_type_to_str(enum gfx_scale_type type)
 {
    switch (type)
@@ -513,7 +534,8 @@ static void shader_write_scale_dim(config_file_t *conf, const char *dim,
       config_set_float(conf, key, scale);
 }
 
-static void shader_write_fbo(config_file_t *conf, const struct gfx_fbo_scale *fbo, unsigned i)
+static void shader_write_fbo(config_file_t *conf,
+      const struct gfx_fbo_scale *fbo, unsigned i)
 {
    char key[64];
    print_buf(key, "float_framebuffer%u", i);
@@ -550,7 +572,8 @@ static const char *import_semantic_to_string(enum state_tracker_type type)
    }
 }
 
-static void shader_write_variable(config_file_t *conf, const struct state_tracker_uniform_info *info)
+static void shader_write_variable(config_file_t *conf,
+      const struct state_tracker_uniform_info *info)
 {
    const char *id = info->id;
 
@@ -566,7 +589,8 @@ static void shader_write_variable(config_file_t *conf, const struct state_tracke
    print_buf(mask_buf, "%s_mask", id);
    print_buf(equal_buf, "%s_equal", id);
 
-   config_set_string(conf, semantic_buf, import_semantic_to_string(info->type));
+   config_set_string(conf, semantic_buf,
+         import_semantic_to_string(info->type));
    config_set_hex(conf, mask_buf, info->mask);
    config_set_hex(conf, equal_buf, info->equal);
 
@@ -589,7 +613,8 @@ static void shader_write_variable(config_file_t *conf, const struct state_tracke
    }
 }
 
-void gfx_shader_write_conf_cgp(config_file_t *conf, struct gfx_shader *shader)
+void gfx_shader_write_conf_cgp(config_file_t *conf,
+      struct gfx_shader *shader)
 {
    unsigned i;
    config_set_int(conf, "shaders", shader->passes);
@@ -631,7 +656,7 @@ void gfx_shader_write_conf_cgp(config_file_t *conf, struct gfx_shader *shader)
       strlcpy(parameters, shader->parameters[0].id, sizeof(parameters));
       for (i = 1; i < shader->num_parameters; i++)
       {
-         // O(n^2), but number of parameters is very limited.
+         /* O(n^2), but number of parameters is very limited. */
          strlcat(parameters, ";", sizeof(parameters));
          strlcat(parameters, shader->parameters[i].id, sizeof(parameters));
       }
@@ -639,7 +664,8 @@ void gfx_shader_write_conf_cgp(config_file_t *conf, struct gfx_shader *shader)
       config_set_string(conf, "parameters", parameters);
       
       for (i = 0; i < shader->num_parameters; i++)
-         config_set_float(conf, shader->parameters[i].id, shader->parameters[i].current);
+         config_set_float(conf, shader->parameters[i].id,
+               shader->parameters[i].current);
    }
 
    if (shader->luts)
@@ -648,7 +674,7 @@ void gfx_shader_write_conf_cgp(config_file_t *conf, struct gfx_shader *shader)
       strlcpy(textures, shader->lut[0].id, sizeof(textures));
       for (i = 1; i < shader->luts; i++)
       {
-         // O(n^2), but number of textures is very limited.
+         /* O(n^2), but number of textures is very limited. */
          strlcat(textures, ";", sizeof(textures));
          strlcat(textures, shader->lut[i].id, sizeof(textures));
       }
@@ -664,7 +690,8 @@ void gfx_shader_write_conf_cgp(config_file_t *conf, struct gfx_shader *shader)
          if (shader->lut[i].filter != RARCH_FILTER_UNSPEC)
          {
             print_buf(key, "%s_linear", shader->lut[i].id);
-            config_set_bool(conf, key, shader->lut[i].filter == RARCH_FILTER_LINEAR);
+            config_set_bool(conf, key, 
+                  shader->lut[i].filter == RARCH_FILTER_LINEAR);
          }
 
          print_buf(key, "%s_wrap_mode", shader->lut[i].id);
@@ -697,7 +724,8 @@ void gfx_shader_write_conf_cgp(config_file_t *conf, struct gfx_shader *shader)
    }
 }
 
-enum rarch_shader_type gfx_shader_parse_type(const char *path, enum rarch_shader_type fallback)
+enum rarch_shader_type gfx_shader_parse_type(const char *path,
+      enum rarch_shader_type fallback)
 {
    if (!path)
       return fallback;
@@ -712,7 +740,8 @@ enum rarch_shader_type gfx_shader_parse_type(const char *path, enum rarch_shader
    return fallback;
 }
 
-void gfx_shader_resolve_relative(struct gfx_shader *shader, const char *ref_path)
+void gfx_shader_resolve_relative(struct gfx_shader *shader,
+      const char *ref_path)
 {
    unsigned i;
    char tmp_path[PATH_MAX];

@@ -35,7 +35,8 @@ static void *android_location_init(void)
    jclass class;
 
    struct android_app *android_app = (struct android_app*)g_android;
-   androidlocation_t *androidlocation = (androidlocation_t*)calloc(1, sizeof(androidlocation_t));
+   androidlocation_t *androidlocation = (androidlocation_t*)
+      calloc(1, sizeof(androidlocation_t));
    if (!androidlocation)
       return NULL;
 
@@ -47,43 +48,53 @@ static void *android_location_init(void)
    if (class == NULL)
       goto dealloc;
 
-   GET_METHOD_ID(env, androidlocation->onLocationInit, class, "onLocationInit", "()V");
+   GET_METHOD_ID(env, androidlocation->onLocationInit, class,
+         "onLocationInit", "()V");
    if (!androidlocation->onLocationInit)
       goto dealloc;
 
-   GET_METHOD_ID(env, androidlocation->onLocationFree, class, "onLocationFree", "()V");
+   GET_METHOD_ID(env, androidlocation->onLocationFree, class,
+         "onLocationFree", "()V");
    if (!androidlocation->onLocationFree)
       goto dealloc;
 
-   GET_METHOD_ID(env, androidlocation->onLocationStart, class, "onLocationStart", "()V");
+   GET_METHOD_ID(env, androidlocation->onLocationStart, class,
+         "onLocationStart", "()V");
    if (!androidlocation->onLocationStart)
       goto dealloc;
 
-   GET_METHOD_ID(env, androidlocation->onLocationStop, class, "onLocationStop", "()V");
+   GET_METHOD_ID(env, androidlocation->onLocationStop, class,
+         "onLocationStop", "()V");
    if (!androidlocation->onLocationStop)
       goto dealloc;
 
-   GET_METHOD_ID(env, androidlocation->onLocationGetLatitude, class, "onLocationGetLatitude", "()D");
+   GET_METHOD_ID(env, androidlocation->onLocationGetLatitude, class,
+         "onLocationGetLatitude", "()D");
    if (!androidlocation->onLocationGetLatitude)
       goto dealloc;
 
-   GET_METHOD_ID(env, androidlocation->onLocationGetLongitude, class, "onLocationGetLongitude", "()D");
+   GET_METHOD_ID(env, androidlocation->onLocationGetLongitude, class,
+         "onLocationGetLongitude", "()D");
    if (!androidlocation->onLocationGetLongitude)
       goto dealloc;
 
-   GET_METHOD_ID(env, androidlocation->onLocationGetHorizontalAccuracy, class, "onLocationGetHorizontalAccuracy", "()D");
+   GET_METHOD_ID(env, androidlocation->onLocationGetHorizontalAccuracy,
+         class, "onLocationGetHorizontalAccuracy", "()D");
    if (!androidlocation->onLocationGetHorizontalAccuracy)
       goto dealloc;
 
-   GET_METHOD_ID(env, androidlocation->onLocationSetInterval, class, "onLocationSetInterval", "(II)V");
+   GET_METHOD_ID(env, androidlocation->onLocationSetInterval,
+         class, "onLocationSetInterval", "(II)V");
    if (!androidlocation->onLocationSetInterval)
       goto dealloc;
 
-   GET_METHOD_ID(env, androidlocation->onLocationHasChanged, class, "onLocationHasChanged", "()Z");
+   GET_METHOD_ID(env, androidlocation->onLocationHasChanged,
+         class, "onLocationHasChanged", "()Z");
    if (!androidlocation->onLocationHasChanged)
       goto dealloc;
 
-   CALL_VOID_METHOD(env, android_app->activity->clazz, androidlocation->onLocationInit);
+   CALL_VOID_METHOD(env, android_app->activity->clazz,
+         androidlocation->onLocationInit);
 
    return androidlocation;
 dealloc:
@@ -99,7 +110,8 @@ static void android_location_free(void *data)
    if (!env)
       return;
 
-   CALL_VOID_METHOD(env, android_app->activity->clazz, androidlocation->onLocationFree);
+   CALL_VOID_METHOD(env, android_app->activity->clazz,
+         androidlocation->onLocationFree);
 
    free(androidlocation);
 }
@@ -112,7 +124,8 @@ static bool android_location_start(void *data)
    if (!env)
       return false;
 
-   CALL_VOID_METHOD(env, android_app->activity->clazz, androidlocation->onLocationStart);
+   CALL_VOID_METHOD(env, android_app->activity->clazz,
+         androidlocation->onLocationStart);
 
    return true;
 }
@@ -125,10 +138,12 @@ static void android_location_stop(void *data)
    if (!env)
       return;
 
-   CALL_VOID_METHOD(env, android_app->activity->clazz, androidlocation->onLocationStop);
+   CALL_VOID_METHOD(env, android_app->activity->clazz,
+         androidlocation->onLocationStop);
 }
 
-static bool android_location_get_position(void *data, double *latitude, double *longitude, double *horiz_accuracy,
+static bool android_location_get_position(void *data, double *latitude,
+      double *longitude, double *horiz_accuracy,
       double *vert_accuracy)
 {
    struct android_app *android_app = (struct android_app*)g_android;
@@ -140,14 +155,18 @@ static bool android_location_get_position(void *data, double *latitude, double *
    jdouble lat, lon, horiz_accu;
    jboolean newLocation;
 
-   CALL_BOOLEAN_METHOD(env, newLocation, android_app->activity->clazz, androidlocation->onLocationHasChanged);
+   CALL_BOOLEAN_METHOD(env, newLocation, android_app->activity->clazz,
+         androidlocation->onLocationHasChanged);
 
    if (!newLocation)
       goto fail;
 
-   CALL_DOUBLE_METHOD(env, lat,        android_app->activity->clazz, androidlocation->onLocationGetLatitude);
-   CALL_DOUBLE_METHOD(env, lon,        android_app->activity->clazz, androidlocation->onLocationGetLongitude);
-   CALL_DOUBLE_METHOD(env, horiz_accu, android_app->activity->clazz, androidlocation->onLocationGetHorizontalAccuracy);
+   CALL_DOUBLE_METHOD(env, lat,        android_app->activity->clazz,
+         androidlocation->onLocationGetLatitude);
+   CALL_DOUBLE_METHOD(env, lon,        android_app->activity->clazz,
+         androidlocation->onLocationGetLongitude);
+   CALL_DOUBLE_METHOD(env, horiz_accu, android_app->activity->clazz,
+         androidlocation->onLocationGetHorizontalAccuracy);
 
    if (lat != 0.0)
       *latitude = lat;
@@ -156,7 +175,8 @@ static bool android_location_get_position(void *data, double *latitude, double *
    if (horiz_accu != 0.0)
       *horiz_accuracy = horiz_accu;
 
-   /* TODO/FIXME - custom implement vertical accuracy since Android location API does not have it? */
+   /* TODO/FIXME - custom implement vertical accuracy since 
+    * Android location API does not have it? */
    *vert_accuracy = 0.0;
 
    return true;
@@ -169,7 +189,8 @@ fail:
    return false;
 }
 
-static void android_location_set_interval(void *data, unsigned interval_ms, unsigned interval_distance)
+static void android_location_set_interval(void *data, unsigned interval_ms,
+      unsigned interval_distance)
 {
    struct android_app *android_app = (struct android_app*)g_android;
    androidlocation_t *androidlocation = (androidlocation_t*)data;
@@ -177,7 +198,9 @@ static void android_location_set_interval(void *data, unsigned interval_ms, unsi
    if (!env)
       return;
 
-   CALL_VOID_METHOD_PARAM(env, android_app->activity->clazz, androidlocation->onLocationSetInterval, (int)interval_ms, (int)interval_distance);
+   CALL_VOID_METHOD_PARAM(env, android_app->activity->clazz,
+         androidlocation->onLocationSetInterval, (int)interval_ms,
+         (int)interval_distance);
 }
 
 const location_driver_t location_android = {

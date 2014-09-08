@@ -29,7 +29,8 @@ typedef struct android_camera
    GLuint tex;
 } androidcamera_t;
 
-static void *android_camera_init(const char *device, uint64_t caps, unsigned width, unsigned height)
+static void *android_camera_init(const char *device, uint64_t caps,
+      unsigned width, unsigned height)
 {
    JNIEnv *env;
    jclass class;
@@ -44,7 +45,8 @@ static void *android_camera_init(const char *device, uint64_t caps, unsigned wid
    }
 
    struct android_app *android_app = (struct android_app*)g_android;
-   androidcamera_t *androidcamera = (androidcamera_t*)calloc(1, sizeof(androidcamera_t));
+   androidcamera_t *androidcamera = (androidcamera_t*)
+         calloc(1, sizeof(androidcamera_t));
    if (!androidcamera)
       return NULL;
 
@@ -56,31 +58,38 @@ static void *android_camera_init(const char *device, uint64_t caps, unsigned wid
    if (class == NULL)
       goto dealloc;
 
-   GET_METHOD_ID(env, androidcamera->onCameraInit, class, "onCameraInit", "()V");
+   GET_METHOD_ID(env, androidcamera->onCameraInit, class,
+         "onCameraInit", "()V");
    if (!androidcamera->onCameraInit)
       goto dealloc;
 
-   GET_METHOD_ID(env, androidcamera->onCameraFree, class, "onCameraFree", "()V");
+   GET_METHOD_ID(env, androidcamera->onCameraFree, class,
+         "onCameraFree", "()V");
    if (!androidcamera->onCameraFree)
       goto dealloc;
 
-   GET_METHOD_ID(env, androidcamera->onCameraSetTexture, class, "onCameraSetTexture", "(I)V");
+   GET_METHOD_ID(env, androidcamera->onCameraSetTexture, class,
+         "onCameraSetTexture", "(I)V");
    if (!androidcamera->onCameraSetTexture)
       goto dealloc;
 
-   GET_METHOD_ID(env, androidcamera->onCameraStart, class, "onCameraStart", "()V");
+   GET_METHOD_ID(env, androidcamera->onCameraStart, class,
+         "onCameraStart", "()V");
    if (!androidcamera->onCameraStart)
       goto dealloc;
 
-   GET_METHOD_ID(env, androidcamera->onCameraStop, class, "onCameraStop", "()V");
+   GET_METHOD_ID(env, androidcamera->onCameraStop, class,
+         "onCameraStop", "()V");
    if (!androidcamera->onCameraStop)
       goto dealloc;
 
-   GET_METHOD_ID(env, androidcamera->onCameraPoll, class, "onCameraPoll", "()Z");
+   GET_METHOD_ID(env, androidcamera->onCameraPoll, class,
+         "onCameraPoll", "()Z");
    if (!androidcamera->onCameraPoll)
       goto dealloc;
 
-   CALL_VOID_METHOD(env, android_app->activity->clazz, androidcamera->onCameraInit);
+   CALL_VOID_METHOD(env, android_app->activity->clazz,
+         androidcamera->onCameraInit);
 
    return androidcamera;
 dealloc:
@@ -96,7 +105,8 @@ static void android_camera_free(void *data)
    if (!env)
       return;
 
-   CALL_VOID_METHOD(env, android_app->activity->clazz, androidcamera->onCameraFree);
+   CALL_VOID_METHOD(env, android_app->activity->clazz,
+         androidcamera->onCameraFree);
 
    free(androidcamera);
 }
@@ -111,13 +121,17 @@ static bool android_camera_start(void *data)
 
    glGenTextures(1, &androidcamera->tex);
    glBindTexture(GL_TEXTURE_EXTERNAL_OES, androidcamera->tex);
-   glTexParameteri(GL_TEXTURE_EXTERNAL_OES, GL_TEXTURE_MIN_FILTER, GL_LINEAR);        
+   glTexParameteri(GL_TEXTURE_EXTERNAL_OES, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
    glTexParameteri(GL_TEXTURE_EXTERNAL_OES, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-   glTexParameteri(GL_TEXTURE_EXTERNAL_OES, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-   glTexParameteri(GL_TEXTURE_EXTERNAL_OES, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+   glTexParameteri(GL_TEXTURE_EXTERNAL_OES, GL_TEXTURE_WRAP_S,
+         GL_CLAMP_TO_EDGE);
+   glTexParameteri(GL_TEXTURE_EXTERNAL_OES, GL_TEXTURE_WRAP_T,
+         GL_CLAMP_TO_EDGE);
 
-   CALL_VOID_METHOD_PARAM(env, android_app->activity->clazz, androidcamera->onCameraSetTexture, (int) androidcamera->tex);
-   CALL_VOID_METHOD(env, android_app->activity->clazz, androidcamera->onCameraStart);
+   CALL_VOID_METHOD_PARAM(env, android_app->activity->clazz,
+         androidcamera->onCameraSetTexture, (int) androidcamera->tex);
+   CALL_VOID_METHOD(env, android_app->activity->clazz,
+         androidcamera->onCameraStart);
 
    return true;
 }
@@ -130,13 +144,15 @@ static void android_camera_stop(void *data)
    if (!env)
       return;
 
-   CALL_VOID_METHOD(env, android_app->activity->clazz, androidcamera->onCameraStop);
+   CALL_VOID_METHOD(env, android_app->activity->clazz,
+         androidcamera->onCameraStop);
    
    if (androidcamera->tex)
       glDeleteTextures(1, &androidcamera->tex);
 }
 
-static bool android_camera_poll(void *data, retro_camera_frame_raw_framebuffer_t frame_raw_cb,
+static bool android_camera_poll(void *data,
+      retro_camera_frame_raw_framebuffer_t frame_raw_cb,
       retro_camera_frame_opengl_texture_t frame_gl_cb)
 {
    struct android_app *android_app = (struct android_app*)g_android;
@@ -148,11 +164,13 @@ static bool android_camera_poll(void *data, retro_camera_frame_raw_framebuffer_t
    (void)frame_raw_cb;
 
    jboolean newFrame;
-   CALL_BOOLEAN_METHOD(env, newFrame, android_app->activity->clazz, androidcamera->onCameraPoll);
+   CALL_BOOLEAN_METHOD(env, newFrame, android_app->activity->clazz, 
+         androidcamera->onCameraPoll);
 
    if (newFrame)
    {
-      // FIXME: Identity for now. Use proper texture matrix as returned by Android Camera.
+      /* FIXME: Identity for now. Use proper texture matrix as 
+       * returned by Android Camera. */
       static const float affine[] = {
          1.0f, 0.0f, 0.0f,
          0.0f, 1.0f, 0.0f,

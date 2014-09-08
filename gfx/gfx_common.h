@@ -30,15 +30,19 @@ extern "C" {
 #include "../config.h"
 #endif
 
-// bufs gets a string suitable for Window title, buf_fps for raw FPS only.
-// buf_fps is optional.
-bool gfx_get_fps(char *buf, size_t size, char *buf_fps, size_t size_fps);
+/* bufs gets a string suitable for Window title, 
+ * buf_fps for raw FPS only.
+ * buf_fps is optional.
+ */
+bool gfx_get_fps(char *buf, size_t size,
+      char *buf_fps, size_t size_fps);
 
 #ifdef _WIN32
 void gfx_set_dwm(void);
 #endif
 
-void gfx_scale_integer(struct rarch_viewport *vp, unsigned win_width, unsigned win_height,
+void gfx_scale_integer(struct rarch_viewport *vp,
+      unsigned win_width, unsigned win_height,
       float aspect_ratio, bool keep_aspect);
 
 enum aspect_ratio

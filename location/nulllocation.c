@@ -37,7 +37,8 @@ static void null_location_stop(void *data)
    (void)data;
 }
 
-static bool null_location_get_position(void *data, double *latitude, double *longitude, double *horiz_accuracy,
+static bool null_location_get_position(void *data, double *latitude,
+      double *longitude, double *horiz_accuracy,
       double *vert_accuracy)
 {
    *latitude  = 0.0;
@@ -47,7 +48,8 @@ static bool null_location_get_position(void *data, double *latitude, double *lon
    return true;
 }
 
-static void null_location_set_interval(void *data, unsigned interval_ms, unsigned interval_distance)
+static void null_location_set_interval(void *data,
+      unsigned interval_ms, unsigned interval_distance)
 {
 }
 

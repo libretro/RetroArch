@@ -59,7 +59,8 @@ static const gfx_ctx_driver_t *gfx_ctx_drivers[] = {
 #if defined(__QNX__)
    &gfx_ctx_bbqnx,
 #endif
-#if defined(IOS) || defined(OSX) //< Don't use __APPLE__ as it breaks basic SDL builds
+#if defined(IOS) || defined(OSX)
+   /* < Don't use __APPLE__ as it breaks basic SDL builds */
    &gfx_ctx_apple,
 #endif
 #if (defined(HAVE_SDL) || defined(HAVE_SDL2)) && defined(HAVE_OPENGL)
@@ -83,7 +84,9 @@ const gfx_ctx_driver_t *gfx_ctx_find_driver(const char *ident)
    return NULL;
 }
 
-const gfx_ctx_driver_t *gfx_ctx_init_first(void *data, enum gfx_ctx_api api, unsigned major, unsigned minor, bool hw_render_ctx)
+const gfx_ctx_driver_t *gfx_ctx_init_first(void *data,
+      enum gfx_ctx_api api, unsigned major,
+      unsigned minor, bool hw_render_ctx)
 {
    unsigned i;
    for (i = 0; gfx_ctx_drivers[i]; i++)
