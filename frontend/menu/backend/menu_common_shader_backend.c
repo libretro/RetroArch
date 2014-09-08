@@ -19,7 +19,6 @@ static void menu_common_shader_manager_init(menu_handle_t *menu)
    char cgp_path[PATH_MAX];
    config_file_t *conf = NULL;
    const char *config_path = NULL;
-   const char *ext = NULL;
    struct gfx_shader *shader = (struct gfx_shader*)menu->shader;
 
    if (*g_extern.core_specific_config_path
@@ -28,32 +27,27 @@ static void menu_common_shader_manager_init(menu_handle_t *menu)
    else if (*g_extern.config_path)
       config_path = g_extern.config_path;
 
+   /* In a multi-config setting, we can't have
+    * conflicts on menu.cgp/menu.glslp. */
    if (config_path)
    {
-      /* In a multi-config setting, we can't have
-       * conflicts on menu.cgp/menu.glslp. */
-
       fill_pathname_base(menu->default_glslp, config_path,
             sizeof(menu->default_glslp));
       path_remove_extension(menu->default_glslp);
-      strlcat(menu->default_glslp, ".glslp",
-            sizeof(menu->default_glslp));
+      strlcat(menu->default_glslp, ".glslp", sizeof(menu->default_glslp));
       fill_pathname_base(menu->default_cgp, config_path,
             sizeof(menu->default_cgp));
       path_remove_extension(menu->default_cgp);
-      strlcat(menu->default_cgp, ".cgp",
-            sizeof(menu->default_cgp));
+      strlcat(menu->default_cgp, ".cgp", sizeof(menu->default_cgp));
    }
    else
    {
-      strlcpy(menu->default_glslp, "menu.glslp",
-            sizeof(menu->default_glslp));
-      strlcpy(menu->default_cgp, "menu.cgp",
-            sizeof(menu->default_cgp));
+      strlcpy(menu->default_glslp, "menu.glslp", sizeof(menu->default_glslp));
+      strlcpy(menu->default_cgp, "menu.cgp", sizeof(menu->default_cgp));
    }
 
-   ext = path_get_extension(g_settings.video.shader_path);
 
+   const char *ext = path_get_extension(g_settings.video.shader_path);
    if (strcmp(ext, "glslp") == 0 || strcmp(ext, "cgp") == 0)
    {
       conf = config_file_new(g_settings.video.shader_path);
@@ -78,14 +72,12 @@ static void menu_common_shader_manager_init(menu_handle_t *menu)
       const char *shader_dir = *g_settings.video.shader_dir ?
          g_settings.video.shader_dir : g_settings.system_directory;
 
-      fill_pathname_join(cgp_path, shader_dir,
-            "menu.glslp", sizeof(cgp_path));
+      fill_pathname_join(cgp_path, shader_dir, "menu.glslp", sizeof(cgp_path));
       conf = config_file_new(cgp_path);
 
       if (!conf)
       {
-         fill_pathname_join(cgp_path, shader_dir,
-               "menu.cgp", sizeof(cgp_path));
+         fill_pathname_join(cgp_path, shader_dir, "menu.cgp", sizeof(cgp_path));
          conf = config_file_new(cgp_path);
       }
 
@@ -122,7 +114,7 @@ static void menu_common_shader_manager_set_preset(struct gfx_shader *shader,
           * Used when a preset is directly loaded.
           * No point in updating when the CGP was 
           * created from the menu itself. */
-         config_file_t *conf = (config_file_t*)config_file_new(cgp_path);
+         config_file_t *conf = config_file_new(cgp_path);
 
          if (conf)
          {
@@ -272,6 +264,8 @@ static void menu_common_shader_manager_save_preset(
          ret = true;
          break;
       }
+      else
+         RARCH_LOG("Failed writing shader preset to %s.\n", cgp_path);
    }
 
    config_file_free(conf);
@@ -282,18 +276,19 @@ static void menu_common_shader_manager_save_preset(
 static unsigned menu_common_shader_manager_get_type(
       const struct gfx_shader *shader)
 {
+   /* All shader types must be the same, or we cannot use it. */
    unsigned i;
    unsigned type = RARCH_SHADER_NONE;
 
    if (!shader)
+   {
+      RARCH_ERR("Cannot get shader type, shader handle is not initialized.\n");
       return RARCH_SHADER_NONE;
-
-   /* All shader types must be the same, or we cannot use it. */
+   }
 
    for (i = 0; i < shader->passes; i++)
    {
-      enum rarch_shader_type pass_type = 
-         gfx_shader_parse_type(shader->pass[i].source.path,
+      enum rarch_shader_type pass_type = gfx_shader_parse_type(shader->pass[i].source.path,
             RARCH_SHADER_NONE);
 
       switch (pass_type)
@@ -310,17 +305,25 @@ static unsigned menu_common_shader_manager_get_type(
       }
    }
 
-   return RARCH_SHADER_NONE;
+   return type;
 }
 
 static int menu_common_shader_manager_setting_toggle(
       unsigned id, const char *label, unsigned action)
 {
+   if (!driver.menu)
+   {
+      RARCH_ERR("Cannot toggle shader setting, menu handle is not initialized.\n");
+      return 0;
+   }
+
+#if 0
+   RARCH_LOG("shader label: %s\n", label);
+#endif
+
    rarch_setting_t *current_setting = NULL;
    rarch_setting_t *setting_data = (rarch_setting_t *)setting_data_get_list();
 
-   if (!driver.menu)
-      return 0;
 
    if (!strcmp(label, "video_shader_default_filter"))
    {
@@ -338,8 +341,7 @@ static int menu_common_shader_manager_setting_toggle(
       if (!(shader = (struct gfx_shader*)driver.menu->parameter_shader))
          return 0;
 
-      if (!(param = &shader->parameters[id - 
-               MENU_SETTINGS_SHADER_PARAMETER_0]))
+      if (!(param = &shader->parameters[id - MENU_SETTINGS_SHADER_PARAMETER_0]))
          return 0;
 
       switch (action)
@@ -363,8 +365,7 @@ static int menu_common_shader_manager_setting_toggle(
             break;
       }
 
-      param->current = min(max(param->minimum, param->current),
-            param->maximum);
+      param->current = min(max(param->minimum, param->current), param->maximum);
 
       if (apply_changes)
          rarch_main_command(RARCH_CMD_SHADERS_APPLY_CHANGES);
@@ -373,8 +374,7 @@ static int menu_common_shader_manager_setting_toggle(
             !strcmp(label, "video_shader_preset_parameters"))
          && action == MENU_ACTION_OK)
       menu_entries_push(driver.menu->menu_stack, "",
-            "video_shader_parameters", MENU_FILE_SWITCH,
-            driver.menu->selection_ptr);
+            "video_shader_parameters", MENU_FILE_SWITCH, driver.menu->selection_ptr);
    else if (!strcmp(label, "shader_apply_changes") ||
          !strcmp(label, "video_shader_num_passes"))
       menu_setting_set(id, label, action);
@@ -403,8 +403,7 @@ static int menu_common_shader_manager_setting_toggle(
       struct gfx_shader_pass *shader_pass = NULL;
 
       if (shader)
-         shader_pass = (struct gfx_shader_pass*)
-            &shader->pass[hack_shader_pass];
+         shader_pass = (struct gfx_shader_pass*)&shader->pass[hack_shader_pass];
 
       switch (action)
       {
@@ -479,8 +478,7 @@ static int menu_common_shader_manager_setting_toggle(
             if (shader_pass)
             {
                shader_pass->fbo.valid = current_scale;
-               shader_pass->fbo.scale_x = shader_pass->fbo.scale_y = 
-                  current_scale;
+               shader_pass->fbo.scale_x = shader_pass->fbo.scale_y = current_scale;
             }
             break;
          }
