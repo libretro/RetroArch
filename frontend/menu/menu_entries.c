@@ -192,18 +192,22 @@ int menu_entries_push_list(menu_handle_t *menu,
       add_setting_entry(menu,list,"help", MENU_FILE_SWITCH, setting_data);
       add_setting_entry(menu,list,"quit_retroarch", MENU_FILE_SWITCH, setting_data);
    }
-   else if (!strcmp(path, "General Options"))
+   else if (!strcmp(label, "Driver Options") ||
+         !strcmp(label, "General Options"))
    {
       rarch_setting_t *setting_data = (rarch_setting_t*)setting_data_get_list();
       rarch_setting_t *setting = (rarch_setting_t*)setting_data_find_setting(setting_data,
-            "General Options");
+            label);
 
       file_list_clear(list);
 
       for (; setting->type != ST_END_GROUP; setting++)
       {
-         if (setting->type == ST_SUB_GROUP ||
-               setting->type == ST_END_SUB_GROUP )
+         if (
+               setting->type == ST_GROUP ||
+               setting->type == ST_SUB_GROUP ||
+               setting->type == ST_END_SUB_GROUP
+            )
             continue;
 
          file_list_push(list, setting->short_description,
@@ -452,17 +456,6 @@ int menu_entries_push_list(menu_handle_t *menu,
       add_setting_entry(menu,list,"osk_enable", 0, setting_data);
       for (i = MENU_SETTINGS_BIND_BEGIN; i <= MENU_SETTINGS_BIND_ALL_LAST; i++)
          add_setting_entry(menu, list, input_config_bind_map[i - MENU_SETTINGS_BIND_BEGIN].base, i, setting_data);
-   }
-   else if (!strcmp(label, "Driver Options"))
-   {
-      file_list_clear(list);
-      add_setting_entry(menu,list,"video_driver", 0, setting_data);
-      add_setting_entry(menu,list,"audio_driver", 0, setting_data);
-      add_setting_entry(menu,list,"audio_resampler_driver", 0, setting_data);
-      add_setting_entry(menu,list,"input_driver", 0, setting_data);
-      add_setting_entry(menu,list,"camera_driver", 0, setting_data);
-      add_setting_entry(menu,list,"location_driver", 0, setting_data);
-      add_setting_entry(menu,list,"menu_driver", 0, setting_data);
    }
    else if (!strcmp(label, "Video Options"))
    {
