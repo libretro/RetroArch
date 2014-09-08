@@ -442,10 +442,8 @@ int menu_entries_push_list(menu_handle_t *menu,
       file_list_clear(list);
       file_list_push(list, "Player", "",
             MENU_SETTINGS_BIND_PLAYER, 0);
-      file_list_push(list, "Device", "",
-            MENU_SETTINGS_BIND_DEVICE, 0);
-      file_list_push(list, "Device Type", "",
-            MENU_SETTINGS_BIND_DEVICE_TYPE, 0);
+      file_list_push(list, "Device", "input_bind_device_id", 0, 0);
+      file_list_push(list, "Device Type", "input_bind_device_type", 0, 0);
       file_list_push(list, "Analog D-pad Mode", "",
             MENU_SETTINGS_BIND_ANALOG_MODE, 0);
       add_setting_entry(menu,list,"input_axis_threshold", 0, setting_data);

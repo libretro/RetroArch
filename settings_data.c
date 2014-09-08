@@ -1507,6 +1507,20 @@ int setting_data_get_description(const char *label, char *msg,
     else if (!strcmp(label, "menu_toggle"))
        snprintf(msg, sizeof_msg,
              " -- Toggles menu.");
+    else if (!strcmp(label, "input_bind_device_id"))
+       snprintf(msg, sizeof_msg,
+       " -- Input Device. \n"
+          " \n"
+          "Picks which gamepad to use for player N. \n"
+          "The name of the pad is available."
+          );
+    else if (!strcmp(label, "input_bind_device_type"))
+       snprintf(msg, sizeof_msg,
+             " -- Input Device Type. \n"
+             " \n"
+             "Picks which device type to use. This is \n"
+             "relevant for the libretro core itself."
+             );
     else
        snprintf(msg, sizeof_msg,
              "-- No info on this item is available. --\n");
@@ -1732,6 +1746,58 @@ void setting_data_get_label(char *type_str,
             driver.menu->shader, type_str, type_str_size,
             menu_label, label, type);
    }
+   else if (!strcmp(label, "input_bind_device_id"))
+   {
+      int map = g_settings.input.joypad_map
+         [driver.menu->current_pad];
+      if (map >= 0 && map < MAX_PLAYERS)
+      {
+         const char *device_name = 
+            g_settings.input.device_names[map];
+
+         if (*device_name)
+            strlcpy(type_str, device_name, type_str_size);
+         else
+            snprintf(type_str, type_str_size,
+                  "N/A (port #%d)", map);
+      }
+      else
+         strlcpy(type_str, "Disabled", type_str_size);
+   }
+   else if (!strcmp(label, "input_bind_device_type"))
+   {
+      const struct retro_controller_description *desc = NULL;
+      if (driver.menu->current_pad < g_extern.system.num_ports)
+         desc = libretro_find_controller_description(
+               &g_extern.system.ports[driver.menu->current_pad],
+               g_settings.input.libretro_device
+               [driver.menu->current_pad]);
+
+      const char *name = desc ? desc->desc : NULL;
+      if (!name)
+      {
+         /* Find generic name. */
+
+         switch (g_settings.input.libretro_device
+               [driver.menu->current_pad])
+         {
+            case RETRO_DEVICE_NONE:
+               name = "None";
+               break;
+            case RETRO_DEVICE_JOYPAD:
+               name = "RetroPad";
+               break;
+            case RETRO_DEVICE_ANALOG:
+               name = "RetroPad w/ Analog";
+               break;
+            default:
+               name = "Unknown";
+               break;
+         }
+      }
+
+      strlcpy(type_str, name, type_str_size);
+   }
    else if (type >= MENU_SETTINGS_PERF_COUNTERS_BEGIN
          && type <= MENU_SETTINGS_PERF_COUNTERS_END)
       menu_common_setting_set_label_perf(type_str, type_str_size, w, type,
@@ -1806,25 +1872,6 @@ void setting_data_get_label(char *type_str,
                snprintf(type_str, type_str_size, "#%u",
                      driver.menu->current_pad + 1);
                break;
-            case MENU_SETTINGS_BIND_DEVICE:
-               {
-                  int map = g_settings.input.joypad_map
-                     [driver.menu->current_pad];
-                  if (map >= 0 && map < MAX_PLAYERS)
-                  {
-                     const char *device_name = 
-                        g_settings.input.device_names[map];
-
-                     if (*device_name)
-                        strlcpy(type_str, device_name, type_str_size);
-                     else
-                        snprintf(type_str, type_str_size,
-                              "N/A (port #%d)", map);
-                  }
-                  else
-                     strlcpy(type_str, "Disabled", type_str_size);
-               }
-               break;
             case MENU_SETTINGS_BIND_ANALOG_MODE:
                {
                   static const char *modes[] = {
@@ -1837,41 +1884,6 @@ void setting_data_get_label(char *type_str,
                   strlcpy(type_str, modes[g_settings.input.analog_dpad_mode
                         [driver.menu->current_pad] % ANALOG_DPAD_LAST],
                         type_str_size);
-               }
-               break;
-            case MENU_SETTINGS_BIND_DEVICE_TYPE:
-               {
-                  const struct retro_controller_description *desc = NULL;
-                  if (driver.menu->current_pad < g_extern.system.num_ports)
-                     desc = libretro_find_controller_description(
-                           &g_extern.system.ports[driver.menu->current_pad],
-                           g_settings.input.libretro_device
-                           [driver.menu->current_pad]);
-
-                  const char *name = desc ? desc->desc : NULL;
-                  if (!name)
-                  {
-                     /* Find generic name. */
-
-                     switch (g_settings.input.libretro_device
-                           [driver.menu->current_pad])
-                     {
-                        case RETRO_DEVICE_NONE:
-                           name = "None";
-                           break;
-                        case RETRO_DEVICE_JOYPAD:
-                           name = "RetroPad";
-                           break;
-                        case RETRO_DEVICE_ANALOG:
-                           name = "RetroPad w/ Analog";
-                           break;
-                        default:
-                           name = "Unknown";
-                           break;
-                     }
-                  }
-
-                  strlcpy(type_str, name, type_str_size);
                }
                break;
             case MENU_SETTINGS_CUSTOM_BIND_MODE:

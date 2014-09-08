@@ -90,32 +90,7 @@ static int menu_info_screen_iterate(unsigned action)
             strlcpy(needle, label, sizeof(needle));
    }
 
-   
-   if (needle[0] == '\0' || setting_data_get_description(needle, msg, sizeof(msg)) == -1)
-   {
-      switch (info_type)
-      {
-         case MENU_SETTINGS_BIND_DEVICE:
-            snprintf(msg, sizeof(msg),
-                  " -- Input Device. \n"
-                  " \n"
-                  "Picks which gamepad to use for player N. \n"
-                  "The name of the pad is available."
-                  );
-            break;
-         case MENU_SETTINGS_BIND_DEVICE_TYPE:
-            snprintf(msg, sizeof(msg),
-                  " -- Input Device Type. \n"
-                  " \n"
-                  "Picks which device type to use. This is \n"
-                  "relevant for the libretro core itself."
-                  );
-            break;
-         default:
-            snprintf(msg, sizeof(msg),
-                  "-- No info on this item available. --\n");
-      }
-   }
+   setting_data_get_description(needle, msg, sizeof(msg));
 
    if (driver.video_data && driver.menu_ctx &&
          driver.menu_ctx->render_messagebox)
@@ -614,6 +589,89 @@ static int menu_setting_set(unsigned id, const char *label,
             gfx_shader_resolve_parameters(NULL, driver.menu->shader);
 #endif
       }
+      else if (!strcmp(label, "input_bind_device_id"))
+      {
+         int *p = &g_settings.input.joypad_map[port];
+         if (action == MENU_ACTION_START)
+            *p = port;
+         else if (action == MENU_ACTION_LEFT)
+            (*p)--;
+         else if (action == MENU_ACTION_RIGHT)
+            (*p)++;
+
+         if (*p < -1)
+            *p = -1;
+         else if (*p >= MAX_PLAYERS)
+            *p = MAX_PLAYERS - 1;
+      }
+      else if (!strcmp(label, "input_bind_device_type"))
+      {
+         unsigned current_device, current_index, i, devices[128];
+         const struct retro_controller_info *desc;
+         unsigned types = 0;
+
+         devices[types++] = RETRO_DEVICE_NONE;
+         devices[types++] = RETRO_DEVICE_JOYPAD;
+
+         /* Only push RETRO_DEVICE_ANALOG as default if we use an 
+          * older core which doesn't use SET_CONTROLLER_INFO. */
+         if (!g_extern.system.num_ports)
+            devices[types++] = RETRO_DEVICE_ANALOG;
+
+         desc = port < g_extern.system.num_ports ?
+            &g_extern.system.ports[port] : NULL;
+         if (desc)
+         {
+            for (i = 0; i < desc->num_types; i++)
+            {
+               unsigned id = desc->types[i].id;
+               if (types < ARRAY_SIZE(devices) &&
+                     id != RETRO_DEVICE_NONE &&
+                     id != RETRO_DEVICE_JOYPAD)
+                  devices[types++] = id;
+            }
+         }
+
+         current_device = g_settings.input.libretro_device[port];
+         current_index = 0;
+         for (i = 0; i < types; i++)
+         {
+            if (current_device == devices[i])
+            {
+               current_index = i;
+               break;
+            }
+         }
+
+         bool updated = true;
+         switch (action)
+         {
+            case MENU_ACTION_START:
+               current_device = RETRO_DEVICE_JOYPAD;
+               break;
+
+            case MENU_ACTION_LEFT:
+               current_device = devices
+                  [(current_index + types - 1) % types];
+               break;
+
+            case MENU_ACTION_RIGHT:
+            case MENU_ACTION_OK:
+               current_device = devices
+                  [(current_index + 1) % types];
+               break;
+
+            default:
+               updated = false;
+         }
+
+         if (updated)
+         {
+            g_settings.input.libretro_device[port] = current_device;
+            pretro_set_controller_port_device(port, current_device);
+         }
+
+      }
       else
       {
          switch (id)
@@ -634,22 +692,6 @@ static int menu_setting_set(unsigned id, const char *label,
                if (port != driver.menu->current_pad)
                   driver.menu->need_refresh = true;
                port = driver.menu->current_pad;
-               break;
-            case MENU_SETTINGS_BIND_DEVICE:
-               {
-                  int *p = &g_settings.input.joypad_map[port];
-                  if (action == MENU_ACTION_START)
-                     *p = port;
-                  else if (action == MENU_ACTION_LEFT)
-                     (*p)--;
-                  else if (action == MENU_ACTION_RIGHT)
-                     (*p)++;
-
-                  if (*p < -1)
-                     *p = -1;
-                  else if (*p >= MAX_PLAYERS)
-                     *p = MAX_PLAYERS - 1;
-               }
                break;
             case MENU_SETTINGS_BIND_ANALOG_MODE:
                switch (action)
@@ -675,75 +717,6 @@ static int menu_setting_set(unsigned id, const char *label,
                      break;
                }
                break;
-            case MENU_SETTINGS_BIND_DEVICE_TYPE:
-               {
-                  unsigned current_device, current_index, i, devices[128];
-                  const struct retro_controller_info *desc;
-                  unsigned types = 0;
-
-                  devices[types++] = RETRO_DEVICE_NONE;
-                  devices[types++] = RETRO_DEVICE_JOYPAD;
-
-                  /* Only push RETRO_DEVICE_ANALOG as default if we use an 
-                   * older core which doesn't use SET_CONTROLLER_INFO. */
-                  if (!g_extern.system.num_ports)
-                     devices[types++] = RETRO_DEVICE_ANALOG;
-
-                  desc = port < g_extern.system.num_ports ?
-                     &g_extern.system.ports[port] : NULL;
-                  if (desc)
-                  {
-                     for (i = 0; i < desc->num_types; i++)
-                     {
-                        unsigned id = desc->types[i].id;
-                        if (types < ARRAY_SIZE(devices) &&
-                              id != RETRO_DEVICE_NONE &&
-                              id != RETRO_DEVICE_JOYPAD)
-                           devices[types++] = id;
-                     }
-                  }
-
-                  current_device = g_settings.input.libretro_device[port];
-                  current_index = 0;
-                  for (i = 0; i < types; i++)
-                  {
-                     if (current_device == devices[i])
-                     {
-                        current_index = i;
-                        break;
-                     }
-                  }
-
-                  bool updated = true;
-                  switch (action)
-                  {
-                     case MENU_ACTION_START:
-                        current_device = RETRO_DEVICE_JOYPAD;
-                        break;
-
-                     case MENU_ACTION_LEFT:
-                        current_device = devices
-                           [(current_index + types - 1) % types];
-                        break;
-
-                     case MENU_ACTION_RIGHT:
-                     case MENU_ACTION_OK:
-                        current_device = devices
-                           [(current_index + 1) % types];
-                        break;
-
-                     default:
-                        updated = false;
-                  }
-
-                  if (updated)
-                  {
-                     g_settings.input.libretro_device[port] = current_device;
-                     pretro_set_controller_port_device(port, current_device);
-                  }
-
-                  break;
-               }
             case MENU_SETTINGS_CUSTOM_BIND_MODE:
                if (action == MENU_ACTION_LEFT || action == MENU_ACTION_RIGHT)
                   driver.menu->bind_mode_keyboard =
