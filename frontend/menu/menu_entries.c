@@ -194,26 +194,21 @@ int menu_entries_push_list(menu_handle_t *menu,
    }
    else if (!strcmp(path, "General Options"))
    {
+      rarch_setting_t *setting_data = (rarch_setting_t*)setting_data_get_list();
+      rarch_setting_t *setting = (rarch_setting_t*)setting_data_find_setting(setting_data,
+            "General Options");
+
       file_list_clear(list);
-      add_setting_entry(menu,list,"libretro_log_level", 0, setting_data);
-      add_setting_entry(menu,list,"log_verbosity", 0, setting_data);
-      add_setting_entry(menu,list,"perfcnt_enable", 0, setting_data);
-      add_setting_entry(menu,list,"game_history_size", 0, setting_data);
-      add_setting_entry(menu,list,"config_save_on_exit", 0, setting_data);
-      add_setting_entry(menu,list,"core_specific_config", 0, setting_data);
-      add_setting_entry(menu,list,"video_gpu_screenshot", 0, setting_data);
-      add_setting_entry(menu,list,"dummy_on_core_shutdown", 0, setting_data);
-      add_setting_entry(menu,list,"fps_show", 0, setting_data);
-      add_setting_entry(menu,list,"fastforward_ratio", 0, setting_data);
-      add_setting_entry(menu,list,"slowmotion_ratio", 0, setting_data);
-      add_setting_entry(menu,list,"rewind_enable", 0, setting_data);
-      add_setting_entry(menu,list,"rewind_granularity", 0, setting_data);
-      add_setting_entry(menu,list,"block_sram_overwrite", 0, setting_data);
-      add_setting_entry(menu,list,"autosave_interval", 0, setting_data);
-      add_setting_entry(menu,list,"video_disable_composition", 0, setting_data);
-      add_setting_entry(menu,list,"pause_nonactive", 0, setting_data);
-      add_setting_entry(menu,list,"savestate_auto_save", 0, setting_data);
-      add_setting_entry(menu,list,"savestate_auto_load", 0, setting_data);
+
+      for (; setting->type != ST_END_GROUP; setting++)
+      {
+         if (setting->type == ST_SUB_GROUP ||
+               setting->type == ST_END_SUB_GROUP )
+            continue;
+
+         file_list_push(list, setting->short_description,
+               setting->name, 0, 0);
+      }
    }
    else if (!strcmp(label, "history_list"))
    {
