@@ -128,17 +128,18 @@ static enum png_chunk_type png_chunk_type(const struct png_chunk *chunk)
 static bool png_read_chunk(FILE *file, struct png_chunk *chunk)
 {
    free(chunk->data);
-   chunk->data = (uint8_t*)calloc(1, chunk->size + sizeof(uint32_t)); // CRC32
+   chunk->data = (uint8_t*)calloc(1, chunk->size + sizeof(uint32_t)); /* CRC32 */
    if (!chunk->data)
       return false;
 
-   if (fread(chunk->data, 1, chunk->size + sizeof(uint32_t), file) != (chunk->size + sizeof(uint32_t)))
+   if (fread(chunk->data, 1, chunk->size + 
+            sizeof(uint32_t), file) != (chunk->size + sizeof(uint32_t)))
    {
       free(chunk->data);
       return false;
    }
 
-   // Ignore CRC.
+   /* Ignore CRC. */
    return true;
 }
 
@@ -148,7 +149,8 @@ static void png_free_chunk(struct png_chunk *chunk)
    chunk->data = NULL;
 }
 
-static bool png_parse_ihdr(FILE *file, struct png_chunk *chunk, struct png_ihdr *ihdr)
+static bool png_parse_ihdr(FILE *file,
+      struct png_chunk *chunk, struct png_ihdr *ihdr)
 {
    unsigned i;
    bool ret = true;
@@ -169,7 +171,8 @@ static bool png_parse_ihdr(FILE *file, struct png_chunk *chunk, struct png_ihdr 
    if (ihdr->width == 0 || ihdr->height == 0)
       GOTO_END_ERROR();
 
-   if (ihdr->color_type == 2 || ihdr->color_type == 4 || ihdr->color_type == 6)
+   if (ihdr->color_type == 2 || 
+         ihdr->color_type == 4 || ihdr->color_type == 6)
    {
       if (ihdr->depth != 8 && ihdr->depth != 16)
          GOTO_END_ERROR();
@@ -245,7 +248,8 @@ static inline int paeth(int a, int b, int c)
       return c;
 }
 
-static inline void copy_line_rgb(uint32_t *data, const uint8_t *decoded, unsigned width, unsigned bpp)
+static inline void copy_line_rgb(uint32_t *data,
+      const uint8_t *decoded, unsigned width, unsigned bpp)
 {
    unsigned i;
    bpp /= 8;
@@ -261,7 +265,8 @@ static inline void copy_line_rgb(uint32_t *data, const uint8_t *decoded, unsigne
    }
 }
 
-static inline void copy_line_rgba(uint32_t *data, const uint8_t *decoded, unsigned width, unsigned bpp)
+static inline void copy_line_rgba(uint32_t *data,
+      const uint8_t *decoded, unsigned width, unsigned bpp)
 {
    unsigned i;
    bpp /= 8;
@@ -279,7 +284,8 @@ static inline void copy_line_rgba(uint32_t *data, const uint8_t *decoded, unsign
    }
 }
 
-static inline void copy_line_bw(uint32_t *data, const uint8_t *decoded, unsigned width, unsigned depth)
+static inline void copy_line_bw(uint32_t *data,
+      const uint8_t *decoded, unsigned width, unsigned depth)
 {
    unsigned i, bit;
    if (depth == 16)
@@ -308,7 +314,8 @@ static inline void copy_line_bw(uint32_t *data, const uint8_t *decoded, unsigned
    }
 }
 
-static inline void copy_line_gray_alpha(uint32_t *data, const uint8_t *decoded, unsigned width,
+static inline void copy_line_gray_alpha(uint32_t *data,
+      const uint8_t *decoded, unsigned width,
       unsigned bpp)
 {
    unsigned i;
@@ -324,7 +331,9 @@ static inline void copy_line_gray_alpha(uint32_t *data, const uint8_t *decoded, 
    }
 }
 
-static inline void copy_line_plt(uint32_t *data, const uint8_t *decoded, unsigned width, unsigned depth, const uint32_t *palette)
+static inline void copy_line_plt(uint32_t *data,
+      const uint8_t *decoded, unsigned width,
+      unsigned depth, const uint32_t *palette)
 {
    unsigned i, bit;
    unsigned mask = (1 << depth) - 1;
@@ -387,7 +396,8 @@ static void png_pass_geom(const struct png_ihdr *ihdr,
 
 
 static bool png_reverse_filter(uint32_t *data, const struct png_ihdr *ihdr,
-      const uint8_t *inflate_buf, size_t inflate_buf_size, const uint32_t *palette)
+      const uint8_t *inflate_buf, size_t inflate_buf_size,
+      const uint32_t *palette)
 {
    unsigned i, h;
    bool ret = true;
@@ -412,23 +422,23 @@ static bool png_reverse_filter(uint32_t *data, const struct png_ihdr *ihdr,
       unsigned filter = *inflate_buf++;
       switch (filter)
       {
-         case 0: // None
+         case 0: /* None */
             memcpy(decoded_scanline, inflate_buf, pitch);
             break;
 
-         case 1: // Sub
+         case 1: /* Sub */
             for (i = 0; i < bpp; i++)
                decoded_scanline[i] = inflate_buf[i];
             for (i = bpp; i < pitch; i++)
                decoded_scanline[i] = decoded_scanline[i - bpp] + inflate_buf[i];
             break;
 
-         case 2: // Up
+         case 2: /* Up */
             for (i = 0; i < pitch; i++)
                decoded_scanline[i] = prev_scanline[i] + inflate_buf[i];
             break;
 
-         case 3: // Average
+         case 3: /* Average */
             for (i = 0; i < bpp; i++)
             {
                uint8_t avg = prev_scanline[i] >> 1;
@@ -441,11 +451,12 @@ static bool png_reverse_filter(uint32_t *data, const struct png_ihdr *ihdr,
             }
             break;
 
-         case 4: // Paeth
+         case 4: /* Paeth */
             for (i = 0; i < bpp; i++)
                decoded_scanline[i] = paeth(0, prev_scanline[i], 0) + inflate_buf[i];
             for (i = bpp; i < pitch; i++)
-               decoded_scanline[i] = paeth(decoded_scanline[i - bpp], prev_scanline[i], prev_scanline[i - bpp]) + inflate_buf[i];
+               decoded_scanline[i] = paeth(decoded_scanline[i - bpp],
+                     prev_scanline[i], prev_scanline[i - bpp]) + inflate_buf[i];
             break;
 
          default:
@@ -457,9 +468,11 @@ static bool png_reverse_filter(uint32_t *data, const struct png_ihdr *ihdr,
       else if (ihdr->color_type == 2)
          copy_line_rgb(data, decoded_scanline, ihdr->width, ihdr->depth);
       else if (ihdr->color_type == 3)
-         copy_line_plt(data, decoded_scanline, ihdr->width, ihdr->depth, palette);
+         copy_line_plt(data, decoded_scanline, ihdr->width,
+               ihdr->depth, palette);
       else if (ihdr->color_type == 4)
-         copy_line_gray_alpha(data, decoded_scanline, ihdr->width, ihdr->depth);
+         copy_line_gray_alpha(data, decoded_scanline, ihdr->width,
+               ihdr->depth);
       else if (ihdr->color_type == 6)
          copy_line_rgba(data, decoded_scanline, ihdr->width, ihdr->depth);
 
@@ -481,11 +494,13 @@ struct adam7_pass
 };
 
 static void deinterlace_pass(uint32_t *data, const struct png_ihdr *ihdr,
-      const uint32_t *input, unsigned pass_width, unsigned pass_height, const struct adam7_pass *pass)
+      const uint32_t *input, unsigned pass_width, unsigned pass_height,
+      const struct adam7_pass *pass)
 {
    unsigned x, y;
    data += pass->y * ihdr->width + pass->x;
-   for (y = 0; y < pass_height; y++, data += ihdr->width * pass->stride_y, input += pass_width)
+   for (y = 0; y < pass_height;
+         y++, data += ihdr->width * pass->stride_y, input += pass_width)
    {
       uint32_t *out = data;
       for (x = 0; x < pass_width; x++, out += pass->stride_x)
@@ -493,8 +508,10 @@ static void deinterlace_pass(uint32_t *data, const struct png_ihdr *ihdr,
    }
 }
 
-static bool png_reverse_filter_adam7(uint32_t *data, const struct png_ihdr *ihdr,
-      const uint8_t *inflate_buf, size_t inflate_buf_size, const uint32_t *palette)
+static bool png_reverse_filter_adam7(uint32_t *data,
+      const struct png_ihdr *ihdr,
+      const uint8_t *inflate_buf, size_t inflate_buf_size,
+      const uint32_t *palette)
 {
    unsigned pass;
    static const struct adam7_pass passes[] = {
@@ -509,13 +526,18 @@ static bool png_reverse_filter_adam7(uint32_t *data, const struct png_ihdr *ihdr
 
    for (pass = 0; pass < ARRAY_SIZE(passes); pass++)
    {
-      if (ihdr->width <= passes[pass].x || ihdr->height <= passes[pass].y) // Empty pass
+      if (ihdr->width <= passes[pass].x ||
+            ihdr->height <= passes[pass].y) /* Empty pass */
          continue;
 
-      unsigned pass_width  = (ihdr->width - passes[pass].x + passes[pass].stride_x - 1) / passes[pass].stride_x;
-      unsigned pass_height = (ihdr->height - passes[pass].y + passes[pass].stride_y - 1) / passes[pass].stride_y;
+      unsigned pass_width  = (ihdr->width - 
+            passes[pass].x + passes[pass].stride_x - 1) / passes[pass].stride_x;
+      unsigned pass_height = (ihdr->height - passes[pass].y + 
+            passes[pass].stride_y - 1) / passes[pass].stride_y;
 
-      uint32_t *tmp_data = (uint32_t*)malloc(pass_width * pass_height * sizeof(uint32_t));
+      uint32_t *tmp_data = (uint32_t*)
+         malloc(pass_width * pass_height * sizeof(uint32_t));
+
       if (!tmp_data)
          return false;
 
@@ -524,7 +546,8 @@ static bool png_reverse_filter_adam7(uint32_t *data, const struct png_ihdr *ihdr
       tmp_ihdr.height = pass_height;
 
       size_t pass_size;
-      png_pass_geom(&tmp_ihdr, pass_width, pass_height, NULL, NULL, &pass_size);
+      png_pass_geom(&tmp_ihdr, pass_width,
+            pass_height, NULL, NULL, &pass_size);
 
       if (pass_size > inflate_buf_size)
       {
@@ -532,7 +555,8 @@ static bool png_reverse_filter_adam7(uint32_t *data, const struct png_ihdr *ihdr
          return false;
       }
 
-      if (!png_reverse_filter(tmp_data, &tmp_ihdr, inflate_buf, pass_size, palette))
+      if (!png_reverse_filter(tmp_data,
+               &tmp_ihdr, inflate_buf, pass_size, palette))
       {
          free(tmp_data);
          return false;
@@ -541,14 +565,16 @@ static bool png_reverse_filter_adam7(uint32_t *data, const struct png_ihdr *ihdr
       inflate_buf += pass_size;
       inflate_buf_size -= pass_size;
 
-      deinterlace_pass(data, ihdr, tmp_data, pass_width, pass_height, &passes[pass]);
+      deinterlace_pass(data,
+            ihdr, tmp_data, pass_width, pass_height, &passes[pass]);
       free(tmp_data);
    }
 
    return true;
 }
 
-static bool png_append_idat(FILE *file, const struct png_chunk *chunk, struct idat_buffer *buf)
+static bool png_append_idat(FILE *file,
+      const struct png_chunk *chunk, struct idat_buffer *buf)
 {
    uint8_t *new_buffer = (uint8_t*)realloc(buf->data, buf->size + chunk->size);
    if (!new_buffer)
@@ -587,7 +613,8 @@ static bool png_read_plte(FILE *file, uint32_t *buffer, unsigned entries)
    return true;
 }
 
-bool rpng_load_image_argb(const char *path, uint32_t **data, unsigned *width, unsigned *height)
+bool rpng_load_image_argb(const char *path, uint32_t **data,
+      unsigned *width, unsigned *height)
 {
    long pos;
    *data   = NULL;
@@ -622,8 +649,9 @@ bool rpng_load_image_argb(const char *path, uint32_t **data, unsigned *width, un
    if (memcmp(header, png_magic, sizeof(png_magic)) != 0)
       GOTO_END_ERROR();
 
-   // feof() apparently isn't triggered after a seek (IEND).
-   for (pos = ftell(file); pos < file_len && pos >= 0; pos = ftell(file))
+   /* feof() apparently isn't triggered after a seek (IEND). */
+   for (pos = ftell(file); 
+         pos < file_len && pos >= 0; pos = ftell(file))
    {
       struct png_chunk chunk = {0};
       if (!read_chunk_header(file, &chunk))
@@ -692,7 +720,7 @@ bool rpng_load_image_argb(const char *path, uint32_t **data, unsigned *width, un
       GOTO_END_ERROR();
 
    png_pass_geom(&ihdr, ihdr.width, ihdr.height, NULL, NULL, &inflate_buf_size);
-   if (ihdr.interlace == 1) // To be sure.
+   if (ihdr.interlace == 1) /* To be sure. */
       inflate_buf_size *= 2;
 
    inflate_buf = (uint8_t*)malloc(inflate_buf_size);
@@ -714,7 +742,7 @@ bool rpng_load_image_argb(const char *path, uint32_t **data, unsigned *width, un
    *width  = ihdr.width;
    *height = ihdr.height;
 #ifdef GEKKO
-   // we often use these in textures, make sure they're 32-byte aligned
+   /* we often use these in textures, make sure they're 32-byte aligned */
    *data = (uint32_t*)memalign(32, ihdr.width * ihdr.height * sizeof(uint32_t));
 #else
    *data = (uint32_t*)malloc(ihdr.width * ihdr.height * sizeof(uint32_t));
@@ -724,10 +752,12 @@ bool rpng_load_image_argb(const char *path, uint32_t **data, unsigned *width, un
 
    if (ihdr.interlace == 1)
    {
-      if (!png_reverse_filter_adam7(*data, &ihdr, inflate_buf, stream.total_out, palette))
+      if (!png_reverse_filter_adam7(*data,
+               &ihdr, inflate_buf, stream.total_out, palette))
          GOTO_END_ERROR();
    }
-   else if (!png_reverse_filter(*data, &ihdr, inflate_buf, stream.total_out, palette))
+   else if (!png_reverse_filter(*data,
+            &ihdr, inflate_buf, stream.total_out, palette))
       GOTO_END_ERROR();
 
 end:
@@ -779,7 +809,8 @@ static bool png_write_ihdr(FILE *file, const struct png_ihdr *ihdr)
    if (fwrite(ihdr_raw, 1, sizeof(ihdr_raw), file) != sizeof(ihdr_raw))
       return false;
 
-   if (!png_write_crc(file, ihdr_raw + sizeof(uint32_t), sizeof(ihdr_raw) - sizeof(uint32_t)))
+   if (!png_write_crc(file, ihdr_raw + sizeof(uint32_t),
+            sizeof(ihdr_raw) - sizeof(uint32_t)))
       return false;
 
    return true;
@@ -806,7 +837,8 @@ static bool png_write_iend(FILE *file)
    if (fwrite(data, 1, sizeof(data), file) != sizeof(data))
       return false;
 
-   if (!png_write_crc(file, data + sizeof(uint32_t), sizeof(data) - sizeof(uint32_t)))
+   if (!png_write_crc(file, data + sizeof(uint32_t),
+            sizeof(data) - sizeof(uint32_t)))
       return false;
 
    return true;
@@ -845,8 +877,8 @@ static unsigned count_sad(const uint8_t *data, size_t size)
    return cnt;
 }
 
-static unsigned filter_up(uint8_t *target, const uint8_t *line, const uint8_t *prev,
-      unsigned width, unsigned bpp)
+static unsigned filter_up(uint8_t *target, const uint8_t *line,
+      const uint8_t *prev, unsigned width, unsigned bpp)
 {
    unsigned i;
    width *= bpp;
@@ -869,8 +901,8 @@ static unsigned filter_sub(uint8_t *target, const uint8_t *line,
    return count_sad(target, width);
 }
 
-static unsigned filter_avg(uint8_t *target, const uint8_t *line, const uint8_t *prev,
-      unsigned width, unsigned bpp)
+static unsigned filter_avg(uint8_t *target, const uint8_t *line,
+      const uint8_t *prev, unsigned width, unsigned bpp)
 {
    unsigned i;
    width *= bpp;
@@ -882,7 +914,8 @@ static unsigned filter_avg(uint8_t *target, const uint8_t *line, const uint8_t *
    return count_sad(target, width);
 }
 
-static unsigned filter_paeth(uint8_t *target, const uint8_t *line, const uint8_t *prev,
+static unsigned filter_paeth(uint8_t *target,
+      const uint8_t *line, const uint8_t *prev,
       unsigned width, unsigned bpp)
 {
    unsigned i;
@@ -895,7 +928,8 @@ static unsigned filter_paeth(uint8_t *target, const uint8_t *line, const uint8_t
    return count_sad(target, width);
 }
 
-static bool rpng_save_image(const char *path, const uint8_t *data,
+static bool rpng_save_image(const char *path,
+      const uint8_t *data,
       unsigned width, unsigned height, unsigned pitch, unsigned bpp)
 {
    unsigned h;
@@ -925,7 +959,7 @@ static bool rpng_save_image(const char *path, const uint8_t *data,
    ihdr.width = width;
    ihdr.height = height;
    ihdr.depth = 8;
-   ihdr.color_type = bpp == sizeof(uint32_t) ? 6 : 2; // RGBA or RGB
+   ihdr.color_type = bpp == sizeof(uint32_t) ? 6 : 2; /* RGBA or RGB */
    if (!png_write_ihdr(file, &ihdr))
       GOTO_END_ERROR();
 
@@ -955,9 +989,12 @@ static bool rpng_save_image(const char *path, const uint8_t *data,
       else
          copy_bgr24_line(rgba_line, data, width);
 
-      // Try every filtering method, and choose the method
-      // which has most entries as zero.
-      // This is probably not very optimal, but it's very simple to implement.
+      /* Try every filtering method, and choose the method
+       * which has most entries as zero.
+       *
+       * This is probably not very optimal, but it's very 
+       * simple to implement.
+       */
       unsigned none_score  = count_sad(rgba_line, width * bpp);
       unsigned up_score    = filter_up(up_filtered, rgba_line, prev_encoded, width, bpp);
       unsigned sub_score   = filter_sub(sub_filtered, rgba_line, width, bpp);
@@ -1002,7 +1039,7 @@ static bool rpng_save_image(const char *path, const uint8_t *data,
       memcpy(prev_encoded, rgba_line, width * bpp);
    }
 
-   deflate_buf = (uint8_t*)malloc(encode_buf_size * 2); // Just to be sure.
+   deflate_buf = (uint8_t*)malloc(encode_buf_size * 2); /* Just to be sure. */
    if (!deflate_buf)
       GOTO_END_ERROR();
 
@@ -1044,13 +1081,15 @@ end:
 bool rpng_save_image_argb(const char *path, const uint32_t *data,
       unsigned width, unsigned height, unsigned pitch)
 {
-   return rpng_save_image(path, (const uint8_t*)data, width, height, pitch, sizeof(uint32_t));
+   return rpng_save_image(path, (const uint8_t*)data,
+         width, height, pitch, sizeof(uint32_t));
 }
 
 bool rpng_save_image_bgr24(const char *path, const uint8_t *data,
       unsigned width, unsigned height, unsigned pitch)
 {
-   return rpng_save_image(path, (const uint8_t*)data, width, height, pitch, 3);
+   return rpng_save_image(path, (const uint8_t*)data,
+         width, height, pitch, 3);
 }
 
 #endif

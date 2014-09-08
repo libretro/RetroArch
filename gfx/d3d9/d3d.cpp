@@ -31,9 +31,10 @@
 #define HAVE_SHADERS
 #endif
 
-//forward decls
+/* forward decls */
 static bool d3d_init_luts(d3d_video_t *d3d);
-static void d3d_set_font_rect(d3d_video_t *d3d, const struct font_params *params);
+static void d3d_set_font_rect(d3d_video_t *d3d,
+      const struct font_params *params);
 static bool d3d_process_shader(d3d_video_t *d3d);
 static bool d3d_init_multipass(d3d_video_t *d3d);
 static void d3d_deinit_chain(d3d_video_t *d3d);
@@ -49,7 +50,8 @@ namespace Monitor
    static unsigned num_mons;
 }
 
-static BOOL CALLBACK monitor_enum_proc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData)
+static BOOL CALLBACK monitor_enum_proc(HMONITOR hMonitor,
+      HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData)
 {
    Monitor::all_hms[Monitor::num_mons++] = hMonitor;
    return TRUE;
@@ -62,11 +64,13 @@ static RECT d3d_monitor_rect(d3d_video_t *d3d)
    EnumDisplayMonitors(NULL, NULL, monitor_enum_proc, 0);
 
    if (!Monitor::last_hm)
-      Monitor::last_hm = MonitorFromWindow(GetDesktopWindow(), MONITOR_DEFAULTTONEAREST);
+      Monitor::last_hm = MonitorFromWindow(
+            GetDesktopWindow(), MONITOR_DEFAULTTONEAREST);
    HMONITOR hm_to_use = Monitor::last_hm;
 
    unsigned fs_monitor = g_settings.video.monitor_index;
-   if (fs_monitor && fs_monitor <= Monitor::num_mons && Monitor::all_hms[fs_monitor - 1])
+   if (fs_monitor && fs_monitor <= Monitor::num_mons 
+         && Monitor::all_hms[fs_monitor - 1])
    {
       hm_to_use = Monitor::all_hms[fs_monitor - 1];
       d3d->cur_mon_id = fs_monitor - 1;
@@ -96,14 +100,16 @@ static void d3d_recompute_pass_sizes(d3d_video_t *d3d)
 {
    LinkInfo link_info = {0};
    link_info.pass = &d3d->shader.pass[0];
-   link_info.tex_w = link_info.tex_h = d3d->video_info.input_scale * RARCH_SCALE_BASE;
+   link_info.tex_w = link_info.tex_h = 
+      d3d->video_info.input_scale * RARCH_SCALE_BASE;
 
    unsigned current_width = link_info.tex_w;
    unsigned current_height = link_info.tex_h;
    unsigned out_width = 0;
    unsigned out_height = 0;
 
-   if (!renderchain_set_pass_size(d3d->chain, 0, current_width, current_height))
+   if (!renderchain_set_pass_size(d3d->chain, 0,
+            current_width, current_height))
    {
       RARCH_ERR("[D3D]: Failed to set pass size.\n");
       return;
@@ -118,7 +124,8 @@ static void d3d_recompute_pass_sizes(d3d_video_t *d3d)
       link_info.tex_w = next_pow2(out_width);
       link_info.tex_h = next_pow2(out_height);
 
-      if (!renderchain_set_pass_size(d3d->chain, i, link_info.tex_w, link_info.tex_h))
+      if (!renderchain_set_pass_size(d3d->chain, i,
+               link_info.tex_w, link_info.tex_h))
       {
          RARCH_ERR("[D3D]: Failed to set pass size.\n");
          return;
@@ -139,7 +146,8 @@ static bool d3d_init_imports(d3d_video_t *d3d)
 
    state_tracker_info tracker_info = {0};
 
-   tracker_info.wram = (uint8_t*)pretro_get_memory_data(RETRO_MEMORY_SYSTEM_RAM);
+   tracker_info.wram = (uint8_t*)
+      pretro_get_memory_data(RETRO_MEMORY_SYSTEM_RAM);
    tracker_info.info = d3d->shader.variable;
    tracker_info.info_elem = d3d->shader.variables;
 
@@ -150,7 +158,8 @@ static bool d3d_init_imports(d3d_video_t *d3d)
       tracker_info.script_is_file = true;
    }
 
-   tracker_info.script_class = *d3d->shader.script_class ? d3d->shader.script_class : NULL;
+   tracker_info.script_class = 
+      *d3d->shader.script_class ? d3d->shader.script_class : NULL;
 #endif
 
    state_tracker_t *state_tracker = state_tracker_init(&tracker_info);
@@ -168,18 +177,20 @@ static bool d3d_init_imports(d3d_video_t *d3d)
 static bool d3d_init_chain(d3d_video_t *d3d, const video_info_t *video_info)
 {
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
-   // Setup information for first pass.
+   /* Setup information for first pass. */
    LinkInfo link_info = {0};
 
    link_info.pass = &d3d->shader.pass[0];
-   link_info.tex_w = link_info.tex_h = video_info->input_scale * RARCH_SCALE_BASE;
+   link_info.tex_w = link_info.tex_h = 
+      video_info->input_scale * RARCH_SCALE_BASE;
 
    d3d_deinit_chain(d3d);
    d3d->chain = new renderchain_t();
    if (!d3d->chain)
       return false;
 
-   if (!renderchain_init(d3d->chain, &d3d->video_info, d3dr, d3d->cgCtx, &d3d->final_viewport, &link_info,
+   if (!renderchain_init(d3d->chain, &d3d->video_info, d3dr,
+            d3d->cgCtx, &d3d->final_viewport, &link_info,
             d3d->video_info.rgb32 ? ARGB : RGB565))
    {
       RARCH_ERR("[D3D9]: Failed to init render chain.\n");
@@ -257,12 +268,16 @@ static bool d3d_init_multipass(d3d_video_t *d3d)
    {
       if (!d3d->shader.pass[i].fbo.valid)
       {
-         d3d->shader.pass[i].fbo.scale_x = d3d->shader.pass[i].fbo.scale_y = 1.0f;
-         d3d->shader.pass[i].fbo.type_x = d3d->shader.pass[i].fbo.type_y = RARCH_SCALE_INPUT;
+         d3d->shader.pass[i].fbo.scale_x = 
+            d3d->shader.pass[i].fbo.scale_y = 1.0f;
+         d3d->shader.pass[i].fbo.type_x = 
+            d3d->shader.pass[i].fbo.type_y = RARCH_SCALE_INPUT;
       }
    }
 
-   bool use_extra_pass = d3d->shader.passes < GFX_MAX_SHADERS && d3d->shader.pass[d3d->shader.passes - 1].fbo.valid;
+   bool use_extra_pass = d3d->shader.passes < GFX_MAX_SHADERS && 
+      d3d->shader.pass[d3d->shader.passes - 1].fbo.valid;
+
    if (use_extra_pass)
    {
       d3d->shader.passes++;
@@ -282,7 +297,8 @@ static bool d3d_init_multipass(d3d_video_t *d3d)
 }
 #endif
 
-static void d3d_set_font_rect(d3d_video_t *d3d, const struct font_params *params)
+static void d3d_set_font_rect(d3d_video_t *d3d,
+      const struct font_params *params)
 {
 #ifndef _XBOX
    float pos_x = g_settings.video.msg_pos_x;
@@ -296,9 +312,12 @@ static void d3d_set_font_rect(d3d_video_t *d3d, const struct font_params *params
       font_size *= params->scale;
    }
 
-   d3d->font_rect.left = d3d->final_viewport.X + d3d->final_viewport.Width * pos_x;
-   d3d->font_rect.right = d3d->final_viewport.X + d3d->final_viewport.Width;
-   d3d->font_rect.top = d3d->final_viewport.Y + (1.0f - pos_y) * d3d->final_viewport.Height - font_size; 
+   d3d->font_rect.left = d3d->final_viewport.X + 
+      d3d->final_viewport.Width * pos_x;
+   d3d->font_rect.right = d3d->final_viewport.X + 
+      d3d->final_viewport.Width;
+   d3d->font_rect.top = d3d->final_viewport.Y + 
+      (1.0f - pos_y) * d3d->final_viewport.Height - font_size; 
    d3d->font_rect.bottom = d3d->final_viewport.Height;
 
    d3d->font_rect_shifted = d3d->font_rect;
@@ -317,7 +336,8 @@ static bool d3d_init_singlepass(d3d_video_t *d3d)
    pass.fbo.valid = true;
    pass.fbo.scale_x = pass.fbo.scale_y = 1.0;
    pass.fbo.type_x = pass.fbo.type_y = RARCH_SCALE_VIEWPORT;
-   strlcpy(pass.source.path, d3d->cg_shader.c_str(), sizeof(pass.source.path));
+   strlcpy(pass.source.path, d3d->cg_shader.c_str(),
+         sizeof(pass.source.path));
 
    return true;
 }
@@ -325,7 +345,8 @@ static bool d3d_init_singlepass(d3d_video_t *d3d)
 static bool d3d_process_shader(d3d_video_t *d3d)
 {
 #ifdef HAVE_FBO
-   if (strcmp(path_get_extension(d3d->cg_shader.c_str()), "cgp") == 0)
+   if (strcmp(path_get_extension(
+               d3d->cg_shader.c_str()), "cgp") == 0)
       return d3d_init_multipass(d3d);
 #endif
 
@@ -336,7 +357,8 @@ static bool d3d_init_luts(d3d_video_t *d3d)
 {
    for (unsigned i = 0; i < d3d->shader.luts; i++)
    {
-      bool ret = renderchain_add_lut(d3d->chain, d3d->shader.lut[i].id, d3d->shader.lut[i].path,
+      bool ret = renderchain_add_lut(
+            d3d->chain, d3d->shader.lut[i].id, d3d->shader.lut[i].path,
          d3d->shader.lut[i].filter == RARCH_FILTER_UNSPEC ?
             g_settings.video.smooth :
             (d3d->shader.lut[i].filter == RARCH_FILTER_LINEAR));
@@ -415,8 +437,8 @@ static bool d3d_init_base(void *data, const video_info_t *info)
    return true;
 }
 
-static void d3d_calculate_rect(d3d_video_t *d3d, unsigned width, unsigned height,
-   bool keep, float desired_aspect);
+static void d3d_calculate_rect(d3d_video_t *d3d, unsigned width,
+      unsigned height, bool keep, float desired_aspect);
 
 static bool d3d_initialize(void *data, const video_info_t *info)
 {
@@ -465,7 +487,8 @@ static bool d3d_initialize(void *data, const video_info_t *info)
    if (!ret)
       return ret;
 
-   d3d_calculate_rect(d3d, d3d->screen_width, d3d->screen_height, info->force_aspect, g_extern.system.aspect_ratio);
+   d3d_calculate_rect(d3d, d3d->screen_width, d3d->screen_height,
+         info->force_aspect, g_extern.system.aspect_ratio);
 
 #ifdef HAVE_SHADERS
    if (!d3d_init_shader(d3d))
@@ -482,9 +505,11 @@ static bool d3d_initialize(void *data, const video_info_t *info)
    }
 
 #if defined(_XBOX360)
-   strlcpy(g_settings.video.font_path, "game:\\media\\Arial_12.xpr", sizeof(g_settings.video.font_path));
+   strlcpy(g_settings.video.font_path, "game:\\media\\Arial_12.xpr",
+         sizeof(g_settings.video.font_path));
 #endif
-   d3d->font_ctx = d3d_font_init_first(d3d, g_settings.video.font_path, g_settings.video.font_size);
+   d3d->font_ctx = d3d_font_init_first(d3d, g_settings.video.font_path,
+         g_settings.video.font_size);
    if (!d3d->font_ctx)
    {
       RARCH_ERR("Failed to initialize font.\n");
@@ -513,11 +538,12 @@ bool d3d_restore(d3d_video_t *d3d)
 #include "d3d_overlays.cpp"
 #endif
 
-static void d3d_set_viewport(d3d_video_t *d3d, int x, int y, unsigned width, unsigned height)
+static void d3d_set_viewport(d3d_video_t *d3d, int x, int y,
+      unsigned width, unsigned height)
 {
    D3DVIEWPORT viewport;
 
-   // D3D doesn't support negative X/Y viewports ...
+   /* D3D doesn't support negative X/Y viewports ... */
    if (x < 0)
       x = 0;
    if (y < 0)
@@ -535,7 +561,8 @@ static void d3d_set_viewport(d3d_video_t *d3d, int x, int y, unsigned width, uns
    d3d_set_font_rect(d3d, NULL);
 }
 
-static void d3d_calculate_rect(d3d_video_t *d3d, unsigned width, unsigned height,
+static void d3d_calculate_rect(d3d_video_t *d3d,
+      unsigned width, unsigned height,
    bool keep, float desired_aspect)
 {
    if (g_settings.video.scale_integer)
@@ -550,23 +577,29 @@ static void d3d_calculate_rect(d3d_video_t *d3d, unsigned width, unsigned height
    {
       if (g_settings.video.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
       {
-         const rarch_viewport_t &custom = g_extern.console.screen.viewports.custom_vp;
-         d3d_set_viewport(d3d, custom.x, custom.y, custom.width, custom.height);
+         const rarch_viewport_t &custom = 
+            g_extern.console.screen.viewports.custom_vp;
+         d3d_set_viewport(d3d, custom.x, custom.y, 
+               custom.width, custom.height);
       }
       else
       {
-         float device_aspect = static_cast<float>(width) / static_cast<float>(height);
+         float device_aspect = static_cast<float>(width) / 
+            static_cast<float>(height);
+
          if (fabsf(device_aspect - desired_aspect) < 0.0001f)
             d3d_set_viewport(d3d, 0, 0, width, height);
          else if (device_aspect > desired_aspect)
          {
             float delta = (desired_aspect / device_aspect - 1.0f) / 2.0f + 0.5f;
-            d3d_set_viewport(d3d, int(roundf(width * (0.5f - delta))), 0, unsigned(roundf(2.0f * width * delta)), height);
+            d3d_set_viewport(d3d, int(roundf(width * (0.5f - delta))),
+                  0, unsigned(roundf(2.0f * width * delta)), height);
          }
          else
          {
             float delta = (device_aspect / desired_aspect - 1.0f) / 2.0f + 0.5f;
-            d3d_set_viewport(d3d, 0, int(roundf(height * (0.5f - delta))), width, unsigned(roundf(2.0f * height * delta)));
+            d3d_set_viewport(d3d, 0, int(roundf(height * (0.5f - delta))),
+                  width, unsigned(roundf(2.0f * height * delta)));
          }
       }
    }
@@ -587,7 +620,7 @@ static bool d3d_frame(void *data, const void *frame,
    RARCH_PERFORMANCE_START(d3d_frame);
 
 #ifndef _XBOX
-   // We cannot recover in fullscreen.
+   /* We cannot recover in fullscreen. */
    if (d3d->needs_restore && IsIconic(d3d->hWnd))
       return true;
 #endif
@@ -599,14 +632,17 @@ static bool d3d_frame(void *data, const void *frame,
 
    if (d3d->should_resize)
    {
-      d3d_calculate_rect(d3d, d3d->screen_width, d3d->screen_height, d3d->video_info.force_aspect, g_extern.system.aspect_ratio);
+      d3d_calculate_rect(d3d, d3d->screen_width,
+            d3d->screen_height, d3d->video_info.force_aspect,
+            g_extern.system.aspect_ratio);
+
       renderchain_set_final_viewport(d3d->chain, &d3d->final_viewport);
       d3d_recompute_pass_sizes(d3d);
 
       d3d->should_resize = false;
    }
 
-   // render_chain() only clears out viewport, clear out everything.
+   /* render_chain() only clears out viewport, clear out everything. */
    screen_vp.X = 0;
    screen_vp.Y = 0;
    screen_vp.MinZ = 0;
@@ -625,7 +661,8 @@ static bool d3d_frame(void *data, const void *frame,
       d3dr->Clear(0, 0, D3DCLEAR_TARGET, 0, 1, 0);
    }
 
-   if (!renderchain_render(d3d->chain, frame, width, height, pitch, d3d->dev_rotation))
+   if (!renderchain_render(d3d->chain, frame, width,
+            height, pitch, d3d->dev_rotation))
    {
       RARCH_ERR("[D3D]: Failed to render scene.\n");
       return false;
@@ -663,7 +700,8 @@ static bool d3d_frame(void *data, const void *frame,
 #endif
 
 #ifdef HAVE_MENU
-   if (g_extern.lifecycle_state & (1ULL << MODE_MENU) && driver.menu_ctx && driver.menu_ctx->frame)
+   if (g_extern.lifecycle_state & (1ULL << MODE_MENU) 
+         && driver.menu_ctx && driver.menu_ctx->frame)
       driver.menu_ctx->frame();
 #endif
 
@@ -737,7 +775,8 @@ static void d3d_free(void *data)
       d3d->g_pD3D->Release();
 
 #ifdef HAVE_MONITOR
-   Monitor::last_hm = MonitorFromWindow(d3d->hWnd, MONITOR_DEFAULTTONEAREST);
+   Monitor::last_hm = MonitorFromWindow(d3d->hWnd,
+         MONITOR_DEFAULTTONEAREST);
    DestroyWindow(d3d->hWnd);
 #endif
 
@@ -779,10 +818,11 @@ static bool d3d_read_viewport(void *data, uint8_t *buffer)
       goto end;
    }
 
-   if (FAILED(d3d->d3d_err = d3dr->CreateOffscreenPlainSurface(d3d->screen_width,
-        d3d->screen_height,
-        D3DFMT_X8R8G8B8, D3DPOOL_SYSTEMMEM,
-        &dest, NULL)))
+   if (FAILED(d3d->d3d_err = d3dr->CreateOffscreenPlainSurface(
+               d3d->screen_width,
+               d3d->screen_height,
+               D3DFMT_X8R8G8B8, D3DPOOL_SYSTEMMEM,
+               &dest, NULL)))
    {
       ret = false;
       goto end;
@@ -803,7 +843,8 @@ static bool d3d_read_viewport(void *data, uint8_t *buffer)
       pixels += (d3d->final_viewport.Height - 1) * pitchpix;
       pixels -= d3d->final_viewport.Y * pitchpix;
 
-      for (unsigned y = 0; y < d3d->final_viewport.Height; y++, pixels -= pitchpix)
+      for (unsigned y = 0; y < d3d->final_viewport.Height;
+            y++, pixels -= pitchpix)
       {
          for (unsigned x = 0; x < d3d->final_viewport.Width; x++)
          {
@@ -827,7 +868,8 @@ end:
    return ret;
 }
 
-static bool d3d_set_shader(void *data, enum rarch_shader_type type, const char *path)
+static bool d3d_set_shader(void *data,
+      enum rarch_shader_type type, const char *path)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
    std::string shader = "";
@@ -855,7 +897,8 @@ static bool d3d_set_shader(void *data, enum rarch_shader_type type, const char *
 }
 
 #ifdef HAVE_MENU
-static void d3d_get_poke_interface(void *data, const video_poke_interface_t **iface);
+static void d3d_get_poke_interface(void *data,
+      const video_poke_interface_t **iface);
 #endif
 
 static void d3d_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
@@ -865,7 +908,9 @@ static void d3d_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
    switch (aspect_ratio_idx)
    {
       case ASPECT_RATIO_SQUARE:
-         gfx_set_square_pixel_viewport(g_extern.system.av_info.geometry.base_width, g_extern.system.av_info.geometry.base_height);
+         gfx_set_square_pixel_viewport(
+               g_extern.system.av_info.geometry.base_width,
+               g_extern.system.av_info.geometry.base_height);
          break;
 
       case ASPECT_RATIO_CORE:
@@ -891,7 +936,8 @@ static void d3d_apply_state_changes(void *data)
    d3d->should_resize = true;
 }
 
-static void d3d_set_osd_msg(void *data, const char *msg, const struct font_params *params)
+static void d3d_set_osd_msg(void *data, const char *msg,
+      const struct font_params *params)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
 
@@ -917,7 +963,8 @@ static void d3d_set_menu_texture_frame(void *data,
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
 
-   if (!d3d->menu->tex || d3d->menu->tex_w != width || d3d->menu->tex_h != height)
+   if (!d3d->menu->tex || d3d->menu->tex_w != width 
+         || d3d->menu->tex_h != height)
    {
       if (d3d->menu && d3d->menu->tex)
          d3d->menu->tex->Release();
@@ -943,17 +990,20 @@ static void d3d_set_menu_texture_frame(void *data,
       {
          uint8_t *dst = (uint8_t*)d3dlr.pBits;
          const uint32_t *src = (const uint32_t*)frame;
-         for (unsigned h = 0; h < height; h++, dst += d3dlr.Pitch, src += width)
+         for (unsigned h = 0; h < height;
+               h++, dst += d3dlr.Pitch, src += width)
          {
             memcpy(dst, src, width * sizeof(uint32_t));
-            memset(dst + width * sizeof(uint32_t), 0, d3dlr.Pitch - width * sizeof(uint32_t));
+            memset(dst + width * sizeof(uint32_t), 0,
+                  d3dlr.Pitch - width * sizeof(uint32_t));
          }
       }
       else
       {
          uint32_t *dst = (uint32_t*)d3dlr.pBits;
          const uint16_t *src = (const uint16_t*)frame;
-         for (unsigned h = 0; h < height; h++, dst += d3dlr.Pitch >> 2, src += width)
+         for (unsigned h = 0; h < height;
+               h++, dst += d3dlr.Pitch >> 2, src += width)
          {
             for (unsigned w = 0; w < width; w++)
             {
@@ -976,7 +1026,8 @@ static void d3d_set_menu_texture_frame(void *data,
    }
 }
 
-static void d3d_set_menu_texture_enable(void *data, bool state, bool full_screen)
+static void d3d_set_menu_texture_enable(void *data,
+      bool state, bool full_screen)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
 
@@ -1005,14 +1056,17 @@ static const video_poke_interface_t d3d_poke_interface = {
    d3d_show_mouse,
 };
 
-static void d3d_get_poke_interface(void *data, const video_poke_interface_t **iface)
+static void d3d_get_poke_interface(void *data,
+      const video_poke_interface_t **iface)
 {
    (void)data;
    *iface = &d3d_poke_interface;
 }
 
-// Delay constructor due to lack of exceptions.
-static bool d3d_construct(d3d_video_t *d3d, const video_info_t *info, const input_driver_t **input,
+/* Delay constructor due to lack of exceptions. */
+
+static bool d3d_construct(d3d_video_t *d3d,
+      const video_info_t *info, const input_driver_t **input,
       void **input_data)
 {
    d3d->should_resize = false;
@@ -1043,8 +1097,10 @@ static bool d3d_construct(d3d_video_t *d3d, const video_info_t *info, const inpu
    d3d->windowClass.hInstance     = NULL;
    d3d->windowClass.hCursor       = LoadCursor(NULL, IDC_ARROW);
    d3d->windowClass.lpszClassName = "RetroArch";
-   d3d->windowClass.hIcon = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_ICON));
-   d3d->windowClass.hIconSm = (HICON)LoadImage(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_ICON), IMAGE_ICON, 16, 16, 0);
+   d3d->windowClass.hIcon = LoadIcon(GetModuleHandle(NULL),
+         MAKEINTRESOURCE(IDI_ICON));
+   d3d->windowClass.hIconSm = (HICON)LoadImage(GetModuleHandle(NULL),
+         MAKEINTRESOURCE(IDI_ICON), IMAGE_ICON, 16, 16, 0);
    if (!info->fullscreen)
       d3d->windowClass.hbrBackground = (HBRUSH)COLOR_WINDOW;
 
@@ -1057,9 +1113,13 @@ static bool d3d_construct(d3d_video_t *d3d, const video_info_t *info, const inpu
 
    bool windowed_full = g_settings.video.windowed_fullscreen;
 
-   full_x = (windowed_full || info->width  == 0) ? (mon_rect.right  - mon_rect.left) : info->width;
-   full_y = (windowed_full || info->height == 0) ? (mon_rect.bottom - mon_rect.top)  : info->height;
-   RARCH_LOG("[D3D]: Monitor size: %dx%d.\n", (int)(mon_rect.right  - mon_rect.left), (int)(mon_rect.bottom - mon_rect.top));
+   full_x = (windowed_full || info->width  == 0) ? 
+      (mon_rect.right  - mon_rect.left) : info->width;
+   full_y = (windowed_full || info->height == 0) ? 
+      (mon_rect.bottom - mon_rect.top)  : info->height;
+   RARCH_LOG("[D3D]: Monitor size: %dx%d.\n", 
+         (int)(mon_rect.right  - mon_rect.left),
+         (int)(mon_rect.bottom - mon_rect.top));
 #else
    if (d3d->ctx_driver && d3d->ctx_driver->get_video_size)
       d3d->ctx_driver->get_video_size(&full_x, &full_y);
@@ -1114,10 +1174,11 @@ static bool d3d_construct(d3d_video_t *d3d, const video_info_t *info, const inpu
 #endif
 
 #ifdef HAVE_SHADERS
-   // This should only be done once here
-   // to avoid set_shader() to be overridden
-   // later.
-   enum rarch_shader_type type = gfx_shader_parse_type(g_settings.video.shader_path, RARCH_SHADER_NONE);
+   /* This should only be done once here
+    * to avoid set_shader() to be overridden
+    * later. */
+   enum rarch_shader_type type = 
+      gfx_shader_parse_type(g_settings.video.shader_path, RARCH_SHADER_NONE);
    if (g_settings.video.shader_enable && type == RARCH_SHADER_CG)
       d3d->cg_shader = g_settings.video.shader_path;
 
@@ -1139,7 +1200,7 @@ static bool d3d_construct(d3d_video_t *d3d, const video_info_t *info, const inpu
 
 static const gfx_ctx_driver_t *d3d_get_context(void)
 {
-   // TODO: GL core contexts through ANGLE?
+   /* TODO: GL core contexts through ANGLE? */
    enum gfx_ctx_api api;
    unsigned major, minor;
 #if defined(_XBOX1)
@@ -1167,7 +1228,7 @@ static void *d3d_init(const video_info_t *info, const input_driver_t **input,
       return NULL;
    }
 
-   //default values
+   /* default values */
    vid->g_pD3D           = NULL;
    vid->dev              = NULL;
 #ifndef _XBOX
