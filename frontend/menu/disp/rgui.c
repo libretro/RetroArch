@@ -352,7 +352,7 @@ static void rgui_render(void)
             setting_data_get_list(),
             driver.menu->selection_buf->list[i].label);
 
-      unsigned w = 21; 
+      unsigned w = 19; 
       (void)setting;
 
       if (!strcmp(label, "performance_counters"))

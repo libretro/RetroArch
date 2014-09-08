@@ -437,7 +437,7 @@ static void rmenu_xui_render(void)
       char message[256];
       char type_str[256];
 
-      unsigned w = 21;
+      unsigned w = 19;
 
       if (type == MENU_FILE_CORE)
       {
