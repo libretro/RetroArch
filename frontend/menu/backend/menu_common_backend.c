@@ -1364,7 +1364,10 @@ static int menu_custom_bind_iterate_keyboard(void *data,
    if (timeout <= 0)
    {
       menu->binds.begin++;
-      menu->binds.target->key = RETROK_UNKNOWN; /* Could be unsafe, but whatever. */
+
+      /* Could be unsafe, but whatever. */
+      menu->binds.target->key = RETROK_UNKNOWN;
+
       menu->binds.target++;
       menu->binds.timeout_end = rarch_get_time_usec() +
          MENU_KEYBOARD_BIND_TIMEOUT_SECONDS * 1000000;
@@ -1389,7 +1392,7 @@ static int menu_custom_bind_iterate_keyboard(void *data,
 }
 
 
-static int menu_action_ok(const char *dir,
+static int menu_action_ok(const char *menu_path,
       const char *menu_label, unsigned menu_type)
 {
    const char *label = NULL;
@@ -1423,7 +1426,7 @@ static int menu_action_ok(const char *dir,
          && type == MENU_FILE_PLAIN)
    {
       int ret = rarch_defer_core(g_extern.core_info,
-            dir, path, driver.menu->deferred_path,
+            menu_path, path, driver.menu->deferred_path,
             sizeof(driver.menu->deferred_path));
 
       if (ret == -1)
@@ -1443,13 +1446,13 @@ static int menu_action_ok(const char *dir,
    else if ((setting && setting->type == ST_DIR)
          && (type == MENU_FILE_USE_DIRECTORY))
    {
-      menu_common_setting_set_current_string(setting, dir);
+      menu_common_setting_set_current_string(setting, menu_path);
       menu_entries_pop_stack(driver.menu->menu_stack, setting->name);
    }
    else if ((setting && setting->type == ST_PATH)
          && (type == MENU_FILE_PLAIN))
    {
-      menu_common_setting_set_current_string_path(setting, dir, path);
+      menu_common_setting_set_current_string_path(setting, menu_path, path);
       menu_entries_pop_stack(driver.menu->menu_stack, setting->name);
    }
 #ifdef HAVE_SHADER_MANAGER
@@ -1457,7 +1460,7 @@ static int menu_action_ok(const char *dir,
          && type == MENU_FILE_PLAIN)
    {
       char shader_path[PATH_MAX];
-      fill_pathname_join(shader_path, dir, path, sizeof(shader_path));
+      fill_pathname_join(shader_path, menu_path, path, sizeof(shader_path));
       if (driver.menu_ctx && driver.menu_ctx->backend &&
             driver.menu_ctx->backend->shader_manager_set_preset)
          driver.menu_ctx->backend->shader_manager_set_preset(
@@ -1470,7 +1473,8 @@ static int menu_action_ok(const char *dir,
          && type == MENU_FILE_PLAIN)
    {
       fill_pathname_join(driver.menu->shader->pass[hack_shader_pass].source.path,
-            dir, path, sizeof(driver.menu->shader->pass[hack_shader_pass].source.path));
+            menu_path, path,
+            sizeof(driver.menu->shader->pass[hack_shader_pass].source.path));
 
       /* This will reset any changed parameters. */
       gfx_shader_resolve_parameters(NULL, driver.menu->shader);
@@ -1491,7 +1495,7 @@ static int menu_action_ok(const char *dir,
    else if (!strcmp(menu_label, "core_list")
          && type == MENU_FILE_CORE)
    {
-      fill_pathname_join(g_settings.libretro, dir, path,
+      fill_pathname_join(g_settings.libretro, menu_path, path,
             sizeof(g_settings.libretro));
       rarch_main_command(RARCH_CMD_LOAD_CORE);
       menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS);
@@ -1516,7 +1520,7 @@ static int menu_action_ok(const char *dir,
          && type == MENU_FILE_PLAIN)
    {
       char config[PATH_MAX];
-      fill_pathname_join(config, dir, path, sizeof(config));
+      fill_pathname_join(config, menu_path, path, sizeof(config));
       menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS);
       driver.menu->msg_force = true;
       if (rarch_replace_config(config))
@@ -1525,10 +1529,11 @@ static int menu_action_ok(const char *dir,
          return -1;
       }
    }
-   else if (!strcmp(menu_label, "disk_image_append") && type == MENU_FILE_PLAIN)
+   else if (!strcmp(menu_label, "disk_image_append")
+         && type == MENU_FILE_PLAIN)
    {
       char image[PATH_MAX];
-      fill_pathname_join(image, dir, path, sizeof(image));
+      fill_pathname_join(image, menu_path, path, sizeof(image));
       rarch_disk_control_append_image(image);
 
       rarch_main_command(RARCH_CMD_RESUME);
@@ -1539,7 +1544,7 @@ static int menu_action_ok(const char *dir,
    else if (menu_parse_check(label, type) == 0)
    {
       char cat_path[PATH_MAX];
-      fill_pathname_join(cat_path, dir, path, sizeof(cat_path));
+      fill_pathname_join(cat_path, menu_path, path, sizeof(cat_path));
 
       menu_entries_push(driver.menu->menu_stack,
             cat_path, menu_label, type, driver.menu->selection_ptr);
@@ -1547,7 +1552,7 @@ static int menu_action_ok(const char *dir,
    else if (type == MENU_FILE_CARCHIVE)
    {
       char cat_path[PATH_MAX];
-      fill_pathname_join(cat_path, dir, path, sizeof(cat_path));
+      fill_pathname_join(cat_path, menu_path, path, sizeof(cat_path));
 
       menu_entries_push(driver.menu->menu_stack,
             cat_path, menu_label, type, driver.menu->selection_ptr);
@@ -1556,11 +1561,12 @@ static int menu_action_ok(const char *dir,
 #ifdef HAVE_COMPRESSION
    else if (type == MENU_FILE_IN_CARCHIVE)
    {
-      fill_pathname_join(g_extern.fullpath, dir, path,
+      fill_pathname_join(g_extern.fullpath, menu_path, path,
             sizeof(g_extern.fullpath));
 
       g_extern.is_carchive = true;
-      strncpy(g_extern.carchive_path,dir,sizeof(g_extern.carchive_path));
+      strncpy(g_extern.carchive_path, menu_path, 
+            sizeof(g_extern.carchive_path));
 
       rarch_main_set_state(RARCH_ACTION_STATE_LOAD_CONTENT);
       menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS);
@@ -1570,7 +1576,7 @@ static int menu_action_ok(const char *dir,
 #endif
    else
    {
-      fill_pathname_join(g_extern.fullpath, dir, path,
+      fill_pathname_join(g_extern.fullpath, menu_path, path,
             sizeof(g_extern.fullpath));
       rarch_main_set_state(RARCH_ACTION_STATE_LOAD_CONTENT);
 
@@ -1593,8 +1599,6 @@ static int menu_common_iterate(unsigned action)
 
    if (driver.video_data && driver.menu_ctx && driver.menu_ctx->set_texture)
       driver.menu_ctx->set_texture(driver.menu);
-
-   //RARCH_LOG("Menu label: %s\n", menu_label);
 
    if (!strcmp(menu_label, "help"))
       return menu_start_screen_iterate(action);
