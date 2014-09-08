@@ -1362,6 +1362,151 @@ int setting_data_get_description(const char *label, char *msg,
              "pass or not."
              );
     }
+    else if (
+          !strcmp(label, "l_x_plus")  ||
+          !strcmp(label, "l_x_minus") ||
+          !strcmp(label, "l_y_plus")  ||
+          !strcmp(label, "l_y_minus")
+          )
+       snprintf(msg, sizeof_msg,
+             " -- Axis for analog stick (DualShock-esque).\n"
+             " \n"
+             "Bound as usual, however, if a real analog \n"
+             "axis is bound, it can be read as a true analog.\n"
+             " \n"
+             "Positive X axis is right. \n"
+             "Positive Y axis is down.");
+    else if (!strcmp(label, "turbo"))
+       snprintf(msg, sizeof_msg,
+             " -- Turbo enable.\n"
+             " \n"
+             "Holding the turbo while pressing another \n"
+             "button will let the button enter a turbo \n"
+             "mode where the button state is modulated \n"
+             "with a periodic signal. \n"
+             " \n"
+             "The modulation stops when the button \n"
+             "itself (not turbo button) is released.");
+    else if (!strcmp(label, "exit_emulator"))
+            snprintf(msg, sizeof_msg,
+                  " -- Key to exit RetroArch cleanly."
+#if !defined(RARCH_MOBILE) && !defined(RARCH_CONSOLE)
+                  "\nKilling it in any hard way (SIGKILL, \n"
+                  "etc) will terminate without saving\n"
+                  "RAM, etc. On Unix-likes,\n"
+                  "SIGINT/SIGTERM allows\n"
+                  "a clean deinitialization."
+#endif
+                  );
+    else if (!strcmp(label, "rewind"))
+            snprintf(msg, sizeof_msg,
+                  " -- Hold button down to rewind.\n"
+                  " \n"
+                  "Rewind must be enabled.");
+    else if (!strcmp(label, "load_state"))
+       snprintf(msg, sizeof_msg,
+             " -- Loads state.");
+    else if (!strcmp(label, "save_state"))
+       snprintf(msg, sizeof_msg,
+                  " -- Saves state.");
+    else if (!strcmp(label, "state_slot_increase") ||
+          !strcmp(label, "state_slot_decrease"))
+       snprintf(msg, sizeof_msg,
+             " -- State slots.\n"
+             " \n"
+             " With slot set to 0, save state name is *.state \n"
+             " (or whatever defined on commandline).\n"
+             "When slot is != 0, path will be (path)(d), \n"
+             "where (d) is slot number.");
+    else if (!strcmp(label, "netplay_flip_players"))
+       snprintf(msg, sizeof_msg,
+             " -- Netplay flip players.");
+    else if (!strcmp(label, "frame_advance"))
+       snprintf(msg, sizeof_msg,
+             " -- Frame advance when content is paused.");
+    else if (!strcmp(label, "enable_hotkey"))
+       snprintf(msg, sizeof_msg,
+             " -- Enable other hotkeys.\n"
+             " \n"
+             " If this hotkey is bound to either keyboard, \n"
+             "joybutton or joyaxis, all other hotkeys will \n"
+             "be disabled unless this hotkey is also held \n"
+             "at the same time. \n"
+             " \n"
+             "This is useful for RETRO_KEYBOARD centric \n"
+             "implementations which query a large area of \n"
+             "the keyboard, where it is not desirable that \n"
+             "hotkeys get in the way.");
+    else if (!strcmp(label, "slowmotion"))
+       snprintf(msg, sizeof_msg,
+             " -- Hold for slowmotion.");
+    else if (!strcmp(label, "movie_record_toggle"))
+       snprintf(msg, sizeof_msg,
+             " -- Toggle between recording and not.");
+    else if (!strcmp(label, "pause_toggle"))
+       snprintf(msg, sizeof_msg,
+             " -- Toggle between paused and non-paused state.");
+    else if (!strcmp(label, "hold_fast_forward"))
+       snprintf(msg, sizeof_msg,
+             " -- Hold for fast-forward. Releasing button \n"
+             "disables fast-forward.");
+    else if (!strcmp(label, "shader_next"))
+       snprintf(msg, sizeof_msg,
+             " -- Applies next shader in directory.");
+    else if (!strcmp(label, "reset"))
+       snprintf(msg, sizeof_msg,
+             " -- Reset the content.\n");
+    else if (!strcmp(label, "cheat_index_plus"))
+       snprintf(msg, sizeof_msg,
+             " -- Increment cheat index.\n");
+    else if (!strcmp(label, "cheat_index_minus"))
+       snprintf(msg, sizeof_msg,
+             " -- Decrement cheat index.\n");
+    else if (!strcmp(label, "cheat_toggle"))
+       snprintf(msg, sizeof_msg,
+             " -- Toggle cheat index.\n");
+    else if (!strcmp(label, "shader_prev"))
+       snprintf(msg, sizeof_msg,
+             " -- Applies previous shader in directory.");
+    else if (!strcmp(label, "audio_mute"))
+       snprintf(msg, sizeof_msg,
+             " -- Mute/unmute audio.");
+    else if (!strcmp(label, "screenshot"))
+       snprintf(msg, sizeof_msg,
+             " -- Take screenshot.");
+    else if (!strcmp(label, "volume_up"))
+       snprintf(msg, sizeof_msg,
+             " -- Increases audio volume.");
+    else if (!strcmp(label, "volume_down"))
+       snprintf(msg, sizeof_msg,
+             " -- Decreases audio volume.");
+    else if (!strcmp(label, "overlay_next"))
+       snprintf(msg, sizeof_msg,
+             " -- Toggles to next overlay.\n"
+             " \n"
+             "Wraps around.");
+    else if (!strcmp(label, "disk_eject_toggle"))
+       snprintf(msg, sizeof_msg,
+             " -- Toggles eject for disks.\n"
+             " \n"
+             "Used for multiple-disk content.");
+    else if (!strcmp(label, "disk_next"))
+       snprintf(msg, sizeof_msg,
+             " -- Cycles through disk images. Use after \n"
+             "ejecting. \n"
+             " \n"
+             " Complete by toggling eject again.");
+    else if (!strcmp(label, "grab_mouse_toggle"))
+       snprintf(msg, sizeof_msg,
+             " -- Toggles mouse grab.\n"
+             " \n"
+             "When mouse is grabbed, RetroArch hides the \n"
+             "mouse, and keeps the mouse pointer inside \n"
+             "the window to allow relative mouse input to \n"
+             "work better.");
+    else if (!strcmp(label, "menu_toggle"))
+       snprintf(msg, sizeof_msg,
+             " -- Toggles menu.");
     else
        snprintf(msg, sizeof_msg,
              "-- No info on this item is available. --\n");
