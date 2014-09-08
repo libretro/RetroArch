@@ -36,6 +36,7 @@
 #include "../../../performance.h"
 #include "../../../input/input_common.h"
 
+#include "../../../settings_data.h"
 #include "../../../screenshot.h"
 #include "../../../gfx/fonts/bitmap.h"
 
@@ -697,6 +698,8 @@ static void lakka_context_destroy(void *data)
 
 void lakka_init_settings(void)
 {
+   rarch_setting_t *setting_data = (rarch_setting_t*)setting_data_get_list();
+
    menu_category_t *category = (menu_category_t*)&categories[0];
 
    strlcpy(category->name, "Settings", sizeof(category->name));
@@ -707,101 +710,77 @@ void lakka_init_settings(void)
    category->items       = (menu_item_t*)
       calloc(category->num_items, sizeof(menu_item_t));
 
-   int j, k;
+   int j, k, jj, kk;
+   for (j = 0; j <= 512; j++)
+   {
+      rarch_setting_t group = (rarch_setting_t)setting_data[j];
 
-   // General options item
+      if (group.type == ST_GROUP)
+      {
+         category->num_items++;
+         category->items = (menu_item_t*)
+            realloc(category->items, category->num_items * sizeof(menu_item_t));
 
-   j = 0;
+         menu_item_t *item  = (menu_item_t*)&category->items[jj];
+
+         strlcpy(item->name, group.name, sizeof(item->name));
+         item->alpha = jj ? 0.5 : 1.0;
+         item->zoom = jj ? i_passive_zoom : i_active_zoom;
+         item->y = jj ?
+            vspacing*(under_item_offset+jj) : vspacing * active_item_factor;
+         item->active_subitem = 0;
+         item->num_subitems = 0;
+
+         kk = 0;
+         for (k = 0; k <= 512; k++)
+         {
+            rarch_setting_t subgroup = (rarch_setting_t)setting_data[k];
+
+            if (subgroup.type == ST_SUB_GROUP) // TODO filter on parent
+            {
+               item->num_subitems++;
+#if 0
+               item->subitems = (menu_subitem_t*)
+                  realloc(item->subitems, item->num_subitems * sizeof(menu_subitem_t));
+#endif
+               item->subitems = (menu_subitem_t*)
+                  calloc(item->num_subitems, sizeof(menu_subitem_t));
+
+               menu_subitem_t *subitem = (menu_subitem_t*)&item->subitems[kk];
+
+               strlcpy(subitem->name, subgroup.name, sizeof(subitem->name));
+               subitem->alpha = kk ? 1.0 : 0.5;
+               subitem->zoom = kk ? i_active_zoom : i_passive_zoom;
+               subitem->y = kk ? vspacing * (kk + under_item_offset)
+                  : vspacing * active_item_factor;
+
+               kk++;
+            }
+         }
+
+         jj++;
+      }
+   }
+
    category->num_items++;
    category->items = (menu_item_t*)
       realloc(category->items, category->num_items * sizeof(menu_item_t));
 
-   menu_item_t *item0  = (menu_item_t*)&category->items[j];
+   menu_item_t *itemq = (menu_item_t*)&category->items[jj];
 
-   strlcpy(item0->name, "General Options", sizeof(item0->name));
-   item0->alpha          = j ? 0.5 : 1.0;
-   item0->zoom           = j ? i_passive_zoom : i_active_zoom;
-   item0->y              = j ?
-      vspacing*(under_item_offset+j) : vspacing * active_item_factor;
-   item0->active_subitem = 0;
-   item0->num_subitems   = 0;
-
-   /* General options subitems */
-
-   k = 0;
-   item0->num_subitems++;
-#if 0
-   item0->subitems = (menu_subitem_t*)
-      realloc(item0->subitems, item0->num_subitems * sizeof(menu_subitem_t));
-#endif
-   item0->subitems = (menu_subitem_t*)
-      calloc(item0->num_subitems, sizeof(menu_subitem_t));
-
-   menu_subitem_t *subitem0 = (menu_subitem_t*)&item0->subitems[k];
-
-   strlcpy(subitem0->name, "Libretro Logging Level", sizeof(subitem0->name));
-   subitem0->alpha = k ? 1.0 : 0.5;
-   subitem0->zoom = k ? i_active_zoom : i_passive_zoom;
-   subitem0->y = k ? vspacing * (k + under_item_offset)
-      : vspacing * active_item_factor;
-
-   k = 1;
-   item0->num_subitems++;
-   item0->subitems = (menu_subitem_t*)
-      realloc(item0->subitems, item0->num_subitems * sizeof(menu_subitem_t));
-#if 0
-   item0->subitems = (menu_subitem_t*)
-      calloc(item0->num_subitems, sizeof(menu_subitem_t));
-#endif
-
-   menu_subitem_t *subitem1 = (menu_subitem_t*)&item0->subitems[k];
-
-   strlcpy(subitem1->name, "Logging Verbosity", sizeof(subitem1->name));
-   subitem1->alpha = k ? 1.0 : 0.5;
-   subitem1->zoom = k ? i_active_zoom : i_passive_zoom;
-   subitem1->y = k ? vspacing * (k + under_item_offset) :
+   strlcpy(itemq->name, "Quit RetroArch", sizeof(itemq->name));
+   itemq->alpha          = jj ? 0.5 : 1.0;
+   itemq->zoom           = jj ? i_passive_zoom : i_active_zoom;
+   itemq->y              = jj ? vspacing*(under_item_offset+jj) :
       vspacing * active_item_factor;
-
-   k = 2;
-   item0->num_subitems++;
-   item0->subitems = (menu_subitem_t*)
-      realloc(item0->subitems, item0->num_subitems * sizeof(menu_subitem_t));
-#if 0
-   item0->subitems = (menu_subitem_t*)
-      calloc(item0->num_subitems, sizeof(menu_subitem_t));
-#endif
-
-   menu_subitem_t *subitem2 = (menu_subitem_t*)&item0->subitems[k];
-
-   strlcpy(subitem2->name, "Configuration Save On Exit",
-         sizeof(subitem2->name));
-   subitem2->alpha = k ? 1.0 : 0.5;
-   subitem2->zoom = k ? i_active_zoom : i_passive_zoom;
-   subitem2->y = k ? vspacing * (k + under_item_offset) :
-      vspacing * active_item_factor;
-
-   /* Quit item */
-
-   j = 1;
-   category->num_items++;
-   category->items = (menu_item_t*)
-      realloc(category->items, category->num_items * sizeof(menu_item_t));
-
-   menu_item_t *item1 = (menu_item_t*)&category->items[j];
-
-   strlcpy(item1->name, "Quit RetroArch", sizeof(item1->name));
-   item1->alpha          = j ? 0.5 : 1.0;
-   item1->zoom           = j ? i_passive_zoom : i_active_zoom;
-   item1->y              = j ? vspacing*(under_item_offset+j) :
-      vspacing * active_item_factor;
-   item1->active_subitem = 0;
-   item1->num_subitems   = 0;
+   itemq->active_subitem = 0;
+   itemq->num_subitems   = 0;
 }
 
 void lakka_settings_context_reset(void)
 {
    menu_item_t *item;
-   int k;
+   int j, k;
    menu_category_t *category = (menu_category_t*)&categories[0];
 
    if (!category)
@@ -810,18 +789,16 @@ void lakka_settings_context_reset(void)
    category->icon = textures[TEXTURE_SETTINGS].id;
    category->item_icon = textures[TEXTURE_SETTING].id;
 
-   /* General options item */
-   item = (menu_item_t*)&category->items[0];
-
-   /* General options subitems */
-   for (k = 0; k < 2; k++)
+   for  (j = 0; j < category->num_items; j++)
    {
-      menu_subitem_t *subitem = (menu_subitem_t*)&item->subitems[k];
-      subitem->icon = textures[TEXTURE_SUBSETTING].id;
-   }
+      item = (menu_item_t*)&category->items[j];
 
-   /* Quit item */
-   item = (menu_item_t*)&category->items[1];
+      for (k = 0; k < item->num_subitems; k++)
+      {
+         menu_subitem_t *subitem = (menu_subitem_t*)&item->subitems[k];
+         subitem->icon = textures[TEXTURE_SUBSETTING].id;
+      }
+   }
 }
 
 

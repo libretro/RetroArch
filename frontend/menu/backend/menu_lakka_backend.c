@@ -31,6 +31,8 @@
 #include "../../../config.def.h"
 #include "../../../input/keyboard_line.h"
 
+#include "../../../settings_data.h"
+
 #include "../disp/lakka.h"
 
 #ifdef HAVE_CONFIG_H
