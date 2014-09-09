@@ -14,7 +14,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-
+#include <stdint.h>
 #include <unistd.h>
 
 #include "input_common.h"
@@ -498,14 +498,14 @@ static void *apple_input_init(void)
 
 static void apple_input_poll(void *data)
 {
-   int i;
+   uint32_t i;
    (void)data;
 
 #ifdef IOS
    apple_gamecontroller_poll_all();
 #endif
 
-   for (i = 0; i < g_current_input_data.touch_count; i ++)
+   for (i = 0; i < g_current_input_data.touch_count; i++)
    {
       input_translate_coord_viewport(g_current_input_data.touches[i].screen_x, g_current_input_data.touches[i].screen_y,
          &g_current_input_data.touches[i].fixed_x, &g_current_input_data.touches[i].fixed_y,
