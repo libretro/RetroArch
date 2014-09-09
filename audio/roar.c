@@ -103,6 +103,12 @@ static void ra_free(void *data)
    free(data);
 }
 
+static bool ra_use_float(void *data)
+{
+   alsa_t *alsa = (alsa_t*)data;
+   return false;
+}
+
 const audio_driver_t audio_roar = {
    ra_init,
    ra_write,
@@ -110,7 +116,6 @@ const audio_driver_t audio_roar = {
    ra_start,
    ra_set_nonblock_state,
    ra_free,
-   NULL,
+   ra_use_float,
    "roar"
 };
-

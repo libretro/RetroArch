@@ -197,6 +197,12 @@ static size_t rs_buffer_size(void *data)
    return 1024 * 4;
 }
 
+static bool rs_use_float(void *data)
+{
+   alsa_t *alsa = (alsa_t*)data;
+   return false;
+}
+
 const audio_driver_t audio_rsound = {
    rs_init,
    rs_write,
@@ -204,7 +210,7 @@ const audio_driver_t audio_rsound = {
    rs_start,
    rs_set_nonblock_state,
    rs_free,
-   NULL,
+   rs_use_float,
    "rsound",
    rs_write_avail,
    rs_buffer_size,

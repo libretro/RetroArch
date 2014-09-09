@@ -105,13 +105,20 @@ static void xenon360_audio_free(void *data)
       free(data);
 }
 
+static bool xenon360_use_float(void *data)
+{
+   (void)data;
+   return false;
+}
+
 const audio_driver_t audio_xenon360 = {
-   .init = xenon360_audio_init,
-   .write = xenon360_audio_write,
-   .stop = xenon360_audio_stop,
-   .start = xenon360_audio_start,
-   .set_nonblock_state = xenon360_audio_set_nonblock_state,
-   .free = xenon360_audio_free,
-   .ident = "xenon360"
+   xenon360_audio_init,
+   xenon360_audio_write,
+   xenon360_audio_stop,
+   xenon360_audio_start,
+   xenon360_audio_set_nonblock_state,
+   xenon360_audio_free,
+   xenon360_use_float,
+   "xenon360"
 };
 

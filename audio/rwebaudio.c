@@ -18,12 +18,12 @@
 
 #include "../emscripten/RWebAudio.h"
 
-static void ra_free(void *data)
+static void rwebaudio_free(void *data)
 {
    RWebAudioFree();
 }
 
-static void *ra_init(const char *device, unsigned rate, unsigned latency)
+static void *rwebaudio_init(const char *device, unsigned rate, unsigned latency)
 {
    (void)device;
    (void)rate;
@@ -33,58 +33,58 @@ static void *ra_init(const char *device, unsigned rate, unsigned latency)
    return data;
 }
 
-static ssize_t ra_write(void *data, const void *buf, size_t size)
+static ssize_t rwebaudio_write(void *data, const void *buf, size_t size)
 {
    (void)data;
    return RWebAudioWrite(buf, size);
 }
 
-static bool ra_stop(void *data)
+static bool rwebaudio_stop(void *data)
 {
    (void)data;
    return RWebAudioStop();
 }
 
-static void ra_set_nonblock_state(void *data, bool state)
+static void rwebaudio_set_nonblock_state(void *data, bool state)
 {
    (void)data;
    RWebAudioSetNonblockState(state);
 }
 
-static bool ra_start(void *data)
+static bool rwebaudio_start(void *data)
 {
    (void)data;
    return RWebAudioStart();
 }
 
-static bool ra_use_float(void *data)
+static bool rwebaudio_use_float(void *data)
 {
    (void)data;
    return true;
 }
 
-static size_t ra_write_avail(void *data)
+static size_t rwebaudio_write_avail(void *data)
 {
    (void)data;
    return RWebAudioWriteAvail();
 }
 
-static size_t ra_buffer_size(void *data)
+static size_t rwebaudio_buffer_size(void *data)
 {
    (void)data;
    return RWebAudioBufferSize();
 }
 
 const audio_driver_t audio_rwebaudio = {
-   ra_init,
-   ra_write,
-   ra_stop,
-   ra_start,
-   ra_set_nonblock_state,
-   ra_free,
-   ra_use_float,
+   rwebaudio_init,
+   rwebaudio_write,
+   rwebaudio_stop,
+   rwebaudio_start,
+   rwebaudio_set_nonblock_state,
+   rwebaudio_free,
+   rwebaudio_use_float,
    "rwebaudio",
-   ra_write_avail,
-   ra_buffer_size,
+   rwebaudio_write_avail,
+   rwebaudio_buffer_size,
 };
 

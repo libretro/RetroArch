@@ -233,6 +233,12 @@ static size_t al_buffer_size(void *data)
    return (al->num_buffers + 1) * BUFSIZE; // Also got tmpbuf.
 }
 
+static bool al_use_float(void *data)
+{
+   (void)data;
+   return false;
+}
+
 const audio_driver_t audio_openal = {
    al_init,
    al_write,
@@ -240,7 +246,7 @@ const audio_driver_t audio_openal = {
    al_start,
    al_set_nonblock_state,
    al_free,
-   NULL,
+   al_use_float,
    "openal",
    al_write_avail,
    al_buffer_size,
