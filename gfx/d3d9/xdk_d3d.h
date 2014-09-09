@@ -27,7 +27,7 @@
 #include "../../gfx/fonts/d3d_font.h"
 
 #include "../../gfx/gfx_context.h"
-#include "../../xdk/xdk_defines.h"
+#include "../../gfx/d3d9/xdk_defines.h"
 
 #define DFONT_MAX	4096
 #if defined(_XBOX360)
