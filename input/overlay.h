@@ -24,11 +24,14 @@
 extern "C" {
 #endif
 
-/* Overlay driver acts as a medium between input drivers and video driver.
- * Coordinates are fetched from input driver, and an overlay with pressable actions are
- * displayed on-screen.
+/* Overlay driver acts as a medium between input drivers 
+ * and video driver.
  *
- * This interface requires that the video driver has support for the overlay interface.
+ * Coordinates are fetched from input driver, and an 
+ * overlay with pressable actions are displayed on-screen.
+ *
+ * This interface requires that the video driver has support 
+ * for the overlay interface.
  */
 typedef struct input_overlay input_overlay_t;
 
