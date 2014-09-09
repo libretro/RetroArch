@@ -14,8 +14,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-// Compile: gcc -o epx.so -shared epx.c -std=c99 -O3 -Wall -pedantic -fPIC
-
 #include "softfilter.h"
 #include <stdlib.h>
 
@@ -75,7 +73,8 @@ static void *epx_generic_create(const struct softfilter_config *config,
    struct filter_data *filt = (struct filter_data*)calloc(1, sizeof(*filt));
    if (!filt)
       return NULL;
-   filt->workers = (struct softfilter_thread_data*)calloc(threads, sizeof(struct softfilter_thread_data));
+   filt->workers = (struct softfilter_thread_data*)
+      calloc(threads, sizeof(struct softfilter_thread_data));
    filt->threads = threads;
    filt->in_fmt  = in_fmt;
    if (!filt->workers)
@@ -86,7 +85,8 @@ static void *epx_generic_create(const struct softfilter_config *config,
    return filt;
 }
 
-static void epx_generic_output(void *data, unsigned *out_width, unsigned *out_height,
+static void epx_generic_output(void *data,
+      unsigned *out_width, unsigned *out_height,
       unsigned width, unsigned height)
 {
    *out_width = width * EPX_SCALE;
@@ -113,11 +113,12 @@ static void EPX_16 (int width, int height,
 
 	height -= 2;
 
-	//   D
-	// A X C
-	//   B
+	/*   D
+	 * A X C
+	 *   B
+    */
 
-	// top edge
+	/* top edge */
 
 	sP  = (uint16_t *)(src - prevline);
 	lP  = (uint16_t *) (src + src_stride);
@@ -159,10 +160,12 @@ static void EPX_16 (int width, int height,
 		{
 		#ifdef MSB_FIRST
 			*dP1 = (colorX << 16) + colorX;
-			*dP2 = (((colorA == colorB) ? colorA : colorX) << 16) + ((colorB == colorC) ? colorB : colorX);
+			*dP2 = (((colorA == colorB) ? colorA : colorX) << 16) + 
+            ((colorB == colorC) ? colorB : colorX);
 		#else
 			*dP1 = colorX + (colorX << 16);
-			*dP2 = ((colorA == colorB) ? colorA : colorX) + (((colorB == colorC) ? colorB : colorX) << 16);
+			*dP2 = ((colorA == colorB) ? colorA : colorX) + 
+            (((colorB == colorC) ? colorB : colorX) << 16);
 		#endif
 		}
 		else
@@ -172,7 +175,7 @@ static void EPX_16 (int width, int height,
 		dP2++;
 	}
 
-	// right edge
+	/* right edge */
 
 	colorA = colorX;
 	colorX = colorC;
@@ -194,8 +197,6 @@ static void EPX_16 (int width, int height,
 	src += src_stride;
 	dst += dst_stride << 1;
 
-	//
-
 	for (; height; height--)
 	{
 		sP  = (uint16_t *) src;
@@ -204,7 +205,7 @@ static void EPX_16 (int width, int height,
 		dP1 = (uint32_t *) dst;
 		dP2 = (uint32_t *) (dst + dst_stride);
 
-		// left edge
+		/* left edge */
 
 		colorX = *sP;
 		colorC = *++sP;
@@ -227,8 +228,6 @@ static void EPX_16 (int width, int height,
 		dP1++;
 		dP2++;
 
-		//
-
 		for (w = width - 2; w; w--)
 		{
 			colorA = colorX;
@@ -240,11 +239,15 @@ static void EPX_16 (int width, int height,
 			if ((colorA != colorC) && (colorB != colorD))
 			{
 			#ifdef MSB_FIRST
-				*dP1 = (((colorD == colorA) ? colorD : colorX) << 16) + ((colorC == colorD) ? colorC : colorX);
-				*dP2 = (((colorA == colorB) ? colorA : colorX) << 16) + ((colorB == colorC) ? colorB : colorX);
+				*dP1 = (((colorD == colorA) ? colorD : colorX) << 16) + 
+               ((colorC == colorD) ? colorC : colorX);
+				*dP2 = (((colorA == colorB) ? colorA : colorX) << 16) + 
+               ((colorB == colorC) ? colorB : colorX);
 			#else
-				*dP1 = ((colorD == colorA) ? colorD : colorX) + (((colorC == colorD) ? colorC : colorX) << 16);
-				*dP2 = ((colorA == colorB) ? colorA : colorX) + (((colorB == colorC) ? colorB : colorX) << 16);
+				*dP1 = ((colorD == colorA) ? colorD : colorX) + 
+               (((colorC == colorD) ? colorC : colorX) << 16);
+				*dP2 = ((colorA == colorB) ? colorA : colorX) + 
+               (((colorB == colorC) ? colorB : colorX) << 16);
 			#endif
 			}
 			else
@@ -254,7 +257,7 @@ static void EPX_16 (int width, int height,
 			dP2++;
 		}
 
-		// right edge
+		/* right edge */
 
 		colorA = colorX;
 		colorX = colorC;
@@ -278,14 +281,14 @@ static void EPX_16 (int width, int height,
 		dst += dst_stride << 1;
 	}
 
-	// bottom edge
+	/* bottom edge */
 
 	sP  = (uint16_t *) src;
 	uP  = (uint16_t *) (src - src_stride);
 	dP1 = (uint32_t *) dst;
 	dP2 = (uint32_t *) (dst + dst_stride);
 
-	// left edge
+	/* left edge */
 
 	colorX = *sP;
 	colorC = *++sP;
@@ -307,8 +310,6 @@ static void EPX_16 (int width, int height,
 	dP1++;
 	dP2++;
 
-	//
-
 	for (w = width - 2; w; w--)
 	{
 		colorA = colorX;
@@ -319,10 +320,12 @@ static void EPX_16 (int width, int height,
 		if ((colorA != colorC) && (colorX != colorD))
 		{
 		#ifdef MSB_FIRST
-			*dP1 = (((colorD == colorA) ? colorD : colorX) << 16) + ((colorC == colorD) ? colorC : colorX);
+			*dP1 = (((colorD == colorA) ? colorD : colorX) << 16) + 
+            ((colorC == colorD) ? colorC : colorX);
 			*dP2 = (colorX << 16) + colorX;
 		#else
-			*dP1 = ((colorD == colorA) ? colorD : colorX) + (((colorC == colorD) ? colorC : colorX) << 16);
+			*dP1 = ((colorD == colorA) ? colorD : colorX) + 
+            (((colorC == colorD) ? colorC : colorX) << 16);
 			*dP2 = colorX + (colorX << 16);
 		#endif
 		}
@@ -333,7 +336,7 @@ static void EPX_16 (int width, int height,
 		dP2++;
 	}
 
-	// right edge
+	/* right edge */
 
 	colorA = colorX;
 	colorX = colorC;
@@ -366,14 +369,18 @@ static void epx_generic_rgb565(unsigned width, unsigned height,
 
 static void epx_work_cb_rgb565(void *data, void *thread_data)
 {
-   struct softfilter_thread_data *thr = (struct softfilter_thread_data*)thread_data;
+   struct softfilter_thread_data *thr = 
+      (struct softfilter_thread_data*)thread_data;
    uint16_t *input = (uint16_t*)thr->in_data;
    uint16_t *output = (uint16_t*)thr->out_data;
    unsigned width = thr->width;
    unsigned height = thr->height;
 
    epx_generic_rgb565(width, height,
-         thr->first, thr->last, input, thr->in_pitch / SOFTFILTER_BPP_RGB565, output, thr->out_pitch / SOFTFILTER_BPP_RGB565);
+         thr->first, thr->last, input,
+         thr->in_pitch / SOFTFILTER_BPP_RGB565,
+         output,
+         thr->out_pitch / SOFTFILTER_BPP_RGB565);
 }
 
 
@@ -386,7 +393,8 @@ static void epx_generic_packets(void *data,
    unsigned i;
    for (i = 0; i < filt->threads; i++)
    {
-      struct softfilter_thread_data *thr = (struct softfilter_thread_data*)&filt->workers[i];
+      struct softfilter_thread_data *thr = 
+         (struct softfilter_thread_data*)&filt->workers[i];
 
       unsigned y_start = (height * i) / filt->threads;
       unsigned y_end = (height * (i + 1)) / filt->threads;
@@ -397,7 +405,8 @@ static void epx_generic_packets(void *data,
       thr->width = width;
       thr->height = y_end - y_start;
 
-      // Workers need to know if they can access pixels outside their given buffer.
+      /* Workers need to know if they can 
+       * access pixels outside their given buffer. */
       thr->first = y_start;
       thr->last = y_end == height;
 
@@ -422,7 +431,8 @@ static const struct softfilter_implementation epx_generic = {
    "epx",
 };
 
-const struct softfilter_implementation *softfilter_get_implementation(softfilter_simd_mask_t simd)
+const struct softfilter_implementation *softfilter_get_implementation(
+      softfilter_simd_mask_t simd)
 {
    (void)simd;
    return &epx_generic;

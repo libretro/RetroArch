@@ -14,8 +14,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-// Compile: gcc -o twoxsai.so -shared twoxsai.c -std=c99 -O3 -Wall -pedantic -fPIC
-
 #include "softfilter.h"
 #include <stdlib.h>
 #include <string.h>
@@ -76,7 +74,8 @@ static void *twoxsai_generic_create(const struct softfilter_config *config,
    struct filter_data *filt = (struct filter_data*)calloc(1, sizeof(*filt));
    if (!filt)
       return NULL;
-   filt->workers = (struct softfilter_thread_data*)calloc(threads, sizeof(struct softfilter_thread_data));
+   filt->workers = (struct softfilter_thread_data*)
+      calloc(threads, sizeof(struct softfilter_thread_data));
    filt->threads = threads;
    filt->in_fmt  = in_fmt;
    if (!filt->workers)
@@ -87,7 +86,8 @@ static void *twoxsai_generic_create(const struct softfilter_config *config,
    return filt;
 }
 
-static void twoxsai_generic_output(void *data, unsigned *out_width, unsigned *out_height,
+static void twoxsai_generic_output(void *data,
+      unsigned *out_width, unsigned *out_height,
       unsigned width, unsigned height)
 {
    *out_width = width * TWOXSAI_SCALE;
@@ -130,8 +130,7 @@ static void twoxsai_generic_destroy(void *data)
          typename_t colorL = *(in + nextline + 2); \
          typename_t colorM = *(in + nextline + nextline - 1); \
          typename_t colorN = *(in + nextline + nextline + 0); \
-         typename_t colorO = *(in + nextline + nextline + 1); \
-         //typename_t colorP = *(in + nextline + nextline + 2);
+         typename_t colorO = *(in + nextline + nextline + 1);
 
 #ifndef twoxsai_function
 #define twoxsai_function(result_cb, interpolate_cb, interpolate2_cb) \
@@ -237,13 +236,15 @@ static void twoxsai_generic_xrgb8888(unsigned width, unsigned height,
       {
          twoxsai_declare_variables(uint32_t, in, nextline);
 
-         //---------------------------------------
-         // Map of the pixels:           I|E F|J
-         //                              G|A B|K
-         //                              H|C D|L
-         //                              M|N O|P
+         /*
+          * Map of the pixels:           I|E F|J
+          *                              G|A B|K
+          *                              H|C D|L
+          *                              M|N O|P
+          */
 
-         twoxsai_function(twoxsai_result, twoxsai_interpolate_xrgb8888, twoxsai_interpolate2_xrgb8888);
+         twoxsai_function(twoxsai_result, twoxsai_interpolate_xrgb8888,
+               twoxsai_interpolate2_xrgb8888);
       }
 
       src += src_stride;
@@ -267,13 +268,15 @@ static void twoxsai_generic_rgb565(unsigned width, unsigned height,
       {
          twoxsai_declare_variables(uint16_t, in, nextline);
 
-         //---------------------------------------
-         // Map of the pixels:           I|E F|J
-         //                              G|A B|K
-         //                              H|C D|L
-         //                              M|N O|P
+         /*
+          * Map of the pixels:           I|E F|J
+          *                              G|A B|K
+          *                              H|C D|L
+          *                              M|N O|P
+          */
 
-         twoxsai_function(twoxsai_result, twoxsai_interpolate_rgb565, twoxsai_interpolate2_rgb565);
+         twoxsai_function(twoxsai_result, twoxsai_interpolate_rgb565,
+               twoxsai_interpolate2_rgb565);
       }
 
       src += src_stride;
@@ -283,56 +286,71 @@ static void twoxsai_generic_rgb565(unsigned width, unsigned height,
 
 static void twoxsai_work_cb_rgb565(void *data, void *thread_data)
 {
-   struct softfilter_thread_data *thr = (struct softfilter_thread_data*)thread_data;
+   struct softfilter_thread_data *thr = 
+      (struct softfilter_thread_data*)thread_data;
    uint16_t *input = (uint16_t*)thr->in_data;
    uint16_t *output = (uint16_t*)thr->out_data;
    unsigned width = thr->width;
    unsigned height = thr->height;
 
    twoxsai_generic_rgb565(width, height,
-         thr->first, thr->last, input, thr->in_pitch / SOFTFILTER_BPP_RGB565, output, thr->out_pitch / SOFTFILTER_BPP_RGB565);
+         thr->first, thr->last, input,
+         thr->in_pitch / SOFTFILTER_BPP_RGB565,
+         output,
+         thr->out_pitch / SOFTFILTER_BPP_RGB565);
 }
 
 static void twoxsai_work_cb_xrgb8888(void *data, void *thread_data)
 {
-   struct softfilter_thread_data *thr = (struct softfilter_thread_data*)thread_data;
+   struct softfilter_thread_data *thr = 
+      (struct softfilter_thread_data*)thread_data;
    uint32_t *input = (uint32_t*)thr->in_data;
    uint32_t *output = (uint32_t*)thr->out_data;
    unsigned width = thr->width;
    unsigned height = thr->height;
 
    twoxsai_generic_xrgb8888(width, height,
-         thr->first, thr->last, input, thr->in_pitch / SOFTFILTER_BPP_XRGB8888, output, thr->out_pitch / SOFTFILTER_BPP_XRGB8888);
+         thr->first, thr->last, input,
+         thr->in_pitch / SOFTFILTER_BPP_XRGB8888,
+         output,
+         thr->out_pitch / SOFTFILTER_BPP_XRGB8888);
 }
 
 static void twoxsai_generic_packets(void *data,
       struct softfilter_work_packet *packets,
       void *output, size_t output_stride,
-      const void *input, unsigned width, unsigned height, size_t input_stride)
+      const void *input, unsigned width,
+      unsigned height, size_t input_stride)
 {
    struct filter_data *filt = (struct filter_data*)data;
    unsigned i;
    for (i = 0; i < filt->threads; i++)
    {
-      struct softfilter_thread_data *thr = (struct softfilter_thread_data*)&filt->workers[i];
+      struct softfilter_thread_data *thr = 
+         (struct softfilter_thread_data*)&filt->workers[i];
 
       unsigned y_start = (height * i) / filt->threads;
       unsigned y_end = (height * (i + 1)) / filt->threads;
-      thr->out_data = (uint8_t*)output + y_start * TWOXSAI_SCALE * output_stride;
+      thr->out_data = (uint8_t*)output + y_start * 
+         TWOXSAI_SCALE * output_stride;
       thr->in_data = (const uint8_t*)input + y_start * input_stride;
       thr->out_pitch = output_stride;
       thr->in_pitch = input_stride;
       thr->width = width;
       thr->height = y_end - y_start;
 
-      // Workers need to know if they can access pixels outside their given buffer.
+      /* Workers need to know if they can access pixels 
+       * outside their given buffer.
+       */
       thr->first = y_start;
       thr->last = y_end == height;
 
       if (filt->in_fmt == SOFTFILTER_FMT_RGB565)
          packets[i].work = twoxsai_work_cb_rgb565;
-      //else if (filt->in_fmt == SOFTFILTER_FMT_RGB4444)
-         //packets[i].work = twoxsai_work_cb_rgb4444;
+#if 0
+      else if (filt->in_fmt == SOFTFILTER_FMT_RGB4444)
+         packets[i].work = twoxsai_work_cb_rgb4444;
+#endif
       else if (filt->in_fmt == SOFTFILTER_FMT_XRGB8888)
          packets[i].work = twoxsai_work_cb_xrgb8888;
       packets[i].thread_data = thr;
@@ -354,7 +372,8 @@ static const struct softfilter_implementation twoxsai_generic = {
    "2xsai",
 };
 
-const struct softfilter_implementation *softfilter_get_implementation(softfilter_simd_mask_t simd)
+const struct softfilter_implementation *softfilter_get_implementation(
+      softfilter_simd_mask_t simd)
 {
    (void)simd;
    return &twoxsai_generic;

@@ -126,7 +126,8 @@ static void *blargg_ntsc_snes_generic_create(const struct softfilter_config *con
    struct filter_data *filt = (struct filter_data*)calloc(1, sizeof(*filt));
    if (!filt)
       return NULL;
-   filt->workers = (struct softfilter_thread_data*)calloc(threads, sizeof(struct softfilter_thread_data));
+   filt->workers = (struct softfilter_thread_data*)
+      calloc(threads, sizeof(struct softfilter_thread_data));
    filt->threads = threads;
    filt->in_fmt  = in_fmt;
    if (!filt->workers)
@@ -141,7 +142,8 @@ static void *blargg_ntsc_snes_generic_create(const struct softfilter_config *con
 }
 
 
-static void blargg_ntsc_snes_generic_output(void *data, unsigned *out_width, unsigned *out_height,
+static void blargg_ntsc_snes_generic_output(void *data,
+      unsigned *out_width, unsigned *out_height,
       unsigned width, unsigned height)
 {
    *out_width  = SNES_NTSC_OUT_WIDTH(width);
@@ -165,9 +167,11 @@ static void blargg_ntsc_snes_render_rgb565(void *data, int width, int height,
 {
    struct filter_data *filt = (struct filter_data*)data;
    if(width <= 256)
-      snes_ntsc_blit(filt->ntsc, input, pitch, filt->burst, width, height, output, outpitch * 2, first, last);
+      snes_ntsc_blit(filt->ntsc, input, pitch, filt->burst,
+            width, height, output, outpitch * 2, first, last);
    else
-      snes_ntsc_blit_hires(filt->ntsc, input, pitch, filt->burst, width, height, output, outpitch * 2, first, last);
+      snes_ntsc_blit_hires(filt->ntsc, input, pitch, filt->burst,
+            width, height, output, outpitch * 2, first, last);
 
    filt->burst ^= filt->burst_toggle;
 }
@@ -185,14 +189,18 @@ static void blargg_ntsc_snes_rgb565(void *data, unsigned width, unsigned height,
 
 static void blargg_ntsc_snes_work_cb_rgb565(void *data, void *thread_data)
 {
-   struct softfilter_thread_data *thr = (struct softfilter_thread_data*)thread_data;
+   struct softfilter_thread_data *thr = 
+      (struct softfilter_thread_data*)thread_data;
    uint16_t *input = (uint16_t*)thr->in_data;
    uint16_t *output = (uint16_t*)thr->out_data;
    unsigned width = thr->width;
    unsigned height = thr->height;
 
    blargg_ntsc_snes_rgb565(data, width, height,
-         thr->first, thr->last, input, thr->in_pitch / SOFTFILTER_BPP_RGB565, output, thr->out_pitch / SOFTFILTER_BPP_RGB565);
+         thr->first, thr->last, input,
+         thr->in_pitch / SOFTFILTER_BPP_RGB565,
+         output,
+         thr->out_pitch / SOFTFILTER_BPP_RGB565);
 }
 
 static void blargg_ntsc_snes_generic_packets(void *data,
@@ -204,7 +212,8 @@ static void blargg_ntsc_snes_generic_packets(void *data,
    unsigned i;
    for (i = 0; i < filt->threads; i++)
    {
-      struct softfilter_thread_data *thr = (struct softfilter_thread_data*)&filt->workers[i];
+      struct softfilter_thread_data *thr = 
+         (struct softfilter_thread_data*)&filt->workers[i];
 
       unsigned y_start = (height * i) / filt->threads;
       unsigned y_end = (height * (i + 1)) / filt->threads;
@@ -215,7 +224,8 @@ static void blargg_ntsc_snes_generic_packets(void *data,
       thr->width = width;
       thr->height = y_end - y_start;
 
-      // Workers need to know if they can access pixels outside their given buffer.
+      /* Workers need to know if they can 
+       * access pixels outside their given buffer. */
       thr->first = y_start;
       thr->last = y_end == height;
 
@@ -240,7 +250,8 @@ static const struct softfilter_implementation blargg_ntsc_snes_generic = {
    "blargg_ntsc_snes",
 };
 
-const struct softfilter_implementation *softfilter_get_implementation(softfilter_simd_mask_t simd)
+const struct softfilter_implementation *softfilter_get_implementation(
+      softfilter_simd_mask_t simd)
 {
    (void)simd;
    return &blargg_ntsc_snes_generic;
