@@ -97,7 +97,9 @@
 				96355CE01788E72A0010DBFA /* Products */,
 				96355CE91788E72A0010DBFA /* Supporting Files */,
 			);
+			indentWidth = 3;
 			sourceTree = "<group>";
+			tabWidth = 3;
 		};
 		96355CE01788E72A0010DBFA /* Products */ = {
 			isa = PBXGroup;
