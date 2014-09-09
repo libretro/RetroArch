@@ -25,8 +25,12 @@ static bool ps3_joypad_init(void)
 
    for (autoconf_pad = 0; autoconf_pad < MAX_PLAYERS; autoconf_pad++)
    {
-      strlcpy(g_settings.input.device_names[autoconf_pad], "SixAxis Controller", sizeof(g_settings.input.device_names[autoconf_pad]));
-      input_config_autoconfigure_joypad(autoconf_pad, ps3_joypad_name(autoconf_pad), ps3_joypad.ident);
+      strlcpy(g_settings.input.device_names[autoconf_pad],
+            "SixAxis Controller",
+            sizeof(g_settings.input.device_names[autoconf_pad]));
+      input_config_autoconfigure_joypad(autoconf_pad,
+            ps3_joypad_name(autoconf_pad),
+            ps3_joypad.ident);
    }
 
    return true;
@@ -68,10 +72,18 @@ static int16_t ps3_joypad_axis(unsigned port_num, uint32_t joyaxis)
 
    switch (axis)
    {
-      case 0: val = ps3->analog_state[port_num][0][0]; break;
-      case 1: val = ps3->analog_state[port_num][0][1]; break;
-      case 2: val = ps3->analog_state[port_num][1][0]; break;
-      case 3: val = ps3->analog_state[port_num][1][1]; break;
+      case 0:
+         val = ps3->analog_state[port_num][0][0];
+         break;
+      case 1:
+         val = ps3->analog_state[port_num][0][1];
+         break;
+      case 2:
+         val = ps3->analog_state[port_num][1][0];
+         break;
+      case 3:
+         val = ps3->analog_state[port_num][1][1];
+         break;
    }
 
    if (is_neg && val > 0)

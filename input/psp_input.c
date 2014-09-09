@@ -60,7 +60,8 @@ static void psp_input_poll(void *data)
 #endif
    (void)ret;
 
-   psp->analog_state[0][0][0] = psp->analog_state[0][0][1] = psp->analog_state[0][1][0] = psp->analog_state[0][1][1] = 0;
+   psp->analog_state[0][0][0] = psp->analog_state[0][0][1] = 
+      psp->analog_state[0][1][0] = psp->analog_state[0][1][1] = 0;
    psp->pad_state = 0;
    psp->pad_state |= (STATE_BUTTON(state_tmp) & PSP_CTRL_LEFT) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT) : 0;
    psp->pad_state |= (STATE_BUTTON(state_tmp) & PSP_CTRL_DOWN) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN) : 0;
@@ -146,7 +147,8 @@ static void* psp_input_initialize(void)
 static bool psp_input_key_pressed(void *data, int key)
 {
    psp_input_t *psp = (psp_input_t*)data;
-   return (g_extern.lifecycle_state & (1ULL << key)) || input_joypad_pressed(psp->joypad, 0, g_settings.input.binds[0], key);
+   return (g_extern.lifecycle_state & (1ULL << key)) || 
+      input_joypad_pressed(psp->joypad, 0, g_settings.input.binds[0], key);
 }
 
 static uint64_t psp_input_get_capabilities(void *data)

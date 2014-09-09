@@ -29,7 +29,6 @@ static bool gx_joypad_init(void)
       ss_initialize(&dev[i]);
 #endif
 
-
    return true;
 }
 
@@ -68,10 +67,18 @@ static int16_t gx_joypad_axis(unsigned port_num, uint32_t joyaxis)
 
    switch (axis)
    {
-      case 0: val = gx->analog_state[port_num][0][0]; break;
-      case 1: val = gx->analog_state[port_num][0][1]; break;
-      case 2: val = gx->analog_state[port_num][1][0]; break;
-      case 3: val = gx->analog_state[port_num][1][1]; break;
+      case 0:
+         val = gx->analog_state[port_num][0][0];
+         break;
+      case 1:
+         val = gx->analog_state[port_num][0][1];
+         break;
+      case 2:
+         val = gx->analog_state[port_num][1][0];
+         break;
+      case 3:
+         val = gx->analog_state[port_num][1][1];
+         break;
    }
 
    if (is_neg && val > 0)

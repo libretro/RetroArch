@@ -89,7 +89,9 @@ enum
    GX_WIIMOTE_2            = 46,
    GX_WIIMOTE_PLUS         = 47,
    GX_WIIMOTE_MINUS        = 48,
-   //GX_WIIMOTE_HOME         = 49,
+#if 0
+   GX_WIIMOTE_HOME         = 49,
+#endif
    GX_WIIMOTE_UP           = 50,
    GX_WIIMOTE_DOWN         = 51,
    GX_WIIMOTE_LEFT         = 52,
@@ -101,7 +103,7 @@ enum
    GX_NUNCHUK_LEFT         = 58,
    GX_NUNCHUK_RIGHT        = 59,
 #endif
-   GX_WIIMOTE_HOME         = 49, // needed on GameCube as "fake" menu button
+   GX_WIIMOTE_HOME         = 49, /* needed on GameCube as "fake" menu button. */
    GX_QUIT_KEY             = 60,
 };
 
@@ -250,8 +252,12 @@ static void *gx_input_init(void)
    for (autoconf_pad = 0; autoconf_pad < MAX_PADS; autoconf_pad++)
    {
       gx->ptype[autoconf_pad] = WPAD_EXP_GAMECUBE;
-      strlcpy(g_settings.input.device_names[autoconf_pad], gx_joypad_name_static(gx, autoconf_pad), sizeof(g_settings.input.device_names[autoconf_pad]));
-      input_config_autoconfigure_joypad(autoconf_pad, gx_joypad_name_static(gx, autoconf_pad), gx->joypad->ident);
+      strlcpy(g_settings.input.device_names[autoconf_pad],
+            gx_joypad_name_static(gx, autoconf_pad),
+            sizeof(g_settings.input.device_names[autoconf_pad]));
+      input_config_autoconfigure_joypad(autoconf_pad,
+            gx_joypad_name_static(gx, autoconf_pad),
+            gx->joypad->ident);
    }
 
    driver.input_data_own = true;
@@ -267,8 +273,11 @@ static void handle_hotplug(void *data, unsigned port, uint32_t ptype)
    if (!g_settings.input.autodetect_enable)
       return;
 
-   strlcpy(g_settings.input.device_names[port], gx_joypad_name(port), sizeof(g_settings.input.device_names[port]));
-   input_config_autoconfigure_joypad(port, gx_joypad_name(port), gx_joypad.ident);
+   strlcpy(g_settings.input.device_names[port],
+         gx_joypad_name(port),
+         sizeof(g_settings.input.device_names[port]));
+   input_config_autoconfigure_joypad(port,
+         gx_joypad_name(port), gx_joypad.ident);
 }
 
 static void gx_input_poll(void *data)
@@ -314,7 +323,7 @@ static void gx_input_poll(void *data)
 
          if (ptype != WPAD_EXP_NUNCHUK)
          {
-            // rotated d-pad on Wiimote
+            /* Rotated d-pad on Wiimote. */
             *state_cur |= (down & WPAD_BUTTON_UP) ? (1ULL << GX_WIIMOTE_LEFT) : 0;
             *state_cur |= (down & WPAD_BUTTON_DOWN) ? (1ULL << GX_WIIMOTE_RIGHT) : 0;
             *state_cur |= (down & WPAD_BUTTON_LEFT) ? (1ULL << GX_WIIMOTE_DOWN) : 0;
@@ -375,7 +384,8 @@ static void gx_input_poll(void *data)
          }
          else if (ptype == WPAD_EXP_NUNCHUK)
          {
-            // wiimote is held upright with nunchuk, do not change d-pad orientation
+            /* Wiimote is held upright with nunchuk, 
+             * do not change d-pad orientation. */
             *state_cur |= (down & WPAD_BUTTON_UP) ? (1ULL << GX_WIIMOTE_UP) : 0;
             *state_cur |= (down & WPAD_BUTTON_DOWN) ? (1ULL << GX_WIIMOTE_DOWN) : 0;
             *state_cur |= (down & WPAD_BUTTON_LEFT) ? (1ULL << GX_WIIMOTE_LEFT) : 0;
@@ -511,7 +521,8 @@ static void gx_input_poll(void *data)
 
 static bool gx_input_key_pressed(void *data, int key)
 {
-   return (g_extern.lifecycle_state & (1ULL << key)) || input_joypad_pressed(&gx_joypad, 0, g_settings.input.binds[0], key);
+   return (g_extern.lifecycle_state & (1ULL << key)) || 
+      input_joypad_pressed(&gx_joypad, 0, g_settings.input.binds[0], key);
 }
 
 static uint64_t gx_input_get_capabilities(void *data)

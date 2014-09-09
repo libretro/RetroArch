@@ -46,7 +46,9 @@ static void xdk_input_poll(void *data)
 
 #if defined(_XBOX1)
    unsigned int dwInsertions, dwRemovals;
-   XGetDeviceChanges(XDEVICE_TYPE_GAMEPAD, reinterpret_cast<PDWORD>(&dwInsertions), reinterpret_cast<PDWORD>(&dwRemovals));
+   XGetDeviceChanges(XDEVICE_TYPE_GAMEPAD,
+         reinterpret_cast<PDWORD>(&dwInsertions),
+         reinterpret_cast<PDWORD>(&dwRemovals));
 #endif
 
    for (unsigned port = 0; port < MAX_PADS; port++)
@@ -54,13 +56,15 @@ static void xdk_input_poll(void *data)
 #ifdef _XBOX1
       XINPUT_CAPABILITIES caps[MAX_PADS];
       (void)caps;
-      // handle removed devices
+
+      /* handle removed devices. */
       xdk->bRemoved[port] = (dwRemovals & (1 << port)) ? true : false;
 
       if(xdk->bRemoved[port])
       {
-         // if the controller was removed after XGetDeviceChanges but before
-         // XInputOpen, the device handle will be NULL
+         /* if the controller was removed after 
+          * XGetDeviceChanges but before
+          * XInputOpen, the device handle will be NULL. */
          if(xdk->gamepads[port])
             XInputClose(xdk->gamepads[port]);
 
@@ -68,7 +72,7 @@ static void xdk_input_poll(void *data)
          xdk->pad_state[port] = 0;
       }
 
-      // handle inserted devices
+      /* handle inserted devices. */
       xdk->bInserted[port] = (dwInsertions & (1 << port)) ? true : false;
 
       if(xdk->bInserted[port])
@@ -78,14 +82,16 @@ static void xdk_input_poll(void *data)
          m_pollingParameters.fInterruptOut = TRUE;
          m_pollingParameters.bInputInterval = 8;
          m_pollingParameters.bOutputInterval = 8;
-         xdk->gamepads[port] = XInputOpen(XDEVICE_TYPE_GAMEPAD, port, XDEVICE_NO_SLOT, NULL);
+         xdk->gamepads[port] = XInputOpen(XDEVICE_TYPE_GAMEPAD, port,
+               XDEVICE_NO_SLOT, NULL);
       }
 
       if (!xdk->gamepads[port])
          continue;
 
-      // if the controller is removed after XGetDeviceChanges but before
-      // XInputOpen, the device handle will be NULL
+      /* if the controller is removed after 
+       * XGetDeviceChanges but before XInputOpen,
+       * the device handle will be NULL. */
 #endif
 
       XINPUT_STATE state_tmp;
@@ -194,7 +200,7 @@ static void *xdk_input_init(void)
 
    xdk->dwDeviceMask = XGetDevices(XDEVICE_TYPE_GAMEPAD);
 
-   //Check the device status
+   /* Check the device status. */
    switch(XGetDeviceEnumerationStatus())
    {
       case XDEVICE_ENUMERATION_IDLE:
@@ -215,7 +221,8 @@ static void *xdk_input_init(void)
 static bool xdk_input_key_pressed(void *data, int key)
 {
    xdk_input_t *xdk = (xdk_input_t*)data;
-   return (g_extern.lifecycle_state & (1ULL << key)) || input_joypad_pressed(xdk->joypad, 0, g_settings.input.binds[0], key);
+   return (g_extern.lifecycle_state & (1ULL << key)) ||
+      input_joypad_pressed(xdk->joypad, 0, g_settings.input.binds[0], key);
 }
 
 static uint64_t xdk_input_get_capabilities(void *data)
@@ -228,9 +235,11 @@ static uint64_t xdk_input_get_capabilities(void *data)
    return caps;
 }
 
-// FIXME - are we sure about treating low frequency motor as the "strong" motor? Does it apply for Xbox too?
+/* FIXME - are we sure about treating low frequency motor as the 
+ * "strong" motor? Does it apply for Xbox too? */
 
-static bool xdk_input_set_rumble(void *data, unsigned port, enum retro_rumble_effect effect, uint16_t strength)
+static bool xdk_input_set_rumble(void *data, unsigned port,
+      enum retro_rumble_effect effect, uint16_t strength)
 {
    xdk_input_t *xdk = (xdk_input_t*)data;
    (void)xdk;

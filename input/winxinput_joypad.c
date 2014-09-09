@@ -291,24 +291,26 @@ static bool winxinput_joypad_button (unsigned port_num, uint16_t joykey)
    if (!(g_winxinput_states[xplayer].connected))
       return false;
 
-   //return false;
-
    uint16_t btn_word = g_winxinput_states[xplayer].xstate.Gamepad.wButtons;
 
    if (GET_HAT_DIR(joykey))
    {
       switch (GET_HAT_DIR(joykey))
       {
-         case HAT_UP_MASK:    return btn_word & XINPUT_GAMEPAD_DPAD_UP;
-         case HAT_DOWN_MASK:  return btn_word & XINPUT_GAMEPAD_DPAD_DOWN;
-         case HAT_LEFT_MASK:  return btn_word & XINPUT_GAMEPAD_DPAD_LEFT;
-         case HAT_RIGHT_MASK: return btn_word & XINPUT_GAMEPAD_DPAD_RIGHT;
+         case HAT_UP_MASK:
+            return btn_word & XINPUT_GAMEPAD_DPAD_UP;
+         case HAT_DOWN_MASK:
+            return btn_word & XINPUT_GAMEPAD_DPAD_DOWN;
+         case HAT_LEFT_MASK:
+            return btn_word & XINPUT_GAMEPAD_DPAD_LEFT;
+         case HAT_RIGHT_MASK:
+            return btn_word & XINPUT_GAMEPAD_DPAD_RIGHT;
       }
-      return false; // hat requested and no hat button down
+      return false; /* hat requested and no hat button down. */
    }
    else
    {
-      // non-hat button
+      /* non-hat button. */
       unsigned num_buttons = g_winxinput_guide_button_supported ? 11 : 10;
 
       if (joykey < num_buttons)
@@ -336,7 +338,8 @@ static int16_t winxinput_joypad_axis (unsigned port_num, uint32_t joyaxis)
    bool is_neg = false;
    bool is_pos = false;
 
-   if (AXIS_NEG_GET(joyaxis) <= 3) // triggers (axes 4,5) cannot be negative
+   /* triggers (axes 4,5) cannot be negative */
+   if (AXIS_NEG_GET(joyaxis) <= 3) 
    {
       axis = AXIS_NEG_GET(joyaxis);
       is_neg = true;
@@ -351,13 +354,24 @@ static int16_t winxinput_joypad_axis (unsigned port_num, uint32_t joyaxis)
 
    switch (axis)
    {
-      case 0: val = pad->sThumbLX; break;
-      case 1: val = pad->sThumbLY; break;
-      case 2: val = pad->sThumbRX; break;
-      case 3: val = pad->sThumbRY; break;
-
-      case 4: val = pad->bLeftTrigger  * 32767 / 255; break; // map 0..255 to 0..32767
-      case 5: val = pad->bRightTrigger * 32767 / 255; break;
+      case 0:
+         val = pad->sThumbLX;
+         break;
+      case 1:
+         val = pad->sThumbLY;
+         break;
+      case 2:
+         val = pad->sThumbRX;
+         break;
+      case 3:
+         val = pad->sThumbRY;
+         break;
+      case 4:
+         val = pad->bLeftTrigger  * 32767 / 255;
+         break; /* map 0..255 to 0..32767 */
+      case 5:
+         val = pad->bRightTrigger * 32767 / 255;
+         break;
    }
 
    if (is_neg && val > 0)
@@ -365,7 +379,7 @@ static int16_t winxinput_joypad_axis (unsigned port_num, uint32_t joyaxis)
    else if (is_pos && val < 0)
       val = 0;
 
-   // Clamp to avoid overflow error
+   /* Clamp to avoid overflow error. */
    if (val == -32768)
       val = -32767;
 
@@ -376,14 +390,23 @@ static void winxinput_joypad_poll(void)
 {
    unsigned i;
    for (i = 0; i < 4; ++i)
+   {
       if (g_winxinput_states[i].connected)
-         if (g_XInputGetStateEx(i, &(g_winxinput_states[i].xstate)) == ERROR_DEVICE_NOT_CONNECTED)
+      {
+         if (g_XInputGetStateEx(i, 
+                  &(g_winxinput_states[i].xstate)) 
+               == ERROR_DEVICE_NOT_CONNECTED)
+         {
             g_winxinput_states[i].connected = false;
+         }
+      }
+   }
 
    dinput_joypad.poll();
 }
 
-static bool winxinput_joypad_rumble(unsigned pad, enum retro_rumble_effect effect, uint16_t strength)
+static bool winxinput_joypad_rumble(unsigned pad,
+      enum retro_rumble_effect effect, uint16_t strength)
 {
    int xplayer = pad_index_to_xplayer_index(pad);
    if (xplayer == -1)
@@ -393,14 +416,14 @@ static bool winxinput_joypad_rumble(unsigned pad, enum retro_rumble_effect effec
       return false;
    }
 
-
-   // Consider the low frequency (left) motor the "strong" one.
+   /* Consider the low frequency (left) motor the "strong" one. */
    if (effect == RETRO_RUMBLE_STRONG)
       g_xinput_rumble_states[xplayer].wLeftMotorSpeed = strength;
    else if (effect == RETRO_RUMBLE_WEAK)
       g_xinput_rumble_states[xplayer].wRightMotorSpeed = strength;
 
-   return g_XInputSetState(xplayer, &g_xinput_rumble_states[xplayer]) == ERROR_SUCCESS;
+   return g_XInputSetState(xplayer, &g_xinput_rumble_states[xplayer]) 
+      == ERROR_SUCCESS;
 }
 
 const rarch_joypad_driver_t winxinput_joypad = {

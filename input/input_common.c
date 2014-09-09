@@ -275,9 +275,9 @@ bool input_translate_coord_viewport(int mouse_x, int mouse_y,
    int scaled_screen_x = (2 * mouse_x * 0x7fff) / (int)vp.full_width - 0x7fff;
    int scaled_screen_y = (2 * mouse_y * 0x7fff) / (int)vp.full_height - 0x7fff;
    if (scaled_screen_x < -0x7fff || scaled_screen_x > 0x7fff)
-      scaled_screen_x = -0x8000; // OOB
+      scaled_screen_x = -0x8000; /* OOB */
    if (scaled_screen_y < -0x7fff || scaled_screen_y > 0x7fff)
-      scaled_screen_y = -0x8000; // OOB
+      scaled_screen_y = -0x8000; /* OOB */
 
    mouse_x -= vp.x;
    mouse_y -= vp.y;
@@ -285,9 +285,9 @@ bool input_translate_coord_viewport(int mouse_x, int mouse_y,
    int scaled_x = (2 * mouse_x * 0x7fff) / (int)vp.width - 0x7fff;
    int scaled_y = (2 * mouse_y * 0x7fff) / (int)vp.height - 0x7fff;
    if (scaled_x < -0x7fff || scaled_x > 0x7fff)
-      scaled_x = -0x8000; // OOB
+      scaled_x = -0x8000; /* OOB */
    if (scaled_y < -0x7fff || scaled_y > 0x7fff)
-      scaled_y = -0x8000; // OOB
+      scaled_y = -0x8000; /* OOB */
 
    *res_x = scaled_x;
    *res_y = scaled_y;
@@ -1193,7 +1193,8 @@ const struct input_key_map input_config_key_map[] = {
    { "rctrl", RETROK_RCTRL },
    { "ralt", RETROK_RALT },
 
-   /* Keys not referenced in any keyboard mapping (except perhaps apple_key_map_hidusage) */
+   /* Keys not referenced in any keyboard mapping 
+    * (except perhaps apple_key_map_hidusage) */
    { "caret", RETROK_CARET },
    { "underscore", RETROK_UNDERSCORE },
    { "exclaim", RETROK_EXCLAIM },
@@ -1450,8 +1451,10 @@ void input_config_autoconfigure_joypad(unsigned index,
    /* First internal */
    for (i = 0; input_builtin_autoconfs[i]; i++)
    {
-      config_file_t *conf = config_file_new_from_string(input_builtin_autoconfs[i]);
-      bool success = input_try_autoconfigure_joypad_from_conf(conf, index, name, driver, block_osd_spam);
+      config_file_t *conf = (config_file_t*)
+         config_file_new_from_string(input_builtin_autoconfs[i]);
+      bool success = input_try_autoconfigure_joypad_from_conf(conf,
+            index, name, driver, block_osd_spam);
       config_file_free(conf);
       if (success)
          break;
