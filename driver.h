@@ -231,17 +231,20 @@ typedef struct input_driver
 {
    void *(*init)(void);
    void (*poll)(void *data);
-   int16_t (*input_state)(void *data, const struct retro_keybind **retro_keybinds,
+   int16_t (*input_state)(void *data,
+         const struct retro_keybind **retro_keybinds,
          unsigned port, unsigned device, unsigned index, unsigned id);
    bool (*key_pressed)(void *data, int key);
    void (*free)(void *data);
-   bool (*set_sensor_state)(void *data, unsigned port, enum retro_sensor_action action, unsigned rate);
+   bool (*set_sensor_state)(void *data, unsigned port,
+         enum retro_sensor_action action, unsigned rate);
    float (*get_sensor_input)(void *data, unsigned port, unsigned id);
    uint64_t (*get_capabilities)(void *data);
    const char *ident;
 
    void (*grab_mouse)(void *data, bool state);
-   bool (*set_rumble)(void *data, unsigned port, enum retro_rumble_effect effect, uint16_t state);
+   bool (*set_rumble)(void *data, unsigned port,
+         enum retro_rumble_effect effect, uint16_t state);
    const rarch_joypad_driver_t *(*get_joypad_driver)(void *data);
 } input_driver_t;
 
@@ -263,7 +266,8 @@ typedef struct camera_driver
 {
    /* FIXME: params for initialization - queries for resolution,
     * framerate, color format which might or might not be honored. */
-   void *(*init)(const char *device, uint64_t buffer_types, unsigned width, unsigned height);
+   void *(*init)(const char *device, uint64_t buffer_types,
+         unsigned width, unsigned height);
 
    void (*free)(void *data);
 
@@ -288,8 +292,10 @@ typedef struct location_driver
    bool (*start)(void *data);
    void (*stop)(void *data);
 
-   bool (*get_position)(void *data, double *lat, double *lon, double *horiz_accuracy, double *vert_accuracy);
-   void (*set_interval)(void *data, unsigned interval_msecs, unsigned interval_distance);
+   bool (*get_position)(void *data, double *lat, double *lon,
+         double *horiz_accuracy, double *vert_accuracy);
+   void (*set_interval)(void *data, unsigned interval_msecs,
+         unsigned interval_distance);
    const char *ident;
 } location_driver_t;
 
@@ -299,9 +305,12 @@ struct rarch_viewport;
 typedef struct video_overlay_interface
 {
    void (*enable)(void *data, bool state);
-   bool (*load)(void *data, const struct texture_image *images, unsigned num_images);
-   void (*tex_geom)(void *data, unsigned image, float x, float y, float w, float h);
-   void (*vertex_geom)(void *data, unsigned image, float x, float y, float w, float h);
+   bool (*load)(void *data,
+         const struct texture_image *images, unsigned num_images);
+   void (*tex_geom)(void *data, unsigned image,
+         float x, float y, float w, float h);
+   void (*vertex_geom)(void *data, unsigned image,
+         float x, float y, float w, float h);
    void (*full_screen)(void *data, bool enable);
    void (*set_alpha)(void *data, unsigned image, float mod);
 } video_overlay_interface_t;
@@ -348,7 +357,8 @@ typedef struct video_poke_interface
    /* Enable or disable rendering. */
    void (*set_texture_enable)(void *data, bool enable, bool full_screen);
 #endif
-   void (*set_osd_msg)(void *data, const char *msg, const struct font_params *params);
+   void (*set_osd_msg)(void *data, const char *msg,
+         const struct font_params *params);
 
    void (*show_mouse)(void *data, bool state);
    void (*grab_mouse_toggle)(void *data);

@@ -13,9 +13,10 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-// Test module to check re-entrancy of libretro implementations.
-// Reruns RetroArch main loop with all content defined on command-line
-// to check if libretro can load multiple content after each other.
+/* Test module to check re-entrancy of libretro implementations.
+ * Reruns RetroArch main loop with all content defined on command-line
+ * to check if libretro can load multiple content after each other.
+ */
 
 #include "../getopt_rarch.h"
 #include "../general.h"
@@ -31,7 +32,8 @@ int main(int argc, char *argv[])
       if (optind + 1 >= argc)
          return 0;
 
-      memmove(&argv[optind], &argv[optind + 1], (argc - optind - 1) * sizeof(char*));
+      memmove(&argv[optind], &argv[optind + 1],
+            (argc - optind - 1) * sizeof(char*));
       argc--;
 
       rarch_main_clear_state();
