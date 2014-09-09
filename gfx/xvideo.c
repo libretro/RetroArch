@@ -809,17 +809,52 @@ static void xv_viewport_info(void *data, struct rarch_viewport *vp)
    *vp = xv->vp;
 }
 
+static void xv_set_rotation(void *data, unsigned rotation)
+{
+   (void)data;
+   (void)rotation;
+}
+
+static bool xv_read_viewport(void *data, uint8_t *buffer)
+{
+   (void)data;
+   (void)buffer;
+
+   return false;
+}
+
+static void xv_get_poke_interface(void *data,
+      const video_poke_interface_t **iface)
+{
+   (void)data;
+   (void)iface;
+}
+
+static bool xv_set_shader(void *data,
+      enum rarch_shader_type type, const char *path)
+{
+   (void)data;
+   (void)type;
+   (void)path;
+
+   return false; 
+}
+
 const video_driver_t video_xvideo = {
    xv_init,
    xv_frame,
    xv_set_nonblock_state,
    xv_alive,
    xv_focus,
-   NULL,
+   xv_set_shader,
    xv_free,
    "xvideo",
-
-   NULL,
+   xv_set_rotation,
    xv_viewport_info,
+   xv_read_viewport,
+#ifdef HAVE_OVERLAY
+  NULL, /* overlay_interface */
+#endif
+  xv_get_poke_interface
 };
 

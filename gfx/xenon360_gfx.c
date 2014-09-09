@@ -263,14 +263,59 @@ static void xenon360_gfx_set_rotation(void *data, unsigned rotation)
    (void)rotation;
 }
 
+static bool xenon360_gfx_set_shader(void *data,
+      enum rarch_shader_type type, const char *path)
+{
+   (void)data;
+   (void)type;
+   (void)path;
+
+   return false; 
+}
+
+static void xenon360_gfx_set_rotation(void *data, unsigned rotation)
+{
+   (void)data;
+   (void)rotation;
+}
+
+static void xenon360_gfx_viewport_info(void *data, struct rarch_viewport *vp)
+{
+   (void)data;
+   (void)vp;
+}
+
+static bool xenon360_gfx_read_viewport(void *data, uint8_t *buffer)
+{
+   (void)data;
+   (void)buffer;
+
+   return false;
+}
+
+static void xenon360_gfx_get_poke_interface(void *data,
+      const video_poke_interface_t **iface)
+{
+   (void)data;
+   (void)iface;
+}
+
 const video_driver_t video_xenon360 = {
    xenon360_gfx_init,
    xenon360_gfx_frame,
    xenon360_gfx_set_nonblock_state,
    xenon360_gfx_alive,
    xenon360_gfx_focus,
-   NULL,
+   xenon360_gfx_set_shader,
    xenon360_gfx_free,
-   "xenon360"
+   "xenon360",
+   xenon360_gfx_set_rotation,
+   xenon360_gfx_viewport_info,
+   xenon360_gfx_read_viewport,
+
+#ifdef HAVE_OVERLAY
+   NULL, /* overlay_interface */
+#endif
+   xenon360_gfx_get_poke_interface
 };
 

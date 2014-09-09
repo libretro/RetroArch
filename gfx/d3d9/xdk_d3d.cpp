@@ -961,6 +961,14 @@ static void *d3d_init(const video_info_t *info, const input_driver_t **input, vo
    return vid;
 }
 
+static bool d3d_read_viewport(void *data, uint8_t *buffer)
+{
+   (void)data;
+   (void)buffer;
+
+   return false;
+}
+
 const video_driver_t video_d3d = {
    d3d_init,
    d3d_frame,
@@ -972,7 +980,7 @@ const video_driver_t video_d3d = {
    "d3d",
    d3d_set_rotation,
    d3d_viewport_info,
-   NULL, /* read_viewport */
+   d3d_read_viewport,
 #ifdef HAVE_OVERLAY
    NULL, /* overlay_interface */
 #endif

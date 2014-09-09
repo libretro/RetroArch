@@ -1341,13 +1341,14 @@ static bool exynos_gfx_focus(void *data) {
   return true; /* drm device always has focus */
 }
 
-static void exynos_gfx_set_rotation(void *data, unsigned rotation) {
+static void exynos_gfx_set_rotation(void *data, unsigned rotation)
+{
   struct exynos_video *vid = data;
-
   vid->menu_rotation = rotation;
 }
 
-static void exynos_gfx_viewport_info(void *data, struct rarch_viewport *vp) {
+static void exynos_gfx_viewport_info(void *data, struct rarch_viewport *vp)
+{
   struct exynos_video *vid = data;
 
   vp->x = vp->y = 0;
@@ -1449,9 +1450,29 @@ static const video_poke_interface_t exynos_poke_interface = {
   exynos_show_mouse
 };
 
-static void exynos_gfx_get_poke_interface(void *data, const video_poke_interface_t **iface) {
-  (void)data;
-  *iface = &exynos_poke_interface;
+static void exynos_gfx_get_poke_interface(void *data,
+      const video_poke_interface_t **iface)
+{
+   (void)data;
+   *iface = &exynos_poke_interface;
+}
+
+static bool exynos_gfx_set_shader(void *data,
+      enum rarch_shader_type type, const char *path)
+{
+   (void)data;
+   (void)type;
+   (void)path;
+
+   return false; 
+}
+
+static bool exynos_gfx_read_viewport(void *data, uint8_t *buffer)
+{
+   (void)data;
+   (void)buffer;
+
+   return false;
 }
 
 const video_driver_t video_exynos = {
@@ -1460,12 +1481,12 @@ const video_driver_t video_exynos = {
   exynos_gfx_set_nonblock_state,
   exynos_gfx_alive,
   exynos_gfx_focus,
-  NULL, /* set_shader */
+  exynos_gfx_set_shader,
   exynos_gfx_free,
   "exynos",
   exynos_gfx_set_rotation,
   exynos_gfx_viewport_info,
-  NULL, /* read_viewport */
+  exynos_gfx_read_viewport,
 
 #ifdef HAVE_OVERLAY
   NULL, /* overlay_interface */

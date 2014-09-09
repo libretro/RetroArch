@@ -62,15 +62,60 @@ static void null_gfx_free(void *data)
    (void)data;
 }
 
+static bool null_gfx_set_shader(void *data,
+      enum rarch_shader_type type, const char *path)
+{
+   (void)data;
+   (void)type;
+   (void)path;
+
+   return false; 
+}
+
+static void null_gfx_set_rotation(void *data,
+      unsigned rotation)
+{
+   (void)data;
+   (void)rotation;
+}
+
+static void null_gfx_viewport_info(void *data,
+      struct rarch_viewport *vp)
+{
+   (void)data;
+   (void)vp;
+}
+
+static bool null_gfx_read_viewport(void *data, uint8_t *buffer)
+{
+   (void)data;
+   (void)buffer;
+
+   return false;
+}
+
+static void null_gfx_get_poke_interface(void *data,
+      const video_poke_interface_t **iface)
+{
+   (void)data;
+   (void)iface;
+}
+
 const video_driver_t video_null = {
    null_gfx_init,
    null_gfx_frame,
    null_gfx_set_nonblock_state,
    null_gfx_alive,
    null_gfx_focus,
-   NULL,
+   null_gfx_set_shader,
    null_gfx_free,
    "null",
+   null_gfx_set_rotation,
+   null_gfx_viewport_info,
+   null_gfx_read_viewport,
 
+#ifdef HAVE_OVERLAY
+  NULL, /* overlay_interface */
+#endif
+  null_gfx_get_poke_interface,
 };
-

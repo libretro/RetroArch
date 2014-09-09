@@ -492,19 +492,42 @@ static void sdl_get_poke_interface(void *data, const video_poke_interface_t **if
    *iface = &sdl_poke_interface;
 }
 
+static bool sdl_gfx_set_shader(void *data,
+      enum rarch_shader_type type, const char *path)
+{
+   (void)data;
+   (void)type;
+   (void)path;
+
+   return false; 
+}
+
+static void sdl_gfx_set_rotation(void *data, unsigned rotation)
+{
+   (void)data;
+   (void)rotation;
+}
+
+static bool sdl_gfx_read_viewport(void *data, uint8_t *buffer)
+{
+   (void)data;
+   (void)buffer;
+
+   return false;
+}
+
 const video_driver_t video_sdl = {
    sdl_gfx_init,
    sdl_gfx_frame,
    sdl_gfx_set_nonblock_state,
    sdl_gfx_alive,
    sdl_gfx_focus,
-   NULL,
+   sdl_gfx_set_shader,
    sdl_gfx_free,
    "sdl",
-
-   NULL,
+   sdl_gfx_set_rotation,
    sdl_gfx_viewport_info,
-   NULL,
+   sdl_gfx_read_viewport,
 #ifdef HAVE_OVERLAY
    NULL,
 #endif

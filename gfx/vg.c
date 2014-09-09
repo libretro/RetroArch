@@ -413,13 +413,58 @@ static bool vg_focus(void *data)
    return vg->driver->has_focus(vg);
 }
 
+static bool vg_set_shader(void *data,
+      enum rarch_shader_type type, const char *path)
+{
+   (void)data;
+   (void)type;
+   (void)path;
+
+   return false; 
+}
+
+static void vg_set_rotation(void *data, unsigned rotation)
+{
+   (void)data;
+   (void)rotation;
+}
+
+static void vg_viewport_info(void *data,
+      struct rarch_viewport *vp)
+{
+   (void)data;
+   (void)vp;
+}
+
+static bool vg_read_viewport(void *data, uint8_t *buffer)
+{
+   (void)data;
+   (void)buffer;
+
+   return false;
+}
+
+static void vg_get_poke_interface(void *data,
+      const video_poke_interface_t **iface)
+{
+   (void)data;
+   (void)iface;
+}
+
 const video_driver_t video_vg = {
    vg_init,
    vg_frame,
    vg_set_nonblock_state,
    vg_alive,
    vg_focus,
-   NULL,
+   vg_set_shader,
    vg_free,
-   "vg"
+   "vg",
+   vg_set_rotation,
+   vg_viewport_info,
+   vg_read_viewport,
+#ifdef HAVE_OVERLAY
+  NULL, /* overlay_interface */
+#endif
+  vg_get_poke_interface
 };

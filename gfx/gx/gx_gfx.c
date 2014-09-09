@@ -1312,13 +1312,23 @@ static void gx_get_overlay_interface(void *data, const video_overlay_interface_t
 }
 #endif
 
+static bool gx_set_shader(void *data,
+      enum rarch_shader_type type, const char *path)
+{
+   (void)data;
+   (void)type;
+   (void)path;
+
+   return false; 
+}
+
 const video_driver_t video_gx = {
    gx_init,
    gx_frame,
    gx_set_nonblock_state,
    gx_alive,
    gx_focus,
-   NULL,
+   gx_set_shader,
    gx_free,
    "gx",
    gx_set_rotation,
