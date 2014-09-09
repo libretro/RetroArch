@@ -2166,7 +2166,7 @@ static void general_write_handler(const void *data)
 #define APPEND(VALUE) if (index == list_size) { list_size *= 2; list = (rarch_setting_t*)realloc(list, sizeof(rarch_setting_t) * list_size); } (list[index++]) = VALUE
 #define START_GROUP(NAME)                       { const char *GROUP_NAME = NAME; APPEND(setting_data_group_setting (ST_GROUP, NAME));
 #define END_GROUP()                             APPEND(setting_data_group_setting (ST_END_GROUP, 0)); }
-#define START_SUB_GROUP(NAME)                   { const char *SUBGROUP_NAME = NAME; APPEND(setting_data_group_setting (ST_SUB_GROUP, NAME));
+#define START_SUB_GROUP(NAME)                   { const char *SUBGROUP_NAME = NAME; (void)SUBGROUP_NAME; APPEND(setting_data_group_setting (ST_SUB_GROUP, NAME));
 #define END_SUB_GROUP()                         APPEND(setting_data_group_setting (ST_END_SUB_GROUP, 0)); }
 #define CONFIG_BOOL(TARGET, NAME, SHORT, DEF, OFF, ON, GROUP, SUBGROUP, CHANGE_HANDLER, READ_HANDLER)   APPEND(setting_data_bool_setting  (NAME, SHORT, &TARGET, DEF, OFF, ON, GROUP, SUBGROUP, CHANGE_HANDLER, READ_HANDLER));
 #define CONFIG_INT(TARGET, NAME, SHORT, DEF, GROUP, SUBGROUP, CHANGE_HANDLER, READ_HANDLER)    APPEND(setting_data_int_setting   (NAME, SHORT, &TARGET, DEF, GROUP, SUBGROUP, CHANGE_HANDLER, READ_HANDLER));
