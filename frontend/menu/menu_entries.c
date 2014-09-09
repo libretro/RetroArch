@@ -149,6 +149,8 @@ static int setting_set_flags(rarch_setting_t *setting)
 {
    if (setting->flags & SD_FLAG_ALLOW_INPUT)
       return MENU_FILE_LINEFEED;
+   if (setting->flags & SD_FLAG_PUSH_ACTION)
+      return MENU_FILE_SWITCH;
    return 0;
 }
 
@@ -173,31 +175,23 @@ int menu_entries_push_list(menu_handle_t *menu,
    if (!strcmp(label, "mainmenu"))
    {
       setting_data = (rarch_setting_t *)setting_data_get_mainmenu(true);
+      rarch_setting_t *setting = (rarch_setting_t*)setting_data_find_setting(setting_data,
+            "Main Menu");
+
       file_list_clear(list);
-      add_setting_entry(menu,list,"core_list", MENU_FILE_SWITCH, setting_data);
-      add_setting_entry(menu,list,"history_list", MENU_FILE_SWITCH, setting_data);
-      add_setting_entry(menu,list,"detect_core_list", MENU_FILE_SWITCH, setting_data);
-      add_setting_entry(menu,list,"load_content", MENU_FILE_SWITCH, setting_data);
-      add_setting_entry(menu,list,"core_options", MENU_FILE_SWITCH, setting_data);
-      add_setting_entry(menu,list,"core_information", MENU_FILE_SWITCH, setting_data);
-      if (g_extern.main_is_init && !g_extern.libretro_dummy)
+
+      for (; setting->type != ST_END_GROUP; setting++)
       {
-         if (g_extern.system.disk_control.get_num_images)
-            file_list_push(list, "Core Disk Options", "disk_options",
-                  MENU_FILE_SWITCH, 0);
+         if (
+               setting->type == ST_GROUP ||
+               setting->type == ST_SUB_GROUP ||
+               setting->type == ST_END_SUB_GROUP
+            )
+            continue;
+
+         file_list_push(list, setting->short_description,
+               setting->name, setting_set_flags(setting), 0);
       }
-      add_setting_entry(menu,list,"settings", MENU_FILE_SWITCH, setting_data);
-      add_setting_entry(menu,list,"performance_counters", MENU_FILE_SWITCH, setting_data);
-      add_setting_entry(menu,list,"savestate", 0, setting_data);
-      add_setting_entry(menu,list,"loadstate", 0, setting_data);
-      add_setting_entry(menu,list,"take_screenshot", MENU_FILE_SWITCH, setting_data);
-      add_setting_entry(menu,list,"resume_content", MENU_FILE_SWITCH, setting_data);
-      add_setting_entry(menu,list,"restart_content", MENU_FILE_SWITCH, setting_data);
-      add_setting_entry(menu,list,"restart_retroarch", MENU_FILE_SWITCH, setting_data);
-      add_setting_entry(menu,list,"configurations", 0, setting_data);
-      add_setting_entry(menu,list,"save_new_config", MENU_FILE_SWITCH, setting_data);
-      add_setting_entry(menu,list,"help", MENU_FILE_SWITCH, setting_data);
-      add_setting_entry(menu,list,"quit_retroarch", MENU_FILE_SWITCH, setting_data);
    }
    else if (
          !strcmp(label, "Driver Options") ||
