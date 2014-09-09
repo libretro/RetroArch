@@ -331,7 +331,9 @@ static void rgui_render(void)
 
    snprintf(title_msg, sizeof(title_msg), "%s - %s %s", PACKAGE_VERSION,
          core_name, core_version);
-   blit_line(RGUI_TERM_START_X + RGUI_TERM_START_X, (RGUI_TERM_HEIGHT * FONT_HEIGHT_STRIDE) +
+   blit_line(
+         RGUI_TERM_START_X + RGUI_TERM_START_X,
+         (RGUI_TERM_HEIGHT * FONT_HEIGHT_STRIDE) +
          RGUI_TERM_START_Y + 2, title_msg, true);
 
    unsigned x, y;
@@ -414,7 +416,8 @@ static void rgui_render(void)
 
       snprintf(message, sizeof(message), "%c %-*.*s %-*s",
             selected ? '>' : ' ',
-            RGUI_TERM_WIDTH - (w + 1 + 2), RGUI_TERM_WIDTH - (w + 1 + 2),
+            RGUI_TERM_WIDTH - (w + 1 + 2),
+            RGUI_TERM_WIDTH - (w + 1 + 2),
             entry_title_buf,
             w,
             type_str_buf);
@@ -438,7 +441,7 @@ static void rgui_render(void)
 
    if (driver.menu->keyboard.display)
    {
-      char msg[1024];
+      char msg[PATH_MAX];
       const char *str = *driver.menu->keyboard.buffer;
       if (!str)
          str = "";
@@ -469,8 +472,7 @@ static void *rgui_init(void)
    if (!ret)
    {
       RARCH_ERR("No font bitmap or binary, abort");
-      /* TODO - should be refactored - perhaps don't do rarch_fail but instead
-       * exit program */
+
       rarch_main_command(RARCH_CMD_QUIT_RETROARCH);
       return NULL;
    }
