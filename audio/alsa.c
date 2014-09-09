@@ -71,23 +71,28 @@ static void *alsa_init(const char *device, unsigned rate, unsigned latency)
 
    snd_pcm_uframes_t buffer_size;
 
-   TRY_ALSA(snd_pcm_open(&alsa->pcm, alsa_dev, SND_PCM_STREAM_PLAYBACK, SND_PCM_NONBLOCK));
+   TRY_ALSA(snd_pcm_open(
+            &alsa->pcm, alsa_dev, SND_PCM_STREAM_PLAYBACK, SND_PCM_NONBLOCK));
    TRY_ALSA(snd_pcm_hw_params_malloc(&params));
    alsa->has_float = find_float_format(alsa->pcm, params);
    format = alsa->has_float ? SND_PCM_FORMAT_FLOAT : SND_PCM_FORMAT_S16;
 
    TRY_ALSA(snd_pcm_hw_params_any(alsa->pcm, params));
-   TRY_ALSA(snd_pcm_hw_params_set_access(alsa->pcm, params, SND_PCM_ACCESS_RW_INTERLEAVED));
+   TRY_ALSA(snd_pcm_hw_params_set_access(
+            alsa->pcm, params, SND_PCM_ACCESS_RW_INTERLEAVED));
    TRY_ALSA(snd_pcm_hw_params_set_format(alsa->pcm, params, format));
    TRY_ALSA(snd_pcm_hw_params_set_channels(alsa->pcm, params, channels));
    TRY_ALSA(snd_pcm_hw_params_set_rate(alsa->pcm, params, rate, 0));
 
-   TRY_ALSA(snd_pcm_hw_params_set_buffer_time_near(alsa->pcm, params, &latency_usec, NULL));
-   TRY_ALSA(snd_pcm_hw_params_set_periods_near(alsa->pcm, params, &periods, NULL));
+   TRY_ALSA(snd_pcm_hw_params_set_buffer_time_near(
+            alsa->pcm, params, &latency_usec, NULL));
+   TRY_ALSA(snd_pcm_hw_params_set_periods_near(
+            alsa->pcm, params, &periods, NULL));
 
    TRY_ALSA(snd_pcm_hw_params(alsa->pcm, params));
 
-   // Shouldn't have to bother with this, but some drivers are apparently broken.
+   /* Shouldn't have to bother with this, 
+    * but some drivers are apparently broken. */
    if (snd_pcm_hw_params_get_period_size(params, &buffer_size, NULL))
       snd_pcm_hw_params_get_period_size_min(params, &buffer_size, NULL);
    RARCH_LOG("ALSA: Period size: %d frames\n", (int)buffer_size);
@@ -100,7 +105,8 @@ static void *alsa_init(const char *device, unsigned rate, unsigned latency)
 
    TRY_ALSA(snd_pcm_sw_params_malloc(&sw_params));
    TRY_ALSA(snd_pcm_sw_params_current(alsa->pcm, sw_params));
-   TRY_ALSA(snd_pcm_sw_params_set_start_threshold(alsa->pcm, sw_params, buffer_size / 2));
+   TRY_ALSA(snd_pcm_sw_params_set_start_threshold(
+            alsa->pcm, sw_params, buffer_size / 2));
    TRY_ALSA(snd_pcm_sw_params(alsa->pcm, sw_params));
 
    snd_pcm_hw_params_free(params);
@@ -165,8 +171,9 @@ static ssize_t alsa_write(void *data, const void *buf_, size_t size_)
 
          break;
       }
-      else if (frames == -EAGAIN && !alsa->nonblock) // Definitely not supposed to happen.
+      else if (frames == -EAGAIN && !alsa->nonblock)
       {
+         /* Definitely not supposed to happen. */
          RARCH_WARN("[ALSA]: poll() was signaled, but EAGAIN returned from write.\n"
                "Your ALSA driver might be subtly broken.\n");
 
@@ -177,16 +184,18 @@ static ssize_t alsa_write(void *data, const void *buf_, size_t size_)
          }
          return written;
       }
-      else if (frames == -EAGAIN) // Expected if we're running nonblock.
+      else if (frames == -EAGAIN) /* Expected if we're running nonblock. */
          return written;
       else if (frames < 0)
       {
-         RARCH_ERR("[ALSA]: Unknown error occured (%s).\n", snd_strerror(frames));
+         RARCH_ERR("[ALSA]: Unknown error occured (%s).\n",
+               snd_strerror(frames));
          return -1;
       }
 
       written += frames;
-      buf     += (frames << 1) * (alsa->has_float ? sizeof(float) : sizeof(int16_t));
+      buf     += (frames << 1) *
+         (alsa->has_float ? sizeof(float) : sizeof(int16_t));
       size    -= frames;
    }
 
@@ -224,7 +233,8 @@ static bool alsa_start(void *data)
       int ret = snd_pcm_pause(alsa->pcm, 0);
       if (ret < 0)
       {
-         RARCH_ERR("[ALSA]: Failed to unpause: %s.\n", snd_strerror(ret));
+         RARCH_ERR("[ALSA]: Failed to unpause: %s.\n",
+               snd_strerror(ret));
          return false;
       }
       else
@@ -258,7 +268,10 @@ static size_t alsa_write_avail(void *data)
    snd_pcm_sframes_t avail = snd_pcm_avail(alsa->pcm);
    if (avail < 0)
    {
-      //RARCH_WARN("[ALSA]: snd_pcm_avail() failed: %s\n", snd_strerror(avail));
+#if 0
+      RARCH_WARN("[ALSA]: snd_pcm_avail() failed: %s\n",
+            snd_strerror(avail));
+#endif
       return alsa->buffer_size;
    }
 
