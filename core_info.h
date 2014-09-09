@@ -55,6 +55,7 @@ typedef struct
 
    core_info_firmware_t *firmware;
    size_t firmware_count;
+   bool supports_no_game;
 } core_info_t;
 
 typedef struct
