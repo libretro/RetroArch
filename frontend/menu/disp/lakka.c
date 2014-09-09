@@ -521,6 +521,15 @@ static void lakka_draw_subitems(int i, int j)
                subitem->alpha);
       }
 
+      if (subitem->value)
+      {
+         lakka_draw_text(subitem->value, 
+               margin_left + hspacing * (i+2.25) +
+               all_categories_x + label_margin_left + 400, 
+               margin_top + subitem->y + label_margin_top, 
+               1, 
+               subitem->alpha);
+      }
    }
 }
 
@@ -734,25 +743,54 @@ void lakka_init_settings(void)
          kk = 0;
          for (k = 0; k <= 512; k++)
          {
-            rarch_setting_t subgroup = (rarch_setting_t)setting_data[k];
+            rarch_setting_t setting = (rarch_setting_t)setting_data[k];
 
-            if (subgroup.type == ST_SUB_GROUP) // TODO filter on parent
+            if (setting.type != ST_SUB_GROUP && setting.group == group.name)
             {
                item->num_subitems++;
-#if 0
+
                item->subitems = (menu_subitem_t*)
                   realloc(item->subitems, item->num_subitems * sizeof(menu_subitem_t));
-#endif
-               item->subitems = (menu_subitem_t*)
-                  calloc(item->num_subitems, sizeof(menu_subitem_t));
 
                menu_subitem_t *subitem = (menu_subitem_t*)&item->subitems[kk];
 
-               strlcpy(subitem->name, subgroup.name, sizeof(subitem->name));
+               strlcpy(subitem->name, setting.short_description, sizeof(subitem->name));
                subitem->alpha = kk ? 1.0 : 0.5;
                subitem->zoom = kk ? i_active_zoom : i_passive_zoom;
                subitem->y = kk ? vspacing * (kk + under_item_offset)
                   : vspacing * active_item_factor;
+
+               if (setting.type == ST_BOOL)
+               {
+                  if (setting.value.boolean)
+                     strlcpy(subitem->value, "ON", sizeof(subitem->value));
+                  else
+                     strlcpy(subitem->value, "OFF", sizeof(subitem->value));
+               }
+               else if (setting.type == ST_INT)
+               {
+                  char value[256];
+                  sprintf(subitem->value, "%d", setting.value.integer);
+               }
+               else if (setting.type == ST_UINT)
+               {
+                  char value[256];
+                  sprintf(subitem->value, "%u", setting.value.integer);
+               }
+               else if (setting.type == ST_FLOAT)
+               {
+                  char value[256];
+                  sprintf(subitem->value, "%f", setting.value.fraction);
+               }
+               else if (setting.type == ST_STRING || setting.type == ST_PATH || setting.type == ST_DIR)
+               {
+                  char value[256];
+                  sprintf(subitem->value, "%s", setting.value.string);
+               }
+               else
+               {
+                  strlcpy(subitem->value, "tbd", sizeof(subitem->value));
+               }
 
                kk++;
             }
