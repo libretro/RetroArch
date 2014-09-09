@@ -441,7 +441,7 @@ static bool vg_read_viewport(void *data, uint8_t *buffer)
    (void)data;
    (void)buffer;
 
-   return false;
+   return true;
 }
 
 static void vg_get_poke_interface(void *data,

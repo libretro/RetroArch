@@ -773,7 +773,7 @@ static void psp_viewport_info(void *data, struct rarch_viewport *vp)
 
 static bool psp_read_viewport(void *data, uint8_t *buffer)
 {
-   return false;
+   return true;
 }
 
 static const video_poke_interface_t psp_poke_interface = {

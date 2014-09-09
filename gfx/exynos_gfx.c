@@ -1472,7 +1472,7 @@ static bool exynos_gfx_read_viewport(void *data, uint8_t *buffer)
    (void)data;
    (void)buffer;
 
-   return false;
+   return true;
 }
 
 const video_driver_t video_exynos = {

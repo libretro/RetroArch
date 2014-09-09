@@ -91,7 +91,7 @@ static bool null_gfx_read_viewport(void *data, uint8_t *buffer)
    (void)data;
    (void)buffer;
 
-   return false;
+   return true;
 }
 
 static void null_gfx_get_poke_interface(void *data,

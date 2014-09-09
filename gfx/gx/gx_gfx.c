@@ -1128,6 +1128,13 @@ static void gx_viewport_info(void *data, struct rarch_viewport *vp)
    *vp = gx->vp;
 }
 
+static bool gx_read_viewport(void *data, uint8_t *buffer)
+{
+   (void)data;
+   (void)buffer;
+   return true;
+}
+
 static const video_poke_interface_t gx_poke_interface = {
    NULL,
    gx_set_aspect_ratio,
@@ -1333,7 +1340,7 @@ const video_driver_t video_gx = {
    "gx",
    gx_set_rotation,
    gx_viewport_info,
-   NULL,
+   gx_read_viewport,
 #ifdef HAVE_OVERLAY
    gx_get_overlay_interface,
 #endif
