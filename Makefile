@@ -413,7 +413,8 @@ endif
 
 
 ifeq ($(HAVE_ZLIB), 1)
-   OBJ += gfx/rpng/rpng.o file_extract.o
+   HAVE_COMPRESSION = 1 
+   OBJ += gfx/rpng/rpng.o file_extract.o decompress/zip_support.o
    LIBS += $(ZLIB_LIBS)
    DEFINES += $(ZLIB_CFLAGS) -DHAVE_ZLIB_DEFLATE
 endif
@@ -464,9 +465,9 @@ ifeq ($(HAVE_NEON),1)
 endif
 
 ifeq ($(HAVE_7ZIP),1)
+   HAVE_COMPRESSION = 1 
    DEFINES += -D_7ZIP_ST
    DEFINES += -DHAVE_7ZIP
-   DEFINES += -DHAVE_COMPRESSION
    7ZOBJ = 	deps/7zip/7zIn.o \
 		deps/7zip/7zAlloc.o \
 		deps/7zip/Bra86.o \
@@ -489,6 +490,10 @@ ifeq ($(HAVE_7ZIP),1)
    RETROLAUNCH_OBJ += $(7ZOBJ)
    JOYCONFIG_OBJ += $(7ZOBJ)
 endif
+
+ifdef HAVE_COMPRESSION
+   DEFINES += -DHAVE_COMPRESSION
+endif 
 
 ifeq ($(HAVE_PRESERVE_DYLIB),1)
    DEFINES += -DNO_DLCLOSE
