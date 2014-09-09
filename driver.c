@@ -1059,14 +1059,14 @@ void init_audio(void)
    }
 
    g_extern.audio_data.use_float = false;
-   if (g_extern.audio_active && driver.audio->use_float &&
-         driver.audio->use_float(driver.audio_data))
+   if (g_extern.audio_active && driver.audio->use_float(driver.audio_data))
       g_extern.audio_data.use_float = true;
 
    if (!g_settings.audio.sync && g_extern.audio_active)
    {
       rarch_main_command(RARCH_CMD_AUDIO_SET_NONBLOCKING_STATE);
-      g_extern.audio_data.chunk_size = g_extern.audio_data.nonblock_chunk_size;
+      g_extern.audio_data.chunk_size = 
+         g_extern.audio_data.nonblock_chunk_size;
    }
 
    /* Should never happen. */
