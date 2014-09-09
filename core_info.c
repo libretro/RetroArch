@@ -184,6 +184,9 @@ core_info_list_t *core_info_list_new(const char *modules_path)
                   &core_info[i].notes) &&
                core_info[i].notes)
             core_info[i].note_list = string_split(core_info[i].notes, "|");
+
+         config_get_bool(core_info[i].data, "supports_no_game",
+               &core_info[i].supports_no_game);
       }
 
       if (!core_info[i].display_name)

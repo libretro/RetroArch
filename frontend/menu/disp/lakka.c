@@ -963,10 +963,72 @@ static void lakka_context_reset(void *data)
    }
 }
 
+static void lakka_init_subitems(menu_item_t *item)
+{
+   int k;
+   for (k = 0; k < item->num_subitems; k++)
+   {
+      menu_subitem_t *subitem = (menu_subitem_t*)&item->subitems[k];
+
+      if (!subitem)
+         continue;
+
+      switch (k)
+      {
+         case 0:
+            strlcpy(subitem->name, "Run", sizeof(subitem->name));
+            break;
+         case 1:
+            strlcpy(subitem->name, "Save State", sizeof(subitem->name));
+            break;
+         case 2:
+            strlcpy(subitem->name, "Load State", sizeof(subitem->name));
+            break;
+         case 3:
+            strlcpy(subitem->name, "Take Screenshot", sizeof(subitem->name));
+            break;
+         case 4:
+            strlcpy(subitem->name, "Reset", sizeof(subitem->name));
+            break;
+      }
+      subitem->alpha = 0;
+      subitem->zoom = k ? i_passive_zoom : i_active_zoom;
+      subitem->y = k ? vspacing * (k+under_item_offset) :
+         vspacing * active_item_factor;
+   }
+}
+
+static void lakka_init_item(int i, int j, menu_category_t *category,
+      core_info_t *info, struct string_list *list, const char * name)
+{
+   menu_item_t *item;
+
+   int n = category->num_items;
+
+   category->num_items++;
+   category->items = (menu_item_t*)realloc(category->items,
+         category->num_items * sizeof(menu_item_t));
+   item = (menu_item_t*)&category->items[n];
+
+   strlcpy(item->name, name, sizeof(item->name));
+   if (list != NULL)
+      strlcpy(item->rom, list->elems[j].data, sizeof(item->rom));
+   item->alpha          = i != menu_active_category ? 0 : n ? 0.5 : 1;
+   item->zoom           = n ? i_passive_zoom : i_active_zoom;
+   item->y              = n ? vspacing*(under_item_offset+n) :
+      vspacing*active_item_factor;
+   item->active_subitem = 0;
+   item->num_subitems   = 5;
+   item->subitems       = (menu_subitem_t*)
+      calloc(item->num_subitems, sizeof(menu_subitem_t));
+
+   lakka_init_subitems(item);
+}
+
 static void lakka_init_items(int i, menu_category_t *category,
       core_info_t *info, const char* path)
 {
-   int num_items, j, n, k;
+   int num_items, j;
    struct string_list *list;
 
    if (category == NULL || info == NULL)
@@ -984,57 +1046,8 @@ static void lakka_init_items(int i, menu_category_t *category,
          lakka_init_items(i, category, info, list->elems[j].data);
       else
       {
-         menu_item_t *item;
-
-         n = category->num_items;
-
-         category->num_items++;
-         category->items = (menu_item_t*)realloc(category->items,
-               category->num_items * sizeof(menu_item_t));
-         item = (menu_item_t*)&category->items[n];
-
-         strlcpy(item->name, path_basename(list->elems[j].data),
-               sizeof(item->name));
-         strlcpy(item->rom, list->elems[j].data, sizeof(item->rom));
-         item->alpha          = i != menu_active_category ? 0 : n ? 0.5 : 1;
-         item->zoom           = n ? i_passive_zoom : i_active_zoom;
-         item->y              = n ? vspacing*(under_item_offset+n) :
-            vspacing*active_item_factor;
-         item->active_subitem = 0;
-         item->num_subitems   = 5;
-         item->subitems       = (menu_subitem_t*)
-            calloc(item->num_subitems, sizeof(menu_subitem_t));
-
-         for (k = 0; k < item->num_subitems; k++)
-         {
-            menu_subitem_t *subitem = (menu_subitem_t*)&item->subitems[k];
-
-            if (!subitem)
-               continue;
-
-            switch (k)
-            {
-               case 0:
-                  strlcpy(subitem->name, "Run", sizeof(subitem->name));
-                  break;
-               case 1:
-                  strlcpy(subitem->name, "Save State", sizeof(subitem->name));
-                  break;
-               case 2:
-                  strlcpy(subitem->name, "Load State", sizeof(subitem->name));
-                  break;
-               case 3:
-                  strlcpy(subitem->name, "Take Screenshot", sizeof(subitem->name));
-                  break;
-               case 4:
-                  strlcpy(subitem->name, "Reset", sizeof(subitem->name));
-                  break;
-            }
-            subitem->alpha = 0;
-            subitem->zoom = k ? i_passive_zoom : i_active_zoom;
-            subitem->y = k ? vspacing * (k+under_item_offset) :
-               vspacing * active_item_factor;
-         }
+         lakka_init_item(i, j, category, info, list, 
+               path_basename(list->elems[j].data));
       }
    }
 
@@ -1133,7 +1146,11 @@ static void *lakka_init(void)
       category->items       = (menu_item_t*)
          calloc(category->num_items + 1, sizeof(menu_item_t));
 
-      lakka_init_items(i, category, info, g_settings.content_directory);
+      if (! info->supports_no_game)
+         lakka_init_items(i, category, info, g_settings.content_directory);
+      else
+         lakka_init_item(i, 0, category, info, NULL, 
+               info->display_name);
    }
 
    return menu;
