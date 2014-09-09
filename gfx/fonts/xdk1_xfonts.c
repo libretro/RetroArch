@@ -22,7 +22,8 @@
 static XFONT *debug_font;
 static D3DSurface *pFrontBuffer;
 
-static bool xfonts_init_font(void *data, const char *font_path, unsigned font_size)
+static bool xfonts_init_font(void *data,
+      const char *font_path, unsigned font_size)
 {
    (void)font_path;
    (void)font_size;
@@ -42,7 +43,8 @@ static void xfonts_deinit_font(void *data)
    (void)data;
 }
 
-static void xfonts_render_msg(void *data, const char *msg, const struct font_params *params)
+static void xfonts_render_msg(void *data, const char *msg,
+      const struct font_params *params)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
    wchar_t str[PATH_MAX];

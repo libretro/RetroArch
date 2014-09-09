@@ -36,10 +36,6 @@
 #include <cell/codec.h>
 #endif
 
-/******************************************************************************* 
-	Image decompression - structs
-********************************************************************************/
-
 typedef struct CtrlMallocArg
 {
    uint32_t mallocCallCounts;
@@ -72,10 +68,6 @@ static int img_free(void *ptr, void *a)
    free(ptr);
    return 0;
 }
-
-/******************************************************************************* 
-	Image decompression - libJPEG
-********************************************************************************/
 
 static bool ps3_load_jpeg(const char *path, struct texture_image *out_img)
 {
@@ -188,10 +180,6 @@ error:
    return false;
 }
 
-/******************************************************************************* 
-	Image decompression - libPNG
-********************************************************************************/
-
 static bool ps3_load_png(const char *path, struct texture_image *out_img)
 {
    size_t img_size;
@@ -269,16 +257,19 @@ static bool ps3_load_png(const char *path, struct texture_image *out_img)
    if (ret != CELL_OK)
       goto error;
 
-   img_size = outParam.output_width * outParam.output_height * sizeof(uint32_t);
+   img_size = outParam.output_width * 
+      outParam.output_height * sizeof(uint32_t);
    out_img->pixels = (uint32_t*)malloc(img_size);
    memset(out_img->pixels, 0, img_size);
 
 #ifdef __PSL1GHT__
    uint64_t output_bytes_per_line = outParam.output_width * 4;
-   ret = cellPngDecDecodeData(mHandle, sHandle, (uint8_t*)out_img->pixels, &output_bytes_per_line, &dOutInfo);
+   ret = cellPngDecDecodeData(mHandle, sHandle, (uint8_t*)
+         out_img->pixels, &output_bytes_per_line, &dOutInfo);
 #else
    dCtrlParam.output_bytes_per_line = outParam.output_width * 4;
-   ret = cellPngDecDecodeData(mHandle, sHandle, (uint8_t*)out_img->pixels, &dCtrlParam, &dOutInfo);
+   ret = cellPngDecDecodeData(mHandle, sHandle, (uint8_t*)
+         out_img->pixels, &dCtrlParam, &dOutInfo);
 #endif
 
    if (ret != CELL_OK || dOutInfo.status != CELL_PNGDEC_DEC_STATUS_FINISH)

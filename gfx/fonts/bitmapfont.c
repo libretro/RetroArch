@@ -38,16 +38,19 @@ static const struct font_atlas *font_renderer_get_atlas(void *data)
    return &handle->atlas;
 }
 
-static const struct font_glyph *font_renderer_get_glyph(void *data, uint32_t code)
+static const struct font_glyph *font_renderer_get_glyph(
+      void *data, uint32_t code)
 {
    bm_renderer_t *handle = (bm_renderer_t*)data;
    return code < ATLAS_SIZE ? &handle->glyphs[code] : NULL;
 }
 
-static void char_to_texture(bm_renderer_t *handle, uint8_t letter, unsigned atlas_x, unsigned atlas_y)
+static void char_to_texture(bm_renderer_t *handle, uint8_t letter,
+      unsigned atlas_x, unsigned atlas_y)
 {
    unsigned y, x, xo, yo;
-   uint8_t *target = handle->atlas.buffer + atlas_x + atlas_y * handle->atlas.width;
+   uint8_t *target = handle->atlas.buffer + atlas_x + 
+      atlas_y * handle->atlas.width;
 
    for (y = 0; y < FONT_HEIGHT; y++)
    {

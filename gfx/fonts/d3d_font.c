@@ -27,7 +27,8 @@ static const d3d_font_renderer_t *d3d_font_backends[] = {
 #endif
 };
 
-const d3d_font_renderer_t *d3d_font_init_first(void *data, const char *font_path, unsigned font_size)
+const d3d_font_renderer_t *d3d_font_init_first(void *data,
+      const char *font_path, unsigned font_size)
 {
    unsigned i;
    for (i = 0; i < ARRAY_SIZE(d3d_font_backends); i++)
