@@ -2332,9 +2332,11 @@ rarch_setting_t *setting_data_get_list(void)
       CONFIG_INT(g_settings.state_slot,                    "state_slot",                 "State Slot",                 0, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
       END_SUB_GROUP()
       START_SUB_GROUP("Miscellaneous")
+#if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
       CONFIG_BOOL(g_settings.network_cmd_enable,         "network_cmd_enable",         "Network Commands",           network_cmd_enable, "OFF", "ON", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
       //CONFIG_INT(g_settings.network_cmd_port,            "network_cmd_port",           "Network Command Port",       network_cmd_port, GROUP_NAME, SUBGROUP_NAME, NULL)
       CONFIG_BOOL(g_settings.stdin_cmd_enable,           "stdin_cmd_enable",           "stdin command",              stdin_cmd_enable, "OFF", "ON", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+#endif
       END_SUB_GROUP()
       END_GROUP()
 
