@@ -45,9 +45,9 @@ OBJ = frontend/platform/platform_emscripten.o \
 		gfx/fonts/bitmapfont.o \
 		gfx/image/image_rpng.o \
 		gfx/filter.o \
-		audio/resampler.o \
-		audio/sinc.o \
-		audio/cc_resampler.o \
+		audio/resamplers/resampler.o \
+		audio/resamplers/sinc.o \
+		audio/resamplers/cc_resampler.o \
 		audio/nullaudio.o \
 		performance.o \
 		core_info.o \

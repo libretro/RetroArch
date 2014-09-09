@@ -16,17 +16,17 @@
 // Bog-standard windowed SINC implementation.
 
 #include "resampler.h"
-#include "../libretro.h"
-#include "../performance.h"
+#include "../../libretro.h"
+#include "../../performance.h"
 #include <math.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
-#include "../msvc/msvc_compat.h"
+#include "../../msvc/msvc_compat.h"
 
 #ifndef RESAMPLER_TEST
-#include "../general.h"
+#include "../../general.h"
 #else
 #define RARCH_LOG(...) fprintf(stderr, __VA_ARGS__)
 #endif

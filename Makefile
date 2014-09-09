@@ -40,10 +40,10 @@ OBJ = frontend/frontend.o \
 		gfx/scaler/scaler_filter.o \
 		gfx/image/image_rpng.o \
 		gfx/fonts/fonts.o \
-		audio/resampler.o \
+		audio/resamplers/resampler.o \
 		audio/dsp_filter.o \
-		audio/sinc.o \
-		audio/cc_resampler.o \
+		audio/resamplers/sinc.o \
+		audio/resamplers/cc_resampler.o \
 		location/nulllocation.o \
 		camera/nullcamera.o \
 		gfx/nullgfx.o \
@@ -452,7 +452,7 @@ ifeq ($(HAVE_XKBCOMMON), 1)
 endif
 
 ifeq ($(HAVE_NEON),1)
-   OBJ += audio/sinc_neon.o
+   OBJ += audio/resamplers/sinc_neon.o
    # When compiled without this, tries to attempt to compile sinc lerp,
    # which will error out
    DEFINES += -DSINC_LOWER_QUALITY

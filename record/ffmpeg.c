@@ -49,7 +49,6 @@ extern "C" {
 #include "../gfx/scaler/scaler.h"
 #include "../conf/config_file.h"
 #include "../audio/utils.h"
-#include "../audio/resampler.h"
 #include "ffemu.h"
 #include <assert.h>
 

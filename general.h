@@ -82,7 +82,7 @@
 #include "command.h"
 #endif
 
-#include "audio/resampler.h"
+#include "audio/resamplers/resampler.h"
 
 #ifdef __cplusplus
 extern "C" {

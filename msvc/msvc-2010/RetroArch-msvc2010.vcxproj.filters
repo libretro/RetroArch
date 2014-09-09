@@ -48,13 +48,13 @@
     <ClCompile Include="..\..\gfx\glsym\glsym_gl.c">
       <Filter>gfx\glsym</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\audio\sinc.c">
+    <ClCompile Include="..\..\audio\resamplers\sinc.c">
       <Filter>audio</Filter>
     </ClCompile>
     <ClCompile Include="..\..\audio\utils.c">
       <Filter>audio</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\audio\resampler.c">
+    <ClCompile Include="..\..\audio\resamplers\resampler.c">
       <Filter>audio</Filter>
     </ClCompile>
     <ClCompile Include="..\..\gfx\math\matrix.c">
@@ -231,7 +231,7 @@
     <ClCompile Include="..\..\gfx\filter.c">
       <Filter>gfx</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\audio\cc_resampler.c">
+    <ClCompile Include="..\..\audio\resamplers\cc_resampler.c">
       <Filter>audio</Filter>
     </ClCompile>
     <ClCompile Include="..\..\frontend\menu\backend\menu_common_backend.c">
