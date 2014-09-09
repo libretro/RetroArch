@@ -57,10 +57,10 @@ static enum gfx_wrap_type wrap_str_to_mode(const char *wrap_mode)
    return RARCH_WRAP_DEFAULT;
 }
 
-// CGP
+/* CGP */
 static bool shader_parse_pass(config_file_t *conf, struct gfx_shader_pass *pass, unsigned i)
 {
-   // Source
+   /* Source */
    char shader_name[64];
    print_buf(shader_name, "shader%u", i);
    if (!config_get_path(conf, shader_name, pass->source.path, sizeof(pass->source.path)))
@@ -69,7 +69,7 @@ static bool shader_parse_pass(config_file_t *conf, struct gfx_shader_pass *pass,
       return false;
    }
    
-   // Smooth
+   /* Smooth */
    char filter_name_buf[64];
    print_buf(filter_name_buf, "filter_linear%u", i);
    bool smooth = false;
@@ -78,14 +78,14 @@ static bool shader_parse_pass(config_file_t *conf, struct gfx_shader_pass *pass,
    else
       pass->filter = RARCH_FILTER_UNSPEC;
 
-   // Wrapping mode
+   /* Wrapping mode */
    char wrap_name_buf[64];
    print_buf(wrap_name_buf, "wrap_mode%u", i);
    char wrap_mode[64];
    if (config_get_array(conf, wrap_name_buf, wrap_mode, sizeof(wrap_mode)))
       pass->wrap = wrap_str_to_mode(wrap_mode);
 
-   // Frame count mod
+   /* Frame count mod */
    char frame_count_mod[64] = {0};
    char frame_count_mod_buf[64];
    print_buf(frame_count_mod_buf, "frame_count_mod%u", i);
@@ -93,7 +93,7 @@ static bool shader_parse_pass(config_file_t *conf, struct gfx_shader_pass *pass,
             frame_count_mod, sizeof(frame_count_mod)))
       pass->frame_count_mod = strtoul(frame_count_mod, NULL, 0);
 
-   // FBO types and mipmapping
+   /* FBO types and mipmapping */
    char srgb_output_buf[64];
    print_buf(srgb_output_buf, "srgb_framebuffer%u", i);
    config_get_bool(conf, srgb_output_buf, &pass->fbo.srgb_fbo);
@@ -111,7 +111,7 @@ static bool shader_parse_pass(config_file_t *conf, struct gfx_shader_pass *pass,
    if (!config_get_array(conf, alias_buf, pass->alias, sizeof(pass->alias)))
       *pass->alias = '\0';
 
-   // Scale
+   /* Scale */
    struct gfx_fbo_scale *scale = &pass->fbo;
    char scale_type[64] = {0};
    char scale_type_x[64] = {0};
