@@ -248,7 +248,7 @@ static const rarch_joypad_driver_t *joypad;
 apple_input_data_t g_current_input_data;
 
 #ifdef OSX // Taken from https://github.com/depp/keycode, check keycode.h for license
-const unsigned char MAC_NATIVE_TO_HID[128] = {
+static const unsigned char MAC_NATIVE_TO_HID[128] = {
   4, 22,  7,  9, 11, 10, 29, 27,  6, 25,255,  5, 20, 26,  8, 21,
  28, 23, 30, 31, 32, 33, 35, 34, 46, 38, 36, 45, 37, 39, 48, 18,
  24, 47, 12, 19, 40, 15, 13, 52, 14, 51, 49, 54, 56, 17, 16, 55,
