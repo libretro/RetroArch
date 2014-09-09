@@ -63,6 +63,9 @@
 #ifdef HAVE_7ZIP
 #include "decompress/7zip_support.h"
 #endif
+#ifdef HAVE_ZLIB
+#include "decompress/zip_support.h"
+#endif
 
 /* Dump to file. */
 bool write_file(const char *path, const void *data, size_t size)
@@ -81,8 +84,18 @@ bool write_file(const char *path, const void *data, size_t size)
 #ifdef HAVE_COMPRESSION
 long read_compressed_file(const char * archive_path, const char *relative_path, void **buf)
 {
+   const char* file_ext = path_get_extension(archive_path);
 #ifdef HAVE_7ZIP
-   return read_7zip_file(archive_path,relative_path,buf);
+   if (strcmp(file_ext,"7z") == 0)
+   {
+      return read_7zip_file(archive_path,relative_path,buf);
+   }
+#endif
+#ifdef HAVE_ZLIB
+   if (strcmp(file_ext,"zip") == 0)
+   {
+      return read_zip_file(archive_path,relative_path,buf);
+   }
 #endif
    return -1;
 }
@@ -387,6 +400,12 @@ struct string_list *compressed_file_list_new(const char *path,
       return compressed_7zip_file_list_new(path,ext);
    }
 #endif
+#ifdef HAVE_ZLIB
+   if (strcmp(file_ext,"zip") == 0)
+   {
+      return compressed_zip_file_list_new(path,ext);
+   }
+#endif
 
 #endif
    return NULL;
@@ -609,6 +628,12 @@ bool path_is_compressed_file(const char* path)
    const char* file_ext = path_get_extension(path);
 #ifdef HAVE_7ZIP
    if (strcmp(file_ext,"7z") == 0)
+   {
+      return true;
+   }
+#endif
+#ifdef HAVE_ZLIB
+   if (strcmp(file_ext,"zip") == 0)
    {
       return true;
    }
