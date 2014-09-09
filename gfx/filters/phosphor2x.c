@@ -14,8 +14,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-// Compile: gcc -o phosphor2x.so -shared phosphor2x.c -std=c99 -O3 -Wall -pedantic -fPIC
-
 #include "softfilter.h"
 #include "boolean.h"
 #include <stdlib.h>
@@ -106,96 +104,111 @@ static inline unsigned max_component_rgb565(uint32_t color)
    return max;
 }
 
-static void blit_linear_line_xrgb8888(uint32_t * out, const uint32_t *in, unsigned width)
+static void blit_linear_line_xrgb8888(uint32_t * out,
+      const uint32_t *in, unsigned width)
 {
    unsigned i;
-   // Splat pixels out on the line.
+
+   /* Splat pixels out on the line. */
    for (i = 0; i < width; i++)
       out[i << 1] = in[i];
 
-   // Blend in-between pixels.
+   /* Blend in-between pixels. */
    for (i = 1; i < (width << 1) - 1; i += 2)
       out[i] = blend_pixels_xrgb8888(out[i - 1], out[i + 1]);
 
-   // Blend edge pixels against black.
+   /* Blend edge pixels against black. */
    out[0] = blend_pixels_xrgb8888(out[0], 0);
-   out[(width << 1) - 1] = blend_pixels_xrgb8888(out[(width << 1) - 1], 0);
+   out[(width << 1) - 1] = 
+      blend_pixels_xrgb8888(out[(width << 1) - 1], 0);
 }
 
-static void blit_linear_line_rgb565(uint16_t * out, const uint16_t *in, unsigned width)
+static void blit_linear_line_rgb565(uint16_t * out,
+      const uint16_t *in, unsigned width)
 {
    unsigned i;
-   // Splat pixels out on the line.
+
+   /* Splat pixels out on the line. */
    for (i = 0; i < width; i++)
       out[i << 1] = in[i];
 
-   // Blend in-between pixels.
+   /* Blend in-between pixels. */
    for (i = 1; i < (width << 1) - 1; i += 2)
-      out[i] = blend_pixels_rgb565(out[i - 1], out[i + 1]);
+      out[i] = 
+         blend_pixels_rgb565(out[i - 1], out[i + 1]);
 
-   // Blend edge pixels against black.
+   /* Blend edge pixels against black. */
    out[0] = blend_pixels_rgb565(out[0], 0);
-   out[(width << 1) - 1] = blend_pixels_rgb565(out[(width << 1) - 1], 0);
+   out[(width << 1) - 1] = 
+      blend_pixels_rgb565(out[(width << 1) - 1], 0);
 }
 
-static void bleed_phosphors_xrgb8888(void *data, uint32_t *scanline, unsigned width)
+static void bleed_phosphors_xrgb8888(void *data,
+      uint32_t *scanline, unsigned width)
 {
    unsigned x;
    struct filter_data *filt = (struct filter_data*)data;
 
-   // Red phosphor
+   /* Red phosphor */
    for (x = 0; x < width; x += 2)
    {
       unsigned r = red_xrgb8888(scanline[x]);
-      unsigned r_set = clamp8(r * filt->phosphor_bleed * filt->phosphor_bloom_8888[r]);
+      unsigned r_set = clamp8(r * filt->phosphor_bleed * 
+            filt->phosphor_bloom_8888[r]);
       set_red_xrgb8888(scanline[x + 1], r_set);
    }
 
-   // Green phosphor
+   /* Green phosphor */
    for (x = 0; x < width; x++)
    {
       unsigned g = green_xrgb8888(scanline[x]);
-      unsigned g_set = clamp8((g >> 1) + 0.5 * g * filt->phosphor_bleed * filt->phosphor_bloom_8888[g]);
+      unsigned g_set = clamp8((g >> 1) + 0.5 * g * 
+            filt->phosphor_bleed * filt->phosphor_bloom_8888[g]);
       set_green_xrgb8888(scanline[x], g_set);
    }
 
-   // Blue phosphor
+   /* Blue phosphor */
    set_blue_xrgb8888(scanline[0], 0);
    for (x = 1; x < width; x += 2)
    {
       unsigned b = blue_xrgb8888(scanline[x]);
-      unsigned b_set = clamp8(b * filt->phosphor_bleed * filt->phosphor_bloom_8888[b]);
+      unsigned b_set = clamp8(b * filt->phosphor_bleed * 
+            filt->phosphor_bloom_8888[b]);
       set_blue_xrgb8888(scanline[x + 1], b_set);
    }
 }
 
-static void bleed_phosphors_rgb565(void *data, uint16_t *scanline, unsigned width)
+static void bleed_phosphors_rgb565(void *data, 
+      uint16_t *scanline, unsigned width)
 {
    unsigned x;
    struct filter_data *filt = (struct filter_data*)data;
 
-   // Red phosphor
+   /* Red phosphor */
    for (x = 0; x < width; x += 2)
    {
       unsigned r = red_rgb565(scanline[x]);
-      unsigned r_set = clamp6(r * filt->phosphor_bleed * filt->phosphor_bloom_565[r]);
+      unsigned r_set = clamp6(r * filt->phosphor_bleed * 
+            filt->phosphor_bloom_565[r]);
       set_red_rgb565(scanline[x + 1], r_set);
    }
 
-   // Green phosphor
+   /* Green phosphor */
    for (x = 0; x < width; x++)
    {
       unsigned g = green_rgb565(scanline[x]);
-      unsigned g_set = clamp6((g >> 1) + 0.5 * g * filt->phosphor_bleed * filt->phosphor_bloom_565[g]);
+      unsigned g_set = clamp6((g >> 1) + 0.5 * g * 
+            filt->phosphor_bleed * filt->phosphor_bloom_565[g]);
       set_green_rgb565(scanline[x], g_set);
    }
 
-   // Blue phosphor
+   /* Blue phosphor */
    set_blue_rgb565(scanline[0], 0);
    for (x = 1; x < width; x += 2)
    {
       unsigned b = blue_rgb565(scanline[x]);
-      unsigned b_set = clamp6(b * filt->phosphor_bleed * filt->phosphor_bloom_565[b]);
+      unsigned b_set = clamp6(b * filt->phosphor_bleed * 
+            filt->phosphor_bloom_565[b]);
       set_blue_rgb565(scanline[x + 1], b_set);
    }
 }
@@ -233,7 +246,8 @@ static void *phosphor2x_generic_create(const struct softfilter_config *config,
 
    if (!filt)
       return NULL;
-   filt->workers = (struct softfilter_thread_data*)calloc(threads, sizeof(struct softfilter_thread_data));
+   filt->workers = (struct softfilter_thread_data*)
+      calloc(threads, sizeof(struct softfilter_thread_data));
    filt->threads = threads;
    filt->in_fmt  = in_fmt;
    if (!filt->workers)
@@ -248,24 +262,36 @@ static void *phosphor2x_generic_create(const struct softfilter_config *config,
    filt->scanrange_low = 0.5;
    filt->scanrange_high = 0.65;
 
-   // Init lookup tables:
-   // phosphorBloom = (scaleTimes .* linspace(0, 1, 255) .^ (1/2.2)) + scaleAdd;
-   // Not exactly sure of order of operations here ...
+#if 0
+   /* Initialize lookup tables: */
+   phosphorBloom = (scaleTimes .* 
+         linspace(0, 1, 255) .^ (1/2.2)) + scaleAdd;
+   /* Not exactly sure of order of operations here ... */
+#endif
    for (i = 0; i < 256; i++)
    {
-      filt->phosphor_bloom_8888[i] = filt->scale_times * powf((float)i / 255.0f, 1.0f/2.2f) + filt->scale_add;
-      filt->scan_range_8888[i] = filt->scanrange_low + i * (filt->scanrange_high - filt->scanrange_low) / 255.0f;
+      filt->phosphor_bloom_8888[i] = 
+         filt->scale_times * powf((float)i / 255.0f, 1.0f/2.2f) + 
+         filt->scale_add;
+      filt->scan_range_8888[i] = 
+         filt->scanrange_low + i * 
+         (filt->scanrange_high - filt->scanrange_low) / 255.0f;
    }
    for (i = 0; i < 64; i++)
    {
-      filt->phosphor_bloom_565[i] = filt->scale_times * powf((float)i / 31.0f, 1.0f/2.2f) + filt->scale_add;
-      filt->scan_range_565[i] = filt->scanrange_low + i * (filt->scanrange_high - filt->scanrange_low) / 31.0f;
+      filt->phosphor_bloom_565[i] = 
+         filt->scale_times * powf((float)i / 31.0f, 1.0f/2.2f)
+         + filt->scale_add;
+      filt->scan_range_565[i] = 
+         filt->scanrange_low + i * 
+         (filt->scanrange_high - filt->scanrange_low) / 31.0f;
    }
 
    return filt;
 }
 
-static void phosphor2x_generic_output(void *data, unsigned *out_width, unsigned *out_height,
+static void phosphor2x_generic_output(void *data,
+      unsigned *out_width, unsigned *out_height,
       unsigned width, unsigned height)
 {
    (void)data;
@@ -280,7 +306,8 @@ static void phosphor2x_generic_destroy(void *data)
    free(filt);
 }
 
-static void phosphor2x_generic_xrgb8888(void *data, unsigned width, unsigned height,
+static void phosphor2x_generic_xrgb8888(void *data,
+      unsigned width, unsigned height,
       int first, int last, uint32_t *src, 
       unsigned src_stride, uint32_t *dst, unsigned dst_stride)
 {
@@ -296,28 +323,39 @@ static void phosphor2x_generic_xrgb8888(void *data, unsigned width, unsigned hei
    {
       uint32_t *out_line, *scan_out;
       unsigned x;
-      const uint32_t *in_line = (const uint32_t*)(src + y * (src_stride)); // Input
+      const uint32_t *in_line = (const uint32_t*)(src + y * (src_stride));
 
-      out_line = (uint32_t*)(dst + y * (dst_stride) * 2); // Output in a scanlines fashion.
+      /* output in a scanlines fashion. */
+      out_line = (uint32_t*)(dst + y * (dst_stride) * 2);
 
-      blit_linear_line_xrgb8888(out_line, in_line, width);        // Bilinear stretch horizontally.
-      bleed_phosphors_xrgb8888(filt, out_line, width << 1);       // Mask 'n bleed phosphors.
+      /* Bilinear stretch horizontally. */
+      blit_linear_line_xrgb8888(out_line, in_line, width);
 
-      // Apply scanlines
+      /* Mask 'n bleed phosphors */
+      bleed_phosphors_xrgb8888(filt, out_line, width << 1);
+
+      /* Apply scanlines */
 
       scan_out = (uint32_t*)out_line + (dst_stride);
 
       for (x = 0; x < (width << 1); x++)
       {
          unsigned max = max_component_xrgb8888(out_line[x]);
-         set_red_xrgb8888(scan_out[x],   (uint32_t)(filt->scan_range_8888[max] * red_xrgb8888(out_line[x])));
-         set_green_xrgb8888(scan_out[x], (uint32_t)(filt->scan_range_8888[max] * green_xrgb8888(out_line[x])));
-         set_blue_xrgb8888(scan_out[x],  (uint32_t)(filt->scan_range_8888[max] * blue_xrgb8888(out_line[x])));
+         set_red_xrgb8888(scan_out[x],  
+               (uint32_t)(filt->scan_range_8888[max] * 
+                  red_xrgb8888(out_line[x])));
+         set_green_xrgb8888(scan_out[x], 
+               (uint32_t)(filt->scan_range_8888[max] * 
+                  green_xrgb8888(out_line[x])));
+         set_blue_xrgb8888(scan_out[x],  
+               (uint32_t)(filt->scan_range_8888[max] * 
+                  blue_xrgb8888(out_line[x])));
       }
    }
 }
 
-static void phosphor2x_generic_rgb565(void *data, unsigned width, unsigned height,
+static void phosphor2x_generic_rgb565(void *data,
+      unsigned width, unsigned height,
       int first, int last, uint16_t *src, 
       unsigned src_stride, uint16_t *dst, unsigned dst_stride)
 {
@@ -333,48 +371,65 @@ static void phosphor2x_generic_rgb565(void *data, unsigned width, unsigned heigh
    {
       uint16_t *scan_out;
       unsigned x;
-      uint16_t *out_line = (uint16_t*)(dst + y * (dst_stride) * 2); // Output in a scanlines fashion.
-      const uint16_t *in_line = (const uint16_t*)(src + y * (src_stride)); // Input
+      /* Output in a scanlines fashion. */
+      uint16_t *out_line = (uint16_t*)(dst + y * (dst_stride) * 2);
+      const uint16_t *in_line = (const uint16_t*)(src + y * (src_stride));
 
-      blit_linear_line_rgb565(out_line, in_line, width);   // Bilinear stretch horizontally.
-      bleed_phosphors_rgb565(filt, out_line, width << 1);  // Mask 'n bleed phosphors.
+      /* Bilinear stretch horizontally. */
+      blit_linear_line_rgb565(out_line, in_line, width);
 
-      // Apply scanlines.
+      /* Mask 'n bleed phosphors. */
+      bleed_phosphors_rgb565(filt, out_line, width << 1);
 
+      /* Apply scanlines. */
       scan_out = (uint16_t*)(out_line + (dst_stride));
 
       for (x = 0; x < (width << 1); x++)
       {
          unsigned max = max_component_rgb565(out_line[x]);
-         set_red_rgb565(scan_out[x],   (uint16_t)(filt->scan_range_565[max] * red_rgb565(out_line[x])));
-         set_green_rgb565(scan_out[x], (uint16_t)(filt->scan_range_565[max] * green_rgb565(out_line[x])));
-         set_blue_rgb565(scan_out[x],  (uint16_t)(filt->scan_range_565[max] * blue_rgb565(out_line[x])));
+         set_red_rgb565(scan_out[x],   
+               (uint16_t)(filt->scan_range_565[max] * 
+                  red_rgb565(out_line[x])));
+         set_green_rgb565(scan_out[x], 
+               (uint16_t)(filt->scan_range_565[max] * 
+                  green_rgb565(out_line[x])));
+         set_blue_rgb565(scan_out[x],  
+               (uint16_t)(filt->scan_range_565[max] * 
+                  blue_rgb565(out_line[x])));
       }
    }
 }
 
 static void phosphor2x_work_cb_xrgb8888(void *data, void *thread_data)
 {
-   struct softfilter_thread_data *thr = (struct softfilter_thread_data*)thread_data;
+   struct softfilter_thread_data *thr = 
+      (struct softfilter_thread_data*)thread_data;
    uint32_t *input = (uint32_t*)thr->in_data;
    uint32_t *output = (uint32_t*)thr->out_data;
    unsigned width = thr->width;
    unsigned height = thr->height;
 
    phosphor2x_generic_xrgb8888(data, width, height,
-         thr->first, thr->last, input, thr->in_pitch / SOFTFILTER_BPP_XRGB8888, output, thr->out_pitch / SOFTFILTER_BPP_XRGB8888);
+         thr->first, thr->last, input,
+         thr->in_pitch / SOFTFILTER_BPP_XRGB8888,
+         output,
+         thr->out_pitch / SOFTFILTER_BPP_XRGB8888);
 }
 
 static void phosphor2x_work_cb_rgb565(void *data, void *thread_data)
 {
-   struct softfilter_thread_data *thr = (struct softfilter_thread_data*)thread_data;
+   struct softfilter_thread_data *thr = 
+      (struct softfilter_thread_data*)thread_data;
    uint16_t *input =  (uint16_t*)thr->in_data;
    uint16_t *output = (uint16_t*)thr->out_data;
    unsigned width = thr->width;
    unsigned height = thr->height;
 
    phosphor2x_generic_rgb565(data, width, height,
-         thr->first, thr->last, input, thr->in_pitch / SOFTFILTER_BPP_RGB565, output, thr->out_pitch / SOFTFILTER_BPP_RGB565);
+         thr->first, thr->last, input,
+         thr->in_pitch / SOFTFILTER_BPP_RGB565,
+         output,
+         thr->out_pitch / SOFTFILTER_BPP_RGB565);
 }
 
 static void phosphor2x_generic_packets(void *data,
@@ -386,7 +441,8 @@ static void phosphor2x_generic_packets(void *data,
    unsigned i;
    for (i = 0; i < filt->threads; i++)
    {
-      struct softfilter_thread_data *thr = (struct softfilter_thread_data*)&filt->workers[i];
+      struct softfilter_thread_data *thr = 
+         (struct softfilter_thread_data*)&filt->workers[i];
 
       unsigned y_start = (height * i) / filt->threads;
       unsigned y_end = (height * (i + 1)) / filt->threads;
@@ -397,14 +453,17 @@ static void phosphor2x_generic_packets(void *data,
       thr->width = width;
       thr->height = y_end - y_start;
 
-      // Workers need to know if they can access pixels outside their given buffer.
+      /* Workers need to know if they can access pixels 
+       * outside their given buffer. */
       thr->first = y_start;
       thr->last = y_end == height;
 
       if (filt->in_fmt == SOFTFILTER_FMT_RGB565)
          packets[i].work = phosphor2x_work_cb_rgb565;
-      //else if (filt->in_fmt == SOFTFILTER_FMT_RGB4444)
-         //packets[i].work = phosphor2x_work_cb_rgb4444;
+#if 0
+      else if (filt->in_fmt == SOFTFILTER_FMT_RGB4444)
+         packets[i].work = phosphor2x_work_cb_rgb4444;
+#endif
       if (filt->in_fmt == SOFTFILTER_FMT_XRGB8888)
          packets[i].work = phosphor2x_work_cb_xrgb8888;
       packets[i].thread_data = thr;
@@ -426,7 +485,8 @@ static const struct softfilter_implementation phosphor2x_generic = {
    "phosphor2x",
 };
 
-const struct softfilter_implementation *softfilter_get_implementation(softfilter_simd_mask_t simd)
+const struct softfilter_implementation *softfilter_get_implementation(
+      softfilter_simd_mask_t simd)
 {
    (void)simd;
    return &phosphor2x_generic;

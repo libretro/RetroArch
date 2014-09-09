@@ -38,7 +38,8 @@ void rarch_softfilter_get_output_size(rarch_softfilter_t *filt,
       unsigned *out_width, unsigned *out_height,
       unsigned width, unsigned height);
 
-enum retro_pixel_format rarch_softfilter_get_output_format(rarch_softfilter_t *filt);
+enum retro_pixel_format rarch_softfilter_get_output_format(
+      rarch_softfilter_t *filt);
 
 void rarch_softfilter_process(rarch_softfilter_t *filt,
       void *output, size_t output_stride,

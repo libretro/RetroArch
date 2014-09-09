@@ -50,7 +50,7 @@ static void *gl_init_font(void *gl_data, const char *font_path, float font_size)
 
    DbgFontInit(&cfg);
 
-   // Doesn't need any state.
+   /* Doesn't need any state. */
    return (void*)-1;
 }
 
@@ -60,7 +60,8 @@ static void gl_deinit_font(void *data)
    DbgFontExit();
 }
 
-static void gl_render_msg(void *data, const char *msg, const struct font_params *params)
+static void gl_render_msg(void *data, const char *msg,
+      const struct font_params *params)
 {
    (void)data;
    float x, y, scale;
@@ -87,7 +88,8 @@ static void gl_render_msg(void *data, const char *msg, const struct font_params 
       DbgFontPrint(x, y, scale - 0.01f, WHITE, msg);
 
 #ifdef SN_TARGET_PSP2
-   /* FIXME - if we ever get around to this port, move this out to some better place */
+   /* FIXME - if we ever get around to this port, 
+    * move this out to some better place */
    sceDbgFontFlush();
 #endif
 }

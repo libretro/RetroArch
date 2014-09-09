@@ -409,9 +409,6 @@ static void gl_compute_fbo_geometry(gl_t *gl, unsigned width, unsigned height,
          case RARCH_SCALE_VIEWPORT:
             gl->fbo_rect[i].img_width = gl->fbo_rect[i].max_img_width = gl->fbo_scale[i].scale_x * vp_width;
             break;
-
-         default:
-            break;
       }
 
       switch (gl->fbo_scale[i].type_y)
@@ -427,9 +424,6 @@ static void gl_compute_fbo_geometry(gl_t *gl, unsigned width, unsigned height,
 
          case RARCH_SCALE_VIEWPORT:
             gl->fbo_rect[i].img_height = gl->fbo_rect[i].max_img_height = gl->fbo_scale[i].scale_y * vp_height;
-            break;
-
-         default:
             break;
       }
 
@@ -2411,9 +2405,9 @@ static void gl_update_tex_filter_frame(gl_t *gl)
    context_bind_hw_render(gl, true);
 }
 
-#if defined(HAVE_GLSL) || defined(HAVE_CG)
 static bool gl_set_shader(void *data, enum rarch_shader_type type, const char *path)
 {
+#if defined(HAVE_GLSL) || defined(HAVE_CG)
    gl_t *gl = (gl_t*)data;
 
    if (!gl)
@@ -2507,8 +2501,10 @@ static bool gl_set_shader(void *data, enum rarch_shader_type type, const char *p
    gl_set_shader_viewport(gl, 1);
    context_bind_hw_render(gl, true);
    return true;
-}
+#else
+   return false;
 #endif
+}
 
 static void gl_viewport_info(void *data, struct rarch_viewport *vp)
 {
@@ -2524,9 +2520,9 @@ static void gl_viewport_info(void *data, struct rarch_viewport *vp)
    vp->y = top_dist;
 }
 
-#ifndef NO_GL_READ_PIXELS
 static bool gl_read_viewport(void *data, uint8_t *buffer)
 {
+#ifndef NO_GL_READ_PIXELS
    gl_t *gl = (gl_t*)data;
    if (!gl)
       return false;
@@ -2623,8 +2619,10 @@ static bool gl_read_viewport(void *data, uint8_t *buffer)
    RARCH_PERFORMANCE_STOP(read_viewport);
    context_bind_hw_render(gl, true);
    return true;
-}
+#else
+   return false;
 #endif
+}
 
 #ifdef HAVE_OVERLAY
 static void gl_free_overlay(gl_t *gl);
@@ -2972,11 +2970,7 @@ const video_driver_t video_gl = {
    gl_alive,
    gl_focus,
 
-#if defined(HAVE_GLSL) || defined(HAVE_CG)
    gl_set_shader,
-#else
-   NULL,
-#endif
 
    gl_free,
    "gl",
@@ -2985,11 +2979,7 @@ const video_driver_t video_gl = {
 
    gl_viewport_info,
 
-#ifndef NO_GL_READ_PIXELS
    gl_read_viewport,
-#else
-   NULL,
-#endif
 
 #ifdef HAVE_OVERLAY
    gl_get_overlay_interface,

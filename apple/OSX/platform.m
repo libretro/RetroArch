@@ -203,7 +203,7 @@ static char** waiting_argv;
    if (filenames.count == 1 && [filenames objectAtIndex:0])
    {
        NSString *__core = [filenames objectAtIndex:0];
-       const char *core_name = driver.menu->info.library_name;
+       const char *core_name = g_extern.menu.info.library_name;
        strlcpy(g_extern.fullpath, __core.UTF8String, sizeof(g_extern.fullpath));
        
        if (core_name)
@@ -232,7 +232,7 @@ static char** waiting_argv;
       {
           NSURL *url = (NSURL*)panel.URL;
           NSString *__core = url.path;
-          const char *core_name = driver.menu->info.library_name;
+          const char *core_name = g_extern.menu.info.library_name;
           strlcpy(g_extern.fullpath, __core.UTF8String, sizeof(g_extern.fullpath));
           
           if (core_name)

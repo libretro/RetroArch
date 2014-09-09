@@ -18,7 +18,8 @@
 #include "../general.h"
 #include "../performance.h"
 
-static inline float time_to_fps(retro_time_t last_time, retro_time_t new_time, int frames)
+static inline float time_to_fps(retro_time_t last_time,
+      retro_time_t new_time, int frames)
 {
    return (1000000.0f * frames) / (new_time - last_time);
 }
@@ -35,9 +36,11 @@ bool gfx_get_fps(char *buf, size_t size, char *buf_fps, size_t size_fps)
    retro_time_t new_time = rarch_get_time_usec();
    if (g_extern.frame_count)
    {
-      unsigned write_index = g_extern.measure_data.frame_time_samples_count++ &
+      unsigned write_index = 
+         g_extern.measure_data.frame_time_samples_count++ &
          (MEASURE_FRAME_TIME_SAMPLES_COUNT - 1);
-      g_extern.measure_data.frame_time_samples[write_index] = new_time - fps_time;
+      g_extern.measure_data.frame_time_samples[write_index] = 
+         new_time - fps_time;
       fps_time = new_time;
 
       if ((g_extern.frame_count % FPS_UPDATE_INTERVAL) == 0)
@@ -45,12 +48,14 @@ bool gfx_get_fps(char *buf, size_t size, char *buf_fps, size_t size_fps)
          last_fps = time_to_fps(time, new_time, FPS_UPDATE_INTERVAL);
          time = new_time;
 
-         snprintf(buf, size, "%s || FPS: %6.1f || Frames: %u", g_extern.title_buf, last_fps, g_extern.frame_count);
+         snprintf(buf, size, "%s || FPS: %6.1f || Frames: %u",
+               g_extern.title_buf, last_fps, g_extern.frame_count);
          ret = true;
       }
 
       if (buf_fps)
-         snprintf(buf_fps, size_fps, "FPS: %6.1f || Frames: %u", last_fps, g_extern.frame_count);
+         snprintf(buf_fps, size_fps, "FPS: %6.1f || Frames: %u",
+               last_fps, g_extern.frame_count);
    }
    else
    {
@@ -67,8 +72,11 @@ bool gfx_get_fps(char *buf, size_t size, char *buf_fps, size_t size_fps)
 #if defined(_WIN32) && !defined(_XBOX)
 #include <windows.h>
 #include "../dynamic.h"
-// We only load this library once, so we let it be unloaded at application shutdown,
-// since unloading it early seems to cause issues on some systems.
+
+/* We only load this library once, so we let it be 
+ * unloaded at application shutdown, since unloading 
+ * it early seems to cause issues on some systems.
+ */
 
 static dylib_t dwmlib;
 static bool dwm_composition_disabled;
@@ -96,7 +104,8 @@ static void gfx_init_dwm(void)
    }
    atexit(gfx_dwm_shutdown);
 
-   HRESULT (WINAPI *mmcss)(BOOL) = (HRESULT (WINAPI*)(BOOL))dylib_proc(dwmlib, "DwmEnableMMCSS");
+   HRESULT (WINAPI *mmcss)(BOOL) = 
+      (HRESULT (WINAPI*)(BOOL))dylib_proc(dwmlib, "DwmEnableMMCSS");
    if (mmcss)
    {
       RARCH_LOG("Setting multimedia scheduling for DWM.\n");
@@ -113,7 +122,8 @@ void gfx_set_dwm(void)
    if (g_settings.video.disable_composition == dwm_composition_disabled)
       return;
 
-   HRESULT (WINAPI *composition_enable)(UINT) = (HRESULT (WINAPI*)(UINT))dylib_proc(dwmlib, "DwmEnableComposition");
+   HRESULT (WINAPI *composition_enable)(UINT) = 
+      (HRESULT (WINAPI*)(UINT))dylib_proc(dwmlib, "DwmEnableComposition");
    if (!composition_enable)
    {
       RARCH_ERR("Did not find DwmEnableComposition ...\n");
@@ -127,7 +137,8 @@ void gfx_set_dwm(void)
 }
 #endif
 
-void gfx_scale_integer(struct rarch_viewport *vp, unsigned width, unsigned height, float aspect_ratio, bool keep_aspect)
+void gfx_scale_integer(struct rarch_viewport *vp, unsigned width,
+      unsigned height, float aspect_ratio, bool keep_aspect)
 {
    int padding_x = 0;
    int padding_y = 0;
@@ -135,7 +146,8 @@ void gfx_scale_integer(struct rarch_viewport *vp, unsigned width, unsigned heigh
    if (g_settings.video.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
    {
       const struct rarch_viewport *custom =
-         (const struct rarch_viewport*)&g_extern.console.screen.viewports.custom_vp;
+         (const struct rarch_viewport*)
+         &g_extern.console.screen.viewports.custom_vp;
 
       padding_x = width - custom->width;
       padding_y = height - custom->height;
@@ -144,27 +156,34 @@ void gfx_scale_integer(struct rarch_viewport *vp, unsigned width, unsigned heigh
    }
    else
    {
-      // Use system reported sizes as these define the geometry for the "normal" case.
+      /* Use system reported sizes as these define the 
+       * geometry for the "normal" case. */
       unsigned base_height = g_extern.system.av_info.geometry.base_height;
+
       if (base_height == 0)
          base_height = 1;
-      // Account for non-square pixels.
-      // This is sort of contradictory with the goal of integer scale,
-      // but it is desirable in some cases.
-      // If square pixels are used, base_height will be equal to g_extern.system.av_info.base_height.
+
+      /* Account for non-square pixels.
+       * This is sort of contradictory with the goal of integer scale,
+       * but it is desirable in some cases.
+       *
+       * If square pixels are used, base_height will be equal to 
+       * g_extern.system.av_info.base_height. */
       unsigned base_width = (unsigned)roundf(base_height * aspect_ratio);
 
-      // Make sure that we don't get 0x scale ...
+      /* Make sure that we don't get 0x scale ... */
       if (width >= base_width && height >= base_height)
       {
-         if (keep_aspect) // X/Y scale must be same.
+         if (keep_aspect)
          {
+            /* X/Y scale must be same. */
             unsigned max_scale = min(width / base_width, height / base_height);
             padding_x = width - base_width * max_scale;
             padding_y = height - base_height * max_scale;
          }
-         else // X/Y can be independent, each scaled as much as possible.
+         else
          {
+            /* X/Y can be independent, each scaled as much as possible. */
             padding_x = width % base_width;
             padding_y = height % base_height;
          }
@@ -240,23 +259,27 @@ void gfx_set_square_pixel_viewport(unsigned width, unsigned height)
 
 void gfx_set_core_viewport(void)
 {
-   const struct retro_game_geometry *geom = &g_extern.system.av_info.geometry;
+   const struct retro_game_geometry *geom = 
+      (const struct retro_game_geometry*)&g_extern.system.av_info.geometry;
 
    if (geom->base_width <= 0.0f || geom->base_height <= 0.0f)
       return;
 
-   // Fallback to 1:1 pixel ratio if none provided
+   /* Fallback to 1:1 pixel ratio if none provided */
    if (geom->aspect_ratio > 0.0f)
       aspectratio_lut[ASPECT_RATIO_CORE].value = geom->aspect_ratio;
    else
-      aspectratio_lut[ASPECT_RATIO_CORE].value = (float)geom->base_width / geom->base_height;
+      aspectratio_lut[ASPECT_RATIO_CORE].value = 
+         (float)geom->base_width / geom->base_height;
 }
 
 void gfx_set_config_viewport(void)
 {
    if (g_settings.video.aspect_ratio < 0.0f)
    {
-      const struct retro_game_geometry *geom = &g_extern.system.av_info.geometry;
+      const struct retro_game_geometry *geom = 
+         (const struct retro_game_geometry*)
+         &g_extern.system.av_info.geometry;
 
       if (geom->aspect_ratio > 0.0f && g_settings.video.aspect_ratio_auto)
          aspectratio_lut[ASPECT_RATIO_CONFIG].value = geom->aspect_ratio;
@@ -265,15 +288,17 @@ void gfx_set_config_viewport(void)
          unsigned base_width  = geom->base_width;
          unsigned base_height = geom->base_height;
 
-         // Get around division by zero errors
+         /* Get around division by zero errors */
          if (base_width == 0)
             base_width = 1;
          if (base_height == 0)
             base_height = 1;
-         aspectratio_lut[ASPECT_RATIO_CONFIG].value = (float)base_width / base_height; // 1:1 PAR.
+         aspectratio_lut[ASPECT_RATIO_CONFIG].value = 
+            (float)base_width / base_height; /* 1:1 PAR. */
       }
    }
    else
-      aspectratio_lut[ASPECT_RATIO_CONFIG].value = g_settings.video.aspect_ratio;
+      aspectratio_lut[ASPECT_RATIO_CONFIG].value = 
+         g_settings.video.aspect_ratio;
 }
 

@@ -19,7 +19,8 @@
 #include "../gfx_common.h"
 #include "../../general.h"
 
-static bool d3dfonts_w32_init_font(void *data, const char *font_path, unsigned font_size)
+static bool d3dfonts_w32_init_font(void *data,
+      const char *font_path, unsigned font_size)
 {
    (void)font_path;
 
@@ -49,7 +50,8 @@ static void d3dfonts_w32_deinit_font(void *data)
    d3d->font = NULL;
 }
 
-static void d3dfonts_w32_render_msg(void *data, const char *msg, const struct font_params *params)
+static void d3dfonts_w32_render_msg(void *data, const char *msg,
+      const struct font_params *params)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
 

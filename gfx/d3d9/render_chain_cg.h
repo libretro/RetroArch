@@ -47,13 +47,16 @@ static inline bool validate_param_name(const char *name)
    return true;
 }
 
-static inline CGparameter find_param_from_semantic(CGparameter param, const std::string &sem)
+static inline CGparameter find_param_from_semantic(
+      CGparameter param, const std::string &sem)
 {
    while (param)
    {
       if (cgGetParameterType(param) == CG_STRUCT)
       {
-         CGparameter ret = find_param_from_semantic(cgGetFirstStructParameter(param), sem);
+         CGparameter ret = find_param_from_semantic(
+               cgGetFirstStructParameter(param), sem);
+
          if (ret)
             return ret;
       }
@@ -72,12 +75,15 @@ static inline CGparameter find_param_from_semantic(CGparameter param, const std:
    return NULL;
 }
 
-static inline CGparameter find_param_from_semantic(CGprogram prog, const std::string &sem)
+static inline CGparameter find_param_from_semantic(CGprogram prog,
+      const std::string &sem)
 {
-   return find_param_from_semantic(cgGetFirstParameter(prog, CG_PROGRAM), sem);
+   return find_param_from_semantic(cgGetFirstParameter(
+            prog, CG_PROGRAM), sem);
 }
 
-bool renderchain_compile_shaders(void *data, CGprogram &fPrg, CGprogram &vPrg, const std::string &shader)
+bool renderchain_compile_shaders(void *data, CGprogram &fPrg,
+      CGprogram &vPrg, const std::string &shader)
 {
    renderchain_t *chain = (renderchain_t*)data;
    CGprofile vertex_profile = cgD3D9GetLatestVertexProfile();
@@ -204,12 +210,15 @@ void renderchain_bind_tracker(void *data, Pass &pass, unsigned pass_index)
       return;
 
    if (pass_index == 1)
-      chain->uniform_cnt = state_get_uniform(chain->tracker, chain->uniform_info, MAX_VARIABLES, chain->frame_count);
+      chain->uniform_cnt = state_get_uniform(chain->tracker,
+            chain->uniform_info, MAX_VARIABLES, chain->frame_count);
 
    for (unsigned i = 0; i < chain->uniform_cnt; i++)
    {
-      set_cg_param(pass.fPrg, chain->uniform_info[i].id, chain->uniform_info[i].value);
-      set_cg_param(pass.vPrg, chain->uniform_info[i].id, chain->uniform_info[i].value);
+      set_cg_param(pass.fPrg, chain->uniform_info[i].id,
+            chain->uniform_info[i].value);
+      set_cg_param(pass.vPrg, chain->uniform_info[i].id,
+            chain->uniform_info[i].value);
    }
 }
 
@@ -423,7 +432,9 @@ void renderchain_bind_prev(void *data, Pass &pass)
       {
          unsigned index = cgGetParameterResourceIndex(param);
 
-         LPDIRECT3DTEXTURE tex = chain->prev.tex[(chain->prev.ptr - (i + 1)) & TEXTURESMASK];
+         LPDIRECT3DTEXTURE tex = (LPDIRECT3DTEXTURE)
+            chain->prev.tex[(chain->prev.ptr - (i + 1)) & TEXTURESMASK];
+
          chain->dev->SetTexture(index, tex);
          chain->bound_tex.push_back(index);
 
@@ -439,7 +450,8 @@ void renderchain_bind_prev(void *data, Pass &pass)
       if (param)
       {
          unsigned index = pass.attrib_map[cgGetParameterResourceIndex(param)];
-         LPDIRECT3DVERTEXBUFFER vert_buf = chain->prev.vertex_buf[(chain->prev.ptr - (i + 1)) & TEXTURESMASK];
+         LPDIRECT3DVERTEXBUFFER vert_buf = (LPDIRECT3DVERTEXBUFFER)
+            chain->prev.vertex_buf[(chain->prev.ptr - (i + 1)) & TEXTURESMASK];
          chain->bound_vert.push_back(index);
 
          chain->dev->SetStreamSource(index, vert_buf, 0, sizeof(Vertex));
@@ -452,8 +464,10 @@ void renderchain_bind_luts(void *data, Pass &pass)
    renderchain_t *chain = (renderchain_t*)data;
    for (unsigned i = 0; i < chain->luts.size(); i++)
    {
-      CGparameter fparam = cgGetNamedParameter(pass.fPrg, chain->luts[i].id.c_str());
+      CGparameter fparam = cgGetNamedParameter(
+            pass.fPrg, chain->luts[i].id.c_str());
       int bound_index = -1;
+
       if (fparam)
       {
          unsigned index = cgGetParameterResourceIndex(fparam);
@@ -463,12 +477,16 @@ void renderchain_bind_luts(void *data, Pass &pass)
                translate_filter(chain->luts[i].smooth));
          chain->dev->SetSamplerState(index, D3DSAMP_MINFILTER,
                translate_filter(chain->luts[i].smooth));
-         chain->dev->SetSamplerState(index, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
-         chain->dev->SetSamplerState(index, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
+         chain->dev->SetSamplerState(index, D3DSAMP_ADDRESSU,
+               D3DTADDRESS_BORDER);
+         chain->dev->SetSamplerState(index, D3DSAMP_ADDRESSV,
+               D3DTADDRESS_BORDER);
          chain->bound_tex.push_back(index);
       }
 
-      CGparameter vparam = cgGetNamedParameter(pass.vPrg, chain->luts[i].id.c_str());
+      CGparameter vparam = cgGetNamedParameter(
+            pass.vPrg, chain->luts[i].id.c_str());
+
       if (vparam)
       {
          unsigned index = cgGetParameterResourceIndex(vparam);
@@ -479,8 +497,10 @@ void renderchain_bind_luts(void *data, Pass &pass)
                   translate_filter(chain->luts[i].smooth));
             chain->dev->SetSamplerState(index, D3DSAMP_MINFILTER,
                   translate_filter(chain->luts[i].smooth));
-            chain->dev->SetSamplerState(index, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
-            chain->dev->SetSamplerState(index, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
+            chain->dev->SetSamplerState(index, D3DSAMP_ADDRESSU,
+                  D3DTADDRESS_BORDER);
+            chain->dev->SetSamplerState(index, D3DSAMP_ADDRESSV,
+                  D3DTADDRESS_BORDER);
             chain->bound_tex.push_back(index);
          }
       }
@@ -490,9 +510,12 @@ void renderchain_bind_luts(void *data, Pass &pass)
 void renderchain_bind_pass(void *data, Pass &pass, unsigned pass_index)
 {
    renderchain_t *chain = (renderchain_t*)data;
-   // We only bother binding passes which are two indices behind.
+
    if (pass_index < 3)
+   {
+      /* We only bother binding passes which are two indices behind. */
       return;
+   }
 
    for (unsigned i = 1; i < pass_index - 1; i++)
    {
@@ -530,15 +553,18 @@ void renderchain_bind_pass(void *data, Pass &pass, unsigned pass_index)
                translate_filter(chain->passes[i].info.pass->filter));
          chain->dev->SetSamplerState(index, D3DSAMP_MINFILTER,
                translate_filter(chain->passes[i].info.pass->filter));
-         chain->dev->SetSamplerState(index, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
-         chain->dev->SetSamplerState(index, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
+         chain->dev->SetSamplerState(index, D3DSAMP_ADDRESSU,
+               D3DTADDRESS_BORDER);
+         chain->dev->SetSamplerState(index, D3DSAMP_ADDRESSV,
+               D3DTADDRESS_BORDER);
       }
 
       param = cgGetNamedParameter(pass.vPrg, attr_tex_coord.c_str());
       if (param)
       {
          unsigned index = pass.attrib_map[cgGetParameterResourceIndex(param)];
-         chain->dev->SetStreamSource(index, chain->passes[i].vertex_buf, 0, sizeof(Vertex));
+         chain->dev->SetStreamSource(index, chain->passes[i].vertex_buf,
+               0, sizeof(Vertex));
          chain->bound_vert.push_back(index);
       }
    }

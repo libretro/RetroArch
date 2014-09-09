@@ -74,15 +74,15 @@ struct ff_video_info
    uint8_t *outbuf;
    size_t outbuf_size;
 
-   // Output pixel format.
+   /* Output pixel format. */
    enum PixelFormat pix_fmt;
-   // Input pixel format. Only used by sws.
+   /* Input pixel format. Only used by sws. */
    enum PixelFormat in_pix_fmt;
 
    unsigned frame_drop_ratio;
    unsigned frame_drop_count;
 
-   // Input pixel size.
+   /* Input pixel size. */
    size_t pix_size;
 
    AVFormatContext *format;
@@ -380,9 +380,11 @@ static bool ffmpeg_init_video(ffmpeg_t *handle)
 
    video->encoder = codec;
 
-   /* Don't use swscaler unless format is not something "in-house" scaler supports.
-    * libswscale doesn't scale RGB -> RGB correctly (goes via YUV first), and it's non-trivial to fix
-    * upstream as it's heavily geared towards YUV.
+   /* Don't use swscaler unless format is not something "in-house" scaler
+    * supports.
+    *
+    * libswscale doesn't scale RGB -> RGB correctly (goes via YUV first),
+    * and it's non-trivial to fix upstream as it's heavily geared towards YUV.
     * If we're dealing with strange formats or YUV, just use libswscale.
     */
    if (params->out_pix_fmt != PIX_FMT_NONE)
@@ -446,8 +448,10 @@ static bool ffmpeg_init_video(ffmpeg_t *handle)
    video->codec->codec_type          = AVMEDIA_TYPE_VIDEO;
    video->codec->width               = param->out_width;
    video->codec->height              = param->out_height;
-   video->codec->time_base           = av_d2q((double)params->frame_drop_ratio /param->fps, 1000000); /* Arbitrary big number. */
-   video->codec->sample_aspect_ratio = av_d2q(param->aspect_ratio * param->out_height / param->out_width, 255);
+   video->codec->time_base           = av_d2q((double)
+         params->frame_drop_ratio /param->fps, 1000000); /* Arbitrary big number. */
+   video->codec->sample_aspect_ratio = av_d2q(
+         param->aspect_ratio * param->out_height / param->out_width, 255);
    video->codec->pix_fmt             = video->pix_fmt;
 
    video->codec->thread_count = params->threads;
@@ -468,8 +472,7 @@ static bool ffmpeg_init_video(ffmpeg_t *handle)
       return false;
 
    /* Allocate a big buffer. ffmpeg API doesn't seem to give us some
-    * clues how big this buffer should be.
-    */
+    * clues how big this buffer should be. */
    video->outbuf_size = 1 << 23;
    video->outbuf = (uint8_t*)av_malloc(video->outbuf_size);
 
@@ -769,7 +772,8 @@ static bool ffmpeg_push_video(void *data,
    if (!handle || !video_data)
       return false;
 
-   drop_frame = handle->video.frame_drop_count++ % handle->video.frame_drop_ratio;
+   drop_frame = handle->video.frame_drop_count++ %
+      handle->video.frame_drop_ratio;
 
    handle->video.frame_drop_count %= handle->video.frame_drop_ratio;
 
@@ -940,7 +944,8 @@ static void ffmpeg_scale_input(ffmpeg_t *handle,
 
          handle->video.scaler.out_width  = handle->params.out_width;
          handle->video.scaler.out_height = handle->params.out_height;
-         handle->video.scaler.out_stride = handle->video.conv_frame->linesize[0];
+         handle->video.scaler.out_stride = 
+            handle->video.conv_frame->linesize[0];
 
          scaler_ctx_gen_filter(&handle->video.scaler);
       }
@@ -1010,10 +1015,12 @@ static void planarize_audio(ffmpeg_t *handle)
 
    if (handle->audio.use_float)
       planarize_float((float*)handle->audio.planar_buf,
-            (const float*)handle->audio.buffer, handle->audio.frames_in_buffer);
+            (const float*)handle->audio.buffer,
+            handle->audio.frames_in_buffer);
    else
       planarize_s16((int16_t*)handle->audio.planar_buf,
-            (const int16_t*)handle->audio.buffer, handle->audio.frames_in_buffer);
+            (const int16_t*)handle->audio.buffer,
+            handle->audio.frames_in_buffer);
 }
 
 static bool encode_audio(ffmpeg_t *handle, AVPacket *pkt, bool dry)
@@ -1152,13 +1159,17 @@ static bool ffmpeg_push_audio_thread(ffmpeg_t *handle,
    size_t written_frames = 0;
    while (written_frames < data->frames)
    {
-      size_t can_write    = handle->audio.codec->frame_size - handle->audio.frames_in_buffer;
+      size_t can_write    = handle->audio.codec->frame_size - 
+         handle->audio.frames_in_buffer;
       size_t write_left   = data->frames - written_frames;
       size_t write_frames = write_left > can_write ? can_write : write_left;
-      size_t write_size   = write_frames * handle->params.channels * handle->audio.sample_size;
+      size_t write_size   = write_frames * 
+         handle->params.channels * handle->audio.sample_size;
 
-      size_t bytes_in_buffer = handle->audio.frames_in_buffer * handle->params.channels * handle->audio.sample_size;
-      size_t written_bytes   = written_frames * handle->params.channels * handle->audio.sample_size;
+      size_t bytes_in_buffer = handle->audio.frames_in_buffer * 
+         handle->params.channels * handle->audio.sample_size;
+      size_t written_bytes   = written_frames * 
+         handle->params.channels * handle->audio.sample_size;
 
       memcpy(handle->audio.buffer + bytes_in_buffer,
             (const uint8_t*)data->data + written_bytes,
@@ -1167,7 +1178,8 @@ static bool ffmpeg_push_audio_thread(ffmpeg_t *handle,
       written_frames                 += write_frames;
       handle->audio.frames_in_buffer += write_frames;
 
-      if ((handle->audio.frames_in_buffer < (size_t)handle->audio.codec->frame_size) && require_block)
+      if ((handle->audio.frames_in_buffer 
+               < (size_t)handle->audio.codec->frame_size) && require_block)
          break;
 
       AVPacket pkt;
@@ -1224,12 +1236,17 @@ static void ffmpeg_flush_video(ffmpeg_t *handle)
 
 static void ffmpeg_flush_buffers(ffmpeg_t *handle)
 {
-   void *video_buf = av_malloc(2 * handle->params.fb_width * handle->params.fb_height * handle->video.pix_size);
-   size_t audio_buf_size = handle->config.audio_enable ? (handle->audio.codec->frame_size * handle->params.channels * sizeof(int16_t)) : 0;
+   void *video_buf = av_malloc(2 * handle->params.fb_width * 
+         handle->params.fb_height * handle->video.pix_size);
+   size_t audio_buf_size = handle->config.audio_enable ? 
+      (handle->audio.codec->frame_size * 
+       handle->params.channels * sizeof(int16_t)) : 0;
    void *audio_buf = audio_buf_size ? av_malloc(audio_buf_size) : NULL;
 
-   /* Try pushing data in an interleaving pattern to ease the work of the muxer a bit. */
+   /* Try pushing data in an interleaving pattern to 
+    * ease the work of the muxer a bit. */
    bool did_work;
+
    do
    {
       did_work = false;
@@ -1253,7 +1270,8 @@ static void ffmpeg_flush_buffers(ffmpeg_t *handle)
       if (fifo_read_avail(handle->attr_fifo) >= sizeof(attr_buf))
       {
          fifo_read(handle->attr_fifo, &attr_buf, sizeof(attr_buf));
-         fifo_read(handle->video_fifo, video_buf, attr_buf.height * attr_buf.pitch);
+         fifo_read(handle->video_fifo, video_buf, 
+               attr_buf.height * attr_buf.pitch);
          attr_buf.data = video_buf;
          ffmpeg_push_video_thread(handle, &attr_buf);
 
@@ -1296,11 +1314,14 @@ static void ffmpeg_thread(void *data)
 {
    ffmpeg_t *ff = (ffmpeg_t*)data;
 
-   /* For some reason, FFmpeg has a tendency to crash if we don't overallocate a bit. */
-   void *video_buf = av_malloc(2 * ff->params.fb_width * ff->params.fb_height * ff->video.pix_size);
+   /* For some reason, FFmpeg has a tendency to crash 
+    * if we don't overallocate a bit. */
+   void *video_buf = av_malloc(2 * ff->params.fb_width *
+         ff->params.fb_height * ff->video.pix_size);
    assert(video_buf);
 
-   size_t audio_buf_size = ff->config.audio_enable ? (ff->audio.codec->frame_size * ff->params.channels * sizeof(int16_t)) : 0;
+   size_t audio_buf_size = ff->config.audio_enable ? 
+      (ff->audio.codec->frame_size * ff->params.channels * sizeof(int16_t)) : 0;
    void *audio_buf = audio_buf_size ? av_malloc(audio_buf_size) : NULL;
 
    while (ff->alive)
@@ -1338,7 +1359,8 @@ static void ffmpeg_thread(void *data)
       {
          slock_lock(ff->lock);
          fifo_read(ff->attr_fifo, &attr_buf, sizeof(attr_buf));
-         fifo_read(ff->video_fifo, video_buf, attr_buf.height * attr_buf.pitch);
+         fifo_read(ff->video_fifo, video_buf,
+               attr_buf.height * attr_buf.pitch);
          slock_unlock(ff->lock);
          scond_signal(ff->cond);
 

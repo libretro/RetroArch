@@ -14,9 +14,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-// Compile: gcc -o darken.so -shared darken.c -std=c99 -O3 -Wall -pedantic -fPIC
-
-// Useless filter, just nice as a reference for other filters.
+/* Useless filter, just nice as a reference for other filters. */
 
 #include "softfilter.h"
 #include <stdlib.h>
@@ -75,7 +73,8 @@ static void *darken_create(const struct softfilter_config *config,
    struct filter_data *filt = (struct filter_data*)calloc(1, sizeof(*filt));
    if (!filt)
       return NULL;
-   filt->workers = (struct softfilter_thread_data*)calloc(threads, sizeof(struct softfilter_thread_data));
+   filt->workers = (struct softfilter_thread_data*)
+      calloc(threads, sizeof(struct softfilter_thread_data));
    filt->threads = threads;
    filt->in_fmt  = in_fmt;
    if (!filt->workers)
@@ -102,28 +101,32 @@ static void darken_destroy(void *data)
 
 static void darken_work_cb_xrgb8888(void *data, void *thread_data)
 {
-   struct softfilter_thread_data *thr = (struct softfilter_thread_data*)thread_data;
+   struct softfilter_thread_data *thr = 
+      (struct softfilter_thread_data*)thread_data;
    const uint32_t *input = (const uint32_t*)thr->in_data;
    uint32_t *output = (uint32_t*)thr->out_data;
    unsigned width = thr->width;
    unsigned height = thr->height;
 
    unsigned x, y;
-   for (y = 0; y < height; y++, input += thr->in_pitch >> 2, output += thr->out_pitch >> 2)
+   for (y = 0; y < height;
+         y++, input += thr->in_pitch >> 2, output += thr->out_pitch >> 2)
       for (x = 0; x < width; x++)
          output[x] = (input[x] >> 2) & (0x3f * 0x01010101);
 }
 
 static void darken_work_cb_rgb565(void *data, void *thread_data)
 {
-   struct softfilter_thread_data *thr = (struct softfilter_thread_data*)thread_data;
+   struct softfilter_thread_data *thr = 
+      (struct softfilter_thread_data*)thread_data;
    const uint16_t *input = (const uint16_t*)thr->in_data;
    uint16_t *output = (uint16_t*)thr->out_data;
    unsigned width = thr->width;
    unsigned height = thr->height;
 
    unsigned x, y;
-   for (y = 0; y < height; y++, input += thr->in_pitch >> 1, output += thr->out_pitch >> 1)
+   for (y = 0; y < height;
+         y++, input += thr->in_pitch >> 1, output += thr->out_pitch >> 1)
       for (x = 0; x < width; x++)
          output[x] = (input[x] >> 2) & ((0x7 << 0) | (0xf << 5) | (0x7 << 11));
 }
@@ -137,7 +140,8 @@ static void darken_packets(void *data,
    struct filter_data *filt = (struct filter_data*)data;
    for (i = 0; i < filt->threads; i++)
    {
-      struct softfilter_thread_data *thr = (struct softfilter_thread_data*)&filt->workers[i];
+      struct softfilter_thread_data *thr = 
+         (struct softfilter_thread_data*)&filt->workers[i];
       unsigned y_start = (height * i) / filt->threads;
       unsigned y_end = (height * (i + 1)) / filt->threads;
       thr->out_data = (uint8_t*)output + y_start * output_stride;
@@ -170,7 +174,8 @@ static const struct softfilter_implementation darken = {
    "darken",
 };
 
-const struct softfilter_implementation *softfilter_get_implementation(softfilter_simd_mask_t simd)
+const struct softfilter_implementation *softfilter_get_implementation(
+      softfilter_simd_mask_t simd)
 {
    (void)simd;
    return &darken;

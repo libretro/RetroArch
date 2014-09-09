@@ -1507,6 +1507,20 @@ int setting_data_get_description(const char *label, char *msg,
     else if (!strcmp(label, "menu_toggle"))
        snprintf(msg, sizeof_msg,
              " -- Toggles menu.");
+    else if (!strcmp(label, "input_bind_device_id"))
+       snprintf(msg, sizeof_msg,
+       " -- Input Device. \n"
+          " \n"
+          "Picks which gamepad to use for player N. \n"
+          "The name of the pad is available."
+          );
+    else if (!strcmp(label, "input_bind_device_type"))
+       snprintf(msg, sizeof_msg,
+             " -- Input Device Type. \n"
+             " \n"
+             "Picks which device type to use. This is \n"
+             "relevant for the libretro core itself."
+             );
     else
        snprintf(msg, sizeof_msg,
              "-- No info on this item is available. --\n");
@@ -1732,6 +1746,74 @@ void setting_data_get_label(char *type_str,
             driver.menu->shader, type_str, type_str_size,
             menu_label, label, type);
    }
+   else if (!strcmp(label, "input_bind_device_id"))
+   {
+      int map = g_settings.input.joypad_map
+         [driver.menu->current_pad];
+      if (map >= 0 && map < MAX_PLAYERS)
+      {
+         const char *device_name = 
+            g_settings.input.device_names[map];
+
+         if (*device_name)
+            strlcpy(type_str, device_name, type_str_size);
+         else
+            snprintf(type_str, type_str_size,
+                  "N/A (port #%d)", map);
+      }
+      else
+         strlcpy(type_str, "Disabled", type_str_size);
+   }
+   else if (!strcmp(label, "input_bind_device_type"))
+   {
+      const struct retro_controller_description *desc = NULL;
+      if (driver.menu->current_pad < g_extern.system.num_ports)
+         desc = libretro_find_controller_description(
+               &g_extern.system.ports[driver.menu->current_pad],
+               g_settings.input.libretro_device
+               [driver.menu->current_pad]);
+
+      const char *name = desc ? desc->desc : NULL;
+      if (!name)
+      {
+         /* Find generic name. */
+
+         switch (g_settings.input.libretro_device
+               [driver.menu->current_pad])
+         {
+            case RETRO_DEVICE_NONE:
+               name = "None";
+               break;
+            case RETRO_DEVICE_JOYPAD:
+               name = "RetroPad";
+               break;
+            case RETRO_DEVICE_ANALOG:
+               name = "RetroPad w/ Analog";
+               break;
+            default:
+               name = "Unknown";
+               break;
+         }
+      }
+
+      strlcpy(type_str, name, type_str_size);
+   }
+   else if (!strcmp(label, "input_bind_player_no"))
+      snprintf(type_str, type_str_size, "#%u",
+            driver.menu->current_pad + 1);
+   else if (!strcmp(label, "input_bind_analog_dpad_mode"))
+   {
+      static const char *modes[] = {
+         "None",
+         "Left Analog",
+         "Right Analog",
+         "Dual Analog",
+      };
+
+      strlcpy(type_str, modes[g_settings.input.analog_dpad_mode
+            [driver.menu->current_pad] % ANALOG_DPAD_LAST],
+            type_str_size);
+   }
    else if (type >= MENU_SETTINGS_PERF_COUNTERS_BEGIN
          && type <= MENU_SETTINGS_PERF_COUNTERS_END)
       menu_common_setting_set_label_perf(type_str, type_str_size, w, type,
@@ -1801,78 +1883,6 @@ void setting_data_get_label(char *type_str,
             case MENU_SETTINGS_CUSTOM_BIND_ALL:
             case MENU_SETTINGS_CUSTOM_BIND_DEFAULT_ALL:
                strlcpy(type_str, "...", type_str_size);
-               break;
-            case MENU_SETTINGS_BIND_PLAYER:
-               snprintf(type_str, type_str_size, "#%u",
-                     driver.menu->current_pad + 1);
-               break;
-            case MENU_SETTINGS_BIND_DEVICE:
-               {
-                  int map = g_settings.input.joypad_map
-                     [driver.menu->current_pad];
-                  if (map >= 0 && map < MAX_PLAYERS)
-                  {
-                     const char *device_name = 
-                        g_settings.input.device_names[map];
-
-                     if (*device_name)
-                        strlcpy(type_str, device_name, type_str_size);
-                     else
-                        snprintf(type_str, type_str_size,
-                              "N/A (port #%d)", map);
-                  }
-                  else
-                     strlcpy(type_str, "Disabled", type_str_size);
-               }
-               break;
-            case MENU_SETTINGS_BIND_ANALOG_MODE:
-               {
-                  static const char *modes[] = {
-                     "None",
-                     "Left Analog",
-                     "Right Analog",
-                     "Dual Analog",
-                  };
-
-                  strlcpy(type_str, modes[g_settings.input.analog_dpad_mode
-                        [driver.menu->current_pad] % ANALOG_DPAD_LAST],
-                        type_str_size);
-               }
-               break;
-            case MENU_SETTINGS_BIND_DEVICE_TYPE:
-               {
-                  const struct retro_controller_description *desc = NULL;
-                  if (driver.menu->current_pad < g_extern.system.num_ports)
-                     desc = libretro_find_controller_description(
-                           &g_extern.system.ports[driver.menu->current_pad],
-                           g_settings.input.libretro_device
-                           [driver.menu->current_pad]);
-
-                  const char *name = desc ? desc->desc : NULL;
-                  if (!name)
-                  {
-                     /* Find generic name. */
-
-                     switch (g_settings.input.libretro_device
-                           [driver.menu->current_pad])
-                     {
-                        case RETRO_DEVICE_NONE:
-                           name = "None";
-                           break;
-                        case RETRO_DEVICE_JOYPAD:
-                           name = "RetroPad";
-                           break;
-                        case RETRO_DEVICE_ANALOG:
-                           name = "RetroPad w/ Analog";
-                           break;
-                        default:
-                           name = "Unknown";
-                           break;
-                     }
-                  }
-
-                  strlcpy(type_str, name, type_str_size);
-               }
                break;
             case MENU_SETTINGS_CUSTOM_BIND_MODE:
                strlcpy(type_str, driver.menu->bind_mode_keyboard ?
@@ -2209,39 +2219,43 @@ rarch_setting_t *setting_data_get_mainmenu(bool regenerate)
    START_GROUP("Main Menu")
       START_SUB_GROUP("State")
 #if defined(HAVE_DYNAMIC) || defined(HAVE_LIBRETRO_MANAGEMENT)
-      CONFIG_BOOL(lists[0],     "core_list",     "Core",          false, "", "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+      CONFIG_BOOL(lists[0],     "core_list",     "Core",          false, "", "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_FLAGS(SD_FLAG_PUSH_ACTION)
 #endif
       if (g_extern.history)
       {
-         CONFIG_BOOL(lists[1],     "history_list",  "Load Content (History)", false, "", "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+         CONFIG_BOOL(lists[1],     "history_list",  "Load Content (History)", false, "", "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_FLAGS(SD_FLAG_PUSH_ACTION)
       }
       if (driver.menu && g_extern.core_info && core_info_list_num_info_files(g_extern.core_info))
       {
-         CONFIG_BOOL(lists[2],     "detect_core_list",  "Load Content (Detect Core)", false, "", "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+         CONFIG_BOOL(lists[2],     "detect_core_list",  "Load Content (Detect Core)", false, "", "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_FLAGS(SD_FLAG_PUSH_ACTION)
       }
-      CONFIG_BOOL(lists[3],     "load_content",  "Load Content", false, "", "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
-      CONFIG_BOOL(lists[4],     "core_options",  "Core Options", false, "", "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
-      CONFIG_BOOL(lists[5],     "core_information",  "Core Information", false, "", "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
-      CONFIG_BOOL(lists[6],     "settings",  "Settings", false, "", "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+      CONFIG_BOOL(lists[3],     "load_content",  "Load Content", false, "", "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_FLAGS(SD_FLAG_PUSH_ACTION)
+      CONFIG_BOOL(lists[4],     "core_options",  "Core Options", false, "", "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_FLAGS(SD_FLAG_PUSH_ACTION)
+      CONFIG_BOOL(lists[5],     "core_information",  "Core Information", false, "", "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_FLAGS(SD_FLAG_PUSH_ACTION)
+      if (g_extern.main_is_init && !g_extern.libretro_dummy)
+      {
+         CONFIG_BOOL(lists[6],     "disk_options",  "Core Disk Options", false, "", "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_FLAGS(SD_FLAG_PUSH_ACTION)
+      }
+      CONFIG_BOOL(lists[7],     "settings",  "Settings", false, "", "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_FLAGS(SD_FLAG_PUSH_ACTION)
       if (g_extern.perfcnt_enable)
       {
-         CONFIG_BOOL(lists[7],     "performance_counters",  "Performance Counters", false, "", "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+         CONFIG_BOOL(lists[8],     "performance_counters",  "Performance Counters", false, "", "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_FLAGS(SD_FLAG_PUSH_ACTION)
       }
       if (g_extern.main_is_init && !g_extern.libretro_dummy)
       {
-         CONFIG_BOOL(lists[8],     "savestate",  "Save State", false, "", "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
-         CONFIG_BOOL(lists[9],     "loadstate",  "Load State", false, "", "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
-         CONFIG_BOOL(lists[10],     "take_screenshot",  "Take Screenshot", false, "", "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
-         CONFIG_BOOL(lists[11],     "resume_content",  "Resume Content", false, "", "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
-         CONFIG_BOOL(lists[12],     "restart_content",  "Restart Content", false, "", "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+         CONFIG_BOOL(lists[9],     "savestate",  "Save State", false, "", "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+         CONFIG_BOOL(lists[10],     "loadstate",  "Load State", false, "", "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+         CONFIG_BOOL(lists[11],     "take_screenshot",  "Take Screenshot", false, "", "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_FLAGS(SD_FLAG_PUSH_ACTION)
+         CONFIG_BOOL(lists[12],     "resume_content",  "Resume Content", false, "", "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_FLAGS(SD_FLAG_PUSH_ACTION)
+         CONFIG_BOOL(lists[13],     "restart_content",  "Restart Content", false, "", "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_FLAGS(SD_FLAG_PUSH_ACTION)
       }
 #ifndef HAVE_DYNAMIC
-      CONFIG_BOOL(lists[13], "restart_retroarch", "Restart RetroArch", false, "", "",GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+      CONFIG_BOOL(lists[14], "restart_retroarch", "Restart RetroArch", false, "", "",GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_FLAGS(SD_FLAG_PUSH_ACTION)
 #endif
-      CONFIG_BOOL(lists[14], "configurations", "Configurations", false, "", "",GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
-      CONFIG_BOOL(lists[15], "save_new_config", "Save New Config", false, "", "",GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
-      CONFIG_BOOL(lists[16], "help", "Help", false, "", "",GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
-      CONFIG_BOOL(lists[17], "quit_retroarch", "Quit RetroArch", false, "", "",GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+      CONFIG_BOOL(lists[15], "configurations", "Configurations", false, "", "",GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+      CONFIG_BOOL(lists[16], "save_new_config", "Save New Config", false, "", "",GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_FLAGS(SD_FLAG_PUSH_ACTION)
+      CONFIG_BOOL(lists[17], "help", "Help", false, "", "",GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_FLAGS(SD_FLAG_PUSH_ACTION)
+      CONFIG_BOOL(lists[18], "quit_retroarch", "Quit RetroArch", false, "", "",GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_FLAGS(SD_FLAG_PUSH_ACTION)
       END_SUB_GROUP()
       END_GROUP()
 
@@ -2293,7 +2307,7 @@ rarch_setting_t *setting_data_get_list(void)
       /* General Options */
       /*******************/
       START_GROUP("General Options")
-      START_SUB_GROUP("General Options")
+      START_SUB_GROUP("State")
       CONFIG_BOOL(g_extern.verbosity,                      "log_verbosity",        "Logging Verbosity", false, "OFF", "ON", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
       CONFIG_UINT(g_settings.libretro_log_level,           "libretro_log_level",        "Libretro Logging Level", libretro_log_level, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_RANGE(0, 3, 1.0, true, true)
       CONFIG_BOOL(g_extern.perfcnt_enable,               "perfcnt_enable",       "Performance Counters", false, "OFF", "ON", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
@@ -2318,9 +2332,11 @@ rarch_setting_t *setting_data_get_list(void)
       CONFIG_INT(g_settings.state_slot,                    "state_slot",                 "State Slot",                 0, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
       END_SUB_GROUP()
       START_SUB_GROUP("Miscellaneous")
+#if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
       CONFIG_BOOL(g_settings.network_cmd_enable,         "network_cmd_enable",         "Network Commands",           network_cmd_enable, "OFF", "ON", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
       //CONFIG_INT(g_settings.network_cmd_port,            "network_cmd_port",           "Network Command Port",       network_cmd_port, GROUP_NAME, SUBGROUP_NAME, NULL)
       CONFIG_BOOL(g_settings.stdin_cmd_enable,           "stdin_cmd_enable",           "stdin command",              stdin_cmd_enable, "OFF", "ON", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+#endif
       END_SUB_GROUP()
       END_GROUP()
 
@@ -2446,7 +2462,7 @@ rarch_setting_t *setting_data_get_list(void)
       END_SUB_GROUP()
 
       START_SUB_GROUP("Miscellaneous")
-      CONFIG_STRING(g_settings.audio.device,             "audio_device",               "Device",                     "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+      CONFIG_STRING(g_settings.audio.device,             "audio_device",               "Device",                     "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_FLAGS(SD_FLAG_ALLOW_INPUT)
       CONFIG_UINT(g_settings.audio.out_rate,             "audio_out_rate",             "Audio Output Rate",          out_rate, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
       CONFIG_PATH(g_settings.audio.dsp_plugin,           "audio_dsp_plugin",           "DSP Plugin",                 g_settings.audio.filter_dir, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)          WITH_FLAGS(SD_FLAG_ALLOW_EMPTY) WITH_VALUES("dsp")
       END_SUB_GROUP()
@@ -2532,12 +2548,12 @@ rarch_setting_t *setting_data_get_list(void)
       START_SUB_GROUP("State")
       CONFIG_BOOL(g_extern.netplay_enable,            "netplay_enable",  "Netplay Enable",        false, "OFF", "ON", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
 #ifdef HAVE_NETPLAY
-      CONFIG_STRING(g_extern.netplay_server,          "netplay_ip_address",   "IP Address",       "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+      CONFIG_STRING(g_extern.netplay_server,          "netplay_ip_address",   "IP Address",       "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_FLAGS(SD_FLAG_ALLOW_INPUT)
 #endif
       CONFIG_BOOL(g_extern.netplay_is_client,         "netplay_mode",    "Netplay Client Enable",          false, "OFF", "ON", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
       CONFIG_BOOL(g_extern.netplay_is_spectate,       "netplay_spectator_mode_enable",    "Netplay Spectator Enable",          false, "OFF", "ON", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
       CONFIG_UINT(g_extern.netplay_sync_frames,       "netplay_delay_frames",      "Netplay Delay Frames",      0, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_RANGE(0, 10, 1, true, false)
-      CONFIG_UINT(g_extern.netplay_port,       "netplay_tcp_udp_port",      "Netplay TCP/UDP Port",      RARCH_DEFAULT_PORT, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_RANGE(1, 99999, 1, true, true)
+      CONFIG_UINT(g_extern.netplay_port,       "netplay_tcp_udp_port",      "Netplay TCP/UDP Port",      RARCH_DEFAULT_PORT, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_RANGE(1, 99999, 1, true, true) WITH_FLAGS(SD_FLAG_ALLOW_INPUT)
       END_SUB_GROUP()
       END_GROUP()
 #endif
@@ -2547,8 +2563,8 @@ rarch_setting_t *setting_data_get_list(void)
       /*******************/
       START_GROUP("User Options")
       START_SUB_GROUP("State")
-      CONFIG_STRING(g_settings.username,          "netplay_nickname",   "Username",       "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
-      CONFIG_UINT(g_settings.user_language,     "user_language",      "Language",       def_user_language, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_RANGE(0, RETRO_LANGUAGE_LAST-1, 1, true, true)
+      CONFIG_STRING(g_settings.username,          "netplay_nickname",   "Username",       "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_FLAGS(SD_FLAG_ALLOW_INPUT)
+      CONFIG_UINT(g_settings.user_language,     "user_language",      "Language",       def_user_language, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_RANGE(0, RETRO_LANGUAGE_LAST-1, 1, true, true) WITH_FLAGS(SD_FLAG_ALLOW_INPUT)
       END_SUB_GROUP()
       END_GROUP()
 

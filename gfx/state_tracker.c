@@ -71,7 +71,9 @@ state_tracker_t* state_tracker_init(const struct state_tracker_info *info)
 #ifdef HAVE_PYTHON
    if (info->script)
    {
-      tracker->py = py_state_new(info->script, info->script_is_file, info->script_class ? info->script_class : "GameAware");
+      tracker->py = py_state_new(info->script, info->script_is_file,
+            info->script_class ? info->script_class : "GameAware");
+
       if (!tracker->py)
       {
          free(tracker);
@@ -81,15 +83,18 @@ state_tracker_t* state_tracker_init(const struct state_tracker_info *info)
    }
 #endif
 
-   tracker->info = (struct state_tracker_internal*)calloc(info->info_elem, sizeof(struct state_tracker_internal));
+   tracker->info = (struct state_tracker_internal*)
+      calloc(info->info_elem, sizeof(struct state_tracker_internal));
    tracker->info_elem = info->info_elem;
 
    for (i = 0; i < info->info_elem; i++)
    {
-      strlcpy(tracker->info[i].id, info->info[i].id, sizeof(tracker->info[i].id));
+      strlcpy(tracker->info[i].id, info->info[i].id,
+            sizeof(tracker->info[i].id));
       tracker->info[i].addr  = info->info[i].addr;
       tracker->info[i].type  = info->info[i].type;
-      tracker->info[i].mask  = (info->info[i].mask == 0) ? 0xffff : info->info[i].mask;
+      tracker->info[i].mask  = (info->info[i].mask == 0) 
+         ? 0xffff : info->info[i].mask;
       tracker->info[i].equal = info->info[i].equal;
 
 #ifdef HAVE_PYTHON
@@ -106,7 +111,7 @@ state_tracker_t* state_tracker_init(const struct state_tracker_info *info)
       }
 #endif
 
-      // If we don't have a valid pointer.
+      /* If we don't have a valid pointer. */
       static const uint8_t empty = 0;
 
       switch (info->info[i].ram_type)
@@ -217,7 +222,7 @@ static void update_element(
    }
 }
 
-// Updates 16-bit input in same format as SNES itself.
+/* Updates 16-bit input in same format as SNES itself. */
 static void update_input(state_tracker_t *tracker)
 {
    unsigned i;
@@ -239,24 +244,30 @@ static void update_input(state_tracker_t *tracker)
       RETRO_DEVICE_ID_JOYPAD_B,
    };
 
-   // Only bind for up to two players for now.
+   /* Only bind for up to two players for now. */
    static const struct retro_keybind *binds[2] = {
       g_settings.input.binds[0],
       g_settings.input.binds[1],
    };
 
    for (i = 0; i < 2; i++)
-      input_push_analog_dpad(g_settings.input.binds[i], g_settings.input.analog_dpad_mode[i]);
+      input_push_analog_dpad(g_settings.input.binds[i],
+            g_settings.input.analog_dpad_mode[i]);
    for (i = 0; i < MAX_PLAYERS; i++)
-      input_push_analog_dpad(g_settings.input.autoconf_binds[i], g_settings.input.analog_dpad_mode[i]);
+      input_push_analog_dpad(g_settings.input.autoconf_binds[i],
+            g_settings.input.analog_dpad_mode[i]);
 
    uint16_t state[2] = {0};
    if (!driver.block_libretro_input)
    {
       for (i = 4; i < 16; i++)
       {
-         state[0] |= (driver.input->input_state(driver.input_data, binds, 0, RETRO_DEVICE_JOYPAD, 0, buttons[i - 4]) ? 1 : 0) << i;
-         state[1] |= (driver.input->input_state(driver.input_data, binds, 1, RETRO_DEVICE_JOYPAD, 0, buttons[i - 4]) ? 1 : 0) << i;
+         state[0] |= (driver.input->input_state(
+                  driver.input_data, binds, 0, 
+                  RETRO_DEVICE_JOYPAD, 0, buttons[i - 4]) ? 1 : 0) << i;
+         state[1] |= (driver.input->input_state(
+                  driver.input_data, binds, 1, 
+                  RETRO_DEVICE_JOYPAD, 0, buttons[i - 4]) ? 1 : 0) << i;
       }
    }
 
@@ -269,7 +280,9 @@ static void update_input(state_tracker_t *tracker)
       tracker->input_state[i] = state[i];
 }
 
-unsigned state_get_uniform(state_tracker_t *tracker, struct state_tracker_uniform *uniforms, unsigned elem, unsigned frame_count)
+unsigned state_get_uniform(state_tracker_t *tracker,
+      struct state_tracker_uniform *uniforms,
+      unsigned elem, unsigned frame_count)
 {
    unsigned i, elems;
    elems = tracker->info_elem < elem ? tracker->info_elem : elem;

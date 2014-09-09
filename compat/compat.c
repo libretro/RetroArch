@@ -80,8 +80,8 @@ static int parse_short(const char *optstring, char * const *argv)
    bool extra_opt = argv[0][2];
    bool takes_arg = opt[1] == ':';
 
-   // If we take an argument, and we see additional characters,
-   // this is in fact the argument (i.e. -cfoo is same as -c foo).
+   /* If we take an argument, and we see additional characters,
+    * this is in fact the argument (i.e. -cfoo is same as -c foo). */
    bool embedded_arg = extra_opt && takes_arg;
 
    if (takes_arg)
@@ -99,8 +99,11 @@ static int parse_short(const char *optstring, char * const *argv)
 
       return optarg ? opt[0] : '?';
    }
-   else if (embedded_arg) // If we see additional characters, and they don't take arguments, this means we have multiple flags in one.
+   else if (embedded_arg)
    {
+      /* If we see additional characters, 
+       * and they don't take arguments, this 
+       * means we have multiple flags in one. */
       memmove(&argv[0][1], &argv[0][2], strlen(&argv[0][2]) + 1);
       return opt[0];
    }
@@ -127,7 +130,7 @@ static int parse_long(const struct option *longopts, char * const *argv)
    if (!opt)
       return '?';
    
-   // getopt_long has an "optional" arg, but we don't bother with that.
+   /* getopt_long has an "optional" arg, but we don't bother with that. */
    if (opt->has_arg && !argv[1])
       return '?';
 
@@ -144,8 +147,8 @@ static int parse_long(const struct option *longopts, char * const *argv)
       *opt->flag = opt->val;
       return 0;
    }
-   else
-      return opt->val;
+
+   return opt->val;
 }
 
 static void shuffle_block(char **begin, char **last, char **end)
@@ -175,18 +178,19 @@ int getopt_long(int argc, char *argv[],
    int short_index = find_short_index(&argv[optind]);
    int long_index  = find_long_index(&argv[optind]);
 
-   // We're done here.
+   /* We're done here. */
    if (short_index == -1 && long_index == -1)
       return -1;
 
-   // Reorder argv so that non-options come last.
-   // Non-POSIXy, but that's what getopt does by default.
+   /* Reorder argv so that non-options come last.
+    * Non-POSIXy, but that's what getopt does by default. */
    if ((short_index > 0) && ((short_index < long_index) || (long_index == -1)))
    {
       shuffle_block(&argv[optind], &argv[optind + short_index], &argv[argc]);
       short_index = 0;
    }
-   else if ((long_index > 0) && ((long_index < short_index) || (short_index == -1)))
+   else if ((long_index > 0) && ((long_index < short_index)
+            || (short_index == -1)))
    {
       shuffle_block(&argv[optind], &argv[optind + long_index], &argv[argc]);
       long_index = 0;
@@ -205,7 +209,7 @@ int getopt_long(int argc, char *argv[],
 #endif
 
 #ifndef HAVE_STRCASESTR
-// Pretty much strncasecmp.
+/* Pretty much strncasecmp. */
 static int casencmp(const char *a, const char *b, size_t n)
 {
    size_t i;
@@ -239,7 +243,7 @@ char *strcasestr_rarch__(const char *haystack, const char *needle)
 
 #ifndef HAVE_STRL
 
-// Implementation of strlcpy()/strlcat() based on OpenBSD.
+/* Implementation of strlcpy()/strlcat() based on OpenBSD. */
 
 size_t strlcpy(char *dest, const char *source, size_t size)
 {

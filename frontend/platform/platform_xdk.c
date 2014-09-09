@@ -235,7 +235,6 @@ static void frontend_xdk_get_environment_settings(int *argc, char *argv[],
 #endif
 
 #ifndef IS_SALAMANDER
-exit:
    g_extern.verbosity = original_verbose;
 #endif
 }

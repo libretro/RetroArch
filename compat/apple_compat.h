@@ -14,7 +14,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-// Prefix header for all source files of the 'RetroArch' target in the 'RetroArch' project
+/* Prefix header for all source files of the 'RetroArch' 
+ * target in the 'RetroArch' project. */
 
 #ifdef IOS
 #import <Availability.h>

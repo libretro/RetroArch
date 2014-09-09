@@ -14,8 +14,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-// Compile: gcc -o lq2x.so -shared lq2x.c -std=c99 -O3 -Wall -pedantic -fPIC
-
 #include "softfilter.h"
 #include <stdlib.h>
 
@@ -75,7 +73,8 @@ static void *lq2x_generic_create(const struct softfilter_config *config,
    struct filter_data *filt = (struct filter_data*)calloc(1, sizeof(*filt));
    if (!filt)
       return NULL;
-   filt->workers = (struct softfilter_thread_data*)calloc(threads, sizeof(struct softfilter_thread_data));
+   filt->workers = (struct softfilter_thread_data*)
+      calloc(threads, sizeof(struct softfilter_thread_data));
    filt->threads = threads;
    filt->in_fmt  = in_fmt;
    if (!filt->workers)
@@ -86,7 +85,8 @@ static void *lq2x_generic_create(const struct softfilter_config *config,
    return filt;
 }
 
-static void lq2x_generic_output(void *data, unsigned *out_width, unsigned *out_height,
+static void lq2x_generic_output(void *data,
+      unsigned *out_width, unsigned *out_height,
       unsigned width, unsigned height)
 {
    *out_width = width * LQ2X_SCALE;
@@ -194,19 +194,24 @@ static void lq2x_generic_xrgb8888(unsigned width, unsigned height,
 
 static void lq2x_work_cb_rgb565(void *data, void *thread_data)
 {
-   struct softfilter_thread_data *thr = (struct softfilter_thread_data*)thread_data;
+   struct softfilter_thread_data *thr = 
+      (struct softfilter_thread_data*)thread_data;
    uint16_t *input = (uint16_t*)thr->in_data;
    uint16_t *output = (uint16_t*)thr->out_data;
    unsigned width = thr->width;
    unsigned height = thr->height;
 
    lq2x_generic_rgb565(width, height,
-         thr->first, thr->last, input, thr->in_pitch / SOFTFILTER_BPP_RGB565, output, thr->out_pitch / SOFTFILTER_BPP_RGB565);
+         thr->first, thr->last, input,
+         thr->in_pitch / SOFTFILTER_BPP_RGB565,
+         output,
+         thr->out_pitch / SOFTFILTER_BPP_RGB565);
 }
 
 static void lq2x_work_cb_xrgb8888(void *data, void *thread_data)
 {
-   struct softfilter_thread_data *thr = (struct softfilter_thread_data*)thread_data;
+   struct softfilter_thread_data *thr = 
+      (struct softfilter_thread_data*)thread_data;
    uint32_t *input = (uint32_t*)thr->in_data;
    uint32_t *output = (uint32_t*)thr->out_data;
    unsigned width = thr->width;
@@ -215,19 +220,24 @@ static void lq2x_work_cb_xrgb8888(void *data, void *thread_data)
    (void)data;
 
    lq2x_generic_xrgb8888(width, height,
-         thr->first, thr->last, input, thr->in_pitch / SOFTFILTER_BPP_XRGB8888, output, thr->out_pitch / SOFTFILTER_BPP_XRGB8888);
+         thr->first, thr->last, input,
+         thr->in_pitch / SOFTFILTER_BPP_XRGB8888,
+         output,
+         thr->out_pitch / SOFTFILTER_BPP_XRGB8888);
 }
 
 static void lq2x_generic_packets(void *data,
       struct softfilter_work_packet *packets,
       void *output, size_t output_stride,
-      const void *input, unsigned width, unsigned height, size_t input_stride)
+      const void *input, unsigned width,
+      unsigned height, size_t input_stride)
 {
    struct filter_data *filt = (struct filter_data*)data;
    unsigned i;
    for (i = 0; i < filt->threads; i++)
    {
-      struct softfilter_thread_data *thr = (struct softfilter_thread_data*)&filt->workers[i];
+      struct softfilter_thread_data *thr = 
+         (struct softfilter_thread_data*)&filt->workers[i];
 
       unsigned y_start = (height * i) / filt->threads;
       unsigned y_end = (height * (i + 1)) / filt->threads;
@@ -238,14 +248,17 @@ static void lq2x_generic_packets(void *data,
       thr->width = width;
       thr->height = y_end - y_start;
 
-      // Workers need to know if they can access pixels outside their given buffer.
+      /* Workers need to know if they can access pixels 
+       * outside their given buffer. */
       thr->first = y_start;
       thr->last = y_end == height;
 
       if (filt->in_fmt == SOFTFILTER_FMT_RGB565)
          packets[i].work = lq2x_work_cb_rgb565;
-      //else if (filt->in_fmt == SOFTFILTER_FMT_RGB4444)
-         //packets[i].work = lq2x_work_cb_rgb4444;
+#if 0
+      else if (filt->in_fmt == SOFTFILTER_FMT_RGB4444)
+         packets[i].work = lq2x_work_cb_rgb4444;
+#endif
       else if (filt->in_fmt == SOFTFILTER_FMT_XRGB8888)
          packets[i].work = lq2x_work_cb_xrgb8888;
       packets[i].thread_data = thr;
@@ -267,7 +280,8 @@ static const struct softfilter_implementation lq2x_generic = {
    "lq2x",
 };
 
-const struct softfilter_implementation *softfilter_get_implementation(softfilter_simd_mask_t simd)
+const struct softfilter_implementation *softfilter_get_implementation(
+      softfilter_simd_mask_t simd)
 {
    (void)simd;
    return &lq2x_generic;

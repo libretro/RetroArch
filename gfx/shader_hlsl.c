@@ -18,7 +18,7 @@
 #include "shader_parse.h"
 #ifdef _XBOX
 #include <xtl.h>
-#include "../xdk/xdk_d3d.h"
+#include "d3d9/xdk_d3d.h"
 #endif
 
 static const char *stock_hlsl_program =

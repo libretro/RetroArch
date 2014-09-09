@@ -109,4 +109,8 @@
 
 #define D3DDevice_DrawPrimitive(dev, type, start, count) dev->DrawPrimitive(type, start, count)
 
+#ifndef D3DCREATE_SOFTWARE_VERTEXPROCESSING
+#define D3DCREATE_SOFTWARE_VERTEXPROCESSING 0
+#endif
+
 #endif

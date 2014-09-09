@@ -62,10 +62,10 @@ typedef struct
 {
    /* row 0 */
 
-   unsigned char enable;	// Light enable
-   unsigned char type;	// Light type
-   unsigned char xpos;	// X position
-   unsigned char ypos;	// Y position
+   unsigned char enable;	/* Light enable */
+   unsigned char type;	   /* Light type   */
+   unsigned char xpos;	   /* X position   */
+   unsigned char ypos;	   /* Y position   */
 
    /* row 1 */
 
@@ -107,9 +107,9 @@ extern int gu_object_stack_depth;
 
 extern GuLightSettings light_settings[4];
 
-static int tbpcmd_tbl[8] = { 0xa0, 0xa1, 0xa2, 0xa3, 0xa4, 0xa5, 0xa6, 0xa7 };	// 0x30A18
-static int tbwcmd_tbl[8] = { 0xa8, 0xa9, 0xaa, 0xab, 0xac, 0xad, 0xae, 0xaf };	// 0x30A38
-static int tsizecmd_tbl[8] = { 0xb8, 0xb9, 0xba, 0xbb, 0xbc, 0xbd, 0xbe, 0xbf };	// 0x30A58
+static int tbpcmd_tbl[8] = { 0xa0, 0xa1, 0xa2, 0xa3, 0xa4, 0xa5, 0xa6, 0xa7 };	/* 0x30A18 */
+static int tbwcmd_tbl[8] = { 0xa8, 0xa9, 0xaa, 0xab, 0xac, 0xad, 0xae, 0xaf };	/* 0x30A38 */
+static int tsizecmd_tbl[8] = { 0xb8, 0xb9, 0xba, 0xbb, 0xbc, 0xbd, 0xbe, 0xbf };	/* 0x30A58 */
 
 #define sendCommandi(cmd, argument) *(gu_list->current++) = (cmd << 24) | (argument & 0xffffff)
 

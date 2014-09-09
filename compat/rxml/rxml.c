@@ -72,12 +72,11 @@ static bool validate_header(const char **ptr)
       if (!eol)
          return false;
 
-      // Always use UTF-8. Don't really care to check.
+      /* Always use UTF-8. Don't really care to check. */
       *ptr = eol + 3;
       return true;
    }
-   else
-      return true;
+   return true;
 }
 
 static bool range_is_space(const char *begin, const char *end)
@@ -113,7 +112,8 @@ static char *strdup_range(const char *begin, const char *end)
 
 static char *strdup_range_escape(const char *begin, const char *end)
 {
-   return strdup_range(begin, end); // Escaping is ignored. Assume we don't deal with that.
+   /* Escaping is ignored. Assume we don't deal with that. */
+   return strdup_range(begin, end);
 }
 
 static struct rxml_attrib_node *rxml_parse_attrs(const char *str)
@@ -148,7 +148,8 @@ static struct rxml_attrib_node *rxml_parse_attrs(const char *str)
       if (!attrib || !value)
          goto end;
 
-      struct rxml_attrib_node *new_node = (struct rxml_attrib_node*)calloc(1, sizeof(*new_node));
+      struct rxml_attrib_node *new_node = 
+         (struct rxml_attrib_node*)calloc(1, sizeof(*new_node));
       if (!new_node)
          goto end;
 
@@ -233,9 +234,10 @@ static struct rxml_node *rxml_parse_node(const char **ptr_)
    if (!rxml_parse_tag(node, str))
       goto error;
 
-   is_closing = strstr(ptr, "/>") + 1 == closing; // Are spaces between / and > allowed?
+   /* Are spaces between / and > allowed? */
+   is_closing = strstr(ptr, "/>") + 1 == closing;
 
-   // Look for more data. Either child nodes or data.
+   /* Look for more data. Either child nodes or data. */
    if (!is_closing)
    {
       size_t closing_tag_size = strlen(node->name) + 4;
@@ -262,8 +264,9 @@ static struct rxml_node *rxml_parse_node(const char **ptr_)
          goto error;
       }
 
-      if (cdata_start && range_is_space(closing + 1, cdata_start)) // CDATA section
+      if (cdata_start && range_is_space(closing + 1, cdata_start))
       {
+         /* CDATA section */
          const char *cdata_end = strstr(cdata_start, "]]>");
          if (!cdata_end)
          {
@@ -273,10 +276,11 @@ static struct rxml_node *rxml_parse_node(const char **ptr_)
 
          node->data = strdup_range(cdata_start + strlen("<![CDATA["), cdata_end);
       }
-      else if (closing_start && closing_start == child_start) // Simple Data
+      else if (closing_start && closing_start == child_start) /* Simple Data */
          node->data = strdup_range(closing + 1, closing_start);
-      else // Parse all child nodes.
+      else
       {
+         /* Parse all child nodes. */
          struct rxml_node *list = NULL;
          struct rxml_node *tail = NULL;
 
@@ -356,7 +360,8 @@ static char *purge_xml_comments(const char *str)
       copy_src   = comment_end + strlen("-->");
    }
 
-   // Avoid strcpy() as OpenBSD is anal and hates you for using it even when it's perfectly safe.
+   /* Avoid strcpy() as OpenBSD is anal and hates you 
+    * for using it even when it's perfectly safe. */
    len = strlen(copy_src);
    memcpy(copy_dest, copy_src, len);
    copy_dest[len] = '\0';

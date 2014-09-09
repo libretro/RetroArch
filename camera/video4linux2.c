@@ -61,7 +61,8 @@ typedef struct video4linux
    char dev_name[PATH_MAX];
 } video4linux_t;
 
-static void process_image(video4linux_t *v4l, const uint8_t *buffer_yuv)
+static void process_image(video4linux_t *v4l,
+      const uint8_t *buffer_yuv)
 {
    RARCH_PERFORMANCE_INIT(yuv_convert_direct);
    RARCH_PERFORMANCE_START(yuv_convert_direct);
@@ -182,7 +183,8 @@ static bool init_device(void *data)
 
    if (!(cap.capabilities & V4L2_CAP_STREAMING))
    {
-      RARCH_ERR("%s does not support streaming I/O (V4L2_CAP_STREAMING).\n", v4l->dev_name);
+      RARCH_ERR("%s does not support streaming I/O (V4L2_CAP_STREAMING).\n",
+            v4l->dev_name);
       return false;
    }
 
@@ -193,7 +195,7 @@ static bool init_device(void *data)
    {
       crop.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
       crop.c = cropcap.defrect;
-      // Ignore errors here.
+      /* Ignore errors here. */
       xioctl(v4l->fd, VIDIOC_S_CROP, &crop);
    }
 
@@ -211,21 +213,23 @@ static bool init_device(void *data)
       return false;
    }
 
-   // VIDIOC_S_FMT may change width, height and pitch.
+   /* VIDIOC_S_FMT may change width, height and pitch. */
    v4l->width = fmt.fmt.pix.width;
    v4l->height = fmt.fmt.pix.height;
    v4l->pitch = max(fmt.fmt.pix.bytesperline, v4l->width * 2);
 
-   // Sanity check to see if our assumptions are met.
-   // It is possible to support whatever the device gives us,
-   // but this dramatically increases complexity.
+   /* Sanity check to see if our assumptions are met.
+    * It is possible to support whatever the device gives us,
+    * but this dramatically increases complexity.
+    */
    if (fmt.fmt.pix.pixelformat != V4L2_PIX_FMT_YUYV)
    {
       RARCH_ERR("The V4L2 device doesn't support YUYV.\n");
       return false;
    }
 
-   if (fmt.fmt.pix.field != V4L2_FIELD_NONE && fmt.fmt.pix.field != V4L2_FIELD_INTERLACED)
+   if (fmt.fmt.pix.field != V4L2_FIELD_NONE
+         && fmt.fmt.pix.field != V4L2_FIELD_INTERLACED)
    {
       RARCH_ERR("The V4L2 device doesn't support progressive nor interlaced video.\n");
       return false;
@@ -300,7 +304,8 @@ static void v4l_free(void *data)
    free(v4l);
 }
 
-static void *v4l_init(const char *device, uint64_t caps, unsigned width, unsigned height)
+static void *v4l_init(const char *device, uint64_t caps,
+      unsigned width, unsigned height)
 {
    struct stat st;
 
@@ -314,7 +319,8 @@ static void *v4l_init(const char *device, uint64_t caps, unsigned width, unsigne
    if (!v4l)
       return NULL;
 
-   strlcpy(v4l->dev_name, device ? device : "/dev/video0", sizeof(v4l->dev_name));
+   strlcpy(v4l->dev_name, device ? device : "/dev/video0",
+         sizeof(v4l->dev_name));
 
    v4l->width  = width;
    v4l->height = height;
@@ -322,7 +328,8 @@ static void *v4l_init(const char *device, uint64_t caps, unsigned width, unsigne
 
    if (stat(v4l->dev_name, &st) == -1)
    {
-      RARCH_ERR("Cannot identify '%s' : %d, %s\n", v4l->dev_name, errno, strerror(errno));
+      RARCH_ERR("Cannot identify '%s' : %d, %s\n", v4l->dev_name,
+            errno, strerror(errno));
       goto error;
    }
 
@@ -336,14 +343,17 @@ static void *v4l_init(const char *device, uint64_t caps, unsigned width, unsigne
 
    if (v4l->fd == -1)
    {
-      RARCH_ERR("Cannot open '%s': %d, %s\n", v4l->dev_name, errno, strerror(errno));
+      RARCH_ERR("Cannot open '%s': %d, %s\n", v4l->dev_name,
+            errno, strerror(errno));
       goto error;
    }
 
    if (!init_device(v4l))
       goto error;
 
-   v4l->buffer_output = (uint32_t*)malloc(v4l->width * v4l->height * sizeof(uint32_t));
+   v4l->buffer_output = (uint32_t*)
+      malloc(v4l->width * v4l->height * sizeof(uint32_t));
+
    if (!v4l->buffer_output)
    {
       RARCH_ERR("Failed to allocate output buffer.\n");
@@ -403,7 +413,8 @@ static bool preprocess_image(void *data)
    return true;
 }
 
-static bool v4l_poll(void *data, retro_camera_frame_raw_framebuffer_t frame_raw_cb,
+static bool v4l_poll(void *data,
+      retro_camera_frame_raw_framebuffer_t frame_raw_cb,
       retro_camera_frame_opengl_texture_t frame_gl_cb)
 {
    video4linux_t *v4l = (video4linux_t*)data;
@@ -415,7 +426,8 @@ static bool v4l_poll(void *data, retro_camera_frame_raw_framebuffer_t frame_raw_
    if (preprocess_image(data))
    {
       if (frame_raw_cb != NULL)
-         frame_raw_cb(v4l->buffer_output, v4l->width, v4l->height, v4l->width * 4);
+         frame_raw_cb(v4l->buffer_output, v4l->width,
+               v4l->height, v4l->width * 4);
       return true;
    }
    else

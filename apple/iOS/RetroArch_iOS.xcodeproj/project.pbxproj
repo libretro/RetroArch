@@ -150,7 +150,9 @@
 				96AFAE2616C1D4EA009DE44C /* Products */,
 				96AFAE3416C1D4EA009DE44C /* Supporting Files */,
 			);
+			indentWidth = 3;
 			sourceTree = "<group>";
+			tabWidth = 3;
 		};
 		96AFAE2616C1D4EA009DE44C /* Products */ = {
 			isa = PBXGroup;

@@ -45,11 +45,13 @@ typedef struct
    char *supported_extensions;
    char *authors;
    char *permissions;
+   char *licenses;
    char *notes;
    struct string_list *note_list;   
    struct string_list *supported_extensions_list;
    struct string_list *authors_list;
    struct string_list *permissions_list;
+   struct string_list *licenses_list;
 
    core_info_firmware_t *firmware;
    size_t firmware_count;

@@ -38,15 +38,18 @@ void gl_load_texture_data(GLuint obj, const struct texture_image *img,
    glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
 #endif
    glTexImage2D(GL_TEXTURE_2D,
-         0, driver.gfx_use_rgba ? GL_RGBA : RARCH_GL_INTERNAL_FORMAT32, img->width, img->height,
-         0, driver.gfx_use_rgba ? GL_RGBA : RARCH_GL_TEXTURE_TYPE32, RARCH_GL_FORMAT32, img->pixels);
+         0, driver.gfx_use_rgba ? GL_RGBA : RARCH_GL_INTERNAL_FORMAT32,
+         img->width, img->height,
+         0, driver.gfx_use_rgba ? GL_RGBA : RARCH_GL_TEXTURE_TYPE32,
+         RARCH_GL_FORMAT32, img->pixels);
 #ifndef HAVE_PSGL
    if (mipmap)
       glGenerateMipmap(GL_TEXTURE_2D);
 #endif
 }
 
-bool gl_load_luts(const struct gfx_shader *generic_shader, GLuint *lut_textures)
+bool gl_load_luts(const struct gfx_shader *generic_shader,
+      GLuint *lut_textures)
 {
    unsigned i;
    unsigned num_luts = min(generic_shader->luts, GFX_MAX_TEXTURES);
@@ -54,8 +57,9 @@ bool gl_load_luts(const struct gfx_shader *generic_shader, GLuint *lut_textures)
    if (!generic_shader->luts)
       return true;
 
-   //  Original shader_glsl.c code only generated one texture handle.  I assume
-   //  it was a bug, but if not, replace num_luts with 1 when GLSL is used.
+   /*  Original shader_glsl.c code only generated one 
+    *  texture handle.  I assume it was a bug, but if not, 
+    *  replace num_luts with 1 when GLSL is used. */
    glGenTextures(num_luts, lut_textures);
    for (i = 0; i < num_luts; i++)
    {
@@ -65,7 +69,8 @@ bool gl_load_luts(const struct gfx_shader *generic_shader, GLuint *lut_textures)
 
       if (!texture_image_load(&img, generic_shader->lut[i].path))
       {
-         RARCH_ERR("Failed to load texture image from: \"%s\"\n", generic_shader->lut[i].path);
+         RARCH_ERR("Failed to load texture image from: \"%s\"\n",
+               generic_shader->lut[i].path);
          return false;
       }
 

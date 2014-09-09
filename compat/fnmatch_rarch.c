@@ -21,8 +21,11 @@
 
 #include "fnmatch_rarch.h"
 
-// Implemnentation of fnmatch(3) so it can be distributed to non *nix platforms
-// No flags are implemented ATM. We don't use them. Add flags as needed.
+/* Implemnentation of fnmatch(3) so it can be 
+ * distributed to non *nix platforms.
+ *
+ * No flags are implemented ATM. 
+ * We don't use them. Add flags as needed. */
 
 int rl_fnmatch(const char *pattern, const char *string, int flags)
 {
@@ -31,30 +34,32 @@ int rl_fnmatch(const char *pattern, const char *string, int flags)
    int rv;
    for (c = pattern; *c != '\0'; c++)
    {
-      // String ended before pattern
+      /* String ended before pattern */
       if ((*c != '*') && (*string == '\0'))
          return FNM_NOMATCH;
 
       switch (*c)
       {
-         // Match any number of unknown chars
+         /* Match any number of unknown chars */
          case '*':
-            // Find next node in the pattern ignoring multiple
-            // asterixes
+            /* Find next node in the pattern 
+             * ignoring multiple asterixes
+             */
             do {
                c++;
                if (*c == '\0')
                   return 0;
             } while (*c == '*');
 
-            // Match the remaining pattern ingnoring more and more
-            // chars.
+            /* Match the remaining pattern 
+             * ignoring more and more characters. */
             do {
-               // We reached the end of the string without a
-               // match. There is a way to optimize this by
-               // calculating the minimum chars needed to
-               // match the remaining pattern but I don't
-               // think it is worth the work ATM.
+               /* We reached the end of the string without a
+                * match. There is a way to optimize this by
+                * calculating the minimum chars needed to
+                * match the remaining pattern but I don't
+                * think it is worth the work ATM.
+                */
                if (*string == '\0')
                   return FNM_NOMATCH;
 
@@ -63,16 +68,16 @@ int rl_fnmatch(const char *pattern, const char *string, int flags)
             } while (rv != 0);
 
             return 0;
-            // Match char from list
+            /* Match char from list */
          case '[':
             charmatch = 0;
             for (c++; *c != ']'; c++)
             {
-               // Bad formath
+               /* Bad format */
                if (*c == '\0')
                   return FNM_NOMATCH;
 
-               // Match already found
+               /* Match already found */
                if (charmatch)
                   continue;
 
@@ -80,21 +85,21 @@ int rl_fnmatch(const char *pattern, const char *string, int flags)
                   charmatch = 1;
             }
 
-            // No match in list
+            /* No match in list */
             if (!charmatch)
                return FNM_NOMATCH;
 
             string++;
             break;
-            // Has any char
+            /* Has any character */
          case '?':
             string++;
             break;
-            // Match following char verbatim
+            /* Match following character verbatim */
          case '\\':
             c++;
-            // Dangling escape at end of pattern
-            if (*c == '\0') // FIXME: Was c == '\0' (makes no sense). Not sure if c == NULL or *c == '\0' is intended. Assuming *c due to c++ right before.
+            /* Dangling escape at end of pattern */
+            if (*c == '\0') /* FIXME: Was c == '\0' (makes no sense). Not sure if c == NULL or *c == '\0' is intended. Assuming *c due to c++ right before. */
                return FNM_NOMATCH;
          default:
             if (*c != *string)
@@ -103,7 +108,7 @@ int rl_fnmatch(const char *pattern, const char *string, int flags)
       }
    }
 
-   // End of string and end of pattend
+   /* End of string and end of pattend */
    if (*string == '\0')
       return 0;
    return FNM_NOMATCH;

@@ -101,61 +101,97 @@ typedef struct renderchain
 } renderchain_t;
 
 void renderchain_free(void *data);
+
 bool renderchain_init(void *data, const video_info_t *video_info,
       LPDIRECT3DDEVICE dev_,
       CGcontext cgCtx_,
       const D3DVIEWPORT *final_viewport_,
       const LinkInfo *info,
       PixelFormat fmt);
+
 void renderchain_clear(void *data);
-void renderchain_set_final_viewport(void *data, const D3DVIEWPORT *final_viewport);
-bool renderchain_set_pass_size(void *data, unsigned pass_index, unsigned width, unsigned height);
+
+void renderchain_set_final_viewport(void *data,
+      const D3DVIEWPORT *final_viewport);
+
+bool renderchain_set_pass_size(void *data, unsigned pass_index,
+      unsigned width, unsigned height);
+
 bool renderchain_add_pass(void *data, const LinkInfo *info);
+
 bool renderchain_add_lut(void *data, const std::string &id,
       const std::string &path,
       bool smooth);
+
 void renderchain_add_state_tracker(void *data, state_tracker_t *tracker);
+
 void renderchain_start_render(void *data);
+
 void renderchain_end_render(void *data);
+
 bool renderchain_render(void *chain_data, const void *data,
       unsigned width, unsigned height, unsigned pitch, unsigned rotation);
+
 D3DTEXTUREFILTERTYPE renderchain_translate_filter(unsigned type);
+
 D3DTEXTUREFILTERTYPE renderchain_translate_filter(bool smooth);
-bool renderchain_create_first_pass(void *data, const LinkInfo *info, PixelFormat fmt);
+
+bool renderchain_create_first_pass(void *data,
+      const LinkInfo *info, PixelFormat fmt);
+
 void renderchain_set_vertices(void *data, Pass &pass,
       unsigned width, unsigned height,
       unsigned out_width, unsigned out_height,
       unsigned vp_width, unsigned vp_height,
       unsigned rotation);
+
 void renderchain_set_viewport(void *data, D3DVIEWPORT *vp);
+
 void renderchain_set_mvp(void *data, CGprogram &vPrg,
       unsigned vp_width, unsigned vp_height,
       unsigned rotation);
+
 void renderchain_convert_geometry(void *data, const LinkInfo *info,
       unsigned &out_width, unsigned &out_height,
       unsigned width, unsigned height,
       D3DVIEWPORT *final_viewport);
+
 void renderchain_blit_to_texture(void *data, const void *frame,
       unsigned width, unsigned height,
       unsigned pitch);
+
 void renderchain_render_pass(void *data, Pass &pass, unsigned pass_index);
+
 void renderchain_log_info(void *data, const LinkInfo *info);
+
 void renderchain_unbind_all(void *data);
 
-bool renderchain_compile_shaders(void *data, CGprogram &fPrg, CGprogram &vPrg, const std::string &shader);
+bool renderchain_compile_shaders(void *data, CGprogram &fPrg,
+      CGprogram &vPrg, const std::string &shader);
+
 void renderchain_set_shaders(void *data, CGprogram &fPrg, CGprogram &vPrg);
+
 void renderchain_destroy_stock_shader(void *data);
+
 void renderchain_destroy_shader(void *data, int i);
+
 void renderchain_set_shader_mvp(void *data, CGprogram &vPrg, D3DXMATRIX &tmp);
+
 void renderchain_set_shader_params(void *data, Pass &pass,
             unsigned video_w, unsigned video_h,
             unsigned tex_w, unsigned tex_h,
             unsigned viewport_w, unsigned viewport_h);
+
 void renderchain_bind_tracker(void *data, Pass &pass, unsigned pass_index);
+
 bool renderchain_init_shader_fvf(void *data, Pass &pass);
+
 void renderchain_bind_orig(void *data, Pass &pass);
+
 void renderchain_bind_prev(void *data, Pass &pass);
+
 void renderchain_bind_luts(void *data, Pass &pass);
+
 void renderchain_bind_pass(void *data, Pass &pass, unsigned pass_index);
 
 #endif

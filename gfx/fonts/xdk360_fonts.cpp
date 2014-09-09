@@ -105,7 +105,8 @@ typedef struct {
 
 static Font_Locals_t s_FontLocals;
 
-static HRESULT xdk360_video_font_create_shaders (void *data, xdk360_video_font_t * font)
+static HRESULT xdk360_video_font_create_shaders(
+      void *data, xdk360_video_font_t * font)
 {
    HRESULT hr;
    d3d_video_t *d3d = (d3d_video_t*)data;
@@ -177,7 +178,8 @@ static HRESULT xdk360_video_font_create_shaders (void *data, xdk360_video_font_t
    return hr;
 }
 
-static bool xdk_init_font(void *data, const char *font_path, unsigned font_size)
+static bool xdk_init_font(void *data,
+      const char *font_path, unsigned font_size)
 {
    (void)font_size;
 
@@ -221,7 +223,7 @@ static bool xdk_init_font(void *data, const char *font_path, unsigned font_size)
 
       // Read the glyph attributes from the file
       font->m_dwNumGlyphs = ((const FontFileStrikesImage_t *)pData)->m_dwNumGlyphs;
-      font->m_Glyphs = ((const FontFileStrikesImage_t *)pData)->m_Glyphs;        // Pointer
+      font->m_Glyphs = ((const FontFileStrikesImage_t *)pData)->m_Glyphs;
    }
    else
    {
@@ -229,7 +231,7 @@ static bool xdk_init_font(void *data, const char *font_path, unsigned font_size)
       goto error;
    }
 
-   // Create the vertex and pixel shaders for rendering the font
+   /* Create the vertex and pixel shaders for rendering the font */
    if (FAILED(xdk360_video_font_create_shaders(d3d, font)))
    {
       RARCH_ERR( "Could not create font shaders.\n" );
@@ -247,7 +249,7 @@ static void xdk_deinit_font(void *data)
 {
    xdk360_video_font_t *font = &m_Font;
 
-   // Destroy the font
+   /* Destroy the font */
    font->m_pFontTexture = NULL;
    font->m_dwNumGlyphs = 0L;
    font->m_Glyphs = NULL;
@@ -347,7 +349,8 @@ static void xdk_video_font_draw_text(xdk360_video_font_t *font, void *video_data
    volatile float * pVertex;
 
    unsigned long dwNumChars = wcslen(strText);
-   d3dr->BeginVertices(D3DPT_QUADLIST, 4 * dwNumChars, sizeof(XMFLOAT4), (void**)&pVertex);
+   d3dr->BeginVertices(D3DPT_QUADLIST, 4 * dwNumChars,
+         sizeof(XMFLOAT4), (void**)&pVertex);
 
    // Draw four vertices for each glyph
    while (*strText)
@@ -435,7 +438,8 @@ static void xdk_video_font_draw_text(xdk360_video_font_t *font, void *video_data
    d3dr->EndVertices();
 }
 
-static void xdk_render_msg(void *data, const char *str_msg, const struct font_params *params)
+static void xdk_render_msg(void *data, const char *str_msg,
+      const struct font_params *params)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
    xdk360_video_font_t *font = &m_Font;

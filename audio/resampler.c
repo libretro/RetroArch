@@ -39,7 +39,9 @@ static int find_resampler_driver_index(const char *driver)
    return -1;
 }
 
-// Resampler is used by multiple modules so avoid clobbering g_extern.audio_data.resampler here.
+/* Resampler is used by multiple modules so avoid 
+ * clobbering g_extern.audio_data.resampler here. */
+
 static const rarch_resampler_t *find_resampler_driver(const char *ident)
 {
    int i = find_resampler_driver_index(ident);
@@ -64,22 +66,27 @@ void find_prev_resampler_driver(void)
 {
    int i = find_resampler_driver_index(g_settings.audio.resampler);
    if (i > 0)
-      strlcpy(g_settings.audio.resampler, resampler_drivers[i - 1]->ident, sizeof(g_settings.audio.resampler));
+      strlcpy(g_settings.audio.resampler, resampler_drivers[i - 1]->ident,
+            sizeof(g_settings.audio.resampler));
    else
-      RARCH_WARN("Couldn't find any previous resampler driver (current one: \"%s\").\n", g_extern.audio_data.resampler->ident);
+      RARCH_WARN("Couldn't find any previous resampler driver (current one: \"%s\").\n",
+            g_extern.audio_data.resampler->ident);
 }
 
 void find_next_resampler_driver(void)
 {
    int i = find_resampler_driver_index(g_settings.audio.resampler);
    if (i >= 0 && resampler_drivers[i + 1])
-      strlcpy(g_settings.audio.resampler, resampler_drivers[i + 1]->ident, sizeof(g_settings.audio.resampler));
+      strlcpy(g_settings.audio.resampler, resampler_drivers[i + 1]->ident,
+            sizeof(g_settings.audio.resampler));
    else
-      RARCH_WARN("Couldn't find any next resampler driver (current one: \"%s\").\n", g_extern.audio_data.resampler->ident);
+      RARCH_WARN("Couldn't find any next resampler driver (current one: \"%s\").\n",
+            g_extern.audio_data.resampler->ident);
 }
 #endif
 
-bool rarch_resampler_realloc(void **re, const rarch_resampler_t **backend, const char *ident, double bw_ratio)
+bool rarch_resampler_realloc(void **re, const rarch_resampler_t **backend,
+      const char *ident, double bw_ratio)
 {
    if (*re && *backend)
       (*backend)->free(*re);

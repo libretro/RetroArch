@@ -87,7 +87,7 @@ static bool ft_renderer_create_atlas(ft_renderer_t *handle)
       FT_Render_Glyph(handle->face->glyph, FT_RENDER_MODE_NORMAL);
       FT_GlyphSlot slot = handle->face->glyph;
 
-      // Some glyphs can be blank.
+      /* Some glyphs can be blank. */
       buffer[i] = (uint8_t*)calloc(slot->bitmap.rows * slot->bitmap.pitch, 1);
 
       glyph->width = slot->bitmap.width;
@@ -100,7 +100,8 @@ static bool ft_renderer_create_atlas(ft_renderer_t *handle)
       glyph->draw_offset_y = -slot->bitmap_top;
 
       if (buffer[i])
-         memcpy(buffer[i], slot->bitmap.buffer, slot->bitmap.rows * pitches[i]);
+         memcpy(buffer[i], slot->bitmap.buffer,
+               slot->bitmap.rows * pitches[i]);
       max_width = max(max_width, (unsigned)slot->bitmap.width);
       max_height = max(max_height, (unsigned)slot->bitmap.rows);
    }
@@ -115,7 +116,7 @@ static bool ft_renderer_create_atlas(ft_renderer_t *handle)
       goto end;
    }
 
-   // Blit our texture atlas.
+   /* Blit our texture atlas. */
    for (i = 0; i < ATLAS_SIZE; i++)
    {
       unsigned r, c;
@@ -132,7 +133,8 @@ static bool ft_renderer_create_atlas(ft_renderer_t *handle)
       if (buffer[i])
       {
          const uint8_t *src = buffer[i];
-         for (r = 0; r < handle->glyphs[i].height; r++, dst += handle->atlas.width, src += pitches[i])
+         for (r = 0; r < handle->glyphs[i].height;
+               r++, dst += handle->atlas.width, src += pitches[i])
             for (c = 0; c < handle->glyphs[i].width; c++)
                dst[c] = src[c];
       }
@@ -174,7 +176,8 @@ error:
    return NULL;
 }
 
-// Not the cleanest way to do things for sure, but should hopefully work ... :)
+/* Not the cleanest way to do things for sure, 
+ * but should hopefully work ... */
 
 static const char *font_paths[] = {
 #if defined(_WIN32)
@@ -190,10 +193,10 @@ static const char *font_paths[] = {
    "/usr/share/fonts/truetype/ttf-dejavu/DejaVuSansMono.ttf",
    "/usr/share/fonts/truetype/ttf-dejavu/DejaVuSans.ttf",
 #endif
-   "osd-font.ttf", // Magic font to search for, useful for distribution.
+   "osd-font.ttf", /* Magic font to search for, useful for distribution. */
 };
 
-// Highly OS/platform dependent.
+/* Highly OS/platform dependent. */
 static const char *ft_renderer_get_default_font(void)
 {
    size_t i;

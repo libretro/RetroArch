@@ -41,7 +41,8 @@ void conv_rgb565_0rgb1555(void *output_, const void *input_,
    const __m128i hi_mask   = _mm_set1_epi16(0x7fe0);
    const __m128i lo_mask   = _mm_set1_epi16(0x1f);
 
-   for (h = 0; h < height; h++, output += out_stride >> 1, input += in_stride >> 1)
+   for (h = 0; h < height;
+         h++, output += out_stride >> 1, input += in_stride >> 1)
    {
       for (w = 0; w < max_width; w += 8)
       {
@@ -69,7 +70,8 @@ void conv_rgb565_0rgb1555(void *output_, const void *input_,
    const uint16_t *input = (const uint16_t*)input_;
    uint16_t *output = (uint16_t*)output_;
 
-   for (h = 0; h < height; h++, output += out_stride >> 1, input += in_stride >> 1)
+   for (h = 0; h < height;
+         h++, output += out_stride >> 1, input += in_stride >> 1)
    {
       for (w = 0; w < width; w++)
       {
@@ -94,11 +96,13 @@ void conv_0rgb1555_rgb565(void *output_, const void *input_,
 
    int max_width = width - 7;
 
-   const __m128i hi_mask   = _mm_set1_epi16((int16_t)((0x1f << 11) | (0x1f << 6)));
+   const __m128i hi_mask   = _mm_set1_epi16(
+         (int16_t)((0x1f << 11) | (0x1f << 6)));
    const __m128i lo_mask   = _mm_set1_epi16(0x1f);
    const __m128i glow_mask = _mm_set1_epi16(1 << 5);
 
-   for (h = 0; h < height; h++, output += out_stride >> 1, input += in_stride >> 1)
+   for (h = 0; h < height;
+         h++, output += out_stride >> 1, input += in_stride >> 1)
    {
       for (w = 0; w < max_width; w += 8)
       {
@@ -106,7 +110,8 @@ void conv_0rgb1555_rgb565(void *output_, const void *input_,
          __m128i rg   = _mm_and_si128(_mm_slli_epi16(in, 1), hi_mask);
          __m128i b    = _mm_and_si128(in, lo_mask);
          __m128i glow = _mm_and_si128(_mm_srli_epi16(in, 4), glow_mask);
-         _mm_storeu_si128((__m128i*)(output + w), _mm_or_si128(rg, _mm_or_si128(b, glow)));
+         _mm_storeu_si128((__m128i*)(output + w),
+               _mm_or_si128(rg, _mm_or_si128(b, glow)));
       }
 
       for (; w < width; w++)
@@ -128,7 +133,8 @@ void conv_0rgb1555_rgb565(void *output_, const void *input_,
    const uint16_t *input = (const uint16_t*)input_;
    uint16_t *output = (uint16_t*)output_;
 
-   for (h = 0; h < height; h++, output += out_stride >> 1, input += in_stride >> 1)
+   for (h = 0; h < height;
+         h++, output += out_stride >> 1, input += in_stride >> 1)
    {
       for (w = 0; w < width; w++)
       {
@@ -159,7 +165,8 @@ void conv_0rgb1555_argb8888(void *output_, const void *input_,
 
    int max_width = width - 7;
 
-   for (h = 0; h < height; h++, output += out_stride >> 2, input += in_stride >> 1)
+   for (h = 0; h < height;
+         h++, output += out_stride >> 2, input += in_stride >> 1)
    {
       for (w = 0; w < max_width; w += 8)
       {
@@ -177,8 +184,10 @@ void conv_0rgb1555_argb8888(void *output_, const void *input_,
          __m128i res_lo_ra = _mm_unpacklo_epi8(r, a);
          __m128i res_hi_ra = _mm_unpackhi_epi8(r, a);
 
-         __m128i res_lo = _mm_or_si128(res_lo_bg, _mm_slli_si128(res_lo_ra, 2));
-         __m128i res_hi = _mm_or_si128(res_hi_bg, _mm_slli_si128(res_hi_ra, 2));
+         __m128i res_lo = _mm_or_si128(res_lo_bg,
+               _mm_slli_si128(res_lo_ra, 2));
+         __m128i res_hi = _mm_or_si128(res_hi_bg,
+               _mm_slli_si128(res_hi_ra, 2));
 
          _mm_storeu_si128((__m128i*)(output + w + 0), res_lo);
          _mm_storeu_si128((__m128i*)(output + w + 4), res_hi);
@@ -207,7 +216,8 @@ void conv_0rgb1555_argb8888(void *output_, const void *input_,
    const uint16_t *input = (const uint16_t*)input_;
    uint32_t *output      = (uint32_t*)output_;
 
-   for (h = 0; h < height; h++, output += out_stride >> 2, input += in_stride >> 1)
+   for (h = 0; h < height;
+         h++, output += out_stride >> 2, input += in_stride >> 1)
    {
       for (w = 0; w < width; w++)
       {
@@ -244,7 +254,8 @@ void conv_rgb565_argb8888(void *output_, const void *input_,
 
    int max_width = width - 7;
 
-   for (h = 0; h < height; h++, output += out_stride >> 2, input += in_stride >> 1)
+   for (h = 0; h < height;
+         h++, output += out_stride >> 2, input += in_stride >> 1)
    {
       for (w = 0; w < max_width; w += 8)
       {
@@ -262,8 +273,10 @@ void conv_rgb565_argb8888(void *output_, const void *input_,
          __m128i res_lo_ra = _mm_unpacklo_epi8(r, a);
          __m128i res_hi_ra = _mm_unpackhi_epi8(r, a);
 
-         __m128i res_lo = _mm_or_si128(res_lo_bg, _mm_slli_si128(res_lo_ra, 2));
-         __m128i res_hi = _mm_or_si128(res_hi_bg, _mm_slli_si128(res_hi_ra, 2));
+         __m128i res_lo = _mm_or_si128(res_lo_bg,
+               _mm_slli_si128(res_lo_ra, 2));
+         __m128i res_hi = _mm_or_si128(res_hi_bg,
+               _mm_slli_si128(res_hi_ra, 2));
 
          _mm_storeu_si128((__m128i*)(output + w + 0), res_lo);
          _mm_storeu_si128((__m128i*)(output + w + 4), res_hi);
@@ -292,7 +305,8 @@ void conv_rgb565_argb8888(void *output_, const void *input_,
    const uint16_t *input = (const uint16_t*)input_;
    uint32_t *output      = (uint32_t*)output_;
 
-   for (h = 0; h < height; h++, output += out_stride >> 2, input += in_stride >> 1)
+   for (h = 0; h < height;
+         h++, output += out_stride >> 2, input += in_stride >> 1)
    {
       for (w = 0; w < width; w++)
       {
@@ -318,7 +332,8 @@ void conv_rgba4444_argb8888(void *output_, const void *input_,
    const uint16_t *input = (const uint16_t*)input_;
    uint32_t *output      = (uint32_t*)output_;
 
-   for (h = 0; h < height; h++, output += out_stride >> 2, input += in_stride >> 1)
+   for (h = 0; h < height;
+         h++, output += out_stride >> 2, input += in_stride >> 1)
    {
       for (w = 0; w < width; w++)
       {
@@ -332,15 +347,15 @@ void conv_rgba4444_argb8888(void *output_, const void *input_,
          b = (b << 4) | b;
          a = (a << 4) | a;
 
-         //output[w] = (0xffu << 24) | (r << 16) | (g << 8) | (b << 0);
          output[w] = (a << 24) | (r << 16) | (g << 8) | (b << 0);
       }
    }
 }
 
 #if defined(__SSE2__)
-// :( TODO: Make this saner.
-static inline void store_bgr24_sse2(void *output, __m128i a, __m128i b, __m128i c, __m128i d)
+/* :( TODO: Make this saner. */
+static inline void store_bgr24_sse2(void *output, __m128i a,
+      __m128i b, __m128i c, __m128i d)
 {
    const __m128i mask_0 = _mm_set_epi32(0, 0, 0, 0x00ffffff);
    const __m128i mask_1 = _mm_set_epi32(0, 0, 0x00ffffff, 0);
@@ -371,13 +386,16 @@ static inline void store_bgr24_sse2(void *output, __m128i a, __m128i b, __m128i 
    __m128i *out = (__m128i*)output;
 
    _mm_storeu_si128(out + 0,
-         _mm_or_si128(a0, _mm_or_si128(a1, _mm_or_si128(a2, _mm_or_si128(a3, _mm_or_si128(a4, a5))))));
+         _mm_or_si128(a0, _mm_or_si128(a1, _mm_or_si128(a2,
+                  _mm_or_si128(a3, _mm_or_si128(a4, a5))))));
 
    _mm_storeu_si128(out + 1,
-         _mm_or_si128(b0, _mm_or_si128(b1, _mm_or_si128(b2, _mm_or_si128(b3, _mm_or_si128(b4, b5))))));
+         _mm_or_si128(b0, _mm_or_si128(b1, _mm_or_si128(b2,
+                  _mm_or_si128(b3, _mm_or_si128(b4, b5))))));
 
    _mm_storeu_si128(out + 2,
-         _mm_or_si128(c0, _mm_or_si128(c1, _mm_or_si128(c2, _mm_or_si128(c3, _mm_or_si128(c4, c5))))));
+         _mm_or_si128(c0, _mm_or_si128(c1, _mm_or_si128(c2,
+                  _mm_or_si128(c3, _mm_or_si128(c4, c5))))));
 }
 
 void conv_0rgb1555_bgr24(void *output_, const void *input_,
@@ -396,7 +414,8 @@ void conv_0rgb1555_bgr24(void *output_, const void *input_,
 
    int max_width = width - 15;
 
-   for (h = 0; h < height; h++, output += out_stride, input += in_stride >> 1)
+   for (h = 0; h < height;
+         h++, output += out_stride, input += in_stride >> 1)
    {
       uint8_t *out = output;
 
@@ -427,12 +446,16 @@ void conv_0rgb1555_bgr24(void *output_, const void *input_,
          __m128i res_hi_ra0 = _mm_unpackhi_epi8(r0, a);
          __m128i res_hi_ra1 = _mm_unpackhi_epi8(r1, a);
 
-         __m128i res_lo0 = _mm_or_si128(res_lo_bg0, _mm_slli_si128(res_lo_ra0, 2));
-         __m128i res_lo1 = _mm_or_si128(res_lo_bg1, _mm_slli_si128(res_lo_ra1, 2));
-         __m128i res_hi0 = _mm_or_si128(res_hi_bg0, _mm_slli_si128(res_hi_ra0, 2));
-         __m128i res_hi1 = _mm_or_si128(res_hi_bg1, _mm_slli_si128(res_hi_ra1, 2));
+         __m128i res_lo0 = _mm_or_si128(res_lo_bg0,
+               _mm_slli_si128(res_lo_ra0, 2));
+         __m128i res_lo1 = _mm_or_si128(res_lo_bg1,
+               _mm_slli_si128(res_lo_ra1, 2));
+         __m128i res_hi0 = _mm_or_si128(res_hi_bg0,
+               _mm_slli_si128(res_hi_ra0, 2));
+         __m128i res_hi1 = _mm_or_si128(res_hi_bg1,
+               _mm_slli_si128(res_hi_ra1, 2));
 
-         // Non-POT pixel sizes ftl :(
+         /* Non-POT pixel sizes ftl :( */
          store_bgr24_sse2(out, res_lo0, res_hi0, res_lo1, res_hi1);
       }
 
@@ -502,10 +525,14 @@ void conv_rgb565_bgr24(void *output_, const void *input_,
          __m128i res_lo_ra1 = _mm_unpacklo_epi8(r1, a);
          __m128i res_hi_ra1 = _mm_unpackhi_epi8(r1, a);
 
-         __m128i res_lo0 = _mm_or_si128(res_lo_bg0, _mm_slli_si128(res_lo_ra0, 2));
-         __m128i res_hi0 = _mm_or_si128(res_hi_bg0, _mm_slli_si128(res_hi_ra0, 2));
-         __m128i res_lo1 = _mm_or_si128(res_lo_bg1, _mm_slli_si128(res_lo_ra1, 2));
-         __m128i res_hi1 = _mm_or_si128(res_hi_bg1, _mm_slli_si128(res_hi_ra1, 2));
+         __m128i res_lo0 = _mm_or_si128(res_lo_bg0,
+               _mm_slli_si128(res_lo_ra0, 2));
+         __m128i res_hi0 = _mm_or_si128(res_hi_bg0,
+               _mm_slli_si128(res_hi_ra0, 2));
+         __m128i res_lo1 = _mm_or_si128(res_lo_bg1,
+               _mm_slli_si128(res_lo_ra1, 2));
+         __m128i res_hi1 = _mm_or_si128(res_hi_bg1,
+               _mm_slli_si128(res_hi_ra1, 2));
 
          store_bgr24_sse2(out, res_lo0, res_hi0, res_lo1, res_hi1);
       }
@@ -535,7 +562,8 @@ void conv_0rgb1555_bgr24(void *output_, const void *input_,
    const uint16_t *input = (const uint16_t*)input_;
    uint8_t *output       = (uint8_t*)output_;
 
-   for (h = 0; h < height; h++, output += out_stride, input += in_stride >> 1)
+   for (h = 0; h < height;
+         h++, output += out_stride, input += in_stride >> 1)
    {
       uint8_t *out = output;
       for (w = 0; w < width; w++)
@@ -563,7 +591,8 @@ void conv_rgb565_bgr24(void *output_, const void *input_,
    const uint16_t *input = (const uint16_t*)input_;
    uint8_t *output       = (uint8_t*)output_;
 
-   for (h = 0; h < height; h++, output += out_stride, input += in_stride >> 1)
+   for (h = 0; h < height;
+         h++, output += out_stride, input += in_stride >> 1)
    {
       uint8_t *out = output;
       for (w = 0; w < width; w++)
@@ -592,7 +621,8 @@ void conv_bgr24_argb8888(void *output_, const void *input_,
    const uint8_t *input = (const uint8_t*)input_;
    uint32_t *output     = (uint32_t*)output_;
 
-   for (h = 0; h < height; h++, output += out_stride >> 2, input += in_stride)
+   for (h = 0; h < height;
+         h++, output += out_stride >> 2, input += in_stride)
    {
       const uint8_t *inp = input;
       for (w = 0; w < width; w++)
@@ -613,7 +643,8 @@ void conv_argb8888_0rgb1555(void *output_, const void *input_,
    const uint32_t *input = (const uint32_t*)input_;
    uint16_t *output      = (uint16_t*)output_;
 
-   for (h = 0; h < height; h++, output += out_stride >> 1, input += in_stride >> 2)
+   for (h = 0; h < height;
+         h++, output += out_stride >> 1, input += in_stride >> 2)
    {
       for (w = 0; w < width; w++)
       {
@@ -637,7 +668,8 @@ void conv_argb8888_bgr24(void *output_, const void *input_,
 
    int max_width = width - 15;
 
-   for (h = 0; h < height; h++, output += out_stride, input += in_stride >> 2)
+   for (h = 0; h < height;
+         h++, output += out_stride, input += in_stride >> 2)
    {
       uint8_t *out = output;
 
@@ -668,7 +700,8 @@ void conv_argb8888_bgr24(void *output_, const void *input_,
    const uint32_t *input = (const uint32_t*)input_;
    uint8_t *output       = (uint8_t*)output_;
 
-   for (h = 0; h < height; h++, output += out_stride, input += in_stride >> 2)
+   for (h = 0; h < height;
+         h++, output += out_stride, input += in_stride >> 2)
    {
       uint8_t *out = output;
       for (w = 0; w < width; w++)
@@ -690,12 +723,14 @@ void conv_argb8888_abgr8888(void *output_, const void *input_,
    const uint32_t *input = (const uint32_t*)input_;
    uint32_t *output      = (uint32_t*)output_;
 
-   for (h = 0; h < height; h++, output += out_stride >> 2, input += in_stride >> 2)
+   for (h = 0; h < height;
+         h++, output += out_stride >> 2, input += in_stride >> 2)
    {
       for (w = 0; w < width; w++)
       {
          uint32_t col = input[w];
-         output[w] = ((col << 16) & 0xff0000) | ((col >> 16) & 0xff) | (col & 0xff00ff00);
+         output[w] = ((col << 16) & 0xff0000) | 
+            ((col >> 16) & 0xff) | (col & 0xff00ff00);
       }
    }
 }
@@ -727,27 +762,28 @@ void conv_yuyv_argb8888(void *output_, const void *input_,
    const __m128i u_b_mul = _mm_set1_epi16(YUV_MAT_U_B);
    const __m128i v_r_mul = _mm_set1_epi16(YUV_MAT_V_R);
    const __m128i v_g_mul = _mm_set1_epi16(YUV_MAT_V_G);
-   const __m128i a       = _mm_cmpeq_epi16(_mm_setzero_si128(), _mm_setzero_si128());
+   const __m128i a       = _mm_cmpeq_epi16(_mm_setzero_si128(),
+         _mm_setzero_si128());
 
    for (h = 0; h < height; h++, output += out_stride >> 2, input += in_stride)
    {
       const uint8_t *src = input;
       uint32_t *dst = output;
 
-      // Each loop processes 16 pixels.
+      /* Each loop processes 16 pixels. */
       for (w = 0; w + 16 <= width; w += 16, src += 32, dst += 16)
       {
-         __m128i yuv0 = _mm_loadu_si128((const __m128i*)(src +  0)); // [Y0, U0, Y1, V0, Y2, U1, Y3, V1, ...]
-         __m128i yuv1 = _mm_loadu_si128((const __m128i*)(src + 16)); // [Y0, U0, Y1, V0, Y2, U1, Y3, V1, ...]
+         __m128i yuv0 = _mm_loadu_si128((const __m128i*)(src +  0)); /* [Y0, U0, Y1, V0, Y2, U1, Y3, V1, ...] */
+         __m128i yuv1 = _mm_loadu_si128((const __m128i*)(src + 16)); /* [Y0, U0, Y1, V0, Y2, U1, Y3, V1, ...] */
 
-         __m128i y0 = _mm_and_si128(yuv0, mask_y); // [Y0, Y1, Y2, ...] (16-bit)
-         __m128i u0 = _mm_and_si128(yuv0, mask_u); // [0, U0, 0, 0, 0, U1, 0, 0, ...]
-         __m128i v0 = _mm_and_si128(yuv0, mask_v); // [0, 0, 0, V1, 0, , 0, V1, ...]
-         __m128i y1 = _mm_and_si128(yuv1, mask_y); // [Y0, Y1, Y2, ...] (16-bit)
-         __m128i u1 = _mm_and_si128(yuv1, mask_u); // [0, U0, 0, 0, 0, U1, 0, 0, ...]
-         __m128i v1 = _mm_and_si128(yuv1, mask_v); // [0, 0, 0, V1, 0, , 0, V1, ...]
+         __m128i y0 = _mm_and_si128(yuv0, mask_y); /* [Y0, Y1, Y2, ...] (16-bit) */
+         __m128i u0 = _mm_and_si128(yuv0, mask_u); /* [0, U0, 0, 0, 0, U1, 0, 0, ...] */
+         __m128i v0 = _mm_and_si128(yuv0, mask_v); /* [0, 0, 0, V1, 0, , 0, V1, ...] */
+         __m128i y1 = _mm_and_si128(yuv1, mask_y); /* [Y0, Y1, Y2, ...] (16-bit) */
+         __m128i u1 = _mm_and_si128(yuv1, mask_u); /* [0, U0, 0, 0, 0, U1, 0, 0, ...] */
+         __m128i v1 = _mm_and_si128(yuv1, mask_v); /* [0, 0, 0, V1, 0, , 0, V1, ...] */
 
-         // Juggle around to get U and V in the same 16-bit format as Y.
+         /* Juggle around to get U and V in the same 16-bit format as Y. */
          u0 = _mm_srli_si128(u0, 1);
          v0 = _mm_srli_si128(v0, 3);
          u1 = _mm_srli_si128(u1, 1);
@@ -755,17 +791,17 @@ void conv_yuyv_argb8888(void *output_, const void *input_,
          __m128i u = _mm_packs_epi32(u0, u1);
          __m128i v = _mm_packs_epi32(v0, v1);
 
-         // Apply YUV offsets (U, V) -= (-128, -128)
+         /* Apply YUV offsets (U, V) -= (-128, -128). */
          u = _mm_sub_epi16(u, chroma_offset);
          v = _mm_sub_epi16(v, chroma_offset);
 
-         // Upscale chroma horizontally (nearest)
+         /* Upscale chroma horizontally (nearest). */
          u0 = _mm_unpacklo_epi16(u, u);
          u1 = _mm_unpackhi_epi16(u, u);
          v0 = _mm_unpacklo_epi16(v, v);
          v1 = _mm_unpackhi_epi16(v, v);
 
-         // Apply transformations
+         /* Apply transformations. */
          y0 = _mm_mullo_epi16(y0, yuv_mul);
          y1 = _mm_mullo_epi16(y1, yuv_mul);
          __m128i u0_g   = _mm_mullo_epi16(u0, u_g_mul);
@@ -777,21 +813,27 @@ void conv_yuyv_argb8888(void *output_, const void *input_,
          __m128i v0_g   = _mm_mullo_epi16(v0, v_g_mul);
          __m128i v1_g   = _mm_mullo_epi16(v1, v_g_mul);
 
-         // Add contibutions from the transformed components.
-         __m128i r0 = _mm_srai_epi16(_mm_adds_epi16(_mm_adds_epi16(y0, v0_r), round_offset), YUV_SHIFT);
-         __m128i g0 = _mm_srai_epi16(_mm_adds_epi16(_mm_adds_epi16(_mm_adds_epi16(y0, v0_g), u0_g), round_offset), YUV_SHIFT);
-         __m128i b0 = _mm_srai_epi16(_mm_adds_epi16(_mm_adds_epi16(y0, u0_b), round_offset), YUV_SHIFT);
+         /* Add contibutions from the transformed components. */
+         __m128i r0 = _mm_srai_epi16(_mm_adds_epi16(_mm_adds_epi16(y0, v0_r),
+                  round_offset), YUV_SHIFT);
+         __m128i g0 = _mm_srai_epi16(_mm_adds_epi16(
+                  _mm_adds_epi16(_mm_adds_epi16(y0, v0_g), u0_g), round_offset), YUV_SHIFT);
+         __m128i b0 = _mm_srai_epi16(_mm_adds_epi16(
+                  _mm_adds_epi16(y0, u0_b), round_offset), YUV_SHIFT);
 
-         __m128i r1 = _mm_srai_epi16(_mm_adds_epi16(_mm_adds_epi16(y1, v1_r), round_offset), YUV_SHIFT);
-         __m128i g1 = _mm_srai_epi16(_mm_adds_epi16(_mm_adds_epi16(_mm_adds_epi16(y1, v1_g), u1_g), round_offset), YUV_SHIFT);
-         __m128i b1 = _mm_srai_epi16(_mm_adds_epi16(_mm_adds_epi16(y1, u1_b), round_offset), YUV_SHIFT);
+         __m128i r1 = _mm_srai_epi16(_mm_adds_epi16(
+                  _mm_adds_epi16(y1, v1_r), round_offset), YUV_SHIFT);
+         __m128i g1 = _mm_srai_epi16(_mm_adds_epi16(
+                  _mm_adds_epi16(_mm_adds_epi16(y1, v1_g), u1_g), round_offset), YUV_SHIFT);
+         __m128i b1 = _mm_srai_epi16(_mm_adds_epi16(
+                  _mm_adds_epi16(y1, u1_b), round_offset), YUV_SHIFT);
 
-         // Saturate into 8-bit.
+         /* Saturate into 8-bit. */
          r0 = _mm_packus_epi16(r0, r1);
          g0 = _mm_packus_epi16(g0, g1);
          b0 = _mm_packus_epi16(b0, b1);
 
-         // Interleave into ARGB.
+         /* Interleave into ARGB. */
          __m128i res_lo_bg = _mm_unpacklo_epi8(b0, g0);
          __m128i res_hi_bg = _mm_unpackhi_epi8(b0, g0);
          __m128i res_lo_ra = _mm_unpacklo_epi8(r0, a);
@@ -807,7 +849,7 @@ void conv_yuyv_argb8888(void *output_, const void *input_,
          _mm_storeu_si128((__m128i*)(dst + 12), res3);
       }
 
-      // Finish off the rest (if any) in C.
+      /* Finish off the rest (if any) in C. */
       for (; w < width; w += 2, src += 4, dst += 2)
       {
          int y0 = src[0];
@@ -837,7 +879,8 @@ void conv_yuyv_argb8888(void *output_, const void *input_,
    const uint8_t *input = (const uint8_t*)input_;
    uint32_t *output     = (uint32_t*)output_;
 
-   for (h = 0; h < height; h++, output += out_stride >> 2, input += in_stride)
+   for (h = 0; h < height;
+         h++, output += out_stride >> 2, input += in_stride)
    {
       const uint8_t *src = input;
       uint32_t *dst = output;
@@ -876,7 +919,8 @@ void conv_copy(void *output_, const void *input_,
    const uint8_t *input = (const uint8_t*)input_;
    uint8_t *output      = (uint8_t*)output_;
 
-   for (h = 0; h < height; h++, output += out_stride, input += in_stride)
+   for (h = 0; h < height;
+         h++, output += out_stride, input += in_stride)
       memcpy(output, input, copy_len);
 }
 

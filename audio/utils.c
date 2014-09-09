@@ -42,7 +42,8 @@ void audio_convert_float_to_s16_C(int16_t *out,
    for (i = 0; i < samples; i++)
    {
       int32_t val = (int32_t)(in[i] * 0x8000);
-      out[i] = (val > 0x7FFF) ? 0x7FFF : (val < -0x8000 ? -0x8000 : (int16_t)val);
+      out[i] = (val > 0x7FFF) ? 0x7FFF :
+         (val < -0x8000 ? -0x8000 : (int16_t)val);
    }
 }
 
@@ -98,7 +99,9 @@ void audio_convert_s16_to_float_altivec(float *out,
    size_t samples_in = samples;
    const vector float gain_vec = { gain, gain , gain, gain };
    const vector float zero_vec = { 0.0f, 0.0f, 0.0f, 0.0f};
-   // Unaligned loads/store is a bit expensive, so we optimize for the good path (very likely).
+
+   /* Unaligned loads/store is a bit expensive, so we 
+    * optimize for the good path (very likely). */
    if (((uintptr_t)out & 15) + ((uintptr_t)in & 15) == 0)
    {
       size_t i;
@@ -123,7 +126,9 @@ void audio_convert_float_to_s16_altivec(int16_t *out,
       const float *in, size_t samples)
 {
    int samples_in = samples;
-   // Unaligned loads/store is a bit expensive, so we optimize for the good path (very likely).
+
+   /* Unaligned loads/store is a bit expensive, 
+    * so we optimize for the good path (very likely). */
    if (((uintptr_t)out & 15) + ((uintptr_t)in & 15) == 0)
    {
       size_t i;
@@ -141,21 +146,26 @@ void audio_convert_float_to_s16_altivec(int16_t *out,
    audio_convert_float_to_s16_C(out, in, samples_in);
 }
 #elif defined(__ARM_NEON__)
-void audio_convert_s16_float_asm(float *out, const int16_t *in, size_t samples, const float *gain); // Avoid potential hard-float/soft-float ABI issues.
-static void audio_convert_s16_to_float_neon(float *out, const int16_t *in, size_t samples,
-      float gain)
+/* Avoid potential hard-float/soft-float ABI issues. */
+void audio_convert_s16_float_asm(float *out, const int16_t *in,
+      size_t samples, const float *gain);
+
+static void audio_convert_s16_to_float_neon(float *out,
+      const int16_t *in, size_t samples, float gain)
 {
    size_t aligned_samples = samples & ~7;
    if (aligned_samples)
       audio_convert_s16_float_asm(out, in, aligned_samples, &gain);
 
-   // Could do all conversion in ASM, but keep it simple for now.
+   /* Could do all conversion in ASM, but keep it simple for now. */
    audio_convert_s16_to_float_C(out + aligned_samples, in + aligned_samples,
          samples - aligned_samples, gain);
 }
 
 void audio_convert_float_s16_asm(int16_t *out, const float *in, size_t samples);
-static void audio_convert_float_to_s16_neon(int16_t *out, const float *in, size_t samples)
+
+static void audio_convert_float_to_s16_neon(int16_t *out,
+      const float *in, size_t samples)
 {
    size_t aligned_samples = samples & ~7;
    if (aligned_samples)
@@ -169,8 +179,9 @@ void audio_convert_s16_to_float_ALLEGREX(float *out,
       const int16_t *in, size_t samples, float gain)
 {
 #ifdef DEBUG
-   // Make sure the buffer is 16 byte aligned, this should be the default behaviour of malloc in the PSPSDK.
-   // Only the output buffer can be assumed to be 16-byte aligned.
+   /* Make sure the buffer is 16 byte aligned, this should be the 
+    * default behaviour of malloc in the PSPSDK.
+    * Only the output buffer can be assumed to be 16-byte aligned. */
    rarch_assert(((uintptr_t)out & 0xf) == 0);
 #endif
 
@@ -227,8 +238,9 @@ void audio_convert_float_to_s16_ALLEGREX(int16_t *out,
       const float *in, size_t samples)
 {
 #ifdef DEBUG
-   // Make sure the buffers are 16 byte aligned, this should be the default behaviour of malloc in the PSPSDK.
-   // Both buffers are allocated by RetroArch, so can assume alignment.
+   /* Make sure the buffers are 16 byte aligned, this should be 
+    * the default behaviour of malloc in the PSPSDK.
+    * Both buffers are allocated by RetroArch, so can assume alignment. */
    rarch_assert(((uintptr_t)in  & 0xf) == 0);
    rarch_assert(((uintptr_t)out & 0xf) == 0);
 #endif
@@ -257,7 +269,8 @@ void audio_convert_float_to_s16_ALLEGREX(int16_t *out,
    for (; i < samples; i++)
    {
       int32_t val = (int32_t)(in[i] * 0x8000);
-      out[i] = (val > 0x7FFF) ? 0x7FFF : (val < -0x8000 ? -0x8000 : (int16_t)val);
+      out[i] = (val > 0x7FFF) ? 0x7FFF :
+         (val < -0x8000 ? -0x8000 : (int16_t)val);
    }
 }
 #endif

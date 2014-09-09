@@ -51,7 +51,8 @@ struct rarch_dsp_filter
    unsigned num_instances;
 };
 
-static const struct dspfilter_implementation *find_implementation(rarch_dsp_filter_t *dsp, const char *ident)
+static const struct dspfilter_implementation *find_implementation(
+      rarch_dsp_filter_t *dsp, const char *ident)
 {
    unsigned i;
    for (i = 0; i < dsp->num_plugs; i++)
@@ -69,7 +70,8 @@ struct dsp_userdata
    const char *prefix[2];
 };
 
-static int get_float(void *userdata, const char *key_str, float *value, float default_value)
+static int get_float(void *userdata, const char *key_str,
+      float *value, float default_value)
 {
    struct dsp_userdata *dsp = (struct dsp_userdata*)userdata;
 
@@ -85,7 +87,8 @@ static int get_float(void *userdata, const char *key_str, float *value, float de
    return got;
 }
 
-static int get_int(void *userdata, const char *key_str, int *value, int default_value)
+static int get_int(void *userdata, const char *key_str,
+      int *value, int default_value)
 {
    struct dsp_userdata *dsp = (struct dsp_userdata*)userdata;
 
@@ -185,7 +188,8 @@ static bool create_filter_graph(rarch_dsp_filter_t *dsp, float sample_rate)
    if (!config_get_uint(dsp->conf, "filters", &filters))
       return false;
 
-   dsp->instances = (struct rarch_dsp_instance*)calloc(filters, sizeof(*dsp->instances));
+   dsp->instances = (struct rarch_dsp_instance*)
+      calloc(filters, sizeof(*dsp->instances));
    if (!dsp->instances)
       return false;
 
@@ -206,7 +210,8 @@ static bool create_filter_graph(rarch_dsp_filter_t *dsp, float sample_rate)
 
       struct dsp_userdata userdata;
       userdata.conf = dsp->conf;
-      userdata.prefix[0] = key; // Index-specific configs take priority over ident-specific.
+      /* Index-specific configs take priority over ident-specific. */
+      userdata.prefix[0] = key;
       userdata.prefix[1] = dsp->instances[i].impl->short_ident;
 
       struct dspfilter_info info = { sample_rate };
@@ -242,7 +247,8 @@ static bool append_plugs(rarch_dsp_filter_t *dsp)
    unsigned i;
    dspfilter_simd_mask_t mask = rarch_get_cpu_features();
 
-   dsp->plugs = (struct rarch_dsp_plug*)calloc(ARRAY_SIZE(dsp_plugs_builtin), sizeof(*dsp->plugs));
+   dsp->plugs = (struct rarch_dsp_plug*)
+      calloc(ARRAY_SIZE(dsp_plugs_builtin), sizeof(*dsp->plugs));
    if (!dsp->plugs)
       return false;
    dsp->num_plugs = ARRAY_SIZE(dsp_plugs_builtin);
@@ -268,7 +274,8 @@ static bool append_plugs(rarch_dsp_filter_t *dsp, struct string_list *list)
       if (!lib)
          continue;
 
-      dspfilter_get_implementation_t cb = (dspfilter_get_implementation_t)dylib_proc(lib, "dspfilter_get_implementation");
+      dspfilter_get_implementation_t cb = (dspfilter_get_implementation_t)
+         dylib_proc(lib, "dspfilter_get_implementation");
       if (!cb)
       {
          dylib_close(lib);
@@ -288,7 +295,8 @@ static bool append_plugs(rarch_dsp_filter_t *dsp, struct string_list *list)
          continue;
       }
 
-      struct rarch_dsp_plug *new_plugs = (struct rarch_dsp_plug*)realloc(dsp->plugs, sizeof(*dsp->plugs) * (dsp->num_plugs + 1));
+      struct rarch_dsp_plug *new_plugs = (struct rarch_dsp_plug*)
+         realloc(dsp->plugs, sizeof(*dsp->plugs) * (dsp->num_plugs + 1));
       if (!new_plugs)
       {
          dylib_close(lib);
@@ -307,7 +315,8 @@ static bool append_plugs(rarch_dsp_filter_t *dsp, struct string_list *list)
 }
 #endif
 
-rarch_dsp_filter_t *rarch_dsp_filter_new(const char *filter_config, float sample_rate)
+rarch_dsp_filter_t *rarch_dsp_filter_new(
+      const char *filter_config, float sample_rate)
 {
 #if !defined(HAVE_FILTERS_BUILTIN) && defined(HAVE_DYLIB)
    char basedir[PATH_MAX];
@@ -381,7 +390,8 @@ void rarch_dsp_filter_free(rarch_dsp_filter_t *dsp)
    free(dsp);
 }
 
-void rarch_dsp_filter_process(rarch_dsp_filter_t *dsp, struct rarch_dsp_data *data)
+void rarch_dsp_filter_process(rarch_dsp_filter_t *dsp,
+      struct rarch_dsp_data *data)
 {
    unsigned i;
    struct dspfilter_output output = {0};
@@ -394,7 +404,8 @@ void rarch_dsp_filter_process(rarch_dsp_filter_t *dsp, struct rarch_dsp_data *da
    {
       input.samples = output.samples;
       input.frames  = output.frames;
-      dsp->instances[i].impl->process(dsp->instances[i].impl_data, &output, &input);
+      dsp->instances[i].impl->process(
+            dsp->instances[i].impl_data, &output, &input);
    }
 
    data->output        = output.samples;

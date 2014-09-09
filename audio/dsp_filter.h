@@ -18,7 +18,8 @@
 
 typedef struct rarch_dsp_filter rarch_dsp_filter_t;
 
-rarch_dsp_filter_t *rarch_dsp_filter_new(const char *filter_config, float sample_rate);
+rarch_dsp_filter_t *rarch_dsp_filter_new(const char *filter_config,
+      float sample_rate);
 
 void rarch_dsp_filter_free(rarch_dsp_filter_t *dsp);
 
@@ -27,12 +28,13 @@ struct rarch_dsp_data
    float *input;
    unsigned input_frames;
 
-   // Set by rarch_dsp_filter_process().
+   /* Set by rarch_dsp_filter_process(). */
    float *output;
    unsigned output_frames;
 };
 
-void rarch_dsp_filter_process(rarch_dsp_filter_t *dsp, struct rarch_dsp_data *data);
+void rarch_dsp_filter_process(rarch_dsp_filter_t *dsp,
+      struct rarch_dsp_data *data);
 
 #endif
 

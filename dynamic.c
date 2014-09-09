@@ -123,7 +123,7 @@ void libretro_get_environment_info(void (*func)(retro_environment_t),
 {
    load_no_content_hook = load_no_content;
 
-   // load_no_content gets set in this callback.
+   /* load_no_content gets set in this callback. */
    func(environ_cb_get_system_info);
 }
 

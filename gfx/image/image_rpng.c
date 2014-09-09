@@ -26,8 +26,10 @@
 #include "../../general.h"
 #include "../rpng/rpng.h"
 
-static bool rpng_image_load_tga_shift(const char *path, struct texture_image *out_img,
-      unsigned a_shift, unsigned r_shift, unsigned g_shift, unsigned b_shift)
+static bool rpng_image_load_tga_shift(const char *path,
+      struct texture_image *out_img,
+      unsigned a_shift, unsigned r_shift,
+      unsigned g_shift, unsigned b_shift)
 {
    unsigned i;
    void *raw_buf = NULL;
@@ -40,7 +42,7 @@ static bool rpng_image_load_tga_shift(const char *path, struct texture_image *ou
 
    uint8_t *buf = (uint8_t*)raw_buf;
 
-   if (buf[2] != 2) // Uncompressed RGB
+   if (buf[2] != 2)
    {
       RARCH_ERR("TGA image is not uncompressed RGB.\n");
       free(buf);
@@ -80,7 +82,8 @@ static bool rpng_image_load_tga_shift(const char *path, struct texture_image *ou
          uint32_t r = tmp[i * 4 + 2];
          uint32_t a = tmp[i * 4 + 3];
 
-         out_img->pixels[i] = (a << a_shift) | (r << r_shift) | (g << g_shift) | (b << b_shift);
+         out_img->pixels[i] = (a << a_shift) |
+            (r << r_shift) | (g << g_shift) | (b << b_shift);
       }
    }
    else if (bits == 24)
@@ -92,7 +95,8 @@ static bool rpng_image_load_tga_shift(const char *path, struct texture_image *ou
          uint32_t r = tmp[i * 3 + 2];
          uint32_t a = 0xff;
 
-         out_img->pixels[i] = (a << a_shift) | (r << r_shift) | (g << g_shift) | (b << b_shift);
+         out_img->pixels[i] = (a << a_shift) |
+            (r << r_shift) | (g << g_shift) | (b << b_shift);
       }
    }
    else
@@ -108,15 +112,19 @@ static bool rpng_image_load_tga_shift(const char *path, struct texture_image *ou
    return true;
 }
 
-static bool rpng_image_load_argb_shift(const char *path, struct texture_image *out_img,
-      unsigned a_shift, unsigned r_shift, unsigned g_shift, unsigned b_shift)
+static bool rpng_image_load_argb_shift(const char *path,
+      struct texture_image *out_img,
+      unsigned a_shift, unsigned r_shift,
+      unsigned g_shift, unsigned b_shift)
 {
    if (strstr(path, ".tga"))
-      return rpng_image_load_tga_shift(path, out_img, a_shift, r_shift, g_shift, b_shift);
+      return rpng_image_load_tga_shift(path, out_img,
+            a_shift, r_shift, g_shift, b_shift);
 #ifdef HAVE_ZLIB
    else if (strstr(path, ".png"))
    {
-      bool ret = rpng_load_image_argb(path, &out_img->pixels, &out_img->width, &out_img->height);
+      bool ret = rpng_load_image_argb(path,
+            &out_img->pixels, &out_img->width, &out_img->height);
       if (!ret)
          return false;
 
@@ -134,7 +142,8 @@ static bool rpng_image_load_argb_shift(const char *path, struct texture_image *o
             uint8_t r = (uint8_t)(col >> 16);
             uint8_t g = (uint8_t)(col >>  8);
             uint8_t b = (uint8_t)(col >>  0);
-            pixels[i] = (a << a_shift) | (r << r_shift) | (g << g_shift) | (b << b_shift);
+            pixels[i] = (a << a_shift) |
+               (r << r_shift) | (g << g_shift) | (b << b_shift);
          }
       }
 
@@ -167,8 +176,10 @@ static bool rpng_image_load_argb_shift(const char *path, struct texture_image *o
 
 static bool rpng_gx_convert_texture32(struct texture_image *image)
 {
-   // memory allocation in libogc is extremely primitive so try to avoid gaps in memory when converting
-   // by copying over to temp buffer first then converting over into main buffer again
+   /* Memory allocation in libogc is extremely primitive so try 
+    * to avoid gaps in memory when converting by copying over to 
+    * a temporary buffer first, then converting over into 
+    * main buffer again. */
    void *tmp = malloc(image->width * image->height * sizeof(uint32_t));
 
    if (!tmp)
@@ -209,7 +220,7 @@ bool texture_image_load(struct texture_image *out_img, const char *path)
 {
    bool ret;
 
-   // This interface "leak" is very ugly. FIXME: Fix this properly ...
+   /* This interface "leak" is very ugly. FIXME: Fix this properly ... */
    if (driver.gfx_use_rgba)
       ret = rpng_image_load_argb_shift(path, out_img, 24, 0, 8, 16);
    else

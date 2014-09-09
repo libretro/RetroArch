@@ -90,32 +90,7 @@ static int menu_info_screen_iterate(unsigned action)
             strlcpy(needle, label, sizeof(needle));
    }
 
-   
-   if (needle[0] == '\0' || setting_data_get_description(needle, msg, sizeof(msg)) == -1)
-   {
-      switch (info_type)
-      {
-         case MENU_SETTINGS_BIND_DEVICE:
-            snprintf(msg, sizeof(msg),
-                  " -- Input Device. \n"
-                  " \n"
-                  "Picks which gamepad to use for player N. \n"
-                  "The name of the pad is available."
-                  );
-            break;
-         case MENU_SETTINGS_BIND_DEVICE_TYPE:
-            snprintf(msg, sizeof(msg),
-                  " -- Input Device Type. \n"
-                  " \n"
-                  "Picks which device type to use. This is \n"
-                  "relevant for the libretro core itself."
-                  );
-            break;
-         default:
-            snprintf(msg, sizeof(msg),
-                  "-- No info on this item available. --\n");
-      }
-   }
+   setting_data_get_description(needle, msg, sizeof(msg));
 
    if (driver.video_data && driver.menu_ctx &&
          driver.menu_ctx->render_messagebox)
@@ -614,136 +589,136 @@ static int menu_setting_set(unsigned id, const char *label,
             gfx_shader_resolve_parameters(NULL, driver.menu->shader);
 #endif
       }
+      else if (!strcmp(label, "input_bind_device_id"))
+      {
+         int *p = &g_settings.input.joypad_map[port];
+         if (action == MENU_ACTION_START)
+            *p = port;
+         else if (action == MENU_ACTION_LEFT)
+            (*p)--;
+         else if (action == MENU_ACTION_RIGHT)
+            (*p)++;
+
+         if (*p < -1)
+            *p = -1;
+         else if (*p >= MAX_PLAYERS)
+            *p = MAX_PLAYERS - 1;
+      }
+      else if (!strcmp(label, "input_bind_device_type"))
+      {
+         unsigned current_device, current_index, i, devices[128];
+         const struct retro_controller_info *desc;
+         unsigned types = 0;
+
+         devices[types++] = RETRO_DEVICE_NONE;
+         devices[types++] = RETRO_DEVICE_JOYPAD;
+
+         /* Only push RETRO_DEVICE_ANALOG as default if we use an 
+          * older core which doesn't use SET_CONTROLLER_INFO. */
+         if (!g_extern.system.num_ports)
+            devices[types++] = RETRO_DEVICE_ANALOG;
+
+         desc = port < g_extern.system.num_ports ?
+            &g_extern.system.ports[port] : NULL;
+         if (desc)
+         {
+            for (i = 0; i < desc->num_types; i++)
+            {
+               unsigned id = desc->types[i].id;
+               if (types < ARRAY_SIZE(devices) &&
+                     id != RETRO_DEVICE_NONE &&
+                     id != RETRO_DEVICE_JOYPAD)
+                  devices[types++] = id;
+            }
+         }
+
+         current_device = g_settings.input.libretro_device[port];
+         current_index = 0;
+         for (i = 0; i < types; i++)
+         {
+            if (current_device == devices[i])
+            {
+               current_index = i;
+               break;
+            }
+         }
+
+         bool updated = true;
+         switch (action)
+         {
+            case MENU_ACTION_START:
+               current_device = RETRO_DEVICE_JOYPAD;
+               break;
+
+            case MENU_ACTION_LEFT:
+               current_device = devices
+                  [(current_index + types - 1) % types];
+               break;
+
+            case MENU_ACTION_RIGHT:
+            case MENU_ACTION_OK:
+               current_device = devices
+                  [(current_index + 1) % types];
+               break;
+
+            default:
+               updated = false;
+         }
+
+         if (updated)
+         {
+            g_settings.input.libretro_device[port] = current_device;
+            pretro_set_controller_port_device(port, current_device);
+         }
+
+      }
+      else if (!strcmp(label, "input_bind_player_no"))
+      {
+         if (action == MENU_ACTION_START)
+            driver.menu->current_pad = 0;
+         else if (action == MENU_ACTION_LEFT)
+         {
+            if (driver.menu->current_pad != 0)
+               driver.menu->current_pad--;
+         }
+         else if (action == MENU_ACTION_RIGHT)
+         {
+            if (driver.menu->current_pad < MAX_PLAYERS - 1)
+               driver.menu->current_pad++;
+         }
+         if (port != driver.menu->current_pad)
+            driver.menu->need_refresh = true;
+         port = driver.menu->current_pad;
+      }
+      else if (!strcmp(label, "input_bind_analog_dpad_mode"))
+      {
+         switch (action)
+         {
+            case MENU_ACTION_START:
+               g_settings.input.analog_dpad_mode[port] = 0;
+               break;
+
+            case MENU_ACTION_OK:
+            case MENU_ACTION_RIGHT:
+               g_settings.input.analog_dpad_mode[port] =
+                  (g_settings.input.analog_dpad_mode[port] + 1)
+                  % ANALOG_DPAD_LAST;
+               break;
+
+            case MENU_ACTION_LEFT:
+               g_settings.input.analog_dpad_mode[port] =
+                  (g_settings.input.analog_dpad_mode
+                   [port] + ANALOG_DPAD_LAST - 1) % ANALOG_DPAD_LAST;
+               break;
+
+            default:
+               break;
+         }
+      }
       else
       {
          switch (id)
          {
-            case MENU_SETTINGS_BIND_PLAYER:
-               if (action == MENU_ACTION_START)
-                  driver.menu->current_pad = 0;
-               else if (action == MENU_ACTION_LEFT)
-               {
-                  if (driver.menu->current_pad != 0)
-                     driver.menu->current_pad--;
-               }
-               else if (action == MENU_ACTION_RIGHT)
-               {
-                  if (driver.menu->current_pad < MAX_PLAYERS - 1)
-                     driver.menu->current_pad++;
-               }
-               if (port != driver.menu->current_pad)
-                  driver.menu->need_refresh = true;
-               port = driver.menu->current_pad;
-               break;
-            case MENU_SETTINGS_BIND_DEVICE:
-               {
-                  int *p = &g_settings.input.joypad_map[port];
-                  if (action == MENU_ACTION_START)
-                     *p = port;
-                  else if (action == MENU_ACTION_LEFT)
-                     (*p)--;
-                  else if (action == MENU_ACTION_RIGHT)
-                     (*p)++;
-
-                  if (*p < -1)
-                     *p = -1;
-                  else if (*p >= MAX_PLAYERS)
-                     *p = MAX_PLAYERS - 1;
-               }
-               break;
-            case MENU_SETTINGS_BIND_ANALOG_MODE:
-               switch (action)
-               {
-                  case MENU_ACTION_START:
-                     g_settings.input.analog_dpad_mode[port] = 0;
-                     break;
-
-                  case MENU_ACTION_OK:
-                  case MENU_ACTION_RIGHT:
-                     g_settings.input.analog_dpad_mode[port] =
-                        (g_settings.input.analog_dpad_mode[port] + 1)
-                        % ANALOG_DPAD_LAST;
-                     break;
-
-                  case MENU_ACTION_LEFT:
-                     g_settings.input.analog_dpad_mode[port] =
-                        (g_settings.input.analog_dpad_mode
-                         [port] + ANALOG_DPAD_LAST - 1) % ANALOG_DPAD_LAST;
-                     break;
-
-                  default:
-                     break;
-               }
-               break;
-            case MENU_SETTINGS_BIND_DEVICE_TYPE:
-               {
-                  unsigned current_device, current_index, i, devices[128];
-                  const struct retro_controller_info *desc;
-                  unsigned types = 0;
-
-                  devices[types++] = RETRO_DEVICE_NONE;
-                  devices[types++] = RETRO_DEVICE_JOYPAD;
-
-                  /* Only push RETRO_DEVICE_ANALOG as default if we use an 
-                   * older core which doesn't use SET_CONTROLLER_INFO. */
-                  if (!g_extern.system.num_ports)
-                     devices[types++] = RETRO_DEVICE_ANALOG;
-
-                  desc = port < g_extern.system.num_ports ?
-                     &g_extern.system.ports[port] : NULL;
-                  if (desc)
-                  {
-                     for (i = 0; i < desc->num_types; i++)
-                     {
-                        unsigned id = desc->types[i].id;
-                        if (types < ARRAY_SIZE(devices) &&
-                              id != RETRO_DEVICE_NONE &&
-                              id != RETRO_DEVICE_JOYPAD)
-                           devices[types++] = id;
-                     }
-                  }
-
-                  current_device = g_settings.input.libretro_device[port];
-                  current_index = 0;
-                  for (i = 0; i < types; i++)
-                  {
-                     if (current_device == devices[i])
-                     {
-                        current_index = i;
-                        break;
-                     }
-                  }
-
-                  bool updated = true;
-                  switch (action)
-                  {
-                     case MENU_ACTION_START:
-                        current_device = RETRO_DEVICE_JOYPAD;
-                        break;
-
-                     case MENU_ACTION_LEFT:
-                        current_device = devices
-                           [(current_index + types - 1) % types];
-                        break;
-
-                     case MENU_ACTION_RIGHT:
-                     case MENU_ACTION_OK:
-                        current_device = devices
-                           [(current_index + 1) % types];
-                        break;
-
-                     default:
-                        updated = false;
-                  }
-
-                  if (updated)
-                  {
-                     g_settings.input.libretro_device[port] = current_device;
-                     pretro_set_controller_port_device(port, current_device);
-                  }
-
-                  break;
-               }
             case MENU_SETTINGS_CUSTOM_BIND_MODE:
                if (action == MENU_ACTION_LEFT || action == MENU_ACTION_RIGHT)
                   driver.menu->bind_mode_keyboard =
@@ -1364,7 +1339,10 @@ static int menu_custom_bind_iterate_keyboard(void *data,
    if (timeout <= 0)
    {
       menu->binds.begin++;
-      menu->binds.target->key = RETROK_UNKNOWN; /* Could be unsafe, but whatever. */
+
+      /* Could be unsafe, but whatever. */
+      menu->binds.target->key = RETROK_UNKNOWN;
+
       menu->binds.target++;
       menu->binds.timeout_end = rarch_get_time_usec() +
          MENU_KEYBOARD_BIND_TIMEOUT_SECONDS * 1000000;
@@ -1389,7 +1367,7 @@ static int menu_custom_bind_iterate_keyboard(void *data,
 }
 
 
-static int menu_action_ok(const char *dir,
+static int menu_action_ok(const char *menu_path,
       const char *menu_label, unsigned menu_type)
 {
    const char *label = NULL;
@@ -1423,7 +1401,7 @@ static int menu_action_ok(const char *dir,
          && type == MENU_FILE_PLAIN)
    {
       int ret = rarch_defer_core(g_extern.core_info,
-            dir, path, driver.menu->deferred_path,
+            menu_path, path, driver.menu->deferred_path,
             sizeof(driver.menu->deferred_path));
 
       if (ret == -1)
@@ -1443,13 +1421,13 @@ static int menu_action_ok(const char *dir,
    else if ((setting && setting->type == ST_DIR)
          && (type == MENU_FILE_USE_DIRECTORY))
    {
-      menu_common_setting_set_current_string(setting, dir);
+      menu_common_setting_set_current_string(setting, menu_path);
       menu_entries_pop_stack(driver.menu->menu_stack, setting->name);
    }
    else if ((setting && setting->type == ST_PATH)
          && (type == MENU_FILE_PLAIN))
    {
-      menu_common_setting_set_current_string_path(setting, dir, path);
+      menu_common_setting_set_current_string_path(setting, menu_path, path);
       menu_entries_pop_stack(driver.menu->menu_stack, setting->name);
    }
 #ifdef HAVE_SHADER_MANAGER
@@ -1457,7 +1435,7 @@ static int menu_action_ok(const char *dir,
          && type == MENU_FILE_PLAIN)
    {
       char shader_path[PATH_MAX];
-      fill_pathname_join(shader_path, dir, path, sizeof(shader_path));
+      fill_pathname_join(shader_path, menu_path, path, sizeof(shader_path));
       if (driver.menu_ctx && driver.menu_ctx->backend &&
             driver.menu_ctx->backend->shader_manager_set_preset)
          driver.menu_ctx->backend->shader_manager_set_preset(
@@ -1470,7 +1448,8 @@ static int menu_action_ok(const char *dir,
          && type == MENU_FILE_PLAIN)
    {
       fill_pathname_join(driver.menu->shader->pass[hack_shader_pass].source.path,
-            dir, path, sizeof(driver.menu->shader->pass[hack_shader_pass].source.path));
+            menu_path, path,
+            sizeof(driver.menu->shader->pass[hack_shader_pass].source.path));
 
       /* This will reset any changed parameters. */
       gfx_shader_resolve_parameters(NULL, driver.menu->shader);
@@ -1491,7 +1470,7 @@ static int menu_action_ok(const char *dir,
    else if (!strcmp(menu_label, "core_list")
          && type == MENU_FILE_CORE)
    {
-      fill_pathname_join(g_settings.libretro, dir, path,
+      fill_pathname_join(g_settings.libretro, menu_path, path,
             sizeof(g_settings.libretro));
       rarch_main_command(RARCH_CMD_LOAD_CORE);
       menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS);
@@ -1516,7 +1495,7 @@ static int menu_action_ok(const char *dir,
          && type == MENU_FILE_PLAIN)
    {
       char config[PATH_MAX];
-      fill_pathname_join(config, dir, path, sizeof(config));
+      fill_pathname_join(config, menu_path, path, sizeof(config));
       menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS);
       driver.menu->msg_force = true;
       if (rarch_replace_config(config))
@@ -1525,10 +1504,11 @@ static int menu_action_ok(const char *dir,
          return -1;
       }
    }
-   else if (!strcmp(menu_label, "disk_image_append") && type == MENU_FILE_PLAIN)
+   else if (!strcmp(menu_label, "disk_image_append")
+         && type == MENU_FILE_PLAIN)
    {
       char image[PATH_MAX];
-      fill_pathname_join(image, dir, path, sizeof(image));
+      fill_pathname_join(image, menu_path, path, sizeof(image));
       rarch_disk_control_append_image(image);
 
       rarch_main_command(RARCH_CMD_RESUME);
@@ -1539,7 +1519,7 @@ static int menu_action_ok(const char *dir,
    else if (menu_parse_check(label, type) == 0)
    {
       char cat_path[PATH_MAX];
-      fill_pathname_join(cat_path, dir, path, sizeof(cat_path));
+      fill_pathname_join(cat_path, menu_path, path, sizeof(cat_path));
 
       menu_entries_push(driver.menu->menu_stack,
             cat_path, menu_label, type, driver.menu->selection_ptr);
@@ -1547,7 +1527,7 @@ static int menu_action_ok(const char *dir,
    else if (type == MENU_FILE_CARCHIVE)
    {
       char cat_path[PATH_MAX];
-      fill_pathname_join(cat_path, dir, path, sizeof(cat_path));
+      fill_pathname_join(cat_path, menu_path, path, sizeof(cat_path));
 
       menu_entries_push(driver.menu->menu_stack,
             cat_path, menu_label, type, driver.menu->selection_ptr);
@@ -1556,11 +1536,12 @@ static int menu_action_ok(const char *dir,
 #ifdef HAVE_COMPRESSION
    else if (type == MENU_FILE_IN_CARCHIVE)
    {
-      fill_pathname_join(g_extern.fullpath, dir, path,
+      fill_pathname_join(g_extern.fullpath, menu_path, path,
             sizeof(g_extern.fullpath));
 
       g_extern.is_carchive = true;
-      strncpy(g_extern.carchive_path,dir,sizeof(g_extern.carchive_path));
+      strncpy(g_extern.carchive_path, menu_path, 
+            sizeof(g_extern.carchive_path));
 
       rarch_main_set_state(RARCH_ACTION_STATE_LOAD_CONTENT);
       menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS);
@@ -1570,7 +1551,7 @@ static int menu_action_ok(const char *dir,
 #endif
    else
    {
-      fill_pathname_join(g_extern.fullpath, dir, path,
+      fill_pathname_join(g_extern.fullpath, menu_path, path,
             sizeof(g_extern.fullpath));
       rarch_main_set_state(RARCH_ACTION_STATE_LOAD_CONTENT);
 
@@ -1593,8 +1574,6 @@ static int menu_common_iterate(unsigned action)
 
    if (driver.video_data && driver.menu_ctx && driver.menu_ctx->set_texture)
       driver.menu_ctx->set_texture(driver.menu);
-
-   //RARCH_LOG("Menu label: %s\n", menu_label);
 
    if (!strcmp(menu_label, "help"))
       return menu_start_screen_iterate(action);

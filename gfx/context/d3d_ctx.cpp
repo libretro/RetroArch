@@ -16,7 +16,7 @@
  */
 
 #ifdef _XBOX
-#include "../../xdk/xdk_d3d.h"
+#include "../d3d9/xdk_d3d.h"
 #else
 #include "../d3d9/d3d.hpp"
 #include "win32_common.h"

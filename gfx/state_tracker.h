@@ -78,9 +78,12 @@ struct state_tracker_uniform
 typedef struct state_tracker state_tracker_t;
 
 state_tracker_t* state_tracker_init(const struct state_tracker_info *info);
+
 void state_tracker_free(state_tracker_t *tracker);
 
-unsigned state_get_uniform(state_tracker_t *tracker, struct state_tracker_uniform *uniforms, unsigned elem, unsigned frame_count);
+unsigned state_get_uniform(state_tracker_t *tracker,
+      struct state_tracker_uniform *uniforms,
+      unsigned elem, unsigned frame_count);
 
 #ifdef __cplusplus
 }

@@ -92,7 +92,8 @@ struct rarch_softfilter
 #endif
 };
 
-static const struct softfilter_implementation *softfilter_find_implementation(rarch_softfilter_t *filt, const char *ident)
+static const struct softfilter_implementation *
+softfilter_find_implementation(rarch_softfilter_t *filt, const char *ident)
 {
    unsigned i;
    for (i = 0; i < filt->num_plugs; i++)
@@ -110,7 +111,8 @@ struct softfilter_userdata
    const char *prefix[2];
 };
 
-static int softfilter_get_float(void *userdata, const char *key_str, float *value, float default_value)
+static int softfilter_get_float(void *userdata, const char *key_str,
+      float *value, float default_value)
 {
    struct softfilter_userdata *filt = (struct softfilter_userdata*)userdata;
 
@@ -126,7 +128,8 @@ static int softfilter_get_float(void *userdata, const char *key_str, float *valu
    return got;
 }
 
-static int softfilter_get_int(void *userdata, const char *key_str, int *value, int default_value)
+static int softfilter_get_int(void *userdata, const char *key_str,
+      int *value, int default_value)
 {
    struct softfilter_userdata *filt = (struct softfilter_userdata*)userdata;
 
@@ -242,10 +245,11 @@ static bool create_softfilter_graph(rarch_softfilter_t *filt,
       return false;
 
    userdata.conf = filt->conf;
-   userdata.prefix[0] = key; // Index-specific configs take priority over ident-specific.
+   /* Index-specific configs take priority over ident-specific. */
+   userdata.prefix[0] = key; 
    userdata.prefix[1] = filt->impl->short_ident;
 
-   // Simple assumptions.
+   /* Simple assumptions. */
    filt->pix_fmt = in_pixel_format;
    input_fmts = filt->impl->query_input_formats();
 
@@ -268,7 +272,8 @@ static bool create_softfilter_graph(rarch_softfilter_t *filt,
    }
 
    output_fmts = filt->impl->query_output_formats(input_fmt);
-   if (output_fmts & input_fmt) // If we have a match of input/output formats, use that.
+   /* If we have a match of input/output formats, use that. */
+   if (output_fmts & input_fmt)
       filt->out_pix_fmt = in_pixel_format;
    else if (output_fmts & SOFTFILTER_FMT_XRGB8888)
       filt->out_pix_fmt = RETRO_PIXEL_FORMAT_XRGB8888;
@@ -283,8 +288,10 @@ static bool create_softfilter_graph(rarch_softfilter_t *filt,
    filt->max_width = max_width;
    filt->max_height = max_height;
 
-   filt->impl_data = filt->impl->create(&softfilter_config, input_fmt, input_fmt, max_width, max_height,
-         threads != RARCH_SOFTFILTER_THREADS_AUTO ? threads : rarch_get_cpu_cores(), cpu_features,
+   filt->impl_data = filt->impl->create(
+         &softfilter_config, input_fmt, input_fmt, max_width, max_height,
+         threads != RARCH_SOFTFILTER_THREADS_AUTO ? threads : 
+         rarch_get_cpu_cores(), cpu_features,
          &userdata);
    if (!filt->impl_data)
    {
@@ -301,7 +308,8 @@ static bool create_softfilter_graph(rarch_softfilter_t *filt,
 
    RARCH_LOG("Using %u threads for softfilter.\n", threads);
 
-   filt->packets = (struct softfilter_work_packet*)calloc(threads, sizeof(*filt->packets));
+   filt->packets = (struct softfilter_work_packet*)
+      calloc(threads, sizeof(*filt->packets));
    if (!filt->packets)
    {
       RARCH_ERR("Failed to allocate softfilter packets.\n");
@@ -309,7 +317,8 @@ static bool create_softfilter_graph(rarch_softfilter_t *filt,
    }
 
 #ifdef HAVE_THREADS
-   filt->thread_data = (struct filter_thread_data*)calloc(threads, sizeof(*filt->thread_data));
+   filt->thread_data = (struct filter_thread_data*)
+      calloc(threads, sizeof(*filt->thread_data));
    if (!filt->thread_data)
       return false;
    filt->threads = threads;
@@ -326,7 +335,8 @@ static bool create_softfilter_graph(rarch_softfilter_t *filt,
       filt->thread_data[i].cond = scond_new();
       if (!filt->thread_data[i].cond)
          return false;
-      filt->thread_data[i].thread = sthread_create(filter_thread_loop, &filt->thread_data[i]);
+      filt->thread_data[i].thread = sthread_create(
+            filter_thread_loop, &filt->thread_data[i]);
       if (!filt->thread_data[i].thread)
          return false;
    }
@@ -336,7 +346,8 @@ static bool create_softfilter_graph(rarch_softfilter_t *filt,
 }
 
 #ifdef HAVE_DYLIB
-static bool append_softfilter_plugs(rarch_softfilter_t *filt, struct string_list *list)
+static bool append_softfilter_plugs(rarch_softfilter_t *filt,
+      struct string_list *list)
 {
    unsigned i;
    softfilter_simd_mask_t mask = rarch_get_cpu_features();
@@ -347,7 +358,8 @@ static bool append_softfilter_plugs(rarch_softfilter_t *filt, struct string_list
       if (!lib)
          continue;
 
-      softfilter_get_implementation_t cb = (softfilter_get_implementation_t)dylib_proc(lib, "softfilter_get_implementation");
+      softfilter_get_implementation_t cb = (softfilter_get_implementation_t)
+         dylib_proc(lib, "softfilter_get_implementation");
       if (!cb)
       {
          dylib_close(lib);
@@ -367,14 +379,16 @@ static bool append_softfilter_plugs(rarch_softfilter_t *filt, struct string_list
          continue;
       }
 
-      struct rarch_soft_plug *new_plugs = (struct rarch_soft_plug*)realloc(filt->plugs, sizeof(*filt->plugs) * (filt->num_plugs + 1));
+      struct rarch_soft_plug *new_plugs = (struct rarch_soft_plug*)
+         realloc(filt->plugs, sizeof(*filt->plugs) * (filt->num_plugs + 1));
       if (!new_plugs)
       {
          dylib_close(lib);
          return false;
       }
 
-      RARCH_LOG("[SoftFilter]: Found plug: %s (%s).\n", impl->ident, impl->short_ident);
+      RARCH_LOG("[SoftFilter]: Found plug: %s (%s).\n",
+            impl->ident, impl->short_ident);
       
       filt->plugs = new_plugs;
       filt->plugs[filt->num_plugs].lib = lib;
@@ -415,7 +429,8 @@ static bool append_softfilter_plugs(rarch_softfilter_t *filt)
    unsigned i;
    softfilter_simd_mask_t mask = rarch_get_cpu_features();
 
-   filt->plugs = (struct rarch_soft_plug*)calloc(ARRAY_SIZE(soft_plugs_builtin), sizeof(*filt->plugs));
+   filt->plugs = (struct rarch_soft_plug*)
+      calloc(ARRAY_SIZE(soft_plugs_builtin), sizeof(*filt->plugs));
    if (!filt->plugs)
       return false;
    filt->num_plugs = ARRAY_SIZE(soft_plugs_builtin);
@@ -430,9 +445,6 @@ static bool append_softfilter_plugs(rarch_softfilter_t *filt)
    return true;
 }
 #endif
-
-
-
 
 rarch_softfilter_t *rarch_softfilter_new(const char *filter_config,
       unsigned threads,
@@ -527,7 +539,8 @@ void rarch_softfilter_free(rarch_softfilter_t *filt)
 void rarch_softfilter_get_max_output_size(rarch_softfilter_t *filt,
       unsigned *width, unsigned *height)
 {
-   rarch_softfilter_get_output_size(filt, width, height, filt->max_width, filt->max_height);
+   rarch_softfilter_get_output_size(filt, width, height,
+         filt->max_width, filt->max_height);
 }
 
 void rarch_softfilter_get_output_size(rarch_softfilter_t *filt,
@@ -535,10 +548,12 @@ void rarch_softfilter_get_output_size(rarch_softfilter_t *filt,
       unsigned width, unsigned height)
 {
    if (filt && filt->impl && filt->impl->query_output_size)
-      filt->impl->query_output_size(filt->impl_data, out_width, out_height, width, height);
+      filt->impl->query_output_size(filt->impl_data, out_width,
+            out_height, width, height);
 }
 
-enum retro_pixel_format rarch_softfilter_get_output_format(rarch_softfilter_t *filt)
+enum retro_pixel_format rarch_softfilter_get_output_format(
+      rarch_softfilter_t *filt)
 {
    return filt->out_pix_fmt;
 }
@@ -554,10 +569,12 @@ void rarch_softfilter_process(rarch_softfilter_t *filt,
             output, output_stride, input, width, height, input_stride);
    
 #ifdef HAVE_THREADS
-   // Fire off workers
+   /* Fire off workers */
    for (i = 0; i < filt->threads; i++)
    {
-      //RARCH_LOG("Firing off filter thread %u ...\n", i);
+#if 0
+      RARCH_LOG("Firing off filter thread %u ...\n", i);
+#endif
       filt->thread_data[i].packet = &filt->packets[i];
       slock_lock(filt->thread_data[i].lock);
       filt->thread_data[i].done = false;
@@ -565,10 +582,12 @@ void rarch_softfilter_process(rarch_softfilter_t *filt,
       slock_unlock(filt->thread_data[i].lock);
    }
 
-   // Wait for workers
+   /* Wait for workers */
    for (i = 0; i < filt->threads; i++)
    {
-      //RARCH_LOG("Waiting for filter thread %u ...\n", i);
+#if 0
+      RARCH_LOG("Waiting for filter thread %u ...\n", i);
+#endif
       slock_lock(filt->thread_data[i].lock);
       while (!filt->thread_data[i].done)
          scond_wait(filt->thread_data[i].cond, filt->thread_data[i].lock);

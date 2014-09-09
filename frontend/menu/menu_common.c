@@ -52,10 +52,10 @@ static void throttle_frame(void)
 
 /* Update menu state which depends on config. */
 
-static void menu_update_libretro_info(menu_handle_t *menu)
+static void update_libretro_info(struct retro_system_info *info)
 {
 #ifndef HAVE_DYNAMIC
-   retro_get_system_info(&g_extern.menu.info);
+   retro_get_system_info(info);
 #endif
 
    core_info_list_free(g_extern.core_info);
@@ -63,7 +63,7 @@ static void menu_update_libretro_info(menu_handle_t *menu)
    if (*g_settings.libretro_directory)
       g_extern.core_info = core_info_list_new(g_settings.libretro_directory);
 
-   rarch_update_system_info(&g_extern.menu.info, NULL);
+   rarch_update_system_info(info, NULL);
 }
 
 static void menu_environment_get(int *argc, char *argv[],
@@ -132,7 +132,7 @@ bool load_menu_content(void)
    }
 
    if (driver.menu)
-      menu_update_libretro_info(driver.menu);
+      update_libretro_info(&g_extern.menu.info);
 
    rarch_main_command(RARCH_CMD_HISTORY_DEINIT);
    rarch_main_command(RARCH_CMD_HISTORY_INIT);
@@ -181,7 +181,7 @@ void *menu_init(const void *data)
    menu->frame_buf_show = true;
    menu->current_pad = 0;
 
-   menu_update_libretro_info(menu);
+   update_libretro_info(&g_extern.menu.info);
 
    if (menu_ctx->backend
          && menu_ctx->backend->shader_manager_init)

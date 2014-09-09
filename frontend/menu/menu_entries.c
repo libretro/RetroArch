@@ -145,6 +145,15 @@ void menu_entries_pop(file_list_t *list)
    }
 }
 
+static int setting_set_flags(rarch_setting_t *setting)
+{
+   if (setting->flags & SD_FLAG_ALLOW_INPUT)
+      return MENU_FILE_LINEFEED;
+   if (setting->flags & SD_FLAG_PUSH_ACTION)
+      return MENU_FILE_SWITCH;
+   return 0;
+}
+
 int menu_entries_push_list(menu_handle_t *menu,
       file_list_t *list,
       const char *path, const char *label,
@@ -166,54 +175,80 @@ int menu_entries_push_list(menu_handle_t *menu,
    if (!strcmp(label, "mainmenu"))
    {
       setting_data = (rarch_setting_t *)setting_data_get_mainmenu(true);
+      rarch_setting_t *setting = (rarch_setting_t*)setting_data_find_setting(setting_data,
+            "Main Menu");
+
       file_list_clear(list);
-      add_setting_entry(menu,list,"core_list", MENU_FILE_SWITCH, setting_data);
-      add_setting_entry(menu,list,"history_list", MENU_FILE_SWITCH, setting_data);
-      add_setting_entry(menu,list,"detect_core_list", MENU_FILE_SWITCH, setting_data);
-      add_setting_entry(menu,list,"load_content", MENU_FILE_SWITCH, setting_data);
-      add_setting_entry(menu,list,"core_options", MENU_FILE_SWITCH, setting_data);
-      add_setting_entry(menu,list,"core_information", MENU_FILE_SWITCH, setting_data);
-      if (g_extern.main_is_init && !g_extern.libretro_dummy)
+
+      for (; setting->type != ST_END_GROUP; setting++)
       {
-         if (g_extern.system.disk_control.get_num_images)
-            file_list_push(list, "Core Disk Options", "disk_options",
-                  MENU_FILE_SWITCH, 0);
+         if (
+               setting->type == ST_GROUP ||
+               setting->type == ST_SUB_GROUP ||
+               setting->type == ST_END_SUB_GROUP
+            )
+            continue;
+
+         file_list_push(list, setting->short_description,
+               setting->name, setting_set_flags(setting), 0);
       }
-      add_setting_entry(menu,list,"settings", MENU_FILE_SWITCH, setting_data);
-      add_setting_entry(menu,list,"performance_counters", MENU_FILE_SWITCH, setting_data);
-      add_setting_entry(menu,list,"savestate", 0, setting_data);
-      add_setting_entry(menu,list,"loadstate", 0, setting_data);
-      add_setting_entry(menu,list,"take_screenshot", MENU_FILE_SWITCH, setting_data);
-      add_setting_entry(menu,list,"resume_content", MENU_FILE_SWITCH, setting_data);
-      add_setting_entry(menu,list,"restart_content", MENU_FILE_SWITCH, setting_data);
-      add_setting_entry(menu,list,"restart_retroarch", MENU_FILE_SWITCH, setting_data);
-      add_setting_entry(menu,list,"configurations", 0, setting_data);
-      add_setting_entry(menu,list,"save_new_config", MENU_FILE_SWITCH, setting_data);
-      add_setting_entry(menu,list,"help", MENU_FILE_SWITCH, setting_data);
-      add_setting_entry(menu,list,"quit_retroarch", MENU_FILE_SWITCH, setting_data);
    }
-   else if (!strcmp(path, "General Options"))
+   else if (
+         !strcmp(label, "Driver Options") ||
+         !strcmp(label, "General Options") ||
+         !strcmp(label, "Overlay Options") ||
+         !strcmp(label, "Privacy Options") ||
+         !strcmp(label, "Video Options") ||
+         !strcmp(label, "Audio Options") ||
+         !strcmp(label, "Path Options") ||
+         !strcmp(label, "Font Options") ||
+         !strcmp(label, "User Options") ||
+         !strcmp(label, "Netplay Options")
+         )
    {
+      rarch_setting_t *setting_data = (rarch_setting_t*)setting_data_get_list();
+      rarch_setting_t *setting = (rarch_setting_t*)setting_data_find_setting(setting_data,
+            label);
+
       file_list_clear(list);
-      add_setting_entry(menu,list,"libretro_log_level", 0, setting_data);
-      add_setting_entry(menu,list,"log_verbosity", 0, setting_data);
-      add_setting_entry(menu,list,"perfcnt_enable", 0, setting_data);
-      add_setting_entry(menu,list,"game_history_size", 0, setting_data);
-      add_setting_entry(menu,list,"config_save_on_exit", 0, setting_data);
-      add_setting_entry(menu,list,"core_specific_config", 0, setting_data);
-      add_setting_entry(menu,list,"video_gpu_screenshot", 0, setting_data);
-      add_setting_entry(menu,list,"dummy_on_core_shutdown", 0, setting_data);
-      add_setting_entry(menu,list,"fps_show", 0, setting_data);
-      add_setting_entry(menu,list,"fastforward_ratio", 0, setting_data);
-      add_setting_entry(menu,list,"slowmotion_ratio", 0, setting_data);
-      add_setting_entry(menu,list,"rewind_enable", 0, setting_data);
-      add_setting_entry(menu,list,"rewind_granularity", 0, setting_data);
-      add_setting_entry(menu,list,"block_sram_overwrite", 0, setting_data);
-      add_setting_entry(menu,list,"autosave_interval", 0, setting_data);
-      add_setting_entry(menu,list,"video_disable_composition", 0, setting_data);
-      add_setting_entry(menu,list,"pause_nonactive", 0, setting_data);
-      add_setting_entry(menu,list,"savestate_auto_save", 0, setting_data);
-      add_setting_entry(menu,list,"savestate_auto_load", 0, setting_data);
+
+      if (!strcmp(label, "Video Options"))
+      {
+#if defined(GEKKO) || defined(__CELLOS_LV2__)
+         file_list_push(list, "Screen Resolution", "",
+               MENU_SETTINGS_VIDEO_RESOLUTION, 0);
+#endif
+         file_list_push(list, "Custom Ratio", "",
+               MENU_SETTINGS_CUSTOM_VIEWPORT, 0);
+      }
+
+      for (; setting->type != ST_END_GROUP; setting++)
+      {
+         if (
+               setting->type == ST_GROUP ||
+               setting->type == ST_SUB_GROUP ||
+               setting->type == ST_END_SUB_GROUP
+            )
+            continue;
+
+         file_list_push(list, setting->short_description,
+               setting->name, setting_set_flags(setting), 0);
+      }
+   }
+   else if (!strcmp(label, "settings"))
+   {
+      rarch_setting_t *setting_data = (rarch_setting_t*)setting_data_get_list();
+      rarch_setting_t *setting = (rarch_setting_t*)setting_data_find_setting(setting_data,
+            "Driver Options");
+
+      file_list_clear(list);
+
+      for (; setting->type != ST_NONE; setting++)
+      {
+         if (setting->type == ST_GROUP)
+            file_list_push(list, setting->short_description,
+                  setting->name, MENU_FILE_SWITCH, 0);
+      }
    }
    else if (!strcmp(label, "history_list"))
    {
@@ -280,6 +315,15 @@ int menu_entries_push_list(menu_handle_t *menu,
             strlcpy(tmp, "Permissions: ", sizeof(tmp));
             string_list_join_concat(tmp, sizeof(tmp),
                   info->permissions_list, ", ");
+            file_list_push(list, tmp, "",
+                  MENU_SETTINGS_CORE_INFO_NONE, 0);
+         }
+
+         if (info->licenses_list)
+         {
+            strlcpy(tmp, "License(s): ", sizeof(tmp));
+            string_list_join_concat(tmp, sizeof(tmp),
+                  info->licenses_list, ", ");
             file_list_push(list, tmp, "",
                   MENU_SETTINGS_CORE_INFO_NONE, 0);
          }
@@ -358,22 +402,6 @@ int menu_entries_push_list(menu_handle_t *menu,
 
       do_action = true;
    }
-   else if (!strcmp(label, "User Options"))
-   {
-      file_list_clear(list);
-      add_setting_entry(menu,list,"netplay_nickname", MENU_FILE_LINEFEED, setting_data);
-      add_setting_entry(menu,list,"user_language", MENU_FILE_LINEFEED, setting_data);
-   }
-   else if (!strcmp(label, "Netplay Options"))
-   {
-      file_list_clear(list);
-      add_setting_entry(menu,list,"netplay_enable", 0, setting_data);
-      add_setting_entry(menu,list,"netplay_mode", 0, setting_data);
-      add_setting_entry(menu,list,"netplay_spectator_mode_enable", 0, setting_data);
-      add_setting_entry(menu,list,"netplay_ip_address", 0, setting_data);
-      add_setting_entry(menu,list,"netplay_tcp_udp_port", MENU_FILE_LINEFEED, setting_data);
-      add_setting_entry(menu,list,"netplay_delay_frames", 0, setting_data);
-   }
    else if (!strcmp(label, "core_counters"))
    {
       file_list_clear(list);
@@ -385,19 +413,6 @@ int menu_entries_push_list(menu_handle_t *menu,
       file_list_clear(list);
       menu_entries_push_perfcounter(menu, list, perf_counters_rarch,
             perf_ptr_rarch, MENU_SETTINGS_PERF_COUNTERS_BEGIN);
-   }
-   else if (!strcmp(label, "Privacy Options"))
-   {
-      file_list_clear(list);
-      add_setting_entry(menu,list,"camera_allow", 0, setting_data);
-      add_setting_entry(menu,list,"location_allow", 0, setting_data);
-   }
-   else if (!strcmp(label, "Overlay Options"))
-   {
-      file_list_clear(list);
-      add_setting_entry(menu,list,"input_overlay", 0, setting_data);
-      add_setting_entry(menu,list,"input_overlay_opacity", 0, setting_data);
-      add_setting_entry(menu,list,"input_overlay_scale", 0, setting_data);
    }
    else if (!strcmp(label, "core_options"))
    {
@@ -415,30 +430,13 @@ int menu_entries_push_list(menu_handle_t *menu,
          file_list_push(list, "No options available.", "",
                MENU_SETTINGS_CORE_OPTION_NONE, 0);
    }
-   else if (!strcmp(label, "Audio Options"))
-   {
-      file_list_clear(list);
-      add_setting_entry(menu,list,"audio_dsp_plugin", 0, setting_data);
-      add_setting_entry(menu,list,"audio_enable", 0, setting_data);
-      add_setting_entry(menu,list,"audio_mute_enable", 0, setting_data);
-      add_setting_entry(menu,list,"audio_latency", 0, setting_data);
-      add_setting_entry(menu,list,"audio_sync", 0, setting_data);
-      add_setting_entry(menu,list,"audio_rate_control_delta", 0, setting_data);
-      add_setting_entry(menu,list,"system_bgm_enable", 0, setting_data);
-      add_setting_entry(menu,list,"audio_volume", 0, setting_data);
-      add_setting_entry(menu,list,"audio_device", MENU_FILE_LINEFEED, setting_data);
-   }
    else if (!strcmp(label, "Input Options"))
    {
       file_list_clear(list);
-      file_list_push(list, "Player", "",
-            MENU_SETTINGS_BIND_PLAYER, 0);
-      file_list_push(list, "Device", "",
-            MENU_SETTINGS_BIND_DEVICE, 0);
-      file_list_push(list, "Device Type", "",
-            MENU_SETTINGS_BIND_DEVICE_TYPE, 0);
-      file_list_push(list, "Analog D-pad Mode", "",
-            MENU_SETTINGS_BIND_ANALOG_MODE, 0);
+      file_list_push(list, "Player", "input_bind_player_no", 0, 0);
+      file_list_push(list, "Device", "input_bind_device_id", 0, 0);
+      file_list_push(list, "Device Type", "input_bind_device_type", 0, 0);
+      file_list_push(list, "Analog D-pad Mode", "input_bind_analog_dpad_mode", 0, 0);
       add_setting_entry(menu,list,"input_axis_threshold", 0, setting_data);
       add_setting_entry(menu,list,"input_autodetect_enable", 0, setting_data);
       add_setting_entry(menu,list,"input_turbo_period", 0, setting_data);
@@ -452,97 +450,6 @@ int menu_entries_push_list(menu_handle_t *menu,
       add_setting_entry(menu,list,"osk_enable", 0, setting_data);
       for (i = MENU_SETTINGS_BIND_BEGIN; i <= MENU_SETTINGS_BIND_ALL_LAST; i++)
          add_setting_entry(menu, list, input_config_bind_map[i - MENU_SETTINGS_BIND_BEGIN].base, i, setting_data);
-   }
-   else if (!strcmp(label, "Driver Options"))
-   {
-      file_list_clear(list);
-      add_setting_entry(menu,list,"video_driver", 0, setting_data);
-      add_setting_entry(menu,list,"audio_driver", 0, setting_data);
-      add_setting_entry(menu,list,"audio_resampler_driver", 0, setting_data);
-      add_setting_entry(menu,list,"input_driver", 0, setting_data);
-      add_setting_entry(menu,list,"camera_driver", 0, setting_data);
-      add_setting_entry(menu,list,"location_driver", 0, setting_data);
-      add_setting_entry(menu,list,"menu_driver", 0, setting_data);
-   }
-   else if (!strcmp(label, "Video Options"))
-   {
-      file_list_clear(list);
-      add_setting_entry(menu,list,"video_shared_context", 0, setting_data);
-#if defined(GEKKO) || defined(__CELLOS_LV2__)
-      file_list_push(list, "Screen Resolution", "",
-            MENU_SETTINGS_VIDEO_RESOLUTION, 0);
-#endif
-      add_setting_entry(menu,list,"video_viwidth", 0, setting_data);
-      add_setting_entry(menu,list,"video_filter", 0, setting_data);
-      add_setting_entry(menu,list, "pal60_enable", 0, setting_data);
-      add_setting_entry(menu,list,"video_smooth", 0, setting_data);
-      add_setting_entry(menu,list, "soft_filter", 0, setting_data);
-      add_setting_entry(menu,list,"video_gamma", 0, setting_data);
-      add_setting_entry(menu,list,"video_filter_flicker", 0,
-            setting_data);
-      add_setting_entry(menu,list,"video_scale_integer", 0, setting_data);
-      add_setting_entry(menu,list,"aspect_ratio_index", 0, setting_data);
-      file_list_push(list, "Custom Ratio", "",
-            MENU_SETTINGS_CUSTOM_VIEWPORT, 0);
-      add_setting_entry(menu,list,"video_fullscreen", 0, setting_data);
-      add_setting_entry(menu,list,"video_windowed_fullscreen", 0, setting_data);
-      add_setting_entry(menu,list,"video_rotation", 0, setting_data);
-      add_setting_entry(menu,list,"video_vsync", 0, setting_data);
-      add_setting_entry(menu,list,"video_hard_sync", 0, setting_data);
-      add_setting_entry(menu,list,"video_hard_sync_frames", 0, setting_data);
-      add_setting_entry(menu,list,"video_frame_delay", 0, setting_data);
-      add_setting_entry(menu,list,"video_black_frame_insertion", 0, setting_data);
-      add_setting_entry(menu,list,"video_swap_interval", 0, setting_data);
-      add_setting_entry(menu,list,"video_threaded", 0, setting_data);
-      add_setting_entry(menu,list,"video_scale", 0, setting_data);
-      add_setting_entry(menu,list,"video_crop_overscan", 0, setting_data);
-      add_setting_entry(menu,list,"video_monitor_index", 0, setting_data);
-      add_setting_entry(menu,list,"video_refresh_rate", 0, setting_data);
-      add_setting_entry(menu,list,"video_refresh_rate_auto", 0, setting_data);
-   }
-   else if (!strcmp(label, "Font Options"))
-   {
-      file_list_clear(list);
-      add_setting_entry(menu,list,"video_font_enable", 0, setting_data);
-      add_setting_entry(menu,list,"video_font_size", 0, setting_data);
-   }
-   else if (!strcmp(label, "settings"))
-   {
-      file_list_clear(list);
-      add_setting_entry(menu,list,"Driver Options", MENU_FILE_SWITCH, setting_data);
-      add_setting_entry(menu,list,"General Options", MENU_FILE_SWITCH, setting_data);
-      add_setting_entry(menu,list,"Video Options", MENU_FILE_SWITCH, setting_data);
-      add_setting_entry(menu,list,"Shader Options", MENU_FILE_SWITCH, setting_data);
-      add_setting_entry(menu,list,"Font Options", MENU_FILE_SWITCH, setting_data);
-      add_setting_entry(menu,list,"Audio Options", MENU_FILE_SWITCH, setting_data);
-      add_setting_entry(menu,list,"Input Options", MENU_FILE_SWITCH, setting_data);
-      add_setting_entry(menu,list,"Overlay Options", MENU_FILE_SWITCH, setting_data);
-      add_setting_entry(menu,list,"User Options", MENU_FILE_SWITCH, setting_data);
-      add_setting_entry(menu,list,"Netplay Options", MENU_FILE_SWITCH, setting_data);
-      add_setting_entry(menu,list,"Path Options", MENU_FILE_SWITCH, setting_data);
-      add_setting_entry(menu,list,"Privacy Options",
-            MENU_FILE_SWITCH, setting_data);
-   }
-   else if (!strcmp(label, "Path Options"))
-   {
-      file_list_clear(list);
-      add_setting_entry(menu,list,"rgui_browser_directory", 0, setting_data);
-      add_setting_entry(menu,list,"content_directory", 0, setting_data);
-      add_setting_entry(menu,list,"assets_directory", 0, setting_data);
-      add_setting_entry(menu,list,"rgui_config_directory", 0, setting_data);
-      add_setting_entry(menu,list,"libretro_dir_path", 0, setting_data);
-      add_setting_entry(menu,list,"libretro_info_path", 0, setting_data);
-      add_setting_entry(menu,list,"game_history_path", 0, setting_data);
-      add_setting_entry(menu,list,"video_filter_dir", 0, setting_data);
-      add_setting_entry(menu,list,"audio_filter_dir", 0, setting_data);
-      add_setting_entry(menu,list,"video_shader_dir", 0, setting_data);
-      add_setting_entry(menu,list,"savestate_directory", 0, setting_data);
-      add_setting_entry(menu,list,"savefile_directory", 0, setting_data);
-      add_setting_entry(menu,list,"overlay_directory", 0, setting_data);
-      add_setting_entry(menu,list,"system_directory", 0, setting_data);
-      add_setting_entry(menu,list,"screenshot_directory", 0, setting_data);
-      add_setting_entry(menu,list,"joypad_autoconfig_dir", 0, setting_data);
-      add_setting_entry(menu,list,"extraction_directory", 0, setting_data);
    }
    else if (!strcmp(label, "Shader Options"))
    {
