@@ -131,9 +131,12 @@ void setting_data_set_with_string_representation(
 void setting_data_get_string_representation(const rarch_setting_t* setting,
       char* buf, size_t sizeof_buf);
 
-// List building helper functions
+/* List building helper functions. */
 rarch_setting_t setting_data_group_setting(enum setting_type type,
       const char* name);
+
+rarch_setting_t setting_data_subgroup_setting(enum setting_type type,
+      const char* name, const char *parent_name);
 
 rarch_setting_t setting_data_bool_setting(const char* name,
       const char* description, bool* target, bool default_value,
