@@ -415,8 +415,10 @@ endif
 ifeq ($(HAVE_ZLIB), 1)
    HAVE_COMPRESSION = 1 
    OBJ += gfx/rpng/rpng.o file_extract.o decompress/zip_support.o
+   JOYCONFIG_OBJ += decompress/zip_support.o
+   RETROLAUNCH_OBJ += decompress/zip_support.o
    LIBS += $(ZLIB_LIBS)
-   DEFINES += $(ZLIB_CFLAGS) -DHAVE_ZLIB_DEFLATE
+   DEFINES += $(ZLIB_CFLAGS) -DHAVE_ZLIB_DEFLATE -DHAVE_ZLIB
 endif
 
 OBJ += record/ffemu.o 
