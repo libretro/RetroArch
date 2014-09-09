@@ -145,6 +145,13 @@ void menu_entries_pop(file_list_t *list)
    }
 }
 
+static int setting_set_flags(rarch_setting_t *setting)
+{
+   if (setting->flags & SD_FLAG_ALLOW_INPUT)
+      return MENU_FILE_LINEFEED;
+   return 0;
+}
+
 int menu_entries_push_list(menu_handle_t *menu,
       file_list_t *list,
       const char *path, const char *label,
@@ -198,8 +205,11 @@ int menu_entries_push_list(menu_handle_t *menu,
          !strcmp(label, "Overlay Options") ||
          !strcmp(label, "Privacy Options") ||
          !strcmp(label, "Video Options") ||
+         !strcmp(label, "Audio Options") ||
          !strcmp(label, "Path Options") ||
-         !strcmp(label, "Font Options")
+         !strcmp(label, "Font Options") ||
+         !strcmp(label, "User Options") ||
+         !strcmp(label, "Netplay Options")
          )
    {
       rarch_setting_t *setting_data = (rarch_setting_t*)setting_data_get_list();
@@ -228,7 +238,7 @@ int menu_entries_push_list(menu_handle_t *menu,
             continue;
 
          file_list_push(list, setting->short_description,
-               setting->name, 0, 0);
+               setting->name, setting_set_flags(setting), 0);
       }
    }
    else if (!strcmp(label, "settings"))
@@ -398,22 +408,6 @@ int menu_entries_push_list(menu_handle_t *menu,
 
       do_action = true;
    }
-   else if (!strcmp(label, "User Options"))
-   {
-      file_list_clear(list);
-      add_setting_entry(menu,list,"netplay_nickname", MENU_FILE_LINEFEED, setting_data);
-      add_setting_entry(menu,list,"user_language", MENU_FILE_LINEFEED, setting_data);
-   }
-   else if (!strcmp(label, "Netplay Options"))
-   {
-      file_list_clear(list);
-      add_setting_entry(menu,list,"netplay_enable", 0, setting_data);
-      add_setting_entry(menu,list,"netplay_mode", 0, setting_data);
-      add_setting_entry(menu,list,"netplay_spectator_mode_enable", 0, setting_data);
-      add_setting_entry(menu,list,"netplay_ip_address", 0, setting_data);
-      add_setting_entry(menu,list,"netplay_tcp_udp_port", MENU_FILE_LINEFEED, setting_data);
-      add_setting_entry(menu,list,"netplay_delay_frames", 0, setting_data);
-   }
    else if (!strcmp(label, "core_counters"))
    {
       file_list_clear(list);
@@ -441,19 +435,6 @@ int menu_entries_push_list(menu_handle_t *menu,
       else
          file_list_push(list, "No options available.", "",
                MENU_SETTINGS_CORE_OPTION_NONE, 0);
-   }
-   else if (!strcmp(label, "Audio Options"))
-   {
-      file_list_clear(list);
-      add_setting_entry(menu,list,"audio_dsp_plugin", 0, setting_data);
-      add_setting_entry(menu,list,"audio_enable", 0, setting_data);
-      add_setting_entry(menu,list,"audio_mute_enable", 0, setting_data);
-      add_setting_entry(menu,list,"audio_latency", 0, setting_data);
-      add_setting_entry(menu,list,"audio_sync", 0, setting_data);
-      add_setting_entry(menu,list,"audio_rate_control_delta", 0, setting_data);
-      add_setting_entry(menu,list,"system_bgm_enable", 0, setting_data);
-      add_setting_entry(menu,list,"audio_volume", 0, setting_data);
-      add_setting_entry(menu,list,"audio_device", MENU_FILE_LINEFEED, setting_data);
    }
    else if (!strcmp(label, "Input Options"))
    {

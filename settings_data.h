@@ -47,11 +47,12 @@ enum setting_type
                     
 enum setting_flags
 {
-   SD_FLAG_PATH_DIR    = 1,
-   SD_FLAG_PATH_FILE   = 2,
-   SD_FLAG_ALLOW_EMPTY = 4,
-   SD_FLAG_VALUE_DESC  = 8,
-   SD_FLAG_HAS_RANGE   = 16
+   SD_FLAG_PATH_DIR    = (1 << 0),
+   SD_FLAG_PATH_FILE   = (1 << 1),
+   SD_FLAG_ALLOW_EMPTY = (1 << 2),
+   SD_FLAG_VALUE_DESC  = (1 << 3),
+   SD_FLAG_HAS_RANGE   = (1 << 4),
+   SD_FLAG_ALLOW_INPUT = (1 << 5),
 };
 
 typedef struct rarch_setting_t
