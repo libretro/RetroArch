@@ -533,7 +533,7 @@ static void rmenu_xui_navigation_alphabet(void *data, size_t *ptr_out)
 }
 
 static void rmenu_xui_list_insert(void *data,
-      const char *path, size_t list_size)
+      const char *path, const char *, size_t list_size)
 {
    (void)data;
    wchar_t buf[PATH_MAX];
