@@ -119,6 +119,8 @@ const audio_driver_t audio_xenon360 = {
    xenon360_audio_set_nonblock_state,
    xenon360_audio_free,
    xenon360_use_float,
-   "xenon360"
+   "xenon360",
+   NULL,
+   NULL
 };
 

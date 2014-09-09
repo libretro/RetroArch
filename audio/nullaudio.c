@@ -70,5 +70,7 @@ const audio_driver_t audio_null = {
    null_audio_free,
    null_audio_use_float,
    "null",
+   NULL,
+   NULL
 };
 

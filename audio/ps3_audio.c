@@ -220,6 +220,8 @@ const audio_driver_t audio_ps3 = {
    ps3_audio_set_nonblock_state,
    ps3_audio_free,
    ps3_audio_use_float,
-   "ps3"
+   "ps3",
+   NULL,
+   NULL
 };
 

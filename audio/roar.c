@@ -117,5 +117,7 @@ const audio_driver_t audio_roar = {
    ra_set_nonblock_state,
    ra_free,
    ra_use_float,
-   "roar"
+   "roar",
+   NULL,
+   NULL
 };

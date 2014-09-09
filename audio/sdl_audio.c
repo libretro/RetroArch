@@ -205,9 +205,11 @@ const audio_driver_t audio_sdl = {
    sdl_audio_free,
    sdl_use_float,
 #ifdef HAVE_SDL2
-   "sdl2"
+   "sdl2",
 #else
-   "sdl"
+   "sdl",
 #endif
+   NULL,
+   NULL
 };
    
