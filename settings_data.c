@@ -603,11 +603,15 @@ void setting_data_get_string_representation(rarch_setting_t* setting,
             snprintf(buf, sizeof_buf, "[KB:%s] [JS:%s] [AX:%s]", key_name, button_name, axis_name);
 #else
 #ifdef HAVE_MENU
-            const struct retro_keybind* bind = (const struct retro_keybind*)
-               &setting->value.keybind[driver.menu->current_pad];
-            const struct retro_keybind* auto_bind = (const struct retro_keybind*)
-               input_get_auto_bind(driver.menu->current_pad, bind->id);
-            input_get_bind_string(buf, bind, auto_bind, sizeof_buf);
+            if (driver.menu != NULL)
+            {
+               const struct retro_keybind* bind = (const struct retro_keybind*)
+                  &setting->value.keybind[driver.menu->current_pad];
+               const struct retro_keybind* auto_bind = 
+                  (const struct retro_keybind*)
+                  input_get_auto_bind(driver.menu->current_pad, bind->id);
+               input_get_bind_string(buf, bind, auto_bind, sizeof_buf);
+            }
 #endif
 #endif
          }
