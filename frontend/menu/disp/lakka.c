@@ -720,6 +720,7 @@ void lakka_init_settings(void)
       calloc(category->num_items, sizeof(menu_item_t));
 
    int j, k, jj, kk;
+   jj = 0;
    for (j = 0; j <= 512; j++)
    {
       rarch_setting_t group = (rarch_setting_t)setting_data[j];
@@ -769,15 +770,15 @@ void lakka_init_settings(void)
                }
                else if (setting.type == ST_INT)
                {
-                  sprintf(subitem->value, "%d", setting.value.integer);
+                  sprintf(subitem->value, "%d", *setting.value.integer);
                }
                else if (setting.type == ST_UINT)
                {
-                  sprintf(subitem->value, "%u", setting.value.integer);
+                  sprintf(subitem->value, "%u", *setting.value.unsigned_integer);
                }
                else if (setting.type == ST_FLOAT)
                {
-                  sprintf(subitem->value, "%f", setting.value.fraction);
+                  sprintf(subitem->value, "%f", *setting.value.fraction);
                }
                else if (setting.type == ST_STRING || setting.type == ST_PATH || setting.type == ST_DIR)
                {
