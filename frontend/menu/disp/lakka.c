@@ -482,7 +482,7 @@ static void lakka_draw_subitems(int i, int j)
       if (!subitem)
          continue;
 
-      if (k == 0 && g_extern.main_is_init
+      if (i && k == 0 && g_extern.main_is_init
             && !g_extern.libretro_dummy
             && strcmp(g_extern.fullpath, active_item->rom) == 0)
       {
