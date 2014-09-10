@@ -1366,6 +1366,12 @@ static int menu_custom_bind_iterate_keyboard(void *data,
    return 0;
 }
 
+static void menu_common_load_content(void)
+{
+   rarch_main_command(RARCH_CMD_LOAD_CONTENT);
+   menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS);
+   driver.menu->msg_force = true;
+}
 
 static int menu_action_ok(const char *menu_path,
       const char *menu_label, unsigned menu_type)
@@ -1409,10 +1415,10 @@ static int menu_action_ok(const char *menu_path,
             if (ret == -1)
             {
 
-               rarch_main_command(RARCH_CMD_LOAD_CONTENT);
                rarch_main_command(RARCH_CMD_LOAD_CORE);
-               menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS);
-               driver.menu->msg_force = true;
+
+               menu_common_load_content();
+
                return -1;
             }
             else if (ret == 0)
@@ -1499,9 +1505,9 @@ static int menu_action_ok(const char *menu_path,
             strlcpy(g_settings.libretro, path, sizeof(g_settings.libretro));
             strlcpy(g_extern.fullpath, driver.menu->deferred_path,
                   sizeof(g_extern.fullpath));
-            rarch_main_command(RARCH_CMD_LOAD_CONTENT);
-            driver.menu->msg_force = true;
-            menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS);
+
+            menu_common_load_content();
+
             return -1;
          }
          else if (!strcmp(menu_label, "core_list"))
@@ -1514,9 +1520,8 @@ static int menu_action_ok(const char *menu_path,
             /* No content needed for this core, load core immediately. */
             if (driver.menu->load_no_content)
             {
-               rarch_main_set_state(RARCH_ACTION_STATE_LOAD_CONTENT);
                *g_extern.fullpath = '\0';
-               driver.menu->msg_force = true;
+               menu_common_load_content();
                return -1;
             }
 
@@ -1563,9 +1568,7 @@ static int menu_action_ok(const char *menu_path,
          strncpy(g_extern.carchive_path, menu_path, 
                sizeof(g_extern.carchive_path));
 
-         rarch_main_set_state(RARCH_ACTION_STATE_LOAD_CONTENT);
-         menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS);
-         driver.menu->msg_force = true;
+         menu_common_load_content();
 
          return -1;
 #endif
@@ -1584,10 +1587,9 @@ static int menu_action_ok(const char *menu_path,
    {
       fill_pathname_join(g_extern.fullpath, menu_path, path,
             sizeof(g_extern.fullpath));
-      rarch_main_set_state(RARCH_ACTION_STATE_LOAD_CONTENT);
 
-      menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS);
-      driver.menu->msg_force = true;
+      menu_common_load_content();
+
       return -1;
    }
 
