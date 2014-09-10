@@ -124,4 +124,61 @@ static void get_title(const char *label, const char *dir,
    }
 }
 
+static void disp_set_label(unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *type_str, size_t type_str_size,
+      const char *entry_label,
+      const char *path)
+{
+   *w = 19;
+
+   if (!strcmp(label, "performance_counters"))
+      *w = 28;
+
+   if (type == MENU_FILE_CORE)
+   {
+      strlcpy(type_str, "(CORE)", type_str_size);
+      file_list_get_alt_at_offset(driver.menu->selection_buf, i, &path);
+      *w = 6;
+   }
+   else if (type == MENU_FILE_PLAIN)
+   {
+      strlcpy(type_str, "(FILE)", type_str_size);
+      *w = 6;
+   }
+   else if (type == MENU_FILE_USE_DIRECTORY)
+   {
+      *type_str = '\0';
+      *w = 0;
+   }
+   else if (type == MENU_FILE_DIRECTORY)
+   {
+      strlcpy(type_str, "(DIR)", type_str_size);
+      type = MENU_FILE_DIRECTORY;
+      *w = 5;
+   }
+   else if (type == MENU_FILE_CARCHIVE)
+   {
+      strlcpy(type_str, "(COMP)", type_str_size);
+      *w = 6;
+   }
+   else if (type == MENU_FILE_IN_CARCHIVE)
+   {
+      strlcpy(type_str, "(CFILE)", type_str_size);
+      *w = 7;
+   }
+   else if (type >= MENU_SETTINGS_CORE_OPTION_START)
+      strlcpy(
+            type_str,
+            core_option_get_val(g_extern.system.core_options,
+               type - MENU_SETTINGS_CORE_OPTION_START),
+            type_str_size);
+   else if (type == MENU_FILE_SWITCH || type == MENU_FILE_LINEFEED_SWITCH)
+      strlcpy(type_str, "...", type_str_size);
+   else if (driver.menu_ctx && driver.menu_ctx->backend &&
+         driver.menu_ctx->backend->setting_set_label)
+      driver.menu_ctx->backend->setting_set_label(type_str,
+            type_str_size, w, type, label, entry_label, i);
+}
+
 #endif

@@ -553,10 +553,12 @@ int menu_parse_check(const char *label, unsigned menu_type)
 int menu_parse_and_resolve(file_list_t *list, file_list_t *menu_list)
 {
    size_t i, list_size;
-   unsigned menu_type = 0;
+   unsigned menu_type = 0, default_type_plain = MENU_FILE_PLAIN;
 
    const char *dir = NULL;
    const char *label = NULL;
+   const char *exts = NULL;
+   char ext_buf[PATH_MAX];
 
    file_list_get_last(menu_list, &dir, &label, &menu_type);
 
@@ -664,9 +666,6 @@ int menu_parse_and_resolve(file_list_t *list, file_list_t *menu_list)
    LWP_MutexUnlock(gx_device_mutex);
 #endif
 
-   const char *exts;
-   char ext_buf[1024];
-
    //RARCH_LOG("LABEL: %s\n", label);
    if (!strcmp(label, "core_list"))
       exts = EXT_EXECUTABLES;
@@ -738,7 +737,7 @@ int menu_parse_and_resolve(file_list_t *list, file_list_t *menu_list)
             break;
          case RARCH_PLAIN_FILE:
          default:
-            file_type = MENU_FILE_PLAIN;
+            file_type = default_type_plain;
             break;
       }
       bool is_dir = (file_type == MENU_FILE_DIRECTORY);
