@@ -541,6 +541,8 @@ static void lakka_draw_items(int i)
       &categories[menu_active_category];
    menu_item_t *active_item = (menu_item_t*)
       &active_category->items[active_category->active_item];
+    
+   (void)active_item;
 
    for(j = 0; j < category->num_items; j++)
    {
@@ -661,6 +663,8 @@ static void lakka_context_destroy(void *data)
 {
    int i, j, k;
    gl_t *gl = (gl_t*)driver.video_data;
+
+   (void)gl;
 
    for (i = 0; i < TEXTURE_LAST; i++)
       glDeleteTextures(1, &textures[i].id);
@@ -1076,7 +1080,7 @@ static int lakka_input_postprocess(uint64_t old_state)
    }
 
    if (! global_alpha)
-      add_tween(DELAY, 1.0, &global_alpha, &inOutQuad, NULL);
+      add_tween(LAKKA_DELAY, 1.0, &global_alpha, &inOutQuad, NULL);
 
    return 0;
 }

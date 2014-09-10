@@ -22,7 +22,10 @@
 #include "../../../gfx/fonts/fonts.h"
 
 #define THEME "monochrome" // flatui or monochrome themes are available
-#define DELAY 0.02
+
+#ifndef LAKKA_DELAY
+#define LAKKA_DELAY 0.02
+#endif
 
 extern int depth;
 extern int num_categories;

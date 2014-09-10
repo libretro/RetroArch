@@ -45,7 +45,7 @@ static void lakka_switch_categories(void)
    int i, j;
 
    // translation
-   add_tween(DELAY, -menu_active_category * hspacing, &all_categories_x, &inOutQuad, NULL);
+   add_tween(LAKKA_DELAY, -menu_active_category * hspacing, &all_categories_x, &inOutQuad, NULL);
 
    // alpha tweening
    for (i = 0; i < num_categories; i++)
@@ -58,15 +58,15 @@ static void lakka_switch_categories(void)
 
       ca = (i == menu_active_category) ? 1.0 : 0.5;
       cz = (i == menu_active_category) ? c_active_zoom : c_passive_zoom;
-      add_tween(DELAY, ca, &category->alpha, &inOutQuad, NULL);
-      add_tween(DELAY, cz, &category->zoom,  &inOutQuad, NULL);
+      add_tween(LAKKA_DELAY, ca, &category->alpha, &inOutQuad, NULL);
+      add_tween(LAKKA_DELAY, cz, &category->zoom,  &inOutQuad, NULL);
 
       for (j = 0; j < category->num_items; j++)
       {
          float ia = (i != menu_active_category     ) ? 0   : 
             (j == category->active_item) ? 1.0 : 0.5;
 
-         add_tween(DELAY, ia, &category->items[j].alpha, &inOutQuad, NULL);
+         add_tween(LAKKA_DELAY, ia, &category->items[j].alpha, &inOutQuad, NULL);
       }
    }
 }
@@ -90,9 +90,9 @@ static void lakka_switch_items(void)
          (j  < active_category->active_item) ? vspacing*(j - active_category->active_item + above_item_offset) :
          vspacing*(j - active_category->active_item + under_item_offset);
 
-      add_tween(DELAY, ia, &active_item->alpha, &inOutQuad, NULL);
-      add_tween(DELAY, iz, &active_item->zoom,  &inOutQuad, NULL);
-      add_tween(DELAY, iy, &active_item->y,     &inOutQuad, NULL);
+      add_tween(LAKKA_DELAY, ia, &active_item->alpha, &inOutQuad, NULL);
+      add_tween(LAKKA_DELAY, iz, &active_item->zoom,  &inOutQuad, NULL);
+      add_tween(LAKKA_DELAY, iy, &active_item->y,     &inOutQuad, NULL);
    }
 }
 
@@ -111,24 +111,24 @@ static void lakka_switch_subitems(void)
 
       if (k < item->active_subitem)
       {
-         // Above items
-         add_tween(DELAY, 0.5, &subitem->alpha, &inOutQuad, NULL);
-         add_tween(DELAY, vspacing*(k - item->active_subitem + above_subitem_offset), &subitem->y, &inOutQuad, NULL);
-         add_tween(DELAY, i_passive_zoom, &subitem->zoom, &inOutQuad, NULL);
+         /* Above items */
+         add_tween(LAKKA_DELAY, 0.5, &subitem->alpha, &inOutQuad, NULL);
+         add_tween(LAKKA_DELAY, vspacing*(k - item->active_subitem + above_subitem_offset), &subitem->y, &inOutQuad, NULL);
+         add_tween(LAKKA_DELAY, i_passive_zoom, &subitem->zoom, &inOutQuad, NULL);
       }
       else if (k == item->active_subitem)
       {
-         // Active item
-         add_tween(DELAY, 1.0, &subitem->alpha, &inOutQuad, NULL);
-         add_tween(DELAY, vspacing*active_item_factor, &subitem->y, &inOutQuad, NULL);
-         add_tween(DELAY, i_active_zoom, &subitem->zoom, &inOutQuad, NULL);
+         /* Active item */
+         add_tween(LAKKA_DELAY, 1.0, &subitem->alpha, &inOutQuad, NULL);
+         add_tween(LAKKA_DELAY, vspacing*active_item_factor, &subitem->y, &inOutQuad, NULL);
+         add_tween(LAKKA_DELAY, i_active_zoom, &subitem->zoom, &inOutQuad, NULL);
       }
       else if (k > item->active_subitem)
       {
-         // Under items
-         add_tween(DELAY, 0.5, &subitem->alpha, &inOutQuad, NULL);
-         add_tween(DELAY, vspacing*(k - item->active_subitem + under_item_offset), &subitem->y, &inOutQuad, NULL);
-         add_tween(DELAY, i_passive_zoom, &subitem->zoom, &inOutQuad, NULL);
+         /* Under items */
+         add_tween(LAKKA_DELAY, 0.5, &subitem->alpha, &inOutQuad, NULL);
+         add_tween(LAKKA_DELAY, vspacing*(k - item->active_subitem + under_item_offset), &subitem->y, &inOutQuad, NULL);
+         add_tween(LAKKA_DELAY, i_passive_zoom, &subitem->zoom, &inOutQuad, NULL);
       }
    }
 }
@@ -174,8 +174,9 @@ static void lakka_reset_submenu(void)
 static void lakka_open_submenu(void)
 {
    int i, j, k;
-   add_tween(DELAY, -hspacing * (menu_active_category+1), &all_categories_x, &inOutQuad, NULL);
-   add_tween(DELAY, 1.0, &arrow_alpha, &inOutQuad, NULL);
+    
+   add_tween(LAKKA_DELAY, -hspacing * (menu_active_category+1), &all_categories_x, &inOutQuad, NULL);
+   add_tween(LAKKA_DELAY, 1.0, &arrow_alpha, &inOutQuad, NULL);
 
    // Reset contextual menu style
    lakka_reset_submenu();
@@ -188,10 +189,10 @@ static void lakka_open_submenu(void)
          continue;
 
       if (i != menu_active_category)
-         add_tween(DELAY, 0, &category->alpha, &inOutQuad, NULL);
+         add_tween(LAKKA_DELAY, 0, &category->alpha, &inOutQuad, NULL);
       else
       {
-         add_tween(DELAY, 1.0, &category->alpha, &inOutQuad, NULL);
+         add_tween(LAKKA_DELAY, 1.0, &category->alpha, &inOutQuad, NULL);
 
          for (j = 0; j < category->num_items; j++)
          {
@@ -203,18 +204,18 @@ static void lakka_open_submenu(void)
 
                   if (k == category->items[j].active_subitem)
                   {
-                     add_tween(DELAY, 1.0, &subitem->alpha, &inOutQuad, NULL);
-                     add_tween(DELAY, i_active_zoom, &subitem->zoom, &inOutQuad, NULL);
+                     add_tween(LAKKA_DELAY, 1.0, &subitem->alpha, &inOutQuad, NULL);
+                     add_tween(LAKKA_DELAY, i_active_zoom, &subitem->zoom, &inOutQuad, NULL);
                   }
                   else
                   {
-                     add_tween(DELAY, 0.5, &subitem->alpha, &inOutQuad, NULL);
-                     add_tween(DELAY, i_passive_zoom, &subitem->zoom, &inOutQuad, NULL);
+                     add_tween(LAKKA_DELAY, 0.5, &subitem->alpha, &inOutQuad, NULL);
+                     add_tween(LAKKA_DELAY, i_passive_zoom, &subitem->zoom, &inOutQuad, NULL);
                   }
                }
             }
             else
-               add_tween(DELAY, 0, &category->items[j].alpha, &inOutQuad, NULL);
+               add_tween(LAKKA_DELAY, 0, &category->items[j].alpha, &inOutQuad, NULL);
          }
       }
    }
@@ -223,8 +224,9 @@ static void lakka_open_submenu(void)
 static void lakka_close_submenu(void)
 {
    int i, j, k;
-   add_tween(DELAY, -hspacing * menu_active_category, &all_categories_x, &inOutQuad, NULL);
-   add_tween(DELAY, 0.0, &arrow_alpha, &inOutQuad, NULL);
+    
+   add_tween(LAKKA_DELAY, -hspacing * menu_active_category, &all_categories_x, &inOutQuad, NULL);
+   add_tween(LAKKA_DELAY, 0.0, &arrow_alpha, &inOutQuad, NULL);
    
    for (i = 0; i < num_categories; i++)
    {
@@ -235,29 +237,29 @@ static void lakka_close_submenu(void)
 
       if (i == menu_active_category)
       {
-         add_tween(DELAY, 1.0, &category->alpha, &inOutQuad, NULL);
-         add_tween(DELAY, c_active_zoom, &category->zoom, &inOutQuad, NULL);
+         add_tween(LAKKA_DELAY, 1.0, &category->alpha, &inOutQuad, NULL);
+         add_tween(LAKKA_DELAY, c_active_zoom, &category->zoom, &inOutQuad, NULL);
 
          for (j = 0; j < category->num_items; j++)
          {
             if (j == category->active_item)
             {
-               add_tween(DELAY, 1.0, &category->items[j].alpha, &inOutQuad, NULL);
+               add_tween(LAKKA_DELAY, 1.0, &category->items[j].alpha, &inOutQuad, NULL);
 
                for (k = 0; k < category->items[j].num_subitems; k++)
-                  add_tween(DELAY, 0, &category->items[j].subitems[k].alpha, &inOutQuad, NULL);
+                  add_tween(LAKKA_DELAY, 0, &category->items[j].subitems[k].alpha, &inOutQuad, NULL);
             }
             else
-               add_tween(DELAY, 0.5, &category->items[j].alpha, &inOutQuad, NULL);
+               add_tween(LAKKA_DELAY, 0.5, &category->items[j].alpha, &inOutQuad, NULL);
          }
       }
       else
       {
-         add_tween(DELAY, 0.5, &category->alpha, &inOutQuad, NULL);
-         add_tween(DELAY, c_passive_zoom, &category->zoom, &inOutQuad, NULL);
+         add_tween(LAKKA_DELAY, 0.5, &category->alpha, &inOutQuad, NULL);
+         add_tween(LAKKA_DELAY, c_passive_zoom, &category->zoom, &inOutQuad, NULL);
 
          for (j = 0; j < category->num_items; j++)
-            add_tween(DELAY, 0, &category->items[j].alpha, &inOutQuad, NULL);
+            add_tween(LAKKA_DELAY, 0, &category->items[j].alpha, &inOutQuad, NULL);
       }
    }
 }
@@ -385,7 +387,7 @@ static int menu_lakka_iterate(unsigned action)
          }
          else if (depth == 0 && menu_active_category == 0 && active_category->active_item == active_category->num_items-1)
          {
-            add_tween(DELAY, 1.0, &global_alpha, &inOutQuad, NULL);
+            add_tween(LAKKA_DELAY, 1.0, &global_alpha, &inOutQuad, NULL);
             rarch_main_set_state(RARCH_ACTION_STATE_RUNNING_FINISHED);
             return -1;
          }

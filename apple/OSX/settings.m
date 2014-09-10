@@ -259,9 +259,9 @@ NSWindowDelegate>
    else
    {
        char buffer[PATH_MAX];
-       const rarch_setting_t* setting_data, *setting;
-       setting_data = (const rarch_setting_t*)setting_data_get_list();
-       setting = (const rarch_setting_t*)&setting_data[[item intValue]];
+       rarch_setting_t* setting_data, *setting = NULL;
+       setting_data = (rarch_setting_t*)setting_data_get_list();
+       setting = (rarch_setting_t*)&setting_data[[item intValue]];
        
        if ([[tableColumn identifier] isEqualToString:BOXSTRING("left")])
            return BOXSTRING(setting->short_description);
