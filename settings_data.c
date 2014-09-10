@@ -456,7 +456,105 @@ void setting_data_set_with_string_representation(const rarch_setting_t* setting,
       setting->change_handler(setting);
 }
 
-void setting_data_get_string_representation(const rarch_setting_t* setting,
+static void menu_common_setting_set_label_st_bool(rarch_setting_t *setting,
+      char *type_str, size_t type_str_size)
+{
+   if (!strcmp(setting->name, "savestate") ||
+         !strcmp(setting->name, "loadstate"))
+   {
+      if (g_settings.state_slot < 0)
+         strlcpy(type_str, "-1 (auto)", type_str_size);
+      else
+         snprintf(type_str, type_str_size, "%d", g_settings.state_slot);
+   }
+   else
+      strlcpy(type_str, *setting->value.boolean ? setting->boolean.on_label :
+            setting->boolean.off_label, type_str_size);
+}
+
+static void menu_common_setting_set_label_st_uint(rarch_setting_t *setting,
+      char *type_str, size_t type_str_size)
+{
+   if (setting && !strcmp(setting->name, "video_monitor_index"))
+   {
+      if (*setting->value.unsigned_integer)
+         snprintf(type_str, type_str_size, "%d",
+               *setting->value.unsigned_integer);
+      else
+         strlcpy(type_str, "0 (Auto)", type_str_size);
+   }
+   else if (setting && !strcmp(setting->name, "video_rotation"))
+      strlcpy(type_str, rotation_lut[*setting->value.unsigned_integer],
+            type_str_size);
+   else if (setting && !strcmp(setting->name, "aspect_ratio_index"))
+      strlcpy(type_str,
+            aspectratio_lut[*setting->value.unsigned_integer].name,
+            type_str_size);
+   else if (setting && !strcmp(setting->name, "autosave_interval"))
+   {
+      if (*setting->value.unsigned_integer)
+         snprintf(type_str, type_str_size, "%u seconds",
+               *setting->value.unsigned_integer);
+      else
+         strlcpy(type_str, "OFF", type_str_size);
+   }
+   else if (setting && !strcmp(setting->name, "user_language"))
+   {
+      static const char *modes[] = {
+         "English",
+         "Japanese",
+         "French",
+         "Spanish",
+         "German",
+         "Italian",
+         "Dutch",
+         "Portuguese",
+         "Russian",
+         "Korean",
+         "Chinese (Traditional)",
+         "Chinese (Simplified)"
+      };
+
+      strlcpy(type_str, modes[g_settings.user_language], type_str_size);
+   }
+   else if (setting && !strcmp(setting->name, "libretro_log_level"))
+   {
+      static const char *modes[] = {
+         "0 (Debug)",
+         "1 (Info)",
+         "2 (Warning)",
+         "3 (Error)"
+      };
+
+      strlcpy(type_str, modes[*setting->value.unsigned_integer],
+            type_str_size);
+   }
+   else
+      snprintf(type_str, type_str_size, "%d",
+            *setting->value.unsigned_integer);
+}
+
+static void menu_common_setting_set_label_st_float(rarch_setting_t *setting,
+      char *type_str, size_t type_str_size)
+{
+   if (setting && !strcmp(setting->name, "video_refresh_rate_auto"))
+   {
+      double refresh_rate = 0.0;
+      double deviation = 0.0;
+      unsigned sample_points = 0;
+
+      if (driver_monitor_fps_statistics(&refresh_rate, &deviation, &sample_points))
+         snprintf(type_str, type_str_size, "%.3f Hz (%.1f%% dev, %u samples)",
+               refresh_rate, 100.0 * deviation, sample_points);
+      else
+         strlcpy(type_str, "N/A", type_str_size);
+   }
+   else
+      snprintf(type_str, type_str_size, setting->rounding_fraction,
+            *setting->value.fraction);
+}
+
+void setting_data_get_string_representation(rarch_setting_t* setting,
       char* buf, size_t sizeof_buf)
 {
    if (!setting || !buf || !sizeof_buf)
@@ -465,24 +563,32 @@ void setting_data_get_string_representation(const rarch_setting_t* setting,
    switch (setting->type)
    {
       case ST_BOOL:
-         snprintf(buf, sizeof_buf, "%s", *setting->value.boolean ? "True" : "False");
+         menu_common_setting_set_label_st_bool(setting, buf, sizeof_buf);
          break;
       case ST_INT:
          snprintf(buf, sizeof_buf, "%d", *setting->value.integer);
          break;
       case ST_UINT:
-         snprintf(buf, sizeof_buf, "%u", *setting->value.unsigned_integer);
+         menu_common_setting_set_label_st_uint(setting, buf, sizeof_buf);
          break;
       case ST_FLOAT:
-         snprintf(buf, sizeof_buf, "%f", *setting->value.fraction);
+         menu_common_setting_set_label_st_float(setting, buf, sizeof_buf);
+         break;
+      case ST_DIR:
+         strlcpy(buf,
+               *setting->value.string ?
+               setting->value.string : setting->dir.empty_path,
+               sizeof_buf);
          break;
       case ST_PATH:
-      case ST_DIR:
+         strlcpy(buf, path_basename(setting->value.string), sizeof_buf);
+         break;
       case ST_STRING:
          strlcpy(buf, setting->value.string, sizeof_buf);
          break;
       case ST_BIND:
          {
+#if 0
             char button_name[32], axis_name[32], key_name[32];
 
             strlcpy(button_name, "nul", sizeof(button_name));
@@ -495,14 +601,25 @@ void setting_data_get_string_representation(const rarch_setting_t* setting,
             get_key_name(key_name, sizeof(key_name), setting);
 #endif
             snprintf(buf, sizeof_buf, "[KB:%s] [JS:%s] [AX:%s]", key_name, button_name, axis_name);
+#else
+#ifdef HAVE_MENU
+            const struct retro_keybind* bind = (const struct retro_keybind*)
+               &setting->value.keybind[driver.menu->current_pad];
+            const struct retro_keybind* auto_bind = (const struct retro_keybind*)
+               input_get_auto_bind(driver.menu->current_pad, bind->id);
+            input_get_bind_string(buf, bind, auto_bind, sizeof_buf);
+#endif
+#endif
          }
          break;
          /* TODO */
       case ST_HEX:
          break;
       case ST_GROUP:
+         strlcpy(buf, "...", sizeof_buf);
          break;
       case ST_SUB_GROUP:
+         strlcpy(buf, "...", sizeof_buf);
          break;
       case ST_END_GROUP:
          break;
@@ -1612,135 +1729,8 @@ static void menu_common_setting_set_label_perf(char *type_str,
    }
 }
 
-static void menu_common_setting_set_label_st_bool(rarch_setting_t *setting,
-      char *type_str, size_t type_str_size)
-{
-   if (!strcmp(setting->name, "savestate") ||
-         !strcmp(setting->name, "loadstate"))
-   {
-      if (g_settings.state_slot < 0)
-         strlcpy(type_str, "-1 (auto)", type_str_size);
-      else
-         snprintf(type_str, type_str_size, "%d", g_settings.state_slot);
-   }
-   else
-      strlcpy(type_str, *setting->value.boolean ? setting->boolean.on_label :
-            setting->boolean.off_label, type_str_size);
-}
 
-static void menu_common_setting_set_label_st_float(rarch_setting_t *setting,
-      char *type_str, size_t type_str_size)
-{
-   if (setting && !strcmp(setting->name, "video_refresh_rate_auto"))
-   {
-      double refresh_rate = 0.0;
-      double deviation = 0.0;
-      unsigned sample_points = 0;
 
-      if (driver_monitor_fps_statistics(&refresh_rate, &deviation, &sample_points))
-         snprintf(type_str, type_str_size, "%.3f Hz (%.1f%% dev, %u samples)",
-               refresh_rate, 100.0 * deviation, sample_points);
-      else
-         strlcpy(type_str, "N/A", type_str_size);
-   }
-   else
-      snprintf(type_str, type_str_size, setting->rounding_fraction,
-            *setting->value.fraction);
-}
-
-static void menu_common_setting_set_label_st_uint(rarch_setting_t *setting,
-      char *type_str, size_t type_str_size)
-{
-   if (setting && !strcmp(setting->name, "video_monitor_index"))
-   {
-      if (*setting->value.unsigned_integer)
-         snprintf(type_str, type_str_size, "%d",
-               *setting->value.unsigned_integer);
-      else
-         strlcpy(type_str, "0 (Auto)", type_str_size);
-   }
-   else if (setting && !strcmp(setting->name, "video_rotation"))
-      strlcpy(type_str, rotation_lut[*setting->value.unsigned_integer],
-            type_str_size);
-   else if (setting && !strcmp(setting->name, "aspect_ratio_index"))
-      strlcpy(type_str,
-            aspectratio_lut[*setting->value.unsigned_integer].name,
-            type_str_size);
-   else if (setting && !strcmp(setting->name, "autosave_interval"))
-   {
-      if (*setting->value.unsigned_integer)
-         snprintf(type_str, type_str_size, "%u seconds",
-               *setting->value.unsigned_integer);
-      else
-         strlcpy(type_str, "OFF", type_str_size);
-   }
-   else if (setting && !strcmp(setting->name, "user_language"))
-   {
-      static const char *modes[] = {
-         "English",
-         "Japanese",
-         "French",
-         "Spanish",
-         "German",
-         "Italian",
-         "Dutch",
-         "Portuguese",
-         "Russian",
-         "Korean",
-         "Chinese (Traditional)",
-         "Chinese (Simplified)"
-      };
-
-      strlcpy(type_str, modes[g_settings.user_language], type_str_size);
-   }
-   else if (setting && !strcmp(setting->name, "libretro_log_level"))
-   {
-      static const char *modes[] = {
-         "0 (Debug)",
-         "1 (Info)",
-         "2 (Warning)",
-         "3 (Error)"
-      };
-
-      strlcpy(type_str, modes[*setting->value.unsigned_integer],
-            type_str_size);
-   }
-   else
-      snprintf(type_str, type_str_size, "%d",
-            *setting->value.unsigned_integer);
-}
-
-static void handle_setting_label(char *type_str,
-      size_t type_str_size, rarch_setting_t *setting)
-{
-   if (setting->type == ST_BOOL)
-      menu_common_setting_set_label_st_bool(setting, type_str, type_str_size);
-   else if (setting->type == ST_UINT)
-      menu_common_setting_set_label_st_uint(setting, type_str, type_str_size);
-   else if (setting->type == ST_FLOAT)
-      menu_common_setting_set_label_st_float(setting, type_str, type_str_size);
-   else if (setting->type == ST_DIR)
-      strlcpy(type_str,
-            *setting->value.string ?
-            setting->value.string : setting->dir.empty_path,
-            type_str_size);
-   else if (setting->type == ST_PATH)
-      strlcpy(type_str, path_basename(setting->value.string), type_str_size);
-   else if (setting->type == ST_STRING)
-      strlcpy(type_str, setting->value.string, type_str_size);
-   else if (setting->type == ST_GROUP)
-      strlcpy(type_str, "...", type_str_size);
-   else if (setting->type == ST_BIND)
-   {
-#ifdef HAVE_MENU
-      const struct retro_keybind* bind = (const struct retro_keybind*)
-         &setting->value.keybind[driver.menu->current_pad];
-      const struct retro_keybind* auto_bind = (const struct retro_keybind*)
-         input_get_auto_bind(driver.menu->current_pad, bind->id);
-      input_get_bind_string(type_str, bind, auto_bind, type_str_size);
-#endif
-   }
-}
 
 void setting_data_get_label(char *type_str,
       size_t type_str_size, unsigned *w, unsigned type, 
@@ -1841,7 +1831,7 @@ void setting_data_get_label(char *type_str,
             perf_counters_libretro,
             type - MENU_SETTINGS_LIBRETRO_PERF_COUNTERS_BEGIN);
    else if (setting)
-      handle_setting_label(type_str, type_str_size, setting);
+      setting_data_get_string_representation(setting, type_str, type_str_size);
    else
    {
       setting_data = (rarch_setting_t*)setting_data_get_mainmenu(true);
@@ -1872,7 +1862,7 @@ void setting_data_get_label(char *type_str,
                snprintf(type_str, type_str_size, "%u", current + 1);
          }
          else
-            handle_setting_label(type_str, type_str_size, setting);
+            setting_data_get_string_representation(setting, type_str, type_str_size);
       }
       else
       {

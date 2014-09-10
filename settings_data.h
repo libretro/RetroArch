@@ -128,7 +128,7 @@ rarch_setting_t* setting_data_find_setting(rarch_setting_t* settings,
 
 void setting_data_set_with_string_representation(
       const rarch_setting_t* setting, const char* value);
-void setting_data_get_string_representation(const rarch_setting_t* setting,
+void setting_data_get_string_representation(rarch_setting_t* setting,
       char* buf, size_t sizeof_buf);
 
 /* List building helper functions. */
