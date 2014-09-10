@@ -429,21 +429,20 @@ static void rmenu_xui_render(void)
 
    for (i = begin; i < end; i++/*, y += FONT_HEIGHT_STRIDE */)
    {
-      const char *path = NULL;
-      const char *entry_label = NULL;
-      unsigned type = 0;
-      file_list_get_at_offset(driver.menu->selection_buf, i,
-            &path, &entry_label, &type);
-      char message[256];
-      char type_str[256];
-      char entry_title_buf[256];
-      char type_str_buf[64];
+      char message[PATH_MAX], type_str[PATH_MAX],
+           entry_title_buf[PATH_MAX], type_str_buf[PATH_MAX],
+           path_buf[PATH_MAX];
+      const char *path = NULL, *entry_label = NULL;
+      unsigned type = 0, w = 0;
       bool selected = false;
-      unsigned w = 0;
+
+      file_list_get_at_offset(driver.menu->selection_buf, i, &path,
+            &entry_label, &type);
 
       disp_set_label(&w, type, i, label,
             type_str, sizeof(type_str), 
-            entry_label, path);
+            entry_label, path,
+            path_buf, sizeof(path_buf));
 
       selected = (i == driver.menu->selection_ptr);
 

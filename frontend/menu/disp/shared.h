@@ -128,7 +128,8 @@ static void disp_set_label(unsigned *w, unsigned type, unsigned i,
       const char *label,
       char *type_str, size_t type_str_size,
       const char *entry_label,
-      const char *path)
+      const char *path,
+      char *path_buf, size_t path_buf_size)
 {
    *w = 19;
 
@@ -206,6 +207,8 @@ static void disp_set_label(unsigned *w, unsigned type, unsigned i,
          driver.menu_ctx->backend->setting_set_label)
       driver.menu_ctx->backend->setting_set_label(type_str,
             type_str_size, w, type, label, entry_label, i);
+
+   strlcpy(path_buf, path, path_buf_size);
 }
 
 #endif

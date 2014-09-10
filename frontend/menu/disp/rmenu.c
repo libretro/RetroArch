@@ -217,17 +217,15 @@ static void rmenu_render(void)
 
    for (i = begin; i < end; i++, j++)
    {
-      const char *path = NULL;
-      const char *entry_label = NULL;
-      unsigned type = 0;
+      char message[PATH_MAX], type_str[PATH_MAX],
+           entry_title_buf[PATH_MAX], type_str_buf[PATH_MAX],
+           path_buf[PATH_MAX];
+      const char *path = NULL, *entry_label = NULL;
+      unsigned type = 0, w = 0;
+      bool selected = false;
+
       file_list_get_at_offset(menu->selection_buf, i,
             &path, &entry_label, &type);
-      char message[256];
-      char type_str[256];
-      unsigned w = 0;
-      char entry_title_buf[256];
-      char type_str_buf[64];
-      bool selected = false;
 
       disp_set_label(&w, type, i, label,
             type_str, sizeof(type_str), 
