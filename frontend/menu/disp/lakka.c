@@ -769,22 +769,18 @@ void lakka_init_settings(void)
                }
                else if (setting.type == ST_INT)
                {
-                  char value[256];
                   sprintf(subitem->value, "%d", setting.value.integer);
                }
                else if (setting.type == ST_UINT)
                {
-                  char value[256];
                   sprintf(subitem->value, "%u", setting.value.integer);
                }
                else if (setting.type == ST_FLOAT)
                {
-                  char value[256];
                   sprintf(subitem->value, "%f", setting.value.fraction);
                }
                else if (setting.type == ST_STRING || setting.type == ST_PATH || setting.type == ST_DIR)
                {
-                  char value[256];
                   sprintf(subitem->value, "%s", setting.value.string);
                }
                else
