@@ -693,7 +693,7 @@ int menu_parse_and_resolve(file_list_t *list, file_list_t *menu_list)
    {
       exts = ext_buf;
       if (*g_extern.menu.info.valid_extensions)
-         snprintf(ext_buf, sizeof(ext_buf), "%s|zip",
+         snprintf(ext_buf, sizeof(ext_buf), "%s",
                g_extern.menu.info.valid_extensions);
       else
          *ext_buf = '\0';
