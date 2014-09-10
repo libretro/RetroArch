@@ -24,7 +24,6 @@
 #include "../file_path.h"
 #include "zip_support.h"
 
-//ZLIB minizip implementation
 #include "../deps/rzlib/unzip.h"
 
 
@@ -43,7 +42,7 @@ int read_zip_file(const char * archive_path, const char *relative_path, void **b
       return -1;
    }
 
-   // Get info about the zip file
+   /* Get info about the zip file */
    unz_global_info global_info;
    if ( unzGetGlobalInfo( zipfile, &global_info ) != UNZ_OK )
    {
@@ -53,11 +52,11 @@ int read_zip_file(const char * archive_path, const char *relative_path, void **b
       return -1;
    }
 
-   // Loop to extract all files
+   /* Loop to extract all files */
    uLong i;
    for ( i = 0; i < global_info.number_entry; ++i )
    {
-      // Get info about current file.
+      /* Get info about current file. */
       unz_file_info file_info;
       char filename[ PATH_MAX ];
       if ( unzGetCurrentFileInfo(
@@ -72,12 +71,12 @@ int read_zip_file(const char * archive_path, const char *relative_path, void **b
          return -1;
       }
 
-      // Check if this entry is a directory or file.
+      /* Check if this entry is a directory or file. */
       char last_char = ' ';
       last_char = filename[strlen(filename)-1];
       if ( last_char == '/' || last_char == '\\' )
       {
-         //We skip directories
+         /* We skip directories */
       }
       else if (strcmp(filename,relative_path) == 0)
       {
@@ -149,7 +148,7 @@ struct string_list *compressed_zip_file_list_new(const char *path,
       return NULL;
    }
 
-   // Get info about the zip file
+   /* Get info about the zip file */
    unz_global_info global_info;
    if ( unzGetGlobalInfo( zipfile, &global_info ) != UNZ_OK )
    {
@@ -159,11 +158,11 @@ struct string_list *compressed_zip_file_list_new(const char *path,
       return NULL;
    }
 
-   // Loop to extract all files
+   /* Loop to extract all files */
    uLong i;
    for ( i = 0; i < global_info.number_entry; ++i )
    {
-      // Get info about current file.
+      /* Get info about current file. */
       unz_file_info file_info;
       char filename[ PATH_MAX ];
       if ( unzGetCurrentFileInfo(
@@ -178,12 +177,12 @@ struct string_list *compressed_zip_file_list_new(const char *path,
          return NULL;
       }
 
-      // Check if this entry is a directory or file.
+      /* Check if this entry is a directory or file. */
       char last_char = ' ';
       last_char = filename[strlen(filename)-1];
       if ( last_char == '/' || last_char == '\\' )
       {
-         //We skip directories
+         /* We skip directories */
       }
       else
       {
