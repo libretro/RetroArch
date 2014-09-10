@@ -297,6 +297,13 @@ static int menu_lakka_iterate(unsigned action)
             menu_active_category--;
             lakka_switch_categories();
          }
+         else if (depth == 1 && menu_active_category > 0 
+            && (active_item->active_subitem == 1 
+            || active_item->active_subitem == 2)
+            && g_settings.state_slot > -1)
+         {
+            g_settings.state_slot--;
+         }
          break;
 
       case MENU_ACTION_RIGHT:
@@ -304,6 +311,13 @@ static int menu_lakka_iterate(unsigned action)
          {
             menu_active_category++;
             lakka_switch_categories();
+         }
+         else if (depth == 1 && menu_active_category > 0 
+            && (active_item->active_subitem == 1
+            || active_item->active_subitem == 2)
+            && g_settings.state_slot < 255)
+         {
+            g_settings.state_slot++;
          }
          break;
 
