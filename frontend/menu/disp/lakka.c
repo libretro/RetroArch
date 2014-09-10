@@ -482,7 +482,7 @@ static void lakka_draw_subitems(int i, int j)
       if (!subitem)
          continue;
 
-      if (k == 0 && g_extern.main_is_init
+      if (i && k == 0 && g_extern.main_is_init
             && !g_extern.libretro_dummy
             && strcmp(g_extern.fullpath, active_item->rom) == 0)
       {
@@ -755,43 +755,20 @@ void lakka_init_settings(void)
                item->num_subitems++;
 
                item->subitems = (menu_subitem_t*)
-                  realloc(item->subitems, item->num_subitems * sizeof(menu_subitem_t));
+                  realloc(item->subitems, 
+                     item->num_subitems * sizeof(menu_subitem_t));
 
                menu_subitem_t *subitem = (menu_subitem_t*)&item->subitems[kk];
 
-               strlcpy(subitem->name, setting.short_description, sizeof(subitem->name));
+               strlcpy(subitem->name, setting.short_description, 
+                     sizeof(subitem->name));
                subitem->alpha = kk ? 1.0 : 0.5;
                subitem->zoom = kk ? i_active_zoom : i_passive_zoom;
                subitem->y = kk ? vspacing * (kk + under_item_offset)
                   : vspacing * active_item_factor;
 
-               if (setting.type == ST_BOOL)
-               {
-                  if (setting.value.boolean)
-                     strlcpy(subitem->value, "ON", sizeof(subitem->value));
-                  else
-                     strlcpy(subitem->value, "OFF", sizeof(subitem->value));
-               }
-               else if (setting.type == ST_INT)
-               {
-                  sprintf(subitem->value, "%d", *setting.value.integer);
-               }
-               else if (setting.type == ST_UINT)
-               {
-                  sprintf(subitem->value, "%u", *setting.value.unsigned_integer);
-               }
-               else if (setting.type == ST_FLOAT)
-               {
-                  sprintf(subitem->value, "%f", *setting.value.fraction);
-               }
-               else if (setting.type == ST_STRING || setting.type == ST_PATH || setting.type == ST_DIR)
-               {
-                  sprintf(subitem->value, "%s", setting.value.string);
-               }
-               else
-               {
-                  strlcpy(subitem->value, "tbd", sizeof(subitem->value));
-               }
+               setting_data_get_string_representation(&setting, subitem->value,
+                     sizeof(subitem->value));
 
                kk++;
             }
