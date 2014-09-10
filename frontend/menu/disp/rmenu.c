@@ -229,7 +229,8 @@ static void rmenu_render(void)
 
       disp_set_label(&w, type, i, label,
             type_str, sizeof(type_str), 
-            entry_label, path);
+            entry_label, path,
+            path_buf, sizeof(path_buf));
       
       selected = (i == driver.menu->selection_ptr);
 
