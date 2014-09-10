@@ -414,23 +414,8 @@ endif
 
 ifeq ($(HAVE_ZLIB), 1)
    HAVE_COMPRESSION = 1 
-   ZLIB_OBJS =  deps/rzlib/crc32.o \
-		deps/rzlib/inftrees.o \
-		deps/rzlib/inflate.o \
-		deps/rzlib/inffast.o \
-		deps/rzlib/zutil.o \
-		deps/rzlib/gzread.o \
-		deps/rzlib/uncompr.o \
-		deps/rzlib/infback.o \
-		deps/rzlib/deflate.o \
-		deps/rzlib/unzip.o \
-		deps/rzlib/trees.o \
-		deps/rzlib/gzlib.o \
-		deps/rzlib/compress.o \
-		deps/rzlib/ioapi.o \
-		deps/rzlib/gzwrite.o \
-		deps/rzlib/adler32.o \
-		deps/rzlib/gzclose.o 
+   ZLIB_OBJS =	deps/rzlib/unzip.o \
+		deps/rzlib/ioapi.o 
    OBJ += gfx/rpng/rpng.o file_extract.o decompress/zip_support.o
    OBJ += $(ZLIB_OBJS)
    JOYCONFIG_OBJ += decompress/zip_support.o
