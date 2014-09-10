@@ -1425,30 +1425,6 @@ static int menu_action_ok(const char *menu_path,
             menu_common_setting_set_current_string_path(setting, menu_path, path);
             menu_entries_pop_stack(driver.menu->menu_stack, setting->name);
          }
-#ifdef HAVE_SHADER_MANAGER
-         else if (!strcmp(menu_label, "video_shader_preset"))
-         {
-            char shader_path[PATH_MAX];
-            fill_pathname_join(shader_path, menu_path, path, sizeof(shader_path));
-            if (driver.menu_ctx && driver.menu_ctx->backend &&
-                  driver.menu_ctx->backend->shader_manager_set_preset)
-               driver.menu_ctx->backend->shader_manager_set_preset(
-                     driver.menu->shader,
-                     gfx_shader_parse_type(shader_path, RARCH_SHADER_NONE),
-                     shader_path);
-            menu_flush_stack_label(driver.menu->menu_stack, "Shader Options");
-         }
-         else if (!strcmp(menu_label, "video_shader_pass"))
-         {
-            fill_pathname_join(driver.menu->shader->pass[hack_shader_pass].source.path,
-                  menu_path, path,
-                  sizeof(driver.menu->shader->pass[hack_shader_pass].source.path));
-
-            /* This will reset any changed parameters. */
-            gfx_shader_resolve_parameters(NULL, driver.menu->shader);
-            menu_flush_stack_label(driver.menu->menu_stack, "Shader Options");
-         }
-#endif
          else if (!strcmp(menu_label, "configurations"))
          {
             char config[PATH_MAX];
@@ -1472,6 +1448,34 @@ static int menu_action_ok(const char *menu_path,
             menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS);
             return -1;
          }
+
+         return 0;
+
+      case MENU_FILE_SHADER_PRESET:
+#ifdef HAVE_SHADER_MANAGER
+         {
+            char shader_path[PATH_MAX];
+            fill_pathname_join(shader_path, menu_path, path, sizeof(shader_path));
+            if (driver.menu_ctx && driver.menu_ctx->backend &&
+                  driver.menu_ctx->backend->shader_manager_set_preset)
+               driver.menu_ctx->backend->shader_manager_set_preset(
+                     driver.menu->shader,
+                     gfx_shader_parse_type(shader_path, RARCH_SHADER_NONE),
+                     shader_path);
+            menu_flush_stack_label(driver.menu->menu_stack, "Shader Options");
+         }
+#endif
+         return 0;
+      case MENU_FILE_SHADER:
+#ifdef HAVE_SHADER_MANAGER
+         fill_pathname_join(driver.menu->shader->pass[hack_shader_pass].source.path,
+               menu_path, path,
+               sizeof(driver.menu->shader->pass[hack_shader_pass].source.path));
+
+         /* This will reset any changed parameters. */
+         gfx_shader_resolve_parameters(NULL, driver.menu->shader);
+         menu_flush_stack_label(driver.menu->menu_stack, "Shader Options");
+#endif
 
          return 0;
 

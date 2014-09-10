@@ -672,9 +672,15 @@ int menu_parse_and_resolve(file_list_t *list, file_list_t *menu_list)
    else if (!strcmp(label, "configurations"))
       exts = "cfg";
    else if (!strcmp(label, "video_shader_preset"))
+   {
       exts = "cgp|glslp";
+      default_type_plain = MENU_FILE_SHADER_PRESET;
+   }
    else if (!strcmp(label, "video_shader_pass"))
+   {
       exts = "cg|glsl";
+      default_type_plain = MENU_FILE_SHADER;
+   }
    else if (!strcmp(label, "video_filter"))
       exts = "filt";
    else if (!strcmp(label, "audio_dsp_plugin"))

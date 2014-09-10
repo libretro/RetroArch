@@ -167,6 +167,16 @@ static void disp_set_label(unsigned *w, unsigned type, unsigned i,
       strlcpy(type_str, "(CFILE)", type_str_size);
       *w = 7;
    }
+   else if (type == MENU_FILE_SHADER_PRESET)
+   {
+      strlcpy(type_str, "(PRESET)", type_str_size);
+      *w = 8;
+   }
+   else if (type == MENU_FILE_SHADER)
+   {
+      strlcpy(type_str, "(SHADER)", type_str_size);
+      *w = 8;
+   }
    else if (type >= MENU_SETTINGS_CORE_OPTION_START)
       strlcpy(
             type_str,
