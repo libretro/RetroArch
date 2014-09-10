@@ -622,6 +622,7 @@ MENU
 #endif
 
 #if defined(HAVE_LAKKA) && defined(HAVE_OPENGL)
+#include "../frontend/menu/backend/menu_lakka_backend.c"
 #include "../frontend/menu/disp/lakka.c"
 #endif
 
