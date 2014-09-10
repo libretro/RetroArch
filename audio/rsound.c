@@ -199,7 +199,7 @@ static size_t rs_buffer_size(void *data)
 
 static bool rs_use_float(void *data)
 {
-   alsa_t *alsa = (alsa_t*)data;
+   (void)data;
    return false;
 }
 
