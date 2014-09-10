@@ -744,6 +744,7 @@ void lakka_init_settings(void)
             vspacing*(under_item_offset+jj) : vspacing * active_item_factor;
          item->active_subitem = 0;
          item->num_subitems = 0;
+         item->subitems = NULL;
 
          kk = 0;
          for (k = 0; k <= 512; k++)
