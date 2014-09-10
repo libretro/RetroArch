@@ -1523,6 +1523,7 @@ static int menu_action_ok(const char *menu_path,
 
          return 0;
          
+      case MENU_FILE_DIRECTORY:
       case MENU_FILE_CARCHIVE:
 
          {
