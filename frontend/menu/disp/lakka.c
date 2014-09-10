@@ -500,7 +500,7 @@ static void lakka_draw_subitems(int i, int j)
             1, 
             subitem->alpha);
       }
-      else if(k == 0 ||
+      else if (k == 0 ||
             menu_active_category == 0 ||
             (g_extern.main_is_init && 
             !g_extern.libretro_dummy &&
@@ -519,6 +519,21 @@ static void lakka_draw_subitems(int i, int j)
                margin_top + subitem->y + label_margin_top, 
                1, 
                subitem->alpha);
+
+         if (i && (k == 1 || k == 2))
+         {
+            char slot[256];
+            if (g_settings.state_slot == -1)
+               snprintf(slot, sizeof(slot), "%d (auto)", g_settings.state_slot);
+            else
+               snprintf(slot, sizeof(slot), "%d", g_settings.state_slot);
+            lakka_draw_text(slot, 
+                  margin_left + hspacing * (i+2.25) +
+                  all_categories_x + label_margin_left + 400, 
+                  margin_top + subitem->y + label_margin_top, 
+                  1, 
+                  subitem->alpha);
+         }
       }
 
       if (subitem->value)
