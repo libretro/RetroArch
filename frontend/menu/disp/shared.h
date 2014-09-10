@@ -177,6 +177,23 @@ static void disp_set_label(unsigned *w, unsigned type, unsigned i,
       strlcpy(type_str, "(SHADER)", type_str_size);
       *w = 8;
    }
+   else if (
+         type == MENU_FILE_VIDEOFILTER ||
+         type == MENU_FILE_AUDIOFILTER)
+   {
+      strlcpy(type_str, "(FILTER)", type_str_size);
+      *w = 8;
+   }
+   else if (type == MENU_FILE_CONFIG)
+   {
+      strlcpy(type_str, "(CONFIG)", type_str_size);
+      *w = 8;
+   }
+   else if (type == MENU_FILE_OVERLAY)
+   {
+      strlcpy(type_str, "(OVERLAY)", type_str_size);
+      *w = 9;
+   }
    else if (type >= MENU_SETTINGS_CORE_OPTION_START)
       strlcpy(
             type_str,

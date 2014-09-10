@@ -670,7 +670,10 @@ int menu_parse_and_resolve(file_list_t *list, file_list_t *menu_list)
    if (!strcmp(label, "core_list"))
       exts = EXT_EXECUTABLES;
    else if (!strcmp(label, "configurations"))
+   {
       exts = "cfg";
+      default_type_plain = MENU_FILE_CONFIG;
+   }
    else if (!strcmp(label, "video_shader_preset"))
    {
       exts = "cgp|glslp";
@@ -682,11 +685,20 @@ int menu_parse_and_resolve(file_list_t *list, file_list_t *menu_list)
       default_type_plain = MENU_FILE_SHADER;
    }
    else if (!strcmp(label, "video_filter"))
+   {
       exts = "filt";
+      default_type_plain = MENU_FILE_VIDEOFILTER;
+   }
    else if (!strcmp(label, "audio_dsp_plugin"))
+   {
       exts = "dsp";
+      default_type_plain = MENU_FILE_AUDIOFILTER;
+   }
    else if (!strcmp(label, "input_overlay"))
+   {
       exts = "cfg";
+      default_type_plain = MENU_FILE_OVERLAY;
+   }
    else if (!strcmp(label, "game_history_path"))
       exts = "cfg";
    else if (menu_common_type_is(label, menu_type) == MENU_FILE_DIRECTORY)
