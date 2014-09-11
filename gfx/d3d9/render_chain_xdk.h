@@ -239,6 +239,8 @@ static void renderchain_set_vertices(void *data, unsigned pass, unsigned width, 
       RD3DVertexBuffer_Unlock(d3d->vertex_buf);
    }
 
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
+#ifdef _XBOX
    if (d3d->shader)
    {
       renderchain_set_mvp(d3d, d3d->screen_width, d3d->screen_height, d3d->dev_rotation);
@@ -249,6 +251,8 @@ static void renderchain_set_vertices(void *data, unsigned pass, unsigned width, 
                d3d->screen_height, g_extern.frame_count,
                NULL, NULL, NULL, 0);
    }
+#endif
+#endif
 }
 
 static void renderchain_set_mvp(void *data, unsigned vp_width, unsigned vp_height, unsigned rotation)
