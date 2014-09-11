@@ -532,6 +532,9 @@ void renderchain_blit_to_texture(void *data, const void *frame,
    D3DLOCKED_RECT d3dlr;
    renderchain_t *chain = (renderchain_t*)data;
    Pass &first = chain->passes[0];
+
+   (void)desc;
+
    if (first.last_width != width || first.last_height != height)
    {
       D3DTexture_LockRectClear(first, first.tex, 0, d3dlr, 

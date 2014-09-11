@@ -37,6 +37,15 @@ extern LRESULT CALLBACK WindowProc(HWND hWnd, UINT message,
 static RECT d3d_monitor_rect(d3d_video_t *d3d);
 #endif
 
+#ifdef HAVE_MONITOR
+namespace Monitor
+{
+	static HMONITOR last_hm;
+	static HMONITOR all_hms[MAX_MONITORS];
+	static unsigned num_mons;
+}
+#endif
+
 static void d3d_deinit_shader(void *data)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;

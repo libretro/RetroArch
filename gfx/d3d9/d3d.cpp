@@ -34,13 +34,6 @@
 #include "d3d_shared.h"
 
 #ifdef HAVE_MONITOR
-namespace Monitor
-{
-   static HMONITOR last_hm;
-   static HMONITOR all_hms[MAX_MONITORS];
-   static unsigned num_mons;
-}
-
 static BOOL CALLBACK monitor_enum_proc(HMONITOR hMonitor,
       HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData)
 {
