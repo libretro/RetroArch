@@ -157,7 +157,6 @@ static void disp_set_label(unsigned *w, unsigned type, unsigned i,
    else if (type == MENU_FILE_DIRECTORY)
    {
       strlcpy(type_str, "(DIR)", type_str_size);
-      type = MENU_FILE_DIRECTORY;
       *w = 5;
    }
    else if (type == MENU_FILE_CARCHIVE)

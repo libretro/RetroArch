@@ -1271,9 +1271,6 @@ void rarch_init_filter(enum retro_pixel_format colfmt)
    geom = (struct retro_game_geometry*)&g_extern.system.av_info.geometry;
    width   = geom->max_width;
    height  = geom->max_height;
-   pow2_x  = 0;
-   pow2_y  = 0;
-   maxsize = 0;
 
    g_extern.filter.filter = rarch_softfilter_new(
          g_settings.video.softfilter_plugin,
