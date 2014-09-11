@@ -420,6 +420,7 @@ ifeq ($(HAVE_ZLIB), 1)
    OBJ += $(ZLIB_OBJS)
    JOYCONFIG_OBJ += decompress/zip_support.o
    JOYCONFIG_OBJ += $(ZLIB_OBJS)
+   JOYCONFIG_LIBS += -lz
    RETROLAUNCH_OBJ += decompress/zip_support.o
    RETROLAUNCH_OBJ += $(ZLIB_OBJS)
    LIBS += $(ZLIB_LIBS)
