@@ -268,6 +268,7 @@ static int menu_lakka_iterate(unsigned action)
 {
    menu_category_t *active_category;
    menu_item_t *active_item;
+   menu_subitem_t * active_subitem;
 
    if (!driver.menu)
    {
@@ -277,17 +278,35 @@ static int menu_lakka_iterate(unsigned action)
 
    active_category = NULL;
    active_item = NULL;
+   active_subitem = NULL;
 
    active_category = (menu_category_t*)&categories[menu_active_category];
 
    if (active_category)
       active_item = (menu_item_t*)&active_category->items[active_category->active_item];
 
+   if (active_item)
+      active_subitem = (menu_subitem_t*)&active_item->subitems[active_item->active_subitem];
+
    if (!active_category || !active_item)
       return 0;
 
    if (driver.video_data && driver.menu_ctx && driver.menu_ctx->set_texture)
       driver.menu_ctx->set_texture(driver.menu);
+
+   if (action && depth == 1 && menu_active_category == 0 
+      && active_subitem->setting)
+   {
+      if (active_subitem->setting->type == ST_BOOL)
+         menu_common_setting_set_current_boolean(
+            active_subitem->setting, action);
+      else if (active_subitem->setting->type == ST_UINT)
+         menu_common_setting_set_current_unsigned_integer(
+            active_subitem->setting, 0, action);
+      else if (active_subitem->setting->type == ST_FLOAT)
+         menu_common_setting_set_current_fraction(
+            active_subitem->setting, action);
+   }
 
    switch (action)
    {
@@ -351,7 +370,7 @@ static int menu_lakka_iterate(unsigned action)
          break;
 
       case MENU_ACTION_OK:
-         if (depth == 1)
+         if (depth == 1 && menu_active_category > 0)
          {
             switch (active_item->active_subitem)
             {
