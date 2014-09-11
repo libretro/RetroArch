@@ -151,6 +151,8 @@ static int setting_set_flags(rarch_setting_t *setting)
       return MENU_FILE_LINEFEED;
    if (setting->flags & SD_FLAG_PUSH_ACTION)
       return MENU_FILE_SWITCH;
+   if (setting->type == ST_PATH)
+      return MENU_FILE_PATH;
    return 0;
 }
 
@@ -539,10 +541,7 @@ int menu_parse_check(const char *label, unsigned menu_type)
             menu_type == MENU_FILE_CARCHIVE ||
             menu_common_type_is(label, menu_type) == MENU_SETTINGS_SHADER_OPTIONS ||
             menu_common_type_is(label, menu_type) == MENU_FILE_DIRECTORY ||
-            !strcmp(label, "input_overlay") ||
-            !strcmp(label, "game_history_path") ||
-            !strcmp(label, "video_filter") ||
-            !strcmp(label, "audio_dsp_plugin") ||
+            menu_type == MENU_FILE_PATH ||
             !strcmp(label, "core_list") ||
             !strcmp(label, "configurations") ||
             !strcmp(label, "disk_image_append"))))
@@ -698,6 +697,11 @@ int menu_parse_and_resolve(file_list_t *list, file_list_t *menu_list)
    {
       exts = "cfg";
       default_type_plain = MENU_FILE_OVERLAY;
+   }
+   else if (!strcmp(label, "video_font_path"))
+   {
+      exts = "ttf";
+      default_type_plain = MENU_FILE_FONT;
    }
    else if (!strcmp(label, "game_history_path"))
       exts = "cfg";

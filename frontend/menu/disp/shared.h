@@ -72,6 +72,8 @@ static void get_title(const char *label, const char *dir,
       strlcpy(title, "INFO", sizeof_title);
    else if (!strcmp(label, "input_overlay"))
       snprintf(title, sizeof_title, "OVERLAY %s", dir);
+   else if (!strcmp(label, "video_font_path"))
+      snprintf(title, sizeof_title, "FONT %s", dir);
    else if (!strcmp(label, "video_filter"))
       snprintf(title, sizeof_title, "FILTER %s", dir);
    else if (!strcmp(label, "audio_dsp_plugin"))
@@ -166,6 +168,11 @@ static void disp_set_label(unsigned *w, unsigned type, unsigned i,
    else if (type == MENU_FILE_IN_CARCHIVE)
    {
       strlcpy(type_str, "(CFILE)", type_str_size);
+      *w = 7;
+   }
+   else if (type == MENU_FILE_FONT)
+   {
+      strlcpy(type_str, "(FONT)", type_str_size);
       *w = 7;
    }
    else if (type == MENU_FILE_SHADER_PRESET)

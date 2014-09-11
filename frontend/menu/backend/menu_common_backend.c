@@ -1461,6 +1461,7 @@ static int menu_action_ok(const char *menu_path,
 
          return 0;
 
+      case MENU_FILE_FONT:
       case MENU_FILE_OVERLAY:
       case MENU_FILE_AUDIOFILTER:
       case MENU_FILE_VIDEOFILTER:

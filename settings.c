@@ -1535,6 +1535,8 @@ bool config_save_file(const char *path)
          g_settings.input.overlay_scale);
 #endif
 
+   config_set_path(conf, "video_font_path", g_settings.video.font_path);
+
    config_set_bool(conf, "gamma_correction",
          g_extern.console.screen.gamma_correction);
    config_set_bool(conf, "soft_filter_enable",
