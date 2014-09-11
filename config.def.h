@@ -104,6 +104,7 @@ enum
    MENU_RMENU,
    MENU_RMENU_XUI,
    MENU_LAKKA,
+   MENU_GLUI,
 };
 
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) || defined(__CELLOS_LV2__)

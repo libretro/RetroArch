@@ -652,6 +652,7 @@ extern const input_osk_driver_t input_null_osk;
 extern const menu_ctx_driver_t menu_ctx_rmenu;
 extern const menu_ctx_driver_t menu_ctx_rmenu_xui;
 extern const menu_ctx_driver_t menu_ctx_rgui;
+extern const menu_ctx_driver_t menu_ctx_glui;
 extern const menu_ctx_driver_t menu_ctx_lakka;
 
 extern const menu_ctx_driver_backend_t menu_ctx_backend_common;
