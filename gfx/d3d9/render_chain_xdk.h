@@ -282,6 +282,8 @@ static void renderchain_blit_to_texture(void *data, const void *frame,
    D3DLOCKED_RECT d3dlr;
    d3d_video_t *d3d = (d3d_video_t*)data;
 
+   (void)desc;
+
    if (d3d->last_width != width || d3d->last_height != height)
    {
       D3DTexture_LockRectClear(d3d, d3d->tex, 0, d3dlr, NULL, D3DLOCK_NOSYSLOCK);

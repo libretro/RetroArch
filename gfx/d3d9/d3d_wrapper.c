@@ -36,13 +36,13 @@ HRESULT d3d_create_vertex_buffer(LPDIRECT3DDEVICE dev,
       D3DPOOL pool, LPDIRECT3DVERTEXBUFFER vert_buf, void *handle)
 {
 #if defined(_XBOX1)
-   IDirect3DDevice8_CreateVertexBuffer(dev, length, usage, fvf, pool,
+   return IDirect3DDevice8_CreateVertexBuffer(dev, length, usage, fvf, pool,
          &vert_buf);
 #elif defined(_XBOX360)
-   IDirect3DDevice9_CreateVertexBuffer(dev, length, usage, fvf, pool,
+   return IDirect3DDevice9_CreateVertexBuffer(dev, length, usage, fvf, pool,
          &vert_buf, NULL);
 #else
-   dev->CreateVertexBuffer(length, usage, fvf, pool, &vert_buf, NULL);
+   return dev->CreateVertexBuffer(length, usage, fvf, pool, &vert_buf, NULL);
 #endif
 }
 
