@@ -116,7 +116,7 @@ static void d3d_overlay_render(void *data, overlay_t *overlay)
    d3d->dev->SetViewport(&d3d->final_viewport);
 }
 
-void d3d_free_overlay(void *data, overlay_t *overlay)
+static void d3d_free_overlay(void *data, overlay_t *overlay)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
 
@@ -126,7 +126,7 @@ void d3d_free_overlay(void *data, overlay_t *overlay)
       overlay->vert_buf->Release();
 }
 
-void d3d_free_overlays(void *data)
+static void d3d_free_overlays(void *data)
 {
    unsigned i;
    d3d_video_t *d3d = (d3d_video_t*)data;

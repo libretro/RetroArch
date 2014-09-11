@@ -18,8 +18,12 @@ static void d3d_deinit_chain(d3d_video_t *d3d);
 static bool d3d_init_chain(d3d_video_t *d3d,
       const video_info_t *video_info);
 
-static void renderchain_free(void *data);
+#ifdef HAVE_OVERLAY
+static void d3d_free_overlays(void *data);
+static void d3d_free_overlay(void *data, overlay_t *overlay);
+#endif
 
+static void renderchain_free(void *data);
 
 void d3d_make_d3dpp(void *data, const video_info_t *info,
 	D3DPRESENT_PARAMETERS *d3dpp);
