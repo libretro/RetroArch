@@ -636,91 +636,66 @@ void setting_data_get_string_representation(rarch_setting_t* setting,
 
 rarch_setting_t setting_data_group_setting(enum setting_type type, const char* name)
 {
-   rarch_setting_t result = {0};
+   rarch_setting_t result = { type, name };
 
-   result.type              = type;
-   result.name              = name;
    result.short_description = name;
-
    return result;
 }
 
-rarch_setting_t setting_data_subgroup_setting(
-      enum setting_type type,
-      const char* name, const char *parent_name)
+rarch_setting_t setting_data_subgroup_setting(enum setting_type type, const char* name,
+      const char *parent_name)
 {
-   rarch_setting_t result = {0};
+   rarch_setting_t result = { type, name };
 
-   result.type              = type;
-   result.name              = name;
    result.short_description = name;
-   result.group             = parent_name;
-
+   result.group = parent_name;
    return result;
 }
 
 rarch_setting_t setting_data_float_setting(const char* name,
       const char* short_description, float* target, float default_value,
-      const char *rounding, const char *group, const char *subgroup,
-      change_handler_t change_handler, change_handler_t read_handler)
+      const char *rounding, const char *group, const char *subgroup, change_handler_t change_handler,
+      change_handler_t read_handler)
 {
-   rarch_setting_t result = {0};
+   rarch_setting_t result = { ST_FLOAT, name, sizeof(float), short_description,
+      group, subgroup };
 
-   result.type                   = ST_FLOAT;
-   result.name                   = name;
-   result.size                   = sizeof(float);
-   result.short_description      = short_description;
-   result.group                  = group;
-   result.subgroup               = subgroup;
-   result.rounding_fraction      = rounding;
-   result.change_handler         = change_handler;
-   result.read_handler           = read_handler;
-   result.value.fraction         = target;
+   result.rounding_fraction = rounding;
+   result.change_handler = change_handler;
+   result.read_handler = read_handler;
+   result.value.fraction = target;
    result.default_value.fraction = default_value;
-
    return result;
 }
 
 rarch_setting_t setting_data_bool_setting(const char* name,
       const char* short_description, bool* target, bool default_value,
       const char *off, const char *on,
-      const char *group, const char *subgroup,
-      change_handler_t change_handler, change_handler_t read_handler)
+      const char *group, const char *subgroup, change_handler_t change_handler,
+      change_handler_t read_handler)
 {
-   rarch_setting_t result = {0};
-
-   result.type                  = ST_BOOL;
-   result.name                  = name;
-   result.size                  = sizeof(bool);
-   result.short_description     = short_description;
-   result.group                 = group;
-   result.subgroup              = subgroup;
-   result.change_handler        = change_handler;
-   result.read_handler          = read_handler;
-   result.value.boolean         = target;
+   rarch_setting_t result = { ST_BOOL, name, sizeof(bool), short_description,
+      group, subgroup };
+   result.change_handler = change_handler;
+   result.read_handler = read_handler;
+   result.value.boolean = target;
    result.default_value.boolean = default_value;
-   result.boolean.off_label     = off;
-   result.boolean.on_label      = on;
-
+   result.boolean.off_label = off;
+   result.boolean.on_label = on;
    return result;
 }
 
 rarch_setting_t setting_data_int_setting(const char* name,
       const char* short_description, int* target, int default_value,
-      const char *group, const char *subgroup,
-      change_handler_t change_handler, change_handler_t read_handler)
+      const char *group, const char *subgroup, change_handler_t change_handler,
+      change_handler_t read_handler)
 {
-    rarch_setting_t result = {0};
+    rarch_setting_t result = { ST_INT, name, sizeof(int), short_description,
+       group, subgroup };
 
-    result.type                  = ST_INT;
-    result.name                  = name;
-    result.size                  = sizeof(int);
-    result.short_description     = short_description;
-    result.group                 = group;
-    result.subgroup              = subgroup;
-    result.change_handler        = change_handler;
-    result.read_handler          = read_handler;
-    result.value.integer         = target;
+    result.change_handler = change_handler;
+    result.read_handler = read_handler;
+    result.value.integer = target;
     result.default_value.integer = default_value;
     return result;
 }
@@ -730,17 +705,12 @@ rarch_setting_t setting_data_uint_setting(const char* name,
       unsigned int default_value, const char *group, const char *subgroup,
       change_handler_t change_handler, change_handler_t read_handler)
 {
-   rarch_setting_t result = {0};
-   
-   result.type                           = ST_UINT;
-   result.name                           = name;
-   result.size                           = sizeof(unsigned int);
-   result.short_description              = short_description;
-   result.group                          = group;
-   result.subgroup                       = subgroup;
-   result.change_handler                 = change_handler;
-   result.read_handler                   = read_handler;
-   result.value.unsigned_integer         = target;
+   rarch_setting_t result = { ST_UINT, name, sizeof(unsigned int),
+      short_description, group, subgroup };
+
+   result.change_handler = change_handler;
+   result.read_handler = read_handler;
+   result.value.unsigned_integer = target;
    result.default_value.unsigned_integer = default_value;
 
    return result;
@@ -749,21 +719,16 @@ rarch_setting_t setting_data_uint_setting(const char* name,
 rarch_setting_t setting_data_string_setting(enum setting_type type,
       const char* name, const char* short_description, char* target,
       unsigned size, const char* default_value, const char *empty,
-      const char *group, const char *subgroup,
-      change_handler_t change_handler, change_handler_t read_handler)
+      const char *group, const char *subgroup, change_handler_t change_handler,
+      change_handler_t read_handler)
 {
-   rarch_setting_t result = {0};
+   rarch_setting_t result = { type, name, size, short_description, group,
+      subgroup };
     
-   result.type                 = type;
-   result.name                 = name;
-   result.size                 = size;
-   result.short_description    = short_description;
-   result.group                = group;
-   result.subgroup             = subgroup;
-   result.dir.empty_path       = empty;
-   result.change_handler       = change_handler;
-   result.read_handler         = read_handler;
-   result.value.string         = target;
+   result.dir.empty_path = empty;
+   result.change_handler = change_handler;
+   result.read_handler = read_handler;
+   result.value.string = target;
    result.default_value.string = default_value;
 
    return result;
@@ -774,17 +739,12 @@ rarch_setting_t setting_data_bind_setting(const char* name,
       uint32_t index, const struct retro_keybind* default_value,
       const char *group, const char *subgroup)
 {
-   rarch_setting_t result = {0};
+   rarch_setting_t result = { ST_BIND, name, 0, short_description, group,
+      subgroup };
 
-   result.type                  = ST_BIND;
-   result.name                  = name;
-   result.size                  = 0;
-   result.short_description     = short_description;
-   result.group                 = group;
-   result.subgroup              = subgroup;
-   result.value.keybind         = target;
+   result.value.keybind = target;
    result.default_value.keybind = default_value;
-   result.index                 = index;
+   result.index = index;
 
    return result;
 }
