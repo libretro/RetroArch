@@ -480,12 +480,6 @@ static void handle_setting(rarch_setting_t *setting,
          else if (action == MENU_ACTION_START)
             *setting->value.string = '\0';
       }
-      else if (!strcmp(setting->name, "video_driver"))
-         handle_driver(setting->name, g_settings.video.driver,
-               sizeof(g_settings.video.driver), action);
-      else if (!strcmp(setting->name, "audio_driver"))
-         handle_driver(setting->name, g_settings.audio.driver,
-               sizeof(g_settings.audio.driver), action);
       else if (!strcmp(setting->name, "audio_resampler_driver"))
       {
          if (action == MENU_ACTION_LEFT)
@@ -493,18 +487,16 @@ static void handle_setting(rarch_setting_t *setting,
          else if (action == MENU_ACTION_RIGHT)
             find_next_resampler_driver();
       }
-      else if (!strcmp(setting->name, "input_driver"))
-         handle_driver(setting->name, g_settings.input.driver,
-               sizeof(g_settings.input.driver), action);
-      else if (!strcmp(setting->name, "camera_driver"))
-         handle_driver(setting->name, g_settings.camera.driver,
-               sizeof(g_settings.camera.driver), action);
-      else if (!strcmp(setting->name, "location_driver"))
-         handle_driver(setting->name, g_settings.location.driver,
-               sizeof(g_settings.location.driver), action);
-      else if (!strcmp(setting->name, "menu_driver"))
-         handle_driver(setting->name, g_settings.menu.driver,
-               sizeof(g_settings.menu.driver), action);
+      else if (
+            !strcmp(setting->name, "video_driver") ||
+            !strcmp(setting->name, "audio_driver") ||
+            !strcmp(setting->name, "input_driver") ||
+            !strcmp(setting->name, "camera_driver") ||
+            !strcmp(setting->name, "location_driver") ||
+            !strcmp(setting->name, "menu_driver")
+            )
+         handle_driver(setting->name, setting->value.string,
+               setting->size, action);
    }
 }
 
