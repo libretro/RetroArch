@@ -15,8 +15,8 @@ static bool d3d_init_chain(d3d_video_t *d3d,
       const video_info_t *video_info);
 
 static void renderchain_free(void *data);
-static void d3d_deinit_shader(d3d_video_t *d3d);
-static bool d3d_init_shader(d3d_video_t *d3d);
+void d3d_deinit_shader(void *data);
+bool d3d_init_shader(void *data);
 
 void d3d_make_d3dpp(void *data, const video_info_t *info,
 	D3DPRESENT_PARAMETERS *d3dpp);
