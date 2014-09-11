@@ -24,7 +24,7 @@ void d3d_swap(d3d_video_t *d3d, LPDIRECT3DDEVICE dev);
 
 HRESULT d3d_create_vertex_buffer(LPDIRECT3DDEVICE dev,
       unsigned length, unsigned usage, unsigned fvf,
-      d3DPOOL pool, LPDIRECT3DVERTEXBUFFER vert_buf, void *handle);
+      D3DPOOL pool, LPDIRECT3DVERTEXBUFFER vert_buf, void *handle);
 
 void d3d_set_stream_source(LPDIRECT3DDEVICE dev, unsigned stream_no,
       LPDIRECT3DVERTEXBUFFER stream_vertbuf, unsigned offset_bytes,
@@ -40,10 +40,10 @@ void d3d_set_sampler_minfilter(LPDIRECT3DDEVICE dev,
       unsigned sampler, unsigned type, unsigned value);
 
 void d3d_set_sampler_magfilter(LPDIRECT3DDEVICE dev,
-      unsigned sampler, unsigned type);
+      unsigned sampler, unsigned type, unsigned value);
 
 void d3d_draw_primitive(LPDIRECT3DDEVICE dev,
-      unsigned type, unsigned start, unsigned count);
+      D3DPRIMITIVETYPE type, unsigned start, unsigned count);
 
 void d3d_lockrectangle_clear(LPDIRECT3DTEXTURE tex,
       unsigned tex_width, unsigned tex_height,
@@ -52,7 +52,7 @@ void d3d_lockrectangle_clear(LPDIRECT3DTEXTURE tex,
 
 void d3d_textureblit(d3d_video_t *d3d,
       LPDIRECT3DTEXTURE tex, D3DSURFACE_DESC desc,
-      D3DLOCKED_RECT rect, const void *frame,
+      D3DLOCKED_RECT lr, const void *frame,
       unsigned width, unsigned height, unsigned pitch);
 
 #endif

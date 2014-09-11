@@ -219,6 +219,7 @@ VIDEO DRIVER
 #endif
 
 #ifdef _XBOX
+#include "../gfx/d3d9/d3d_wrapper.c"
 #include "../gfx/d3d9/d3d.cpp"
 #endif
 

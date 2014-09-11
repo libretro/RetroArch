@@ -14,7 +14,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../context/win32_common.h"
 #include "d3d_wrapper.h"
 
 void d3d_swap(d3d_video_t *d3d, LPDIRECT3DDEVICE dev)
@@ -34,7 +33,7 @@ void d3d_swap(d3d_video_t *d3d, LPDIRECT3DDEVICE dev)
 
 HRESULT d3d_create_vertex_buffer(LPDIRECT3DDEVICE dev,
       unsigned length, unsigned usage, unsigned fvf,
-      d3DPOOL pool, LPDIRECT3DVERTEXBUFFER vert_buf, void *handle)
+      D3DPOOL pool, LPDIRECT3DVERTEXBUFFER vert_buf, void *handle)
 {
 #if defined(_XBOX1)
    IDirect3DDevice8_CreateVertexBuffer(dev, length, usage, fvf, pool,
@@ -101,7 +100,7 @@ void d3d_set_sampler_minfilter(LPDIRECT3DDEVICE dev,
 }
 
 void d3d_set_sampler_magfilter(LPDIRECT3DDEVICE dev,
-      unsigned sampler, unsigned type)
+      unsigned sampler, unsigned type, unsigned value)
 {
 #if defined(_XBOX1)
    D3D__DirtyFlags |= (D3DDIRTYFLAG_TEXTURE_STATE_0 << sampler);
@@ -114,7 +113,7 @@ void d3d_set_sampler_magfilter(LPDIRECT3DDEVICE dev,
 }
 
 void d3d_draw_primitive(LPDIRECT3DDEVICE dev,
-      unsigned type, unsigned start, unsigned count)
+      D3DPRIMITIVETYPE type, unsigned start, unsigned count)
 {
 #if defined(_XBOX1)
    D3DDevice_DrawVertices(type, start, D3DVERTEXCOUNT(type, count));
@@ -135,12 +134,12 @@ void d3d_lockrectangle_clear(LPDIRECT3DTEXTURE tex,
       unsigned flags)
 {
 #if defined(_XBOX)
-   D3DTexture_LockRect(tex, level, &lockedrect, rect, flags);
-   memset(lockedrect.pBits, 0, tex_height * lockedrect.Pitch)
+   D3DTexture_LockRect(tex, level, &lock_rect, &rect, flags);
+   memset(lock_rect.pBits, 0, tex_height * lock_rect.Pitch);
 #else
-   if (SUCCEEDED(tex->LockRect(level, &lockedrect, rect, flags)))
+   if (SUCCEEDED(tex->LockRect(level, &lock_rect, rect, flags)))
    {
-      memset(lockedrect.pBits, level, tex_height * lockedrect.Pitch);
+      memset(lock_rect.pBits, level, tex_height * lock_rect.Pitch);
       tex->UnlockRect(0);
    }
 #endif
@@ -148,16 +147,16 @@ void d3d_lockrectangle_clear(LPDIRECT3DTEXTURE tex,
 
 void d3d_textureblit(d3d_video_t *d3d,
       LPDIRECT3DTEXTURE tex, D3DSURFACE_DESC desc,
-      D3DLOCKED_RECT rect, const void *frame,
+      D3DLOCKED_RECT lr, const void *frame,
       unsigned width, unsigned height, unsigned pitch)
 {
 #if 1
-   if (SUCCEEDED(tex->LockRect(0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK)))
+   if (SUCCEEDED(tex->LockRect(0, &lr, NULL, D3DLOCK_NOSYSLOCK)))
    {
       for (unsigned y = 0; y < height; y++)
       { 
          const uint8_t *in = (const uint8_t*)frame + y * pitch;
-         uint8_t *out = (uint8_t*)d3dlr.pBits + y * d3dlr.Pitch;
+         uint8_t *out = (uint8_t*)lr.pBits + y * lr.Pitch;
          memcpy(out, in, width * d3d->pixel_size);
       }
       tex->UnlockRect(0);
