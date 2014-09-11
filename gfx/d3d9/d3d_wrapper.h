@@ -17,13 +17,14 @@
 #ifndef _D3D_WRAPPER_H
 #define _D3D_WRAPPER_H
 
+#include "../context/win32_common.h"
 #include "d3d_defines.h"
 
 void d3d_swap(d3d_video_t *d3d, LPDIRECT3DDEVICE dev);
 
 HRESULT d3d_create_vertex_buffer(LPDIRECT3DDEVICE dev,
       unsigned length, unsigned usage, unsigned fvf,
-      d3DPOOL pool, LPDIRECT3DVERTEXBUFFER** vert_buf, void *handle);
+      d3DPOOL pool, LPDIRECT3DVERTEXBUFFER vert_buf, void *handle);
 
 void d3d_set_stream_source(LPDIRECT3DDEVICE dev, unsigned stream_no,
       LPDIRECT3DVERTEXBUFFER stream_vertbuf, unsigned offset_bytes,

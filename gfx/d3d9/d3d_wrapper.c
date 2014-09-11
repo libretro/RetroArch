@@ -34,16 +34,16 @@ void d3d_swap(d3d_video_t *d3d, LPDIRECT3DDEVICE dev)
 
 HRESULT d3d_create_vertex_buffer(LPDIRECT3DDEVICE dev,
       unsigned length, unsigned usage, unsigned fvf,
-      d3DPOOL pool, LPDIRECT3DVERTEXBUFFER** vert_buf, void *handle)
+      d3DPOOL pool, LPDIRECT3DVERTEXBUFFER vert_buf, void *handle)
 {
 #if defined(_XBOX1)
    IDirect3DDevice8_CreateVertexBuffer(dev, length, usage, fvf, pool,
-         vert_buf);
+         &vert_buf);
 #elif defined(_XBOX360)
    IDirect3DDevice9_CreateVertexBuffer(dev, length, usage, fvf, pool,
-         vert_buf, NULL);
+         &vert_buf, NULL);
 #else
-   dev->CreateVertexBuffer(length, usage, fvf, pool, vert_buf, NULL);
+   dev->CreateVertexBuffer(length, usage, fvf, pool, &vert_buf, NULL);
 #endif
 }
 
