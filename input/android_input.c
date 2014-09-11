@@ -752,7 +752,7 @@ static const rarch_joypad_driver_t *android_input_get_joypad_driver(void *data)
    return android->joypad;
 }
 
-const input_driver_t input_android = {
+input_driver_t input_android = {
    android_input_init,
    android_input_poll,
    android_input_state,

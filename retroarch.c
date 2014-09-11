@@ -169,12 +169,11 @@ static void take_screenshot(void)
 
    if (viewport_read)
    {
-#ifdef HAVE_MENU
       /* Avoid taking screenshot of GUI overlays. */
       if (driver.video_poke && driver.video_poke->set_texture_enable)
          driver.video_poke->set_texture_enable(driver.video_data,
                false, false);
-#endif
+
       if (driver.video)
          rarch_render_cached_frame();
    }

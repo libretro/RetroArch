@@ -298,7 +298,7 @@ static size_t pulse_buffer_size(void *data)
    return pa->buffer_size;
 }
 
-const audio_driver_t audio_pulse = {
+audio_driver_t audio_pulse = {
    pulse_init,
    pulse_write,
    pulse_stop,
@@ -310,4 +310,3 @@ const audio_driver_t audio_pulse = {
    pulse_write_avail,
    pulse_buffer_size,
 };
-

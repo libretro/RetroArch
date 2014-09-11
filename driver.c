@@ -24,7 +24,6 @@
 #include <math.h>
 #include "compat/posix_string.h"
 #include "audio/utils.h"
-#include "audio/resampler.h"
 #include "gfx/thread_wrapper.h"
 #include "audio/thread_wrapper.h"
 #include "gfx/gfx_common.h"
@@ -237,6 +236,9 @@ static const menu_ctx_driver_t *menu_ctx_drivers[] = {
 #endif
 #if defined(HAVE_LAKKA)
    &menu_ctx_lakka,
+#endif
+#if defined(HAVE_GLUI)
+   &menu_ctx_glui,
 #endif
 #if defined(HAVE_RGUI)
    &menu_ctx_rgui,
@@ -1060,14 +1062,14 @@ void init_audio(void)
    }
 
    g_extern.audio_data.use_float = false;
-   if (g_extern.audio_active && driver.audio->use_float &&
-         driver.audio->use_float(driver.audio_data))
+   if (g_extern.audio_active && driver.audio->use_float(driver.audio_data))
       g_extern.audio_data.use_float = true;
 
    if (!g_settings.audio.sync && g_extern.audio_active)
    {
       rarch_main_command(RARCH_CMD_AUDIO_SET_NONBLOCKING_STATE);
-      g_extern.audio_data.chunk_size = g_extern.audio_data.nonblock_chunk_size;
+      g_extern.audio_data.chunk_size = 
+         g_extern.audio_data.nonblock_chunk_size;
    }
 
    /* Should never happen. */
@@ -1269,9 +1271,6 @@ void rarch_init_filter(enum retro_pixel_format colfmt)
    geom = (struct retro_game_geometry*)&g_extern.system.av_info.geometry;
    width   = geom->max_width;
    height  = geom->max_height;
-   pow2_x  = 0;
-   pow2_y  = 0;
-   maxsize = 0;
 
    g_extern.filter.filter = rarch_softfilter_new(
          g_settings.video.softfilter_plugin,

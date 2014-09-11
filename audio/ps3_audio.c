@@ -23,8 +23,8 @@
 
 #include "../ps3/sdk_defines.h"
 
-#define AUDIO_BLOCKS 8 // 8 or 16. Guess what we choose? :)
-#define AUDIO_CHANNELS 2 // All hail glorious stereo!
+#define AUDIO_BLOCKS 8
+#define AUDIO_CHANNELS 2
 
 typedef struct
 {
@@ -54,7 +54,8 @@ static void event_loop(uint64_t data)
    cellAudioCreateNotifyEventQueue(&id, &key);
    cellAudioSetNotifyEventQueue(key);
 
-   float out_tmp[CELL_AUDIO_BLOCK_SAMPLES * AUDIO_CHANNELS] __attribute__((aligned(16)));
+   float out_tmp[CELL_AUDIO_BLOCK_SAMPLES * AUDIO_CHANNELS]
+      __attribute__((aligned(16)));
 
    while (!aud->quit_thread)
    {
@@ -68,14 +69,16 @@ static void event_loop(uint64_t data)
       sys_lwmutex_unlock(&aud->lock);
       sys_lwcond_signal(&aud->cond);
 
-      cellAudioAddData(aud->audio_port, out_tmp, CELL_AUDIO_BLOCK_SAMPLES, 1.0);
+      cellAudioAddData(aud->audio_port, out_tmp,
+            CELL_AUDIO_BLOCK_SAMPLES, 1.0);
    }
 
    cellAudioRemoveNotifyEventQueue(key);
    sys_ppu_thread_exit(0);
 }
 
-static void *ps3_audio_init(const char *device, unsigned rate, unsigned latency)
+static void *ps3_audio_init(const char *device,
+      unsigned rate, unsigned latency)
 {
    (void)latency;
    (void)device;
@@ -103,11 +106,14 @@ static void *ps3_audio_init(const char *device, unsigned rate, unsigned latency)
       return NULL;
    }
 
-   data->buffer = fifo_new(CELL_AUDIO_BLOCK_SAMPLES * AUDIO_CHANNELS * AUDIO_BLOCKS * sizeof(float));
+   data->buffer = fifo_new(CELL_AUDIO_BLOCK_SAMPLES * 
+         AUDIO_CHANNELS * AUDIO_BLOCKS * sizeof(float));
 
 #ifdef __PSL1GHT__
-   sys_lwmutex_attr_t lock_attr = {SYS_LWMUTEX_ATTR_PROTOCOL, SYS_LWMUTEX_ATTR_RECURSIVE, "\0"};
-   sys_lwmutex_attr_t cond_lock_attr = {SYS_LWMUTEX_ATTR_PROTOCOL, SYS_LWMUTEX_ATTR_RECURSIVE, "\0"};
+   sys_lwmutex_attr_t lock_attr = 
+   {SYS_LWMUTEX_ATTR_PROTOCOL, SYS_LWMUTEX_ATTR_RECURSIVE, "\0"};
+   sys_lwmutex_attr_t cond_lock_attr =
+   {SYS_LWMUTEX_ATTR_PROTOCOL, SYS_LWMUTEX_ATTR_RECURSIVE, "\0"};
    sys_lwcond_attribute_t cond_attr = {"\0"};
 #else
    sys_lwmutex_attribute_t lock_attr;
@@ -212,7 +218,7 @@ static bool ps3_audio_use_float(void *data)
    return true;
 }
 
-const audio_driver_t audio_ps3 = {
+audio_driver_t audio_ps3 = {
    ps3_audio_init,
    ps3_audio_write,
    ps3_audio_stop,
@@ -220,6 +226,7 @@ const audio_driver_t audio_ps3 = {
    ps3_audio_set_nonblock_state,
    ps3_audio_free,
    ps3_audio_use_float,
-   "ps3"
+   "ps3",
+   NULL,
+   NULL
 };
-

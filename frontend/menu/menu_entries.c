@@ -151,6 +151,10 @@ static int setting_set_flags(rarch_setting_t *setting)
       return MENU_FILE_LINEFEED;
    if (setting->flags & SD_FLAG_PUSH_ACTION)
       return MENU_FILE_SWITCH;
+   if (setting->flags & SD_FLAG_IS_DRIVER)
+      return MENU_FILE_DRIVER;
+   if (setting->type == ST_PATH)
+      return MENU_FILE_PATH;
    return 0;
 }
 
@@ -539,10 +543,7 @@ int menu_parse_check(const char *label, unsigned menu_type)
             menu_type == MENU_FILE_CARCHIVE ||
             menu_common_type_is(label, menu_type) == MENU_SETTINGS_SHADER_OPTIONS ||
             menu_common_type_is(label, menu_type) == MENU_FILE_DIRECTORY ||
-            !strcmp(label, "input_overlay") ||
-            !strcmp(label, "game_history_path") ||
-            !strcmp(label, "video_filter") ||
-            !strcmp(label, "audio_dsp_plugin") ||
+            menu_type == MENU_FILE_PATH ||
             !strcmp(label, "core_list") ||
             !strcmp(label, "configurations") ||
             !strcmp(label, "disk_image_append"))))
@@ -553,10 +554,12 @@ int menu_parse_check(const char *label, unsigned menu_type)
 int menu_parse_and_resolve(file_list_t *list, file_list_t *menu_list)
 {
    size_t i, list_size;
-   unsigned menu_type = 0;
+   unsigned menu_type = 0, default_type_plain = MENU_FILE_PLAIN;
 
    const char *dir = NULL;
    const char *label = NULL;
+   const char *exts = NULL;
+   char ext_buf[PATH_MAX];
 
    file_list_get_last(menu_list, &dir, &label, &menu_type);
 
@@ -664,24 +667,44 @@ int menu_parse_and_resolve(file_list_t *list, file_list_t *menu_list)
    LWP_MutexUnlock(gx_device_mutex);
 #endif
 
-   const char *exts;
-   char ext_buf[1024];
-
    //RARCH_LOG("LABEL: %s\n", label);
    if (!strcmp(label, "core_list"))
       exts = EXT_EXECUTABLES;
    else if (!strcmp(label, "configurations"))
+   {
       exts = "cfg";
+      default_type_plain = MENU_FILE_CONFIG;
+   }
    else if (!strcmp(label, "video_shader_preset"))
+   {
       exts = "cgp|glslp";
+      default_type_plain = MENU_FILE_SHADER_PRESET;
+   }
    else if (!strcmp(label, "video_shader_pass"))
+   {
       exts = "cg|glsl";
+      default_type_plain = MENU_FILE_SHADER;
+   }
    else if (!strcmp(label, "video_filter"))
+   {
       exts = "filt";
+      default_type_plain = MENU_FILE_VIDEOFILTER;
+   }
    else if (!strcmp(label, "audio_dsp_plugin"))
+   {
       exts = "dsp";
+      default_type_plain = MENU_FILE_AUDIOFILTER;
+   }
    else if (!strcmp(label, "input_overlay"))
+   {
       exts = "cfg";
+      default_type_plain = MENU_FILE_OVERLAY;
+   }
+   else if (!strcmp(label, "video_font_path"))
+   {
+      exts = "ttf";
+      default_type_plain = MENU_FILE_FONT;
+   }
    else if (!strcmp(label, "game_history_path"))
       exts = "cfg";
    else if (menu_common_type_is(label, menu_type) == MENU_FILE_DIRECTORY)
@@ -738,7 +761,7 @@ int menu_parse_and_resolve(file_list_t *list, file_list_t *menu_list)
             break;
          case RARCH_PLAIN_FILE:
          default:
-            file_type = MENU_FILE_PLAIN;
+            file_type = (menu_file_type_t)default_type_plain;
             break;
       }
       bool is_dir = (file_type == MENU_FILE_DIRECTORY);
@@ -808,8 +831,7 @@ int menu_parse_and_resolve(file_list_t *list, file_list_t *menu_list)
    }
 
    driver.menu->scroll_indices_size = 0;
-   if (strcmp(label, "history_list") != 0)
-      menu_build_scroll_indices(list);
+   menu_build_scroll_indices(list);
 
    entries_refresh(list);
    

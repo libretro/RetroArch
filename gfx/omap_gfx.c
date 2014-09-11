@@ -879,22 +879,53 @@ static void omap_gfx_viewport_info(void *data, struct rarch_viewport *vp) {
   vp->height = vp->full_height = vid->height;
 }
 
-const video_driver_t video_omap = {
+static bool omap_gfx_set_shader(void *data,
+      enum rarch_shader_type type, const char *path)
+{
+   (void)data;
+   (void)type;
+   (void)path;
+
+   return false; 
+}
+
+static void omap_gfx_set_rotation(void *data, unsigned rotation)
+{
+   (void)data;
+   (void)rotation;
+}
+
+static bool omap_gfx_read_viewport(void *data, uint8_t *buffer)
+{
+   (void)data;
+   (void)buffer;
+
+   return true;
+}
+
+static void omap_gfx_get_poke_interface(void *data,
+      const video_poke_interface_t **iface)
+{
+   (void)data;
+   (void)iface;
+}
+
+video_driver_t video_omap = {
   omap_gfx_init,
   omap_gfx_frame,
   omap_gfx_set_nonblock_state,
   omap_gfx_alive,
   omap_gfx_focus,
-  NULL, /* set_shader */
+  omap_gfx_set_shader,
   omap_gfx_free,
   "omap",
 
-  NULL, /* set_rotation */
+  omap_gfx_set_rotation,
   omap_gfx_viewport_info,
-  NULL, /* read_viewport */
+  omap_gfx_read_viewport,
 
 #ifdef HAVE_OVERLAY
   NULL, /* overlay_interface */
 #endif
-  NULL /* poke_interface */
+  omap_gfx_get_poke_interface
 };

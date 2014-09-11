@@ -23,7 +23,7 @@
 #include <stdio.h>
 
 #if !defined(RESAMPLER_TEST) && defined(RARCH_INTERNAL)
-#include "../general.h"
+#include "../../general.h"
 #else
 #define RARCH_LOG(...) fprintf(stderr, __VA_ARGS__)
 #endif
@@ -47,7 +47,8 @@ static void resampler_CC_process(void *re_, struct resampler_data *data)
    float ratio, fraction;
 
    audio_frame_float_t *inp = (audio_frame_float_t*)data->data_in;
-   audio_frame_float_t *inp_max = (audio_frame_float_t*)(inp + data->input_frames);
+   audio_frame_float_t *inp_max = (audio_frame_float_t*)
+      (inp + data->input_frames);
    audio_frame_float_t *outp = (audio_frame_float_t*)data->data_out;
 
    __asm__ (
@@ -126,7 +127,8 @@ static void resampler_CC_process(void *re_, struct resampler_data *data)
       outp++;
    }
 
-   // The VFPU state is assumed to remain intact in-between calls to resampler_CC_process.
+   /* The VFPU state is assumed to remain intact 
+    * in-between calls to resampler_CC_process. */
 
 done:
    data->output_frames = outp - (audio_frame_float_t*)data->data_out;
@@ -144,8 +146,8 @@ static void *resampler_CC_init(double bandwidth_mod)
          ".set      push\n"
          ".set      noreorder\n"
 
-         "vcst.s    s710, VFPU_PI           \n"   // 710 = pi
-         "vcst.s    s711, VFPU_1_PI         \n"   // 711 = 1.0 / (pi)
+         "vcst.s    s710, VFPU_PI           \n"   /* 710 = pi */
+         "vcst.s    s711, VFPU_1_PI         \n"   /* 711 = 1.0 / (pi) */
 
          "vzero.q   c720                    \n"
          "vzero.q   c730                    \n"
@@ -157,7 +159,7 @@ static void *resampler_CC_init(double bandwidth_mod)
 }
 #else
 
-// C reference version. Not optimized.
+/* C reference version. Not optimized. */
 typedef struct rarch_CC_resampler
 {
    audio_frame_float_t buffer[4];
@@ -176,7 +178,8 @@ static inline float cc_kernel(float x, float b)
    return (cc_int(x + 0.5, b) - cc_int(x - 0.5, b)) / (2.0 * M_PI);
 }
 
-static inline void add_to(const audio_frame_float_t *source, audio_frame_float_t *target, float ratio)
+static inline void add_to(const audio_frame_float_t *source,
+      audio_frame_float_t *target, float ratio)
 {
    target->l += source->l * ratio;
    target->r += source->r * ratio;
@@ -192,7 +195,7 @@ static void resampler_CC_downsample(void *re_, struct resampler_data *data)
    audio_frame_float_t *outp    = (audio_frame_float_t*)data->data_out;
 
    ratio = 1.0 / data->ratio;
-   b = data->ratio; // cutoff frequency
+   b = data->ratio; /* cutoff frequency. */
 
    while (inp != inp_max)
    {
@@ -234,7 +237,7 @@ static void resampler_CC_upsample(void *re_, struct resampler_data *data)
    audio_frame_float_t *inp_max = (audio_frame_float_t*)(inp + data->input_frames);
    audio_frame_float_t *outp    = (audio_frame_float_t*)data->data_out;
 
-   b = min(data->ratio, 1.00); // cutoff frequency
+   b = min(data->ratio, 1.00); /* cutoff frequency. */
    ratio = 1.0 / data->ratio;
 
    while (inp != inp_max)
@@ -285,7 +288,8 @@ static void resampler_CC_free(void *re_)
 static void *resampler_CC_init(double bandwidth_mod)
 {
    int i;
-   rarch_CC_resampler_t *re = (rarch_CC_resampler_t*)calloc(1, sizeof(rarch_CC_resampler_t));
+   rarch_CC_resampler_t *re = (rarch_CC_resampler_t*)
+      calloc(1, sizeof(rarch_CC_resampler_t));
    if (!re)
       return NULL;
 
@@ -297,7 +301,9 @@ static void *resampler_CC_init(double bandwidth_mod)
 
    RARCH_LOG("Convoluted Cosine resampler (C) : ");
 
-   if (bandwidth_mod < 0.75) // variations of data->ratio around 0.75 are safer than around 1.0 for both up/downsampler.
+   /* variations of data->ratio around 0.75 are safer 
+    * than around 1.0 for both up/downsampler. */
+   if (bandwidth_mod < 0.75) 
    {
       RARCH_LOG("CC_downsample @%f \n", bandwidth_mod);
       re->process = resampler_CC_downsample;

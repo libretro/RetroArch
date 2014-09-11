@@ -60,7 +60,8 @@ static volatile gx_audio_t *gx_audio_data;
 static void dma_callback(void)
 {
    gx_audio_t *wa = (gx_audio_t*)gx_audio_data;
-   // erase last chunk to avoid repeating audio
+
+   /* Erase last chunk to avoid repeating audio. */
    memset(wa->data[wa->dma_busy], 0, CHUNK_SIZE);
 
    wa->dma_busy = wa->dma_next;
@@ -72,7 +73,8 @@ static void dma_callback(void)
    OSSignalCond(wa->cond);
 }
 
-static void *gx_audio_init(const char *device, unsigned rate, unsigned latency)
+static void *gx_audio_init(const char *device,
+      unsigned rate, unsigned latency)
 {
    gx_audio_t *wa = (gx_audio_t*)memalign(32, sizeof(*wa));
    if (!wa)
@@ -106,8 +108,9 @@ static void *gx_audio_init(const char *device, unsigned rate, unsigned latency)
    return wa;
 }
 
-// Wii uses silly R, L, R, L interleaving ...
-static inline void copy_swapped(uint32_t * restrict dst, const uint32_t * restrict src, size_t size)
+/* Wii uses silly R, L, R, L interleaving. */
+static inline void copy_swapped(uint32_t * restrict dst,
+      const uint32_t * restrict src, size_t size)
 {
    do
    {
@@ -128,8 +131,10 @@ static ssize_t gx_audio_write(void *data, const void *buf_, size_t size)
       if (frames < to_write)
          to_write = frames;
 
-      // FIXME: Nonblocking audio should break out of loop when it has nothing to write.
-      while ((wa->dma_write == wa->dma_next || wa->dma_write == wa->dma_busy) && !wa->nonblock)
+      /* FIXME: Nonblocking audio should break out of loop 
+       * when it has nothing to write. */
+      while ((wa->dma_write == wa->dma_next || 
+               wa->dma_write == wa->dma_busy) && !wa->nonblock)
          OSSleepThread(wa->cond);
 
       copy_swapped(wa->data[wa->dma_write] + wa->write_ptr, buf, to_write);
@@ -198,7 +203,8 @@ static void gx_audio_free(void *data)
 static size_t gx_audio_write_avail(void *data)
 {
    gx_audio_t *wa = (gx_audio_t*)data;
-   return ((wa->dma_busy - wa->dma_write + BLOCKS) & (BLOCKS - 1)) * CHUNK_SIZE;
+   return ((wa->dma_busy - wa->dma_write + BLOCKS)
+         & (BLOCKS - 1)) * CHUNK_SIZE;
 }
 
 static size_t gx_audio_buffer_size(void *data)
@@ -214,7 +220,7 @@ static bool gx_audio_use_float(void *data)
    return false;
 }
 
-const audio_driver_t audio_gx = {
+audio_driver_t audio_gx = {
    gx_audio_init,
    gx_audio_write,
    gx_audio_stop,

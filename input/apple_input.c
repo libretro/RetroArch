@@ -14,7 +14,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-
+#include <stdint.h>
 #include <unistd.h>
 
 #include "input_common.h"
@@ -248,7 +248,7 @@ static const rarch_joypad_driver_t *joypad;
 apple_input_data_t g_current_input_data;
 
 #ifdef OSX // Taken from https://github.com/depp/keycode, check keycode.h for license
-const unsigned char MAC_NATIVE_TO_HID[128] = {
+static const unsigned char MAC_NATIVE_TO_HID[128] = {
   4, 22,  7,  9, 11, 10, 29, 27,  6, 25,255,  5, 20, 26,  8, 21,
  28, 23, 30, 31, 32, 33, 35, 34, 46, 38, 36, 45, 37, 39, 48, 18,
  24, 47, 12, 19, 40, 15, 13, 52, 14, 51, 49, 54, 56, 17, 16, 55,
@@ -498,14 +498,14 @@ static void *apple_input_init(void)
 
 static void apple_input_poll(void *data)
 {
-   int i;
+   uint32_t i;
    (void)data;
 
 #ifdef IOS
    apple_gamecontroller_poll_all();
 #endif
 
-   for (i = 0; i < g_current_input_data.touch_count; i ++)
+   for (i = 0; i < g_current_input_data.touch_count; i++)
    {
       input_translate_coord_viewport(g_current_input_data.touches[i].screen_x, g_current_input_data.touches[i].screen_y,
          &g_current_input_data.touches[i].fixed_x, &g_current_input_data.touches[i].fixed_y,
@@ -623,7 +623,7 @@ static const rarch_joypad_driver_t *apple_get_joypad_driver(void *data)
    return joypad;
 }
 
-const input_driver_t input_apple = {
+input_driver_t input_apple = {
    apple_input_init,
    apple_input_poll,
    apple_input_state,

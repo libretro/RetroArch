@@ -21,8 +21,11 @@
 #include "../../../gfx/gl_common.h"
 #include "../../../gfx/fonts/fonts.h"
 
-#define THEME "flatui" // flatui or monochrome themes are available
-#define DELAY 0.02
+#define THEME "monochrome" // flatui or monochrome themes are available
+
+#ifndef LAKKA_DELAY
+#define LAKKA_DELAY 0.02
+#endif
 
 extern int depth;
 extern int num_categories;
@@ -48,6 +51,7 @@ typedef struct
    float  alpha;
    float  zoom;
    float  y;
+   char  value[256];
 } menu_subitem_t;
 
 typedef struct

@@ -2963,7 +2963,7 @@ static void gl_get_poke_interface(void *data, const video_poke_interface_t **ifa
    *iface = &gl_poke_interface;
 }
 
-const video_driver_t video_gl = {
+video_driver_t video_gl = {
    gl_init,
    gl_frame,
    gl_set_nonblock_state,

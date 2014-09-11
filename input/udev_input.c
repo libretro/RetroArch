@@ -818,7 +818,7 @@ static const rarch_joypad_driver_t *udev_input_get_joypad_driver(void *data)
    return udev->joypad;
 }
 
-const input_driver_t input_udev = {
+input_driver_t input_udev = {
    udev_input_init,
    udev_input_poll,
    udev_input_state,
@@ -832,4 +832,3 @@ const input_driver_t input_udev = {
    udev_input_set_rumble,
    udev_input_get_joypad_driver,
 };
-

@@ -64,12 +64,14 @@ static void alsa_worker_thread(void *data)
       scond_signal(alsa->cond);
       slock_unlock(alsa->fifo_lock);
 
-      // If underrun, fill rest with silence.
+      /* If underrun, fill rest with silence. */
       memset(buf + fifo_size, 0, alsa->period_size - fifo_size);
 
-      snd_pcm_sframes_t frames = snd_pcm_writei(alsa->pcm, buf, alsa->period_frames);
+      snd_pcm_sframes_t frames = snd_pcm_writei(
+            alsa->pcm, buf, alsa->period_frames);
 
-      if (frames == -EPIPE || frames == -EINTR || frames == -ESTRPIPE)
+      if (frames == -EPIPE || frames == -EINTR || 
+            frames == -ESTRPIPE)
       {
          if (snd_pcm_recover(alsa->pcm, frames, 1) < 0)
          {
@@ -82,7 +84,8 @@ static void alsa_worker_thread(void *data)
       }
       else if (frames < 0)
       {
-         RARCH_ERR("[ALSA]: Unknown error occured (%s).\n", snd_strerror(frames));
+         RARCH_ERR("[ALSA]: Unknown error occured (%s).\n",
+               snd_strerror(frames));
          break;
       }
    }
@@ -101,7 +104,8 @@ static bool alsa_thread_use_float(void *data)
    return alsa->has_float;
 }
 
-static bool alsathread_find_float_format(snd_pcm_t *pcm, snd_pcm_hw_params_t *params)
+static bool alsathread_find_float_format(snd_pcm_t *pcm,
+      snd_pcm_hw_params_t *params)
 {
    if (snd_pcm_hw_params_test_format(pcm, params, SND_PCM_FORMAT_FLOAT) == 0)
    {
@@ -140,7 +144,8 @@ static void alsa_thread_free(void *data)
    }
 }
 
-static void *alsa_thread_init(const char *device, unsigned rate, unsigned latency)
+static void *alsa_thread_init(const char *device,
+      unsigned rate, unsigned latency)
 {
    alsa_thread_t *alsa = (alsa_thread_t*)calloc(1, sizeof(alsa_thread_t));
    if (!alsa)
@@ -167,19 +172,24 @@ static void *alsa_thread_init(const char *device, unsigned rate, unsigned latenc
    format = alsa->has_float ? SND_PCM_FORMAT_FLOAT : SND_PCM_FORMAT_S16;
 
    TRY_ALSA(snd_pcm_hw_params_any(alsa->pcm, params));
-   TRY_ALSA(snd_pcm_hw_params_set_access(alsa->pcm, params, SND_PCM_ACCESS_RW_INTERLEAVED));
+   TRY_ALSA(snd_pcm_hw_params_set_access(
+            alsa->pcm, params, SND_PCM_ACCESS_RW_INTERLEAVED));
    TRY_ALSA(snd_pcm_hw_params_set_format(alsa->pcm, params, format));
    TRY_ALSA(snd_pcm_hw_params_set_channels(alsa->pcm, params, channels));
    TRY_ALSA(snd_pcm_hw_params_set_rate(alsa->pcm, params, rate, 0));
 
-   TRY_ALSA(snd_pcm_hw_params_set_buffer_time_near(alsa->pcm, params, &latency_usec, NULL));
-   TRY_ALSA(snd_pcm_hw_params_set_periods_near(alsa->pcm, params, &periods, NULL));
+   TRY_ALSA(snd_pcm_hw_params_set_buffer_time_near(
+            alsa->pcm, params, &latency_usec, NULL));
+   TRY_ALSA(snd_pcm_hw_params_set_periods_near(
+            alsa->pcm, params, &periods, NULL));
 
    TRY_ALSA(snd_pcm_hw_params(alsa->pcm, params));
 
-   // Shouldn't have to bother with this, but some drivers are apparently broken.
+   /* Shouldn't have to bother with this, 
+    * but some drivers are apparently broken. */
    if (snd_pcm_hw_params_get_period_size(params, &alsa->period_frames, NULL))
-      snd_pcm_hw_params_get_period_size_min(params, &alsa->period_frames, NULL);
+      snd_pcm_hw_params_get_period_size_min(
+            params, &alsa->period_frames, NULL);
    RARCH_LOG("ALSA: Period size: %d frames\n", (int)alsa->period_frames);
    if (snd_pcm_hw_params_get_buffer_size(params, &buffer_size))
       snd_pcm_hw_params_get_buffer_size_max(params, &buffer_size);
@@ -190,7 +200,8 @@ static void *alsa_thread_init(const char *device, unsigned rate, unsigned latenc
 
    TRY_ALSA(snd_pcm_sw_params_malloc(&sw_params));
    TRY_ALSA(snd_pcm_sw_params_current(alsa->pcm, sw_params));
-   TRY_ALSA(snd_pcm_sw_params_set_start_threshold(alsa->pcm, sw_params, buffer_size / 2));
+   TRY_ALSA(snd_pcm_sw_params_set_start_threshold(
+            alsa->pcm, sw_params, buffer_size / 2));
    TRY_ALSA(snd_pcm_sw_params(alsa->pcm, sw_params));
 
    snd_pcm_hw_params_free(params);
@@ -305,7 +316,7 @@ static size_t alsa_thread_buffer_size(void *data)
    return alsa->buffer_size;
 }
 
-const audio_driver_t audio_alsathread = {
+audio_driver_t audio_alsathread = {
    alsa_thread_init,
    alsa_thread_write,
    alsa_thread_stop,

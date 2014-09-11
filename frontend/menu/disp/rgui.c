@@ -344,73 +344,29 @@ static void rgui_render(void)
 
    for (i = begin; i < end; i++, y += FONT_HEIGHT_STRIDE)
    {
-      char message[256], type_str[256];
-      const char *path = NULL;
-      const char *entry_label = NULL;
-      unsigned type = 0;
+      char message[PATH_MAX], type_str[PATH_MAX],
+           entry_title_buf[PATH_MAX], type_str_buf[PATH_MAX],
+           path_buf[PATH_MAX];
+      const char *path = NULL, *entry_label = NULL;
+      unsigned type = 0, w = 0;
+      bool selected = false;
+
       file_list_get_at_offset(driver.menu->selection_buf, i, &path,
             &entry_label, &type);
       rarch_setting_t *setting = (rarch_setting_t*)setting_data_find_setting(
             setting_data_get_list(),
             driver.menu->selection_buf->list[i].label);
-
-      unsigned w = 19; 
       (void)setting;
 
-      if (!strcmp(label, "performance_counters"))
-         w = 28;
+      disp_set_label(&w, type, i, label,
+            type_str, sizeof(type_str), 
+            entry_label, path,
+            path_buf, sizeof(path_buf));
 
-      if (type == MENU_FILE_CORE)
-      {
-         strlcpy(type_str, "(CORE)", sizeof(type_str));
-         file_list_get_alt_at_offset(driver.menu->selection_buf, i, &path);
-         w = 6;
-      }
-      else if (type == MENU_FILE_PLAIN)
-      {
-         strlcpy(type_str, "(FILE)", sizeof(type_str));
-         w = 6;
-      }
-      else if (type == MENU_FILE_USE_DIRECTORY)
-      {
-         *type_str = '\0';
-         w = 0;
-      }
-      else if (type == MENU_FILE_DIRECTORY)
-      {
-         strlcpy(type_str, "(DIR)", sizeof(type_str));
-         type = MENU_FILE_DIRECTORY;
-         w = 5;
-      }
-      else if (type == MENU_FILE_CARCHIVE)
-      {
-         strlcpy(type_str, "(COMP)", sizeof(type_str));
-         w = 6;
-      }
-      else if (type == MENU_FILE_IN_CARCHIVE)
-      {
-         strlcpy(type_str, "(CFILE)", sizeof(type_str));
-         w = 7;
-      }
-      else if (type >= MENU_SETTINGS_CORE_OPTION_START)
-         strlcpy(
-               type_str,
-               core_option_get_val(g_extern.system.core_options,
-                  type - MENU_SETTINGS_CORE_OPTION_START),
-               sizeof(type_str));
-      else if (type == MENU_FILE_SWITCH || type == MENU_FILE_LINEFEED_SWITCH)
-         strlcpy(type_str, "...", sizeof(type_str));
-      else if (driver.menu_ctx && driver.menu_ctx->backend &&
-            driver.menu_ctx->backend->setting_set_label)
-         driver.menu_ctx->backend->setting_set_label(type_str,
-               sizeof(type_str), &w, type, label, entry_label, i);
-
-      char entry_title_buf[256];
-      char type_str_buf[64];
-      bool selected = i == driver.menu->selection_ptr;
+      selected = (i == driver.menu->selection_ptr);
 
       menu_ticker_line(entry_title_buf, RGUI_TERM_WIDTH - (w + 1 + 2),
-            g_extern.frame_count / RGUI_TERM_START_X, path, selected);
+            g_extern.frame_count / RGUI_TERM_START_X, path_buf, selected);
       menu_ticker_line(type_str_buf, w, g_extern.frame_count / RGUI_TERM_START_X,
             type_str, selected);
 
@@ -513,7 +469,7 @@ void rgui_set_texture(void *data)
             menu_framebuf, false, menu->width, menu->height, 1.0f);
 }
 
-const menu_ctx_driver_t menu_ctx_rgui = {
+menu_ctx_driver_t menu_ctx_rgui = {
    rgui_set_texture,
    rgui_render_messagebox,
    rgui_render,

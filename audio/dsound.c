@@ -451,16 +451,21 @@ static size_t dsound_buffer_size(void *data)
    return 4 * 1024;
 }
 
-const audio_driver_t audio_dsound = {
+static bool dsound_use_float(void *data)
+{
+   (void)data;
+   return false;
+}
+
+audio_driver_t audio_dsound = {
    dsound_init,
    dsound_write,
    dsound_stop,
    dsound_start,
    dsound_set_nonblock_state,
    dsound_free,
-   NULL,
+   dsound_use_float,
    "dsound",
    dsound_write_avail,
    dsound_buffer_size,
 };
-

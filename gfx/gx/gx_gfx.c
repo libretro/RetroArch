@@ -1128,6 +1128,13 @@ static void gx_viewport_info(void *data, struct rarch_viewport *vp)
    *vp = gx->vp;
 }
 
+static bool gx_read_viewport(void *data, uint8_t *buffer)
+{
+   (void)data;
+   (void)buffer;
+   return true;
+}
+
 static const video_poke_interface_t gx_poke_interface = {
    NULL,
    gx_set_aspect_ratio,
@@ -1312,18 +1319,28 @@ static void gx_get_overlay_interface(void *data, const video_overlay_interface_t
 }
 #endif
 
-const video_driver_t video_gx = {
+static bool gx_set_shader(void *data,
+      enum rarch_shader_type type, const char *path)
+{
+   (void)data;
+   (void)type;
+   (void)path;
+
+   return false; 
+}
+
+video_driver_t video_gx = {
    gx_init,
    gx_frame,
    gx_set_nonblock_state,
    gx_alive,
    gx_focus,
-   NULL,
+   gx_set_shader,
    gx_free,
    "gx",
    gx_set_rotation,
    gx_viewport_info,
-   NULL,
+   gx_read_viewport,
 #ifdef HAVE_OVERLAY
    gx_get_overlay_interface,
 #endif

@@ -353,7 +353,7 @@ static uint64_t sdl_get_capabilities(void *data)
    return caps;
 }
 
-const input_driver_t input_sdl = {
+input_driver_t input_sdl = {
    sdl_input_init,
    sdl_input_poll,
    sdl_input_state,
@@ -372,4 +372,3 @@ const input_driver_t input_sdl = {
    sdl_set_rumble,
    sdl_get_joypad_driver,
 };
-

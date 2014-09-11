@@ -59,7 +59,7 @@ static void nullosk_lifecycle(void *data, uint64_t status)
 {
 }
 
-const input_osk_driver_t input_null_osk = {
+input_osk_driver_t input_null_osk = {
    nullosk_init,
    nullosk_free,
    nullosk_enable_key_layout,

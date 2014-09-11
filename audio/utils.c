@@ -82,7 +82,8 @@ void audio_convert_float_to_s16_SSE2(int16_t *out,
    for (i = 0; i + 8 <= samples; i += 8, in += 8, out += 8)
    {
       __m128 input[2] = { _mm_loadu_ps(in + 0), _mm_loadu_ps(in + 4) };
-      __m128 res[2] = { _mm_mul_ps(input[0], factor), _mm_mul_ps(input[1], factor) };
+      __m128 res[2] = { _mm_mul_ps(input[0], factor),
+         _mm_mul_ps(input[1], factor) };
 
       __m128i ints[2] = { _mm_cvtps_epi32(res[0]), _mm_cvtps_epi32(res[1]) };
       __m128i packed = _mm_packs_epi32(ints[0], ints[1]);

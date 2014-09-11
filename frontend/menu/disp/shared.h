@@ -72,6 +72,8 @@ static void get_title(const char *label, const char *dir,
       strlcpy(title, "INFO", sizeof_title);
    else if (!strcmp(label, "input_overlay"))
       snprintf(title, sizeof_title, "OVERLAY %s", dir);
+   else if (!strcmp(label, "video_font_path"))
+      snprintf(title, sizeof_title, "FONT %s", dir);
    else if (!strcmp(label, "video_filter"))
       snprintf(title, sizeof_title, "FILTER %s", dir);
    else if (!strcmp(label, "audio_dsp_plugin"))
@@ -122,6 +124,97 @@ static void get_title(const char *label, const char *dir,
          snprintf(title, sizeof_title, "CONTENT (%s) %s", core_name, dir);
       }
    }
+}
+
+static void disp_set_label(unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *type_str, size_t type_str_size,
+      const char *entry_label,
+      const char *path,
+      char *path_buf, size_t path_buf_size)
+{
+   *w = 19;
+
+   if (!strcmp(label, "performance_counters"))
+      *w = 28;
+
+   if (type == MENU_FILE_CORE)
+   {
+      strlcpy(type_str, "(CORE)", type_str_size);
+      file_list_get_alt_at_offset(driver.menu->selection_buf, i, &path);
+      *w = 6;
+   }
+   else if (type == MENU_FILE_PLAIN)
+   {
+      strlcpy(type_str, "(FILE)", type_str_size);
+      *w = 6;
+   }
+   else if (type == MENU_FILE_USE_DIRECTORY)
+   {
+      *type_str = '\0';
+      *w = 0;
+   }
+   else if (type == MENU_FILE_DIRECTORY)
+   {
+      strlcpy(type_str, "(DIR)", type_str_size);
+      *w = 5;
+   }
+   else if (type == MENU_FILE_CARCHIVE)
+   {
+      strlcpy(type_str, "(COMP)", type_str_size);
+      *w = 6;
+   }
+   else if (type == MENU_FILE_IN_CARCHIVE)
+   {
+      strlcpy(type_str, "(CFILE)", type_str_size);
+      *w = 7;
+   }
+   else if (type == MENU_FILE_FONT)
+   {
+      strlcpy(type_str, "(FONT)", type_str_size);
+      *w = 7;
+   }
+   else if (type == MENU_FILE_SHADER_PRESET)
+   {
+      strlcpy(type_str, "(PRESET)", type_str_size);
+      *w = 8;
+   }
+   else if (type == MENU_FILE_SHADER)
+   {
+      strlcpy(type_str, "(SHADER)", type_str_size);
+      *w = 8;
+   }
+   else if (
+         type == MENU_FILE_VIDEOFILTER ||
+         type == MENU_FILE_AUDIOFILTER)
+   {
+      strlcpy(type_str, "(FILTER)", type_str_size);
+      *w = 8;
+   }
+   else if (type == MENU_FILE_CONFIG)
+   {
+      strlcpy(type_str, "(CONFIG)", type_str_size);
+      *w = 8;
+   }
+   else if (type == MENU_FILE_OVERLAY)
+   {
+      strlcpy(type_str, "(OVERLAY)", type_str_size);
+      *w = 9;
+   }
+   else if (type >= MENU_SETTINGS_CORE_OPTION_START)
+      strlcpy(
+            type_str,
+            core_option_get_val(g_extern.system.core_options,
+               type - MENU_SETTINGS_CORE_OPTION_START),
+            type_str_size);
+   else if (type == MENU_FILE_SWITCH || type == MENU_FILE_LINEFEED_SWITCH)
+      strlcpy(type_str, "...", type_str_size);
+   else if (driver.menu_ctx && driver.menu_ctx->backend &&
+         driver.menu_ctx->backend->setting_set_label)
+      driver.menu_ctx->backend->setting_set_label(type_str,
+            type_str_size, w, type, label, entry_label, i);
+
+   strlcpy(path_buf, path, path_buf_size);
 }
 
 #endif

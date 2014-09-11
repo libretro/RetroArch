@@ -189,6 +189,8 @@ const char *config_get_default_menu(void)
          return "rmenu_xui";
       case MENU_LAKKA:
          return "lakka";
+      case MENU_GLUI:
+         return "glui";
       default:
          return "NULL";
    }
@@ -1532,6 +1534,10 @@ bool config_save_file(const char *path)
    config_set_float(conf, "input_overlay_scale",
          g_settings.input.overlay_scale);
 #endif
+
+   config_set_path(conf, "video_font_path", g_settings.video.font_path);
+   config_set_float(conf, "video_message_pos_x", g_settings.video.msg_pos_x);
+   config_set_float(conf, "video_message_pos_y", g_settings.video.msg_pos_y);
 
    config_set_bool(conf, "gamma_correction",
          g_extern.console.screen.gamma_correction);

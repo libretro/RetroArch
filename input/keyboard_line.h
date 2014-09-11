@@ -54,7 +54,8 @@ void input_keyboard_line_free(input_keyboard_line_t *state);
 void input_keyboard_event(bool down, unsigned code, uint32_t character,
       uint16_t mod);
 
-const char **input_keyboard_start_line(void *userdata, input_keyboard_line_complete_t cb);
+const char **input_keyboard_start_line(void *userdata,
+      input_keyboard_line_complete_t cb);
 
 /* Wait for keys to be pressed (used for binding keys in the menu).
  * Callback returns false when all polling is done. */

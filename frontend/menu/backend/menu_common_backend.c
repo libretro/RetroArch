@@ -480,12 +480,6 @@ static void handle_setting(rarch_setting_t *setting,
          else if (action == MENU_ACTION_START)
             *setting->value.string = '\0';
       }
-      else if (!strcmp(setting->name, "video_driver"))
-         handle_driver(setting->name, g_settings.video.driver,
-               sizeof(g_settings.video.driver), action);
-      else if (!strcmp(setting->name, "audio_driver"))
-         handle_driver(setting->name, g_settings.audio.driver,
-               sizeof(g_settings.audio.driver), action);
       else if (!strcmp(setting->name, "audio_resampler_driver"))
       {
          if (action == MENU_ACTION_LEFT)
@@ -493,18 +487,9 @@ static void handle_setting(rarch_setting_t *setting,
          else if (action == MENU_ACTION_RIGHT)
             find_next_resampler_driver();
       }
-      else if (!strcmp(setting->name, "input_driver"))
-         handle_driver(setting->name, g_settings.input.driver,
-               sizeof(g_settings.input.driver), action);
-      else if (!strcmp(setting->name, "camera_driver"))
-         handle_driver(setting->name, g_settings.camera.driver,
-               sizeof(g_settings.camera.driver), action);
-      else if (!strcmp(setting->name, "location_driver"))
-         handle_driver(setting->name, g_settings.location.driver,
-               sizeof(g_settings.location.driver), action);
-      else if (!strcmp(setting->name, "menu_driver"))
-         handle_driver(setting->name, g_settings.menu.driver,
-               sizeof(g_settings.menu.driver), action);
+      else if (id == MENU_FILE_DRIVER)
+         handle_driver(setting->name, setting->value.string,
+               setting->size, action);
    }
 }
 
@@ -1366,6 +1351,12 @@ static int menu_custom_bind_iterate_keyboard(void *data,
    return 0;
 }
 
+static void menu_common_load_content(void)
+{
+   rarch_main_command(RARCH_CMD_LOAD_CONTENT);
+   menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS);
+   driver.menu->msg_force = true;
+}
 
 static int menu_action_ok(const char *menu_path,
       const char *menu_label, unsigned menu_type)
@@ -1390,173 +1381,201 @@ static int menu_action_ok(const char *menu_path,
    RARCH_LOG("type id  : %d\n", type);
 #endif
 
-   if (type == MENU_FILE_PLAYLIST_ENTRY)
+   switch (type)
    {
-      rarch_playlist_load_content(g_extern.history,
-            driver.menu->selection_ptr);
-      menu_flush_stack_type(driver.menu->menu_stack, MENU_SETTINGS);
-      return -1;
-   }
-   else if (!strcmp(menu_label, "detect_core_list")
-         && type == MENU_FILE_PLAIN)
-   {
-      int ret = rarch_defer_core(g_extern.core_info,
-            menu_path, path, driver.menu->deferred_path,
-            sizeof(driver.menu->deferred_path));
+      case MENU_FILE_PLAYLIST_ENTRY:
 
-      if (ret == -1)
-      {
-
-         rarch_main_command(RARCH_CMD_LOAD_CONTENT);
-         rarch_main_command(RARCH_CMD_LOAD_CORE);
-         menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS);
-         driver.menu->msg_force = true;
+         rarch_playlist_load_content(g_extern.history,
+               driver.menu->selection_ptr);
+         menu_flush_stack_type(driver.menu->menu_stack, MENU_SETTINGS);
          return -1;
-      }
-      else if (ret == 0)
-         menu_entries_push(driver.menu->menu_stack,
-               g_settings.libretro_directory, "deferred_core_list",
-               0, driver.menu->selection_ptr);
-   }
-   else if ((setting && setting->type == ST_DIR)
-         && (type == MENU_FILE_USE_DIRECTORY))
-   {
-      menu_common_setting_set_current_string(setting, menu_path);
-      menu_entries_pop_stack(driver.menu->menu_stack, setting->name);
-   }
-   else if ((setting && setting->type == ST_PATH)
-         && (type == MENU_FILE_PLAIN))
-   {
-      menu_common_setting_set_current_string_path(setting, menu_path, path);
-      menu_entries_pop_stack(driver.menu->menu_stack, setting->name);
-   }
+
+      case MENU_FILE_PLAIN:
+         if (!strcmp(menu_label, "detect_core_list"))
+         {
+            int ret = rarch_defer_core(g_extern.core_info,
+                  menu_path, path, driver.menu->deferred_path,
+                  sizeof(driver.menu->deferred_path));
+
+            if (ret == -1)
+            {
+
+               rarch_main_command(RARCH_CMD_LOAD_CORE);
+
+               menu_common_load_content();
+
+               return -1;
+            }
+            else if (ret == 0)
+               menu_entries_push(driver.menu->menu_stack,
+                     g_settings.libretro_directory, "deferred_core_list",
+                     0, driver.menu->selection_ptr);
+         }
+         else if ((setting && setting->type == ST_PATH))
+         {
+            menu_common_setting_set_current_string_path(setting, menu_path, path);
+            menu_entries_pop_stack(driver.menu->menu_stack, setting->name);
+         }
+         else if (!strcmp(menu_label, "disk_image_append"))
+         {
+            char image[PATH_MAX];
+            fill_pathname_join(image, menu_path, path, sizeof(image));
+            rarch_disk_control_append_image(image);
+
+            rarch_main_command(RARCH_CMD_RESUME);
+
+            menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS);
+            return -1;
+         }
+
+         return 0;
+
+      case MENU_FILE_CONFIG:
+
+         {
+            char config[PATH_MAX];
+            fill_pathname_join(config, menu_path, path, sizeof(config));
+            menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS);
+            driver.menu->msg_force = true;
+            if (rarch_replace_config(config))
+            {
+               menu_clear_navigation(driver.menu);
+               return -1;
+            }
+         }
+
+         return 0;
+
+      case MENU_FILE_FONT:
+      case MENU_FILE_OVERLAY:
+      case MENU_FILE_AUDIOFILTER:
+      case MENU_FILE_VIDEOFILTER:
+
+         menu_common_setting_set_current_string_path(setting, menu_path, path);
+         menu_entries_pop_stack(driver.menu->menu_stack, setting->name);
+
+         return 0;
+
+      case MENU_FILE_SHADER_PRESET:
 #ifdef HAVE_SHADER_MANAGER
-   else if (!strcmp(menu_label, "video_shader_preset")
-         && type == MENU_FILE_PLAIN)
-   {
-      char shader_path[PATH_MAX];
-      fill_pathname_join(shader_path, menu_path, path, sizeof(shader_path));
-      if (driver.menu_ctx && driver.menu_ctx->backend &&
-            driver.menu_ctx->backend->shader_manager_set_preset)
-         driver.menu_ctx->backend->shader_manager_set_preset(
-               driver.menu->shader,
-               gfx_shader_parse_type(shader_path, RARCH_SHADER_NONE),
-               shader_path);
-      menu_flush_stack_label(driver.menu->menu_stack, "Shader Options");
-   }
-   else if (!strcmp(menu_label, "video_shader_pass")
-         && type == MENU_FILE_PLAIN)
-   {
-      fill_pathname_join(driver.menu->shader->pass[hack_shader_pass].source.path,
-            menu_path, path,
-            sizeof(driver.menu->shader->pass[hack_shader_pass].source.path));
-
-      /* This will reset any changed parameters. */
-      gfx_shader_resolve_parameters(NULL, driver.menu->shader);
-      menu_flush_stack_label(driver.menu->menu_stack, "Shader Options");
-   }
+         {
+            char shader_path[PATH_MAX];
+            fill_pathname_join(shader_path, menu_path, path, sizeof(shader_path));
+            if (driver.menu_ctx && driver.menu_ctx->backend &&
+                  driver.menu_ctx->backend->shader_manager_set_preset)
+               driver.menu_ctx->backend->shader_manager_set_preset(
+                     driver.menu->shader,
+                     gfx_shader_parse_type(shader_path, RARCH_SHADER_NONE),
+                     shader_path);
+            menu_flush_stack_label(driver.menu->menu_stack, "Shader Options");
+         }
 #endif
-   else if (!strcmp(menu_label, "deferred_core_list")
-         && type == MENU_FILE_CORE)
-   {
-      strlcpy(g_settings.libretro, path, sizeof(g_settings.libretro));
-      strlcpy(g_extern.fullpath, driver.menu->deferred_path,
-            sizeof(g_extern.fullpath));
-      rarch_main_command(RARCH_CMD_LOAD_CONTENT);
-      driver.menu->msg_force = true;
-      menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS);
-      return -1;
-   }
-   else if (!strcmp(menu_label, "core_list")
-         && type == MENU_FILE_CORE)
-   {
-      fill_pathname_join(g_settings.libretro, menu_path, path,
-            sizeof(g_settings.libretro));
-      rarch_main_command(RARCH_CMD_LOAD_CORE);
-      menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS);
+         return 0;
+      case MENU_FILE_SHADER:
+#ifdef HAVE_SHADER_MANAGER
+         fill_pathname_join(driver.menu->shader->pass[hack_shader_pass].source.path,
+               menu_path, path,
+               sizeof(driver.menu->shader->pass[hack_shader_pass].source.path));
+
+         /* This will reset any changed parameters. */
+         gfx_shader_resolve_parameters(NULL, driver.menu->shader);
+         menu_flush_stack_label(driver.menu->menu_stack, "Shader Options");
+#endif
+
+         return 0;
+
+      case MENU_FILE_CORE:
+
+         if (!strcmp(menu_label, "deferred_core_list"))
+         {
+            strlcpy(g_settings.libretro, path, sizeof(g_settings.libretro));
+            strlcpy(g_extern.fullpath, driver.menu->deferred_path,
+                  sizeof(g_extern.fullpath));
+
+            menu_common_load_content();
+
+            return -1;
+         }
+         else if (!strcmp(menu_label, "core_list"))
+         {
+            fill_pathname_join(g_settings.libretro, menu_path, path,
+                  sizeof(g_settings.libretro));
+            rarch_main_command(RARCH_CMD_LOAD_CORE);
+            menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS);
 #if defined(HAVE_DYNAMIC)
-      /* No content needed for this core, load core immediately. */
-      if (driver.menu->load_no_content)
-      {
-         rarch_main_set_state(RARCH_ACTION_STATE_LOAD_CONTENT);
-         *g_extern.fullpath = '\0';
-         driver.menu->msg_force = true;
-         return -1;
-      }
+            /* No content needed for this core, load core immediately. */
+            if (driver.menu->load_no_content)
+            {
+               *g_extern.fullpath = '\0';
+               menu_common_load_content();
+               return -1;
+            }
 
-      /* Core selection on non-console just updates directory listing.
-       * Will take effect on new content load. */
+            /* Core selection on non-console just updates directory listing.
+             * Will take effect on new content load. */
 #elif defined(RARCH_CONSOLE)
-      rarch_main_command(RARCH_CMD_RESTART_RETROARCH);
-      return -1;
+            rarch_main_command(RARCH_CMD_RESTART_RETROARCH);
+            return -1;
 #endif
-   }
-   else if (!strcmp(menu_label, "configurations")
-         && type == MENU_FILE_PLAIN)
-   {
-      char config[PATH_MAX];
-      fill_pathname_join(config, menu_path, path, sizeof(config));
-      menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS);
-      driver.menu->msg_force = true;
-      if (rarch_replace_config(config))
-      {
-         menu_clear_navigation(driver.menu);
-         return -1;
-      }
-   }
-   else if (!strcmp(menu_label, "disk_image_append")
-         && type == MENU_FILE_PLAIN)
-   {
-      char image[PATH_MAX];
-      fill_pathname_join(image, menu_path, path, sizeof(image));
-      rarch_disk_control_append_image(image);
+         }
 
-      rarch_main_command(RARCH_CMD_RESUME);
+         return 0;
 
-      menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS);
-      return -1;
-   }
-   else if (menu_parse_check(label, type) == 0)
-   {
-      char cat_path[PATH_MAX];
-      fill_pathname_join(cat_path, menu_path, path, sizeof(cat_path));
+      case MENU_FILE_USE_DIRECTORY:
 
-      menu_entries_push(driver.menu->menu_stack,
-            cat_path, menu_label, type, driver.menu->selection_ptr);
-   }
-   else if (type == MENU_FILE_CARCHIVE)
-   {
-      char cat_path[PATH_MAX];
-      fill_pathname_join(cat_path, menu_path, path, sizeof(cat_path));
+         if (setting && setting->type == ST_DIR)
+         {
+            menu_common_setting_set_current_string(setting, menu_path);
+            menu_entries_pop_stack(driver.menu->menu_stack, setting->name);
+         }
 
-      menu_entries_push(driver.menu->menu_stack,
-            cat_path, menu_label, type, driver.menu->selection_ptr);
-      return 0;
-   }
+         return 0;
+
+      case MENU_FILE_DIRECTORY:
+      case MENU_FILE_CARCHIVE:
+
+         {
+            char cat_path[PATH_MAX];
+            fill_pathname_join(cat_path, menu_path, path, sizeof(cat_path));
+
+            menu_entries_push(driver.menu->menu_stack,
+                  cat_path, menu_label, type, driver.menu->selection_ptr);
+         }
+
+         return 0;
+
 #ifdef HAVE_COMPRESSION
-   else if (type == MENU_FILE_IN_CARCHIVE)
-   {
-      fill_pathname_join(g_extern.fullpath, menu_path, path,
-            sizeof(g_extern.fullpath));
+      case MENU_FILE_IN_CARCHIVE:
 
-      g_extern.is_carchive = true;
-      strncpy(g_extern.carchive_path, menu_path, 
-            sizeof(g_extern.carchive_path));
+         fill_pathname_join(g_extern.fullpath, menu_path, path,
+               sizeof(g_extern.fullpath));
 
-      rarch_main_set_state(RARCH_ACTION_STATE_LOAD_CONTENT);
-      menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS);
-      driver.menu->msg_force = true;
-      return -1;
-   }
+         g_extern.is_carchive = true;
+         strncpy(g_extern.carchive_path, menu_path, 
+               sizeof(g_extern.carchive_path));
+
+         menu_common_load_content();
+
+         return -1;
 #endif
+         
+   }
+
+   if (menu_parse_check(label, type) == 0)
+   {
+      char cat_path[PATH_MAX];
+      fill_pathname_join(cat_path, menu_path, path, sizeof(cat_path));
+
+      menu_entries_push(driver.menu->menu_stack,
+            cat_path, menu_label, type, driver.menu->selection_ptr);
+   }
    else
    {
       fill_pathname_join(g_extern.fullpath, menu_path, path,
             sizeof(g_extern.fullpath));
-      rarch_main_set_state(RARCH_ACTION_STATE_LOAD_CONTENT);
 
-      menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS);
-      driver.menu->msg_force = true;
+      menu_common_load_content();
+
       return -1;
    }
 
@@ -1720,7 +1739,7 @@ static void menu_common_setting_set_label(char *type_str,
          type, menu_label, label, index);
 }
 
-const menu_ctx_driver_backend_t menu_ctx_backend_common = {
+menu_ctx_driver_backend_t menu_ctx_backend_common = {
    menu_common_iterate,
 #ifdef HAVE_SHADER_MANAGER
    menu_common_shader_manager_init,

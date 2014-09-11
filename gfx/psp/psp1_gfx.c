@@ -773,7 +773,7 @@ static void psp_viewport_info(void *data, struct rarch_viewport *vp)
 
 static bool psp_read_viewport(void *data, uint8_t *buffer)
 {
-   return false;
+   return true;
 }
 
 static const video_poke_interface_t psp_poke_interface = {
@@ -796,19 +796,37 @@ static void psp_get_poke_interface(void *data,
    *iface = &psp_poke_interface;
 }
 
-const video_driver_t video_psp1 = {
+static bool psp_read_viewport(void *data, uint8_t *buffer)
+{
+   (void)data;
+   (void)buffer;
+
+   return false;
+}
+
+static bool psp_set_shader(void *data,
+      enum rarch_shader_type type, const char *path)
+{
+   (void)data;
+   (void)type;
+   (void)path;
+
+   return false; 
+}
+
+video_driver_t video_psp1 = {
    psp_init,
    psp_frame,
    psp_set_nonblock_state,
    psp_alive,
    psp_focus,
-   NULL,
+   psp_set_shader,
    psp_free,
    "psp1",
 
    psp_set_rotation,
    psp_viewport_info,
-   NULL, /* psp_read_viewport */
+   psp_read_viewport,
 #ifdef HAVE_OVERLAY
    NULL,
 #endif

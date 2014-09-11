@@ -70,7 +70,7 @@ static bool ios_camera_poll(void *data, retro_camera_frame_raw_framebuffer_t fra
    return true;
 }
 
-const camera_driver_t camera_ios = {
+camera_driver_t camera_ios = {
    ios_camera_init,
    ios_camera_free,
    ios_camera_start,

@@ -76,7 +76,8 @@ static void coreaudio_free(void *data)
    free(dev);
 }
 
-static OSStatus audio_write_cb(void *userdata, AudioUnitRenderActionFlags *action_flags,
+static OSStatus audio_write_cb(void *userdata,
+      AudioUnitRenderActionFlags *action_flags,
       const AudioTimeStamp *time_stamp, UInt32 bus_number,
       UInt32 number_frames, AudioBufferList *io_data)
 {
@@ -97,9 +98,14 @@ static OSStatus audio_write_cb(void *userdata, AudioUnitRenderActionFlags *actio
    if (fifo_read_avail(dev->buffer) < write_avail)
    {
       *action_flags = kAudioUnitRenderAction_OutputIsSilence;
-      memset(outbuf, 0, write_avail); // Seems to be needed.
+
+      /* Seems to be needed. */
+      memset(outbuf, 0, write_avail);
+
       pthread_mutex_unlock(&dev->lock);
-      pthread_cond_signal(&dev->cond); // Technically possible to deadlock without.
+
+      /* Technically possible to deadlock without. */
+      pthread_cond_signal(&dev->cond); 
       return noErr;
    }
 
@@ -121,13 +127,15 @@ static void choose_output_device(coreaudio_t *dev, const char* device)
 
    UInt32 size = 0;
 
-   if (AudioObjectGetPropertyDataSize(kAudioObjectSystemObject, &propaddr, 0, 0, &size) != noErr)
+   if (AudioObjectGetPropertyDataSize(kAudioObjectSystemObject,
+            &propaddr, 0, 0, &size) != noErr)
       return;
 
    UInt32 deviceCount = size / sizeof(AudioDeviceID);
    AudioDeviceID *devices = malloc(size);
 
-   if (!devices || AudioObjectGetPropertyData(kAudioObjectSystemObject, &propaddr, 0, 0, &size, devices) != noErr)
+   if (!devices || AudioObjectGetPropertyData(kAudioObjectSystemObject,
+            &propaddr, 0, 0, &size, devices) != noErr)
       goto done;
 
    propaddr.mScope = kAudioDevicePropertyScopeOutput;
@@ -139,9 +147,12 @@ static void choose_output_device(coreaudio_t *dev, const char* device)
       char device_name[1024];
       device_name[0] = 0;
 
-      if (AudioObjectGetPropertyData(devices[i], &propaddr, 0, 0, &size, device_name) == noErr && strcmp(device_name, device) == 0)
+      if (AudioObjectGetPropertyData(devices[i],
+               &propaddr, 0, 0, &size, device_name) == noErr 
+            && !strcmp(device_name, device))
       {
-         AudioUnitSetProperty(dev->dev, kAudioOutputUnitProperty_CurrentDevice, kAudioUnitScope_Global, 0, &devices[i], sizeof(AudioDeviceID));
+         AudioUnitSetProperty(dev->dev, kAudioOutputUnitProperty_CurrentDevice, 
+               kAudioUnitScope_Global, 0, &devices[i], sizeof(AudioDeviceID));
          goto done;
       }
    }
@@ -159,7 +170,8 @@ static void coreaudio_interrupt_listener(void *data, UInt32 interrupt_state)
 }
 #endif
 
-static void *coreaudio_init(const char *device, unsigned rate, unsigned latency)
+static void *coreaudio_init(const char *device,
+      unsigned rate, unsigned latency)
 {
    (void)device;
 
@@ -227,15 +239,18 @@ static void *coreaudio_init(const char *device, unsigned rate, unsigned latency)
    stream_desc.mBytesPerFrame = 2 * sizeof(float);
    stream_desc.mFramesPerPacket = 1;
    stream_desc.mFormatID = kAudioFormatLinearPCM;
-   stream_desc.mFormatFlags = kAudioFormatFlagIsFloat | kAudioFormatFlagIsPacked | (is_little_endian() ? 0 : kAudioFormatFlagIsBigEndian);
+   stream_desc.mFormatFlags = kAudioFormatFlagIsFloat | 
+      kAudioFormatFlagIsPacked | (is_little_endian() ? 
+            0 : kAudioFormatFlagIsBigEndian);
    
    if (AudioUnitSetProperty(dev->dev, kAudioUnitProperty_StreamFormat,
          kAudioUnitScope_Input, 0, &stream_desc, sizeof(stream_desc)) != noErr)
       goto error;
    
-   // Check returned audio format
+   /* Check returned audio format. */
    UInt32 i_size = sizeof(real_desc);;
-   if (AudioUnitGetProperty(dev->dev, kAudioUnitProperty_StreamFormat, kAudioUnitScope_Input, 0, &real_desc, &i_size) != noErr)
+   if (AudioUnitGetProperty(dev->dev, kAudioUnitProperty_StreamFormat, 
+            kAudioUnitScope_Input, 0, &real_desc, &i_size) != noErr)
       goto error;
 
    if (real_desc.mChannelsPerFrame != stream_desc.mChannelsPerFrame)
@@ -247,11 +262,12 @@ static void *coreaudio_init(const char *device, unsigned rate, unsigned latency)
    if (real_desc.mFormatID != stream_desc.mFormatID)
       goto error;
 
-   RARCH_LOG("[CoreAudio]: Using output sample rate of %.1f Hz\n", (float)real_desc.mSampleRate);
+   RARCH_LOG("[CoreAudio]: Using output sample rate of %.1f Hz\n",
+         (float)real_desc.mSampleRate);
    g_settings.audio.out_rate = real_desc.mSampleRate;
 
 
-   // Set channel layout (fails on iOS)
+   /* Set channel layout (fails on iOS). */
 #ifndef IOS
    AudioChannelLayout layout = {0};
 
@@ -261,7 +277,7 @@ static void *coreaudio_init(const char *device, unsigned rate, unsigned latency)
       goto error;
 #endif
 
-   // Set callbacks and finish up
+   /* Set callbacks and finish up. */
    AURenderCallbackStruct cb = {0};
    cb.inputProc = audio_write_cb;
    cb.inputProcRefCon = dev;
@@ -283,7 +299,8 @@ static void *coreaudio_init(const char *device, unsigned rate, unsigned latency)
    if (!dev->buffer)
       goto error;
 
-   RARCH_LOG("[CoreAudio]: Using buffer size of %u bytes: (latency = %u ms)\n", (unsigned)fifo_size, latency);
+   RARCH_LOG("[CoreAudio]: Using buffer size of %u bytes: (latency = %u ms)\n",
+         (unsigned)fifo_size, latency);
 
    if (AudioOutputUnitStart(dev->dev) != noErr)
       goto error;
@@ -333,7 +350,8 @@ static ssize_t coreaudio_write(void *data, const void *buf_, size_t size)
       }
 
 #ifdef IOS
-      if (write_avail == 0 && pthread_cond_timedwait(&dev->cond, &dev->lock, &timeout) == ETIMEDOUT)
+      if (write_avail == 0 && pthread_cond_timedwait(
+               &dev->cond, &dev->lock, &timeout) == ETIMEDOUT)
          g_interrupted = true;
 #else
       if (write_avail == 0)
@@ -384,7 +402,7 @@ static size_t coreaudio_buffer_size(void *data)
    return dev->buffer_size;
 }
 
-const audio_driver_t audio_coreaudio = {
+audio_driver_t audio_coreaudio = {
    coreaudio_init,
    coreaudio_write,
    coreaudio_stop,
@@ -396,4 +414,3 @@ const audio_driver_t audio_coreaudio = {
    coreaudio_write_avail,
    coreaudio_buffer_size,
 };
-

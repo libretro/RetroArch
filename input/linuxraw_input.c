@@ -236,7 +236,7 @@ static uint64_t linuxraw_get_capabilities(void *data)
    return caps;
 }
 
-const input_driver_t input_linuxraw = {
+input_driver_t input_linuxraw = {
    linuxraw_input_init,
    linuxraw_input_poll,
    linuxraw_input_state,

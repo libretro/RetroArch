@@ -35,24 +35,31 @@ struct apple_pad_connection
 
 static IOHIDManagerRef g_hid_manager;
 
-static void apple_pad_send_control(struct apple_pad_connection* connection, uint8_t* data, size_t size)
+static void apple_pad_send_control(struct apple_pad_connection* connection,
+      uint8_t* data, size_t size)
 {
-    IOHIDDeviceSetReport(connection->device, kIOHIDReportTypeOutput, 0x01, data + 1, size - 1);
+    IOHIDDeviceSetReport(connection->device,
+          kIOHIDReportTypeOutput, 0x01, data + 1, size - 1);
 }
 
-// NOTE: I pieced this together through trial and error, any corrections are welcome
-static void hid_device_input_callback(void* context, IOReturn result, void* sender, IOHIDValueRef value)
+/* NOTE: I pieced this together through trial and error, 
+ * any corrections are welcome. */
+
+static void hid_device_input_callback(void* context, IOReturn result,
+      void* sender, IOHIDValueRef value)
 {
     IOHIDElementRef element;
     uint32_t type, page, use;
-    struct apple_pad_connection* connection = (struct apple_pad_connection*)context;
+    struct apple_pad_connection* connection = (struct apple_pad_connection*)
+       context;
     
     element = IOHIDValueGetElement(value);
     type    = IOHIDElementGetType(element);
     page    = IOHIDElementGetUsagePage(element);
     use     = IOHIDElementGetUsage(element);
     
-    // Joystick handler: TODO: Can GamePad work the same?
+    /* Joystick handler.
+     * TODO: Can GamePad work the same? */
     if (type == kIOHIDElementTypeInput_Button && page == kHIDPage_Button)
     {
         CFIndex state = IOHIDValueGetIntegerValue(value);
@@ -79,7 +86,8 @@ static void hid_device_input_callback(void* context, IOReturn result, void* send
                 state = IOHIDValueGetIntegerValue(value) - min;
                 
                 val = (float)state / (float)max;
-                g_current_input_data.pad_axis[connection->slot][i] = ((val * 2.0f) - 1.0f) * 32767.0f;
+                g_current_input_data.pad_axis[connection->slot][i] = 
+                   ((val * 2.0f) - 1.0f) * 32767.0f;
             }
         }
     }
@@ -87,12 +95,14 @@ static void hid_device_input_callback(void* context, IOReturn result, void* send
 
 static void hid_device_removed(void* context, IOReturn result, void* sender)
 {
-    struct apple_pad_connection* connection = (struct apple_pad_connection*)context;
+    struct apple_pad_connection* connection = (struct apple_pad_connection*)
+       context;
     
     if (connection && connection->slot < MAX_PLAYERS)
     {
         g_current_input_data.pad_buttons[connection->slot] = 0;
-        memset(g_current_input_data.pad_axis[connection->slot], 0, sizeof(g_current_input_data.pad_axis));
+        memset(g_current_input_data.pad_axis[connection->slot],
+              0, sizeof(g_current_input_data.pad_axis));
         
         apple_joypad_disconnect(connection->slot);
         free(connection);
@@ -101,49 +111,63 @@ static void hid_device_removed(void* context, IOReturn result, void* sender)
     IOHIDDeviceClose(sender, kIOHIDOptionsTypeNone);
 }
 
-static void hid_device_report(void* context, IOReturn result, void *sender, IOHIDReportType type, uint32_t reportID, uint8_t *report, CFIndex reportLength)
+static void hid_device_report(void* context, IOReturn result, void *sender,
+      IOHIDReportType type, uint32_t reportID, uint8_t *report,
+      CFIndex reportLength)
 {
-    struct apple_pad_connection* connection = (struct apple_pad_connection*)context;
+    struct apple_pad_connection* connection = (struct apple_pad_connection*)
+       context;
     apple_joypad_packet(connection->slot, connection->data, reportLength + 1);
 }
 
-static void hid_manager_device_attached(void* context, IOReturn result, void* sender, IOHIDDeviceRef device)
+static void hid_manager_device_attached(void* context, IOReturn result,
+      void* sender, IOHIDDeviceRef device)
 {
     char device_name[1024];
     CFStringRef device_name_ref;
-    struct apple_pad_connection* connection = (struct apple_pad_connection*)calloc(1, sizeof(*connection));
+    struct apple_pad_connection* connection = (struct apple_pad_connection*)
+       calloc(1, sizeof(*connection));
     
     connection->device = device;
     connection->slot = MAX_PLAYERS;
     
     IOHIDDeviceOpen(device, kIOHIDOptionsTypeNone);
-    IOHIDDeviceScheduleWithRunLoop(device, CFRunLoopGetCurrent(), kCFRunLoopCommonModes);
+    IOHIDDeviceScheduleWithRunLoop(device, CFRunLoopGetCurrent(),
+          kCFRunLoopCommonModes);
     IOHIDDeviceRegisterRemovalCallback(device, hid_device_removed, connection);
     
     device_name_ref = IOHIDDeviceGetProperty(device, CFSTR(kIOHIDProductKey));
-    CFStringGetCString(device_name_ref, device_name, sizeof(device_name), kCFStringEncodingUTF8);
+    CFStringGetCString(device_name_ref, device_name,
+          sizeof(device_name), kCFStringEncodingUTF8);
     
     connection->slot = apple_joypad_connect(device_name, connection);
     
     if (apple_joypad_has_interface(connection->slot))
-        IOHIDDeviceRegisterInputReportCallback(device, connection->data + 1, sizeof(connection->data) - 1, hid_device_report, connection);
+        IOHIDDeviceRegisterInputReportCallback(device,
+              connection->data + 1, sizeof(connection->data) - 1,
+              hid_device_report, connection);
     else
-        IOHIDDeviceRegisterInputValueCallback(device, hid_device_input_callback, connection);
+        IOHIDDeviceRegisterInputValueCallback(device,
+              hid_device_input_callback, connection);
 
     if (device_name[0] != '\0')
     {
-       strlcpy(g_settings.input.device_names[connection->slot], device_name, sizeof(g_settings.input.device_names));
-       input_config_autoconfigure_joypad(connection->slot, device_name, apple_joypad.ident);
+       strlcpy(g_settings.input.device_names[connection->slot],
+             device_name, sizeof(g_settings.input.device_names));
+       input_config_autoconfigure_joypad(connection->slot,
+             device_name, apple_joypad.ident);
        RARCH_LOG("Port %d: %s.\n", connection->slot, device_name);
     }
 }
 
-static void append_matching_dictionary(CFMutableArrayRef array, uint32_t page, uint32_t use)
+static void append_matching_dictionary(CFMutableArrayRef array,
+      uint32_t page, uint32_t use)
 {
     CFNumberRef pagen, usen;
     CFMutableDictionaryRef matcher;
     
-    matcher = CFDictionaryCreateMutable(kCFAllocatorDefault, 0, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
+    matcher = CFDictionaryCreateMutable(kCFAllocatorDefault, 0,
+          &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
     
     pagen = CFNumberCreate(kCFAllocatorDefault, kCFNumberIntType, &page);
     CFDictionarySetValue(matcher, CFSTR(kIOHIDDeviceUsagePageKey), pagen);
@@ -188,7 +212,8 @@ static int32_t find_empty_slot(void)
    return -1;
 }
 
-int32_t apple_joypad_connect(const char* name, struct apple_pad_connection* connection)
+int32_t apple_joypad_connect(const char* name,
+      struct apple_pad_connection* connection)
 {
    int32_t slot;
    slot = find_empty_slot();
@@ -276,7 +301,8 @@ static bool apple_joypad_init(void)
     
     if (!g_hid_manager)
     {
-        g_hid_manager = IOHIDManagerCreate(kCFAllocatorDefault, kIOHIDOptionsTypeNone);
+        g_hid_manager = IOHIDManagerCreate(
+              kCFAllocatorDefault, kIOHIDOptionsTypeNone);
         
         matcher = CFArrayCreateMutable(kCFAllocatorDefault, 0, &kCFTypeArrayCallBacks);
         append_matching_dictionary(matcher, kHIDPage_GenericDesktop, kHIDUsage_GD_Joystick);
@@ -316,7 +342,8 @@ static void apple_joypad_destroy(void)
     if (g_hid_manager)
     {
         IOHIDManagerClose(g_hid_manager, kIOHIDOptionsTypeNone);
-        IOHIDManagerUnscheduleFromRunLoop(g_hid_manager, CFRunLoopGetCurrent(), kCFRunLoopCommonModes);
+        IOHIDManagerUnscheduleFromRunLoop(g_hid_manager,
+              CFRunLoopGetCurrent(), kCFRunLoopCommonModes);
         
         CFRelease(g_hid_manager);
     }
@@ -333,7 +360,8 @@ static bool apple_joypad_button(unsigned port, uint16_t joykey)
    if (GET_HAT_DIR(joykey))
       return false;
    // Check the button
-   return (port < MAX_PLAYERS && joykey < 32) ? (g_current_input_data.pad_buttons[port] & (1 << joykey)) != 0 : false;
+   return (port < MAX_PLAYERS && joykey < 32) ? 
+      (g_current_input_data.pad_buttons[port] & (1 << joykey)) != 0 : false;
 }
 
 static int16_t apple_joypad_axis(unsigned port, uint32_t joyaxis)
@@ -363,7 +391,8 @@ static void apple_joypad_poll(void)
 {
 }
 
-static bool apple_joypad_rumble(unsigned pad, enum retro_rumble_effect effect, uint16_t strength)
+static bool apple_joypad_rumble(unsigned pad,
+      enum retro_rumble_effect effect, uint16_t strength)
 {
    if (pad < MAX_PLAYERS && slots[pad].used && slots[pad].iface
        && slots[pad].iface->set_rumble)
@@ -381,7 +410,7 @@ static const char *apple_joypad_name(unsigned joypad)
    return NULL;
 }
 
-const rarch_joypad_driver_t apple_joypad = {
+rarch_joypad_driver_t apple_joypad = {
    apple_joypad_init,
    apple_joypad_query_pad,
    apple_joypad_destroy,

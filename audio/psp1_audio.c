@@ -22,7 +22,6 @@
 #include <pspaudio.h>
 #include <stdint.h>
 
-//ToDO
 typedef struct psp1_audio
 {
    bool nonblocking;
@@ -48,13 +47,16 @@ static int audioMainLoop(SceSize args, void* argp)
 
    while (psp->running)
    {
-      uint16_t readPos = psp->readPos; // get a non volatile copy
+      /* Get a non-volatile copy. */
+      uint16_t readPos = psp->readPos;
 
-      if (((uint16_t)(psp->writePos - readPos) & AUDIO_BUFFER_SIZE_MASK) < (AUDIO_OUT_COUNT * 2))
+      if (((uint16_t)(psp->writePos - readPos) & AUDIO_BUFFER_SIZE_MASK)
+            < (AUDIO_OUT_COUNT * 2))
          sceAudioSRCOutputBlocking(PSP_AUDIO_VOLUME_MAX, psp->zeroBuffer);
       else
       {
-         sceAudioSRCOutputBlocking(PSP_AUDIO_VOLUME_MAX, psp->buffer + readPos);
+         sceAudioSRCOutputBlocking(PSP_AUDIO_VOLUME_MAX,
+               psp->buffer + readPos);
          readPos += AUDIO_OUT_COUNT;
          readPos &= AUDIO_BUFFER_SIZE_MASK;
          psp->readPos = readPos;
@@ -66,7 +68,8 @@ static int audioMainLoop(SceSize args, void* argp)
    return 0;
 }
 
-static void *psp_audio_init(const char *device, unsigned rate, unsigned latency)
+static void *psp_audio_init(const char *device,
+      unsigned rate, unsigned latency)
 {
    (void)device;
    (void)latency;
@@ -76,16 +79,20 @@ static void *psp_audio_init(const char *device, unsigned rate, unsigned latency)
    if (!psp)
       return NULL;
 
-   psp->buffer      = (uint32_t*)memalign(64, AUDIO_BUFFER_SIZE * sizeof(uint32_t));  // cache aligned, not necessary but helpful
+   /* Cache aligned, not necessary but helpful. */
+   psp->buffer      = (uint32_t*)
+      memalign(64, AUDIO_BUFFER_SIZE * sizeof(uint32_t));
    memset(psp->buffer, 0, AUDIO_BUFFER_SIZE * sizeof(uint32_t));
 
-   psp->zeroBuffer  = (uint32_t*)memalign(64, AUDIO_OUT_COUNT   * sizeof(uint32_t));
+   psp->zeroBuffer  = (uint32_t*)
+      memalign(64, AUDIO_OUT_COUNT   * sizeof(uint32_t));
    memset(psp->zeroBuffer, 0, AUDIO_OUT_COUNT * sizeof(uint32_t));
 
    psp->readPos     = 0;
    psp->writePos    = 0;
    psp->rate        = rate;
-   psp->thread      = sceKernelCreateThread ("audioMainLoop", audioMainLoop, 0x08, 0x10000, 0, NULL);
+   psp->thread      = sceKernelCreateThread
+      ("audioMainLoop", audioMainLoop, 0x08, 0x10000, 0, NULL);
    psp->nonblocking = false;
 
    psp->running     = true;
@@ -118,15 +125,20 @@ static ssize_t psp_audio_write(void *data, const void *buf, size_t size)
 
    sampleCount= size / sizeof(uint32_t);
 
-//   if (psp->nonblocking)
-//   {
-//      /* TODO */
-//   }
+#if 0
+   if (psp->nonblocking)
+   {
+      /* TODO */
+   }
+#endif
 
    if((writePos + sampleCount) > AUDIO_BUFFER_SIZE)
    {
-      memcpy(psp->buffer + writePos, buf, (AUDIO_BUFFER_SIZE - writePos) * sizeof(uint32_t));
-      memcpy(psp->buffer, (uint32_t*) buf + (AUDIO_BUFFER_SIZE - writePos), (writePos + sampleCount - AUDIO_BUFFER_SIZE) * sizeof(uint32_t));
+      memcpy(psp->buffer + writePos, buf,
+            (AUDIO_BUFFER_SIZE - writePos) * sizeof(uint32_t));
+      memcpy(psp->buffer, (uint32_t*) buf +
+            (AUDIO_BUFFER_SIZE - writePos),
+            (writePos + sampleCount - AUDIO_BUFFER_SIZE) * sizeof(uint32_t));
    }
    else
       memcpy(psp->buffer + writePos, buf, size);
@@ -145,7 +157,8 @@ static bool psp_audio_stop(void *data)
 
    runStatus.size = sizeof(SceKernelThreadRunStatus);
 
-   if (sceKernelReferThreadRunStatus(psp->thread, &runStatus) < 0) // error
+   if (sceKernelReferThreadRunStatus(
+            psp->thread, &runStatus) < 0) /* Error */
       return false;
    if (runStatus.status == PSP_THREAD_STOPPED)
       return false;
@@ -164,7 +177,8 @@ static bool psp_audio_start(void *data)
 
    runStatus.size = sizeof(SceKernelThreadRunStatus);
 
-   if (sceKernelReferThreadRunStatus(psp->thread, &runStatus) < 0) // error
+   if (sceKernelReferThreadRunStatus(
+            psp->thread, &runStatus) < 0) /* Error */
       return false;
    if (runStatus.status != PSP_THREAD_STOPPED)
       return false;
@@ -192,7 +206,8 @@ static size_t psp_write_avail(void *data)
 {
    /* TODO */
    psp1_audio_t* psp = (psp1_audio_t*)data;
-   return AUDIO_BUFFER_SIZE - ((uint16_t)(psp->writePos - psp->readPos) & AUDIO_BUFFER_SIZE_MASK);
+   return AUDIO_BUFFER_SIZE - ((uint16_t)
+         (psp->writePos - psp->readPos) & AUDIO_BUFFER_SIZE_MASK);
 }
 
 static size_t psp_buffer_size(void *data)
@@ -202,7 +217,7 @@ static size_t psp_buffer_size(void *data)
 }
 
 
-const audio_driver_t audio_psp1 = {
+audio_driver_t audio_psp1 = {
    psp_audio_init,
    psp_audio_write,
    psp_audio_stop,

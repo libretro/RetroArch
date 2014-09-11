@@ -355,10 +355,10 @@ FIFO BUFFER
 /*============================================================
 AUDIO RESAMPLER
 ============================================================ */
-#include "../audio/resampler.c"
-#include "../audio/sinc.c"
+#include "../audio/resamplers/resampler.c"
+#include "../audio/resamplers/sinc.c"
 #ifdef HAVE_CC_RESAMPLER
-#include "../audio/cc_resampler.c"
+#include "../audio/resamplers/cc_resampler.c"
 #endif
 
 /*============================================================
@@ -622,6 +622,7 @@ MENU
 #endif
 
 #if defined(HAVE_LAKKA) && defined(HAVE_OPENGL)
+#include "../frontend/menu/backend/menu_lakka_backend.c"
 #include "../frontend/menu/disp/lakka.c"
 #endif
 

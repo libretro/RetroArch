@@ -46,7 +46,8 @@ static int Buf_EnsureSize(CBuf *dest, size_t size)
 
 static Byte kUtf8Limits[5] = { 0xC0, 0xE0, 0xF0, 0xF8, 0xFC };
 
-static Bool Utf16_To_Utf8(Byte *dest, size_t *destLen, const UInt16 *src, size_t srcLen)
+static Bool Utf16_To_Utf8(Byte *dest, size_t *destLen,
+      const UInt16 *src, size_t srcLen)
 {
    size_t destPos = 0, srcPos = 0;
    for (;;)
@@ -80,13 +81,15 @@ static Bool Utf16_To_Utf8(Byte *dest, size_t *destLen, const UInt16 *src, size_t
          if (value < (((UInt32)1) << (numAdds * 5 + 6)))
             break;
       if (dest)
-         dest[destPos] = (char)(kUtf8Limits[numAdds - 1] + (value >> (6 * numAdds)));
+         dest[destPos] = (char)(kUtf8Limits[numAdds - 1] 
+               + (value >> (6 * numAdds)));
       destPos++;
       do
       {
          numAdds--;
          if (dest)
-            dest[destPos] = (char)(0x80 + ((value >> (6 * numAdds)) & 0x3F));
+            dest[destPos] = (char)(0x80 
+                  + ((value >> (6 * numAdds)) & 0x3F));
          destPos++;
       }
       while (numAdds != 0);
@@ -95,7 +98,8 @@ static Bool Utf16_To_Utf8(Byte *dest, size_t *destLen, const UInt16 *src, size_t
    return False;
 }
 
-static SRes Utf16_To_Utf8Buf(CBuf *dest, const UInt16 *src, size_t srcLen)
+static SRes Utf16_To_Utf8Buf(CBuf *dest,
+      const UInt16 *src, size_t srcLen)
 {
    size_t destLen = 0;
    Bool res;
@@ -158,9 +162,10 @@ static SRes ConvertUtf16toCharString(const UInt16 *s, char *outstring)
    return res;
 }
 
-
-// Extract the relative path relative_path from a 7z archive archive_path and allocate a buf for it to write it in.
-int read_7zip_file(const char * archive_path, const char *relative_path, void **buf)
+/* Extract the relative path relative_path from a 7z archive 
+ * archive_path and allocate a buf for it to write it in. */
+int read_7zip_file(const char * archive_path,
+      const char *relative_path, void **buf)
 {
    CFileInStream archiveStream;
    CLookToRead lookStream;
@@ -172,7 +177,8 @@ int read_7zip_file(const char * archive_path, const char *relative_path, void **
    size_t tempSize = 0;
    long outsize = -1;
 
-   //These are the allocation routines - currently using the non-standard 7zip choices.
+   /*These are the allocation routines.
+    * Currently using the non-standard 7zip choices. */
    allocImp.Alloc = SzAlloc;
    allocImp.Free = SzFree;
    allocTempImp.Alloc = SzAllocTemp;
@@ -185,7 +191,8 @@ int read_7zip_file(const char * archive_path, const char *relative_path, void **
    }
    else
    {
-      RARCH_LOG_OUTPUT("Openend archive %s. Now trying to extract %s\n",archive_path,relative_path);
+      RARCH_LOG_OUTPUT("Openend archive %s. Now trying to extract %s\n",
+            archive_path,relative_path);
    }
    FileInStream_CreateVTable(&archiveStream);
    LookToRead_CreateVTable(&lookStream, False);
@@ -209,9 +216,11 @@ int read_7zip_file(const char * archive_path, const char *relative_path, void **
          size_t len;
          if (f->IsDir)
          {
-            //we skip over everything, which is not a directory.
+            /* We skip over everything which is not a directory. 
+             * FIXME: Why continue then if f->IsDir is true?*/
             continue;
          }
+
          len = SzArEx_GetFileNameUtf16(&db, i, NULL);
          if (len > tempSize)
          {
@@ -234,16 +243,21 @@ int read_7zip_file(const char * archive_path, const char *relative_path, void **
 
          if (strcmp(infile,relative_path) == 0)
          {
-            res = SzArEx_Extract(&db, &lookStream.s, i,&blockIndex, &outBuffer, &outBufferSize,&offset, &outSizeProcessed,&allocImp, &allocTempImp);
+            res = SzArEx_Extract(&db, &lookStream.s, i,&blockIndex,
+                  &outBuffer, &outBufferSize,&offset, &outSizeProcessed,
+                  &allocImp, &allocTempImp);
             if (res != SZ_OK)
             {
-               break; //This goes to the error section.
+               break; /* This goes to the error section. */
             }
             outsize = outSizeProcessed;
             *buf = outBuffer+offset;
 
-            //We could either use the 7Zip allocated buffer or create our own and use it.
-            //We would however need to realloc anyways, because RetroArch expects a \0 at the end, therefore we allocate new, copy and free the old one.
+            /*We could either use the 7Zip allocated buffer,
+             * or create our own and use it.
+             * We would however need to realloc anyways, because RetroArch 
+             * expects a \0 at the end, therefore we allocate new, 
+             * copy and free the old one. */
             *buf = malloc(outsize + 1);
 
             ((char*)(*buf))[outsize] = '\0';
@@ -301,7 +315,8 @@ struct string_list *compressed_7zip_file_list_new(const char *path,
 
    (void)outsize;
 
-   //These are the allocation routines - currently using the non-standard 7zip choices.
+   /* These are the allocation routines - currently using 
+    * the non-standard 7zip choices. */
    allocImp.Alloc = SzAlloc;
    allocImp.Free = SzFree;
    allocTempImp.Alloc = SzAllocTemp;
@@ -391,7 +406,7 @@ struct string_list *compressed_7zip_file_list_new(const char *path,
 
    if (res != SZ_OK)
    {
-      //Error handling:
+      /* Error handling */
       if (res == SZ_ERROR_UNSUPPORTED)
       {
          RARCH_ERR("7Zip decoder doesn't support this archive\n");

@@ -33,41 +33,59 @@
 #define CPU_X86
 #endif
 
-// Other arches SIGBUS (usually) on unaligned accesses.
+/* Other arches SIGBUS (usually) on unaligned accesses. */
 #ifndef CPU_X86
 #define NO_UNALIGNED_MEM
 #endif
 
-// Format per frame:
-// size nextstart;
-// repeat {
-//   uint16 numchanged; // everything is counted in units of uint16
-//   if (numchanged) {
-//     uint16 numunchanged; // skip these before handling numchanged
-//     uint16[numchanged] changeddata;
-//   }
-//   else
-//   {
-//     uint32 numunchanged;
-//     if (!numunchanged) break;
-//   }
-// }
-// size thisstart;
-//
-// The start offsets point to 'nextstart' of any given compressed frame.
-// Each uint16 is stored native endian; anything that claims any other endianness refers to the endianness of this specific item.
-// The uint32 is stored little endian.
-// Each size value is stored native endian if alignment is not enforced; if it is, they're little endian.
-// The start of the buffer contains a size pointing to the end of the buffer; the end points to its start.
-// Wrapping is handled by returning to the start of the buffer if the compressed data could potentially hit the edge;
-// if the compressed data could potentially overwrite the tail pointer, the tail retreats until it can no longer collide.
-// This means that on average, ~2 * maxcompsize is unused at any given moment.
+/* Format per frame (pseudocode): */
+#if 0
+size nextstart;
+repeat {
+   uint16 numchanged; /* everything is counted in units of uint16 */
+   if (numchanged)
+   {
+      uint16 numunchanged; /* skip these before handling numchanged */
+      uint16[numchanged] changeddata;
+   }
+   else
+   {
+      uint32 numunchanged;
+      if (!numunchanged)
+         break;
+   }
+}
+size thisstart;
+#endif
 
-// These are called very few constant times per frame, keep it as simple as possible.
+/* The start offsets point to 'nextstart' of any given compressed frame.
+ * Each uint16 is stored native endian; anything that claims any other 
+ * endianness refers to the endianness of this specific item.
+ * The uint32 is stored little endian.
+ *
+ * Each size value is stored native endian if alignment is not enforced; 
+ * if it is, they're little endian.
+ *
+ * The start of the buffer contains a size pointing to the end of the 
+ * buffer; the end points to its start.
+ *
+ * Wrapping is handled by returning to the start of the buffer if the 
+ * compressed data could potentially hit the edge;
+ *
+ * if the compressed data could potentially overwrite the tail pointer, 
+ * the tail retreats until it can no longer collide.
+ *
+ * This means that on average, ~2 * maxcompsize is 
+ * unused at any given moment. */
+
+
+/* These are called very few constant times per frame, 
+ * keep it as simple as possible. */
 static inline void write_size_t(void *ptr, size_t val)
 {
    memcpy(ptr, &val, sizeof(val));
 }
+
 static inline size_t read_size_t(const void *ptr)
 {
    size_t ret;

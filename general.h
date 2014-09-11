@@ -82,7 +82,7 @@
 #include "command.h"
 #endif
 
-#include "audio/resampler.h"
+#include "audio/resamplers/resampler.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -811,7 +811,8 @@ int rarch_main(int argc, char *argv[]);
 
 bool rarch_replace_config(const char *path);
 
-void rarch_main_init_wrap(const struct rarch_main_wrap *args, int *argc, char **argv);
+void rarch_main_init_wrap(const struct rarch_main_wrap *args,
+      int *argc, char **argv);
 
 int rarch_main_init(int argc, char *argv[]);
 void rarch_main_set_state(unsigned action);

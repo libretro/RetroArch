@@ -30,7 +30,8 @@ typedef struct
    bool nonblock;
 } xenon_audio_t;
 
-static void *xenon360_audio_init(const char *device, unsigned rate, unsigned latency)
+static void *xenon360_audio_init(const char *device,
+      unsigned rate, unsigned latency)
 {
    static bool inited = false;
    if (!inited)
@@ -45,7 +46,8 @@ static void *xenon360_audio_init(const char *device, unsigned rate, unsigned lat
 
 static inline uint32_t bswap_32(uint32_t val)
 {
-   return (val >> 24) | (val << 24) | ((val >> 8) & 0xff00) | ((val << 8) & 0xff0000);
+   return (val >> 24) | (val << 24) |
+      ((val >> 8) & 0xff00) | ((val << 8) & 0xff0000);
 }
 
 static ssize_t xenon360_audio_write(void *data, const void *buf, size_t size)
@@ -62,7 +64,8 @@ static ssize_t xenon360_audio_write(void *data, const void *buf, size_t size)
    {
       while (xenon_sound_get_unplayed() >= MAX_BUFFER)
       {
-         // libxenon doesn't have proper synchronization primitives for this :(
+         /* libxenon doesn't have proper 
+          * synchronization primitives for this... */
          udelay(50);
       }
 
@@ -105,13 +108,21 @@ static void xenon360_audio_free(void *data)
       free(data);
 }
 
-const audio_driver_t audio_xenon360 = {
-   .init = xenon360_audio_init,
-   .write = xenon360_audio_write,
-   .stop = xenon360_audio_stop,
-   .start = xenon360_audio_start,
-   .set_nonblock_state = xenon360_audio_set_nonblock_state,
-   .free = xenon360_audio_free,
-   .ident = "xenon360"
-};
+static bool xenon360_use_float(void *data)
+{
+   (void)data;
+   return false;
+}
 
+audio_driver_t audio_xenon360 = {
+   xenon360_audio_init,
+   xenon360_audio_write,
+   xenon360_audio_stop,
+   xenon360_audio_start,
+   xenon360_audio_set_nonblock_state,
+   xenon360_audio_free,
+   xenon360_use_float,
+   "xenon360",
+   NULL,
+   NULL
+};

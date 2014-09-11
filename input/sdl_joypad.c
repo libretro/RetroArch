@@ -404,7 +404,7 @@ static const char *sdl_joypad_name(unsigned pad)
    return pad_name(pad);
 }
 
-const rarch_joypad_driver_t sdl_joypad = {
+rarch_joypad_driver_t sdl_joypad = {
    sdl_joypad_init,
    sdl_joypad_query_pad,
    sdl_joypad_destroy,
@@ -423,4 +423,3 @@ const rarch_joypad_driver_t sdl_joypad = {
    "sdl"
 #endif
 };
-

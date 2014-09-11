@@ -217,53 +217,22 @@ static void rmenu_render(void)
 
    for (i = begin; i < end; i++, j++)
    {
-      const char *path = NULL;
-      const char *entry_label = NULL;
-      unsigned type = 0;
+      char message[PATH_MAX], type_str[PATH_MAX],
+           entry_title_buf[PATH_MAX], type_str_buf[PATH_MAX],
+           path_buf[PATH_MAX];
+      const char *path = NULL, *entry_label = NULL;
+      unsigned type = 0, w = 0;
+      bool selected = false;
+
       file_list_get_at_offset(menu->selection_buf, i,
             &path, &entry_label, &type);
-      char message[256];
-      char type_str[256];
 
-      unsigned w = 19;
-
-      if (type == MENU_FILE_CORE)
-      {
-         strlcpy(type_str, "(CORE)", sizeof(type_str));
-         file_list_get_alt_at_offset(driver.menu->selection_buf, i, &path);
-         w = 6;
-      }
-      else if (type == MENU_FILE_PLAIN)
-      {
-         strlcpy(type_str, "(FILE)", sizeof(type_str));
-         w = 6;
-      }
-      else if (type == MENU_FILE_USE_DIRECTORY)
-      {
-         *type_str = '\0';
-         w = 0;
-      }
-      else if (type == MENU_FILE_DIRECTORY)
-      {
-         strlcpy(type_str, "(DIR)", sizeof(type_str));
-         type = MENU_FILE_DIRECTORY;
-         w = 5;
-      }
-      else if (type >= MENU_SETTINGS_CORE_OPTION_START)
-         strlcpy(type_str,
-               core_option_get_val(g_extern.system.core_options,
-                  type - MENU_SETTINGS_CORE_OPTION_START),
-               sizeof(type_str));
-      else if (type == MENU_FILE_SWITCH || type == MENU_FILE_LINEFEED_SWITCH)
-         strlcpy(type_str, "...", sizeof(type_str));
-      else if (driver.menu_ctx && driver.menu_ctx->backend
-            && driver.menu_ctx->backend->setting_set_label)
-         driver.menu_ctx->backend->setting_set_label(type_str,
-               sizeof(type_str), &w, type, label, entry_label, i);
-
-      char entry_title_buf[256];
-      char type_str_buf[64];
-      bool selected = i == menu->selection_ptr;
+      disp_set_label(&w, type, i, label,
+            type_str, sizeof(type_str), 
+            entry_label, path,
+            path_buf, sizeof(path_buf));
+      
+      selected = (i == driver.menu->selection_ptr);
 
       menu_ticker_line(entry_title_buf, RMENU_TERM_WIDTH - (w + 1 + 2),
             g_extern.frame_count / 15, path, selected);
@@ -372,7 +341,7 @@ static int rmenu_input_postprocess(uint64_t old_state)
    return 0;
 }
 
-const menu_ctx_driver_t menu_ctx_rmenu = {
+menu_ctx_driver_t menu_ctx_rmenu = {
    rmenu_set_texture,
    rmenu_render_messagebox,
    rmenu_render,

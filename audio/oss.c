@@ -181,16 +181,21 @@ static size_t oss_buffer_size(void *data)
    return info.fragsize * info.fragstotal;
 }
 
-const audio_driver_t audio_oss = {
+static bool oss_use_float(void *data)
+{
+   (void)data;
+   return false;
+}
+
+audio_driver_t audio_oss = {
    oss_init,
    oss_write,
    oss_stop,
    oss_start,
    oss_set_nonblock_state,
    oss_free,
-   NULL,
+   oss_use_float,
    "oss",
    oss_write_avail,
    oss_buffer_size,
 };
-

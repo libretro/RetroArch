@@ -284,7 +284,7 @@ static bool sl_use_float(void *data)
    return false;
 }
 
-const audio_driver_t audio_opensl = {
+audio_driver_t audio_opensl = {
    sl_init,
    sl_write,
    sl_stop,
@@ -296,4 +296,3 @@ const audio_driver_t audio_opensl = {
    sl_write_avail,
    sl_buffer_size,
 };
-

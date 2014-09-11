@@ -704,13 +704,23 @@ void sdl2_gfx_poke_interface(void *data, const video_poke_interface_t **iface)
    *iface = &sdl2_video_poke_interface;
 }
 
-const video_driver_t video_sdl2 = {
+static bool sdl2_gfx_set_shader(void *data,
+      enum rarch_shader_type type, const char *path)
+{
+   (void)data;
+   (void)type;
+   (void)path;
+
+   return false; 
+}
+
+video_driver_t video_sdl2 = {
    sdl2_gfx_init,
    sdl2_gfx_frame,
    sdl2_gfx_set_nonblock_state,
    sdl2_gfx_alive,
    sdl2_gfx_focus,
-   NULL,
+   sdl2_gfx_set_shader,
    sdl2_gfx_free,
    "sdl2",
 

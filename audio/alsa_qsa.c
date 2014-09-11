@@ -45,7 +45,8 @@ typedef struct alsa
 
 typedef long snd_pcm_sframes_t;
 
-static void *alsa_qsa_init(const char *device, unsigned rate, unsigned latency)
+static void *alsa_qsa_init(const char *device,
+      unsigned rate, unsigned latency)
 {
    int err, card, dev, i;
    snd_pcm_channel_params_t params = {0};
@@ -64,13 +65,15 @@ static void *alsa_qsa_init(const char *device, unsigned rate, unsigned latency)
    if ((err = snd_pcm_open_preferred(&alsa->pcm, &card, &dev,
                SND_PCM_OPEN_PLAYBACK)) < 0)
    {
-      RARCH_ERR("[ALSA QSA]: Audio open error: %s\n", snd_strerror(err));
+      RARCH_ERR("[ALSA QSA]: Audio open error: %s\n",
+            snd_strerror(err));
       goto error;
    }
 
    if((err = snd_pcm_nonblock_mode(alsa->pcm, 1)) < 0)
    {
-      RARCH_ERR("[ALSA QSA]: Can't set blocking mode: %s\n", snd_strerror(err));
+      RARCH_ERR("[ALSA QSA]: Can't set blocking mode: %s\n",
+            snd_strerror(err));
       goto error;
    }
 
@@ -106,7 +109,8 @@ static void *alsa_qsa_init(const char *device, unsigned rate, unsigned latency)
 
    if ((err = snd_pcm_channel_params(alsa->pcm, &params)) < 0)
    {
-      RARCH_ERR("[ALSA QSA]: Channel Parameter Error: %s\n", snd_strerror(err));
+      RARCH_ERR("[ALSA QSA]: Channel Parameter Error: %s\n",
+            snd_strerror(err));
       goto error;
    }
 
@@ -114,7 +118,8 @@ static void *alsa_qsa_init(const char *device, unsigned rate, unsigned latency)
 
    if ((err = snd_pcm_channel_setup(alsa->pcm, &setup)) < 0)
    {
-      RARCH_ERR("[ALSA QSA]: Channel Parameter Read Back Error: %s\n", snd_strerror(err));
+      RARCH_ERR("[ALSA QSA]: Channel Parameter Read Back Error: %s\n",
+            snd_strerror(err));
       goto error;
    }
 
@@ -128,9 +133,11 @@ static void *alsa_qsa_init(const char *device, unsigned rate, unsigned latency)
    alsa->buf_count = (latency * 4 * rate + 500) / 1000;
    alsa->buf_count = (alsa->buf_count + alsa->buf_size / 2) / alsa->buf_size;
 
-   if ((err = snd_pcm_channel_prepare(alsa->pcm, SND_PCM_CHANNEL_PLAYBACK)) < 0)
+   if ((err = snd_pcm_channel_prepare(alsa->pcm,
+               SND_PCM_CHANNEL_PLAYBACK)) < 0)
    {
-      RARCH_ERR("[ALSA QSA]: Channel Prepare Error: %s\n", snd_strerror(err));
+      RARCH_ERR("[ALSA QSA]: Channel Prepare Error: %s\n",
+            snd_strerror(err));
       goto error;
    }
 
@@ -147,7 +154,8 @@ static void *alsa_qsa_init(const char *device, unsigned rate, unsigned latency)
 
    alsa->has_float = false;
    alsa->can_pause = true;
-   RARCH_LOG("[ALSA QSA]: Can pause: %s.\n", alsa->can_pause ? "yes" : "no");
+   RARCH_LOG("[ALSA QSA]: Can pause: %s.\n",
+         alsa->can_pause ? "yes" : "no");
 
    return alsa;
 
@@ -176,7 +184,8 @@ static int check_pcm_status(void *data, int channel_type)
          RARCH_LOG("check_pcm_status: SNDP_CM_STATUS_UNDERRUN.\n");
          if ((ret = snd_pcm_channel_prepare(alsa->pcm, channel_type)) < 0)
          {
-            RARCH_ERR("Invalid state detected for underrun on snd_pcm_channel_prepare: %s\n", snd_strerror(ret));
+            RARCH_ERR("Invalid state detected for underrun on snd_pcm_channel_prepare: %s\n",
+                  snd_strerror(ret));
             ret = -EPROTO;
          }
       }
@@ -185,7 +194,8 @@ static int check_pcm_status(void *data, int channel_type)
          RARCH_LOG("check_pcm_status: SNDP_CM_STATUS_OVERRUN.\n");
          if ((ret = snd_pcm_channel_prepare(alsa->pcm, channel_type)) < 0)
          {
-            RARCH_ERR("Invalid state detected for overrun on snd_pcm_channel_prepare: %s\n", snd_strerror(ret));
+            RARCH_ERR("Invalid state detected for overrun on snd_pcm_channel_prepare: %s\n",
+                  snd_strerror(ret));
             ret = -EPROTO;
          }
       }
@@ -194,7 +204,8 @@ static int check_pcm_status(void *data, int channel_type)
          RARCH_LOG("check_pcm_status: SNDP_CM_STATUS_CHANGE.\n");
          if ((ret = snd_pcm_channel_prepare(alsa->pcm, channel_type)) < 0)
          {
-            RARCH_ERR("Invalid state detected for change on snd_pcm_channel_prepare: %s\n", snd_strerror(ret));
+            RARCH_ERR("Invalid state detected for change on snd_pcm_channel_prepare: %s\n",
+                  snd_strerror(ret));
             ret = -EPROTO;
          }
       }
@@ -216,13 +227,13 @@ static ssize_t alsa_qsa_write(void *data, const void *buf, size_t size)
    snd_pcm_channel_status_t cstatus = {0};
    snd_pcm_sframes_t written = 0;
 
-
    while (size)
    {
       size_t avail_write = min(alsa->buf_size - alsa->buffer_ptr, size);
       if (avail_write)
       {
-         memcpy(alsa->buffer[alsa->buffer_index] + alsa->buffer_ptr, buf, avail_write);
+         memcpy(alsa->buffer[alsa->buffer_index] + 
+               alsa->buffer_ptr, buf, avail_write);
          alsa->buffer_ptr += avail_write;
          buf            += avail_write;
          size           -= avail_write;
@@ -231,7 +242,8 @@ static ssize_t alsa_qsa_write(void *data, const void *buf, size_t size)
 
       if (alsa->buffer_ptr >= alsa->buf_size)
       {
-         snd_pcm_sframes_t frames = snd_pcm_write(alsa->pcm, alsa->buffer[alsa->buffer_index], alsa->buf_size);
+         snd_pcm_sframes_t frames = snd_pcm_write(alsa->pcm,
+               alsa->buffer[alsa->buffer_index], alsa->buf_size);
 
          alsa->buffer_index = (alsa->buffer_index + 1) % alsa->buf_count;
          alsa->buffer_ptr = 0;
@@ -297,7 +309,8 @@ static bool alsa_qsa_start(void *data)
       int ret = snd_pcm_playback_resume(alsa->pcm);
       if (ret < 0)
       {
-         RARCH_ERR("[ALSA QSA]: Failed to unpause: %s.\n", snd_strerror(ret));
+         RARCH_ERR("[ALSA QSA]: Failed to unpause: %s.\n",
+               snd_strerror(ret));
          return false;
       }
       else
@@ -336,7 +349,9 @@ static void alsa_qsa_free(void *data)
 static size_t alsa_qsa_write_avail(void *data)
 {
    alsa_t *alsa = (alsa_t*)data;
-   size_t avail = (alsa->buf_count - (int)alsa->buffered_blocks - 1) * alsa->buf_size + (alsa->buf_size - (int)alsa->buffer_ptr);
+   size_t avail = (alsa->buf_count - 
+         (int)alsa->buffered_blocks - 1) * alsa->buf_size + 
+      (alsa->buf_size - (int)alsa->buffer_ptr);
    return avail;
 }
 
@@ -346,7 +361,7 @@ static size_t alsa_qsa_buffer_size(void *data)
    return alsa->buf_size * alsa->buf_count; 
 }
 
-const audio_driver_t audio_alsa = {
+audio_driver_t audio_alsa = {
    alsa_qsa_init,
    alsa_qsa_write,
    alsa_qsa_stop,

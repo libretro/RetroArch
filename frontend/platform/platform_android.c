@@ -320,7 +320,8 @@ JNIEnv *jni_thread_getenv(void)
 {
    JNIEnv *env;
    struct android_app* android_app = (struct android_app*)g_android;
-   int status = (*android_app->activity->vm)->AttachCurrentThread(android_app->activity->vm, &env, 0);
+   int status = (*android_app->activity->vm)->
+      AttachCurrentThread(android_app->activity->vm, &env, 0);
 
    if (status < 0)
    {
@@ -342,7 +343,8 @@ static void jni_thread_destruct(void *value)
       return;
 
    if (android_app)
-      (*android_app->activity->vm)->DetachCurrentThread(android_app->activity->vm);
+      (*android_app->activity->vm)->
+         DetachCurrentThread(android_app->activity->vm);
    pthread_setspecific(thread_key, NULL);
 }
 
@@ -490,7 +492,8 @@ static void frontend_android_get_environment_settings(int *argc,
       args->state_path = NULL;
    }
 
-   CALL_OBJ_METHOD(env, obj, android_app->activity->clazz, android_app->getIntent);
+   CALL_OBJ_METHOD(env, obj, android_app->activity->clazz,
+         android_app->getIntent);
    RARCH_LOG("Checking arguments passed from intent ...\n");
 
    // Config file

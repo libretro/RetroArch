@@ -18,13 +18,13 @@
 #define __RARCH_RESAMPLER_H
 
 #ifdef HAVE_CONFIG_H
-#include "../config.h"
+#include "../../config.h"
 #endif
 
 #include <stddef.h>
 #include <stdint.h>
 #include <math.h>
-#include "../boolean.h"
+#include "../../boolean.h"
 
 #ifndef M_PI
 /* M_PI is left out of ISO C99 :( */

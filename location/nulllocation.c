@@ -53,7 +53,7 @@ static void null_location_set_interval(void *data,
 {
 }
 
-const location_driver_t location_null = {
+location_driver_t location_null = {
    null_location_init,
    null_location_free,
    null_location_start,

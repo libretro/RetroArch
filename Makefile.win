@@ -45,10 +45,10 @@ OBJ = frontend/frontend.o \
 		gfx/fonts/fonts.o \
 		gfx/fonts/bitmapfont.o \
 		gfx/image/image_rpng.o \
-		audio/resampler.o \
+		audio/resamplers/resampler.o \
 		audio/dsp_filter.o \
-		audio/sinc.o \
-		audio/cc_resampler.o \
+		audio/resamplers/sinc.o \
+		audio/resamplers/cc_resampler.o \
 		location/nulllocation.o \
 		camera/nullcamera.o \
 		gfx/nullgfx.o \

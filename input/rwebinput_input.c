@@ -180,7 +180,7 @@ static uint64_t rwebinput_get_capabilities(void *data)
    return caps;
 }
 
-const input_driver_t input_rwebinput = {
+input_driver_t input_rwebinput = {
    rwebinput_input_init,
    rwebinput_input_poll,
    rwebinput_input_state,
@@ -192,4 +192,3 @@ const input_driver_t input_rwebinput = {
    "rwebinput",
    rwebinput_grab_mouse,
 };
-

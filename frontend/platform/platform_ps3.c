@@ -151,7 +151,8 @@ static void frontend_ps3_get_environment_settings(int *argc, char *argv[],
    {
       RARCH_LOG("cellGameBootCheck() OK.\n");
       RARCH_LOG("Directory name: [%s].\n", dirName);
-      RARCH_LOG(" HDD Free Size (in KB) = [%d] Size (in KB) = [%d] System Size (in KB) = [%d].\n", size.hddFreeSizeKB, size.sizeKB, size.sysSizeKB);
+      RARCH_LOG(" HDD Free Size (in KB) = [%d] Size (in KB) = [%d] System Size (in KB) = [%d].\n",
+            size.hddFreeSizeKB, size.sizeKB, size.sysSizeKB);
 
       switch(get_type)
       {

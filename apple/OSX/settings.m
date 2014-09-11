@@ -24,11 +24,6 @@
 static void* const associated_name_tag = (void*)&associated_name_tag;
 
 @interface RAInputBinder : NSWindow
-{
-   NSTimer* _timer;
-   const rarch_setting_t* _setting;
-}
-
 @property (nonatomic, retain) NSTimer* timer;
 @property (nonatomic, assign) const rarch_setting_t* setting;
 @end
@@ -93,15 +88,6 @@ static void* const associated_name_tag = (void*)&associated_name_tag;
 NSOutlineViewDataSource, NSOutlineViewDelegate,
 NSWindowDelegate>
 #endif
-{
-   RAInputBinder* _binderWindow;
-   NSButtonCell* _booleanCell;
-   NSTextFieldCell* _binderCell;
-   NSTableView* _table;
-   NSOutlineView* _outline;
-   NSMutableArray* _settings;
-   NSMutableArray* _currentGroup;
-}
 
 @property (nonatomic, retain) RAInputBinder IBOutlet* binderWindow;
 @property (nonatomic, retain) NSButtonCell IBOutlet* booleanCell;
@@ -259,9 +245,9 @@ NSWindowDelegate>
    else
    {
        char buffer[PATH_MAX];
-       const rarch_setting_t* setting_data, *setting;
-       setting_data = (const rarch_setting_t*)setting_data_get_list();
-       setting = (const rarch_setting_t*)&setting_data[[item intValue]];
+       rarch_setting_t* setting_data, *setting = NULL;
+       setting_data = (rarch_setting_t*)setting_data_get_list();
+       setting = (rarch_setting_t*)&setting_data[[item intValue]];
        
        if ([[tableColumn identifier] isEqualToString:BOXSTRING("left")])
            return BOXSTRING(setting->short_description);

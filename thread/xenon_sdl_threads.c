@@ -39,7 +39,7 @@ int SDL_CondWait(SDL_cond *cond, SDL_mutex *lock)
 
    SDL_mutexV(lock);
    *sleeping = true;
-   while (*sleeping); // Yeah, we all love busyloops don't we? ._.
+   while (*sleeping); /* Yeah, we all love busyloops don't we? ._. */
    SDL_mutexP(lock);
 
    return 0;

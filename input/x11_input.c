@@ -53,7 +53,7 @@ static void *x_input_init(void)
    if (!x11)
       return NULL;
 
-   // Borrow the active X window ...
+   /* Borrow the active X window ... */
    x11->display = (Display*)driver.video_display;
    x11->win     = (Window)driver.video_window;
 
@@ -74,7 +74,8 @@ static bool x_key_pressed(x11_input_t *x11, int key)
    return ret;
 }
 
-static bool x_is_pressed(x11_input_t *x11, const struct retro_keybind *binds, unsigned id)
+static bool x_is_pressed(x11_input_t *x11,
+      const struct retro_keybind *binds, unsigned id)
 {
    if (id < RARCH_BIND_LIST_END)
    {
@@ -84,7 +85,8 @@ static bool x_is_pressed(x11_input_t *x11, const struct retro_keybind *binds, un
    return false;
 }
 
-static int16_t x_pressed_analog(x11_input_t *x11, const struct retro_keybind *binds, unsigned index, unsigned id)
+static int16_t x_pressed_analog(x11_input_t *x11,
+      const struct retro_keybind *binds, unsigned index, unsigned id)
 {
    unsigned id_minus = 0;
    unsigned id_plus  = 0;
@@ -125,7 +127,8 @@ static int16_t x_mouse_state(x11_input_t *x11, unsigned id)
    }
 }
 
-static int16_t x_pointer_state(x11_input_t *x11, unsigned index, unsigned id, bool screen)
+static int16_t x_pointer_state(x11_input_t *x11,
+      unsigned index, unsigned id, bool screen)
 {
    if (index != 0)
       return 0;
@@ -184,7 +187,9 @@ static int16_t x_lightgun_state(x11_input_t *x11, unsigned id)
    }
 }
 
-static int16_t x_input_state(void *data, const struct retro_keybind **binds, unsigned port, unsigned device, unsigned index, unsigned id)
+static int16_t x_input_state(void *data,
+      const struct retro_keybind **binds, unsigned port,
+      unsigned device, unsigned index, unsigned id)
 {
    x11_input_t *x11 = (x11_input_t*)data;
    int16_t ret;
@@ -201,7 +206,8 @@ static int16_t x_input_state(void *data, const struct retro_keybind **binds, uns
       case RETRO_DEVICE_ANALOG:
          ret = x_pressed_analog(x11, binds[port], index, id);
          if (!ret)
-            ret = input_joypad_analog(x11->joypad, port, index, id, binds[port]);
+            ret = input_joypad_analog(x11->joypad, port, index,
+                  id, binds[port]);
          return ret;
 
       case RETRO_DEVICE_MOUSE:
@@ -209,7 +215,8 @@ static int16_t x_input_state(void *data, const struct retro_keybind **binds, uns
 
       case RETRO_DEVICE_POINTER:
       case RARCH_DEVICE_POINTER_SCREEN:
-         return x_pointer_state(x11, index, id, device == RARCH_DEVICE_POINTER_SCREEN);
+         return x_pointer_state(x11, index, id,
+               device == RARCH_DEVICE_POINTER_SCREEN);
 
       case RETRO_DEVICE_LIGHTGUN:
          return x_lightgun_state(x11, id);
@@ -253,7 +260,7 @@ static void x_input_poll_mouse(x11_input_t *x11)
    x11->mouse_wu = mask & Button4Mask; 
    x11->mouse_wd = mask & Button5Mask; 
 
-   // Somewhat hacky, but seem to do the job.
+   /* Somewhat hacky, but seem to do the job. */
    if (x11->grab_mouse && driver.video->focus(driver.video_data))
    {
       struct rarch_viewport vp = {0};
@@ -295,7 +302,8 @@ static void x_grab_mouse(void *data, bool state)
    x11->grab_mouse = state;
 }
 
-static bool x_set_rumble(void *data, unsigned port, enum retro_rumble_effect effect, uint16_t strength)
+static bool x_set_rumble(void *data, unsigned port,
+      enum retro_rumble_effect effect, uint16_t strength)
 {
    x11_input_t *x11 = (x11_input_t*)data;
    return input_joypad_set_rumble(x11->joypad, port, effect, strength);
@@ -321,7 +329,7 @@ static uint64_t x_input_get_capabilities(void *data)
    return caps;
 }
 
-const input_driver_t input_x = {
+input_driver_t input_x = {
    x_input_init,
    x_input_poll,
    x_input_state,
@@ -335,4 +343,3 @@ const input_driver_t input_x = {
    x_set_rumble,
    x_get_joypad_driver,
 };
-
