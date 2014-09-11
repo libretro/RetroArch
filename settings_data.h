@@ -54,6 +54,7 @@ enum setting_flags
    SD_FLAG_HAS_RANGE   = (1 << 4),
    SD_FLAG_ALLOW_INPUT = (1 << 5),
    SD_FLAG_PUSH_ACTION = (1 << 6),
+   SD_FLAG_IS_DRIVER   = (1 << 7),
 };
 
 typedef struct rarch_setting_t

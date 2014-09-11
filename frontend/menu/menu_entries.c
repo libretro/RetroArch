@@ -151,6 +151,8 @@ static int setting_set_flags(rarch_setting_t *setting)
       return MENU_FILE_LINEFEED;
    if (setting->flags & SD_FLAG_PUSH_ACTION)
       return MENU_FILE_SWITCH;
+   if (setting->flags & SD_FLAG_IS_DRIVER)
+      return MENU_FILE_DRIVER;
    if (setting->type == ST_PATH)
       return MENU_FILE_PATH;
    return 0;

@@ -487,14 +487,7 @@ static void handle_setting(rarch_setting_t *setting,
          else if (action == MENU_ACTION_RIGHT)
             find_next_resampler_driver();
       }
-      else if (
-            !strcmp(setting->name, "video_driver") ||
-            !strcmp(setting->name, "audio_driver") ||
-            !strcmp(setting->name, "input_driver") ||
-            !strcmp(setting->name, "camera_driver") ||
-            !strcmp(setting->name, "location_driver") ||
-            !strcmp(setting->name, "menu_driver")
-            )
+      else if (id == MENU_FILE_DRIVER)
          handle_driver(setting->name, setting->value.string,
                setting->size, action);
    }
