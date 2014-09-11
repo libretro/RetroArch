@@ -1255,7 +1255,7 @@ static void *d3d_init(const video_info_t *info, const input_driver_t **input,
    return vid;
 }
 
-const video_driver_t video_d3d = {
+video_driver_t video_d3d = {
    d3d_init,
    d3d_frame,
    d3d_set_nonblock_state,

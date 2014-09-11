@@ -623,7 +623,7 @@ static const rarch_joypad_driver_t *apple_get_joypad_driver(void *data)
    return joypad;
 }
 
-const input_driver_t input_apple = {
+input_driver_t input_apple = {
    apple_input_init,
    apple_input_poll,
    apple_input_state,

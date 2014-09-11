@@ -109,7 +109,7 @@ static void ps3_joypad_destroy(void)
 {
 }
 
-const rarch_joypad_driver_t ps3_joypad = {
+rarch_joypad_driver_t ps3_joypad = {
    ps3_joypad_init,
    ps3_joypad_query_pad,
    ps3_joypad_destroy,

@@ -457,7 +457,7 @@ static bool dsound_use_float(void *data)
    return false;
 }
 
-const audio_driver_t audio_dsound = {
+audio_driver_t audio_dsound = {
    dsound_init,
    dsound_write,
    dsound_stop,
@@ -469,4 +469,3 @@ const audio_driver_t audio_dsound = {
    dsound_write_avail,
    dsound_buffer_size,
 };
-

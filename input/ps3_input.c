@@ -351,7 +351,7 @@ static const rarch_joypad_driver_t *ps3_input_get_joypad_driver(void *data)
    return ps3->joypad;
 }
 
-const input_driver_t input_ps3 = {
+input_driver_t input_ps3 = {
    ps3_input_init,
    ps3_input_poll,
    ps3_input_state,

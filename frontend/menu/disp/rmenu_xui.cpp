@@ -531,7 +531,7 @@ static void rmenu_xui_list_set_selection(void *data)
       XuiListSetCurSel(m_menulist, file_list_get_directory_ptr(list));
 }
 
-const menu_ctx_driver_t menu_ctx_rmenu_xui = {
+menu_ctx_driver_t menu_ctx_rmenu_xui = {
    NULL,
    rmenu_xui_render_messagebox,
    rmenu_xui_render,

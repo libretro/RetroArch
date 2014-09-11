@@ -220,7 +220,7 @@ static bool gx_audio_use_float(void *data)
    return false;
 }
 
-const audio_driver_t audio_gx = {
+audio_driver_t audio_gx = {
    gx_audio_init,
    gx_audio_write,
    gx_audio_stop,

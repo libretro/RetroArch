@@ -434,7 +434,7 @@ static bool v4l_poll(void *data,
       return false;
 }
 
-const camera_driver_t camera_v4l2 = {
+camera_driver_t camera_v4l2 = {
    v4l_init,
    v4l_free,
    v4l_start,
@@ -442,4 +442,3 @@ const camera_driver_t camera_v4l2 = {
    v4l_poll,
    "video4linux2",
 };
-

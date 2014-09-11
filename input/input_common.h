@@ -106,18 +106,18 @@ bool input_joypad_hat_raw(const rarch_joypad_driver_t *driver,
 const char *input_joypad_name(const rarch_joypad_driver_t *driver,
       unsigned joypad);
 
-extern const rarch_joypad_driver_t dinput_joypad;
-extern const rarch_joypad_driver_t linuxraw_joypad;
-extern const rarch_joypad_driver_t udev_joypad;
-extern const rarch_joypad_driver_t winxinput_joypad;
-extern const rarch_joypad_driver_t sdl_joypad;
-extern const rarch_joypad_driver_t ps3_joypad;
-extern const rarch_joypad_driver_t psp_joypad;
-extern const rarch_joypad_driver_t xdk_joypad;
-extern const rarch_joypad_driver_t gx_joypad;
-extern const rarch_joypad_driver_t apple_joypad;
-extern const rarch_joypad_driver_t android_joypad;
-extern const rarch_joypad_driver_t qnx_joypad;
+extern rarch_joypad_driver_t dinput_joypad;
+extern rarch_joypad_driver_t linuxraw_joypad;
+extern rarch_joypad_driver_t udev_joypad;
+extern rarch_joypad_driver_t winxinput_joypad;
+extern rarch_joypad_driver_t sdl_joypad;
+extern rarch_joypad_driver_t ps3_joypad;
+extern rarch_joypad_driver_t psp_joypad;
+extern rarch_joypad_driver_t xdk_joypad;
+extern rarch_joypad_driver_t gx_joypad;
+extern rarch_joypad_driver_t apple_joypad;
+extern rarch_joypad_driver_t android_joypad;
+extern rarch_joypad_driver_t qnx_joypad;
 
 struct rarch_key_map
 {

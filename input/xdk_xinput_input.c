@@ -276,8 +276,7 @@ static const rarch_joypad_driver_t *xdk_input_get_joypad_driver(void *data)
    return xdk->joypad;
 }
 
-const input_driver_t input_xinput = 
-{
+input_driver_t input_xinput = {
    xdk_input_init,
    xdk_input_poll,
    xdk_input_state,

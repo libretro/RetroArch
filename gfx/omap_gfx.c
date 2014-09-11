@@ -910,7 +910,7 @@ static void omap_gfx_get_poke_interface(void *data,
    (void)iface;
 }
 
-const video_driver_t video_omap = {
+video_driver_t video_omap = {
   omap_gfx_init,
   omap_gfx_frame,
   omap_gfx_set_nonblock_state,

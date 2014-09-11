@@ -101,7 +101,7 @@ static void null_gfx_get_poke_interface(void *data,
    (void)iface;
 }
 
-const video_driver_t video_null = {
+video_driver_t video_null = {
    null_gfx_init,
    null_gfx_frame,
    null_gfx_set_nonblock_state,

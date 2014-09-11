@@ -330,7 +330,7 @@ static size_t ja_buffer_size(void *data)
    return jd->buffer_size;
 }
 
-const audio_driver_t audio_jack = {
+audio_driver_t audio_jack = {
    ja_init,
    ja_write,
    ja_stop,
@@ -342,4 +342,3 @@ const audio_driver_t audio_jack = {
    ja_write_avail,
    ja_buffer_size,
 };
-

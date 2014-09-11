@@ -109,7 +109,7 @@ static bool ra_use_float(void *data)
    return false;
 }
 
-const audio_driver_t audio_roar = {
+audio_driver_t audio_roar = {
    ra_init,
    ra_write,
    ra_stop,

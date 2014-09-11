@@ -316,7 +316,7 @@ static size_t alsa_thread_buffer_size(void *data)
    return alsa->buffer_size;
 }
 
-const audio_driver_t audio_alsathread = {
+audio_driver_t audio_alsathread = {
    alsa_thread_init,
    alsa_thread_write,
    alsa_thread_stop,

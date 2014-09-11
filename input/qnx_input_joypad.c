@@ -108,7 +108,7 @@ static void qnx_joypad_destroy(void)
 {
 }
 
-const rarch_joypad_driver_t qnx_joypad = {
+rarch_joypad_driver_t qnx_joypad = {
    qnx_joypad_init,
    qnx_joypad_query_pad,
    qnx_joypad_destroy,

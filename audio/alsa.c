@@ -284,7 +284,7 @@ static size_t alsa_buffer_size(void *data)
    return alsa->buffer_size;
 }
 
-const audio_driver_t audio_alsa = {
+audio_driver_t audio_alsa = {
    alsa_init,
    alsa_write,
    alsa_stop,

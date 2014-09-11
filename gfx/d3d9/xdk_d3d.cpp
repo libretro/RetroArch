@@ -969,7 +969,7 @@ static bool d3d_read_viewport(void *data, uint8_t *buffer)
    return false;
 }
 
-const video_driver_t video_d3d = {
+video_driver_t video_d3d = {
    d3d_init,
    d3d_frame,
    d3d_set_nonblock_state,

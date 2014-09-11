@@ -187,7 +187,7 @@ static bool android_camera_poll(void *data,
    return false;
 }
 
-const camera_driver_t camera_android = {
+camera_driver_t camera_android = {
    android_camera_init,
    android_camera_free,
    android_camera_start,
@@ -195,4 +195,3 @@ const camera_driver_t camera_android = {
    android_camera_poll,
    "android",
 };
-

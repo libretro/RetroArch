@@ -300,7 +300,7 @@ static void xenon360_gfx_get_poke_interface(void *data,
    (void)iface;
 }
 
-const video_driver_t video_xenon360 = {
+video_driver_t video_xenon360 = {
    xenon360_gfx_init,
    xenon360_gfx_frame,
    xenon360_gfx_set_nonblock_state,
@@ -318,4 +318,3 @@ const video_driver_t video_xenon360 = {
 #endif
    xenon360_gfx_get_poke_interface
 };
-

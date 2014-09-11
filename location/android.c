@@ -203,7 +203,7 @@ static void android_location_set_interval(void *data, unsigned interval_ms,
          (int)interval_distance);
 }
 
-const location_driver_t location_android = {
+location_driver_t location_android = {
    android_location_init,
    android_location_free,
    android_location_start,

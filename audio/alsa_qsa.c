@@ -361,7 +361,7 @@ static size_t alsa_qsa_buffer_size(void *data)
    return alsa->buf_size * alsa->buf_count; 
 }
 
-const audio_driver_t audio_alsa = {
+audio_driver_t audio_alsa = {
    alsa_qsa_init,
    alsa_qsa_write,
    alsa_qsa_stop,

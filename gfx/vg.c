@@ -451,7 +451,7 @@ static void vg_get_poke_interface(void *data,
    (void)iface;
 }
 
-const video_driver_t video_vg = {
+video_driver_t video_vg = {
    vg_init,
    vg_frame,
    vg_set_nonblock_state,

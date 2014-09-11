@@ -469,7 +469,7 @@ void rgui_set_texture(void *data)
             menu_framebuf, false, menu->width, menu->height, 1.0f);
 }
 
-const menu_ctx_driver_t menu_ctx_rgui = {
+menu_ctx_driver_t menu_ctx_rgui = {
    rgui_set_texture,
    rgui_render_messagebox,
    rgui_render,

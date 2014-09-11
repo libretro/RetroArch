@@ -305,7 +305,7 @@ static const char *linuxraw_joypad_name(unsigned pad)
    return *g_pads[pad].ident ? g_pads[pad].ident : NULL;
 }
 
-const rarch_joypad_driver_t linuxraw_joypad = {
+rarch_joypad_driver_t linuxraw_joypad = {
    linuxraw_joypad_init,
    linuxraw_joypad_query_pad,
    linuxraw_joypad_destroy,
@@ -316,4 +316,3 @@ const rarch_joypad_driver_t linuxraw_joypad = {
    linuxraw_joypad_name,
    "linuxraw",
 };
-

@@ -956,7 +956,7 @@ static const char *dinput_joypad_name(unsigned pad)
    return NULL;
 }
 
-const rarch_joypad_driver_t dinput_joypad = {
+rarch_joypad_driver_t dinput_joypad = {
    dinput_joypad_init,
    dinput_joypad_query_pad,
    dinput_joypad_destroy,

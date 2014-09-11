@@ -61,7 +61,7 @@ static bool null_audio_use_float(void *data)
    return true;
 }
 
-const audio_driver_t audio_null = {
+audio_driver_t audio_null = {
    null_audio_init,
    null_audio_write,
    null_audio_stop,
@@ -73,4 +73,3 @@ const audio_driver_t audio_null = {
    NULL,
    NULL
 };
-

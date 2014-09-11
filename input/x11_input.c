@@ -329,7 +329,7 @@ static uint64_t x_input_get_capabilities(void *data)
    return caps;
 }
 
-const input_driver_t input_x = {
+input_driver_t input_x = {
    x_input_init,
    x_input_poll,
    x_input_state,
@@ -343,4 +343,3 @@ const input_driver_t input_x = {
    x_set_rumble,
    x_get_joypad_driver,
 };
-

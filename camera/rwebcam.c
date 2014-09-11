@@ -43,7 +43,7 @@ static bool rwebcam_poll(void *data, retro_camera_frame_raw_framebuffer_t frame_
    return RWebCamPoll(data, frame_raw_cb, frame_gl_cb);
 }
 
-const camera_driver_t camera_rwebcam = {
+camera_driver_t camera_rwebcam = {
    rwebcam_init,
    rwebcam_free,
    rwebcam_start,

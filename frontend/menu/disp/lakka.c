@@ -1150,7 +1150,7 @@ static void *lakka_init(void)
    return menu;
 }
 
-const menu_ctx_driver_t menu_ctx_lakka = {
+menu_ctx_driver_t menu_ctx_lakka = {
    NULL,
    NULL,
    NULL,

@@ -802,7 +802,7 @@ static const rarch_joypad_driver_t *qnx_input_get_joypad_driver(void *data)
    return qnx->joypad;
 }
 
-const input_driver_t input_qnx = {
+input_driver_t input_qnx = {
    qnx_input_init,
    qnx_input_poll,
    qnx_input_state,

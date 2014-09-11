@@ -218,7 +218,7 @@ static bool ps3_audio_use_float(void *data)
    return true;
 }
 
-const audio_driver_t audio_ps3 = {
+audio_driver_t audio_ps3 = {
    ps3_audio_init,
    ps3_audio_write,
    ps3_audio_stop,
@@ -230,4 +230,3 @@ const audio_driver_t audio_ps3 = {
    NULL,
    NULL
 };
-

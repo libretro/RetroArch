@@ -196,7 +196,7 @@ static bool sdl_use_float(void *data)
    return false;
 }
 
-const audio_driver_t audio_sdl = {
+audio_driver_t audio_sdl = {
    sdl_audio_init,
    sdl_audio_write,
    sdl_audio_stop,
@@ -212,4 +212,3 @@ const audio_driver_t audio_sdl = {
    NULL,
    NULL
 };
-   

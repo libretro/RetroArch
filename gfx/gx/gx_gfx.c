@@ -1329,7 +1329,7 @@ static bool gx_set_shader(void *data,
    return false; 
 }
 
-const video_driver_t video_gx = {
+video_driver_t video_gx = {
    gx_init,
    gx_frame,
    gx_set_nonblock_state,

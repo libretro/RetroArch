@@ -203,7 +203,7 @@ static bool rs_use_float(void *data)
    return false;
 }
 
-const audio_driver_t audio_rsound = {
+audio_driver_t audio_rsound = {
    rs_init,
    rs_write,
    rs_stop,
@@ -215,4 +215,3 @@ const audio_driver_t audio_rsound = {
    rs_write_avail,
    rs_buffer_size,
 };
-   

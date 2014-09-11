@@ -68,7 +68,7 @@ static bool nullinput_set_sensor_state(void *data,
    return false;
 }
 
-const input_driver_t input_null = {
+input_driver_t input_null = {
    nullinput_input_init,
    nullinput_input_poll,
    nullinput_input_state,

@@ -183,7 +183,7 @@ static void oskutil_lifecycle(void *data, uint64_t status)
    }
 }
 
-const input_osk_driver_t input_ps3_osk = {
+input_osk_driver_t input_ps3_osk = {
    oskutil_init,
    oskutil_free,
    oskutil_enable_key_layout,

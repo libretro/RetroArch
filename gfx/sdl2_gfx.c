@@ -714,7 +714,7 @@ static bool sdl2_gfx_set_shader(void *data,
    return false; 
 }
 
-const video_driver_t video_sdl2 = {
+video_driver_t video_sdl2 = {
    sdl2_gfx_init,
    sdl2_gfx_frame,
    sdl2_gfx_set_nonblock_state,

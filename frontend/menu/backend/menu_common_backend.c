@@ -1739,7 +1739,7 @@ static void menu_common_setting_set_label(char *type_str,
          type, menu_label, label, index);
 }
 
-const menu_ctx_driver_backend_t menu_ctx_backend_common = {
+menu_ctx_driver_backend_t menu_ctx_backend_common = {
    menu_common_iterate,
 #ifdef HAVE_SHADER_MANAGER
    menu_common_shader_manager_init,

@@ -341,7 +341,7 @@ static int rmenu_input_postprocess(uint64_t old_state)
    return 0;
 }
 
-const menu_ctx_driver_t menu_ctx_rmenu = {
+menu_ctx_driver_t menu_ctx_rmenu = {
    rmenu_set_texture,
    rmenu_render_messagebox,
    rmenu_render,

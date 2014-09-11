@@ -516,7 +516,7 @@ static bool sdl_gfx_read_viewport(void *data, uint8_t *buffer)
    return true;
 }
 
-const video_driver_t video_sdl = {
+video_driver_t video_sdl = {
    sdl_gfx_init,
    sdl_gfx_frame,
    sdl_gfx_set_nonblock_state,
@@ -533,4 +533,3 @@ const video_driver_t video_sdl = {
 #endif
    sdl_get_poke_interface
 };
-

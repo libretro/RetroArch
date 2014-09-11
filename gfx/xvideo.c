@@ -840,7 +840,7 @@ static bool xv_set_shader(void *data,
    return false; 
 }
 
-const video_driver_t video_xvideo = {
+video_driver_t video_xvideo = {
    xv_init,
    xv_frame,
    xv_set_nonblock_state,
@@ -857,4 +857,3 @@ const video_driver_t video_xvideo = {
 #endif
   xv_get_poke_interface
 };
-

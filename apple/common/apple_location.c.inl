@@ -71,7 +71,7 @@ fail:
    return false;
 }
 
-const location_driver_t location_apple = {
+location_driver_t location_apple = {
 	apple_location_init,
 	apple_location_free,
 	apple_location_start,

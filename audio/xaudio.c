@@ -125,7 +125,7 @@ static size_t xa_buffer_size(void *data)
    return xa->bufsize;
 }
 
-const audio_driver_t audio_xa = {
+audio_driver_t audio_xa = {
    xa_init,
    xa_write,
    xa_stop,

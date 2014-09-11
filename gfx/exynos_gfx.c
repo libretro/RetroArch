@@ -1475,7 +1475,7 @@ static bool exynos_gfx_read_viewport(void *data, uint8_t *buffer)
    return true;
 }
 
-const video_driver_t video_exynos = {
+video_driver_t video_exynos = {
   exynos_gfx_init,
   exynos_gfx_frame,
   exynos_gfx_set_nonblock_state,

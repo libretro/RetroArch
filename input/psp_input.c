@@ -167,7 +167,7 @@ static const rarch_joypad_driver_t *psp_input_get_joypad_driver(void *data)
    return psp->joypad;
 }
 
-const input_driver_t input_psp = {
+input_driver_t input_psp = {
    psp_input_initialize,
    psp_input_poll,
    psp_input_state,

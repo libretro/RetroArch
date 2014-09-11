@@ -40,7 +40,7 @@ static bool nullcamera_poll(void *data, retro_camera_frame_raw_framebuffer_t fra
    return true;
 }
 
-const camera_driver_t camera_null = {
+camera_driver_t camera_null = {
    nullcamera_init,
    nullcamera_free,
    nullcamera_start,

@@ -814,7 +814,7 @@ static bool psp_set_shader(void *data,
    return false; 
 }
 
-const video_driver_t video_psp1 = {
+video_driver_t video_psp1 = {
    psp_init,
    psp_frame,
    psp_set_nonblock_state,

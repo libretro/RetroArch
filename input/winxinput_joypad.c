@@ -426,7 +426,7 @@ static bool winxinput_joypad_rumble(unsigned pad,
       == ERROR_SUCCESS;
 }
 
-const rarch_joypad_driver_t winxinput_joypad = {
+rarch_joypad_driver_t winxinput_joypad = {
    winxinput_joypad_init,
    winxinput_joypad_query_pad,
    winxinput_joypad_destroy,
@@ -437,4 +437,3 @@ const rarch_joypad_driver_t winxinput_joypad = {
    winxinput_joypad_name,
    "winxinput",
 };
-

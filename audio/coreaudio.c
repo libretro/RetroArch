@@ -402,7 +402,7 @@ static size_t coreaudio_buffer_size(void *data)
    return dev->buffer_size;
 }
 
-const audio_driver_t audio_coreaudio = {
+audio_driver_t audio_coreaudio = {
    coreaudio_init,
    coreaudio_write,
    coreaudio_stop,
@@ -414,4 +414,3 @@ const audio_driver_t audio_coreaudio = {
    coreaudio_write_avail,
    coreaudio_buffer_size,
 };
-

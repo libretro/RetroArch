@@ -114,7 +114,7 @@ static bool xenon360_use_float(void *data)
    return false;
 }
 
-const audio_driver_t audio_xenon360 = {
+audio_driver_t audio_xenon360 = {
    xenon360_audio_init,
    xenon360_audio_write,
    xenon360_audio_stop,
@@ -126,4 +126,3 @@ const audio_driver_t audio_xenon360 = {
    NULL,
    NULL
 };
-

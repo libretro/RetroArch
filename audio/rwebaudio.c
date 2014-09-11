@@ -75,7 +75,7 @@ static size_t rwebaudio_buffer_size(void *data)
    return RWebAudioBufferSize();
 }
 
-const audio_driver_t audio_rwebaudio = {
+audio_driver_t audio_rwebaudio = {
    rwebaudio_init,
    rwebaudio_write,
    rwebaudio_stop,
@@ -87,4 +87,3 @@ const audio_driver_t audio_rwebaudio = {
    rwebaudio_write_avail,
    rwebaudio_buffer_size,
 };
-

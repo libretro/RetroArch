@@ -101,7 +101,7 @@ static uint64_t xenon360_get_capabilities(void *data)
    return caps;
 }
 
-const input_driver_t input_xenon360 = {
+input_driver_t input_xenon360 = {
    xenon360_input_init,
    xenon360_input_poll,
    xenon360_input_state,

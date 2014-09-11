@@ -187,7 +187,7 @@ static bool oss_use_float(void *data)
    return false;
 }
 
-const audio_driver_t audio_oss = {
+audio_driver_t audio_oss = {
    oss_init,
    oss_write,
    oss_stop,
@@ -199,4 +199,3 @@ const audio_driver_t audio_oss = {
    oss_write_avail,
    oss_buffer_size,
 };
-

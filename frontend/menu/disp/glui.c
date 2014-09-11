@@ -311,7 +311,7 @@ static void glui_context_reset(void *data)
       g_settings.video.font_size);
 }
 
-const menu_ctx_driver_t menu_ctx_glui = {
+menu_ctx_driver_t menu_ctx_glui = {
    NULL,
    NULL,
    NULL,

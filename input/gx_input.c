@@ -540,7 +540,7 @@ static const rarch_joypad_driver_t *gx_input_get_joypad_driver(void *data)
    return &gx_joypad;
 }
 
-const input_driver_t input_gx = {
+input_driver_t input_gx = {
    gx_input_init,
    gx_input_poll,
    gx_input_state,

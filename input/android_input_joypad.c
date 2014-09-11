@@ -131,7 +131,7 @@ static void android_joypad_destroy(void)
 {
 }
 
-const rarch_joypad_driver_t android_joypad = {
+rarch_joypad_driver_t android_joypad = {
    android_joypad_init,
    android_joypad_query_pad,
    android_joypad_destroy,

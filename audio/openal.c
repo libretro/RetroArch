@@ -239,7 +239,7 @@ static bool al_use_float(void *data)
    return false;
 }
 
-const audio_driver_t audio_openal = {
+audio_driver_t audio_openal = {
    al_init,
    al_write,
    al_stop,
@@ -251,4 +251,3 @@ const audio_driver_t audio_openal = {
    al_write_avail,
    al_buffer_size,
 };
-
