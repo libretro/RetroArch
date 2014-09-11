@@ -35,7 +35,7 @@ static bool d3d_init_base(void *data, const video_info_t *info)
    D3DPRESENT_PARAMETERS d3dpp;
    d3d_make_d3dpp(d3d, info, &d3dpp);
 
-   d3d->g_pD3D = direct3d_create_ctx(D3D_SDK_VERSION);
+   d3d->g_pD3D = D3DCREATE_CTX(D3D_SDK_VERSION);
    if (!d3d->g_pD3D)
    {
       RARCH_ERR("Failed to create D3D interface.\n");
@@ -101,7 +101,7 @@ static bool d3d_initialize(void *data, const video_info_t *info)
 
             default:
                err = "Unknown";
-         }.
+         }
          RARCH_WARN(
                "[D3D]: Attempting to recover from dead state (%s).\n", err);
 #else
