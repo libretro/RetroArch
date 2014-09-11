@@ -719,7 +719,7 @@ static void *d3d_init(const video_info_t *info, const input_driver_t **input,
    if (!vid)
       return NULL;
 
-   vid->ctx_driver = d3d_get_context();
+   vid->ctx_driver = d3d_get_context(NULL);
    if (!vid->ctx_driver)
    {
       delete vid;

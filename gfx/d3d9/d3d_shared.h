@@ -9,7 +9,7 @@ static bool d3d_process_shader(d3d_video_t *d3d);
 static bool d3d_init_multipass(d3d_video_t *d3d);
 static void d3d_deinit_chain(d3d_video_t *d3d);
 static bool d3d_init_chain(d3d_video_t *d3d,
-      const video_info_t *video_info)
+      const video_info_t *video_info);
 
 #ifdef HAVE_WINDOW
 #define IDI_ICON 1
@@ -20,10 +20,8 @@ extern LRESULT CALLBACK WindowProc(HWND hWnd, UINT message,
 static RECT d3d_monitor_rect(d3d_video_t *d3d);
 #endif
 
-static void d3d_deinit_chain(void *data)
+static void d3d_deinit_chain(d3d_video_t *d3d)
 {
-   d3d_video_t *d3d = (d3d_video_t*)data;
-
 #ifdef _XBOX
    renderchain_free(d3d);
 #else
@@ -197,9 +195,8 @@ static void d3d_set_viewport(d3d_video_t *d3d, int x, int y,
    d3d_set_font_rect(d3d, NULL);
 #endif
 }
-bool d3d_restore(void *data)
+bool d3d_restore(d3d_video_t *d3d)
 {
-   d3d_video_t *d3d = (d3d_video_t*)data;
    d3d_deinitialize(d3d);
    d3d->needs_restore = !d3d_initialize(d3d, &d3d->video_info);
 
@@ -505,17 +502,17 @@ static void d3d_show_mouse(void *data, bool state)
 
 static const gfx_ctx_driver_t *d3d_get_context(void *data)
 {
-   /* TODO: GL core contexts through ANGLE? */
-   enum gfx_ctx_api api;
-   unsigned major, minor;
+   /* Default to Direct3D9 for now.
+   TODO: GL core contexts through ANGLE? */
+   enum gfx_ctx_api api = GFX_CTX_DIRECT3D9_API;
+   unsigned major = 9, minor = 0;
+   (void)major;
+   (void)minor;
+
 #if defined(_XBOX1)
    api = GFX_CTX_DIRECT3D8_API;
    major = 8;
-#elif defined(_XBOX360)
-   api = GFX_CTX_DIRECT3D9_API;
-   major = 9;
 #endif
-   minor = 0;
    return gfx_ctx_init_first(driver.video_data, api,
          major, minor, false);
 }
