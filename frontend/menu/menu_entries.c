@@ -755,7 +755,7 @@ int menu_parse_and_resolve(file_list_t *list, file_list_t *menu_list)
             break;
          case RARCH_PLAIN_FILE:
          default:
-            file_type = default_type_plain;
+            file_type = (menu_file_type_t)default_type_plain;
             break;
       }
       bool is_dir = (file_type == MENU_FILE_DIRECTORY);
