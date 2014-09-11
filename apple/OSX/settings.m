@@ -24,11 +24,6 @@
 static void* const associated_name_tag = (void*)&associated_name_tag;
 
 @interface RAInputBinder : NSWindow
-{
-   NSTimer* _timer;
-   const rarch_setting_t* _setting;
-}
-
 @property (nonatomic, retain) NSTimer* timer;
 @property (nonatomic, assign) const rarch_setting_t* setting;
 @end
@@ -93,15 +88,6 @@ static void* const associated_name_tag = (void*)&associated_name_tag;
 NSOutlineViewDataSource, NSOutlineViewDelegate,
 NSWindowDelegate>
 #endif
-{
-   RAInputBinder* _binderWindow;
-   NSButtonCell* _booleanCell;
-   NSTextFieldCell* _binderCell;
-   NSTableView* _table;
-   NSOutlineView* _outline;
-   NSMutableArray* _settings;
-   NSMutableArray* _currentGroup;
-}
 
 @property (nonatomic, retain) RAInputBinder IBOutlet* binderWindow;
 @property (nonatomic, retain) NSButtonCell IBOutlet* booleanCell;
