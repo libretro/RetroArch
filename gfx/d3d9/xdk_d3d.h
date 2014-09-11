@@ -21,6 +21,7 @@
 #ifdef _XBOX1
 #include <xfont.h>
 #endif
+#include "d3d_defines.h"
 #include "../../gfx/shader_common.h"
 #include "../../gfx/shader_parse.h"
 #include "../../gfx/image/image.h"
@@ -114,6 +115,8 @@ typedef struct d3d_video
    overlay_t *menu;
 #endif
 } d3d_video_t;
+
+#include "d3d_shared.h"
 
 extern void d3d_make_d3dpp(void *data, const video_info_t *info, D3DPRESENT_PARAMETERS *d3dpp);
 extern bool texture_image_render(struct texture_image *out_img);

@@ -34,7 +34,16 @@
 
 #include "render_chain_xdk.h"
 
-#include "d3d_shared.h"
+static void d3d_deinit_shader(d3d_video_t *d3d)
+{
+	(void)d3d;
+}
+
+static bool d3d_init_shader(d3d_video_t *d3d)
+{
+	(void)d3d;
+    return false;
+}
 
 static void d3d_free(void *data)
 {
@@ -91,10 +100,9 @@ static bool d3d_set_shader(void *data,
    return true;
 }
 
-static bool d3d_init_chain(void *data, const video_info_t *info)
+static bool d3d_init_chain(d3d_video_t *d3d, const video_info_t *info)
 {
-   d3d_video_t *d3d = (d3d_video_t*)data;
-   d3d_video_t *link_info = (d3d_video_t*)data;
+   d3d_video_t *link_info = (d3d_video_t*)d3d;
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
    link_info->tex_w = link_info->tex_h = RARCH_SCALE_BASE * info->input_scale;
 

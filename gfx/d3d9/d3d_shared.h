@@ -1,4 +1,5 @@
 #include "d3d_defines.h"
+#include "../gfx_common.h"
 
 /* forward declarations */
 static void d3d_calculate_rect(d3d_video_t *d3d,
@@ -12,6 +13,13 @@ static bool d3d_init_multipass(d3d_video_t *d3d);
 static void d3d_deinit_chain(d3d_video_t *d3d);
 static bool d3d_init_chain(d3d_video_t *d3d,
       const video_info_t *video_info);
+
+static void renderchain_free(d3d_video_t *d3d);
+static void d3d_deinit_shader(d3d_video_t *d3d);
+static bool d3d_init_shader(d3d_video_t *d3d);
+
+void d3d_make_d3dpp(void *data, const video_info_t *info,
+	D3DPRESENT_PARAMETERS *d3dpp);
 
 #ifdef HAVE_WINDOW
 #define IDI_ICON 1
@@ -397,7 +405,7 @@ static bool d3d_construct(d3d_video_t *d3d,
          (int)(mon_rect.bottom - mon_rect.top));
 #else
    if (d3d->ctx_driver && d3d->ctx_driver->get_video_size)
-      d3d->ctx_driver->get_video_size(&full_x, &full_y);
+      d3d->ctx_driver->get_video_size(d3d, &full_x, &full_y);
 #endif
    d3d->screen_width  = info->fullscreen ? full_x : info->width;
    d3d->screen_height = info->fullscreen ? full_y : info->height;
