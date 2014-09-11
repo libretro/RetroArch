@@ -180,13 +180,11 @@ static void glui_frame(void)
 
    for (i = begin; i < end; i++, y += FONT_HEIGHT_STRIDE)
    {
-      char message[256], type_str[256];
-      const char *path = NULL;
-      const char *entry_label = NULL;
-      unsigned type = 0;
-      unsigned w = 0; 
-      char entry_title_buf[256];
-      char type_str_buf[64];
+      char message[PATH_MAX], type_str[PATH_MAX],
+           entry_title_buf[PATH_MAX], type_str_buf[PATH_MAX],
+           path_buf[PATH_MAX];
+      const char *path = NULL, *entry_label = NULL;
+      unsigned type = 0, w = 0;
       bool selected = false;
 
       file_list_get_at_offset(driver.menu->selection_buf, i, &path,
@@ -198,12 +196,13 @@ static void glui_frame(void)
 
       disp_set_label(&w, type, i, label,
             type_str, sizeof(type_str), 
-            entry_label, path);
+            entry_label, path,
+            path_buf, sizeof(path_buf));
 
       selected = (i == driver.menu->selection_ptr);
 
       menu_ticker_line(entry_title_buf, RGUI_TERM_WIDTH - (w + 1 + 2),
-            g_extern.frame_count / RGUI_TERM_START_X, path, selected);
+            g_extern.frame_count / RGUI_TERM_START_X, path_buf, selected);
       menu_ticker_line(type_str_buf, w, g_extern.frame_count / RGUI_TERM_START_X,
             type_str, selected);
 
