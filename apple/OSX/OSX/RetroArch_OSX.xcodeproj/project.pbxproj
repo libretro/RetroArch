@@ -422,7 +422,6 @@
 					"-D_7ZIP_ST",
 					"-DHAVE_COMPRESSION",
 					"-DHAVE_7ZIP",
-					"-DHAVE_7ZIP",
 					"-DHAVE_LAKKA",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
