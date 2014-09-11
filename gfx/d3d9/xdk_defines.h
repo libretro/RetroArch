@@ -20,20 +20,6 @@
 
 #if defined(_XBOX1)
 /* XBox 1*/
-#define LPDIRECT3DRESOURCE LPDIRECT3DRESOURCE8
-#define LPDIRECT3DTEXTURE LPDIRECT3DTEXTURE8
-#define LPDIRECT3DCUBETEXTURE LPDIRECT3DCUBETEXTURE8
-#define LPDIRECT3DVOLUMETEXTURE LPDIRECT3DVOLUMETEXTURE8
-#define LPDIRECT3DVERTEXBUFFER LPDIRECT3DVERTEXBUFFER8
-#define LPDIRECT3DRESOURCE LPDIRECT3DRESOURCE8
-#define LPDIRECT3D LPDIRECT3D8
-#define LPDIRECT3DDEVICE LPDIRECT3DDEVICE8
-#define LPDIRECT3DSURFACE LPDIRECT3DSURFACE8
-
-#define D3DVIEWPORT D3DVIEWPORT8
-#define D3DVERTEXELEMENT D3DVERTEXELEMENT8
-
-#define direct3d_create_ctx Direct3DCreate8
 
 #define SetSamplerState_function(device, sampler, type, value) \
  D3D__DirtyFlags |= (D3DDIRTYFLAG_TEXTURE_STATE_0 << sampler); \
@@ -56,32 +42,8 @@
 #define D3DDevice_CreateVertexBuffers(device, Length, Usage, UnusedFVF, UnusedPool, ppVertexBuffer, pUnusedSharedHandle) IDirect3DDevice8_CreateVertexBuffer(device, Length, Usage, UnusedFVF, UnusedPool, ppVertexBuffer)
 #define D3DDevice_SetStreamSources(device, streamNumber, pStreamData, OffsetInBytes, Stride)      IDirect3DDevice8_SetStreamSource(device, streamNumber, pStreamData, Stride);
 
-
-#define D3DLOCK_NOSYSLOCK (0)
-
-#define D3DSAMP_ADDRESSU D3DTSS_ADDRESSU
-#define D3DSAMP_ADDRESSV D3DTSS_ADDRESSV
-#define D3DSAMP_MAGFILTER D3DTSS_MAGFILTER
-#define D3DSAMP_MINFILTER D3DTSS_MINFILTER
-
 #elif defined(_XBOX360)
 /* XBox 360*/
-#define LPDIRECT3D LPDIRECT3D9
-#define LPDIRECT3DDEVICE LPDIRECT3DDEVICE9
-#define LPDIRECT3DTEXTURE LPDIRECT3DTEXTURE9
-#define LPDIRECT3DCUBETEXTURE LPDIRECT3DCUBETEXTURE9
-#define LPDIRECT3DSURFACE LPDIRECT3DSURFACE9
-#define LPDIRECT3DVOLUMETEXTURE LPDIRECT3DVOLUMETEXTURE9
-#define LPDIRECT3DVERTEXBUFFER LPDIRECT3DVERTEXBUFFER9
-#define LPDIRECT3DRESOURCE LPDIRECT3DRESOURCE9
-#define LPDIRECT3DVERTEXDECLARATION LPDIRECT3DVERTEXDECLARATION9
-#define LPDIRECT3DVERTEXSHADER LPDIRECT3DVERTEXSHADER9
-#define LPDIRECT3DPIXELSHADER LPDIRECT3DPIXELSHADER9
-
-#define D3DVIEWPORT D3DVIEWPORT9
-#define D3DVERTEXELEMENT D3DVERTEXELEMENT9
-
-#define direct3d_create_ctx Direct3DCreate9
 
 #define RD3DVertexBuffer_Lock(device, OffsetToLock, SizeToLock, ppbData, Flags) *ppbData = D3DVertexBuffer_Lock(device, OffsetToLock, SizeToLock, Flags)
 #define RD3DVertexBuffer_Unlock(device) D3DVertexBuffer_Unlock(device)
@@ -108,9 +70,5 @@
    memset(lockedrect.pBits, 0, pass->tex_h * lockedrect.Pitch)
 
 #define D3DDevice_DrawPrimitive(dev, type, start, count) dev->DrawPrimitive(type, start, count)
-
-#ifndef D3DCREATE_SOFTWARE_VERTEXPROCESSING
-#define D3DCREATE_SOFTWARE_VERTEXPROCESSING 0
-#endif
 
 #endif
