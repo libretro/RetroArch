@@ -829,8 +829,7 @@ int menu_parse_and_resolve(file_list_t *list, file_list_t *menu_list)
    }
 
    driver.menu->scroll_indices_size = 0;
-   if (strcmp(label, "history_list") != 0)
-      menu_build_scroll_indices(list);
+   menu_build_scroll_indices(list);
 
    entries_refresh(list);
    
