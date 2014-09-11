@@ -144,6 +144,7 @@ static void d3d_reinit_renderchain(void *data,
    d3d_init_chain(d3d, video);
 }
 
+#ifdef _XBOX
 #ifdef HAVE_RMENU
 extern struct texture_image *menu_texture;
 #endif
@@ -218,7 +219,6 @@ static bool texture_image_render(void *data,
 #endif
 
 #ifdef HAVE_MENU
-
 static void d3d_draw_texture(void *data)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
@@ -239,9 +239,7 @@ static void d3d_draw_texture(void *data)
 #endif
 }
 #endif
-
-static void d3d_calculate_rect(void *data, unsigned width,
-      unsigned height, bool keep, float desired_aspect);
+#endif
 
 static bool d3d_frame(void *data, const void *frame,
       unsigned width, unsigned height, unsigned pitch,

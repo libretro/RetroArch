@@ -67,4 +67,10 @@
 #define D3DSAMP_MINFILTER D3DTSS_MINFILTER
 #endif
 
+#if defined(_XBOX360)
+#define D3DFVF_CUSTOMVERTEX 0
+#elif defined(_XBOX1)
+#define D3DFVF_CUSTOMVERTEX	(D3DFVF_XYZRHW | D3DFVF_TEX1)
+#endif
+
 #endif

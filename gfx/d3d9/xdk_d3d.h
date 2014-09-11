@@ -30,13 +30,6 @@
 #include "../../gfx/gfx_context.h"
 #include "../../gfx/d3d9/xdk_defines.h"
 
-#define DFONT_MAX	4096
-#if defined(_XBOX360)
-#define D3DFVF_CUSTOMVERTEX 0
-#elif defined(_XBOX1)
-#define D3DFVF_CUSTOMVERTEX	(D3DFVF_XYZRHW | D3DFVF_TEX1)
-#endif
-
 typedef struct
 {
    struct Coords
