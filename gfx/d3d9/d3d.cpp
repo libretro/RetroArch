@@ -31,20 +31,9 @@
 #define HAVE_SHADERS
 #endif
 
-/* forward decls */
-static bool d3d_init_luts(d3d_video_t *d3d);
-static void d3d_set_font_rect(d3d_video_t *d3d,
-      const struct font_params *params);
-static bool d3d_process_shader(d3d_video_t *d3d);
-static bool d3d_init_multipass(d3d_video_t *d3d);
-static void d3d_deinit_chain(d3d_video_t *d3d);
-
 #include "d3d_shared.h"
 
 #ifdef HAVE_MONITOR
-#define IDI_ICON 1
-#define MAX_MONITORS 9
-
 namespace Monitor
 {
    static HMONITOR last_hm;
@@ -371,14 +360,6 @@ static bool d3d_init_luts(d3d_video_t *d3d)
 
    return true;
 }
-
-#ifdef HAVE_WINDOW
-extern LRESULT CALLBACK WindowProc(HWND hWnd, UINT message,
-        WPARAM wParam, LPARAM lParam);
-#endif
-
-static void d3d_calculate_rect(d3d_video_t *d3d, unsigned width,
-      unsigned height, bool keep, float desired_aspect);
 
 #ifdef HAVE_OVERLAY
 #include "d3d_overlays.cpp"

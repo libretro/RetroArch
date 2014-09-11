@@ -1,3 +1,24 @@
+/* forward declarations */
+static void d3d_calculate_rect(d3d_video_t *d3d,
+      unsigned width, unsigned height,
+   bool keep, float desired_aspect);
+static bool d3d_init_luts(d3d_video_t *d3d);
+static void d3d_set_font_rect(d3d_video_t *d3d,
+      const struct font_params *params);
+static bool d3d_process_shader(d3d_video_t *d3d);
+static bool d3d_init_multipass(d3d_video_t *d3d);
+static void d3d_deinit_chain(d3d_video_t *d3d);
+static bool d3d_init_chain(d3d_video_t *d3d,
+      const video_info_t *video_info)
+
+#ifdef HAVE_WINDOW
+#define IDI_ICON 1
+#define MAX_MONITORS 9
+
+extern LRESULT CALLBACK WindowProc(HWND hWnd, UINT message,
+        WPARAM wParam, LPARAM lParam);
+static RECT d3d_monitor_rect(d3d_video_t *d3d);
+#endif
 
 static void d3d_deinit_chain(void *data)
 {
