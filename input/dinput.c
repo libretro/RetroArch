@@ -580,7 +580,7 @@ static uint64_t dinput_get_capabilities(void *data)
    return caps;
 }
 
-const input_driver_t input_dinput = {
+input_driver_t input_dinput = {
    dinput_init,
    dinput_poll,
    dinput_input_state,
