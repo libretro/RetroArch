@@ -1940,8 +1940,6 @@ static void general_read_handler(const void *data)
         *setting->value.integer = g_settings.input.joypad_map[3];
     else if (!strcmp(setting->name, "input_player5_joypad_index"))
         *setting->value.integer = g_settings.input.joypad_map[4];
-    else if (!strcmp(setting->name, "log_verbosity"))
-        *setting->value.boolean = g_extern.verbosity;
 }
 
 static void general_write_handler(const void *data)
