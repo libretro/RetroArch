@@ -21,13 +21,18 @@
 #endif
 
 #include "d3d.hpp"
+#ifndef _XBOX
 #include "render_chain.hpp"
+#endif
 #include "../../file.h"
 #include "../gfx_common.h"
 
 #include "../context/win32_common.h"
+
+#ifndef _XBOX
 #define HAVE_MONITOR
 #define HAVE_WINDOW
+#endif
 
 #include "../../compat/posix_string.h"
 #include "../../performance.h"
@@ -94,6 +99,7 @@ static RECT d3d_monitor_rect(d3d_video_t *d3d)
 }
 #endif
 
+#ifndef _XBOX
 static void d3d_recompute_pass_sizes(d3d_video_t *d3d)
 {
    LinkInfo link_info = {0};
@@ -135,6 +141,7 @@ static void d3d_recompute_pass_sizes(d3d_video_t *d3d)
       link_info.pass = &d3d->shader.pass[i];
    }
 }
+#endif
 
 #ifndef DONT_HAVE_STATE_TRACKER
 static bool d3d_init_imports(d3d_video_t *d3d)
@@ -176,15 +183,21 @@ static bool d3d_init_chain(d3d_video_t *d3d, const video_info_t *video_info)
 {
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
    /* Setup information for first pass. */
+#ifdef _XBOX
+   /* TODO - properly implement this. */
+   d3d_video_t *link_info = (d3d_video_t*)d3d;
+   link_info->tex_w = link_info->tex_h = 
+	   RARCH_SCALE_BASE * video_info->input_scale;
+#else
    LinkInfo link_info = {0};
-
    link_info.pass = &d3d->shader.pass[0];
    link_info.tex_w = link_info.tex_h = 
       video_info->input_scale * RARCH_SCALE_BASE;
+#endif
 
    d3d_deinit_chain(d3d);
 #ifdef _XBOX
-   if (!renderchain_init(d3d, info))
+   if (!renderchain_init(d3d, video_info))
    {
       RARCH_ERR("[D3D]: Failed to init render chain.\n");
       return false;
@@ -455,6 +468,7 @@ static void d3d_set_font_rect(d3d_video_t *d3d,
 
 static bool d3d_init_singlepass(d3d_video_t *d3d)
 {
+#ifndef _XBOX
    memset(&d3d->shader, 0, sizeof(d3d->shader));
    d3d->shader.passes = 1;
    gfx_shader_pass &pass = d3d->shader.pass[0];
@@ -463,6 +477,7 @@ static bool d3d_init_singlepass(d3d_video_t *d3d)
    pass.fbo.type_x = pass.fbo.type_y = RARCH_SCALE_VIEWPORT;
    strlcpy(pass.source.path, d3d->cg_shader.c_str(),
          sizeof(pass.source.path));
+#endif
 
    return true;
 }
@@ -478,6 +493,7 @@ static bool d3d_process_shader(d3d_video_t *d3d)
    return d3d_init_singlepass(d3d);
 }
 
+#ifndef _XBOX
 static bool d3d_init_luts(d3d_video_t *d3d)
 {
    for (unsigned i = 0; i < d3d->shader.luts; i++)
@@ -494,6 +510,7 @@ static bool d3d_init_luts(d3d_video_t *d3d)
 
    return true;
 }
+#endif
 
 #ifdef HAVE_OVERLAY
 #include "d3d_overlays.cpp"

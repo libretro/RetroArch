@@ -425,7 +425,7 @@ static bool d3d_construct(d3d_video_t *d3d,
    gfx_set_dwm();
 #endif
 
-#ifdef HAVE_MENU
+#if defined(HAVE_MENU) && defined(HAVE_OVERLAY)
    if (d3d->menu)
       free(d3d->menu);
 
@@ -440,7 +440,7 @@ static bool d3d_construct(d3d_video_t *d3d,
    d3d->menu->vert_coords.h = -1;
 #endif
 
-#ifdef HAVE_WINDOW
+#if defined(HAVE_WINDOW) && !defined(_XBOX)
    memset(&d3d->windowClass, 0, sizeof(d3d->windowClass));
    d3d->windowClass.cbSize        = sizeof(d3d->windowClass);
    d3d->windowClass.style         = CS_HREDRAW | CS_VREDRAW;
@@ -478,7 +478,7 @@ static bool d3d_construct(d3d_video_t *d3d,
    d3d->screen_width  = info->fullscreen ? full_x : info->width;
    d3d->screen_height = info->fullscreen ? full_y : info->height;
 
-#ifdef HAVE_WINDOW
+#if defined(HAVE_WINDOW) && !defined(_XBOX)
    unsigned win_width  = d3d->screen_width;
    unsigned win_height = d3d->screen_height;
 
@@ -517,7 +517,7 @@ static bool d3d_construct(d3d_video_t *d3d,
 #endif
    );
 
-#ifdef HAVE_WINDOW
+#if defined(HAVE_WINDOW) && !defined(_XBOX)
    ShowWindow(d3d->hWnd, SW_RESTORE);
    UpdateWindow(d3d->hWnd);
    SetForegroundWindow(d3d->hWnd);
@@ -647,8 +647,9 @@ static void *d3d_init(const video_info_t *info,
 #ifdef _XBOX
    vid->should_resize        = false;
    vid->vsync                = info->vsync;
-#endif
+#else
    vid->menu                 = NULL;
+#endif
 
    if (!d3d_construct(vid, info, input, input_data))
    {

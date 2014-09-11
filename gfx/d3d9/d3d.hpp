@@ -35,6 +35,10 @@
 #endif
 #endif
 
+#ifdef _XBOX1
+#include <xfont.h>
+#endif
+
 #include "../../general.h"
 #include "../../driver.h"
 #include "../shader_parse.h"
@@ -53,7 +57,13 @@
 
 class RenderChain;
 
-#ifndef _XBOX
+#if defined(_XBOX)
+#if defined(_XBOX1)
+#define D3DDevice_Presents(d3d, device) D3DDevice_Swap(0)
+#elif defined(_XBOX360)
+#define D3DDevice_Presents(d3d, device) D3DDevice_Present(device)
+#endif
+#else
 #define D3DDevice_SetSamplerState_AddressU(dev, sampler, type) dev->SetSamplerState(sampler, D3DSAMP_ADDRESSU, type)
 #define D3DDevice_SetSamplerState_AddressV(dev, sampler, type) dev->SetSamplerState(sampler, D3DSAMP_ADDRESSV, type)
 #define D3DDevice_SetSamplerState_MinFilter(dev, sampler, type) dev->SetSamplerState(sampler, D3DSAMP_MINFILTER, type)
@@ -93,7 +103,7 @@ class RenderChain;
    }
 #endif
 
-
+#ifdef HAVE_OVERLAY
 typedef struct
 {
    struct Coords
@@ -109,6 +119,7 @@ typedef struct
    LPDIRECT3DTEXTURE tex;
    LPDIRECT3DVERTEXBUFFER vert_buf;
 } overlay_t;
+#endif
 
 #ifdef _XBOX
 typedef struct Vertex
@@ -160,7 +171,9 @@ typedef struct d3d_video
 
       std::string cg_shader;
 
+#ifndef _XBOX
       struct gfx_shader shader;
+#endif
 
       video_info_t video_info;
 
@@ -180,7 +193,7 @@ typedef struct d3d_video
 
       bool menu_texture_enable;
       bool menu_texture_full_screen;
-#ifdef HAVE_MENU
+#if defined(HAVE_MENU) && defined(HAVE_OVERLAY)
       overlay_t *menu;
 #endif
       void *chain;
@@ -199,6 +212,9 @@ typedef struct d3d_video
       // RENDERCHAIN PASS -> INFO
       unsigned tex_w;
       unsigned tex_h;
+#endif
+#ifdef _XBOX
+	  bool vsync;
 #endif
 } d3d_video_t;
 
