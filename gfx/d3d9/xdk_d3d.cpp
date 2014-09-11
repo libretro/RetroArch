@@ -34,17 +34,6 @@
 
 #include "render_chain_xdk.h"
 
-static void d3d_deinit_shader(void *data)
-{
-	(void)data;
-}
-
-static bool d3d_init_shader(void *data)
-{
-	(void)data;
-    return false;
-}
-
 static void d3d_free(void *data)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;

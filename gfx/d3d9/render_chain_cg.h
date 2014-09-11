@@ -569,33 +569,4 @@ void renderchain_bind_pass(void *data, Pass &pass, unsigned pass_index)
       }
    }
 }
-
-bool d3d_init_shader(void *data)
-{
-   d3d_video_t *d3d = (d3d_video_t*)data;
-   d3d->cgCtx = cgCreateContext();
-   if (!d3d->cgCtx)
-      return false;
-
-   RARCH_LOG("[D3D]: Created shader context.\n");
-
-   HRESULT ret = cgD3D9SetDevice(d3d->dev);
-   if (FAILED(ret))
-      return false;
-
-   return true;
-}
-
-void d3d_deinit_shader(void *data)
-{
-   d3d_video_t *d3d = (d3d_video_t*)data;
-   if (!d3d->cgCtx)
-      return;
-
-   cgD3D9UnloadAllPrograms();
-   cgD3D9SetDevice(NULL);
-   cgDestroyContext(d3d->cgCtx);
-   d3d->cgCtx = NULL;
-}
-
 #endif

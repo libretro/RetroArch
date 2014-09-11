@@ -15,8 +15,7 @@ static bool d3d_init_chain(d3d_video_t *d3d,
       const video_info_t *video_info);
 
 static void renderchain_free(void *data);
-void d3d_deinit_shader(void *data);
-bool d3d_init_shader(void *data);
+
 
 void d3d_make_d3dpp(void *data, const video_info_t *info,
 	D3DPRESENT_PARAMETERS *d3dpp);
@@ -29,6 +28,44 @@ extern LRESULT CALLBACK WindowProc(HWND hWnd, UINT message,
         WPARAM wParam, LPARAM lParam);
 static RECT d3d_monitor_rect(d3d_video_t *d3d);
 #endif
+
+static void d3d_deinit_shader(void *data)
+{
+   d3d_video_t *d3d = (d3d_video_t*)data;
+   (void)d3d;
+   (void)data;
+
+#ifdef HAVE_CG
+   if (!d3d->cgCtx)
+      return;
+
+   cgD3D9UnloadAllPrograms();
+   cgD3D9SetDevice(NULL);
+   cgDestroyContext(d3d->cgCtx);
+   d3d->cgCtx = NULL;
+#endif
+}
+
+static bool d3d_init_shader(void *data)
+{
+   d3d_video_t *d3d = (d3d_video_t*)data;
+   (void)d3d;
+	(void)data;
+#if defined(_XBOX)
+    return false;
+#elif defined(HAVE_CG)
+   d3d->cgCtx = cgCreateContext();
+   if (!d3d->cgCtx)
+      return false;
+
+   RARCH_LOG("[D3D]: Created shader context.\n");
+
+   HRESULT ret = cgD3D9SetDevice(d3d->dev);
+   if (FAILED(ret))
+      return false;
+   return true;
+#endif
+}
 
 static void d3d_deinit_chain(d3d_video_t *d3d)
 {
