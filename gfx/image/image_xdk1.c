@@ -15,11 +15,11 @@
  */
 
 #include "image.h"
-#include "../../xdk/xdk_d3d.h"
+#include "../d3d9/d3d_defines.h"
 
 bool texture_image_load(struct texture_image *out_img, const char *path)
 {
-   d3d_video_t *d3d = (d3d_video_t*)data;
+   d3d_video_t *d3d = (d3d_video_t*)driver.video_data;
 
    D3DXIMAGE_INFO m_imageInfo;
 
