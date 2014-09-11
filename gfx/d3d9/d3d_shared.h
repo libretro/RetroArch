@@ -628,8 +628,8 @@ static void *d3d_init(const video_info_t *info,
 #endif
 #ifdef _XBOX
    vid->should_resize        = false;
-#endif
    vid->vsync                = info->vsync;
+#endif
    vid->menu                 = NULL;
 
    if (!d3d_construct(vid, info, input, input_data))
