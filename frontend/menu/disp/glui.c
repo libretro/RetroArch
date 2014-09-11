@@ -38,12 +38,12 @@
 
 #include "shared.h"
 
-#define FONT_HEIGHT_STRIDE 40
-#define FONT_WIDTH_STRIDE 20
-#define RGUI_TERM_START_X (gl->win_width / 21)
-#define RGUI_TERM_START_Y (gl->win_height / 9)
-#define RGUI_TERM_WIDTH (((gl->win_width - RGUI_TERM_START_X - RGUI_TERM_START_X) / (FONT_WIDTH_STRIDE)))
-#define RGUI_TERM_HEIGHT (((gl->win_height - RGUI_TERM_START_Y) / (FONT_HEIGHT_STRIDE)) - 1)
+#define GLUI_FONT_HEIGHT_STRIDE 40
+#define GLUI_FONT_WIDTH_STRIDE 20
+#define GLUI_TERM_START_X (gl->win_width / 21)
+#define GLUI_TERM_START_Y (gl->win_height / 9)
+#define GLUI_TERM_WIDTH (((gl->win_width - GLUI_TERM_START_X - GLUI_TERM_START_X) / (GLUI_FONT_WIDTH_STRIDE)))
+#define GLUI_TERM_HEIGHT (((gl->win_height - GLUI_TERM_START_Y) / (GLUI_FONT_HEIGHT_STRIDE)) - 1)
 
 const gl_font_renderer_t *font_driver;
 
@@ -65,7 +65,7 @@ static void blit_line(float x, float y, const char *message, bool green)
    params.full_screen = true;
 
    if (font_driver)
-      font_driver->render_msg(driver.menu->font, message, &params);
+      font_driver->render_msg((void*)driver.menu->font, message, &params);
 }
 
 static void glui_render_background(void)
@@ -113,19 +113,19 @@ static void glui_frame(void)
    size_t begin = 0;
    size_t end;
 
-   if (driver.menu->selection_ptr >= RGUI_TERM_HEIGHT / 2)
-      begin = driver.menu->selection_ptr - RGUI_TERM_HEIGHT / 2;
-   end   = (driver.menu->selection_ptr + RGUI_TERM_HEIGHT <=
+   if (driver.menu->selection_ptr >= GLUI_TERM_HEIGHT / 2)
+      begin = driver.menu->selection_ptr - GLUI_TERM_HEIGHT / 2;
+   end   = (driver.menu->selection_ptr + GLUI_TERM_HEIGHT <=
          file_list_get_size(driver.menu->selection_buf)) ?
-      driver.menu->selection_ptr + RGUI_TERM_HEIGHT :
+      driver.menu->selection_ptr + GLUI_TERM_HEIGHT :
       file_list_get_size(driver.menu->selection_buf);
 
    /* Do not scroll if all items are visible. */
-   if (file_list_get_size(driver.menu->selection_buf) <= RGUI_TERM_HEIGHT)
+   if (file_list_get_size(driver.menu->selection_buf) <= GLUI_TERM_HEIGHT)
       begin = 0;
 
-   if (end - begin > RGUI_TERM_HEIGHT)
-      end = begin + RGUI_TERM_HEIGHT;
+   if (end - begin > GLUI_TERM_HEIGHT)
+      end = begin + GLUI_TERM_HEIGHT;
 
    glui_render_background();
 
@@ -148,9 +148,9 @@ static void glui_frame(void)
          title, sizeof(title));
 
    char title_buf[256];
-   menu_ticker_line(title_buf, RGUI_TERM_WIDTH - 3,
-         g_extern.frame_count / RGUI_TERM_START_X, title, true);
-   blit_line(RGUI_TERM_START_X + RGUI_TERM_START_X, RGUI_TERM_START_X, title_buf, true);
+   menu_ticker_line(title_buf, GLUI_TERM_WIDTH - 3,
+         g_extern.frame_count / GLUI_TERM_START_X, title, true);
+   blit_line(GLUI_TERM_START_X + GLUI_TERM_START_X, GLUI_TERM_START_X, title_buf, true);
 
    char title_msg[64];
    const char *core_name = g_extern.menu.info.library_name;
@@ -168,17 +168,17 @@ static void glui_frame(void)
    snprintf(title_msg, sizeof(title_msg), "%s - %s %s", PACKAGE_VERSION,
          core_name, core_version);
    blit_line(
-         RGUI_TERM_START_X + RGUI_TERM_START_X,
-         (RGUI_TERM_HEIGHT * FONT_HEIGHT_STRIDE) +
-         RGUI_TERM_START_Y + 2, title_msg, true);
+         GLUI_TERM_START_X + GLUI_TERM_START_X,
+         (GLUI_TERM_HEIGHT * GLUI_FONT_HEIGHT_STRIDE) +
+         GLUI_TERM_START_Y + 2, title_msg, true);
 
    unsigned x, y;
    size_t i;
 
-   x = RGUI_TERM_START_X;
-   y = RGUI_TERM_START_Y;
+   x = GLUI_TERM_START_X;
+   y = GLUI_TERM_START_Y;
 
-   for (i = begin; i < end; i++, y += FONT_HEIGHT_STRIDE)
+   for (i = begin; i < end; i++, y += GLUI_FONT_HEIGHT_STRIDE)
    {
       char message[PATH_MAX], type_str[PATH_MAX],
            entry_title_buf[PATH_MAX], type_str_buf[PATH_MAX],
@@ -201,15 +201,15 @@ static void glui_frame(void)
 
       selected = (i == driver.menu->selection_ptr);
 
-      menu_ticker_line(entry_title_buf, RGUI_TERM_WIDTH - (w + 1 + 2),
-            g_extern.frame_count / RGUI_TERM_START_X, path_buf, selected);
-      menu_ticker_line(type_str_buf, w, g_extern.frame_count / RGUI_TERM_START_X,
+      menu_ticker_line(entry_title_buf, GLUI_TERM_WIDTH - (w + 1 + 2),
+            g_extern.frame_count / GLUI_TERM_START_X, path_buf, selected);
+      menu_ticker_line(type_str_buf, w, g_extern.frame_count / GLUI_TERM_START_X,
             type_str, selected);
 
       snprintf(message, sizeof(message), "%c %-*.*s %-*s",
             selected ? '>' : ' ',
-            RGUI_TERM_WIDTH - (w + 1 + 2),
-            RGUI_TERM_WIDTH - (w + 1 + 2),
+            GLUI_TERM_WIDTH - (w + 1 + 2),
+            GLUI_TERM_WIDTH - (w + 1 + 2),
             entry_title_buf,
             w,
             type_str_buf);
@@ -307,7 +307,7 @@ static void glui_context_reset(void *data)
    if (!menu)
       return;
 
-   gl_font_init_first(&font_driver, &menu->font, gl, g_settings.video.font_path,
+   gl_font_init_first(&font_driver, (void*)&menu->font, gl, g_settings.video.font_path,
       g_settings.video.font_size);
 }
 
