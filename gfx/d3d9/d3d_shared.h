@@ -1,6 +1,10 @@
 #include "d3d_defines.h"
 #include "../gfx_common.h"
 
+#ifdef HAVE_HLSL
+#include "../shader_hlsl.h"
+#endif
+
 /* forward declarations */
 static void d3d_calculate_rect(d3d_video_t *d3d,
       unsigned width, unsigned height,
@@ -51,7 +55,7 @@ static bool d3d_init_shader(void *data)
    d3d_video_t *d3d = (d3d_video_t*)data;
    (void)d3d;
 	(void)data;
-#if defined(_XBOX360)
+#if defined(HAVE_HLSL)
    RARCH_LOG("D3D]: Using HLSL shader backend.\n");
    const gl_shader_backend_t *backend = &hlsl_backend;
    const char *shader_path = g_settings.video.shader_path;
@@ -60,8 +64,6 @@ static bool d3d_init_shader(void *data)
       return false;
 
    return d3d->shader->init(d3d, shader_path);
-#elif defined(_XBOX1)
-    return false;
 #elif defined(HAVE_CG)
    d3d->cgCtx = cgCreateContext();
    if (!d3d->cgCtx)
@@ -73,6 +75,8 @@ static bool d3d_init_shader(void *data)
    if (FAILED(ret))
       return false;
    return true;
+#elif defined(_XBOX1)
+	return false;
 #endif
 }
 
