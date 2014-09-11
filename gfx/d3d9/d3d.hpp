@@ -110,6 +110,7 @@ typedef struct
    LPDIRECT3DVERTEXBUFFER vert_buf;
 } overlay_t;
 
+#ifdef _XBOX
 typedef struct Vertex
 {
    float x, y;
@@ -119,6 +120,7 @@ typedef struct Vertex
 #endif
    float u, v;
 } Vertex;
+#endif
 
 typedef struct gl_shader_backend gl_shader_backend_t;
 
@@ -128,7 +130,9 @@ typedef struct d3d_video
 {
       const d3d_font_renderer_t *font_ctx;
       const gfx_ctx_driver_t *ctx_driver;
+#ifdef _XBOX
       const gl_shader_backend_t *shader;
+#endif
       bool should_resize;
       bool quitting;
 
