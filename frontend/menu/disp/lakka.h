@@ -51,7 +51,7 @@ typedef struct
    float  alpha;
    float  zoom;
    float  y;
-   char  value[256];
+   rarch_setting_t *setting;
 } menu_subitem_t;
 
 typedef struct

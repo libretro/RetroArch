@@ -33,8 +33,6 @@
 #include "../../../config.def.h"
 #include "../../../input/keyboard_line.h"
 
-#include "../../../settings_data.h"
-
 #if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
 #define HAVE_SHADER_MANAGER
 #endif
@@ -209,7 +207,7 @@ static int menu_common_setting_set_perf(unsigned setting, unsigned action,
    return 0;
 }
 
-static void menu_common_setting_set_current_boolean(
+void menu_common_setting_set_current_boolean(
       rarch_setting_t *setting, unsigned action)
 {
    if (
@@ -269,7 +267,7 @@ static void menu_common_setting_set_current_path_selection(
       setting->change_handler(setting);
 }
 
-static void menu_common_setting_set_current_fraction(
+void menu_common_setting_set_current_fraction(
       rarch_setting_t *setting, unsigned action)
 {
    if (!strcmp(setting->name, "video_refresh_rate_auto"))
@@ -351,7 +349,7 @@ static void menu_common_setting_set_current_fraction(
       setting->change_handler(setting);
 }
 
-static void menu_common_setting_set_current_unsigned_integer(
+void menu_common_setting_set_current_unsigned_integer(
       rarch_setting_t *setting, unsigned id, unsigned action)
 {
    if (id == MENU_FILE_LINEFEED)

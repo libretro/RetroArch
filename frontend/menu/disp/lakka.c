@@ -536,9 +536,12 @@ static void lakka_draw_subitems(int i, int j)
          }
       }
 
-      if (subitem->value)
+      if (subitem->setting)
       {
-         lakka_draw_text(subitem->value, 
+         char val[256];
+         setting_data_get_string_representation(subitem->setting, val,
+               sizeof(val));
+         lakka_draw_text(val, 
                margin_left + hspacing * (i+2.25) +
                all_categories_x + label_margin_left + 400, 
                margin_top + subitem->y + label_margin_top, 
@@ -783,8 +786,7 @@ void lakka_init_settings(void)
                subitem->y = kk ? vspacing * (kk + under_item_offset)
                   : vspacing * active_item_factor;
 
-               setting_data_get_string_representation(&setting, subitem->value,
-                     sizeof(subitem->value));
+               subitem->setting = &setting_data[k];
 
                kk++;
             }
