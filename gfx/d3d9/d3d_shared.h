@@ -1,8 +1,12 @@
 #include "d3d_defines.h"
 #include "../gfx_common.h"
 
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
+
 #ifdef HAVE_HLSL
 #include "../shader_hlsl.h"
+#endif
+
 #endif
 
 /* forward declarations */
