@@ -476,35 +476,6 @@ static bool d3d_frame(void *data, const void *frame,
    return true;
 }
 
-static void d3d_free(void *data)
-{
-   d3d_video_t *d3d = (d3d_video_t*)data;
-   d3d_deinitialize(d3d);
-#ifdef HAVE_OVERLAY
-   d3d_free_overlays(d3d);
-#endif
-#ifdef HAVE_MENU
-   d3d_free_overlay(d3d, d3d->menu);
-#endif
-   if (d3d->dev)
-      d3d->dev->Release();
-   if (d3d->g_pD3D)
-      d3d->g_pD3D->Release();
-
-#ifdef HAVE_MONITOR
-   Monitor::last_hm = MonitorFromWindow(d3d->hWnd,
-         MONITOR_DEFAULTTONEAREST);
-   DestroyWindow(d3d->hWnd);
-#endif
-
-   if (d3d)
-      delete d3d;
-
-#ifndef _XBOX
-   UnregisterClass("RetroArch", GetModuleHandle(NULL));
-#endif
-}
-
 static bool d3d_read_viewport(void *data, uint8_t *buffer)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
