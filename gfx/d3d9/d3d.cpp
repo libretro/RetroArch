@@ -712,47 +712,6 @@ static void d3d_get_poke_interface(void *data,
    *iface = &d3d_poke_interface;
 }
 
-static void *d3d_init(const video_info_t *info, const input_driver_t **input,
-      void **input_data)
-{
-   d3d_video_t *vid = new d3d_video_t();
-   if (!vid)
-      return NULL;
-
-   vid->ctx_driver = d3d_get_context(NULL);
-   if (!vid->ctx_driver)
-   {
-      delete vid;
-      return NULL;
-   }
-
-   /* default values */
-   vid->g_pD3D           = NULL;
-   vid->dev              = NULL;
-#ifndef _XBOX
-   vid->font             = NULL;
-#endif
-   vid->dev_rotation     = 0;
-   vid->needs_restore    = false;
-#ifdef HAVE_CG
-   vid->cgCtx            = NULL;
-#endif
-#ifdef HAVE_OVERLAY
-   vid->overlays_enabled = false;
-#endif
-   vid->chain            = NULL;
-   vid->menu             = NULL;
-
-   if (!d3d_construct(vid, info, input, input_data))
-   {
-      RARCH_ERR("[D3D]: Failed to init D3D.\n");
-      delete vid;
-      return NULL;
-   }
-
-   return vid;
-}
-
 video_driver_t video_d3d = {
    d3d_init,
    d3d_frame,

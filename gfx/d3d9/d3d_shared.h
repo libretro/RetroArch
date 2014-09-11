@@ -576,3 +576,73 @@ static const gfx_ctx_driver_t *d3d_get_context(void *data)
    return gfx_ctx_init_first(driver.video_data, api,
          major, minor, false);
 }
+
+static void *d3d_init(const video_info_t *info,
+      const input_driver_t **input, void **input_data)
+{
+#ifdef _XBOX
+   if (driver.video_data)
+   {
+      d3d_video_t *vid = (d3d_video_t*)driver.video_data;
+
+      /* Reinitialize renderchain as we 
+       * might have changed pixel formats.*/
+      d3d_reinit_renderchain(vid, info);
+
+      if (input && input_data)
+      {
+         *input = driver.input;
+         *input_data = driver.input_data;
+      }
+
+      driver.video_data_own = true;
+      driver.input_data_own = true;
+      return driver.video_data;
+   }
+#endif
+
+   d3d_video_t *vid = new d3d_video_t();
+   if (!vid)
+      return NULL;
+
+   vid->ctx_driver = d3d_get_context(vid);
+   if (!vid->ctx_driver)
+   {
+      free(vid);
+      return NULL;
+   }
+
+   /* Default values */
+   vid->g_pD3D               = NULL;
+   vid->dev                  = NULL;
+#ifndef _XBOX
+   vid->font                 = NULL;
+#endif
+   vid->dev_rotation         = 0;
+   vid->needs_restore        = false;
+#ifdef HAVE_CG
+   vid->cgCtx                = NULL;
+#endif
+#ifdef HAVE_OVERLAY
+   vid->overlays_enabled     = false;
+#endif
+#ifdef _XBOX
+   vid->should_resize        = false;
+#endif
+   vid->vsync                = info->vsync;
+   vid->menu                 = NULL;
+
+   if (!d3d_construct(vid, info, input, input_data))
+   {
+      RARCH_ERR("[D3D]: Failed to init D3D.\n");
+      delete vid;
+      return NULL;
+   }
+
+#ifdef _XBOX
+   driver.video_data_own = true;
+   driver.input_data_own = true;
+#endif
+
+   return vid;
+}
