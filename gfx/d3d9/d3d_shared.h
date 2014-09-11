@@ -23,6 +23,11 @@ static void d3d_free_overlays(void *data);
 static void d3d_free_overlay(void *data, overlay_t *overlay);
 #endif
 
+#ifdef _XBOX
+static void d3d_reinit_renderchain(void *data,
+      const video_info_t *video);
+#endif
+
 static void renderchain_free(void *data);
 
 void d3d_make_d3dpp(void *data, const video_info_t *info,
