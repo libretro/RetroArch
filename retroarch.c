@@ -3682,7 +3682,7 @@ void rarch_main_command(unsigned cmd)
                driver.menu_ctx->backend->shader_manager_save_preset(NULL, true);
             else
             {
-#if defined(HAVE_CG || defined(HAVE_HLSL) || defined(HAVE_GLSL)
+#if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
                shader_type = gfx_shader_parse_type("", DEFAULT_SHADER_TYPE);
 #endif
 
