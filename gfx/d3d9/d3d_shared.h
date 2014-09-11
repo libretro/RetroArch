@@ -51,7 +51,16 @@ static bool d3d_init_shader(void *data)
    d3d_video_t *d3d = (d3d_video_t*)data;
    (void)d3d;
 	(void)data;
-#if defined(_XBOX)
+#if defined(_XBOX360)
+   RARCH_LOG("D3D]: Using HLSL shader backend.\n");
+   const gl_shader_backend_t *backend = &hlsl_backend;
+   const char *shader_path = g_settings.video.shader_path;
+   d3d->shader = backend;
+   if (!d3d->shader)
+      return false;
+
+   return d3d->shader->init(d3d, shader_path);
+#elif defined(_XBOX1)
     return false;
 #elif defined(HAVE_CG)
    d3d->cgCtx = cgCreateContext();
