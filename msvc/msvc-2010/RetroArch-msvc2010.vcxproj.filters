@@ -120,9 +120,6 @@
     <ClCompile Include="..\..\frontend\frontend_context.c">
       <Filter>frontend</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\gfx\context\win32_common.c">
-      <Filter>input</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\gfx\scaler\pixconv.c">
       <Filter>gfx\scaler</Filter>
     </ClCompile>
@@ -258,9 +255,166 @@
     <ClCompile Include="..\..\record\ffemu.c">
       <Filter>record</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\gfx\context\win32_common.c">
+      <Filter>gfx\context</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="resource.h" />
+    <ClInclude Include="..\..\retroarch_logger.h" />
+    <ClInclude Include="..\..\autosave.h" />
+    <ClInclude Include="..\..\cheats.h" />
+    <ClInclude Include="..\..\command.h" />
+    <ClInclude Include="..\..\core_info.h" />
+    <ClInclude Include="..\..\core_options.h" />
+    <ClInclude Include="..\..\driver.h" />
+    <ClInclude Include="..\..\dynamic.h" />
+    <ClInclude Include="..\..\dynamic_dummy.h" />
+    <ClInclude Include="..\..\file.h" />
+    <ClInclude Include="..\..\file_extract.h" />
+    <ClInclude Include="..\..\fifo_buffer.h" />
+    <ClInclude Include="..\..\file_list.h" />
+    <ClInclude Include="..\..\file_path.h" />
+    <ClInclude Include="..\..\hash.h" />
+    <ClInclude Include="..\..\rewind.h" />
+    <ClInclude Include="..\..\screenshot.h" />
+    <ClInclude Include="..\..\settings_data.h" />
+    <ClInclude Include="..\..\thread.h" />
+    <ClInclude Include="..\..\message_queue.h" />
+    <ClInclude Include="..\..\movie.h" />
+    <ClInclude Include="..\..\netplay.h" />
+    <ClInclude Include="..\..\patch.h" />
+    <ClInclude Include="..\..\performance.h" />
+    <ClInclude Include="..\..\playlist.h" />
+    <ClInclude Include="..\..\audio\resamplers\resampler.h">
+      <Filter>audio</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\audio\thread_wrapper.h">
+      <Filter>audio</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\audio\utils.h">
+      <Filter>audio</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\audio\dsp_filter.h">
+      <Filter>audio</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\compat\rxml\rxml.h">
+      <Filter>compat\rxml</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\frontend\frontend.h">
+      <Filter>frontend</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\frontend\frontend_context.h">
+      <Filter>frontend</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\frontend\menu\menu_navigation.h">
+      <Filter>frontend\menu</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\frontend\menu\menu_common.h">
+      <Filter>frontend\menu</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\frontend\menu\menu_entries.h">
+      <Filter>frontend\menu</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\frontend\menu\menu_input_line_cb.h">
+      <Filter>frontend\menu</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\frontend\menu\backend\menu_common_backend.h">
+      <Filter>frontend\menu\backend</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\frontend\menu\disp\shared.h">
+      <Filter>frontend\menu\disp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\gfx\shader_cg.h">
+      <Filter>gfx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\gfx\shader_common.h">
+      <Filter>gfx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\gfx\shader_glsl.h">
+      <Filter>gfx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\gfx\shader_parse.h">
+      <Filter>gfx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\gfx\state_tracker.h">
+      <Filter>gfx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\gfx\filter.h">
+      <Filter>gfx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\gfx\gfx_common.h">
+      <Filter>gfx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\gfx\gfx_context.h">
+      <Filter>gfx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\gfx\gl_common.h">
+      <Filter>gfx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\gfx\d3d9\d3d.hpp">
+      <Filter>gfx\d3d9</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\gfx\d3d9\render_chain.hpp">
+      <Filter>gfx\d3d9</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\gfx\fonts\gl_font.h">
+      <Filter>gfx\fonts</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\gfx\fonts\d3d_font.h">
+      <Filter>gfx\fonts</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\gfx\fonts\fonts.h">
+      <Filter>gfx\fonts</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\gfx\glsym\rglgen.h">
+      <Filter>gfx\glsym</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\gfx\glsym\glsym_gl.h">
+      <Filter>gfx\glsym</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\gfx\image\image.h">
+      <Filter>gfx\image</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\gfx\math\matrix_3x3.h">
+      <Filter>gfx\math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\gfx\math\matrix.h">
+      <Filter>gfx\math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\gfx\rpng\rpng.h">
+      <Filter>gfx\rpng</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\gfx\scaler\scaler_common.h">
+      <Filter>gfx\scaler</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\gfx\scaler\scaler_int.h">
+      <Filter>gfx\scaler</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\gfx\scaler\pixconv.h">
+      <Filter>gfx\scaler</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\gfx\scaler\scaler.h">
+      <Filter>gfx\scaler</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\input\input_common.h">
+      <Filter>input</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\input\keyboard_line.h">
+      <Filter>input</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\input\autoconf\builtin.h">
+      <Filter>input\autoconf</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\input\overlay.h">
+      <Filter>input</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\gfx\context\win32_common.h">
+      <Filter>gfx\context</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\record\ffemu.h">
+      <Filter>record</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\..\media\rarch.rc" />
@@ -319,9 +473,6 @@
     </Filter>
     <Filter Include="deps\zlib">
       <UniqueIdentifier>{cf7c2fb9-ca3c-468e-af4f-74c652b3e5fe}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="frontend\menu\info">
-      <UniqueIdentifier>{bc290b55-620e-4351-b3b8-4d7a0a3b8792}</UniqueIdentifier>
     </Filter>
     <Filter Include="frontend\menu\backend">
       <UniqueIdentifier>{dd1ca879-56f4-43f6-8bd8-ae50222061e8}</UniqueIdentifier>
