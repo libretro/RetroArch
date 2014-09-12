@@ -44,6 +44,8 @@
 #endif
 
 #elif defined(_XBOX1)
+#include <xtl.h>
+
 //Direct3D 8
 #define LPDIRECT3D                     LPDIRECT3D8
 #define LPDIRECT3DDEVICE               LPDIRECT3DDEVICE8
