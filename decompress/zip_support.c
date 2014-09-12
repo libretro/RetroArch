@@ -33,7 +33,7 @@
  */
 int read_zip_file(const char * archive_path, const char *relative_path, void **buf)
 {
-   size_t bytes_read = -1;
+   ssize_t bytes_read = -1;
    bool finished_reading = false;
    unzFile *zipfile = (unzFile*)unzOpen( archive_path );
    if ( ! zipfile )
@@ -144,7 +144,7 @@ struct string_list *compressed_zip_file_list_new(const char *path,
       ext_list = string_split(ext, "|");
 
 
-   size_t bytes_read = -1;
+   ssize_t bytes_read = -1;
    bool finished_reading = false;
    unzFile *zipfile = (unzFile*)unzOpen( path );
 
