@@ -197,7 +197,7 @@ static bool texture_image_render(void *data,
 
    /* Draw the quad. */
    d3dr->SetTexture(0, out_img->pixels);
-   D3DDevice_SetStreamSources(d3dr, 0,
+   d3d_set_stream_source(d3dr, 0,
          out_img->vertex_buf, 0, sizeof(Vertex));
    d3dr->SetVertexShader(D3DFVF_CUSTOMVERTEX);
 
