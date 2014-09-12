@@ -113,7 +113,7 @@ static void d3d_overlay_render(void *data, overlay_t *overlay)
 
    /* Restore previous state. */
    d3d->dev->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
-   d3d_set_viewport(d3d->dev, &final_viewport);
+   d3d_set_viewport(d3d->dev, &d3d->final_viewport);
 }
 
 static void d3d_free_overlay(void *data, overlay_t *overlay)
