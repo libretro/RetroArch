@@ -94,7 +94,7 @@ DYNAMIC = 1
 
 HAVE_WINXINPUT = 1
 
-HAVE_LAKKA = 0
+HAVE_LAKKA = 1
 
 ifeq ($(SLIM),)
    HAVE_SDL = 1
