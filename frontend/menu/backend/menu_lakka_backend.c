@@ -356,15 +356,19 @@ static int menu_lakka_iterate(unsigned action)
          case MENU_ACTION_RIGHT:
          case MENU_ACTION_OK:
          case MENU_ACTION_START:
-            if (active_subitem->setting->type == ST_BOOL)
-               menu_action_setting_boolean(
-                     active_subitem->setting, action);
-            else if (active_subitem->setting->type == ST_UINT)
-               menu_action_setting_unsigned_integer(
-                     active_subitem->setting, 0, action);
-            else if (active_subitem->setting->type == ST_FLOAT)
-               menu_action_setting_fraction(
-                     active_subitem->setting, action);
+            {
+               rarch_setting_t *setting = (rarch_setting_t*)
+                  active_subitem->setting;
+
+               if (setting->type == ST_BOOL)
+                  menu_action_setting_boolean(setting, action);
+               else if (setting->type == ST_UINT)
+                  menu_action_setting_unsigned_integer(setting, 0, action);
+               else if (setting->type == ST_FLOAT)
+                  menu_action_setting_fraction(setting, action);
+               else if (setting->type == ST_STRING)
+                  menu_action_setting_driver(setting, action);
+            }
             break;
          default:
             break;

@@ -189,3 +189,31 @@ void menu_action_setting_fraction(
    if (setting->change_handler)
       setting->change_handler(setting);
 }
+
+void menu_action_setting_driver(
+      rarch_setting_t *setting, unsigned action)
+{
+   if (!strcmp(setting->name, "audio_resampler_driver"))
+   {
+      if (action == MENU_ACTION_LEFT)
+         find_prev_resampler_driver();
+      else if (action == MENU_ACTION_RIGHT)
+         find_next_resampler_driver();
+   }
+   else if (setting->flags & SD_FLAG_IS_DRIVER)
+   {
+      const char *label    = setting->name;
+      char *driver         = (char*)setting->value.string;
+      size_t sizeof_driver = setting->size;
+
+      switch (action)
+      {
+         case MENU_ACTION_LEFT:
+            find_prev_driver(label, driver, sizeof_driver);
+            break;
+         case MENU_ACTION_RIGHT:
+            find_next_driver(label, driver, sizeof_driver);
+            break;
+      }
+   }
+}

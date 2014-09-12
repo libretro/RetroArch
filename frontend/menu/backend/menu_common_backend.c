@@ -262,20 +262,6 @@ void menu_common_setting_set_current_string(
       setting->change_handler(setting);
 }
 
-static void handle_driver(const char *label, char *driver,
-      size_t sizeof_driver, unsigned action)
-{
-   switch (action)
-   {
-      case MENU_ACTION_LEFT:
-         find_prev_driver(label, driver, sizeof_driver);
-         break;
-      case MENU_ACTION_RIGHT:
-         find_next_driver(label, driver, sizeof_driver);
-         break;
-   }
-}
-
 static void handle_setting(rarch_setting_t *setting,
       unsigned id, const char *label, unsigned action)
 {
@@ -300,7 +286,9 @@ static void handle_setting(rarch_setting_t *setting,
             setting->default_value.string, setting->name, id, action);
    else if (setting->type == ST_STRING)
    {
-      if (id == MENU_FILE_LINEFEED || id == MENU_FILE_LINEFEED_SWITCH)
+      if (
+            (setting->flags & SD_FLAG_ALLOW_INPUT) || 
+            id == MENU_FILE_LINEFEED_SWITCH)
       {
          if (action == MENU_ACTION_OK)
             menu_key_start_line(driver.menu, setting->short_description,
@@ -308,16 +296,8 @@ static void handle_setting(rarch_setting_t *setting,
          else if (action == MENU_ACTION_START)
             *setting->value.string = '\0';
       }
-      else if (!strcmp(setting->name, "audio_resampler_driver"))
-      {
-         if (action == MENU_ACTION_LEFT)
-            find_prev_resampler_driver();
-         else if (action == MENU_ACTION_RIGHT)
-            find_next_resampler_driver();
-      }
-      else if (id == MENU_FILE_DRIVER)
-         handle_driver(setting->name, setting->value.string,
-               setting->size, action);
+      else
+         menu_action_setting_driver(setting, action);
    }
 }
 

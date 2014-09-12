@@ -28,4 +28,7 @@ void menu_action_setting_fraction(
 void menu_action_setting_unsigned_integer(
       rarch_setting_t *setting, unsigned id, unsigned action);
 
+void menu_action_setting_driver(
+      rarch_setting_t *setting, unsigned action);
+
 #endif
