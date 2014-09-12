@@ -926,6 +926,18 @@ void fill_pathname_join(char *out_path,
    rarch_assert(strlcat(out_path, path, size) < size);
 }
 
+void fill_pathname_join_delim(char *out_path, const char *dir,
+      const char *path, const char delim, size_t size)
+{
+   size_t copied = strlcpy(out_path, dir, size);
+   rarch_assert(copied < size+1);
+
+   out_path[copied]=delim;
+   out_path[copied+1] = '\0';
+
+   rarch_assert(strlcat(out_path, path, size) < size);
+}
+
 void fill_pathname_expand_special(char *out_path,
       const char *in_path, size_t size)
 {

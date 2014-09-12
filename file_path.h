@@ -193,6 +193,10 @@ void fill_pathname_resolve_relative(char *out_path, const char *in_refpath,
 void fill_pathname_join(char *out_path, const char *dir,
       const char *path, size_t size);
 
+/* Joins a directory and path together using the given char. */
+void fill_pathname_join_delim(char *out_path, const char *dir,
+      const char *path, const char delim, size_t size);
+
 /* Generates a short representation of path. It should only
  * be used for displaying the result; the output representation is not
  * binding in any meaningful way (for a normal path, this is the same as basename)
