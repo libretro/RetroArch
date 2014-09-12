@@ -71,9 +71,9 @@ float active_item_factor;
 float under_item_offset;
 
 // Font variables
-void *font;
-const gl_font_renderer_t *font_driver;
-char font_path[PATH_MAX];
+static void *font;
+static const gl_font_renderer_t *font_driver;
+static char font_path[PATH_MAX];
 
 static const GLfloat vertex[] = {
    0, 0,
@@ -116,7 +116,7 @@ struct lakka_texture_item
 struct lakka_texture_item textures[TEXTURE_LAST];
 
 static tween_t* tweens = NULL;
-int numtweens = 0;
+static int numtweens = 0;
 
 static void lakka_responsive(void)
 {
