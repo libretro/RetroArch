@@ -363,6 +363,7 @@ AUDIO RESAMPLER
 ============================================================ */
 #include "../audio/resamplers/resampler.c"
 #include "../audio/resamplers/sinc.c"
+#include "../audio/resamplers/nearest.c"
 #ifdef HAVE_CC_RESAMPLER
 #include "../audio/resamplers/cc_resampler.c"
 #endif

@@ -27,6 +27,7 @@ static const rarch_resampler_t *resampler_drivers[] = {
 #ifdef HAVE_CC_RESAMPLER
    &CC_resampler,
 #endif
+   &nearest_resampler,
    NULL,
 };
 
@@ -107,4 +108,3 @@ bool rarch_resampler_realloc(void **re, const rarch_resampler_t **backend,
 
    return true;
 }
-

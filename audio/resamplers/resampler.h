@@ -52,8 +52,9 @@ typedef struct rarch_resampler
    const char *ident;
 } rarch_resampler_t;
 
-extern const rarch_resampler_t sinc_resampler;
-extern const rarch_resampler_t CC_resampler;
+extern rarch_resampler_t sinc_resampler;
+extern rarch_resampler_t CC_resampler;
+extern rarch_resampler_t nearest_resampler;
 
 /* Reallocs resampler. Will free previous handle before 
  * allocating a new one. If ident is NULL, first resampler will be used. */

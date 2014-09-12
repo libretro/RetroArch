@@ -48,6 +48,7 @@ OBJ = frontend/frontend.o \
 		audio/resamplers/resampler.o \
 		audio/dsp_filter.o \
 		audio/resamplers/sinc.o \
+		audio/resamplers/nearest.o \
 		audio/resamplers/cc_resampler.o \
 		location/nulllocation.o \
 		camera/nullcamera.o \

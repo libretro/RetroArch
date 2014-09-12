@@ -47,6 +47,7 @@ OBJ = frontend/platform/platform_emscripten.o \
 		gfx/filter.o \
 		audio/resamplers/resampler.o \
 		audio/resamplers/sinc.o \
+		audio/resamplers/nearest.o \
 		audio/resamplers/cc_resampler.o \
 		audio/nullaudio.o \
 		performance.o \
