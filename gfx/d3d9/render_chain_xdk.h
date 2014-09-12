@@ -239,6 +239,8 @@ static void renderchain_set_vertices(void *data, unsigned pass, unsigned width, 
       RD3DVertexBuffer_Unlock(d3d->vertex_buf);
    }
 
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
+#ifdef _XBOX
    if (d3d->shader)
    {
       renderchain_set_mvp(d3d, d3d->screen_width, d3d->screen_height, d3d->dev_rotation);
@@ -249,6 +251,8 @@ static void renderchain_set_vertices(void *data, unsigned pass, unsigned width, 
                d3d->screen_height, g_extern.frame_count,
                NULL, NULL, NULL, 0);
    }
+#endif
+#endif
 }
 
 static void renderchain_set_mvp(void *data, unsigned vp_width, unsigned vp_height, unsigned rotation)
@@ -278,6 +282,8 @@ static void renderchain_blit_to_texture(void *data, const void *frame,
    D3DLOCKED_RECT d3dlr;
    d3d_video_t *d3d = (d3d_video_t*)data;
 
+   (void)desc;
+
    if (d3d->last_width != width || d3d->last_height != height)
    {
       D3DTexture_LockRectClear(d3d, d3d->tex, 0, d3dlr, NULL, D3DLOCK_NOSYSLOCK);
@@ -286,52 +292,3 @@ static void renderchain_blit_to_texture(void *data, const void *frame,
    D3DTexture_LockRect(d3d->tex, 0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);
    D3DTexture_Blit(d3d, desc, d3dlr, frame, width, height, pitch);
 }
-
-static bool d3d_init_shader(void *data)
-{
-   d3d_video_t *d3d = (d3d_video_t*)data;
-   const gl_shader_backend_t *backend = NULL;
-
-   const char *shader_path = g_settings.video.shader_path;
-   enum rarch_shader_type type = gfx_shader_parse_type(shader_path, DEFAULT_SHADER_TYPE);
-   
-   switch (type)
-   {
-      case RARCH_SHADER_HLSL:
-#ifdef HAVE_HLSL
-         RARCH_LOG("[D3D]: Using HLSL shader backend.\n");
-         backend = &hlsl_backend;
-#endif
-         break;
-   }
-
-   if (!backend)
-   {
-      RARCH_ERR("[GL]: Didn't find valid shader backend. Continuing without shaders.\n");
-      return true;
-   }
-
-
-   d3d->shader = backend;
-   return d3d->shader->init(d3d, shader_path);
-}
-
-#ifdef HAVE_SHADERS
-void d3d_deinit_shader(void *data)
-{
-   d3d_video_t *d3d = (d3d_video_t*)data;
-#ifdef HAVE_CG
-   if (!d3d->cgCtx)
-      return;
-
-   cgD3D9UnloadAllPrograms();
-   cgD3D9SetDevice(NULL);
-   cgDestroyContext(d3d->cgCtx);
-   d3d->cgCtx = NULL;
-#else
-   if (d3d->shader && d3d->shader->deinit)
-      d3d->shader->deinit();
-   d3d->shader = NULL;
-#endif
-}
-#endif

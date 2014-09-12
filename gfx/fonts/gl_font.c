@@ -43,4 +43,3 @@ bool gl_font_init_first(const gl_font_renderer_t **font_driver, void **font_hand
 
    return false;
 }
-

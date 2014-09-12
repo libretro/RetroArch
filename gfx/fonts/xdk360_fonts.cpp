@@ -467,7 +467,7 @@ static void xdk_render_msg(void *data, const char *str_msg,
    }
 }
 
-const d3d_font_renderer_t d3d_xbox360_font = {
+d3d_font_renderer_t d3d_xbox360_font = {
    xdk_init_font,
    xdk_deinit_font,
    xdk_render_msg,

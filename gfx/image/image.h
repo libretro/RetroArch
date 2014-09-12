@@ -19,9 +19,11 @@
 #include <stdint.h>
 #include "../../boolean.h"
 
+#ifdef _WIN32
+#include "../context/win32_common.h"
 #ifdef _XBOX1
-#include <xtl.h>
-#include "../../xdk/xdk_defines.h"
+#include "../d3d9/d3d_defines.h"
+#endif
 #endif
 
 struct texture_image

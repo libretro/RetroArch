@@ -75,7 +75,7 @@ static void d3dfonts_w32_render_msg(void *data, const char *msg,
    }
 }
 
-const d3d_font_renderer_t d3d_win32_font = {
+d3d_font_renderer_t d3d_win32_font = {
    d3dfonts_w32_init_font,
    d3dfonts_w32_deinit_font,
    d3dfonts_w32_render_msg,

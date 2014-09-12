@@ -94,10 +94,9 @@ static void gl_render_msg(void *data, const char *msg,
 #endif
 }
 
-const gl_font_renderer_t libdbg_font = {
+gl_font_renderer_t libdbg_font = {
    gl_init_font,
    gl_deinit_font,
    gl_render_msg,
    "GL raster",
 };
-

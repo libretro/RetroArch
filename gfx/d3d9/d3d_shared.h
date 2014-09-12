@@ -1,8 +1,109 @@
+#include "d3d_defines.h"
+#include "../gfx_common.h"
 
-static void d3d_deinit_chain(void *data)
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
+
+#ifdef HAVE_HLSL
+#include "../shader_hlsl.h"
+#endif
+
+#endif
+
+/* forward declarations */
+static void d3d_calculate_rect(d3d_video_t *d3d,
+      unsigned width, unsigned height,
+   bool keep, float desired_aspect);
+static bool d3d_init_luts(d3d_video_t *d3d);
+static void d3d_set_font_rect(d3d_video_t *d3d,
+      const struct font_params *params);
+static bool d3d_process_shader(d3d_video_t *d3d);
+static bool d3d_init_multipass(d3d_video_t *d3d);
+static void d3d_deinit_chain(d3d_video_t *d3d);
+static bool d3d_init_chain(d3d_video_t *d3d,
+      const video_info_t *video_info);
+
+#ifdef HAVE_OVERLAY
+static void d3d_free_overlays(void *data);
+static void d3d_free_overlay(void *data, overlay_t *overlay);
+#endif
+
+#ifdef _XBOX
+static void d3d_reinit_renderchain(void *data,
+      const video_info_t *video);
+#endif
+
+static void renderchain_free(void *data);
+
+void d3d_make_d3dpp(void *data, const video_info_t *info,
+	D3DPRESENT_PARAMETERS *d3dpp);
+
+#ifdef HAVE_WINDOW
+#define IDI_ICON 1
+#define MAX_MONITORS 9
+
+extern LRESULT CALLBACK WindowProc(HWND hWnd, UINT message,
+        WPARAM wParam, LPARAM lParam);
+static RECT d3d_monitor_rect(d3d_video_t *d3d);
+#endif
+
+#ifdef HAVE_MONITOR
+namespace Monitor
+{
+	static HMONITOR last_hm;
+	static HMONITOR all_hms[MAX_MONITORS];
+	static unsigned num_mons;
+}
+#endif
+
+static void d3d_deinit_shader(void *data)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
+   (void)d3d;
+   (void)data;
 
+#ifdef HAVE_CG
+   if (!d3d->cgCtx)
+      return;
+
+   cgD3D9UnloadAllPrograms();
+   cgD3D9SetDevice(NULL);
+   cgDestroyContext(d3d->cgCtx);
+   d3d->cgCtx = NULL;
+#endif
+}
+
+static bool d3d_init_shader(void *data)
+{
+   d3d_video_t *d3d = (d3d_video_t*)data;
+   (void)d3d;
+	(void)data;
+#if defined(HAVE_HLSL)
+   RARCH_LOG("D3D]: Using HLSL shader backend.\n");
+   const gl_shader_backend_t *backend = &hlsl_backend;
+   const char *shader_path = g_settings.video.shader_path;
+   d3d->shader = backend;
+   if (!d3d->shader)
+      return false;
+
+   return d3d->shader->init(d3d, shader_path);
+#elif defined(HAVE_CG)
+   d3d->cgCtx = cgCreateContext();
+   if (!d3d->cgCtx)
+      return false;
+
+   RARCH_LOG("[D3D]: Created shader context.\n");
+
+   HRESULT ret = cgD3D9SetDevice(d3d->dev);
+   if (FAILED(ret))
+      return false;
+   return true;
+#elif defined(_XBOX1)
+	return false;
+#endif
+}
+
+static void d3d_deinit_chain(d3d_video_t *d3d)
+{
 #ifdef _XBOX
    renderchain_free(d3d);
 #else
@@ -176,9 +277,8 @@ static void d3d_set_viewport(d3d_video_t *d3d, int x, int y,
    d3d_set_font_rect(d3d, NULL);
 #endif
 }
-bool d3d_restore(void *data)
+bool d3d_restore(d3d_video_t *d3d)
 {
-   d3d_video_t *d3d = (d3d_video_t*)data;
    d3d_deinitialize(d3d);
    d3d->needs_restore = !d3d_initialize(d3d, &d3d->video_info);
 
@@ -329,11 +429,15 @@ static bool d3d_construct(d3d_video_t *d3d,
    gfx_set_dwm();
 #endif
 
-#ifdef HAVE_MENU
+#if defined(HAVE_MENU) && defined(HAVE_OVERLAY)
    if (d3d->menu)
       free(d3d->menu);
 
    d3d->menu = (overlay_t*)calloc(1, sizeof(overlay_t));
+
+   if (!d3d->menu)
+      return false;
+
    d3d->menu->tex_coords.x = 0;
    d3d->menu->tex_coords.y = 0;
    d3d->menu->tex_coords.w = 1;
@@ -344,7 +448,7 @@ static bool d3d_construct(d3d_video_t *d3d,
    d3d->menu->vert_coords.h = -1;
 #endif
 
-#ifdef HAVE_WINDOW
+#if defined(HAVE_WINDOW) && !defined(_XBOX)
    memset(&d3d->windowClass, 0, sizeof(d3d->windowClass));
    d3d->windowClass.cbSize        = sizeof(d3d->windowClass);
    d3d->windowClass.style         = CS_HREDRAW | CS_VREDRAW;
@@ -377,12 +481,12 @@ static bool d3d_construct(d3d_video_t *d3d,
          (int)(mon_rect.bottom - mon_rect.top));
 #else
    if (d3d->ctx_driver && d3d->ctx_driver->get_video_size)
-      d3d->ctx_driver->get_video_size(&full_x, &full_y);
+      d3d->ctx_driver->get_video_size(d3d, &full_x, &full_y);
 #endif
    d3d->screen_width  = info->fullscreen ? full_x : info->width;
    d3d->screen_height = info->fullscreen ? full_y : info->height;
 
-#ifdef HAVE_WINDOW
+#if defined(HAVE_WINDOW) && !defined(_XBOX)
    unsigned win_width  = d3d->screen_width;
    unsigned win_height = d3d->screen_height;
 
@@ -421,7 +525,7 @@ static bool d3d_construct(d3d_video_t *d3d,
 #endif
    );
 
-#ifdef HAVE_WINDOW
+#if defined(HAVE_WINDOW) && !defined(_XBOX)
    ShowWindow(d3d->hWnd, SW_RESTORE);
    UpdateWindow(d3d->hWnd);
    SetForegroundWindow(d3d->hWnd);
@@ -484,17 +588,122 @@ static void d3d_show_mouse(void *data, bool state)
 
 static const gfx_ctx_driver_t *d3d_get_context(void *data)
 {
-   /* TODO: GL core contexts through ANGLE? */
-   enum gfx_ctx_api api;
-   unsigned major, minor;
+   /* Default to Direct3D9 for now.
+   TODO: GL core contexts through ANGLE? */
+   enum gfx_ctx_api api = GFX_CTX_DIRECT3D9_API;
+   unsigned major = 9, minor = 0;
+   (void)major;
+   (void)minor;
+
 #if defined(_XBOX1)
    api = GFX_CTX_DIRECT3D8_API;
    major = 8;
-#elif defined(_XBOX360)
-   api = GFX_CTX_DIRECT3D9_API;
-   major = 9;
 #endif
-   minor = 0;
    return gfx_ctx_init_first(driver.video_data, api,
          major, minor, false);
+}
+
+static void *d3d_init(const video_info_t *info,
+      const input_driver_t **input, void **input_data)
+{
+#ifdef _XBOX
+   if (driver.video_data)
+   {
+      d3d_video_t *vid = (d3d_video_t*)driver.video_data;
+
+      /* Reinitialize renderchain as we 
+       * might have changed pixel formats.*/
+      d3d_reinit_renderchain(vid, info);
+
+      if (input && input_data)
+      {
+         *input = driver.input;
+         *input_data = driver.input_data;
+      }
+
+      driver.video_data_own = true;
+      driver.input_data_own = true;
+      return driver.video_data;
+   }
+#endif
+
+   d3d_video_t *vid = new d3d_video_t();
+   if (!vid)
+      return NULL;
+
+   vid->ctx_driver = d3d_get_context(vid);
+   if (!vid->ctx_driver)
+   {
+      delete vid;
+      return NULL;
+   }
+
+   /* Default values */
+   vid->g_pD3D               = NULL;
+   vid->dev                  = NULL;
+#ifndef _XBOX
+   vid->font                 = NULL;
+#endif
+   vid->dev_rotation         = 0;
+   vid->needs_restore        = false;
+#ifdef HAVE_CG
+   vid->cgCtx                = NULL;
+#endif
+#ifdef HAVE_OVERLAY
+   vid->overlays_enabled     = false;
+#endif
+#ifdef _XBOX
+   vid->should_resize        = false;
+   vid->vsync                = info->vsync;
+#else
+   vid->menu                 = NULL;
+#endif
+
+   if (!d3d_construct(vid, info, input, input_data))
+   {
+      RARCH_ERR("[D3D]: Failed to init D3D.\n");
+      delete vid;
+      return NULL;
+   }
+
+#ifdef _XBOX
+   driver.video_data_own = true;
+   driver.input_data_own = true;
+#endif
+
+   return vid;
+}
+
+static void d3d_free(void *data)
+{
+   d3d_video_t *d3d = (d3d_video_t*)data;
+   d3d_deinitialize(d3d);
+#ifdef HAVE_OVERLAY
+   d3d_free_overlays(d3d);
+#endif
+#if defined(HAVE_MENU) && !defined(_XBOX)
+   d3d_free_overlay(d3d, d3d->menu);
+#endif
+#ifdef _XBOX
+   if (d3d->ctx_driver && d3d->ctx_driver->destroy)
+      d3d->ctx_driver->destroy(d3d);
+   d3d->ctx_driver = NULL;
+#endif
+   if (d3d->dev)
+      d3d->dev->Release();
+   if (d3d->g_pD3D)
+      d3d->g_pD3D->Release();
+
+#ifdef HAVE_MONITOR
+   Monitor::last_hm = MonitorFromWindow(d3d->hWnd,
+         MONITOR_DEFAULTTONEAREST);
+   DestroyWindow(d3d->hWnd);
+#endif
+
+   if (d3d)
+      delete d3d;
+
+#ifndef _XBOX
+   UnregisterClass("RetroArch", GetModuleHandle(NULL));
+#endif
 }

@@ -329,7 +329,7 @@ static int menu_common_shader_manager_setting_toggle(
    {
       if ((current_setting = setting_data_find_setting(
                   setting_data, "video_smooth")))
-         menu_common_setting_set_current_boolean(current_setting, action);
+         menu_action_setting_boolean(current_setting, action);
    }
    else if (id >= MENU_SETTINGS_SHADER_PARAMETER_0
          && id <= MENU_SETTINGS_SHADER_PARAMETER_LAST)

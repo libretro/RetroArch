@@ -209,7 +209,7 @@ static const char *ft_renderer_get_default_font(void)
    return NULL;
 }
 
-const font_renderer_driver_t ft_font_renderer = {
+font_renderer_driver_t ft_font_renderer = {
    ft_renderer_init,
    ft_renderer_get_atlas,
    ft_renderer_get_glyph,
@@ -217,4 +217,3 @@ const font_renderer_driver_t ft_font_renderer = {
    ft_renderer_get_default_font,
    "freetype",
 };
-

@@ -18,6 +18,7 @@
 #define _MENU_COMMON_BACKEND_H
 
 #include "../menu_common.h"
+#include "../../../settings_data.h"
 
 #ifndef GFX_MAX_PARAMETERS
 #define GFX_MAX_PARAMETERS 64
@@ -71,5 +72,6 @@ enum
    GX_RESOLUTIONS_LAST,
 };
 #endif
+
 
 #endif

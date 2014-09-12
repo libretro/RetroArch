@@ -15,11 +15,11 @@
  */
 
 #include "image.h"
-#include "../../xdk/xdk_d3d.h"
+#include "../d3d9/d3d_wrapper.h"
 
 bool texture_image_load(struct texture_image *out_img, const char *path)
 {
-   d3d_video_t *d3d = (d3d_video_t*)data;
+   d3d_video_t *d3d = (d3d_video_t*)driver.video_data;
 
    D3DXIMAGE_INFO m_imageInfo;
 
@@ -36,9 +36,9 @@ bool texture_image_load(struct texture_image *out_img, const char *path)
    }
 
    /* create a vertex buffer for the quad that will display the texture */
-   if (FAILED(D3DDevice_CreateVertexBuffers(d3d->dev, 4 * sizeof(Vertex),
+   if (FAILED(d3d_create_vertex_buffer(d3d->dev, 4 * sizeof(Vertex),
                D3DUSAGE_WRITEONLY, D3DFVF_CUSTOMVERTEX,
-               D3DPOOL_MANAGED, &out_img->vertex_buf, NULL)))
+               D3DPOOL_MANAGED, out_img->vertex_buf, NULL)))
    {
       RARCH_ERR("Error occurred during CreateVertexBuffer().\n");
       out_img->pixels->Release();

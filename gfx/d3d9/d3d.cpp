@@ -15,14 +15,24 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifdef _XBOX
+#include <xtl.h>
+#include <xgraphics.h>
+#endif
+
 #include "d3d.hpp"
+#ifndef _XBOX
 #include "render_chain.hpp"
+#endif
 #include "../../file.h"
 #include "../gfx_common.h"
 
 #include "../context/win32_common.h"
+
+#ifndef _XBOX
 #define HAVE_MONITOR
 #define HAVE_WINDOW
+#endif
 
 #include "../../compat/posix_string.h"
 #include "../../performance.h"
@@ -31,27 +41,18 @@
 #define HAVE_SHADERS
 #endif
 
-/* forward decls */
-static bool d3d_init_luts(d3d_video_t *d3d);
-static void d3d_set_font_rect(d3d_video_t *d3d,
-      const struct font_params *params);
-static bool d3d_process_shader(d3d_video_t *d3d);
-static bool d3d_init_multipass(d3d_video_t *d3d);
-static void d3d_deinit_chain(d3d_video_t *d3d);
+#ifdef HAVE_HLSL
+#include "../../gfx/shader_hlsl.h"
+#endif
 
 #include "d3d_shared.h"
 
+#ifdef _XBOX
+#include "../../xdk/xdk_resources.h"
+#include "render_chain_xdk.h"
+#endif
+
 #ifdef HAVE_MONITOR
-#define IDI_ICON 1
-#define MAX_MONITORS 9
-
-namespace Monitor
-{
-   static HMONITOR last_hm;
-   static HMONITOR all_hms[MAX_MONITORS];
-   static unsigned num_mons;
-}
-
 static BOOL CALLBACK monitor_enum_proc(HMONITOR hMonitor,
       HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData)
 {
@@ -98,6 +99,7 @@ static RECT d3d_monitor_rect(d3d_video_t *d3d)
 }
 #endif
 
+#ifndef _XBOX
 static void d3d_recompute_pass_sizes(d3d_video_t *d3d)
 {
    LinkInfo link_info = {0};
@@ -139,6 +141,7 @@ static void d3d_recompute_pass_sizes(d3d_video_t *d3d)
       link_info.pass = &d3d->shader.pass[i];
    }
 }
+#endif
 
 #ifndef DONT_HAVE_STATE_TRACKER
 static bool d3d_init_imports(d3d_video_t *d3d)
@@ -180,13 +183,27 @@ static bool d3d_init_chain(d3d_video_t *d3d, const video_info_t *video_info)
 {
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
    /* Setup information for first pass. */
-   LinkInfo link_info = {0};
+#ifdef _XBOX
+   /* TODO - properly implement this. */
+   d3d_video_t *link_info = (d3d_video_t*)d3d;
+   link_info->tex_w = link_info->tex_h = 
+	   RARCH_SCALE_BASE * video_info->input_scale;
 
+   //d3d_deinit_chain(d3d);
+#else
+   LinkInfo link_info = {0};
    link_info.pass = &d3d->shader.pass[0];
    link_info.tex_w = link_info.tex_h = 
       video_info->input_scale * RARCH_SCALE_BASE;
+#endif
 
-   d3d_deinit_chain(d3d);
+#ifdef _XBOX
+   if (!renderchain_init(d3d, video_info))
+   {
+      RARCH_ERR("[D3D]: Failed to init render chain.\n");
+      return false;
+   }
+#else
    d3d->chain = new renderchain_t();
    if (!d3d->chain)
       return false;
@@ -229,7 +246,9 @@ static bool d3d_init_chain(d3d_video_t *d3d, const video_info_t *video_info)
       RARCH_ERR("[D3D9]: Failed to init LUTs.\n");
       return false;
    }
+#endif
 
+#ifndef _XBOX
 #ifndef DONT_HAVE_STATE_TRACKER
    if (!d3d_init_imports(d3d))
    {
@@ -237,9 +256,127 @@ static bool d3d_init_chain(d3d_video_t *d3d, const video_info_t *video_info)
       return false;
    }
 #endif
+#endif
 
    return true;
 }
+
+#ifdef _XBOX
+static void d3d_reinit_renderchain(void *data,
+      const video_info_t *video)
+{
+   d3d_video_t *d3d = (d3d_video_t*)data;
+
+   d3d->pixel_size   = video->rgb32 ?
+      sizeof(uint32_t) : sizeof(uint16_t);
+   d3d->tex_w = d3d->tex_h = 
+      RARCH_SCALE_BASE * video->input_scale;
+
+   RARCH_LOG(
+         "Reinitializing renderchain - and textures (%u x %u @ %u bpp)\n",
+         d3d->tex_w, d3d->tex_h, d3d->pixel_size * CHAR_BIT);
+
+   d3d_deinit_chain(d3d);
+   d3d_init_chain(d3d, video);
+}
+#endif
+
+#ifdef _XBOX
+#ifdef HAVE_RMENU
+extern struct texture_image *menu_texture;
+#endif
+
+#ifdef _XBOX1
+static bool texture_image_render(void *data,
+      struct texture_image *out_img,
+      int x, int y, int w, int h, bool force_fullscreen)
+{
+   d3d_video_t *d3d = (d3d_video_t*)data;
+   LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
+
+   if (out_img->pixels == NULL || out_img->vertex_buf == NULL)
+      return false;
+
+   float fX = static_cast<float>(x);
+   float fY = static_cast<float>(y);
+
+   // create the new vertices
+   Vertex newVerts[] =
+   {
+      // x,           y,              z,     color, u ,v
+      {fX,            fY,             0.0f,  0,     0, 0},
+      {fX + w,        fY,             0.0f,  0,     1, 0},
+      {fX + w,        fY + h,         0.0f,  0,     1, 1},
+      {fX,            fY + h,         0.0f,  0,     0, 1}
+   };
+
+   // load the existing vertices
+   Vertex *pCurVerts;
+
+   HRESULT ret = out_img->vertex_buf->Lock(0, 0,
+         (unsigned char**)&pCurVerts, 0);
+
+   if (FAILED(ret))
+      return false;
+
+   // copy the new verts over the old verts
+   memcpy(pCurVerts, newVerts, 4 * sizeof(Vertex));
+   out_img->vertex_buf->Unlock();
+
+   d3d->dev->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
+   d3d->dev->SetRenderState(D3DRS_SRCBLEND,  D3DBLEND_SRCALPHA);
+   d3d->dev->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+
+   /* Also blend the texture with the set alpha value. */
+   d3d->dev->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_MODULATE);
+   d3d->dev->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_DIFFUSE);
+   d3d->dev->SetTextureStageState(0, D3DTSS_ALPHAARG2, D3DTA_TEXTURE);
+
+   /* Draw the quad. */
+   d3dr->SetTexture(0, out_img->pixels);
+   d3d_set_stream_source(d3dr, 0,
+         out_img->vertex_buf, 0, sizeof(Vertex));
+   d3dr->SetVertexShader(D3DFVF_CUSTOMVERTEX);
+
+   if (force_fullscreen)
+   {
+      D3DVIEWPORT vp = {0};
+      vp.Width  = w;
+      vp.Height = h;
+      vp.X      = 0;
+      vp.Y      = 0;
+      vp.MinZ   = 0.0f;
+      vp.MaxZ   = 1.0f;
+      d3dr->SetViewport(&vp);
+   }
+   d3d_draw_primitive(d3dr, D3DPT_QUADLIST, 0, 1);
+
+   return true;
+}
+#endif
+
+#ifdef HAVE_MENU
+static void d3d_draw_texture(void *data)
+{
+   d3d_video_t *d3d = (d3d_video_t*)data;
+#if defined(HAVE_RMENU)
+   menu_texture->x = 0;
+   menu_texture->y = 0;
+
+   if (d3d->menu_texture_enable)
+   {
+      d3d->dev->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_ONE);
+      d3d->dev->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+      d3d->dev->SetRenderState(D3DRS_ALPHABLENDENABLE, true);
+      texture_image_render(d3d, menu_texture,
+            menu_texture->x, menu_texture->y,
+         d3d->screen_width, d3d->screen_height, true);
+      d3d->dev->SetRenderState(D3DRS_ALPHABLENDENABLE, false);
+   }
+#endif
+}
+#endif
+#endif
 
 #ifdef HAVE_FBO
 static bool d3d_init_multipass(d3d_video_t *d3d)
@@ -332,6 +469,7 @@ static void d3d_set_font_rect(d3d_video_t *d3d,
 
 static bool d3d_init_singlepass(d3d_video_t *d3d)
 {
+#ifndef _XBOX
    memset(&d3d->shader, 0, sizeof(d3d->shader));
    d3d->shader.passes = 1;
    gfx_shader_pass &pass = d3d->shader.pass[0];
@@ -340,6 +478,7 @@ static bool d3d_init_singlepass(d3d_video_t *d3d)
    pass.fbo.type_x = pass.fbo.type_y = RARCH_SCALE_VIEWPORT;
    strlcpy(pass.source.path, d3d->cg_shader.c_str(),
          sizeof(pass.source.path));
+#endif
 
    return true;
 }
@@ -355,6 +494,7 @@ static bool d3d_process_shader(d3d_video_t *d3d)
    return d3d_init_singlepass(d3d);
 }
 
+#ifndef _XBOX
 static bool d3d_init_luts(d3d_video_t *d3d)
 {
    for (unsigned i = 0; i < d3d->shader.luts; i++)
@@ -371,14 +511,7 @@ static bool d3d_init_luts(d3d_video_t *d3d)
 
    return true;
 }
-
-#ifdef HAVE_WINDOW
-extern LRESULT CALLBACK WindowProc(HWND hWnd, UINT message,
-        WPARAM wParam, LPARAM lParam);
 #endif
-
-static void d3d_calculate_rect(d3d_video_t *d3d, unsigned width,
-      unsigned height, bool keep, float desired_aspect);
 
 #ifdef HAVE_OVERLAY
 #include "d3d_overlays.cpp"
@@ -415,13 +548,16 @@ static bool d3d_frame(void *data, const void *frame,
             d3d->screen_height, d3d->video_info.force_aspect,
             g_extern.system.aspect_ratio);
 
+#ifndef _XBOX
       renderchain_set_final_viewport(d3d->chain, &d3d->final_viewport);
       d3d_recompute_pass_sizes(d3d);
+#endif
 
       d3d->should_resize = false;
    }
 
-   /* render_chain() only clears out viewport, clear out everything. */
+   /* render_chain() only clears out viewport, 
+    * clear out everything. */
    screen_vp.X = 0;
    screen_vp.Y = 0;
    screen_vp.MinZ = 0;
@@ -431,7 +567,8 @@ static bool d3d_frame(void *data, const void *frame,
    d3dr->SetViewport(&screen_vp);
    d3dr->Clear(0, 0, D3DCLEAR_TARGET, 0, 1, 0);
 
-   // Insert black frame first, so we can screenshot, etc.
+   /* Insert black frame first, so we 
+    * can screenshot, etc. */
    if (g_settings.video.black_frame_insertion)
    {
       D3DDevice_Presents(d3d, d3dr);
@@ -440,12 +577,17 @@ static bool d3d_frame(void *data, const void *frame,
       d3dr->Clear(0, 0, D3DCLEAR_TARGET, 0, 1, 0);
    }
 
+#ifdef _XBOX
+   renderchain_render_pass(d3d, frame, width, height,
+         pitch, d3d->dev_rotation);
+#else
    if (!renderchain_render(d3d->chain, frame, width,
             height, pitch, d3d->dev_rotation))
    {
       RARCH_ERR("[D3D]: Failed to render scene.\n");
       return false;
    }
+#endif
 
    if (d3d->font_ctx && d3d->font_ctx->render_msg && msg)
    {
@@ -466,8 +608,10 @@ static bool d3d_frame(void *data, const void *frame,
    }
 
 #ifdef HAVE_MENU
+#ifndef _XBOX
    if (d3d->menu && d3d->menu->enabled)
       d3d_overlay_render(d3d, d3d->menu);
+#endif
 #endif
 
 #ifdef HAVE_OVERLAY
@@ -482,6 +626,12 @@ static bool d3d_frame(void *data, const void *frame,
    if (g_extern.lifecycle_state & (1ULL << MODE_MENU) 
          && driver.menu_ctx && driver.menu_ctx->frame)
       driver.menu_ctx->frame();
+
+#ifdef _XBOX
+   /* TODO - should be refactored. */
+   if (d3d && d3d->menu_texture_enable)
+      d3d_draw_texture(d3d);
+#endif
 #endif
 
    RARCH_PERFORMANCE_STOP(d3d_frame);
@@ -495,35 +645,6 @@ static bool d3d_frame(void *data, const void *frame,
    return true;
 }
 
-static void d3d_free(void *data)
-{
-   d3d_video_t *d3d = (d3d_video_t*)data;
-   d3d_deinitialize(d3d);
-#ifdef HAVE_OVERLAY
-   d3d_free_overlays(d3d);
-#endif
-#ifdef HAVE_MENU
-   d3d_free_overlay(d3d, d3d->menu);
-#endif
-   if (d3d->dev)
-      d3d->dev->Release();
-   if (d3d->g_pD3D)
-      d3d->g_pD3D->Release();
-
-#ifdef HAVE_MONITOR
-   Monitor::last_hm = MonitorFromWindow(d3d->hWnd,
-         MONITOR_DEFAULTTONEAREST);
-   DestroyWindow(d3d->hWnd);
-#endif
-
-   if (d3d)
-      delete d3d;
-
-#ifndef _XBOX
-   UnregisterClass("RetroArch", GetModuleHandle(NULL));
-#endif
-}
-
 static bool d3d_read_viewport(void *data, uint8_t *buffer)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
@@ -532,6 +653,13 @@ static bool d3d_read_viewport(void *data, uint8_t *buffer)
    RARCH_PERFORMANCE_INIT(d3d_read_viewport);
    RARCH_PERFORMANCE_START(d3d_read_viewport);
    bool ret = true;
+
+   (void)data;
+   (void)buffer;
+
+#ifdef _XBOX
+   ret = false;
+#else
    LPDIRECT3DSURFACE target = NULL;
    LPDIRECT3DSURFACE dest   = NULL;
 
@@ -588,6 +716,7 @@ end:
       target->Release();
    if (dest)
       dest->Release();
+#endif
    return ret;
 }
 
@@ -596,12 +725,25 @@ static bool d3d_set_shader(void *data,
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
    std::string shader = "";
-   if (path && type == RARCH_SHADER_CG)
-      shader = path;
+
+   switch (type)
+   {
+      case RARCH_SHADER_CG:
+         if (path)
+            shader = path;
+#ifdef HAVE_HLSL
+         d3d->shader = &hlsl_backend;
+#endif
+         break;
+      default:
+         break;
+   }
 
    std::string old_shader = d3d->cg_shader;
    bool restore_old = false;
+#ifdef HAVE_CG
    d3d->cg_shader = shader;
+#endif
 
    if (!d3d_process_shader(d3d) || !d3d_restore(d3d))
    {
@@ -611,7 +753,9 @@ static bool d3d_set_shader(void *data,
 
    if (restore_old)
    {
+#ifdef HAVE_CG
       d3d->cg_shader = old_shader;
+#endif
       d3d_process_shader(d3d);
       d3d_restore(d3d);
    }
@@ -631,6 +775,13 @@ static void d3d_set_menu_texture_frame(void *data,
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
 
+   (void)frame;
+   (void)rgb32;
+   (void)width;
+   (void)height;
+   (void)alpha;
+
+#ifndef _XBOX
    if (!d3d->menu->tex || d3d->menu->tex_w != width 
          || d3d->menu->tex_h != height)
    {
@@ -692,6 +843,7 @@ static void d3d_set_menu_texture_frame(void *data,
       if (d3d->menu)
          d3d->menu->tex->UnlockRect(0);
    }
+#endif
 }
 
 static void d3d_set_menu_texture_enable(void *data,
@@ -699,11 +851,16 @@ static void d3d_set_menu_texture_enable(void *data,
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
 
+#ifdef _XBOX
+   d3d->menu_texture_enable = state;
+   d3d->menu_texture_full_screen = full_screen;
+#else
    if (!d3d || !d3d->menu)
       return;
 
    d3d->menu->enabled = state;
    d3d->menu->fullscreen = full_screen;
+#endif
 }
 #endif
 
@@ -729,47 +886,6 @@ static void d3d_get_poke_interface(void *data,
 {
    (void)data;
    *iface = &d3d_poke_interface;
-}
-
-static void *d3d_init(const video_info_t *info, const input_driver_t **input,
-      void **input_data)
-{
-   d3d_video_t *vid = new d3d_video_t();
-   if (!vid)
-      return NULL;
-
-   vid->ctx_driver = d3d_get_context();
-   if (!vid->ctx_driver)
-   {
-      delete vid;
-      return NULL;
-   }
-
-   /* default values */
-   vid->g_pD3D           = NULL;
-   vid->dev              = NULL;
-#ifndef _XBOX
-   vid->font             = NULL;
-#endif
-   vid->dev_rotation     = 0;
-   vid->needs_restore    = false;
-#ifdef HAVE_CG
-   vid->cgCtx            = NULL;
-#endif
-#ifdef HAVE_OVERLAY
-   vid->overlays_enabled = false;
-#endif
-   vid->chain            = NULL;
-   vid->menu             = NULL;
-
-   if (!d3d_construct(vid, info, input, input_data))
-   {
-      RARCH_ERR("[D3D]: Failed to init D3D.\n");
-      delete vid;
-      return NULL;
-   }
-
-   return vid;
 }
 
 video_driver_t video_d3d = {

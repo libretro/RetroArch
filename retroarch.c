@@ -3321,6 +3321,10 @@ void rarch_main_set_state(unsigned cmd)
          rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED);
          rarch_main_set_state(RARCH_ACTION_STATE_RUNNING_FINISHED);
          break;
+      case RARCH_ACTION_STATE_FORCE_QUIT:
+         g_extern.lifecycle_state = 0;
+         rarch_main_set_state(RARCH_ACTION_STATE_QUIT);
+         break;
       case RARCH_ACTION_STATE_FLUSH_INPUT:
          g_extern.lifecycle_state |= (1ULL << MODE_CLEAR_INPUT);
          break;
@@ -3352,10 +3356,13 @@ void rarch_main_command(unsigned cmd)
 
    switch (cmd)
    {
-      case RARCH_CMD_LOAD_CONTENT:
-#ifdef HAVE_DYNAMIC
+      case RARCH_CMD_LOAD_CONTENT_PERSIST:
          rarch_main_command(RARCH_CMD_LOAD_CORE);
          rarch_main_set_state(RARCH_ACTION_STATE_LOAD_CONTENT);
+         break;
+      case RARCH_CMD_LOAD_CONTENT:
+#ifdef HAVE_DYNAMIC
+         rarch_main_command(RARCH_CMD_LOAD_CONTENT_PERSIST);
 #else
          rarch_environment_cb(RETRO_ENVIRONMENT_SET_LIBRETRO_PATH,
                (void*)g_settings.libretro);
@@ -3549,7 +3556,7 @@ void rarch_main_command(unsigned cmd)
          init_drivers();
          break;
       case RARCH_CMD_QUIT_RETROARCH:
-         rarch_main_set_state(RARCH_ACTION_STATE_QUIT);
+         rarch_main_set_state(RARCH_ACTION_STATE_FORCE_QUIT);
          break;
       case RARCH_CMD_RESUME:
          rarch_main_set_state(RARCH_ACTION_STATE_RUNNING);
@@ -3665,7 +3672,10 @@ void rarch_main_command(unsigned cmd)
                driver.menu_ctx->backend->shader_manager_save_preset(NULL, true);
             else
             {
+#if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
                shader_type = gfx_shader_parse_type("", DEFAULT_SHADER_TYPE);
+#endif
+
                if (shader_type == RARCH_SHADER_NONE)
                {
 #if defined(HAVE_GLSL)

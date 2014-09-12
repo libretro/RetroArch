@@ -161,7 +161,7 @@ error:
 void rarch_cmd_free(rarch_cmd_t *handle)
 {
 #if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
-   if (handle->net_fd >= 0)
+   if (handle && handle->net_fd >= 0)
       close(handle->net_fd);
 #endif
 

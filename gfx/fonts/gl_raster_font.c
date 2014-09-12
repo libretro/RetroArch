@@ -265,10 +265,9 @@ static void gl_render_msg(void *data, const char *msg,
    gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
 }
 
-const gl_font_renderer_t gl_raster_font = {
+gl_font_renderer_t gl_raster_font = {
    gl_init_font,
    gl_free_font,
    gl_render_msg,
    "GL raster",
 };
-

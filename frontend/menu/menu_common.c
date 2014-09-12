@@ -83,31 +83,31 @@ static void menu_environment_get(int *argc, char *argv[],
 
 bool load_menu_content(void)
 {
-   if (driver.menu)
+   if (*g_extern.fullpath || (driver.menu && driver.menu->load_no_content))
    {
-      if (*g_extern.fullpath || driver.menu->load_no_content)
+      if (*g_extern.fullpath)
       {
-         if (*g_extern.fullpath)
-         {
-            char tmp[PATH_MAX];
-            char str[PATH_MAX];
+         char tmp[PATH_MAX];
+         char str[PATH_MAX];
 
-            fill_pathname_base(tmp, g_extern.fullpath, sizeof(tmp));
-            snprintf(str, sizeof(str), "INFO - Loading %s ...", tmp);
-            msg_queue_push(g_extern.msg_queue, str, 1, 1);
-         }
-
-         content_playlist_push(g_extern.history,
-               g_extern.fullpath,
-               g_settings.libretro,
-               g_extern.menu.info.library_name);
+         fill_pathname_base(tmp, g_extern.fullpath, sizeof(tmp));
+         snprintf(str, sizeof(str), "INFO - Loading %s ...", tmp);
+         msg_queue_push(g_extern.msg_queue, str, 1, 1);
       }
+
+      content_playlist_push(g_extern.history,
+            g_extern.fullpath,
+            g_settings.libretro,
+            g_extern.menu.info.library_name);
    }
 
    /* redraw menu frame */
-   driver.menu->old_input_state = driver.menu->trigger_state = 0;
-   driver.menu->do_held = false;
-   driver.menu->msg_force = true;
+   if (driver.menu)
+   {
+      driver.menu->old_input_state = driver.menu->trigger_state = 0;
+      driver.menu->do_held = false;
+      driver.menu->msg_force = true;
+   }
 
    if (driver.menu_ctx && driver.menu_ctx->backend &&
          driver.menu_ctx->backend->iterate) 

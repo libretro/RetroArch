@@ -219,7 +219,8 @@ VIDEO DRIVER
 #endif
 
 #ifdef _XBOX
-#include "../gfx/d3d9/xdk_d3d.cpp"
+#include "../gfx/d3d9/d3d_wrapper.c"
+#include "../gfx/d3d9/d3d.cpp"
 #endif
 
 #if defined(GEKKO)
@@ -587,10 +588,9 @@ SCREENSHOTS
 ============================================================ */
 #if defined(_XBOX1)
 #include "../xdk/screenshot_xdk1.c"
-#endif
-
+#else
 #include "../screenshot.c"
-
+#endif
 
 /*============================================================
 PLAYLISTS
@@ -603,6 +603,7 @@ MENU
 #ifdef HAVE_MENU
 #include "../frontend/menu/menu_input_line_cb.c"
 #include "../frontend/menu/menu_common.c"
+#include "../frontend/menu/menu_action.c"
 #include "../frontend/menu/menu_entries.c"
 #include "../frontend/menu/menu_navigation.c"
 

@@ -34,36 +34,6 @@
 
 #include "render_chain_xdk.h"
 
-#include "d3d_shared.h"
-
-static void d3d_free(void *data)
-{
-   d3d_video_t *d3d = (d3d_video_t*)data;
-   d3d_deinitialize(d3d);
-#ifdef _XBOX
-   if (d3d->ctx_driver && d3d->ctx_driver->destroy)
-      d3d->ctx_driver->destroy(d3d);
-   d3d->ctx_driver = NULL;
-#endif
-   if (d3d->dev)
-      d3d->dev->Release();
-   if (d3d->g_pD3D)
-      d3d->g_pD3D->Release();
-
-#ifdef HAVE_MONITOR
-   Monitor::last_hm = MonitorFromWindow(d3d->hWnd,
-         MONITOR_DEFAULTTONEAREST);
-   DestroyWindow(d3d->hWnd);
-#endif
-
-   if (d3d)
-      delete d3d;
-
-#ifndef _XBOX
-   UnregisterClass("RetroArch", GetModuleHandle(NULL));
-#endif
-}
-
 static bool d3d_set_shader(void *data,
       enum rarch_shader_type type, const char *path)
 {
@@ -91,10 +61,9 @@ static bool d3d_set_shader(void *data,
    return true;
 }
 
-static bool d3d_init_chain(void *data, const video_info_t *info)
+static bool d3d_init_chain(d3d_video_t *d3d, const video_info_t *info)
 {
-   d3d_video_t *d3d = (d3d_video_t*)data;
-   d3d_video_t *link_info = (d3d_video_t*)data;
+   d3d_video_t *link_info = (d3d_video_t*)d3d;
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
    link_info->tex_w = link_info->tex_h = RARCH_SCALE_BASE * info->input_scale;
 
@@ -175,6 +144,7 @@ static void d3d_reinit_renderchain(void *data,
    d3d_init_chain(d3d, video);
 }
 
+#ifdef _XBOX
 #ifdef HAVE_RMENU
 extern struct texture_image *menu_texture;
 #endif
@@ -249,7 +219,6 @@ static bool texture_image_render(void *data,
 #endif
 
 #ifdef HAVE_MENU
-
 static void d3d_draw_texture(void *data)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
@@ -270,9 +239,7 @@ static void d3d_draw_texture(void *data)
 #endif
 }
 #endif
-
-static void d3d_calculate_rect(void *data, unsigned width,
-      unsigned height, bool keep, float desired_aspect);
+#endif
 
 static bool d3d_frame(void *data, const void *frame,
       unsigned width, unsigned height, unsigned pitch,
@@ -421,74 +388,6 @@ static void d3d_get_poke_interface(void *data,
 {
    (void)data;
    *iface = &d3d_poke_interface;
-}
-
-static void *d3d_init(const video_info_t *info,
-      const input_driver_t **input, void **input_data)
-{
-#ifdef _XBOX
-   if (driver.video_data)
-   {
-      d3d_video_t *vid = (d3d_video_t*)driver.video_data;
-
-      /* Reinitialize renderchain as we 
-       * might have changed pixel formats.*/
-      d3d_reinit_renderchain(vid, info);
-
-      if (input && input_data)
-      {
-         *input = driver.input;
-         *input_data = driver.input_data;
-      }
-
-      driver.video_data_own = true;
-      driver.input_data_own = true;
-      return driver.video_data;
-   }
-#endif
-
-   d3d_video_t *vid = new d3d_video_t();
-   if (!vid)
-      return NULL;
-
-   vid->ctx_driver = d3d_get_context(vid);
-   if (!vid->ctx_driver)
-   {
-      free(vid);
-      return NULL;
-   }
-
-   /* Default values */
-   vid->g_pD3D               = NULL;
-   vid->dev                  = NULL;
-#ifndef _XBOX
-   vid->font                 = NULL;
-#endif
-   vid->dev_rotation         = 0;
-   vid->needs_restore        = false;
-#ifdef HAVE_CG
-   vid->cgCtx                = NULL;
-#endif
-#ifdef HAVE_OVERLAY
-   vid->overlays_enabled = false;
-#endif
-   vid->should_resize        = false;
-   vid->vsync                = info->vsync;
-   vid->menu                 = NULL;
-
-   if (!d3d_construct(vid, info, input, input_data))
-   {
-      RARCH_ERR("[D3D]: Failed to init D3D.\n");
-      delete vid;
-      return NULL;
-   }
-
-#ifdef _XBOX
-   driver.video_data_own = true;
-   driver.input_data_own = true;
-#endif
-
-   return vid;
 }
 
 static bool d3d_read_viewport(void *data, uint8_t *buffer)

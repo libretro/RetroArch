@@ -20,10 +20,12 @@
 extern "C" {
 #endif
 
+#ifndef _XBOX
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 
 LRESULT win32_handle_keyboard_event(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam);
+#endif
 
 #ifdef __cplusplus
 }

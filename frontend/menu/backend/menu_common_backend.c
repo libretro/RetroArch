@@ -21,6 +21,7 @@
 #include <limits.h>
 #include <ctype.h>
 #include "menu_common_backend.h"
+#include "../menu_action.h"
 #include "../menu_entries.h"
 #include "../menu_navigation.h"
 #include "../menu_input_line_cb.h"
@@ -32,8 +33,6 @@
 #include "../../../input/input_common.h"
 #include "../../../config.def.h"
 #include "../../../input/keyboard_line.h"
-
-#include "../../../settings_data.h"
 
 #if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
 #define HAVE_SHADER_MANAGER
@@ -77,7 +76,8 @@ static int menu_info_screen_iterate(unsigned action)
             driver.menu->selection_ptr,
             setting_data_get_mainmenu(true))))
    {
-      strlcpy(needle, current_setting->name, sizeof(needle));
+      if (current_setting)
+         strlcpy(needle, current_setting->name, sizeof(needle));
    }
    else
    {
@@ -209,44 +209,6 @@ static int menu_common_setting_set_perf(unsigned setting, unsigned action,
    return 0;
 }
 
-static void menu_common_setting_set_current_boolean(
-      rarch_setting_t *setting, unsigned action)
-{
-   if (
-         !strcmp(setting->name, "savestate") ||
-         !strcmp(setting->name, "loadstate"))
-   {
-      if (action == MENU_ACTION_START)
-         g_settings.state_slot = 0;
-      else if (action == MENU_ACTION_LEFT)
-      {
-         // Slot -1 is (auto) slot.
-         if (g_settings.state_slot >= 0)
-            g_settings.state_slot--;
-      }
-      else if (action == MENU_ACTION_RIGHT)
-         g_settings.state_slot++;
-      else if (action == MENU_ACTION_OK)
-         *setting->value.boolean = !(*setting->value.boolean);
-   }
-   else
-   {
-      switch (action)
-      {
-         case MENU_ACTION_OK:
-         case MENU_ACTION_LEFT:
-         case MENU_ACTION_RIGHT:
-            *setting->value.boolean = !(*setting->value.boolean);
-            break;
-         case MENU_ACTION_START:
-            *setting->value.boolean = setting->default_value.boolean;
-            break;
-      }
-   }
-
-   if (setting->change_handler)
-      setting->change_handler(setting);
-}
 
 static void menu_common_setting_set_current_path_selection(
       rarch_setting_t *setting, const char *start_path,
@@ -268,140 +230,6 @@ static void menu_common_setting_set_current_path_selection(
    if (setting->change_handler)
       setting->change_handler(setting);
 }
-
-static void menu_common_setting_set_current_fraction(
-      rarch_setting_t *setting, unsigned action)
-{
-   if (!strcmp(setting->name, "video_refresh_rate_auto"))
-   {
-      if (action == MENU_ACTION_START)
-         g_extern.measure_data.frame_time_samples_count = 0;
-      else if (action == MENU_ACTION_OK)
-      {
-         double refresh_rate, deviation = 0.0;
-         unsigned sample_points = 0;
-
-         if (driver_monitor_fps_statistics(&refresh_rate,
-                  &deviation, &sample_points))
-         {
-            driver_set_monitor_refresh_rate(refresh_rate);
-            /* Incase refresh rate update forced non-block video. */
-            rarch_main_command(RARCH_CMD_VIDEO_SET_BLOCKING_STATE);
-         }
-      }
-   }
-   else if (!strcmp(setting->name, "fastforward_ratio"))
-   {
-      bool clamp_value = false;
-      if (action == MENU_ACTION_START)
-        *setting->value.fraction  = setting->default_value.fraction;
-      else if (action == MENU_ACTION_LEFT)
-      {
-         *setting->value.fraction -= setting->step;
-
-         /* Avoid potential rounding errors when going from 1.1 to 1.0. */
-         if (*setting->value.fraction < 0.95f) 
-            *setting->value.fraction = setting->default_value.fraction;
-         else
-            clamp_value = true;
-      }
-      else if (action == MENU_ACTION_RIGHT)
-      {
-         *setting->value.fraction += setting->step;
-         clamp_value = true;
-      }
-      if (clamp_value)
-         g_settings.fastforward_ratio =
-            max(min(*setting->value.fraction, setting->max), 1.0f);
-   }
-   else
-   {
-      switch (action)
-      {
-         case MENU_ACTION_LEFT:
-            *setting->value.fraction =
-               *setting->value.fraction - setting->step;
-
-            if (setting->enforce_minrange)
-            {
-               if (*setting->value.fraction < setting->min)
-                  *setting->value.fraction = setting->min;
-            }
-            break;
-
-         case MENU_ACTION_RIGHT:
-         case MENU_ACTION_OK:
-            *setting->value.fraction = 
-               *setting->value.fraction + setting->step;
-
-            if (setting->enforce_maxrange)
-            {
-               if (*setting->value.fraction > setting->max)
-                  *setting->value.fraction = setting->max;
-            }
-            break;
-
-         case MENU_ACTION_START:
-            *setting->value.fraction = setting->default_value.fraction;
-            break;
-      }
-   }
-
-   if (setting->change_handler)
-      setting->change_handler(setting);
-}
-
-static void menu_common_setting_set_current_unsigned_integer(
-      rarch_setting_t *setting, unsigned id, unsigned action)
-{
-   if (id == MENU_FILE_LINEFEED)
-   {
-      if (action == MENU_ACTION_OK)
-         menu_key_start_line(driver.menu, setting->short_description,
-               setting->name, st_uint_callback);
-      else if (action == MENU_ACTION_START)
-         *setting->value.unsigned_integer =
-            setting->default_value.unsigned_integer;
-   }
-   else
-   {
-      switch (action)
-      {
-         case MENU_ACTION_LEFT:
-            if (*setting->value.unsigned_integer != setting->min)
-               *setting->value.unsigned_integer =
-                  *setting->value.unsigned_integer - setting->step;
-
-            if (setting->enforce_minrange)
-            {
-               if (*setting->value.unsigned_integer < setting->min)
-                  *setting->value.unsigned_integer = setting->min;
-            }
-            break;
-
-         case MENU_ACTION_RIGHT:
-         case MENU_ACTION_OK:
-            *setting->value.unsigned_integer =
-               *setting->value.unsigned_integer + setting->step;
-
-            if (setting->enforce_maxrange)
-            {
-               if (*setting->value.unsigned_integer > setting->max)
-                  *setting->value.unsigned_integer = setting->max;
-            }
-            break;
-
-         case MENU_ACTION_START:
-            *setting->value.unsigned_integer =
-               setting->default_value.unsigned_integer;
-            break;
-      }
-   } 
-
-   if (setting->change_handler)
-      setting->change_handler(setting);
-}
-
 
 static void menu_common_setting_set_current_string_path(
       rarch_setting_t *setting, const char *dir, const char *path)
@@ -434,29 +262,15 @@ void menu_common_setting_set_current_string(
       setting->change_handler(setting);
 }
 
-static void handle_driver(const char *label, char *driver,
-      size_t sizeof_driver, unsigned action)
-{
-   switch (action)
-   {
-      case MENU_ACTION_LEFT:
-         find_prev_driver(label, driver, sizeof_driver);
-         break;
-      case MENU_ACTION_RIGHT:
-         find_next_driver(label, driver, sizeof_driver);
-         break;
-   }
-}
-
 static void handle_setting(rarch_setting_t *setting,
       unsigned id, const char *label, unsigned action)
 {
    if (setting->type == ST_BOOL)
-      menu_common_setting_set_current_boolean(setting, action);
+      menu_action_setting_boolean(setting, action);
    else if (setting->type == ST_UINT)
-      menu_common_setting_set_current_unsigned_integer(setting, id, action);
+      menu_action_setting_unsigned_integer(setting, id, action);
    else if (setting->type == ST_FLOAT)
-      menu_common_setting_set_current_fraction(setting, action);
+      menu_action_setting_fraction(setting, action);
    else if (setting->type == ST_DIR)
    {
       if (action == MENU_ACTION_START)
@@ -472,7 +286,9 @@ static void handle_setting(rarch_setting_t *setting,
             setting->default_value.string, setting->name, id, action);
    else if (setting->type == ST_STRING)
    {
-      if (id == MENU_FILE_LINEFEED || id == MENU_FILE_LINEFEED_SWITCH)
+      if (
+            (setting->flags & SD_FLAG_ALLOW_INPUT) || 
+            id == MENU_FILE_LINEFEED_SWITCH)
       {
          if (action == MENU_ACTION_OK)
             menu_key_start_line(driver.menu, setting->short_description,
@@ -480,16 +296,8 @@ static void handle_setting(rarch_setting_t *setting,
          else if (action == MENU_ACTION_START)
             *setting->value.string = '\0';
       }
-      else if (!strcmp(setting->name, "audio_resampler_driver"))
-      {
-         if (action == MENU_ACTION_LEFT)
-            find_prev_resampler_driver();
-         else if (action == MENU_ACTION_RIGHT)
-            find_next_resampler_driver();
-      }
-      else if (id == MENU_FILE_DRIVER)
-         handle_driver(setting->name, setting->value.string,
-               setting->size, action);
+      else
+         menu_action_setting_driver(setting, action);
    }
 }
 
@@ -1427,6 +1235,19 @@ static int menu_action_ok(const char *menu_path,
             menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS);
             return -1;
          }
+         else
+         {
+            fill_pathname_join(g_extern.fullpath, menu_path, path,
+                  sizeof(g_extern.fullpath));
+
+            menu_common_load_content();
+            rarch_main_command(RARCH_CMD_LOAD_CONTENT_PERSIST);
+            menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS);
+            driver.menu->msg_force = true;
+            RARCH_LOG("Gets here.\n");
+
+            return -1;
+         }
 
          return 0;
 
@@ -1568,15 +1389,6 @@ static int menu_action_ok(const char *menu_path,
 
       menu_entries_push(driver.menu->menu_stack,
             cat_path, menu_label, type, driver.menu->selection_ptr);
-   }
-   else
-   {
-      fill_pathname_join(g_extern.fullpath, menu_path, path,
-            sizeof(g_extern.fullpath));
-
-      menu_common_load_content();
-
-      return -1;
    }
 
    return 0;

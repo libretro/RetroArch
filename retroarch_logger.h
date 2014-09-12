@@ -18,6 +18,7 @@
 #define __RARCH_LOGGER_H
 
 #include <stdarg.h>
+#include <stdio.h>
 
 #if defined(RARCH_DUMMY_LOG)
 #define LOG_FILE (stderr)

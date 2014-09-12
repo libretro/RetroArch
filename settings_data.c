@@ -19,6 +19,7 @@
 #include "gfx/shader_common.h"
 #include "input/input_common.h"
 #include "config.def.h"
+#include "retroarch_logger.h"
 
 #ifdef APPLE
 #include "input/apple_keycode.h"
@@ -40,7 +41,19 @@
 static void get_input_config_prefix(char *buf, size_t sizeof_buf,
       const rarch_setting_t *setting)
 {
-   snprintf(buf, sizeof_buf, "input%cplayer%d",
+   if (!buf)
+   {
+      RARCH_ERR("Null buffer passed to %s", __FUNCTION__);
+      return;
+   }
+
+   if (!setting)
+   {
+      RARCH_ERR("Null setting passed to %s", __FUNCTION__);
+      return;
+   }
+
+   snprintf(buf, sizeof_buf, "input%cplayer%u",
          setting->index ? '_' : '\0', setting->index);
 }
 
@@ -48,6 +61,19 @@ static void get_input_config_key(char *buf, size_t sizeof_buf,
       const rarch_setting_t* setting, const char* type)
 {
    char prefix[32];
+
+   if (!buf)
+   {
+      RARCH_ERR("Null buffer passed to %s", __FUNCTION__);
+      return;
+   }
+
+   if (!setting)
+   {
+      RARCH_ERR("Null setting passed to %s", __FUNCTION__);
+      return;
+   }
+
    get_input_config_prefix(prefix, sizeof(prefix), setting);
    snprintf(buf, sizeof_buf, "%s_%s%c%s", prefix, setting->name,
          type ? '_' : '\0', type);
@@ -60,6 +86,18 @@ static void get_key_name(char *buf, size_t sizeof_buf,
       const rarch_setting_t* setting)
 {
    uint32_t hidkey, i;
+
+   if (!buf)
+   {
+      RARCH_ERR("Null buffer passed to %s", __FUNCTION__);
+      return;
+   }
+
+   if (!setting)
+   {
+      RARCH_ERR("Null setting passed to %s", __FUNCTION__);
+      return;
+   }
 
    if (BINDFOR(*setting).key == RETROK_UNKNOWN)
       return;
@@ -80,6 +118,18 @@ static void get_key_name(char *buf, size_t sizeof_buf,
 static void get_button_name(char *buf, size_t sizeof_buf,
       const rarch_setting_t* setting)
 {
+   if (!buf)
+   {
+      RARCH_ERR("Null buffer passed to %s", __FUNCTION__);
+      return;
+   }
+
+   if (!setting)
+   {
+      RARCH_ERR("Null setting passed to %s", __FUNCTION__);
+      return;
+   }
+
    if (BINDFOR(*setting).joykey == NO_BTN)
       return;
 
@@ -90,16 +140,36 @@ static void get_button_name(char *buf, size_t sizeof_buf,
 static void get_axis_name(char *buf, size_t sizeof_buf,
       const rarch_setting_t* setting)
 {
-   uint32_t joyaxis = BINDFOR(*setting).joyaxis;
+   uint32_t joyaxis;
+
+   if (!buf)
+   {
+      RARCH_ERR("Null buffer passed to %s", __FUNCTION__);
+      return;
+   }
+
+   if (!setting)
+   {
+      RARCH_ERR("Null setting passed to %s", __FUNCTION__);
+      return;
+   }
+
+   joyaxis = BINDFOR(*setting).joyaxis;
 
    if (AXIS_NEG_GET(joyaxis) != AXIS_DIR_NONE)
-      snprintf(buf, sizeof_buf, "-%d", AXIS_NEG_GET(joyaxis));
+      snprintf(buf, sizeof_buf, "-%u", AXIS_NEG_GET(joyaxis));
    else if (AXIS_POS_GET(joyaxis) != AXIS_DIR_NONE)
-      snprintf(buf, sizeof_buf, "+%d", AXIS_POS_GET(joyaxis));
+      snprintf(buf, sizeof_buf, "+%u", AXIS_POS_GET(joyaxis));
 }
 
 void setting_data_reset_setting(const rarch_setting_t* setting)
 {
+   if (!setting)
+   {
+      RARCH_ERR("Null setting passed to %s", __FUNCTION__);
+      return;
+   }
+
    switch (setting->type)
    {
       case ST_BOOL:
@@ -158,7 +228,7 @@ void setting_data_reset(const rarch_setting_t* settings)
 static bool setting_data_load_config(
       const rarch_setting_t* settings, config_file_t* config)
 {
-   if (!config)
+   if (!settings || !config)
       return false;
 
    for (; settings->type != ST_NONE; settings++)
@@ -265,7 +335,7 @@ bool setting_data_load_config_path(const rarch_setting_t* settings,
 bool setting_data_save_config(const rarch_setting_t* settings,
       config_file_t* config)
 {
-   if (!config)
+   if (!settings || !config)
       return false;
 
    for (; settings->type != ST_NONE; settings++)
@@ -365,7 +435,7 @@ rarch_setting_t* setting_data_find_setting(rarch_setting_t* setting,
 {
    bool found = false;
 
-   if (!name)
+   if (!setting || !name)
       return NULL;
 
    for (; setting->type != ST_NONE; setting++)
@@ -459,8 +529,14 @@ void setting_data_set_with_string_representation(const rarch_setting_t* setting,
 static void menu_common_setting_set_label_st_bool(rarch_setting_t *setting,
       char *type_str, size_t type_str_size)
 {
+   if (!setting)
+   {
+      RARCH_ERR("Null setting passed to %s", __FUNCTION__);
+      return;
+   }
+
    if (!strcmp(setting->name, "savestate") ||
-         !strcmp(setting->name, "loadstate"))
+       !strcmp(setting->name, "loadstate"))
    {
       if (g_settings.state_slot < 0)
          strlcpy(type_str, "-1 (auto)", type_str_size);
@@ -468,29 +544,41 @@ static void menu_common_setting_set_label_st_bool(rarch_setting_t *setting,
          snprintf(type_str, type_str_size, "%d", g_settings.state_slot);
    }
    else
+   {
       strlcpy(type_str, *setting->value.boolean ? setting->boolean.on_label :
             setting->boolean.off_label, type_str_size);
+   }
 }
 
 static void menu_common_setting_set_label_st_uint(rarch_setting_t *setting,
       char *type_str, size_t type_str_size)
 {
-   if (setting && !strcmp(setting->name, "video_monitor_index"))
+   if (!setting)
+   {
+      RARCH_ERR("Null setting passed to %s", __FUNCTION__);
+      return;
+   }
+
+   if (!strcmp(setting->name, "video_monitor_index"))
    {
       if (*setting->value.unsigned_integer)
-         snprintf(type_str, type_str_size, "%d",
+         snprintf(type_str, type_str_size, "%u",
                *setting->value.unsigned_integer);
       else
          strlcpy(type_str, "0 (Auto)", type_str_size);
    }
-   else if (setting && !strcmp(setting->name, "video_rotation"))
+   else if (!strcmp(setting->name, "video_rotation"))
+   {
       strlcpy(type_str, rotation_lut[*setting->value.unsigned_integer],
             type_str_size);
-   else if (setting && !strcmp(setting->name, "aspect_ratio_index"))
+   }
+   else if (!strcmp(setting->name, "aspect_ratio_index"))
+   {
       strlcpy(type_str,
             aspectratio_lut[*setting->value.unsigned_integer].name,
             type_str_size);
-   else if (setting && !strcmp(setting->name, "autosave_interval"))
+   }
+   else if (!strcmp(setting->name, "autosave_interval"))
    {
       if (*setting->value.unsigned_integer)
          snprintf(type_str, type_str_size, "%u seconds",
@@ -498,7 +586,7 @@ static void menu_common_setting_set_label_st_uint(rarch_setting_t *setting,
       else
          strlcpy(type_str, "OFF", type_str_size);
    }
-   else if (setting && !strcmp(setting->name, "user_language"))
+   else if (!strcmp(setting->name, "user_language"))
    {
       static const char *modes[] = {
          "English",
@@ -517,7 +605,7 @@ static void menu_common_setting_set_label_st_uint(rarch_setting_t *setting,
 
       strlcpy(type_str, modes[g_settings.user_language], type_str_size);
    }
-   else if (setting && !strcmp(setting->name, "libretro_log_level"))
+   else if (!strcmp(setting->name, "libretro_log_level"))
    {
       static const char *modes[] = {
          "0 (Debug)",
@@ -530,14 +618,22 @@ static void menu_common_setting_set_label_st_uint(rarch_setting_t *setting,
             type_str_size);
    }
    else
-      snprintf(type_str, type_str_size, "%d",
+   {
+      snprintf(type_str, type_str_size, "%u",
             *setting->value.unsigned_integer);
+   }
 }
 
 static void menu_common_setting_set_label_st_float(rarch_setting_t *setting,
       char *type_str, size_t type_str_size)
 {
-   if (setting && !strcmp(setting->name, "video_refresh_rate_auto"))
+   if (!setting)
+   {
+      RARCH_ERR("Null setting passed to %s", __FUNCTION__);
+      return;
+   }
+
+   if (!strcmp(setting->name, "video_refresh_rate_auto"))
    {
       double refresh_rate = 0.0;
       double deviation = 0.0;
@@ -550,8 +646,10 @@ static void menu_common_setting_set_label_st_float(rarch_setting_t *setting,
          strlcpy(type_str, "N/A", type_str_size);
    }
    else
+   {
       snprintf(type_str, type_str_size, setting->rounding_fraction,
             *setting->value.fraction);
+   }
 }
 
 void setting_data_get_string_representation(rarch_setting_t* setting,
@@ -1950,7 +2048,6 @@ static void general_write_handler(const void *data)
    if (!setting)
       return;
 
-   
    if (!strcmp(setting->name, "quit_retroarch"))
    {
       if (*setting->value.boolean)
@@ -2171,7 +2268,28 @@ static void general_write_handler(const void *data)
       rarch_main_command(rarch_cmd);
 }
 
-#define APPEND(VALUE) if (index == list_size) { list_size *= 2; list = (rarch_setting_t*)realloc(list, sizeof(rarch_setting_t) * list_size); } (list[index++]) = VALUE
+#define APPEND(VALUE)                                                                   \
+   if (index == list_size)                                                              \
+   {                                                                                    \
+      rarch_setting_t* list_temp = NULL;                                                \
+                                                                                        \
+      list_size *= 2;                                                                   \
+      list_temp = (rarch_setting_t*)realloc(list, sizeof(rarch_setting_t) * list_size); \
+                                                                                        \
+      if (list_temp)                                                                    \
+      {                                                                                 \
+         list = list_temp;                                                              \
+      }                                                                                 \
+      else                                                                              \
+      {                                                                                 \
+         RARCH_ERR("Settings list reallocation failed.\n");                             \
+         free(list);                                                                    \
+         list = NULL;                                                                   \
+         return NULL;                                                                   \
+      }                                                                                 \
+   }                                                                                    \
+   (list[index++]) = VALUE
+
 #define START_GROUP(NAME)                       { const char *GROUP_NAME = NAME; APPEND(setting_data_group_setting (ST_GROUP, NAME));
 #define END_GROUP()                             APPEND(setting_data_group_setting (ST_END_GROUP, 0)); }
 #define START_SUB_GROUP(NAME, GROUPNAME)        { const char *SUBGROUP_NAME = NAME; (void)SUBGROUP_NAME; APPEND(setting_data_subgroup_setting (ST_SUB_GROUP, NAME, GROUPNAME));
@@ -2210,6 +2328,7 @@ rarch_setting_t *setting_data_get_mainmenu(bool regenerate)
 {
    int index = 0;
    static rarch_setting_t* list = NULL;
+   rarch_setting_t* list_tmp = NULL;
    int list_size = 32;
    static bool lists[32];
 
@@ -2223,6 +2342,11 @@ rarch_setting_t *setting_data_get_mainmenu(bool regenerate)
    }
 
    list = (rarch_setting_t*)malloc(sizeof(rarch_setting_t) * list_size);
+   if (!list)
+   {
+      RARCH_ERR("setting_data_get_mainmenu list allocation failed.\n");
+      return NULL;
+   }
 
    START_GROUP("Main Menu")
       START_SUB_GROUP("State", GROUP_NAME)
@@ -2271,7 +2395,18 @@ rarch_setting_t *setting_data_get_mainmenu(bool regenerate)
    APPEND(terminator);
 
    /* flatten this array to save ourselves some kilobytes */
-   list = (rarch_setting_t*)realloc(list, sizeof(rarch_setting_t) * index);
+   list_tmp = (rarch_setting_t*)realloc(list, sizeof(rarch_setting_t) * index);
+   if (list_tmp)
+   {
+      list = list_tmp;
+   }
+   else
+   {
+      RARCH_ERR("setting_data_get_mainmenu list flattening failed.\n");
+      free(list);
+      list = NULL;
+   }
+
    /* do not optimize into return realloc(),
     * list is static and must be written. */
    return (rarch_setting_t*)list;
@@ -2282,12 +2417,18 @@ rarch_setting_t *setting_data_get_list(void)
 {
    int i, player, index = 0;
    static rarch_setting_t* list = NULL;
+   rarch_setting_t* list_tmp = NULL;
    int list_size = 512;
 
    if (list)
       return list;
 
    list = (rarch_setting_t*)malloc(sizeof(rarch_setting_t) * list_size);
+   if (!list)
+   {
+      RARCH_ERR("setting_data_get_list list allocation failed.\n");
+      return NULL;
+   }
 
    START_GROUP("Driver Options")
       START_SUB_GROUP("State", GROUP_NAME)
@@ -2617,8 +2758,18 @@ rarch_setting_t *setting_data_get_list(void)
    APPEND(terminator);
 
    /* flatten this array to save ourselves some kilobytes. */
-   list = (rarch_setting_t*)
+   list_tmp = (rarch_setting_t*)
       realloc(list, sizeof(rarch_setting_t) * index);
+   if (list_tmp)
+   {
+      list = list_tmp;
+   }
+   else
+   {
+      RARCH_ERR("setting_data_get_list list flattening failed.\n");
+      free(list);
+      list = NULL;
+   }
 
    /* do not optimize into return realloc(),
     * list is static and must be written. */

@@ -35,9 +35,17 @@
 #endif
 #endif
 
+#ifdef _XBOX1
+#include <xfont.h>
+#endif
+
 #include "../../general.h"
 #include "../../driver.h"
+
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
 #include "../shader_parse.h"
+#include "../shader_common.h"
+#endif
 
 #include "../fonts/d3d_font.h"
 #include "../gfx_context.h"
@@ -47,13 +55,17 @@
 #include <Cg/cg.h>
 #include <Cg/cgD3D9.h>
 #endif
-#include "d3d_defines.h"
+#include "d3d_wrapper.h"
 #include <string>
 #include <vector>
 
-class RenderChain;
-
-#ifndef _XBOX
+#if defined(_XBOX)
+#if defined(_XBOX1)
+#define D3DDevice_Presents(d3d, device) D3DDevice_Swap(0)
+#elif defined(_XBOX360)
+#define D3DDevice_Presents(d3d, device) D3DDevice_Present(device)
+#endif
+#else
 #define D3DDevice_SetSamplerState_AddressU(dev, sampler, type) dev->SetSamplerState(sampler, D3DSAMP_ADDRESSU, type)
 #define D3DDevice_SetSamplerState_AddressV(dev, sampler, type) dev->SetSamplerState(sampler, D3DSAMP_ADDRESSV, type)
 #define D3DDevice_SetSamplerState_MinFilter(dev, sampler, type) dev->SetSamplerState(sampler, D3DSAMP_MINFILTER, type)
@@ -93,7 +105,7 @@ class RenderChain;
    }
 #endif
 
-
+#ifdef HAVE_OVERLAY
 typedef struct
 {
    struct Coords
@@ -109,15 +121,37 @@ typedef struct
    LPDIRECT3DTEXTURE tex;
    LPDIRECT3DVERTEXBUFFER vert_buf;
 } overlay_t;
+#endif
 
-bool d3d_init_shader(void *data);
-void d3d_deinit_shader(void *data);
+#ifdef _XBOX
+typedef struct Vertex
+{
+   float x, y;
+#if defined(_XBOX1)
+   float z;
+   float rhw;
+#endif
+   float u, v;
+} Vertex;
+#endif
+
+#if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
+#ifdef _XBOX
+typedef struct gl_shader_backend gl_shader_backend_t;
+#endif
+#endif
+
 void d3d_make_d3dpp(void *data, const video_info_t *info, D3DPRESENT_PARAMETERS *d3dpp);
 
 typedef struct d3d_video
 {
       const d3d_font_renderer_t *font_ctx;
       const gfx_ctx_driver_t *ctx_driver;
+#if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
+#ifdef _XBOX
+      const gl_shader_backend_t *shader;
+#endif
+#endif
       bool should_resize;
       bool quitting;
 
@@ -130,6 +164,11 @@ typedef struct d3d_video
 #ifndef _XBOX
       LPD3DXFONT font;
 #endif
+#if defined(HAVE_D3D9) && defined(_XBOX)
+   LPDIRECT3DSURFACE lpSurface;
+   LPDIRECT3DTEXTURE lpTexture_ot_as16srgb;
+   LPDIRECT3DTEXTURE lpTexture_ot;
+#endif
       HRESULT d3d_err;
       unsigned cur_mon_id;
 
@@ -140,7 +179,9 @@ typedef struct d3d_video
 
       std::string cg_shader;
 
+#ifndef _XBOX
       struct gfx_shader shader;
+#endif
 
       video_info_t video_info;
 
@@ -158,10 +199,31 @@ typedef struct d3d_video
       std::vector<overlay_t> overlays;
 #endif
 
-#ifdef HAVE_MENU
+      bool menu_texture_enable;
+      bool menu_texture_full_screen;
+#if defined(HAVE_MENU) && defined(HAVE_OVERLAY)
       overlay_t *menu;
 #endif
       void *chain;
+
+#ifdef _XBOX
+      /* TODO _ should all be refactored */
+      // RENDERCHAIN PASS
+      unsigned pixel_size;
+      LPDIRECT3DTEXTURE tex;
+      LPDIRECT3DVERTEXBUFFER vertex_buf;
+      unsigned last_width;
+      unsigned last_height;
+#ifdef HAVE_D3D9
+      LPDIRECT3DVERTEXDECLARATION vertex_decl;
+#endif
+      // RENDERCHAIN PASS -> INFO
+      unsigned tex_w;
+      unsigned tex_h;
+#endif
+#ifdef _XBOX
+	  bool vsync;
+#endif
 } d3d_video_t;
 
 #ifndef _XBOX

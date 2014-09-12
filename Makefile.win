@@ -88,12 +88,13 @@ HAVE_NETPLAY = 1
 HAVE_STDIN_CMD = 1
 HAVE_THREADS = 1
 HAVE_RGUI = 1
+HAVE_GLUI = 1
 HAVE_7ZIP = 1
 DYNAMIC = 1
 
 HAVE_WINXINPUT = 1
 
-HAVE_LAKKA = 0
+HAVE_LAKKA = 1
 
 ifeq ($(SLIM),)
    HAVE_SDL = 1
@@ -126,6 +127,10 @@ ifeq ($(HAVE_RGUI), 1)
    OBJ += frontend/menu/disp/rgui.o
    DEFINES += -DHAVE_MENU -DHAVE_RGUI
    HAVE_MENU_COMMON = 1
+ifeq ($(HAVE_GLUI), 1)
+   OBJ += frontend/menu/disp/glui.o
+   DEFINES += -DHAVE_GLUI
+endif
 ifeq ($(HAVE_LAKKA), 1)
    OBJ += frontend/menu/backend/menu_lakka_backend.o frontend/menu/disp/lakka.o
    DEFINES += -DHAVE_LAKKA
@@ -139,6 +144,7 @@ ifeq ($(HAVE_MENU_COMMON), 1)
 			 frontend/menu/menu_input_line_cb.o \
 			 frontend/menu/menu_common.o \
 			 frontend/menu/menu_navigation.o  \
+			 frontend/menu/menu_action.o \
 			 frontend/menu/menu_entries.o
 endif
 
@@ -189,7 +195,7 @@ else
 endif
 
 ifeq ($(HAVE_D3D9), 1)
-   OBJ += gfx/d3d9/d3d.o gfx/d3d9/render_chain.o gfx/fonts/d3d_font.o gfx/fonts/d3d_w32_font.o gfx/context/d3d_ctx.o
+   OBJ += gfx/d3d9/d3d.o gfx/d3d9/render_chain.o gfx/d3d9/d3d_wrapper.o gfx/fonts/d3d_font.o gfx/fonts/d3d_w32_font.o gfx/context/d3d_ctx.o
    DEFINES += -DHAVE_WIN32_D3D9
    LIBS += -ld3d9 -lcg -lcgD3D9 -ld3dx9 -ldxguid
 endif

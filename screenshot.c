@@ -13,9 +13,9 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "screenshot.h"
 #include "compat/strl.h"
 #include <stdio.h>
+#include <stddef.h>
 #include <time.h>
 #include "boolean.h"
 #include <stdint.h>

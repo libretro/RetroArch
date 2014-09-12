@@ -13,8 +13,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef GL_FONT_H__
-#define GL_FONT_H__
+#ifndef D3D_FONT_H__
+#define D3D_FONT_H__
 
 #include <stdint.h>
 #include "../../boolean.h"
@@ -33,9 +33,9 @@ typedef struct d3d_font_renderer
    const char *ident;
 } d3d_font_renderer_t;
 
-extern const d3d_font_renderer_t d3d_xbox360_font;
-extern const d3d_font_renderer_t d3d_xdk1_font;
-extern const d3d_font_renderer_t d3d_win32_font;
+extern d3d_font_renderer_t d3d_xbox360_font;
+extern d3d_font_renderer_t d3d_xdk1_font;
+extern d3d_font_renderer_t d3d_win32_font;
 
 const d3d_font_renderer_t *d3d_font_init_first(void *data,
       const char *font_path, unsigned font_size);
