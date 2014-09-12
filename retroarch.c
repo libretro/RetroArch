@@ -3956,13 +3956,19 @@ int rarch_defer_core(core_info_list_t *core_info, const char *dir,
    {
       strlcpy(g_extern.fullpath, deferred_path,
             sizeof(g_extern.fullpath));
+      if (path_is_compressed_file(dir))
+      {
+         /* In case of a compressed archive, we have to join with a hash */
+         /* We are going to write at the position of dir: */
+         rarch_assert(strlen(dir) < strlen(g_extern.fullpath));
+         g_extern.fullpath[strlen(dir)] = '#';
+      }
 
       if (path_file_exists(info->path))
          strlcpy(g_settings.libretro, info->path,
                sizeof(g_settings.libretro));
       return -1;
    }
-
    return 0;
 }
 
