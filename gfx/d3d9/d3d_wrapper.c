@@ -150,7 +150,19 @@ void d3d_textureblit(d3d_video_t *d3d,
       D3DLOCKED_RECT lr, const void *frame,
       unsigned width, unsigned height, unsigned pitch)
 {
-#if 1
+   (void)desc;
+#if defined(_XBOX360)
+   tex->GetLevelDesc(0, &desc);
+   XGCopySurface(lr.pBits, lr.Pitch, width, height, desc.Format, NULL,
+      frame, pitch, desc.Format, NULL, 0, 0);
+#elif defined(_XBOX1)
+   for (unsigned y = 0; y < height; y++)
+   {
+      const uint8_t *in = (const uint8_t*)frame + y * pitch;
+      uint8_t *out = (uint8_t*)lr.pBits + y * lr.Pitch;
+      memcpy(out, in, width * d3d->pixel_size);
+   }
+#else
    if (SUCCEEDED(tex->LockRect(0, &lr, NULL, D3DLOCK_NOSYSLOCK)))
    {
       for (unsigned y = 0; y < height; y++)
