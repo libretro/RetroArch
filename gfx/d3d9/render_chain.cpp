@@ -156,7 +156,7 @@ bool renderchain_add_pass(void *data, const LinkInfo *info)
    if (!renderchain_init_shader_fvf(chain, pass))
       return false;
 
-   if (FAILED(d3d_create_vertex_buffer(d3dr, 4 * sizeof(Vertex),
+   if (FAILED(D3DDevice_CreateVertexBuffers(d3dr, 4 * sizeof(Vertex),
                d3dr->GetSoftwareVertexProcessing() 
                ? D3DUSAGE_SOFTWAREPROCESSING : 0,
                0,
