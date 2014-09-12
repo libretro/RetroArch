@@ -220,8 +220,6 @@
     <ClCompile Include="..\..\deps\7zip\CpuArch.c" />
     <ClCompile Include="..\..\deps\7zip\Lzma2Dec.c" />
     <ClCompile Include="..\..\deps\7zip\LzmaDec.c" />
-    <ClCompile Include="..\..\deps\7zip\Ppmd7.c" />
-    <ClCompile Include="..\..\deps\7zip\Ppmd7Dec.c" />
     <ClCompile Include="..\..\deps\rzlib\adler32.c" />
     <ClCompile Include="..\..\deps\rzlib\compress.c" />
     <ClCompile Include="..\..\deps\rzlib\crc32.c" />

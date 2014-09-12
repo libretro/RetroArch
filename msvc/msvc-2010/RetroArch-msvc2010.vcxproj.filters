@@ -307,12 +307,6 @@
     <ClCompile Include="..\..\deps\7zip\LzmaDec.c">
       <Filter>deps\lzma</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\deps\7zip\Ppmd7.c">
-      <Filter>deps\lzma</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\deps\7zip\Ppmd7Dec.c">
-      <Filter>deps\lzma</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\decompress\7zip_support.c">
       <Filter>decompress</Filter>
     </ClCompile>
