@@ -487,7 +487,6 @@ ifeq ($(HAVE_7ZIP),1)
 		deps/7zip/7zFile.o \
 		deps/7zip/7zStream.o \
 		deps/7zip/7zBuf2.o \
-		deps/7zip/Ppmd7.o \
 		deps/7zip/LzmaDec.o \
 		deps/7zip/7zCrcOpt.o \
 		deps/7zip/Bra.o \
@@ -496,7 +495,6 @@ ifeq ($(HAVE_7ZIP),1)
 		deps/7zip/7zCrc.o \
 		deps/7zip/Lzma2Dec.o \
 		deps/7zip/7zBuf.o \
-		deps/7zip/Ppmd7Dec.o \
 		decompress/7zip_support.o 
    OBJ += $(7ZOBJ)
    RETROLAUNCH_OBJ += $(7ZOBJ)
