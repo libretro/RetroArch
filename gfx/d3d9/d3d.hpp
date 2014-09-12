@@ -59,8 +59,6 @@
 #include <string>
 #include <vector>
 
-class RenderChain;
-
 #if defined(_XBOX)
 #if defined(_XBOX1)
 #define D3DDevice_Presents(d3d, device) D3DDevice_Swap(0)
