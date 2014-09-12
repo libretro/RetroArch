@@ -77,7 +77,8 @@ static int menu_info_screen_iterate(unsigned action)
             driver.menu->selection_ptr,
             setting_data_get_mainmenu(true))))
    {
-      strlcpy(needle, current_setting->name, sizeof(needle));
+      if (current_setting)
+         strlcpy(needle, current_setting->name, sizeof(needle));
    }
    else
    {
