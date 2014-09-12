@@ -87,7 +87,7 @@ static void d3d_overlay_render(void *data, overlay_t *overlay)
    vertex_decl->Release();
 #endif
 
-   D3DDevice_SetStreamSources(d3d->dev, 0, overlay->vert_buf,
+   d3d_set_stream_source(d3d->dev, 0, overlay->vert_buf,
          0, sizeof(overlay_vertex));
 
    if (overlay->fullscreen)
@@ -105,11 +105,11 @@ static void d3d_overlay_render(void *data, overlay_t *overlay)
 
    /* Render overlay. */
    d3d->dev->SetTexture(0, overlay->tex);
-   D3DDevice_SetSamplerState_AddressU(d3d->dev, 0, D3DTADDRESS_BORDER);
-   D3DDevice_SetSamplerState_AddressV(d3d->dev, 0, D3DTADDRESS_BORDER);
-   D3DDevice_SetSamplerState_MinFilter(d3d->dev, 0, D3DTEXF_LINEAR);
-   D3DDevice_SetSamplerState_MagFilter(d3d->dev, 0, D3DTEXF_LINEAR);
-   D3DDevice_DrawPrimitive(d3d->dev, D3DPT_TRIANGLESTRIP, 0, 2);
+   d3d_set_sampler_address_u(d3d->dev, 0, D3DTADDRESS_BORDER);
+   d3d_set_sampler_address_v(d3d->dev, 0, D3DTADDRESS_BORDER);
+   d3d_set_sampler_minfilter(d3d->dev, 0, D3DTEXF_LINEAR);
+   d3d_set_sampler_magfilter(d3d->dev, 0, D3DTEXF_LINEAR);
+   d3d_draw_primitive(d3d->dev, D3DPT_TRIANGLESTRIP, 0, 2);
 
    /* Restore previous state. */
    d3d->dev->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);

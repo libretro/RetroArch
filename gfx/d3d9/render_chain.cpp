@@ -161,7 +161,7 @@ bool renderchain_add_pass(void *data, const LinkInfo *info)
                ? D3DUSAGE_SOFTWAREPROCESSING : 0,
                0,
                D3DPOOL_DEFAULT,
-               pass.vertex_buf,
+               &pass.vertex_buf,
                NULL)))
       return false;
 
