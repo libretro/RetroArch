@@ -3338,6 +3338,10 @@ void rarch_main_set_state(unsigned cmd)
          rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED);
          rarch_main_set_state(RARCH_ACTION_STATE_RUNNING_FINISHED);
          break;
+      case RARCH_ACTION_STATE_FORCE_QUIT:
+         g_extern.lifecycle_state = 0;
+         rarch_main_set_state(RARCH_ACTION_STATE_QUIT);
+         break;
       case RARCH_ACTION_STATE_FLUSH_INPUT:
          g_extern.lifecycle_state |= (1ULL << MODE_CLEAR_INPUT);
          break;
@@ -3569,7 +3573,7 @@ void rarch_main_command(unsigned cmd)
          init_drivers();
          break;
       case RARCH_CMD_QUIT_RETROARCH:
-         rarch_main_set_state(RARCH_ACTION_STATE_QUIT);
+         rarch_main_set_state(RARCH_ACTION_STATE_FORCE_QUIT);
          break;
       case RARCH_CMD_RESUME:
          rarch_main_set_state(RARCH_ACTION_STATE_RUNNING);
