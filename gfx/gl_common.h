@@ -204,7 +204,7 @@ typedef struct gl
 
    bool vsync;
    GLuint texture[MAX_TEXTURES];
-   unsigned tex_index; // For use with PREV.
+   unsigned tex_index; /* For use with PREV. */
    unsigned textures;
    struct gl_tex_info prev_info[MAX_TEXTURES];
    GLuint tex_mag_filter;
@@ -219,7 +219,7 @@ typedef struct gl
    unsigned frame_count;
 
 #ifdef HAVE_FBO
-   // Render-to-texture, multipass shaders
+   /* Render-to-texture, multipass shaders. */
    GLuint fbo[MAX_SHADERS];
    GLuint fbo_texture[MAX_SHADERS];
    struct gl_fbo_rect fbo_rect[MAX_SHADERS];
@@ -264,17 +264,17 @@ typedef struct gl
    GLuint pbo;
 
    GLenum internal_fmt;
-   GLenum texture_type; // RGB565 or ARGB
+   GLenum texture_type; /* RGB565 or ARGB */
    GLenum texture_fmt;
    GLenum wrap_mode;
-   unsigned base_size; // 2 or 4
+   unsigned base_size; /* 2 or 4 */
 #ifdef HAVE_OPENGLES
    bool support_unpack_row_length;
 #else
    bool have_es2_compat;
 #endif
 
-   // Fonts
+   /* Fonts */
    const gl_font_renderer_t *font_driver;
    void *font_handle;
 
@@ -292,7 +292,7 @@ typedef struct gl
 #endif
 
 #ifdef HAVE_GL_ASYNC_READBACK
-   // PBOs used for asynchronous viewport readbacks.
+   /* PBOs used for asynchronous viewport readbacks. */
    GLuint pbo_readback[4];
    bool pbo_readback_valid[4];
    bool pbo_readback_enable;
@@ -321,18 +321,19 @@ typedef struct gl
 
 #if defined(HAVE_PSGL)
 #define RARCH_GL_INTERNAL_FORMAT32 GL_ARGB_SCE
-#define RARCH_GL_INTERNAL_FORMAT16 GL_RGB5 // TODO: Verify if this is really 565 or just 555.
+#define RARCH_GL_INTERNAL_FORMAT16 GL_RGB5 /* TODO: Verify if this is really 565 or just 555. */
 #define RARCH_GL_TEXTURE_TYPE32 GL_BGRA
 #define RARCH_GL_TEXTURE_TYPE16 GL_BGRA
 #define RARCH_GL_FORMAT32 GL_UNSIGNED_INT_8_8_8_8_REV
 #define RARCH_GL_FORMAT16 GL_RGB5
 #elif defined(HAVE_OPENGLES)
-// Imgtec/SGX headers have this missing.
+/* Imgtec/SGX headers have this missing. */
 #ifndef GL_BGRA_EXT
 #define GL_BGRA_EXT 0x80E1
 #endif
 #ifdef IOS
-#define RARCH_GL_INTERNAL_FORMAT32 GL_RGBA // Stupid Apple
+/* Stupid Apple. */
+#define RARCH_GL_INTERNAL_FORMAT32 GL_RGBA
 #else
 #define RARCH_GL_INTERNAL_FORMAT32 GL_BGRA_EXT
 #endif
@@ -342,7 +343,7 @@ typedef struct gl
 #define RARCH_GL_FORMAT32 GL_UNSIGNED_BYTE
 #define RARCH_GL_FORMAT16 GL_UNSIGNED_SHORT_5_6_5
 #else
-// On desktop, we always use 32-bit.
+/* On desktop, we always use 32-bit. */
 #define RARCH_GL_INTERNAL_FORMAT32 GL_RGBA8
 #define RARCH_GL_INTERNAL_FORMAT16 GL_RGBA8
 #define RARCH_GL_TEXTURE_TYPE32 GL_BGRA
@@ -350,8 +351,9 @@ typedef struct gl
 #define RARCH_GL_FORMAT32 GL_UNSIGNED_INT_8_8_8_8_REV
 #define RARCH_GL_FORMAT16 GL_UNSIGNED_INT_8_8_8_8_REV
 
-// GL_RGB565 internal format isn't in desktop GL until 4.1 core (ARB_ES2_compatibility).
-// Check for this.
+/* GL_RGB565 internal format isn't in desktop GL 
+ * until 4.1 core (ARB_ES2_compatibility).
+ * Check for this. */
 #ifndef GL_RGB565
 #define GL_RGB565 0x8D62
 #endif
@@ -360,15 +362,19 @@ typedef struct gl
 #define RARCH_GL_FORMAT16_565 GL_UNSIGNED_SHORT_5_6_5
 #endif
 
-// Platform specific workarounds/hacks.
+/* Platform specific workarounds/hacks. */
 #if defined(__CELLOS_LV2__)
 #define NO_GL_READ_PIXELS
 
-// Performance hacks
+/* Performance hacks. */
 #ifdef HAVE_GCMGL
+
 extern GLvoid* glMapBufferTextureReferenceRA( GLenum target, GLenum access );
+
 extern GLboolean glUnmapBufferTextureReferenceRA( GLenum target );
-extern void glBufferSubDataTextureReferenceRA( GLenum target, GLintptr offset, GLsizeiptr size, const GLvoid *data );
+
+extern void glBufferSubDataTextureReferenceRA( GLenum target,
+      GLintptr offset, GLsizeiptr size, const GLvoid *data );
 #define glMapBuffer(target, access) glMapBufferTextureReferenceRA(target, access)
 #define glUnmapBuffer(target) glUnmapBufferTextureReferenceRA(target)
 #define glBufferSubData(target, offset, size, data) glBufferSubDataTextureReferenceRA(target, offset, size, data)
@@ -383,7 +389,7 @@ extern void glBufferSubDataTextureReferenceRA( GLenum target, GLintptr offset, G
 #define NO_GL_FF_MATRIX
 #endif
 
-#if defined(HAVE_OPENGLES2) // TODO: Figure out exactly what.
+#if defined(HAVE_OPENGLES2) /* TODO: Figure out exactly what. */
 #define NO_GL_CLAMP_TO_BORDER
 #endif
 
@@ -398,10 +404,15 @@ extern void glBufferSubDataTextureReferenceRA( GLenum target, GLintptr offset, G
 #endif
 
 void gl_set_projection(gl_t *gl, struct gl_ortho *ortho, bool allow_rotate);
-void gl_set_viewport(gl_t *gl, unsigned width, unsigned height, bool force_full, bool allow_rotate);
-void gl_shader_set_coords(gl_t *gl, const struct gl_coords *coords, const math_matrix *mat);
+
+void gl_set_viewport(gl_t *gl, unsigned width, unsigned height,
+      bool force_full, bool allow_rotate);
+
+void gl_shader_set_coords(gl_t *gl,
+      const struct gl_coords *coords, const math_matrix *mat);
 
 void gl_init_fbo(gl_t *gl, unsigned width, unsigned height);
+
 void gl_deinit_fbo(gl_t *gl);
 
 static inline GLenum gl_wrap_type_to_enum(enum gfx_wrap_type type)
