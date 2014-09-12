@@ -176,6 +176,7 @@ int read_7zip_file(const char * archive_path,
    UInt16 *temp = NULL;
    size_t tempSize = 0;
    long outsize = -1;
+   bool file_found = false;
 
    /*These are the allocation routines.
     * Currently using the non-standard 7zip choices. */
@@ -243,6 +244,7 @@ int read_7zip_file(const char * archive_path,
 
          if (strcmp(infile,relative_path) == 0)
          {
+            file_found = true;
             res = SzArEx_Extract(&db, &lookStream.s, i,&blockIndex,
                   &outBuffer, &outBufferSize,&offset, &outSizeProcessed,
                   &allocImp, &allocTempImp);
@@ -272,11 +274,13 @@ int read_7zip_file(const char * archive_path,
 
    File_Close(&archiveStream.file);
 
-   if (res == SZ_OK)
+   if (res == SZ_OK && file_found == true)
       return outsize;
 
    //Error handling:
-   if (res == SZ_ERROR_UNSUPPORTED)
+   if (!file_found)
+      RARCH_ERR("File %s not found in %s\n",relative_path,archive_path);
+   else if (res == SZ_ERROR_UNSUPPORTED)
       RARCH_ERR("7Zip decoder doesn't support this archive\n");
    else if (res == SZ_ERROR_MEM)
       RARCH_ERR("7Zip decoder could not allocate memory\n");
