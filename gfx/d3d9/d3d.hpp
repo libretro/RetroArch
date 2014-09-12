@@ -59,38 +59,18 @@
 #include <string>
 #include <vector>
 
-#if defined(_XBOX)
-#if defined(_XBOX1)
-#define D3DDevice_Presents(d3d, device) D3DDevice_Swap(0)
-#elif defined(_XBOX360)
-#define D3DDevice_Presents(d3d, device) D3DDevice_Present(device)
-#endif
-#else
+#ifndef _XBOX
 #define D3DDevice_SetSamplerState_AddressU(dev, sampler, type) dev->SetSamplerState(sampler, D3DSAMP_ADDRESSU, type)
 #define D3DDevice_SetSamplerState_AddressV(dev, sampler, type) dev->SetSamplerState(sampler, D3DSAMP_ADDRESSV, type)
 #define D3DDevice_SetSamplerState_MinFilter(dev, sampler, type) dev->SetSamplerState(sampler, D3DSAMP_MINFILTER, type)
 #define D3DDevice_SetSamplerState_MagFilter(dev, sampler, type) dev->SetSamplerState(sampler, D3DSAMP_MAGFILTER, type)
-#define D3DDevice_DrawPrimitive(dev, type, start, count) \
-   if (SUCCEEDED(dev->BeginScene())) \
-   { \
-      dev->DrawPrimitive(type, start, count); \
-      dev->EndScene(); \
-   }
 #define D3DTexture_LockRectClear(pass, tex, level, lockedrect, rect, flags) \
    if (SUCCEEDED(tex->LockRect(level, &lockedrect, rect, flags))) \
    { \
       memset(lockedrect.pBits, level, pass.info.tex_h * lockedrect.Pitch); \
       tex->UnlockRect(0); \
    }
-#define D3DDevice_Presents(d3d, dev) \
-      if (dev->Present(NULL, NULL, NULL, NULL) != D3D_OK) \
-      { \
-         RARCH_ERR("[D3D]: Present() failed.\n"); \
-         d3d->needs_restore = true; \
-      }
 #define D3DDevice_CreateVertexBuffers(device, Length, Usage, UnusedFVF, UnusedPool, ppVertexBuffer, pUnusedSharedHandle) device->CreateVertexBuffer(Length, Usage, UnusedFVF, UnusedPool, ppVertexBuffer, NULL)
-
-#define D3DDevice_SetStreamSources(device, streamNumber, pStreamData, OffsetInBytes, Stride) device->SetStreamSource(streamNumber, pStreamData, OffsetInBytes, Stride)
 
 #define D3DTexture_Blit(d3d, desc, d3dlr, frame, width, height, pitch) \
    if (SUCCEEDED(first.tex->LockRect(0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK))) \

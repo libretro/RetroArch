@@ -31,10 +31,8 @@
 #define RD3DVertexBuffer_Lock(device, OffsetToLock, SizeToLock, ppbData, Flags) *ppbData = D3DVertexBuffer_Lock2(device, Flags) + OffsetToLock
 #define RD3DVertexBuffer_Unlock(device)
 #define RD3DDevice_SetTexture(device, Stage, pTexture) D3DDevice_SetTexture(Stage, pTexture)
-#define RD3DDevice_DrawPrimitive(device, PrimitiveType, StartVertex, PrimitiveCount) D3DDevice_DrawVertices(PrimitiveType, StartVertex, D3DVERTEXCOUNT(PrimitiveType, PrimitiveCount))
 #define RD3DDevice_Clear(device, Count, pRects, Flags, Color, Z, Stencil) D3DDevice_Clear(Count, pRects, Flags, Color, Z, Stencil)
 #define RD3DDevice_SetViewport(device, viewport) D3DDevice_SetViewport(viewport)
-#define D3DDevice_Presents(d3d, device) D3DDevice_Swap(0)
 #define D3DDevice_CreateVertexBuffers(device, Length, Usage, UnusedFVF, UnusedPool, ppVertexBuffer, pUnusedSharedHandle) IDirect3DDevice8_CreateVertexBuffer(device, Length, Usage, UnusedFVF, UnusedPool, ppVertexBuffer)
 
 #elif defined(_XBOX360)
@@ -48,16 +46,12 @@
  D3DDevice_SetTexture(device, Stage, pTexture, pendingMask3)
 
 #define D3DDevice_CreateVertexBuffers(device, Length, Usage, UnusedFVF, UnusedPool, ppVertexBuffer, pUnusedSharedHandle) IDirect3DDevice9_CreateVertexBuffer(device, Length, Usage, UnusedFVF, UnusedPool, ppVertexBuffer, NULL)
-#define RD3DDevice_DrawPrimitive(device, PrimitiveType, StartVertex, PrimitiveCount) D3DDevice_DrawVertices(device, PrimitiveType, StartVertex, D3DVERTEXCOUNT(PrimitiveType, PrimitiveCount))
 #define RD3DDevice_Clear(device, Count, pRects, Flags, Color, Z, Stencil) D3DDevice_Clear(device, Count, pRects, Flags, Color, Z, Stencil, false)
 #define RD3DDevice_SetViewport(device, viewport) D3DDevice_SetViewport(device, viewport)
-#define D3DDevice_Presents(d3d, dev) D3DDevice_Present(dev)
 #endif
 
 #define D3DTexture_LockRectClear(pass, tex, level, lockedrect, rect, flags) \
    D3DTexture_LockRect(tex, level, &lockedrect, rect, flags); \
    memset(lockedrect.pBits, 0, pass->tex_h * lockedrect.Pitch)
-
-#define D3DDevice_DrawPrimitive(dev, type, start, count) dev->DrawPrimitive(type, start, count)
 
 #endif
