@@ -19,6 +19,7 @@
 #include "gfx/shader_common.h"
 #include "input/input_common.h"
 #include "config.def.h"
+#include "retroarch_logger.h"
 
 #ifdef APPLE
 #include "input/apple_keycode.h"
@@ -2171,7 +2172,28 @@ static void general_write_handler(const void *data)
       rarch_main_command(rarch_cmd);
 }
 
-#define APPEND(VALUE) if (index == list_size) { list_size *= 2; list = (rarch_setting_t*)realloc(list, sizeof(rarch_setting_t) * list_size); } (list[index++]) = VALUE
+#define APPEND(VALUE)                                                                   \
+   if (index == list_size)                                                              \
+   {                                                                                    \
+      rarch_setting_t* list_temp = NULL;                                                \
+                                                                                        \
+      list_size *= 2;                                                                   \
+      list_temp = (rarch_setting_t*)realloc(list, sizeof(rarch_setting_t) * list_size); \
+                                                                                        \
+      if (list_temp)                                                                    \
+      {                                                                                 \
+         list = list_temp;                                                              \
+      }                                                                                 \
+      else                                                                              \
+      {                                                                                 \
+         RARCH_ERR("Settings list reallocation failed.\n");                             \
+         free(list);                                                                    \
+         list = NULL;                                                                   \
+         return NULL;                                                                   \
+      }                                                                                 \
+   }                                                                                    \
+   (list[index++]) = VALUE
+
 #define START_GROUP(NAME)                       { const char *GROUP_NAME = NAME; APPEND(setting_data_group_setting (ST_GROUP, NAME));
 #define END_GROUP()                             APPEND(setting_data_group_setting (ST_END_GROUP, 0)); }
 #define START_SUB_GROUP(NAME, GROUPNAME)        { const char *SUBGROUP_NAME = NAME; (void)SUBGROUP_NAME; APPEND(setting_data_subgroup_setting (ST_SUB_GROUP, NAME, GROUPNAME));
@@ -2210,6 +2232,7 @@ rarch_setting_t *setting_data_get_mainmenu(bool regenerate)
 {
    int index = 0;
    static rarch_setting_t* list = NULL;
+   rarch_setting_t* list_tmp = NULL;
    int list_size = 32;
    static bool lists[32];
 
@@ -2223,6 +2246,11 @@ rarch_setting_t *setting_data_get_mainmenu(bool regenerate)
    }
 
    list = (rarch_setting_t*)malloc(sizeof(rarch_setting_t) * list_size);
+   if (!list)
+   {
+      RARCH_ERR("setting_data_get_mainmenu list allocation failed.\n");
+      return NULL;
+   }
 
    START_GROUP("Main Menu")
       START_SUB_GROUP("State", GROUP_NAME)
@@ -2271,7 +2299,18 @@ rarch_setting_t *setting_data_get_mainmenu(bool regenerate)
    APPEND(terminator);
 
    /* flatten this array to save ourselves some kilobytes */
-   list = (rarch_setting_t*)realloc(list, sizeof(rarch_setting_t) * index);
+   list_tmp = (rarch_setting_t*)realloc(list, sizeof(rarch_setting_t) * index);
+   if (list_tmp)
+   {
+      list = list_tmp;
+   }
+   else
+   {
+      RARCH_ERR("setting_data_get_mainmenu list flattening failed.\n");
+      free(list);
+      list = NULL;
+   }
+
    /* do not optimize into return realloc(),
     * list is static and must be written. */
    return (rarch_setting_t*)list;
@@ -2282,12 +2321,18 @@ rarch_setting_t *setting_data_get_list(void)
 {
    int i, player, index = 0;
    static rarch_setting_t* list = NULL;
+   rarch_setting_t* list_tmp = NULL;
    int list_size = 512;
 
    if (list)
       return list;
 
    list = (rarch_setting_t*)malloc(sizeof(rarch_setting_t) * list_size);
+   if (!list)
+   {
+      RARCH_ERR("setting_data_get_list list allocation failed.\n");
+      return NULL;
+   }
 
    START_GROUP("Driver Options")
       START_SUB_GROUP("State", GROUP_NAME)
@@ -2617,8 +2662,18 @@ rarch_setting_t *setting_data_get_list(void)
    APPEND(terminator);
 
    /* flatten this array to save ourselves some kilobytes. */
-   list = (rarch_setting_t*)
+   list_tmp = (rarch_setting_t*)
       realloc(list, sizeof(rarch_setting_t) * index);
+   if (list_tmp)
+   {
+      list = list_tmp;
+   }
+   else
+   {
+      RARCH_ERR("setting_data_get_list list flattening failed.\n");
+      free(list);
+      list = NULL;
+   }
 
    /* do not optimize into return realloc(),
     * list is static and must be written. */

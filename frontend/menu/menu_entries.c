@@ -178,9 +178,9 @@ int menu_entries_push_list(menu_handle_t *menu,
 
    if (!strcmp(label, "mainmenu"))
    {
+      rarch_setting_t *setting;
       setting_data = (rarch_setting_t *)setting_data_get_mainmenu(true);
-      rarch_setting_t *setting = (rarch_setting_t*)setting_data_find_setting(setting_data,
-            "Main Menu");
+      setting = (rarch_setting_t*)setting_data_find_setting(setting_data, "Main Menu");
 
       file_list_clear(list);
 
