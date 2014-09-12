@@ -272,11 +272,9 @@ int menu_entries_push_list(menu_handle_t *menu,
          if (path)
          {
             char path_short[PATH_MAX];
-            fill_pathname(path_short, path_basename(path), "",
-                  sizeof(path_short));
-
-            snprintf(fill_buf, sizeof(fill_buf), "%s (%s)",
-                  path_short, core_name);
+            fill_short_pathname_representation(path_short,path,sizeof(path_short));
+            snprintf(fill_buf,sizeof(fill_buf),"%s (%s)",
+               path_short,core_name);
          }
 
          file_list_push(list, fill_buf, "",
