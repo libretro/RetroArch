@@ -38,6 +38,11 @@
 #define HAVE_SHADER_MANAGER
 #endif
 
+#ifdef GEKKO
+extern unsigned menu_gx_resolutions[GX_RESOLUTIONS_LAST][2];
+extern unsigned menu_current_gx_resolution;
+#endif
+
 // FIXME: Ugly hack, nees to be refactored badly
 static size_t hack_shader_pass = 0;
 
@@ -1176,6 +1181,8 @@ static int menu_action_ok(const char *menu_path,
       setting_data_get_list();
    rarch_setting_t *setting = (rarch_setting_t*)
       setting_data_find_setting(setting_data, menu_label);
+
+   (void)hack_shader_pass;
 
    if (file_list_get_size(driver.menu->selection_buf) == 0)
       return 0;

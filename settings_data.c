@@ -1764,7 +1764,7 @@ int setting_data_get_description(const char *label, char *msg,
 }
 
 #ifdef GEKKO
-static unsigned menu_gx_resolutions[GX_RESOLUTIONS_LAST][2] = {
+unsigned menu_gx_resolutions[GX_RESOLUTIONS_LAST][2] = {
    { 512, 192 },
    { 598, 200 },
    { 640, 200 },
@@ -1805,7 +1805,7 @@ static unsigned menu_gx_resolutions[GX_RESOLUTIONS_LAST][2] = {
    { 640, 480 },
 };
 
-static unsigned menu_current_gx_resolution = GX_RESOLUTIONS_640_480;
+unsigned menu_current_gx_resolution = GX_RESOLUTIONS_640_480;
 #endif
 
 static void menu_common_setting_set_label_perf(char *type_str,
