@@ -1104,8 +1104,17 @@ static void lakka_init_core_info(void *data)
 static void *lakka_init(void)
 {
    int i;
-   menu_handle_t *menu = (menu_handle_t*)calloc(1, sizeof(*menu));
-   gl_t *gl = (gl_t*)driver.video_data;
+   menu_handle_t *menu;
+   gl_t *gl;
+
+   if (driver.video != &video_gl)
+   {
+      RARCH_ERR("Cannot initialize Lakka menu driver: gl video driver is not active.\n");
+      return NULL;
+   }
+
+   menu = (menu_handle_t*)calloc(1, sizeof(*menu));
+   gl = (gl_t*)driver.video_data;
 
    if (!menu || !gl)
       return NULL;
