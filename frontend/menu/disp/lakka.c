@@ -667,7 +667,7 @@ static GLuint png_texture_load(const char * file_name)
    texture_image_load(&ti, file_name);
 
    /* Generate the OpenGL texture object */
-   GLuint texture;
+   GLuint texture = 0;
    glGenTextures(1, &texture);
    glBindTexture(GL_TEXTURE_2D, texture);
    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, ti.width, ti.height, 0,
