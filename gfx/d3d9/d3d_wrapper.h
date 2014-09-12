@@ -20,7 +20,7 @@
 #include "../context/win32_common.h"
 #include "d3d_defines.h"
 
-void d3d_swap(d3d_video_t *d3d, LPDIRECT3DDEVICE dev);
+void d3d_swap(void *data, LPDIRECT3DDEVICE dev);
 
 HRESULT d3d_create_vertex_buffer(LPDIRECT3DDEVICE dev,
       unsigned length, unsigned usage, unsigned fvf,
@@ -50,7 +50,7 @@ void d3d_lockrectangle_clear(LPDIRECT3DTEXTURE tex,
       unsigned level, D3DLOCKED_RECT lock_rect, RECT rect,
       unsigned flags);
 
-void d3d_textureblit(d3d_video_t *d3d,
+void d3d_textureblit(void *data,
       LPDIRECT3DTEXTURE tex, D3DSURFACE_DESC desc,
       D3DLOCKED_RECT lr, const void *frame,
       unsigned width, unsigned height, unsigned pitch);

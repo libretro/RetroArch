@@ -258,6 +258,10 @@
     <ClCompile Include="..\..\gfx\context\win32_common.c">
       <Filter>gfx\context</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\frontend\menu\menu_action.c" />
+    <ClCompile Include="..\..\gfx\d3d9\d3d_wrapper.c">
+      <Filter>gfx\d3d9</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="resource.h" />
