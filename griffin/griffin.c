@@ -670,7 +670,6 @@ DEPENDENCIES
 #include "../deps/7zip/7zFile.c"
 #include "../deps/7zip/7zStream.c"
 #include "../deps/7zip/7zBuf2.c"
-#include "../deps/7zip/Ppmd7.c"
 #include "../deps/7zip/LzmaDec.c"
 #include "../deps/7zip/7zCrcOpt.c"
 #include "../deps/7zip/Bra.c"
@@ -679,7 +678,6 @@ DEPENDENCIES
 #include "../deps/7zip/7zCrc.c"
 #include "../deps/7zip/Lzma2Dec.c"
 #include "../deps/7zip/7zBuf.c"
-#include "../deps/7zip/Ppmd7Dec.c"
 #include "../decompress/7zip_support.c"
 #endif
 
