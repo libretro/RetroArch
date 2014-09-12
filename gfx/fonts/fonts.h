@@ -70,8 +70,8 @@ typedef struct font_renderer_driver
    const char *ident;
 } font_renderer_driver_t;
 
-extern const font_renderer_driver_t ft_font_renderer;
-extern const font_renderer_driver_t bitmap_font_renderer;
+extern font_renderer_driver_t ft_font_renderer;
+extern font_renderer_driver_t bitmap_font_renderer;
 
 /* font_path can be NULL for default font. */
 bool font_renderer_create_default(const font_renderer_driver_t **driver,

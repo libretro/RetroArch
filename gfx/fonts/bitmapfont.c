@@ -122,7 +122,7 @@ static const char *font_renderer_get_default_font(void)
    return "";
 }
 
-const font_renderer_driver_t bitmap_font_renderer = {
+font_renderer_driver_t bitmap_font_renderer = {
    font_renderer_init,
    font_renderer_get_atlas,
    font_renderer_get_glyph,
