@@ -133,6 +133,7 @@ ifeq ($(HAVE_MENU_COMMON), 1)
 			 frontend/menu/menu_input_line_cb.o \
 			 frontend/menu/menu_common.o \
 			 frontend/menu/menu_navigation.o  \
+			 frontend/menu/menu_action.o \
 			 frontend/menu/menu_entries.o
 endif
 

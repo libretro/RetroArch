@@ -73,11 +73,5 @@ enum
 };
 #endif
 
-void menu_common_setting_set_current_boolean(
-      rarch_setting_t *setting, unsigned action);
-void menu_common_setting_set_current_fraction(
-      rarch_setting_t *setting, unsigned action);
-void menu_common_setting_set_current_unsigned_integer(
-      rarch_setting_t *setting, unsigned id, unsigned action);
 
 #endif

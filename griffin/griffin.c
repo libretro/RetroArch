@@ -603,6 +603,7 @@ MENU
 #ifdef HAVE_MENU
 #include "../frontend/menu/menu_input_line_cb.c"
 #include "../frontend/menu/menu_common.c"
+#include "../frontend/menu/menu_action.c"
 #include "../frontend/menu/menu_entries.c"
 #include "../frontend/menu/menu_navigation.c"
 

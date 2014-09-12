@@ -21,7 +21,7 @@
 #include <string.h>
 #include <limits.h>
 #include <ctype.h>
-#include "menu_common_backend.h"
+#include "../menu_action.h"
 #include "../menu_navigation.h"
 
 #include "../../../gfx/gfx_common.h"
