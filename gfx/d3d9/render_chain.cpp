@@ -133,8 +133,8 @@ bool renderchain_set_pass_size(void *data, unsigned pass_index,
          return false;
 
       d3dr->SetTexture(0, pass.tex);
-      D3DDevice_SetSamplerState_AddressU(d3dr, 0, D3DTADDRESS_BORDER);
-      D3DDevice_SetSamplerState_AddressV(d3dr, 0, D3DTADDRESS_BORDER);
+      d3d_set_sampler_address_u(d3dr, 0, D3DTADDRESS_BORDER);
+      d3d_set_sampler_address_v(d3dr, 0, D3DTADDRESS_BORDER);
       d3dr->SetTexture(0, NULL);
    }
 
@@ -156,7 +156,7 @@ bool renderchain_add_pass(void *data, const LinkInfo *info)
    if (!renderchain_init_shader_fvf(chain, pass))
       return false;
 
-   if (FAILED(D3DDevice_CreateVertexBuffers(d3dr, 4 * sizeof(Vertex),
+   if (FAILED(d3d_create_vertex_buffer(d3dr, 4 * sizeof(Vertex),
                d3dr->GetSoftwareVertexProcessing() 
                ? D3DUSAGE_SOFTWAREPROCESSING : 0,
                0,
@@ -174,8 +174,8 @@ bool renderchain_add_pass(void *data, const LinkInfo *info)
       return false;
 
    d3dr->SetTexture(0, pass.tex);
-   D3DDevice_SetSamplerState_AddressU(d3dr, 0, D3DTADDRESS_BORDER);
-   D3DDevice_SetSamplerState_AddressV(d3dr, 0, D3DTADDRESS_BORDER);
+   d3d_set_sampler_address_u(d3dr, 0, D3DTADDRESS_BORDER);
+   d3d_set_sampler_address_v(d3dr, 0, D3DTADDRESS_BORDER);
    d3dr->SetTexture(0, NULL);
 
    chain->passes.push_back(pass);
@@ -212,8 +212,8 @@ bool renderchain_add_lut(void *data, const std::string &id,
       return false;
 
    d3dr->SetTexture(0, lut);
-   D3DDevice_SetSamplerState_AddressU(d3dr, 0, D3DTADDRESS_BORDER);
-   D3DDevice_SetSamplerState_AddressV(d3dr, 0, D3DTADDRESS_BORDER);
+   d3d_set_sampler_address_u(d3dr, 0, D3DTADDRESS_BORDER);
+   d3d_set_sampler_address_v(d3dr, 0, D3DTADDRESS_BORDER);
    d3dr->SetTexture(0, NULL);
 
    lut_info info = { lut, id, smooth };
@@ -377,8 +377,8 @@ bool renderchain_create_first_pass(void *data, const LinkInfo *info,
             translate_filter(info->pass->filter));
       D3DDevice_SetSamplerState_MagFilter(d3dr, 0,
             translate_filter(info->pass->filter));
-      D3DDevice_SetSamplerState_AddressU(d3dr, 0, D3DTADDRESS_BORDER);
-      D3DDevice_SetSamplerState_AddressV(d3dr, 0, D3DTADDRESS_BORDER);
+      d3d_set_sampler_address_u(d3dr, 0, D3DTADDRESS_BORDER);
+      d3d_set_sampler_address_v(d3dr, 0, D3DTADDRESS_BORDER);
       d3dr->SetTexture(0, NULL);
    }
 
@@ -562,10 +562,8 @@ void renderchain_render_pass(void *data, Pass &pass, unsigned pass_index)
    d3dr->SetVertexDeclaration(pass.vertex_decl);
 #endif
    for (unsigned i = 0; i < 4; i++)
-   {
-      D3DDevice_SetStreamSources(d3dr, i,
+      d3d_set_stream_source(d3dr, i,
             pass.vertex_buf, 0, sizeof(Vertex));
-   }
 
    renderchain_bind_orig(chain, pass);
    renderchain_bind_prev(chain, pass);
@@ -573,7 +571,7 @@ void renderchain_render_pass(void *data, Pass &pass, unsigned pass_index)
    renderchain_bind_luts(chain, pass);
    renderchain_bind_tracker(chain, pass, pass_index);
 
-   D3DDevice_DrawPrimitive(d3dr, D3DPT_TRIANGLESTRIP, 0, 2);
+   d3d_draw_primitive(d3dr, D3DPT_TRIANGLESTRIP, 0, 2);
 
    // So we don't render with linear filter into render targets,
    // which apparently looked odd (too blurry).
@@ -643,9 +641,7 @@ void renderchain_unbind_all(void *data)
    }
 
    for (unsigned i = 0; i < chain->bound_vert.size(); i++)
-   {
-      D3DDevice_SetStreamSources(d3dr, chain->bound_vert[i], 0, 0, 0);
-   }
+      d3d_set_stream_source(d3dr, chain->bound_vert[i], 0, 0, 0);
 
    chain->bound_tex.clear();
    chain->bound_vert.clear();

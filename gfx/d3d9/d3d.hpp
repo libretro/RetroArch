@@ -55,7 +55,7 @@
 #include <Cg/cg.h>
 #include <Cg/cgD3D9.h>
 #endif
-#include "d3d_defines.h"
+#include "d3d_wrapper.h"
 #include <string>
 #include <vector>
 

@@ -61,7 +61,7 @@ void d3d_set_stream_source(LPDIRECT3DDEVICE dev, unsigned stream_no,
 }
 
 void d3d_set_sampler_address_u(LPDIRECT3DDEVICE dev,
-      unsigned sampler, unsigned type, unsigned value)
+      unsigned sampler, unsigned value)
 {
 #if defined(_XBOX1)
    D3D__DirtyFlags |= (D3DDIRTYFLAG_TEXTURE_STATE_0 << sampler);
@@ -69,12 +69,12 @@ void d3d_set_sampler_address_u(LPDIRECT3DDEVICE dev,
 #elif defined(_XBOX360)
    D3DDevice_SetSamplerState_AddressU_Inline(dev, sampler, value);
 #else
-   dev->SetSamplerState(sampler, D3DSAMP_ADDRESSU, type);
+   dev->SetSamplerState(sampler, D3DSAMP_ADDRESSU, value);
 #endif
 }
 
 void d3d_set_sampler_address_v(LPDIRECT3DDEVICE dev,
-      unsigned sampler, unsigned type, unsigned value)
+      unsigned sampler, unsigned value)
 {
 #if defined(_XBOX1)
    D3D__DirtyFlags |= (D3DDIRTYFLAG_TEXTURE_STATE_0 << sampler);
@@ -82,12 +82,12 @@ void d3d_set_sampler_address_v(LPDIRECT3DDEVICE dev,
 #elif defined(_XBOX360)
    D3DDevice_SetSamplerState_AddressV_Inline(dev, sampler, value);
 #else
-   dev->SetSamplerState(sampler, D3DSAMP_ADDRESSV, type);
+   dev->SetSamplerState(sampler, D3DSAMP_ADDRESSV, value);
 #endif
 }
 
 void d3d_set_sampler_minfilter(LPDIRECT3DDEVICE dev,
-      unsigned sampler, unsigned type, unsigned value)
+      unsigned sampler, unsigned value)
 {
 #if defined(_XBOX1)
    D3D__DirtyFlags |= (D3DDIRTYFLAG_TEXTURE_STATE_0 << sampler);
@@ -95,12 +95,12 @@ void d3d_set_sampler_minfilter(LPDIRECT3DDEVICE dev,
 #elif defined(_XBOX360)
    D3DDevice_SetSamplerState_MinFilter(dev, sampler, value);
 #else
-   dev->SetSamplerState(sampler, D3DSAMP_MINFILTER, type);
+   dev->SetSamplerState(sampler, D3DSAMP_MINFILTER, value);
 #endif
 }
 
 void d3d_set_sampler_magfilter(LPDIRECT3DDEVICE dev,
-      unsigned sampler, unsigned type, unsigned value)
+      unsigned sampler, unsigned value)
 {
 #if defined(_XBOX1)
    D3D__DirtyFlags |= (D3DDIRTYFLAG_TEXTURE_STATE_0 << sampler);
@@ -108,7 +108,7 @@ void d3d_set_sampler_magfilter(LPDIRECT3DDEVICE dev,
 #elif defined(_XBOX360)
    D3DDevice_SetSamplerState_MagFilter(dev, sampler, value);
 #else
-   dev->SetSamplerState(sampler, D3DSAMP_MAGFILTER, type);
+   dev->SetSamplerState(sampler, D3DSAMP_MAGFILTER, value);
 #endif
 }
 

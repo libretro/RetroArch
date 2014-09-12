@@ -31,16 +31,16 @@ void d3d_set_stream_source(LPDIRECT3DDEVICE dev, unsigned stream_no,
       unsigned stride);
 
 void d3d_set_sampler_address_u(LPDIRECT3DDEVICE dev,
-      unsigned sampler, unsigned type, unsigned value);
+      unsigned sampler, unsigned value);
 
 void d3d_set_sampler_address_v(LPDIRECT3DDEVICE dev,
-      unsigned sampler, unsigned type, unsigned value);
+      unsigned sampler, unsigned value);
 
 void d3d_set_sampler_minfilter(LPDIRECT3DDEVICE dev,
-      unsigned sampler, unsigned type, unsigned value);
+      unsigned sampler, unsigned value);
 
 void d3d_set_sampler_magfilter(LPDIRECT3DDEVICE dev,
-      unsigned sampler, unsigned type, unsigned value);
+      unsigned sampler, unsigned value);
 
 void d3d_draw_primitive(LPDIRECT3DDEVICE dev,
       D3DPRIMITIVETYPE type, unsigned start, unsigned count);
