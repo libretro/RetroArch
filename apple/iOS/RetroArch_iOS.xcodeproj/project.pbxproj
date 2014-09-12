@@ -558,7 +558,6 @@
 					"-DHAVE_THREADS",
 					"-DHAVE_FILTERS_BUILTIN",
 					"-D_7ZIP_ST",
-					"-DHAVE_COMPRESSION",
 					"-DHAVE_7ZIP",
 				);
 				"OTHER_CFLAGS[arch=*]" = (
@@ -590,7 +589,6 @@
 					"-DHAVE_THREADS",
 					"-DHAVE_FILTERS_BUILTIN",
 					"-D_7ZIP_ST",
-					"-DHAVE_COMPRESSION",
 					"-DHAVE_7ZIP",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
