@@ -24,6 +24,7 @@
 #include "../general.h"
 #include "../boolean.h"
 #include "input_common.h"
+#include "retroarch_logger.h"
 #include <stdlib.h>
 #include <stddef.h>
 #include <string.h>
@@ -483,6 +484,12 @@ bool dinput_handle_message(void *dinput, UINT message, WPARAM wParam, LPARAM lPa
       {
          struct pointer_status *new_pointer = 
             (struct pointer_status *)malloc(sizeof(struct pointer_status));
+         if (!new_pointer)
+         {
+            RARCH_ERR("dinput_handle_message: pointer allocation in WM_POINTERDOWN failed.\n");
+            return false;
+         }
+
          new_pointer->pointer_id = GET_POINTERID_WPARAM(wParam);
          dinput_pointer_store_pos(new_pointer, lParam);
          dinput_add_pointer(di, new_pointer);
