@@ -159,8 +159,9 @@ void d3d_textureblit(void *data, void *renderchain_data,
       D3DLOCKED_RECT lr, const void *frame,
       unsigned width, unsigned height, unsigned pitch)
 {
-	d3d_video_t *d3d = (d3d_video_t*)d3d;
+	d3d_video_t *d3d = (d3d_video_t*)data;
    (void)desc;
+   (void)data;
    (void)d3d;
 
    if (!d3d)
