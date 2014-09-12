@@ -119,6 +119,11 @@ int read_zip_file(const char * archive_path, const char *relative_path, void **b
       }
    }
    unzClose( zipfile );
+   if(!finished_reading)
+   {
+      RARCH_ERR("File %s not found in %s\n",relative_path,archive_path);
+      return -1;
+   }
    return bytes_read;
 }
 
