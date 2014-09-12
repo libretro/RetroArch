@@ -41,7 +41,7 @@
 static void get_input_config_prefix(char *buf, size_t sizeof_buf,
       const rarch_setting_t *setting)
 {
-   snprintf(buf, sizeof_buf, "input%cplayer%d",
+   snprintf(buf, sizeof_buf, "input%cplayer%u",
          setting->index ? '_' : '\0', setting->index);
 }
 
@@ -94,9 +94,9 @@ static void get_axis_name(char *buf, size_t sizeof_buf,
    uint32_t joyaxis = BINDFOR(*setting).joyaxis;
 
    if (AXIS_NEG_GET(joyaxis) != AXIS_DIR_NONE)
-      snprintf(buf, sizeof_buf, "-%d", AXIS_NEG_GET(joyaxis));
+      snprintf(buf, sizeof_buf, "-%u", AXIS_NEG_GET(joyaxis));
    else if (AXIS_POS_GET(joyaxis) != AXIS_DIR_NONE)
-      snprintf(buf, sizeof_buf, "+%d", AXIS_POS_GET(joyaxis));
+      snprintf(buf, sizeof_buf, "+%u", AXIS_POS_GET(joyaxis));
 }
 
 void setting_data_reset_setting(const rarch_setting_t* setting)
@@ -479,7 +479,7 @@ static void menu_common_setting_set_label_st_uint(rarch_setting_t *setting,
    if (setting && !strcmp(setting->name, "video_monitor_index"))
    {
       if (*setting->value.unsigned_integer)
-         snprintf(type_str, type_str_size, "%d",
+         snprintf(type_str, type_str_size, "%u",
                *setting->value.unsigned_integer);
       else
          strlcpy(type_str, "0 (Auto)", type_str_size);
@@ -531,7 +531,7 @@ static void menu_common_setting_set_label_st_uint(rarch_setting_t *setting,
             type_str_size);
    }
    else
-      snprintf(type_str, type_str_size, "%d",
+      snprintf(type_str, type_str_size, "%u",
             *setting->value.unsigned_integer);
 }
 
