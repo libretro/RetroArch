@@ -469,16 +469,6 @@ struct global
    char basename[PATH_MAX];
    char fullpath[PATH_MAX];
 
-#ifdef HAVE_COMPRESSION
-   /* In case of a compressed archive, this is the path 
-    * to the archive. Fullpath contains everything. */
-   char carchive_path[PATH_MAX];
-
-   /* True, in case of a compressed archive 
-    * containing the content file. */
-   bool is_carchive;
-#endif
-
    /* A list of save types and associated paths for all content. */
    struct string_list *savefiles;
 

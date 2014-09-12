@@ -1015,9 +1015,6 @@ static void print_help(void)
    puts("\t\tAvailable commands are listed if command is invalid.");
 #endif
 
-#ifdef HAVE_COMPRESSION
-   puts("\t-z/--carchive: Path to a compressed container containing the main content file.\n\t\tThe main content file has to be specified as a subfile, for example like this:\n\t\t ./retroarch -Lmylib.so -z myfile.7z myfile.7z/myrom.rom .");
-#endif
    puts("\t-r/--record: Path to record video file.\n\t\tUsing .mkv extension is recommended.");
    puts("\t--recordconfig: Path to settings used during recording.");
    puts("\t--size: Overrides output video size when recording (format: WIDTHxHEIGHT).");
@@ -1185,9 +1182,6 @@ static void parse_input(int argc, char *argv[])
       { "detach", 0, NULL, 'D' },
       { "features", 0, &val, 'f' },
       { "subsystem", 1, NULL, 'Z' },
-#ifdef HAVE_COMPRESSION
-      { "carchive", 0, NULL, 'z' },
-#endif
       { NULL, 0, NULL, 0 }
    };
 
@@ -1205,15 +1199,10 @@ static void parse_input(int argc, char *argv[])
 #define NETPLAY_ARG
 #endif
 
-#ifdef HAVE_COMPRESSION
-#define COMPRESS_ARG "z:"
-#else
-#define COMPRESS_ARG
-#endif
 
 #define BSV_MOVIE_ARG "P:R:M:"
 
-   const char *optstring = "hs:fvS:A:c:U:DN:d:" BSV_MOVIE_ARG NETPLAY_ARG DYNAMIC_ARG FFMPEG_RECORD_ARG COMPRESS_ARG;
+   const char *optstring = "hs:fvS:A:c:U:DN:d:" BSV_MOVIE_ARG NETPLAY_ARG DYNAMIC_ARG FFMPEG_RECORD_ARG;
 
    for (;;)
    {
@@ -1330,12 +1319,6 @@ static void parse_input(int argc, char *argv[])
                      sizeof(g_settings.libretro));
                g_extern.has_set_libretro = true;
             }
-            break;
-#endif
-#ifdef HAVE_COMPRESSION
-         case 'z':
-            strlcpy(g_extern.carchive_path, optarg, sizeof(g_extern.carchive_path));
-            g_extern.is_carchive = true;
             break;
 #endif
          case 'P':
