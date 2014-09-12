@@ -13,8 +13,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef GL_FONT_H__
-#define GL_FONT_H__
+#ifndef D3D_FONT_H__
+#define D3D_FONT_H__
 
 #include <stdint.h>
 #include "../../boolean.h"
