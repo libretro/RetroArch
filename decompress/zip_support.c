@@ -146,8 +146,12 @@ struct string_list *compressed_zip_file_list_new(const char *path,
 
    size_t bytes_read = -1;
    bool finished_reading = false;
-   unzFile *zipfile = unzOpen( path );
-   if ( ! zipfile )
+   unzFile *zipfile = (unzFile*)unzOpen( path );
+
+   (void)finished_reading;
+   (void)bytes_read;
+
+   if (!zipfile)
    {
       RARCH_ERR("Could not open zipfile %s.\n",path);
       return NULL;
