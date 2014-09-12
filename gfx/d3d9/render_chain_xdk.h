@@ -92,8 +92,8 @@ static bool renderchain_create_first_pass(void *data, const video_info_t *info)
    if (FAILED(ret))
       return false;
 
-   D3DDevice_SetSamplerState_AddressU(d3dr, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
-   D3DDevice_SetSamplerState_AddressV(d3dr, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
+   d3d_set_sampler_address_u(d3dr, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
+   d3d_set_sampler_address_v(d3dr, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
 #ifdef _XBOX1
    d3dr->SetRenderState(D3DRS_LIGHTING, FALSE);
 #endif
@@ -144,8 +144,8 @@ static void renderchain_render_pass(void *data, const void *frame, unsigned widt
 
    RD3DDevice_SetTexture(d3dr, 0, d3d->tex);
    RD3DDevice_SetViewport(d3d->dev, &d3d->final_viewport);
-   D3DDevice_SetSamplerState_MinFilter(d3dr, 0, g_settings.video.smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT);
-   D3DDevice_SetSamplerState_MagFilter(d3dr, 0, g_settings.video.smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT);
+   d3d_set_sampler_minfilter(d3dr, 0, g_settings.video.smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT);
+   d3d_set_sampler_magfilter(d3dr, 0, g_settings.video.smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT);
 
 #if defined(_XBOX1)
    RD3DDevice_SetVertexShader(d3dr, D3DFVF_XYZ | D3DFVF_TEX1);
@@ -153,11 +153,9 @@ static void renderchain_render_pass(void *data, const void *frame, unsigned widt
    D3DDevice_SetVertexDeclaration(d3dr, d3d->vertex_decl);
 #endif
    for (unsigned i = 0; i < 4; i++)
-   {
-      D3DDevice_SetStreamSources(d3dr, i, d3d->vertex_buf, 0, sizeof(Vertex));
-   }
+      d3d_set_stream_source(d3dr, i, d3d->vertex_buf, 0, sizeof(Vertex));
 
-   D3DDevice_DrawPrimitive(d3dr, D3DPT_TRIANGLESTRIP, 0, 2);
+   d3d_draw_primitive(d3dr, D3DPT_TRIANGLESTRIP, 0, 2);
 
    g_extern.frame_count++;
 
