@@ -373,9 +373,9 @@ bool renderchain_create_first_pass(void *data, const LinkInfo *info,
          return false;
 
       d3dr->SetTexture(0, chain->prev.tex[i]);
-      D3DDevice_SetSamplerState_MinFilter(d3dr, 0,
+      d3d_set_sampler_minfilter(d3dr, 0,
             translate_filter(info->pass->filter));
-      D3DDevice_SetSamplerState_MagFilter(d3dr, 0,
+      d3d_set_sampler_magfilter(d3dr, 0,
             translate_filter(info->pass->filter));
       d3d_set_sampler_address_u(d3dr, 0, D3DTADDRESS_BORDER);
       d3d_set_sampler_address_v(d3dr, 0, D3DTADDRESS_BORDER);
@@ -551,9 +551,9 @@ void renderchain_render_pass(void *data, Pass &pass, unsigned pass_index)
    renderchain_set_shaders(chain, pass.fPrg, pass.vPrg);
 
    d3dr->SetTexture(0, pass.tex);
-   D3DDevice_SetSamplerState_MinFilter(d3dr, 0,
+   d3d_set_sampler_minfilter(d3dr, 0,
          translate_filter(pass.info.pass->filter));
-   D3DDevice_SetSamplerState_MagFilter(d3dr, 0,
+   d3d_set_sampler_magfilter(d3dr, 0,
          translate_filter(pass.info.pass->filter));
 
 #ifdef _XBOX1
@@ -575,8 +575,8 @@ void renderchain_render_pass(void *data, Pass &pass, unsigned pass_index)
 
    // So we don't render with linear filter into render targets,
    // which apparently looked odd (too blurry).
-   D3DDevice_SetSamplerState_MinFilter(d3dr, 0, D3DTEXF_POINT);
-   D3DDevice_SetSamplerState_MagFilter(d3dr, 0, D3DTEXF_POINT);
+   d3d_set_sampler_minfilter(d3dr, 0, D3DTEXF_POINT);
+   d3d_set_sampler_magfilter(d3dr, 0, D3DTEXF_POINT);
 
    renderchain_unbind_all(chain);
 }
@@ -633,9 +633,9 @@ void renderchain_unbind_all(void *data)
     */
    for (unsigned i = 0; i < chain->bound_tex.size(); i++)
    {
-      D3DDevice_SetSamplerState_MinFilter(d3dr,
+      d3d_set_sampler_minfilter(d3dr,
             chain->bound_tex[i], D3DTEXF_POINT);
-      D3DDevice_SetSamplerState_MagFilter(d3dr,
+      d3d_set_sampler_magfilter(d3dr,
             chain->bound_tex[i], D3DTEXF_POINT);
       d3dr->SetTexture(chain->bound_tex[i], NULL);
    }
