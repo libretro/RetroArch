@@ -297,15 +297,25 @@ static int menu_lakka_iterate(unsigned action)
    if (action && depth == 1 && menu_active_category == 0 
       && active_subitem->setting)
    {
-      if (active_subitem->setting->type == ST_BOOL)
-         menu_common_setting_set_current_boolean(
-            active_subitem->setting, action);
-      else if (active_subitem->setting->type == ST_UINT)
-         menu_common_setting_set_current_unsigned_integer(
-            active_subitem->setting, 0, action);
-      else if (active_subitem->setting->type == ST_FLOAT)
-         menu_common_setting_set_current_fraction(
-            active_subitem->setting, action);
+      switch (action)
+      {
+         case MENU_ACTION_LEFT:
+         case MENU_ACTION_RIGHT:
+         case MENU_ACTION_OK:
+         case MENU_ACTION_START:
+            if (active_subitem->setting->type == ST_BOOL)
+               menu_common_setting_set_current_boolean(
+                     active_subitem->setting, action);
+            else if (active_subitem->setting->type == ST_UINT)
+               menu_common_setting_set_current_unsigned_integer(
+                     active_subitem->setting, 0, action);
+            else if (active_subitem->setting->type == ST_FLOAT)
+               menu_common_setting_set_current_fraction(
+                     active_subitem->setting, action);
+            break;
+         default:
+            break;
+      }
    }
 
    switch (action)
