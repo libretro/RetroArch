@@ -207,7 +207,7 @@ static void glui_frame(void)
             type_str, selected);
 
       snprintf(message, sizeof(message), "%c %-*.*s %-*s",
-            selected ? '>' : ' ',
+            ' ',
             GLUI_TERM_WIDTH - (w + 1 + 2),
             GLUI_TERM_WIDTH - (w + 1 + 2),
             entry_title_buf,
