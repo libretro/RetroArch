@@ -571,7 +571,7 @@ static bool d3d_frame(void *data, const void *frame,
     * can screenshot, etc. */
    if (g_settings.video.black_frame_insertion)
    {
-      D3DDevice_Presents(d3d, d3dr);
+      d3d_swap(d3d, d3dr);
       if (d3d->needs_restore)
          return true;
       d3dr->Clear(0, 0, D3DCLEAR_TARGET, 0, 1, 0);
