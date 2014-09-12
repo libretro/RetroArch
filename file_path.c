@@ -63,6 +63,9 @@
 #ifdef HAVE_7ZIP
 #include "decompress/7zip_support.h"
 #endif
+#ifdef HAVE_ZLIB
+#include "decompress/zip_support.h"
+#endif
 
 /* Dump to file. */
 bool write_file(const char *path, const void *data, size_t size)
@@ -79,20 +82,54 @@ bool write_file(const char *path, const void *data, size_t size)
 
 /* Generic compressed file loader. */
 #ifdef HAVE_COMPRESSION
-long read_compressed_file(const char * archive_path, const char *relative_path, void **buf)
+long read_compressed_file(const char * path, void **buf)
 {
+   //We split carchive path and relative path:
+   char archive_path[PATH_MAX];
+   strlcpy(archive_path,path,sizeof(archive_path));
+   char* archive_found = strchr(archive_path,'#');
+   rarch_assert(archive_found != NULL);
+
+   //We assure that there is something after the '#' symbol
+   if (strlen(archive_found) <= 1)
+   {
+      /*
+       * This error condition happens for example, when
+       * path = /path/to/file.7z, or
+       * path = /path/to/file.7z#
+       */
+      RARCH_ERR("Could not extract image path and carchive path from "
+            "path: %s.\n", path);
+      return -1;
+   }
+
+   //We split the string in two, by putting a \0, where the hash was:
+   *archive_found = '\0';
+   archive_found+=1;
+
+
+   const char* file_ext = path_get_extension(archive_path);
 #ifdef HAVE_7ZIP
-   return read_7zip_file(archive_path,relative_path,buf);
+   if (strcasecmp(file_ext,"7z") == 0)
+   {
+      return read_7zip_file(archive_path,archive_found,buf);
+   }
+#endif
+#ifdef HAVE_ZLIB
+   if (strcasecmp(file_ext,"zip") == 0)
+   {
+      return read_zip_file(archive_path,archive_found,buf);
+   }
 #endif
    return -1;
 }
 #endif
 
-/* Generic file loader. */
-long read_file(const char *path, void **buf)
+static long read_generic_file(const char *path, void **buf)
 {
    long rc = 0, len = 0;
    void *rom_buf = NULL;
+
    FILE *file = fopen(path, "rb");
 
    if (!file)
@@ -125,6 +162,28 @@ error:
    free(rom_buf);
    *buf = NULL;
    return -1;
+
+}
+
+/* Generic file loader. */
+long read_file(const char *path, void **buf)
+{
+   /* Here we check, whether the file, we are about to read is
+    * inside an archive, or not.
+    *
+    * We determine, whether a file is inside a compressed archive,
+    * by checking for the # inside the URL.
+    *
+    * For example: fullpath: /home/user/game.7z/mygame.rom
+    * carchive_path: /home/user/game.7z
+    * */
+#ifdef HAVE_COMPRESSION
+   if (path_contains_compressed_file(path))
+   {
+      return read_compressed_file(path,buf);
+   }
+#endif
+   return read_generic_file(path,buf);
 }
 
 /* Reads file content as one string. */
@@ -382,9 +441,15 @@ struct string_list *compressed_file_list_new(const char *path,
 #ifdef HAVE_COMPRESSION
    const char* file_ext = path_get_extension(path);
 #ifdef HAVE_7ZIP
-   if (strcmp(file_ext,"7z") == 0)
+   if (strcasecmp(file_ext,"7z") == 0)
    {
       return compressed_7zip_file_list_new(path,ext);
+   }
+#endif
+#ifdef HAVE_ZLIB
+   if (strcasecmp(file_ext,"zip") == 0)
+   {
+      return compressed_zip_file_list_new(path,ext);
    }
 #endif
 
@@ -603,12 +668,27 @@ static const char *path_default_slash(void)
 #endif
 }
 
+bool path_contains_compressed_file(const char *path)
+{
+   /*
+    * Currently we only check for hash symbol inside the pathname.
+    * If path is ever expanded to a general URI, we should check for that here.
+    */
+   return (strchr(path,'#') != NULL);
+}
+
 bool path_is_compressed_file(const char* path)
 {
 #ifdef HAVE_COMPRESSION
    const char* file_ext = path_get_extension(path);
 #ifdef HAVE_7ZIP
    if (strcmp(file_ext,"7z") == 0)
+   {
+      return true;
+   }
+#endif
+#ifdef HAVE_ZLIB
+   if (strcmp(file_ext,"zip") == 0)
    {
       return true;
    }
@@ -892,6 +972,18 @@ void fill_pathname_join(char *out_path,
    rarch_assert(strlcat(out_path, path, size) < size);
 }
 
+void fill_pathname_join_delim(char *out_path, const char *dir,
+      const char *path, const char delim, size_t size)
+{
+   size_t copied = strlcpy(out_path, dir, size);
+   rarch_assert(copied < size+1);
+
+   out_path[copied]=delim;
+   out_path[copied+1] = '\0';
+
+   rarch_assert(strlcat(out_path, path, size) < size);
+}
+
 void fill_pathname_expand_special(char *out_path,
       const char *in_path, size_t size)
 {
@@ -931,6 +1023,35 @@ void fill_pathname_expand_special(char *out_path,
 
    rarch_assert(strlcpy(out_path, in_path, size) < size);
 }
+
+void fill_short_pathname_representation(char* out_rep,
+      const char *in_path, size_t size)
+{
+
+
+   char path_short[PATH_MAX];
+   fill_pathname(path_short, path_basename(in_path), "",
+            sizeof(path_short));
+
+   char* last_hash = strchr(path_short,'#');
+   /* We handle paths like:
+    * /path/to/file.7z#mygame.img
+    * short_name: mygame.img:
+    */
+   if(last_hash != NULL)
+   {
+      /* We check whether something is actually after the hash to avoid
+       * going over the buffer.
+       */
+      rarch_assert(strlen(last_hash) > 1);
+      strlcpy(out_rep,last_hash + 1, size);
+   }
+   else
+   {
+      strlcpy(out_rep,path_short, size);
+   }
+}
+
 
 void fill_pathname_abbreviate_special(char *out_path,
       const char *in_path, size_t size)

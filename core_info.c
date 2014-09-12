@@ -41,7 +41,6 @@ static void core_info_list_resolve_all_extensions(
 
    if (all_ext_len)
    {
-      all_ext_len += strlen("|zip");
       core_info_list->all_ext = (char*)calloc(1, all_ext_len);
    }
 
@@ -56,7 +55,6 @@ static void core_info_list_resolve_all_extensions(
             strlcat(core_info_list->all_ext, "|", all_ext_len);
          }
       }
-      strlcat(core_info_list->all_ext, "|zip", all_ext_len);
    }
 }
 

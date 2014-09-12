@@ -219,13 +219,21 @@ ifeq ($(HAVE_RSOUND), 1)
 endif
 
 ifeq ($(HAVE_ZLIB), 1)
+   ZLIB_OBJS =	deps/rzlib/unzip.o \
+		deps/rzlib/ioapi.o \
+		decompress/zip_support.o 
    OBJ += gfx/rpng/rpng.o file_extract.o
+   OBJ += $(ZLIB_OBJS)
+   RETROLAUNCH_OBJ += $(ZLIB_OBJS)
+   JOBJ += $(ZLIB_OBJS)
    DEFINES += -DHAVE_ZLIB
+   HAVE_COMPRESSION = 1 
    ifeq ($(WANT_MINIZ), 1)
       OBJ += deps/miniz/miniz.o
       DEFINES += -DWANT_MINIZ
    else
       LIBS += -lz
+      JLIBS += -lz
       DEFINES += -DHAVE_ZLIB_DEFLATE
    endif
 endif
@@ -298,7 +306,8 @@ ifeq ($(HAVE_7ZIP),1)
    CFLAGS  += -I./deps/7zip
    DEFINES += -D_7ZIP_ST
    DEFINES += -DHAVE_7ZIP
-   DEFINES += -DHAVE_COMPRESSION
+   HAVE_COMPRESSION = 1
+   compression = yes
    7ZOBJ = 	deps/7zip/7zIn.o \
 		deps/7zip/7zAlloc.o \
 		deps/7zip/Bra86.o \
@@ -320,6 +329,10 @@ ifeq ($(HAVE_7ZIP),1)
    OBJ += $(7ZOBJ)
    RETROLAUNCH_OBJ += $(7ZOBJ)
    JOBJ += $(7ZOBJ)
+endif
+
+ifdef HAVE_COMPRESSION
+   DEFINES += -DHAVE_COMPRESSION
 endif
 
 ifneq ($(V), 1)

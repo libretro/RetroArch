@@ -40,7 +40,7 @@ enum
 
 
 #ifdef HAVE_COMPRESSION
-long read_compressed_file(const char * archive_path, const char *relative_path, void **buf);
+long read_compressed_file(const char * path, void **buf);
 #endif
 
 long read_file(const char *path, void **buf);
@@ -88,6 +88,11 @@ void string_list_set(struct string_list *list, unsigned index,
 
 /* path_is_compressed_file also means: The compressed file is supported */
 bool path_is_compressed_file(const char *path);
+
+/* Somewhere in the path there might be a compressed file
+ * E.g.: /path/to/file.7z#mygame.img
+ */
+bool path_contains_compressed_file(const char *path);
 bool path_is_directory(const char *path);
 bool path_file_exists(const char *path);
 
@@ -187,6 +192,21 @@ void fill_pathname_resolve_relative(char *out_path, const char *in_refpath,
  * two consecutive slashes between dir and path. */
 void fill_pathname_join(char *out_path, const char *dir,
       const char *path, size_t size);
+
+/* Joins a directory and path together using the given char. */
+void fill_pathname_join_delim(char *out_path, const char *dir,
+      const char *path, const char delim, size_t size);
+
+/* Generates a short representation of path. It should only
+ * be used for displaying the result; the output representation is not
+ * binding in any meaningful way (for a normal path, this is the same as basename)
+ * In case of more complex URLs, this should cut everything except for
+ * the main image file.
+ * E.g.: "/path/to/game.img" -> game.img
+ *       "/path/to/myarchive.7z#folder/to/game.img" -> game.img
+ */
+void fill_short_pathname_representation(char* out_rep,
+      const char *in_path, size_t size);
 
 void fill_pathname_expand_special(char *out_path,
       const char *in_path, size_t size);

@@ -133,53 +133,7 @@ static ssize_t read_content_file(const char *path, void **buf)
 {
    uint8_t *ret_buf = NULL;
    ssize_t ret = -1;
-
-   /* Here we check, whether the file, we are about to read is 
-    * inside an archive, or not.
-    *
-    * We determine, whether a file is inside a compressed archive,
-    * by checking, if the archive string is a substring of the
-    * complete path
-    *
-    * For example: fullpath: /home/user/game.7z/mygame.rom
-    * carchive_path: /home/user/game.7z
-    * */
-
-#ifdef HAVE_COMPRESSION
-   const char* archive_found = (const char*)strstr(path,
-         g_extern.carchive_path);
-
-   if (g_extern.is_carchive)
-   {
-         if(archive_found)
-         {
-            if (strlen(path) < strlen(g_extern.carchive_path)+2)
-            {
-               /*
-                * This error condition happens for example, when
-                * carchive_path == path, or
-                * carchive_path + '/' == path.
-                */
-               RARCH_ERR("Could not extract image path %s from carchive path %s.\n",
-                     path, g_extern.carchive_path);
-               return -1;
-            }
-            ret = read_compressed_file(g_extern.carchive_path,
-                  archive_found + strlen(g_extern.carchive_path) + 1,
-                  (void**)&ret_buf);
-         }
-         else
-         {
-            /* If we didn't actually find the archivename in the filename
-             * the given path is not inside the archive. Then we proceed to 
-             * just load the file.
-             */
-            ret = read_file(path, (void**)&ret_buf);
-         }
-   }
-   else
-#endif
-      ret = read_file(path, (void**)&ret_buf);
+   ret = read_file(path, (void**) &ret_buf);
 
    if (ret <= 0)
       return ret;
@@ -407,7 +361,6 @@ static bool load_content(const struct retro_subsystem_info *special,
       }
 
       info[i].path = *path ? path : NULL;
-
       if (!need_fullpath && *path)
       {
          /* Load the content into memory. */
@@ -429,7 +382,16 @@ static bool load_content(const struct retro_subsystem_info *special,
          info[i].size = size;
       }
       else
-         RARCH_LOG("Content loading skipped. Implementation will load it on its own.\n");
+      {
+         RARCH_LOG("Content loading skipped. Implementation will"
+               " load it on its own.\n");
+         if (need_fullpath && path_contains_compressed_file(path))
+         {
+            RARCH_ERR("Compressed files are only supported for drivers,"
+                  " where need_fullpath is set to false. Exiting.\n");
+            rarch_assert(false);
+         }
+      }
    }
 
    if (special)

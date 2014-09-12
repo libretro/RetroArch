@@ -1198,12 +1198,16 @@ static int menu_action_ok(const char *menu_path,
          menu_flush_stack_type(driver.menu->menu_stack, MENU_SETTINGS);
          return -1;
 
+#ifdef HAVE_COMPRESSION
+      case MENU_FILE_IN_CARCHIVE:
+#endif
       case MENU_FILE_PLAIN:
          if (!strcmp(menu_label, "detect_core_list"))
          {
             int ret = rarch_defer_core(g_extern.core_info,
                   menu_path, path, driver.menu->deferred_path,
                   sizeof(driver.menu->deferred_path));
+
 
             if (ret == -1)
             {
@@ -1237,8 +1241,16 @@ static int menu_action_ok(const char *menu_path,
          }
          else
          {
-            fill_pathname_join(g_extern.fullpath, menu_path, path,
-                  sizeof(g_extern.fullpath));
+            if (type == MENU_FILE_IN_CARCHIVE)
+            {
+               fill_pathname_join_delim(g_extern.fullpath, menu_path, path,
+                     '#',sizeof(g_extern.fullpath));
+            }
+            else
+            {
+               fill_pathname_join(g_extern.fullpath, menu_path, path,
+                     sizeof(g_extern.fullpath));
+            }
 
             menu_common_load_content();
             rarch_main_command(RARCH_CMD_LOAD_CONTENT_PERSIST);
@@ -1358,27 +1370,11 @@ static int menu_action_ok(const char *menu_path,
          {
             char cat_path[PATH_MAX];
             fill_pathname_join(cat_path, menu_path, path, sizeof(cat_path));
-
             menu_entries_push(driver.menu->menu_stack,
                   cat_path, menu_label, type, driver.menu->selection_ptr);
          }
 
          return 0;
-
-#ifdef HAVE_COMPRESSION
-      case MENU_FILE_IN_CARCHIVE:
-
-         fill_pathname_join(g_extern.fullpath, menu_path, path,
-               sizeof(g_extern.fullpath));
-
-         g_extern.is_carchive = true;
-         strncpy(g_extern.carchive_path, menu_path, 
-               sizeof(g_extern.carchive_path));
-
-         menu_common_load_content();
-
-         return -1;
-#endif
          
    }
 

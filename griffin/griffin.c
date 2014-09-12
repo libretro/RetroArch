@@ -23,6 +23,10 @@
 #define DONT_HAVE_STATE_TRACKER
 #endif
 
+#if defined(HAVE_ZLIB) || defined(HAVE_7ZIP)
+#define HAVE_COMPRESSION
+#endif
+
 #if defined(_XBOX)
 #include "../msvc/msvc_compat.h"
 #endif
@@ -46,6 +50,7 @@ CONSOLE EXTENSIONS
 
 #ifdef HAVE_ZLIB
 #include "../file_extract.c"
+#include "../decompress/zip_support.c"
 #endif
 
 
@@ -649,6 +654,10 @@ DEPENDENCIES
 #include "../deps/rzlib/trees.c"
 #include "../deps/rzlib/uncompr.c"
 #include "../deps/rzlib/zutil.c"
+#endif
+
+/* Decompression support always requires the next two files */
+#if defined(WANT_MINIZ) || defined(HAVE_ZLIB)
 #include "../deps/rzlib/ioapi.c"
 #include "../deps/rzlib/unzip.c"
 #endif
