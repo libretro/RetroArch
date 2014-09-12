@@ -185,13 +185,16 @@ void d3d_set_texture(LPDIRECT3DDEVICE dev, unsigned sampler,
 }
 
 HRESULT d3d_set_vertex_shader(LPDIRECT3DDEVICE dev, unsigned index,
-      LPDIRECT3DVERTEXSHADER shader)
+      void *data)
 {
 #if defined(_XBOX1)
    return dev->SetVertexShader(index);
 #elif defined(_XBOX360)
-   return D3DDevice_SetVertexShader(dev, shader);
+   LPDIRECT3DVERTEXSHADER shader = (LPDIRECT3DVERTEXSHADER)data;
+   D3DDevice_SetVertexShader(dev, shader);
+   return S_OK;
 #else
+   LPDIRECT3DVERTEXSHADER shader = (LPDIRECT3DVERTEXSHADER)data;
    return dev->SetVertexShader(shader);
 #endif
 }
