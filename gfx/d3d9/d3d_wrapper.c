@@ -178,7 +178,7 @@ void d3d_set_texture(LPDIRECT3DDEVICE dev, unsigned sampler,
       D3DTAG_MASKENCODE(D3DTAG_START(D3DTAG_FETCHCONSTANTS) 
             + fetchConstant, D3DTAG_START(D3DTAG_FETCHCONSTANTS)
             + fetchConstant);
-   D3DDevice_SetTexture(dev, sampler, tex, pendingMask3)
+   D3DDevice_SetTexture(dev, sampler, tex, pendingMask3);
 #else
    dev->SetTexture(0, tex);
 #endif

@@ -16,7 +16,7 @@
 
 #include <xtl.h>
 #include "d3d_font.h"
-#include "../d3d.hpp"
+#include "../d3d9/d3d.hpp"
 #include "../gfx_common.h"
 #include "../../general.h"
 #include "../../xdk/xdk_resources.h"

@@ -134,9 +134,6 @@ static void renderchain_render_pass(void *data, const void *frame, unsigned widt
 #if defined(_XBOX1)
    d3dr->SetFlickerFilter(g_extern.console.screen.flicker_filter_index);
    d3dr->SetSoftDisplayFilter(g_extern.console.softfilter_enable);
-#elif defined(_XBOX360)
-   DWORD fetchConstant;
-   UINT64 pendingMask3;
 #endif
 
    renderchain_blit_to_texture(d3d, frame, width, height, pitch);
