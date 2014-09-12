@@ -42,8 +42,4 @@
 #define RD3DDevice_Clear(device, Count, pRects, Flags, Color, Z, Stencil) D3DDevice_Clear(device, Count, pRects, Flags, Color, Z, Stencil, false)
 #endif
 
-#define D3DTexture_LockRectClear(pass, tex, level, lockedrect, rect, flags) \
-   D3DTexture_LockRect(tex, level, &lockedrect, rect, flags); \
-   memset(lockedrect.pBits, 0, pass->tex_h * lockedrect.Pitch)
-
 #endif

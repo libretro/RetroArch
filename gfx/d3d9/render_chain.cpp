@@ -537,7 +537,7 @@ void renderchain_blit_to_texture(void *data, const void *frame,
 
    if (first.last_width != width || first.last_height != height)
    {
-      D3DTexture_LockRectClear(first, first.tex, 0, d3dlr, 
+      d3d_lockrectangle_clear(first, first.tex, 0, d3dlr, 
             NULL, D3DLOCK_NOSYSLOCK);
    }
 

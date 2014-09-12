@@ -45,8 +45,8 @@ void d3d_set_sampler_magfilter(LPDIRECT3DDEVICE dev,
 void d3d_draw_primitive(LPDIRECT3DDEVICE dev,
       D3DPRIMITIVETYPE type, unsigned start, unsigned count);
 
-void d3d_lockrectangle_clear(LPDIRECT3DTEXTURE tex,
-      unsigned tex_width, unsigned tex_height,
+void d3d_lockrectangle_clear(void *data, 
+      LPDIRECT3DTEXTURE tex,
       unsigned level, D3DLOCKED_RECT lock_rect, RECT rect,
       unsigned flags);
 

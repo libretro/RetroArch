@@ -137,15 +137,17 @@ void d3d_draw_primitive(LPDIRECT3DDEVICE dev,
 #endif
 }
 
-void d3d_lockrectangle_clear(LPDIRECT3DTEXTURE tex,
-      unsigned tex_width, unsigned tex_height,
+void d3d_lockrectangle_clear(void *data, 
+      LPDIRECT3DTEXTURE tex,
       unsigned level, D3DLOCKED_RECT lock_rect, RECT rect,
       unsigned flags)
 {
 #if defined(_XBOX)
+   d3d_video_t *chain = (d3d_video_t*)data;
    D3DTexture_LockRect(tex, level, &lock_rect, &rect, flags);
-   memset(lock_rect.pBits, 0, tex_height * lock_rect.Pitch);
+   memset(lock_rect.pBits, 0, chain->tex_h * lock_rect.Pitch);
 #else
+   renderchain_t *chain = (renderchain_t*)data;
    if (SUCCEEDED(tex->LockRect(level, &lock_rect, &rect, flags)))
    {
       memset(lock_rect.pBits, level, tex_height * lock_rect.Pitch);

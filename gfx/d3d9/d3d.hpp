@@ -60,12 +60,6 @@
 #include <vector>
 
 #ifndef _XBOX
-#define D3DTexture_LockRectClear(pass, tex, level, lockedrect, rect, flags) \
-   if (SUCCEEDED(tex->LockRect(level, &lockedrect, rect, flags))) \
-   { \
-      memset(lockedrect.pBits, level, pass.info.tex_h * lockedrect.Pitch); \
-      tex->UnlockRect(0); \
-   }
 #define D3DDevice_CreateVertexBuffers(device, Length, Usage, UnusedFVF, UnusedPool, ppVertexBuffer, pUnusedSharedHandle) device->CreateVertexBuffer(Length, Usage, UnusedFVF, UnusedPool, ppVertexBuffer, NULL)
 #endif
 
