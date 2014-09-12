@@ -349,7 +349,6 @@
 					"-DHAVE_THREADS",
 					"-DHAVE_DYLIB",
 					"-DHAVE_CG",
-					"-D_7ZIP_ST",
 					"-DHAVE_7ZIP",
 					"-DHAVE_LAKKA",
 				);
@@ -418,7 +417,6 @@
 					"-DHAVE_THREADS",
 					"-DHAVE_DYLIB",
 					"-DHAVE_CG",
-					"-D_7ZIP_ST",
 					"-DHAVE_7ZIP",
 					"-DHAVE_LAKKA",
 				);

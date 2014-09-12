@@ -76,6 +76,7 @@ endif
   HAVE_FILTERS_BUILTIN     := 1
   HAVE_THREADS             := 1
   HAVE_ZLIB                := 1
+  HAVE_7ZIP                := 1
   HAVE_RPNG                := 1
   HAVE_OVERLAY             := 1
   HAVE_BUILTIN_AUTOCONFIG  := 1
@@ -108,6 +109,7 @@ endif
   HAVE_RARCH_EXEC          := 1
   HAVE_THREADS             := 1
   HAVE_RSOUND              := 1
+HAVE_7ZIP                  := 1
   HAVE_LIBRETRO_MANAGEMENT := 1
   HAVE_ZLIB                := 1
   HAVE_RPNG                := 1
@@ -160,6 +162,10 @@ endif
 
 ifeq ($(HAVE_ZLIB), 1)
 CFLAGS      += -DHAVE_ZLIB -DWANT_MINIZ
+endif
+
+ifeq ($(HAVE_7ZIP), 1)
+CFLAGS      += -DHAVE_7ZIP
 endif
 
 ifeq ($(HAVE_OVERLAY), 1)

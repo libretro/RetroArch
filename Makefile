@@ -479,7 +479,6 @@ endif
 
 ifeq ($(HAVE_7ZIP),1)
    HAVE_COMPRESSION = 1 
-   DEFINES += -D_7ZIP_ST
    DEFINES += -DHAVE_7ZIP
    7ZOBJ = 	deps/7zip/7zIn.o \
 		deps/7zip/7zAlloc.o \

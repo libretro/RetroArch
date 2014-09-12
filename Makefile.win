@@ -304,7 +304,6 @@ endif
 
 ifeq ($(HAVE_7ZIP),1)
    CFLAGS  += -I./deps/7zip
-   DEFINES += -D_7ZIP_ST
    DEFINES += -DHAVE_7ZIP
    HAVE_COMPRESSION = 1
    compression = yes

@@ -2,8 +2,7 @@
 2010-03-12 : Igor Pavlov : Public domain
 This code is based on PPMd var.H (2001): Dmitry Shkarin : Public domain */
 
-#include <memory.h>
-
+#include <string.h>
 #include "Ppmd7.h"
 
 const Byte PPMD7_kExpEscape[16] = { 25, 14, 9, 7, 5, 5, 4, 4, 4, 3, 3, 3, 2, 2, 2, 2 };
