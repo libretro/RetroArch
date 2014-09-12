@@ -3369,10 +3369,13 @@ void rarch_main_command(unsigned cmd)
 
    switch (cmd)
    {
-      case RARCH_CMD_LOAD_CONTENT:
-#ifdef HAVE_DYNAMIC
+      case RARCH_CMD_LOAD_CONTENT_PERSIST:
          rarch_main_command(RARCH_CMD_LOAD_CORE);
          rarch_main_set_state(RARCH_ACTION_STATE_LOAD_CONTENT);
+         break;
+      case RARCH_CMD_LOAD_CONTENT:
+#ifdef HAVE_DYNAMIC
+         rarch_main_command(RARCH_CMD_LOAD_CONTENT_PERSIST);
 #else
          rarch_environment_cb(RETRO_ENVIRONMENT_SET_LIBRETRO_PATH,
                (void*)g_settings.libretro);

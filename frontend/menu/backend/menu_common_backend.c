@@ -1432,6 +1432,10 @@ static int menu_action_ok(const char *menu_path,
                   sizeof(g_extern.fullpath));
 
             menu_common_load_content();
+            rarch_main_command(RARCH_CMD_LOAD_CONTENT_PERSIST);
+            menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS);
+            driver.menu->msg_force = true;
+            RARCH_LOG("Gets here.\n");
 
             return -1;
          }
