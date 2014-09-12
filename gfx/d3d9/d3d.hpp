@@ -67,18 +67,6 @@
       tex->UnlockRect(0); \
    }
 #define D3DDevice_CreateVertexBuffers(device, Length, Usage, UnusedFVF, UnusedPool, ppVertexBuffer, pUnusedSharedHandle) device->CreateVertexBuffer(Length, Usage, UnusedFVF, UnusedPool, ppVertexBuffer, NULL)
-
-#define D3DTexture_Blit(d3d, desc, d3dlr, frame, width, height, pitch) \
-   if (SUCCEEDED(first.tex->LockRect(0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK))) \
-   { \
-   for (unsigned y = 0; y < height; y++) \
-   { \
-      const uint8_t *in = (const uint8_t*)frame + y * pitch; \
-      uint8_t *out = (uint8_t*)d3dlr.pBits + y * d3dlr.Pitch; \
-      memcpy(out, in, width * d3d->pixel_size); \
-   } \
-         first.tex->UnlockRect(0); \
-   }
 #endif
 
 #ifdef HAVE_OVERLAY

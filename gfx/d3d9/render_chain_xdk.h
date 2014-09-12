@@ -5,20 +5,6 @@ static void renderchain_blit_to_texture(void *data, const void *frame,
 static void renderchain_set_mvp(void *data, unsigned vp_width, unsigned vp_height, unsigned rotation);
 static void renderchain_set_vertices(void *data, unsigned pass, unsigned width, unsigned height);
 
-#if defined(_XBOX360)
-#define D3DTexture_Blit(d3d, desc, d3dlr, frame, width, height, pitch) \
-   d3d->tex->GetLevelDesc(0, &desc); \
-   XGCopySurface(d3dlr.pBits, d3dlr.Pitch, width, height, desc.Format, NULL, frame, pitch, desc.Format, NULL, 0, 0)
-#else
-#define D3DTexture_Blit(d3d, desc, d3dlr, frame, width, height, pitch) \
-   for (unsigned y = 0; y < height; y++) \
-   { \
-      const uint8_t *in = (const uint8_t*)frame + y * pitch; \
-      uint8_t *out = (uint8_t*)d3dlr.pBits + y * d3dlr.Pitch; \
-      memcpy(out, in, width * d3d->pixel_size); \
-   }
-#endif
-
 static void renderchain_clear(void *data)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
@@ -285,5 +271,5 @@ static void renderchain_blit_to_texture(void *data, const void *frame,
    }
 
    D3DTexture_LockRect(d3d->tex, 0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);
-   D3DTexture_Blit(d3d, desc, d3dlr, frame, width, height, pitch);
+   d3d_texture_blit(d3d, desc, d3dlr, frame, width, height, pitch);
 }
