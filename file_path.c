@@ -82,30 +82,54 @@ bool write_file(const char *path, const void *data, size_t size)
 
 /* Generic compressed file loader. */
 #ifdef HAVE_COMPRESSION
-long read_compressed_file(const char * archive_path, const char *relative_path, void **buf)
+long read_compressed_file(const char * path, void **buf)
 {
+   //We split carchive path and relative path:
+   char archive_path[PATH_MAX];
+   strlcpy(archive_path,path,sizeof(archive_path));
+   char* archive_found = strchr(archive_path,'#');
+   rarch_assert(archive_found != NULL);
+
+   //We assure that there is something after the '#' symbol
+   if (strlen(archive_found) <= 1)
+   {
+      /*
+       * This error condition happens for example, when
+       * path = /path/to/file.7z, or
+       * path = /path/to/file.7z#
+       */
+      RARCH_ERR("Could not extract image path and carchive path from "
+            "path: %s.\n", path);
+      return -1;
+   }
+
+   //We split the string in two, by putting a \0, where the hash was:
+   *archive_found = '\0';
+   archive_found+=1;
+
+
    const char* file_ext = path_get_extension(archive_path);
 #ifdef HAVE_7ZIP
    if (strcasecmp(file_ext,"7z") == 0)
    {
-      return read_7zip_file(archive_path,relative_path,buf);
+      return read_7zip_file(archive_path,archive_found,buf);
    }
 #endif
 #ifdef HAVE_ZLIB
    if (strcasecmp(file_ext,"zip") == 0)
    {
-      return read_zip_file(archive_path,relative_path,buf);
+      return read_zip_file(archive_path,archive_found,buf);
    }
 #endif
    return -1;
 }
 #endif
 
-/* Generic file loader. */
-long read_file(const char *path, void **buf)
+static long read_generic_file(const char *path, void **buf)
 {
    long rc = 0, len = 0;
    void *rom_buf = NULL;
+
    FILE *file = fopen(path, "rb");
 
    if (!file)
@@ -138,6 +162,28 @@ error:
    free(rom_buf);
    *buf = NULL;
    return -1;
+
+}
+
+/* Generic file loader. */
+long read_file(const char *path, void **buf)
+{
+   /* Here we check, whether the file, we are about to read is
+    * inside an archive, or not.
+    *
+    * We determine, whether a file is inside a compressed archive,
+    * by checking for the # inside the URL.
+    *
+    * For example: fullpath: /home/user/game.7z/mygame.rom
+    * carchive_path: /home/user/game.7z
+    * */
+#ifdef HAVE_COMPRESSION
+   if (path_contains_compressed_file(path))
+   {
+      return read_compressed_file(path,buf);
+   }
+#endif
+   return read_generic_file(path,buf);
 }
 
 /* Reads file content as one string. */

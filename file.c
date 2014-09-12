@@ -133,50 +133,7 @@ static ssize_t read_content_file(const char *path, void **buf)
 {
    uint8_t *ret_buf = NULL;
    ssize_t ret = -1;
-
-   /* Here we check, whether the file, we are about to read is 
-    * inside an archive, or not.
-    *
-    * We determine, whether a file is inside a compressed archive,
-    * by checking for the # inside the URL.
-    *
-    * For example: fullpath: /home/user/game.7z/mygame.rom
-    * carchive_path: /home/user/game.7z
-    * */
-
-#ifdef HAVE_COMPRESSION
-   if (path_contains_compressed_file(path))
-   {
-      //We split carchive path and relative path:
-      char archive_path[PATH_MAX];
-      strlcpy(archive_path,path,sizeof(archive_path));
-      char* archive_found = strchr(archive_path,'#');
-
-      //We assure that there is something after the '#' symbol
-      if (strlen(archive_found) <= 1)
-      {
-         /*
-          * This error condition happens for example, when
-          * path = /path/to/file.7z, or
-          * path = /path/to/file.7z#
-          */
-         RARCH_ERR("Could not extract image path and carchive path from "
-               "path: %s.\n", path);
-         return -1;
-      }
-
-      rarch_assert(archive_found != NULL);
-      *archive_found = '\0';
-
-      archive_found+=1;
-      printf("relative_path: %s, archive_path: %s\n",archive_found,archive_path);
-      ret = read_compressed_file(archive_path,
-            archive_found,
-            (void**)&ret_buf);
-   }
-   else
-#endif
-      ret = read_file(path, (void**) &ret_buf);
+   ret = read_file(path, (void**) &ret_buf);
 
    if (ret <= 0)
       return ret;
@@ -431,8 +388,8 @@ static bool load_content(const struct retro_subsystem_info *special,
          if (need_fullpath && path_contains_compressed_file(path))
          {
             RARCH_ERR("Compressed files are only supported for drivers,"
-                  " where need_fullpath is set to false.\n");
-            goto end;
+                  " where need_fullpath is set to false. Exiting.\n");
+            rarch_assert(false);
          }
       }
    }
