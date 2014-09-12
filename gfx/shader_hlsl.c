@@ -16,10 +16,7 @@
 
 #include "shader_hlsl.h"
 #include "shader_parse.h"
-#ifdef _XBOX
-#include <xtl.h>
-#include "d3d9/xdk_d3d.h"
-#endif
+#include "d3d9/d3d.hpp"
 
 static const char *stock_hlsl_program =
       "void main_vertex\n"
