@@ -19,13 +19,13 @@
 
 #include "../../settings_data.h"
 
-void menu_common_setting_set_current_boolean(
+void menu_action_setting_boolean(
       rarch_setting_t *setting, unsigned action);
 
-void menu_common_setting_set_current_fraction(
+void menu_action_setting_fraction(
       rarch_setting_t *setting, unsigned action);
 
-void menu_common_setting_set_current_unsigned_integer(
+void menu_action_setting_unsigned_integer(
       rarch_setting_t *setting, unsigned id, unsigned action);
 
 #endif

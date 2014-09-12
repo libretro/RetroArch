@@ -280,11 +280,11 @@ static void handle_setting(rarch_setting_t *setting,
       unsigned id, const char *label, unsigned action)
 {
    if (setting->type == ST_BOOL)
-      menu_common_setting_set_current_boolean(setting, action);
+      menu_action_setting_boolean(setting, action);
    else if (setting->type == ST_UINT)
-      menu_common_setting_set_current_unsigned_integer(setting, id, action);
+      menu_action_setting_unsigned_integer(setting, id, action);
    else if (setting->type == ST_FLOAT)
-      menu_common_setting_set_current_fraction(setting, action);
+      menu_action_setting_fraction(setting, action);
    else if (setting->type == ST_DIR)
    {
       if (action == MENU_ACTION_START)

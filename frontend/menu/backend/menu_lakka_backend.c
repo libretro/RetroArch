@@ -304,13 +304,13 @@ static int menu_lakka_iterate(unsigned action)
          case MENU_ACTION_OK:
          case MENU_ACTION_START:
             if (active_subitem->setting->type == ST_BOOL)
-               menu_common_setting_set_current_boolean(
+               menu_action_setting_boolean(
                      active_subitem->setting, action);
             else if (active_subitem->setting->type == ST_UINT)
-               menu_common_setting_set_current_unsigned_integer(
+               menu_action_setting_unsigned_integer(
                      active_subitem->setting, 0, action);
             else if (active_subitem->setting->type == ST_FLOAT)
-               menu_common_setting_set_current_fraction(
+               menu_action_setting_fraction(
                      active_subitem->setting, action);
             break;
          default:
