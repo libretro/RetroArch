@@ -434,6 +434,10 @@ static bool d3d_construct(d3d_video_t *d3d,
       free(d3d->menu);
 
    d3d->menu = (overlay_t*)calloc(1, sizeof(overlay_t));
+
+   if (!d3d->menu)
+      return false;
+
    d3d->menu->tex_coords.x = 0;
    d3d->menu->tex_coords.y = 0;
    d3d->menu->tex_coords.w = 1;
@@ -630,7 +634,7 @@ static void *d3d_init(const video_info_t *info,
    vid->ctx_driver = d3d_get_context(vid);
    if (!vid->ctx_driver)
    {
-      free(vid);
+      delete vid;
       return NULL;
    }
 

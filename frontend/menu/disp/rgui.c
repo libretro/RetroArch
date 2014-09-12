@@ -145,10 +145,17 @@ static void blit_line(int x, int y, const char *message, bool green)
    }
 }
 
-static void init_font(menu_handle_t *menu, const uint8_t *font_bmp_buf)
+static bool init_font(menu_handle_t *menu, const uint8_t *font_bmp_buf)
 {
    unsigned i;
    uint8_t *font = (uint8_t *) calloc(1, FONT_OFFSET(256));
+
+   if (!font)
+   {
+      RARCH_ERR("Font memory allocation failed in %s", __FUNCTION__);
+      return false;
+   }
+
    menu->alloc_font = true;
    for (i = 0; i < 256; i++)
    {
@@ -159,6 +166,7 @@ static void init_font(menu_handle_t *menu, const uint8_t *font_bmp_buf)
    }
 
    menu->font = font;
+   return true;
 }
 
 static bool rguidisp_init_font(void *data)
@@ -169,7 +177,7 @@ static bool rguidisp_init_font(void *data)
    const uint8_t *font_bin_buf = bitmap_bin;
 
    if (font_bmp_buf)
-      init_font(menu, font_bmp_buf);
+      return init_font(menu, font_bmp_buf);
    else if (font_bin_buf)
       menu->font = font_bin_buf;
    else
