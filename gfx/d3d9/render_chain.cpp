@@ -541,7 +541,8 @@ void renderchain_blit_to_texture(void *data, const void *frame,
             NULL, D3DLOCK_NOSYSLOCK);
    }
 
-   d3d_texture_blit(chain, desc, d3dlr, frame, width, height, pitch);
+   d3d_texture_blit(driver.video_data, chain, first.tex,
+      desc, d3dlr, frame, width, height, pitch);
 }
 
 void renderchain_render_pass(void *data, Pass &pass, unsigned pass_index)

@@ -271,5 +271,5 @@ static void renderchain_blit_to_texture(void *data, const void *frame,
    }
 
    D3DTexture_LockRect(d3d->tex, 0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);
-   d3d_texture_blit(d3d, desc, d3dlr, frame, width, height, pitch);
+   d3d_texture_blit(d3d, NULL, d3d->tex, desc, d3dlr, frame, width, height, pitch);
 }
