@@ -32,7 +32,6 @@
 #define RD3DVertexBuffer_Unlock(device)
 #define RD3DDevice_SetTexture(device, Stage, pTexture) D3DDevice_SetTexture(Stage, pTexture)
 #define RD3DDevice_Clear(device, Count, pRects, Flags, Color, Z, Stencil) D3DDevice_Clear(Count, pRects, Flags, Color, Z, Stencil)
-#define RD3DDevice_SetViewport(device, viewport) D3DDevice_SetViewport(viewport)
 #define D3DDevice_CreateVertexBuffers(device, Length, Usage, UnusedFVF, UnusedPool, ppVertexBuffer, pUnusedSharedHandle) IDirect3DDevice8_CreateVertexBuffer(device, Length, Usage, UnusedFVF, UnusedPool, ppVertexBuffer)
 
 #elif defined(_XBOX360)
@@ -47,7 +46,6 @@
 
 #define D3DDevice_CreateVertexBuffers(device, Length, Usage, UnusedFVF, UnusedPool, ppVertexBuffer, pUnusedSharedHandle) IDirect3DDevice9_CreateVertexBuffer(device, Length, Usage, UnusedFVF, UnusedPool, ppVertexBuffer, NULL)
 #define RD3DDevice_Clear(device, Count, pRects, Flags, Color, Z, Stencil) D3DDevice_Clear(device, Count, pRects, Flags, Color, Z, Stencil, false)
-#define RD3DDevice_SetViewport(device, viewport) D3DDevice_SetViewport(device, viewport)
 #endif
 
 #define D3DTexture_LockRectClear(pass, tex, level, lockedrect, rect, flags) \

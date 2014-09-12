@@ -100,7 +100,7 @@ static void d3d_overlay_render(void *data, overlay_t *overlay)
       vp_full.Height = d3d->screen_height;
       vp_full.MinZ = 0.0f;
       vp_full.MaxZ = 1.0f;
-      d3d->dev->SetViewport(&vp_full);
+      d3d_set_viewport(d3d->dev, &vp_full);
    }
 
    /* Render overlay. */
@@ -113,7 +113,7 @@ static void d3d_overlay_render(void *data, overlay_t *overlay)
 
    /* Restore previous state. */
    d3d->dev->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
-   d3d->dev->SetViewport(&d3d->final_viewport);
+   d3d_set_viewport(d3d->dev, &final_viewport);
 }
 
 static void d3d_free_overlay(void *data, overlay_t *overlay)

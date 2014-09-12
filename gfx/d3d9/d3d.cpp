@@ -347,7 +347,7 @@ static bool texture_image_render(void *data,
       vp.Y      = 0;
       vp.MinZ   = 0.0f;
       vp.MaxZ   = 1.0f;
-      d3dr->SetViewport(&vp);
+      d3d_set_viewport(d3dr, &vp);
    }
    d3d_draw_primitive(d3dr, D3DPT_QUADLIST, 0, 1);
 
@@ -564,7 +564,7 @@ static bool d3d_frame(void *data, const void *frame,
    screen_vp.MaxZ = 1;
    screen_vp.Width = d3d->screen_width;
    screen_vp.Height = d3d->screen_height;
-   d3dr->SetViewport(&screen_vp);
+   d3d_set_viewport(d3dr, &screen_vp);
    d3dr->Clear(0, 0, D3DCLEAR_TARGET, 0, 1, 0);
 
    /* Insert black frame first, so we 

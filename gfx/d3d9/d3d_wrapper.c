@@ -154,6 +154,18 @@ void d3d_lockrectangle_clear(LPDIRECT3DTEXTURE tex,
 #endif
 }
 
+void d3d_set_viewport(LPDIRECT3DDEVICE dev, D3DVIEWPORT *vp)
+{
+   (void)dev;
+#if defined(_XBOX360)
+   D3DDevice_SetViewport(dev, vp);
+#elif defined(_XBOX1)
+   D3DDevice_SetViewport(vp);
+#else
+   dev->SetViewport(vp);
+#endif
+}
+
 void d3d_textureblit(void *data, void *renderchain_data,
       LPDIRECT3DTEXTURE tex, D3DSURFACE_DESC desc,
       D3DLOCKED_RECT lr, const void *frame,

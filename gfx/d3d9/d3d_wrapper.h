@@ -55,4 +55,6 @@ void d3d_textureblit(void *data,
       D3DLOCKED_RECT lr, const void *frame,
       unsigned width, unsigned height, unsigned pitch);
 
+void d3d_set_viewport(LPDIRECT3DDEVICE dev, D3DVIEWPORT *vp);
+
 #endif

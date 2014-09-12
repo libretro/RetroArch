@@ -290,7 +290,7 @@ bool renderchain_render(void *chain_data, const void *data,
       viewport.Height = to_pass.info.tex_h;
       viewport.MinZ = 0.0f;
       viewport.MaxZ = 1.0f;
-      d3dr->SetViewport(&viewport);
+      d3d_set_viewport(d3dr, &viewport);
       d3dr->Clear(0, 0, D3DCLEAR_TARGET, 0, 1, 0);
       
       viewport.Width = out_width;
@@ -465,7 +465,7 @@ void renderchain_set_viewport(void *data, D3DVIEWPORT *vp)
 {
    renderchain_t *chain = (renderchain_t*)data;
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)chain->dev;
-   d3dr->SetViewport(vp);
+   d3d_set_viewport(d3dr, vp);
 }
 
 void renderchain_set_mvp(void *data, CGprogram &vPrg,

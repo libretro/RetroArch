@@ -29,6 +29,8 @@
 #include "../../../message_queue.h"
 #include "../../../general.h"
 
+#include "../../gfx/d3d9/d3d.hpp"
+
 #include "shared.h"
 
 #define XUI_CONTROL_NAVIGATE_OK (XUI_CONTROL_NAVIGATE_RIGHT + 1)
@@ -306,7 +308,7 @@ static void rmenu_xui_frame(void)
    vp_full.Height = d3d->screen_height;
    vp_full.MinZ = 0.0f;
    vp_full.MaxZ = 1.0f;
-   d3dr->SetViewport(&vp_full);
+   d3d_set_viewport(d3dr, &vp_full);
 
    app.RunFrame();
    XuiTimersRun();
@@ -336,7 +338,7 @@ static void rmenu_xui_frame(void)
 
    XuiRenderEnd( app.GetDC() );
 
-   d3dr->SetViewport(&d3d->final_viewport);
+   d3d_set_viewport(d3dr, &d3d->final_viewport);
 }
 
 static int rmenu_xui_input_postprocess(uint64_t old_state)
