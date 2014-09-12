@@ -203,8 +203,16 @@ static bool gl_shader_init(gl_t *gl)
    const char *shader_path = (g_settings.video.shader_enable && *g_settings.video.shader_path) ?
       g_settings.video.shader_path : NULL;
 
-   enum rarch_shader_type type = gfx_shader_parse_type(shader_path,
-         gl->core_context ? RARCH_SHADER_GLSL : DEFAULT_SHADER_TYPE);
+   enum rarch_shader_type type;
+
+   if (!gl)
+   {
+      RARCH_ERR("Invalid GL instance passed to %s", __FUNCTION__);
+      return false;
+   }
+
+   type = gfx_shader_parse_type(shader_path,
+      gl->core_context ? RARCH_SHADER_GLSL : DEFAULT_SHADER_TYPE);
 
    ret = 0;
 

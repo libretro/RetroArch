@@ -1289,6 +1289,9 @@ unsigned input_translate_str_to_bind_id(const char *str)
 
 static void parse_hat(struct retro_keybind *bind, const char *str)
 {
+   if (!bind || !str)
+      return;
+
    if (!isdigit(*str))
       return;
 

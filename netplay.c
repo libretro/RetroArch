@@ -752,17 +752,28 @@ static bool get_info_spectate(netplay_t *handle)
    return ret;
 }
 
-static void init_buffers(netplay_t *handle)
+static bool init_buffers(netplay_t *handle)
 {
    unsigned i;
    handle->buffer = (struct delta_frame*)calloc(handle->buffer_size,
          sizeof(*handle->buffer));
+   
+   if (!handle->buffer)
+      return false;
+
    handle->state_size = pretro_serialize_size();
+
    for (i = 0; i < handle->buffer_size; i++)
    {
       handle->buffer[i].state = malloc(handle->state_size);
+
+      if (!handle->buffer[i].state)
+         return false;
+
       handle->buffer[i].is_simulated = true;
    }
+
+   return true;
 }
 
 netplay_t *netplay_new(const char *server, uint16_t port,
@@ -818,7 +829,9 @@ netplay_t *netplay_new(const char *server, uint16_t port,
 
       handle->buffer_size = frames + 1;
 
-      init_buffers(handle);
+      if (!init_buffers(handle))
+         goto error;
+
       handle->has_connection = true;
    }
 

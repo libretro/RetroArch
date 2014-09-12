@@ -16,8 +16,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stddef.h>
-#include "message_queue.h"
 #include "boolean.h"
+#include "message_queue.h"
+#include "retroarch_logger.h"
 #include "compat/posix_string.h"
 
 struct queue_elem
@@ -72,6 +73,11 @@ void msg_queue_push(msg_queue_t *queue, const char *msg,
 
    struct queue_elem *new_elem = (struct queue_elem*)
       calloc(1, sizeof(struct queue_elem));
+   if (!new_elem)
+   {
+      RARCH_ERR("New element allocation failed in %s", __FUNCTION__);
+      return;
+   }
 
    new_elem->prio = prio;
    new_elem->duration = duration;

@@ -360,10 +360,15 @@ returntype main_entry(signature())
 
    rarch_main_clear_state();
 
-   if (!(ret = (main_load_content(argc, argv, args,
-                  driver.frontend_ctx->environment_get,
-                  driver.frontend_ctx->process_args))))
-      return_var(ret);
+   if (driver.frontend_ctx)
+   {
+      if (!(ret = (main_load_content(argc, argv, args,
+         driver.frontend_ctx->environment_get,
+         driver.frontend_ctx->process_args))))
+      {
+         return_var(ret);
+      }
+   }
 
 #if defined(HAVE_MENU)
 #if defined(RARCH_CONSOLE) || defined(RARCH_MOBILE)
