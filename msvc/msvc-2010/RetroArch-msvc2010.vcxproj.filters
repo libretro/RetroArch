@@ -262,6 +262,63 @@
     <ClCompile Include="..\..\gfx\d3d9\d3d_wrapper.c">
       <Filter>gfx\d3d9</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\deps\7zip\7zAlloc.c">
+      <Filter>deps\lzma</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\deps\7zip\7zBuf.c">
+      <Filter>deps\lzma</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\deps\7zip\7zBuf2.c">
+      <Filter>deps\lzma</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\deps\7zip\7zCrc.c">
+      <Filter>deps\lzma</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\deps\7zip\7zCrcOpt.c">
+      <Filter>deps\lzma</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\deps\7zip\7zDec.c">
+      <Filter>deps\lzma</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\deps\7zip\7zFile.c">
+      <Filter>deps\lzma</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\deps\7zip\7zIn.c">
+      <Filter>deps\lzma</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\deps\7zip\7zStream.c">
+      <Filter>deps\lzma</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\deps\7zip\Bcj2.c">
+      <Filter>deps\lzma</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\deps\7zip\Bra.c">
+      <Filter>deps\lzma</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\deps\7zip\Bra86.c">
+      <Filter>deps\lzma</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\deps\7zip\CpuArch.c">
+      <Filter>deps\lzma</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\deps\7zip\Lzma2Dec.c">
+      <Filter>deps\lzma</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\deps\7zip\LzmaDec.c">
+      <Filter>deps\lzma</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\deps\7zip\Ppmd7.c">
+      <Filter>deps\lzma</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\deps\7zip\Ppmd7Dec.c">
+      <Filter>deps\lzma</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\decompress\7zip_support.c">
+      <Filter>decompress</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\decompress\zip_support.c">
+      <Filter>decompress</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="resource.h" />
@@ -489,6 +546,12 @@
     </Filter>
     <Filter Include="record">
       <UniqueIdentifier>{5a80dd03-b4d7-4118-92ff-55a601fd80fc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="decompress">
+      <UniqueIdentifier>{5b5cc9ef-5f96-42bb-9690-d97593954ef1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="deps\lzma">
+      <UniqueIdentifier>{fdbc97c0-7581-475f-89ec-40081267f22c}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

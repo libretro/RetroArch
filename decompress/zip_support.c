@@ -35,7 +35,7 @@ int read_zip_file(const char * archive_path, const char *relative_path, void **b
 {
    size_t bytes_read = -1;
    bool finished_reading = false;
-   unzFile *zipfile = unzOpen( archive_path );
+   unzFile *zipfile = (unzFile*)unzOpen( archive_path );
    if ( ! zipfile )
    {
       RARCH_ERR("Could not open zipfile %s.\n",archive_path);
