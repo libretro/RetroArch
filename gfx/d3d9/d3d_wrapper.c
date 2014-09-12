@@ -16,7 +16,9 @@
 
 #include "d3d.hpp"
 #include "d3d_wrapper.h"
+#ifndef _XBOX
 #include "render_chain.hpp"
+#endif
 
 void d3d_swap(void *data, LPDIRECT3DDEVICE dev)
 {
