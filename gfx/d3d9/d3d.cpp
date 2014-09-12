@@ -333,7 +333,7 @@ static bool texture_image_render(void *data,
    d3d->dev->SetTextureStageState(0, D3DTSS_ALPHAARG2, D3DTA_TEXTURE);
 
    /* Draw the quad. */
-   d3dr->SetTexture(0, out_img->pixels);
+   d3d_set_texture(d3dr, 0, out_img->pixels);
    d3d_set_stream_source(d3dr, 0,
          out_img->vertex_buf, 0, sizeof(Vertex));
    d3dr->SetVertexShader(D3DFVF_CUSTOMVERTEX);

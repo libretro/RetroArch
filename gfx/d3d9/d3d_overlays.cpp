@@ -104,7 +104,7 @@ static void d3d_overlay_render(void *data, overlay_t *overlay)
    }
 
    /* Render overlay. */
-   d3d->dev->SetTexture(0, overlay->tex);
+   d3d_set_texture(d3d->dev, 0, overlay->tex);
    d3d_set_sampler_address_u(d3d->dev, 0, D3DTADDRESS_BORDER);
    d3d_set_sampler_address_v(d3d->dev, 0, D3DTADDRESS_BORDER);
    d3d_set_sampler_minfilter(d3d->dev, 0, D3DTEXF_LINEAR);

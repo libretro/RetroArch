@@ -16,6 +16,7 @@
 
 #include <xtl.h>
 #include "d3d_font.h"
+#include "../d3d.hpp"
 #include "../gfx_common.h"
 #include "../../general.h"
 #include "../../xdk/xdk_resources.h"
@@ -277,7 +278,7 @@ static void xdk_render_msg_post(xdk360_video_font_t * font, void *video_data)
    d3d_video_t *d3d = (d3d_video_t*)video_data;
    LPDIRECT3DDEVICE d3dr = d3d->dev;
 
-   d3dr->SetTexture(0, NULL);
+   d3d_set_texture(d3dr, 0, NULL);
    d3dr->SetVertexDeclaration(NULL);
    D3DDevice_SetVertexShader(d3dr, NULL);
    D3DDevice_SetPixelShader(d3dr, NULL);
@@ -297,7 +298,7 @@ static void xdk_render_msg_pre(xdk360_video_font_t * font, void *video_data)
    D3DTexture_GetLevelDesc(font->m_pFontTexture, 0, &TextureDesc); // Get the description
 
    // Set render state
-   d3dr->SetTexture(0, font->m_pFontTexture);
+   d3d_set_texture(d3dr, 0, font->m_pFontTexture);
 
    // Read the TextureDesc here to ensure no load/hit/store from GetLevelDesc()
    float vTexScale[4];

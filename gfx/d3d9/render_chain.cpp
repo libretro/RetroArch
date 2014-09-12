@@ -132,10 +132,10 @@ bool renderchain_set_pass_size(void *data, unsigned pass_index,
          &pass.tex, NULL)))
          return false;
 
-      d3dr->SetTexture(0, pass.tex);
+      d3d_set_texture(d3dr, 0, pass.tex);
       d3d_set_sampler_address_u(d3dr, 0, D3DTADDRESS_BORDER);
       d3d_set_sampler_address_v(d3dr, 0, D3DTADDRESS_BORDER);
-      d3dr->SetTexture(0, NULL);
+      d3d_set_texture(d3dr, 0, NULL);
    }
 
    return true;
@@ -173,10 +173,10 @@ bool renderchain_add_pass(void *data, const LinkInfo *info)
                &pass.tex, NULL)))
       return false;
 
-   d3dr->SetTexture(0, pass.tex);
+   d3d_set_texture(d3dr, 0, pass.tex);
    d3d_set_sampler_address_u(d3dr, 0, D3DTADDRESS_BORDER);
    d3d_set_sampler_address_v(d3dr, 0, D3DTADDRESS_BORDER);
-   d3dr->SetTexture(0, NULL);
+   d3d_set_texture(d3dr, 0, NULL);
 
    chain->passes.push_back(pass);
 
@@ -211,10 +211,10 @@ bool renderchain_add_lut(void *data, const std::string &id,
                &lut)))
       return false;
 
-   d3dr->SetTexture(0, lut);
+   d3d_set_texture(d3dr, 0, lut);
    d3d_set_sampler_address_u(d3dr, 0, D3DTADDRESS_BORDER);
    d3d_set_sampler_address_v(d3dr, 0, D3DTADDRESS_BORDER);
-   d3dr->SetTexture(0, NULL);
+   d3d_set_texture(d3dr, 0, NULL);
 
    lut_info info = { lut, id, smooth };
    chain->luts.push_back(info);
@@ -372,14 +372,14 @@ bool renderchain_create_first_pass(void *data, const LinkInfo *info,
                   &chain->prev.tex[i], NULL)))
          return false;
 
-      d3dr->SetTexture(0, chain->prev.tex[i]);
+      d3d_set_texture(d3dr, 0, chain->prev.tex[i]);
       d3d_set_sampler_minfilter(d3dr, 0,
             translate_filter(info->pass->filter));
       d3d_set_sampler_magfilter(d3dr, 0,
             translate_filter(info->pass->filter));
       d3d_set_sampler_address_u(d3dr, 0, D3DTADDRESS_BORDER);
       d3d_set_sampler_address_v(d3dr, 0, D3DTADDRESS_BORDER);
-      d3dr->SetTexture(0, NULL);
+      d3d_set_texture(d3dr, 0, NULL);
    }
 
    renderchain_compile_shaders(chain, pass.fPrg,
@@ -550,7 +550,7 @@ void renderchain_render_pass(void *data, Pass &pass, unsigned pass_index)
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)chain->dev;
    renderchain_set_shaders(chain, pass.fPrg, pass.vPrg);
 
-   d3dr->SetTexture(0, pass.tex);
+   d3d_set_texture(d3dr, 0, pass.tex);
    d3d_set_sampler_minfilter(d3dr, 0,
          translate_filter(pass.info.pass->filter));
    d3d_set_sampler_magfilter(d3dr, 0,
@@ -637,7 +637,7 @@ void renderchain_unbind_all(void *data)
             chain->bound_tex[i], D3DTEXF_POINT);
       d3d_set_sampler_magfilter(d3dr,
             chain->bound_tex[i], D3DTEXF_POINT);
-      d3dr->SetTexture(chain->bound_tex[i], NULL);
+      d3d_set_texture(d3dr, chain->bound_tex[i], NULL);
    }
 
    for (unsigned i = 0; i < chain->bound_vert.size(); i++)

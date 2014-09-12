@@ -166,6 +166,24 @@ void d3d_set_viewport(LPDIRECT3DDEVICE dev, D3DVIEWPORT *vp)
 #endif
 }
 
+void d3d_set_texture(LPDIRECT3DDEVICE dev, unsigned sampler,
+      LPDIRECT3DTEXTURE tex)
+{
+#if defined(_XBOX1)
+   D3DDevice_SetTexture(sampler, tex);
+#elif defined(_XBOX360)
+   unsigned fetchConstant = 
+      GPU_CONVERT_D3D_TO_HARDWARE_TEXTUREFETCHCONSTANT(sampler);
+   uint64_t pendingMask3 = 
+      D3DTAG_MASKENCODE(D3DTAG_START(D3DTAG_FETCHCONSTANTS) 
+            + fetchConstant, D3DTAG_START(D3DTAG_FETCHCONSTANTS)
+            + fetchConstant);
+   D3DDevice_SetTexture(dev, sampler, tex, pendingMask3)
+#else
+   dev->SetTexture(0, tex);
+#endif
+}
+
 void d3d_textureblit(void *data, void *renderchain_data,
       LPDIRECT3DTEXTURE tex, D3DSURFACE_DESC desc,
       D3DLOCKED_RECT lr, const void *frame,

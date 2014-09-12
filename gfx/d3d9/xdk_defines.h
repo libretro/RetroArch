@@ -30,7 +30,6 @@
 #define RD3DDevice_SetVertexShader(device, handle) D3DDevice_SetVertexShader(handle)
 #define RD3DVertexBuffer_Lock(device, OffsetToLock, SizeToLock, ppbData, Flags) *ppbData = D3DVertexBuffer_Lock2(device, Flags) + OffsetToLock
 #define RD3DVertexBuffer_Unlock(device)
-#define RD3DDevice_SetTexture(device, Stage, pTexture) D3DDevice_SetTexture(Stage, pTexture)
 #define RD3DDevice_Clear(device, Count, pRects, Flags, Color, Z, Stencil) D3DDevice_Clear(Count, pRects, Flags, Color, Z, Stencil)
 #define D3DDevice_CreateVertexBuffers(device, Length, Usage, UnusedFVF, UnusedPool, ppVertexBuffer, pUnusedSharedHandle) IDirect3DDevice8_CreateVertexBuffer(device, Length, Usage, UnusedFVF, UnusedPool, ppVertexBuffer)
 
@@ -39,10 +38,6 @@
 
 #define RD3DVertexBuffer_Lock(device, OffsetToLock, SizeToLock, ppbData, Flags) *ppbData = D3DVertexBuffer_Lock(device, OffsetToLock, SizeToLock, Flags)
 #define RD3DVertexBuffer_Unlock(device) D3DVertexBuffer_Unlock(device)
-#define RD3DDevice_SetTexture(device, Stage, pTexture) \
- fetchConstant = GPU_CONVERT_D3D_TO_HARDWARE_TEXTUREFETCHCONSTANT(Stage); \
- pendingMask3 = D3DTAG_MASKENCODE(D3DTAG_START(D3DTAG_FETCHCONSTANTS) + fetchConstant, D3DTAG_START(D3DTAG_FETCHCONSTANTS) + fetchConstant); \
- D3DDevice_SetTexture(device, Stage, pTexture, pendingMask3)
 
 #define D3DDevice_CreateVertexBuffers(device, Length, Usage, UnusedFVF, UnusedPool, ppVertexBuffer, pUnusedSharedHandle) IDirect3DDevice9_CreateVertexBuffer(device, Length, Usage, UnusedFVF, UnusedPool, ppVertexBuffer, NULL)
 #define RD3DDevice_Clear(device, Count, pRects, Flags, Color, Z, Stencil) D3DDevice_Clear(device, Count, pRects, Flags, Color, Z, Stencil, false)

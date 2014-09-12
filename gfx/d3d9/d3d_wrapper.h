@@ -50,6 +50,9 @@ void d3d_lockrectangle_clear(LPDIRECT3DTEXTURE tex,
       unsigned level, D3DLOCKED_RECT lock_rect, RECT rect,
       unsigned flags);
 
+void d3d_set_texture(LPDIRECT3DDEVICE dev, unsigned sampler,
+      LPDIRECT3DTEXTURE tex);
+
 void d3d_textureblit(void *data,
       LPDIRECT3DTEXTURE tex, D3DSURFACE_DESC desc,
       D3DLOCKED_RECT lr, const void *frame,

@@ -142,7 +142,7 @@ static void renderchain_render_pass(void *data, const void *frame, unsigned widt
    renderchain_blit_to_texture(d3d, frame, width, height, pitch);
    renderchain_set_vertices(d3d, 1, width, height);
 
-   RD3DDevice_SetTexture(d3dr, 0, d3d->tex);
+   d3d_set_texture(d3dr, 0, d3d->tex);
    d3d_set_viewport(d3d->dev, &d3d->final_viewport);
    d3d_set_sampler_minfilter(d3dr, 0, g_settings.video.smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT);
    d3d_set_sampler_magfilter(d3dr, 0, g_settings.video.smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT);
