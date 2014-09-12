@@ -60,10 +60,6 @@
 #include <vector>
 
 #ifndef _XBOX
-#define D3DDevice_SetSamplerState_AddressU(dev, sampler, type) dev->SetSamplerState(sampler, D3DSAMP_ADDRESSU, type)
-#define D3DDevice_SetSamplerState_AddressV(dev, sampler, type) dev->SetSamplerState(sampler, D3DSAMP_ADDRESSV, type)
-#define D3DDevice_SetSamplerState_MinFilter(dev, sampler, type) dev->SetSamplerState(sampler, D3DSAMP_MINFILTER, type)
-#define D3DDevice_SetSamplerState_MagFilter(dev, sampler, type) dev->SetSamplerState(sampler, D3DSAMP_MAGFILTER, type)
 #define D3DTexture_LockRectClear(pass, tex, level, lockedrect, rect, flags) \
    if (SUCCEEDED(tex->LockRect(level, &lockedrect, rect, flags))) \
    { \
