@@ -18,7 +18,8 @@ typedef struct rarch_nearest_resampler
 }rarch_nearest_resampler_t;
  
  
-static void resampler_nearest_process(void *re_, struct resampler_data *data)
+static void resampler_nearest_process(void *re_,
+      struct resampler_data *data)
 {
    (void)re_;
    float ratio;
@@ -38,8 +39,10 @@ static void resampler_nearest_process(void *re_, struct resampler_data *data)
  
    ratio = 1.0/data->ratio;
  
-   while(inp!=inp_max){
-      while(re->fraction>1){
+   while(inp != inp_max)
+   {
+      while(re->fraction > 1)
+      {
          *outp++=*inp;
          re->fraction-=ratio;
       }
@@ -59,7 +62,8 @@ static void resampler_nearest_free(void *re_)
  
 static void *resampler_nearest_init(double bandwidth_mod)
 {
-   rarch_nearest_resampler_t *re = (rarch_nearest_resampler_t*)calloc(1, sizeof(rarch_nearest_resampler_t));
+   rarch_nearest_resampler_t *re = (rarch_nearest_resampler_t*)
+      calloc(1, sizeof(rarch_nearest_resampler_t));
    if (!re)
       return NULL;
    
