@@ -20,9 +20,7 @@
 extern "C" {
 #endif
 
-#ifdef _XBOX
-#include <xtl.h>
-#else
+#ifndef _XBOX
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 
