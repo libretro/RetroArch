@@ -199,7 +199,7 @@ static bool content_playlist_read_file(
       if (file)
          fclose(file);
 
-      return true;
+      return false;
    }
 
    for (playlist->size = 0; playlist->size < playlist->cap; )
