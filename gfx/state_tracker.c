@@ -85,6 +85,14 @@ state_tracker_t* state_tracker_init(const struct state_tracker_info *info)
 
    tracker->info = (struct state_tracker_internal*)
       calloc(info->info_elem, sizeof(struct state_tracker_internal));
+
+   if (!tracker->info)
+   {
+      RARCH_ERR("%s: Allocation of state tracker info failed.", __FUNCTION__);
+      free(tracker);
+      return NULL;
+   }
+
    tracker->info_elem = info->info_elem;
 
    for (i = 0; i < info->info_elem; i++)
@@ -138,10 +146,14 @@ state_tracker_t* state_tracker_init(const struct state_tracker_info *info)
 
 void state_tracker_free(state_tracker_t *tracker)
 {
-   free(tracker->info);
+   if (tracker)
+   {
+      free(tracker->info);
 #ifdef HAVE_PYTHON
-   py_state_free(tracker->py);
+      py_state_free(tracker->py);
 #endif
+   }
+
    free(tracker);
 }
 
