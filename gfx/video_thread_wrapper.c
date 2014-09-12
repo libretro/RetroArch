@@ -926,4 +926,13 @@ bool rarch_threaded_video_init(const video_driver_t **out_driver,
    return thread_init(thr, info, input, input_data);
 }
 
+void *rarch_threaded_video_resolve(const video_driver_t **drv)
+{
+   const thread_video_t *thr = (const thread_video_t*)driver.video_data;
+
+   if (drv)
+      *drv = thr->driver;
+
+   return thr->driver_data;
+}
 

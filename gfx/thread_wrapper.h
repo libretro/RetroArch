@@ -26,5 +26,7 @@ bool rarch_threaded_video_init(
       const input_driver_t **input, void **input_data,
       const video_driver_t *driver, const video_info_t *info);
 
+void *rarch_threaded_video_resolve(const video_driver_t **drv);
+
 #endif
 

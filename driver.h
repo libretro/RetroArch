@@ -554,6 +554,9 @@ bool driver_set_sensor_state(unsigned port,
 
 float driver_sensor_get_input(unsigned port, unsigned action);
 
+/* Use this if you need the real video driver and driver data pointers */
+void *driver_video_resolve(const video_driver_t **drv);
+
 #ifdef HAVE_DYLIB
 void rarch_deinit_filter(void);
 void rarch_init_filter(enum retro_pixel_format);
