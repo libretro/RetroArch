@@ -1544,3 +1544,19 @@ void uninit_video_input(void)
    deinit_shader_dir();
    compute_monitor_fps_statistics();
 }
+
+
+void *driver_video_resolve(const video_driver_t **drv)
+{
+#ifdef HAVE_THREADS
+   if (g_settings.video.threaded && !g_extern.system.hw_render_callback.context_type)
+      return rarch_threaded_video_resolve(drv);
+   else
+#endif
+   {
+      if (drv)
+         *drv = driver.video;
+
+      return driver.video_data;
+   }
+}

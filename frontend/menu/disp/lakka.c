@@ -120,7 +120,8 @@ static int numtweens = 0;
 
 static void lakka_responsive(void)
 {
-   gl_t *gl = (gl_t*)driver.video_data;
+   gl_t *gl = (gl_t*)driver_video_resolve(NULL);
+
    if (!gl)
       return;
 
@@ -352,7 +353,8 @@ static void lakka_draw_text(const char *str, float x,
    if (alpha == 0)
       return;
 
-   gl_t *gl = (gl_t*)driver.video_data;
+   gl_t *gl = (gl_t*)driver_video_resolve(NULL);
+
    if (!gl)
       return;
 
@@ -383,7 +385,8 @@ void lakka_draw_background(void)
       1.0f, 1.0f, 1.0f, global_alpha,
    };
 
-   gl_t *gl = (gl_t*)driver.video_data;
+   gl_t *gl = (gl_t*)driver_video_resolve(NULL);
+
    if (!gl)
       return;
 
@@ -416,7 +419,7 @@ void lakka_draw_icon(GLuint texture, float x, float y,
    if (alpha == 0)
       return;
 
-   gl_t *gl = (gl_t*)driver.video_data;
+   gl_t *gl = (gl_t*)driver_video_resolve(NULL);
 
    if (!gl)
       return;
@@ -623,7 +626,7 @@ static void lakka_draw_categories(void)
 
 static void lakka_frame(void)
 {
-   gl_t *gl = (gl_t*)driver.video_data;
+   gl_t *gl = (gl_t*)driver_video_resolve(NULL);
    menu_category_t *active_category = (menu_category_t*)
       &categories[menu_active_category];
    menu_item_t *active_item;
@@ -680,9 +683,7 @@ static GLuint png_texture_load(const char * file_name)
 static void lakka_context_destroy(void *data)
 {
    int i, j, k;
-   gl_t *gl = (gl_t*)driver.video_data;
-
-   (void)gl;
+   (void)data;
 
    for (i = 0; i < TEXTURE_LAST; i++)
       glDeleteTextures(1, &textures[i].id);
@@ -841,7 +842,7 @@ static void lakka_context_reset(void *data)
    int i, j, k;
    char mediapath[256], themepath[256], iconpath[256];
    menu_handle_t *menu = (menu_handle_t*)data;
-   gl_t *gl = (gl_t*)driver.video_data;
+   gl_t *gl = (gl_t*)driver_video_resolve(NULL);
 
    driver.gfx_use_rgba = true;
 
@@ -1105,18 +1106,18 @@ static void *lakka_init(void)
 {
    int i;
    menu_handle_t *menu;
-   gl_t *gl;
+   const video_driver_t *video_driver = NULL;
+   gl_t *gl = (gl_t*)driver_video_resolve(&video_driver);
 
-   if (driver.video != &video_gl)
+   if (video_driver != &video_gl || !gl)
    {
       RARCH_ERR("Cannot initialize Lakka menu driver: gl video driver is not active.\n");
       return NULL;
    }
 
    menu = (menu_handle_t*)calloc(1, sizeof(*menu));
-   gl = (gl_t*)driver.video_data;
 
-   if (!menu || !gl)
+   if (!menu)
       return NULL;
 
    lakka_responsive();

@@ -49,7 +49,8 @@ const gl_font_renderer_t *font_driver;
 
 static void blit_line(float x, float y, const char *message, bool green)
 {
-   gl_t *gl = (gl_t*)driver.video_data;
+   gl_t *gl = (gl_t*)driver_video_resolve(NULL);
+
    if (!driver.menu || !gl)
       return;
 
@@ -77,7 +78,8 @@ static void glui_render_background(void)
       0.0f, 0.0f, 0.0f, 0.9f,
    };
 
-   gl_t *gl = (gl_t*)driver.video_data;
+   gl_t *gl = (gl_t*)driver_video_resolve(NULL);
+
    if (!gl)
       return;
 
@@ -103,7 +105,7 @@ static void glui_render_messagebox(const char *message)
 
 static void glui_frame(void)
 {
-   gl_t *gl = (gl_t*)driver.video_data;
+   gl_t *gl = (gl_t*)driver_video_resolve(NULL);
 
    if (!driver.menu || !gl)
       return;
@@ -258,10 +260,19 @@ static void glui_init_core_info(void *data)
 
 static void *glui_init(void)
 {
-   menu_handle_t *menu = (menu_handle_t*)calloc(1, sizeof(*menu));
-   gl_t *gl = (gl_t*)driver.video_data;
+   menu_handle_t *menu;
+   const video_driver_t *video_driver = NULL;
+   gl_t *gl = (gl_t*)driver_video_resolve(&video_driver);
 
-   if (!menu || !gl)
+   if (video_driver != &video_gl || !gl)
+   {
+      RARCH_ERR("Cannot initialize GLUI menu driver: gl video driver is not active.\n");
+      return NULL;
+   }
+
+   menu = (menu_handle_t*)calloc(1, sizeof(*menu));
+
+   if (!menu)
       return NULL;
 
    glui_init_core_info(menu);
@@ -300,7 +311,7 @@ static void glui_context_reset(void *data)
 {
    char mediapath[256], themepath[256], iconpath[256];
    menu_handle_t *menu = (menu_handle_t*)data;
-   gl_t *gl = (gl_t*)driver.video_data;
+   gl_t *gl = (gl_t*)driver_video_resolve(NULL);
 
    driver.gfx_use_rgba = true;
 
