@@ -1426,6 +1426,15 @@ static int menu_action_ok(const char *menu_path,
             menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS);
             return -1;
          }
+         else
+         {
+            fill_pathname_join(g_extern.fullpath, menu_path, path,
+                  sizeof(g_extern.fullpath));
+
+            menu_common_load_content();
+
+            return -1;
+         }
 
          return 0;
 
@@ -1567,15 +1576,6 @@ static int menu_action_ok(const char *menu_path,
 
       menu_entries_push(driver.menu->menu_stack,
             cat_path, menu_label, type, driver.menu->selection_ptr);
-   }
-   else
-   {
-      fill_pathname_join(g_extern.fullpath, menu_path, path,
-            sizeof(g_extern.fullpath));
-
-      menu_common_load_content();
-
-      return -1;
    }
 
    return 0;
