@@ -40,6 +40,9 @@ static inline bool validate_param_name(const char *name)
       "PASS",
    };
 
+   if (!name)
+      return false;
+
    for (unsigned i = 0; i < sizeof(illegal) / sizeof(illegal[0]); i++)
       if (strstr(name, illegal[i]) == name)
          return false;
