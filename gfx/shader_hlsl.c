@@ -350,7 +350,7 @@ static bool hlsl_init(void *data, const char *path)
    for(unsigned i = 1; i <= cg_shader->passes; i++)
       set_program_attributes(i);
 
-   d3d->dev->SetVertexShader(prg[1].vprg);
+   d3d_set_vertex_shader(d3d->dev, 1, prg[1].vprg);
    d3d->dev->SetPixelShader(prg[1].fprg);
 
    hlsl_active = true;
@@ -373,11 +373,10 @@ static void hlsl_use(void *data, unsigned index)
    if (hlsl_active && prg[index].vprg && prg[index].fprg)
    {
       active_index = index;
+      d3d_set_vertex_shader(d3dr, index, prg[index].vprg);
 #ifdef _XBOX
-      D3DDevice_SetVertexShader(d3dr, prg[index].vprg);
       D3DDevice_SetPixelShader(d3dr, prg[index].fprg);
 #else
-      d3dr->SetVertexShader(prg[index].vprg);
       d3dr->SetPixelShader(prg[index].fprg);
 #endif
    }

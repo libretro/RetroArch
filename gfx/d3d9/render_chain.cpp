@@ -557,7 +557,7 @@ void renderchain_render_pass(void *data, Pass &pass, unsigned pass_index)
          translate_filter(pass.info.pass->filter));
 
 #ifdef _XBOX1
-   d3dr->SetVertexShader(D3DFVF_XYZ | D3DFVF_TEX1);
+   d3d_set_vertex_shader(d3dr, D3DFVF_XYZ | D3DFVF_TEX1, NULL);
 #else
    d3dr->SetVertexDeclaration(pass.vertex_decl);
 #endif

@@ -184,6 +184,19 @@ void d3d_set_texture(LPDIRECT3DDEVICE dev, unsigned sampler,
 #endif
 }
 
+HRESULT d3d_set_vertex_shader(LPDIRECT3DDEVICE dev, unsigned index,
+      LPDIRECT3DVERTEXSHADER shader)
+{
+#if defined(_XBOX1)
+   return dev->SetVertexShader(index);
+#elif defined(_XBOX360)
+   return D3DDevice_SetVertexShader(dev, shader);
+#else
+   return dev->SetVertexShader(shader);
+#endif
+}
+
+
 void d3d_textureblit(void *data, void *renderchain_data,
       LPDIRECT3DTEXTURE tex, D3DSURFACE_DESC desc,
       D3DLOCKED_RECT lr, const void *frame,

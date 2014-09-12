@@ -280,7 +280,7 @@ static void xdk_render_msg_post(xdk360_video_font_t * font, void *video_data)
 
    d3d_set_texture(d3dr, 0, NULL);
    d3dr->SetVertexDeclaration(NULL);
-   D3DDevice_SetVertexShader(d3dr, NULL);
+   d3d_set_vertex_shader(d3dr, 0, NULL);
    D3DDevice_SetPixelShader(d3dr, NULL);
    d3dr->SetRenderState( D3DRS_VIEWPORTENABLE, font->m_dwSavedState );
 }
@@ -309,7 +309,7 @@ static void xdk_render_msg_pre(xdk360_video_font_t * font, void *video_data)
 
    d3dr->SetRenderState( D3DRS_VIEWPORTENABLE, FALSE );
    d3dr->SetVertexDeclaration(s_FontLocals.m_pFontVertexDecl);
-   d3dr->SetVertexShader(s_FontLocals.m_pFontVertexShader);
+   d3d_set_vertex_shader(d3dr, 0, s_FontLocals.m_pFontVertexShader);
    d3dr->SetPixelShader(s_FontLocals.m_pFontPixelShader);
 
    // Set the texture scaling factor as a vertex shader constant

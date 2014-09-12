@@ -336,7 +336,7 @@ static bool texture_image_render(void *data,
    d3d_set_texture(d3dr, 0, out_img->pixels);
    d3d_set_stream_source(d3dr, 0,
          out_img->vertex_buf, 0, sizeof(Vertex));
-   d3dr->SetVertexShader(D3DFVF_CUSTOMVERTEX);
+   d3d_set_vertex_shader(d3dr, D3DFVF_CUSTOMVERTEX, NULL);
 
    if (force_fullscreen)
    {

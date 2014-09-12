@@ -145,7 +145,7 @@ static void renderchain_render_pass(void *data, const void *frame, unsigned widt
    d3d_set_sampler_magfilter(d3dr, 0, g_settings.video.smooth ? D3DTEXF_LINEAR : D3DTEXF_POINT);
 
 #if defined(_XBOX1)
-   RD3DDevice_SetVertexShader(d3dr, D3DFVF_XYZ | D3DFVF_TEX1);
+   d3d_set_vertex_shader(d3dr, D3DFVF_XYZ | D3DFVF_TEX1, NULL);
 #elif defined(_XBOX360)
    D3DDevice_SetVertexDeclaration(d3dr, d3d->vertex_decl);
 #endif
