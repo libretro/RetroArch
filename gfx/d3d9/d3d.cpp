@@ -1402,7 +1402,7 @@ static bool d3d_overlay_load(void *data,
       overlay_t &overlay = d3d->overlays[i];
 
       overlay.tex = (LPDIRECT3DTEXTURE)
-         d3d_texture_new(d3d->dev,
+         d3d_texture_new(d3d->dev, NULL,
                   width, height, 1,
                   0,
                   D3DFMT_A8R8G8B8,
@@ -1754,13 +1754,13 @@ static void d3d_set_menu_texture_frame(void *data,
       if (d3d->menu)
 	     d3d_texture_free(d3d->menu->tex); 
 
-      d3d->menu_tex = (LPDIRECT3DTEXTURE)
+      d3d->menu->tex = (LPDIRECT3DTEXTURE)
          d3d_texture_new(d3d->dev, NULL,
             width, height, 1,
             0, D3DFMT_A8R8G8B8,
             D3DPOOL_MANAGED, 0, 0, 0, NULL, NULL);
 
-      if (!d3d->menu_tex)
+      if (!d3d->menu->tex)
       {
          RARCH_ERR("[D3D]: Failed to create menu texture.\n");
          return;
