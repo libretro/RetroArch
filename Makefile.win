@@ -31,6 +31,9 @@ ifeq ($(SLIM),)
    HAVE_FFMPEG = 1
 endif
 
+FREETYPE_CFLAGS := -DHAVE_FREETYPE -Ifreetype2
+FREETYPE_LIBS   := -lfreetype
+
 OBJDIR := obj-w32
 
 OBJ              :=
@@ -103,11 +106,6 @@ ifeq ($(HAVE_SDL), 1)
    LIBS += -lSDL
    JOYCONFIG_LIBS += -lSDL
    DEFINES += -ISDL -DHAVE_SDL
-endif
-
-ifeq ($(HAVE_THREADS), 1)
-   OBJ += autosave.o thread.o gfx/video_thread_wrapper.o audio/thread_wrapper.o
-   DEFINES += -DHAVE_THREADS
 endif
 
 ifeq ($(HAVE_OPENGL), 1)
@@ -189,12 +187,6 @@ ifeq ($(HAVE_NETPLAY), 1)
    DEFINES += -DHAVE_NETPLAY -DHAVE_NETWORK_CMD
    OBJ += netplay.o
    LIBS += -lws2_32
-endif
-
-ifeq ($(HAVE_FREETYPE), 1)
-   OBJ += gfx/fonts/freetype.o
-   DEFINES += -DHAVE_FREETYPE -Ifreetype2
-   LIBS += -lfreetype -lz
 endif
 
 ifeq ($(DYNAMIC), 1)

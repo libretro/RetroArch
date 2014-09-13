@@ -70,13 +70,6 @@ endif
 OBJ += playlist.o \
 		 movie.o
 
-ifeq ($(HAVE_THREADS), 1)
-   OBJ += autosave.o thread.o gfx/video_thread_wrapper.o audio/thread_wrapper.o
-   ifeq ($(findstring Haiku,$(OS)),)
-      LIBS += -lpthread
-   endif
-endif
-
 ifeq ($(HAVE_NETPLAY), 1)
    OBJ += netplay.o
    ifneq ($(findstring Win32,$(OS)),)
@@ -340,13 +333,6 @@ ifeq ($(HAVE_DYLIB), 1)
    LIBS += $(DYLIB_LIB)
    OBJ += gfx/filter.o
 endif
-
-ifeq ($(HAVE_FREETYPE), 1)
-   OBJ += gfx/fonts/freetype.o
-   LIBS += $(FREETYPE_LIBS)
-   DEFINES += $(FREETYPE_CFLAGS)
-endif
-
 
 ifeq ($(HAVE_ZLIB), 1)
    HAVE_COMPRESSION = 1 

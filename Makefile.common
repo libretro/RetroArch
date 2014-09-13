@@ -69,3 +69,17 @@ ifeq ($(HAVE_MENU_COMMON), 1)
 			 frontend/menu/menu_action.o \
 			 frontend/menu/menu_entries.o
 endif
+
+ifeq ($(HAVE_FREETYPE), 1)
+   OBJ += gfx/fonts/freetype.o
+   LIBS += $(FREETYPE_LIBS)
+   DEFINES += $(FREETYPE_CFLAGS)
+endif
+
+ifeq ($(HAVE_THREADS), 1)
+   OBJ += autosave.o thread.o gfx/video_thread_wrapper.o audio/thread_wrapper.o
+   DEFINES += -DHAVE_THREADS
+   ifeq ($(findstring Haiku,$(OS)),)
+      LIBS += -lpthread
+   endif
+endif
