@@ -9,11 +9,9 @@ static void renderchain_clear(void *data)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
 
-   if (d3d->tex)
-      d3d->tex->Release();
+   d3d_texture_free(d3d->tex);
    d3d->tex = NULL;
-   if (d3d->vertex_buf)
-      d3d->vertex_buf->Release();
+   d3d_vertex_buffer_free(d3d->vertex_buf);
    d3d->vertex_buf = NULL;
 
 #ifdef _XBOX360
@@ -90,7 +88,6 @@ static bool renderchain_create_first_pass(void *data,
 
    return true;
 }
-
 
 static bool renderchain_init(void *data, const video_info_t *info)
 {
