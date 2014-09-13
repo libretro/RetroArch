@@ -372,7 +372,7 @@ bool renderchain_create_first_pass(void *data, const LinkInfo *info,
          return false;
 
       chain->prev.tex[i] = (LPDIRECT3DTEXTURE)d3d_texture_new(
-      d3dr, NULL, d3info->tex_w, info->tex_h, 1, 0,
+      d3dr, NULL, info->tex_w, info->tex_h, 1, 0,
       fmt == RGB565 ? D3DFMT_R5G6B5 : D3DFMT_X8R8G8B8,
       D3DPOOL_MANAGED, 0, 0, 0, NULL, NULL);
 
