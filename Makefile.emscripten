@@ -1,63 +1,13 @@
 TARGET = retroarch.js
 
-OBJ = frontend/platform/platform_emscripten.o \
-		frontend/platform/platform_null.o \
-		frontend/frontend.o \
-		frontend/frontend_context.o \
-		retroarch.o \
-		file.o \
-		file_list.o \
-		file_path.o \
-		driver.o \
-		conf/config_file.o \
-		settings.o \
-		settings_data.o \
-		hash.o \
-		dynamic.o \
-		dynamic_dummy.o \
-		message_queue.o \
-		rewind.o \
-		movie.o \
-		gfx/gfx_common.o \
-		input/nullinput.o \
-		input/input_common.o \
-		input/rwebinput_input.o \
-		input/keyboard_line.o \
-		core_options.o \
-		patch.o \
-		compat/compat.o \
-		compat/rxml/rxml.o \
-		screenshot.o \
-		cheats.o \
-		audio/utils.o \
-		audio/rwebaudio.o \
-		audio/dsp_filter.o \
-		input/overlay.o \
-		fifo_buffer.o \
-		gfx/scaler/scaler.o \
-		gfx/shader_common.o \
-		gfx/scaler/pixconv.o \
-		gfx/scaler/scaler_int.o \
-		gfx/scaler/scaler_filter.o \
-		gfx/state_tracker.o \
-		gfx/shader_parse.o \
-		gfx/fonts/fonts.o \
-		gfx/fonts/bitmapfont.o \
-		gfx/image/image_rpng.o \
-		gfx/filter.o \
-		audio/resamplers/resampler.o \
-		audio/resamplers/sinc.o \
-		audio/resamplers/nearest.o \
-		audio/resamplers/cc_resampler.o \
-		audio/nullaudio.o \
-		performance.o \
-		core_info.o \
-		location/nulllocation.o \
-		camera/nullcamera.o \
-		camera/rwebcam.o \
-		input/osk/nullosk.o \
-		gfx/nullgfx.o
+OBJ :=
 
+include Makefile.common
+
+OBJ += frontend/platform/platform_emscripten.o \
+		input/rwebinput_input.o \
+		audio/rwebaudio.o \
+		camera/rwebcam.o
 
 HAVE_OPENGL = 1
 HAVE_RGUI = 1

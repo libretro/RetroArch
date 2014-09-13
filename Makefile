@@ -4,55 +4,9 @@ TARGET = retroarch tools/retroarch-joyconfig tools/retrolaunch/retrolaunch
 
 OBJDIR := obj-unix
 
-OBJ = frontend/frontend.o \
-		frontend/frontend_context.o \
-		frontend/platform/platform_null.o \
-		retroarch.o \
-		file.o \
-		file_list.o \
-		file_path.o \
-		hash.o \
-		driver.o \
-		settings.o \
-		settings_data.o \
-		dynamic.o \
-		dynamic_dummy.o \
-		message_queue.o \
-		rewind.o \
-		gfx/gfx_common.o \
-		gfx/fonts/bitmapfont.o \
-		input/input_common.o \
-		input/keyboard_line.o \
-		input/overlay.o \
-		patch.o \
-		fifo_buffer.o \
-		core_options.o \
-		compat/compat.o \
-		cheats.o \
-		core_info.o \
-		conf/config_file.o \
-		screenshot.o \
-		gfx/scaler/scaler.o \
-		gfx/shader_common.o \
-		gfx/shader_parse.o \
-		gfx/scaler/pixconv.o \
-		gfx/scaler/scaler_int.o \
-		gfx/scaler/scaler_filter.o \
-		gfx/image/image_rpng.o \
-		gfx/fonts/fonts.o \
-		audio/resamplers/resampler.o \
-		audio/dsp_filter.o \
-		audio/resamplers/sinc.o \
-		audio/resamplers/nearest.o \
-		audio/resamplers/cc_resampler.o \
-		location/nulllocation.o \
-		camera/nullcamera.o \
-		gfx/nullgfx.o \
-		audio/nullaudio.o \
-		input/nullinput.o \
-		input/osk/nullosk.o \
-		performance.o
+OBJ := 
 
+include Makefile.common
 
 JOYCONFIG_OBJ = tools/retroarch-joyconfig.o \
 	conf/config_file.o \
@@ -83,7 +37,6 @@ else
 endif
 
 DEFINES = -DHAVE_CONFIG_H -DRARCH_INTERNAL -DHAVE_CC_RESAMPLER -DHAVE_OVERLAY
-
 
 ifeq ($(GLOBAL_CONFIG_DIR),)
    GLOBAL_CONFIG_DIR = /etc
