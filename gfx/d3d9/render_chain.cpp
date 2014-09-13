@@ -156,13 +156,11 @@ bool renderchain_add_pass(void *data, const LinkInfo *info)
    if (!renderchain_init_shader_fvf(chain, &pass))
       return false;
 
-   if (FAILED(D3DDevice_CreateVertexBuffers(d3dr, 4 * sizeof(Vertex),
-               d3dr->GetSoftwareVertexProcessing() 
-               ? D3DUSAGE_SOFTWAREPROCESSING : 0,
-               0,
-               D3DPOOL_DEFAULT,
-               &pass.vertex_buf,
-               NULL)))
+   pass.vertex_buf = (LPDIRECT3DVERTEXBUFFER)d3d_vertex_buffer_new(d3dr, 4 * sizeof(Vertex),
+	   d3dr->GetSoftwareVertexProcessing() ? D3DUSAGE_SOFTWAREPROCESSING : 0,
+	   0, D3DPOOL_DEFAULT, NULL);
+
+   if (!pass.vertex_buf)
       return false;
 
    if (FAILED(d3dr->CreateTexture(info->tex_w, info->tex_h, 1,

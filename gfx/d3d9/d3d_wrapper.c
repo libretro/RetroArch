@@ -40,19 +40,27 @@ void d3d_swap(void *data, LPDIRECT3DDEVICE dev)
 #endif
 }
 
-HRESULT d3d_create_vertex_buffer(LPDIRECT3DDEVICE dev,
+LPDIRECT3DVERTEXBUFFER d3d_vertex_buffer_new(LPDIRECT3DDEVICE dev,
       unsigned length, unsigned usage, unsigned fvf,
-      D3DPOOL pool, LPDIRECT3DVERTEXBUFFER vert_buf, void *handle)
+      D3DPOOL pool, void *handle)
 {
+   HRESULT hr;
+   LPDIRECT3DVERTEXBUFFER buf;
+
 #if defined(_XBOX1)
-   return IDirect3DDevice8_CreateVertexBuffer(dev, length, usage, fvf, pool,
-         &vert_buf);
+   hr = IDirect3DDevice8_CreateVertexBuffer(dev, length, usage, fvf, pool,
+         &buf);
 #elif defined(_XBOX360)
-   return IDirect3DDevice9_CreateVertexBuffer(dev, length, usage, fvf, pool,
-         &vert_buf, NULL);
+   hr = IDirect3DDevice9_CreateVertexBuffer(dev, length, usage, fvf, pool,
+         &buf, NULL);
 #else
-   return dev->CreateVertexBuffer(length, usage, fvf, pool, &vert_buf, NULL);
+   hr = dev->CreateVertexBuffer(length, usage, fvf, pool, &buf, NULL);
 #endif
+
+   if (FAILED(hr))
+	   return NULL;
+
+   return buf;
 }
 
 void d3d_set_stream_source(LPDIRECT3DDEVICE dev, unsigned stream_no,

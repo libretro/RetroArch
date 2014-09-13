@@ -1239,10 +1239,12 @@ static void d3d_overlay_render(void *data, overlay_t *overlay)
 
    if (!overlay->vert_buf)
    {
-      D3DDevice_CreateVertexBuffers(d3d->dev, sizeof(vert), 
-         d3d->dev->GetSoftwareVertexProcessing() ? 
-         D3DUSAGE_SOFTWAREPROCESSING : 0, 0, D3DPOOL_MANAGED,
-         &overlay->vert_buf, NULL);
+      overlay->vert_buf = (LPDIRECT3DVERTEXBUFFER)d3d_vertex_buffer_new(
+      d3d->dev, sizeof(vert), d3d->dev->GetSoftwareVertexProcessing() ? 
+      D3DUSAGE_SOFTWAREPROCESSING : 0, 0, D3DPOOL_MANAGED, NULL);
+
+	  if (!overlay->vert_buf)
+		  return;
    }
 
    for (i = 0; i < 4; i++)

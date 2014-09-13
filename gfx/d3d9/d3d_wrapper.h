@@ -22,9 +22,9 @@
 
 void d3d_swap(void *data, LPDIRECT3DDEVICE dev);
 
-HRESULT d3d_create_vertex_buffer(LPDIRECT3DDEVICE dev,
+LPDIRECT3DVERTEXBUFFER d3d_vertex_buffer_new(LPDIRECT3DDEVICE dev,
       unsigned length, unsigned usage, unsigned fvf,
-      D3DPOOL pool, LPDIRECT3DVERTEXBUFFER vert_buf, void *handle);
+      D3DPOOL pool, void *handle);
 
 void d3d_set_stream_source(LPDIRECT3DDEVICE dev, unsigned stream_no,
       LPDIRECT3DVERTEXBUFFER stream_vertbuf, unsigned offset_bytes,
