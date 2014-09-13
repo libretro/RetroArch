@@ -127,7 +127,7 @@ VIDEO CONTEXT
 #if defined(HAVE_VIDEOCORE)
 #include "../gfx/context/vc_egl_ctx.c"
 #endif
-#if defined(HAVE_X11) && defined(HAVE_OPENGLES)
+#if defined(HAVE_X11) && !defined(HAVE_OPENGLES)
 #include "../gfx/context/glx_ctx.c"
 #endif
 #if defined(HAVE_EGL)
