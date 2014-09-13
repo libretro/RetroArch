@@ -78,6 +78,7 @@ void d3d_texture_free(LPDIRECT3DTEXTURE tex)
 {
    if (tex)
       tex->Release();
+   tex = NULL;
 }
 
 LPDIRECT3DVERTEXBUFFER d3d_vertex_buffer_new(LPDIRECT3DDEVICE dev,
@@ -107,6 +108,7 @@ void d3d_vertex_buffer_free(LPDIRECT3DVERTEXBUFFER buf)
 {
    if (buf)
       buf->Release();
+   buf = NULL;
 }
 
 void d3d_set_stream_source(LPDIRECT3DDEVICE dev, unsigned stream_no,

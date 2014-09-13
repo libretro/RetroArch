@@ -10,9 +10,7 @@ static void renderchain_clear(void *data)
    d3d_video_t *d3d = (d3d_video_t*)data;
 
    d3d_texture_free(d3d->tex);
-   d3d->tex = NULL;
    d3d_vertex_buffer_free(d3d->vertex_buf);
-   d3d->vertex_buf = NULL;
 
 #ifdef _XBOX360
    if (d3d->vertex_decl)
