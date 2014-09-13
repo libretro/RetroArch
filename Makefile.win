@@ -33,10 +33,11 @@ endif
 
 OBJDIR := obj-w32
 
-OBJ     :=
-LIBS    := -lm
+OBJ              :=
+LIBS             := -lm
 JOYCONFIG_LIBS   :=
-DEFINES := -I. -DHAVE_BUILTIN_AUTOCONFIG -DRARCH_INTERNAL -DHAVE_CC_RESAMPLER -DHAVE_OVERLAY
+DEFINES          := -I. -DHAVE_BUILTIN_AUTOCONFIG -DRARCH_INTERNAL -DHAVE_CC_RESAMPLER -DHAVE_OVERLAY
+LDFLAGS          := -L. -static-libgcc
 
 include Makefile.common
 
@@ -66,7 +67,6 @@ endif
 
 libretro ?= -lretro
 
-LDFLAGS = -L. -static-libgcc
 
 ifeq ($(TDM_GCC),)
    LDCXXFLAGS += -static-libstdc++
