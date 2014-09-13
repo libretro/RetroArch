@@ -193,21 +193,22 @@ bool renderchain_add_lut(void *data, const std::string &id,
 
    RARCH_LOG("[D3D]: Loading LUT texture: %s.\n", path.c_str());
 
-   if (FAILED(D3DXCreateTextureFromFileExA(
-               d3dr,
-               path.c_str(),
-               D3DX_DEFAULT_NONPOW2,
-               D3DX_DEFAULT_NONPOW2,
-               0,
-               0,
-               D3DFMT_FROM_FILE,
-               D3DPOOL_MANAGED,
-               smooth ? D3DX_FILTER_LINEAR : D3DX_FILTER_POINT,
-               0,
-               0,
-               NULL,
-               NULL,
-               &lut)))
+   lut = (LPDIRECT3DTEXTURE)d3d_texture_new(d3dr,
+         path.c_str(),
+         D3DX_DEFAULT_NONPOW2,
+         D3DX_DEFAULT_NONPOW2,
+         0,
+         0,
+         D3DFMT_FROM_FILE,
+         D3DPOOL_MANAGED,
+         smooth ? D3DX_FILTER_LINEAR : D3DX_FILTER_POINT,
+         0,
+         0,
+         NULL,
+         NULL,
+         );
+
+   if (!lut)
       return false;
 
    d3d_set_texture(d3dr, 0, lut);
