@@ -59,7 +59,6 @@ bool renderchain_init_shader_fvf(void *data, void *pass_)
 static bool renderchain_create_first_pass(void *data,
       const video_info_t *info)
 {
-   HRESULT ret;
    d3d_video_t *chain = (d3d_video_t*)data;
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)chain->dev;
 
