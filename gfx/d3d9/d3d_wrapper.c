@@ -104,6 +104,28 @@ LPDIRECT3DVERTEXBUFFER d3d_vertex_buffer_new(LPDIRECT3DDEVICE dev,
    return buf;
 }
 
+void *d3d_vertex_buffer_lock(LPDIRECT3DVERTEXBUFFER vertbuf)
+{
+#ifdef _XBOX1
+   BYTE *buf;
+#else
+   void *buf;
+#endif
+
+#if defined(_XBOX1)
+   buf = D3DVertexBuffer_Lock2(vertbuf, 0);
+#elif defined(_XBOX360)
+   buf = D3DVertexBuffer_Lock(vertbuf, 0, 0, 0);
+#else
+   vertbuf->Lock(0, sizeof(buf), &buf, 0);
+#endif
+
+   if (!buf)
+      return NULL;
+
+   return buf;
+}
+
 void d3d_vertex_buffer_free(LPDIRECT3DVERTEXBUFFER buf)
 {
    if (buf)

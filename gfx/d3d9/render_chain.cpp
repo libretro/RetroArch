@@ -455,8 +455,7 @@ void renderchain_set_vertices(void *data, Pass *pass,
          vert[i].y += 0.5f;
       }
 
-      void *verts;
-      pass->vertex_buf->Lock(0, sizeof(vert), &verts, 0);
+      void *verts = d3d_vertex_buffer_lock(pass->vertex_buf);
       memcpy(verts, vert, sizeof(vert));
       pass->vertex_buf->Unlock();
    }

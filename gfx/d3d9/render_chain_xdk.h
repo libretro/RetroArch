@@ -204,12 +204,7 @@ static void renderchain_set_vertices(void *data, unsigned pass, unsigned width, 
          vert[i].y += 0.5f / ((float)d3d->tex_h);
       }
 
-#if defined(_XBOX1)
-      BYTE *verts;
-#elif defined(_XBOX360)
-      void *verts;
-#endif
-      RD3DVertexBuffer_Lock(d3d->vertex_buf, 0, 0, &verts, 0);
+      void *verts = d3d_vertex_buffer_lock(d3d->vertex_buf);
       memcpy(verts, vert, sizeof(vert));
       RD3DVertexBuffer_Unlock(d3d->vertex_buf);
    }
