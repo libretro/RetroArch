@@ -205,11 +205,6 @@ ifeq ($(HAVE_PYTHON), 1)
    OBJ += gfx/py_state/py_state.o
 endif
 
-ifeq ($(HAVE_WINXINPUT), 1)
-   DEFINES += -DHAVE_WINXINPUT
-   OBJ += input/winxinput_joypad.o
-endif
-
 ifeq ($(HAVE_DINPUT), 1)
    LIBS += -ldinput8 -ldxguid -lole32
    DEFINES += -DHAVE_DINPUT
@@ -219,9 +214,9 @@ endif
 OBJ += record/ffemu.o 
 
 ifeq ($(HAVE_FFMPEG), 1)
+   OBJ += record/ffmpeg.o
    LIBS += -lavformat -lavcodec -lavutil -lswscale -lws2_32 -lz
    DEFINES += -DHAVE_FFMPEG -Iffmpeg
-   OBJ += record/ffmpeg.o
 endif
 
 ifeq ($(HAVE_7ZIP),1)

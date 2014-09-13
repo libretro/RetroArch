@@ -10,13 +10,14 @@ ifeq ($(GLOBAL_CONFIG_DIR),)
 endif
 
 OBJ := 
+JOYCONFIG_OBJ :=
 LIBS :=
-DEFINES += -DHAVE_CONFIG_H -DRARCH_INTERNAL -DHAVE_CC_RESAMPLER -DHAVE_OVERLAY
+DEFINES := -DHAVE_CONFIG_H -DRARCH_INTERNAL -DHAVE_CC_RESAMPLER -DHAVE_OVERLAY
 DEFINES += -DGLOBAL_CONFIG_DIR='"$(GLOBAL_CONFIG_DIR)"'
 
 include Makefile.common
 
-JOYCONFIG_OBJ = tools/retroarch-joyconfig.o \
+JOYCONFIG_OBJ += tools/retroarch-joyconfig.o \
 	conf/config_file.o \
 	file_path.o \
 	compat/compat.o \
@@ -182,11 +183,6 @@ ifeq ($(HAVE_D3D9), 1)
    LIBS += -ld3d9 -ld3dx9 -ldxguid
 endif
 
-ifeq ($(HAVE_WINXINPUT), 1)
-   OBJ += input/winxinput_joypad.o
-   JOYCONFIG_OBJ += input/winxinput_joypad.o
-endif
-
 ifeq ($(HAVE_DINPUT), 1)
    LIBS += -ldinput8 -ldxguid -lole32
    OBJ += input/dinput.o
@@ -292,24 +288,6 @@ ifeq ($(HAVE_WAYLAND), 1)
  LIBS += $(WAYLAND_LIBS)
 endif
 
-ifeq ($(HAVE_VG), 1)
-   OBJ += gfx/vg.o gfx/math/matrix_3x3.o
-   DEFINES += $(VG_CFLAGS)
-   LIBS += $(VG_LIBS)
-endif
-
-ifeq ($(HAVE_XVIDEO), 1)
-   OBJ += gfx/xvideo.o
-   LIBS += $(XVIDEO_LIBS) 
-   DEFINES += $(XVIDEO_CFLAGS)
-endif
-
-ifeq ($(HAVE_X11), 1)
-   OBJ += input/x11_input.o gfx/context/x11_common.o
-   LIBS += $(X11_LIBS) $(XEXT_LIBS) $(XF86VM_LIBS) $(XINERAMA_LIBS)
-   DEFINES += $(X11_CFLAGS) $(XEXT_CFLAGS) $(XF86VM_CFLAGS) $(XINERAMA_CFLAGS)
-endif
-
 ifeq ($(HAVE_CG), 1)
    OBJ += gfx/shader_cg.o
    ifeq ($(OSX), 1)
@@ -367,19 +345,6 @@ ifeq ($(HAVE_PYTHON), 1)
    DEFINES += $(PYTHON_CFLAGS) -Wno-unused-parameter
    LIBS += $(PYTHON_LIBS)
    OBJ += gfx/py_state/py_state.o
-endif
-
-ifeq ($(HAVE_UDEV), 1)
-   DEFINES += $(UDEV_CFLAGS)
-   LIBS += $(UDEV_LIBS)
-   JOYCONFIG_LIBS += $(UDEV_LIBS)
-   OBJ += input/udev_input.o input/udev_joypad.o
-   JOYCONFIG_OBJ += tools/udev_joypad.o
-endif
-
-ifeq ($(HAVE_XKBCOMMON), 1)
-   DEFINES += $(XKBCOMMON_CFLAGS)
-   LIBS += $(XKBCOMMON_LIBS)
 endif
 
 ifeq ($(HAVE_NEON),1)

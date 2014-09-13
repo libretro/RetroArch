@@ -83,3 +83,45 @@ ifeq ($(HAVE_THREADS), 1)
       LIBS += -lpthread
    endif
 endif
+
+#Input
+
+ifeq ($(HAVE_WINXINPUT), 1)
+   DEFINES += -DHAVE_WINXINPUT
+   OBJ += input/winxinput_joypad.o
+   JOYCONFIG_OBJ += input/winxinput_joypad.o
+endif
+
+ifeq ($(HAVE_X11), 1)
+   OBJ += input/x11_input.o gfx/context/x11_common.o
+   LIBS += $(X11_LIBS) $(XEXT_LIBS) $(XF86VM_LIBS) $(XINERAMA_LIBS)
+   DEFINES += $(X11_CFLAGS) $(XEXT_CFLAGS) $(XF86VM_CFLAGS) $(XINERAMA_CFLAGS)
+endif
+
+ifeq ($(HAVE_XKBCOMMON), 1)
+   DEFINES += $(XKBCOMMON_CFLAGS)
+   LIBS += $(XKBCOMMON_LIBS)
+endif
+
+ifeq ($(HAVE_UDEV), 1)
+   DEFINES += $(UDEV_CFLAGS)
+   LIBS += $(UDEV_LIBS)
+   JOYCONFIG_LIBS += $(UDEV_LIBS)
+   OBJ += input/udev_input.o input/udev_joypad.o
+   JOYCONFIG_OBJ += tools/udev_joypad.o
+endif
+
+# Video
+
+ifeq ($(HAVE_VG), 1)
+   OBJ += gfx/vg.o gfx/math/matrix_3x3.o
+   DEFINES += $(VG_CFLAGS)
+   LIBS += $(VG_LIBS)
+endif
+
+ifeq ($(HAVE_XVIDEO), 1)
+   OBJ += gfx/xvideo.o
+   LIBS += $(XVIDEO_LIBS) 
+   DEFINES += $(XVIDEO_CFLAGS)
+endif
+
