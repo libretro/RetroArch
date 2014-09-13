@@ -346,8 +346,8 @@ bool renderchain_create_first_pass(void *data, const LinkInfo *info,
    D3DXMATRIX ident;
    D3DXMatrixIdentity(&ident);
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)chain->dev;
-   d3dr->SetTransform(D3DTS_WORLD, &ident);
-   d3dr->SetTransform(D3DTS_VIEW, &ident);
+   d3d_set_transform(d3dr, D3DTS_WORLD, &ident);
+   d3d_set_transform(d3dr, D3DTS_VIEW, &ident);
 
    Pass pass;
    pass.info = *info;

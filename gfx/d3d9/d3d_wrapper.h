@@ -44,6 +44,9 @@ void d3d_set_stream_source(LPDIRECT3DDEVICE dev, unsigned stream_no,
 
 void d3d_texture_free(LPDIRECT3DTEXTURE tex);
 
+void d3d_set_transform(LPDIRECT3DDEVICE dev,
+      D3DTRANSFORMSTATETYPE state, CONST D3DMATRIX *matrix);
+
 void d3d_set_sampler_address_u(LPDIRECT3DDEVICE dev,
       unsigned sampler, unsigned value);
 

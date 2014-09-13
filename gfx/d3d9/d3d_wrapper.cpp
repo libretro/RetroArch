@@ -40,6 +40,16 @@ void d3d_swap(void *data, LPDIRECT3DDEVICE dev)
 #endif
 }
 
+void d3d_set_transform(LPDIRECT3DDEVICE dev,
+      D3DTRANSFORMSTATETYPE state, CONST D3DMATRIX *matrix)
+{
+#ifdef _XBOX1
+   D3DDevice_SetTransform(state, matrix);
+#else
+   dev->SetTransform(state, matrix);
+#endif
+}
+
 LPDIRECT3DTEXTURE d3d_texture_new(LPDIRECT3DDEVICE dev,
       const char *path, unsigned width, unsigned height,
       unsigned miplevels, unsigned usage, D3DFORMAT format,

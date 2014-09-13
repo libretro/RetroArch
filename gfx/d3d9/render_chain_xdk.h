@@ -239,9 +239,9 @@ static void renderchain_set_mvp(void *data, unsigned vp_width, unsigned vp_heigh
    D3DXMatrixIdentity(&p_out);
    D3DXMatrixRotationZ(&p_rotate, rotation * (M_PI / 2.0));
 
-   RD3DDevice_SetTransform(d3dr, D3DTS_WORLD, &p_rotate);
-   RD3DDevice_SetTransform(d3dr, D3DTS_VIEW, &p_out);
-   RD3DDevice_SetTransform(d3dr, D3DTS_PROJECTION, &p_out);
+   d3d_set_transform(d3dr, D3DTS_WORLD, &p_rotate);
+   d3d_set_transform(d3dr, D3DTS_VIEW, &p_out);
+   d3d_set_transform(d3dr, D3DTS_PROJECTION, &p_out);
 #endif
 }
 

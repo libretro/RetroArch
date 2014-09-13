@@ -17,8 +17,6 @@
 #ifndef RARCH_XDK_RESOURCE_H
 #define RARCH_XDK_RESOURCE_H
 
-#include "../gfx/d3d9/xdk_defines.h"
-
 DWORD XBResource_SizeOf( LPDIRECT3DRESOURCE pResource );
 
 //structure member offsets matter
