@@ -35,7 +35,7 @@ OBJDIR := obj-w32
 
 OBJ     :=
 LIBS    := -lm
-JLIBS   :=
+JOYCONFIG_LIBS   :=
 DEFINES := -I. -DHAVE_BUILTIN_AUTOCONFIG -DRARCH_INTERNAL -DHAVE_CC_RESAMPLER -DHAVE_OVERLAY
 
 include Makefile.common
@@ -111,7 +111,7 @@ ifeq ($(HAVE_SDL2), 1)
 
    JOYCONFIG_OBJ += input/sdl_joypad.o
    LIBS += -lSDL2
-   JLIBS += -lSDL2
+   JOYCONFIG_LIBS += -lSDL2
    DEFINES += -ISDL2 -DHAVE_SDL2
    HAVE_SDL = 0
 endif
@@ -125,7 +125,7 @@ ifeq ($(HAVE_SDL), 1)
 
    JOYCONFIG_OBJ += input/sdl_joypad.o
    LIBS += -lSDL
-   JLIBS += -lSDL
+   JOYCONFIG_LIBS += -lSDL
    DEFINES += -ISDL -DHAVE_SDL
 endif
 
@@ -187,7 +187,7 @@ ifeq ($(HAVE_ZLIB), 1)
       DEFINES += -DWANT_MINIZ
    else
       LIBS += -lz
-      JLIBS += -lz
+      JOYCONFIG_LIBS += -lz
       DEFINES += -DHAVE_ZLIB_DEFLATE
    endif
 endif
@@ -361,9 +361,9 @@ $(OBJDIR)/%.o: %.rc $(HEADERS)
 $(JTARGET): $(RARCH_JOYCONFIG_OBJ)
 	@$(if $(Q), $(shell echo echo LD $@),)
 ifeq ($(CXX_BUILD), 1)
-	$(Q)$(CXX) -o $@ $(RARCH_JOYCONFIG_OBJ) -ldxguid -ldinput8 -lole32 $(LDFLAGS) $(JLIBS)
+	$(Q)$(CXX) -o $@ $(RARCH_JOYCONFIG_OBJ) -ldxguid -ldinput8 -lole32 $(LDFLAGS) $(JOYCONFIG_LIBS)
 else
-	$(Q)$(CC) -o $@ $(RARCH_JOYCONFIG_OBJ) -ldxguid -ldinput8 -lole32 $(LDFLAGS) $(JLIBS)
+	$(Q)$(CC) -o $@ $(RARCH_JOYCONFIG_OBJ) -ldxguid -ldinput8 -lole32 $(LDFLAGS) $(JOYCONFIG_LIBS)
 endif
 
 clean:
