@@ -197,7 +197,7 @@ static bool check_fbo_proc(gl_t *gl)
 
 static bool gl_shader_init(gl_t *gl)
 {
-   bool ret;
+   bool ret = false;
    const gl_shader_backend_t *backend = NULL;
 
    const char *shader_path = (g_settings.video.shader_enable && *g_settings.video.shader_path) ?
@@ -213,8 +213,6 @@ static bool gl_shader_init(gl_t *gl)
 
    type = gfx_shader_parse_type(shader_path,
       gl->core_context ? RARCH_SHADER_GLSL : DEFAULT_SHADER_TYPE);
-
-   ret = 0;
 
    if (type == RARCH_SHADER_NONE)
    {
@@ -260,12 +258,14 @@ static bool gl_shader_init(gl_t *gl)
    gl->shader = backend;
 
    if (gl->shader && gl->shader->init)
+   {
       ret = gl->shader->init(gl, shader_path);
 
-   if (!ret)
-   {
-      RARCH_ERR("[GL]: Failed to init shader, falling back to stock.\n");
-      ret = gl->shader->init(gl, NULL);
+      if (!ret)
+      {
+         RARCH_ERR("[GL]: Failed to init shader, falling back to stock.\n");
+         ret = gl->shader->init(gl, NULL);
+      }
    }
 
    return ret;
