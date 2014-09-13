@@ -38,12 +38,8 @@
 
 #include "shared.h"
 
-#define GLUI_FONT_HEIGHT_STRIDE 40
-#define GLUI_FONT_WIDTH_STRIDE 16
-#define GLUI_TERM_START_X (gl->win_width / 21)
-#define GLUI_TERM_START_Y (gl->win_height / 9)
-#define GLUI_TERM_WIDTH (((gl->win_width - GLUI_TERM_START_X - GLUI_TERM_START_X) / (GLUI_FONT_WIDTH_STRIDE)))
-#define GLUI_TERM_HEIGHT (((gl->win_height - GLUI_TERM_START_Y) / (GLUI_FONT_HEIGHT_STRIDE)) - 1)
+int line_height, glyph_width, glui_term_start_x, glui_term_start_y, 
+   glui_term_width, glui_term_height;
 
 const gl_font_renderer_t *font_driver;
 
@@ -115,19 +111,21 @@ static void glui_frame(void)
    size_t begin = 0;
    size_t end;
 
-   if (driver.menu->selection_ptr >= GLUI_TERM_HEIGHT / 2)
-      begin = driver.menu->selection_ptr - GLUI_TERM_HEIGHT / 2;
-   end   = (driver.menu->selection_ptr + GLUI_TERM_HEIGHT <=
+   if (driver.menu->selection_ptr >= glui_term_height / 2)
+      begin = driver.menu->selection_ptr - glui_term_height / 2;
+   end   = (driver.menu->selection_ptr + glui_term_height <=
          file_list_get_size(driver.menu->selection_buf)) ?
-      driver.menu->selection_ptr + GLUI_TERM_HEIGHT :
+      driver.menu->selection_ptr + glui_term_height :
       file_list_get_size(driver.menu->selection_buf);
 
    /* Do not scroll if all items are visible. */
-   if (file_list_get_size(driver.menu->selection_buf) <= GLUI_TERM_HEIGHT)
+   if (file_list_get_size(driver.menu->selection_buf) <= glui_term_height)
       begin = 0;
 
-   if (end - begin > GLUI_TERM_HEIGHT)
-      end = begin + GLUI_TERM_HEIGHT;
+   if (end - begin > glui_term_height)
+      end = begin + glui_term_height;
+
+   end -= 1;
 
    glui_render_background();
 
@@ -150,9 +148,10 @@ static void glui_frame(void)
          title, sizeof(title));
 
    char title_buf[256];
-   menu_ticker_line(title_buf, GLUI_TERM_WIDTH - 3,
-         g_extern.frame_count / GLUI_TERM_START_X, title, true);
-   blit_line(GLUI_TERM_START_X + GLUI_TERM_START_X, GLUI_TERM_START_X, title_buf, true);
+   menu_ticker_line(title_buf, glui_term_width - 3,
+         g_extern.frame_count / glui_term_start_x, title, true);
+   blit_line(glui_term_start_x + glui_term_start_x, glui_term_start_y, 
+         title_buf, true);
 
    char title_msg[64];
    const char *core_name = g_extern.menu.info.library_name;
@@ -170,17 +169,17 @@ static void glui_frame(void)
    snprintf(title_msg, sizeof(title_msg), "%s - %s %s", PACKAGE_VERSION,
          core_name, core_version);
    blit_line(
-         GLUI_TERM_START_X + GLUI_TERM_START_X,
-         (GLUI_TERM_HEIGHT * GLUI_FONT_HEIGHT_STRIDE) +
-         GLUI_TERM_START_Y + 2, title_msg, true);
+         glui_term_start_x + glui_term_start_x,
+         (glui_term_height * line_height) +
+         glui_term_start_y + 2, title_msg, true);
 
    unsigned x, y;
    size_t i;
 
-   x = GLUI_TERM_START_X;
-   y = GLUI_TERM_START_Y;
+   x = glui_term_start_x;
+   y = glui_term_start_y + line_height;
 
-   for (i = begin; i < end; i++, y += GLUI_FONT_HEIGHT_STRIDE)
+   for (i = begin; i < end; i++, y += line_height)
    {
       char message[PATH_MAX], type_str[PATH_MAX],
            entry_title_buf[PATH_MAX], type_str_buf[PATH_MAX],
@@ -203,10 +202,10 @@ static void glui_frame(void)
 
       selected = (i == driver.menu->selection_ptr);
 
-      menu_ticker_line(entry_title_buf, GLUI_TERM_WIDTH - (w + 1 + 2),
-            g_extern.frame_count / GLUI_TERM_START_X, path_buf, selected);
-      menu_ticker_line(type_str_buf, w, g_extern.frame_count / GLUI_TERM_START_X,
-            type_str, selected);
+      menu_ticker_line(entry_title_buf, glui_term_width - (w + 1 + 2),
+            g_extern.frame_count / glui_term_start_x, path_buf, selected);
+      menu_ticker_line(type_str_buf, w, 
+            g_extern.frame_count / glui_term_start_x, type_str, selected);
 
       snprintf(message, sizeof(message), "%c %s",
             ' ',
@@ -214,8 +213,8 @@ static void glui_frame(void)
 
       blit_line(x, y, message, selected);
 
-      blit_line(gl->win_width - GLUI_FONT_WIDTH_STRIDE * w 
-         - GLUI_TERM_START_X , y, type_str_buf, selected);
+      blit_line(gl->win_width - glyph_width * w 
+         - glui_term_start_x , y, type_str_buf, selected);
    }
 
 #ifdef GEKKO
@@ -316,6 +315,15 @@ static void glui_context_reset(void *data)
 
    if (!menu)
       return;
+
+   line_height = g_settings.video.font_size * 4 / 3;
+   glyph_width = line_height / 2;
+   glui_term_start_x = gl->win_width / 21;
+   glui_term_start_y = gl->win_height / 9;
+   glui_term_width = (gl->win_width - glui_term_start_x - glui_term_start_x) 
+         / glyph_width;
+   glui_term_height = ((gl->win_height - glui_term_start_y) 
+         / (line_height)) - 1;
 
    gl_font_init_first(&font_driver, (void*)&menu->font, gl, g_settings.video.font_path,
       g_settings.video.font_size);
