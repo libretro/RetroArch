@@ -1016,17 +1016,14 @@ static bool texture_image_render(void *data,
       {fX,            fY + h,         0.0f,  0,     0, 1}
    };
 
-   // load the existing vertices
-   Vertex *pCurVerts;
+   /* load the existing vertices */
+   void *verts = d3d_vertex_buffer_lock(out_img->vertex_buf);
 
-   HRESULT ret = out_img->vertex_buf->Lock(0, 0,
-         (unsigned char**)&pCurVerts, 0);
-
-   if (FAILED(ret))
+   if (!verts)
       return false;
 
-   // copy the new verts over the old verts
-   memcpy(pCurVerts, newVerts, 4 * sizeof(Vertex));
+   /* copy the new verts over the old verts */
+   memcpy(verts, newVerts, sizeof(newVerts));
    out_img->vertex_buf->Unlock();
 
    d3d->dev->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
