@@ -1527,7 +1527,7 @@ static bool d3d_frame(void *data, const void *frame,
    screen_vp.Width = d3d->screen_width;
    screen_vp.Height = d3d->screen_height;
    d3d_set_viewport(d3dr, &screen_vp);
-   d3dr->Clear(0, 0, D3DCLEAR_TARGET, 0, 1, 0);
+   d3d_clear(d3dr, 0, 0, D3DCLEAR_TARGET, 0, 1, 0);
 
    /* Insert black frame first, so we 
     * can screenshot, etc. */
@@ -1536,7 +1536,7 @@ static bool d3d_frame(void *data, const void *frame,
       d3d_swap(d3d, d3dr);
       if (d3d->needs_restore)
          return true;
-      d3dr->Clear(0, 0, D3DCLEAR_TARGET, 0, 1, 0);
+      d3d_clear(d3dr, 0, 0, D3DCLEAR_TARGET, 0, 1, 0);
    }
 
 #ifdef _XBOX

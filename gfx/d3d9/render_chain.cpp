@@ -295,7 +295,7 @@ bool renderchain_render(void *chain_data, const void *data,
       viewport.MinZ = 0.0f;
       viewport.MaxZ = 1.0f;
       d3d_set_viewport(d3dr, &viewport);
-      d3dr->Clear(0, 0, D3DCLEAR_TARGET, 0, 1, 0);
+      d3d_clear(d3dr, 0, 0, D3DCLEAR_TARGET, 0, 1, 0);
       
       viewport.Width = out_width;
       viewport.Height = out_height;

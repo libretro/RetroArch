@@ -229,6 +229,20 @@ void d3d_draw_primitive(LPDIRECT3DDEVICE dev,
 #endif
 }
 
+void d3d_clear(LPDIRECT3DDEVICE dev,
+      unsigned count, const D3DRECT *rects, unsigned flags,
+      D3DCOLOR color, float z, unsigned stencil)
+{
+#if defined(_XBOX1)
+   D3DDevice_Clear(count, rects, flags, color, z, stencil);
+#elif defined(_XBOX360)
+   D3DDevice_Clear(dev, count, rects, flags, color, z, 
+         stencil, false);
+#else
+   dev->Clear(count, rects, flags, color, z, stencil);
+#endif
+}
+
 void d3d_lockrectangle_clear(void *data, 
       LPDIRECT3DTEXTURE tex,
       unsigned level, D3DLOCKED_RECT *lock_rect, RECT *rect,

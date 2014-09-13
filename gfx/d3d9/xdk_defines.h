@@ -17,18 +17,8 @@
 #ifndef _XDK_DEFINES_H
 #define _XDK_DEFINES_H
 
-
 #if defined(_XBOX1)
-/* XBox 1*/
-
 #define RD3DDevice_SetTransform(device, State, pMatrix) D3DDevice_SetTransform(State, pMatrix)
-
-#define RD3DDevice_Clear(device, Count, pRects, Flags, Color, Z, Stencil) D3DDevice_Clear(Count, pRects, Flags, Color, Z, Stencil)
-
-#elif defined(_XBOX360)
-/* XBox 360*/
-
-#define RD3DDevice_Clear(device, Count, pRects, Flags, Color, Z, Stencil) D3DDevice_Clear(device, Count, pRects, Flags, Color, Z, Stencil, false)
 #endif
 
 #endif
