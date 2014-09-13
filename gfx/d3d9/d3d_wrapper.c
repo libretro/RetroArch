@@ -270,7 +270,7 @@ void d3d_texture_blit(void *data, void *renderchain_data,
 	   return;
 
 #ifdef _XBOX
-   D3DTexture_LockRect(tex, 0, &lr, NULL, D3DLOCK_NOSYSLOCK);
+   D3DTexture_LockRect(tex, 0, lr, NULL, D3DLOCK_NOSYSLOCK);
 #if defined(_XBOX360)
    D3DSURFACE_DESC desc;
    tex->GetLevelDesc(0, &desc);
