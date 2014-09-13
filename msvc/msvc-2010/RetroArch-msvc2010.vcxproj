@@ -237,7 +237,7 @@
     <ClCompile Include="..\..\deps\rzlib\unzip.c" />
     <ClCompile Include="..\..\deps\rzlib\zutil.c" />
     <ClCompile Include="..\..\file_extract.c" />
-    <ClCompile Include="..\..\gfx\d3d9\d3d_wrapper.c" />
+    <ClCompile Include="..\..\gfx\d3d9\d3d_wrapper.cpp" />
     <ClCompile Include="..\..\playlist.c" />
     <ClCompile Include="..\..\file_list.c" />
     <ClCompile Include="..\..\frontend\menu\backend\menu_common_backend.c" />
