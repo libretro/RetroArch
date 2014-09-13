@@ -205,7 +205,7 @@ bool renderchain_add_lut(void *data, const std::string &id,
          0,
          0,
          NULL,
-         NULL,
+         NULL
          );
 
    if (!lut)
