@@ -59,8 +59,14 @@ LPDIRECT3DTEXTURE d3d_texture_new(LPDIRECT3DDEVICE dev,
             pool, filter, mipfilter, color_key, src_info,
             palette, &buf);
    else
+   {
       hr = dev->CreateTexture(width, height, miplevels, usage,
-            format, pool, &buf, NULL);
+            format, pool, &buf
+#ifndef _XBOX1
+            , NULL
+#endif
+            );
+   }
 
    if (FAILED(hr))
 	   return NULL;
