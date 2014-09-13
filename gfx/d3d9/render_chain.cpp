@@ -117,22 +117,22 @@ bool renderchain_set_pass_size(void *data, unsigned pass_index,
 {
    renderchain_t *chain = (renderchain_t*)data;
    LPDIRECT3DDEVICE d3dr = chain->dev;
-   Pass &pass = chain->passes[pass_index];
-   if (width != pass.info.tex_w || height != pass.info.tex_h)
+   Pass *pass = (Pass*)&chain->passes[pass_index];
+   if (width != pass->info.tex_w || height != pass->info.tex_h)
    {
-      pass.tex->Release();
-      pass.info.tex_w = width;
-      pass.info.tex_h = height;
+      pass->tex->Release();
+      pass->info.tex_w = width;
+      pass->info.tex_h = height;
 
       if (FAILED(d3dr->CreateTexture(width, height, 1,
          D3DUSAGE_RENDERTARGET,
          chain->passes.back().info.pass->fbo.fp_fbo ? 
          D3DFMT_A32B32G32R32F : D3DFMT_A8R8G8B8,
          D3DPOOL_DEFAULT,
-         &pass.tex, NULL)))
+         &pass->tex, NULL)))
          return false;
 
-      d3d_set_texture(d3dr, 0, pass.tex);
+      d3d_set_texture(d3dr, 0, pass->tex);
       d3d_set_sampler_address_u(d3dr, 0, D3DTADDRESS_BORDER);
       d3d_set_sampler_address_v(d3dr, 0, D3DTADDRESS_BORDER);
       d3d_set_texture(d3dr, 0, NULL);
@@ -144,7 +144,7 @@ bool renderchain_set_pass_size(void *data, unsigned pass_index,
 bool renderchain_add_pass(void *data, const LinkInfo *info)
 {
    renderchain_t *chain = (renderchain_t*)data;
-   LPDIRECT3DDEVICE d3dr = chain->dev;
+   LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)chain->dev;
    Pass pass;
    pass.info = *info;
    pass.last_width = 0;
@@ -153,7 +153,7 @@ bool renderchain_add_pass(void *data, const LinkInfo *info)
    renderchain_compile_shaders(chain, pass.fPrg, 
          pass.vPrg, info->pass->source.path);
 
-   if (!renderchain_init_shader_fvf(chain, pass))
+   if (!renderchain_init_shader_fvf(chain, &pass))
       return false;
 
    if (FAILED(D3DDevice_CreateVertexBuffers(d3dr, 4 * sizeof(Vertex),
@@ -273,21 +273,21 @@ bool renderchain_render(void *chain_data, const void *data,
    // In-between render target passes.
    for (unsigned i = 0; i < chain->passes.size() - 1; i++)
    {
-      Pass &from_pass = chain->passes[i];
-      Pass &to_pass   = chain->passes[i + 1];
+      Pass *from_pass = (Pass*)&chain->passes[i];
+      Pass *to_pass   = (Pass*)&chain->passes[i + 1];
 
       LPDIRECT3DSURFACE target;
-      to_pass.tex->GetSurfaceLevel(0, &target);
+      to_pass->tex->GetSurfaceLevel(0, &target);
       d3dr->SetRenderTarget(0, target);
 
-      renderchain_convert_geometry(chain, &from_pass.info,
+      renderchain_convert_geometry(chain, &from_pass->info,
             out_width, out_height,
             current_width, current_height, chain->final_viewport);
 
-      // Clear out whole FBO.
+      /* Clear out whole FBO. */
       D3DVIEWPORT viewport = {0};
-      viewport.Width = to_pass.info.tex_w;
-      viewport.Height = to_pass.info.tex_h;
+      viewport.Width = to_pass->info.tex_w;
+      viewport.Height = to_pass->info.tex_h;
       viewport.MinZ = 0.0f;
       viewport.MaxZ = 1.0f;
       d3d_set_viewport(d3dr, &viewport);
@@ -309,11 +309,11 @@ bool renderchain_render(void *chain_data, const void *data,
       target->Release();
    }
 
-   // Final pass
+   /* Final pass */
    d3dr->SetRenderTarget(0, back_buffer);
-   Pass &last_pass = chain->passes.back();
+   Pass *last_pass = (Pass*)&chain->passes.back();
 
-   renderchain_convert_geometry(chain, &last_pass.info,
+   renderchain_convert_geometry(chain, &last_pass->info,
          out_width, out_height,
          current_width, current_height, chain->final_viewport);
    renderchain_set_viewport(chain, chain->final_viewport);
@@ -385,28 +385,28 @@ bool renderchain_create_first_pass(void *data, const LinkInfo *info,
    renderchain_compile_shaders(chain, pass.fPrg,
          pass.vPrg, info->pass->source.path);
 
-   if (!renderchain_init_shader_fvf(chain, pass))
+   if (!renderchain_init_shader_fvf(chain, &pass))
       return false;
    chain->passes.push_back(pass);
    return true;
 }
 
-void renderchain_set_vertices(void *data, Pass &pass,
+void renderchain_set_vertices(void *data, Pass *pass,
       unsigned width, unsigned height,
       unsigned out_width, unsigned out_height,
       unsigned vp_width, unsigned vp_height,
       unsigned rotation)
 {
    renderchain_t *chain = (renderchain_t*)data;
-   const LinkInfo &info = pass.info;
+   const LinkInfo *info = (const LinkInfo*)&pass->info;
 
-   if (pass.last_width != width || pass.last_height != height)
+   if (pass->last_width != width || pass->last_height != height)
    {
-      pass.last_width = width;
-      pass.last_height = height;
+      pass->last_width = width;
+      pass->last_height = height;
 
-      float _u = static_cast<float>(width) / info.tex_w;
-      float _v = static_cast<float>(height) / info.tex_h;
+      float _u = static_cast<float>(width) / info->tex_w;
+      float _v = static_cast<float>(height) / info->tex_h;
       Vertex vert[4];
       for (unsigned i = 0; i < 4; i++)
       {
@@ -449,15 +449,15 @@ void renderchain_set_vertices(void *data, Pass &pass,
       }
 
       void *verts;
-      pass.vertex_buf->Lock(0, sizeof(vert), &verts, 0);
+      pass->vertex_buf->Lock(0, sizeof(vert), &verts, 0);
       memcpy(verts, vert, sizeof(vert));
-      pass.vertex_buf->Unlock();
+      pass->vertex_buf->Unlock();
    }
 
-   renderchain_set_mvp(chain, pass.vPrg, vp_width, vp_height, rotation);
+   renderchain_set_mvp(chain, pass->vPrg, vp_width, vp_height, rotation);
    renderchain_set_shader_params(chain, pass,
          width, height,
-         info.tex_w, info.tex_h,
+         info->tex_w, info->tex_h,
          vp_width, vp_height);
 }
 
@@ -542,26 +542,26 @@ void renderchain_blit_to_texture(void *data, const void *frame,
       &d3dlr, frame, width, height, pitch);
 }
 
-void renderchain_render_pass(void *data, Pass &pass, unsigned pass_index)
+void renderchain_render_pass(void *data, Pass *pass, unsigned pass_index)
 {
    renderchain_t *chain = (renderchain_t*)data;
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)chain->dev;
-   renderchain_set_shaders(chain, pass.fPrg, pass.vPrg);
+   renderchain_set_shaders(chain, pass->fPrg, pass->vPrg);
 
-   d3d_set_texture(d3dr, 0, pass.tex);
+   d3d_set_texture(d3dr, 0, pass->tex);
    d3d_set_sampler_minfilter(d3dr, 0,
-         translate_filter(pass.info.pass->filter));
+         translate_filter(pass->info.pass->filter));
    d3d_set_sampler_magfilter(d3dr, 0,
-         translate_filter(pass.info.pass->filter));
+         translate_filter(pass->info.pass->filter));
 
 #ifdef _XBOX1
    d3d_set_vertex_shader(d3dr, D3DFVF_XYZ | D3DFVF_TEX1, NULL);
 #else
-   d3dr->SetVertexDeclaration(pass.vertex_decl);
+   d3dr->SetVertexDeclaration(pass->vertex_decl);
 #endif
    for (unsigned i = 0; i < 4; i++)
       d3d_set_stream_source(d3dr, i,
-            pass.vertex_buf, 0, sizeof(Vertex));
+            pass->vertex_buf, 0, sizeof(Vertex));
 
    renderchain_bind_orig(chain, pass);
    renderchain_bind_prev(chain, pass);

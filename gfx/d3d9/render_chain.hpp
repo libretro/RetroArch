@@ -139,7 +139,7 @@ D3DTEXTUREFILTERTYPE renderchain_translate_filter(bool smooth);
 bool renderchain_create_first_pass(void *data,
       const LinkInfo *info, PixelFormat fmt);
 
-void renderchain_set_vertices(void *data, Pass &pass,
+void renderchain_set_vertices(void *data, Pass *pass,
       unsigned width, unsigned height,
       unsigned out_width, unsigned out_height,
       unsigned vp_width, unsigned vp_height,
@@ -160,7 +160,7 @@ void renderchain_blit_to_texture(void *data, const void *frame,
       unsigned width, unsigned height,
       unsigned pitch);
 
-void renderchain_render_pass(void *data, Pass &pass, unsigned pass_index);
+void renderchain_render_pass(void *data, Pass *pass, unsigned pass_index);
 
 void renderchain_log_info(void *data, const LinkInfo *info);
 
@@ -177,22 +177,22 @@ void renderchain_destroy_shader(void *data, int i);
 
 void renderchain_set_shader_mvp(void *data, CGprogram &vPrg, D3DXMATRIX &tmp);
 
-void renderchain_set_shader_params(void *data, Pass &pass,
+void renderchain_set_shader_params(void *data, Pass *pass,
             unsigned video_w, unsigned video_h,
             unsigned tex_w, unsigned tex_h,
             unsigned viewport_w, unsigned viewport_h);
 
-void renderchain_bind_tracker(void *data, Pass &pass, unsigned pass_index);
+void renderchain_bind_tracker(void *data, Pass *pass, unsigned pass_index);
 
-bool renderchain_init_shader_fvf(void *data, Pass &pass);
+bool renderchain_init_shader_fvf(void *data, Pass *pass);
 
-void renderchain_bind_orig(void *data, Pass &pass);
+void renderchain_bind_orig(void *data, Pass *pass);
 
-void renderchain_bind_prev(void *data, Pass &pass);
+void renderchain_bind_prev(void *data, Pass *pass);
 
-void renderchain_bind_luts(void *data, Pass &pass);
+void renderchain_bind_luts(void *data, Pass *pass);
 
-void renderchain_bind_pass(void *data, Pass &pass, unsigned pass_index);
+void renderchain_bind_pass(void *data, Pass *pass, unsigned pass_index);
 
 #endif
 
