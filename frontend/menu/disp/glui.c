@@ -38,8 +38,7 @@
 
 #include "shared.h"
 
-int line_height, glyph_width, glui_term_start_x, glui_term_start_y, 
-   glui_term_width, glui_term_height;
+int line_height, glyph_width, glui_margin, glui_term_width, glui_term_height;
 
 static void glui_blit_line(float x, float y, const char *message, bool green)
 {
@@ -68,10 +67,10 @@ static void glui_blit_line(float x, float y, const char *message, bool green)
 static void glui_render_background(void)
 {
    GLfloat color[] = {
-      0.0f, 0.0f, 0.0f, 0.9f,
-      0.0f, 0.0f, 0.0f, 0.9f,
-      0.0f, 0.0f, 0.0f, 0.9f,
-      0.0f, 0.0f, 0.0f, 0.9f,
+      0.0f, 0.0f, 0.0f, 0.8f,
+      0.0f, 0.0f, 0.0f, 0.8f,
+      0.0f, 0.0f, 0.0f, 0.8f,
+      0.0f, 0.0f, 0.0f, 0.8f,
    };
 
    gl_t *gl = (gl_t*)driver_video_resolve(NULL);
@@ -80,6 +79,8 @@ static void glui_render_background(void)
       return;
 
    gl_set_viewport(gl, gl->win_width, gl->win_height, false, false);
+
+   glBindTexture(GL_TEXTURE_2D, 0);
 
    glEnable(GL_BLEND);
 
@@ -106,6 +107,12 @@ static void glui_frame(void)
    if (!driver.menu || !gl)
       return;
 
+   line_height = g_settings.video.font_size * 4 / 3;
+   glyph_width = line_height / 2;
+   glui_margin = gl->win_width / 20 ;
+   glui_term_width = (gl->win_width - glui_margin * 2) / glyph_width;
+   glui_term_height = (gl->win_height - glui_margin * 2) / line_height - 2;
+
    glViewport(0, 0, gl->win_width, gl->win_height);
 
    size_t begin = 0;
@@ -115,7 +122,7 @@ static void glui_frame(void)
       begin = driver.menu->selection_ptr - glui_term_height / 2;
    end   = (driver.menu->selection_ptr + glui_term_height <=
          file_list_get_size(driver.menu->selection_buf)) ?
-      driver.menu->selection_ptr + glui_term_height - 1 :
+      driver.menu->selection_ptr + glui_term_height :
       file_list_get_size(driver.menu->selection_buf);
 
    /* Do not scroll if all items are visible. */
@@ -147,8 +154,8 @@ static void glui_frame(void)
 
    char title_buf[256];
    menu_ticker_line(title_buf, glui_term_width - 3,
-         g_extern.frame_count / glui_term_start_x, title, true);
-   glui_blit_line(glui_term_start_x + glui_term_start_x, glui_term_start_y,
+         g_extern.frame_count / glui_margin, title, true);
+   glui_blit_line(glui_margin * 2, glui_margin + line_height,
          title_buf, true);
 
    char title_msg[64];
@@ -167,15 +174,14 @@ static void glui_frame(void)
    snprintf(title_msg, sizeof(title_msg), "%s - %s %s", PACKAGE_VERSION,
          core_name, core_version);
    glui_blit_line(
-         glui_term_start_x + glui_term_start_x,
-         (glui_term_height * line_height) +
-         glui_term_start_y + 2, title_msg, true);
+         glui_margin * 2,
+         glui_margin + glui_term_height * line_height + line_height * 2, title_msg, true);
 
    unsigned x, y;
    size_t i;
 
-   x = glui_term_start_x;
-   y = glui_term_start_y + line_height;
+   x = glui_margin;
+   y = glui_margin + line_height*2;
 
    for (i = begin; i < end; i++, y += line_height)
    {
@@ -201,18 +207,16 @@ static void glui_frame(void)
       selected = (i == driver.menu->selection_ptr);
 
       menu_ticker_line(entry_title_buf, glui_term_width - (w + 1 + 2),
-            g_extern.frame_count / glui_term_start_x, path_buf, selected);
+            g_extern.frame_count / glui_margin, path_buf, selected);
       menu_ticker_line(type_str_buf, w, 
-            g_extern.frame_count / glui_term_start_x, type_str, selected);
+            g_extern.frame_count / glui_margin, type_str, selected);
 
-      snprintf(message, sizeof(message), "%c %s",
-            ' ',
-            entry_title_buf);
+      snprintf(message, sizeof(message), "%s", entry_title_buf);
 
       glui_blit_line(x, y, message, selected);
 
-      glui_blit_line(gl->win_width - glyph_width * w
-         - glui_term_start_x , y, type_str_buf, selected);
+      glui_blit_line(gl->win_width - glyph_width * w - glui_margin , 
+         y, type_str_buf, selected);
    }
 
 #ifdef GEKKO
@@ -312,15 +316,6 @@ static void glui_context_reset(void *data)
 
    if (!menu)
       return;
-
-   line_height = g_settings.video.font_size * 4 / 3;
-   glyph_width = line_height / 2;
-   glui_term_start_x = gl->win_width / 21;
-   glui_term_start_y = gl->win_height / 9;
-   glui_term_width = (gl->win_width - glui_term_start_x - glui_term_start_x) 
-         / glyph_width;
-   glui_term_height = ((gl->win_height - glui_term_start_y) 
-         / (line_height)) - 1;
 }
 
 menu_ctx_driver_t menu_ctx_glui = {
