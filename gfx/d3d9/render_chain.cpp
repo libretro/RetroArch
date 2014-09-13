@@ -77,9 +77,9 @@ void renderchain_clear(void *data)
    for (unsigned i = 0; i < TEXTURES; i++)
    {
       if (chain->prev.tex[i])
-         chain->prev.tex[i]->Release();
+         d3d_texture_free(chain->prev.tex[i]);
       if (chain->prev.vertex_buf[i])
-         chain->prev.vertex_buf[i]->Release();
+         d3d_vertex_buffer_free(chain->prev.vertex_buf[i]);
    }
 
    if (chain->passes[0].vertex_decl)
@@ -87,9 +87,9 @@ void renderchain_clear(void *data)
    for (unsigned i = 1; i < chain->passes.size(); i++)
    {
       if (chain->passes[i].tex)
-         chain->passes[i].tex->Release();
+         d3d_texture_free(chain->passes[i].tex);
       if (chain->passes[i].vertex_buf)
-         chain->passes[i].vertex_buf->Release();
+         d3d_vertex_buffer_free(chain->passes[i].vertex_buf);
       if (chain->passes[i].vertex_decl)
          chain->passes[i].vertex_decl->Release();
       renderchain_destroy_shader(chain, i);
@@ -98,7 +98,7 @@ void renderchain_clear(void *data)
    for (unsigned i = 0; i < chain->luts.size(); i++)
    {
       if (chain->luts[i].tex)
-         chain->luts[i].tex->Release();
+         d3d_texture_free(chain->luts[i].tex);
    }
 
    chain->passes.clear();
@@ -120,7 +120,8 @@ bool renderchain_set_pass_size(void *data, unsigned pass_index,
    Pass *pass = (Pass*)&chain->passes[pass_index];
    if (width != pass->info.tex_w || height != pass->info.tex_h)
    {
-      pass->tex->Release();
+      d3d_texture_free(pass->tex);
+
       pass->info.tex_w = width;
       pass->info.tex_h = height;
 

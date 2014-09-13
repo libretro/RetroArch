@@ -1345,10 +1345,8 @@ static void d3d_free_overlay(void *data, overlay_t *overlay)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
 
-   if (overlay->tex)
-      overlay->tex->Release();
-   if (overlay->vert_buf)
-      overlay->vert_buf->Release();
+   d3d_texture_free(overlay->tex);
+   d3d_vertex_buffer_free(overlay->vert_buf);
 }
 
 static void d3d_free_overlays(void *data)
@@ -1752,8 +1750,9 @@ static void d3d_set_menu_texture_frame(void *data,
    if (!d3d->menu->tex || d3d->menu->tex_w != width 
          || d3d->menu->tex_h != height)
    {
-      if (d3d->menu && d3d->menu->tex)
-         d3d->menu->tex->Release();
+      if (d3d->menu)
+	     d3d_texture_free(d3d->menu->tex); 
+
       if (FAILED(d3d->dev->CreateTexture(width, height, 1,
                   0, D3DFMT_A8R8G8B8,
                   D3DPOOL_MANAGED,
