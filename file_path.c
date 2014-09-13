@@ -179,9 +179,7 @@ long read_file(const char *path, void **buf)
     * */
 #ifdef HAVE_COMPRESSION
    if (path_contains_compressed_file(path))
-   {
       return read_compressed_file(path,buf);
-   }
 #endif
    return read_generic_file(path,buf);
 }
@@ -442,15 +440,11 @@ struct string_list *compressed_file_list_new(const char *path,
    const char* file_ext = path_get_extension(path);
 #ifdef HAVE_7ZIP
    if (strcasecmp(file_ext,"7z") == 0)
-   {
       return compressed_7zip_file_list_new(path,ext);
-   }
 #endif
 #ifdef HAVE_ZLIB
    if (strcasecmp(file_ext,"zip") == 0)
-   {
       return compressed_zip_file_list_new(path,ext);
-   }
 #endif
 
 #endif
@@ -683,15 +677,11 @@ bool path_is_compressed_file(const char* path)
    const char* file_ext = path_get_extension(path);
 #ifdef HAVE_7ZIP
    if (strcmp(file_ext,"7z") == 0)
-   {
       return true;
-   }
 #endif
 #ifdef HAVE_ZLIB
    if (strcmp(file_ext,"zip") == 0)
-   {
       return true;
-   }
 #endif
 
 #endif
@@ -856,7 +846,7 @@ const char *path_basename(const char *path)
 bool path_is_absolute(const char *path)
 {
 #ifdef _WIN32
-   // Many roads lead to Rome ...
+   /* Many roads lead to Rome ... */
    return path[0] == '/' || (strstr(path, "\\\\") == path)
       || strstr(path, ":/") || strstr(path, ":\\") || strstr(path, ":\\\\");
 #else
@@ -1003,10 +993,11 @@ void fill_pathname_expand_special(char *out_path,
    }
    else if ((in_path[0] == ':') &&
 #ifdef _WIN32
-         ((in_path[1] == '/') || (in_path[1] == '\\')))
+         ((in_path[1] == '/') || (in_path[1] == '\\'))
 #else
-         (in_path[1] == '/'))
+         (in_path[1] == '/')
 #endif
+            )
    {
       char application_dir[PATH_MAX];
       fill_pathname_application_path(application_dir, sizeof(application_dir));
@@ -1040,8 +1031,8 @@ void fill_short_pathname_representation(char* out_rep,
     */
    if(last_hash != NULL)
    {
-      /* We check whether something is actually after the hash to avoid
-       * going over the buffer.
+      /* We check whether something is actually 
+       * after the hash to avoid going over the buffer.
        */
       rarch_assert(strlen(last_hash) > 1);
       strlcpy(out_rep,last_hash + 1, size);

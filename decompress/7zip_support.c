@@ -134,7 +134,8 @@ static SRes Utf16_To_Char(CBuf *buf, const UInt16 *s, int fileMode)
                      AreFileApisANSI() ? CP_ACP : CP_OEMCP
 #endif
                ) : CP_OEMCP,
-               0, (LPCWSTR)s, len, (char *)buf->data, size, &defaultChar, &defUsed);
+               0, (LPCWSTR)s, len, (char *)buf->data,
+               size, &defaultChar, &defUsed);
          if (numChars == 0 || numChars >= size)
             return SZ_ERROR_FAIL;
          buf->data[numChars] = 0;
@@ -277,7 +278,7 @@ int read_7zip_file(const char * archive_path,
    if (res == SZ_OK && file_found == true)
       return outsize;
 
-   //Error handling:
+   /* Error handling */
    if (!file_found)
       RARCH_ERR("File %s not found in %s\n",relative_path,archive_path);
    else if (res == SZ_ERROR_UNSUPPORTED)
@@ -412,27 +413,16 @@ struct string_list *compressed_7zip_file_list_new(const char *path,
    {
       /* Error handling */
       if (res == SZ_ERROR_UNSUPPORTED)
-      {
          RARCH_ERR("7Zip decoder doesn't support this archive\n");
-         goto error;
-      }
       else if (res == SZ_ERROR_MEM)
-      {
          RARCH_ERR("7Zip decoder could not allocate memory\n");
-         goto error;
-      }
       else if (res == SZ_ERROR_CRC)
-      {
          RARCH_ERR("7Zip decoder encountered a CRC error in the archive\n");
-         goto error;
-      }
       else
-      {
          RARCH_ERR(
                "\nUnspecified error in 7-ZIP archive, error number was: #%d\n",
                res);
-         goto error;
-      }
+      goto error;
    }
 
    string_list_free(ext_list);
@@ -446,5 +436,4 @@ error:
    string_list_free(list);
    string_list_free(ext_list);
    return NULL;
-
 }

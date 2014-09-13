@@ -274,7 +274,8 @@ static struct rxml_node *rxml_parse_node(const char **ptr_)
             goto error;
          }
 
-         node->data = strdup_range(cdata_start + strlen("<![CDATA["), cdata_end);
+         node->data = strdup_range(cdata_start + 
+               strlen("<![CDATA["), cdata_end);
       }
       else if (closing_start && closing_start == child_start) /* Simple Data */
          node->data = strdup_range(closing + 1, closing_start);
@@ -288,7 +289,8 @@ static struct rxml_node *rxml_parse_node(const char **ptr_)
 
          const char *first_start   = strchr(ptr, '<');
          const char *first_closing = strstr(ptr, "</");
-         while (first_start && first_closing && first_start < first_closing)
+         while (first_start && 
+               first_closing && first_start < first_closing)
          {
             struct rxml_node *new_node = rxml_parse_node(&ptr);
             if (!new_node)

@@ -27,11 +27,14 @@
 #include "../deps/rzlib/unzip.h"
 
 
-/* Extract the relative path relative_path from a zip archive archive_path and allocate a buf for it to write it in. */
+/* Extract the relative path relative_path from a 
+ * zip archive archive_path and allocate a buf for it to write it in. */
 /* This code is inspired by:
- * http://stackoverflow.com/questions/10440113/simple-way-to-unzip-a-zip-file-using-zlib
+ * stackoverflow.com/questions/10440113/simple-way-to-unzip-a-zip-file-using-zlib
  */
-int read_zip_file(const char * archive_path, const char *relative_path, void **buf)
+
+int read_zip_file(const char * archive_path,
+      const char *relative_path, void **buf)
 {
    ssize_t bytes_read = -1;
    bool finished_reading = false;
@@ -47,7 +50,8 @@ int read_zip_file(const char * archive_path, const char *relative_path, void **b
    if ( unzGetGlobalInfo( zipfile, &global_info ) != UNZ_OK )
    {
       RARCH_ERR("Could not get global zipfile info of %s."
-                "Could be only a gzip file without the zip part.\n",archive_path);
+                "Could be only a gzip file without the zip part.\n",
+                archive_path);
       unzClose( zipfile );
       return -1;
    }
@@ -66,7 +70,8 @@ int read_zip_file(const char * archive_path, const char *relative_path, void **b
             PATH_MAX,
             NULL, 0, NULL, 0 ) != UNZ_OK )
       {
-         RARCH_ERR("Could not read file info in zip %s.\n",archive_path);
+         RARCH_ERR("Could not read file info in zip %s.\n",
+               archive_path);
          unzClose( zipfile );
          return -1;
       }
@@ -83,7 +88,8 @@ int read_zip_file(const char * archive_path, const char *relative_path, void **b
          /* We found the correct file in the zip, now extract it to *buf */
          if ( unzOpenCurrentFile( zipfile ) != UNZ_OK )
          {
-            RARCH_ERR("The file %s in %s could not be read.\n",relative_path,archive_path);
+            RARCH_ERR("The file %s in %s could not be read.\n", 
+                  relative_path, archive_path);
             unzClose( zipfile );
             return -1;
          }
@@ -94,8 +100,10 @@ int read_zip_file(const char * archive_path, const char *relative_path, void **b
          bytes_read = unzReadCurrentFile( zipfile, *buf, file_info.uncompressed_size );
          if (bytes_read != file_info.uncompressed_size)
          {
-            RARCH_ERR("We tried to read %d bytes, but only got %d of file %s in zip %s.\n",
-                  (unsigned int) file_info.uncompressed_size,(int)bytes_read,relative_path,archive_path);
+            RARCH_ERR(
+                  "We tried to read %d bytes, but only got %d of file %s in zip %s.\n",
+                  (unsigned int) file_info.uncompressed_size, (int)bytes_read,
+                  relative_path, archive_path);
             free(*buf);
             unzCloseCurrentFile( zipfile );
             unzClose( zipfile );
@@ -112,7 +120,9 @@ int read_zip_file(const char * archive_path, const char *relative_path, void **b
       {
          if ( unzGoToNextFile( zipfile ) != UNZ_OK )
          {
-            RARCH_ERR( "Could not iterate to next file in %s. Zipfile might be corrupt.\n",archive_path );
+            RARCH_ERR(
+                  "Could not iterate to next file in %s. Zipfile might be corrupt.\n",
+                  archive_path );
             unzClose( zipfile );
             return -1;
          }
@@ -162,7 +172,8 @@ struct string_list *compressed_zip_file_list_new(const char *path,
    if ( unzGetGlobalInfo( zipfile, &global_info ) != UNZ_OK )
    {
       RARCH_ERR("Could not get global zipfile info of %s."
-                "Could be only a gzip file without the zip part.\n",path);
+                "Could be only a gzip file without the zip part.\n",
+                path);
       unzClose( zipfile );
       return NULL;
    }
