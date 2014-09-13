@@ -75,7 +75,7 @@ void msg_queue_push(msg_queue_t *queue, const char *msg,
       calloc(1, sizeof(struct queue_elem));
    if (!new_elem)
    {
-      RARCH_ERR("New element allocation failed in %s", __FUNCTION__);
+      RARCH_ERR("New element allocation failed.\n");
       return;
    }
 

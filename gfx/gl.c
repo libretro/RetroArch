@@ -207,7 +207,7 @@ static bool gl_shader_init(gl_t *gl)
 
    if (!gl)
    {
-      RARCH_ERR("Invalid GL instance passed to %s", __FUNCTION__);
+      RARCH_ERR("Invalid GL instance passed.\n");
       return false;
    }
 

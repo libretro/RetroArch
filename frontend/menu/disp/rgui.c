@@ -152,7 +152,7 @@ static bool init_font(menu_handle_t *menu, const uint8_t *font_bmp_buf)
 
    if (!font)
    {
-      RARCH_ERR("Font memory allocation failed in %s", __FUNCTION__);
+      RARCH_ERR("Font memory allocation failed.\n");
       return false;
    }
 
