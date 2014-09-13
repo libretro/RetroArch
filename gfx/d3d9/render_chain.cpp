@@ -125,12 +125,15 @@ bool renderchain_set_pass_size(void *data, unsigned pass_index,
       pass->info.tex_w = width;
       pass->info.tex_h = height;
 
-      if (FAILED(d3dr->CreateTexture(width, height, 1,
+      pass->tex = (LPDIRECT3DTEXTURE)d3d_texture_new(
+      d3dr, NULL, width, height, 1,
          D3DUSAGE_RENDERTARGET,
          chain->passes.back().info.pass->fbo.fp_fbo ? 
          D3DFMT_A32B32G32R32F : D3DFMT_A8R8G8B8,
-         D3DPOOL_DEFAULT,
-         &pass->tex, NULL)))
+         D3DPOOL_DEFAULT, 0, 0, 0,
+         NULL, NULL);
+      
+      if (!pass->tex)
          return false;
 
       d3d_set_texture(d3dr, 0, pass->tex);
@@ -164,12 +167,13 @@ bool renderchain_add_pass(void *data, const LinkInfo *info)
    if (!pass.vertex_buf)
       return false;
 
-   if (FAILED(d3dr->CreateTexture(info->tex_w, info->tex_h, 1,
+   pass.tex = d3d_texture_new(d3dr, NULL, info->tex_w, info->tex_h, 1,
                D3DUSAGE_RENDERTARGET,
                chain->passes.back().info.pass->fbo.fp_fbo 
                ? D3DFMT_A32B32G32R32F : D3DFMT_A8R8G8B8,
-               D3DPOOL_DEFAULT,
-               &pass.tex, NULL)))
+               D3DPOOL_DEFAULT, 0, 0, 0, NULL, NULL);
+
+   if (!pass.tex)
       return false;
 
    d3d_set_texture(d3dr, 0, pass.tex);
@@ -367,10 +371,12 @@ bool renderchain_create_first_pass(void *data, const LinkInfo *info,
       if (!chain->prev.vertex_buf[i])
          return false;
 
-      if (FAILED(d3dr->CreateTexture(info->tex_w, info->tex_h, 1, 0,
-                  fmt == RGB565 ? D3DFMT_R5G6B5 : D3DFMT_X8R8G8B8,
-                  D3DPOOL_MANAGED,
-                  &chain->prev.tex[i], NULL)))
+      chain->prev.tex[i] = (LPDIRECT3DTEXTURE)d3d_texture_new(
+      d3dr, NULL, d3info->tex_w, info->tex_h, 1, 0,
+      fmt == RGB565 ? D3DFMT_R5G6B5 : D3DFMT_X8R8G8B8,
+      D3DPOOL_MANAGED, 0, 0, 0, NULL, NULL);
+
+      if (!chain->prev.tex[i])
          return false;
 
       d3d_set_texture(d3dr, 0, chain->prev.tex[i]);

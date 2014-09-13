@@ -49,11 +49,18 @@ LPDIRECT3DTEXTURE d3d_texture_new(LPDIRECT3DDEVICE dev,
 {
    HRESULT hr;
    LPDIRECT3DTEXTURE buf;
-   
-   hr = D3DXCreateTextureFromFileExA(dev,
-         path, width, height, miplevels, usage, format,
-         pool, filter, mipfilter, color_key, src_info,
-         palette, &buf);
+
+   if (!dev)
+      return NULL;
+
+   if (path != NULL)
+      hr = D3DXCreateTextureFromFileExA(dev,
+            path, width, height, miplevels, usage, format,
+            pool, filter, mipfilter, color_key, src_info,
+            palette, &buf);
+   else
+      hr = dev->CreateTexture(width, height, miplevels, usage,
+            format, pool, &buf, NULL);
 
    if (FAILED(hr))
 	   return NULL;
