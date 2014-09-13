@@ -21,10 +21,6 @@
 #if defined(_XBOX1)
 /* XBox 1*/
 
-#define SetSamplerState_function(device, sampler, type, value) \
- D3D__DirtyFlags |= (D3DDIRTYFLAG_TEXTURE_STATE_0 << sampler); \
- D3D__TextureState[sampler][type] = value
-
 #define RD3DDevice_SetTransform(device, State, pMatrix) D3DDevice_SetTransform(State, pMatrix)
 
 #define RD3DVertexBuffer_Lock(device, OffsetToLock, SizeToLock, ppbData, Flags) *ppbData = D3DVertexBuffer_Lock2(device, Flags) + OffsetToLock
