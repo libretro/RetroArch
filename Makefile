@@ -4,7 +4,14 @@ TARGET = retroarch tools/retroarch-joyconfig tools/retrolaunch/retrolaunch
 
 OBJDIR := obj-unix
 
+ifeq ($(GLOBAL_CONFIG_DIR),)
+   GLOBAL_CONFIG_DIR = /etc
+endif
+
 OBJ := 
+LIBS :=
+DEFINES += -DHAVE_CONFIG_H -DRARCH_INTERNAL -DHAVE_CC_RESAMPLER -DHAVE_OVERLAY
+DEFINES += -DGLOBAL_CONFIG_DIR='"$(GLOBAL_CONFIG_DIR)"'
 
 include Makefile.common
 
@@ -28,20 +35,13 @@ RETROLAUNCH_OBJ = tools/retrolaunch/main.o \
 HEADERS = $(wildcard */*/*.h) $(wildcard */*.h) $(wildcard *.h)
 
 ifeq ($(findstring Haiku,$(OS)),)
-   LIBS = -lm
+   LIBS += -lm
    DEBUG_FLAG = -g
 else
-   LIBS = -lroot -lnetwork
+   LIBS += -lroot -lnetwork
    # stable and nightly haiku builds are stuck on gdb 6.x but we use gcc4
    DEBUG_FLAG = -gdwarf-2
 endif
-
-DEFINES = -DHAVE_CONFIG_H -DRARCH_INTERNAL -DHAVE_CC_RESAMPLER -DHAVE_OVERLAY
-
-ifeq ($(GLOBAL_CONFIG_DIR),)
-   GLOBAL_CONFIG_DIR = /etc
-endif
-DEFINES += -DGLOBAL_CONFIG_DIR='"$(GLOBAL_CONFIG_DIR)"'
 
 ifeq ($(REENTRANT_TEST), 1)
    DEFINES += -Dmain=retroarch_main
@@ -80,7 +80,8 @@ ifeq ($(HAVE_LAKKA), 1)
 endif
 endif
 
-OBJ += playlist.o
+OBJ += playlist.o \
+		 movie.o
 
 ifeq ($(HAVE_MENU_COMMON), 1)
    OBJ += frontend/menu/backend/menu_common_backend.o \
@@ -97,8 +98,6 @@ ifeq ($(HAVE_THREADS), 1)
       LIBS += -lpthread
    endif
 endif
-
-   OBJ += movie.o
 
 ifeq ($(HAVE_NETPLAY), 1)
    OBJ += netplay.o

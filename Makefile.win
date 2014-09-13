@@ -33,7 +33,10 @@ endif
 
 OBJDIR := obj-w32
 
-OBJ :=
+OBJ     :=
+LIBS    := -lm
+JLIBS   :=
+DEFINES := -I. -DHAVE_BUILTIN_AUTOCONFIG -DRARCH_INTERNAL -DHAVE_CC_RESAMPLER -DHAVE_OVERLAY
 
 include Makefile.common
 
@@ -63,8 +66,6 @@ endif
 
 libretro ?= -lretro
 
-LIBS = -lm
-DEFINES = -I. -DHAVE_BUILTIN_AUTOCONFIG -DRARCH_INTERNAL -DHAVE_CC_RESAMPLER -DHAVE_OVERLAY
 LDFLAGS = -L. -static-libgcc
 
 ifeq ($(TDM_GCC),)
@@ -75,7 +76,6 @@ ifeq ($(SCALER_NO_SIMD), 1)
    DEFINES += -DSCALER_NO_SIMD
 endif
 
-JLIBS =
 
 ifeq ($(HAVE_RGUI), 1)
    OBJ += frontend/menu/disp/rgui.o

@@ -1,13 +1,7 @@
 TARGET = retroarch.js
 
 OBJ :=
-
-include Makefile.common
-
-OBJ += frontend/platform/platform_emscripten.o \
-		input/rwebinput_input.o \
-		audio/rwebaudio.o \
-		camera/rwebcam.o
+DEFINES := -DRARCH_INTERNAL -DHAVE_CC_RESAMPLER
 
 HAVE_OPENGL = 1
 HAVE_RGUI = 1
@@ -24,10 +18,16 @@ ifneq ($(NATIVE_ZLIB),)
    WANT_MINIZ = 0
 endif
 
+include Makefile.common
+
+OBJ += frontend/platform/platform_emscripten.o \
+		input/rwebinput_input.o \
+		audio/rwebaudio.o \
+		camera/rwebcam.o
+
 libretro = libretro_emscripten.bc
 
 LIBS =
-DEFINES = -DRARCH_INTERNAL -DHAVE_CC_RESAMPLER
 LDFLAGS = -L. -s TOTAL_MEMORY=$(MEMORY) -s OUTLINING_LIMIT=50000 --js-library emscripten/library_rwebaudio.js --js-library emscripten/library_rwebinput.js --js-library emscripten/library_rwebcam.js --no-heap-copy
 
 ifeq ($(HAVE_RGUI), 1)
