@@ -45,7 +45,8 @@ void d3d_set_transform(LPDIRECT3DDEVICE dev,
 {
 #ifdef _XBOX1
    D3DDevice_SetTransform(state, matrix);
-#else
+#elif !defined(_XBOX360)
+   /* XBox 360 D3D9 does not support fixed-function pipeline. */
    dev->SetTransform(state, matrix);
 #endif
 }
