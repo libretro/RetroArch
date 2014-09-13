@@ -1119,16 +1119,20 @@ static bool d3d_init_multipass(d3d_video_t *d3d)
    if (use_extra_pass)
    {
       d3d->shader.passes++;
-      gfx_shader_pass &dummy_pass = d3d->shader.pass[d3d->shader.passes - 1];
-      dummy_pass.fbo.scale_x = dummy_pass.fbo.scale_y = 1.0f;
-      dummy_pass.fbo.type_x = dummy_pass.fbo.type_y = RARCH_SCALE_VIEWPORT;
-      dummy_pass.filter = RARCH_FILTER_UNSPEC;
+      gfx_shader_pass *dummy_pass = (gfx_shader_pass*)
+         &d3d->shader.pass[d3d->shader.passes - 1];
+
+      dummy_pass->fbo.scale_x = dummy_pass->fbo.scale_y = 1.0f;
+      dummy_pass->fbo.type_x  = dummy_pass->fbo.type_y = RARCH_SCALE_VIEWPORT;
+      dummy_pass->filter      = RARCH_FILTER_UNSPEC;
    }
    else
    {
-      gfx_shader_pass &pass = d3d->shader.pass[d3d->shader.passes - 1];
-      pass.fbo.scale_x = pass.fbo.scale_y = 1.0f;
-      pass.fbo.type_x = pass.fbo.type_y = RARCH_SCALE_VIEWPORT;
+      gfx_shader_pass *pass = (gfx_shader_pass*)
+         &d3d->shader.pass[d3d->shader.passes - 1];
+
+      pass->fbo.scale_x = pass->fbo.scale_y = 1.0f;
+      pass->fbo.type_x  = pass->fbo.type_y = RARCH_SCALE_VIEWPORT;
    }
 
    return true;
@@ -1171,12 +1175,13 @@ static bool d3d_init_singlepass(d3d_video_t *d3d)
 #ifndef _XBOX
    memset(&d3d->shader, 0, sizeof(d3d->shader));
    d3d->shader.passes = 1;
-   gfx_shader_pass &pass = d3d->shader.pass[0];
-   pass.fbo.valid = true;
-   pass.fbo.scale_x = pass.fbo.scale_y = 1.0;
-   pass.fbo.type_x = pass.fbo.type_y = RARCH_SCALE_VIEWPORT;
-   strlcpy(pass.source.path, d3d->cg_shader.c_str(),
-         sizeof(pass.source.path));
+   gfx_shader_pass *pass = (gfx_shader_pass*)&d3d->shader.pass[0];
+
+   pass->fbo.valid = true;
+   pass->fbo.scale_x = pass->fbo.scale_y = 1.0;
+   pass->fbo.type_x = pass->fbo.type_y = RARCH_SCALE_VIEWPORT;
+   strlcpy(pass->source.path, d3d->cg_shader.c_str(),
+         sizeof(pass->source.path));
 #endif
 
    return true;
@@ -1391,9 +1396,9 @@ static bool d3d_overlay_load(void *data,
    {
       unsigned width = images[i].width;
       unsigned height = images[i].height;
-      overlay_t &overlay = d3d->overlays[i];
+      overlay_t *overlay = (overlay_t*)&d3d->overlays[i];
 
-      overlay.tex = (LPDIRECT3DTEXTURE)
+      overlay->tex = (LPDIRECT3DTEXTURE)
          d3d_texture_new(d3d->dev, NULL,
                   width, height, 1,
                   0,
@@ -1401,14 +1406,14 @@ static bool d3d_overlay_load(void *data,
                   D3DPOOL_MANAGED, 0, 0, 0, 
                   NULL, NULL);
 
-      if (!overlay.tex)
+      if (!overlay->tex)
       {
          RARCH_ERR("[D3D]: Failed to create overlay texture\n");
          return false;
       }
 
       D3DLOCKED_RECT d3dlr;
-      if (SUCCEEDED(overlay.tex->LockRect(0, &d3dlr,
+      if (SUCCEEDED(overlay->tex->LockRect(0, &d3dlr,
                   NULL, D3DLOCK_NOSYSLOCK)))
       {
          uint32_t *dst = static_cast<uint32_t*>(d3dlr.pBits);
@@ -1416,11 +1421,11 @@ static bool d3d_overlay_load(void *data,
          unsigned pitch = d3dlr.Pitch >> 2;
          for (y = 0; y < height; y++, dst += pitch, src += width)
             memcpy(dst, src, width << 2);
-         overlay.tex->UnlockRect(0);
+         overlay->tex->UnlockRect(0);
       }
 
-      overlay.tex_w = width;
-      overlay.tex_h = height;
+      overlay->tex_w = width;
+      overlay->tex_h = height;
 
       /* Default. Stretch to whole screen. */
       d3d_overlay_tex_geom(d3d, i, 0, 0, 1, 1);
