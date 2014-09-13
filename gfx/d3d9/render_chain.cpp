@@ -528,21 +528,18 @@ void renderchain_blit_to_texture(void *data, const void *frame,
       unsigned width, unsigned height,
       unsigned pitch)
 {
-   D3DSURFACE_DESC desc;
    D3DLOCKED_RECT d3dlr;
    renderchain_t *chain = (renderchain_t*)data;
    Pass *first = (Pass*)&chain->passes[0];
 
-   (void)desc;
-
    if (first->last_width != width || first->last_height != height)
    {
-      d3d_lockrectangle_clear(first, first->tex, 0, d3dlr, 
+      d3d_lockrectangle_clear(first, first->tex, 0, &d3dlr, 
             NULL, D3DLOCK_NOSYSLOCK);
    }
 
    d3d_texture_blit(driver.video_data, chain, first->tex,
-      desc, d3dlr, frame, width, height, pitch);
+      &d3dlr, frame, width, height, pitch);
 }
 
 void renderchain_render_pass(void *data, Pass &pass, unsigned pass_index)

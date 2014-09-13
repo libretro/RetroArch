@@ -259,18 +259,15 @@ static void renderchain_set_mvp(void *data, unsigned vp_width, unsigned vp_heigh
 static void renderchain_blit_to_texture(void *data, const void *frame,
    unsigned width, unsigned height, unsigned pitch)
 {
-   D3DSURFACE_DESC desc;
    D3DLOCKED_RECT d3dlr;
    d3d_video_t *d3d = (d3d_video_t*)data;
-
-   (void)desc;
 
    if (d3d->last_width != width || d3d->last_height != height)
    {
       d3d_lockrectangle_clear(d3d, d3d->tex,
-            0, d3dlr, NULL, D3DLOCK_NOSYSLOCK);
+            0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);
    }
 
    D3DTexture_LockRect(d3d->tex, 0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);
-   d3d_texture_blit(d3d, NULL, d3d->tex, desc, d3dlr, frame, width, height, pitch);
+   d3d_texture_blit(d3d, NULL, d3d->tex, &d3dlr, frame, width, height, pitch);
 }

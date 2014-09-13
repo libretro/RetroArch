@@ -47,7 +47,7 @@ void d3d_draw_primitive(LPDIRECT3DDEVICE dev,
 
 void d3d_lockrectangle_clear(void *data, 
       LPDIRECT3DTEXTURE tex,
-      unsigned level, D3DLOCKED_RECT lock_rect, RECT *rect,
+      unsigned level, D3DLOCKED_RECT *lock_rect, RECT *rect,
       unsigned flags);
 
 void d3d_set_texture(LPDIRECT3DDEVICE dev, unsigned sampler,
@@ -57,8 +57,8 @@ HRESULT d3d_set_vertex_shader(LPDIRECT3DDEVICE dev, unsigned index,
       void *data);
 
 void d3d_texture_blit(void *data, void *renderchain_data,
-      LPDIRECT3DTEXTURE tex, D3DSURFACE_DESC desc,
-      D3DLOCKED_RECT lr, const void *frame,
+      LPDIRECT3DTEXTURE tex,
+      D3DLOCKED_RECT *lr, const void *frame,
       unsigned width, unsigned height, unsigned pitch);
 
 void d3d_set_viewport(LPDIRECT3DDEVICE dev, D3DVIEWPORT *vp);

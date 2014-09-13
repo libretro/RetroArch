@@ -139,18 +139,18 @@ void d3d_draw_primitive(LPDIRECT3DDEVICE dev,
 
 void d3d_lockrectangle_clear(void *data, 
       LPDIRECT3DTEXTURE tex,
-      unsigned level, D3DLOCKED_RECT lock_rect, RECT *rect,
+      unsigned level, D3DLOCKED_RECT *lock_rect, RECT *rect,
       unsigned flags)
 {
 #if defined(_XBOX)
    d3d_video_t *chain = (d3d_video_t*)data;
-   D3DTexture_LockRect(tex, level, &lock_rect, rect, flags);
-   memset(lock_rect.pBits, 0, chain->tex_h * lock_rect.Pitch);
+   D3DTexture_LockRect(tex, level, lock_rect, rect, flags);
+   memset(lock_rect->pBits, 0, chain->tex_h * lock_rect->Pitch);
 #else
    Pass *pass = (Pass*)data;
-   if (SUCCEEDED(tex->LockRect(level, &lock_rect, rect, flags)))
+   if (SUCCEEDED(tex->LockRect(level, lock_rect, rect, flags)))
    {
-      memset(lock_rect.pBits, level, pass->info.tex_h * lock_rect.Pitch);
+      memset(lock_rect->pBits, level, pass->info.tex_h * lock_rect->Pitch);
       tex->UnlockRect(0);
    }
 #endif
@@ -203,12 +203,10 @@ HRESULT d3d_set_vertex_shader(LPDIRECT3DDEVICE dev, unsigned index,
 
 
 void d3d_texture_blit(void *data, void *renderchain_data,
-      LPDIRECT3DTEXTURE tex, D3DSURFACE_DESC desc,
-      D3DLOCKED_RECT lr, const void *frame,
+      LPDIRECT3DTEXTURE tex, D3DLOCKED_RECT *lr, const void *frame,
       unsigned width, unsigned height, unsigned pitch)
 {
 	d3d_video_t *d3d = (d3d_video_t*)data;
-   (void)desc;
    (void)data;
    (void)d3d;
 
@@ -216,14 +214,15 @@ void d3d_texture_blit(void *data, void *renderchain_data,
 	   return;
 
 #if defined(_XBOX360)
+   D3DSURFACE_DESC desc;
    tex->GetLevelDesc(0, &desc);
-   XGCopySurface(lr.pBits, lr.Pitch, width, height, desc.Format, NULL,
+   XGCopySurface(lr->pBits, lr->Pitch, width, height, desc.Format, NULL,
       frame, pitch, desc.Format, NULL, 0, 0);
 #elif defined(_XBOX1)
    for (unsigned y = 0; y < height; y++)
    {
       const uint8_t *in = (const uint8_t*)frame + y * pitch;
-      uint8_t *out = (uint8_t*)lr.pBits + y * lr.Pitch;
+      uint8_t *out = (uint8_t*)lr->pBits + y * lr->Pitch;
       memcpy(out, in, width * d3d->pixel_size);
    }
 #else
@@ -232,12 +231,12 @@ void d3d_texture_blit(void *data, void *renderchain_data,
    if (!chain)
 	   return;
 
-   if (SUCCEEDED(tex->LockRect(0, &lr, NULL, D3DLOCK_NOSYSLOCK)))
+   if (SUCCEEDED(tex->LockRect(0, lr, NULL, D3DLOCK_NOSYSLOCK)))
    {
       for (unsigned y = 0; y < height; y++)
       { 
          const uint8_t *in = (const uint8_t*)frame + y * pitch;
-         uint8_t *out = (uint8_t*)lr.pBits + y * lr.Pitch;
+         uint8_t *out = (uint8_t*)lr->pBits + y * lr->Pitch;
          memcpy(out, in, width * chain->pixel_size);
       }
       tex->UnlockRect(0);
