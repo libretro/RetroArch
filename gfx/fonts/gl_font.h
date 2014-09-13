@@ -19,6 +19,8 @@
 #include "../../driver.h"
 #include "../../boolean.h"
 
+struct font_glyph;
+
 typedef struct gl_font_renderer
 {
    void *(*init)(void *data, const char *font_path, float font_size);
@@ -26,6 +28,8 @@ typedef struct gl_font_renderer
    void (*render_msg)(void *data, const char *msg,
          const struct font_params *parms);
    const char *ident;
+
+   const struct font_glyph *(*get_glyph)(void *data, uint32_t code);
 } gl_font_renderer_t;
 
 extern gl_font_renderer_t gl_raster_font;

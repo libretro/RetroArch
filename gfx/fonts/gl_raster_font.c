@@ -265,9 +265,20 @@ static void gl_render_msg(void *data, const char *msg,
    gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
 }
 
+static const struct font_glyph *gl_get_glyph(void *data, uint32_t code)
+{
+   gl_raster_t *font = (gl_raster_t*)data;
+
+   if (!font)
+      return NULL;
+
+   return font->font_driver->get_glyph(font->font_driver, code);
+}
+
 gl_font_renderer_t gl_raster_font = {
    gl_init_font,
    gl_free_font,
    gl_render_msg,
    "GL raster",
+   gl_get_glyph,
 };
