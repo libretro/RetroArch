@@ -36,9 +36,11 @@ bool texture_image_load(struct texture_image *out_img, const char *path)
    }
 
    /* create a vertex buffer for the quad that will display the texture */
-   if (FAILED(d3d_create_vertex_buffer(d3d->dev, 4 * sizeof(Vertex),
-               D3DUSAGE_WRITEONLY, D3DFVF_CUSTOMVERTEX,
-               D3DPOOL_MANAGED, out_img->vertex_buf, NULL)))
+   out_img->vertex_buf = (LPDIRECT3DVERTEXBUFFER)d3d_vertex_buffer_new(
+         d3d->dev, 4 * sizeof(Vertex), D3DUSAGE_WRITEONLY, D3DFVF_CUSTOMVERTEX,
+         D3DPOOL_MANAGED, NULL);
+
+   if (!out_img->vertex_buf)
    {
       RARCH_ERR("Error occurred during CreateVertexBuffer().\n");
       out_img->pixels->Release();
