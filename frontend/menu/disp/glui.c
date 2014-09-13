@@ -39,7 +39,7 @@
 #include "shared.h"
 
 #define GLUI_FONT_HEIGHT_STRIDE 40
-#define GLUI_FONT_WIDTH_STRIDE 20
+#define GLUI_FONT_WIDTH_STRIDE 16
 #define GLUI_TERM_START_X (gl->win_width / 21)
 #define GLUI_TERM_START_Y (gl->win_height / 9)
 #define GLUI_TERM_WIDTH (((gl->win_width - GLUI_TERM_START_X - GLUI_TERM_START_X) / (GLUI_FONT_WIDTH_STRIDE)))
@@ -208,15 +208,14 @@ static void glui_frame(void)
       menu_ticker_line(type_str_buf, w, g_extern.frame_count / GLUI_TERM_START_X,
             type_str, selected);
 
-      snprintf(message, sizeof(message), "%c %-*.*s %-*s",
+      snprintf(message, sizeof(message), "%c %s",
             ' ',
-            GLUI_TERM_WIDTH - (w + 1 + 2),
-            GLUI_TERM_WIDTH - (w + 1 + 2),
-            entry_title_buf,
-            w,
-            type_str_buf);
+            entry_title_buf);
 
       blit_line(x, y, message, selected);
+
+      blit_line(gl->win_width - GLUI_FONT_WIDTH_STRIDE * strlen(type_str_buf) 
+         - GLUI_TERM_START_X , y, type_str_buf, selected);
    }
 
 #ifdef GEKKO
