@@ -88,19 +88,18 @@ static void gfx_dwm_shutdown(void)
    dwmlib = NULL;
 }
 
-static void gfx_init_dwm(void)
+static bool gfx_init_dwm(void)
 {
-   static bool inited;
+   static bool inited = false;
 
    if (inited)
-      return;
-   inited = true;
+      return true;
 
    dwmlib = dylib_load("dwmapi.dll");
    if (!dwmlib)
    {
       RARCH_LOG("Did not find dwmapi.dll.\n");
-      return;
+      return false;
    }
    atexit(gfx_dwm_shutdown);
 
@@ -111,12 +110,14 @@ static void gfx_init_dwm(void)
       RARCH_LOG("Setting multimedia scheduling for DWM.\n");
       mmcss(TRUE);
    }
+
+   inited = true;
+   return true;
 }
 
 void gfx_set_dwm(void)
 {
-   gfx_init_dwm();
-   if (!dwmlib)
+   if (!gfx_init_dwm())
       return;
 
    if (g_settings.video.disable_composition == dwm_composition_disabled)
