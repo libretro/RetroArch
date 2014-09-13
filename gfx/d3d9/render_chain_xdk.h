@@ -70,15 +70,12 @@ static bool renderchain_create_first_pass(void *data,
    if (!chain->vertex_buf)
       return false;
 
-   ret = d3dr->CreateTexture(chain->tex_w, chain->tex_h, 1, 0,
+   chain->tex = (LPDIRECT3DTEXTURE)d3d_texture_new(d3dr, NULL, 
+         chain->tex_w, chain->tex_h, 1, 0,
          info->rgb32 ? D3DFMT_LIN_X8R8G8B8 : D3DFMT_LIN_R5G6B5,
-         0, &chain->tex
-#ifdef _XBOX360
-         , NULL
-#endif
-         );
+         0, 0, 0, 0, NULL, NULL);
 
-   if (FAILED(ret))
+   if (!chain->tex)
       return false;
 
    d3d_set_sampler_address_u(d3dr, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);

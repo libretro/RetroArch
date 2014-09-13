@@ -1401,14 +1401,15 @@ static bool d3d_overlay_load(void *data,
       unsigned height = images[i].height;
       overlay_t &overlay = d3d->overlays[i];
 
-      if (FAILED(d3d->dev->CreateTexture(
-                  width,
-                  height,
-                  1,
+      overlay.tex = (LPDIRECT3DTEXTURE)
+         d3d_texture_new(d3d->dev,
+                  width, height, 1,
                   0,
                   D3DFMT_A8R8G8B8,
-                  D3DPOOL_MANAGED,
-                  &overlay.tex, NULL)))
+                  D3DPOOL_MANAGED, 0, 0, 0, 
+                  NULL, NULL);
+
+      if (!overlay.tex)
       {
          RARCH_ERR("[D3D]: Failed to create overlay texture\n");
          return false;
@@ -1753,14 +1754,18 @@ static void d3d_set_menu_texture_frame(void *data,
       if (d3d->menu)
 	     d3d_texture_free(d3d->menu->tex); 
 
-      if (FAILED(d3d->dev->CreateTexture(width, height, 1,
-                  0, D3DFMT_A8R8G8B8,
-                  D3DPOOL_MANAGED,
-                  &d3d->menu->tex, NULL)))
+      d3d->menu_tex = (LPDIRECT3DTEXTURE)
+         d3d_texture_new(d3d->dev, NULL,
+            width, height, 1,
+            0, D3DFMT_A8R8G8B8,
+            D3DPOOL_MANAGED, 0, 0, 0, NULL, NULL);
+
+      if (!d3d->menu_tex)
       {
          RARCH_ERR("[D3D]: Failed to create menu texture.\n");
          return;
       }
+
       d3d->menu->tex_w = width;
       d3d->menu->tex_h = height;
    }
