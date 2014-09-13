@@ -269,6 +269,8 @@ void d3d_texture_blit(void *data, void *renderchain_data,
    if (!d3d)
 	   return;
 
+#ifdef _XBOX
+   D3DTexture_LockRect(tex, 0, &lr, NULL, D3DLOCK_NOSYSLOCK);
 #if defined(_XBOX360)
    D3DSURFACE_DESC desc;
    tex->GetLevelDesc(0, &desc);
@@ -281,6 +283,7 @@ void d3d_texture_blit(void *data, void *renderchain_data,
       uint8_t *out = (uint8_t*)lr->pBits + y * lr->Pitch;
       memcpy(out, in, width * d3d->pixel_size);
    }
+#endif
 #else
    renderchain_t *chain = (renderchain_t*)renderchain_data;
 
