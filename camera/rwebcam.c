@@ -16,7 +16,8 @@
 #include "../driver.h"
 #include "../emscripten/RWebCam.h"
 
-static void *rwebcam_init(const char *device, uint64_t caps, unsigned width, unsigned height)
+static void *rwebcam_init(const char *device, uint64_t caps,
+      unsigned width, unsigned height)
 {
    (void)device;
    return RWebCamInit(caps, width, height);
@@ -37,7 +38,8 @@ static void rwebcam_stop(void *data)
    RWebCamStop(data);
 }
 
-static bool rwebcam_poll(void *data, retro_camera_frame_raw_framebuffer_t frame_raw_cb,
+static bool rwebcam_poll(void *data,
+      retro_camera_frame_raw_framebuffer_t frame_raw_cb,
       retro_camera_frame_opengl_texture_t frame_gl_cb)
 {
    return RWebCamPoll(data, frame_raw_cb, frame_gl_cb);

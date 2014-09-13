@@ -96,15 +96,10 @@ static bool init_mmap(void *data)
    if (xioctl(v4l->fd, VIDIOC_REQBUFS, &req) == -1)
    {
       if (errno == EINVAL)
-      {
          RARCH_ERR("%s does not support memory mapping.\n", v4l->dev_name);
-         return false;
-      }
       else
-      {
          RARCH_ERR("xioctl of VIDIOC_REQBUFS failed.\n");
-         return false;
-      }
+      return false;
    }
 
    if (req.count < 2)
@@ -164,15 +159,10 @@ static bool init_device(void *data)
    if (xioctl(v4l->fd, VIDIOC_QUERYCAP, &cap) < 0)
    {
       if (errno == EINVAL)
-      {
          RARCH_ERR("%s is no V4L2 device.\n", v4l->dev_name);
-         return false;
-      }
       else
-      {
          RARCH_ERR("Error - VIDIOC_QUERYCAP.\n");
-         return false;
-      }
+      return false;
    }
 
    if (!(cap.capabilities & V4L2_CAP_VIDEO_CAPTURE))
@@ -430,8 +420,8 @@ static bool v4l_poll(void *data,
                v4l->height, v4l->width * 4);
       return true;
    }
-   else
-      return false;
+
+   return false;
 }
 
 camera_driver_t camera_v4l2 = {

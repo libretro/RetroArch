@@ -15,7 +15,8 @@
 
 #include "../driver.h"
 
-static void *nullcamera_init(const char *device, uint64_t caps, unsigned width, unsigned height)
+static void *nullcamera_init(const char *device, uint64_t caps,
+      unsigned width, unsigned height)
 {
    (void)device;
    return (void*)-1;
@@ -23,20 +24,28 @@ static void *nullcamera_init(const char *device, uint64_t caps, unsigned width, 
 
 static void nullcamera_free(void *data)
 {
+   (void)data;
 }
 
 static bool nullcamera_start(void *data)
 {
+   (void)data;
    return true;
 }
 
 static void nullcamera_stop(void *data)
 {
+   (void)data;
 }
 
-static bool nullcamera_poll(void *data, retro_camera_frame_raw_framebuffer_t frame_raw_cb,
+static bool nullcamera_poll(void *data,
+      retro_camera_frame_raw_framebuffer_t frame_raw_cb,
       retro_camera_frame_opengl_texture_t frame_gl_cb)
 {
+   (void)data;
+   (void)frame_raw_cb;
+   (void)frame_gl_cb;
+
    return true;
 }
 
