@@ -40,6 +40,33 @@ void d3d_swap(void *data, LPDIRECT3DDEVICE dev)
 #endif
 }
 
+LPDIRECT3DTEXTURE d3d_texture_new(LPDIRECT3DDEVICE dev,
+      const char *path, unsigned width, unsigned height,
+      unsigned miplevels, unsigned usage, D3DFORMAT format,
+      D3DPOOL pool, unsigned filter, unsigned mipfilter,
+      D3DCOLOR color_key, D3DXIMAGE_INFO *src_info, 
+      PALETTEENTRY *palette)
+{
+   HRESULT hr;
+   LPDIRECT3DTEXTURE buf;
+   
+   hr = D3DXCreateTextureFromFileExA(dev,
+         path, width, height, miplevels, usage, format,
+         pool, filter, mipfilter, color_key, src_info,
+         palette, &buf);
+
+   if (FAILED(hr))
+	   return NULL;
+
+   return buf;
+}
+
+void d3d_texture_free(LPDIRECT3DTEXTURE tex)
+{
+   if (tex)
+      tex->Release();
+}
+
 LPDIRECT3DVERTEXBUFFER d3d_vertex_buffer_new(LPDIRECT3DDEVICE dev,
       unsigned length, unsigned usage, unsigned fvf,
       D3DPOOL pool, void *handle)
@@ -61,6 +88,12 @@ LPDIRECT3DVERTEXBUFFER d3d_vertex_buffer_new(LPDIRECT3DDEVICE dev,
 	   return NULL;
 
    return buf;
+}
+
+void d3d_vertex_buffer_free(LPDIRECT3DVERTEXBUFFER buf)
+{
+   if (buf)
+      buf->Release();
 }
 
 void d3d_set_stream_source(LPDIRECT3DDEVICE dev, unsigned stream_no,

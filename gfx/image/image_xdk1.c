@@ -23,17 +23,15 @@ bool texture_image_load(struct texture_image *out_img, const char *path)
 
    D3DXIMAGE_INFO m_imageInfo;
 
-   out_img->pixels      = NULL;
    out_img->vertex_buf  = NULL;
 
-   if (FAILED(D3DXCreateTextureFromFileExA(d3d->dev,
-         path, D3DX_DEFAULT, D3DX_DEFAULT, D3DX_DEFAULT, 0, D3DFMT_A8R8G8B8,
-         D3DPOOL_MANAGED, D3DX_DEFAULT, D3DX_DEFAULT, 0, &m_imageInfo, NULL,
-         &out_img->pixels)))
-   {
-      RARCH_ERR("Error occurred during D3DXCreateTextureFromFileExA().\n");
+   out_img->pixels = d3d_texture_new(d3d->dev, path,
+         D3DX_DEFAULT, D3DX_DEFAULT, D3DX_DEFAULT, 0,
+         D3DFMT_A8R8G8B8, D3DPOOL_MANAGED, D3DX_DEFAULT,
+         D3DX_DEFAULT, 0, &m_imageInfo, NULL);
+
+   if (!out_img->pixels)
       return false;
-   }
 
    /* create a vertex buffer for the quad that will display the texture */
    out_img->vertex_buf = (LPDIRECT3DVERTEXBUFFER)d3d_vertex_buffer_new(
@@ -42,8 +40,7 @@ bool texture_image_load(struct texture_image *out_img, const char *path)
 
    if (!out_img->vertex_buf)
    {
-      RARCH_ERR("Error occurred during CreateVertexBuffer().\n");
-      out_img->pixels->Release();
+      d3d_texture_free(out_img->pixels);
       return false;
    }
 
@@ -58,9 +55,7 @@ void texture_image_free(struct texture_image *img)
    if (!img)
       return;
 
-   if (img->vertex_buf)
-      img->vertex_buf->Release();
-   if (img->pixels)
-      img->pixels->Release();
+   d3d_vertex_buffer_free(img->vertex_buf);
+   d3d_texture_free(img->pixels);
    memset(img, 0, sizeof(*img));
 }
