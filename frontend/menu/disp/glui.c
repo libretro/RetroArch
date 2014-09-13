@@ -115,7 +115,7 @@ static void glui_frame(void)
       begin = driver.menu->selection_ptr - glui_term_height / 2;
    end   = (driver.menu->selection_ptr + glui_term_height <=
          file_list_get_size(driver.menu->selection_buf)) ?
-      driver.menu->selection_ptr + glui_term_height :
+      driver.menu->selection_ptr + glui_term_height - 1 :
       file_list_get_size(driver.menu->selection_buf);
 
    /* Do not scroll if all items are visible. */
@@ -124,8 +124,6 @@ static void glui_frame(void)
 
    if (end - begin > glui_term_height)
       end = begin + glui_term_height;
-
-   end -= 1;
 
    glui_render_background();
 
