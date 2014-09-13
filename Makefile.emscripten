@@ -30,22 +30,7 @@ libretro = libretro_emscripten.bc
 LIBS =
 LDFLAGS = -L. -s TOTAL_MEMORY=$(MEMORY) -s OUTLINING_LIMIT=50000 --js-library emscripten/library_rwebaudio.js --js-library emscripten/library_rwebinput.js --js-library emscripten/library_rwebcam.js --no-heap-copy
 
-ifeq ($(HAVE_RGUI), 1)
-   DEFINES += -DHAVE_MENU -DHAVE_RGUI
-   OBJ += frontend/menu/disp/rgui.o
-	HAVE_MENU_COMMON = 1
-endif
-
 OBJ += playlist.o
-
-ifeq ($(HAVE_MENU_COMMON), 1)
-   OBJ += frontend/menu/backend/menu_common_backend.o \
-			 frontend/menu/menu_input_line_cb.o \
-			 frontend/menu/menu_common.o \
-			 frontend/menu/menu_navigation.o  \
-			 frontend/menu/menu_action.o \
-			 frontend/menu/menu_entries.o
-endif
 
 ifeq ($(HAVE_SDL), 1)
    OBJ += input/sdl_input.o

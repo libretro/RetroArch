@@ -67,31 +67,8 @@ ifneq ($(findstring Linux,$(OS)),)
    JOYCONFIG_OBJ += tools/linuxraw_joypad.o
 endif
 
-ifeq ($(HAVE_RGUI), 1)
-   OBJ += frontend/menu/disp/rgui.o
-   DEFINES += -DHAVE_MENU -DHAVE_RGUI
-   HAVE_MENU_COMMON = 1
-ifeq ($(HAVE_GLUI), 1)
-   OBJ += frontend/menu/disp/glui.o
-   DEFINES += -DHAVE_GLUI
-endif
-ifeq ($(HAVE_LAKKA), 1)
-   OBJ += frontend/menu/backend/menu_lakka_backend.o frontend/menu/disp/lakka.o
-   DEFINES += -DHAVE_LAKKA
-endif
-endif
-
 OBJ += playlist.o \
 		 movie.o
-
-ifeq ($(HAVE_MENU_COMMON), 1)
-   OBJ += frontend/menu/backend/menu_common_backend.o \
-			 frontend/menu/menu_input_line_cb.o \
-			 frontend/menu/menu_common.o \
-			 frontend/menu/menu_navigation.o  \
-			 frontend/menu/menu_action.o \
-			 frontend/menu/menu_entries.o
-endif
 
 ifeq ($(HAVE_THREADS), 1)
    OBJ += autosave.o thread.o gfx/video_thread_wrapper.o audio/thread_wrapper.o
