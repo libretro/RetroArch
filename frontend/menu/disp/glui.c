@@ -41,9 +41,7 @@
 int line_height, glyph_width, glui_term_start_x, glui_term_start_y, 
    glui_term_width, glui_term_height;
 
-const gl_font_renderer_t *font_driver;
-
-static void blit_line(float x, float y, const char *message, bool green)
+static void glui_blit_line(float x, float y, const char *message, bool green)
 {
    gl_t *gl = (gl_t*)driver_video_resolve(NULL);
 
@@ -60,9 +58,11 @@ static void blit_line(float x, float y, const char *message, bool green)
    params.color = green ? FONT_COLOR_RGBA(100, 255, 100, 255)
       : FONT_COLOR_RGBA(255, 255, 255, 255);
    params.full_screen = true;
-
-   if (font_driver)
-      font_driver->render_msg((void*)driver.menu->font, message, &params);
+    
+   if (driver.video_data && driver.video_poke
+       && driver.video_poke->set_osd_msg)
+       driver.video_poke->set_osd_msg(driver.video_data,
+                                      message, &params);
 }
 
 static void glui_render_background(void)
@@ -148,7 +148,7 @@ static void glui_frame(void)
    char title_buf[256];
    menu_ticker_line(title_buf, glui_term_width - 3,
          g_extern.frame_count / glui_term_start_x, title, true);
-   blit_line(glui_term_start_x + glui_term_start_x, glui_term_start_y, 
+   glui_blit_line(glui_term_start_x + glui_term_start_x, glui_term_start_y,
          title_buf, true);
 
    char title_msg[64];
@@ -166,7 +166,7 @@ static void glui_frame(void)
 
    snprintf(title_msg, sizeof(title_msg), "%s - %s %s", PACKAGE_VERSION,
          core_name, core_version);
-   blit_line(
+   glui_blit_line(
          glui_term_start_x + glui_term_start_x,
          (glui_term_height * line_height) +
          glui_term_start_y + 2, title_msg, true);
@@ -209,9 +209,9 @@ static void glui_frame(void)
             ' ',
             entry_title_buf);
 
-      blit_line(x, y, message, selected);
+      glui_blit_line(x, y, message, selected);
 
-      blit_line(gl->win_width - glyph_width * w 
+      glui_blit_line(gl->win_width - glyph_width * w
          - glui_term_start_x , y, type_str_buf, selected);
    }
 
@@ -305,7 +305,6 @@ static int glui_input_postprocess(uint64_t old_state)
 
 static void glui_context_reset(void *data)
 {
-   char mediapath[256], themepath[256], iconpath[256];
    menu_handle_t *menu = (menu_handle_t*)data;
    gl_t *gl = (gl_t*)driver_video_resolve(NULL);
 
@@ -322,9 +321,6 @@ static void glui_context_reset(void *data)
          / glyph_width;
    glui_term_height = ((gl->win_height - glui_term_start_y) 
          / (line_height)) - 1;
-
-   gl_font_init_first(&font_driver, (void*)&menu->font, gl, g_settings.video.font_path,
-      g_settings.video.font_size);
 }
 
 menu_ctx_driver_t menu_ctx_glui = {

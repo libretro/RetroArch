@@ -628,9 +628,17 @@ MENU
 #include "../frontend/menu/disp/rmenu_xui.cpp"
 #endif
 
-#if defined(HAVE_LAKKA) && defined(HAVE_OPENGL)
+#ifdef HAVE_OPENGL
+
+#ifdef HAVE_LAKKA
 #include "../frontend/menu/backend/menu_lakka_backend.c"
 #include "../frontend/menu/disp/lakka.c"
+#endif
+
+#ifdef HAVE_GLUI
+#include "../frontend/menu/disp/glui.c"
+#endif
+
 #endif
 
 #ifdef __cplusplus
