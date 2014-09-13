@@ -272,7 +272,7 @@ static const struct font_glyph *gl_get_glyph(void *data, uint32_t code)
    if (!font)
       return NULL;
 
-   return font->font_driver->get_glyph(font->font_driver, code);
+   return font->font_driver->get_glyph((void*)font->font_driver, code);
 }
 
 gl_font_renderer_t gl_raster_font = {
