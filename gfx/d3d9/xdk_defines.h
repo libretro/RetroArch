@@ -23,15 +23,10 @@
 
 #define RD3DDevice_SetTransform(device, State, pMatrix) D3DDevice_SetTransform(State, pMatrix)
 
-#define RD3DVertexBuffer_Lock(device, OffsetToLock, SizeToLock, ppbData, Flags) *ppbData = D3DVertexBuffer_Lock2(device, Flags) + OffsetToLock
-#define RD3DVertexBuffer_Unlock(device)
 #define RD3DDevice_Clear(device, Count, pRects, Flags, Color, Z, Stencil) D3DDevice_Clear(Count, pRects, Flags, Color, Z, Stencil)
 
 #elif defined(_XBOX360)
 /* XBox 360*/
-
-#define RD3DVertexBuffer_Lock(device, OffsetToLock, SizeToLock, ppbData, Flags) *ppbData = D3DVertexBuffer_Lock(device, OffsetToLock, SizeToLock, Flags)
-#define RD3DVertexBuffer_Unlock(device) D3DVertexBuffer_Unlock(device)
 
 #define RD3DDevice_Clear(device, Count, pRects, Flags, Color, Z, Stencil) D3DDevice_Clear(device, Count, pRects, Flags, Color, Z, Stencil, false)
 #endif

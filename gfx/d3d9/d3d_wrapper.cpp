@@ -104,6 +104,20 @@ LPDIRECT3DVERTEXBUFFER d3d_vertex_buffer_new(LPDIRECT3DDEVICE dev,
    return buf;
 }
 
+void d3d_vertex_buffer_unlock(LPDIRECT3DVERTEXBUFFER vertbuf)
+{
+   /* This is a stub on Xbox 1, see docs. */
+#ifndef _XBOX1
+
+#ifdef _XBOX360
+   D3DVertexBuffer_Unlock(vertbuf);
+#else
+   vertbuf->Unlock();
+#endif
+
+#endif
+}
+
 void *d3d_vertex_buffer_lock(LPDIRECT3DVERTEXBUFFER vertbuf)
 {
 #ifdef _XBOX1

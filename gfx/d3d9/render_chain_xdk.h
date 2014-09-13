@@ -206,7 +206,7 @@ static void renderchain_set_vertices(void *data, unsigned pass, unsigned width, 
 
       void *verts = d3d_vertex_buffer_lock(d3d->vertex_buf);
       memcpy(verts, vert, sizeof(vert));
-      RD3DVertexBuffer_Unlock(d3d->vertex_buf);
+      d3d_vertex_buffer_unlock(d3d->vertex_buf);
    }
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)

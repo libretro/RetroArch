@@ -1024,7 +1024,7 @@ static bool texture_image_render(void *data,
 
    /* copy the new verts over the old verts */
    memcpy(verts, newVerts, sizeof(newVerts));
-   out_img->vertex_buf->Unlock();
+   d3d_vertex_buffer_unlock(out_img->vertex_buf);
 
    d3d->dev->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
    d3d->dev->SetRenderState(D3DRS_SRCBLEND,  D3DBLEND_SRCALPHA);
@@ -1284,7 +1284,7 @@ static void d3d_overlay_render(void *data, overlay_t *overlay)
 
    overlay->vert_buf->Lock(0, sizeof(vert), &verts, 0);
    memcpy(verts, vert, sizeof(vert));
-   overlay->vert_buf->Unlock();
+   d3d_vertex_buffer_unlock(overlay->vert_buf);
 
    // enable alpha
    d3d->dev->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);

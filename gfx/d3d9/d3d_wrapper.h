@@ -27,6 +27,7 @@ LPDIRECT3DVERTEXBUFFER d3d_vertex_buffer_new(LPDIRECT3DDEVICE dev,
       D3DPOOL pool, void *handle);
 
 void *d3d_vertex_buffer_lock(LPDIRECT3DVERTEXBUFFER vertbuf);
+void d3d_vertex_buffer_unlock(LPDIRECT3DVERTEXBUFFER vertbuf);
 
 void d3d_vertex_buffer_free(LPDIRECT3DVERTEXBUFFER buf);
 
