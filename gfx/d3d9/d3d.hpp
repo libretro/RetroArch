@@ -59,10 +59,6 @@
 #include <string>
 #include <vector>
 
-#ifndef _XBOX
-#define D3DDevice_CreateVertexBuffers(device, Length, Usage, UnusedFVF, UnusedPool, ppVertexBuffer, pUnusedSharedHandle) device->CreateVertexBuffer(Length, Usage, UnusedFVF, UnusedPool, ppVertexBuffer, NULL)
-#endif
-
 #ifdef HAVE_OVERLAY
 typedef struct
 {

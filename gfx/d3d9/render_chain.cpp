@@ -355,14 +355,15 @@ bool renderchain_create_first_pass(void *data, const LinkInfo *info,
       chain->prev.last_width[i] = 0;
       chain->prev.last_height[i] = 0;
 
-      if (FAILED(d3dr->CreateVertexBuffer(
-                  4 * sizeof(Vertex),
-                  d3dr->GetSoftwareVertexProcessing() 
-                  ? D3DUSAGE_SOFTWAREPROCESSING : 0,
-                  0,
-                  D3DPOOL_DEFAULT,
-                  &chain->prev.vertex_buf[i],
-                  NULL)))
+      chain->prev.vertex_buf[i] = d3d_vertex_buffer_new(
+            d3dr, 4 * sizeof(Vertex),
+            d3dr->GetSoftwareVertexProcessing() 
+            ? D3DUSAGE_SOFTWAREPROCESSING : 0,
+            0,
+            D3DPOOL_DEFAULT,
+            NULL);
+
+      if (!chain->prev.vertex_buf[i])
          return false;
 
       if (FAILED(d3dr->CreateTexture(info->tex_w, info->tex_h, 1, 0,

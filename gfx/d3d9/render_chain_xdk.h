@@ -56,19 +56,22 @@ bool renderchain_init_shader_fvf(void *data, void *pass_)
    return true;
 }
 
-static bool renderchain_create_first_pass(void *data, const video_info_t *info)
+static bool renderchain_create_first_pass(void *data,
+      const video_info_t *info)
 {
    HRESULT ret;
    d3d_video_t *chain = (d3d_video_t*)data;
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)chain->dev;
 
-   ret = D3DDevice_CreateVertexBuffers(d3dr, 4 * sizeof(Vertex), 
-         D3DUSAGE_WRITEONLY, D3DFVF_CUSTOMVERTEX, D3DPOOL_MANAGED, &chain->vertex_buf, NULL);
+   chain->vertex_buf = d3d_vertex_buffer_new(d3dr, 4 * sizeof(Vertex), 
+         D3DUSAGE_WRITEONLY, D3DFVF_CUSTOMVERTEX, D3DPOOL_MANAGED, 
+         NULL);
 
-   if (FAILED(ret))
+   if (!chain->vertex_buf)
       return false;
 
-   ret = d3dr->CreateTexture(chain->tex_w, chain->tex_h, 1, 0, info->rgb32 ? D3DFMT_LIN_X8R8G8B8 : D3DFMT_LIN_R5G6B5,
+   ret = d3dr->CreateTexture(chain->tex_w, chain->tex_h, 1, 0,
+         info->rgb32 ? D3DFMT_LIN_X8R8G8B8 : D3DFMT_LIN_R5G6B5,
          0, &chain->tex
 #ifdef _XBOX360
          , NULL
