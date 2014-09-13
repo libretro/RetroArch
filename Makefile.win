@@ -43,7 +43,7 @@ include Makefile.common
 OBJ +=	media/rarch.o \
 			gfx/context/win32_common.o
 
-JOBJ := conf/config_file.o \
+JOYCONFIG_OBJ := conf/config_file.o \
 	tools/retroarch-joyconfig.o \
 	compat/compat.o \
 	file_path.o \
@@ -109,7 +109,7 @@ ifeq ($(HAVE_SDL2), 1)
      OBJ += gfx/context/sdl_gl_ctx.o
    endif
 
-   JOBJ += input/sdl_joypad.o
+   JOYCONFIG_OBJ += input/sdl_joypad.o
    LIBS += -lSDL2
    JLIBS += -lSDL2
    DEFINES += -ISDL2 -DHAVE_SDL2
@@ -123,7 +123,7 @@ ifeq ($(HAVE_SDL), 1)
      OBJ += gfx/context/sdl_gl_ctx.o
    endif
 
-   JOBJ += input/sdl_joypad.o
+   JOYCONFIG_OBJ += input/sdl_joypad.o
    LIBS += -lSDL
    JLIBS += -lSDL
    DEFINES += -ISDL -DHAVE_SDL
@@ -179,7 +179,7 @@ ifeq ($(HAVE_ZLIB), 1)
    OBJ += gfx/rpng/rpng.o file_extract.o
    OBJ += $(ZLIB_OBJS)
    RETROLAUNCH_OBJ += $(ZLIB_OBJS)
-   JOBJ += $(ZLIB_OBJS)
+   JOYCONFIG_OBJ += $(ZLIB_OBJS)
    DEFINES += -DHAVE_ZLIB
    HAVE_COMPRESSION = 1 
    ifeq ($(WANT_MINIZ), 1)
@@ -279,7 +279,7 @@ ifeq ($(HAVE_7ZIP),1)
 		decompress/7zip_support.o 
    OBJ += $(7ZOBJ)
    RETROLAUNCH_OBJ += $(7ZOBJ)
-   JOBJ += $(7ZOBJ)
+   JOYCONFIG_OBJ += $(7ZOBJ)
 endif
 
 ifdef HAVE_COMPRESSION
@@ -321,11 +321,11 @@ ifneq ($(GIT_VERSION),)
 endif
 
 RARCH_OBJ := $(addprefix $(OBJDIR)/,$(OBJ))
-RARCH_JOBJ := $(addprefix $(OBJDIR)/,$(JOBJ))
+RARCH_JOYCONFIG_OBJ := $(addprefix $(OBJDIR)/,$(JOYCONFIG_OBJ))
 
 all: $(TARGET) $(JTARGET)
 
--include $(RARCH_OBJ:.o=.d) $(RARCH_JOBJ:.o=.d)
+-include $(RARCH_OBJ:.o=.d) $(RARCH_JOYCONFIG_OBJ:.o=.d)
 
 $(TARGET): $(RARCH_OBJ)
 	@$(if $(Q), $(shell echo echo LD $@),)
@@ -358,12 +358,12 @@ $(OBJDIR)/%.o: %.rc $(HEADERS)
 	@$(if $(Q), $(shell echo echo WINDRES $<),)
 	$(Q)$(WINDRES) -o $@ $<
 
-$(JTARGET): $(RARCH_JOBJ)
+$(JTARGET): $(RARCH_JOYCONFIG_OBJ)
 	@$(if $(Q), $(shell echo echo LD $@),)
 ifeq ($(CXX_BUILD), 1)
-	$(Q)$(CXX) -o $@ $(RARCH_JOBJ) -ldxguid -ldinput8 -lole32 $(LDFLAGS) $(JLIBS)
+	$(Q)$(CXX) -o $@ $(RARCH_JOYCONFIG_OBJ) -ldxguid -ldinput8 -lole32 $(LDFLAGS) $(JLIBS)
 else
-	$(Q)$(CC) -o $@ $(RARCH_JOBJ) -ldxguid -ldinput8 -lole32 $(LDFLAGS) $(JLIBS)
+	$(Q)$(CC) -o $@ $(RARCH_JOYCONFIG_OBJ) -ldxguid -ldinput8 -lole32 $(LDFLAGS) $(JLIBS)
 endif
 
 clean:

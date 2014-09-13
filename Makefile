@@ -1,6 +1,7 @@
 include config.mk
 
-TARGET = retroarch tools/retroarch-joyconfig tools/retrolaunch/retrolaunch
+TARGET = retroarch tools/retrolaunch/retrolaunch
+JTARGET = tools/retroarch-joyconfig 
 
 OBJDIR := obj-unix
 
@@ -516,7 +517,7 @@ RARCH_OBJ := $(addprefix $(OBJDIR)/,$(OBJ))
 RARCH_JOYCONFIG_OBJ := $(addprefix $(OBJDIR)/,$(JOYCONFIG_OBJ))
 RARCH_RETROLAUNCH_OBJ := $(addprefix $(OBJDIR)/,$(RETROLAUNCH_OBJ))
 
-all: $(TARGET) config.mk
+all: $(TARGET) $(JTARGET) config.mk
 
 -include $(RARCH_OBJ:.o=.d) $(RARCH_JOYCONFIG_OBJ:.o=.d) $(RARCH_RETROLAUNCH_OBJ:.o=.d)
 
@@ -528,7 +529,7 @@ retroarch: $(RARCH_OBJ)
 	@$(if $(Q), $(shell echo echo LD $@),)
 	$(Q)$(LINK) -o $@ $(RARCH_OBJ) $(LIBS) $(LDFLAGS) $(LIBRARY_DIRS)
 
-tools/retroarch-joyconfig: $(RARCH_JOYCONFIG_OBJ)
+$(JTARGET): $(RARCH_JOYCONFIG_OBJ)
 	@$(if $(Q), $(shell echo echo LD $@),)
 ifeq ($(CXX_BUILD), 1)
 	$(Q)$(CXX) -o $@ $(RARCH_JOYCONFIG_OBJ) $(JOYCONFIG_LIBS) $(LDFLAGS) $(LIBRARY_DIRS)
@@ -615,6 +616,6 @@ clean:
 	rm -rf $(OBJDIR)
 	rm -f $(TARGET)
 	rm -f tools/retrolaunch/retrolaunch
-	rm -f tools/retroarch-joyconfig
+	rm -f $(JTARGET)
 
 .PHONY: all install uninstall clean
