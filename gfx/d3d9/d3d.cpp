@@ -685,9 +685,6 @@ static void *d3d_init(const video_info_t *info,
    /* Default values */
    vid->g_pD3D               = NULL;
    vid->dev                  = NULL;
-#ifndef _XBOX
-   vid->font                 = NULL;
-#endif
    vid->dev_rotation         = 0;
    vid->needs_restore        = false;
 #ifdef HAVE_CG

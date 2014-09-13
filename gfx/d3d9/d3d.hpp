@@ -115,9 +115,6 @@ typedef struct d3d_video
       HWND hWnd;
       LPDIRECT3D g_pD3D;
       LPDIRECT3DDEVICE dev;
-#ifndef _XBOX
-      LPD3DXFONT font;
-#endif
 #if defined(HAVE_D3D9) && defined(_XBOX)
    LPDIRECT3DSURFACE lpSurface;
    LPDIRECT3DTEXTURE lpTexture_ot_as16srgb;

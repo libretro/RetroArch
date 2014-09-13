@@ -19,6 +19,8 @@
 #include "../gfx_common.h"
 #include "../../general.h"
 
+static LPD3DXFONT d3d_font;
+
 static bool d3dfonts_w32_init_font(void *data,
       const char *font_path, unsigned font_size)
 {
@@ -39,15 +41,15 @@ static bool d3dfonts_w32_init_font(void *data,
    uint32_t b = static_cast<uint32_t>(g_settings.video.msg_color_b * 255) & 0xff;
    d3d->font_color = D3DCOLOR_XRGB(r, g, b);
 
-   return SUCCEEDED(D3DXCreateFontIndirect(d3d->dev, &desc, &d3d->font));
+   return SUCCEEDED(D3DXCreateFontIndirect(d3d->dev, &desc, &d3d_font));
 }
 
 static void d3dfonts_w32_deinit_font(void *data)
 {
-   d3d_video_t *d3d = (d3d_video_t*)data;
-   if (d3d->font)
-      d3d->font->Release();
-   d3d->font = NULL;
+   (void)data;
+   if (d3d_font)
+      d3d_font->Release();
+   d3d_font = NULL;
 }
 
 static void d3dfonts_w32_render_msg(void *data, const char *msg,
@@ -57,14 +59,14 @@ static void d3dfonts_w32_render_msg(void *data, const char *msg,
 
    if (msg && SUCCEEDED(d3d->dev->BeginScene()))
    {
-      d3d->font->DrawTextA(NULL,
+      d3d_font->DrawTextA(NULL,
             msg,
             -1,
             &d3d->font_rect_shifted,
             DT_LEFT,
             ((d3d->font_color >> 2) & 0x3f3f3f) | 0xff000000);
 
-      d3d->font->DrawTextA(NULL,
+      d3d_font->DrawTextA(NULL,
             msg,
             -1,
             &d3d->font_rect,
