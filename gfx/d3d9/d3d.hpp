@@ -172,9 +172,6 @@ typedef struct d3d_video
       unsigned tex_w;
       unsigned tex_h;
 #endif
-#ifdef _XBOX
-	  bool vsync;
-#endif
 } d3d_video_t;
 
 #ifndef _XBOX
