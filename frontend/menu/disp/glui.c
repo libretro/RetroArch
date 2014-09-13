@@ -214,7 +214,7 @@ static void glui_frame(void)
 
       blit_line(x, y, message, selected);
 
-      blit_line(gl->win_width - GLUI_FONT_WIDTH_STRIDE * strlen(type_str_buf) 
+      blit_line(gl->win_width - GLUI_FONT_WIDTH_STRIDE * www 
          - GLUI_TERM_START_X , y, type_str_buf, selected);
    }
 
