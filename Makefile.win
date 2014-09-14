@@ -61,9 +61,6 @@ LDFLAGS          := -L. -static-libgcc
 
 include Makefile.common
 
-OBJ +=	media/rarch.o \
-			gfx/context/win32_common.o
-
 JOYCONFIG_OBJ += conf/config_file.o \
 	tools/retroarch-joyconfig.o \
 	compat/compat.o \

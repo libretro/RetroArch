@@ -511,3 +511,8 @@ ifeq ($(HAVE_NETPLAY), 1)
       LIBS += -lws2_32
    endif
 endif
+
+ifneq ($(findstring Win32,$(OS)),)
+OBJ +=	media/rarch.o \
+			gfx/context/win32_common.o
+endif
