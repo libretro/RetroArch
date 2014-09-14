@@ -102,9 +102,6 @@ int main_entry_decide(signature(), args_type() args)
 
 int main_entry_iterate_content(signature(), args_type() args)
 {
-   if (g_extern.system.shutdown)
-      return main_entry_iterate_shutdown(signature_expand(), args);
-
    if (!rarch_main_iterate())
    {
       rarch_main_set_state(RARCH_ACTION_STATE_RUNNING_FINISHED);
@@ -131,9 +128,6 @@ int main_entry_iterate_clear_input(signature(), args_type() args)
 {
    (void)args;
 
-   if (g_extern.system.shutdown)
-      return main_entry_iterate_shutdown(signature_expand(), args);
-
    rarch_input_poll();
 #ifdef HAVE_MENU
    if (menu_input())
@@ -149,9 +143,6 @@ int main_entry_iterate_clear_input(signature(), args_type() args)
 
 int main_entry_iterate_load_content(signature(), args_type() args)
 {
-   if (g_extern.system.shutdown)
-      return main_entry_iterate_shutdown(signature_expand(), args);
-
 #ifdef HAVE_MENU
    if (!load_menu_content())
    {
@@ -171,9 +162,6 @@ int main_entry_iterate_load_content(signature(), args_type() args)
 int main_entry_iterate_menu_preinit(signature(), args_type() args)
 {
    int i;
-
-   if (g_extern.system.shutdown)
-      return main_entry_iterate_shutdown(signature_expand(), args);
 
    /* Menu should always run with vsync on. */
    rarch_main_command(RARCH_CMD_VIDEO_SET_BLOCKING_STATE);
@@ -206,24 +194,23 @@ int main_entry_iterate_menu_preinit(signature(), args_type() args)
 
 int main_entry_iterate_menu(signature(), args_type() args)
 {
-   if (g_extern.system.shutdown)
-      return main_entry_iterate_shutdown(signature_expand(), args);
-
-   if (!menu_iterate())
+   if (menu_iterate())
    {
-      rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED);
-      driver_set_nonblock_state(driver.nonblock_state);
-
-      rarch_main_command(RARCH_CMD_AUDIO_START);
-      rarch_main_set_state(RARCH_ACTION_STATE_FLUSH_INPUT);
-
-      if (input_key_pressed_func(RARCH_QUIT_KEY) ||
-            !driver.video->alive(driver.video_data))
-         return 1;
+      if (driver.frontend_ctx && driver.frontend_ctx->process_events)
+         driver.frontend_ctx->process_events(args);
+      return 0;
    }
 
-   if (driver.frontend_ctx && driver.frontend_ctx->process_events)
-      driver.frontend_ctx->process_events(args);
+   rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED);
+   driver_set_nonblock_state(driver.nonblock_state);
+
+   rarch_main_command(RARCH_CMD_AUDIO_START);
+   rarch_main_set_state(RARCH_ACTION_STATE_FLUSH_INPUT);
+
+   if (input_key_pressed_func(RARCH_QUIT_KEY) ||
+         !driver.video->alive(driver.video_data))
+      return 1;
+
    return 0;
 }
 #endif
