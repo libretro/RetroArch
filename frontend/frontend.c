@@ -209,23 +209,21 @@ int main_entry_iterate_menu(signature(), args_type() args)
    if (g_extern.system.shutdown)
       return main_entry_iterate_shutdown(signature_expand(), args);
 
-   if (menu_iterate())
+   if (!menu_iterate())
    {
-      if (driver.frontend_ctx && driver.frontend_ctx->process_events)
-         driver.frontend_ctx->process_events(args);
-      return 0;
+      rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED);
+      driver_set_nonblock_state(driver.nonblock_state);
+
+      rarch_main_command(RARCH_CMD_AUDIO_START);
+      rarch_main_set_state(RARCH_ACTION_STATE_FLUSH_INPUT);
+
+      if (input_key_pressed_func(RARCH_QUIT_KEY) ||
+            !driver.video->alive(driver.video_data))
+         return 1;
    }
 
-   rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED);
-   driver_set_nonblock_state(driver.nonblock_state);
-
-   rarch_main_command(RARCH_CMD_AUDIO_START);
-   rarch_main_set_state(RARCH_ACTION_STATE_FLUSH_INPUT);
-
-   if (input_key_pressed_func(RARCH_QUIT_KEY) ||
-         !driver.video->alive(driver.video_data))
-      return 1;
-
+   if (driver.frontend_ctx && driver.frontend_ctx->process_events)
+      driver.frontend_ctx->process_events(args);
    return 0;
 }
 #endif

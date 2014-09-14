@@ -3285,9 +3285,6 @@ static inline void limit_frame_time(void)
 
 void rarch_main_set_state(unsigned cmd)
 {
-
-   frontend_loop = NULL;
-
    switch (cmd)
    {
       case RARCH_ACTION_STATE_MENU_PREINIT:
