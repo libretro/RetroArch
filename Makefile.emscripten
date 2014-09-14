@@ -26,11 +26,6 @@ LDFLAGS := -L. -s TOTAL_MEMORY=$(MEMORY) -s OUTLINING_LIMIT=50000 --js-library e
 
 include Makefile.common
 
-OBJ += frontend/platform/platform_emscripten.o \
-		input/rwebinput_input.o \
-		audio/rwebaudio.o \
-		camera/rwebcam.o
-
 libretro = libretro_emscripten.bc
 
 ifeq ($(HAVE_ZLIB), 1)

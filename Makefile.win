@@ -53,6 +53,7 @@ PYTHON_CFLAGS    := -DHAVE_PYTHON -Ipython
 OBJDIR           := obj-w32
 
 OBJ              :=
+JOYCONFIG_OBJ    :=
 LIBS             := -lm
 JOYCONFIG_LIBS   :=
 DEFINES          := -I. -DHAVE_BUILTIN_AUTOCONFIG -DRARCH_INTERNAL -DHAVE_CC_RESAMPLER -DHAVE_OVERLAY
@@ -63,13 +64,11 @@ include Makefile.common
 OBJ +=	media/rarch.o \
 			gfx/context/win32_common.o
 
-JOYCONFIG_OBJ := conf/config_file.o \
+JOYCONFIG_OBJ += conf/config_file.o \
 	tools/retroarch-joyconfig.o \
 	compat/compat.o \
 	file_path.o \
-	tools/input_common_joyconfig.o \
-	input/dinput.o \
-	input/winxinput_joypad.o
+	tools/input_common_joyconfig.o
 
 HEADERS = $(wildcard */*/*.h) $(wildcard */*.h) $(wildcard *.h)
 

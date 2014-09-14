@@ -127,6 +127,13 @@ ifeq ($(HAVE_PYTHON), 1)
    OBJ += gfx/py_state/py_state.o
 endif
 
+ifeq ($(HAVE_EMSCRIPTEN), 1)
+OBJ += frontend/platform/platform_emscripten.o \
+		input/rwebinput_input.o \
+		audio/rwebaudio.o \
+		camera/rwebcam.o
+endif
+
 # Audio
 #
 ifeq ($(HAVE_COREAUDIO), 1)
