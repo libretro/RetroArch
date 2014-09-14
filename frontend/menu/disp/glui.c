@@ -39,6 +39,7 @@
 #include "shared.h"
 
 int line_height, glyph_width, glui_margin, glui_term_width, glui_term_height;
+GLuint glui_bg = 0;
 
 static void glui_blit_line(float x, float y, const char *message, bool green)
 {
@@ -66,11 +67,25 @@ static void glui_blit_line(float x, float y, const char *message, bool green)
 
 static void glui_render_background(void)
 {
-   GLfloat color[] = {
+   GLfloat black_color[] = {
       0.0f, 0.0f, 0.0f, 0.8f,
       0.0f, 0.0f, 0.0f, 0.8f,
       0.0f, 0.0f, 0.0f, 0.8f,
       0.0f, 0.0f, 0.0f, 0.8f,
+   };
+
+   static const GLfloat vertex[] = {
+      0, 0,
+      1, 0,
+      0, 1,
+      1, 1,
+   };
+
+   static const GLfloat tex_coord[] = {
+      0, 1,
+      1, 1,
+      0, 0,
+      1, 0,
    };
 
    gl_t *gl = (gl_t*)driver_video_resolve(NULL);
@@ -78,18 +93,20 @@ static void glui_render_background(void)
    if (!gl)
       return;
 
-   gl_set_viewport(gl, gl->win_width, gl->win_height, false, false);
-
-   glBindTexture(GL_TEXTURE_2D, 0);
+   glViewport(0, 0, gl->win_width, gl->win_height);
 
    glEnable(GL_BLEND);
 
-   gl->coords.vertex = gl->vertex_ptr;
-   gl->coords.tex_coord = (GLfloat*)calloc(4, sizeof(GLfloat));
-   gl->coords.color = color;
+   gl->coords.vertex = vertex;
+   gl->coords.tex_coord = tex_coord;
+   gl->coords.color = glui_bg ? gl->white_color_ptr : black_color;
+   glBindTexture(GL_TEXTURE_2D, glui_bg);
+
+   if (gl->shader && gl->shader->use)
+      gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
 
    gl->coords.vertices = 4;
-   gl_shader_set_coords(gl, &gl->coords, &gl->mvp);
+   gl_shader_set_coords(gl, &gl->coords, &gl->mvp_no_rot);
 
    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
    glDisable(GL_BLEND);
@@ -307,6 +324,25 @@ static int glui_input_postprocess(uint64_t old_state)
    return 0;
 }
 
+static GLuint png_texture_load(const char * file_name)
+{
+   struct texture_image ti = {0};
+   texture_image_load(&ti, file_name);
+
+   /* Generate the OpenGL texture object */
+   GLuint texture = 0;
+   glGenTextures(1, &texture);
+   glBindTexture(GL_TEXTURE_2D, texture);
+   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, ti.width, ti.height, 0,
+         GL_RGBA, GL_UNSIGNED_BYTE, ti.pixels);
+   glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+   glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+   free(ti.pixels);
+
+   return texture;
+}
+
 static void glui_context_reset(void *data)
 {
    menu_handle_t *menu = (menu_handle_t*)data;
@@ -316,6 +352,16 @@ static void glui_context_reset(void *data)
 
    if (!menu)
       return;
+
+   char bgpath[PATH_MAX];
+
+   fill_pathname_join(bgpath, g_settings.assets_directory,
+         "glui", sizeof(bgpath));
+
+   fill_pathname_join(bgpath, bgpath, "bg.png", sizeof(bgpath));
+
+   if (path_file_exists(bgpath))
+      glui_bg = png_texture_load(bgpath);
 }
 
 menu_ctx_driver_t menu_ctx_glui = {
