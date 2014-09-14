@@ -29,7 +29,7 @@
 #include "../../../message_queue.h"
 #include "../../../general.h"
 
-#include "../../gfx/d3d9/d3d.hpp"
+#include "../../gfx/d3d/d3d.hpp"
 
 #include "shared.h"
 

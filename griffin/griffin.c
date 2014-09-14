@@ -229,10 +229,10 @@ VIDEO DRIVER
 #endif
 
 #if defined(_XBOX) || defined(HAVE_WIN32_D3D9)
-#include "../gfx/d3d9/d3d_wrapper.cpp"
-#include "../gfx/d3d9/d3d.cpp"
+#include "../gfx/d3d/d3d_wrapper.cpp"
+#include "../gfx/d3d/d3d.cpp"
 #ifndef _XBOX
-#include "../gfx/d3d9/render_chain.cpp"
+#include "../gfx/d3d/render_chain.cpp"
 #endif
 #endif
 

@@ -15,7 +15,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../d3d9/d3d.hpp"
+#include "../d3d/d3d.hpp"
 #include "win32_common.h"
 
 #include "../gfx_common.h"
@@ -446,7 +446,7 @@ static void gfx_ctx_d3d_swap_interval(void *data, unsigned interval)
 #endif
 }
 
-const gfx_ctx_driver_t gfx_ctx_d3d9 = {
+const gfx_ctx_driver_t gfx_ctx_d3d = {
    gfx_ctx_d3d_init,
    gfx_ctx_d3d_destroy,
    gfx_ctx_d3d_bind_api,

@@ -22,7 +22,7 @@
 #ifdef _WIN32
 #include "../context/win32_common.h"
 #ifdef _XBOX1
-#include "../d3d9/d3d_defines.h"
+#include "../d3d/d3d_defines.h"
 #endif
 #endif
 

@@ -27,7 +27,7 @@ static const gfx_ctx_driver_t *gfx_ctx_drivers[] = {
    &gfx_ctx_ps3,
 #endif
 #if defined(HAVE_WIN32_D3D9) || defined(_XBOX)
-   &gfx_ctx_d3d9,
+   &gfx_ctx_d3d,
 #endif
 #if defined(HAVE_VIDEOCORE)
    &gfx_ctx_videocore,

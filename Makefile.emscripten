@@ -74,7 +74,7 @@ clean:
 	rm -f conf/*.o
 	rm -f gfx/scaler/*.o
 	rm -f gfx/*.o
-	rm -f gfx/d3d9/*.o
+	rm -f gfx/d3d/*.o
 	rm -f gfx/context/*.o
 	rm -f gfx/math/*.o
 	rm -f gfx/fonts/*.o

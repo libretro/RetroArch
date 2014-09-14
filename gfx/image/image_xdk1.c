@@ -15,7 +15,7 @@
  */
 
 #include "image.h"
-#include "../d3d9/d3d_wrapper.h"
+#include "../d3d/d3d_wrapper.h"
 
 bool texture_image_load(struct texture_image *out_img, const char *path)
 {
