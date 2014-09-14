@@ -563,8 +563,8 @@ static void gfx_ctx_input_driver(void *data, const input_driver_t **input, void 
 {
    (void)data;
    dinput_wgl   = input_dinput.init();
-   *input       = dinput ? &input_dinput : NULL;
-   *input_data  = dinput;
+   *input       = dinput_wgl ? &input_dinput : NULL;
+   *input_data  = dinput_wgl;
 }
 
 static bool gfx_ctx_has_focus(void *data)

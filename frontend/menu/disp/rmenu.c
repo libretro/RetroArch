@@ -328,16 +328,7 @@ static void rmenu_free(void *data)
 
 static int rmenu_input_postprocess(uint64_t old_state)
 {
-   menu_handle_t *menu = (menu_handle_t*)driver.menu;
-
-   if ((menu->trigger_state & (1ULL << RARCH_MENU_TOGGLE)) &&
-         g_extern.main_is_init &&
-         !g_extern.libretro_dummy)
-   {
-      rarch_main_command(RARCH_CMD_RESUME);
-      return -1;
-   }
-
+   (void)old_state;
    return 0;
 }
 

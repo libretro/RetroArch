@@ -454,16 +454,6 @@ static void rgui_free(void *data)
 
 static int rgui_input_postprocess(uint64_t old_state)
 {
-   (void)old_state;
-
-   if ((driver.menu->trigger_state & (1ULL << RARCH_MENU_TOGGLE)) &&
-         g_extern.main_is_init &&
-         !g_extern.libretro_dummy)
-   {
-      rarch_main_command(RARCH_CMD_RESUME);
-      return -1;
-   }
-
    return 0;
 }
 

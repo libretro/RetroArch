@@ -1069,11 +1069,7 @@ static int lakka_input_postprocess(uint64_t old_state)
             & (1ULL << RARCH_MENU_TOGGLE)) &&
          g_extern.main_is_init &&
          !g_extern.libretro_dummy)
-   {
       global_alpha = 0;
-      rarch_main_command(RARCH_CMD_RESUME);
-      return -1;
-   }
 
    if (! global_alpha)
       add_tween(LAKKA_DELAY, 1.0, &global_alpha, &inOutQuad, NULL);

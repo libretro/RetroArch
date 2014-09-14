@@ -3285,9 +3285,6 @@ static inline void limit_frame_time(void)
 
 void rarch_main_set_state(unsigned cmd)
 {
-
-   frontend_loop = NULL;
-
    switch (cmd)
    {
       case RARCH_ACTION_STATE_MENU_PREINIT:
@@ -3335,8 +3332,6 @@ void rarch_main_set_state(unsigned cmd)
       default:
          break;
    }
-
-   frontend_loop = main_entry_decide;
 }
 
 void rarch_main_command(unsigned cmd)
@@ -3548,6 +3543,9 @@ void rarch_main_command(unsigned cmd)
          rarch_main_set_state(RARCH_ACTION_STATE_FORCE_QUIT);
          break;
       case RARCH_CMD_RESUME:
+#ifdef HAVE_MENU
+         rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED);
+#endif
          rarch_main_set_state(RARCH_ACTION_STATE_RUNNING);
          break;
       case RARCH_CMD_RESTART_RETROARCH:

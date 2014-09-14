@@ -343,12 +343,7 @@ static void rmenu_xui_frame(void)
 
 static int rmenu_xui_input_postprocess(uint64_t old_state)
 {
-   if ((driver.menu->trigger_state & (1ULL << RARCH_MENU_TOGGLE)) &&
-      g_extern.main_is_init)
-   {
-      rarch_main_command(RARCH_CMD_RESUME);
-      return -1;
-   }
+   (void)old_state;
 
    return 0;
 }

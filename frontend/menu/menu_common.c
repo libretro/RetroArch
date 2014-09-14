@@ -295,6 +295,8 @@ static unsigned input_frame(uint64_t trigger_state)
       return MENU_ACTION_START;
    if (trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_SELECT))
       return MENU_ACTION_SELECT;
+   if (trigger_state & (1ULL << RARCH_MENU_TOGGLE))
+      return MENU_ACTION_TOGGLE;
    return MENU_ACTION_NOOP;
 }
 
@@ -304,7 +306,6 @@ bool menu_iterate(void)
    static bool initial_held = true;
    static bool first_held = false;
    uint64_t input_state = 0;
-   int32_t input_entry_ret = 0;
    int32_t ret = 0;
 
    if (!driver.menu)
@@ -371,7 +372,7 @@ bool menu_iterate(void)
 
    if (driver.menu_ctx && driver.menu_ctx->backend
          && driver.menu_ctx->backend->iterate) 
-      input_entry_ret = driver.menu_ctx->backend->iterate(action);
+      driver.menu_ctx->backend->iterate(action);
 
    draw_frame(true);
    throttle_frame();
@@ -383,7 +384,7 @@ bool menu_iterate(void)
    if (ret < 0)
       menu_flush_stack_type(driver.menu->menu_stack, MENU_SETTINGS);
 
-   if (ret || input_entry_ret)
+   if (ret)
       return false;
 
    return true;

@@ -86,9 +86,6 @@ int main_entry_iterate_menu_preinit(signature(), args_type() args);
 int main_entry_iterate_menu(signature(), args_type() args);
 #endif
 
-extern int (*frontend_loop)(signature(), args_type() args);
-
-
 #ifdef __cplusplus
 }
 #endif
