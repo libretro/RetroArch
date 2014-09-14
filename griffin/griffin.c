@@ -108,7 +108,7 @@ VIDEO CONTEXT
 
 #if defined(__CELLOS_LV2__)
 #include "../gfx/context/ps3_ctx.c"
-#elif defined(_XBOX)
+#elif defined(_XBOX) || defined(HAVE_WIN32_D3D9)
 #include "../gfx/context/d3d_ctx.cpp"
 #elif defined(ANDROID)
 #include "../gfx/context/androidegl_ctx.c"
@@ -130,8 +130,13 @@ VIDEO CONTEXT
 #if defined(HAVE_X11) && !defined(HAVE_OPENGLES)
 #include "../gfx/context/glx_ctx.c"
 #endif
+
 #if defined(HAVE_EGL)
 #include "../gfx/context/xegl_ctx.c"
+#endif
+
+#if defined(_WIN32) && !defined(_XBOX)
+#include "../gfx/context/wgl_ctx.c"
 #endif
 
 #endif
@@ -223,9 +228,12 @@ VIDEO DRIVER
 #include "../gfx/xvideo.c"
 #endif
 
-#ifdef _XBOX
+#if defined(_XBOX) || defined(HAVE_WIN32_D3D9)
 #include "../gfx/d3d9/d3d_wrapper.cpp"
 #include "../gfx/d3d9/d3d.cpp"
+#ifndef _XBOX
+#include "../gfx/d3d9/render_chain.cpp"
+#endif
 #endif
 
 #if defined(GEKKO)
@@ -261,8 +269,12 @@ FONTS
 #include "../gfx/fonts/gl_font.c"
 #endif
 
-#ifdef _XBOX
+#if defined(_XBOX) || defined(HAVE_WIN32_D3D9)
 #include "../gfx/fonts/d3d_font.c"
+#endif
+
+#if defined(_WIN32) && !defined(_XBOX)
+#include "../gfx/fonts/d3d_w32_font.cpp"
 #endif
 
 #if defined(HAVE_LIBDBGFONT)
@@ -306,6 +318,8 @@ INPUT
 #include "../input/xdk_xinput_input.c"
 #include "../input/xdk_xinput_input_joypad.c"
 #include "../input/autoconf/builtin_xdk.c"
+#elif defined(_WIN32)
+#include "../input/autoconf/builtin_win.c"
 #elif defined(XENON)
 #include "../input/xenon360_input.c"
 #elif defined(ANDROID)
@@ -319,6 +333,18 @@ INPUT
 #include "../input/qnx_input_joypad.c"
 #elif defined(EMSCRIPTEN)
 #include "../input/rwebinput_input.c"
+#endif
+
+#ifdef HAVE_DINPUT
+#include "../input/dinput.c"
+#endif
+
+#ifdef HAVE_WINXINPUT
+#include "../input/winxinput_joypad.c"
+#endif
+
+#if defined(_WIN32) && !defined(_XBOX)
+#include "../gfx/context/win32_common.c"
 #endif
 
 #if defined(__CELLOS_LV2__)
