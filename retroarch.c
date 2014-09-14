@@ -3545,6 +3545,9 @@ void rarch_main_command(unsigned cmd)
          rarch_main_set_state(RARCH_ACTION_STATE_FORCE_QUIT);
          break;
       case RARCH_CMD_RESUME:
+#ifdef HAVE_MENU
+         rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED);
+#endif
          rarch_main_set_state(RARCH_ACTION_STATE_RUNNING);
          break;
       case RARCH_CMD_RESTART_RETROARCH:
