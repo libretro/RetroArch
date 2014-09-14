@@ -40,21 +40,6 @@ ifeq ($(HAVE_DYLIB), 1)
    LIBS += $(DYLIB_LIB)
 endif
 
-ifeq ($(HAVE_ZLIB), 1)
-   HAVE_COMPRESSION = 1 
-   ZLIB_OBJS =	deps/rzlib/unzip.o \
-		deps/rzlib/ioapi.o 
-   OBJ += gfx/rpng/rpng.o file_extract.o decompress/zip_support.o
-   OBJ += $(ZLIB_OBJS)
-   JOYCONFIG_OBJ += decompress/zip_support.o
-   JOYCONFIG_OBJ += $(ZLIB_OBJS)
-   JOYCONFIG_LIBS += -lz
-   RETROLAUNCH_OBJ += decompress/zip_support.o
-   RETROLAUNCH_OBJ += $(ZLIB_OBJS)
-   LIBS += $(ZLIB_LIBS)
-   DEFINES += $(ZLIB_CFLAGS) -DHAVE_ZLIB_DEFLATE -DHAVE_ZLIB
-endif
-
 ifeq ($(HAVE_DYNAMIC), 1)
    LIBS += $(DYLIB_LIB)
 else

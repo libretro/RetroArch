@@ -89,26 +89,6 @@ endif
 
 libretro ?= -lretro
 
-ifeq ($(HAVE_ZLIB), 1)
-   ZLIB_OBJS =	deps/rzlib/unzip.o \
-		deps/rzlib/ioapi.o \
-		decompress/zip_support.o 
-   OBJ += gfx/rpng/rpng.o file_extract.o
-   OBJ += $(ZLIB_OBJS)
-   RETROLAUNCH_OBJ += $(ZLIB_OBJS)
-   JOYCONFIG_OBJ += $(ZLIB_OBJS)
-   DEFINES += -DHAVE_ZLIB
-   HAVE_COMPRESSION = 1 
-   ifeq ($(WANT_MINIZ), 1)
-      OBJ += deps/miniz/miniz.o
-      DEFINES += -DWANT_MINIZ
-   else
-      LIBS += -lz
-      JOYCONFIG_LIBS += -lz
-      DEFINES += -DHAVE_ZLIB_DEFLATE
-   endif
-endif
-
 ifeq ($(DYNAMIC), 1)
    DEFINES += -DHAVE_DYNAMIC
 else

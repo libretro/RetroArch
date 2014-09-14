@@ -508,6 +508,52 @@ ifeq ($(HAVE_7ZIP),1)
    JOYCONFIG_OBJ += $(7ZOBJ)
 endif
 
+ifeq ($(HAVE_ZLIB), 1)
+   ZLIB_OBJS =	decompress/zip_support.o 
+   OBJ += gfx/rpng/rpng.o file_extract.o
+   OBJ += $(ZLIB_OBJS)
+   RETROLAUNCH_OBJ += $(ZLIB_OBJS)
+   JOYCONFIG_OBJ += $(ZLIB_OBJS)
+   DEFINES += -DHAVE_ZLIB
+   HAVE_COMPRESSION = 1 
+   ifeq ($(WANT_MINIZ), 1)
+      DEFINES += -DWANT_MINIZ
+   else
+      LIBS += -lz
+      JOYCONFIG_LIBS += -lz
+		HAVE_ZLIB_DEFLATE = 1
+   endif
+endif
+
+ifeq ($(WANT_MINIZ),1)
+	OBJ += deps/rzlib/adler32.o \
+			 deps/rzlib/compress.o \
+			 deps/rzlib/crc32.o \
+			 deps/rzlib/deflate.o \
+			 deps/rzlib/gzclose.o \
+			 deps/rzlib/gzlib.o \
+			 deps/rzlib/gzread.o \
+			 deps/rzlib/gzwrite.o \
+			 deps/rzlib/inffast.o \
+			 deps/rzlib/inflate.o \
+			 deps/rzlib/inftrees.o \
+			 deps/rzlib/trees.o \
+			 deps/rzlib/uncompr.o \
+			 deps/rzlib/zutil.o \
+			 deps/rzlib/ioapi.o \
+			 deps/rzlib/unzip.o
+else
+ZLIB_OBJS = deps/rzlib/unzip.o deps/rzlib/ioapi.o
+OBJ += $(ZLIB_OBJS)
+RETROLAUNCH_OBJ += $(ZLIB_OBJS)
+JOYCONFIG_OBJ += $(ZLIB_OBJS)
+HAVE_ZLIB_DEFLATE = 1
+endif
+
+ifeq ($(HAVE_ZLIB_DEFLATE),1)
+DEFINES += -DHAVE_ZLIB_DEFLATE
+endif
+
 # Camera
 
 ifeq ($(HAVE_V4L2),1)
