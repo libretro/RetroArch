@@ -155,6 +155,11 @@ $(OBJDIR)/%.o: %.S config.h config.mk $(HEADERS)
 	@$(if $(Q), $(shell echo echo AS $<),)
 	$(Q)$(CC) $(CFLAGS) $(ASFLAGS) $(DEFINES) -c -o $@ $<
 
+$(OBJDIR)/%.o: %.rc $(HEADERS)
+	@mkdir -p $(dir $@)
+	@$(if $(Q), $(shell echo echo WINDRES $<),)
+	$(Q)$(WINDRES) -o $@ $<
+
 install: $(TARGET)
 	rm -f $(OBJDIR)/git_version.o
 	mkdir -p $(DESTDIR)$(PREFIX)/bin 2>/dev/null || /bin/true
