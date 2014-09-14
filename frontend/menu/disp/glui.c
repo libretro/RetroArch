@@ -327,7 +327,7 @@ static int glui_input_postprocess(uint64_t old_state)
    return 0;
 }
 
-static GLuint png_texture_load(const char * file_name)
+static GLuint glui_png_texture_load(const char * file_name)
 {
    struct texture_image ti = {0};
    texture_image_load(&ti, file_name);
@@ -364,7 +364,7 @@ static void glui_context_reset(void *data)
    fill_pathname_join(bgpath, bgpath, "bg.png", sizeof(bgpath));
 
    if (path_file_exists(bgpath))
-      glui_bg = png_texture_load(bgpath);
+      glui_bg = glui_png_texture_load(bgpath);
 }
 
 menu_ctx_driver_t menu_ctx_glui = {
