@@ -88,7 +88,7 @@ state_tracker_t* state_tracker_init(const struct state_tracker_info *info)
 
    if (!tracker->info)
    {
-      RARCH_ERR("%s: Allocation of state tracker info failed.", __FUNCTION__);
+      RARCH_ERR("Allocation of state tracker info failed.\n");
       free(tracker);
       return NULL;
    }

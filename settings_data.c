@@ -43,13 +43,13 @@ static void get_input_config_prefix(char *buf, size_t sizeof_buf,
 {
    if (!buf)
    {
-      RARCH_ERR("Null buffer passed to %s", __FUNCTION__);
+      RARCH_ERR("Null buffer passed.\n");
       return;
    }
 
    if (!setting)
    {
-      RARCH_ERR("Null setting passed to %s", __FUNCTION__);
+      RARCH_ERR("Null setting passed.\n");
       return;
    }
 
@@ -64,13 +64,13 @@ static void get_input_config_key(char *buf, size_t sizeof_buf,
 
    if (!buf)
    {
-      RARCH_ERR("Null buffer passed to %s", __FUNCTION__);
+      RARCH_ERR("Null buffer passed.\n");
       return;
    }
 
    if (!setting)
    {
-      RARCH_ERR("Null setting passed to %s", __FUNCTION__);
+      RARCH_ERR("Null setting passed.\n");
       return;
    }
 
@@ -89,13 +89,13 @@ static void get_key_name(char *buf, size_t sizeof_buf,
 
    if (!buf)
    {
-      RARCH_ERR("Null buffer passed to %s", __FUNCTION__);
+      RARCH_ERR("Null buffer passed.\n");
       return;
    }
 
    if (!setting)
    {
-      RARCH_ERR("Null setting passed to %s", __FUNCTION__);
+      RARCH_ERR("Null setting passed.\n");
       return;
    }
 
@@ -120,13 +120,13 @@ static void get_button_name(char *buf, size_t sizeof_buf,
 {
    if (!buf)
    {
-      RARCH_ERR("Null buffer passed to %s", __FUNCTION__);
+      RARCH_ERR("Null buffer passed.\n");
       return;
    }
 
    if (!setting)
    {
-      RARCH_ERR("Null setting passed to %s", __FUNCTION__);
+      RARCH_ERR("Null setting passed.\n");
       return;
    }
 
@@ -144,13 +144,13 @@ static void get_axis_name(char *buf, size_t sizeof_buf,
 
    if (!buf)
    {
-      RARCH_ERR("Null buffer passed to %s", __FUNCTION__);
+      RARCH_ERR("Null buffer passed.\n");
       return;
    }
 
    if (!setting)
    {
-      RARCH_ERR("Null setting passed to %s", __FUNCTION__);
+      RARCH_ERR("Null setting passed.\n");
       return;
    }
 
@@ -166,7 +166,7 @@ void setting_data_reset_setting(const rarch_setting_t* setting)
 {
    if (!setting)
    {
-      RARCH_ERR("Null setting passed to %s", __FUNCTION__);
+      RARCH_ERR("Null setting passed.\n");
       return;
    }
 
@@ -531,7 +531,7 @@ static void menu_common_setting_set_label_st_bool(rarch_setting_t *setting,
 {
    if (!setting)
    {
-      RARCH_ERR("Null setting passed to %s", __FUNCTION__);
+      RARCH_ERR("Null setting passed.\n");
       return;
    }
 
@@ -555,7 +555,7 @@ static void menu_common_setting_set_label_st_uint(rarch_setting_t *setting,
 {
    if (!setting)
    {
-      RARCH_ERR("Null setting passed to %s", __FUNCTION__);
+      RARCH_ERR("Null setting passed.\n");
       return;
    }
 
@@ -629,7 +629,7 @@ static void menu_common_setting_set_label_st_float(rarch_setting_t *setting,
 {
    if (!setting)
    {
-      RARCH_ERR("Null setting passed to %s", __FUNCTION__);
+      RARCH_ERR("Null setting passed.\n");
       return;
    }
 
