@@ -63,22 +63,36 @@ struct config_file
    struct include_list *includes;
 };
 
-static config_file_t *config_file_new_internal(const char *path,
-      unsigned depth);
+static config_file_t *config_file_new_internal(const char *path, unsigned depth);
+void config_file_free(config_file_t *conf);
 
 static char *getaline(FILE *file)
 {
-   char *newline = (char*)malloc(9);
+   char* newline = (char*)malloc(9);
+   char* newline_tmp = NULL;
    size_t cur_size = 8;
    size_t index = 0;
-
    int in = getc(file);
+
+   if (!newline)
+      return NULL;
+
    while (in != EOF && in != '\n')
    {
       if (index == cur_size)
       {
          cur_size *= 2;
          newline = (char*)realloc(newline, cur_size + 1);
+
+         if (newline_tmp)
+         {
+            newline = newline_tmp;
+         }
+         else
+         {
+            free(newline);
+            return NULL;
+         }
       }
 
       newline[index++] = in;
@@ -173,6 +187,10 @@ static void add_include_list(config_file_t *conf, const char *path)
 {
    struct include_list *head = conf->includes;
    struct include_list *node = (struct include_list*)calloc(1, sizeof(*node));
+
+   if (!node)
+      return;
+
    node->path = strdup(path);
 
    if (head)
@@ -267,10 +285,19 @@ static char *strip_comment(char *str)
 static bool parse_line(config_file_t *conf,
       struct config_entry_list *list, char *line)
 {
-   if (!*line)
+   char* comment = NULL;
+   char* key = (char*)malloc(9);
+   char* key_tmp = NULL;
+   size_t cur_size = 8;
+   size_t index = 0;
+
+   if (!line || !*line)
       return false;
 
-   char *comment = strip_comment(line);
+   if (!key)
+      return false;
+
+   comment = strip_comment(line);
 
    /* Starting line with # and include includes config files. */
    if ((comment == line) && (conf->include_depth < MAX_INCLUDE_DEPTH))
@@ -283,22 +310,30 @@ static bool parse_line(config_file_t *conf,
       }
    }
    else if (conf->include_depth >= MAX_INCLUDE_DEPTH)
+   {
       fprintf(stderr, "!!! #include depth exceeded for config. Might be a cycle.\n");
+   }
 
    /* Skips to first character. */
    while (isspace(*line))
       line++;
-
-   char *key = (char*)malloc(9);
-   size_t cur_size = 8;
-   size_t index = 0;
 
    while (isgraph(*line))
    {
       if (index == cur_size)
       {
          cur_size *= 2;
-         key = (char*)realloc(key, cur_size + 1);
+         key_tmp = (char*)realloc(key, cur_size + 1);
+
+         if (key_tmp)
+         {
+            key = key_tmp;
+         }
+         else
+         {
+            free(key);
+            return false;
+         }
       }
 
       key[index++] = *line++;
@@ -365,7 +400,16 @@ static config_file_t *config_file_new_internal(
    {
       struct config_entry_list *list = (struct config_entry_list*)
          calloc(1, sizeof(*list));
-      char *line = getaline(file);
+      char *line = NULL;
+
+      if (!list)
+      {
+         config_file_free(conf);
+         fclose(file);
+         return NULL;
+      }
+
+      line = getaline(file);
 
       if (line)
       {
@@ -375,6 +419,7 @@ static config_file_t *config_file_new_internal(
                conf->tail->next = list;
             else
                conf->entries = list;
+
             conf->tail = list;
          }
 
@@ -410,9 +455,14 @@ config_file_t *config_file_new_from_string(const char *from_string)
    {
       struct config_entry_list *list = (struct config_entry_list*)
          calloc(1, sizeof(*list));
-      
       char* line = lines->elems[i].data;
-    
+
+      if (!list)
+      {
+         config_file_free(conf);
+         return NULL;
+      }
+
       if (line)
       {
          if (parse_line(conf, list, line))
@@ -421,6 +471,7 @@ config_file_t *config_file_new_from_string(const char *from_string)
                conf->tail->next = list;
             else
                conf->entries = list;
+
             conf->tail = list;
          }
       }
@@ -703,6 +754,10 @@ void config_set_string(config_file_t *conf, const char *key, const char *val)
 
    struct config_entry_list *elem = (struct config_entry_list*)
       calloc(1, sizeof(*elem));
+
+   if (!elem)
+      return;
+
    elem->key = strdup(key);
    elem->value = strdup(val);
 
