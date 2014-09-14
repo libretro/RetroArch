@@ -1,5 +1,6 @@
 TARGET = retroarch.js
 
+OS = Emscripten
 OBJ :=
 DEFINES := -DRARCH_INTERNAL -DHAVE_CC_RESAMPLER
 

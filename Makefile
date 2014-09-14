@@ -36,43 +36,9 @@ RETROLAUNCH_OBJ = tools/retrolaunch/main.o \
 
 HEADERS = $(wildcard */*/*.h) $(wildcard */*.h) $(wildcard *.h)
 
-ifeq ($(findstring Haiku,$(OS)),)
-   LIBS += -lm
-   DEBUG_FLAG = -g
-else
-   LIBS += -lroot -lnetwork
-   # stable and nightly haiku builds are stuck on gdb 6.x but we use gcc4
-   DEBUG_FLAG = -gdwarf-2
-endif
-
 ifeq ($(REENTRANT_TEST), 1)
    DEFINES += -Dmain=retroarch_main
    OBJ += console/test.o
-endif
-
-ifneq ($(findstring Darwin,$(OS)),)
-   OSX := 1
-   LIBS += -framework AppKit
-else
-   OSX := 0
-endif
-
-ifneq ($(findstring BSD,$(OS)),)
-   BSD_LOCAL_INC = -I/usr/local/include
-endif
-
-ifneq ($(findstring Linux,$(OS)),)
-   LIBS += -lrt
-   JOYCONFIG_LIBS += -lrt
-   OBJ += input/linuxraw_input.o input/linuxraw_joypad.o
-   JOYCONFIG_OBJ += tools/linuxraw_joypad.o
-endif
-
-ifeq ($(HAVE_NETPLAY), 1)
-   OBJ += netplay.o
-   ifneq ($(findstring Win32,$(OS)),)
-      LIBS += -lws2_32
-   endif
 endif
 
 ifeq ($(HAVE_OPENGL), 1)

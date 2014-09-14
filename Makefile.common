@@ -27,11 +27,44 @@ ifeq ($(HAVE_HARD_FLOAT), 1)
    DEFINES += -mfloat-abi=hard
 endif
 
+# System
+
+ifneq ($(findstring BSD,$(OS)),)
+   BSD_LOCAL_INC += -I/usr/local/include
+endif
+
+ifneq ($(findstring Darwin,$(OS)),)
+   OSX := 1
+   LIBS += -framework AppKit
+else
+   OSX := 0
+endif
+
+ifneq ($(findstring Linux,$(OS)),)
+   LIBS += -lrt
+   JOYCONFIG_LIBS += -lrt
+   OBJ += input/linuxraw_input.o input/linuxraw_joypad.o
+   JOYCONFIG_OBJ += tools/linuxraw_joypad.o
+endif
+
+ifeq ($(findstring Haiku,$(OS)),)
+   LIBS += -lm
+   DEBUG_FLAG = -g
+else
+   LIBS += -lroot -lnetwork
+   # stable and nightly haiku builds are stuck on gdb 6.x but we use gcc4
+   DEBUG_FLAG = -gdwarf-2
+endif
+
+# Git
+
 GIT_VERSION := $(shell git rev-parse --short HEAD 2>/dev/null)
 ifneq ($(GIT_VERSION),)
    DEFINES += -DHAVE_GIT_VERSION -DGIT_VERSION="\"$(GIT_VERSION)\""
    OBJ += git_version.o
 endif
+
+# General object files
 
 OBJ += frontend/frontend.o \
 		frontend/frontend_context.o \
@@ -384,4 +417,12 @@ ifeq ($(HAVE_V4L2),1)
    DEFINES += -DHAVE_V4L2
 endif
 
-# Movie
+# Netplay
+
+ifeq ($(HAVE_NETPLAY), 1)
+   DEFINES += -DHAVE_NETPLAY -DHAVE_NETWORK_CMD
+   OBJ += netplay.o
+   ifneq ($(findstring Win32,$(OS)),)
+      LIBS += -lws2_32
+   endif
+endif

@@ -122,12 +122,6 @@ ifeq ($(HAVE_STDIN_CMD), 1)
    OBJ += command.o
 endif
 
-ifeq ($(HAVE_NETPLAY), 1)
-   DEFINES += -DHAVE_NETPLAY -DHAVE_NETWORK_CMD
-   OBJ += netplay.o
-   LIBS += -lws2_32
-endif
-
 ifeq ($(DYNAMIC), 1)
    DEFINES += -DHAVE_DYNAMIC
 else
