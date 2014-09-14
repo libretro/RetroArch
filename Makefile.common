@@ -281,7 +281,8 @@ endif
 
 ifeq ($(HAVE_WINXINPUT), 1)
    DEFINES += -DHAVE_WINXINPUT
-   OBJ += input/winxinput_joypad.o
+   OBJ += input/winxinput_joypad.o \
+          input/autoconf/builtin_win.o
    JOYCONFIG_OBJ += input/winxinput_joypad.o
 endif
 
@@ -374,8 +375,7 @@ ifeq ($(HAVE_OPENGL), 1)
          LIBS += -framework OpenGL
       else ifneq ($(findstring Win32,$(OS)),)
          LIBS += -lopengl32 -lgdi32 -lcomdlg32
-         OBJ += gfx/context/wgl_ctx.o \
-					 gfx/context/win32_common.o
+         OBJ += gfx/context/wgl_ctx.o
       else
          LIBS += -lGL
       endif
