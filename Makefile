@@ -177,12 +177,6 @@ ifeq ($(HAVE_SDL2), 1)
    LIBS += $(SDL2_LIBS)
 endif
 
-ifeq ($(HAVE_D3D9), 1)
-   OBJ += gfx/d3d9/d3d.o gfx/d3d9/d3d_wrapper.o gfx/d3d9/render_chain.o gfx/fonts/d3d_font.o gfx/fonts/d3d_w32_font.o gfx/context/d3d_ctx.o
-   DEFINES += -DHAVE_WIN32_D3D9
-   LIBS += -ld3d9 -ld3dx9 -ldxguid
-endif
-
 ifeq ($(HAVE_DINPUT), 1)
    LIBS += -ldinput8 -ldxguid -lole32
    OBJ += input/dinput.o
@@ -286,18 +280,6 @@ ifeq ($(HAVE_WAYLAND), 1)
  #OBJ += input/wayland.o
  DEFINES += $(WAYLAND_CFLAGS)
  LIBS += $(WAYLAND_LIBS)
-endif
-
-ifeq ($(HAVE_CG), 1)
-   OBJ += gfx/shader_cg.o
-   ifeq ($(OSX), 1)
-      LIBS += -framework Cg
-   else
-      LIBS += -lCg -lCgGL
-      ifeq ($(HAVE_D3D9),1)
-         LIBS += -lcgD3D9
-      endif
-   endif
 endif
 
 ifeq ($(HAVE_LIBXML2), 1)
