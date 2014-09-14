@@ -18,6 +18,21 @@
 #include "menu_input_line_cb.h"
 #include "menu_action.h"
 
+int menu_action_setting_apply(rarch_setting_t *setting)
+{
+   if (setting->change_handler)
+      setting->change_handler(setting);
+
+   if (setting->flags & SD_FLAG_EXIT
+         && setting->cmd_trigger.triggered)
+   {
+      setting->cmd_trigger.triggered = false;
+      return -1;
+   }
+
+   return 0;
+}
+
 int menu_action_setting_boolean(
       rarch_setting_t *setting, unsigned action)
 {
@@ -61,17 +76,7 @@ int menu_action_setting_boolean(
       }
    }
 
-   if (setting->change_handler)
-      setting->change_handler(setting);
-
-   if (setting->flags & SD_FLAG_EXIT
-         && setting->cmd_trigger.triggered)
-   {
-      setting->cmd_trigger.triggered = false;
-      return -1;
-   }
-
-   return 0;
+   return menu_action_setting_apply(setting);
 }
 
 int menu_action_setting_unsigned_integer(
@@ -124,17 +129,7 @@ int menu_action_setting_unsigned_integer(
       }
    } 
 
-   if (setting->change_handler)
-      setting->change_handler(setting);
-
-   if (setting->flags & SD_FLAG_EXIT
-         && setting->cmd_trigger.triggered)
-   {
-      setting->cmd_trigger.triggered = false;
-      return -1;
-   }
-
-   return 0;
+   return menu_action_setting_apply(setting);
 }
 
 int menu_action_setting_fraction(
@@ -221,17 +216,7 @@ int menu_action_setting_fraction(
       }
    }
 
-   if (setting->change_handler)
-      setting->change_handler(setting);
-
-   if (setting->flags & SD_FLAG_EXIT
-         && setting->cmd_trigger.triggered)
-   {
-      setting->cmd_trigger.triggered = false;
-      return -1;
-   }
-
-   return 0;
+   return menu_action_setting_apply(setting);
 }
 
 void menu_action_setting_driver(

@@ -19,6 +19,8 @@
 
 #include "../../settings_data.h"
 
+int menu_action_setting_apply(rarch_setting_t *setting);
+
 int menu_action_setting_boolean(
       rarch_setting_t *setting, unsigned action);
 

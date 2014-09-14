@@ -235,17 +235,7 @@ static int menu_common_setting_set_current_path_selection(
          break;
    }
 
-   if (setting->change_handler)
-      setting->change_handler(setting);
-
-   if (setting->flags & SD_FLAG_EXIT
-         && setting->cmd_trigger.triggered)
-   {
-      setting->cmd_trigger.triggered = false;
-      return -1;
-   }
-
-   return 0;
+   return menu_action_setting_apply(setting);
 }
 
 static int menu_common_setting_set_current_string_path(
@@ -253,17 +243,7 @@ static int menu_common_setting_set_current_string_path(
 {
    fill_pathname_join(setting->value.string, dir, path, setting->size);
 
-   if (setting->change_handler)
-      setting->change_handler(setting);
-
-   if (setting->flags & SD_FLAG_EXIT
-         && setting->cmd_trigger.triggered)
-   {
-      setting->cmd_trigger.triggered = false;
-      return -1;
-   }
-
-   return 0;
+   return menu_action_setting_apply(setting);
 }
 
 int menu_common_set_current_string_based_on_label(
@@ -286,17 +266,7 @@ int menu_common_setting_set_current_string(
 {
    strlcpy(setting->value.string, str, setting->size);
 
-   if (setting->change_handler)
-      setting->change_handler(setting);
-
-   if (setting->flags & SD_FLAG_EXIT
-         && setting->cmd_trigger.triggered)
-   {
-      setting->cmd_trigger.triggered = false;
-      return -1;
-   }
-
-   return 0;
+   return menu_action_setting_apply(setting);
 }
 
 static int handle_setting(rarch_setting_t *setting,
@@ -317,16 +287,7 @@ static int handle_setting(rarch_setting_t *setting,
       if (action == MENU_ACTION_START)
       {
          *setting->value.string = '\0';
-
-         if (setting->change_handler)
-            setting->change_handler(setting);
-
-         if (setting->flags & SD_FLAG_EXIT
-               && setting->cmd_trigger.triggered)
-         {
-            setting->cmd_trigger.triggered = false;
-            return -1;
-         }
+         return menu_action_setting_apply(setting);
       }
       return 0;
    }
