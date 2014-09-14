@@ -34,8 +34,14 @@ endif
 FREETYPE_CFLAGS := -DHAVE_FREETYPE -Ifreetype2
 FREETYPE_LIBS   := -lfreetype
 
-LIBXML2_CFLAGS := -Ilibxml2 -DHAVE_LIBXML2 -DHAVE_GLSL
-LIBXML2_LIBS   := -lxml2 -liconv
+LIBXML2_CFLAGS  := -Ilibxml2 -DHAVE_LIBXML2 -DHAVE_GLSL
+LIBXML2_LIBS    := -lxml2 -liconv
+
+RSOUND_CFLAGS   := -DHAVE_RSOUND
+RSOUND_LIBS     := -lrsound
+
+PYTHON_LIBS     := -lpython32
+PYTHON_CFLAGS   := -DHAVE_PYTHON -Ipython
 
 OBJDIR := obj-w32
 
@@ -82,8 +88,6 @@ ifeq ($(SCALER_NO_SIMD), 1)
    DEFINES += -DSCALER_NO_SIMD
 endif
 
-OBJ += playlist.o
-
 ifeq ($(HAVE_SDL2), 1)
    OBJ += gfx/sdl2_gfx.o input/sdl_input.o input/sdl_joypad.o audio/sdl_audio.o
 
@@ -115,24 +119,6 @@ ifeq ($(HAVE_OPENGL), 1)
    OBJ += gfx/gl.o gfx/math/matrix.o gfx/fonts/gl_font.o gfx/fonts/gl_raster_font.o gfx/gfx_context.o gfx/context/wgl_ctx.o gfx/shader_glsl.o gfx/glsym/rglgen.o gfx/glsym/glsym_gl.o
    DEFINES += -DHAVE_OPENGL -DHAVE_GLSL -DHAVE_GL_SYNC
    LIBS += -lopengl32 -lgdi32 -lcomdlg32
-endif
-
-ifeq ($(HAVE_XAUDIO), 1)
-   OBJ += audio/xaudio.o audio/xaudio-c/xaudio-c.o
-   DEFINES += -DHAVE_XAUDIO
-   LIBS += -lole32
-endif
-
-ifeq ($(HAVE_DSOUND), 1)
-   OBJ += audio/dsound.o
-   DEFINES += -DHAVE_DSOUND
-   LIBS += -ldxguid -ldsound
-endif
-
-ifeq ($(HAVE_RSOUND), 1)
-   OBJ += audio/rsound.o
-   DEFINES += -DHAVE_RSOUND
-   LIBS += -lrsound
 endif
 
 ifeq ($(HAVE_ZLIB), 1)
@@ -177,20 +163,6 @@ else
    LIBS += $(libretro)
 endif
 
-ifeq ($(HAVE_PYTHON), 1)
-   LIBS += -lpython32
-   DEFINES += -DHAVE_PYTHON -Ipython
-   OBJ += gfx/py_state/py_state.o
-endif
-
-ifeq ($(HAVE_DINPUT), 1)
-   LIBS += -ldinput8 -ldxguid -lole32
-   DEFINES += -DHAVE_DINPUT
-   OBJ += input/dinput.o
-endif
-
-OBJ += record/ffemu.o 
-
 ifeq ($(HAVE_FFMPEG), 1)
    OBJ += record/ffmpeg.o
    LIBS += -lavformat -lavcodec -lavutil -lswscale -lws2_32 -lz
@@ -208,11 +180,6 @@ else
    CFLAGS += -O3 -ffast-math
    CXXFLAGS += -O3 -ffast-math
    LDCXXFLAGS += -s
-endif
-
-ifeq ($(GL_DEBUG), 1)
-   CFLAGS += -DGL_DEBUG
-   CXXFLAGS += -DGL_DEBUG
 endif
 
 CFLAGS += -Wall -Wno-unused-result -Wno-unused-variable -I.

@@ -2,9 +2,26 @@ ifeq ($(HAVE_FBO), 1)
    DEFINES += -DHAVE_FBO
 endif
 
+ifeq ($(SCALER_NO_SIMD), 1)
+   DEFINES += -DSCALER_NO_SIMD
+endif
+
 ifdef HAVE_COMPRESSION
    DEFINES += -DHAVE_COMPRESSION
 endif 
+
+ifeq ($(HAVE_PRESERVE_DYLIB),1)
+   DEFINES += -DNO_DLCLOSE
+endif
+
+ifeq ($(GL_DEBUG), 1)
+   CFLAGS += -DGL_DEBUG
+   CXXFLAGS += -DGL_DEBUG
+endif
+
+ifeq ($(HAVE_HARD_FLOAT), 1)
+   DEFINES += -mfloat-abi=hard
+endif
 
 OBJ += frontend/frontend.o \
 		frontend/frontend_context.o \
@@ -53,7 +70,106 @@ OBJ += frontend/frontend.o \
 		audio/nullaudio.o \
 		input/nullinput.o \
 		input/osk/nullosk.o \
+		playlist.o \
+		movie.o \
+		record/ffemu.o \
 		performance.o
+
+# Miscellaneous
+
+ifeq ($(HAVE_PYTHON), 1)
+   DEFINES += $(PYTHON_CFLAGS) -Wno-unused-parameter
+   LIBS += $(PYTHON_LIBS)
+   OBJ += gfx/py_state/py_state.o
+endif
+
+# Audio
+#
+ifeq ($(HAVE_COREAUDIO), 1)
+   OBJ += audio/coreaudio.o
+   LIBS += -framework CoreServices -framework CoreAudio -framework AudioUnit
+endif
+
+ifeq ($(HAVE_OSS), 1)
+   OBJ += audio/oss.o
+endif
+
+ifeq ($(HAVE_OSS_BSD), 1)
+   OBJ += audio/oss.o
+endif
+
+ifeq ($(HAVE_ALSA), 1)
+   OBJ += audio/alsa.o audio/alsathread.o
+   LIBS += $(ALSA_LIBS)
+   DEFINES += $(ALSA_CFLAGS)
+endif
+
+ifeq ($(HAVE_ROAR), 1)
+   OBJ += audio/roar.o
+   LIBS += $(ROAR_LIBS)
+   DEFINES += $(ROAR_CFLAGS)
+endif
+
+ifeq ($(HAVE_AL), 1)
+   OBJ += audio/openal.o
+   ifeq ($(OSX),1)
+      LIBS += -framework OpenAL
+   else
+      LIBS += -lopenal
+   endif
+endif
+
+ifeq ($(HAVE_JACK),1)
+   OBJ += audio/jack.o
+   LIBS += $(JACK_LIBS)
+   DEFINES += $(JACK_CFLAGS)
+endif
+
+ifeq ($(HAVE_PULSE), 1)
+   OBJ += audio/pulse.o
+   LIBS += $(PULSE_LIBS)
+   DEFINES += $(PULSE_CFLAGS)
+endif
+
+ifeq ($(HAVE_OSS_LIB), 1)
+   LIBS += -lossaudio
+endif
+
+ifeq ($(HAVE_RSOUND), 1)
+   OBJ += audio/rsound.o
+   DEFINES += $(RSOUND_CFLAGS)
+   LIBS += $(RSOUND_LIBS)
+endif
+
+ifeq ($(HAVE_DSOUND), 1)
+   OBJ += audio/dsound.o
+   DEFINES += -DHAVE_DSOUND
+   LIBS += -ldxguid -ldsound
+endif
+
+ifeq ($(HAVE_XAUDIO), 1)
+   OBJ += audio/xaudio.o audio/xaudio-c/xaudio-c.o
+   DEFINES += -DHAVE_XAUDIO
+   LIBS += -lole32
+endif
+
+# Audio Resamplers
+
+ifeq ($(HAVE_NEON),1)
+   OBJ += audio/resamplers/sinc_neon.o
+   # When compiled without this, tries to attempt to compile sinc lerp,
+   # which will error out
+	#
+	# TODO - we need to make quality levels of sinc
+	# runtime toggleable instead of going by compile-time
+	# defines
+   DEFINES += -DSINC_LOWER_QUALITY
+endif
+
+OBJ += audio/utils.o
+ifeq ($(HAVE_NEON),1)
+   OBJ += audio/utils_neon.o
+endif
 
 ifeq ($(HAVE_RGUI), 1)
    OBJ += frontend/menu/disp/rgui.o
@@ -92,7 +208,19 @@ ifeq ($(HAVE_THREADS), 1)
    endif
 endif
 
+ifeq ($(HAVE_COMMAND), 1)
+   OBJ += command.o
+endif
+
 #Input
+
+ifeq ($(HAVE_DINPUT), 1)
+   LIBS += -ldinput8 -ldxguid -lole32
+   DEFINES += -DHAVE_DINPUT
+   OBJ += input/dinput.o
+   JOYCONFIG_LIBS += -ldinput8 -ldxguid -lole32
+   JOYCONFIG_OBJ += input/dinput.o
+endif
 
 ifeq ($(HAVE_WINXINPUT), 1)
    DEFINES += -DHAVE_WINXINPUT
@@ -119,7 +247,18 @@ ifeq ($(HAVE_UDEV), 1)
    JOYCONFIG_OBJ += tools/udev_joypad.o
 endif
 
+
 # Video
+
+ifeq ($(HAVE_OMAP), 1)
+   OBJ += gfx/omap_gfx.o
+endif
+
+ifeq ($(HAVE_EXYNOS), 1)
+   OBJ += gfx/exynos_gfx.o mem/neon/memcpy-neon.o
+   LIBS += $(DRM_LIBS) $(EXYNOS_LIBS)
+   DEFINES += $(DRM_CFLAGS) $(EXYNOS_CFLAGS)
+endif
 
 ifeq ($(HAVE_VG), 1)
    OBJ += gfx/vg.o gfx/math/matrix_3x3.o
@@ -193,3 +332,12 @@ ifeq ($(HAVE_7ZIP),1)
    RETROLAUNCH_OBJ += $(7ZOBJ)
    JOYCONFIG_OBJ += $(7ZOBJ)
 endif
+
+# Camera
+
+ifeq ($(HAVE_V4L2),1)
+   OBJ += camera/video4linux2.o
+   DEFINES += -DHAVE_V4L2
+endif
+
+# Movie

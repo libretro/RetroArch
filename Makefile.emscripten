@@ -18,6 +18,7 @@ ifneq ($(NATIVE_ZLIB),)
    WANT_MINIZ = 0
 endif
 
+LIBS    :=
 LDFLAGS := -L. -s TOTAL_MEMORY=$(MEMORY) -s OUTLINING_LIMIT=50000 --js-library emscripten/library_rwebaudio.js --js-library emscripten/library_rwebinput.js --js-library emscripten/library_rwebcam.js --no-heap-copy
 
 include Makefile.common
@@ -28,10 +29,6 @@ OBJ += frontend/platform/platform_emscripten.o \
 		camera/rwebcam.o
 
 libretro = libretro_emscripten.bc
-
-LIBS =
-
-OBJ += playlist.o
 
 ifeq ($(HAVE_SDL), 1)
    OBJ += input/sdl_input.o

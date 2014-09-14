@@ -68,87 +68,11 @@ ifneq ($(findstring Linux,$(OS)),)
    JOYCONFIG_OBJ += tools/linuxraw_joypad.o
 endif
 
-OBJ += playlist.o \
-		 movie.o
-
 ifeq ($(HAVE_NETPLAY), 1)
    OBJ += netplay.o
    ifneq ($(findstring Win32,$(OS)),)
       LIBS += -lws2_32
    endif
-endif
-
-ifeq ($(HAVE_COMMAND), 1)
-   OBJ += command.o
-endif
-
-ifeq ($(HAVE_OSS), 1)
-   OBJ += audio/oss.o
-endif
-
-ifeq ($(HAVE_OSS_BSD), 1)
-   OBJ += audio/oss.o
-endif
-
-ifeq ($(HAVE_OSS_LIB), 1)
-   LIBS += -lossaudio
-endif
-
-ifeq ($(HAVE_RSOUND), 1)
-   OBJ += audio/rsound.o
-   DEFINES += $(RSOUND_CFLAGS)
-   LIBS += $(RSOUND_LIBS)
-endif
-
-ifeq ($(HAVE_ALSA), 1)
-   OBJ += audio/alsa.o audio/alsathread.o
-   LIBS += $(ALSA_LIBS)
-   DEFINES += $(ALSA_CFLAGS)
-endif
-
-ifeq ($(HAVE_ROAR), 1)
-   OBJ += audio/roar.o
-   LIBS += $(ROAR_LIBS)
-   DEFINES += $(ROAR_CFLAGS)
-endif
-
-ifeq ($(HAVE_HARD_FLOAT), 1)
-   DEFINES += -mfloat-abi=hard
-endif
-
-ifeq ($(HAVE_AL), 1)
-   OBJ += audio/openal.o
-   ifeq ($(OSX),1)
-      LIBS += -framework OpenAL
-   else
-      LIBS += -lopenal
-   endif
-endif
-
-ifeq ($(HAVE_V4L2),1)
-   OBJ += camera/video4linux2.o
-   DEFINES += -DHAVE_V4L2
-endif
-
-ifeq ($(HAVE_JACK),1)
-   OBJ += audio/jack.o
-   LIBS += $(JACK_LIBS)
-   DEFINES += $(JACK_CFLAGS)
-endif
-
-ifeq ($(HAVE_PULSE), 1)
-   OBJ += audio/pulse.o
-   LIBS += $(PULSE_LIBS)
-   DEFINES += $(PULSE_CFLAGS)
-endif
-
-ifeq ($(HAVE_COREAUDIO), 1)
-   OBJ += audio/coreaudio.o
-   LIBS += -framework CoreServices -framework CoreAudio -framework AudioUnit
-endif
-
-ifeq ($(SCALER_NO_SIMD), 1)
-   DEFINES += -DSCALER_NO_SIMD
 endif
 
 ifeq ($(HAVE_SDL), 1)
@@ -175,33 +99,6 @@ ifeq ($(HAVE_SDL2), 1)
    JOYCONFIG_LIBS += $(SDL2_LIBS)
    DEFINES += $(SDL2_CFLAGS) $(BSD_LOCAL_INC)
    LIBS += $(SDL2_LIBS)
-endif
-
-ifeq ($(HAVE_DINPUT), 1)
-   LIBS += -ldinput8 -ldxguid -lole32
-   OBJ += input/dinput.o
-   JOYCONFIG_LIBS += -ldinput8 -ldxguid -lole32
-   JOYCONFIG_OBJ += input/dinput.o
-endif
-
-ifeq ($(HAVE_XAUDIO), 1)
-   OBJ += audio/xaudio.o audio/xaudio-c/xaudio-c.o
-   LIBS += -lole32
-endif
-
-ifeq ($(HAVE_DSOUND), 1)
-   OBJ += audio/dsound.o
-   LIBS += -ldxguid -ldsound
-endif
-
-ifeq ($(HAVE_OMAP), 1)
-   OBJ += gfx/omap_gfx.o
-endif
-
-ifeq ($(HAVE_EXYNOS), 1)
-   OBJ += gfx/exynos_gfx.o mem/neon/memcpy-neon.o
-   LIBS += $(DRM_LIBS) $(EXYNOS_LIBS)
-   DEFINES += $(DRM_CFLAGS) $(EXYNOS_CFLAGS)
 endif
 
 ifeq ($(HAVE_OPENGL), 1)
@@ -266,7 +163,8 @@ ifeq ($(HAVE_OPENGL), 1)
          LIBS += -framework OpenGL
       else ifneq ($(findstring Win32,$(OS)),)
          LIBS += -lopengl32 -lgdi32 -lcomdlg32
-         OBJ += gfx/context/wgl_ctx.o gfx/context/win32_common.o
+         OBJ += gfx/context/wgl_ctx.o \
+					 gfx/context/win32_common.o
       else
          LIBS += -lGL
       endif
@@ -302,8 +200,6 @@ ifeq ($(HAVE_ZLIB), 1)
    DEFINES += $(ZLIB_CFLAGS) -DHAVE_ZLIB_DEFLATE -DHAVE_ZLIB
 endif
 
-OBJ += record/ffemu.o 
-
 ifeq ($(HAVE_FFMPEG), 1)
    OBJ += record/ffmpeg.o
    LIBS += $(AVCODEC_LIBS) $(AVFORMAT_LIBS) $(AVUTIL_LIBS) $(SWSCALE_LIBS)
@@ -316,28 +212,6 @@ else
    LIBS += $(libretro)
 endif
 
-ifeq ($(HAVE_PYTHON), 1)
-   DEFINES += $(PYTHON_CFLAGS) -Wno-unused-parameter
-   LIBS += $(PYTHON_LIBS)
-   OBJ += gfx/py_state/py_state.o
-endif
-
-ifeq ($(HAVE_NEON),1)
-   OBJ += audio/resamplers/sinc_neon.o
-   # When compiled without this, tries to attempt to compile sinc lerp,
-   # which will error out
-   DEFINES += -DSINC_LOWER_QUALITY
-endif
-
-OBJ += audio/utils.o
-ifeq ($(HAVE_NEON),1)
-   OBJ += audio/utils_neon.o
-endif
-
-ifeq ($(HAVE_PRESERVE_DYLIB),1)
-   DEFINES += -DNO_DLCLOSE
-endif
-
 ifneq ($(V),1)
    Q := @
 endif
@@ -345,11 +219,6 @@ endif
 OPTIMIZE_FLAG = -O3 -ffast-math
 ifeq ($(DEBUG), 1)
    OPTIMIZE_FLAG = -O0
-endif
-
-ifeq ($(GL_DEBUG), 1)
-   CFLAGS += -DGL_DEBUG
-   CXXFLAGS += -DGL_DEBUG
 endif
 
 CFLAGS += -Wall $(OPTIMIZE_FLAG) $(INCLUDE_DIRS) $(DEBUG_FLAG) -I.
