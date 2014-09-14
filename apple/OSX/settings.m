@@ -304,10 +304,8 @@ NSWindowDelegate>
       
       if ([item isKindOfClass:[NSNumber class]])
       {
-          const rarch_setting_t *setting_data, *setting;
-          
-          setting_data = (const rarch_setting_t*)setting_data_get_list();
-          setting      = (const rarch_setting_t*)&setting_data[[item intValue]];
+          rarch_setting_t *setting_data = (rarch_setting_t*)setting_data_get_list();
+          rarch_setting_t *setting      = (rarch_setting_t*)&setting_data[[item intValue]];
           
           switch (setting->type)
           {
@@ -336,12 +334,9 @@ NSWindowDelegate>
 
       if ([item isKindOfClass:[NSNumber class]])
       {
-          NSString *editor_string;
-          const rarch_setting_t *setting_data, *setting;
-          
-          setting_data = (const rarch_setting_t *)setting_data_get_list();
-          setting = (const rarch_setting_t*)&setting_data[[item intValue]];
-          editor_string = (NSString*)editor.string;
+          rarch_setting_t *setting_data = (rarch_setting_t *)setting_data_get_list();
+          rarch_setting_t *setting = (rarch_setting_t*)&setting_data[[item intValue]];
+          NSString *editor_string = (NSString*)editor.string;
           
           setting_data_set_with_string_representation(setting, editor_string.UTF8String);
       }
