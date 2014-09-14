@@ -52,3 +52,12 @@ EOF
 	echo "$ECHOBUF ... $CXX"
 	rm -f "$TEMP_CXX" "$TEMP_EXE"
 fi
+
+if [ "$OS" = "Win32" ]; then
+	ECHOBUF="Checking for windres"
+	if [ -z "$WINDRES" ]; then
+		WINDRES=$(which ${CROSS_COMPILE}windres)
+		[ "$WINDRES" ] || { echo "$ECHOBUF ... Not found. Exiting."; exit 1; }
+	fi
+	echo "$ECHOBUF ... $WINDRES"
+fi
