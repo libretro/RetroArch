@@ -18,7 +18,7 @@
 #include "menu_input_line_cb.h"
 #include "menu_action.h"
 
-void menu_action_setting_boolean(
+int menu_action_setting_boolean(
       rarch_setting_t *setting, unsigned action)
 {
    if (
@@ -55,9 +55,14 @@ void menu_action_setting_boolean(
 
    if (setting->change_handler)
       setting->change_handler(setting);
+
+   if (setting->flags & SD_FLAG_EXIT)
+      return -1;
+
+   return 0;
 }
 
-void menu_action_setting_unsigned_integer(
+int menu_action_setting_unsigned_integer(
       rarch_setting_t *setting, unsigned id, unsigned action)
 {
    if (id == MENU_FILE_LINEFEED)
@@ -106,9 +111,14 @@ void menu_action_setting_unsigned_integer(
 
    if (setting->change_handler)
       setting->change_handler(setting);
+
+   if (setting->flags & SD_FLAG_EXIT)
+      return -1;
+
+   return 0;
 }
 
-void menu_action_setting_fraction(
+int menu_action_setting_fraction(
       rarch_setting_t *setting, unsigned action)
 {
    if (!strcmp(setting->name, "video_refresh_rate_auto"))
@@ -188,6 +198,11 @@ void menu_action_setting_fraction(
 
    if (setting->change_handler)
       setting->change_handler(setting);
+
+   if (setting->flags & SD_FLAG_EXIT)
+      return -1;
+
+   return 0;
 }
 
 void menu_action_setting_driver(
