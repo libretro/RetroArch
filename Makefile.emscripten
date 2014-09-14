@@ -48,17 +48,29 @@ ifeq ($(HAVE_ZLIB), 1)
    OBJ += gfx/rpng/rpng.o file_extract.o
    DEFINES += -DHAVE_ZLIB
    ifeq ($(WANT_MINIZ), 1)
-      OBJ += deps/rzlib/adler32.o deps/rzlib/compress.o deps/rzlib/crc32.o deps/rzlib/deflate.o deps/rzlib/gzclose.o deps/rzlib/gzlib.o deps/rzlib/gzread.o deps/rzlib/gzwrite.o deps/rzlib/inffast.o deps/rzlib/inflate.o deps/rzlib/inftrees.o deps/rzlib/trees.o deps/rzlib/uncompr.o deps/rzlib/zutil.o deps/rzlib/ioapi.o deps/rzlib/unzip.o decompress/zip_support.o
+      OBJ += deps/rzlib/adler32.o \
+				 deps/rzlib/compress.o \
+				 deps/rzlib/crc32.o \
+				 deps/rzlib/deflate.o \
+				 deps/rzlib/gzclose.o \
+				 deps/rzlib/gzlib.o \
+				 deps/rzlib/gzread.o \
+				 deps/rzlib/gzwrite.o \
+				 deps/rzlib/inffast.o \
+				 deps/rzlib/inflate.o \
+				 deps/rzlib/inftrees.o \
+				 deps/rzlib/trees.o \
+				 deps/rzlib/uncompr.o \
+				 deps/rzlib/zutil.o \
+				 deps/rzlib/ioapi.o \
+				 deps/rzlib/unzip.o \
+				 decompress/zip_support.o
       DEFINES += -DWANT_MINIZ
    else
       OBJ += deps/rzlib/ioapi.o deps/rzlib/unzip.o decompress/zip_support.o
       LIBS += -lz
       DEFINES += -DHAVE_ZLIB_DEFLATE
    endif
-endif
-
-ifeq ($(HAVE_FBO), 1)
-   DEFINES += -DHAVE_FBO
 endif
 
 ifneq ($(V), 1)

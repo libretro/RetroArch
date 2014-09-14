@@ -282,13 +282,6 @@ ifeq ($(HAVE_WAYLAND), 1)
  LIBS += $(WAYLAND_LIBS)
 endif
 
-ifeq ($(HAVE_LIBXML2), 1)
-   LIBS += $(LIBXML2_LIBS)
-   DEFINES += $(LIBXML2_CFLAGS)
-else
-   OBJ += compat/rxml/rxml.o
-endif
-
 ifeq ($(HAVE_DYLIB), 1)
    LIBS += $(DYLIB_LIB)
    OBJ += gfx/filter.o
@@ -340,34 +333,6 @@ OBJ += audio/utils.o
 ifeq ($(HAVE_NEON),1)
    OBJ += audio/utils_neon.o
 endif
-
-ifeq ($(HAVE_7ZIP),1)
-   HAVE_COMPRESSION = 1 
-   DEFINES += -DHAVE_7ZIP
-   7ZOBJ = 	deps/7zip/7zIn.o \
-		deps/7zip/7zAlloc.o \
-		deps/7zip/Bra86.o \
-		deps/7zip/CpuArch.o \
-		deps/7zip/7zFile.o \
-		deps/7zip/7zStream.o \
-		deps/7zip/7zBuf2.o \
-		deps/7zip/LzmaDec.o \
-		deps/7zip/7zCrcOpt.o \
-		deps/7zip/Bra.o \
-		deps/7zip/7zDec.o \
-		deps/7zip/Bcj2.o \
-		deps/7zip/7zCrc.o \
-		deps/7zip/Lzma2Dec.o \
-		deps/7zip/7zBuf.o \
-		decompress/7zip_support.o 
-   OBJ += $(7ZOBJ)
-   RETROLAUNCH_OBJ += $(7ZOBJ)
-   JOYCONFIG_OBJ += $(7ZOBJ)
-endif
-
-ifdef HAVE_COMPRESSION
-   DEFINES += -DHAVE_COMPRESSION
-endif 
 
 ifeq ($(HAVE_PRESERVE_DYLIB),1)
    DEFINES += -DNO_DLCLOSE

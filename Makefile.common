@@ -1,3 +1,11 @@
+ifeq ($(HAVE_FBO), 1)
+   DEFINES += -DHAVE_FBO
+endif
+
+ifdef HAVE_COMPRESSION
+   DEFINES += -DHAVE_COMPRESSION
+endif 
+
 OBJ += frontend/frontend.o \
 		frontend/frontend_context.o \
 		frontend/platform/platform_null.o \
@@ -150,4 +158,38 @@ ifeq ($(HAVE_D3D9), 1)
 ifeq ($(HAVE_CG), 1)
    LIBS += -lcg -lcgD3D9
 endif
+endif
+
+ifeq ($(HAVE_LIBXML2), 1)
+   LIBS += $(LIBXML2_LIBS)
+   DEFINES += $(LIBXML2_CFLAGS)
+else
+   OBJ += compat/rxml/rxml.o
+endif
+
+# Compression/Archive
+
+ifeq ($(HAVE_7ZIP),1)
+   CFLAGS  += -I./deps/7zip
+   HAVE_COMPRESSION = 1 
+   DEFINES += -DHAVE_7ZIP
+   7ZOBJ = 	deps/7zip/7zIn.o \
+		deps/7zip/7zAlloc.o \
+		deps/7zip/Bra86.o \
+		deps/7zip/CpuArch.o \
+		deps/7zip/7zFile.o \
+		deps/7zip/7zStream.o \
+		deps/7zip/7zBuf2.o \
+		deps/7zip/LzmaDec.o \
+		deps/7zip/7zCrcOpt.o \
+		deps/7zip/Bra.o \
+		deps/7zip/7zDec.o \
+		deps/7zip/Bcj2.o \
+		deps/7zip/7zCrc.o \
+		deps/7zip/Lzma2Dec.o \
+		deps/7zip/7zBuf.o \
+		decompress/7zip_support.o 
+   OBJ += $(7ZOBJ)
+   RETROLAUNCH_OBJ += $(7ZOBJ)
+   JOYCONFIG_OBJ += $(7ZOBJ)
 endif

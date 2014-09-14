@@ -34,6 +34,9 @@ endif
 FREETYPE_CFLAGS := -DHAVE_FREETYPE -Ifreetype2
 FREETYPE_LIBS   := -lfreetype
 
+LIBXML2_CFLAGS := -Ilibxml2 -DHAVE_LIBXML2 -DHAVE_GLSL
+LIBXML2_LIBS   := -lxml2 -liconv
+
 OBJDIR := obj-w32
 
 OBJ              :=
@@ -152,13 +155,6 @@ ifeq ($(HAVE_ZLIB), 1)
    endif
 endif
 
-ifeq ($(HAVE_LIBXML2), 1)
-   DEFINES += -Ilibxml2 -DHAVE_LIBXML2 -DHAVE_GLSL
-   LIBS += -lxml2 -liconv
-else
-   OBJ += compat/rxml/rxml.o
-endif
-
 ifeq ($(HAVE_DYLIB), 1)
    DEFINES += -DHAVE_DYLIB
    OBJ += gfx/filter.o
@@ -181,10 +177,6 @@ else
    LIBS += $(libretro)
 endif
 
-ifeq ($(HAVE_FBO), 1)
-   DEFINES += -DHAVE_FBO
-endif
-
 ifeq ($(HAVE_PYTHON), 1)
    LIBS += -lpython32
    DEFINES += -DHAVE_PYTHON -Ipython
@@ -203,36 +195,6 @@ ifeq ($(HAVE_FFMPEG), 1)
    OBJ += record/ffmpeg.o
    LIBS += -lavformat -lavcodec -lavutil -lswscale -lws2_32 -lz
    DEFINES += -DHAVE_FFMPEG -Iffmpeg
-endif
-
-ifeq ($(HAVE_7ZIP),1)
-   CFLAGS  += -I./deps/7zip
-   DEFINES += -DHAVE_7ZIP
-   HAVE_COMPRESSION = 1
-   compression = yes
-   7ZOBJ = 	deps/7zip/7zIn.o \
-		deps/7zip/7zAlloc.o \
-		deps/7zip/Bra86.o \
-		deps/7zip/CpuArch.o \
-		deps/7zip/7zFile.o \
-		deps/7zip/7zStream.o \
-		deps/7zip/7zBuf2.o \
-		deps/7zip/LzmaDec.o \
-		deps/7zip/7zCrcOpt.o \
-		deps/7zip/Bra.o \
-		deps/7zip/7zDec.o \
-		deps/7zip/Bcj2.o \
-		deps/7zip/7zCrc.o \
-		deps/7zip/Lzma2Dec.o \
-		deps/7zip/7zBuf.o \
-		decompress/7zip_support.o 
-   OBJ += $(7ZOBJ)
-   RETROLAUNCH_OBJ += $(7ZOBJ)
-   JOYCONFIG_OBJ += $(7ZOBJ)
-endif
-
-ifdef HAVE_COMPRESSION
-   DEFINES += -DHAVE_COMPRESSION
 endif
 
 ifneq ($(V), 1)
