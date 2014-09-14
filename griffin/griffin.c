@@ -27,7 +27,7 @@
 #define HAVE_COMPRESSION
 #endif
 
-#if defined(_XBOX)
+#if defined(_XBOX) || defined(_MSC_VER)
 #include "../msvc/msvc_compat.h"
 #endif
 
