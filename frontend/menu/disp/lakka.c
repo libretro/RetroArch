@@ -661,7 +661,7 @@ static void lakka_frame(void)
    gl_set_viewport(gl, gl->win_width, gl->win_height, false, false);
 }
 
-static GLuint png_texture_load(const char * file_name)
+static GLuint lakka_png_texture_load(const char * file_name)
 {
    struct texture_image ti = {0};
    texture_image_load(&ti, file_name);
@@ -883,7 +883,7 @@ static void lakka_context_reset(void *data)
          "reload.png", sizeof(textures[TEXTURE_RELOAD].path));
 
    for (k = 0; k < TEXTURE_LAST; k++)
-      textures[k].id = png_texture_load(textures[k].path);
+      textures[k].id = lakka_png_texture_load(textures[k].path);
 
    lakka_settings_context_reset();
    for (i = 1; i < num_categories; i++)
@@ -926,8 +926,8 @@ static void lakka_context_reset(void *data)
       strlcat(content_texturepath, core_id, sizeof(content_texturepath));
       strlcat(content_texturepath, "-content.png", sizeof(content_texturepath));
 
-      category->icon = png_texture_load(texturepath);
-      category->item_icon = png_texture_load(content_texturepath);
+      category->icon = lakka_png_texture_load(texturepath);
+      category->item_icon = lakka_png_texture_load(content_texturepath);
       
       for (j = 0; j < category->num_items; j++)
       {

@@ -77,6 +77,7 @@ const frontend_ctx_driver_t *frontend_ctx_find_driver(const char *ident);
 /* Finds first suitable driver and initialize. */
 const frontend_ctx_driver_t *frontend_ctx_init_first(void);
 
+int main_entry_decide(signature(), args_type() args);
 int main_entry_iterate_clear_input(signature(), args_type() args);
 int main_entry_iterate_load_content(signature(), args_type() args);
 int main_entry_iterate_content(signature(), args_type() args);
