@@ -36,11 +36,6 @@ RETROLAUNCH_OBJ = tools/retrolaunch/main.o \
 
 HEADERS = $(wildcard */*/*.h) $(wildcard */*.h) $(wildcard *.h)
 
-ifeq ($(REENTRANT_TEST), 1)
-   DEFINES += -Dmain=retroarch_main
-   OBJ += console/test.o
-endif
-
 ifeq ($(HAVE_DYLIB), 1)
    LIBS += $(DYLIB_LIB)
 endif
@@ -58,12 +53,6 @@ ifeq ($(HAVE_ZLIB), 1)
    RETROLAUNCH_OBJ += $(ZLIB_OBJS)
    LIBS += $(ZLIB_LIBS)
    DEFINES += $(ZLIB_CFLAGS) -DHAVE_ZLIB_DEFLATE -DHAVE_ZLIB
-endif
-
-ifeq ($(HAVE_FFMPEG), 1)
-   OBJ += record/ffmpeg.o
-   LIBS += $(AVCODEC_LIBS) $(AVFORMAT_LIBS) $(AVUTIL_LIBS) $(SWSCALE_LIBS)
-   DEFINES += $(AVCODEC_CFLAGS) $(AVFORMAT_CFLAGS) $(AVUTIL_CFLAGS) $(SWSCALE_CFLAGS)
 endif
 
 ifeq ($(HAVE_DYNAMIC), 1)

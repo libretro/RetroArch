@@ -50,6 +50,12 @@ RSOUND_LIBS      := -lrsound
 PYTHON_LIBS      := -lpython32
 PYTHON_CFLAGS    := -DHAVE_PYTHON -Ipython
 
+AVCODEC_LIBS     := -lavcodec
+AVUTIL_LIBS      := -lavutil
+SWSCALE_LIBS     := -lswscale
+AVFORMAT_LIBS    := -lavformat
+FFMPEG_LIBS      := -lws2_32 -lz
+
 OBJDIR           := obj-w32
 
 OS               := Win32
@@ -107,12 +113,6 @@ ifeq ($(DYNAMIC), 1)
    DEFINES += -DHAVE_DYNAMIC
 else
    LIBS += $(libretro)
-endif
-
-ifeq ($(HAVE_FFMPEG), 1)
-   OBJ += record/ffmpeg.o
-   LIBS += -lavformat -lavcodec -lavutil -lswscale -lws2_32 -lz
-   DEFINES += -DHAVE_FFMPEG -Iffmpeg
 endif
 
 ifneq ($(V), 1)
