@@ -2,7 +2,8 @@ TARGET = retroarch.js
 
 OS = Emscripten
 OBJ :=
-DEFINES := -DRARCH_INTERNAL -DHAVE_CC_RESAMPLER
+DEFINES := -DRARCH_INTERNAL -DHAVE_CC_RESAMPLER -DHAVE_OVERLAY
+DEFINES += -DHAVE_OPENGL -DHAVE_OPENGLES -DHAVE_OPENGLES2 -DHAVE_EGL -DHAVE_OVERLAY -DHAVE_GLSL
 
 HAVE_OPENGL = 1
 HAVE_EMSCRIPTEN = 1
@@ -31,11 +32,6 @@ OBJ += frontend/platform/platform_emscripten.o \
 		camera/rwebcam.o
 
 libretro = libretro_emscripten.bc
-
-ifeq ($(HAVE_OPENGL), 1)
-   OBJ += gfx/gl.o gfx/math/matrix.o gfx/fonts/gl_font.o gfx/fonts/gl_raster_font.o gfx/gfx_context.o gfx/context/emscriptenegl_ctx.o gfx/shader_glsl.o gfx/glsym/rglgen.o gfx/glsym/glsym_es2.o
-   DEFINES += -DHAVE_OPENGL -DHAVE_OPENGLES -DHAVE_OPENGLES2 -DHAVE_EGL -DHAVE_OVERLAY -DHAVE_GLSL
-endif
 
 ifeq ($(HAVE_ZLIB), 1)
    OBJ += gfx/rpng/rpng.o file_extract.o
