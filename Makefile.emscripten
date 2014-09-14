@@ -4,6 +4,7 @@ OBJ :=
 DEFINES := -DRARCH_INTERNAL -DHAVE_CC_RESAMPLER
 
 HAVE_OPENGL = 1
+HAVE_EMSCRIPTEN = 1
 HAVE_RGUI = 1
 HAVE_SDL = 0
 HAVE_ZLIB = 1
@@ -29,12 +30,6 @@ OBJ += frontend/platform/platform_emscripten.o \
 		camera/rwebcam.o
 
 libretro = libretro_emscripten.bc
-
-ifeq ($(HAVE_SDL), 1)
-   OBJ += input/sdl_input.o
-   LIBS += -lSDL
-   DEFINES += -ISDL -DHAVE_SDL
-endif
 
 ifeq ($(HAVE_OPENGL), 1)
    OBJ += gfx/gl.o gfx/math/matrix.o gfx/fonts/gl_font.o gfx/fonts/gl_raster_font.o gfx/gfx_context.o gfx/context/emscriptenegl_ctx.o gfx/shader_glsl.o gfx/glsym/rglgen.o gfx/glsym/glsym_es2.o

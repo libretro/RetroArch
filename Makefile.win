@@ -31,19 +31,26 @@ ifeq ($(SLIM),)
    HAVE_FFMPEG = 1
 endif
 
-FREETYPE_CFLAGS := -DHAVE_FREETYPE -Ifreetype2
-FREETYPE_LIBS   := -lfreetype
+FREETYPE_CFLAGS  := -DHAVE_FREETYPE -Ifreetype2
+FREETYPE_LIBS    := -lfreetype
 
-LIBXML2_CFLAGS  := -Ilibxml2 -DHAVE_LIBXML2 -DHAVE_GLSL
-LIBXML2_LIBS    := -lxml2 -liconv
+LIBXML2_CFLAGS   := -Ilibxml2 -DHAVE_LIBXML2 -DHAVE_GLSL
+LIBXML2_LIBS     := -lxml2 -liconv
 
-RSOUND_CFLAGS   := -DHAVE_RSOUND
-RSOUND_LIBS     := -lrsound
+SDL_LIBS         := -lSDL
+SDL_CFLAGS       := -ISDL -DHAVE_SDL
+BSD_LOCAL_INC    :=
 
-PYTHON_LIBS     := -lpython32
-PYTHON_CFLAGS   := -DHAVE_PYTHON -Ipython
+SDL2_LIBS        := -lSDL2
+SDL2_CFLAGS      := -ISDL2 -DHAVE_SDL2
 
-OBJDIR := obj-w32
+RSOUND_CFLAGS    := -DHAVE_RSOUND
+RSOUND_LIBS      := -lrsound
+
+PYTHON_LIBS      := -lpython32
+PYTHON_CFLAGS    := -DHAVE_PYTHON -Ipython
+
+OBJDIR           := obj-w32
 
 OBJ              :=
 LIBS             := -lm
@@ -84,37 +91,6 @@ ifeq ($(TDM_GCC),)
    LDCXXFLAGS += -static-libstdc++
 endif
 
-ifeq ($(SCALER_NO_SIMD), 1)
-   DEFINES += -DSCALER_NO_SIMD
-endif
-
-ifeq ($(HAVE_SDL2), 1)
-   OBJ += gfx/sdl2_gfx.o input/sdl_input.o input/sdl_joypad.o audio/sdl_audio.o
-
-   ifeq ($(HAVE_OPENGL), 1)
-     OBJ += gfx/context/sdl_gl_ctx.o
-   endif
-
-   JOYCONFIG_OBJ += input/sdl_joypad.o
-   LIBS += -lSDL2
-   JOYCONFIG_LIBS += -lSDL2
-   DEFINES += -ISDL2 -DHAVE_SDL2
-   HAVE_SDL = 0
-endif
-
-ifeq ($(HAVE_SDL), 1)
-   OBJ += gfx/sdl_gfx.o input/sdl_input.o input/sdl_joypad.o audio/sdl_audio.o
-
-   ifeq ($(HAVE_OPENGL), 1)
-     OBJ += gfx/context/sdl_gl_ctx.o
-   endif
-
-   JOYCONFIG_OBJ += input/sdl_joypad.o
-   LIBS += -lSDL
-   JOYCONFIG_LIBS += -lSDL
-   DEFINES += -ISDL -DHAVE_SDL
-endif
-
 ifeq ($(HAVE_OPENGL), 1)
    OBJ += gfx/gl.o gfx/math/matrix.o gfx/fonts/gl_font.o gfx/fonts/gl_raster_font.o gfx/gfx_context.o gfx/context/wgl_ctx.o gfx/shader_glsl.o gfx/glsym/rglgen.o gfx/glsym/glsym_gl.o
    DEFINES += -DHAVE_OPENGL -DHAVE_GLSL -DHAVE_GL_SYNC
@@ -139,11 +115,6 @@ ifeq ($(HAVE_ZLIB), 1)
       JOYCONFIG_LIBS += -lz
       DEFINES += -DHAVE_ZLIB_DEFLATE
    endif
-endif
-
-ifeq ($(HAVE_DYLIB), 1)
-   DEFINES += -DHAVE_DYLIB
-   OBJ += gfx/filter.o
 endif
 
 ifeq ($(HAVE_STDIN_CMD), 1)
@@ -190,12 +161,6 @@ else
    ifneq ($(GNU90_BUILD), 1)
       CFLAGS += -std=gnu99
    endif
-endif
-
-GIT_VERSION := $(shell git rev-parse --short HEAD 2>/dev/null)
-ifneq ($(GIT_VERSION),)
-   DEFINES += -DHAVE_GIT_VERSION -DGIT_VERSION=\"$(GIT_VERSION)\"
-   OBJ += git_version.o
 endif
 
 RARCH_OBJ := $(addprefix $(OBJDIR)/,$(OBJ))

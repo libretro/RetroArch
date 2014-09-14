@@ -75,32 +75,6 @@ ifeq ($(HAVE_NETPLAY), 1)
    endif
 endif
 
-ifeq ($(HAVE_SDL), 1)
-   OBJ += gfx/sdl_gfx.o input/sdl_input.o input/sdl_joypad.o audio/sdl_audio.o
-
-   ifeq ($(HAVE_OPENGL), 1)
-     OBJ += gfx/context/sdl_gl_ctx.o
-   endif
-
-   JOYCONFIG_OBJ += input/sdl_joypad.o
-   JOYCONFIG_LIBS += $(SDL_LIBS)
-   DEFINES += $(SDL_CFLAGS) $(BSD_LOCAL_INC)
-   LIBS += $(SDL_LIBS)
-endif
-
-ifeq ($(HAVE_SDL2), 1)
-   OBJ += gfx/sdl2_gfx.o input/sdl_input.o input/sdl_joypad.o audio/sdl_audio.o
-
-   ifeq ($(HAVE_OPENGL), 1)
-     OBJ += gfx/context/sdl_gl_ctx.o
-   endif
-
-   JOYCONFIG_OBJ += input/sdl_joypad.o
-   JOYCONFIG_LIBS += $(SDL2_LIBS)
-   DEFINES += $(SDL2_CFLAGS) $(BSD_LOCAL_INC)
-   LIBS += $(SDL2_LIBS)
-endif
-
 ifeq ($(HAVE_OPENGL), 1)
    OBJ += gfx/gl.o \
 			 gfx/gfx_context.o \
@@ -174,15 +148,8 @@ ifeq ($(HAVE_OPENGL), 1)
    DEFINES += -DHAVE_GLSL
 endif
 
-ifeq ($(HAVE_WAYLAND), 1)
- #OBJ += input/wayland.o
- DEFINES += $(WAYLAND_CFLAGS)
- LIBS += $(WAYLAND_LIBS)
-endif
-
 ifeq ($(HAVE_DYLIB), 1)
    LIBS += $(DYLIB_LIB)
-   OBJ += gfx/filter.o
 endif
 
 ifeq ($(HAVE_ZLIB), 1)
@@ -249,12 +216,6 @@ ifeq ($(NOUNUSED), yes)
 endif
 ifeq ($(NOUNUSED_VARIABLE), yes)
    CFLAGS += -Wno-unused-variable
-endif
-
-GIT_VERSION := $(shell git rev-parse --short HEAD 2>/dev/null)
-ifneq ($(GIT_VERSION),)
-   DEFINES += -DHAVE_GIT_VERSION -DGIT_VERSION="\"$(GIT_VERSION)\""
-   OBJ += git_version.o
 endif
 
 RARCH_OBJ := $(addprefix $(OBJDIR)/,$(OBJ))
