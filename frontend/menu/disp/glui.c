@@ -107,6 +107,9 @@ static void glui_frame(void)
    if (!driver.menu || !gl)
       return;
 
+   if (g_extern.lifecycle_state & (1ULL << MODE_GAME))
+      return;
+
    line_height = g_settings.video.font_size * 4 / 3;
    glyph_width = line_height / 2;
    glui_margin = gl->win_width / 20 ;
