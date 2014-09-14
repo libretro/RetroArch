@@ -226,6 +226,9 @@ static int menu_common_setting_set_current_path_selection(
          menu_entries_push(driver.menu->menu_stack,
                start_path, label, type,
                driver.menu->selection_ptr);
+
+         if (setting->cmd_trigger.idx != RARCH_CMD_NONE)
+            setting->cmd_trigger.triggered = true;
          break;
       case MENU_ACTION_START:
          *setting->value.string = '\0';
@@ -235,8 +238,12 @@ static int menu_common_setting_set_current_path_selection(
    if (setting->change_handler)
       setting->change_handler(setting);
 
-   if (setting->flags & SD_FLAG_EXIT)
+   if (setting->flags & SD_FLAG_EXIT
+         && setting->cmd_trigger.triggered)
+   {
+      setting->cmd_trigger.triggered = false;
       return -1;
+   }
 
    return 0;
 }
@@ -249,8 +256,12 @@ static int menu_common_setting_set_current_string_path(
    if (setting->change_handler)
       setting->change_handler(setting);
 
-   if (setting->flags & SD_FLAG_EXIT)
+   if (setting->flags & SD_FLAG_EXIT
+         && setting->cmd_trigger.triggered)
+   {
+      setting->cmd_trigger.triggered = false;
       return -1;
+   }
 
    return 0;
 }
@@ -278,8 +289,12 @@ int menu_common_setting_set_current_string(
    if (setting->change_handler)
       setting->change_handler(setting);
 
-   if (setting->flags & SD_FLAG_EXIT)
+   if (setting->flags & SD_FLAG_EXIT
+         && setting->cmd_trigger.triggered)
+   {
+      setting->cmd_trigger.triggered = false;
       return -1;
+   }
 
    return 0;
 }
@@ -306,8 +321,12 @@ static int handle_setting(rarch_setting_t *setting,
          if (setting->change_handler)
             setting->change_handler(setting);
 
-         if (setting->flags & SD_FLAG_EXIT)
+         if (setting->flags & SD_FLAG_EXIT
+               && setting->cmd_trigger.triggered)
+         {
+            setting->cmd_trigger.triggered = false;
             return -1;
+         }
       }
       return 0;
    }

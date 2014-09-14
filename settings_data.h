@@ -23,7 +23,7 @@
 extern "C" {
 #endif
 
-typedef void (*change_handler_t)(const void *data);
+typedef void (*change_handler_t)(void *data);
 
 #define BINDFOR(s) (*(&(s))->value.keybind)
 
@@ -107,6 +107,12 @@ typedef struct rarch_setting_t
 
    struct
    {
+      unsigned idx;
+      bool triggered;
+   } cmd_trigger;
+
+   struct
+   {
       const char *off_label;
       const char *on_label;
    } boolean;
@@ -117,19 +123,19 @@ typedef struct rarch_setting_t
    bool enforce_maxrange;
 }  rarch_setting_t;
 
-void setting_data_reset_setting(const rarch_setting_t* setting);
-void setting_data_reset(const rarch_setting_t* settings);
+void setting_data_reset_setting(rarch_setting_t* setting);
+void setting_data_reset(rarch_setting_t* settings);
 
-bool setting_data_load_config_path(const rarch_setting_t* settings,
+bool setting_data_load_config_path(rarch_setting_t* settings,
       const char* path);
-bool setting_data_save_config(const rarch_setting_t* settings,
+bool setting_data_save_config(rarch_setting_t* settings,
       config_file_t* config);
 
 rarch_setting_t* setting_data_find_setting(rarch_setting_t* settings,
       const char* name);
 
 void setting_data_set_with_string_representation(
-      const rarch_setting_t* setting, const char* value);
+      rarch_setting_t* setting, const char* value);
 void setting_data_get_string_representation(rarch_setting_t* setting,
       char* buf, size_t sizeof_buf);
 

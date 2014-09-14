@@ -36,13 +36,21 @@ int menu_action_setting_boolean(
       else if (action == MENU_ACTION_RIGHT)
          g_settings.state_slot++;
       else if (action == MENU_ACTION_OK)
+      {
          *setting->value.boolean = !(*setting->value.boolean);
+
+         if (setting->cmd_trigger.idx != RARCH_CMD_NONE)
+            setting->cmd_trigger.triggered = true;
+      }
    }
    else
    {
       switch (action)
       {
          case MENU_ACTION_OK:
+            if (setting->cmd_trigger.idx != RARCH_CMD_NONE)
+               setting->cmd_trigger.triggered = true;
+            /* fall-through */
          case MENU_ACTION_LEFT:
          case MENU_ACTION_RIGHT:
             *setting->value.boolean = !(*setting->value.boolean);
@@ -56,8 +64,12 @@ int menu_action_setting_boolean(
    if (setting->change_handler)
       setting->change_handler(setting);
 
-   if (setting->flags & SD_FLAG_EXIT)
+   if (setting->flags & SD_FLAG_EXIT
+         && setting->cmd_trigger.triggered)
+   {
+      setting->cmd_trigger.triggered = false;
       return -1;
+   }
 
    return 0;
 }
@@ -90,8 +102,11 @@ int menu_action_setting_unsigned_integer(
             }
             break;
 
-         case MENU_ACTION_RIGHT:
          case MENU_ACTION_OK:
+            if (setting->cmd_trigger.idx != RARCH_CMD_NONE)
+               setting->cmd_trigger.triggered = true;
+            /* fall-through */
+         case MENU_ACTION_RIGHT:
             *setting->value.unsigned_integer =
                *setting->value.unsigned_integer + setting->step;
 
@@ -112,8 +127,12 @@ int menu_action_setting_unsigned_integer(
    if (setting->change_handler)
       setting->change_handler(setting);
 
-   if (setting->flags & SD_FLAG_EXIT)
+   if (setting->flags & SD_FLAG_EXIT
+         && setting->cmd_trigger.triggered)
+   {
+      setting->cmd_trigger.triggered = false;
       return -1;
+   }
 
    return 0;
 }
@@ -137,6 +156,9 @@ int menu_action_setting_fraction(
             /* Incase refresh rate update forced non-block video. */
             rarch_main_command(RARCH_CMD_VIDEO_SET_BLOCKING_STATE);
          }
+
+         if (setting->cmd_trigger.idx != RARCH_CMD_NONE)
+            setting->cmd_trigger.triggered = true;
       }
    }
    else if (!strcmp(setting->name, "fastforward_ratio"))
@@ -178,8 +200,11 @@ int menu_action_setting_fraction(
             }
             break;
 
-         case MENU_ACTION_RIGHT:
          case MENU_ACTION_OK:
+            if (setting->cmd_trigger.idx != RARCH_CMD_NONE)
+               setting->cmd_trigger.triggered = true;
+            /* fall-through */
+         case MENU_ACTION_RIGHT:
             *setting->value.fraction = 
                *setting->value.fraction + setting->step;
 
@@ -199,8 +224,12 @@ int menu_action_setting_fraction(
    if (setting->change_handler)
       setting->change_handler(setting);
 
-   if (setting->flags & SD_FLAG_EXIT)
+   if (setting->flags & SD_FLAG_EXIT
+         && setting->cmd_trigger.triggered)
+   {
+      setting->cmd_trigger.triggered = false;
       return -1;
+   }
 
    return 0;
 }

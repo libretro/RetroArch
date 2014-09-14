@@ -39,7 +39,7 @@
 #endif
 
 static void get_input_config_prefix(char *buf, size_t sizeof_buf,
-      const rarch_setting_t *setting)
+      rarch_setting_t *setting)
 {
    if (!buf)
    {
@@ -58,7 +58,7 @@ static void get_input_config_prefix(char *buf, size_t sizeof_buf,
 }
 
 static void get_input_config_key(char *buf, size_t sizeof_buf,
-      const rarch_setting_t* setting, const char* type)
+      rarch_setting_t* setting, const char* type)
 {
    char prefix[32];
 
@@ -83,7 +83,7 @@ static void get_input_config_key(char *buf, size_t sizeof_buf,
 /* FIXME - make portable */
 
 static void get_key_name(char *buf, size_t sizeof_buf,
-      const rarch_setting_t* setting)
+      rarch_setting_t* setting)
 {
    uint32_t hidkey, i;
 
@@ -116,7 +116,7 @@ static void get_key_name(char *buf, size_t sizeof_buf,
 #endif
 
 static void get_button_name(char *buf, size_t sizeof_buf,
-      const rarch_setting_t* setting)
+      rarch_setting_t* setting)
 {
    if (!buf)
    {
@@ -138,7 +138,7 @@ static void get_button_name(char *buf, size_t sizeof_buf,
 }
 
 static void get_axis_name(char *buf, size_t sizeof_buf,
-      const rarch_setting_t* setting)
+      rarch_setting_t* setting)
 {
    uint32_t joyaxis;
 
@@ -162,7 +162,7 @@ static void get_axis_name(char *buf, size_t sizeof_buf,
       snprintf(buf, sizeof_buf, "+%u", AXIS_POS_GET(joyaxis));
 }
 
-void setting_data_reset_setting(const rarch_setting_t* setting)
+void setting_data_reset_setting(rarch_setting_t* setting)
 {
    if (!setting)
    {
@@ -219,14 +219,14 @@ void setting_data_reset_setting(const rarch_setting_t* setting)
       setting->change_handler(setting);
 }
 
-void setting_data_reset(const rarch_setting_t* settings)
+void setting_data_reset(rarch_setting_t* settings)
 {
    for (; settings->type != ST_NONE; settings++)
       setting_data_reset_setting(settings);
 }
 
 static bool setting_data_load_config(
-      const rarch_setting_t* settings, config_file_t* config)
+      rarch_setting_t* settings, config_file_t* config)
 {
    if (!settings || !config)
       return false;
@@ -318,7 +318,7 @@ static bool setting_data_load_config(
    return true;
 }
 
-bool setting_data_load_config_path(const rarch_setting_t* settings,
+bool setting_data_load_config_path(rarch_setting_t* settings,
       const char* path)
 {
    config_file_t *config = (config_file_t*)config_file_new(path);
@@ -332,7 +332,7 @@ bool setting_data_load_config_path(const rarch_setting_t* settings,
    return config;
 }
 
-bool setting_data_save_config(const rarch_setting_t* settings,
+bool setting_data_save_config(rarch_setting_t* settings,
       config_file_t* config)
 {
    if (!settings || !config)
@@ -459,7 +459,7 @@ rarch_setting_t* setting_data_find_setting(rarch_setting_t* setting,
    return setting;
 }
 
-void setting_data_set_with_string_representation(const rarch_setting_t* setting,
+void setting_data_set_with_string_representation(rarch_setting_t* setting,
       const char* value)
 {
    if (!setting || !value)
@@ -2005,9 +2005,9 @@ void setting_data_get_label(char *type_str,
    }
 }
 
-static void general_read_handler(const void *data)
+static void general_read_handler(void *data)
 {
-    const rarch_setting_t *setting = (const rarch_setting_t*)data;
+    rarch_setting_t *setting = (rarch_setting_t*)data;
     
     if (!setting)
        return;
@@ -2040,63 +2040,23 @@ static void general_read_handler(const void *data)
         *setting->value.integer = g_settings.input.joypad_map[4];
 }
 
-static void general_write_handler(const void *data)
+static void general_write_handler(void *data)
 {
    unsigned rarch_cmd = RARCH_CMD_NONE;
-   const rarch_setting_t *setting = (const rarch_setting_t*)data;
+   rarch_setting_t *setting = (rarch_setting_t*)data;
 
    if (!setting)
       return;
 
-   if (!strcmp(setting->name, "quit_retroarch"))
+   if (setting->cmd_trigger.idx != RARCH_CMD_NONE)
    {
       if (*setting->value.boolean)
-      {
-         rarch_cmd = RARCH_CMD_QUIT_RETROARCH;
          *setting->value.boolean = false;
-      }
+      if (setting->cmd_trigger.triggered)
+         rarch_cmd = setting->cmd_trigger.idx;
    }
-   else if (!strcmp(setting->name, "save_new_config"))
-   {
-      if (*setting->value.boolean)
-      {
-         rarch_cmd = RARCH_CMD_MENU_SAVE_CONFIG;
-         *setting->value.boolean = false;
-      }
-   }
-   else if (!strcmp(setting->name, "restart_retroarch"))
-   {
-      if (*setting->value.boolean)
-      {
-         rarch_cmd = RARCH_CMD_RESTART_RETROARCH;
-         *setting->value.boolean = false;
-      }
-   }
-   else if (!strcmp(setting->name, "resume_content"))
-   {
-      if (*setting->value.boolean)
-      {
-         rarch_cmd = RARCH_CMD_RESUME;
-         *setting->value.boolean = false;
-      }
-   }
-   else if (!strcmp(setting->name, "restart_content"))
-   {
-      if (*setting->value.boolean)
-      {
-         rarch_cmd = RARCH_CMD_RESET;
-         *setting->value.boolean = false;
-      }
-   }
-   else if (!strcmp(setting->name, "take_screenshot"))
-   {
-      if (*setting->value.boolean)
-      {
-         rarch_cmd = RARCH_CMD_TAKE_SCREENSHOT;
-         *setting->value.boolean = false;
-      }
-   }
-   else if (!strcmp(setting->name, "help"))
+
+   if (!strcmp(setting->name, "help"))
    {
       if (*setting->value.boolean)
       {
@@ -2182,22 +2142,6 @@ static void general_write_handler(const void *data)
          g_settings.audio.rate_control_delta = *setting->value.fraction;
       }
    }
-   else if (!strcmp(setting->name, "savestate"))
-   {
-      if (*setting->value.boolean)
-      {
-         rarch_cmd = RARCH_CMD_SAVE_STATE;
-         *setting->value.boolean = false;
-      }
-   }
-   else if (!strcmp(setting->name, "loadstate"))
-   {
-      if (*setting->value.boolean)
-      {
-         rarch_cmd = RARCH_CMD_LOAD_STATE;
-         *setting->value.boolean = false;
-      }
-   }
    else if (!strcmp(setting->name, "autosave_interval"))
       rarch_cmd = RARCH_CMD_AUTOSAVE;
 #ifdef HAVE_OVERLAY
@@ -2264,7 +2208,7 @@ static void general_write_handler(const void *data)
       g_extern.has_set_verbosity = *setting->value.boolean;
    }
 
-   if (rarch_cmd)
+   if (rarch_cmd || setting->cmd_trigger.triggered)
       rarch_main_command(rarch_cmd);
 }
 
@@ -2316,6 +2260,8 @@ static void general_write_handler(const void *data)
    WITH_FLAGS(SD_FLAG_HAS_RANGE)
 
 #define WITH_VALUES(VALUES) (list[index -1]).values = VALUES;
+
+#define WITH_CMD(VALUES) (list[index -1]).cmd_trigger.idx = VALUES;
 
 #ifdef GEKKO
 #define MAX_GAMMA_SETTING 2
@@ -2375,19 +2321,19 @@ rarch_setting_t *setting_data_get_mainmenu(bool regenerate)
       }
       if (g_extern.main_is_init && !g_extern.libretro_dummy)
       {
-         CONFIG_BOOL(lists[9],     "savestate",  "Save State", false, "", "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_FLAGS(SD_FLAG_EXIT)
-         CONFIG_BOOL(lists[10],     "loadstate",  "Load State", false, "", "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_FLAGS(SD_FLAG_EXIT)
-         CONFIG_BOOL(lists[11],     "take_screenshot",  "Take Screenshot", false, "", "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_FLAGS(SD_FLAG_PUSH_ACTION)
-         CONFIG_BOOL(lists[12],     "resume_content",  "Resume Content", false, "", "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_FLAGS(SD_FLAG_PUSH_ACTION) WITH_FLAGS(SD_FLAG_EXIT)
-         CONFIG_BOOL(lists[13],     "restart_content",  "Restart Content", false, "", "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_FLAGS(SD_FLAG_PUSH_ACTION) WITH_FLAGS(SD_FLAG_EXIT)
+         CONFIG_BOOL(lists[9],     "savestate",  "Save State", false, "", "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_FLAGS(SD_FLAG_EXIT) WITH_CMD(RARCH_CMD_SAVE_STATE)
+         CONFIG_BOOL(lists[10],     "loadstate",  "Load State", false, "", "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_FLAGS(SD_FLAG_EXIT) WITH_CMD(RARCH_CMD_LOAD_STATE)
+         CONFIG_BOOL(lists[11],     "take_screenshot",  "Take Screenshot", false, "", "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_FLAGS(SD_FLAG_PUSH_ACTION) WITH_CMD(RARCH_CMD_TAKE_SCREENSHOT)
+         CONFIG_BOOL(lists[12],     "resume_content",  "Resume Content", false, "", "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_FLAGS(SD_FLAG_PUSH_ACTION) WITH_FLAGS(SD_FLAG_EXIT) WITH_CMD(RARCH_CMD_RESUME)
+         CONFIG_BOOL(lists[13],     "restart_content",  "Restart Content", false, "", "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_FLAGS(SD_FLAG_PUSH_ACTION) WITH_FLAGS(SD_FLAG_EXIT) WITH_CMD(RARCH_CMD_RESET)
       }
 #ifndef HAVE_DYNAMIC
-      CONFIG_BOOL(lists[14], "restart_retroarch", "Restart RetroArch", false, "", "",GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_FLAGS(SD_FLAG_PUSH_ACTION)
+      CONFIG_BOOL(lists[14], "restart_retroarch", "Restart RetroArch", false, "", "",GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_FLAGS(SD_FLAG_PUSH_ACTION) WITH_CMD(RARCH_CMD_RESTART_RETROARCH)
 #endif
       CONFIG_BOOL(lists[15], "configurations", "Configurations", false, "", "",GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
-      CONFIG_BOOL(lists[16], "save_new_config", "Save New Config", false, "", "",GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_FLAGS(SD_FLAG_PUSH_ACTION)
+      CONFIG_BOOL(lists[16], "save_new_config", "Save New Config", false, "", "",GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_FLAGS(SD_FLAG_PUSH_ACTION) WITH_CMD(RARCH_CMD_MENU_SAVE_CONFIG)
       CONFIG_BOOL(lists[17], "help", "Help", false, "", "",GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_FLAGS(SD_FLAG_PUSH_ACTION)
-      CONFIG_BOOL(lists[18], "quit_retroarch", "Quit RetroArch", false, "", "",GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_FLAGS(SD_FLAG_PUSH_ACTION)
+      CONFIG_BOOL(lists[18], "quit_retroarch", "Quit RetroArch", false, "", "",GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_FLAGS(SD_FLAG_PUSH_ACTION) WITH_CMD(RARCH_CMD_QUIT_RETROARCH)
       END_SUB_GROUP()
       END_GROUP()
 
