@@ -36,6 +36,16 @@ ifeq ($(REENTRANT_TEST), 1)
    OBJ += console/test.o
 endif
 
+# Switches
+
+# Extra menu drivers if GL supported
+ifeq ($(HAVE_OPENGL), 1)
+ifeq ($(HAVE_RGUI), 1)
+HAVE_GLUI = 1
+HAVE_LAKKA = 1
+endif
+endif
+
 # System
 
 ifneq ($(findstring BSD,$(OS)),)
