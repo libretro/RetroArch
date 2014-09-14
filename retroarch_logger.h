@@ -59,7 +59,7 @@
 #define RARCH_LOG_V(tag, fmt, vp) do { \
       if (RARCH_LOG_VERBOSE) \
       { \
-         fprintf(LOG_FILE, "RetroArch: %s: " __FUNCTION__); \
+         fprintf(LOG_FILE, "RetroArch: %s: ", __FUNCTION__); \
          fprintf(LOG_FILE, tag);\
          vfprintf(LOG_FILE, fmt, vp); \
          fflush(LOG_FILE); \
