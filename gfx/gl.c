@@ -1592,8 +1592,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
    gl_set_prev_texture(gl, &tex_info);
 
 #if defined(HAVE_MENU)
-   if ((g_extern.lifecycle_state & (1ULL << MODE_MENU))
-         && driver.menu_ctx && driver.menu_ctx->frame)
+   if (driver.menu_ctx && driver.menu_ctx->frame)
       driver.menu_ctx->frame();
 
    if (gl->menu_texture_enable)
