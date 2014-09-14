@@ -52,6 +52,7 @@ PYTHON_CFLAGS    := -DHAVE_PYTHON -Ipython
 
 OBJDIR           := obj-w32
 
+OS               := Win32
 OBJ              :=
 JOYCONFIG_OBJ    :=
 LIBS             := -lm
