@@ -372,14 +372,14 @@ bool menu_iterate(void)
 
    if (driver.menu_ctx && driver.menu_ctx->backend
          && driver.menu_ctx->backend->iterate) 
-      driver.menu_ctx->backend->iterate(action);
+      ret = driver.menu_ctx->backend->iterate(action);
 
    draw_frame(true);
    throttle_frame();
    draw_frame(false);
 
    if (driver.menu_ctx && driver.menu_ctx->input_postprocess)
-      ret = driver.menu_ctx->input_postprocess(driver.menu->old_input_state);
+      driver.menu_ctx->input_postprocess(driver.menu->old_input_state);
 
    if (ret < 0)
       menu_flush_stack_type(driver.menu->menu_stack, MENU_SETTINGS);
