@@ -3332,8 +3332,6 @@ void rarch_main_set_state(unsigned cmd)
       default:
          break;
    }
-
-   frontend_loop = main_entry_decide;
 }
 
 void rarch_main_command(unsigned cmd)
