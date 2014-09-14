@@ -30,9 +30,9 @@
 #include "../../settings_data.h"
 
 /* forward decls */
-void menu_common_setting_set_current_string(rarch_setting_t *setting,
+int menu_common_setting_set_current_string(rarch_setting_t *setting,
       const char *str);
-void menu_common_set_current_string_based_on_label(
+int menu_common_set_current_string_based_on_label(
       const char *label, const char *str);
 
 void menu_key_start_line(void *data, const char *label,
