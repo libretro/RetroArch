@@ -80,6 +80,26 @@ static int main_entry_iterate_shutdown(signature(), args_type() args)
    return 0;
 }
 
+int main_entry_decide(signature(), args_type() args)
+{
+   frontend_loop = NULL;
+
+   if (g_extern.lifecycle_state & (1ULL << MODE_CLEAR_INPUT))
+      frontend_loop = main_entry_iterate_clear_input;
+   else if (g_extern.lifecycle_state & (1ULL << MODE_LOAD_GAME))
+      frontend_loop = main_entry_iterate_load_content;
+   else if (g_extern.lifecycle_state & (1ULL << MODE_GAME))
+      frontend_loop = main_entry_iterate_content;
+#ifdef HAVE_MENU
+   else if (g_extern.lifecycle_state & (1ULL << MODE_MENU_PREINIT))
+      frontend_loop = main_entry_iterate_menu_preinit;
+   else if (g_extern.lifecycle_state & (1ULL << MODE_MENU))
+      frontend_loop = main_entry_iterate_menu;
+#endif
+
+   return 0;
+}
+
 int main_entry_iterate_content(signature(), args_type() args)
 {
    if (g_extern.system.shutdown)
