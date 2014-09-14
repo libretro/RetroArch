@@ -1450,7 +1450,7 @@ void input_config_autoconfigure_joypad(unsigned index,
    /* false = load from both cfg files and internal */
    bool internal_only = !*g_settings.input.autoconfig_dir;
 
-#ifdef HAVE_BUILTIN_AUTOCONFIG
+#if defined(HAVE_BUILTIN_AUTOCONFIG) && (!defined(_WIN32) || defined(HAVE_WINXINPUT))
    /* First internal */
    for (i = 0; input_builtin_autoconfs[i]; i++)
    {

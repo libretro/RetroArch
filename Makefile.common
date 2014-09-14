@@ -281,7 +281,8 @@ endif
 
 ifeq ($(HAVE_WINXINPUT), 1)
    DEFINES += -DHAVE_WINXINPUT
-   OBJ += input/winxinput_joypad.o
+   OBJ += input/winxinput_joypad.o \
+          input/autoconf/builtin_win.o
    JOYCONFIG_OBJ += input/winxinput_joypad.o
 endif
 
