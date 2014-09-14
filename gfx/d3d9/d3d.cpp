@@ -755,7 +755,7 @@ static void d3d_free(void *data)
 #endif
 
 #ifdef HAVE_MONITOR
-static BOOL CALLBACK monitor_enum_proc(HMONITOR hMonitor,
+static BOOL CALLBACK d3d_monitor_enum_proc(HMONITOR hMonitor,
       HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData)
 {
    Monitor::all_hms[Monitor::num_mons++] = hMonitor;
@@ -766,7 +766,7 @@ static BOOL CALLBACK monitor_enum_proc(HMONITOR hMonitor,
 static RECT d3d_monitor_rect(d3d_video_t *d3d)
 {
    Monitor::num_mons = 0;
-   EnumDisplayMonitors(NULL, NULL, monitor_enum_proc, 0);
+   EnumDisplayMonitors(NULL, NULL, d3d_monitor_enum_proc, 0);
 
    if (!Monitor::last_hm)
       Monitor::last_hm = MonitorFromWindow(

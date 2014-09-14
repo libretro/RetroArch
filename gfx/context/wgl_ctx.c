@@ -213,7 +213,7 @@ extern "C"
 #endif
 bool dinput_handle_message(void *dinput, UINT message, WPARAM wParam, LPARAM lParam);
 
-static void *dinput;
+static void *dinput_wgl;
 
 static LRESULT CALLBACK WndProc(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam)
@@ -263,7 +263,7 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT message,
          }
          return 0;
    }
-   if (dinput_handle_message(dinput, message, wparam, lparam))
+   if (dinput_handle_message(dinput_wgl, message, wparam, lparam))
       return 0;
    return DefWindowProc(hwnd, message, wparam, lparam);
 }
@@ -562,7 +562,7 @@ static void gfx_ctx_destroy(void *data)
 static void gfx_ctx_input_driver(void *data, const input_driver_t **input, void **input_data)
 {
    (void)data;
-   dinput = input_dinput.init();
+   dinput_wgl   = input_dinput.init();
    *input       = dinput ? &input_dinput : NULL;
    *input_data  = dinput;
 }

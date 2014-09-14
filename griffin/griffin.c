@@ -27,7 +27,7 @@
 #define HAVE_COMPRESSION
 #endif
 
-#if defined(_XBOX) || defined(_MSC_VER)
+#if defined(_MSC_VER)
 #include "../msvc/msvc_compat.h"
 #endif
 
@@ -85,7 +85,7 @@ COMPATIBILITY
 /*============================================================
 CONFIG FILE
 ============================================================ */
-#ifdef _XBOX
+#if defined(_MSC_VER)
 #undef __RARCH_POSIX_STRING_H
 #undef __RARCH_MSVC_COMPAT_H
 #undef strcasecmp
@@ -667,6 +667,10 @@ MENU
 
 #endif
 
+#ifdef HAVE_COMMAND
+#include "../command.c"
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -724,7 +728,7 @@ XML
 #include "../compat/rxml/rxml.c"
 #endif
 /*============================================================
- APPLE EXTENSIONS
+ SETTINGS
 ============================================================ */
     
 #include "../settings_data.c"

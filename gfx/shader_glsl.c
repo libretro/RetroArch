@@ -49,7 +49,7 @@ static unsigned glsl_minor;
 
 static bool glsl_enable;
 static GLuint gl_program[GFX_MAX_SHADERS];
-static unsigned active_index;
+static unsigned glsl_active_index;
 
 static GLuint gl_teximage[GFX_MAX_TEXTURES];
 
@@ -643,7 +643,7 @@ static void gl_glsl_deinit(void)
    memset(gl_program, 0, sizeof(gl_program));
    memset(gl_uniforms, 0, sizeof(gl_uniforms));
    glsl_enable  = false;
-   active_index = 0;
+   glsl_active_index = 0;
 
    gl_glsl_free_shader();
 
@@ -874,7 +874,7 @@ static void gl_glsl_set_params(void *data, unsigned width, unsigned height,
 {
    (void)data;
 
-   if (!glsl_enable || (gl_program[active_index] == 0))
+   if (!glsl_enable || (gl_program[glsl_active_index] == 0))
       return;
 
    GLfloat buffer[512];
@@ -884,7 +884,7 @@ static void gl_glsl_set_params(void *data, unsigned width, unsigned height,
    size_t attribs_size = 0;
    struct glsl_attrib *attr = attribs;
 
-   const struct shader_uniforms *uni = &gl_uniforms[active_index];
+   const struct shader_uniforms *uni = &gl_uniforms[glsl_active_index];
 
    float input_size[2] = {(float)width, (float)height};
    float output_size[2] = {(float)out_width, (float)out_height};
@@ -899,9 +899,9 @@ static void gl_glsl_set_params(void *data, unsigned width, unsigned height,
    if (uni->texture_size >= 0)
       glUniform2fv(uni->texture_size, 1, texture_size);
 
-   if (uni->frame_count >= 0 && active_index)
+   if (uni->frame_count >= 0 && glsl_active_index)
    {
-      unsigned modulo = glsl_shader->pass[active_index - 1].frame_count_mod;
+      unsigned modulo = glsl_shader->pass[glsl_active_index - 1].frame_count_mod;
       if (modulo)
          frame_count %= modulo;
       glUniform1i(uni->frame_count, frame_count);
@@ -925,7 +925,7 @@ static void gl_glsl_set_params(void *data, unsigned width, unsigned height,
    }
 
    /* Set original texture. */
-   if (active_index)
+   if (glsl_active_index)
    {
       if (uni->orig.texture >= 0)
       {
@@ -1019,9 +1019,9 @@ static void gl_glsl_set_params(void *data, unsigned width, unsigned height,
 
    if (size)
    {
-      gl_glsl_set_attribs(glsl_vbo[active_index].vbo_secondary,
-            &glsl_vbo[active_index].buffer_secondary,
-            &glsl_vbo[active_index].size_secondary,
+      gl_glsl_set_attribs(glsl_vbo[glsl_active_index].vbo_secondary,
+            &glsl_vbo[glsl_active_index].buffer_secondary,
+            &glsl_vbo[glsl_active_index].size_secondary,
             buffer, size, attribs, attribs_size);
    }
 
@@ -1030,7 +1030,7 @@ static void gl_glsl_set_params(void *data, unsigned width, unsigned height,
    /* #pragma parameters. */
    for (i = 0; i < glsl_shader->num_parameters; i++)
    {
-      int location = glGetUniformLocation(gl_program[active_index],
+      int location = glGetUniformLocation(gl_program[glsl_active_index],
             glsl_shader->parameters[i].id);
       glUniform1f(location, glsl_shader->parameters[i].current);
    }
@@ -1041,13 +1041,13 @@ static void gl_glsl_set_params(void *data, unsigned width, unsigned height,
       static struct state_tracker_uniform info[GFX_MAX_VARIABLES];
       static unsigned cnt = 0;
 
-      if (active_index == 1)
+      if (glsl_active_index == 1)
          cnt = state_get_uniform(gl_state_tracker, info,
                GFX_MAX_VARIABLES, frame_count);
 
       for (i = 0; i < cnt; i++)
       {
-         int location = glGetUniformLocation(gl_program[active_index],
+         int location = glGetUniformLocation(gl_program[glsl_active_index],
                info[i].id);
          glUniform1f(location, info[i].value);
       }
@@ -1060,7 +1060,7 @@ static bool gl_glsl_set_mvp(void *data, const math_matrix *mat)
    if (!glsl_enable || !glsl_shader->modern)
       return false;
 
-   int loc = gl_uniforms[active_index].mvp;
+   int loc = gl_uniforms[glsl_active_index].mvp;
    if (loc >= 0)
       glUniformMatrix4fv(loc, 1, GL_FALSE, mat->data);
 
@@ -1088,7 +1088,7 @@ static bool gl_glsl_set_coords(const struct gl_coords *coords)
    size_t attribs_size = 0;
    struct glsl_attrib *attr = attribs;
 
-   const struct shader_uniforms *uni = &gl_uniforms[active_index];
+   const struct shader_uniforms *uni = &gl_uniforms[glsl_active_index];
    if (uni->tex_coord >= 0)
    {
       attr->loc    = uni->tex_coord;
@@ -1143,9 +1143,9 @@ static bool gl_glsl_set_coords(const struct gl_coords *coords)
 
    if (size)
    {
-      gl_glsl_set_attribs(glsl_vbo[active_index].vbo_primary,
-            &glsl_vbo[active_index].buffer_primary,
-            &glsl_vbo[active_index].size_primary,
+      gl_glsl_set_attribs(glsl_vbo[glsl_active_index].vbo_primary,
+            &glsl_vbo[glsl_active_index].buffer_primary,
+            &glsl_vbo[glsl_active_index].size_primary,
             buffer, size,
             attribs, attribs_size);
    }
@@ -1162,7 +1162,7 @@ static void gl_glsl_use(void *data, unsigned index)
    {
       gl_glsl_reset_attrib();
 
-      active_index = index;
+      glsl_active_index = index;
       glUseProgram(gl_program[index]);
    }
 }
