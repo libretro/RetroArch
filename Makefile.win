@@ -83,11 +83,6 @@ endif
 
 libretro ?= -lretro
 
-
-ifeq ($(TDM_GCC),)
-   LDCXXFLAGS += -static-libstdc++
-endif
-
 ifeq ($(HAVE_ZLIB), 1)
    ZLIB_OBJS =	deps/rzlib/unzip.o \
 		deps/rzlib/ioapi.o \
@@ -106,11 +101,6 @@ ifeq ($(HAVE_ZLIB), 1)
       JOYCONFIG_LIBS += -lz
       DEFINES += -DHAVE_ZLIB_DEFLATE
    endif
-endif
-
-ifeq ($(HAVE_STDIN_CMD), 1)
-   DEFINES += -DHAVE_COMMAND -DHAVE_STDIN_CMD
-   OBJ += command.o
 endif
 
 ifeq ($(DYNAMIC), 1)

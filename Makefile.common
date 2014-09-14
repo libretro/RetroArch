@@ -27,6 +27,10 @@ ifeq ($(HAVE_HARD_FLOAT), 1)
    DEFINES += -mfloat-abi=hard
 endif
 
+ifeq ($(TDM_GCC),)
+   LDCXXFLAGS += -static-libstdc++
+endif
+
 # System
 
 ifneq ($(findstring BSD,$(OS)),)
@@ -120,6 +124,11 @@ OBJ += frontend/frontend.o \
 		performance.o
 
 # Miscellaneous
+
+ifeq ($(HAVE_STDIN_CMD), 1)
+   DEFINES += -DHAVE_COMMAND -DHAVE_STDIN_CMD
+   OBJ += command.o
+endif
 
 ifeq ($(HAVE_PYTHON), 1)
    DEFINES += $(PYTHON_CFLAGS) -Wno-unused-parameter
