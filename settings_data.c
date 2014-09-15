@@ -2148,10 +2148,6 @@ static void general_write_handler(void *data)
       g_settings.input.joypad_map[3] = *setting->value.integer;
    else if (!strcmp(setting->name, "input_player5_joypad_index"))
       g_settings.input.joypad_map[4] = *setting->value.integer;
-   else if (!strcmp(setting->name, "libretro_info_path"))
-      rarch_cmd = RARCH_CMD_CORE_INFO_INIT;
-   else if (!strcmp(setting->name, "libretro_dir_path"))
-      rarch_cmd = RARCH_CMD_CORE_INFO_INIT;
 #ifdef HAVE_NETPLAY
    else if (!strcmp(setting->name, "netplay_ip_address"))
       g_extern.has_set_netplay_ip_address = (setting->value.string[0] != '\0');
@@ -2635,8 +2631,8 @@ rarch_setting_t *setting_data_get_list(void)
 
 #endif
       CONFIG_PATH(g_settings.libretro,                   "libretro_path",              "Libretro Path",              "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)                WITH_FLAGS(SD_FLAG_ALLOW_EMPTY)
-      CONFIG_DIR(g_settings.libretro_directory,         "libretro_dir_path",         "Core Directory",              g_defaults.core_dir, "<None>", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)   WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
-      CONFIG_DIR(g_settings.libretro_info_path,         "libretro_info_path",         "Core Info Directory",        g_defaults.core_info_dir, "<None>", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)   WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR)
+      CONFIG_DIR(g_settings.libretro_directory,         "libretro_dir_path",         "Core Directory",              g_defaults.core_dir, "<None>", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)   WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR) WITH_CMD(RARCH_CMD_CORE_INFO_INIT)
+      CONFIG_DIR(g_settings.libretro_info_path,         "libretro_info_path",         "Core Info Directory",        g_defaults.core_info_dir, "<None>", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)   WITH_FLAGS(SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR) WITH_CMD(RARCH_CMD_CORE_INFO_INIT)
       CONFIG_PATH(g_settings.core_options_path,          "core_options_path",          "Core Options Path",          "", "Paths", SUBGROUP_NAME, general_write_handler, general_read_handler)                WITH_FLAGS(SD_FLAG_ALLOW_EMPTY)
       CONFIG_PATH(g_settings.cheat_database,             "cheat_database_path",        "Cheat Database",             "", "Paths", SUBGROUP_NAME, general_write_handler, general_read_handler)                WITH_FLAGS(SD_FLAG_ALLOW_EMPTY)
       CONFIG_PATH(g_settings.cheat_settings_path,        "cheat_settings_path",        "Cheat Settings",             "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)                WITH_FLAGS(SD_FLAG_ALLOW_EMPTY)
