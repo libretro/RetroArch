@@ -291,11 +291,14 @@ static bool parse_line(config_file_t *conf,
    size_t cur_size = 8;
    size_t index = 0;
 
-   if (!line || !*line)
-      return false;
-
    if (!key)
       return false;
+
+   if (!line || !*line)
+   {
+      free(key);
+      return false;
+   }
 
    comment = strip_comment(line);
 
@@ -306,6 +309,7 @@ static bool parse_line(config_file_t *conf,
       if (strstr(comment, "include ") == comment)
       {
          add_sub_conf(conf, comment + strlen("include "));
+         free(key);
          return false;
       }
    }
