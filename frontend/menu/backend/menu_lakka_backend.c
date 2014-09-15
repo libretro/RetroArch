@@ -23,6 +23,7 @@
 #include <ctype.h>
 #include "../menu_action.h"
 #include "../menu_navigation.h"
+#include "menu_backend.h"
 
 #include "../../../gfx/gfx_common.h"
 #include "../../../driver.h"

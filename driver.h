@@ -35,7 +35,9 @@
 #include "miscellaneous.h"
 #endif
 
-#include "driver_menu.h"
+#include "frontend/menu/menu_driver.h"
+#include "frontend/menu/backend/menu_backend.h"
+#include "frontend/menu/disp/menu_display.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
