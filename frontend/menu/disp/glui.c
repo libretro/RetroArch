@@ -40,7 +40,7 @@
 
 int line_height, glyph_width, glui_margin, glui_term_width, glui_term_height;
 GLuint glui_bg = 0;
-const char *box_message;
+char box_message[PATH_MAX];
 
 static void glui_blit_line(float x, float y, const char *message, bool green)
 {
@@ -122,7 +122,7 @@ static void glui_get_message(const char *message)
    if (!driver.menu || !message || !*message)
       return;
 
-   box_message = message;
+   strlcpy(box_message, message, sizeof(box_message));
 }
 
 static void glui_render_messagebox(const char *message)
@@ -299,11 +299,11 @@ static void glui_frame(void)
       glui_render_messagebox(msg);
    }
 
-   if (box_message)
+   if (box_message[0] != '\0')
    {
       glui_render_background();
       glui_render_messagebox(box_message);
-      box_message = 0;
+      box_message[0] = '\0';
    }
 
    gl_set_viewport(gl, gl->win_width, gl->win_height, false, false);
