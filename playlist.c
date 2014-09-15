@@ -235,6 +235,13 @@ end:
    return true;
 }
 
+static void playlist_create_new(const char *path)
+{
+   FILE *file = fopen(path, "w");
+   if (file)
+      fclose(file);
+}
+
 content_playlist_t *content_playlist_init(const char *path, size_t size)
 {
    RARCH_LOG("Opening playlist: %s.\n", path);
@@ -252,6 +259,9 @@ content_playlist_t *content_playlist_init(const char *path, size_t size)
       goto error;
 
    playlist->cap = size;
+
+   if (!path_file_exists(path))
+      playlist_create_new(path);
 
    if (!content_playlist_read_file(playlist, path))
       goto error;
