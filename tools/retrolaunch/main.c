@@ -281,6 +281,9 @@ int detect_file(const char *path, char *game_name, size_t max_len,
 }
 
 #ifndef RARCH_CONSOLE
+#ifndef __APPLE__
+#undef main
+#endif
 int main(int argc, char *argv[])
 {
    struct RunInfo info;
