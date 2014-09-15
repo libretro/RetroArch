@@ -380,8 +380,11 @@ bool menu_iterate(void)
    if (driver.menu_ctx && driver.menu_ctx->input_postprocess)
       driver.menu_ctx->input_postprocess(driver.menu->old_input_state);
 
+#if 0
+   /* Go back to Main Menu when exiting */
    if (ret < 0)
       menu_flush_stack_type(driver.menu->menu_stack, MENU_SETTINGS);
+#endif
 
    if (ret)
       return false;
