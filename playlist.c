@@ -61,6 +61,9 @@ void content_playlist_get_index(content_playlist_t *playlist,
 static void content_playlist_free_entry(
       struct content_playlist_entry *entry)
 {
+   if (!entry)
+      return;
+
    if (entry->path)
       free(entry->path);
    entry->path = NULL;
