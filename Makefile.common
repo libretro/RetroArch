@@ -332,7 +332,7 @@ endif
 # Video
 #
 ifeq ($(HAVE_OPENGL), 1)
-   DEFINES += -DHAVE_OPENGL -DHAVE_GLSL -DHAVE_GL_SYNC
+   DEFINES += -DHAVE_OPENGL -DHAVE_GLSL
    OBJ += gfx/gl.o \
 			 gfx/gfx_context.o \
 			 gfx/fonts/gl_font.o \
