@@ -47,8 +47,11 @@ long read_compressed_file(const char * path, void **buf);
 #endif
 
 long read_file(const char *path, void **buf);
+
 bool read_file_string(const char *path, char **buf);
+
 bool write_file(const char *path, const void *buf, size_t size);
+
 bool write_empty_file(const char *path);
 
 struct string_list *compressed_file_list_new(const char *filename,
@@ -61,7 +64,9 @@ bool path_is_compressed_file(const char *path);
  * E.g.: /path/to/file.7z#mygame.img
  */
 bool path_contains_compressed_file(const char *path);
+
 bool path_is_directory(const char *path);
+
 bool path_file_exists(const char *path);
 
 /* Gets extension of file. Only '.'s after the last slash are considered. */
@@ -178,8 +183,10 @@ void fill_short_pathname_representation(char* out_rep,
 
 void fill_pathname_expand_special(char *out_path,
       const char *in_path, size_t size);
+
 void fill_pathname_abbreviate_special(char *out_path,
       const char *in_path, size_t size);
+
 void fill_pathname_slash(char *path, size_t size);
 
 #ifndef RARCH_CONSOLE
