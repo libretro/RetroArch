@@ -117,6 +117,7 @@ static void glui_render_background(void)
 static void glui_get_message(const char *message)
 {
    size_t i;
+   (void)i;
 
    if (!driver.menu || !message || !*message)
       return;
