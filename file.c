@@ -525,4 +525,3 @@ bool init_content_file(void)
    string_list_free(content);
    return ret;
 }
-

@@ -847,7 +847,7 @@ static unsigned menu_common_shader_manager_get_type(
       const struct gfx_shader *shader)
 {
    /* All shader types must be the same, or we cannot use it. */
-   unsigned i, type = 0;
+   unsigned i = 0, type = 0;
 
    (void)i;
 
