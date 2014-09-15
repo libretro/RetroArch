@@ -18,6 +18,8 @@
 #define __RARCH_STRING_LIST_H
 
 #include "boolean.h"
+#include <stdlib.h>
+#include <stddef.h>
 
 #ifdef __cplusplus
 extern "C" {

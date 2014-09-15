@@ -91,6 +91,7 @@ OBJ += frontend/frontend.o \
 		retroarch.o \
 		file.o \
 		file_list.o \
+		dir_list.o \
 		string_list.o \
 		file_path.o \
 		hash.o \
@@ -614,6 +615,7 @@ RETROLAUNCH_OBJ += tools/retrolaunch/main.o \
 	compat/fnmatch_rarch.o \
 	tools/input_common_launch.o \
 	file_path.o \
+	dir_list.o \
 	string_list.o \
 	compat/compat.o \
 	conf/config_file.o \

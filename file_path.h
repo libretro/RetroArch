@@ -23,6 +23,7 @@
 #include <stddef.h>
 #include <sys/types.h>
 #include "string_list.h"
+#include "dir_list.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -52,10 +53,6 @@ bool write_empty_file(const char *path);
 
 struct string_list *compressed_file_list_new(const char *filename,
       const char* ext);
-struct string_list *dir_list_new(const char *dir, const char *ext,
-      bool include_dirs);
-void dir_list_sort(struct string_list *list, bool dir_first);
-void dir_list_free(struct string_list *list);
 
 /* path_is_compressed_file also means: The compressed file is supported */
 bool path_is_compressed_file(const char *path);
