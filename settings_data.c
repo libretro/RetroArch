@@ -2273,7 +2273,9 @@ rarch_setting_t *setting_data_get_mainmenu(bool regenerate)
       CONFIG_BOOL(lists[3],     "load_content",  "Load Content", false, "", "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_FLAGS(SD_FLAG_PUSH_ACTION)
       CONFIG_BOOL(lists[4],     "core_options",  "Core Options", false, "", "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_FLAGS(SD_FLAG_PUSH_ACTION)
       CONFIG_BOOL(lists[5],     "core_information",  "Core Information", false, "", "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_FLAGS(SD_FLAG_PUSH_ACTION)
-      if (g_extern.main_is_init && !g_extern.libretro_dummy)
+      if (g_extern.main_is_init
+            && !g_extern.libretro_dummy
+            && g_extern.system.disk_control.get_num_images)
       {
          CONFIG_BOOL(lists[6],     "disk_options",  "Core Disk Options", false, "", "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_FLAGS(SD_FLAG_PUSH_ACTION)
       }
