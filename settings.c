@@ -452,6 +452,7 @@ void config_set_defaults(void)
    *g_settings.input.overlay = '\0';
    *g_settings.content_directory = '\0';
    *g_settings.assets_directory = '\0';
+   *g_settings.playlist_directory = '\0';
    *g_settings.video.shader_path = '\0';
    *g_settings.video.shader_dir = '\0';
    *g_settings.video.filter_dir = '\0';
@@ -488,6 +489,9 @@ void config_set_defaults(void)
    if (*g_defaults.assets_dir)
       strlcpy(g_settings.assets_directory,
             g_defaults.assets_dir, sizeof(g_settings.assets_directory));
+   if (*g_defaults.playlist_dir)
+      strlcpy(g_settings.playlist_directory,
+            g_defaults.playlist_dir, sizeof(g_settings.playlist_directory));
    if (*g_defaults.core_dir)
       fill_pathname_expand_special(g_settings.libretro_directory,
             g_defaults.core_dir, sizeof(g_settings.libretro_directory));
@@ -1067,10 +1071,13 @@ bool config_load_file(const char *path, bool set_defaults)
    CONFIG_GET_PATH(extraction_directory, "extraction_directory");
    CONFIG_GET_PATH(content_directory, "content_directory");
    CONFIG_GET_PATH(assets_directory, "assets_directory");
+   CONFIG_GET_PATH(playlist_directory, "playlist_directory");
    if (!strcmp(g_settings.content_directory, "default"))
       *g_settings.content_directory = '\0';
    if (!strcmp(g_settings.assets_directory, "default"))
       *g_settings.assets_directory = '\0';
+   if (!strcmp(g_settings.playlist_directory, "default"))
+      *g_settings.playlist_directory = '\0';
 #ifdef HAVE_MENU
    CONFIG_GET_PATH(menu_content_directory, "rgui_browser_directory");
    if (!strcmp(g_settings.menu_content_directory, "default"))
@@ -1507,6 +1514,9 @@ bool config_save_file(const char *path)
    config_set_path(conf, "assets_directory",
          *g_settings.assets_directory ?
          g_settings.assets_directory : "default");
+   config_set_path(conf, "playlist_directory",
+         *g_settings.playlist_directory ?
+         g_settings.playlist_directory : "default");
 #ifdef HAVE_MENU
    config_set_path(conf, "rgui_browser_directory",
          *g_settings.menu_content_directory ?

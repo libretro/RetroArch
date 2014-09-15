@@ -444,6 +444,7 @@ unsigned menu_common_type_is(const char *label, unsigned type)
          !strcmp(label, "overlay_directory") ||
          !strcmp(label, "screenshot_directory") ||
          !strcmp(label, "joypad_autoconfig_dir") ||
+         !strcmp(label, "playlist_directory") ||
          !strcmp(label, "extraction_directory") ||
          !strcmp(label, "system_directory"))
       return MENU_FILE_DIRECTORY;

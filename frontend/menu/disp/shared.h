@@ -80,6 +80,8 @@ static void get_title(const char *label, const char *dir,
       snprintf(title, sizeof_title, "DSP FILTER %s", dir);
    else if (!strcmp(label, "rgui_browser_directory"))
       snprintf(title, sizeof_title, "BROWSER DIR %s", dir);
+   else if (!strcmp(label, "playlist_directory"))
+      snprintf(title, sizeof_title, "PLAYLIST DIR %s", dir);
    else if (!strcmp(label, "content_directory"))
       snprintf(title, sizeof_title, "CONTENT DIR %s", dir);
    else if (!strcmp(label, "screenshot_directory"))
