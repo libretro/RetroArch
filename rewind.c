@@ -133,17 +133,21 @@ state_manager_t *state_manager_new(size_t state_size, size_t buffer_size)
 
    state->data = (uint8_t*)malloc(buffer_size);
 
-   state->thisblock = (uint8_t*)calloc(state->blocksize + sizeof(uint16_t) * 4 + 16, 1);
-   state->nextblock = (uint8_t*)calloc(state->blocksize + sizeof(uint16_t) * 4 + 16, 1);
+   state->thisblock = (uint8_t*)
+      calloc(state->blocksize + sizeof(uint16_t) * 4 + 16, 1);
+   state->nextblock = (uint8_t*)
+      calloc(state->blocksize + sizeof(uint16_t) * 4 + 16, 1);
    if (!state->data || !state->thisblock || !state->nextblock)
       goto error;
 
    /* Force in a different byte at the end, so we don't need to check 
     * bounds in the innermost loop (it's expensive).
     *
-    * There is also a large amount of data that's the same, to stop the other scan
-    * There is also some padding at the end. This is so we don't read outside the 
-    * buffer end if we're reading in large blocks;
+    * There is also a large amount of data that's the same, to stop 
+    * the other scan.
+    *
+    * There is also some padding at the end. This is so we don't 
+    * read outside the buffer end if we're reading in large blocks;
     *
     * It doesn't make any difference to us, but sacrificing 16 bytes to get 
     * Valgrind happy is worth it. */
