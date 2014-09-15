@@ -385,6 +385,17 @@ void lakka_draw_background(void)
       1.0f, 1.0f, 1.0f, global_alpha,
    };
 
+   float alpha = 0.9f;
+   if (alpha > global_alpha)
+      alpha = global_alpha;
+
+   GLfloat black_color[] = {
+      0.0f, 0.0f, 0.0f, alpha,
+      0.0f, 0.0f, 0.0f, alpha,
+      0.0f, 0.0f, 0.0f, alpha,
+      0.0f, 0.0f, 0.0f, alpha,
+   };
+
    gl_t *gl = (gl_t*)driver_video_resolve(NULL);
 
    if (!gl)
@@ -396,7 +407,7 @@ void lakka_draw_background(void)
 
    gl->coords.vertex = vertex;
    gl->coords.tex_coord = tex_coord;
-   gl->coords.color = color;
+   gl->coords.color = textures[TEXTURE_BG].id ? color : black_color;
    glBindTexture(GL_TEXTURE_2D, textures[TEXTURE_BG].id);
 
    if (gl->shader && gl->shader->use)
@@ -663,6 +674,9 @@ static void lakka_frame(void)
 
 static GLuint lakka_png_texture_load(const char * file_name)
 {
+   if (! path_file_exists(file_name))
+      return 0;
+
    struct texture_image ti = {0};
    texture_image_load(&ti, file_name);
 
