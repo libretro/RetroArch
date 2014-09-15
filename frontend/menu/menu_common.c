@@ -315,7 +315,6 @@ bool menu_iterate(void)
    {
       driver.menu->need_refresh = true;
       rarch_main_set_state(RARCH_ACTION_STATE_MENU_PREINIT_FINISHED);
-      driver.menu->old_input_state |= 1ULL << RARCH_MENU_TOGGLE;
    }
 
    rarch_input_poll();
