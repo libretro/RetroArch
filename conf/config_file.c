@@ -82,7 +82,7 @@ static char *getaline(FILE *file)
       if (index == cur_size)
       {
          cur_size *= 2;
-         newline = (char*)realloc(newline, cur_size + 1);
+         newline_tmp = (char*)realloc(newline, cur_size + 1);
 
          if (newline_tmp)
          {
@@ -459,6 +459,7 @@ config_file_t *config_file_new_from_string(const char *from_string)
 
       if (!list)
       {
+         string_list_free(lines);
          config_file_free(conf);
          return NULL;
       }
@@ -479,7 +480,7 @@ config_file_t *config_file_new_from_string(const char *from_string)
       if (list != conf->tail)
          free(list);
    }
-   
+
    string_list_free(lines);
 
    return conf;
