@@ -26,11 +26,17 @@
 
 #if defined(ANDROID)
 #include "platform/platform_android.h"
+#define main_entry android_app_entry
 #define args_type() struct android_app*
 #define signature() void* data
 #define signature_expand() data
 #define returntype void
 #else
+#if defined(__APPLE__) || defined(HAVE_BB10) || defined(EMSCRIPTEN)
+#define main_entry rarch_main
+#else
+#define main_entry main
+#endif
 #define args_type() void*
 #define signature() int argc, char *argv[]
 #define signature_expand() argc, argv

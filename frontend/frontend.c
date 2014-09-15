@@ -18,8 +18,6 @@
 #include "frontend.h"
 #include "../general.h"
 
-#include "frontend_context.h"
-
 #if defined(HAVE_MENU)
 #include "menu/menu_input_line_cb.h"
 #include "menu/menu_common.h"
@@ -31,7 +29,6 @@
 
 #if defined(ANDROID)
 
-#define main_entry android_app_entry
 #define returntype void
 #define returnfunc() exit(0)
 #define return_negative() return
@@ -40,12 +37,6 @@
 #define declare_argv() char *argv[1]
 #define args_initial_ptr() data
 #else
-
-#if defined(__APPLE__) || defined(HAVE_BB10) || defined(EMSCRIPTEN)
-#define main_entry rarch_main
-#else
-#define main_entry main
-#endif
 
 #define returntype int
 #define returnfunc() return 0
