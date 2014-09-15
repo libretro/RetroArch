@@ -56,11 +56,11 @@ ifeq ($(DEBUG), 1)
 endif
 
 CFLAGS += -Wall $(OPTIMIZE_FLAG) $(INCLUDE_DIRS) $(DEBUG_FLAG) -I.
-CXXFLAGS = -std=c++0x -xc++ -D__STDC_CONSTANT_MACROS
+CXXFLAGS := $(CFLAGS) -std=c++0x -D__STDC_CONSTANT_MACROS
 
 ifeq ($(CXX_BUILD), 1)
    LINK = $(CXX)
-   CFLAGS += $(CXXFLAGS)
+   CFLAGS := $(CXXFLAGS) -xc++
 else
    ifeq ($(findstring Win32,$(OS)),)
       LINK = $(CC)
@@ -80,9 +80,11 @@ endif
 
 ifeq ($(NOUNUSED), yes)
    CFLAGS += -Wno-unused-result
+   CXXFLAGS += -Wno-unused-result
 endif
 ifeq ($(NOUNUSED_VARIABLE), yes)
    CFLAGS += -Wno-unused-variable
+   CXXFLAGS += -Wno-unused-variable
 endif
 
 RARCH_OBJ := $(addprefix $(OBJDIR)/,$(OBJ))
@@ -103,11 +105,7 @@ retroarch: $(RARCH_OBJ)
 
 $(JTARGET): $(RARCH_JOYCONFIG_OBJ)
 	@$(if $(Q), $(shell echo echo LD $@),)
-ifeq ($(CXX_BUILD), 1)
-	$(Q)$(CXX) -o $@ $(RARCH_JOYCONFIG_OBJ) $(JOYCONFIG_LIBS) $(LDFLAGS) $(LIBRARY_DIRS)
-else
-	$(Q)$(CC) -o $@ $(RARCH_JOYCONFIG_OBJ) $(JOYCONFIG_LIBS) $(LDFLAGS) $(LIBRARY_DIRS)
-endif
+	$(Q)$(LINK) -o $@ $(RARCH_JOYCONFIG_OBJ) $(JOYCONFIG_LIBS) $(LDFLAGS) $(LIBRARY_DIRS)
 
 tools/retrolaunch/retrolaunch: $(RARCH_RETROLAUNCH_OBJ)
 	@$(if $(Q), $(shell echo echo LD $@),)
@@ -121,7 +119,7 @@ $(OBJDIR)/%.o: %.c config.h config.mk
 $(OBJDIR)/%.o: %.cpp
 	@mkdir -p $(dir $@)
 	@$(if $(Q), $(shell echo echo CXX $<),)
-	$(Q)$(CXX) $(CFLAGS) $(CXXFLAGS) $(DEFINES) -MMD -c -o $@ $<
+	$(Q)$(CXX) $(CXXFLAGS) $(DEFINES) -MMD -c -o $@ $<
 
 .FORCE:
 
