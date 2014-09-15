@@ -331,6 +331,13 @@ static int menu_lakka_iterate(unsigned action)
       return 0;
    }
 
+   if (action == MENU_ACTION_TOGGLE &&
+         g_extern.main_is_init && !g_extern.libretro_dummy)
+   {
+      rarch_main_command(RARCH_CMD_RESUME);
+      return -1;
+   }
+
    active_category = (menu_category_t*)&categories[menu_active_category];
 
    if (active_category)
@@ -350,25 +357,26 @@ static int menu_lakka_iterate(unsigned action)
    if (action && depth == 1 && menu_active_category == 0 
       && active_subitem->setting)
    {
+      rarch_setting_t *setting = (rarch_setting_t*)
+         active_subitem->setting;
+
       switch (action)
       {
+         case MENU_ACTION_OK:
+            if (setting->cmd_trigger.idx != RARCH_CMD_NONE)
+               setting->cmd_trigger.triggered = true;
+            /* fall-through */
          case MENU_ACTION_LEFT:
          case MENU_ACTION_RIGHT:
-         case MENU_ACTION_OK:
          case MENU_ACTION_START:
-            {
-               rarch_setting_t *setting = (rarch_setting_t*)
-                  active_subitem->setting;
-
-               if (setting->type == ST_BOOL)
-                  menu_action_setting_boolean(setting, action);
-               else if (setting->type == ST_UINT)
-                  menu_action_setting_unsigned_integer(setting, 0, action);
-               else if (setting->type == ST_FLOAT)
-                  menu_action_setting_fraction(setting, action);
-               else if (setting->type == ST_STRING)
-                  menu_action_setting_driver(setting, action);
-            }
+            if (setting->type == ST_BOOL)
+               menu_action_setting_boolean(setting, action);
+            else if (setting->type == ST_UINT)
+               menu_action_setting_unsigned_integer(setting, 0, action);
+            else if (setting->type == ST_FLOAT)
+               menu_action_setting_fraction(setting, action);
+            else if (setting->type == ST_STRING)
+               menu_action_setting_driver(setting, action);
             break;
          default:
             break;

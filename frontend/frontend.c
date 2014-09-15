@@ -274,6 +274,8 @@ static void check_defaults_dirs(void)
       path_mkdir(g_defaults.audio_filter_dir);
    if (*g_defaults.assets_dir)
       path_mkdir(g_defaults.assets_dir);
+   if (*g_defaults.playlist_dir)
+      path_mkdir(g_defaults.playlist_dir);
    if (*g_defaults.core_dir)
       path_mkdir(g_defaults.core_dir);
    if (*g_defaults.core_info_dir)

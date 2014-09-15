@@ -18,7 +18,22 @@
 #include "menu_input_line_cb.h"
 #include "menu_action.h"
 
-void menu_action_setting_boolean(
+int menu_action_setting_apply(rarch_setting_t *setting)
+{
+   if (setting->change_handler)
+      setting->change_handler(setting);
+
+   if (setting->flags & SD_FLAG_EXIT
+         && setting->cmd_trigger.triggered)
+   {
+      setting->cmd_trigger.triggered = false;
+      return -1;
+   }
+
+   return 0;
+}
+
+int menu_action_setting_boolean(
       rarch_setting_t *setting, unsigned action)
 {
    if (
@@ -36,13 +51,21 @@ void menu_action_setting_boolean(
       else if (action == MENU_ACTION_RIGHT)
          g_settings.state_slot++;
       else if (action == MENU_ACTION_OK)
+      {
          *setting->value.boolean = !(*setting->value.boolean);
+
+         if (setting->cmd_trigger.idx != RARCH_CMD_NONE)
+            setting->cmd_trigger.triggered = true;
+      }
    }
    else
    {
       switch (action)
       {
          case MENU_ACTION_OK:
+            if (setting->cmd_trigger.idx != RARCH_CMD_NONE)
+               setting->cmd_trigger.triggered = true;
+            /* fall-through */
          case MENU_ACTION_LEFT:
          case MENU_ACTION_RIGHT:
             *setting->value.boolean = !(*setting->value.boolean);
@@ -53,11 +76,10 @@ void menu_action_setting_boolean(
       }
    }
 
-   if (setting->change_handler)
-      setting->change_handler(setting);
+   return menu_action_setting_apply(setting);
 }
 
-void menu_action_setting_unsigned_integer(
+int menu_action_setting_unsigned_integer(
       rarch_setting_t *setting, unsigned id, unsigned action)
 {
    if (id == MENU_FILE_LINEFEED)
@@ -85,8 +107,11 @@ void menu_action_setting_unsigned_integer(
             }
             break;
 
-         case MENU_ACTION_RIGHT:
          case MENU_ACTION_OK:
+            if (setting->cmd_trigger.idx != RARCH_CMD_NONE)
+               setting->cmd_trigger.triggered = true;
+            /* fall-through */
+         case MENU_ACTION_RIGHT:
             *setting->value.unsigned_integer =
                *setting->value.unsigned_integer + setting->step;
 
@@ -104,11 +129,10 @@ void menu_action_setting_unsigned_integer(
       }
    } 
 
-   if (setting->change_handler)
-      setting->change_handler(setting);
+   return menu_action_setting_apply(setting);
 }
 
-void menu_action_setting_fraction(
+int menu_action_setting_fraction(
       rarch_setting_t *setting, unsigned action)
 {
    if (!strcmp(setting->name, "video_refresh_rate_auto"))
@@ -127,6 +151,9 @@ void menu_action_setting_fraction(
             /* Incase refresh rate update forced non-block video. */
             rarch_main_command(RARCH_CMD_VIDEO_SET_BLOCKING_STATE);
          }
+
+         if (setting->cmd_trigger.idx != RARCH_CMD_NONE)
+            setting->cmd_trigger.triggered = true;
       }
    }
    else if (!strcmp(setting->name, "fastforward_ratio"))
@@ -168,8 +195,11 @@ void menu_action_setting_fraction(
             }
             break;
 
-         case MENU_ACTION_RIGHT:
          case MENU_ACTION_OK:
+            if (setting->cmd_trigger.idx != RARCH_CMD_NONE)
+               setting->cmd_trigger.triggered = true;
+            /* fall-through */
+         case MENU_ACTION_RIGHT:
             *setting->value.fraction = 
                *setting->value.fraction + setting->step;
 
@@ -186,8 +216,7 @@ void menu_action_setting_fraction(
       }
    }
 
-   if (setting->change_handler)
-      setting->change_handler(setting);
+   return menu_action_setting_apply(setting);
 }
 
 void menu_action_setting_driver(
@@ -216,4 +245,35 @@ void menu_action_setting_driver(
             break;
       }
    }
+}
+
+int menu_action_setting_set_current_string(
+      rarch_setting_t *setting, const char *str)
+{
+   strlcpy(setting->value.string, str, setting->size);
+
+   return menu_action_setting_apply(setting);
+}
+
+int menu_action_set_current_string_based_on_label(
+      const char *label, const char *str)
+{
+   if (!strcmp(label, "video_shader_preset_save_as"))
+   {
+#ifdef HAVE_SHADER_MANAGER
+      if (driver.menu_ctx && driver.menu_ctx->backend
+            && driver.menu_ctx->backend->shader_manager_save_preset)
+         driver.menu_ctx->backend->shader_manager_save_preset(str, false);
+#endif
+   }
+
+   return 0;
+}
+
+int menu_action_setting_set_current_string_path(
+      rarch_setting_t *setting, const char *dir, const char *path)
+{
+   fill_pathname_join(setting->value.string, dir, path, setting->size);
+
+   return menu_action_setting_apply(setting);
 }

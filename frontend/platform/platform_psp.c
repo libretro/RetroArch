@@ -77,6 +77,8 @@ static void frontend_psp_get_environment_settings(int *argc, char *argv[],
          "savefiles", sizeof(g_defaults.sram_dir));
    fill_pathname_join(g_defaults.system_dir, g_defaults.core_dir,
          "system", sizeof(g_defaults.system_dir));
+   fill_pathname_join(g_defaults.playlist_dir, g_defaults.core_dir,
+         "playlists", sizeof(g_defaults.playlist_dir));
    fill_pathname_join(g_defaults.config_path, g_defaults.port_dir,
          "retroarch.cfg", sizeof(g_defaults.config_path));
 

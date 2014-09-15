@@ -315,7 +315,6 @@ bool menu_iterate(void)
    {
       driver.menu->need_refresh = true;
       rarch_main_set_state(RARCH_ACTION_STATE_MENU_PREINIT_FINISHED);
-      driver.menu->old_input_state |= 1ULL << RARCH_MENU_TOGGLE;
    }
 
    rarch_input_poll();
@@ -372,17 +371,20 @@ bool menu_iterate(void)
 
    if (driver.menu_ctx && driver.menu_ctx->backend
          && driver.menu_ctx->backend->iterate) 
-      driver.menu_ctx->backend->iterate(action);
+      ret = driver.menu_ctx->backend->iterate(action);
 
    draw_frame(true);
    throttle_frame();
    draw_frame(false);
 
    if (driver.menu_ctx && driver.menu_ctx->input_postprocess)
-      ret = driver.menu_ctx->input_postprocess(driver.menu->old_input_state);
+      driver.menu_ctx->input_postprocess(driver.menu->old_input_state);
 
+#if 0
+   /* Go back to Main Menu when exiting */
    if (ret < 0)
       menu_flush_stack_type(driver.menu->menu_stack, MENU_SETTINGS);
+#endif
 
    if (ret)
       return false;
@@ -444,6 +446,7 @@ unsigned menu_common_type_is(const char *label, unsigned type)
          !strcmp(label, "overlay_directory") ||
          !strcmp(label, "screenshot_directory") ||
          !strcmp(label, "joypad_autoconfig_dir") ||
+         !strcmp(label, "playlist_directory") ||
          !strcmp(label, "extraction_directory") ||
          !strcmp(label, "system_directory"))
       return MENU_FILE_DIRECTORY;

@@ -342,6 +342,8 @@ static void glui_context_reset(void *data)
 {
    menu_handle_t *menu = (menu_handle_t*)data;
    gl_t *gl = (gl_t*)driver_video_resolve(NULL);
+    
+   (void)gl;
 
    driver.gfx_use_rgba = true;
 

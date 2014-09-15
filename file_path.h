@@ -46,6 +46,7 @@ long read_compressed_file(const char * path, void **buf);
 long read_file(const char *path, void **buf);
 bool read_file_string(const char *path, char **buf);
 bool write_file(const char *path, const void *buf, size_t size);
+bool write_empty_file(const char *path);
 
 union string_list_elem_attr
 {

@@ -19,16 +19,27 @@
 
 #include "../../settings_data.h"
 
-void menu_action_setting_boolean(
+int menu_action_setting_apply(rarch_setting_t *setting);
+
+int menu_action_setting_boolean(
       rarch_setting_t *setting, unsigned action);
 
-void menu_action_setting_fraction(
+int menu_action_setting_fraction(
       rarch_setting_t *setting, unsigned action);
 
-void menu_action_setting_unsigned_integer(
+int menu_action_setting_unsigned_integer(
       rarch_setting_t *setting, unsigned id, unsigned action);
 
 void menu_action_setting_driver(
       rarch_setting_t *setting, unsigned action);
+
+int menu_action_set_current_string_based_on_label(
+      const char *label, const char *str);
+
+int menu_action_setting_set_current_string(
+      rarch_setting_t *setting, const char *str);
+
+int menu_action_setting_set_current_string_path(
+      rarch_setting_t *setting, const char *dir, const char *path);
 
 #endif

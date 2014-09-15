@@ -55,6 +55,8 @@ static void frontend_qnx_get_environment_settings(int *argc, char *argv[],
          "lib", sizeof(g_defaults.core_dir));
    fill_pathname_join(g_defaults.core_info_dir, "app/native",
          "info", sizeof(g_defaults.core_info_dir));
+   fill_pathname_join(g_defaults.playlist_dir, "app/native",
+         "playlists", sizeof(g_defaults.playlist_dir));
 }
 
 const frontend_ctx_driver_t frontend_ctx_qnx = {

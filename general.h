@@ -197,6 +197,7 @@ struct defaults
    char sram_dir[PATH_MAX];
    char screenshot_dir[PATH_MAX];
    char system_dir[PATH_MAX];
+   char playlist_dir[PATH_MAX];
 
    struct
    {
@@ -365,6 +366,7 @@ struct settings
    char system_directory[PATH_MAX];
 
    char extraction_directory[PATH_MAX];
+   char playlist_directory[PATH_MAX];
 
    bool rewind_enable;
    size_t rewind_buffer_size;

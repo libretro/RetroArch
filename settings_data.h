@@ -23,7 +23,7 @@
 extern "C" {
 #endif
 
-typedef void (*change_handler_t)(const void *data);
+typedef void (*change_handler_t)(void *data);
 
 #define BINDFOR(s) (*(&(s))->value.keybind)
 
@@ -47,14 +47,16 @@ enum setting_type
                     
 enum setting_flags
 {
-   SD_FLAG_PATH_DIR    = (1 << 0),
-   SD_FLAG_PATH_FILE   = (1 << 1),
-   SD_FLAG_ALLOW_EMPTY = (1 << 2),
-   SD_FLAG_VALUE_DESC  = (1 << 3),
-   SD_FLAG_HAS_RANGE   = (1 << 4),
-   SD_FLAG_ALLOW_INPUT = (1 << 5),
-   SD_FLAG_PUSH_ACTION = (1 << 6),
-   SD_FLAG_IS_DRIVER   = (1 << 7),
+   SD_FLAG_PATH_DIR       = (1 << 0),
+   SD_FLAG_PATH_FILE      = (1 << 1),
+   SD_FLAG_ALLOW_EMPTY    = (1 << 2),
+   SD_FLAG_VALUE_DESC     = (1 << 3),
+   SD_FLAG_HAS_RANGE      = (1 << 4),
+   SD_FLAG_ALLOW_INPUT    = (1 << 5),
+   SD_FLAG_PUSH_ACTION    = (1 << 6),
+   SD_FLAG_IS_DRIVER      = (1 << 7),
+   SD_FLAG_EXIT           = (1 << 8),
+   SD_FLAG_CMD_APPLY_AUTO = (1 << 9),
 };
 
 typedef struct rarch_setting_t
@@ -106,6 +108,12 @@ typedef struct rarch_setting_t
 
    struct
    {
+      unsigned idx;
+      bool triggered;
+   } cmd_trigger;
+
+   struct
+   {
       const char *off_label;
       const char *on_label;
    } boolean;
@@ -116,19 +124,19 @@ typedef struct rarch_setting_t
    bool enforce_maxrange;
 }  rarch_setting_t;
 
-void setting_data_reset_setting(const rarch_setting_t* setting);
-void setting_data_reset(const rarch_setting_t* settings);
+void setting_data_reset_setting(rarch_setting_t* setting);
+void setting_data_reset(rarch_setting_t* settings);
 
-bool setting_data_load_config_path(const rarch_setting_t* settings,
+bool setting_data_load_config_path(rarch_setting_t* settings,
       const char* path);
-bool setting_data_save_config(const rarch_setting_t* settings,
+bool setting_data_save_config(rarch_setting_t* settings,
       config_file_t* config);
 
 rarch_setting_t* setting_data_find_setting(rarch_setting_t* settings,
       const char* name);
 
 void setting_data_set_with_string_representation(
-      const rarch_setting_t* setting, const char* value);
+      rarch_setting_t* setting, const char* value);
 void setting_data_get_string_representation(rarch_setting_t* setting,
       char* buf, size_t sizeof_buf);
 

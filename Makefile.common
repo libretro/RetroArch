@@ -584,8 +584,8 @@ ifeq ($(HAVE_NETPLAY), 1)
 endif
 
 ifneq ($(findstring Win32,$(OS)),)
-OBJ +=	media/rarch.o \
-			gfx/context/win32_common.o
+   OBJ += media/rarch.o \
+          gfx/context/win32_common.o
 endif
 
 # Record

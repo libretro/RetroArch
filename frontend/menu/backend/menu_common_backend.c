@@ -215,7 +215,7 @@ static int menu_common_setting_set_perf(unsigned setting, unsigned action,
 }
 
 
-static void menu_common_setting_set_current_path_selection(
+static int menu_common_setting_set_current_path_selection(
       rarch_setting_t *setting, const char *start_path,
       const char *label, unsigned type,
       unsigned action)
@@ -226,70 +226,42 @@ static void menu_common_setting_set_current_path_selection(
          menu_entries_push(driver.menu->menu_stack,
                start_path, label, type,
                driver.menu->selection_ptr);
+
+         if (setting->cmd_trigger.idx != RARCH_CMD_NONE)
+            setting->cmd_trigger.triggered = true;
          break;
       case MENU_ACTION_START:
          *setting->value.string = '\0';
          break;
    }
 
-   if (setting->change_handler)
-      setting->change_handler(setting);
+   return menu_action_setting_apply(setting);
 }
 
-static void menu_common_setting_set_current_string_path(
-      rarch_setting_t *setting, const char *dir, const char *path)
-{
-   fill_pathname_join(setting->value.string, dir, path, setting->size);
-
-   if (setting->change_handler)
-      setting->change_handler(setting);
-}
-
-void menu_common_set_current_string_based_on_label(
-      const char *label, const char *str)
-{
-   if (!strcmp(label, "video_shader_preset_save_as"))
-   {
-#ifdef HAVE_SHADER_MANAGER
-      if (driver.menu_ctx && driver.menu_ctx->backend
-            && driver.menu_ctx->backend->shader_manager_save_preset)
-         driver.menu_ctx->backend->shader_manager_save_preset(str, false);
-#endif
-   }
-}
-
-void menu_common_setting_set_current_string(
-      rarch_setting_t *setting, const char *str)
-{
-   strlcpy(setting->value.string, str, setting->size);
-
-   if (setting->change_handler)
-      setting->change_handler(setting);
-}
-
-static void handle_setting(rarch_setting_t *setting,
+static int handle_setting(rarch_setting_t *setting,
       unsigned id, const char *label, unsigned action)
 {
    if (setting->type == ST_BOOL)
-      menu_action_setting_boolean(setting, action);
-   else if (setting->type == ST_UINT)
-      menu_action_setting_unsigned_integer(setting, id, action);
-   else if (setting->type == ST_FLOAT)
-      menu_action_setting_fraction(setting, action);
-   else if (setting->type == ST_DIR)
+      return menu_action_setting_boolean(setting, action);
+   if (setting->type == ST_UINT)
+      return menu_action_setting_unsigned_integer(setting, id, action);
+   if (setting->type == ST_FLOAT)
+      return menu_action_setting_fraction(setting, action);
+   if (setting->type == ST_PATH)
+      return menu_common_setting_set_current_path_selection(setting,
+            setting->default_value.string, setting->name, id, action);
+
+   if (setting->type == ST_DIR)
    {
       if (action == MENU_ACTION_START)
       {
          *setting->value.string = '\0';
-
-         if (setting->change_handler)
-            setting->change_handler(setting);
+         return menu_action_setting_apply(setting);
       }
+      return 0;
    }
-   else if (setting->type == ST_PATH)
-      menu_common_setting_set_current_path_selection(setting,
-            setting->default_value.string, setting->name, id, action);
-   else if (setting->type == ST_STRING)
+
+   if (setting->type == ST_STRING)
    {
       if (
             (setting->flags & SD_FLAG_ALLOW_INPUT) || 
@@ -304,6 +276,8 @@ static void handle_setting(rarch_setting_t *setting,
       else
          menu_action_setting_driver(setting, action);
    }
+
+   return 0;
 }
 
 static int menu_setting_set(unsigned id, const char *label,
@@ -316,7 +290,7 @@ static int menu_setting_set(unsigned id, const char *label,
          );
 
    if (setting)
-      handle_setting(setting, id, label, action);
+      return handle_setting(setting, id, label, action);
    else
    {
       setting = (rarch_setting_t*)get_last_setting(
@@ -350,7 +324,7 @@ static int menu_setting_set(unsigned id, const char *label,
             }
          }
 
-         handle_setting(setting, id, label, action);
+         return handle_setting(setting, id, label, action);
       }
       else if (!strcmp(label, "video_shader_num_passes"))
       {
@@ -1232,7 +1206,7 @@ static int menu_action_ok(const char *menu_path,
          }
          else if ((setting && setting->type == ST_PATH))
          {
-            menu_common_setting_set_current_string_path(setting, menu_path, path);
+            menu_action_setting_set_current_string_path(setting, menu_path, path);
             menu_entries_pop_stack(driver.menu->menu_stack, setting->name);
          }
          else if (!strcmp(menu_label, "disk_image_append"))
@@ -1291,7 +1265,7 @@ static int menu_action_ok(const char *menu_path,
       case MENU_FILE_AUDIOFILTER:
       case MENU_FILE_VIDEOFILTER:
 
-         menu_common_setting_set_current_string_path(setting, menu_path, path);
+         menu_action_setting_set_current_string_path(setting, menu_path, path);
          menu_entries_pop_stack(driver.menu->menu_stack, setting->name);
 
          return 0;
@@ -1365,7 +1339,7 @@ static int menu_action_ok(const char *menu_path,
 
          if (setting && setting->type == ST_DIR)
          {
-            menu_common_setting_set_current_string(setting, menu_path);
+            menu_action_setting_set_current_string(setting, menu_path);
             menu_entries_pop_stack(driver.menu->menu_stack, setting->name);
          }
 

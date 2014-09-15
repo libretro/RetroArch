@@ -3479,9 +3479,18 @@ void rarch_main_command(unsigned cmd)
          break;
       case RARCH_CMD_HISTORY_INIT:
          if (!g_extern.history)
-            g_extern.history = content_playlist_init(
-                  g_settings.content_history_path,
-                  g_settings.content_history_size);
+         {
+            bool init_history = true;
+
+            if (!path_file_exists(g_settings.content_history_path))
+               init_history = write_empty_file(
+                     g_settings.content_history_path);
+
+            if (init_history)
+               g_extern.history = content_playlist_init(
+                     g_settings.content_history_path,
+                     g_settings.content_history_size);
+         }
          break;
       case RARCH_CMD_HISTORY_DEINIT:
          if (g_extern.history)

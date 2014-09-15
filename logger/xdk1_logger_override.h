@@ -29,9 +29,11 @@ static inline void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
 {
    char msg_new[1024], buffer[1024];
 #ifdef IS_SALAMANDER
-   snprintf(msg_new, sizeof(msg_new), "RetroArch Salamander: %s%s", tag ? tag : "", fmt);
+   snprintf(msg_new, sizeof(msg_new),
+         "RetroArch Salamander: %s%s", tag ? tag : "", fmt);
 #else
-   snprintf(msg_new, sizeof(msg_new), "RetroArch: %s%s", tag ? tag : "", fmt);
+   snprintf(msg_new, sizeof(msg_new),
+         "RetroArch: %s%s", tag ? tag : "", fmt);
 #endif
    wvsprintf(buffer, msg_new, ap);
    OutputDebugStringA(buffer);
@@ -47,7 +49,8 @@ static inline void RARCH_LOG(const char *fmt, ...)
    va_end(ap);
 }
 
-static inline void RARCH_LOG_OUTPUT_V(const char *tag, const char *msg, va_list ap)
+static inline void RARCH_LOG_OUTPUT_V(const char *tag,
+      const char *msg, va_list ap)
 {
    RARCH_LOG_V(tag, msg, ap);
 }
@@ -64,9 +67,11 @@ static inline void RARCH_WARN_V(const char *tag, const char *fmt, va_list ap)
 {
    char msg_new[1024], buffer[1024];
 #ifdef IS_SALAMANDER
-   snprintf(msg_new, sizeof(msg_new), "RetroArch Salamander [WARN] :: %s%s", tag ? tag : "", fmt);
+   snprintf(msg_new, sizeof(msg_new),
+         "RetroArch Salamander [WARN] :: %s%s", tag ? tag : "", fmt);
 #else
-   snprintf(msg_new, sizeof(msg_new), "RetroArch [WARN] :: %s%s", tag ? tag : "", fmt);
+   snprintf(msg_new, sizeof(msg_new),
+         "RetroArch [WARN] :: %s%s", tag ? tag : "", fmt);
 #endif
    wvsprintf(buffer, msg_new, ap);
    OutputDebugStringA(buffer);
@@ -86,9 +91,11 @@ static inline void RARCH_ERR_V(const char *tag, const char *fmt, ...)
 {
    char msg_new[1024];
 #ifdef IS_SALAMANDER
-   snprintf(msg_new, sizeof(msg_new), "RetroArch Salamander [ERR] :: %s%s", tag ? tag : "", fmt);
+   snprintf(msg_new, sizeof(msg_new),
+         "RetroArch Salamander [ERR] :: %s%s", tag ? tag : "", fmt);
 #else
-   snprintf(msg_new, sizeof(msg_new), "RetroArch [ERR] :: %s%s", tag ? tag : "", fmt);
+   snprintf(msg_new, sizeof(msg_new),
+         "RetroArch [ERR] :: %s%s", tag ? tag : "", fmt);
 #endif
    OutputDebugStringA(fmt);
 }

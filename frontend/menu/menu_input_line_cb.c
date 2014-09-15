@@ -25,15 +25,10 @@
 #include <limits.h>
 #include <ctype.h>
 #include "menu_common.h"
+#include "menu_action.h"
 #include "../../input/keyboard_line.h"
 #include "menu_input_line_cb.h"
 #include "../../settings_data.h"
-
-/* forward decls */
-void menu_common_setting_set_current_string(rarch_setting_t *setting,
-      const char *str);
-void menu_common_set_current_string_based_on_label(
-      const char *label, const char *str);
 
 void menu_key_start_line(void *data, const char *label,
       const char *label_setting, input_keyboard_line_complete_t cb)
@@ -100,9 +95,10 @@ void st_string_callback(void *userdata, const char *str)
       if ((current_setting = (rarch_setting_t*)
                setting_data_find_setting(
                   setting_data, menu->keyboard.label_setting)))
-         menu_common_setting_set_current_string(current_setting, str);
+         menu_action_setting_set_current_string(current_setting, str);
       else
-         menu_common_set_current_string_based_on_label(menu->keyboard.label_setting, str);
+         menu_action_set_current_string_based_on_label(
+               menu->keyboard.label_setting, str);
    }
    menu_key_end_line(menu);
 }

@@ -80,6 +80,17 @@ bool write_file(const char *path, const void *data, size_t size)
    return ret;
 }
 
+bool write_empty_file(const char *path)
+{
+   FILE *file = fopen(path, "w");
+   if (!file)
+      return false;
+
+   fclose(file);
+
+   return true;
+}
+
 /* Generic compressed file loader. */
 #ifdef HAVE_COMPRESSION
 long read_compressed_file(const char * path, void **buf)
