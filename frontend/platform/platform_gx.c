@@ -198,6 +198,8 @@ static void frontend_gx_get_environment_settings(int *argc, char *argv[],
          "savefiles", sizeof(g_defaults.sram_dir));
    fill_pathname_join(g_defaults.savestate_dir, g_defaults.port_dir,
          "savefiles", sizeof(g_defaults.savestate_dir));
+   fill_pathname_join(g_defaults.playlist_dir, g_defaults.port_dir,
+         "playlists", sizeof(g_defaults.playlist_dir));
 
 #ifdef IS_SALAMANDER
    if (*argc > 2 && argv[1] != NULL && argv[2] != NULL)

@@ -620,6 +620,8 @@ static void frontend_android_get_environment_settings(int *argc,
                   path, "info", sizeof(g_defaults.core_info_dir));
             fill_pathname_join(g_defaults.autoconfig_dir,
                   path, "autoconfig", sizeof(g_defaults.autoconfig_dir));
+            fill_pathname_join(g_defaults.playlist_dir,
+                  path, "playlists", sizeof(g_defaults.playlist_dir));
          }
       }
    }

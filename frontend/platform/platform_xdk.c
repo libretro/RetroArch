@@ -162,6 +162,8 @@ static void frontend_xdk_get_environment_settings(int *argc, char *argv[],
          "game:", sizeof(g_defaults.screenshot_dir));
    strlcpy(g_defaults.savestate_dir,
          "game:\\savestates", sizeof(g_defaults.savestate_dir));
+   strlcpy(g_defaults.playlist_dir,
+         "game:\\playlists", sizeof(g_defaults.playlist_dir));
    strlcpy(g_defaults.sram_dir,
          "game:\\savefiles", sizeof(g_defaults.sram_dir));
    strlcpy(g_defaults.system_dir,

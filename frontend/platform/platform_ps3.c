@@ -207,6 +207,8 @@ static void frontend_ps3_get_environment_settings(int *argc, char *argv[],
             "overlays", sizeof(g_defaults.overlay_dir));
       fill_pathname_join(g_defaults.assets_dir,   g_defaults.core_dir,
             "media", sizeof(g_defaults.assets_dir));
+      fill_pathname_join(g_defaults.playlist_dir,   g_defaults.core_dir,
+            "playlists", sizeof(g_defaults.playlist_dir));
    }
 
 #ifndef IS_SALAMANDER
