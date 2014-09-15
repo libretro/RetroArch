@@ -36,10 +36,6 @@ extern "C" {
 #define MAX_PLAYERS 16
 #endif
 
-#ifndef LIBRETRO_H__
-typedef int64_t retro_time_t;
-#endif
-
 struct menu_bind_state_port
 {
    bool buttons[MENU_MAX_BUTTONS];
@@ -117,7 +113,7 @@ typedef struct
 
    /* Used to throttle menu in case
     * VSync is broken. */
-   retro_time_t last_time;
+   int64_t last_time;
 
    struct menu_bind_state binds;
    struct
@@ -129,10 +125,10 @@ typedef struct
    } keyboard;
 
    bool bind_mode_keyboard;
-   retro_time_t time;
-   retro_time_t delta;
-   retro_time_t target_msec;
-   retro_time_t sleep_msec;
+   int64_t time;
+   int64_t delta;
+   int64_t target_msec;
+   int64_t sleep_msec;
 } menu_handle_t;
 
 #ifdef __cplusplus
