@@ -145,6 +145,9 @@ static bool png_read_chunk(FILE *file, struct png_chunk *chunk)
 
 static void png_free_chunk(struct png_chunk *chunk)
 {
+   if (!chunk)
+      return;
+
    free(chunk->data);
    chunk->data = NULL;
 }

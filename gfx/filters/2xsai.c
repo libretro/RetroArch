@@ -97,6 +97,10 @@ static void twoxsai_generic_output(void *data,
 static void twoxsai_generic_destroy(void *data)
 {
    struct filter_data *filt = (struct filter_data*)data;
+
+   if (!filt)
+      return;
+
    free(filt->workers);
    free(filt);
 }

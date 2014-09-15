@@ -183,10 +183,13 @@ static void xdk_input_free_input(void *data)
 {
    xdk_input_t *xdk = (xdk_input_t*)data;
 
+   if (!xdk)
+      return;
+
    if (xdk->joypad)
       xdk->joypad->destroy();
 
-   free(data);
+   free(xdk);
 }
 
 static void *xdk_input_init(void)

@@ -230,10 +230,13 @@ static void x_input_free(void *data)
 {
    x11_input_t *x11 = (x11_input_t*)data;
 
+   if (!x11)
+      return;
+
    if (x11->joypad)
       x11->joypad->destroy();
 
-   free(data);
+   free(x11);
 }
 
 static void x_input_poll_mouse(x11_input_t *x11)

@@ -127,6 +127,9 @@ static void psp_input_free_input(void *data)
 {
    psp_input_t *psp = (psp_input_t*)data;
 
+   if (!psp)
+      return;
+
    if (psp->joypad)
       psp->joypad->destroy();
 

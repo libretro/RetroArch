@@ -170,6 +170,9 @@ error:
 
 void state_manager_free(state_manager_t *state)
 {
+   if (!state)
+      return;
+
    free(state->data);
    free(state->thisblock);
    free(state->nextblock);

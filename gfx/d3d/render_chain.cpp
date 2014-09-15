@@ -36,6 +36,9 @@ void renderchain_free(void *data)
 {
    renderchain_t *chain = (renderchain_t*)data;
 
+   if (!chain)
+      return;
+
    renderchain_clear(chain);
    renderchain_destroy_stock_shader(chain);
    if (chain->tracker)

@@ -145,6 +145,10 @@ void renderchain_set_shaders(void *data, CGprogram &fPrg, CGprogram &vPrg)
 void renderchain_destroy_stock_shader(void *data)
 {
    renderchain_t *chain = (renderchain_t*)data;
+
+   if (!chain)
+      return;
+
 #ifdef HAVE_CG
    if (chain->fStock)
       cgDestroyProgram(chain->fStock);
@@ -156,6 +160,10 @@ void renderchain_destroy_stock_shader(void *data)
 void renderchain_destroy_shader(void *data, int i)
 {
    renderchain_t *chain = (renderchain_t*)data;
+
+   if (!chain)
+      return;
+
 #ifdef HAVE_CG
    if (chain->passes[i].fPrg)
       cgDestroyProgram(chain->passes[i].fPrg);
