@@ -331,6 +331,13 @@ static int menu_lakka_iterate(unsigned action)
       return 0;
    }
 
+   if (action == MENU_ACTION_TOGGLE &&
+         g_extern.main_is_init && !g_extern.libretro_dummy)
+   {
+      rarch_main_command(RARCH_CMD_RESUME);
+      return -1;
+   }
+
    active_category = (menu_category_t*)&categories[menu_active_category];
 
    if (active_category)
