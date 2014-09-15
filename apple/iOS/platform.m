@@ -177,7 +177,7 @@ static void handle_touch_event(NSArray* touches)
 
 - (void)applicationDidFinishLaunching:(UIApplication *)application
 {
-   const rarch_setting_t* frontend_settings;
+   rarch_setting_t* frontend_settings;
    const core_info_list_t* core_list;
    const char *paths;
 
@@ -235,7 +235,7 @@ static void handle_touch_event(NSArray* touches)
    apple_gamecontroller_init();
 
    // Load system config
-   frontend_settings = (const rarch_setting_t*)apple_get_frontend_settings();
+   frontend_settings = (rarch_setting_t*)apple_get_frontend_settings();
    setting_data_reset(frontend_settings);
 }
 
