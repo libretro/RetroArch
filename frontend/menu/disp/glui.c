@@ -40,6 +40,7 @@
 
 int line_height, glyph_width, glui_margin, glui_term_width, glui_term_height;
 GLuint glui_bg = 0;
+const char *box_message;
 
 static void glui_blit_line(float x, float y, const char *message, bool green)
 {
@@ -113,8 +114,42 @@ static void glui_render_background(void)
    gl->coords.color = gl->white_color_ptr;
 }
 
+static void glui_get_message(const char *message)
+{
+   size_t i;
+
+   if (!driver.menu || !message || !*message)
+      return;
+
+   box_message = message;
+}
+
 static void glui_render_messagebox(const char *message)
 {
+   gl_t *gl = (gl_t*)driver_video_resolve(NULL);
+
+   if (!driver.menu || !gl)
+      return;
+
+   struct string_list *list = string_split(message, "\n");
+   if (!list)
+      return;
+   if (list->elems == 0)
+   {
+      string_list_free(list);
+      return;
+   }
+
+   int i;
+   int x = gl->win_width / 2 - strlen(list->elems[0].data) * glyph_width / 2;
+   int y = gl->win_height / 2 - list->size * line_height / 2;
+   for (i = 0; i < list->size; i++)
+   {
+      const char *msg = list->elems[i].data;
+      glui_blit_line(x, y + i * line_height, msg, false);
+   }
+
+   string_list_free(list);
 }
 
 static void glui_frame(void)
@@ -263,6 +298,13 @@ static void glui_frame(void)
       glui_render_messagebox(msg);
    }
 
+   if (box_message)
+   {
+      glui_render_background();
+      glui_render_messagebox(box_message);
+      box_message = 0;
+   }
+
    gl_set_viewport(gl, gl->win_width, gl->win_height, false, false);
 }
 
@@ -363,7 +405,7 @@ static void glui_context_reset(void *data)
 
 menu_ctx_driver_t menu_ctx_glui = {
    NULL,
-   NULL,
+   glui_get_message,
    NULL,
    glui_frame,
    glui_init,
