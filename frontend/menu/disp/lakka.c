@@ -1122,6 +1122,12 @@ static void *lakka_init(void)
    categories = (menu_category_t*)
       calloc(num_categories, sizeof(menu_category_t));
 
+   if (!categories)
+   {
+      free(menu);
+      return NULL;
+   }
+
    lakka_init_settings();
 
    for (i = 1; i < num_categories; i++)
@@ -1137,7 +1143,10 @@ static void *lakka_init(void)
          info = (core_info_t*)&info_list->list[i-1];
 
       if (info == NULL)
-         return NULL;
+      {
+         free(menu);
+         return NULL
+      };
 
       strlcpy(category->name, info->display_name, sizeof(category->name));
       strlcpy(category->libretro, info->path, sizeof(category->libretro));
