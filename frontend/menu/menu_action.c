@@ -246,3 +246,34 @@ void menu_action_setting_driver(
       }
    }
 }
+
+int menu_action_setting_set_current_string(
+      rarch_setting_t *setting, const char *str)
+{
+   strlcpy(setting->value.string, str, setting->size);
+
+   return menu_action_setting_apply(setting);
+}
+
+int menu_action_set_current_string_based_on_label(
+      const char *label, const char *str)
+{
+   if (!strcmp(label, "video_shader_preset_save_as"))
+   {
+#ifdef HAVE_SHADER_MANAGER
+      if (driver.menu_ctx && driver.menu_ctx->backend
+            && driver.menu_ctx->backend->shader_manager_save_preset)
+         driver.menu_ctx->backend->shader_manager_save_preset(str, false);
+#endif
+   }
+
+   return 0;
+}
+
+int menu_action_setting_set_current_string_path(
+      rarch_setting_t *setting, const char *dir, const char *path)
+{
+   fill_pathname_join(setting->value.string, dir, path, setting->size);
+
+   return menu_action_setting_apply(setting);
+}

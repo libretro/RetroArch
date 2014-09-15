@@ -238,37 +238,6 @@ static int menu_common_setting_set_current_path_selection(
    return menu_action_setting_apply(setting);
 }
 
-static int menu_common_setting_set_current_string_path(
-      rarch_setting_t *setting, const char *dir, const char *path)
-{
-   fill_pathname_join(setting->value.string, dir, path, setting->size);
-
-   return menu_action_setting_apply(setting);
-}
-
-int menu_common_set_current_string_based_on_label(
-      const char *label, const char *str)
-{
-   if (!strcmp(label, "video_shader_preset_save_as"))
-   {
-#ifdef HAVE_SHADER_MANAGER
-      if (driver.menu_ctx && driver.menu_ctx->backend
-            && driver.menu_ctx->backend->shader_manager_save_preset)
-         driver.menu_ctx->backend->shader_manager_save_preset(str, false);
-#endif
-   }
-
-   return 0;
-}
-
-int menu_common_setting_set_current_string(
-      rarch_setting_t *setting, const char *str)
-{
-   strlcpy(setting->value.string, str, setting->size);
-
-   return menu_action_setting_apply(setting);
-}
-
 static int handle_setting(rarch_setting_t *setting,
       unsigned id, const char *label, unsigned action)
 {
@@ -1237,7 +1206,7 @@ static int menu_action_ok(const char *menu_path,
          }
          else if ((setting && setting->type == ST_PATH))
          {
-            menu_common_setting_set_current_string_path(setting, menu_path, path);
+            menu_action_setting_set_current_string_path(setting, menu_path, path);
             menu_entries_pop_stack(driver.menu->menu_stack, setting->name);
          }
          else if (!strcmp(menu_label, "disk_image_append"))
@@ -1296,7 +1265,7 @@ static int menu_action_ok(const char *menu_path,
       case MENU_FILE_AUDIOFILTER:
       case MENU_FILE_VIDEOFILTER:
 
-         menu_common_setting_set_current_string_path(setting, menu_path, path);
+         menu_action_setting_set_current_string_path(setting, menu_path, path);
          menu_entries_pop_stack(driver.menu->menu_stack, setting->name);
 
          return 0;
@@ -1370,7 +1339,7 @@ static int menu_action_ok(const char *menu_path,
 
          if (setting && setting->type == ST_DIR)
          {
-            menu_common_setting_set_current_string(setting, menu_path);
+            menu_action_setting_set_current_string(setting, menu_path);
             menu_entries_pop_stack(driver.menu->menu_stack, setting->name);
          }
 
