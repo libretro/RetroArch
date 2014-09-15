@@ -73,15 +73,20 @@ bool gx_init_mem2(void)
    u32 level;
    _CPU_ISR_Disable(level);
 
-   // BIG NOTE: MEM2 on the Wii is 64MB, but a portion of that is reserved for
-   // IOS. libogc by default defines the "safe" area for MEM2 to go from
-   // 0x90002000 to 0x933E0000. However, from my testing, I've found I need to
-   // reserve about 256KB for stuff like network and USB to work correctly.
-   // However, other sources says these functions need at least 0xE0000 bytes,
-   // 7/8 of a megabyte, of reserved memory to do this. My initial testing
-   // shows that we can work with only 128KB, but we use 256KB becuse testing
-   // has shown some stuff being iffy with only 128KB, mainly wiimote stuff.
-   // If some stuff mysteriously stops working, try fiddling with this size.
+   /* BIG NOTE: MEM2 on the Wii is 64MB, but a portion 
+    * of that is reserved for IOS.
+    *
+    * libogc by default defines the "safe" area for MEM2 
+    * to go from 0x90002000 to 0x933E0000.
+    *
+    * However, from my testing, I've found I need to
+    * reserve about 256KB for stuff like network and USB to work correctly.
+    * However, other sources says these functions need at least 0xE0000 bytes,
+    * 7/8 of a megabyte, of reserved memory to do this. My initial testing
+    * shows that we can work with only 128KB, but we use 256KB becuse testing
+    * has shown some stuff being iffy with only 128KB, mainly Wiimote stuff.
+    * If some stuff mysteriously stops working, try fiddling with this size.
+    */
    u32 size = SYS_GetArena2Size() - 1024 * 256;
 
    void *heap_ptr = (void *) ROUNDUP32(((u32) SYS_GetArena2Hi() - size));
@@ -94,17 +99,9 @@ bool gx_init_mem2(void)
 
 void *_mem2_memalign(u8 align, u32 size)
 {
-   void *ptr;
-
-   if(size == 0)
-      return NULL;
- 
-   ptr = __lwp_heap_allocate(&gx_mem2_heap, size); 
-
-   if (ptr == NULL)
-      return NULL;
-
-   return ptr;
+   if(size != 0)
+      return __lwp_heap_allocate(&gx_mem2_heap, size); 
+   return NULL;
 }
 
 void *_mem2_malloc(u32 size)
@@ -114,10 +111,8 @@ void *_mem2_malloc(u32 size)
 
 void _mem2_free(void *ptr)
 { 
-   if(!ptr)
-      return;
-
-   __lwp_heap_free(&gx_mem2_heap, ptr);
+   if(ptr)
+      __lwp_heap_free(&gx_mem2_heap, ptr);
  }
 
 void *_mem2_realloc(void *ptr, u32 newsize)
@@ -246,7 +241,7 @@ __attribute__ ((used)) void __wrap_free(void *p)
 __attribute__ ((used)) void *__wrap_realloc(void *p, size_t size)
 {
    void *n;
-   // ptr from mem2
+   /* ptr from mem2 */
    if (((u32) p & 0x10000000) != 0)
    {
       n = _mem2_realloc(p, size);

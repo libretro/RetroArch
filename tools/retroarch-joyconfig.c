@@ -27,8 +27,10 @@
 #include <assert.h>
 #include "../compat/posix_string.h"
 
-// Need to be present for build to work, but it's not *really* used.
-// Better than having to build special versions of lots of objects with special #ifdefs.
+/* Need to be present for build to work, but it's not *really* used.
+ * Better than having to build special versions of lots of objects 
+ * with special #ifdefs.
+ */
 struct settings g_settings;
 struct global g_extern;
 driver_t driver;
@@ -100,7 +102,8 @@ static void poll_joypad(const rarch_joypad_driver_t *driver,
    }
 }
 
-static void get_binds(config_file_t *conf, config_file_t *auto_conf, int player, int joypad)
+static void get_binds(config_file_t *conf, config_file_t *auto_conf,
+      int player, int joypad)
 {
    int i, timeout_cnt;
    const rarch_joypad_driver_t *driver = input_joypad_init_driver(g_driver);
@@ -146,9 +149,13 @@ static void get_binds(config_file_t *conf, config_file_t *auto_conf, int player,
       if (abs(initial) < 20000)
          initial = 0;
 
-      // Certain joypads (such as XBox360 controller on Linux) has a default negative axis for shoulder triggers,
-      // which makes configuration very awkward.
-      // If default negative, we can't trigger on the negative axis, and similar with defaulted positive axes.
+      /* Certain joypads (such as XBox360 controller on Linux)
+       * has a default negative axis for shoulder triggers,
+       * which makes configuration very awkward.
+       *
+       * If default negative, we can't trigger on the negative axis, 
+       * and similar with defaulted positive axes.
+       */
 
       if (initial)
          fprintf(stderr, "Axis %d is defaulted to %s axis value of %d.\n", i, initial > 0 ? "positive" : "negative", initial);
@@ -183,9 +190,10 @@ static void get_binds(config_file_t *conf, config_file_t *auto_conf, int player,
       {
          old_poll = new_poll;
 
-         // To avoid pegging CPU.
-         // Ideally use an event-based joypad scheme,
-         // but it adds far more complexity, so, meh.
+         /* To avoid pegging CPU.
+          * Ideally use an event-based joypad scheme,
+          * but it adds far more complexity, so, meh.
+          */
          rarch_sleep(10);
 
          if (timeout_ticks)
@@ -206,7 +214,9 @@ static void get_binds(config_file_t *conf, config_file_t *auto_conf, int player,
                fprintf(stderr, "\tJoybutton pressed: %d\n", j);
                char key[64];
                snprintf(key, sizeof(key), "%s_%s_btn",
-                     input_config_get_prefix(player_index, input_config_bind_map[i].meta), input_config_bind_map[i].base);
+                     input_config_get_prefix(player_index,
+                        input_config_bind_map[i].meta),
+                     input_config_bind_map[i].base);
                config_set_int(conf, key, j);
 
                if (auto_conf)
@@ -230,7 +240,8 @@ static void get_binds(config_file_t *conf, config_file_t *auto_conf, int player,
             bool require_negative = initial_axes[j] > 0;
             bool require_positive = initial_axes[j] < 0;
 
-            // Block the axis config until we're sure axes have returned to their neutral state.
+            /* Block the axis config until we're sure 
+             * axes have returned to their neutral state. */
             if (same_axis)
             {
                if (abs(value) < 10000 ||
@@ -239,7 +250,8 @@ static void get_binds(config_file_t *conf, config_file_t *auto_conf, int player,
                   block_axis = false;
             }
 
-            // If axes are in their neutral state, we can't allow it.
+            /* If axes are in their neutral state, 
+             * we can't allow it. */
             if (require_negative && value >= 0)
                continue;
             if (require_positive && value <= 0)
@@ -251,7 +263,8 @@ static void get_binds(config_file_t *conf, config_file_t *auto_conf, int player,
             if (abs(value) > 20000)
             {
                last_axis = j;
-               fprintf(stderr, "\tJoyaxis moved: Axis %d, Value %d\n", j, value);
+               fprintf(stderr, "\tJoyaxis moved: Axis %d, Value %d\n",
+                     j, value);
 
                char buf[8];
                snprintf(buf, sizeof(buf),
@@ -259,7 +272,9 @@ static void get_binds(config_file_t *conf, config_file_t *auto_conf, int player,
 
                char key[64];
                snprintf(key, sizeof(key), "%s_%s_axis",
-                     input_config_get_prefix(player_index, input_config_bind_map[i].meta), input_config_bind_map[i].base);
+                     input_config_get_prefix(player_index,
+                        input_config_bind_map[i].meta),
+                     input_config_bind_map[i].base);
 
                config_set_string(conf, key, buf);
 
@@ -298,7 +313,9 @@ static void get_binds(config_file_t *conf, config_file_t *auto_conf, int player,
 
                char key[64];
                snprintf(key, sizeof(key), "%s_%s_btn",
-                     input_config_get_prefix(player_index, input_config_bind_map[i].meta), input_config_bind_map[i].base);
+                     input_config_get_prefix(player_index,
+                        input_config_bind_map[i].meta),
+                     input_config_bind_map[i].base);
 
                config_set_string(conf, key, buf);
 
@@ -394,7 +411,8 @@ static void parse_input(int argc, char *argv[])
             }
             else if (g_player > MAX_PLAYERS)
             {
-               fprintf(stderr, "Player number must be from 1 to %d.\n", MAX_PLAYERS);
+               fprintf(stderr, "Player number must be from 1 to %d.\n",
+                     MAX_PLAYERS);
                exit(1);
             }
             break;
