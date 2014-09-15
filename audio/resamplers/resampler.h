@@ -52,6 +52,12 @@ typedef struct rarch_resampler
    const char *ident;
 } rarch_resampler_t;
 
+typedef struct audio_frame_float
+{
+   float l;
+   float r;
+} audio_frame_float_t;
+
 extern rarch_resampler_t sinc_resampler;
 extern rarch_resampler_t CC_resampler;
 extern rarch_resampler_t nearest_resampler;

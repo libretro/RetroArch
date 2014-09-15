@@ -28,12 +28,6 @@
 #define RARCH_LOG(...) fprintf(stderr, __VA_ARGS__)
 #endif
 
-typedef struct audio_frame_float
-{
-   float l;
-   float r;
-} audio_frame_float_t;
-
 typedef struct audio_frame_int16
 {
    int16_t l;
