@@ -1145,8 +1145,8 @@ static void *lakka_init(void)
       if (info == NULL)
       {
          free(menu);
-         return NULL
-      };
+         return NULL;
+      }
 
       strlcpy(category->name, info->display_name, sizeof(category->name));
       strlcpy(category->libretro, info->path, sizeof(category->libretro));
