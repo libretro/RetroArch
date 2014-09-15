@@ -16,7 +16,7 @@
 #include "filter.h"
 #include "filters/softfilter.h"
 #include "../dynamic.h"
-#include "../conf/config_file.h"
+#include "../conf/config_file_userdata.h"
 #include "../general.h"
 #include "../file_path.h"
 #include "../file_ext.h"
@@ -105,124 +105,14 @@ softfilter_find_implementation(rarch_softfilter_t *filt, const char *ident)
    return NULL;
 }
 
-struct softfilter_userdata
-{
-   config_file_t *conf;
-   const char *prefix[2];
-};
-
-static int softfilter_get_float(void *userdata, const char *key_str,
-      float *value, float default_value)
-{
-   struct softfilter_userdata *filt = (struct softfilter_userdata*)userdata;
-
-   char key[2][256];
-   snprintf(key[0], sizeof(key[0]), "%s_%s", filt->prefix[0], key_str);
-   snprintf(key[1], sizeof(key[1]), "%s_%s", filt->prefix[1], key_str);
-
-   bool got = config_get_float(filt->conf, key[0], value);
-   got = got || config_get_float(filt->conf, key[1], value);
-
-   if (!got)
-      *value = default_value;
-   return got;
-}
-
-static int softfilter_get_int(void *userdata, const char *key_str,
-      int *value, int default_value)
-{
-   struct softfilter_userdata *filt = (struct softfilter_userdata*)userdata;
-
-   char key[2][256];
-   snprintf(key[0], sizeof(key[0]), "%s_%s", filt->prefix[0], key_str);
-   snprintf(key[1], sizeof(key[1]), "%s_%s", filt->prefix[1], key_str);
-
-   bool got = config_get_int(filt->conf, key[0], value);
-   got = got || config_get_int(filt->conf, key[1], value);
-
-   if (!got)
-      *value = default_value;
-   return got;
-}
-
-#define softfilter_get_array_setup() \
-   struct softfilter_userdata *filt = (struct softfilter_userdata*)userdata; \
- \
-   char key[2][256]; \
-   snprintf(key[0], sizeof(key[0]), "%s_%s", filt->prefix[0], key_str); \
-   snprintf(key[1], sizeof(key[1]), "%s_%s", filt->prefix[1], key_str); \
- \
-   char *str = NULL; \
-   bool got = config_get_string(filt->conf, key[0], &str); \
-   got = got || config_get_string(filt->conf, key[1], &str);
-
-#define softfilter_get_array_body(T) \
-   if (got) \
-   { \
-      unsigned i; \
-      struct string_list *list = string_split(str, " "); \
-      *values = (T*)calloc(list->size, sizeof(T)); \
-      for (i = 0; i < list->size; i++) \
-         (*values)[i] = (T)strtod(list->elems[i].data, NULL); \
-      *out_num_values = list->size; \
-      string_list_free(list); \
-      return true; \
-   } \
-   else \
-   { \
-      *values = (T*)calloc(num_default_values, sizeof(T)); \
-      memcpy(*values, default_values, sizeof(T) * num_default_values); \
-      *out_num_values = num_default_values; \
-      return false; \
-   }
-
-static int softfilter_get_float_array(void *userdata, const char *key_str,
-      float **values, unsigned *out_num_values,
-      const float *default_values, unsigned num_default_values)
-{
-   softfilter_get_array_setup()
-   softfilter_get_array_body(float)
-}
-
-static int softfilter_get_int_array(void *userdata, const char *key_str,
-      int **values, unsigned *out_num_values,
-      const int *default_values, unsigned num_default_values)
-{
-   softfilter_get_array_setup()
-   softfilter_get_array_body(int)
-}
-
-static int softfilter_get_string(void *userdata, const char *key_str,
-      char **output, const char *default_output)
-{
-   softfilter_get_array_setup()
-
-   if (got)
-   {
-      *output = str;
-      return true; 
-   }
-   else
-   {
-      *output = strdup(default_output);
-      return false;
-   }
-}
-
-static void softfilter_free(void *ptr)
-{
-   free(ptr);
-}
-
 static const struct softfilter_config softfilter_config = {
-   softfilter_get_float,
-   softfilter_get_int,
-   softfilter_get_float_array,
-   softfilter_get_int_array,
-   softfilter_get_string,
-   softfilter_free,
+   config_userdata_get_float,
+   config_userdata_get_int,
+   config_userdata_get_float_array,
+   config_userdata_get_int_array,
+   config_userdata_get_string,
+   config_userdata_free,
 };
-
 
 static bool create_softfilter_graph(rarch_softfilter_t *filt,
       enum retro_pixel_format in_pixel_format,
@@ -232,7 +122,7 @@ static bool create_softfilter_graph(rarch_softfilter_t *filt,
 {
    unsigned input_fmts, input_fmt, output_fmts;
    char key[64];
-   struct softfilter_userdata userdata;
+   struct config_file_userdata userdata;
 
    snprintf(key, sizeof(key), "filter");
 
