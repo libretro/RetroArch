@@ -266,6 +266,8 @@
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release_LTCG|Xbox 360'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\file_path.c" />
+    <ClCompile Include="..\..\dir_list.c" />
+    <ClCompile Include="..\..\string_list.c" />
     <ClCompile Include="..\..\frontend\frontend_salamander.c" />
     <ClCompile Include="..\..\frontend\frontend_context.c" />
     <ClCompile Include="..\..\frontend\platform\platform_null.c" />

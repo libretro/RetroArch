@@ -26,6 +26,12 @@
     <ClCompile Include="..\..\file_path.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\dir_list.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\string_list.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\frontend\frontend_salamander.c">
       <Filter>Source Files</Filter>
     </ClCompile>
