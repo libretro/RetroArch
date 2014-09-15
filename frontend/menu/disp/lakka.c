@@ -762,9 +762,9 @@ void lakka_init_settings(void)
    jj = 0;
    for (j = 0; j <= 512; j++)
    {
-      rarch_setting_t group = (rarch_setting_t)setting_data[j];
+      rarch_setting_t *group = (rarch_setting_t*)&setting_data[j];
 
-      if (group.type == ST_GROUP)
+      if (group && group->type == ST_GROUP)
       {
          category->num_items++;
          category->items = (menu_item_t*)
@@ -772,7 +772,7 @@ void lakka_init_settings(void)
 
          menu_item_t *item  = (menu_item_t*)&category->items[jj];
 
-         strlcpy(item->name, group.name, sizeof(item->name));
+         strlcpy(item->name, group->name, sizeof(item->name));
          item->alpha = jj ? 0.5 : 1.0;
          item->zoom = jj ? i_passive_zoom : i_active_zoom;
          item->y = jj ?
@@ -784,9 +784,11 @@ void lakka_init_settings(void)
          kk = 0;
          for (k = 0; k <= 512; k++)
          {
-            rarch_setting_t setting = (rarch_setting_t)setting_data[k];
+            rarch_setting_t *setting = (rarch_setting_t*)&setting_data[k];
 
-            if (setting.type != ST_SUB_GROUP && setting.group == group.name)
+            if (setting
+                  && setting->type != ST_SUB_GROUP 
+                  && setting->group == group->name)
             {
                item->num_subitems++;
 
@@ -796,14 +798,14 @@ void lakka_init_settings(void)
 
                menu_subitem_t *subitem = (menu_subitem_t*)&item->subitems[kk];
 
-               strlcpy(subitem->name, setting.short_description, 
+               strlcpy(subitem->name, setting->short_description, 
                      sizeof(subitem->name));
                subitem->alpha = kk ? 1.0 : 0.5;
                subitem->zoom = kk ? i_active_zoom : i_passive_zoom;
                subitem->y = kk ? vspacing * (kk + under_item_offset)
                   : vspacing * active_item_factor;
 
-               subitem->setting = &setting_data[k];
+               subitem->setting = (rarch_setting_t*)&setting_data[k];
 
                kk++;
             }
