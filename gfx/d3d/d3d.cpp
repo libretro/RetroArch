@@ -717,6 +717,10 @@ static void *d3d_init(const video_info_t *info,
 static void d3d_free(void *data)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
+
+   if (!d3d)
+      return;
+
    d3d_deinitialize(d3d);
 #ifdef HAVE_OVERLAY
    d3d_free_overlays(d3d);
@@ -1342,6 +1346,9 @@ static void d3d_free_overlay(void *data, overlay_t *overlay)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
 
+   if (!d3d)
+      return;
+
    d3d_texture_free(overlay->tex);
    d3d_vertex_buffer_free(overlay->vert_buf);
 }
@@ -1350,6 +1357,9 @@ static void d3d_free_overlays(void *data)
 {
    unsigned i;
    d3d_video_t *d3d = (d3d_video_t*)data;
+
+   if (!d3d)
+      return;
 
    for (i = 0; i < d3d->overlays.size(); i++)
       d3d_free_overlay(d3d, &d3d->overlays[i]);

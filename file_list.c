@@ -84,6 +84,9 @@ void file_list_free(file_list_t *list)
 {
    size_t i;
 
+   if (!list)
+      return;
+
    for (i = 0; i < list->size; i++)
    {
       free(list->list[i].path);

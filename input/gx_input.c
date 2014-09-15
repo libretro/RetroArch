@@ -176,10 +176,13 @@ static void gx_input_free_input(void *data)
 {
    gx_input_t *gx = (gx_input_t*)data;
 
+   if (!gx)
+      return;
+
    if (gx->joypad)
       gx->joypad->destroy();
 
-   free(data);
+   free(gx);
 }
 
 static const char *gx_joypad_name(unsigned pad)

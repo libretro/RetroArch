@@ -95,6 +95,10 @@ static void darken_output(void *data, unsigned *out_width, unsigned *out_height,
 static void darken_destroy(void *data)
 {
    struct filter_data *filt = (struct filter_data*)data;
+
+   if (!filt)
+      return;
+
    free(filt->workers);
    free(filt);
 }

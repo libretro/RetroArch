@@ -43,6 +43,9 @@ fifo_buffer_t *fifo_new(size_t size)
 
 void fifo_free(fifo_buffer_t *buffer)
 {
+   if(!buffer)
+      return;
+
    free(buffer->buffer);
    free(buffer);
 }

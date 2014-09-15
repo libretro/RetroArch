@@ -154,6 +154,9 @@ static void blargg_ntsc_snes_generic_destroy(void *data)
 {
    struct filter_data *filt = (struct filter_data*)data;
 
+   if (!filt)
+      return;
+
    if(filt->ntsc)
       free(filt->ntsc);
 

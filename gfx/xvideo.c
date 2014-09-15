@@ -780,6 +780,10 @@ static bool xv_focus(void *data)
 static void xv_free(void *data)
 {
    xv_t *xv = (xv_t*)data;
+
+   if (!xv)
+      return;
+
    x11_destroy_input_context(&xv->xim, &xv->xic);
    XShmDetach(xv->display, &xv->shminfo);
    shmdt(xv->shminfo.shmaddr);

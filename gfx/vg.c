@@ -182,6 +182,9 @@ static void vg_free(void *data)
 {
    vg_t *vg = (vg_t*)data;
 
+   if (!vg)
+      return;
+
    vgDestroyImage(vg->mImage);
 
    if (vg->mFontsOn)

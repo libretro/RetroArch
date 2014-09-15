@@ -23,6 +23,9 @@ static void renderchain_free(void *data)
 {
    d3d_video_t *chain = (d3d_video_t*)data;
 
+   if (!chain)
+      return;
+
    renderchain_clear(chain);
    //renderchain_destroy_stock_shader(chain);
 #ifndef DONT_HAVE_STATE_TRACKER

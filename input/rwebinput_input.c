@@ -132,9 +132,12 @@ static void rwebinput_input_free(void *data)
    rwebinput_input_t *rwebinput = (rwebinput_input_t*)data;
    uninited = true;
 
+   if (!rwebinput)
+      return;
+
    RWebInputDestroy(rwebinput->context);
 
-   free(data);
+   free(rwebinput);
 }
 
 static void rwebinput_input_poll(void *data)

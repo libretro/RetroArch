@@ -182,6 +182,9 @@ bool libretro_get_system_info(const char *path,
 
 void libretro_free_system_info(struct retro_system_info *info)
 {
+   if (!info)
+      return;
+
    free((void*)info->library_name);
    free((void*)info->library_version);
    free((void*)info->valid_extensions);

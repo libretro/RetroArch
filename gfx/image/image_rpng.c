@@ -212,6 +212,9 @@ static bool rpng_gx_convert_texture32(struct texture_image *image)
 
 void texture_image_free(struct texture_image *img)
 {
+   if (!img)
+      return;
+
    free(img->pixels);
    memset(img, 0, sizeof(*img));
 }

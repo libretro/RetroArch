@@ -122,6 +122,9 @@ slock_t *slock_new(void)
 
 void slock_free(slock_t *lock)
 {
+   if (!lock)
+      return;
+
    CloseHandle(lock->lock);
    free(lock);
 }
@@ -201,6 +204,9 @@ int scond_broadcast(scond_t *cond)
 
 void scond_free(scond_t *cond)
 {
+   if (!cond)
+      return;
+
    CloseHandle(cond->event);
    free(cond);
 }
@@ -279,6 +285,9 @@ slock_t *slock_new(void)
 
 void slock_free(slock_t *lock)
 {
+   if (!lock)
+      return;
+
    pthread_mutex_destroy(&lock->lock);
    free(lock);
 }
@@ -315,6 +324,9 @@ scond_t *scond_new(void)
 
 void scond_free(scond_t *cond)
 {
+   if (!cond)
+      return;
+
    pthread_cond_destroy(&cond->cond);
    free(cond);
 }

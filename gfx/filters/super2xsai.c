@@ -96,6 +96,10 @@ static void supertwoxsai_generic_output(void *data, unsigned *out_width, unsigne
 static void supertwoxsai_generic_destroy(void *data)
 {
    struct filter_data *filt = (struct filter_data*)data;
+
+   if (!filt)
+      return;
+
    free(filt->workers);
    free(filt);
 }
