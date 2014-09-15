@@ -5,7 +5,7 @@ LOCAL_MODULE := retroarch-jni
 RARCH_DIR := ../../..
 LOCAL_CFLAGS += -std=gnu99 -Wall -DHAVE_LOGGER -DRARCH_DUMMY_LOG -DHAVE_ZLIB -DHAVE_MMAP -I$(LOCAL_PATH)/$(RARCH_DIR)
 LOCAL_LDLIBS := -llog -lz
-LOCAL_SRC_FILES := apk-extract/apk-extract.c $(RARCH_DIR)/file_extract.c $(RARCH_DIR)/file_path.c $(RARCH_DIR)/compat/compat.c
+LOCAL_SRC_FILES := apk-extract/apk-extract.c $(RARCH_DIR)/file_extract.c $(RARCH_DIR)/file_path.c $(RARCH_DIR)/string_list.c $(RARCH_DIR)/compat/compat.c
 
 include $(BUILD_SHARED_LIBRARY)
 
