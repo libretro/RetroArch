@@ -677,10 +677,9 @@ static bool inside_hitbox(const struct overlay_desc *desc, float x, float y)
       case OVERLAY_HITBOX_RECT:
          return (fabs(x - desc->x) <= desc->range_x_mod) &&
             (fabs(y - desc->y) <= desc->range_y_mod);
-
-      default:
-         return false;
    }
+
+   return false;
 }
 
 static inline float clamp(float val, float lower, float upper)
@@ -689,8 +688,7 @@ static inline float clamp(float val, float lower, float upper)
       return lower;
    else if (val > upper)
       return upper;
-   else
-      return val;
+   return val;
 }
 
 void input_overlay_poll(input_overlay_t *ol, input_overlay_state_t *out,

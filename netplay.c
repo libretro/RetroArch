@@ -87,17 +87,25 @@ struct netplay
    struct delta_frame *buffer;
    size_t buffer_size;
 
-   size_t self_ptr; // Ptr where we are now.
-   size_t other_ptr; // Points to the last reliable state that self ever had.
-   size_t read_ptr; // Ptr to where we are reading. Generally, other_ptr <= read_ptr <= self_ptr.
-   size_t tmp_ptr; // A temporary pointer used on replay.
+   /* Pointer where we are now. */
+   size_t self_ptr; 
+   /* Points to the last reliable state that self ever had. */
+   size_t other_ptr;
+   /* Pointer to where we are reading. 
+    * Generally, other_ptr <= read_ptr <= self_ptr. */
+   size_t read_ptr;
+   /* A temporary pointer used on replay. */
+   size_t tmp_ptr;
 
    size_t state_size;
 
-   bool is_replay; // Are we replaying old frames?
-   bool can_poll; // We don't want to poll several times on a frame.
+   /* Are we replaying old frames? */
+   bool is_replay;
+   /* We don't want to poll several times on a frame. */
+   bool can_poll;
 
-   // To compat UDP packet loss we also send old data along with the packets.
+   /* To compat UDP packet loss we also send 
+    * old data along with the packets. */
    uint32_t packet_buffer[UDP_FRAME_PACKETS * 2];
    uint32_t frame_count;
    uint32_t read_frame_count;
@@ -109,7 +117,7 @@ struct netplay
 
    unsigned timeout_cnt;
 
-   // Spectating.
+   /* Spectating. */
    bool spectate;
    bool spectate_client;
    int spectate_fds[MAX_SPECTATORS];
@@ -117,11 +125,11 @@ struct netplay
    size_t spectate_input_ptr;
    size_t spectate_input_size;
 
-   // Player flipping
-   // Flipping state. If ptr >= flip_frame, we apply the flip.
-   // If not, we apply the opposite, effectively creating a trigger point.
-   // To avoid collition we need to make sure our client/host is synced up 
-   // well after flip_frame before allowing another flip.
+   /* Player flipping
+    * Flipping state. If ptr >= flip_frame, we apply the flip.
+    * If not, we apply the opposite, effectively creating a trigger point.
+    * To avoid collition we need to make sure our client/host is synced up 
+    * well after flip_frame before allowing another flip. */
    bool flip;
    uint32_t flip_frame;
 };
@@ -167,11 +175,13 @@ static void warn_hangup(void)
 
 void input_poll_net(void)
 {
-   if (!netplay_should_skip(g_extern.netplay) && netplay_can_poll(g_extern.netplay))
+   if (!netplay_should_skip(g_extern.netplay)
+         && netplay_can_poll(g_extern.netplay))
       netplay_poll(g_extern.netplay);
 }
 
-void video_frame_net(const void *data, unsigned width, unsigned height, size_t pitch)
+void video_frame_net(const void *data, unsigned width,
+      unsigned height, size_t pitch)
 {
    if (!netplay_should_skip(g_extern.netplay))
       g_extern.netplay->cbs.frame_cb(data, width, height, pitch);
@@ -190,7 +200,8 @@ size_t audio_sample_batch_net(const int16_t *data, size_t frames)
    return frames;
 }
 
-int16_t input_state_net(unsigned port, unsigned device, unsigned index, unsigned id)
+int16_t input_state_net(unsigned port, unsigned device,
+      unsigned index, unsigned id)
 {
    if (netplay_is_alive(g_extern.netplay))
       return netplay_input_state(g_extern.netplay, port, device, index, id);
@@ -614,7 +625,7 @@ static bool get_info(netplay_t *handle)
       return false;
    }
 
-   // Send SRAM data to our Player 2.
+   /* Send SRAM data to our Player 2. */
    const void *sram = pretro_get_memory_data(RETRO_MEMORY_SAVE_RAM);
    unsigned sram_size = pretro_get_memory_size(RETRO_MEMORY_SAVE_RAM);
    if (!send_all(handle->fd, sram, sram_size))
@@ -682,7 +693,8 @@ static bool bsv_parse_header(const uint32_t *header, uint32_t magic)
    uint32_t in_crc = swap_if_big32(header[CRC_INDEX]);
    if (in_crc != g_extern.content_crc)
    {
-      RARCH_ERR("CRC32 mismatch, got 0x%x, expected 0x%x.\n", in_crc, g_extern.content_crc);
+      RARCH_ERR("CRC32 mismatch, got 0x%x, expected 0x%x.\n", in_crc,
+            g_extern.content_crc);
       return false;
    }
 
@@ -1134,13 +1146,14 @@ static bool netplay_get_cmd(netplay_t *handle)
    {
       case NETPLAY_CMD_FLIP_PLAYERS:
       {
+         uint32_t flip_frame;
+
          if (cmd_size != sizeof(uint32_t))
          {
             RARCH_ERR("CMD_FLIP_PLAYERS has unexpected command size.\n");
             return netplay_cmd_nak(handle);
          }
 
-         uint32_t flip_frame;
          if (!recv_all(handle->fd, &flip_frame, sizeof(flip_frame)))
          {
             RARCH_ERR("Failed to receive CMD_FLIP_PLAYERS argument.\n");

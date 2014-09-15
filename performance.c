@@ -85,7 +85,8 @@ unsigned perf_ptr_libretro;
 
 void rarch_perf_register(struct retro_perf_counter *perf)
 {
-   if (!g_extern.perfcnt_enable || perf->registered || perf_ptr_rarch >= MAX_COUNTERS)
+   if (!g_extern.perfcnt_enable || perf->registered 
+         || perf_ptr_rarch >= MAX_COUNTERS)
       return;
 
    perf_counters_rarch[perf_ptr_rarch++] = perf;
@@ -107,7 +108,8 @@ void retro_perf_clear(void)
    memset(perf_counters_libretro, 0, sizeof(perf_counters_libretro));
 }
 
-static void log_counters(const struct retro_perf_counter **counters, unsigned num)
+static void log_counters(
+      const struct retro_perf_counter **counters, unsigned num)
 {
    unsigned i;
    for (i = 0; i < num; i++)
@@ -116,7 +118,8 @@ static void log_counters(const struct retro_perf_counter **counters, unsigned nu
       {
          RARCH_LOG(PERF_LOG_FMT,
                counters[i]->ident,
-               (unsigned long long)counters[i]->total / (unsigned long long)counters[i]->call_cnt,
+               (unsigned long long)counters[i]->total / 
+               (unsigned long long)counters[i]->call_cnt,
                (unsigned long long)counters[i]->call_cnt);
       }
    }
@@ -147,7 +150,8 @@ retro_perf_tick_t rarch_get_perf_counter(void)
 #elif defined(__linux__) || defined(__QNX__)
    struct timespec tv;
    if (clock_gettime(CLOCK_MONOTONIC, &tv) == 0)
-      time = (retro_perf_tick_t)tv.tv_sec * 1000000000 + (retro_perf_tick_t)tv.tv_nsec;
+      time = (retro_perf_tick_t)tv.tv_sec * 1000000000 + 
+         (retro_perf_tick_t)tv.tv_nsec;
    else
       time = 0;
 
@@ -194,7 +198,8 @@ retro_time_t rarch_get_time_usec(void)
 {
 #if defined(_WIN32)
    static LARGE_INTEGER freq;
-   if (!freq.QuadPart && !QueryPerformanceFrequency(&freq)) // Frequency is guaranteed to not change.
+   /* Frequency is guaranteed to not change. */
+   if (!freq.QuadPart && !QueryPerformanceFrequency(&freq))
       return 0;
 
    LARGE_INTEGER count;
@@ -205,7 +210,8 @@ retro_time_t rarch_get_time_usec(void)
    return sys_time_get_system_time();
 #elif defined(GEKKO)
    return ticks_to_microsecs(gettime());
-#elif defined(__MACH__) // OSX doesn't have clock_gettime ...
+#elif defined(__MACH__)
+   /* OSX doesn't have clock_gettime. */
    clock_serv_t cclock;
    mach_timespec_t mts;
    host_get_clock_service(mach_host_self(), CALENDAR_CLOCK, &cclock);
@@ -239,8 +245,8 @@ retro_time_t rarch_get_time_usec(void)
 #ifdef CPU_X86
 static void x86_cpuid(int func, int flags[4])
 {
-   // On Android, we compile RetroArch with PIC, and we are not allowed to clobber the ebx
-   // register.
+   /* On Android, we compile RetroArch with PIC, and we 
+    * are not allowed to clobber the ebx register. */
 #ifdef __x86_64__
 #define REG_b "rbx"
 #define REG_S "rsi"
@@ -264,18 +270,21 @@ static void x86_cpuid(int func, int flags[4])
 #endif
 }
 
-// Only runs on i686 and above. Needs to be conditionally run.
+/* Only runs on i686 and above. Needs to be conditionally run. */
 static uint64_t xgetbv_x86(uint32_t index)
 {
 #if defined(__GNUC__)
    uint32_t eax, edx;
    asm volatile (
-         // Older GCC versions (Apple's GCC for example) do not understand xgetbv instruction.
-         // Stamp out the machine code directly.
+         /* Older GCC versions (Apple's GCC for example) do 
+          * not understand xgetbv instruction.
+          * Stamp out the machine code directly.
+          */
          ".byte 0x0f, 0x01, 0xd0\n"
          : "=a"(eax), "=d"(edx) : "c"(index));
    return ((uint64_t)edx << 32) | eax;
-#elif _MSC_FULL_VER >= 160040219 // Intrinsic only works on 2010 SP1 and above.
+#elif _MSC_FULL_VER >= 160040219
+   /* Intrinsic only works on 2010 SP1 and above. */
    return _xgetbv(index);
 #else
    RARCH_WARN("Unknown compiler. Cannot check xgetbv bits.\n");
@@ -287,15 +296,16 @@ static uint64_t xgetbv_x86(uint32_t index)
 #if defined(__ARM_NEON__)
 static void arm_enable_runfast_mode(void)
 {
-   // RunFast mode. Enables flush-to-zero and some floating point optimizations.
+   /* RunFast mode. Enables flush-to-zero and some 
+    * floating point optimizations. */
    static const unsigned x = 0x04086060;
    static const unsigned y = 0x03000000;
    int r;
    asm volatile(
-         "fmrx	%0, fpscr   \n\t" // r0 = FPSCR
-         "and	%0, %0, %1  \n\t" // r0 = r0 & 0x04086060
-         "orr	%0, %0, %2  \n\t" // r0 = r0 | 0x03000000
-         "fmxr	fpscr, %0   \n\t" // FPSCR = r0
+         "fmrx	%0, fpscr   \n\t" /* r0 = FPSCR */
+         "and	%0, %0, %1  \n\t" /* r0 = r0 & 0x04086060 */
+         "orr	%0, %0, %2  \n\t" /* r0 = r0 | 0x03000000 */
+         "fmxr	fpscr, %0   \n\t" /* FPSCR = r0 */
          : "=r"(r)
          : "r"(x), "r"(y)
         );
@@ -304,7 +314,8 @@ static void arm_enable_runfast_mode(void)
 
 unsigned rarch_get_cpu_cores(void)
 {
-#if defined(_WIN32) && !defined(_XBOX) // Win32
+#if defined(_WIN32) && !defined(_XBOX)
+   /* Win32 */
    SYSTEM_INFO sysinfo;
    GetSystemInfo(&sysinfo);
    return sysinfo.dwNumberOfProcessors;
@@ -312,13 +323,15 @@ unsigned rarch_get_cpu_cores(void)
    return android_getCpuCount();
 #elif defined(GEKKO)
    return 1;
-#elif defined(_SC_NPROCESSORS_ONLN) // Linux, most unix-likes.
+#elif defined(_SC_NPROCESSORS_ONLN)
+   /* Linux, most UNIX-likes. */
    long ret = sysconf(_SC_NPROCESSORS_ONLN);
    if (ret <= 0)
       return (unsigned)1;
    return ret;
-#elif defined(BSD) || defined(__APPLE__) // BSD
-   // Copypasta from stackoverflow, dunno if it works.
+#elif defined(BSD) || defined(__APPLE__)
+   /* BSD */
+   /* Copypasta from stackoverflow, dunno if it works. */
    int num_cpu = 0;
    int mib[4];
    size_t len = sizeof(num_cpu);
@@ -337,7 +350,7 @@ unsigned rarch_get_cpu_cores(void)
 #elif defined(_XBOX360)
    return 3;
 #else
-   // No idea, assume single core.
+   /* No idea, assume single core. */
    return 1;
 #endif
 }
@@ -356,7 +369,7 @@ uint64_t rarch_get_cpu_features(void)
    RARCH_LOG("[CPUID]: Vendor: %s\n", vendor);
 
    unsigned max_flag = flags[0];
-   if (max_flag < 1) // Does CPUID not support func = 1? (unlikely ...)
+   if (max_flag < 1) /* Does CPUID not support func = 1? (unlikely ...) */
       return 0;
 
    x86_cpuid(1, flags);
@@ -366,7 +379,7 @@ uint64_t rarch_get_cpu_features(void)
 
    if (flags[3] & (1 << 25))
    {
-      // SSE also implies MMXEXT (according to FFmpeg source).
+      /* SSE also implies MMXEXT (according to FFmpeg source). */
       cpu |= RETRO_SIMD_SSE;
       cpu |= RETRO_SIMD_MMXEXT;
    }
@@ -390,8 +403,11 @@ uint64_t rarch_get_cpu_features(void)
       cpu |= RETRO_SIMD_AES;
 
    const int avx_flags = (1 << 27) | (1 << 28);
-   // Must only perform xgetbv check if we have AVX CPU support (guaranteed to have at least i686).
-   if (((flags[2] & avx_flags) == avx_flags) && ((xgetbv_x86(0) & 0x6) == 0x6))
+
+   /* Must only perform xgetbv check if we have 
+    * AVX CPU support (guaranteed to have at least i686). */
+   if (((flags[2] & avx_flags) == avx_flags) 
+         && ((xgetbv_x86(0) & 0x6) == 0x6))
       cpu |= RETRO_SIMD_AVX;
 
    if (max_flag >= 7)

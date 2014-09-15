@@ -49,7 +49,8 @@ static inline void RARCH_LOG(const char *fmt, ...)
    va_end(ap);
 }
 
-static inline void RARCH_LOG_OUTPUT_V(const char *tag, const char *fmt, va_list ap)
+static inline void RARCH_LOG_OUTPUT_V(const char *tag,
+      const char *fmt, va_list ap)
 {
    RARCH_LOG_V(tag, fmt, ap);
 }

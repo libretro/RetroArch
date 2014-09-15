@@ -19,12 +19,14 @@
 
 #ifdef _MSC_VER
 
-#undef UNICODE // Do not bother with UNICODE at this time.
+#undef UNICODE /* Do not bother with UNICODE at this time. */
 #include <direct.h>
 #include <stddef.h>
 #include <math.h>
 
-// Python headers defines ssize_t and sets HAVE_SSIZE_T. Cannot duplicate these efforts.
+/* Python headers defines ssize_t and sets HAVE_SSIZE_T.
+ * Cannot duplicate these efforts.
+ */
 #ifndef HAVE_SSIZE_T
 #if defined(_WIN64)
 typedef __int64 ssize_t;
@@ -41,7 +43,7 @@ typedef int ssize_t;
 #undef strncasecmp
 #define strncasecmp _strnicmp
 
-// Disable some of the annoying warnings.
+/* Disable some of the annoying warnings. */
 #pragma warning(disable : 4800)
 #pragma warning(disable : 4805)
 #pragma warning(disable : 4244)
