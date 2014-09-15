@@ -114,6 +114,7 @@ OBJ += frontend/frontend.o \
 		cheats.o \
 		core_info.o \
 		conf/config_file.o \
+		conf/config_file_userdata.o \
 		screenshot.o \
 		gfx/scaler/scaler.o \
 		gfx/shader_common.o \

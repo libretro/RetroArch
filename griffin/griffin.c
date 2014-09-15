@@ -92,6 +92,7 @@ CONFIG FILE
 #endif
 
 #include "../conf/config_file.c"
+#include "../conf/config_file_userdata.c"
 #include "../core_options.c"
 
 /*============================================================
