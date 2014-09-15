@@ -524,6 +524,7 @@ DYNAMIC
 FILE
 ============================================================ */
 #include "../file.c"
+#include "../string_list.c"
 #include "../file_path.c"
 #include "../file_list.c"
 

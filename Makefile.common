@@ -91,6 +91,7 @@ OBJ += frontend/frontend.o \
 		retroarch.o \
 		file.o \
 		file_list.o \
+		string_list.o \
 		file_path.o \
 		hash.o \
 		driver.o \
@@ -596,3 +597,24 @@ ifeq ($(HAVE_FFMPEG), 1)
    DEFINES += $(AVCODEC_CFLAGS) $(AVFORMAT_CFLAGS) $(AVUTIL_CFLAGS) $(SWSCALE_CFLAGS)
 	DEFINES += -DHAVE_FFMPEG -Iffmpeg
 endif
+
+# Joyconfig / RetroLaunch binaries
+
+JOYCONFIG_OBJ += tools/retroarch-joyconfig.o \
+	conf/config_file.o \
+	file_path.o \
+	string_list.o \
+	compat/compat.o \
+	tools/input_common_joyconfig.o
+
+RETROLAUNCH_OBJ += tools/retrolaunch/main.o \
+	hash.o \
+	tools/retrolaunch/parser.o \
+	tools/retrolaunch/cd_detect.o \
+	compat/fnmatch_rarch.o \
+	tools/input_common_launch.o \
+	file_path.o \
+	string_list.o \
+	compat/compat.o \
+	conf/config_file.o \
+	settings.o

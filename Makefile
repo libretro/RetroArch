@@ -11,28 +11,12 @@ endif
 
 OBJ := 
 JOYCONFIG_OBJ :=
+RETROLAUNCH_OBJ :=
 LIBS :=
 DEFINES := -DHAVE_CONFIG_H -DRARCH_INTERNAL -DHAVE_CC_RESAMPLER -DHAVE_OVERLAY
 DEFINES += -DGLOBAL_CONFIG_DIR='"$(GLOBAL_CONFIG_DIR)"'
 
 include Makefile.common
-
-JOYCONFIG_OBJ += tools/retroarch-joyconfig.o \
-	conf/config_file.o \
-	file_path.o \
-	compat/compat.o \
-	tools/input_common_joyconfig.o
-
-RETROLAUNCH_OBJ = tools/retrolaunch/main.o \
-	hash.o \
-	tools/retrolaunch/parser.o \
-	tools/retrolaunch/cd_detect.o \
-	compat/fnmatch_rarch.o \
-	tools/input_common_launch.o \
-	file_path.o \
-	compat/compat.o \
-	conf/config_file.o \
-	settings.o
 
 HEADERS = $(wildcard */*/*.h) $(wildcard */*.h) $(wildcard *.h)
 

@@ -69,12 +69,6 @@ LDFLAGS          := -L. -static-libgcc
 
 include Makefile.common
 
-JOYCONFIG_OBJ += conf/config_file.o \
-	tools/retroarch-joyconfig.o \
-	compat/compat.o \
-	file_path.o \
-	tools/input_common_joyconfig.o
-
 HEADERS = $(wildcard */*/*.h) $(wildcard */*.h) $(wildcard *.h)
 
 ifneq ($(HOST_PREFIX),)

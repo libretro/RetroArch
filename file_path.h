@@ -1,5 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
+ *  Copyright (C) 2011-2014 - Daniel De Matteis
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -21,6 +22,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <sys/types.h>
+#include "string_list.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -48,44 +50,12 @@ bool read_file_string(const char *path, char **buf);
 bool write_file(const char *path, const void *buf, size_t size);
 bool write_empty_file(const char *path);
 
-union string_list_elem_attr
-{
-   bool  b;
-   int   i;
-   void *p;
-};
-
-struct string_list_elem
-{
-   char *data;
-   union string_list_elem_attr attr;
-};
-
-struct string_list
-{
-   struct string_list_elem *elems;
-   size_t size;
-   size_t cap;
-};
-
 struct string_list *compressed_file_list_new(const char *filename,
       const char* ext);
 struct string_list *dir_list_new(const char *dir, const char *ext,
       bool include_dirs);
 void dir_list_sort(struct string_list *list, bool dir_first);
 void dir_list_free(struct string_list *list);
-bool string_list_find_elem(const struct string_list *list, const char *elem);
-bool string_list_find_elem_prefix(const struct string_list *list,
-      const char *prefix, const char *elem);
-struct string_list *string_split(const char *str, const char *delim);
-struct string_list *string_list_new(void);
-bool string_list_append(struct string_list *list, const char *elem,
-      union string_list_elem_attr attr);
-void string_list_free(struct string_list *list);
-void string_list_join_concat(char *buffer, size_t size,
-      const struct string_list *list, const char *sep);
-void string_list_set(struct string_list *list, unsigned index,
-      const char *str);
 
 /* path_is_compressed_file also means: The compressed file is supported */
 bool path_is_compressed_file(const char *path);
