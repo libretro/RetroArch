@@ -19,7 +19,8 @@ struct userdata
    const char *dest;
 };
 
-static bool zlib_cb(const char *name, const uint8_t *cdata, unsigned cmode, uint32_t csize, uint32_t size,
+static bool zlib_cb(const char *name, const uint8_t *cdata,
+      unsigned cmode, uint32_t csize, uint32_t size,
       uint32_t crc32, void *userdata)
 {
    char path[PATH_MAX];
@@ -46,7 +47,7 @@ static bool zlib_cb(const char *name, const uint8_t *cdata, unsigned cmode, uint
 
    switch (cmode)
    {
-      case 0: // Uncompressed
+      case 0: /* Uncompressed */
          if (!write_file(path, cdata, size))
          {
             RARCH_ERR("Failed to write file: %s.\n", path);
@@ -54,7 +55,7 @@ static bool zlib_cb(const char *name, const uint8_t *cdata, unsigned cmode, uint
          }
          break;
 
-      case 8: // Deflate
+      case 8: /* Deflate */
          if (!zlib_inflate_data_to_file(path, cdata, csize, size, crc32))
          {
             RARCH_ERR("Failed to deflate to: %s.\n", path);
