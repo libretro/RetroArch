@@ -38,7 +38,7 @@
 
 #include "shared.h"
 
-int line_height, glyph_width, glui_margin, glui_term_width, glui_term_height;
+unsigned line_height, glyph_width, glui_margin, glui_term_width, glui_term_height;
 GLuint glui_bg = 0;
 char box_message[PATH_MAX];
 
@@ -141,7 +141,7 @@ static void glui_render_messagebox(const char *message)
       return;
    }
 
-   int i;
+   unsigned i;
    int x = gl->win_width / 2 - strlen(list->elems[0].data) * glyph_width / 2;
    int y = gl->win_height / 2 - list->size * line_height / 2;
    for (i = 0; i < list->size; i++)
