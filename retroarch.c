@@ -780,8 +780,7 @@ static inline void input_poll_overlay(void)
 
 void rarch_input_poll(void)
 {
-   if (driver.input && driver.input->poll)
-      driver.input->poll(driver.input_data);
+   driver.input->poll(driver.input_data);
 
 #ifdef HAVE_OVERLAY
    if (driver.overlay)
@@ -2165,8 +2164,7 @@ static void set_fullscreen(bool fullscreen)
    driver.video_cache_context = false;
 
    /* Poll input to avoid possibly stale data to corrupt things. */
-   if (driver.input)
-      driver.input->poll(driver.input_data);
+   driver.input->poll(driver.input_data);
 }
 
 bool rarch_check_fullscreen(bool pressed)
