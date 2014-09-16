@@ -10,9 +10,6 @@ ifeq ($(SCALER_NO_SIMD), 1)
    DEFINES += -DSCALER_NO_SIMD
 endif
 
-ifdef HAVE_COMPRESSION
-   DEFINES += -DHAVE_COMPRESSION
-endif 
 
 ifeq ($(HAVE_PRESERVE_DYLIB),1)
    DEFINES += -DNO_DLCLOSE
@@ -603,6 +600,10 @@ ifeq ($(HAVE_FFMPEG), 1)
    DEFINES += $(AVCODEC_CFLAGS) $(AVFORMAT_CFLAGS) $(AVUTIL_CFLAGS) $(SWSCALE_CFLAGS)
 	DEFINES += -DHAVE_FFMPEG -Iffmpeg
 endif
+
+ifeq ($(HAVE_COMPRESSION), 1)
+   DEFINES += -DHAVE_COMPRESSION
+endif 
 
 # Joyconfig / RetroLaunch binaries
 
