@@ -466,14 +466,7 @@ endif
 ifeq ($(HAVE_CG), 1)
 	DEFINES += -DHAVE_CG
    OBJ += gfx/shader_cg.o
-   ifeq ($(OSX), 1)
-      LIBS += -framework Cg
-   else
-      LIBS += -lCg -lCgGL
-      ifeq ($(HAVE_D3D9),1)
-         LIBS += -lcgD3D9
-      endif
-   endif
+   LIBS += $(CG_LIBS)
 endif
 
 ifeq ($(HAVE_D3D9), 1)
@@ -485,9 +478,10 @@ ifeq ($(HAVE_D3D9), 1)
 			 gfx/context/d3d_ctx.o
    DEFINES += -DHAVE_WIN32_D3D9
    LIBS += -ld3d9 -ld3dx9 -ldxguid
-ifeq ($(HAVE_CG), 1)
-   LIBS += -lcg -lcgD3D9
-endif
+
+   ifeq ($(HAVE_CG), 1)
+      LIBS += -lcgD3D9
+   endif
 endif
 
 ifeq ($(HAVE_LIBXML2), 1)
