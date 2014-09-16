@@ -461,6 +461,10 @@ const gfx_ctx_driver_t gfx_ctx_d3d = {
    gfx_ctx_d3d_swap_buffers,
    gfx_ctx_d3d_input_driver,
    NULL,
+#ifdef HAVE_EGL
+   NULL,
+   NULL,
+#endif
    gfx_ctx_d3d_show_mouse,
    "d3d",
 };
