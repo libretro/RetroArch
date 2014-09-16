@@ -64,7 +64,7 @@ OBJ              :=
 JOYCONFIG_OBJ    :=
 LIBS             := -lm
 JOYCONFIG_LIBS   :=
-DEFINES          := -I. -DHAVE_BUILTIN_AUTOCONFIG -DRARCH_INTERNAL -DHAVE_CC_RESAMPLER -DHAVE_OVERLAY
+DEFINES          := -I. -DRARCH_INTERNAL -DHAVE_CC_RESAMPLER -DHAVE_OVERLAY
 LDFLAGS          := -L. -static-libgcc
 
 include Makefile.common
