@@ -2169,12 +2169,11 @@ static void set_fullscreen(bool fullscreen)
       driver.input->poll(driver.input_data);
 }
 
-bool rarch_check_fullscreen(void)
+bool rarch_check_fullscreen(bool pressed)
 {
    /* If we go fullscreen we drop all drivers and 
     * reinitialize to be safe. */
    static bool was_pressed = false;
-   bool pressed = input_key_pressed_func(RARCH_FULLSCREEN_TOGGLE_KEY);
    bool toggle = pressed && !was_pressed;
 
    if (toggle)
@@ -2870,15 +2869,15 @@ static void check_netplay_flip(retro_input_t input)
 
    old_pressed = pressed;
 
-   rarch_check_fullscreen();
+   rarch_check_fullscreen(BIT64_GET(input, RARCH_FULLSCREEN_TOGGLE_KEY));
 }
 #endif
 
-void rarch_check_block_hotkey(void)
+void rarch_check_block_hotkey(bool enable_hotkey)
 {
    static const struct retro_keybind *bind = 
       &g_settings.input.binds[0][RARCH_ENABLE_HOTKEY];
-   bool use_hotkey_enable, enable_hotkey;
+   bool use_hotkey_enable;
 
    /* Don't block the check to RARCH_ENABLE_HOTKEY
     * unless we're really supposed to. */
@@ -2888,7 +2887,6 @@ void rarch_check_block_hotkey(void)
    use_hotkey_enable = bind->key != RETROK_UNKNOWN ||
       bind->joykey != NO_BTN ||
       bind->joyaxis != AXIS_NONE;
-   enable_hotkey = input_key_pressed_func(RARCH_ENABLE_HOTKEY);
 
    driver.block_hotkey = driver.block_input ||
       (use_hotkey_enable && !enable_hotkey);
@@ -2899,10 +2897,9 @@ void rarch_check_block_hotkey(void)
 }
 
 #ifdef HAVE_OVERLAY
-void rarch_check_overlay(void)
+void rarch_check_overlay(bool pressed)
 {
    static bool old_pressed = false;
-   bool pressed = input_key_pressed_func(RARCH_OVERLAY_NEXT);
 
    if (!driver.overlay)
       return;
@@ -2937,8 +2934,7 @@ static void check_grab_mouse_toggle(retro_input_t input)
 
 static void do_state_checks(retro_input_t input)
 {
-   rarch_check_block_hotkey();
-
+   rarch_check_block_hotkey(BIT64_GET(input, RARCH_ENABLE_HOTKEY));
 
    check_screenshot(input);
    check_mute(input);
@@ -2949,7 +2945,7 @@ static void do_state_checks(retro_input_t input)
    check_grab_mouse_toggle(input);
 
 #ifdef HAVE_OVERLAY
-   rarch_check_overlay();
+   rarch_check_overlay(BIT64_GET(input, RARCH_OVERLAY_NEXT));
 #endif
 
 #ifdef HAVE_NETPLAY
@@ -2962,7 +2958,8 @@ static void do_state_checks(retro_input_t input)
    check_pause(input);
    check_oneshot(input);
 
-   if (rarch_check_fullscreen() && g_extern.is_paused)
+   if (rarch_check_fullscreen(BIT64_GET(input, RARCH_FULLSCREEN_TOGGLE_KEY))
+         && g_extern.is_paused)
       rarch_render_cached_frame();
 
    if (g_extern.is_paused && !g_extern.is_oneshot)

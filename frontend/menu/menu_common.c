@@ -310,6 +310,7 @@ bool menu_iterate(void)
    if (!driver.menu)
       return false;
 
+
    if (g_extern.lifecycle_state & (1ULL << MODE_MENU_PREINIT))
    {
       driver.menu->need_refresh = true;
@@ -317,14 +318,18 @@ bool menu_iterate(void)
    }
 
    rarch_input_poll();
-   rarch_check_block_hotkey();
-#ifdef HAVE_OVERLAY
-   rarch_check_overlay();
-#endif
-   rarch_check_fullscreen();
 
-   if (input_key_pressed_func(RARCH_QUIT_KEY)
-         || !driver.video->alive(driver.video_data))
+   retro_input_t input = input_keys_pressed_func(RARCH_FIRST_META_KEY);
+
+   rarch_check_block_hotkey(BIT64_GET(input, RARCH_ENABLE_HOTKEY));
+#ifdef HAVE_OVERLAY
+   rarch_check_overlay(BIT64_GET(input, RARCH_OVERLAY_NEXT));
+#endif
+   rarch_check_fullscreen(BIT64_GET(input, RARCH_FULLSCREEN_TOGGLE_KEY));
+
+   if (
+         BIT64_GET(input, RARCH_QUIT_KEY) ||
+         !driver.video->alive(driver.video_data))
    {
       rarch_main_command(RARCH_CMD_RESUME);
       return false;
