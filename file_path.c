@@ -123,15 +123,11 @@ long read_compressed_file(const char * path, void **buf)
    const char* file_ext = path_get_extension(archive_path);
 #ifdef HAVE_7ZIP
    if (strcasecmp(file_ext,"7z") == 0)
-   {
       return read_7zip_file(archive_path,archive_found,buf);
-   }
 #endif
 #ifdef HAVE_ZLIB
    if (strcasecmp(file_ext,"zip") == 0)
-   {
       return read_zip_file(archive_path,archive_found,buf);
-   }
 #endif
    return -1;
 }
@@ -654,8 +650,6 @@ void fill_pathname_expand_special(char *out_path,
 void fill_short_pathname_representation(char* out_rep,
       const char *in_path, size_t size)
 {
-
-
    char path_short[PATH_MAX];
    fill_pathname(path_short, path_basename(in_path), "",
             sizeof(path_short));
@@ -674,9 +668,7 @@ void fill_short_pathname_representation(char* out_rep,
       strlcpy(out_rep,last_hash + 1, size);
    }
    else
-   {
       strlcpy(out_rep,path_short, size);
-   }
 }
 
 

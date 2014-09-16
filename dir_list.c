@@ -64,11 +64,9 @@ static int qstrcmp_dir(const void *a_, const void *b_)
 
 void dir_list_sort(struct string_list *list, bool dir_first)
 {
-   if (!list)
-      return;
-
-   qsort(list->elems, list->size, sizeof(struct string_list_elem),
-         dir_first ? qstrcmp_dir : qstrcmp_plain);
+   if (list)
+      qsort(list->elems, list->size, sizeof(struct string_list_elem),
+            dir_first ? qstrcmp_dir : qstrcmp_plain);
 }
 
 void dir_list_free(struct string_list *list)
