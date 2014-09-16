@@ -301,7 +301,7 @@ bool menu_custom_bind_keyboard_cb(void *data, unsigned code)
 uint64_t menu_input(void)
 {
    unsigned i;
-   uint64_t input_state = 0;
+   uint64_t input_state = 0, input_meta = 0;
    static const struct retro_keybind *binds[] = { g_settings.input.binds[0] };
 
    if (!driver.menu)
@@ -327,7 +327,10 @@ uint64_t menu_input(void)
 #endif
       }
    }
-   input_state |= input_key_pressed_func(RARCH_MENU_TOGGLE)
+
+   input_meta = input_keys_pressed_func(RARCH_MENU_TOGGLE, RARCH_MENU_TOGGLE + 1);
+
+   input_state |= BIND_PRESSED(input_meta, RARCH_MENU_TOGGLE)
       ? (1ULL << RARCH_MENU_TOGGLE) : 0;
 
    input_pop_analog_dpad((struct retro_keybind*)binds[0]);

@@ -516,6 +516,12 @@ static int android_input_get_id(android_input_t *android, AInputEvent *event)
    return id;
 }
 
+static bool pause_key_pressed(void)
+{
+   retro_input_t input = input_keys_pressed_func(RARCH_PAUSE_TOGGLE, RARCH_PAUSE_TOGGLE+1);
+   return BIND_PRESSED(input, RARCH_PAUSE_TOGGLE);
+}
+
 /* Handle all events. If our activity is in pause state,
  * block until we're unpaused.
  */
@@ -525,7 +531,7 @@ static void android_input_poll(void *data)
    struct android_app *android_app = (struct android_app*)g_android;
    android_input_t *android = (android_input_t*)data;
 
-   while ((ident = ALooper_pollAll((input_key_pressed_func(RARCH_PAUSE_TOGGLE))
+   while ((ident = ALooper_pollAll((pause_key_pressed())
                ? -1 : 0,
                NULL, NULL, NULL)) >= 0)
    {

@@ -319,7 +319,8 @@ bool menu_iterate(void)
 
    rarch_input_poll();
 
-   retro_input_t input = input_keys_pressed_func(RARCH_FIRST_META_KEY);
+   retro_input_t input = input_keys_pressed_func(RARCH_FIRST_META_KEY,
+         RARCH_BIND_LIST_END);
 
    rarch_check_block_hotkey(BIND_PRESSED(input, RARCH_ENABLE_HOTKEY));
 #ifdef HAVE_OVERLAY

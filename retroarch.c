@@ -3686,7 +3686,8 @@ void rarch_main_command(unsigned cmd)
 bool rarch_main_iterate(void)
 {
    unsigned i;
-   retro_input_t input = input_keys_pressed_func(RARCH_FIRST_META_KEY);
+   retro_input_t input = input_keys_pressed_func(RARCH_FIRST_META_KEY,
+         RARCH_BIND_LIST_END);
 
    /* SHUTDOWN on consoles should exit RetroArch completely. */
    if (g_extern.system.shutdown)

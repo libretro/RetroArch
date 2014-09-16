@@ -218,18 +218,19 @@ static inline bool input_key_pressed_func(int key)
 
 /* Returns a 64-bit mask of all pressed buttons, starting
  * from the specified key up until the last queryable key
- * (RARCH_BIND_LIST_END).
+ * (key_end).
  *
  * TODO: In case RARCH_BIND_LIST_END starts exceeding 64,
  * and you need a bitmask of more than 64 entries, don't
  * use this function.
  */
 
-static inline retro_input_t input_keys_pressed_func(unsigned key)
+static inline retro_input_t input_keys_pressed_func(unsigned key,
+      unsigned key_end)
 {
    retro_input_t ret = 0;
 
-   for (; key < RARCH_BIND_LIST_END; key++)
+   for (; key < key_end; key++)
    {
       if (input_key_pressed_func(key))
          ret |= (1ULL << key);
