@@ -469,7 +469,7 @@ ifeq ($(HAVE_CG), 1)
    ifeq ($(OSX), 1)
       LIBS += -framework Cg
    else
-      LIBS += -lCg -lCgGL
+      LIBS += -lcg -lcgGL
       ifeq ($(HAVE_D3D9),1)
          LIBS += -lcgD3D9
       endif
