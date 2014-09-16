@@ -33,6 +33,8 @@ ifeq ($(SLIM),)
    HAVE_FFMPEG = 1
 endif
 
+CG_LIBS          := -lcg -lcgGL
+
 FREETYPE_CFLAGS  := -DHAVE_FREETYPE -Ifreetype2
 FREETYPE_LIBS    := -lfreetype
 
