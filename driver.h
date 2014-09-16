@@ -667,26 +667,6 @@ extern menu_ctx_driver_t menu_ctx_lakka;
 extern menu_ctx_driver_backend_t menu_ctx_backend_common;
 extern menu_ctx_driver_backend_t menu_ctx_backend_lakka;
 
-static inline bool input_key_pressed_func(int key)
-{
-   bool ret = false;
-
-   if (!driver.block_hotkey)
-      ret = driver.input->key_pressed(driver.input_data, key);
-
-#ifdef HAVE_OVERLAY
-   ret = ret || (driver.overlay_state.buttons & (1ULL << key));
-#endif
-
-#ifdef HAVE_COMMAND
-   if (driver.command)
-      ret = ret || rarch_cmd_get(driver.command, key);
-#endif
-
-   return ret;
-}
-
-
 #ifdef __cplusplus
 }
 #endif

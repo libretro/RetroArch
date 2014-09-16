@@ -194,6 +194,25 @@ void input_push_analog_dpad(struct retro_keybind *binds, unsigned mode);
 
 void input_pop_analog_dpad(struct retro_keybind *binds);
 
+static inline bool input_key_pressed_func(int key)
+{
+   bool ret = false;
+
+   if (!driver.block_hotkey)
+      ret = driver.input->key_pressed(driver.input_data, key);
+
+#ifdef HAVE_OVERLAY
+   ret = ret || (driver.overlay_state.buttons & (1ULL << key));
+#endif
+
+#ifdef HAVE_COMMAND
+   if (driver.command)
+      ret = ret || rarch_cmd_get(driver.command, key);
+#endif
+
+   return ret;
+}
+
 #ifdef __cplusplus
 }
 #endif
