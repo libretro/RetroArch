@@ -218,6 +218,9 @@ if [ "$HAVE_OPENGL" != 'no' ] && [ "$HAVE_GLES" != 'yes' ]; then
       check_lib_cxx CG -lCg cgCreateContext
       [ "$HAVE_CG" = 'yes' ] && CG_LIBS='-lCg -lCgGL'
    fi
+
+   # fix undefined variables
+   PKG_CONF_USED+=CG
 else
    echo "Ignoring Cg. Desktop OpenGL is not enabled."
    HAVE_CG='no'
