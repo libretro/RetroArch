@@ -321,14 +321,14 @@ bool menu_iterate(void)
 
    retro_input_t input = input_keys_pressed_func(RARCH_FIRST_META_KEY);
 
-   rarch_check_block_hotkey(BIT64_GET(input, RARCH_ENABLE_HOTKEY));
+   rarch_check_block_hotkey(BIND_PRESSED(input, RARCH_ENABLE_HOTKEY));
 #ifdef HAVE_OVERLAY
-   rarch_check_overlay(BIT64_GET(input, RARCH_OVERLAY_NEXT));
+   rarch_check_overlay(BIND_PRESSED(input, RARCH_OVERLAY_NEXT));
 #endif
-   rarch_check_fullscreen(BIT64_GET(input, RARCH_FULLSCREEN_TOGGLE_KEY));
+   rarch_check_fullscreen(BIND_PRESSED(input, RARCH_FULLSCREEN_TOGGLE_KEY));
 
    if (
-         BIT64_GET(input, RARCH_QUIT_KEY) ||
+         BIND_PRESSED(input, RARCH_QUIT_KEY) ||
          !driver.video->alive(driver.video_data))
    {
       rarch_main_command(RARCH_CMD_RESUME);

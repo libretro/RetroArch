@@ -61,8 +61,8 @@
  */
 static void check_fast_forward_button(retro_input_t input)
 {
-   bool new_button_state = BIT64_GET(input, RARCH_FAST_FORWARD_KEY);
-   bool new_hold_button_state = BIT64_GET(input, RARCH_FAST_FORWARD_HOLD_KEY);
+   bool new_button_state = BIND_PRESSED(input, RARCH_FAST_FORWARD_KEY);
+   bool new_hold_button_state = BIND_PRESSED(input, RARCH_FAST_FORWARD_HOLD_KEY);
    static bool old_button_state = false;
    static bool old_hold_button_state = false;
 
@@ -2137,7 +2137,7 @@ static void main_state(unsigned cmd)
 static void check_savestates(retro_input_t input, bool immutable)
 {
    static bool old_should_savestate = false;
-   bool should_savestate = BIT64_GET(input, RARCH_SAVE_STATE_KEY);
+   bool should_savestate = BIND_PRESSED(input, RARCH_SAVE_STATE_KEY);
 
    if (should_savestate && !old_should_savestate)
       rarch_main_command(RARCH_CMD_SAVE_STATE);
@@ -2146,7 +2146,7 @@ static void check_savestates(retro_input_t input, bool immutable)
    if (!immutable)
    {
       static bool old_should_loadstate = false;
-      bool should_loadstate = BIT64_GET(input, RARCH_LOAD_STATE_KEY);
+      bool should_loadstate = BIND_PRESSED(input, RARCH_LOAD_STATE_KEY);
 
       if (!should_savestate && should_loadstate && !old_should_loadstate)
          rarch_main_command(RARCH_CMD_LOAD_STATE);
@@ -2205,8 +2205,8 @@ static void check_stateslots(retro_input_t input)
    /* Save state slots */
    static bool old_should_slot_increase = false;
    static bool old_should_slot_decrease = false;
-   bool should_slot_increase = BIT64_GET(input, RARCH_STATE_SLOT_PLUS);
-   bool should_slot_decrease = BIT64_GET(input, RARCH_STATE_SLOT_MINUS);
+   bool should_slot_increase = BIND_PRESSED(input, RARCH_STATE_SLOT_PLUS);
+   bool should_slot_decrease = BIND_PRESSED(input, RARCH_STATE_SLOT_MINUS);
 
    if (should_slot_increase && !old_should_slot_increase)
    {
@@ -2272,7 +2272,7 @@ static void check_rewind(retro_input_t input)
    if (!g_extern.state_manager)
       return;
 
-   if (BIT64_GET(input, RARCH_REWIND))
+   if (BIND_PRESSED(input, RARCH_REWIND))
    {
       const void *buf = NULL;
 
@@ -2322,7 +2322,7 @@ static void check_rewind(retro_input_t input)
 
 static void check_slowmotion(retro_input_t input)
 {
-   g_extern.is_slowmotion = BIT64_GET(input, RARCH_SLOWMOTION);
+   g_extern.is_slowmotion = BIND_PRESSED(input, RARCH_SLOWMOTION);
 
    if (!g_extern.is_slowmotion)
       return;
@@ -2396,7 +2396,7 @@ static void check_movie_playback(bool pressed)
 static void check_movie(retro_input_t input)
 {
    static bool old_button = false;
-   bool new_button = BIT64_GET(input, RARCH_MOVIE_RECORD_TOGGLE);
+   bool new_button = BIND_PRESSED(input, RARCH_MOVIE_RECORD_TOGGLE);
    bool pressed = new_button && !old_button;
 
    if (g_extern.bsv.movie_playback)
@@ -2414,11 +2414,11 @@ static void check_pause(retro_input_t input)
    bool focus               = true;
    bool has_set_audio_stop  = false;
    bool has_set_audio_start = false;
-   bool new_state           = BIT64_GET(input, RARCH_PAUSE_TOGGLE);
+   bool new_state           = BIND_PRESSED(input, RARCH_PAUSE_TOGGLE);
 
    /* FRAMEADVANCE will set us into pause mode. */
    new_state |= !g_extern.is_paused &&
-      BIT64_GET(input, RARCH_FRAMEADVANCE);
+      BIND_PRESSED(input, RARCH_FRAMEADVANCE);
 
    if (g_settings.pause_nonactive)
       focus = driver.video->focus(driver.video_data);
@@ -2467,8 +2467,8 @@ static void check_oneshot(retro_input_t input)
 {
    static bool old_state = false;
    static bool old_rewind_state = false;
-   bool new_state        = BIT64_GET(input, RARCH_FRAMEADVANCE);
-   bool new_rewind_state = BIT64_GET(input, RARCH_REWIND);
+   bool new_state        = BIND_PRESSED(input, RARCH_FRAMEADVANCE);
+   bool new_rewind_state = BIND_PRESSED(input, RARCH_REWIND);
 
    g_extern.is_oneshot = (new_state && !old_state);
    old_state = new_state;
@@ -2482,7 +2482,7 @@ static void check_oneshot(retro_input_t input)
 static void check_reset(retro_input_t input)
 {
    static bool old_state = false;
-   bool new_state = BIT64_GET(input, RARCH_RESET);
+   bool new_state = BIND_PRESSED(input, RARCH_RESET);
 
    if (new_state && !old_state)
       rarch_main_command(RARCH_CMD_RESET);
@@ -2538,8 +2538,8 @@ static void check_shader_dir(retro_input_t input)
    if (!g_extern.shader_dir.list || !driver.video->set_shader)
       return;
 
-   pressed_next = BIT64_GET(input, RARCH_SHADER_NEXT);
-   pressed_prev = BIT64_GET(input, RARCH_SHADER_PREV);
+   pressed_next = BIND_PRESSED(input, RARCH_SHADER_NEXT);
+   pressed_prev = BIND_PRESSED(input, RARCH_SHADER_PREV);
 
    if (pressed_next && !old_pressed_next)
    {
@@ -2599,9 +2599,9 @@ static void check_cheats(retro_input_t input)
    if (!g_extern.cheat)
       return;
 
-   pressed_next = BIT64_GET(input, RARCH_CHEAT_INDEX_PLUS);
-   pressed_prev = BIT64_GET(input, RARCH_CHEAT_INDEX_MINUS);
-   pressed_toggle = BIT64_GET(input, RARCH_CHEAT_TOGGLE);
+   pressed_next = BIND_PRESSED(input, RARCH_CHEAT_INDEX_PLUS);
+   pressed_prev = BIND_PRESSED(input, RARCH_CHEAT_INDEX_MINUS);
+   pressed_toggle = BIND_PRESSED(input, RARCH_CHEAT_TOGGLE);
 
    if (pressed_next && !old_pressed_next)
       cheat_manager_index_next(g_extern.cheat);
@@ -2756,8 +2756,8 @@ static void check_disk(retro_input_t input)
    if (!control->get_num_images)
       return;
 
-   pressed_eject = BIT64_GET(input, RARCH_DISK_EJECT_TOGGLE);
-   pressed_next  = BIT64_GET(input, RARCH_DISK_NEXT);
+   pressed_eject = BIND_PRESSED(input, RARCH_DISK_EJECT_TOGGLE);
+   pressed_next  = BIND_PRESSED(input, RARCH_DISK_NEXT);
 
    if (pressed_eject && !old_pressed_eject)
    {
@@ -2786,7 +2786,7 @@ static void check_disk(retro_input_t input)
 static void check_screenshot(retro_input_t input)
 {
    static bool old_pressed = false;
-   bool pressed            = BIT64_GET(input, RARCH_SCREENSHOT);
+   bool pressed            = BIND_PRESSED(input, RARCH_SCREENSHOT);
 
    if (pressed && !old_pressed)
       rarch_main_command(RARCH_CMD_TAKE_SCREENSHOT);
@@ -2797,7 +2797,7 @@ static void check_screenshot(retro_input_t input)
 static void check_mute(retro_input_t input)
 {
    static bool old_pressed = false;
-   bool pressed            = BIT64_GET(input, RARCH_MUTE);
+   bool pressed            = BIND_PRESSED(input, RARCH_MUTE);
 
    if (!g_extern.audio_active)
       return;
@@ -2832,8 +2832,8 @@ static void check_volume(retro_input_t input)
 {
    char msg[256];
    float db_change   = 0.0f;
-   bool pressed_up   = BIT64_GET(input, RARCH_VOLUME_UP);
-   bool pressed_down = BIT64_GET(input, RARCH_VOLUME_DOWN);
+   bool pressed_up   = BIND_PRESSED(input, RARCH_VOLUME_UP);
+   bool pressed_down = BIND_PRESSED(input, RARCH_VOLUME_DOWN);
 
    if (!pressed_up && !pressed_down)
       return;
@@ -2860,14 +2860,14 @@ static void check_volume(retro_input_t input)
 static void check_netplay_flip(retro_input_t input)
 {
    static bool old_pressed = false;
-   bool pressed            = BIT64_GET(input, RARCH_NETPLAY_FLIP);
+   bool pressed            = BIND_PRESSED(input, RARCH_NETPLAY_FLIP);
 
    if (pressed && !old_pressed)
       netplay_flip_players(g_extern.netplay);
 
    old_pressed = pressed;
 
-   rarch_check_fullscreen(BIT64_GET(input, RARCH_FULLSCREEN_TOGGLE_KEY));
+   rarch_check_fullscreen(BIND_PRESSED(input, RARCH_FULLSCREEN_TOGGLE_KEY));
 }
 #endif
 
@@ -2914,7 +2914,7 @@ static void check_grab_mouse_toggle(retro_input_t input)
    static bool old_pressed       = false;
    static bool grab_mouse_state  = false;
    bool pressed                  = 
-      BIT64_GET(input, RARCH_GRAB_MOUSE_TOGGLE) &&
+      BIND_PRESSED(input, RARCH_GRAB_MOUSE_TOGGLE) &&
       driver.input->grab_mouse;
 
    if (pressed && !old_pressed)
@@ -2932,7 +2932,7 @@ static void check_grab_mouse_toggle(retro_input_t input)
 
 static void do_state_checks(retro_input_t input)
 {
-   rarch_check_block_hotkey(BIT64_GET(input, RARCH_ENABLE_HOTKEY));
+   rarch_check_block_hotkey(BIND_PRESSED(input, RARCH_ENABLE_HOTKEY));
 
    check_screenshot(input);
    check_mute(input);
@@ -2943,7 +2943,7 @@ static void do_state_checks(retro_input_t input)
    check_grab_mouse_toggle(input);
 
 #ifdef HAVE_OVERLAY
-   rarch_check_overlay(BIT64_GET(input, RARCH_OVERLAY_NEXT));
+   rarch_check_overlay(BIND_PRESSED(input, RARCH_OVERLAY_NEXT));
 #endif
 
 #ifdef HAVE_NETPLAY
@@ -2956,7 +2956,7 @@ static void do_state_checks(retro_input_t input)
    check_pause(input);
    check_oneshot(input);
 
-   if (rarch_check_fullscreen(BIT64_GET(input, RARCH_FULLSCREEN_TOGGLE_KEY))
+   if (rarch_check_fullscreen(BIND_PRESSED(input, RARCH_FULLSCREEN_TOGGLE_KEY))
          && g_extern.is_paused)
       rarch_render_cached_frame();
 
@@ -3205,7 +3205,7 @@ error:
 static bool check_enter_menu(retro_input_t input)
 {
    static bool old_rmenu_toggle = true;
-   bool rmenu_toggle            = BIT64_GET(input, RARCH_MENU_TOGGLE)
+   bool rmenu_toggle            = BIND_PRESSED(input, RARCH_MENU_TOGGLE)
       || (g_extern.libretro_dummy && !old_rmenu_toggle);
 
    /* Always go into menu if dummy core is loaded. */
@@ -3693,7 +3693,7 @@ bool rarch_main_iterate(void)
       return false;
 
    /* Time to drop? */
-   if (BIT64_GET(input, RARCH_QUIT_KEY) ||
+   if (BIND_PRESSED(input, RARCH_QUIT_KEY) ||
          !driver.video->alive(driver.video_data))
       return false;
 
