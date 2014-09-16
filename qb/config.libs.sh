@@ -220,7 +220,7 @@ if [ "$HAVE_OPENGL" != 'no' ] && [ "$HAVE_GLES" != 'yes' ]; then
    fi
 
    # fix undefined variables
-   PKG_CONF_USED+=CG
+   PKG_CONF_USED="$PKG_CONF_USED CG"
 else
    echo "Ignoring Cg. Desktop OpenGL is not enabled."
    HAVE_CG='no'
