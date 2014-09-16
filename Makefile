@@ -16,6 +16,10 @@ LIBS :=
 DEFINES := -DHAVE_CONFIG_H -DRARCH_INTERNAL -DHAVE_CC_RESAMPLER -DHAVE_OVERLAY
 DEFINES += -DGLOBAL_CONFIG_DIR='"$(GLOBAL_CONFIG_DIR)"'
 
+ifneq ($(findstring Win32,$(OS)),)
+   LDFLAGS += -static-libgcc
+endif
+
 include Makefile.common
 
 HEADERS = $(wildcard */*/*.h) $(wildcard */*.h) $(wildcard *.h)
