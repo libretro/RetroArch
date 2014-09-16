@@ -126,10 +126,9 @@ const rarch_joypad_driver_t *input_joypad_init_first(void)
 const char *input_joypad_name(const rarch_joypad_driver_t *driver,
       unsigned joypad)
 {
-   if (!driver)
-      return NULL;
-
-   return driver->name(joypad);
+   if (driver)
+      return driver->name(joypad);
+   return NULL;
 }
 
 bool input_joypad_set_rumble(const rarch_joypad_driver_t *driver,
@@ -234,29 +233,26 @@ int16_t input_joypad_analog(const rarch_joypad_driver_t *driver,
 int16_t input_joypad_axis_raw(const rarch_joypad_driver_t *driver,
       unsigned joypad, unsigned axis)
 {
-   if (!driver)
-      return 0;
-
-   return driver->axis(joypad, AXIS_POS(axis)) +
-      driver->axis(joypad, AXIS_NEG(axis));
+   if (driver)
+      return driver->axis(joypad, AXIS_POS(axis)) +
+         driver->axis(joypad, AXIS_NEG(axis));
+   return 0;
 }
 
 bool input_joypad_button_raw(const rarch_joypad_driver_t *driver,
       unsigned joypad, unsigned button)
 {
-   if (!driver)
-      return false;
-
-   return driver->button(joypad, button);
+   if (driver)
+      return driver->button(joypad, button);
+   return false;
 }
 
 bool input_joypad_hat_raw(const rarch_joypad_driver_t *driver,
       unsigned joypad, unsigned hat_dir, unsigned hat)
 {
-   if (!driver)
-      return false;
-
-   return driver->button(joypad, HAT_MAP(hat, hat_dir));
+   if (driver)
+      return driver->button(joypad, HAT_MAP(hat, hat_dir));
+   return false;
 }
 
 #ifndef IS_RETROLAUNCH
