@@ -370,7 +370,6 @@ static void rmenu_xui_render(void)
    const char *dir = NULL;
    const char *label = NULL;
    unsigned menu_type = 0;
-   unsigned menu_type_is = 0;
 
    if (!driver.menu || driver.menu->need_refresh && 
          (g_extern.lifecycle_state & (1ULL << MODE_MENU))
@@ -385,11 +384,7 @@ static void rmenu_xui_render(void)
    file_list_get_last(driver.menu->menu_stack, &dir,
          &label, &menu_type);
 
-   if (driver.menu_ctx && driver.menu_ctx->backend
-         && driver.menu_ctx->backend->type_is)
-      menu_type_is = driver.menu_ctx->backend->type_is(label, menu_type);
-
-   get_title(label, dir, menu_type, menu_type_is,
+   get_title(label, dir, menu_type,
          title, sizeof(title));
 
    mbstowcs(strw_buffer, title, sizeof(strw_buffer) / sizeof(wchar_t));

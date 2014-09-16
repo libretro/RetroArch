@@ -2,8 +2,7 @@
 #define _DISP_SHARED_H
 
 static void get_title(const char *label, const char *dir,
-      unsigned menu_type, unsigned menu_type_is,
-      char *title, size_t sizeof_title)
+      unsigned menu_type, char *title, size_t sizeof_title)
 {
    if (!strcmp(label, "core_list"))
       snprintf(title, sizeof_title, "CORE SELECTION %s", dir);

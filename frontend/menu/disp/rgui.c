@@ -306,19 +306,13 @@ static void rgui_render(void)
    const char *dir = NULL;
    const char *label = NULL;
    unsigned menu_type = 0;
-   unsigned menu_type_is = 0;
    file_list_get_last(driver.menu->menu_stack, &dir, &label, &menu_type);
-
-   if (driver.menu_ctx && driver.menu_ctx->backend &&
-         driver.menu_ctx->backend->type_is)
-      menu_type_is = driver.menu_ctx->backend->type_is(label, menu_type);
 
 #if 0
    RARCH_LOG("Dir is: %s\n", label);
 #endif
 
-   get_title(label, dir, menu_type, menu_type_is,
-         title, sizeof(title));
+   get_title(label, dir, menu_type, title, sizeof(title));
 
    char title_buf[256];
    menu_ticker_line(title_buf, RGUI_TERM_WIDTH - 3,
