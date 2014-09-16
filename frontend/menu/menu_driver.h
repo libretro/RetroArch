@@ -79,7 +79,6 @@ typedef struct
 
    uint16_t *frame_buf;
    size_t frame_buf_pitch;
-   bool frame_buf_show;
 
    file_list_t *menu_stack;
    file_list_t *selection_buf;

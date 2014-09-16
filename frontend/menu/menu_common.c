@@ -178,7 +178,6 @@ void *menu_init(const void *data)
    menu->trigger_state = 0;
    menu->old_input_state = 0;
    menu->do_held = false;
-   menu->frame_buf_show = true;
    menu->current_pad = 0;
 
    update_libretro_info(&g_extern.menu.info);
