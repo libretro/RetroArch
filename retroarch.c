@@ -2936,8 +2936,29 @@ static void check_grab_mouse_toggle(void)
    old_pressed = pressed;
 }
 
-static void check_flip(void)
+static void do_state_checks(void)
 {
+   rarch_check_block_hotkey();
+
+   check_screenshot();
+   check_mute();
+   check_volume();
+
+   check_turbo();
+
+   check_grab_mouse_toggle();
+
+#ifdef HAVE_OVERLAY
+   rarch_check_overlay();
+#endif
+
+#ifdef HAVE_NETPLAY
+   if (g_extern.netplay)
+   {
+      check_netplay_flip();
+      return;
+   }
+#endif
    check_pause();
    check_oneshot();
 
@@ -2962,30 +2983,6 @@ static void check_flip(void)
    check_disk();
 
    check_reset();
-}
-
-static void do_state_checks(void)
-{
-   rarch_check_block_hotkey();
-
-   check_screenshot();
-   check_mute();
-   check_volume();
-
-   check_turbo();
-
-   check_grab_mouse_toggle();
-
-#ifdef HAVE_OVERLAY
-   rarch_check_overlay();
-#endif
-
-#ifdef HAVE_NETPLAY
-   if (g_extern.netplay)
-      check_netplay_flip();
-   else
-#endif
-      check_flip();
 }
 
 static void init_state(void)
