@@ -413,6 +413,10 @@ ifeq ($(HAVE_OPENGL), 1)
    DEFINES += -DHAVE_GLSL
 endif
 
+ifeq ($(HAVE_SDL2), 1)
+   HAVE_SDL=0
+endif
+
 ifeq ($(HAVE_SDL), 1)
    OBJ += gfx/sdl_gfx.o input/sdl_input.o input/sdl_joypad.o audio/sdl_audio.o
 
