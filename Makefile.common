@@ -544,6 +544,10 @@ ifeq ($(HAVE_ZLIB), 1)
    endif
 endif
 
+ifdef HAVE_COMPRESSION
+   DEFINES += -DHAVE_COMPRESSION
+endif
+
 ifeq ($(WANT_MINIZ),1)
 	OBJ += deps/rzlib/adler32.o \
 			 deps/rzlib/compress.o \
