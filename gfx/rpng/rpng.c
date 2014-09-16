@@ -247,8 +247,7 @@ static inline int paeth(int a, int b, int c)
       return a;
    else if (pb <= pc)
       return b;
-   else
-      return c;
+   return c;
 }
 
 static inline void copy_line_rgb(uint32_t *data,
