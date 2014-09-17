@@ -3599,8 +3599,7 @@ bool rarch_main_iterate(void)
       return false;
 
    /* Time to drop? */
-   if (BIND_PRESSED(input, RARCH_QUIT_KEY) ||
-         !driver.video->alive(driver.video_data))
+   if (check_quit_key_func(input) || !driver.video->alive(driver.video_data))
       return false;
 
    if (check_enter_menu_func(input, old_input))

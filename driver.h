@@ -689,6 +689,7 @@ extern menu_ctx_driver_backend_t menu_ctx_backend_lakka;
 #define check_stateslots_func(input, old_input) check_stateslots(BIND_PRESSED(input, RARCH_STATE_SLOT_PLUS), BIND_PRESSED(old_input, RARCH_STATE_SLOT_PLUS), BIND_PRESSED(input, RARCH_STATE_SLOT_MINUS), BIND_PRESSED(old_input, RARCH_STATE_SLOT_MINUS))
 #define check_savestates_func(input, old_input)  check_savestates(BIND_PRESSED(input, RARCH_SAVE_STATE_KEY), BIND_PRESSED(old_input, RARCH_SAVE_STATE_KEY), BIND_PRESSED(input, RARCH_LOAD_STATE_KEY), BIND_PRESSED(old_input, RARCH_LOAD_STATE_KEY), g_extern.bsv.movie)
 #define check_pause_func(input, old_input) check_pause(BIND_PRESSED(input, RARCH_PAUSE_TOGGLE), BIND_PRESSED(old_input, RARCH_PAUSE_TOGGLE), BIND_PRESSED(input, RARCH_FRAMEADVANCE))
+#define check_quit_key_func(input) BIND_PRESSED(input, RARCH_QUIT_KEY)
 
 #ifdef __cplusplus
 }
