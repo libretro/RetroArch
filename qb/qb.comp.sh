@@ -14,7 +14,7 @@ if [ -n "$CROSS_COMPILE" ]; then
 	esac
 fi
 
-if [ -z "$OS" ]; then
+if [ -z "$CROSS_COMPILE" ] || [ -z "$OS" ]; then
 	case "$(uname)" in
 		'Linux') OS='Linux';;
 		*'BSD') OS='BSD';;
