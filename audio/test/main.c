@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -16,11 +16,15 @@
 // Resampler that reads raw S16NE/stereo from stdin and outputs to stdout in S16NE/stereo.
 // Used for testing and performance benchmarking.
 
-#include "../resampler.h"
+#include "../resamplers/resampler.h"
 #include "../utils.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+
+#ifndef RESAMPLER_IDENT
+#define RESAMPLER_IDENT "sinc"
+#endif
 
 int main(int argc, char *argv[])
 {
@@ -56,7 +60,7 @@ int main(int argc, char *argv[])
 
    const rarch_resampler_t *resampler = NULL;
    void *re = NULL;
-   if (!rarch_resampler_realloc(&re, &resampler, NULL, out_rate / in_rate))
+   if (!rarch_resampler_realloc(&re, &resampler, RESAMPLER_IDENT, out_rate / in_rate))
    {
       fprintf(stderr, "Failed to allocate resampler ...\n");
       return 1;
