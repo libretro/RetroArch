@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -13,7 +13,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../resampler.h"
+#include "../resamplers/resampler.h"
 #include "../utils.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -22,6 +22,10 @@
 #include <string.h>
 #include <assert.h>
 #include <stdbool.h>
+
+#ifndef RESAMPLER_IDENT
+#define RESAMPLER_IDENT "sinc"
+#endif
 
 #undef min
 #define min(a, b) (((a) < (b)) ? (a) : (b))
@@ -63,7 +67,7 @@ static unsigned bitswap(unsigned i, unsigned range)
 }
 
 // When interleaving the butterfly buffer, addressing puts bits in reverse.
-// [0, 1, 2, 3, 4, 5, 6, 7] => [0, 4, 2, 6, 1, 5, 3, 7] 
+// [0, 1, 2, 3, 4, 5, 6, 7] => [0, 4, 2, 6, 1, 5, 3, 7]
 static void interleave(complex double *butterfly_buf, size_t samples)
 {
    unsigned range = bitrange(samples);
@@ -269,7 +273,7 @@ int main(int argc, char *argv[])
 
    void *re = NULL;
    const rarch_resampler_t *resampler = NULL;
-   if (!rarch_resampler_realloc(&re, &resampler, NULL, ratio))
+   if (!rarch_resampler_realloc(&re, &resampler, RESAMPLER_IDENT, ratio))
       return 1;
 
    test_fft();
