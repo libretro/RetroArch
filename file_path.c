@@ -417,6 +417,22 @@ void fill_pathname_base(char *out, const char *in_path, size_t size)
    else
       ptr = in_path;
 
+   /* In case of compression, we also have to consider paths like
+    *   /path/to/archive.7z#mygame.img
+    *   and
+    *   /path/to/archive.7z#folder/mygame.img
+    *   basename would be mygame.img in both cases
+    */
+
+#ifdef HAVE_COMPRESSION
+   const char *ptr_bak = ptr;
+   ptr = strchr(ptr,'#');
+   if (ptr)
+      ptr++;
+   else
+      ptr = ptr_bak;
+#endif
+
    rarch_assert(strlcpy(out, ptr, size) < size);
 }
 

@@ -1022,7 +1022,7 @@ static void set_basename(const char *path)
    char *dst = NULL;
 
    strlcpy(g_extern.fullpath, path, sizeof(g_extern.fullpath));
-   strlcpy(g_extern.basename, path, sizeof(g_extern.basename));
+   fill_pathname_base(g_extern.basename, path, sizeof(g_extern.basename));
 
    if ((dst = strrchr(g_extern.basename, '.')))
       *dst = '\0';
