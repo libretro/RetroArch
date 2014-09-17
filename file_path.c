@@ -417,6 +417,22 @@ void fill_pathname_base(char *out, const char *in_path, size_t size)
    else
       ptr = in_path;
 
+   /* In case of compression, we also have to consider paths like
+    *   /path/to/archive.7z#mygame.img
+    *   and
+    *   /path/to/archive.7z#folder/mygame.img
+    *   basename would be mygame.img in both cases
+    */
+
+#ifdef HAVE_COMPRESSION
+   const char *ptr_bak = ptr;
+   ptr = strchr(ptr_bak,'#');
+   if (ptr)
+      ptr++;
+   else
+      ptr = ptr_bak;
+#endif
+
    rarch_assert(strlcpy(out, ptr, size) < size);
 }
 
@@ -450,7 +466,16 @@ void path_basedir(char *path)
    if (strlen(path) < 2)
       return;
 
-   char *last = find_last_slash(path);
+   char *last;
+
+#ifdef HAVE_COMPRESSION
+   /* We want to find the directory with the zipfile in basedir. */
+   last = strchr(path,'#');
+   if (last)
+      *last = '\0';
+#endif
+
+   last = find_last_slash(path);
 
    if (last)
       last[1] = '\0';
@@ -469,6 +494,15 @@ void path_parent_dir(char *path)
 const char *path_basename(const char *path)
 {
    const char *last = find_last_slash(path);
+
+   /* We cut either at the last hash or the last slash; whichever comes last */
+#ifdef HAVE_COMPRESSION
+   const char *last_hash = strchr(path,'#');
+   if (last_hash > last)
+   {
+      return last_hash + 1;
+   }
+#endif
 
    if (last)
       return last + 1;

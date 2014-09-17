@@ -1023,6 +1023,29 @@ static void set_basename(const char *path)
 
    strlcpy(g_extern.fullpath, path, sizeof(g_extern.fullpath));
    strlcpy(g_extern.basename, path, sizeof(g_extern.basename));
+   /* Removing extension is a bit tricky for compressed files.
+    * Basename means:
+    * /file/to/path/game.extension should be:
+    * /file/to/path/game
+    *
+    * Two things to consider here are: /file/to/path/ is expected
+    * to be a directory and "game" is a single file. This is used for
+    * states and srm default paths
+    *
+    * For compressed files we have:
+    *
+    * /file/to/path/comp.7z#game.extension and
+    * /file/to/path/comp.7z#folder/game.extension
+    *
+    * The choice I take here is:
+    * /file/to/path/game as basename. We might end up in a writable dir then
+    * and the name of srm and states are meaningful.
+    *
+    */
+#ifdef HAVE_COMPRESSION
+   path_basedir(g_extern.basename);
+   fill_pathname_dir(g_extern.basename,path,"",sizeof(g_extern.basename));
+#endif
 
    if ((dst = strrchr(g_extern.basename, '.')))
       *dst = '\0';
