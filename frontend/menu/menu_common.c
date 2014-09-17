@@ -329,8 +329,7 @@ bool menu_iterate(void)
 #endif
    check_fullscreen_func(input, old_state);
 
-   if (BIND_PRESSED(input, RARCH_QUIT_KEY) 
-         || !driver.video->alive(driver.video_data))
+   if (check_quit_key_func(input) || !driver.video->alive(driver.video_data))
    {
       rarch_main_command(RARCH_CMD_RESUME);
       return false;
