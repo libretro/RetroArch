@@ -667,6 +667,28 @@ extern menu_ctx_driver_t menu_ctx_lakka;
 extern menu_ctx_driver_backend_t menu_ctx_backend_common;
 extern menu_ctx_driver_backend_t menu_ctx_backend_lakka;
 
+#define check_block_hotkey_func(input) rarch_check_block_hotkey(BIND_PRESSED(input, RARCH_ENABLE_HOTKEY))
+
+#define check_cheats_func(input, old_input) check_cheats(BIND_PRESSED(input, RARCH_CHEAT_INDEX_PLUS), BIND_PRESSED(old_input, RARCH_CHEAT_INDEX_PLUS), BIND_PRESSED(input, RARCH_CHEAT_INDEX_MINUS), BIND_PRESSED(old_input, RARCH_CHEAT_INDEX_MINUS), BIND_PRESSED(input, RARCH_CHEAT_TOGGLE), BIND_PRESSED(old_input, RARCH_CHEAT_TOGGLE))
+#define check_disk_func(input, old_input) check_disk(BIND_PRESSED(input, RARCH_DISK_EJECT_TOGGLE), BIND_PRESSED(old_input, RARCH_DISK_EJECT_TOGGLE), BIND_PRESSED(input, RARCH_DISK_NEXT), BIND_PRESSED(old_input, RARCH_DISK_NEXT))
+#define check_netplay_flip_func(input, old_input) check_netplay_flip(BIND_PRESSED(input, RARCH_NETPLAY_FLIP), BIND_PRESSED(old_input, RARCH_NETPLAY_FLIP), BIND_PRESSED(input, RARCH_FULLSCREEN_TOGGLE_KEY), BIND_PRESSED(old_input, RARCH_FULLSCREEN_TOGGLE_KEY))
+#define check_overlay_func(input, old_input) rarch_check_overlay(BIND_PRESSED(input, RARCH_OVERLAY_NEXT), BIND_PRESSED(old_input, RARCH_OVERLAY_NEXT))
+#define check_screenshot_func(input, old_input) check_screenshot(BIND_PRESSED(input, RARCH_SCREENSHOT), BIND_PRESSED(old_input, RARCH_SCREENSHOT))
+#define check_oneshot_func(input, old_input) check_oneshot(BIND_PRESSED(input, RARCH_FRAMEADVANCE), BIND_PRESSED(old_input, RARCH_FRAMEADVANCE), BIND_PRESSED(input, RARCH_REWIND), BIND_PRESSED(old_input, RARCH_REWIND))
+#define check_reset_func(input, old_input) check_reset(BIND_PRESSED(input, RARCH_RESET), BIND_PRESSED(old_input, RARCH_RESET))
+#define check_slowmotion_func(input) check_slowmotion(BIND_PRESSED(input, RARCH_SLOWMOTION))
+#define check_shader_dir_func(input, old_input) check_shader_dir(BIND_PRESSED(input, RARCH_SHADER_NEXT), BIND_PRESSED(old_input, RARCH_SHADER_NEXT), BIND_PRESSED(input, RARCH_SHADER_PREV), BIND_PRESSED(old_input, RARCH_SHADER_PREV))
+#define check_enter_menu_func(input, old_input) check_enter_menu(BIND_PRESSED(input, RARCH_MENU_TOGGLE), BIND_PRESSED(old_input, RARCH_MENU_TOGGLE))
+#define check_mute_func(input, old_input) check_mute(BIND_PRESSED(input, RARCH_MUTE), BIND_PRESSED(old_input, RARCH_MUTE))
+#define check_volume_func(input, old_input) check_volume(BIND_PRESSED(input, RARCH_VOLUME_UP), BIND_PRESSED(old_input, RARCH_VOLUME_DOWN))
+#define check_fullscreen_func(input, old_input) rarch_check_fullscreen(BIND_PRESSED(input, RARCH_FULLSCREEN_TOGGLE_KEY), BIND_PRESSED(old_input, RARCH_FULLSCREEN_TOGGLE_KEY))
+#define check_fast_forward_button_func(input, old_input) check_fast_forward_button(BIND_PRESSED(input, RARCH_FAST_FORWARD_KEY), BIND_PRESSED(old_input, RARCH_FAST_FORWARD_KEY), BIND_PRESSED(input, RARCH_FAST_FORWARD_HOLD_KEY), BIND_PRESSED(old_input, RARCH_FAST_FORWARD_HOLD_KEY))
+#define check_movie_func(input, old_input) check_movie(BIND_PRESSED(input, RARCH_MOVIE_RECORD_TOGGLE), BIND_PRESSED(old_input, RARCH_MOVIE_RECORD_TOGGLE))
+#define check_rewind_func(input) check_rewind(BIND_PRESSED(input, RARCH_REWIND))
+#define check_grab_mouse_toggle_func(input, old_input) check_grab_mouse_toggle(BIND_PRESSED(input, RARCH_GRAB_MOUSE_TOGGLE), BIND_PRESSED(old_input, RARCH_GRAB_MOUSE_TOGGLE))
+#define check_stateslots_func(input, old_input) check_stateslots(BIND_PRESSED(input, RARCH_STATE_SLOT_PLUS), BIND_PRESSED(old_input, RARCH_STATE_SLOT_PLUS), BIND_PRESSED(input, RARCH_STATE_SLOT_MINUS), BIND_PRESSED(old_input, RARCH_STATE_SLOT_MINUS))
+#define check_savestates_func(input, old_input)  check_savestates(BIND_PRESSED(input, RARCH_SAVE_STATE_KEY), BIND_PRESSED(old_input, RARCH_SAVE_STATE_KEY), BIND_PRESSED(input, RARCH_LOAD_STATE_KEY), BIND_PRESSED(old_input, RARCH_LOAD_STATE_KEY), g_extern.bsv.movie)
+
 #ifdef __cplusplus
 }
 #endif

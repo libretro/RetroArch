@@ -2832,129 +2832,63 @@ static void check_grab_mouse_toggle(bool pressed, bool old_pressed)
 
 static void do_state_checks(retro_input_t input, retro_input_t old_input)
 {
-   rarch_check_block_hotkey(
-         BIND_PRESSED(input, RARCH_ENABLE_HOTKEY));
+   check_block_hotkey_func(input);
 
-   check_screenshot(
-         BIND_PRESSED(input, RARCH_SCREENSHOT),
-         BIND_PRESSED(old_input, RARCH_SCREENSHOT)
-         );
+   check_screenshot_func(input, old_input);
 
    if (g_extern.audio_active)
-      check_mute(
-            BIND_PRESSED(input, RARCH_MUTE),
-            BIND_PRESSED(old_input, RARCH_MUTE)
-            );
+      check_mute_func(input, old_input);
 
-   check_volume(
-         BIND_PRESSED(input, RARCH_VOLUME_UP),
-         BIND_PRESSED(old_input, RARCH_VOLUME_DOWN)
-         );
+   check_volume_func(input, old_input);
 
    check_turbo();
 
    if (driver.input->grab_mouse)
-      check_grab_mouse_toggle(
-            BIND_PRESSED(input, RARCH_GRAB_MOUSE_TOGGLE),
-            BIND_PRESSED(old_input, RARCH_GRAB_MOUSE_TOGGLE)
-            );
+      check_grab_mouse_toggle_func(input, old_input);
 
 #ifdef HAVE_OVERLAY
    if (driver.overlay)
-      rarch_check_overlay(
-            BIND_PRESSED(input, RARCH_OVERLAY_NEXT),
-            BIND_PRESSED(old_input, RARCH_OVERLAY_NEXT)
-            );
+      check_overlay_func(input, old_input);
 #endif
 
 #ifdef HAVE_NETPLAY
    if (g_extern.netplay)
    {
-      check_netplay_flip(
-            BIND_PRESSED(input, RARCH_NETPLAY_FLIP),
-            BIND_PRESSED(old_input, RARCH_NETPLAY_FLIP),
-            BIND_PRESSED(input, RARCH_FULLSCREEN_TOGGLE_KEY),
-            BIND_PRESSED(old_input, RARCH_FULLSCREEN_TOGGLE_KEY)
-            );
+      check_netplay_flip_func(input,  old_input);
       return;
    }
 #endif
    check_pause(input, old_input);
 
-   check_oneshot(
-         BIND_PRESSED(input, RARCH_FRAMEADVANCE),
-         BIND_PRESSED(old_input, RARCH_FRAMEADVANCE),
-         BIND_PRESSED(input, RARCH_REWIND),
-         BIND_PRESSED(old_input, RARCH_REWIND)
-         );
+   check_oneshot_func(input, old_input);
 
-   if (rarch_check_fullscreen(
-            BIND_PRESSED(input, RARCH_FULLSCREEN_TOGGLE_KEY),
-            BIND_PRESSED(old_input, RARCH_FULLSCREEN_TOGGLE_KEY)
-            )
-         && g_extern.is_paused)
+   if (check_fullscreen_func(input, old_input) && g_extern.is_paused)
       rarch_render_cached_frame();
 
    if (g_extern.is_paused && !g_extern.is_oneshot)
       return;
 
-   check_fast_forward_button(
-         BIND_PRESSED(input, RARCH_FAST_FORWARD_KEY),
-         BIND_PRESSED(old_input, RARCH_FAST_FORWARD_KEY),
-         BIND_PRESSED(input, RARCH_FAST_FORWARD_HOLD_KEY),
-         BIND_PRESSED(old_input, RARCH_FAST_FORWARD_HOLD_KEY)
-         );
+   check_fast_forward_button_func(input, old_input);
 
-   check_stateslots(
-         BIND_PRESSED(input, RARCH_STATE_SLOT_PLUS),
-         BIND_PRESSED(old_input, RARCH_STATE_SLOT_PLUS),
-         BIND_PRESSED(input, RARCH_STATE_SLOT_MINUS),
-         BIND_PRESSED(old_input, RARCH_STATE_SLOT_MINUS)
-         );
+   check_stateslots_func(input, old_input);
 
-   check_savestates(
-         BIND_PRESSED(input, RARCH_SAVE_STATE_KEY),
-         BIND_PRESSED(old_input, RARCH_SAVE_STATE_KEY),
-         BIND_PRESSED(input, RARCH_LOAD_STATE_KEY),
-         BIND_PRESSED(old_input, RARCH_LOAD_STATE_KEY),
-         g_extern.bsv.movie);
+   check_savestates_func(input, old_input);
 
-   check_rewind(BIND_PRESSED(input, RARCH_REWIND));
+   check_rewind_func(input);
 
-   check_slowmotion(
-         BIND_PRESSED(input, RARCH_SLOWMOTION));
+   check_slowmotion_func(input);
 
-   check_movie(
-         BIND_PRESSED(input, RARCH_MOVIE_RECORD_TOGGLE),
-         BIND_PRESSED(old_input, RARCH_MOVIE_RECORD_TOGGLE));
+   check_movie_func(input, old_input);
 
-   check_shader_dir(
-         BIND_PRESSED(input, RARCH_SHADER_NEXT),
-         BIND_PRESSED(old_input, RARCH_SHADER_NEXT),
-         BIND_PRESSED(input, RARCH_SHADER_PREV),
-         BIND_PRESSED(old_input, RARCH_SHADER_PREV)
-         );
+   check_shader_dir_func(input, old_input);
 
    if (g_extern.cheat)
-      check_cheats(
-            BIND_PRESSED(input, RARCH_CHEAT_INDEX_PLUS),
-            BIND_PRESSED(old_input, RARCH_CHEAT_INDEX_PLUS),
-            BIND_PRESSED(input, RARCH_CHEAT_INDEX_MINUS),
-            BIND_PRESSED(old_input, RARCH_CHEAT_INDEX_MINUS),
-            BIND_PRESSED(input, RARCH_CHEAT_TOGGLE),
-            BIND_PRESSED(old_input, RARCH_CHEAT_TOGGLE)
-            );
+      check_cheats_func(input, old_input);
 
    if (g_extern.system.disk_control.get_num_images)
-      check_disk(
-            BIND_PRESSED(input, RARCH_DISK_EJECT_TOGGLE),
-            BIND_PRESSED(old_input, RARCH_DISK_EJECT_TOGGLE),
-            BIND_PRESSED(input, RARCH_DISK_NEXT),
-            BIND_PRESSED(old_input, RARCH_DISK_NEXT));
+      check_disk_func(input, old_input);
 
-   check_reset(
-         BIND_PRESSED(input, RARCH_RESET),
-         BIND_PRESSED(old_input, RARCH_RESET));
+   check_reset_func(input, old_input);
 }
 
 static void init_state(void)
@@ -3671,10 +3605,7 @@ bool rarch_main_iterate(void)
          !driver.video->alive(driver.video_data))
       return false;
 
-   if (check_enter_menu(
-            BIND_PRESSED(input, RARCH_MENU_TOGGLE),
-               BIND_PRESSED(old_input, RARCH_MENU_TOGGLE)
-               ))
+   if (check_enter_menu_func(input, old_input))
       return false; /* Enter menu, don't exit. */
 
    if (g_extern.exec)

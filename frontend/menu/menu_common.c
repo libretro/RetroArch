@@ -323,20 +323,14 @@ bool menu_iterate(void)
    retro_input_t input = input_keys_pressed_func(RARCH_FIRST_META_KEY,
          RARCH_BIND_LIST_END, &old_state);
 
-   rarch_check_block_hotkey(BIND_PRESSED(input, RARCH_ENABLE_HOTKEY));
+   check_block_hotkey_func(input);
 #ifdef HAVE_OVERLAY
-   rarch_check_overlay(
-         BIND_PRESSED(input, RARCH_OVERLAY_NEXT),
-         BIND_PRESSED(old_state, RARCH_OVERLAY_NEXT));
+   check_overlay_func(input, old_state);
 #endif
-   rarch_check_fullscreen(
-         BIND_PRESSED(input, RARCH_FULLSCREEN_TOGGLE_KEY),
-         BIND_PRESSED(old_state, RARCH_FULLSCREEN_TOGGLE_KEY)
-         );
+   check_fullscreen_func(input, old_state);
 
-   if (
-         BIND_PRESSED(input, RARCH_QUIT_KEY) ||
-         !driver.video->alive(driver.video_data))
+   if (BIND_PRESSED(input, RARCH_QUIT_KEY) 
+         || !driver.video->alive(driver.video_data))
    {
       rarch_main_command(RARCH_CMD_RESUME);
       return false;
