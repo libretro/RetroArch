@@ -186,7 +186,7 @@ int main_entry_iterate_menu_preinit(signature(), args_type() args)
 
 int main_entry_iterate_menu(signature(), args_type() args)
 {
-   retro_input_t input = 0;
+   retro_input_t input, old_state = 0;
 
    if (menu_iterate())
    {
@@ -201,7 +201,8 @@ int main_entry_iterate_menu(signature(), args_type() args)
    rarch_main_command(RARCH_CMD_AUDIO_START);
    rarch_main_set_state(RARCH_ACTION_STATE_FLUSH_INPUT);
 
-   input = input_keys_pressed_func(RARCH_QUIT_KEY, RARCH_QUIT_KEY + 1);
+   input = input_keys_pressed_func(RARCH_QUIT_KEY, RARCH_QUIT_KEY + 1,
+         &old_state);
 
    if (BIND_PRESSED(input, RARCH_QUIT_KEY) ||
          !driver.video->alive(driver.video_data))

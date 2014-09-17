@@ -301,6 +301,7 @@ static unsigned input_frame(uint64_t trigger_state)
 
 bool menu_iterate(void)
 {
+   retro_input_t old_state = 0;
    unsigned action = MENU_ACTION_NOOP;
    static bool initial_held = true;
    static bool first_held = false;
@@ -320,13 +321,18 @@ bool menu_iterate(void)
    rarch_input_poll();
 
    retro_input_t input = input_keys_pressed_func(RARCH_FIRST_META_KEY,
-         RARCH_BIND_LIST_END);
+         RARCH_BIND_LIST_END, &old_state);
 
    rarch_check_block_hotkey(BIND_PRESSED(input, RARCH_ENABLE_HOTKEY));
 #ifdef HAVE_OVERLAY
-   rarch_check_overlay(BIND_PRESSED(input, RARCH_OVERLAY_NEXT));
+   rarch_check_overlay(
+         BIND_PRESSED(input, RARCH_OVERLAY_NEXT),
+         BIND_PRESSED(old_state, RARCH_OVERLAY_NEXT));
 #endif
-   rarch_check_fullscreen(BIND_PRESSED(input, RARCH_FULLSCREEN_TOGGLE_KEY));
+   rarch_check_fullscreen(
+         BIND_PRESSED(input, RARCH_FULLSCREEN_TOGGLE_KEY),
+         BIND_PRESSED(old_state, RARCH_FULLSCREEN_TOGGLE_KEY)
+         );
 
    if (
          BIND_PRESSED(input, RARCH_QUIT_KEY) ||

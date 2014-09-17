@@ -207,9 +207,11 @@ void input_pop_analog_dpad(struct retro_keybind *binds);
  */
 
 static inline retro_input_t input_keys_pressed_func(unsigned key,
-      unsigned key_end)
+      unsigned key_end, retro_input_t *old_state)
 {
+   static retro_input_t old_ret = 0;
    retro_input_t ret = 0;
+   *old_state = old_ret;
 
    for (; key < key_end; key++)
    {
@@ -230,6 +232,8 @@ static inline retro_input_t input_keys_pressed_func(unsigned key,
       if (state)
          ret |= (1ULL << key);
    }
+
+   old_ret = ret;
 
    return ret;
 }

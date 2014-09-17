@@ -59,26 +59,19 @@
  * that the button must go from pressed to unpressed back to pressed 
  * to be able to toggle between then.
  */
-static void check_fast_forward_button(retro_input_t input)
+static void check_fast_forward_button(bool pressed, bool old_pressed,
+      bool hold_pressed, bool old_hold_pressed)
 {
-   bool new_button_state = BIND_PRESSED(input, RARCH_FAST_FORWARD_KEY);
-   bool new_hold_button_state = BIND_PRESSED(input, RARCH_FAST_FORWARD_HOLD_KEY);
-   static bool old_button_state = false;
-   static bool old_hold_button_state = false;
-
-   if (new_button_state && !old_button_state)
+   if (pressed && !old_pressed)
    {
       driver.nonblock_state = !driver.nonblock_state;
       driver_set_nonblock_state(driver.nonblock_state);
    }
-   else if (old_hold_button_state != new_hold_button_state)
+   else if (old_hold_pressed != hold_pressed)
    {
-      driver.nonblock_state = new_hold_button_state;
+      driver.nonblock_state = hold_pressed;
       driver_set_nonblock_state(driver.nonblock_state);
    }
-
-   old_button_state = new_button_state;
-   old_hold_button_state = new_hold_button_state;
 }
 
 static bool take_screenshot_viewport(void)
@@ -2134,23 +2127,18 @@ static void main_state(unsigned cmd)
 }
 
 
-static void check_savestates(retro_input_t input, bool immutable)
+static void check_savestates(
+      bool should_savestate, bool old_should_savestate,
+      bool should_loadstate, bool old_should_loadstate,
+      bool immutable)
 {
-   static bool old_should_savestate = false;
-   bool should_savestate = BIND_PRESSED(input, RARCH_SAVE_STATE_KEY);
-
    if (should_savestate && !old_should_savestate)
       rarch_main_command(RARCH_CMD_SAVE_STATE);
-   old_should_savestate = should_savestate;
 
    if (!immutable)
    {
-      static bool old_should_loadstate = false;
-      bool should_loadstate = BIND_PRESSED(input, RARCH_LOAD_STATE_KEY);
-
       if (!should_savestate && should_loadstate && !old_should_loadstate)
          rarch_main_command(RARCH_CMD_LOAD_STATE);
-      old_should_loadstate = should_loadstate;
    }
 }
 
@@ -2167,12 +2155,11 @@ static void set_fullscreen(bool fullscreen)
    driver.input->poll(driver.input_data);
 }
 
-bool rarch_check_fullscreen(bool pressed)
+bool rarch_check_fullscreen(bool pressed, bool old_pressed)
 {
    /* If we go fullscreen we drop all drivers and 
     * reinitialize to be safe. */
-   static bool was_pressed = false;
-   bool toggle = pressed && !was_pressed;
+   bool toggle = pressed && !old_pressed;
 
    if (toggle)
    {
@@ -2180,7 +2167,6 @@ bool rarch_check_fullscreen(bool pressed)
       rarch_main_command(RARCH_CMD_REINIT);
    }
 
-   was_pressed = pressed;
    return toggle;
 }
 
@@ -2200,35 +2186,26 @@ static void state_slot(void)
    RARCH_LOG("%s\n", msg);
 }
 
-static void check_stateslots(retro_input_t input)
+static void check_stateslots(bool pressed_increase, bool old_pressed_increase,
+      bool pressed_decrease, bool old_pressed_decrease)
 {
    /* Save state slots */
-   static bool old_should_slot_increase = false;
-   static bool old_should_slot_decrease = false;
-   bool should_slot_increase = BIND_PRESSED(input, RARCH_STATE_SLOT_PLUS);
-   bool should_slot_decrease = BIND_PRESSED(input, RARCH_STATE_SLOT_MINUS);
-
-   if (should_slot_increase && !old_should_slot_increase)
+   if (pressed_increase && !old_pressed_increase)
    {
       g_settings.state_slot++;
       state_slot();
    }
-   old_should_slot_increase = should_slot_increase;
 
-   if (should_slot_decrease && !old_should_slot_decrease)
+   if (pressed_decrease && !old_pressed_decrease)
    {
       if (g_settings.state_slot > 0)
          g_settings.state_slot--;
       state_slot();
    }
-   old_should_slot_decrease = should_slot_decrease;
 }
 
 static inline void flush_rewind_audio(void)
 {
-   if (!g_extern.frame_is_reverse)
-      return;
-
    /* We just rewound. Flush rewind audio buffer. */
    g_extern.audio_active = audio_flush(g_extern.audio_data.rewind_buf
          + g_extern.audio_data.rewind_ptr,
@@ -2257,11 +2234,12 @@ static inline void setup_rewind_audio(void)
    g_extern.audio_data.data_ptr = 0;
 }
 
-static void check_rewind(retro_input_t input)
+static void check_rewind(bool pressed)
 {
    static bool first = true;
 
-   flush_rewind_audio();
+   if (g_extern.frame_is_reverse)
+      flush_rewind_audio();
 
    if (first)
    {
@@ -2272,7 +2250,7 @@ static void check_rewind(retro_input_t input)
    if (!g_extern.state_manager)
       return;
 
-   if (BIND_PRESSED(input, RARCH_REWIND))
+   if (pressed)
    {
       const void *buf = NULL;
 
@@ -2320,9 +2298,9 @@ static void check_rewind(retro_input_t input)
          audio_sample_batch_rewind : audio_sample_batch);
 }
 
-static void check_slowmotion(retro_input_t input)
+static void check_slowmotion(bool pressed)
 {
-   g_extern.is_slowmotion = BIND_PRESSED(input, RARCH_SLOWMOTION);
+   g_extern.is_slowmotion = pressed;
 
    if (!g_extern.is_slowmotion)
       return;
@@ -2337,9 +2315,6 @@ static void check_slowmotion(retro_input_t input)
 
 static void check_movie_record(bool pressed)
 {
-   if (!pressed)
-      return;
-
    if (g_extern.bsv.movie)
    {
       msg_queue_clear(g_extern.msg_queue);
@@ -2381,33 +2356,32 @@ static void check_movie_record(bool pressed)
 
 static void check_movie_playback(bool pressed)
 {
-   if (g_extern.bsv.movie_end || pressed)
-   {
-      msg_queue_push(g_extern.msg_queue,
-            RETRO_MSG_MOVIE_PLAYBACK_ENDED, 1, 180);
-      RARCH_LOG(RETRO_LOG_MOVIE_PLAYBACK_ENDED);
+   if (!g_extern.bsv.movie_end)
+      return;
 
-      deinit_movie();
-      g_extern.bsv.movie_end = false;
-      g_extern.bsv.movie_playback = false;
-   }
+   msg_queue_push(g_extern.msg_queue,
+         RETRO_MSG_MOVIE_PLAYBACK_ENDED, 1, 180);
+   RARCH_LOG(RETRO_LOG_MOVIE_PLAYBACK_ENDED);
+
+   deinit_movie();
+   g_extern.bsv.movie_end = false;
+   g_extern.bsv.movie_playback = false;
 }
 
-static void check_movie(retro_input_t input)
+static void check_movie(bool new_pressed, bool old_pressed)
 {
-   static bool old_button = false;
-   bool new_button = BIND_PRESSED(input, RARCH_MOVIE_RECORD_TOGGLE);
-   bool pressed = new_button && !old_button;
+   bool pressed = new_pressed && !old_pressed;
+
+   if (!pressed)
+      return;
 
    if (g_extern.bsv.movie_playback)
       check_movie_playback(pressed);
    else
       check_movie_record(pressed);
-
-   old_button = new_button;
 }
 
-static void check_pause(retro_input_t input)
+static void check_pause(retro_input_t input, retro_input_t old_input)
 {
    static bool old_state    = false;
    static bool old_focus    = true;
@@ -2463,31 +2437,20 @@ static void check_pause(retro_input_t input)
    old_state = new_state;
 }
 
-static void check_oneshot(retro_input_t input)
+static void check_oneshot(
+      bool new_state,        bool old_state,
+      bool new_rewind_state, bool old_rewind_state)
 {
-   static bool old_state = false;
-   static bool old_rewind_state = false;
-   bool new_state        = BIND_PRESSED(input, RARCH_FRAMEADVANCE);
-   bool new_rewind_state = BIND_PRESSED(input, RARCH_REWIND);
-
    g_extern.is_oneshot = (new_state && !old_state);
-   old_state = new_state;
-
    /* Rewind buttons works like FRAMEREWIND when paused.
     * We will one-shot in that case. */
    g_extern.is_oneshot |= new_rewind_state && !old_rewind_state;
-   old_rewind_state = new_rewind_state;
 }
 
-static void check_reset(retro_input_t input)
+static void check_reset(bool pressed, bool old_pressed)
 {
-   static bool old_state = false;
-   bool new_state = BIND_PRESSED(input, RARCH_RESET);
-
-   if (new_state && !old_state)
+   if (pressed && !old_pressed)
       rarch_main_command(RARCH_CMD_RESET);
-
-   old_state = new_state;
 }
 
 static void check_turbo(void)
@@ -2516,30 +2479,27 @@ static void check_turbo(void)
 
 
    if (driver.block_libretro_input)
+   {
       memset(g_extern.turbo_frame_enable, 0,
             sizeof(g_extern.turbo_frame_enable));
-   else
-   {
-      for (i = 0; i < MAX_PLAYERS; i++)
-         g_extern.turbo_frame_enable[i] =
-            driver.input->input_state(driver.input_data, binds, i,
-                  RETRO_DEVICE_JOYPAD, 0, RARCH_TURBO_ENABLE);
+      return;
+
    }
+
+   for (i = 0; i < MAX_PLAYERS; i++)
+      g_extern.turbo_frame_enable[i] =
+         driver.input->input_state(driver.input_data, binds, i,
+               RETRO_DEVICE_JOYPAD, 0, RARCH_TURBO_ENABLE);
 }
 
-static void check_shader_dir(retro_input_t input)
+static void check_shader_dir(
+      bool pressed_next, bool old_pressed_next,
+      bool pressed_prev, bool old_pressed_prev)
 {
-   static bool old_pressed_next = false;
-   static bool old_pressed_prev = false;
    bool should_apply = false;
-   bool pressed_next = false;
-   bool pressed_prev = false;
 
    if (!g_extern.shader_dir.list || !driver.video->set_shader)
       return;
-
-   pressed_next = BIND_PRESSED(input, RARCH_SHADER_NEXT);
-   pressed_prev = BIND_PRESSED(input, RARCH_SHADER_PREV);
 
    if (pressed_next && !old_pressed_next)
    {
@@ -2582,37 +2542,19 @@ static void check_shader_dir(retro_input_t input)
       if (!driver.video->set_shader(driver.video_data, type, shader))
          RARCH_WARN("Failed to apply shader.\n");
    }
-
-   old_pressed_next = pressed_next;
-   old_pressed_prev = pressed_prev;
 }
 
-static void check_cheats(retro_input_t input)
+static void check_cheats(
+      bool pressed_next,   bool old_pressed_next,
+      bool pressed_prev,   bool old_pressed_prev,
+      bool pressed_toggle, bool old_pressed_toggle)
 {
-   bool pressed_next               = false;
-   bool pressed_prev               = false;
-   bool pressed_toggle             = false;
-   static bool old_pressed_prev    = false;
-   static bool old_pressed_next    = false;
-   static bool old_pressed_toggle  = false;
-
-   if (!g_extern.cheat)
-      return;
-
-   pressed_next = BIND_PRESSED(input, RARCH_CHEAT_INDEX_PLUS);
-   pressed_prev = BIND_PRESSED(input, RARCH_CHEAT_INDEX_MINUS);
-   pressed_toggle = BIND_PRESSED(input, RARCH_CHEAT_TOGGLE);
-
    if (pressed_next && !old_pressed_next)
       cheat_manager_index_next(g_extern.cheat);
    else if (pressed_prev && !old_pressed_prev)
       cheat_manager_index_prev(g_extern.cheat);
    else if (pressed_toggle && !old_pressed_toggle)
       cheat_manager_toggle(g_extern.cheat);
-
-   old_pressed_prev = pressed_prev;
-   old_pressed_next = pressed_next;
-   old_pressed_toggle = pressed_toggle;
 }
 
 void rarch_disk_control_append_image(const char *path)
@@ -2744,20 +2686,12 @@ void rarch_disk_control_set_index(unsigned next_index)
    }
 }
 
-static void check_disk(retro_input_t input)
+static void check_disk(
+      bool pressed_eject, bool old_pressed_eject,
+      bool pressed_next,  bool old_pressed_next)
 {
-   bool pressed_eject               = false;
-   bool pressed_next                = false;
-   static bool old_pressed_eject    = false;
-   static bool old_pressed_next     = false;
    const struct retro_disk_control_callback *control = 
       (const struct retro_disk_control_callback*)&g_extern.system.disk_control;
-
-   if (!control->get_num_images)
-      return;
-
-   pressed_eject = BIND_PRESSED(input, RARCH_DISK_EJECT_TOGGLE);
-   pressed_next  = BIND_PRESSED(input, RARCH_DISK_NEXT);
 
    if (pressed_eject && !old_pressed_eject)
    {
@@ -2778,36 +2712,22 @@ static void check_disk(retro_input_t input)
       else
          RARCH_ERR("Got invalid disk index from libretro.\n");
    }
-
-   old_pressed_eject = pressed_eject;
-   old_pressed_next  = pressed_next;
 }
 
-static void check_screenshot(retro_input_t input)
+static void check_screenshot(bool pressed, bool old_pressed)
 {
-   static bool old_pressed = false;
-   bool pressed            = BIND_PRESSED(input, RARCH_SCREENSHOT);
-
    if (pressed && !old_pressed)
       rarch_main_command(RARCH_CMD_TAKE_SCREENSHOT);
-
-   old_pressed = pressed;
 }
 
-static void check_mute(retro_input_t input)
+static void check_mute(bool pressed, bool old_pressed)
 {
-   static bool old_pressed = false;
-   bool pressed            = BIND_PRESSED(input, RARCH_MUTE);
-
-   if (!g_extern.audio_active)
-      return;
-
    if (pressed && !old_pressed)
    {
+      const char *msg = !g_extern.audio_data.mute ?
+         "Audio muted." : "Audio unmuted.";
       g_extern.audio_data.mute = !g_extern.audio_data.mute;
 
-      const char *msg = g_extern.audio_data.mute ?
-         "Audio muted." : "Audio unmuted.";
       msg_queue_clear(g_extern.msg_queue);
       msg_queue_push(g_extern.msg_queue, msg, 1, 180);
 
@@ -2824,16 +2744,12 @@ static void check_mute(retro_input_t input)
 
       RARCH_LOG("%s\n", msg);
    }
-
-   old_pressed = pressed;
 }
 
-static void check_volume(retro_input_t input)
+static void check_volume(bool pressed_up, bool pressed_down)
 {
    char msg[256];
    float db_change   = 0.0f;
-   bool pressed_up   = BIND_PRESSED(input, RARCH_VOLUME_UP);
-   bool pressed_down = BIND_PRESSED(input, RARCH_VOLUME_DOWN);
 
    if (!pressed_up && !pressed_down)
       return;
@@ -2856,18 +2772,15 @@ static void check_volume(retro_input_t input)
 }
 
 #ifdef HAVE_NETPLAY
-
-static void check_netplay_flip(retro_input_t input)
+static void check_netplay_flip(bool pressed, bool old_pressed,
+      bool fullscreen_toggle_pressed, bool old_fullscreen_toggle_pressed)
 {
-   static bool old_pressed = false;
-   bool pressed            = BIND_PRESSED(input, RARCH_NETPLAY_FLIP);
-
    if (pressed && !old_pressed)
       netplay_flip_players(g_extern.netplay);
 
-   old_pressed = pressed;
-
-   rarch_check_fullscreen(BIND_PRESSED(input, RARCH_FULLSCREEN_TOGGLE_KEY));
+   rarch_check_fullscreen(
+         fullscreen_toggle_pressed,
+         old_fullscreen_toggle_pressed);
 }
 #endif
 
@@ -2895,27 +2808,16 @@ void rarch_check_block_hotkey(bool enable_hotkey)
 }
 
 #ifdef HAVE_OVERLAY
-void rarch_check_overlay(bool pressed)
+void rarch_check_overlay(bool pressed, bool old_pressed)
 {
-   static bool old_pressed = false;
-
-   if (!driver.overlay)
-      return;
-
    if (pressed && !old_pressed)
       input_overlay_next(driver.overlay);
-
-   old_pressed = pressed;
 }
 #endif
 
-static void check_grab_mouse_toggle(retro_input_t input)
+static void check_grab_mouse_toggle(bool pressed, bool old_pressed)
 {
-   static bool old_pressed       = false;
    static bool grab_mouse_state  = false;
-   bool pressed                  = 
-      BIND_PRESSED(input, RARCH_GRAB_MOUSE_TOGGLE) &&
-      driver.input->grab_mouse;
 
    if (pressed && !old_pressed)
    {
@@ -2926,58 +2828,133 @@ static void check_grab_mouse_toggle(retro_input_t input)
       if (driver.video_poke && driver.video_poke->show_mouse)
          driver.video_poke->show_mouse(driver.video_data, !grab_mouse_state);
    }
-
-   old_pressed = pressed;
 }
 
-static void do_state_checks(retro_input_t input)
+static void do_state_checks(retro_input_t input, retro_input_t old_input)
 {
-   rarch_check_block_hotkey(BIND_PRESSED(input, RARCH_ENABLE_HOTKEY));
+   rarch_check_block_hotkey(
+         BIND_PRESSED(input, RARCH_ENABLE_HOTKEY));
 
-   check_screenshot(input);
-   check_mute(input);
-   check_volume(input);
+   check_screenshot(
+         BIND_PRESSED(input, RARCH_SCREENSHOT),
+         BIND_PRESSED(old_input, RARCH_SCREENSHOT)
+         );
+
+   if (g_extern.audio_active)
+      check_mute(
+            BIND_PRESSED(input, RARCH_MUTE),
+            BIND_PRESSED(old_input, RARCH_MUTE)
+            );
+
+   check_volume(
+         BIND_PRESSED(input, RARCH_VOLUME_UP),
+         BIND_PRESSED(old_input, RARCH_VOLUME_DOWN)
+         );
 
    check_turbo();
 
-   check_grab_mouse_toggle(input);
+   if (driver.input->grab_mouse)
+      check_grab_mouse_toggle(
+            BIND_PRESSED(input, RARCH_GRAB_MOUSE_TOGGLE),
+            BIND_PRESSED(old_input, RARCH_GRAB_MOUSE_TOGGLE)
+            );
 
 #ifdef HAVE_OVERLAY
-   rarch_check_overlay(BIND_PRESSED(input, RARCH_OVERLAY_NEXT));
+   if (driver.overlay)
+      rarch_check_overlay(
+            BIND_PRESSED(input, RARCH_OVERLAY_NEXT),
+            BIND_PRESSED(old_input, RARCH_OVERLAY_NEXT)
+            );
 #endif
 
 #ifdef HAVE_NETPLAY
    if (g_extern.netplay)
    {
-      check_netplay_flip(input);
+      check_netplay_flip(
+            BIND_PRESSED(input, RARCH_NETPLAY_FLIP),
+            BIND_PRESSED(old_input, RARCH_NETPLAY_FLIP),
+            BIND_PRESSED(input, RARCH_FULLSCREEN_TOGGLE_KEY),
+            BIND_PRESSED(old_input, RARCH_FULLSCREEN_TOGGLE_KEY)
+            );
       return;
    }
 #endif
-   check_pause(input);
-   check_oneshot(input);
+   check_pause(input, old_input);
 
-   if (rarch_check_fullscreen(BIND_PRESSED(input, RARCH_FULLSCREEN_TOGGLE_KEY))
+   check_oneshot(
+         BIND_PRESSED(input, RARCH_FRAMEADVANCE),
+         BIND_PRESSED(old_input, RARCH_FRAMEADVANCE),
+         BIND_PRESSED(input, RARCH_REWIND),
+         BIND_PRESSED(old_input, RARCH_REWIND)
+         );
+
+   if (rarch_check_fullscreen(
+            BIND_PRESSED(input, RARCH_FULLSCREEN_TOGGLE_KEY),
+            BIND_PRESSED(old_input, RARCH_FULLSCREEN_TOGGLE_KEY)
+            )
          && g_extern.is_paused)
       rarch_render_cached_frame();
 
    if (g_extern.is_paused && !g_extern.is_oneshot)
       return;
 
-   check_fast_forward_button(input);
+   check_fast_forward_button(
+         BIND_PRESSED(input, RARCH_FAST_FORWARD_KEY),
+         BIND_PRESSED(old_input, RARCH_FAST_FORWARD_KEY),
+         BIND_PRESSED(input, RARCH_FAST_FORWARD_HOLD_KEY),
+         BIND_PRESSED(old_input, RARCH_FAST_FORWARD_HOLD_KEY)
+         );
 
-   check_stateslots(input);
-   check_savestates(input, g_extern.bsv.movie);
+   check_stateslots(
+         BIND_PRESSED(input, RARCH_STATE_SLOT_PLUS),
+         BIND_PRESSED(old_input, RARCH_STATE_SLOT_PLUS),
+         BIND_PRESSED(input, RARCH_STATE_SLOT_MINUS),
+         BIND_PRESSED(old_input, RARCH_STATE_SLOT_MINUS)
+         );
 
-   check_rewind(input);
-   check_slowmotion(input);
+   check_savestates(
+         BIND_PRESSED(input, RARCH_SAVE_STATE_KEY),
+         BIND_PRESSED(old_input, RARCH_SAVE_STATE_KEY),
+         BIND_PRESSED(input, RARCH_LOAD_STATE_KEY),
+         BIND_PRESSED(old_input, RARCH_LOAD_STATE_KEY),
+         g_extern.bsv.movie);
 
-   check_movie(input);
+   check_rewind(BIND_PRESSED(input, RARCH_REWIND));
 
-   check_shader_dir(input);
-   check_cheats(input);
-   check_disk(input);
+   check_slowmotion(
+         BIND_PRESSED(input, RARCH_SLOWMOTION));
 
-   check_reset(input);
+   check_movie(
+         BIND_PRESSED(input, RARCH_MOVIE_RECORD_TOGGLE),
+         BIND_PRESSED(old_input, RARCH_MOVIE_RECORD_TOGGLE));
+
+   check_shader_dir(
+         BIND_PRESSED(input, RARCH_SHADER_NEXT),
+         BIND_PRESSED(old_input, RARCH_SHADER_NEXT),
+         BIND_PRESSED(input, RARCH_SHADER_PREV),
+         BIND_PRESSED(old_input, RARCH_SHADER_PREV)
+         );
+
+   if (g_extern.cheat)
+      check_cheats(
+            BIND_PRESSED(input, RARCH_CHEAT_INDEX_PLUS),
+            BIND_PRESSED(old_input, RARCH_CHEAT_INDEX_PLUS),
+            BIND_PRESSED(input, RARCH_CHEAT_INDEX_MINUS),
+            BIND_PRESSED(old_input, RARCH_CHEAT_INDEX_MINUS),
+            BIND_PRESSED(input, RARCH_CHEAT_TOGGLE),
+            BIND_PRESSED(old_input, RARCH_CHEAT_TOGGLE)
+            );
+
+   if (g_extern.system.disk_control.get_num_images)
+      check_disk(
+            BIND_PRESSED(input, RARCH_DISK_EJECT_TOGGLE),
+            BIND_PRESSED(old_input, RARCH_DISK_EJECT_TOGGLE),
+            BIND_PRESSED(input, RARCH_DISK_NEXT),
+            BIND_PRESSED(old_input, RARCH_DISK_NEXT));
+
+   check_reset(
+         BIND_PRESSED(input, RARCH_RESET),
+         BIND_PRESSED(old_input, RARCH_RESET));
 }
 
 static void init_state(void)
@@ -3202,23 +3179,18 @@ error:
    return 1;
 }
 
-static bool check_enter_menu(retro_input_t input)
+static bool check_enter_menu(bool pressed, bool old_pressed)
 {
-   static bool old_rmenu_toggle = true;
-   bool rmenu_toggle            = BIND_PRESSED(input, RARCH_MENU_TOGGLE)
-      || (g_extern.libretro_dummy && !old_rmenu_toggle);
+   bool rmenu_toggle = pressed || (g_extern.libretro_dummy && !old_pressed);
 
-   /* Always go into menu if dummy core is loaded. */
-   if (rmenu_toggle && !old_rmenu_toggle)
+   if (rmenu_toggle && !old_pressed)
    {
+      /* Always go into menu if dummy core is loaded. */
       rarch_main_set_state(RARCH_ACTION_STATE_MENU_PREINIT);
-      old_rmenu_toggle = true;
       g_extern.system.frame_time_last = 0;
-
       return true;
    }
 
-   old_rmenu_toggle = rmenu_toggle;
    return false;
 }
 
@@ -3686,8 +3658,9 @@ void rarch_main_command(unsigned cmd)
 bool rarch_main_iterate(void)
 {
    unsigned i;
+   retro_input_t old_input;
    retro_input_t input = input_keys_pressed_func(RARCH_FIRST_META_KEY,
-         RARCH_BIND_LIST_END);
+         RARCH_BIND_LIST_END, &old_input);
 
    /* SHUTDOWN on consoles should exit RetroArch completely. */
    if (g_extern.system.shutdown)
@@ -3698,7 +3671,10 @@ bool rarch_main_iterate(void)
          !driver.video->alive(driver.video_data))
       return false;
 
-   if (check_enter_menu(input))
+   if (check_enter_menu(
+            BIND_PRESSED(input, RARCH_MENU_TOGGLE),
+               BIND_PRESSED(old_input, RARCH_MENU_TOGGLE)
+               ))
       return false; /* Enter menu, don't exit. */
 
    if (g_extern.exec)
@@ -3708,7 +3684,7 @@ bool rarch_main_iterate(void)
    }
 
    /* Checks for stuff like fullscreen, save states, etc. */
-   do_state_checks(input);
+   do_state_checks(input, old_input);
 
    if (g_extern.is_paused && !g_extern.is_oneshot)
    {
