@@ -59,10 +59,10 @@
  * that the button must go from pressed to unpressed back to pressed 
  * to be able to toggle between then.
  */
-static void check_fast_forward_button(bool pressed, bool old_pressed,
+static void check_fast_forward_button(bool fastforward_pressed,
       bool hold_pressed, bool old_hold_pressed)
 {
-   if (pressed && !old_pressed)
+   if (fastforward_pressed)
    {
       driver.nonblock_state = !driver.nonblock_state;
       driver_set_nonblock_state(driver.nonblock_state);
@@ -2127,21 +2127,6 @@ static void main_state(unsigned cmd)
 }
 
 
-static void check_savestates(
-      bool should_savestate, bool old_should_savestate,
-      bool should_loadstate, bool old_should_loadstate,
-      bool immutable)
-{
-   if (should_savestate && !old_should_savestate)
-      rarch_main_command(RARCH_CMD_SAVE_STATE);
-
-   if (!immutable)
-   {
-      if (!should_savestate && should_loadstate && !old_should_loadstate)
-         rarch_main_command(RARCH_CMD_LOAD_STATE);
-   }
-}
-
 static void set_fullscreen(bool fullscreen)
 {
    g_settings.video.fullscreen = fullscreen;
@@ -2155,19 +2140,17 @@ static void set_fullscreen(bool fullscreen)
    driver.input->poll(driver.input_data);
 }
 
-bool rarch_check_fullscreen(bool pressed, bool old_pressed)
+bool rarch_check_fullscreen(bool pressed)
 {
-   /* If we go fullscreen we drop all drivers and 
-    * reinitialize to be safe. */
-   bool toggle = pressed && !old_pressed;
-
-   if (toggle)
+   if (pressed)
    {
+      /* If we go fullscreen we drop all drivers and 
+       * reinitialize to be safe. */
       g_settings.video.fullscreen = !g_settings.video.fullscreen;
       rarch_main_command(RARCH_CMD_REINIT);
    }
 
-   return toggle;
+   return pressed;
 }
 
 static void state_slot(void)
@@ -2186,17 +2169,17 @@ static void state_slot(void)
    RARCH_LOG("%s\n", msg);
 }
 
-static void check_stateslots(bool pressed_increase, bool old_pressed_increase,
-      bool pressed_decrease, bool old_pressed_decrease)
+static void check_stateslots(
+      bool pressed_increase, bool pressed_decrease)
 {
    /* Save state slots */
-   if (pressed_increase && !old_pressed_increase)
+   if (pressed_increase)
    {
       g_settings.state_slot++;
       state_slot();
    }
 
-   if (pressed_decrease && !old_pressed_decrease)
+   if (pressed_decrease)
    {
       if (g_settings.state_slot > 0)
          g_settings.state_slot--;
@@ -2368,17 +2351,12 @@ static void check_movie_playback(bool pressed)
    g_extern.bsv.movie_playback = false;
 }
 
-static void check_movie(bool new_pressed, bool old_pressed)
+static void check_movie(void)
 {
-   bool pressed = new_pressed && !old_pressed;
-
-   if (!pressed)
-      return;
-
    if (g_extern.bsv.movie_playback)
-      check_movie_playback(pressed);
+      check_movie_playback(true);
    else
-      check_movie_record(pressed);
+      check_movie_record(true);
 }
 
 static void check_pause(
@@ -2436,19 +2414,12 @@ static void check_pause(
 }
 
 static void check_oneshot(
-      bool new_state,        bool old_state,
-      bool new_rewind_state, bool old_rewind_state)
+      bool oneshot_pressed,
+      bool rewind_pressed)
 {
-   g_extern.is_oneshot = (new_state && !old_state);
    /* Rewind buttons works like FRAMEREWIND when paused.
     * We will one-shot in that case. */
-   g_extern.is_oneshot |= new_rewind_state && !old_rewind_state;
-}
-
-static void check_reset(bool pressed, bool old_pressed)
-{
-   if (pressed && !old_pressed)
-      rarch_main_command(RARCH_CMD_RESET);
+   g_extern.is_oneshot = oneshot_pressed | rewind_pressed;
 }
 
 static void check_turbo(void)
@@ -2490,22 +2461,20 @@ static void check_turbo(void)
                RETRO_DEVICE_JOYPAD, 0, RARCH_TURBO_ENABLE);
 }
 
-static void check_shader_dir(
-      bool pressed_next, bool old_pressed_next,
-      bool pressed_prev, bool old_pressed_prev)
+static void check_shader_dir(bool pressed_next, bool pressed_prev)
 {
    bool should_apply = false;
 
    if (!g_extern.shader_dir.list || !driver.video->set_shader)
       return;
 
-   if (pressed_next && !old_pressed_next)
+   if (pressed_next)
    {
       should_apply = true;
       g_extern.shader_dir.ptr = (g_extern.shader_dir.ptr + 1) %
          g_extern.shader_dir.list->size;
    }
-   else if (pressed_prev && !old_pressed_prev)
+   else if (pressed_prev)
    {
       should_apply = true;
       if (g_extern.shader_dir.ptr == 0)
@@ -2540,19 +2509,6 @@ static void check_shader_dir(
       if (!driver.video->set_shader(driver.video_data, type, shader))
          RARCH_WARN("Failed to apply shader.\n");
    }
-}
-
-static void check_cheats(
-      bool pressed_next,   bool old_pressed_next,
-      bool pressed_prev,   bool old_pressed_prev,
-      bool pressed_toggle, bool old_pressed_toggle)
-{
-   if (pressed_next && !old_pressed_next)
-      cheat_manager_index_next(g_extern.cheat);
-   else if (pressed_prev && !old_pressed_prev)
-      cheat_manager_index_prev(g_extern.cheat);
-   else if (pressed_toggle && !old_pressed_toggle)
-      cheat_manager_toggle(g_extern.cheat);
 }
 
 void rarch_disk_control_append_image(const char *path)
@@ -2684,64 +2640,27 @@ void rarch_disk_control_set_index(unsigned next_index)
    }
 }
 
-static void check_disk(
-      bool pressed_eject, bool old_pressed_eject,
-      bool pressed_next,  bool old_pressed_next)
+static void check_mute(void)
 {
-   const struct retro_disk_control_callback *control = 
-      (const struct retro_disk_control_callback*)&g_extern.system.disk_control;
+   const char *msg = !g_extern.audio_data.mute ?
+      "Audio muted." : "Audio unmuted.";
+   g_extern.audio_data.mute = !g_extern.audio_data.mute;
 
-   if (pressed_eject && !old_pressed_eject)
+   msg_queue_clear(g_extern.msg_queue);
+   msg_queue_push(g_extern.msg_queue, msg, 1, 180);
+
+   if (driver.audio_data)
    {
-      bool new_state = !control->get_eject_state();
-      rarch_disk_control_set_eject(new_state, true);
-   }
-   else if (pressed_next && !old_pressed_next)
-   {
-      unsigned num_disks = control->get_num_images();
-      unsigned current   = control->get_image_index();
-      if (num_disks && num_disks != UINT_MAX)
+      if (g_extern.audio_data.mute)
+         driver.audio->stop(driver.audio_data);
+      else if (!driver.audio->start(driver.audio_data))
       {
-         /* Use "no disk" state when index == num_disks. */
-         unsigned next_index = current >= num_disks ?
-            0 : ((current + 1) % (num_disks + 1));
-         rarch_disk_control_set_index(next_index);
+         RARCH_ERR("Failed to unmute audio.\n");
+         g_extern.audio_active = false;
       }
-      else
-         RARCH_ERR("Got invalid disk index from libretro.\n");
    }
-}
 
-static void check_screenshot(bool pressed, bool old_pressed)
-{
-   if (pressed && !old_pressed)
-      rarch_main_command(RARCH_CMD_TAKE_SCREENSHOT);
-}
-
-static void check_mute(bool pressed, bool old_pressed)
-{
-   if (pressed && !old_pressed)
-   {
-      const char *msg = !g_extern.audio_data.mute ?
-         "Audio muted." : "Audio unmuted.";
-      g_extern.audio_data.mute = !g_extern.audio_data.mute;
-
-      msg_queue_clear(g_extern.msg_queue);
-      msg_queue_push(g_extern.msg_queue, msg, 1, 180);
-
-      if (driver.audio_data)
-      {
-         if (g_extern.audio_data.mute)
-            driver.audio->stop(driver.audio_data);
-         else if (!driver.audio->start(driver.audio_data))
-         {
-            RARCH_ERR("Failed to unmute audio.\n");
-            g_extern.audio_active = false;
-         }
-      }
-
-      RARCH_LOG("%s\n", msg);
-   }
+   RARCH_LOG("%s\n", msg);
 }
 
 static void check_volume(bool pressed_up, bool pressed_down)
@@ -2770,15 +2689,12 @@ static void check_volume(bool pressed_up, bool pressed_down)
 }
 
 #ifdef HAVE_NETPLAY
-static void check_netplay_flip(bool pressed, bool old_pressed,
-      bool fullscreen_toggle_pressed, bool old_fullscreen_toggle_pressed)
+static void check_netplay_flip(bool pressed, bool fullscreen_toggle_pressed)
 {
-   if (pressed && !old_pressed)
+   if (pressed)
       netplay_flip_players(g_extern.netplay);
 
-   rarch_check_fullscreen(
-         fullscreen_toggle_pressed,
-         old_fullscreen_toggle_pressed);
+   rarch_check_fullscreen(fullscreen_toggle_pressed);
 }
 #endif
 
@@ -2805,88 +2721,136 @@ void rarch_check_block_hotkey(bool enable_hotkey)
    driver.block_libretro_input = use_hotkey_enable && enable_hotkey;
 }
 
-#ifdef HAVE_OVERLAY
-void rarch_check_overlay(bool pressed, bool old_pressed)
-{
-   if (pressed && !old_pressed)
-      input_overlay_next(driver.overlay);
-}
-#endif
-
-static void check_grab_mouse_toggle(bool pressed, bool old_pressed)
+static void check_grab_mouse_toggle(void)
 {
    static bool grab_mouse_state  = false;
 
-   if (pressed && !old_pressed)
-   {
-      grab_mouse_state = !grab_mouse_state;
-      RARCH_LOG("Grab mouse state: %s.\n", grab_mouse_state ? "yes" : "no");
-      driver.input->grab_mouse(driver.input_data, grab_mouse_state);
+   grab_mouse_state = !grab_mouse_state;
+   RARCH_LOG("Grab mouse state: %s.\n", grab_mouse_state ? "yes" : "no");
+   driver.input->grab_mouse(driver.input_data, grab_mouse_state);
 
-      if (driver.video_poke && driver.video_poke->show_mouse)
-         driver.video_poke->show_mouse(driver.video_data, !grab_mouse_state);
-   }
+   if (driver.video_poke && driver.video_poke->show_mouse)
+      driver.video_poke->show_mouse(driver.video_data, !grab_mouse_state);
 }
 
-static void do_state_checks(retro_input_t input, retro_input_t old_input)
+static void check_disk_eject(
+      const struct retro_disk_control_callback *control)
+{
+   bool new_state = !control->get_eject_state();
+   rarch_disk_control_set_eject(new_state, true);
+}
+
+static void check_disk_next(
+      const struct retro_disk_control_callback *control)
+{
+   unsigned num_disks = control->get_num_images();
+   unsigned current   = control->get_image_index();
+   if (num_disks && num_disks != UINT_MAX)
+   {
+      /* Use "no disk" state when index == num_disks. */
+      unsigned next_index = current >= num_disks ?
+         0 : ((current + 1) % (num_disks + 1));
+      rarch_disk_control_set_index(next_index);
+   }
+   else
+      RARCH_ERR("Got invalid disk index from libretro.\n");
+}
+
+static void do_state_checks(
+      retro_input_t input, retro_input_t old_input,
+      retro_input_t trigger_input)
 {
    check_block_hotkey_func(input);
 
-   check_screenshot_func(input, old_input);
+   if (BIND_PRESSED(trigger_input, RARCH_SCREENSHOT))
+      rarch_main_command(RARCH_CMD_TAKE_SCREENSHOT);
 
    if (g_extern.audio_active)
-      check_mute_func(input, old_input);
+   {
+      if (BIND_PRESSED(trigger_input, RARCH_MUTE))
+         check_mute();
+   }
 
    check_volume_func(input, old_input);
 
    check_turbo();
 
    if (driver.input->grab_mouse)
-      check_grab_mouse_toggle_func(input, old_input);
+   {
+      if (BIND_PRESSED(trigger_input, RARCH_GRAB_MOUSE_TOGGLE))
+         check_grab_mouse_toggle();
+   }
 
 #ifdef HAVE_OVERLAY
    if (driver.overlay)
-      check_overlay_func(input, old_input);
+   {
+      if (BIND_PRESSED(trigger_input, RARCH_OVERLAY_NEXT))
+         input_overlay_next(driver.overlay);
+   }
 #endif
 
 #ifdef HAVE_NETPLAY
    if (g_extern.netplay)
    {
-      check_netplay_flip_func(input,  old_input);
+      check_netplay_flip_func(trigger_input);
       return;
    }
 #endif
    check_pause_func(input, old_input);
 
-   check_oneshot_func(input, old_input);
+   check_oneshot_func(trigger_input);
 
-   if (check_fullscreen_func(input, old_input) && g_extern.is_paused)
+   if (check_fullscreen_func(trigger_input) && g_extern.is_paused)
       rarch_render_cached_frame();
 
    if (g_extern.is_paused && !g_extern.is_oneshot)
       return;
 
-   check_fast_forward_button_func(input, old_input);
+   check_fast_forward_button_func(input, old_input, trigger_input);
 
-   check_stateslots_func(input, old_input);
+   check_stateslots_func(trigger_input);
 
-   check_savestates_func(input, old_input);
+   if (BIND_PRESSED(trigger_input, RARCH_SAVE_STATE_KEY))
+      rarch_main_command(RARCH_CMD_SAVE_STATE);
+   else if (!g_extern.bsv.movie) /* Immutable */
+   {
+      if (BIND_PRESSED(trigger_input, RARCH_LOAD_STATE_KEY))
+         rarch_main_command(RARCH_CMD_LOAD_STATE);
+   }
 
    check_rewind_func(input);
 
    check_slowmotion_func(input);
 
-   check_movie_func(input, old_input);
+   if (BIND_PRESSED(trigger_input, RARCH_MOVIE_RECORD_TOGGLE))
+      check_movie();
 
-   check_shader_dir_func(input, old_input);
+   check_shader_dir_func(trigger_input);
 
    if (g_extern.cheat)
-      check_cheats_func(input, old_input);
+   {
+      if (BIND_PRESSED(trigger_input, RARCH_CHEAT_INDEX_PLUS))
+         cheat_manager_index_next(g_extern.cheat);
+      else if (BIND_PRESSED(trigger_input, RARCH_CHEAT_INDEX_MINUS))
+         cheat_manager_index_prev(g_extern.cheat);
+      else if (BIND_PRESSED(trigger_input, RARCH_CHEAT_TOGGLE))
+         cheat_manager_toggle(g_extern.cheat);
+   }
 
    if (g_extern.system.disk_control.get_num_images)
-      check_disk_func(input, old_input);
+   {
+      const struct retro_disk_control_callback *control = 
+         (const struct retro_disk_control_callback*)
+         &g_extern.system.disk_control;
 
-   check_reset_func(input, old_input);
+      if (BIND_PRESSED(trigger_input, RARCH_DISK_EJECT_TOGGLE))
+         check_disk_eject(control);
+      else if (BIND_PRESSED(trigger_input, RARCH_DISK_NEXT))
+         check_disk_next(control);
+   }
+
+   if (BIND_PRESSED(trigger_input, RARCH_RESET))
+      rarch_main_command(RARCH_CMD_RESET);
 }
 
 static void init_state(void)
@@ -3590,9 +3554,11 @@ void rarch_main_command(unsigned cmd)
 bool rarch_main_iterate(void)
 {
    unsigned i;
-   retro_input_t old_input;
+   retro_input_t old_input, trigger_input;
    retro_input_t input = input_keys_pressed_func(RARCH_FIRST_META_KEY,
          RARCH_BIND_LIST_END, &old_input);
+
+   trigger_input = input & ~old_input;
 
    /* SHUTDOWN on consoles should exit RetroArch completely. */
    if (g_extern.system.shutdown)
@@ -3612,7 +3578,7 @@ bool rarch_main_iterate(void)
    }
 
    /* Checks for stuff like fullscreen, save states, etc. */
-   do_state_checks(input, old_input);
+   do_state_checks(input, old_input, trigger_input);
 
    if (g_extern.is_paused && !g_extern.is_oneshot)
    {

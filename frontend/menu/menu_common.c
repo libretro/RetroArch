@@ -301,7 +301,7 @@ static unsigned input_frame(uint64_t trigger_state)
 
 bool menu_iterate(void)
 {
-   retro_input_t old_state = 0;
+   retro_input_t old_state = 0, trigger_input = 0;
    unsigned action = MENU_ACTION_NOOP;
    static bool initial_held = true;
    static bool first_held = false;
@@ -323,11 +323,14 @@ bool menu_iterate(void)
    retro_input_t input = input_keys_pressed_func(RARCH_FIRST_META_KEY,
          RARCH_BIND_LIST_END, &old_state);
 
+   trigger_input = input & ~old_state;
+
    check_block_hotkey_func(input);
 #ifdef HAVE_OVERLAY
-   check_overlay_func(input, old_state);
+   if (BIND_PRESSED(trigger_input, RARCH_OVERLAY_NEXT))
+         input_overlay_next(driver.overlay);
 #endif
-   check_fullscreen_func(input, old_state);
+   check_fullscreen_func(trigger_input);
 
    if (check_quit_key_func(input) || !driver.video->alive(driver.video_data))
    {
