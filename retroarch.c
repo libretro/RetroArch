@@ -2381,18 +2381,17 @@ static void check_movie(bool new_pressed, bool old_pressed)
       check_movie_record(pressed);
 }
 
-static void check_pause(retro_input_t input, retro_input_t old_input)
+static void check_pause(
+      bool new_state, bool old_state,
+      bool frameadvance_pressed)
 {
-   static bool old_state    = false;
    static bool old_focus    = true;
    bool focus               = true;
    bool has_set_audio_stop  = false;
    bool has_set_audio_start = false;
-   bool new_state           = BIND_PRESSED(input, RARCH_PAUSE_TOGGLE);
 
    /* FRAMEADVANCE will set us into pause mode. */
-   new_state |= !g_extern.is_paused &&
-      BIND_PRESSED(input, RARCH_FRAMEADVANCE);
+   new_state |= !g_extern.is_paused && frameadvance_pressed;
 
    if (g_settings.pause_nonactive)
       focus = driver.video->focus(driver.video_data);
@@ -2434,7 +2433,6 @@ static void check_pause(retro_input_t input, retro_input_t old_input)
       rarch_render_cached_frame();
 
    old_focus = focus;
-   old_state = new_state;
 }
 
 static void check_oneshot(
@@ -2858,7 +2856,7 @@ static void do_state_checks(retro_input_t input, retro_input_t old_input)
       return;
    }
 #endif
-   check_pause(input, old_input);
+   check_pause_func(input, old_input);
 
    check_oneshot_func(input, old_input);
 
@@ -3624,7 +3622,6 @@ bool rarch_main_iterate(void)
       return true;
    }
 
-   /* Run libretro for one frame. */
 #if defined(HAVE_THREADS)
    lock_autosave();
 #endif
@@ -3652,6 +3649,7 @@ bool rarch_main_iterate(void)
    if ((g_settings.video.frame_delay > 0) && !driver.nonblock_state)
       rarch_sleep(g_settings.video.frame_delay);
 
+   /* Run libretro for one frame. */
    update_frame_time();
    pretro_run();
    limit_frame_time();
