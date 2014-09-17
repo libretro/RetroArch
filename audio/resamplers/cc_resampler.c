@@ -28,13 +28,8 @@
 #define RARCH_LOG(...) fprintf(stderr, __VA_ARGS__)
 #endif
 
-typedef struct audio_frame_int16
-{
-   int16_t l;
-   int16_t r;
-} audio_frame_int16_t;
 
-#ifdef _MIPS_ARCH_ALLEGREX1
+#ifdef _MIPS_ARCH_ALLEGREX
 static void resampler_CC_process(void *re_, struct resampler_data *data)
 {
    (void)re_;
@@ -121,7 +116,7 @@ static void resampler_CC_process(void *re_, struct resampler_data *data)
       outp++;
    }
 
-   /* The VFPU state is assumed to remain intact 
+   /* The VFPU state is assumed to remain intact
     * in-between calls to resampler_CC_process. */
 
 done:
@@ -150,6 +145,251 @@ static void *resampler_CC_init(double bandwidth_mod)
 
    RARCH_LOG("\nConvoluted Cosine resampler (VFPU): \n");
    return (void*)-1;
+}
+#elif defined(__SSE__)
+
+/* uses a fast polynomial approximation
+ * since SSE lacks native support for trigonometric functions
+ * cc_int is approximated with P(X) = X - (3/4)*X^3 + (1/4)*X^5
+ */
+
+
+#include <xmmintrin.h>
+
+#ifndef CC_RESAMPLER_PRECISION
+#define CC_RESAMPLER_PRECISION 1
+#endif
+
+typedef struct rarch_CC_resampler
+{
+   __m128 previous;
+   __m128 current;
+
+   float distance;
+   void (*process)(void *re, struct resampler_data *data);
+} rarch_CC_resampler_t;
+
+
+static void resampler_CC_downsample(void *re_, struct resampler_data *data)
+{
+   float ratio, b;
+   rarch_CC_resampler_t *re     = (rarch_CC_resampler_t*)re_;
+
+   audio_frame_float_t *inp     = (audio_frame_float_t*)data->data_in;
+   audio_frame_float_t *inp_max = (audio_frame_float_t*)(inp + data->input_frames);
+   audio_frame_float_t *outp    = (audio_frame_float_t*)data->data_out;
+
+   ratio = 1.0 / data->ratio;
+   b = data->ratio; /* cutoff frequency. */
+
+   __m128 vec_previous = _mm_loadu_ps((float*)&re->previous);
+   __m128 vec_current  = _mm_loadu_ps((float*)&re->current);
+
+   while (inp != inp_max)
+   {
+      __m128 vec_ratio =
+         _mm_mul_ps(_mm_set_ps1(ratio), _mm_set_ps(3.0, 2.0, 1.0, 0.0));
+      __m128 vec_w = _mm_sub_ps(_mm_set_ps1(re->distance), vec_ratio);
+
+      __m128 vec_w1 = _mm_add_ps(vec_w , _mm_set_ps1(0.5));
+      __m128 vec_w2 = _mm_sub_ps(vec_w , _mm_set_ps1(0.5));
+
+      __m128 vec_b = _mm_set_ps1(b);
+      vec_w1 = _mm_mul_ps(vec_w1, vec_b);
+      vec_w2 = _mm_mul_ps(vec_w2, vec_b);
+
+#if (CC_RESAMPLER_PRECISION > 0)
+      __m128 vec_ww1 = _mm_mul_ps(vec_w1, vec_w1);
+      __m128 vec_ww2 = _mm_mul_ps(vec_w2, vec_w2);
+
+
+      vec_ww1 = _mm_mul_ps(vec_ww1, _mm_sub_ps(_mm_set_ps1(3.0),vec_ww1));
+      vec_ww2 = _mm_mul_ps(vec_ww2, _mm_sub_ps(_mm_set_ps1(3.0),vec_ww2));
+
+      vec_ww1 = _mm_mul_ps(_mm_set_ps1(1.0/4.0), vec_ww1);
+      vec_ww2 = _mm_mul_ps(_mm_set_ps1(1.0/4.0), vec_ww2);
+
+      vec_w1  = _mm_mul_ps(vec_w1, _mm_sub_ps(_mm_set_ps1(1.0), vec_ww1));
+      vec_w2  = _mm_mul_ps(vec_w2, _mm_sub_ps(_mm_set_ps1(1.0), vec_ww2));
+#endif
+
+      vec_w1  = _mm_min_ps(vec_w1, _mm_set_ps1( 0.5));
+      vec_w2  = _mm_min_ps(vec_w2, _mm_set_ps1( 0.5));
+      vec_w1  = _mm_max_ps(vec_w1, _mm_set_ps1(-0.5));
+      vec_w2  = _mm_max_ps(vec_w2, _mm_set_ps1(-0.5));
+
+      vec_w   = _mm_sub_ps(vec_w1, vec_w2);
+
+      __m128 vec_w_previous =
+         _mm_shuffle_ps(vec_w,vec_w,_MM_SHUFFLE(1, 1, 0, 0));
+      __m128 vec_w_current  =
+         _mm_shuffle_ps(vec_w,vec_w,_MM_SHUFFLE(3, 3, 2, 2));
+
+      __m128 vec_in = _mm_loadl_pi(_mm_setzero_ps(),(__m64*)inp);
+      vec_in = _mm_shuffle_ps(vec_in,vec_in,_MM_SHUFFLE(1, 0, 1, 0));
+
+      vec_previous =
+         _mm_add_ps(vec_previous, _mm_mul_ps(vec_in, vec_w_previous));
+      vec_current  =
+         _mm_add_ps(vec_current, _mm_mul_ps(vec_in, vec_w_current));
+
+      re->distance++;
+      inp++;
+
+      if (re->distance > (ratio + 0.5))
+      {
+         _mm_storel_pi((__m64*)outp, vec_previous);
+         vec_previous =
+            _mm_shuffle_ps(vec_previous,vec_current,_MM_SHUFFLE(1, 0, 3, 2));
+         vec_current  =
+            _mm_shuffle_ps(vec_current,_mm_setzero_ps(),_MM_SHUFFLE(1, 0, 3, 2));
+
+         re->distance -= ratio;
+         outp++;
+      }
+   }
+
+   _mm_storeu_ps((float*)&re->previous, vec_previous);
+   _mm_storeu_ps((float*)&re->current,  vec_current);
+
+   data->output_frames = outp - (audio_frame_float_t*)data->data_out;
+}
+
+#ifndef min
+#define min(a, b) ((a) < (b) ? (a) : (b))
+#endif
+
+static void resampler_CC_upsample(void *re_, struct resampler_data *data)
+{
+   float b, ratio;
+   rarch_CC_resampler_t *re = (rarch_CC_resampler_t*)re_;
+
+   audio_frame_float_t *inp     = (audio_frame_float_t*)data->data_in;
+   audio_frame_float_t *inp_max = (audio_frame_float_t*)(inp + data->input_frames);
+   audio_frame_float_t *outp    = (audio_frame_float_t*)data->data_out;
+
+   b = min(data->ratio, 1.00); /* cutoff frequency. */
+   ratio = 1.0 / data->ratio;
+
+   __m128 vec_previous = _mm_loadu_ps((float*)&re->previous);
+   __m128 vec_current  = _mm_loadu_ps((float*)&re->current);
+
+
+
+   while (inp != inp_max)
+   {
+      __m128 vec_in = _mm_loadl_pi(_mm_setzero_ps(),(__m64*)inp);
+      vec_previous =
+         _mm_shuffle_ps(vec_previous,vec_current,_MM_SHUFFLE(1, 0, 3, 2));
+      vec_current  =
+         _mm_shuffle_ps(vec_current,vec_in,_MM_SHUFFLE(1, 0, 3, 2));
+
+      while (re->distance < 1.0)
+      {
+         __m128 vec_w =
+            _mm_add_ps(_mm_set_ps1(re->distance), _mm_set_ps(-2.0, -1.0, 0.0, 1.0));
+
+         __m128 vec_w1 = _mm_add_ps(vec_w , _mm_set_ps1(0.5));
+         __m128 vec_w2 = _mm_sub_ps(vec_w , _mm_set_ps1(0.5));
+
+         __m128 vec_b = _mm_set_ps1(b);
+         vec_w1 = _mm_mul_ps(vec_w1, vec_b);
+         vec_w2 = _mm_mul_ps(vec_w2, vec_b);
+
+#if (CC_RESAMPLER_PRECISION > 0)
+         __m128 vec_ww1 = _mm_mul_ps(vec_w1, vec_w1);
+         __m128 vec_ww2 = _mm_mul_ps(vec_w2, vec_w2);
+
+
+         vec_ww1 = _mm_mul_ps(vec_ww1,_mm_sub_ps(_mm_set_ps1(3.0),vec_ww1));
+         vec_ww2 = _mm_mul_ps(vec_ww2,_mm_sub_ps(_mm_set_ps1(3.0),vec_ww2));
+
+         vec_ww1 = _mm_mul_ps(_mm_set_ps1(1.0 / 4.0), vec_ww1);
+         vec_ww2 = _mm_mul_ps(_mm_set_ps1(1.0 / 4.0), vec_ww2);
+
+         vec_w1  = _mm_mul_ps(vec_w1, _mm_sub_ps(_mm_set_ps1(1.0), vec_ww1));
+         vec_w2  = _mm_mul_ps(vec_w2, _mm_sub_ps(_mm_set_ps1(1.0), vec_ww2));
+#endif
+
+         vec_w1  = _mm_min_ps(vec_w1, _mm_set_ps1( 0.5));
+         vec_w2  = _mm_min_ps(vec_w2, _mm_set_ps1( 0.5));
+         vec_w1  = _mm_max_ps(vec_w1, _mm_set_ps1(-0.5));
+         vec_w2  = _mm_max_ps(vec_w2, _mm_set_ps1(-0.5));
+
+         vec_w   = _mm_sub_ps(vec_w1, vec_w2);
+
+         __m128 vec_w_previous =
+            _mm_shuffle_ps(vec_w,vec_w,_MM_SHUFFLE(1, 1, 0, 0));
+         __m128 vec_w_current  =
+            _mm_shuffle_ps(vec_w,vec_w,_MM_SHUFFLE(3, 3, 2, 2));
+
+         __m128 vec_out =  _mm_mul_ps(vec_previous, vec_w_previous);
+         vec_out = _mm_add_ps(vec_out, _mm_mul_ps(vec_current, vec_w_current));
+         vec_out =
+            _mm_add_ps(vec_out, _mm_shuffle_ps(vec_out,vec_out,_MM_SHUFFLE(3, 2, 3, 2)));
+
+         _mm_storel_pi((__m64*)outp,vec_out);
+
+         re->distance += ratio;
+         outp++;
+      }
+
+      re->distance -= 1.0;
+      inp++;
+   }
+
+   _mm_storeu_ps((float*)&re->previous, vec_previous);
+   _mm_storeu_ps((float*)&re->current,  vec_current);
+
+   data->output_frames = outp - (audio_frame_float_t*)data->data_out;
+}
+
+
+static void resampler_CC_process(void *re_, struct resampler_data *data)
+{
+   rarch_CC_resampler_t *re = (rarch_CC_resampler_t*)re_;
+   re->process(re_, data);
+}
+
+static void resampler_CC_free(void *re_)
+{
+   rarch_CC_resampler_t *re = (rarch_CC_resampler_t*)re_;
+   if (re)
+      free(re);
+}
+
+static void *resampler_CC_init(double bandwidth_mod)
+{
+   int i;
+   rarch_CC_resampler_t *re = (rarch_CC_resampler_t*)
+      calloc(1, sizeof(rarch_CC_resampler_t));
+   if (!re)
+      return NULL;
+
+   for (i = 0; i < 4; i++)
+   {
+      re->previous = _mm_setzero_ps();
+      re->current    = _mm_setzero_ps();
+   }
+
+   RARCH_LOG("Convoluted Cosine resampler (SSE) : ");
+
+   /* variations of data->ratio around 0.75 are safer
+    * than around 1.0 for both up/downsampler. */
+   if (bandwidth_mod < 0.75)
+   {
+      RARCH_LOG("CC_downsample @%f \n", bandwidth_mod);
+      re->process = resampler_CC_downsample;
+      re->distance = 0.0;
+   }
+   else
+   {
+      RARCH_LOG("CC_upsample @%f \n", bandwidth_mod);
+      re->process = resampler_CC_upsample;
+      re->distance = 2.0;
+   }
+
+   return re;
 }
 #else
 
@@ -295,9 +535,9 @@ static void *resampler_CC_init(double bandwidth_mod)
 
    RARCH_LOG("Convoluted Cosine resampler (C) : ");
 
-   /* variations of data->ratio around 0.75 are safer 
+   /* variations of data->ratio around 0.75 are safer
     * than around 1.0 for both up/downsampler. */
-   if (bandwidth_mod < 0.75) 
+   if (bandwidth_mod < 0.75)
    {
       RARCH_LOG("CC_downsample @%f \n", bandwidth_mod);
       re->process = resampler_CC_downsample;
