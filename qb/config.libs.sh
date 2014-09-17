@@ -209,10 +209,18 @@ fi
 if [ "$HAVE_OPENGL" != 'no' ] && [ "$HAVE_GLES" != 'yes' ]; then
    if [ "$OS" = 'Darwin' ]; then
       check_lib CG "-framework Cg" cgCreateContext
+      [ "$HAVE_CG" = 'yes' ] && CG_LIBS='-framework Cg'
+   elif [ "$OS" = 'Win32' ]; then
+      check_lib_cxx CG -lcg cgCreateContext
+      [ "$HAVE_CG" = 'yes' ] && CG_LIBS='-lcg -lcgGL'
    else
       # On some distros, -lCg doesn't link against -lstdc++ it seems ...
       check_lib_cxx CG -lCg cgCreateContext
+      [ "$HAVE_CG" = 'yes' ] && CG_LIBS='-lCg -lCgGL'
    fi
+
+   # fix undefined variables
+   PKG_CONF_USED="$PKG_CONF_USED CG"
 else
    echo "Ignoring Cg. Desktop OpenGL is not enabled."
    HAVE_CG='no'

@@ -301,6 +301,7 @@ static unsigned input_frame(uint64_t trigger_state)
 
 bool menu_iterate(void)
 {
+   retro_input_t old_state = 0;
    unsigned action = MENU_ACTION_NOOP;
    static bool initial_held = true;
    static bool first_held = false;
@@ -319,17 +320,17 @@ bool menu_iterate(void)
 
    rarch_input_poll();
 
-   retro_input_t input = input_keys_pressed_func(RARCH_FIRST_META_KEY);
+   retro_input_t input = input_keys_pressed_func(RARCH_FIRST_META_KEY,
+         RARCH_BIND_LIST_END, &old_state);
 
-   rarch_check_block_hotkey(BIND_PRESSED(input, RARCH_ENABLE_HOTKEY));
+   check_block_hotkey_func(input);
 #ifdef HAVE_OVERLAY
-   rarch_check_overlay(BIND_PRESSED(input, RARCH_OVERLAY_NEXT));
+   check_overlay_func(input, old_state);
 #endif
-   rarch_check_fullscreen(BIND_PRESSED(input, RARCH_FULLSCREEN_TOGGLE_KEY));
+   check_fullscreen_func(input, old_state);
 
-   if (
-         BIND_PRESSED(input, RARCH_QUIT_KEY) ||
-         !driver.video->alive(driver.video_data))
+   if (BIND_PRESSED(input, RARCH_QUIT_KEY) 
+         || !driver.video->alive(driver.video_data))
    {
       rarch_main_command(RARCH_CMD_RESUME);
       return false;

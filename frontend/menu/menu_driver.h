@@ -19,8 +19,8 @@
 
 #include <stddef.h>
 #include <stdint.h>
-#include "boolean.h"
-#include "file_list.h"
+#include "../../boolean.h"
+#include "../../file_list.h"
 
 
 #ifdef __cplusplus

@@ -6,15 +6,26 @@ TEMP_EXE=.tmp
 
 ECHOBUF="Checking operating system"
 #echo -n "Checking operating system"
-case "$(uname)" in
-	'Linux') OS='Linux';;
-	*'BSD') OS='BSD';;
-	'Darwin') OS='Darwin';;
-	'MINGW32'*) OS='MinGW';;
-	'CYGWIN'*) OS='Cygwin';;
-	'Haiku') OS='Haiku';;
-	*) OS="Win32";;
-esac
+
+if [ -n "$CROSS_COMPILE" ]; then
+	case "$CROSS_COMPILE" in
+		*'-mingw32'*) OS='Win32';;
+		*);;
+	esac
+fi
+
+if [ -z "$OS" ]; then
+	case "$(uname)" in
+		'Linux') OS='Linux';;
+		*'BSD') OS='BSD';;
+		'Darwin') OS='Darwin';;
+		'MINGW32'*) OS='MinGW';;
+		'CYGWIN'*) OS='Cygwin';;
+		'Haiku') OS='Haiku';;
+		*) OS="Win32";;
+	esac
+fi
+
 echo "$ECHOBUF ... $OS"
 
 # Checking for working C compiler

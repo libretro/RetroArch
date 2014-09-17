@@ -51,9 +51,6 @@ typedef void (*environment_get_t)(int *argc, char *argv[], void *args,
    void *params_data);
 typedef void (*process_args_t)(int *argc, char *argv[]);
 
-/* avoid cyclic reference */
-typedef struct video_driver video_driver_t;
-
 typedef struct frontend_ctx_driver
 {
    environment_get_t environment_get;
@@ -70,7 +67,7 @@ typedef struct frontend_ctx_driver
 
    const char *ident;
 
-   const video_driver_t *(*get_video_driver)(void);
+   const struct video_driver *(*get_video_driver)(void);
 } frontend_ctx_driver_t;
 
 extern const frontend_ctx_driver_t frontend_ctx_gx;
