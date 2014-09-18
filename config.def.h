@@ -535,7 +535,7 @@ static const bool savestate_auto_index = false;
  * RetroArch will automatically load any savestate with this path on 
  * startup if savestate_auto_load is set. */
 static const bool savestate_auto_save = false;
-static const bool savestate_auto_load = true;
+static const bool savestate_auto_load = false;
 
 /* Slowmotion ratio. */
 static const float slowmotion_ratio = 3.0;
