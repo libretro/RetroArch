@@ -324,8 +324,6 @@ bool menu_iterate(void)
          RARCH_BIND_LIST_END, &old_state);
 
    trigger_input = input & ~old_state;
-
-   check_block_hotkey_func(input);
 #ifdef HAVE_OVERLAY
    if (BIND_PRESSED(trigger_input, RARCH_OVERLAY_NEXT))
          input_overlay_next(driver.overlay);

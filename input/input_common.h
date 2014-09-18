@@ -18,6 +18,7 @@
 
 #include "../driver.h"
 #include "../conf/config_file.h"
+#include "../general.h"
 #include <stdint.h>
 
 #ifdef __cplusplus
@@ -196,7 +197,6 @@ void input_push_analog_dpad(struct retro_keybind *binds, unsigned mode);
 
 void input_pop_analog_dpad(struct retro_keybind *binds);
 
-
 /* Returns a 64-bit mask of all pressed buttons, starting
  * from the specified key up until the last queryable key
  * (key_end).
@@ -212,6 +212,11 @@ static inline retro_input_t input_keys_pressed_func(unsigned key,
    static retro_input_t old_ret = 0;
    retro_input_t ret = 0;
    *old_state = old_ret;
+
+#ifdef RARCH_INTERNAL
+   rarch_check_block_hotkey(driver.input->key_pressed(driver.input_data,
+            RARCH_ENABLE_HOTKEY));
+#endif
 
    for (; key < key_end; key++)
    {
