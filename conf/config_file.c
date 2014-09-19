@@ -84,15 +84,13 @@ static char *getaline(FILE *file)
          cur_size *= 2;
          newline_tmp = (char*)realloc(newline, cur_size + 1);
 
-         if (newline_tmp)
-         {
-            newline = newline_tmp;
-         }
-         else
+         if (!newline_tmp)
          {
             free(newline);
             return NULL;
          }
+
+         newline = newline_tmp;
       }
 
       newline[index++] = in;
@@ -174,7 +172,9 @@ static void add_child_list(config_file_t *parent, config_file_t *child)
    /* Rebase tail. */
    if (parent->entries)
    {
-      struct config_entry_list *head = parent->entries;
+      struct config_entry_list *head = 
+         (struct config_entry_list*)parent->entries;
+
       while (head->next)
          head = head->next;
       parent->tail = head;
@@ -329,15 +329,13 @@ static bool parse_line(config_file_t *conf,
          cur_size *= 2;
          key_tmp = (char*)realloc(key, cur_size + 1);
 
-         if (key_tmp)
-         {
-            key = key_tmp;
-         }
-         else
+         if (!key_tmp)
          {
             free(key);
             return false;
          }
+
+         key = key_tmp;
       }
 
       key[index++] = *line++;
