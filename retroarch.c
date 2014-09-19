@@ -2319,12 +2319,13 @@ static void check_slowmotion(bool pressed)
          "Slow motion rewind." : "Slow motion.", 0, 30);
 }
 
-static void check_movie_init(void)
+static bool check_movie_init(void)
 {
    char path[PATH_MAX], msg[PATH_MAX];
+   bool ret = true;
    
    if (g_extern.bsv.movie)
-      return;
+      return false;
 
    g_settings.rewind_granularity = 1;
 
@@ -2342,6 +2343,10 @@ static void check_movie_init(void)
    snprintf(msg, sizeof(msg), "Starting movie record to \"%s\".", path);
 
    g_extern.bsv.movie = bsv_movie_init(path, RARCH_MOVIE_RECORD);
+
+   if (!g_extern.bsv.movie)
+      ret = false;
+
    msg_queue_clear(g_extern.msg_queue);
    msg_queue_push(g_extern.msg_queue, g_extern.bsv.movie ?
          msg : "Failed to start movie record.", 1, 180);
@@ -2350,24 +2355,28 @@ static void check_movie_init(void)
       RARCH_LOG("Starting movie record to \"%s\".\n", path);
    else
       RARCH_ERR("Failed to start movie record.\n");
+
+   return ret;
 }
 
-static void check_movie_record(void)
+static bool check_movie_record(void)
 {
    if (!g_extern.bsv.movie)
-      return;
+      return false;
 
    msg_queue_clear(g_extern.msg_queue);
    msg_queue_push(g_extern.msg_queue,
          RETRO_MSG_MOVIE_RECORD_STOPPING, 2, 180);
    RARCH_LOG(RETRO_LOG_MOVIE_RECORD_STOPPING);
    deinit_movie();
+
+   return true;
 }
 
-static void check_movie_playback(bool pressed)
+static bool check_movie_playback(void)
 {
    if (!g_extern.bsv.movie_end)
-      return;
+      return false;
 
    msg_queue_push(g_extern.msg_queue,
          RETRO_MSG_MOVIE_PLAYBACK_ENDED, 1, 180);
@@ -2376,19 +2385,17 @@ static void check_movie_playback(bool pressed)
    deinit_movie();
    g_extern.bsv.movie_end = false;
    g_extern.bsv.movie_playback = false;
+
+   return true;
 }
 
-static void check_movie(void)
+static bool check_movie(void)
 {
    if (g_extern.bsv.movie_playback)
-      check_movie_playback(true);
-   else
-   {
-      if (g_extern.bsv.movie)
-         check_movie_init();
-      else
-         check_movie_record();
-   }
+      return check_movie_playback();
+   if (!g_extern.bsv.movie)
+      return check_movie_init();
+   return check_movie_record();
 }
 
 static void check_pause(
