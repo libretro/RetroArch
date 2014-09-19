@@ -93,6 +93,7 @@ OBJ += frontend/frontend.o \
 		file_path.o \
 		hash.o \
 		driver.o \
+		general.o \
 		settings.o \
 		settings_data.o \
 		dynamic.o \
