@@ -2398,9 +2398,7 @@ static bool check_movie(void)
    return check_movie_record();
 }
 
-static void check_pause(
-      bool new_state, bool old_state,
-      bool frameadvance_pressed)
+static void check_pause(bool pressed, bool frameadvance_pressed)
 {
    static bool old_focus    = true;
    bool focus               = true;
@@ -2408,12 +2406,12 @@ static void check_pause(
    bool has_set_audio_start = false;
 
    /* FRAMEADVANCE will set us into pause mode. */
-   new_state |= !g_extern.is_paused && frameadvance_pressed;
+   pressed |= !g_extern.is_paused && frameadvance_pressed;
 
    if (g_settings.pause_nonactive)
       focus = driver.video->focus(driver.video_data);
 
-   if (focus && new_state && !old_state)
+   if (focus && pressed)
    {
       g_extern.is_paused = !g_extern.is_paused;
 
@@ -2838,7 +2836,7 @@ static bool do_state_checks(
       return true;
    }
 #endif
-   check_pause_func(input, old_input);
+   check_pause_func(trigger_input);
 
    check_oneshot_func(trigger_input);
 
@@ -3118,21 +3116,6 @@ error:
 
    g_extern.main_is_init = false;
    return 1;
-}
-
-static bool check_enter_menu(bool pressed, bool old_pressed)
-{
-   bool rmenu_toggle = pressed || (g_extern.libretro_dummy && !old_pressed);
-
-   if (rmenu_toggle && !old_pressed)
-   {
-      /* Always go into menu if dummy core is loaded. */
-      rarch_main_set_state(RARCH_ACTION_STATE_MENU_PREINIT);
-      g_extern.system.frame_time_last = 0;
-      return true;
-   }
-
-   return false;
 }
 
 static inline void update_frame_time(void)
@@ -3615,8 +3598,13 @@ bool rarch_main_iterate(void)
    if (check_quit_key_func(input) || !driver.video->alive(driver.video_data))
       return false;
 
-   if (check_enter_menu_func(input, old_input))
+   if (check_enter_menu_func(trigger_input) || (g_extern.libretro_dummy))
+   {
+      /* Always go into menu if dummy core is loaded. */
+      rarch_main_set_state(RARCH_ACTION_STATE_MENU_PREINIT);
+      g_extern.system.frame_time_last = 0;
       return false; /* Enter menu, don't exit. */
+   }
 
    if (g_extern.exec)
    {
