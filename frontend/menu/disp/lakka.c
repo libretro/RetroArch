@@ -43,6 +43,7 @@
 #include "../../../gfx/fonts/bitmap.h"
 
 #include "lakka.h"
+#include "tween.h"
 
 // Category variables
 menu_category_t *categories;
@@ -117,9 +118,6 @@ struct lakka_texture_item
 };
 
 struct lakka_texture_item textures[TEXTURE_LAST];
-
-static tween_t* tweens = NULL;
-static int numtweens = 0;
 
 static void lakka_responsive(void)
 {
@@ -253,104 +251,6 @@ static char *str_replace (const char *string, const char *substr, const char *re
       free (oldstr);
    }
    return newstr;
-}
-
-float inOutQuad(float t, float b, float c, float d)
-{
-   t = t / d * 2;
-   if (t < 1)
-      return c / 2 * pow(t, 2) + b;
-   return -c / 2 * ((t - 1) * (t - 3) - 1) + b;
-}
-
-void add_tween(float duration, float target_value, float* subject,
-      easingFunc easing, tweenCallback callback)
-{
-   tween_t *tween;
-   tween_t *tweens_tmp;
-
-   numtweens++;
-
-   tweens_tmp = (tween_t*)realloc(tweens, numtweens * sizeof(tween_t));
-   if (tweens_tmp != NULL)
-   {
-       tweens = tweens_tmp;
-   }
-   else // realloc failed
-   {
-      if (tweens != NULL)
-      {
-         free(tweens);
-         tweens = NULL;
-      }
-
-      return;
-   }
-   
-   tween = (tween_t*)&tweens[numtweens-1];
-
-   if (!tween)
-      return;
-
-   tween->alive = 1;
-   tween->duration = duration;
-   tween->running_since = 0;
-   tween->initial_value = *subject;
-   tween->target_value = target_value;
-   tween->subject = subject;
-   tween->easing = easing;
-   tween->callback = callback;
-}
-
-static void update_tween(void *data, float dt)
-{
-   tween_t *tween = (tween_t*)data;
-
-   if (!tween)
-      return;
-
-#if 0
-   RARCH_LOG("delta: %f\n", dt);
-   RARCH_LOG("tween running since: %f\n", tween->running_since);
-   RARCH_LOG("tween duration: %f\n", tween->duration);
-#endif
-
-   if (tween->running_since < tween->duration)
-   {
-      tween->running_since += dt;
-
-      if (tween->easing)
-         *tween->subject = tween->easing(
-               tween->running_since,
-               tween->initial_value,
-               tween->target_value - tween->initial_value,
-               tween->duration);
-
-      if (tween->running_since >= tween->duration)
-      {
-         *tween->subject = tween->target_value;
-
-         if (tween->callback)
-            tween->callback();
-      }
-   }
-}
-
-static void update_tweens(float dt)
-{
-   int i, active_tweens;
-
-   active_tweens = 0;
-
-   for(i = 0; i < numtweens; i++)
-   {
-      update_tween(&tweens[i], dt);
-      active_tweens += tweens[i].running_since <
-         tweens[i].duration ? 1 : 0;
-   }
-
-   if (numtweens && !active_tweens)
-      numtweens = 0;
 }
 
 static void lakka_draw_text(const char *str, float x,
@@ -745,9 +645,6 @@ static void lakka_context_destroy(void *data)
       font_driver->free(font);
       font_driver = NULL;
    }
-
-   //if (numtweens)
-   //   free(tweens);
 }
 
 void lakka_init_settings(void)

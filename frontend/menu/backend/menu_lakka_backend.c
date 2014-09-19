@@ -35,6 +35,7 @@
 #include "../../../settings_data.h"
 
 #include "../disp/lakka.h"
+#include "../disp/tween.h"
 
 #ifdef HAVE_CONFIG_H
 #include "../../../config.h"
