@@ -70,6 +70,7 @@ typedef struct
    uint64_t old_input_state;
    uint64_t trigger_state;
    bool do_held;
+   bool open_compressed;
 
    unsigned delay_timer;
    unsigned delay_count;
@@ -89,6 +90,12 @@ typedef struct
 
    bool defer_core;
    char deferred_path[PATH_MAX];
+
+   /* This buffer can be used to display generic OK messages to the user.
+    * Fill it and call
+    * file_list_push(driver.menu->menu_stack, "", "message", 0, 0);
+    */
+   char message_contents[PATH_MAX];
 
    /* Quick jumping indices with L/R.
     * Rebuilt when parsing directory. */
