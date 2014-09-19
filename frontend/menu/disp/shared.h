@@ -162,8 +162,16 @@ static void disp_set_label(unsigned *w, unsigned type, unsigned i,
    }
    else if (type == MENU_FILE_CARCHIVE)
    {
-      strlcpy(type_str, "(COMP)", type_str_size);
-      *w = 6;
+      if (driver.menu->open_compressed)
+      {
+         strlcpy(type_str, "(COMP)", type_str_size);
+         *w = 6;
+      }
+      else
+      {
+         strlcpy(type_str, "(FILE)", type_str_size);
+         *w = 6;
+      }
    }
    else if (type == MENU_FILE_IN_CARCHIVE)
    {
