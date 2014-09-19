@@ -132,8 +132,8 @@ int rarch_defer_core(core_info_list_t *core_info, const char *dir,
             sizeof(g_extern.fullpath));
       if (path_is_compressed_file(dir))
       {
-         /* In case of a compressed archive, we have to join with a hash */
-         /* We are going to write at the position of dir: */
+         /* In case of a compressed archive, we have to join with a hash.
+          * We are going to write at the position of dir: */
          rarch_assert(strlen(dir) < strlen(g_extern.fullpath));
          g_extern.fullpath[strlen(dir)] = '#';
       }
@@ -172,7 +172,8 @@ bool rarch_replace_config(const char *path)
    return true;
 }
 
-void rarch_update_system_info(struct retro_system_info *_info, bool *load_no_content)
+void rarch_update_system_info(struct retro_system_info *_info,
+      bool *load_no_content)
 {
    const core_info_t *info = NULL;
 #if defined(HAVE_DYNAMIC)
