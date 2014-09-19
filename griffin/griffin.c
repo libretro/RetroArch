@@ -663,6 +663,7 @@ MENU
 #ifdef HAVE_LAKKA
 #include "../frontend/menu/backend/menu_lakka_backend.c"
 #include "../frontend/menu/disp/lakka.c"
+#include "../frontend/menu/disp/tween.c"
 #endif
 
 #ifdef HAVE_GLUI
