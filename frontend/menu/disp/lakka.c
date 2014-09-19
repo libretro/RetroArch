@@ -71,6 +71,7 @@ float above_subitem_offset;
 float above_item_offset;
 float active_item_factor;
 float under_item_offset;
+float setting_margin_left;
 
 // Font variables
 static void *font;
@@ -149,6 +150,7 @@ static void lakka_responsive(void)
       title_margin_top = 50.0;
       label_margin_left = 192;
       label_margin_top = 15;
+      setting_margin_left = 1200;
       strcpy(icon_dir, "256");
       return;
    }
@@ -166,6 +168,7 @@ static void lakka_responsive(void)
       label_margin_left = 144;
       label_margin_top = 11.0;
       strcpy(icon_dir, "192");
+      setting_margin_left = 800;
       return;
    }
 
@@ -181,6 +184,7 @@ static void lakka_responsive(void)
       title_margin_top = 35.0;
       label_margin_left = 85;
       label_margin_top = 8.0;
+      setting_margin_left = 600;
       strcpy(icon_dir, "128");
       return;
    }
@@ -198,6 +202,7 @@ static void lakka_responsive(void)
       label_margin_left = 48;
       label_margin_top = 6.0;
       strcpy(icon_dir, "64");
+      setting_margin_left = 250;
       return;
    }
 
@@ -211,6 +216,7 @@ static void lakka_responsive(void)
    title_margin_top = 30.0;
    label_margin_left = 64;
    label_margin_top = 6.0;
+   setting_margin_left = 400;
    strcpy(icon_dir, "96");
 }
 
@@ -545,7 +551,7 @@ static void lakka_draw_subitems(int i, int j)
                snprintf(slot, sizeof(slot), "%d", g_settings.state_slot);
             lakka_draw_text(slot, 
                   margin_left + hspacing * (i+2.25) +
-                  all_categories_x + label_margin_left + 400, 
+                  all_categories_x + label_margin_left + setting_margin_left, 
                   margin_top + subitem->y + label_margin_top, 
                   1, 
                   subitem->alpha);
@@ -559,7 +565,7 @@ static void lakka_draw_subitems(int i, int j)
                sizeof(val));
          lakka_draw_text(val, 
                margin_left + hspacing * (i+2.25) +
-               all_categories_x + label_margin_left + 400, 
+               all_categories_x + label_margin_left + setting_margin_left, 
                margin_top + subitem->y + label_margin_top, 
                1, 
                subitem->alpha);
