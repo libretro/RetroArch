@@ -624,9 +624,9 @@ extern video_driver_t video_xdk_d3d;
 extern video_driver_t video_sdl;
 extern video_driver_t video_sdl2;
 extern video_driver_t video_vg;
-extern video_driver_t video_null;
 extern video_driver_t video_omap;
 extern video_driver_t video_exynos;
+extern video_driver_t video_null;
 
 extern input_driver_t input_android;
 extern input_driver_t input_sdl;
