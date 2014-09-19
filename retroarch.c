@@ -2781,7 +2781,10 @@ static void check_disk_next(
       RARCH_ERR("Got invalid disk index from libretro.\n");
 }
 
-static void do_state_checks(
+/* Checks for stuff like fullscreen, save states, etc.
+ * Return false when RetroArch is paused. */
+
+static bool do_state_checks(
       retro_input_t input, retro_input_t old_input,
       retro_input_t trigger_input)
 {
@@ -2816,7 +2819,7 @@ static void do_state_checks(
    if (g_extern.netplay)
    {
       check_netplay_flip_func(trigger_input);
-      return;
+      return true;
    }
 #endif
    check_pause_func(input, old_input);
@@ -2827,7 +2830,7 @@ static void do_state_checks(
       rarch_render_cached_frame();
 
    if (g_extern.is_paused && !g_extern.is_oneshot)
-      return;
+      return false;
 
    check_fast_forward_button_func(input, old_input, trigger_input);
 
@@ -2874,6 +2877,8 @@ static void do_state_checks(
 
    if (BIND_PRESSED(trigger_input, RARCH_RESET))
       rarch_main_command(RARCH_CMD_RESET);
+
+   return true;
 }
 
 static void init_state(void)
@@ -3603,10 +3608,7 @@ bool rarch_main_iterate(void)
       return false;
    }
 
-   /* Checks for stuff like fullscreen, save states, etc. */
-   do_state_checks(input, old_input, trigger_input);
-
-   if (g_extern.is_paused && !g_extern.is_oneshot)
+   if (!do_state_checks(input, old_input, trigger_input))
    {
       rarch_input_poll();
       rarch_sleep(10);
