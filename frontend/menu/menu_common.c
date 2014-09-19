@@ -290,6 +290,8 @@ static unsigned input_frame(uint64_t trigger_state)
       return MENU_ACTION_CANCEL;
    if (trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_A))
       return MENU_ACTION_OK;
+   if (trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_Y))
+      return MENU_ACTION_Y;
    if (trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_START))
       return MENU_ACTION_START;
    if (trigger_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_SELECT))
