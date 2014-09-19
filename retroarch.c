@@ -2319,45 +2319,49 @@ static void check_slowmotion(bool pressed)
          "Slow motion rewind." : "Slow motion.", 0, 30);
 }
 
-static void check_movie_record(bool pressed)
+static void check_movie_init(void)
 {
+   char path[PATH_MAX], msg[PATH_MAX];
+   
    if (g_extern.bsv.movie)
+      return;
+
+   g_settings.rewind_granularity = 1;
+
+   if (g_settings.state_slot > 0)
    {
-      msg_queue_clear(g_extern.msg_queue);
-      msg_queue_push(g_extern.msg_queue,
-            RETRO_MSG_MOVIE_RECORD_STOPPING, 2, 180);
-      RARCH_LOG(RETRO_LOG_MOVIE_RECORD_STOPPING);
-      deinit_movie();
+      snprintf(path, sizeof(path), "%s%d.bsv",
+            g_extern.bsv.movie_path, g_settings.state_slot);
    }
    else
    {
-      char path[PATH_MAX], msg[PATH_MAX];
-
-      g_settings.rewind_granularity = 1;
-
-      if (g_settings.state_slot > 0)
-      {
-         snprintf(path, sizeof(path), "%s%d.bsv",
-               g_extern.bsv.movie_path, g_settings.state_slot);
-      }
-      else
-      {
-         snprintf(path, sizeof(path), "%s.bsv",
-               g_extern.bsv.movie_path);
-      }
-
-      snprintf(msg, sizeof(msg), "Starting movie record to \"%s\".", path);
-
-      g_extern.bsv.movie = bsv_movie_init(path, RARCH_MOVIE_RECORD);
-      msg_queue_clear(g_extern.msg_queue);
-      msg_queue_push(g_extern.msg_queue, g_extern.bsv.movie ?
-            msg : "Failed to start movie record.", 1, 180);
-
-      if (g_extern.bsv.movie)
-         RARCH_LOG("Starting movie record to \"%s\".\n", path);
-      else
-         RARCH_ERR("Failed to start movie record.\n");
+      snprintf(path, sizeof(path), "%s.bsv",
+            g_extern.bsv.movie_path);
    }
+
+   snprintf(msg, sizeof(msg), "Starting movie record to \"%s\".", path);
+
+   g_extern.bsv.movie = bsv_movie_init(path, RARCH_MOVIE_RECORD);
+   msg_queue_clear(g_extern.msg_queue);
+   msg_queue_push(g_extern.msg_queue, g_extern.bsv.movie ?
+         msg : "Failed to start movie record.", 1, 180);
+
+   if (g_extern.bsv.movie)
+      RARCH_LOG("Starting movie record to \"%s\".\n", path);
+   else
+      RARCH_ERR("Failed to start movie record.\n");
+}
+
+static void check_movie_record(void)
+{
+   if (!g_extern.bsv.movie)
+      return;
+
+   msg_queue_clear(g_extern.msg_queue);
+   msg_queue_push(g_extern.msg_queue,
+         RETRO_MSG_MOVIE_RECORD_STOPPING, 2, 180);
+   RARCH_LOG(RETRO_LOG_MOVIE_RECORD_STOPPING);
+   deinit_movie();
 }
 
 static void check_movie_playback(bool pressed)
@@ -2379,7 +2383,12 @@ static void check_movie(void)
    if (g_extern.bsv.movie_playback)
       check_movie_playback(true);
    else
-      check_movie_record(true);
+   {
+      if (g_extern.bsv.movie)
+         check_movie_init();
+      else
+         check_movie_record();
+   }
 }
 
 static void check_pause(
