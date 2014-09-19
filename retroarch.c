@@ -2486,6 +2486,9 @@ static void check_turbo(void)
 
 static void check_shader_dir(bool pressed_next, bool pressed_prev)
 {
+   char msg[PATH_MAX];
+   const char *shader = NULL, *ext = NULL;
+   enum rarch_shader_type type = RARCH_SHADER_NONE;
    bool should_apply = false;
 
    if (!g_extern.shader_dir.list || !driver.video->set_shader)
@@ -2506,13 +2509,12 @@ static void check_shader_dir(bool pressed_next, bool pressed_prev)
          g_extern.shader_dir.ptr--;
    }
 
-   if (should_apply)
+   if (!should_apply)
+      return;
+
    {
-      char msg[512];
-      const char *shader          = 
-         g_extern.shader_dir.list->elems[g_extern.shader_dir.ptr].data;
-      enum rarch_shader_type type = RARCH_SHADER_NONE;
-      const char *ext             = path_get_extension(shader);
+      shader = g_extern.shader_dir.list->elems[g_extern.shader_dir.ptr].data;
+      ext    = path_get_extension(shader);
 
       if (strcmp(ext, "glsl") == 0 || strcmp(ext, "glslp") == 0)
          type = RARCH_SHADER_GLSL;
@@ -2536,7 +2538,7 @@ static void check_shader_dir(bool pressed_next, bool pressed_prev)
 
 void rarch_disk_control_append_image(const char *path)
 {
-   char msg[512];
+   char msg[PATH_MAX];
    unsigned new_index;
    const struct retro_disk_control_callback *control = 
       (const struct retro_disk_control_callback*)&g_extern.system.disk_control;
@@ -2583,7 +2585,7 @@ void rarch_disk_control_append_image(const char *path)
 
 void rarch_disk_control_set_eject(bool new_state, bool log)
 {
-   char msg[256];
+   char msg[PATH_MAX];
    const struct retro_disk_control_callback *control = 
       (const struct retro_disk_control_callback*)&g_extern.system.disk_control;
    bool error = false;
@@ -2621,7 +2623,7 @@ void rarch_disk_control_set_eject(bool new_state, bool log)
 
 void rarch_disk_control_set_index(unsigned next_index)
 {
-   char msg[256];
+   char msg[PATH_MAX];
    unsigned num_disks;
    const struct retro_disk_control_callback *control = 
       (const struct retro_disk_control_callback*)&g_extern.system.disk_control;
@@ -2951,7 +2953,8 @@ static void verify_api_version(void)
 }
 
 /* Make sure we haven't compiled for something we cannot run.
- * Ideally, code would get swapped out depending on CPU support, but this will do for now.
+ * Ideally, code would get swapped out depending on CPU support, 
+ * but this will do for now.
  */
 static void validate_cpu_features(void)
 {
@@ -3238,11 +3241,13 @@ void rarch_main_command(unsigned cmd)
       case RARCH_CMD_LOAD_CORE:
 #ifdef HAVE_MENU
          if (driver.menu)
-            rarch_update_system_info(&g_extern.menu.info, &driver.menu->load_no_content);
+            rarch_update_system_info(&g_extern.menu.info,
+                  &driver.menu->load_no_content);
 #endif
          break;
       case RARCH_CMD_LOAD_STATE:
-         /* Disallow savestate load when we absolutely cannot change game state. */
+         /* Disallow savestate load when we absolutely 
+          * cannot change game state. */
          if (g_extern.bsv.movie)
             return;
 
