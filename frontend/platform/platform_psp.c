@@ -223,6 +223,11 @@ static int frontend_psp_get_rating(void)
    return 4;
 }
 
+static const struct video_driver *frontend_psp_get_video_driver(void)
+{
+   return (void*)-1;
+}
+
 const frontend_ctx_driver_t frontend_ctx_psp = {
    frontend_psp_get_environment_settings, /* get_environment_settings */
    frontend_psp_init,            /* init */
@@ -235,4 +240,5 @@ const frontend_ctx_driver_t frontend_ctx_psp = {
    NULL,                         /* get_name */
    frontend_psp_get_rating,      /* get_rating */
    "psp",
+   frontend_psp_get_video_driver,
 };

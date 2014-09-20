@@ -21,6 +21,11 @@
 #include <stddef.h>
 #include <string.h>
 
+static const struct video_driver *frontend_null_get_video_driver(void)
+{
+   return (void*)-1;
+}
+
 const frontend_ctx_driver_t frontend_ctx_null = {
    NULL,                         /* environment_get */
    NULL,                         /* init */
@@ -33,4 +38,5 @@ const frontend_ctx_driver_t frontend_ctx_null = {
    NULL,                         /* get_name */
    NULL,                         /* get_rating */
    "null",
+   frontend_null_get_video_driver,
 };

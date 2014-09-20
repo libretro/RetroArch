@@ -59,6 +59,11 @@ static void frontend_qnx_get_environment_settings(int *argc, char *argv[],
          "playlists", sizeof(g_defaults.playlist_dir));
 }
 
+static const struct video_driver *frontend_qnx_get_video_driver(void)
+{
+   return (void*)-1;
+}
+
 const frontend_ctx_driver_t frontend_ctx_qnx = {
    frontend_qnx_get_environment_settings, /* get_environment_settings */
    frontend_qnx_init,            /* init */
@@ -71,4 +76,5 @@ const frontend_ctx_driver_t frontend_ctx_qnx = {
    NULL,                         /* get_name */
    frontend_qnx_get_rating,      /* get_rating */
    "qnx",
+   frontend_qnx_get_video_driver,
 };

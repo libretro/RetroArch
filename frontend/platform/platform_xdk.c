@@ -322,6 +322,11 @@ static int frontend_xdk_get_rating(void)
 #endif
 }
 
+static const struct video_driver *frontend_xdk_get_video_driver(void)
+{
+   return (void*)-1;
+}
+
 const frontend_ctx_driver_t frontend_ctx_xdk = {
    frontend_xdk_get_environment_settings,     /* get_environment_settings */
    frontend_xdk_init,            /* init */
@@ -334,4 +339,5 @@ const frontend_ctx_driver_t frontend_ctx_xdk = {
    NULL,                         /* get_name */
    frontend_xdk_get_rating,      /* get_rating */
    "xdk",
+   frontend_xdk_get_video_driver,
 };
