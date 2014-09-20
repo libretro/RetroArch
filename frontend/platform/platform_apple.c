@@ -68,12 +68,6 @@ static int frontend_apple_get_rating(void)
     * determine rating for some */
    return -1;
 }
-
-static const struct video_driver *frontend_apple_get_video_driver(void)
-{
-   return (void*)-1;
-}
-
 const frontend_ctx_driver_t frontend_ctx_apple = {
    NULL,                         /* environment_get */
    NULL,                         /* init */
@@ -86,5 +80,4 @@ const frontend_ctx_driver_t frontend_ctx_apple = {
    NULL,                         /* get_name */
    frontend_apple_get_rating,    /* get_rating */
    "apple",
-   frontend_apple_get_video_driver,
 };

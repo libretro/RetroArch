@@ -351,11 +351,6 @@ static int frontend_gx_get_rating(void)
 #endif
 }
 
-static const struct video_driver *frontend_gx_get_video_driver(void)
-{
-   return (void*)-1;
-}
-
 const frontend_ctx_driver_t frontend_ctx_gx = {
    frontend_gx_get_environment_settings, /* get_environment_settings */
    frontend_gx_init,                /* init */
@@ -368,5 +363,4 @@ const frontend_ctx_driver_t frontend_ctx_gx = {
    NULL,                            /* get_name */
    frontend_gx_get_rating,          /* get_rating */
    "gx",
-   frontend_gx_get_video_driver,
 };

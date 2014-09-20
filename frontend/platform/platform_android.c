@@ -884,11 +884,6 @@ static int frontend_android_get_rating(void)
    return -1;
 }
 
-static const struct video_driver *frontend_android_get_video_driver(void)
-{
-   return (void*)-1;
-}
-
 const frontend_ctx_driver_t frontend_ctx_android = {
    frontend_android_get_environment_settings, /* get_environment_settings */
    frontend_android_init,        /* init */
@@ -901,5 +896,4 @@ const frontend_ctx_driver_t frontend_ctx_android = {
    frontend_android_get_name,    /* get_name */
    frontend_android_get_rating,  /* get_rating */
    "android",
-   frontend_android_get_video_driver,
 };
