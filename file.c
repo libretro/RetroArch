@@ -391,6 +391,13 @@ static bool load_content(const struct retro_subsystem_info *special,
             RARCH_LOG("Compressed file in case of need_fullpath."
                   "Now extracting to temporary directory.\n");
 
+            if ((!strcmp(g_settings.extraction_directory,"")) ||
+                 !path_is_directory(g_settings.extraction_directory))
+            {
+               RARCH_ERR("Tried extracting to extraction directory, but "
+                      "extraction directory was not set or found. Exiting.\n");
+               rarch_assert(false);
+            }
             /* This is a test implementation, currently it needs as much
              * RAM as the file is big.
              */
