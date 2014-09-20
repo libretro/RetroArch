@@ -1723,12 +1723,6 @@ static int menu_load_or_open_zip_iterate(unsigned action)
    return 0;
 }
 
-static int menu_action_y(const char * menu_path,
-      const char * menu_label, unsigned  menu_type )
-{
-   return 0;
-}
-
 static int menu_action_ok(const char *menu_path,
       const char *menu_label, unsigned menu_type)
 {
@@ -1938,7 +1932,8 @@ static int menu_action_ok(const char *menu_path,
          {
             if (type == MENU_FILE_CARCHIVE && !strcmp(menu_label, "detect_core_list"))
             {
-               file_list_push(driver.menu->menu_stack, "", "load_open_zip", 0, 0);
+               file_list_push(driver.menu->menu_stack, path, "load_open_zip",
+                     0, driver.menu->selection_ptr);
                return 0;
             }
             char cat_path[PATH_MAX];
@@ -2095,10 +2090,6 @@ static int menu_common_iterate(unsigned action)
       case MENU_ACTION_OK:
          ret = menu_action_ok(path, menu_label, menu_type);
          break;
-
-
-      case MENU_ACTION_Y:
-         return menu_action_y(path, menu_label, menu_type);
 
       case MENU_ACTION_REFRESH:
          menu_clear_navigation(driver.menu);
