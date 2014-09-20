@@ -134,6 +134,10 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 /* selected.                                 */
 /*********************************************/
 @implementation RAMenuItemBasic
+@synthesize description;
+@synthesize userdata;
+@synthesize action;
+@synthesize detail;
 
 + (RAMenuItemBasic*)itemWithDescription:(NSString*)description action:(void (^)())action
 {
