@@ -4,6 +4,10 @@ CVOpenGLESTextureCacheRef textureCache;
 GLuint outputTexture;
 static bool newFrame = false;
 
+#ifndef GL_BGRA
+#define GL_BGRA 0x80E1
+#endif
+
 void event_process_camera_frame(void* pixelBufferPtr)
 {
     CVOpenGLESTextureRef renderTexture;
