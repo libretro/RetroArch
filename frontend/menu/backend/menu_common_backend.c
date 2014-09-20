@@ -69,6 +69,104 @@ static int menu_message_toggle(unsigned action)
    return 0;
 }
 
+
+static int menu_load_or_open_zip_iterate(unsigned action)
+{
+   char msg[PATH_MAX];
+   snprintf(msg, sizeof(msg),
+           "Opening compressed file\n"
+           " \n"
+
+           " - OK to open as Folder\n"
+           " - Cancel/Back to Load \n");
+
+   if (driver.video_data && driver.menu_ctx &&
+         driver.menu_ctx->render_messagebox)
+   {
+      if (*msg && msg[0] != '\0')
+         driver.menu_ctx->render_messagebox(msg);
+   }
+
+   if (action == MENU_ACTION_OK)
+   {
+      menu_entries_pop(driver.menu->menu_stack);
+
+      const char *menu_path;
+      const char *menu_label;
+      unsigned int menu_type;
+      char const* path;
+      char const* label;
+      unsigned int type;
+
+      file_list_get_last(driver.menu->menu_stack, &menu_path, &menu_label, &menu_type);
+
+      if (file_list_get_size(driver.menu->selection_buf) == 0)
+         return 0;
+
+      file_list_get_at_offset(driver.menu->selection_buf,
+            driver.menu->selection_ptr, &path, &label, &type);
+
+      char cat_path[PATH_MAX];
+      fill_pathname_join(cat_path, menu_path, path, sizeof(cat_path));
+      menu_entries_push(driver.menu->menu_stack,
+            cat_path, menu_label, type, driver.menu->selection_ptr);
+   }
+   else if (action == MENU_ACTION_CANCEL)
+   {
+
+      menu_entries_pop(driver.menu->menu_stack);
+
+      /*const char *menu_path;
+      const char *menu_label;
+      unsigned int menu_type;
+      char const* path;
+      char const* label;
+      unsigned int type;
+
+      file_list_get_last(driver.menu->menu_stack, &menu_path, &menu_label, &menu_type);
+
+      if (file_list_get_size(driver.menu->selection_buf) == 0)
+         return 0;
+
+      file_list_get_at_offset(driver.menu->selection_buf,
+            driver.menu->selection_ptr, &path, &label, &type);
+
+      char cat_path[PATH_MAX];
+      fill_pathname_join(cat_path, menu_path, path, sizeof(cat_path));
+      return menu_action_ok(cat_path,menu_label,MENU_FILE_PLAIN); */
+/*
+      menu_entries_push(driver.menu->menu_stack,
+            cat_path, menu_label, type, driver.menu->selection_ptr);
+
+
+
+      menu_entries_pop(driver.menu->menu_stack);
+      const char *menu_path;
+      const char *menu_label;
+      unsigned int menu_type;
+      char const* path;
+      char const* label;
+      unsigned int type;
+
+      file_list_get_last(driver.menu->menu_stack, &menu_path, &menu_label, &menu_type);
+      printf("BABBA\n");
+      return menu_action_ok(menu_path,menu_label,menu_type);
+
+      if (file_list_get_size(driver.menu->selection_buf) == 0)
+         return 0;
+
+      file_list_get_at_offset(driver.menu->selection_buf,
+            driver.menu->selection_ptr, &path, &label, &type);
+
+
+      char cat_path[PATH_MAX];
+      fill_pathname_join(cat_path, menu_path, path, sizeof(cat_path));
+      menu_action_ok(driver.menu->menu_stack,
+             cat_path, menu_label, MENU_FILE_PLAIN, driver.menu->selection_ptr); */
+   }
+   return 0;
+}
+
 static int menu_info_screen_iterate(unsigned action)
 {
    char msg[PATH_MAX];
@@ -1647,33 +1745,9 @@ static void menu_common_load_content(void)
    driver.menu->msg_force = true;
 }
 
-static int menu_action_y()
+static int menu_action_y(const char * /*menu_path*/,
+      const char * /*menu_label*/, unsigned /* menu_type */)
 {
-   /* Toggle is only available in detect_core_list */
-   /*
-   if (strcmp(menu_label, "detect_core_list"))
-   {
-      return 0;
-   }
-   */
-   if (!driver.menu->open_compressed)
-   {
-      snprintf(driver.menu->message_contents,
-            sizeof(driver.menu->message_contents),
-                    "--   ZipMode switched.   --\n"
-                    "Opening Archives as folders\n\n"
-                    "       Press OK to continue\n");
-   }
-   else
-   {
-      snprintf(driver.menu->message_contents,
-            sizeof(driver.menu->message_contents),
-            "--  ZipMode switched.  --\n"
-            "Loading Archives as files\n\n"
-            "     Press OK to continue\n");
-   }
-   driver.menu->open_compressed = !driver.menu->open_compressed;
-   file_list_push(driver.menu->menu_stack, "", "message", 0, 0);
    return 0;
 }
 
@@ -1716,6 +1790,7 @@ static int menu_action_ok(const char *menu_path,
       case MENU_FILE_IN_CARCHIVE:
 #endif
       case MENU_FILE_PLAIN:
+      {
          if (!strcmp(menu_label, "detect_core_list"))
          {
             int ret = rarch_defer_core(g_extern.core_info,
@@ -1756,24 +1831,6 @@ static int menu_action_ok(const char *menu_path,
          {
             if (type == MENU_FILE_IN_CARCHIVE)
             {
-               if (g_extern.menu.info.need_fullpath)
-               {
-                  /* Currently files in compressed archives are not supported
-                   * in case of need_fullpath == true.q
-                   */
-                  snprintf(driver.menu->message_contents,
-                        sizeof(driver.menu->message_contents),
-                                "Opening of files inside archives\n"
-                                "is not possible for this driver.\n"
-                                " \n"
-                                "Extract manually or open as file\n"
-                                " \n"
-                                "(Go back and press Y)           \n"
-                                " \n"
-                                "          Press OK to continue\n");
-                  file_list_push(driver.menu->menu_stack, "", "message", 0, 0);
-                  return 0;
-               }
                fill_pathname_join_delim(g_extern.fullpath, menu_path, path,
                      '#',sizeof(g_extern.fullpath));
             }
@@ -1791,8 +1848,10 @@ static int menu_action_ok(const char *menu_path,
 
             return -1;
          }
-
          return 0;
+      }
+
+
 
       case MENU_FILE_CONFIG:
 
@@ -1899,15 +1958,11 @@ static int menu_action_ok(const char *menu_path,
       case MENU_FILE_CARCHIVE:
 
          {
-            if (type == MENU_FILE_CARCHIVE)
-               if (!driver.menu->open_compressed)
-               {
-                  /* in case we don't open compressed archives currently
-                   * we just treat it as a PLAIN file, just like before.
-                   */
-                  type = MENU_FILE_PLAIN;
-                  continue;
-               }
+            if (type == MENU_FILE_CARCHIVE && !strcmp(menu_label, "detect_core_list"))
+            {
+               file_list_push(driver.menu->menu_stack, "", "load_open_zip", 0, 0);
+               return 0;
+            }
             char cat_path[PATH_MAX];
             fill_pathname_join(cat_path, menu_path, path, sizeof(cat_path));
             menu_entries_push(driver.menu->menu_stack,
@@ -1955,6 +2010,8 @@ static int menu_common_iterate(unsigned action)
       return menu_start_screen_iterate(action);
    else if (!strcmp(menu_label, "message"))
       return menu_message_toggle(action);
+   else if (!strcmp(menu_label, "load_open_zip"))
+      return menu_load_or_open_zip_iterate(action);
    else if (!strcmp(menu_label, "info_screen"))
       return menu_info_screen_iterate(action);
    else if (menu_common_type_is(menu_label, menu_type) == MENU_SETTINGS)
@@ -2061,9 +2118,9 @@ static int menu_common_iterate(unsigned action)
          ret = menu_action_ok(path, menu_label, menu_type);
          break;
 
+
       case MENU_ACTION_Y:
-         return menu_action_y();
-         //break;
+         return menu_action_y(path, menu_label, menu_type);
 
       case MENU_ACTION_REFRESH:
          menu_clear_navigation(driver.menu);
