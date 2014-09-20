@@ -14,6 +14,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#import <Availability.h>
 #import "RetroArch_Apple.h"
 #include "../../general.h"
 
@@ -198,6 +199,11 @@ static GLContextClass* g_context;
          return (apple_frontend_settings.orientation_flags & UIInterfaceOrientationMaskLandscapeLeft);
       case UIInterfaceOrientationLandscapeRight:
          return (apple_frontend_settings.orientation_flags & UIInterfaceOrientationMaskLandscapeRight);
+
+#if __IPHONE_OS_VERSION_MAX_ALLOWED >= __IPHONE_8_0
+      case UIInterfaceOrientationUnknown:
+         return (apple_frontend_settings.orientation_flags & UIInterfaceOrientationMaskAll);
+#endif
    }
    
    return YES;
