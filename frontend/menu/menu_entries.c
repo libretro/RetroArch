@@ -759,6 +759,17 @@ int menu_parse_and_resolve(file_list_t *list, file_list_t *menu_list)
             break;
          case RARCH_PLAIN_FILE:
          default:
+            if (!strcmp(label, "detect_core_list"))
+            {
+               if (path_is_compressed_file(str_list->elems[i].data))
+               {
+                  /* in case of deferred_core_list we have to interpret
+                   * every archive as an archive to disallow instant loading
+                   */
+                  file_type = MENU_FILE_CARCHIVE;
+                  break;
+               }
+            }
             file_type = (menu_file_type_t)default_type_plain;
             break;
       }
