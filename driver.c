@@ -643,10 +643,10 @@ static void find_video_driver(void)
    {
       driver.video = driver.frontend_ctx->get_video_driver();
 
-      if (driver.video)
-         return;
-      else
+      if (!driver.video)
          RARCH_WARN("Frontend supports get_video_driver() but did not specify one.\n");
+      else if (driver.video != (void*)-1)
+         return;
    }
 
    int i = find_driver_index("video_driver", g_settings.video.driver);
