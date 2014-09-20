@@ -638,7 +638,8 @@ static void find_video_driver(void)
    }
 #endif
 
-   if (driver.frontend_ctx->get_video_driver)
+   if (driver.frontend_ctx &&
+       driver.frontend_ctx->get_video_driver)
    {
       driver.video = driver.frontend_ctx->get_video_driver();
 
