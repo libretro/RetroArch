@@ -27,6 +27,7 @@
 #include "hash.h"
 #include "file_extract.h"
 
+
 #ifdef _WIN32
 #ifdef _XBOX
 #include <xtl.h>
@@ -387,9 +388,24 @@ static bool load_content(const struct retro_subsystem_info *special,
                " load it on its own.\n");
          if (need_fullpath && path_contains_compressed_file(path))
          {
-            RARCH_ERR("Compressed files are only supported for drivers,"
-                  " where need_fullpath is set to false. Exiting.\n");
-            rarch_assert(false);
+            RARCH_LOG("Compressed file in case of need_fullpath."
+                  "Now extracting to temporary directory.\n");
+
+            /* This is a test implementation, currently it needs as much
+             * RAM as the file is big.
+             */
+            char new_path[PATH_MAX];
+            fill_pathname_join(new_path,g_settings.extraction_directory,
+                  path_basename(path),sizeof(new_path));
+            void *buf = NULL;
+            ssize_t bytes_read = -1;
+            bytes_read = read_file(path, &buf);
+            write_file(new_path,buf,bytes_read);
+
+            info[i].path =strdup(new_path);
+            if(buf)
+               free(buf);
+            buf = NULL;
          }
       }
    }
