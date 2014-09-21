@@ -266,6 +266,7 @@ struct settings
 
       bool allow_rotate;
       bool shared_context;
+      bool force_srgb_disable;
    } video;
 
 #ifdef HAVE_MENU

@@ -516,6 +516,9 @@ static void gl_create_fbo_textures(gl_t *gl)
             RARCH_ERR("[GL]: sRGB FBO was requested, but it is not supported. Falling back to UNORM. Result may have banding!\n");
       }
 
+      if (g_settings.video.force_srgb_disable)
+         srgb_fbo = false;
+
    #ifndef HAVE_OPENGLES2
       if (fp_fbo && gl->has_fp_fbo)
       {
@@ -1873,6 +1876,9 @@ static bool resolve_extensions(gl_t *gl)
    gl->has_srgb_fbo = gl->core_context || (gl_query_extension(gl, "EXT_texture_sRGB") && gl_query_extension(gl, "ARB_framebuffer_sRGB"));
 #endif
 #endif
+
+   if (g_settings.video.force_srgb_disable)
+      gl->has_srgb_fbo = false;
 
 #ifdef GL_DEBUG
    // Useful for debugging, but kinda obnoxious otherwise.
