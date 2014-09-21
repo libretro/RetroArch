@@ -73,8 +73,6 @@ int main_entry_decide(signature(), args_type() args)
 #ifdef HAVE_MENU
    if (g_extern.system.shutdown)
       return main_entry_iterate_shutdown(signature_expand(), args);
-   if (g_extern.lifecycle_state & (1ULL << MODE_LOAD_GAME))
-      return main_entry_iterate_load_content(signature_expand(), args);
    if (g_extern.lifecycle_state & (1ULL << MODE_GAME))
       return main_entry_iterate_content(signature_expand(), args);
    if (g_extern.lifecycle_state & (1ULL << MODE_MENU))
@@ -109,23 +107,6 @@ static int main_entry_iterate_content_nomenu(signature(), args_type() args)
    return 0;
 }
 #endif
-
-int main_entry_iterate_load_content(signature(), args_type() args)
-{
-#ifdef HAVE_MENU
-   if (!load_menu_content())
-   {
-      /* If content loading fails, we go back to menu. */
-      rarch_main_set_state(RARCH_ACTION_STATE_RUNNING_FINISHED);
-      if (driver.menu)
-         rarch_main_set_state(RARCH_ACTION_STATE_MENU_PREINIT);
-   }
-#endif
-
-   rarch_main_set_state(RARCH_ACTION_STATE_LOAD_CONTENT_FINISHED);
-
-   return 0;
-}
 
 #ifdef HAVE_MENU
 int main_entry_iterate_menu(signature(), args_type() args)

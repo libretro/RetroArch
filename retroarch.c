@@ -3210,10 +3210,15 @@ void rarch_main_set_state(unsigned cmd)
          }
          break;
       case RARCH_ACTION_STATE_LOAD_CONTENT:
-         g_extern.lifecycle_state |= (1ULL << MODE_LOAD_GAME);
-         break;
-      case RARCH_ACTION_STATE_LOAD_CONTENT_FINISHED:
-         g_extern.lifecycle_state &= ~(1ULL << MODE_LOAD_GAME);
+#ifdef HAVE_MENU
+         if (!load_menu_content())
+         {
+            /* If content loading fails, we go back to menu. */
+            rarch_main_set_state(RARCH_ACTION_STATE_RUNNING_FINISHED);
+            if (driver.menu)
+               rarch_main_set_state(RARCH_ACTION_STATE_MENU_PREINIT);
+         }
+#endif
          break;
       case RARCH_ACTION_STATE_RUNNING:
          g_extern.lifecycle_state |= (1ULL << MODE_GAME);
