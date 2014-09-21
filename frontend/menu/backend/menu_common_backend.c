@@ -1762,7 +1762,7 @@ static int menu_action_ok(const char *menu_path,
       case MENU_FILE_IN_CARCHIVE:
 #endif
       case MENU_FILE_PLAIN:
-      {
+
          if (!strcmp(menu_label, "detect_core_list"))
          {
             int ret = rarch_defer_core(g_extern.core_info,
@@ -1820,10 +1820,8 @@ static int menu_action_ok(const char *menu_path,
 
             return -1;
          }
+
          return 0;
-      }
-
-
 
       case MENU_FILE_CONFIG:
 

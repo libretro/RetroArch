@@ -27,7 +27,6 @@
 #include "hash.h"
 #include "file_extract.h"
 
-
 #ifdef _WIN32
 #ifdef _XBOX
 #include <xtl.h>
