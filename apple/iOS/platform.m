@@ -105,7 +105,7 @@ static void handle_touch_event(NSArray* touches)
 @end
 
 @interface UIApplication(iOS7Keyboard)
-- (id)_keyCommandForEvent:(id)event;
+- (id)_keyCommandForEvent:(UIEvent*)event;
 @end
 
 @interface RApplication : UIApplication
