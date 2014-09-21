@@ -3177,6 +3177,7 @@ void rarch_main_set_state(unsigned cmd)
    {
       case RARCH_ACTION_STATE_MENU_PREINIT:
          g_extern.lifecycle_state |= (1ULL << MODE_MENU_PREINIT);
+         g_extern.system.frame_time_last = 0;
          break;
       case RARCH_ACTION_STATE_MENU_PREINIT_FINISHED:
          g_extern.lifecycle_state &= ~(1ULL << MODE_MENU_PREINIT);
@@ -3602,7 +3603,6 @@ bool rarch_main_iterate(void)
    {
       /* Always go into menu if dummy core is loaded. */
       rarch_main_set_state(RARCH_ACTION_STATE_MENU_PREINIT);
-      g_extern.system.frame_time_last = 0;
       return false; /* Enter menu, don't exit. */
    }
 
