@@ -46,9 +46,9 @@ static bool zlib_extract_callback(const char *name,
    // Ignore directories
    if (name[strlen(name) - 1] == '/')
       return true;
-  
+
    fill_pathname_join(path, (const char*)userdata, name, sizeof(path));
-   
+
    switch (cmode)
    {
       case 0: // Uncompressed
@@ -80,7 +80,7 @@ static void file_action(enum file_action action, NSString* source, NSString* tar
    NSError* error = nil;
    bool result = false;
    NSFileManager* manager = [NSFileManager defaultManager];
-   
+
    switch (action)
    {
       case FA_DELETE:
@@ -123,16 +123,16 @@ static void file_action(enum file_action action, NSString* source, NSString* tar
 {
    static NSString* const cell_id = @"path_item";
    static NSString* const icon_types[2] = { @"ic_file", @"ic_dir" };
-   
+
    uint32_t type_id = self.isDirectory ? 1 : 0;
-   
+
    UITableViewCell* result = [tableView dequeueReusableCellWithIdentifier:cell_id];
    if (!result)
       result = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:cell_id];
 
    result.textLabel.text = [self.path lastPathComponent];
    result.imageView.image = [UIImage imageNamed:icon_types[type_id]];
-   
+
    return result;
 }
 
@@ -152,21 +152,17 @@ static void file_action(enum file_action action, NSString* source, NSString* tar
 {
    if ((self = [super initWithStyle:UITableViewStylePlain]))
    {
-      _path = path ? path : NSHomeDirectory();
-      _chooseAction = action;
-      _extensions = extensions ? BOXSTRING(extensions) : 0;
-
-      self = [super initWithStyle:UITableViewStylePlain];
+      self.path = path ? path : NSHomeDirectory();
+      self.chooseAction = action;
+      self.extensions = extensions ? BOXSTRING(extensions) : 0;
       self.hidesHeaders = YES;
-      
+
       self.navigationItem.leftBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:@"Up" style:UIBarButtonItemStyleBordered target:self
                                                                        action:@selector(gotoParent)];
-
 
       self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemCancel target:self
                                                                         action:@selector(cancelBrowser)];
 
-      
       // NOTE: The "App" and "Root" buttons aren't really needed for non-jailbreak devices.
       NSMutableArray* toolbarButtons = [NSMutableArray arrayWithObjects:
          [[UIBarButtonItem alloc] initWithTitle:@"Home" style:UIBarButtonItemStyleBordered target:self
@@ -183,12 +179,11 @@ static void file_action(enum file_action action, NSString* source, NSString* tar
                                   action:@selector(createNewFolder)],
          nil
       ];
-      
+
       self.toolbarItems = toolbarButtons;
 
       [self.tableView addGestureRecognizer:[[UILongPressGestureRecognizer alloc] initWithTarget:self
                       action:@selector(fileAction:)]];
-      
    }
 
    return self;
@@ -201,7 +196,7 @@ static void file_action(enum file_action action, NSString* source, NSString* tar
 
 - (void)gotoParent
 {
-   [self browseTo:[_path stringByDeletingLastPathComponent]];
+   [self browseTo:[self.path stringByDeletingLastPathComponent]];
 }
 
 - (void)gotoHomeDir
@@ -221,27 +216,27 @@ static void file_action(enum file_action action, NSString* source, NSString* tar
 
 - (void)refresh
 {
-   [self browseTo:_path];
+   [self browseTo: self.path];
 }
 
 - (void)browseTo:(NSString*)path
 {
-   _path = path;
-   self.title = _path.lastPathComponent;
+   self.path = path;
+   self.title = self.path.lastPathComponent;
 
    // Need one array per section
    self.sections = [NSMutableArray array];
-   
+
    for (NSString* i in [self sectionIndexTitlesForTableView:self.tableView])
       [self.sections addObject:[NSMutableArray arrayWithObject:i]];
-   
+
    // List contents
-   struct string_list* contents = dir_list_new(_path.UTF8String, _extensions.UTF8String, true);
-   
+   struct string_list* contents = dir_list_new(self.path.UTF8String, self.extensions.UTF8String, true);
+
    if (contents)
    {
       RADirectoryList __weak* weakSelf = self;
-      
+
       if (self.allowBlank)
          [self.sections[0] addObject:[RAMenuItemBasic itemWithDescription:@"[ Use Empty Path ]"
                                                                    action:^{ weakSelf.chooseAction(weakSelf, nil); }]];
@@ -250,17 +245,17 @@ static void file_action(enum file_action action, NSString* source, NSString* tar
                                                                    action:^{ weakSelf.chooseAction(weakSelf, [RADirectoryItem directoryItemFromPath:path]); }]];
 
       dir_list_sort(contents, true);
-   
+
       for (size_t i = 0; i < contents->size; i ++)
       {
          const char* basename = path_basename(contents->elems[i].data);
-      
+
          uint32_t section = isalpha(basename[0]) ? (toupper(basename[0]) - 'A') + 2 : 1;
          section = (contents->elems[i].attr.i == RARCH_DIRECTORY) ? 0 : section;
 
          [self.sections[section] addObject:[RADirectoryItem directoryItemFromElement:&contents->elems[i]]];
       }
-   
+
       dir_list_free(contents);
    }
    else
@@ -280,7 +275,7 @@ static void file_action(enum file_action action, NSString* source, NSString* tar
 - (void)viewWillAppear:(BOOL)animated
 {
    [super viewWillAppear:animated];
-   [self browseTo:_path];
+   [self browseTo: self.path];
 }
 
 - (NSArray*)sectionIndexTitlesForTableView:(UITableView*)tableView
@@ -312,7 +307,7 @@ static void file_action(enum file_action action, NSString* source, NSString* tar
    {
       CGPoint point = [gesture locationInView:self.tableView];
       NSIndexPath* indexPath = [self.tableView indexPathForRowAtPoint:point];
-      
+
       if (indexPath)
       {
          self.selectedItem = [self itemForIndexPath:indexPath];
@@ -320,7 +315,7 @@ static void file_action(enum file_action action, NSString* source, NSString* tar
 
          NSString* button4_name = (IOS_IS_VERSION_7_OR_HIGHER()) ? @"AirDrop" : @"Delete";
          NSString* button5_name = (IOS_IS_VERSION_7_OR_HIGHER()) ? @"Delete" : nil;
-         
+
          UIActionSheet* menu = [[UIActionSheet alloc] initWithTitle:self.selectedItem.path.lastPathComponent delegate:self
                                                       cancelButtonTitle:@"Cancel" destructiveButtonTitle:nil
                                                       otherButtonTitles:is_zip ? @"Unzip" : @"Zip", @"Move", @"Rename", button4_name, button5_name, nil];
@@ -335,7 +330,7 @@ static void file_action(enum file_action action, NSString* source, NSString* tar
 {
    NSString* target = self.selectedItem.path;
    NSString* action = [actionSheet buttonTitleAtIndex:buttonIndex];
-   
+
    if ([action isEqualToString:@"Unzip"])
    {
       UIAlertView* alertView = [[UIAlertView alloc] initWithTitle:@"Enter target directory" message:@"" delegate:self
@@ -360,11 +355,11 @@ static void file_action(enum file_action action, NSString* source, NSString* tar
    else if ([action isEqualToString:@"AirDrop"] && IOS_IS_VERSION_7_OR_HIGHER())
    {
       // TODO: Zip if not already zipped
-      
+
       NSURL* url = [NSURL fileURLWithPath:self.selectedItem.path isDirectory:self.selectedItem.isDirectory];
       NSArray* items = [NSArray arrayWithObject:url];
       UIActivityViewController* avc = [[UIActivityViewController alloc] initWithActivityItems:items applicationActivities:nil];
-      
+
       [self presentViewController:avc animated:YES completion:nil];
    }
 #endif
@@ -392,10 +387,10 @@ static void file_action(enum file_action action, NSString* source, NSString* tar
       NSString* text = [alertView textFieldAtIndex:0].text;
 
       if (text.length)
-         file_action((enum file_action)alertView.tag, self.selectedItem.path, [_path stringByAppendingPathComponent:text]);
+         file_action((enum file_action)alertView.tag, self.selectedItem.path, [self.path stringByAppendingPathComponent:text]);
    }
 
-   [self browseTo:_path];
+   [self browseTo: self.path];
 }
 
 @end
@@ -411,20 +406,20 @@ static void file_action(enum file_action action, NSString* source, NSString* tar
    if ((self = [super initWithStyle:UITableViewStyleGrouped]))
    {
       RAFoldersList* __weak weakSelf = self;
-      _path = path;
+      self.path = path;
 
       // Parent item
-      NSString* sourceItem = _path.stringByDeletingLastPathComponent;
-      
+      NSString* sourceItem = self.path.stringByDeletingLastPathComponent;
+
       RAMenuItemBasic* parentItem = [RAMenuItemBasic itemWithDescription:BOXSTRING("<Parent>") association:sourceItem.stringByDeletingLastPathComponent
          action:^(id userdata){ [weakSelf moveInto:userdata]; } detail:NULL];
       [self.sections addObject:@[BOXSTRING(""), parentItem]];
 
 
       // List contents
-      struct string_list* contents = dir_list_new([_path stringByDeletingLastPathComponent].UTF8String, 0, true);
+      struct string_list* contents = dir_list_new([self.path stringByDeletingLastPathComponent].UTF8String, 0, true);
       NSMutableArray* items = [NSMutableArray arrayWithObject:BOXSTRING("")];
-   
+
       if (contents)
       {
          size_t i;
@@ -435,18 +430,18 @@ static void file_action(enum file_action action, NSString* source, NSString* tar
             if (contents->elems[i].attr.i == RARCH_DIRECTORY)
             {
                const char* basename = path_basename(contents->elems[i].data);
-               
+
                RAMenuItemBasic* item = [RAMenuItemBasic itemWithDescription:BOXSTRING(basename) association:BOXSTRING(contents->elems[i].data)
                   action:^(id userdata){ [weakSelf moveInto:userdata]; } detail:NULL];
                [items addObject:item];
             }
          }
-   
+
          dir_list_free(contents);
       }
 
-      [self setTitle:[BOXSTRING("Move ") stringByAppendingString:_path.lastPathComponent]];
-      
+      [self setTitle:[BOXSTRING("Move ") stringByAppendingString: self.path.lastPathComponent]];
+
       [self.sections addObject:items];
    }
 
