@@ -71,14 +71,18 @@ static int main_entry_iterate_shutdown(signature(), args_type() args)
 int main_entry_decide(signature(), args_type() args)
 {
 #ifdef HAVE_MENU
+   int ret = 1;
    if (g_extern.system.shutdown)
-      return main_entry_iterate_shutdown(signature_expand(), args);
+      ret = main_entry_iterate_shutdown(signature_expand(), args);
    if (g_extern.lifecycle_state & (1ULL << MODE_GAME))
-      return main_entry_iterate_content(signature_expand(), args);
+      ret = main_entry_iterate_content(signature_expand(), args);
    if (g_extern.lifecycle_state & (1ULL << MODE_MENU))
-      return main_entry_iterate_menu(signature_expand(), args);
+      ret = main_entry_iterate_menu(signature_expand(), args);
 
-   return 1;
+   if (driver.frontend_ctx && driver.frontend_ctx->process_events)
+      driver.frontend_ctx->process_events(args);
+
+   return ret;
 #else
    return main_entry_iterate_content_nomenu(signature_expand(), args);
 #endif
@@ -91,9 +95,6 @@ int main_entry_iterate_content(signature(), args_type() args)
       rarch_main_set_state(RARCH_ACTION_STATE_RUNNING_FINISHED);
       return 0;
    }
-
-   if (driver.frontend_ctx && driver.frontend_ctx->process_events)
-      driver.frontend_ctx->process_events(args);
 
    return 0;
 }
@@ -114,11 +115,7 @@ int main_entry_iterate_menu(signature(), args_type() args)
    retro_input_t input, old_state = 0;
 
    if (menu_iterate())
-   {
-      if (driver.frontend_ctx && driver.frontend_ctx->process_events)
-         driver.frontend_ctx->process_events(args);
       return 0;
-   }
 
    rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED);
    driver_set_nonblock_state(driver.nonblock_state);
