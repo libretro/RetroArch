@@ -505,6 +505,8 @@
 					"-DRARCH_INTERNAL",
 					"-DHAVE_THREADS",
 					"-DHAVE_FILTERS_BUILTIN",
+					"-DHAVE_LAKKA",
+					"-DHAVE_GLUI",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				VALID_ARCHS = "armv7 armv7s";
@@ -558,6 +560,8 @@
 					"-DHAVE_THREADS",
 					"-DHAVE_FILTERS_BUILTIN",
 					"-DHAVE_7ZIP",
+					"-DHAVE_LAKKA",
+					"-DHAVE_GLUI",
 				);
 				"OTHER_CFLAGS[arch=*]" = (
 					"-DNS_BLOCK_ASSERTIONS=1",
@@ -580,14 +584,16 @@
 					"-DRARCH_MOBILE",
 					"-DHAVE_COREAUDIO",
 					"-DHAVE_DYNAMIC",
+					"-DRARCH_INTERNAL",
 					"-DHAVE_OVERLAY",
 					"-DHAVE_ZLIB",
 					"-DWANT_MINIZ",
 					"-DSINC_LOWER_QUALITY",
-					"-DRARCH_INTERNAL",
 					"-DHAVE_THREADS",
 					"-DHAVE_FILTERS_BUILTIN",
 					"-DHAVE_7ZIP",
+					"-DHAVE_LAKKA",
+					"-DHAVE_GLUI",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE = "";
