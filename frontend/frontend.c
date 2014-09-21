@@ -55,163 +55,34 @@
 
 #define MAX_ARGS 32
 
-static retro_keyboard_event_t key_event;
-
-static int main_entry_iterate_shutdown(signature(), args_type() args)
+static int main_entry_iterate_shutdown(signature(),
+      args_type() args)
 {
    (void)args;
 
-   if (!g_settings.load_dummy_on_core_shutdown)
-      return 1;
+   if (g_extern.core_shutdown_initiated 
+         && g_settings.load_dummy_on_core_shutdown)
+   {
+      /* Load dummy core instead of exiting RetroArch completely. */
+      rarch_main_command(RARCH_CMD_PREPARE_DUMMY);
+      g_extern.core_shutdown_initiated = false;
+      return 0;
+   }
 
-   /* Load dummy core instead of exiting RetroArch completely. */
-   rarch_main_command(RARCH_CMD_PREPARE_DUMMY);
-
-   return 0;
+   return 1;
 }
 
 int main_entry_decide(signature(), args_type() args)
 {
-#ifdef HAVE_MENU
-   if (g_extern.system.shutdown)
-      return main_entry_iterate_shutdown(signature_expand(), args);
-   if (g_extern.lifecycle_state & (1ULL << MODE_CLEAR_INPUT))
-      return main_entry_iterate_clear_input(signature_expand(), args);
-   if (g_extern.lifecycle_state & (1ULL << MODE_LOAD_GAME))
-      return main_entry_iterate_load_content(signature_expand(), args);
-   if (g_extern.lifecycle_state & (1ULL << MODE_GAME))
-      return main_entry_iterate_content(signature_expand(), args);
-   if (g_extern.lifecycle_state & (1ULL << MODE_MENU_PREINIT))
-      return main_entry_iterate_menu_preinit(signature_expand(), args);
-   if (g_extern.lifecycle_state & (1ULL << MODE_MENU))
-      return main_entry_iterate_menu(signature_expand(), args);
-
-   return 1;
-#else
-   return main_entry_iterate_content_nomenu(signature_expand(), args);
-#endif
-}
-
-int main_entry_iterate_content(signature(), args_type() args)
-{
+   int ret = 0;
    if (!rarch_main_iterate())
-   {
-      rarch_main_set_state(RARCH_ACTION_STATE_RUNNING_FINISHED);
-      return 0;
-   }
+      return main_entry_iterate_shutdown(signature_expand(), args);
 
    if (driver.frontend_ctx && driver.frontend_ctx->process_events)
       driver.frontend_ctx->process_events(args);
 
    return 0;
 }
-
-#ifndef HAVE_MENU
-static int main_entry_iterate_content_nomenu(signature(), args_type() args)
-{
-   if (!rarch_main_iterate())
-      return 1;
-
-   return 0;
-}
-#endif
-
-int main_entry_iterate_clear_input(signature(), args_type() args)
-{
-   (void)args;
-
-   rarch_input_poll();
-#ifdef HAVE_MENU
-   if (menu_input())
-      return 0;
-#endif
-
-   /* Restore libretro keyboard callback. */
-   g_extern.system.key_event = key_event;
-   rarch_main_set_state(RARCH_ACTION_STATE_FLUSH_INPUT_FINISHED);
-
-   return 0;
-}
-
-int main_entry_iterate_load_content(signature(), args_type() args)
-{
-#ifdef HAVE_MENU
-   if (!load_menu_content())
-   {
-      /* If content loading fails, we go back to menu. */
-      rarch_main_set_state(RARCH_ACTION_STATE_RUNNING_FINISHED);
-      if (driver.menu)
-         rarch_main_set_state(RARCH_ACTION_STATE_MENU_PREINIT);
-   }
-#endif
-
-   rarch_main_set_state(RARCH_ACTION_STATE_LOAD_CONTENT_FINISHED);
-
-   return 0;
-}
-
-#ifdef HAVE_MENU
-int main_entry_iterate_menu_preinit(signature(), args_type() args)
-{
-   int i;
-
-   /* Menu should always run with vsync on. */
-   rarch_main_command(RARCH_CMD_VIDEO_SET_BLOCKING_STATE);
-
-   /* Stop all rumbling before entering the menu. */
-   for (i = 0; i < MAX_PLAYERS; i++)
-   {
-      driver_set_rumble_state(i, RETRO_RUMBLE_STRONG, 0);
-      driver_set_rumble_state(i, RETRO_RUMBLE_WEAK, 0);
-   }
-
-   rarch_main_command(RARCH_CMD_AUDIO_STOP);
-
-   if (driver.menu)
-   {
-      /* Override keyboard callback to redirect to menu instead.
-       * We'll use this later for something ...
-       * FIXME: This should probably be moved to menu_common somehow. */
-      key_event = g_extern.system.key_event;
-      g_extern.system.key_event = menu_key_event;
-
-      driver.menu->need_refresh = true;
-      driver.menu->old_input_state |= 1ULL << RARCH_MENU_TOGGLE;
-      rarch_main_set_state(RARCH_ACTION_STATE_MENU_PREINIT_FINISHED);
-      rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING);
-   }
-
-   return 0;
-}
-
-int main_entry_iterate_menu(signature(), args_type() args)
-{
-   retro_input_t input, old_state = 0;
-
-   if (menu_iterate())
-   {
-      if (driver.frontend_ctx && driver.frontend_ctx->process_events)
-         driver.frontend_ctx->process_events(args);
-      return 0;
-   }
-
-   rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED);
-   driver_set_nonblock_state(driver.nonblock_state);
-
-   rarch_main_command(RARCH_CMD_AUDIO_START);
-   rarch_main_set_state(RARCH_ACTION_STATE_FLUSH_INPUT);
-
-   input = input_keys_pressed_func(RARCH_QUIT_KEY, RARCH_QUIT_KEY + 1,
-         &old_state);
-
-   if (BIND_PRESSED(input, RARCH_QUIT_KEY) ||
-         !driver.video->alive(driver.video_data))
-      return 1;
-
-   return 0;
-}
-#endif
-
 
 void main_exit(args_type() args)
 {

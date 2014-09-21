@@ -52,7 +52,7 @@ typedef void (^RAActionSheetCallback)(UIActionSheet*, NSInteger);
 
 static void RunActionSheet(const char* title, const struct string_list* items, UIView* parent, RAActionSheetCallback callback)
 {
-   int i;
+   size_t i;
    RARunActionSheetDelegate* delegate = [[RARunActionSheetDelegate alloc] initWithCallbackBlock:callback];
    UIActionSheet* actionSheet = [UIActionSheet new];
 
@@ -134,6 +134,10 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 /* selected.                                 */
 /*********************************************/
 @implementation RAMenuItemBasic
+@synthesize description;
+@synthesize userdata;
+@synthesize action;
+@synthesize detail;
 
 + (RAMenuItemBasic*)itemWithDescription:(NSString*)description action:(void (^)())action
 {
@@ -653,15 +657,15 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 
 - (void)dealloc
 {
-   if (_history)
-      content_playlist_free(_history);
+   if (self.history)
+      content_playlist_free(self.history);
 }
 
 - (id)initWithHistoryPath:(const char*)historyPath
 {
    if ((self = [super initWithStyle:UITableViewStylePlain]))
    {
-      _history = content_playlist_init(historyPath, 100);
+      self.history = content_playlist_init(historyPath, 100);
       [self reloadData];
       self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:BOXSTRING("Clear History")
                                                 style:UIBarButtonItemStyleBordered target:self action:@selector(clearHistory)];
@@ -672,18 +676,18 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 
 - (void)clearHistory
 {
-   if (_history)
-      content_playlist_clear(_history);
+   if (self.history)
+      content_playlist_clear(self.history);
    [self reloadData];
 }
 
 - (void)willReloadData
 {
-   int i;
+   size_t i;
    RAHistoryMenu* __weak weakSelf = self;
    NSMutableArray *section = [NSMutableArray arrayWithObject:BOXSTRING("")];
    
-   for (i = 0; _history && i < content_playlist_size(_history); i ++)
+   for (i = 0; self.history && i < content_playlist_size(self.history); i ++)
    {
        RAMenuItemBasic *item;
        const char *path      = NULL;
@@ -903,7 +907,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 
 - (void)willReloadData
 {
-   int i;
+   size_t i;
    const core_info_list_t* core_list;
    RAFrontendSettingsMenu* __weak weakSelf = self;
    NSMutableArray* cores = (NSMutableArray*)self.coreConfigOptions;
@@ -1151,7 +1155,7 @@ static bool copy_config(const char *src_path, const char *dst_path)
    self.actionRan = true;
    
    if (self.action)
-      _action(coreID);
+      self.action(coreID);
 }
 
 - (void)load:(uint32_t)count coresFromList:(const core_info_t*)list toSection:(NSMutableArray*)array

@@ -43,6 +43,7 @@
 
 #ifdef HAVE_MENU
 #include "frontend/menu/menu_common.h"
+#include "frontend/menu/menu_input_line_cb.h"
 #endif
 
 #ifdef _WIN32
@@ -2319,51 +2320,64 @@ static void check_slowmotion(bool pressed)
          "Slow motion rewind." : "Slow motion.", 0, 30);
 }
 
-static void check_movie_record(bool pressed)
+static bool check_movie_init(void)
 {
+   char path[PATH_MAX], msg[PATH_MAX];
+   bool ret = true;
+   
    if (g_extern.bsv.movie)
+      return false;
+
+   g_settings.rewind_granularity = 1;
+
+   if (g_settings.state_slot > 0)
    {
-      msg_queue_clear(g_extern.msg_queue);
-      msg_queue_push(g_extern.msg_queue,
-            RETRO_MSG_MOVIE_RECORD_STOPPING, 2, 180);
-      RARCH_LOG(RETRO_LOG_MOVIE_RECORD_STOPPING);
-      deinit_movie();
+      snprintf(path, sizeof(path), "%s%d.bsv",
+            g_extern.bsv.movie_path, g_settings.state_slot);
    }
    else
    {
-      char path[PATH_MAX], msg[PATH_MAX];
-
-      g_settings.rewind_granularity = 1;
-
-      if (g_settings.state_slot > 0)
-      {
-         snprintf(path, sizeof(path), "%s%d.bsv",
-               g_extern.bsv.movie_path, g_settings.state_slot);
-      }
-      else
-      {
-         snprintf(path, sizeof(path), "%s.bsv",
-               g_extern.bsv.movie_path);
-      }
-
-      snprintf(msg, sizeof(msg), "Starting movie record to \"%s\".", path);
-
-      g_extern.bsv.movie = bsv_movie_init(path, RARCH_MOVIE_RECORD);
-      msg_queue_clear(g_extern.msg_queue);
-      msg_queue_push(g_extern.msg_queue, g_extern.bsv.movie ?
-            msg : "Failed to start movie record.", 1, 180);
-
-      if (g_extern.bsv.movie)
-         RARCH_LOG("Starting movie record to \"%s\".\n", path);
-      else
-         RARCH_ERR("Failed to start movie record.\n");
+      snprintf(path, sizeof(path), "%s.bsv",
+            g_extern.bsv.movie_path);
    }
+
+   snprintf(msg, sizeof(msg), "Starting movie record to \"%s\".", path);
+
+   g_extern.bsv.movie = bsv_movie_init(path, RARCH_MOVIE_RECORD);
+
+   if (!g_extern.bsv.movie)
+      ret = false;
+
+   msg_queue_clear(g_extern.msg_queue);
+   msg_queue_push(g_extern.msg_queue, g_extern.bsv.movie ?
+         msg : "Failed to start movie record.", 1, 180);
+
+   if (g_extern.bsv.movie)
+      RARCH_LOG("Starting movie record to \"%s\".\n", path);
+   else
+      RARCH_ERR("Failed to start movie record.\n");
+
+   return ret;
 }
 
-static void check_movie_playback(bool pressed)
+static bool check_movie_record(void)
+{
+   if (!g_extern.bsv.movie)
+      return false;
+
+   msg_queue_clear(g_extern.msg_queue);
+   msg_queue_push(g_extern.msg_queue,
+         RETRO_MSG_MOVIE_RECORD_STOPPING, 2, 180);
+   RARCH_LOG(RETRO_LOG_MOVIE_RECORD_STOPPING);
+   deinit_movie();
+
+   return true;
+}
+
+static bool check_movie_playback(void)
 {
    if (!g_extern.bsv.movie_end)
-      return;
+      return false;
 
    msg_queue_push(g_extern.msg_queue,
          RETRO_MSG_MOVIE_PLAYBACK_ENDED, 1, 180);
@@ -2372,19 +2386,20 @@ static void check_movie_playback(bool pressed)
    deinit_movie();
    g_extern.bsv.movie_end = false;
    g_extern.bsv.movie_playback = false;
+
+   return true;
 }
 
-static void check_movie(void)
+static bool check_movie(void)
 {
    if (g_extern.bsv.movie_playback)
-      check_movie_playback(true);
-   else
-      check_movie_record(true);
+      return check_movie_playback();
+   if (!g_extern.bsv.movie)
+      return check_movie_init();
+   return check_movie_record();
 }
 
-static void check_pause(
-      bool new_state, bool old_state,
-      bool frameadvance_pressed)
+static void check_pause(bool pressed, bool frameadvance_pressed)
 {
    static bool old_focus    = true;
    bool focus               = true;
@@ -2392,12 +2407,12 @@ static void check_pause(
    bool has_set_audio_start = false;
 
    /* FRAMEADVANCE will set us into pause mode. */
-   new_state |= !g_extern.is_paused && frameadvance_pressed;
+   pressed |= !g_extern.is_paused && frameadvance_pressed;
 
    if (g_settings.pause_nonactive)
       focus = driver.video->focus(driver.video_data);
 
-   if (focus && new_state && !old_state)
+   if (focus && pressed)
    {
       g_extern.is_paused = !g_extern.is_paused;
 
@@ -2486,6 +2501,9 @@ static void check_turbo(void)
 
 static void check_shader_dir(bool pressed_next, bool pressed_prev)
 {
+   char msg[PATH_MAX];
+   const char *shader = NULL, *ext = NULL;
+   enum rarch_shader_type type = RARCH_SHADER_NONE;
    bool should_apply = false;
 
    if (!g_extern.shader_dir.list || !driver.video->set_shader)
@@ -2506,13 +2524,12 @@ static void check_shader_dir(bool pressed_next, bool pressed_prev)
          g_extern.shader_dir.ptr--;
    }
 
-   if (should_apply)
+   if (!should_apply)
+      return;
+
    {
-      char msg[512];
-      const char *shader          = 
-         g_extern.shader_dir.list->elems[g_extern.shader_dir.ptr].data;
-      enum rarch_shader_type type = RARCH_SHADER_NONE;
-      const char *ext             = path_get_extension(shader);
+      shader = g_extern.shader_dir.list->elems[g_extern.shader_dir.ptr].data;
+      ext    = path_get_extension(shader);
 
       if (strcmp(ext, "glsl") == 0 || strcmp(ext, "glslp") == 0)
          type = RARCH_SHADER_GLSL;
@@ -2536,7 +2553,7 @@ static void check_shader_dir(bool pressed_next, bool pressed_prev)
 
 void rarch_disk_control_append_image(const char *path)
 {
-   char msg[512];
+   char msg[PATH_MAX];
    unsigned new_index;
    const struct retro_disk_control_callback *control = 
       (const struct retro_disk_control_callback*)&g_extern.system.disk_control;
@@ -2583,7 +2600,7 @@ void rarch_disk_control_append_image(const char *path)
 
 void rarch_disk_control_set_eject(bool new_state, bool log)
 {
-   char msg[256];
+   char msg[PATH_MAX];
    const struct retro_disk_control_callback *control = 
       (const struct retro_disk_control_callback*)&g_extern.system.disk_control;
    bool error = false;
@@ -2621,7 +2638,7 @@ void rarch_disk_control_set_eject(bool new_state, bool log)
 
 void rarch_disk_control_set_index(unsigned next_index)
 {
-   char msg[256];
+   char msg[PATH_MAX];
    unsigned num_disks;
    const struct retro_disk_control_callback *control = 
       (const struct retro_disk_control_callback*)&g_extern.system.disk_control;
@@ -2779,7 +2796,10 @@ static void check_disk_next(
       RARCH_ERR("Got invalid disk index from libretro.\n");
 }
 
-static void do_state_checks(
+/* Checks for stuff like fullscreen, save states, etc.
+ * Return false when RetroArch is paused. */
+
+static bool do_state_checks(
       retro_input_t input, retro_input_t old_input,
       retro_input_t trigger_input)
 {
@@ -2814,10 +2834,10 @@ static void do_state_checks(
    if (g_extern.netplay)
    {
       check_netplay_flip_func(trigger_input);
-      return;
+      return true;
    }
 #endif
-   check_pause_func(input, old_input);
+   check_pause_func(trigger_input);
 
    check_oneshot_func(trigger_input);
 
@@ -2825,7 +2845,7 @@ static void do_state_checks(
       rarch_render_cached_frame();
 
    if (g_extern.is_paused && !g_extern.is_oneshot)
-      return;
+      return false;
 
    check_fast_forward_button_func(input, old_input, trigger_input);
 
@@ -2872,6 +2892,8 @@ static void do_state_checks(
 
    if (BIND_PRESSED(trigger_input, RARCH_RESET))
       rarch_main_command(RARCH_CMD_RESET);
+
+   return true;
 }
 
 static void init_state(void)
@@ -2951,7 +2973,8 @@ static void verify_api_version(void)
 }
 
 /* Make sure we haven't compiled for something we cannot run.
- * Ideally, code would get swapped out depending on CPU support, but this will do for now.
+ * Ideally, code would get swapped out depending on CPU support, 
+ * but this will do for now.
  */
 static void validate_cpu_features(void)
 {
@@ -3096,21 +3119,6 @@ error:
    return 1;
 }
 
-static bool check_enter_menu(bool pressed, bool old_pressed)
-{
-   bool rmenu_toggle = pressed || (g_extern.libretro_dummy && !old_pressed);
-
-   if (rmenu_toggle && !old_pressed)
-   {
-      /* Always go into menu if dummy core is loaded. */
-      rarch_main_set_state(RARCH_ACTION_STATE_MENU_PREINIT);
-      g_extern.system.frame_time_last = 0;
-      return true;
-   }
-
-   return false;
-}
-
 static inline void update_frame_time(void)
 {
    retro_time_t time = 0;
@@ -3169,22 +3177,47 @@ void rarch_main_set_state(unsigned cmd)
    switch (cmd)
    {
       case RARCH_ACTION_STATE_MENU_PREINIT:
-         g_extern.lifecycle_state |= (1ULL << MODE_MENU_PREINIT);
-         break;
-      case RARCH_ACTION_STATE_MENU_PREINIT_FINISHED:
-         g_extern.lifecycle_state &= ~(1ULL << MODE_MENU_PREINIT);
+         {
+            int i;
+
+            /* Menu should always run with vsync on. */
+            rarch_main_command(RARCH_CMD_VIDEO_SET_BLOCKING_STATE);
+
+            /* Stop all rumbling before entering the menu. */
+            for (i = 0; i < MAX_PLAYERS; i++)
+            {
+               driver_set_rumble_state(i, RETRO_RUMBLE_STRONG, 0);
+               driver_set_rumble_state(i, RETRO_RUMBLE_WEAK, 0);
+            }
+
+            rarch_main_command(RARCH_CMD_AUDIO_STOP);
+
+#ifdef HAVE_MENU
+            if (driver.menu)
+            {
+               /* Override keyboard callback to redirect to menu instead.
+                * We'll use this later for something ...
+                * FIXME: This should probably be moved to menu_common somehow. */
+               g_extern.frontend_key_event = g_extern.system.key_event;
+               g_extern.system.key_event = menu_key_event;
+
+               driver.menu->need_refresh = true;
+               driver.menu->old_input_state |= 1ULL << RARCH_MENU_TOGGLE;
+               rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING);
+            }
+#endif
+            g_extern.system.frame_time_last = 0;
+         }
          break;
       case RARCH_ACTION_STATE_LOAD_CONTENT:
-         g_extern.lifecycle_state |= (1ULL << MODE_LOAD_GAME);
-         break;
-      case RARCH_ACTION_STATE_LOAD_CONTENT_FINISHED:
-         g_extern.lifecycle_state &= ~(1ULL << MODE_LOAD_GAME);
-         break;
-      case RARCH_ACTION_STATE_RUNNING:
-         g_extern.lifecycle_state |= (1ULL << MODE_GAME);
-         break;
-      case RARCH_ACTION_STATE_RUNNING_FINISHED:
-         g_extern.lifecycle_state &= ~(1ULL << MODE_GAME);
+#ifdef HAVE_MENU
+         if (!load_menu_content())
+         {
+            /* If content loading fails, we go back to menu. */
+            if (driver.menu)
+               rarch_main_set_state(RARCH_ACTION_STATE_MENU_PREINIT);
+         }
+#endif
          break;
       case RARCH_ACTION_STATE_MENU_RUNNING:
          g_extern.lifecycle_state |= (1ULL << MODE_MENU);
@@ -3196,18 +3229,20 @@ void rarch_main_set_state(unsigned cmd)
          g_extern.lifecycle_state |= (1ULL << MODE_EXITSPAWN);
          break;
       case RARCH_ACTION_STATE_QUIT:
+         g_extern.system.shutdown = true;
          rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED);
-         rarch_main_set_state(RARCH_ACTION_STATE_RUNNING_FINISHED);
          break;
       case RARCH_ACTION_STATE_FORCE_QUIT:
          g_extern.lifecycle_state = 0;
          rarch_main_set_state(RARCH_ACTION_STATE_QUIT);
          break;
       case RARCH_ACTION_STATE_FLUSH_INPUT:
-         g_extern.lifecycle_state |= (1ULL << MODE_CLEAR_INPUT);
-         break;
-      case RARCH_ACTION_STATE_FLUSH_INPUT_FINISHED:
-         g_extern.lifecycle_state &= ~(1ULL << MODE_CLEAR_INPUT);
+         rarch_input_poll();
+#ifdef HAVE_MENU
+         menu_input();
+#endif
+         /* Restore libretro keyboard callback. */
+         g_extern.system.key_event = g_extern.frontend_key_event;
          break;
       case RARCH_ACTION_STATE_NONE:
       default:
@@ -3238,11 +3273,13 @@ void rarch_main_command(unsigned cmd)
       case RARCH_CMD_LOAD_CORE:
 #ifdef HAVE_MENU
          if (driver.menu)
-            rarch_update_system_info(&g_extern.menu.info, &driver.menu->load_no_content);
+            rarch_update_system_info(&g_extern.menu.info,
+                  &driver.menu->load_no_content);
 #endif
          break;
       case RARCH_CMD_LOAD_STATE:
-         /* Disallow savestate load when we absolutely cannot change game state. */
+         /* Disallow savestate load when we absolutely 
+          * cannot change game state. */
          if (g_extern.bsv.movie)
             return;
 
@@ -3251,7 +3288,6 @@ void rarch_main_command(unsigned cmd)
             return;
 #endif
          main_state(cmd);
-         rarch_main_set_state(RARCH_ACTION_STATE_RUNNING);
          break;
       case RARCH_CMD_RESET:
          RARCH_LOG(RETRO_LOG_RESETTING_CONTENT);
@@ -3261,14 +3297,12 @@ void rarch_main_command(unsigned cmd)
          /* bSNES since v073r01 resets controllers to JOYPAD
           * after a reset, so just enforce it here. */
          init_controllers();
-         rarch_main_set_state(RARCH_ACTION_STATE_RUNNING);
          break;
       case RARCH_CMD_SAVE_STATE:
          if (g_settings.savestate_auto_index)
             g_settings.state_slot++;
 
          main_state(cmd);
-         rarch_main_set_state(RARCH_ACTION_STATE_RUNNING);
          break;
       case RARCH_CMD_TAKE_SCREENSHOT:
          take_screenshot();
@@ -3436,7 +3470,6 @@ void rarch_main_command(unsigned cmd)
 #ifdef HAVE_MENU
          rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED);
 #endif
-         rarch_main_set_state(RARCH_ACTION_STATE_RUNNING);
          break;
       case RARCH_CMD_RESTART_RETROARCH:
 #if defined(GEKKO) && defined(HW_RVL)
@@ -3444,7 +3477,6 @@ void rarch_main_command(unsigned cmd)
                SALAMANDER_FILE,
                sizeof(g_extern.fullpath));
 #endif
-         rarch_main_set_state(RARCH_ACTION_STATE_RUNNING_FINISHED);
          rarch_main_set_state(RARCH_ACTION_STATE_EXITSPAWN);
          break;
       case RARCH_CMD_MENU_SAVE_CONFIG:
@@ -3581,16 +3613,32 @@ bool rarch_main_iterate(void)
 
    trigger_input = input & ~old_input;
 
-   /* SHUTDOWN on consoles should exit RetroArch completely. */
-   if (g_extern.system.shutdown)
-      return false;
-
    /* Time to drop? */
-   if (check_quit_key_func(input) || !driver.video->alive(driver.video_data))
+   if (
+         g_extern.system.shutdown ||
+         check_quit_key_func(input) ||
+         !driver.video->alive(driver.video_data))
       return false;
 
-   if (check_enter_menu_func(input, old_input))
-      return false; /* Enter menu, don't exit. */
+   if (g_extern.lifecycle_state & (1ULL << MODE_MENU))
+   {
+      if (!menu_iterate(input, old_input, trigger_input))
+      {
+         rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED);
+         driver_set_nonblock_state(driver.nonblock_state);
+
+         rarch_main_command(RARCH_CMD_AUDIO_START);
+         rarch_main_set_state(RARCH_ACTION_STATE_FLUSH_INPUT);
+      }
+      return true;
+   }
+
+   if (check_enter_menu_func(trigger_input) || (g_extern.libretro_dummy))
+   {
+      /* Always go into menu if dummy core is loaded. */
+      rarch_main_set_state(RARCH_ACTION_STATE_MENU_PREINIT);
+      return true; /* Enter menu on next run. */
+   }
 
    if (g_extern.exec)
    {
@@ -3598,10 +3646,7 @@ bool rarch_main_iterate(void)
       return false;
    }
 
-   /* Checks for stuff like fullscreen, save states, etc. */
-   do_state_checks(input, old_input, trigger_input);
-
-   if (g_extern.is_paused && !g_extern.is_oneshot)
+   if (!do_state_checks(input, old_input, trigger_input))
    {
       rarch_input_poll();
       rarch_sleep(10);
@@ -3722,196 +3767,4 @@ void rarch_main_deinit(void)
    deinit_savefiles();
 
    g_extern.main_is_init = false;
-}
-
-void rarch_playlist_push(content_playlist_t *playlist,
-      const char *path)
-{
-   char tmp[PATH_MAX];
-
-   if (!playlist || !g_extern.libretro_dummy)
-      return;
-
-   /* path can be relative here.
-    * Ensure we're pushing absolute path. */
-
-   strlcpy(tmp, path, sizeof(tmp));
-
-   if (*tmp)
-      path_resolve_realpath(tmp, sizeof(tmp));
-
-   if (g_extern.system.no_content || *tmp)
-      content_playlist_push(playlist,
-            *tmp ? tmp : NULL,
-            g_settings.libretro,
-            g_extern.system.info.library_name);
-}
-
-void rarch_playlist_load_content(content_playlist_t *playlist,
-      unsigned index)
-{
-   const char *path      = NULL;
-   const char *core_path = NULL;
-
-   content_playlist_get_index(playlist,
-         index, &path, &core_path, NULL);
-
-   strlcpy(g_settings.libretro, core_path, sizeof(g_settings.libretro));
-   rarch_environment_cb(RETRO_ENVIRONMENT_EXEC, (void*)path);
-
-   rarch_main_command(RARCH_CMD_LOAD_CORE);
-}
-
-void rarch_main_init_wrap(const struct rarch_main_wrap *args,
-      int *argc, char **argv)
-{
-   *argc = 0;
-   argv[(*argc)++] = strdup("retroarch");
-
-   if (!args->no_content)
-   {
-      if (args->content_path)
-      {
-         RARCH_LOG("Using content: %s.\n", args->content_path);
-         argv[(*argc)++] = strdup(args->content_path);
-      }
-      else
-      {
-         RARCH_LOG("No content, starting dummy core.\n");
-         argv[(*argc)++] = strdup("--menu");
-      }
-   }
-
-   if (args->sram_path)
-   {
-      argv[(*argc)++] = strdup("-s");
-      argv[(*argc)++] = strdup(args->sram_path);
-   }
-
-   if (args->state_path)
-   {
-      argv[(*argc)++] = strdup("-S");
-      argv[(*argc)++] = strdup(args->state_path);
-   }
-
-   if (args->config_path)
-   {
-      argv[(*argc)++] = strdup("-c");
-      argv[(*argc)++] = strdup(args->config_path);
-   }
-
-#ifdef HAVE_DYNAMIC
-   if (args->libretro_path)
-   {
-      argv[(*argc)++] = strdup("-L");
-      argv[(*argc)++] = strdup(args->libretro_path);
-   }
-#endif
-
-   if (args->verbose)
-      argv[(*argc)++] = strdup("-v");
-
-#ifdef HAVE_FILE_LOGGER
-   for (i = 0; i < *argc; i++)
-      RARCH_LOG("arg #%d: %s\n", i, argv[i]);
-#endif
-}
-
-/* When selection is presented back, returns 0.
- * If it can make a decision right now, returns -1. */
-
-int rarch_defer_core(core_info_list_t *core_info, const char *dir,
-      const char *path, char *deferred_path, size_t sizeof_deferred_path)
-{
-   const core_info_t *info = NULL;
-   size_t supported = 0;
-
-   fill_pathname_join(deferred_path, dir, path, sizeof_deferred_path);
-
-   if (path_is_compressed_file(dir))
-   {
-      /* In case of a compressed archive, we have to join with a hash */
-      /* We are going to write at the position of dir: */
-      rarch_assert(strlen(dir) < strlen(deferred_path));
-      deferred_path[strlen(dir)] = '#';
-   }
-
-   if (core_info)
-      core_info_list_get_supported_cores(core_info, deferred_path, &info,
-            &supported);
-
-   /* Can make a decision right now. */
-   if (supported == 1)
-   {
-      strlcpy(g_extern.fullpath, deferred_path,
-            sizeof(g_extern.fullpath));
-
-      if (path_file_exists(info->path))
-         strlcpy(g_settings.libretro, info->path,
-               sizeof(g_settings.libretro));
-      return -1;
-   }
-   return 0;
-}
-
-/* Quite intrusive and error prone.
- * Likely to have lots of small bugs.
- * Cleanly exit the main loop to ensure that all the tiny details
- * get set properly.
- *
- * This should mitigate most of the smaller bugs. */
-
-bool rarch_replace_config(const char *path)
-{
-   /* If config file to be replaced is the same as the 
-    * current config file, exit. */
-   if (!strcmp(path, g_extern.config_path))
-      return false;
-
-   if (g_settings.config_save_on_exit && *g_extern.config_path)
-      config_save_file(g_extern.config_path);
-
-   strlcpy(g_extern.config_path, path, sizeof(g_extern.config_path));
-   g_extern.block_config_read = false;
-   *g_settings.libretro = '\0'; /* Load core in new config. */
-
-   rarch_main_command(RARCH_CMD_PREPARE_DUMMY);
-
-   return true;
-}
-
-void rarch_update_system_info(struct retro_system_info *_info, bool *load_no_content)
-{
-   const core_info_t *info = NULL;
-#if defined(HAVE_DYNAMIC)
-   libretro_free_system_info(_info);
-   if (!(*g_settings.libretro))
-      return;
-
-   libretro_get_system_info(g_settings.libretro, _info,
-         load_no_content);
-#endif
-   if (!g_extern.core_info)
-      return;
-
-   if (!core_info_list_get_info(g_extern.core_info,
-            g_extern.core_info_current, g_settings.libretro))
-      return;
-
-   /* Keep track of info for the currently selected core. */
-   info = (const core_info_t*)g_extern.core_info_current;
-
-   if (!g_extern.verbosity)
-      return;
-
-   RARCH_LOG("[Core Info]:\n");
-   if (info->display_name)
-      RARCH_LOG("Display Name = %s\n", info->display_name);
-   if (info->supported_extensions)
-      RARCH_LOG("Supported Extensions = %s\n",
-            info->supported_extensions);
-   if (info->authors)
-      RARCH_LOG("Authors = %s\n", info->authors);
-   if (info->permissions)
-      RARCH_LOG("Permissions = %s\n", info->permissions);
 }

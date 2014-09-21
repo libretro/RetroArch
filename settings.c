@@ -306,6 +306,7 @@ void config_set_defaults(void)
       g_settings.video.threaded = g_defaults.settings.video_threaded_enable;
 
    g_settings.video.shared_context = video_shared_context;
+   g_settings.video.force_srgb_disable = false;
 #ifdef GEKKO
    g_settings.video.viwidth = video_viwidth;
 #endif
@@ -429,6 +430,7 @@ void config_set_defaults(void)
    g_extern.console.screen.viewports.custom_vp.height = 0;
    g_extern.console.screen.viewports.custom_vp.x = 0;
    g_extern.console.screen.viewports.custom_vp.y = 0;
+
 
    /* Make sure settings from other configs carry over into defaults 
     * for another config. */
@@ -929,6 +931,8 @@ bool config_load_file(const char *path, bool set_defaults)
    CONFIG_GET_FLOAT(video.msg_pos_x, "video_message_pos_x");
    CONFIG_GET_FLOAT(video.msg_pos_y, "video_message_pos_y");
    CONFIG_GET_INT(video.rotation, "video_rotation");
+
+   CONFIG_GET_BOOL(video.force_srgb_disable, "video_force_srgb_disable");
 
 #ifdef RARCH_CONSOLE
    /* TODO - will be refactored later to make it more clean - it's more 
@@ -1451,6 +1455,8 @@ bool config_save_file(const char *path)
    config_set_bool(conf,  "video_threaded", g_settings.video.threaded);
    config_set_bool(conf,  "video_shared_context",
          g_settings.video.shared_context);
+   config_set_bool(conf,  "video_force_srgb_disable",
+         g_settings.video.force_srgb_disable);
    config_set_bool(conf,  "video_fullscreen", g_settings.video.fullscreen);
    config_set_float(conf, "video_refresh_rate", g_settings.video.refresh_rate);
    config_set_int(conf,   "video_monitor_index",

@@ -624,9 +624,9 @@ extern video_driver_t video_xdk_d3d;
 extern video_driver_t video_sdl;
 extern video_driver_t video_sdl2;
 extern video_driver_t video_vg;
-extern video_driver_t video_null;
 extern video_driver_t video_omap;
 extern video_driver_t video_exynos;
+extern video_driver_t video_null;
 
 extern input_driver_t input_android;
 extern input_driver_t input_sdl;
@@ -672,14 +672,14 @@ extern menu_ctx_driver_backend_t menu_ctx_backend_lakka;
 #define check_oneshot_func(trigger_input) check_oneshot(BIND_PRESSED(trigger_input, RARCH_FRAMEADVANCE), BIND_PRESSED(trigger_input, RARCH_REWIND))
 #define check_slowmotion_func(input) check_slowmotion(BIND_PRESSED(input, RARCH_SLOWMOTION))
 #define check_shader_dir_func(trigger_input) check_shader_dir(BIND_PRESSED(trigger_input, RARCH_SHADER_NEXT), BIND_PRESSED(trigger_input, RARCH_SHADER_PREV))
-#define check_enter_menu_func(input, old_input) check_enter_menu(BIND_PRESSED(input, RARCH_MENU_TOGGLE), BIND_PRESSED(old_input, RARCH_MENU_TOGGLE))
+#define check_enter_menu_func(input) BIND_PRESSED(input, RARCH_MENU_TOGGLE)
 #define check_mute_func(input, old_input) check_mute(BIND_PRESSED(input, RARCH_MUTE), BIND_PRESSED(old_input, RARCH_MUTE))
 #define check_volume_func(input, old_input) check_volume(BIND_PRESSED(input, RARCH_VOLUME_UP), BIND_PRESSED(old_input, RARCH_VOLUME_DOWN))
 #define check_fullscreen_func(trigger_input) rarch_check_fullscreen(BIND_PRESSED(trigger_input, RARCH_FULLSCREEN_TOGGLE_KEY))
 #define check_fast_forward_button_func(input, old_input, trigger_input) check_fast_forward_button(BIND_PRESSED(trigger_input, RARCH_FAST_FORWARD_KEY), BIND_PRESSED(input, RARCH_FAST_FORWARD_HOLD_KEY), BIND_PRESSED(old_input, RARCH_FAST_FORWARD_HOLD_KEY))
 #define check_rewind_func(input) check_rewind(BIND_PRESSED(input, RARCH_REWIND))
 #define check_stateslots_func(trigger_input) check_stateslots(BIND_PRESSED(trigger_input, RARCH_STATE_SLOT_PLUS), BIND_PRESSED(trigger_input, RARCH_STATE_SLOT_MINUS))
-#define check_pause_func(input, old_input) check_pause(BIND_PRESSED(input, RARCH_PAUSE_TOGGLE), BIND_PRESSED(old_input, RARCH_PAUSE_TOGGLE), BIND_PRESSED(input, RARCH_FRAMEADVANCE))
+#define check_pause_func(input) check_pause(BIND_PRESSED(input, RARCH_PAUSE_TOGGLE), BIND_PRESSED(input, RARCH_FRAMEADVANCE))
 #define check_quit_key_func(input) BIND_PRESSED(input, RARCH_QUIT_KEY)
 
 #ifdef __cplusplus

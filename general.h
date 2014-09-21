@@ -137,35 +137,27 @@ enum action_state
 {
    RARCH_ACTION_STATE_NONE = 0,
    RARCH_ACTION_STATE_MENU_PREINIT,
-   RARCH_ACTION_STATE_MENU_PREINIT_FINISHED,
    RARCH_ACTION_STATE_LOAD_CONTENT,
-   RARCH_ACTION_STATE_LOAD_CONTENT_FINISHED,
-   RARCH_ACTION_STATE_RUNNING,
-   RARCH_ACTION_STATE_RUNNING_FINISHED,
    RARCH_ACTION_STATE_MENU_RUNNING,
    RARCH_ACTION_STATE_MENU_RUNNING_FINISHED,
    RARCH_ACTION_STATE_EXITSPAWN,
    RARCH_ACTION_STATE_FLUSH_INPUT,
-   RARCH_ACTION_STATE_FLUSH_INPUT_FINISHED,
    RARCH_ACTION_STATE_QUIT,
    RARCH_ACTION_STATE_FORCE_QUIT,
 };
 
 enum menu_enums
 {
-   MODE_GAME = 0,
-   MODE_LOAD_GAME,
+   MODE_NONE = 0,
    MODE_MENU,
    MODE_MENU_WIDESCREEN,
    MODE_MENU_HD,
-   MODE_MENU_PREINIT,
    MODE_EXTLAUNCH_MULTIMAN,
    MODE_EXITSPAWN,
    MODE_EXITSPAWN_START_GAME,
    MODE_EXITSPAWN_MULTIMAN,
    MODE_OSK_ENTRY_SUCCESS,
    MODE_OSK_ENTRY_FAIL,
-   MODE_CLEAR_INPUT,
 };
 
 enum sound_mode_enums
@@ -266,6 +258,7 @@ struct settings
 
       bool allow_rotate;
       bool shared_context;
+      bool force_srgb_disable;
    } video;
 
 #ifdef HAVE_MENU
@@ -436,6 +429,7 @@ struct global
    bool location_active;
    bool osk_active;
    bool force_fullscreen;
+   bool core_shutdown_initiated;
 
    struct string_list *temporary_content;
 
@@ -761,6 +755,8 @@ struct global
 
    /* Config file associated with per-core configs. */
    char core_specific_config_path[PATH_MAX];
+
+   retro_keyboard_event_t frontend_key_event;
 };
 
 struct rarch_main_wrap

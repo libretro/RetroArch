@@ -608,7 +608,7 @@ static void shader_write_variable(config_file_t *conf,
          config_set_hex(conf, wram_buf, info->addr);
          break;
 
-      default:
+      case RARCH_STATE_NONE:
          break;
    }
 }

@@ -12,7 +12,9 @@
 	<dict>
 		<key>49FCA0A2-0FE0-4A7A-9C54-642C68ED726A</key>
 		<string>git://github.com/libretro/common-overlays.git</string>
-		<key>A5B07A9E-AFED-41CB-BE4B-7C0CDBC26E8C</key>
+		<key>76200F0D6584D865E96F58DE862E738E88B23A3C</key>
+		<string>https://github.com/libretro/libretro-super.git</string>
+		<key>C7C12374C7051F8843B3EFA1ACCAF2907102CCF7</key>
 		<string>https://github.com/libretro/RetroArch.git</string>
 	</dict>
 	<key>IDESourceControlProjectPath</key>
@@ -21,17 +23,27 @@
 	<dict>
 		<key>49FCA0A2-0FE0-4A7A-9C54-642C68ED726A</key>
 		<string>../../../media/overlays</string>
-		<key>A5B07A9E-AFED-41CB-BE4B-7C0CDBC26E8C</key>
+		<key>76200F0D6584D865E96F58DE862E738E88B23A3C</key>
+		<string>../../../..</string>
+		<key>C7C12374C7051F8843B3EFA1ACCAF2907102CCF7</key>
 		<string>../../..</string>
 	</dict>
 	<key>IDESourceControlProjectURL</key>
 	<string>https://github.com/libretro/RetroArch.git</string>
 	<key>IDESourceControlProjectVersion</key>
-	<integer>110</integer>
+	<integer>111</integer>
 	<key>IDESourceControlProjectWCCIdentifier</key>
-	<string>A5B07A9E-AFED-41CB-BE4B-7C0CDBC26E8C</string>
+	<string>C7C12374C7051F8843B3EFA1ACCAF2907102CCF7</string>
 	<key>IDESourceControlProjectWCConfigurations</key>
 	<array>
+		<dict>
+			<key>IDESourceControlRepositoryExtensionIdentifierKey</key>
+			<string>public.vcs.git</string>
+			<key>IDESourceControlWCCIdentifierKey</key>
+			<string>76200F0D6584D865E96F58DE862E738E88B23A3C</string>
+			<key>IDESourceControlWCCName</key>
+			<string></string>
+		</dict>
 		<dict>
 			<key>IDESourceControlRepositoryExtensionIdentifierKey</key>
 			<string>public.vcs.git</string>
@@ -44,7 +56,7 @@
 			<key>IDESourceControlRepositoryExtensionIdentifierKey</key>
 			<string>public.vcs.git</string>
 			<key>IDESourceControlWCCIdentifierKey</key>
-			<string>A5B07A9E-AFED-41CB-BE4B-7C0CDBC26E8C</string>
+			<string>C7C12374C7051F8843B3EFA1ACCAF2907102CCF7</string>
 			<key>IDESourceControlWCCName</key>
 			<string>retroarch</string>
 		</dict>

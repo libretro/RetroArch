@@ -102,6 +102,7 @@ size_t (*pretro_get_memory_size)(unsigned);
 #endif
 
 static bool *load_no_content_hook;
+static bool ignore_environment_cb;
 
 static bool environ_cb_get_system_info(unsigned cmd, void *data)
 {
@@ -125,6 +126,13 @@ void libretro_get_environment_info(void (*func)(retro_environment_t),
 
    /* load_no_content gets set in this callback. */
    func(environ_cb_get_system_info);
+
+   /* It's possible that we just set get_system_info callback to the currently running core.
+    * Make sure we reset it to the actual environment callback.
+    * Ignore any environment callbacks here in case we're running on the non-current core. */
+   ignore_environment_cb = true;
+   func(rarch_environment_cb);
+   ignore_environment_cb = false;
 }
 
 static dylib_t libretro_get_system_info_lib(const char *path,
@@ -499,6 +507,9 @@ bool rarch_environment_cb(unsigned cmd, void *data)
 {
    unsigned p, id;
 
+   if (ignore_environment_cb)
+      return false;
+
    switch (cmd)
    {
       case RETRO_ENVIRONMENT_GET_OVERSCAN:
@@ -591,6 +602,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
       case RETRO_ENVIRONMENT_SHUTDOWN:
          RARCH_LOG("Environ SHUTDOWN.\n");
          g_extern.system.shutdown = true;
+         g_extern.core_shutdown_initiated = true;
          break;
 
       case RETRO_ENVIRONMENT_SET_PERFORMANCE_LEVEL:

@@ -79,24 +79,6 @@ typedef struct
    menu_item_t *items;
 } menu_category_t;
 
-typedef float (*easingFunc)(float, float, float, float);
-typedef void (*tweenCallback) (void);
-
-typedef struct
-{
-   int    alive;
-   float  duration;
-   float  running_since;
-   float  initial_value;
-   float  target_value;
-   float* subject;
-   easingFunc easing;
-   tweenCallback callback;
-} tween_t;
-
 extern menu_category_t *categories;
-
-void add_tween(float duration, float target_value, float* subject, easingFunc easing, tweenCallback callback);
-float inOutQuad(float t, float b, float c, float d);
 
 #endif /* MENU_DISP_LAKKA_H */
