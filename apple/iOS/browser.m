@@ -251,7 +251,7 @@ static void file_action(enum file_action action, NSString* source, NSString* tar
 
       dir_list_sort(contents, true);
    
-      for (int i = 0; i < contents->size; i ++)
+      for (size_t i = 0; i < contents->size; i ++)
       {
          const char* basename = path_basename(contents->elems[i].data);
       
@@ -427,7 +427,7 @@ static void file_action(enum file_action action, NSString* source, NSString* tar
    
       if (contents)
       {
-         int i;
+         size_t i;
          dir_list_sort(contents, true);
 
          for (i = 0; i < contents->size; i ++)
