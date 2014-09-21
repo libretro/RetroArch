@@ -21,7 +21,7 @@ extern "C" {
 #endif
 
 int read_7zip_file(const char * archive_path,
-      const char *relative_path, void **buf);
+      const char *relative_path, void **buf, char const* optional_outfileq);
 
 struct string_list *compressed_7zip_file_list_new(const char *path,
       const char* ext);

@@ -26,15 +26,22 @@
 
 #include "../deps/rzlib/unzip.h"
 
+/* Undefined at the end of the file
+ * Don't use outside of this file
+ */
+#define RARCH_ZIP_SUPPORT_BUFFER_SIZE_MAX 16384
 
 /* Extract the relative path relative_path from a 
  * zip archive archive_path and allocate a buf for it to write it in. */
 /* This code is inspired by:
  * stackoverflow.com/questions/10440113/simple-way-to-unzip-a-zip-file-using-zlib
+ *
+ * optional_outfile if not NULL will be used to extract the file. buf will be 0
+ * then.
  */
 
 int read_zip_file(const char * archive_path,
-      const char *relative_path, void **buf)
+      const char *relative_path, void **buf, const char* optional_outfile)
 {
    ssize_t bytes_read = -1;
    bool finished_reading = false;
@@ -94,22 +101,55 @@ int read_zip_file(const char * archive_path,
             return -1;
          }
 
-         /* Allocate outbuffer */
-         *buf = malloc(file_info.uncompressed_size + 1 );
-
-         bytes_read = unzReadCurrentFile( zipfile, *buf, file_info.uncompressed_size );
-         if (bytes_read != file_info.uncompressed_size)
+         if (optional_outfile != 0)
          {
-            RARCH_ERR(
+            char read_buffer[RARCH_ZIP_SUPPORT_BUFFER_SIZE_MAX];
+            FILE* outsink = fopen(optional_outfile,"wb");
+            if (outsink == NULL)
+            {
+               RARCH_ERR("Could not open outfilepath %s in zip_extract.\n",
+                     optional_outfile);
+               unzCloseCurrentFile( zipfile );
+               unzClose( zipfile );
+               return -1;
+            }
+            bytes_read = 0;
+            do
+            {
+               bytes_read = unzReadCurrentFile( zipfile, read_buffer,
+                     RARCH_ZIP_SUPPORT_BUFFER_SIZE_MAX );
+               ssize_t fwrite_bytes = fwrite(read_buffer,1,bytes_read,outsink);
+               if (fwrite_bytes != bytes_read)
+               {
+                  /* couldn't write all bytes */
+                  RARCH_ERR("Error writing to %s.\n",optional_outfile);
+                  fclose(outsink);
+                  unzCloseCurrentFile( zipfile );
+                  unzClose( zipfile );
+                  return -1;
+               }
+            } while(bytes_read > 0) ;
+            fclose(outsink);
+         }
+         else
+         {
+            /* Allocate outbuffer */
+            *buf = malloc(file_info.uncompressed_size + 1 );
+
+            bytes_read = unzReadCurrentFile( zipfile, *buf, file_info.uncompressed_size );
+            if (bytes_read != file_info.uncompressed_size)
+            {
+               RARCH_ERR(
                   "We tried to read %d bytes, but only got %d of file %s in zip %s.\n",
                   (unsigned int) file_info.uncompressed_size, (int)bytes_read,
                   relative_path, archive_path);
-            free(*buf);
-            unzCloseCurrentFile( zipfile );
-            unzClose( zipfile );
-            return -1;
+               free(*buf);
+               unzCloseCurrentFile( zipfile );
+               unzClose( zipfile );
+               return -1;
+            }
+            ((char*)(*buf))[file_info.uncompressed_size] = '\0';
          }
-         ((char*)(*buf))[file_info.uncompressed_size] = '\0';
          finished_reading = true;
       }
       unzCloseCurrentFile( zipfile );
@@ -238,3 +278,5 @@ struct string_list *compressed_zip_file_list_new(const char *path,
    unzClose( zipfile );
    return list;
 }
+
+#undef RARCH_ZIP_SUPPORT_BUFFER_SIZE_MAX

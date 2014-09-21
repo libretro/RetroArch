@@ -398,21 +398,12 @@ static bool load_content(const struct retro_subsystem_info *special,
                       "extraction directory was not set or found. Exiting.\n");
                rarch_assert(false);
             }
-            /* This is a test implementation, currently it needs as much
-             * RAM as the file is big.
-             */
+
             char new_path[PATH_MAX];
             fill_pathname_join(new_path,g_settings.extraction_directory,
                   path_basename(path),sizeof(new_path));
-            void *buf = NULL;
-            ssize_t bytes_read = -1;
-            bytes_read = read_file(path, &buf);
-            write_file(new_path,buf,bytes_read);
-
-            info[i].path =strdup(new_path);
-            if(buf)
-               free(buf);
-            buf = NULL;
+            read_compressed_file(path,NULL,new_path);
+            info[i].path = strdup(new_path);
          }
       }
    }
