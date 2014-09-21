@@ -52,7 +52,7 @@ typedef void (^RAActionSheetCallback)(UIActionSheet*, NSInteger);
 
 static void RunActionSheet(const char* title, const struct string_list* items, UIView* parent, RAActionSheetCallback callback)
 {
-   int i;
+   size_t i;
    RARunActionSheetDelegate* delegate = [[RARunActionSheetDelegate alloc] initWithCallbackBlock:callback];
    UIActionSheet* actionSheet = [UIActionSheet new];
 
@@ -683,7 +683,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 
 - (void)willReloadData
 {
-   int i;
+   size_t i;
    RAHistoryMenu* __weak weakSelf = self;
    NSMutableArray *section = [NSMutableArray arrayWithObject:BOXSTRING("")];
    
@@ -907,7 +907,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 
 - (void)willReloadData
 {
-   int i;
+   size_t i;
    const core_info_list_t* core_list;
    RAFrontendSettingsMenu* __weak weakSelf = self;
    NSMutableArray* cores = (NSMutableArray*)self.coreConfigOptions;

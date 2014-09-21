@@ -64,7 +64,7 @@ void apple_display_alert(const char *message, const char *title)
 
 - (BOOL)isPartialStringValid:(NSString*)partialString newEditingString:(NSString**)newString errorDescription:(NSString**)error
 {
-   int i;
+   NSUInteger i;
    bool hasDot = false;
 
    if (partialString.length)

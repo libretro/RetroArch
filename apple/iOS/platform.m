@@ -116,7 +116,7 @@ static void handle_touch_event(NSArray* touches)
 // Keyboard handler for iOS 7
 - (id)_keyCommandForEvent:(UIEvent*)event
 {
-   int i;
+   NSUInteger i;
    // This gets called twice with the same timestamp for each keypress, that's fine for polling
    // but is bad for business with events.
    static double last_time_stamp;
