@@ -74,7 +74,6 @@ static int main_entry_iterate_shutdown(signature(),
 
 int main_entry_decide(signature(), args_type() args)
 {
-   int ret = 0;
    if (!rarch_main_iterate())
       return main_entry_iterate_shutdown(signature_expand(), args);
 

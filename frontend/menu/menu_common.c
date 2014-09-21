@@ -304,7 +304,6 @@ static unsigned input_frame(uint64_t trigger_state)
 bool menu_iterate(retro_input_t input,
       retro_input_t old_input, retro_input_t trigger_input)
 {
-   retro_input_t old_state = 0;
    unsigned action = MENU_ACTION_NOOP;
    static bool initial_held = true;
    static bool first_held = false;
