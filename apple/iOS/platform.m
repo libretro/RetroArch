@@ -73,7 +73,7 @@ const void* apple_get_frontend_settings(void)
 // Input helpers: This is kept here because it needs objective-c
 static void handle_touch_event(NSArray* touches)
 {
-   int i;
+   NSUInteger i;
    const float scale = [[UIScreen mainScreen] scale];
 
    g_current_input_data.touch_count = 0;
