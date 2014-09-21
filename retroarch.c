@@ -3214,17 +3214,10 @@ void rarch_main_set_state(unsigned cmd)
          if (!load_menu_content())
          {
             /* If content loading fails, we go back to menu. */
-            rarch_main_set_state(RARCH_ACTION_STATE_RUNNING_FINISHED);
             if (driver.menu)
                rarch_main_set_state(RARCH_ACTION_STATE_MENU_PREINIT);
          }
 #endif
-         break;
-      case RARCH_ACTION_STATE_RUNNING:
-         g_extern.lifecycle_state |= (1ULL << MODE_GAME);
-         break;
-      case RARCH_ACTION_STATE_RUNNING_FINISHED:
-         g_extern.lifecycle_state &= ~(1ULL << MODE_GAME);
          break;
       case RARCH_ACTION_STATE_MENU_RUNNING:
          g_extern.lifecycle_state |= (1ULL << MODE_MENU);
@@ -3236,8 +3229,8 @@ void rarch_main_set_state(unsigned cmd)
          g_extern.lifecycle_state |= (1ULL << MODE_EXITSPAWN);
          break;
       case RARCH_ACTION_STATE_QUIT:
+         g_extern.system.shutdown = true;
          rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED);
-         rarch_main_set_state(RARCH_ACTION_STATE_RUNNING_FINISHED);
          break;
       case RARCH_ACTION_STATE_FORCE_QUIT:
          g_extern.lifecycle_state = 0;
@@ -3295,7 +3288,6 @@ void rarch_main_command(unsigned cmd)
             return;
 #endif
          main_state(cmd);
-         rarch_main_set_state(RARCH_ACTION_STATE_RUNNING);
          break;
       case RARCH_CMD_RESET:
          RARCH_LOG(RETRO_LOG_RESETTING_CONTENT);
@@ -3305,14 +3297,12 @@ void rarch_main_command(unsigned cmd)
          /* bSNES since v073r01 resets controllers to JOYPAD
           * after a reset, so just enforce it here. */
          init_controllers();
-         rarch_main_set_state(RARCH_ACTION_STATE_RUNNING);
          break;
       case RARCH_CMD_SAVE_STATE:
          if (g_settings.savestate_auto_index)
             g_settings.state_slot++;
 
          main_state(cmd);
-         rarch_main_set_state(RARCH_ACTION_STATE_RUNNING);
          break;
       case RARCH_CMD_TAKE_SCREENSHOT:
          take_screenshot();
@@ -3480,7 +3470,6 @@ void rarch_main_command(unsigned cmd)
 #ifdef HAVE_MENU
          rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED);
 #endif
-         rarch_main_set_state(RARCH_ACTION_STATE_RUNNING);
          break;
       case RARCH_CMD_RESTART_RETROARCH:
 #if defined(GEKKO) && defined(HW_RVL)
@@ -3488,7 +3477,6 @@ void rarch_main_command(unsigned cmd)
                SALAMANDER_FILE,
                sizeof(g_extern.fullpath));
 #endif
-         rarch_main_set_state(RARCH_ACTION_STATE_RUNNING_FINISHED);
          rarch_main_set_state(RARCH_ACTION_STATE_EXITSPAWN);
          break;
       case RARCH_CMD_MENU_SAVE_CONFIG:
@@ -3625,19 +3613,31 @@ bool rarch_main_iterate(void)
 
    trigger_input = input & ~old_input;
 
-   /* SHUTDOWN on consoles should exit RetroArch completely. */
-   if (g_extern.system.shutdown)
+   /* Time to drop? */
+   if (
+         g_extern.system.shutdown ||
+         check_quit_key_func(input) ||
+         !driver.video->alive(driver.video_data))
       return false;
 
-   /* Time to drop? */
-   if (check_quit_key_func(input) || !driver.video->alive(driver.video_data))
-      return false;
+   if (g_extern.lifecycle_state & (1ULL << MODE_MENU))
+   {
+      if (!menu_iterate(input, old_input, trigger_input))
+      {
+         rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED);
+         driver_set_nonblock_state(driver.nonblock_state);
+
+         rarch_main_command(RARCH_CMD_AUDIO_START);
+         rarch_main_set_state(RARCH_ACTION_STATE_FLUSH_INPUT);
+      }
+      return true;
+   }
 
    if (check_enter_menu_func(trigger_input) || (g_extern.libretro_dummy))
    {
       /* Always go into menu if dummy core is loaded. */
       rarch_main_set_state(RARCH_ACTION_STATE_MENU_PREINIT);
-      return false; /* Enter menu, don't exit. */
+      return true; /* Enter menu on next run. */
    }
 
    if (g_extern.exec)

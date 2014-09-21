@@ -515,7 +515,7 @@ static int menu_lakka_iterate(unsigned action)
                  (active_category->num_items - 1))))
          {
             add_tween(LAKKA_DELAY, 1.0, &global_alpha, &inOutQuad, NULL);
-            rarch_main_set_state(RARCH_ACTION_STATE_RUNNING_FINISHED);
+            rarch_main_command(RARCH_CMD_QUIT_RETROARCH);
             return -1;
          }
          break;

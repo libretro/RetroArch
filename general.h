@@ -138,8 +138,6 @@ enum action_state
    RARCH_ACTION_STATE_NONE = 0,
    RARCH_ACTION_STATE_MENU_PREINIT,
    RARCH_ACTION_STATE_LOAD_CONTENT,
-   RARCH_ACTION_STATE_RUNNING,
-   RARCH_ACTION_STATE_RUNNING_FINISHED,
    RARCH_ACTION_STATE_MENU_RUNNING,
    RARCH_ACTION_STATE_MENU_RUNNING_FINISHED,
    RARCH_ACTION_STATE_EXITSPAWN,
@@ -150,7 +148,7 @@ enum action_state
 
 enum menu_enums
 {
-   MODE_GAME = 0,
+   MODE_NONE = 0,
    MODE_MENU,
    MODE_MENU_WIDESCREEN,
    MODE_MENU_HD,
@@ -431,6 +429,7 @@ struct global
    bool location_active;
    bool osk_active;
    bool force_fullscreen;
+   bool core_shutdown_initiated;
 
    struct string_list *temporary_content;
 

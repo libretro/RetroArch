@@ -55,64 +55,33 @@
 
 #define MAX_ARGS 32
 
-static int main_entry_iterate_shutdown(signature(), args_type() args)
+static int main_entry_iterate_shutdown(signature(),
+      args_type() args)
 {
    (void)args;
 
-   if (!g_settings.load_dummy_on_core_shutdown)
-      return 1;
+   if (g_extern.core_shutdown_initiated 
+         && g_settings.load_dummy_on_core_shutdown)
+   {
+      /* Load dummy core instead of exiting RetroArch completely. */
+      rarch_main_command(RARCH_CMD_PREPARE_DUMMY);
+      g_extern.core_shutdown_initiated = false;
+      return 0;
+   }
 
-   /* Load dummy core instead of exiting RetroArch completely. */
-   rarch_main_command(RARCH_CMD_PREPARE_DUMMY);
-
-   return 0;
+   return 1;
 }
 
 int main_entry_decide(signature(), args_type() args)
 {
-#ifdef HAVE_MENU
-   int ret = 1;
-   if (g_extern.system.shutdown)
-      ret = main_entry_iterate_shutdown(signature_expand(), args);
-   else if (g_extern.lifecycle_state & (1ULL << MODE_MENU))
-   {
-      retro_input_t input, old_state = 0;
-
-      if (!menu_iterate())
-      {
-         rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED);
-         driver_set_nonblock_state(driver.nonblock_state);
-
-         rarch_main_command(RARCH_CMD_AUDIO_START);
-         rarch_main_set_state(RARCH_ACTION_STATE_FLUSH_INPUT);
-
-         input = input_keys_pressed_func(RARCH_QUIT_KEY, RARCH_QUIT_KEY + 1,
-               &old_state);
-
-         if (BIND_PRESSED(input, RARCH_QUIT_KEY) ||
-               !driver.video->alive(driver.video_data))
-            ret = 1;
-      }
-
-      ret = 0;
-   }
-   else if (g_extern.lifecycle_state & (1ULL << MODE_GAME))
-   {
-      if (!rarch_main_iterate())
-         rarch_main_set_state(RARCH_ACTION_STATE_RUNNING_FINISHED);
-      ret = 0;
-   }
+   int ret = 0;
+   if (!rarch_main_iterate())
+      return main_entry_iterate_shutdown(signature_expand(), args);
 
    if (driver.frontend_ctx && driver.frontend_ctx->process_events)
       driver.frontend_ctx->process_events(args);
 
-   return ret;
-#else
-   if (!rarch_main_iterate())
-      return 1;
-
    return 0;
-#endif
 }
 
 void main_exit(args_type() args)

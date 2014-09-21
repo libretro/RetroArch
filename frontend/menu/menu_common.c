@@ -299,9 +299,10 @@ static unsigned input_frame(uint64_t trigger_state)
    return MENU_ACTION_NOOP;
 }
 
-bool menu_iterate(void)
+bool menu_iterate(retro_input_t input,
+      retro_input_t old_input, retro_input_t trigger_input)
 {
-   retro_input_t old_state = 0, trigger_input = 0;
+   retro_input_t old_state = 0;
    unsigned action = MENU_ACTION_NOOP;
    static bool initial_held = true;
    static bool first_held = false;
@@ -311,24 +312,20 @@ bool menu_iterate(void)
    if (!driver.menu)
       return false;
 
-   rarch_input_poll();
-
-   retro_input_t input = input_keys_pressed_func(RARCH_FIRST_META_KEY,
-         RARCH_BIND_LIST_END, &old_state);
-
-   trigger_input = input & ~old_state;
 #ifdef HAVE_OVERLAY
    if (BIND_PRESSED(trigger_input, RARCH_OVERLAY_NEXT))
          input_overlay_next(driver.overlay);
 #endif
    check_fullscreen_func(trigger_input);
 
-   if (check_quit_key_func(input) || !driver.video->alive(driver.video_data))
+   if (check_enter_menu_func(trigger_input) &&
+         g_extern.main_is_init && !g_extern.libretro_dummy)
    {
       rarch_main_command(RARCH_CMD_RESUME);
       return false;
    }
 
+   rarch_input_poll();
    input_state = menu_input();
 
    if (driver.menu->do_held)

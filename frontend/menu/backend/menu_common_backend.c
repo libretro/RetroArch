@@ -1870,13 +1870,6 @@ static int menu_common_iterate(unsigned action)
    if (driver.video_data && driver.menu_ctx && driver.menu_ctx->set_texture)
       driver.menu_ctx->set_texture(driver.menu);
 
-   if (action == MENU_ACTION_TOGGLE &&
-         g_extern.main_is_init && !g_extern.libretro_dummy)
-   {
-      rarch_main_command(RARCH_CMD_RESUME);
-      return -1;
-   }
-
    if (!strcmp(menu_label, "help"))
       return menu_start_screen_iterate(action);
    else if (!strcmp(menu_label, "info_screen"))
