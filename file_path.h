@@ -43,7 +43,8 @@ enum
 
 
 #ifdef HAVE_COMPRESSION
-long read_compressed_file(const char * path, void **buf);
+long read_compressed_file(const char * path, void **buf,
+      const char* optional_filename);
 #endif
 
 long read_file(const char *path, void **buf);

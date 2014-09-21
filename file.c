@@ -387,9 +387,22 @@ static bool load_content(const struct retro_subsystem_info *special,
                " load it on its own.\n");
          if (need_fullpath && path_contains_compressed_file(path))
          {
-            RARCH_ERR("Compressed files are only supported for drivers,"
-                  " where need_fullpath is set to false. Exiting.\n");
-            rarch_assert(false);
+            RARCH_LOG("Compressed file in case of need_fullpath."
+                  "Now extracting to temporary directory.\n");
+
+            if ((!strcmp(g_settings.extraction_directory,"")) ||
+                 !path_is_directory(g_settings.extraction_directory))
+            {
+               RARCH_ERR("Tried extracting to extraction directory, but "
+                      "extraction directory was not set or found. Exiting.\n");
+               rarch_assert(false);
+            }
+
+            char new_path[PATH_MAX];
+            fill_pathname_join(new_path,g_settings.extraction_directory,
+                  path_basename(path),sizeof(new_path));
+            read_compressed_file(path,NULL,new_path);
+            info[i].path = strdup(new_path);
          }
       }
    }

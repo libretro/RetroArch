@@ -56,6 +56,19 @@ static void *get_last_setting(const file_list_t *list, int index,
    return NULL;
 }
 
+static int menu_message_toggle(unsigned action)
+{
+   if (driver.video_data && driver.menu_ctx
+         && driver.menu_ctx->render_messagebox)
+   {
+      driver.menu_ctx->render_messagebox(driver.menu->message_contents);
+   }
+   if (action == MENU_ACTION_OK)
+      menu_entries_pop(driver.menu->menu_stack);
+
+   return 0;
+}
+
 static int menu_info_screen_iterate(unsigned action)
 {
    char msg[PATH_MAX];
@@ -1632,6 +1645,84 @@ static void menu_common_load_content(void)
    driver.menu->msg_force = true;
 }
 
+static int menu_load_or_open_zip_iterate(unsigned action)
+{
+   char msg[PATH_MAX];
+   snprintf(msg, sizeof(msg), "Opening compressed file\n"
+         " \n"
+
+         " - OK to open as Folder\n"
+         " - Cancel/Back to Load \n");
+
+   if (driver.video_data && driver.menu_ctx
+         && driver.menu_ctx->render_messagebox)
+   {
+      if (*msg && msg[0] != '\0')
+         driver.menu_ctx->render_messagebox(msg);
+   }
+
+   if (action == MENU_ACTION_OK)
+   {
+      menu_entries_pop(driver.menu->menu_stack);
+
+      const char *menu_path;
+      const char *menu_label;
+      unsigned int menu_type;
+      char const* path;
+      char const* label;
+      unsigned int type;
+
+      file_list_get_last(driver.menu->menu_stack, &menu_path, &menu_label,
+            &menu_type);
+
+      if (file_list_get_size(driver.menu->selection_buf) == 0)
+         return 0;
+
+      file_list_get_at_offset(driver.menu->selection_buf,
+            driver.menu->selection_ptr, &path, &label, &type);
+
+      char cat_path[PATH_MAX];
+      fill_pathname_join(cat_path, menu_path, path, sizeof(cat_path));
+      menu_entries_push(driver.menu->menu_stack, cat_path, menu_label, type,
+            driver.menu->selection_ptr);
+   }
+   else if (action == MENU_ACTION_CANCEL)
+   {
+      menu_entries_pop(driver.menu->menu_stack);
+
+      const char *menu_path;
+      const char *menu_label;
+      unsigned int menu_type;
+      char const* path;
+      char const* label;
+      unsigned int type;
+
+      file_list_get_last(driver.menu->menu_stack, &menu_path, &menu_label,
+            &menu_type);
+
+      if (file_list_get_size(driver.menu->selection_buf) == 0)
+         return 0;
+
+      file_list_get_at_offset(driver.menu->selection_buf,
+            driver.menu->selection_ptr, &path, &label, &type);
+
+      int ret = rarch_defer_core(g_extern.core_info, menu_path, path,
+            driver.menu->deferred_path, sizeof(driver.menu->deferred_path));
+      if (ret == -1)
+      {
+         rarch_main_command(RARCH_CMD_LOAD_CORE);
+         menu_common_load_content();
+         return -1;
+      }
+      else if (ret == 0)
+         menu_entries_push(driver.menu->menu_stack,
+               g_settings.libretro_directory, "deferred_core_list", 0,
+               driver.menu->selection_ptr);
+
+   }
+   return 0;
+}
+
 static int menu_action_ok(const char *menu_path,
       const char *menu_label, unsigned menu_type)
 {
@@ -1656,9 +1747,10 @@ static int menu_action_ok(const char *menu_path,
    RARCH_LOG("type     : %d\n", type == MENU_FILE_USE_DIRECTORY);
    RARCH_LOG("type id  : %d\n", type);
 #endif
-
-   switch (type)
+   while (true)
    {
+      switch (type)
+      {
       case MENU_FILE_PLAYLIST_ENTRY:
 
          rarch_playlist_load_content(g_extern.history,
@@ -1670,12 +1762,12 @@ static int menu_action_ok(const char *menu_path,
       case MENU_FILE_IN_CARCHIVE:
 #endif
       case MENU_FILE_PLAIN:
+
          if (!strcmp(menu_label, "detect_core_list"))
          {
             int ret = rarch_defer_core(g_extern.core_info,
                   menu_path, path, driver.menu->deferred_path,
                   sizeof(driver.menu->deferred_path));
-
 
             if (ret == -1)
             {
@@ -1836,6 +1928,12 @@ static int menu_action_ok(const char *menu_path,
       case MENU_FILE_CARCHIVE:
 
          {
+            if (type == MENU_FILE_CARCHIVE && !strcmp(menu_label, "detect_core_list"))
+            {
+               file_list_push(driver.menu->menu_stack, path, "load_open_zip",
+                     0, driver.menu->selection_ptr);
+               return 0;
+            }
             char cat_path[PATH_MAX];
             fill_pathname_join(cat_path, menu_path, path, sizeof(cat_path));
             menu_entries_push(driver.menu->menu_stack,
@@ -1843,7 +1941,9 @@ static int menu_action_ok(const char *menu_path,
          }
 
          return 0;
-         
+
+      }
+      break;
    }
 
    if (menu_parse_check(label, type) == 0)
@@ -1872,6 +1972,10 @@ static int menu_common_iterate(unsigned action)
 
    if (!strcmp(menu_label, "help"))
       return menu_start_screen_iterate(action);
+   else if (!strcmp(menu_label, "message"))
+      return menu_message_toggle(action);
+   else if (!strcmp(menu_label, "load_open_zip"))
+      return menu_load_or_open_zip_iterate(action);
    else if (!strcmp(menu_label, "info_screen"))
       return menu_info_screen_iterate(action);
    else if (menu_common_type_is(menu_label, menu_type) == MENU_SETTINGS)

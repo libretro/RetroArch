@@ -121,6 +121,14 @@ int rarch_defer_core(core_info_list_t *core_info, const char *dir,
 
    fill_pathname_join(deferred_path, dir, path, sizeof_deferred_path);
 
+   if (path_is_compressed_file(dir))
+   {
+      /* In case of a compressed archive, we have to join with a hash */
+      /* We are going to write at the position of dir: */
+      rarch_assert(strlen(dir) < strlen(deferred_path));
+      deferred_path[strlen(dir)] = '#';
+   }
+
    if (core_info)
       core_info_list_get_supported_cores(core_info, deferred_path, &info,
             &supported);
@@ -130,14 +138,6 @@ int rarch_defer_core(core_info_list_t *core_info, const char *dir,
    {
       strlcpy(g_extern.fullpath, deferred_path,
             sizeof(g_extern.fullpath));
-      if (path_is_compressed_file(dir))
-      {
-         /* In case of a compressed archive, we have to join with a hash.
-          * We are going to write at the position of dir: */
-         rarch_assert(strlen(dir) < strlen(g_extern.fullpath));
-         g_extern.fullpath[strlen(dir)] = '#';
-      }
-
       if (path_file_exists(info->path))
          strlcpy(g_settings.libretro, info->path,
                sizeof(g_settings.libretro));

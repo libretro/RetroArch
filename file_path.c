@@ -92,10 +92,22 @@ bool write_empty_file(const char *path)
    return true;
 }
 
-/* Generic compressed file loader. */
+/* Generic compressed file loader.
+ * Extracts to buf, unless optional_filename != 0
+ * Then extracts to optional_filename and leaves buf alone.
+ */
 #ifdef HAVE_COMPRESSION
-long read_compressed_file(const char * path, void **buf)
+long read_compressed_file(const char * path, void **buf,
+      const char* optional_filename)
 {
+   /* Safety check.
+    * If optional_filename and optional_filename exists, we simply return 0,
+    * hoping that optional_filename is the same as requested.
+   */
+   if (optional_filename)
+      if(path_file_exists(optional_filename))
+         return 0;
+
    //We split carchive path and relative path:
    char archive_path[PATH_MAX];
    strlcpy(archive_path,path,sizeof(archive_path));
@@ -123,11 +135,11 @@ long read_compressed_file(const char * path, void **buf)
    const char* file_ext = path_get_extension(archive_path);
 #ifdef HAVE_7ZIP
    if (strcasecmp(file_ext,"7z") == 0)
-      return read_7zip_file(archive_path,archive_found,buf);
+      return read_7zip_file(archive_path,archive_found,buf,optional_filename);
 #endif
 #ifdef HAVE_ZLIB
    if (strcasecmp(file_ext,"zip") == 0)
-      return read_zip_file(archive_path,archive_found,buf);
+      return read_zip_file(archive_path,archive_found,buf,optional_filename);
 #endif
    return -1;
 }
@@ -187,7 +199,7 @@ long read_file(const char *path, void **buf)
     * */
 #ifdef HAVE_COMPRESSION
    if (path_contains_compressed_file(path))
-      return read_compressed_file(path,buf);
+      return read_compressed_file(path,buf,0);
 #endif
    return read_generic_file(path,buf);
 }

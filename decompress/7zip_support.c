@@ -30,7 +30,10 @@
 #include "../deps/7zip/7zFile.h"
 #include "../deps/7zip/7zVersion.h"
 
-
+/* Undefined at the end of the file
+ * Don't use outside of this file
+ */
+#define RARCH_ZIP_SUPPORT_BUFFER_SIZE_MAX 16384
 
 static ISzAlloc g_Alloc = { SzAlloc, SzFree };
 
@@ -164,9 +167,11 @@ static SRes ConvertUtf16toCharString(const UInt16 *s, char *outstring)
 }
 
 /* Extract the relative path relative_path from a 7z archive 
- * archive_path and allocate a buf for it to write it in. */
+ * archive_path and allocate a buf for it to write it in.
+ * If optional_outfile is set, extract to that instead and don't alloc buffer.
+ */
 int read_7zip_file(const char * archive_path,
-      const char *relative_path, void **buf)
+      const char *relative_path, void **buf, const char* optional_outfile)
 {
    CFileInStream archiveStream;
    CLookToRead lookStream;
@@ -245,6 +250,9 @@ int read_7zip_file(const char * archive_path,
 
          if (strcmp(infile,relative_path) == 0)
          {
+            /* C LZMA SDK does not support chunked extraction - see here:
+             * sourceforge.net/p/sevenzip/discussion/45798/thread/6fb59aaf/
+             * */
             file_found = true;
             res = SzArEx_Extract(&db, &lookStream.s, i,&blockIndex,
                   &outBuffer, &outBufferSize,&offset, &outSizeProcessed,
@@ -254,17 +262,33 @@ int read_7zip_file(const char * archive_path,
                break; /* This goes to the error section. */
             }
             outsize = outSizeProcessed;
-            *buf = outBuffer+offset;
-
-            /*We could either use the 7Zip allocated buffer,
-             * or create our own and use it.
-             * We would however need to realloc anyways, because RetroArch 
-             * expects a \0 at the end, therefore we allocate new, 
-             * copy and free the old one. */
-            *buf = malloc(outsize + 1);
-
-            ((char*)(*buf))[outsize] = '\0';
-            memcpy(*buf,outBuffer+offset,outsize);
+            if (optional_outfile != NULL)
+            {
+               FILE* outsink = fopen(optional_outfile,"wb");
+               if (outsink == NULL)
+               {
+                  RARCH_ERR("Could not open outfilepath %s in 7zip_extract.\n",
+                        optional_outfile);
+                  IAlloc_Free(&allocImp, outBuffer);
+                  SzArEx_Free(&db, &allocImp);
+                  SzFree(NULL, temp);
+                  File_Close(&archiveStream.file);
+                  return -1;
+               }
+               fwrite(outBuffer+offset,1,outsize,outsink);
+               fclose(outsink);
+            }
+            else
+            {
+               /*We could either use the 7Zip allocated buffer,
+                * or create our own and use it.
+                * We would however need to realloc anyways, because RetroArch
+                * expects a \0 at the end, therefore we allocate new,
+                * copy and free the old one. */
+               *buf = malloc(outsize + 1);
+               ((char*)(*buf))[outsize] = '\0';
+               memcpy(*buf,outBuffer+offset,outsize);
+            }
             IAlloc_Free(&allocImp, outBuffer);
             break;
          }
@@ -437,3 +461,5 @@ error:
    string_list_free(ext_list);
    return NULL;
 }
+
+#undef RARCH_ZIP_SUPPORT_BUFFER_SIZE_MAX
