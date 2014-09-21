@@ -165,10 +165,6 @@ static void handle_touch_event(NSArray* touches)
 @end
 
 @implementation RetroArch_iOS
-{
-   UIWindow* _window;
-   NSString* _path;
-}
 
 + (RetroArch_iOS*)get
 {
@@ -185,9 +181,9 @@ static void handle_touch_event(NSArray* touches)
    [self setDelegate:self];
 
    // Setup window
-   _window = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
+   self.window = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
    [self showPauseMenu:self];
-   [_window makeKeyAndVisible];
+   [self.window makeKeyAndVisible];
 
    // Build system paths and test permissions
    self.documentsDirectory = [NSHomeDirectory() stringByAppendingPathComponent:@"Documents"];
@@ -278,7 +274,7 @@ static void handle_touch_event(NSArray* touches)
    [self setToolbarHidden:true animated:NO];
    [[UIApplication sharedApplication] setStatusBarHidden:true withAnimation:UIStatusBarAnimationNone];
    [[UIApplication sharedApplication] setIdleTimerDisabled:true];
-   [_window setRootViewController:[RAGameView get]];
+   [self.window setRootViewController:[RAGameView get]];
    g_extern.is_paused = false;
 }
 
@@ -287,7 +283,7 @@ static void handle_touch_event(NSArray* touches)
    g_extern.is_paused = true;
    [[UIApplication sharedApplication] setStatusBarHidden:false withAnimation:UIStatusBarAnimationNone];
    [[UIApplication sharedApplication] setIdleTimerDisabled:false];
-   [_window setRootViewController:self];
+   [self.window setRootViewController:self];
 }
 
 - (void)loadingCore:(NSString*)core withFile:(const char*)file

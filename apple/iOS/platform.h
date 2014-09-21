@@ -37,6 +37,9 @@ const void* apple_get_frontend_settings(void);
 
 @interface RetroArch_iOS : UINavigationController<UIApplicationDelegate, UINavigationControllerDelegate, RetroArch_Platform>
 
+@property (nonatomic) UIWindow* window;
+@property (nonatomic) NSString* documentsDirectory; // e.g. /var/mobile/Documents
+
 + (RetroArch_iOS*)get;
 
 - (void)showGameView;
@@ -45,9 +48,6 @@ const void* apple_get_frontend_settings(void);
 - (void)unloadingCore;
 
 - (void)refreshSystemConfig;
-
-@property (nonatomic) NSString* documentsDirectory; // e.g. /var/mobile/Documents
-
 @end
 
 // modes are: keyboard, icade and btstack
