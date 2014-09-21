@@ -657,15 +657,15 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 
 - (void)dealloc
 {
-   if (_history)
-      content_playlist_free(_history);
+   if (self.history)
+      content_playlist_free(self.history);
 }
 
 - (id)initWithHistoryPath:(const char*)historyPath
 {
    if ((self = [super initWithStyle:UITableViewStylePlain]))
    {
-      _history = content_playlist_init(historyPath, 100);
+      self.history = content_playlist_init(historyPath, 100);
       [self reloadData];
       self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:BOXSTRING("Clear History")
                                                 style:UIBarButtonItemStyleBordered target:self action:@selector(clearHistory)];
@@ -676,8 +676,8 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 
 - (void)clearHistory
 {
-   if (_history)
-      content_playlist_clear(_history);
+   if (self.history)
+      content_playlist_clear(self.history);
    [self reloadData];
 }
 
@@ -687,7 +687,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
    RAHistoryMenu* __weak weakSelf = self;
    NSMutableArray *section = [NSMutableArray arrayWithObject:BOXSTRING("")];
    
-   for (i = 0; _history && i < content_playlist_size(_history); i ++)
+   for (i = 0; self.history && i < content_playlist_size(self.history); i ++)
    {
        RAMenuItemBasic *item;
        const char *path      = NULL;
@@ -1155,7 +1155,7 @@ static bool copy_config(const char *src_path, const char *dst_path)
    self.actionRan = true;
    
    if (self.action)
-      _action(coreID);
+      self.action(coreID);
 }
 
 - (void)load:(uint32_t)count coresFromList:(const core_info_t*)list toSection:(NSMutableArray*)array
