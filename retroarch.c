@@ -3022,6 +3022,7 @@ static void deinit_core(void)
 {
    pretro_unload_game();
    pretro_deinit();
+   uninit_drivers();
    uninit_libretro_sym();
 }
 
@@ -3113,7 +3114,6 @@ int rarch_main_init(int argc, char *argv[])
 
 error:
    deinit_core();
-   uninit_drivers();
 
    g_extern.main_is_init = false;
    return 1;
@@ -3760,7 +3760,6 @@ void rarch_main_deinit(void)
    save_auto_state();
 
    deinit_core();
-   uninit_drivers();
 
    deinit_temporary_content();
    deinit_subsystem_fullpaths();
