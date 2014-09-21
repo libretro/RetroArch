@@ -73,8 +73,6 @@ int main_entry_decide(signature(), args_type() args)
 #ifdef HAVE_MENU
    if (g_extern.system.shutdown)
       return main_entry_iterate_shutdown(signature_expand(), args);
-   if (g_extern.lifecycle_state & (1ULL << MODE_CLEAR_INPUT))
-      return main_entry_iterate_clear_input(signature_expand(), args);
    if (g_extern.lifecycle_state & (1ULL << MODE_LOAD_GAME))
       return main_entry_iterate_load_content(signature_expand(), args);
    if (g_extern.lifecycle_state & (1ULL << MODE_GAME))
@@ -111,23 +109,6 @@ static int main_entry_iterate_content_nomenu(signature(), args_type() args)
    return 0;
 }
 #endif
-
-int main_entry_iterate_clear_input(signature(), args_type() args)
-{
-   (void)args;
-
-   rarch_input_poll();
-#ifdef HAVE_MENU
-   if (menu_input())
-      return 0;
-#endif
-
-   /* Restore libretro keyboard callback. */
-   g_extern.system.key_event = g_extern.frontend_key_event;
-   rarch_main_set_state(RARCH_ACTION_STATE_FLUSH_INPUT_FINISHED);
-
-   return 0;
-}
 
 int main_entry_iterate_load_content(signature(), args_type() args)
 {

@@ -3239,10 +3239,12 @@ void rarch_main_set_state(unsigned cmd)
          rarch_main_set_state(RARCH_ACTION_STATE_QUIT);
          break;
       case RARCH_ACTION_STATE_FLUSH_INPUT:
-         g_extern.lifecycle_state |= (1ULL << MODE_CLEAR_INPUT);
-         break;
-      case RARCH_ACTION_STATE_FLUSH_INPUT_FINISHED:
-         g_extern.lifecycle_state &= ~(1ULL << MODE_CLEAR_INPUT);
+         rarch_input_poll();
+#ifdef HAVE_MENU
+         menu_input();
+#endif
+         /* Restore libretro keyboard callback. */
+         g_extern.system.key_event = g_extern.frontend_key_event;
          break;
       case RARCH_ACTION_STATE_NONE:
       default:
