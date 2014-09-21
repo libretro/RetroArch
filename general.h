@@ -137,7 +137,6 @@ enum action_state
 {
    RARCH_ACTION_STATE_NONE = 0,
    RARCH_ACTION_STATE_MENU_PREINIT,
-   RARCH_ACTION_STATE_MENU_PREINIT_FINISHED,
    RARCH_ACTION_STATE_LOAD_CONTENT,
    RARCH_ACTION_STATE_LOAD_CONTENT_FINISHED,
    RARCH_ACTION_STATE_RUNNING,
@@ -158,7 +157,6 @@ enum menu_enums
    MODE_MENU,
    MODE_MENU_WIDESCREEN,
    MODE_MENU_HD,
-   MODE_MENU_PREINIT,
    MODE_EXTLAUNCH_MULTIMAN,
    MODE_EXITSPAWN,
    MODE_EXITSPAWN_START_GAME,
@@ -762,6 +760,8 @@ struct global
 
    /* Config file associated with per-core configs. */
    char core_specific_config_path[PATH_MAX];
+
+   retro_keyboard_event_t frontend_key_event;
 };
 
 struct rarch_main_wrap

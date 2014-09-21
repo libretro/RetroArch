@@ -311,13 +311,6 @@ bool menu_iterate(void)
    if (!driver.menu)
       return false;
 
-
-   if (g_extern.lifecycle_state & (1ULL << MODE_MENU_PREINIT))
-   {
-      driver.menu->need_refresh = true;
-      rarch_main_set_state(RARCH_ACTION_STATE_MENU_PREINIT_FINISHED);
-   }
-
    rarch_input_poll();
 
    retro_input_t input = input_keys_pressed_func(RARCH_FIRST_META_KEY,

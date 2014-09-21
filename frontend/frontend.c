@@ -55,8 +55,6 @@
 
 #define MAX_ARGS 32
 
-static retro_keyboard_event_t key_event;
-
 static int main_entry_iterate_shutdown(signature(), args_type() args)
 {
    (void)args;
@@ -81,8 +79,6 @@ int main_entry_decide(signature(), args_type() args)
       return main_entry_iterate_load_content(signature_expand(), args);
    if (g_extern.lifecycle_state & (1ULL << MODE_GAME))
       return main_entry_iterate_content(signature_expand(), args);
-   if (g_extern.lifecycle_state & (1ULL << MODE_MENU_PREINIT))
-      return main_entry_iterate_menu_preinit(signature_expand(), args);
    if (g_extern.lifecycle_state & (1ULL << MODE_MENU))
       return main_entry_iterate_menu(signature_expand(), args);
 
@@ -127,7 +123,7 @@ int main_entry_iterate_clear_input(signature(), args_type() args)
 #endif
 
    /* Restore libretro keyboard callback. */
-   g_extern.system.key_event = key_event;
+   g_extern.system.key_event = g_extern.frontend_key_event;
    rarch_main_set_state(RARCH_ACTION_STATE_FLUSH_INPUT_FINISHED);
 
    return 0;
@@ -151,39 +147,6 @@ int main_entry_iterate_load_content(signature(), args_type() args)
 }
 
 #ifdef HAVE_MENU
-int main_entry_iterate_menu_preinit(signature(), args_type() args)
-{
-   int i;
-
-   /* Menu should always run with vsync on. */
-   rarch_main_command(RARCH_CMD_VIDEO_SET_BLOCKING_STATE);
-
-   /* Stop all rumbling before entering the menu. */
-   for (i = 0; i < MAX_PLAYERS; i++)
-   {
-      driver_set_rumble_state(i, RETRO_RUMBLE_STRONG, 0);
-      driver_set_rumble_state(i, RETRO_RUMBLE_WEAK, 0);
-   }
-
-   rarch_main_command(RARCH_CMD_AUDIO_STOP);
-
-   if (driver.menu)
-   {
-      /* Override keyboard callback to redirect to menu instead.
-       * We'll use this later for something ...
-       * FIXME: This should probably be moved to menu_common somehow. */
-      key_event = g_extern.system.key_event;
-      g_extern.system.key_event = menu_key_event;
-
-      driver.menu->need_refresh = true;
-      driver.menu->old_input_state |= 1ULL << RARCH_MENU_TOGGLE;
-      rarch_main_set_state(RARCH_ACTION_STATE_MENU_PREINIT_FINISHED);
-      rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING);
-   }
-
-   return 0;
-}
-
 int main_entry_iterate_menu(signature(), args_type() args)
 {
    retro_input_t input, old_state = 0;

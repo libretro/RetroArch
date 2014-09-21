@@ -43,6 +43,7 @@
 
 #ifdef HAVE_MENU
 #include "frontend/menu/menu_common.h"
+#include "frontend/menu/menu_input_line_cb.h"
 #endif
 
 #ifdef _WIN32
@@ -3176,11 +3177,37 @@ void rarch_main_set_state(unsigned cmd)
    switch (cmd)
    {
       case RARCH_ACTION_STATE_MENU_PREINIT:
-         g_extern.lifecycle_state |= (1ULL << MODE_MENU_PREINIT);
-         g_extern.system.frame_time_last = 0;
-         break;
-      case RARCH_ACTION_STATE_MENU_PREINIT_FINISHED:
-         g_extern.lifecycle_state &= ~(1ULL << MODE_MENU_PREINIT);
+         {
+            int i;
+
+            /* Menu should always run with vsync on. */
+            rarch_main_command(RARCH_CMD_VIDEO_SET_BLOCKING_STATE);
+
+            /* Stop all rumbling before entering the menu. */
+            for (i = 0; i < MAX_PLAYERS; i++)
+            {
+               driver_set_rumble_state(i, RETRO_RUMBLE_STRONG, 0);
+               driver_set_rumble_state(i, RETRO_RUMBLE_WEAK, 0);
+            }
+
+            rarch_main_command(RARCH_CMD_AUDIO_STOP);
+
+#ifdef HAVE_MENU
+            if (driver.menu)
+            {
+               /* Override keyboard callback to redirect to menu instead.
+                * We'll use this later for something ...
+                * FIXME: This should probably be moved to menu_common somehow. */
+               g_extern.frontend_key_event = g_extern.system.key_event;
+               g_extern.system.key_event = menu_key_event;
+
+               driver.menu->need_refresh = true;
+               driver.menu->old_input_state |= 1ULL << RARCH_MENU_TOGGLE;
+               rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING);
+            }
+#endif
+            g_extern.system.frame_time_last = 0;
+         }
          break;
       case RARCH_ACTION_STATE_LOAD_CONTENT:
          g_extern.lifecycle_state |= (1ULL << MODE_LOAD_GAME);
