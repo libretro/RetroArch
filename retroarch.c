@@ -3202,7 +3202,6 @@ void rarch_main_set_state(unsigned cmd)
                g_extern.system.key_event = menu_key_event;
 
                driver.menu->need_refresh = true;
-               driver.menu->old_input_state |= 1ULL << RARCH_MENU_TOGGLE;
                rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING);
             }
 #endif
