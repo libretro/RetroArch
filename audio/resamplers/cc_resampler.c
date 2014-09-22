@@ -51,22 +51,39 @@
 #define min(a, b) ((a) < (b) ? (a) : (b))
 #endif
 
-#ifndef ALIGN_MEMORY
-#ifdef _MSC_VER
-# define ALIGN_MEMORY(X) __declspec(align(X))
-#else
-# define ALIGN_MEMORY(X) __attribute__((aligned(X)))
-#endif
-#endif
-
 typedef struct rarch_CC_resampler
 {
-   ALIGN_MEMORY(32) audio_frame_float_t buffer[4];
+   audio_frame_float_t buffer[4];
 
    float distance;
    void (*process)(void *re, struct resampler_data *data);
 } rarch_CC_resampler_t;
 
+/* memalign() replacement functions
+ * copied from sinc.c and changed signature so no conflict
+ * happens when using griffin.c
+ * these functions should probably be moved to a common header
+ */
+
+static void *memalign_alloc__(size_t boundary, size_t size)
+{
+   void *ptr = malloc(boundary + size + sizeof(uintptr_t));
+   if (!ptr)
+      return NULL;
+
+   uintptr_t addr = ((uintptr_t)ptr +
+         sizeof(uintptr_t) + boundary) & ~(boundary - 1);
+   void **place   = (void**)addr;
+   place[-1]      = ptr;
+
+   return (void*)addr;
+}
+
+static void memalign_free__(void *ptr)
+{
+   void **p = (void**)ptr;
+   free(p[-1]);
+}
 
 #ifdef _MIPS_ARCH_ALLEGREX
 static void resampler_CC_process(void *re_, struct resampler_data *data)
@@ -518,14 +535,14 @@ static void resampler_CC_free(void *re_)
 {
    rarch_CC_resampler_t *re = (rarch_CC_resampler_t*)re_;
    if (re)
-      free(re);
+      memalign_free__(re);
 }
 
 static void *resampler_CC_init(double bandwidth_mod)
 {
    int i;
    rarch_CC_resampler_t *re = (rarch_CC_resampler_t*)
-      calloc(1, sizeof(rarch_CC_resampler_t));
+      memalign_alloc__(32, sizeof(rarch_CC_resampler_t));
    if (!re)
       return NULL;
 
