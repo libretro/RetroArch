@@ -17,6 +17,7 @@
 
 #include "boolean.h"
 #include "libretro.h"
+#include "retro.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -226,16 +227,26 @@ static size_t audio_sample_batch_rewind(const int16_t *data, size_t frames)
    return frames;
 }
 
-void retro_set_default_callbacks(struct retro_callbacks* cbs)
+void retro_set_default_callbacks(void *data)
 {
-   cbs->frame_cb = video_frame;
-   cbs->sample_cb = audio_sample;
+   struct retro_callbacks *cbs = (struct retro_callbacks*)data;
+
+   if (!cbs)
+      return;
+
+   cbs->frame_cb        = video_frame;
+   cbs->sample_cb       = audio_sample;
    cbs->sample_batch_cb = audio_sample_batch;
-   cbs->state_cb = input_state;
+   cbs->state_cb        = input_state;
 }
 
-void retro_init_libretro_cbs(struct retro_callbacks* cbs)
+void retro_init_libretro_cbs(void *data)
 {
+   struct retro_callbacks *cbs = (struct retro_callbacks*)data;
+
+   if (!cbs)
+      return;
+
    pretro_set_video_refresh(video_frame);
    pretro_set_audio_sample(audio_sample);
    pretro_set_audio_sample_batch(audio_sample_batch);

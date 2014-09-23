@@ -20,16 +20,16 @@
 
 #include "libretro.h"
 
-struct retro_callbacks
+typedef struct retro_callbacks
 {
    retro_video_refresh_t frame_cb;
    retro_audio_sample_t sample_cb;
    retro_audio_sample_batch_t sample_batch_cb;
    retro_input_state_t state_cb;
-};
+} retro_callbacks_t;
 
-void retro_init_libretro_cbs(struct retro_callbacks* cbs);
-void retro_set_default_callbacks(struct retro_callbacks* cbs);
+void retro_init_libretro_cbs(void *data);
+void retro_set_default_callbacks(void *data);
 void retro_set_rewind_callbacks(void);
 
 #endif
