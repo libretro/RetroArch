@@ -92,6 +92,8 @@ unsigned (*pretro_get_region)(void);
 void *(*pretro_get_memory_data)(unsigned);
 size_t (*pretro_get_memory_size)(unsigned);
 
+static bool ignore_environment_cb;
+
 #ifdef HAVE_DYNAMIC
 #if defined(__APPLE__)
 #define DYNAMIC_EXT "dylib"
@@ -102,7 +104,6 @@ size_t (*pretro_get_memory_size)(unsigned);
 #endif
 
 static bool *load_no_content_hook;
-static bool ignore_environment_cb;
 
 static bool environ_cb_get_system_info(unsigned cmd, void *data)
 {
@@ -1061,7 +1062,6 @@ bool rarch_environment_cb(unsigned cmd, void *data)
             *g_extern.fullpath = '\0';
 
 #if defined(RARCH_CONSOLE)
-         rarch_main_set_state(RARCH_ACTION_STATE_RUNNING_FINISHED);
          rarch_main_set_state(RARCH_ACTION_STATE_EXITSPAWN);
          g_extern.lifecycle_state |= (1ULL << MODE_EXITSPAWN_START_GAME);
 #elif defined(HAVE_DYNAMIC)
