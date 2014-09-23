@@ -16,8 +16,8 @@
 /* Bog-standard windowed SINC implementation. */
 
 #include "resampler.h"
+#ifdef RARCH_INTERNAL
 #include "../../libretro.h"
-#ifndef RARCH_INTERNAL
 #include "../../performance.h"
 #endif
 #include <math.h>
@@ -25,7 +25,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#ifdef _WIN32
 #include "../../msvc/msvc_compat.h"
+#endif
 
 #if !defined(RESAMPLER_TEST) && defined(RARCH_INTERNAL)
 #include "../../general.h"
