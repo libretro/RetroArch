@@ -57,6 +57,8 @@
 #include "msvc/msvc_compat.h"
 #endif
 
+struct retro_callbacks retro_ctx;
+
 /* To avoid continous switching if we hold the button down, we require
  * that the button must go from pressed to unpressed back to pressed 
  * to be able to toggle between then.
@@ -443,7 +445,8 @@ void rarch_render_cached_frame(void)
     * freed the memory, but no known implementations do this.
     * It would be really stupid at any rate ...
     */
-   retro_video_frame(frame,
+   if (retro_ctx.frame_cb)
+   retro_ctx.frame_cb(frame,
          g_extern.frame_cache.width,
          g_extern.frame_cache.height,
          g_extern.frame_cache.pitch);
@@ -2854,7 +2857,7 @@ int rarch_main_init(int argc, char *argv[])
 #endif
    }
 
-   retro_init_libretro_cbs();
+   retro_init_libretro_cbs(&retro_ctx);
    init_system_av_info();
    init_drivers();
 

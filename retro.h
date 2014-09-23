@@ -28,13 +28,8 @@ struct retro_callbacks
    retro_input_state_t state_cb;
 };
 
-void retro_init_libretro_cbs(void);
-
-void retro_video_frame(const void *data, unsigned width,
-      unsigned height, size_t pitch);
-
+void retro_init_libretro_cbs(struct retro_callbacks* cbs);
 void retro_set_default_callbacks(struct retro_callbacks* cbs);
-
 void retro_set_rewind_callbacks(void);
 
 #endif

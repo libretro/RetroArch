@@ -226,13 +226,23 @@ static size_t audio_sample_batch_rewind(const int16_t *data, size_t frames)
    return frames;
 }
 
-void retro_init_libretro_cbs(void)
+void retro_set_default_callbacks(struct retro_callbacks* cbs)
+{
+   cbs->frame_cb = video_frame;
+   cbs->sample_cb = audio_sample;
+   cbs->sample_batch_cb = audio_sample_batch;
+   cbs->state_cb = input_state;
+}
+
+void retro_init_libretro_cbs(struct retro_callbacks* cbs)
 {
    pretro_set_video_refresh(video_frame);
    pretro_set_audio_sample(audio_sample);
    pretro_set_audio_sample_batch(audio_sample_batch);
    pretro_set_input_state(input_state);
    pretro_set_input_poll(rarch_input_poll);
+
+   retro_set_default_callbacks(cbs);
 
 #ifdef HAVE_NETPLAY
    if (!g_extern.netplay)
@@ -253,20 +263,6 @@ void retro_init_libretro_cbs(void)
       pretro_set_input_state(input_state_net);
    }
 #endif
-}
-
-void retro_video_frame(const void *data, unsigned width,
-      unsigned height, size_t pitch)
-{
-   video_frame(data, width, height, pitch);
-}
-
-void retro_set_default_callbacks(struct retro_callbacks* cbs)
-{
-   cbs->frame_cb = video_frame;
-   cbs->sample_cb = audio_sample;
-   cbs->sample_batch_cb = audio_sample_batch;
-   cbs->state_cb = input_state;
 }
 
 void retro_set_rewind_callbacks(void)
