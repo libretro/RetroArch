@@ -25,70 +25,6 @@
 #include "general.h"
 #include "performance.h"
 
-static void recording_dump_frame(const void *data, unsigned width,
-      unsigned height, size_t pitch)
-{
-   struct ffemu_video_data ffemu_data = {0};
-
-   ffemu_data.pitch   = pitch;
-   ffemu_data.width   = width;
-   ffemu_data.height  = height;
-   ffemu_data.data    = data;
-
-   if (g_extern.record_gpu_buffer)
-   {
-      struct rarch_viewport vp = {0};
-
-      if (driver.video && driver.video->viewport_info)
-         driver.video->viewport_info(driver.video_data, &vp);
-
-      if (!vp.width || !vp.height)
-      {
-         RARCH_WARN("Viewport size calculation failed! Will continue using raw data. This will probably not work right ...\n");
-         rarch_deinit_gpu_recording();
-
-         recording_dump_frame(data, width, height, pitch);
-         return;
-      }
-
-      /* User has resized. We kinda have a problem now. */
-      if (vp.width != g_extern.record_gpu_width ||
-            vp.height != g_extern.record_gpu_height)
-      {
-         static const char msg[] = "Recording terminated due to resize.";
-         RARCH_WARN("%s\n", msg);
-         msg_queue_clear(g_extern.msg_queue);
-         msg_queue_push(g_extern.msg_queue, msg, 1, 180);
-
-         rarch_deinit_recording();
-         return;
-      }
-
-      /* Big bottleneck.
-       * Since we might need to do read-backs asynchronously,
-       * it might take 3-4 times before this returns true. */
-      if (driver.video && driver.video->read_viewport)
-         if (!driver.video->read_viewport(driver.video_data,
-                  g_extern.record_gpu_buffer))
-            return;
-
-      ffemu_data.pitch  = g_extern.record_gpu_width * 3;
-      ffemu_data.width  = g_extern.record_gpu_width;
-      ffemu_data.height = g_extern.record_gpu_height;
-      ffemu_data.data   = g_extern.record_gpu_buffer +
-         (ffemu_data.height - 1) * ffemu_data.pitch;
-
-      ffemu_data.pitch  = -ffemu_data.pitch;
-   }
-
-   if (!g_extern.record_gpu_buffer)
-      ffemu_data.is_dupe = !data;
-
-   if (g_extern.rec_driver && g_extern.rec_driver->push_video)
-      g_extern.rec_driver->push_video(g_extern.rec, &ffemu_data);
-}
-
-
 static void video_frame(const void *data, unsigned width,
       unsigned height, size_t pitch)
 {
@@ -128,7 +64,7 @@ static void video_frame(const void *data, unsigned width,
             || !g_settings.video.post_filter_record || !data
             || g_extern.record_gpu_buffer)
       )
-      recording_dump_frame(data, width, height, pitch);
+      rarch_recording_dump_frame(data, width, height, pitch);
 
    msg = msg_queue_pull(g_extern.msg_queue);
    driver.current_msg = msg;
@@ -152,7 +88,8 @@ static void video_frame(const void *data, unsigned width,
       RARCH_PERFORMANCE_STOP(softfilter_process);
 
       if (g_extern.rec && g_settings.video.post_filter_record)
-         recording_dump_frame(g_extern.filter.buffer, owidth, oheight, opitch);
+         rarch_recording_dump_frame(g_extern.filter.buffer,
+               owidth, oheight, opitch);
 
       data = g_extern.filter.buffer;
       width = owidth;

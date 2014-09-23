@@ -833,6 +833,9 @@ int rarch_defer_core(core_info_list_t *data,
 void rarch_update_system_info(struct retro_system_info *info,
       bool *load_no_content);
 
+void rarch_recording_dump_frame(const void *data, unsigned width,
+      unsigned height, size_t pitch);
+
 #ifdef __cplusplus
 }
 #endif
