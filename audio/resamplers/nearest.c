@@ -9,6 +9,7 @@
 #if !defined(RESAMPLER_TEST) && defined(RARCH_INTERNAL)
 #include "../../general.h"
 #else
+/* FIXME - variadic macros not supported for MSVC 2003 */
 #define RARCH_LOG(...) fprintf(stderr, __VA_ARGS__)
 #endif
  

@@ -17,7 +17,9 @@
 
 #include "resampler.h"
 #include "../../libretro.h"
+#ifndef RARCH_INTERNAL
 #include "../../performance.h"
+#endif
 #include <math.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -25,7 +27,7 @@
 #include <stdio.h>
 #include "../../msvc/msvc_compat.h"
 
-#ifndef RESAMPLER_TEST
+#if !defined(RESAMPLER_TEST) && defined(RARCH_INTERNAL)
 #include "../../general.h"
 #else
 #define RARCH_LOG(...) fprintf(stderr, __VA_ARGS__)

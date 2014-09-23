@@ -22,6 +22,10 @@
 
 #include "../../general.h"
 
+#if !defined(RESAMPLER_TEST) && defined(RARCH_INTERNAL)
+#include "../../general.h"
+#endif
+
 static const rarch_resampler_t *resampler_drivers[] = {
    &sinc_resampler,
 #ifdef HAVE_CC_RESAMPLER
@@ -50,6 +54,7 @@ static const rarch_resampler_t *find_resampler_driver(const char *ident)
       return resampler_drivers[i];
    else
    {
+#ifdef RARCH_INTERNAL
       unsigned d;
       RARCH_ERR("Couldn't find any resampler driver named \"%s\"\n", ident);
       RARCH_LOG_OUTPUT("Available resampler drivers are:\n");
@@ -57,6 +62,7 @@ static const rarch_resampler_t *find_resampler_driver(const char *ident)
          RARCH_LOG_OUTPUT("\t%s\n", resampler_drivers[d]->ident);
 
       RARCH_WARN("Going to default to first resampler driver ...\n");
+#endif
 
       return resampler_drivers[0];
    }
@@ -69,9 +75,11 @@ void find_prev_resampler_driver(void)
    if (i > 0)
       strlcpy(g_settings.audio.resampler, resampler_drivers[i - 1]->ident,
             sizeof(g_settings.audio.resampler));
+#ifdef RARCH_INTERNAL
    else
       RARCH_WARN("Couldn't find any previous resampler driver (current one: \"%s\").\n",
             g_extern.audio_data.resampler->ident);
+#endif
 }
 
 void find_next_resampler_driver(void)
@@ -80,9 +88,11 @@ void find_next_resampler_driver(void)
    if (i >= 0 && resampler_drivers[i + 1])
       strlcpy(g_settings.audio.resampler, resampler_drivers[i + 1]->ident,
             sizeof(g_settings.audio.resampler));
+#ifdef RARCH_INTERNAL
    else
       RARCH_WARN("Couldn't find any next resampler driver (current one: \"%s\").\n",
             g_extern.audio_data.resampler->ident);
+#endif
 }
 #endif
 
