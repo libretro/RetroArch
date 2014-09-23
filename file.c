@@ -339,6 +339,8 @@ static bool load_content(const struct retro_subsystem_info *special,
    unsigned i;
    bool ret = true;
 
+   struct string_list* additional_path_allocs = string_list_new();
+
    struct retro_game_info *info = (struct retro_game_info*)
       calloc(content->size, sizeof(*info));
 
@@ -399,10 +401,15 @@ static bool load_content(const struct retro_subsystem_info *special,
             }
 
             char new_path[PATH_MAX];
+            union string_list_elem_attr attr;
+            attr.i = 0;
             fill_pathname_join(new_path,g_settings.extraction_directory,
                   path_basename(path),sizeof(new_path));
             read_compressed_file(path,NULL,new_path);
-            info[i].path = strdup(new_path);
+            string_list_append(additional_path_allocs,new_path,attr);
+            info[i].path =
+                  additional_path_allocs->elems
+                     [additional_path_allocs->size -1 ].data;
          }
       }
    }
@@ -418,6 +425,8 @@ static bool load_content(const struct retro_subsystem_info *special,
 end:
    for (i = 0; i < content->size; i++)
       free((void*)info[i].data);
+
+   string_list_free(additional_path_allocs);
    free(info);
    return ret;
 }
