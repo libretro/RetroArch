@@ -85,6 +85,7 @@ endif
 OBJ += frontend/frontend.o \
 		frontend/frontend_context.o \
 		frontend/platform/platform_null.o \
+		libretro_version_1.o \
 		retroarch.o \
 		file.o \
 		file_list.o \

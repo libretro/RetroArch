@@ -796,14 +796,14 @@ bool config_load_file(const char *path, bool set_defaults);
 bool config_save_file(const char *path);
 bool config_read_keybinds(const char *path);
 
+void rarch_deinit_recording(void);
+bool rarch_audio_flush(const int16_t *data, size_t samples);
 void rarch_main_clear_state(void);
 int rarch_main(int argc, char *argv[]);
-
 bool rarch_replace_config(const char *path);
-
 void rarch_main_init_wrap(const struct rarch_main_wrap *args,
       int *argc, char **argv);
-
+void rarch_deinit_gpu_recording(void);
 int rarch_main_init(int argc, char *argv[]);
 void rarch_main_set_state(unsigned action);
 void rarch_main_command(unsigned action);

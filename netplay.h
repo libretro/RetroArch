@@ -21,6 +21,7 @@
 #include <stddef.h>
 #include "boolean.h"
 #include "libretro.h"
+#include "retro.h"
 
 void input_poll_net(void);
 
@@ -41,14 +42,6 @@ int16_t input_state_spectate_client(unsigned port, unsigned device,
       unsigned index, unsigned id);
 
 typedef struct netplay netplay_t;
-
-struct retro_callbacks
-{
-   retro_video_refresh_t frame_cb;
-   retro_audio_sample_t sample_cb;
-   retro_audio_sample_batch_t sample_batch_cb;
-   retro_input_state_t state_cb;
-};
 
 bool netplay_init_network(void);
 
