@@ -42,4 +42,10 @@ int menu_action_setting_set_current_string(
 int menu_action_setting_set_current_string_path(
       rarch_setting_t *setting, const char *dir, const char *path);
 
+int menu_action_setting_set(unsigned id, const char *label,
+      unsigned action);
+
+int menu_action_handle_setting(rarch_setting_t *setting,
+      unsigned id, const char *label, unsigned action);
+
 #endif

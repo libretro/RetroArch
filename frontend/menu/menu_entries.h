@@ -20,6 +20,7 @@
 #include <stdlib.h>
 #include "menu_common.h"
 #include "../../file_list.h"
+#include "../../settings_data.h"
 
 void menu_entries_push(file_list_t *list,
       const char *path, const char *label, unsigned type,
@@ -38,5 +39,13 @@ void menu_entries_pop_stack(file_list_t *list, const char *needle);
 
 void menu_flush_stack_type(file_list_t *list, unsigned final_type);
 void menu_flush_stack_label(file_list_t *list, const char *needle);
+
+int menu_entries_set_current_path_selection(
+      rarch_setting_t *setting, const char *start_path,
+      const char *label, unsigned type,
+      unsigned action);
+
+void *menu_entries_get_last_setting(const char *label, int index,
+      rarch_setting_t *settings);
 
 #endif

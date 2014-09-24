@@ -642,6 +642,7 @@ MENU
 #include "../frontend/menu/menu_common.c"
 #include "../frontend/menu/menu_action.c"
 #include "../frontend/menu/menu_entries.c"
+#include "../frontend/menu/menu_shader.c"
 #include "../frontend/menu/menu_navigation.c"
 
 #include "../frontend/menu/backend/menu_common_backend.c"

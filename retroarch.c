@@ -44,6 +44,7 @@
 
 #ifdef HAVE_MENU
 #include "frontend/menu/menu_common.h"
+#include "frontend/menu/menu_shader.h"
 #include "frontend/menu/menu_input_line_cb.h"
 #endif
 
@@ -3334,16 +3335,10 @@ void rarch_main_command(unsigned cmd)
 #ifdef HAVE_MENU
          {
             unsigned shader_type = RARCH_SHADER_NONE;
+            shader_type = menu_shader_manager_get_type(driver.menu->shader);
 
-            if (driver.menu_ctx && driver.menu_ctx->backend &&
-                  driver.menu_ctx->backend->shader_manager_get_type)
-               shader_type = driver.menu_ctx->backend->shader_manager_get_type(
-                     driver.menu->shader);
-
-            if (driver.menu->shader->passes && shader_type != RARCH_SHADER_NONE
-                  && driver.menu_ctx && driver.menu_ctx->backend &&
-                  driver.menu_ctx->backend->shader_manager_save_preset)
-               driver.menu_ctx->backend->shader_manager_save_preset(NULL, true);
+            if (driver.menu->shader->passes && shader_type != RARCH_SHADER_NONE)
+               menu_shader_manager_save_preset(NULL, true);
             else
             {
 #if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
@@ -3358,10 +3353,7 @@ void rarch_main_command(unsigned cmd)
                   shader_type = RARCH_SHADER_CG;
 #endif
                }
-               if (driver.menu_ctx && driver.menu_ctx->backend &&
-                     driver.menu_ctx->backend->shader_manager_set_preset)
-                  driver.menu_ctx->backend->shader_manager_set_preset(
-                        NULL, shader_type, NULL);
+               menu_shader_manager_set_preset(NULL, shader_type, NULL);
             }
          }
 #endif

@@ -36,6 +36,7 @@
 
 #ifdef HAVE_MENU
 #include "frontend/menu/menu_entries.h"
+#include "frontend/menu/menu_shader.h"
 #endif
 
 static void get_input_config_prefix(char *buf, size_t sizeof_buf,
@@ -1832,8 +1833,6 @@ static void menu_common_setting_set_label_perf(char *type_str,
 }
 
 
-
-
 void setting_data_get_label(char *type_str,
       size_t type_str_size, unsigned *w, unsigned type, 
       const char *menu_label, const char *label, unsigned index)
@@ -1845,14 +1844,12 @@ void setting_data_get_label(char *type_str,
    if ((!strcmp(menu_label, "Shader Options") ||
             !strcmp(menu_label, "video_shader_parameters") ||
             !strcmp(menu_label, "video_shader_preset_parameters"))
-         &&
-         driver.menu_ctx && driver.menu_ctx->backend &&
-         driver.menu_ctx->backend->shader_manager_get_str
       )
    {
-      driver.menu_ctx->backend->shader_manager_get_str(
-            driver.menu->shader, type_str, type_str_size,
+#ifdef HAVE_MENU
+      menu_shader_manager_get_str(driver.menu->shader, type_str, type_str_size,
             menu_label, label, type);
+#endif
    }
    else if (!strcmp(label, "input_bind_device_id"))
    {

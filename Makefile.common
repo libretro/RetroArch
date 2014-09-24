@@ -270,6 +270,7 @@ ifeq ($(HAVE_MENU_COMMON), 1)
 			 frontend/menu/menu_common.o \
 			 frontend/menu/menu_navigation.o  \
 			 frontend/menu/menu_action.o \
+			 frontend/menu/menu_shader.o \
 			 frontend/menu/menu_entries.o
 endif
 

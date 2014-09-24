@@ -20,10 +20,6 @@
 #include "../menu_common.h"
 #include "../../../settings_data.h"
 
-#ifndef GFX_MAX_PARAMETERS
-#define GFX_MAX_PARAMETERS 64
-#endif
-
 #ifndef MAX_COUNTERS
 #define MAX_COUNTERS 64
 #endif

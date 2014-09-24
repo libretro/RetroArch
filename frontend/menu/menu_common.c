@@ -17,6 +17,7 @@
 #include "menu_common.h"
 #include "menu_input_line_cb.h"
 #include "menu_entries.h"
+#include "menu_shader.h"
 #include "../frontend.h"
 
 static void draw_frame(bool enable)
@@ -137,9 +138,7 @@ bool load_menu_content(void)
    rarch_main_command(RARCH_CMD_HISTORY_DEINIT);
    rarch_main_command(RARCH_CMD_HISTORY_INIT);
 
-   if (driver.menu_ctx && driver.menu_ctx->backend
-         && driver.menu_ctx->backend->shader_manager_init)
-      driver.menu_ctx->backend->shader_manager_init(driver.menu);
+   menu_shader_manager_init(driver.menu);
 
    rarch_main_command(RARCH_CMD_VIDEO_SET_ASPECT_RATIO);
    rarch_main_command(RARCH_CMD_RESUME);
@@ -182,9 +181,7 @@ void *menu_init(const void *data)
 
    update_libretro_info(&g_extern.menu.info);
 
-   if (menu_ctx->backend
-         && menu_ctx->backend->shader_manager_init)
-      menu_ctx->backend->shader_manager_init(menu);
+   menu_shader_manager_init(menu);
 
    rarch_main_command(RARCH_CMD_HISTORY_INIT);
    menu->last_time = rarch_get_time_usec();
