@@ -1696,14 +1696,14 @@ static int menu_load_or_open_zip_iterate(unsigned action)
 
    if (action == MENU_ACTION_OK)
    {
-      menu_entries_pop(driver.menu->menu_stack);
+      char cat_path[PATH_MAX];
+      const char *menu_path  = NULL;
+      const char *menu_label = NULL;
+      const char* path       = NULL;
+      const char* label      = NULL;
+      unsigned int menu_type = 0, type = 0;
 
-      const char *menu_path;
-      const char *menu_label;
-      unsigned int menu_type;
-      char const* path;
-      char const* label;
-      unsigned int type;
+      menu_entries_pop(driver.menu->menu_stack);
 
       file_list_get_last(driver.menu->menu_stack, &menu_path, &menu_label,
             &menu_type);
@@ -1714,21 +1714,19 @@ static int menu_load_or_open_zip_iterate(unsigned action)
       file_list_get_at_offset(driver.menu->selection_buf,
             driver.menu->selection_ptr, &path, &label, &type);
 
-      char cat_path[PATH_MAX];
       fill_pathname_join(cat_path, menu_path, path, sizeof(cat_path));
       menu_entries_push(driver.menu->menu_stack, cat_path, menu_label, type,
             driver.menu->selection_ptr);
    }
    else if (action == MENU_ACTION_CANCEL)
    {
-      menu_entries_pop(driver.menu->menu_stack);
+      const char *menu_path   = NULL;
+      const char *menu_label  = NULL;
+      const char* path        = NULL;
+      const char* label       = NULL;
+      unsigned int menu_type = 0, type = 0;
 
-      const char *menu_path;
-      const char *menu_label;
-      unsigned int menu_type;
-      char const* path;
-      char const* label;
-      unsigned int type;
+      menu_entries_pop(driver.menu->menu_stack);
 
       file_list_get_last(driver.menu->menu_stack, &menu_path, &menu_label,
             &menu_type);
@@ -1824,6 +1822,7 @@ static int menu_action_ok(const char *menu_path,
          else if (!strcmp(menu_label, "disk_image_append"))
          {
             char image[PATH_MAX];
+
             fill_pathname_join(image, menu_path, path, sizeof(image));
             rarch_disk_control_append_image(image);
 
@@ -1860,6 +1859,7 @@ static int menu_action_ok(const char *menu_path,
 
          {
             char config[PATH_MAX];
+
             fill_pathname_join(config, menu_path, path, sizeof(config));
             menu_flush_stack_type(driver.menu->menu_stack,MENU_SETTINGS);
             driver.menu->msg_force = true;
@@ -1961,13 +1961,15 @@ static int menu_action_ok(const char *menu_path,
       case MENU_FILE_CARCHIVE:
 
          {
+            char cat_path[PATH_MAX];
+
             if (type == MENU_FILE_CARCHIVE && !strcmp(menu_label, "detect_core_list"))
             {
                file_list_push(driver.menu->menu_stack, path, "load_open_zip",
                      0, driver.menu->selection_ptr);
                return 0;
             }
-            char cat_path[PATH_MAX];
+
             fill_pathname_join(cat_path, menu_path, path, sizeof(cat_path));
             menu_entries_push(driver.menu->menu_stack,
                   cat_path, menu_label, type, driver.menu->selection_ptr);
@@ -1997,6 +1999,7 @@ static int menu_common_iterate(unsigned action)
    unsigned menu_type = 0;
    const char *path = NULL;
    const char *menu_label = NULL;
+   unsigned scroll_speed = 0, fast_scroll_speed = 0;
 
    file_list_get_last(driver.menu->menu_stack, &path, &menu_label, &menu_type);
 
@@ -2026,8 +2029,8 @@ static int menu_common_iterate(unsigned action)
    if (driver.menu->need_refresh && action != MENU_ACTION_MESSAGE)
       action = MENU_ACTION_NOOP;
 
-   unsigned scroll_speed = (max(driver.menu->scroll_accel, 2) - 2) / 4 + 1;
-   unsigned fast_scroll_speed = 4 + 4 * scroll_speed;
+   scroll_speed = (max(driver.menu->scroll_accel, 2) - 2) / 4 + 1;
+   fast_scroll_speed = 4 + 4 * scroll_speed;
 
    switch (action)
    {
