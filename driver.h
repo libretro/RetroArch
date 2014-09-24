@@ -39,6 +39,8 @@
 #include "frontend/menu/backend/menu_backend.h"
 #include "frontend/menu/disp/menu_display.h"
 
+#include "retro.h"
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -428,10 +430,12 @@ typedef struct driver
    const video_driver_t *video;
    const input_driver_t *input;
    const input_osk_driver_t *osk;
-   void *osk_data;
    const camera_driver_t *camera;
-   void *camera_data;
    const location_driver_t *location;
+   struct retro_callbacks retro_ctx;
+
+   void *osk_data;
+   void *camera_data;
    void *location_data;
    void *audio_data;
    void *video_data;

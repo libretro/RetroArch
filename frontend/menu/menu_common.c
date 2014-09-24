@@ -323,7 +323,8 @@ bool menu_iterate(retro_input_t input,
       return false;
    }
 
-   rarch_input_poll();
+   driver.retro_ctx.poll_cb();
+
    input_state = menu_input();
 
    if (driver.menu->do_held)

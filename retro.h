@@ -15,8 +15,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _RETRO_IMPLEMENTATION_H
-#define _RETRO_IMPLEMENTATION_H
+#ifndef _RETRO_IMPLEMENTATION_V1_H
+#define _RETRO_IMPLEMENTATION_V1_H
 
 #include "libretro.h"
 
@@ -26,6 +26,7 @@ typedef struct retro_callbacks
    retro_audio_sample_t sample_cb;
    retro_audio_sample_batch_t sample_batch_cb;
    retro_input_state_t state_cb;
+   retro_input_poll_t poll_cb;
 } retro_callbacks_t;
 
 void retro_init_libretro_cbs(void *data);
