@@ -22,13 +22,13 @@ resampler-sinc.o: ../resamplers/resampler.c
 	$(CC) -c -o $@ $< $(CFLAGS)
 
 resampler-cc.o: ../resamplers/resampler.c
-	$(CC) -c -o $@ $< $(CFLAGS) -DHAVE_CC_RESAMPLER -DRESAMPLER_IDENT='"CC"'
+	$(CC) -c -o $@ $< $(CFLAGS) -DRESAMPLER_IDENT='"CC"'
 
 main-cc.o: main.c
-	$(CC) -c -o $@ $< $(CFLAGS) -DHAVE_CC_RESAMPLER -DRESAMPLER_IDENT='"CC"'
+	$(CC) -c -o $@ $< $(CFLAGS) -DRESAMPLER_IDENT='"CC"'
 
 snr-cc.o: snr.c
-	$(CC) -c -o $@ $< $(CFLAGS) -DHAVE_CC_RESAMPLER -DRESAMPLER_IDENT='"CC"'
+	$(CC) -c -o $@ $< $(CFLAGS) -DRESAMPLER_IDENT='"CC"'
 
 cc-resampler.o: ../resamplers/cc_resampler.c
 	$(CC) -c -o $@ $< $(CFLAGS)

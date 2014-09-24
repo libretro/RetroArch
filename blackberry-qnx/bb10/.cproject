@@ -32,7 +32,6 @@
 									<listOptionValue builtIn="false" value="HAVE_DYLIB"/>
 									<listOptionValue builtIn="false" value="HAVE_ALSA"/>
 									<listOptionValue builtIn="false" value="RARCH_INTERNAL"/>
-									<listOptionValue builtIn="false" value="HAVE_CC_RESAMPLER"/>
 									<listOptionValue builtIn="false" value="HAVE_RGUI"/>
 									<listOptionValue builtIn="false" value="HAVE_MENU"/>
 									<listOptionValue builtIn="false" value="RARCH_MOBILE"/>
@@ -150,7 +149,6 @@
 									<listOptionValue builtIn="false" value="HAVE_DYLIB"/>
 									<listOptionValue builtIn="false" value="HAVE_ALSA"/>
 									<listOptionValue builtIn="false" value="RARCH_INTERNAL"/>
-									<listOptionValue builtIn="false" value="HAVE_CC_RESAMPLER"/>
 									<listOptionValue builtIn="false" value="HAVE_RGUI"/>
 									<listOptionValue builtIn="false" value="HAVE_MENU"/>
 									<listOptionValue builtIn="false" value="RARCH_MOBILE"/>
@@ -270,7 +268,6 @@
 									<listOptionValue builtIn="false" value="HAVE_DYLIB"/>
 									<listOptionValue builtIn="false" value="HAVE_ALSA"/>
 									<listOptionValue builtIn="false" value="RARCH_INTERNAL"/>
-									<listOptionValue builtIn="false" value="HAVE_CC_RESAMPLER"/>
 									<listOptionValue builtIn="false" value="HAVE_RGUI"/>
 									<listOptionValue builtIn="false" value="HAVE_MENU"/>
 									<listOptionValue builtIn="false" value="RARCH_MOBILE"/>
@@ -391,7 +388,6 @@
 									<listOptionValue builtIn="false" value="HAVE_DYLIB"/>
 									<listOptionValue builtIn="false" value="HAVE_ALSA"/>
 									<listOptionValue builtIn="false" value="RARCH_INTERNAL"/>
-									<listOptionValue builtIn="false" value="HAVE_CC_RESAMPLER"/>
 									<listOptionValue builtIn="false" value="HAVE_RGUI"/>
 									<listOptionValue builtIn="false" value="HAVE_MENU"/>
 									<listOptionValue builtIn="false" value="RARCH_MOBILE"/>
@@ -510,7 +506,6 @@
 									<listOptionValue builtIn="false" value="HAVE_DYLIB"/>
 									<listOptionValue builtIn="false" value="HAVE_ALSA"/>
 									<listOptionValue builtIn="false" value="RARCH_INTERNAL"/>
-									<listOptionValue builtIn="false" value="HAVE_CC_RESAMPLER"/>
 									<listOptionValue builtIn="false" value="HAVE_RGUI"/>
 									<listOptionValue builtIn="false" value="HAVE_MENU"/>
 									<listOptionValue builtIn="false" value="RARCH_MOBILE"/>
@@ -629,7 +624,6 @@
 									<listOptionValue builtIn="false" value="HAVE_DYLIB"/>
 									<listOptionValue builtIn="false" value="HAVE_ALSA"/>
 									<listOptionValue builtIn="false" value="RARCH_INTERNAL"/>
-									<listOptionValue builtIn="false" value="HAVE_CC_RESAMPLER"/>
 									<listOptionValue builtIn="false" value="HAVE_RGUI"/>
 									<listOptionValue builtIn="false" value="HAVE_MENU"/>
 									<listOptionValue builtIn="false" value="RARCH_MOBILE"/>
@@ -749,7 +743,6 @@
 									<listOptionValue builtIn="false" value="HAVE_DYLIB"/>
 									<listOptionValue builtIn="false" value="HAVE_ALSA"/>
 									<listOptionValue builtIn="false" value="RARCH_INTERNAL"/>
-									<listOptionValue builtIn="false" value="HAVE_CC_RESAMPLER"/>
 									<listOptionValue builtIn="false" value="HAVE_RGUI"/>
 									<listOptionValue builtIn="false" value="HAVE_MENU"/>
 									<listOptionValue builtIn="false" value="RARCH_MOBILE"/>
