@@ -18,11 +18,6 @@
 #define HAVE_SHADERS
 #endif
 
-#ifdef _XBOX
-#define DONT_HAVE_BITMAPFONTS
-#define DONT_HAVE_STATE_TRACKER
-#endif
-
 #if defined(HAVE_ZLIB) || defined(HAVE_7ZIP)
 #define HAVE_COMPRESSION
 #endif
@@ -253,16 +248,14 @@ FONTS
 
 #if defined(HAVE_OPENGL) || defined(HAVE_D3D8) || defined(HAVE_D3D9)
 
-#if defined(HAVE_FREETYPE) || !defined(DONT_HAVE_BITMAPFONTS)
+#if defined(HAVE_FREETYPE)
 #include "../gfx/fonts/fonts.c"
 
 #if defined(HAVE_FREETYPE)
 #include "../gfx/fonts/freetype.c"
 #endif
 
-#if !defined(DONT_HAVE_BITMAPFONTS)
 #include "../gfx/fonts/bitmapfont.c"
-#endif
 
 #endif
 
@@ -368,13 +361,7 @@ INPUT
 /*============================================================
 STATE TRACKER
 ============================================================ */
-#ifdef _XBOX
-#define DONT_HAVE_STATE_TRACKER
-#endif
-
-#ifndef DONT_HAVE_STATE_TRACKER
 #include "../gfx/state_tracker.c"
-#endif
 
 #ifdef HAVE_PYTHON
 #include "../gfx/py_state/py_state.c"
