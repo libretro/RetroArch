@@ -954,7 +954,8 @@ static int menu_common_shader_manager_setting_toggle(
 
       param->current = min(max(param->minimum, param->current), param->maximum);
 
-      if (apply_changes)
+      if (apply_changes 
+       && !strcmp(label, "video_shader_parameters"))
          rarch_main_command(RARCH_CMD_SHADERS_APPLY_CHANGES);
    }
    else if ((!strcmp(label, "video_shader_parameters") ||
