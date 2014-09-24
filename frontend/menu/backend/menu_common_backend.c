@@ -191,44 +191,6 @@ static int menu_start_screen_iterate(unsigned action)
    return 0;
 }
 
-static int menu_common_core_setting_toggle(unsigned setting, unsigned action)
-{
-   unsigned index = setting - MENU_SETTINGS_CORE_OPTION_START;
-
-   switch (action)
-   {
-      case MENU_ACTION_LEFT:
-         core_option_prev(g_extern.system.core_options, index);
-         break;
-
-      case MENU_ACTION_RIGHT:
-      case MENU_ACTION_OK:
-         core_option_next(g_extern.system.core_options, index);
-         break;
-
-      case MENU_ACTION_START:
-         core_option_set_default(g_extern.system.core_options, index);
-         break;
-
-      default:
-         break;
-   }
-
-   return 0;
-}
-
-static int menu_common_setting_set_perf(unsigned setting, unsigned action,
-      struct retro_perf_counter **counters, unsigned offset)
-{
-   if (counters[offset] && action == MENU_ACTION_START)
-   {
-      counters[offset]->total = 0;
-      counters[offset]->call_cnt = 0;
-   }
-   return 0;
-}
-
-
 static int menu_common_setting_set_current_path_selection(
       rarch_setting_t *setting, const char *start_path,
       const char *label, unsigned type,
