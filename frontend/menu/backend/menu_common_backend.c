@@ -1579,8 +1579,23 @@ static int menu_viewport_iterate(unsigned action)
 
 static int menu_custom_bind_iterate(void *data)
 {
+   char msg[PATH_MAX];
+   int64_t current;
+   int timeout = 0;
    menu_handle_t *menu = (menu_handle_t*)data;
    struct menu_bind_state binds = menu->binds;
+
+   if (driver.video_data && driver.menu_ctx &&
+         driver.menu_ctx->render)
+      driver.menu_ctx->render();
+
+   snprintf(msg, sizeof(msg), "[%s]\npress joypad\n(RETURN to skip)",
+         input_config_bind_map[
+         driver.menu->binds.begin - MENU_SETTINGS_BIND_BEGIN].desc);
+
+   if (driver.video_data && driver.menu_ctx 
+         && driver.menu_ctx->render_messagebox)
+      driver.menu_ctx->render_messagebox(msg);
 
    menu_poll_bind_state(&binds);
 
@@ -1602,11 +1617,28 @@ static int menu_custom_bind_iterate(void *data)
    return 0;
 }
 
-static int menu_custom_bind_iterate_keyboard(void *data,
-      int64_t current, int timeout)
+static int menu_custom_bind_iterate_keyboard(void *data)
 {
+   char msg[PATH_MAX];
+   int64_t current;
+   int timeout = 0;
    bool timed_out = false;
    menu_handle_t *menu = (menu_handle_t*)data;
+
+   if (driver.video_data && driver.menu_ctx &&
+         driver.menu_ctx->render)
+      driver.menu_ctx->render();
+
+   current = rarch_get_time_usec();
+   timeout = (driver.menu->binds.timeout_end - current) / 1000000;
+   snprintf(msg, sizeof(msg), "[%s]\npress keyboard\n(timeout %d seconds)",
+         input_config_bind_map[
+         driver.menu->binds.begin - MENU_SETTINGS_BIND_BEGIN].desc,
+         timeout);
+
+   if (driver.video_data && driver.menu_ctx 
+         && driver.menu_ctx->render_messagebox)
+      driver.menu_ctx->render_messagebox(msg);
 
    if (timeout <= 0)
    {
@@ -1985,44 +2017,10 @@ static int menu_common_iterate(unsigned action)
          !strcmp(menu_label, "custom_viewport_2")
          )
       return menu_viewport_iterate(action);
-   else if (
-         menu_type == MENU_SETTINGS_CUSTOM_BIND ||
-         menu_type == MENU_SETTINGS_CUSTOM_BIND_KEYBOARD
-         )
-   {
-      char msg[PATH_MAX];
-      int64_t current;
-      int timeout = 0;
-
-      if (driver.video_data && driver.menu_ctx &&
-            driver.menu_ctx->render)
-         driver.menu_ctx->render();
-
-      if (menu_type == MENU_SETTINGS_CUSTOM_BIND)
-      {
-         snprintf(msg, sizeof(msg), "[%s]\npress joypad\n(RETURN to skip)",
-               input_config_bind_map[
-               driver.menu->binds.begin - MENU_SETTINGS_BIND_BEGIN].desc);
-      }
-      else if (menu_type == MENU_SETTINGS_CUSTOM_BIND_KEYBOARD)
-      {
-         current = rarch_get_time_usec();
-         timeout = (driver.menu->binds.timeout_end - current) / 1000000;
-         snprintf(msg, sizeof(msg), "[%s]\npress keyboard\n(timeout %d seconds)",
-               input_config_bind_map[
-               driver.menu->binds.begin - MENU_SETTINGS_BIND_BEGIN].desc,
-               timeout);
-      }
-
-      if (driver.video_data && driver.menu_ctx 
-            && driver.menu_ctx->render_messagebox)
-         driver.menu_ctx->render_messagebox(msg);
-
-      if (menu_type == MENU_SETTINGS_CUSTOM_BIND)
-         return menu_custom_bind_iterate(driver.menu);
-      else if (menu_type == MENU_SETTINGS_CUSTOM_BIND_KEYBOARD)
-         return menu_custom_bind_iterate_keyboard(driver.menu, current, timeout);
-   }
+   else if (menu_type == MENU_SETTINGS_CUSTOM_BIND)
+      return menu_custom_bind_iterate(driver.menu);
+   else if (menu_type == MENU_SETTINGS_CUSTOM_BIND_KEYBOARD)
+      return menu_custom_bind_iterate_keyboard(driver.menu);
 
    if (driver.menu->need_refresh && action != MENU_ACTION_MESSAGE)
       action = MENU_ACTION_NOOP;
