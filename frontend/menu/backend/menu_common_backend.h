@@ -20,10 +20,6 @@
 #include "../menu_common.h"
 #include "../../../settings_data.h"
 
-#ifndef MAX_COUNTERS
-#define MAX_COUNTERS 64
-#endif
-
 #ifdef GEKKO
 enum
 {
