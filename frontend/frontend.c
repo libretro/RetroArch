@@ -55,27 +55,20 @@
 
 #define MAX_ARGS 32
 
-static int main_entry_iterate_shutdown(signature(),
-      args_type() args)
-{
-   (void)args;
-
-   if (g_extern.core_shutdown_initiated 
-         && g_settings.load_dummy_on_core_shutdown)
-   {
-      /* Load dummy core instead of exiting RetroArch completely. */
-      rarch_main_command(RARCH_CMD_PREPARE_DUMMY);
-      g_extern.core_shutdown_initiated = false;
-      return 0;
-   }
-
-   return 1;
-}
-
 int main_entry_decide(signature(), args_type() args)
 {
    if (!rarch_main_iterate())
-      return main_entry_iterate_shutdown(signature_expand(), args);
+   {
+      if (g_extern.core_shutdown_initiated 
+            && g_settings.load_dummy_on_core_shutdown)
+      {
+         /* Load dummy core instead of exiting RetroArch completely. */
+         rarch_main_command(RARCH_CMD_PREPARE_DUMMY);
+         g_extern.core_shutdown_initiated = false;
+         return 0;
+      }
+      return 1;
+   }
 
    if (driver.frontend_ctx && driver.frontend_ctx->process_events)
       driver.frontend_ctx->process_events(args);
