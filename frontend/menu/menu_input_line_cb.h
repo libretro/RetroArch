@@ -38,6 +38,10 @@ bool menu_poll_find_trigger(struct menu_bind_state *state,
 
 bool menu_custom_bind_keyboard_cb(void *data, unsigned code);
 
+int menu_input_bind_iterate(void *data);
+
+int menu_input_bind_iterate_keyboard(void *data);
+
 uint64_t menu_input(void);
 
 #endif
