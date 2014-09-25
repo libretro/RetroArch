@@ -134,8 +134,7 @@ static void rmenu_render(void)
       return;
    }
 
-   if (menu->need_refresh && 
-         (g_extern.lifecycle_state & (1ULL << MODE_MENU))
+   if (menu->need_refresh && g_extern.is_menu
          && !menu->msg_force)
       return;
 

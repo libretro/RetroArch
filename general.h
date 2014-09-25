@@ -148,7 +148,6 @@ enum action_state
 enum menu_enums
 {
    MODE_NONE = 0,
-   MODE_MENU,
    MODE_MENU_WIDESCREEN,
    MODE_MENU_HD,
    MODE_EXTLAUNCH_MULTIMAN,
@@ -635,6 +634,7 @@ struct global
    /* Pausing support. */
    bool is_paused;
    bool is_oneshot;
+   bool is_menu;
    bool is_slowmotion;
 
    /* Turbo support. */

@@ -2849,10 +2849,10 @@ void rarch_main_set_state(unsigned cmd)
 #endif
          break;
       case RARCH_ACTION_STATE_MENU_RUNNING:
-         g_extern.lifecycle_state |= (1ULL << MODE_MENU);
+         g_extern.is_menu = true;
          break;
       case RARCH_ACTION_STATE_MENU_RUNNING_FINISHED:
-         g_extern.lifecycle_state &= ~(1ULL << MODE_MENU);
+         g_extern.is_menu = false;
          break;
       case RARCH_ACTION_STATE_EXITSPAWN:
          g_extern.lifecycle_state |= (1ULL << MODE_EXITSPAWN);
@@ -3232,7 +3232,7 @@ bool rarch_main_iterate(void)
          !driver.video->alive(driver.video_data))
       return false;
 
-   if (g_extern.lifecycle_state & (1ULL << MODE_MENU))
+   if (g_extern.is_menu)
    {
       if (!menu_iterate(input, old_input, trigger_input))
       {

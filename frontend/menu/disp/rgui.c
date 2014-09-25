@@ -281,8 +281,8 @@ static void rgui_render(void)
    size_t begin = 0;
    size_t end;
 
-   if (driver.menu->need_refresh &&
-         (g_extern.lifecycle_state & (1ULL << MODE_MENU))
+   if (driver.menu->need_refresh 
+         && g_extern.is_menu
          && !driver.menu->msg_force)
       return;
 

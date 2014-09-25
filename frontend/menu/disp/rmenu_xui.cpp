@@ -372,8 +372,7 @@ static void rmenu_xui_render(void)
    unsigned menu_type = 0;
 
    if (!driver.menu || driver.menu->need_refresh && 
-         (g_extern.lifecycle_state & (1ULL << MODE_MENU))
-         && !driver.menu->msg_force)
+         g_extern.is_menu && !driver.menu->msg_force)
       return;
 
    begin = driver.menu->selection_ptr;
