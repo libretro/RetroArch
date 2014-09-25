@@ -1616,12 +1616,12 @@ retro_input_t input_keys_pressed(unsigned key,
       unsigned key_end, const struct retro_keybind **binds)
 {
    retro_input_t ret = 0;
+   
+   if (driver.block_libretro_input)
+      return 0;
 
    for (; key < key_end; key++)
    {
-      if (driver.block_libretro_input)
-         return 0;
-
       ret |= driver.input->input_state(driver.input_data,
             binds, 0, RETRO_DEVICE_JOYPAD, 0, key) ? (1ULL << key) : 0;
 #ifdef HAVE_OVERLAY
