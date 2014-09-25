@@ -3220,7 +3220,11 @@ bool rarch_main_iterate(void)
 
    if (g_extern.is_menu)
    {
-      if (!menu_iterate(input, old_input, trigger_input))
+      if (
+            !menu_iterate(input, old_input, trigger_input) ||
+            (check_enter_menu_func(trigger_input) &&
+             g_extern.main_is_init && !g_extern.libretro_dummy)
+         )
       {
          rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED);
          driver_set_nonblock_state(driver.nonblock_state);

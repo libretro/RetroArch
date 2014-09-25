@@ -301,8 +301,7 @@ bool menu_custom_bind_keyboard_cb(void *data, unsigned code)
 uint64_t menu_input(void)
 {
    unsigned i;
-   uint64_t input_state = 0;
-   retro_input_t input_meta = 0, old_state = 0;
+   retro_input_t input_state = 0, old_state = 0;
    static const struct retro_keybind *binds[] = { g_settings.input.binds[0] };
 
    if (!driver.menu)
@@ -318,12 +317,6 @@ uint64_t menu_input(void)
 
    input_state = input_keys_pressed(0, RETRO_DEVICE_ID_JOYPAD_R2, binds);
 
-   input_meta = meta_input_keys_pressed(RARCH_MENU_TOGGLE, RARCH_MENU_TOGGLE + 1,
-         &old_state);
-
-   input_state |= BIND_PRESSED(input_meta, RARCH_MENU_TOGGLE)
-      ? (1ULL << RARCH_MENU_TOGGLE) : 0;
-
    input_pop_analog_dpad((struct retro_keybind*)binds[0]);
    for (i = 0; i < MAX_PLAYERS; i++)
       input_pop_analog_dpad(g_settings.input.autoconf_binds[i]);
@@ -337,7 +330,7 @@ uint64_t menu_input(void)
             | (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT)
             | (1ULL << RETRO_DEVICE_ID_JOYPAD_L)
             | (1ULL << RETRO_DEVICE_ID_JOYPAD_R)
-            )) && !(input_state & (1ULL << RARCH_MENU_TOGGLE));
+            ));
 
    return input_state;
 }
