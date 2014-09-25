@@ -316,13 +316,6 @@ bool menu_iterate(retro_input_t input,
 #endif
    check_fullscreen_func(trigger_input);
 
-   if (check_enter_menu_func(trigger_input) &&
-         g_extern.main_is_init && !g_extern.libretro_dummy)
-   {
-      rarch_main_command(RARCH_CMD_RESUME);
-      return false;
-   }
-
    driver.retro_ctx.poll_cb();
 
    input_state = menu_input();
