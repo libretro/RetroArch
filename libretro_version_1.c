@@ -181,8 +181,11 @@ static int16_t input_state(unsigned port, unsigned device,
       g_settings.input.binds[15],
    };
 
-   if (!driver.block_libretro_input && (id < RARCH_FIRST_META_KEY ||
-            device == RETRO_DEVICE_KEYBOARD))
+   if (!driver.block_libretro_input &&
+         ((id < RARCH_FIRST_META_KEY ||
+            device == RETRO_DEVICE_KEYBOARD) &&
+         (g_extern.frame_count > driver.block_libretro_input_until))
+         )
       res = driver.input->input_state(driver.input_data, binds, port,
             device, index, id);
 

@@ -2866,10 +2866,7 @@ void rarch_main_set_state(unsigned cmd)
          rarch_main_set_state(RARCH_ACTION_STATE_QUIT);
          break;
       case RARCH_ACTION_STATE_FLUSH_INPUT:
-         driver.retro_ctx.poll_cb();
-#ifdef HAVE_MENU
-         menu_input();
-#endif
+         driver.block_libretro_input_until = g_extern.frame_count + (5);
          /* Restore libretro keyboard callback. */
          g_extern.system.key_event = g_extern.frontend_key_event;
          break;
