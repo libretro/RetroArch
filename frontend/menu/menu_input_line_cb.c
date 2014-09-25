@@ -301,7 +301,7 @@ bool menu_custom_bind_keyboard_cb(void *data, unsigned code)
 uint64_t menu_input(void)
 {
    unsigned i;
-   retro_input_t input_state = 0, old_state = 0;
+   retro_input_t input_state = 0;
    static const struct retro_keybind *binds[] = { g_settings.input.binds[0] };
 
    if (!driver.menu)
