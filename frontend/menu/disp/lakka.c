@@ -704,8 +704,8 @@ void lakka_init_settings(void)
 
                strlcpy(subitem->name, setting->short_description, 
                      sizeof(subitem->name));
-               subitem->alpha = kk ? 1.0 : 0.5;
-               subitem->zoom = kk ? i_active_zoom : i_passive_zoom;
+               subitem->alpha = 0.0;
+               subitem->zoom = kk ? i_passive_zoom : i_active_zoom;
                subitem->y = kk ? vspacing * (kk + under_item_offset)
                   : vspacing * active_item_factor;
 
