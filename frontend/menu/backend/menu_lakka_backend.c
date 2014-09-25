@@ -163,51 +163,43 @@ static void lakka_switch_subitems(void)
    }
 }
 
-static void lakka_reset_submenu(void)
+static void lakka_reset_submenu(int i, int j)
 {
-   int i, j, k;
+   menu_category_t *category = (menu_category_t*)&categories[i];
+
+   if (!category)
+      return;
+
+   category->items[category->active_item].active_subitem = 0;
+
+   int k;
+   for (k = 0; k < category->items[j].num_subitems; k++)
+   {
+      menu_subitem_t *subitem = (menu_subitem_t*)
+         &category->items[j].subitems[k];
+
+      if (!subitem)
+         continue;
+
+      subitem->alpha = 0;
+      subitem->zoom = (k == category->items[j].active_subitem) ? 
+         i_active_zoom : i_passive_zoom;
+      subitem->y = k == 0 ? 
+         vspacing * active_item_factor : 
+         vspacing * (k + under_item_offset);
+   }
+}
+
+static bool lakka_on_active_rom(void)
+{
    menu_category_t *active_category = (menu_category_t*)
       &categories[menu_active_category];
 
-   bool do_reset = (!(
-            g_extern.main_is_init
+   return !(g_extern.main_is_init
             && !g_extern.libretro_dummy
             && (!strcmp(g_extern.fullpath,
                active_category->items[
-               active_category->active_item].rom))));
-
-   if (!do_reset)
-      return;
-
-   /* Keeps active submenu state (do we really want that?) */
-   active_category->items[active_category->active_item].active_subitem = 0;
-
-   for (i = 0; i < num_categories; i++)
-   {
-      menu_category_t *category = (menu_category_t*)&categories[i];
-
-      if (!category)
-         continue;
-
-      for (j = 0; j < category->num_items; j++)
-      {
-         for (k = 0; k < category->items[j].num_subitems; k++)
-         {
-            menu_subitem_t *subitem = (menu_subitem_t*)
-               &category->items[j].subitems[k];
-
-            if (!subitem)
-               continue;
-
-            subitem->alpha = 0;
-            subitem->zoom = (k == category->items[j].active_subitem) ? 
-               i_active_zoom : i_passive_zoom;
-            subitem->y = k == 0 ? 
-               vspacing * active_item_factor : 
-               vspacing * (k + under_item_offset);
-         }
-      }
-   }
+               active_category->active_item].rom)));
 }
 
 static void lakka_open_submenu(void)
@@ -218,8 +210,11 @@ static void lakka_open_submenu(void)
          &all_categories_x, &inOutQuad, NULL);
    add_tween(LAKKA_DELAY, 1.0, &arrow_alpha, &inOutQuad, NULL);
 
-   /* Reset contextual menu style */
-   lakka_reset_submenu();
+   menu_category_t *active_category = (menu_category_t*)
+      &categories[menu_active_category];
+
+   if (menu_active_category > 0 && lakka_on_active_rom())
+      lakka_reset_submenu(menu_active_category, active_category->active_item);
    
    for (i = 0; i < num_categories; i++)
    {
