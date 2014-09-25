@@ -258,7 +258,8 @@ static void lakka_draw_text(const char *str, float x,
 {
    if (alpha > global_alpha)
       alpha = global_alpha;
-   if (alpha == 0)
+   uint8_t a8 = 255 * alpha;
+   if (a8 == 0)
       return;
 
    gl_t *gl = (gl_t*)driver_video_resolve(NULL);
@@ -277,7 +278,7 @@ static void lakka_draw_text(const char *str, float x,
    params.y = 1.0f - y / gl->win_height;
 
    params.scale = scale;
-   params.color = FONT_COLOR_RGBA(255, 255, 255, (uint8_t)(255 * alpha));
+   params.color = FONT_COLOR_RGBA(255, 255, 255, a8);
    params.full_screen = true;
 
    if (font_driver)
