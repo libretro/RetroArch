@@ -190,6 +190,18 @@ static void lakka_reset_submenu(int i, int j)
    }
 }
 
+static bool lakka_on_active_rom(void)
+{
+   menu_category_t *active_category = (menu_category_t*)
+      &categories[menu_active_category];
+
+   return !(g_extern.main_is_init
+            && !g_extern.libretro_dummy
+            && (!strcmp(g_extern.fullpath,
+               active_category->items[
+               active_category->active_item].rom)));
+}
+
 static void lakka_open_submenu(void)
 {
    int i, j, k;
@@ -201,14 +213,7 @@ static void lakka_open_submenu(void)
    menu_category_t *active_category = (menu_category_t*)
       &categories[menu_active_category];
 
-   bool do_reset = !(
-            g_extern.main_is_init
-            && !g_extern.libretro_dummy
-            && (!strcmp(g_extern.fullpath,
-               active_category->items[
-               active_category->active_item].rom)));
-
-   if (do_reset)
+   if (menu_active_category > 0 && lakka_on_active_rom())
       lakka_reset_submenu(menu_active_category, active_category->active_item);
    
    for (i = 0; i < num_categories; i++)
