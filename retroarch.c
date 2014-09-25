@@ -2865,11 +2865,6 @@ void rarch_main_set_state(unsigned cmd)
          g_extern.lifecycle_state = 0;
          rarch_main_set_state(RARCH_ACTION_STATE_QUIT);
          break;
-      case RARCH_ACTION_STATE_FLUSH_INPUT:
-         driver.block_libretro_input_until = g_extern.frame_count + (5);
-         /* Restore libretro keyboard callback. */
-         g_extern.system.key_event = g_extern.frontend_key_event;
-         break;
       case RARCH_ACTION_STATE_NONE:
       default:
          break;
@@ -3245,7 +3240,10 @@ bool rarch_main_iterate(void)
          driver_set_nonblock_state(driver.nonblock_state);
 
          rarch_main_command(RARCH_CMD_AUDIO_START);
-         rarch_main_set_state(RARCH_ACTION_STATE_FLUSH_INPUT);
+
+         driver.block_libretro_input_until = g_extern.frame_count + (5);
+         /* Restore libretro keyboard callback. */
+         g_extern.system.key_event = g_extern.frontend_key_event;
       }
       return true;
    }
