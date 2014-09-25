@@ -367,6 +367,8 @@ int menu_input_bind_iterate(void *data)
 
    menu_poll_bind_state(&binds);
 
+   driver.block_hotkey_until = g_extern.frame_count + (60);
+
    if ((binds.skip && !menu->binds.skip) ||
          menu_poll_find_trigger(&menu->binds, &binds))
    {
@@ -420,6 +422,8 @@ int menu_input_bind_iterate_keyboard(void *data)
          MENU_KEYBOARD_BIND_TIMEOUT_SECONDS * 1000000;
       timed_out = true;
    }
+
+   driver.block_hotkey_until = g_extern.frame_count + (60);
 
    /* binds.begin is updated in keyboard_press callback. */
    if (menu->binds.begin > menu->binds.last)
