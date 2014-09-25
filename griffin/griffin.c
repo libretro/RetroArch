@@ -246,17 +246,11 @@ VIDEO DRIVER
 FONTS
 ============================================================ */
 
-#if defined(HAVE_OPENGL) || defined(HAVE_D3D8) || defined(HAVE_D3D9)
-
-#if defined(HAVE_FREETYPE)
 #include "../gfx/fonts/fonts.c"
+#include "../gfx/fonts/bitmapfont.c"
 
 #if defined(HAVE_FREETYPE)
 #include "../gfx/fonts/freetype.c"
-#endif
-
-#include "../gfx/fonts/bitmapfont.c"
-
 #endif
 
 #ifdef HAVE_OPENGL
@@ -273,14 +267,18 @@ FONTS
 
 #if defined(HAVE_LIBDBGFONT)
 #include "../gfx/fonts/ps_libdbgfont.c"
-#elif defined(HAVE_OPENGL)
-#include "../gfx/fonts/gl_raster_font.c"
-#elif defined(_XBOX1)
-#include "../gfx/fonts/xdk1_xfonts.c"
-#elif defined(_XBOX360)
-#include "../gfx/fonts/xdk360_fonts.cpp"
 #endif
 
+#if defined(HAVE_OPENGL)
+#include "../gfx/fonts/gl_raster_font.c"
+#endif
+
+#if defined(_XBOX1)
+#include "../gfx/fonts/xdk1_xfonts.c"
+#endif
+
+#if defined(_XBOX360)
+#include "../gfx/fonts/xdk360_fonts.cpp"
 #endif
 
 /*============================================================
