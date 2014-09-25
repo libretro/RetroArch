@@ -316,20 +316,9 @@ uint64_t menu_input(void)
       input_push_analog_dpad(g_settings.input.autoconf_binds[i],
             g_settings.input.analog_dpad_mode[i]);
 
-   if (!driver.block_libretro_input)
-   {
-      for (i = 0; i < RETRO_DEVICE_ID_JOYPAD_R2; i++)
-      {
-         input_state |= driver.input->input_state(driver.input_data, binds,
-               0, RETRO_DEVICE_JOYPAD, 0, i) ? (1ULL << i) : 0;
-#ifdef HAVE_OVERLAY
-         input_state |= (driver.overlay_state.buttons & (UINT64_C(1) << i))
-            ? (1ULL << i) : 0;
-#endif
-      }
-   }
+   input_state = input_keys_pressed(0, RETRO_DEVICE_ID_JOYPAD_R2, binds);
 
-   input_meta = input_keys_pressed_func(RARCH_MENU_TOGGLE, RARCH_MENU_TOGGLE + 1,
+   input_meta = meta_input_keys_pressed(RARCH_MENU_TOGGLE, RARCH_MENU_TOGGLE + 1,
          &old_state);
 
    input_state |= BIND_PRESSED(input_meta, RARCH_MENU_TOGGLE)

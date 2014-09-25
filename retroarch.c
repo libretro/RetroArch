@@ -3228,7 +3228,7 @@ bool rarch_main_iterate(void)
 {
    unsigned i;
    retro_input_t old_input, trigger_input;
-   retro_input_t input = input_keys_pressed_func(RARCH_FIRST_META_KEY,
+   retro_input_t input = meta_input_keys_pressed(RARCH_FIRST_META_KEY,
          RARCH_BIND_LIST_END, &old_input);
 
    trigger_input = input & ~old_input;

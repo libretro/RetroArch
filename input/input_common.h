@@ -197,51 +197,11 @@ void input_push_analog_dpad(struct retro_keybind *binds, unsigned mode);
 
 void input_pop_analog_dpad(struct retro_keybind *binds);
 
-/* Returns a 64-bit mask of all pressed buttons, starting
- * from the specified key up until the last queryable key
- * (key_end).
- *
- * TODO: In case RARCH_BIND_LIST_END starts exceeding 64,
- * and you need a bitmask of more than 64 entries, don't
- * use this function.
- */
+retro_input_t input_keys_pressed(unsigned key,
+      unsigned key_end, const struct retro_keybind **binds);
 
-static inline retro_input_t input_keys_pressed_func(unsigned key,
-      unsigned key_end, retro_input_t *old_state)
-{
-   static retro_input_t old_ret = 0;
-   retro_input_t ret = 0;
-   *old_state = old_ret;
-
-#ifdef RARCH_INTERNAL
-   rarch_check_block_hotkey(driver.input->key_pressed(driver.input_data,
-            RARCH_ENABLE_HOTKEY));
-#endif
-
-   for (; key < key_end; key++)
-   {
-      bool state = false;
-
-      if (!driver.block_hotkey)
-         state = driver.input->key_pressed(driver.input_data, key);
-
-#ifdef HAVE_OVERLAY
-      state = state || (driver.overlay_state.buttons & (1ULL << key));
-#endif
-
-#ifdef HAVE_COMMAND
-      if (driver.command)
-         state = state || rarch_cmd_get(driver.command, key);
-#endif
-
-      if (state)
-         ret |= (1ULL << key);
-   }
-
-   old_ret = ret;
-
-   return ret;
-}
+retro_input_t meta_input_keys_pressed(unsigned key,
+      unsigned key_end, retro_input_t *old_state);
 
 #ifdef __cplusplus
 }

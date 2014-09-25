@@ -1611,3 +1611,71 @@ void input_pop_analog_dpad(struct retro_keybind *binds)
       binds[i].joyaxis = binds[i].orig_joyaxis;
 }
 
+#if !defined(IS_JOYCONFIG) && !defined(IS_RETROLAUNCH)
+retro_input_t input_keys_pressed(unsigned key,
+      unsigned key_end, const struct retro_keybind **binds)
+{
+   retro_input_t ret = 0;
+
+   for (; key < key_end; key++)
+   {
+      if (driver.block_libretro_input)
+         return 0;
+
+      ret |= driver.input->input_state(driver.input_data,
+            binds, 0, RETRO_DEVICE_JOYPAD, 0, key) ? (1ULL << key) : 0;
+#ifdef HAVE_OVERLAY
+      ret |= (driver.overlay_state.buttons & (UINT64_C(1) << key))
+         ? (1ULL << key) : 0;
+#endif
+   }
+
+   return ret;
+}
+
+/* Returns a 64-bit mask of all pressed meta keys, starting
+ * from the specified key up until the last queryable key
+ * (key_end).
+ *
+ * TODO: In case RARCH_BIND_LIST_END starts exceeding 64,
+ * and you need a bitmask of more than 64 entries, don't
+ * use this function.
+ */
+
+retro_input_t meta_input_keys_pressed(unsigned key,
+      unsigned key_end, retro_input_t *old_state)
+{
+   static retro_input_t old_ret = 0;
+   retro_input_t ret = 0;
+   *old_state = old_ret;
+
+#ifdef RARCH_INTERNAL
+   rarch_check_block_hotkey(driver.input->key_pressed(driver.input_data,
+            RARCH_ENABLE_HOTKEY));
+#endif
+
+   for (; key < key_end; key++)
+   {
+      bool state = false;
+
+      if (!driver.block_hotkey)
+         state = driver.input->key_pressed(driver.input_data, key);
+
+#ifdef HAVE_OVERLAY
+      state = state || (driver.overlay_state.buttons & (1ULL << key));
+#endif
+
+#ifdef HAVE_COMMAND
+      if (driver.command)
+         state = state || rarch_cmd_get(driver.command, key);
+#endif
+
+      if (state)
+         ret |= (1ULL << key);
+   }
+
+   old_ret = ret;
+
+   return ret;
+}
+#endif
