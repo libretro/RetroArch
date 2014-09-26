@@ -68,13 +68,15 @@ typedef struct rarch_CC_resampler
 
 static void *memalign_alloc__(size_t boundary, size_t size)
 {
+   uintptr_t addr;
+   void **place;
    void *ptr = malloc(boundary + size + sizeof(uintptr_t));
    if (!ptr)
       return NULL;
 
-   uintptr_t addr = ((uintptr_t)ptr +
-         sizeof(uintptr_t) + boundary) & ~(boundary - 1);
-   void **place   = (void**)addr;
+   addr = ((uintptr_t)ptr + sizeof(uintptr_t) + boundary)
+      & ~(boundary - 1);
+   place   = (void**)addr;
    place[-1]      = ptr;
 
    return (void*)addr;
@@ -89,13 +91,13 @@ static void memalign_free__(void *ptr)
 #ifdef _MIPS_ARCH_ALLEGREX
 static void resampler_CC_process(void *re_, struct resampler_data *data)
 {
-   (void)re_;
    float ratio, fraction;
-
    audio_frame_float_t *inp = (audio_frame_float_t*)data->data_in;
    audio_frame_float_t *inp_max = (audio_frame_float_t*)
       (inp + data->input_frames);
    audio_frame_float_t *outp = (audio_frame_float_t*)data->data_out;
+
+   (void)re_;
 
    __asm__ (
          ".set      push\n"
@@ -214,6 +216,7 @@ static void *resampler_CC_init(double bandwidth_mod)
 
 static void resampler_CC_downsample(void *re_, struct resampler_data *data)
 {
+   __m128 vec_previous, vec_current;
    float ratio, b;
    rarch_CC_resampler_t *re     = (rarch_CC_resampler_t*)re_;
 
@@ -224,8 +227,8 @@ static void resampler_CC_downsample(void *re_, struct resampler_data *data)
    ratio = 1.0 / data->ratio;
    b = data->ratio; /* cutoff frequency. */
 
-   __m128 vec_previous = _mm_loadu_ps((float*)&re->buffer[0]);
-   __m128 vec_current  = _mm_loadu_ps((float*)&re->buffer[2]);
+   vec_previous = _mm_loadu_ps((float*)&re->buffer[0]);
+   vec_current  = _mm_loadu_ps((float*)&re->buffer[2]);
 
    while (inp != inp_max)
    {
@@ -299,6 +302,7 @@ static void resampler_CC_downsample(void *re_, struct resampler_data *data)
 
 static void resampler_CC_upsample(void *re_, struct resampler_data *data)
 {
+   __m128 vec_previous, vec_current;
    float b, ratio;
    rarch_CC_resampler_t *re = (rarch_CC_resampler_t*)re_;
 
@@ -309,10 +313,8 @@ static void resampler_CC_upsample(void *re_, struct resampler_data *data)
    b = min(data->ratio, 1.00); /* cutoff frequency. */
    ratio = 1.0 / data->ratio;
 
-   __m128 vec_previous = _mm_loadu_ps((float*)&re->buffer[0]);
-   __m128 vec_current  = _mm_loadu_ps((float*)&re->buffer[2]);
-
-
+   vec_previous = _mm_loadu_ps((float*)&re->buffer[0]);
+   vec_current  = _mm_loadu_ps((float*)&re->buffer[2]);
 
    while (inp != inp_max)
    {
@@ -394,12 +396,14 @@ size_t resampler_CC_upsample_neon  (float *outp, const float *inp,
 
 static void resampler_CC_downsample(void *re_, struct resampler_data *data)
 {
-   data->output_frames = resampler_CC_downsample_neon(data->data_out, data->data_in, re_, data->input_frames, data->ratio);
+   data->output_frames = resampler_CC_downsample_neon(
+         data->data_out, data->data_in, re_, data->input_frames, data->ratio);
 }
 
 static void resampler_CC_upsample(void *re_, struct resampler_data *data)
 {
-   data->output_frames = resampler_CC_upsample_neon(data->data_out, data->data_in, re_, data->input_frames, data->ratio);
+   data->output_frames = resampler_CC_upsample_neon(
+         data->data_out, data->data_in, re_, data->input_frames, data->ratio);
 }
 
 #else
@@ -448,7 +452,8 @@ static void resampler_CC_downsample(void *re_, struct resampler_data *data)
    rarch_CC_resampler_t *re     = (rarch_CC_resampler_t*)re_;
 
    audio_frame_float_t *inp     = (audio_frame_float_t*)data->data_in;
-   audio_frame_float_t *inp_max = (audio_frame_float_t*)(inp + data->input_frames);
+   audio_frame_float_t *inp_max = (audio_frame_float_t*)
+      (inp + data->input_frames);
    audio_frame_float_t *outp    = (audio_frame_float_t*)data->data_out;
 
    ratio = 1.0 / data->ratio;
@@ -487,7 +492,8 @@ static void resampler_CC_upsample(void *re_, struct resampler_data *data)
    rarch_CC_resampler_t *re = (rarch_CC_resampler_t*)re_;
 
    audio_frame_float_t *inp     = (audio_frame_float_t*)data->data_in;
-   audio_frame_float_t *inp_max = (audio_frame_float_t*)(inp + data->input_frames);
+   audio_frame_float_t *inp_max = (audio_frame_float_t*)
+      (inp + data->input_frames);
    audio_frame_float_t *outp    = (audio_frame_float_t*)data->data_out;
 
    b = min(data->ratio, 1.00); /* cutoff frequency. */
@@ -555,7 +561,7 @@ static void *resampler_CC_init(double bandwidth_mod)
 
    RARCH_LOG("Convoluted Cosine resampler (" CC_RESAMPLER_IDENT ") - precision = %i : ", CC_RESAMPLER_PRECISION);
 
-   /* variations of data->ratio around 0.75 are safer
+   /* Variations of data->ratio around 0.75 are safer
     * than around 1.0 for both up/downsampler. */
    if (bandwidth_mod < 0.75)
    {

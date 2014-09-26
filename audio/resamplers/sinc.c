@@ -181,18 +181,20 @@ static void init_sinc_table(rarch_sinc_resampler_t *resamp, double cutoff,
    int i, j, p;
    double window_mod = window_function(0.0); /* Need to normalize w(0) to 1.0. */
    int stride = calculate_delta ? 2 : 1;
-
    double sidelobes = taps / 2.0;
+
    for (i = 0; i < phases; i++)
    {
       for (j = 0; j < taps; j++)
       {
+         double window_phase, sinc_phase;
+         float val;
          int n = j * phases + i;
-         double window_phase = (double)n / (phases * taps); /* [0, 1). */
+         window_phase = (double)n / (phases * taps); /* [0, 1). */
          window_phase = 2.0 * window_phase - 1.0; /* [-1, 1) */
-         double sinc_phase = sidelobes * window_phase;
+         sinc_phase = sidelobes * window_phase;
 
-         float val = cutoff * sinc(M_PI * sinc_phase * cutoff) * 
+         val = cutoff * sinc(M_PI * sinc_phase * cutoff) * 
             window_function(window_phase) / window_mod;
          phase_table[i * stride * taps + j] = val;
       }
@@ -213,14 +215,16 @@ static void init_sinc_table(rarch_sinc_resampler_t *resamp, double cutoff,
       int phase = phases - 1;
       for (j = 0; j < taps; j++)
       {
+         float val, delta;
+         double window_phase, sinc_phase;
          int n = j * phases + (phase + 1);
-         double window_phase = (double)n / (phases * taps); /* (0, 1]. */
+         window_phase = (double)n / (phases * taps); /* (0, 1]. */
          window_phase = 2.0 * window_phase - 1.0; /* (-1, 1] */
-         double sinc_phase = sidelobes * window_phase;
+         sinc_phase = sidelobes * window_phase;
 
-         float val = cutoff * sinc(M_PI * sinc_phase * cutoff) * 
+         val = cutoff * sinc(M_PI * sinc_phase * cutoff) * 
             window_function(window_phase) / window_mod;
-         float delta = (val - phase_table[phase * stride * taps + j]);
+         delta = (val - phase_table[phase * stride * taps + j]);
          phase_table[(phase * stride + 1) * taps + j] = delta;
       }
    }
@@ -229,13 +233,16 @@ static void init_sinc_table(rarch_sinc_resampler_t *resamp, double cutoff,
 /* No memalign() for us on Win32 ... */
 static void *aligned_alloc__(size_t boundary, size_t size)
 {
+   uintptr_t addr;
+   void **place;
    void *ptr = malloc(boundary + size + sizeof(uintptr_t));
+
    if (!ptr)
       return NULL;
 
-   uintptr_t addr = ((uintptr_t)ptr + 
-         sizeof(uintptr_t) + boundary) & ~(boundary - 1);
-   void **place   = (void**)addr;
+   addr           = ((uintptr_t)ptr + sizeof(uintptr_t) + boundary) 
+                    & ~(boundary - 1);
+   place          = (void**)addr;
    place[-1]      = ptr;
 
    return (void*)addr;
@@ -373,7 +380,7 @@ static void process_sinc(rarch_sinc_resampler_t *resamp, float *out_buffer)
       sum_r       = _mm_add_ps(sum_r, _mm_mul_ps(buf_r, sinc));
    }
 
-   /* Them annoying shuffles :V
+   /* Them annoying shuffles.
     * sum_l = { l3, l2, l1, l0 }
     * sum_r = { r3, r2, r1, r0 }
     */

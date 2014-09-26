@@ -1,5 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
+ *  Copyright (C) 2011-2014 - Daniel De Matteis
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -27,7 +28,7 @@
 #include "../../boolean.h"
 
 #ifndef M_PI
-/* M_PI is left out of ISO C99 :( */
+/* M_PI is left out of ISO C99 */
 #define M_PI 3.14159265358979323846264338327
 #endif
 
@@ -44,7 +45,7 @@ struct resampler_data
 
 typedef struct rarch_resampler
 {
-   /* Bandwidth factor. Will be < 1.0 for downsampling, > 1.0 for upsamling. 
+   /* Bandwidth factor. Will be < 1.0 for downsampling, > 1.0 for upsampling. 
     * Corresponds to expected resampling ratio. */
    void *(*init)(double bandwidth_mod);
    void (*process)(void *re, struct resampler_data *data);
