@@ -73,10 +73,13 @@ static void menu_environment_get(int *argc, char *argv[],
    struct rarch_main_wrap *wrap_args = (struct rarch_main_wrap*)params_data;
 
    wrap_args->no_content    = driver.menu->load_no_content;
-   wrap_args->verbose       = g_extern.verbosity;
+   if (!g_extern.has_set_verbosity)
+      wrap_args->verbose       = g_extern.verbosity;
    wrap_args->config_path   = *g_extern.config_path ? g_extern.config_path : NULL;
-   wrap_args->sram_path     = *g_extern.savefile_dir ? g_extern.savefile_dir : NULL;
-   wrap_args->state_path    = *g_extern.savestate_dir ? g_extern.savestate_dir : NULL;
+   if (!g_extern.has_set_save_path)
+      wrap_args->sram_path     = *g_extern.savefile_dir ? g_extern.savefile_dir : NULL;
+   if (!g_extern.has_set_state_path)
+      wrap_args->state_path    = *g_extern.savestate_dir ? g_extern.savestate_dir : NULL;
    wrap_args->content_path  = *g_extern.fullpath ? g_extern.fullpath : NULL;
    wrap_args->libretro_path = *g_settings.libretro ? g_settings.libretro : NULL;
    wrap_args->touched       = true;
