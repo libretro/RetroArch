@@ -560,5 +560,6 @@ rarch_resampler_t sinc_resampler = {
    resampler_sinc_free,
    RESAMPLER_API_VERSION,
    "sinc",
+   "sinc"
 };
 

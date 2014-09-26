@@ -66,13 +66,22 @@ struct resampler_data
    double ratio;
 };
 
+/* Bandwidth factor. Will be < 1.0 for downsampling, > 1.0 for upsampling. 
+ * Corresponds to expected resampling ratio. */
+typedef void *(*resampler_init_t)(double bandwidth_mod,
+      resampler_simd_mask_t mask);
+
+/* Frees the handle. */
+typedef void (*resampler_free_t)(void *data);
+
+/* Processes input data. */
+typedef void (*resampler_process_t)(void *_data, struct resampler_data *data);
+
 typedef struct rarch_resampler
 {
-   /* Bandwidth factor. Will be < 1.0 for downsampling, > 1.0 for upsampling. 
-    * Corresponds to expected resampling ratio. */
-   void *(*init)(double bandwidth_mod, resampler_simd_mask_t mask);
-   void (*process)(void *re, struct resampler_data *data);
-   void (*free)(void *re);
+   resampler_init_t     init;
+   resampler_process_t  process;
+   resampler_free_t     free;
 
    /* Must be RESAMPLER_API_VERSION */
    unsigned api_version;
@@ -80,6 +89,9 @@ typedef struct rarch_resampler
    /* Human readable identifier of implementation. */
    const char *ident;
 
+   /* Computer-friendly short version of ident.
+    * Lower case, no spaces and special characters, etc. */
+   const char *short_ident; 
 } rarch_resampler_t;
 
 typedef struct audio_frame_float
