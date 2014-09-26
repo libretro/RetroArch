@@ -1912,7 +1912,6 @@ void setting_data_get_label(char *type_str,
          "None",
          "Left Analog",
          "Right Analog",
-         "Dual Analog",
       };
 
       strlcpy(type_str, modes[g_settings.input.analog_dpad_mode
