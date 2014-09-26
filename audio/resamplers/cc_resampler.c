@@ -592,5 +592,6 @@ rarch_resampler_t CC_resampler = {
    resampler_CC_init,
    resampler_CC_process,
    resampler_CC_free,
+   RESAMPLER_API_VERSION,
    "CC",
 };

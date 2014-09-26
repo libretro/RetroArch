@@ -53,6 +53,8 @@ extern "C" {
  */
 typedef unsigned resampler_simd_mask_t;
 
+#define RESAMPLER_API_VERSION 1
+
 struct resampler_data
 {
    const float *data_in;
@@ -71,7 +73,13 @@ typedef struct rarch_resampler
    void *(*init)(double bandwidth_mod, resampler_simd_mask_t mask);
    void (*process)(void *re, struct resampler_data *data);
    void (*free)(void *re);
+
+   /* Must be RESAMPLER_API_VERSION */
+   unsigned api_version;
+
+   /* Human readable identifier of implementation. */
    const char *ident;
+
 } rarch_resampler_t;
 
 typedef struct audio_frame_float
