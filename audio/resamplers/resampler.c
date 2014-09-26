@@ -17,17 +17,23 @@
 #ifdef RARCH_INTERNAL
 #include "../../performance.h"
 #endif
+#include "../../conf/config_file_userdata.h"
 #include <string.h>
-
-#ifdef HAVE_CONFIG_H
-#include "../../config.h"
-#endif
 
 static const rarch_resampler_t *resampler_drivers[] = {
    &sinc_resampler,
    &CC_resampler,
    &nearest_resampler,
    NULL,
+};
+
+static const struct resampler_config resampler_config = {
+   config_userdata_get_float,
+   config_userdata_get_int,
+   config_userdata_get_float_array,
+   config_userdata_get_int_array,
+   config_userdata_get_string,
+   config_userdata_free,
 };
 
 static int find_resampler_driver_index(const char *driver)
@@ -95,7 +101,7 @@ static bool resampler_append_plugs(void **re,
 {
    resampler_simd_mask_t mask = rarch_get_cpu_features();
 
-   *re = (*backend)->init(bw_ratio, mask);
+   *re = (*backend)->init(&resampler_config, bw_ratio, mask);
 
    if (!*re)
       return false;

@@ -52,12 +52,13 @@ static void resampler_nearest_free(void *re_)
       free(re);
 }
  
-static void *resampler_nearest_init(double bandwidth_mod,
-      resampler_simd_mask_t mask)
+static void *resampler_nearest_init(const struct resampler_config *config,
+      double bandwidth_mod, resampler_simd_mask_t mask)
 {
    rarch_nearest_resampler_t *re = (rarch_nearest_resampler_t*)
       calloc(1, sizeof(rarch_nearest_resampler_t));
 
+   (void)config;
    (void)mask;
 
    if (!re)

@@ -484,13 +484,15 @@ static void resampler_sinc_free(void *re)
    free(resampler);
 }
 
-static void *resampler_sinc_new(double bandwidth_mod,
-      resampler_simd_mask_t mask)
+static void *resampler_sinc_new(const struct resampler_config *config,
+      double bandwidth_mod, resampler_simd_mask_t mask)
 {
    size_t phase_elems, elems;
    double cutoff;
    rarch_sinc_resampler_t *re = (rarch_sinc_resampler_t*)
       calloc(1, sizeof(*re));
+   (void)config;
+
    if (!re)
       return NULL;
 

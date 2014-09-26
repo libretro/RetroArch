@@ -545,8 +545,8 @@ static void resampler_CC_free(void *re_)
       memalign_free__(re);
 }
 
-static void *resampler_CC_init(double bandwidth_mod,
-      resampler_simd_mask_t mask)
+static void *resampler_CC_init(const struct resampler_config *config,
+      double bandwidth_mod, resampler_simd_mask_t mask)
 {
    int i;
    rarch_CC_resampler_t *re = (rarch_CC_resampler_t*)
@@ -557,6 +557,7 @@ static void *resampler_CC_init(double bandwidth_mod,
     * C codepath or NEON codepath. This will help out
     * Android. */
    (void)mask;
+   (void)config;
 
    if (!re)
       return NULL;
