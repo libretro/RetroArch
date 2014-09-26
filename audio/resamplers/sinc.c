@@ -484,8 +484,11 @@ static void resampler_sinc_free(void *re)
    free(resampler);
 }
 
-static void *resampler_sinc_new(double bandwidth_mod)
+static void *resampler_sinc_new(double bandwidth_mod,
+      resampler_simd_mask_t mask)
 {
+   size_t phase_elems, elems;
+   double cutoff;
    rarch_sinc_resampler_t *re = (rarch_sinc_resampler_t*)
       calloc(1, sizeof(*re));
    if (!re)
@@ -494,7 +497,7 @@ static void *resampler_sinc_new(double bandwidth_mod)
    memset(re, 0, sizeof(*re));
 
    re->taps = TAPS;
-   double cutoff = CUTOFF;
+   cutoff = CUTOFF;
 
    /* Downsampling, must lower cutoff, and extend number of 
     * taps accordingly to keep same stopband attenuation. */
@@ -511,11 +514,11 @@ static void *resampler_sinc_new(double bandwidth_mod)
    re->taps = (re->taps + 3) & ~3;
 #endif
 
-   size_t phase_elems = (1 << PHASE_BITS) * re->taps;
+   phase_elems = (1 << PHASE_BITS) * re->taps;
 #if SINC_COEFF_LERP
    phase_elems *= 2;
 #endif
-   size_t elems = phase_elems + 4 * re->taps;
+   elems = phase_elems + 4 * re->taps;
 
    re->main_buffer = (float*)
       aligned_alloc__(128, sizeof(float) * elems);
@@ -534,11 +537,10 @@ static void *resampler_sinc_new(double bandwidth_mod)
 #elif defined(__SSE__)
    RARCH_LOG("Sinc resampler [SSE]\n");
 #elif defined(__ARM_NEON__)
-   unsigned cpu = rarch_get_cpu_features();
-   process_sinc_func = cpu & RETRO_SIMD_NEON 
+   process_sinc_func = mask & RESAMPLER_SIMD_NEON 
       ? process_sinc_neon : process_sinc_C;
    RARCH_LOG("Sinc resampler [%s]\n",
-         cpu & RETRO_SIMD_NEON ? "NEON" : "C");
+         mask & RESAMPLER_SIMD_NEON ? "NEON" : "C");
 #else
    RARCH_LOG("Sinc resampler [C]\n");
 #endif

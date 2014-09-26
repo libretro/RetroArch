@@ -545,11 +545,19 @@ static void resampler_CC_free(void *re_)
       memalign_free__(re);
 }
 
-static void *resampler_CC_init(double bandwidth_mod)
+static void *resampler_CC_init(double bandwidth_mod,
+      resampler_simd_mask_t mask)
 {
    int i;
    rarch_CC_resampler_t *re = (rarch_CC_resampler_t*)
       memalign_alloc__(32, sizeof(rarch_CC_resampler_t));
+
+   /* TODO: lookup if NEON support can be detected at 
+    * runtime and a funcptr set at runtime for either
+    * C codepath or NEON codepath. This will help out
+    * Android. */
+   (void)mask;
+
    if (!re)
       return NULL;
 

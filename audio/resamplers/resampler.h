@@ -18,8 +18,8 @@
 #ifndef __RARCH_RESAMPLER_H
 #define __RARCH_RESAMPLER_H
 
-#ifdef HAVE_CONFIG_H
-#include "../../config.h"
+#ifdef __cplusplus
+extern "C" {
 #endif
 
 #include <stddef.h>
@@ -28,9 +28,30 @@
 #include "../../boolean.h"
 
 #ifndef M_PI
-/* M_PI is left out of ISO C99 */
 #define M_PI 3.14159265358979323846264338327
 #endif
+
+#define RESAMPLER_SIMD_SSE      (1 << 0)
+#define RESAMPLER_SIMD_SSE2     (1 << 1)
+#define RESAMPLER_SIMD_VMX      (1 << 2)
+#define RESAMPLER_SIMD_VMX128   (1 << 3)
+#define RESAMPLER_SIMD_AVX      (1 << 4)
+#define RESAMPLER_SIMD_NEON     (1 << 5)
+#define RESAMPLER_SIMD_SSE3     (1 << 6)
+#define RESAMPLER_SIMD_SSSE3    (1 << 7)
+#define RESAMPLER_SIMD_MMX      (1 << 8)
+#define RESAMPLER_SIMD_MMXEXT   (1 << 9)
+#define RESAMPLER_SIMD_SSE4     (1 << 10)
+#define RESAMPLER_SIMD_SSE42    (1 << 11)
+#define RESAMPLER_SIMD_AVX2     (1 << 12)
+#define RESAMPLER_SIMD_VFPU     (1 << 13)
+#define RESAMPLER_SIMD_PS       (1 << 14)
+
+/* A bit-mask of all supported SIMD instruction sets.
+ * Allows an implementation to pick different 
+ * dspfilter_implementation structs.
+ */
+typedef unsigned resampler_simd_mask_t;
 
 struct resampler_data
 {
@@ -47,7 +68,7 @@ typedef struct rarch_resampler
 {
    /* Bandwidth factor. Will be < 1.0 for downsampling, > 1.0 for upsampling. 
     * Corresponds to expected resampling ratio. */
-   void *(*init)(double bandwidth_mod);
+   void *(*init)(double bandwidth_mod, resampler_simd_mask_t mask);
    void (*process)(void *re, struct resampler_data *data);
    void (*free)(void *re);
    const char *ident;
@@ -81,6 +102,10 @@ bool rarch_resampler_realloc(void **re, const rarch_resampler_t **backend,
 #define rarch_resampler_process(backend, handle, data) do { \
    (backend)->process(handle, data); \
 } while(0)
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 

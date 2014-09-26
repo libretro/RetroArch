@@ -14,6 +14,9 @@
  */
 
 #include "resampler.h"
+#ifdef RARCH_INTERNAL
+#include "../../performance.h"
+#endif
 #include <string.h>
 
 #ifdef HAVE_CONFIG_H
@@ -86,6 +89,19 @@ static const rarch_resampler_t *find_resampler_driver(const char *ident)
    }
 }
 
+static bool resampler_append_plugs(void **re,
+      const rarch_resampler_t **backend,
+      double bw_ratio)
+{
+   resampler_simd_mask_t mask = rarch_get_cpu_features();
+
+   *re = (*backend)->init(bw_ratio, mask);
+
+   if (!*re)
+      return false;
+   return true;
+}
+
 bool rarch_resampler_realloc(void **re, const rarch_resampler_t **backend,
       const char *ident, double bw_ratio)
 {
@@ -95,16 +111,13 @@ bool rarch_resampler_realloc(void **re, const rarch_resampler_t **backend,
    *re      = NULL;
    *backend = find_resampler_driver(ident);
 
-   if (!*backend)
-      return false;
-
-   *re = (*backend)->init(bw_ratio);
-
-   if (!*re)
-   {
-      *backend = NULL;
-      return false;
-   }
+   if (!resampler_append_plugs(re, backend, bw_ratio))
+      goto error;
 
    return true;
+
+error:
+   if (!*re)
+      *backend = NULL;
+   return false;
 }
