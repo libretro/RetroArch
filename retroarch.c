@@ -2737,15 +2737,9 @@ error:
 
 static inline void update_frame_time(void)
 {
-   retro_time_t time = 0;
    retro_time_t delta = 0;
-   bool is_locked_fps = false;
-
-   if (!g_extern.system.frame_time.callback)
-      return;
-
-   time = rarch_get_time_usec();
-   is_locked_fps = g_extern.is_paused || driver.nonblock_state;
+   retro_time_t time = rarch_get_time_usec();
+   bool is_locked_fps = g_extern.is_paused || driver.nonblock_state;
 
    is_locked_fps |= !!g_extern.rec;
 
@@ -2763,20 +2757,21 @@ static inline void update_frame_time(void)
 
 static inline void limit_frame_time(void)
 {
-   if (g_settings.fastforward_ratio < 0.0f)
-      return;
+   retro_time_t current = rarch_get_time_usec();
+   retro_time_t target  = 0, to_sleep_ms = 0;
 
    g_extern.frame_limit.minimum_frame_time = (retro_time_t)
       roundf(1000000.0f / (g_extern.system.av_info.timing.fps *
                g_settings.fastforward_ratio));
 
-   retro_time_t current = rarch_get_time_usec();
-   retro_time_t target = g_extern.frame_limit.last_frame_time + 
+   target = g_extern.frame_limit.last_frame_time + 
       g_extern.frame_limit.minimum_frame_time;
-   retro_time_t to_sleep_ms = (target - current) / 1000;
+   to_sleep_ms = (target - current) / 1000;
+
    if (to_sleep_ms > 0)
    {
       rarch_sleep((unsigned int)to_sleep_ms);
+
       /* Combat jitter a bit. */
       g_extern.frame_limit.last_frame_time += 
          g_extern.frame_limit.minimum_frame_time;
@@ -3285,10 +3280,14 @@ bool rarch_main_iterate(void)
    if ((g_settings.video.frame_delay > 0) && !driver.nonblock_state)
       rarch_sleep(g_settings.video.frame_delay);
 
+   if (g_extern.system.frame_time.callback)
+      update_frame_time();
+
    /* Run libretro for one frame. */
-   update_frame_time();
    pretro_run();
-   limit_frame_time();
+
+   if (g_settings.fastforward_ratio >= 0.0f)
+      limit_frame_time();
 
    for (i = 0; i < MAX_PLAYERS; i++)
    {

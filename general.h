@@ -631,7 +631,7 @@ struct global
    bool sram_save_disable;
    bool use_sram;
 
-   /* Pausing support. */
+   /* Lifecycle state checks. */
    bool is_paused;
    bool is_oneshot;
    bool is_menu;
