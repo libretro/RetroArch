@@ -1567,38 +1567,26 @@ void input_config_autoconfigure_joypad(unsigned index, const char *name,
 
 void input_push_analog_dpad(struct retro_keybind *binds, unsigned mode)
 {
-   unsigned i;
+   unsigned i, j;
+
+   for (i = RETRO_DEVICE_ID_JOYPAD_UP; i <= RETRO_DEVICE_ID_JOYPAD_RIGHT; i++)
+      binds[i].orig_joyaxis = binds[i].joyaxis;
 
    switch (mode)
    {
       case ANALOG_DPAD_LSTICK:
-         binds[RETRO_DEVICE_ID_JOYPAD_RIGHT].orig_joyaxis = binds[RETRO_DEVICE_ID_JOYPAD_RIGHT].joyaxis;
-         binds[RETRO_DEVICE_ID_JOYPAD_LEFT].orig_joyaxis  = binds[RETRO_DEVICE_ID_JOYPAD_LEFT].joyaxis;
-         binds[RETRO_DEVICE_ID_JOYPAD_DOWN].orig_joyaxis  = binds[RETRO_DEVICE_ID_JOYPAD_DOWN].joyaxis;
-         binds[RETRO_DEVICE_ID_JOYPAD_UP].orig_joyaxis    = binds[RETRO_DEVICE_ID_JOYPAD_UP].joyaxis;
+         j = RARCH_ANALOG_LEFT_X_PLUS + 3;
 
          /* Inherit joyaxis from analogs. */
-         binds[RETRO_DEVICE_ID_JOYPAD_RIGHT].joyaxis      = binds[RARCH_ANALOG_LEFT_X_PLUS + 0].joyaxis;
-         binds[RETRO_DEVICE_ID_JOYPAD_LEFT].joyaxis       = binds[RARCH_ANALOG_LEFT_X_PLUS + 1].joyaxis;
-         binds[RETRO_DEVICE_ID_JOYPAD_DOWN].joyaxis       = binds[RARCH_ANALOG_LEFT_X_PLUS + 2].joyaxis;
-         binds[RETRO_DEVICE_ID_JOYPAD_UP].joyaxis         = binds[RARCH_ANALOG_LEFT_X_PLUS + 3].joyaxis;
+         for (i = RETRO_DEVICE_ID_JOYPAD_UP; i <= RETRO_DEVICE_ID_JOYPAD_RIGHT; i++)
+            binds[i].joyaxis = binds[j--].joyaxis;
          break;
       case ANALOG_DPAD_RSTICK:
-         binds[RETRO_DEVICE_ID_JOYPAD_RIGHT].orig_joyaxis = binds[RETRO_DEVICE_ID_JOYPAD_RIGHT].joyaxis;
-         binds[RETRO_DEVICE_ID_JOYPAD_LEFT].orig_joyaxis  = binds[RETRO_DEVICE_ID_JOYPAD_LEFT].joyaxis;
-         binds[RETRO_DEVICE_ID_JOYPAD_DOWN].orig_joyaxis  = binds[RETRO_DEVICE_ID_JOYPAD_DOWN].joyaxis;
-         binds[RETRO_DEVICE_ID_JOYPAD_UP].orig_joyaxis    = binds[RETRO_DEVICE_ID_JOYPAD_UP].joyaxis;
+         j = RARCH_ANALOG_RIGHT_X_PLUS + 3;
 
          /* Inherit joyaxis from analogs. */
-         binds[RETRO_DEVICE_ID_JOYPAD_RIGHT].joyaxis      = binds[RARCH_ANALOG_RIGHT_X_PLUS + 0].joyaxis;
-         binds[RETRO_DEVICE_ID_JOYPAD_LEFT].joyaxis       = binds[RARCH_ANALOG_RIGHT_X_PLUS + 1].joyaxis;
-         binds[RETRO_DEVICE_ID_JOYPAD_DOWN].joyaxis       = binds[RARCH_ANALOG_RIGHT_X_PLUS + 2].joyaxis;
-         binds[RETRO_DEVICE_ID_JOYPAD_UP].joyaxis         = binds[RARCH_ANALOG_RIGHT_X_PLUS + 3].joyaxis;
-         break;
-
-      default:
          for (i = RETRO_DEVICE_ID_JOYPAD_UP; i <= RETRO_DEVICE_ID_JOYPAD_RIGHT; i++)
-            binds[i].orig_joyaxis = binds[i].joyaxis;
+            binds[i].joyaxis = binds[j--].joyaxis;
          break;
    }
 }
