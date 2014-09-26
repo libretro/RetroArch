@@ -315,7 +315,7 @@ uint64_t menu_input(void)
       input_push_analog_dpad(g_settings.input.autoconf_binds[i],
             g_settings.input.analog_dpad_mode[i]);
 
-   input_state = input_keys_pressed(0, RETRO_DEVICE_ID_JOYPAD_R2, binds);
+   input_state = input_keys_pressed(0, RARCH_FIRST_CUSTOM_BIND, binds);
 
    input_pop_analog_dpad((struct retro_keybind*)binds[0]);
    for (i = 0; i < MAX_PLAYERS; i++)
