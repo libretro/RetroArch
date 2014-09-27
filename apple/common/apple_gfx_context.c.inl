@@ -9,6 +9,7 @@ static bool g_use_hw_ctx;
 #ifdef OSX
 static bool g_has_went_fullscreen;
 static NSOpenGLPixelFormat* g_format;
+static NSOpenGLContext *g_hw_ctx;
 #endif
 
 static unsigned g_minor = 0;
@@ -50,7 +51,16 @@ static bool apple_gfx_ctx_init(void *data)
     };
     
     g_format = [[NSOpenGLPixelFormat alloc] initWithAttributes:attributes];
-    g_context = [[NSOpenGLContext alloc] initWithFormat:g_format shareContext:nil];
+    
+    if (g_use_hw_ctx)
+    {
+        //g_hw_ctx  = [[NSOpenGLContext alloc] initWithFormat:g_format shareContext:nil];
+        g_context = [[NSOpenGLContext alloc] initWithFormat:g_format shareContext:g_hw_ctx];
+    }
+    else
+    {
+       g_context = [[NSOpenGLContext alloc] initWithFormat:g_format shareContext:nil];
+    }
     [g_context setView:g_view];
 #else
     g_context = [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES2];
@@ -79,6 +89,9 @@ static void apple_gfx_ctx_destroy(void *data)
     if (g_format)
         [g_format release];
     g_format = nil;
+    if (g_hw_ctx)
+        [g_hw_ctx release];
+    g_hw_ctx = nil;
 #endif
    [GLContextClass clearCurrentContext];
    g_context = nil;
@@ -244,6 +257,11 @@ static void apple_gfx_ctx_bind_hw_render(void *data, bool enable)
 {
    (void)data;
    g_use_hw_ctx = enable;
+    
+    if (enable)
+        [g_hw_ctx makeCurrentContext];
+    else
+        [g_context makeCurrentContext];
 }
 
 // The apple_* functions are implemented in apple/RetroArch/RAGameView.m
