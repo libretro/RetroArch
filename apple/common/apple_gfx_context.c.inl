@@ -102,7 +102,7 @@ static bool apple_gfx_ctx_set_video_mode(void *data, unsigned width, unsigned he
 {
    (void)data;
 #ifdef OSX
-   // TODO: Sceen mode support
+   // TODO: Screen mode support
    
    if (fullscreen && !g_has_went_fullscreen)
    {
@@ -187,13 +187,13 @@ static void apple_gfx_ctx_swap_buffers(void *data)
 
 static gfx_ctx_proc_t apple_gfx_ctx_get_proc_address(const char *symbol_name)
 {
-#ifdef MAC_OS_X_VERSION_10_7
    return (gfx_ctx_proc_t)CFBundleGetFunctionPointerForName(CFBundleGetBundleWithIdentifier(GLFrameworkID),
-                                                            (__bridge CFStringRef)BOXSTRING(symbol_name));
+#ifdef MAC_OS_X_VERSION_10_7
+         (__bridge CFStringRef)BOXSTRING(symbol_name)
 #else
-	return (gfx_ctx_proc_t)CFBundleGetFunctionPointerForName(CFBundleGetBundleWithIdentifier(GLFrameworkID),
-															 (CFStringRef)BOXSTRING(symbol_name));
+         (CFStringRef)BOXSTRING(symbol_name)
 #endif
+         );
 }
 
 static void gfx_ctx_check_window(void *data, bool *quit,
