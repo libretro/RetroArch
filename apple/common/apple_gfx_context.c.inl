@@ -4,6 +4,7 @@
 
 static int g_fast_forward_skips;
 static bool g_is_syncing = true;
+static bool g_use_hw_ctx;
 
 #ifdef OSX
 static bool g_has_went_fullscreen;
@@ -208,7 +209,7 @@ static gfx_ctx_proc_t apple_gfx_ctx_get_proc_address(const char *symbol_name)
          );
 }
 
-static void gfx_ctx_check_window(void *data, bool *quit,
+static void apple_gfx_ctx_check_window(void *data, bool *quit,
       bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
 {
    (void)frame_count;
@@ -225,18 +226,24 @@ static void gfx_ctx_check_window(void *data, bool *quit,
    }
 }
 
-static void gfx_ctx_set_resize(void *data, unsigned width, unsigned height)
+static void apple_gfx_ctx_set_resize(void *data, unsigned width, unsigned height)
 {
    (void)data;
    (void)width;
    (void)height;
 }
 
-static void gfx_ctx_input_driver(void *data, const input_driver_t **input, void **input_data)
+static void apple_gfx_ctx_input_driver(void *data, const input_driver_t **input, void **input_data)
 {
    (void)data;
    *input = NULL;
    *input_data = NULL;
+}
+
+static void apple_gfx_ctx_bind_hw_render(void *data, bool enable)
+{
+   (void)data;
+   g_use_hw_ctx = enable;
 }
 
 // The apple_* functions are implemented in apple/RetroArch/RAGameView.m
@@ -249,12 +256,13 @@ const gfx_ctx_driver_t gfx_ctx_apple = {
    apple_gfx_ctx_get_video_size,
    NULL,
    apple_gfx_ctx_update_window_title,
-   gfx_ctx_check_window,
-   gfx_ctx_set_resize,
+   apple_gfx_ctx_check_window,
+   apple_gfx_ctx_set_resize,
    apple_gfx_ctx_has_focus,
    apple_gfx_ctx_swap_buffers,
-   gfx_ctx_input_driver,
+   apple_gfx_ctx_input_driver,
    apple_gfx_ctx_get_proc_address,
    NULL,
    "apple",
+   apple_gfx_ctx_bind_hw_render,
 };
