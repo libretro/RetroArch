@@ -10,6 +10,9 @@ static bool g_has_went_fullscreen;
 static NSOpenGLPixelFormat* g_format;
 #endif
 
+static unsigned g_minor = 0;
+static unsigned g_major = 0;
+
 static RAScreen* get_chosen_screen(void)
 {
 #if defined(OSX) && !defined(MAC_OS_X_VERSION_10_6)
@@ -28,6 +31,32 @@ static RAScreen* get_chosen_screen(void)
 static bool apple_gfx_ctx_init(void *data)
 {
    (void)data;
+    
+    RARCH_LOG("Minor: %d\n", g_minor);
+    RARCH_LOG("Major: %d\n", g_major);
+    
+#ifdef OSX
+    
+    NSOpenGLPixelFormatAttribute attributes [] = {
+        NSOpenGLPFADoubleBuffer,	// double buffered
+        NSOpenGLPFADepthSize,
+        (NSOpenGLPixelFormatAttribute)16, // 16 bit depth buffer
+#ifdef MAC_OS_X_VERSION_10_7
+        (g_major || g_minor) ? NSOpenGLPFAOpenGLProfile : 0,
+        (g_major << 12) | (g_minor << 8),
+#endif
+        (NSOpenGLPixelFormatAttribute)nil
+    };
+    
+    g_format = [[NSOpenGLPixelFormat alloc] initWithAttributes:attributes];
+    g_context = [[NSOpenGLContext alloc] initWithFormat:g_format shareContext:nil];
+    [g_context setView:g_view];
+#else
+    g_context = [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES2];
+    g_view.context = g_context;
+#endif
+    
+    [g_context makeCurrentContext];
    // Make sure the view was created
    [RAGameView get];
    return true;
@@ -39,49 +68,32 @@ static void apple_gfx_ctx_destroy(void *data)
 
    [GLContextClass clearCurrentContext];
 
-#ifdef IOS
+#if defined(IOS)
    g_view.context = nil;
+#elif defined(OSX)
+    [g_context clearDrawable];
+    if (g_context)
+        [g_context release];
+    g_context = nil;
+    if (g_format)
+        [g_format release];
+    g_format = nil;
 #endif
    [GLContextClass clearCurrentContext];
    g_context = nil;
 }
+
+
 
 static bool apple_gfx_ctx_bind_api(void *data, enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
    (void)data;
    if (api != GLAPIType)
       return false;
-
-   [GLContextClass clearCurrentContext];
-
-#ifdef OSX
-   [g_context clearDrawable];
-   [g_context release], g_context = nil;
-   [g_format release], g_format = nil;
-
-   NSOpenGLPixelFormatAttribute attributes [] = {
-      NSOpenGLPFADoubleBuffer,	// double buffered
-      NSOpenGLPFADepthSize,
-     (NSOpenGLPixelFormatAttribute)16, // 16 bit depth buffer
-#ifdef MAC_OS_X_VERSION_10_7
-     (major || minor) ? NSOpenGLPFAOpenGLProfile : 0,
-     (major << 12) | (minor << 8),
-#endif
-      (NSOpenGLPixelFormatAttribute)nil
-   };
-
-   [g_format release];
-   [g_context release];
-
-   g_format = [[NSOpenGLPixelFormat alloc] initWithAttributes:attributes];
-   g_context = [[NSOpenGLContext alloc] initWithFormat:g_format shareContext:nil];
-   [g_context setView:g_view];
-#else
-   g_context = [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES2];
-   g_view.context = g_context;
-#endif
-
-   [g_context makeCurrentContext];
+    
+   g_minor = minor;
+   g_major = major;
+  
    return true;
 }
 
