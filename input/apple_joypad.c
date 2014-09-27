@@ -23,13 +23,14 @@
 #include "../apple/iOS/bluetooth/btpad_queue.c"
 #elif defined(OSX)
 #include <IOKit/hid/IOHIDManager.h>
+#include <IOKit/hid/IOHIDKeys.h>
 #endif
 
 #ifdef OSX
 struct apple_pad_connection
 {
     uint32_t slot;
-    IOHIDDeviceRef device;
+    IOHIDDeviceRef device_handle;
     uint8_t data[2048];
 };
 
@@ -38,7 +39,7 @@ static IOHIDManagerRef g_hid_manager;
 static void apple_pad_send_control(struct apple_pad_connection* connection,
       uint8_t* data, size_t size)
 {
-    IOHIDDeviceSetReport(connection->device,
+    IOHIDDeviceSetReport(connection->device_handle,
           kIOHIDReportTypeOutput, 0x01, data + 1, size - 1);
 }
 
@@ -108,7 +109,7 @@ static void hid_device_removed(void* context, IOReturn result, void* sender)
         free(connection);
     }
     
-    IOHIDDeviceClose(sender, kIOHIDOptionsTypeNone);
+    IOHIDDeviceClose(sender, kIOHIDOptionsTypeSeizeDevice);
 }
 
 static void hid_device_report(void* context, IOReturn result, void *sender,
@@ -128,10 +129,12 @@ static void hid_manager_device_attached(void* context, IOReturn result,
     struct apple_pad_connection* connection = (struct apple_pad_connection*)
        calloc(1, sizeof(*connection));
     
-    connection->device = device;
-    connection->slot = MAX_PLAYERS;
+    connection->device_handle = device;
+    connection->slot          = MAX_PLAYERS;
     
     IOHIDDeviceOpen(device, kIOHIDOptionsTypeNone);
+    
+    /* Move the device's run loop to this thread. */
     IOHIDDeviceScheduleWithRunLoop(device, CFRunLoopGetCurrent(),
           kCFRunLoopCommonModes);
     IOHIDDeviceRegisterRemovalCallback(device, hid_device_removed, connection);
@@ -293,29 +296,52 @@ bool apple_joypad_has_interface(uint32_t slot)
    return false;
 }
 
+static int hid_init_manager(void)
+{
+    CFMutableArrayRef matcher;
+    
+    g_hid_manager = IOHIDManagerCreate(
+    kCFAllocatorDefault, kIOHIDOptionsTypeNone);
+    
+    if (!g_hid_manager)
+        return -1;
+    
+    matcher = CFArrayCreateMutable(kCFAllocatorDefault, 0, &kCFTypeArrayCallBacks);
+    append_matching_dictionary(matcher, kHIDPage_GenericDesktop, kHIDUsage_GD_Joystick);
+    append_matching_dictionary(matcher, kHIDPage_GenericDesktop, kHIDUsage_GD_GamePad);
+    
+    IOHIDManagerSetDeviceMatchingMultiple(g_hid_manager, matcher);
+    CFRelease(matcher);
+    
+    IOHIDManagerRegisterDeviceMatchingCallback(g_hid_manager, hid_manager_device_attached, 0);
+    IOHIDManagerScheduleWithRunLoop(g_hid_manager, CFRunLoopGetMain(), kCFRunLoopCommonModes);
+    
+    IOHIDManagerOpen(g_hid_manager, kIOHIDOptionsTypeNone);
+    
+    return 0;
+}
+
+static int hid_exit(void)
+{
+    if (g_hid_manager)
+    {
+        IOHIDManagerClose(g_hid_manager, kIOHIDOptionsTypeNone);
+        IOHIDManagerUnscheduleFromRunLoop(g_hid_manager,
+                                          CFRunLoopGetCurrent(), kCFRunLoopCommonModes);
+        
+        CFRelease(g_hid_manager);
+    }
+    g_hid_manager = NULL;
+    
+    return 0;
+}
+
 // RetroArch joypad driver:
 static bool apple_joypad_init(void)
 {
 #ifdef OSX
-    CFMutableArrayRef matcher;
-    
     if (!g_hid_manager)
-    {
-        g_hid_manager = IOHIDManagerCreate(
-              kCFAllocatorDefault, kIOHIDOptionsTypeNone);
-        
-        matcher = CFArrayCreateMutable(kCFAllocatorDefault, 0, &kCFTypeArrayCallBacks);
-        append_matching_dictionary(matcher, kHIDPage_GenericDesktop, kHIDUsage_GD_Joystick);
-        append_matching_dictionary(matcher, kHIDPage_GenericDesktop, kHIDUsage_GD_GamePad);
-        
-        IOHIDManagerSetDeviceMatchingMultiple(g_hid_manager, matcher);
-        CFRelease(matcher);
-        
-        IOHIDManagerRegisterDeviceMatchingCallback(g_hid_manager, hid_manager_device_attached, 0);
-        IOHIDManagerScheduleWithRunLoop(g_hid_manager, CFRunLoopGetMain(), kCFRunLoopCommonModes);
-        
-        IOHIDManagerOpen(g_hid_manager, kIOHIDOptionsTypeNone);
-    }
+        hid_init_manager();
 #endif
    return true;
 }
@@ -337,18 +363,6 @@ static void apple_joypad_destroy(void)
          slots[i].iface->set_rumble(slots[i].data, RETRO_RUMBLE_WEAK, 0);
       }
    }
-
-#ifdef OSX
-    if (g_hid_manager)
-    {
-        IOHIDManagerClose(g_hid_manager, kIOHIDOptionsTypeNone);
-        IOHIDManagerUnscheduleFromRunLoop(g_hid_manager,
-              CFRunLoopGetCurrent(), kCFRunLoopCommonModes);
-        
-        CFRelease(g_hid_manager);
-    }
-    g_hid_manager = NULL;
-#endif
 }
 
 static bool apple_joypad_button(unsigned port, uint16_t joykey)
