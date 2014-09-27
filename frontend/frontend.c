@@ -152,6 +152,8 @@ static void check_defaults_dirs(void)
       path_mkdir(g_defaults.sram_dir);
    if (*g_defaults.system_dir)
       path_mkdir(g_defaults.system_dir);
+   if (*g_defaults.resampler_dir)
+      path_mkdir(g_defaults.resampler_dir);
 }
 
 bool main_load_content(int argc, char **argv, args_type() args,

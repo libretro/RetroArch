@@ -447,6 +447,7 @@ void config_set_defaults(void)
    *g_settings.content_history_path = '\0';
    *g_settings.cheat_database = '\0';
    *g_settings.cheat_settings_path = '\0';
+   *g_settings.resampler_directory = '\0';
    *g_settings.screenshot_directory = '\0';
    *g_settings.system_directory = '\0';
    *g_settings.extraction_directory = '\0';
@@ -542,6 +543,10 @@ void config_set_defaults(void)
       strlcpy(g_settings.screenshot_directory,
             g_defaults.screenshot_dir,
             sizeof(g_settings.screenshot_directory));
+   if (*g_defaults.resampler_dir)
+      strlcpy(g_settings.resampler_directory,
+            g_defaults.resampler_dir,
+            sizeof(g_settings.resampler_directory));
 
    if (*g_defaults.config_path)
       fill_pathname_expand_special(g_extern.config_path,
@@ -1072,6 +1077,7 @@ bool config_load_file(const char *path, bool set_defaults)
       }
    }
 
+   CONFIG_GET_PATH(resampler_directory, "resampler_directory");
    CONFIG_GET_PATH(extraction_directory, "extraction_directory");
    CONFIG_GET_PATH(content_directory, "content_directory");
    CONFIG_GET_PATH(assets_directory, "assets_directory");
@@ -1506,6 +1512,8 @@ bool config_save_file(const char *path)
          g_settings.system_directory : "default");
    config_set_path(conf, "extraction_directory",
          g_settings.extraction_directory);
+   config_set_path(conf, "resampler_directory",
+         g_settings.resampler_directory);
    config_set_string(conf, "audio_resampler", g_settings.audio.resampler);
    config_set_path(conf, "savefile_directory",
          *g_extern.savefile_dir ? g_extern.savefile_dir : "default");

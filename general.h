@@ -184,6 +184,7 @@ struct defaults
    char port_dir[PATH_MAX];
    char shader_dir[PATH_MAX];
    char savestate_dir[PATH_MAX];
+   char resampler_dir[PATH_MAX];
    char sram_dir[PATH_MAX];
    char screenshot_dir[PATH_MAX];
    char system_dir[PATH_MAX];
@@ -353,6 +354,7 @@ struct settings
    char cheat_database[PATH_MAX];
    char cheat_settings_path[PATH_MAX];
 
+   char resampler_directory[PATH_MAX];
    char screenshot_directory[PATH_MAX];
    char system_directory[PATH_MAX];
 
