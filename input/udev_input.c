@@ -101,21 +101,6 @@ struct udev_input
    bool mouse_l, mouse_r, mouse_m, mouse_wu, mouse_wd;
 };
 
-static inline bool get_bit(const uint8_t *buf, unsigned bit)
-{
-   return buf[bit >> 3] & (1 << (bit & 7));
-}
-
-static inline void clear_bit(uint8_t *buf, unsigned bit)
-{
-   buf[bit >> 3] &= ~(1 << (bit & 7));
-}
-
-static inline void set_bit(uint8_t *buf, unsigned bit)
-{
-   buf[bit >> 3] |= 1 << (bit & 7);
-}
-
 #ifdef HAVE_XKBCOMMON
 // FIXME: Don't handle composed and dead-keys properly. Waiting for support in libxkbcommon ...
 static void handle_xkb(udev_input_t *udev, int code, int value)

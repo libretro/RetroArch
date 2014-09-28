@@ -100,21 +100,6 @@ static typeof(AMotionEvent_getAxisValue) *p_AMotionEvent_getAxisValue;
 
 #define AMotionEvent_getAxisValue (*p_AMotionEvent_getAxisValue)
 
-static inline bool get_bit(const uint8_t *buf, unsigned bit)
-{
-   return buf[bit >> 3] & (1 << (bit & 7));
-}
-
-static inline void clear_bit(uint8_t *buf, unsigned bit)
-{
-   buf[bit >> 3] &= ~(1 << (bit & 7));
-}
-
-static inline void set_bit(uint8_t *buf, unsigned bit)
-{
-   buf[bit >> 3] |= 1 << (bit & 7);
-}
-
 static void engine_handle_dpad_default(android_input_t *android,
       AInputEvent *event, int port, int source)
 {
