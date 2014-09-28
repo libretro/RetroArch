@@ -51,11 +51,12 @@ static void hidpad_ps3_send_control(struct hidpad_ps3_data* device)
    apple_pad_send_control(device->connection, report_buffer, sizeof(report_buffer));
 }
 
-static void* hidpad_ps3_connect(struct apple_pad_connection* connection, uint32_t slot)
+static void* hidpad_ps3_connect(void *data, uint32_t slot)
 {
+   struct apple_pad_connection* connection = (struct apple_pad_connection*)data;
    struct hidpad_ps3_data* device = (struct hidpad_ps3_data*)calloc(1, sizeof(struct hidpad_ps3_data));
 
-   if (!device)
+   if (!device || !connection)
       return NULL;
 
    device->connection = connection;  

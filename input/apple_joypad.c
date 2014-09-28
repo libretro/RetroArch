@@ -54,11 +54,11 @@ static int32_t find_empty_slot(void)
    return -1;
 }
 
-int32_t apple_joypad_connect(const char* name,
-      struct apple_pad_connection* connection)
+int32_t apple_joypad_connect(const char* name, void *data)
 {
-   int32_t slot;
-   slot = find_empty_slot();
+   struct apple_pad_connection* connection = 
+      (struct apple_pad_connection*)data;
+   int32_t slot = find_empty_slot();
 
    if (slot >= 0 && slot < MAX_PLAYERS)
    {

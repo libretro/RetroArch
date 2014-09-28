@@ -27,11 +27,15 @@ struct apple_pad_connection
 
 static IOHIDManagerRef g_hid_manager;
 
-static void apple_pad_send_control(struct apple_pad_connection* connection,
-                                   uint8_t* data, size_t size)
+static void apple_pad_send_control(void *connect_data,
+      uint8_t* data, size_t size)
 {
-    IOHIDDeviceSetReport(connection->device_handle,
-                         kIOHIDReportTypeOutput, 0x01, data + 1, size - 1);
+   struct apple_pad_connection* connection = 
+      (struct apple_pad_connection*)connect_data;
+
+   if (connection)
+      IOHIDDeviceSetReport(connection->device_handle,
+            kIOHIDReportTypeOutput, 0x01, data + 1, size - 1);
 }
 
 /* NOTE: I pieced this together through trial and error,
@@ -40,18 +44,16 @@ static void apple_pad_send_control(struct apple_pad_connection* connection,
 static void hid_device_input_callback(void* context, IOReturn result,
       void* sender, IOHIDValueRef value)
 {
-   IOHIDElementRef element;
-   uint32_t type, page, use;
    struct apple_pad_connection* connection = (struct apple_pad_connection*)
       context;
-
-   element = IOHIDValueGetElement(value);
-   type    = IOHIDElementGetType(element);
-   page    = IOHIDElementGetUsagePage(element);
-   use     = IOHIDElementGetUsage(element);
+   IOHIDElementRef element = IOHIDValueGetElement(value);
+   uint32_t type    = IOHIDElementGetType(element);
+   uint32_t page    = IOHIDElementGetUsagePage(element);
+   uint32_t use     = IOHIDElementGetUsage(element);
 
    /* Joystick handler.
     * TODO: Can GamePad work the same? */
+
    if ((type == kIOHIDElementTypeInput_Button)
          && page == kHIDPage_Button)
    {
@@ -124,7 +126,7 @@ static void hid_device_report(void* context, IOReturn result, void *sender,
 static void hid_manager_device_attached(void* context, IOReturn result,
                                         void* sender, IOHIDDeviceRef device)
 {
-   char device_name[1024];
+   char device_name[PATH_MAX];
    CFStringRef device_name_ref;
    struct apple_pad_connection* connection = (struct apple_pad_connection*)
       calloc(1, sizeof(*connection));

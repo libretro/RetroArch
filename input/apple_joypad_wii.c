@@ -20,11 +20,14 @@
 #include "../boolean.h"
 #include "wiimote.h"
 
-static void* hidpad_wii_connect(struct apple_pad_connection* connection, uint32_t slot)
+static void* hidpad_wii_connect(void *data, uint32_t slot)
 {
-   struct wiimote_t* device = (struct wiimote_t*)calloc(1, sizeof(struct wiimote_t));
+   struct apple_pad_connection *connection = 
+      (struct apple_pad_connection*)data;
+   struct wiimote_t *device = (struct wiimote_t*)
+      calloc(1, sizeof(struct wiimote_t));
 
-   if (!device)
+   if (!device || !connection)
       return NULL;
 
    device->connection = connection;
@@ -37,15 +40,19 @@ static void* hidpad_wii_connect(struct apple_pad_connection* connection, uint32_
    return device;
 }
 
-static void hidpad_wii_disconnect(struct wiimote_t* device)
+static void hidpad_wii_disconnect(void *data)
 {
+   struct wiimote_t* device = (struct wiimote_t*)data;
+
    if (device)
       free(device);
 }
 
-static int16_t hidpad_wii_get_axis(struct wiimote_t* device, unsigned axis)
+static int16_t hidpad_wii_get_axis(void *data, unsigned axis)
 {
-   if (device->exp.type == EXP_CLASSIC)
+   struct wiimote_t* device = (struct wiimote_t*)data;
+
+   if (device && device->exp.type == EXP_CLASSIC)
    {
       switch (axis)
       {
@@ -57,19 +64,21 @@ static int16_t hidpad_wii_get_axis(struct wiimote_t* device, unsigned axis)
             return device->exp.cc.classic.rjs.x.value * 0x7FFF;
          case 3:
             return device->exp.cc.classic.rjs.y.value * 0x7FFF;
-         default:
-            return 0;
       }
    }
 
    return 0;
 }
 
-static void hidpad_wii_packet_handler(struct wiimote_t* device,
+static void hidpad_wii_packet_handler(void *data,
       uint8_t *packet, uint16_t size)
 {
    int i;
+   struct wiimote_t* device = (struct wiimote_t*)data;
    byte* msg = packet + 2;
+
+   if (!device)
+      return;
 
    switch (packet[1])
    {
@@ -93,13 +102,19 @@ static void hidpad_wii_packet_handler(struct wiimote_t* device,
 
    g_current_input_data.pad_buttons[device->unid] = device->btns | 
       (device->exp.cc.classic.btns << 16);
+
    for (i = 0; i < 4; i++)
-      g_current_input_data.pad_axis[device->unid][i] = hidpad_wii_get_axis(device, i);
+      g_current_input_data.pad_axis[device->unid][i] = 
+         hidpad_wii_get_axis(device, i);
 }
 
-static void hidpad_wii_set_rumble(struct wiimote_t* device, enum retro_rumble_effect effect, uint16_t strength)
+static void hidpad_wii_set_rumble(void *data,
+      enum retro_rumble_effect effect, uint16_t strength)
 {
-   // TODO
+   /* TODO */
+   (void)data;
+   (void)effect;
+   (void)strength;
 }
 
 struct apple_pad_interface apple_pad_wii =

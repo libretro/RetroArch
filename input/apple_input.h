@@ -48,17 +48,15 @@ struct apple_pad_connection;
 
 struct apple_pad_interface
 {
-   void* (*connect)(struct apple_pad_connection* connection, uint32_t slot);
+   void* (*connect)(void *data, uint32_t slot);
    void (*disconnect)(void* device);
    void (*packet_handler)(void* device, uint8_t *packet, uint16_t size);
    void (*set_rumble)(void* device, enum retro_rumble_effect effect,
          uint16_t strength);
 };
 
-
-// Joypad data
-int32_t apple_joypad_connect(const char* name,
-      struct apple_pad_connection* connection);
+/* Joypad data */
+int32_t apple_joypad_connect(const char* name, void *data);
 
 int32_t apple_joypad_connect_gcapi(void);
 
@@ -72,7 +70,7 @@ bool apple_joypad_has_interface(uint32_t slot);
 
 /* This is implemented in the platform-specific 
  * portions of the input code */
-void apple_joypad_send_hid_control(struct apple_pad_connection* connection,
+void apple_joypad_send_hid_control(void *connect_data,
       uint8_t* data, size_t size);
 
 /* Input data for the main thread and the game thread */
