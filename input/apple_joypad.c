@@ -73,6 +73,7 @@ int32_t apple_joypad_connect(const char* name, void *data)
       } pad_map[] = 
       {
          { "Nintendo RVL-CNT-01",         &apple_pad_wii },
+         { "Nintendo RVL-CNT-01-UC",      &apple_pad_wii },
          { "PLAYSTATION(R)3 Controller",  &apple_pad_ps3 },
          { 0, 0}
       };
@@ -90,12 +91,12 @@ int32_t apple_joypad_connect(const char* name, void *data)
 
 int32_t apple_joypad_connect_gcapi(void)
 {
-   int32_t slot;
-   slot = find_empty_slot();
+   int32_t slot = find_empty_slot();
 
    if (slot >= 0 && slot < MAX_PLAYERS)
    {
       joypad_slot_t *s = (joypad_slot_t*)&slots[slot];
+
       s->used = true;
       s->is_gcapi = true;
    }
@@ -116,7 +117,8 @@ void apple_joypad_disconnect(uint32_t slot)
    }
 }
 
-void apple_joypad_packet(uint32_t slot, uint8_t* data, uint32_t length)
+void apple_joypad_packet(uint32_t slot,
+      uint8_t* data, uint32_t length)
 {
    if (slot < MAX_PLAYERS && slots[slot].used)
    {

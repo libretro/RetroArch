@@ -20,6 +20,8 @@
 
 struct apple_pad_connection
 {
+    int v_id;
+    int p_id;
     uint32_t slot;
     IOHIDDeviceRef device_handle;
     uint8_t data[2048];
@@ -128,6 +130,7 @@ static void hid_manager_device_attached(void* context, IOReturn result,
 {
    char device_name[PATH_MAX];
    CFStringRef device_name_ref;
+   CFNumberRef vendorID, productID;
    struct apple_pad_connection* connection = (struct apple_pad_connection*)
       calloc(1, sizeof(*connection));
 
@@ -141,9 +144,17 @@ static void hid_manager_device_attached(void* context, IOReturn result,
          kCFRunLoopCommonModes);
    IOHIDDeviceRegisterRemovalCallback(device, hid_device_removed, connection);
 
+#ifndef IOS
    device_name_ref = IOHIDDeviceGetProperty(device, CFSTR(kIOHIDProductKey));
    CFStringGetCString(device_name_ref, device_name,
          sizeof(device_name), kCFStringEncodingUTF8);
+#endif
+
+   vendorID = (CFNumberRef)IOHIDDeviceGetProperty(device, CFSTR(kIOHIDVendorIDKey));
+   CFNumberGetValue(vendorID, kCFNumberIntType, &connection->v_id);
+
+   productID = (CFNumberRef)IOHIDDeviceGetProperty(device, CFSTR(kIOHIDProductIDKey));
+   CFNumberGetValue(productID, kCFNumberIntType, &connection->p_id);
 
    connection->slot = apple_joypad_connect(device_name, connection);
 
@@ -218,14 +229,14 @@ static bool hid_init_manager(void)
 
 static int hid_exit(void)
 {
-   if (g_hid_manager)
-   {
-      IOHIDManagerClose(g_hid_manager, kIOHIDOptionsTypeNone);
-      IOHIDManagerUnscheduleFromRunLoop(g_hid_manager,
-            CFRunLoopGetCurrent(), kCFRunLoopCommonModes);
+   if (!g_hid_manager)
+      return -1;
 
-      CFRelease(g_hid_manager);
-   }
+   IOHIDManagerClose(g_hid_manager, kIOHIDOptionsTypeNone);
+   IOHIDManagerUnscheduleFromRunLoop(g_hid_manager,
+         CFRunLoopGetCurrent(), kCFRunLoopCommonModes);
+
+   CFRelease(g_hid_manager);
 
    g_hid_manager = NULL;
 
