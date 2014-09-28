@@ -95,6 +95,12 @@ static void hid_device_removed(void* context, IOReturn result, void* sender)
     
     if (connection && connection->slot < MAX_PLAYERS)
     {
+        char msg[512];
+        snprintf(msg, sizeof(msg), "Joypad #%u (%s) disconnected.",
+                 connection->slot, "N/A");
+        msg_queue_push(g_extern.msg_queue, msg, 0, 60);
+        RARCH_LOG("[apple_input]: %s\n", msg);
+        
         g_current_input_data.pad_buttons[connection->slot] = 0;
         memset(g_current_input_data.pad_axis[connection->slot],
                0, sizeof(g_current_input_data.pad_axis));
