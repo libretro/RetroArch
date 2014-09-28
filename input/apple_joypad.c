@@ -135,16 +135,13 @@ bool apple_joypad_has_interface(uint32_t slot)
    return false;
 }
 
-
-
-// RetroArch joypad driver:
 static bool apple_joypad_init(void)
 {
-#ifdef OSX
-    if (!g_hid_manager)
-        hid_init_manager();
-#endif
+#ifdef HAVE_HID
+   return hid_init_manager();
+#else
    return true;
+#endif
 }
 
 static bool apple_joypad_query_pad(unsigned pad)
@@ -164,6 +161,9 @@ static void apple_joypad_destroy(void)
          slots[i].iface->set_rumble(slots[i].data, RETRO_RUMBLE_WEAK, 0);
       }
    }
+#ifdef HAVE_HID
+   hid_exit();
+#endif
 }
 
 static bool apple_joypad_button(unsigned port, uint16_t joykey)
