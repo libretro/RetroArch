@@ -415,6 +415,8 @@ void gl_init_fbo(gl_t *gl, unsigned width, unsigned height);
 
 void gl_deinit_fbo(gl_t *gl);
 
+/* TODO - we need a D3D equivalent for this too - probably move
+ * this to video driver later so it can be defined per graphics API. */
 static inline GLenum gl_wrap_type_to_enum(enum gfx_wrap_type type)
 {
    switch (type)
@@ -431,9 +433,9 @@ static inline GLenum gl_wrap_type_to_enum(enum gfx_wrap_type type)
          return GL_REPEAT;
       case RARCH_WRAP_MIRRORED_REPEAT:
          return GL_MIRRORED_REPEAT;
-      default:
-         return 0;
    }
+
+   return 0;
 }
 
 #endif
