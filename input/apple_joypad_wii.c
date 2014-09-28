@@ -119,8 +119,8 @@ static void hidpad_wii_set_rumble(void *data,
 
 struct apple_pad_interface apple_pad_wii =
 {
-   (void*)&hidpad_wii_connect,
-   (void*)&hidpad_wii_disconnect,
-   (void*)&hidpad_wii_packet_handler,
-   (void*)&hidpad_wii_set_rumble
+   &hidpad_wii_connect,
+   &hidpad_wii_disconnect,
+   &hidpad_wii_packet_handler,
+   &hidpad_wii_set_rumble
 };

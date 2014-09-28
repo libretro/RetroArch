@@ -171,8 +171,8 @@ static void hidpad_ps3_set_rumble(void *data,
 
 struct apple_pad_interface apple_pad_ps3 =
 {
-   (void*)&hidpad_ps3_connect,
-   (void*)&hidpad_ps3_disconnect,
-   (void*)&hidpad_ps3_packet_handler,
-   (void*)&hidpad_ps3_set_rumble
+   &hidpad_ps3_connect,
+   &hidpad_ps3_disconnect,
+   &hidpad_ps3_packet_handler,
+   &hidpad_ps3_set_rumble
 };
