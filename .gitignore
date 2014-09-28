@@ -27,9 +27,6 @@ ipch
 *.zip
 RetroArch-w32/
 RetroArch-w64/
-android/native/obj/
-android/phoenix/bin/
-android/phoenix/gen/
 .DS_Store
 */build/*
 *.pbxuser
@@ -63,3 +60,18 @@ apple/RetroArch_iOS.xcodeproj/project.xcworkspace/*
 /python/
 /rsound.h
 .pc
+/media/shaders_glsl/
+
+# Android
+/android/phoenix/obj/
+/android/phoenix/assets/
+/android/phoenix/libs/
+/android/phoenix/bin/
+/android/phoenix/gen/
+/android/phoenix/local.properties
+
+# Cloned by libretro-fetch.sh
+/media/assets/
+/media/autoconfig/
+/media/overlays/
+/media/shaders/
