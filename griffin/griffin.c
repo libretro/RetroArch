@@ -291,6 +291,12 @@ INPUT
 #include "../input/overlay.c"
 #endif
 
+#if defined(HAVE_HID)
+#ifdef OSX
+#include "../input/hid/apple_input_hid.c"
+#endif
+#endif
+
 #if defined(__CELLOS_LV2__)
 #include "../input/ps3_input.c"
 #include "../input/ps3_input_joypad.c"
