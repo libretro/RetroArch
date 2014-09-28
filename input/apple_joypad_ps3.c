@@ -31,7 +31,7 @@ struct hidpad_ps3_data
 
 static void hidpad_ps3_send_control(struct hidpad_ps3_data* device)
 {
-   // TODO: Can this be modified to turn off motion tracking?
+   /* TODO: Can this be modified to turn off motion tracking? */
    static uint8_t report_buffer[] = {
       0x52, 0x01,
       0x00, 0xFF, 0x00, 0xFF, 0x00,
@@ -48,13 +48,17 @@ static void hidpad_ps3_send_control(struct hidpad_ps3_data* device)
    report_buffer[11] = 1 << ((device->slot % 4) + 1);
    report_buffer[4] = device->motors[1] >> 8;
    report_buffer[6] = device->motors[0] >> 8;
-   apple_pad_send_control(device->connection, report_buffer, sizeof(report_buffer));
+    
+   apple_pad_send_control(
+      device->connection, report_buffer, sizeof(report_buffer));
 }
 
-static void* hidpad_ps3_connect(void *data, uint32_t slot)
+static void* hidpad_ps3_connect(void *connect_data, uint32_t slot)
 {
-   struct apple_pad_connection* connection = (struct apple_pad_connection*)data;
-   struct hidpad_ps3_data* device = (struct hidpad_ps3_data*)calloc(1, sizeof(struct hidpad_ps3_data));
+   struct apple_pad_connection* connection =
+    (struct apple_pad_connection*)connect_data;
+   struct hidpad_ps3_data* device = (struct hidpad_ps3_data*)
+    calloc(1, sizeof(struct hidpad_ps3_data));
 
    if (!device || !connection)
       return NULL;
@@ -62,26 +66,29 @@ static void* hidpad_ps3_connect(void *data, uint32_t slot)
    device->connection = connection;  
    device->slot = slot;
    
-   // Magic packet to start reports
 #ifdef IOS
+   /* Magic packet to start reports. */
    static uint8_t data[] = {0x53, 0xF4, 0x42, 0x03, 0x00, 0x00};
    apple_pad_send_control(device->connection, data, 6);
 #endif
 
-   // Without this the digital buttons won't be reported
+   /* Without this, the digital buttons won't be reported. */
    hidpad_ps3_send_control(device);
 
    return device;
 }
 
-static void hidpad_ps3_disconnect(struct hidpad_ps3_data* device)
+static void hidpad_ps3_disconnect(void *data)
 {
+   struct hidpad_ps3_data *device = (struct hidpad_ps3_data*)data;
+    
    if (device)
       free(device);
 }
 
-static uint32_t hidpad_ps3_get_buttons(struct hidpad_ps3_data* device)
+static uint32_t hidpad_ps3_get_buttons(void *data)
 {
+   uint32_t i, result = 0, pressed_keys;
    static const uint32_t button_mapping[17] =
    {
       RETRO_DEVICE_ID_JOYPAD_SELECT,
@@ -102,19 +109,23 @@ static uint32_t hidpad_ps3_get_buttons(struct hidpad_ps3_data* device)
       RETRO_DEVICE_ID_JOYPAD_Y,
       16 //< PS Button
    };
+   struct hidpad_ps3_data *device = (struct hidpad_ps3_data*)data;
 
-   const uint32_t pressed_keys = device->data[3] | (device->data[4] << 8) | ((device->data[5] & 1) << 16);
-   uint32_t result = 0;
+   pressed_keys = device->data[3] | (device->data[4] << 8) |
+    ((device->data[5] & 1) << 16);
 
-   for (int i = 0; i < 17; i ++)
-      result |= (pressed_keys & (1 << i)) ? (1 << button_mapping[i]) : 0;
+   for (i = 0; i < 17; i ++)
+      result |= (pressed_keys & (1 << i)) ?
+       (1 << button_mapping[i]) : 0;
 
    return result;
 }
 
-static int16_t hidpad_ps3_get_axis(struct hidpad_ps3_data* device, unsigned axis)
+static int16_t hidpad_ps3_get_axis(void *data, unsigned axis)
 {
-   if (axis < 4)
+   struct hidpad_ps3_data *device = (struct hidpad_ps3_data*)data;
+    
+   if (device && (axis < 4))
    {
       int val = device->data[7 + axis];
       val = (val << 8) - 0x8000;
@@ -124,8 +135,14 @@ static int16_t hidpad_ps3_get_axis(struct hidpad_ps3_data* device, unsigned axis
    return 0;
 }
 
-static void hidpad_ps3_packet_handler(struct hidpad_ps3_data* device, uint8_t *packet, uint16_t size)
+static void hidpad_ps3_packet_handler(void *data, uint8_t *packet, uint16_t size)
 {
+   int i;
+   struct hidpad_ps3_data *device = (struct hidpad_ps3_data*)data;
+    
+   if (!device)
+      return;
+    
    if (!device->have_led)
    {
       hidpad_ps3_send_control(device);
@@ -135,15 +152,17 @@ static void hidpad_ps3_packet_handler(struct hidpad_ps3_data* device, uint8_t *p
    memcpy(device->data, packet, size);
 
    g_current_input_data.pad_buttons[device->slot] = hidpad_ps3_get_buttons(device);
-   for (int i = 0; i < 4; i ++)
+   for (i = 0; i < 4; i ++)
       g_current_input_data.pad_axis[device->slot][i] = hidpad_ps3_get_axis(device, i);
 }
 
-static void hidpad_ps3_set_rumble(struct hidpad_ps3_data* device, enum retro_rumble_effect effect, uint16_t strength)
+static void hidpad_ps3_set_rumble(void *data,
+   enum retro_rumble_effect effect, uint16_t strength)
 {
+   struct hidpad_ps3_data *device = (struct hidpad_ps3_data*)data;
    unsigned index = (effect == RETRO_RUMBLE_STRONG) ? 0 : 1;
 
-   if (device->motors[index] != strength)
+   if (device && (device->motors[index] != strength))
    {
       device->motors[index] = strength;
       hidpad_ps3_send_control(device);
