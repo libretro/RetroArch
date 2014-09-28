@@ -1809,6 +1809,7 @@ unsigned menu_gx_resolutions[GX_RESOLUTIONS_LAST][2] = {
 unsigned menu_current_gx_resolution = GX_RESOLUTIONS_640_480;
 #endif
 
+#ifdef HAVE_MENU
 static void menu_common_setting_set_label_perf(char *type_str,
       size_t type_str_size, unsigned *w, unsigned type,
       const struct retro_perf_counter **counters, unsigned offset)
@@ -1832,7 +1833,6 @@ static void menu_common_setting_set_label_perf(char *type_str,
    }
 }
 
-
 void setting_data_get_label(char *type_str,
       size_t type_str_size, unsigned *w, unsigned type, 
       const char *menu_label, const char *label, unsigned index)
@@ -1846,10 +1846,8 @@ void setting_data_get_label(char *type_str,
             !strcmp(menu_label, "video_shader_preset_parameters"))
       )
    {
-#ifdef HAVE_MENU
       menu_shader_manager_get_str(driver.menu->shader, type_str, type_str_size,
             menu_label, label, type);
-#endif
    }
    else if (!strcmp(label, "input_bind_device_id"))
    {
@@ -2000,6 +1998,7 @@ void setting_data_get_label(char *type_str,
       }
    }
 }
+#endif
 
 static void general_read_handler(void *data)
 {

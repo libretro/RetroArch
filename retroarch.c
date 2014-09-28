@@ -164,10 +164,12 @@ static void take_screenshot(void)
 
    if (viewport_read)
    {
+#ifdef HAVE_MENU
       /* Avoid taking screenshot of GUI overlays. */
       if (driver.video_poke && driver.video_poke->set_texture_enable)
          driver.video_poke->set_texture_enable(driver.video_data,
                false, false);
+#endif
 
       if (driver.video)
          rarch_render_cached_frame();
@@ -3176,7 +3178,9 @@ void rarch_main_command(unsigned cmd)
          save_core_config();
          break;
       case RARCH_CMD_SHADERS_APPLY_CHANGES:
+#ifdef HAVE_MENU
          menu_shader_manager_apply_changes();
+#endif
          break;
    }
 }
@@ -3197,6 +3201,7 @@ bool rarch_main_iterate(void)
          !driver.video->alive(driver.video_data))
       return false;
 
+#ifdef HAVE_MENU
    if (g_extern.is_menu)
    {
       if (
@@ -3223,6 +3228,7 @@ bool rarch_main_iterate(void)
       rarch_main_set_state(RARCH_ACTION_STATE_MENU_PREINIT);
       return true; /* Enter menu on next run. */
    }
+#endif
 
    if (g_extern.exec)
    {

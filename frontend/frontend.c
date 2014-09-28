@@ -18,6 +18,7 @@
 #include "../driver.h"
 #include "frontend.h"
 #include "../general.h"
+#include "../performance.h"
 
 #if defined(HAVE_MENU)
 #include "menu/menu_input_line_cb.h"
