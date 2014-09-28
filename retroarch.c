@@ -2938,6 +2938,30 @@ static void save_core_config(void)
    msg_queue_push(g_extern.msg_queue, msg, 1, 180);
 }
 
+static void history_playlist_new(void)
+{
+   bool init_history = true;
+
+   if (g_extern.history)
+      return;
+
+   if (!path_file_exists(g_settings.content_history_path))
+      init_history = write_empty_file(
+            g_settings.content_history_path);
+
+   if (init_history)
+      g_extern.history = content_playlist_init(
+            g_settings.content_history_path,
+            g_settings.content_history_size);
+}
+
+static void history_playlist_free(void)
+{
+   if (g_extern.history)
+      content_playlist_free(g_extern.history);
+   g_extern.history = NULL;
+}
+
 void rarch_main_command(unsigned cmd)
 {
    bool boolean = false;
@@ -3048,8 +3072,7 @@ void rarch_main_command(unsigned cmd)
          break;
       case RARCH_CMD_OVERLAY_DEINIT:
 #ifdef HAVE_OVERLAY
-         if (driver.overlay)
-            input_overlay_free(driver.overlay);
+         input_overlay_free(driver.overlay);
          driver.overlay = NULL;
          memset(&driver.overlay_state, 0, sizeof(driver.overlay_state));
 #endif
@@ -3081,24 +3104,10 @@ void rarch_main_command(unsigned cmd)
          rarch_deinit_recording();
          break;
       case RARCH_CMD_HISTORY_INIT:
-         if (!g_extern.history)
-         {
-            bool init_history = true;
-
-            if (!path_file_exists(g_settings.content_history_path))
-               init_history = write_empty_file(
-                     g_settings.content_history_path);
-
-            if (init_history)
-               g_extern.history = content_playlist_init(
-                     g_settings.content_history_path,
-                     g_settings.content_history_size);
-         }
+         history_playlist_new();
          break;
       case RARCH_CMD_HISTORY_DEINIT:
-         if (g_extern.history)
-            content_playlist_free(g_extern.history);
-         g_extern.history = NULL;
+         history_playlist_free();
          break;
       case RARCH_CMD_CORE_INFO_INIT:
          core_info_list_free(g_extern.core_info);
@@ -3135,16 +3144,14 @@ void rarch_main_command(unsigned cmd)
          break;
       case RARCH_CMD_OVERLAY_SET_SCALE_FACTOR:
 #ifdef HAVE_OVERLAY
-         if (driver.overlay)
-            input_overlay_set_scale_factor(driver.overlay,
-                  g_settings.input.overlay_scale);
+         input_overlay_set_scale_factor(driver.overlay,
+               g_settings.input.overlay_scale);
 #endif
          break;
       case RARCH_CMD_OVERLAY_SET_ALPHA_MOD:
 #ifdef HAVE_OVERLAY
-         if (driver.overlay)
-            input_overlay_set_alpha_mod(driver.overlay,
-                  g_settings.input.overlay_opacity);
+         input_overlay_set_alpha_mod(driver.overlay,
+               g_settings.input.overlay_opacity);
 #endif
          break;
       case RARCH_CMD_RESET_CONTEXT:
@@ -3155,9 +3162,7 @@ void rarch_main_command(unsigned cmd)
          rarch_main_set_state(RARCH_ACTION_STATE_FORCE_QUIT);
          break;
       case RARCH_CMD_RESUME:
-#ifdef HAVE_MENU
          rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED);
-#endif
          break;
       case RARCH_CMD_RESTART_RETROARCH:
 #if defined(GEKKO) && defined(HW_RVL)

@@ -156,6 +156,10 @@ static void input_overlay_set_vertex_geom(input_overlay_t *ol)
 void input_overlay_set_scale_factor(input_overlay_t *ol, float scale)
 {
    size_t i;
+
+   if (!ol)
+      return;
+
    for (i = 0; i < ol->size; i++)
       input_overlay_scale(&ol->overlays[i], scale);
 
@@ -872,6 +876,10 @@ void input_overlay_free(input_overlay_t *ol)
 void input_overlay_set_alpha_mod(input_overlay_t *ol, float mod)
 {
    unsigned i;
+
+   if (!ol)
+      return;
+
    for (i = 0; i < ol->active->load_images_size; i++)
       ol->iface->set_alpha(ol->iface_data, i,
             g_settings.input.overlay_opacity);
