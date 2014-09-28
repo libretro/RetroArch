@@ -20,12 +20,15 @@
 #include <stdarg.h>
 #include <android/log.h>
 
+// Log tag. Used for logcat filtering, e.g.: adb logcat RetroArch:V *:S
+#define RARCH_LOG_TAG "RetroArch"
+
 #ifndef RARCH_LOG
-#define RARCH_LOG(...)  __android_log_print(ANDROID_LOG_INFO, "RetroArch: ", __VA_ARGS__)
+#define RARCH_LOG(...)  __android_log_print(ANDROID_LOG_INFO, RARCH_LOG_TAG, __VA_ARGS__)
 #endif
 
 #ifndef RARCH_LOG_V
-#define RARCH_LOG_V(tag, fmt, vp) __android_log_vprint(ANDROID_LOG_INFO, "RetroArch: " tag, fmt, vp)
+#define RARCH_LOG_V(tag, fmt, vp) __android_log_vprint(ANDROID_LOG_INFO, RARCH_LOG_TAG tag, fmt, vp)
 #endif
 
 #ifndef RARCH_LOG_OUTPUT
@@ -37,19 +40,19 @@
 #endif
 
 #ifndef RARCH_ERR
-#define RARCH_ERR(...)  __android_log_print(ANDROID_LOG_INFO, "RetroArch [ERROR] :: ", __VA_ARGS__)
+#define RARCH_ERR(...)  __android_log_print(ANDROID_LOG_ERROR, RARCH_LOG_TAG, __VA_ARGS__)
 #endif
 
 #ifndef RARCH_ERR_V
-#define RARCH_ERR_V(tag, fmt, vp) __android_log_vprint(ANDROID_LOG_INFO, "RetroArch [ERROR] :: " tag, fmt, vp)
+#define RARCH_ERR_V(tag, fmt, vp) __android_log_vprint(ANDROID_LOG_ERROR, RARCH_LOG_TAG tag, fmt, vp)
 #endif
 
 #ifndef RARCH_WARN
-#define RARCH_WARN(...) __android_log_print(ANDROID_LOG_INFO, "RetroArch [WARN] :: ", __VA_ARGS__)
+#define RARCH_WARN(...) __android_log_print(ANDROID_LOG_WARN, RARCH_LOG_TAG, __VA_ARGS__)
 #endif
 
 #ifndef RARCH_WARN_V
-#define RARCH_WARN_V(tag, fmt, vp) __android_log_print(ANDROID_LOG_INFO, "RetroArch [WARN] :: " tag, fmt, vp)
+#define RARCH_WARN_V(tag, fmt, vp) __android_log_print(ANDROID_LOG_WARN, RARCH_LOG_TAG tag, fmt, vp)
 #endif
 
 #endif
