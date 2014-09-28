@@ -34,23 +34,6 @@ static void draw_frame(bool enable)
       rarch_render_cached_frame();
 }
 
-static void throttle_frame(void)
-{
-   if (!driver.menu)
-      return;
-
-   /* Throttle in case VSync is broken (avoid 1000+ FPS Menu). */
-   driver.menu->time = rarch_get_time_usec();
-   driver.menu->delta = (driver.menu->time - driver.menu->last_time) / 1000;
-   driver.menu->target_msec = 750 / g_settings.video.refresh_rate;
-   /* Try to sleep less, so we can hopefully rely on FPS logger. */
-   driver.menu->sleep_msec = driver.menu->target_msec - driver.menu->delta;
-
-   if (driver.menu->sleep_msec > 0)
-      rarch_sleep((unsigned int)driver.menu->sleep_msec);
-   driver.menu->last_time = rarch_get_time_usec();
-}
-
 /* Update menu state which depends on config. */
 
 static void update_libretro_info(struct retro_system_info *info)
@@ -364,7 +347,6 @@ bool menu_iterate(retro_input_t input,
       ret = driver.menu_ctx->backend->iterate(action);
 
    draw_frame(true);
-   throttle_frame();
    draw_frame(false);
 
    if (driver.menu_ctx && driver.menu_ctx->input_postprocess)

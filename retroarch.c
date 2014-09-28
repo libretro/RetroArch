@@ -3201,6 +3201,9 @@ bool rarch_main_iterate(void)
          !driver.video->alive(driver.video_data))
       return false;
 
+   if (g_extern.system.frame_time.callback)
+      update_frame_time();
+
 #ifdef HAVE_MENU
    if (g_extern.is_menu)
    {
@@ -3219,7 +3222,7 @@ bool rarch_main_iterate(void)
          /* Restore libretro keyboard callback. */
          g_extern.system.key_event = g_extern.frontend_key_event;
       }
-      return true;
+      goto end;
    }
 
    if (check_enter_menu_func(trigger_input) || (g_extern.libretro_dummy))
@@ -3273,14 +3276,10 @@ bool rarch_main_iterate(void)
    if ((g_settings.video.frame_delay > 0) && !driver.nonblock_state)
       rarch_sleep(g_settings.video.frame_delay);
 
-   if (g_extern.system.frame_time.callback)
-      update_frame_time();
 
    /* Run libretro for one frame. */
    pretro_run();
 
-   if (g_settings.fastforward_ratio >= 0.0f)
-      limit_frame_time();
 
    for (i = 0; i < MAX_PLAYERS; i++)
    {
@@ -3302,6 +3301,10 @@ bool rarch_main_iterate(void)
 #if defined(HAVE_THREADS)
    unlock_autosave();
 #endif
+
+end:
+   if (g_settings.fastforward_ratio >= 0.0f)
+      limit_frame_time();
 
    return true;
 }

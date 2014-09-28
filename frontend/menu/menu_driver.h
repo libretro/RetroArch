@@ -130,10 +130,6 @@ typedef struct
    } keyboard;
 
    bool bind_mode_keyboard;
-   int64_t time;
-   int64_t delta;
-   int64_t target_msec;
-   int64_t sleep_msec;
 } menu_handle_t;
 
 #ifdef __cplusplus
