@@ -433,12 +433,13 @@ typedef struct driver
    const location_driver_t *location;
    struct retro_callbacks retro_ctx;
 
-   void *osk_data;
-   void *camera_data;
-   void *location_data;
    void *audio_data;
    void *video_data;
    void *input_data;
+   void *osk_data;
+   void *camera_data;
+   void *location_data;
+
 #ifdef HAVE_MENU
    menu_handle_t *menu;
    const menu_ctx_driver_t *menu_ctx;
