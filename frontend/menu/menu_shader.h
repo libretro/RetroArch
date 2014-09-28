@@ -24,17 +24,25 @@
 #include "../../gfx/shader_parse.h"
 
 void menu_shader_manager_init(void *data);
+
 void menu_shader_manager_set_preset(struct gfx_shader *shader,
       unsigned type, const char *cgp_path);
+
 int menu_shader_manager_setting_toggle(
       unsigned id, const char *label, unsigned action);
+
 void menu_shader_manager_save_preset(
       const char *basename, bool apply);
+
 unsigned menu_shader_manager_get_type(
       const struct gfx_shader *shader);
+
 void menu_shader_manager_get_str(struct gfx_shader *shader,
       char *type_str, size_t type_str_size, const char *menu_label,
       const char *label, unsigned type);
+
 int handle_shader_pass_setting(struct gfx_shader *shader, unsigned action);
+
+void menu_shader_manager_apply_changes(void);
 
 #endif

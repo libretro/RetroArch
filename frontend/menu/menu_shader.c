@@ -320,7 +320,7 @@ int menu_shader_manager_setting_toggle(
 {
    if (!driver.menu)
    {
-      RARCH_ERR("Cannot toggle shader setting, menu handle is not initialized.\n");
+      RARCH_ERR("Menu handle is not initialized.\n");
       return 0;
    }
 
@@ -536,6 +536,31 @@ int handle_shader_pass_setting(struct gfx_shader *shader, unsigned action)
    return 0;
 }
 
+void menu_shader_manager_apply_changes(void)
+{
+   unsigned shader_type = RARCH_SHADER_NONE;
+   shader_type = menu_shader_manager_get_type(driver.menu->shader);
+
+   if (driver.menu->shader->passes && shader_type != RARCH_SHADER_NONE)
+      menu_shader_manager_save_preset(NULL, true);
+   else
+   {
+#if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
+      shader_type = gfx_shader_parse_type("", DEFAULT_SHADER_TYPE);
+#endif
+
+      if (shader_type == RARCH_SHADER_NONE)
+      {
+#if defined(HAVE_GLSL)
+         shader_type = RARCH_SHADER_GLSL;
+#elif defined(HAVE_CG) || defined(HAVE_HLSL)
+         shader_type = RARCH_SHADER_CG;
+#endif
+      }
+      menu_shader_manager_set_preset(NULL, shader_type, NULL);
+   }
+}
+
 #else
 
 void menu_shader_manager_init(void *data) {}
@@ -564,5 +589,7 @@ int handle_shader_pass_setting(struct gfx_shader *shader)
 {
    return 0;
 }
+
+void menu_shader_manager_apply_changes(void) { }
 
 #endif
