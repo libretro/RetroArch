@@ -77,6 +77,7 @@ static UIView *g_pause_indicator_view;
 
 static RAGameView* g_instance;
 static GLContextClass* g_context;
+static GLContextClass* g_hw_ctx;
 
 
 @implementation RAGameView

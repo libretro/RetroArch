@@ -298,6 +298,7 @@ bool apple_joypad_has_interface(uint32_t slot)
 
 static int hid_init_manager(void)
 {
+#ifdef OSX
     CFMutableArrayRef matcher;
     
     g_hid_manager = IOHIDManagerCreate(
@@ -317,12 +318,14 @@ static int hid_init_manager(void)
     IOHIDManagerScheduleWithRunLoop(g_hid_manager, CFRunLoopGetMain(), kCFRunLoopCommonModes);
     
     IOHIDManagerOpen(g_hid_manager, kIOHIDOptionsTypeNone);
+#endif
     
     return 0;
 }
 
 static int hid_exit(void)
 {
+#ifdef OSX
     if (g_hid_manager)
     {
         IOHIDManagerClose(g_hid_manager, kIOHIDOptionsTypeNone);
@@ -332,6 +335,7 @@ static int hid_exit(void)
         CFRelease(g_hid_manager);
     }
     g_hid_manager = NULL;
+#endif
     
     return 0;
 }

@@ -9,7 +9,6 @@ static bool g_use_hw_ctx;
 #ifdef OSX
 static bool g_has_went_fullscreen;
 static NSOpenGLPixelFormat* g_format;
-static NSOpenGLContext *g_hw_ctx;
 #endif
 
 static unsigned g_minor = 0;
