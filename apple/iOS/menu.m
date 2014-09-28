@@ -212,7 +212,10 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
    
    RAMenuItemGeneralSetting* item = [[RAMenuItemGeneralSetting alloc] initWithSetting:setting];
    
-   if (item.setting->type == ST_INT || item.setting->type == ST_UINT || item.setting->type == ST_FLOAT)
+   if (
+       item.setting->type == ST_INT  ||
+       item.setting->type == ST_UINT ||
+       item.setting->type == ST_FLOAT)
       item.formatter = [[RANumberFormatter alloc] initWithSetting:item.setting];
    
    return item;
@@ -227,7 +230,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 
 - (UITableViewCell*)cellForTableView:(UITableView*)tableView
 {
-   char buffer[256];
+   char buffer[PATH_MAX];
    static NSString* const cell_id = @"string_setting";
 
    self.parentTable = tableView;
@@ -262,7 +265,7 @@ static void RunActionSheet(const char* title, const struct string_list* items, U
 
 - (void)wasSelectedOnTableView:(UITableView*)tableView ofController:(UIViewController*)controller
 {
-   char buffer[256];
+   char buffer[PATH_MAX];
    NSString *desc = BOXSTRING("N/A");
    UIAlertView *alertView;
    UITextField *field;
