@@ -38,6 +38,7 @@
 #include "msvc/msvc_compat.h"
 
 #include "retroarch_logger.h"
+#include "endianness.h"
 #include <limits.h>
 
 /* Some platforms do not set this value.
@@ -105,48 +106,6 @@ static inline uint32_t prev_pow2(uint32_t v)
    v |= v >> 8;
    v |= v >> 16;
    return v - (v >> 1);
-}
-
-static inline uint8_t is_little_endian(void)
-{
-   union
-   {
-      uint16_t x;
-      uint8_t y[2];
-   } u;
-
-   u.x = 1;
-   return u.y[0];
-}
-
-static inline uint32_t swap_if_big32(uint32_t val)
-{
-   if (is_little_endian())
-      return val;
-   return (val >> 24) | ((val >> 8) & 0xFF00) |
-      ((val << 8) & 0xFF0000) | (val << 24);
-}
-
-static inline uint32_t swap_if_little32(uint32_t val)
-{
-   if (is_little_endian())
-      return (val >> 24) | ((val >> 8) & 0xFF00) |
-         ((val << 8) & 0xFF0000) | (val << 24);
-   return val;
-}
-
-static inline uint16_t swap_if_big16(uint16_t val)
-{
-   if (is_little_endian())
-      return val;
-   return (val >> 8) | (val << 8);
-}
-
-static inline uint16_t swap_if_little16(uint16_t val)
-{
-   if (is_little_endian())
-      return (val >> 8) | (val << 8);
-   return val;
 }
 
 /* Helper macros and struct to keep track of many booleans.
