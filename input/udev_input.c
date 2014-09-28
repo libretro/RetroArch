@@ -607,6 +607,9 @@ static bool open_devices(udev_input_t *udev, const char *type, device_handle_cb 
    for (item = devs; item; item = udev_list_entry_get_next(item))
    {
       const char *name = udev_list_entry_get_name(item);
+
+      /* Get the filename of the /sys entry for the device
+       * and create a udev_device object (dev) representing it. */
       struct udev_device *dev = udev_device_new_from_syspath(udev->udev, name);
       const char *devnode = udev_device_get_devnode(dev);
 
