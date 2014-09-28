@@ -58,6 +58,11 @@
             unless="sdk.dir"
     />
 
+    <!-- Name of ndk-build executable. -->
+    <condition property="ndk.cmd" value="ndk-build.cmd" else="ndk-build">
+        <os family="windows"/>
+    </condition>
+
     <!--
         Import per project custom build rules if present at the root of the project.
         This is the place to put custom intermediary targets such as:
@@ -72,13 +77,13 @@
     -->
     <import file="custom_rules.xml" optional="true" />
     <target name="-pre-build">
-       <exec executable="${ndk.dir}/ndk-build" failonerror="true">
+       <exec executable="${ndk.dir}/${ndk.cmd}" failonerror="true">
           <arg value="-j4"/>
        </exec>
     </target>
 
     <target name="clean" depends="android_rules.clean">
-       <exec executable="${ndk.dir}/ndk-build" failonerror="true">
+       <exec executable="${ndk.dir}/${ndk.cmd}" failonerror="true">
           <arg value="clean"/>
        </exec>
     </target>
