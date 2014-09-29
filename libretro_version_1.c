@@ -202,34 +202,9 @@ static int16_t input_state(unsigned port, unsigned device,
    }
 #endif
 
-   {
-      /* Last frame input_state was called. */
-      static unsigned flush_frame = 0;
-      /* Last frame which had input. */
-      static unsigned flush_frame_input = 0;
-
-      if (driver.flushing_input)
-      {
-         if (flush_frame != g_extern.frame_count &&
-            flush_frame != flush_frame_input)
-         {
-            /* At least one entire frame has passed with no input. */
-            driver.flushing_input = false;
-            flush_frame = flush_frame_input = 0;
-         }
-         else
-         {
-            flush_frame = g_extern.frame_count;
-            if (res)
-            {
-               flush_frame_input = g_extern.frame_count;
-               res = 0;
-            }
-         }
-      }
-      else
-         flush_frame = flush_frame_input = 0;
-   }
+   /* flushing_input will be cleared in rarch_main_iterate. */
+   if (driver.flushing_input)
+      res = 0;
 
    /* Don't allow turbo for D-pad. */
    if (device == RETRO_DEVICE_JOYPAD && (id < RETRO_DEVICE_ID_JOYPAD_UP ||
