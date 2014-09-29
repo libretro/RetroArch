@@ -2803,7 +2803,8 @@ void rarch_main_set_state(unsigned cmd)
                driver_set_rumble_state(i, RETRO_RUMBLE_WEAK, 0);
             }
 
-            rarch_main_command(RARCH_CMD_AUDIO_STOP);
+            if (g_settings.menu.pause_libretro)
+               rarch_main_command(RARCH_CMD_AUDIO_STOP);
 
 #ifdef HAVE_MENU
             if (driver.menu)
@@ -2836,7 +2837,8 @@ void rarch_main_set_state(unsigned cmd)
 
          driver_set_nonblock_state(driver.nonblock_state);
 
-         rarch_main_command(RARCH_CMD_AUDIO_START);
+         if (g_settings.menu.pause_libretro)
+            rarch_main_command(RARCH_CMD_AUDIO_START);
 
          /* Prevent stray input from going to libretro core */
          driver.flushing_input = true;
