@@ -3193,6 +3193,18 @@ void rarch_main_command(unsigned cmd)
    }
 }
 
+static void do_state_check_menu_toggle(void)
+{
+   if (g_extern.is_menu)
+   {
+      if (g_extern.main_is_init && !g_extern.libretro_dummy)
+         rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED);
+      return;
+   }
+
+   rarch_main_set_state(RARCH_ACTION_STATE_MENU_PREINIT);
+}
+
 bool rarch_main_iterate(void)
 {
    unsigned i;
@@ -3213,22 +3225,14 @@ bool rarch_main_iterate(void)
       update_frame_time();
 
 #ifdef HAVE_MENU
+   if (check_enter_menu_func(trigger_input) || (g_extern.libretro_dummy))
+      do_state_check_menu_toggle();
+
    if (g_extern.is_menu)
    {
-      if (
-            !menu_iterate(input, old_input, trigger_input) ||
-            (check_enter_menu_func(trigger_input) &&
-             g_extern.main_is_init && !g_extern.libretro_dummy)
-         )
+      if (!menu_iterate(input, old_input, trigger_input))
          rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED);
       goto end;
-   }
-
-   if (check_enter_menu_func(trigger_input) || (g_extern.libretro_dummy))
-   {
-      /* Always go into menu if dummy core is loaded. */
-      rarch_main_set_state(RARCH_ACTION_STATE_MENU_PREINIT);
-      return true; /* Enter menu on next run. */
    }
 #endif
 
