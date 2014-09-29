@@ -1639,7 +1639,9 @@ retro_input_t meta_input_keys_pressed(unsigned key,
    {
       bool state = false;
 
-      if (!driver.block_hotkey)
+      if (
+            (!driver.block_libretro_input && (key < RARCH_FIRST_META_KEY)) ||
+            !driver.block_hotkey)
          state = driver.input->key_pressed(driver.input_data, key);
 
 #ifdef HAVE_OVERLAY
