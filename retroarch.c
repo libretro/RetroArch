@@ -3190,6 +3190,13 @@ void rarch_main_command(unsigned cmd)
    }
 }
 
+static inline void do_limit_frame_time(void)
+{
+   if (g_settings.fastforward_ratio >= 0.0f)
+      limit_frame_time();
+}
+
+#ifdef HAVE_MENU
 static void do_state_check_menu_toggle(void)
 {
    if (g_extern.is_menu)
@@ -3201,6 +3208,19 @@ static void do_state_check_menu_toggle(void)
 
    rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING);
 }
+
+static bool do_menu_oneshot(
+      retro_input_t input, retro_input_t old_input,
+      retro_input_t trigger_input)
+{
+   if (!menu_iterate(input, old_input, trigger_input))
+      rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED);
+   
+   do_limit_frame_time();
+
+   return true;
+}
+#endif
 
 bool rarch_main_iterate(void)
 {
@@ -3226,11 +3246,7 @@ bool rarch_main_iterate(void)
       do_state_check_menu_toggle();
 
    if (g_extern.is_menu)
-   {
-      if (!menu_iterate(input, old_input, trigger_input))
-         rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED);
-      goto end;
-   }
+      return do_menu_oneshot(input, old_input, trigger_input);
 #endif
 
    if (g_extern.exec)
@@ -3280,7 +3296,6 @@ bool rarch_main_iterate(void)
    /* Run libretro for one frame. */
    pretro_run();
 
-
    for (i = 0; i < MAX_PLAYERS; i++)
    {
       if (!g_settings.input.analog_dpad_mode[i])
@@ -3302,9 +3317,7 @@ bool rarch_main_iterate(void)
    unlock_autosave();
 #endif
 
-end:
-   if (g_settings.fastforward_ratio >= 0.0f)
-      limit_frame_time();
+   do_limit_frame_time();
 
    return true;
 }
