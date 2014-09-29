@@ -2836,6 +2836,14 @@ void rarch_main_set_state(unsigned cmd)
          break;
       case RARCH_ACTION_STATE_MENU_RUNNING_FINISHED:
          g_extern.is_menu = false;
+
+         driver_set_nonblock_state(driver.nonblock_state);
+
+         rarch_main_command(RARCH_CMD_AUDIO_START);
+
+         driver.block_libretro_input_until = g_extern.frame_count + (5);
+         /* Restore libretro keyboard callback. */
+         g_extern.system.key_event = g_extern.frontend_key_event;
          break;
       case RARCH_ACTION_STATE_EXITSPAWN:
          g_extern.lifecycle_state |= (1ULL << MODE_EXITSPAWN);
@@ -3212,16 +3220,7 @@ bool rarch_main_iterate(void)
             (check_enter_menu_func(trigger_input) &&
              g_extern.main_is_init && !g_extern.libretro_dummy)
          )
-      {
          rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED);
-         driver_set_nonblock_state(driver.nonblock_state);
-
-         rarch_main_command(RARCH_CMD_AUDIO_START);
-
-         driver.block_libretro_input_until = g_extern.frame_count + (5);
-         /* Restore libretro keyboard callback. */
-         g_extern.system.key_event = g_extern.frontend_key_event;
-      }
       goto end;
    }
 
