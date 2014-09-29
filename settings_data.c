@@ -2591,13 +2591,20 @@ rarch_setting_t *setting_data_get_list(void)
       END_GROUP()
 #endif
 
+#ifdef HAVE_MENU
+      START_GROUP("Menu Options")
+      START_SUB_GROUP("State", GROUP_NAME)
+      CONFIG_BOOL(g_settings.menu_show_start_screen,     "rgui_show_start_screen",     "Show Start Screen", menu_show_start_screen, "OFF", "ON", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+      CONFIG_BOOL(g_settings.menu.pause_libretro,            "menu_pause_libretro",  "Pause Libretro",        true, "OFF", "ON", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+      END_SUB_GROUP()
+      END_GROUP()
+#endif
+
 #ifdef HAVE_NETPLAY
       START_GROUP("Netplay Options")
       START_SUB_GROUP("State", GROUP_NAME)
       CONFIG_BOOL(g_extern.netplay_enable,            "netplay_enable",  "Netplay Enable",        false, "OFF", "ON", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
-#ifdef HAVE_NETPLAY
       CONFIG_STRING(g_extern.netplay_server,          "netplay_ip_address",   "IP Address",       "", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_FLAGS(SD_FLAG_ALLOW_INPUT)
-#endif
       CONFIG_BOOL(g_extern.netplay_is_client,         "netplay_mode",    "Netplay Client Enable",          false, "OFF", "ON", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
       CONFIG_BOOL(g_extern.netplay_is_spectate,       "netplay_spectator_mode_enable",    "Netplay Spectator Enable",          false, "OFF", "ON", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
       CONFIG_UINT(g_extern.netplay_sync_frames,       "netplay_delay_frames",      "Netplay Delay Frames",      0, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_RANGE(0, 10, 1, true, false)
@@ -2615,9 +2622,6 @@ rarch_setting_t *setting_data_get_list(void)
 
       START_GROUP("Path Options")
       START_SUB_GROUP("State", GROUP_NAME)
-#ifdef HAVE_MENU
-      CONFIG_BOOL(g_settings.menu_show_start_screen,     "rgui_show_start_screen",     "Show Start Screen", menu_show_start_screen, "OFF", "ON", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
-#endif
       CONFIG_UINT(g_settings.content_history_size,          "game_history_size",          "Content History Size",       default_content_history_size, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_RANGE(0, 0, 1.0, true, false)
       END_SUB_GROUP()
       START_SUB_GROUP("Paths", GROUP_NAME)

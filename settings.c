@@ -379,6 +379,7 @@ void config_set_defaults(void)
 
 #ifdef HAVE_MENU
    g_settings.menu_show_start_screen = menu_show_start_screen;
+   g_settings.menu.pause_libretro = true;
 #endif
 
    g_settings.location.allow = false;
@@ -898,6 +899,10 @@ bool config_load_file(const char *path, bool set_defaults)
    CONFIG_GET_BOOL(video.disable_composition, "video_disable_composition");
    CONFIG_GET_BOOL(video.vsync, "video_vsync");
    CONFIG_GET_BOOL(video.hard_sync, "video_hard_sync");
+
+#ifdef HAVE_MENU
+   CONFIG_GET_BOOL(menu.pause_libretro, "menu_pause_libretro");
+#endif
 
    CONFIG_GET_INT(video.hard_sync_frames, "video_hard_sync_frames");
    if (g_settings.video.hard_sync_frames > 3)
@@ -1472,6 +1477,7 @@ bool config_save_file(const char *path)
    config_set_string(conf,"video_driver", g_settings.video.driver);
 #ifdef HAVE_MENU
    config_set_string(conf,"menu_driver", g_settings.menu.driver);
+   config_set_bool(conf,"menu_pause_libretro", g_settings.menu.pause_libretro);
 #endif
    config_set_bool(conf,  "video_vsync", g_settings.video.vsync);
    config_set_bool(conf,  "video_hard_sync", g_settings.video.hard_sync);

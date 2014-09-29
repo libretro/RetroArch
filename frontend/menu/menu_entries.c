@@ -204,6 +204,7 @@ int menu_entries_push_list(menu_handle_t *menu,
          !strcmp(label, "Overlay Options") ||
          !strcmp(label, "Privacy Options") ||
          !strcmp(label, "Video Options") ||
+         !strcmp(label, "Menu Options") ||
          !strcmp(label, "Audio Options") ||
          !strcmp(label, "Path Options") ||
          !strcmp(label, "Font Options") ||

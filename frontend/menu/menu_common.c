@@ -389,6 +389,7 @@ unsigned menu_common_type_is(const char *label, unsigned type)
          !strcmp(label, "Audio Options") ||
          !strcmp(label, "disk_options") ||
          !strcmp(label, "Path Options") ||
+         !strcmp(label, "Menu Options") ||
          !strcmp(label, "Privacy Options") ||
          !strcmp(label, "Overlay Options") ||
          !strcmp(label, "User Options") ||
