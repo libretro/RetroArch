@@ -27,26 +27,23 @@ static void draw_frame(bool enable)
       driver.video_poke->set_texture_enable(driver.video_data,
             enable, MENU_TEXTURE_FULLSCREEN);
 
-   if (!enable)
+   if (!enable || !driver.video)
       return;
 
-   if (driver.video)
+   if (!g_settings.menu.pause_libretro)
    {
-      if (!g_settings.menu.pause_libretro)
+      if (g_extern.main_is_init && !g_extern.libretro_dummy)
       {
-         if (g_extern.main_is_init && !g_extern.libretro_dummy)
-         {
-            bool block_libretro_input = driver.block_libretro_input;
-            driver.block_libretro_input = true;
-            pretro_run();
-            driver.block_libretro_input = block_libretro_input;
+         bool block_libretro_input = driver.block_libretro_input;
+         driver.block_libretro_input = true;
+         pretro_run();
+         driver.block_libretro_input = block_libretro_input;
 
-            return;
-         }
+         return;
       }
-
-      rarch_render_cached_frame();
    }
+
+   rarch_render_cached_frame();
 }
 
 /* Update menu state which depends on config. */
