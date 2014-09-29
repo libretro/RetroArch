@@ -1600,27 +1600,6 @@ void input_pop_analog_dpad(struct retro_keybind *binds)
 }
 
 #if !defined(IS_JOYCONFIG) && !defined(IS_RETROLAUNCH)
-retro_input_t input_keys_pressed(unsigned key,
-      unsigned key_end, const struct retro_keybind **binds)
-{
-   retro_input_t ret = 0;
-   
-   if (driver.block_libretro_input)
-      return 0;
-
-   for (; key < key_end; key++)
-   {
-      ret |= driver.input->input_state(driver.input_data,
-            binds, 0, RETRO_DEVICE_JOYPAD, 0, key) ? (1ULL << key) : 0;
-#ifdef HAVE_OVERLAY
-      ret |= (driver.overlay_state.buttons & (UINT64_C(1) << key))
-         ? (1ULL << key) : 0;
-#endif
-   }
-
-   return ret;
-}
-
 /* Returns a 64-bit mask of all pressed meta keys, starting
  * from the specified key up until the last queryable key
  * (key_end).
