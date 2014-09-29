@@ -28,9 +28,6 @@ static CFRunLoopObserverRef iterate_observer;
 
 static void do_iteration(void)
 {
-   if (!(g_extern.main_is_init && !g_extern.is_paused))
-      return;
-
    if (main_entry_decide(0, NULL, NULL))
    {
       main_exit(NULL);
