@@ -67,10 +67,7 @@ struct menu_bind_state
 
 typedef struct
 {
-   uint64_t old_input_state;
-   uint64_t trigger_state;
-   bool do_held;
-
+   /* Used for key repeat */
    unsigned delay_timer;
    unsigned delay_count;
 

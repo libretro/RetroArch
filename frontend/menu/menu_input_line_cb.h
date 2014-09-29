@@ -42,6 +42,4 @@ int menu_input_bind_iterate(void *data);
 
 int menu_input_bind_iterate_keyboard(void *data);
 
-uint64_t menu_input(void);
-
 #endif

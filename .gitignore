@@ -61,6 +61,7 @@ apple/RetroArch_iOS.xcodeproj/project.xcworkspace/*
 /rsound.h
 .pc
 /media/shaders_glsl/
+/obj-w32/
 
 # Android
 /android/phoenix/obj/

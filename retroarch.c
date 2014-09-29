@@ -2838,7 +2838,9 @@ void rarch_main_set_state(unsigned cmd)
 
          rarch_main_command(RARCH_CMD_AUDIO_START);
 
-         driver.block_libretro_input_until = g_extern.frame_count + (5);
+         /* Prevent stray input from going to libretro core */
+         driver.flushing_input = true;
+
          /* Restore libretro keyboard callback. */
          g_extern.system.key_event = g_extern.frontend_key_event;
          break;
@@ -3226,8 +3228,16 @@ bool rarch_main_iterate(void)
 {
    unsigned i;
    retro_input_t old_input, trigger_input;
-   retro_input_t input = meta_input_keys_pressed(RARCH_FIRST_META_KEY,
+   retro_input_t input = meta_input_keys_pressed(0,
          RARCH_BIND_LIST_END, &old_input);
+
+   if (driver.flushing_input)
+   {
+      if (input)
+         input = 0;
+      else
+         driver.flushing_input = false;
+   }
 
    trigger_input = input & ~old_input;
 
