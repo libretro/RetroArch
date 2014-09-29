@@ -2595,7 +2595,7 @@ rarch_setting_t *setting_data_get_list(void)
       START_GROUP("Menu Options")
       START_SUB_GROUP("State", GROUP_NAME)
       CONFIG_BOOL(g_settings.menu_show_start_screen,     "rgui_show_start_screen",     "Show Start Screen", menu_show_start_screen, "OFF", "ON", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
-      CONFIG_BOOL(g_settings.menu.pause_libretro,            "menu_pause_libretro",  "Pause Libretro",        true, "OFF", "ON", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler)
+      CONFIG_BOOL(g_settings.menu.pause_libretro,            "menu_pause_libretro",  "Pause Libretro",        true, "OFF", "ON", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_CMD(RARCH_CMD_MENU_PAUSE_LIBRETRO) WITH_FLAGS(SD_FLAG_CMD_APPLY_AUTO)
       END_SUB_GROUP()
       END_GROUP()
 #endif

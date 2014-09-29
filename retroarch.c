@@ -3191,6 +3191,20 @@ void rarch_main_command(unsigned cmd)
          menu_shader_manager_apply_changes();
 #endif
          break;
+      case RARCH_CMD_MENU_PAUSE_LIBRETRO:
+         if (g_extern.is_menu)
+         {
+            if (g_settings.menu.pause_libretro)
+               rarch_main_command(RARCH_CMD_AUDIO_STOP);
+            else
+               rarch_main_command(RARCH_CMD_AUDIO_START);
+         }
+         else
+         {
+            if (g_settings.menu.pause_libretro)
+               rarch_main_command(RARCH_CMD_AUDIO_START);
+         }
+         break;
    }
 }
 
