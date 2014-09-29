@@ -730,9 +730,6 @@ static void process_pending_intent(void *data)
 
    if (startgame)
    {
-      rarch_main_set_state(RARCH_ACTION_STATE_MENU_PREINIT_FINISHED);
-      rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED);
-      rarch_main_command(RARCH_CMD_LOAD_CONTENT);
    }
 
    CALL_VOID_METHOD(env, android_app->activity->clazz,

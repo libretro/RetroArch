@@ -2789,7 +2789,7 @@ void rarch_main_set_state(unsigned cmd)
 {
    switch (cmd)
    {
-      case RARCH_ACTION_STATE_MENU_PREINIT:
+      case RARCH_ACTION_STATE_MENU_RUNNING:
          {
             int i;
 
@@ -2815,11 +2815,11 @@ void rarch_main_set_state(unsigned cmd)
                g_extern.system.key_event = menu_key_event;
 
                driver.menu->need_refresh = true;
-               rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING);
             }
 #endif
             g_extern.system.frame_time_last = 0;
          }
+         g_extern.is_menu = true;
          break;
       case RARCH_ACTION_STATE_LOAD_CONTENT:
 #ifdef HAVE_MENU
@@ -2827,12 +2827,9 @@ void rarch_main_set_state(unsigned cmd)
          {
             /* If content loading fails, we go back to menu. */
             if (driver.menu)
-               rarch_main_set_state(RARCH_ACTION_STATE_MENU_PREINIT);
+               rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING);
          }
 #endif
-         break;
-      case RARCH_ACTION_STATE_MENU_RUNNING:
-         g_extern.is_menu = true;
          break;
       case RARCH_ACTION_STATE_MENU_RUNNING_FINISHED:
          g_extern.is_menu = false;
@@ -3202,7 +3199,7 @@ static void do_state_check_menu_toggle(void)
       return;
    }
 
-   rarch_main_set_state(RARCH_ACTION_STATE_MENU_PREINIT);
+   rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING);
 }
 
 bool rarch_main_iterate(void)
