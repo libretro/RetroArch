@@ -103,8 +103,6 @@ bool load_menu_content(void)
    /* redraw menu frame */
    if (driver.menu)
    {
-      driver.menu->old_input_state = driver.menu->trigger_state = 0;
-      driver.menu->do_held = false;
       driver.menu->msg_force = true;
    }
 
@@ -172,9 +170,6 @@ void *menu_init(const void *data)
    menu_entries_push_list(menu, menu->selection_buf,
          "", "mainmenu", 0);
 
-   menu->trigger_state = 0;
-   menu->old_input_state = 0;
-   menu->do_held = false;
    menu->current_pad = 0;
 
    update_libretro_info(&g_extern.menu.info);
@@ -302,8 +297,14 @@ bool menu_iterate(retro_input_t input,
    unsigned action = MENU_ACTION_NOOP;
    static bool initial_held = true;
    static bool first_held = false;
-   uint64_t input_state = 0;
    int32_t ret = 0;
+   static const retro_input_t input_repeat =
+      (1ULL << RETRO_DEVICE_ID_JOYPAD_UP)
+      | (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN)
+      | (1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT)
+      | (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT)
+      | (1ULL << RETRO_DEVICE_ID_JOYPAD_L)
+      | (1ULL << RETRO_DEVICE_ID_JOYPAD_R);
 
    if (!driver.menu)
       return false;
@@ -316,9 +317,7 @@ bool menu_iterate(retro_input_t input,
 
    driver.retro_ctx.poll_cb();
 
-   input_state = menu_input();
-
-   if (driver.menu->do_held)
+   if (input & input_repeat)
    {
       if (!first_held)
       {
@@ -330,7 +329,7 @@ bool menu_iterate(retro_input_t input,
       if (driver.menu->delay_count >= driver.menu->delay_timer)
       {
          first_held = false;
-         driver.menu->trigger_state = input_state;
+         trigger_input |= input & input_repeat;
          driver.menu->scroll_accel = min(driver.menu->scroll_accel + 1, 64);
       }
 
@@ -344,15 +343,14 @@ bool menu_iterate(retro_input_t input,
    }
 
    driver.menu->delay_count++;
-   driver.menu->old_input_state = input_state;
 
    if (driver.block_input)
-      driver.menu->trigger_state = 0;
+      trigger_input = 0;
 
    /* don't run anything first frame, only capture held inputs
     * for old_input_state.
     */
-   action = input_frame(driver.menu->trigger_state);
+   action = input_frame(trigger_input);
 
    if (driver.menu_ctx && driver.menu_ctx->backend
          && driver.menu_ctx->backend->iterate) 
@@ -362,7 +360,7 @@ bool menu_iterate(retro_input_t input,
    draw_frame(false);
 
    if (driver.menu_ctx && driver.menu_ctx->input_postprocess)
-      driver.menu_ctx->input_postprocess(driver.menu->old_input_state);
+      driver.menu_ctx->input_postprocess(input, old_input);
 
 #if 0
    /* Go back to Main Menu when exiting */

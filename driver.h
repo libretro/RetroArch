@@ -481,10 +481,9 @@ typedef struct driver
 #endif
    bool stdin_claimed;
    bool block_hotkey;
-   unsigned block_hotkey_until;
    bool block_input;
    bool block_libretro_input;
-   unsigned block_libretro_input_until;
+   bool flushing_input;
    bool nonblock_state;
 
    /* Opaque handles to currently running window.

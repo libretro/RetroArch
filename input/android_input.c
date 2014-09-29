@@ -503,9 +503,7 @@ static int android_input_get_id(android_input_t *android, AInputEvent *event)
 
 static bool pause_key_pressed(void)
 {
-   retro_input_t old_input = 0;
-   retro_input_t input = meta_input_keys_pressed(RARCH_PAUSE_TOGGLE, RARCH_PAUSE_TOGGLE+1, &old_input);
-   return BIND_PRESSED(input, RARCH_PAUSE_TOGGLE);
+   return driver.input->key_pressed(driver.input_data, RARCH_PAUSE_TOGGLE);
 }
 
 /* Handle all events. If our activity is in pause state,

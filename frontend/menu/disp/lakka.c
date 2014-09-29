@@ -984,10 +984,10 @@ static void lakka_free(void *data)
    g_extern.core_info = NULL;
 }
 
-static int lakka_input_postprocess(uint64_t old_state)
+static int lakka_input_postprocess(retro_input_t state, retro_input_t old_state)
 {
-   if ((driver.menu && driver.menu->trigger_state
-            & (1ULL << RARCH_MENU_TOGGLE)) &&
+   retro_input_t trigger_state = state & ~old_state;
+   if ((driver.menu && check_enter_menu_func(trigger_state)) &&
          g_extern.main_is_init &&
          !g_extern.libretro_dummy)
       global_alpha = 0;

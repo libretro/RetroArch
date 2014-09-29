@@ -344,13 +344,6 @@ static void glui_free(void *data)
    g_extern.core_info = NULL;
 }
 
-static int glui_input_postprocess(uint64_t old_state)
-{
-   (void)old_state;
-
-   return 0;
-}
-
 static GLuint glui_png_texture_load(const char * file_name)
 {
    struct texture_image ti = {0};
@@ -404,7 +397,7 @@ menu_ctx_driver_t menu_ctx_glui = {
    NULL,
    NULL,
    NULL,
-   glui_input_postprocess,
+   NULL,
    NULL,
    NULL,
    NULL,

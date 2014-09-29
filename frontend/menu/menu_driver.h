@@ -67,18 +67,6 @@ struct menu_bind_state
 
 typedef struct
 {
-   /* Keys down last frame. Used for trigger_state */
-   uint64_t old_input_state;
-
-   /* New keys pressed down this frame */
-   uint64_t trigger_state;
-
-   /* Whether any repeating keys are being held down, */
-   /* and key repeat should be handled */
-   /* TODO: should be a mask of keys we are repeating, */
-   /* instead of repeating all keys being held down. */
-   bool do_held;
-
    /* Used for key repeat */
    unsigned delay_timer;
    unsigned delay_count;

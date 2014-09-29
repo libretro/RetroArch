@@ -56,7 +56,7 @@ static void menu_key_end_line(void *data)
    menu->keyboard.label_setting = NULL;
 
    /* Avoid triggering states on pressing return. */
-   menu->old_input_state = -1ULL;
+   driver.flushing_input = true;
 }
 
 static void menu_search_callback(void *userdata, const char *str)
@@ -298,43 +298,6 @@ bool menu_custom_bind_keyboard_cb(void *data, unsigned code)
    return menu->binds.begin <= menu->binds.last;
 }
 
-uint64_t menu_input(void)
-{
-   unsigned i;
-   retro_input_t input_state = 0;
-   static const struct retro_keybind *binds[] = { g_settings.input.binds[0] };
-
-   if (!driver.menu)
-      return 0;
-
-   input_push_analog_dpad((struct retro_keybind*)binds[0],
-         (g_settings.input.analog_dpad_mode[0] == ANALOG_DPAD_NONE) ?
-         ANALOG_DPAD_LSTICK : g_settings.input.analog_dpad_mode[0]);
-
-   for (i = 0; i < MAX_PLAYERS; i++)
-      input_push_analog_dpad(g_settings.input.autoconf_binds[i],
-            g_settings.input.analog_dpad_mode[i]);
-
-   input_state = input_keys_pressed(0, RARCH_FIRST_CUSTOM_BIND, binds);
-
-   input_pop_analog_dpad((struct retro_keybind*)binds[0]);
-   for (i = 0; i < MAX_PLAYERS; i++)
-      input_pop_analog_dpad(g_settings.input.autoconf_binds[i]);
-
-   driver.menu->trigger_state = input_state & ~driver.menu->old_input_state;
-
-   driver.menu->do_held = (input_state & (
-            (1ULL << RETRO_DEVICE_ID_JOYPAD_UP)
-            | (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN)
-            | (1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT)
-            | (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT)
-            | (1ULL << RETRO_DEVICE_ID_JOYPAD_L)
-            | (1ULL << RETRO_DEVICE_ID_JOYPAD_R)
-            ));
-
-   return input_state;
-}
-
 int menu_input_bind_iterate(void *data)
 {
    char msg[PATH_MAX];
@@ -358,22 +321,22 @@ int menu_input_bind_iterate(void *data)
          && driver.menu_ctx->render_messagebox)
       driver.menu_ctx->render_messagebox(msg);
 
+   driver.block_input = true;
    menu_poll_bind_state(&binds);
-
-   driver.block_hotkey_until = g_extern.frame_count + (15);
 
    if ((binds.skip && !menu->binds.skip) ||
          menu_poll_find_trigger(&menu->binds, &binds))
    {
+      driver.block_input = false;
+
+      /* Avoid new binds triggering things right away. */
+      driver.flushing_input = true;
+
       binds.begin++;
       if (binds.begin <= binds.last)
          binds.target++;
       else
          return 1;
-
-      /* Avoid new binds triggering things right away. */
-      menu->trigger_state = 0;
-      menu->old_input_state = -1ULL;
    }
    menu->binds = binds;
 
@@ -416,14 +379,11 @@ int menu_input_bind_iterate_keyboard(void *data)
       timed_out = true;
    }
 
-   driver.block_hotkey_until = g_extern.frame_count + (15);
-
    /* binds.begin is updated in keyboard_press callback. */
    if (menu->binds.begin > menu->binds.last)
    {
       /* Avoid new binds triggering things right away. */
-      menu->trigger_state = 0;
-      menu->old_input_state = -1ULL;
+      driver.flushing_input = true;
 
       /* We won't be getting any key events, so just cancel early. */
       if (timed_out)
