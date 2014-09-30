@@ -26,6 +26,7 @@
 
 #include "wiimote.c"
 #include "apple_joypad_ps3.c"
+#include "apple_joypad_ps4.c"
 #include "apple_joypad_wii.c"
 
 typedef struct
@@ -74,7 +75,7 @@ int32_t apple_joypad_connect(const char* name, void *data)
       {
          { "Nintendo RVL-CNT-01",         &apple_pad_wii },
          /* { "Nintendo RVL-CNT-01-UC",   &apple_pad_wii }, */ /* WiiU */
-         /* { "Wireless Controller",      &apple_pad_ps4 }, */ /* DualShock4 */
+         { "Wireless Controller",         &apple_pad_ps4 }, /* DualShock4 */
          { "PLAYSTATION(R)3 Controller",  &apple_pad_ps3 },
          { 0, 0}
       };

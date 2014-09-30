@@ -36,7 +36,7 @@ static void hidpad_ps4_send_control(struct hidpad_ps4_data* device)
       0x52, 0x11, 0xB0, 0x00, 0x0F
    };
    
-   uint8_t rgb[4][3] { { 0xFF, 0, 0 }, { 0, 0xFF, 0 }, { 0, 0, 0xFF }, { 0xFF, 0xFF, 0xFF } };
+   uint8_t rgb[4][3] = { { 0xFF, 0, 0 }, { 0, 0xFF, 0 }, { 0, 0, 0xFF }, { 0xFF, 0xFF, 0xFF } };
    report_buffer[ 9] = rgb[(device->slot % 4)][0];
    report_buffer[10] = rgb[(device->slot % 4)][1];
    report_buffer[11] = rgb[(device->slot % 4)][2];
@@ -79,7 +79,7 @@ static void hidpad_ps4_disconnect(void *data)
 
 static uint32_t hidpad_ps4_get_buttons(void *data)
 {
-   uint32_t i, result = 0;
+   uint32_t result = 0;
    struct hidpad_ps4_data *device = (struct hidpad_ps4_data*)data;
 
    struct Report
@@ -93,7 +93,7 @@ static uint32_t hidpad_ps4_get_buttons(void *data)
       uint8_t rightTrigger;
    };
 
-   Report* rpt = (Report*)&device->data[4];
+   struct Report* rpt = (struct Report*)&device->data[4];
    const uint8_t dpad_state = rpt->buttons[0] & 0xF;
 
    result |= ((rpt->buttons[0] & 0x20) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_B) : 0);
@@ -143,6 +143,8 @@ static void hidpad_ps4_packet_handler(void *data, uint8_t *packet, uint16_t size
    if (!device)
       return;
     
+   (void)i;
+    
 #if 0
    if (!device->have_led)
    {
@@ -163,11 +165,11 @@ static void hidpad_ps4_packet_handler(void *data, uint8_t *packet, uint16_t size
 static void hidpad_ps4_set_rumble(void *data,
    enum retro_rumble_effect effect, uint16_t strength)
 {
+   /* TODO */
+#if 0
    struct hidpad_ps4_data *device = (struct hidpad_ps4_data*)data;
    unsigned index = (effect == RETRO_RUMBLE_STRONG) ? 0 : 1;
 
-   /* TODO */
-#if 0
    if (device && (device->motors[index] != strength))
    {
       device->motors[index] = strength;
