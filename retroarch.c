@@ -2527,13 +2527,28 @@ static void deinit_log_file(void)
 
 void rarch_main_clear_state(void)
 {
+   static bool inited = false;
    unsigned i;
 
    memset(&g_settings, 0, sizeof(g_settings));
 
    deinit_log_file();
 
+   if (inited)
+      uninit_drivers();
+
+   /* XXX This memset is really dangerous.
+    *
+    * (a) it can leak memory because the pointers 
+    * in g_extern aren't freed.
+    * (b) it can zero pointers that the rest of 
+    * the code will look at.
+    */
+
    memset(&g_extern, 0, sizeof(g_extern));
+
+   if (inited)
+      init_drivers();
 
    init_state();
 
@@ -2541,6 +2556,8 @@ void rarch_main_clear_state(void)
       g_settings.input.libretro_device[i] = RETRO_DEVICE_JOYPAD;
 
    init_msg_queue();
+
+   inited = true;
 }
 
 #ifdef HAVE_ZLIB
