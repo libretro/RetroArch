@@ -619,7 +619,8 @@ static bool apple_bind_button_pressed(void *data, int key)
    const struct retro_keybind *binds = g_settings.input.binds[0];
    apple_input_data_t *apple = (apple_input_data_t*)data;
 
-   return apple_is_pressed(apple, 0, binds, key);
+   return apple_is_pressed(apple, 0, binds, key) ||
+    input_joypad_pressed(apple->joypad, 0, g_settings.input.binds[0], key);
 }
 
 static void apple_input_free_input(void *data)
