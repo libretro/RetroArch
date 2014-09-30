@@ -550,17 +550,15 @@ static void lakka_draw_categories(void)
 static void lakka_check_fb_status()
 {
     GLenum status;
-    status = glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER);
+    status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
     switch(status) {
     case GL_FRAMEBUFFER_COMPLETE:
         break;
 
     case GL_FRAMEBUFFER_UNSUPPORTED:
-    /* choose different formats */
         break;
 
     default:
-        /* programming error; will fail on all hardware */
         fputs("Framebuffer Error\n", stderr);
         exit(-1);
     }
@@ -590,11 +588,11 @@ static void lakka_fbo_reset()
 
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-   glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, fbocolor, 0);
+   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, fbocolor, 0);
 
    glBindRenderbuffer(GL_RENDERBUFFER, fbodepth);
-   glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, gl->win_width, 900);
-   glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, fbodepth);
+   glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT16, gl->win_width, gl->win_height);
+   glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, fbodepth);
 
    lakka_check_fb_status();
 
