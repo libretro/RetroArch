@@ -510,8 +510,10 @@ static void handle_hotplug(android_input_t *android,
    {
       strlcpy(g_settings.input.device_names[*port],
             name_buf, sizeof(g_settings.input.device_names[*port]));
-      /* TODO - implement VID/PID? */
-      input_config_autoconfigure_joypad(*port, name_buf, 0, 0, android_joypad.ident);
+
+      input_config_autoconfigure_joypad(*port, name_buf,
+            vendorId, productId,
+            android_joypad.ident);
       RARCH_LOG("Port %d: %s.\n", *port, name_buf);
    }
 

@@ -37,14 +37,13 @@ static void input_autoconfigure_joypad_conf(config_file_t *conf,
 
 static bool input_try_autoconfigure_joypad_from_conf(config_file_t *conf,
       unsigned index, const char *name, const char *driver,
-      const char *vid, const char *pid, bool block_osd_spam)
+      int32_t vid, int32_t pid, bool block_osd_spam)
 {
    if (!conf)
       return false;
 
-   char ident[PATH_MAX], ident_idx[PATH_MAX];
-   char input_driver[PATH_MAX], input_vid[PATH_MAX],
-        input_pid[PATH_MAX];
+   char ident[PATH_MAX], ident_idx[PATH_MAX], input_driver[PATH_MAX];
+   int input_vid, input_pid;
    bool cond_found_idx, cond_found_general,
         cond_found_vid = false, cond_found_pid = false;
 
@@ -52,8 +51,8 @@ static bool input_try_autoconfigure_joypad_from_conf(config_file_t *conf,
 
    config_get_array(conf, "input_device", ident, sizeof(ident));
    config_get_array(conf, "input_driver", input_driver, sizeof(input_driver));
-   config_get_array(conf, "input_vendor_id", input_vid, sizeof(input_vid));
-   config_get_array(conf, "input_product_id", input_pid, sizeof(input_pid));
+   config_get_int(conf, "input_vendor_id", &input_vid);
+   config_get_int(conf, "input_product_id", &input_pid);
 
    snprintf(ident_idx, sizeof(ident_idx), "%s_p%u", ident, index);
 
@@ -61,10 +60,10 @@ static bool input_try_autoconfigure_joypad_from_conf(config_file_t *conf,
 
    cond_found_idx     = !strcmp(ident_idx, name);
    cond_found_general = !strcmp(ident, name) && !strcmp(driver, input_driver);
-   if (vid != 0)
-      cond_found_vid     = !strcmp(vid, input_vid);
-   if (pid != 0)
-      cond_found_pid     = !strcmp(vid, input_pid);
+   if ((vid != 0) && (input_vid != 0))
+      cond_found_vid     = (vid == input_vid);
+   if ((pid != 0) && (input_pid != 0))
+      cond_found_pid     = (pid == input_pid);
 
    /* If Vendor ID and Product ID matches, we've found our
     * entry. */
@@ -95,7 +94,7 @@ found:
 }
 
 void input_config_autoconfigure_joypad(unsigned index,
-      const char *name, const char *vid, const char *pid,
+      const char *name, int32_t vid, int32_t pid,
       const char *driver)
 {
    size_t i;

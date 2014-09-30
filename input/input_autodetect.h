@@ -17,11 +17,13 @@
 #ifndef _INPUT_AUTODETECT_H
 #define _INPUT_AUTODETECT_H
 
+#include <stdint.h>
+
 const struct retro_keybind *input_get_auto_bind(unsigned port,
       unsigned id);
 
 void input_config_autoconfigure_joypad(unsigned index,
-      const char *name, const char *vid, const char *pid,
+      const char *name, int32_t vid, int32_t pid,
       const char *driver);
 
 extern const char* const input_builtin_autoconfs[];

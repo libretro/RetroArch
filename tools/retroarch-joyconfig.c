@@ -431,9 +431,14 @@ static void parse_input(int argc, char *argv[])
 }
 
 void input_config_autoconfigure_joypad(unsigned index,
-      const char *name, const char *vid, const char *pid,
+      const char *name, int32_t vid, int32_t pid,
       const char *driver)
 {
+   (void)index;
+   (void)name;
+   (void)vid;
+   (void)pid;
+   (void)driver;
 }
 
 // Need SDL_main on OSX.
