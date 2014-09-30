@@ -80,19 +80,19 @@ static void hid_device_input_callback(void* context, IOReturn result,
 
                            for (i = 0; i < 4; i ++)
                            {
-                              if (use == axis_use_ids[i])
-                              {
-                                 CFIndex min, max, state;
-                                 float val;
+                              CFIndex min, max, state;
+                              float val;
 
-                                 min = IOHIDElementGetPhysicalMin(element);
-                                 max = IOHIDElementGetPhysicalMax(element) - min;
-                                 state = IOHIDValueGetIntegerValue(value) - min;
+                              if (use != axis_use_ids[i])
+                                 continue;
 
-                                 val = (float)state / (float)max;
-                                 apple->axes[connection->slot][i] =
-                                    ((val * 2.0f) - 1.0f) * 32767.0f;
-                              }
+                              min = IOHIDElementGetPhysicalMin(element);
+                              max = IOHIDElementGetPhysicalMax(element) - min;
+                              state = IOHIDValueGetIntegerValue(value) - min;
+
+                              val = (float)state / (float)max;
+                              apple->axes[connection->slot][i] =
+                                 ((val * 2.0f) - 1.0f) * 32767.0f;
                            }
                         }
                         break;
