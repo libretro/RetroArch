@@ -16,6 +16,7 @@
 #ifndef INPUT_COMMON_H__
 #define INPUT_COMMON_H__
 
+#include "input_autodetect.h"
 #include "../driver.h"
 #include "../conf/config_file.h"
 #include "../general.h"
@@ -173,8 +174,6 @@ struct input_bind_map
 
 extern const struct input_bind_map input_config_bind_map[];
 
-const struct retro_keybind *input_get_auto_bind(unsigned port, unsigned id);
-
 /* auto_bind can be NULL. */
 void input_get_bind_string(char *buf, const struct retro_keybind *bind,
       const struct retro_keybind *auto_bind, size_t size);
@@ -187,8 +186,6 @@ struct input_key_map
 extern const struct input_key_map input_config_key_map[];
 void input_translate_rk_to_str(enum retro_key key, char *buf, size_t size);
 enum retro_key input_translate_str_to_rk(const char *str);
-
-extern const char* const input_builtin_autoconfs[];
 
 const char *input_config_get_prefix(unsigned player, bool meta);
 
@@ -204,9 +201,6 @@ void input_config_parse_joy_button(config_file_t *conf, const char *prefix,
 
 void input_config_parse_joy_axis(config_file_t *conf, const char *prefix,
       const char *axis, struct retro_keybind *bind);
-
-void input_config_autoconfigure_joypad(unsigned index,
-      const char *name, const char *driver);
 
 void input_push_analog_dpad(struct retro_keybind *binds, unsigned mode);
 

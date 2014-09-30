@@ -103,6 +103,7 @@ OBJ += frontend/frontend.o \
 		rewind.o \
 		gfx/gfx_common.o \
 		gfx/fonts/bitmapfont.o \
+		input/input_autodetect.o \
 		input/input_common.o \
 		input/keyboard_line.o \
 		input/overlay.o \

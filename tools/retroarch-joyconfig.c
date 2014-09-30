@@ -430,6 +430,11 @@ static void parse_input(int argc, char *argv[])
 
 }
 
+void input_config_autoconfigure_joypad(unsigned index,
+      const char *name, const char *driver)
+{
+}
+
 // Need SDL_main on OSX.
 #ifndef __APPLE__
 #undef main
