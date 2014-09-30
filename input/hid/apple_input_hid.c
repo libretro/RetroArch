@@ -55,40 +55,60 @@ static void hid_device_input_callback(void* context, IOReturn result,
 
    /* Joystick handler.
     * TODO: Can GamePad work the same? */
-
-   if ((type == kIOHIDElementTypeInput_Button)
-         && page == kHIDPage_Button)
+    
+   if (
+       (type == kIOHIDElementTypeInput_Misc) ||
+       (type == kIOHIDElementTypeInput_Button) ||
+       (type == kIOHIDElementTypeInput_Axis)
+       )
    {
-      CFIndex state = IOHIDValueGetIntegerValue(value);
-
-      if (state)
-         g_current_input_data.pad_buttons[connection->slot] |= (1 << (use - 1));
-      else
-         g_current_input_data.pad_buttons[connection->slot] &= ~(1 << (use - 1));
-   }
-   else if (
-         (type == kIOHIDElementTypeInput_Misc) &&
-         (page == kHIDPage_GenericDesktop))
-   {
-      static const uint32_t axis_use_ids[4] = { 48, 49, 50, 53 };
-      int i;
-
-      for (i = 0; i < 4; i ++)
-      {
-         if (use == axis_use_ids[i])
-         {
-            CFIndex min, max, state;
-            float val;
-
-            min = IOHIDElementGetPhysicalMin(element);
-            max = IOHIDElementGetPhysicalMax(element) - min;
-            state = IOHIDValueGetIntegerValue(value) - min;
-
-            val = (float)state / (float)max;
-            g_current_input_data.pad_axis[connection->slot][i] =
-               ((val * 2.0f) - 1.0f) * 32767.0f;
-         }
-      }
+       switch (page)
+       {
+           case kHIDPage_GenericDesktop:
+               switch (type)
+           {
+               case kIOHIDElementTypeInput_Misc:
+               {
+                   static const uint32_t axis_use_ids[4] = { 48, 49, 50, 53 };
+                   int i;
+                   
+                   for (i = 0; i < 4; i ++)
+                   {
+                       if (use == axis_use_ids[i])
+                       {
+                           CFIndex min, max, state;
+                           float val;
+                           
+                           min = IOHIDElementGetPhysicalMin(element);
+                           max = IOHIDElementGetPhysicalMax(element) - min;
+                           state = IOHIDValueGetIntegerValue(value) - min;
+                           
+                           val = (float)state / (float)max;
+                           g_current_input_data.pad_axis[connection->slot][i] =
+                           ((val * 2.0f) - 1.0f) * 32767.0f;
+                       }
+                   }
+                   break;
+               }
+                   break;
+               case kHIDPage_Button:
+                   switch (type)
+               {
+                   case kIOHIDElementTypeInput_Button:
+                   {
+                       CFIndex state = IOHIDValueGetIntegerValue(value);
+                       
+                       if (state)
+                           g_current_input_data.pad_buttons[connection->slot] |= (1 << (use - 1));
+                       else
+                           g_current_input_data.pad_buttons[connection->slot] &= ~(1 << (use - 1));
+                   }
+                       break;
+               }
+                   break;
+           }
+            break;
+       }
    }
 }
 
