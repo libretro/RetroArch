@@ -20,11 +20,11 @@
 
 struct apple_pad_connection
 {
-    int v_id;
-    int p_id;
-    uint32_t slot;
-    IOHIDDeviceRef device_handle;
-    uint8_t data[2048];
+   int v_id;
+   int p_id;
+   uint32_t slot;
+   IOHIDDeviceRef device_handle;
+   uint8_t data[2048];
 };
 
 static IOHIDManagerRef g_hid_manager;
@@ -71,31 +71,31 @@ static void hid_device_input_callback(void* context, IOReturn result,
                case kIOHIDElementTypeInput_Misc:
                   switch (use)
                   {
-                      case kHIDUsage_GD_Hatswitch:
-                          break;
-                      default:
-                      {
-                     static const uint32_t axis_use_ids[4] = { 48, 49, 50, 53 };
-                     int i;
-
-                     for (i = 0; i < 4; i ++)
-                     {
-                        if (use == axis_use_ids[i])
+                     case kHIDUsage_GD_Hatswitch:
+                        break;
+                     default:
                         {
-                           CFIndex min, max, state;
-                           float val;
+                           static const uint32_t axis_use_ids[4] = { 48, 49, 50, 53 };
+                           int i;
 
-                           min = IOHIDElementGetPhysicalMin(element);
-                           max = IOHIDElementGetPhysicalMax(element) - min;
-                           state = IOHIDValueGetIntegerValue(value) - min;
+                           for (i = 0; i < 4; i ++)
+                           {
+                              if (use == axis_use_ids[i])
+                              {
+                                 CFIndex min, max, state;
+                                 float val;
 
-                           val = (float)state / (float)max;
-                           apple->axes[connection->slot][i] =
-                              ((val * 2.0f) - 1.0f) * 32767.0f;
+                                 min = IOHIDElementGetPhysicalMin(element);
+                                 max = IOHIDElementGetPhysicalMax(element) - min;
+                                 state = IOHIDValueGetIntegerValue(value) - min;
+
+                                 val = (float)state / (float)max;
+                                 apple->axes[connection->slot][i] =
+                                    ((val * 2.0f) - 1.0f) * 32767.0f;
+                              }
+                           }
                         }
-                     }
-                      }
-                     break;
+                        break;
                   }
                   break;
             }
@@ -121,39 +121,39 @@ static void hid_device_input_callback(void* context, IOReturn result,
 
 static void hid_device_removed(void* context, IOReturn result, void* sender)
 {
-    apple_input_data_t *apple = (apple_input_data_t*)driver.input_data;
-    struct apple_pad_connection* connection = (struct apple_pad_connection*)
-    context;
-    
-    if (connection && connection->slot < MAX_PLAYERS)
-    {
-        char msg[512];
-        snprintf(msg, sizeof(msg), "Joypad #%u (%s) disconnected.",
-                 connection->slot, "N/A");
-        msg_queue_push(g_extern.msg_queue, msg, 0, 60);
-        RARCH_LOG("[apple_input]: %s\n", msg);
-        
-        apple->buttons[connection->slot] = 0;
-        memset(apple->axes[connection->slot], 0, sizeof(apple->axes));
-        
-        apple_joypad_disconnect(connection->slot);
-        free(connection);
-    }
-    
-    IOHIDDeviceClose(sender, kIOHIDOptionsTypeSeizeDevice);
+   apple_input_data_t *apple = (apple_input_data_t*)driver.input_data;
+   struct apple_pad_connection* connection = (struct apple_pad_connection*)
+      context;
+
+   if (connection && connection->slot < MAX_PLAYERS)
+   {
+      char msg[512];
+      snprintf(msg, sizeof(msg), "Joypad #%u (%s) disconnected.",
+            connection->slot, "N/A");
+      msg_queue_push(g_extern.msg_queue, msg, 0, 60);
+      RARCH_LOG("[apple_input]: %s\n", msg);
+
+      apple->buttons[connection->slot] = 0;
+      memset(apple->axes[connection->slot], 0, sizeof(apple->axes));
+
+      apple_joypad_disconnect(connection->slot);
+      free(connection);
+   }
+
+   IOHIDDeviceClose(sender, kIOHIDOptionsTypeSeizeDevice);
 }
 
 static void hid_device_report(void* context, IOReturn result, void *sender,
       IOHIDReportType type, uint32_t reportID, uint8_t *report,
       CFIndex reportLength)
 {
-    struct apple_pad_connection* connection = (struct apple_pad_connection*)
-    context;
-    apple_joypad_packet(connection->slot, connection->data, reportLength + 1);
+   struct apple_pad_connection* connection = (struct apple_pad_connection*)
+      context;
+   apple_joypad_packet(connection->slot, connection->data, reportLength + 1);
 }
 
 static void hid_manager_device_attached(void* context, IOReturn result,
-                                        void* sender, IOHIDDeviceRef device)
+      void* sender, IOHIDDeviceRef device)
 {
    char device_name[PATH_MAX];
    CFStringRef device_name_ref;
@@ -204,7 +204,7 @@ static void hid_manager_device_attached(void* context, IOReturn result,
 }
 
 static void append_matching_dictionary(CFMutableArrayRef array,
-                                       uint32_t page, uint32_t use)
+      uint32_t page, uint32_t use)
 {
    CFNumberRef pagen, usen;
    CFMutableDictionaryRef matcher;
