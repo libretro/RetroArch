@@ -459,6 +459,7 @@ static int menu_lakka_iterate(unsigned action)
             {
                case 0:
                   global_alpha = 0.0;
+                  global_scale = 2.0;
                   if (g_extern.main_is_init && !g_extern.libretro_dummy
                         && (!strcmp(g_extern.fullpath, active_item->rom)))
                   {
@@ -481,11 +482,13 @@ static int menu_lakka_iterate(unsigned action)
                   break;
                case 1:
                   global_alpha = 0.0;
+                  global_scale = 2.0;
                   rarch_main_command(RARCH_CMD_SAVE_STATE);
                   return -1;
                   break;
                case 2:
                   global_alpha = 0.0;
+                  global_scale = 2.0;
                   rarch_main_command(RARCH_CMD_LOAD_STATE);
                   return -1;
                   break;
@@ -494,6 +497,7 @@ static int menu_lakka_iterate(unsigned action)
                   break;
                case 4:
                   global_alpha = 0.0;
+                  global_scale = 2.0;
                   rarch_main_command(RARCH_CMD_RESET);
                   return -1;
                   break;
@@ -510,6 +514,7 @@ static int menu_lakka_iterate(unsigned action)
                  (active_category->num_items - 1))))
          {
             add_tween(LAKKA_DELAY, 1.0, &global_alpha, &inOutQuad, NULL);
+            add_tween(LAKKA_DELAY, 1.0, &global_scale, &inOutQuad, NULL);
             rarch_main_command(RARCH_CMD_QUIT_RETROARCH);
             return -1;
          }
