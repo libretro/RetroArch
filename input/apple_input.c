@@ -477,7 +477,7 @@ int32_t apple_input_find_any_axis(uint32_t port)
 static bool apple_key_pressed(apple_input_data_t *apple,
       enum retro_key id)
 {
-   if (id >= 0 && id < RETROK_LAST)
+   if (id < RETROK_LAST)
       return apple->keys[input_translate_rk_to_keysym((enum retro_key)id)];
    return false;
 }
@@ -563,9 +563,9 @@ static int16_t apple_mouse_state(apple_input_data_t *apple,
 }
 
 static int16_t apple_pointer_state(apple_input_data_t *apple,
-      unsigned index, unsigned id)
+      unsigned device, unsigned index, unsigned id)
 {
-   const bool want_full = device == RARCH_DEVICE_POINTER_SCREEN;
+   const bool want_full = (device == RARCH_DEVICE_POINTER_SCREEN);
 
    if (index < apple->touch_count && index < MAX_TOUCHES)
    {
@@ -608,7 +608,7 @@ static int16_t apple_input_state(void *data,
          return apple_mouse_state(apple, id);
       case RETRO_DEVICE_POINTER:
       case RARCH_DEVICE_POINTER_SCREEN:
-         return apple_pointer_state(apple, index, id);
+         return apple_pointer_state(apple, device, index, id);
    }
 
    return 0;
