@@ -74,11 +74,12 @@ const void* apple_get_frontend_settings(void)
 static void handle_touch_event(NSArray* touches)
 {
    NSUInteger i;
+   apple_input_data_t *apple = (apple_input_data_t*)driver.input_data;
    const float scale = [[UIScreen mainScreen] scale];
 
-   g_current_input_data.touch_count = 0;
+   apple->touch_count = 0;
    
-   for(i = 0; i < touches.count && g_current_input_data.touch_count < MAX_TOUCHES; i ++)
+   for(i = 0; i < touches.count && (apple->touch_count < MAX_TOUCHES); i ++)
    {
       UITouch* touch = [touches objectAtIndex:i];
       
@@ -89,8 +90,8 @@ static void handle_touch_event(NSArray* touches)
 
       if (touch.phase != UITouchPhaseEnded && touch.phase != UITouchPhaseCancelled)
       {
-         g_current_input_data.touches[g_current_input_data.touch_count   ].screen_x = coord.x * scale;
-         g_current_input_data.touches[g_current_input_data.touch_count ++].screen_y = coord.y * scale;
+         apple->touches[apple->touch_count   ].screen_x = coord.x * scale;
+         apple->touches[apple->touch_count ++].screen_y = coord.y * scale;
       }
    }
 }

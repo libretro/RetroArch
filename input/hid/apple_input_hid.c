@@ -46,6 +46,7 @@ static void apple_pad_send_control(void *connect_data,
 static void hid_device_input_callback(void* context, IOReturn result,
       void* sender, IOHIDValueRef value)
 {
+   apple_input_data_t *apple = (apple_input_data_t*)driver.input_data;
    struct apple_pad_connection* connection = (struct apple_pad_connection*)
       context;
    IOHIDElementRef element = IOHIDValueGetElement(value);
@@ -89,7 +90,7 @@ static void hid_device_input_callback(void* context, IOReturn result,
                            state = IOHIDValueGetIntegerValue(value) - min;
 
                            val = (float)state / (float)max;
-                           g_current_input_data.axes[connection->slot][i] =
+                           apple->axes[connection->slot][i] =
                               ((val * 2.0f) - 1.0f) * 32767.0f;
                         }
                      }
@@ -107,9 +108,9 @@ static void hid_device_input_callback(void* context, IOReturn result,
                      CFIndex state = IOHIDValueGetIntegerValue(value);
 
                      if (state)
-                        g_current_input_data.buttons[connection->slot] |= (1 << (use - 1));
+                        apple->buttons[connection->slot] |= (1 << (use - 1));
                      else
-                        g_current_input_data.buttons[connection->slot] &= ~(1 << (use - 1));
+                        apple->buttons[connection->slot] &= ~(1 << (use - 1));
                   }
                   break;
             }
@@ -120,6 +121,7 @@ static void hid_device_input_callback(void* context, IOReturn result,
 
 static void hid_device_removed(void* context, IOReturn result, void* sender)
 {
+    apple_input_data_t *apple = (apple_input_data_t*)driver.input_data;
     struct apple_pad_connection* connection = (struct apple_pad_connection*)
     context;
     
@@ -131,9 +133,8 @@ static void hid_device_removed(void* context, IOReturn result, void* sender)
         msg_queue_push(g_extern.msg_queue, msg, 0, 60);
         RARCH_LOG("[apple_input]: %s\n", msg);
         
-        g_current_input_data.buttons[connection->slot] = 0;
-        memset(g_current_input_data.axes[connection->slot],
-               0, sizeof(g_current_input_data.axes));
+        apple->buttons[connection->slot] = 0;
+        memset(apple->axes[connection->slot], 0, sizeof(apple->axes));
         
         apple_joypad_disconnect(connection->slot);
         free(connection);

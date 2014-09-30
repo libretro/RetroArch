@@ -47,6 +47,8 @@ typedef struct
    uint32_t buttons[MAX_PLAYERS];
    int16_t axes[MAX_PLAYERS][4];
    int8_t  hats[NUM_HATS][2];
+    
+   const rarch_joypad_driver_t *joypad;
 } apple_input_data_t;
 
 struct apple_pad_connection;
@@ -77,9 +79,6 @@ bool apple_joypad_has_interface(uint32_t slot);
  * portions of the input code */
 void apple_joypad_send_hid_control(void *connect_data,
       uint8_t* data, size_t size);
-
-/* Input data for the main thread and the game thread */
-extern apple_input_data_t g_current_input_data;
 
 /* Main thread only */
 void apple_input_enable_icade(bool on);

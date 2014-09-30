@@ -74,10 +74,11 @@ static void hidpad_wii_packet_handler(void *data,
       uint8_t *packet, uint16_t size)
 {
    int i;
+   apple_input_data_t *apple = (apple_input_data_t*)driver.input_data;
    struct wiimote_t* device = (struct wiimote_t*)data;
    byte* msg = packet + 2;
 
-   if (!device)
+   if (!device || !apple)
       return;
 
    switch (packet[1])
@@ -100,12 +101,11 @@ static void hidpad_wii_packet_handler(void *data,
          break;
    }
 
-   g_current_input_data.buttons[device->unid] = device->btns |
+   apple->buttons[device->unid] = device->btns |
       (device->exp.cc.classic.btns << 16);
 
    for (i = 0; i < 4; i++)
-      g_current_input_data.axes[device->unid][i] =
-         hidpad_wii_get_axis(device, i);
+      apple->axes[device->unid][i] = hidpad_wii_get_axis(device, i);
 }
 
 static void hidpad_wii_set_rumble(void *data,

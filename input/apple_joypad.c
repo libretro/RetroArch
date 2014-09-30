@@ -172,7 +172,8 @@ static void apple_joypad_destroy(void)
 
 static bool apple_joypad_button(unsigned port, uint16_t joykey)
 {
-   if (joykey == NO_BTN)
+   apple_input_data_t *apple = (apple_input_data_t*)driver.input_data;
+   if (!apple || joykey == NO_BTN)
       return false;
 
    // Check hat.
@@ -180,26 +181,25 @@ static bool apple_joypad_button(unsigned port, uint16_t joykey)
       return false;
    // Check the button
    return (port < MAX_PLAYERS && joykey < 32) ? 
-      (g_current_input_data.buttons[port] & (1 << joykey)) != 0 : false;
+      (apple->buttons[port] & (1 << joykey)) != 0 : false;
 }
 
 static int16_t apple_joypad_axis(unsigned port, uint32_t joyaxis)
 {
-   int16_t val;
+   apple_input_data_t *apple = (apple_input_data_t*)driver.input_data;
+   int16_t val = 0;
 
-   if (joyaxis == AXIS_NONE)
+   if (!apple || joyaxis == AXIS_NONE)
       return 0;
-
-   val = 0;
 
    if (AXIS_NEG_GET(joyaxis) < 4)
    {
-      val = g_current_input_data.axes[port][AXIS_NEG_GET(joyaxis)];
+      val = apple->axes[port][AXIS_NEG_GET(joyaxis)];
       val = (val < 0) ? val : 0;
    }
    else if(AXIS_POS_GET(joyaxis) < 4)
    {
-      val = g_current_input_data.axes[port][AXIS_POS_GET(joyaxis)];
+      val = apple->axes[port][AXIS_POS_GET(joyaxis)];
       val = (val > 0) ? val : 0;
    }
 

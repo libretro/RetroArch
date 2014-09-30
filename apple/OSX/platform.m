@@ -34,6 +34,7 @@ static void* const associated_core_key = (void*)&associated_core_key;
 {
    int i;
    NSEventType event_type;
+   apple_input_data_t *apple = (apple_input_data_t*)driver.input_data;
 
    [super sendEvent:event];
    
@@ -67,23 +68,23 @@ static void* const associated_core_key = (void*)&associated_core_key;
    {
       NSPoint pos;
       // Relative
-      g_current_input_data.mouse_delta[0] += event.deltaX;
-      g_current_input_data.mouse_delta[1] += event.deltaY;
+      apple->mouse_delta[0] += event.deltaX;
+      apple->mouse_delta[1] += event.deltaY;
 
       // Absolute
       pos = [[RAGameView get] convertPoint:[event locationInWindow] fromView:nil];
-      g_current_input_data.touches[0].screen_x = pos.x;
-      g_current_input_data.touches[0].screen_y = pos.y;
+      apple->touches[0].screen_x = pos.x;
+      apple->touches[0].screen_y = pos.y;
    }
    else if (event_type == NSLeftMouseDown || event_type == NSRightMouseDown || event_type == NSOtherMouseDown)
    {
-      g_current_input_data.mouse_buttons |= 1 << event.buttonNumber;
-      g_current_input_data.touch_count = 1;
+      apple->mouse_buttons |= 1 << event.buttonNumber;
+      apple->touch_count = 1;
    }
    else if (event_type == NSLeftMouseUp || event_type == NSRightMouseUp || event_type == NSOtherMouseUp)
    {
-      g_current_input_data.mouse_buttons &= ~(1 << event.buttonNumber);
-      g_current_input_data.touch_count = 0;
+      apple->mouse_buttons &= ~(1 << event.buttonNumber);
+      apple->touch_count = 0;
    }
 }
 

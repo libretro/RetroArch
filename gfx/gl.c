@@ -2361,6 +2361,9 @@ static bool gl_alive(void *data)
 {
    gl_t *gl = (gl_t*)data;
    bool quit = false, resize = false;
+    
+   if (!gl)
+      return false;
 
    context_check_window_func(gl, &quit,
          &resize, &gl->win_width, &gl->win_height,

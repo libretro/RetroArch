@@ -29,53 +29,53 @@ static BOOL apple_gamecontroller_available(void)
 
 static void apple_gamecontroller_poll(GCController *controller)
 {
-    if (!controller || controller.playerIndex == MAX_PLAYERS)
-        return;
+   uint32_t slot, pause;
+   apple_input_data_t *apple = (apple_input_data_t*)driver.input_data;
+   if (!apple || !controller || controller.playerIndex == MAX_PLAYERS)
+      return;
     
-    uint32_t slot = (uint32_t)controller.playerIndex;
-    
+    slot = (uint32_t)controller.playerIndex;
     /* retain the start (pause) value */
-    uint32_t pause = g_current_input_data.buttons[slot] & (1 << RETRO_DEVICE_ID_JOYPAD_START);
+    pause = apple->buttons[slot] & (1 << RETRO_DEVICE_ID_JOYPAD_START);
     
-    g_current_input_data.buttons[slot] = 0;
-    memset(g_current_input_data.axes[slot], 0, sizeof(g_current_input_data.axes[0]));
+    apple->buttons[slot] = 0;
+    memset(apple->axes[slot], 0, sizeof(apple->axes[0]));
     
-    g_current_input_data.buttons[slot] |= pause;
+    apple->buttons[slot] |= pause;
     
     if (controller.extendedGamepad)
     {
         GCExtendedGamepad *gp = (GCExtendedGamepad *)controller.extendedGamepad;
-        g_current_input_data.buttons[slot] |= gp.dpad.up.pressed ? (1 << RETRO_DEVICE_ID_JOYPAD_UP) : 0;
-        g_current_input_data.buttons[slot] |= gp.dpad.down.pressed ? (1 << RETRO_DEVICE_ID_JOYPAD_DOWN) : 0;
-        g_current_input_data.buttons[slot] |= gp.dpad.left.pressed ? (1 << RETRO_DEVICE_ID_JOYPAD_LEFT) : 0;
-        g_current_input_data.buttons[slot] |= gp.dpad.right.pressed ? (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT) : 0;
-        g_current_input_data.buttons[slot] |= gp.buttonA.pressed ? (1 << RETRO_DEVICE_ID_JOYPAD_B) : 0;
-        g_current_input_data.buttons[slot] |= gp.buttonB.pressed ? (1 << RETRO_DEVICE_ID_JOYPAD_A) : 0;
-        g_current_input_data.buttons[slot] |= gp.buttonX.pressed ? (1 << RETRO_DEVICE_ID_JOYPAD_Y) : 0;
-        g_current_input_data.buttons[slot] |= gp.buttonY.pressed ? (1 << RETRO_DEVICE_ID_JOYPAD_X) : 0;
-        g_current_input_data.buttons[slot] |= gp.leftShoulder.pressed ? (1 << RETRO_DEVICE_ID_JOYPAD_L) : 0;
-        g_current_input_data.buttons[slot] |= gp.rightShoulder.pressed ? (1 << RETRO_DEVICE_ID_JOYPAD_R) : 0;
-        
-        g_current_input_data.buttons[slot] |= gp.leftTrigger.pressed ? (1 << RETRO_DEVICE_ID_JOYPAD_L2) : 0;
-        g_current_input_data.buttons[slot] |= gp.rightTrigger.pressed ? (1 << RETRO_DEVICE_ID_JOYPAD_R2) : 0;
-        g_current_input_data.axes[slot][0] = gp.leftThumbstick.xAxis.value * 32767.0f;
-        g_current_input_data.axes[slot][1] = gp.leftThumbstick.yAxis.value * 32767.0f;
-        g_current_input_data.axes[slot][2] = gp.rightThumbstick.xAxis.value * 32767.0f;
-        g_current_input_data.axes[slot][3] = gp.rightThumbstick.yAxis.value * 32767.0f;
+        apple->buttons[slot] |= gp.dpad.up.pressed ? (1 << RETRO_DEVICE_ID_JOYPAD_UP) : 0;
+        apple->buttons[slot] |= gp.dpad.down.pressed ? (1 << RETRO_DEVICE_ID_JOYPAD_DOWN) : 0;
+        apple->buttons[slot] |= gp.dpad.left.pressed ? (1 << RETRO_DEVICE_ID_JOYPAD_LEFT) : 0;
+        apple->buttons[slot] |= gp.dpad.right.pressed ? (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT) : 0;
+        apple->buttons[slot] |= gp.buttonA.pressed ? (1 << RETRO_DEVICE_ID_JOYPAD_B) : 0;
+        apple->buttons[slot] |= gp.buttonB.pressed ? (1 << RETRO_DEVICE_ID_JOYPAD_A) : 0;
+        apple->buttons[slot] |= gp.buttonX.pressed ? (1 << RETRO_DEVICE_ID_JOYPAD_Y) : 0;
+        apple->buttons[slot] |= gp.buttonY.pressed ? (1 << RETRO_DEVICE_ID_JOYPAD_X) : 0;
+        apple->buttons[slot] |= gp.leftShoulder.pressed ? (1 << RETRO_DEVICE_ID_JOYPAD_L) : 0;
+        apple->buttons[slot] |= gp.rightShoulder.pressed ? (1 << RETRO_DEVICE_ID_JOYPAD_R) : 0;
+        apple->buttons[slot] |= gp.leftTrigger.pressed ? (1 << RETRO_DEVICE_ID_JOYPAD_L2) : 0;
+        apple->buttons[slot] |= gp.rightTrigger.pressed ? (1 << RETRO_DEVICE_ID_JOYPAD_R2) : 0;
+        apple->axes[slot][0] = gp.leftThumbstick.xAxis.value * 32767.0f;
+        apple->axes[slot][1] = gp.leftThumbstick.yAxis.value * 32767.0f;
+        apple->axes[slot][2] = gp.rightThumbstick.xAxis.value * 32767.0f;
+        apple->axes[slot][3] = gp.rightThumbstick.yAxis.value * 32767.0f;
     }
     else if (controller.gamepad)
     {
         GCGamepad *gp = (GCGamepad *)controller.gamepad;
-        g_current_input_data.buttons[slot] |= gp.dpad.up.pressed ? (1 << RETRO_DEVICE_ID_JOYPAD_UP) : 0;
-        g_current_input_data.buttons[slot] |= gp.dpad.down.pressed ? (1 << RETRO_DEVICE_ID_JOYPAD_DOWN) : 0;
-        g_current_input_data.buttons[slot] |= gp.dpad.left.pressed ? (1 << RETRO_DEVICE_ID_JOYPAD_LEFT) : 0;
-        g_current_input_data.buttons[slot] |= gp.dpad.right.pressed ? (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT) : 0;
-        g_current_input_data.buttons[slot] |= gp.buttonA.pressed ? (1 << RETRO_DEVICE_ID_JOYPAD_B) : 0;
-        g_current_input_data.buttons[slot] |= gp.buttonB.pressed ? (1 << RETRO_DEVICE_ID_JOYPAD_A) : 0;
-        g_current_input_data.buttons[slot] |= gp.buttonX.pressed ? (1 << RETRO_DEVICE_ID_JOYPAD_Y) : 0;
-        g_current_input_data.buttons[slot] |= gp.buttonY.pressed ? (1 << RETRO_DEVICE_ID_JOYPAD_X) : 0;
-        g_current_input_data.buttons[slot] |= gp.leftShoulder.pressed ? (1 << RETRO_DEVICE_ID_JOYPAD_L) : 0;
-        g_current_input_data.buttons[slot] |= gp.rightShoulder.pressed ? (1 << RETRO_DEVICE_ID_JOYPAD_R) : 0;
+        apple->buttons[slot] |= gp.dpad.up.pressed ? (1 << RETRO_DEVICE_ID_JOYPAD_UP) : 0;
+        apple->buttons[slot] |= gp.dpad.down.pressed ? (1 << RETRO_DEVICE_ID_JOYPAD_DOWN) : 0;
+        apple->buttons[slot] |= gp.dpad.left.pressed ? (1 << RETRO_DEVICE_ID_JOYPAD_LEFT) : 0;
+        apple->buttons[slot] |= gp.dpad.right.pressed ? (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT) : 0;
+        apple->buttons[slot] |= gp.buttonA.pressed ? (1 << RETRO_DEVICE_ID_JOYPAD_B) : 0;
+        apple->buttons[slot] |= gp.buttonB.pressed ? (1 << RETRO_DEVICE_ID_JOYPAD_A) : 0;
+        apple->buttons[slot] |= gp.buttonX.pressed ? (1 << RETRO_DEVICE_ID_JOYPAD_Y) : 0;
+        apple->buttons[slot] |= gp.buttonY.pressed ? (1 << RETRO_DEVICE_ID_JOYPAD_X) : 0;
+        apple->buttons[slot] |= gp.leftShoulder.pressed ? (1 << RETRO_DEVICE_ID_JOYPAD_L) : 0;
+        apple->buttons[slot] |= gp.rightShoulder.pressed ? (1 << RETRO_DEVICE_ID_JOYPAD_R) : 0;
     }
 }
 
@@ -90,6 +90,7 @@ void apple_gamecontroller_poll_all(void)
 
 static void apple_gamecontroller_register(GCGamepad *gamepad)
 {
+   apple_input_data_t *apple = (apple_input_data_t*)driver.input_data;
     gamepad.valueChangedHandler = ^(GCGamepad *updateGamepad, GCControllerElement *element) {
         apple_gamecontroller_poll(updateGamepad.controller);
     };
@@ -98,10 +99,10 @@ static void apple_gamecontroller_register(GCGamepad *gamepad)
         
         uint32_t slot = (uint32_t)controller.playerIndex;
         
-        g_current_input_data.buttons[slot] |= (1 << RETRO_DEVICE_ID_JOYPAD_START);
+        apple->buttons[slot] |= (1 << RETRO_DEVICE_ID_JOYPAD_START);
         
         dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.1 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-            g_current_input_data.buttons[slot] &= ~(1 << RETRO_DEVICE_ID_JOYPAD_START);
+            apple->buttons[slot] &= ~(1 << RETRO_DEVICE_ID_JOYPAD_START);
         });
         
     };

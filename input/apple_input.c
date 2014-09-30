@@ -243,9 +243,7 @@ enum input_devices
 
 #endif
 
-static const rarch_joypad_driver_t *joypad;
 
-apple_input_data_t g_current_input_data;
 
 #ifdef OSX // Taken from https://github.com/depp/keycode, check keycode.h for license
 static const unsigned char MAC_NATIVE_TO_HID[128] = {
@@ -291,6 +289,7 @@ static bool handle_small_keyboard(unsigned* code, bool down)
    
    static uint8_t mapping[128];
    static bool map_initialized;
+   apple_input_data_t *apple = (apple_input_data_t*)driver.input_data;
    
    if (!map_initialized)
    {
@@ -309,10 +308,10 @@ static bool handle_small_keyboard(unsigned* code, bool down)
    unsigned translated_code = (*code < 128) ? mapping[*code] : 0;
    
    // Allow old keys to be released
-   if (!down && g_current_input_data.keys[*code])
+   if (!down && apple->keys[*code])
       return false;
 
-   if ((!down && g_current_input_data.keys[translated_code]) ||
+   if ((!down && apple->keys[translated_code]) ||
        small_keyboard_active)
    {
       *code = translated_code;
@@ -374,6 +373,7 @@ void apple_input_reset_icade_buttons(void)
 
 void apple_input_keyboard_event(bool down, unsigned code, uint32_t character, uint32_t mod)
 {
+   apple_input_data_t *apple = (apple_input_data_t*)driver.input_data;
    code = HIDKEY(code);
 
    if (icade_enabled)
@@ -388,7 +388,7 @@ void apple_input_keyboard_event(bool down, unsigned code, uint32_t character, ui
    if (code == 0 || code >= MAX_KEYS)
       return;
 
-   g_current_input_data.keys[code] = down;
+   apple->keys[code] = down;
    
    /* This is copied here as it isn't defined in any standard iOS header */
    enum
@@ -419,6 +419,10 @@ void apple_input_keyboard_event(bool down, unsigned code, uint32_t character, ui
 int32_t apple_input_find_any_key(void)
 {
    unsigned i;
+   apple_input_data_t *apple = (apple_input_data_t*)driver.input_data;
+    
+   if (!apple)
+      return 0;
 
 #ifdef IOS
    apple_gamecontroller_poll_all();
@@ -426,7 +430,7 @@ int32_t apple_input_find_any_key(void)
    input_init_keyboard_lut(apple_key_map_hidusage);
 
    for (i = 0; apple_key_name_map[i].hid_id; i++)
-      if (g_current_input_data.keys[apple_key_name_map[i].hid_id])
+      if (apple->keys[apple_key_name_map[i].hid_id])
          return apple_key_name_map[i].hid_id;
 
    return 0;
@@ -435,11 +439,13 @@ int32_t apple_input_find_any_key(void)
 int32_t apple_input_find_any_button(uint32_t port)
 {
    unsigned i, buttons;
+   apple_input_data_t *apple = (apple_input_data_t*)driver.input_data;
+    
 #ifdef IOS
    apple_gamecontroller_poll_all();
 #endif
 
-   buttons = g_current_input_data.buttons[port] |
+   buttons = apple->buttons[port] |
       ((port == 0) ? apple_input_get_icade_buttons() : 0);
 
    if (buttons)
@@ -452,13 +458,16 @@ int32_t apple_input_find_any_button(uint32_t port)
 
 int32_t apple_input_find_any_axis(uint32_t port)
 {
+   int i;
+   apple_input_data_t *apple = (apple_input_data_t*)driver.input_data;
+    
 #ifdef IOS
    apple_gamecontroller_poll_all();
 #endif
 
-   for (int i = 0; i < 4; i++)
+   for (i = 0; i < 4; i++)
    {
-      int16_t value = g_current_input_data.axes[port][i];
+      int16_t value = apple->axes[port][i];
       
       if (abs(value) > 0x4000)
          return (value < 0) ? -(i + 1) : i + 1;
@@ -468,86 +477,99 @@ int32_t apple_input_find_any_axis(uint32_t port)
 }
 
 // Game thread interface
-static bool apple_key_pressed(enum retro_key key)
+static bool apple_key_pressed(apple_input_data_t *apple, enum retro_key key)
 {
    if ((int)key >= 0 && key < RETROK_LAST)
-      return g_current_input_data.keys[input_translate_rk_to_keysym(key)];
-   
+      return apple->keys[input_translate_rk_to_keysym(key)];
    return false;
 }
 
-static bool apple_is_pressed(unsigned port_num, const struct retro_keybind *binds, unsigned key)
+static bool apple_is_pressed(apple_input_data_t *apple, unsigned port_num,
+   const struct retro_keybind *binds, unsigned key)
 {
-   return apple_key_pressed(binds[key].key) || input_joypad_pressed(joypad, port_num, binds, key);
+   return apple_key_pressed(apple, binds[key].key) ||
+    input_joypad_pressed(apple->joypad, port_num, binds, key);
 }
 
 // Exported input driver
 static void *apple_input_init(void)
 {
+   apple_input_data_t *apple = NULL;
+    
    if (driver.input_data)
-       return driver.input_data;
-
+      return driver.input_data;
+    
+   apple = (apple_input_data_t*)calloc(1, sizeof(*apple));
+   if (!apple)
+      return NULL;
+    
    input_init_keyboard_lut(apple_key_map_hidusage);
-   memset(&g_current_input_data, 0, sizeof(g_current_input_data));
 
-   joypad = input_joypad_init_driver(g_settings.input.joypad_driver);
+   apple->joypad = input_joypad_init_driver(g_settings.input.joypad_driver);
     
    driver.input_data_own = true;
-   return (void*)-1;
+    
+   return apple;
 }
 
 static void apple_input_poll(void *data)
 {
    uint32_t i;
-   (void)data;
+   apple_input_data_t *apple = (apple_input_data_t*)data;
+    
+   if (!apple)
+       return;
 
 #ifdef IOS
    apple_gamecontroller_poll_all();
 #endif
 
-   for (i = 0; i < g_current_input_data.touch_count; i++)
+   for (i = 0; i < apple->touch_count; i++)
    {
-      input_translate_coord_viewport(g_current_input_data.touches[i].screen_x, g_current_input_data.touches[i].screen_y,
-         &g_current_input_data.touches[i].fixed_x, &g_current_input_data.touches[i].fixed_y,
-         &g_current_input_data.touches[i].full_x, &g_current_input_data.touches[i].full_y);
+      input_translate_coord_viewport(apple->touches[i].screen_x,
+                                     apple->touches[i].screen_y,
+                                     &apple->touches[i].fixed_x,
+                                     &apple->touches[i].fixed_y,
+                                     &apple->touches[i].full_x,
+                                     &apple->touches[i].full_y);
    }
 
-   if (joypad)
-      joypad->poll();
+   if (apple->joypad)
+      apple->joypad->poll();
 
-   g_current_input_data.buttons[0] |= apple_input_get_icade_buttons();
+   apple->buttons[0] |= apple_input_get_icade_buttons();
 
-   g_current_input_data.mouse_delta[0] = 0;
-   g_current_input_data.mouse_delta[1] = 0;
+   apple->mouse_delta[0] = 0;
+   apple->mouse_delta[1] = 0;
 }
 
 static int16_t apple_input_state(void *data, const struct retro_keybind **binds, unsigned port, unsigned device, unsigned index, unsigned id)
 {
-   (void)data;
+   apple_input_data_t *apple = (apple_input_data_t*)data;
 
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
-         return (id < RARCH_BIND_LIST_END) ? apple_is_pressed(port, binds[port], id) : 0;
+         return (id < RARCH_BIND_LIST_END) ? apple_is_pressed(apple, port, binds[port], id) : 0;
          
       case RETRO_DEVICE_ANALOG:
-         return input_joypad_analog(joypad, port, index, id, binds[port]);
+         return input_joypad_analog(apple->joypad, port, index, id, binds[port]);
       
       case RETRO_DEVICE_KEYBOARD:
-         return apple_key_pressed(id);
+         return apple_key_pressed(apple, id);
 
       case RETRO_DEVICE_MOUSE:
       {
          switch (id)
          {
             case RETRO_DEVICE_ID_MOUSE_X:
-               return g_current_input_data.mouse_delta[0];
+               return apple->mouse_delta[0];
             case RETRO_DEVICE_ID_MOUSE_Y:
-               return g_current_input_data.mouse_delta[1];
+               return apple->mouse_delta[1];
             case RETRO_DEVICE_ID_MOUSE_LEFT:
-               return g_current_input_data.mouse_buttons & 1;
+               return apple->mouse_buttons & 1;
             case RETRO_DEVICE_ID_MOUSE_RIGHT:
-               return g_current_input_data.mouse_buttons & 2;
+               return apple->mouse_buttons & 2;
          }
       }
       
@@ -556,9 +578,10 @@ static int16_t apple_input_state(void *data, const struct retro_keybind **binds,
       {
          const bool want_full = device == RARCH_DEVICE_POINTER_SCREEN;
       
-         if (index < g_current_input_data.touch_count && index < MAX_TOUCHES)
+         if (index < apple->touch_count && index < MAX_TOUCHES)
          {
-            const apple_touch_data_t *touch = (const apple_touch_data_t *)&g_current_input_data.touches[index];
+            const apple_touch_data_t *touch = (const apple_touch_data_t *)
+             &apple->touches[index];
             int16_t x = want_full ? touch->full_x : touch->fixed_x;
             int16_t y = want_full ? touch->full_y : touch->fixed_y;
 
@@ -584,23 +607,33 @@ static int16_t apple_input_state(void *data, const struct retro_keybind **binds,
 static bool apple_bind_button_pressed(void *data, int key)
 {
    const struct retro_keybind *binds = g_settings.input.binds[0];
-   (void)data;
+   apple_input_data_t *apple = (apple_input_data_t*)data;
 
-   return (key >= 0 && key < RARCH_BIND_LIST_END) ? apple_is_pressed(0, binds, key) : false;
+   return (key >= 0 && key < RARCH_BIND_LIST_END) ?
+    apple_is_pressed(apple, 0, binds, key) : false;
 }
 
 static void apple_input_free_input(void *data)
 {
-   (void)data;
+   apple_input_data_t *apple = (apple_input_data_t*)data;
     
-   if (joypad)
-      joypad->destroy();
+   if (!apple)
+      return;
+    
+   if (apple && apple->joypad)
+      apple->joypad->destroy();
+    
+   free(apple);
 }
 
-static bool apple_input_set_rumble(void *data, unsigned port, enum retro_rumble_effect effect, uint16_t strength)
+static bool apple_input_set_rumble(void *data,
+   unsigned port, enum retro_rumble_effect effect, uint16_t strength)
 {
-   (void)data;
-   return input_joypad_set_rumble(joypad, port, effect, strength);
+   apple_input_data_t *apple = (apple_input_data_t*)data;
+    
+   if (apple && apple->joypad)
+      return input_joypad_set_rumble(apple->joypad, port, effect, strength);
+   return false;
 }
 
 static uint64_t apple_input_get_capabilities(void *data)
@@ -620,7 +653,11 @@ static uint64_t apple_input_get_capabilities(void *data)
 
 static const rarch_joypad_driver_t *apple_get_joypad_driver(void *data)
 {
-   return joypad;
+   apple_input_data_t *apple = (apple_input_data_t*)data;
+    
+   if (apple && apple->joypad)
+      return apple->joypad;
+   return NULL;
 }
 
 input_driver_t input_apple = {
