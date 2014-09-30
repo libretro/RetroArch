@@ -1255,7 +1255,7 @@ static void init_msg_queue(void)
       rarch_assert(g_extern.msg_queue = msg_queue_new(8));
 }
 
-void rarch_deinit_msg_queue(void)
+static void deinit_msg_queue(void)
 {
    if (g_extern.msg_queue)
       msg_queue_free(g_extern.msg_queue);
@@ -2568,11 +2568,11 @@ void rarch_main_state_new(void)
 
 void rarch_main_state_free(void)
 {
+   deinit_msg_queue();
    deinit_log_file();
 
    main_clear_state(false);
 
-   rarch_deinit_msg_queue();
 }
 
 #ifdef HAVE_ZLIB

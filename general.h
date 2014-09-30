@@ -806,7 +806,6 @@ void rarch_main_command(unsigned action);
 bool rarch_main_iterate(void);
 void rarch_main_deinit(void);
 void rarch_render_cached_frame(void);
-void rarch_deinit_msg_queue(void);
 void rarch_check_block_hotkey(bool pressed);
 bool rarch_check_fullscreen(bool pressed);
 void rarch_disk_control_set_eject(bool state, bool log);

@@ -104,8 +104,6 @@ void main_exit(args_type() args)
       rarch_main_deinit();
    }
 
-   rarch_deinit_msg_queue();
-
    rarch_perf_log();
 
 #if defined(HAVE_LOGGER) && !defined(ANDROID)
