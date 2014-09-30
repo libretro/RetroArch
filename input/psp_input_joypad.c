@@ -28,8 +28,10 @@ static bool psp_joypad_init(void)
       strlcpy(g_settings.input.device_names[autoconf_pad],
             psp_joypad_name(autoconf_pad),
             sizeof(g_settings.input.device_names[autoconf_pad]));
+      /* TODO - implement VID/PID? */
       input_config_autoconfigure_joypad(autoconf_pad,
             psp_joypad_name(autoconf_pad),
+            0, 0,
             psp_joypad.ident);
    }
 

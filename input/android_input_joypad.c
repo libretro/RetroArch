@@ -30,8 +30,9 @@ static bool android_joypad_init(void)
       strlcpy(g_settings.input.device_names[autoconf_pad],
             android_joypad_name(autoconf_pad),
             sizeof(g_settings.input.device_names[autoconf_pad]));
+      /* TODO - implement VID/PID? */
       input_config_autoconfigure_joypad(autoconf_pad,
-            android_joypad_name(autoconf_pad),
+            android_joypad_name(autoconf_pad), 0, 0,
             android_joypad.ident);
    }
 

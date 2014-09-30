@@ -151,7 +151,8 @@ static void handle_plugged_pad(void)
                g_pads[index].fd = -1;
                *g_pads[index].ident = '\0';
 
-               input_config_autoconfigure_joypad(index, NULL, NULL);
+               /* TODO - implement VID/PID? */
+               input_config_autoconfigure_joypad(index, NULL, 0, 0, NULL);
             }
          }
          // Sometimes, device will be created before acess to it is established.
@@ -162,7 +163,8 @@ static void handle_plugged_pad(void)
             bool ret = linuxraw_joypad_init_pad(path, &g_pads[index]);
 
             if (*g_pads[index].ident && ret)
-               input_config_autoconfigure_joypad(index, g_pads[index].ident, "linuxraw");
+               /* TODO - implement VID/PID? */
+               input_config_autoconfigure_joypad(index, g_pads[index].ident, 0, 0, "linuxraw");
          }
       }
    }
@@ -211,13 +213,14 @@ static bool linuxraw_joypad_init(void)
       char path[PATH_MAX];
       snprintf(path, sizeof(path), "/dev/input/js%u", i);
 
+      /* TODO - implement VID/PID? */
       if (linuxraw_joypad_init_pad(path, pad))
       {
-         input_config_autoconfigure_joypad(i, pad->ident, "linuxraw");
+         input_config_autoconfigure_joypad(i, pad->ident, 0, 0, "linuxraw");
          poll_pad(pad);
       }
       else
-         input_config_autoconfigure_joypad(i, NULL, NULL);
+         input_config_autoconfigure_joypad(i, NULL, 0, 0, NULL);
    }
 
    g_notify = inotify_init();

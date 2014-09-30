@@ -28,8 +28,11 @@ static bool qnx_joypad_init(void)
    {
       strlcpy(g_settings.input.device_names[autoconf_pad], "None",
             sizeof(g_settings.input.device_names[autoconf_pad]));
+      /* TODO - implement VID/PID? */
       input_config_autoconfigure_joypad(autoconf_pad,
-            qnx_joypad_name(autoconf_pad), qnx_joypad.ident);
+            qnx_joypad_name(autoconf_pad),
+            0, 0,
+            qnx_joypad.ident);
    }
 
    return true;

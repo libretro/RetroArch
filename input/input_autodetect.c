@@ -37,19 +37,23 @@ static void input_autoconfigure_joypad_conf(config_file_t *conf,
 
 static bool input_try_autoconfigure_joypad_from_conf(config_file_t *conf,
       unsigned index, const char *name, const char *driver,
-      bool block_osd_spam)
+      const char *vid, const char *pid, bool block_osd_spam)
 {
    if (!conf)
       return false;
 
-   char ident[1024], ident_idx[1024];
-   char input_driver[1024];
-   bool cond_found_idx, cond_found_general;
+   char ident[PATH_MAX], ident_idx[PATH_MAX];
+   char input_driver[PATH_MAX], input_vid[PATH_MAX],
+        input_pid[PATH_MAX];
+   bool cond_found_idx, cond_found_general,
+        cond_found_vid = false, cond_found_pid = false;
 
    *ident = *input_driver = '\0';
 
    config_get_array(conf, "input_device", ident, sizeof(ident));
    config_get_array(conf, "input_driver", input_driver, sizeof(input_driver));
+   config_get_array(conf, "input_vendor_id", input_vid, sizeof(input_vid));
+   config_get_array(conf, "input_product_id", input_pid, sizeof(input_pid));
 
    snprintf(ident_idx, sizeof(ident_idx), "%s_p%u", ident, index);
 
@@ -57,7 +61,17 @@ static bool input_try_autoconfigure_joypad_from_conf(config_file_t *conf,
 
    cond_found_idx     = !strcmp(ident_idx, name);
    cond_found_general = !strcmp(ident, name) && !strcmp(driver, input_driver);
+   if (vid != 0)
+      cond_found_vid     = !strcmp(vid, input_vid);
+   if (pid != 0)
+      cond_found_pid     = !strcmp(vid, input_pid);
 
+   /* If Vendor ID and Product ID matches, we've found our
+    * entry. */
+   if (cond_found_vid && cond_found_pid)
+      goto found;
+
+   /* Check for name match. */
    if (cond_found_idx)
       goto found;
    else if (cond_found_general)
@@ -81,7 +95,8 @@ found:
 }
 
 void input_config_autoconfigure_joypad(unsigned index,
-      const char *name, const char *driver)
+      const char *name, const char *vid, const char *pid,
+      const char *driver)
 {
    size_t i;
 
@@ -113,7 +128,7 @@ void input_config_autoconfigure_joypad(unsigned index,
       config_file_t *conf = (config_file_t*)
          config_file_new_from_string(input_builtin_autoconfs[i]);
       bool success = input_try_autoconfigure_joypad_from_conf(conf,
-            index, name, driver, block_osd_spam);
+            index, name, driver, vid, pid, block_osd_spam);
       config_file_free(conf);
       if (success)
          break;
@@ -134,7 +149,7 @@ void input_config_autoconfigure_joypad(unsigned index,
          if (!conf)
             continue;
          bool success = input_try_autoconfigure_joypad_from_conf(conf,
-               index, name, driver, block_osd_spam);
+               index, name, driver, vid, pid, block_osd_spam);
          config_file_free(conf);
          if (success)
             break;

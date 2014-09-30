@@ -117,7 +117,9 @@ static void pad_connect(unsigned id)
    }
 
    strlcpy(g_settings.input.device_names[id], pad_name(id), sizeof(g_settings.input.device_names[id]));
-   input_config_autoconfigure_joypad(id, pad_name(id), sdl_joypad.ident);
+   /* TODO - implement VID/PID? */
+   input_config_autoconfigure_joypad(id, pad_name(id),
+         0, 0, sdl_joypad.ident);
 
    RARCH_LOG("[SDL]: Joypad #%u connected: %s.\n", id, pad_name(id));
 

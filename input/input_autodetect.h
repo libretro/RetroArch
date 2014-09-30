@@ -21,7 +21,8 @@ const struct retro_keybind *input_get_auto_bind(unsigned port,
       unsigned id);
 
 void input_config_autoconfigure_joypad(unsigned index,
-      const char *name, const char *driver);
+      const char *name, const char *vid, const char *pid,
+      const char *driver);
 
 extern const char* const input_builtin_autoconfs[];
 

@@ -258,8 +258,10 @@ static void *gx_input_init(void)
       strlcpy(g_settings.input.device_names[autoconf_pad],
             gx_joypad_name_static(gx, autoconf_pad),
             sizeof(g_settings.input.device_names[autoconf_pad]));
+      /* TODO - implement VID/PID? */
       input_config_autoconfigure_joypad(autoconf_pad,
             gx_joypad_name_static(gx, autoconf_pad),
+            0, 0,
             gx->joypad->ident);
    }
 
@@ -279,8 +281,11 @@ static void handle_hotplug(void *data, unsigned port, uint32_t ptype)
    strlcpy(g_settings.input.device_names[port],
          gx_joypad_name(port),
          sizeof(g_settings.input.device_names[port]));
+   /* TODO - implement VID/PID? */
    input_config_autoconfigure_joypad(port,
-         gx_joypad_name(port), gx_joypad.ident);
+         gx_joypad_name(port),
+         0, 0,
+         gx_joypad.ident);
 }
 
 static void gx_input_poll(void *data)

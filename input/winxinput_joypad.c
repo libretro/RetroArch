@@ -231,8 +231,15 @@ static bool winxinput_joypad_init(void)
    {
       if (pad_index_to_xplayer_index(autoconf_pad) > -1)
       {
-         strlcpy(g_settings.input.device_names[autoconf_pad], winxinput_joypad_name(autoconf_pad), sizeof(g_settings.input.device_names[autoconf_pad]));
-         input_config_autoconfigure_joypad(autoconf_pad, winxinput_joypad_name(autoconf_pad), winxinput_joypad.ident);
+         strlcpy(g_settings.input.device_names[autoconf_pad],
+               winxinput_joypad_name(autoconf_pad),
+               sizeof(g_settings.input.device_names[autoconf_pad]));
+
+         /* TODO - implement VID/PID? */
+         input_config_autoconfigure_joypad(autoconf_pad,
+               winxinput_joypad_name(autoconf_pad),
+               0, 0,
+               winxinput_joypad.ident);
       }
    }
 

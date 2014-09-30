@@ -28,8 +28,10 @@ static bool ps3_joypad_init(void)
       strlcpy(g_settings.input.device_names[autoconf_pad],
             "SixAxis Controller",
             sizeof(g_settings.input.device_names[autoconf_pad]));
+      /* TODO - implement VID/PID? */
       input_config_autoconfigure_joypad(autoconf_pad,
             ps3_joypad_name(autoconf_pad),
+            0, 0,
             ps3_joypad.ident);
    }
 

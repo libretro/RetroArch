@@ -301,8 +301,11 @@ static void free_pad(unsigned pad, bool hotplug)
    g_pads[pad].ident = g_settings.input.device_names[pad];
 
    // Avoid autoconfig spam if we're reiniting driver.
+   /* TODO - implement VID/PID? */
    if (hotplug)
-      input_config_autoconfigure_joypad(pad, NULL, NULL);
+      input_config_autoconfigure_joypad(pad, NULL, 
+           0, 0,
+           NULL);
 }
 
 static bool add_pad(unsigned p, int fd, const char *path)
@@ -363,8 +366,11 @@ static bool add_pad(unsigned p, int fd, const char *path)
    pad->device = st.st_rdev;
    pad->fd = fd;
    pad->path = strdup(path);
+
+   /* TODO - implement VID/PID? */
    if (*pad->ident)
-      input_config_autoconfigure_joypad(p, pad->ident, "udev");
+      input_config_autoconfigure_joypad(p, pad->ident, 
+            0, 0, "udev");
 
    // Check for rumble features.
    unsigned long ffbit[NBITS(FF_MAX)] = {0};

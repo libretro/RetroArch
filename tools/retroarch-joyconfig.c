@@ -431,7 +431,8 @@ static void parse_input(int argc, char *argv[])
 }
 
 void input_config_autoconfigure_joypad(unsigned index,
-      const char *name, const char *driver)
+      const char *name, const char *vid, const char *pid,
+      const char *driver)
 {
 }
 

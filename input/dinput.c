@@ -778,8 +778,9 @@ static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
       strlcpy(g_settings.input.device_names[g_joypad_cnt],
             dinput_joypad_name(g_joypad_cnt),
             sizeof(g_settings.input.device_names[g_joypad_cnt]));
+      /* TODO - implement VID/PID? */
       input_config_autoconfigure_joypad(g_joypad_cnt,
-            dinput_joypad_name(g_joypad_cnt),
+            dinput_joypad_name(g_joypad_cnt), 0, 0,
             dinput_joypad.ident);
    }
 
