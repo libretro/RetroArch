@@ -376,6 +376,7 @@ void lakka_draw_icon(GLuint texture, float x, float y,
    gl_shader_set_coords(gl, &gl->coords, &mymat);
 
    glEnable(GL_BLEND);
+   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
    glDisable(GL_BLEND);
 
