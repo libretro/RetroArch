@@ -229,23 +229,12 @@ const char* apple_keycode_hidusage_to_name(uint32_t hid_usage)
    return "nul";
 }
 
-#ifdef IOS
+#if defined(IOS)
 extern void apple_gamecontroller_poll_all(void);
 
-enum input_devices
-{
-   DEVICE_NONE = 0,
-   DEVICE_WIIMOTE,
-   DEVICE_SIXAXIS,
-   DEVICE_MFI,
-   DEVICE_LAST
-};
-
-#endif
-
-
-
-#ifdef OSX // Taken from https://github.com/depp/keycode, check keycode.h for license
+#define HIDKEY(X) X
+#elif defined(OSX)
+/* Taken from https://github.com/depp/keycode, check keycode.h for license */
 static const unsigned char MAC_NATIVE_TO_HID[128] = {
   4, 22,  7,  9, 11, 10, 29, 27,  6, 25,255,  5, 20, 26,  8, 21,
  28, 23, 30, 31, 32, 33, 35, 34, 46, 38, 36, 45, 37, 39, 48, 18,
@@ -258,8 +247,6 @@ static const unsigned char MAC_NATIVE_TO_HID[128] = {
 };
 
 #define HIDKEY(X) (X < 128) ? MAC_NATIVE_TO_HID[X] : 0
-#else
-#define HIDKEY(X) X
 #endif
 
 static bool icade_enabled;
