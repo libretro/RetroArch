@@ -475,7 +475,7 @@ bool rarch_audio_flush(const int16_t *data, size_t samples)
 
    if (g_extern.is_paused || g_extern.audio_data.mute)
       return true;
-   if (!g_extern.audio_active)
+   if (!g_extern.audio_active || !g_extern.audio_data.data)
       return false;
 
    RARCH_PERFORMANCE_INIT(audio_convert_s16);
