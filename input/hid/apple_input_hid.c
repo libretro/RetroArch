@@ -68,7 +68,12 @@ static void hid_device_input_callback(void* context, IOReturn result,
             switch (type)
             {
                case kIOHIDElementTypeInput_Misc:
+                  switch (use)
                   {
+                      case kHIDUsage_GD_Hatswitch:
+                          break;
+                      default:
+                      {
                      static const uint32_t axis_use_ids[4] = { 48, 49, 50, 53 };
                      int i;
 
@@ -88,6 +93,7 @@ static void hid_device_input_callback(void* context, IOReturn result,
                               ((val * 2.0f) - 1.0f) * 32767.0f;
                         }
                      }
+                      }
                      break;
                   }
                   break;
