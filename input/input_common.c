@@ -1625,22 +1625,16 @@ retro_input_t input_keys_pressed(unsigned key,
  * from the specified key up until the last queryable key
  * (key_end).
  *
- * Because this function keeps a copy of the old input state,
- * it should only be called once per frame (currently in
- * rarch_main_iterate);
- *
  * TODO: In case RARCH_BIND_LIST_END starts exceeding 64,
  * and you need a bitmask of more than 64 entries, don't
  * use this function.
  */
 
 retro_input_t meta_input_keys_pressed(unsigned key,
-      unsigned key_end, retro_input_t *old_state)
+      unsigned key_end)
 {
-   static retro_input_t old_ret = 0;
    static const struct retro_keybind *binds[] = { g_settings.input.binds[0] };
    retro_input_t ret = 0;
-   *old_state = old_ret;
    int i;
 
 #ifdef RARCH_INTERNAL
@@ -1679,8 +1673,6 @@ retro_input_t meta_input_keys_pressed(unsigned key,
    input_pop_analog_dpad((struct retro_keybind*)binds[0]);
    for (i = 0; i < MAX_PLAYERS; i++)
       input_pop_analog_dpad(g_settings.input.autoconf_binds[i]);
-
-   old_ret = ret;
 
    return ret;
 }

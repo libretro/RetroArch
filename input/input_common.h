@@ -216,7 +216,7 @@ retro_input_t input_keys_pressed(unsigned key,
       unsigned key_end, const struct retro_keybind **binds);
 
 retro_input_t meta_input_keys_pressed(unsigned key,
-      unsigned key_end, retro_input_t *old_state);
+      unsigned key_end);
 
 #ifdef __cplusplus
 }
