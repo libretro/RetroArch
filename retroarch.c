@@ -2526,6 +2526,64 @@ static void deinit_log_file(void)
    g_extern.log_file = NULL;
 }
 
+static void free_temporary_content(void)
+{
+   unsigned i;
+   for (i = 0; i < g_extern.temporary_content->size; i++)
+   {
+      const char *path = g_extern.temporary_content->elems[i].data;
+
+      RARCH_LOG("Removing temporary content file: %s.\n", path);
+      if (remove(path) < 0)
+         RARCH_ERR("Failed to remove temporary file: %s.\n", path);
+   }
+   string_list_free(g_extern.temporary_content);
+}
+
+static void deinit_temporary_content(void)
+{
+   if (g_extern.temporary_content)
+      free_temporary_content();
+   g_extern.temporary_content = NULL;
+}
+
+static void deinit_subsystem_fullpaths(void)
+{
+   if (g_extern.subsystem_fullpaths)
+      string_list_free(g_extern.subsystem_fullpaths);
+   g_extern.subsystem_fullpaths = NULL;
+}
+
+static void history_playlist_free(void)
+{
+   if (g_extern.history)
+      content_playlist_free(g_extern.history);
+   g_extern.history = NULL;
+}
+
+static void main_clear_state_extern(void)
+{
+   /* XXX This memset is really dangerous.
+    *
+    * (a) it can leak memory because the pointers 
+    * in g_extern aren't freed.
+    * (b) it can zero pointers that the rest of 
+    * the code will look at.
+    */
+   deinit_temporary_content();
+   deinit_subsystem_fullpaths();
+   rarch_deinit_recording();
+
+   if (g_extern.core_info)
+      core_info_list_free(g_extern.core_info);
+   g_extern.core_info = NULL;
+
+   deinit_log_file();
+   history_playlist_free();
+
+   memset(&g_extern, 0, sizeof(g_extern));
+}
+
 static void main_clear_state(bool inited)
 {
    unsigned i;
@@ -2535,15 +2593,7 @@ static void main_clear_state(bool inited)
    if (inited)
       uninit_drivers();
 
-   /* XXX This memset is really dangerous.
-    *
-    * (a) it can leak memory because the pointers 
-    * in g_extern aren't freed.
-    * (b) it can zero pointers that the rest of 
-    * the code will look at.
-    */
-
-   memset(&g_extern, 0, sizeof(g_extern));
+   main_clear_state_extern();
 
    if (inited)
       init_drivers();
@@ -2994,12 +3044,6 @@ static void history_playlist_new(void)
             g_settings.content_history_size);
 }
 
-static void history_playlist_free(void)
-{
-   if (g_extern.history)
-      content_playlist_free(g_extern.history);
-   g_extern.history = NULL;
-}
 
 void rarch_main_command(unsigned cmd)
 {
@@ -3111,7 +3155,8 @@ void rarch_main_command(unsigned cmd)
          break;
       case RARCH_CMD_OVERLAY_DEINIT:
 #ifdef HAVE_OVERLAY
-         input_overlay_free(driver.overlay);
+         if (driver.overlay)
+            input_overlay_free(driver.overlay);
          driver.overlay = NULL;
          memset(&driver.overlay_state, 0, sizeof(driver.overlay_state));
 #endif
@@ -3149,14 +3194,15 @@ void rarch_main_command(unsigned cmd)
          history_playlist_free();
          break;
       case RARCH_CMD_CORE_INFO_INIT:
-         core_info_list_free(g_extern.core_info);
-         g_extern.core_info = NULL;
-         if (*g_settings.libretro_directory)
+         if (*g_settings.libretro_directory &&
+               !g_extern.core_info)
+         {
             g_extern.core_info = core_info_list_new(g_settings.libretro_directory);
 #ifdef HAVE_MENU
-         if (driver.menu_ctx && driver.menu_ctx->init_core_info)
-            driver.menu_ctx->init_core_info(driver.menu);
+            if (driver.menu_ctx && driver.menu_ctx->init_core_info)
+               driver.menu_ctx->init_core_info(driver.menu);
 #endif
+         }
          break;
       case RARCH_CMD_VIDEO_APPLY_STATE_CHANGES:
          if (driver.video_data && driver.video_poke
@@ -3380,33 +3426,7 @@ bool rarch_main_iterate(void)
    return true;
 }
 
-static void free_temporary_content(void)
-{
-   unsigned i;
-   for (i = 0; i < g_extern.temporary_content->size; i++)
-   {
-      const char *path = g_extern.temporary_content->elems[i].data;
 
-      RARCH_LOG("Removing temporary content file: %s.\n", path);
-      if (remove(path) < 0)
-         RARCH_ERR("Failed to remove temporary file: %s.\n", path);
-   }
-   string_list_free(g_extern.temporary_content);
-}
-
-static void deinit_temporary_content(void)
-{
-   if (g_extern.temporary_content)
-      free_temporary_content();
-   g_extern.temporary_content = NULL;
-}
-
-static void deinit_subsystem_fullpaths(void)
-{
-   if (g_extern.subsystem_fullpaths)
-      string_list_free(g_extern.subsystem_fullpaths);
-   g_extern.subsystem_fullpaths = NULL;
-}
 
 
 void rarch_main_deinit(void)
