@@ -36,10 +36,12 @@ static void hidpad_ps4_send_control(struct hidpad_ps4_data* device)
       0x52, 0x11, 0xB0, 0x00, 0x0F
    };
    
+#if 0
    uint8_t rgb[4][3] = { { 0xFF, 0, 0 }, { 0, 0xFF, 0 }, { 0, 0, 0xFF }, { 0xFF, 0xFF, 0xFF } };
    report_buffer[ 9] = rgb[(device->slot % 4)][0];
    report_buffer[10] = rgb[(device->slot % 4)][1];
    report_buffer[11] = rgb[(device->slot % 4)][2];
+#endif
     
    apple_pad_send_control(
       device->connection, report_buffer, sizeof(report_buffer));
@@ -96,25 +98,23 @@ static uint32_t hidpad_ps4_get_buttons(void *data)
    struct Report* rpt = (struct Report*)&device->data[4];
    const uint8_t dpad_state = rpt->buttons[0] & 0xF;
 
-   result |= ((rpt->buttons[0] & 0x20) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_B) : 0);
-   result |= ((rpt->buttons[0] & 0x40) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_A) : 0);
-   result |= ((rpt->buttons[0] & 0x10) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_Y) : 0);
-   result |= ((rpt->buttons[0] & 0x80) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_X) : 0);
-   result |= ((rpt->buttons[1] & 0x01) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_L) : 0);
-   result |= ((rpt->buttons[1] & 0x02) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_R) : 0);
-   result |= ((rpt->buttons[1] & 0x04) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_L2) : 0);
-   result |= ((rpt->buttons[1] & 0x08) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_R2) : 0);
-   result |= ((rpt->buttons[1] & 0x10) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_SELECT) : 0);
-   result |= ((rpt->buttons[1] & 0x20) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_START) : 0);
-   result |= ((rpt->buttons[1] & 0x40) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_L3) : 0);
-   result |= ((rpt->buttons[1] & 0x80) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_R3) : 0);
-
-   result |= ((dpad_state & 0x00) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_UP) : 0);
-   result |= ((dpad_state & 0x02) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT) : 0);
-   result |= ((dpad_state & 0x04) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN) : 0);
-   result |= ((dpad_state & 0x06) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT) : 0);
-
-   result |= ((rpt->buttons[2] & 0x01) ? (1ULL << RARCH_MENU_TOGGLE) : 0);
+   result |= ((rpt->buttons[0] & 0x20) ? (1 << RETRO_DEVICE_ID_JOYPAD_B) : 0);
+   result |= ((rpt->buttons[0] & 0x40) ? (1 << RETRO_DEVICE_ID_JOYPAD_A) : 0);
+   result |= ((rpt->buttons[0] & 0x10) ? (1 << RETRO_DEVICE_ID_JOYPAD_Y) : 0);
+   result |= ((rpt->buttons[0] & 0x80) ? (1 << RETRO_DEVICE_ID_JOYPAD_X) : 0);
+   result |= ((rpt->buttons[1] & 0x01) ? (1 << RETRO_DEVICE_ID_JOYPAD_L) : 0);
+   result |= ((rpt->buttons[1] & 0x02) ? (1 << RETRO_DEVICE_ID_JOYPAD_R) : 0);
+   result |= ((rpt->buttons[1] & 0x04) ? (1 << RETRO_DEVICE_ID_JOYPAD_L2) : 0);
+   result |= ((rpt->buttons[1] & 0x08) ? (1 << RETRO_DEVICE_ID_JOYPAD_R2) : 0);
+   result |= ((rpt->buttons[1] & 0x10) ? (1 << RETRO_DEVICE_ID_JOYPAD_SELECT) : 0);
+   result |= ((rpt->buttons[1] & 0x20) ? (1 << RETRO_DEVICE_ID_JOYPAD_START) : 0);
+   result |= ((rpt->buttons[1] & 0x40) ? (1 << RETRO_DEVICE_ID_JOYPAD_L3) : 0);
+   result |= ((rpt->buttons[1] & 0x80) ? (1 << RETRO_DEVICE_ID_JOYPAD_R3) : 0);
+   result |= ((dpad_state & 0x00) ? (1 << RETRO_DEVICE_ID_JOYPAD_UP) : 0);
+   result |= ((dpad_state & 0x02) ? (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT) : 0);
+   result |= ((dpad_state & 0x04) ? (1 << RETRO_DEVICE_ID_JOYPAD_DOWN) : 0);
+   result |= ((dpad_state & 0x06) ? (1 << RETRO_DEVICE_ID_JOYPAD_LEFT) : 0);
+   result |= ((rpt->buttons[2] & 0x01) ? (1 << 16) : 0);
 
    return result;
 }
