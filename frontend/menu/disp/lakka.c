@@ -354,6 +354,9 @@ void lakka_draw_icon(GLuint texture, float x, float y,
       1.0f, 1.0f, 1.0f, alpha,
    };
 
+   if (gl->shader && gl->shader->use)
+      gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
+
    glViewport(x, gl->win_height - y, icon_size, icon_size);
 
    struct gl_coords coords;
