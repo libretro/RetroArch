@@ -250,10 +250,10 @@ static int android_input_get_id_port(android_input_t *android, int id,
    return -1;
 }
 
-static bool android_input_lookup_name(char *buf, size_t size, int id)
+static bool android_input_lookup_name(char *buf, int *vendorId, int *productId, size_t size, int id)
 {
    jclass class;
-   jmethodID method, getName;
+   jmethodID method, getName, getVendorId, getProductId;
    jobject device, name;
    JNIEnv *env = (JNIEnv*)jni_thread_getenv();
 
@@ -300,6 +300,34 @@ static bool android_input_lookup_name(char *buf, size_t size, int id)
    (*env)->ReleaseStringUTFChars(env, name, str);
 
    RARCH_LOG("device name: %s\n", buf);
+
+   getVendorId = NULL;
+   GET_METHOD_ID(env, getVendorId, class, "getVendorId", "()I;");
+   if (!getVendorId)
+      goto error;
+
+   CALL_INT_METHOD(env, *vendorId, device, getVendorId);
+   if (!*vendorId)
+   {
+      RARCH_ERR("Failed to find vendor id for device ID: %d\n", id);
+      goto error;
+   }
+   RARCH_LOG("device vendor id: %d\n", *vendorId);
+
+   getProductId = NULL;
+   GET_METHOD_ID(env, getProductId, class, "getProductId", "()I;");
+   if (!getProductId)
+      goto error;
+
+   *productId = 0;
+   CALL_INT_METHOD(env, *productId, device, getProductId);
+   if (!*productId)
+   {
+      RARCH_ERR("Failed to find product id for device ID: %d\n", id);
+      goto error;
+   }
+   RARCH_LOG("device product id: %d\n", *productId);
+
    return true;
 error:
    return false;
@@ -325,6 +353,7 @@ static void handle_hotplug(android_input_t *android,
 {
    char device_name[256], name_buf[256];
    name_buf[0] = device_name[0] = 0;
+   int vendorId, productId;
 
    if (!g_settings.input.autodetect_enable)
       return;
@@ -335,7 +364,11 @@ static void handle_hotplug(android_input_t *android,
       return;
    }
 
-   android_input_lookup_name(device_name, sizeof(device_name), id);
+   if (!android_input_lookup_name(device_name, &vendorId, &productId, sizeof(device_name), id))
+   {
+      RARCH_ERR("Could not look up device name or IDs.\n");
+      return;
+   }
 
    /* FIXME: Ugly hack, see other FIXME note below. */
    if (strstr(device_name, "keypad-game-zeus") ||
