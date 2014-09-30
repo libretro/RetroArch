@@ -800,7 +800,10 @@ bool config_read_keybinds(const char *path);
 
 void rarch_deinit_recording(void);
 bool rarch_audio_flush(const int16_t *data, size_t samples);
-void rarch_main_clear_state(void);
+
+void rarch_main_state_new(void);
+void rarch_main_state_free(void);
+
 int rarch_main(int argc, char *argv[]);
 bool rarch_replace_config(const char *path);
 void rarch_main_init_wrap(const struct rarch_main_wrap *args,

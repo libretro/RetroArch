@@ -121,7 +121,7 @@ void main_exit(args_type() args)
       driver.frontend_ctx->exitspawn(g_settings.libretro,
             sizeof(g_settings.libretro));
 
-   rarch_main_clear_state();
+   rarch_main_state_free();
 
    if (driver.frontend_ctx && driver.frontend_ctx->shutdown)
       driver.frontend_ctx->shutdown(false);
@@ -225,7 +225,7 @@ returntype main_entry(signature())
    if (driver.frontend_ctx && driver.frontend_ctx->init)
       driver.frontend_ctx->init(args);
 
-   rarch_main_clear_state();
+   rarch_main_state_new();
 
    if (driver.frontend_ctx)
    {

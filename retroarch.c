@@ -2525,14 +2525,11 @@ static void deinit_log_file(void)
    g_extern.log_file = NULL;
 }
 
-void rarch_main_clear_state(void)
+static void main_clear_state(bool inited)
 {
-   static bool inited = false;
    unsigned i;
 
    memset(&g_settings, 0, sizeof(g_settings));
-
-   deinit_log_file();
 
    if (inited)
       uninit_drivers();
@@ -2555,9 +2552,26 @@ void rarch_main_clear_state(void)
    for (i = 0; i < MAX_PLAYERS; i++)
       g_settings.input.libretro_device[i] = RETRO_DEVICE_JOYPAD;
 
+}
+
+void rarch_main_state_new(void)
+{
+   static bool inited = false;
+
+   main_clear_state(inited);
+
    init_msg_queue();
 
    inited = true;
+}
+
+void rarch_main_state_free(void)
+{
+   deinit_log_file();
+
+   main_clear_state(false);
+
+   rarch_deinit_msg_queue();
 }
 
 #ifdef HAVE_ZLIB
