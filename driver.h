@@ -38,6 +38,8 @@
 #include "frontend/menu/menu_driver.h"
 #include "frontend/menu/backend/menu_backend.h"
 #include "frontend/menu/disp/menu_display.h"
+#include "audio/resamplers/resampler.h"
+#include "record/ffemu.h"
 
 #include "retro.h"
 
@@ -431,6 +433,8 @@ typedef struct driver
    const input_osk_driver_t *osk;
    const camera_driver_t *camera;
    const location_driver_t *location;
+   const rarch_resampler_t *resampler;
+   const ffemu_backend_t *recording;
    struct retro_callbacks retro_ctx;
 
    void *audio_data;
@@ -439,6 +443,8 @@ typedef struct driver
    void *osk_data;
    void *camera_data;
    void *location_data;
+   void *resampler_data;
+   void *recording_data;
 
 #ifdef HAVE_MENU
    menu_handle_t *menu;

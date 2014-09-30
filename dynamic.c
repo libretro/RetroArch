@@ -826,7 +826,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          const struct retro_audio_callback *info = 
             (const struct retro_audio_callback*)data;
 
-         if (g_extern.rec) // A/V sync is a must.
+         if (driver.recording_data) // A/V sync is a must.
             return false;
 
 #ifdef HAVE_NETPLAY

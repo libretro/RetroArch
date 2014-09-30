@@ -835,7 +835,7 @@ bool driver_update_system_av_info(const struct retro_system_av_info *info)
 
    /* Cannot continue recording with different parameters.
     * Take the easiest route out and just restart the recording. */
-   if (g_extern.rec)
+   if (driver.recording_data)
    {
       static const char *msg = "Restarting recording due to driver reinit.";
       msg_queue_push(g_extern.msg_queue, msg, 2, 180);
@@ -1095,8 +1095,8 @@ void init_audio(void)
       g_extern.audio_data.src_ratio =
       (double)g_settings.audio.out_rate / g_extern.audio_data.in_rate;
 
-   if (!rarch_resampler_realloc(&g_extern.audio_data.resampler_data,
-            &g_extern.audio_data.resampler,
+   if (!rarch_resampler_realloc(&driver.resampler_data,
+            &driver.resampler,
          g_settings.audio.resampler, g_extern.audio_data.orig_src_ratio))
    {
       RARCH_ERR("Failed to initialize resampler \"%s\".\n",
@@ -1246,8 +1246,8 @@ void uninit_audio(void)
       return;
    }
 
-   rarch_resampler_freep(&g_extern.audio_data.resampler,
-         &g_extern.audio_data.resampler_data);
+   rarch_resampler_freep(&driver.resampler,
+         &driver.resampler_data);
 
    free(g_extern.audio_data.data);
    g_extern.audio_data.data = NULL;

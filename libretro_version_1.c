@@ -62,7 +62,7 @@ static void video_frame(const void *data, unsigned width,
     * but we really need to do processing before blocking on VSync
     * for best possible scheduling.
     */
-   if (g_extern.rec && (!g_extern.filter.filter
+   if (driver.recording_data && (!g_extern.filter.filter
             || !g_settings.video.post_filter_record || !data
             || g_extern.record_gpu_buffer)
       )
@@ -89,7 +89,7 @@ static void video_frame(const void *data, unsigned width,
             data, width, height, pitch);
       RARCH_PERFORMANCE_STOP(softfilter_process);
 
-      if (g_extern.rec && g_settings.video.post_filter_record)
+      if (driver.recording_data && g_settings.video.post_filter_record)
          rarch_recording_dump_frame(g_extern.filter.buffer,
                owidth, oheight, opitch);
 

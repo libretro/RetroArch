@@ -288,8 +288,8 @@ void rarch_recording_dump_frame(const void *data, unsigned width,
    if (!g_extern.record_gpu_buffer)
       ffemu_data.is_dupe = !data;
 
-   if (g_extern.rec_driver && g_extern.rec_driver->push_video)
-      g_extern.rec_driver->push_video(g_extern.rec, &ffemu_data);
+   if (driver.recording && driver.recording->push_video)
+      driver.recording->push_video(driver.recording_data, &ffemu_data);
 }
 
 static void init_recording(void)
@@ -408,7 +408,7 @@ static void init_recording(void)
          params.fb_width, params.fb_height,
          (unsigned)params.pix_fmt);
 
-   if (!ffemu_init_first(&g_extern.rec_driver, &g_extern.rec, &params))
+   if (!ffemu_init_first(&driver.recording, &driver.recording_data, &params))
    {
       RARCH_ERR(RETRO_LOG_INIT_RECORDING_FAILED);
       rarch_deinit_gpu_recording();
@@ -417,16 +417,17 @@ static void init_recording(void)
 
 void rarch_deinit_recording(void)
 {
-   if (!g_extern.rec || !g_extern.rec_driver)
+   if (!driver.recording_data || !driver.recording)
       return;
 
-   if (g_extern.rec_driver->finalize)
-      g_extern.rec_driver->finalize(g_extern.rec);
-   if (g_extern.rec_driver->free)
-      g_extern.rec_driver->free(g_extern.rec);
+   if (driver.recording->finalize)
+      driver.recording->finalize(driver.recording_data);
 
-   g_extern.rec = NULL;
-   g_extern.rec_driver = NULL;
+   if (driver.recording->free)
+      driver.recording->free(driver.recording_data);
+
+   driver.recording_data = NULL;
+   driver.recording = NULL;
 
    rarch_deinit_gpu_recording();
 }
@@ -434,10 +435,10 @@ void rarch_deinit_recording(void)
 void rarch_render_cached_frame(void)
 {
    const void *frame = g_extern.frame_cache.data;
-   void *recording   = g_extern.rec;
+   void *recording   = driver.recording_data;
 
    /* Cannot allow recording when pushing duped frames. */
-   g_extern.rec = NULL;
+   driver.recording_data = NULL;
 
    if (frame == RETRO_HW_FRAME_BUFFER_VALID)
       frame = NULL; /* Dupe */
@@ -452,7 +453,7 @@ void rarch_render_cached_frame(void)
          g_extern.frame_cache.height,
          g_extern.frame_cache.pitch);
 
-   g_extern.rec = recording;
+   driver.recording_data = recording;
 }
 
 bool rarch_audio_flush(const int16_t *data, size_t samples)
@@ -463,14 +464,14 @@ bool rarch_audio_flush(const int16_t *data, size_t samples)
    struct resampler_data src_data = {0};
    struct rarch_dsp_data dsp_data = {0};
 
-   if (g_extern.rec)
+   if (driver.recording_data)
    {
       struct ffemu_audio_data ffemu_data = {0};
       ffemu_data.data                    = data;
       ffemu_data.frames                  = samples / 2;
 
-      if (g_extern.rec_driver && g_extern.rec_driver->push_audio)
-         g_extern.rec_driver->push_audio(g_extern.rec, &ffemu_data);
+      if (driver.recording && driver.recording->push_audio)
+         driver.recording->push_audio(driver.recording_data, &ffemu_data);
    }
 
    if (g_extern.is_paused || g_extern.audio_data.mute)
@@ -511,8 +512,8 @@ bool rarch_audio_flush(const int16_t *data, size_t samples)
 
    RARCH_PERFORMANCE_INIT(resampler_proc);
    RARCH_PERFORMANCE_START(resampler_proc);
-   rarch_resampler_process(g_extern.audio_data.resampler,
-         g_extern.audio_data.resampler_data, &src_data);
+   rarch_resampler_process(driver.resampler,
+         driver.resampler_data, &src_data);
    RARCH_PERFORMANCE_STOP(resampler_proc);
 
    output_data   = g_extern.audio_data.outsamples;
@@ -2774,7 +2775,7 @@ static inline void update_frame_time(void)
    retro_time_t time = rarch_get_time_usec();
    bool is_locked_fps = g_extern.is_paused || driver.nonblock_state;
 
-   is_locked_fps |= !!g_extern.rec;
+   is_locked_fps |= !!driver.recording_data;
 
    if (!g_extern.system.frame_time_last || is_locked_fps)
       delta = g_extern.system.frame_time.reference;

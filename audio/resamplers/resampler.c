@@ -56,7 +56,7 @@ void find_prev_resampler_driver(void)
             sizeof(g_settings.audio.resampler));
    else
       RARCH_WARN("Couldn't find any previous resampler driver (current one: \"%s\").\n",
-            g_extern.audio_data.resampler->ident);
+            driver.resampler->ident);
 }
 
 void find_next_resampler_driver(void)
@@ -67,12 +67,12 @@ void find_next_resampler_driver(void)
             sizeof(g_settings.audio.resampler));
    else
       RARCH_WARN("Couldn't find any next resampler driver (current one: \"%s\").\n",
-            g_extern.audio_data.resampler->ident);
+            driver.resampler->ident);
 }
 #endif
 
 /* Resampler is used by multiple modules so avoid 
- * clobbering g_extern.audio_data.resampler here. */
+ * clobbering driver.resampler here. */
 
 static const rarch_resampler_t *find_resampler_driver(const char *ident)
 {

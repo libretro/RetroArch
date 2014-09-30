@@ -22,7 +22,6 @@
 #include <limits.h>
 #include <setjmp.h>
 #include "driver.h"
-#include "record/ffemu.h"
 #include "message_queue.h"
 #include "rewind.h"
 #include "movie.h"
@@ -81,8 +80,6 @@
 #ifdef HAVE_COMMAND
 #include "command.h"
 #endif
-
-#include "audio/resamplers/resampler.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -542,9 +539,6 @@ struct global
 
    struct
    {
-      void *resampler_data;
-      const rarch_resampler_t *resampler;
-
       float *data;
 
       size_t data_ptr;
@@ -661,9 +655,6 @@ struct global
 #endif
 
    /* Recording. */
-   const ffemu_backend_t *rec_driver;
-   void *rec;
-
    char record_path[PATH_MAX];
    char record_config[PATH_MAX];
    bool recording_enable;
