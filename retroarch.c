@@ -3243,9 +3243,13 @@ static bool do_menu_oneshot(
 bool rarch_main_iterate(void)
 {
    unsigned i;
+   static retro_input_t last_input = 0;
    retro_input_t old_input, trigger_input;
    retro_input_t input = meta_input_keys_pressed(0,
-         RARCH_BIND_LIST_END, &old_input);
+         RARCH_BIND_LIST_END);
+
+   old_input = last_input;
+   last_input = input;
 
    if (driver.flushing_input)
    {
