@@ -439,7 +439,7 @@ int32_t apple_input_find_any_button(uint32_t port)
    apple_gamecontroller_poll_all();
 #endif
 
-   buttons = g_current_input_data.pad_buttons[port] |
+   buttons = g_current_input_data.buttons[port] |
       ((port == 0) ? apple_input_get_icade_buttons() : 0);
 
    if (buttons)
@@ -458,7 +458,7 @@ int32_t apple_input_find_any_axis(uint32_t port)
 
    for (int i = 0; i < 4; i++)
    {
-      int16_t value = g_current_input_data.pad_axis[port][i];
+      int16_t value = g_current_input_data.axes[port][i];
       
       if (abs(value) > 0x4000)
          return (value < 0) ? -(i + 1) : i + 1;
@@ -515,7 +515,7 @@ static void apple_input_poll(void *data)
    if (joypad)
       joypad->poll();
 
-   g_current_input_data.pad_buttons[0] |= apple_input_get_icade_buttons();
+   g_current_input_data.buttons[0] |= apple_input_get_icade_buttons();
 
    g_current_input_data.mouse_delta[0] = 0;
    g_current_input_data.mouse_delta[1] = 0;

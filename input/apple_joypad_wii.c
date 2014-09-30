@@ -100,11 +100,11 @@ static void hidpad_wii_packet_handler(void *data,
          break;
    }
 
-   g_current_input_data.pad_buttons[device->unid] = device->btns | 
+   g_current_input_data.buttons[device->unid] = device->btns |
       (device->exp.cc.classic.btns << 16);
 
    for (i = 0; i < 4; i++)
-      g_current_input_data.pad_axis[device->unid][i] = 
+      g_current_input_data.axes[device->unid][i] =
          hidpad_wii_get_axis(device, i);
 }
 

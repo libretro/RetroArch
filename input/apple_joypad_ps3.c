@@ -151,9 +151,9 @@ static void hidpad_ps3_packet_handler(void *data, uint8_t *packet, uint16_t size
 
    memcpy(device->data, packet, size);
 
-   g_current_input_data.pad_buttons[device->slot] = hidpad_ps3_get_buttons(device);
+   g_current_input_data.buttons[device->slot] = hidpad_ps3_get_buttons(device);
    for (i = 0; i < 4; i ++)
-      g_current_input_data.pad_axis[device->slot][i] = hidpad_ps3_get_axis(device, i);
+      g_current_input_data.axes[device->slot][i] = hidpad_ps3_get_axis(device, i);
 }
 
 static void hidpad_ps3_set_rumble(void *data,

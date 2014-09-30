@@ -89,7 +89,7 @@ static void hid_device_input_callback(void* context, IOReturn result,
                            state = IOHIDValueGetIntegerValue(value) - min;
 
                            val = (float)state / (float)max;
-                           g_current_input_data.pad_axis[connection->slot][i] =
+                           g_current_input_data.axes[connection->slot][i] =
                               ((val * 2.0f) - 1.0f) * 32767.0f;
                         }
                      }
@@ -107,9 +107,9 @@ static void hid_device_input_callback(void* context, IOReturn result,
                      CFIndex state = IOHIDValueGetIntegerValue(value);
 
                      if (state)
-                        g_current_input_data.pad_buttons[connection->slot] |= (1 << (use - 1));
+                        g_current_input_data.buttons[connection->slot] |= (1 << (use - 1));
                      else
-                        g_current_input_data.pad_buttons[connection->slot] &= ~(1 << (use - 1));
+                        g_current_input_data.buttons[connection->slot] &= ~(1 << (use - 1));
                   }
                   break;
             }
@@ -131,9 +131,9 @@ static void hid_device_removed(void* context, IOReturn result, void* sender)
         msg_queue_push(g_extern.msg_queue, msg, 0, 60);
         RARCH_LOG("[apple_input]: %s\n", msg);
         
-        g_current_input_data.pad_buttons[connection->slot] = 0;
-        memset(g_current_input_data.pad_axis[connection->slot],
-               0, sizeof(g_current_input_data.pad_axis));
+        g_current_input_data.buttons[connection->slot] = 0;
+        memset(g_current_input_data.axes[connection->slot],
+               0, sizeof(g_current_input_data.axes));
         
         apple_joypad_disconnect(connection->slot);
         free(connection);

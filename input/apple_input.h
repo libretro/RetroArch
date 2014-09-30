@@ -23,6 +23,10 @@
 #define MAX_TOUCHES 16
 #define MAX_KEYS 256
 
+#ifndef NUM_HATS
+#define NUM_HATS 4
+#endif
+
 typedef struct
 {
    int16_t screen_x, screen_y;
@@ -40,8 +44,9 @@ typedef struct
 
    uint32_t keys[MAX_KEYS];
 
-   uint32_t pad_buttons[MAX_PLAYERS];
-   int16_t pad_axis[MAX_PLAYERS][4];
+   uint32_t buttons[MAX_PLAYERS];
+   int16_t axes[MAX_PLAYERS][4];
+   int8_t  hats[NUM_HATS][2];
 } apple_input_data_t;
 
 struct apple_pad_connection;
