@@ -39,8 +39,8 @@ typedef struct {
     int analogCount;
     int buttonCount;
     char id[64];
-    char vendor[64];
-    char product[64];
+    char vid[64];
+    char pid[64];
 
     int device;
     int port;
@@ -129,8 +129,7 @@ static void process_gamepad_event(void *data,
             SCREEN_PROPERTY_ANALOG1, controller->analog1);
 
    /* Only player 1
-    * TODO: Am I missing something? Is there a better way?
-    */
+    * TODO: Am I missing something? Is there a better way? */
    if((controller->port == 0) && 
          (controller->buttons & 
           g_settings.input.binds[0][RARCH_MENU_TOGGLE].joykey))
@@ -153,9 +152,9 @@ static void loadController(void *data, input_device_t* controller)
    screen_get_device_property_cv(controller->handle,
          SCREEN_PROPERTY_ID_STRING, sizeof(controller->id), controller->id);
    screen_get_device_property_cv(controller->handle,
-         SCREEN_PROPERTY_VENDOR, sizeof(controller->id), controller->vendor);
+         SCREEN_PROPERTY_VENDOR, sizeof(controller->id), controller->vid);
    screen_get_device_property_cv(controller->handle,
-         SCREEN_PROPERTY_PRODUCT, sizeof(controller->id), controller->product);
+         SCREEN_PROPERTY_PRODUCT, sizeof(controller->id), controller->pid);
 
    if (controller->type == SCREEN_EVENT_GAMEPAD || 
          controller->type == SCREEN_EVENT_JOYSTICK)
@@ -185,8 +184,8 @@ static void loadController(void *data, input_device_t* controller)
       RARCH_LOG("Keyboard Device Connected:\n");
 
    RARCH_LOG("\tID: %s\n", controller->id);
-   RARCH_LOG("\tVendor: %s\n", controller->vendor);
-   RARCH_LOG("\tProduct: %s\n", controller->product);
+   RARCH_LOG("\tVendor  ID: %s\n", controller->vid);
+   RARCH_LOG("\tProduct ID: %s\n", controller->pid);
    RARCH_LOG("\tButton Count: %d\n", controller->buttonCount);
    RARCH_LOG("\tAnalog Count: %d\n", controller->analogCount);
 }
@@ -313,7 +312,8 @@ static void qnx_input_autodetect_gamepad(void *data,
    }
 }
 
-static void process_keyboard_event(void *data, screen_event_t event, int type)
+static void process_keyboard_event(void *data,
+      screen_event_t event, int type)
 {
    input_device_t* controller = NULL;
    int i, b, sym, modifiers, flags, scan, cap;
@@ -695,6 +695,72 @@ static void qnx_input_poll(void *data)
    }
 }
 
+/* Need to return [-0x8000, 0x7fff].
+ * Gamepad API gives us [-128, 127] with (0,0) center
+ * Untested
+ */
+
+static int16_t qnx_analog_input_state(qnx_input_t *qnx,
+      unsigned port, unsigned index, unsigned id)
+{
+#ifdef HAVE_BB10
+   if(qnx->port_device[port])
+   {
+      switch ((index << 1) | id)
+      {
+         case (RETRO_DEVICE_INDEX_ANALOG_LEFT << 1) | RETRO_DEVICE_ID_ANALOG_X:
+            return qnx->port_device[port]->analog0[0] * 256;
+         case (RETRO_DEVICE_INDEX_ANALOG_LEFT << 1) | RETRO_DEVICE_ID_ANALOG_Y:
+            return qnx->port_device[port]->analog0[1] * 256;
+         case (RETRO_DEVICE_INDEX_ANALOG_RIGHT << 1) | RETRO_DEVICE_ID_ANALOG_X:
+            return qnx->port_device[port]->analog1[0] * 256;
+         case (RETRO_DEVICE_INDEX_ANALOG_RIGHT << 1) | RETRO_DEVICE_ID_ANALOG_Y:
+            return qnx->port_device[port]->analog1[1] * 256;
+      }
+   }
+#endif
+
+   return 0;
+}
+
+static int16_t qnx_pointer_screen_input_state(qnx_input_t *qnx,
+      unsigned index, unsigned id)
+{
+   switch (id)
+   {
+      case RETRO_DEVICE_ID_POINTER_X:
+         return qnx->pointer[qnx->touch_map[index]].full_x;
+      case RETRO_DEVICE_ID_POINTER_Y:
+         return qnx->pointer[qnx->touch_map[index]].full_y;
+      case RETRO_DEVICE_ID_POINTER_PRESSED:
+         return (
+               index < qnx->pointer_count)
+            && (qnx->pointer[index].full_x != -0x8000) 
+            && (qnx->pointer[index].full_y != -0x8000);
+   }
+
+   return 0;
+}
+
+static int16_t qnx_pointer_input_state(qnx_input_t *qnx,
+      unsigned index, unsigned id)
+{
+   switch (id)
+   {
+      case RETRO_DEVICE_ID_POINTER_X:
+         return qnx->pointer[qnx->touch_map[index]].x;
+      case RETRO_DEVICE_ID_POINTER_Y:
+         return qnx->pointer[qnx->touch_map[index]].y;
+      case RETRO_DEVICE_ID_POINTER_PRESSED:
+         return (
+               index < qnx->pointer_count)
+            && (qnx->pointer[index].x != -0x8000)
+            && (qnx->pointer[index].y != -0x8000);
+   }
+
+   return 0;
+}
+
 static int16_t qnx_input_state(void *data,
       const struct retro_keybind **retro_keybinds,
       unsigned port, unsigned device, unsigned index, unsigned id)
@@ -706,64 +772,12 @@ static int16_t qnx_input_state(void *data,
       case RETRO_DEVICE_JOYPAD:
          return input_joypad_pressed(qnx->joypad, port,
                (unsigned int)g_settings.input.binds[port], id);
-#ifdef HAVE_BB10
       case RETRO_DEVICE_ANALOG:
-         /* Need to return [-0x8000, 0x7fff].
-          * Gamepad API gives us [-128, 127] with (0,0) center
-          * Untested
-          */
-         if(qnx->port_device[port])
-         {
-            switch ((index << 1) | id)
-            {
-               case (RETRO_DEVICE_INDEX_ANALOG_LEFT << 1) | RETRO_DEVICE_ID_ANALOG_X:
-                  return qnx->port_device[port]->analog0[0] * 256;
-               case (RETRO_DEVICE_INDEX_ANALOG_LEFT << 1) | RETRO_DEVICE_ID_ANALOG_Y:
-                  return qnx->port_device[port]->analog0[1] * 256;
-               case (RETRO_DEVICE_INDEX_ANALOG_RIGHT << 1) | RETRO_DEVICE_ID_ANALOG_X:
-                  return qnx->port_device[port]->analog1[0] * 256;
-               case (RETRO_DEVICE_INDEX_ANALOG_RIGHT << 1) | RETRO_DEVICE_ID_ANALOG_Y:
-                  return qnx->port_device[port]->analog1[1] * 256;
-               default:
-                  break;
-            }
-         }
-         break;
-#endif
+         return qnx_analog_input_state(qnx, port, index, id);
       case RARCH_DEVICE_POINTER_SCREEN:
-         switch (id)
-         {
-            case RETRO_DEVICE_ID_POINTER_X:
-               return qnx->pointer[qnx->touch_map[index]].full_x;
-            case RETRO_DEVICE_ID_POINTER_Y:
-               return qnx->pointer[qnx->touch_map[index]].full_y;
-            case RETRO_DEVICE_ID_POINTER_PRESSED:
-               return (
-                     index < qnx->pointer_count)
-                  && (qnx->pointer[index].full_x != -0x8000) 
-                  && (qnx->pointer[index].full_y != -0x8000);
-            default:
-               return 0;
-         }
-         break;
+         return qnx_pointer_screen_input_state(qnx, index, id);
       case RETRO_DEVICE_POINTER:
-         switch (id)
-         {
-            case RETRO_DEVICE_ID_POINTER_X:
-               return qnx->pointer[qnx->touch_map[index]].x;
-            case RETRO_DEVICE_ID_POINTER_Y:
-               return qnx->pointer[qnx->touch_map[index]].y;
-            case RETRO_DEVICE_ID_POINTER_PRESSED:
-               return (
-                     index < qnx->pointer_count)
-                  && (qnx->pointer[index].x != -0x8000)
-                  && (qnx->pointer[index].y != -0x8000);
-            default:
-               return 0;
-         }
-         break;
-      default:
-         break;
+         return qnx_pointer_input_state(qnx, index, id);
    }
 
    return 0;
