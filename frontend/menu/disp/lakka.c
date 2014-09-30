@@ -51,7 +51,8 @@ int depth = 0;
 int num_categories = 0;
 int menu_active_category = 0;
 float all_categories_x = 0;
-float global_alpha = 0;
+float global_alpha = 0.0f;
+float global_scale = 2.0f;
 float arrow_alpha = 0;
 float hspacing;
 float vspacing;
@@ -73,6 +74,8 @@ float above_item_offset;
 float active_item_factor;
 float under_item_offset;
 float setting_margin_left;
+
+GLuint fbo, fbocolor, fbodepth = 0;
 
 // Font variables
 static void *font;
@@ -312,22 +315,18 @@ void lakka_draw_background(void)
 
    glViewport(0, 0, gl->win_width, gl->win_height);
 
-   glEnable(GL_BLEND);
-
-   gl->coords.vertex = vertex;
-   gl->coords.tex_coord = tex_coord;
-   gl->coords.color = textures[TEXTURE_BG].id ? color : black_color;
+   struct gl_coords coords;
+   coords.vertices = 4;
+   coords.vertex = vertex;
+   coords.tex_coord = tex_coord;
+   coords.color = textures[TEXTURE_BG].id ? color : black_color;
    glBindTexture(GL_TEXTURE_2D, textures[TEXTURE_BG].id);
 
-   if (gl->shader && gl->shader->use)
-      gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
+   gl_shader_set_coords(gl, &coords, &gl->mvp_no_rot);
 
-   gl->coords.vertices = 4;
-   gl_shader_set_coords(gl, &gl->coords, &gl->mvp_no_rot);
-
+   glEnable(GL_BLEND);
    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
    glDisable(GL_BLEND);
-   gl->coords.color = gl->white_color_ptr;
 }
 
 void lakka_draw_icon(GLuint texture, float x, float y,
@@ -357,15 +356,12 @@ void lakka_draw_icon(GLuint texture, float x, float y,
 
    glViewport(x, gl->win_height - y, icon_size, icon_size);
 
-   glEnable(GL_BLEND);
-
-   gl->coords.vertex = vertex;
-   gl->coords.tex_coord = tex_coord;
-   gl->coords.color = color;
+   struct gl_coords coords;
+   coords.vertices = 4;
+   coords.vertex = vertex;
+   coords.tex_coord = tex_coord;
+   coords.color = color;
    glBindTexture(GL_TEXTURE_2D, texture);
-
-   if (gl->shader && gl->shader->use)
-      gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
 
    math_matrix mymat;
 
@@ -377,15 +373,21 @@ void lakka_draw_icon(GLuint texture, float x, float y,
    matrix_scale(&mscal, scale, scale, 1);
    matrix_multiply(&mymat, &mscal, &mymat);
 
-   gl->coords.vertices = 4;
-   gl_shader_set_coords(gl, &gl->coords, &mymat);
+   gl_shader_set_coords(gl, &coords, &mymat);
 
+   glEnable(GL_BLEND);
+   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
    glDisable(GL_BLEND);
+}
 
-   gl->coords.vertex = gl->vertex_ptr;
-   gl->coords.tex_coord = gl->tex_coords;
-   gl->coords.color = gl->white_color_ptr;
+static void lakka_draw_arrow()
+{
+   lakka_draw_icon(textures[TEXTURE_ARROW].id,
+        margin_left + hspacing*(menu_active_category+1) +
+        all_categories_x + icon_size/2.0,
+        margin_top + vspacing*active_item_factor +
+        icon_size/2.0, arrow_alpha, 0, i_active_zoom);
 }
 
 static void lakka_draw_subitems(int i, int j)
@@ -543,6 +545,103 @@ static void lakka_draw_categories(void)
    }
 }
 
+#ifdef HAVE_FBO
+
+static void lakka_check_fb_status()
+{
+    GLenum status;
+    status = glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER);
+    switch(status) {
+    case GL_FRAMEBUFFER_COMPLETE:
+        break;
+
+    case GL_FRAMEBUFFER_UNSUPPORTED:
+    /* choose different formats */
+        break;
+
+    default:
+        /* programming error; will fail on all hardware */
+        fputs("Framebuffer Error\n", stderr);
+        exit(-1);
+    }
+}
+
+static void lakka_fbo_reset()
+{
+   gl_t *gl = (gl_t*)driver_video_resolve(NULL);
+   if (!gl)
+      return;
+
+   glGenFramebuffers(1, &fbo);
+   glGenTextures(1, &fbocolor);
+   glGenRenderbuffers(1, &fbodepth);
+
+   glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+
+   glBindTexture(GL_TEXTURE_2D, fbocolor);
+   glTexImage2D(GL_TEXTURE_2D, 
+         0, 
+         GL_RGBA, 
+         gl->win_width, gl->win_height,
+         0, 
+         GL_RGBA, 
+         GL_UNSIGNED_BYTE, 
+         NULL);
+
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+   glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, fbocolor, 0);
+
+   glBindRenderbuffer(GL_RENDERBUFFER, fbodepth);
+   glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, gl->win_width, 900);
+   glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, fbodepth);
+
+   lakka_check_fb_status();
+
+   glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+static void lakka_draw_fbo()
+{
+   gl_t *gl = (gl_t*)driver_video_resolve(NULL);
+   if (!gl)
+      return;
+
+   struct gl_coords coords;
+   coords.vertices = 4;
+   coords.vertex = vertex;
+   coords.tex_coord = vertex;
+   coords.color = gl->white_color_ptr;
+   glBindTexture(GL_TEXTURE_2D, fbocolor);
+
+   math_matrix mymat;
+
+   math_matrix mrot;
+   matrix_rotate_z(&mrot, 0);
+   matrix_multiply(&mymat, &mrot, &gl->mvp_no_rot);
+
+   math_matrix mscal;
+   matrix_scale(&mscal, global_scale, global_scale, 1);
+   matrix_multiply(&mymat, &mscal, &mymat);
+
+   gl_shader_set_coords(gl, &coords, &mymat);
+
+   glEnable(GL_BLEND);
+
+   // shadow
+   glViewport(2, -2, gl->win_width, gl->win_height);
+   glBlendFunc(GL_ZERO, GL_ONE_MINUS_SRC_ALPHA);
+   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+   glViewport(0, 0, gl->win_width, gl->win_height);
+
+   glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+   glDisable(GL_BLEND);
+}
+
+#endif
+
 static void lakka_frame(void)
 {
    gl_t *gl = (gl_t*)driver_video_resolve(NULL);
@@ -558,11 +657,22 @@ static void lakka_frame(void)
 
    update_tweens(0.002);
 
-   glViewport(0, 0, gl->win_width, gl->win_height);
-
-   lakka_draw_background();
-
+#ifdef HAVE_FBO
+   glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+   glClearColor(0.0, 0.0, 0.0, 0.0);
+   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
    lakka_draw_categories();
+   lakka_draw_arrow();
+   glBindFramebuffer(GL_FRAMEBUFFER, 0);
+   glViewport(0, 0, gl->win_width, gl->win_height);
+   lakka_draw_background();
+   lakka_draw_fbo();
+#else
+   glViewport(0, 0, gl->win_width, gl->win_height);
+   lakka_draw_background();
+   lakka_draw_categories();
+   lakka_draw_arrow();
+#endif
 
    if (depth == 0)
       lakka_draw_text(active_category->name,
@@ -571,13 +681,9 @@ static void lakka_frame(void)
       lakka_draw_text(active_item->name,
             title_margin_left, title_margin_top, 1, 1.0);
 
-   lakka_draw_icon(textures[TEXTURE_ARROW].id,
-        margin_left + hspacing*(menu_active_category+1) +
-        all_categories_x + icon_size/2.0,
-        margin_top + vspacing*active_item_factor +
-        icon_size/2.0, arrow_alpha, 0, i_active_zoom);
-
    gl_set_viewport(gl, gl->win_width, gl->win_height, false, false);
+
+   glDisable(GL_BLEND);
 }
 
 static GLuint lakka_png_texture_load(const char * file_name)
@@ -606,6 +712,12 @@ static void lakka_context_destroy(void *data)
 {
    int i, j, k;
    (void)data;
+
+#ifdef HAVE_FBO
+   glDeleteFramebuffers(1, &fbo);
+   glDeleteTextures(1, &fbocolor);
+   glDeleteTextures(1, &fbodepth);
+#endif
 
    for (i = 0; i < TEXTURE_LAST; i++)
       glDeleteTextures(1, &textures[i].id);
@@ -757,7 +869,6 @@ void lakka_settings_context_reset(void)
    }
 }
 
-
 static void lakka_context_reset(void *data)
 {
    int i, j, k;
@@ -765,10 +876,14 @@ static void lakka_context_reset(void *data)
    menu_handle_t *menu = (menu_handle_t*)data;
    gl_t *gl = (gl_t*)driver_video_resolve(NULL);
 
-   driver.gfx_use_rgba = true;
-
    if (!menu)
       return;
+
+#ifdef HAVE_FBO
+   lakka_fbo_reset();
+#endif
+
+   driver.gfx_use_rgba = true;
 
    fill_pathname_join(mediapath, g_settings.assets_directory,
          "lakka", sizeof(mediapath));
@@ -990,10 +1105,16 @@ static int lakka_input_postprocess(retro_input_t state, retro_input_t old_state)
    if ((driver.menu && check_enter_menu_func(trigger_state)) &&
          g_extern.main_is_init &&
          !g_extern.libretro_dummy)
-      global_alpha = 0;
+   {
+      global_alpha = 0.0f;
+      global_scale = 2.0f;
+   }
 
-   if (! global_alpha)
-      add_tween(LAKKA_DELAY, 1.0, &global_alpha, &inOutQuad, NULL);
+   if (global_alpha == 0.0f)
+      add_tween(LAKKA_DELAY, 1.0f, &global_alpha, &inOutQuad, NULL);
+
+   if (global_scale == 2.0f)
+      add_tween(LAKKA_DELAY, 1.0f, &global_scale, &inQuad, NULL);
 
    return 0;
 }
