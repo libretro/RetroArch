@@ -32,6 +32,7 @@ extern int num_categories;
 extern float all_categories_x;
 extern int menu_active_category;
 extern float global_alpha;
+extern float global_scale;
 extern float arrow_alpha;
 extern float hspacing;
 extern float vspacing;
