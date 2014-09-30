@@ -2557,13 +2557,9 @@ static void main_clear_state(bool inited)
 
 void rarch_main_state_new(void)
 {
-   static bool inited = false;
-
-   main_clear_state(inited);
+   main_clear_state(g_extern.main_is_init);
 
    init_msg_queue();
-
-   inited = true;
 }
 
 void rarch_main_state_free(void)
