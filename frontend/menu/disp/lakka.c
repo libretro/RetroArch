@@ -315,19 +315,18 @@ void lakka_draw_background(void)
 
    glViewport(0, 0, gl->win_width, gl->win_height);
 
-   gl->coords.vertex = vertex;
-   gl->coords.tex_coord = tex_coord;
-   gl->coords.color = textures[TEXTURE_BG].id ? color : black_color;
+   struct gl_coords coords;
+   coords.vertices = 4;
+   coords.vertex = vertex;
+   coords.tex_coord = tex_coord;
+   coords.color = textures[TEXTURE_BG].id ? color : black_color;
    glBindTexture(GL_TEXTURE_2D, textures[TEXTURE_BG].id);
 
-   gl->coords.vertices = 4;
-   gl_shader_set_coords(gl, &gl->coords, &gl->mvp_no_rot);
+   gl_shader_set_coords(gl, &coords, &gl->mvp_no_rot);
 
    glEnable(GL_BLEND);
    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
    glDisable(GL_BLEND);
-
-   gl->coords.color = gl->white_color_ptr;
 }
 
 void lakka_draw_icon(GLuint texture, float x, float y,
@@ -357,9 +356,11 @@ void lakka_draw_icon(GLuint texture, float x, float y,
 
    glViewport(x, gl->win_height - y, icon_size, icon_size);
 
-   gl->coords.vertex = vertex;
-   gl->coords.tex_coord = tex_coord;
-   gl->coords.color = color;
+   struct gl_coords coords;
+   coords.vertices = 4;
+   coords.vertex = vertex;
+   coords.tex_coord = tex_coord;
+   coords.color = color;
    glBindTexture(GL_TEXTURE_2D, texture);
 
    math_matrix mymat;
@@ -372,17 +373,12 @@ void lakka_draw_icon(GLuint texture, float x, float y,
    matrix_scale(&mscal, scale, scale, 1);
    matrix_multiply(&mymat, &mscal, &mymat);
 
-   gl->coords.vertices = 4;
-   gl_shader_set_coords(gl, &gl->coords, &mymat);
+   gl_shader_set_coords(gl, &coords, &mymat);
 
    glEnable(GL_BLEND);
    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
    glDisable(GL_BLEND);
-
-   gl->coords.vertex = gl->vertex_ptr;
-   gl->coords.tex_coord = gl->tex_coords;
-   gl->coords.color = gl->white_color_ptr;
 }
 
 static void lakka_draw_arrow()
@@ -611,10 +607,11 @@ static void lakka_draw_fbo()
    if (!gl)
       return;
 
-   gl->coords.vertices = 4;
-   gl->coords.vertex = vertex;
-   gl->coords.tex_coord = vertex;
-   gl->coords.color = gl->white_color_ptr;
+   struct gl_coords coords;
+   coords.vertices = 4;
+   coords.vertex = vertex;
+   coords.tex_coord = vertex;
+   coords.color = gl->white_color_ptr;
    glBindTexture(GL_TEXTURE_2D, fbocolor);
 
    math_matrix mymat;
@@ -627,7 +624,7 @@ static void lakka_draw_fbo()
    matrix_scale(&mscal, global_scale, global_scale, 1);
    matrix_multiply(&mymat, &mscal, &mymat);
 
-   gl_shader_set_coords(gl, &gl->coords, &mymat);
+   gl_shader_set_coords(gl, &coords, &mymat);
 
    glEnable(GL_BLEND);
 
