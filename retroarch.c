@@ -2574,8 +2574,6 @@ static void main_clear_state_extern(void)
    deinit_subsystem_fullpaths();
    rarch_deinit_recording();
 
-
-
    deinit_log_file();
    history_playlist_free();
 

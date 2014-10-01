@@ -198,9 +198,8 @@ static void hid_manager_device_attached(void* context, IOReturn result,
       strlcpy(g_settings.input.device_names[connection->slot],
             device_name, sizeof(g_settings.input.device_names));
        
-       /* TODO - VID/PID? */
       input_config_autoconfigure_joypad(connection->slot,
-            device_name, 0, 0, apple_joypad.ident);
+            device_name, connection->v_id, connection->p_id, apple_joypad.ident);
       RARCH_LOG("Port %d: %s.\n", connection->slot, device_name);
    }
 }
