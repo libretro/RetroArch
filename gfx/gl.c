@@ -1329,8 +1329,8 @@ static inline void gl_copy_frame(gl_t *gl, const void *frame, unsigned width, un
 
          if (width != pitch_width)
          {
-            /* conv_buffer - this buffer is 
-             * preallocated in case we hit this path. */
+            /* Slow path - conv_buffer is preallocated 
+             * just in case we hit this path. */
 
             unsigned h;
             const unsigned line_bytes = width * gl->base_size;
@@ -1361,30 +1361,21 @@ static inline void gl_copy_frame(gl_t *gl, const void *frame, unsigned width, un
 
    glUnmapBuffer(GL_TEXTURE_REFERENCE_BUFFER_SCE);
 #else
+   const GLvoid *data_buf = frame;
    glPixelStorei(GL_UNPACK_ALIGNMENT, get_alignment(pitch));
-   if (gl->base_size == 2)
-   {
-      const void *buf = frame;
-      if (!gl->have_es2_compat)
-      {
-         // Convert to 32-bit textures on desktop GL.
-         gl_convert_frame_rgb16_32(gl, gl->conv_buffer, frame, width, height, pitch);
-         buf = gl->conv_buffer;
-      }
-      else
-         glPixelStorei(GL_UNPACK_ROW_LENGTH, pitch / gl->base_size);
 
-      glTexSubImage2D(GL_TEXTURE_2D,
-            0, 0, 0, width, height, gl->texture_type,
-            gl->texture_fmt, buf);
+   if (gl->base_size == 2 && !gl->have_es2_compat)
+   {
+      /* Convert to 32-bit textures on desktop GL. */
+      gl_convert_frame_rgb16_32(gl, gl->conv_buffer, frame, width, height, pitch);
+      data_buf = gl->conv_buffer;
    }
    else
-   {
       glPixelStorei(GL_UNPACK_ROW_LENGTH, pitch / gl->base_size);
-      glTexSubImage2D(GL_TEXTURE_2D,
-            0, 0, 0, width, height, gl->texture_type,
-            gl->texture_fmt, frame);
-   }
+
+   glTexSubImage2D(GL_TEXTURE_2D,
+         0, 0, 0, width, height, gl->texture_type,
+         gl->texture_fmt, data_buf);
 
    glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
 #endif
