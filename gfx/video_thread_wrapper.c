@@ -45,6 +45,7 @@ enum thread_cmd
    CMD_POKE_GET_FBO_STATE,
 #endif
    CMD_POKE_SET_ASPECT_RATIO,
+   CMD_POKE_SET_OSD_MSG,
 
    CMD_DUMMY = INT_MAX
 };
@@ -130,6 +131,13 @@ typedef struct thread_video
          unsigned index;
          bool smooth;
       } filtering;
+
+      struct
+      {
+         char msg[1024];
+         struct font_params params;
+      } osd_message;
+
    } cmd_data;
 
    struct rarch_viewport vp;
@@ -387,7 +395,15 @@ static void thread_loop(void *data)
                   thr->cmd_data.i);
             thread_reply(thr, CMD_POKE_SET_ASPECT_RATIO);
             break;
-            
+
+         case CMD_POKE_SET_OSD_MSG:
+            if (thr->poke && thr->poke->set_osd_msg)
+               thr->poke->set_osd_msg(thr->driver_data,
+                     thr->cmd_data.osd_message.msg,
+                     &thr->cmd_data.osd_message.params);
+            thread_reply(thr, CMD_POKE_SET_OSD_MSG);
+            break;
+
          case CMD_NONE:
             /* Never reply on no command. Possible deadlock if 
              * thread sends command right after frame update. */
@@ -408,10 +424,12 @@ static void thread_loop(void *data)
          bool focus = false;
          struct rarch_viewport vp = {0};
          
+         thr->frame.within_thread = true;
          if (thr->driver && thr->driver->frame)
             ret = thr->driver->frame(thr->driver_data,
                thr->frame.buffer, thr->frame.width, thr->frame.height,
                thr->frame.pitch, *thr->frame.msg ? thr->frame.msg : NULL);
+         thr->frame.within_thread = false;
 
          slock_unlock(thr->frame.lock);
 
@@ -820,6 +838,23 @@ static void thread_set_texture_enable(void *data, bool state, bool full_screen)
 }
 #endif
 
+static void thread_set_osd_msg(void *data, const char *msg, const struct font_params *params)
+{
+   thread_video_t *thr = (thread_video_t*)data;
+   if (thr->frame.within_thread)
+   {
+      if (thr->poke && thr->poke->set_osd_msg)
+         thr->poke->set_osd_msg(thr->driver_data, msg, params);
+   }
+   else
+   {
+      strncpy(thr->cmd_data.osd_message.msg, msg, sizeof(thr->cmd_data.osd_message.msg));
+      thr->cmd_data.osd_message.params = *params;
+      thread_send_cmd(thr, CMD_POKE_SET_OSD_MSG);
+      thread_wait_reply(thr, CMD_POKE_SET_OSD_MSG);
+   }
+}
+
 static void thread_apply_state_changes(void *data)
 {
    thread_video_t *thr = (thread_video_t*)data;
@@ -849,7 +884,7 @@ static const video_poke_interface_t thread_poke = {
    thread_set_texture_enable,
 #endif
 
-   NULL,
+   thread_set_osd_msg,
    NULL,
    NULL,
 
