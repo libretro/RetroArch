@@ -27,30 +27,31 @@
 #define ATLAS_COLS 16
 #define ATLAS_SIZE (ATLAS_ROWS * ATLAS_COLS)
 
-typedef struct ft_renderer
+typedef struct freetype_renderer
 {
    FT_Library lib;
    FT_Face face;
 
    struct font_atlas atlas;
    struct font_glyph glyphs[ATLAS_SIZE];
-} ft_renderer_t;
+} freetype_renderer_t;
 
-static const struct font_atlas *ft_renderer_get_atlas(void *data)
+static const struct font_atlas *freetype_renderer_get_atlas(void *data)
 {
-   ft_renderer_t *handle = (ft_renderer_t*)data;
+   freetype_renderer_t *handle = (freetype_renderer_t*)data;
    return &handle->atlas;
 }
 
-static const struct font_glyph *ft_renderer_get_glyph(void *data, uint32_t code)
+static const struct font_glyph *freetype_renderer_get_glyph(
+      void *data, uint32_t code)
 {
-   ft_renderer_t *handle = (ft_renderer_t*)data;
+   freetype_renderer_t *handle = (freetype_renderer_t*)data;
    return code < ATLAS_SIZE ? &handle->glyphs[code] : NULL;
 }
 
-static void ft_renderer_free(void *data)
+static void freetype_renderer_free(void *data)
 {
-   ft_renderer_t *handle = (ft_renderer_t*)data;
+   freetype_renderer_t *handle = (freetype_renderer_t*)data;
    if (!handle)
       return;
 
@@ -63,7 +64,7 @@ static void ft_renderer_free(void *data)
    free(handle);
 }
 
-static bool ft_renderer_create_atlas(ft_renderer_t *handle)
+static bool freetype_renderer_create_atlas(freetype_renderer_t *handle)
 {
    unsigned i;
    bool ret = true;
@@ -109,7 +110,9 @@ static bool ft_renderer_create_atlas(ft_renderer_t *handle)
    handle->atlas.width = max_width * ATLAS_COLS;
    handle->atlas.height = max_height * ATLAS_ROWS;
 
-   handle->atlas.buffer = (uint8_t*)calloc(handle->atlas.width * handle->atlas.height, 1);
+   handle->atlas.buffer = (uint8_t*)
+      calloc(handle->atlas.width * handle->atlas.height, 1);
+
    if (!handle->atlas.buffer)
    {
       ret = false;
@@ -120,19 +123,19 @@ static bool ft_renderer_create_atlas(ft_renderer_t *handle)
    for (i = 0; i < ATLAS_SIZE; i++)
    {
       unsigned r, c;
-
+      uint8_t *dst = NULL;
       unsigned offset_x = (i % ATLAS_COLS) * max_width;
       unsigned offset_y = (i / ATLAS_COLS) * max_height;
 
       handle->glyphs[i].atlas_offset_x = offset_x;
       handle->glyphs[i].atlas_offset_y = offset_y;
 
-      uint8_t *dst = handle->atlas.buffer;
+      dst = (uint8_t*)handle->atlas.buffer;
       dst += offset_x + offset_y * handle->atlas.width;
 
       if (buffer[i])
       {
-         const uint8_t *src = buffer[i];
+         const uint8_t *src = (const uint8_t*)buffer[i];
          for (r = 0; r < handle->glyphs[i].height;
                r++, dst += handle->atlas.width, src += pitches[i])
             for (c = 0; c < handle->glyphs[i].width; c++)
@@ -146,11 +149,13 @@ end:
    return ret;
 }
 
-static void *ft_renderer_init(const char *font_path, float font_size)
+static void *freetype_renderer_init(const char *font_path, float font_size)
 {
    FT_Error err;
 
-   ft_renderer_t *handle = (ft_renderer_t*)calloc(1, sizeof(*handle));
+   freetype_renderer_t *handle = (freetype_renderer_t*)
+      calloc(1, sizeof(*handle));
+
    if (!handle)
       goto error;
 
@@ -166,13 +171,13 @@ static void *ft_renderer_init(const char *font_path, float font_size)
    if (err)
       goto error;
 
-   if (!ft_renderer_create_atlas(handle))
+   if (!freetype_renderer_create_atlas(handle))
       goto error;
 
    return handle;
 
 error:
-   ft_renderer_free(handle);
+   freetype_renderer_free(handle);
    return NULL;
 }
 
@@ -197,7 +202,7 @@ static const char *font_paths[] = {
 };
 
 /* Highly OS/platform dependent. */
-static const char *ft_renderer_get_default_font(void)
+static const char *freetype_renderer_get_default_font(void)
 {
    size_t i;
    for (i = 0; i < ARRAY_SIZE(font_paths); i++)
@@ -209,11 +214,11 @@ static const char *ft_renderer_get_default_font(void)
    return NULL;
 }
 
-font_renderer_driver_t ft_font_renderer = {
-   ft_renderer_init,
-   ft_renderer_get_atlas,
-   ft_renderer_get_glyph,
-   ft_renderer_free,
-   ft_renderer_get_default_font,
+font_renderer_driver_t freetype_font_renderer = {
+   freetype_renderer_init,
+   freetype_renderer_get_atlas,
+   freetype_renderer_get_glyph,
+   freetype_renderer_free,
+   freetype_renderer_get_default_font,
    "freetype",
 };

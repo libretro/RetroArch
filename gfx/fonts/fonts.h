@@ -70,7 +70,7 @@ typedef struct font_renderer_driver
    const char *ident;
 } font_renderer_driver_t;
 
-extern font_renderer_driver_t ft_font_renderer;
+extern font_renderer_driver_t freetype_font_renderer;
 extern font_renderer_driver_t bitmap_font_renderer;
 
 /* font_path can be NULL for default font. */
