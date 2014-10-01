@@ -18,6 +18,19 @@
 #include "../gl_common.h"
 #include "../shader_common.h"
 
+#define emit(c, vx, vy) do { \
+   font_vertex[     2 * (6 * i + c) + 0] = (x + (delta_x + off_x + vx * width) * scale) * inv_win_width; \
+   font_vertex[     2 * (6 * i + c) + 1] = (y + (delta_y - off_y - vy * height) * scale) * inv_win_height; \
+   font_tex_coords[ 2 * (6 * i + c) + 0] = (tex_x + vx * width) * inv_tex_size_x; \
+   font_tex_coords[ 2 * (6 * i + c) + 1] = (tex_y + vy * height) * inv_tex_size_y; \
+   font_color[      4 * (6 * i + c) + 0] = color[0]; \
+   font_color[      4 * (6 * i + c) + 1] = color[1]; \
+   font_color[      4 * (6 * i + c) + 2] = color[2]; \
+   font_color[      4 * (6 * i + c) + 3] = color[3]; \
+} while(0)
+
+#define MAX_MSG_LEN_CHUNK 64
+
 typedef struct
 {
    gl_t *gl;
@@ -28,7 +41,8 @@ typedef struct
    void *font_data;
 } gl_raster_t;
 
-static void *gl_init_font(void *gl_data, const char *font_path, float font_size)
+static void *gl_raster_font_init_font(void *gl_data,
+      const char *font_path, float font_size)
 {
    gl_raster_t *font = (gl_raster_t*)calloc(1, sizeof(*font));
    if (!font)
@@ -87,7 +101,7 @@ static void *gl_init_font(void *gl_data, const char *font_path, float font_size)
    return font;
 }
 
-static void gl_free_font(void *data)
+static void gl_raster_font_free_font(void *data)
 {
    gl_raster_t *font = (gl_raster_t*)data;
    if (!font)
@@ -100,16 +114,6 @@ static void gl_free_font(void *data)
    free(font);
 }
 
-#define emit(c, vx, vy) do { \
-   font_vertex[     2 * (6 * i + c) + 0] = (x + (delta_x + off_x + vx * width) * scale) * inv_win_width; \
-   font_vertex[     2 * (6 * i + c) + 1] = (y + (delta_y - off_y - vy * height) * scale) * inv_win_height; \
-   font_tex_coords[ 2 * (6 * i + c) + 0] = (tex_x + vx * width) * inv_tex_size_x; \
-   font_tex_coords[ 2 * (6 * i + c) + 1] = (tex_y + vy * height) * inv_tex_size_y; \
-   font_color[      4 * (6 * i + c) + 0] = color[0]; \
-   font_color[      4 * (6 * i + c) + 1] = color[1]; \
-   font_color[      4 * (6 * i + c) + 2] = color[2]; \
-   font_color[      4 * (6 * i + c) + 3] = color[3]; \
-} while(0)
 
 static void render_message(gl_raster_t *font, const char *msg, GLfloat scale,
       const GLfloat color[4], GLfloat pos_x, GLfloat pos_y)
@@ -119,7 +123,6 @@ static void render_message(gl_raster_t *font, const char *msg, GLfloat scale,
 
    glBindTexture(GL_TEXTURE_2D, font->tex);
 
-#define MAX_MSG_LEN_CHUNK 64
    GLfloat font_tex_coords[2 * 6 * MAX_MSG_LEN_CHUNK];
    GLfloat font_vertex[2 * 6 * MAX_MSG_LEN_CHUNK]; 
    GLfloat font_color[4 * 6 * MAX_MSG_LEN_CHUNK];
@@ -192,7 +195,7 @@ static void render_message(gl_raster_t *font, const char *msg, GLfloat scale,
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
 }
 
-static void gl_render_msg(void *data, const char *msg,
+static void gl_raster_font_render_msg(void *data, const char *msg,
       const struct font_params *params)
 {
    GLfloat x, y, scale, drop_mod;
@@ -265,7 +268,8 @@ static void gl_render_msg(void *data, const char *msg,
    gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
 }
 
-static const struct font_glyph *gl_get_glyph(void *data, uint32_t code)
+static const struct font_glyph *gl_raster_font_get_glyph(
+      void *data, uint32_t code)
 {
    gl_raster_t *font = (gl_raster_t*)data;
 
@@ -276,9 +280,9 @@ static const struct font_glyph *gl_get_glyph(void *data, uint32_t code)
 }
 
 gl_font_renderer_t gl_raster_font = {
-   gl_init_font,
-   gl_free_font,
-   gl_render_msg,
+   gl_raster_font_init_font,
+   gl_raster_font_free_font,
+   gl_raster_font_render_msg,
    "GL raster",
-   gl_get_glyph,
+   gl_raster_font_get_glyph,
 };

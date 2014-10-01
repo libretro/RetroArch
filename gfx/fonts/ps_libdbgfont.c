@@ -33,7 +33,7 @@
 #define DbgFontExit cellDbgFontExit
 #endif
 
-static void *gl_init_font(void *gl_data, const char *font_path, float font_size)
+static void *libdbg_font_init_font(void *gl_data, const char *font_path, float font_size)
 {
    (void)font_path;
    (void)font_size;
@@ -54,13 +54,13 @@ static void *gl_init_font(void *gl_data, const char *font_path, float font_size)
    return (void*)-1;
 }
 
-static void gl_deinit_font(void *data)
+static void libdbg_font_deinit_font(void *data)
 {
    (void)data;
    DbgFontExit();
 }
 
-static void gl_render_msg(void *data, const char *msg,
+static void libdbg_font_render_msg(void *data, const char *msg,
       const struct font_params *params)
 {
    (void)data;
@@ -95,8 +95,8 @@ static void gl_render_msg(void *data, const char *msg,
 }
 
 gl_font_renderer_t libdbg_font = {
-   gl_init_font,
-   gl_deinit_font,
-   gl_render_msg,
+   libdbg_font_init_font,
+   libdbg_font_deinit_font,
+   libdbg_font_render_msg,
    "GL raster",
 };
