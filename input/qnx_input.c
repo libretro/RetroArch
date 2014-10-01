@@ -31,7 +31,6 @@
 #endif
 
 typedef struct {
-    // Static device info.
 #ifdef HAVE_BB10
     screen_device_t handle;
 #endif
@@ -82,7 +81,8 @@ typedef struct qnx_input
 static void qnx_input_autodetect_gamepad(void *data,
       input_device_t* controller, int port);
 
-static void initController(void *data, input_device_t* controller);
+static void handle_device(void *data,
+      input_device_t* controller);
 
 #ifdef HAVE_BB10
 static void process_gamepad_event(void *data,
@@ -136,7 +136,7 @@ static void process_gamepad_event(void *data,
       g_extern.lifecycle_state ^= (1ULL << RARCH_MENU_TOGGLE);
 }
 
-static void loadController(void *data, input_device_t* controller)
+static void handle_device(void *data, input_device_t* controller)
 {
    int device;
    qnx_input_t *qnx = (qnx_input_t*)data;
@@ -228,7 +228,7 @@ static void discoverControllers(void *data)
       {
          qnx->devices[qnx->pads_connected].handle = devices_found[i];
          qnx->devices[qnx->pads_connected].index = qnx->pads_connected;
-         loadController(qnx, &qnx->devices[qnx->pads_connected]);
+         handle_device(qnx, &qnx->devices[qnx->pads_connected]);
 
          if (qnx->pads_connected == MAX_PADS)
             break;
@@ -304,8 +304,9 @@ static void qnx_input_autodetect_gamepad(void *data,
    {
       strlcpy(g_settings.input.device_names[port],
             name_buf, sizeof(g_settings.input.device_names[port]));
-      /* TODO - implement VID/PID? */
-      input_config_autoconfigure_joypad(port, name_buf, 0, 0,
+
+      input_config_autoconfigure_joypad(port, name_buf,
+            controller->vid, controller->vid,
             qnx->joypad);
 
       controller->port = port;
@@ -555,7 +556,7 @@ static void handle_screen_event(void *data, bps_event_t *event)
                   if (!qnx->devices[i].handle)
                   {
                      qnx->devices[i].handle = device;
-                     loadController(data, &qnx->devices[i]);
+                     handle_device(data, &qnx->devices[i]);
                      break;
                   }
                }
