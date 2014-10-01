@@ -31,7 +31,8 @@
 static PyObject* py_read_wram(PyObject *self, PyObject *args)
 {
    (void)self;
-   const uint8_t *data = (const uint8_t*)pretro_get_memory_data(RETRO_MEMORY_SYSTEM_RAM);
+   const uint8_t *data = (const uint8_t*)
+      pretro_get_memory_data(RETRO_MEMORY_SYSTEM_RAM);
    if (!data)
    {
       Py_INCREF(Py_None);
@@ -56,7 +57,8 @@ static PyObject* py_read_wram(PyObject *self, PyObject *args)
 static PyObject* py_read_vram(PyObject *self, PyObject *args)
 {
    (void)self;
-   const uint8_t *data = (const uint8_t*)pretro_get_memory_data(RETRO_MEMORY_VIDEO_RAM);
+   const uint8_t *data = (const uint8_t*)
+      pretro_get_memory_data(RETRO_MEMORY_VIDEO_RAM);
    if (!data)
    {
       Py_INCREF(Py_None);
@@ -103,7 +105,9 @@ static PyObject *py_read_input(PyObject *self, PyObject *args)
    if (player > MAX_PLAYERS || player < 1 || key >= RARCH_FIRST_META_KEY)
       return NULL;
 
-   int16_t res = driver.block_libretro_input ? 0 : driver.input->input_state(driver.input_data, py_binds, player - 1, RETRO_DEVICE_JOYPAD, 0, key);
+   int16_t res = driver.block_libretro_input ? 0 : 
+      driver.input->input_state(driver.input_data,
+            py_binds, player - 1, RETRO_DEVICE_JOYPAD, 0, key);
    return PyBool_FromLong(res);
 }
 
@@ -122,7 +126,8 @@ static PyObject *py_read_analog(PyObject *self, PyObject *args)
    if (player > MAX_PLAYERS || player < 1 || index > 1 || id > 1)
       return NULL;
 
-   int16_t res = driver.input->input_state(driver.input_data, py_binds, player - 1, RETRO_DEVICE_ANALOG, index, id);
+   int16_t res = driver.input->input_state(driver.input_data,
+         py_binds, player - 1, RETRO_DEVICE_ANALOG, index, id);
    return PyFloat_FromDouble((double)res / 0x7fff);
 }
 
@@ -154,10 +159,14 @@ static void py_set_attrs(PyObject *mod)
    DECL_ATTR_RETRO(L3);
    DECL_ATTR_RETRO(R3);
 
-   PyObject_SetAttrString(mod, "ANALOG_LEFT", PyLong_FromLong(RETRO_DEVICE_INDEX_ANALOG_LEFT));
-   PyObject_SetAttrString(mod, "ANALOG_RIGHT", PyLong_FromLong(RETRO_DEVICE_INDEX_ANALOG_RIGHT));
-   PyObject_SetAttrString(mod, "ANALOG_X", PyLong_FromLong(RETRO_DEVICE_ID_ANALOG_X));
-   PyObject_SetAttrString(mod, "ANALOG_Y", PyLong_FromLong(RETRO_DEVICE_ID_ANALOG_Y));
+   PyObject_SetAttrString(mod, "ANALOG_LEFT",
+         PyLong_FromLong(RETRO_DEVICE_INDEX_ANALOG_LEFT));
+   PyObject_SetAttrString(mod, "ANALOG_RIGHT",
+         PyLong_FromLong(RETRO_DEVICE_INDEX_ANALOG_RIGHT));
+   PyObject_SetAttrString(mod, "ANALOG_X",
+         PyLong_FromLong(RETRO_DEVICE_ID_ANALOG_X));
+   PyObject_SetAttrString(mod, "ANALOG_Y",
+         PyLong_FromLong(RETRO_DEVICE_ID_ANALOG_Y));
 }
 
 static PyModuleDef RarchModule = {
@@ -201,7 +210,7 @@ static char *dupe_newline(const char *str)
    return ret;
 }
 
-// Need to make sure that first-line indentation is 0. :(
+/* Need to make sure that first-line indentation is 0. */
 static char *align_program(const char *program)
 {
    char *prog = strdup(program);
@@ -244,7 +253,8 @@ static char *align_program(const char *program)
    return new_prog;
 }
 
-py_state_t *py_state_new(const char *script, unsigned is_file, const char *pyclass)
+py_state_t *py_state_new(const char *script,
+      unsigned is_file, const char *pyclass)
 {
    RARCH_LOG("Initializing Python runtime ...\n");
    PyImport_AppendInittab("rarch", &PyInit_Retro);
@@ -261,9 +271,10 @@ py_state_t *py_state_new(const char *script, unsigned is_file, const char *pycla
 
    if (is_file)
    {
-      // Have to hack around the fact that the
-      // FILE struct isn't standardized across environments.
-      // PyRun_SimpleFile() breaks on Windows because it's compiled with MSVC.
+      /* Have to hack around the fact that the FILE struct
+       * isn't standardized across environments.
+       * PyRun_SimpleFile() breaks on Windows because it's 
+       * compiled with MSVC. */
 
       char *script_ = NULL;
       if (read_file(script, (void**)&script_) < 0)
@@ -340,8 +351,10 @@ float py_state_get(py_state_t *handle, const char *id,
    unsigned i;
    for (i = 0; i < MAX_PLAYERS; i++)
    {
-      input_push_analog_dpad(g_settings.input.binds[i], g_settings.input.analog_dpad_mode[i]);
-      input_push_analog_dpad(g_settings.input.autoconf_binds[i], g_settings.input.analog_dpad_mode[i]);
+      input_push_analog_dpad(g_settings.input.binds[i],
+            g_settings.input.analog_dpad_mode[i]);
+      input_push_analog_dpad(g_settings.input.autoconf_binds[i],
+            g_settings.input.analog_dpad_mode[i]);
    }
 
    PyObject *ret = PyObject_CallMethod(handle->inst, (char*)id, (char*)"I", frame_count);
