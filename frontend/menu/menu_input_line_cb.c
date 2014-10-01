@@ -301,14 +301,9 @@ bool menu_custom_bind_keyboard_cb(void *data, unsigned code)
 int menu_input_bind_iterate(void *data)
 {
    char msg[PATH_MAX];
-   int64_t current;
-   int timeout = 0;
    menu_handle_t *menu = (menu_handle_t*)data;
    struct menu_bind_state binds = menu->binds;
     
-   (void)current;
-   (void)timeout;
-
    if (driver.video_data && driver.menu_ctx &&
          driver.menu_ctx->render)
       driver.menu_ctx->render();
