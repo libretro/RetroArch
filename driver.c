@@ -24,8 +24,8 @@
 #include <math.h>
 #include "compat/posix_string.h"
 #include "audio/utils.h"
-#include "gfx/thread_wrapper.h"
-#include "audio/thread_wrapper.h"
+#include "gfx/video_thread_wrapper.h"
+#include "audio/audio_thread_wrapper.h"
 #include "gfx/gfx_common.h"
 
 #ifdef HAVE_X11

@@ -13,7 +13,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "thread_wrapper.h"
+#include "video_thread_wrapper.h"
 #include "../thread.h"
 #include "../general.h"
 #include "../performance.h"

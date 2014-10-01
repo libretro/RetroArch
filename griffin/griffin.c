@@ -598,7 +598,7 @@ THREAD
 #elif defined(HAVE_THREADS)
 #include "../thread.c"
 #include "../gfx/video_thread_wrapper.c"
-#include "../audio/thread_wrapper.c"
+#include "../audio/audio_thread_wrapper.c"
 #include "../autosave.c"
 #endif
 

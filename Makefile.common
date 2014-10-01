@@ -282,7 +282,7 @@ ifeq ($(HAVE_FREETYPE), 1)
 endif
 
 ifeq ($(HAVE_THREADS), 1)
-   OBJ += autosave.o thread.o gfx/video_thread_wrapper.o audio/thread_wrapper.o
+   OBJ += autosave.o thread.o gfx/video_thread_wrapper.o audio/audio_thread_wrapper.o
    DEFINES += -DHAVE_THREADS
    ifeq ($(findstring Haiku,$(OS)),)
       LIBS += -lpthread
