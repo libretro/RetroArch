@@ -125,14 +125,11 @@ static void gl_overlay_tex_geom(void *data,
       float x, float y, float w, float h);
 #endif
 
-static inline void set_texture_coords(GLfloat *coords,
-      GLfloat xamt, GLfloat yamt)
-{
-   coords[2] = xamt;
-   coords[6] = xamt;
-   coords[5] = yamt;
-   coords[7] = yamt;
-}
+#define set_texture_coords(coords, xamt, yamt) \
+   coords[2] = xamt; \
+   coords[6] = xamt; \
+   coords[5] = yamt; \
+   coords[7] = yamt
 
 #if defined(HAVE_EGL) && defined(HAVE_OPENGLES2)
 static bool check_eglimage_proc(void)
