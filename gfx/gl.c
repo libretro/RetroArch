@@ -194,7 +194,7 @@ static bool check_fbo_proc(gl_t *gl)
 #endif
 #endif
 
-////////////////// Shaders
+/* Shaders */
 
 static bool gl_shader_init(gl_t *gl)
 {
@@ -272,34 +272,14 @@ static bool gl_shader_init(gl_t *gl)
    return ret;
 }
 
-static inline void gl_shader_deinit(gl_t *gl)
+static void gl_shader_deinit(gl_t *gl)
 {
-   if (!gl)
-      return;
-
    if (gl->shader)
       gl->shader->deinit();
    gl->shader = NULL;
 }
 
 #ifndef NO_GL_FF_VERTEX
-static void gl_set_coords(const struct gl_coords *coords)
-{
-   glClientActiveTexture(GL_TEXTURE1);
-   glTexCoordPointer(2, GL_FLOAT, 0, coords->lut_tex_coord);
-   glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-
-   glClientActiveTexture(GL_TEXTURE0);
-   glVertexPointer(2, GL_FLOAT, 0, coords->vertex);
-   glEnableClientState(GL_VERTEX_ARRAY);
-
-   glColorPointer(4, GL_FLOAT, 0, coords->color);
-   glEnableClientState(GL_COLOR_ARRAY);
-
-   glTexCoordPointer(2, GL_FLOAT, 0, coords->tex_coord);
-   glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-}
-
 static void gl_disable_client_arrays(gl_t *gl)
 {
    if (!gl || gl->core_context)
@@ -314,34 +294,43 @@ static void gl_disable_client_arrays(gl_t *gl)
 }
 #endif
 
-#ifndef NO_GL_FF_MATRIX
-static void gl_set_mvp(const void *data)
-{
-   const math_matrix *mat = (const math_matrix*)data;
-   glMatrixMode(GL_PROJECTION);
-   glLoadMatrixf(mat->data);
-   glMatrixMode(GL_MODELVIEW);
-   glLoadIdentity();
-}
-#endif
-
 void gl_shader_set_coords(gl_t *gl, const struct gl_coords *coords, const math_matrix *mat)
 {
-   if (!gl)
-      return;
-
    bool ret_coords = (gl->shader) ? gl->shader->set_coords(coords) : false;
    bool ret_mvp    = (gl->shader) ? gl->shader->set_mvp(gl, mat)   : false;
 
-   // Fall back to FF-style if needed and possible.
+   (void)ret_coords;
+   (void)ret_mvp;
+
 #ifndef NO_GL_FF_VERTEX
+   // Fall back to FF-style if needed and possible.
    if (!ret_coords)
-      gl_set_coords(coords);
+   {
+      glClientActiveTexture(GL_TEXTURE1);
+      glTexCoordPointer(2, GL_FLOAT, 0, coords->lut_tex_coord);
+      glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+
+      glClientActiveTexture(GL_TEXTURE0);
+      glVertexPointer(2, GL_FLOAT, 0, coords->vertex);
+      glEnableClientState(GL_VERTEX_ARRAY);
+
+      glColorPointer(4, GL_FLOAT, 0, coords->color);
+      glEnableClientState(GL_COLOR_ARRAY);
+
+      glTexCoordPointer(2, GL_FLOAT, 0, coords->tex_coord);
+      glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+   }
 #endif
 
 #ifndef NO_GL_FF_MATRIX
+   // Fall back to FF-style if needed and possible.
    if (!ret_mvp)
-      gl_set_mvp(mat);
+   {
+      glMatrixMode(GL_PROJECTION);
+      glLoadMatrixf(mat->data);
+      glMatrixMode(GL_MODELVIEW);
+      glLoadIdentity();
+   }
 #endif
 }
 
@@ -379,19 +368,22 @@ static void gl_shader_scale(gl_t *gl, unsigned index, struct gfx_fbo_scale *scal
       gl->shader->shader_scale(index, scale);
 }
 
+/* Compute FBO geometry.
+ * When width/height changes or window sizes change, 
+ * we have to recalculate geometry of our FBO. */
+
 static void gl_compute_fbo_geometry(gl_t *gl, unsigned width, unsigned height,
       unsigned vp_width, unsigned vp_height)
 {
    int i;
-   unsigned last_width, last_height, last_max_width, last_max_height;
-   last_width = width;
-   last_height = height;
-   last_max_width = gl->tex_w;
-   last_max_height = gl->tex_h;
-
-   GLint max_size = 0;
-   glGetIntegerv(GL_MAX_TEXTURE_SIZE, &max_size);
    bool size_modified = false;
+   GLint max_size = 0;
+   unsigned last_width = width;
+   unsigned last_height = height;
+   unsigned last_max_width = gl->tex_w;
+   unsigned last_max_height = gl->tex_h;
+
+   glGetIntegerv(GL_MAX_TEXTURE_SIZE, &max_size);
 
    // Calculate viewports for FBOs.
    for (i = 0; i < gl->fbo_pass; i++)
@@ -692,14 +684,15 @@ static void gl_deinit_hw_render(gl_t *gl)
 
 static bool gl_init_hw_render(gl_t *gl, unsigned width, unsigned height)
 {
-   // We can only share texture objects through contexts.
-   // FBOs are "abstract" objects and are not shared.
+   unsigned i;
+   bool depth = false, stencil = false;
+   GLint max_fbo_size = 0, max_renderbuffer_size = 0;
+
+   /* We can only share texture objects through contexts.
+    * FBOs are "abstract" objects and are not shared. */
    context_bind_hw_render(gl, true);
 
-   unsigned i;
    RARCH_LOG("[GL]: Initializing HW render (%u x %u).\n", width, height);
-   GLint max_fbo_size = 0;
-   GLint max_renderbuffer_size = 0;
    glGetIntegerv(GL_MAX_TEXTURE_SIZE, &max_fbo_size);
    glGetIntegerv(RARCH_GL_MAX_RENDERBUFFER_SIZE, &max_renderbuffer_size);
    RARCH_LOG("[GL]: Max texture size: %d px, renderbuffer size: %u px.\n", max_fbo_size, max_renderbuffer_size);
@@ -710,8 +703,8 @@ static bool gl_init_hw_render(gl_t *gl, unsigned width, unsigned height)
    glBindTexture(GL_TEXTURE_2D, 0);
    glGenFramebuffers(gl->textures, gl->hw_render_fbo);
 
-   bool depth = g_extern.system.hw_render_callback.depth;
-   bool stencil = g_extern.system.hw_render_callback.stencil;
+   depth = g_extern.system.hw_render_callback.depth;
+   stencil = g_extern.system.hw_render_callback.stencil;
 
 #ifdef HAVE_OPENGLES2
    if (stencil && !gl_query_extension(gl, "OES_packed_depth_stencil"))
@@ -779,9 +772,6 @@ void gl_set_projection(gl_t *gl, struct gl_ortho *ortho, bool allow_rotate)
 {
    math_matrix rot;
 
-   if (!gl)
-      return;
-
    // Calculate projection.
    matrix_ortho(&gl->mvp_no_rot, ortho->left, ortho->right,
          ortho->bottom, ortho->top, ortho->znear, ortho->zfar);
@@ -801,9 +791,6 @@ void gl_set_viewport(gl_t *gl, unsigned width, unsigned height, bool force_full,
    int x = 0, y = 0;
    float device_aspect = (float)width / height;
    struct gl_ortho ortho = {0, 1, 0, 1, -1, 1};
-
-   if (!gl)
-      return;
 
    if (gl->ctx_driver->translate_aspect)
       device_aspect = context_translate_aspect_func(gl, width, height);
@@ -917,19 +904,21 @@ static inline void gl_start_frame_fbo(gl_t *gl)
 #endif
 }
 
+/* On resize, we might have to recreate our FBOs 
+ * due to "Viewport" scale, and set a new viewport. */
+
 static void gl_check_fbo_dimensions(gl_t *gl)
 {
    int i;
-   if (!gl)
-      return;
 
-   // Check if we have to recreate our FBO textures.
+   /* Check if we have to recreate our FBO textures. */
    for (i = 0; i < gl->fbo_pass; i++)
    {
-      // Check proactively since we might suddently get sizes of tex_w width or tex_h height.
       if (gl->fbo_rect[i].max_img_width > gl->fbo_rect[i].width ||
             gl->fbo_rect[i].max_img_height > gl->fbo_rect[i].height)
       {
+         /* Check proactively since we might suddently 
+          * get sizes of tex_w width or tex_h height. */
          unsigned img_width = gl->fbo_rect[i].max_img_width;
          unsigned img_height = gl->fbo_rect[i].max_img_height;
          unsigned max = img_width > img_height ? img_width : img_height;
@@ -941,17 +930,22 @@ static void gl_check_fbo_dimensions(gl_t *gl)
          glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[i]);
 
          glTexImage2D(GL_TEXTURE_2D,
-               0, RARCH_GL_INTERNAL_FORMAT32, gl->fbo_rect[i].width, gl->fbo_rect[i].height,
+               0, RARCH_GL_INTERNAL_FORMAT32,
+               gl->fbo_rect[i].width,
+               gl->fbo_rect[i].height,
                0, RARCH_GL_TEXTURE_TYPE32,
                RARCH_GL_FORMAT32, NULL);
 
-         glFramebufferTexture2D(RARCH_GL_FRAMEBUFFER, RARCH_GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gl->fbo_texture[i], 0);
+         glFramebufferTexture2D(RARCH_GL_FRAMEBUFFER,
+               RARCH_GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
+               gl->fbo_texture[i], 0);
 
          GLenum status = glCheckFramebufferStatus(RARCH_GL_FRAMEBUFFER);
          if (status != RARCH_GL_FRAMEBUFFER_COMPLETE)
             RARCH_WARN("Failed to reinit FBO texture.\n");
 
-         RARCH_LOG("Recreating FBO texture #%d: %ux%u\n", i, gl->fbo_rect[i].width, gl->fbo_rect[i].height);
+         RARCH_LOG("Recreating FBO texture #%d: %ux%u\n",
+               i, gl->fbo_rect[i].width, gl->fbo_rect[i].height);
       }
    }
 }
@@ -961,25 +955,22 @@ static void gl_frame_fbo(gl_t *gl, const struct gl_tex_info *tex_info)
    const struct gl_fbo_rect *prev_rect;
    const struct gl_fbo_rect *rect;
    struct gl_tex_info *fbo_info;
-
    struct gl_tex_info fbo_tex_info[MAX_SHADERS];
    int i;
    GLfloat xamt, yamt;
    unsigned fbo_tex_info_cnt = 0;
    GLfloat fbo_tex_coords[8] = {0.0f};
 
-   if (!gl)
-      return;
-
-   // Render the rest of our passes.
+   /* Render the rest of our passes. */
    gl->coords.tex_coord = fbo_tex_coords;
 
-   // Calculate viewports, texture coordinates etc, and render all passes from FBOs, to another FBO.
+   /* Calculate viewports, texture coordinates etc,
+    * and render all passes from FBOs, to another FBO. */
    for (i = 1; i < gl->fbo_pass; i++)
    {
       prev_rect = &gl->fbo_rect[i - 1];
-      rect = &gl->fbo_rect[i];
-      fbo_info = &fbo_tex_info[i - 1];
+      rect      = &gl->fbo_rect[i];
+      fbo_info  = &fbo_tex_info[i - 1];
 
       xamt = (GLfloat)prev_rect->img_width / prev_rect->width;
       yamt = (GLfloat)prev_rect->img_height / prev_rect->height;
@@ -1007,7 +998,7 @@ static void gl_frame_fbo(gl_t *gl, const struct gl_tex_info *tex_info)
 
       glClear(GL_COLOR_BUFFER_BIT);
 
-      // Render to FBO with certain size.
+      /* Render to FBO with certain size. */
       gl_set_viewport(gl, rect->img_width, rect->img_height, true, false);
       if (gl->shader)
          gl->shader->set_params(gl, prev_rect->img_width, prev_rect->img_height, 
@@ -1025,14 +1016,14 @@ static void gl_frame_fbo(gl_t *gl, const struct gl_tex_info *tex_info)
       glDisable(GL_FRAMEBUFFER_SRGB);
 #endif
 
-   // Render our last FBO texture directly to screen.
+   /* Render our last FBO texture directly to screen. */
    prev_rect = &gl->fbo_rect[gl->fbo_pass - 1];
    xamt = (GLfloat)prev_rect->img_width / prev_rect->width;
    yamt = (GLfloat)prev_rect->img_height / prev_rect->height;
 
    set_texture_coords(fbo_tex_coords, xamt, yamt);
 
-   // Push final FBO to list.
+   /* Push final FBO to list. */
    fbo_info = &fbo_tex_info[gl->fbo_pass - 1];
    fbo_info->tex = gl->fbo_texture[gl->fbo_pass - 1];
    fbo_info->input_size[0] = prev_rect->img_width;
@@ -1042,7 +1033,7 @@ static void gl_frame_fbo(gl_t *gl, const struct gl_tex_info *tex_info)
    memcpy(fbo_info->coord, fbo_tex_coords, sizeof(fbo_tex_coords));
    fbo_tex_info_cnt++;
 
-   // Render our FBO texture to back buffer.
+   /* Render our FBO texture to back buffer. */
    gl_bind_backbuffer();
    if (gl->shader)
       gl->shader->use(gl, gl->fbo_pass + 1);
@@ -1262,6 +1253,8 @@ static void gl_init_textures(gl_t *gl, const video_info_t *video)
 
 static inline void gl_copy_frame(gl_t *gl, const void *frame, unsigned width, unsigned height, unsigned pitch)
 {
+   RARCH_PERFORMANCE_INIT(copy_frame);
+   RARCH_PERFORMANCE_START(copy_frame);
 #if defined(HAVE_OPENGLES2)
 #if defined(HAVE_EGL)
    if (gl->egl_images)
@@ -1322,7 +1315,7 @@ static inline void gl_copy_frame(gl_t *gl, const void *frame, unsigned width, un
 
             data_buf = gl->conv_buffer;
          }
-         
+
          glTexSubImage2D(GL_TEXTURE_2D,
                0, 0, 0, width, height, gl->texture_type,
                gl->texture_fmt, data_buf);         
@@ -1359,6 +1352,7 @@ static inline void gl_copy_frame(gl_t *gl, const void *frame, unsigned width, un
 
    glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
 #endif
+   RARCH_PERFORMANCE_STOP(copy_frame);
 }
 
 static inline void gl_set_prev_texture(gl_t *gl, const struct gl_tex_info *tex_info)
@@ -1472,12 +1466,11 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
 #endif
 
 #ifdef HAVE_FBO
-   // Render to texture in first pass.
+   /* Render to texture in first pass. */
    if (gl->fbo_inited)
    {
-      // Recompute FBO geometry.
-      // When width/height changes or window sizes change, we have to recalcuate geometry of our FBO.
-      gl_compute_fbo_geometry(gl, width, height, gl->vp_out_width, gl->vp_out_height);
+      gl_compute_fbo_geometry(gl, width, height,
+            gl->vp_out_width, gl->vp_out_height);
       gl_start_frame_fbo(gl);
    }
 #endif
@@ -1487,8 +1480,6 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
       gl->should_resize = false;
       context_set_resize_func(gl, gl->win_width, gl->win_height);
 
-      /* On resize, we might have to recreate our FBOs 
-       * due to "Viewport" scale, and set a new viewport. */
 #ifdef HAVE_FBO
       if (gl->fbo_inited)
       {
@@ -1514,10 +1505,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
 #endif
       {
          gl_update_input_size(gl, width, height, pitch, true);
-         RARCH_PERFORMANCE_INIT(copy_frame);
-         RARCH_PERFORMANCE_START(copy_frame);
          gl_copy_frame(gl, frame, width, height, pitch);
-         RARCH_PERFORMANCE_STOP(copy_frame);
       }
 
 #ifndef HAVE_GCMGL
