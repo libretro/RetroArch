@@ -384,7 +384,7 @@ void lakka_draw_icon(GLuint texture, float x, float y,
    glDisable(GL_BLEND);
 }
 
-static void lakka_draw_arrow()
+static void lakka_draw_arrow(void)
 {
    lakka_draw_icon(textures[TEXTURE_ARROW].id,
         margin_left + hspacing*(menu_active_category+1) +
@@ -550,7 +550,7 @@ static void lakka_draw_categories(void)
 
 #ifdef HAVE_FBO
 
-static void lakka_check_fb_status()
+static void lakka_check_fb_status(void)
 {
     GLenum status;
     status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
@@ -567,7 +567,7 @@ static void lakka_check_fb_status()
     }
 }
 
-static void lakka_fbo_reset()
+static void lakka_fbo_reset(void)
 {
    gl_t *gl = (gl_t*)driver_video_resolve(NULL);
    if (!gl)
@@ -602,7 +602,7 @@ static void lakka_fbo_reset()
    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-static void lakka_draw_fbo()
+static void lakka_draw_fbo(void)
 {
    gl_t *gl = (gl_t*)driver_video_resolve(NULL);
    if (!gl)
