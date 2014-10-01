@@ -342,13 +342,6 @@ static void rmenu_xui_frame(void)
    d3d_set_viewport(d3dr, &d3d->final_viewport);
 }
 
-static int rmenu_xui_input_postprocess(uint64_t old_state)
-{
-   (void)old_state;
-
-   return 0;
-}
-
 static void blit_line(int x, int y, const char *message, bool green)
 {
 }
@@ -534,7 +527,7 @@ menu_ctx_driver_t menu_ctx_rmenu_xui = {
    NULL,
    rmenu_xui_populate_entries,
    NULL,
-   rmenu_xui_input_postprocess,
+   NULL,
    rmenu_xui_navigation_clear,
    rmenu_xui_navigation_set_visible,
    rmenu_xui_navigation_set_visible,

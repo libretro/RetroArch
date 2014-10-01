@@ -320,12 +320,6 @@ static void rmenu_free(void *data)
 {
 }
 
-static int rmenu_input_postprocess(uint64_t old_state)
-{
-   (void)old_state;
-   return 0;
-}
-
 menu_ctx_driver_t menu_ctx_rmenu = {
    rmenu_set_texture,
    rmenu_render_messagebox,
@@ -337,7 +331,7 @@ menu_ctx_driver_t menu_ctx_rmenu = {
    rmenu_context_destroy,
    NULL,
    NULL,
-   rmenu_input_postprocess,
+   NULL,
    NULL,
    NULL,
    NULL,
