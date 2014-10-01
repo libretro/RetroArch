@@ -399,7 +399,7 @@ void retro_init_libretro_cbs(void *data)
    retro_set_default_callbacks(cbs);
 
 #ifdef HAVE_NETPLAY
-   if (!g_extern.netplay)
+   if (!driver.netplay_data)
       return;
 
    if (g_extern.netplay_is_spectate)

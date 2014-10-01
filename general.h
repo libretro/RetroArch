@@ -641,7 +641,6 @@ struct global
 
 #ifdef HAVE_NETPLAY
    /* Netplay. */
-   netplay_t *netplay;
    char netplay_server[PATH_MAX];
    bool netplay_enable;
    bool netplay_is_client;

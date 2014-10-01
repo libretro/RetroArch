@@ -448,6 +448,9 @@ typedef struct driver
    void *location_data;
    void *resampler_data;
    void *recording_data;
+#ifdef HAVE_NETPLAY
+   void *netplay_data;
+#endif
 
    bool audio_active;
    bool video_active;

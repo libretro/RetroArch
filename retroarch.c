@@ -1278,7 +1278,7 @@ static void init_cheats(void)
 {
    bool allow_cheats = true;
 #ifdef HAVE_NETPLAY
-   allow_cheats &= !g_extern.netplay;
+   allow_cheats &= !driver.netplay_data;
 #endif
    allow_cheats &= !g_extern.bsv.movie;
 
@@ -1300,7 +1300,7 @@ static void init_rewind(void)
 {
    void *state = NULL;
 #ifdef HAVE_NETPLAY
-   if (g_extern.netplay)
+   if (driver.netplay_data)
       return;
 #endif
 
@@ -1337,7 +1337,7 @@ static void init_rewind(void)
 static void deinit_rewind(void)
 {
 #ifdef HAVE_NETPLAY
-    if (g_extern.netplay)
+    if (driver.netplay_data)
         return;
 #endif
     
@@ -1419,13 +1419,13 @@ static void init_netplay(void)
    else
       RARCH_LOG("Waiting for client...\n");
 
-   g_extern.netplay = netplay_new(
+   driver.netplay_data = (netplay_t*)netplay_new(
          g_extern.netplay_is_client ? g_extern.netplay_server : NULL,
          g_extern.netplay_port ? g_extern.netplay_port : RARCH_DEFAULT_PORT,
          g_extern.netplay_sync_frames, &cbs, g_extern.netplay_is_spectate,
          g_settings.username);
 
-   if (!g_extern.netplay)
+   if (!driver.netplay_data)
    {
       g_extern.netplay_is_client = false;
       RARCH_WARN(RETRO_LOG_INIT_NETPLAY_FAILED);
@@ -1439,9 +1439,9 @@ static void init_netplay(void)
 
 static void deinit_netplay(void)
 {
-   if (g_extern.netplay)
-      netplay_free(g_extern.netplay);
-   g_extern.netplay = NULL;
+   if (driver.netplay_data)
+      netplay_free(driver.netplay_data);
+   driver.netplay_data = NULL;
 }
 #endif
 
@@ -2361,7 +2361,7 @@ static void check_volume(bool pressed_up, bool pressed_down)
 static void check_netplay_flip(bool pressed, bool fullscreen_toggle_pressed)
 {
    if (pressed)
-      netplay_flip_players(g_extern.netplay);
+      netplay_flip_players(driver.netplay_data);
 
    rarch_check_fullscreen(fullscreen_toggle_pressed);
 }
@@ -2460,7 +2460,7 @@ static bool do_state_checks(
 #endif
 
 #ifdef HAVE_NETPLAY
-   if (g_extern.netplay)
+   if (driver.netplay_data)
    {
       check_netplay_flip_func(trigger_input);
       return true;
@@ -2708,7 +2708,7 @@ static void init_sram(void)
 {
    g_extern.use_sram = g_extern.use_sram && !g_extern.sram_save_disable
 #ifdef HAVE_NETPLAY
-   && (!g_extern.netplay || !g_extern.netplay_is_client)
+   && (!driver.netplay_data || !g_extern.netplay_is_client)
 #endif
    ;
 
@@ -3084,7 +3084,7 @@ void rarch_main_command(unsigned cmd)
             return;
 
 #ifdef HAVE_NETPLAY
-         if (g_extern.netplay)
+         if (driver.netplay_data)
             return;
 #endif
          main_state(cmd);
@@ -3393,8 +3393,8 @@ bool rarch_main_iterate(void)
 #endif
 
 #ifdef HAVE_NETPLAY
-   if (g_extern.netplay)
-      netplay_pre_frame(g_extern.netplay);
+   if (driver.netplay_data)
+      netplay_pre_frame(driver.netplay_data);
 #endif
 
    if (g_extern.bsv.movie)
@@ -3435,8 +3435,8 @@ bool rarch_main_iterate(void)
       bsv_movie_set_frame_end(g_extern.bsv.movie);
 
 #ifdef HAVE_NETPLAY
-   if (g_extern.netplay)
-      netplay_post_frame(g_extern.netplay);
+   if (driver.netplay_data)
+      netplay_post_frame(driver.netplay_data);
 #endif
 
 #if defined(HAVE_THREADS)
