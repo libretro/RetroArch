@@ -330,16 +330,8 @@ void gl_shader_set_coords(gl_t *gl, const struct gl_coords *coords, const math_m
    if (!gl)
       return;
 
-   bool ret_coords = false;
-   bool ret_mvp    = false;
-
-   (void)ret_coords;
-   (void)ret_mvp;
-
-   if (gl->shader)
-      ret_coords = gl->shader->set_coords(coords);
-   if (gl->shader)
-      ret_mvp = gl->shader->set_mvp(gl, mat);
+   bool ret_coords = (gl->shader) ? gl->shader->set_coords(coords) : false;
+   bool ret_mvp    = (gl->shader) ? gl->shader->set_mvp(gl, mat)   : false;
 
    // Fall back to FF-style if needed and possible.
 #ifndef NO_GL_FF_VERTEX
@@ -479,8 +471,9 @@ static void gl_create_fbo_textures(gl_t *gl)
 
    glGenTextures(gl->fbo_pass, gl->fbo_texture);
 
-   GLuint base_filt = g_settings.video.smooth ? GL_LINEAR : GL_NEAREST;
-   GLuint base_mip_filt = g_settings.video.smooth ? GL_LINEAR_MIPMAP_LINEAR : GL_NEAREST_MIPMAP_NEAREST;
+   GLuint base_filt     = g_settings.video.smooth ? GL_LINEAR : GL_NEAREST;
+   GLuint base_mip_filt = g_settings.video.smooth ? 
+      GL_LINEAR_MIPMAP_LINEAR : GL_NEAREST_MIPMAP_NEAREST;
 
    for (i = 0; i < gl->fbo_pass; i++)
    {
@@ -784,6 +777,8 @@ static bool gl_init_hw_render(gl_t *gl, unsigned width, unsigned height)
 
 void gl_set_projection(gl_t *gl, struct gl_ortho *ortho, bool allow_rotate)
 {
+   math_matrix rot;
+
    if (!gl)
       return;
 
@@ -791,14 +786,14 @@ void gl_set_projection(gl_t *gl, struct gl_ortho *ortho, bool allow_rotate)
    matrix_ortho(&gl->mvp_no_rot, ortho->left, ortho->right,
          ortho->bottom, ortho->top, ortho->znear, ortho->zfar);
 
-   if (allow_rotate)
+   if (!allow_rotate)
    {
-      math_matrix rot;
-      matrix_rotate_z(&rot, M_PI * gl->rotation / 180.0f);
-      matrix_multiply(&gl->mvp, &rot, &gl->mvp_no_rot);
-   }
-   else
       gl->mvp = gl->mvp_no_rot;
+      return;
+   }
+
+   matrix_rotate_z(&rot, M_PI * gl->rotation / 180.0f);
+   matrix_multiply(&gl->mvp, &rot, &gl->mvp_no_rot);
 }
 
 void gl_set_viewport(gl_t *gl, unsigned width, unsigned height, bool force_full, bool allow_rotate)
@@ -904,16 +899,16 @@ static void gl_set_rotation(void *data, unsigned rotation)
 #ifdef HAVE_FBO
 static inline void gl_start_frame_fbo(gl_t *gl)
 {
-   if (!gl)
-      return;
-
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
    glBindFramebuffer(RARCH_GL_FRAMEBUFFER, gl->fbo[0]);
-   gl_set_viewport(gl, gl->fbo_rect[0].img_width, gl->fbo_rect[0].img_height, true, false);
 
-   // Need to preserve the "flipped" state when in FBO as well to have 
-   // consistent texture coordinates.
-   // We will "flip" it in place on last pass.
+   gl_set_viewport(gl, gl->fbo_rect[0].img_width,
+         gl->fbo_rect[0].img_height, true, false);
+
+   /* Need to preserve the "flipped" state when in FBO 
+    * as well to have consistent texture coordinates.
+    *
+    * We will "flip" it in place on last pass. */
    gl->coords.vertex = vertexes;
 
 #if defined(GL_FRAMEBUFFER_SRGB) && !defined(HAVE_OPENGLES)
@@ -1077,21 +1072,6 @@ static void gl_frame_fbo(gl_t *gl, const struct gl_tex_info *tex_info)
    gl->coords.tex_coord = gl->tex_coords;
 }
 #endif
-
-static void gl_update_resize(gl_t *gl)
-{
-#ifdef HAVE_FBO
-   if (gl && gl->fbo_inited)
-   {
-      gl_check_fbo_dimensions(gl);
-
-      // Go back to what we're supposed to do, render to FBO #0 :D
-      gl_start_frame_fbo(gl);
-      return;
-   }
-#endif
-   gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
-}
 
 static void gl_update_input_size(gl_t *gl, unsigned width, unsigned height, unsigned pitch, bool clear)
 {
@@ -1507,8 +1487,20 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
       gl->should_resize = false;
       context_set_resize_func(gl, gl->win_width, gl->win_height);
 
-      // On resize, we might have to recreate our FBOs due to "Viewport" scale, and set a new viewport.
-      gl_update_resize(gl);
+      /* On resize, we might have to recreate our FBOs 
+       * due to "Viewport" scale, and set a new viewport. */
+#ifdef HAVE_FBO
+      if (gl->fbo_inited)
+      {
+         gl_check_fbo_dimensions(gl);
+
+         /* Go back to what we're supposed to do, 
+          * render to FBO #0. */
+         gl_start_frame_fbo(gl);
+      }
+      else
+#endif
+         gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
    }
 
    gl->tex_index = frame ? ((gl->tex_index + 1) % gl->textures) : (gl->tex_index);
