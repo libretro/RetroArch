@@ -548,7 +548,7 @@ static void lakka_draw_categories(void)
    }
 }
 
-#ifdef HAVE_FBO
+#if defined(HAVE_FBO) && defined(LAKKA_EFFECTS)
 
 static void lakka_check_fb_status(void)
 {
@@ -658,7 +658,7 @@ static void lakka_frame(void)
 
    update_tweens(0.002);
 
-#ifdef HAVE_FBO
+#if defined(HAVE_FBO) && defined(LAKKA_EFFECTS)
    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
    glClearColor(0.0, 0.0, 0.0, 0.0);
    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -714,7 +714,7 @@ static void lakka_context_destroy(void *data)
    int i, j, k;
    (void)data;
 
-#ifdef HAVE_FBO
+#if defined(HAVE_FBO) && defined(LAKKA_EFFECTS)
    glDeleteFramebuffers(1, &fbo);
    glDeleteTextures(1, &fbocolor);
    glDeleteTextures(1, &fbodepth);
@@ -880,7 +880,7 @@ static void lakka_context_reset(void *data)
    if (!menu)
       return;
 
-#ifdef HAVE_FBO
+#if defined(HAVE_FBO) && defined(LAKKA_EFFECTS)
    lakka_fbo_reset();
 #endif
 
