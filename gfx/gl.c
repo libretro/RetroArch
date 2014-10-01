@@ -124,7 +124,8 @@ static void gl_overlay_tex_geom(void *data,
       float x, float y, float w, float h);
 #endif
 
-static inline void set_texture_coords(GLfloat *coords, GLfloat xamt, GLfloat yamt)
+static inline void set_texture_coords(GLfloat *coords,
+      GLfloat xamt, GLfloat yamt)
 {
    coords[2] = xamt;
    coords[6] = xamt;
@@ -610,6 +611,8 @@ void gl_deinit_fbo(gl_t *gl)
    }
 }
 
+/* Set up render to texture. */
+
 void gl_init_fbo(gl_t *gl, unsigned width, unsigned height)
 {
    int i;
@@ -800,20 +803,15 @@ void gl_set_projection(gl_t *gl, struct gl_ortho *ortho, bool allow_rotate)
 
 void gl_set_viewport(gl_t *gl, unsigned width, unsigned height, bool force_full, bool allow_rotate)
 {
-   int x, y;
-   float device_aspect = 0.0f;
+   int x = 0, y = 0;
+   float device_aspect = (float)width / height;
    struct gl_ortho ortho = {0, 1, 0, 1, -1, 1};
 
    if (!gl)
       return;
 
-   x = 0;
-   y = 0;
-
    if (gl->ctx_driver->translate_aspect)
       device_aspect = context_translate_aspect_func(gl, width, height);
-   else
-      device_aspect = (float)width / height;
 
    if (g_settings.video.scale_integer && !force_full)
    {
@@ -896,11 +894,11 @@ static void gl_set_rotation(void *data, unsigned rotation)
    gl_t *gl = (gl_t*)data;
    struct gl_ortho ortho = {0, 1, 0, 1, -1, 1};
 
-   if (gl)
-   {
-      gl->rotation = 90 * rotation;
-      gl_set_projection(gl, &ortho, true);
-   }
+   if (!gl)
+      return;
+
+   gl->rotation = 90 * rotation;
+   gl_set_projection(gl, &ortho, true);
 }
 
 #ifdef HAVE_FBO
@@ -941,6 +939,7 @@ static void gl_check_fbo_dimensions(gl_t *gl)
          unsigned img_height = gl->fbo_rect[i].max_img_height;
          unsigned max = img_width > img_height ? img_width : img_height;
          unsigned pow2_size = next_pow2(max);
+
          gl->fbo_rect[i].width = gl->fbo_rect[i].height = pow2_size;
 
          glBindFramebuffer(RARCH_GL_FRAMEBUFFER, gl->fbo[i]);
@@ -964,7 +963,14 @@ static void gl_check_fbo_dimensions(gl_t *gl)
 
 static void gl_frame_fbo(gl_t *gl, const struct gl_tex_info *tex_info)
 {
+   const struct gl_fbo_rect *prev_rect;
+   const struct gl_fbo_rect *rect;
+   struct gl_tex_info *fbo_info;
+
+   struct gl_tex_info fbo_tex_info[MAX_SHADERS];
    int i;
+   GLfloat xamt, yamt;
+   unsigned fbo_tex_info_cnt = 0;
    GLfloat fbo_tex_coords[8] = {0.0f};
 
    if (!gl)
@@ -973,14 +979,6 @@ static void gl_frame_fbo(gl_t *gl, const struct gl_tex_info *tex_info)
    // Render the rest of our passes.
    gl->coords.tex_coord = fbo_tex_coords;
 
-   // It's kinda handy ... :)
-   const struct gl_fbo_rect *prev_rect;
-   const struct gl_fbo_rect *rect;
-   struct gl_tex_info *fbo_info;
-
-   struct gl_tex_info fbo_tex_info[MAX_SHADERS];
-   unsigned fbo_tex_info_cnt = 0;
-
    // Calculate viewports, texture coordinates etc, and render all passes from FBOs, to another FBO.
    for (i = 1; i < gl->fbo_pass; i++)
    {
@@ -988,8 +986,8 @@ static void gl_frame_fbo(gl_t *gl, const struct gl_tex_info *tex_info)
       rect = &gl->fbo_rect[i];
       fbo_info = &fbo_tex_info[i - 1];
 
-      GLfloat xamt = (GLfloat)prev_rect->img_width / prev_rect->width;
-      GLfloat yamt = (GLfloat)prev_rect->img_height / prev_rect->height;
+      xamt = (GLfloat)prev_rect->img_width / prev_rect->width;
+      yamt = (GLfloat)prev_rect->img_height / prev_rect->height;
 
       set_texture_coords(fbo_tex_coords, xamt, yamt);
 
@@ -1034,8 +1032,8 @@ static void gl_frame_fbo(gl_t *gl, const struct gl_tex_info *tex_info)
 
    // Render our last FBO texture directly to screen.
    prev_rect = &gl->fbo_rect[gl->fbo_pass - 1];
-   GLfloat xamt = (GLfloat)prev_rect->img_width / prev_rect->width;
-   GLfloat yamt = (GLfloat)prev_rect->img_height / prev_rect->height;
+   xamt = (GLfloat)prev_rect->img_width / prev_rect->width;
+   yamt = (GLfloat)prev_rect->img_height / prev_rect->height;
 
    set_texture_coords(fbo_tex_coords, xamt, yamt);
 
@@ -1083,31 +1081,34 @@ static void gl_frame_fbo(gl_t *gl, const struct gl_tex_info *tex_info)
 static void gl_update_resize(gl_t *gl)
 {
 #ifdef HAVE_FBO
-   if (!gl->fbo_inited)
-      gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
-   else
+   if (gl && gl->fbo_inited)
    {
       gl_check_fbo_dimensions(gl);
 
       // Go back to what we're supposed to do, render to FBO #0 :D
       gl_start_frame_fbo(gl);
+      return;
    }
-#else
-   gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
 #endif
+   gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
 }
 
 static void gl_update_input_size(gl_t *gl, unsigned width, unsigned height, unsigned pitch, bool clear)
 {
-   // Res change. Need to clear out texture.
-   if ((width != gl->last_width[gl->tex_index] || height != gl->last_height[gl->tex_index]) && gl->empty_buf)
+   bool set_coords = false;
+
+   /* Resolution change. Need to clear out texture. */
+
+   if ((width != gl->last_width[gl->tex_index] || 
+            height != gl->last_height[gl->tex_index]) && gl->empty_buf)
    {
       gl->last_width[gl->tex_index] = width;
       gl->last_height[gl->tex_index] = height;
 
       if (clear)
       {
-         glPixelStorei(GL_UNPACK_ALIGNMENT, get_alignment(width * sizeof(uint32_t)));
+         glPixelStorei(GL_UNPACK_ALIGNMENT,
+               get_alignment(width * sizeof(uint32_t)));
 #if defined(HAVE_PSGL)
          glBufferSubData(GL_TEXTURE_REFERENCE_BUFFER_SCE,
                gl->tex_w * gl->tex_h * gl->tex_index * gl->base_size,
@@ -1120,16 +1121,19 @@ static void gl_update_input_size(gl_t *gl, unsigned width, unsigned height, unsi
 #endif
       }
 
-      GLfloat xamt = (GLfloat)width / gl->tex_w;
-      GLfloat yamt = (GLfloat)height / gl->tex_h;
-
-      set_texture_coords(gl->tex_coords, xamt, yamt);
+      set_coords = true;
    }
-   // We might have used different texture coordinates last frame. Edge case if resolution changes very rapidly.
-   else if (width != gl->last_width[(gl->tex_index + gl->textures - 1) % gl->textures] ||
-         height != gl->last_height[(gl->tex_index + gl->textures - 1) % gl->textures])
+   /* We might have used different texture coordinates 
+    * last frame. Edge case if resolution changes very rapidly. */
+   else if ((width != 
+         gl->last_width[(gl->tex_index + gl->textures - 1) % gl->textures]) ||
+         (height != 
+         gl->last_height[(gl->tex_index + gl->textures - 1) % gl->textures]))
+      set_coords = true;
+
+   if (set_coords)
    {
-      GLfloat xamt = (GLfloat)width / gl->tex_w;
+      GLfloat xamt = (GLfloat)width  / gl->tex_w;
       GLfloat yamt = (GLfloat)height / gl->tex_h;
       set_texture_coords(gl->tex_coords, xamt, yamt);
    }
@@ -1299,7 +1303,7 @@ static inline void gl_copy_frame(gl_t *gl, const void *frame, unsigned width, un
    {
       glPixelStorei(GL_UNPACK_ALIGNMENT, get_alignment(width * gl->base_size));
 
-      // Fallback for GLES devices without GL_BGRA_EXT.
+      /* Fallback for GLES devices without GL_BGRA_EXT. */
       if (gl->base_size == 4 && driver.gfx_use_rgba)
       {
          gl_convert_frame_argb8888_abgr8888(gl, gl->conv_buffer, frame, width, height, pitch);
@@ -1318,29 +1322,30 @@ static inline void gl_copy_frame(gl_t *gl, const void *frame, unsigned width, un
       }
       else
       {
-         // No GL_UNPACK_ROW_LENGTH ;(
+         /* No GL_UNPACK_ROW_LENGTH. */
+
+         const GLvoid *data_buf = frame;
          unsigned pitch_width = pitch / gl->base_size;
-         if (width == pitch_width) // Happy path :D
+
+         if (width != pitch_width)
          {
-            glTexSubImage2D(GL_TEXTURE_2D,
-                  0, 0, 0, width, height, gl->texture_type,
-                  gl->texture_fmt, frame);
-         }
-         else // Slower path.
-         {
+            /* conv_buffer - this buffer is 
+             * preallocated in case we hit this path. */
+
             unsigned h;
             const unsigned line_bytes = width * gl->base_size;
-
-            uint8_t *dst = (uint8_t*)gl->conv_buffer; // This buffer is preallocated for this purpose.
+            uint8_t *dst = (uint8_t*)gl->conv_buffer;
             const uint8_t *src = (const uint8_t*)frame;
 
             for (h = 0; h < height; h++, src += pitch, dst += line_bytes)
                memcpy(dst, src, line_bytes);
 
-            glTexSubImage2D(GL_TEXTURE_2D,
-                  0, 0, 0, width, height, gl->texture_type,
-                  gl->texture_fmt, gl->conv_buffer);         
+            data_buf = gl->conv_buffer;
          }
+         
+         glTexSubImage2D(GL_TEXTURE_2D,
+               0, 0, 0, width, height, gl->texture_type,
+               gl->texture_fmt, data_buf);         
       }
    }
 #elif defined(HAVE_PSGL)
@@ -1791,16 +1796,16 @@ static void gl_free(void *data)
 
 static void gl_set_nonblock_state(void *data, bool state)
 {
-   RARCH_LOG("GL VSync => %s\n", state ? "off" : "on");
-
    gl_t *gl = (gl_t*)data;
 
-   if (gl)
-   {
-      context_bind_hw_render(gl, false);
-      context_swap_interval_func(gl, state ? 0 : g_settings.video.swap_interval);
-      context_bind_hw_render(gl, true);
-   }
+   if (!gl)
+      return;
+
+   RARCH_LOG("GL VSync => %s\n", state ? "off" : "on");
+
+   context_bind_hw_render(gl, false);
+   context_swap_interval_func(gl, state ? 0 : g_settings.video.swap_interval);
+   context_bind_hw_render(gl, true);
 }
 
 static bool resolve_extensions(gl_t *gl)
@@ -2033,8 +2038,8 @@ static const gfx_ctx_driver_t *gl_get_context(gl_t *gl)
 
       return ctx;
    }
-   else
-      return gfx_ctx_init_first(gl, api, major, minor, gl->shared_context_use);
+
+   return gfx_ctx_init_first(gl, api, major, minor, gl->shared_context_use);
 }
 
 #ifdef GL_DEBUG
@@ -2066,37 +2071,70 @@ static void DEBUG_CALLBACK_TYPE gl_debug_cb(GLenum source, GLenum type,
       GLuint id, GLenum severity, GLsizei length,
       const GLchar *message, void *userParam)
 {
+   const char *src, *typestr;
+   gl_t *gl = (gl_t*)userParam; /* Useful for debugger. */
+
+   (void)gl;
    (void)id;
    (void)length;
 
-   gl_t *gl = (gl_t*)userParam; // Useful for debugger.
-   (void)gl;
-
-   const char *src;
    switch (source)
    {
-      case GL_DEBUG_SOURCE_API: src = "API"; break;
-      case GL_DEBUG_SOURCE_WINDOW_SYSTEM: src = "Window system"; break;
-      case GL_DEBUG_SOURCE_SHADER_COMPILER: src = "Shader compiler"; break;
-      case GL_DEBUG_SOURCE_THIRD_PARTY: src = "3rd party"; break;
-      case GL_DEBUG_SOURCE_APPLICATION: src = "Application"; break;
-      case GL_DEBUG_SOURCE_OTHER: src = "Other"; break;
-      default: src = "Unknown"; break;
+      case GL_DEBUG_SOURCE_API:
+         src = "API";
+         break;
+      case GL_DEBUG_SOURCE_WINDOW_SYSTEM:
+         src = "Window system";
+         break;
+      case GL_DEBUG_SOURCE_SHADER_COMPILER:
+         src = "Shader compiler";
+         break;
+      case GL_DEBUG_SOURCE_THIRD_PARTY:
+         src = "3rd party";
+         break;
+      case GL_DEBUG_SOURCE_APPLICATION:
+         src = "Application";
+         break;
+      case GL_DEBUG_SOURCE_OTHER:
+         src = "Other";
+         break;
+      default:
+         src = "Unknown";
+         break;
    }
 
-   const char *typestr;
    switch (type)
    {
-      case GL_DEBUG_TYPE_ERROR: typestr = "Error"; break;
-      case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR: typestr = "Deprecated behavior"; break;
-      case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR: typestr = "Undefined behavior"; break;
-      case GL_DEBUG_TYPE_PORTABILITY: typestr = "Portability"; break;
-      case GL_DEBUG_TYPE_PERFORMANCE: typestr = "Performance"; break;
-      case GL_DEBUG_TYPE_MARKER: typestr = "Marker"; break;
-      case GL_DEBUG_TYPE_PUSH_GROUP: typestr = "Push group"; break;
-      case GL_DEBUG_TYPE_POP_GROUP: typestr = "Pop group"; break;
-      case GL_DEBUG_TYPE_OTHER: typestr = "Other"; break;
-      default: typestr = "Unknown"; break;
+      case GL_DEBUG_TYPE_ERROR:
+         typestr = "Error";
+         break;
+      case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR:
+         typestr = "Deprecated behavior";
+         break;
+      case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR:
+         typestr = "Undefined behavior";
+         break;
+      case GL_DEBUG_TYPE_PORTABILITY:
+         typestr = "Portability";
+         break;
+      case GL_DEBUG_TYPE_PERFORMANCE:
+         typestr = "Performance";
+         break;
+      case GL_DEBUG_TYPE_MARKER:
+         typestr = "Marker";
+         break;
+      case GL_DEBUG_TYPE_PUSH_GROUP:
+         typestr = "Push group";
+         break;
+      case GL_DEBUG_TYPE_POP_GROUP:
+        typestr = "Pop group";
+        break;
+      case GL_DEBUG_TYPE_OTHER:
+        typestr = "Other";
+        break;
+      default:
+        typestr = "Unknown";
+        break;
    }
 
    switch (severity)
@@ -2142,6 +2180,7 @@ static void gl_begin_debug(gl_t *gl)
 
 static void *gl_init(const video_info_t *video, const input_driver_t **input, void **input_data)
 {
+   unsigned win_width, win_height;
 #ifdef _WIN32
    gfx_set_dwm();
 #endif
@@ -2166,8 +2205,9 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 
    context_swap_interval_func(gl, video->vsync ? g_settings.video.swap_interval : 0);
 
-   unsigned win_width  = video->width;
-   unsigned win_height = video->height;
+   win_width  = video->width;
+   win_height = video->height;
+
    if (video->fullscreen && (win_width == 0) && (win_height == 0))
    {
       win_width  = gl->full_x;
@@ -2317,7 +2357,6 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    gl_init_textures_data(gl);
 
 #ifdef HAVE_FBO
-   // Set up render to texture.
    gl_init_fbo(gl, gl->tex_w, gl->tex_h);
 
 #ifndef HAVE_GCMGL
@@ -2510,11 +2549,10 @@ static bool gl_set_shader(void *data, enum rarch_shader_type type, const char *p
    }
 
 #ifdef HAVE_FBO
-   // Set up render to texture again.
    gl_init_fbo(gl, gl->tex_w, gl->tex_h);
 #endif
 
-   // Apparently need to set viewport for passes when we aren't using FBOs.
+   /* Apparently need to set viewport for passes when we aren't using FBOs. */
    gl_set_shader_viewport(gl, 0);
    gl_set_shader_viewport(gl, 1);
    context_bind_hw_render(gl, true);
@@ -2532,7 +2570,7 @@ static void gl_viewport_info(void *data, struct rarch_viewport *vp)
    vp->full_width  = gl->win_width;
    vp->full_height = gl->win_height;
 
-   // Adjust as GL viewport is bottom-up.
+   /* Adjust as GL viewport is bottom-up. */
    top_y = vp->y + vp->height;
    top_dist = gl->win_height - top_y;
    vp->y = top_dist;
@@ -2698,11 +2736,16 @@ static void gl_overlay_tex_geom(void *data,
       GLfloat x, GLfloat y,
       GLfloat w, GLfloat h)
 {
+   GLfloat *tex = NULL;
    gl_t *gl = (gl_t*)data;
    if (!gl)
       return;
 
-   GLfloat *tex = &gl->overlay_tex_coord[image * 8];
+   tex = (GLfloat*)&gl->overlay_tex_coord[image * 8];
+
+   if (!tex)
+      return;
+
    tex[0] = x;     tex[1] = y;
    tex[2] = x + w; tex[3] = y;
    tex[4] = x;     tex[5] = y + h;
@@ -2714,15 +2757,19 @@ static void gl_overlay_vertex_geom(void *data,
       float x, float y,
       float w, float h)
 {
+   GLfloat *vertex = NULL;
    gl_t *gl = (gl_t*)data;
    if (!gl)
       return;
 
-   GLfloat *vertex = &gl->overlay_vertex_coord[image * 8];
+   vertex = (GLfloat*)&gl->overlay_vertex_coord[image * 8];
 
    // Flipped, so we preserve top-down semantics.
    y = 1.0f - y;
    h = -h;
+
+   if (!vertex)
+      return;
 
    vertex[0] = x;     vertex[1] = y;
    vertex[2] = x + w; vertex[3] = y;
@@ -2734,12 +2781,12 @@ static void gl_overlay_enable(void *data, bool state)
 {
    gl_t *gl = (gl_t*)data;
 
-   if (gl)
-   {
-      gl->overlay_enable = state;
-      if (gl->ctx_driver->show_mouse && gl->fullscreen)
-         gl->ctx_driver->show_mouse(gl, state);
-   }
+   if (!gl)
+      return;
+
+   gl->overlay_enable = state;
+   if (gl->ctx_driver->show_mouse && gl->fullscreen)
+      gl->ctx_driver->show_mouse(gl, state);
 }
 
 static void gl_overlay_full_screen(void *data, bool enable)
@@ -2752,11 +2799,16 @@ static void gl_overlay_full_screen(void *data, bool enable)
 
 static void gl_overlay_set_alpha(void *data, unsigned image, float mod)
 {
+   GLfloat *color = NULL;
    gl_t *gl = (gl_t*)data;
    if (!gl)
       return;
 
-   GLfloat *color = &gl->overlay_color_coord[image * 16];
+   color = (GLfloat*)&gl->overlay_color_coord[image * 16];
+
+   if (!color)
+      return;
+
    color[ 0 + 3] = mod;
    color[ 4 + 3] = mod;
    color[ 8 + 3] = mod;
@@ -2836,7 +2888,9 @@ static void gl_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
    switch (aspect_ratio_idx)
    {
       case ASPECT_RATIO_SQUARE:
-         gfx_set_square_pixel_viewport(g_extern.system.av_info.geometry.base_width, g_extern.system.av_info.geometry.base_height);
+         gfx_set_square_pixel_viewport(
+               g_extern.system.av_info.geometry.base_width,
+               g_extern.system.av_info.geometry.base_height);
          break;
 
       case ASPECT_RATIO_CORE:
@@ -2853,11 +2907,11 @@ static void gl_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
 
    g_extern.system.aspect_ratio = aspectratio_lut[aspect_ratio_idx].value;
 
-   if (gl)
-   {
-      gl->keep_aspect = true;
-      gl->should_resize = true;
-   }
+   if (!gl)
+      return;
+
+   gl->keep_aspect = true;
+   gl->should_resize = true;
 }
 
 #if defined(HAVE_MENU)
@@ -2911,11 +2965,11 @@ static void gl_set_texture_enable(void *data, bool state, bool full_screen)
 {
    gl_t *gl = (gl_t*)data;
 
-   if (gl)
-   {
-      gl->menu_texture_enable = state;
-      gl->menu_texture_full_screen = full_screen;
-   }
+   if (!gl)
+      return;
+
+   gl->menu_texture_enable = state;
+   gl->menu_texture_full_screen = full_screen;
 }
 #endif
 
