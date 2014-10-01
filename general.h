@@ -830,6 +830,10 @@ void rarch_update_system_info(struct retro_system_info *info,
 void rarch_recording_dump_frame(const void *data, unsigned width,
       unsigned height, size_t pitch);
 
+void rarch_init_shader_dir(void);
+
+void rarch_deinit_shader_dir(void);
+
 #ifdef __cplusplus
 }
 #endif

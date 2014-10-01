@@ -3426,9 +3426,6 @@ bool rarch_main_iterate(void)
    return true;
 }
 
-
-
-
 void rarch_main_deinit(void)
 {
 #ifdef HAVE_NETPLAY
@@ -3461,4 +3458,34 @@ void rarch_main_deinit(void)
    deinit_savefiles();
 
    g_extern.main_is_init = false;
+}
+
+void rarch_init_shader_dir(void)
+{
+   unsigned i;
+   if (!*g_settings.video.shader_dir)
+      return;
+
+   g_extern.shader_dir.list = dir_list_new(g_settings.video.shader_dir,
+         "cg|cgp|glsl|glslp", false);
+
+   if (!g_extern.shader_dir.list || g_extern.shader_dir.list->size == 0)
+   {
+      rarch_deinit_shader_dir();
+      return;
+   }
+
+   g_extern.shader_dir.ptr  = 0;
+   dir_list_sort(g_extern.shader_dir.list, false);
+
+   for (i = 0; i < g_extern.shader_dir.list->size; i++)
+      RARCH_LOG("Found shader \"%s\"\n",
+            g_extern.shader_dir.list->elems[i].data);
+}
+
+void rarch_deinit_shader_dir(void)
+{
+   dir_list_free(g_extern.shader_dir.list);
+   g_extern.shader_dir.list = NULL;
+   g_extern.shader_dir.ptr  = 0;
 }

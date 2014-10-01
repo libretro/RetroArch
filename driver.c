@@ -926,13 +926,6 @@ static void deinit_pixel_converter(void)
    driver.scaler_out = NULL;
 }
 
-static void deinit_shader_dir(void)
-{
-   dir_list_free(g_extern.shader_dir.list);
-   g_extern.shader_dir.list = NULL;
-   g_extern.shader_dir.ptr  = 0;
-}
-
 static void compute_monitor_fps_statistics(void)
 {
    double avg_fps = 0.0;
@@ -1317,29 +1310,6 @@ error:
    rarch_deinit_filter();
 }
 
-static void init_shader_dir(void)
-{
-   unsigned i;
-   if (!*g_settings.video.shader_dir)
-      return;
-
-   g_extern.shader_dir.list = dir_list_new(g_settings.video.shader_dir,
-         "cg|cgp|glsl|glslp", false);
-
-   if (!g_extern.shader_dir.list || g_extern.shader_dir.list->size == 0)
-   {
-      deinit_shader_dir();
-      return;
-   }
-
-   g_extern.shader_dir.ptr  = 0;
-   dir_list_sort(g_extern.shader_dir.list, false);
-
-   for (i = 0; i < g_extern.shader_dir.list->size; i++)
-      RARCH_LOG("Found shader \"%s\"\n",
-            g_extern.shader_dir.list->elems[i].data);
-}
-
 static bool init_video_pixel_converter(unsigned size)
 {
    /* This function can be called multiple times
@@ -1374,7 +1344,7 @@ void init_video_input(void)
 
    rarch_init_filter(g_extern.system.pix_fmt);
 
-   init_shader_dir();
+   rarch_init_shader_dir();
 
    geom = (const struct retro_game_geometry*)&g_extern.system.av_info.geometry;
    max_dim = max(geom->max_width, geom->max_height);
@@ -1552,7 +1522,7 @@ void uninit_video_input(void)
 
    rarch_deinit_filter();
 
-   deinit_shader_dir();
+   rarch_deinit_shader_dir();
    compute_monitor_fps_statistics();
 }
 
