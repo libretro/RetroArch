@@ -284,8 +284,10 @@ static void lakka_draw_text(const char *str, float x,
    params.color = FONT_COLOR_RGBA(255, 255, 255, a8);
    params.full_screen = true;
 
-   if (font_driver)
-      font_driver->render_msg(font, str, &params);
+   if (driver.video_data && driver.video_poke
+       && driver.video_poke->set_osd_msg)
+       driver.video_poke->set_osd_msg(driver.video_data,
+                                      str, &params);
 }
 
 void lakka_draw_background(void)
