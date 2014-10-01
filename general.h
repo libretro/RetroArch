@@ -683,6 +683,8 @@ struct global
    } frame_cache;
 
    unsigned frame_count;
+   unsigned max_frames;
+
    char title_buf[64];
 
    struct
