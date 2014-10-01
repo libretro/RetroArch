@@ -1060,7 +1060,7 @@ static void gl_frame_fbo(gl_t *gl, const struct gl_tex_info *tex_info)
    gl_shader_set_coords(gl, &gl->coords, &gl->mvp);
    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
-   gl->coords.tex_coord = gl->tex_coords;
+   gl->coords.tex_coord = gl->tex_info.coord;
 }
 #endif
 
@@ -1106,7 +1106,7 @@ static void gl_update_input_size(gl_t *gl, unsigned width, unsigned height, unsi
    {
       GLfloat xamt = (GLfloat)width  / gl->tex_w;
       GLfloat yamt = (GLfloat)height / gl->tex_h;
-      set_texture_coords(gl->tex_coords, xamt, yamt);
+      set_texture_coords(gl->tex_info.coord, xamt, yamt);
    }
 }
 
@@ -1436,7 +1436,7 @@ static inline void gl_draw_texture(gl_t *gl)
    glDisable(GL_BLEND);
 
    gl->coords.vertex = gl->vertex_ptr;
-   gl->coords.tex_coord = gl->tex_coords;
+   gl->coords.tex_coord = gl->tex_info.coord;
    gl->coords.color = gl->white_color_ptr;
 }
 #endif
@@ -1543,14 +1543,11 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
    }
 #endif
 
-   struct gl_tex_info tex_info = {0};
-   tex_info.tex           = gl->texture[gl->tex_index];
-   tex_info.input_size[0] = width;
-   tex_info.input_size[1] = height;
-   tex_info.tex_size[0]   = gl->tex_w;
-   tex_info.tex_size[1]   = gl->tex_h;
-
-   memcpy(tex_info.coord, gl->tex_coords, sizeof(gl->tex_coords));
+   gl->tex_info.tex           = gl->texture[gl->tex_index];
+   gl->tex_info.input_size[0] = width;
+   gl->tex_info.input_size[1] = height;
+   gl->tex_info.tex_size[0]   = gl->tex_w;
+   gl->tex_info.tex_size[1]   = gl->tex_h;
 
    glClear(GL_COLOR_BUFFER_BIT);
 
@@ -1559,7 +1556,7 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
          gl->tex_w, gl->tex_h,
          gl->vp.width, gl->vp.height,
          g_extern.frame_count, 
-         &tex_info, gl->prev_info, NULL, 0);
+         &gl->tex_info, gl->prev_info, NULL, 0);
 
    gl->coords.vertices = 4;
    gl_shader_set_coords(gl, &gl->coords, &gl->mvp);
@@ -1567,10 +1564,10 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
 
 #ifdef HAVE_FBO
    if (gl->fbo_inited)
-      gl_frame_fbo(gl, &tex_info);
+      gl_frame_fbo(gl, &gl->tex_info);
 #endif
 
-   gl_set_prev_texture(gl, &tex_info);
+   gl_set_prev_texture(gl, &gl->tex_info);
 
 #if defined(HAVE_MENU)
    if (g_extern.is_menu
@@ -2306,9 +2303,9 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    glDisable(GL_CULL_FACE);
    glDisable(GL_DITHER);
 
-   memcpy(gl->tex_coords, tex_coords, sizeof(tex_coords));
+   memcpy(gl->tex_info.coord, tex_coords, sizeof(gl->tex_info.coord));
    gl->coords.vertex         = gl->vertex_ptr;
-   gl->coords.tex_coord      = gl->tex_coords;
+   gl->coords.tex_coord      = gl->tex_info.coord;
    gl->coords.color          = gl->white_color_ptr;
    gl->coords.lut_tex_coord  = tex_coords;
    gl->coords.vertices       = 4;
@@ -2817,7 +2814,7 @@ static void gl_render_overlay(void *data)
 
    glDisable(GL_BLEND);
    gl->coords.vertex    = gl->vertex_ptr;
-   gl->coords.tex_coord = gl->tex_coords;
+   gl->coords.tex_coord = gl->tex_info.coord;
    gl->coords.color     = gl->white_color_ptr;
    gl->coords.vertices  = 4;
    if (gl->overlay_full_screen)

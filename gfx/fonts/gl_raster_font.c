@@ -189,7 +189,7 @@ static void render_message(gl_raster_t *font, const char *msg, GLfloat scale,
 
    /* Post - Go back to old rendering path. */
    gl->coords.vertex    = gl->vertex_ptr;
-   gl->coords.tex_coord = gl->tex_coords;
+   gl->coords.tex_coord = gl->tex_info.coord;
    gl->coords.color     = gl->white_color_ptr;
    gl->coords.vertices  = 4;
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);

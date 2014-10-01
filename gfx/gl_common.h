@@ -206,6 +206,7 @@ typedef struct gl
    GLuint texture[MAX_TEXTURES];
    unsigned tex_index; /* For use with PREV. */
    unsigned textures;
+   struct gl_tex_info tex_info;
    struct gl_tex_info prev_info[MAX_TEXTURES];
    GLuint tex_mag_filter;
    GLuint tex_min_filter;
@@ -254,7 +255,6 @@ typedef struct gl
    unsigned last_width[MAX_TEXTURES];
    unsigned last_height[MAX_TEXTURES];
    unsigned tex_w, tex_h;
-   GLfloat tex_coords[8];
    math_matrix mvp, mvp_no_rot;
 
    struct gl_coords coords;
