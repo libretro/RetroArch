@@ -137,10 +137,9 @@ static inline bool gl_check_error(void)
          break;
       case GL_NO_ERROR:
          return true;
-      default:
-         RARCH_ERR("Non specified GL error.\n");
    }
 
+   RARCH_ERR("Non specified GL error.\n");
    return false;
 }
 
