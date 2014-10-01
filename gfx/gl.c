@@ -588,15 +588,15 @@ error:
 
 void gl_deinit_fbo(gl_t *gl)
 {
-   if (gl->fbo_inited)
-   {
-      glDeleteTextures(gl->fbo_pass, gl->fbo_texture);
-      glDeleteFramebuffers(gl->fbo_pass, gl->fbo);
-      memset(gl->fbo_texture, 0, sizeof(gl->fbo_texture));
-      memset(gl->fbo, 0, sizeof(gl->fbo));
-      gl->fbo_inited = false;
-      gl->fbo_pass = 0;
-   }
+   if (!gl->fbo_inited)
+      return;
+
+   glDeleteTextures(gl->fbo_pass, gl->fbo_texture);
+   glDeleteFramebuffers(gl->fbo_pass, gl->fbo);
+   memset(gl->fbo_texture, 0, sizeof(gl->fbo_texture));
+   memset(gl->fbo, 0, sizeof(gl->fbo));
+   gl->fbo_inited = false;
+   gl->fbo_pass = 0;
 }
 
 /* Set up render to texture. */
@@ -1084,7 +1084,8 @@ static void gl_frame_fbo(gl_t *gl, const struct gl_tex_info *tex_info)
 }
 #endif
 
-static void gl_update_input_size(gl_t *gl, unsigned width, unsigned height, unsigned pitch, bool clear)
+static void gl_update_input_size(gl_t *gl, unsigned width,
+      unsigned height, unsigned pitch, bool clear)
 {
    bool set_coords = false;
 
@@ -1234,7 +1235,9 @@ static void gl_init_textures(gl_t *gl, const video_info_t *video)
 
    if (gl->hw_render_use && gl->base_size == sizeof(uint32_t))
    {
-      bool support_argb = gl_query_extension(gl, "OES_rgb8_rgba8") || gl_query_extension(gl, "ARM_argb8");
+      bool support_argb = gl_query_extension(gl, "OES_rgb8_rgba8")
+         || gl_query_extension(gl, "ARM_argb8");
+
       if (support_argb)
       {
          internal_fmt = GL_RGBA;
