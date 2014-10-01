@@ -645,6 +645,7 @@ static void print_help(void)
 
    puts("\t-P/--bsvplay: Playback a BSV movie file.");
    puts("\t-R/--bsvrecord: Start recording a BSV movie file from the beginning.");
+   puts("\t--eof-exit: Exit upon reaching the end of the BSV movie file.");
    puts("\t-M/--sram-mode: Takes an argument telling how SRAM should be handled in the session.");
    puts("\t\t{no,}load-{no,}save describes if SRAM should be loaded, and if SRAM should be saved.");
    puts("\t\tDo note that noload-save implies that save files will be deleted and overwritten.");
@@ -672,7 +673,8 @@ static void print_help(void)
    puts("\t--bps: Specifies path for BPS patch that will be applied to content.");
    puts("\t--ips: Specifies path for IPS patch that will be applied to content.");
    puts("\t--no-patch: Disables all forms of content patching.");
-   puts("\t-D/--detach: Detach " RETRO_FRONTEND " from the running console. Not relevant for all platforms.\n");
+   puts("\t-D/--detach: Detach " RETRO_FRONTEND " from the running console. Not relevant for all platforms.");
+   puts("\t--max-frames: Runs for the specified number of frames, then exits.\n");
 }
 
 static void set_basename(const char *path)
@@ -854,6 +856,8 @@ static void parse_input(int argc, char *argv[])
       { "detach", 0, NULL, 'D' },
       { "features", 0, &val, 'f' },
       { "subsystem", 1, NULL, 'Z' },
+      { "max-frames", 1, NULL, 'm' },
+      { "eof-exit", 0, &val, 'e' },
       { NULL, 0, NULL, 0 }
    };
 
@@ -1051,6 +1055,10 @@ static void parse_input(int argc, char *argv[])
 #endif
             break;
 
+         case 'm':
+            g_extern.max_frames = strtoul(optarg, NULL, 10);
+            break;
+
          case 0:
             switch (val)
             {
@@ -1125,6 +1133,10 @@ static void parse_input(int argc, char *argv[])
                case 'f':
                   print_features();
                   exit(0);
+
+               case 'e':
+                  g_extern.bsv.eof_exit = true;
+                  break;
 
                default:
                   break;
@@ -3335,6 +3347,9 @@ bool rarch_main_iterate(void)
    if (
          g_extern.system.shutdown ||
          check_quit_key_func(input) ||
+         (g_extern.max_frames &&
+          g_extern.frame_count >= g_extern.max_frames) ||
+         (g_extern.bsv.movie_end && g_extern.bsv.eof_exit) ||
          !driver.video->alive(driver.video_data))
       return false;
 

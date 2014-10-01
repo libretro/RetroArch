@@ -610,6 +610,7 @@ struct global
       bsv_movie_t *movie;
       char movie_path[PATH_MAX];
       bool movie_playback;
+      bool eof_exit;
 
       /* Immediate playback/recording. */
       char movie_start_path[PATH_MAX];
@@ -674,6 +675,8 @@ struct global
    } frame_cache;
 
    unsigned frame_count;
+   unsigned max_frames;
+
    char title_buf[64];
 
    struct
