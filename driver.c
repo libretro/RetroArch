@@ -303,9 +303,8 @@ static const void *find_driver_nonempty(const char *label, int i,
 static int find_driver_index(const char * label, const char *driver)
 {
    unsigned i;
-   const void *obj = NULL;
-
    char str[PATH_MAX];
+   const void *obj = NULL;
 
    for (i = 0; (obj = (const void*)find_driver_nonempty(label, i, str, sizeof(str))) != NULL; i++)
    {
@@ -629,6 +628,7 @@ static void find_audio_driver(void)
 
 static void find_video_driver(void)
 {
+   int i;
 #if defined(HAVE_OPENGL) && defined(HAVE_FBO)
    if (g_extern.system.hw_render_callback.context_type)
    {
@@ -645,11 +645,10 @@ static void find_video_driver(void)
 
       if (driver.video)
          return;
-      else
-         RARCH_WARN("Frontend supports get_video_driver() but did not specify one.\n");
+      RARCH_WARN("Frontend supports get_video_driver() but did not specify one.\n");
    }
 
-   int i = find_driver_index("video_driver", g_settings.video.driver);
+   i = find_driver_index("video_driver", g_settings.video.driver);
    if (i >= 0)
       driver.video = video_drivers[i];
    else
@@ -708,13 +707,17 @@ void init_drivers_pre(void)
 
 static void adjust_system_rates(void)
 {
+   float timing_skew;
+   const struct retro_system_timing *info = 
+      (const struct retro_system_timing*)&g_extern.system.av_info.timing;
+
    g_extern.system.force_nonblock = false;
-   const struct retro_system_timing *info = &g_extern.system.av_info.timing;
 
    if (info->fps <= 0.0 || info->sample_rate <= 0.0)
       return;
 
-   float timing_skew = fabs(1.0f - info->fps / g_settings.video.refresh_rate);
+   timing_skew = fabs(1.0f - info->fps / g_settings.video.refresh_rate);
+
    if (timing_skew > 0.05f)
    {
       /* We don't want to adjust pitch too much. If we have extreme cases,
@@ -750,7 +753,7 @@ static void adjust_system_rates(void)
 
 void driver_set_monitor_refresh_rate(float hz)
 {
-   char msg[256];
+   char msg[PATH_MAX];
    snprintf(msg, sizeof(msg), "Setting refresh rate to: %.3f Hz.", hz);
    msg_queue_push(g_extern.msg_queue, msg, 1, 180);
    RARCH_LOG("%s\n", msg);
@@ -768,10 +771,10 @@ void driver_set_nonblock_state(bool nonblock)
    /* Only apply non-block-state for video if we're using vsync. */
    if (g_extern.video_active && driver.video_data)
    {
-      bool video_nb = nonblock;
+      bool video_nonblock = nonblock;
       if (!g_settings.video.vsync || g_extern.system.force_nonblock)
-         video_nb = true;
-      driver.video->set_nonblock_state(driver.video_data, video_nb);
+         video_nonblock = true;
+      driver.video->set_nonblock_state(driver.video_data, video_nonblock);
    }
 
    if (g_extern.audio_active && driver.audio_data)
@@ -779,7 +782,8 @@ void driver_set_nonblock_state(bool nonblock)
             g_settings.audio.sync ? nonblock : true);
 
    g_extern.audio_data.chunk_size = nonblock ?
-      g_extern.audio_data.nonblock_chunk_size : g_extern.audio_data.block_chunk_size;
+      g_extern.audio_data.nonblock_chunk_size : 
+      g_extern.audio_data.block_chunk_size;
 }
 
 bool driver_set_rumble_state(unsigned port,
@@ -928,8 +932,7 @@ static void deinit_pixel_converter(void)
 
 static void compute_monitor_fps_statistics(void)
 {
-   double avg_fps = 0.0;
-   double stddev = 0.0;
+   double avg_fps = 0.0, stddev = 0.0;
    unsigned samples = 0;
 
    if (g_settings.video.threaded)
@@ -1005,6 +1008,9 @@ void uninit_drivers(void)
 
 void init_audio(void)
 {
+   size_t max_bufsamples = AUDIO_CHUNK_SIZE_NONBLOCKING * 2;
+   size_t outsamples_max;
+
    audio_convert_init_simd();
 
    /* Resource leaks will follow if audio is initialized twice. */
@@ -1012,9 +1018,8 @@ void init_audio(void)
       return;
 
    /* Accomodate rewind since at some point we might have two full buffers. */
-   size_t max_bufsamples = AUDIO_CHUNK_SIZE_NONBLOCKING * 2;
-   size_t outsamples_max = max_bufsamples *
-      AUDIO_MAX_RATIO * g_settings.slowmotion_ratio;
+   outsamples_max = max_bufsamples * AUDIO_MAX_RATIO * 
+      g_settings.slowmotion_ratio;
 
    /* Used for recording even if audio isn't enabled. */
    rarch_assert(g_extern.audio_data.conv_outsamples =
@@ -1136,36 +1141,35 @@ void init_audio(void)
 
 static void compute_audio_buffer_statistics(void)
 {
-   unsigned i, samples;
-   samples = min(g_extern.measure_data.buffer_free_samples_count,
+   unsigned i, low_water_size, high_water_size, avg, stddev;
+   float avg_filled, deviation;
+   uint64_t accum = 0, accum_var = 0;
+   unsigned low_water_count = 0, high_water_count = 0;
+   unsigned samples = min(g_extern.measure_data.buffer_free_samples_count,
          AUDIO_BUFFER_FREE_SAMPLES_COUNT);
+
    if (samples < 3)
       return;
 
-   uint64_t accum = 0;
    for (i = 1; i < samples; i++)
       accum += g_extern.measure_data.buffer_free_samples[i];
 
-   int avg = accum / (samples - 1);
+   avg = accum / (samples - 1);
 
-   uint64_t accum_var = 0;
    for (i = 1; i < samples; i++)
    {
       int diff = avg - g_extern.measure_data.buffer_free_samples[i];
       accum_var += diff * diff;
    }
 
-   unsigned stddev = (unsigned)sqrt((double)accum_var / (samples - 2));
+   stddev = (unsigned)sqrt((double)accum_var / (samples - 2));
 
-   float avg_filled = 1.0f - (float)avg /
-      g_extern.audio_data.driver_buffer_size;
-   float deviation = (float)stddev / g_extern.audio_data.driver_buffer_size;
+   avg_filled = 1.0f - (float)avg / g_extern.audio_data.driver_buffer_size;
+   deviation = (float)stddev / g_extern.audio_data.driver_buffer_size;
 
-   unsigned low_water_size = g_extern.audio_data.driver_buffer_size * 3 / 4;
-   unsigned high_water_size = g_extern.audio_data.driver_buffer_size / 4;
+   low_water_size = g_extern.audio_data.driver_buffer_size * 3 / 4;
+   high_water_size = g_extern.audio_data.driver_buffer_size / 4;
 
-   unsigned low_water_count = 0;
-   unsigned high_water_count = 0;
    for (i = 1; i < samples; i++)
    {
       if (g_extern.measure_data.buffer_free_samples[i] >= low_water_size)
@@ -1184,17 +1188,15 @@ static void compute_audio_buffer_statistics(void)
 bool driver_monitor_fps_statistics(double *refresh_rate,
       double *deviation, unsigned *sample_points)
 {
-   unsigned i, samples;
-   if (g_settings.video.threaded)
-      return false;
-
-   samples = min(MEASURE_FRAME_TIME_SAMPLES_COUNT,
+   unsigned i;
+   retro_time_t accum = 0, avg, accum_var = 0;
+   unsigned samples = min(MEASURE_FRAME_TIME_SAMPLES_COUNT,
          g_extern.measure_data.frame_time_samples_count);
-   if (samples < 2)
+
+   if (g_settings.video.threaded || (samples < 2))
       return false;
 
    /* Measure statistics on frame time (microsecs), *not* FPS. */
-   retro_time_t accum = 0;
    for (i = 0; i < samples; i++)
       accum += g_extern.measure_data.frame_time_samples[i];
 
@@ -1204,8 +1206,7 @@ bool driver_monitor_fps_statistics(double *refresh_rate,
             i, (int)g_extern.measure_data.frame_time_samples[i]);
 #endif
 
-   retro_time_t avg = accum / samples;
-   retro_time_t accum_var = 0;
+   avg = accum / samples;
 
    /* Drop first measurement. It is likely to be bad. */
    for (i = 0; i < samples; i++)
@@ -1272,7 +1273,7 @@ void rarch_init_filter(enum retro_pixel_format colfmt)
       return;
    }
 
-   geom = (struct retro_game_geometry*)&g_extern.system.av_info.geometry;
+   geom    = (struct retro_game_geometry*)&g_extern.system.av_info.geometry;
    width   = geom->max_width;
    height  = geom->max_height;
 
@@ -1288,13 +1289,15 @@ void rarch_init_filter(enum retro_pixel_format colfmt)
 
    rarch_softfilter_get_max_output_size(g_extern.filter.filter,
          &width, &height);
-   pow2_x  = next_pow2(width);
-   pow2_y  = next_pow2(height);
-   maxsize = max(pow2_x, pow2_y); 
+
+   pow2_x                = next_pow2(width);
+   pow2_y                = next_pow2(height);
+   maxsize               = max(pow2_x, pow2_y); 
    g_extern.filter.scale = maxsize / RARCH_SCALE_BASE;
 
    g_extern.filter.out_rgb32 = rarch_softfilter_get_output_format(
          g_extern.filter.filter) == RETRO_PIXEL_FORMAT_XRGB8888;
+
    g_extern.filter.out_bpp = g_extern.filter.out_rgb32 ?
       sizeof(uint32_t) : sizeof(uint16_t);
 
@@ -1335,15 +1338,15 @@ static bool init_video_pixel_converter(unsigned size)
    return true;
 }
 
-
 void init_video_input(void)
 {
    unsigned max_dim, scale, width, height;
+   rarch_viewport_t *custom_vp;
    const input_driver_t *tmp = NULL;
    const struct retro_game_geometry *geom = NULL;
+   video_info_t video = {0};
 
    rarch_init_filter(g_extern.system.pix_fmt);
-
    rarch_init_shader_dir();
 
    geom = (const struct retro_game_geometry*)&g_extern.system.av_info.geometry;
@@ -1360,7 +1363,7 @@ void init_video_input(void)
    gfx_set_config_viewport();
 
    /* Update CUSTOM viewport. */
-   rarch_viewport_t *custom_vp = &g_extern.console.screen.viewports.custom_vp;
+   custom_vp = (rarch_viewport_t*)&g_extern.console.screen.viewports.custom_vp;
    if (g_settings.video.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
    {
       float default_aspect = aspectratio_lut[ASPECT_RATIO_CORE].value;
@@ -1407,7 +1410,6 @@ void init_video_input(void)
       rarch_fail(1, "init_video_input()");
    }
 
-   video_info_t video = {0};
    video.width = width;
    video.height = height;
    video.fullscreen = g_settings.video.fullscreen;
