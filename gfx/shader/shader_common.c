@@ -75,7 +75,7 @@ bool gl_load_luts(const struct gfx_shader *generic_shader,
       }
 
       gl_load_texture_data(lut_textures[i], &img,
-            gl_wrap_type_to_enum(generic_shader->lut[i].wrap),
+            driver.video->wrap_type_to_enum(generic_shader->lut[i].wrap),
             generic_shader->lut[i].filter != RARCH_FILTER_NEAREST,
             generic_shader->lut[i].mipmap);
       texture_image_free(&img);

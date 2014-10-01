@@ -452,6 +452,26 @@ static void gl_compute_fbo_geometry(gl_t *gl, unsigned width, unsigned height,
    }
 }
 
+static unsigned gl_wrap_type_to_enum(enum gfx_wrap_type type)
+{
+   switch (type)
+   {
+#ifndef HAVE_OPENGLES
+      case RARCH_WRAP_BORDER:
+         return GL_CLAMP_TO_BORDER;
+#else
+      case RARCH_WRAP_BORDER:
+#endif
+      case RARCH_WRAP_EDGE:
+         return GL_CLAMP_TO_EDGE;
+      case RARCH_WRAP_REPEAT:
+         return GL_REPEAT;
+      case RARCH_WRAP_MIRRORED_REPEAT:
+         return GL_MIRRORED_REPEAT;
+   }
+
+   return 0;
+}
 
 static void gl_create_fbo_textures(gl_t *gl)
 {
@@ -3082,6 +3102,7 @@ static struct gfx_shader *gl_get_current_shader(void *data)
    return (gl && gl->shader) ? gl->shader->get_current_shader() : NULL;
 }
 
+
 static const video_poke_interface_t gl_poke_interface = {
    NULL,
 #ifdef HAVE_FBO
@@ -3131,5 +3152,6 @@ video_driver_t video_gl = {
    gl_get_overlay_interface,
 #endif
    gl_get_poke_interface,
+   gl_wrap_type_to_enum,
 };
 

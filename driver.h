@@ -414,6 +414,7 @@ typedef struct video_driver
    void (*overlay_interface)(void *data, const video_overlay_interface_t **iface);
 #endif
    void (*poke_interface)(void *data, const video_poke_interface_t **iface);
+   unsigned (*wrap_type_to_enum)(enum gfx_wrap_type type);
 } video_driver_t;
 
 enum rarch_display_type
