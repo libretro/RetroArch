@@ -2817,16 +2817,13 @@ error:
 
 static inline void update_frame_time(void)
 {
-   retro_time_t delta = 0;
    retro_time_t time = rarch_get_time_usec();
+   retro_time_t delta = time - g_extern.system.frame_time_last;
    bool is_locked_fps = g_extern.is_paused || driver.nonblock_state;
-
    is_locked_fps |= !!driver.recording_data;
 
    if (!g_extern.system.frame_time_last || is_locked_fps)
       delta = g_extern.system.frame_time.reference;
-   else
-      delta = time - g_extern.system.frame_time_last;
 
    if (!is_locked_fps && g_extern.is_slowmotion)
       delta /= g_settings.slowmotion_ratio;
