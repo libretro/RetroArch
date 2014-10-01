@@ -421,11 +421,6 @@ struct global
 {
    bool verbosity;
    bool perfcnt_enable;
-   bool audio_active;
-   bool video_active;
-   bool camera_active;
-   bool location_active;
-   bool osk_active;
    bool force_fullscreen;
    bool core_shutdown_initiated;
 

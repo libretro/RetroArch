@@ -376,7 +376,7 @@ static void init_osk(void)
    if (!driver.osk_data)
    {
       RARCH_ERR("Failed to initialize OSK driver. Will continue without OSK.\n");
-      g_extern.osk_active = false;
+      driver.osk_active = false;
    }
 }
 
@@ -459,7 +459,7 @@ void init_camera(void)
    if (!driver.camera_data)
    {
       RARCH_ERR("Failed to initialize camera driver. Will continue without camera.\n");
-      g_extern.camera_active = false;
+      driver.camera_active = false;
    }
 
    if (g_extern.system.camera_callback.initialized)
@@ -560,7 +560,7 @@ void init_location(void)
    if (!driver.location_data)
    {
       RARCH_ERR("Failed to initialize location driver. Will continue without location.\n");
-      g_extern.location_active = false;
+      driver.location_active = false;
    }
 
    if (g_extern.system.location_callback.initialized)
@@ -772,7 +772,7 @@ void driver_set_monitor_refresh_rate(float hz)
 void driver_set_nonblock_state(bool nonblock)
 {
    /* Only apply non-block-state for video if we're using vsync. */
-   if (g_extern.video_active && driver.video_data)
+   if (driver.video_active && driver.video_data)
    {
       bool video_nonblock = nonblock;
       if (!g_settings.video.vsync || g_extern.system.force_nonblock)
@@ -780,7 +780,7 @@ void driver_set_nonblock_state(bool nonblock)
       driver.video->set_nonblock_state(driver.video_data, video_nonblock);
    }
 
-   if (g_extern.audio_active && driver.audio_data)
+   if (driver.audio_active && driver.audio_data)
       driver.audio->set_nonblock_state(driver.audio_data,
             g_settings.audio.sync ? nonblock : true);
 
@@ -896,11 +896,11 @@ void init_drivers(void)
    init_audio();
 
    /* Only initialize camera driver if we're ever going to use it. */
-   if (g_extern.camera_active)
+   if (driver.camera_active)
       init_camera();
 
    /* Only initialize location driver if we're ever going to use it. */
-   if (g_extern.location_active)
+   if (driver.location_active)
       init_location();
 
    init_osk();
@@ -1042,7 +1042,7 @@ void init_audio(void)
 
    if (!g_settings.audio.enable)
    {
-      g_extern.audio_active = false;
+      driver.audio_active = false;
       return;
    }
 
@@ -1071,14 +1071,14 @@ void init_audio(void)
    if (!driver.audio_data)
    {
       RARCH_ERR("Failed to initialize audio driver. Will continue without audio.\n");
-      g_extern.audio_active = false;
+      driver.audio_active = false;
    }
 
    g_extern.audio_data.use_float = false;
-   if (g_extern.audio_active && driver.audio->use_float(driver.audio_data))
+   if (driver.audio_active && driver.audio->use_float(driver.audio_data))
       g_extern.audio_data.use_float = true;
 
-   if (!g_settings.audio.sync && g_extern.audio_active)
+   if (!g_settings.audio.sync && driver.audio_active)
    {
       rarch_main_command(RARCH_CMD_AUDIO_SET_NONBLOCKING_STATE);
       g_extern.audio_data.chunk_size = 
@@ -1103,7 +1103,7 @@ void init_audio(void)
    {
       RARCH_ERR("Failed to initialize resampler \"%s\".\n",
             g_settings.audio.resampler);
-      g_extern.audio_active = false;
+      driver.audio_active = false;
    }
 
    rarch_assert(g_extern.audio_data.data = (float*)
@@ -1117,7 +1117,7 @@ void init_audio(void)
          malloc(outsamples_max * sizeof(float)));
 
    g_extern.audio_data.rate_control = false;
-   if (!g_extern.system.audio_callback.callback && g_extern.audio_active &&
+   if (!g_extern.system.audio_callback.callback && driver.audio_active &&
          g_settings.audio.rate_control)
    {
       if (driver.audio->buffer_size && driver.audio->write_avail)
@@ -1134,7 +1134,7 @@ void init_audio(void)
 
    g_extern.measure_data.buffer_free_samples_count = 0;
 
-   if (g_extern.audio_active && !g_extern.audio_data.mute &&
+   if (driver.audio_active && !g_extern.audio_data.mute &&
          g_extern.system.audio_callback.callback)
    {
       /* Threaded driver is initially stopped. */
@@ -1240,7 +1240,7 @@ void uninit_audio(void)
 
    if (!g_settings.audio.enable)
    {
-      g_extern.audio_active = false;
+      driver.audio_active = false;
       return;
    }
 

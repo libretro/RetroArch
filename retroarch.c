@@ -476,7 +476,7 @@ bool rarch_audio_flush(const int16_t *data, size_t samples)
 
    if (g_extern.is_paused || g_extern.audio_data.mute)
       return true;
-   if (!g_extern.audio_active || !g_extern.audio_data.data)
+   if (!driver.audio_active || !g_extern.audio_data.data)
       return false;
 
    RARCH_PERFORMANCE_INIT(audio_convert_s16);
@@ -1846,10 +1846,10 @@ static void check_stateslots(
 static inline void flush_rewind_audio(void)
 {
    /* We just rewound. Flush rewind audio buffer. */
-   g_extern.audio_active = rarch_audio_flush(g_extern.audio_data.rewind_buf
+   driver.audio_active = rarch_audio_flush(g_extern.audio_data.rewind_buf
          + g_extern.audio_data.rewind_ptr,
          g_extern.audio_data.rewind_size - g_extern.audio_data.rewind_ptr)
-      && g_extern.audio_active;
+      && driver.audio_active;
 
    g_extern.frame_is_reverse = false;
 }
@@ -2325,7 +2325,7 @@ static void check_mute(void)
       else if (!driver.audio->start(driver.audio_data))
       {
          RARCH_ERR("Failed to unmute audio.\n");
-         g_extern.audio_active = false;
+         driver.audio_active = false;
       }
    }
 
@@ -2435,7 +2435,7 @@ static bool do_state_checks(
    if (BIND_PRESSED(trigger_input, RARCH_SCREENSHOT))
       rarch_main_command(RARCH_CMD_TAKE_SCREENSHOT);
 
-   if (g_extern.audio_active)
+   if (driver.audio_active)
    {
       if (BIND_PRESSED(trigger_input, RARCH_MUTE))
          check_mute();
@@ -2527,8 +2527,8 @@ static bool do_state_checks(
 
 static void init_state(void)
 {
-   g_extern.video_active = true;
-   g_extern.audio_active = true;
+   driver.video_active = true;
+   driver.audio_active = true;
 }
 
 static void deinit_log_file(void)
@@ -3156,7 +3156,7 @@ void rarch_main_command(unsigned cmd)
                && !driver.audio->start(driver.audio_data))
          {
             RARCH_ERR("Failed to start audio driver. Will continue without audio.\n");
-            g_extern.audio_active = false;
+            driver.audio_active = false;
          }
          break;
       case RARCH_CMD_OVERLAY_INIT:

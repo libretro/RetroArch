@@ -32,7 +32,7 @@ static void video_frame(const void *data, unsigned width,
 {
    const char *msg = NULL;
 
-   if (!g_extern.video_active)
+   if (!driver.video_active)
       return;
 
    g_extern.frame_cache.data   = data;
@@ -100,7 +100,7 @@ static void video_frame(const void *data, unsigned width,
    }
 
    if (!driver.video->frame(driver.video_data, data, width, height, pitch, msg))
-      g_extern.video_active = false;
+      driver.video_active = false;
 }
 
 static void audio_sample(int16_t left, int16_t right)
@@ -111,8 +111,8 @@ static void audio_sample(int16_t left, int16_t right)
    if (g_extern.audio_data.data_ptr < g_extern.audio_data.chunk_size)
       return;
 
-   g_extern.audio_active = rarch_audio_flush(g_extern.audio_data.conv_outsamples,
-         g_extern.audio_data.data_ptr) && g_extern.audio_active;
+   driver.audio_active = rarch_audio_flush(g_extern.audio_data.conv_outsamples,
+         g_extern.audio_data.data_ptr) && driver.audio_active;
 
    g_extern.audio_data.data_ptr = 0;
 }
@@ -122,8 +122,8 @@ static size_t audio_sample_batch(const int16_t *data, size_t frames)
    if (frames > (AUDIO_CHUNK_SIZE_NONBLOCKING >> 1))
       frames = AUDIO_CHUNK_SIZE_NONBLOCKING >> 1;
 
-   g_extern.audio_active = rarch_audio_flush(data, frames << 1)
-      && g_extern.audio_active;
+   driver.audio_active = rarch_audio_flush(data, frames << 1)
+      && driver.audio_active;
 
    return frames;
 }

@@ -449,6 +449,12 @@ typedef struct driver
    void *resampler_data;
    void *recording_data;
 
+   bool audio_active;
+   bool video_active;
+   bool camera_active;
+   bool location_active;
+   bool osk_active;
+
 #ifdef HAVE_MENU
    menu_handle_t *menu;
    const menu_ctx_driver_t *menu_ctx;

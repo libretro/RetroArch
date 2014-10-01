@@ -405,8 +405,8 @@ void uninit_libretro_sym(void)
    free(g_extern.system.special);
    free(g_extern.system.ports);
    memset(&g_extern.system, 0, sizeof(g_extern.system));
-   g_extern.camera_active = false;
-   g_extern.location_active = false;
+   driver.camera_active = false;
+   driver.location_active = false;
 
    /* Performance counters no longer valid. */
    retro_perf_clear();
@@ -895,7 +895,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          cb->start = driver_camera_start;
          cb->stop = driver_camera_stop;
          g_extern.system.camera_callback = *cb;
-         g_extern.camera_active = cb->caps != 0;
+         driver.camera_active = cb->caps != 0;
          break;
       }
 
@@ -909,7 +909,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          cb->get_position = driver_location_get_position;
          cb->set_interval = driver_location_set_interval;
          g_extern.system.location_callback = *cb;
-         g_extern.location_active = true;
+         driver.location_active = true;
          break;
       }
 
