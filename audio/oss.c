@@ -39,6 +39,8 @@
 #define DEFAULT_OSS_DEV "/dev/dsp"
 #endif
 
+static bool oss_is_paused;
+
 static void *oss_init(const char *device, unsigned rate, unsigned latency)
 {
    int *fd = (int*)calloc(1, sizeof(int));
@@ -124,12 +126,21 @@ static bool oss_stop(void *data)
 {
    int *fd = (int*)data;
    ioctl(*fd, SNDCTL_DSP_RESET, 0);
+   oss_is_paused = true;
    return true;
 }
 
 static bool oss_start(void *data)
 {
+   (void)data;
+   oss_is_paused = false;
    return true;
+}
+
+static bool oss_alive(void *data)
+{
+   (void)data;
+   return !oss_is_paused;
 }
 
 static void oss_set_nonblock_state(void *data, bool state)
@@ -155,9 +166,9 @@ static void oss_free(void *data)
 
 static size_t oss_write_avail(void *data)
 {
+   audio_buf_info info;
    int *fd = (int*)data;
 
-   audio_buf_info info;
    if (ioctl(*fd, SNDCTL_DSP_GETOSPACE, &info) < 0)
    {
       RARCH_ERR("SNDCTL_DSP_GETOSPACE failed ...\n");
@@ -169,9 +180,9 @@ static size_t oss_write_avail(void *data)
 
 static size_t oss_buffer_size(void *data)
 {
+   audio_buf_info info;
    int *fd = (int*)data;
 
-   audio_buf_info info;
    if (ioctl(*fd, SNDCTL_DSP_GETOSPACE, &info) < 0)
    {
       RARCH_ERR("SNDCTL_DSP_GETOSPACE failed ...\n");
@@ -192,6 +203,7 @@ audio_driver_t audio_oss = {
    oss_write,
    oss_stop,
    oss_start,
+   oss_alive,
    oss_set_nonblock_state,
    oss_free,
    oss_use_float,

@@ -25,6 +25,7 @@ typedef struct rsd
 {
    rsound_t *rd;
    bool nonblock;
+   bool is_paused;
    volatile bool has_error;
 
    fifo_buffer_t *buffer;
@@ -146,6 +147,7 @@ static bool rs_stop(void *data)
 {
    rsd_t *rsd = (rsd_t*)data;
    rsd_stop(rsd->rd);
+   rsd->is_paused = true;
 
    return true;
 }
@@ -156,11 +158,20 @@ static void rs_set_nonblock_state(void *data, bool state)
    rsd->nonblock = state;
 }
 
+static bool rs_alive(void *data)
+{
+   rsd_t *rsd = (rsd_t*)data;
+   if (rsd)
+      return !rsd->is_paused;
+   return false;
+}
+
 static bool rs_start(void *data)
 {
    rsd_t *rsd = (rsd_t*)data;
    if (rsd_start(rsd->rd) < 0)
       return false;
+   rsd->is_paused = false;
 
    return true;
 }
@@ -208,6 +219,7 @@ audio_driver_t audio_rsound = {
    rs_write,
    rs_stop,
    rs_start,
+   rs_alive,
    rs_set_nonblock_state,
    rs_free,
    rs_use_float,

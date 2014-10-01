@@ -43,6 +43,7 @@ typedef struct coreaudio
    AudioComponentInstance dev;
 #endif
    bool dev_alive;
+   bool is_paused;
 
    fifo_buffer_t *buffer;
    bool nonblock;
@@ -363,22 +364,32 @@ static ssize_t coreaudio_write(void *data, const void *buf_, size_t size)
    return written;
 }
 
-static bool coreaudio_stop(void *data)
-{
-   coreaudio_t *dev = (coreaudio_t*)data;
-   return AudioOutputUnitStop(dev->dev) == noErr;
-}
-
 static void coreaudio_set_nonblock_state(void *data, bool state)
 {
    coreaudio_t *dev = (coreaudio_t*)data;
    dev->nonblock = state;
 }
 
+static bool coreaudio_alive(void *data)
+{
+   coreaudio_t *dev = (coreaudio_t*)data;
+   if (dev)
+      return !dev->is_paused;
+   return false;
+}
+
+static bool coreaudio_stop(void *data)
+{
+   coreaudio_t *dev = (coreaudio_t*)data;
+   dev->is_paused = (AudioOutputUnitStop(dev->dev) == noErr) ? true : false;
+   return dev->is_paused ? true : false;
+}
+
 static bool coreaudio_start(void *data)
 {
    coreaudio_t *dev = (coreaudio_t*)data;
-   return AudioOutputUnitStart(dev->dev) == noErr;
+   dev->is_paused = (AudioOutputUnitStart(dev->dev) == noErr) ? false : true;
+   return dev->is_paused ? false : true;
 }
 
 static bool coreaudio_use_float(void *data)
@@ -407,6 +418,7 @@ audio_driver_t audio_coreaudio = {
    coreaudio_write,
    coreaudio_stop,
    coreaudio_start,
+   coreaudio_alive,
    coreaudio_set_nonblock_state,
    coreaudio_free,
    coreaudio_use_float,

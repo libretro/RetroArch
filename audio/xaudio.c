@@ -23,6 +23,7 @@ typedef struct
 {
    xaudio2_t *xa;
    bool nonblock;
+   bool is_paused;
    size_t bufsize;
 } xa_t;
 
@@ -80,8 +81,17 @@ static ssize_t xa_write(void *data, const void *buf, size_t size)
 
 static bool xa_stop(void *data)
 {
-   (void)data;
+   xa_t *xa = (xa_t*)data;
+   xa->is_paused = false;
    return true;
+}
+
+static bool xa_alive(void *data)
+{
+   xa_t *xa = (xa_t*)data;
+   if (xa)
+      return !xa->is_paused;
+   return false;
 }
 
 static void xa_set_nonblock_state(void *data, bool state)
@@ -92,7 +102,8 @@ static void xa_set_nonblock_state(void *data, bool state)
 
 static bool xa_start(void *data)
 {
-   (void)data;
+   xa_t *xa = (xa_t*)data;
+   xa->is_paused = false;
    return true;
 }
 
@@ -130,6 +141,7 @@ audio_driver_t audio_xa = {
    xa_write,
    xa_stop,
    xa_start,
+   xa_alive,
    xa_set_nonblock_state,
    xa_free,
    xa_use_float,

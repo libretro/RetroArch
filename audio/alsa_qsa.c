@@ -273,12 +273,40 @@ static bool alsa_qsa_stop(void *data)
 
    if (alsa->can_pause && !alsa->is_paused)
    {
-      if (snd_pcm_playback_pause(alsa->pcm) == 0)
+      int ret = snd_pcm_playback_pause(alsa->pcm);
+      if (ret < 0)
+         return false;
+
+      alsa->is_paused = true;
+   }
+
+   return true;
+}
+
+static bool alsa_qsa_alive(void *data)
+{
+   alsa_t *alsa = (alsa_t*)data;
+   if (alsa)
+      return !alsa->is_paused;
+   return false;
+}
+
+static bool alsa_qsa_start(void *data)
+{
+   alsa_t *alsa = (alsa_t*)data;
+
+   if (alsa->can_pause && alsa->is_paused)
+   {
+      int ret = snd_pcm_playback_resume(alsa->pcm);
+
+      if (ret < 0)
       {
-         alsa->is_paused = true;
-         return true;
+         RARCH_ERR("[ALSA QSA]: Failed to unpause: %s.\n",
+               snd_strerror(ret));
+         return false;
       }
-      return false;
+
+      alsa->is_paused = false;
    }
 
    return true;
@@ -300,28 +328,6 @@ static void alsa_qsa_set_nonblock_state(void *data, bool state)
    alsa->nonblock = state;
 }
 
-static bool alsa_qsa_start(void *data)
-{
-   alsa_t *alsa = (alsa_t*)data;
-
-   if (alsa->can_pause && alsa->is_paused)
-   {
-      int ret = snd_pcm_playback_resume(alsa->pcm);
-      if (ret < 0)
-      {
-         RARCH_ERR("[ALSA QSA]: Failed to unpause: %s.\n",
-               snd_strerror(ret));
-         return false;
-      }
-      else
-      {
-         alsa->is_paused = false;
-         return true;
-      }
-   }
-
-   return true;
-}
 
 static bool alsa_qsa_use_float(void *data)
 {
@@ -366,6 +372,7 @@ audio_driver_t audio_alsa = {
    alsa_qsa_write,
    alsa_qsa_stop,
    alsa_qsa_start,
+   alsa_qsa_alive,
    alsa_qsa_set_nonblock_state,
    alsa_qsa_free,
    alsa_qsa_use_float,

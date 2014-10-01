@@ -30,6 +30,7 @@ typedef struct alsa_thread
 {
    snd_pcm_t *pcm;
    bool nonblock;
+   bool is_paused;
    bool has_float;
    volatile bool thread_dead;
 
@@ -280,9 +281,20 @@ static ssize_t alsa_thread_write(void *data, const void *buf, size_t size)
    }
 }
 
+static bool alsa_thread_alive(void *data)
+{
+   alsa_thread_t *alsa = (alsa_thread_t*)data;
+   if (alsa)
+      return !alsa->is_paused;
+   return false;
+}
+
 static bool alsa_thread_stop(void *data)
 {
-   (void)data;
+   alsa_thread_t *alsa = (alsa_thread_t*)data;
+
+   if (alsa)
+      alsa->is_paused = true;
    return true;
 }
 
@@ -294,7 +306,10 @@ static void alsa_thread_set_nonblock_state(void *data, bool state)
 
 static bool alsa_thread_start(void *data)
 {
-   (void)data;
+   alsa_thread_t *alsa = (alsa_thread_t*)data;
+
+   if (alsa)
+      alsa->is_paused = false;
    return true;
 }
 
@@ -321,6 +336,7 @@ audio_driver_t audio_alsathread = {
    alsa_thread_write,
    alsa_thread_stop,
    alsa_thread_start,
+   alsa_thread_alive,
    alsa_thread_set_nonblock_state,
    alsa_thread_free,
    alsa_thread_use_float,

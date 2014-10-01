@@ -36,6 +36,7 @@ typedef struct jack
    jack_ringbuffer_t *buffer[2];
    volatile bool shutdown;
    bool nonblock;
+   bool is_paused;
 
    pthread_cond_t cond;
    pthread_mutex_t cond_lock;
@@ -274,8 +275,18 @@ static ssize_t ja_write(void *data, const void *buf, size_t size)
 
 static bool ja_stop(void *data)
 {
-   (void)data;
+   jack_t *jd = (jack_t*)data;
+   if (jd)
+      jd->is_paused = true;
    return true;
+}
+
+static bool ja_alive(void *data)
+{
+   jack_t *jd = (jack_t*)data;
+   if (jd)
+      return !jd->is_paused;
+   return false;
 }
 
 static void ja_set_nonblock_state(void *data, bool state)
@@ -286,7 +297,9 @@ static void ja_set_nonblock_state(void *data, bool state)
 
 static bool ja_start(void *data)
 {
-   (void)data;
+   jack_t *jd = (jack_t*)data;
+   if (jd)
+      jd->is_paused = false;
    return true;
 }
 
@@ -335,6 +348,7 @@ audio_driver_t audio_jack = {
    ja_write,
    ja_stop,
    ja_start,
+   ja_alive,
    ja_set_nonblock_state,
    ja_free,
    ja_use_float,

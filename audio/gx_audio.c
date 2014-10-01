@@ -53,6 +53,7 @@ typedef struct
 
    OSCond cond;
    bool nonblock;
+   bool is_paused;
 } gx_audio_t;
 
 static volatile gx_audio_t *gx_audio_data;
@@ -163,6 +164,7 @@ static bool gx_audio_stop(void *data)
    AIStopDMA();
    memset(wa->data, 0, sizeof(wa->data));
    DCFlushRange(wa->data, sizeof(wa->data));
+   wa->is_paused = true;
    return true;
 }
 
@@ -178,9 +180,18 @@ static void gx_audio_set_nonblock_state(void *data, bool state)
 
 static bool gx_audio_start(void *data)
 {
-   (void)data;
+   gx_audio_t *wa = (gx_audio_t*)data;
    AIStartDMA();
+   wa->is_paused = false;
    return true;
+}
+
+static bool gx_audio_alive(void *data)
+{
+   gx_audio_t *wa = (gx_audio_t*)data;
+   if (wa)
+      return !wa->is_paused;
+   return false;
 }
 
 static void gx_audio_free(void *data)
@@ -225,6 +236,7 @@ audio_driver_t audio_gx = {
    gx_audio_write,
    gx_audio_stop,
    gx_audio_start,
+   gx_audio_alive,
    gx_audio_set_nonblock_state,
    gx_audio_free,
    gx_audio_use_float,

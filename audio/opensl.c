@@ -52,6 +52,7 @@ typedef struct sl
    slock_t *lock;
    scond_t *cond;
    bool nonblock;
+   bool is_paused;
    unsigned buf_size;
    unsigned buf_count;
 } sl_t;
@@ -199,7 +200,16 @@ error:
 static bool sl_stop(void *data)
 {
    sl_t *sl = (sl_t*)data;
-   return SLPlayItf_SetPlayState(sl->player, SL_PLAYSTATE_STOPPED) == SL_RESULT_SUCCESS;
+   sl->is_paused = (SLPlayItf_SetPlayState(sl->player, SL_PLAYSTATE_STOPPED) == SL_RESULT_SUCCESS) ? true : false;
+   return sl->is_paused ? true : false;
+}
+
+static bool sl_alive(void *data)
+{
+   sl_t *sl = (sl_t*)data;
+   if (sl)
+      return !sl->is_paused;
+   return false;
 }
 
 static void sl_set_nonblock_state(void *data, bool state)
@@ -211,7 +221,8 @@ static void sl_set_nonblock_state(void *data, bool state)
 static bool sl_start(void *data)
 {
    sl_t *sl = (sl_t*)data;
-   return SLPlayItf_SetPlayState(sl->player, SL_PLAYSTATE_PLAYING) == SL_RESULT_SUCCESS;
+   sl->is_paused = (SLPlayItf_SetPlayState(sl->player, SL_PLAYSTATE_PLAYING) == SL_RESULT_SUCCESS) ? false : true;
+   return sl->is_paused ? false : true;
 }
 
 
@@ -289,6 +300,7 @@ audio_driver_t audio_opensl = {
    sl_write,
    sl_stop,
    sl_start,
+   sl_alive,
    sl_set_nonblock_state,
    sl_free,
    sl_use_float,

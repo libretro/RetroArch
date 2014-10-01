@@ -69,6 +69,7 @@ typedef struct dsound
    unsigned buffer_size;
 
    bool nonblock;
+   bool is_paused;
    volatile bool thread_alive;
 } dsound_t;
 
@@ -384,7 +385,8 @@ static bool dsound_stop(void *data)
 {
    dsound_t *ds = (dsound_t*)data;
    dsound_stop_thread(ds);
-   return IDirectSoundBuffer_Stop(ds->dsb) == DS_OK;
+   ds->is_paused = (IDirectSoundBuffer_Stop(ds->dsb) == DS_OK) ? true : false;
+   return (ds->is_paused) ? true : false;
 }
 
 static bool dsound_start(void *data)
@@ -395,7 +397,16 @@ static bool dsound_start(void *data)
    if (!dsound_start_thread(ds))
       return false;
 
-   return IDirectSoundBuffer_Play(ds->dsb, 0, 0, DSBPLAY_LOOPING) == DS_OK;
+   ds->is_paused = (IDirectSoundBuffer_Play(ds->dsb, 0, 0, DSBPLAY_LOOPING) == DS_OK) ? false : true;
+   return (ds->is_paused) ? false : true;
+}
+
+static bool dsound_alive(void *data)
+{
+   dsound_t *ds = (dsound_t*)data;
+   if (ds)
+      return !ds->is_paused;
+   return false;
 }
 
 static void dsound_set_nonblock_state(void *data, bool state)
@@ -462,6 +473,7 @@ audio_driver_t audio_dsound = {
    dsound_write,
    dsound_stop,
    dsound_start,
+   dsound_alive,
    dsound_set_nonblock_state,
    dsound_free,
    dsound_use_float,

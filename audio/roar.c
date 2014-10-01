@@ -78,8 +78,18 @@ static ssize_t ra_write(void *data, const void *buf, size_t size)
 
 static bool ra_stop(void *data)
 {
-   (void)data;
+   roar_t *roar = (roar_t*)data;
+   if (roar)
+      roar->is_paused = true;
    return true;
+}
+
+static bool ra_alive(void *data)
+{
+   roar_t *roar = (roar_t*)data;
+   if (roar)
+      return !roar->is_paused;
+   return false;
 }
 
 static void ra_set_nonblock_state(void *data, bool state)
@@ -92,7 +102,9 @@ static void ra_set_nonblock_state(void *data, bool state)
 
 static bool ra_start(void *data)
 {
-   (void)data;
+   roar_t *roar = (roar_t*)data;
+   if (roar)
+      roar->is_paused = false;
    return true;
 }
 
@@ -114,6 +126,7 @@ audio_driver_t audio_roar = {
    ra_write,
    ra_stop,
    ra_start,
+   ra_alive,
    ra_set_nonblock_state,
    ra_free,
    ra_use_float,

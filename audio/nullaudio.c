@@ -43,6 +43,12 @@ static bool null_audio_stop(void *data)
    return true;
 }
 
+static bool null_audio_alive(void *data)
+{
+   (void)data;
+   return true;
+}
+
 static bool null_audio_start(void *data)
 {
    (void)data;
@@ -66,6 +72,7 @@ audio_driver_t audio_null = {
    null_audio_write,
    null_audio_stop,
    null_audio_start,
+   null_audio_alive,
    null_audio_set_nonblock_state,
    null_audio_free,
    null_audio_use_float,

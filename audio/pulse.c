@@ -30,6 +30,7 @@ typedef struct
    size_t buffer_size;
    bool nonblock;
    bool success;
+   bool is_paused;
 } pa_t;
 
 static void pulse_free(void *data)
@@ -254,7 +255,16 @@ static bool pulse_stop(void *data)
    pa_threaded_mainloop_wait(pa->mainloop);
    bool ret = pa->success;
    pa_threaded_mainloop_unlock(pa->mainloop);
+   pa->is_paused = true;
    return ret;
+}
+
+static bool pulse_alive(void *data)
+{
+   pa_t *pa = (pa_t*)data;
+   if (pa)
+      return !pa->is_paused;
+   return false;
 }
 
 static bool pulse_start(void *data)
@@ -267,6 +277,7 @@ static bool pulse_start(void *data)
    pa_threaded_mainloop_wait(pa->mainloop);
    bool ret = pa->success;
    pa_threaded_mainloop_unlock(pa->mainloop);
+   pa->is_paused = false;
    return ret;
 }
 
@@ -303,6 +314,7 @@ audio_driver_t audio_pulse = {
    pulse_write,
    pulse_stop,
    pulse_start,
+   pulse_alive,
    pulse_set_nonblock_state,
    pulse_free,
    pulse_use_float,

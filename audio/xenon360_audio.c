@@ -28,6 +28,7 @@ typedef struct
 {
    uint32_t buffer[2048];
    bool nonblock;
+   bool is_paused;
 } xenon_audio_t;
 
 static void *xenon360_audio_init(const char *device,
@@ -86,8 +87,17 @@ static ssize_t xenon360_audio_write(void *data, const void *buf, size_t size)
 
 static bool xenon360_audio_stop(void *data)
 {
-   (void)data;
+   xenon_audio_t *xa = data;
+   xa->is_paused = true;
    return true;
+}
+
+static bool xenon360_audio_alive(void *data)
+{
+   xenon_audio_t *xa = data;
+   if (xa)
+      return !xa->is_paused;
+   return false;
 }
 
 static void xenon360_audio_set_nonblock_state(void *data, bool state)
@@ -98,7 +108,8 @@ static void xenon360_audio_set_nonblock_state(void *data, bool state)
 
 static bool xenon360_audio_start(void *data)
 {
-   (void)data;
+   xenon_audio_t *xa = data;
+   xa->is_paused = false;
    return true;
 }
 
@@ -119,6 +130,7 @@ audio_driver_t audio_xenon360 = {
    xenon360_audio_write,
    xenon360_audio_stop,
    xenon360_audio_start,
+   xenon360_audio_alive,
    xenon360_audio_set_nonblock_state,
    xenon360_audio_free,
    xenon360_use_float,

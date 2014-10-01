@@ -184,6 +184,9 @@ typedef struct audio_driver
    bool (*stop)(void *data);
    bool (*start)(void *data);
 
+   /* Is the audio driver currently running? */
+   bool (*alive)(void *data);
+
    /* Should we care about blocking in audio thread? Fast forwarding. */
    void (*set_nonblock_state)(void *data, bool toggle);
    void (*free)(void *data);

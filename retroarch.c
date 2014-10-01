@@ -3137,11 +3137,22 @@ void rarch_main_command(unsigned cmd)
 #endif
          break;
       case RARCH_CMD_AUDIO_STOP:
-         if (driver.audio_data)
-            driver.audio->stop(driver.audio_data);
+         if (!driver.audio_data)
+            return;
+
+         if (!driver.audio->alive(driver.audio_data))
+            return;
+
+         driver.audio->stop(driver.audio_data);
          break;
       case RARCH_CMD_AUDIO_START:
-         if (driver.audio_data && !g_extern.audio_data.mute
+         if (!driver.audio_data)
+            return;
+
+         if (driver.audio->alive(driver.audio_data))
+            return;
+
+         if (!g_extern.audio_data.mute
                && !driver.audio->start(driver.audio_data))
          {
             RARCH_ERR("Failed to start audio driver. Will continue without audio.\n");

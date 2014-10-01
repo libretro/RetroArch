@@ -18,6 +18,8 @@
 
 #include "../emscripten/RWebAudio.h"
 
+static bool rwebaudio_is_paused;
+
 static void rwebaudio_free(void *data)
 {
    RWebAudioFree();
@@ -42,6 +44,7 @@ static ssize_t rwebaudio_write(void *data, const void *buf, size_t size)
 static bool rwebaudio_stop(void *data)
 {
    (void)data;
+   rwebaudio_is_paused = true;
    return RWebAudioStop();
 }
 
@@ -51,9 +54,16 @@ static void rwebaudio_set_nonblock_state(void *data, bool state)
    RWebAudioSetNonblockState(state);
 }
 
+static bool rwebaudio_alive(void *data)
+{
+   (void)data;
+   return !rwebaudio_is_paused;
+}
+
 static bool rwebaudio_start(void *data)
 {
    (void)data;
+   rwebaudio_is_paused = false;
    return RWebAudioStart();
 }
 
@@ -80,6 +90,7 @@ audio_driver_t audio_rwebaudio = {
    rwebaudio_write,
    rwebaudio_stop,
    rwebaudio_start,
+   rwebaudio_alive,
    rwebaudio_set_nonblock_state,
    rwebaudio_free,
    rwebaudio_use_float,

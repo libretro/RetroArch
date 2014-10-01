@@ -202,18 +202,27 @@ static ssize_t alsa_write(void *data, const void *buf_, size_t size_)
    return written;
 }
 
+static bool alsa_alive(void *data)
+{
+   alsa_t *alsa = (alsa_t*)data;
+   if (alsa)
+      return !alsa->is_paused;
+   return false;
+}
+
 static bool alsa_stop(void *data)
 {
    alsa_t *alsa = (alsa_t*)data;
 
-   if (alsa->can_pause && !alsa->is_paused)
+   if (alsa->can_pause
+         && !alsa->is_paused)
    {
-      if (snd_pcm_pause(alsa->pcm, 1) == 0)
-      {
-         alsa->is_paused = true;
-         return true;
-      }
-      return false;
+      int ret = snd_pcm_pause(alsa->pcm, 1);
+
+      if (ret < 0)
+         return false;
+
+      alsa->is_paused = true;
    }
 
    return true;
@@ -228,20 +237,20 @@ static void alsa_set_nonblock_state(void *data, bool state)
 static bool alsa_start(void *data)
 {
    alsa_t *alsa = (alsa_t*)data;
-   if (alsa->can_pause && alsa->is_paused)
+
+   if (alsa->can_pause
+         && alsa->is_paused)
    {
       int ret = snd_pcm_pause(alsa->pcm, 0);
+
       if (ret < 0)
       {
          RARCH_ERR("[ALSA]: Failed to unpause: %s.\n",
                snd_strerror(ret));
          return false;
       }
-      else
-      {
-         alsa->is_paused = false;
-         return true;
-      }
+
+      alsa->is_paused = false;
    }
    return true;
 }
@@ -289,6 +298,7 @@ audio_driver_t audio_alsa = {
    alsa_write,
    alsa_stop,
    alsa_start,
+   alsa_alive,
    alsa_set_nonblock_state,
    alsa_free,
    alsa_use_float,

@@ -31,6 +31,7 @@ typedef struct audio_thread
    scond_t *cond;
    bool alive;
    bool stopped;
+   bool is_paused;
    bool use_float;
 
    int inited;
@@ -132,10 +133,21 @@ static void audio_thread_free(void *data)
    free(thr);
 }
 
+static bool audio_thread_alive(void *data)
+{
+   bool alive = false;
+   audio_thread_t *thr = (audio_thread_t*)data;
+   audio_thread_block(thr);
+   alive = !thr->is_paused;
+   audio_thread_unblock(thr);
+   return alive;
+}
+
 static bool audio_thread_stop(void *data)
 {
    audio_thread_t *thr = (audio_thread_t*)data;
    audio_thread_block(thr);
+   thr->is_paused = true;
    g_extern.system.audio_callback.set_state(false);
    return true;
 }
@@ -144,6 +156,7 @@ static bool audio_thread_start(void *data)
 {
    audio_thread_t *thr = (audio_thread_t*)data;
    g_extern.system.audio_callback.set_state(true);
+   thr->is_paused = false;
    audio_thread_unblock(thr);
    return true;
 }
@@ -181,6 +194,7 @@ static const audio_driver_t audio_thread = {
    audio_thread_write,
    audio_thread_stop,
    audio_thread_start,
+   audio_thread_alive,
    audio_thread_set_nonblock_state,
    audio_thread_free,
    audio_thread_use_float,

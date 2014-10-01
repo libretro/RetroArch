@@ -50,6 +50,7 @@ typedef struct al
    ALCcontext *ctx;
 
    bool nonblock;
+   bool is_paused;
 } al_t;
 
 static void al_free(void *data)
@@ -204,8 +205,18 @@ static ssize_t al_write(void *data, const void *buf_, size_t size)
 
 static bool al_stop(void *data)
 {
-   (void)data;
+   al_t *al = (al_t*)data;
+   if (al)
+      al->is_paused = true;
    return true;
+}
+
+static bool al_alive(void *data)
+{
+   al_t *al = (al_t*)data;
+   if (al)
+      return !al->is_paused;
+   return false;
 }
 
 static void al_set_nonblock_state(void *data, bool state)
@@ -216,7 +227,9 @@ static void al_set_nonblock_state(void *data, bool state)
 
 static bool al_start(void *data)
 {
-   (void)data;
+   al_t *al = (al_t*)data;
+   if (al)
+      al->is_paused = false;
    return true;
 }
 
@@ -244,6 +257,7 @@ audio_driver_t audio_openal = {
    al_write,
    al_stop,
    al_start,
+   al_alive,
    al_set_nonblock_state,
    al_free,
    al_use_float,

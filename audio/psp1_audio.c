@@ -150,6 +150,14 @@ static ssize_t psp_audio_write(void *data, const void *buf, size_t size)
    return sampleCount;
 }
 
+static bool psp_audio_alive(void *data)
+{
+   psp1_audio_t* psp = (psp1_audio_t*)data;
+   if (psp)
+      return psp->running;
+   return false;
+}
+
 static bool psp_audio_stop(void *data)
 {
    SceKernelThreadRunStatus runStatus;
@@ -222,6 +230,7 @@ audio_driver_t audio_psp1 = {
    psp_audio_write,
    psp_audio_stop,
    psp_audio_start,
+   psp_audio_alive,
    psp_audio_set_nonblock_state,
    psp_audio_free,
    psp_audio_use_float,

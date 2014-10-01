@@ -31,6 +31,7 @@
 typedef struct sdl_audio
 {
    bool nonblock;
+   bool is_paused;
 
    slock_t *lock;
    scond_t *cond;
@@ -157,14 +158,25 @@ static ssize_t sdl_audio_write(void *data, const void *buf, size_t size)
 
 static bool sdl_audio_stop(void *data)
 {
-   (void)data;
+   sdl_audio_t *sdl = (sdl_audio_t*)data;
+   sdl->is_paused = true;
    SDL_PauseAudio(1);
    return true;
 }
 
+static bool sdl_audio_alive(void *data)
+{
+   sdl_audio_t *sdl = (sdl_audio_t*)data;
+   if (sdl)
+      return !sdl->is_paused;
+   return false;
+}
+
 static bool sdl_audio_start(void *data)
 {
-   (void)data;
+   sdl_audio_t *sdl = (sdl_audio_t*)data;
+   sdl->is_paused = false;
+
    SDL_PauseAudio(0);
    return true;
 }
@@ -201,6 +213,7 @@ audio_driver_t audio_sdl = {
    sdl_audio_write,
    sdl_audio_stop,
    sdl_audio_start,
+   sdl_audio_alive,
    sdl_audio_set_nonblock_state,
    sdl_audio_free,
    sdl_use_float,
