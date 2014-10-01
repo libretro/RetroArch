@@ -847,6 +847,10 @@ static void parse_config_file(void)
 bool config_load_file(const char *path, bool set_defaults)
 {
    unsigned i;
+   char *save, tmp_str[PATH_MAX];
+   char tmp_append_path[PATH_MAX]; /* Don't destroy append_config_path. */
+   const char *extra_path;
+   unsigned msg_color = 0;
    config_file_t *conf = NULL;
 
    if (path)
@@ -858,21 +862,21 @@ bool config_load_file(const char *path, bool set_defaults)
    else
       conf = open_default_config_file();
 
-   if (conf == NULL)
+   if (!conf)
       return true;
 
    if (set_defaults)
       config_set_defaults();
 
-   char *save;
-   char tmp_append_path[PATH_MAX]; /* Don't destroy append_config_path. */
    strlcpy(tmp_append_path, g_extern.append_config_path,
          sizeof(tmp_append_path));
-   const char *extra_path = strtok_r(tmp_append_path, ",", &save);
+   extra_path = strtok_r(tmp_append_path, ",", &save);
+
    while (extra_path)
    {
+      bool ret = false;
       RARCH_LOG("Appending config \"%s\"\n", extra_path);
-      bool ret = config_append_file(conf, extra_path);
+      ret = config_append_file(conf, extra_path);
       if (!ret)
          RARCH_ERR("Failed to append config \"%s\"\n", extra_path);
       extra_path = strtok_r(NULL, ";", &save);
@@ -885,7 +889,6 @@ bool config_load_file(const char *path, bool set_defaults)
       RARCH_LOG_OUTPUT("=== Config end ===\n");
    }
 
-   char tmp_str[PATH_MAX];
 
    CONFIG_GET_FLOAT(video.scale, "video_scale");
    CONFIG_GET_INT(video.fullscreen_x, "video_fullscreen_x");
@@ -976,7 +979,6 @@ bool config_load_file(const char *path, bool set_defaults)
    CONFIG_GET_INT_EXTERN(console.screen.viewports.custom_vp.height,
          "custom_viewport_height");
 
-   unsigned msg_color = 0;
    if (config_get_hex(conf, "video_message_color", &msg_color))
    {
       g_settings.video.msg_color_r = ((msg_color >> 16) & 0xff) / 255.0f;
@@ -1285,7 +1287,9 @@ static void read_keybinds_player(config_file_t *conf, unsigned player)
    unsigned i;
    for (i = 0; input_config_bind_map[i].valid; i++)
    {
-      struct retro_keybind *bind = &g_settings.input.binds[player][i];
+      struct retro_keybind *bind = (struct retro_keybind*)
+         &g_settings.input.binds[player][i];
+
       if (!bind->valid)
          continue;
 
@@ -1304,21 +1308,23 @@ static void config_read_keybinds_conf(config_file_t *conf)
 
 bool config_read_keybinds(const char *path)
 {
-   config_file_t *conf = config_file_new(path);
+   config_file_t *conf = (config_file_t*)config_file_new(path);
+
    if (!conf)
       return false;
+
    config_read_keybinds_conf(conf);
    config_file_free(conf);
+
    return true;
 }
 
 static void save_keybind_key(config_file_t *conf, const char *prefix,
       const char *base, const struct retro_keybind *bind)
 {
-   char key[64];
-   snprintf(key, sizeof(key), "%s_%s", prefix, base);
+   char key[64], btn[64];
 
-   char btn[64];
+   snprintf(key, sizeof(key), "%s_%s", prefix, base);
    input_translate_rk_to_str(bind->key, btn, sizeof(btn));
    config_set_string(conf, key, btn);
 }
@@ -1326,6 +1332,7 @@ static void save_keybind_key(config_file_t *conf, const char *prefix,
 static void save_keybind_hat(config_file_t *conf, const char *key,
       const struct retro_keybind *bind)
 {
+   char config[16];
    unsigned hat = GET_HAT(bind->joykey);
    const char *dir = NULL;
 
@@ -1351,7 +1358,6 @@ static void save_keybind_hat(config_file_t *conf, const char *key,
          rarch_assert(0);
    }
 
-   char config[16];
    snprintf(config, sizeof(config), "h%u%s", hat, dir);
    config_set_string(conf, key, config);
 }
@@ -1374,10 +1380,10 @@ static void save_keybind_axis(config_file_t *conf, const char *prefix,
       const char *base, const struct retro_keybind *bind)
 {
    char key[64];
-   snprintf(key, sizeof(key), "%s_%s_axis", prefix, base);
-
    unsigned axis = 0;
    char dir = '\0';
+
+   snprintf(key, sizeof(key), "%s_%s_axis", prefix, base);
 
    if (bind->joyaxis == AXIS_NONE)
       config_set_string(conf, key, "nul");
@@ -1427,9 +1433,12 @@ static void save_keybinds_player(config_file_t *conf, unsigned player)
 bool config_save_file(const char *path)
 {
    unsigned i = 0;
+   bool ret = false;
    config_file_t *conf = config_file_new(path);
+
    if (!conf)
       conf = config_file_new(NULL);
+
    if (!conf)
       return false;
 
@@ -1657,7 +1666,7 @@ bool config_save_file(const char *path)
    config_set_bool(conf, "log_verbosity", g_extern.verbosity);
    config_set_bool(conf, "perfcnt_enable", g_extern.perfcnt_enable);
 
-   bool ret = config_file_write(conf, path);
+   ret = config_file_write(conf, path);
    config_file_free(conf);
    return ret;
 }
