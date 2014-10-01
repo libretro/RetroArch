@@ -37,10 +37,12 @@ void string_list_free(struct string_list *list)
 
 static bool string_list_capacity(struct string_list *list, size_t cap)
 {
+   struct string_list_elem *new_data = NULL;
    rarch_assert(cap > list->size);
 
-   struct string_list_elem *new_data = (struct string_list_elem*)
+   new_data = (struct string_list_elem*)
       realloc(list->elems, cap * sizeof(*new_data));
+
    if (!new_data)
       return false;
 
@@ -51,7 +53,9 @@ static bool string_list_capacity(struct string_list *list, size_t cap)
 
 struct string_list *string_list_new(void)
 {
-   struct string_list *list = (struct string_list*)calloc(1, sizeof(*list));
+   struct string_list *list = (struct string_list*)
+      calloc(1, sizeof(*list));
+
    if (!list)
       return NULL;
 
@@ -67,11 +71,12 @@ struct string_list *string_list_new(void)
 bool string_list_append(struct string_list *list, const char *elem,
       union string_list_elem_attr attr)
 {
+   char *dup;
    if (list->size >= list->cap &&
          !string_list_capacity(list, list->cap * 2))
       return false;
 
-   char *dup = strdup(elem);
+   dup = strdup(elem);
    if (!dup)
       return false;
 
@@ -82,7 +87,8 @@ bool string_list_append(struct string_list *list, const char *elem,
    return true;
 }
 
-void string_list_set(struct string_list *list, unsigned index, const char *str)
+void string_list_set(struct string_list *list,
+      unsigned index, const char *str)
 {
    free(list->elems[index].data);
    rarch_assert(list->elems[index].data = strdup(str));
@@ -91,12 +97,11 @@ void string_list_set(struct string_list *list, unsigned index, const char *str)
 void string_list_join_concat(char *buffer, size_t size,
       const struct string_list *list, const char *sep)
 {
-   size_t len = strlen(buffer);
+   size_t i, len = strlen(buffer);
    rarch_assert(len < size);
    buffer += len;
    size -= len;
 
-   size_t i;
    for (i = 0; i < list->size; i++)
    {
       strlcat(buffer, list->elems[i].data, size);
@@ -107,10 +112,11 @@ void string_list_join_concat(char *buffer, size_t size,
 
 struct string_list *string_split(const char *str, const char *delim)
 {
+   char *save      = NULL;
    char *copy      = NULL;
    const char *tmp = NULL;
-
    struct string_list *list = string_list_new();
+
    if (!list)
       goto error;
 
@@ -118,7 +124,6 @@ struct string_list *string_split(const char *str, const char *delim)
    if (!copy)
       goto error;
 
-   char *save;
    tmp = strtok_r(copy, delim, &save);
    while (tmp)
    {
@@ -159,10 +164,11 @@ bool string_list_find_elem_prefix(const struct string_list *list,
       const char *prefix, const char *elem)
 {
    size_t i;
+   char prefixed[PATH_MAX];
+
    if (!list)
       return false;
 
-   char prefixed[PATH_MAX];
    snprintf(prefixed, sizeof(prefixed), "%s%s", prefix, elem);
 
    for (i = 0; i < list->size; i++)
