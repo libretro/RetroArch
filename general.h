@@ -616,6 +616,7 @@ struct global
       bsv_movie_t *movie;
       char movie_path[PATH_MAX];
       bool movie_playback;
+      bool eof_exit;
 
       /* Immediate playback/recording. */
       char movie_start_path[PATH_MAX];

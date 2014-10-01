@@ -644,6 +644,7 @@ static void print_help(void)
 
    puts("\t-P/--bsvplay: Playback a BSV movie file.");
    puts("\t-R/--bsvrecord: Start recording a BSV movie file from the beginning.");
+   puts("\t--eof-exit: Exit upon reaching the end of the BSV movie file.");
    puts("\t-M/--sram-mode: Takes an argument telling how SRAM should be handled in the session.");
    puts("\t\t{no,}load-{no,}save describes if SRAM should be loaded, and if SRAM should be saved.");
    puts("\t\tDo note that noload-save implies that save files will be deleted and overwritten.");
@@ -855,6 +856,7 @@ static void parse_input(int argc, char *argv[])
       { "features", 0, &val, 'f' },
       { "subsystem", 1, NULL, 'Z' },
       { "max-frames", 1, NULL, 'm' },
+      { "eof-exit", 0, &val, 'e' },
       { NULL, 0, NULL, 0 }
    };
 
@@ -1130,6 +1132,10 @@ static void parse_input(int argc, char *argv[])
                case 'f':
                   print_features();
                   exit(0);
+
+               case 'e':
+                  g_extern.bsv.eof_exit = true;
+                  break;
 
                default:
                   break;
@@ -3273,6 +3279,7 @@ bool rarch_main_iterate(void)
          check_quit_key_func(input) ||
          (g_extern.max_frames &&
           g_extern.frame_count >= g_extern.max_frames) ||
+         (g_extern.bsv.movie_end && g_extern.bsv.eof_exit) ||
          !driver.video->alive(driver.video_data))
       return false;
 
