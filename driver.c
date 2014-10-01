@@ -306,7 +306,8 @@ static int find_driver_index(const char * label, const char *driver)
    char str[PATH_MAX];
    const void *obj = NULL;
 
-   for (i = 0; (obj = (const void*)find_driver_nonempty(label, i, str, sizeof(str))) != NULL; i++)
+   for (i = 0; (obj = (const void*)
+            find_driver_nonempty(label, i, str, sizeof(str))) != NULL; i++)
    {
       if (!obj)
          return -1;
@@ -325,7 +326,8 @@ void find_prev_driver(const char *label, char *str, size_t sizeof_str)
    if (i > 0)
       find_driver_nonempty(label, i - 1, str, sizeof_str);
    else
-      RARCH_WARN("Couldn't find any previous driver (current one: \"%s\").\n", str);
+      RARCH_WARN(
+            "Couldn't find any previous driver (current one: \"%s\").\n", str);
 }
 
 void find_next_driver(const char *label, char *str, size_t sizeof_str)
@@ -345,7 +347,8 @@ static void find_osk_driver(void)
    else
    {
       unsigned d;
-      RARCH_ERR("Couldn't find any OSK driver named \"%s\"\n", g_settings.osk.driver);
+      RARCH_ERR("Couldn't find any OSK driver named \"%s\"\n",
+            g_settings.osk.driver);
       RARCH_LOG_OUTPUT("Available OSK drivers are:\n");
       for (d = 0; osk_drivers[d]; d++)
          RARCH_LOG_OUTPUT("\t%s\n", osk_drivers[d]->ident);
@@ -885,7 +888,8 @@ void init_drivers(void)
 
    init_video_input();
 
-   if (!driver.video_cache_context_ack && g_extern.system.hw_render_callback.context_reset)
+   if (!driver.video_cache_context_ack
+         && g_extern.system.hw_render_callback.context_reset)
       g_extern.system.hw_render_callback.context_reset();
    driver.video_cache_context_ack = false;
 
@@ -1367,11 +1371,13 @@ void init_video_input(void)
    if (g_settings.video.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
    {
       float default_aspect = aspectratio_lut[ASPECT_RATIO_CORE].value;
-      aspectratio_lut[ASPECT_RATIO_CUSTOM].value = (custom_vp->width && custom_vp->height) ?
+      aspectratio_lut[ASPECT_RATIO_CUSTOM].value = 
+         (custom_vp->width && custom_vp->height) ?
          (float)custom_vp->width / custom_vp->height : default_aspect;
    }
 
-   g_extern.system.aspect_ratio = aspectratio_lut[g_settings.video.aspect_ratio_idx].value;
+   g_extern.system.aspect_ratio = 
+      aspectratio_lut[g_settings.video.aspect_ratio_idx].value;
 
    if (g_settings.video.fullscreen)
    {
@@ -1420,16 +1426,20 @@ void init_video_input(void)
 #endif
    video.smooth = g_settings.video.smooth;
    video.input_scale = scale;
-   video.rgb32 = g_extern.filter.filter ? g_extern.filter.out_rgb32 : (g_extern.system.pix_fmt == RETRO_PIXEL_FORMAT_XRGB8888);
+   video.rgb32 = g_extern.filter.filter ? 
+      g_extern.filter.out_rgb32 : 
+      (g_extern.system.pix_fmt == RETRO_PIXEL_FORMAT_XRGB8888);
 
    tmp = (const input_driver_t*)driver.input;
    /* Need to grab the "real" video driver interface on a reinit. */
    find_video_driver();
+
 #ifdef HAVE_THREADS
    if (g_settings.video.threaded && !g_extern.system.hw_render_callback.context_type)
    {
       /* Can't do hardware rendering with threaded driver currently. */
       RARCH_LOG("Starting threaded video driver ...\n");
+
       if (!rarch_threaded_video_init(&driver.video, &driver.video_data,
                &driver.input, &driver.input_data,
                driver.video, &video))
@@ -1476,7 +1486,8 @@ void init_video_input(void)
 
    if (!driver.input)
    {
-      /* Video driver didn't provide an input driver so we use configured one. */
+      /* Video driver didn't provide an input driver,
+       * so we use configured one. */
       RARCH_LOG("Graphics driver did not initialize an input driver. Attempting to pick a suitable driver.\n");
 
       if (tmp)
@@ -1484,20 +1495,19 @@ void init_video_input(void)
       else
          find_input_driver();
 
-      if (driver.input)
-      {
-         driver.input_data = driver.input->init();
-         if (!driver.input_data)
-         {
-            RARCH_ERR("Cannot initialize input driver. Exiting ...\n");
-            rarch_fail(1, "init_video_input()");
-         }
-      }
-      else
+      if (!driver.input)
       {
          /* This should never really happen as tmp (driver.input) is always 
           * found before this in find_driver_input(), or we have aborted 
           * in a similar fashion anyways. */
+         rarch_fail(1, "init_video_input()");
+      }
+
+      driver.input_data = driver.input->init();
+
+      if (!driver.input_data)
+      {
+         RARCH_ERR("Cannot initialize input driver. Exiting ...\n");
          rarch_fail(1, "init_video_input()");
       }
    }
@@ -1512,12 +1522,18 @@ void uninit_video_input(void)
 {
    rarch_main_command(RARCH_CMD_OVERLAY_DEINIT);
 
-   if (!driver.input_data_own && driver.input_data != driver.video_data &&
-         driver.input && driver.input->free)
+   if (
+         !driver.input_data_own &&
+         (driver.input_data != driver.video_data) &&
+         driver.input &&
+         driver.input->free)
       driver.input->free(driver.input_data);
 
-   if (!driver.video_data_own && driver.video_data && driver.video
-         && driver.video->free)
+   if (
+         !driver.video_data_own &&
+         driver.video_data &&
+         driver.video &&
+         driver.video->free)
       driver.video->free(driver.video_data);
 
    deinit_pixel_converter();
@@ -1532,7 +1548,8 @@ void uninit_video_input(void)
 void *driver_video_resolve(const video_driver_t **drv)
 {
 #ifdef HAVE_THREADS
-   if (g_settings.video.threaded && !g_extern.system.hw_render_callback.context_type)
+   if (g_settings.video.threaded
+         && !g_extern.system.hw_render_callback.context_type)
       return rarch_threaded_video_resolve(drv);
    else
 #endif
