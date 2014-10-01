@@ -2574,9 +2574,7 @@ static void main_clear_state_extern(void)
    deinit_subsystem_fullpaths();
    rarch_deinit_recording();
 
-   if (g_extern.core_info)
-      core_info_list_free(g_extern.core_info);
-   g_extern.core_info = NULL;
+
 
    deinit_log_file();
    history_playlist_free();
@@ -3191,6 +3189,9 @@ void rarch_main_command(unsigned cmd)
          history_playlist_free();
          break;
       case RARCH_CMD_CORE_INFO_INIT:
+         if (g_extern.core_info)
+            core_info_list_free(g_extern.core_info);
+         g_extern.core_info = NULL;
          if (*g_settings.libretro_directory &&
                !g_extern.core_info)
          {
