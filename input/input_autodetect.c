@@ -43,7 +43,7 @@ static bool input_try_autoconfigure_joypad_from_conf(config_file_t *conf,
       return false;
 
    char ident[PATH_MAX], ident_idx[PATH_MAX], input_driver[PATH_MAX];
-   int input_vid, input_pid;
+   int input_vid = 0, input_pid = 0;
    bool cond_found_idx, cond_found_general,
         cond_found_vid = false, cond_found_pid = false;
 
