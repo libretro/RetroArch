@@ -143,17 +143,6 @@ static inline bool gl_check_error(void)
    return false;
 }
 
-static inline unsigned get_alignment(unsigned pitch)
-{
-   if (pitch & 1)
-      return 1;
-   if (pitch & 2)
-      return 2;
-   if (pitch & 4)
-      return 4;
-   return 8;
-}
-
 struct gl_fbo_rect
 {
    unsigned img_width;

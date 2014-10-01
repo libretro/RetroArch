@@ -83,6 +83,17 @@ static const GLfloat white_color[] = {
    1, 1, 1, 1,
 };
 
+static inline unsigned get_alignment(unsigned pitch)
+{
+   if (pitch & 1)
+      return 1;
+   if (pitch & 2)
+      return 2;
+   if (pitch & 4)
+      return 4;
+   return 8;
+}
+
 static inline bool gl_query_extension(gl_t *gl, const char *ext)
 {
    bool ret = false;
