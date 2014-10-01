@@ -27,7 +27,7 @@
 #include "gfx/scaler/scaler.h"
 #include "gfx/image/image.h"
 #include "gfx/filters/softfilter.h"
-#include "gfx/shader_parse.h"
+#include "gfx/shader/shader_parse.h"
 #include "audio/dsp_filter.h"
 #include "input/overlay.h"
 #include "frontend/frontend_context.h"

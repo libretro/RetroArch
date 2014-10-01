@@ -16,7 +16,6 @@
 
 #include "settings_data.h"
 #include "file_path.h"
-#include "gfx/shader_common.h"
 #include "input/input_common.h"
 #include "config.def.h"
 #include "retroarch_logger.h"

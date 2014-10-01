@@ -22,15 +22,15 @@
 #include "shader_common.h"
 #include <Cg/cg.h>
 #include <Cg/cgGL.h>
-#include "../general.h"
+#include "../../general.h"
 #include <string.h>
-#include "../compat/strl.h"
-#include "../conf/config_file.h"
-#include "../dynamic.h"
-#include "../compat/posix_string.h"
-#include "../file.h"
+#include "../../compat/strl.h"
+#include "../../conf/config_file.h"
+#include "../../dynamic.h"
+#include "../../compat/posix_string.h"
+#include "../../file.h"
 
-#include "state_tracker.h"
+#include "../state_tracker.h"
 
 #if 0
 #define RARCH_CG_DEBUG

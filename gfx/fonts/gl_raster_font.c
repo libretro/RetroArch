@@ -16,7 +16,7 @@
 
 #include "../gfx_common.h"
 #include "../gl_common.h"
-#include "../shader_common.h"
+#include "../shader/shader_common.h"
 
 #define emit(c, vx, vy) do { \
    font_vertex[     2 * (6 * i + c) + 0] = (x + (delta_x + off_x + vx * width) * scale) * inv_win_width; \

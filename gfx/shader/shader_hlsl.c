@@ -16,7 +16,7 @@
 
 #include "shader_hlsl.h"
 #include "shader_parse.h"
-#include "d3d/d3d.hpp"
+#include "../d3d/d3d.hpp"
 
 static const char *stock_hlsl_program =
       "void main_vertex\n"

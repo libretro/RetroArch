@@ -22,7 +22,7 @@
 #include "gfx_context.h"
 #include "scaler/scaler.h"
 #include "fonts/gl_font.h"
-#include "shader_parse.h"
+#include "shader/shader_parse.h"
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"

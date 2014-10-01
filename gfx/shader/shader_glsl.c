@@ -13,26 +13,26 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../boolean.h"
+#include "../../boolean.h"
 #include <string.h>
-#include "../general.h"
+#include "../../general.h"
 #include "shader_glsl.h"
-#include "../compat/strl.h"
-#include "../compat/posix_string.h"
-#include "state_tracker.h"
-#include "../dynamic.h"
-#include "../file.h"
+#include "../../compat/strl.h"
+#include "../../compat/posix_string.h"
+#include "../state_tracker.h"
+#include "../../dynamic.h"
+#include "../../file.h"
 
 #ifdef HAVE_CONFIG_H
-#include "../config.h"
+#include "../../config.h"
 #endif
 
-#include "glsym/glsym.h"
+#include "../glsym/glsym.h"
 
-#include "gfx_context.h"
+#include "../gfx_context.h"
 #include <stdlib.h>
 
-#include "gl_common.h"
+#include "../gl_common.h"
 
 #ifdef HAVE_OPENGLES2
 #define BORDER_FUNC GL_CLAMP_TO_EDGE

@@ -14,7 +14,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../gfx/shader_common.h"
+#include "../../gfx/shader/shader_common.h"
 #include "menu_action.h"
 #include "menu_common.h"
 #include "menu_entries.h"

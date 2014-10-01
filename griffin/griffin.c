@@ -146,19 +146,19 @@ VIDEO CONTEXT
 VIDEO SHADERS
 ============================================================ */
 #ifdef HAVE_SHADERS
-#include "../gfx/shader_common.c"
-#include "../gfx/shader_parse.c"
+#include "../gfx/shader/shader_common.c"
+#include "../gfx/shader/shader_parse.c"
 
 #ifdef HAVE_CG
-#include "../gfx/shader_cg.c"
+#include "../gfx/shader/shader_cg.c"
 #endif
 
 #ifdef HAVE_HLSL
-#include "../gfx/shader_hlsl.c"
+#include "../gfx/shader/shader_hlsl.c"
 #endif
 
 #ifdef HAVE_GLSL
-#include "../gfx/shader_glsl.c"
+#include "../gfx/shader/shader_glsl.c"
 #endif
 
 #endif

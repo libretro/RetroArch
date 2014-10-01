@@ -16,18 +16,18 @@
 #ifndef SHADER_COMMON_H__
 #define SHADER_COMMON_H__
 
-#include "../boolean.h"
+#include "../../boolean.h"
 
 #ifdef HAVE_CONFIG_H
-#include "../config.h"
+#include "../../config.h"
 #endif
 
 #ifdef HAVE_OPENGL
-#include "gl_common.h"
+#include "../gl_common.h"
 #endif
 
-#include "gfx_context.h"
-#include "math/matrix.h"
+#include "../gfx_context.h"
+#include "../math/matrix.h"
 
 #if defined(_XBOX360)
 #define DEFAULT_SHADER_TYPE RARCH_SHADER_HLSL

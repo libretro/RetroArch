@@ -43,8 +43,8 @@
 #include "../../driver.h"
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
-#include "../shader_parse.h"
-#include "../shader_common.h"
+#include "../shader/shader_parse.h"
+#include "../shader/shader_common.h"
 #endif
 
 #include "../fonts/d3d_font.h"

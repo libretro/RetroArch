@@ -42,14 +42,14 @@
 #include "../compat/strl.h"
 
 #ifdef HAVE_CG
-#include "shader_cg.h"
+#include "shader/shader_cg.h"
 #endif
 
 #ifdef HAVE_GLSL
-#include "shader_glsl.h"
+#include "shader/shader_glsl.h"
 #endif
 
-#include "shader_common.h"
+#include "shader/shader_common.h"
 
 /* Used for the last pass when rendering to the back buffer. */
 static const GLfloat vertexes_flipped[] = {

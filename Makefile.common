@@ -117,8 +117,8 @@ OBJ += frontend/frontend.o \
 		conf/config_file_userdata.o \
 		screenshot.o \
 		gfx/scaler/scaler.o \
-		gfx/shader_common.o \
-		gfx/shader_parse.o \
+		gfx/shader/shader_common.o \
+		gfx/shader/shader_parse.o \
 		gfx/scaler/pixconv.o \
 		gfx/scaler/scaler_int.o \
 		gfx/scaler/scaler_filter.o \
@@ -413,7 +413,7 @@ ifeq ($(HAVE_OPENGL), 1)
       endif
    endif
 
-   OBJ += gfx/shader_glsl.o 
+   OBJ += gfx/shader/shader_glsl.o 
    DEFINES += -DHAVE_GLSL
 endif
 
@@ -472,7 +472,7 @@ endif
 
 ifeq ($(HAVE_CG), 1)
 	DEFINES += -DHAVE_CG
-   OBJ += gfx/shader_cg.o
+   OBJ += gfx/shader/shader_cg.o
    LIBS += $(CG_LIBS)
 endif
 

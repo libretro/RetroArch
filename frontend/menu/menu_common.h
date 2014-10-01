@@ -31,7 +31,7 @@
 #include "../../input/input_common.h"
 #include "../../input/keyboard_line.h"
 #include "../../performance.h"
-#include "../../gfx/shader_common.h"
+#include "../../gfx/shader/shader_common.h"
 
 #ifdef HAVE_RGUI
 #define MENU_TEXTURE_FULLSCREEN false

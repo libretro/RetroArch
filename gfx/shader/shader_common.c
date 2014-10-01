@@ -14,7 +14,7 @@
  */
 
 #include "shader_common.h"
-#include "../retroarch_logger.h"
+#include "../../retroarch_logger.h"
 
 #ifdef HAVE_OPENGL
 void gl_load_texture_data(GLuint obj, const struct texture_image *img,
