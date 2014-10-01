@@ -1511,11 +1511,12 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
       gl_update_resize(gl);
    }
 
-   if (frame) // Can be NULL for frame dupe / NULL render.
-   {
-      gl->tex_index = (gl->tex_index + 1) % gl->textures;
-      glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
+   gl->tex_index = frame ? ((gl->tex_index + 1) % gl->textures) : (gl->tex_index);
+   glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
 
+   /* Can be NULL for frame dupe / NULL render. */
+   if (frame) 
+   {
 #ifdef HAVE_FBO
       if (!gl->hw_render_fbo_init)
 #endif
@@ -1526,16 +1527,17 @@ static bool gl_frame(void *data, const void *frame, unsigned width, unsigned hei
          gl_copy_frame(gl, frame, width, height, pitch);
          RARCH_PERFORMANCE_STOP(copy_frame);
       }
-   }
-   else
-      glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
 
 #ifndef HAVE_GCMGL
-   if (frame && gl->tex_mipmap) // No point regenerating mipmaps if there are no new frames.
-      glGenerateMipmap(GL_TEXTURE_2D);
+      /* No point regenerating mipmaps 
+       * if there are no new frames. */
+      if (gl->tex_mipmap)
+         glGenerateMipmap(GL_TEXTURE_2D);
 #endif
+   }
 
-   // Have to reset rendering state which libretro core could easily have overridden.
+   /* Have to reset rendering state which libretro core 
+    * could easily have overridden. */
 #ifdef HAVE_FBO
    if (gl->hw_render_fbo_init)
    {
