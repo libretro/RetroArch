@@ -3061,8 +3061,6 @@ void rarch_main_command(unsigned cmd)
 #else
          rarch_environment_cb(RETRO_ENVIRONMENT_SET_LIBRETRO_PATH,
                (void*)g_settings.libretro);
-         rarch_environment_cb(RETRO_ENVIRONMENT_EXEC,
-               (void*)g_extern.fullpath);
 #endif
          break;
       case RARCH_CMD_LOAD_CORE:
