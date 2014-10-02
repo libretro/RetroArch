@@ -38,7 +38,9 @@ SYS_PROCESS_PARAM(1001, 0x200000)
    
 #ifdef HAVE_MULTIMAN
 #define MULTIMAN_SELF_FILE "/dev_hdd0/game/BLES80608/USRDIR/RELOAD.SELF"
+static bool multiman_detected  = false;
 #endif
+
 
 #ifdef IS_SALAMANDER
 #include <netex/net.h>
@@ -104,7 +106,7 @@ static void frontend_ps3_get_environment_settings(int *argc, char *argv[],
    if(path_file_exists(argv[2]) && *argc > 1
          && (strcmp(argv[2], EMULATOR_CONTENT_DIR) == 0))
    {
-      g_extern.lifecycle_state |= (1ULL << MODE_EXTLAUNCH_MULTIMAN);
+      multiman_detected = true;
       RARCH_LOG("Started from multiMAN, auto-game start enabled.\n");
    }
    else
@@ -171,7 +173,7 @@ static void frontend_ps3_get_environment_settings(int *argc, char *argv[],
       ret = cellGameContentPermit(contentInfoPath, g_defaults.port_dir);
 
 #ifdef HAVE_MULTIMAN
-      if (g_extern.lifecycle_state & (1ULL << MODE_EXTLAUNCH_MULTIMAN))
+      if (multiman_detected)
       {
          fill_pathname_join(contentInfoPath, "/dev_hdd0/game/",
                EMULATOR_CONTENT_DIR, sizeof(contentInfoPath));
@@ -313,14 +315,6 @@ static void frontend_ps3_exitspawn(char *core_path, size_t core_path_size)
    bool original_verbose = g_extern.verbosity;
    g_extern.verbosity = true;
 
-#ifdef HAVE_MULTIMAN 
-   if (g_extern.lifecycle_state & (1ULL << MODE_EXITSPAWN_MULTIMAN))
-   {
-      RARCH_LOG("Boot Multiman: %s.\n", MULTIMAN_SELF_FILE);
-      strlcpy(core_path, MULTIMAN_SELF_FILE, core_path_size);
-   }
-   else
-#endif
    if (g_extern.lifecycle_state & (1ULL << MODE_EXITSPAWN_START_GAME))
       should_load_game = true;
 #endif
