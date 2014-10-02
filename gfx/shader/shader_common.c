@@ -17,6 +17,8 @@
 #include "../../retroarch_logger.h"
 
 #ifdef HAVE_OPENGL
+#include "shader_gl_common.h"
+
 void gl_load_texture_data(GLuint obj, const struct texture_image *img,
       GLenum wrap, bool linear, bool mipmap)
 {

@@ -1,5 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
+ *  Copyright (C) 2011-2014 - Daniel De Matteis
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -13,8 +14,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef SHADER_COMMON_H__
-#define SHADER_COMMON_H__
+#ifndef SHADERS_COMMON_H__
+#define SHADERS_COMMON_H__
 
 #include "../../boolean.h"
 
@@ -22,37 +23,10 @@
 #include "../../config.h"
 #endif
 
-#ifdef HAVE_OPENGL
-#include "../gl_common.h"
-#endif
-
 #include "../gfx_context.h"
 #include "../math/matrix.h"
 
-#if defined(_XBOX360)
-#define DEFAULT_SHADER_TYPE RARCH_SHADER_HLSL
-#elif defined(__PSL1GHT__)
-#define DEFAULT_SHADER_TYPE RARCH_SHADER_GLSL
-#elif defined(__CELLOS_LV2__)
-#define DEFAULT_SHADER_TYPE RARCH_SHADER_CG
-#elif defined(HAVE_OPENGLES2)
-#define DEFAULT_SHADER_TYPE RARCH_SHADER_GLSL
-#else
-#define DEFAULT_SHADER_TYPE RARCH_SHADER_NONE
-#endif
-
-#if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
-#ifndef HAVE_SHADER_MANAGER
-#define HAVE_SHADER_MANAGER
-#endif
-
-#include "shader_parse.h"
-
-#define GL_SHADER_STOCK_BLEND (GFX_MAX_SHADERS - 1)
-
-#endif
-
-struct shader_backend
+typedef struct shader_backend
 {
    bool (*init)(void *data, const char *path);
    void (*deinit)(void);
@@ -77,18 +51,34 @@ struct shader_backend
    struct gfx_shader *(*get_current_shader)(void);
 
    enum rarch_shader_type type;
-};
+} shader_backend_t;
 
 extern const shader_backend_t gl_glsl_backend;
 extern const shader_backend_t hlsl_backend;
 extern const shader_backend_t gl_cg_backend;
 extern const shader_backend_t shader_null_backend;
 
-#ifdef HAVE_OPENGL
-void gl_load_texture_data(GLuint obj, const struct texture_image *img,
-      GLenum wrap, bool linear, bool mipmap);
-bool gl_load_luts(const struct gfx_shader *generic_shader,
-      GLuint *lut_textures);
+#if defined(_XBOX360)
+#define DEFAULT_SHADER_TYPE RARCH_SHADER_HLSL
+#elif defined(__PSL1GHT__)
+#define DEFAULT_SHADER_TYPE RARCH_SHADER_GLSL
+#elif defined(__CELLOS_LV2__)
+#define DEFAULT_SHADER_TYPE RARCH_SHADER_CG
+#elif defined(HAVE_OPENGLES2)
+#define DEFAULT_SHADER_TYPE RARCH_SHADER_GLSL
+#else
+#define DEFAULT_SHADER_TYPE RARCH_SHADER_NONE
+#endif
+
+#if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
+#ifndef HAVE_SHADER_MANAGER
+#define HAVE_SHADER_MANAGER
+#endif
+
+#include "shader_parse.h"
+
+#define GL_SHADER_STOCK_BLEND (GFX_MAX_SHADERS - 1)
+
 #endif
 
 #endif

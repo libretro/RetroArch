@@ -22,6 +22,7 @@
 #include "gfx_context.h"
 #include "scaler/scaler.h"
 #include "fonts/gl_font.h"
+#include "shader/shader_common.h"
 #include "shader/shader_parse.h"
 
 #ifdef HAVE_CONFIG_H
@@ -166,8 +167,6 @@ struct gl_coords
    const GLfloat *lut_tex_coord;
    unsigned vertices;
 };
-
-typedef struct shader_backend shader_backend_t;
 
 #define MAX_SHADERS 16
 #define MAX_TEXTURES 8

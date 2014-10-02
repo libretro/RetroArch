@@ -32,7 +32,9 @@
 #include "../gfx_context.h"
 #include <stdlib.h>
 
-#include "../gl_common.h"
+#ifdef HAVE_OPENGL
+#include "shader_gl_common.h"
+#endif
 
 #ifdef HAVE_OPENGLES2
 #define BORDER_FUNC GL_CLAMP_TO_EDGE

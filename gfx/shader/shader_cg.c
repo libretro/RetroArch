@@ -18,6 +18,10 @@
 #pragma comment(lib, "cggl")
 #endif
 
+#ifdef HAVE_OPENGL
+#include "shader_gl_common.h"
+#endif
+
 #include "shader_cg.h"
 #include "shader_common.h"
 #include <Cg/cg.h>

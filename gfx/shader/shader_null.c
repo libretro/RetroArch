@@ -32,8 +32,6 @@
 #include "shader_common.h"
 #include <stdlib.h>
 
-typedef struct shader_backend shader_backend_t;
-
 static void shader_null_deinit(void) { }
 static bool shader_null_init(void *data, const char *path) { return true; }
 

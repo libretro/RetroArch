@@ -27,6 +27,7 @@
 #include "../backend/menu_common_backend.h"
 #include "../../../general.h"
 #include "../../../gfx/gfx_common.h"
+#include "../../../gfx/shader/shader_gl_common.h"
 #include "../../../config.def.h"
 #include "../../../file.h"
 #include "../../../dynamic.h"
