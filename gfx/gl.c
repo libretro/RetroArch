@@ -611,7 +611,7 @@ error:
    return false;
 }
 
-void gl_deinit_fbo(gl_t *gl)
+static void gl_deinit_fbo(gl_t *gl)
 {
    if (!gl->fbo_inited)
       return;
