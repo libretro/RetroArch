@@ -149,8 +149,6 @@ enum menu_enums
    MODE_MENU_HD,
    MODE_EXITSPAWN,
    MODE_EXITSPAWN_START_GAME,
-   MODE_OSK_ENTRY_SUCCESS,
-   MODE_OSK_ENTRY_FAIL,
 };
 
 enum sound_mode_enums

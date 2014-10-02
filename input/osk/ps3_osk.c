@@ -166,12 +166,12 @@ static void oskutil_lifecycle(void *data, uint64_t status)
          if (osk->outputInfo.result == CELL_OSKDIALOG_INPUT_FIELD_RESULT_OK)
          {
             RARCH_LOG("Setting MODE_OSK_ENTRY_SUCCESS.\n");
-            g_extern.lifecycle_state |= (1ULL << MODE_OSK_ENTRY_SUCCESS);
+            /* TODO */
          }
          else
          {
             RARCH_LOG("Setting MODE_OSK_ENTRY_FAIL.\n");
-            g_extern.lifecycle_state |= (1ULL << MODE_OSK_ENTRY_FAIL);
+            /* TODO */
          }
 
          osk->flags &= ~OSK_IN_USE;
