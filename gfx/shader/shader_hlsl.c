@@ -395,10 +395,9 @@ static unsigned hlsl_num(void)
 
 static bool hlsl_filter_type(unsigned index, bool *smooth)
 {
-   if (hlsl_active && index)
+   if (hlsl_active && index
+         && (cg_shader->pass[index - 1].filter != RARCH_FILTER_UNSPEC))
    {
-      if (cg_shader->pass[index - 1].filter == RARCH_FILTER_UNSPEC)
-         return false;
       *smooth = cg_shader->pass[index - 1].filter = RARCH_FILTER_LINEAR;
       return true;
    }
