@@ -28,7 +28,6 @@
 #include "general.h"
 #include "dynamic.h"
 #include "performance.h"
-#include "audio/utils.h"
 #include "record/ffemu.h"
 #include "rewind.h"
 #include "movie.h"
@@ -198,28 +197,6 @@ static void take_screenshot(void)
 
    if (g_extern.is_paused)
       rarch_render_cached_frame();
-}
-
-static void readjust_audio_input_rate(void)
-{
-   int avail = driver.audio->write_avail(driver.audio_data);
-
-   //RARCH_LOG_OUTPUT("Audio buffer is %u%% full\n",
-   //      (unsigned)(100 - (avail * 100) / g_extern.audio_data.driver_buffer_size));
-
-   unsigned write_index = g_extern.measure_data.buffer_free_samples_count++ &
-      (AUDIO_BUFFER_FREE_SAMPLES_COUNT - 1);
-   int      half_size   = g_extern.audio_data.driver_buffer_size / 2;
-   int      delta_mid   = avail - half_size;
-   double   direction   = (double)delta_mid / half_size;
-   double   adjust      = 1.0 + g_settings.audio.rate_control_delta *
-      direction;
-
-   g_extern.measure_data.buffer_free_samples[write_index] = avail;
-   g_extern.audio_data.src_ratio = g_extern.audio_data.orig_src_ratio * adjust;
-
-   //RARCH_LOG_OUTPUT("New rate: %lf, Orig rate: %lf\n",
-   //      g_extern.audio_data.src_ratio, g_extern.audio_data.orig_src_ratio);
 }
 
 void rarch_deinit_gpu_recording(void)
@@ -452,91 +429,6 @@ void rarch_render_cached_frame(void)
             g_extern.frame_cache.pitch);
 
    driver.recording_data = recording;
-}
-
-bool rarch_audio_flush(const int16_t *data, size_t samples)
-{
-   const void *output_data        = NULL;
-   unsigned output_frames         = 0;
-   size_t   output_size           = sizeof(float);
-   struct resampler_data src_data = {0};
-   struct rarch_dsp_data dsp_data = {0};
-
-   if (driver.recording_data)
-   {
-      struct ffemu_audio_data ffemu_data = {0};
-      ffemu_data.data                    = data;
-      ffemu_data.frames                  = samples / 2;
-
-      if (driver.recording && driver.recording->push_audio)
-         driver.recording->push_audio(driver.recording_data, &ffemu_data);
-   }
-
-   if (g_extern.is_paused || g_extern.audio_data.mute)
-      return true;
-   if (!driver.audio_active || !g_extern.audio_data.data)
-      return false;
-
-   RARCH_PERFORMANCE_INIT(audio_convert_s16);
-   RARCH_PERFORMANCE_START(audio_convert_s16);
-   audio_convert_s16_to_float(g_extern.audio_data.data, data, samples,
-         g_extern.audio_data.volume_gain);
-   RARCH_PERFORMANCE_STOP(audio_convert_s16);
-
-   dsp_data.input                 = g_extern.audio_data.data;
-   dsp_data.input_frames          = samples >> 1;
-
-   if (g_extern.audio_data.dsp)
-   {
-      RARCH_PERFORMANCE_INIT(audio_dsp);
-      RARCH_PERFORMANCE_START(audio_dsp);
-      rarch_dsp_filter_process(g_extern.audio_data.dsp, &dsp_data);
-      RARCH_PERFORMANCE_STOP(audio_dsp);
-   }
-
-   src_data.data_in      = dsp_data.output ?
-      dsp_data.output : g_extern.audio_data.data;
-   src_data.input_frames = dsp_data.output ?
-      dsp_data.output_frames : (samples >> 1);
-
-   src_data.data_out = g_extern.audio_data.outsamples;
-
-   if (g_extern.audio_data.rate_control)
-      readjust_audio_input_rate();
-
-   src_data.ratio = g_extern.audio_data.src_ratio;
-   if (g_extern.is_slowmotion)
-      src_data.ratio *= g_settings.slowmotion_ratio;
-
-   RARCH_PERFORMANCE_INIT(resampler_proc);
-   RARCH_PERFORMANCE_START(resampler_proc);
-   rarch_resampler_process(driver.resampler,
-         driver.resampler_data, &src_data);
-   RARCH_PERFORMANCE_STOP(resampler_proc);
-
-   output_data   = g_extern.audio_data.outsamples;
-   output_frames = src_data.output_frames;
-
-   if (!g_extern.audio_data.use_float)
-   {
-      RARCH_PERFORMANCE_INIT(audio_convert_float);
-      RARCH_PERFORMANCE_START(audio_convert_float);
-      audio_convert_float_to_s16(g_extern.audio_data.conv_outsamples,
-            (const float*)output_data, output_frames * 2);
-      RARCH_PERFORMANCE_STOP(audio_convert_float);
-
-      output_data = g_extern.audio_data.conv_outsamples;
-      output_size = sizeof(int16_t);
-   }
-
-   if (driver.audio->write(driver.audio_data, output_data,
-            output_frames * output_size * 2) < 0)
-   {
-      RARCH_ERR(RETRO_LOG_AUDIO_WRITE_FAILED);
-      return false;
-   }
-
-   return true;
 }
 
 #include "config.features.h"
@@ -1841,17 +1733,6 @@ static void check_stateslots(
    }
 }
 
-static inline void flush_rewind_audio(void)
-{
-   /* We just rewound. Flush rewind audio buffer. */
-   driver.audio_active = rarch_audio_flush(g_extern.audio_data.rewind_buf
-         + g_extern.audio_data.rewind_ptr,
-         g_extern.audio_data.rewind_size - g_extern.audio_data.rewind_ptr)
-      && driver.audio_active;
-
-   g_extern.frame_is_reverse = false;
-}
-
 static inline void setup_rewind_audio(void)
 {
    unsigned i;
@@ -1876,7 +1757,14 @@ static void check_rewind(bool pressed)
    static bool first = true;
 
    if (g_extern.frame_is_reverse)
-      flush_rewind_audio();
+   {
+      /* We just rewound. Flush rewind audio buffer. */
+      retro_flush_audio(g_extern.audio_data.rewind_buf
+            + g_extern.audio_data.rewind_ptr,
+            g_extern.audio_data.rewind_size - g_extern.audio_data.rewind_ptr);
+
+      g_extern.frame_is_reverse = false;
+   }
 
    if (first)
    {

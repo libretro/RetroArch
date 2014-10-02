@@ -32,5 +32,6 @@ typedef struct retro_callbacks
 void retro_init_libretro_cbs(void *data);
 void retro_set_default_callbacks(void *data);
 void retro_set_rewind_callbacks(void);
+void retro_flush_audio(const int16_t *data, size_t samples);
 
 #endif
