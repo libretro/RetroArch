@@ -1770,6 +1770,7 @@ static void gl_free_overlay(gl_t *gl)
 static void gl_free(void *data)
 {
    gl_t *gl = (gl_t*)data;
+   gfx_ctx_driver_t *ctx_driver = (gfx_ctx_driver_t*)gl->ctx_driver;
 
    if (!gl)
       return;
@@ -1839,7 +1840,7 @@ static void gl_free(void *data)
    }
 #endif
 
-   context_destroy_func(gl);
+   ctx_driver->destroy(gl);
 
    free(gl->empty_buf);
    free(gl->conv_buffer);
@@ -2317,7 +2318,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 
    if (!resolve_extensions(gl))
    {
-      context_destroy_func(gl);
+      ctx_driver->destroy(gl);
       free(gl);
       return NULL;
    }
@@ -2373,7 +2374,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    if (!gl_shader_init(gl))
    {
       RARCH_ERR("[GL]: Shader init failed.\n");
-      context_destroy_func(gl);
+      ctx_driver->destroy(gl);
       free(gl);
       return NULL;
    }
@@ -2438,7 +2439,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    gl->conv_buffer = calloc(sizeof(uint32_t), gl->tex_w * gl->tex_h);
    if (!gl->conv_buffer)
    {
-      context_destroy_func(gl);
+      ctx_driver->destroy(gl);
       free(gl);
       return NULL;
    }
@@ -2454,7 +2455,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    if (gl->hw_render_use && 
          !gl_init_hw_render(gl, gl->tex_w, gl->tex_h))
    {
-      context_destroy_func(gl);
+      ctx_driver->destroy(gl);
       free(gl);
       return NULL;
    }
@@ -2480,7 +2481,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 
    if (!gl_check_error())
    {
-      context_destroy_func(gl);
+      ctx_driver->destroy(gl);
       free(gl);
       return NULL;
    }

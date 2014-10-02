@@ -37,7 +37,6 @@
 
 #include "glsym/glsym.h"
 
-#define context_destroy_func(gl)                         gl->ctx_driver->destroy(gl)
 #define context_bind_hw_render(gl, enable)               if (gl->shared_context_use && gl->ctx_driver->bind_hw_render) gl->ctx_driver->bind_hw_render(gl, enable)
 
 #ifdef HAVE_EGL
