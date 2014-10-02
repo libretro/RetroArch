@@ -145,9 +145,6 @@ VIDEO CONTEXT
 /*============================================================
 VIDEO SHADERS
 ============================================================ */
-#ifdef HAVE_OPENGL
-#include "../gfx/shader/shader_gl_common.c"
-#endif
 
 #ifdef HAVE_SHADERS
 #include "../gfx/shader/shader_context.c"
@@ -213,6 +210,7 @@ VIDEO DRIVER
 
 #ifdef HAVE_OPENGL
 #include "../gfx/gl.c"
+#include "../gfx/gl_common.c"
 
 #ifndef HAVE_PSGL
 #include "../gfx/glsym/rglgen.c"

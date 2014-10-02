@@ -14,7 +14,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "shader_gl_common.h"
+#include "gl_common.h"
 
 void gl_load_texture_data(GLuint obj, const struct texture_image *img,
       GLenum wrap, bool linear, bool mipmap)

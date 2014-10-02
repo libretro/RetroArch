@@ -33,7 +33,7 @@
 #include <stdlib.h>
 
 #ifdef HAVE_OPENGL
-#include "shader_gl_common.h"
+#include "../gl_common.h"
 #endif
 
 #ifdef HAVE_OPENGLES2
