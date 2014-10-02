@@ -152,7 +152,9 @@ VIDEO SHADERS
 #include "../gfx/shader/shader_null.c"
 
 #ifdef HAVE_CG
-#include "../gfx/shader/shader_cg.c"
+#ifdef HAVE_OPENGL
+#include "../gfx/shader/shader_gl_cg.c"
+#endif
 #endif
 
 #ifdef HAVE_HLSL

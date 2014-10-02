@@ -474,7 +474,7 @@ endif
 
 ifeq ($(HAVE_CG), 1)
 	DEFINES += -DHAVE_CG
-   OBJ += gfx/shader/shader_cg.o
+   OBJ += gfx/shader/shader_gl_cg.o
    LIBS += $(CG_LIBS)
 endif
 

@@ -1021,6 +1021,6 @@ const shader_backend_t gl_cg_backend = {
    gl_cg_get_current_shader,
 
    RARCH_SHADER_CG,
-   "cg"
+   "gl_cg"
 };
 
