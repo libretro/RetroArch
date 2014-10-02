@@ -22,7 +22,6 @@
 #include <limits.h>
 
 #include "menu_display.h"
-#include "../backend/menu_common_backend.h"
 #include "../menu_common.h"
 #include "../../../general.h"
 #include "../../../gfx/gfx_common.h"
@@ -30,7 +29,6 @@
 #include "../../../file.h"
 #include "../../../dynamic.h"
 #include "../../../compat/posix_string.h"
-#include "../../../gfx/shader_parse.h"
 #include "../../../performance.h"
 #include "../../../input/input_common.h"
 
