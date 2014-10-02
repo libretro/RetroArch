@@ -28,12 +28,11 @@
 #include "../../../general.h"
 #include "../../../gfx/gfx_common.h"
 #include "../../../gfx/gl_common.h"
-#include "../../../gfx/shader/shader_common.h"
+#include "../../../gfx/shader/shader_context.h"
 #include "../../../config.def.h"
 #include "../../../file.h"
 #include "../../../dynamic.h"
 #include "../../../compat/posix_string.h"
-#include "../../../gfx/shader/shader_parse.h"
 #include "../../../performance.h"
 #include "../../../input/input_common.h"
 

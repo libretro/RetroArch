@@ -18,7 +18,7 @@
 #define __RARCH_GLSL_H
 
 #include "../../boolean.h"
-#include "shader_common.h"
+#include "shader_context.h"
 
 void gl_glsl_set_get_proc_address(gfx_ctx_proc_t (*proc)(const char*));
 void gl_glsl_set_context_type(bool core_profile, unsigned major, unsigned minor);

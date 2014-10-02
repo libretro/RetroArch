@@ -14,8 +14,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef SHADERS_COMMON_H__
-#define SHADERS_COMMON_H__
+#ifndef SHADER_CONTEXT_H__
+#define SHADER_CONTEXT_H__
 
 #include "../../boolean.h"
 

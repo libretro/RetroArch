@@ -14,11 +14,10 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../gfx/shader/shader_common.h"
+#include "menu_shader.h"
 #include "menu_action.h"
 #include "menu_common.h"
 #include "menu_entries.h"
-#include "menu_shader.h"
 #include "../../settings_data.h"
 
 #ifdef HAVE_SHADER_MANAGER

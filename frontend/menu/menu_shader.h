@@ -21,7 +21,7 @@
 #define HAVE_SHADER_MANAGER
 #endif
 
-#include "../../gfx/shader/shader_parse.h"
+#include "../../gfx/shader/shader_context.h"
 
 void menu_shader_manager_init(void *data);
 

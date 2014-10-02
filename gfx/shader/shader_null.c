@@ -29,7 +29,7 @@
 #endif
 
 #include "../gfx_context.h"
-#include "shader_common.h"
+#include "shader_context.h"
 #include <stdlib.h>
 
 static void shader_null_deinit(void) { }

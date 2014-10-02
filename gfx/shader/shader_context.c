@@ -13,7 +13,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "shader_common.h"
+#include "shader_context.h"
 #include "../../retroarch_logger.h"
 
 #ifdef HAVE_OPENGL

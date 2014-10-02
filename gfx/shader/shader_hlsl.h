@@ -18,7 +18,7 @@
 #ifndef __RARCH_HLSL_H
 #define __RARCH_HLSL_H
 
-#include "shader_common.h"
+#include "shader_context.h"
 #include <stdint.h>
 
 void hlsl_set_proj_matrix(XMMATRIX rotation_value);

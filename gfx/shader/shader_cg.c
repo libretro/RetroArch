@@ -23,7 +23,7 @@
 #endif
 
 #include <stdint.h>
-#include "shader_common.h"
+#include "shader_context.h"
 #include <Cg/cg.h>
 #include <Cg/cgGL.h>
 #include "../../general.h"

@@ -45,7 +45,7 @@
 #include "shader/shader_glsl.h"
 #endif
 
-#include "shader/shader_common.h"
+#include "shader/shader_context.h"
 
 /* Used for the last pass when rendering to the back buffer. */
 static const GLfloat vertexes_flipped[] = {

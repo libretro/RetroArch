@@ -146,7 +146,7 @@ VIDEO CONTEXT
 VIDEO SHADERS
 ============================================================ */
 #ifdef HAVE_SHADERS
-#include "../gfx/shader/shader_common.c"
+#include "../gfx/shader/shader_context.c"
 #include "../gfx/shader/shader_parse.c"
 #include "../gfx/shader/shader_null.c"
 
