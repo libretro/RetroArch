@@ -1526,6 +1526,7 @@ static bool gl_frame(void *data, const void *frame,
 
    gl_t *gl = (gl_t*)data;
    gfx_ctx_driver_t *ctx_driver = (gfx_ctx_driver_t*)gl->ctx_driver;
+   gl_shader_backend_t *shader = (gl_shader_backend_t*)gl->shader;
 
    if (!gl)
       return true;
@@ -1537,8 +1538,8 @@ static bool gl_frame(void *data, const void *frame,
       glBindVertexArray(gl->vao);
 #endif
 
-   if (gl->shader)
-      gl->shader->use(gl, 1);
+   if (shader)
+      shader->use(gl, 1);
 
 #ifdef IOS
    /* Apparently the viewport is lost each frame, thanks Apple. */
@@ -1632,8 +1633,8 @@ static bool gl_frame(void *data, const void *frame,
 
    glClear(GL_COLOR_BUFFER_BIT);
 
-   if (gl->shader && gl->shader->set_params)
-      gl->shader->set_params(gl, width, height,
+   if (shader && shader->set_params)
+      shader->set_params(gl, width, height,
          gl->tex_w, gl->tex_h,
          gl->vp.width, gl->vp.height,
          g_extern.frame_count, 
@@ -1675,8 +1676,8 @@ static bool gl_frame(void *data, const void *frame,
    /* Reset state which could easily mess up libretro core. */
    if (gl->hw_render_fbo_init)
    {
-      if (gl->shader)
-         gl->shader->use(gl, 0);
+      if (shader)
+         shader->use(gl, 0);
       glBindTexture(GL_TEXTURE_2D, 0);
 #ifndef NO_GL_FF_VERTEX
       gl_disable_client_arrays(gl);
