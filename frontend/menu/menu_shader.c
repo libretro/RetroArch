@@ -503,7 +503,7 @@ int menu_shader_manager_setting_toggle(
    return 0;
 }
 
-int handle_shader_pass_setting(struct gfx_shader *shader, unsigned action)
+static int handle_shader_pass_setting(struct gfx_shader *shader, unsigned action)
 {
    switch (action)
    {
@@ -584,11 +584,6 @@ unsigned menu_shader_manager_get_type(const struct gfx_shader *shader)
 void menu_shader_manager_get_str(struct gfx_shader *shader,
       char *type_str, size_t type_str_size, const char *menu_label,
       const char *label, unsigned type) { }
-
-int handle_shader_pass_setting(struct gfx_shader *shader)
-{
-   return 0;
-}
 
 void menu_shader_manager_apply_changes(void) { }
 

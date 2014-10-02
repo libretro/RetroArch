@@ -41,8 +41,6 @@ void menu_shader_manager_get_str(struct gfx_shader *shader,
       char *type_str, size_t type_str_size, const char *menu_label,
       const char *label, unsigned type);
 
-int handle_shader_pass_setting(struct gfx_shader *shader, unsigned action);
-
 void menu_shader_manager_apply_changes(void);
 
 #endif
