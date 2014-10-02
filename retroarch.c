@@ -434,24 +434,22 @@ void rarch_deinit_recording(void)
 
 void rarch_render_cached_frame(void)
 {
-   const void *frame = g_extern.frame_cache.data;
    void *recording   = driver.recording_data;
 
    /* Cannot allow recording when pushing duped frames. */
    driver.recording_data = NULL;
-
-   if (frame == RETRO_HW_FRAME_BUFFER_VALID)
-      frame = NULL; /* Dupe */
 
    /* Not 100% safe, since the library might have
     * freed the memory, but no known implementations do this.
     * It would be really stupid at any rate ...
     */
    if (driver.retro_ctx.frame_cb)
-   driver.retro_ctx.frame_cb(frame,
-         g_extern.frame_cache.width,
-         g_extern.frame_cache.height,
-         g_extern.frame_cache.pitch);
+      driver.retro_ctx.frame_cb(
+            (g_extern.frame_cache.data == RETRO_HW_FRAME_BUFFER_VALID)
+            ? NULL : g_extern.frame_cache.data,
+            g_extern.frame_cache.width,
+            g_extern.frame_cache.height,
+            g_extern.frame_cache.pitch);
 
    driver.recording_data = recording;
 }
