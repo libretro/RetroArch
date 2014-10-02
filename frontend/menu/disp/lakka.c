@@ -58,6 +58,10 @@ float c_active_zoom;
 float c_passive_zoom;
 float i_active_zoom;
 float i_passive_zoom;
+float c_active_alpha;
+float c_passive_alpha;
+float i_active_alpha;
+float i_passive_alpha;
 float lakka_font_size;
 float margin_left;
 float margin_top;
@@ -131,6 +135,11 @@ static void lakka_responsive(void)
    c_passive_zoom = 0.5;
    i_active_zoom = 1.0;
    i_passive_zoom = 0.5;
+
+   c_active_alpha = 1.0;
+   c_passive_alpha = 0.5;
+   i_active_alpha = 1.0;
+   i_passive_alpha = 0.5;
 
    above_subitem_offset = 1.5;
    above_item_offset = -1.0;
@@ -767,7 +776,7 @@ void lakka_init_settings(void)
    menu_category_t *category = (menu_category_t*)&categories[0];
 
    strlcpy(category->name, "Settings", sizeof(category->name));
-   category->alpha = 1.0;
+   category->alpha = c_active_alpha;
    category->zoom = c_active_zoom;
    category->active_item = 0;
    category->num_items   = 0;
@@ -789,7 +798,7 @@ void lakka_init_settings(void)
          menu_item_t *item  = (menu_item_t*)&category->items[jj];
 
          strlcpy(item->name, group->name, sizeof(item->name));
-         item->alpha = jj ? 0.5 : 1.0;
+         item->alpha = jj ? i_passive_alpha : i_active_alpha;
          item->zoom = jj ? i_passive_zoom : i_active_zoom;
          item->y = jj ?
             vspacing*(under_item_offset+jj) : vspacing * active_item_factor;
@@ -838,7 +847,7 @@ void lakka_init_settings(void)
    menu_item_t *itemq = (menu_item_t*)&category->items[jj];
 
    strlcpy(itemq->name, "Quit RetroArch", sizeof(itemq->name));
-   itemq->alpha          = jj ? 0.5 : 1.0;
+   itemq->alpha          = jj ? i_passive_alpha : i_active_alpha;
    itemq->zoom           = jj ? i_passive_zoom : i_active_zoom;
    itemq->y              = jj ? vspacing*(under_item_offset+jj) :
       vspacing * active_item_factor;
@@ -1047,7 +1056,8 @@ static void lakka_init_item(int i, int j, menu_category_t *category,
    strlcpy(item->name, name, sizeof(item->name));
    if (list != NULL)
       strlcpy(item->rom, list->elems[j].data, sizeof(item->rom));
-   item->alpha          = i != menu_active_category ? 0 : n ? 0.5 : 1;
+   item->alpha          = i != menu_active_category ? 0 :
+                          n ? i_passive_alpha : i_active_alpha;
    item->zoom           = n ? i_passive_zoom : i_active_zoom;
    item->y              = n ? vspacing*(under_item_offset+n) :
       vspacing*active_item_factor;
@@ -1193,7 +1203,7 @@ static void *lakka_init(void)
 
       strlcpy(category->name, info->display_name, sizeof(category->name));
       strlcpy(category->libretro, info->path, sizeof(category->libretro));
-      category->alpha       = 0.5;
+      category->alpha       = i_passive_alpha;
       category->zoom        = c_passive_zoom;
       category->active_item = 0;
       category->num_items   = 0;
