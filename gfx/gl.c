@@ -301,19 +301,9 @@ static void gl_disable_client_arrays(gl_t *gl)
 void gl_shader_set_coords(gl_t *gl,
       const struct gl_coords *coords, const math_matrix *mat)
 {
-   shader_backend_t *shader = (shader_backend_t*)gl->shader;
-   bool ret_coords = false;
-   bool ret_mvp    = false;
-
-   if (shader)
+   if (!gl->shader->set_coords(coords)) 
    {
-      ret_coords = shader->set_coords(coords);
-      ret_mvp    = shader->set_mvp(gl, mat);
-   }
-
 #ifndef NO_GL_FF_VERTEX
-   if (!ret_coords)
-   {
       /* Fall back to FF-style if needed and possible. */
       glClientActiveTexture(GL_TEXTURE1);
       glTexCoordPointer(2, GL_FLOAT, 0, coords->lut_tex_coord);
@@ -328,19 +318,18 @@ void gl_shader_set_coords(gl_t *gl,
 
       glTexCoordPointer(2, GL_FLOAT, 0, coords->tex_coord);
       glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-   }
 #endif
-
-#ifndef NO_GL_FF_MATRIX
-   if (!ret_mvp)
+   }
+   if (!gl->shader->set_mvp(gl, mat))
    {
+#ifndef NO_GL_FF_MATRIX
       /* Fall back to FF-style if needed and possible. */
       glMatrixMode(GL_PROJECTION);
       glLoadMatrixf(mat->data);
       glMatrixMode(GL_MODELVIEW);
       glLoadIdentity();
-   }
 #endif
+   }
 }
 
 #ifdef IOS
