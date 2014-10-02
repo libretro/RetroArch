@@ -315,6 +315,39 @@ unsigned menu_shader_manager_get_type(const struct gfx_shader *shader)
    return type;
 }
 
+static int handle_shader_pass_setting(struct gfx_shader *shader, unsigned action)
+{
+   switch (action)
+   {
+      case MENU_ACTION_START:
+         if (shader && shader->passes)
+            shader->passes = 0;
+         driver.menu->need_refresh = true;
+         break;
+
+      case MENU_ACTION_LEFT:
+         if (shader && shader->passes)
+            shader->passes--;
+         driver.menu->need_refresh = true;
+         break;
+
+      case MENU_ACTION_RIGHT:
+      case MENU_ACTION_OK:
+         if (shader && (shader->passes < GFX_MAX_SHADERS))
+            shader->passes++;
+         driver.menu->need_refresh = true;
+         break;
+
+      default:
+         break;
+   }
+
+   if (driver.menu->need_refresh)
+      gfx_shader_resolve_parameters(NULL, driver.menu->shader);
+
+   return 0;
+}
+
 int menu_shader_manager_setting_toggle(
       unsigned id, const char *label, unsigned action)
 {
@@ -503,38 +536,6 @@ int menu_shader_manager_setting_toggle(
    return 0;
 }
 
-static int handle_shader_pass_setting(struct gfx_shader *shader, unsigned action)
-{
-   switch (action)
-   {
-      case MENU_ACTION_START:
-         if (shader && shader->passes)
-            shader->passes = 0;
-         driver.menu->need_refresh = true;
-         break;
-
-      case MENU_ACTION_LEFT:
-         if (shader && shader->passes)
-            shader->passes--;
-         driver.menu->need_refresh = true;
-         break;
-
-      case MENU_ACTION_RIGHT:
-      case MENU_ACTION_OK:
-         if (shader && (shader->passes < GFX_MAX_SHADERS))
-            shader->passes++;
-         driver.menu->need_refresh = true;
-         break;
-
-      default:
-         break;
-   }
-
-   if (driver.menu->need_refresh)
-      gfx_shader_resolve_parameters(NULL, driver.menu->shader);
-
-   return 0;
-}
 
 void menu_shader_manager_apply_changes(void)
 {
