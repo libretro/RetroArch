@@ -129,6 +129,8 @@ enum basic_event
    RARCH_CMD_MENU_SAVE_CONFIG,
    RARCH_CMD_MENU_PAUSE_LIBRETRO,
    RARCH_CMD_SHADERS_APPLY_CHANGES,
+   RARCH_CMD_SHADER_DIR_INIT,
+   RARCH_CMD_SHADER_DIR_DEINIT,
 };
 
 enum action_state
@@ -812,10 +814,6 @@ void rarch_update_system_info(struct retro_system_info *info,
 
 void rarch_recording_dump_frame(const void *data, unsigned width,
       unsigned height, size_t pitch);
-
-void rarch_init_shader_dir(void);
-
-void rarch_deinit_shader_dir(void);
 
 #ifdef __cplusplus
 }

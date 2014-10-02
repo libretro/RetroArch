@@ -1352,7 +1352,7 @@ void init_video_input(void)
    static int dummy_pixel=0;
 
    rarch_init_filter(g_extern.system.pix_fmt);
-   rarch_init_shader_dir();
+   rarch_main_command(RARCH_CMD_SHADER_DIR_INIT);
 
    geom = (const struct retro_game_geometry*)&g_extern.system.av_info.geometry;
    max_dim = max(geom->max_width, geom->max_height);
@@ -1551,7 +1551,7 @@ void uninit_video_input(void)
 
    rarch_deinit_filter();
 
-   rarch_deinit_shader_dir();
+   rarch_main_command(RARCH_CMD_SHADER_DIR_DEINIT);
    compute_monitor_fps_statistics();
 }
 

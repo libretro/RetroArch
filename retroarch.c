@@ -3173,6 +3173,35 @@ void rarch_main_command(unsigned cmd)
                rarch_main_command(RARCH_CMD_AUDIO_START);
          }
          break;
+      case RARCH_CMD_SHADER_DIR_INIT:
+         rarch_main_command(RARCH_CMD_SHADER_DIR_DEINIT);
+         {
+            unsigned i;
+            if (!*g_settings.video.shader_dir)
+               return;
+
+            g_extern.shader_dir.list = dir_list_new(g_settings.video.shader_dir,
+                  "cg|cgp|glsl|glslp", false);
+
+            if (!g_extern.shader_dir.list || g_extern.shader_dir.list->size == 0)
+            {
+               rarch_main_command(RARCH_CMD_SHADER_DIR_DEINIT);
+               return;
+            }
+
+            g_extern.shader_dir.ptr  = 0;
+            dir_list_sort(g_extern.shader_dir.list, false);
+
+            for (i = 0; i < g_extern.shader_dir.list->size; i++)
+               RARCH_LOG("Found shader \"%s\"\n",
+                     g_extern.shader_dir.list->elems[i].data);
+         }
+         break;
+      case RARCH_CMD_SHADER_DIR_DEINIT:
+         dir_list_free(g_extern.shader_dir.list);
+         g_extern.shader_dir.list = NULL;
+         g_extern.shader_dir.ptr  = 0;
+         break;
    }
 }
 
@@ -3355,34 +3384,4 @@ void rarch_main_deinit(void)
    deinit_savefiles();
 
    g_extern.main_is_init = false;
-}
-
-void rarch_init_shader_dir(void)
-{
-   unsigned i;
-   if (!*g_settings.video.shader_dir)
-      return;
-
-   g_extern.shader_dir.list = dir_list_new(g_settings.video.shader_dir,
-         "cg|cgp|glsl|glslp", false);
-
-   if (!g_extern.shader_dir.list || g_extern.shader_dir.list->size == 0)
-   {
-      rarch_deinit_shader_dir();
-      return;
-   }
-
-   g_extern.shader_dir.ptr  = 0;
-   dir_list_sort(g_extern.shader_dir.list, false);
-
-   for (i = 0; i < g_extern.shader_dir.list->size; i++)
-      RARCH_LOG("Found shader \"%s\"\n",
-            g_extern.shader_dir.list->elems[i].data);
-}
-
-void rarch_deinit_shader_dir(void)
-{
-   dir_list_free(g_extern.shader_dir.list);
-   g_extern.shader_dir.list = NULL;
-   g_extern.shader_dir.ptr  = 0;
 }
