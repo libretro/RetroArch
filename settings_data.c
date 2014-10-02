@@ -1763,51 +1763,6 @@ int setting_data_get_description(const char *label, char *msg,
     return 0;
 }
 
-#ifdef GEKKO
-unsigned menu_gx_resolutions[GX_RESOLUTIONS_LAST][2] = {
-   { 512, 192 },
-   { 598, 200 },
-   { 640, 200 },
-   { 384, 224 },
-   { 448, 224 },
-   { 480, 224 },
-   { 512, 224 },
-   { 576, 224 },
-   { 608, 224 },
-   { 640, 224 },
-   { 340, 232 },
-   { 512, 232 },
-   { 512, 236 },
-   { 336, 240 },
-   { 352, 240 },
-   { 384, 240 },
-   { 512, 240 },
-   { 530, 240 },
-   { 640, 240 },
-   { 512, 384 },
-   { 598, 400 },
-   { 640, 400 },
-   { 384, 448 },
-   { 448, 448 },
-   { 480, 448 },
-   { 512, 448 },
-   { 576, 448 },
-   { 608, 448 },
-   { 640, 448 },
-   { 340, 464 },
-   { 512, 464 },
-   { 512, 472 },
-   { 352, 480 },
-   { 384, 480 },
-   { 512, 480 },
-   { 530, 480 },
-   { 608, 480 },
-   { 640, 480 },
-};
-
-unsigned menu_current_gx_resolution = GX_RESOLUTIONS_640_480;
-#endif
-
 #ifdef HAVE_MENU
 static void menu_common_setting_set_label_perf(char *type_str,
       size_t type_str_size, unsigned *w, unsigned type,
