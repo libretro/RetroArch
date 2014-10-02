@@ -298,40 +298,6 @@ static void gl_disable_client_arrays(gl_t *gl)
 }
 #endif
 
-void gl_shader_set_coords(gl_t *gl,
-      const struct gl_coords *coords, const math_matrix *mat)
-{
-   if (!gl->shader->set_coords(coords)) 
-   {
-#ifndef NO_GL_FF_VERTEX
-      /* Fall back to FF-style if needed and possible. */
-      glClientActiveTexture(GL_TEXTURE1);
-      glTexCoordPointer(2, GL_FLOAT, 0, coords->lut_tex_coord);
-      glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-
-      glClientActiveTexture(GL_TEXTURE0);
-      glVertexPointer(2, GL_FLOAT, 0, coords->vertex);
-      glEnableClientState(GL_VERTEX_ARRAY);
-
-      glColorPointer(4, GL_FLOAT, 0, coords->color);
-      glEnableClientState(GL_COLOR_ARRAY);
-
-      glTexCoordPointer(2, GL_FLOAT, 0, coords->tex_coord);
-      glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-#endif
-   }
-   if (!gl->shader->set_mvp(gl, mat))
-   {
-#ifndef NO_GL_FF_MATRIX
-      /* Fall back to FF-style if needed and possible. */
-      glMatrixMode(GL_PROJECTION);
-      glLoadMatrixf(mat->data);
-      glMatrixMode(GL_MODELVIEW);
-      glLoadIdentity();
-#endif
-   }
-}
-
 #ifdef IOS
 /* There is no default frame buffer on iOS. */
 void apple_bind_game_view_fbo(void);
