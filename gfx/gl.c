@@ -343,11 +343,6 @@ void gl_shader_set_coords(gl_t *gl,
 #endif
 }
 
-#define gl_shader_num(gl) ((gl->shader) ? gl->shader->num_shaders() : 0)
-#define gl_shader_filter_type(gl, index, smooth) ((gl->shader) ? gl->shader->filter_type(index, smooth) : false)
-#define gl_shader_wrap_type(gl, index) ((gl->shader) ? gl->shader->wrap_type(index) : RARCH_WRAP_BORDER)
-#define gl_shader_mipmap_input(gl, index) ((gl->shader) ? gl->shader->mipmap_input(index) : false)
-
 #ifdef IOS
 /* There is no default frame buffer on iOS. */
 void apple_bind_game_view_fbo(void);
@@ -373,8 +368,7 @@ static inline GLenum min_filter_to_mag(GLenum type)
 static void gl_shader_scale(gl_t *gl, unsigned index, struct gfx_fbo_scale *scale)
 {
    scale->valid = false;
-   if (gl->shader)
-      gl->shader->shader_scale(index, scale);
+   gl->shader->shader_scale(index, scale);
 }
 
 /* Compute FBO geometry.
@@ -497,16 +491,18 @@ static void gl_create_fbo_textures(gl_t *gl)
    {
       glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[i]);
 
-      bool mipmapped = gl_shader_mipmap_input(gl, i + 2);
+      bool mipmapped = gl->shader->mipmap_input(i + 2);
 
       GLenum min_filter = mipmapped ? base_mip_filt : base_filt;
       bool smooth = false;
-      if (gl_shader_filter_type(gl, i + 2, &smooth))
-         min_filter = mipmapped ? (smooth ? GL_LINEAR_MIPMAP_LINEAR : GL_NEAREST_MIPMAP_NEAREST) : (smooth ? GL_LINEAR : GL_NEAREST);
+      if (gl->shader->filter_type(i + 2, &smooth))
+         min_filter = mipmapped ? (smooth ? 
+               GL_LINEAR_MIPMAP_LINEAR : GL_NEAREST_MIPMAP_NEAREST)
+            : (smooth ? GL_LINEAR : GL_NEAREST);
 
       GLenum mag_filter = min_filter_to_mag(min_filter);
 
-      enum gfx_wrap_type wrap = gl_shader_wrap_type(gl, i + 2);
+      enum gfx_wrap_type wrap = gl->shader->wrap_type(i + 2);
       GLenum wrap_enum = gl_wrap_type_to_enum(wrap);
 
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, mag_filter);
@@ -630,15 +626,15 @@ static void gl_init_fbo(gl_t *gl, unsigned width, unsigned height)
 {
    int i;
 
-   if (!gl || gl_shader_num(gl) == 0)
+   if (!gl || gl->shader->num_shaders() == 0)
       return;
 
    struct gfx_fbo_scale scale, scale_last;
    gl_shader_scale(gl, 1, &scale);
-   gl_shader_scale(gl, gl_shader_num(gl), &scale_last);
+   gl_shader_scale(gl, gl->shader->num_shaders(), &scale_last);
 
    /* we always want FBO to be at least initialized on startup for consoles */
-   if (gl_shader_num(gl) == 1 && !scale.valid)
+   if (gl->shader->num_shaders() == 1 && !scale.valid)
       return;
 
    if (!check_fbo_proc(gl))
@@ -647,7 +643,7 @@ static void gl_init_fbo(gl_t *gl, unsigned width, unsigned height)
       return;
    }
 
-   gl->fbo_pass = gl_shader_num(gl) - 1;
+   gl->fbo_pass = gl->shader->num_shaders() - 1;
    if (scale_last.valid)
       gl->fbo_pass++;
 
@@ -1034,12 +1030,11 @@ static void gl_frame_fbo(gl_t *gl, shader_backend_t *shader,
 
       glBindFramebuffer(RARCH_GL_FRAMEBUFFER, gl->fbo[i]);
 
-      if (shader)
-         shader->use(gl, i + 1);
+      shader->use(gl, i + 1);
       glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[i - 1]);
 
 #ifndef HAVE_GCMGL
-      if (gl_shader_mipmap_input(gl, i + 1))
+      if (gl->shader->mipmap_input(i + 1))
          glGenerateMipmap(GL_TEXTURE_2D);
 #endif
 
@@ -1047,8 +1042,7 @@ static void gl_frame_fbo(gl_t *gl, shader_backend_t *shader,
 
       /* Render to FBO with certain size. */
       gl_set_viewport(gl, rect->img_width, rect->img_height, true, false);
-      if (shader)
-         shader->set_params(gl, prev_rect->img_width, prev_rect->img_height, 
+      shader->set_params(gl, prev_rect->img_width, prev_rect->img_height, 
             prev_rect->width, prev_rect->height, 
             gl->vp.width, gl->vp.height, g_extern.frame_count, 
             tex_info, gl->prev_info, fbo_tex_info, fbo_tex_info_cnt);
@@ -1082,21 +1076,19 @@ static void gl_frame_fbo(gl_t *gl, shader_backend_t *shader,
 
    /* Render our FBO texture to back buffer. */
    gl_bind_backbuffer();
-   if (shader)
-      shader->use(gl, gl->fbo_pass + 1);
+   shader->use(gl, gl->fbo_pass + 1);
 
    glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[gl->fbo_pass - 1]);
 
 #ifndef HAVE_GCMGL
-   if (gl_shader_mipmap_input(gl, gl->fbo_pass + 1))
+   if (gl->shader->mipmap_input(gl->fbo_pass + 1))
       glGenerateMipmap(GL_TEXTURE_2D);
 #endif
 
    glClear(GL_COLOR_BUFFER_BIT);
    gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
 
-   if (shader)
-      shader->set_params(gl, prev_rect->img_width, prev_rect->img_height, 
+   shader->set_params(gl, prev_rect->img_width, prev_rect->img_height, 
          prev_rect->width, prev_rect->height, 
          gl->vp.width, gl->vp.height, g_extern.frame_count, 
          tex_info, gl->prev_info, fbo_tex_info, fbo_tex_info_cnt);
@@ -1431,8 +1423,7 @@ static inline void gl_set_prev_texture(gl_t *gl,
 
 static inline void gl_set_shader_viewport(gl_t *gl, unsigned shader)
 {
-   if (gl->shader)
-      gl->shader->use(gl, shader);
+   gl->shader->use(gl, shader);
    gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
 }
 
@@ -1487,8 +1478,7 @@ static inline void gl_draw_texture(gl_t *gl)
    gl->coords.color = color;
    glBindTexture(GL_TEXTURE_2D, gl->menu_texture);
 
-   if (gl->shader)
-      gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
+   gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
    gl->coords.vertices = 4;
    gl_shader_set_coords(gl, &gl->coords, &gl->mvp_no_rot);
 
@@ -1531,8 +1521,7 @@ static bool gl_frame(void *data, const void *frame,
       glBindVertexArray(gl->vao);
 #endif
 
-   if (shader)
-      shader->use(gl, 1);
+   shader->use(gl, 1);
 
 #ifdef IOS
    /* Apparently the viewport is lost each frame, thanks Apple. */
@@ -1626,8 +1615,7 @@ static bool gl_frame(void *data, const void *frame,
 
    glClear(GL_COLOR_BUFFER_BIT);
 
-   if (shader && shader->set_params)
-      shader->set_params(gl, width, height,
+   shader->set_params(gl, width, height,
          gl->tex_w, gl->tex_h,
          gl->vp.width, gl->vp.height,
          g_extern.frame_count, 
@@ -1669,8 +1657,7 @@ static bool gl_frame(void *data, const void *frame,
    /* Reset state which could easily mess up libretro core. */
    if (gl->hw_render_fbo_init)
    {
-      if (shader)
-         shader->use(gl, 0);
+      shader->use(gl, 0);
       glBindTexture(GL_TEXTURE_2D, 0);
 #ifndef NO_GL_FF_VERTEX
       gl_disable_client_arrays(gl);
@@ -2393,7 +2380,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    }
 
    RARCH_LOG("[GL]: Using %u textures.\n", gl->textures);
-   RARCH_LOG("[GL]: Loaded %u program(s).\n", gl_shader_num(gl));
+   RARCH_LOG("[GL]: Loaded %u program(s).\n", gl->shader->num_shaders());
 
    gl->tex_w = RARCH_SCALE_BASE * video->input_scale;
    gl->tex_h = RARCH_SCALE_BASE * video->input_scale;
@@ -2406,9 +2393,9 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    gl_set_shader_viewport(gl, 1);
 
    bool force_smooth = false;
-   gl->tex_mipmap = gl_shader_mipmap_input(gl, 1);
+   gl->tex_mipmap = gl->shader->mipmap_input(1);
 
-   if (gl_shader_filter_type(gl, 1, &force_smooth))
+   if (gl->shader->filter_type(1, &force_smooth))
       gl->tex_min_filter = gl->tex_mipmap ? (force_smooth ? 
             GL_LINEAR_MIPMAP_LINEAR : GL_NEAREST_MIPMAP_NEAREST) 
          : (force_smooth ? GL_LINEAR : GL_NEAREST);
@@ -2418,7 +2405,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
          : (video->smooth ? GL_LINEAR : GL_NEAREST);
    
    gl->tex_mag_filter = min_filter_to_mag(gl->tex_min_filter);
-   gl->wrap_mode = gl_wrap_type_to_enum(gl_shader_wrap_type(gl, 1));
+   gl->wrap_mode = gl_wrap_type_to_enum(gl->shader->wrap_type(1));
 
    gl_set_texture_fmts(gl, video->rgb32);
 
@@ -2537,11 +2524,11 @@ static void gl_update_tex_filter_frame(gl_t *gl)
       return;
 
    context_bind_hw_render(gl, false);
-   if (!gl_shader_filter_type(gl, 1, &smooth))
+   if (!gl->shader->filter_type(1, &smooth))
       smooth = g_settings.video.smooth;
-   GLenum wrap_mode = gl_wrap_type_to_enum(gl_shader_wrap_type(gl, 1));
+   GLenum wrap_mode = gl_wrap_type_to_enum(gl->shader->wrap_type(1));
 
-   gl->tex_mipmap = gl_shader_mipmap_input(gl, 1);
+   gl->tex_mipmap = gl->shader->mipmap_input(1);
 
    gl->video_info.smooth = smooth;
    GLuint new_filt = gl->tex_mipmap ? (smooth ? 
@@ -2949,8 +2936,7 @@ static void gl_render_overlay(void *data)
       glViewport(0, 0, gl->win_width, gl->win_height);
 
    /* Ensure that we reset the attrib array. */
-   if (gl->shader)
-      gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
+   gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
    gl->coords.vertex    = gl->overlay_vertex_coord;
    gl->coords.tex_coord = gl->overlay_tex_coord;
    gl->coords.color     = gl->overlay_color_coord;

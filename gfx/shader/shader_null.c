@@ -66,7 +66,7 @@ static unsigned shader_null_num(void)
 
 static bool shader_null_filter_type(unsigned index, bool *smooth)
 {
-   return true;
+   return false;
 }
 
 static enum gfx_wrap_type shader_null_wrap_type(unsigned index)
