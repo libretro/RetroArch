@@ -492,14 +492,11 @@ static unsigned gl_wrap_type_to_enum(enum gfx_wrap_type type)
 static void gl_create_fbo_textures(gl_t *gl)
 {
    int i;
-   if (!gl)
-      return;
-
-   glGenTextures(gl->fbo_pass, gl->fbo_texture);
-
    GLuint base_filt     = g_settings.video.smooth ? GL_LINEAR : GL_NEAREST;
    GLuint base_mip_filt = g_settings.video.smooth ? 
       GL_LINEAR_MIPMAP_LINEAR : GL_NEAREST_MIPMAP_NEAREST;
+
+   glGenTextures(gl->fbo_pass, gl->fbo_texture);
 
    for (i = 0; i < gl->fbo_pass; i++)
    {
@@ -1004,7 +1001,8 @@ static void gl_check_fbo_dimensions(gl_t *gl)
    }
 }
 
-static void gl_frame_fbo(gl_t *gl, const struct gl_tex_info *tex_info)
+static void gl_frame_fbo(gl_t *gl, gl_shader_backend_t *shader,
+      const struct gl_tex_info *tex_info)
 {
    const struct gl_fbo_rect *prev_rect;
    const struct gl_fbo_rect *rect;
@@ -1041,8 +1039,8 @@ static void gl_frame_fbo(gl_t *gl, const struct gl_tex_info *tex_info)
 
       glBindFramebuffer(RARCH_GL_FRAMEBUFFER, gl->fbo[i]);
 
-      if (gl->shader)
-         gl->shader->use(gl, i + 1);
+      if (shader)
+         shader->use(gl, i + 1);
       glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[i - 1]);
 
 #ifndef HAVE_GCMGL
@@ -1054,8 +1052,8 @@ static void gl_frame_fbo(gl_t *gl, const struct gl_tex_info *tex_info)
 
       /* Render to FBO with certain size. */
       gl_set_viewport(gl, rect->img_width, rect->img_height, true, false);
-      if (gl->shader)
-         gl->shader->set_params(gl, prev_rect->img_width, prev_rect->img_height, 
+      if (shader)
+         shader->set_params(gl, prev_rect->img_width, prev_rect->img_height, 
             prev_rect->width, prev_rect->height, 
             gl->vp.width, gl->vp.height, g_extern.frame_count, 
             tex_info, gl->prev_info, fbo_tex_info, fbo_tex_info_cnt);
@@ -1089,8 +1087,8 @@ static void gl_frame_fbo(gl_t *gl, const struct gl_tex_info *tex_info)
 
    /* Render our FBO texture to back buffer. */
    gl_bind_backbuffer();
-   if (gl->shader)
-      gl->shader->use(gl, gl->fbo_pass + 1);
+   if (shader)
+      shader->use(gl, gl->fbo_pass + 1);
 
    glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[gl->fbo_pass - 1]);
 
@@ -1102,8 +1100,8 @@ static void gl_frame_fbo(gl_t *gl, const struct gl_tex_info *tex_info)
    glClear(GL_COLOR_BUFFER_BIT);
    gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
 
-   if (gl->shader)
-      gl->shader->set_params(gl, prev_rect->img_width, prev_rect->img_height, 
+   if (shader)
+      shader->set_params(gl, prev_rect->img_width, prev_rect->img_height, 
          prev_rect->width, prev_rect->height, 
          gl->vp.width, gl->vp.height, g_extern.frame_count, 
          tex_info, gl->prev_info, fbo_tex_info, fbo_tex_info_cnt);
@@ -1646,7 +1644,7 @@ static bool gl_frame(void *data, const void *frame,
 
 #ifdef HAVE_FBO
    if (gl->fbo_inited)
-      gl_frame_fbo(gl, &gl->tex_info);
+      gl_frame_fbo(gl, shader, &gl->tex_info);
 #endif
 
    gl_set_prev_texture(gl, &gl->tex_info);
