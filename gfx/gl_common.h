@@ -355,11 +355,15 @@ extern void glBufferSubDataTextureReferenceRA( GLenum target,
 #endif
 
 #if defined(HAVE_OPENGL_MODERN) || defined(HAVE_OPENGLES2) || defined(HAVE_PSGL)
+#ifndef NO_GL_FF_VERTEX
 #define NO_GL_FF_VERTEX
+#endif
 #endif
 
 #if defined(HAVE_OPENGL_MODERN) || defined(HAVE_OPENGLES2) || defined(HAVE_PSGL)
+#ifndef NO_GL_FF_MATRIX
 #define NO_GL_FF_MATRIX
+#endif
 #endif
 
 #if defined(HAVE_OPENGLES2) /* TODO: Figure out exactly what. */
@@ -375,6 +379,26 @@ extern void glBufferSubDataTextureReferenceRA( GLenum target,
 #define GL_SRGB_ALPHA_EXT 0x8C42
 #endif
 #endif
+
+/* Fall back to FF-style if needed and possible. */
+#define gl_ff_vertex(coords) \
+      glClientActiveTexture(GL_TEXTURE1); \
+      glTexCoordPointer(2, GL_FLOAT, 0, coords->lut_tex_coord); \
+      glEnableClientState(GL_TEXTURE_COORD_ARRAY); \
+      glClientActiveTexture(GL_TEXTURE0); \
+      glVertexPointer(2, GL_FLOAT, 0, coords->vertex); \
+      glEnableClientState(GL_VERTEX_ARRAY); \
+      glColorPointer(4, GL_FLOAT, 0, coords->color); \
+      glEnableClientState(GL_COLOR_ARRAY); \
+      glTexCoordPointer(2, GL_FLOAT, 0, coords->tex_coord); \
+      glEnableClientState(GL_TEXTURE_COORD_ARRAY)
+
+/* Fall back to FF-style if needed and possible. */
+#define gl_ff_matrix(mat) \
+      glMatrixMode(GL_PROJECTION); \
+      glLoadMatrixf(mat->data); \
+      glMatrixMode(GL_MODELVIEW); \
+      glLoadIdentity()
 
 void gl_set_viewport(gl_t *gl, unsigned width, unsigned height,
       bool force_full, bool allow_rotate);

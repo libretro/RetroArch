@@ -1551,12 +1551,9 @@ void *driver_video_resolve(const video_driver_t **drv)
    if (g_settings.video.threaded
          && !g_extern.system.hw_render_callback.context_type)
       return rarch_threaded_video_resolve(drv);
-   else
 #endif
-   {
-      if (drv)
-         *drv = driver.video;
+   if (drv)
+      *drv = driver.video;
 
-      return driver.video_data;
-   }
+   return driver.video_data;
 }
