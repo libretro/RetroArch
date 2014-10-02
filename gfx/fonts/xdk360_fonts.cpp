@@ -21,7 +21,7 @@
 #include "../../general.h"
 #include "../../xdk/xdk_resources.h"
 
-#define FONT_SCALE ((g_extern.lifecycle_state & (1ULL << MODE_MENU_HD)) ? 2 : 1)
+#define FONT_SCALE(d3d) ((d3d->resolution_hd_enable) ? 2 : 1)
 
 typedef struct GLYPH_ATTR
 {
@@ -363,7 +363,7 @@ static void xdk_video_font_draw_text(xdk360_video_font_t *font, void *video_data
       {
          // Handle the newline character
          m_fCursorX = x;
-         m_fCursorY += font->m_fFontYAdvance * FONT_SCALE;
+         m_fCursorY += font->m_fFontYAdvance * FONT_SCALE(d3d);
          continue;
       }
 
@@ -375,10 +375,10 @@ static void xdk_video_font_draw_text(xdk360_video_font_t *font, void *video_data
       else
          pGlyph = &font->m_Glyphs[0];
 
-      float fOffset  = FONT_SCALE * (float)pGlyph->wOffset;
-      float fAdvance = FONT_SCALE * (float)pGlyph->wAdvance;
-      float fWidth   = FONT_SCALE * (float)pGlyph->wWidth;
-      float fHeight  = FONT_SCALE * font->m_fFontHeight;
+      float fOffset  = FONT_SCALE(d3d) * (float)pGlyph->wOffset;
+      float fAdvance = FONT_SCALE(d3d) * (float)pGlyph->wAdvance;
+      float fWidth   = FONT_SCALE(d3d) * (float)pGlyph->wWidth;
+      float fHeight  = FONT_SCALE(d3d) * font->m_fFontHeight;
 
       m_fCursorX += fOffset;
 
@@ -454,7 +454,7 @@ static void xdk_render_msg(void *data, const char *str_msg,
    }
    else
    {
-      x = (g_extern.lifecycle_state & (1ULL << MODE_MENU_HD)) ? 160 : 100;
+      x = d3d->resolution_hd_enable ? 160 : 100;
       y = 120;
    }
 

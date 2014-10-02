@@ -141,12 +141,6 @@ enum action_state
    RARCH_ACTION_STATE_FORCE_QUIT,
 };
 
-enum menu_enums
-{
-   MODE_NONE = 0,
-   MODE_MENU_HD,
-};
-
 enum sound_mode_enums
 {
    SOUND_MODE_NORMAL = 0,

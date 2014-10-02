@@ -165,9 +165,7 @@ static void* rmenu_xui_init(void)
 
    d3d_video_t *d3d= (d3d_video_t*)driver.video_data;
 
-   bool hdmenus_allowed = (g_extern.lifecycle_state & (1ULL << MODE_MENU_HD));
-
-   if (hdmenus_allowed)
+   if (d3d->resolution_hd_enable)
       RARCH_LOG("HD menus enabled.\n");
 
    D3DPRESENT_PARAMETERS d3dpp;
@@ -210,7 +208,7 @@ static void* rmenu_xui_init(void)
       goto error;
    }
 
-   hr = XuiSceneCreate(hdmenus_allowed ?
+   hr = XuiSceneCreate(d3d->resolution_hd_enable ?
          L"file://game:/media/hd/" : L"file://game:/media/sd/",
          L"rarch_main.xur", NULL, &root_menu);
    if (FAILED(hr))
@@ -257,7 +255,8 @@ static void xui_render_message(const char *msg)
 	size_t i, j;
 
 	struct string_list *list = string_split(msg, "\n");
-	if (!list)
+   d3d_video_t *d3d = (d3d_video_t*)driver.video_data;
+	if (!list || !d3d)
 		return;
 
 	if (list->elems == 0)
@@ -281,8 +280,7 @@ static void xui_render_message(const char *msg)
 			msglen = RMENU_TERM_WIDTH;
 		}
 	#endif
-		float msg_width  = (g_extern.lifecycle_state &
-            (1ULL << MODE_MENU_HD)) ? 160 : 100;
+      float msg_width = d3d->resolution_hd_enable ? 160 : 100;
 		float msg_height = 120;
 		float msg_offset = 32;
 

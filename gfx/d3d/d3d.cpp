@@ -1570,7 +1570,7 @@ static bool d3d_frame(void *data, const void *frame,
       float msg_width  = 60;
       float msg_height = 365;
 #elif defined(_XBOX360)
-      float msg_width  = (g_extern.lifecycle_state & (1ULL << MODE_MENU_HD)) ? 160 : 100;
+      float msg_width  = d3d->resolution_dh_enable ? 160 : 100;
       float msg_height = 120;
 #endif
       font_parms.x = msg_width;

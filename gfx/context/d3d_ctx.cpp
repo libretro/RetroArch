@@ -334,7 +334,7 @@ static void gfx_ctx_d3d_input_driver(void *data, const input_driver_t **input, v
 
 static void gfx_ctx_d3d_get_video_size(void *data, unsigned *width, unsigned *height)
 {
-   (void)data;
+   d3d_video_t *d3d = (d3d_video_t*)driver.video_data;
 #ifdef _XBOX
    (void)width;
    (void)height;
@@ -345,17 +345,18 @@ static void gfx_ctx_d3d_get_video_size(void *data, unsigned *width, unsigned *he
    *width  = video_mode.dwDisplayWidth;
    *height = video_mode.dwDisplayHeight;
 
+   driver.resolution_hd_enable = false;
+
    if(video_mode.fIsHiDef)
    {
       *width = 1280;
       *height = 720;
-      g_extern.lifecycle_state |= (1ULL << MODE_MENU_HD);
+      driver.resolution_hd_enable = true;
    }
    else
    {
       *width = 640;
       *height = 480;
-      g_extern.lifecycle_state &= ~(1ULL << MODE_MENU_HD);
    }
 
    widescreen_mode = video_mode.fIsWideScreen;
@@ -402,21 +403,21 @@ static void gfx_ctx_d3d_get_video_size(void *data, unsigned *width, unsigned *he
          *width = 640;
          *height  = 480;
          widescreen_mode = false;
-         g_extern.lifecycle_state |= (1ULL << MODE_MENU_HD);
+         driver.resolution_hd_enable = true;
       }
       else if(video_mode & XC_VIDEO_FLAGS_HDTV_720p)
       {
          *width = 1280;
          *height  = 720;
          widescreen_mode = true;
-         g_extern.lifecycle_state |= (1ULL << MODE_MENU_HD);
+         driver.resolution_hd_enable = true;
       }
       else if(video_mode & XC_VIDEO_FLAGS_HDTV_1080i)
       {
          *width = 1920;
          *height  = 1080;
          widescreen_mode = true;
-         g_extern.lifecycle_state |= (1ULL << MODE_MENU_HD);
+         driver.resolution_hd_enable = true;
       }
    }
 #endif

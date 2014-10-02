@@ -171,6 +171,8 @@ typedef struct d3d_video
       unsigned tex_w;
       unsigned tex_h;
 #endif
+      /* TODO - refactor this away properly. */
+      bool resolution_hd_enable;
 } d3d_video_t;
 
 #ifndef _XBOX
