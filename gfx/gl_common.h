@@ -385,8 +385,6 @@ void gl_set_viewport(gl_t *gl, unsigned width, unsigned height,
 void gl_shader_set_coords(gl_t *gl,
       const struct gl_coords *coords, const math_matrix *mat);
 
-void gl_init_fbo(gl_t *gl, unsigned width, unsigned height);
-
 void gl_deinit_fbo(gl_t *gl);
 
 #endif

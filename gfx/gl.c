@@ -630,7 +630,7 @@ void gl_deinit_fbo(gl_t *gl)
 
 /* Set up render to texture. */
 
-void gl_init_fbo(gl_t *gl, unsigned width, unsigned height)
+static void gl_init_fbo(gl_t *gl, unsigned width, unsigned height)
 {
    int i;
 
