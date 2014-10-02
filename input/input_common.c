@@ -1486,21 +1486,20 @@ static void check_block_hotkey(bool enable_hotkey)
    driver.block_libretro_input = use_hotkey_enable && enable_hotkey;
 }
 
-/* Returns a 64-bit mask of all pressed meta keys, starting
- * from the specified key up until the last queryable key
- * (key_end).
+/* Returns a 64-bit mask of all pressed keys, starting
+ * from bind ID 0 (RARCH_DEVICE_ID_JOYPAD_B) up until 
+ * last bind ID (RARCH_BIND_LIST_END).
  *
  * TODO: In case RARCH_BIND_LIST_END starts exceeding 64,
  * and you need a bitmask of more than 64 entries, don't
  * use this function.
  */
 
-retro_input_t meta_input_keys_pressed(unsigned key,
-      unsigned key_end)
+retro_input_t input_keys_pressed(void)
 {
    static const struct retro_keybind *binds[] = { g_settings.input.binds[0] };
    retro_input_t ret = 0;
-   int i;
+   int i, key;
 
    check_block_hotkey(driver.input->key_pressed(driver.input_data,
             RARCH_ENABLE_HOTKEY));
@@ -1513,7 +1512,7 @@ retro_input_t meta_input_keys_pressed(unsigned key,
       input_push_analog_dpad(g_settings.input.autoconf_binds[i],
             g_settings.input.analog_dpad_mode[i]);
 
-   for (; key < key_end; key++)
+   for (key = 0; key < RARCH_BIND_LIST_END; key++)
    {
       bool state = false;
 
