@@ -2597,7 +2597,6 @@ static bool gl_set_shader(void *data,
 #endif
 
       default:
-         gl->shader = &shader_null_backend;
          break;
    }
 
