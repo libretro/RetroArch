@@ -952,11 +952,11 @@ static unsigned gl_cg_num(void)
 
 static bool gl_cg_filter_type(unsigned index, bool *smooth)
 {
-   if (cg_active && index)
+   if (cg_active && index &&
+         (cg_shader->pass[index - 1].filter != RARCH_FILTER_UNSPEC)
+      )
    {
-      if (cg_shader->pass[index - 1].filter == RARCH_FILTER_UNSPEC)
-         return false;
-      *smooth = cg_shader->pass[index - 1].filter == RARCH_FILTER_LINEAR;
+      *smooth = (cg_shader->pass[index - 1].filter == RARCH_FILTER_LINEAR);
       return true;
    }
 

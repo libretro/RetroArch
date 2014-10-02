@@ -1190,11 +1190,11 @@ static unsigned gl_glsl_num(void)
 
 static bool gl_glsl_filter_type(unsigned index, bool *smooth)
 {
-   if (glsl_enable && index)
+   if (glsl_enable && index 
+         && (glsl_shader->pass[index - 1].filter != RARCH_FILTER_UNSPEC)
+      )
    {
-      if (glsl_shader->pass[index - 1].filter == RARCH_FILTER_UNSPEC)
-         return false;
-      *smooth = glsl_shader->pass[index - 1].filter == RARCH_FILTER_LINEAR;
+      *smooth = (glsl_shader->pass[index - 1].filter == RARCH_FILTER_LINEAR);
       return true;
    }
    return false;
