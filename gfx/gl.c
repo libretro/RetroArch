@@ -205,7 +205,7 @@ static bool gl_shader_init(gl_t *gl)
 {
    enum rarch_shader_type type;
    bool ret = false;
-   const shader_backend_t *backend = (const shader_backend_t*)&shader_null_backend;
+   const shader_backend_t *backend = NULL;
    const char *shader_path = (g_settings.video.shader_enable && *g_settings.video.shader_path) ?
       g_settings.video.shader_path : NULL;
 
@@ -680,7 +680,7 @@ static void gl_init_fbo(gl_t *gl, unsigned width, unsigned height)
    {
       gl->fbo_rect[i].width  = next_pow2(gl->fbo_rect[i].img_width);
       gl->fbo_rect[i].height = next_pow2(gl->fbo_rect[i].img_height);
-      RARCH_LOG("Creating FBO %d @ %ux%u\n", i,
+      RARCH_LOG("[GL]: Creating FBO %d @ %ux%u\n", i,
             gl->fbo_rect[i].width, gl->fbo_rect[i].height);
    }
 
@@ -990,7 +990,7 @@ static void gl_check_fbo_dimensions(gl_t *gl)
          if (status != RARCH_GL_FRAMEBUFFER_COMPLETE)
             RARCH_WARN("Failed to reinit FBO texture.\n");
 
-         RARCH_LOG("Recreating FBO texture #%d: %ux%u\n",
+         RARCH_LOG("[GL]: Recreating FBO texture #%d: %ux%u\n",
                i, gl->fbo_rect[i].width, gl->fbo_rect[i].height);
       }
    }
@@ -1854,7 +1854,7 @@ static void gl_set_nonblock_state(void *data, bool state)
    if (!gl)
       return;
 
-   RARCH_LOG("GL VSync => %s\n", state ? "off" : "on");
+   RARCH_LOG("[GL]: VSync => %s\n", state ? "off" : "on");
 
    context_bind_hw_render(gl, false);
    ctx_driver->swap_interval(gl,
@@ -2370,6 +2370,14 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
          hw_render->version_major, hw_render->version_minor);
 #endif
 
+   gl->shader = (const shader_backend_t*)shader_ctx_init_first();
+
+   if (gl->shader)
+   {
+      RARCH_LOG("[GL]: Default shader backend found: %s.\n",
+            gl->shader->ident);
+   }
+
    if (!gl_shader_init(gl))
    {
       RARCH_ERR("[GL]: Shader init failed.\n");
@@ -2384,8 +2392,8 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
       gl->textures = max(minimum + 1, gl->textures);
    }
 
-   RARCH_LOG("GL: Using %u textures.\n", gl->textures);
-   RARCH_LOG("GL: Loaded %u program(s).\n", gl_shader_num(gl));
+   RARCH_LOG("[GL]: Using %u textures.\n", gl->textures);
+   RARCH_LOG("[GL]: Loaded %u program(s).\n", gl_shader_num(gl));
 
    gl->tex_w = RARCH_SCALE_BASE * video->input_scale;
    gl->tex_h = RARCH_SCALE_BASE * video->input_scale;
@@ -2636,7 +2644,7 @@ static bool gl_set_shader(void *data,
          glDeleteBuffers(1, &gl->pbo);
 #endif
          gl->textures = textures;
-         RARCH_LOG("GL: Using %u textures.\n", gl->textures);
+         RARCH_LOG("[GL]: Using %u textures.\n", gl->textures);
          gl->tex_index = 0;
          gl_init_textures(gl, &gl->video_info);
          gl_init_textures_data(gl);
