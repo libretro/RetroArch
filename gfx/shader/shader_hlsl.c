@@ -101,12 +101,16 @@ static void hlsl_set_params(void *data, unsigned width, unsigned height,
       unsigned tex_width, unsigned tex_height,
       unsigned out_width, unsigned out_height,
       unsigned frame_counter,
-      const struct gl_tex_info *info,
-      const struct gl_tex_info *prev_info,
-      const struct gl_tex_info *fbo_info, unsigned fbo_info_cnt)
+      const void *_info,
+      const void *_prev_info,
+      const void *_fbo_info, unsigned fbo_info_cnt)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
    LPDIRECT3DDEVICE d3d_device_ptr = (LPDIRECT3DDEVICE)d3d->dev;
+   const struct gl_tex_info *info = (const struct gl_tex_info*)_info;
+   const struct gl_tex_info *prev_info = (const struct gl_tex_info*)_prev_info;
+   const struct gl_tex_info *fbo_info = (const struct gl_tex_info*)_fbo_info;
+
    if (!hlsl_active)
       return;
 
@@ -433,7 +437,7 @@ static struct gfx_shader *hlsl_get_current_shader(void)
    return NULL;
 }
 
-const gl_shader_backend_t hlsl_backend = {
+const shader_backend_t hlsl_backend = {
    hlsl_init,
    hlsl_deinit,
    hlsl_set_params,

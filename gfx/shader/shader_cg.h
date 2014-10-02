@@ -20,6 +20,4 @@
 #include "shader_common.h"
 #include <stdint.h>
 
-extern const gl_shader_backend_t gl_cg_backend;
-
 #endif

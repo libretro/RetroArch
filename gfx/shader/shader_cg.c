@@ -181,9 +181,10 @@ static bool gl_cg_set_mvp(void *data, const math_matrix *mat)
    } \
 } while(0)
 
-static bool gl_cg_set_coords(const struct gl_coords *coords)
+static bool gl_cg_set_coords(const void *data)
 {
-   if (!cg_active)
+   const struct gl_coords *coords = (const struct gl_coords*)data;
+   if (!cg_active || !coords)
       return false;
 
    SET_COORD(vertex, vertex, 2);
@@ -203,13 +204,17 @@ static void gl_cg_set_params(void *data, unsigned width, unsigned height,
       unsigned tex_width, unsigned tex_height,
       unsigned out_width, unsigned out_height,
       unsigned frame_count,
-      const struct gl_tex_info *info,
-      const struct gl_tex_info *prev_info,
-      const struct gl_tex_info *fbo_info,
+      const void *_info,
+      const void *_prev_info,
+      const void *_fbo_info,
       unsigned fbo_info_cnt)
 {
-   (void)data;
+   const struct gl_tex_info *info = (const struct gl_tex_info*)_info;
+   const struct gl_tex_info *prev_info = (const struct gl_tex_info*)_prev_info;
+   const struct gl_tex_info *fbo_info = (const struct gl_tex_info*)_fbo_info;
    unsigned i;
+
+   (void)data;
    if (!cg_active || (active_index == 0) ||
          (active_index == GL_SHADER_STOCK_BLEND))
       return;
@@ -985,7 +990,7 @@ static struct gfx_shader *gl_cg_get_current_shader(void)
    return cg_active ? cg_shader : NULL;
 }
 
-const gl_shader_backend_t gl_cg_backend = {
+const shader_backend_t gl_cg_backend = {
    gl_cg_init,
    gl_cg_deinit,
    gl_cg_set_params,

@@ -50,7 +50,9 @@
 
 #define GL_SHADER_STOCK_BLEND (GFX_MAX_SHADERS - 1)
 
-struct gl_shader_backend
+#endif
+
+struct shader_backend
 {
    bool (*init)(void *data, const char *path);
    void (*deinit)(void);
@@ -58,16 +60,16 @@ struct gl_shader_backend
          unsigned tex_width, unsigned tex_height, 
          unsigned out_width, unsigned out_height,
          unsigned frame_counter,
-         const struct gl_tex_info *info, 
-         const struct gl_tex_info *prev_info,
-         const struct gl_tex_info *fbo_info, unsigned fbo_info_cnt);
+         const void *info, 
+         const void *prev_info,
+         const void *fbo_info, unsigned fbo_info_cnt);
 
    void (*use)(void *data, unsigned index);
    unsigned (*num_shaders)(void);
    bool (*filter_type)(unsigned index, bool *smooth);
    enum gfx_wrap_type (*wrap_type)(unsigned index);
    void (*shader_scale)(unsigned index, struct gfx_fbo_scale *scale);
-   bool (*set_coords)(const struct gl_coords *coords);
+   bool (*set_coords)(const void *data);
    bool (*set_mvp)(void *data, const math_matrix *mat);
    unsigned (*get_prev_textures)(void);
    bool (*mipmap_input)(unsigned index);
@@ -76,7 +78,11 @@ struct gl_shader_backend
 
    enum rarch_shader_type type;
 };
-#endif
+
+extern const shader_backend_t gl_glsl_backend;
+extern const shader_backend_t hlsl_backend;
+extern const shader_backend_t gl_cg_backend;
+extern const shader_backend_t shader_null_backend;
 
 #ifdef HAVE_OPENGL
 void gl_load_texture_data(GLuint obj, const struct texture_image *img,

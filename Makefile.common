@@ -117,6 +117,7 @@ OBJ += frontend/frontend.o \
 		conf/config_file_userdata.o \
 		screenshot.o \
 		gfx/scaler/scaler.o \
+		gfx/shader/shader_null.o \
 		gfx/shader/shader_common.o \
 		gfx/shader/shader_parse.o \
 		gfx/scaler/pixconv.o \

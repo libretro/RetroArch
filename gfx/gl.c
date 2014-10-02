@@ -207,13 +207,12 @@ static bool check_fbo_proc(gl_t *gl)
 
 static bool gl_shader_init(gl_t *gl)
 {
+   enum rarch_shader_type type;
    bool ret = false;
-   const gl_shader_backend_t *backend = NULL;
-
+   const shader_backend_t *backend = (const shader_backend_t*)&shader_null_backend;
    const char *shader_path = (g_settings.video.shader_enable && *g_settings.video.shader_path) ?
       g_settings.video.shader_path : NULL;
 
-   enum rarch_shader_type type;
 
    if (!gl)
    {
@@ -306,7 +305,7 @@ static void gl_disable_client_arrays(gl_t *gl)
 void gl_shader_set_coords(gl_t *gl,
       const struct gl_coords *coords, const math_matrix *mat)
 {
-   gl_shader_backend_t *shader = (gl_shader_backend_t*)gl->shader;
+   shader_backend_t *shader = (shader_backend_t*)gl->shader;
    bool ret_coords = false;
    bool ret_mvp    = false;
 
@@ -1001,7 +1000,7 @@ static void gl_check_fbo_dimensions(gl_t *gl)
    }
 }
 
-static void gl_frame_fbo(gl_t *gl, gl_shader_backend_t *shader,
+static void gl_frame_fbo(gl_t *gl, shader_backend_t *shader,
       const struct gl_tex_info *tex_info)
 {
    const struct gl_fbo_rect *prev_rect;
@@ -1524,7 +1523,7 @@ static bool gl_frame(void *data, const void *frame,
 
    gl_t *gl = (gl_t*)data;
    gfx_ctx_driver_t *ctx_driver = (gfx_ctx_driver_t*)gl->ctx_driver;
-   gl_shader_backend_t *shader = (gl_shader_backend_t*)gl->shader;
+   shader_backend_t *shader = (shader_backend_t*)gl->shader;
 
    if (!gl)
       return true;
@@ -2598,7 +2597,7 @@ static bool gl_set_shader(void *data,
 #endif
 
       default:
-         gl->shader = NULL;
+         gl->shader = &shader_null_backend;
          break;
    }
 

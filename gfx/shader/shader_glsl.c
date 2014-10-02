@@ -868,23 +868,25 @@ static void gl_glsl_set_params(void *data, unsigned width, unsigned height,
       unsigned tex_width, unsigned tex_height, 
       unsigned out_width, unsigned out_height,
       unsigned frame_count,
-      const struct gl_tex_info *info, 
-      const struct gl_tex_info *prev_info, 
-      const struct gl_tex_info *fbo_info, unsigned fbo_info_cnt)
+      const void *_info, 
+      const void *_prev_info, 
+      const void *_fbo_info, unsigned fbo_info_cnt)
 {
+   GLfloat buffer[512];
+   struct glsl_attrib attribs[32];
+   unsigned i;
+   size_t size = 0, attribs_size = 0;
+   const struct gl_tex_info *info = (const struct gl_tex_info*)_info;
+   const struct gl_tex_info *prev_info = (const struct gl_tex_info*)_prev_info;
+   const struct gl_tex_info *fbo_info = (const struct gl_tex_info*)_fbo_info;
+   struct glsl_attrib *attr = (struct glsl_attrib*)attribs;
+   const struct shader_uniforms *uni = (const struct shader_uniforms*)
+      &gl_uniforms[glsl_active_index];
+
    (void)data;
 
    if (!glsl_enable || (gl_program[glsl_active_index] == 0))
       return;
-
-   GLfloat buffer[512];
-   unsigned i;
-   size_t size = 0;
-   struct glsl_attrib attribs[32];
-   size_t attribs_size = 0;
-   struct glsl_attrib *attr = attribs;
-
-   const struct shader_uniforms *uni = &gl_uniforms[glsl_active_index];
 
    float input_size[2] = {(float)width, (float)height};
    float output_size[2] = {(float)out_width, (float)out_height};
@@ -1067,9 +1069,11 @@ static bool gl_glsl_set_mvp(void *data, const math_matrix *mat)
    return true;
 }
 
-static bool gl_glsl_set_coords(const struct gl_coords *coords)
+static bool gl_glsl_set_coords(const void *data)
 {
-   if (!glsl_enable || !glsl_shader->modern)
+   const struct gl_coords *coords = (const struct gl_coords*)data;
+
+   if (!glsl_enable || !glsl_shader->modern || !coords)
       return false;
 
    /* Avoid hitting malloc on every single regular quad draw. */
@@ -1239,7 +1243,7 @@ void gl_glsl_set_context_type(bool core_profile,
    glsl_minor = minor;
 }
 
-const gl_shader_backend_t gl_glsl_backend = {
+const shader_backend_t gl_glsl_backend = {
    gl_glsl_init,
    gl_glsl_deinit,
    gl_glsl_set_params,

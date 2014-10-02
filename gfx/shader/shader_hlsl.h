@@ -25,6 +25,4 @@ void hlsl_set_proj_matrix(XMMATRIX rotation_value);
 
 #define RARCH_HLSL_MAX_SHADERS 16
 
-extern const gl_shader_backend_t hlsl_backend;
-
 #endif

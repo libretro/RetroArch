@@ -167,7 +167,7 @@ struct gl_coords
    unsigned vertices;
 };
 
-typedef struct gl_shader_backend gl_shader_backend_t;
+typedef struct shader_backend shader_backend_t;
 
 #define MAX_SHADERS 16
 #define MAX_TEXTURES 8
@@ -175,7 +175,7 @@ typedef struct gl_shader_backend gl_shader_backend_t;
 typedef struct gl
 {
    const gfx_ctx_driver_t *ctx_driver;
-   const gl_shader_backend_t *shader;
+   const shader_backend_t *shader;
 
    bool vsync;
    GLuint texture[MAX_TEXTURES];
