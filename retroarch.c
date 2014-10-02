@@ -2239,29 +2239,6 @@ static void check_netplay_flip(bool pressed, bool fullscreen_toggle_pressed)
 }
 #endif
 
-void rarch_check_block_hotkey(bool enable_hotkey)
-{
-   static const struct retro_keybind *bind = 
-      &g_settings.input.binds[0][RARCH_ENABLE_HOTKEY];
-   bool use_hotkey_enable;
-
-   /* Don't block the check to RARCH_ENABLE_HOTKEY
-    * unless we're really supposed to. */
-   driver.block_hotkey = driver.block_input;
-
-   // If we haven't bound anything to this, always allow hotkeys.
-   use_hotkey_enable = bind->key != RETROK_UNKNOWN ||
-      bind->joykey != NO_BTN ||
-      bind->joyaxis != AXIS_NONE;
-
-   driver.block_hotkey = driver.block_input ||
-      (use_hotkey_enable && !enable_hotkey);
-
-   /* If we hold ENABLE_HOTKEY button, block all libretro input to allow 
-    * hotkeys to be bound to same keys as RetroPad. */
-   driver.block_libretro_input = use_hotkey_enable && enable_hotkey;
-}
-
 static void check_grab_mouse_toggle(void)
 {
    static bool grab_mouse_state  = false;

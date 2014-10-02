@@ -1463,6 +1463,29 @@ void input_pop_analog_dpad(struct retro_keybind *binds)
 }
 
 #if !defined(IS_JOYCONFIG) && !defined(IS_RETROLAUNCH)
+static void check_block_hotkey(bool enable_hotkey)
+{
+   bool use_hotkey_enable;
+   static const struct retro_keybind *bind = 
+      &g_settings.input.binds[0][RARCH_ENABLE_HOTKEY];
+
+   /* Don't block the check to RARCH_ENABLE_HOTKEY
+    * unless we're really supposed to. */
+   driver.block_hotkey = driver.block_input;
+
+   // If we haven't bound anything to this, always allow hotkeys.
+   use_hotkey_enable = bind->key != RETROK_UNKNOWN ||
+      bind->joykey != NO_BTN ||
+      bind->joyaxis != AXIS_NONE;
+
+   driver.block_hotkey = driver.block_input ||
+      (use_hotkey_enable && !enable_hotkey);
+
+   /* If we hold ENABLE_HOTKEY button, block all libretro input to allow 
+    * hotkeys to be bound to same keys as RetroPad. */
+   driver.block_libretro_input = use_hotkey_enable && enable_hotkey;
+}
+
 /* Returns a 64-bit mask of all pressed meta keys, starting
  * from the specified key up until the last queryable key
  * (key_end).
@@ -1479,10 +1502,8 @@ retro_input_t meta_input_keys_pressed(unsigned key,
    retro_input_t ret = 0;
    int i;
 
-#ifdef RARCH_INTERNAL
-   rarch_check_block_hotkey(driver.input->key_pressed(driver.input_data,
+   check_block_hotkey(driver.input->key_pressed(driver.input_data,
             RARCH_ENABLE_HOTKEY));
-#endif
 
    input_push_analog_dpad((struct retro_keybind*)binds[0],
          (g_settings.input.analog_dpad_mode[0] == ANALOG_DPAD_NONE) ?
