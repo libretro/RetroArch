@@ -51,6 +51,9 @@ typedef struct shader_backend
    struct gfx_shader *(*get_current_shader)(void);
 
    enum rarch_shader_type type;
+
+   /* Human readable string. */
+   const char *ident;
 } shader_backend_t;
 
 extern const shader_backend_t gl_glsl_backend;
@@ -71,6 +74,7 @@ extern const shader_backend_t shader_null_backend;
 #endif
 
 #if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
+
 #ifndef HAVE_SHADER_MANAGER
 #define HAVE_SHADER_MANAGER
 #endif
@@ -80,5 +84,9 @@ extern const shader_backend_t shader_null_backend;
 #define GL_SHADER_STOCK_BLEND (GFX_MAX_SHADERS - 1)
 
 #endif
+
+const shader_backend_t *shader_ctx_find_driver(const char *ident);
+
+const shader_backend_t *shader_ctx_init_first(void);
 
 #endif

@@ -453,4 +453,5 @@ const shader_backend_t hlsl_backend = {
    hlsl_get_current_shader,
 
    RARCH_SHADER_HLSL,
+   "hlsl"
 };

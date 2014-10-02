@@ -1,5 +1,5 @@
 /*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
+ *  Copyright (C) 2011-2014 - Daniel De Matteis
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -15,3 +15,43 @@
 
 #include "shader_context.h"
 #include "../../retroarch_logger.h"
+#include <string.h>
+
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
+
+static const shader_backend_t *shader_ctx_drivers[] = {
+#ifdef HAVE_CG
+   &gl_cg_backend,
+#endif
+#ifdef HAVE_GLSL
+   &gl_glsl_backend,
+#endif
+#ifdef HAVE_HLSL
+   &hlsl_backend,
+#endif
+   &shader_null_backend,
+   NULL
+};
+
+const shader_backend_t *shader_ctx_find_driver(const char *ident)
+{
+   unsigned i;
+   for (i = 0; shader_ctx_drivers[i]; i++)
+   {
+      if (strcmp(shader_ctx_drivers[i]->ident, ident) == 0)
+         return shader_ctx_drivers[i];
+   }
+
+   return NULL;
+}
+
+const shader_backend_t *shader_ctx_init_first(void)
+{
+   unsigned i;
+   for (i = 0; shader_ctx_drivers[i]; i++)
+      return shader_ctx_drivers[i];
+
+   return NULL;
+}

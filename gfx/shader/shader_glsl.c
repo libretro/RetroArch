@@ -1261,5 +1261,6 @@ const shader_backend_t gl_glsl_backend = {
    gl_glsl_get_current_shader,
 
    RARCH_SHADER_GLSL,
+   "glsl"
 };
 

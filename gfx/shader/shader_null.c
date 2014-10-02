@@ -119,4 +119,5 @@ const shader_backend_t shader_null_backend = {
    shader_null_get_current_shader,
 
    RARCH_SHADER_NONE,
+   "nullshader"
 };
