@@ -41,10 +41,6 @@
 #include "gfx_context.h"
 #include "../compat/strl.h"
 
-#ifdef HAVE_CG
-#include "shader/shader_cg.h"
-#endif
-
 #ifdef HAVE_GLSL
 #include "shader/shader_glsl.h"
 #endif

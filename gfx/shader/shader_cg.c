@@ -22,7 +22,7 @@
 #include "shader_gl_common.h"
 #endif
 
-#include "shader_cg.h"
+#include <stdint.h>
 #include "shader_common.h"
 #include <Cg/cg.h>
 #include <Cg/cgGL.h>
