@@ -113,9 +113,7 @@ void main_exit(args_type() args)
    if (driver.frontend_ctx && driver.frontend_ctx->deinit)
       driver.frontend_ctx->deinit(args);
 
-   if (g_extern.lifecycle_state & (1ULL << MODE_EXITSPAWN)
-         && driver.frontend_ctx
-         && driver.frontend_ctx->exitspawn)
+   if (driver.frontend_ctx && driver.frontend_ctx->exitspawn)
       driver.frontend_ctx->exitspawn(g_settings.libretro,
             sizeof(g_settings.libretro));
 

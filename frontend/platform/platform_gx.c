@@ -59,6 +59,9 @@ enum
    GX_DEVICE_END
 };
 
+static bool exit_spawn = false;
+static bool exitspawn_start_game = false;
+
 #if defined(HAVE_LOGGER) || defined(HAVE_FILE_LOGGER)
 static devoptab_t dotab_stdout = {
    "stdout",   // device name
@@ -306,8 +309,10 @@ static void frontend_gx_exitspawn(char *core_path, size_t sizeof_core_path)
    if (gx_rom_path[0] != '\0')
       should_load_game = true;
 #elif defined(HW_RVL)
-   if (g_extern.lifecycle_state & (1ULL << MODE_EXITSPAWN_START_GAME))
-      should_load_game = true;
+   should_load_game = exitspawn_start_game;
+
+   if (!exit_spawn)
+      return;
 
    frontend_gx_exec(core_path, should_load_game);
 
@@ -342,6 +347,12 @@ static void frontend_gx_exec(const char *path, bool should_load_game)
 #endif
 }
 
+static void frontend_gx_set_fork(bool exitspawn, bool start_game)
+{
+   exit_spawn = exitspawn;
+   exitspawn_start_game = start_game;
+}
+
 static int frontend_gx_get_rating(void)
 {
 #ifdef HW_RVL
@@ -359,6 +370,7 @@ const frontend_ctx_driver_t frontend_ctx_gx = {
    frontend_gx_process_args,        /* process_args */
    NULL,                            /* process_events */
    frontend_gx_exec,                /* exec */
+   frontend_gx_set_fork,            /* set_fork */
    NULL,                            /* shutdown */
    NULL,                            /* get_name */
    frontend_gx_get_rating,          /* get_rating */

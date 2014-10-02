@@ -31,6 +31,9 @@
 #include "../../general.h"
 #endif
 
+static bool exit_spawn;
+static bool exitspawn_start_game;
+
 #ifdef _XBOX1
 static HRESULT xbox_io_mount(char *szDrive, char *szDevice)
 {
@@ -258,13 +261,21 @@ static void frontend_xdk_init(void *data)
 
 static void frontend_xdk_exec(const char *path, bool should_load_game);
 
+static void frontend_xdk_set_fork(bool exit, bool start_game)
+{
+   exit_spawn = exit;
+   exitspawn_start_game = start_game;
+}
+
 static void frontend_xdk_exitspawn(char *core_path,
       size_t sizeof_core_path)
 {
    bool should_load_game = false;
 #ifndef IS_SALAMANDER
-   if (g_extern.lifecycle_state & (1ULL << MODE_EXITSPAWN_START_GAME))
-      should_load_game = true;
+   should_load_game = exitspawn_start_game;
+
+   if (!exit_spawn)
+      return;
 #endif
    frontend_xdk_exec(core_path, should_load_game);
 }
@@ -330,6 +341,7 @@ const frontend_ctx_driver_t frontend_ctx_xdk = {
    NULL,                         /* process_args */
    NULL,                         /* process_events */
    frontend_xdk_exec,            /* exec */
+   frontend_xdk_set_fork,        /* set_fork */
    NULL,                         /* shutdown */
    NULL,                         /* get_name */
    frontend_xdk_get_rating,      /* get_rating */

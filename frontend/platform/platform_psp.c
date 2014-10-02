@@ -42,6 +42,9 @@ PSP_HEAP_SIZE_MAX();
 
 char eboot_path[512];
 
+static bool exit_spawn = false;
+static bool exitspawn_start_game = false;
+
 #ifdef IS_SALAMANDER
 #include "../../file_ext.h"
 #endif
@@ -206,14 +209,20 @@ static void frontend_psp_exec(const char *path, bool should_load_game)
 #endif
 }
 
+static void frontend_psp_set_fork(bool exit, bool start_game)
+{
+   exit_spawn = true;
+   exitspawn_start_game = start_game;
+}
 
 static void frontend_psp_exitspawn(char *core_path, size_t sizeof_core_path)
 {
    bool should_load_game = false;
 #ifndef IS_SALAMANDER
-   if (g_extern.lifecycle_state & (1ULL << MODE_EXITSPAWN_START_GAME))
-      should_load_game = true;
+   should_load_game = exitspawn_start_game;
 
+   if (!exit_spawn)
+      return;
 #endif
    frontend_psp_exec(core_path, should_load_game);
 }
@@ -231,6 +240,7 @@ const frontend_ctx_driver_t frontend_ctx_psp = {
    NULL,                         /* process_args */
    NULL,                         /* process_events */
    frontend_psp_exec,            /* exec */
+   frontend_psp_set_fork,        /* set_fork */
    frontend_psp_shutdown,        /* shutdown */
    NULL,                         /* get_name */
    frontend_psp_get_rating,      /* get_rating */

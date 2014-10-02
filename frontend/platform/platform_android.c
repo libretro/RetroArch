@@ -889,6 +889,7 @@ const frontend_ctx_driver_t frontend_ctx_android = {
    NULL,                         /* process_args */
    frontend_android_process_events, /* process_events */
    NULL,                         /* exec */
+   NULL,                         /* set_fork */
    frontend_android_shutdown,    /* shutdown */
    frontend_android_get_name,    /* get_name */
    frontend_android_get_rating,  /* get_rating */

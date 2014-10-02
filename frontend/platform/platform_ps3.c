@@ -41,6 +41,8 @@ SYS_PROCESS_PARAM(1001, 0x200000)
 static bool multiman_detected  = false;
 #endif
 
+static bool exit_spawn = false;
+static bool exitspawn_start_game = false;
 
 #ifdef IS_SALAMANDER
 #include <netex/net.h>
@@ -306,6 +308,12 @@ static void frontend_ps3_deinit(void *data)
 
 static void frontend_ps3_exec(const char *path, bool should_load_game);
 
+static void frontend_ps3_set_fork(bool exit, bool start_game)
+{
+   exit_spawn = exitspawn;
+   exitspawn_start_game = start_game;
+}
+
 static void frontend_ps3_exitspawn(char *core_path, size_t core_path_size)
 {
 #ifdef HAVE_RARCH_EXEC
@@ -315,8 +323,10 @@ static void frontend_ps3_exitspawn(char *core_path, size_t core_path_size)
    bool original_verbose = g_extern.verbosity;
    g_extern.verbosity = true;
 
-   if (g_extern.lifecycle_state & (1ULL << MODE_EXITSPAWN_START_GAME))
-      should_load_game = true;
+   should_load_game = exitspawn_start_game;
+
+   if (!exit_spawn)
+      return;
 #endif
 
    frontend_ps3_exec(core_path, should_load_game);
@@ -439,6 +449,7 @@ const frontend_ctx_driver_t frontend_ctx_ps3 = {
    NULL,                         /* process_args */
    NULL,                         /* process_events */
    frontend_ps3_exec,            /* exec */
+   frontend_ps3_set_fork,        /* set_fork */
    NULL,                         /* shutdown */
    NULL,                         /* get_name */
    frontend_ps3_get_rating,      /* get_rating */

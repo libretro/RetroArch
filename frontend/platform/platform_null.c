@@ -29,6 +29,7 @@ const frontend_ctx_driver_t frontend_ctx_null = {
    NULL,                         /* process_args */
    NULL,                         /* process_events */
    NULL,                         /* exec */
+   NULL,                         /* set_fork */
    NULL,                         /* shutdown */
    NULL,                         /* get_name */
    NULL,                         /* get_rating */

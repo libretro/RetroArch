@@ -2927,9 +2927,6 @@ void rarch_main_set_state(unsigned cmd)
          /* Restore libretro keyboard callback. */
          g_extern.system.key_event = g_extern.frontend_key_event;
          break;
-      case RARCH_ACTION_STATE_EXITSPAWN:
-         g_extern.lifecycle_state |= (1ULL << MODE_EXITSPAWN);
-         break;
       case RARCH_ACTION_STATE_QUIT:
          g_extern.system.shutdown = true;
          rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED);
@@ -3272,7 +3269,8 @@ void rarch_main_command(unsigned cmd)
                SALAMANDER_FILE,
                sizeof(g_extern.fullpath));
 #endif
-         rarch_main_set_state(RARCH_ACTION_STATE_EXITSPAWN);
+         if (driver.frontend_ctx && driver.frontend_ctx->set_fork)
+            driver.frontend_ctx->set_fork(true, false);
          break;
       case RARCH_CMD_MENU_SAVE_CONFIG:
          save_core_config();
