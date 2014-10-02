@@ -179,7 +179,8 @@ static void render_message(gl_raster_t *font, const char *msg, GLfloat scale,
       gl->coords.vertex    = font_vertex;
       gl->coords.color     = font_color;
       gl->coords.vertices  = 6 * msg_len;
-      gl_shader_set_coords(gl, &gl->coords, &gl->mvp_no_rot);
+      gl->shader->set_coords(&gl->coords);
+      gl->shader->set_mvp(gl, &gl->mvp_no_rot);
       glDrawArrays(GL_TRIANGLES, 0, 6 * msg_len);
 
       msg_len_full -= msg_len;

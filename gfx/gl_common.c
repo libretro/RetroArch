@@ -83,20 +83,3 @@ bool gl_load_luts(const struct gfx_shader *generic_shader,
    glBindTexture(GL_TEXTURE_2D, 0);
    return true;
 }
-
-void gl_shader_set_coords(gl_t *gl,
-      const struct gl_coords *coords, const math_matrix *mat)
-{
-   if (!gl->shader->set_coords(coords)) 
-   {
-#ifndef NO_GL_FF_VERTEX
-      gl_ff_vertex(coords);
-#endif
-   }
-   if (!gl->shader->set_mvp(gl, mat))
-   {
-#ifndef NO_GL_FF_MATRIX
-      gl_ff_matrix(mat);
-#endif
-   }
-}

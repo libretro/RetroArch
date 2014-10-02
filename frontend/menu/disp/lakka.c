@@ -331,7 +331,8 @@ void lakka_draw_background(void)
    coords.color = textures[TEXTURE_BG].id ? color : black_color;
    glBindTexture(GL_TEXTURE_2D, textures[TEXTURE_BG].id);
 
-   gl_shader_set_coords(gl, &coords, &gl->mvp_no_rot);
+   gl->shader->set_coords(&coords);
+   gl->shader->set_mvp(gl, &gl->mvp_no_rot);
 
    glEnable(GL_BLEND);
    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
@@ -385,7 +386,8 @@ void lakka_draw_icon(GLuint texture, float x, float y,
    matrix_scale(&mscal, scale, scale, 1);
    matrix_multiply(&mymat, &mscal, &mymat);
 
-   gl_shader_set_coords(gl, &coords, &mymat);
+   gl->shader->set_coords(&coords);
+   gl->shader->set_mvp(gl, &mymat);
 
    glEnable(GL_BLEND);
    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -634,7 +636,8 @@ static void lakka_draw_fbo(void)
    matrix_scale(&mscal, global_scale, global_scale, 1);
    matrix_multiply(&mymat, &mscal, &mymat);
 
-   gl_shader_set_coords(gl, &coords, &mymat);
+   gl->shader->set_coords(&coords);
+   gl->shader->set_mvp(gl, &mymat);
 
    glEnable(GL_BLEND);
 

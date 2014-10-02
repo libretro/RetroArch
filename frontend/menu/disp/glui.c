@@ -109,7 +109,8 @@ static void glui_render_background(void)
       gl->shader->use(gl, GL_SHADER_STOCK_BLEND);
 
    gl->coords.vertices = 4;
-   gl_shader_set_coords(gl, &gl->coords, &gl->mvp_no_rot);
+   gl->shader->set_coords(&gl->coords);
+   gl->shader->set_mvp(gl, &gl->mvp_no_rot);
 
    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
    glDisable(GL_BLEND);

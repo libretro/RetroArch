@@ -28,6 +28,10 @@
 #include "../../config.h"
 #endif
 
+#ifdef HAVE_OPENGL
+#include "../gl_common.h"
+#endif
+
 #include "../gfx_context.h"
 #include "shader_context.h"
 #include <stdlib.h>
@@ -47,11 +51,30 @@ static void shader_null_set_params(void *data, unsigned width, unsigned height,
 
 static bool shader_null_set_mvp(void *data, const math_matrix *mat)
 {
+#ifdef HAVE_OPENGL
+#ifndef NO_GL_FF_MATRIX
+   gl_t *gl = (gl_t*)driver_video_resolve(NULL);
+   if (gl)
+   {
+      gl_ff_matrix(mat);
+   }
+#endif
+#endif
    return false;
 }
 
 static bool shader_null_set_coords(const void *data)
 {
+#ifdef HAVE_OPENGL
+#ifndef NO_GL_FF_VERTEX
+   gl_t *gl = (gl_t*)driver_video_resolve(NULL);
+   if (gl)
+   {
+      const struct gl_coords *coords = (const struct gl_coords*)data;
+      gl_ff_vertex(coords);
+   }
+#endif
+#endif
    return false;
 }
 

@@ -26,6 +26,7 @@
 #ifdef HAVE_OPENGL
 #include "../gl_common.h"
 #include <Cg/cgGL.h>
+
 #endif
 
 #include "../../general.h"
@@ -175,6 +176,9 @@ static bool gl_cg_set_mvp(void *data, const math_matrix *mat)
       return true;
    }
 
+#ifndef NO_GL_FF_MATRIX
+   gl_ff_matrix(mat);
+#endif
    return false;
 }
 
@@ -191,7 +195,7 @@ static bool gl_cg_set_coords(const void *data)
 {
    const struct gl_coords *coords = (const struct gl_coords*)data;
    if (!cg_active || !coords)
-      return false;
+      goto fallback;
 
    SET_COORD(vertex, vertex, 2);
    SET_COORD(tex, tex_coord, 2);
@@ -199,6 +203,11 @@ static bool gl_cg_set_coords(const void *data)
    SET_COORD(color, color, 4);
 
    return true;
+fallback:
+#ifndef NO_GL_FF_VERTEX
+   gl_ff_vertex(coords);
+#endif
+   return false;
 }
 
 #define set_param_2f(param, x, y) \
