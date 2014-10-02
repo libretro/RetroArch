@@ -188,8 +188,13 @@ static void resampler_CC_free(void *re_)
    (void)re_;
 }
 
-static void *resampler_CC_init(double bandwidth_mod)
+static void *resampler_CC_init(const struct resampler_config *config,
+      double bandwidth_mod, resampler_simd_mask_t mask)
 {
+   (void)mask;
+   (void)bandwidth_mod;
+   (void)config;
+
    __asm__ (
          ".set      push\n"
          ".set      noreorder\n"
