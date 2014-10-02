@@ -2658,3 +2658,9 @@ GLAPI void APIENTRY glPixelStorei( GLenum pname, GLint param )
          break;
    }
 }
+
+GLAPI void APIENTRY glGenerateMipmapOES(GLenum target)
+{
+   (void)target;
+   /* stub */
+}

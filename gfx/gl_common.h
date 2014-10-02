@@ -87,7 +87,7 @@
 #define RARCH_GL_MAX_RENDERBUFFER_SIZE GL_MAX_RENDERBUFFER_SIZE
 #endif
 
-#if defined(HAVE_PSGL) && !defined(HAVE_GCMGL)
+#if defined(HAVE_PSGL)
 #define glGenerateMipmap glGenerateMipmapOES
 #endif
 

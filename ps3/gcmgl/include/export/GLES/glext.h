@@ -408,6 +408,7 @@ extern "C"
    GLAPI void APIENTRY glFramebufferRenderbufferOES( GLenum, GLenum, GLenum, GLuint );
    GLAPI void APIENTRY glGetFramebufferAttachmentParameterivOES( GLenum, GLenum, GLenum, GLint * );
    GLAPI void APIENTRY glGenerateMipmapOES( GLenum );
+   GLAPI void APIENTRY glGenerateMipmap( GLenum target);
 
    /* Texture Reference */
    GLAPI void APIENTRY glTextureReferenceSCE( GLenum target, GLuint levels, GLuint baseWidth, GLuint baseHeight, GLuint baseDepth, GLenum internalFormat, GLuint pitch, GLintptr offset );

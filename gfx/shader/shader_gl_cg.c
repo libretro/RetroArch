@@ -995,8 +995,10 @@ static unsigned gl_cg_get_prev_textures(void)
 
 static bool gl_cg_mipmap_input(unsigned index)
 {
+#ifndef HAVE_GCMGL
    if (cg_active && index)
       return cg_shader->pass[index - 1].mipmap;
+#endif
    return false;
 }
 

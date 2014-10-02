@@ -988,10 +988,8 @@ static void gl_frame_fbo(gl_t *gl, shader_backend_t *shader,
       shader->use(gl, i + 1);
       glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[i - 1]);
 
-#ifndef HAVE_GCMGL
       if (gl->shader->mipmap_input(i + 1))
          glGenerateMipmap(GL_TEXTURE_2D);
-#endif
 
       glClear(GL_COLOR_BUFFER_BIT);
 
@@ -1036,10 +1034,8 @@ static void gl_frame_fbo(gl_t *gl, shader_backend_t *shader,
 
    glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[gl->fbo_pass - 1]);
 
-#ifndef HAVE_GCMGL
    if (gl->shader->mipmap_input(gl->fbo_pass + 1))
       glGenerateMipmap(GL_TEXTURE_2D);
-#endif
 
    glClear(GL_COLOR_BUFFER_BIT);
    gl_set_viewport(gl, gl->win_width, gl->win_height, false, true);
@@ -1530,12 +1526,10 @@ static bool gl_frame(void *data, const void *frame,
          gl_copy_frame(gl, frame, width, height, pitch);
       }
 
-#ifndef HAVE_GCMGL
       /* No point regenerating mipmaps 
        * if there are no new frames. */
       if (gl->tex_mipmap)
          glGenerateMipmap(GL_TEXTURE_2D);
-#endif
    }
 
    /* Have to reset rendering state which libretro core 
