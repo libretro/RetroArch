@@ -144,7 +144,6 @@ enum action_state
 enum menu_enums
 {
    MODE_NONE = 0,
-   MODE_MENU_WIDESCREEN,
    MODE_MENU_HD,
 };
 

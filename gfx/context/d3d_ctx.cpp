@@ -36,6 +36,10 @@
 #define XBOX_PRESENTATIONINTERVAL D3DRS_PRESENTINTERVAL
 #endif
 
+#ifdef _XBOX
+static bool widescreen_mode = false;
+#endif
+
 static d3d_video_t *curD3D = NULL;
 static bool d3d_quit = false;
 static void *dinput;
@@ -237,10 +241,10 @@ void d3d_make_d3dpp(void *data, const video_info_t *info, D3DPRESENT_PARAMETERS 
          d3dpp->Flags = D3DPRESENTFLAG_INTERLACED;
    }
 
-   if (g_extern.lifecycle_state & MODE_MENU_WIDESCREEN)
+   if (widescreen_mode)
       d3dpp->Flags |= D3DPRESENTFLAG_WIDESCREEN;
 #elif defined(_XBOX360)
-   if (!(g_extern.lifecycle_state & (1ULL << MODE_MENU_WIDESCREEN)))
+   if (!widescreen_mode)
       d3dpp->Flags |= D3DPRESENTFLAG_NO_LETTERBOX;
 
    if (g_extern.console.screen.gamma_correction)
@@ -354,10 +358,7 @@ static void gfx_ctx_d3d_get_video_size(void *data, unsigned *width, unsigned *he
       g_extern.lifecycle_state &= ~(1ULL << MODE_MENU_HD);
    }
 
-   if(video_mode.fIsWideScreen)
-      g_extern.lifecycle_state |= (1ULL << MODE_MENU_WIDESCREEN);
-   else
-      g_extern.lifecycle_state &= ~(1ULL << MODE_MENU_WIDESCREEN);
+   widescreen_mode = video_mode.fIsWideScreen;
 #elif defined(_XBOX1)
    DWORD video_mode = XGetVideoFlags();
 
@@ -367,39 +368,30 @@ static void gfx_ctx_d3d_get_video_size(void *data, unsigned *width, unsigned *he
    // Only valid in PAL mode, not valid for HDTV modes!
    if(XGetVideoStandard() == XC_VIDEO_STANDARD_PAL_I)
    {
-      // Check for 16:9 mode (PAL REGION)
+      widescreen_mode = false;
+
+      /* Check for 16:9 mode (PAL REGION) */
       if(video_mode & XC_VIDEO_FLAGS_WIDESCREEN)
       {
+         *width = 720;
          //60 Hz, 720x480i
          if(video_mode & XC_VIDEO_FLAGS_PAL_60Hz)
-         {
-            *width = 720;
             *height = 480;
-         }
          else //50 Hz, 720x576i
-         {
-            *width = 720;
             *height = 576;
-         }
-         g_extern.lifecycle_state |= (1ULL << MODE_MENU_WIDESCREEN);
-      }
-      else
-      {
-         g_extern.lifecycle_state &= ~(1ULL << MODE_MENU_WIDESCREEN);
+         widescreen_mode = true;
       }
    }
    else
    {
-      // Check for 16:9 mode (NTSC REGIONS)
+      widescreen_mode = false;
+
+      /* Check for 16:9 mode (NTSC REGIONS) */
       if(video_mode & XC_VIDEO_FLAGS_WIDESCREEN)
       {
          *width = 720;
          *height = 480;
-         g_extern.lifecycle_state |= (1ULL << MODE_MENU_WIDESCREEN);
-      }
-      else
-      {
-         g_extern.lifecycle_state &= ~(1ULL << MODE_MENU_WIDESCREEN);
+         widescreen_mode = true;
       }
    }
 
@@ -409,21 +401,21 @@ static void gfx_ctx_d3d_get_video_size(void *data, unsigned *width, unsigned *he
       {
          *width = 640;
          *height  = 480;
-         g_extern.lifecycle_state &= ~(1ULL << MODE_MENU_WIDESCREEN);
+         widescreen_mode = false;
          g_extern.lifecycle_state |= (1ULL << MODE_MENU_HD);
       }
       else if(video_mode & XC_VIDEO_FLAGS_HDTV_720p)
       {
          *width = 1280;
          *height  = 720;
-         g_extern.lifecycle_state |= (1ULL << MODE_MENU_WIDESCREEN);
+         widescreen_mode = true;
          g_extern.lifecycle_state |= (1ULL << MODE_MENU_HD);
       }
       else if(video_mode & XC_VIDEO_FLAGS_HDTV_1080i)
       {
          *width = 1920;
          *height  = 1080;
-         g_extern.lifecycle_state |= (1ULL << MODE_MENU_WIDESCREEN);
+         widescreen_mode = true;
          g_extern.lifecycle_state |= (1ULL << MODE_MENU_HD);
       }
    }
