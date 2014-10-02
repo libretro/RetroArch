@@ -346,6 +346,7 @@ ifeq ($(HAVE_OPENGL), 1)
 			 gfx/fonts/gl_font.o \
 			 gfx/fonts/gl_raster_font.o \
 			 gfx/math/matrix.o \
+			 gfx/shader/shader_gl_common.o \
 			 gfx/state_tracker.o \
 			 gfx/glsym/rglgen.o
 
