@@ -303,13 +303,18 @@ static void gl_disable_client_arrays(gl_t *gl)
 }
 #endif
 
-void gl_shader_set_coords(gl_t *gl, const struct gl_coords *coords, const math_matrix *mat)
+void gl_shader_set_coords(gl_t *gl,
+      const struct gl_coords *coords, const math_matrix *mat)
 {
-   bool ret_coords = (gl->shader) ? gl->shader->set_coords(coords) : false;
-   bool ret_mvp    = (gl->shader) ? gl->shader->set_mvp(gl, mat)   : false;
+   gl_shader_backend_t *shader = (gl_shader_backend_t*)gl->shader;
+   bool ret_coords = false;
+   bool ret_mvp    = false;
 
-   (void)ret_coords;
-   (void)ret_mvp;
+   if (shader)
+   {
+      ret_coords = shader->set_coords(coords);
+      ret_mvp    = shader->set_mvp(gl, mat);
+   }
 
 #ifndef NO_GL_FF_VERTEX
    if (!ret_coords)
