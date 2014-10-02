@@ -39,12 +39,6 @@
 
 #define context_bind_hw_render(gl, enable)               if (gl->shared_context_use && gl->ctx_driver->bind_hw_render) gl->ctx_driver->bind_hw_render(gl, enable)
 
-#ifdef HAVE_EGL
-#define context_init_egl_image_buffer_func(gl, video)    gl->ctx_driver->init_egl_image_buffer(gl, video)
-#define context_write_egl_image_func(gl, frame, width, height, pitch, base_size, tex_index, img) \
-   gl->ctx_driver->write_egl_image(gl, frame, width, height, pitch, base_size, tex_index,img)
-#endif
-
 #if (!defined(HAVE_OPENGLES) || defined(HAVE_OPENGLES3))
 #define HAVE_GL_ASYNC_READBACK
 #endif
