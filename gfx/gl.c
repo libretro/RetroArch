@@ -2894,13 +2894,14 @@ static void gl_overlay_vertex_geom(void *data,
 static void gl_overlay_enable(void *data, bool state)
 {
    gl_t *gl = (gl_t*)data;
+   gfx_ctx_driver_t *ctx_driver = (gfx_ctx_driver_t*)gl->ctx_driver;
 
    if (!gl)
       return;
 
    gl->overlay_enable = state;
-   if (gl->ctx_driver->show_mouse && gl->fullscreen)
-      gl->ctx_driver->show_mouse(gl, state);
+   if (ctx_driver->show_mouse && gl->fullscreen)
+      ctx_driver->show_mouse(gl, state);
 }
 
 static void gl_overlay_full_screen(void *data, bool enable)
@@ -2992,7 +2993,9 @@ static uintptr_t gl_get_current_framebuffer(void *data)
 static retro_proc_address_t gl_get_proc_address(void *data, const char *sym)
 {
    gl_t *gl = (gl_t*)data;
-   return gl->ctx_driver->get_proc_address(sym);
+   gfx_ctx_driver_t *ctx_driver = (gfx_ctx_driver_t*)gl->ctx_driver;
+
+   return ctx_driver->get_proc_address(sym);
 }
 #endif
 
@@ -3114,9 +3117,10 @@ static void gl_set_osd_msg(void *data, const char *msg,
 static void gl_show_mouse(void *data, bool state)
 {
    gl_t *gl = (gl_t*)data;
+   gfx_ctx_driver_t *ctx_driver = (gfx_ctx_driver_t*)gl->ctx_driver;
 
-   if (gl && gl->ctx_driver->show_mouse)
-      gl->ctx_driver->show_mouse(gl, state);
+   if (gl && ctx_driver->show_mouse)
+      ctx_driver->show_mouse(gl, state);
 }
 
 static struct gfx_shader *gl_get_current_shader(void *data)
