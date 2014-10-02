@@ -1672,20 +1672,6 @@ static void main_state(unsigned cmd)
    RARCH_LOG("%s\n", msg);
 }
 
-
-static void set_fullscreen(bool fullscreen)
-{
-   g_settings.video.fullscreen = fullscreen;
-   driver.video_cache_context = 
-      g_extern.system.hw_render_callback.cache_context;
-   driver.video_cache_context_ack = false;
-   rarch_main_command(RARCH_CMD_RESET_CONTEXT);
-   driver.video_cache_context = false;
-
-   /* Poll input to avoid possibly stale data to corrupt things. */
-   driver.input->poll(driver.input_data);
-}
-
 bool rarch_check_fullscreen(bool pressed)
 {
    if (pressed)
@@ -3003,7 +2989,14 @@ void rarch_main_command(unsigned cmd)
          g_extern.system.shutdown = true;
          break;
       case RARCH_CMD_REINIT:
-         set_fullscreen(g_settings.video.fullscreen);
+         driver.video_cache_context = 
+            g_extern.system.hw_render_callback.cache_context;
+         driver.video_cache_context_ack = false;
+         rarch_main_command(RARCH_CMD_RESET_CONTEXT);
+         driver.video_cache_context = false;
+
+         /* Poll input to avoid possibly stale data to corrupt things. */
+         driver.input->poll(driver.input_data);
          break;
       case RARCH_CMD_REWIND:
          if (g_settings.rewind_enable)
