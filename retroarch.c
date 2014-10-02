@@ -199,11 +199,28 @@ static void take_screenshot(void)
       rarch_render_cached_frame();
 }
 
-void rarch_deinit_gpu_recording(void)
+static void rarch_deinit_gpu_recording(void)
 {
    if (g_extern.record_gpu_buffer)
       free(g_extern.record_gpu_buffer);
    g_extern.record_gpu_buffer = NULL;
+}
+
+static void rarch_deinit_recording(void)
+{
+   if (!driver.recording_data || !driver.recording)
+      return;
+
+   if (driver.recording->finalize)
+      driver.recording->finalize(driver.recording_data);
+
+   if (driver.recording->free)
+      driver.recording->free(driver.recording_data);
+
+   driver.recording_data = NULL;
+   driver.recording = NULL;
+
+   rarch_deinit_gpu_recording();
 }
 
 void rarch_recording_dump_frame(const void *data, unsigned width,
@@ -392,22 +409,6 @@ static void init_recording(void)
    }
 }
 
-void rarch_deinit_recording(void)
-{
-   if (!driver.recording_data || !driver.recording)
-      return;
-
-   if (driver.recording->finalize)
-      driver.recording->finalize(driver.recording_data);
-
-   if (driver.recording->free)
-      driver.recording->free(driver.recording_data);
-
-   driver.recording_data = NULL;
-   driver.recording = NULL;
-
-   rarch_deinit_gpu_recording();
-}
 
 void rarch_render_cached_frame(void)
 {

@@ -561,73 +561,6 @@ void config_set_defaults(void)
 
 static void parse_config_file(void);
 
-static void config_load_core_specific(void)
-{
-   *g_extern.core_specific_config_path = '\0';
-
-   if (!*g_settings.libretro
-#ifdef HAVE_DYNAMIC
-      || g_extern.libretro_dummy
-#endif
-      )
-      return;
-
-#ifdef HAVE_MENU
-   if (*g_settings.menu_config_directory)
-   {
-      path_resolve_realpath(g_settings.menu_config_directory,
-            sizeof(g_settings.menu_config_directory));
-      strlcpy(g_extern.core_specific_config_path,
-            g_settings.menu_config_directory,
-            sizeof(g_extern.core_specific_config_path));
-   }
-   else
-#endif
-   {
-      /* Use original config file's directory as a fallback. */
-      fill_pathname_basedir(g_extern.core_specific_config_path,
-            g_extern.config_path, sizeof(g_extern.core_specific_config_path));
-   }
-
-   fill_pathname_dir(g_extern.core_specific_config_path, g_settings.libretro,
-         ".cfg", sizeof(g_extern.core_specific_config_path));
-
-   if (g_settings.core_specific_config)
-   {
-      char tmp[PATH_MAX];
-      strlcpy(tmp, g_settings.libretro, sizeof(tmp));
-      RARCH_LOG("Loading core-specific config from: %s.\n",
-            g_extern.core_specific_config_path);
-
-      if (!config_load_file(g_extern.core_specific_config_path, true))
-         RARCH_WARN("Core-specific config not found, reusing last config.\n");
-
-      /* Force some parameters which are implied when using core specific configs.
-       * Don't have the core config file overwrite the libretro path. */
-      strlcpy(g_settings.libretro, tmp, sizeof(g_settings.libretro));
-
-      /* This must be true for core specific configs. */
-      g_settings.core_specific_config = true;
-   }
-}
-
-void config_load(void)
-{
-   /* Flush out per-core configs before loading a new config. */
-   if (*g_extern.core_specific_config_path &&
-         g_settings.config_save_on_exit && g_settings.core_specific_config)
-      config_save_file(g_extern.core_specific_config_path);
-
-   if (!g_extern.block_config_read)
-   {
-      config_set_defaults();
-      parse_config_file();
-   }
-
-   /* Per-core config handling. */
-   config_load_core_specific();
-}
-
 static config_file_t *open_default_config_file(void)
 {
    config_file_t *conf = NULL;
@@ -821,30 +754,7 @@ static config_file_t *open_default_config_file(void)
 
 static void config_read_keybinds_conf(config_file_t *conf);
 
-static void parse_config_file(void)
-{
-   bool ret;
-   if (*g_extern.config_path)
-   {
-      RARCH_LOG("Loading config from: %s.\n", g_extern.config_path);
-      ret = config_load_file(g_extern.config_path, false);
-   }
-   else
-   {
-      RARCH_LOG("Loading default config.\n");
-      ret = config_load_file(NULL, false);
-      if (*g_extern.config_path)
-         RARCH_LOG("Found default config: %s.\n", g_extern.config_path);
-   }
-
-   if (!ret)
-   {
-      RARCH_ERR("Couldn't find config at path: \"%s\"\n",
-            g_extern.config_path);
-   }
-}
-
-bool config_load_file(const char *path, bool set_defaults)
+static bool config_load_file(const char *path, bool set_defaults)
 {
    unsigned i;
    char *save, tmp_str[PATH_MAX];
@@ -1242,6 +1152,99 @@ bool config_load_file(const char *path, bool set_defaults)
    config_file_free(conf);
    return true;
 }
+
+static void config_load_core_specific(void)
+{
+   *g_extern.core_specific_config_path = '\0';
+
+   if (!*g_settings.libretro
+#ifdef HAVE_DYNAMIC
+      || g_extern.libretro_dummy
+#endif
+      )
+      return;
+
+#ifdef HAVE_MENU
+   if (*g_settings.menu_config_directory)
+   {
+      path_resolve_realpath(g_settings.menu_config_directory,
+            sizeof(g_settings.menu_config_directory));
+      strlcpy(g_extern.core_specific_config_path,
+            g_settings.menu_config_directory,
+            sizeof(g_extern.core_specific_config_path));
+   }
+   else
+#endif
+   {
+      /* Use original config file's directory as a fallback. */
+      fill_pathname_basedir(g_extern.core_specific_config_path,
+            g_extern.config_path, sizeof(g_extern.core_specific_config_path));
+   }
+
+   fill_pathname_dir(g_extern.core_specific_config_path, g_settings.libretro,
+         ".cfg", sizeof(g_extern.core_specific_config_path));
+
+   if (g_settings.core_specific_config)
+   {
+      char tmp[PATH_MAX];
+      strlcpy(tmp, g_settings.libretro, sizeof(tmp));
+      RARCH_LOG("Loading core-specific config from: %s.\n",
+            g_extern.core_specific_config_path);
+
+      if (!config_load_file(g_extern.core_specific_config_path, true))
+         RARCH_WARN("Core-specific config not found, reusing last config.\n");
+
+      /* Force some parameters which are implied when using core specific configs.
+       * Don't have the core config file overwrite the libretro path. */
+      strlcpy(g_settings.libretro, tmp, sizeof(g_settings.libretro));
+
+      /* This must be true for core specific configs. */
+      g_settings.core_specific_config = true;
+   }
+}
+
+void config_load(void)
+{
+   /* Flush out per-core configs before loading a new config. */
+   if (*g_extern.core_specific_config_path &&
+         g_settings.config_save_on_exit && g_settings.core_specific_config)
+      config_save_file(g_extern.core_specific_config_path);
+
+   if (!g_extern.block_config_read)
+   {
+      config_set_defaults();
+      parse_config_file();
+   }
+
+   /* Per-core config handling. */
+   config_load_core_specific();
+}
+
+
+
+static void parse_config_file(void)
+{
+   bool ret;
+   if (*g_extern.config_path)
+   {
+      RARCH_LOG("Loading config from: %s.\n", g_extern.config_path);
+      ret = config_load_file(g_extern.config_path, false);
+   }
+   else
+   {
+      RARCH_LOG("Loading default config.\n");
+      ret = config_load_file(NULL, false);
+      if (*g_extern.config_path)
+         RARCH_LOG("Found default config: %s.\n", g_extern.config_path);
+   }
+
+   if (!ret)
+   {
+      RARCH_ERR("Couldn't find config at path: \"%s\"\n",
+            g_extern.config_path);
+   }
+}
+
 
 static void read_keybinds_keyboard(config_file_t *conf, unsigned player,
       unsigned index, struct retro_keybind *bind)

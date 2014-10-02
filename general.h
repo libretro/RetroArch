@@ -770,12 +770,8 @@ const char *config_get_default_menu(void);
 #endif
 
 #include "conf/config_file.h"
-bool config_load_file(const char *path, bool set_defaults);
 bool config_save_file(const char *path);
 bool config_read_keybinds(const char *path);
-
-void rarch_deinit_recording(void);
-bool rarch_audio_flush(const int16_t *data, size_t samples);
 
 void rarch_main_state_new(void);
 void rarch_main_state_free(void);
@@ -784,7 +780,6 @@ int rarch_main(int argc, char *argv[]);
 bool rarch_replace_config(const char *path);
 void rarch_main_init_wrap(const struct rarch_main_wrap *args,
       int *argc, char **argv);
-void rarch_deinit_gpu_recording(void);
 int rarch_main_init(int argc, char *argv[]);
 void rarch_main_set_state(unsigned action);
 void rarch_main_command(unsigned action);
@@ -795,8 +790,6 @@ bool rarch_check_fullscreen(bool pressed);
 void rarch_disk_control_set_eject(bool state, bool log);
 void rarch_disk_control_set_index(unsigned index);
 void rarch_disk_control_append_image(const char *path);
-bool rarch_set_rumble_state(unsigned port,
-      enum retro_rumble_effect effect, bool enable);
 
 void rarch_playlist_push(content_playlist_t *playlist,
       const char *path);
