@@ -377,8 +377,6 @@ extern void glBufferSubDataTextureReferenceRA( GLenum target,
 #endif
 #endif
 
-void gl_set_projection(gl_t *gl, struct gl_ortho *ortho, bool allow_rotate);
-
 void gl_set_viewport(gl_t *gl, unsigned width, unsigned height,
       bool force_full, bool allow_rotate);
 

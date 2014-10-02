@@ -806,7 +806,7 @@ static bool gl_init_hw_render(gl_t *gl, unsigned width, unsigned height)
 #endif
 #endif
 
-void gl_set_projection(gl_t *gl, struct gl_ortho *ortho, bool allow_rotate)
+static void gl_set_projection(gl_t *gl, struct gl_ortho *ortho, bool allow_rotate)
 {
    math_matrix rot;
 
