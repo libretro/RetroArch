@@ -165,7 +165,6 @@ struct apple_key_name_map_entry
 };
 
 extern const struct apple_key_name_map_entry apple_key_name_map[];
-extern const struct rarch_key_map apple_key_map_hidusage[];
 
 const char* apple_keycode_hidusage_to_name(uint32_t hid_usage);
 
