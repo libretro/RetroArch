@@ -2559,36 +2559,27 @@ void rarch_main_set_state(unsigned cmd)
    switch (cmd)
    {
       case RARCH_ACTION_STATE_MENU_RUNNING:
-         {
-            int i;
+         /* Menu should always run with vsync on. */
+         rarch_main_command(RARCH_CMD_VIDEO_SET_BLOCKING_STATE);
+         /* Stop all rumbling before entering the menu. */
+         rarch_main_command(RARCH_CMD_RUMBLE_STOP);
 
-            /* Menu should always run with vsync on. */
-            rarch_main_command(RARCH_CMD_VIDEO_SET_BLOCKING_STATE);
-
-            /* Stop all rumbling before entering the menu. */
-            for (i = 0; i < MAX_PLAYERS; i++)
-            {
-               driver_set_rumble_state(i, RETRO_RUMBLE_STRONG, 0);
-               driver_set_rumble_state(i, RETRO_RUMBLE_WEAK, 0);
-            }
-
-            if (g_settings.menu.pause_libretro)
-               rarch_main_command(RARCH_CMD_AUDIO_STOP);
+         if (g_settings.menu.pause_libretro)
+            rarch_main_command(RARCH_CMD_AUDIO_STOP);
 
 #ifdef HAVE_MENU
-            if (driver.menu)
-            {
-               /* Override keyboard callback to redirect to menu instead.
-                * We'll use this later for something ...
-                * FIXME: This should probably be moved to menu_common somehow. */
-               g_extern.frontend_key_event = g_extern.system.key_event;
-               g_extern.system.key_event = menu_key_event;
+         if (driver.menu)
+         {
+            /* Override keyboard callback to redirect to menu instead.
+             * We'll use this later for something ...
+             * FIXME: This should probably be moved to menu_common somehow. */
+            g_extern.frontend_key_event = g_extern.system.key_event;
+            g_extern.system.key_event = menu_key_event;
 
-               driver.menu->need_refresh = true;
-            }
-#endif
-            g_extern.system.frame_time_last = 0;
+            driver.menu->need_refresh = true;
          }
+#endif
+         g_extern.system.frame_time_last = 0;
          g_extern.is_menu = true;
          break;
       case RARCH_ACTION_STATE_LOAD_CONTENT:
@@ -3177,6 +3168,16 @@ void rarch_main_command(unsigned cmd)
 
             if (!control)
                check_disk_next(control);
+         }
+         break;
+      case RARCH_CMD_RUMBLE_STOP:
+         {
+            int i;
+            for (i = 0; i < MAX_PLAYERS; i++)
+            {
+               driver_set_rumble_state(i, RETRO_RUMBLE_STRONG, 0);
+               driver_set_rumble_state(i, RETRO_RUMBLE_WEAK, 0);
+            }
          }
          break;
    }

@@ -158,6 +158,7 @@ enum basic_event
    RARCH_CMD_LOG_FILE_DEINIT,
    RARCH_CMD_DISK_EJECT_TOGGLE,
    RARCH_CMD_DISK_NEXT,
+   RARCH_CMD_RUMBLE_STOP,
 };
 
 enum action_state
