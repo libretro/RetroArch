@@ -123,15 +123,6 @@ const struct apple_key_name_map_entry apple_key_name_map[] =
    { "nul", 0x00},
 };
 
-const char* apple_keycode_hidusage_to_name(uint32_t hid_usage)
-{
-   for (int i = 0; apple_key_name_map[i].hid_id; i ++)
-      if (apple_key_name_map[i].hid_id == hid_usage)
-         return apple_key_name_map[i].keyname;
-
-   return "nul";
-}
-
 #if defined(IOS)
 extern void apple_gamecontroller_poll_all(void);
 
