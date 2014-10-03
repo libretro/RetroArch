@@ -50,6 +50,9 @@ extern void system_exec_wii(const char *path, bool should_load_game);
 #include <sdcard/gcsd.h>
 #include <fat.h>
 
+static bool exit_spawn = false;
+static bool exitspawn_start_game = false;
+
 #ifndef IS_SALAMANDER
 
 enum
@@ -58,9 +61,6 @@ enum
    GX_DEVICE_USB,
    GX_DEVICE_END
 };
-
-static bool exit_spawn = false;
-static bool exitspawn_start_game = false;
 
 #if defined(HAVE_LOGGER) || defined(HAVE_FILE_LOGGER)
 static devoptab_t dotab_stdout = {
