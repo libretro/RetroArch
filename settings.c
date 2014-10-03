@@ -407,6 +407,7 @@ static void config_set_defaults(void)
    g_settings.rewind_granularity = rewind_granularity;
    g_settings.slowmotion_ratio = slowmotion_ratio;
    g_settings.fastforward_ratio = fastforward_ratio;
+   g_settings.fastforward_ratio_throttle_enable = fastforward_ratio_throttle_enable;
    g_settings.pause_nonactive = pause_nonactive;
    g_settings.autosave_interval = autosave_interval;
 
@@ -1086,6 +1087,7 @@ static bool config_load_file(const char *path, bool set_defaults)
       g_settings.slowmotion_ratio = 1.0f;
 
    CONFIG_GET_FLOAT(fastforward_ratio, "fastforward_ratio");
+   CONFIG_GET_BOOL(fastforward_ratio_throttle_enable, "fastforward_ratio_throttle_enable");
 
    CONFIG_GET_BOOL(pause_nonactive, "pause_nonactive");
    CONFIG_GET_INT(autosave_interval, "autosave_interval");
@@ -1667,6 +1669,7 @@ bool config_save_file(const char *path)
          g_settings.savestate_auto_load);
 
    config_set_float(conf, "fastforward_ratio", g_settings.fastforward_ratio);
+   config_set_bool(conf, "fastforward_ratio_throttle_enable", g_settings.fastforward_ratio_throttle_enable);
    config_set_float(conf, "slowmotion_ratio", g_settings.slowmotion_ratio);
 
    config_set_bool(conf, "config_save_on_exit",

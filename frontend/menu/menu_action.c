@@ -159,30 +159,6 @@ int menu_action_setting_fraction(
             setting->cmd_trigger.triggered = true;
       }
    }
-   else if (!strcmp(setting->name, "fastforward_ratio"))
-   {
-      bool clamp_value = false;
-      if (action == MENU_ACTION_START)
-        *setting->value.fraction  = setting->default_value.fraction;
-      else if (action == MENU_ACTION_LEFT)
-      {
-         *setting->value.fraction -= setting->step;
-
-         /* Avoid potential rounding errors when going from 1.1 to 1.0. */
-         if (*setting->value.fraction < 0.95f) 
-            *setting->value.fraction = setting->default_value.fraction;
-         else
-            clamp_value = true;
-      }
-      else if (action == MENU_ACTION_RIGHT)
-      {
-         *setting->value.fraction += setting->step;
-         clamp_value = true;
-      }
-      if (clamp_value)
-         g_settings.fastforward_ratio =
-            max(min(*setting->value.fraction, setting->max), 1.0f);
-   }
    else
    {
       switch (action)

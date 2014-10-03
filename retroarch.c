@@ -3184,7 +3184,7 @@ void rarch_main_command(unsigned cmd)
 
 static inline void do_limit_frame_time(void)
 {
-   if (g_settings.fastforward_ratio >= 0.0f)
+   if (g_settings.fastforward_ratio_throttle_enable)
       limit_frame_time();
 }
 

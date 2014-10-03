@@ -382,6 +382,7 @@ struct settings
 
    float slowmotion_ratio;
    float fastforward_ratio;
+   bool fastforward_ratio_throttle_enable;
 
    bool pause_nonactive;
    unsigned autosave_interval;
