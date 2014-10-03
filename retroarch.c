@@ -2147,8 +2147,9 @@ static void check_volume(bool pressed_up, bool pressed_down)
 #ifdef HAVE_NETPLAY
 static void check_netplay_flip(bool pressed, bool fullscreen_toggle_pressed)
 {
-   if (pressed)
-      netplay_flip_players(driver.netplay_data);
+   netplay_t *netplay = (netplay_t*)driver.netplay_data;
+   if (pressed && netplay)
+      netplay_flip_players(netplay);
 
    rarch_check_fullscreen(fullscreen_toggle_pressed);
 }
@@ -3107,9 +3108,12 @@ void rarch_main_command(unsigned cmd)
          break;
       case RARCH_CMD_NETPLAY_DEINIT:
 #ifdef HAVE_NETPLAY
-         if (driver.netplay_data)
-            netplay_free(driver.netplay_data);
+		  {
+			  netplay_t *netplay = (netplay_t*)driver.netplay_data;
+         if (netplay)
+            netplay_free(netplay);
          driver.netplay_data = NULL;
+		  }
 #endif
          break;
       case RARCH_CMD_NETPLAY_INIT:
@@ -3269,7 +3273,7 @@ bool rarch_main_iterate(void)
 
 #ifdef HAVE_NETPLAY
    if (driver.netplay_data)
-      netplay_pre_frame(driver.netplay_data);
+      netplay_pre_frame((netplay_t*)driver.netplay_data);
 #endif
 
    if (g_extern.bsv.movie)
@@ -3311,7 +3315,7 @@ bool rarch_main_iterate(void)
 
 #ifdef HAVE_NETPLAY
    if (driver.netplay_data)
-      netplay_post_frame(driver.netplay_data);
+      netplay_post_frame((netplay_t*)driver.netplay_data);
 #endif
 
 #if defined(HAVE_THREADS)

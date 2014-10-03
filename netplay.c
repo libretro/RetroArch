@@ -1361,7 +1361,7 @@ static int16_t netplay_get_spectate_input(netplay_t *netplay, bool port,
 int16_t input_state_spectate_client(unsigned port, unsigned device,
       unsigned index, unsigned id)
 {
-   return netplay_get_spectate_input(driver.netplay_data, port,
+   return netplay_get_spectate_input((netplay_t*)driver.netplay_data, port,
          device, index, id);
 }
 
