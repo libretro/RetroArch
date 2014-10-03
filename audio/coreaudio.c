@@ -367,7 +367,8 @@ static ssize_t coreaudio_write(void *data, const void *buf_, size_t size)
 static void coreaudio_set_nonblock_state(void *data, bool state)
 {
    coreaudio_t *dev = (coreaudio_t*)data;
-   dev->nonblock = state;
+   if (dev)
+      dev->nonblock = state;
 }
 
 static bool coreaudio_alive(void *data)
