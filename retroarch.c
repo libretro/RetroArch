@@ -1280,14 +1280,6 @@ static void init_command(void)
                g_settings.network_cmd_enable, g_settings.network_cmd_port)))
       RARCH_ERR("Failed to initialize command interface.\n");
 }
-
-static void deinit_command(void)
-{
-   if (driver.command)
-      rarch_cmd_free(driver.command);
-   driver.command = NULL;
-}
-
 #endif
 
 #if defined(HAVE_THREADS)
@@ -2001,9 +1993,7 @@ void rarch_disk_control_append_image(const char *path)
    msg_queue_clear(g_extern.msg_queue);
    msg_queue_push(g_extern.msg_queue, msg, 0, 180);
 
-#if defined(HAVE_THREADS)
-   deinit_autosave();
-#endif
+   rarch_main_command(RARCH_CMD_AUTOSAVE_DEINIT);
 
    /* TODO: Need to figure out what to do with subsystems case. */
    if (!*g_extern.subsystem)
@@ -2016,9 +2006,7 @@ void rarch_disk_control_append_image(const char *path)
       fill_pathnames();
    }
 
-#if defined(HAVE_THREADS)
-   init_autosave();
-#endif
+   rarch_main_command(RARCH_CMD_AUTOSAVE_INIT);
 
    rarch_disk_control_set_eject(false, false);
 }
@@ -2376,7 +2364,6 @@ static void main_clear_state(bool inited)
 
    for (i = 0; i < MAX_PLAYERS; i++)
       g_settings.input.libretro_device[i] = RETRO_DEVICE_JOYPAD;
-
 }
 
 void rarch_main_state_new(void)
@@ -2469,24 +2456,6 @@ static void validate_cpu_features(void)
 #endif
 }
 
-static void init_savefiles(void)
-{
-   g_extern.use_sram = g_extern.use_sram && !g_extern.sram_save_disable
-#ifdef HAVE_NETPLAY
-   && (!driver.netplay_data || !g_extern.netplay_is_client)
-#endif
-   ;
-
-   if (g_extern.use_sram)
-   {
-#if defined(HAVE_THREADS)
-      init_autosave();
-#endif
-   }
-   else
-      RARCH_LOG("SRAM will not be saved.\n");
-}
-
 static void deinit_core(void)
 {
    pretro_unload_game();
@@ -2561,10 +2530,7 @@ int rarch_main_init(int argc, char *argv[])
    init_system_av_info();
    init_drivers();
 
-#ifdef HAVE_COMMAND
-   init_command();
-#endif
-
+   rarch_main_command(RARCH_CMD_COMMAND_INIT);
    rarch_main_command(RARCH_CMD_REWIND_INIT);
    rarch_main_command(RARCH_CMD_CONTROLLERS_INIT);
    rarch_main_command(RARCH_CMD_RECORD_INIT);
@@ -2623,9 +2589,6 @@ static inline void limit_frame_time(void)
    else
       g_extern.frame_limit.last_frame_time = rarch_get_time_usec();
 }
-
-/* TODO - can we refactor command.c to do this? Should be local and not
- * stdin or network-based */
 
 void rarch_main_set_state(unsigned cmd)
 {
@@ -2802,7 +2765,6 @@ static void history_playlist_new(void)
             g_settings.content_history_size);
 }
 
-
 void rarch_main_command(unsigned cmd)
 {
    bool boolean = false;
@@ -2913,11 +2875,19 @@ void rarch_main_command(unsigned cmd)
          else
             rarch_main_command(RARCH_CMD_REWIND_DEINIT);
          break;
-      case RARCH_CMD_AUTOSAVE:
+      case RARCH_CMD_AUTOSAVE_DEINIT:
 #ifdef HAVE_THREADS
          deinit_autosave();
+#endif
+         break;
+      case RARCH_CMD_AUTOSAVE_INIT:
+#ifdef HAVE_THREADS
          init_autosave();
 #endif
+         break;
+      case RARCH_CMD_AUTOSAVE:
+         rarch_main_command(RARCH_CMD_AUTOSAVE_DEINIT);
+         rarch_main_command(RARCH_CMD_AUTOSAVE_INIT);
          break;
       case RARCH_CMD_AUDIO_STOP:
          if (!driver.audio_data)
@@ -3140,7 +3110,16 @@ void rarch_main_command(unsigned cmd)
          break;
       case RARCH_CMD_SAVEFILES_INIT:
          rarch_main_command(RARCH_CMD_SAVEFILES_DEINIT);
-         init_savefiles();
+
+         g_extern.use_sram = g_extern.use_sram && !g_extern.sram_save_disable
+#ifdef HAVE_NETPLAY
+            && (!driver.netplay_data || !g_extern.netplay_is_client)
+#endif
+            ;
+         if (g_extern.use_sram)
+            rarch_main_command(RARCH_CMD_AUTOSAVE_INIT);
+         else
+            RARCH_LOG("SRAM will not be saved.\n");
          break;
       case RARCH_CMD_MSG_QUEUE_DEINIT:
          if (g_extern.msg_queue)
@@ -3172,6 +3151,20 @@ void rarch_main_command(unsigned cmd)
          rarch_main_command(RARCH_CMD_NETPLAY_DEINIT);
 #ifdef HAVE_NETPLAY
          init_netplay();
+#endif
+         break;
+      case RARCH_CMD_COMMAND_DEINIT:
+#ifdef HAVE_COMMAND
+         if (driver.command)
+            rarch_cmd_free(driver.command);
+         driver.command = NULL;
+#endif
+         break;
+      case RARCH_CMD_COMMAND_INIT:
+         rarch_main_command(RARCH_CMD_COMMAND_DEINIT);
+
+#ifdef HAVE_COMMAND
+         init_command();
 #endif
          break;
    }
@@ -3326,14 +3319,10 @@ bool rarch_main_iterate(void)
 void rarch_main_deinit(void)
 {
    rarch_main_command(RARCH_CMD_NETPLAY_DEINIT);
-#ifdef HAVE_COMMAND
-   deinit_command();
-#endif
+   rarch_main_command(RARCH_CMD_COMMAND_DEINIT);
 
-#if defined(HAVE_THREADS)
    if (g_extern.use_sram)
-      deinit_autosave();
-#endif
+      rarch_main_command(RARCH_CMD_AUTOSAVE_DEINIT);
 
    rarch_main_command(RARCH_CMD_RECORD_DEINIT);
    rarch_main_command(RARCH_CMD_SAVEFILES);
