@@ -2982,10 +2982,14 @@ void rarch_main_command(unsigned cmd)
          rarch_main_command(RARCH_CMD_HISTORY_DEINIT);
          history_playlist_new();
          break;
-      case RARCH_CMD_CORE_INFO_INIT:
+      case RARCH_CMD_CORE_INFO_DEINIT:
          if (g_extern.core_info)
             core_info_list_free(g_extern.core_info);
          g_extern.core_info = NULL;
+         break;
+      case RARCH_CMD_CORE_INFO_INIT:
+         rarch_main_command(RARCH_CMD_CORE_INFO_DEINIT);
+
          if (*g_settings.libretro_directory &&
                !g_extern.core_info)
          {
