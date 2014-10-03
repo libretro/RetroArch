@@ -46,7 +46,7 @@
 
 #include "../file.h"
 
-static rarch_joypad_driver_t *joypad_drivers[] = {
+rarch_joypad_driver_t *joypad_drivers[] = {
 #ifndef IS_RETROLAUNCH
 #ifdef __CELLOS_LV2__
    &ps3_joypad,

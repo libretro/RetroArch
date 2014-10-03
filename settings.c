@@ -176,6 +176,43 @@ const char *config_get_default_input(void)
    }
 }
 
+const char *config_get_default_joypad(void)
+{
+   switch (JOYPAD_DEFAULT_DRIVER)
+   {
+      case JOYPAD_PS3:
+         return "ps3";
+      case JOYPAD_WINXINPUT:
+         return "winxinput";
+      case JOYPAD_GX:
+         return "gx";
+      case JOYPAD_XDK:
+         return "xdk";
+      case JOYPAD_PSP:
+         return "psp";
+      case JOYPAD_DINPUT:
+         return "dinput";
+      case JOYPAD_UDEV:
+         return "udev";
+      case JOYPAD_LINUXRAW:
+         return "linuxraw";
+      case JOYPAD_ANDROID:
+         return "android";
+      case JOYPAD_SDL:
+#ifdef HAVE_SDL2
+         return "sdl2";
+#else
+         return "sdl";
+#endif
+      case JOYPAD_APPLE:
+         return "apple";
+      case JOYPAD_QNX:
+         return "qnx";
+      default:
+         return NULL;
+   }
+}
+
 #ifdef HAVE_MENU
 const char *config_get_default_menu(void)
 {
@@ -251,6 +288,7 @@ void config_set_defaults(void)
    const char *def_audio = config_get_default_audio();
    const char *def_audio_resampler = config_get_default_audio_resampler();
    const char *def_input = config_get_default_input();
+   const char *def_joypad = config_get_default_joypad();
 #ifdef HAVE_MENU
    const char *def_menu  = config_get_default_menu();
 #endif
@@ -279,6 +317,9 @@ void config_set_defaults(void)
    if (def_input)
       strlcpy(g_settings.input.driver,
             def_input, sizeof(g_settings.input.driver));
+   if (def_joypad)
+      strlcpy(g_settings.input.joypad_driver,
+            def_input, sizeof(g_settings.input.joypad_driver));
 #ifdef HAVE_MENU
    if (def_menu)
       strlcpy(g_settings.menu.driver,

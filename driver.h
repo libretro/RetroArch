@@ -690,6 +690,8 @@ extern menu_ctx_driver_t menu_ctx_lakka;
 extern menu_ctx_driver_backend_t menu_ctx_backend_common;
 extern menu_ctx_driver_backend_t menu_ctx_backend_lakka;
 
+extern rarch_joypad_driver_t *joypad_drivers[];
+
 #define check_netplay_flip_func(trigger_input) check_netplay_flip(BIND_PRESSED(trigger_input, RARCH_NETPLAY_FLIP), BIND_PRESSED(trigger_input, RARCH_FULLSCREEN_TOGGLE_KEY))
 #define check_overlay_func(input, old_input) rarch_check_overlay(BIND_PRESSED(input, RARCH_OVERLAY_NEXT), BIND_PRESSED(old_input, RARCH_OVERLAY_NEXT))
 #define check_oneshot_func(trigger_input) check_oneshot(BIND_PRESSED(trigger_input, RARCH_FRAMEADVANCE), BIND_PRESSED(trigger_input, RARCH_REWIND))
