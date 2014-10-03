@@ -31,17 +31,12 @@
 #include <CoreVideo/CVOpenGLESTextureCache.h>
 #endif
 
-#define GLContextClass EAGLContext
-
 #elif defined(OSX)
-
-#define GLContextClass NSOpenGLContext
 
 /* RAGameView is a container on iOS; 
  * on OSX these are both the same object
  */
 #define g_view g_instance
-
 #endif
 
 #ifdef IOS
@@ -54,7 +49,6 @@ static UIView *g_pause_indicator_view;
 #endif
 
 static RAGameView* g_instance;
-static GLContextClass* g_context;
 
 @implementation RAGameView
 + (RAGameView*)get
@@ -91,17 +85,19 @@ static GLContextClass* g_context;
 
 #ifdef OSX
 
+static void apple_gfx_ctx_update(void);
+static void apple_gfx_ctx_flush_buffer(void);
+
 - (void)setFrame:(NSRect)frameRect
 {
    [super setFrame:frameRect];
 
-   if (g_context)
-      [g_context update];
+   apple_gfx_ctx_update();
 }
 
 - (void)display
 {
-   [g_context flushBuffer];
+   apple_gfx_ctx_flush_buffer();
 }
 
 /* Stop the annoying sound when pressing a key. */

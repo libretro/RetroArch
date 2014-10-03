@@ -3,6 +3,7 @@
 #include "../../gfx/gl_common.h"
 
 #ifdef IOS
+#define GLContextClass EAGLContext
 #define GLFrameworkID CFSTR("com.apple.opengles")
 #define RAScreen UIScreen
 
@@ -14,6 +15,7 @@
 
 #else
 
+
 @interface NSScreen (IOSCompat) @end
 @implementation NSScreen (IOSCompat)
 - (CGRect)bounds
@@ -24,11 +26,13 @@
 - (float) scale  { return 1.0f; }
 @end
 
+#define GLContextClass NSOpenGLContext
 #define GLFrameworkID CFSTR("com.apple.opengl")
 #define RAScreen NSScreen
 #endif
 
 static GLContextClass* g_hw_ctx;
+static GLContextClass* g_context;
 
 static int g_fast_forward_skips;
 static bool g_is_syncing = true;
@@ -63,6 +67,18 @@ static RAScreen* get_chosen_screen(void)
 	
    return (RAScreen*)[RAScreen.screens objectAtIndex:g_settings.video.monitor_index];
 #endif
+}
+
+static void apple_gfx_ctx_update(void)
+{
+    if (g_context)
+        [g_context update];
+}
+
+static void apple_gfx_ctx_flush_buffer(void)
+{
+    if (g_context)
+        [g_context flushBuffer];
 }
 
 static bool apple_gfx_ctx_init(void *data)
