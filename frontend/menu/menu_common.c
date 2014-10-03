@@ -76,7 +76,8 @@ static void menu_environment_get(int *argc, char *argv[],
    if (!g_extern.has_set_state_path)
       wrap_args->state_path    = *g_extern.savestate_dir ? g_extern.savestate_dir : NULL;
    wrap_args->content_path  = *g_extern.fullpath ? g_extern.fullpath : NULL;
-   wrap_args->libretro_path = *g_settings.libretro ? g_settings.libretro : NULL;
+   if (!g_extern.has_set_libretro)
+      wrap_args->libretro_path = *g_settings.libretro ? g_settings.libretro : NULL;
    wrap_args->touched       = true;
 }
 
