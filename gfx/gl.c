@@ -988,7 +988,7 @@ static void gl_frame_fbo(gl_t *gl, shader_backend_t *shader,
       shader->use(gl, i + 1);
       glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[i - 1]);
 
-      if (gl->shader->mipmap_input(i + 1))
+      if (shader->mipmap_input(i + 1))
          glGenerateMipmap(GL_TEXTURE_2D);
 
       glClear(GL_COLOR_BUFFER_BIT);
@@ -1034,7 +1034,7 @@ static void gl_frame_fbo(gl_t *gl, shader_backend_t *shader,
 
    glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[gl->fbo_pass - 1]);
 
-   if (gl->shader->mipmap_input(gl->fbo_pass + 1))
+   if (shader->mipmap_input(gl->fbo_pass + 1))
       glGenerateMipmap(GL_TEXTURE_2D);
 
    glClear(GL_COLOR_BUFFER_BIT);
