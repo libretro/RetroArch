@@ -3,7 +3,6 @@
 #include "../../gfx/gl_common.h"
 
 #ifdef IOS
-#define GLAPIType GFX_CTX_OPENGL_ES_API
 #define GLFrameworkID CFSTR("com.apple.opengles")
 #define RAScreen UIScreen
 
@@ -25,7 +24,6 @@
 - (float) scale  { return 1.0f; }
 @end
 
-#define GLAPIType GFX_CTX_OPENGL_API
 #define GLFrameworkID CFSTR("com.apple.opengl")
 #define RAScreen NSScreen
 #endif
@@ -139,8 +137,13 @@ static void apple_gfx_ctx_destroy(void *data)
 static bool apple_gfx_ctx_bind_api(void *data, enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
    (void)data;
-   if (api != GLAPIType)
+#if defined(IOS)
+   if (api != GFX_CTX_OPENGL_ES_API)
       return false;
+#elif defined(OSX)
+   if (api != GFX_CTX_OPENGL_API)
+      return false;
+#endif
     
    g_minor = minor;
    g_major = major;
