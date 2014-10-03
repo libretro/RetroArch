@@ -145,6 +145,9 @@ static void handle_touch_event(NSArray* touches)
    return [super _keyCommandForEvent:event];
 }
 
+#define GSEVENT_TYPE_KEYDOWN 10
+#define GSEVENT_TYPE_KEYUP 11
+
 - (void)sendEvent:(UIEvent *)event
 {
    [super sendEvent:event];

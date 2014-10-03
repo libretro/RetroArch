@@ -23,9 +23,6 @@
 #include "../../core_info.h"
 #include "../../settings_data.h"
 
-#define GSEVENT_TYPE_KEYDOWN 10
-#define GSEVENT_TYPE_KEYUP 11
-
 @protocol RetroArch_Platform
 - (void)loadingCore:(NSString*)core withFile:(const char*)file;
 - (void)unloadingCore;

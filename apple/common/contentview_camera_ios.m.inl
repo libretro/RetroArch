@@ -22,8 +22,9 @@ void event_process_camera_frame(void* pixelBufferPtr)
     // create a texture from our render target.
     // textureCache will be what you previously made with CVOpenGLESTextureCacheCreate
     ret = CVOpenGLESTextureCacheCreateTextureFromImage(kCFAllocatorDefault,
-                                                       textureCache, pixelBuffer, NULL, GL_TEXTURE_2D,
-                                                       GL_RGBA, (GLsizei)width, (GLsizei)height, GL_BGRA, GL_UNSIGNED_BYTE, 0, &renderTexture);
+          textureCache, pixelBuffer, NULL, GL_TEXTURE_2D,
+          GL_RGBA, (GLsizei)width, (GLsizei)height, GL_BGRA, GL_UNSIGNED_BYTE, 0, &renderTexture);
+
     if (!renderTexture || ret)
     {
         RARCH_ERR("ioscamera: CVOpenGLESTextureCacheCreateTextureFromImage failed.\n");
