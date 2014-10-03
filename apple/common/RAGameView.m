@@ -58,14 +58,31 @@ static GLContextClass* g_context;
    return g_instance;
 }
 
-#ifdef OSX
-
 - (id)init
 {
    self = [super init];
+   
+#if defined(OSX)
    [self setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
+#elif defined(IOS)
+   /* iOS Pause menu and lifecycle. */
+   UINib *xib = (UINib*)[UINib nibWithNibName:BOXSTRING("PauseIndicatorView") bundle:nil];
+   g_pause_indicator_view = [[xib instantiateWithOwner:[RetroArch_iOS get] options:nil] lastObject];
+   
+   g_view = [GLKView new];
+   g_view.multipleTouchEnabled = YES;
+   g_view.enableSetNeedsDisplay = NO;
+   [g_view addSubview:g_pause_indicator_view];
+   
+   self.view = g_view;
+   
+   [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(showPauseIndicator) name:UIApplicationWillEnterForegroundNotification object:nil];
+#endif
+   
    return self;
 }
+
+#ifdef OSX
 
 - (void)setFrame:(NSRect)frameRect
 {
@@ -96,26 +113,6 @@ static GLContextClass* g_context;
 }
 
 #elif defined(IOS)
-// < iOS Pause menu and lifecycle
-- (id)init
-{
-   UINib *xib;
-   self = [super init];
-
-   xib = (UINib*)[UINib nibWithNibName:BOXSTRING("PauseIndicatorView") bundle:nil];
-   g_pause_indicator_view = [[xib instantiateWithOwner:[RetroArch_iOS get] options:nil] lastObject];
-
-   g_view = [GLKView new];
-   g_view.multipleTouchEnabled = YES;
-   g_view.enableSetNeedsDisplay = NO;
-   [g_view addSubview:g_pause_indicator_view];
-
-   self.view = g_view;
-   
-   [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(showPauseIndicator) name:UIApplicationWillEnterForegroundNotification object:nil];
-   return self;
-}
-
 // Pause Menus
 - (void)viewDidAppear:(BOOL)animated
 {
