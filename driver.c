@@ -284,6 +284,12 @@ static const void *find_driver_nonempty(const char *label, int i,
       if (driver)
          strlcpy(str, input_drivers[i]->ident, sizeof_str);
    }
+   else if (!strcmp(label, "input_joypad_driver"))
+   {
+      driver = joypad_drivers[i];
+      if (driver)
+         strlcpy(str, joypad_drivers[i]->ident, sizeof_str);
+   }
    else if (!strcmp(label, "video_driver"))
    {
       driver = video_drivers[i];
@@ -693,7 +699,6 @@ static void find_input_driver(void)
          rarch_fail(1, "find_input_driver()");
    }
 }
-
 
 void init_drivers_pre(void)
 {

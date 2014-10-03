@@ -2304,7 +2304,7 @@ rarch_setting_t *setting_data_get_list(void)
 #ifdef HAVE_MENU
       CONFIG_STRING(g_settings.menu.driver,              "menu_driver",                "Menu Driver",                config_get_default_menu(), GROUP_NAME, SUBGROUP_NAME, NULL, NULL) WITH_FLAGS(SD_FLAG_IS_DRIVER)
 #endif
-      CONFIG_STRING(g_settings.input.joypad_driver,      "input_joypad_driver",        "Joypad Driver",              "", GROUP_NAME, SUBGROUP_NAME, NULL, NULL) WITH_FLAGS(SD_FLAG_IS_DRIVER)
+      CONFIG_STRING(g_settings.input.joypad_driver,      "input_joypad_driver",        "Joypad Driver",              config_get_default_joypad(), GROUP_NAME, SUBGROUP_NAME, NULL, NULL) WITH_FLAGS(SD_FLAG_IS_DRIVER)
       CONFIG_STRING(g_settings.input.keyboard_layout,    "input_keyboard_layout",      "Keyboard Layout",            "", GROUP_NAME, SUBGROUP_NAME, NULL, NULL) WITH_FLAGS(SD_FLAG_IS_DRIVER)
 
       END_SUB_GROUP()

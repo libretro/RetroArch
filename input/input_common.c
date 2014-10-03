@@ -46,7 +46,7 @@
 
 #include "../file.h"
 
-static rarch_joypad_driver_t *joypad_drivers[] = {
+rarch_joypad_driver_t *joypad_drivers[] = {
 #ifndef IS_RETROLAUNCH
 #ifdef __CELLOS_LV2__
    &ps3_joypad,
@@ -105,7 +105,7 @@ const rarch_joypad_driver_t *input_joypad_init_driver(const char *ident)
       }
    }
 
-   return NULL;
+   return input_joypad_init_first();
 }
 
 const rarch_joypad_driver_t *input_joypad_init_first(void)
