@@ -132,11 +132,9 @@ bool load_menu_content(void)
    if (driver.menu)
       update_libretro_info(&g_extern.menu.info);
 
-   rarch_main_command(RARCH_CMD_HISTORY_DEINIT);
-   rarch_main_command(RARCH_CMD_HISTORY_INIT);
-
    menu_shader_manager_init(driver.menu);
 
+   rarch_main_command(RARCH_CMD_HISTORY_INIT);
    rarch_main_command(RARCH_CMD_VIDEO_SET_ASPECT_RATIO);
    rarch_main_command(RARCH_CMD_RESUME);
 
