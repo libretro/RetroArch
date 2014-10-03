@@ -2289,13 +2289,6 @@ static void init_state(void)
    driver.audio_active = true;
 }
 
-static void deinit_log_file(void)
-{
-   if (g_extern.log_file)
-      fclose(g_extern.log_file);
-   g_extern.log_file = NULL;
-}
-
 static void free_temporary_content(void)
 {
    unsigned i;
@@ -2310,20 +2303,6 @@ static void free_temporary_content(void)
    string_list_free(g_extern.temporary_content);
 }
 
-static void deinit_temporary_content(void)
-{
-   if (g_extern.temporary_content)
-      free_temporary_content();
-   g_extern.temporary_content = NULL;
-}
-
-static void deinit_subsystem_fullpaths(void)
-{
-   if (g_extern.subsystem_fullpaths)
-      string_list_free(g_extern.subsystem_fullpaths);
-   g_extern.subsystem_fullpaths = NULL;
-}
-
 static void main_clear_state_extern(void)
 {
    /* XXX This memset is really dangerous.
@@ -2333,11 +2312,10 @@ static void main_clear_state_extern(void)
     * (b) it can zero pointers that the rest of 
     * the code will look at.
     */
-   deinit_temporary_content();
-   deinit_subsystem_fullpaths();
+   rarch_main_command(RARCH_CMD_TEMPORARY_CONTENT_DEINIT);
+   rarch_main_command(RARCH_CMD_SUBSYSTEM_FULLPATHS_DEINIT);
    rarch_main_command(RARCH_CMD_RECORD_DEINIT);
-
-   deinit_log_file();
+   rarch_main_command(RARCH_CMD_LOG_FILE_DEINIT);
    rarch_main_command(RARCH_CMD_HISTORY_DEINIT);
 
    memset(&g_extern, 0, sizeof(g_extern));
@@ -2372,7 +2350,7 @@ void rarch_main_state_new(void)
 void rarch_main_state_free(void)
 {
    rarch_main_command(RARCH_CMD_MSG_QUEUE_DEINIT);
-   deinit_log_file();
+   rarch_main_command(RARCH_CMD_LOG_FILE_DEINIT);
 
    main_clear_state(false);
 
@@ -3177,6 +3155,21 @@ void rarch_main_command(unsigned cmd)
          init_command();
 #endif
          break;
+      case RARCH_CMD_TEMPORARY_CONTENT_DEINIT:
+         if (g_extern.temporary_content)
+            free_temporary_content();
+         g_extern.temporary_content = NULL;
+         break;
+      case RARCH_CMD_SUBSYSTEM_FULLPATHS_DEINIT:
+         if (g_extern.subsystem_fullpaths)
+            string_list_free(g_extern.subsystem_fullpaths);
+         g_extern.subsystem_fullpaths = NULL;
+         break;
+      case RARCH_CMD_LOG_FILE_DEINIT:
+         if (g_extern.log_file)
+            fclose(g_extern.log_file);
+         g_extern.log_file = NULL;
+         break;
    }
 }
 
@@ -3345,8 +3338,8 @@ void rarch_main_deinit(void)
 
    deinit_core();
 
-   deinit_temporary_content();
-   deinit_subsystem_fullpaths();
+   rarch_main_command(RARCH_CMD_TEMPORARY_CONTENT_DEINIT);
+   rarch_main_command(RARCH_CMD_SUBSYSTEM_FULLPATHS_DEINIT);
    rarch_main_command(RARCH_CMD_SAVEFILES_DEINIT);
 
    g_extern.main_is_init = false;
