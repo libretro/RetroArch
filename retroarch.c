@@ -2353,12 +2353,12 @@ static void main_clear_state(bool inited)
    memset(&g_settings, 0, sizeof(g_settings));
 
    if (inited)
-      uninit_drivers();
+      rarch_main_command(RARCH_CMD_DRIVERS_DEINIT);
 
    main_clear_state_extern();
 
    if (inited)
-      init_drivers();
+      rarch_main_command(RARCH_CMD_DRIVERS_INIT);
 
    init_state();
 
@@ -2460,7 +2460,9 @@ static void deinit_core(void)
 {
    pretro_unload_game();
    pretro_deinit();
-   uninit_drivers();
+
+   rarch_main_command(RARCH_CMD_DRIVERS_DEINIT);
+
    uninit_libretro_sym();
 }
 
@@ -2528,8 +2530,8 @@ int rarch_main_init(int argc, char *argv[])
 
    retro_init_libretro_cbs(&driver.retro_ctx);
    init_system_av_info();
-   init_drivers();
 
+   rarch_main_command(RARCH_CMD_DRIVERS_INIT);
    rarch_main_command(RARCH_CMD_COMMAND_INIT);
    rarch_main_command(RARCH_CMD_REWIND_INIT);
    rarch_main_command(RARCH_CMD_CONTROLLERS_INIT);
@@ -3035,9 +3037,15 @@ void rarch_main_command(unsigned cmd)
                g_settings.input.overlay_opacity);
 #endif
          break;
-      case RARCH_CMD_RESET_CONTEXT:
+      case RARCH_CMD_DRIVERS_DEINIT:
          uninit_drivers();
+         break;
+      case RARCH_CMD_DRIVERS_INIT:
          init_drivers();
+         break;
+      case RARCH_CMD_RESET_CONTEXT:
+         rarch_main_command(RARCH_CMD_DRIVERS_DEINIT);
+         rarch_main_command(RARCH_CMD_DRIVERS_INIT);
          break;
       case RARCH_CMD_QUIT_RETROARCH:
          rarch_main_set_state(RARCH_ACTION_STATE_FORCE_QUIT);
