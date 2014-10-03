@@ -18,7 +18,8 @@
 #import "RetroArch_Apple.h"
 #include "../../general.h"
 
-// Define compatibility symbols and categories
+/* Define compatibility symbols and categories. */
+
 #ifdef IOS
 
 #ifdef HAVE_CAMERA
@@ -31,9 +32,16 @@
 #endif
 
 #define GLContextClass EAGLContext
+
 #elif defined(OSX)
+
 #define GLContextClass NSOpenGLContext
-#define g_view g_instance // < RAGameView is a container on iOS; on OSX these are both the same object
+
+/* RAGameView is a container on iOS; 
+ * on OSX these are both the same object
+ */
+#define g_view g_instance
+
 #endif
 
 #ifdef IOS
@@ -43,7 +51,6 @@
 #define ALMOST_INVISIBLE (.021f)
 static GLKView *g_view;
 static UIView *g_pause_indicator_view;
-
 #endif
 
 static RAGameView* g_instance;
@@ -97,7 +104,7 @@ static GLContextClass* g_context;
    [g_context flushBuffer];
 }
 
-// Stop the annoying sound when pressing a key
+/* Stop the annoying sound when pressing a key. */
 - (BOOL)acceptsFirstResponder
 {
    return YES;
@@ -113,9 +120,9 @@ static GLContextClass* g_context;
 }
 
 #elif defined(IOS)
-// Pause Menus
 - (void)viewDidAppear:(BOOL)animated
 {
+   /* Pause Menus. */
    [self showPauseIndicator];
 }
 
@@ -147,13 +154,13 @@ static GLContextClass* g_context;
    ];
 }
 
-// NOTE: This version runs on iOS6+
+/* NOTE: This version runs on iOS6+. */
 - (NSUInteger)supportedInterfaceOrientations
 {
    return apple_frontend_settings.orientation_flags;
 }
 
-// NOTE: This version runs on iOS2-iOS5, but not iOS6+
+/* NOTE: This version runs on iOS2-iOS5, but not iOS6+. */
 - (BOOL)shouldAutorotateToInterfaceOrientation:(UIInterfaceOrientation)interfaceOrientation
 {
    switch (interfaceOrientation)
