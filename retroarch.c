@@ -2240,11 +2240,8 @@ static bool do_state_checks(
 
    if (BIND_PRESSED(trigger_input, RARCH_SAVE_STATE_KEY))
       rarch_main_command(RARCH_CMD_SAVE_STATE);
-   else if (!g_extern.bsv.movie) /* Immutable */
-   {
-      if (BIND_PRESSED(trigger_input, RARCH_LOAD_STATE_KEY))
-         rarch_main_command(RARCH_CMD_LOAD_STATE);
-   }
+   else if (BIND_PRESSED(trigger_input, RARCH_LOAD_STATE_KEY))
+      rarch_main_command(RARCH_CMD_LOAD_STATE);
 
    check_rewind_func(input);
 
@@ -2255,27 +2252,17 @@ static bool do_state_checks(
 
    check_shader_dir_func(trigger_input);
 
-   if (g_extern.cheat)
-   {
-      if (BIND_PRESSED(trigger_input, RARCH_CHEAT_INDEX_PLUS))
-         cheat_manager_index_next(g_extern.cheat);
-      else if (BIND_PRESSED(trigger_input, RARCH_CHEAT_INDEX_MINUS))
-         cheat_manager_index_prev(g_extern.cheat);
-      else if (BIND_PRESSED(trigger_input, RARCH_CHEAT_TOGGLE))
-         cheat_manager_toggle(g_extern.cheat);
-   }
+   if (BIND_PRESSED(trigger_input, RARCH_CHEAT_INDEX_PLUS))
+      cheat_manager_index_next(g_extern.cheat);
+   else if (BIND_PRESSED(trigger_input, RARCH_CHEAT_INDEX_MINUS))
+      cheat_manager_index_prev(g_extern.cheat);
+   else if (BIND_PRESSED(trigger_input, RARCH_CHEAT_TOGGLE))
+      cheat_manager_toggle(g_extern.cheat);
 
-   if (g_extern.system.disk_control.get_num_images)
-   {
-      const struct retro_disk_control_callback *control = 
-         (const struct retro_disk_control_callback*)
-         &g_extern.system.disk_control;
-
-      if (BIND_PRESSED(trigger_input, RARCH_DISK_EJECT_TOGGLE))
-         check_disk_eject(control);
-      else if (BIND_PRESSED(trigger_input, RARCH_DISK_NEXT))
-         check_disk_next(control);
-   }
+   if (BIND_PRESSED(trigger_input, RARCH_DISK_EJECT_TOGGLE))
+      rarch_main_command(RARCH_CMD_DISK_EJECT_TOGGLE);
+   else if (BIND_PRESSED(trigger_input, RARCH_DISK_NEXT))
+      rarch_main_command(RARCH_CMD_DISK_NEXT);
 
    if (BIND_PRESSED(trigger_input, RARCH_RESET))
       rarch_main_command(RARCH_CMD_RESET);
@@ -2768,8 +2755,8 @@ void rarch_main_command(unsigned cmd)
 #endif
          break;
       case RARCH_CMD_LOAD_STATE:
-         /* Disallow savestate load when we absolutely 
-          * cannot change game state. */
+         /* Immutable - disallow savestate load when 
+          * we absolutely cannot change game state. */
          if (g_extern.bsv.movie)
             return;
 
@@ -3169,6 +3156,28 @@ void rarch_main_command(unsigned cmd)
          if (g_extern.log_file)
             fclose(g_extern.log_file);
          g_extern.log_file = NULL;
+         break;
+      case RARCH_CMD_DISK_EJECT_TOGGLE:
+         if (g_extern.system.disk_control.get_num_images)
+         {
+            const struct retro_disk_control_callback *control = 
+               (const struct retro_disk_control_callback*)
+               &g_extern.system.disk_control;
+
+            if (control)
+               check_disk_eject(control);
+         }
+         break;
+      case RARCH_CMD_DISK_NEXT:
+         if (g_extern.system.disk_control.get_num_images)
+         {
+            const struct retro_disk_control_callback *control = 
+               (const struct retro_disk_control_callback*)
+               &g_extern.system.disk_control;
+
+            if (!control)
+               check_disk_next(control);
+         }
          break;
    }
 }

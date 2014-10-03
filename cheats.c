@@ -381,6 +381,9 @@ static void cheat_manager_update(cheat_manager_t *handle)
 
 void cheat_manager_toggle(cheat_manager_t *handle)
 {
+   if (!handle)
+      return;
+
    handle->cheats[handle->ptr].state ^= true;
    cheat_manager_apply_cheats(handle);
    cheat_manager_update(handle);
@@ -388,12 +391,17 @@ void cheat_manager_toggle(cheat_manager_t *handle)
 
 void cheat_manager_index_next(cheat_manager_t *handle)
 {
+   if (!handle)
+      return;
    handle->ptr = (handle->ptr + 1) % handle->size;
    cheat_manager_update(handle);
 }
 
 void cheat_manager_index_prev(cheat_manager_t *handle)
 {
+   if (!handle)
+      return;
+
    if (handle->ptr == 0)
       handle->ptr = handle->size - 1;
    else
