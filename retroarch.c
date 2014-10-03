@@ -2969,13 +2969,14 @@ void rarch_main_command(unsigned cmd)
 
          rarch_main_command(RARCH_CMD_GPU_RECORD_DEINIT);
          break;
-      case RARCH_CMD_RECORD_INIT:
-         init_recording();
-         break;
       case RARCH_CMD_HISTORY_DEINIT:
          if (g_extern.history)
             content_playlist_free(g_extern.history);
          g_extern.history = NULL;
+         break;
+      case RARCH_CMD_RECORD_INIT:
+         rarch_main_command(RARCH_CMD_HISTORY_DEINIT);
+         init_recording();
          break;
       case RARCH_CMD_HISTORY_INIT:
          rarch_main_command(RARCH_CMD_HISTORY_DEINIT);
