@@ -212,20 +212,13 @@ static void apple_gfx_ctx_get_video_size(void *data, unsigned* width, unsigned* 
 static void apple_gfx_ctx_update_window_title(void *data)
 {
    static char buf[128], buf_fps[128];
-   bool fps_draw, got_text;
-    
-   (void)data;
-   (void)got_text;
-
-   fps_draw = g_settings.fps_show;
-   got_text = gfx_get_fps(buf, sizeof(buf), fps_draw ? buf_fps : NULL, sizeof(buf_fps));
-   static const char* const text = buf; // < Can't access buf directly in the block
-    (void)text;
+   bool got_text = gfx_get_fps(buf, sizeof(buf), g_settings.fps_show ? buf_fps : NULL, sizeof(buf_fps));
 #ifdef OSX
+   static const char* const text = buf; // < Can't access buf directly in the block
    if (got_text)
        [[g_view window] setTitle:[NSString stringWithCString:text encoding:NSUTF8StringEncoding]];
 #endif
-   if (fps_draw)
+   if (g_settings.fps_show)
       msg_queue_push(g_extern.msg_queue, buf_fps, 1, 1);
 }
 
@@ -241,11 +234,7 @@ static bool apple_gfx_ctx_has_focus(void *data)
 
 static void apple_gfx_ctx_swap_buffers(void *data)
 {
-   bool swap;
-   (void)data;
-   swap = --g_fast_forward_skips < 0;
-
-   if (!swap)
+   if (!(--g_fast_forward_skips < 0))
       return;
 
    [g_view display];
@@ -266,11 +255,11 @@ static gfx_ctx_proc_t apple_gfx_ctx_get_proc_address(const char *symbol_name)
 static void apple_gfx_ctx_check_window(void *data, bool *quit,
       bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
 {
+   unsigned new_width, new_height;
    (void)frame_count;
 
    *quit = false;
 
-   unsigned new_width, new_height;
    apple_gfx_ctx_get_video_size(data, &new_width, &new_height);
    if (new_width != *width || new_height != *height)
    {
