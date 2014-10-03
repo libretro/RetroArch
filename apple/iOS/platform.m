@@ -297,7 +297,6 @@ static void handle_touch_event(NSArray* touches)
 - (void)unloadingCore
 {
    [self showPauseMenu:self];
-   
    btpad_set_inquiry_state(true);
 }
 

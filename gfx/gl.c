@@ -2441,12 +2441,11 @@ static bool gl_alive(void *data)
 {
    bool quit = false, resize = false;
    gl_t *gl = (gl_t*)data;
-   gfx_ctx_driver_t *ctx_driver = (gfx_ctx_driver_t*)gl->ctx_driver;
     
    if (!gl)
       return false;
 
-   ctx_driver->check_window(gl, &quit,
+   gl->ctx_driver->check_window(gl, &quit,
          &resize, &gl->win_width, &gl->win_height,
          g_extern.frame_count);
 
