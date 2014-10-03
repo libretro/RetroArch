@@ -95,7 +95,7 @@ static GLContextClass* g_context;
 {
    [super setFrame:frameRect];
 
-   if (g_view && g_context)
+   if (g_context)
       [g_context update];
 }
 
