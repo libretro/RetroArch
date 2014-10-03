@@ -33,9 +33,6 @@
 #define APP_HAS_FOCUS ([[UIApplication sharedApplication] applicationState] == UIApplicationStateActive)
 
 #define GLContextClass EAGLContext
-#define GLAPIType GFX_CTX_OPENGL_ES_API
-#define GLFrameworkID CFSTR("com.apple.opengles")
-#define RAScreen UIScreen
 
 @interface EAGLContext (OSXCompat) @end
 @implementation EAGLContext (OSXCompat)
@@ -47,9 +44,6 @@
 #define APP_HAS_FOCUS ([NSApp isActive])
 
 #define GLContextClass NSOpenGLContext
-#define GLAPIType GFX_CTX_OPENGL_API
-#define GLFrameworkID CFSTR("com.apple.opengl")
-#define RAScreen NSScreen
 
 #define g_view g_instance // < RAGameView is a container on iOS; on OSX these are both the same object
 
@@ -77,8 +71,6 @@ static UIView *g_pause_indicator_view;
 
 static RAGameView* g_instance;
 static GLContextClass* g_context;
-static GLContextClass* g_hw_ctx;
-
 
 @implementation RAGameView
 + (RAGameView*)get
@@ -222,17 +214,8 @@ static GLContextClass* g_hw_ctx;
 
 @end
 
-#ifdef IOS
-void apple_bind_game_view_fbo(void)
-{
-   if (g_context)
-      [g_view bindDrawable];
-}
-
-#ifdef HAVE_CAMERA
+#if defined(HAVE_CAMERA) && defined(IOS)
 #include "apple_camera_ios.c.inl"
-#endif
-
 #endif
 
 #ifdef HAVE_LOCATION

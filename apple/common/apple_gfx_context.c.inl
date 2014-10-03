@@ -2,6 +2,18 @@
 #include "../../gfx/gfx_context.h"
 #include "../../gfx/gl_common.h"
 
+#ifdef IOS
+#define GLAPIType GFX_CTX_OPENGL_ES_API
+#define GLFrameworkID CFSTR("com.apple.opengles")
+#define RAScreen UIScreen
+#else
+#define GLAPIType GFX_CTX_OPENGL_API
+#define GLFrameworkID CFSTR("com.apple.opengl")
+#define RAScreen NSScreen
+#endif
+
+static GLContextClass* g_hw_ctx;
+
 static int g_fast_forward_skips;
 static bool g_is_syncing = true;
 static bool g_use_hw_ctx;
@@ -13,6 +25,14 @@ static NSOpenGLPixelFormat* g_format;
 
 static unsigned g_minor = 0;
 static unsigned g_major = 0;
+
+#ifdef IOS
+void apple_bind_game_view_fbo(void)
+{
+   if (g_context)
+      [g_view bindDrawable];
+}
+#endif
 
 static RAScreen* get_chosen_screen(void)
 {
