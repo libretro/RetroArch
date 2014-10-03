@@ -24,12 +24,7 @@
 #include "../../frontend/platform/platform_android.h"
 #include "../image/image.h"
 
-#include "../fonts/gl_font.h"
 #include <stdint.h>
-
-#ifdef HAVE_GLSL
-#include "../shader_glsl.h"
-#endif
 
 static bool g_use_hw_ctx;
 static EGLContext g_egl_hw_ctx;
