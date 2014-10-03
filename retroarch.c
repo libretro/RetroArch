@@ -2629,7 +2629,7 @@ int rarch_main_init(int argc, char *argv[])
    init_command();
 #endif
 
-   init_rewind();
+   rarch_main_command(RARCH_CMD_REWIND_INIT);
    init_controllers();
 
    rarch_main_command(RARCH_CMD_RECORD_INIT);
@@ -2769,7 +2769,7 @@ void rarch_main_set_state(unsigned cmd)
    }
 }
 
-/* Save a new config to a file. Filename is based
+/* Save a new configuration to a file. Filename is based
  * on heuristics to avoid typing. */
 
 static void save_core_config(void)
@@ -2952,11 +2952,17 @@ void rarch_main_command(unsigned cmd)
          /* Poll input to avoid possibly stale data to corrupt things. */
          driver.input->poll(driver.input_data);
          break;
-      case RARCH_CMD_REWIND:
+      case RARCH_CMD_REWIND_DEINIT:
+         deinit_rewind();
+         break;
+      case RARCH_CMD_REWIND_INIT:
+         init_rewind();
+         break;
+      case RARCH_CMD_REWIND_TOGGLE:
          if (g_settings.rewind_enable)
-            init_rewind();
+            rarch_main_command(RARCH_CMD_REWIND_INIT);
          else
-            deinit_rewind();
+            rarch_main_command(RARCH_CMD_REWIND_DEINIT);
          break;
       case RARCH_CMD_AUTOSAVE:
 #ifdef HAVE_THREADS
@@ -2967,7 +2973,6 @@ void rarch_main_command(unsigned cmd)
       case RARCH_CMD_AUDIO_STOP:
          if (!driver.audio_data)
             return;
-
          if (!driver.audio->alive(driver.audio_data))
             return;
 
@@ -3340,7 +3345,7 @@ void rarch_main_deinit(void)
 
    save_files();
 
-   deinit_rewind();
+   rarch_main_command(RARCH_CMD_REWIND_DEINIT);
    deinit_cheats();
 
    deinit_movie();
