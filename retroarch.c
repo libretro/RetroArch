@@ -2559,6 +2559,10 @@ void rarch_main_set_state(unsigned cmd)
    switch (cmd)
    {
       case RARCH_ACTION_STATE_MENU_RUNNING:
+#ifdef HAVE_MENU
+         if (!driver.menu)
+            return;
+
          /* Menu should always run with vsync on. */
          rarch_main_command(RARCH_CMD_VIDEO_SET_BLOCKING_STATE);
          /* Stop all rumbling before entering the menu. */
@@ -2567,32 +2571,26 @@ void rarch_main_set_state(unsigned cmd)
          if (g_settings.menu.pause_libretro)
             rarch_main_command(RARCH_CMD_AUDIO_STOP);
 
-#ifdef HAVE_MENU
-         if (driver.menu)
-         {
-            /* Override keyboard callback to redirect to menu instead.
-             * We'll use this later for something ...
-             * FIXME: This should probably be moved to menu_common somehow. */
-            g_extern.frontend_key_event = g_extern.system.key_event;
-            g_extern.system.key_event = menu_key_event;
+         /* Override keyboard callback to redirect to menu instead.
+          * We'll use this later for something ...
+          * FIXME: This should probably be moved to menu_common somehow. */
+         g_extern.frontend_key_event = g_extern.system.key_event;
+         g_extern.system.key_event = menu_key_event;
 
-            driver.menu->need_refresh = true;
-         }
-#endif
+         driver.menu->need_refresh = true;
          g_extern.system.frame_time_last = 0;
          g_extern.is_menu = true;
+#endif
          break;
       case RARCH_ACTION_STATE_LOAD_CONTENT:
 #ifdef HAVE_MENU
+         /* If content loading fails, we go back to menu. */
          if (!load_menu_content())
-         {
-            /* If content loading fails, we go back to menu. */
-            if (driver.menu)
-               rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING);
-         }
+            rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING);
 #endif
          break;
       case RARCH_ACTION_STATE_MENU_RUNNING_FINISHED:
+#ifdef HAVE_MENU
          g_extern.is_menu = false;
 
          driver_set_nonblock_state(driver.nonblock_state);
@@ -2605,6 +2603,7 @@ void rarch_main_set_state(unsigned cmd)
 
          /* Restore libretro keyboard callback. */
          g_extern.system.key_event = g_extern.frontend_key_event;
+#endif
          break;
       case RARCH_ACTION_STATE_QUIT:
          g_extern.system.shutdown = true;
