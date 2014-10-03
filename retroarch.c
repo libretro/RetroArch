@@ -2531,15 +2531,10 @@ static inline void update_frame_time(void)
 
 static void limit_frame_time(void)
 {
-   double effective_fps, mft_f;
    retro_time_t current = rarch_get_time_usec();
    retro_time_t target  = 0, to_sleep_ms = 0;
-   float ffr = g_settings.fastforward_ratio;
-
-   if (ffr <= 0.0)
-      ffr = -1.0;
-   effective_fps = (g_extern.system.av_info.timing.fps * ffr);
-   mft_f = 1000000.0f / effective_fps;
+   double effective_fps = (g_extern.system.av_info.timing.fps * g_settings.fastforward_ratio);
+   double mft_f = 1000000.0f / effective_fps;
 
    g_extern.frame_limit.minimum_frame_time = (retro_time_t) roundf(mft_f);
 

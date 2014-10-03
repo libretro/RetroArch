@@ -1087,6 +1087,12 @@ static bool config_load_file(const char *path, bool set_defaults)
       g_settings.slowmotion_ratio = 1.0f;
 
    CONFIG_GET_FLOAT(fastforward_ratio, "fastforward_ratio");
+
+   /* Sanitize fastforward_ratio value - previously range was -1
+    * and up (with 0 being skipped) */
+   if (g_settings.fastforward_ratio <= 0.0f)
+      g_settings.fastforward_ratio = 1.0f;
+
    CONFIG_GET_BOOL(fastforward_ratio_throttle_enable, "fastforward_ratio_throttle_enable");
 
    CONFIG_GET_BOOL(pause_nonactive, "pause_nonactive");
