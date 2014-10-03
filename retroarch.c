@@ -2097,20 +2097,23 @@ static void check_mute(void)
 {
    const char *msg = !g_extern.audio_data.mute ?
       "Audio muted." : "Audio unmuted.";
+
+   if (!driver.audio_data)
+      return;
+   if (!driver.audio_active)
+      return;
+
    g_extern.audio_data.mute = !g_extern.audio_data.mute;
 
    msg_queue_clear(g_extern.msg_queue);
    msg_queue_push(g_extern.msg_queue, msg, 1, 180);
 
-   if (driver.audio_data)
+   if (g_extern.audio_data.mute)
+      driver.audio->stop(driver.audio_data);
+   else if (!driver.audio->start(driver.audio_data))
    {
-      if (g_extern.audio_data.mute)
-         driver.audio->stop(driver.audio_data);
-      else if (!driver.audio->start(driver.audio_data))
-      {
-         RARCH_ERR("Failed to unmute audio.\n");
-         driver.audio_active = false;
-      }
+      RARCH_ERR("Failed to unmute audio.\n");
+      driver.audio_active = false;
    }
 
    RARCH_LOG("%s\n", msg);
@@ -2155,6 +2158,9 @@ static void check_grab_mouse_toggle(void)
 {
    static bool grab_mouse_state  = false;
 
+   if (!driver.input->grab_mouse)
+      return;
+
    grab_mouse_state = !grab_mouse_state;
    RARCH_LOG("Grab mouse state: %s.\n", grab_mouse_state ? "yes" : "no");
    driver.input->grab_mouse(driver.input_data, grab_mouse_state);
@@ -2196,28 +2202,19 @@ static bool do_state_checks(
    if (BIND_PRESSED(trigger_input, RARCH_SCREENSHOT))
       rarch_main_command(RARCH_CMD_TAKE_SCREENSHOT);
 
-   if (driver.audio_active)
-   {
-      if (BIND_PRESSED(trigger_input, RARCH_MUTE))
-         check_mute();
-   }
+   if (BIND_PRESSED(trigger_input, RARCH_MUTE))
+      check_mute();
 
    check_volume_func(input, old_input);
 
    check_turbo();
 
-   if (driver.input->grab_mouse)
-   {
-      if (BIND_PRESSED(trigger_input, RARCH_GRAB_MOUSE_TOGGLE))
-         check_grab_mouse_toggle();
-   }
+   if (BIND_PRESSED(trigger_input, RARCH_GRAB_MOUSE_TOGGLE))
+      check_grab_mouse_toggle();
 
 #ifdef HAVE_OVERLAY
-   if (driver.overlay)
-   {
-      if (BIND_PRESSED(trigger_input, RARCH_OVERLAY_NEXT))
-         input_overlay_next(driver.overlay);
-   }
+   if (BIND_PRESSED(trigger_input, RARCH_OVERLAY_NEXT))
+      input_overlay_next(driver.overlay);
 #endif
 
 #ifdef HAVE_NETPLAY

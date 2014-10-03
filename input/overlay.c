@@ -843,6 +843,9 @@ void input_overlay_poll_clear(input_overlay_t *ol)
 
 void input_overlay_next(input_overlay_t *ol)
 {
+   if (!ol)
+      return;
+
    ol->index = ol->next_index;
    ol->active = &ol->overlays[ol->index];
 
