@@ -426,7 +426,7 @@ static void lakka_draw_subitems(int i, int j)
             && strcmp(g_extern.fullpath, active_item->rom) == 0)
       {
          lakka_draw_icon(textures[TEXTURE_RESUME].id, 
-            margin_left + hspacing*(i+2.25) +
+            margin_left + hspacing*(i+1) + icon_size*2 +
             all_categories_x - icon_size/2.0,
             margin_top + subitem->y + icon_size/2.0,
             subitem->alpha,
@@ -446,12 +446,13 @@ static void lakka_draw_subitems(int i, int j)
             strcmp(g_extern.fullpath, active_item->rom) == 0))
       {
          lakka_draw_icon(subitem->icon, 
-               margin_left + hspacing*(i+2.25) +
+               margin_left + hspacing*(i+1) + icon_size*2 +
                all_categories_x - icon_size/2.0, 
                margin_top + subitem->y + icon_size/2.0, 
                subitem->alpha, 
                0, 
                subitem->zoom);
+
          lakka_draw_text(subitem->name, 
                margin_left + hspacing * (i+2.25) +
                all_categories_x + label_margin_left, 
