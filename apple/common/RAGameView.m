@@ -50,6 +50,8 @@ static UIView *g_pause_indicator_view;
 
 static RAGameView* g_instance;
 
+#include "apple_gfx_context.c.inl"
+
 @implementation RAGameView
 + (RAGameView*)get
 {
@@ -198,5 +200,3 @@ static void apple_gfx_ctx_flush_buffer(void);
 #ifdef HAVE_LOCATION
 #include "apple_location.c.inl"
 #endif
-
-#include "apple_gfx_context.c.inl"

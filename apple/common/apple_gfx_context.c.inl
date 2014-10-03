@@ -71,14 +71,18 @@ static RAScreen* get_chosen_screen(void)
 
 static void apple_gfx_ctx_update(void)
 {
+#ifdef OSX
     if (g_context)
         [g_context update];
+#endif
 }
 
 static void apple_gfx_ctx_flush_buffer(void)
 {
+#ifdef OSX
     if (g_context)
         [g_context flushBuffer];
+#endif
 }
 
 static bool apple_gfx_ctx_init(void *data)
@@ -230,15 +234,15 @@ static void apple_gfx_ctx_get_video_size(void *data, unsigned* width, unsigned* 
 
 static void apple_gfx_ctx_update_window_title(void *data)
 {
+#ifdef OSX
    static char buf[128], buf_fps[128];
    bool got_text = gfx_get_fps(buf, sizeof(buf), g_settings.fps_show ? buf_fps : NULL, sizeof(buf_fps));
-#ifdef OSX
    static const char* const text = buf; // < Can't access buf directly in the block
    if (got_text)
        [[g_view window] setTitle:[NSString stringWithCString:text encoding:NSUTF8StringEncoding]];
+    if (g_settings.fps_show)
+        msg_queue_push(g_extern.msg_queue, buf_fps, 1, 1);
 #endif
-   if (g_settings.fps_show)
-      msg_queue_push(g_extern.msg_queue, buf_fps, 1, 1);
 }
 
 static bool apple_gfx_ctx_has_focus(void *data)
