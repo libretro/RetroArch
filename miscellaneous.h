@@ -121,8 +121,6 @@ typedef struct
 #define BIT_GET(a, bit)   ((a).data[(bit) >> 5] & (1 << ((bit) & 31)))
 #define BIT_CLEAR_ALL(a)  memset(&(a), 0, sizeof(a));
 
-#define BIND_PRESSED(a, bit) (BIT64_GET(a, bit))
-
-#define BIT64_GET(a, bit) ((a) & (1ULL << ((bit))))
+#define BIND_PRESSED(a, bit) ((a) & (1ULL << ((bit))))
 
 #endif
