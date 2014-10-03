@@ -2529,14 +2529,13 @@ static inline void update_frame_time(void)
    g_extern.system.frame_time.callback(delta);
 }
 
-static inline void limit_frame_time(void)
+static void limit_frame_time(void)
 {
-   float ffr;
    double effective_fps, mft_f;
    retro_time_t current = rarch_get_time_usec();
    retro_time_t target  = 0, to_sleep_ms = 0;
+   float ffr = g_settings.fastforward_ratio;
 
-   ffr = g_settings.fastforward_ratio;
    if (ffr <= 0.0)
       ffr = -1.0;
    effective_fps = (g_extern.system.av_info.timing.fps * ffr);
@@ -3188,12 +3187,6 @@ void rarch_main_command(unsigned cmd)
    }
 }
 
-static inline void do_limit_frame_time(void)
-{
-   if (g_settings.fastforward_ratio_throttle_enable)
-      limit_frame_time();
-}
-
 #ifdef HAVE_MENU
 static void do_state_check_menu_toggle(void)
 {
@@ -3214,7 +3207,8 @@ static bool do_menu_oneshot(
    if (!menu_iterate(input, old_input, trigger_input))
       rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED);
    
-   do_limit_frame_time();
+   if (g_settings.fastforward_ratio_throttle_enable)
+      limit_frame_time();
 
    return true;
 }
@@ -3329,7 +3323,8 @@ bool rarch_main_iterate(void)
    unlock_autosave();
 #endif
 
-   do_limit_frame_time();
+   if (g_settings.fastforward_ratio_throttle_enable)
+      limit_frame_time();
 
    return true;
 }
