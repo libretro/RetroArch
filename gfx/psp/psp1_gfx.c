@@ -118,33 +118,104 @@ typedef struct psp1_video
 #define PSP_FRAME_VERTEX_COUNT   (PSP_FRAME_SLICE_COUNT * 2)
 
 static inline void psp_set_screen_coords (psp1_sprite_t* framecoords, 
-      int x, int y, int width, int height)
+      int x, int y, int width, int height, unsigned rotation)
 {
    int i;
    int current_column = 0;
+   float x0, y0, step_x, step_y;
 
-   float x0 = x;
-   float y0 = y;
-   float step_x = ((float) width)  / PSP_FRAME_COLUMNS_COUNT;
-   float step_y = ((float) height) / PSP_FRAME_ROWS_COUNT;
-
-   for (i=0; i < PSP_FRAME_SLICE_COUNT; i++)
+   if (rotation == 0)
    {
-      framecoords[i].v0.x = x0;
-      framecoords[i].v0.y = y0;
+      x0 = x;
+      y0 = y;
+      step_x = ((float) width)  / PSP_FRAME_COLUMNS_COUNT;
+      step_y = ((float) height) / PSP_FRAME_ROWS_COUNT;
 
-      x0 += step_x;
-
-      framecoords[i].v1.x = x0;
-      framecoords[i].v1.y = y0 + step_y;
-
-      if (++current_column == PSP_FRAME_COLUMNS_COUNT)
+      for (i=0; i < PSP_FRAME_SLICE_COUNT; i++)
       {
-         x0 = x;
-         y0 += step_y;
-         current_column = 0;
+         framecoords[i].v0.x = x0;
+         framecoords[i].v0.y = y0;
+
+         framecoords[i].v1.x = (x0 += step_x);
+         framecoords[i].v1.y = y0 + step_y;
+
+         if (++current_column == PSP_FRAME_COLUMNS_COUNT)
+         {
+            x0 = x;
+            y0 += step_y;
+            current_column = 0;
+         }
       }
    }
+   else if (rotation == 1) /* 90° */
+   {
+      x0 = x + width;
+      y0 = y;
+      step_x = -((float) width) / PSP_FRAME_ROWS_COUNT;
+      step_y = ((float) height)  / PSP_FRAME_COLUMNS_COUNT;
+
+      for (i=0; i < PSP_FRAME_SLICE_COUNT; i++)
+      {
+         framecoords[i].v0.x = x0;
+         framecoords[i].v0.y = y0;
+
+         framecoords[i].v1.x = x0 + step_x;
+         framecoords[i].v1.y = (y0 += step_y);
+
+         if (++current_column == PSP_FRAME_COLUMNS_COUNT)
+         {
+            y0 = y;
+            x0 += step_x;
+            current_column = 0;
+         }
+      }
+   }
+   else if (rotation == 2) /* 180° */
+   {
+      x0 = x + width;
+      y0 = y + height;
+      step_x = -((float) width)  / PSP_FRAME_COLUMNS_COUNT;
+      step_y = -((float) height) / PSP_FRAME_ROWS_COUNT;
+
+      for (i=0; i < PSP_FRAME_SLICE_COUNT; i++)
+      {
+         framecoords[i].v0.x = x0;
+         framecoords[i].v0.y = y0;
+
+         framecoords[i].v1.x = (x0 += step_x);
+         framecoords[i].v1.y = y0 + step_y;
+
+         if (++current_column == PSP_FRAME_COLUMNS_COUNT)
+         {
+            x0 = x + width;
+            y0 += step_y;
+            current_column = 0;
+         }
+      }
+   }
+   else /* 270° */
+   {
+      x0 = x;
+      y0 = y + height;
+      step_x = ((float) width)  / PSP_FRAME_ROWS_COUNT;
+      step_y = -((float) height) / PSP_FRAME_COLUMNS_COUNT;
+
+      for (i=0; i < PSP_FRAME_SLICE_COUNT; i++)
+      {
+         framecoords[i].v0.x = x0;
+         framecoords[i].v0.y = y0;
+         framecoords[i].v1.x = x0 + step_x;
+         framecoords[i].v1.y = (y0 += step_y);
+
+         if (++current_column == PSP_FRAME_COLUMNS_COUNT)
+         {
+            y0 = y + height;
+            x0 += step_x;
+            current_column = 0;
+         }
+      }
+   }
+
 }
 
 static inline void psp_set_tex_coords (psp1_sprite_t* framecoords,
@@ -174,7 +245,7 @@ static inline void psp_set_tex_coords (psp1_sprite_t* framecoords,
       }
    }
 }
-static void psp_update_frame_coords(psp1_video_t* psp);
+
 static void psp_update_viewport(psp1_video_t* psp);
 
 static void psp_on_vblank(u32 sub, psp1_video_t *psp)
@@ -564,7 +635,7 @@ static void psp_set_texture_frame(void *data, const void *frame, bool rgb32,
 #endif
 
    psp_set_screen_coords(psp->menu.frame_coords, 0, 0,
-         SCEGU_SCR_WIDTH, SCEGU_SCR_HEIGHT);
+         SCEGU_SCR_WIDTH, SCEGU_SCR_HEIGHT, 0);
    psp_set_tex_coords(psp->menu.frame_coords, width, height);
 
    sceKernelDcacheWritebackRange(frame, width * height * 2);
@@ -603,46 +674,10 @@ static void psp_set_texture_enable(void *data, bool state, bool full_screen)
 
 }
 
-static inline void psp_update_frame_coords(psp1_video_t* psp)
-{
-   /* TODO: no rotation for now */
-#if 0
-   psp1_vertex_t *v0, *v1;
-
-   if (psp->rotation & 0x2)
-   {
-      v0 = &psp->frame_coords->v1;
-      v1 = &psp->frame_coords->v0;
-   }
-   else
-   {
-      v0 = &psp->frame_coords->v0;
-      v1 = &psp->frame_coords->v1;
-   }
-
-   if (psp->rotation & 0x1)
-   {
-      v0->x = psp->vp.x + psp->vp.width;
-      v1->x = psp->vp.x;
-   }
-   else
-   {
-      v0->x = psp->vp.x;
-      v1->x = psp->vp.x + psp->vp.width;
-   }
-
-   v0->y = psp->vp.y;
-   v1->y = psp->vp.y + psp->vp.height;
-#endif
-
-   psp_set_screen_coords(psp->frame_coords, psp->vp.x,
-         psp->vp.y, psp->vp.width, psp->vp.height);
-}
-
 static void psp_update_viewport(psp1_video_t* psp)
 {
    int x, y;
-   float device_aspect = SCEGU_SCR_WIDTH / SCEGU_SCR_HEIGHT;
+   float device_aspect = ((float)SCEGU_SCR_WIDTH) / SCEGU_SCR_HEIGHT;
    float width = SCEGU_SCR_WIDTH;
    float height = SCEGU_SCR_HEIGHT;
    x = 0;
@@ -710,7 +745,8 @@ static void psp_update_viewport(psp1_video_t* psp)
       psp->vp.height = height;
    }
 
-   psp_update_frame_coords(psp);
+   psp_set_screen_coords(psp->frame_coords, psp->vp.x,
+         psp->vp.y, psp->vp.width, psp->vp.height, psp->rotation);
 
    psp->should_resize = false;
 
