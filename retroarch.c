@@ -1127,20 +1127,6 @@ static inline bool save_files(void)
    return true;
 }
 
-
-static void init_msg_queue(void)
-{
-   if (!g_extern.msg_queue)
-      rarch_assert(g_extern.msg_queue = msg_queue_new(8));
-}
-
-static void deinit_msg_queue(void)
-{
-   if (g_extern.msg_queue)
-      msg_queue_free(g_extern.msg_queue);
-   g_extern.msg_queue = NULL;
-}
-
 static void init_cheats(void)
 {
    bool allow_cheats = true;
@@ -1154,13 +1140,6 @@ static void init_cheats(void)
 
    if (*g_settings.cheat_database)
       g_extern.cheat = cheat_manager_new(g_settings.cheat_database);
-}
-
-static void deinit_cheats(void)
-{
-   if (g_extern.cheat)
-      cheat_manager_free(g_extern.cheat);
-   g_extern.cheat = NULL;
 }
 
 static void init_rewind(void)
@@ -2392,13 +2371,6 @@ static void deinit_subsystem_fullpaths(void)
    g_extern.subsystem_fullpaths = NULL;
 }
 
-static void history_playlist_free(void)
-{
-   if (g_extern.history)
-      content_playlist_free(g_extern.history);
-   g_extern.history = NULL;
-}
-
 static void main_clear_state_extern(void)
 {
    /* XXX This memset is really dangerous.
@@ -2413,7 +2385,7 @@ static void main_clear_state_extern(void)
    rarch_main_command(RARCH_CMD_RECORD_DEINIT);
 
    deinit_log_file();
-   history_playlist_free();
+   rarch_main_command(RARCH_CMD_HISTORY_DEINIT);
 
    memset(&g_extern, 0, sizeof(g_extern));
 }
@@ -2442,13 +2414,12 @@ static void main_clear_state(bool inited)
 void rarch_main_state_new(void)
 {
    main_clear_state(g_extern.main_is_init);
-
-   init_msg_queue();
+   rarch_main_command(RARCH_CMD_MSG_QUEUE_INIT);
 }
 
 void rarch_main_state_free(void)
 {
-   deinit_msg_queue();
+   rarch_main_command(RARCH_CMD_MSG_QUEUE_DEINIT);
    deinit_log_file();
 
    main_clear_state(false);
@@ -2530,7 +2501,7 @@ static void validate_cpu_features(void)
 #endif
 }
 
-static void init_sram(void)
+static void init_savefiles(void)
 {
    g_extern.use_sram = g_extern.use_sram && !g_extern.sram_save_disable
 #ifdef HAVE_NETPLAY
@@ -2630,13 +2601,10 @@ int rarch_main_init(int argc, char *argv[])
 #endif
 
    rarch_main_command(RARCH_CMD_REWIND_INIT);
-   init_controllers();
-
+   rarch_main_command(RARCH_CMD_CONTROLLERS_INIT);
    rarch_main_command(RARCH_CMD_RECORD_INIT);
-
-   init_sram();
-
-   init_cheats();
+   rarch_main_command(RARCH_CMD_SAVEFILES_INIT);
+   rarch_main_command(RARCH_CMD_CHEATS_INIT);
 
    g_extern.error_in_init = false;
    g_extern.main_is_init  = true;
@@ -2859,9 +2827,6 @@ static void history_playlist_new(void)
 {
    bool init_history = true;
 
-   if (g_extern.history)
-      return;
-
    if (!path_file_exists(g_settings.content_history_path))
       init_history = write_empty_file(
             g_settings.content_history_path);
@@ -2910,14 +2875,18 @@ void rarch_main_command(unsigned cmd)
 #endif
          main_state(cmd);
          break;
+      case RARCH_CMD_CONTROLLERS_INIT:
+         init_controllers();
+         break;
       case RARCH_CMD_RESET:
          RARCH_LOG(RETRO_LOG_RESETTING_CONTENT);
          msg_queue_clear(g_extern.msg_queue);
          msg_queue_push(g_extern.msg_queue, "Reset.", 1, 120);
          pretro_reset();
+
          /* bSNES since v073r01 resets controllers to JOYPAD
           * after a reset, so just enforce it here. */
-         init_controllers();
+         rarch_main_command(RARCH_CMD_CONTROLLERS_INIT);
          break;
       case RARCH_CMD_SAVE_STATE:
          if (g_settings.savestate_auto_index)
@@ -2951,6 +2920,15 @@ void rarch_main_command(unsigned cmd)
 
          /* Poll input to avoid possibly stale data to corrupt things. */
          driver.input->poll(driver.input_data);
+         break;
+      case RARCH_CMD_CHEATS_INIT:
+         rarch_main_command(RARCH_CMD_CHEATS_DEINIT);
+         init_cheats();
+         break;
+      case RARCH_CMD_CHEATS_DEINIT:
+         if (g_extern.cheat)
+            cheat_manager_free(g_extern.cheat);
+         g_extern.cheat = NULL;
          break;
       case RARCH_CMD_REWIND_DEINIT:
          deinit_rewind();
@@ -3053,11 +3031,14 @@ void rarch_main_command(unsigned cmd)
 
          rarch_main_command(RARCH_CMD_GPU_RECORD_DEINIT);
          break;
-      case RARCH_CMD_HISTORY_INIT:
-         history_playlist_new();
-         break;
       case RARCH_CMD_HISTORY_DEINIT:
-         history_playlist_free();
+         if (g_extern.history)
+            content_playlist_free(g_extern.history);
+         g_extern.history = NULL;
+         break;
+      case RARCH_CMD_HISTORY_INIT:
+         rarch_main_command(RARCH_CMD_HISTORY_DEINIT);
+         history_playlist_new();
          break;
       case RARCH_CMD_CORE_INFO_INIT:
          if (g_extern.core_info)
@@ -3177,6 +3158,22 @@ void rarch_main_command(unsigned cmd)
          dir_list_free(g_extern.shader_dir.list);
          g_extern.shader_dir.list = NULL;
          g_extern.shader_dir.ptr  = 0;
+         break;
+      case RARCH_CMD_SAVEFILES_INIT:
+         init_savefiles();
+         break;
+      case RARCH_CMD_SAVEFILES_DEINIT:
+         save_files();
+         break;
+      case RARCH_CMD_MSG_QUEUE_DEINIT:
+         if (g_extern.msg_queue)
+            msg_queue_free(g_extern.msg_queue);
+         g_extern.msg_queue = NULL;
+         break;
+      case RARCH_CMD_MSG_QUEUE_INIT:
+         rarch_main_command(RARCH_CMD_MSG_QUEUE_DEINIT);
+         if (!g_extern.msg_queue)
+            rarch_assert(g_extern.msg_queue = msg_queue_new(8));
          break;
    }
 }
@@ -3342,11 +3339,10 @@ void rarch_main_deinit(void)
 #endif
 
    rarch_main_command(RARCH_CMD_RECORD_DEINIT);
-
-   save_files();
+   rarch_main_command(RARCH_CMD_SAVEFILES_DEINIT);
 
    rarch_main_command(RARCH_CMD_REWIND_DEINIT);
-   deinit_cheats();
+   rarch_main_command(RARCH_CMD_CHEATS_DEINIT);
 
    deinit_movie();
 
