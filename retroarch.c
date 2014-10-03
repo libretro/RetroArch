@@ -1588,15 +1588,15 @@ static void main_state(unsigned cmd)
 
 bool rarch_check_fullscreen(bool pressed)
 {
-   if (pressed)
-   {
-      /* If we go fullscreen we drop all drivers and 
-       * reinitialize to be safe. */
-      g_settings.video.fullscreen = !g_settings.video.fullscreen;
-      rarch_main_command(RARCH_CMD_REINIT);
-   }
+   if (!pressed)
+      return false;
 
-   return pressed;
+   /* If we go fullscreen we drop all drivers and 
+    * reinitialize to be safe. */
+   g_settings.video.fullscreen = !g_settings.video.fullscreen;
+   rarch_main_command(RARCH_CMD_REINIT);
+
+   return true;
 }
 
 static void state_slot(void)
