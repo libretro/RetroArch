@@ -446,7 +446,7 @@ void driver_camera_poll(void)
             g_extern.system.camera_callback.frame_opengl_texture);
 }
 
-void init_camera(void)
+static void init_camera(void)
 {
    /* Resource leaks will follow if camera is initialized twice. */
    if (driver.camera_data)
@@ -472,7 +472,7 @@ void init_camera(void)
       g_extern.system.camera_callback.initialized();
 }
 
-void uninit_camera(void)
+static void uninit_camera(void)
 {
    if (driver.camera_data && driver.camera)
    {
@@ -484,8 +484,6 @@ void uninit_camera(void)
    }
    driver.camera_data = NULL;
 }
-
-
 
 static void find_location_driver(void)
 {
@@ -553,7 +551,7 @@ bool driver_location_get_position(double *lat, double *lon,
    return false;
 }
 
-void init_location(void)
+static void init_location(void)
 {
    /* Resource leaks will follow if location interface is initialized twice. */
    if (driver.location_data)
@@ -573,7 +571,7 @@ void init_location(void)
       g_extern.system.location_callback.initialized();
 }
 
-void uninit_location(void)
+static void uninit_location(void)
 {
    if (driver.location_data && driver.location)
    {
@@ -587,8 +585,7 @@ void uninit_location(void)
 }
 
 #ifdef HAVE_MENU
-
-void find_menu_driver(void)
+static void find_menu_driver(void)
 {
    int i = find_driver_index("menu_driver", g_settings.menu.driver);
    if (i >= 0)
@@ -874,148 +871,7 @@ static void init_menu(void)
 }
 #endif
 
-void init_drivers(void)
-{
-   driver.video_data_own = false;
-   driver.audio_data_own = false;
-   driver.input_data_own = false;
-   driver.camera_data_own = false;
-   driver.location_data_own = false;
-   driver.osk_data_own = false;
-#ifdef HAVE_MENU
-   /* By default, we want the menu to persist through driver reinits. */
-   driver.menu_data_own = true;
-#endif
-
-   adjust_system_rates();
-
-   g_extern.frame_count = 0;
-
-   init_video_input();
-
-   if (!driver.video_cache_context_ack
-         && g_extern.system.hw_render_callback.context_reset)
-      g_extern.system.hw_render_callback.context_reset();
-   driver.video_cache_context_ack = false;
-
-   init_audio();
-
-   /* Only initialize camera driver if we're ever going to use it. */
-   if (driver.camera_active)
-      init_camera();
-
-   /* Only initialize location driver if we're ever going to use it. */
-   if (driver.location_active)
-      init_location();
-
-   init_osk();
-
-#ifdef HAVE_MENU
-   init_menu();
-
-   if (driver.menu && driver.menu_ctx && driver.menu_ctx->context_reset)
-      driver.menu_ctx->context_reset(driver.menu);
-#endif
-
-   /* Keep non-throttled state as good as possible. */
-   if (driver.nonblock_state)
-      driver_set_nonblock_state(driver.nonblock_state);
-
-   g_extern.system.frame_time_last = 0;
-}
-
-void rarch_deinit_filter(void)
-{
-   rarch_softfilter_free(g_extern.filter.filter);
-   free(g_extern.filter.buffer);
-   memset(&g_extern.filter, 0, sizeof(g_extern.filter));
-}
-
-static void deinit_pixel_converter(void)
-{
-   scaler_ctx_gen_reset(&driver.scaler);
-   memset(&driver.scaler, 0, sizeof(driver.scaler));
-   free(driver.scaler_out);
-   driver.scaler_out = NULL;
-}
-
-static void compute_monitor_fps_statistics(void)
-{
-   double avg_fps = 0.0, stddev = 0.0;
-   unsigned samples = 0;
-
-   if (g_settings.video.threaded)
-   {
-      RARCH_LOG("Monitor FPS estimation is disabled for threaded video.\n");
-      return;
-   }
-
-   if (g_extern.measure_data.frame_time_samples_count <
-         2 * MEASURE_FRAME_TIME_SAMPLES_COUNT)
-   {
-      RARCH_LOG(
-            "Does not have enough samples for monitor refresh rate estimation. Requires to run for at least %u frames.\n",
-            2 * MEASURE_FRAME_TIME_SAMPLES_COUNT);
-      return;
-   }
-
-   if (driver_monitor_fps_statistics(&avg_fps, &stddev, &samples))
-   {
-      RARCH_LOG("Average monitor Hz: %.6f Hz. (%.3f %% frame time deviation, based on %u last samples).\n",
-            avg_fps, 100.0 * stddev, samples);
-   }
-}
-
-void uninit_drivers(void)
-{
-   uninit_audio();
-
-   if (g_extern.system.hw_render_callback.context_destroy &&
-         !driver.video_cache_context)
-      g_extern.system.hw_render_callback.context_destroy();
-
-#ifdef HAVE_MENU
-   if (driver.menu && driver.menu_ctx && driver.menu_ctx->context_destroy)
-      driver.menu_ctx->context_destroy(driver.menu);
-
-   if (!driver.menu_data_own)
-   {
-      menu_free(driver.menu);
-      driver.menu = NULL;
-   }
-#endif
-
-   uninit_video_input();
-
-   if (!driver.video_data_own)
-      driver.video_data = NULL;
-
-   if (!driver.camera_data_own)
-   {
-      uninit_camera();
-      driver.camera_data = NULL;
-   }
-
-   if (!driver.location_data_own)
-   {
-      uninit_location();
-      driver.location_data = NULL;
-   }
-   
-   if (!driver.osk_data_own)
-   {
-      uninit_osk();
-      driver.osk_data = NULL;
-   }
-
-   if (!driver.input_data_own)
-      driver.input_data = NULL;
-
-   if (!driver.audio_data_own)
-      driver.audio_data = NULL;
-}
-
-void init_audio(void)
+static void init_audio(void)
 {
    size_t max_bufsamples = AUDIO_CHUNK_SIZE_NONBLOCKING * 2;
    size_t outsamples_max;
@@ -1147,128 +1003,52 @@ void init_audio(void)
    }
 }
 
-
-static void compute_audio_buffer_statistics(void)
+static void deinit_pixel_converter(void)
 {
-   unsigned i, low_water_size, high_water_size, avg, stddev;
-   float avg_filled, deviation;
-   uint64_t accum = 0, accum_var = 0;
-   unsigned low_water_count = 0, high_water_count = 0;
-   unsigned samples = min(g_extern.measure_data.buffer_free_samples_count,
-         AUDIO_BUFFER_FREE_SAMPLES_COUNT);
-
-   if (samples < 3)
-      return;
-
-   for (i = 1; i < samples; i++)
-      accum += g_extern.measure_data.buffer_free_samples[i];
-
-   avg = accum / (samples - 1);
-
-   for (i = 1; i < samples; i++)
-   {
-      int diff = avg - g_extern.measure_data.buffer_free_samples[i];
-      accum_var += diff * diff;
-   }
-
-   stddev = (unsigned)sqrt((double)accum_var / (samples - 2));
-
-   avg_filled = 1.0f - (float)avg / g_extern.audio_data.driver_buffer_size;
-   deviation = (float)stddev / g_extern.audio_data.driver_buffer_size;
-
-   low_water_size = g_extern.audio_data.driver_buffer_size * 3 / 4;
-   high_water_size = g_extern.audio_data.driver_buffer_size / 4;
-
-   for (i = 1; i < samples; i++)
-   {
-      if (g_extern.measure_data.buffer_free_samples[i] >= low_water_size)
-         low_water_count++;
-      else if (g_extern.measure_data.buffer_free_samples[i] <= high_water_size)
-         high_water_count++;
-   }
-
-   RARCH_LOG("Average audio buffer saturation: %.2f %%, standard deviation (percentage points): %.2f %%.\n",
-         avg_filled * 100.0, deviation * 100.0);
-   RARCH_LOG("Amount of time spent close to underrun: %.2f %%. Close to blocking: %.2f %%.\n",
-         (100.0 * low_water_count) / (samples - 1),
-         (100.0 * high_water_count) / (samples - 1));
+   scaler_ctx_gen_reset(&driver.scaler);
+   memset(&driver.scaler, 0, sizeof(driver.scaler));
+   free(driver.scaler_out);
+   driver.scaler_out = NULL;
 }
 
-bool driver_monitor_fps_statistics(double *refresh_rate,
-      double *deviation, unsigned *sample_points)
+static bool init_video_pixel_converter(unsigned size)
 {
-   unsigned i;
-   retro_time_t accum = 0, avg, accum_var = 0;
-   unsigned samples = min(MEASURE_FRAME_TIME_SAMPLES_COUNT,
-         g_extern.measure_data.frame_time_samples_count);
+   /* This function can be called multiple times
+    * without deiniting first on consoles. */
+   deinit_pixel_converter();
 
-   if (g_settings.video.threaded || (samples < 2))
-      return false;
-
-   /* Measure statistics on frame time (microsecs), *not* FPS. */
-   for (i = 0; i < samples; i++)
-      accum += g_extern.measure_data.frame_time_samples[i];
-
-#if 0
-   for (i = 0; i < samples; i++)
-      RARCH_LOG("Interval #%u: %d usec / frame.\n",
-            i, (int)g_extern.measure_data.frame_time_samples[i]);
-#endif
-
-   avg = accum / samples;
-
-   /* Drop first measurement. It is likely to be bad. */
-   for (i = 0; i < samples; i++)
+   if (g_extern.system.pix_fmt == RETRO_PIXEL_FORMAT_0RGB1555)
    {
-      retro_time_t diff = g_extern.measure_data.frame_time_samples[i] - avg;
-      accum_var += diff * diff;
-   }
+      RARCH_WARN("0RGB1555 pixel format is deprecated, and will be slower. For 15/16-bit, RGB565 format is preferred.\n");
 
-   *deviation = sqrt((double)accum_var / (samples - 1)) / avg;
-   *refresh_rate = 1000000.0 / avg;
-   *sample_points = samples;
+      driver.scaler.scaler_type = SCALER_TYPE_POINT;
+      driver.scaler.in_fmt      = SCALER_FMT_0RGB1555;
+
+      /* TODO: Pick either ARGB8888 or RGB565 depending on driver. */
+      driver.scaler.out_fmt     = SCALER_FMT_RGB565;
+
+      if (!scaler_ctx_gen_filter(&driver.scaler))
+         return false;
+
+      driver.scaler_out = calloc(sizeof(uint16_t), size * size);
+   }
 
    return true;
 }
 
-void uninit_audio(void)
+static void deinit_video_filter(void)
 {
-   if (driver.audio_data && driver.audio)
-      driver.audio->free(driver.audio_data);
-
-   free(g_extern.audio_data.conv_outsamples);
-   g_extern.audio_data.conv_outsamples = NULL;
-   g_extern.audio_data.data_ptr        = 0;
-
-   free(g_extern.audio_data.rewind_buf);
-   g_extern.audio_data.rewind_buf = NULL;
-
-   if (!g_settings.audio.enable)
-   {
-      driver.audio_active = false;
-      return;
-   }
-
-   rarch_resampler_freep(&driver.resampler,
-         &driver.resampler_data);
-
-   free(g_extern.audio_data.data);
-   g_extern.audio_data.data = NULL;
-
-   free(g_extern.audio_data.outsamples);
-   g_extern.audio_data.outsamples = NULL;
-
-   rarch_main_command(RARCH_CMD_DSP_FILTER_DEINIT);
-
-   compute_audio_buffer_statistics();
+   rarch_softfilter_free(g_extern.filter.filter);
+   free(g_extern.filter.buffer);
+   memset(&g_extern.filter, 0, sizeof(g_extern.filter));
 }
 
-void rarch_init_filter(enum retro_pixel_format colfmt)
+static void init_video_filter(enum retro_pixel_format colfmt)
 {
    unsigned width, height, pow2_x, pow2_y, maxsize;
    struct retro_game_geometry *geom = NULL;
 
-   rarch_deinit_filter();
+   deinit_video_filter();
    if (!*g_settings.video.softfilter_plugin)
       return;
 
@@ -1319,35 +1099,10 @@ void rarch_init_filter(enum retro_pixel_format colfmt)
 
 error:
    RARCH_ERR("Softfilter initialization failed.\n");
-   rarch_deinit_filter();
+   deinit_video_filter();
 }
 
-static bool init_video_pixel_converter(unsigned size)
-{
-   /* This function can be called multiple times
-    * without deiniting first on consoles. */
-   deinit_pixel_converter();
-
-   if (g_extern.system.pix_fmt == RETRO_PIXEL_FORMAT_0RGB1555)
-   {
-      RARCH_WARN("0RGB1555 pixel format is deprecated, and will be slower. For 15/16-bit, RGB565 format is preferred.\n");
-
-      driver.scaler.scaler_type = SCALER_TYPE_POINT;
-      driver.scaler.in_fmt      = SCALER_FMT_0RGB1555;
-
-      /* TODO: Pick either ARGB8888 or RGB565 depending on driver. */
-      driver.scaler.out_fmt     = SCALER_FMT_RGB565;
-
-      if (!scaler_ctx_gen_filter(&driver.scaler))
-         return false;
-
-      driver.scaler_out = calloc(sizeof(uint16_t), size * size);
-   }
-
-   return true;
-}
-
-void init_video_input(void)
+static void init_video_input(void)
 {
    unsigned max_dim, scale, width, height;
    rarch_viewport_t *custom_vp;
@@ -1356,7 +1111,7 @@ void init_video_input(void)
    video_info_t video = {0};
    static int dummy_pixel=0;
 
-   rarch_init_filter(g_extern.system.pix_fmt);
+   init_video_filter(g_extern.system.pix_fmt);
    rarch_main_command(RARCH_CMD_SHADER_DIR_INIT);
 
    geom = (const struct retro_game_geometry*)&g_extern.system.av_info.geometry;
@@ -1534,7 +1289,164 @@ void init_video_input(void)
 
 }
 
-void uninit_video_input(void)
+void init_drivers(void)
+{
+   driver.video_data_own = false;
+   driver.audio_data_own = false;
+   driver.input_data_own = false;
+   driver.camera_data_own = false;
+   driver.location_data_own = false;
+   driver.osk_data_own = false;
+#ifdef HAVE_MENU
+   /* By default, we want the menu to persist through driver reinits. */
+   driver.menu_data_own = true;
+#endif
+
+   adjust_system_rates();
+
+   g_extern.frame_count = 0;
+
+   init_video_input();
+
+   if (!driver.video_cache_context_ack
+         && g_extern.system.hw_render_callback.context_reset)
+      g_extern.system.hw_render_callback.context_reset();
+   driver.video_cache_context_ack = false;
+
+   init_audio();
+
+   /* Only initialize camera driver if we're ever going to use it. */
+   if (driver.camera_active)
+      init_camera();
+
+   /* Only initialize location driver if we're ever going to use it. */
+   if (driver.location_active)
+      init_location();
+
+   init_osk();
+
+#ifdef HAVE_MENU
+   init_menu();
+
+   if (driver.menu && driver.menu_ctx && driver.menu_ctx->context_reset)
+      driver.menu_ctx->context_reset(driver.menu);
+#endif
+
+   /* Keep non-throttled state as good as possible. */
+   if (driver.nonblock_state)
+      driver_set_nonblock_state(driver.nonblock_state);
+
+   g_extern.system.frame_time_last = 0;
+}
+
+
+
+static void compute_monitor_fps_statistics(void)
+{
+   double avg_fps = 0.0, stddev = 0.0;
+   unsigned samples = 0;
+
+   if (g_settings.video.threaded)
+   {
+      RARCH_LOG("Monitor FPS estimation is disabled for threaded video.\n");
+      return;
+   }
+
+   if (g_extern.measure_data.frame_time_samples_count <
+         2 * MEASURE_FRAME_TIME_SAMPLES_COUNT)
+   {
+      RARCH_LOG(
+            "Does not have enough samples for monitor refresh rate estimation. Requires to run for at least %u frames.\n",
+            2 * MEASURE_FRAME_TIME_SAMPLES_COUNT);
+      return;
+   }
+
+   if (driver_monitor_fps_statistics(&avg_fps, &stddev, &samples))
+   {
+      RARCH_LOG("Average monitor Hz: %.6f Hz. (%.3f %% frame time deviation, based on %u last samples).\n",
+            avg_fps, 100.0 * stddev, samples);
+   }
+}
+
+static void compute_audio_buffer_statistics(void)
+{
+   unsigned i, low_water_size, high_water_size, avg, stddev;
+   float avg_filled, deviation;
+   uint64_t accum = 0, accum_var = 0;
+   unsigned low_water_count = 0, high_water_count = 0;
+   unsigned samples = min(g_extern.measure_data.buffer_free_samples_count,
+         AUDIO_BUFFER_FREE_SAMPLES_COUNT);
+
+   if (samples < 3)
+      return;
+
+   for (i = 1; i < samples; i++)
+      accum += g_extern.measure_data.buffer_free_samples[i];
+
+   avg = accum / (samples - 1);
+
+   for (i = 1; i < samples; i++)
+   {
+      int diff = avg - g_extern.measure_data.buffer_free_samples[i];
+      accum_var += diff * diff;
+   }
+
+   stddev = (unsigned)sqrt((double)accum_var / (samples - 2));
+
+   avg_filled = 1.0f - (float)avg / g_extern.audio_data.driver_buffer_size;
+   deviation = (float)stddev / g_extern.audio_data.driver_buffer_size;
+
+   low_water_size = g_extern.audio_data.driver_buffer_size * 3 / 4;
+   high_water_size = g_extern.audio_data.driver_buffer_size / 4;
+
+   for (i = 1; i < samples; i++)
+   {
+      if (g_extern.measure_data.buffer_free_samples[i] >= low_water_size)
+         low_water_count++;
+      else if (g_extern.measure_data.buffer_free_samples[i] <= high_water_size)
+         high_water_count++;
+   }
+
+   RARCH_LOG("Average audio buffer saturation: %.2f %%, standard deviation (percentage points): %.2f %%.\n",
+         avg_filled * 100.0, deviation * 100.0);
+   RARCH_LOG("Amount of time spent close to underrun: %.2f %%. Close to blocking: %.2f %%.\n",
+         (100.0 * low_water_count) / (samples - 1),
+         (100.0 * high_water_count) / (samples - 1));
+}
+
+static void uninit_audio(void)
+{
+   if (driver.audio_data && driver.audio)
+      driver.audio->free(driver.audio_data);
+
+   free(g_extern.audio_data.conv_outsamples);
+   g_extern.audio_data.conv_outsamples = NULL;
+   g_extern.audio_data.data_ptr        = 0;
+
+   free(g_extern.audio_data.rewind_buf);
+   g_extern.audio_data.rewind_buf = NULL;
+
+   if (!g_settings.audio.enable)
+   {
+      driver.audio_active = false;
+      return;
+   }
+
+   rarch_resampler_freep(&driver.resampler,
+         &driver.resampler_data);
+
+   free(g_extern.audio_data.data);
+   g_extern.audio_data.data = NULL;
+
+   free(g_extern.audio_data.outsamples);
+   g_extern.audio_data.outsamples = NULL;
+
+   rarch_main_command(RARCH_CMD_DSP_FILTER_DEINIT);
+
+   compute_audio_buffer_statistics();
+}
+
+static void uninit_video_input(void)
 {
    rarch_main_command(RARCH_CMD_OVERLAY_DEINIT);
 
@@ -1554,11 +1466,104 @@ void uninit_video_input(void)
 
    deinit_pixel_converter();
 
-   rarch_deinit_filter();
+   deinit_video_filter();
 
    rarch_main_command(RARCH_CMD_SHADER_DIR_DEINIT);
    compute_monitor_fps_statistics();
 }
+
+void uninit_drivers(void)
+{
+   uninit_audio();
+
+   if (g_extern.system.hw_render_callback.context_destroy &&
+         !driver.video_cache_context)
+      g_extern.system.hw_render_callback.context_destroy();
+
+#ifdef HAVE_MENU
+   if (driver.menu && driver.menu_ctx && driver.menu_ctx->context_destroy)
+      driver.menu_ctx->context_destroy(driver.menu);
+
+   if (!driver.menu_data_own)
+   {
+      menu_free(driver.menu);
+      driver.menu = NULL;
+   }
+#endif
+
+   uninit_video_input();
+
+   if (!driver.video_data_own)
+      driver.video_data = NULL;
+
+   if (!driver.camera_data_own)
+   {
+      uninit_camera();
+      driver.camera_data = NULL;
+   }
+
+   if (!driver.location_data_own)
+   {
+      uninit_location();
+      driver.location_data = NULL;
+   }
+   
+   if (!driver.osk_data_own)
+   {
+      uninit_osk();
+      driver.osk_data = NULL;
+   }
+
+   if (!driver.input_data_own)
+      driver.input_data = NULL;
+
+   if (!driver.audio_data_own)
+      driver.audio_data = NULL;
+}
+
+
+
+
+bool driver_monitor_fps_statistics(double *refresh_rate,
+      double *deviation, unsigned *sample_points)
+{
+   unsigned i;
+   retro_time_t accum = 0, avg, accum_var = 0;
+   unsigned samples = min(MEASURE_FRAME_TIME_SAMPLES_COUNT,
+         g_extern.measure_data.frame_time_samples_count);
+
+   if (g_settings.video.threaded || (samples < 2))
+      return false;
+
+   /* Measure statistics on frame time (microsecs), *not* FPS. */
+   for (i = 0; i < samples; i++)
+      accum += g_extern.measure_data.frame_time_samples[i];
+
+#if 0
+   for (i = 0; i < samples; i++)
+      RARCH_LOG("Interval #%u: %d usec / frame.\n",
+            i, (int)g_extern.measure_data.frame_time_samples[i]);
+#endif
+
+   avg = accum / samples;
+
+   /* Drop first measurement. It is likely to be bad. */
+   for (i = 0; i < samples; i++)
+   {
+      retro_time_t diff = g_extern.measure_data.frame_time_samples[i] - avg;
+      accum_var += diff * diff;
+   }
+
+   *deviation = sqrt((double)accum_var / (samples - 1)) / avg;
+   *refresh_rate = 1000000.0 / avg;
+   *sample_points = samples;
+
+   return true;
+}
+
+
+
+
 
 
 void *driver_video_resolve(const video_driver_t **drv)

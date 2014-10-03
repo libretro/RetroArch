@@ -542,22 +542,11 @@ void init_drivers(void);
 void init_drivers_pre(void);
 void uninit_drivers(void);
 
-void init_video_input(void);
-void uninit_video_input(void);
-void init_audio(void);
-void uninit_audio(void);
-
 void find_prev_driver(const char *label, char *str, size_t sizeof_str);
 void find_next_driver(const char *label, char *str, size_t sizeof_str);
 
 void find_prev_resampler_driver(void);
 void find_next_resampler_driver(void);
-
-void init_camera(void);
-void uninit_camera(void);
-
-void init_location(void);
-void uninit_location(void);
 
 void driver_set_monitor_refresh_rate(float hz);
 bool driver_monitor_fps_statistics(double *refresh_rate,
@@ -582,17 +571,6 @@ float driver_sensor_get_input(unsigned port, unsigned action);
 /* Use this if you need the real video driver and driver data pointers */
 void *driver_video_resolve(const video_driver_t **drv);
 
-#ifdef HAVE_DYLIB
-void rarch_deinit_filter(void);
-void rarch_init_filter(enum retro_pixel_format);
-#endif
-
-#ifdef HAVE_FILTERS_BUILTIN
-unsigned dspfilter_get_last_idx(void);
-#endif
-
-const char *rarch_dspfilter_get_name(void *data);
-
 /* Used by RETRO_ENVIRONMENT_GET_CAMERA_INTERFACE. */
 bool driver_camera_start(void);
 void driver_camera_stop(void);
@@ -605,10 +583,6 @@ bool driver_location_get_position(double *lat, double *lon,
       double *horiz_accuracy, double *vert_accuracy);
 void driver_location_set_interval(unsigned interval_msecs,
       unsigned interval_distance);
-
-#ifdef HAVE_MENU
-void find_menu_driver(void);
-#endif
 
 /* Used by RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO. */
 bool driver_update_system_av_info(const struct retro_system_av_info *info);
