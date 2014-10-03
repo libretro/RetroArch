@@ -1095,7 +1095,7 @@ static void init_controllers(void)
    }
 }
 
-static inline bool load_save_files(void)
+static bool load_save_files(void)
 {
    unsigned i;
 
@@ -1109,12 +1109,12 @@ static inline bool load_save_files(void)
     return true;
 }
 
-static inline bool save_files(void)
+static void save_files(void)
 {
    unsigned i;
 
    if (!g_extern.savefiles || !g_extern.use_sram)
-      return false;
+      return;
 
    for (i = 0; i < g_extern.savefiles->size; i++)
    {
@@ -1123,8 +1123,6 @@ static inline bool save_files(void)
       RARCH_LOG("Saving RAM type #%u to \"%s\".\n", type, path);
       save_ram_file(path, type);
    }
-
-   return true;
 }
 
 static void init_cheats(void)
@@ -1178,18 +1176,6 @@ static void init_rewind(void)
    state_manager_push_where(g_extern.state_manager, &state);
    pretro_serialize(state, g_extern.state_size);
    state_manager_push_do(g_extern.state_manager);
-}
-
-static void deinit_rewind(void)
-{
-#ifdef HAVE_NETPLAY
-    if (driver.netplay_data)
-        return;
-#endif
-    
-   if (g_extern.state_manager)
-      state_manager_free(g_extern.state_manager);
-   g_extern.state_manager = NULL;
 }
 
 static void init_movie(void)
@@ -2931,7 +2917,13 @@ void rarch_main_command(unsigned cmd)
          g_extern.cheat = NULL;
          break;
       case RARCH_CMD_REWIND_DEINIT:
-         deinit_rewind();
+#ifdef HAVE_NETPLAY
+         if (driver.netplay_data)
+            return;
+#endif
+         if (g_extern.state_manager)
+            state_manager_free(g_extern.state_manager);
+         g_extern.state_manager = NULL;
          break;
       case RARCH_CMD_REWIND_INIT:
          init_rewind();
