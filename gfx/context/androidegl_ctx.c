@@ -28,7 +28,7 @@
 #include <stdint.h>
 
 #ifdef HAVE_GLSL
-#include "../shader_glsl.h"
+#include "../shader/shader_glsl.h"
 #endif
 
 static bool g_use_hw_ctx;
