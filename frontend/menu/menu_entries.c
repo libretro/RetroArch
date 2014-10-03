@@ -258,7 +258,7 @@ int menu_entries_push_list(menu_handle_t *menu,
    else if (!strcmp(label, "history_list"))
    {
       file_list_clear(list);
-      list_size = content_playlist_size(g_extern.history);
+      list_size = content_playlist_size(g_defaults.history);
 
       for (i = 0; i < list_size; i++)
       {
@@ -266,7 +266,7 @@ int menu_entries_push_list(menu_handle_t *menu,
          const char *path      = NULL;
          const char *core_name = NULL;
 
-         content_playlist_get_index(g_extern.history, i,
+         content_playlist_get_index(g_defaults.history, i,
                &path, NULL, &core_name);
          strlcpy(fill_buf, core_name, sizeof(fill_buf));
 

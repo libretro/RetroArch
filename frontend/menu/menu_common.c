@@ -95,7 +95,7 @@ bool load_menu_content(void)
          msg_queue_push(g_extern.msg_queue, str, 1, 1);
       }
 
-      content_playlist_push(g_extern.history,
+      content_playlist_push(g_defaults.history,
             g_extern.fullpath,
             g_settings.libretro,
             g_extern.menu.info.library_name);
@@ -177,7 +177,6 @@ void *menu_init(const void *data)
 
    menu_shader_manager_init(menu);
 
-   rarch_main_command(RARCH_CMD_HISTORY_INIT);
    menu->last_time = rarch_get_time_usec();
 
    return menu;

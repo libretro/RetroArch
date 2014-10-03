@@ -2762,7 +2762,7 @@ static void history_playlist_new(void)
             g_settings.content_history_path);
 
    if (init_history)
-      g_extern.history = content_playlist_init(
+      g_defaults.history = content_playlist_init(
             g_settings.content_history_path,
             g_settings.content_history_size);
 }
@@ -2972,9 +2972,9 @@ void rarch_main_command(unsigned cmd)
          rarch_main_command(RARCH_CMD_GPU_RECORD_DEINIT);
          break;
       case RARCH_CMD_HISTORY_DEINIT:
-         if (g_extern.history)
-            content_playlist_free(g_extern.history);
-         g_extern.history = NULL;
+         if (g_defaults.history)
+            content_playlist_free(g_defaults.history);
+         g_defaults.history = NULL;
          break;
       case RARCH_CMD_RECORD_INIT:
          rarch_main_command(RARCH_CMD_HISTORY_DEINIT);

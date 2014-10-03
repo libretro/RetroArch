@@ -203,6 +203,8 @@ struct defaults
       float video_refresh_rate;
       bool video_threaded_enable;
    } settings; 
+
+   content_playlist_t *history;
 };
 
 /* All config related settings go here. */
@@ -436,7 +438,6 @@ struct global
 
    struct string_list *temporary_content;
 
-   content_playlist_t *history;
    core_info_list_t *core_info;
    core_info_t *core_info_current;
 

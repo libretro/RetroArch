@@ -791,7 +791,7 @@ static int menu_action_ok(const char *menu_path,
       {
       case MENU_FILE_PLAYLIST_ENTRY:
 
-         rarch_playlist_load_content(g_extern.history,
+         rarch_playlist_load_content(g_defaults.history,
                driver.menu->selection_ptr);
          menu_flush_stack_type(driver.menu->menu_stack, MENU_SETTINGS);
          return -1;
