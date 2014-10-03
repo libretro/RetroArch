@@ -77,9 +77,9 @@ const char *config_get_default_audio(void)
          return "rwebaudio";
       case AUDIO_NULL:
          return "null";
-      default:
-         return NULL;
    }
+
+   return NULL;
 }
 
 const char *config_get_default_audio_resampler(void)
@@ -92,9 +92,9 @@ const char *config_get_default_audio_resampler(void)
          return "sinc";
       case AUDIO_RESAMPLER_NEAREST:
          return "nearest";
-      default:
-         return NULL;
    }
+
+   return NULL;
 }
 
 const char *config_get_default_video(void)
@@ -130,9 +130,9 @@ const char *config_get_default_video(void)
          return "omap";
       case VIDEO_EXYNOS:
          return "exynos";
-      default:
-         return NULL;
    }
+
+   return NULL;
 }
 
 const char *config_get_default_input(void)
@@ -173,9 +173,9 @@ const char *config_get_default_input(void)
       	 return "rwebinput";
       case INPUT_NULL:
          return "null";
-      default:
-         return NULL;
    }
+
+   return NULL;
 }
 
 const char *config_get_default_joypad(void)
@@ -210,9 +210,9 @@ const char *config_get_default_joypad(void)
          return "apple";
       case JOYPAD_QNX:
          return "qnx";
-      default:
-         return NULL;
    }
+
+   return NULL;
 }
 
 #ifdef HAVE_MENU
@@ -230,9 +230,9 @@ const char *config_get_default_menu(void)
          return "lakka";
       case MENU_GLUI:
          return "glui";
-      default:
-         return "NULL";
    }
+
+   return "NULL";
 }
 #endif
 
@@ -244,9 +244,9 @@ const char *config_get_default_osk(void)
          return "ps3";
       case OSK_NULL:
          return "null";
-      default:
-         return NULL;
    }
+
+   return NULL;
 }
 
 const char *config_get_default_camera(void)
@@ -263,9 +263,9 @@ const char *config_get_default_camera(void)
          return "ios";
       case CAMERA_NULL:
          return "null";
-      default:
-         return NULL;
    }
+
+   return NULL;
 }
 
 const char *config_get_default_location(void)
@@ -278,9 +278,9 @@ const char *config_get_default_location(void)
          return "apple";
       case LOCATION_NULL:
          return "null";
-      default:
-         return NULL;
    }
+
+   return NULL;
 }
 
 static void config_set_defaults(void)
