@@ -33,7 +33,6 @@
 
 #define returntype void
 #define returnfunc() exit(0)
-#define return_negative() return
 #define return_var(var) return
 #define declare_argc() int argc = 0;
 #define declare_argv() char *argv[1]
@@ -42,7 +41,6 @@
 
 #define returntype int
 #define returnfunc() return 0
-#define return_negative() return 1
 #define return_var(var) return var
 #define declare_argc()
 #define declare_argv()
