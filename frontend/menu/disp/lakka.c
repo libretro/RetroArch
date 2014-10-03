@@ -1115,15 +1115,6 @@ static void lakka_free(void *data)
 
 static int lakka_input_postprocess(retro_input_t state, retro_input_t old_state)
 {
-   retro_input_t trigger_state = state & ~old_state;
-   if ((driver.menu && check_enter_menu_func(trigger_state)) &&
-         g_extern.main_is_init &&
-         !g_extern.libretro_dummy)
-   {
-      global_alpha = 0.0f;
-      global_scale = 2.0f;
-   }
-
    if (global_alpha == 0.0f)
       add_tween(LAKKA_DELAY, 1.0f, &global_alpha, &inOutQuad, NULL);
 

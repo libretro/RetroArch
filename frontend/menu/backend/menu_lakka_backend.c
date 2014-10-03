@@ -378,6 +378,14 @@ static int menu_lakka_iterate(unsigned action)
 
    switch (action)
    {
+      case MENU_ACTION_TOGGLE:
+         if (g_extern.main_is_init && !g_extern.libretro_dummy)
+         {
+            global_alpha = 0.0;
+            global_scale = 2.0;
+         }
+         break;
+
       case MENU_ACTION_LEFT:
          if (depth == 0 && menu_active_category > 0)
          {
@@ -454,8 +462,6 @@ static int menu_lakka_iterate(unsigned action)
             switch (active_item->active_subitem)
             {
                case 0:
-                  global_alpha = 0.0;
-                  global_scale = 2.0;
                   if (g_extern.main_is_init && !g_extern.libretro_dummy
                         && (!strcmp(g_extern.fullpath, active_item->rom)))
                   {
@@ -477,14 +483,10 @@ static int menu_lakka_iterate(unsigned action)
                   return -1;
                   break;
                case 1:
-                  global_alpha = 0.0;
-                  global_scale = 2.0;
                   rarch_main_command(RARCH_CMD_SAVE_STATE);
                   return -1;
                   break;
                case 2:
-                  global_alpha = 0.0;
-                  global_scale = 2.0;
                   rarch_main_command(RARCH_CMD_LOAD_STATE);
                   return -1;
                   break;
@@ -492,8 +494,6 @@ static int menu_lakka_iterate(unsigned action)
                   rarch_main_command(RARCH_CMD_TAKE_SCREENSHOT);
                   break;
                case 4:
-                  global_alpha = 0.0;
-                  global_scale = 2.0;
                   rarch_main_command(RARCH_CMD_RESET);
                   return -1;
                   break;
