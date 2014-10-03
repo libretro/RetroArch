@@ -345,13 +345,13 @@ static void gfx_ctx_d3d_get_video_size(void *data, unsigned *width, unsigned *he
    *width  = video_mode.dwDisplayWidth;
    *height = video_mode.dwDisplayHeight;
 
-   driver.resolution_hd_enable = false;
+   d3d->resolution_hd_enable = false;
 
    if(video_mode.fIsHiDef)
    {
       *width = 1280;
       *height = 720;
-      driver.resolution_hd_enable = true;
+      d3d->resolution_hd_enable = true;
    }
    else
    {

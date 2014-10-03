@@ -123,7 +123,7 @@ static bool d3d_init_shader(void *data)
 	(void)data;
 #if defined(HAVE_HLSL)
    RARCH_LOG("D3D]: Using HLSL shader backend.\n");
-   const gl_shader_backend_t *backend = &hlsl_backend;
+   const shader_backend_t *backend = &hlsl_backend;
    const char *shader_path = g_settings.video.shader_path;
    d3d->shader = backend;
    if (!d3d->shader)
@@ -850,6 +850,7 @@ static void d3d_recompute_pass_sizes(d3d_video_t *d3d)
 #endif
 
 #ifndef DONT_HAVE_STATE_TRACKER
+#ifndef _XBOX
 static bool d3d_init_imports(d3d_video_t *d3d)
 {
    if (!d3d->shader.variables)
@@ -883,6 +884,7 @@ static bool d3d_init_imports(d3d_video_t *d3d)
    renderchain_add_state_tracker(d3d->chain, state_tracker);
    return true;
 }
+#endif
 #endif
 
 static bool d3d_init_chain(d3d_video_t *d3d, const video_info_t *video_info)
@@ -1570,7 +1572,7 @@ static bool d3d_frame(void *data, const void *frame,
       float msg_width  = 60;
       float msg_height = 365;
 #elif defined(_XBOX360)
-      float msg_width  = d3d->resolution_dh_enable ? 160 : 100;
+      float msg_width  = d3d->resolution_hd_enable ? 160 : 100;
       float msg_height = 120;
 #endif
       font_parms.x = msg_width;

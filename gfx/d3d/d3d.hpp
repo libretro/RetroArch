@@ -102,7 +102,7 @@ typedef struct d3d_video
       const gfx_ctx_driver_t *ctx_driver;
 #if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
 #ifdef _XBOX
-      const gl_shader_backend_t *shader;
+      const shader_backend_t *shader;
 #endif
 #endif
       bool should_resize;
