@@ -68,7 +68,7 @@ typedef struct rarch_CC_resampler
 
 static void *memalign_alloc__(size_t boundary, size_t size)
 {
-   uintptr_t addr;
+   uintptr_t addr = 0;
    void **place;
    void *ptr = malloc(boundary + size + sizeof(uintptr_t));
    if (!ptr)
@@ -540,7 +540,8 @@ static void resampler_CC_upsample(void *re_, struct resampler_data *data)
 static void resampler_CC_process(void *re_, struct resampler_data *data)
 {
    rarch_CC_resampler_t *re = (rarch_CC_resampler_t*)re_;
-   re->process(re_, data);
+   if (re)
+      re->process(re_, data);
 }
 
 static void resampler_CC_free(void *re_)

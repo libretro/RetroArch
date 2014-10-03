@@ -202,6 +202,7 @@ static void init_sinc_table(rarch_sinc_resampler_t *resamp, double cutoff,
 
    if (calculate_delta)
    {
+      int phase;
       for (p = 0; p < phases - 1; p++)
       {
          for (j = 0; j < taps; j++)
@@ -212,7 +213,7 @@ static void init_sinc_table(rarch_sinc_resampler_t *resamp, double cutoff,
          }
       }
 
-      int phase = phases - 1;
+      phase = phases - 1;
       for (j = 0; j < taps; j++)
       {
          float val, delta;
@@ -233,8 +234,8 @@ static void init_sinc_table(rarch_sinc_resampler_t *resamp, double cutoff,
 /* No memalign() for us on Win32 ... */
 static void *aligned_alloc__(size_t boundary, size_t size)
 {
-   uintptr_t addr;
    void **place;
+   uintptr_t addr = 0;
    void *ptr = malloc(boundary + size + sizeof(uintptr_t));
 
    if (!ptr)
