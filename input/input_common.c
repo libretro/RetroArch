@@ -39,6 +39,10 @@
 #include <X11/keysym.h>
 #endif
 
+#ifdef __APPLE__
+#include "apple_keycode.h"
+#endif
+
 #ifdef __linux
 #include <linux/input.h>
 #include <linux/kd.h>
