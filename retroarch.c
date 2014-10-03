@@ -199,30 +199,6 @@ static void take_screenshot(void)
       rarch_render_cached_frame();
 }
 
-static void rarch_deinit_gpu_recording(void)
-{
-   if (g_extern.record_gpu_buffer)
-      free(g_extern.record_gpu_buffer);
-   g_extern.record_gpu_buffer = NULL;
-}
-
-static void rarch_deinit_recording(void)
-{
-   if (!driver.recording_data || !driver.recording)
-      return;
-
-   if (driver.recording->finalize)
-      driver.recording->finalize(driver.recording_data);
-
-   if (driver.recording->free)
-      driver.recording->free(driver.recording_data);
-
-   driver.recording_data = NULL;
-   driver.recording = NULL;
-
-   rarch_deinit_gpu_recording();
-}
-
 void rarch_recording_dump_frame(const void *data, unsigned width,
       unsigned height, size_t pitch)
 {
@@ -243,7 +219,7 @@ void rarch_recording_dump_frame(const void *data, unsigned width,
       if (!vp.width || !vp.height)
       {
          RARCH_WARN("Viewport size calculation failed! Will continue using raw data. This will probably not work right ...\n");
-         rarch_deinit_gpu_recording();
+         rarch_main_command(RARCH_CMD_GPU_RECORD_DEINIT);
 
          rarch_recording_dump_frame(data, width, height, pitch);
          return;
@@ -258,7 +234,7 @@ void rarch_recording_dump_frame(const void *data, unsigned width,
          msg_queue_clear(g_extern.msg_queue);
          msg_queue_push(g_extern.msg_queue, msg, 1, 180);
 
-         rarch_deinit_recording();
+         rarch_main_command(RARCH_CMD_RECORD_DEINIT);
          return;
       }
 
@@ -405,7 +381,7 @@ static void init_recording(void)
    if (!ffemu_init_first(&driver.recording, &driver.recording_data, &params))
    {
       RARCH_ERR(RETRO_LOG_INIT_RECORDING_FAILED);
-      rarch_deinit_gpu_recording();
+      rarch_main_command(RARCH_CMD_GPU_RECORD_DEINIT);
    }
 }
 
@@ -2434,7 +2410,7 @@ static void main_clear_state_extern(void)
     */
    deinit_temporary_content();
    deinit_subsystem_fullpaths();
-   rarch_deinit_recording();
+   rarch_main_command(RARCH_CMD_RECORD_DEINIT);
 
    deinit_log_file();
    history_playlist_free();
@@ -2656,7 +2632,7 @@ int rarch_main_init(int argc, char *argv[])
    init_rewind();
    init_controllers();
 
-   init_recording();
+   rarch_main_command(RARCH_CMD_RECORD_INIT);
 
    init_sram();
 
@@ -3049,11 +3025,28 @@ void rarch_main_command(unsigned cmd)
             rarch_dsp_filter_free(g_extern.audio_data.dsp);
          g_extern.audio_data.dsp = NULL;
          break;
+      case RARCH_CMD_GPU_RECORD_DEINIT:
+         if (g_extern.record_gpu_buffer)
+            free(g_extern.record_gpu_buffer);
+         g_extern.record_gpu_buffer = NULL;
+         break;
       case RARCH_CMD_RECORD_INIT:
          init_recording();
          break;
       case RARCH_CMD_RECORD_DEINIT:
-         rarch_deinit_recording();
+         if (!driver.recording_data || !driver.recording)
+            return;
+
+         if (driver.recording->finalize)
+            driver.recording->finalize(driver.recording_data);
+
+         if (driver.recording->free)
+            driver.recording->free(driver.recording_data);
+
+         driver.recording_data = NULL;
+         driver.recording = NULL;
+
+         rarch_main_command(RARCH_CMD_GPU_RECORD_DEINIT);
          break;
       case RARCH_CMD_HISTORY_INIT:
          history_playlist_new();
@@ -3343,7 +3336,7 @@ void rarch_main_deinit(void)
       deinit_autosave();
 #endif
 
-   rarch_deinit_recording();
+   rarch_main_command(RARCH_CMD_RECORD_DEINIT);
 
    save_files();
 
