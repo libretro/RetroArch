@@ -95,14 +95,6 @@ size_t (*pretro_get_memory_size)(unsigned);
 static bool ignore_environment_cb;
 
 #ifdef HAVE_DYNAMIC
-#if defined(__APPLE__)
-#define DYNAMIC_EXT "dylib"
-#elif defined(_WIN32)
-#define DYNAMIC_EXT "dll"
-#else
-#define DYNAMIC_EXT "so"
-#endif
-
 static bool *load_no_content_hook;
 
 static bool environ_cb_get_system_info(unsigned cmd, void *data)
