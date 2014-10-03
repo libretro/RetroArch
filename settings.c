@@ -283,7 +283,7 @@ const char *config_get_default_location(void)
    }
 }
 
-void config_set_defaults(void)
+static void config_set_defaults(void)
 {
    unsigned i, j;
    const char *def_video = config_get_default_video();
@@ -1246,22 +1246,6 @@ static void config_load_core_specific(void)
    }
 }
 
-void config_load(void)
-{
-   /* Flush out per-core configs before loading a new config. */
-   if (*g_extern.core_specific_config_path &&
-         g_settings.config_save_on_exit && g_settings.core_specific_config)
-      config_save_file(g_extern.core_specific_config_path);
-
-   if (!g_extern.block_config_read)
-   {
-      config_set_defaults();
-      parse_config_file();
-   }
-
-   /* Per-core config handling. */
-   config_load_core_specific();
-}
 
 
 
@@ -1352,7 +1336,8 @@ static void config_read_keybinds_conf(config_file_t *conf)
       read_keybinds_player(conf, i);
 }
 
-bool config_read_keybinds(const char *path)
+#if 0
+static bool config_read_keybinds(const char *path)
 {
    config_file_t *conf = (config_file_t*)config_file_new(path);
 
@@ -1364,6 +1349,7 @@ bool config_read_keybinds(const char *path)
 
    return true;
 }
+#endif
 
 static void save_keybind_key(config_file_t *conf, const char *prefix,
       const char *base, const struct retro_keybind *bind)
@@ -1474,6 +1460,23 @@ static void save_keybinds_player(config_file_t *conf, unsigned player)
          save_keybind(conf, prefix, input_config_bind_map[i].base,
                &g_settings.input.binds[player][i]);
    }
+}
+
+void config_load(void)
+{
+   /* Flush out per-core configs before loading a new config. */
+   if (*g_extern.core_specific_config_path &&
+         g_settings.config_save_on_exit && g_settings.core_specific_config)
+      config_save_file(g_extern.core_specific_config_path);
+
+   if (!g_extern.block_config_read)
+   {
+      config_set_defaults();
+      parse_config_file();
+   }
+
+   /* Per-core config handling. */
+   config_load_core_specific();
 }
 
 bool config_save_file(const char *path)

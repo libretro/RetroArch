@@ -780,7 +780,6 @@ extern struct defaults g_defaults;
 
 /* Public functions. */
 void config_load(void);
-void config_set_defaults(void);
 const char *config_get_default_camera(void);
 const char *config_get_default_location(void);
 const char *config_get_default_osk(void);
@@ -795,7 +794,6 @@ const char *config_get_default_menu(void);
 
 #include "conf/config_file.h"
 bool config_save_file(const char *path);
-bool config_read_keybinds(const char *path);
 
 void rarch_main_state_new(void);
 void rarch_main_state_free(void);
