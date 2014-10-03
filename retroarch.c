@@ -1218,13 +1218,6 @@ static void init_movie(void)
    }
 }
 
-static void deinit_movie(void)
-{
-   if (g_extern.bsv.movie)
-      bsv_movie_free(g_extern.bsv.movie);
-   g_extern.bsv.movie = NULL;
-}
-
 #define RARCH_DEFAULT_PORT 55435
 
 #ifdef HAVE_NETPLAY
@@ -1267,13 +1260,6 @@ static void init_netplay(void)
                RETRO_MSG_INIT_NETPLAY_FAILED,
                0, 180);
    }
-}
-
-static void deinit_netplay(void)
-{
-   if (driver.netplay_data)
-      netplay_free(driver.netplay_data);
-   driver.netplay_data = NULL;
 }
 #endif
 
@@ -1398,16 +1384,10 @@ static void set_savestate_auto_index(void)
    RARCH_LOG("Found last state slot: #%d\n", g_settings.state_slot);
 }
 
-static void deinit_savefiles(void)
-{
-   if (g_extern.savefiles)
-      string_list_free(g_extern.savefiles);
-   g_extern.savefiles = NULL;
-}
-
 static void fill_pathnames(void)
 {
-   deinit_savefiles();
+   rarch_main_command(RARCH_CMD_SAVEFILES_DEINIT);
+
    g_extern.savefiles = string_list_new();
    rarch_assert(g_extern.savefiles);
 
@@ -1812,7 +1792,8 @@ static bool check_movie_record(void)
    msg_queue_push(g_extern.msg_queue,
          RETRO_MSG_MOVIE_RECORD_STOPPING, 2, 180);
    RARCH_LOG(RETRO_LOG_MOVIE_RECORD_STOPPING);
-   deinit_movie();
+
+   rarch_main_command(RARCH_CMD_BSV_MOVIE_DEINIT);
 
    return true;
 }
@@ -1826,7 +1807,8 @@ static bool check_movie_playback(void)
          RETRO_MSG_MOVIE_PLAYBACK_ENDED, 1, 180);
    RARCH_LOG(RETRO_LOG_MOVIE_PLAYBACK_ENDED);
 
-   deinit_movie();
+   rarch_main_command(RARCH_CMD_BSV_MOVIE_DEINIT);
+
    g_extern.bsv.movie_end = false;
    g_extern.bsv.movie_playback = false;
 
@@ -2571,11 +2553,8 @@ int rarch_main_init(int argc, char *argv[])
 
       load_auto_state();
 
-      init_movie();
-
-#ifdef HAVE_NETPLAY
-      init_netplay();
-#endif
+      rarch_main_command(RARCH_CMD_BSV_MOVIE_INIT);
+      rarch_main_command(RARCH_CMD_NETPLAY_INIT);
    }
 
    retro_init_libretro_cbs(&driver.retro_ctx);
@@ -2907,14 +2886,14 @@ void rarch_main_command(unsigned cmd)
          /* Poll input to avoid possibly stale data to corrupt things. */
          driver.input->poll(driver.input_data);
          break;
-      case RARCH_CMD_CHEATS_INIT:
-         rarch_main_command(RARCH_CMD_CHEATS_DEINIT);
-         init_cheats();
-         break;
       case RARCH_CMD_CHEATS_DEINIT:
          if (g_extern.cheat)
             cheat_manager_free(g_extern.cheat);
          g_extern.cheat = NULL;
+         break;
+      case RARCH_CMD_CHEATS_INIT:
+         rarch_main_command(RARCH_CMD_CHEATS_DEINIT);
+         init_cheats();
          break;
       case RARCH_CMD_REWIND_DEINIT:
 #ifdef HAVE_NETPLAY
@@ -2962,6 +2941,14 @@ void rarch_main_command(unsigned cmd)
             driver.audio_active = false;
          }
          break;
+      case RARCH_CMD_OVERLAY_DEINIT:
+#ifdef HAVE_OVERLAY
+         if (driver.overlay)
+            input_overlay_free(driver.overlay);
+         driver.overlay = NULL;
+         memset(&driver.overlay_state, 0, sizeof(driver.overlay_state));
+#endif
+         break;
       case RARCH_CMD_OVERLAY_INIT:
 #ifdef HAVE_OVERLAY
          if (!*g_settings.input.overlay)
@@ -2972,17 +2959,14 @@ void rarch_main_command(unsigned cmd)
             RARCH_ERR("Failed to load overlay.\n");
 #endif
          break;
-      case RARCH_CMD_OVERLAY_DEINIT:
-#ifdef HAVE_OVERLAY
-         if (driver.overlay)
-            input_overlay_free(driver.overlay);
-         driver.overlay = NULL;
-         memset(&driver.overlay_state, 0, sizeof(driver.overlay_state));
-#endif
-         break;
       case RARCH_CMD_OVERLAY_REINIT:
          rarch_main_command(RARCH_CMD_OVERLAY_DEINIT);
          rarch_main_command(RARCH_CMD_OVERLAY_INIT);
+         break;
+      case RARCH_CMD_DSP_FILTER_DEINIT:
+         if (g_extern.audio_data.dsp)
+            rarch_dsp_filter_free(g_extern.audio_data.dsp);
+         g_extern.audio_data.dsp = NULL;
          break;
       case RARCH_CMD_DSP_FILTER_INIT:
          rarch_main_command(RARCH_CMD_DSP_FILTER_DEINIT);
@@ -2995,18 +2979,10 @@ void rarch_main_command(unsigned cmd)
             RARCH_ERR("[DSP]: Failed to initialize DSP filter \"%s\".\n",
                   g_settings.audio.dsp_plugin);
          break;
-      case RARCH_CMD_DSP_FILTER_DEINIT:
-         if (g_extern.audio_data.dsp)
-            rarch_dsp_filter_free(g_extern.audio_data.dsp);
-         g_extern.audio_data.dsp = NULL;
-         break;
       case RARCH_CMD_GPU_RECORD_DEINIT:
          if (g_extern.record_gpu_buffer)
             free(g_extern.record_gpu_buffer);
          g_extern.record_gpu_buffer = NULL;
-         break;
-      case RARCH_CMD_RECORD_INIT:
-         init_recording();
          break;
       case RARCH_CMD_RECORD_DEINIT:
          if (!driver.recording_data || !driver.recording)
@@ -3022,6 +2998,9 @@ void rarch_main_command(unsigned cmd)
          driver.recording = NULL;
 
          rarch_main_command(RARCH_CMD_GPU_RECORD_DEINIT);
+         break;
+      case RARCH_CMD_RECORD_INIT:
+         init_recording();
          break;
       case RARCH_CMD_HISTORY_DEINIT:
          if (g_extern.history)
@@ -3122,6 +3101,11 @@ void rarch_main_command(unsigned cmd)
                rarch_main_command(RARCH_CMD_AUDIO_START);
          }
          break;
+      case RARCH_CMD_SHADER_DIR_DEINIT:
+         dir_list_free(g_extern.shader_dir.list);
+         g_extern.shader_dir.list = NULL;
+         g_extern.shader_dir.ptr  = 0;
+         break;
       case RARCH_CMD_SHADER_DIR_INIT:
          rarch_main_command(RARCH_CMD_SHADER_DIR_DEINIT);
          {
@@ -3146,16 +3130,17 @@ void rarch_main_command(unsigned cmd)
                      g_extern.shader_dir.list->elems[i].data);
          }
          break;
-      case RARCH_CMD_SHADER_DIR_DEINIT:
-         dir_list_free(g_extern.shader_dir.list);
-         g_extern.shader_dir.list = NULL;
-         g_extern.shader_dir.ptr  = 0;
-         break;
-      case RARCH_CMD_SAVEFILES_INIT:
-         init_savefiles();
+      case RARCH_CMD_SAVEFILES:
+         save_files();
          break;
       case RARCH_CMD_SAVEFILES_DEINIT:
-         save_files();
+         if (g_extern.savefiles)
+            string_list_free(g_extern.savefiles);
+         g_extern.savefiles = NULL;
+         break;
+      case RARCH_CMD_SAVEFILES_INIT:
+         rarch_main_command(RARCH_CMD_SAVEFILES_DEINIT);
+         init_savefiles();
          break;
       case RARCH_CMD_MSG_QUEUE_DEINIT:
          if (g_extern.msg_queue)
@@ -3166,6 +3151,28 @@ void rarch_main_command(unsigned cmd)
          rarch_main_command(RARCH_CMD_MSG_QUEUE_DEINIT);
          if (!g_extern.msg_queue)
             rarch_assert(g_extern.msg_queue = msg_queue_new(8));
+         break;
+      case RARCH_CMD_BSV_MOVIE_DEINIT:
+         if (g_extern.bsv.movie)
+            bsv_movie_free(g_extern.bsv.movie);
+         g_extern.bsv.movie = NULL;
+         break;
+      case RARCH_CMD_BSV_MOVIE_INIT:
+         rarch_main_command(RARCH_CMD_BSV_MOVIE_DEINIT);
+         init_movie();
+         break;
+      case RARCH_CMD_NETPLAY_DEINIT:
+#ifdef HAVE_NETPLAY
+         if (driver.netplay_data)
+            netplay_free(driver.netplay_data);
+         driver.netplay_data = NULL;
+#endif
+         break;
+      case RARCH_CMD_NETPLAY_INIT:
+         rarch_main_command(RARCH_CMD_NETPLAY_DEINIT);
+#ifdef HAVE_NETPLAY
+         init_netplay();
+#endif
          break;
    }
 }
@@ -3318,9 +3325,7 @@ bool rarch_main_iterate(void)
 
 void rarch_main_deinit(void)
 {
-#ifdef HAVE_NETPLAY
-   deinit_netplay();
-#endif
+   rarch_main_command(RARCH_CMD_NETPLAY_DEINIT);
 #ifdef HAVE_COMMAND
    deinit_command();
 #endif
@@ -3331,12 +3336,11 @@ void rarch_main_deinit(void)
 #endif
 
    rarch_main_command(RARCH_CMD_RECORD_DEINIT);
-   rarch_main_command(RARCH_CMD_SAVEFILES_DEINIT);
+   rarch_main_command(RARCH_CMD_SAVEFILES);
 
    rarch_main_command(RARCH_CMD_REWIND_DEINIT);
    rarch_main_command(RARCH_CMD_CHEATS_DEINIT);
-
-   deinit_movie();
+   rarch_main_command(RARCH_CMD_BSV_MOVIE_DEINIT);
 
    save_auto_state();
 
@@ -3344,7 +3348,7 @@ void rarch_main_deinit(void)
 
    deinit_temporary_content();
    deinit_subsystem_fullpaths();
-   deinit_savefiles();
+   rarch_main_command(RARCH_CMD_SAVEFILES_DEINIT);
 
    g_extern.main_is_init = false;
 }
