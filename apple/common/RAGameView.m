@@ -30,33 +30,10 @@
 #include <CoreVideo/CVOpenGLESTextureCache.h>
 #endif
 
-#define APP_HAS_FOCUS ([[UIApplication sharedApplication] applicationState] == UIApplicationStateActive)
-
 #define GLContextClass EAGLContext
-
-@interface EAGLContext (OSXCompat) @end
-@implementation EAGLContext (OSXCompat)
-+ (void)clearCurrentContext { [EAGLContext setCurrentContext:nil];  }
-- (void)makeCurrentContext  { [EAGLContext setCurrentContext:self]; }
-@end
-
 #elif defined(OSX)
-#define APP_HAS_FOCUS ([NSApp isActive])
-
 #define GLContextClass NSOpenGLContext
-
 #define g_view g_instance // < RAGameView is a container on iOS; on OSX these are both the same object
-
-@interface NSScreen (IOSCompat) @end
-@implementation NSScreen (IOSCompat)
-- (CGRect)bounds
-{
-	CGRect cgrect  = NSRectToCGRect(self.frame);
-	return CGRectMake(0, 0, CGRectGetWidth(cgrect), CGRectGetHeight(cgrect));
-}
-- (float) scale  { return 1.0f; }
-@end
-
 #endif
 
 #ifdef IOS

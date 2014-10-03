@@ -6,7 +6,25 @@
 #define GLAPIType GFX_CTX_OPENGL_ES_API
 #define GLFrameworkID CFSTR("com.apple.opengles")
 #define RAScreen UIScreen
+
+@interface EAGLContext (OSXCompat) @end
+@implementation EAGLContext (OSXCompat)
++ (void)clearCurrentContext { [EAGLContext setCurrentContext:nil];  }
+- (void)makeCurrentContext  { [EAGLContext setCurrentContext:self]; }
+@end
+
 #else
+
+@interface NSScreen (IOSCompat) @end
+@implementation NSScreen (IOSCompat)
+- (CGRect)bounds
+{
+    CGRect cgrect  = NSRectToCGRect(self.frame);
+    return CGRectMake(0, 0, CGRectGetWidth(cgrect), CGRectGetHeight(cgrect));
+}
+- (float) scale  { return 1.0f; }
+@end
+
 #define GLAPIType GFX_CTX_OPENGL_API
 #define GLFrameworkID CFSTR("com.apple.opengl")
 #define RAScreen NSScreen
@@ -214,7 +232,11 @@ static void apple_gfx_ctx_update_window_title(void *data)
 static bool apple_gfx_ctx_has_focus(void *data)
 {
    (void)data;
-   return APP_HAS_FOCUS;
+#ifdef IOS
+    return ([[UIApplication sharedApplication] applicationState] == UIApplicationStateActive);
+#else
+    return [NSApp isActive];
+#endif
 }
 
 static void apple_gfx_ctx_swap_buffers(void *data)
