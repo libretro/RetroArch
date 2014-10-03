@@ -90,6 +90,8 @@ const char *config_get_default_audio_resampler(void)
          return "cc";
       case AUDIO_RESAMPLER_SINC:
          return "sinc";
+      case AUDIO_RESAMPLER_NEAREST:
+         return "nearest";
       default:
          return NULL;
    }
