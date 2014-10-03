@@ -105,7 +105,7 @@ const rarch_joypad_driver_t *input_joypad_init_driver(const char *ident)
       }
    }
 
-   return NULL;
+   return input_joypad_init_first();
 }
 
 const rarch_joypad_driver_t *input_joypad_init_first(void)
