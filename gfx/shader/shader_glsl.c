@@ -1185,7 +1185,9 @@ static void gl_glsl_use(void *data, unsigned index)
 
 static unsigned gl_glsl_num(void)
 {
-   return glsl_shader->passes;
+   if (glsl_shader)
+      return glsl_shader->passes;
+   return 0;
 }
 
 static bool gl_glsl_filter_type(unsigned index, bool *smooth)
