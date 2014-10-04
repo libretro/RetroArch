@@ -464,13 +464,11 @@ static bool apple_joypad_rumble(unsigned pad,
    return false;
 }
 
-static const char *apple_joypad_name(unsigned joypad)
+static const char *apple_joypad_name(unsigned pad)
 {
    /* TODO/FIXME - implement properly */
    if (pad >= MAX_PLAYERS)
       return NULL;
-
-   (void)joypad;
 
    return NULL;
 }
