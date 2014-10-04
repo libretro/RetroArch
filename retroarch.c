@@ -3261,7 +3261,8 @@ int rarch_main_iterate(void)
       if (!menu_iterate(input, old_input, trigger_input))
          rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED);
 
-      ret = 1;
+      if ( ! input )
+        ret = 1;
       goto success;
    }
 #endif
