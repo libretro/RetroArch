@@ -319,7 +319,7 @@ void btpad_packet_handler(uint8_t packet_type,
 
                   RARCH_LOG("BTpad: Got %.200s\n", (char*)&packet[9]);
 
-                  connection->slot = joypad_connection_connect(
+                  connection->slot = pad_connection_connect(
                         (char*)packet + 9, connection);
                   connection->state = BTPAD_CONNECTED;
                }

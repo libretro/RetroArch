@@ -66,7 +66,7 @@ struct pad_connection_interface
 };
 
 /* Joypad data */
-int32_t joypad_connection_connect(const char* name, void *data);
+int32_t pad_connection_connect(const char* name, void *data);
 
 int32_t apple_joypad_connect_gcapi(void);
 

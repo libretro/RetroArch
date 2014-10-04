@@ -193,7 +193,7 @@ static void add_device(void* context, IOReturn result,
    productID = (CFNumberRef)IOHIDDeviceGetProperty(device, CFSTR(kIOHIDProductIDKey));
    CFNumberGetValue(productID, kCFNumberIntType, &connection->p_id);
 
-   connection->slot = joypad_connection_connect(device_name, connection);
+   connection->slot = pad_connection_connect(device_name, connection);
 
    if (pad_connection_has_interface(connection->slot))
       IOHIDDeviceRegisterInputReportCallback(device,
@@ -249,7 +249,7 @@ static int find_vacant_pad(void)
    return -1;
 }
 
-int32_t joypad_connection_connect(const char* name, void *data)
+int32_t pad_connection_connect(const char* name, void *data)
 {
    struct pad_connection* connection = (struct pad_connection*)data;
    int pad = find_vacant_pad();
