@@ -352,6 +352,7 @@ static void config_set_defaults(void)
    g_settings.video.force_srgb_disable = false;
 #ifdef GEKKO
    g_settings.video.viwidth = video_viwidth;
+   g_settings.video.vfilter = video_vfilter;
 #endif
    g_settings.video.smooth = video_smooth;
    g_settings.video.force_aspect = force_aspect;
@@ -877,6 +878,7 @@ static bool config_load_file(const char *path, bool set_defaults)
    CONFIG_GET_BOOL(video.shared_context, "video_shared_context");
 #ifdef GEKKO
    CONFIG_GET_INT(video.viwidth, "video_viwidth");
+   CONFIG_GET_BOOL(video.vfilter, "video_vfilter");
 #endif
    CONFIG_GET_BOOL(video.smooth, "video_smooth");
    CONFIG_GET_BOOL(video.force_aspect, "video_force_aspect");
@@ -1527,6 +1529,7 @@ bool config_save_file(const char *path)
    config_set_bool(conf,  "video_scale_integer", g_settings.video.scale_integer);
 #ifdef GEKKO
    config_set_int(conf,   "video_viwidth", g_settings.video.viwidth);
+   config_set_bool(conf,  "video_vfilter", g_settings.video.vfilter);
 #endif
    config_set_bool(conf,  "video_smooth", g_settings.video.smooth);
    config_set_bool(conf,  "video_threaded", g_settings.video.threaded);

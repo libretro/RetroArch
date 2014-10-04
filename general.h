@@ -235,6 +235,7 @@ struct settings
       unsigned frame_delay;
 #ifdef GEKKO
       unsigned viwidth;
+      bool vfilter;
 #endif
       bool smooth;
       bool force_aspect;
