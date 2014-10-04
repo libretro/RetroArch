@@ -87,6 +87,7 @@ OBJ += frontend/frontend.o \
 		frontend/platform/platform_null.o \
 		libretro_version_1.o \
 		retroarch.o \
+		runloop.o \
 		file.o \
 		file_list.o \
 		dir_list.o \

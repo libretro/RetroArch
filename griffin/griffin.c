@@ -597,6 +597,7 @@ RETROARCH
 #include "../general.c"
 #include "../libretro_version_1.c"
 #include "../retroarch.c"
+#include "../runloop.c"
 
 /*============================================================
 RECORDING
