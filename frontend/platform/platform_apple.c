@@ -91,9 +91,10 @@ static void do_iteration(void)
     "ugly way" first because it is the most expedient and
     safe. Other eyeballs should decide if it isn't necessary.
     */
-
+#if 0
    if ( ! g_extern.is_menu ) 
      CFRunLoopWakeUp(CFRunLoopGetMain());
+#endif
 }
 
 void apple_start_iteration(void)
