@@ -60,8 +60,10 @@ int32_t pad_connection_connect(const char* name, void *data)
       } pad_map[] = 
       {
          { "Nintendo RVL-CNT-01",         &apple_pad_wii },
-         /* { "Nintendo RVL-CNT-01-UC",   &apple_pad_wii }, */ /* WiiU */
-         /* { "Wireless Controller",         &apple_pad_ps4 }, */ /* DualShock4 */
+#if 0
+         { "Nintendo RVL-CNT-01-UC",   &apple_pad_wii_u },
+         { "Wireless Controller",         &apple_pad_ps4 },
+#endif
          { "PLAYSTATION(R)3 Controller",  &apple_pad_ps3 },
          { 0, 0}
       };
@@ -118,6 +120,24 @@ void pad_connection_packet(uint32_t pad,
       if (s->iface && s->data && s->iface->packet_handler)
          s->iface->packet_handler(s->data, data, length);
    }
+}
+
+uint32_t pad_connection_get_buttons(void *data, unsigned index)
+{
+   joypad_slot_t *s = (joypad_slot_t*)&slots[index];
+
+   if (s && s->iface && s->data)
+      return s->iface->get_buttons(s->data, index);
+   return 0;
+}
+
+int16_t pad_connection_get_axis(void *data, unsigned index, unsigned i)
+{
+   joypad_slot_t *s = (joypad_slot_t*)&slots[index];
+
+   if (s && s->iface && s->data)
+      return s->iface->get_axis(s->data, index, i);
+   return 0;
 }
 
 bool pad_connection_has_interface(uint32_t pad)

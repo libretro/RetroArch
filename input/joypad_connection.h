@@ -22,14 +22,13 @@
 
 typedef struct pad_connection_interface
 {
-   void* (*connect)(void *data, uint32_t slot);
-
-   void (*disconnect)(void* device);
-
-   void (*packet_handler)(void* device, uint8_t *packet, uint16_t size);
-
-   void (*set_rumble)(void* device, enum retro_rumble_effect effect,
+   void*    (*connect)(void *data, uint32_t slot);
+   void     (*disconnect)(void* device);
+   void     (*packet_handler)(void* device, uint8_t *packet, uint16_t size);
+   void     (*set_rumble)(void* device, enum retro_rumble_effect effect,
          uint16_t strength);
+   uint32_t (*get_buttons)(void *data);
+   int16_t  (*get_axis)(void *data, unsigned axis);
 } pad_connection_interface_t;
 
 extern pad_connection_interface_t apple_pad_wii;
@@ -42,6 +41,10 @@ int32_t apple_joypad_connect_gcapi(void);
 void pad_connection_disconnect(uint32_t slot);
 
 void pad_connection_packet(uint32_t slot, uint8_t* data, uint32_t length);
+
+uint32_t pad_connection_get_buttons(void *data);
+
+int16_t pad_connection_get_axis(void *data, unsigned i);
 
 /* Determine if connected joypad is a hidpad backed device.
  * If false, pad_connection_packet cannot be used */

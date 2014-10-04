@@ -146,9 +146,17 @@ static void hid_device_report(void* context, IOReturn result, void *sender,
       CFIndex reportLength)
 {
    struct pad_connection* connection = (struct pad_connection*)context;
+   apple_input_data_t *apple = (apple_input_data_t*)driver.input_data;
 
-   if (connection)
+   if (connection && apple)
+   {
+      int i;
+
       pad_connection_packet(connection->slot, connection->data, reportLength + 1);
+      apple->buttons[connection->slot] = pad_connection_get_buttons(connection->data);
+      for (i = 0; i < 4; i++)
+         apple->axes[device->slot][i] = pad_connection_get_axis(connection->data, i);
+   }
 }
 
 static void add_device(void* context, IOReturn result,

@@ -131,11 +131,17 @@ void btpad_packet_handler(uint8_t packet_type,
          {
             struct pad_connection* connection = 
                (struct pad_connection*)&g_connections[i];
+            apple_input_data_t *apple = (apple_input_data_t*)driver.input_data;
 
             if (connection && connection->state == BTPAD_CONNECTED
                   && (connection->channels[0] == channel || 
                      connection->channels[1] == channel))
+            {
                pad_connection_packet(connection->slot, packet, size);
+               apple->buttons[connection->slot] = pad_connection_get_buttons(connection->data);
+               for (i = 0; i < 4; i++)
+                  apple->axes[device->slot][i] = pad_connection_get_axis(connection->data, i);
+            }
          }
          break;
       case HCI_EVENT_PACKET:

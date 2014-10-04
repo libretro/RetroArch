@@ -69,15 +69,22 @@ static int16_t hidpad_wii_get_axis(void *data, unsigned axis)
    return 0;
 }
 
+static uint32_t hidpad_wii_get_buttons(void *data)
+{
+   struct wiimote_t* device = (struct wiimote_t*)data;
+   if (device)
+      return  device->btns | (device->exp.cc.classic.btns << 16);
+   return 0;
+}
+
 static void hidpad_wii_packet_handler(void *data,
       uint8_t *packet, uint16_t size)
 {
    int i;
-   apple_input_data_t *apple = (apple_input_data_t*)driver.input_data;
    struct wiimote_t* device = (struct wiimote_t*)data;
    byte* msg = packet + 2;
 
-   if (!device || !apple)
+   if (!device)
       return;
 
    switch (packet[1])
@@ -99,12 +106,6 @@ static void hidpad_wii_packet_handler(void *data,
          wiimote_handle_expansion(device, msg+2);
          break;
    }
-
-   apple->buttons[device->unid] = device->btns |
-      (device->exp.cc.classic.btns << 16);
-
-   for (i = 0; i < 4; i++)
-      apple->axes[device->unid][i] = hidpad_wii_get_axis(device, i);
 }
 
 static void hidpad_wii_set_rumble(void *data,
@@ -120,5 +121,7 @@ pad_connection_interface_t apple_pad_wii = {
    hidpad_wii_connect,
    hidpad_wii_disconnect,
    hidpad_wii_packet_handler,
-   hidpad_wii_set_rumble
+   hidpad_wii_set_rumble,
+   hidpad_wii_get_buttons,
+   hidpad_wii_get_axis,
 };

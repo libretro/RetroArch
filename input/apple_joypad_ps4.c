@@ -137,10 +137,9 @@ static int16_t hidpad_ps4_get_axis(void *data, unsigned axis)
 static void hidpad_ps4_packet_handler(void *data, uint8_t *packet, uint16_t size)
 {
    int i;
-   apple_input_data_t *apple = (apple_input_data_t*)driver.input_data;
    struct hidpad_ps4_data *device = (struct hidpad_ps4_data*)data;
     
-   if (!device || !apple)
+   if (!device)
       return;
     
    (void)i;
@@ -154,12 +153,6 @@ static void hidpad_ps4_packet_handler(void *data, uint8_t *packet, uint16_t size
 #endif
 
    memcpy(device->data, packet, size);
-
-   apple->buttons[device->slot] = hidpad_ps4_get_buttons(device);
-#if 0
-   for (i = 0; i < 4; i ++)
-      g_current_input_data.axes[device->slot][i] = hidpad_ps4_get_axis(device, i);
-#endif
 }
 
 static void hidpad_ps4_set_rumble(void *data,

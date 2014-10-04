@@ -136,11 +136,9 @@ static int16_t hidpad_ps3_get_axis(void *data, unsigned axis)
 
 static void hidpad_ps3_packet_handler(void *data, uint8_t *packet, uint16_t size)
 {
-   int i;
-   apple_input_data_t *apple = (apple_input_data_t*)driver.input_data;
    struct hidpad_ps3_data *device = (struct hidpad_ps3_data*)data;
     
-   if (!device || !apple)
+   if (!device)
       return;
     
    if (!device->have_led)
@@ -150,10 +148,6 @@ static void hidpad_ps3_packet_handler(void *data, uint8_t *packet, uint16_t size
    }
 
    memcpy(device->data, packet, size);
-
-   apple->buttons[device->slot] = hidpad_ps3_get_buttons(device);
-   for (i = 0; i < 4; i ++)
-      apple->axes[device->slot][i] = hidpad_ps3_get_axis(device, i);
 }
 
 static void hidpad_ps3_set_rumble(void *data,
@@ -173,5 +167,7 @@ pad_connection_interface_t apple_pad_ps3 = {
    hidpad_ps3_connect,
    hidpad_ps3_disconnect,
    hidpad_ps3_packet_handler,
-   hidpad_ps3_set_rumble
+   hidpad_ps3_set_rumble,
+   hidpad_ps3_get_buttons,
+   hidpad_ps3_get_axis,
 };
