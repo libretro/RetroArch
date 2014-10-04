@@ -39,8 +39,9 @@
 #include "../config.h"
 #endif
 
-// Need libxkbcommon to translate raw evdev events to characters
-// which can be passed to keyboard callback in a sensible way.
+/* Need libxkbcommon to translate raw evdev events to characters
+ * which can be passed to keyboard callback in a sensible way. */
+
 #ifdef HAVE_XKBCOMMON
 #include <xkbcommon/xkbcommon.h>
 #endif
@@ -102,35 +103,42 @@ struct udev_input
 };
 
 #ifdef HAVE_XKBCOMMON
-// FIXME: Don't handle composed and dead-keys properly. Waiting for support in libxkbcommon ...
+/* FIXME: Don't handle composed and dead-keys properly. 
+ * Waiting for support in libxkbcommon ... */
 static void handle_xkb(udev_input_t *udev, int code, int value)
 {
    unsigned i;
-   int xk_code = code + 8; // Convert Linux evdev to X11 (xkbcommon docs say so at least ...)
-
-   if (value == 2) // Repeat, release first explicitly.
-      xkb_state_update_key(udev->xkb_state, xk_code, XKB_KEY_UP);
-
    const xkb_keysym_t *syms = NULL;
    unsigned num_syms = 0;
+   uint16_t mod = 0;
+   /* Convert Linux evdev to X11 (xkbcommon docs say so at least ...) */
+   int xk_code = code + 8;
+
+   if (value == 2) /* Repeat, release first explicitly. */
+      xkb_state_update_key(udev->xkb_state, xk_code, XKB_KEY_UP);
+
    if (value)
       num_syms = xkb_state_key_get_syms(udev->xkb_state, xk_code, &syms);
 
    xkb_state_update_key(udev->xkb_state, xk_code, value ? XKB_KEY_DOWN : XKB_KEY_UP);
 
-   // Build mod state.
-   uint16_t mod = 0;
+   /* Build mod state. */
    for (i = 0; i < ARRAY_SIZE(udev->mod_map); i++)
       if (udev->mod_map[i].index != XKB_MOD_INVALID)
-         mod |= xkb_state_mod_index_is_active(udev->xkb_state, udev->mod_map[i].index, XKB_STATE_MODS_EFFECTIVE) > 0 ? udev->mod_map[i].bit : 0;
+         mod |= xkb_state_mod_index_is_active(
+               udev->xkb_state,
+               udev->mod_map[i].index,
+               (XKB_STATE_MODS_EFFECTIVE) > 0) ? udev->mod_map[i].bit : 0;
 
-   input_keyboard_event(value, input_translate_keysym_to_rk(code), num_syms ? xkb_keysym_to_utf32(syms[0]) : 0, mod);
+   input_keyboard_event(value, input_translate_keysym_to_rk(code),
+         num_syms ? xkb_keysym_to_utf32(syms[0]) : 0, mod);
    for (i = 1; i < num_syms; i++)
       input_keyboard_event(value, RETROK_UNKNOWN, xkb_keysym_to_utf32(syms[i]), mod);
 }
 #endif
 
-static void udev_handle_keyboard(udev_input_t *udev, const struct input_event *event, struct input_device *dev)
+static void udev_handle_keyboard(udev_input_t *udev,
+      const struct input_event *event, struct input_device *dev)
 {
    switch (event->type)
    {
@@ -151,7 +159,8 @@ static void udev_handle_keyboard(udev_input_t *udev, const struct input_event *e
    }
 }
 
-static void udev_handle_touchpad(udev_input_t *udev, const struct input_event *event, struct input_device *dev)
+static void udev_handle_touchpad(udev_input_t *udev,
+      const struct input_event *event, struct input_device *dev)
 {
    switch (event->type)
    {
@@ -161,16 +170,18 @@ static void udev_handle_touchpad(udev_input_t *udev, const struct input_event *e
             case ABS_X:
             {
                int x = event->value - dev->state.touchpad.info_x.minimum;
-               int range = dev->state.touchpad.info_x.maximum - dev->state.touchpad.info_x.minimum;
+               int range = dev->state.touchpad.info_x.maximum - 
+                  dev->state.touchpad.info_x.minimum;
                float x_norm = (float)x / range;
 
                float rel_x = x_norm - dev->state.touchpad.x;
 
                if (dev->state.touchpad.touch)
-                  udev->mouse_x += (int16_t)roundf(dev->state.touchpad.mod_x * rel_x);
+                  udev->mouse_x += (int16_t)
+                     roundf(dev->state.touchpad.mod_x * rel_x);
 
                dev->state.touchpad.x = x_norm;
-               // Some factor, not sure what's good to do here ...
+               /* Some factor, not sure what's good to do here ... */
                dev->state.touchpad.mod_x = 500.0f;
                break;
             }
@@ -178,7 +189,8 @@ static void udev_handle_touchpad(udev_input_t *udev, const struct input_event *e
             case ABS_Y:
             {
                int y = event->value - dev->state.touchpad.info_y.minimum;
-               int range = dev->state.touchpad.info_y.maximum - dev->state.touchpad.info_y.minimum;
+               int range = dev->state.touchpad.info_y.maximum - 
+                  dev->state.touchpad.info_y.minimum;
                float y_norm = (float)y / range;
 
                float rel_y = y_norm - dev->state.touchpad.y;
@@ -187,7 +199,8 @@ static void udev_handle_touchpad(udev_input_t *udev, const struct input_event *e
                   udev->mouse_y += (int16_t)roundf(dev->state.touchpad.mod_y * rel_y);
 
                dev->state.touchpad.y = y_norm;
-               // Some factor, not sure what's good to do here ...
+
+               /* Some factor, not sure what's good to do here ... */
                dev->state.touchpad.mod_y = 500.0f;
                break;
             }
@@ -202,7 +215,7 @@ static void udev_handle_touchpad(udev_input_t *udev, const struct input_event *e
          {
             case BTN_TOUCH:
                dev->state.touchpad.touch = event->value;
-               dev->state.touchpad.mod_x = 0.0f; // First ABS event is not a relative one.
+               dev->state.touchpad.mod_x = 0.0f; /* First ABS event is not a relative one. */
                dev->state.touchpad.mod_y = 0.0f;
                break;
 
@@ -212,7 +225,8 @@ static void udev_handle_touchpad(udev_input_t *udev, const struct input_event *e
    }
 }
 
-static void udev_handle_mouse(udev_input_t *udev, const struct input_event *event, struct input_device *dev)
+static void udev_handle_mouse(udev_input_t *udev,
+      const struct input_event *event, struct input_device *dev)
 {
    switch (event->type)
    {
@@ -265,26 +279,32 @@ static void udev_handle_mouse(udev_input_t *udev, const struct input_event *even
 
 static bool hotplug_available(udev_input_t *udev)
 {
-   if (!udev->monitor)
+   struct pollfd fds = {0};
+   if (!udev || !udev->monitor)
       return false;
 
-   struct pollfd fds = {0};
    fds.fd = udev_monitor_get_fd(udev->monitor);
    fds.events = POLLIN;
    return (poll(&fds, 1, 0) == 1) && (fds.revents & POLLIN);
 }
 
-static bool add_device(udev_input_t *udev, const char *devnode, device_handle_cb cb)
+static bool add_device(udev_input_t *udev,
+      const char *devnode, device_handle_cb cb)
 {
+   int fd;
    struct stat st;
+   struct input_device **tmp;
+   struct input_device *device = NULL;
+   struct epoll_event event = {0};
+
    if (stat(devnode, &st) < 0)
       return false;
 
-   int fd = open(devnode, O_RDONLY | O_NONBLOCK);
+   fd = open(devnode, O_RDONLY | O_NONBLOCK);
    if (fd < 0)
       return false;
 
-   struct input_device *device = (struct input_device*)calloc(1, sizeof(*device));
+   device = (struct input_device*)calloc(1, sizeof(*device));
    if (!device)
    {
       close(fd);
@@ -307,7 +327,7 @@ static bool add_device(udev_input_t *udev, const char *devnode, device_handle_cb
       return false;
    }
 
-   struct input_device **tmp = (struct input_device**)realloc(udev->devices,
+   tmp = (struct input_device**)realloc(udev->devices,
          (udev->num_devices + 1) * sizeof(*udev->devices));
 
    if (!tmp)
@@ -320,11 +340,13 @@ static bool add_device(udev_input_t *udev, const char *devnode, device_handle_cb
    tmp[udev->num_devices++] = device;
    udev->devices = tmp;
 
-   struct epoll_event event = {0};
    event.events = EPOLLIN;
    event.data.ptr = device;
-   if (epoll_ctl(udev->epfd, EPOLL_CTL_ADD, fd, &event) < 0) // Shouldn't happen, but just check it.
-      RARCH_ERR("Failed to add FD (%d) to epoll list (%s).\n", fd, strerror(errno));
+
+   /* Shouldn't happen, but just check it. */
+   if (epoll_ctl(udev->epfd, EPOLL_CTL_ADD, fd, &event) < 0)
+      RARCH_ERR("Failed to add FD (%d) to epoll list (%s).\n",
+            fd, strerror(errno));
 
    return true;
 }
@@ -400,23 +422,23 @@ end:
 
 static void udev_input_poll(void *data)
 {
+   int i, ret;
+   struct epoll_event events[32];
    udev_input_t *udev = (udev_input_t*)data;
    udev->mouse_x = udev->mouse_y = 0;
 
    while (hotplug_available(udev))
       handle_hotplug(udev);
 
-   int i;
-   struct epoll_event events[32];
-   int ret = epoll_wait(udev->epfd, events, ARRAY_SIZE(events), 0);
+   ret = epoll_wait(udev->epfd, events, ARRAY_SIZE(events), 0);
 
    for (i = 0; i < ret; i++)
    {
       if (events[i].events & EPOLLIN)
       {
+         int j, len;
          struct input_device *device = (struct input_device*)events[i].data.ptr;
          struct input_event events[32];
-         int j, len;
 
          while ((len = read(device->fd, events, sizeof(events))) > 0)
          {
@@ -449,9 +471,9 @@ static int16_t udev_mouse_state(udev_input_t *udev, unsigned id)
          return udev->mouse_wu;
       case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
          return udev->mouse_wd;
-      default:
-         return 0;
    }
+
+   return 0;
 }
 
 static int16_t udev_lightgun_state(udev_input_t *udev, unsigned id)
@@ -472,12 +494,12 @@ static int16_t udev_lightgun_state(udev_input_t *udev, unsigned id)
          return udev->mouse_m && udev->mouse_r; 
       case RETRO_DEVICE_ID_LIGHTGUN_PAUSE:
          return udev->mouse_m && udev->mouse_l; 
-      default:
-         return 0;
    }
+
+   return 0;
 }
 
-static bool udev_is_pressed(udev_input_t *udev, const struct retro_keybind *binds, unsigned id)
+static bool udev_input_is_pressed(udev_input_t *udev, const struct retro_keybind *binds, unsigned id)
 {
    if (id < RARCH_BIND_LIST_END)
    {
@@ -494,9 +516,9 @@ static int16_t udev_analog_pressed(udev_input_t *udev,
    unsigned id_plus  = 0;
    input_conv_analog_id_to_bind_id(index, id, &id_minus, &id_plus);
 
-   int16_t pressed_minus = udev_is_pressed(udev,
+   int16_t pressed_minus = udev_input_is_pressed(udev,
          binds, id_minus) ? -0x7fff : 0;
-   int16_t pressed_plus = udev_is_pressed(udev,
+   int16_t pressed_plus = udev_input_is_pressed(udev,
          binds, id_plus) ? 0x7fff : 0;
    return pressed_plus + pressed_minus;
 }
@@ -510,7 +532,7 @@ static int16_t udev_input_state(void *data, const struct retro_keybind **binds,
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
-         return udev_is_pressed(udev, binds[port], id) ||
+         return udev_input_is_pressed(udev, binds[port], id) ||
             input_joypad_pressed(udev->joypad, port, binds[port], id);
 
       case RETRO_DEVICE_ANALOG:
@@ -533,20 +555,20 @@ static int16_t udev_input_state(void *data, const struct retro_keybind **binds,
    }
 }
 
-static bool udev_bind_button_pressed(void *data, int key)
+static bool udev_input_bind_button_pressed(void *data, int key)
 {
    udev_input_t *udev = (udev_input_t*)data;
-   return udev_is_pressed(udev, g_settings.input.binds[0], key) ||
+   return udev_input_is_pressed(udev, g_settings.input.binds[0], key) ||
       input_joypad_pressed(udev->joypad, 0, g_settings.input.binds[0], key);
 }
 
 static void udev_input_free(void *data)
 {
-   if (!data)
-      return;
-
    unsigned i;
    udev_input_t *udev = (udev_input_t*)data;
+   if (!data || !udev)
+      return;
+
    if (udev->joypad)
       udev->joypad->destroy();
 
@@ -780,16 +802,16 @@ static uint64_t udev_input_get_capabilities(void *data)
    (void)data;
 
    return
-      (1 << RETRO_DEVICE_JOYPAD) |
-      (1 << RETRO_DEVICE_ANALOG) |
+      (1 << RETRO_DEVICE_JOYPAD)   |
+      (1 << RETRO_DEVICE_ANALOG)   |
       (1 << RETRO_DEVICE_KEYBOARD) |
-      (1 << RETRO_DEVICE_MOUSE) |
+      (1 << RETRO_DEVICE_MOUSE)    |
       (1 << RETRO_DEVICE_LIGHTGUN);
 }
 
 static void udev_input_grab_mouse(void *data, bool state)
 {
-   // Dummy for now. Might be useful in the future.
+   /* Dummy for now. Might be useful in the future. */
    (void)data;
    (void)state;
 }
@@ -797,20 +819,24 @@ static void udev_input_grab_mouse(void *data, bool state)
 static bool udev_input_set_rumble(void *data, unsigned port, enum retro_rumble_effect effect, uint16_t strength)
 {
    udev_input_t *udev = (udev_input_t*)data;
-   return input_joypad_set_rumble(udev->joypad, port, effect, strength);
+   if (udev && udev->joypad)
+      return input_joypad_set_rumble(udev->joypad, port, effect, strength);
+   return false;
 }
 
 static const rarch_joypad_driver_t *udev_input_get_joypad_driver(void *data)
 {
    udev_input_t *udev = (udev_input_t*)data;
-   return udev->joypad;
+   if (udev)
+      return udev->joypad;
+   return NULL;
 }
 
 input_driver_t input_udev = {
    udev_input_init,
    udev_input_poll,
    udev_input_state,
-   udev_bind_button_pressed,
+   udev_input_bind_button_pressed,
    udev_input_free,
    NULL,
    NULL,

@@ -153,6 +153,8 @@ static uint32_t icade_buttons;
 
 static bool handle_small_keyboard(unsigned* code, bool down)
 {
+   static uint8_t mapping[128];
+   static bool map_initialized;
    static const struct { uint8_t orig; uint8_t mod; } mapping_def[] =
    {
       { KEY_Grave,      KEY_Escape     }, { KEY_1,          KEY_F1         },
@@ -170,10 +172,8 @@ static bool handle_small_keyboard(unsigned* code, bool down)
       { KEY_X,          KP_2           }, { KEY_C,          KP_3           },
       { 0 }
    };
-   
-   static uint8_t mapping[128];
-   static bool map_initialized;
    apple_input_data_t *apple = (apple_input_data_t*)driver.input_data;
+   unsigned translated_code  = 0;
    
    if (!map_initialized)
    {
@@ -189,7 +189,7 @@ static bool handle_small_keyboard(unsigned* code, bool down)
       return true;
    }
    
-   unsigned translated_code = (*code < 128) ? mapping[*code] : 0;
+   translated_code = (*code < 128) ? mapping[*code] : 0;
    
    /* Allow old keys to be released. */
    if (!down && apple->keys[*code])
@@ -256,24 +256,26 @@ void apple_input_reset_icade_buttons(void)
    icade_buttons = 0;
 }
 
+/* This is copied here as it isn't 
+ * defined in any standard iOS header */
+enum
+{
+   NSAlphaShiftKeyMask = 1 << 16,
+   NSShiftKeyMask      = 1 << 17,
+   NSControlKeyMask    = 1 << 18,
+   NSAlternateKeyMask  = 1 << 19,
+   NSCommandKeyMask    = 1 << 20,
+   NSNumericPadKeyMask = 1 << 21,
+   NSHelpKeyMask       = 1 << 22,
+   NSFunctionKeyMask   = 1 << 23,
+   NSDeviceIndependentModifierFlagsMask = 0xffff0000U
+};
+
 void apple_input_keyboard_event(bool down,
       unsigned code, uint32_t character, uint32_t mod)
 {
    apple_input_data_t *apple = (apple_input_data_t*)driver.input_data;
-   /* This is copied here as it isn't 
-    * defined in any standard iOS header */
-   enum
-   {
-      NSAlphaShiftKeyMask = 1 << 16,
-      NSShiftKeyMask      = 1 << 17,
-      NSControlKeyMask    = 1 << 18,
-      NSAlternateKeyMask  = 1 << 19,
-      NSCommandKeyMask    = 1 << 20,
-      NSNumericPadKeyMask = 1 << 21,
-      NSHelpKeyMask       = 1 << 22,
-      NSFunctionKeyMask   = 1 << 23,
-      NSDeviceIndependentModifierFlagsMask = 0xffff0000U
-   };
+   enum retro_mod mods = RETROKMOD_NONE;
 
    code = HIDKEY(code);
 
@@ -291,7 +293,6 @@ void apple_input_keyboard_event(bool down,
 
    apple->keys[code] = down;
 
-   enum retro_mod mods = RETROKMOD_NONE;
    mods |= (mod & NSAlphaShiftKeyMask) ? RETROKMOD_CAPSLOCK : 0;
    mods |= (mod & NSShiftKeyMask)      ? RETROKMOD_SHIFT : 0;
    mods |= (mod & NSControlKeyMask)    ? RETROKMOD_CTRL : 0;
@@ -376,7 +377,7 @@ static bool apple_key_pressed(apple_input_data_t *apple,
    return false;
 }
 
-static int16_t apple_is_pressed(apple_input_data_t *apple, unsigned port_num,
+static int16_t apple_input_is_pressed(apple_input_data_t *apple, unsigned port_num,
    const struct retro_keybind *binds, unsigned id)
 {
    if (id < RARCH_BIND_LIST_END)
@@ -491,7 +492,7 @@ static int16_t apple_input_state(void *data,
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
-         return apple_is_pressed(apple, port, binds[port], id) ||
+         return apple_input_is_pressed(apple, port, binds[port], id) ||
             input_joypad_pressed(apple->joypad, port, binds[port], id);
       case RETRO_DEVICE_ANALOG:
          return input_joypad_analog(apple->joypad, port,
@@ -508,23 +509,21 @@ static int16_t apple_input_state(void *data,
    return 0;
 }
 
-static bool apple_bind_button_pressed(void *data, int key)
+static bool apple_input_bind_button_pressed(void *data, int key)
 {
-   const struct retro_keybind *binds = g_settings.input.binds[0];
    apple_input_data_t *apple = (apple_input_data_t*)data;
-
-   return apple_is_pressed(apple, 0, binds, key) ||
-    input_joypad_pressed(apple->joypad, 0, binds, key);
+   return apple_input_is_pressed(apple, 0, g_settings.input.binds[0], key) ||
+      input_joypad_pressed(apple->joypad, 0, g_settings.input.binds[0], key);
 }
 
-static void apple_input_free_input(void *data)
+static void apple_input_free(void *data)
 {
    apple_input_data_t *apple = (apple_input_data_t*)data;
     
-   if (!apple)
+   if (!apple || !data)
       return;
     
-   if (apple && apple->joypad)
+   if (apple->joypad)
       apple->joypad->destroy();
     
    free(apple);
@@ -543,20 +542,24 @@ static bool apple_input_set_rumble(void *data,
 
 static uint64_t apple_input_get_capabilities(void *data)
 {
-   uint64_t caps = 0;
-
    (void)data;
 
-   caps |= (1 << RETRO_DEVICE_JOYPAD);
-   caps |= (1 << RETRO_DEVICE_MOUSE);
-   caps |= (1 << RETRO_DEVICE_KEYBOARD);
-   caps |= (1 << RETRO_DEVICE_POINTER);
-   caps |= (1 << RETRO_DEVICE_ANALOG);
-
-   return caps;
+   return 
+      (1 << RETRO_DEVICE_JOYPAD)   |
+      (1 << RETRO_DEVICE_MOUSE)    |
+      (1 << RETRO_DEVICE_KEYBOARD) |
+      (1 << RETRO_DEVICE_POINTER)  |
+      (1 << RETRO_DEVICE_ANALOG);
 }
 
-static const rarch_joypad_driver_t *apple_get_joypad_driver(void *data)
+static void apple_input_grab_mouse(void *data, bool state)
+{
+   /* Dummy for now. Might be useful in the future. */
+   (void)data;
+   (void)state;
+}
+
+static const rarch_joypad_driver_t *apple_input_get_joypad_driver(void *data)
 {
    apple_input_data_t *apple = (apple_input_data_t*)data;
     
@@ -569,13 +572,13 @@ input_driver_t input_apple = {
    apple_input_init,
    apple_input_poll,
    apple_input_state,
-   apple_bind_button_pressed,
-   apple_input_free_input,
+   apple_input_bind_button_pressed,
+   apple_input_free,
    NULL,
    NULL,
    apple_input_get_capabilities,
    "apple_input",
-   NULL,
+   apple_input_grab_mouse,
    apple_input_set_rumble,
-   apple_get_joypad_driver
+   apple_input_get_joypad_driver
 };
