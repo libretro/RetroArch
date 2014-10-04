@@ -117,6 +117,9 @@ static void btpad_close_all_connections(void)
    int i;
    for (i = 0; i < MAX_PLAYERS; i ++)
       btpad_close_connection(&g_connections[i]);
+   /* TODO/FIXME - create platform-agnostic solution for this
+    * and figure out why/if this is needed. */
+   CFRunLoopStop(CFRunLoopGetCurrent());
 }
 
 void btpad_packet_handler(uint8_t packet_type,
@@ -166,7 +169,6 @@ void btpad_packet_handler(uint8_t packet_type,
 
                      case HCI_STATE_HALTING:
                         btpad_close_all_connections();
-                        CFRunLoopStop(CFRunLoopGetCurrent());
                         break;                  
                   }
                }
