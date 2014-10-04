@@ -116,7 +116,7 @@ void apple_joypad_disconnect(uint32_t pad)
    }
 }
 
-void apple_joypad_packet(uint32_t pad,
+void pad_connection_packet(uint32_t pad,
       uint8_t* data, uint32_t length)
 {
    if (pad < MAX_PLAYERS && slots[pad].used)

@@ -72,18 +72,12 @@ int32_t apple_joypad_connect_gcapi(void);
 
 void apple_joypad_disconnect(uint32_t slot);
 
-void apple_joypad_packet(uint32_t slot, uint8_t* data, uint32_t length);
+void pad_connection_packet(uint32_t slot, uint8_t* data, uint32_t length);
 
 /* Determine if connected joypad is a hidpad backed device.
- * If false, apple_joypad_packet cannot be used */
+ * If false, pad_connection_packet cannot be used */
 bool apple_joypad_has_interface(uint32_t slot);
 
-/* This is implemented in the platform-specific 
- * portions of the input code */
-void apple_joypad_send_hid_control(void *connect_data,
-      uint8_t* data, size_t size);
-
-/* Main thread only */
 void apple_input_enable_icade(bool on);
 
 void apple_input_enable_small_keyboard(bool on);

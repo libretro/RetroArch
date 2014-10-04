@@ -159,7 +159,7 @@ static void hid_device_report(void* context, IOReturn result, void *sender,
    struct pad_connection* connection = (struct pad_connection*)context;
 
    if (connection)
-      apple_joypad_packet(connection->slot, connection->data, reportLength + 1);
+      pad_connection_packet(connection->slot, connection->data, reportLength + 1);
 }
 
 static void add_device(void* context, IOReturn result,
@@ -312,7 +312,7 @@ void apple_joypad_disconnect(uint32_t slot)
    }
 }
 
-void apple_joypad_packet(uint32_t slot,
+void pad_connection_packet(uint32_t slot,
       uint8_t* data, uint32_t length)
 {
    if (slot < MAX_PLAYERS && slots[slot].used)

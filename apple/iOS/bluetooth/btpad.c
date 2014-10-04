@@ -135,7 +135,7 @@ void btpad_packet_handler(uint8_t packet_type,
             if (connection && connection->state == BTPAD_CONNECTED
                   && (connection->channels[0] == channel || 
                      connection->channels[1] == channel))
-               apple_joypad_packet(connection->slot, packet, size);
+               pad_connection_packet(connection->slot, packet, size);
          }
          break;
       case HCI_EVENT_PACKET:
