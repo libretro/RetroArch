@@ -89,9 +89,6 @@ static bool apple_gfx_ctx_init(void *data)
 {
    (void)data;
     
-    RARCH_LOG("Minor: %d\n", g_minor);
-    RARCH_LOG("Major: %d\n", g_major);
-    
 #ifdef OSX
     
     NSOpenGLPixelFormatAttribute attributes [] = {
