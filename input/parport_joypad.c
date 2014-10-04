@@ -219,7 +219,10 @@ static void destroy_pad(struct parport_joypad *pad)
 static bool parport_joypad_init(void)
 {
    unsigned i, j;
-   bool found_button;
+   bool found_enabled_button;
+   bool found_disabled_button;
+   char buf[NUM_BUTTONS * 3 + 1];
+   char pin[3 + 1];
 
    for (i = 0; i < MAX_PLAYERS; i++)
    {
@@ -238,25 +241,46 @@ static bool parport_joypad_init(void)
           * so assume the user is not holding any button on startup
           * and disable any low pins.
           */
-         for (j = 0; j < NUM_BUTTONS; j++)
-            pad->button_enable[j] = true;
-
          poll_pad(pad);
-         found_button = false;
+         found_enabled_button = false;
+         found_disabled_button = false;
 
          for (j = 0; j < NUM_BUTTONS; j++)
          {
             if (!pad->buttons[j])
-               found_button = true;
+            {
+               pad->button_enable[j] = true;
+               found_enabled_button = true;
+            }
             else
+            {
                pad->button_enable[j] = false;
+               found_disabled_button = true;
+            }
          }
 
-         if (found_button)
+         if (found_enabled_button)
+         {
+            if (found_disabled_button)
+            {
+               buf[0] = '\0';
+               for (j = 0; j < NUM_BUTTONS; j++)
+               {
+                  if (!pad->button_enable[j])
+                  {
+                     snprintf(pin, sizeof(pin), "%d ", j);
+                     strlcat(buf, pin, sizeof(buf));
+                  }
+               }
+               RARCH_WARN("[Joypad]: Pin(s) %son %s were low on init, assuming not connected\n", \
+                                       buf, path);
+            }
             input_config_autoconfigure_joypad(i, pad->ident, 0, 0, "parport");
+         }
          else
          {
-            destroy_pad(pad); /* assume nothing was connected */
+            RARCH_WARN("[Joypad]: All pins low on %s, assuming nothing connected\n", path);
+            destroy_pad(pad);
             input_config_autoconfigure_joypad(i, NULL, 0, 0, NULL);
          }
       }
