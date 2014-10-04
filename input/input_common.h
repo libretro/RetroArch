@@ -134,7 +134,8 @@ extern rarch_joypad_driver_t ps3_joypad;
 extern rarch_joypad_driver_t psp_joypad;
 extern rarch_joypad_driver_t xdk_joypad;
 extern rarch_joypad_driver_t gx_joypad;
-extern rarch_joypad_driver_t apple_joypad;
+extern rarch_joypad_driver_t apple_hid_joypad;
+extern rarch_joypad_driver_t apple_ios_joypad;
 extern rarch_joypad_driver_t android_joypad;
 extern rarch_joypad_driver_t qnx_joypad;
 

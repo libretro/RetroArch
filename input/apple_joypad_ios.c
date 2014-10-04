@@ -229,7 +229,7 @@ static const char *apple_joypad_name(unsigned joypad)
    return NULL;
 }
 
-rarch_joypad_driver_t apple_joypad = {
+rarch_joypad_driver_t apple_ios_joypad = {
    apple_joypad_init,
    apple_joypad_query_pad,
    apple_joypad_destroy,
