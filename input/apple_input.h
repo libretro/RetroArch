@@ -70,7 +70,7 @@ int32_t joypad_connection_connect(const char* name, void *data);
 
 int32_t apple_joypad_connect_gcapi(void);
 
-void apple_joypad_disconnect(uint32_t slot);
+void pad_connection_disconnect(uint32_t slot);
 
 void pad_connection_packet(uint32_t slot, uint8_t* data, uint32_t length);
 

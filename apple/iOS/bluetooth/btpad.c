@@ -346,7 +346,7 @@ void btpad_packet_handler(uint8_t packet_type,
                      {
                         connection->handle = 0;
 
-                        apple_joypad_disconnect(connection->slot);
+                        pad_connection_disconnect(connection->slot);
                         btpad_close_connection(connection);
                      }
                   }

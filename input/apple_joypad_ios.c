@@ -103,7 +103,7 @@ int32_t apple_joypad_connect_gcapi(void)
    return pad;
 }
 
-void apple_joypad_disconnect(uint32_t pad)
+void pad_connection_disconnect(uint32_t pad)
 {
    if (pad < MAX_PLAYERS && slots[pad].used)
    {

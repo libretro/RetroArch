@@ -126,7 +126,7 @@ static void apple_gamecontroller_disconnect(GCController* controller)
     if (controller.playerIndex == GCControllerPlayerIndexUnset)
         return;
     
-    apple_joypad_disconnect((uint32_t)controller.playerIndex);
+    pad_connection_disconnect((uint32_t)controller.playerIndex);
 }
 
 void apple_gamecontroller_init(void)

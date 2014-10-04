@@ -145,7 +145,7 @@ static void remove_device(void* context, IOReturn result, void* sender)
       apple->buttons[connection->slot] = 0;
       memset(apple->axes[connection->slot], 0, sizeof(apple->axes));
 
-      apple_joypad_disconnect(connection->slot);
+      pad_connection_disconnect(connection->slot);
       free(connection);
    }
 
@@ -299,7 +299,7 @@ int32_t apple_joypad_connect_gcapi(void)
    return pad;
 }
 
-void apple_joypad_disconnect(uint32_t slot)
+void pad_connection_disconnect(uint32_t slot)
 {
    if (slot < MAX_PLAYERS && slots[slot].used)
    {
