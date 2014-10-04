@@ -2517,7 +2517,7 @@ error:
    return 1;
 }
 
-static inline void update_frame_time(void)
+static void update_frame_time(void)
 {
    retro_time_t time = rarch_get_time_usec();
    retro_time_t delta = time - g_extern.system.frame_time_last;
@@ -2538,7 +2538,8 @@ static void limit_frame_time(void)
 {
    retro_time_t current = rarch_get_time_usec();
    retro_time_t target  = 0, to_sleep_ms = 0;
-   double effective_fps = (g_extern.system.av_info.timing.fps * g_settings.fastforward_ratio);
+   double effective_fps = g_extern.system.av_info.timing.fps 
+      * g_settings.fastforward_ratio;
    double mft_f = 1000000.0f / effective_fps;
 
    g_extern.frame_limit.minimum_frame_time = (retro_time_t) roundf(mft_f);
