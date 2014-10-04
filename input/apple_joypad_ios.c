@@ -22,9 +22,20 @@
 #include "../apple/iOS/bluetooth/btdynamic.c"
 #include "../apple/iOS/bluetooth/btpad.c"
 #include "../apple/iOS/bluetooth/btpad_queue.c"
+#include "joypad_connection.h"
+
+static void apple_joypad_ios_receive_control(unsigned index)
+{
+    int i;
+    apple_input_data_t *apple = (apple_input_data_t*)driver.input_data;
+    apple->buttons[index] = pad_connection_get_buttons(index);
+    for (i = 0; i < 4; i++)
+        apple->axes[index][i] = pad_connection_get_axis(index, i);
+}
 
 static bool apple_joypad_init(void)
 {
+   pad_connection_init(&apple_joypad_ios_receive_control);
    return true;
 }
 

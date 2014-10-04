@@ -146,17 +146,18 @@ static void hid_device_report(void* context, IOReturn result, void *sender,
       CFIndex reportLength)
 {
    struct pad_connection* connection = (struct pad_connection*)context;
-   apple_input_data_t *apple = (apple_input_data_t*)driver.input_data;
 
-   if (connection && apple)
-   {
-      int i;
-
+   if (connection)
       pad_connection_packet(connection->slot, connection->data, reportLength + 1);
-      apple->buttons[connection->slot] = pad_connection_get_buttons(connection->slot);
-      for (i = 0; i < 4; i++)
-         apple->axes[connection->slot][i] = pad_connection_get_axis(connection->slot, i);
-   }
+}
+
+static void apple_hid_receive_control(unsigned index)
+{
+   int i;
+   apple_input_data_t *apple = (apple_input_data_t*)driver.input_data;
+   apple->buttons[index] = pad_connection_get_buttons(index);
+   for (i = 0; i < 4; i++)
+      apple->axes[index][i] = pad_connection_get_axis(index, i);
 }
 
 static void add_device(void* context, IOReturn result,
@@ -257,6 +258,8 @@ static bool apple_joypad_init(void)
          kCFRunLoopCommonModes);
 
    IOHIDManagerOpen(g_hid_manager, kIOHIDOptionsTypeNone);
+    
+   pad_connection_init(&apple_hid_receive_control);
 
    return true;
 }

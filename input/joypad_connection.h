@@ -21,6 +21,7 @@
 #include <stddef.h>
 
 typedef void (*send_control_t)(void *data, uint8_t *buf, size_t size);
+typedef void (*receive_control_t)(unsigned index);
 
 typedef struct pad_connection_interface
 {
@@ -39,6 +40,10 @@ extern pad_connection_interface_t pad_connection_ps3;
 int32_t pad_connection_connect(const char* name, void *data, send_control_t ptr);
 
 int32_t apple_joypad_connect_gcapi(void);
+
+void pad_connection_init(receive_control_t receive_control);
+
+void pad_connection_destroy(void);
 
 void pad_connection_disconnect(uint32_t slot);
 
