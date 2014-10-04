@@ -18,11 +18,9 @@
 #include "input_common.h"
 #include "../general.h"
 
-#ifdef IOS
 #include "../apple/iOS/bluetooth/btdynamic.c"
 #include "../apple/iOS/bluetooth/btpad.c"
 #include "../apple/iOS/bluetooth/btpad_queue.c"
-#endif
 
 #include "wiimote.c"
 #include "apple_joypad_ps3.c"
@@ -208,6 +206,7 @@ static int16_t apple_joypad_axis(unsigned port, uint32_t joyaxis)
 
 static void apple_joypad_poll(void)
 {
+    apple_gamecontroller_poll_all();
 }
 
 static bool apple_joypad_rumble(unsigned pad,

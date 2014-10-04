@@ -124,8 +124,6 @@ const struct apple_key_name_map_entry apple_key_name_map[] =
 };
 
 #if defined(IOS)
-extern void apple_gamecontroller_poll_all(void);
-
 #define HIDKEY(X) X
 #elif defined(OSX)
 
@@ -312,10 +310,9 @@ int32_t apple_input_find_any_key(void)
     
    if (!apple)
       return 0;
-
-#ifdef IOS
-   apple_gamecontroller_poll_all();
-#endif
+    
+   if (apple->joypad)
+       apple->joypad->poll();
    input_init_keyboard_lut(rarch_key_map_apple_hid);
 
    for (i = 0; apple_key_name_map[i].hid_id; i++)
@@ -333,9 +330,8 @@ int32_t apple_input_find_any_button(uint32_t port)
    if (!apple)
       return -1;
     
-#ifdef IOS
-   apple_gamecontroller_poll_all();
-#endif
+   if (apple->joypad)
+       apple->joypad->poll();
 
    buttons = apple->buttons[port];
    if (port == 0)
@@ -354,9 +350,8 @@ int32_t apple_input_find_any_axis(uint32_t port)
    int i;
    apple_input_data_t *apple = (apple_input_data_t*)driver.input_data;
     
-#ifdef IOS
-   apple_gamecontroller_poll_all();
-#endif
+   if (apple && apple->joypad)
+       apple->joypad->poll();
 
    for (i = 0; i < 4; i++)
    {
@@ -415,10 +410,6 @@ static void apple_input_poll(void *data)
     
    if (!apple)
        return;
-
-#ifdef IOS
-   apple_gamecontroller_poll_all();
-#endif
 
    for (i = 0; i < apple->touch_count; i++)
    {
