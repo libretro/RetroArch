@@ -289,7 +289,12 @@ static unsigned input_frame(uint64_t trigger_state)
    return MENU_ACTION_NOOP;
 }
 
-bool menu_iterate(retro_input_t input,
+/* Returns:
+ *  0  -  Forcibly wake up the loop.
+ * -1  -  Quit out of iteration loop.
+ */
+
+int menu_iterate(retro_input_t input,
       retro_input_t old_input, retro_input_t trigger_input)
 {
    unsigned action = MENU_ACTION_NOOP;
@@ -305,7 +310,7 @@ bool menu_iterate(retro_input_t input,
       | (1ULL << RETRO_DEVICE_ID_JOYPAD_R);
 
    if (!driver.menu)
-      return false;
+      return -1;
 
 #ifdef HAVE_OVERLAY
    if (BIND_PRESSED(trigger_input, RARCH_OVERLAY_NEXT))
@@ -361,9 +366,9 @@ bool menu_iterate(retro_input_t input,
       driver.menu_ctx->input_postprocess(input, old_input);
 
    if (ret)
-      return false;
+      return -1;
 
-   return true;
+   return 0;
 }
 
 unsigned menu_common_type_is(const char *label, unsigned type)

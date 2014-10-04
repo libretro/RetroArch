@@ -3258,10 +3258,10 @@ int rarch_main_iterate(void)
 
    if (g_extern.is_menu)
    {
-      if (!menu_iterate(input, old_input, trigger_input))
+      if (menu_iterate(input, old_input, trigger_input) == -1)
          rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED);
 
-      if ( ! input )
+      if (!input)
         ret = 1;
       goto success;
    }

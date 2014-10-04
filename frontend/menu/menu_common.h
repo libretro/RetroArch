@@ -136,7 +136,8 @@ typedef enum
 
 void *menu_init(const void *data);
 
-bool menu_iterate(retro_input_t input, retro_input_t old_input, retro_input_t trigger_input);
+int menu_iterate(retro_input_t input,
+      retro_input_t old_input, retro_input_t trigger_input);
 
 void menu_free(void *data);
 
