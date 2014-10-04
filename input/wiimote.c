@@ -47,6 +47,7 @@
 
 #include "wiimote.h"
 
+/* Forward declarations. */
 int wiimote_send(struct wiimote_t* wm, byte report_type, byte* msg, int len);
 
 int wiimote_read_data(struct wiimote_t* wm, unsigned int addr,
@@ -61,6 +62,9 @@ int classic_ctrl_handshake(struct wiimote_t* wm,
       struct classic_ctrl_t* cc, byte* data, unsigned short len);
 
 void classic_ctrl_event(struct classic_ctrl_t* cc, byte* msg);
+
+/* TODO - Get rid of Apple-specific functions. */
+void apple_pad_send_control(void *data, uint8_t* data_buf, size_t size);
 
 /**
  *	@brief Request the wiimote controller status.

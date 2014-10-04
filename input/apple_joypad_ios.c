@@ -23,10 +23,7 @@
 #include "../apple/iOS/bluetooth/btpad_queue.c"
 #include "../apple/common/apple_gamecontroller.h"
 
-#include "wiimote.c"
-#include "apple_joypad_ps3.c"
-#include "apple_joypad_ps4.c"
-#include "apple_joypad_wii.c"
+
 
 typedef struct
 {

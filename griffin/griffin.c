@@ -333,6 +333,10 @@ INPUT
 #endif
 
 #if defined(__APPLE__)
+#include "../input/wiimote.c"
+#include "../input/apple_joypad_ps3.c"
+#include "../input/apple_joypad_ps4.c"
+#include "../input/apple_joypad_wii.c"
 
 #ifdef HAVE_HID
 #include "../input/apple_joypad_hid.c"

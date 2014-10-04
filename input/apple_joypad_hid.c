@@ -20,14 +20,6 @@
 #include "input_common.h"
 #include "../general.h"
 
-static void apple_pad_send_control(void *connect_data,
-      uint8_t* data, size_t size);
-
-#include "wiimote.c"
-#include "apple_joypad_ps3.c"
-#include "apple_joypad_ps4.c"
-#include "apple_joypad_wii.c"
-
 typedef struct
 {
    bool used;
@@ -50,15 +42,14 @@ struct apple_pad_connection
 
 static IOHIDManagerRef g_hid_manager;
 
-static void apple_pad_send_control(void *connect_data,
-      uint8_t* data, size_t size)
+void apple_pad_send_control(void *data, uint8_t* data_buf, size_t size)
 {
    struct apple_pad_connection* connection =
-      (struct apple_pad_connection*)connect_data;
+      (struct apple_pad_connection*)data;
 
    if (connection)
       IOHIDDeviceSetReport(connection->device_handle,
-            kIOHIDReportTypeOutput, 0x01, data + 1, size - 1);
+            kIOHIDReportTypeOutput, 0x01, data_buf + 1, size - 1);
 }
 
 /* NOTE: I pieced this together through trial and error,

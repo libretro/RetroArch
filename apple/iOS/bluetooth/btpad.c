@@ -45,15 +45,17 @@ struct apple_pad_connection
    uint16_t channels[2]; //0: Control, 1: Interrupt
 };
 
-static struct apple_pad_connection g_connections[MAX_PLAYERS];
-
-void apple_pad_send_control(struct apple_pad_connection* connection, uint8_t* data, size_t size)
-{
-   bt_send_l2cap_ptr(connection->channels[0], data, size);
-}
-
 static bool inquiry_off;
 static bool inquiry_running;
+static struct apple_pad_connection g_connections[MAX_PLAYERS];
+
+void apple_pad_send_control(void *data, uint8_t* data_buf, size_t size)
+{
+   struct apple_pad_connection *connection =
+    (struct apple_pad_connection*)data;
+   if (connection)
+      bt_send_l2cap_ptr(connection->channels[0], data_buf, size);
+}
 
 void btpad_set_inquiry_state(bool on)
 {
