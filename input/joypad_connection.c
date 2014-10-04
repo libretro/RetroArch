@@ -56,7 +56,7 @@ int32_t pad_connection_connect(const char* name, void *data)
       static const struct
       {
          const char* name;
-         struct pad_connection_interface *iface;
+         pad_connection_interface_t *iface;
       } pad_map[] = 
       {
          { "Nintendo RVL-CNT-01",         &apple_pad_wii },

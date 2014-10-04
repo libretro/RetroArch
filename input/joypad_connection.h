@@ -17,9 +17,10 @@
 #ifndef _JOYPAD_CONNECTION_H
 #define _JOYPAD_CONNECTION_H
 
+#include <stdint.h>
 #include <stddef.h>
 
-struct pad_connection_interface
+typedef struct pad_connection_interface
 {
    void* (*connect)(void *data, uint32_t slot);
 
@@ -29,7 +30,10 @@ struct pad_connection_interface
 
    void (*set_rumble)(void* device, enum retro_rumble_effect effect,
          uint16_t strength);
-};
+} pad_connection_interface_t;
+
+extern pad_connection_interface_t apple_pad_wii;
+extern pad_connection_interface_t apple_pad_ps3;
 
 int32_t pad_connection_connect(const char* name, void *data);
 
