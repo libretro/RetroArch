@@ -18,12 +18,6 @@
 #include "input_common.h"
 #include "../general.h"
 
-#ifdef IOS
-#include "../apple/iOS/bluetooth/btdynamic.c"
-#include "../apple/iOS/bluetooth/btpad.c"
-#include "../apple/iOS/bluetooth/btpad_queue.c"
-#endif
-
 #include "wiimote.c"
 #include "apple_joypad_ps3.c"
 #include "apple_joypad_ps4.c"
@@ -141,11 +135,7 @@ bool apple_joypad_has_interface(uint32_t slot)
 
 static bool apple_joypad_init(void)
 {
-#ifdef HAVE_HID
    return hid_init_manager();
-#else
-   return true;
-#endif
 }
 
 static bool apple_joypad_query_pad(unsigned pad)
@@ -165,9 +155,8 @@ static void apple_joypad_destroy(void)
          slots[i].iface->set_rumble(slots[i].data, RETRO_RUMBLE_WEAK, 0);
       }
    }
-#ifdef HAVE_HID
+    
    hid_exit();
-#endif
 }
 
 static bool apple_joypad_button(unsigned port, uint16_t joykey)
