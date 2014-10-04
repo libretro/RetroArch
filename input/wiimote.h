@@ -195,17 +195,6 @@ typedef struct wiimote_t
 #define WIIMOTE_TOGGLE_STATE(wm, s)    ((wm->state & (s)) ? WIIMOTE_DISABLE_STATE(wm, s) : WIIMOTE_ENABLE_STATE(wm, s))
 #define WIIMOTE_IS_CONNECTED(wm)       (WIIMOTE_IS_SET(wm, WIIMOTE_STATE_CONNECTED))
 
-int  wiimote_handshake(struct wiimote_t* wm,
-      byte event, byte* data, unsigned short len);
-
-void wiimote_status(struct wiimote_t* wm);
-
-void wiimote_data_report(struct wiimote_t* wm, byte type);
-
-void wiimote_pressed_buttons(struct wiimote_t* wm, byte* msg);
-
-void wiimote_handle_expansion(struct wiimote_t* wm, byte* msg);
-
 #if defined(__cplusplus)
 }
 #endif
