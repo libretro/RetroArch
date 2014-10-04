@@ -3220,17 +3220,20 @@ static inline int time_to_exit(retro_input_t input)
 }
 
 /* Returns:
- * 0  -  Successful iteration.
- * -1 -  Quit out of iteration loop.
+ *  0  -  Successful iteration.
+ *  1  -  Forcibly wake up the loop.
+ * -1  -  Quit out of iteration loop.
  */
+
 int rarch_main_iterate(void)
 {
    unsigned i;
+   retro_input_t trigger_input;
+   int ret = 0;
    static retro_input_t last_input = 0;
-   retro_input_t old_input, trigger_input;
+   retro_input_t old_input = last_input;
    retro_input_t input = input_keys_pressed();
 
-   old_input = last_input;
    last_input = input;
 
    if (driver.flushing_input)
@@ -3258,6 +3261,7 @@ int rarch_main_iterate(void)
       if (!menu_iterate(input, old_input, trigger_input))
          rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED);
 
+      ret = 1;
       goto success;
    }
 #endif
@@ -3274,9 +3278,7 @@ int rarch_main_iterate(void)
       driver.retro_ctx.poll_cb();
       rarch_sleep(10);
 
-      /* TODO - maybe change this from 0 to something else
-       * to signal that RetroArch is currently paused. */
-      return 0;
+      return 1;
    }
 
 #if defined(HAVE_THREADS)
@@ -3338,7 +3340,7 @@ success:
    if (g_settings.fastforward_ratio_throttle_enable)
       limit_frame_time();
 
-   return 0;
+   return ret;
 }
 
 void rarch_main_deinit(void)

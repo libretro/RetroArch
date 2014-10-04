@@ -27,7 +27,9 @@
 
 static void emscripten_mainloop(void)
 {
-   if (main_entry_decide(0, NULL, NULL))
+   int ret = main_entry_decide(0, NULL, NULL)
+
+   if (ret == -1)
    {
       main_exit(NULL);
       exit(0);

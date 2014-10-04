@@ -28,73 +28,74 @@ static CFRunLoopObserverRef iterate_observer;
 
 static void do_iteration(void)
 {
-   if (main_entry_decide(0, NULL, NULL))
+   int ret = main_entry_decide(0, NULL, NULL);
+
+   if (ret == -1)
    {
       main_exit(NULL);
       return;
    }
 
+   if (ret) 
+      CFRunLoopWakeUp(CFRunLoopGetMain());
+
    /* TODO/FIXME
-    I am almost positive that this is not necessary and is actually a
-    bad thing.
+      I am almost positive that this is not necessary and is actually a
+      bad thing.
 
-    1st. Why it is bad thing.
+      1st. Why it is bad thing.
 
-    This wakes up the main event loop immediately and the main loop
-    has only one observer, which is this function. In other words,
-    this causes the function to be called immediately. I did an
-    experiment where I saved the time before calling this and then
-    reported the difference between it and the start of
-    do_iteration, and as expected it was about 0. As a result, when
-    we remove this, idle performance (i.e. displaying the RetroArch
-    menu) is 0% CPU as desired.
+      This wakes up the main event loop immediately and the main loop
+      has only one observer, which is this function. In other words,
+      this causes the function to be called immediately. I did an
+      experiment where I saved the time before calling this and then
+      reported the difference between it and the start of
+      do_iteration, and as expected it was about 0. As a result, when
+      we remove this, idle performance (i.e. displaying the RetroArch
+      menu) is 0% CPU as desired.
 
-    2nd. Why it is not necessary.
+      2nd. Why it is not necessary.
 
-    The event loop will wake up itself when there is input to the
-    process. This includes touch events, keyboard, bluetooth,
-    etc. Thus, it will be woken up and without any intervention so
-    that we can process that event.
+      The event loop will wake up itself when there is input to the
+      process. This includes touch events, keyboard, bluetooth,
+      etc. Thus, it will be woken up and without any intervention so
+      that we can process that event.
 
-    Nota bene. Why this analysis might be wrong (and what to do about it).
+      Nota bene. Why this analysis might be wrong (and what to do about it).
 
-    If RA is not idle and is running a core, then I believe it is
-    designed to expect to be called in a busy loop like this because
-    it implements its own frame timer to ensure that the emulation
-    simulation isn't too fast. In that case, this change would only
-    allow emulation to run when there was input, which would make
-    all games turn-based. :)
+      If RA is not idle and is running a core, then I believe it is
+      designed to expect to be called in a busy loop like this because
+      it implements its own frame timer to ensure that the emulation
+      simulation isn't too fast. In that case, this change would only
+      allow emulation to run when there was input, which would make
+      all games turn-based. :)
 
-    There are two good ways to fix this and still have the desired
-    0% CPU idle behavior.
+      There are two good ways to fix this and still have the desired
+      0% CPU idle behavior.
 
-    Approach 1: Change main_entry_decide from returning a boolean
-    (two-values) that are interpreted as CONTINUE and QUIT. Into
-    returning a char-sized enum with three values that are
-    interpreted as QUIT, WAIT, and AGAIN, such that QUIT calls
-    main_exit, WAIT doesn't wake up the loop, and AGAIN does. It
-    would then return AGAIN when a core was active. An ugly way to
-    get the same effect is to look have this code just look at
-    g_extern.is_menu and use the WAIT behavior in that case.
+      Approach 1: Change main_entry_decide from returning a boolean
+      (two-values) that are interpreted as CONTINUE and QUIT. Into
+      returning a char-sized enum with three values that are
+      interpreted as QUIT, WAIT, and AGAIN, such that QUIT calls
+      main_exit, WAIT doesn't wake up the loop, and AGAIN does. It
+      would then return AGAIN when a core was active. An ugly way to
+      get the same effect is to look have this code just look at
+      g_extern.is_menu and use the WAIT behavior in that case.
 
-    Approach 2: Instead of signalling outside of RA whether a core
-    is running, instead externalize the frame time that is inside
-    retroarch. change main_entry_decide to return a value in
-    [-1,MAX_INT] where -1 is interpreted as QUIT, [0,MAX_INT) is
-    interpreted as the amount of time to wait until continuing, and
-    MAX_INT is interpreted as WAIT. This could be more robust
-    because we'd be exposing the scheduling behavior of RA to iOS,
-    which might be good in other platforms as well.
+      Approach 2: Instead of signalling outside of RA whether a core
+      is running, instead externalize the frame time that is inside
+      retroarch. change main_entry_decide to return a value in
+      [-1,MAX_INT] where -1 is interpreted as QUIT, [0,MAX_INT) is
+      interpreted as the amount of time to wait until continuing, and
+      MAX_INT is interpreted as WAIT. This could be more robust
+      because we'd be exposing the scheduling behavior of RA to iOS,
+      which might be good in other platforms as well.
 
-    Approach 1 is the simplest and essentially just pushes down
-    these requirements to rarch_main_iterate. I have gone with the
-    "ugly way" first because it is the most expedient and
-    safe. Other eyeballs should decide if it isn't necessary.
-    */
-#if 0
-   if ( ! g_extern.is_menu ) 
-     CFRunLoopWakeUp(CFRunLoopGetMain());
-#endif
+      Approach 1 is the simplest and essentially just pushes down
+      these requirements to rarch_main_iterate. I have gone with the
+      "ugly way" first because it is the most expedient and
+      safe. Other eyeballs should decide if it isn't necessary.
+      */
 }
 
 void apple_start_iteration(void)

@@ -56,7 +56,9 @@
 
 int main_entry_decide(signature(), args_type() args)
 {
-   if (rarch_main_iterate() == -1)
+   int ret = rarch_main_iterate();
+
+   if (ret == -1)
    {
       if (g_extern.core_shutdown_initiated 
             && g_settings.load_dummy_on_core_shutdown)
@@ -66,13 +68,12 @@ int main_entry_decide(signature(), args_type() args)
          g_extern.core_shutdown_initiated = false;
          return 0;
       }
-      return 1;
    }
 
    if (driver.frontend_ctx && driver.frontend_ctx->process_events)
       driver.frontend_ctx->process_events(args);
 
-   return 0;
+   return ret;
 }
 
 void main_exit(args_type() args)
@@ -241,7 +242,7 @@ returntype main_entry(signature())
 #endif
 
 #if defined(HAVE_MAIN_LOOP)
-   while (!main_entry_decide(signature_expand(), args));
+   while (main_entry_decide(signature_expand(), args) != -1);
 
    main_exit(args);
 #endif
