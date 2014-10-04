@@ -334,7 +334,6 @@ INPUT
 
 #if defined(__APPLE__)
 #include "../input/joypad_connection.c"
-#include "../input/wiimote.c"
 #include "../input/apple_joypad_ps3.c"
 #include "../input/apple_joypad_ps4.c"
 #include "../input/apple_joypad_wii.c"
