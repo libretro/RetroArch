@@ -68,6 +68,8 @@ static void poll_pad(struct parport_joypad *pad)
    *     back again so the same pullup scheme may be used for
    *     all pins.
    *
+   * Pin 1 is set high so it can be used for pullups.
+   *
    * RetroArch does not perform debouncing, and so long as
    * the button settling time is less than the frame time
    * no bouncing will be observed. This replicates the latching
@@ -85,15 +87,13 @@ static void poll_pad(struct parport_joypad *pad)
 
    for (i = 0; i < 8; i++)
    {
-      pad->buttons[i] = !(data & UINT8_C(1 << i));
+      pad->buttons[i] = !(data & UINT8_C(1 << i)) && pad->button_enable[i];
    }
    for (i = 3; i < 8; i++)
    {
-      pad->buttons[i + 5] = !(status & UINT8_C(1 << i));
+      pad->buttons[i + 5] = !(status & UINT8_C(1 << i)) && pad->button_enable[i];
    }
-   pad->buttons[12] = pad->buttons[12] ? false : true;
-
-
+   pad->buttons[12] = pad->buttons[12] ? false : true && pad->button_enable[12];
 }
 
 static bool parport_joypad_init_pad(const char *path, struct parport_joypad *pad)
@@ -102,6 +102,7 @@ static bool parport_joypad_init_pad(const char *path, struct parport_joypad *pad
    char data;
    struct ppdev_frob_struct frob;
    bool set_control = false;
+   int i;
 
    int mode = IEEE1284_MODE_BYTE;
 
@@ -162,13 +163,17 @@ static bool parport_joypad_init_pad(const char *path, struct parport_joypad *pad
          goto error;
       }
 
-      /* Failure to enable strobe breaks Linux Multisystem style controllers.
+      /* Failure to enable strobe can break Linux Multisystem style controllers.
        * Controllers using an alternative power source will still work.
        * Failure to disable interrupts slightly increases CPU usage. */
       if (!set_control)
          RARCH_WARN("[Joypad]: Failed to clear nStrobe and nIRQ bits on %s\n", path);
 
       strlcpy(pad->ident, path, sizeof(g_settings.input.device_names[0]));
+
+      for (i = 0; i < NUM_BUTTONS; i++)
+         pad->button_enable[i] = true;
+
       return true;
 error:
       close(pad->fd);
@@ -193,9 +198,28 @@ static void parport_joypad_poll(void)
    }
 }
 
+static void destroy_pad(struct parport_joypad *pad)
+{
+   char data;
+   data = pad->saved_data;
+   if (ioctl(pad->fd, PPWDATA, &data) < 0)
+      RARCH_ERR("[Joypad]: Failed to restore original data register on %s\n", pad->ident);
+
+   data = pad->saved_control;
+   if (ioctl(pad->fd, PPWDATA, &data) < 0)
+      RARCH_ERR("[Joypad]: Failed to restore original control register on %s\n", pad->ident);
+
+   if (ioctl(pad->fd, PPRELEASE) < 0)
+      RARCH_ERR("[Joypad]: Failed to release parallel port %s\n", pad->ident);
+
+   close(pad->fd);
+   pad->fd = -1;
+}
+
 static bool parport_joypad_init(void)
 {
-   unsigned i;
+   unsigned i, j;
+   bool found_button;
 
    for (i = 0; i < MAX_PLAYERS; i++)
    {
@@ -207,13 +231,38 @@ static bool parport_joypad_init(void)
       snprintf(path, sizeof(path), "/dev/parport%u", i);
 
       if (parport_joypad_init_pad(path, pad))
-          {
-             input_config_autoconfigure_joypad(i, pad->ident, 0, 0, "parport");
-             poll_pad(pad);
-          }
-          else
-             input_config_autoconfigure_joypad(i, NULL, 0, 0, NULL);
-       }
+      {
+         /* If a pin is low on initialization it can either mean
+          * a button is pressed or that nothing is connected.
+          * Polling non-connected pins can render the menu unusable
+          * so assume the user is not holding any button on startup
+          * and disable any low pins.
+          */
+         for (j = 0; j < NUM_BUTTONS; j++)
+            pad->button_enable[j] = true;
+
+         poll_pad(pad);
+         found_button = false;
+
+         for (j = 0; j < NUM_BUTTONS; j++)
+         {
+            if (!pad->buttons[j])
+               found_button = true;
+            else
+               pad->button_enable[j] = false;
+         }
+
+         if (found_button)
+            input_config_autoconfigure_joypad(i, pad->ident, 0, 0, "parport");
+         else
+         {
+            destroy_pad(pad); /* assume nothing was connected */
+            input_config_autoconfigure_joypad(i, NULL, 0, 0, NULL);
+         }
+      }
+      else
+         input_config_autoconfigure_joypad(i, NULL, 0, 0, NULL);
+      }
 
    return true;
 }
@@ -221,7 +270,6 @@ static bool parport_joypad_init(void)
 static void parport_joypad_destroy(void)
 {
    unsigned i;
-   char data;
    struct parport_joypad *pad;
 
    for (i = 0; i < MAX_PLAYERS; i++)
@@ -229,18 +277,7 @@ static void parport_joypad_destroy(void)
       pad = &g_pads[i];
       if (pad->fd >= 0)
       {
-         data = pad->saved_data;
-         if (ioctl(pad->fd, PPWDATA, &data) < 0)
-            RARCH_ERR("[Joypad]: Failed to restore original data register on %s\n", pad->ident);
-
-         data = pad->saved_control;
-         if (ioctl(pad->fd, PPWDATA, &data) < 0)
-            RARCH_ERR("[Joypad]: Failed to restore original control register on %s\n", pad->ident);
-
-         if (ioctl(pad->fd, PPRELEASE) < 0)
-            RARCH_ERR("[Joypad]: Failed to release parallel port %s\n", pad->ident);
-
-         close(pad->fd);
+         destroy_pad(pad);
       }
    }
    memset(g_pads, 0, sizeof(g_pads));
