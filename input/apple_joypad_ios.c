@@ -17,13 +17,11 @@
 #include "apple_input.h"
 #include "input_common.h"
 #include "../general.h"
+#include "../apple/common/apple_gamecontroller.h"
 
 #include "../apple/iOS/bluetooth/btdynamic.c"
 #include "../apple/iOS/bluetooth/btpad.c"
 #include "../apple/iOS/bluetooth/btpad_queue.c"
-#include "../apple/common/apple_gamecontroller.h"
-
-
 
 typedef struct
 {

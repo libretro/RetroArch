@@ -1,5 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2013-2014 - Jason Fetters
+ *  Copyright (C) 2011-2014 - Daniel De Matteis
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -34,7 +35,8 @@ BTDIMPORT int (*bt_open_ptr)(void);
 BTDIMPORT void (*bt_close_ptr)(void);
 BTDIMPORT void (*bt_flip_addr_ptr)(bd_addr_t dest, bd_addr_t src);
 BTDIMPORT char* (*bd_addr_to_str_ptr)(bd_addr_t addr);
-BTDIMPORT btstack_packet_handler_t (*bt_register_packet_handler_ptr)(btstack_packet_handler_t handler);
+BTDIMPORT btstack_packet_handler_t (*bt_register_packet_handler_ptr)
+   (btstack_packet_handler_t handler);
 BTDIMPORT int (*bt_send_cmd_ptr)(const hci_cmd_t *cmd, ...);
 BTDIMPORT void (*bt_send_l2cap_ptr)(uint16_t local_cid, uint8_t *data, uint16_t len);
 BTDIMPORT void (*run_loop_init_ptr)(RUN_LOOP_TYPE type);

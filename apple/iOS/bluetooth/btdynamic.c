@@ -57,7 +57,8 @@ static struct
    {0, 0}
 };
 
-extern void btpad_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+extern void btpad_packet_handler(uint8_t packet_type,
+      uint16_t channel, uint8_t *packet, uint16_t size);
 
 static bool btstack_tested;
 static bool btstack_loaded;
@@ -65,7 +66,7 @@ static bool btstack_loaded;
 static pthread_t btstack_thread;
 static CFRunLoopSourceRef btstack_quit_source;
 
-bool btstack_try_load()
+bool btstack_try_load(void)
 {
    assert(sizeof(void**) == sizeof(void(*)()));
 
@@ -109,7 +110,7 @@ bool btstack_try_load()
    return true;
 }
 
-void btstack_thread_stop()
+void btstack_thread_stop(void)
 {
    bt_send_cmd_ptr(btstack_set_power_mode_ptr, HCI_POWER_OFF);
 }
