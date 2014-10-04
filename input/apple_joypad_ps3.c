@@ -18,7 +18,7 @@
 #include <stdlib.h>
 
 #include "../boolean.h"
-#include "apple_input.h"
+#include "joypad_connection.h"
 
 struct hidpad_ps3_data
 {

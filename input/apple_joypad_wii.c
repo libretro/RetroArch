@@ -19,6 +19,7 @@
 
 #include "../boolean.h"
 #include "wiimote.h"
+#include "joypad_connection.h"
 
 static void* hidpad_wii_connect(void *data, uint32_t slot)
 {
