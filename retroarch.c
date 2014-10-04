@@ -3202,19 +3202,6 @@ static void do_state_check_menu_toggle(void)
 
    rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING);
 }
-
-static int do_menu_oneshot(
-      retro_input_t input, retro_input_t old_input,
-      retro_input_t trigger_input)
-{
-   if (!menu_iterate(input, old_input, trigger_input))
-      rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED);
-   
-   if (g_settings.fastforward_ratio_throttle_enable)
-      limit_frame_time();
-
-   return 0;
-}
 #endif
 
 static inline int time_to_exit(retro_input_t input)
@@ -3266,7 +3253,12 @@ int rarch_main_iterate(void)
       do_state_check_menu_toggle();
 
    if (g_extern.is_menu)
-      return do_menu_oneshot(input, old_input, trigger_input);
+   {
+      if (!menu_iterate(input, old_input, trigger_input))
+         rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING_FINISHED);
+
+      goto success;
+   }
 #endif
 
    if (g_extern.exec)
@@ -3341,6 +3333,7 @@ int rarch_main_iterate(void)
    unlock_autosave();
 #endif
 
+success:
    if (g_settings.fastforward_ratio_throttle_enable)
       limit_frame_time();
 
