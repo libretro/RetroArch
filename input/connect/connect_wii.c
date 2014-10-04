@@ -17,8 +17,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "../boolean.h"
-#include "wiimote.h"
+#include "connect_wii.h"
 #include "joypad_connection.h"
 
 #ifndef NO_BAKED_IN_WIIMOTE
