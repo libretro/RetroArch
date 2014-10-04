@@ -3220,8 +3220,8 @@ static inline int time_to_exit(retro_input_t input)
 }
 
 /* Returns:
- *  0  -  Successful iteration.
- *  1  -  Forcibly wake up the loop.
+ *  0  -  Forcibly wake up the loop.
+ *  1  -  Wait until input to wake up the loop
  * -1  -  Quit out of iteration loop.
  */
 

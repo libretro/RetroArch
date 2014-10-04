@@ -36,7 +36,7 @@ static void do_iteration(void)
       return;
    }
 
-   if (ret) 
+   if (ret == 0) 
       CFRunLoopWakeUp(CFRunLoopGetMain());
 
    /* TODO/FIXME
