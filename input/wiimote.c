@@ -63,8 +63,7 @@ int classic_ctrl_handshake(struct wiimote_t* wm,
 
 void classic_ctrl_event(struct classic_ctrl_t* cc, byte* msg);
 
-/* TODO - Get rid of Apple-specific functions. */
-void apple_pad_send_control(void *data, uint8_t* data_buf, size_t size);
+void pad_connection_send_control(void *data, uint8_t* data_buf, size_t size);
 
 /* 
  * Request the wiimote controller status.
@@ -373,7 +372,7 @@ int wiimote_send(struct wiimote_t* wm, byte report_type, byte* msg, int len)
    printf("\n");
 #endif
 
-   apple_pad_send_control(wm->connection, buf, len + 2);
+   pad_connection_send_control(wm->connection, buf, len + 2);
    return 1;
 }
 

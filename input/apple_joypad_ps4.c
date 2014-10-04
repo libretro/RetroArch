@@ -43,12 +43,13 @@ static void hidpad_ps4_send_control(struct hidpad_ps4_data* device)
    report_buffer[11] = rgb[(device->slot % 4)][2];
 #endif
     
-   apple_pad_send_control(
+   pad_connection_send_control(
       device->connection, report_buffer, sizeof(report_buffer));
 }
 
 static void* hidpad_ps4_connect(void *connect_data, uint32_t slot)
 {
+   uint8_t data[0x25];
    struct pad_connection* connection = (struct pad_connection*)connect_data;
    struct hidpad_ps4_data* device = (struct hidpad_ps4_data*)
     calloc(1, sizeof(struct hidpad_ps4_data));
@@ -61,8 +62,7 @@ static void* hidpad_ps4_connect(void *connect_data, uint32_t slot)
    
    /* TODO - unsure of this */
    /* This is needed to get full input packet over bluetooth. */
-   uint8_t data[0x25];
-   apple_pad_send_control(device->connection, data, 0x2);
+   pad_connection_send_control(device->connection, data, 0x2);
 
    /* Without this, the digital buttons won't be reported. */
    hidpad_ps4_send_control(device);
