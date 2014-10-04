@@ -31,7 +31,7 @@ typedef struct
 
 static joypad_slot_t slots[MAX_PLAYERS];
 
-struct apple_pad_connection
+struct pad_connection
 {
    int v_id;
    int p_id;
@@ -44,8 +44,7 @@ static IOHIDManagerRef g_hid_manager;
 
 void apple_pad_send_control(void *data, uint8_t* data_buf, size_t size)
 {
-   struct apple_pad_connection* connection =
-      (struct apple_pad_connection*)data;
+   struct pad_connection* connection = (struct pad_connection*)data;
 
    if (connection)
       IOHIDDeviceSetReport(connection->device_handle,
@@ -59,8 +58,7 @@ static void hid_device_input_callback(void* context, IOReturn result,
       void* sender, IOHIDValueRef value)
 {
    apple_input_data_t *apple = (apple_input_data_t*)driver.input_data;
-   struct apple_pad_connection* connection = (struct apple_pad_connection*)
-      context;
+   struct pad_connection* connection = (struct pad_connection*)context;
    IOHIDElementRef element = IOHIDValueGetElement(value);
    uint32_t type    = IOHIDElementGetType(element);
    uint32_t page    = IOHIDElementGetUsagePage(element);
@@ -134,8 +132,7 @@ static void hid_device_input_callback(void* context, IOReturn result,
 static void remove_device(void* context, IOReturn result, void* sender)
 {
    apple_input_data_t *apple = (apple_input_data_t*)driver.input_data;
-   struct apple_pad_connection* connection = (struct apple_pad_connection*)
-      context;
+   struct pad_connection* connection = (struct pad_connection*)context;
 
    if (connection && connection->slot < MAX_PLAYERS)
    {
@@ -159,8 +156,7 @@ static void hid_device_report(void* context, IOReturn result, void *sender,
       IOHIDReportType type, uint32_t reportID, uint8_t *report,
       CFIndex reportLength)
 {
-   struct apple_pad_connection* connection = (struct apple_pad_connection*)
-      context;
+   struct pad_connection* connection = (struct pad_connection*)context;
 
    if (connection)
       apple_joypad_packet(connection->slot, connection->data, reportLength + 1);
@@ -172,7 +168,7 @@ static void add_device(void* context, IOReturn result,
    char device_name[PATH_MAX];
    CFStringRef device_name_ref;
    CFNumberRef vendorID, productID;
-   struct apple_pad_connection* connection = (struct apple_pad_connection*)
+   struct pad_connection* connection = (struct pad_connection*)
       calloc(1, sizeof(*connection));
 
    connection->device_handle = device;
@@ -255,8 +251,7 @@ static int find_vacant_pad(void)
 
 int32_t apple_joypad_connect(const char* name, void *data)
 {
-   struct apple_pad_connection* connection = 
-      (struct apple_pad_connection*)data;
+   struct pad_connection* connection = (struct pad_connection*)data;
    int pad = find_vacant_pad();
 
    if (pad >= 0 && pad < MAX_PLAYERS)

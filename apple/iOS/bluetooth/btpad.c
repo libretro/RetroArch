@@ -33,7 +33,7 @@ enum btpad_state
    BTPAD_CONNECTED
 };
 
-struct apple_pad_connection
+struct pad_connection
 {
    uint32_t slot;
 
@@ -48,12 +48,11 @@ struct apple_pad_connection
 
 static bool inquiry_off;
 static bool inquiry_running;
-static struct apple_pad_connection g_connections[MAX_PLAYERS];
+static struct pad_connection g_connections[MAX_PLAYERS];
 
 void apple_pad_send_control(void *data, uint8_t* data_buf, size_t size)
 {
-   struct apple_pad_connection *connection =
-      (struct apple_pad_connection*)data;
+   struct pad_connection *connection = (struct pad_connection*)data;
 
    if (connection)
       bt_send_l2cap_ptr(connection->channels[0], data_buf, size);
@@ -68,7 +67,7 @@ void btpad_set_inquiry_state(bool on)
 }
 
 /* Internal interface. */
-static struct apple_pad_connection* btpad_find_empty_connection(void)
+static struct pad_connection* btpad_find_empty_connection(void)
 {
    int i;
    for (i = 0; i != MAX_PLAYERS; i ++)
@@ -78,7 +77,7 @@ static struct apple_pad_connection* btpad_find_empty_connection(void)
    return 0;
 }
 
-static struct apple_pad_connection* btpad_find_connection_for(
+static struct pad_connection* btpad_find_connection_for(
       uint16_t handle, bd_addr_t address)
 {
    int i;
@@ -101,8 +100,7 @@ static struct apple_pad_connection* btpad_find_connection_for(
    return 0;
 }
 
-static void btpad_close_connection(
-      struct apple_pad_connection* connection)
+static void btpad_close_connection(struct pad_connection* connection)
 {
    if (!connection)
       return;
@@ -110,7 +108,7 @@ static void btpad_close_connection(
    if (connection->handle)
       btpad_queue_hci_disconnect(connection->handle, 0x15);
 
-   memset(connection, 0, sizeof(struct apple_pad_connection));
+   memset(connection, 0, sizeof(struct pad_connection));
 }
 
 static void btpad_close_all_connections(void)
@@ -131,8 +129,8 @@ void btpad_packet_handler(uint8_t packet_type,
       case L2CAP_DATA_PACKET:
          for (i = 0; i < MAX_PLAYERS; i ++)
          {
-            struct apple_pad_connection* connection = 
-               (struct apple_pad_connection*)&g_connections[i];
+            struct pad_connection* connection = 
+               (struct pad_connection*)&g_connections[i];
 
             if (connection && connection->state == BTPAD_CONNECTED
                   && (connection->channels[0] == channel || 
@@ -198,14 +196,14 @@ void btpad_packet_handler(uint8_t packet_type,
                   {
                      bt_flip_addr_ptr(event_addr, &packet[3]);
 
-                     struct apple_pad_connection* connection = 
-                        (struct apple_pad_connection*)btpad_find_empty_connection();
+                     struct pad_connection* connection = 
+                        (struct pad_connection*)btpad_find_empty_connection();
 
                      if (!connection)
                         return;
 
                      RARCH_LOG("BTpad: Inquiry found device\n");
-                     memset(connection, 0, sizeof(struct apple_pad_connection));
+                     memset(connection, 0, sizeof(struct pad_connection));
 
                      memcpy(connection->address, event_addr, sizeof(bd_addr_t));
                      connection->has_address = true;
@@ -235,8 +233,8 @@ void btpad_packet_handler(uint8_t packet_type,
                   const uint16_t psm = READ_BT_16(packet, 11);
                   const uint16_t channel_id = READ_BT_16(packet, 13);
 
-                  struct apple_pad_connection* connection = 
-                     (struct apple_pad_connection*)btpad_find_connection_for(
+                  struct pad_connection* connection = 
+                     (struct pad_connection*)btpad_find_connection_for(
                            handle, event_addr);
 
                   if (!packet[2])
@@ -277,8 +275,8 @@ void btpad_packet_handler(uint8_t packet_type,
                   const uint32_t psm = READ_BT_16(packet, 10);
                   const uint32_t channel_id = READ_BT_16(packet, 12);
 
-                  struct apple_pad_connection* connection = 
-                     (struct apple_pad_connection*)btpad_find_connection_for(
+                  struct pad_connection* connection = 
+                     (struct pad_connection*)btpad_find_connection_for(
                            handle, event_addr);
 
                   if (!connection)
@@ -290,7 +288,7 @@ void btpad_packet_handler(uint8_t packet_type,
                      RARCH_LOG("BTpad: Got new incoming connection\n");
 
                      memset(connection, 0,
-                           sizeof(struct apple_pad_connection));
+                           sizeof(struct pad_connection));
 
                      memcpy(connection->address, event_addr,
                            sizeof(bd_addr_t));
@@ -309,8 +307,8 @@ void btpad_packet_handler(uint8_t packet_type,
                {
                   bt_flip_addr_ptr(event_addr, &packet[3]);
 
-                  struct apple_pad_connection* connection = 
-                     (struct apple_pad_connection*)btpad_find_connection_for(
+                  struct pad_connection* connection = 
+                     (struct pad_connection*)btpad_find_connection_for(
                            0, event_addr);
 
                   if (!connection)
@@ -340,8 +338,8 @@ void btpad_packet_handler(uint8_t packet_type,
 
                   if (!packet[2])
                   {
-                     struct apple_pad_connection* connection = 
-                        (struct apple_pad_connection*)btpad_find_connection_for(
+                     struct pad_connection* connection = 
+                        (struct pad_connection*)btpad_find_connection_for(
                               handle, 0);
 
                      if (connection)

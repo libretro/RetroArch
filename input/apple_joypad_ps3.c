@@ -22,7 +22,7 @@
 
 struct hidpad_ps3_data
 {
-   struct apple_pad_connection* connection;
+   struct pad_connection* connection;
    uint8_t data[512];
    uint32_t slot;
    bool have_led;
@@ -55,8 +55,7 @@ static void hidpad_ps3_send_control(struct hidpad_ps3_data* device)
 
 static void* hidpad_ps3_connect(void *connect_data, uint32_t slot)
 {
-   struct apple_pad_connection* connection =
-    (struct apple_pad_connection*)connect_data;
+   struct pad_connection* connection = (struct pad_connection*)connect_data;
    struct hidpad_ps3_data* device = (struct hidpad_ps3_data*)
     calloc(1, sizeof(struct hidpad_ps3_data));
 

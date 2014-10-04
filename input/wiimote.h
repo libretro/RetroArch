@@ -171,8 +171,9 @@ typedef struct wiimote_t
 {
    /* User specified ID. */
    int unid;
-   /* TODO/FIXME - refactor */
-   struct apple_pad_connection* connection;
+
+   struct pad_connection* connection;
+
    /* Various state flags. */
    int state;
    /* Currently lit LEDs. */

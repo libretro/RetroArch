@@ -22,8 +22,7 @@
 
 static void* hidpad_wii_connect(void *data, uint32_t slot)
 {
-   struct apple_pad_connection *connection = 
-      (struct apple_pad_connection*)data;
+   struct pad_connection *connection = (struct pad_connection*)data;
    struct wiimote_t *device = (struct wiimote_t*)
       calloc(1, sizeof(struct wiimote_t));
 

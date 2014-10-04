@@ -51,7 +51,7 @@ typedef struct
    const rarch_joypad_driver_t *joypad;
 } apple_input_data_t;
 
-struct apple_pad_connection;
+struct pad_connection;
 
 struct apple_pad_interface
 {

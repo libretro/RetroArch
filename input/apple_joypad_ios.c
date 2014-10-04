@@ -51,8 +51,7 @@ static int find_vacant_pad(void)
 
 int32_t apple_joypad_connect(const char* name, void *data)
 {
-   struct apple_pad_connection* connection = 
-      (struct apple_pad_connection*)data;
+   struct pad_connection* connection = (struct pad_connection*)data;
    int pad = find_vacant_pad();
 
    if (pad >= 0 && pad < MAX_PLAYERS)
