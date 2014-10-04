@@ -170,6 +170,7 @@ typedef struct video_info
    bool vsync;
    bool force_aspect;
    unsigned viwidth;
+   bool vfilter;
    bool smooth;
    /* Maximum input size: RARCH_SCALE_BASE * input_scale */
    unsigned input_scale;
