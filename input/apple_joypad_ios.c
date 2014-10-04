@@ -21,6 +21,7 @@
 #include "../apple/iOS/bluetooth/btdynamic.c"
 #include "../apple/iOS/bluetooth/btpad.c"
 #include "../apple/iOS/bluetooth/btpad_queue.c"
+#include "../apple/common/apple_gamecontroller.h"
 
 #include "wiimote.c"
 #include "apple_joypad_ps3.c"
