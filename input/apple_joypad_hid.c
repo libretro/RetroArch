@@ -20,17 +20,6 @@
 #include "input_common.h"
 #include "../general.h"
 
-typedef struct
-{
-   bool used;
-   struct pad_connection_interface *iface;
-   void* data;
-
-   bool is_gcapi;
-} joypad_slot_t;
-
-static joypad_slot_t slots[MAX_PLAYERS];
-
 struct pad_connection
 {
    int v_id;
@@ -235,103 +224,6 @@ static void append_matching_dictionary(CFMutableArrayRef array,
    CFRelease(matcher);
 }
 
-static int find_vacant_pad(void)
-{
-   unsigned i;
-   for (i = 0; i < MAX_PLAYERS; i++)
-   {
-      if (slots[i].used)
-         continue;
-
-      memset(&slots[i], 0, sizeof(slots[0]));
-      return i;
-   }
-   return -1;
-}
-
-int32_t pad_connection_connect(const char* name, void *data)
-{
-   struct pad_connection* connection = (struct pad_connection*)data;
-   int pad = find_vacant_pad();
-
-   if (pad >= 0 && pad < MAX_PLAYERS)
-   {
-      unsigned i;
-      joypad_slot_t* s = (joypad_slot_t*)&slots[pad];
-      s->used = true;
-
-      static const struct
-      {
-         const char* name;
-         struct pad_connection_interface *iface;
-      } pad_map[] = 
-      {
-         { "Nintendo RVL-CNT-01",         &apple_pad_wii },
-         /* { "Nintendo RVL-CNT-01-UC",   &apple_pad_wii }, */ /* WiiU */
-         /* { "Wireless Controller",         &apple_pad_ps4 }, */ /* DualShock4 */
-         { "PLAYSTATION(R)3 Controller",  &apple_pad_ps3 },
-         { 0, 0}
-      };
-
-      for (i = 0; name && pad_map[i].name; i++)
-         if (strstr(name, pad_map[i].name))
-         {
-            s->iface = pad_map[i].iface;
-            s->data = s->iface->connect(connection, pad);
-         }
-   }
-
-   return pad;
-}
-
-int32_t apple_joypad_connect_gcapi(void)
-{
-   int pad = find_vacant_pad();
-
-   if (pad >= 0 && pad < MAX_PLAYERS)
-   {
-      joypad_slot_t *s = (joypad_slot_t*)&slots[pad];
-
-      s->used = true;
-      s->is_gcapi = true;
-   }
-
-   return pad;
-}
-
-void pad_connection_disconnect(uint32_t slot)
-{
-   if (slot < MAX_PLAYERS && slots[slot].used)
-   {
-      joypad_slot_t* s = (joypad_slot_t*)&slots[slot];
-
-      if (s->iface && s->data && s->iface->disconnect)
-         s->iface->disconnect(s->data);
-
-      memset(s, 0, sizeof(joypad_slot_t));
-   }
-}
-
-void pad_connection_packet(uint32_t slot,
-      uint8_t* data, uint32_t length)
-{
-   if (slot < MAX_PLAYERS && slots[slot].used)
-   {
-      joypad_slot_t *s = (joypad_slot_t*)&slots[slot];
-
-      if (s->iface && s->data && s->iface->packet_handler)
-         s->iface->packet_handler(s->data, data, length);
-   }
-}
-
-bool pad_connection_has_interface(uint32_t slot)
-{
-   if (slot < MAX_PLAYERS && slots[slot].used)
-      return slots[slot].iface ? true : false;
-
-   return false;
-}
-
 static bool apple_joypad_init(void)
 {
    CFMutableArrayRef matcher;
@@ -382,18 +274,7 @@ static void apple_joypad_hid_destroy(void)
 
 static void apple_joypad_destroy(void)
 {
-   unsigned i;
-
-   for (i = 0; i < MAX_PLAYERS; i ++)
-   {
-      if (slots[i].used && slots[i].iface
-            && slots[i].iface->set_rumble)
-      {
-         slots[i].iface->set_rumble(slots[i].data, RETRO_RUMBLE_STRONG, 0);
-         slots[i].iface->set_rumble(slots[i].data, RETRO_RUMBLE_WEAK, 0);
-      }
-   }
-
+   pad_connection_destroy();
    apple_joypad_hid_destroy();
 }
 
@@ -440,14 +321,7 @@ static void apple_joypad_poll(void)
 static bool apple_joypad_rumble(unsigned pad,
       enum retro_rumble_effect effect, uint16_t strength)
 {
-   if (pad < MAX_PLAYERS && slots[pad].used && slots[pad].iface
-         && slots[pad].iface->set_rumble)
-   {
-      slots[pad].iface->set_rumble(slots[pad].data, effect, strength);
-      return true;
-   }
-
-   return false;
+   return pad_connection_rumble(pad, effect, strength);
 }
 
 static const char *apple_joypad_name(unsigned pad)

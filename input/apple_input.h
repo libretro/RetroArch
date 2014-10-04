@@ -18,6 +18,7 @@
 #define __APPLE_RARCH_INPUT_H__
 
 #include "../general.h"
+#include "joypad_connection.h"
 
 /* Input responder */
 #define MAX_TOUCHES 16
@@ -50,33 +51,6 @@ typedef struct
     
    const rarch_joypad_driver_t *joypad;
 } apple_input_data_t;
-
-struct pad_connection;
-
-struct pad_connection_interface
-{
-   void* (*connect)(void *data, uint32_t slot);
-
-   void (*disconnect)(void* device);
-
-   void (*packet_handler)(void* device, uint8_t *packet, uint16_t size);
-
-   void (*set_rumble)(void* device, enum retro_rumble_effect effect,
-         uint16_t strength);
-};
-
-/* Joypad data */
-int32_t pad_connection_connect(const char* name, void *data);
-
-int32_t apple_joypad_connect_gcapi(void);
-
-void pad_connection_disconnect(uint32_t slot);
-
-void pad_connection_packet(uint32_t slot, uint8_t* data, uint32_t length);
-
-/* Determine if connected joypad is a hidpad backed device.
- * If false, pad_connection_packet cannot be used */
-bool pad_connection_has_interface(uint32_t slot);
 
 void apple_input_enable_icade(bool on);
 
