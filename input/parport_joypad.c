@@ -91,7 +91,7 @@ static void poll_pad(struct parport_joypad *pad)
    }
    for (i = 3; i < 8; i++)
    {
-      pad->buttons[i + 5] = !(status & UINT8_C(1 << i)) && pad->button_enable[i];
+      pad->buttons[i + 5] = !(status & UINT8_C(1 << i)) && pad->button_enable[i + 5];
    }
    pad->buttons[12] = pad->buttons[12] ? false : true && pad->button_enable[12];
 }
