@@ -73,8 +73,6 @@ bool btstack_try_load(void)
    if (btstack_tested)
       return btstack_loaded;
 
-   RARCH_LOG("BTstack: Attempting to load\n");
-   
    btstack_tested = true;
    btstack_loaded = false;
 
@@ -82,8 +80,7 @@ bool btstack_try_load(void)
 
    if (!btstack)
    {
-      RARCH_LOG("BTstack: /usr/lib/libBTstack.dylib not loadable\n");
-      RARCH_LOG("BTstack: Not loaded\n");
+      RARCH_ERR("[BTstack]: Not loaded\n");
       return false;
    }
 
@@ -93,9 +90,8 @@ bool btstack_try_load(void)
 
       if (!*grabbers[i].target)
       {
-         RARCH_LOG("BTstack: Symbol %s not found in /usr/lib/libBTstack.dylib\n", grabbers[i].name);
-         RARCH_LOG("BTstack: Not loaded\n");
-      
+         RARCH_ERR("[BTstack]: Symbol %s not found, not loaded.\n", grabbers[i].name);
+
          dlclose(btstack);
          return false;
       }
@@ -104,7 +100,7 @@ bool btstack_try_load(void)
    run_loop_init_ptr(RUN_LOOP_COCOA);
    bt_register_packet_handler_ptr(btpad_packet_handler);
 
-   RARCH_LOG("BTstack: Loaded\n");
+   RARCH_LOG("[BTstack]: Loaded.\n");
    btstack_loaded = true;
 
    return true;

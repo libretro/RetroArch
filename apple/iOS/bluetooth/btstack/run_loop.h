@@ -50,69 +50,88 @@
 extern "C" {
 #endif
 	
-typedef enum {
-	RUN_LOOP_POSIX = 1,
-	RUN_LOOP_COCOA,
-	RUN_LOOP_EMBEDDED
+typedef enum
+{
+   RUN_LOOP_POSIX = 1,
+   RUN_LOOP_COCOA,
+   RUN_LOOP_EMBEDDED
 } RUN_LOOP_TYPE;
 
-typedef struct data_source {
-    linked_item_t item;
-    int  fd;                                 // <-- file descriptor to watch or 0
-    int  (*process)(struct data_source *ds); // <-- do processing
+typedef struct data_source
+{
+   linked_item_t item;
+
+   /* File descriptor to watch or 0. */
+   int  fd;
+
+   int  (*process)(struct data_source *ds);
 } data_source_t;
 
-typedef struct timer {
-    linked_item_t item; 
+typedef struct timer
+{
+   linked_item_t item; 
 #ifdef HAVE_TIME
-    struct timeval timeout;                  // <-- next timeout
+   /* Next timeout. */
+   struct timeval timeout;
 #endif
 #ifdef HAVE_TICK
-    uint32_t timeout;                       // timeout in system ticks
+   /* Timeout in system ticks. */
+   uint32_t timeout;
 #endif
-    void  (*process)(struct timer *ts);      // <-- do processing
+   void  (*process)(struct timer *ts);
 } timer_source_t;
 
 
-// Set timer based on current time in milliseconds.
+/* Set timer based on current time in milliseconds. */
 void run_loop_set_timer(timer_source_t *a, uint32_t timeout_in_ms);
 
-// Set callback that will be executed when timer expires.
-void run_loop_set_timer_handler(timer_source_t *ts, void (*process)(timer_source_t *_ts));
+/* Set callback that will be executed when timer expires. */
+void run_loop_set_timer_handler(timer_source_t *ts,
+      void (*process)(timer_source_t *_ts));
 
-// Add/Remove timer source.
+/* Add timer source. */
 void run_loop_add_timer(timer_source_t *timer); 
+
+/* Remove timer source. */
 int  run_loop_remove_timer(timer_source_t *timer);
 
-// Init must be called before any other run_loop call. 
-// Use RUN_LOOP_EMBEDDED for embedded devices.
+/* Init must be called before any other run_loop call. 
+ * Use RUN_LOOP_EMBEDDED for embedded devices.
+ */
 void run_loop_init(RUN_LOOP_TYPE type);
 
-// Set data source callback.
-void run_loop_set_data_source_handler(data_source_t *ds, int (*process)(data_source_t *_ds));
+/* Set data source callback. */
+void run_loop_set_data_source_handler(data_source_t *ds,
+      int (*process)(data_source_t *_ds));
 
-
-// Add/Remove data source.
+/* Add data source. */
 void run_loop_add_data_source(data_source_t *dataSource);
+
+/* Remove data source. */
 int  run_loop_remove_data_source(data_source_t *dataSource);
 
-
-// Execute configured run loop. This function does not return.
+/* Execute configured run loop. 
+ * This function does not return. */
 void run_loop_execute(void);
 
-// hack to fix HCI timer handling
+/* Hack to fix HCI timer handling. */
 #ifdef HAVE_TICK
-// Sets how many miliseconds has one tick.
+/* Sets how many milliseconds has one tick. */
 uint32_t embedded_ticks_for_ms(uint32_t time_in_ms);
-// Queries the current time in ticks.
+
+/* Queries the current time in ticks. */
 uint32_t embedded_get_ticks(void);
+
 #endif
 #ifdef EMBEDDED
-// Sets an internal flag that is checked in the critical section
-// just before entering sleep mode. Has to be called by the interupt
-// handler of a data source to signal the run loop that a new data 
-// is available.
+
+/* Sets an internal flag that is checked in the critical section
+ * just before entering sleep mode. Has to be called by the interupt
+ * handler of a data source to signal the run loop that a new data 
+ * is available.
+ */
 void     embedded_trigger(void);    
+
 #endif
 #if defined __cplusplus
 }

@@ -1,5 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2013-2014 - Jason Fetters
+ *  Copyright (C) 2011-2014 - Daniel De Matteis
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -93,24 +94,36 @@ void btpad_queue_process(void)
          return;
 
       if (cmd->command == btstack_set_power_mode_ptr)
-         bt_send_cmd_ptr(cmd->command, cmd->btstack_set_power_mode.on);
+         bt_send_cmd_ptr(
+               cmd->command,
+               cmd->btstack_set_power_mode.on);
       else if (cmd->command == hci_read_bd_addr_ptr)
          bt_send_cmd_ptr(cmd->command);
       else if (cmd->command == hci_disconnect_ptr)
-         bt_send_cmd_ptr(cmd->command, cmd->hci_disconnect.handle,
+         bt_send_cmd_ptr(
+               cmd->command,
+               cmd->hci_disconnect.handle,
                cmd->hci_disconnect.reason);
       else if (cmd->command == hci_inquiry_ptr)
-         bt_send_cmd_ptr(cmd->command, cmd->hci_inquiry.lap,
-               cmd->hci_inquiry.length, cmd->hci_inquiry.num_responses);
+         bt_send_cmd_ptr(
+               cmd->command,
+               cmd->hci_inquiry.lap,
+               cmd->hci_inquiry.length,
+               cmd->hci_inquiry.num_responses);
       else if (cmd->command == hci_remote_name_request_ptr)
-         bt_send_cmd_ptr(cmd->command, cmd->hci_remote_name_request.bd_addr,
+         bt_send_cmd_ptr(
+               cmd->command,
+               cmd->hci_remote_name_request.bd_addr,
                cmd->hci_remote_name_request.page_scan_repetition_mode,
                cmd->hci_remote_name_request.reserved,
                cmd->hci_remote_name_request.clock_offset);
 
       else if (cmd->command == hci_pin_code_request_reply_ptr)
-         bt_send_cmd_ptr(cmd->command, cmd->hci_pin_code_request_reply.bd_addr,
-               6, cmd->hci_pin_code_request_reply.pin);
+         bt_send_cmd_ptr(
+               cmd->command,
+               cmd->hci_pin_code_request_reply.bd_addr,
+               6,
+               cmd->hci_pin_code_request_reply.pin);
 
       INCPOS(read);
    }
@@ -161,7 +174,8 @@ void btpad_queue_hci_disconnect(uint16_t handle, uint8_t reason)
    btpad_queue_process();
 }
 
-void btpad_queue_hci_inquiry(uint32_t lap, uint8_t length, uint8_t num_responses)
+void btpad_queue_hci_inquiry(uint32_t lap,
+      uint8_t length, uint8_t num_responses)
 {
    struct btpad_queue_command* cmd = (struct btpad_queue_command*)
       &commands[insert_position];
@@ -190,7 +204,8 @@ void btpad_queue_hci_remote_name_request(bd_addr_t bd_addr,
 
    cmd->command = hci_remote_name_request_ptr;
    memcpy(cmd->hci_remote_name_request.bd_addr, bd_addr, sizeof(bd_addr_t));
-   cmd->hci_remote_name_request.page_scan_repetition_mode = page_scan_repetition_mode;
+   cmd->hci_remote_name_request.page_scan_repetition_mode = 
+      page_scan_repetition_mode;
    cmd->hci_remote_name_request.reserved = reserved;
    cmd->hci_remote_name_request.clock_offset = clock_offset;
 

@@ -38,7 +38,8 @@
  *  
  */
 
-#pragma once
+#ifndef _BTSTACK_HEADER_H
+#define _BTSTACK_HEADER_H
 
 #include "hci_cmds.h"
 #include "run_loop.h"
@@ -50,31 +51,40 @@
 extern "C" {
 #endif
 	
-// Default TCP port for BTstack daemon
+/* Default TCP port for BTstack daemon. */
 #define BTSTACK_PORT            13333
 
-// UNIX domain socket for BTstack */
+/* UNIX domain socket for BTstack. */
 #define BTSTACK_UNIX            "/tmp/BTstack"
 
-// packet handler
-typedef void (*btstack_packet_handler_t) (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+/* Packet handler. */
+typedef void (*btstack_packet_handler_t) (uint8_t packet_type,
+      uint16_t channel, uint8_t *packet, uint16_t size);
 
-// optional: if called before bt_open, TCP socket is used instead of local unix socket
-//           note: address is not copied and must be valid during bt_open
+/* Optional
+ *
+ * If called before bt_open, TCP socket is used 
+ * instead of local UNIX socket.
+ *
+ * note: Address is not copied and must be 
+ * valid during bt_open.
+ */
 void bt_use_tcp(const char * address, uint16_t port); 
 
-// init BTstack library
+/* Init BTstack library. */
 int bt_open(void);
 
-// stop using BTstack library
+/* Stop using BTstack library. */
 int bt_close(void);
 
-// send hci cmd packet
+/* Send HCI cmd packet. */
 int bt_send_cmd(const hci_cmd_t *cmd, ...);
 
-// register packet handler -- channel only valid for l2cap and rfcomm packets
-// @returns old packet handler
-btstack_packet_handler_t bt_register_packet_handler(btstack_packet_handler_t handler);
+/* Register packet handler -- channel only valid 
+ * for L2CAP and RFCOMM packets.
+ */
+btstack_packet_handler_t bt_register_packet_handler(
+      btstack_packet_handler_t handler);
 
 void bt_send_acl(uint8_t * data, uint16_t len);
 
@@ -83,4 +93,6 @@ void bt_send_rfcomm(uint16_t rfcom_cid, uint8_t *data, uint16_t len);
 
 #if defined __cplusplus
 }
+#endif
+
 #endif

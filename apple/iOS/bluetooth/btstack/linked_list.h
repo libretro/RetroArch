@@ -35,7 +35,8 @@
  *  Created by Matthias Ringwald on 7/13/09.
  */
 
-#pragma once
+#ifndef _BTSTACK_LINKED_LIST_H
+#define _BTSTACK_LINKED_LIST_H
 
 #if defined __cplusplus
 extern "C" {
@@ -60,4 +61,6 @@ void test_linked_list(void);
 
 #if defined __cplusplus
 }
+#endif
+
 #endif

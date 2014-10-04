@@ -33,7 +33,8 @@
  *  sdp_util.h
  */
 
-#pragma once
+#ifndef _BTSTACK_SDP_UTIL_H
+#define _BTSTACK_SDP_UTIL_H
 
 #include <stdint.h>
 
@@ -135,4 +136,6 @@ void      sdp_create_spp_service(uint8_t *service, int service_id, const char *n
 
 #if defined __cplusplus
 }
+#endif
+
 #endif
