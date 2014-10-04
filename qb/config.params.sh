@@ -47,3 +47,4 @@ HAVE_FLOATHARD=no       # Force hard float ABI (for ARM)
 HAVE_FLOATSOFTFP=no     # Force soft float ABI (for ARM)
 HAVE_7ZIP=yes           # Compile in 7z support
 HAVE_PRESERVE_DYLIB=no  # Disable dlclose() for Valgrind support
+HAVE_PARPORT=auto       # Parallel port joypad support

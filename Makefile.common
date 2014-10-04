@@ -59,8 +59,8 @@ endif
 ifneq ($(findstring Linux,$(OS)),)
    LIBS += -lrt
    JOYCONFIG_LIBS += -lrt
-   OBJ += input/linuxraw_input.o input/linuxraw_joypad.o input/parport_joypad.o
-   JOYCONFIG_OBJ += tools/linuxraw_joypad.o tools/parport_joypad.o
+   OBJ += input/linuxraw_input.o input/linuxraw_joypad.o
+   JOYCONFIG_OBJ += tools/linuxraw_joypad.o
 endif
 
 ifeq ($(findstring Haiku,$(OS)),)
@@ -336,6 +336,10 @@ ifeq ($(HAVE_UDEV), 1)
    JOYCONFIG_OBJ += tools/udev_joypad.o
 endif
 
+ifeq ($(HAVE_PARPORT), 1)
+   OBJ += input/parport_joypad.o
+   JOYCONFIG_OBJ += tools/parport_joypad.o
+endif
 
 # Video
 #
