@@ -1184,6 +1184,7 @@ static void init_video_input(void)
    video.force_aspect = g_settings.video.force_aspect;
 #ifdef GEKKO
    video.viwidth = g_settings.video.viwidth;
+   video.vfilter = g_settings.video.vfilter;
 #endif
    video.smooth = g_settings.video.smooth;
    video.input_scale = scale;
