@@ -116,7 +116,7 @@ static void hidpad_wii_set_rumble(void *data,
    (void)strength;
 }
 
-pad_connection_interface_t apple_pad_wii = {
+pad_connection_interface_t pad_connection_wii = {
    hidpad_wii_connect,
    hidpad_wii_disconnect,
    hidpad_wii_packet_handler,

@@ -59,12 +59,12 @@ int32_t pad_connection_connect(const char* name, void *data)
          pad_connection_interface_t *iface;
       } pad_map[] = 
       {
-         { "Nintendo RVL-CNT-01",         &apple_pad_wii },
+         { "Nintendo RVL-CNT-01",         &pad_connection_wii },
 #if 0
-         { "Nintendo RVL-CNT-01-UC",   &apple_pad_wii_u },
-         { "Wireless Controller",         &apple_pad_ps4 },
+         { "Nintendo RVL-CNT-01-UC",   &pad_connection_wii_u },
+         { "Wireless Controller",         &pad_connection_ps4 },
 #endif
-         { "PLAYSTATION(R)3 Controller",  &apple_pad_ps3 },
+         { "PLAYSTATION(R)3 Controller",  &pad_connection_ps3 },
          { 0, 0}
       };
 

@@ -171,7 +171,7 @@ static void hidpad_ps4_set_rumble(void *data,
 #endif
 }
 
-pad_connection_interface_t apple_pad_ps4 = {
+pad_connection_interface_t pad_connection_ps4 = {
    hidpad_ps4_connect,
    hidpad_ps4_disconnect,
    hidpad_ps4_packet_handler,

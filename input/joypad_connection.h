@@ -31,8 +31,8 @@ typedef struct pad_connection_interface
    int16_t  (*get_axis)(void *data, unsigned axis);
 } pad_connection_interface_t;
 
-extern pad_connection_interface_t apple_pad_wii;
-extern pad_connection_interface_t apple_pad_ps3;
+extern pad_connection_interface_t pad_connection_wii;
+extern pad_connection_interface_t pad_connection_ps3;
 
 int32_t pad_connection_connect(const char* name, void *data);
 
