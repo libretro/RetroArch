@@ -26,7 +26,7 @@
 typedef struct
 {
    bool used;
-   struct apple_pad_interface* iface;
+   struct pad_connection_interface *iface;
    void* data;
    
    bool is_gcapi;
@@ -64,7 +64,7 @@ int32_t apple_joypad_connect(const char* name, void *data)
       static const struct
       {
          const char* name;
-         struct apple_pad_interface* iface;
+         struct pad_connection_interface *iface;
       } pad_map[] = 
       {
          { "Nintendo RVL-CNT-01",         &apple_pad_wii },

@@ -53,11 +53,14 @@ typedef struct
 
 struct pad_connection;
 
-struct apple_pad_interface
+struct pad_connection_interface
 {
    void* (*connect)(void *data, uint32_t slot);
+
    void (*disconnect)(void* device);
+
    void (*packet_handler)(void* device, uint8_t *packet, uint16_t size);
+
    void (*set_rumble)(void* device, enum retro_rumble_effect effect,
          uint16_t strength);
 };

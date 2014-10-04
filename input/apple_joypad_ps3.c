@@ -169,7 +169,7 @@ static void hidpad_ps3_set_rumble(void *data,
    }
 }
 
-struct apple_pad_interface apple_pad_ps3 =
+struct pad_connection_interface apple_pad_ps3 =
 {
    &hidpad_ps3_connect,
    &hidpad_ps3_disconnect,
