@@ -3217,9 +3217,23 @@ static int do_menu_oneshot(
 }
 #endif
 
+static inline int time_to_exit(retro_input_t input)
+{
+   if (
+         g_extern.system.shutdown
+         || check_quit_key_func(input)
+         || (g_extern.max_frames && g_extern.frame_count >= 
+            g_extern.max_frames)
+         || (g_extern.bsv.movie_end && g_extern.bsv.eof_exit)
+         || !driver.video->alive(driver.video_data)
+      )
+      return 1;
+   return 0;
+}
+
 /* Returns:
- * 0  - Successful iteration.
- * 1 -  Quit of iteration loop.
+ * 0  -  Successful iteration.
+ * -1 -  Quit out of iteration loop.
  */
 int rarch_main_iterate(void)
 {
@@ -3241,15 +3255,8 @@ int rarch_main_iterate(void)
 
    trigger_input = input & ~old_input;
 
-   /* Time to drop? */
-   if (
-         g_extern.system.shutdown ||
-         check_quit_key_func(input) ||
-         (g_extern.max_frames &&
-          g_extern.frame_count >= g_extern.max_frames) ||
-         (g_extern.bsv.movie_end && g_extern.bsv.eof_exit) ||
-         !driver.video->alive(driver.video_data))
-      return 1;
+   if (time_to_exit(input))
+      return -1;
 
    if (g_extern.system.frame_time.callback)
       update_frame_time();
@@ -3265,7 +3272,7 @@ int rarch_main_iterate(void)
    if (g_extern.exec)
    {
       g_extern.exec = false;
-      return 1;
+      return -1;
    }
 
    if (do_state_checks(input, old_input, trigger_input))

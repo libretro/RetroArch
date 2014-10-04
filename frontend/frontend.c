@@ -56,7 +56,7 @@
 
 int main_entry_decide(signature(), args_type() args)
 {
-   if (rarch_main_iterate())
+   if (rarch_main_iterate() == -1)
    {
       if (g_extern.core_shutdown_initiated 
             && g_settings.load_dummy_on_core_shutdown)
