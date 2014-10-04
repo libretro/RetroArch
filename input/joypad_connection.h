@@ -20,9 +20,11 @@
 #include <stdint.h>
 #include <stddef.h>
 
+typedef void (*send_control_t)(void *data, uint8_t *buf, size_t size);
+
 typedef struct pad_connection_interface
 {
-   void*    (*connect)(void *data, uint32_t slot);
+   void*    (*connect)(void *data, uint32_t slot, send_control_t ptr);
    void     (*disconnect)(void* device);
    void     (*packet_handler)(void* device, uint8_t *packet, uint16_t size);
    void     (*set_rumble)(void* device, enum retro_rumble_effect effect,
@@ -34,7 +36,7 @@ typedef struct pad_connection_interface
 extern pad_connection_interface_t pad_connection_wii;
 extern pad_connection_interface_t pad_connection_ps3;
 
-int32_t pad_connection_connect(const char* name, void *data);
+int32_t pad_connection_connect(const char* name, void *data, send_control_t ptr);
 
 int32_t apple_joypad_connect_gcapi(void);
 

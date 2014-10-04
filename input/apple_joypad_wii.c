@@ -46,7 +46,7 @@ static int wiimote_send(struct wiimote_t* wm,
     printf("\n");
 #endif
     
-    pad_connection_send_control(wm->connection, buf, len + 2);
+    wm->send_control(wm->connection, buf, len + 2);
     return 1;
 }
 
@@ -457,7 +457,8 @@ static int wiimote_handshake(struct wiimote_t* wm,  byte event, byte* data,
 
 #endif
 
-static void* hidpad_wii_connect(void *data, uint32_t slot)
+static void* hidpad_wii_connect(void *data, uint32_t slot,
+                                send_control_t ptr)
 {
    struct pad_connection *connection = (struct pad_connection*)data;
    struct wiimote_t *device = (struct wiimote_t*)
@@ -470,6 +471,7 @@ static void* hidpad_wii_connect(void *data, uint32_t slot)
    device->unid = slot;
    device->state = WIIMOTE_STATE_CONNECTED;
    device->exp.type = EXP_NONE;
+   device->send_control = ptr;
 
    wiimote_handshake(device, -1, NULL, -1);
 

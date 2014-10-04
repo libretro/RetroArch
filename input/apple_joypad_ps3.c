@@ -23,6 +23,7 @@
 struct hidpad_ps3_data
 {
    struct pad_connection* connection;
+   send_control_t send_control;
    uint8_t data[512];
    uint32_t slot;
    bool have_led;
@@ -49,11 +50,10 @@ static void hidpad_ps3_send_control(struct hidpad_ps3_data* device)
    report_buffer[4] = device->motors[1] >> 8;
    report_buffer[6] = device->motors[0] >> 8;
     
-   pad_connection_send_control(
-      device->connection, report_buffer, sizeof(report_buffer));
+   device->send_control(device->connection, report_buffer, sizeof(report_buffer));
 }
 
-static void* hidpad_ps3_connect(void *connect_data, uint32_t slot)
+static void* hidpad_ps3_connect(void *connect_data, uint32_t slot, send_control_t ptr)
 {
    struct pad_connection* connection = (struct pad_connection*)connect_data;
    struct hidpad_ps3_data* device = (struct hidpad_ps3_data*)
@@ -64,11 +64,12 @@ static void* hidpad_ps3_connect(void *connect_data, uint32_t slot)
 
    device->connection = connection;  
    device->slot = slot;
+   device->send_control = ptr;
    
 #ifdef IOS
    /* Magic packet to start reports. */
    static uint8_t data[] = {0x53, 0xF4, 0x42, 0x03, 0x00, 0x00};
-   pad_connection_send_control(device->connection, data, 6);
+   device->send_control(device->connection, data, 6);
 #endif
 
    /* Without this, the digital buttons won't be reported. */

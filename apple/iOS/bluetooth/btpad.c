@@ -50,7 +50,8 @@ static bool inquiry_off;
 static bool inquiry_running;
 static struct pad_connection g_connections[MAX_PLAYERS];
 
-void pad_connection_send_control(void *data, uint8_t* data_buf, size_t size)
+static void btpad_connection_send_control(void *data,
+        uint8_t* data_buf, size_t size)
 {
    struct pad_connection *connection = (struct pad_connection*)data;
 
@@ -326,7 +327,7 @@ void btpad_packet_handler(uint8_t packet_type,
                   RARCH_LOG("BTpad: Got %.200s\n", (char*)&packet[9]);
 
                   connection->slot = pad_connection_connect(
-                        (char*)packet + 9, connection);
+                        (char*)packet + 9, connection, btpad_connection_send_control);
                   connection->state = BTPAD_CONNECTED;
                }
                break;

@@ -23,6 +23,7 @@
 struct hidpad_ps4_data
 {
    struct pad_connection* connection;
+   send_control_t send_control;
    uint8_t data[512];
    uint32_t slot;
    bool have_led;
@@ -43,11 +44,10 @@ static void hidpad_ps4_send_control(struct hidpad_ps4_data* device)
    report_buffer[11] = rgb[(device->slot % 4)][2];
 #endif
     
-   pad_connection_send_control(
-      device->connection, report_buffer, sizeof(report_buffer));
+   device->send_control(device->connection, report_buffer, sizeof(report_buffer));
 }
 
-static void* hidpad_ps4_connect(void *connect_data, uint32_t slot)
+static void* hidpad_ps4_connect(void *connect_data, uint32_t slot, send_control_t ptr)
 {
    uint8_t data[0x25];
    struct pad_connection* connection = (struct pad_connection*)connect_data;
@@ -59,10 +59,11 @@ static void* hidpad_ps4_connect(void *connect_data, uint32_t slot)
 
    device->connection = connection;  
    device->slot = slot;
+   device->send_control = ptr;
    
    /* TODO - unsure of this */
    /* This is needed to get full input packet over bluetooth. */
-   pad_connection_send_control(device->connection, data, 0x2);
+   device->send_control(device->connection, data, 0x2);
 
    /* Without this, the digital buttons won't be reported. */
    hidpad_ps4_send_control(device);

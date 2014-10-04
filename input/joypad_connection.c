@@ -42,7 +42,7 @@ static int find_vacant_pad(void)
    return -1;
 }
 
-int32_t pad_connection_connect(const char* name, void *data)
+int32_t pad_connection_connect(const char* name, void *data, send_control_t ptr)
 {
    int pad = find_vacant_pad();
 
@@ -72,7 +72,7 @@ int32_t pad_connection_connect(const char* name, void *data)
          if (strstr(name, pad_map[i].name))
          {
             s->iface = pad_map[i].iface;
-            s->data = s->iface->connect(data, pad);
+            s->data = s->iface->connect(data, pad, ptr);
          }
    }
 

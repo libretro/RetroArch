@@ -31,7 +31,7 @@ struct pad_connection
 
 static IOHIDManagerRef g_hid_manager;
 
-void pad_connection_send_control(void *data, uint8_t* data_buf, size_t size)
+static void hid_pad_connection_send_control(void *data, uint8_t* data_buf, size_t size)
 {
    struct pad_connection* connection = (struct pad_connection*)data;
 
@@ -190,7 +190,7 @@ static void add_device(void* context, IOReturn result,
    productID = (CFNumberRef)IOHIDDeviceGetProperty(device, CFSTR(kIOHIDProductIDKey));
    CFNumberGetValue(productID, kCFNumberIntType, &connection->p_id);
 
-   connection->slot = pad_connection_connect(device_name, connection);
+   connection->slot = pad_connection_connect(device_name, connection, hid_pad_connection_send_control);
 
    if (pad_connection_has_interface(connection->slot))
       IOHIDDeviceRegisterInputReportCallback(device,

@@ -173,6 +173,7 @@ typedef struct wiimote_t
    int unid;
 
    struct pad_connection* connection;
+   send_control_t send_control;
 
    /* Various state flags. */
    int state;
