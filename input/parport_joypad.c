@@ -34,7 +34,9 @@ struct parport_joypad
 {
    int fd;
    bool buttons[NUM_BUTTONS];
-
+   bool button_enable[NUM_BUTTONS];
+   char saved_data;
+   char saved_control;
    char *ident;
 };
 
@@ -90,13 +92,17 @@ static void poll_pad(struct parport_joypad *pad)
       pad->buttons[i + 5] = !(status & UINT8_C(1 << i));
    }
    pad->buttons[12] = pad->buttons[12] ? false : true;
+
+
 }
 
 static bool parport_joypad_init_pad(const char *path, struct parport_joypad *pad)
 {
    int datadir = 1; /* read */
    char data;
-   bool irq_disable = false;
+   struct ppdev_frob_struct frob;
+   bool set_control = false;
+
    int mode = IEEE1284_MODE_BYTE;
 
    if (pad->fd >= 0)
@@ -129,17 +135,40 @@ static bool parport_joypad_init_pad(const char *path, struct parport_joypad *pad
          RARCH_WARN("[Joypad]: Failed to set data direction to input on %s\n", path);
          goto error;
       }
+
+      if (ioctl(pad->fd, PPRDATA, &data) < 0)
+      {
+         RARCH_WARN("[Joypad]: Failed to save original data register on %s\n", path);
+         goto error;
+      }
+      pad->saved_data = data;
+
       if (ioctl(pad->fd, PPRCONTROL, &data) == 0)
       {
-         data &= 0xEF; /* Clear bit 4 to disable interrupts */
-         if (ioctl(pad->fd, PPWCONTROL, &data) == 0)
-            irq_disable = true;
+         pad->saved_control = data;
+         /* Clear strobe bit to set strobe high for pullup +V */
+         /* Clear control bit 4 to disable interrupts */
+         frob.mask = PARPORT_CONTROL_STROBE | (UINT8_C(1 << 4));
+         frob.val = 0;
+         if (ioctl(pad->fd, PPFCONTROL, &frob) == 0)
+            set_control = true;
       }
-      /* Failure to disable interrupts only slightly increases CPU use, not an error */
-      if (!irq_disable)
-         RARCH_WARN("[Joypad]: Failed to disable interrupts on %s\n", path);
+      else
+      {
+         data = pad->saved_data;
+         if (ioctl(pad->fd, PPWDATA, &data) < 0)
+            RARCH_WARN("[Joypad]: Failed to restore original data register on %s\n", path);
+         RARCH_WARN("[Joypad]: Failed to save original control register on %s\n", path);
+         goto error;
+      }
 
-      strlcpy(pad->ident, "Parallel port device", sizeof(g_settings.input.device_names[0]));
+      /* Failure to enable strobe breaks Linux Multisystem style controllers.
+       * Controllers using an alternative power source will still work.
+       * Failure to disable interrupts slightly increases CPU usage. */
+      if (!set_control)
+         RARCH_WARN("[Joypad]: Failed to clear nStrobe and nIRQ bits on %s\n", path);
+
+      strlcpy(pad->ident, path, sizeof(g_settings.input.device_names[0]));
       return true;
 error:
       close(pad->fd);
@@ -192,12 +221,26 @@ static bool parport_joypad_init(void)
 static void parport_joypad_destroy(void)
 {
    unsigned i;
+   char data;
+   struct parport_joypad *pad;
+
    for (i = 0; i < MAX_PLAYERS; i++)
    {
-      if (g_pads[i].fd >= 0)
+      pad = &g_pads[i];
+      if (pad->fd >= 0)
       {
-         ioctl(g_pads[i].fd, PPRELEASE);
-         close(g_pads[i].fd);
+         data = pad->saved_data;
+         if (ioctl(pad->fd, PPWDATA, &data) < 0)
+            RARCH_ERR("[Joypad]: Failed to restore original data register on %s\n", pad->ident);
+
+         data = pad->saved_control;
+         if (ioctl(pad->fd, PPWDATA, &data) < 0)
+            RARCH_ERR("[Joypad]: Failed to restore original control register on %s\n", pad->ident);
+
+         if (ioctl(pad->fd, PPRELEASE) < 0)
+            RARCH_ERR("[Joypad]: Failed to release parallel port %s\n", pad->ident);
+
+         close(pad->fd);
       }
    }
    memset(g_pads, 0, sizeof(g_pads));
