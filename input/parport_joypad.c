@@ -275,7 +275,7 @@ static bool parport_joypad_init(void)
                RARCH_WARN("[Joypad]: Pin(s) %son %s were low on init, assuming not connected\n", \
                                        buf, path);
             }
-            input_config_autoconfigure_joypad(i, pad->ident, 0, 0, "parport");
+            input_config_autoconfigure_joypad(i, "Generic Parallel Port device", 0, 0, "parport");
          }
          else
          {
