@@ -38,17 +38,17 @@ typedef struct
 
 static joypad_slot_t slots[MAX_PLAYERS];
 
-static int32_t find_empty_slot(void)
+static int find_vacant_pad(void)
 {
    unsigned i;
 
    for (i = 0; i < MAX_PLAYERS; i++)
    {
-      if (!slots[i].used)
-      {
-         memset(&slots[i], 0, sizeof(slots[0]));
-         return i;
-      }
+      if (slots[i].used)
+         continue;
+
+      memset(&slots[i], 0, sizeof(slots[0]));
+      return i;
    }
    return -1;
 }
@@ -57,12 +57,13 @@ int32_t apple_joypad_connect(const char* name, void *data)
 {
    struct apple_pad_connection* connection = 
       (struct apple_pad_connection*)data;
-   int32_t slot = find_empty_slot();
+   int pad = find_vacant_pad();
 
-   if (slot >= 0 && slot < MAX_PLAYERS)
+   if (pad >= 0 && pad < MAX_PLAYERS)
    {
       unsigned i;
-      joypad_slot_t* s = (joypad_slot_t*)&slots[slot];
+      joypad_slot_t* s = (joypad_slot_t*)&slots[pad];
+
       s->used = true;
 
       static const struct
@@ -82,33 +83,36 @@ int32_t apple_joypad_connect(const char* name, void *data)
          if (strstr(name, pad_map[i].name))
          {
             s->iface = pad_map[i].iface;
-            s->data = s->iface->connect(connection, slot);
+            s->data = s->iface->connect(connection, pad);
          }
    }
 
-   return slot;
+   return pad;
 }
 
 int32_t apple_joypad_connect_gcapi(void)
 {
-   int32_t slot = find_empty_slot();
+   int pad = find_vacant_pad();
 
-   if (slot >= 0 && slot < MAX_PLAYERS)
+   if (pad >= 0 && pad < MAX_PLAYERS)
    {
-      joypad_slot_t *s = (joypad_slot_t*)&slots[slot];
+      joypad_slot_t *s = (joypad_slot_t*)&slots[pad];
 
-      s->used = true;
-      s->is_gcapi = true;
+      if (s)
+      {
+         s->used = true;
+         s->is_gcapi = true;
+      }
    }
 
-   return slot;
+   return pad;
 }
 
-void apple_joypad_disconnect(uint32_t slot)
+void apple_joypad_disconnect(uint32_t pad)
 {
-   if (slot < MAX_PLAYERS && slots[slot].used)
+   if (pad < MAX_PLAYERS && slots[pad].used)
    {
-      joypad_slot_t* s = (joypad_slot_t*)&slots[slot];
+      joypad_slot_t* s = (joypad_slot_t*)&slots[pad];
 
       if (s->iface && s->data && s->iface->disconnect)
          s->iface->disconnect(s->data);
@@ -117,33 +121,29 @@ void apple_joypad_disconnect(uint32_t slot)
    }
 }
 
-void apple_joypad_packet(uint32_t slot,
+void apple_joypad_packet(uint32_t pad,
       uint8_t* data, uint32_t length)
 {
-   if (slot < MAX_PLAYERS && slots[slot].used)
+   if (pad < MAX_PLAYERS && slots[pad].used)
    {
-      joypad_slot_t *s = (joypad_slot_t*)&slots[slot];
+      joypad_slot_t *s = (joypad_slot_t*)&slots[pad];
 
       if (s->iface && s->data && s->iface->packet_handler)
          s->iface->packet_handler(s->data, data, length);
    }
 }
 
-bool apple_joypad_has_interface(uint32_t slot)
+bool apple_joypad_has_interface(uint32_t pad)
 {
-   if (slot < MAX_PLAYERS && slots[slot].used)
-      return slots[slot].iface ? true : false;
+   if (pad < MAX_PLAYERS && slots[pad].used)
+      return slots[pad].iface ? true : false;
 
    return false;
 }
 
 static bool apple_joypad_init(void)
 {
-#ifdef HAVE_HID
-   return hid_init_manager();
-#else
    return true;
-#endif
 }
 
 static bool apple_joypad_query_pad(unsigned pad)
@@ -163,9 +163,6 @@ static void apple_joypad_destroy(void)
          slots[i].iface->set_rumble(slots[i].data, RETRO_RUMBLE_WEAK, 0);
       }
    }
-#ifdef HAVE_HID
-   hid_exit();
-#endif
 }
 
 static bool apple_joypad_button(unsigned port, uint16_t joykey)
