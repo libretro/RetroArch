@@ -83,7 +83,12 @@ rarch_joypad_driver_t *joypad_drivers[] = {
    &sdl_joypad,
 #endif
 #ifdef __MACH__
-   &apple_joypad,
+#ifdef HAVE_HID
+   &apple_hid_joypad,
+#endif
+#ifdef IOS
+   &apple_ios_joypad,
+#endif
 #endif
 #ifdef __QNX__
    &qnx_joypad,
