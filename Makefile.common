@@ -336,6 +336,10 @@ ifeq ($(HAVE_UDEV), 1)
    JOYCONFIG_OBJ += tools/udev_joypad.o
 endif
 
+ifeq ($(HAVE_PARPORT), 1)
+   OBJ += input/parport_joypad.o
+   JOYCONFIG_OBJ += tools/parport_joypad.o
+endif
 
 # Video
 #

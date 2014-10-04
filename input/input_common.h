@@ -127,6 +127,7 @@ const char *input_joypad_name(const rarch_joypad_driver_t *driver,
 
 extern rarch_joypad_driver_t dinput_joypad;
 extern rarch_joypad_driver_t linuxraw_joypad;
+extern rarch_joypad_driver_t parport_joypad;
 extern rarch_joypad_driver_t udev_joypad;
 extern rarch_joypad_driver_t winxinput_joypad;
 extern rarch_joypad_driver_t sdl_joypad;

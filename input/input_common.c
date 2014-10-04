@@ -76,6 +76,9 @@ rarch_joypad_driver_t *joypad_drivers[] = {
 #if defined(__linux) && !defined(ANDROID)
    &linuxraw_joypad,
 #endif
+#ifdef HAVE_PARPORT
+   &parport_joypad,
+#endif
 #ifdef ANDROID
    &android_joypad,
 #endif

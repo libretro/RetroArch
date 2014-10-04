@@ -121,6 +121,11 @@ $(OBJDIR)/tools/linuxraw_joypad.o: input/linuxraw_joypad.c
 	@$(if $(Q), $(shell echo echo CC $<),)
 	$(Q)$(CC) $(CFLAGS) $(DEFINES) -MMD -DIS_JOYCONFIG -c -o $@ $<
 
+$(OBJDIR)/tools/parport_joypad.o: input/parport_joypad.c
+	@mkdir -p $(dir $@)
+	@$(if $(Q), $(shell echo echo CC $<),)
+	$(Q)$(CC) $(CFLAGS) $(DEFINES) -MMD -DIS_JOYCONFIG -c -o $@ $<
+
 $(OBJDIR)/tools/udev_joypad.o: input/udev_joypad.c
 	@mkdir -p $(dir $@)
 	@$(if $(Q), $(shell echo echo CC $<),)
