@@ -195,7 +195,7 @@ static void add_device(void* context, IOReturn result,
 
    connection->slot = joypad_connection_connect(device_name, connection);
 
-   if (apple_joypad_has_interface(connection->slot))
+   if (pad_connection_has_interface(connection->slot))
       IOHIDDeviceRegisterInputReportCallback(device,
             connection->data + 1, sizeof(connection->data) - 1,
             hid_device_report, connection);
@@ -324,7 +324,7 @@ void pad_connection_packet(uint32_t slot,
    }
 }
 
-bool apple_joypad_has_interface(uint32_t slot)
+bool pad_connection_has_interface(uint32_t slot)
 {
    if (slot < MAX_PLAYERS && slots[slot].used)
       return slots[slot].iface ? true : false;

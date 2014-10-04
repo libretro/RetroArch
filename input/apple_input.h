@@ -76,7 +76,7 @@ void pad_connection_packet(uint32_t slot, uint8_t* data, uint32_t length);
 
 /* Determine if connected joypad is a hidpad backed device.
  * If false, pad_connection_packet cannot be used */
-bool apple_joypad_has_interface(uint32_t slot);
+bool pad_connection_has_interface(uint32_t slot);
 
 void apple_input_enable_icade(bool on);
 

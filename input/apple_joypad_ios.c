@@ -128,7 +128,7 @@ void pad_connection_packet(uint32_t pad,
    }
 }
 
-bool apple_joypad_has_interface(uint32_t pad)
+bool pad_connection_has_interface(uint32_t pad)
 {
    if (pad < MAX_PLAYERS && slots[pad].used)
       return slots[pad].iface ? true : false;
