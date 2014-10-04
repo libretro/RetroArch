@@ -2194,9 +2194,12 @@ static void check_disk_next(
 }
 
 /* Checks for stuff like fullscreen, save states, etc.
- * Return false when RetroArch is paused. */
+ * Returns:
+ * 0 - normal operation.
+ * 1 - when RetroArch is paused.
+ */
 
-static bool do_state_checks(
+static int do_state_checks(
       retro_input_t input, retro_input_t old_input,
       retro_input_t trigger_input)
 {
@@ -2222,7 +2225,7 @@ static bool do_state_checks(
    if (driver.netplay_data)
    {
       check_netplay_flip_func(trigger_input);
-      return true;
+      goto exit;
    }
 #endif
    check_pause_func(trigger_input);
@@ -2233,7 +2236,7 @@ static bool do_state_checks(
       rarch_render_cached_frame();
 
    if (g_extern.is_paused && !g_extern.is_oneshot)
-      return false;
+      return 1;
 
    check_fast_forward_button_func(input, old_input, trigger_input);
 
@@ -2268,7 +2271,8 @@ static bool do_state_checks(
    if (BIND_PRESSED(trigger_input, RARCH_RESET))
       rarch_main_command(RARCH_CMD_RESET);
 
-   return true;
+exit:
+   return 0;
 }
 
 static void init_state(void)
@@ -3199,7 +3203,7 @@ static void do_state_check_menu_toggle(void)
    rarch_main_set_state(RARCH_ACTION_STATE_MENU_RUNNING);
 }
 
-static bool do_menu_oneshot(
+static int do_menu_oneshot(
       retro_input_t input, retro_input_t old_input,
       retro_input_t trigger_input)
 {
@@ -3209,11 +3213,15 @@ static bool do_menu_oneshot(
    if (g_settings.fastforward_ratio_throttle_enable)
       limit_frame_time();
 
-   return true;
+   return 0;
 }
 #endif
 
-bool rarch_main_iterate(void)
+/* Returns:
+ * 0  - Successful iteration.
+ * 1 -  Quit of iteration loop.
+ */
+int rarch_main_iterate(void)
 {
    unsigned i;
    static retro_input_t last_input = 0;
@@ -3241,7 +3249,7 @@ bool rarch_main_iterate(void)
           g_extern.frame_count >= g_extern.max_frames) ||
          (g_extern.bsv.movie_end && g_extern.bsv.eof_exit) ||
          !driver.video->alive(driver.video_data))
-      return false;
+      return 1;
 
    if (g_extern.system.frame_time.callback)
       update_frame_time();
@@ -3257,14 +3265,18 @@ bool rarch_main_iterate(void)
    if (g_extern.exec)
    {
       g_extern.exec = false;
-      return false;
+      return 1;
    }
 
-   if (!do_state_checks(input, old_input, trigger_input))
+   if (do_state_checks(input, old_input, trigger_input))
    {
+      /* RetroArch has been paused */
       driver.retro_ctx.poll_cb();
       rarch_sleep(10);
-      return true;
+
+      /* TODO - maybe change this from 0 to something else
+       * to signal that RetroArch is currently paused. */
+      return 0;
    }
 
 #if defined(HAVE_THREADS)
@@ -3325,7 +3337,7 @@ bool rarch_main_iterate(void)
    if (g_settings.fastforward_ratio_throttle_enable)
       limit_frame_time();
 
-   return true;
+   return 0;
 }
 
 void rarch_main_deinit(void)
