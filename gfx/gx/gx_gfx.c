@@ -127,8 +127,6 @@ void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines)
    viWidth    = g_settings.video.viwidth;
 #if defined(HW_RVL)
 #if 0
-   if (CONF_GetAspectRatio() == CONF_ASPECT_16_9)
-      viWidth = 704;
 #endif
 
    progressive = CONF_GetProgressiveScan() > 0 && VIDEO_HaveComponentCable();
