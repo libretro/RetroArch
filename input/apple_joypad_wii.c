@@ -80,7 +80,6 @@ static uint32_t hidpad_wii_get_buttons(void *data)
 static void hidpad_wii_packet_handler(void *data,
       uint8_t *packet, uint16_t size)
 {
-   int i;
    struct wiimote_t* device = (struct wiimote_t*)data;
    byte* msg = packet + 2;
 

@@ -153,9 +153,9 @@ static void hid_device_report(void* context, IOReturn result, void *sender,
       int i;
 
       pad_connection_packet(connection->slot, connection->data, reportLength + 1);
-      apple->buttons[connection->slot] = pad_connection_get_buttons(connection->data);
+      apple->buttons[connection->slot] = pad_connection_get_buttons(connection->slot);
       for (i = 0; i < 4; i++)
-         apple->axes[device->slot][i] = pad_connection_get_axis(connection->data, i);
+         apple->axes[connection->slot][i] = pad_connection_get_axis(connection->slot, i);
    }
 }
 

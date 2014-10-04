@@ -42,9 +42,9 @@ void pad_connection_disconnect(uint32_t slot);
 
 void pad_connection_packet(uint32_t slot, uint8_t* data, uint32_t length);
 
-uint32_t pad_connection_get_buttons(void *data);
+uint32_t pad_connection_get_buttons(unsigned index);
 
-int16_t pad_connection_get_axis(void *data, unsigned i);
+int16_t pad_connection_get_axis(unsigned index, unsigned i);
 
 /* Determine if connected joypad is a hidpad backed device.
  * If false, pad_connection_packet cannot be used */

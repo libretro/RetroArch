@@ -138,9 +138,9 @@ void btpad_packet_handler(uint8_t packet_type,
                      connection->channels[1] == channel))
             {
                pad_connection_packet(connection->slot, packet, size);
-               apple->buttons[connection->slot] = pad_connection_get_buttons(connection->data);
+               apple->buttons[connection->slot] = pad_connection_get_buttons(connection->slot);
                for (i = 0; i < 4; i++)
-                  apple->axes[device->slot][i] = pad_connection_get_axis(connection->data, i);
+                  apple->axes[connection->slot][i] = pad_connection_get_axis(connection->slot, i);
             }
          }
          break;

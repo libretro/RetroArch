@@ -122,21 +122,21 @@ void pad_connection_packet(uint32_t pad,
    }
 }
 
-uint32_t pad_connection_get_buttons(void *data, unsigned index)
+uint32_t pad_connection_get_buttons(unsigned index)
 {
    joypad_slot_t *s = (joypad_slot_t*)&slots[index];
 
    if (s && s->iface && s->data)
-      return s->iface->get_buttons(s->data, index);
+      return s->iface->get_buttons(s->data);
    return 0;
 }
 
-int16_t pad_connection_get_axis(void *data, unsigned index, unsigned i)
+int16_t pad_connection_get_axis(unsigned index, unsigned i)
 {
    joypad_slot_t *s = (joypad_slot_t*)&slots[index];
 
    if (s && s->iface && s->data)
-      return s->iface->get_axis(s->data, index, i);
+      return s->iface->get_axis(s->data, i);
    return 0;
 }
 
