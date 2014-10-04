@@ -169,7 +169,14 @@ typedef struct video_info
    bool fullscreen;
    bool vsync;
    bool force_aspect;
+#ifdef GEKKO
+   /* TODO - we can't really have driver system-specific
+    * variables in here. There should be some
+    * kind of publicly accessible driver implementation
+    * video struct for specific things like this.
+    */
    unsigned viwidth;
+#endif
    bool vfilter;
    bool smooth;
    /* Maximum input size: RARCH_SCALE_BASE * input_scale */
