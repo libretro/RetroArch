@@ -329,14 +329,25 @@ INPUT
 #elif defined(ANDROID)
 #include "../input/android_input.c"
 #include "../input/android_input_joypad.c"
-#elif defined(IOS) || defined(OSX)
+#elif defined(__APPLE__)
 #include "../input/apple_input.c"
-#include "../input/apple_joypad.c"
 #elif defined(__QNX__)
 #include "../input/qnx_input.c"
 #include "../input/qnx_input_joypad.c"
 #elif defined(EMSCRIPTEN)
 #include "../input/rwebinput_input.c"
+#endif
+
+#if defined(__APPLE__)
+
+#ifdef HAVE_HID
+#include "../input/apple_joypad_hid.c"
+#endif
+
+#ifdef IOS
+#include "../input/apple_joypad_ios.c"
+#endif
+
 #endif
 
 #ifdef HAVE_DINPUT

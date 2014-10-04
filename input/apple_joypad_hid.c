@@ -238,5 +238,5 @@ rarch_joypad_driver_t apple_joypad = {
    apple_joypad_poll,
    apple_joypad_rumble,
    apple_joypad_name,
-   "apple"
+   "apple_hid"
 };

@@ -206,8 +206,10 @@ const char *config_get_default_joypad(void)
 #else
          return "sdl";
 #endif
-      case JOYPAD_APPLE:
-         return "apple";
+      case JOYPAD_APPLE_HID:
+         return "apple_hid";
+      case JOYPAD_APPLE_IOS:
+         return "apple_ios";
       case JOYPAD_QNX:
          return "qnx";
    }
