@@ -449,11 +449,13 @@ static int do_state_checks(
 #endif
    check_pause_func(trigger_input);
 
-   if (check_fullscreen_func(trigger_input) && g_extern.is_paused)
-      rarch_render_cached_frame();
-
-   if (g_extern.is_paused && !check_oneshot_func(trigger_input))
-      return 1;
+   if (g_extern.is_paused)
+   {
+      if (check_fullscreen_func(trigger_input))
+         rarch_render_cached_frame();
+      if (!check_oneshot_func(trigger_input))
+         return 1;
+   }
 
    check_fast_forward_button_func(input, old_input, trigger_input);
 
