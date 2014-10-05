@@ -447,7 +447,7 @@ static int do_state_checks(
    if (driver.netplay_data)
    {
       check_netplay_flip_func(trigger_input);
-      goto exit;
+      return 0;
    }
 #endif
    check_pause_func(trigger_input);
@@ -493,7 +493,6 @@ static int do_state_checks(
    if (BIT64_GET(trigger_input, RARCH_RESET))
       rarch_main_command(RARCH_CMD_RESET);
 
-exit:
    return 0;
 }
 
