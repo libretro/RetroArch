@@ -53,12 +53,15 @@ static bool android_joypad_init(void)
    return true;
 }
 
-static bool android_joypad_button(unsigned port_num, uint16_t joykey)
+static bool android_joypad_button(unsigned port, uint16_t joykey)
 {
    android_input_t *android = (android_input_t*)driver.input_data;
+   uint8_t *buf = NULL;
 
-   if (!android || port_num >= MAX_PADS)
+   if (!android || port >= MAX_PADS)
       return false;
+
+   buf = android->pad_state[port];
 
    if (GET_HAT_DIR(joykey))
    {
@@ -69,25 +72,25 @@ static bool android_joypad_button(unsigned port_num, uint16_t joykey)
       switch (GET_HAT_DIR(joykey))
       {
          case HAT_LEFT_MASK:
-            return android->hat_state[port_num][0] == -1;
+            return android->hat_state[port][0] == -1;
          case HAT_RIGHT_MASK:
-            return android->hat_state[port_num][0] ==  1;
+            return android->hat_state[port][0] ==  1;
          case HAT_UP_MASK:
-            return android->hat_state[port_num][1] == -1;
+            return android->hat_state[port][1] == -1;
          case HAT_DOWN_MASK:
-            return android->hat_state[port_num][1] ==  1;
+            return android->hat_state[port][1] ==  1;
          default:
             return false;
       }
    }
-   return joykey < LAST_KEYCODE && get_bit(android->pad_state[port_num],
-         joykey);
+
+   return joykey < LAST_KEYCODE && BIT_GET(buf, joykey);
 }
 
-static int16_t android_joypad_axis(unsigned port_num, uint32_t joyaxis)
+static int16_t android_joypad_axis(unsigned port, uint32_t joyaxis)
 {
    android_input_t *android = (android_input_t*)driver.input_data;
-   if (!android || joyaxis == AXIS_NONE || port_num >= MAX_PADS)
+   if (!android || joyaxis == AXIS_NONE || port >= MAX_PADS)
       return 0;
 
    int val = 0;
@@ -107,7 +110,7 @@ static int16_t android_joypad_axis(unsigned port_num, uint32_t joyaxis)
       is_pos = true;
    }
 
-   val = android->analog_state[port_num][axis];
+   val = android->analog_state[port][axis];
 
    if (is_neg && val > 0)
       val = 0;
