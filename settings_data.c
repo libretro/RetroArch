@@ -2540,7 +2540,7 @@ rarch_setting_t *setting_data_get_list(void)
 #ifdef HAVE_OVERLAY
       START_GROUP("Overlay Options")
       START_SUB_GROUP("State", GROUP_NAME)
-      CONFIG_PATH(g_settings.input.overlay,              "input_overlay",              "Overlay Preset",              g_extern.overlay_dir, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_FLAGS(SD_FLAG_ALLOW_EMPTY) WITH_VALUES("cfg") WITH_CMD(RARCH_CMD_OVERLAY_REINIT)
+      CONFIG_PATH(g_settings.input.overlay,              "input_overlay",              "Overlay Preset",              g_extern.overlay_dir, GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_FLAGS(SD_FLAG_ALLOW_EMPTY) WITH_VALUES("cfg") WITH_CMD(RARCH_CMD_OVERLAY_INIT)
       CONFIG_FLOAT(g_settings.input.overlay_opacity,     "input_overlay_opacity",      "Overlay Opacity",            0.7f, "%.2f", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_RANGE(0, 1, 0.01, true, true) WITH_CMD(RARCH_CMD_OVERLAY_SET_ALPHA_MOD) WITH_FLAGS(SD_FLAG_CMD_APPLY_AUTO)
       CONFIG_FLOAT(g_settings.input.overlay_scale,       "input_overlay_scale",        "Overlay Scale",              1.0f, "%.2f", GROUP_NAME, SUBGROUP_NAME, general_write_handler, general_read_handler) WITH_RANGE(0, 2, 0.01, true, true) WITH_CMD(RARCH_CMD_OVERLAY_SET_SCALE_FACTOR) WITH_FLAGS(SD_FLAG_CMD_APPLY_AUTO)
       END_SUB_GROUP()

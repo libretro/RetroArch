@@ -2302,6 +2302,7 @@ bool rarch_main_command(unsigned cmd)
 #endif
          break;
       case RARCH_CMD_OVERLAY_INIT:
+         rarch_main_command(RARCH_CMD_OVERLAY_DEINIT);
 #ifdef HAVE_OVERLAY
          if (!*g_settings.input.overlay)
             break;
@@ -2310,10 +2311,6 @@ bool rarch_main_command(unsigned cmd)
          if (!driver.overlay)
             RARCH_ERR("Failed to load overlay.\n");
 #endif
-         break;
-      case RARCH_CMD_OVERLAY_REINIT:
-         rarch_main_command(RARCH_CMD_OVERLAY_DEINIT);
-         rarch_main_command(RARCH_CMD_OVERLAY_INIT);
          break;
       case RARCH_CMD_DSP_FILTER_DEINIT:
          if (g_extern.audio_data.dsp)
