@@ -106,9 +106,9 @@ static void hid_device_input_callback(void* context, IOReturn result,
                      unsigned id = use - 1;
 
                      if (state)
-                        apple->buttons[connection->slot] |=  (1 << id);
+                        BIT32_SET(apple->buttons[connection->slot], id);
                      else
-                        apple->buttons[connection->slot] &= ~(1 << id);
+                        BIT32_CLEAR(apple->buttons[connection->slot], id);
                   }
                   break;
             }

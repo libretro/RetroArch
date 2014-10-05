@@ -232,9 +232,9 @@ static void handle_icade_event(unsigned keycode)
       const int button = icade_map[keycode].button;
       
       if (icade_map[keycode].up)
-         icade_buttons &= ~(1 << button);
+         BIT32_CLEAR(icade_buttons, button);
       else
-         icade_buttons |=  (1 << button);
+         BIT32_SET(icade_buttons, button);
    }
 }
 
@@ -334,7 +334,7 @@ int32_t apple_input_find_any_button(uint32_t port)
 
    buttons = apple->buttons[port];
    if (port == 0)
-      buttons |= apple_input_get_icade_buttons();
+      BIT32_SET(buttons, apple_input_get_icade_buttons());
 
    if (buttons)
       for (i = 0; i != 32; i ++)
@@ -416,7 +416,7 @@ static void apple_input_poll(void *data)
    if (apple->joypad)
       apple->joypad->poll();
 
-   apple->buttons[0] |= apple_input_get_icade_buttons();
+   BIT32_SET(apple->buttons[0], apple_input_get_icade_buttons());
 
    apple->mouse_delta[0] = 0;
    apple->mouse_delta[1] = 0;
