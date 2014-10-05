@@ -36,6 +36,15 @@ typedef struct pad_connection_interface
 extern pad_connection_interface_t pad_connection_wii;
 extern pad_connection_interface_t pad_connection_ps3;
 
+typedef struct
+{
+    bool used;
+    struct pad_connection_interface *iface;
+    void* data;
+    
+    bool is_gcapi;
+} joypad_connection_t;
+
 int32_t pad_connection_connect(const char* name, void *data, send_control_t ptr);
 
 int32_t apple_joypad_connect_gcapi(void);

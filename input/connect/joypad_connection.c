@@ -16,16 +16,7 @@
 
 #include "joypad_connection.h"
 
-typedef struct
-{
-   bool used;
-   struct pad_connection_interface *iface;
-   void* data;
-   
-   bool is_gcapi;
-} joypad_slot_t;
-
-static joypad_slot_t slots[MAX_PLAYERS];
+static joypad_connection_t slots[MAX_PLAYERS];
 
 static int find_vacant_pad(void)
 {
@@ -55,7 +46,7 @@ int32_t pad_connection_connect(const char* name, void *data, send_control_t ptr)
    if (pad >= 0 && pad < MAX_PLAYERS)
    {
       unsigned i;
-      joypad_slot_t* s = (joypad_slot_t*)&slots[pad];
+      joypad_connection_t* s = (joypad_connection_t*)&slots[pad];
 
       s->used = true;
 
@@ -91,12 +82,12 @@ int32_t apple_joypad_connect_gcapi(void)
 
    if (pad >= 0 && pad < MAX_PLAYERS)
    {
-      joypad_slot_t *s = (joypad_slot_t*)&slots[pad];
+      joypad_connection_t *s = (joypad_connection_t*)&slots[pad];
 
       if (s)
       {
-         s->used = true;
-         s->is_gcapi = true;
+          s->used = true;
+          s->is_gcapi = true;
       }
    }
 
@@ -107,12 +98,12 @@ void pad_connection_disconnect(uint32_t pad)
 {
    if (pad < MAX_PLAYERS && slots[pad].used)
    {
-      joypad_slot_t* s = (joypad_slot_t*)&slots[pad];
+      joypad_connection_t* s = (joypad_connection_t*)&slots[pad];
 
       if (s->iface && s->data && s->iface->disconnect)
          s->iface->disconnect(s->data);
 
-      memset(s, 0, sizeof(joypad_slot_t));
+      memset(s, 0, sizeof(joypad_connection_t));
    }
 }
 
@@ -121,7 +112,7 @@ void pad_connection_packet(uint32_t pad,
 {
    if (pad < MAX_PLAYERS && slots[pad].used)
    {
-      joypad_slot_t *s = (joypad_slot_t*)&slots[pad];
+      joypad_connection_t *s = (joypad_connection_t*)&slots[pad];
 
       if (!s)
           return;
@@ -133,7 +124,7 @@ void pad_connection_packet(uint32_t pad,
 
 uint32_t pad_connection_get_buttons(unsigned index)
 {
-   joypad_slot_t *s = (joypad_slot_t*)&slots[index];
+   joypad_connection_t *s = (joypad_connection_t*)&slots[index];
 
    if (s && s->iface && s->data)
       return s->iface->get_buttons(s->data);
@@ -142,7 +133,7 @@ uint32_t pad_connection_get_buttons(unsigned index)
 
 int16_t pad_connection_get_axis(unsigned index, unsigned i)
 {
-   joypad_slot_t *s = (joypad_slot_t*)&slots[index];
+   joypad_connection_t *s = (joypad_connection_t*)&slots[index];
 
    if (s && s->iface && s->data)
       return s->iface->get_axis(s->data, i);
