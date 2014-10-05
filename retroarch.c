@@ -2250,13 +2250,10 @@ void rarch_main_command(unsigned cmd)
 #endif
          break;
       case RARCH_CMD_AUTOSAVE_INIT:
+         rarch_main_command(RARCH_CMD_AUTOSAVE_DEINIT);
 #ifdef HAVE_THREADS
          init_autosave();
 #endif
-         break;
-      case RARCH_CMD_AUTOSAVE:
-         rarch_main_command(RARCH_CMD_AUTOSAVE_DEINIT);
-         rarch_main_command(RARCH_CMD_AUTOSAVE_INIT);
          break;
       case RARCH_CMD_AUDIO_STOP:
          if (!driver.audio_data)
