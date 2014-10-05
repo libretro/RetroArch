@@ -64,7 +64,7 @@ static bool ps3_joypad_button(unsigned port_num, uint16_t joykey)
 
 static int16_t ps3_joypad_axis(unsigned port_num, uint32_t joyaxis)
 {
-   int val = 0. axis = -1;
+   int val = 0, axis = -1;
    bool is_neg = false, is_pos = false;
 
    if (joyaxis == AXIS_NONE || port_num >= MAX_PADS)
@@ -210,11 +210,35 @@ static bool ps3_joypad_query_pad(unsigned pad)
    return pad < MAX_PLAYERS && pad_state[pad];
 }
 
+static bool ps3_joypad_rumble(unsigned pad,
+      enum retro_rumble_effect effect, uint16_t strength)
+{
+   CellPadActParam params;
+
+   switch (effect)
+   {
+      case RETRO_RUMBLE_WEAK:
+         if (strength > 1)
+            strength = 1;
+         params.motor[0] = strength;
+         break;
+      case RETRO_RUMBLE_STRONG:
+         if (strength > 255)
+            strength = 255;
+         params.motor[1] = strength;
+         break;
+   }
+
+   cellPadSetActDirect(pad, &params);
+
+   return true;
+}
 
 static void ps3_joypad_destroy(void)
 {
    cellPadEnd();
 }
+
 
 rarch_joypad_driver_t ps3_joypad = {
    ps3_joypad_init,
@@ -223,7 +247,7 @@ rarch_joypad_driver_t ps3_joypad = {
    ps3_joypad_button,
    ps3_joypad_axis,
    ps3_joypad_poll,
-   NULL,
+   ps3_joypad_rumble,
    ps3_joypad_name,
    "ps3",
 };

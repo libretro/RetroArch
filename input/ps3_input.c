@@ -220,25 +220,12 @@ static bool ps3_input_set_sensor_state(void *data, unsigned port,
 static bool ps3_input_set_rumble(void *data, unsigned port,
       enum retro_rumble_effect effect, uint16_t strength)
 {
-   CellPadActParam params;
+   ps3_input_t *ps3 = (ps3_input_t*)data;
 
-   switch (effect)
-   {
-      case RETRO_RUMBLE_WEAK:
-         if (strength > 1)
-            strength = 1;
-         params.motor[0] = strength;
-         break;
-      case RETRO_RUMBLE_STRONG:
-         if (strength > 255)
-            strength = 255;
-         params.motor[1] = strength;
-         break;
-   }
-
-   cellPadSetActDirect(port, &params);
-
-   return true;
+   if (ps3 && ps3->joypad)
+      return input_joypad_set_rumble(ps3->joypad,
+            port, effect, strength);
+   return false;
 }
 
 static const rarch_joypad_driver_t *ps3_input_get_joypad_driver(void *data)
