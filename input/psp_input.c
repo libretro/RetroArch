@@ -38,69 +38,15 @@
 
 typedef struct psp_input
 {
-   uint64_t pad_state;
-   int16_t analog_state[1][2][2];
    const rarch_joypad_driver_t *joypad;
 } psp_input_t;
 
 static void psp_input_poll(void *data)
 {
-   int32_t ret;
-   uint64_t *lifecycle_state = (uint64_t*)&g_extern.lifecycle_state;
-   SceCtrlData state_tmp;
    psp_input_t *psp = (psp_input_t*)data;
 
-#ifdef PSP
-   sceCtrlSetSamplingCycle(0);
-#endif
-   sceCtrlSetSamplingMode(DEFAULT_SAMPLING_MODE);
-   ret = CtrlPeekBufferPositive(0, &state_tmp, 1);
-#ifdef HAVE_KERNEL_PRX
-   state_tmp.Buttons = (state_tmp.Buttons&0x0000FFFF)|(read_system_buttons()&0xFFFF0000);
-#endif
-   (void)ret;
-
-   psp->analog_state[0][0][0] = psp->analog_state[0][0][1] = 
-      psp->analog_state[0][1][0] = psp->analog_state[0][1][1] = 0;
-   psp->pad_state = 0;
-   psp->pad_state |= (STATE_BUTTON(state_tmp) & PSP_CTRL_LEFT) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_LEFT) : 0;
-   psp->pad_state |= (STATE_BUTTON(state_tmp) & PSP_CTRL_DOWN) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_DOWN) : 0;
-   psp->pad_state |= (STATE_BUTTON(state_tmp) & PSP_CTRL_RIGHT) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_RIGHT) : 0;
-   psp->pad_state |= (STATE_BUTTON(state_tmp) & PSP_CTRL_UP) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_UP) : 0;
-   psp->pad_state |= (STATE_BUTTON(state_tmp) & PSP_CTRL_START) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_START) : 0;
-   psp->pad_state |= (STATE_BUTTON(state_tmp) & PSP_CTRL_SELECT) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_SELECT) : 0;
-   psp->pad_state |= (STATE_BUTTON(state_tmp) & PSP_CTRL_TRIANGLE) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_X) : 0;
-   psp->pad_state |= (STATE_BUTTON(state_tmp) & PSP_CTRL_SQUARE) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_Y) : 0;
-   psp->pad_state |= (STATE_BUTTON(state_tmp) & PSP_CTRL_CROSS) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_B) : 0;
-   psp->pad_state |= (STATE_BUTTON(state_tmp) & PSP_CTRL_CIRCLE) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_A) : 0;
-   psp->pad_state |= (STATE_BUTTON(state_tmp) & PSP_CTRL_R) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_R) : 0;
-   psp->pad_state |= (STATE_BUTTON(state_tmp) & PSP_CTRL_L) ? (1ULL << RETRO_DEVICE_ID_JOYPAD_L) : 0;
-
-   psp->analog_state[0][RETRO_DEVICE_INDEX_ANALOG_LEFT] [RETRO_DEVICE_ID_ANALOG_X] = (int16_t)(STATE_ANALOGLX(state_tmp)-128) * 256;
-   psp->analog_state[0][RETRO_DEVICE_INDEX_ANALOG_LEFT] [RETRO_DEVICE_ID_ANALOG_Y] = (int16_t)(STATE_ANALOGLY(state_tmp)-128) * 256;
-#ifdef SN_TARGET_PSP2
-   psp->analog_state[0][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_X] = (int16_t)(STATE_ANALOGRX(state_tmp)-128) * 256;
-   psp->analog_state[0][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_Y] = (int16_t)(STATE_ANALOGRY(state_tmp)-128) * 256;
-#endif
-
-   for (int i = 0; i < 2; i++)
-      for (int j = 0; j < 2; j++)
-         if (psp->analog_state[0][i][j] == -0x8000)
-            psp->analog_state[0][i][j] = -0x7fff;
-
-   *lifecycle_state &= ~((1ULL << RARCH_MENU_TOGGLE));
-
-#ifdef HAVE_KERNEL_PRX
-   if (STATE_BUTTON(state_tmp) & PSP_CTRL_NOTE)
-#else
-      if (
-            (psp->pad_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_L))
-            && (psp->pad_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_R))
-            && (psp->pad_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_SELECT))
-            && (psp->pad_state & (1ULL << RETRO_DEVICE_ID_JOYPAD_START))
-         )
-#endif
-      *lifecycle_state |= (1ULL << RARCH_MENU_TOGGLE);
+   if (psp->joypad)
+      psp->joypad->poll();
 }
 
 static int16_t psp_input_state(void *data, const struct retro_keybind **binds,
@@ -127,10 +73,7 @@ static void psp_input_free_input(void *data)
 {
    psp_input_t *psp = (psp_input_t*)data;
 
-   if (!psp)
-      return;
-
-   if (psp->joypad)
+   if (psp && psp->joypad)
       psp->joypad->destroy();
 
    free(data);
@@ -156,18 +99,17 @@ static bool psp_input_key_pressed(void *data, int key)
 
 static uint64_t psp_input_get_capabilities(void *data)
 {
-   uint64_t caps = 0;
+   (void)data;
 
-   caps |= (1 << RETRO_DEVICE_JOYPAD);
-   caps |= (1 << RETRO_DEVICE_ANALOG);
-
-   return caps;
+   return (1 << RETRO_DEVICE_JOYPAD) |  (1 << RETRO_DEVICE_ANALOG);
 }
 
 static const rarch_joypad_driver_t *psp_input_get_joypad_driver(void *data)
 {
    psp_input_t *psp = (psp_input_t*)data;
-   return psp->joypad;
+   if (psp)
+      return psp->joypad;
+   return NULL;
 }
 
 input_driver_t input_psp = {
