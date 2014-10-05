@@ -231,7 +231,9 @@ static bool ps3_input_set_rumble(void *data, unsigned port,
 static const rarch_joypad_driver_t *ps3_input_get_joypad_driver(void *data)
 {
    ps3_input_t *ps3 = (ps3_input_t*)data;
-   return ps3->joypad;
+   if (ps3)
+      return ps3->joypad;
+   return NULL;
 }
 
 input_driver_t input_ps3 = {
