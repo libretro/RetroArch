@@ -40,51 +40,62 @@ static void* const associated_core_key = (void*)&associated_core_key;
    
    event_type = event.type;
    
-   if (event_type == NSKeyDown || event_type == NSKeyUp)
+   switch ((NSInteger)event_type)
    {
-      NSString* ch = (NSString*)event.characters;
-      
-      if (!ch || ch.length == 0)
-         apple_input_keyboard_event(event_type == NSKeyDown, event.keyCode, 0, 0);
-      else
+      case NSKeyDown:
+      case NSKeyUp:
       {
-         apple_input_keyboard_event(event_type == NSKeyDown, event.keyCode, [ch characterAtIndex:0], event.modifierFlags);
+         NSString* ch = (NSString*)event.characters;
          
-         for (i = 1; i < ch.length; i ++)
-            apple_input_keyboard_event(event_type == NSKeyDown, 0, [ch characterAtIndex:i], event.modifierFlags);
+         if (!ch || ch.length == 0)
+            apple_input_keyboard_event(event_type == NSKeyDown, event.keyCode, 0, 0);
+         else
+         {
+            apple_input_keyboard_event(event_type == NSKeyDown, event.keyCode, [ch characterAtIndex:0], event.modifierFlags);
+            
+            for (i = 1; i < ch.length; i ++)
+               apple_input_keyboard_event(event_type == NSKeyDown, 0, [ch characterAtIndex:i], event.modifierFlags);
+         }
       }
-   }
-   else if (event_type == NSFlagsChanged)
-   {
-      static uint32_t old_flags = 0;
-      uint32_t new_flags = event.modifierFlags;
-      bool down = (new_flags & old_flags) == old_flags;
-      old_flags = new_flags;
-      
-      apple_input_keyboard_event(down, event.keyCode, 0, event.modifierFlags);
-   }
-   else if (event_type == NSMouseMoved || event_type == NSLeftMouseDragged ||
-            event_type == NSRightMouseDragged || event_type == NSOtherMouseDragged)
-   {
-      NSPoint pos;
-      // Relative
-      apple->mouse_delta[0] += event.deltaX;
-      apple->mouse_delta[1] += event.deltaY;
-
-      // Absolute
-      pos = [[RAGameView get] convertPoint:[event locationInWindow] fromView:nil];
-      apple->touches[0].screen_x = pos.x;
-      apple->touches[0].screen_y = pos.y;
-   }
-   else if (event_type == NSLeftMouseDown || event_type == NSRightMouseDown || event_type == NSOtherMouseDown)
-   {
-      apple->mouse_buttons |= 1 << event.buttonNumber;
-      apple->touch_count = 1;
-   }
-   else if (event_type == NSLeftMouseUp || event_type == NSRightMouseUp || event_type == NSOtherMouseUp)
-   {
-      apple->mouse_buttons &= ~(1 << event.buttonNumber);
-      apple->touch_count = 0;
+         break;
+      case NSFlagsChanged:
+      {
+         static uint32_t old_flags = 0;
+         uint32_t new_flags = event.modifierFlags;
+         bool down = (new_flags & old_flags) == old_flags;
+         old_flags = new_flags;
+         
+         apple_input_keyboard_event(down, event.keyCode, 0, event.modifierFlags);
+      }
+         break;
+      case NSMouseMoved:
+      case NSLeftMouseDragged:
+      case NSRightMouseDragged:
+      case NSOtherMouseDragged:
+      {
+         NSPoint pos;
+         // Relative
+         apple->mouse_delta[0] += event.deltaX;
+         apple->mouse_delta[1] += event.deltaY;
+         
+         // Absolute
+         pos = [[RAGameView get] convertPoint:[event locationInWindow] fromView:nil];
+         apple->touches[0].screen_x = pos.x;
+         apple->touches[0].screen_y = pos.y;
+      }
+         break;
+      case NSLeftMouseDown:
+      case NSRightMouseDown:
+      case NSOtherMouseDown:
+         apple->mouse_buttons |= 1 << event.buttonNumber;
+         apple->touch_count = 1;
+         break;
+      case NSLeftMouseUp:
+      case NSRightMouseUp:
+      case NSOtherMouseUp:
+         apple->mouse_buttons &= ~(1 << event.buttonNumber);
+         apple->touch_count = 0;
+         break;
    }
 }
 
