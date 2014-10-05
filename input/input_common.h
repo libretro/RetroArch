@@ -209,8 +209,6 @@ void input_push_analog_dpad(struct retro_keybind *binds, unsigned mode);
 
 void input_pop_analog_dpad(struct retro_keybind *binds);
 
-retro_input_t input_keys_pressed(void);
-
 #ifdef __cplusplus
 }
 #endif
