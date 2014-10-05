@@ -79,17 +79,14 @@ static void hid_device_input_callback(void* context, IOReturn result,
 
                            for (i = 0; i < 4; i ++)
                            {
-                              CFIndex min, max, state;
-                              float val;
+                              CFIndex min   = IOHIDElementGetPhysicalMin(element);
+                              CFIndex max   = IOHIDElementGetPhysicalMax(element) - min;
+                              CFIndex state = IOHIDValueGetIntegerValue(value) - min;
+                              float val     = (float)state / (float)max;
 
                               if (use != axis_use_ids[i])
                                  continue;
 
-                              min = IOHIDElementGetPhysicalMin(element);
-                              max = IOHIDElementGetPhysicalMax(element) - min;
-                              state = IOHIDValueGetIntegerValue(value) - min;
-
-                              val = (float)state / (float)max;
                               apple->axes[connection->slot][i] =
                                  ((val * 2.0f) - 1.0f) * 32767.0f;
                            }
@@ -148,7 +145,8 @@ static void hid_device_report(void* context, IOReturn result, void *sender,
    struct pad_connection* connection = (struct pad_connection*)context;
 
    if (connection)
-      pad_connection_packet(connection->slot, connection->data, reportLength + 1);
+      pad_connection_packet(connection->slot,
+            connection->data, reportLength + 1);
 }
 
 static void add_device(void* context, IOReturn result,
@@ -182,7 +180,8 @@ static void add_device(void* context, IOReturn result,
    productID = (CFNumberRef)IOHIDDeviceGetProperty(device, CFSTR(kIOHIDProductIDKey));
    CFNumberGetValue(productID, kCFNumberIntType, &connection->p_id);
 
-   connection->slot = pad_connection_connect(device_name, connection, &hid_pad_connection_send_control);
+   connection->slot = pad_connection_connect(device_name, 
+         connection, &hid_pad_connection_send_control);
 
    if (pad_connection_has_interface(connection->slot))
       IOHIDDeviceRegisterInputReportCallback(device,
@@ -287,10 +286,11 @@ static bool apple_joypad_button(unsigned port, uint16_t joykey)
    if (!apple || joykey == NO_BTN)
       return false;
 
-   // Check hat.
+   /* Check hat. */
    if (GET_HAT_DIR(joykey))
       return false;
-   // Check the button
+
+   /* Check the button. */
    if ((port < MAX_PLAYERS) && (joykey < 32))
        return ((apple->buttons[port] & (1 << joykey)) != 0) ||
               ((buttons & (1 << joykey)) != 0);
