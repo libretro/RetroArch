@@ -313,7 +313,6 @@ int32_t apple_input_find_any_key(void)
     
    if (apple->joypad)
        apple->joypad->poll();
-   input_init_keyboard_lut(rarch_key_map_apple_hid);
 
    for (i = 0; apple_key_name_map[i].hid_id; i++)
       if (apple->key_state[apple_key_name_map[i].hid_id])
