@@ -2283,9 +2283,7 @@ bool rarch_main_command(unsigned cmd)
          driver.audio->stop(driver.audio_data);
          break;
       case RARCH_CMD_AUDIO_START:
-         if (!driver.audio_data)
-            return false;
-         if (driver.audio->alive(driver.audio_data))
+         if (!driver.audio_data || driver.audio->alive(driver.audio_data))
             return false;
 
          if (!g_extern.audio_data.mute

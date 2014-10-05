@@ -38,8 +38,8 @@ static void check_mute(void)
    msg_queue_push(g_extern.msg_queue, msg, 1, 180);
 
    if (g_extern.audio_data.mute)
-      driver.audio->stop(driver.audio_data);
-   else if (!driver.audio->start(driver.audio_data))
+      rarch_main_command(RARCH_CMD_AUDIO_STOP);
+   else if (!rarch_main_command(RARCH_CMD_AUDIO_START))
    {
       RARCH_ERR("Failed to unmute audio.\n");
       driver.audio_active = false;
