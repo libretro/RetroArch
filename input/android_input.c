@@ -219,6 +219,7 @@ static inline void android_input_poll_event_type_key(
       AInputEvent *event, int port, int keycode, int source,
       int type_event, int *handled)
 {
+   uint8_t *buf = android->pad_state[port];
    int action  = AKeyEvent_getAction(event);
 
    /* some controllers send both the up and down events at once
@@ -227,9 +228,9 @@ static inline void android_input_poll_event_type_key(
     * cleared every poll anyway)
     */
    if (action == AKEY_EVENT_ACTION_UP)
-      clear_bit(android->pad_state[port], keycode);
+      BIT_CLEAR(buf, keycode);
    else if (action == AKEY_EVENT_ACTION_DOWN)
-      set_bit(android->pad_state[port], keycode);
+      BIT_SET(buf, keycode);
 
    if ((keycode == AKEYCODE_VOLUME_UP || keycode == AKEYCODE_VOLUME_DOWN))
       *handled = 0;
