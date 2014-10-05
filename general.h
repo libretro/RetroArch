@@ -645,7 +645,6 @@ struct global
 
    /* Lifecycle state checks. */
    bool is_paused;
-   bool is_oneshot;
    bool is_menu;
    bool is_slowmotion;
 

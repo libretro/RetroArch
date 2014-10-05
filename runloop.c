@@ -137,11 +137,11 @@ static void check_pause(bool pressed, bool frameadvance_pressed)
    }
 }
 
-static inline void check_oneshot(bool oneshot_pressed, bool rewind_pressed)
+/* Rewind buttons works like FRAMEREWIND when paused.
+ * We will one-shot in that case. */
+static inline bool check_is_oneshot(bool oneshot_pressed, bool rewind_pressed)
 {
-   /* Rewind buttons works like FRAMEREWIND when paused.
-    * We will one-shot in that case. */
-   g_extern.is_oneshot = oneshot_pressed | rewind_pressed;
+   return (oneshot_pressed | rewind_pressed);
 }
 
 /* To avoid continous switching if we hold the button down, we require
@@ -464,12 +464,10 @@ static int do_state_checks(
 #endif
    check_pause_func(trigger_input);
 
-   check_oneshot_func(trigger_input);
-
    if (check_fullscreen_func(trigger_input) && g_extern.is_paused)
       rarch_render_cached_frame();
 
-   if (g_extern.is_paused && !g_extern.is_oneshot)
+   if (g_extern.is_paused && !check_oneshot_func(trigger_input))
       return 1;
 
    check_fast_forward_button_func(input, old_input, trigger_input);
