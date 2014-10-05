@@ -56,9 +56,7 @@ static bool ps3_joypad_init(void)
 
 static bool ps3_joypad_button(unsigned port_num, uint16_t joykey)
 {
-   ps3_input_t *ps3 = (ps3_input_t*)driver.input_data;
-
-   if (!ps3 || port_num >= MAX_PADS)
+   if (port_num >= MAX_PADS)
       return false;
 
    return pad_state[port_num] & (1ULL << joykey);
@@ -66,16 +64,11 @@ static bool ps3_joypad_button(unsigned port_num, uint16_t joykey)
 
 static int16_t ps3_joypad_axis(unsigned port_num, uint32_t joyaxis)
 {
-   ps3_input_t *ps3 = (ps3_input_t*)driver.input_data;
+   int val = 0. axis = -1;
+   bool is_neg = false, is_pos = false;
 
-   if (!ps3 || joyaxis == AXIS_NONE || port_num >= MAX_PADS)
+   if (joyaxis == AXIS_NONE || port_num >= MAX_PADS)
       return 0;
-
-   int val = 0;
-
-   int axis    = -1;
-   bool is_neg = false;
-   bool is_pos = false;
 
    if (AXIS_NEG_GET(joyaxis) < 4)
    {
@@ -120,7 +113,7 @@ static void ps3_joypad_poll(void)
 
    for (port = 0; port < MAX_PADS; port++)
    {
-      static CellPadData state_tmp;
+      CellPadData state_tmp;
       cellPadGetData(port, &state_tmp);
 
       if (state_tmp.len != 0)
@@ -214,8 +207,7 @@ static void ps3_joypad_poll(void)
 
 static bool ps3_joypad_query_pad(unsigned pad)
 {
-   ps3_input_t *ps3 = (ps3_input_t*)driver.input_data;
-   return (ps3 && pad < MAX_PLAYERS && pad_state[pad]);
+   return pad < MAX_PLAYERS && pad_state[pad];
 }
 
 
