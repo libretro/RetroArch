@@ -152,11 +152,11 @@ static void check_pause(bool pressed, bool frameadvance_pressed)
       focus = driver.video->focus(driver.video_data);
 
    if (focus && pressed)
-      g_extern.is_paused = !g_extern.is_paused;
+      g_extern.is_paused  = !g_extern.is_paused;
    else if (focus && !old_focus)
       g_extern.is_paused  = false;
    else if (!focus && old_focus)
-      g_extern.is_paused = true;
+      g_extern.is_paused  = true;
 
    if (g_extern.is_paused)
    {
