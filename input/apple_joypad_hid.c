@@ -102,11 +102,12 @@ static void hid_device_input_callback(void* context, IOReturn result,
                case kIOHIDElementTypeInput_Button:
                   {
                      CFIndex state = IOHIDValueGetIntegerValue(value);
+                     unsigned id = use - 1;
 
                      if (state)
-                        apple->buttons[connection->slot] |= (1 << (use - 1));
+                        apple->buttons[connection->slot] |=  (1 << id);
                      else
-                        apple->buttons[connection->slot] &= ~(1 << (use - 1));
+                        apple->buttons[connection->slot] &= ~(1 << id);
                   }
                   break;
             }
