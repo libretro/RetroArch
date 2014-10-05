@@ -251,7 +251,8 @@ static int android_input_get_id_port(android_input_t *android, int id,
    return -1;
 }
 
-static bool android_input_lookup_name(char *buf, int *vendorId, int *productId, size_t size, int id)
+static bool android_input_lookup_name(char *buf,
+      int *vendorId, int *productId, size_t size, int id)
 {
    jclass class;
    jmethodID method, getName, getVendorId, getProductId;
@@ -538,11 +539,6 @@ static int android_input_get_id(android_input_t *android, AInputEvent *event)
    return id;
 }
 
-static bool pause_key_pressed(void)
-{
-   return driver.input->key_pressed(driver.input_data, RARCH_PAUSE_TOGGLE);
-}
-
 /* Handle all events. If our activity is in pause state,
  * block until we're unpaused.
  */
@@ -552,7 +548,8 @@ static void android_input_poll(void *data)
    struct android_app *android_app = (struct android_app*)g_android;
    android_input_t *android = (android_input_t*)data;
 
-   while ((ident = ALooper_pollAll((pause_key_pressed())
+   while ((ident = 
+            ALooper_pollAll((driver.input->key_pressed(driver.input_data, RARCH_PAUSE_TOGGLE))
                ? -1 : 0,
                NULL, NULL, NULL)) >= 0)
    {
@@ -639,8 +636,6 @@ static int16_t android_input_state(void *data,
                return (index < android->pointer_count) &&
                   (android->pointer[index].x != -0x8000) &&
                   (android->pointer[index].y != -0x8000);
-            default:
-               return 0;
          }
          break;
       case RARCH_DEVICE_POINTER_SCREEN:
@@ -654,8 +649,6 @@ static int16_t android_input_state(void *data,
                return (index < android->pointer_count) &&
                   (android->pointer[index].full_x != -0x8000) &&
                   (android->pointer[index].full_y != -0x8000);
-            default:
-               return 0;
          }
          break;
    }
@@ -688,13 +681,12 @@ static void android_input_free_input(void *data)
 
 static uint64_t android_input_get_capabilities(void *data)
 {
-   uint64_t caps = 0;
+   (void)data;
 
-   caps |= (1 << RETRO_DEVICE_JOYPAD);
-   caps |= (1 << RETRO_DEVICE_POINTER);
-   caps |= (1 << RETRO_DEVICE_ANALOG);
-
-   return caps;
+   return 
+      (1 << RETRO_DEVICE_JOYPAD)  |
+      (1 << RETRO_DEVICE_POINTER) |
+      (1 << RETRO_DEVICE_ANALOG);
 }
 
 static void android_input_enable_sensor_manager(void *data)
@@ -776,7 +768,9 @@ static float android_input_get_sensor_input(void *data,
 static const rarch_joypad_driver_t *android_input_get_joypad_driver(void *data)
 {
    android_input_t *android = (android_input_t*)data;
-   return android->joypad;
+   if (android)
+      return android->joypad;
+   return NULL;
 }
 
 input_driver_t input_android = {
