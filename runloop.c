@@ -53,17 +53,14 @@ static void check_mute(void)
 static void check_volume(bool pressed_up, bool pressed_down)
 {
    char msg[256];
-   float db_change   = 0.0f;
-
-   if (!pressed_up && !pressed_down)
-      return;
 
    if (pressed_up)
-      db_change += 0.5f;
-   if (pressed_down)
-      db_change -= 0.5f;
+      g_extern.audio_data.volume_db += 0.5f;
+   else if (pressed_down)
+      g_extern.audio_data.volume_db -= 0.5f;
+   else
+      return;
 
-   g_extern.audio_data.volume_db += db_change;
    g_extern.audio_data.volume_db = max(g_extern.audio_data.volume_db, -80.0f);
    g_extern.audio_data.volume_db = min(g_extern.audio_data.volume_db, 12.0f);
 
