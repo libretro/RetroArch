@@ -2255,6 +2255,9 @@ void rarch_main_command(unsigned cmd)
          init_autosave();
 #endif
          break;
+      case RARCH_CMD_AUTOSAVE_STATE:
+         save_auto_state();
+         break;
       case RARCH_CMD_AUDIO_STOP:
          if (!driver.audio_data)
             return;
@@ -2613,7 +2616,7 @@ void rarch_main_deinit(void)
    rarch_main_command(RARCH_CMD_CHEATS_DEINIT);
    rarch_main_command(RARCH_CMD_BSV_MOVIE_DEINIT);
 
-   save_auto_state();
+   rarch_main_command(RARCH_CMD_AUTOSAVE_STATE);
 
    deinit_core();
 
