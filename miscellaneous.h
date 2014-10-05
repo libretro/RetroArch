@@ -126,6 +126,11 @@ typedef struct
 #define BIT64_GET(a, bit) (!!((a) &   (1ULL << ((bit) & 63))))
 #define BIT64_CLEAR_ALL(a)   ((a) = 0)
 
+#define BIT32_SET(a, bit)    ((a) |=  (1 << ((bit) & 31)))
+#define BIT32_CLEAR(a, bit)  ((a) &= ~(1 << ((bit) & 31)))
+#define BIT32_GET(a, bit) (!!((a) &   (1 << ((bit) & 31))))
+#define BIT32_CLEAR_ALL(a)   ((a) = 0)
+
 #define BIT_SET(a, bit)   ((a)[(bit) >> 3] |=  (1 << ((bit) & 7)))
 #define BIT_CLEAR(a, bit) ((a)[(bit) >> 3] &= ~(1 << ((bit) & 7)))
 #define BIT_GET(a, bit)   ((a)[(bit) >> 3] &   (1 << ((bit) & 7)))
